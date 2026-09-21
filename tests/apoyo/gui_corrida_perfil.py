@@ -34,12 +34,9 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
-for _ruta in (str(RAIZ), str(RAIZ / "src")):
-    if _ruta not in sys.path:
-        sys.path.insert(0, _ruta)
 
 import cli                                             # noqa: E402
-import criterios_adoptados as ca                       # noqa: E402
+from src import criterios_adoptados as ca
 
 CSV_PERFIL = RAIZ / "tests" / "ejemplo_puntos_perfil.csv"
 

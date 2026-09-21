@@ -24,23 +24,19 @@ from __future__ import annotations
 
 import html as _html
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
 SRC = RAIZ / "src"
-for ruta in (str(RAIZ), str(SRC)):
-    if ruta not in sys.path:
-        sys.path.insert(0, ruta)
 
-import traza_punto as tp                                           # noqa: E402
+from src import traza_punto as tp
 from cli import cargar_datos_externos, correr                      # noqa: E402
-from modelos import TipoDeVeredicto                                # noqa: E402
-from modulos import M11_reporte as M11                             # noqa: E402
-from normativa.esquema import Verbo                                # noqa: E402
-from normativa.registro import construir                           # noqa: E402
+from src.modelos import TipoDeVeredicto
+from src.modulos import M11_reporte as M11
+from src.normativa.esquema import Verbo
+from src.normativa.registro import construir
 
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
 

@@ -47,7 +47,7 @@ import ast
 import re
 from pathlib import Path
 
-import criterios_adoptados as ca
+from src import criterios_adoptados as ca
 
 RAIZ = Path(__file__).resolve().parent.parent
 SRC = RAIZ / "src"

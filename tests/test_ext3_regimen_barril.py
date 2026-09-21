@@ -37,14 +37,14 @@ from pathlib import Path
 import pytest
 
 import cli
-import modelos
-from modelos import (ControlGobernante, DisenoNoFactibleError, ErrorProyecto,
+from src import modelos
+from src.modelos import (ControlGobernante, DisenoNoFactibleError, ErrorProyecto,
                      Magnitud, SeccionCircular, TipoDeVeredicto, TipoMaterial)
-from modulos import M4_control as M4
-from modulos import M5_verificaciones as M5
-from modulos import M6_proteccion as M6
-from modulos import MD
-from modulos.M2_material import catalogo
+from src.modulos import M4_control as M4
+from src.modulos import M5_verificaciones as M5
+from src.modulos import M6_proteccion as M6
+from src.modulos import MD
+from src.modulos.M2_material import catalogo
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
 from tests.fixtures.casos_patron import CP12_REGIMEN_LLENO
@@ -422,7 +422,7 @@ def test_d_el_bloque_h_o_llega_a_volcar(tmp_path):
 # a mano: una mutacion que la difiriera siempre pasaba 277 tests.
 
 def _informe_dimensionado_con(resultado_hidraulico):
-    from modelos import ResultadoPunto
+    from src.modelos import ResultadoPunto
     punto = _punto_md(id="B-01")
     informe = cli.InformePunto(punto=punto)
     informe.resultado = ResultadoPunto(
@@ -460,7 +460,7 @@ def test_la_compuerta_no_marca_un_punto_dentro_de_rango():
 # ===========================================================================
 
 def test_y_sobre_D_del_punto_sigue_al_regimen_del_barril():
-    from modelos import ResultadoPunto
+    from src.modelos import ResultadoPunto
 
     def punto_con(r):
         return ResultadoPunto(punto=_punto_md(), aceptado=True,

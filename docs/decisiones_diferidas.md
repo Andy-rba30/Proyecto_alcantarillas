@@ -1139,7 +1139,7 @@ y que no queda escrita en ningún otro registro.
   también qué pasa hoy: sobre A-01 de `tests/ejemplo_puntos.csv`, con
   `ancho_plataforma` de 9.60 m, un `longitud_m` declarado de 0.5 m llega a la
   Sec. 7.B y sale `factible`.
-- **Dónde vive:** `cli.py::_DOMINIO_DE_CLAVE` (el diagnóstico completo, clave
+- **Dónde vive:** `src/servicio.py::_DOMINIO_DE_CLAVE` (en `cli.py` hasta EXT-9) (el diagnóstico completo, clave
   por clave, en su comentario) y `cli.py::_resolver_longitud` (las dos puertas)
 
 ---
@@ -1684,7 +1684,7 @@ quedaron sin hacer a propósito, con su argumento y su sesión.
   `contextvars.ContextVar` por registro con `reiniciar_usos`/`capturar_contexto`
   sobre la variable de contexto, y un test con dos corridas concurrentes
   cuyos `contexto.criterios_usados` no se mezclen.
-- **Dónde vive:** `cli.py::capturar_contexto`
+- **Dónde vive:** `src/servicio.py::capturar_contexto` (en `cli.py` hasta EXT-9)
 
 ## EXT-4-03 · Un `Informe` sin contexto no se exporta: no hay caída al estado vivo
 
@@ -2130,3 +2130,87 @@ esperaría o porque dejan algo abierto.
   función `fragmento_con_anexo(pasos)` que lo cierre con su propio anexo.
 - **Dónde vive:** `src/modulos/M11_reporte.py::bloque_paso`
 
+
+# Parte XXV — Lo que EXT-9 dejó escrito al convertir `src/` en paquete y separar el servicio de cálculo
+
+## EXT-9-01 · `cli` conserva reexportaciones del servicio hasta que la suite migre
+
+- **Qué se difirió:** retirar de `cli.py` el bloque `from src.servicio import
+  (...)  # noqa: F401` que reexporta lo que `gui/app.py` lee como `cli.X` y
+  lo que la suite lee como `cli._x` (`_verificador_perfil`, `_etapa`,
+  `_numero_externo`, `_fase_*`, `_bloqueo`, `_dato_externo`,
+  `_compuerta_metodo_h_o`, `_DOMINIO_DE_CLAVE`, `CLAVES_EXTERNAS`,
+  `FAMILIAS_QUE_USAN`, `MODULOS_DIFERIDOS_POR_ALCANCE`,
+  `VERIFICACIONES_DIFERIDAS_POR_ALCANCE`, ...), y con él las lecturas
+  `cli.X` de la GUI y de los archivos de tests que las escriben.
+- **Por qué:** E01 pedía mover la orquestación sin cambiar el contrato de
+  quien la consume, y el prompt de EXT-9 lo dice con esas palabras: las
+  reexportaciones «se retiran solo cuando los 11 archivos de tests migren».
+  Migrarlos en la misma sesión habría mezclado el movimiento con una
+  reescritura de la suite que no cambia lo que se prueba. Lo que SÍ se fija
+  ya es que la reexportación no es una copia: `test_e03_cli_reexporta_el_
+  mismo_objeto_que_el_servicio` deriva el censo del AST de `gui/app.py` y de
+  los tests y exige identidad (`cli.X is servicio.X`), y los tres
+  `monkeypatch` que parcheaban sobre `cli` una función que el servicio LLAMA
+  (`disenar_punto`, `cadena_sismica`, `seleccionar_clase_calibre`) migraron
+  a `servicio`, porque ahí se resuelve el nombre y sobre `cli` habrían
+  dejado de tener efecto.
+- **Qué haría falta:** cambiar `cli.X` por `servicio.X` en `gui/app.py` y en
+  los archivos de tests que lo escriben (`test_cli`, `test_ext1_entradas`,
+  `test_ext3_regimen_barril`, `test_ext4_contexto_corrida`,
+  `test_ext5_forma_gui`, `test_ext6_registro_normativo`,
+  `test_ext8_rendimiento_gui`, `test_familias_del_csv`, `test_gui_contrato`,
+  `test_memoria_sustentada`, `test_nivel_medido`, `test_traza_punto`,
+  `test_anticipo`, `test_ayuda_entrada`, `test_cierre_perfil`,
+  `test_canal_discrepancias`, `test_M11_reporte` y los apoyos de ventana
+  real), retirar el bloque y dejar que `test_e03_cli_reexporta_el_mismo_
+  objeto_que_el_servicio` quede vacío de contrato —su censo sale del código,
+  así que se apaga solo—.
+- **Dónde vive:** `cli.py::main`
+
+## EXT-9-02 · La CLI se queda en la raíz: no hay `python -m src.cli`
+
+- **Qué se difirió:** mover `cli.py` dentro del paquete para que
+  `python -m src.cli` y `python -m src.normativa.manifiesto` compartan
+  literalmente la misma escritura, que es como el prompt de EXT-9 enuncia
+  la convención (`python -m <paquete>.cli`).
+- **Por qué:** la convención que se comparte es la que importa —todo se
+  lanza desde la raíz, con `-m` o como script de la raíz, y nada inserta
+  rutas en `sys.path`—, y `cli.py` en la raíz ya la cumple: `python cli.py`
+  y `python -m cli` resuelven `src` porque la raíz es `sys.path[0]`. Moverlo
+  habría tocado el contrato de EXT-8 (el subproceso del PDF lanza
+  `python cli.py --sesion ...`, `gui/exportacion_pdf.py::comando_exportar_pdf`),
+  el README, la línea base de la Familia C (`regenerar.sh` lo invoca cuatro
+  veces) y una docena de tests que lo ejecutan por ruta, sin cerrar ningún
+  hallazgo: PC-08 se cierra con un solo nombre importable para `src/`, no
+  con la ubicación del adaptador. Lo que sí cambió de escritura es lo que
+  no tenía otra salida: `src/indice_formulas.py` se lanza como
+  `python -m src.indice_formulas` —como script, `sys.path[0]` es `src/` y el
+  paquete no se ve—, igual que `tests/linea_base_familia_c/punto_cajon.py`
+  (`python -m tests.linea_base_familia_c.punto_cajon` en `regenerar.sh`).
+- **Qué haría falta:** si algún día el adaptador entra al paquete, un
+  `src/cli.py` con el `main` actual y un `cli.py` de raíz que sólo lo
+  invoque, actualizando a la vez el comando del hijo del PDF, el README y
+  `regenerar.sh`; y decidir qué pasa con `import cli` en la GUI y en la
+  suite, que volvería a ser un segundo nombre para el mismo módulo.
+- **Dónde vive:** `gui/exportacion_pdf.py::comando_exportar_pdf`
+
+## EXT-9-03 · El índice de fórmulas no se regeneró en EXT-9, y su sello sigue siendo el de EXT-8
+
+- **Qué se difirió:** regenerar `docs/indice_formulas.md` con un sello de
+  EXT-9.
+- **Por qué:** EXT-9 es un refactor de imports y de ubicación: la corrida de
+  referencia emite los MISMOS `PasoDeMemoria` —el test de sincronía lo
+  comprueba regenerando a memoria y comparando el cuerpo sin la fecha—, de
+  modo que no hay nada que resincronizar, y el sello exige el par de la suite
+  medido sobre `origin/main`, que no se conoce antes de fusionar. El
+  dictamen ya lo había dicho de E03c («no puede "regenerar el índice con
+  sello" dentro de la sesión») y el prompt de EXT-9 lo repite. El
+  encabezado del documento nombra `src/indice_formulas.py` como ruta de
+  archivo, que sigue siendo cierta; el comando de regeneración, que sí
+  cambió, vive en el docstring del módulo y en los mensajes de
+  `tests/test_indice_formulas.py`, no en el documento generado.
+- **Qué haría falta:** nada para cerrarla; la próxima sesión que toque
+  citas, criterios, memoria o pasos regenera los cuatro documentos con su
+  sello, como manda el ritual de cierre.
+- **Dónde vive:** `src/indice_formulas.py::corrida_de_referencia`

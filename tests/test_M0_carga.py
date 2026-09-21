@@ -30,9 +30,9 @@ from pathlib import Path
 
 import pytest
 
-from modelos import (DatoFaltanteError, DatoInvalidoError, Familia,
+from src.modelos import (DatoFaltanteError, DatoInvalidoError, Familia,
                      PuntoCritico)
-from modulos.M0_carga import COLUMNAS, cargar_puntos, leer_cabecera
+from src.modulos.M0_carga import COLUMNAS, cargar_puntos, leer_cabecera
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING
 
 DIRECTORIO_TESTS = Path(__file__).resolve().parent

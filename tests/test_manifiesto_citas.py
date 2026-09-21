@@ -398,7 +398,7 @@ def test_T8_el_manifiesto_esta_sincronizado_con_el_codigo():
 
         python3 -m src.normativa.manifiesto --escribir --suite "..."
     """
-    from normativa.manifiesto import resincronizar
+    from src.normativa.manifiesto import resincronizar
     texto = MANIFIESTO.read_text(encoding="utf-8")
     regenerado, cambios, _ = resincronizar(texto)
     assert regenerado == texto, (
@@ -412,8 +412,8 @@ def test_T8_el_indice_del_registro_esta_sincronizado():
     El OTRO manifiesto, el que se genera entero desde los objetos. Ahi no hay
     numeros de linea que puedan romperse porque no hay lineas: hay ids.
     """
-    from normativa.manifiesto import INDICE_REGISTRO, indice_del_registro
-    from normativa.registro import construir
+    from src.normativa.manifiesto import INDICE_REGISTRO, indice_del_registro
+    from src.normativa.registro import construir
     assert INDICE_REGISTRO.exists(), (
         "falta docs/manifiesto_registro_normativo.md: generalo con "
         "python3 -m src.normativa.manifiesto --escribir --suite \"...\"")

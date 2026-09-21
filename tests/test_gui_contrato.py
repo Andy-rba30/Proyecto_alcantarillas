@@ -440,7 +440,7 @@ def test_la_version_del_formato_de_sesion_subio():
     # Desde EXT-8 la version vive en `src/sesion.py` (la CLI la lee tambien)
     # y la GUI la reexporta con el mismo nombre.
     import re
-    import sesion
+    from src import sesion
     texto = (RAIZ / "src" / "sesion.py").read_text(encoding="utf-8-sig")
     version = re.search(r"^FORMATO_SESION = (\d+)", texto, re.MULTILINE)
     assert version is not None
@@ -470,9 +470,7 @@ def test_la_ventana_tiene_un_metodo_por_bloque_del_orden_visual():
     El recorrido llama a `_bloque_<nombre>`: si falta uno, la ventana revienta
     al abrirse en vez de pintar de menos en silencio. El test lo adelanta.
     """
-    import sys
-    sys.path.insert(0, str(RAIZ / "src"))
-    import ventana_normativa as vn_src
+    from src import ventana_normativa as vn_src
 
     metodos = {nodo.name for nodo in ast.walk(ARBOL_VENTANA)
                if isinstance(nodo, ast.FunctionDef)}
@@ -570,12 +568,16 @@ def test_la_gui_pinta_los_tres_registros_separados_y_no_lee_normativa():
         "el pintor dejo de dar estilo propio a cada registro: pegados, los "
         "tres se leen como norma (NOR-HID-04)")
 
+    # Por PARTES del nombre y no por la primera: desde EXT-9 el registro se
+    # importa como `src.normativa`, y mirar solo `split(".")[0]` dejaria la
+    # guardia vacua.
     for nodo in ast.walk(ARBOL_GUI):
         if isinstance(nodo, ast.Import):
-            assert not any(a.name.split(".")[0] == "normativa"
+            assert not any("normativa" in a.name.split(".")
                            for a in nodo.names)
         if isinstance(nodo, ast.ImportFrom):
-            assert (nodo.module or "").split(".")[0] != "normativa"
+            assert "normativa" not in (nodo.module or "").split(".")
+            assert not any(a.name == "normativa" for a in nodo.names)
 
 
 def test_los_componentes_de_la_gui_estan_en_un_solo_sitio():
@@ -749,7 +751,7 @@ def test_la_ventana_puede_declarar_los_SIETE_criterios_del_cajon(ventana):
     siete criterios de la Familia C quedaba fuera de la declaracion en
     caliente sin que nada lo dijera.
     """
-    import criterios_adoptados as ca_
+    from src import criterios_adoptados as ca_
 
     tecleado = {
         "embocadura_cajon": "cajon_concreto_aletas_30_75",
@@ -886,8 +888,8 @@ def _banderas_de_la_cli():
 @pytest.fixture
 def _corrida_limpia():
     """Deja el estado declarado como lo encontro (ver test_declaracion.py)."""
-    import criterios_adoptados as ca
-    import declaracion as dec
+    from src import criterios_adoptados as ca
+    from src import declaracion as dec
 
     dec.limpiar()
     previos = ca.valores_dinamicos()
@@ -914,8 +916,8 @@ def test_un_valor_declarado_desde_la_ventana_aparece_en_la_memoria(_corrida_limp
          exige y lo que `_procedencia` sola no podia dar.
     """
     import cli
-    import declaracion as dec
-    from modulos import M11_reporte as M11
+    from src import declaracion as dec
+    from src.modulos import M11_reporte as M11
 
     procedencia = dec.declarar_desde_tabla(
         "ke_entrada", 0.5, filas=("concreto_headwall_square_edge",))
@@ -945,9 +947,9 @@ def test_la_memoria_no_inventa_procedencia_para_lo_declarado_por_la_cli(_corrida
     registro seria peor que no imprimir ninguna.
     """
     import cli
-    import criterios_adoptados as ca
-    import declaracion as dec
-    from modulos import M11_reporte as M11
+    from src import criterios_adoptados as ca
+    from src import declaracion as dec
+    from src.modulos import M11_reporte as M11
 
     ca.establecer_valor_dinamico("ke_entrada", 0.5)
     assert dec.procedencia_de("ke_entrada") is None
@@ -993,8 +995,8 @@ def test_el_estado_de_un_criterio_distingue_los_tres_casos(ventana):
     dejo invisible durante toda la vida del proyecto: un valor que gobernaba
     el calculo y que la memoria imprimia como sin declarar.
     """
-    import criterios_adoptados as ca
-    import declaracion as dec
+    from src import criterios_adoptados as ca
+    from src import declaracion as dec
 
     pendiente = next(c for c, v in ca.CRITERIOS.items() if v.valor is None)
     resuelto = next(c for c, v in ca.CRITERIOS.items() if v.valor is not None)
@@ -1022,8 +1024,8 @@ def test_el_estado_de_un_criterio_distingue_PISAR_de_RELLENAR(ventana):
     la tabla no la mostraria: exactamente la forma que tuvo SIS-A-01, un valor
     que gobierna el calculo y que la pantalla describe como otra cosa.
     """
-    import criterios_adoptados as ca
-    import declaracion as dec
+    from src import criterios_adoptados as ca
+    from src import declaracion as dec
 
     # Un pendiente de forma `float` (EXT-5): la puerta exige la forma que la
     # ficha declara, y 1.0 no es un texto ni una clase de sitio.
@@ -1105,7 +1107,7 @@ def test_la_leyenda_nombra_exactamente_las_etiquetas_que_el_archivo_puede_tener(
     manana entra el primer `[N->]` nuevo o desaparece el ultimo `[S]`, este
     test lo dice en vez de quedarse verde sobre una lista copiada.
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
 
     presentes = {c.etiqueta for c in ca.CRITERIOS.values()}
     leyenda = _leyenda_de_etiquetas()
@@ -1657,8 +1659,8 @@ def test_las_opciones_del_filtro_de_fase_son_las_fases_del_censo(app):
     con `factores_carga_aashto` ---, y este test la caza entonces sin que
     nadie tenga que acordarse del combo.
     """
-    import criterios_adoptados as ca
-    import variables_entrada as ve
+    from src import criterios_adoptados as ca
+    from src import variables_entrada as ve
 
     esperadas = sorted({ve.variable(clave).fase for clave in ca.CRITERIOS})
     assert app._fases_del_censo() == esperadas, (
@@ -1716,8 +1718,8 @@ def test_el_filtro_de_fase_compone_en_Y_con_los_otros_tres(ventana):
     interseccion, y la fase de cada fila se compara contra la MISMA
     atribucion del censo de la que salen las opciones.
     """
-    import criterios_adoptados as ca
-    import variables_entrada as ve
+    from src import criterios_adoptados as ca
+    from src import variables_entrada as ve
 
     class _Var:
         def __init__(self, valor):
@@ -1913,8 +1915,10 @@ def test_la_ventana_de_ayuda_no_sabe_nada_por_su_cuenta():
             f"la ventana dejo de pedir '{nombre}': o lo calcula ella, o dejo "
             "de mostrarlo")
 
-    importados = {n.module.split(".")[0] for n in ast.walk(arbol)
-                  if isinstance(n, ast.ImportFrom) and n.module}
+    importados = {parte for n in ast.walk(arbol)
+                  if isinstance(n, ast.ImportFrom) and n.module
+                  for parte in n.module.split(".")
+                  + [a.name for a in n.names]}
     assert "modulos" not in importados, (
         "la ventana importa un modulo de calculo: el contenido tiene que "
         "llegarle armado por `src/ayuda_entrada.py`")
@@ -1951,8 +1955,8 @@ def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
     obs = json.loads(destino.read_text(encoding="utf-8"))
     assert obs["ok"], obs.get("error")
 
-    import ayuda_entrada as ay
-    from modulos import M0_carga as m0
+    from src import ayuda_entrada as ay
+    from src.modulos import M0_carga as m0
 
     # 1. Las dos tablas se llenan con lo que el censo dice, y con nada mas.
     assert obs["filas_csv_csv"] == list(m0.COLUMNAS)
@@ -1967,7 +1971,7 @@ def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
     #     da: el glosario trae el censo ENTERO y en su orden, y la prosa trae
     #     un parrafo de las etiquetas y un estado --- comparados contra la
     #     ficha, no contra un texto escrito aqui.
-    import variables_entrada as ve
+    from src import variables_entrada as ve
     assert obs["filas_glosario_csv"] == sorted(ve.VARIABLES, key=str.lower)
     etiqueta = ay.fichas_de_etiquetas()[0]
     assert etiqueta.explicacion in obs["texto_conceptos"]
@@ -2080,7 +2084,7 @@ def test_las_secciones_de_la_pestana_1_se_derivan_del_censo_de_familias(
     familias --- las de la medida, no las del rotulo viejo, que decia
     «Familia A» sobre un dato que la medida atribuye a A y B ---.
     """
-    from modelos import Familia
+    from src.modelos import Familia
 
     todas = tuple(Familia)
     traduccion = app.ExpedienteApp.CLAVE_EXTERNA_DE_CAMPO
@@ -2241,7 +2245,7 @@ def test_la_pestana_1_construye_el_panel_de_anticipo_con_su_aviso():
         "src/anticipo.py: una copia escrita aqui puede divergir y dejar de "
         "decir «estimación»")
 
-    import anticipo as antc
+    from src import anticipo as antc
     assert "Estimación" in antc.AVISO_DEL_ANTICIPO
     assert "pestaña 4" in antc.AVISO_DEL_ANTICIPO
 

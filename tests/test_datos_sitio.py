@@ -21,11 +21,11 @@ Valores de referencia: tests/fixtures/casos_patron.py (no se recalculan aqui).
 
 import pytest
 
-import criterios_adoptados as ca
-import datos_sitio as ds
-from datos_sitio import (DATOS_SITIO, DatoSitio, dato, datos_sin_valor,
+from src import criterios_adoptados as ca
+from src import datos_sitio as ds
+from src.datos_sitio import (DATOS_SITIO, DatoSitio, dato, datos_sin_valor,
                          datos_usados, reporte_datos_sitio, valor)
-from modelos import CriterioPendienteError, ErrorProyecto
+from src.modelos import CriterioPendienteError, ErrorProyecto
 from tests.fixtures.casos_patron import CP7_CADENA_SISMICA
 from tests.apoyo import estructura
 
@@ -199,7 +199,7 @@ def test_los_dos_valores_de_E030_siguen_siendo_solo_referencia():
 
 def test_ninguno_de_los_tres_sigue_declarado_en_otro_archivo():
     """Una sola declaracion por dato: la doble definicion es lo que motivo la v5."""
-    import constantes_normativas as CN
+    from src import constantes_normativas as CN
 
     for clave in DATOS_SITIO:
         assert not hasattr(CN, clave), (

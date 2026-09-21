@@ -49,7 +49,7 @@ la regla prohibe.
 
 Regla de uso
 ------------
-    import declaracion as dec
+    from src import declaracion as dec
 
     dec.declarar_desde_tabla("ke_entrada", 0.5,
                              filas=("concreto_headwall_square_edge",))
@@ -65,13 +65,13 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-import criterios_adoptados as _ca
-import variables_entrada as _ve
-import ventana_normativa as _vn
-from modelos import DeCatalogo, DeTabla, EnRango, ModoDeResolucion, Poblacion
-from normativa import registro as _registro
-from tolerancias import TOL_UMBRAL_NORMATIVO
-from normativa.esquema import (BandaDeInterpolacion, ConjuntoDeMaximos,
+from src import criterios_adoptados as _ca
+from src import variables_entrada as _ve
+from src import ventana_normativa as _vn
+from src.modelos import DeCatalogo, DeTabla, EnRango, ModoDeResolucion, Poblacion
+from src.normativa import registro as _registro
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
+from src.normativa.esquema import (BandaDeInterpolacion, ConjuntoDeMaximos,
                                IntervaloAdmisible, PisoUnico, TechoUnico)
 
 

@@ -58,7 +58,7 @@ EL ESTADO DE LA CORRIDA SALE DEL INFORME, NO DEL PROCESO (EXT-4, EXT-A-01).
 Todo lo que es estado --- que criterios y datos de sitio se invocaron, con que
 valor efectivo gobernaron, cuales se declararon o pisaron en caliente y con que
 procedencia, el SHA-1 del CSV --- lo trae `Informe.contexto`, un
-`ContextoCorrida` congelado que `cli.correr` fotografia al salir. Hasta EXT-4
+`ContextoCorrida` congelado que `servicio.correr` fotografia al salir. Hasta EXT-4
 este modulo lo leia del registro vivo de `criterios_adoptados`, `datos_sitio`
 y `declaracion` en 24 sitios, y una memoria renderizada despues de otra
 corrida, o despues de una declaracion, describia un estado que no era el suyo.
@@ -98,7 +98,7 @@ instalacion del script y no del expediente.
 
 Uso
 ---
-    from modulos.M11_reporte import memoria_html, exportar_html, exportar_pdf
+    from src.modulos.M11_reporte import memoria_html, exportar_html, exportar_pdf
 
     html_texto = memoria_html(informe, proyecto="Via de evitamiento - La Union")
     exportar_html(informe, Path("Memoria.html"))
@@ -121,12 +121,12 @@ from string import Template
 from typing import (Any, Callable, Dict, Iterator, List, Optional, Sequence,
                     Tuple)
 
-import criterios_adoptados as ca
-import datos_sitio as ds
+from src import criterios_adoptados as ca
+from src import datos_sitio as ds
 # Los umbrales normativos con su CARACTER (recomendacion / exigencia) se leen
 # de su transcripcion, no se reescriben aqui: la memoria y el codigo tienen
 # que citar el mismo objeto o divergen, que es literalmente NOR-MEM-01.
-from constantes_normativas import (HOMONIMIAS,
+from src.constantes_normativas import (HOMONIMIAS,
                                    UMBRALES_DE_VERIFICACION,
                                    H_O_HW_SOBRE_D_CAUTELA,
                                    H_O_HW_SOBRE_D_MIN, H_O_NUMERAL,
@@ -137,19 +137,19 @@ from constantes_normativas import (HOMONIMIAS,
 # El registro, para leer de el los textos literales y las interpretaciones en
 # vez de que M11 lleve una copia. La memoria y el codigo tienen que citar el
 # mismo objeto o divergen, que es literalmente NOR-MEM-01.
-from normativa import fundamentos as _fundamentos
-from normativa import registro as _registro_M11
+from src.normativa import fundamentos as _fundamentos
+from src.normativa import registro as _registro_M11
 # La clave del criterio que fija la cota de fondo de entrada se importa de su
 # modulo, no se reescribe aqui: si se renombrara, una copia literal en el
 # reporte apuntaria a un criterio inexistente sin que nada avisara. Es el
 # mismo reparto por el que M7 importa CRITERIO_RESGUARDO de M5.
-from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
+from src.modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        verificaciones_no_evaluadas)
-from modulos.M8_estructural import verificacion_diferida_estructural
+from src.modulos.M8_estructural import verificacion_diferida_estructural
 # Los rotulos de alcance viven en modelos.py, no en cli.py: M11 los necesita y
 # no puede importar la CLI --- es la CLI quien importa M11 ---. Ver la nota de
 # su declaracion.
-from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, ContextoCorrida,
+from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, ContextoCorrida,
                      MOTIVO_METODO_NO_EVALUABLE, TipoDeVeredicto)
 
 _reg_M11 = _registro_M11.construir()
@@ -482,7 +482,7 @@ class Trazabilidad:
 
 def sha1_de_bytes(datos: bytes) -> str:
     """
-    SHA-1 de un contenido ya leido, en hexadecimal. Es lo que `cli.correr`
+    SHA-1 de un contenido ya leido, en hexadecimal. Es lo que `servicio.correr`
     aplica a los MISMOS bytes que M0 parsea (PC-09): la huella del CSV que
     la memoria imprime es la de lo que se calculo, no la del archivo que hay
     en disco al exportar.
@@ -1041,7 +1041,7 @@ def _tabla_diseno(informe: Any) -> str:
                   else H_O_HW_SOBRE_D_CAUTELA)
         veredicto = ("NO DEBE USARSE" if hidraulica.h_o_fuera_de_rango
                      else "PIDE CAUTELA")
-        # LO QUE HACE LA CORRIDA CON ELLO lo decide `cli.correr_punto`, no
+        # LO QUE HACE LA CORRIDA CON ELLO lo decide `servicio.correr_punto`, no
         # este formateador (EXT-3): bajo 0.75 el punto lleva el bloqueo
         # «metodo no evaluable» -- en la tabla de etapas bloqueadas de esta
         # misma memoria --, diferido solo a nivel de perfil. Aqui se dice, no

@@ -10,7 +10,7 @@ que nadie regenera envejece con el commit siguiente sin que nada falle. Aqui
 el documento se regenera a memoria y se compara con el que esta en disco; si
 difieren, NO se edita a mano:
 
-    python3 src/indice_formulas.py --escribir --suite "<N passed, M skipped (entorno)>"
+    python3 -m src.indice_formulas --escribir --suite "<N passed, M skipped (entorno)>"
 
 Lo que ademas se vigila, porque es lo que puede envejecer solo:
 
@@ -34,20 +34,16 @@ from __future__ import annotations
 
 import ast
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
 SRC = RAIZ / "src"
-for ruta in (str(RAIZ), str(SRC)):
-    if ruta not in sys.path:
-        sys.path.insert(0, ruta)
 
-import indice_formulas as ind                                      # noqa: E402
-import traza_punto as tp                                           # noqa: E402
-from modulos import M11_reporte as M11                             # noqa: E402
+from src import indice_formulas as ind
+from src import traza_punto as tp
+from src.modulos import M11_reporte as M11
 
 
 @pytest.fixture(scope="module")
@@ -64,7 +60,7 @@ def pasos(informe):
 def texto_en_disco():
     assert ind.INDICE_FORMULAS.exists(), (
         "falta docs/indice_formulas.md: generalo con "
-        "python3 src/indice_formulas.py --escribir --suite \"...\"")
+        "python3 -m src.indice_formulas --escribir --suite \"...\"")
     return ind.INDICE_FORMULAS.read_text(encoding="utf-8")
 
 
@@ -82,7 +78,7 @@ def test_el_indice_de_formulas_esta_sincronizado(informe, texto_en_disco):
     assert sello is not None, "el indice en disco no lleva un sello legible"
     assert ind.indice_de_formulas(informe, sello) == texto_en_disco, (
         "el indice de formulas esta desincronizado. NO se edita a mano: "
-        "python3 src/indice_formulas.py --escribir --suite \"<par de la suite>\"")
+        "python3 -m src.indice_formulas --escribir --suite \"<par de la suite>\"")
 
 
 def test_el_sello_lleva_fecha_commit_y_par_de_la_suite(texto_en_disco):
@@ -268,7 +264,7 @@ def test_hueco_censado_construye_la_misma_ficha_que_la_traza():
 
 def test_los_fundamentos_no_ejercitados_son_el_complemento(pasos,
                                                             texto_en_disco):
-    from normativa.registro import construir
+    from src.normativa.registro import construir
     declarados = {f.id for f in construir().fundamentos}
     emitidos = {p.fundamento_id for p in pasos}
     seccion = texto_en_disco.split("## 4. ")[1]

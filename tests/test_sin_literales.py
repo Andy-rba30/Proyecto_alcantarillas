@@ -842,7 +842,12 @@ def _detalle(faltas: dict) -> str:
 # declararse, o el numero se convierte en un colchon donde caben marcas
 # nuevas sin que nadie las vea.
 CENSO_DE_MARCAS = {
-    "cli.py": 4,
+    # 4 -> 3 en EXT-9: `_fmt` (los decimales por defecto con que el informe
+    # escribe una magnitud) se mudo con el servicio de calculo a
+    # `src/servicio.py`, donde escribe los mensajes de dos bloqueos ademas del
+    # volcado. Ningun literal nacio ni murio: el censo suma igual.
+    "cli.py": 3,
+    "src/servicio.py": 1,
     # 28 -> 24 + 4: `Tooltip` y `MarcoScroll` se MOVIERON a
     # `gui/componentes.py` para que la ventana emergente los reutilice en vez
     # de copiarlos, y sus cuatro marcas viajaron con ellos (tres de offset de
@@ -1380,8 +1385,8 @@ def caudal(A, R, S):
 """
 
 CODIGO_PERMITIDO = """
-from constantes_normativas import Y_SOBRE_D_MAX
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src.constantes_normativas import Y_SOBRE_D_MAX
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 def cumple_borde_libre(y, D, tabla):
     referencia = tabla[3]

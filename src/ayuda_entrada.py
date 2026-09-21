@@ -27,7 +27,7 @@ archivo es la que miente. Todo sale de donde ya vive:
     el limite fisico de la celda  `ventana_normativa.dominio_mostrado`
     que puede ir vacio, y en que
       familia, y quien lo debe    `M0_carga.VACIOS_ADMITIDOS`
-    las claves del JSON           `cli.CLAVES_EXTERNAS`
+    las claves del JSON           `servicio.CLAVES_EXTERNAS`
     que familias usan cada clave  `cli.FAMILIAS_QUE_USAN`
     las tres familias             `M1_clasificacion.PERFILES`, por `modelos.Familia`
     las cinco etiquetas           `criterios_adoptados.ETIQUETAS_VALIDAS`
@@ -55,7 +55,7 @@ Las dos ayudas salen del mismo censo
 La del CSV: las columnas tienen concepto, unidad y `resolucion` en el censo,
 porque son una de sus poblaciones.
 
-La del JSON: las OCHO claves de `cli.CLAVES_EXTERNAS` estan en el censo desde
+La del JSON: las OCHO claves de `servicio.CLAVES_EXTERNAS` estan en el censo desde
 EXT-5 (EXT-G-03). Dos (`Q_m3s`, `S_cauce`) como columnas del CSV, que ademas
 lo son; las otras seis (`luz_m`, `TW_m`, `longitud_m`, `S_conducto`,
 `L_hidraulico_m`, `categoria_tr`) como la poblacion `dato_externo` de
@@ -75,9 +75,10 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-import variables_entrada as ve
-import ventana_normativa as vn
-from modelos import (Familia, Libre, TipoDeVeredicto, VacioAdmitido,
+from src import variables_entrada as ve
+from src import ventana_normativa as vn
+from src import servicio
+from src.modelos import (Familia, Libre, TipoDeVeredicto, VacioAdmitido,
                      VariableDeEntrada)
 # POR EL MODULO Y NO POR EL VALOR (`from ... import COLUMNAS`), y no es
 # estilo: un `from` copia la tupla en este espacio de nombres al importar, y
@@ -86,7 +87,7 @@ from modelos import (Familia, Libre, TipoDeVeredicto, VacioAdmitido,
 # que este archivo existe para evitar --- y ademas impide comprobarlo:
 # `tests/test_ayuda_entrada.py` AÑADE una columna al censo y mira si la
 # ayuda la recoge, y con la foto ese test seria imposible de escribir.
-from modulos import M0_carga as m0
+from src.modulos import M0_carga as m0
 
 # El separador del CSV. No es un valor de proyecto: es el formato del archivo
 # que `csv.DictReader` lee con su dialecto por defecto.
@@ -244,7 +245,7 @@ def vacios_por_quien_lo_debe() -> Tuple[Tuple[str, Tuple[str, ...], Tuple[Famili
 @dataclass(frozen=True)
 class FichaDeClaveExterna:
     """
-    Una clave de `cli.CLAVES_EXTERNAS`, con lo que de ella se DERIVA del
+    Una clave de `servicio.CLAVES_EXTERNAS`, con lo que de ella se DERIVA del
     censo de `variables_entrada`: las ocho estan censadas desde EXT-5
     (EXT-G-03) --- las dos que ademas son columna del CSV, como columnas; las
     seis restantes, como la poblacion `DATO_EXTERNO` ---. Hasta entonces las
@@ -268,20 +269,21 @@ class FichaDeClaveExterna:
 
 def fichas_de_datos_externos() -> Tuple[FichaDeClaveExterna, ...]:
     """
-    Las ocho claves del JSON, en el orden en que `cli` las declara.
+    Las ocho claves del JSON, en el orden en que el servicio de calculo las
+    declara (`servicio.CLAVES_EXTERNAS`).
 
-    Se importa `cli` DENTRO de la funcion y no arriba: `cli` importa los once
-    modulos de calculo y este modulo lo importan la GUI y los tests de
-    contenido, que no tienen por que arrastrar el pipeline entero para pintar
-    una lista de ocho nombres.
+    Hasta EXT-9 se leian de `cli`, importado DENTRO de la funcion para que
+    este modulo --- que importan la GUI y los tests de contenido --- no
+    arrastrara el pipeline entero al cargar. Desde EXT-9 `CLAVES_EXTERNAS` y
+    `familias_que_usan` viven en `src/servicio.py`, que se importa arriba:
+    el servicio SI arrastra los once modulos de calculo, pero es un modulo de
+    esta capa y no la de arriba, y la GUI ya los tenia cargados por `cli`.
     """
-    import cli
-
     fichas = []
-    for clave in cli.CLAVES_EXTERNAS:
+    for clave in servicio.CLAVES_EXTERNAS:
         v = ve.variable(clave)          # KeyError si el censo no la tiene
         fichas.append(FichaDeClaveExterna(
-            clave=clave, familias=cli.familias_que_usan(clave),
+            clave=clave, familias=servicio.familias_que_usan(clave),
             concepto=v.concepto, unidad=v.unidad,
             de_donde_sale=ve.como_se_lee(v)))
     return tuple(fichas)
@@ -289,7 +291,7 @@ def fichas_de_datos_externos() -> Tuple[FichaDeClaveExterna, ...]:
 
 # El id de ejemplo del esqueleto. Va entre angulos para que se vea que hay que
 # sustituirlo; si alguien lo deja tal cual, la corrida no se rompe --- lo avisa
-# `cli._avisar_ids_desconocidos`, que es exactamente lo que tiene que pasar.
+# `servicio._avisar_ids_desconocidos`, que es exactamente lo que tiene que pasar.
 ID_DE_EJEMPLO = "<id del CSV>"
 
 
@@ -299,7 +301,7 @@ def esqueleto_json() -> str:
 
     LAS OCHO CLAVES NO VAN DENTRO, y el primer intento si las metia --- con
     `null` de valor, que parecia el «no declarado» natural ---. No lo es:
-    `cli._dato_externo` exige un numero (o la cadena de `categoria_tr`), de
+    `servicio._dato_externo` exige un numero (o la cadena de `categoria_tr`), de
     modo que aquel esqueleto no se podia pegar y correr, que es lo unico que
     un esqueleto tiene que saber hacer. Las claves se leen de la tabla de
     arriba, que para eso esta, y aqui queda la forma que SI carga.
@@ -315,9 +317,7 @@ def esqueleto_json() -> str:
 
 def claves_admitidas() -> str:
     """Las ocho claves en una linea, para la ayuda y para el mensaje de error."""
-    import cli
-
-    return ", ".join(cli.CLAVES_EXTERNAS)
+    return ", ".join(servicio.CLAVES_EXTERNAS)
 
 
 # ===========================================================================
@@ -359,7 +359,7 @@ def fichas_de_familias() -> Tuple[FichaDeFamilia, ...]:
     la GUI y los tests de contenido no tienen por que arrastrar un modulo de
     calculo para pintar tres rotulos.
     """
-    from modulos import M1_clasificacion as m1
+    from src.modulos import M1_clasificacion as m1
 
     fichas = []
     for familia in Familia:
@@ -440,7 +440,7 @@ def fichas_de_etiquetas() -> Tuple[FichaDeEtiqueta, ...]:
     ya no existe tambien (una fila muerta aqui es la tabla paralela que este
     archivo se prohibe).
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
 
     sobrantes = set(_EXPLICACIONES_DE_ETIQUETAS) - set(ca.ETIQUETAS_VALIDAS)
     if sobrantes:
@@ -568,7 +568,7 @@ def fichas_de_estados(ruta_gui=None) -> Tuple[FichaDeEstado, ...]:
     diferido ---, cada uno anclado al simbolo del que sale, de modo que si el
     simbolo desaparece la fila no se puede construir.
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
 
     derivados = _estados_de_la_tabla(ruta_gui)
     tags = {tag for tag, _rotulo in derivados}

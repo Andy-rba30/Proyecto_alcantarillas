@@ -51,11 +51,11 @@ from pathlib import Path
 import pytest
 
 import cli
-import criterios_adoptados as ca
-import declaracion as dec
-import sesion as ses
-from modulos import M11_reporte as M11
-from normativa import registro as _registro
+from src import criterios_adoptados as ca
+from src import declaracion as dec
+from src import sesion as ses
+from src.modulos import M11_reporte as M11
+from src.normativa import registro as _registro
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import con_valor
 
@@ -186,7 +186,7 @@ def test_pc10_import_cli_no_carga_weasyprint_ni_scipy_ni_el_censo():
     `variables_entrada` no se construye hasta que alguien lo pide.
     """
     programa = (
-        "import sys, json; import cli; import variables_entrada as ve\n"
+        "import sys, json; import cli; from src import variables_entrada as ve\n"
         "print(json.dumps({'weasyprint': 'weasyprint' in sys.modules,\n"
         "  'scipy': 'scipy.optimize' in sys.modules,\n"
         "  'censo': 'VARIABLES' in vars(ve)}))\n"
@@ -198,10 +198,10 @@ def test_pc10_import_cli_no_carga_weasyprint_ni_scipy_ni_el_censo():
     antes, despues = (json.loads(l) for l in hecho.stdout.strip().splitlines())
     assert antes == {"weasyprint": False, "scipy": False, "censo": False}, antes
     assert despues["censo_despues"] is True
-    import variables_entrada as ve
+    from src import variables_entrada as ve
     assert despues["n"] == len(ve.VARIABLES) == len(ca.CRITERIOS) + len(ve._EXTERNOS) \
-        + len(__import__("datos_sitio").DATOS_SITIO) \
-        + len(__import__("modulos.M0_carga", fromlist=["COLUMNAS"]).COLUMNAS)
+        + len(__import__("src.datos_sitio", fromlist=["DATOS_SITIO"]).DATOS_SITIO) \
+        + len(__import__("src.modulos.M0_carga", fromlist=["COLUMNAS"]).COLUMNAS)
 
 
 def test_pc10_el_censo_perezoso_sigue_pasando_su_guardia_al_construirse():
@@ -211,7 +211,7 @@ def test_pc10_el_censo_perezoso_sigue_pasando_su_guardia_al_construirse():
     que seguir cayendo. Se comprueba leyendo el AST: `_construir` (o quien
     arme el diccionario) llama a la guardia antes de devolverlo.
     """
-    import variables_entrada as ve
+    from src import variables_entrada as ve
     arbol = _arbol(RAIZ / "src" / "variables_entrada.py")
     assert _funcion(arbol, "__getattr__"), "sin __getattr__ de modulo no hay pereza"
     llamadas = {ast.unparse(n.func) for n in ast.walk(arbol)
@@ -734,7 +734,7 @@ def test_pc12_el_paso_2_1_se_imprime_una_vez_por_punto(informe_expediente):
 
 def test_pc12_desarrollo_de_verificaciones_es_una_sola_seleccion_compartida():
     """La GUI (traza_punto) y M11 leen la MISMA seleccion, sin el paso repetido."""
-    import traza_punto
+    from src import traza_punto
     fuente = ast.unparse(_arbol(RAIZ / "src" / "traza_punto.py"))
     assert "desarrollo_de_verificaciones" in fuente
     assert callable(M11.desarrollo_de_verificaciones)

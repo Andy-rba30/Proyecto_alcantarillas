@@ -132,7 +132,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.MD import disenar_punto
+    from src.modulos.MD import disenar_punto
 
     resultado = disenar_punto(punto, L=24.0, TW=0.30)
     resultado.material.nombre, resultado.seccion.etiqueta(), resultado.verificaciones
@@ -144,8 +144,8 @@ from importlib import import_module
 from typing import (Callable, List, Optional, Protocol, Sequence, Tuple,
                     Iterable)
 
-import criterios_adoptados as ca
-from modelos import (CriterioPendienteError,
+from src import criterios_adoptados as ca
+from src.modelos import (CriterioPendienteError,
                      DatoFaltanteError,
                      DatoInvalidoError,
                      DisenoNoFactibleError,
@@ -161,17 +161,17 @@ from modelos import (CriterioPendienteError,
                      Seccion,
                      TipoMaterial,
                      Verificacion)
-from modulos.M2_material import (CRITERIO_SECCIONES_CAJON,
+from src.modulos.M2_material import (CRITERIO_SECCIONES_CAJON,
                                  materiales_candidatos, siguiente_seccion)
-from modulos.M3_hidraulica import resolver_manning
-from modulos.M4_control import caudal_por_celda, resolver_control
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src.modulos.M3_hidraulica import resolver_manning
+from src.modulos.M4_control import caudal_por_celda, resolver_control
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_BUCLE = "Sec. 2 de la guia de sesiones (Fases 4 y 5)"
 
 MENSAJE_DIAMETRO_SUPERADO = "material descartado por diámetro requerido"
 
-MODULO_VERIFICACIONES = "modulos.M5_verificaciones"
+MODULO_VERIFICACIONES = "src.modulos.M5_verificaciones"
 FUNCION_VERIFICACIONES = "verificar"
 
 
@@ -530,7 +530,7 @@ def _exigir_progreso(material: Material, seccion: Seccion,
     """
     La progresion tiene que AVANZAR: la seccion nueva no puede ser una ya
     visitada (EXT-A-03). Es `DatoInvalidoError` sobre el criterio del que
-    sale la progresion -- y por tanto `ErrorProyecto`, que `cli._etapa`
+    sale la progresion -- y por tanto `ErrorProyecto`, que `servicio._etapa`
     captura y la GUI muestra --, nunca un bucle.
     """
     if not any(_mismo_escalon(seccion, v) for v in visitadas):

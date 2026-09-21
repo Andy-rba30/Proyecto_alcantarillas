@@ -32,11 +32,6 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
-SRC = RAIZ / "src"
-for _ruta in (RAIZ, SRC):
-    if str(_ruta) not in sys.path:
-        sys.path.insert(0, str(_ruta))
-
 # La columna con la que se prueba el panel de detalle. Se elige la de
 # `resolucion` mas larga del censo --- 1236 caracteres --- porque es la que
 # obliga al panel a tener scroll, que es el defecto que la pestana 2 ya tuvo.

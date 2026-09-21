@@ -54,20 +54,14 @@ sobrevivia ---, y el superviviente fue justamente uno de esos ocho (los
 que habia entonces).
 """
 
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
-SRC = RAIZ / "src"
-for ruta in (str(RAIZ), str(SRC)):
-    if ruta not in sys.path:
-        sys.path.insert(0, ruta)
-
 import cli                                                        # noqa: E402
-import criterios_adoptados as ca                                  # noqa: E402
-import variables_entrada as ve                                    # noqa: E402
+from src import criterios_adoptados as ca
+from src import variables_entrada as ve
 
 CSV_PERFIL = RAIZ / "tests" / "ejemplo_puntos_perfil.csv"
 

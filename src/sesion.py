@@ -109,7 +109,7 @@ def errores_de_sesion(data: Any) -> List[str]:
 def banderas_de_externos(externos: Dict[str, str]) -> Dict[str, Optional[str]]:
     """
     Los textos de los campos de la pestana 1, como las banderas que
-    `cli.cargar_datos_externos` espera: `None` si el campo quedo vacio, la
+    `servicio.cargar_datos_externos` espera: `None` si el campo quedo vacio, la
     coma decimal pasada a punto en los numericos, y la categoria de TR tal
     cual. Un campo que la sesion no trae es un campo vacio.
     """

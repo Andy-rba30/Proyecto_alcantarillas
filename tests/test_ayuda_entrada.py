@@ -28,23 +28,19 @@ prueba que lo encontraria.
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
 SRC = RAIZ / "src"
-for ruta in (str(RAIZ), str(SRC)):
-    if ruta not in sys.path:
-        sys.path.insert(0, ruta)
 
-import ayuda_entrada as ay                                        # noqa: E402
+from src import ayuda_entrada as ay
 import cli                                                        # noqa: E402
-import variables_entrada as ve                                    # noqa: E402
-from modelos import (Familia, Libre, Poblacion,                   # noqa: E402
+from src import variables_entrada as ve
+from src.modelos import (Familia, Libre, Poblacion,
                      VariableDeEntrada)
-from modulos import M0_carga as m0                                # noqa: E402
+from src.modulos import M0_carga as m0
 
 COLUMNA_INVENTADA = "columna_de_prueba_que_no_existe"
 
@@ -115,7 +111,7 @@ def test_el_limite_fisico_lo_pinta_la_misma_funcion_que_la_ventana_normativa():
     no se puede confiar --- y ademas una de las dos acabaria rotulandolo como
     normativo, que es el error que esa funcion existe para impedir.
     """
-    import ventana_normativa as vn
+    from src import ventana_normativa as vn
 
     f = ay.ficha_de_columna("S_cauce")
     assert f.limite_fisico == vn.dominio_mostrado("S_CAUCE_MAX")
@@ -522,7 +518,7 @@ def test_toda_familia_del_enum_llega_con_su_perfil(monkeypatch):
     """
     from dataclasses import replace
 
-    from modulos import M1_clasificacion as m1
+    from src.modulos import M1_clasificacion as m1
 
     fichas = ay.fichas_de_familias()
     assert [f.familia for f in fichas] == list(Familia)
@@ -548,7 +544,7 @@ def test_una_familia_sin_perfil_detiene_la_ayuda(monkeypatch):
     detiene con KeyError en vez de omitir la fila --- que es como una tabla
     escrita a mano se quedaria callada.
     """
-    from modulos import M1_clasificacion as m1
+    from src.modulos import M1_clasificacion as m1
 
     monkeypatch.delitem(m1.PERFILES, Familia.C)
     with pytest.raises(KeyError, match="no tiene perfil"):
@@ -563,7 +559,7 @@ def test_las_etiquetas_son_las_de_la_taxonomia_y_en_su_orden():
     y el archivo EXISTE en src/: un «vive en» que apunte a un modulo retirado
     mandaria al lector a buscar donde no hay nada.
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
 
     fichas = ay.fichas_de_etiquetas()
     assert [f.etiqueta for f in fichas] == list(ca.ETIQUETAS_VALIDAS)
@@ -581,7 +577,7 @@ def test_una_etiqueta_sin_parrafo_o_un_parrafo_sin_etiqueta_fallan(monkeypatch):
     etiqueta ya no esta en la taxonomia tambien: seria la tabla paralela que
     este archivo se prohibe, envejeciendo en silencio.
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
 
     monkeypatch.setattr(ca, "ETIQUETAS_VALIDAS",
                         ca.ETIQUETAS_VALIDAS + ("X",))
@@ -605,8 +601,8 @@ def test_los_estados_son_los_de_la_tabla_de_criterios():
     import ast as ast_mod
     from dataclasses import fields
 
-    import criterios_adoptados as ca
-    from modelos import TipoDeVeredicto
+    from src import criterios_adoptados as ca
+    from src.modelos import TipoDeVeredicto
 
     arbol = ast_mod.parse((RAIZ / "gui" / "app.py").read_text(
         encoding="utf-8"))

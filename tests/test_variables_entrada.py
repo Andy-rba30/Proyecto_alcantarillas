@@ -15,14 +15,14 @@ se prueba con datos que la pasan no se ha probado.
 
 import pytest
 
-import criterios_adoptados as ca
-import datos_sitio as ds
-import variables_entrada as ve
-from modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango, Libre,
+from src import criterios_adoptados as ca
+from src import datos_sitio as ds
+from src import variables_entrada as ve
+from src.modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango, Libre,
                      ModoDeResolucion, Poblacion, VariableDeEntrada, modo_de)
-from modulos.M0_carga import COLUMNAS
-from normativa import esquema as E
-from normativa import registro as rn
+from src.modulos.M0_carga import COLUMNAS
+from src.normativa import esquema as E
+from src.normativa import registro as rn
 
 
 # ===========================================================================

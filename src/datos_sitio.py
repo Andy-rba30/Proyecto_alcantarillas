@@ -67,7 +67,7 @@ cambiar de proyectista, es [S] y va aqui.
 
 Regla de uso
 ------------
-    import datos_sitio as ds
+    from src import datos_sitio as ds
 
     PGA = ds.valor("PGA_roca_B")     # registra el uso automaticamente
     print(ds.reporte_datos_sitio())  # M11 lo imprime en la Seccion 3
@@ -82,7 +82,7 @@ import numbers
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Set
 
-from modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
+from src.modelos import (CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
                      Libre, ModoDeResolucion, Resolucion, modo_de)
 
 
@@ -769,7 +769,7 @@ def dato(clave: str) -> DatoSitio:
 def datos_usados() -> List[str]:
     """
     Las claves que el calculo invoco, ordenadas. Desde EXT-4 es el registro
-    de la corrida EN CURSO: `cli.correr` lo vacia al entrar y lo fotografia
+    de la corrida EN CURSO: `servicio.correr` lo vacia al entrar y lo fotografia
     al salir en `Informe.contexto`.
     """
     return sorted(_USADOS)
@@ -780,7 +780,7 @@ def reiniciar_usos() -> None:
     Vacia el registro de usos; hermano de
     `criterios_adoptados.reiniciar_usos` y por la misma razon (PC-09): el
     registro era de proceso y una segunda corrida heredaba los usos de la
-    primera. Lo llama `cli.correr` al entrar.
+    primera. Lo llama `servicio.correr` al entrar.
     """
     _USADOS.clear()
 

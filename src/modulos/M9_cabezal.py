@@ -137,8 +137,8 @@ Excepciones
 
 Uso
 ---
-    from modelos import CondicionAnalisis
-    from modulos.M9_cabezal import (cadena_sismica, k_ae_mononobe_okabe,
+    from src.modelos import CondicionAnalisis
+    from src.modulos.M9_cabezal import (cadena_sismica, k_ae_mononobe_okabe,
                                     verificar_volteo)
 
     cadena = cadena_sismica()                       # los 7 pasos de Sec. 9.2
@@ -155,10 +155,10 @@ from __future__ import annotations
 import math
 from typing import Optional, Sequence, Tuple
 
-import criterios_adoptados as ca
-import datos_sitio as ds
-from constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
-from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
+from src import criterios_adoptados as ca
+from src import datos_sitio as ds
+from src.constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
+from src.constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    NUMERAL_CORTANTE_MUROS_E060,
                                    AMBIENTE_CORROSIVO_TEXTO,
                                    CARGA_VIVA,
@@ -281,7 +281,7 @@ from constantes_normativas import (AMBIENTE_CORROSIVO_AUMENTAR,
                                    SULFATOS,
                                    TABLA_COMBINACIONES_FILAS,
                                    TABLA_GAMMA_P_FILAS)
-from modelos import (CIFRAS_FACTOR, CadenaSismica, CasoDemandaSismica,
+from src.modelos import (CIFRAS_FACTOR, CadenaSismica, CasoDemandaSismica,
                      CombinacionCarga, EleccionDeProyecto, Magnitud,
                      TipoDeVeredicto, Umbral, Veredicto, paso,
                      CondicionAnalisis, CuantiaRefuerzo, DatoInvalidoError,
@@ -291,7 +291,7 @@ from modelos import (CIFRAS_FACTOR, CadenaSismica, CasoDemandaSismica,
                      PresionContactoBase, RecubrimientoDiseno,
                      RequisitosDurabilidad,
                      ReferenciaNormativa, Verificacion)
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 # --------------------------------------------------------------------------
 # Numerales
@@ -2166,7 +2166,7 @@ def _gamma_permanente(carga: str, fila_combinacion: dict,
 # escriba mal un literal, es que la tabla cambie de transcripcion y un
 # consumidor quede apuntando a una fila que ya no esta. Cuando eso pasa, el
 # problema SI es del expediente -- la transcripcion -- y la fila del informe
-# que produce `cli._bloqueo` dice exactamente cual falta.
+# que produce `servicio._bloqueo` dice exactamente cual falta.
 #
 # LA FRONTERA, para que no se estire: se usa `DatoInvalidoError` cuando el
 # argumento es una CLAVE DE TABLA NORMATIVA y el mensaje enumera las

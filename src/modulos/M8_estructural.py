@@ -162,7 +162,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.M8_estructural import (cama_apoyo_relleno_lateral,
+    from src.modulos.M8_estructural import (cama_apoyo_relleno_lateral,
                                         verificacion_diferida_estructural)
 
     cama = cama_apoyo_relleno_lateral(material)          # informativo
@@ -173,15 +173,15 @@ from __future__ import annotations
 
 from typing import Tuple
 
-import criterios_adoptados as ca
-from constantes_fisicas import GAMMA_AGUA_KN_M3
-from constantes_normativas import (CAMA_RELLENO_LATERAL,
+from src import criterios_adoptados as ca
+from src.constantes_fisicas import GAMMA_AGUA_KN_M3
+from src.constantes_normativas import (CAMA_RELLENO_LATERAL,
                                    GAMMA_P_NO_APLICA,
                                    NUMERAL_TABLA_GAMMA_P,
                                    TABLA_COMBINACIONES_FILAS,
                                    TABLA_GAMMA_P_FILAS,
                                    fila_gamma_p_legible)
-from modelos import (CamaApoyoRelleno, DatoInvalidoError, FactoresFlotacion,
+from src.modelos import (CamaApoyoRelleno, DatoInvalidoError, FactoresFlotacion,
                      FormaSeccion, Material, ReferenciaNormativa, Seccion)
 
 NUMERAL_8_1_2 = "Fase 8, items 1-2"

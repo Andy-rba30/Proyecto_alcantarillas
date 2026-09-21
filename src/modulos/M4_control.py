@@ -269,7 +269,7 @@ aproximado NO esta definido para ese punto: el HW que sale no es un resultado
 sino un numero fuera del dominio del metodo. Este modulo sigue sin lanzar --
 calcula, marca `h_o_fuera_de_rango` y juzga el paso F4.HO como DIFERIDO con
 el motivo «metodo no evaluable» -- y quien convierte la bandera en `Bloqueo`
-es la corrida (`cli.correr_punto`), leyendo el MISMO campo que el paso juzga:
+es la corrida (`servicio.correr_punto`), leyendo el MISMO campo que el paso juzga:
 diferible a nivel de perfil, no a nivel de expediente. Nunca es un
 `Verificacion(cumple=False)`: subir de diametro solo baja HW/D (0.589 ->
 0.526 medido) y recorrer el catalogo hasta `DisenoNoFactibleError` seria
@@ -325,7 +325,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.M4_control import (tirante_critico, control_entrada,
+    from src.modulos.M4_control import (tirante_critico, control_entrada,
                                     control_salida, hw_gobernante,
                                     resolver_control)
 
@@ -349,15 +349,15 @@ from typing import NamedTuple, Optional, Tuple
 # valiendo --- traido la primera vez que hace falta; el segundo import es una
 # busqueda en `sys.modules`.
 
-import criterios_adoptados as ca
-from constantes_fisicas import G
-from constantes_normativas import (FORMA_1, FORMA_2, K_MANNING_SI,
+from src import criterios_adoptados as ca
+from src.constantes_fisicas import G
+from src.constantes_normativas import (FORMA_1, FORMA_2, K_MANNING_SI,
                                    H_O_HW_SOBRE_D_CAUTELA,
                                    H_O_HW_SOBRE_D_MIN, KE_CAJON_C2,
                                    KE_HDS5_C2, KU_SI,
                                    K_FRICCION_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
-from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      FormaSeccion, Geometria, Seccion,
                      ConstantesHDS5,
                      ControlEntrada, ControlGobernante,
@@ -367,9 +367,9 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      RegimenEntrada,
                      ResultadoHidraulico, TiranteCritico, TipoDeVeredicto,
                      TiranteNormal, TransicionEntrada, Umbral, Veredicto, paso)
-from modulos.M2_material import CRITERIO_N_CELDAS_CAJON, numero_de_celdas
-from modulos.M3_hidraulica import geometria, resolver_manning
-from tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
+from src.modulos.M2_material import CRITERIO_N_CELDAS_CAJON, numero_de_celdas
+from src.modulos.M3_hidraulica import geometria, resolver_manning
+from src.tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
 
 NUMERAL_CRITICO = "4.2.1"
 NUMERAL_ENTRADA = "4.2"
@@ -533,7 +533,7 @@ def _critico_por_brent(Q: float, seccion: Seccion) -> Geometria:
     SUS DOS MENSAJES SIGUEN NOMBRANDO «theta», «(0, 2*pi)» y «D», y no es un
     descuido del renombre: la UNICA seccion que llega hasta aqui es la que NO
     despeja su critico, y hoy esa es la circular. Los dos textos se imprimen
-    --`cli._bloqueo` los publica-- y generalizarlos sin una segunda forma sin
+    --`servicio._bloqueo` los publica-- y generalizarlos sin una segunda forma sin
     solucion cerrada seria cambiar salida por una hipotesis. Quien traiga una
     tercera forma sin despeje tiene que generalizarlos con ella delante; lo
     encontro la auditoria de C4 y queda dicho aqui, que es donde se lee.
@@ -1886,7 +1886,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         # bloquea como «metodo no evaluable»; un paso que dijera NO_CUMPLE
         # sobre un punto que la corrida no rechaza es la divergencia entre
         # memoria y pipeline que EXT-M-02 midio. El Bloqueo lo construye
-        # `cli.correr_punto` leyendo `ResultadoHidraulico.h_o_fuera_de_rango`,
+        # `servicio.correr_punto` leyendo `ResultadoHidraulico.h_o_fuera_de_rango`,
         # que es esta misma bandera filtrada por control gobernante.
         veredicto=Veredicto(
             tipo=(TipoDeVeredicto.DIFERIDO

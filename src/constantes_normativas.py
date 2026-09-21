@@ -73,10 +73,10 @@ con comentarios de linea. Queda escrita aqui para que no haya que deducirla.
 # leyendo `MANNING`, `V_MAX` o `SOBRECARGA_TRASDOS_H_EQ` con la misma forma y
 # el mismo valor; lo unico que cambia es de donde salen.
 # El motivo del bloqueo «metodo no evaluable», escrito UNA vez (EXT-3).
-from modelos import MOTIVO_METODO_NO_EVALUABLE  # noqa: E402
+from src.modelos import MOTIVO_METODO_NO_EVALUABLE
 from typing import Tuple
 
-from normativa import registro as _registro_normativo
+from src.normativa import registro as _registro_normativo
 
 _reg = _registro_normativo.construir()
 
@@ -1026,7 +1026,7 @@ H_O_FORMA_MAXIMO_TEXTO = "ho = TW or (dc + D)/2 whichever is larger."
 #      (`_exigir_regimen_evaluable`); M6 recibe `ResultadoHidraulico.V_salida`;
 #      y bajo control de salida con HW/D < H_O_HW_SOBRE_D_MIN el punto viaja
 #      con el bloqueo «metodo no evaluable» (`modelos.MetodoNoEvaluableError`,
-#      compuerta en `cli._compuerta_metodo_h_o`). Lo que sigue pendiente es
+#      compuerta en `servicio._compuerta_metodo_h_o`). Lo que sigue pendiente es
 #      SOLO el perfil por paso directo (EXT-3b), con los puntos 1 a 5.
 #   5. LOS DORADOS NO SE FABRICAN: un caso patron de perfil necesita una
 #      corrida de referencia externa citable (HY-8 u otra), que es la misma

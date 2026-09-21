@@ -20,15 +20,15 @@ from pathlib import Path
 
 import pytest
 
-import criterios_adoptados as ca
-from constantes_normativas import DIAMETRO_MIN
-from dominios import MILIMETROS_POR_METRO
-from normativa import registro as _registro
-from modelos import (CriterioPendienteError, DatoFaltanteError,
+from src import criterios_adoptados as ca
+from src.constantes_normativas import DIAMETRO_MIN
+from src.dominios import MILIMETROS_POR_METRO
+from src.normativa import registro as _registro
+from src.modelos import (CriterioPendienteError, DatoFaltanteError,
                      DatoInvalidoError, Familia, FormaSeccion, Material,
                      TipoMaterial)
-from modulos.M0_carga import cargar_puntos
-from modulos.M2_material import (CRITERIO_ESPESOR_PARED, catalogo,
+from src.modulos.M0_carga import cargar_puntos
+from src.modulos.M2_material import (CRITERIO_ESPESOR_PARED, catalogo,
                                  espesor_pared, materiales_candidatos,
                                  siguiente_diametro, siguiente_seccion)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
@@ -406,7 +406,7 @@ def test_el_marco_no_hereda_la_seccion_de_tuberia_del_eg2013():
 
     EL TUBO NO SE MUEVE, que es la otra mitad: la 506 sigue siendo suya.
     """
-    from constantes_normativas import (SECCION_ACERO_REFUERZO,
+    from src.constantes_normativas import (SECCION_ACERO_REFUERZO,
                                        SECCION_CONCRETO_ESTRUCTURAL,
                                        SECCION_EG2013_CAJON)
 
@@ -521,7 +521,7 @@ def test_una_seccion_fuera_de_la_progresion_declarada_es_dato_invalido():
     El catalogo no reconoce secciones "de proveedor", igual que no reconoce
     diametros fuera de la progresion (Sec. 3.2).
     """
-    from modelos import SeccionRectangular
+    from src.modelos import SeccionRectangular
     with declarados(DECLARACIONES_CAJON):
         with pytest.raises(DatoInvalidoError) as exc:
             siguiente_seccion(_marco(), SeccionRectangular(1.75, 1.35))
@@ -626,7 +626,7 @@ def test_la_progresion_del_marco_se_reconoce_con_tolerancia_y_no_con_igualdad():
     round-trip por texto --, y entonces el bucle levantaria un
     `DatoInvalidoError` sobre una seccion que SI esta en la serie.
     """
-    from modelos import SeccionRectangular
+    from src.modelos import SeccionRectangular
     with declarados(DECLARACIONES_CAJON):
         marco = _marco()
         # La misma seccion, con el ultimo bit movido.

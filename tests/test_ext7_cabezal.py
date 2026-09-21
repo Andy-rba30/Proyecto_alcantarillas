@@ -37,21 +37,21 @@ from pathlib import Path
 
 import pytest
 
-import constantes_normativas as CN
-import criterios_adoptados as ca
-import datos_sitio as ds
-from modelos import (CondicionAnalisis, CriterioPendienteError,
+from src import constantes_normativas as CN
+from src import criterios_adoptados as ca
+from src import datos_sitio as ds
+from src.modelos import (CondicionAnalisis, CriterioPendienteError,
                      DatoInvalidoError, EstabilidadCabezal,
                      GeometriaCabezal, Verificacion)
-from modulos import M9_cabezal as M9
-from normativa import registro as _registro
-from normativa.esquema import Caracter, EstadoDiscrepancia
+from src.modulos import M9_cabezal as M9
+from src.normativa import registro as _registro
+from src.normativa.esquema import Caracter, EstadoDiscrepancia
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import con_valor, sin_valor
 from tests.fixtures.casos_patron import (CP9_EMPUJE_TRASDOS,
                                          CP9_RANKINE_LIMITE,
                                          CP9_TOLERANCIA_RELATIVA)
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 RAIZ = Path(__file__).resolve().parents[1]
 CP9 = CP9_EMPUJE_TRASDOS
@@ -682,7 +682,7 @@ def test_EXT7_nada_se_cablea_a_la_cli():
     for nombre in ("empujes_trasdos", "verificar_estabilidad",
                    "armado del num. 9.4 (ocho funciones)"):
         assert nombre in M9.FUNCIONES_SIN_CONSUMIDOR
-    for archivo in ("cli.py", "src/modulos/M11_reporte.py"):
+    for archivo in ("cli.py", "src/servicio.py", "src/modulos/M11_reporte.py"):
         arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8"))
         llamadas = {n.func.attr for n in ast.walk(arbol)
                     if isinstance(n, ast.Call)

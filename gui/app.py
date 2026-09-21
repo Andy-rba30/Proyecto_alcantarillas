@@ -219,7 +219,6 @@ que Tk mandaba a stderr con la ventana como si nada.
 from __future__ import annotations
 
 import ast
-import sys
 import tempfile
 import traceback
 from pathlib import Path
@@ -229,28 +228,26 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 RAIZ = Path(__file__).resolve().parent.parent
-SRC = RAIZ / "src"
-for _ruta in (RAIZ, SRC):
-    if str(_ruta) not in sys.path:
-        sys.path.insert(0, str(_ruta))
+# La ventana se lanza desde la raiz con `python -m gui.app` (README), que es
+# lo que pone la raiz en el path: desde EXT-9 no hay `sys.path.insert` y los
+# modulos del calculador se importan del paquete `src` (PC-08).
+import json
 
-import json  # noqa: E402
-
-import anticipo as antc  # noqa: E402
-import cli  # noqa: E402
-import criterios_adoptados as ca  # noqa: E402
-import declaracion as dec  # noqa: E402
-import variables_entrada as ve  # noqa: E402
-from modelos import Derivada, ErrorProyecto, Familia  # noqa: E402
+from src import anticipo as antc
+import cli
+from src import criterios_adoptados as ca
+from src import declaracion as dec
+from src import variables_entrada as ve
+from src.modelos import Derivada, ErrorProyecto, Familia
 # Solo para PREGUNTARLE si weasyprint cargo (`_ayuda_del_pdf`). No se le pide
 # ningun calculo: la exportacion sigue pasando por `cli.exportar_pdf`, que es
 # la misma puerta que usa la linea de comandos.
-from modulos import M11_reporte as M11  # noqa: E402
+from src.modulos import M11_reporte as M11
 # La traza de procedencia por punto (G4). El CONTENIDO lo produce
 # `src/traza_punto.py` --- que pasos, en que orden, con que rotulos y en cual
 # de los tres registros tipograficos va cada linea ---; aqui solo se pinta.
 # Mismo reparto que `ventana_normativa`, y por las mismas razones.
-import traza_punto as tp  # noqa: E402
+from src import traza_punto as tp
 
 # `ayuda_ent` y no `ayuda`: `ayuda` es el nombre de la variable de bucle de
 # CAMPOS_EXTERNOS, en `_construir_tab_datos`, que es la MISMA funcion donde
@@ -258,7 +255,7 @@ import traza_punto as tp  # noqa: E402
 # local de esa funcion y la lambda del icono acabaria pidiendole
 # `.PESTANA_CSV` a la ultima cadena de tooltip del bucle --- un
 # AttributeError al pulsar, no al arrancar. Lo encontro `pyflakes`.
-import sesion as ses  # noqa: E402
+from src import sesion as ses
 from gui import ayuda_entrada as ayuda_ent  # noqa: E402
 from gui import exportacion_pdf as expdf  # noqa: E402
 from gui import ventana_normativa as ventana_norma  # noqa: E402

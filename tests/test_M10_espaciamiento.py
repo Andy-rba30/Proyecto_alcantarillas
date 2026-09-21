@@ -9,9 +9,9 @@ llega como argumento porque la hoja de ruta no da su formula.
 
 import pytest
 
-import criterios_adoptados as ca
-from modelos import CriterioPendienteError, DatoInvalidoError, GobiernaEspaciamiento
-from modulos.M10_espaciamiento import espaciamiento_alivio
+from src import criterios_adoptados as ca
+from src.modelos import CriterioPendienteError, DatoInvalidoError, GobiernaEspaciamiento
+from src.modulos.M10_espaciamiento import espaciamiento_alivio
 
 
 def test_gobierna_normativo_cuando_la_cuneta_alcanza_mas():

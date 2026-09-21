@@ -56,9 +56,9 @@ Excepciones
 
 Uso
 ---
-    from modelos import CategoriaTR
-    from modulos.M0_carga import cargar_puntos
-    from modulos.M1_clasificacion import clasificar_puntos, exigir_alcance
+    from src.modelos import CategoriaTR
+    from src.modulos.M0_carga import cargar_puntos
+    from src.modulos.M1_clasificacion import clasificar_puntos, exigir_alcance
 
     puntos = cargar_puntos("tests/ejemplo_puntos.csv")
 
@@ -98,17 +98,17 @@ import math
 import numbers
 from typing import Dict, List, Mapping, Optional, Tuple, Union
 
-from constantes_normativas import (LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE,
+from src.constantes_normativas import (LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE,
                                    TABLA_02_FILAS, UMBRALES_POR_CODIGO,
                                    caracter_del_umbral)
-from criterios_adoptados import valor, valor_si_declarado
-from modelos import (CIFRAS_FACTOR, CIFRAS_MAGNITUD, CategoriaTR,
+from src.criterios_adoptados import valor, valor_si_declarado
+from src.modelos import (CIFRAS_FACTOR, CIFRAS_MAGNITUD, CategoriaTR,
                      Clasificacion, DatoFaltanteError,
                      DatoInvalidoError, Denominacion, DisenoNoFactibleError,
                      EleccionDeProyecto, Familia, Magnitud, PerfilFamilia,
                      PeriodoRetorno, PuntoCritico, TipoDeVeredicto, Umbral,
                      Veredicto, Verificacion, paso)
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 # Numerales que sustentan cada decision de la fase.
 NUMERAL_LUZ = "4.1.1.3.1 / 4.1.1.5.1"     # Manual MTC, pags. 70 y 88 (Sec. 2.1)

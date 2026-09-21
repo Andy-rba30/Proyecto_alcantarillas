@@ -113,7 +113,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.M3_hidraulica import resolver_manning, tirante_normal, geometria
+    from src.modulos.M3_hidraulica import resolver_manning, tirante_normal, geometria
 
     resolucion = resolver_manning(D=0.90, Q=1.1673, S=0.005, material=concreto)
     if resolucion is None:
@@ -135,14 +135,14 @@ from typing import Optional
 # valiendo --- traido la primera vez que hace falta; el segundo import es una
 # busqueda en `sys.modules`.
 
-import criterios_adoptados as ca
-from constantes_normativas import K_MANNING_SI
-from modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
+from src import criterios_adoptados as ca
+from src.constantes_normativas import K_MANNING_SI
+from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
                      Seccion, SeccionCircular,
                      Geometria, LimiteNumericoError, Magnitud, Material,
                      PuntoCritico, SeccionReceptor, TiranteNormal,
                      TWDeterminado, ViaDelTW, paso)
-from tolerancias import TOL_BRENT, TOL_THETA_BORDE
+from src.tolerancias import TOL_BRENT, TOL_THETA_BORDE
 
 NUMERAL_MANNING = "4.1"
 
@@ -159,7 +159,7 @@ def _validar_parametros(seccion: Seccion, Q: float, S: float, n: float) -> None:
     # QUIEN NOMBRA EL DATO ES LA SECCION, Y ESA ES LA RESPUESTA DE C4 A LA
     # ANOTACION A-4 DE §16.4. C1 llego a renombrar el `campo` a "altura" y lo
     # devolvio a "D", porque de esta excepcion se imprimen LAS DOS CADENAS --
-    # `campo` y `motivo` viajan juntos dentro de `str(exc)`, que `cli._bloqueo`
+    # `campo` y `motivo` viajan juntos dentro de `str(exc)`, que `servicio._bloqueo`
     # guarda como `mensaje`, `cli._bloqueo_json` publica y `M11._tabla_bloqueos`
     # pinta -- y renombrar movia salida. La anotacion quedaba para C4 "que es
     # la primera sesion en que 'D' es falso -- una SeccionRectangular no tiene

@@ -27,10 +27,16 @@ auditoría de Sistema.
   gana solo con verificación.** Si un cambio contradice la v8, primero se enmienda la
   v8 (EXT-0 lo hace para todo lo conocido); en el punto de uso se declara la
   discrepancia con cita de página; el defecto se reporta contra la hoja.
-- **Imports planos.** Los módulos se importan como los importa `conftest.py`
-  (`import criterios_adoptados as ca`, `from modulos import M4_control`), nunca
-  `src.modulos.X`: `src/` no es paquete y esa vía crea un segundo módulo con otro
-  estado (PC-08). Las rutas `src/modulos/X.py` de este documento son rutas de archivo.
+- **Imports del paquete `src` (desde EXT-9; hasta entonces, planos).** `src/` es
+  un paquete real y el único estilo es `from src import criterios_adoptados as
+  ca`, `from src.modulos import M4_control`, `from src.modulos.M3_hidraulica
+  import geometria`; nunca la forma plana (`import criterios_adoptados`) ni
+  `import src.X`, y ningún `sys.path.insert` (`tests/test_ext9_paquete_servicio.py`
+  rechaza las tres por AST). Antes de EXT-9 la regla era la contraria —imports
+  planos, nunca `src.modulos.X`— porque `src/` no era paquete y esa vía creaba
+  un segundo módulo con otro estado (PC-08). Las rutas `src/modulos/X.py` de este
+  documento son rutas de archivo. La orquestación está en `src/servicio.py`;
+  `cli.py` es el adaptador y reexporta lo que la GUI y la suite leen de `cli`.
 - **Un cluster entero por commit; un commit por sesión.** Antes de tocar un objeto,
   consulta la hoja `Conflictos` del tracker (8 filas vinculantes, §6 de
   `hoja_de_ruta_correcciones_v12.md`) y `docs/decisiones_diferidas.md`.
@@ -49,7 +55,7 @@ auditoría de Sistema.
 - **Ritual de cierre** (obligatorio): (1) suite entera verde, `passed + skipped =
   collected` (hoy 1982); (2) regenerar los cuatro documentos generados si tocaste
   citas, criterios, memoria o pasos: `python3 -m src.normativa.manifiesto --escribir
-  --suite "<par>"` y `python3 src/indice_formulas.py --escribir --suite "<par>"`;
+  --suite "<par>"` y `python3 -m src.indice_formulas --escribir --suite "<par>"`;
   (3) actualizar Estado/Responsable/Commit en la hoja `Hallazgos` de
   `docs/auditorias/matriz_cruzada_auditorias.xlsx` (openpyxl preautorizado); (4)
   registrar en `docs/decisiones_diferidas.md` lo que se difiera, con símbolo; (5)

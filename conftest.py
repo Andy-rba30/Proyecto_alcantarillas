@@ -1,26 +1,18 @@
 """
 conftest.py
 ===========
-Hace importables los dos arboles que usan los tests:
+Declara los criterios de la corrida de pruebas y aisla el estado de proceso
+entre tests.
 
-    src/   -> modulos planos, tal como los nombra el Anexo C de la hoja de ruta
-              (`from criterios_adoptados import valor`)
-    raiz   -> `from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING`
-
-Sin esto, pytest solo agrega el directorio del test al path y ninguno de los
-dos imports funciona.
+NO TOCA `sys.path` DESDE EXT-9 (PC-08). Hasta entonces insertaba la raiz y
+`src/` para que los tests importaran por nombre plano
+(`import criterios_adoptados`), y esa segunda via es la que creaba un modulo
+duplicado con su propio estado. Hoy `src/` es un paquete real y el unico
+anclaje es la raiz del repositorio, que pytest ya pone en el path por ser
+el directorio de este `conftest.py`: `from src import criterios_adoptados`,
+`from src.modulos import M4_control`,
+`from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING`.
 """
-
-import sys
-from pathlib import Path
-
-RAIZ = Path(__file__).resolve().parent
-SRC = RAIZ / "src"
-
-for ruta in (RAIZ, SRC):
-    if str(ruta) not in sys.path:
-        sys.path.insert(0, str(ruta))
-
 
 # ---------------------------------------------------------------------------
 # La corrida de pruebas declara el origen de la cota de fondo de entrada
@@ -73,9 +65,9 @@ def pytest_configure(config):
         "markers",
         "pdf: abre un PDF de normas/; exige PyMuPDF (requirements-dev.txt)")
 
-import criterios_adoptados as _ca  # noqa: E402
-import datos_sitio as _ds  # noqa: E402
-import declaracion as _dec  # noqa: E402
+from src import criterios_adoptados as _ca
+from src import datos_sitio as _ds
+from src import declaracion as _dec
 
 CLAVE_ORIGEN_COTA = "origen_cota_fondo_entrada"
 ORIGEN_COTA_DE_PRUEBA = "cota_terreno"

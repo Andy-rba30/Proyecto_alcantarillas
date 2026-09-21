@@ -59,7 +59,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.M6_proteccion import laushey_d50, proteccion_salida
+    from src.modulos.M6_proteccion import laushey_d50, proteccion_salida
 
     d50 = laushey_d50(V=resultado.V_erosion)
     proteccion = proteccion_salida(V=resultado.V_salida)    # `Magnitud` de M4 (HDS-5 3.1.6)
@@ -78,9 +78,9 @@ from __future__ import annotations
 
 from typing import Tuple
 
-import criterios_adoptados as ca
-from constantes_normativas import G_LAUSHEY, LAUSHEY_K
-from modelos import (CIFRAS_MAGNITUD, EleccionDeProyecto, Magnitud,
+from src import criterios_adoptados as ca
+from src.constantes_normativas import G_LAUSHEY, LAUSHEY_K
+from src.modelos import (CIFRAS_MAGNITUD, EleccionDeProyecto, Magnitud,
                      ProteccionSalida, TipoDeVeredicto, Veredicto, paso)
 
 NUMERAL_LAUSHEY = "4.1.1.3.7 c)"

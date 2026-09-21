@@ -35,13 +35,13 @@ from pathlib import Path
 
 import pytest
 
-from constantes_normativas import Y_SOBRE_D_MAX
-from modelos import (CriterioPendienteError, DatoFaltanteError,
+from src.constantes_normativas import Y_SOBRE_D_MAX
+from src.modelos import (CriterioPendienteError, DatoFaltanteError,
                      DatoInvalidoError, DisenoNoFactibleError, ErrorProyecto,
                      Familia, PuntoCritico, TipoMaterial, Verificacion)
-from modulos.M0_carga import cargar_puntos
-from modulos.M2_material import catalogo
-from modulos.MD import (FUNCION_VERIFICACIONES, MENSAJE_DIAMETRO_SUPERADO,
+from src.modulos.M0_carga import cargar_puntos
+from src.modulos.M2_material import catalogo
+from src.modulos.MD import (FUNCION_VERIFICACIONES, MENSAJE_DIAMETRO_SUPERADO,
                         MODULO_VERIFICACIONES, _motivo_sin_candidatos,
                         _verificador_de_M5, disenar_lote, disenar_material,
                         disenar_punto)
@@ -666,7 +666,7 @@ def test_el_verificador_por_defecto_es_el_de_M5():
     La cara positiva de las dos anteriores: con M5 en su sitio, el
     verificador que MD resuelve es SU funcion, no un doble ni un fallback.
     """
-    import modulos.M5_verificaciones as M5
+    from src.modulos import M5_verificaciones as M5
 
     assert _verificador_de_M5() is getattr(M5, FUNCION_VERIFICACIONES)
 
@@ -829,6 +829,9 @@ def test_la_premisa_de_que_M5_no_existe_no_vuelve_como_afirmacion():
         for nodo in _ast.walk(arbol):
             if isinstance(nodo, _ast.ImportFrom) and nodo.module:
                 modulos.add(nodo.module)
+                # `from src import X` y `from src.modulos import MX` nombran
+                # SUBMODULOS en los alias (EXT-9): cada uno es un modulo mas.
+                modulos |= {f"{nodo.module}.{alias.name}" for alias in nodo.names}
             elif isinstance(nodo, _ast.Import):
                 modulos |= {alias.name for alias in nodo.names}
         return modulos
@@ -842,7 +845,9 @@ def test_la_premisa_de_que_M5_no_existe_no_vuelve_como_afirmacion():
         for modulo in _importa(rel):
             if modulo in ("modulos.MD", "MD") or modulo.endswith(".MD"):
                 return True
-            candidata = raiz / "src" / (modulo.replace(".", "/") + ".py")
+            # Desde EXT-9 el nombre lleva el paquete delante
+            # (`src.modulos.M4_control`), y la ruta se deriva de el entera.
+            candidata = raiz / (modulo.replace(".", "/") + ".py")
             # `as_posix()` Y NO `str()`, aunque este test NO falle en Windows:
             # `vistos` es el corta-ciclos, y la semilla entra escrita con `/`
             # (`"src/modulos/M5_verificaciones.py"`). Con el separador del
@@ -867,9 +872,9 @@ def test_la_premisa_de_que_M5_no_existe_no_vuelve_como_afirmacion():
 # `_caudal_por_barril` a `return Q`, la suite entera seguia en verde. Toda la
 # mitad multibarril de la sesion estaba verde sobre nada. Estos tests la matan.
 
-from modelos import FormaSeccion                                  # noqa: E402
-from modulos.M2_material import numero_de_celdas                  # noqa: E402
-from modulos.MD import _caudal_por_barril                         # noqa: E402
+from src.modelos import FormaSeccion
+from src.modulos.M2_material import numero_de_celdas
+from src.modulos.MD import _caudal_por_barril
 from tests.apoyo.criterios import con_valor, declarados, sin_valor  # noqa: E402
 
 _CAJON_MD = {
@@ -940,8 +945,8 @@ def test_un_numero_de_celdas_que_no_es_un_entero_mayor_que_cero_es_invalido(
 # --. La memoria no puede negar lo que el registro acredita, y el descarte
 # sigue siendo de catalogo en los tres.
 def test_el_motivo_de_descarte_no_niega_para_el_hdpe_lo_que_el_registro_acredita():
-    from modulos.M2_material import catalogo
-    from modulos.MD import _motivo_descarte
+    from src.modulos.M2_material import catalogo
+    from src.modulos.MD import _motivo_descarte
     hdpe = _motivo_descarte(catalogo(TipoMaterial.HDPE), "x")
     assert "NO es un tope de" not in hdpe
     assert "coincide con el techo de la serie" in hdpe

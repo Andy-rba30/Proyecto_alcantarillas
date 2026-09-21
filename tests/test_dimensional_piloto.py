@@ -58,7 +58,6 @@ from __future__ import annotations
 
 import ast
 import re
-import sys
 from dataclasses import dataclass
 from fractions import Fraction as F
 from pathlib import Path
@@ -68,13 +67,10 @@ import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
 SRC = RAIZ / "src"
-for ruta in (str(RAIZ), str(SRC)):
-    if ruta not in sys.path:
-        sys.path.insert(0, ruta)
 
-import constantes_normativas as cn                                 # noqa: E402
+from src import constantes_normativas as cn
 from tests.apoyo.aproximacion import REL_TRANSPORTE                # noqa: E402
-import indice_formulas as ind                                      # noqa: E402
+from src import indice_formulas as ind
 
 MODULOS_DEL_PILOTO = ("M3_hidraulica", "M4_control", "M5_verificaciones")
 

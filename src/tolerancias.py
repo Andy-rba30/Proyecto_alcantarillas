@@ -31,7 +31,7 @@ se declara en la memoria en vez de esconderlo detras del redondeo.
 
 Uso
 ---
-    from tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
+    from src.tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
 
     theta = brentq(f, a, b, xtol=TOL_BRENT)
     cumple = y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO

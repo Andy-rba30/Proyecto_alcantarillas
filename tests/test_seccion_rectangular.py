@@ -24,17 +24,17 @@ import math
 
 import pytest
 
-from constantes_fisicas import G
-from constantes_normativas import HDS5_INLET, KU_SI
-from modelos import (ConstantesHDS5, DatoInvalidoError, LimiteNumericoError,
+from src.constantes_fisicas import G
+from src.constantes_normativas import HDS5_INLET, KU_SI
+from src.modelos import (ConstantesHDS5, DatoInvalidoError, LimiteNumericoError,
                      SeccionCircular, SeccionRectangular)
-from modulos.M3_hidraulica import resolver_manning, tirante_normal
-from modulos.M4_control import (_pasos_hidraulicos, caudal_adimensional,
+from src.modulos.M3_hidraulica import resolver_manning, tirante_normal
+from src.modulos.M4_control import (_pasos_hidraulicos, caudal_adimensional,
                                 control_entrada, control_salida,
                                 tirante_critico)
-from modulos.M2_material import catalogo
+from src.modulos.M2_material import catalogo
 from tests.apoyo.aproximacion import ABS_CERO
-from modelos import ControlGobernante, TipoMaterial
+from src.modelos import ControlGobernante, TipoMaterial
 from tests.fixtures.casos_patron import (CP2R_GEOMETRIA_MANNING_RECTANGULAR,
                                          CP5D_FORMA2,
                                          CP5DR_TRANSICION_CAJON,
@@ -723,7 +723,7 @@ def test_las_dos_secciones_implementan_el_protocolo_entero():
     forma; sin ello, «ciegos» es una intencion, no una propiedad.
     """
     import inspect
-    from modelos import Seccion
+    from src.modelos import Seccion
 
     del_protocolo = {n for n in vars(Seccion)
                      if not n.startswith("_")}

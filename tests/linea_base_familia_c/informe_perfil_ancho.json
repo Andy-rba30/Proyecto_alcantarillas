@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "b946ea4ae9a54a363fefc14aa75541a1c2b716d2",
+    "criterios_sha1": "71f9047c2c288608966f30404ff9232c7050e16f",
     "puntos": 4,
     "dimensionados": 3,
     "cerrado": false

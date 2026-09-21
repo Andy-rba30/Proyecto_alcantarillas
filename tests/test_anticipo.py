@@ -27,10 +27,10 @@ from pathlib import Path
 
 import pytest
 
-import anticipo as antc
+from src import anticipo as antc
 import cli
-import criterios_adoptados as ca
-from modulos import M0_carga as m0
+from src import criterios_adoptados as ca
+from src.modulos import M0_carga as m0
 
 RAIZ = Path(__file__).resolve().parents[1]
 CSV_EXPEDIENTE = RAIZ / "tests" / "ejemplo_puntos.csv"

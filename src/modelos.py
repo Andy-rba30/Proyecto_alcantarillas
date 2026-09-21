@@ -38,8 +38,8 @@ from functools import lru_cache
 from types import MappingProxyType
 from typing import Any, Dict, Mapping, Optional, Protocol, Tuple, Union
 
-from dominios import CENTIMETROS_POR_METRO
-from tolerancias import TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
+from src.dominios import CENTIMETROS_POR_METRO
+from src.tolerancias import TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
 
 
 # ===========================================================================
@@ -113,14 +113,14 @@ class CriterioPendienteError(ErrorProyecto):
 
         NO ES POR AQUI POR DONDE LA GUI MUESTRA UN PENDIENTE, y el docstring
         anterior --- «Texto que la GUI muestra al usuario» --- lo afirmaba. La
-        GUI llega por `cli._etapa` -> `cli._bloqueo` -> `Bloqueo` ->
+        GUI llega por `servicio._etapa` -> `servicio._bloqueo` -> `Bloqueo` ->
         `M11.criterios_bloqueantes` -> `gui/app.py::_llenar_resumen`, y pinta
         SEIS columnas: clave, etiqueta, concepto, fuente, fases y puntos.
         Cablear esta propiedad ahi cambiaria ese tablero por un solo dato.
 
         Y no es que sea la via mas rica de dos: es la UNICA. Comprobado
         vaciando el `valor` de los 46 criterios y de todos los datos de sitio:
-        `cli.correr` devuelve su informe sin levantar nada, con los bloqueos
+        `servicio.correr` devuelve su informe sin levantar nada, con los bloqueos
         archivados. Los tres unicos sitios que levantan
         `CriterioPendienteError` --- `criterios_adoptados.valor`,
         `datos_sitio.valor` y `GeometriaCabezal.exigir_ancho_talon` --- cuelgan
@@ -2279,7 +2279,7 @@ class ResultadoHidraulico:
     # EL REGIMEN DEL BARRIL Y LO QUE DE EL DEPENDE (EXT-3; EXT-M-01, PC-04).
     # Ver el docstring. Todos con default para que los constructores de la
     # suite que no pasan por M4 sigan armandose; M4 los llena SIEMPRE, y
-    # `cli._fase_6` trata un `V_salida` vacio como fallo de programa.
+    # `servicio._fase_6` trata un `V_salida` vacio como fallo de programa.
     regimen_barril: RegimenBarril = RegimenBarril.PARCIALMENTE_LLENO
     V_llena_m_s: Optional[float] = None   # m/s - Q_celda / A_llena (regimen LLENO)
     V_salida: Optional["Magnitud"] = None # m/s - HDS-5 3.1.6, con procedencia
@@ -2623,7 +2623,7 @@ class Bloqueo:
 @dataclass(frozen=True)
 class ContextoCorrida:
     """
-    LA FOTO DEL ESTADO CON QUE CORRIO EL EXPEDIENTE, tomada por `cli.correr`
+    LA FOTO DEL ESTADO CON QUE CORRIO EL EXPEDIENTE, tomada por `servicio.correr`
     al salir y colgada del `Informe` (EXT-A-01, PC-09; EXT-4).
 
     Por que existe. Los tres archivos de valores llevan estado de PROCESO:
@@ -2641,7 +2641,7 @@ class ContextoCorrida:
     Que lleva, y por que cada cosa:
 
     - `criterios_usados`, `datos_usados`: lo que ESTA corrida invoco. El
-      registro se vacia al entrar en `cli.correr` y se fotografia al salir.
+      registro se vacia al entrar en `servicio.correr` y se fotografia al salir.
     - `valores_efectivos`: el valor con que gobierno cada criterio del
       catalogo, copiado EN PROFUNDIDAD --- un dict declarado en caliente y
       mutado despues no puede mover la memoria de una corrida que ya paso ---.
@@ -2711,14 +2711,14 @@ class ContextoCorrida:
     def de(informe: Any) -> "ContextoCorrida":
         """
         El contexto de un informe, o un error que dice que el informe no lo
-        lleva. Solo `cli.correr` lo produce: un `Informe` armado a mano no
+        lleva. Solo `servicio.correr` lo produce: un `Informe` armado a mano no
         tiene corrida que describir, y exportarlo leyendo el estado vivo
         seria exactamente el defecto que este objeto cierra.
         """
         contexto = getattr(informe, "contexto", None)
         if not isinstance(contexto, ContextoCorrida):
             raise ValueError(
-                "el informe no lleva ContextoCorrida: solo cli.correr lo "
+                "el informe no lleva ContextoCorrida: solo servicio.correr lo "
                 "produce, y sin el la capa de reporte no puede decir con que "
                 "estado corrio el expediente")
         return contexto
@@ -2967,7 +2967,7 @@ def _registro_normativo():
     reconstruirlo por paso convertiria la traza en el cuello de botella del
     pipeline.
     """
-    from normativa import registro as _rn
+    from src.normativa import registro as _rn
 
     return _rn.construir()
 
@@ -4568,7 +4568,7 @@ class Poblacion(str, Enum):
     pueden comparar y la memoria bloques que no suman.
 
     `DATO_EXTERNO` llego en EXT-5 (EXT-G-03): las seis claves de
-    `cli.CLAVES_EXTERNAS` que no son columna, ni dato de sitio, ni criterio
+    `servicio.CLAVES_EXTERNAS` que no son columna, ni dato de sitio, ni criterio
     no estaban en ningun censo, y la ayuda de la GUI las mostraba como «sin
     ficha». Se censan como poblacion propia y no como columnas porque no lo
     son: no viven en el CSV y no varian necesariamente punto a punto.

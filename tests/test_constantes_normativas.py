@@ -13,9 +13,9 @@ import math
 
 import pytest
 
-import constantes_normativas as CN
-import datos_sitio as ds
-from constantes_fisicas import G
+from src import constantes_normativas as CN
+from src import datos_sitio as ds
+from src.constantes_fisicas import G
 from tests.fixtures.casos_patron import (CP1_PERIODO_RETORNO,
                                          CP2_GEOMETRIA_MANNING,
                                          CP3_VELOCIDAD_MINIMA, CP4_LAUSHEY,

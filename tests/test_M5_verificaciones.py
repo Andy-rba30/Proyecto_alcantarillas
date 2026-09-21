@@ -34,17 +34,17 @@ from pathlib import Path
 
 import pytest
 
-import criterios_adoptados as ca
-from constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
+from src import criterios_adoptados as ca
+from src.constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
-from dominios import CBR_MAX_FISICO
-from modelos import (ControlGobernante, CriterioPendienteError,
+from src.dominios import CBR_MAX_FISICO
+from src.modelos import (ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
                      Familia, FormaSeccion, PuntoCritico, ResultadoHidraulico,
                      SeccionCircular, SeccionRectangular, TipoMaterial)
-from modulos.M2_material import catalogo
-from modulos.M8_estructural import factores_carga_flotacion
-from modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
+from src.modulos.M2_material import catalogo
+from src.modulos.M8_estructural import factores_carga_flotacion
+from src.modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        CRITERIO_V_MAX_CONCRETO,
                                        ORIGENES_COTA_ENTRADA,
                                        NUMERAL_V2, NUMERAL_V3, NUMERAL_V7,
@@ -284,7 +284,7 @@ def test_v4b_no_puede_llevar_la_advertencia_y_su_razon_esta_censada():
     Se fija aqui para que el hueco sea una decision comprobada y no un olvido:
     el dia que V4b tenga fundamento, este test cae y hay que ponerle la nota.
     """
-    from normativa.fundamentos import SIN_FUNDAMENTO
+    from src.normativa.fundamentos import SIN_FUNDAMENTO
     v = v4b_relacion_hw_d(D=0.90, resultado=_resultado())
     assert v.paso is None
     censados = {id_: razon for id_, razon, _ in SIN_FUNDAMENTO}
@@ -390,8 +390,8 @@ def test_el_texto_literal_del_numeral_esta_transcrito_y_no_resumido():
     el parrafo fija: que es una recomendacion, y que la razon es la
     sedimentacion (no el desgaste) -- que es lo que lo separa de V3.
     """
-    import constantes_normativas as CN
-    from modulos import M5_verificaciones as M5
+    from src import constantes_normativas as CN
+    from src.modulos import M5_verificaciones as M5
 
     literal = "recomendándose que la velocidad mínima sea igual a 0.25 m/s"
     razon = ("no produzca sedimentación que pueda incidir en una reducción de "
@@ -846,15 +846,15 @@ def test_vc1_no_presenta_su_umbral_como_exigencia_sobre_un_canal():
     Es el mismo agujero estructural que C7 midio en `F5.V7`, aqui cerrado a
     proposito y fijado por un test.
     """
-    from normativa.esquema import Caracter, Verbo
-    from normativa.fundamentos import FUNDAMENTOS
+    from src.normativa.esquema import Caracter, Verbo
+    from src.normativa.fundamentos import FUNDAMENTOS
 
     v = vc1_borde_libre_canal(punto=_punto_de_canal(),
                               resultado=_resultado(HW_entrada=0.60))
     # La cita del UMBRAL --- la que lleva el numero --- es la del rango, y su
     # caracter en el registro es RECOMENDACION.
     assert v.paso.umbral.cita_id == "MC_HHD.4.1.1.4.1e#RANGO"
-    from normativa.registro import construir
+    from src.normativa.registro import construir
     assert construir().cita(
         v.paso.umbral.cita_id).caracter is Caracter.RECOMENDACION
     # El `caracter` que la memoria imprime nombra LAS DOS, como en V2 y por la
@@ -1008,7 +1008,7 @@ def test_la_eleccion_de_fila_de_V7_sale_de_su_fundamento_y_lista_las_siete(
     que ata su verbo al `caracter` de sus citas por T11. Se comprueba por
     identidad con el registro, no por parecido de texto.
     """
-    from normativa.registro import construir
+    from src.normativa.registro import construir
 
     original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
     monkeypatch.setitem(
@@ -1439,8 +1439,8 @@ def test_las_once_filas_de_la_fase_5_tienen_su_funcion():
     memoria; y una fila sin cablear que no se declarara seria el defecto
     contrario, que es el que V2b tenia.
     """
-    from modulos import M11_reporte as M11
-    from modulos.M5_verificaciones import verificaciones_no_evaluadas
+    from src.modulos import M11_reporte as M11
+    from src.modulos.M5_verificaciones import verificaciones_no_evaluadas
 
     textos = verificaciones_no_evaluadas()
     assert textos == (), (
@@ -1645,8 +1645,8 @@ def test_v2_contra_el_caso_patron_CP3_por_la_cadena_de_produccion():
     lo hace el test de mas abajo, y lo hace en exclusiva. «El filo» de CP-3 es
     una coincidencia de tres cifras, no un empate.
     """
-    from modelos import SeccionCircular
-    from modulos.M3_hidraulica import resolver_manning
+    from src.modelos import SeccionCircular
+    from src.modulos.M3_hidraulica import resolver_manning
 
     c3, c2 = CP3_VELOCIDAD_MINIMA, CP2_GEOMETRIA_MANNING
     material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
@@ -1697,8 +1697,8 @@ def test_la_salvedad_de_CP3_es_cierta_y_no_solo_una_advertencia_escrita():
     conjunto de condiciones de la conclusion que citaba --- y quedaba a 2.9
     veces del piso, sin poder distinguir nada.
     """
-    from modelos import SeccionCircular
-    from modulos.M3_hidraulica import resolver_manning
+    from src.modelos import SeccionCircular
+    from src.modulos.M3_hidraulica import resolver_manning
 
     c3 = CP3_VELOCIDAD_MINIMA
     material = catalogo(TipoMaterial.CONCRETO_REFORZADO)

@@ -31,9 +31,6 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
-for _ruta in (str(RAIZ), str(RAIZ / "src")):
-    if _ruta not in sys.path:
-        sys.path.insert(0, _ruta)
 
 CSV_EXPEDIENTE = RAIZ / "tests" / "ejemplo_puntos.csv"
 

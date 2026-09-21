@@ -50,11 +50,8 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
-for _ruta in (str(RAIZ), str(RAIZ / "src")):
-    if _ruta not in sys.path:
-        sys.path.insert(0, _ruta)
 
-import criterios_adoptados as ca                       # noqa: E402
+from src import criterios_adoptados as ca
 
 # Un texto que no casa con ninguna clave ni concepto: el filtro deja fuera a
 # todo el archivo, que es el caso extremo y el que hace visible el defecto.

@@ -35,7 +35,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.M0_carga import cargar_puntos
+    from src.modulos.M0_carga import cargar_puntos
 
     puntos = cargar_puntos("tests/ejemplo_puntos.csv")
     pendientes = [p for p in puntos if p.pendiente_dato_externo]
@@ -50,10 +50,10 @@ from dataclasses import fields
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from dominios import (CBR_MAX_FISICO, ESVIAJE_MAX, METROS_POR_KM, S_CAUCE_MAX)
-from modelos import (CabeceraCSV, DatoFaltanteError, DatoInvalidoError,
+from src.dominios import (CBR_MAX_FISICO, ESVIAJE_MAX, METROS_POR_KM, S_CAUCE_MAX)
+from src.modelos import (CabeceraCSV, DatoFaltanteError, DatoInvalidoError,
                      Familia, PuntoCritico, VacioAdmitido)
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +98,7 @@ _VACIAS_TODA_FAMILIA = ("Q_receptor_m3s", "cota_TW")        # Tablero 3.1
 #             cuenca: es el de diseno del canal (Sec. 2.3). Poner el de la
 #             cuenca seria dimensionar con el caudal equivocado. Sin el se
 #             detiene `MD.disenar_punto`, que lo exige antes de pedir
-#             candidatos. Vehiculo: clave `Q_m3s` de `cli.CLAVES_EXTERNAS`.
+#             candidatos. Vehiculo: clave `Q_m3s` de `servicio.CLAVES_EXTERNAS`.
 #   area_ha   Sec. 1.1 la llama «solo clasificador» y su unico lector es
 #             `M1._categoria_por_area`, que sirve a la Familia A para elegir
 #             fila de la Tabla N 02. La Familia C no tiene TR --su caudal no
@@ -254,7 +254,7 @@ def cargar_puntos(ruta: Any) -> List[PuntoCritico]:
     Sec. 1.5 (validaciones cruzadas).
 
     Es `leer_bytes` + `cargar_puntos_de_bytes`, y las dos mitades son
-    publicas desde EXT-4 para que `cli.correr` pueda calcular el SHA-1 del
+    publicas desde EXT-4 para que `servicio.correr` pueda calcular el SHA-1 del
     CSV sobre LOS MISMOS BYTES que se parsean (PC-09, EXT-A-01): hasta
     entonces la trazabilidad de la memoria volvia a abrir el archivo al
     exportar, y un CSV editado entre la corrida y la exportacion salia con

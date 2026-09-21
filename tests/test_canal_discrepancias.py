@@ -25,23 +25,17 @@ corrida TOCA, y que no llegue lo demas.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
-SRC = RAIZ / "src"
-for ruta in (str(RAIZ), str(SRC)):
-    if ruta not in sys.path:
-        sys.path.insert(0, ruta)
-
-import criterios_adoptados as ca                                   # noqa: E402
+from src import criterios_adoptados as ca
 from cli import cargar_datos_externos, correr                      # noqa: E402
-from modelos import Magnitud, paso                                 # noqa: E402
-from modulos import M11_reporte as M11                             # noqa: E402
-from normativa.esquema import EstadoDiscrepancia                   # noqa: E402
-from normativa.registro import construir                           # noqa: E402
+from src.modelos import Magnitud, paso
+from src.modulos import M11_reporte as M11
+from src.normativa.esquema import EstadoDiscrepancia
+from src.normativa.registro import construir
 
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
 
@@ -449,7 +443,7 @@ def test_un_paso_no_puede_declarar_una_discrepancia_resuelta():
 
 def test_un_criterio_no_puede_declarar_una_discrepancia_inexistente():
     import dataclasses
-    from criterios_adoptados import _verificar_criterio
+    from src.criterios_adoptados import _verificar_criterio
 
     c = dataclasses.replace(ca.CRITERIOS["D_max_catalogo"],
                             discrepancias=("DIS-QUE-NO-EXISTE",))

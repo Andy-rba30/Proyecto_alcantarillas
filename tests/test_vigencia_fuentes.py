@@ -25,10 +25,10 @@ import dataclasses
 
 import pytest
 
-import criterios_adoptados as ca
-from modelos import CriterioPendienteError, Libre
-from normativa import fuentes as fu
-from normativa.esquema import ErrorDeRegistro
+from src import criterios_adoptados as ca
+from src.modelos import CriterioPendienteError, Libre
+from src.normativa import fuentes as fu
+from src.normativa.esquema import ErrorDeRegistro
 
 CLAVE = "edicion_que_rige_el_expediente"
 CLAVE_LEGAL = "edicion_legal_que_rige_el_expediente"
@@ -313,7 +313,7 @@ def test_la_vigencia_no_toca_ninguna_cita():
     de ella, y ninguna cita cambio de pagina, sha1 ni texto por T1: lo que se
     comprueba es que el registro sigue integro con las notas nuevas.
     """
-    from normativa import registro as _registro
+    from src.normativa import registro as _registro
     reg = _registro.construir()
     assert reg.problemas_de_integridad() == ()
     assert all("VIGENCIA" not in (c.nota or "") for c in reg.citas)

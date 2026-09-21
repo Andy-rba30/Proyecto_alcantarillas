@@ -28,9 +28,9 @@ from pathlib import Path
 
 import pytest
 
-import criterios_adoptados as ca
-import declaracion as dec
-import ventana_normativa as vn
+from src import criterios_adoptados as ca
+from src import declaracion as dec
+from src import ventana_normativa as vn
 
 RAIZ = Path(__file__).resolve().parents[1]
 MODULO = RAIZ / "src" / "declaracion.py"
@@ -334,7 +334,7 @@ def test_la_validacion_de_un_intervalo_usa_sus_dos_extremos():
     El contraste que hace util a los tests de arriba: cuando la fuente SI
     escribe un piso y un techo, la validacion los usa como tales.
     """
-    from normativa.esquema import IntervaloAdmisible, QuePasaFuera
+    from src.normativa.esquema import IntervaloAdmisible, QuePasaFuera
     intervalo = IntervaloAdmisible(
         minimo=1.0, maximo=2.0, unidad="m", cita_id="x",
         que_pasa_fuera=QuePasaFuera.INCUMPLE_LA_NORMA)
@@ -349,7 +349,7 @@ def test_un_piso_no_se_valida_como_un_techo():
     un piso y un techo se comportarian igual y uno de los dos estaria al
     reves.
     """
-    from normativa.esquema import PisoUnico, QuePasaFuera, TechoUnico
+    from src.normativa.esquema import PisoUnico, QuePasaFuera, TechoUnico
     piso = PisoUnico(minimo=2.0, unidad="m", cita_id="x",
                      que_pasa_fuera=QuePasaFuera.INCUMPLE_LA_NORMA)
     techo = TechoUnico(maximo=2.0, unidad="m", cita_id="x",

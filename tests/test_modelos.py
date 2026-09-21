@@ -16,9 +16,9 @@ from pathlib import Path
 
 import pytest
 
-import constantes_normativas as CN
-import criterios_adoptados as ca
-from modelos import (CasoDemandaSismica, CondicionAnalisis, ConstantesHDS5,
+from src import constantes_normativas as CN
+from src import criterios_adoptados as ca
+from src.modelos import (CasoDemandaSismica, CondicionAnalisis, ConstantesHDS5,
                      FormaSeccion,
                      ControlGobernante, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError,
@@ -616,8 +616,8 @@ def test_un_material_y_una_seccion_de_formas_distintas_no_pasan_juntos():
     cierra es la puerta, igual que `ResultadoPunto.__post_init__` cierra la
     suya.
     """
-    from modelos import exigir_seccion_coherente
-    from modulos.M2_material import catalogo
+    from src.modelos import exigir_seccion_coherente
+    from src.modulos.M2_material import catalogo
 
     tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
     # El par coherente pasa sin ruido.
@@ -857,7 +857,7 @@ def test_la_carga_sismica_va_con_su_brazo_o_no_va():
 # cabecera del archivo, con el mismo criterio con que otras pruebas de la
 # suite hacen `from dataclasses import replace` dentro del test: la seccion
 # queda autocontenida y se puede mover entera.
-from modelos import GeometriaCabezal                             # noqa: E402
+from src.modelos import GeometriaCabezal
 from tests.apoyo.aproximacion import REL_TRANSPORTE              # noqa: E402
 
 

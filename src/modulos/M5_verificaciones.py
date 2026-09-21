@@ -207,7 +207,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.M5_verificaciones import verificar
+    from src.modulos.M5_verificaciones import verificar
 
     verificaciones = verificar(punto=punto, material=material,
                                seccion=seccion,
@@ -223,12 +223,12 @@ from __future__ import annotations
 
 from typing import Optional, Tuple
 
-import criterios_adoptados as ca
-from constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
+from src import criterios_adoptados as ca
+from src.constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    RESGUARDO_NAPA_SUBRASANTE,
                                    UMBRALES_POR_CODIGO, V_MIN,
                                    Y_SOBRE_D_MAX, caracter_del_umbral)
-from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      CIFRAS_PORCENTAJE, ControlGobernante, CotaDeEntrada,
                      DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
                      ErrorProyecto, Familia, FormaSeccion,
@@ -239,17 +239,17 @@ from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
                      Verificacion, eleccion,
                      exigir_seccion_coherente, paso)
-from modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
+from src.modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
                                  espesor_pared,
                                  numero_de_celdas)
-from modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
+from src.modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
                                     filas_ev_de_la_tabla,
                                     peso_relleno_kn_m)
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 # LO QUE V1 Y V2 NO PUEDEN EVALUAR, dicho una vez (EXT-3; EXT-M-01, v8 §4.1).
 # Bajo control de SALIDA con el barril PARCIALMENTE LLENO el tirante y la
@@ -1371,7 +1371,7 @@ def altura_relleno_sobre_clave(*, punto: PuntoCritico, material: Material,
     que la Fase 5 ya lanzaba.
 
     POR QUE SE EXTRAJO (SIS-A-21). La resta estaba escrita dos veces: dentro
-    de `v7_flotacion`, con la guarda, y en `cli._fase_8`, sin ella. La segunda
+    de `v7_flotacion`, con la guarda, y en `servicio._fase_8`, sin ella. La segunda
     copia no hacia daño HOY -- la Fase 8 se detiene antes, en el tope de
     'clases_producto_por_relleno' -- y esa es exactamente la forma en que una
     guarda desaparece sin que nadie lo note: el dia en que ese criterio se
@@ -1391,7 +1391,7 @@ def altura_relleno_sobre_clave(*, punto: PuntoCritico, material: Material,
             # consumen V7 (Fase 5) y la norma de producto (Fase 8), y una
             # excepcion que nombrase una sola mandaria al revisor a la etapa
             # equivocada la mitad de las veces. Quien la atrapa ya sabe en que
-            # etapa esta -- `cli._etapa` la anota con su fase.
+            # etapa esta -- `servicio._etapa` la anota con su fase.
             motivo="la clave del conducto queda a nivel de la subrasante o "
                    f"por encima ({altura:+.3f} m de relleno): no hay relleno "
                    "sobre la clave que pesar ni con que entrar a la tabla de "
@@ -1655,7 +1655,7 @@ def v5_remanso(*, punto: PuntoCritico,
       ANADIR esos dos, y por eso es Faltante y no Invalido (CLAUDE.md).
 
     Antes esta segunda rama era un `raise AssertionError` desnudo: no
-    descendia de `ErrorProyecto`, de modo que `cli._etapa` no lo capturaba y
+    descendia de `ErrorProyecto`, de modo que `servicio._etapa` no lo capturaba y
     una corrida con el criterio declarado abortaba entera, con todos sus
     puntos, en vez de anotar el bloqueo y seguir.
     """
@@ -2114,10 +2114,10 @@ def v8_evento_extremo(*, punto: PuntoCritico,
       Faltante y no Invalido (CLAUDE.md).
 
     Hasta S20 esta segunda rama era un `raise AssertionError` desnudo, y
-    estaba declarada como «mina deliberada» en `cli._verificador_perfil`. La
+    estaba declarada como «mina deliberada» en `servicio._verificador_perfil`. La
     mina avisaba de algo cierto -- la logica de V8 no esta escrita -- por el
     medio equivocado: `AssertionError` no desciende de `ErrorProyecto`, de
-    modo que `cli._etapa` no lo capturaba y una corrida con el criterio
+    modo que `servicio._etapa` no lo capturaba y una corrida con el criterio
     declarado abortaba entera, con todos sus puntos, en vez de anotar el
     bloqueo y seguir. Es palabra por palabra el defecto que V5 ya habia
     tenido y que se corrigio antes; V8 se quedo con el.
@@ -2228,7 +2228,7 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 # longitud ---, de modo que la sustitucion no PIERDE alcance; pero decir que
 # VC1 cierra el hueco entero seria falso, y se dice.
 # DEVUELVE EL CODIGO ADEMAS DE LA PIEZA, y no es adorno. Hay DOS llamadores
-# --- `verificar` aqui y `cli._verificador_perfil` --- y no tratan igual lo que
+# --- `verificar` aqui y `servicio._verificador_perfil` --- y no tratan igual lo que
 # sale: para el de perfil, V5 es una verificacion DIFERIDA (su fallo se anota y
 # el punto sigue dimensionandose) mientras que VC1 es OBLIGATORIA (su fallo
 # bloquea el material). Si el llamador tuviera que deducir cual le toca
@@ -2274,7 +2274,7 @@ def verificar(*, punto: PuntoCritico, material: Material,
     cuando el barril va parcialmente lleno bajo control de SALIDA: el tirante
     y la velocidad que comparan exigen el perfil de la lamina de agua. A
     nivel de expediente eso bloquea el punto; a nivel de perfil
-    `cli._verificador_perfil` lo difiere y sigue.
+    `servicio._verificador_perfil` lo difiere y sigue.
 
     PERO LO QUE YA SE VERIFICO NO SE TIRA. Al detenerse, la excepcion se lleva
     en `verificaciones_completadas` las que si se evaluaron, con su veredicto y

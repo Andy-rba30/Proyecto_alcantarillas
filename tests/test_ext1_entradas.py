@@ -48,20 +48,20 @@ from pathlib import Path
 import pytest
 
 import cli
-import criterios_adoptados as ca
-import declaracion as dec
-from constantes_normativas import KE_HDS5_C2
-from dominios import ESVIAJE_MAX
-from modelos import (DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
+from src import criterios_adoptados as ca
+from src import declaracion as dec
+from src.constantes_normativas import KE_HDS5_C2
+from src.dominios import ESVIAJE_MAX
+from src.modelos import (DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
                      Familia, FormaSeccion, LimiteNumericoError, PuntoCritico,
                      SeccionCircular, TipoMaterial, Verificacion)
-from modulos import M1_clasificacion as M1
-from modulos import M3_hidraulica as M3
-from modulos import M4_control as M4
-from modulos import M7_geometria as M7
-from modulos import M11_reporte as M11
-from modulos import MD
-from modulos.M2_material import (CRITERIO_ESPESOR_PARED,
+from src.modulos import M1_clasificacion as M1
+from src.modulos import M3_hidraulica as M3
+from src.modulos import M4_control as M4
+from src.modulos import M7_geometria as M7
+from src.modulos import M11_reporte as M11
+from src.modulos import MD
+from src.modulos.M2_material import (CRITERIO_ESPESOR_PARED,
                                  CRITERIO_ESPESOR_PARED_CAJON,
                                  CRITERIO_N_MANNING_HDPE,
                                  CRITERIO_SECCIONES_CAJON, catalogo,
@@ -250,7 +250,7 @@ def test_una_declaracion_del_propietario_mal_formada_es_dato_invalido(
 
 
 def test_una_declaracion_bien_formada_del_propietario_sigue_gobernando(_limpia):
-    from constantes_normativas import RIESGO_ADMISIBLE
+    from src.constantes_normativas import RIESGO_ADMISIBLE
     maximos = RIESGO_ADMISIBLE[FILA_TR]
     ca.establecer_valor_dinamico(
         M1.CRITERIO_RIESGO_PROPIETARIO,
@@ -567,7 +567,7 @@ def test_factor_esviaje_tiene_guardia_de_salida_con_umbral_nombrado():
     PC-32. A 89.99999 grados el coseno esta por debajo del umbral nombrado en
     `tolerancias.COS_ESVIAJE_MIN` y el factor deja de estar determinado.
     """
-    from tolerancias import COS_ESVIAJE_MIN
+    from src.tolerancias import COS_ESVIAJE_MIN
     assert 0 < COS_ESVIAJE_MIN < 1
     with pytest.raises(LimiteNumericoError) as exc:
         M7.factor_esviaje(_punto(esviaje_grados=ESVIAJE_MAX - 1e-7))

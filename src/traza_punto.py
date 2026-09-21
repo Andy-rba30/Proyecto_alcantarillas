@@ -53,10 +53,10 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple, Union
 
-import criterios_adoptados as _ca
-from modelos import TipoDeVeredicto
-from modulos import M11_reporte as _M11
-from normativa import registro as _registro
+from src import criterios_adoptados as _ca
+from src.modelos import TipoDeVeredicto
+from src.modulos import M11_reporte as _M11
+from src.normativa import registro as _registro
 
 # Los tres registros tipograficos de la §4.4. Son contenido, no estilo: la
 # GUI mapea cada uno a un formato visual distinto y un test comprueba que no

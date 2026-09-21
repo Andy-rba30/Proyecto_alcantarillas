@@ -23,18 +23,18 @@ import math
 
 import pytest
 
-import criterios_adoptados as ca
-from constantes_fisicas import G
-from constantes_normativas import (KU_SI, K_FRICCION_SI,
+from src import criterios_adoptados as ca
+from src.constantes_fisicas import G
+from src.constantes_normativas import (KU_SI, K_FRICCION_SI,
                                    Q_LIM_NO_SUMERGIDO, Q_LIM_SUMERGIDO)
-from dominios import S_CAUCE_MAX
-from modelos import (ConstantesHDS5, ControlGobernante, DatoInvalidoError,
+from src.dominios import S_CAUCE_MAX
+from src.modelos import (ConstantesHDS5, ControlGobernante, DatoInvalidoError,
                      DisenoNoFactibleError, RegimenEntrada, ResultadoHidraulico,
                      TiranteCritico)
-from modulos.M2_material import catalogo
-from modelos import SeccionCircular
-from modulos.M3_hidraulica import geometria
-from modulos.M4_control import (CRITERIO_GEOMETRIA_SALIDA, CRITERIO_KE,
+from src.modulos.M2_material import catalogo
+from src.modelos import SeccionCircular
+from src.modulos.M3_hidraulica import geometria
+from src.modulos.M4_control import (CRITERIO_GEOMETRIA_SALIDA, CRITERIO_KE,
                                 CRITERIO_KE_CAJON,
                                 CRITERIO_TRANSICION, NUMERAL_CRITICO,
                                 NUMERAL_ENTRADA, area_llena,
@@ -44,7 +44,7 @@ from modulos.M4_control import (CRITERIO_GEOMETRIA_SALIDA, CRITERIO_KE,
                                 perdida_carga,
                                 radio_hidraulico_lleno, resolver_control,
                                 tirante_critico)
-from modelos import (DatoInvalidoError, ErrorProyecto,
+from src.modelos import (DatoInvalidoError, ErrorProyecto,
                      LimiteNumericoError, TipoMaterial)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
@@ -378,7 +378,7 @@ def test_ks_esta_en_todas_las_cartas_de_la_tabla_a1():
     `ConstantesHDS5` lo declare obligatorio y que ninguna carta lo traiga en
     cero por descuido.
     """
-    from constantes_normativas import HDS5_INLET
+    from src.constantes_normativas import HDS5_INLET
 
     for nombre, fila in HDS5_INLET.items():
         assert "Ks" in fila, f"la carta '{nombre}' perdio el Ks"
@@ -422,7 +422,7 @@ def test_con_ks_negativo_mas_pendiente_significa_menos_carga(hds5):
 def test_una_carta_en_inglete_invierte_el_signo(hds5):
     """La carta 'circular_cmp_mitered' trae Ks = +0.7: mas pendiente, mas
     carga. Es la otra mitad de la formulacion, no un caso teorico."""
-    from constantes_normativas import HDS5_INLET
+    from src.constantes_normativas import HDS5_INLET
 
     inglete = ConstantesHDS5.desde_dict(HDS5_INLET["circular_cmp_mitered"])
     assert inglete.Ks > 0
@@ -932,7 +932,7 @@ def test_la_rama_de_ho_que_goberno_sale_escrita_en_la_memoria(concreto):
     del precedente `FACTOR_MURO_TABLA` que CLAUDE.md registra: un test verde
     sobre el comentario en vez de sobre el hecho.
     """
-    from modulos.M11_reporte import bloque_pasos
+    from src.modulos.M11_reporte import bloque_pasos
 
     c = CP2_GEOMETRIA_MANNING
     def _memoria(TW):
@@ -971,7 +971,7 @@ def _carta(forma, K=None, M=None, c=None, Y=None, Ks=None):
 
 def _q_para(q_estrella, D):
     """El Q que produce ese q* en una circular de diametro D."""
-    from constantes_normativas import KU_SI
+    from src.constantes_normativas import KU_SI
     return q_estrella * (math.pi * D ** 2 / 4) * math.sqrt(D) / KU_SI
 
 
@@ -984,7 +984,7 @@ def test_la_forma_2_no_lleva_el_termino_Ks_por_S():
     positivo y ninguna guardia de signo se dispara --, de modo que sin este
     test hace falta otro auditor para volver a encontrarlo.
     """
-    from modulos.M4_control import _hw_sobre_D_no_sumergido
+    from src.modulos.M4_control import _hw_sobre_D_no_sumergido
     caso = CP5D_FORMA2["no_sumergido"]
     hds5 = _carta(forma=2)
     obtenido = _hw_sobre_D_no_sumergido(
@@ -1004,7 +1004,7 @@ def test_la_forma_2_ignora_H_c_y_la_forma_1_no():
     H_c muy distintos la Forma 2 da lo MISMO y la Forma 1 no, que es la
     comprobacion que distingue las dos ecuaciones sin mirar constantes.
     """
-    from modulos.M4_control import _hw_sobre_D_no_sumergido
+    from src.modulos.M4_control import _hw_sobre_D_no_sumergido
     caso = CP5D_FORMA2["no_sumergido"]
     sec, S = SeccionCircular(0.90), caso["S"]
     f2 = [_hw_sobre_D_no_sumergido(caso["q_estrella"], H_c=h, seccion=sec,
@@ -1025,7 +1025,7 @@ def test_la_magnitud_del_defecto_de_forma_2_es_la_medida():
     Ks = -0.5 el termino resta, de modo que el HW espureo es MENOR que el
     real y V4, V4b y el tamizado de 7.A pasan mas facil.
     """
-    from modulos.M4_control import _hw_sobre_D_no_sumergido
+    from src.modulos.M4_control import _hw_sobre_D_no_sumergido
     d = CP5D_FORMA2_KS_ESPUREO
     hds5 = _carta(forma=2, K=d["K"], M=d["M"], Ks=d["Ks"])
     correcto = _hw_sobre_D_no_sumergido(
@@ -1057,7 +1057,7 @@ def test_la_rama_sumergida_es_comun_a_las_dos_formas():
     variables de A.2.1 sin distinguir forma, y la Tabla A.1 da c e Y para
     todas sus cartas. Con la misma carta, cambiar `forma` no la mueve.
     """
-    from modulos.M4_control import _hw_sobre_D_sumergido
+    from src.modulos.M4_control import _hw_sobre_D_sumergido
     caso = CP5D_FORMA2["sumergido"]
     valores = [_hw_sobre_D_sumergido(caso["q_estrella"], caso["S"],
                                      _carta(forma=f)) for f in (1, 2)]
@@ -1074,7 +1074,7 @@ def test_la_transicion_interpola_desde_la_forma_2_cuando_es_la_que_toca():
     Ks*S: si la interpolacion siguiera tomando el extremo de la Forma 1, este
     test cae.
     """
-    from modulos.M4_control import (_hw_sobre_D_no_sumergido,
+    from src.modulos.M4_control import (_hw_sobre_D_no_sumergido,
                                     _hw_sobre_D_sumergido)
     caso = CP5D_FORMA2["transicion"]
     hds5 = _carta(forma=2)
@@ -1097,7 +1097,7 @@ def test_control_entrada_con_forma_2_recorre_las_tres_ramas():
     solo en la funcion privada. Y la CONTINUIDAD de la transicion: en q* = 3.5
     y en q* = 4.0 la recta tiene que empalmar con las dos ramas puras.
     """
-    from modulos.M4_control import (control_entrada, _hw_sobre_D_no_sumergido,
+    from src.modulos.M4_control import (control_entrada, _hw_sobre_D_no_sumergido,
                                     _hw_sobre_D_sumergido)
     D, S = 0.90, CP5D_FORMA2["no_sumergido"]["S"]
     sec, hds5 = SeccionCircular(D), _carta(forma=2)
@@ -1130,7 +1130,7 @@ def test_una_forma_que_la_tabla_A1_no_define_se_detiene():
     La columna «Equation Form» solo toma 1 y 2. Una carta con otra forma no es
     de esta tabla, y el calculo no puede elegirle una por defecto.
     """
-    from modulos.M4_control import _hw_sobre_D_no_sumergido
+    from src.modulos.M4_control import _hw_sobre_D_no_sumergido
     with pytest.raises(DatoInvalidoError) as exc:
         _hw_sobre_D_no_sumergido(2.70, 0.75, SeccionCircular(0.90), 0.03,
                                  _carta(forma=3))
@@ -1151,8 +1151,8 @@ def test_una_forma_que_la_tabla_A1_no_define_se_detiene():
 def _pasos_con(carta):
     """Los PasoDeMemoria de una corrida completa con esa carta."""
     import dataclasses
-    from modulos.M3_hidraulica import resolver_manning
-    from modulos.M4_control import (_pasos_hidraulicos, control_entrada,
+    from src.modulos.M3_hidraulica import resolver_manning
+    from src.modulos.M4_control import (_pasos_hidraulicos, control_entrada,
                                     control_salida, hw_gobernante,
                                     tirante_critico)
     base = catalogo(TipoMaterial.CONCRETO_REFORZADO)
@@ -1263,7 +1263,7 @@ def test_bajo_forma_2_la_transicion_puede_decrecer_con_el_caudal():
     (A.2) + la (A.3) + la recta del criterio [C] --: se DECLARA, y este test
     existe para que un cambio del metodo de transicion mueva un test.
     """
-    from modulos.M4_control import (_hw_sobre_D_no_sumergido,
+    from src.modulos.M4_control import (_hw_sobre_D_no_sumergido,
                                     _hw_sobre_D_sumergido)
     d = CP5D_FORMA2_TRANSICION_NO_MONOTONA
     hds5 = _carta(forma=d["forma"], K=d["K"], M=d["M"], c=d["c"], Y=d["Y"],
@@ -1308,7 +1308,7 @@ def test_bajo_forma_2_la_transicion_puede_decrecer_con_el_caudal():
 # filas y el 0.5 en dos, y tres filas comparten el rotulo «Square-edged at
 # crown»: un coeficiente declarado a secas es indecidible.
 
-from modelos import FormaSeccion, SeccionRectangular          # noqa: E402
+from src.modelos import FormaSeccion, SeccionRectangular
 from tests.apoyo.criterios import con_valor, declarados       # noqa: E402
 
 _CAJON = {
@@ -1387,7 +1387,7 @@ def test_sin_ke_declarado_el_marco_se_detiene_y_no_hereda_el_del_tubo():
     diametro (bucle de MD)». Este test fija la pieza que ese comportamiento
     tiene por debajo, sin pagar la corrida completa.
     """
-    from modelos import CriterioPendienteError
+    from src.modelos import CriterioPendienteError
     sin_ke = {k: v for k, v in _CAJON.items() if k != "ke_entrada_cajon"}
     with declarados(sin_ke):
         with pytest.raises(CriterioPendienteError) as exc:

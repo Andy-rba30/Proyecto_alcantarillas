@@ -70,20 +70,16 @@ MISMO `M11.bloque_pasos` que usa la memoria de produccion. Asi el oraculo
 cubre las dos mitades: los numeros y las etiquetas.
 """
 
-import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
-for _ruta in (RAIZ, RAIZ / "src"):
-    if str(_ruta) not in sys.path:
-        sys.path.insert(0, str(_ruta))
 
-import criterios_adoptados as ca                                    # noqa: E402
-from modelos import (FormaSeccion, SeccionRectangular, TipoMaterial)  # noqa: E402
-from modulos.M2_material import catalogo                             # noqa: E402
-from modulos import M11_reporte as M11                               # noqa: E402
-from modulos.M3_hidraulica import resolver_manning                   # noqa: E402
-from modulos.M4_control import (caudal_por_celda,                     # noqa: E402
+from src import criterios_adoptados as ca
+from src.modelos import (FormaSeccion, SeccionRectangular, TipoMaterial)
+from src.modulos.M2_material import catalogo
+from src.modulos import M11_reporte as M11
+from src.modulos.M3_hidraulica import resolver_manning
+from src.modulos.M4_control import (caudal_por_celda,
                                 control_entrada, control_salida,
                                 criterio_ke_de,
                                 resolver_control, tirante_critico)

@@ -104,6 +104,36 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   Sigue siendo una **estimación** con falsos negativos posibles, y por eso no
   gobierna ningún filtro: dice a qué fase pertenece una variable y clasifica
   lo que ninguna corrida llega a invocar.
+- **`src/` es un paquete real con UN solo nombre, y el servicio de cálculo
+  vive en él (EXT-9, PC-08).** Hasta EXT-9 `src/` no era paquete: cinco
+  archivos de producción (`cli.py`, `gui/app.py`, `gui/ayuda_entrada.py`,
+  `gui/ventana_normativa.py`, `src/indice_formulas.py`) y `conftest.py` lo
+  insertaban en `sys.path` e importaban por nombre plano, y con `src/` en el
+  path `import src.criterios_adoptados` e `import criterios_adoptados` eran
+  DOS módulos con dos `_OVERRIDES`, dos `_USADOS` y dos `CriterioPendienteError`
+  que no se atrapan entre sí (demostrado en vivo por el dictamen: `catalogo(
+  CONCRETO, RECTANGULAR)` por una vía exige los criterios del cajón y por la
+  otra devuelve en silencio la norma del tubo). Desde EXT-9 hay un solo
+  estilo en TODO el repositorio —`from src import criterios_adoptados as ca`,
+  `from src.modulos import M4_control`, `from src.modulos.M3_hidraulica import
+  geometria`—, ningún archivo toca `sys.path` (la raíz la pone quien ejecuta:
+  `python cli.py`, `python -m gui.app`, `python -m src.indice_formulas`,
+  `python -m src.normativa.manifiesto`, `python -m tests.apoyo.<script>`, o
+  pytest por el `conftest.py` de la raíz), y `src/normativa/` conserva sus
+  imports relativos, que no salen del subpaquete. Las rutas `src/modulos/X.py`
+  de la documentación siguen siendo rutas de archivo. Y la orquestación
+  —el alcance y lo que difiere, la carga de datos externos, las estructuras
+  del informe, las fases, `correr`, `correr_punto` y `capturar_contexto`—
+  está en `src/servicio.py`: `cli.py` es un ADAPTADOR (argparse, JSON,
+  texto) que importa del servicio y REEXPORTA, como el mismo objeto, lo que
+  `gui/app.py` y la suite leen de `cli` (ficha EXT-9-01). Importar y
+  ejecutar el servicio no inicia la CLI ni la GUI; `anticipo`,
+  `ayuda_entrada` e `indice_formulas` importan del servicio y ya no de la
+  capa de arriba. `tests/test_ext9_paquete_servicio.py` fija las cuatro
+  cosas: identidad (ningún archivo de `src/` bajo dos claves de
+  `sys.modules`, medido en subproceso), estilo único y cero `sys.path` (por
+  AST), servicio sin adaptadores (por AST y en proceso limpio) y equivalencia
+  por las dos puertas (mismo JSON y mismo contexto).
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None
@@ -131,7 +161,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   punto decimal, literal estructurado, o texto; rechaza el separador de
   miles—, distinto a propósito del de la CLI (`ast.literal_eval` del texto
   entero), divergencia fijada por test. Las seis claves de
-  `cli.CLAVES_EXTERNAS` que no son columna del CSV son desde EXT-5 la cuarta
+  `servicio.CLAVES_EXTERNAS` (en `cli` hasta EXT-9) que no son columna del CSV son desde EXT-5 la cuarta
   población del censo, `Poblacion.DATO_EXTERNO`, y la ayuda del JSON se
   deriva de ahí (EXT-G-03).
 - **El estado con que corrió el expediente viaja en el informe, no se lee
@@ -140,7 +170,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   libro de procedencias— y hasta EXT-4 los cuatro exportadores lo leían AL
   EXPORTAR, en 39 sitios: correr dos veces en la GUI, declarar después de
   correr o editar el CSV antes de exportar movían la memoria de una corrida
-  que ya había pasado (EXT-A-01, PC-07, PC-09). `cli.correr` vacía los usos al
+  que ya había pasado (EXT-A-01, PC-07, PC-09). `servicio.correr` (`cli.correr` hasta EXT-9) vacía los usos al
   entrar (`reiniciar_usos`) y fotografía al salir `Informe.contexto`, un
   `ContextoCorrida` congelado de `modelos.py` con usos, valores efectivos
   copiados en profundidad, procedencias, declarados y pisados en caliente y
@@ -273,8 +303,9 @@ distinga un problema del expediente de un fallo del programa con un solo except.
 - CriterioPendienteError: criterio [A] sin valor. La GUI la muestra como un
   pendiente declarable, no como error del programa. **Y no la muestra con esa
   sola línea**, que es lo que esta cláusula decía: llega por la vía del
-  `Bloqueo` — `cli._etapa` → `cli._bloqueo` → `M11.criterios_bloqueantes` →
-  `gui/app.py::_llenar_resumen` — y pinta seis columnas: clave, etiqueta,
+  `Bloqueo` — `servicio._etapa` → `servicio._bloqueo` → `M11.criterios_bloqueantes` →
+  `gui/app.py::_llenar_resumen` (los dos primeros vivían en `cli` hasta
+  EXT-9, que los reexporta) — y pinta seis columnas: clave, etiqueta,
   concepto, fuente, fases y puntos. `CriterioPendienteError.mensaje_gui`
   conserva la redacción mínima («falta declarar: <clave>») y **no tiene
   consumidor de producción a propósito**: cablearla cambiaría ese tablero por
@@ -295,7 +326,7 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   y las dos entradas que `espesor_pared_conducto` puede no traer — el material
   cuya norma de producto no está en `normas/`, y la fila de diámetro que nadie
   transcribió—. Los tres eran `AssertionError` desnudos: **una excepción que no
-  desciende de `ErrorProyecto` tumba la corrida entera** porque `cli._etapa` no
+  desciende de `ErrorProyecto` tumba la corrida entera** porque `servicio._etapa` no
   la captura, y la GUI no la puede distinguir de un fallo del programa. La
   regla que los separa sigue siendo la misma: si el revisor tiene que AÑADIR
   algo es Faltante. Se amplió aquí en S16 (SIS-E-06): `modelos.py`
@@ -359,7 +390,7 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   `DisenoNoFactibleError`. Su `str()` empieza siempre por
   `MOTIVO_METODO_NO_EVALUABLE`. Y desde EXT-3 `Bloqueo` vive en `modelos.py`
   con `tipo: TipoDeBloqueo` (str Enum cuyos valores son los textos que la
-  línea base ya imprimía): la vía `cli._etapa` → `cli._bloqueo` descrita
+  línea base ya imprimía): la vía `servicio._etapa` → `servicio._bloqueo` descrita
   arriba no cambia, `cli` lo reexporta.
 No usar Exception genérica en lógica de negocio. Un fallo de E/S (archivo
 inexistente) no es del expediente y sale como FileNotFoundError, fuera de
@@ -404,7 +435,8 @@ ErrorProyecto.
   y desde T3 también `trazabilidad.csv` —la vista filtrable del registro,
   una fila por `Cita`— sale del mismo comando, que por eso exige el par de
   la suite: es parte del sello de la primera línea. El cuarto generado,
-  `indice_formulas.md`, tiene su propio comando (`src/indice_formulas.py`)
+  `indice_formulas.md`, tiene su propio comando (`python3 -m src.indice_formulas`;
+  hasta EXT-9 se lanzaba como script, y como script ya no encuentra el paquete)
   porque necesita la corrida de referencia entera. El sello (fecha, commit
   de origen, alcance, par de la suite con su entorno) lo pone quien regenera
   y el test lo LEE del documento para comparar el cuerpo y no la fecha.
@@ -429,7 +461,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2515**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **2532**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **tres** clases y no de dos, y la tercera llegó en S21:
 
@@ -473,7 +505,27 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **EXT-8 (2026-09-20) sumó CUARENTA tests**: los 33 de
+independientes. **EXT-9 (2026-09-21) sumó DIECISIETE tests**: los 14 de
+`tests/test_ext9_paquete_servicio.py` —la aceptación de PC-08 y de las fases
+E01, E02, E03, E03a, E03b y E03c del plan de evolución: diez escritos primero
+en rojo con `xfail(strict=True)` —medidos 4 passed, 10 xfailed y 0 XPASS
+antes de tocar código— y liberados al convertir `src/` en paquete y mover la
+orquestación a `src/servicio.py`; los cuatro que valen antes y después son la
+guardia de identidad en subproceso (ningún archivo de `src/` bajo dos claves
+de `sys.modules`), el rechazo por AST de `import src.X`, los imports
+relativos confinados a `src/normativa/` y el mutante del detector— y los
+tres anclajes parametrizados de `test_decisiones_diferidas` para las fichas
+de la Parte XXV (EXT-9-01..03). Ningún otro archivo sumó ni restó tests: los tres `monkeypatch` de `test_cli` sobre
+lo que el servicio LLAMA pasaron a `servicio`, los barridos de consumidores
+de `test_criterios_adoptados` y `test_ext7_cabezal` incluyen ahora
+`src/servicio.py`, y las guardias por AST que comparaban la primera parte
+del nombre del módulo (`test_ext4`, `test_gui_contrato`, `test_MD`) miran
+todas las partes para no quedar vacuas con el prefijo del paquete. La línea
+base de la Familia C se regeneró por UNA sola razón medida con `diff`: la
+huella `criterios_sha1`, porque `criterios_adoptados.py` cambió sus líneas
+de import; ningún número de cálculo ni ningún otro byte se movió. Ninguno de
+los diecisiete depende de PyMuPDF ni de Tk, de modo que los cuatro pares
+suben 17 exactos. **EXT-8 (2026-09-20) sumó CUARENTA tests**: los 33 de
 `tests/test_ext8_rendimiento_gui.py` —la aceptación del cluster «rendimiento
 y GUI no bloqueante» (PC-10, PC-11, PC-12, PC-17), escrita primero en rojo
 con `xfail(strict=True)` de módulo —medidos 28 xfailed y 0 XPASS antes de
@@ -727,7 +779,7 @@ llevaba desde el 2026-09-09 sin entrar en `main` y cuya ficha `S24-01` trae su
 propio caso parametrizado en `test_decisiones_diferidas`: 1882; N1: 1883;
 post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
-2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515. La
+2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES

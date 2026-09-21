@@ -74,7 +74,7 @@ formateo generico de dos numeros.
 
 Regla de uso
 ------------
-    import ventana_normativa as vn
+    from src import ventana_normativa as vn
 
     v = vn.ventana("n_manning_hdpe")
     v.cara                       # Cara.TABLA
@@ -90,14 +90,14 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import criterios_adoptados as _ca
-import datos_sitio as _ds
-import dominios as _dominios
-import variables_entrada as _ve
-from modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango, Libre,
+from src import criterios_adoptados as _ca
+from src import datos_sitio as _ds
+from src import dominios as _dominios
+from src import variables_entrada as _ve
+from src.modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango, Libre,
                      ModoDeResolucion, Poblacion, VariableDeEntrada)
-from normativa import registro as _registro
-from normativa.esquema import (Acotada, AfirmacionNegativa,
+from src.normativa import registro as _registro
+from src.normativa.esquema import (Acotada, AfirmacionNegativa,
                                BandaDeInterpolacion, Catalogo, Celda,
                                CeldaSinValor, CondicionAplicacion,
                                ConjuntoDeMaximos, Efecto, Interpretacion,

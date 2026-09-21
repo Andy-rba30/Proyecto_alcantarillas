@@ -35,20 +35,14 @@ from __future__ import annotations
 import csv
 import io
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
-SRC = RAIZ / "src"
-for ruta in (str(RAIZ), str(SRC)):
-    if ruta not in sys.path:
-        sys.path.insert(0, ruta)
-
-from normativa import manifiesto as man                            # noqa: E402
-from normativa.esquema import Usada                                # noqa: E402
-from normativa.registro import construir                           # noqa: E402
+from src.normativa import manifiesto as man
+from src.normativa.esquema import Usada
+from src.normativa.registro import construir
 
 COMO_REGENERAR = ('python3 -m src.normativa.manifiesto --escribir '
                   '--suite "N passed, M skipped (entorno)"')

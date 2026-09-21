@@ -11,7 +11,7 @@ El repositorio mantiene CUATRO POBLACIONES separadas, y las separa bien
 `tests/test_variables_entrada.py` los contrasta con sus fuentes):
 
     columnas del CSV        `modelos.PuntoCritico` / `M0_carga.COLUMNAS`
-    datos externos          `_EXTERNOS` (las claves de `cli.CLAVES_EXTERNAS`
+    datos externos          `_EXTERNOS` (las claves de `servicio.CLAVES_EXTERNAS`
                             que no son columna; desde EXT-5)
     datos de sitio          `datos_sitio.DATOS_SITIO`
     criterios adoptados     `criterios_adoptados.CRITERIOS`
@@ -84,7 +84,7 @@ que promete menos: ninguno inventa una tabla, un rango o una cita.
 
 Regla de uso
 ------------
-    import variables_entrada as ve
+    from src import variables_entrada as ve
 
     v = ve.variable("cbr_subrasante")
     v.modo                       # ModoDeResolucion.DE_ENSAYO
@@ -102,16 +102,16 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-import criterios_adoptados as _ca
-import datos_sitio as _ds
-import dominios as _dominios
-from criterios_adoptados import verificar_resolucion
-from modelos import CategoriaTR
-from modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango, Libre,
+from src import criterios_adoptados as _ca
+from src import datos_sitio as _ds
+from src import dominios as _dominios
+from src.criterios_adoptados import verificar_resolucion
+from src.modelos import CategoriaTR
+from src.modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango, Libre,
                      ModoDeResolucion, Poblacion, Resolucion,
                      VariableDeEntrada)
-from modulos.M0_carga import COLUMNAS
-from normativa import registro as _registro_normativo
+from src.modulos.M0_carga import COLUMNAS
+from src.normativa import registro as _registro_normativo
 
 
 # ---------------------------------------------------------------------------
@@ -545,7 +545,7 @@ _COLUMNAS: Dict[str, _Columna] = {
                         "columna va vacia por el Tablero 3.1 (ANA / Junta de "
                         "Usuarios del Bajo Piura). Para esos puntos el valor "
                         "entra por la clave `S_cauce` de "
-                        "`cli.CLAVES_EXTERNAS`, y la memoria lo imprime con "
+                        "`servicio.CLAVES_EXTERNAS`, y la memoria lo imprime con "
                         "esa procedencia en vez de con la de la columna",
             dominio="m/m, 0 < S < S_CAUCE_MAX; un valor >= 1 delata una celda "
                     "cargada en porcentaje",
@@ -802,7 +802,7 @@ _COLUMNAS: Dict[str, _Columna] = {
 # ---------------------------------------------------------------------------
 # Poblacion 4 - los datos externos que NO son columna del CSV
 # ---------------------------------------------------------------------------
-# Las claves de `cli.CLAVES_EXTERNAS` que no son columna, ni dato de sitio,
+# Las claves de `servicio.CLAVES_EXTERNAS` que no son columna, ni dato de sitio,
 # ni criterio (EXT-G-03, decidido en EXT-0 y hecho en EXT-5). Hasta EXT-5 no
 # estaban en ningun censo y la ayuda del JSON las mostraba en ambar como «sin
 # ficha», prefiriendo un hueco declarado a una frase inventada. La objecion
@@ -811,12 +811,12 @@ _COLUMNAS: Dict[str, _Columna] = {
 # deriva: la fase la miden los consumidores (`_consumidores`, como en las
 # otras poblaciones) y donde no hay consumidor el hueco dice a que fase
 # pertenece; el dominio se nombra POR NOMBRE contra `dominios.py`, el MISMO
-# que `cli._DOMINIO_DE_CLAVE` aplica a la clave del JSON; y las opciones de
+# que `servicio._DOMINIO_DE_CLAVE` aplica a la clave del JSON; y las opciones de
 # `categoria_tr` salen del enum que M1 valida, no de una lista escrita aqui.
 #
 # NO SE IMPORTA `cli`: `cli` importa los once modulos y este censo lo
 # importan la GUI y los tests de contenido. Que este censo y
-# `cli.CLAVES_EXTERNAS` digan lo mismo lo comprueba
+# `servicio.CLAVES_EXTERNAS` digan lo mismo lo comprueba
 # `tests/test_ext5_forma_gui.py`, en el mismo sitio donde se comprueba que
 # las fichas de la ayuda salen de aqui.
 
@@ -902,7 +902,7 @@ _EXTERNOS: Dict[str, _Externo] = {
             dominio="m > 0 y finito",
         ),
         fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
-        nota="La Fase 10 la lee `cli._fase_10` por punto, no un modulo de "
+        nota="La Fase 10 la lee `servicio._fase_10` por punto, no un modulo de "
              "calculo por su nombre, y por eso la fase se declara",
     ),
 

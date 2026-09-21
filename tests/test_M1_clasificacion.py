@@ -20,15 +20,15 @@ from pathlib import Path
 
 import pytest
 
-import criterios_adoptados as ca
+from src import criterios_adoptados as ca
 from tests.apoyo.criterios import sin_valor
-from constantes_normativas import LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE
-from modelos import (CategoriaTR, Clasificacion, CriterioPendienteError,
+from src.constantes_normativas import LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE
+from src.modelos import (CategoriaTR, Clasificacion, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError, Denominacion,
                      DisenoNoFactibleError, ErrorProyecto, Familia,
                      Verificacion)
-from modulos.M0_carga import cargar_puntos
-from modulos.M1_clasificacion import (CRITERIO_CATEGORIA_A,
+from src.modulos.M0_carga import cargar_puntos
+from src.modulos.M1_clasificacion import (CRITERIO_CATEGORIA_A,
                                       CRITERIO_RIESGO_PROPIETARIO, PERFILES,
                                       clasificar, clasificar_puntos,
                                       datos_pendientes, denominacion_por_luz,

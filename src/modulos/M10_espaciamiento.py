@@ -45,7 +45,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.M10_espaciamiento import espaciamiento_alivio
+    from src.modulos.M10_espaciamiento import espaciamiento_alivio
 
     espaciamiento = espaciamiento_alivio(L_hidraulico=180.0)
     espaciamiento.espaciamiento_max, espaciamiento.gobierna
@@ -55,12 +55,12 @@ from __future__ import annotations
 
 import math
 
-import criterios_adoptados as ca
-from modelos import (CIFRAS_FACTOR, DatoInvalidoError, EleccionDeProyecto,
+from src import criterios_adoptados as ca
+from src.modelos import (CIFRAS_FACTOR, DatoInvalidoError, EleccionDeProyecto,
                      Espaciamiento, Magnitud, TipoDeVeredicto, Umbral,
                      Veredicto, paso,
                      GobiernaEspaciamiento, ReferenciaNormativa)
-from normativa.citas import MC_HHD_CUNETA as _cita_cuneta
+from src.normativa.citas import MC_HHD_CUNETA as _cita_cuneta
 
 # LA PAGINA SE LEE DEL REGISTRO, no se repite: NOR-HID-02 se cerro en S12
 # corrigiendo la cita (MC_HHD_CUNETA, pag. impresa 179) y este texto -- el

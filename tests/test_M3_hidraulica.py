@@ -20,10 +20,10 @@ import math
 
 import pytest
 
-from modelos import (DatoInvalidoError, Geometria, SeccionCircular, TiranteNormal,
+from src.modelos import (DatoInvalidoError, Geometria, SeccionCircular, TiranteNormal,
                      TipoMaterial)
-from modulos.M2_material import catalogo
-from modulos.M3_hidraulica import area, geometria, perimetro, resolver_manning, tirante_normal
+from src.modulos.M2_material import catalogo
+from src.modulos.M3_hidraulica import area, geometria, perimetro, resolver_manning, tirante_normal
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING, CP3_VELOCIDAD_MINIMA
 
 

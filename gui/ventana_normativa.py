@@ -38,22 +38,14 @@ Reutiliza `gui/componentes.py`, que es `legacy/Tc.py` movido a un modulo comun.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Optional
 
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-RAIZ = Path(__file__).resolve().parent.parent
-SRC = RAIZ / "src"
-for _ruta in (RAIZ, SRC):
-    if str(_ruta) not in sys.path:
-        sys.path.insert(0, str(_ruta))
-
-import declaracion as dec  # noqa: E402
-import ventana_normativa as vn  # noqa: E402
-from gui.componentes import (COLOR_AVISO, COLOR_ERROR, COLOR_OK,  # noqa: E402
+from src import declaracion as dec
+from src import ventana_normativa as vn
+from gui.componentes import (COLOR_AVISO, COLOR_ERROR, COLOR_OK,
                              CampoValidable, MarcoScroll, Tooltip,
                              interpretar_texto_declarado)
 

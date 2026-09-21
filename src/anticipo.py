@@ -53,11 +53,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Tuple
 
-import criterios_adoptados as ca
-from modelos import Familia, VacioAdmitido
+from src import criterios_adoptados as ca
+from src import servicio
+from src.modelos import Familia, VacioAdmitido
 # Por el modulo y no por el valor, por la razon escrita en `ayuda_entrada.py`:
 # un `from ... import COLUMNAS` copia la tupla y la deja leyendo una foto.
-from modulos import M0_carga as m0
+from src.modulos import M0_carga as m0
 
 # La linea fija del panel (regla dura de G3). La palabra «estimacion» no es
 # opcional: el proyecto distingue estimaciones de medidas y esta es una
@@ -248,23 +249,22 @@ class DiferimientosDelAlcance:
 
 def diferimientos_del_alcance(alcance: str) -> DiferimientosDelAlcance:
     """
-    La lista REAL de lo que ese alcance difiere, leida de `cli` y no escrita
-    a mano: `VERIFICACIONES_DIFERIDAS_POR_ALCANCE` (las que se intentan y
-    cuyo fallo se difiere, hoy V5 y V8 a perfil) y
+    La lista REAL de lo que ese alcance difiere, leida del servicio de
+    calculo y no escrita a mano: `VERIFICACIONES_DIFERIDAS_POR_ALCANCE` (las
+    que se intentan y cuyo fallo se difiere, hoy V5 y V8 a perfil) y
     `MODULOS_DIFERIDOS_POR_ALCANCE` (los que la corrida no ejecuta). Los dos
     diccionarios los consulta la propia corrida, de modo que esta lista no
     puede divergir de lo que la corrida hace.
 
-    `cli` se importa DENTRO y no arriba, por la razon escrita en
-    `ayuda_entrada.fichas_de_datos_externos`: `cli` arrastra los once modulos
-    de calculo, y este modulo lo importan la GUI y los tests de contenido.
+    Hasta EXT-9 los dos se leian de `cli`, importado DENTRO de la funcion
+    para no arrastrar la capa de arriba al cargar este modulo; desde EXT-9
+    viven en `src/servicio.py`, que es un modulo de esta misma capa y se
+    importa arriba, como cualquier otro.
     """
-    import cli
-
     return DiferimientosDelAlcance(
         alcance=alcance,
-        verificaciones=tuple(cli.VERIFICACIONES_DIFERIDAS_POR_ALCANCE[alcance]),
-        modulos=tuple(cli.MODULOS_DIFERIDOS_POR_ALCANCE[alcance]))
+        verificaciones=tuple(servicio.VERIFICACIONES_DIFERIDAS_POR_ALCANCE[alcance]),
+        modulos=tuple(servicio.MODULOS_DIFERIDOS_POR_ALCANCE[alcance]))
 
 
 def lineas_de_diferimientos(diferido: DiferimientosDelAlcance) -> Tuple[str, ...]:

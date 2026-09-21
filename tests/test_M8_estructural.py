@@ -33,15 +33,15 @@ from pathlib import Path
 
 import pytest
 
-import criterios_adoptados as ca
-from modelos import SeccionCircular, SeccionRectangular
+from src import criterios_adoptados as ca
+from src.modelos import SeccionCircular, SeccionRectangular
 from tests.apoyo.criterios import declarados, sin_valor
-from constantes_fisicas import GAMMA_AGUA_KN_M3
-import modulos.M8_estructural as M8
-from modelos import (CamaApoyoRelleno, CriterioPendienteError,
+from src.constantes_fisicas import GAMMA_AGUA_KN_M3
+from src.modulos import M8_estructural as M8
+from src.modelos import (CamaApoyoRelleno, CriterioPendienteError,
                      DatoInvalidoError, PuntoCritico, TipoMaterial)
-from modulos.M2_material import catalogo
-from modulos.M8_estructural import (cama_apoyo_relleno_lateral,
+from src.modulos.M2_material import catalogo
+from src.modulos.M8_estructural import (cama_apoyo_relleno_lateral,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
                                     peso_relleno_kn_m,
@@ -151,7 +151,7 @@ def test_el_traslado_de_la_geometria_a_la_seccion_movio_un_ULP_y_esta_declarado(
     el peso especifico del agua.
     """
     import math
-    from constantes_fisicas import GAMMA_AGUA_KN_M3
+    from src.constantes_fisicas import GAMMA_AGUA_KN_M3
 
     for D_ext, se_mueve in ((1.100, False), (1.976, True),
                             (2.276, False), (2.876, False)):

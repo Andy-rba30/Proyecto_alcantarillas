@@ -21,13 +21,13 @@ from pathlib import Path
 
 import pytest
 
-import criterios_adoptados as ca
-import datos_sitio as ds
+from src import criterios_adoptados as ca
+from src import datos_sitio as ds
 from cli import (Bloqueo, DatoDeclarado, Informe, InformePunto,
                  capturar_contexto, cargar_datos_externos, correr)
-from modelos import (FormaSeccion, PasoDiseno, SeccionCircular, TipoDeBloqueo,
+from src.modelos import (FormaSeccion, PasoDiseno, SeccionCircular, TipoDeBloqueo,
                      Verificacion)
-from modulos import M11_reporte as M11
+from src.modulos import M11_reporte as M11
 
 RAIZ = Path(__file__).resolve().parents[1]
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
@@ -441,8 +441,8 @@ class TestIteraciones:
         La traza no la fabrica M11: sale del bucle real de MD. Se comprueba
         con el observador directamente, sin pasar por la CLI.
         """
-        from modelos import Material, TipoMaterial, ConstantesHDS5
-        from modulos.MD import disenar_material
+        from src.modelos import Material, TipoMaterial, ConstantesHDS5
+        from src.modulos.MD import disenar_material
 
         informe = _informe_de_ejemplo()
         punto = informe.puntos[0].punto
@@ -757,7 +757,7 @@ class TestBloquePendientes:
         todavia sin valor", que le dice al revisor que cualquier etapa que lo
         invoque se detiene. No es cierto, y la memoria no puede afirmarlo.
         """
-        import criterios_adoptados as ca
+        from src import criterios_adoptados as ca
 
         html = M11.bloque_pendientes(M11.tableros_pendientes(), (), _contexto())
         assert "v_max_concreto_eleccion" in ca.criterios_opcionales_sin_declarar()
@@ -1049,7 +1049,7 @@ class TestBloqueAcotaciones:
         declarar `vacio_verificado`. Si algun dia esto se hardcodea en la
         plantilla, este test deja de tener sentido y hay que revisarlo.
         """
-        import criterios_adoptados as ca
+        from src import criterios_adoptados as ca
 
         declaradas = M11.acotaciones_declaradas(_contexto())
         esperadas = sorted(k for k, c in ca.CRITERIOS.items()
@@ -1105,8 +1105,8 @@ class TestBloqueAcotaciones:
         El revisor esta mirando la fila G1, no el bloque 0-bis. Sin remision,
         la seccion existe y nadie llega a ella desde donde importa.
         """
-        import criterios_adoptados as ca
-        from modelos import Verificacion
+        from src import criterios_adoptados as ca
+        from src.modelos import Verificacion
 
         class _InformeFalso:
             def __init__(self, *pares):

@@ -32,23 +32,17 @@ Sec. 1.3 entera.
 
 import math
 import re
-import sys
 from pathlib import Path
 
 import pytest
 from scipy.optimize import brentq
 
 RAIZ = Path(__file__).resolve().parents[1]
-SRC = RAIZ / "src"
-for ruta in (str(RAIZ), str(SRC)):
-    if ruta not in sys.path:
-        sys.path.insert(0, ruta)
-
 import cli                                                        # noqa: E402
-import criterios_adoptados as ca                                  # noqa: E402
-from modelos import SeccionReceptor, ViaDelTW                     # noqa: E402
-from modulos import M11_reporte as M11                            # noqa: E402
-from modulos import M3_hidraulica as M3                           # noqa: E402
+from src import criterios_adoptados as ca
+from src.modelos import SeccionReceptor, ViaDelTW
+from src.modulos import M11_reporte as M11
+from src.modulos import M3_hidraulica as M3
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE     # noqa: E402
 from tests.apoyo.criterios import sin_valor                       # noqa: E402
 
@@ -122,7 +116,7 @@ def test_b01_queda_dimensionado_con_hw_no_evaluable_y_diferido(informe_perfil):
     diferidas por la misma via en vez de aprobadas con el tirante normal.
     A-01 y A-02, bajo control de entrada, no llevan ninguno de los tres.
     """
-    from modelos import MOTIVO_METODO_NO_EVALUABLE, TipoDeBloqueo
+    from src.modelos import MOTIVO_METODO_NO_EVALUABLE, TipoDeBloqueo
     b01 = _punto(informe_perfil, "B-01")
     assert b01.dimensionado
     h = b01.resultado.resultado_hidraulico
@@ -553,7 +547,7 @@ SECCION = SeccionReceptor(b_m=2.0, z_HV=1.5, S=0.0008, n=0.030,
 
 
 def _punto_de_prueba(**cambios):
-    from modelos import Familia, PuntoCritico
+    from src.modelos import Familia, PuntoCritico
     base = dict(id="X-01", progresiva_km=0.0, progresiva_display="0+000",
                 familia=Familia.A, Q_m3s=1.0, area_ha=100.0, S_cauce=0.006,
                 cota_terreno=42.10, cota_rasante=44.20, cota_subrasante=44.05,
@@ -639,9 +633,9 @@ def test_el_TW_mayor_es_el_peor_caso_y_por_eso_basta_correr_uno():
     monotono en TW, «correr con el gobernante» dejaria de equivaler a
     «cumplir en ambos» y este test es el que lo dice.
     """
-    from modulos.M2_material import catalogo
-    from modulos.M4_control import resolver_control
-    from modelos import SeccionCircular, TipoMaterial
+    from src.modulos.M2_material import catalogo
+    from src.modulos.M4_control import resolver_control
+    from src.modelos import SeccionCircular, TipoMaterial
 
     material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
     anterior = -math.inf

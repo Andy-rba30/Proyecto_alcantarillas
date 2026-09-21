@@ -26,18 +26,19 @@ from pathlib import Path
 import pytest
 
 import cli
-import criterios_adoptados as ca
+from src import criterios_adoptados as ca
+from src import servicio
 from tests.apoyo.criterios import sin_valor
-from modulos.M11_reporte import PlantillaHTML
-from modelos import (CriterioPendienteError,
+from src.modulos.M11_reporte import PlantillaHTML
+from src.modelos import (CriterioPendienteError,
                      ControlGobernante, DatoInvalidoError, Magnitud,
                      ResultadoHidraulico, ResultadoPunto, SeccionCircular,
                      TipoMaterial, Verificacion)
-from modulos.M0_carga import cargar_puntos
-from modulos.M2_material import catalogo
+from src.modulos.M0_carga import cargar_puntos
+from src.modulos.M2_material import catalogo
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
-from dominios import S_CAUCE_MAX
-from modulos import M11_reporte as M11
+from src.dominios import S_CAUCE_MAX
+from src.modulos import M11_reporte as M11
 
 CSV = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
 
@@ -401,7 +402,8 @@ def _resultado_hdpe(punto, S=None, **_):
 def informe_dimensionado(monkeypatch):
     """A-01 dimensionado, con la Fase 6 desbloqueada y la 8 aun sin tabla."""
     _declarar(monkeypatch, longitud_proteccion_salida=3.0)
-    monkeypatch.setattr(cli, "disenar_punto",
+    # Se patchea donde el nombre se RESUELVE: el servicio (EXT-9).
+    monkeypatch.setattr(servicio, "disenar_punto",
                         lambda punto, **kwargs: _resultado_hdpe(punto, **kwargs))
     return _informe(luz_m=2.0, categoria_tr="quebrada_menor", TW_m=0.0,
                     longitud_m=12.0)
@@ -709,9 +711,10 @@ def test_perfil_no_ejecuta_fase_8_ni_cabezal(monkeypatch):
     """
     _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
     llamadas = []
-    monkeypatch.setattr(cli, "seleccionar_clase_calibre",
+    # Se patchea donde el nombre se RESUELVE: el servicio (EXT-9).
+    monkeypatch.setattr(servicio, "seleccionar_clase_calibre",
                         lambda **kw: llamadas.append(kw))
-    monkeypatch.setattr(cli, "cadena_sismica",
+    monkeypatch.setattr(servicio, "cadena_sismica",
                         lambda: llamadas.append("cabezal"))
 
     perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
@@ -1134,7 +1137,7 @@ def test_un_dato_de_sitio_pendiente_sale_como_bloqueo_y_no_como_KeyError(monkeyp
     inalcanzable desde el expediente; se provoca vaciando uno, que es el
     estado que el proyecto admite y para el que existe el mecanismo.
     """
-    import datos_sitio as ds
+    from src import datos_sitio as ds
     from dataclasses import replace
 
     clave = "PGA_roca_B"
@@ -1158,7 +1161,7 @@ def test_un_dato_de_sitio_pendiente_sale_como_bloqueo_y_no_como_KeyError(monkeyp
 
 def test_el_resolvedor_comun_encuentra_las_dos_familias_y_nombra_la_que_falta():
     """La otra mitad del contrato de `ca.declaracion_de`."""
-    import datos_sitio as ds
+    from src import datos_sitio as ds
 
     assert ca.declaracion_de("talud_terraplen").etiqueta == "A"
     assert ca.declaracion_de("PGA_roca_B").etiqueta == "S"
@@ -1461,7 +1464,7 @@ def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
          Familia C los que la llevan (§15.6.3), y se pierden con las filas.
     """
     from cli import InformePunto
-    from modelos import (ErrorProyecto, Familia, FormaSeccion, PuntoCritico,
+    from src.modelos import (ErrorProyecto, Familia, FormaSeccion, PuntoCritico,
                          SeccionRectangular)
     from tests.apoyo.criterios import declarados
 
@@ -1530,7 +1533,7 @@ def test_a_alcance_perfil_la_familia_C_corre_VC1_y_no_difiere_V5():
     difieren: VC1 es OBLIGATORIA y V5 diferida.
     """
     from cli import InformePunto
-    from modelos import (Familia, FormaSeccion, PuntoCritico,
+    from src.modelos import (Familia, FormaSeccion, PuntoCritico,
                          SeccionRectangular)
     from tests.apoyo.criterios import declarados
 

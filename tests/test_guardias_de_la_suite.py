@@ -445,7 +445,7 @@ def test_el_fixture_referencial_dice_la_verdad_sobre_los_criterios_vacios():
     cierra y nadie toca el .md, el documento pasa a mentir en silencio -- que
     es exactamente lo que paso con v_max_hdpe y v_max_tmc.
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
 
     claves = _claves_declaradas_vacias()
     assert claves, "el parrafo de criterios vacios desaparecio del fixture"
@@ -465,7 +465,7 @@ def test_los_dos_v_max_cerrados_no_pueden_volver_al_vacio_en_silencio():
     v_max_tmc estan CERRADOS con 4.572 m/s y fuente WSDOT. Si alguien los
     devuelve a None, el documento vuelve a mentir en la direccion contraria.
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
 
     for clave in ("v_max_hdpe", "v_max_tmc"):
         criterio = ca.CRITERIOS[clave]
@@ -541,7 +541,7 @@ def test_el_fixture_no_nombra_simbolos_retirados():
     describiendo el codigo en sus terminos. Los dos campos que lo
     sustituyeron son los que tienen que aparecer.
     """
-    from modelos import Material
+    from src.modelos import Material
 
     campos = set(Material.__dataclass_fields__)
     assert "v_max_rango" not in campos

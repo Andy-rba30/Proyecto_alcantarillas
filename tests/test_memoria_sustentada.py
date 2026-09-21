@@ -30,23 +30,19 @@ memoria generada ---. Un test sobre los objetos habria pasado.
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
 SRC = RAIZ / "src"
-for ruta in (str(RAIZ), str(SRC)):
-    if ruta not in sys.path:
-        sys.path.insert(0, ruta)
 
 from cli import cargar_datos_externos, correr                      # noqa: E402
-from modelos import (Magnitud, PasoDeMemoria, TipoDeVeredicto,     # noqa: E402
+from src.modelos import (Magnitud, PasoDeMemoria, TipoDeVeredicto,
                      Umbral, Veredicto)
-from modulos import M11_reporte as M11                             # noqa: E402
-from normativa import fundamentos as F                             # noqa: E402
-from normativa.registro import construir                           # noqa: E402
+from src.modulos import M11_reporte as M11
+from src.normativa import fundamentos as F
+from src.normativa.registro import construir
 
 CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
 
@@ -195,7 +191,7 @@ def test_todo_umbral_normativo_del_bloque_fijo_lleva_su_cita(reg):
     imprime SIEMPRE (se imprima o no una sola fila de verificacion). Ninguna
     de sus entradas puede quedarse sin cita del registro.
     """
-    import constantes_normativas as cn
+    from src import constantes_normativas as cn
 
     for u in cn.UMBRALES_DE_VERIFICACION:
         anclas = tuple(u.get("citas", ())) + tuple(
@@ -355,7 +351,7 @@ def test_la_sensibilidad_declarada_se_imprime_como_analisis(memoria):
     obligatorio». El rango llegaba al documento, pero sin decir que era ni
     para que servia.
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
 
     assert "Sensibilidad declarada" in memoria
     assert "barrido de sensibilidad" in memoria
@@ -388,7 +384,7 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
     que el expediente no alcanza --- se declaran aqui, con la razon, en vez de
     quedar sueltos.
     """
-    import constantes_normativas as cn
+    from src import constantes_normativas as cn
 
     emitidos = {p.fundamento_id for p in _pasos_de(informe)}
     # Y los de las ELECCIONES que viajan dentro de un paso, que desde C7 son

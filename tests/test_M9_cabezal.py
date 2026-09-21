@@ -31,11 +31,11 @@ from pathlib import Path
 import pytest
 from dataclasses import replace
 
-import criterios_adoptados as ca
+from src import criterios_adoptados as ca
 from tests.apoyo.criterios import con_valor, sin_valor
-import datos_sitio as ds
-from constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
-from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
+from src import datos_sitio as ds
+from src.constantes_fisicas import GAMMA_AGUA_KN_M3, PIE_EN_METROS
+from src.constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    RECUBRIMIENTO_MP_EQUIVALENCIA,
                                    RECUBRIMIENTO_MP_MM,
                                    CICLOPEO_FRACCION_PIEDRA_MAX,
@@ -58,12 +58,12 @@ from constantes_normativas import (CICLOPEO_FC_MATRIZ_MIN_APLICABLE,
                                    RECUBRIMIENTO, SOBRECARGA_TRASDOS_H_EQ,
                                    SOBRECARGA_TRASDOS_PISO_MP_M,
                                    TABLA_GAMMA_P_FILAS)
-from modelos import (CondicionAnalisis, CriterioPendienteError,
+from src.modelos import (CondicionAnalisis, CriterioPendienteError,
                      DatoFaltanteError, DatoInvalidoError,
                      DisenoNoFactibleError, GeometriaCabezal)
-from modulos.M0_carga import cargar_puntos
-from modulos import M9_cabezal as M9
-from modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
+from src.modulos.M0_carga import cargar_puntos
+from src.modulos import M9_cabezal as M9
+from src.modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
                                 cimentacion_en_roca,
                                 clase_exposicion_sulfatos,
                                 clases_de_sitio_plausibles,
@@ -119,7 +119,7 @@ from tests.fixtures.casos_patron import (CP7_CADENA_SISMICA,
                                          CP9_RANKINE_LIMITE,
                                          CP9_TOLERANCIA_RELATIVA)
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 TOL = 1e-12
 

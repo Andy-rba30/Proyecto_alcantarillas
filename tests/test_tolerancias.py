@@ -10,10 +10,10 @@ import sys
 
 import pytest
 
-import constantes_normativas as CN
-from criterios_adoptados import CRITERIOS
+from src import constantes_normativas as CN
+from src.criterios_adoptados import CRITERIOS
 from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING
-from tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
+from src.tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
 
 
 def test_son_positivas_y_estan_por_encima_del_epsilon_del_double():

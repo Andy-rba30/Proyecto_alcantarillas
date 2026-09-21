@@ -47,7 +47,7 @@ de los que aparecen semanas mas tarde y en otro archivo.
 from contextlib import contextmanager
 from dataclasses import replace
 
-import criterios_adoptados as ca
+from src import criterios_adoptados as ca
 
 
 @contextmanager

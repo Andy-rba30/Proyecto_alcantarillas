@@ -29,9 +29,6 @@ import time
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
-for _ruta in (str(RAIZ), str(RAIZ / "src")):
-    if _ruta not in sys.path:
-        sys.path.insert(0, _ruta)
 
 import cli                                             # noqa: E402
 
@@ -65,7 +62,7 @@ def main(salida: Path) -> int:
     import gui.app as gapp
     import gui.componentes as comp
     from gui import ayuda_entrada, ventana_normativa
-    from modulos import M11_reporte as M11
+    from src.modulos import M11_reporte as M11
 
     salida.mkdir(parents=True, exist_ok=True)
     externos = salida / "datos_externos.json"

@@ -48,10 +48,10 @@ from pathlib import Path
 import pytest
 
 import cli
-import criterios_adoptados as ca
-import datos_sitio as ds
-import declaracion as dec
-from modulos import M11_reporte as M11
+from src import criterios_adoptados as ca
+from src import datos_sitio as ds
+from src import declaracion as dec
+from src.modulos import M11_reporte as M11
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -237,7 +237,7 @@ def test_c_editar_el_csv_tras_correr_no_cambia_el_sha1_exportado(tmp_path):
 def test_i_el_contexto_es_una_foto_congelada_de_la_corrida(tmp_path):
     from dataclasses import FrozenInstanceError
 
-    from modelos import ContextoCorrida
+    from src.modelos import ContextoCorrida
 
     csv = tmp_path / "corrida.csv"
     shutil.copy(CSV_PERFIL, csv)
@@ -556,23 +556,38 @@ def _alias_de_los_modulos_con_estado(arbol):
     de una funcion o un alias nuevo son formas de esquivar la guardia de
     atributos, y se rechazan aqui (auditoria adversarial de EXT-4).
     """
+    # Desde EXT-9 los modulos viven en el paquete `src`: `from src import
+    # criterios_adoptados as ca` es la forma del alias, y
+    # `from src.criterios_adoptados import x` la de los nombres sueltos. El
+    # nombre se compara SIN el prefijo del paquete, para que la guardia no
+    # quede vacua al cambiar la escritura.
+    def _plano(nombre):
+        return nombre.split(".", 1)[1] if nombre.startswith("src.") else nombre
+
     alias = {}
     for nodo in ast.walk(arbol):
-        if isinstance(nodo, ast.ImportFrom) and nodo.module in MODULOS_CON_ESTADO:
+        if isinstance(nodo, ast.ImportFrom) and nodo.module \
+                and _plano(nodo.module) in MODULOS_CON_ESTADO:
             raise AssertionError(
                 f"M11 importa nombres sueltos de {nodo.module}: la guardia "
                 "solo puede ver accesos por atributo")
-        if isinstance(nodo, ast.Import):
+        if isinstance(nodo, ast.ImportFrom) and nodo.module == "src":
             for nombre in nodo.names:
                 if nombre.name in MODULOS_CON_ESTADO:
                     alias[nombre.asname or nombre.name] = nombre.name
+        if isinstance(nodo, ast.Import):
+            for nombre in nodo.names:
+                if _plano(nombre.name) in MODULOS_CON_ESTADO:
+                    alias[nombre.asname or nombre.name] = _plano(nombre.name)
     for funcion in ast.walk(arbol):
         if isinstance(funcion, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for nodo in ast.walk(funcion):
                 if isinstance(nodo, (ast.Import, ast.ImportFrom)):
-                    modulos = ([n.name for n in nodo.names]
+                    modulos = ([_plano(n.name) for n in nodo.names]
                                if isinstance(nodo, ast.Import)
-                               else [nodo.module])
+                               else [_plano(nodo.module or "")]
+                               + ([n.name for n in nodo.names]
+                                  if nodo.module == "src" else []))
                     assert not set(modulos) & MODULOS_CON_ESTADO, (
                         f"import diferido de un modulo con estado en "
                         f"{funcion.name}")

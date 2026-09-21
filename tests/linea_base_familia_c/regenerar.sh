@@ -145,7 +145,9 @@ python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance expediente \
 # Ver el bloque "LO QUE ENSANCHA C4" de arriba y el docstring del driver. No
 # lleva `|| true`: si este falla, la linea base tiene que fallar con el, y no
 # quedarse con el archivo de la corrida anterior.
-python3 tests/linea_base_familia_c/punto_cajon.py > "$TMP/cajon.html"
+# Se lanza con `-m` desde la raiz, como todo lo que importa del paquete
+# `src` (EXT-9): como script, `sys.path[0]` seria su propio directorio.
+python3 -m tests.linea_base_familia_c.punto_cajon > "$TMP/cajon.html"
 
 # Los patrones son especificos a proposito: un barrido de fechas generico
 # pisaria texto normativo. Medido en C0: en el HTML hay TRES fechas y las tres

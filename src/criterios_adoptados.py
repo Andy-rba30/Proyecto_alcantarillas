@@ -6,7 +6,7 @@ verificada. Ningun otro modulo del script debe declarar estos valores.
 
 Regla de uso
 ------------
-    from criterios_adoptados import valor, reporte_criterios
+    from src.criterios_adoptados import valor, reporte_criterios
 
     Fpga = valor("F_pga")          # registra el uso automaticamente
     ...
@@ -67,14 +67,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional, Tuple, Dict, List, Set
 
-from constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
+from src.constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    H_O_CONDICION_TEXTO, H_O_NUMERAL,
                                    KE_HDS5_C2, MANNING, V_MIN,
                                    REGIMEN_CORTANTE_EN_EL_PLANO,
                                    REGIMEN_CORTANTE_PERPENDICULAR)
-from normativa import esquema as _esquema
-from normativa import registro as _registro_normativo
-from modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
+from src.normativa import esquema as _esquema
+from src.normativa import registro as _registro_normativo
+from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
                      CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
                      DeTabla, EnRango, Libre, ModoDeResolucion, Resolucion,
                      modo_de)
@@ -643,7 +643,7 @@ def declaracion_de(clave: str):
     """
     El objeto DECLARADO de `clave`, venga de este archivo o de datos_sitio.py.
 
-    SIS-A-05. `cli._bloqueo` y `M11.criterios_bloqueantes` resolvian toda
+    SIS-A-05. `servicio._bloqueo` y `M11.criterios_bloqueantes` resolvian toda
     clave con `criterio()`, y `CriterioPendienteError` no la levanta solo este
     archivo: `datos_sitio.valor` levanta LA MISMA excepcion cuando un [S] de
     corredor todavia no se ha leido -- deliberadamente, porque el error que se
@@ -662,7 +662,7 @@ def declaracion_de(clave: str):
     """
     if clave in CRITERIOS:
         return criterio(clave)
-    import datos_sitio as ds
+    from src import datos_sitio as ds
 
     if clave in ds.DATOS_SITIO:
         return ds.dato(clave)
@@ -729,7 +729,7 @@ def criterios_usados() -> List[str]:
     JSON). Existe para que nadie tenga que leer `_USADOS` desde fuera.
 
     DESDE EXT-4 ES EL REGISTRO DE LA CORRIDA EN CURSO, no del proceso:
-    `cli.correr` lo vacia al entrar (`reiniciar_usos`) y lo fotografia al
+    `servicio.correr` lo vacia al entrar (`reiniciar_usos`) y lo fotografia al
     salir en `Informe.contexto`. Los exportadores leen la foto, no esto.
     """
     return sorted(_USADOS)
@@ -737,7 +737,7 @@ def criterios_usados() -> List[str]:
 
 def reiniciar_usos() -> None:
     """
-    Vacia el registro de usos. Lo llama `cli.correr` AL ENTRAR, y es lo que
+    Vacia el registro de usos. Lo llama `servicio.correr` AL ENTRAR, y es lo que
     cierra PC-09: el registro era de proceso y nunca se vaciaba, de modo que
     en la GUI --- o en cualquier consumidor que corra dos veces --- la
     memoria de la segunda corrida imprimia como usados los criterios de la
@@ -862,7 +862,7 @@ def criterios_sin_consumidor() -> List[str]:
 # exacta --, y esta funcion solo las reagrupa por (situacion, categoria), que
 # es la forma en que `M9._recubrimiento_aashto_detallado` las consulta.
 def _tabla_recubrimiento_aashto_mm() -> Dict[str, Dict[str, float]]:
-    from normativa import registro as _rn
+    from src.normativa import registro as _rn
     tabla = _rn.construir().tabla("AASHTO_LRFD_9.T5.10.1-1")
     return {
         tabla.clave_corta(fila): {
@@ -7389,7 +7389,7 @@ def _verificar_discrepancias(clave: str, c: Criterio) -> None:
     """
     if not c.discrepancias:
         return
-    from normativa import registro as _reg
+    from src.normativa import registro as _reg
     registro = _reg.construir()
     for id_ in c.discrepancias:
         try:
@@ -7777,7 +7777,7 @@ def parametros_sensibilizables(solo_numericos: bool = True) -> Dict[str, Tuple]:
 if __name__ == "__main__":
     # Demostracion: cadena sismica completa desde una sola fuente. El PGA es
     # un dato de sitio [S] y entra desde datos_sitio.py, no desde aqui.
-    import datos_sitio as ds
+    from src import datos_sitio as ds
 
     A_s = ds.valor("PGA_roca_B") * valor("F_pga")
     k_h = valor("factor_muro_eleccion") * A_s

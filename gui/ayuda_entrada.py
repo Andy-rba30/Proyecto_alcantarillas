@@ -42,22 +42,14 @@ alto con un `PanedWindow` y un `Treeview`, que traen su propio scroll.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 
 import tkinter as tk
 from tkinter import ttk
 
-RAIZ = Path(__file__).resolve().parent.parent
-SRC = RAIZ / "src"
-for _ruta in (RAIZ, SRC):
-    if str(_ruta) not in sys.path:
-        sys.path.insert(0, str(_ruta))
+from src import ayuda_entrada as ay
+from src.modelos import Familia
 
-import ayuda_entrada as ay  # noqa: E402
-from modelos import Familia  # noqa: E402
-
-from gui.componentes import COLOR_AVISO, COLOR_OK, Tooltip  # noqa: E402
+from gui.componentes import COLOR_AVISO, COLOR_OK, Tooltip
 
 # Los nombres de las tres pestanas, que ademas son los modos con que se
 # puede abrir la ventana. Son rotulos de pantalla: lo que la ventana AFIRMA

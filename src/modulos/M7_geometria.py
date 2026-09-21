@@ -62,7 +62,7 @@ la alcantarilla es la del cauce, y esa sigue siendo la regla del proyecto: el
 valor por defecto lo pone la Fase 4, que resuelve `punto.exigir("S_cauce")`
 cuando nadie declara otra cosa. Lo que este modulo YA NO hace es volver a
 resolverla por su cuenta. Lo hacia -- `S = punto.exigir("S_cauce")` si el
-llamador no pasaba nada -- y el llamador de produccion (`cli._fase_7`) no
+llamador no pasaba nada -- y el llamador de produccion (`servicio._fase_7`) no
 pasaba nada, de modo que el punto que declaraba su pendiente aparte
 ('S_conducto' de la CLI, la via de Sec. 2.3 para la Familia B y la C) quedaba
 con DOS pendientes: el HW y las velocidades calculados con la declarada, y la
@@ -223,7 +223,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.M7_geometria import tamizado_rasante, compatibilidad_geometrica
+    from src.modulos.M7_geometria import tamizado_rasante, compatibilidad_geometrica
 
     # 7.A, antes del perfil longitudinal, con el diametro maximo supuesto
     tamizado = tamizado_rasante(punto=punto, material=hdpe,
@@ -245,9 +245,9 @@ from __future__ import annotations
 import math
 from typing import Optional, Tuple
 
-import criterios_adoptados as ca
-from dominios import ESVIAJE_MAX
-from modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
+from src import criterios_adoptados as ca
+from src.dominios import ESVIAJE_MAX
+from src.modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
                      CondicionRasante,
                      DatoInvalidoError, EleccionDeProyecto, FormaSeccion,
                      LimiteNumericoError,
@@ -255,11 +255,11 @@ from modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
                      exigir_seccion_coherente,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
-from modulos.M2_material import espesor_pared
-from modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
+from src.modulos.M2_material import espesor_pared
+from src.modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
                                        cota_de_entrada,
                                        resguardo_por_cbr)
-from tolerancias import COS_ESVIAJE_MIN, TOL_UMBRAL_NORMATIVO
+from src.tolerancias import COS_ESVIAJE_MIN, TOL_UMBRAL_NORMATIVO
 
 NUMERAL_7A = "Sec. 7.A"
 NUMERAL_7B = "Sec. 7.B"

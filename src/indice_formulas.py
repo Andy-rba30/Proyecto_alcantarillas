@@ -75,7 +75,7 @@ necesariamente posterior, y no puede conocerse antes de hacerlo.
 
 Regenerar::
 
-    python3 src/indice_formulas.py --escribir --suite "1910 passed, 4 skipped (PyMuPDF si, Tk si)"
+    python3 -m src.indice_formulas --escribir --suite "1910 passed, 4 skipped (PyMuPDF si, Tk si)"
 """
 
 from __future__ import annotations
@@ -87,11 +87,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-import criterios_adoptados as _ca
-import traza_punto as _tp
-from modelos import PasoDeMemoria
-from modulos import M11_reporte as _M11
-from normativa import registro as _registro
+from src import criterios_adoptados as _ca
+from src import traza_punto as _tp
+from src import servicio
+from src.modelos import PasoDeMemoria
+from src.modulos import M11_reporte as _M11
+from src.normativa import registro as _registro
 
 RAIZ = Path(__file__).resolve().parents[1]
 SRC = RAIZ / "src"
@@ -146,10 +147,10 @@ def leer_sello(texto: str) -> Optional[Sello]:
 
 def corrida_de_referencia() -> Any:
     """
-    `cli.correr` sobre el CSV y los datos externos de referencia, a alcance
-    de expediente, SIN declaraciones en caliente. El import de `cli` es
-    diferido: este modulo vive en `src/` y `cli.py` es la capa de arriba; se
-    importa al correr, no al cargar.
+    `servicio.correr` sobre el CSV y los datos externos de referencia, a alcance
+    de expediente, SIN declaraciones en caliente. La corrida la hace el
+    servicio de calculo (`src/servicio.py`, EXT-9): hasta entonces se
+    importaba `cli` en diferido, porque era la capa de arriba.
 
     LAS DECLARACIONES EN CALIENTE SE RETIRAN MIENTRAS DURA LA CORRIDA, y se
     reponen despues, clave a clave. La razon es de reproducibilidad: la suite
@@ -162,14 +163,12 @@ def corrida_de_referencia() -> Any:
     seria un documento sin referencia. La referencia es el expediente tal
     cual esta; lo que la suite declara para probar formulas no entra aqui.
     """
-    import cli
-
     previas = _ca.valores_dinamicos()
     for clave in previas:
         _ca.quitar_valor_dinamico(clave)
     try:
-        externos = cli.cargar_datos_externos(EXTERNOS_REFERENCIA, {})
-        return cli.correr(CSV_REFERENCIA, externos, alcance=ALCANCE_REFERENCIA)
+        externos = servicio.cargar_datos_externos(EXTERNOS_REFERENCIA, {})
+        return servicio.correr(CSV_REFERENCIA, externos, alcance=ALCANCE_REFERENCIA)
     finally:
         for clave, valor in previas.items():
             _ca.establecer_valor_dinamico(clave, valor)
@@ -593,7 +592,7 @@ def _commit_de_origen() -> str:
 
 def main(argv: List[str]) -> int:
     """
-    `python3 src/indice_formulas.py [--escribir] [--suite "N passed, M skipped (entorno)"]`
+    `python3 -m src.indice_formulas [--escribir] [--suite "N passed, M skipped (entorno)"]`
 
     Sin `--escribir` solo informa si el documento esta sincronizado. Con
     `--escribir` exige `--suite`: el par de la suite es parte del sello y
@@ -636,7 +635,4 @@ def main(argv: List[str]) -> int:
 if __name__ == "__main__":
     import sys
 
-    for ruta in (str(RAIZ), str(SRC)):
-        if ruta not in sys.path:
-            sys.path.insert(0, ruta)
     raise SystemExit(main(sys.argv[1:]))

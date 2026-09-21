@@ -39,13 +39,13 @@ Los hallazgos que este archivo vigila
 
 import pytest
 
-import criterios_adoptados as ca
-import datos_sitio as ds
-import variables_entrada as ve
-import ventana_normativa as vn
-from modelos import ModoDeResolucion, Poblacion
-from normativa import registro as registro_normativo
-from normativa.esquema import (ConjuntoDeMaximos, Efecto, NoUsada,
+from src import criterios_adoptados as ca
+from src import datos_sitio as ds
+from src import variables_entrada as ve
+from src import ventana_normativa as vn
+from src.modelos import ModoDeResolucion, Poblacion
+from src.normativa import registro as registro_normativo
+from src.normativa.esquema import (ConjuntoDeMaximos, Efecto, NoUsada,
                                PendienteDeCondicion, Usada)
 
 REGISTRO = registro_normativo.construir()
@@ -328,7 +328,7 @@ def test_la_frase_de_un_intervalo_si_dice_entre():
     El contraste que hace util al test anterior: cuando la fuente SI escribe un
     piso y un techo, la ventana lo dice con esas palabras.
     """
-    from normativa.esquema import (IntervaloAdmisible, PisoUnico,
+    from src.normativa.esquema import (IntervaloAdmisible, PisoUnico,
                                    QuePasaFuera, TechoUnico)
     intervalo = IntervaloAdmisible(
         minimo=1.0, maximo=2.0, unidad="m", cita_id="x",
@@ -587,7 +587,7 @@ def test_una_celda_sin_valor_se_escribe_con_su_significado():
     `"*"` a secas no le dice nada a quien lee la ventana. El asterisco de la
     fila F de la tabla de F_pga significa «investigacion especifica del sitio».
     """
-    from normativa.esquema import CeldaSinValor
+    from src.normativa.esquema import CeldaSinValor
     texto = vn.texto_de_celda(CeldaSinValor.EXIGE_ESTUDIO)
     assert texto.startswith("*")
     assert "estudio" in texto

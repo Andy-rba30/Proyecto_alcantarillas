@@ -26,19 +26,19 @@ from contextlib import ExitStack
 import pytest
 from dataclasses import replace
 
-import criterios_adoptados as ca
-from constantes_normativas import H_RELLENO_MIN
-from dominios import ESVIAJE_MAX
-from modelos import (CondicionRasante, ControlGobernante, CriterioPendienteError,
+from src import criterios_adoptados as ca
+from src.constantes_normativas import H_RELLENO_MIN
+from src.dominios import ESVIAJE_MAX
+from src.modelos import (CondicionRasante, ControlGobernante, CriterioPendienteError,
                      DatoInvalidoError, DisenoNoFactibleError, ErrorProyecto,
                      Familia, FormaSeccion, LimiteNumericoError, PuntoCritico,
                      ResultadoHidraulico, SeccionCircular,
                      SeccionRectangular, TipoMaterial)
-from modulos.M0_carga import cargar_puntos
-from modulos.M2_material import catalogo
-from tolerancias import TOL_UMBRAL_NORMATIVO
-from modulos.M5_verificaciones import v4_carga_entrada
-from modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
+from src.modulos.M0_carga import cargar_puntos
+from src.modulos.M2_material import catalogo
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
+from src.modulos.M5_verificaciones import v4_carga_entrada
+from src.modulos.M7_geometria import (CRITERIO_COBERTURA_AASHTO,
                                   CRITERIO_COBERTURA_CAJON,
                                   MINIMO_AASHTO, numeral_g1,
                                   CRITERIO_CONDICION_PAVIMENTO,

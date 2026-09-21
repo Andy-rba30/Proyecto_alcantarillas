@@ -198,7 +198,7 @@ Excepciones
 
 Uso
 ---
-    from modulos.M2_material import (catalogo, materiales_candidatos,
+    from src.modulos.M2_material import (catalogo, materiales_candidatos,
                                      siguiente_seccion)
 
     candidatos = materiales_candidatos(punto)   # el marco, en Familia C
@@ -215,20 +215,20 @@ import math
 import numbers
 from typing import Any, Optional, Tuple, Union
 
-import criterios_adoptados as ca
-from constantes_normativas import (ALCANCE_NORMA_PRODUCTO, CARTAS_CAJON_TA1,
+from src import criterios_adoptados as ca
+from src.constantes_normativas import (ALCANCE_NORMA_PRODUCTO, CARTAS_CAJON_TA1,
                                    FILAS_MANNING_CONCRETO,HDS5_INLET, H_RELLENO_MIN, MANNING,
                                    SECCION_EG2013,
                                    SECCION_EG2013_CAJON,
                                    TABLA_09_FILAS, V_MAX)
-from dominios import MILIMETROS_POR_METRO
-from modelos import (CIFRAS_FACTOR, CIFRAS_FINA, ConstantesHDS5,
+from src.dominios import MILIMETROS_POR_METRO
+from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, ConstantesHDS5,
                      DatoFaltanteError, DatoInvalidoError,
                      EleccionDeProyecto, Familia, FormaSeccion, Magnitud,
                      Material, PasoDeMemoria, PuntoCritico, Seccion,
                      SeccionCircular, SeccionRectangular, TipoDeVeredicto,
                      TipoMaterial, Veredicto, paso)
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_CATALOGO = "Sec. 3.2"     # nuevo en v7, sin numeral MTC propio
 NUMERAL_MATERIAL = "Sec. 3.4"
@@ -799,7 +799,7 @@ def _carta_de_cajon() -> str:
         violando. Este es el unico punto del codigo donde la regla vinculante
         #5 se puede hacer cumplir.
       * y una ERRATA en la clave --«cajon_concreto_aleta_45_d04»-- sale como
-        `KeyError` desnudo, que no desciende de `ErrorProyecto`: `cli._etapa`
+        `KeyError` desnudo, que no desciende de `ErrorProyecto`: `servicio._etapa`
         no lo captura, tumba la corrida entera y la GUI no lo puede distinguir
         de un fallo del programa. Es la mina que S20 desactivo tres veces.
 
@@ -1035,7 +1035,7 @@ def catalogo(material: MaterialLike,
 
     if forma is FormaSeccion.RECTANGULAR:
         # EL ORDEN DE ESTAS DOS LECTURAS DECIDE QUE CRITERIO VE EL REVISOR
-        # PRIMERO, porque `cli._etapa` registra UN bloqueo por etapa. Se lee
+        # PRIMERO, porque `servicio._etapa` registra UN bloqueo por etapa. Se lee
         # primero la embocadura y no el n: la embocadura elige la carta Y la
         # forma de ecuacion, y con ella el ke del control de salida, de modo
         # que es la que arrastra mas decisiones detras. Los otros tres

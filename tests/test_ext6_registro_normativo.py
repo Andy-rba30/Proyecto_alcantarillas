@@ -35,17 +35,17 @@ from pathlib import Path
 
 import pytest
 
-import constantes_normativas as CN
-import criterios_adoptados as ca
-from modelos import FormaSeccion, TipoMaterial
-from normativa import citas as ci
-from normativa import discrepancias as di
-from normativa import fuentes as fu
-from normativa import fundamentos as F
-from normativa import registro as _registro
-from normativa.esquema import Caracter, Corrida, ErrorDeRegistro
-from normativa.extraccion import sha1_de
-from tolerancias import TOL_UMBRAL_NORMATIVO
+from src import constantes_normativas as CN
+from src import criterios_adoptados as ca
+from src.modelos import FormaSeccion, TipoMaterial
+from src.normativa import citas as ci
+from src.normativa import discrepancias as di
+from src.normativa import fuentes as fu
+from src.normativa import fundamentos as F
+from src.normativa import registro as _registro
+from src.normativa.esquema import Caracter, Corrida, ErrorDeRegistro
+from src.normativa.extraccion import sha1_de
+from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 RAIZ = Path(__file__).resolve().parents[1]
 
@@ -120,7 +120,7 @@ def test_la_tabla_304_09_esta_transcrita_entera_y_es_el_piso_del_derecho_de_via(
     # Piso [N], SIN consumidor todavia: V5 se detiene antes, en el dato de
     # sitio `ancho_derecho_via_m`, y la clase de via del corredor esta vacia.
     # La tabla lo dice fila por fila en vez de fingir un consumidor.
-    from normativa.esquema import NoUsada
+    from src.normativa.esquema import NoUsada
     assert all(isinstance(f.uso, NoUsada) for f in t.filas)
 
 
@@ -148,7 +148,7 @@ def test_los_tres_textos_que_mentian_sobre_el_dg2018_ya_no_mienten():
     assert "304.07" in remanso.justificacion
     assert "PENDIENTE" in remanso.fuente
 
-    clase = __import__("datos_sitio").DATOS_SITIO["clase_de_via"]
+    clase = __import__("src.datos_sitio", fromlist=["DATOS_SITIO"]).DATOS_SITIO["clase_de_via"]
     assert "AUSENTE" not in clase.fuente
     assert "FUENTES_AUSENTES" not in clase.fuente
 
@@ -243,7 +243,7 @@ def test_las_citas_de_e060_11_10_estan_en_las_pdf_103_y_104(reg, cita_id, pagina
 ])
 def test_las_citas_de_alcance_de_las_normas_de_producto_se_leyeron_por_imagen(
         reg, cita_id, pagina_pdf, fragmento):
-    from normativa.esquema import MetodoDeVerificacion
+    from src.normativa.esquema import MetodoDeVerificacion
     c = reg.cita(cita_id)
     assert c.pagina_pdf == pagina_pdf
     assert fragmento in c.texto_literal.texto
@@ -271,7 +271,7 @@ def test_el_registro_sigue_integro_con_las_citas_nuevas(reg):
 # ===========================================================================
 
 def test_el_marco_no_lleva_la_norma_de_producto_de_un_tubo():
-    from modulos.M2_material import catalogo, norma_producto_de
+    from src.modulos.M2_material import catalogo, norma_producto_de
     tubo = catalogo(TipoMaterial.CONCRETO_REFORZADO)
     assert tubo.norma_producto == "AASHTO M 170M-04 / ASTM C 76M-02 (metrica)"
     marco = norma_producto_de(TipoMaterial.CONCRETO_REFORZADO, FormaSeccion.RECTANGULAR)
@@ -283,7 +283,7 @@ def test_el_marco_no_lleva_la_norma_de_producto_de_un_tubo():
 
 
 def test_el_alcance_de_cada_norma_de_producto_esta_anclado_en_el_registro(reg):
-    from modulos.M2_material import CITA_ALCANCE_NORMA_PRODUCTO
+    from src.modulos.M2_material import CITA_ALCANCE_NORMA_PRODUCTO
     claves = {(TipoMaterial.CONCRETO_REFORZADO, FormaSeccion.CIRCULAR),
               (TipoMaterial.TMC, FormaSeccion.CIRCULAR),
               (TipoMaterial.HDPE, FormaSeccion.CIRCULAR),
@@ -304,8 +304,8 @@ def test_el_motivo_de_descarte_de_un_marco_no_niega_una_norma_que_no_existe():
     un marco que agota su serie: la norma del tubo no topa al marco, y el
     marco no tiene norma de producto que negar.
     """
-    from modulos.MD import _motivo_descarte
-    from modulos.M2_material import catalogo
+    from src.modulos.MD import _motivo_descarte
+    from src.modulos.M2_material import catalogo
     from tests.apoyo.criterios import declarados
     from tests.test_M2_material import DECLARACIONES_CAJON
     with declarados(DECLARACIONES_CAJON):
@@ -319,8 +319,8 @@ def test_el_motivo_de_descarte_de_un_marco_no_niega_una_norma_que_no_existe():
 
 
 def test_los_tres_sitios_de_m11_y_el_json_distinguen_el_marco():
-    from modulos import M11_reporte as M11
-    from modulos.M2_material import catalogo
+    from src.modulos import M11_reporte as M11
+    from src.modulos.M2_material import catalogo
     from tests.apoyo.criterios import declarados
     from tests.test_M2_material import DECLARACIONES_CAJON
     with declarados(DECLARACIONES_CAJON):
@@ -452,8 +452,8 @@ def test_la_introduccion_del_manual_de_puentes_ancla_la_lrfd_de_2014(reg):
 
 def test_la_pagina_de_la_cuneta_que_imprime_la_memoria_es_la_del_registro():
     """No se repite el numero: se compara con `MC_HHD_CUNETA.pagina_impresa`."""
-    from modulos import M10_espaciamiento as M10
-    from modelos import Espaciamiento, GobiernaEspaciamiento
+    from src.modulos import M10_espaciamiento as M10
+    from src.modelos import Espaciamiento, GobiernaEspaciamiento
     pagina = ci.MC_HHD_CUNETA.pagina_impresa
     assert pagina == "179"
     assert f"pag. {pagina}" in M10.NUMERAL_FASE_10 and "178" not in M10.NUMERAL_FASE_10
@@ -477,8 +477,8 @@ def test_manning_dice_una_geometria_y_dos_velocidades():
 
 
 def test_la_columna_tr_de_diseno_es_de_la_tabla_de_la_v8_y_no_de_la_tabla_02():
-    from modelos import CategoriaTR
-    from modulos.M1_clasificacion import tr_de_categoria
+    from src.modelos import CategoriaTR
+    from src.modulos.M1_clasificacion import tr_de_categoria
     tr = tr_de_categoria(CategoriaTR.QUEBRADA_IMPORTANTE)
     texto = tr.paso.resultado.procedencia
     assert "TR de diseño" in texto

@@ -30,13 +30,13 @@ from pathlib import Path
 
 import pytest
 
-from normativa import registro as _registro
-from normativa.esquema import (
+from src.normativa import registro as _registro
+from src.normativa.esquema import (
     SinDeterminar,
     Verbatim,
     esta_por_transcribir,
 )
-from normativa.extraccion import (
+from src.normativa.extraccion import (
     PDF_NO_DISPONIBLE,
     aparece_en_pagina,
     normalizar,
@@ -155,7 +155,7 @@ def test_T2_una_cita_a_una_fuente_sin_texto_se_verifico_por_imagen(reg):
     SI lo entregan), y eso es una propiedad DE LA FUENTE. Una cita suya verificada «por texto» seria una
     verificacion imposible: el campo `metodo` obliga a decir cual de las dos.
     """
-    from normativa.esquema import MetodoDeVerificacion
+    from src.normativa.esquema import MetodoDeVerificacion
     for c, f in _citas_verificables(reg):
         if f.texto_extraible or c.verificado is None:
             continue

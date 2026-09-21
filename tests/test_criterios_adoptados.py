@@ -17,14 +17,14 @@ from pathlib import Path
 
 import pytest
 
-import criterios_adoptados as ca
-import datos_sitio as ds
-from constantes_normativas import (F_PGA_TABLA,
+from src import criterios_adoptados as ca
+from src import datos_sitio as ds
+from src.constantes_normativas import (F_PGA_TABLA,
                                    REDUCCION_KH_POR_DESPLAZAMIENTO)
-from criterios_adoptados import (CRITERIOS, criterio, criterios_sin_valor,
+from src.criterios_adoptados import (CRITERIOS, criterio, criterios_sin_valor,
                                  parametros_sensibilizables, reporte_criterios,
                                  valor)
-from modelos import CriterioPendienteError, ErrorProyecto
+from src.modelos import CriterioPendienteError, ErrorProyecto
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP7_CADENA_SISMICA,
                                          CP8_CONTROL_SALIDA)
@@ -1212,11 +1212,13 @@ def test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor():
     verificada -- exactamente el patron que SIS-A-03 denuncio en ocho
     docstrings: texto que describia un estado que el codigo ya no tenia.
 
-    Se mira produccion, no tests: `src/modulos/`, `cli.py` y `gui/app.py`.
+    Se mira produccion, no tests: `src/modulos/`, `src/servicio.py` (la
+    orquestacion, desde EXT-9), `cli.py` y `gui/app.py`.
     """
     raiz = Path(__file__).resolve().parents[1]
     fuentes = list((raiz / "src" / "modulos").glob("*.py"))
-    fuentes += [raiz / "cli.py", raiz / "gui" / "app.py"]
+    fuentes += [raiz / "src" / "servicio.py", raiz / "cli.py",
+                raiz / "gui" / "app.py"]
     textos = {ruta: ruta.read_text(encoding="utf-8-sig") for ruta in fuentes}
 
     for clave in ca.criterios_sin_consumidor():
@@ -1267,7 +1269,7 @@ def test_todos_los_topes_de_diametro_son_alcanzables_desde_la_progresion():
 
 def test_ningun_diametro_de_alcantarilla_alcanza_la_luz_de_puente():
     """Sec. 2.1: con luz >= 6.0 m la obra sale del alcance del script."""
-    import constantes_normativas as CN
+    from src import constantes_normativas as CN
     assert max(valor(CLAVE_TOPES).values()) < CN.LUZ_MAX_ALCANTARILLA
     assert CN.DIAMETRO_MIN < CN.LUZ_MAX_ALCANTARILLA
 
@@ -1565,7 +1567,7 @@ def test_dato_faltante_admite_un_dato_que_no_es_columna_del_csv():
     de lo que el proyecto la tiene; se amplio la constitucion, que era lo que
     estaba desactualizado.
     """
-    from modelos import DatoFaltanteError
+    from src.modelos import DatoFaltanteError
 
     assert "tablero externo" in (DatoFaltanteError.__doc__ or "")
 
@@ -1703,7 +1705,7 @@ def test_regla_8_la_fila_de_gamma_EV_del_cajon_es_porticos_rigidos():
     assert eleccion["cajon"]["EV"] == "EV_porticos_rigidos"
     assert eleccion["concreto_reforzado"]["EV"] == "EV_estructura_rigida_enterrada"
     # Las dos filas existen en la tabla [N] y no son la misma.
-    from constantes_normativas import TABLA_GAMMA_P_FILAS
+    from src.constantes_normativas import TABLA_GAMMA_P_FILAS
     porticos = TABLA_GAMMA_P_FILAS["EV_porticos_rigidos"]
     tubo = TABLA_GAMMA_P_FILAS["EV_estructura_rigida_enterrada"]
     assert porticos != tubo

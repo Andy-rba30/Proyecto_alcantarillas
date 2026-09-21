@@ -14,8 +14,8 @@ adoptados de espesor y longitud.
 
 import pytest
 
-from modelos import CriterioPendienteError, Magnitud, ProteccionSalida
-from modulos.M6_proteccion import (ADVERTENCIA_FALTA_FILTRO,
+from src.modelos import CriterioPendienteError, Magnitud, ProteccionSalida
+from src.modulos.M6_proteccion import (ADVERTENCIA_FALTA_FILTRO,
                                    ADVERTENCIA_NO_ES_DISENO,
                                    CRITERIO_ESPESOR, CRITERIO_LONGITUD,
                                    laushey_d50, proteccion_salida)
@@ -57,7 +57,7 @@ def test_proteccion_salida_calcula_espesor_antes_de_detenerse(monkeypatch):
     Con 'longitud_proteccion_salida' declarado (simulado aqui), el resultado
     trae d50, espesor = 1.75*d50 y las dos advertencias de Sec. 6.
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
 
     original = ca.CRITERIOS[CRITERIO_LONGITUD]
     monkeypatch.setitem(

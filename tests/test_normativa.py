@@ -20,9 +20,9 @@ import functools
 
 import pytest
 
-from normativa import registro as _registro
-from normativa.discrepancias import DISCREPANCIAS
-from normativa.esquema import (
+from src.normativa import registro as _registro
+from src.normativa.discrepancias import DISCREPANCIAS
+from src.normativa.esquema import (
     Acotada,
     AfirmacionNegativa,
     Caracter,
@@ -105,7 +105,7 @@ def test_T4_ninguna_cita_queda_huerfana(reg):
 
     Ambas se reconocen porque `constantes_normativas` las nombra.
     """
-    import constantes_normativas as CN
+    from src import constantes_normativas as CN
 
     def _textos(v):
         if isinstance(v, str):
@@ -253,8 +253,8 @@ def test_T13_toda_vista_de_calculo_declarada_existe_de_verdad(reg):
     clave inexistente de criterios falla igual que un atributo inexistente de
     constantes.
     """
-    import constantes_normativas as CN
-    import criterios_adoptados as ca
+    from src import constantes_normativas as CN
+    from src import criterios_adoptados as ca
     for t in reg.tablas:
         for vista in t.vistas_de_calculo:
             assert hasattr(CN, vista) or vista in ca.CRITERIOS, (
@@ -268,7 +268,7 @@ def test_T14_las_vistas_derivadas_coinciden_con_su_transcripcion(reg):
     test lo comprueba sobre las que el codigo ya deriva, para que si alguien
     vuelve a escribir el numero a mano, las dos copias diverjan y se vea.
     """
-    import constantes_normativas as CN
+    from src import constantes_normativas as CN
 
     t09 = reg.tabla("MC_HHD.T09")
     assert CN.MANNING == {t09.clave_corta(f): (f.valores["minimo"],
@@ -296,7 +296,7 @@ def test_T14_las_vistas_derivadas_coinciden_con_su_transcripcion(reg):
     # La Tabla 5.10.1-1 de AASHTO: la vista NO vive en constantes_normativas
     # sino en una clave de criterios, porque el valor es [C]. Era el ultimo
     # dict de 63 numeros copiado a mano que quedaba en el expediente.
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
     t5101 = reg.tabla("AASHTO_LRFD_9.T5.10.1-1")
     assert ca.valor("tabla_recubrimiento_aashto_mm") == {
         t5101.clave_corta(f): {"A": f.valores["cat_a_mm"],
@@ -312,7 +312,7 @@ def test_T14_la_conversion_a_mm_de_la_tabla_de_aashto_es_exacta(reg):
     comprobar: de redondear mal esta conversion salio el «75 mm» que el
     expediente arrastro donde la fuente escribe 3.0 in = 76.2 mm.
     """
-    from constantes_fisicas import PULGADA_EN_MM
+    from src.constantes_fisicas import PULGADA_EN_MM
     t5101 = reg.tabla("AASHTO_LRFD_9.T5.10.1-1")
     for f in t5101.filas:
         for cat in ("a", "b", "c"):
@@ -342,7 +342,7 @@ def test_T15_una_condicion_que_no_bloquea_lleva_su_justificacion(reg):
 
 def test_T15_por_defecto_una_condicion_bloquea():
     """El valor por defecto ES la regla; desviarse exige texto."""
-    from normativa.esquema import CondicionAplicacion, PorDatoDeSitio
+    from src.normativa.esquema import CondicionAplicacion, PorDatoDeSitio
     c = CondicionAplicacion(
         id="X", texto=Verbatim(texto="x", pagina_pdf=1), cita_id="Y",
         resuelve=PorDatoDeSitio(clave="z"))
@@ -568,7 +568,7 @@ def test_T21_los_verbatim_del_registro_conservan_sus_diacriticos(reg):
 
 
 def test_T21_la_normalizacion_es_para_buscar_y_no_altera_lo_guardado():
-    from normativa.extraccion import normalizar
+    from src.normativa.extraccion import normalizar
     original = "Velocidades máximas admisibles (m/s), 2,0 %"
     plano = normalizar(original)
     assert plano == "velocidades maximas admisibles (m/s), 2.0 %"
@@ -632,7 +632,7 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
 
 
 def test_las_citas_sin_firma_son_exactamente_las_censadas(reg):
-    from normativa.esquema import SinDeterminar
+    from src.normativa.esquema import SinDeterminar
     sin_firma = {c.id for c in reg.citas_sin_verificar()}
     assert sin_firma == set(CITAS_SIN_FIRMA_A_PROPOSITO), (
         f"citas sin firma de verificacion: {sorted(sin_firma)}; censadas: "
@@ -661,7 +661,7 @@ FUENTES_DERIVADAS_CON_MARCA = {
 
 
 def test_toda_cita_de_la_traduccion_de_M294_lo_dice(reg):
-    from normativa.extraccion import normalizar
+    from src.normativa.extraccion import normalizar
     for fuente_id, marca in FUENTES_DERIVADAS_CON_MARCA.items():
         fuente = reg.fuente(fuente_id)
         assert marca in normalizar(fuente.titulo), (
@@ -692,7 +692,7 @@ def test_T22_el_centinela_es_unico_y_falsy():
     UN solo valor admisible para lo aun no leido, y falsy para que
     `if cita.titulo_numeral:` se lea como «si ya se transcribio».
     """
-    from normativa.esquema import _PorTranscribir
+    from src.normativa.esquema import _PorTranscribir
     assert POR_TRANSCRIBIR is _PorTranscribir()
     assert not POR_TRANSCRIBIR
     assert esta_por_transcribir(POR_TRANSCRIBIR)
@@ -700,7 +700,7 @@ def test_T22_el_centinela_es_unico_y_falsy():
 
 
 def test_T22_una_cita_con_pendientes_y_firma_no_se_puede_construir():
-    from normativa.esquema import MetodoDeVerificacion, Verificado
+    from src.normativa.esquema import MetodoDeVerificacion, Verificado
     with pytest.raises(ErrorDeRegistro):
         Cita(id="X", fuente_id="MC_HHD", numeral="1", titulo_numeral="t",
              pagina_impresa="1", pagina_pdf=POR_TRANSCRIBIR,
@@ -737,7 +737,7 @@ def test_una_afirmacion_negativa_exige_su_ambito_barrido():
 
 
 def test_una_tabla_no_admite_celdas_en_columnas_que_no_declara():
-    from normativa.esquema import ColumnaDeTabla, FilaDeTabla, TablaNormativa
+    from src.normativa.esquema import ColumnaDeTabla, FilaDeTabla, TablaNormativa
     with pytest.raises(ErrorDeRegistro):
         TablaNormativa(
             id="T", cita_id="C", titulo_literal="t",
@@ -858,8 +858,8 @@ def test_el_numeral_de_laushey_no_escribe_ningun_valor_de_g(reg):
 # sin decir de donde salia.
 
 def test_T23_toda_laguna_nombra_un_cerrador_que_existe(reg):
-    import criterios_adoptados as ca
-    import datos_sitio as ds
+    from src import criterios_adoptados as ca
+    from src import datos_sitio as ds
     for t in reg.tablas:
         for laguna in _todas_las_lagunas(t):
             quien = laguna.quien_lo_cierra
@@ -879,7 +879,7 @@ def test_T23_una_laguna_que_bloquea_apunta_a_un_vacio_de_verdad(reg):
     esta VACIA o el consumidor se detiene igual. Se comprueba el caso que el
     hallazgo destapo: las dos lagunas de h_eq.
     """
-    import criterios_adoptados as ca
+    from src import criterios_adoptados as ca
     for clave in ("h_eq_bajo_altura_tabulada", "h_eq_banda_intermedia_borde"):
         c = ca.CRITERIOS[clave]
         assert c.valor is None and not c.opcional, (
@@ -894,8 +894,8 @@ def test_T23_las_dos_lagunas_de_h_eq_detienen_el_calculo():
     La comprobacion de verdad: el caso numerico del hallazgo se detiene.
     """
     from unittest import mock
-    from modelos import CriterioPendienteError
-    from modulos import M9_cabezal as M9
+    from src.modelos import CriterioPendienteError
+    from src.modulos import M9_cabezal as M9
 
     sitio = {"orientacion_muro_respecto_al_trafico":
              M9.ORIENTACION_PARALELO_AL_TRAFICO,
@@ -915,9 +915,9 @@ def test_T23_toda_condicion_resuelve_a_una_clave_que_existe(reg):
     sobre `existe_informacion_secundaria_tramo`) apuntaban a la nada y el
     triage de sus 37 elecciones pendientes no tenia donde aterrizar.
     """
-    from normativa.esquema import PorCriterio as _PC, PorDatoDeSitio as _PD
-    import criterios_adoptados as ca
-    import datos_sitio as ds
+    from src.normativa.esquema import PorCriterio as _PC, PorDatoDeSitio as _PD
+    from src import criterios_adoptados as ca
+    from src import datos_sitio as ds
     for donde, cond in reg.condiciones():
         r = cond.resuelve
         if isinstance(r, _PC):
@@ -983,8 +983,8 @@ def _resuelve(consumidor: str) -> bool:
     para ganar exactitud que el lector no necesita.
     """
     import importlib
-    import criterios_adoptados as ca
-    import datos_sitio as ds
+    from src import criterios_adoptados as ca
+    from src import datos_sitio as ds
 
     clave = _clave_entre_corchetes(consumidor)
     cabeza = consumidor.split("[")[0]
@@ -1009,7 +1009,7 @@ def _modulos_con_prefijo(prefijo: str):
     import importlib
     import pathlib as _pl
     encontrados = []
-    for ruta in (prefijo, f"modulos.{prefijo}"):
+    for ruta in (f"src.{prefijo}", f"src.modulos.{prefijo}"):
         try:
             encontrados.append(importlib.import_module(ruta))
         except ImportError:
@@ -1018,7 +1018,7 @@ def _modulos_con_prefijo(prefijo: str):
     for fichero in sorted(raiz.glob(f"{prefijo}_*.py")):
         try:
             encontrados.append(
-                importlib.import_module(f"modulos.{fichero.stem}"))
+                importlib.import_module(f"src.modulos.{fichero.stem}"))
         except ImportError:
             pass
     return tuple(encontrados)

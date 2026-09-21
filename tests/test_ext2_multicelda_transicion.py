@@ -35,18 +35,18 @@ import math
 
 import pytest
 
-from constantes_normativas import (KU_SI, K_MANNING_SI, Q_LIM_NO_SUMERGIDO,
+from src.constantes_normativas import (KU_SI, K_MANNING_SI, Q_LIM_NO_SUMERGIDO,
                                    Q_LIM_SUMERGIDO)
-from modelos import (ControlGobernante, FormaSeccion, RegimenEntrada,
+from src.modelos import (ControlGobernante, FormaSeccion, RegimenEntrada,
                      SeccionCircular, SeccionRectangular, TipoMaterial)
-from modulos import M4_control as M4
-from modulos import MD
-from modulos.M2_material import catalogo
-from modulos.M3_hidraulica import resolver_manning, tirante_normal
-from modulos.M4_control import (control_entrada, resolver_control,
+from src.modulos import M4_control as M4
+from src.modulos import MD
+from src.modulos.M2_material import catalogo
+from src.modulos.M3_hidraulica import resolver_manning, tirante_normal
+from src.modulos.M4_control import (control_entrada, resolver_control,
                                 tirante_critico)
-from modulos.M5_verificaciones import v6_material_solido_arrastre
-from normativa import registro as rn
+from src.modulos.M5_verificaciones import v6_material_solido_arrastre
+from src.normativa import registro as rn
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import declarados
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING, CP5D_FORMA2,
@@ -222,7 +222,7 @@ def test_la_fila_hidraulica_de_la_tabla_de_diseno_dice_N_y_Q_celda():
     (la linea base lo fija).
     """
     from cli import InformePunto
-    from modulos import M11_reporte as M11
+    from src.modulos import M11_reporte as M11
     resultado = _disenar_marco_n3()
     informe = InformePunto(punto=resultado.punto, resultado=resultado)
     html = M11._tabla_diseno(informe)

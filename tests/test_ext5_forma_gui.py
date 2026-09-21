@@ -43,12 +43,12 @@ from pathlib import Path
 import pytest
 
 import cli
-import constantes_normativas as CN
-import criterios_adoptados as ca
-import declaracion as dec
-import variables_entrada as ve
-from modelos import Derivada, Poblacion, TipoDeBloqueo
-from normativa.esquema import (BandaDeInterpolacion, ConjuntoDeMaximos,
+from src import constantes_normativas as CN
+from src import criterios_adoptados as ca
+from src import declaracion as dec
+from src import variables_entrada as ve
+from src.modelos import Derivada, Poblacion, TipoDeBloqueo
+from src.normativa.esquema import (BandaDeInterpolacion, ConjuntoDeMaximos,
                                IntervaloAdmisible, PisoUnico, QuePasaFuera,
                                TechoUnico)
 from tests.apoyo import doble_tkinter
@@ -272,7 +272,7 @@ def test_cortante_alto_declara_la_cuantia_que_M9_lee_y_no_un_si_no():
     ErrorProyecto. La forma es `float`, y el valor llega a M9 como el minimo
     que gobierna.
     """
-    from modulos import M9_cabezal as M9
+    from src.modulos import M9_cabezal as M9
     clave = "cortante_alto_muro_e060_art_11_10_10_2"
     with pytest.raises(ValueError, match="forma"):
         ca.establecer_valor_dinamico(clave, "si")
@@ -584,7 +584,7 @@ def test_las_seis_claves_externas_estan_en_el_censo_como_dato_externo():
 
 
 def test_las_ocho_fichas_del_json_se_derivan_del_censo():
-    import ayuda_entrada as ay
+    from src import ayuda_entrada as ay
     fichas = ay.fichas_de_datos_externos()
     assert [f.clave for f in fichas] == list(cli.CLAVES_EXTERNAS)
     for f in fichas:
