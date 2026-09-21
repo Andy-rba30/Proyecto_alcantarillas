@@ -595,7 +595,7 @@ cambian `criterios_sha1` y `hoja_ruta_sha1`. La mutación se remidió con el
 arnés sobre las once funciones tocadas (242 mutantes: 212 muertos en la
 primera vuelta, 87.6 %, 5 más en la segunda, 25 vivos, uno cerrado con
 una aserción y 24 censados, ficha EA-06). Las cuatro configuraciones se
-MIDIERON sobre `origin/main` en `SHA_EXT` (el commit `ext(E-A)`, fusionado
+MIDIERON sobre `origin/main` en `b7d8def` (el commit `ext(E-A)`, fusionado
 por fast-forward), en serie, sobre un checkout limpio (`git worktree`) y
 sin otra suite en marcha: las dos sin Tk sin `DISPLAY` y con un `xvfb-run`
 que falla, las dos sin PyMuPDF desinstalándolo y reinstalándolo;
@@ -966,10 +966,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 3776 (medido en EXT-11) | 3 |
-| sí | no | 3766 (medido en EXT-11) | 13 |
-| no | sí | 3741 (medido en EXT-11) | 38 |
-| no | no | 3731 (medido en EXT-11) | 48 |
+| sí | sí | 3821 (medido en E-A) | 3 |
+| sí | no | 3811 (medido en E-A) | 13 |
+| no | sí | 3786 (medido en E-A) | 38 |
+| no | no | 3776 (medido en E-A) | 48 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
