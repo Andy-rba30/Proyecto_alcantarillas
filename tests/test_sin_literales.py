@@ -896,7 +896,11 @@ CENSO_DE_MARCAS = {
     # las tres marcas que `gui/ventana_normativa.py` llevaba por lo mismo
     # (y que por eso desaparecen de su fila): el censo sube 3 aqui y baja 3
     # alli, y ninguna magnitud del expediente entro ni salio.
-    "gui/componentes.py": 9,
+    # 9 -> 10 en el bloque 1b: `CONTEXTO_DPI_POR_MONITOR_V2 = -4`, el
+    # pseudo-handle de la API de Windows con que el proceso se declara
+    # consciente de DPI por monitor. Es un identificador del sistema
+    # operativo, no una magnitud.
+    "gui/componentes.py": 10,
     # EXT-8 (PC-11): el umbral de puntos a partir del que se ofrece la via
     # del navegador --- una MEDIDA del dictamen, no un valor de proyecto ---
     # y las lineas de la cola del diagnostico del hijo.

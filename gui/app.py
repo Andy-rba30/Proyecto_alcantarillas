@@ -3343,6 +3343,9 @@ class ExpedienteApp:
 
 
 def main():
+    # ANTES del primer Tk, o Windows la ignora (ver `gui/componentes.py`):
+    # es lo que hace que el contenido se vea nitido con la pantalla escalada.
+    comp.declarar_conciencia_de_dpi()
     root = tb.Window(themename="litera") if tb is not None else tk.Tk()
     ExpedienteApp(root)
     root.mainloop()

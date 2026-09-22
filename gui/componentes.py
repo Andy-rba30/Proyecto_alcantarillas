@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import ast
 import re
+import sys
 import tkinter as tk
 from tkinter import ttk
 
@@ -117,6 +118,63 @@ FAMILIAS_UI = ("IBM Plex Sans", "Segoe UI", "Noto Sans", "DejaVu Sans",
                "Helvetica")
 FAMILIAS_MONO = ("IBM Plex Mono", "Consolas", "Cascadia Mono",
                  "DejaVu Sans Mono", "Menlo", "Courier New")
+
+
+# ---------------------------------------------------------------------------
+# Nitidez en Windows: la conciencia de DPI se declara ANTES del primer Tk
+# ---------------------------------------------------------------------------
+# Medido sobre la ventana real en Windows tras el bloque 1: el titulo de la
+# ventana (que pinta Windows) salia nitido y TODO el contenido (que pinta Tk)
+# salia borroso. Es la firma de un proceso que no se declara consciente de
+# DPI: con la pantalla al 125 % o al 150 %, Windows lo dibuja al 100 % y lo
+# estira como una imagen. ttkbootstrap declara la conciencia «del sistema»
+# al crear su `Window`, y no basta: vale solo para el monitor principal tal
+# como estaba al iniciar sesion, y en cuanto la ventana cae en un monitor
+# con otro escalado --- o el escalado cambio despues --- Windows vuelve a
+# estirarla. La declaracion que no se estira nunca es la POR MONITOR (v2),
+# y hay que hacerla antes de crear el primer `Tk`: despues, Windows la
+# ignora. `gui.app.main` la llama en su primera linea.
+#
+# El valor es el pseudo-handle DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 de
+# la API de Windows, no un valor de proyecto.
+CONTEXTO_DPI_POR_MONITOR_V2 = -4   # literal-ok: pseudo-handle de la API de Windows
+DPI_NO_APLICA = "no aplica: no es Windows"
+DPI_POR_MONITOR_V2 = "por monitor (v2)"
+DPI_POR_MONITOR = "por monitor"
+DPI_DEL_SISTEMA = "del sistema"
+DPI_NO_DECLARADA = "no se pudo declarar"
+
+
+def declarar_conciencia_de_dpi():
+    """
+    Declara al proceso consciente de DPI en Windows, de la forma mas fina
+    que el sistema admita, y devuelve cual quedo declarada (una de las
+    cinco constantes `DPI_*`). Fuera de Windows no hace nada. Nunca lanza:
+    una maquina sin la API moderna cae a la siguiente forma, y una sin
+    ninguna se queda como estaba, que es lo que habia.
+    """
+    if sys.platform != "win32":
+        return DPI_NO_APLICA
+    import ctypes
+    try:
+        user32 = ctypes.windll.user32
+        user32.SetProcessDpiAwarenessContext.argtypes = [ctypes.c_void_p]
+        if user32.SetProcessDpiAwarenessContext(
+                ctypes.c_void_p(CONTEXTO_DPI_POR_MONITOR_V2)):
+            return DPI_POR_MONITOR_V2
+    except (AttributeError, OSError):
+        pass
+    try:
+        # 2 = PROCESS_PER_MONITOR_DPI_AWARE (Windows 8.1+).
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        return DPI_POR_MONITOR
+    except (AttributeError, OSError):
+        pass
+    try:
+        ctypes.windll.user32.SetProcessDPIAware()
+        return DPI_DEL_SISTEMA
+    except (AttributeError, OSError):
+        return DPI_NO_DECLARADA
 
 
 class Tipografia:

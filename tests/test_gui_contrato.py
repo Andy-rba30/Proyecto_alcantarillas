@@ -587,6 +587,34 @@ def test_la_gui_pinta_los_tres_registros_separados_y_no_lee_normativa():
             assert not any(a.name == "normativa" for a in nodo.names)
 
 
+def test_la_ventana_declara_la_conciencia_de_dpi_antes_de_crear_el_tk():
+    """
+    Bloque 1b del rediseño visual. Medido en Windows: el titulo de la
+    ventana salia nitido y el contenido borroso, que es la firma de un
+    proceso sin conciencia de DPI estirado por el escalado de pantalla. La
+    declaracion vale solo si llega ANTES del primer `Tk`; este test fija el
+    orden en `main` sobre el arbol, y que fuera de Windows la funcion no
+    toca nada.
+    """
+    import sys
+
+    cuerpo = ast.unparse(_funcion(ARBOL_GUI, "main"))
+    assert "declarar_conciencia_de_dpi" in cuerpo, (
+        "`main` dejo de declarar la conciencia de DPI")
+    assert cuerpo.index("declarar_conciencia_de_dpi") < cuerpo.index("Window("), (
+        "la conciencia de DPI se declara DESPUES de crear la ventana: "
+        "Windows la ignora y el contenido vuelve a salir borroso")
+
+    from tests.apoyo.doble_tkinter import gui_componentes
+    comp = gui_componentes()
+    if sys.platform != "win32":
+        assert comp.declarar_conciencia_de_dpi() == comp.DPI_NO_APLICA
+    else:
+        assert comp.declarar_conciencia_de_dpi() in {
+            comp.DPI_POR_MONITOR_V2, comp.DPI_POR_MONITOR,
+            comp.DPI_DEL_SISTEMA, comp.DPI_NO_DECLARADA}
+
+
 def test_los_componentes_de_la_gui_estan_en_un_solo_sitio():
     """
     `CLAUDE.md`: «No reinventar los componentes». `Tooltip` y `MarcoScroll`
