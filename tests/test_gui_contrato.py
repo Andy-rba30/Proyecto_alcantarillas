@@ -615,6 +615,41 @@ def test_la_ventana_declara_la_conciencia_de_dpi_antes_de_crear_el_tk():
             comp.DPI_DEL_SISTEMA, comp.DPI_NO_DECLARADA}
 
 
+def test_la_navegacion_lateral_conmuta_el_notebook_y_no_lleva_paso_propio():
+    """
+    Bloque 3 del rediseño visual, la enmienda a «Notebook por pestañas» de
+    CLAUDE.md: la ventana construye `NavegacionLateral` SOBRE `self.nb`, el
+    Notebook lleva el estilo que retira la tira de pestañas, y la columna no
+    guarda ningun indice propio: lee el activo del Notebook y cambia de vista
+    por `select`. Sobre el arbol; lo real lo mide el smoke de ventana.
+    """
+    crear = _funcion(ARBOL_GUI, "_crear_interfaz")
+    navegaciones = [n for n in ast.walk(crear) if isinstance(n, ast.Call)
+                    and _nombre_de_tipo(n.func) == "NavegacionLateral"]
+    assert len(navegaciones) == 1, "la ventana dejo de construir la navegacion lateral"
+    args = [ast.unparse(a) for a in navegaciones[0].args]
+    assert "self.nb" in args, "la navegacion no conmuta el Notebook de la ventana"
+    assert any("VISTAS" in a for a in args), (
+        "los rotulos de la navegacion tienen que salir de VISTAS, como las cabeceras")
+    notebooks = [n for n in ast.walk(crear) if isinstance(n, ast.Call)
+                 and _nombre_de_tipo(n.func) == "Notebook"]
+    estilos = {kw.value.value for n in notebooks for kw in n.keywords
+               if kw.arg == "style" and isinstance(kw.value, ast.Constant)}
+    assert estilos == {"Lateral.TNotebook"}, estilos
+
+    clase = next(n for n in ast.walk(ARBOL_COMPONENTES)
+                 if isinstance(n, ast.ClassDef) and n.name == "NavegacionLateral")
+    metodos = {n.name for n in clase.body if isinstance(n, ast.FunctionDef)}
+    assert {"ir", "activo", "refrescar"} <= metodos
+    activo = ast.unparse(next(n for n in clase.body
+                              if isinstance(n, ast.FunctionDef) and n.name == "activo"))
+    assert 'index("current")' in activo or "index('current')" in activo, (
+        "el paso activo tiene que leerse del Notebook, no de un indice propio")
+    fuente = ast.unparse(clase)
+    assert "<<NotebookTabChanged>>" in fuente, (
+        "la columna no escucha los `select` hechos por fuera de ella")
+
+
 def test_los_componentes_de_la_gui_estan_en_un_solo_sitio():
     """
     `CLAUDE.md`: «No reinventar los componentes». `Tooltip` y `MarcoScroll`
@@ -2097,6 +2132,13 @@ def test_la_ventana_normativa_se_construye_y_se_cierra_de_verdad(tmp_path):
         "ejemplo_puntos.csv trae 4 puntos y la tabla de la pestana 3 tiene "
         f"{obs['puntos_en_tabla']}")
     assert obs["pestanas_recorridas"]
+    # Bloque 3 del rediseño visual: la navegacion lateral y el Notebook son
+    # UNA sola fuente del paso activo, medido en las dos direcciones.
+    assert obs["navegacion_sigue_al_notebook"] == [0, 1, 2, 3], (
+        "la columna de navegacion no sigue a los `select` del Notebook")
+    assert obs["notebook_tras_ir"] == 1, (
+        "el `ir` de la columna no cambia la pestaña del Notebook")
+    assert obs["items_de_navegacion"] == obs["pestanas"]
 
     # La emergente del criterio `de_tabla`: se abrio de verdad, con la cara
     # TABLA construida, y se cerro sin dejar rastro.

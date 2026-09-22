@@ -56,6 +56,15 @@ y va EMPAQUETADA ANTES que el Notebook: hasta el bloque 1 iba despues, y en
 la geometria por defecto (1100x800) el alto natural del Notebook la dejaba
 fuera de la pantalla con el boton de EJECUTAR dentro.
 
+La navegacion es LATERAL desde el bloque 3 (`comp.NavegacionLateral`): una
+columna con los cuatro pasos numerados que CONMUTA el Notebook. El Notebook
+se conserva por debajo con la tira de pestañas retirada por estilo
+(`Lateral.TNotebook`): `nb.select`, `nb.tabs`, `nb.index` y los cuatro
+`nb.add` siguen siendo el contrato, y el paso activo tiene una sola fuente,
+el propio Notebook, que la columna lee por `<<NotebookTabChanged>>`. La
+enmienda a la regla «Notebook por pestañas» esta en CLAUDE.md y en la ficha
+REDISEÑO-3-01 de `docs/decisiones_diferidas.md`.
+
 Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
 -----------------------------------------------------------
     1. Datos de entrada    CSV de Sec. 1.2 (M0) + datos declarados que no son
@@ -662,8 +671,15 @@ class ExpedienteApp:
         self._construir_barra_superior(contenedor)
         self._construir_barra_de_estado(contenedor)
 
-        self.nb = ttk.Notebook(contenedor)
-        self.nb.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+        # EL CUERPO: la navegacion lateral a la izquierda y el Notebook a la
+        # derecha (bloque 3). El Notebook se conserva --- es el contrato de
+        # `nb.select`/`nb.tabs`/`nb.index` que leen la suite, los apoyos y
+        # esta misma ventana --- y su tira de pestañas se retira por estilo;
+        # el paso activo lo pinta `NavegacionLateral`, que lo lee del
+        # Notebook y no lo lleva por su cuenta.
+        cuerpo = ttk.Frame(contenedor, style="Fondo.TFrame")
+        cuerpo.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+        self.nb = ttk.Notebook(cuerpo, style="Lateral.TNotebook")
 
         # Las pestañas 2 y 3 son de geometria FIJA (bloque 2 del rediseño):
         # tabla a la izquierda y detalle a la derecha, en dos columnas que
@@ -682,6 +698,15 @@ class ExpedienteApp:
         self.nb.add(self.tab_criterios, text=rotulo[self.tab_criterios])
         self.nb.add(self.tab_puntos, text=rotulo[self.tab_puntos])
         self.nb.add(self.tab_resumen, text=rotulo[self.tab_resumen])
+        self.navegacion = comp.NavegacionLateral(
+            cuerpo, self.nb, [titulo for titulo, _sub in VISTAS])
+        self.navegacion.pack(side="left", fill="y", padx=(0, 12))
+        self.nb.pack(side="left", fill="both", expand=True)
+        # Control+1..4 va al paso n desde el teclado, por la MISMA puerta que
+        # el clic: `NavegacionLateral.ir` -> `nb.select`.
+        for indice in range(len(VISTAS)):
+            self.root.bind(f"<Control-Key-{indice + 1}>",
+                           lambda _evt, i=indice: self.navegacion.ir(i))
 
         self._construir_tab_datos(self.tab_datos.interior)
         self._construir_tab_criterios(self.tab_criterios)
@@ -1303,8 +1328,8 @@ class ExpedienteApp:
         columnas.grid(row=1, column=0, sticky="nsew", padx=14, pady=(0, 12))
         izquierda = ttk.Frame(columnas, style="Fondo.TFrame")
         derecha = ttk.Frame(columnas, style="Fondo.TFrame")
-        columnas.add(izquierda, weight=3)
-        columnas.add(derecha, weight=2)
+        columnas.add(izquierda, weight=1)
+        columnas.add(derecha, weight=1)
         comp.repartir_al_mostrar(columnas)
 
         panel_filtro = Panel(izquierda, "Filtro y recuento")
@@ -1337,7 +1362,7 @@ class ExpedienteApp:
                  "tiene y que sigue diciendo otra cosa. La memoria imprime los "
                  "pisados en su propio bloque, con el valor del archivo al lado: "
                  "sirven para TANTEAR, no para entregar.",
-            style="Ayuda.TLabel", wraplength=560, justify="left",
+            style="Ayuda.TLabel", wraplength=440, justify="left",
         ).pack(anchor="w", pady=(0, 8))
 
         # --- El filtro y el recuento -------------------------------------
@@ -1358,10 +1383,6 @@ class ExpedienteApp:
             f_filtro, textvariable=self.filtro_estado_var, state="readonly",
             width=26, values=[rotulo for rotulo, _tag in FILTROS_DE_ESTADO])
         cmb_estado.grid(row=0, column=1, sticky="w", padx=(6, 16))
-        # El recuento es una INSIGNIA: texto («39 de 79 pendientes») sobre el
-        # fondo suave del estado, rojo mientras quede alguno y verde cuando no.
-        self.lbl_recuento_criterios = Insignia(f_filtro, "", comp.INSIGNIA_NEUTRA)
-        self.lbl_recuento_criterios.grid(row=0, column=2, sticky="e")
         Tooltip(cmb_estado,
                 "PENDIENTE  = valor=None: bloquea el calculo que lo invoque.\n"
                 "Declarado en esta corrida = valor puesto desde la ventana o\n"
@@ -1397,7 +1418,7 @@ class ExpedienteApp:
         self.filtro_fase_var = tk.StringVar(value=FILTRO_FASE_TODAS)
         cmb_fase = ttk.Combobox(
             f_filtro, textvariable=self.filtro_fase_var, state="readonly",
-            width=64, values=[FILTRO_FASE_TODAS] + _fases_del_censo())
+            width=48, values=[FILTRO_FASE_TODAS] + _fases_del_censo())
         cmb_fase.grid(row=2, column=1, columnspan=2, sticky="w",
                       padx=(6, 16), pady=(6, 0))
         Tooltip(cmb_fase,
@@ -1415,6 +1436,12 @@ class ExpedienteApp:
         self.filtro_texto_var = tk.StringVar()
         ent_buscar = ttk.Entry(f_filtro, textvariable=self.filtro_texto_var, width=28)
         ent_buscar.grid(row=3, column=1, sticky="w", padx=(6, 16), pady=(6, 0))
+        # El recuento es una INSIGNIA: texto («39 de 79 pendientes») sobre el
+        # fondo suave del estado, rojo mientras quede alguno y verde cuando no.
+        self.lbl_recuento_criterios = Insignia(f_filtro, "", comp.INSIGNIA_NEUTRA)
+        self.lbl_recuento_criterios.configure(wraplength=440, justify="left")
+        self.lbl_recuento_criterios.grid(row=4, column=0, columnspan=3, sticky="w",
+                                         pady=(8, 0))
         Tooltip(ent_buscar,
                 "Busca en la CLAVE y en el CONCEPTO, sin distinguir mayusculas.\n"
                 "Se aplica junto con el filtro de estado, no en su lugar.")
@@ -1545,13 +1572,13 @@ class ExpedienteApp:
             self.color_neutro_editor = "SystemButtonFace"
         self.valor_declarado_var.trace_add("write", self._literal_cambio)
 
-        # TRES FILAS DE BOTONES, y el reparto no es estetica: el panel vive
-        # en la columna derecha (bloque 2) y los cuatro en una fila no caben;
-        # las dos acciones reversibles sobre la declaracion van juntas, la
-        # ventana normativa debajo, y la permanente --- «Guardar en archivo
+        # UN BOTON POR FILA, y el reparto no es estetica: el panel vive en la
+        # columna derecha (bloque 2, mas estrecha desde la navegacion lateral
+        # del bloque 3) y dos botones en una fila no caben; las tres acciones
+        # reversibles van seguidas, y la permanente --- «Guardar en archivo
         # fuente», la unica que modifica el archivo del proyecto --- va sola,
         # separada por una linea: la accion que no se deshace no comparte
-        # fila con las que si.
+        # bloque con las que si.
         f_botones = ttk.Frame(f_declarar)
         f_botones.grid(row=3, column=0, columnspan=2, sticky="w", pady=(4, 0))
 
@@ -1565,7 +1592,7 @@ class ExpedienteApp:
                   "sola llamada por declaracion.py, con su procedencia: la fila\n"
                   "elegida en el editor, o la nota que una adopcion distinta\n"
                   "exige. Si un campo falla, no entra nada.")
-        self.btn_aplicar_corrida.pack(side="left", padx=(0, 8), ipadx=6, ipady=3)
+        self.btn_aplicar_corrida.pack(anchor="w", ipadx=6, ipady=3)
 
         self.btn_quitar_declarado = BotonAccion(
             f_botones, "Quitar declaracion de la corrida",
@@ -1574,7 +1601,7 @@ class ExpedienteApp:
                   "procedencia. Lo que queda debajo depende de lo que habia:\n"
                   "si el criterio estaba vacio vuelve a bloquear el calculo;\n"
                   "si estaba PISADO vuelve a gobernar el valor del archivo.")
-        self.btn_quitar_declarado.pack(side="left", padx=(0, 8), ipadx=6, ipady=3)
+        self.btn_quitar_declarado.pack(anchor="w", pady=(6, 0), ipadx=6, ipady=3)
 
         f_norma = ttk.Frame(f_declarar)
         f_norma.grid(row=4, column=0, columnspan=2, sticky="w", pady=(8, 0))
@@ -1616,7 +1643,7 @@ class ExpedienteApp:
 
         # La linea de estado del panel, DENTRO del panel que la produce.
         self.lbl_estado_criterio = ttk.Label(f_declarar, text="", style="Ayuda.TLabel",
-                                              wraplength=440, justify="left")
+                                              wraplength=380, justify="left")
         self.lbl_estado_criterio.grid(row=7, column=0, columnspan=2, sticky="w",
                                       pady=(8, 0))
 

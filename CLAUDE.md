@@ -448,6 +448,25 @@ ErrorProyecto.
   Tkinter + ttkbootstrap, Notebook por pestañas, MarcoScroll, Tooltip, campo
   validable, plantilla con marcadores %%, sesión en JSON, export HTML/PDF/CSV.
   No reinventar los componentes.
+- **Enmienda (rediseño visual, bloque 3): la navegación es LATERAL y el
+  Notebook se conserva por debajo.** «Notebook por pestañas» sigue siendo
+  cierto como ESTRUCTURA y deja de serlo como CARA: la ventana principal
+  tiene una columna de cuatro pasos numerados (`gui/componentes.py::
+  NavegacionLateral`) que conmuta el `ttk.Notebook` de siempre, cuya tira de
+  pestañas se retira por estilo (`Lateral.TNotebook`, layout vacío de su
+  `Tab`). Lo que NO cambia, y es lo que la enmienda protege: `nb.select`,
+  `nb.tabs`, `nb.index` y los cuatro `nb.add` siguen siendo la puerta única
+  para cambiar de vista —la suite y los apoyos de ventana real la usan— y el
+  paso activo tiene UNA fuente, el Notebook, que la columna lee por
+  `<<NotebookTabChanged>>`; la columna nunca lleva el paso por su cuenta.
+  Las ventanas emergentes (ayuda de entrada) siguen con sus pestañas a la
+  vista. La decisión y su alternativa descartada —retirar el Notebook y
+  apilar marcos a mano— están en la ficha REDISEÑO-3-01 de
+  `docs/decisiones_diferidas.md`. El tema entero (paleta, tipografía,
+  estilos con nombre, `Panel`, `Insignia`, `TituloDeVista`) vive en
+  `gui/componentes.py` desde el bloque 1, y en Windows `gui.app.main`
+  declara la conciencia de DPI por monitor antes del primer `Tk` (bloque
+  1b): sin eso el contenido se veía borroso con la pantalla escalada.
 - **Dónde están hoy esos componentes, que ya no es `legacy/Tc.py`.** La regla
   decía «leer esos archivos antes de escribir GUI», y mandaba a un programa
   que ya no se puede ni importar en este repositorio: `matplotlib` es import de

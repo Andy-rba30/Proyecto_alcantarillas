@@ -367,6 +367,27 @@ def aplicar_tema(style, root=None):
     style.map("TNotebook.Tab", background=[("selected", SUPERFICIE)],
               foreground=[("selected", TEXTO)],
               expand=[("selected", (0, 0, 0, 0))])
+
+    # EL NOTEBOOK QUE CONMUTA LA NAVEGACION LATERAL (bloque 3): conserva
+    # sus pestañas --- `select`, `tabs`, `index` y los cuatro `add` son el
+    # contrato que la suite y los apoyos leen --- y NO las pinta: la tira
+    # de pestañas se retira por estilo, con un layout vacio para su
+    # elemento `Tab`, y el paso activo lo dice la navegacion de al lado.
+    style.configure("Lateral.TNotebook", background=FONDO, borderwidth=0,
+                    tabmargins=(0, 0, 0, 0))
+    style.layout("Lateral.TNotebook.Tab", [])
+    # Los items de la navegacion lateral: el inactivo sobre el fondo, el
+    # activo sobre superficie, con el numero en la monoespaciada azul.
+    style.configure("Nav.TFrame", background=FONDO)
+    style.configure("Activo.Nav.TFrame", background=SUPERFICIE)
+    style.configure("Nav.TLabel", background=FONDO, foreground=TEXTO_SUAVE,
+                    font=ui())
+    style.configure("Activo.Nav.TLabel", background=SUPERFICIE, foreground=TEXTO,
+                    font=ui(CUERPO_PT, "bold"))
+    style.configure("NavNumero.TLabel", background=FONDO, foreground=TEXTO_SUAVE,
+                    font=mono(CUERPO_PT, "bold"))
+    style.configure("Activo.NavNumero.TLabel", background=SUPERFICIE,
+                    foreground=AZUL, font=mono(CUERPO_PT, "bold"))
     return tipo
 
 
@@ -402,6 +423,61 @@ def repartir_al_mostrar(paned):
             return
         paned.sashpos(0, evento.width * pesos[0] // sum(pesos))
     identificador = paned.bind("<Configure>", _colocar, add="+")
+
+
+class NavegacionLateral(ttk.Frame):
+    """
+    La navegacion lateral de pasos numerados que CONMUTA un `Notebook`.
+
+    El Notebook se conserva por debajo (bloque 3 del rediseño visual): sus
+    pestañas siguen existiendo y `select`, `tabs`, `index` y `add` siguen
+    siendo la puerta que la suite, los apoyos de ventana real y la propia
+    ventana usan para cambiar de vista. Lo que cambia es QUIEN LO PINTA:
+    la tira de pestañas se retira por estilo (`Lateral.TNotebook`) y esta
+    columna muestra un item por pestaña --- numero y titulo, los mismos de
+    `VISTAS` --- y marca el activo. Un clic en un item hace `select`; un
+    `select` hecho por cualquier otro camino (el clic del anticipo, el
+    final de la corrida, un test) llega por `<<NotebookTabChanged>>` y
+    repinta el item activo. Una sola fuente del paso activo: el Notebook.
+    """
+
+    def __init__(self, master, notebook, titulos):
+        super().__init__(master, style="Fondo.TFrame")
+        self.notebook = notebook
+        self.items = []
+        for indice, titulo in enumerate(titulos):
+            item = ttk.Frame(self, style="Nav.TFrame", padding=(12, 9))
+            item.pack(fill="x", pady=(0, 4))
+            numero = ttk.Label(item, text=str(indice + 1), style="NavNumero.TLabel")
+            numero.pack(side="left", padx=(0, 10))
+            rotulo = ttk.Label(item, text=titulo, style="Nav.TLabel")
+            rotulo.pack(side="left")
+            for widget in (item, numero, rotulo):
+                widget.configure(cursor="hand2")
+                widget.bind("<Button-1>", lambda _evt, i=indice: self.ir(i))
+            self.items.append((item, numero, rotulo))
+        notebook.bind("<<NotebookTabChanged>>", lambda _evt: self.refrescar(),
+                      add="+")
+        self.refrescar()
+
+    def ir(self, indice):
+        """Selecciona la pestaña `indice` (desde 0) en el Notebook."""
+        self.notebook.select(self.notebook.tabs()[indice])
+
+    def activo(self):
+        """El indice de la pestaña activa, o None si el Notebook esta vacio."""
+        try:
+            return self.notebook.index("current")
+        except tk.TclError:
+            return None
+
+    def refrescar(self):
+        actual = self.activo()
+        for indice, (item, numero, rotulo) in enumerate(self.items):
+            prefijo = "Activo." if indice == actual else ""
+            item.configure(style=f"{prefijo}Nav.TFrame")
+            numero.configure(style=f"{prefijo}NavNumero.TLabel")
+            rotulo.configure(style=f"{prefijo}Nav.TLabel")
 
 
 class Panel(ttk.Frame):

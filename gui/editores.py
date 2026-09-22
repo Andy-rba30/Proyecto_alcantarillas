@@ -130,7 +130,7 @@ class EditorTipado:
     def _pie(self, p):
         e = self.esquema
         if e.dominio:
-            ttk.Label(p, text=f"Dominio (ficha): {e.dominio}", wraplength=520,
+            ttk.Label(p, text=f"Dominio (ficha): {e.dominio}", wraplength=380,
                       justify="left", style="Ayuda.TLabel").pack(anchor="w", pady=(4, 0))
         f_nota = ttk.Frame(p)
         f_nota.pack(fill="x", pady=(4, 0))
@@ -143,7 +143,7 @@ class EditorTipado:
         # Rotulo ARRIBA del campo y no al lado: el editor vive en la columna
         # derecha de la pestaña 2 (bloque 2) y el rotulo mas largo empujaba el
         # campo fuera de la vista.
-        ttk.Label(f_nota, text=rotulo, wraplength=520, justify="left").pack(anchor="w")
+        ttk.Label(f_nota, text=rotulo, wraplength=380, justify="left").pack(anchor="w")
         ent = ttk.Entry(f_nota, textvariable=self.nota_var, width=24)
         ent.pack(fill="x", expand=True, pady=(2, 0))
         Tooltip(ent, "Viaja con la procedencia y la memoria la imprime. En un\n"
@@ -299,8 +299,8 @@ class EditorEscalar(EditorTipado):
             cv.marco.pack(side="left", fill="x", expand=True, padx=(6, 0))
             if campo.opciones:
                 ttk.Label(p, text="Opciones que la ficha nombra: " + "; ".join(campo.opciones),
-                          wraplength=520, justify="left", style="Ayuda.TLabel").pack(anchor="w")
-        self.lbl_mensaje = ttk.Label(p, text="", wraplength=520, justify="left",
+                          wraplength=380, justify="left", style="Ayuda.TLabel").pack(anchor="w")
+        self.lbl_mensaje = ttk.Label(p, text="", wraplength=380, justify="left",
                                      style="Ayuda.TLabel")
         self.lbl_mensaje.pack(anchor="w")
         if campo.nombre in self._campos and isinstance(self._campos[campo.nombre], CampoValidable):
@@ -424,7 +424,7 @@ class EditorSerieDePares(EditorTipado):
             f_alta, "Quitar par", letra=BotonAccion.DISCRETA, command=self._quitar_fila,
             ayuda="Quita de la serie el par seleccionado en la tabla.")
         self.btn_quitar.pack(side="left")
-        self.lbl_mensaje = ttk.Label(p, text="", wraplength=520, justify="left",
+        self.lbl_mensaje = ttk.Label(p, text="", wraplength=380, justify="left",
                                      style="Ayuda.TLabel")
         self.lbl_mensaje.pack(anchor="w")
 
@@ -503,7 +503,7 @@ class EditorDict(EditorTipado):
             else:
                 cv = self._campo_validable(f, campo, var)
                 cv.marco.grid(row=fila, column=1, sticky="we", pady=1)
-        self.lbl_mensaje = ttk.Label(p, text="", wraplength=520, justify="left",
+        self.lbl_mensaje = ttk.Label(p, text="", wraplength=380, justify="left",
                                      style="Ayuda.TLabel")
         self.lbl_mensaje.pack(anchor="w")
         for cv in self._campos.values():
@@ -575,7 +575,7 @@ class EditorLiteral(EditorTipado):
                            "(ventana por campo, campos obligatorios o un valor de "
                            "escalares): se escribe ENTERO en el campo «Valor nuevo», "
                            "como literal, y pasa la misma guardia."),
-                  wraplength=520, justify="left", style="Ayuda.TLabel").pack(anchor="w")
+                  wraplength=380, justify="left", style="Ayuda.TLabel").pack(anchor="w")
         self._desplegable_de_filas(p, self._al_fila_elegida)
 
     def piezas(self):

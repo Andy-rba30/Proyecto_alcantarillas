@@ -72,12 +72,24 @@ def main(destino: Path) -> int:
         obs["informe"] = ventana.informe is not None
         obs["puntos_en_tabla"] = len(ventana.tree_puntos.get_children())
 
-        # 3. Las CUATRO pestanas se seleccionan y repintan de verdad.
+        # 3. Las CUATRO pestanas se seleccionan y repintan de verdad, y la
+        #    NAVEGACION LATERAL (rediseño visual, bloque 3) sigue a cada
+        #    `select` hecho por fuera de ella: su paso activo es el del
+        #    Notebook, no uno propio.
+        activos = []
         for pestana in (ventana.tab_datos, ventana.tab_criterios,
                         ventana.tab_puntos, ventana.tab_resumen):
             ventana.nb.select(pestana)
             raiz.update()
+            activos.append(ventana.navegacion.activo())
         obs["pestanas_recorridas"] = True
+        obs["navegacion_sigue_al_notebook"] = activos
+        # Y el camino inverso: el clic en un item de la columna (su `ir`)
+        # cambia la pestana del Notebook.
+        ventana.navegacion.ir(1)
+        raiz.update()
+        obs["notebook_tras_ir"] = ventana.nb.index("current")
+        obs["items_de_navegacion"] = len(ventana.navegacion.items)
 
         # 4. La ventana normativa del criterio `de_tabla`, abierta POR EL
         #    CAMINO DEL RATON: seleccion real en el arbol (el evento se

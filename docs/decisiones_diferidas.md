@@ -3304,3 +3304,27 @@ símbolo.
 - **Qué haría falta:** otro ejemplar de M 170M para las Tablas 1 a 4 (o la
   M 170M-23 que la vigencia ya pide para gabinete).
 - **Dónde vive:** `src/normativa/tablas.py::T_M170M_T5`
+
+# Parte XXXIX — Lo que el rediseño visual de la GUI dejó escrito: la navegación lateral conmuta el Notebook
+
+## REDISEÑO-3-01 · La navegación es lateral y el Notebook se conserva por debajo, con la tira de pestañas retirada por estilo
+
+- **Cerrado (rediseño visual, bloque 3):** la regla «Notebook por pestañas»
+  de CLAUDE.md queda enmendada, no derogada. La ventana principal muestra
+  una columna de cuatro pasos numerados (`NavegacionLateral`) y el
+  `ttk.Notebook` sigue debajo con sus cuatro `add`: `select`, `tabs` e
+  `index` son la puerta única para cambiar de vista, y el paso activo tiene
+  una sola fuente —el Notebook, leído por `<<NotebookTabChanged>>`—. La
+  alternativa era retirar el Notebook y apilar los cuatro marcos a mano con
+  un índice propio; se descartó porque duplicaría el estado (la columna y la
+  pila cada una con «su» paso activo) y rompería el contrato que la suite y
+  los diez apoyos de ventana real leen (`nb.select`, `nb.tabs`, `nb.index`).
+  La tira de pestañas se retira por estilo (`Lateral.TNotebook`, layout
+  vacío de su `Tab`), de modo que la emergente de ayuda conserva las suyas.
+- **Abierto:** el atajo de teclado Control+n y el clic de la columna llegan
+  al mismo `select`; lo que no hay es lectura de la columna por un lector de
+  pantalla más allá del texto de sus rótulos, que es el límite de `ttk`.
+- **Qué haría falta:** nada para el expediente. Si algún día el Notebook se
+  retira de verdad, la columna tendría que llevar el paso activo, y esta
+  ficha se reescribe.
+- **Dónde vive:** `gui/componentes.py::NavegacionLateral`
