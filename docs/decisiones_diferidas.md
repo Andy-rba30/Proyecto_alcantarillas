@@ -793,16 +793,7 @@ M8 y de M11 que su propio alcance excluye.
   corredor de referencia (la procedencia del ke de tubo pasaría a imprimir fila,
   agrupación y bloque) y ese cambio de salida pertenece a la sesión que rehace
   la forma de los criterios (EXT-6), no a la de guardias sin cambio de contrato.
-- **Revisión del 2026-09-22, tras PF-6: EXT-6 NO la migró y sigue abierta.**
-  Medido sobre `origin/main` (`d5ff74c`): `ke_entrada` conserva la forma
-  `float` con valor 0.5, `ke_entrada_cajon` la forma `str`, y
-  `M4.ke_declarado` la rama de los rótulos vacíos. EXT-6 rehízo el registro
-  normativo y no tocó esta forma, y ninguna sesión posterior (EXT-7..11,
-  E-A, E-B, PF-1..6) la tomó. El tracker dejaba la fila apuntando a EXT-6
-  como si fuera a cerrarse allí; queda como **abierta sin sesión asignada**,
-  con la mitad de validación cerrada por EXT-1 y la migración de forma como
-  lo que haría falta. No se cierra aquí: mueve la memoria del corredor de
-  referencia y merece su sesión.
+- **2026-09-22:** EXT-6 no la migró; sigue abierta, sin sesión (`d5ff74c`).
 - **Dónde vive:** `src/constantes_normativas.py::KE_HDS5_C2`
 
 
