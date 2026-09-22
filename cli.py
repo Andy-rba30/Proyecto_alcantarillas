@@ -171,6 +171,7 @@ from src import sesion as _sesion
 from src.constantes_normativas import H_O_HW_SOBRE_D_MIN
 from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ContextoCorrida, ErrorProyecto, Espaciamiento,
+                         EstadoDeVerificacion,
                          PasoDiseno, PerfilLamina, ProteccionSalida,
                          ResultadoPunto, TipoDeVeredicto, Verificacion)
 from src.modulos import M2_material as M2
@@ -235,6 +236,9 @@ MARCA_INCUMPLE = "[NO]"
 # verificacion no detiene el punto (`cumple` True) y no es un [OK]; la marca
 # se lee del veredicto del paso, como hace M11.
 MARCA_INDICADOR = "[AVISO]"
+# C10 (PC-27): la fila que no se evaluo no es [OK]. El estado es la fuente y
+# este adaptador de texto es una vista mas; hasta C10 leia `cumple` a secas.
+MARCA_NO_APLICA = "[N/A]"
 
 # ===========================================================================
 # Volcado a JSON
@@ -263,7 +267,10 @@ def _verificacion_json(fase: str, v: Verificacion) -> Dict[str, Any]:
     # indicador_con_aviso las dos cosas difieren a proposito (cumple=True,
     # veredicto «indicador»), y un JSON con solo `cumple` lo perderia --
     # el «fuera de dominio» que solo existia en el HTML es PC-27.
+    # `estado` (PC-27, cierre): LA fuente; `cumple` y `veredicto` son sus
+    # vistas y se conservan porque el JSON los publica desde EXT-3 / PF-4.
     return {"fase": fase, "codigo": v.codigo, "numeral": v.numeral,
+            "estado": v.estado.value,
             "cumple": v.cumple, "veredicto": _veredicto_de(v),
             "valor_obtenido": _num(v.valor_obtenido),
             "valor_admisible": _num(v.valor_admisible),
@@ -719,7 +726,9 @@ def _lineas_verificaciones(informe: InformePunto) -> List[str]:
         return []
     out = [f"{SANGRIA}Verificaciones:"]
     for fase, v in filas:
-        if _veredicto_de(v) == TipoDeVeredicto.INDICADOR.value:
+        if v.estado is EstadoDeVerificacion.NO_APLICA:
+            marca = MARCA_NO_APLICA
+        elif _veredicto_de(v) == TipoDeVeredicto.INDICADOR.value:
             marca = MARCA_INDICADOR
         else:
             marca = MARCA_CUMPLE if v.cumple else MARCA_INCUMPLE
@@ -727,6 +736,8 @@ def _lineas_verificaciones(informe: InformePunto) -> List[str]:
         out.append(f"{SANGRIA * 2}{marca} {codigo:<4} {v.numeral:<28} "
                    f"obtenido {_fmt(v.valor_obtenido)} | admisible "
                    f"{_fmt(v.valor_admisible)}")
+        if v.estado is EstadoDeVerificacion.NO_APLICA:
+            out.append(f"{SANGRIA_DETALLE}no aplica: {v.motivo_no_aplica}")
         if v.criterio_aplicado:
             # Consulta tolerante: una clave que no este en CRITERIOS se imprime
             # tal cual, sin etiqueta. Un desajuste de nombre es un problema de

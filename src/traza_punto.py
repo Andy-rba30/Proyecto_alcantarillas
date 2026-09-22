@@ -85,6 +85,8 @@ ROTULO_NOTA = "Lo que pone el proyecto"
 TITULO_HUECO = "sin fundamento normativo declarado"
 ROTULO_HUECO_POR_QUE = "Por que no lo tiene"
 ROTULO_HUECO_FALTA = "Que haria falta para traerlo"
+TITULO_NO_APLICA = "no aplica en este punto"
+ROTULO_NO_APLICA = "Por que no aplica"
 
 
 @dataclass(frozen=True)
@@ -126,7 +128,22 @@ class HuecoDeVerificacion:
     que_haria_falta: str = ""
 
 
-EntradaDeTraza = Union[DetalleDePaso, HuecoDeVerificacion]
+@dataclass(frozen=True)
+class NoAplicaDeVerificacion:
+    """
+    La entrada de una verificacion que NO APLICA al punto (C10, PC-27): no
+    es un hueco --- no le falta fundamento: no se evaluo --- y lo que se
+    imprime es el motivo que la sustituye, el mismo que M11 imprime.
+    """
+
+    codigo: str
+    titulo: str
+    lineas: Tuple[LineaDeTraza, ...]
+    motivo: str = ""
+
+
+EntradaDeTraza = Union[DetalleDePaso, HuecoDeVerificacion,
+                       NoAplicaDeVerificacion]
 
 
 @dataclass(frozen=True)
@@ -290,6 +307,14 @@ def _hueco(codigo: str, censo: Tuple[str, str]) -> HuecoDeVerificacion:
         que_haria_falta=que_haria_falta)
 
 
+def _no_aplica(entrada: Any) -> NoAplicaDeVerificacion:
+    return NoAplicaDeVerificacion(
+        codigo=entrada.codigo, titulo=TITULO_NO_APLICA,
+        lineas=(LineaDeTraza(REGISTRO_PROYECTO, ROTULO_NO_APLICA,
+                             entrada.motivo),),
+        motivo=entrada.motivo)
+
+
 def hueco_censado(codigo: str) -> HuecoDeVerificacion:
     """
     El `HuecoDeVerificacion` de una verificacion censada en `SIN_FUNDAMENTO`,
@@ -361,7 +386,9 @@ def traza_del_punto(informe_punto: Any) -> TrazaDelPunto:
     censo = _M11.sin_fundamento_por_codigo()
     entradas: List[EntradaDeTraza] = []
     for codigo, paso in _M11.desarrollo_de_verificaciones(informe_punto):
-        if paso is not None:
+        if isinstance(paso, _M11.NoAplica):
+            entradas.append(_no_aplica(paso))
+        elif paso is not None:
             entradas.append(_detalle(paso, reg))
         else:
             entradas.append(_hueco(codigo, censo[codigo]))

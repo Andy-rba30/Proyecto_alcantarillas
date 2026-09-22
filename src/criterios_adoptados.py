@@ -67,6 +67,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional, Tuple, Dict, List, Set
 
+from src.dominios import ESVIAJE_MAX
 from src.constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    H_O_CONDICION_TEXTO, H_O_NUMERAL,
                                    KE_HDS5_C2, MANNING, V_MIN,
@@ -2437,8 +2438,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "maximo normativo. Es opcional y no un vacio: sin "
                       "declarar, el calculo no se detiene, V3 aplica el techo "
                       "normativo de 6.0 m/s y la memoria no declara este "
-                      "criterio. Es el unico `opcional=True` del archivo; M2 "
-                      "lee ademas con `valor_si_declarado()` otras cuatro "
+                      "criterio. Es uno de los tres `opcional=True` del archivo, "
+                      "con 'riesgo_admisible_propietario' y "
+                      "'esviaje_max_grados', y los tres comparten la "
+                      "mecanica: sin declarar, nada se detiene. M2 lee ademas "
+                      "con `valor_si_declarado()` otras cuatro "
                       "claves no opcionales ('n_manning_hdpe', "
                       "'espesor_pared_conducto', 'v_max_tmc' y 'v_max_hdpe') "
                       "para armar el catalogo con campos vacios, pero "
@@ -2697,6 +2701,69 @@ CRITERIOS: Dict[str, Criterio] = {
                         "numero, y la pag. 3.12 de la misma fuente relaja la "
                         "condicion a «at least part»",
             dominio="fraccion en (0, 1]",
+        ),
+    ),
+
+    "esviaje_max_grados": Criterio(
+        valor=None,                 # OPCIONAL: sin valor, 7.B no acota el esviaje
+        # NIVEL MEDIDO por la TERCERA corrida de `tests/test_nivel_medido.py`
+        # (opcional=True se lee con `valor_si_declarado()`, que no registra
+        # el uso mientras el criterio siga vacio); declarado en caliente por
+        # encima de todo esviaje del CSV de referencia, la corrida de perfil
+        # lo invoca en M7 sin mover ningun resultado.
+        opcional=True,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Esviaje maximo, en grados, que el proyecto acepta construir "
+                 "en un cruce",
+        justificacion="Decide la cota de cordura del esviaje del cruce que "
+                      "entra en 1/cos(esviaje) de la Sec. 7.B (PC-32). Es "
+                      "opcional y no un vacio: sin declarar, el calculo no se "
+                      "detiene y `M7.factor_esviaje` acepta todo esviaje que "
+                      "M0 admite, 0 <= esviaje < 90 grados, con la unica "
+                      "guardia NUMERICA de `tolerancias.COS_ESVIAJE_MIN`; "
+                      "medido en el dictamen, 89.9 grados dan un factor 573 y "
+                      "10 313 m de conducto sobre A-01 sin excepcion. Ninguna "
+                      "fuente de normas/ fija un esviaje maximo constructivo "
+                      "para una alcantarilla: la Sec. 7.B de la hoja de ruta "
+                      "solo escribe 'afectada por esviaje', EG-2013 no lo "
+                      "acota, y el DG-2018 trata el esviaje en las "
+                      "intersecciones entre carreteras (num. 502.03.03, sobre "
+                      "el triangulo de visibilidad: pide rectificar los "
+                      "angulos de cruzamiento cuando sea factible), que no "
+                      "es una obra de drenaje. Por eso la cota es una ADOPCION del "
+                      "proyectista, y escribirla en tolerancias.py con nombre "
+                      "de tolerancia seria la misma cota disfrazada "
+                      "(decisiones_diferidas.md, PC-32). Declarada, "
+                      "`factor_esviaje` detiene con DatoInvalidoError todo "
+                      "punto cuyo esviaje la supere: el dato ESTA y hay que "
+                      "corregirlo (o rediseñar el cruce), que es la regla que "
+                      "separa Invalido de Faltante. Sensibilidad (0.0, "
+                      "90.0): es el dominio fisico entero del esviaje "
+                      "(`dominios.ESVIAJE_MAX`), no una banda de practica, "
+                      "porque ninguna fuente escribe una; el valor lo pone "
+                      "quien firma, sobre las condiciones de esta obra",
+        fuente="Ninguna fuente de normas/ fija el valor (verificado "
+               "buscando 'esviaje' en DG-2018, EG-2013 y el Manual de "
+               "Hidrologia). DG-2018 num. 502.03.03, pag. impresa 220 (PDF "
+               "221), es de intersecciones entre carreteras -- considera "
+               "inconvenientes los angulos de cruzamiento inferiores a 60 "
+               "grados -- y no da un maximo para una obra de drenaje; se "
+               "cita como el unico pronunciamiento "
+               "sobre esviaje de un cruce, para que nadie lo lea como si "
+               "acotara alcantarillas",
+        reemplazado_por="El esviaje maximo que la solucion constructiva del "
+                        "cruce admita (cabezales y aletas esviados, longitud "
+                        "de conducto), decidido en los planos; o una guia "
+                        "tecnica que lo acote, si aparece, que lo pasaria a "
+                        "[C]",
+        sensibilidad=(0.0, ESVIAJE_MAX),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre la solucion constructiva del "
+                        "cruce; ninguna tabla ni rango de fuente lo determina",
+            dominio="grados sexagesimales, 0 (cruce perpendicular) a 90 "
+                    "(conducto paralelo a la via, sin cruce que resolver)",
         ),
     ),
 

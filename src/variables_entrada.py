@@ -975,6 +975,9 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "F_pga": _Meta(unidad="-"),
     "F_pga_lectura_columna_extrema": _Meta(unidad="-"),
     "HW_D_max": _Meta(unidad="-"),
+    # Cierre C10 (PC-32): el tope de esviaje que el proyecto acepta
+    # construir, opcional; sin declarar no existe para M7 (MAT-O18).
+    "esviaje_max_grados": _Meta(unidad="grados"),
     # E-A: la lectura de «most of its length» con que el paso 4.3c juzga la
     # primera condicion de uso de h_o sobre la fraccion llena que el perfil
     # de la lamina mide. La consume M4 (`CRITERIO_FRACCION_LLENA`).

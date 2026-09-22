@@ -231,7 +231,7 @@ from src.constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      CIFRAS_PORCENTAJE, ControlGobernante, CotaDeEntrada,
                      DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
-                     ErrorProyecto, Familia, FormaSeccion,
+                     ErrorProyecto, EstadoDeVerificacion, Familia, FormaSeccion,
                      Magnitud, Material, MetodoNoEvaluableError,
                      PuntoCritico, ReferenciaNormativa, RegimenBarril,
                      ResultadoHidraulico,
@@ -2376,6 +2376,46 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 # `_verificador_perfil`, que se quedo sin VC1 mientras `verificar` ya lo
 # corria, de modo que a `--alcance perfil` --- el alcance del entregable --- un
 # cruce de canal seguia saliendo con V5 diferida y sin VC1 por ninguna parte.
+def v5_no_aplica_en_canal(*, punto: PuntoCritico) -> Verificacion:
+    """
+    La fila V5 de la tabla de la Fase 5 en un punto de la Familia C: NO
+    APLICA, y se dice con esas palabras (PC-27, cierre del 2026-09-22).
+
+    Hasta aqui la fila no aparecia: VC1 ocupaba su posicion y el revisor que
+    contara filas tenia que deducir que V5 se habia sustituido leyendo
+    `_remanso_o_cruce_de_canal`. El estado NO_APLICA de
+    `EstadoDeVerificacion` existe para esto: la verificacion existe en la
+    tabla, en este punto no dice nada --- su umbral es un ANCHO sobre la
+    plataforma y en un paso de canal el agua sube confinada entre las dos
+    coronaciones ---, y quien la sustituye (VC1, con veredicto real) va en el
+    motivo. No cuenta como incumplida ni como cumplida: `cumple=True` es la
+    vista que el pipeline lee (no detiene el punto), y el JSON y la memoria
+    llevan el estado.
+    """
+    if punto.familia is not Familia.C:
+        raise ValueError(
+            f"v5_no_aplica_en_canal es solo para la Familia C y el punto "
+            f"{punto.id} es de la Familia {punto.familia.value}")
+    return Verificacion(
+        cumple=True,
+        numeral=NUMERAL_V5,
+        valor_obtenido=None,
+        valor_admisible=None,
+        criterio_aplicado=None,
+        codigo="V5",
+        estado=EstadoDeVerificacion.NO_APLICA,
+        motivo_no_aplica=(
+            "V5 verifica que el remanso no se extienda sobre la plataforma "
+            "mas alla del derecho de via, y su umbral es un ANCHO; en un "
+            "paso de canal (Familia C) el agua sube confinada entre las dos "
+            "coronaciones del canal y ese ancho no acota nada. La SUSTITUYE "
+            "VC1, que compara la cota del remanso contra la coronacion y "
+            "corre en la misma posicion de la tabla con veredicto real; lo "
+            "que VC1 no cubre (la extension del remanso aguas arriba) esta "
+            "dicho en su propio paso"),
+    )
+
+
 def pieza_del_hueco_de_V5(*, punto: PuntoCritico,
                           resultado: ResultadoHidraulico):
     """(codigo, pieza) que ocupa la posicion de V5: VC1 en Familia C, V5 si no."""
@@ -2453,4 +2493,8 @@ def verificar(*, punto: PuntoCritico, material: Material,
         except ErrorProyecto as exc:
             exc.verificaciones_completadas = tuple(hechas)
             raise
+        # LA FILA SUSTITUIDA SE IMPRIME COMO «NO APLICA» (PC-27): en la
+        # Familia C, detras de VC1 va la V5 que VC1 sustituye, con su motivo.
+        if hechas[-1].codigo == "VC1":
+            hechas.append(v5_no_aplica_en_canal(punto=punto))
     return tuple(hechas)

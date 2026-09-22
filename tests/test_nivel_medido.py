@@ -74,15 +74,19 @@ EXTERNOS_GLOBALES = dict(luz_m=3.0, L_hidraulico_m=120.0, TW_m=None,
                          longitud_m=None, categoria_tr=None)
 EXTERNOS_POR_PUNTO = {"C-01": {"Q_m3s": 0.65, "S_conducto": 0.004}}
 
-# Los dos opcionales, con el valor que su consumidor YA aplica por defecto.
+# Los opcionales, con el valor que su consumidor YA aplica por defecto.
 # No es una declaracion de proyecto: es el instrumento de medida, y esta
 # elegido para no mover nada. `v_max_concreto_eleccion` = 6.0 es el maximo de
 # la fila de concreto de la Tabla N 10, que es lo que rige sin declarar; el
 # riesgo del Propietario repite los maximos recomendados de la Tabla N 02 para
 # la fila que esta corrida usa.
+# El esviaje maximo (C10, PC-32) se declara por ENCIMA de todo esviaje del
+# CSV de referencia (el mayor es C-01, 30 grados), de modo que M7 lo invoca
+# y ningun punto se detiene.
 OPCIONALES_PARA_MEDIR = {
     "v_max_concreto_eleccion": 6.0,
     "riesgo_admisible_propietario": {"quebrada_importante": {"R": 0.30, "n": 25}},
+    "esviaje_max_grados": 60.0,
 }
 
 

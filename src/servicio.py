@@ -1252,6 +1252,10 @@ def _verificador_perfil(informe: InformePunto):
             punto=punto, resultado=resultado)
         try:
             filas.append(pieza_hueco())
+            if codigo_hueco != "V5":
+                # La fila sustituida, como «no aplica» y con su motivo
+                # (PC-27): la tabla de la Fase 5 conserva sus once filas.
+                filas.append(M5.v5_no_aplica_en_canal(punto=punto))
         except ErrorProyecto as exc:
             if codigo_hueco in VERIFICACIONES_DIFERIDAS_POR_ALCANCE[ALCANCE_PERFIL]:
                 _diferir_verificacion(informe, codigo_hueco, exc,

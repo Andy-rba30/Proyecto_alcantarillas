@@ -39,6 +39,7 @@ from src.constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
 from src.dominios import CBR_MIN_FISICO
 from src.modelos import (ControlGobernante, CriterioPendienteError,
+                         EstadoDeVerificacion,
                      DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
                      Familia, FormaSeccion, PuntoCritico, ResultadoHidraulico,
                      SeccionCircular, SeccionRectangular, TipoMaterial)
@@ -1216,10 +1217,18 @@ def test_verificar_en_familia_C_corre_VC1_en_vez_de_V5(concreto):
     hechas = excinfo.value.verificaciones_completadas
     codigos = [v.codigo for v in hechas]
     assert "VC1" in codigos
-    assert "V5" not in codigos
-    # Y la posicion importa: VC1 ocupa el hueco de V5, entre V4b y V6.
+    # Desde el cierre de C10 (PC-27) V5 SI figura, pero como fila que NO
+    # APLICA: no se evaluo, no lleva valor y dice que VC1 la sustituye.
+    # Antes no figuraba, y una fila ausente no se distingue de una olvidada.
+    v5 = [v for v in hechas if v.codigo == "V5"]
+    assert len(v5) == 1
+    assert v5[0].estado is EstadoDeVerificacion.NO_APLICA
+    assert v5[0].valor_obtenido is None and "VC1" in v5[0].motivo_no_aplica
+    # Y la posicion importa: VC1 ocupa el hueco de V5, entre V4b y V6, y la
+    # fila «no aplica» de V5 va pegada detras de VC1.
     assert codigos.index("VC1") == codigos.index("V4b") + 1
-    assert codigos.index("VC1") == codigos.index("V6") - 1
+    assert codigos.index("V5") == codigos.index("VC1") + 1
+    assert codigos.index("V5") == codigos.index("V6") - 1
 
 
 def test_verificar_en_familia_A_sigue_deteniendose_en_V5_y_no_corre_VC1(concreto):
@@ -1465,8 +1474,12 @@ def test_las_once_filas_de_la_fase_5_tienen_su_funcion():
     modulo = (raiz / "src" / "modulos" / "M5_verificaciones.py").read_text(encoding="utf-8")
     # Por AST y no por regex sobre el texto (PC-21): un `def` en un
     # comentario o en un docstring contaria igual.
+    # `v5_no_aplica_en_canal` (C10, PC-27) no es una verificacion: es la fila
+    # que dice que V5 no se evalua en la Familia C. Se excluye por nombre
+    # completo, no por patron, para que no entre otra por la misma puerta.
     funciones = [n.name for n in ast.parse(modulo).body
-                 if isinstance(n, ast.FunctionDef) and re.match(r"v\d+b?_", n.name)]
+                 if isinstance(n, ast.FunctionDef) and re.match(r"v\d+b?_", n.name)
+                 and n.name != "v5_no_aplica_en_canal"]
     assert len(filas) == 11, f"la tabla de Fase 5 ya no tiene once filas: {filas}"
     assert len(funciones) == 11, f"M5 ya no tiene once verificaciones: {funciones}"
     assert len(textos) == len(filas) - len(funciones)

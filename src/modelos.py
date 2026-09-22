@@ -2657,11 +2657,70 @@ class FactoresFlotacion:
     fila_gamma_EV: str
 
 
+class EstadoDeVerificacion(str, Enum):
+    """
+    EL ESTADO DE UNA VERIFICACION, con una sola fuente (PC-27, cierre del
+    2026-09-22). Hasta aqui habia TRES capas que decian lo mismo sin que
+    nada las atara: `Verificacion.cumple` (lo que lee el pipeline), el
+    `TipoDeVeredicto` del `PasoDeMemoria` (lo que lee la memoria) y el
+    `Bloqueo` (lo que no llego a evaluarse). PF-4 midio la grieta: una misma
+    verificacion decia `cumple=True` al pipeline e INDICADOR a la memoria,
+    a proposito, y nada impedia que dijera dos cosas incompatibles.
+
+    Desde aqui `Verificacion.estado` ES la fuente, y las otras dos son
+    vistas: `cumple` se deriva de el (`EstadoDeVerificacion.cumple`) y el
+    veredicto del paso tiene que coincidir (`Verificacion.__post_init__` lo
+    exige). Lo que NO llego a evaluarse no es un estado de aqui: sigue siendo
+    un `Bloqueo`, porque no hay `Verificacion` que lo lleve. Cuatro valores:
+
+        CUMPLE       se evaluo y pasa.
+        NO_CUMPLE    se evaluo y no pasa: el punto se detiene.
+        INDICADOR    se evaluo, el indicador se disparo, y un [A] declarado
+                     decidio no detener el punto (PF-4, `regimen_v2b`).
+        NO_APLICA    la fila existe en la tabla de la Fase 5 y en ESTE punto
+                     no dice nada: V5 en la Familia C, SUSTITUIDA por VC1
+                     (`M5.v5_no_aplica_en_canal`). No cuenta como
+                     incumplida y la memoria lo imprime con esas palabras,
+                     con el motivo al lado; hasta aqui la fila simplemente
+                     no aparecia.
+    """
+    CUMPLE = "cumple"
+    NO_CUMPLE = "no cumple"
+    INDICADOR = "indicador"
+    NO_APLICA = "no aplica"
+
+    @property
+    def cumple(self) -> bool:
+        """La vista que lee el pipeline: solo NO_CUMPLE detiene el punto."""
+        return self is not EstadoDeVerificacion.NO_CUMPLE
+
+    @classmethod
+    def de_veredicto(cls, tipo: "TipoDeVeredicto") -> Optional["EstadoDeVerificacion"]:
+        """
+        El estado que un veredicto de paso implica, o None si el veredicto
+        no juzga (SIN_VEREDICTO) o no se evaluo (DIFERIDO, que es un
+        `Bloqueo` y no un estado de verificacion).
+        """
+        return {
+            TipoDeVeredicto.CUMPLE: cls.CUMPLE,
+            TipoDeVeredicto.NO_CUMPLE: cls.NO_CUMPLE,
+            TipoDeVeredicto.INDICADOR: cls.INDICADOR,
+        }.get(tipo)
+
+
 @dataclass(frozen=True)
 class Verificacion:
     """
     Resultado de una verificacion de la Fase 5. Nunca se devuelve un bool
     desnudo: sin numeral, la memoria de calculo no es defendible.
+
+    `estado` es LA FUENTE del resultado desde el cierre de PC-27; `cumple`
+    sigue en la firma porque veinte constructores lo escriben, y desde aqui
+    es una VISTA comprobada: `__post_init__` deriva el estado cuando no viene
+    (del veredicto del paso, o de `cumple`) y rechaza con `ValueError` un
+    `cumple` que no sea el del estado, o un veredicto del paso que diga otra
+    cosa. `motivo_no_aplica` es obligatorio con NO_APLICA: una fila que «no
+    aplica» sin decir por que es un hueco con otro nombre.
 
     `criterio_aplicado` es la clave de `criterios_adoptados.py` cuando el
     umbral proviene de un criterio [N->], [C] o [A]; None cuando el umbral es
@@ -2689,6 +2748,44 @@ class Verificacion:
     # cada una con lo que habria que transcribir para traerla. M11 imprime esa
     # razon en el sitio del paso ausente, en vez de dejar el hueco callado.
     paso: Optional["PasoDeMemoria"] = None
+    estado: Optional[EstadoDeVerificacion] = None
+    motivo_no_aplica: str = ""
+
+    def __post_init__(self) -> None:
+        veredicto = getattr(self.paso, "veredicto", None)
+        derivado = (EstadoDeVerificacion.de_veredicto(veredicto.tipo)
+                    if veredicto is not None else None)
+        estado = self.estado
+        if estado is None:
+            if derivado is not None and derivado.cumple != bool(self.cumple):
+                raise ValueError(
+                    f"Verificacion {self.codigo or self.numeral}: el veredicto "
+                    f"del paso dice «{veredicto.tipo.value}» y `cumple`="
+                    f"{self.cumple!r}. La memoria y el pipeline tienen que "
+                    "decir lo mismo (SIS-A-07, PC-27)")
+            estado = derivado if derivado is not None else (
+                EstadoDeVerificacion.CUMPLE if self.cumple
+                else EstadoDeVerificacion.NO_CUMPLE)
+            object.__setattr__(self, "estado", estado)
+        if estado.cumple != bool(self.cumple):
+            raise ValueError(
+                f"Verificacion {self.codigo or self.numeral}: `cumple`="
+                f"{self.cumple!r} no es la vista del `estado` "
+                f"«{estado.value}». El estado es la fuente y `cumple` se "
+                "deriva de el; dos valores que discrepan son la grieta de "
+                "PC-27")
+        if derivado is not None and derivado is not estado:
+            raise ValueError(
+                f"Verificacion {self.codigo or self.numeral}: el veredicto "
+                f"del paso dice «{veredicto.tipo.value}» y el estado "
+                f"«{estado.value}». La memoria y el pipeline tienen que "
+                "decir lo mismo (SIS-A-07, PC-27)")
+        if estado is EstadoDeVerificacion.NO_APLICA and \
+                not str(self.motivo_no_aplica).strip():
+            raise ValueError(
+                f"Verificacion {self.codigo or self.numeral}: NO_APLICA sin "
+                "`motivo_no_aplica`. Una fila que no aplica tiene que decir "
+                "por que y que la sustituye")
 
 
 # ===========================================================================

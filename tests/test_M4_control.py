@@ -1377,15 +1377,19 @@ def test_una_fila_del_bloque_de_TUBO_no_vale_como_ke_de_marco():
     assert "concreto_headwall_square_edge" not in exc.value.motivo
 
 
-def test_ke_del_tubo_es_un_numero_y_no_trae_fila():
+def test_ke_del_tubo_es_un_numero_y_trae_la_fila_de_la_que_sale():
     """
-    La asimetria declarada: 'ke_entrada' sigue siendo un numero. Se fija para
-    que el dia que se migre al mismo patron este test lo diga, en vez de que
-    la migracion pase inadvertida.
+    La asimetria declarada: 'ke_entrada' sigue siendo un numero. Desde el
+    cierre de C5-02 (2026-09-22) los tres rotulos NO salen vacios: la fila
+    viaja en `DeTabla.fila_id` y el consumidor comprueba que el 0.5 es su
+    celda. Si algun dia se migra la forma, este test lo dice.
     """
+    from src.constantes_normativas import KE_HDS5_C2
     fila, agrupacion, bloque, ke = ke_declarado(CRITERIO_KE)
     assert ke == pytest.approx(0.5, rel=REL_TRANSPORTE)
-    assert fila == "" and agrupacion == "" and bloque == ""
+    esperada = KE_HDS5_C2["concreto_headwall_square_edge"]
+    assert (fila, agrupacion, bloque) == (
+        esperada["fila"], esperada["agrupacion"], esperada["bloque"])
 
 
 def test_sin_ke_declarado_el_marco_se_detiene_y_no_hereda_el_del_tubo():

@@ -793,7 +793,7 @@ M8 y de M11 que su propio alcance excluye.
   corredor de referencia (la procedencia del ke de tubo pasaría a imprimir fila,
   agrupación y bloque) y ese cambio de salida pertenece a la sesión que rehace
   la forma de los criterios (EXT-6), no a la de guardias sin cambio de contrato.
-- **2026-09-22:** EXT-6 no la migró; sigue abierta, sin sesión (`d5ff74c`).
+- **2026-09-22:** EXT-6 no la migró (`d5ff74c`); C10 la cerró sin migrar la forma: C10-01.
 - **Dónde vive:** `src/constantes_normativas.py::KE_HDS5_C2`
 
 
@@ -1466,6 +1466,7 @@ letra**, y por eso se escriben aquí y no sólo en el docstring.
   alguna guía lo fija), leído por `factor_esviaje` con `valor_si_declarado` para
   no mover la línea base mientras nadie lo declare. Es una decisión del
   proyectista, no de esta sesión.
+- **Cerrada en C10:** el criterio existe, `esviaje_max_grados`; ver C10-03.
 - **Dónde vive:** `src/tolerancias.py::COS_ESVIAJE_MIN`
 
 ## EXT-V-02 · La celda que la procedencia cita se infiere cuando la fila tiene una sola
@@ -2945,6 +2946,7 @@ símbolo.
   `n_manning_cauce` de la Sec. 1.2 (o un [S] por punto) con su
   trazabilidad, y la segunda comparación en `M5.v2b_sedimentacion` bajo el
   mismo `regimen_v2b`.
+- **(1) cerrada en C10:** `EstadoDeVerificacion`, ver C10-02. (2) sigue.
 - **Dónde vive:** `src/modelos.py::TipoDeVeredicto`
 
 ## PF-4-02 · El barrido leía el veredicto sólo de `cumple`, y desde PF-4 son dos campos
@@ -3102,3 +3104,68 @@ símbolo.
   viva, y no se reescriben.
 - **Qué haría falta:** nada.
 - **Dónde vive:** `src/comparador.py::CAMPOS_OMITIDOS`
+
+# Parte XXXVI — Lo que el cierre de C10 dejó escrito: la fila del ke, el estado único y la cota de esviaje
+
+## C10-01 · `ke_entrada` conserva la forma `float`; la fila viaja por la resolución y por la procedencia, y el consumidor no atribuye rótulos a un número que no es la celda
+
+- **Cerrado (C10):** C5-02 pedía migrar `ke_entrada` a clave de fila «como
+  `ke_entrada_cajon`». No se migró, y es decisión: la forma `float` es la que
+  leen los editores tipados de E-B, el barrido de PF-3 y
+  `declaracion.declarar_desde_tabla` (que exige nota cuando el valor difiere
+  de la celda). Lo que el hallazgo denunciaba —que la procedencia pudiera
+  mentir— se cierra por otra vía: `M4._fila_del_ke_numerico` recupera la
+  fila de la que sale el número (del archivo, `DeTabla.fila_id`; en
+  caliente, `declaracion.procedencia_de(...).filas`), `M4.ke_declarado`
+  imprime fila, agrupación y bloque SOLO si el número coincide con la celda
+  (a `TOL_UMBRAL_NORMATIVO`) y rechaza con `DatoInvalidoError` una fila del
+  bloque «Box» para el tubo, la simétrica de NOR-HID-01. La memoria del
+  corredor de referencia dejó de decir «declarado como NUMERO: la fila… se
+  lee en el campo fuente» e imprime «Square-edge» bajo «Headwall or headwall
+  and wingwalls» del bloque «Pipe, Concrete».
+- **Abierto:** una declaración por `--declarar` o por
+  `establecer_valor_dinamico` a secas no nombra fila, y el consumidor no se
+  la inventa: imprime el número sin rótulos y la procedencia lo dice.
+- **Qué haría falta:** nada para el hallazgo. Migrar la forma seguiría
+  siendo mover un dato que nadie pidió mover.
+- **Dónde vive:** `src/modulos/M4_control.py::_fila_del_ke_numerico`
+
+## C10-02 · El estado de verificación tiene una sola fuente, `EstadoDeVerificacion`; `cumple` y el veredicto del paso son vistas comprobadas, y «no aplica» existe con un productor real
+
+- **Cerrado (C10):** PC-27 llevaba tres capas —`Verificacion.cumple`, el
+  `TipoDeVeredicto` del paso y `Bloqueo`— sin decir cuál gobierna. Hoy
+  `modelos.EstadoDeVerificacion` (CUMPLE, NO_CUMPLE, INDICADOR, NO_APLICA)
+  es la fuente: `Verificacion.estado` se deriva del veredicto del paso, o de
+  `cumple` si no hay paso, y `__post_init__` rechaza con `ValueError` un
+  `cumple` que no sea la vista del estado y un veredicto que discrepe.
+  NO_APLICA exige `motivo_no_aplica` y tiene productor:
+  `M5.v5_no_aplica_en_canal`, la fila de V5 que en la Familia C sustituye
+  VC1, cableada en `M5.verificar` y en `servicio._verificador_perfil`; antes
+  V5 no figuraba, y una fila ausente no se distingue de una olvidada. El JSON
+  lleva `estado`, M11 pinta la marca «no aplica» sin hacer aritmética.
+  `Bloqueo` se queda para lo que NO se evaluó (una etapa detenida no es una
+  verificación), y `EstabilidadCabezal` rechaza la tupla vacía desde EXT-7.
+- **Abierto:** DIFERIDO y SIN_VEREDICTO siguen siendo valores del veredicto
+  sin traducción a estado —no hay `Verificacion` que los produzca— y el
+  segundo indicador del num. 5.3.3 sigue sin evaluarse (PF-4-01, punto 2).
+- **Qué haría falta:** un productor de esos dos valores, si alguna vez lo
+  hay, extendería `EstadoDeVerificacion.de_veredicto`.
+- **Dónde vive:** `src/modelos.py::EstadoDeVerificacion`
+
+## C10-03 · El esviaje máximo constructivo es un [A] opcional de perfil, y sin declararlo nada cambia
+
+- **Cerrado (C10):** PC-32 quedó en EXT-1 con la guardia NUMÉRICA
+  (`COS_ESVIAJE_MIN`) y con la cota de cordura diferida a «un criterio [A]».
+  Ese criterio existe: `esviaje_max_grados`, opcional, de perfil, `float`,
+  sensibilidad (0.0, `ESVIAJE_MAX`) y resolución `Libre`. `M7.factor_esviaje`
+  lo lee con `valor_si_declarado` y, declarado, detiene con
+  `DatoInvalidoError` —dato, criterio y máximo nombrados— todo esviaje del
+  CSV que lo supere: el dato está y hay que corregirlo, que es lo que
+  separa Invalido de Faltante. Sin declarar, la línea base no se mueve y el
+  89.9° del dictamen sigue pasando, como MAT-O18 decidió.
+- **Abierto:** el valor. Ninguna fuente de `normas/` fija un esviaje máximo
+  para una alcantarilla: DG-2018 num. 502.03.03 (pág. impresa 220) es de
+  intersecciones entre carreteras. Elegirlo es del proyectista.
+- **Qué haría falta:** que el proyectista lo declare, o una guía técnica que
+  lo acote, que lo pasaría a [C].
+- **Dónde vive:** `src/criterios_adoptados.py::CRITERIOS`

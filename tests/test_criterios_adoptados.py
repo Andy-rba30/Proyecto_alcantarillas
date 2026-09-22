@@ -818,11 +818,14 @@ def test_los_opcionales_declarados_hoy():
     al cerrar NOR-HID-08 entro 'riesgo_admisible_propietario', que tiene
     exactamente la misma forma -- la norma fija un valor por defecto (los
     maximos recomendados de la Tabla N 02) y el criterio permite endurecerlo,
-    sin bloquear si nadie lo declara.
+    sin bloquear si nadie lo declara. Y desde el cierre de C10 entro el
+    tercero, 'esviaje_max_grados' (PC-32): sin declarar, M7 no acota el
+    esviaje (MAT-O18); declarado, lo aplica como tope del CSV.
     """
     opcionales = {k for k, c in CRITERIOS.items() if c.opcional}
     assert opcionales == {"v_max_concreto_eleccion",
-                          "riesgo_admisible_propietario"}
+                          "riesgo_admisible_propietario",
+                          "esviaje_max_grados"}
 
 
 def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():

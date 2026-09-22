@@ -854,6 +854,15 @@ def factor_esviaje(punto: PuntoCritico) -> float:
     cota, el camino es declararla como criterio [A] con su sensibilidad, no
     escribirla aqui.
 
+    Y ESE CAMINO EXISTE DESDE EL CIERRE DE C10 (PC-32): el criterio [A]
+    opcional 'esviaje_max_grados' de criterios_adoptados.py. Sin declarar,
+    nada cambia -- el parrafo anterior sigue vigente y el numero se ve --;
+    declarado, un esviaje que lo supere sale como `DatoInvalidoError` que
+    nombra al dato, al criterio y al maximo declarado: es un dato del CSV que
+    contradice una decision del proyecto, no un fallo de aritmetica, y por eso
+    no es LimiteNumericoError. La cota la elige el proyectista y queda
+    declarada con su sensibilidad; aqui solo se aplica.
+
     LO QUE SI TIENE ES UNA GUARDIA DE SALIDA NUMERICA (PC-32, EXT-1), y
     conviene no confundirla con la cota anterior: por debajo de
     `tolerancias.COS_ESVIAJE_MIN` -- cos(theta) ~ 3.5e-7, o sea theta por
@@ -871,6 +880,21 @@ def factor_esviaje(punto: PuntoCritico) -> float:
             motivo=f"el esviaje va de 0 (cruce perpendicular) a {ESVIAJE_MAX} "
                    "grados, donde el conducto seria paralelo a la via y la "
                    "longitud de 7.B no estaria definida",
+        )
+    maximo = ca.valor_si_declarado("esviaje_max_grados")
+    if maximo is not None and not punto.esviaje_grados <= maximo + TOL_UMBRAL_NORMATIVO:
+        # COTA DECLARADA, NO INVENTADA (PC-32, cierre C10). Solo actua cuando
+        # el proyectista declaro el criterio [A] opcional; sin el, el
+        # esviaje sigue sin tope (MAT-O18). Forma MAT-D13: condicion en
+        # positivo y negada, mensaje que nombra al dato y al criterio.
+        raise DatoInvalidoError(
+            "esviaje_grados", valor=punto.esviaje_grados, id_punto=punto.id,
+            motivo=f"el esviaje de {punto.esviaje_grados!r} grados supera el "
+                   f"maximo que el proyecto acepta construir, {maximo!r} "
+                   "grados, declarado en el criterio [A] 'esviaje_max_grados' "
+                   "(criterios_adoptados.py, PC-32). O se corrige el dato del "
+                   "CSV o se revisa la declaracion; el calculo no elige por "
+                   "el proyectista",
         )
     coseno = math.cos(math.radians(punto.esviaje_grados))
     if not coseno > COS_ESVIAJE_MIN:

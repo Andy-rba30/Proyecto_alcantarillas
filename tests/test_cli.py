@@ -40,7 +40,7 @@ from src import criterios_adoptados as ca
 from src import servicio
 from tests.apoyo.criterios import sin_valor
 from src.modulos.M11_reporte import PlantillaHTML
-from src.modelos import (CriterioPendienteError,
+from src.modelos import (CriterioPendienteError, EstadoDeVerificacion,
                      ControlGobernante, DatoInvalidoError,
                      ResultadoHidraulico, ResultadoPunto,
                      TipoMaterial, Verificacion)
@@ -1626,8 +1626,9 @@ def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
     assert exc.value.clave == "espesor_pared_cajon"
 
     filas = exc.value.verificaciones_completadas
+    # V5 va detras de VC1 como fila «no aplica» (C10, PC-27).
     assert [v.codigo for v in filas] == ["V1", "V2", "V2b", "V3", "V4",
-                                         "V4b", "VC1", "V6"]
+                                         "V4b", "VC1", "V5", "V6"]
     con_nota = [v.codigo for v in filas
                 if v.paso is not None and v.paso.nota_del_proyecto]
     assert con_nota, ("ninguna de las verificaciones que sobrevivieron lleva "
@@ -1687,7 +1688,10 @@ def test_a_alcance_perfil_la_familia_C_corre_VC1_y_no_difiere_V5():
 
     codigos = [v.codigo for v in filas]
     assert "VC1" in codigos, codigos
-    assert "V5" not in codigos
+    # Desde C10 (PC-27) V5 figura como fila «no aplica» detras de VC1: no se
+    # evalua, y lo dice. Antes no figuraba.
+    v5 = [v for v in filas if v.codigo == "V5"]
+    assert len(v5) == 1 and v5[0].estado is EstadoDeVerificacion.NO_APLICA
     # Y no queda anotada como diferida: la que se difiere en esta familia no
     # es VC1 --- se evalua --- sino la MITAD del requisito que VC1 no cierra,
     # y esa va por `_declarar_alcance_familia_c`, no por aqui.

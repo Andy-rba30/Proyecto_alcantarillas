@@ -1060,6 +1060,27 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
 # Pieza 3 - Control de salida (Sec. 4.3)
 # ---------------------------------------------------------------------------
 
+def _fila_del_ke_numerico(criterio_ke: str) -> Optional[str]:
+    """
+    La clave de fila de la Tabla C.2 de la que sale el ke NUMERICO, o None.
+
+    Declarado en caliente: la fila que `declarar_desde_tabla` registro en
+    la procedencia (una declaracion sin procedencia --- `--declarar`,
+    `establecer_valor_dinamico` a secas --- no nombra fila y no se le
+    inventa). Del archivo: `DeTabla.fila_id` de la resolucion del criterio.
+    El import es perezoso porque `declaracion` importa la ventana normativa
+    y el censo, que M4 no necesita para calcular.
+    """
+    if ca.declarado_en_caliente(criterio_ke):
+        from src import declaracion as _dec
+        procedencia = _dec.procedencia_de(criterio_ke)
+        if procedencia is None or not procedencia.filas:
+            return None
+        return procedencia.filas[0]
+    resolucion = ca.CRITERIOS[criterio_ke].resolucion
+    return getattr(resolucion, "fila_id", None)
+
+
 def ke_declarado(criterio_ke: str = CRITERIO_KE
                  ) -> Tuple[str, str, str, float]:
     """
@@ -1072,9 +1093,11 @@ def ke_declarado(criterio_ke: str = CRITERIO_KE
     DOS CRITERIOS, DOS FORMAS DE DECLARACION, y la asimetria es deliberada
     (esta razonada en `constantes_normativas.KE_HDS5_C2`):
 
-      * 'ke_entrada' (tubo) declara UN NUMERO. Los tres rotulos salen vacios:
-        el criterio no dice de que fila salio, y este modulo no lo puede
-        deducir sin inventarlo.
+      * 'ke_entrada' (tubo) declara UN NUMERO, y desde el cierre de C5-02
+        los tres rotulos salen de la fila de la que ese numero sale
+        (`_fila_del_ke_numerico`): vacios solo si el numero no es la celda
+        de ninguna fila nombrada (un ke declarado a secas, o uno que
+        «DIFIERE de la celda»).
       * 'ke_entrada_cajon' declara LA CLAVE DE UNA FILA de la Tabla C.2. Se
         declara asi porque en el bloque «Box, Reinforced Concrete» el numero
         NO identifica la fila -- el 0.2 esta en tres, el 0.5 en dos, y tres
@@ -1098,7 +1121,34 @@ def ke_declarado(criterio_ke: str = CRITERIO_KE
         # El NUMERO declarado se valida aqui, en el consumidor: la ventana del
         # criterio defiende la puerta de declaracion y esta guardia defiende
         # lo que llegue por cualquier otra via (EXT-V-02).
-        return "", "", "", _validar_ke(valor, criterio_ke)
+        ke = _validar_ke(valor, criterio_ke)
+        # Y LA FILA VIAJA CON EL NUMERO (C5-02, cierre del 2026-09-22). El
+        # tubo sigue declarando un numero --- es el unico criterio `float`
+        # resuelto `de_tabla`, y sobre el se sostienen el editor de E-B, el
+        # barrido de PF-3 y `declarar_desde_tabla` ---, pero el numero SALE
+        # de una fila: la del archivo esta en `DeTabla.fila_id` de su
+        # resolucion, y la de una declaracion en caliente en la procedencia
+        # que `declarar_desde_tabla` registro. Los tres rotulos se imprimen
+        # SOLO si el numero es la celda de esa fila: un 0.7 declarado sobre
+        # la fila del 0.5 «DIFIERE de la celda» (EXT-1) y no puede citarla.
+        fila_id = _fila_del_ke_numerico(criterio_ke)
+        if fila_id is None:
+            return "", "", "", ke
+        f = KE_HDS5_C2.get(fila_id)
+        if f is None or f["bloque"].startswith("Box"):
+            raise DatoInvalidoError(
+                criterio_ke, valor=fila_id,
+                motivo="la fila de la que se declara el ke del TUBO tiene "
+                       "que ser de un bloque «Pipe» de la Tabla C.2 del "
+                       f"HDS-5; «{fila_id}» es del bloque "
+                       f"«{f['bloque'] if f else 'desconocido'}» (un cajon, "
+                       "o una fila que la tabla no tiene). Es la simetrica "
+                       "de NOR-HID-01: el numero puede coincidir y la cita "
+                       "seria falsa",
+            )
+        if not abs(f["ke"] - ke) <= TOL_UMBRAL_NORMATIVO:
+            return "", "", "", ke
+        return f["fila"], f["agrupacion"], f["bloque"], ke
     if not isinstance(valor, str) or valor not in KE_CAJON_C2:
         raise DatoInvalidoError(
             criterio_ke, valor=valor,
@@ -1295,9 +1345,16 @@ def _procedencia_ke(salida: ControlSalida) -> str:
         return ("coeficiente pasado explicito a `control_salida`: esta "
                 "corrida NO lo leyo de ningun criterio")
     if not salida.ke_fila:
-        return (f"criterio '{salida.ke_criterio}', declarado como NUMERO: la "
-                f"fila de la Tabla C.2 de la que sale se lee en el campo "
-                f"`fuente` del criterio, no en el valor")
+        # Dos casos reales y un solo texto que no miente en ninguno: el ke
+        # se declaro nombrando una fila cuya celda NO es este numero (la
+        # nota que `declarar_desde_tabla` exige va en el bloque 3), o se
+        # declaro sin nombrar fila (`--declarar`, `establecer_valor_dinamico`)
+        # y entonces no hay procedencia registrada que citar: se dice.
+        return (f"criterio '{salida.ke_criterio}', declarado como NUMERO sin "
+                "fila de la Tabla C.2 que lo respalde: o la fila nombrada al "
+                "declararlo tiene otra celda (la nota que lo explica esta en "
+                "el bloque 3 de esta memoria), o se declaro sin nombrar fila "
+                "y esta memoria no tiene procedencia que citar")
     # EL BLOQUE SE LEE DE LA TABLA, NO SE CABLEA. Esta linea decia
     # «del bloque «Box, Reinforced Concrete»» como literal, de modo que
     # imprimia esa procedencia CUALQUIERA que fuese la fila declarada -- y

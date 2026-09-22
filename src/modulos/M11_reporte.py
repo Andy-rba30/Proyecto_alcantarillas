@@ -151,8 +151,8 @@ from src.modulos.M8_estructural import verificacion_diferida_estructural
 # no puede importar la CLI --- es la CLI quien importa M11 ---. Ver la nota de
 # su declaracion.
 from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, ContextoCorrida,
-                     ControlGobernante, MOTIVO_METODO_NO_EVALUABLE,
-                     TipoDeVeredicto)
+                     ControlGobernante, EstadoDeVerificacion,
+                     MOTIVO_METODO_NO_EVALUABLE, TipoDeVeredicto)
 
 _reg_M11 = _registro_M11.construir()
 
@@ -270,6 +270,11 @@ MARCA_INCUMPLE = "NO cumple"
 # `paso.veredicto` de la propia `Verificacion`, no de `cumple`.
 MARCA_INDICADOR = "INDICADOR (aviso)"
 CLASE_INDICADOR = "indicador"
+# La fila que existe en la tabla de la Fase 5 y en este punto no dice nada
+# (PC-27, cierre): V5 en la Familia C, sustituida por VC1. Se imprime con
+# el motivo al lado, en vez de no imprimirse.
+MARCA_NO_APLICA = "no aplica"
+CLASE_NO_APLICA = "no-aplica"
 
 # Orden de lectura de las etiquetas, de mas normativo a mas adoptado. Reproduce
 # el de `criterios_adoptados.reporte_criterios`.
@@ -457,7 +462,12 @@ def _es_indicador(v: Any) -> bool:
 
 
 def _marca_de_verificacion(v: Any) -> str:
-    if _es_indicador(v):
+    estado = getattr(v, "estado", None)
+    if estado is EstadoDeVerificacion.NO_APLICA:
+        motivo = _esc(getattr(v, "motivo_no_aplica", ""))
+        return (f'<span class="{CLASE_NO_APLICA}" title="{motivo}">'
+                f"{MARCA_NO_APLICA}</span>")
+    if _es_indicador(v) or estado is EstadoDeVerificacion.INDICADOR:
         return f'<span class="{CLASE_INDICADOR}">{MARCA_INDICADOR}</span>'
     return _marca(v.cumple)
 
@@ -1706,13 +1716,37 @@ def _paso_ausente(codigo: str) -> str:
             f"{_esc(que_haria_falta)}</p></div>")
 
 
+@dataclass(frozen=True)
+class NoAplica:
+    """
+    La entrada de desarrollo de una verificacion que NO APLICA al punto
+    (`EstadoDeVerificacion.NO_APLICA`, C10 / PC-27): no tiene paso porque no
+    se evaluo, y el motivo dice que la sustituye. Viaja en
+    `desarrollo_de_verificaciones` en el lugar del paso para que ni M11 ni
+    la traza la confundan con el HUECO censado de una verificacion sin
+    fundamento --- que es lo que el auditor de C10 midio en C-01: la fila
+    «no aplica» de V5 imprimia el hueco del derecho de via, pidiendo al
+    revisor datos que en un cruce de canal no cierran nada ---.
+    """
+
+    codigo: str
+    motivo: str
+
+
+def _no_aplica_html(entrada: "NoAplica") -> str:
+    return ('<div class="paso nota"><h5><code>' + _esc(entrada.codigo)
+            + f"</code> &mdash; {_esc(MARCA_NO_APLICA)} en este punto</h5>"
+            f"<p><b>Por que no aplica:</b> {_esc(entrada.motivo)}</p></div>")
+
+
 def desarrollo_de_verificaciones(informe: Any) -> Tuple[Tuple[str, Optional[Any]], ...]:
     """
     Las verificaciones cuyo DESARROLLO se imprime bajo la tabla de Fase 5,
-    como `(codigo, paso)`: `paso` es el `PasoDeMemoria` de la verificacion o
-    `None` cuando no lo tiene y el censo (`sin_fundamento_por_codigo`) explica
-    por que --- ese hueco se imprime con `_paso_ausente` ---. Lo que no tiene
-    ni paso ni censo no entra: inventarle texto seria peor que el hueco.
+    como `(codigo, paso)`: `paso` es el `PasoDeMemoria` de la verificacion,
+    un `NoAplica` cuando la verificacion no aplica al punto (C10), o `None`
+    cuando no lo tiene y el censo (`sin_fundamento_por_codigo`) explica por
+    que --- ese hueco se imprime con `_paso_ausente` ---. Lo que no tiene ni
+    paso ni censo no entra: inventarle texto seria peor que el hueco.
 
     LA MISMA SELECCION PARA M11 Y PARA LA TRAZA DE LA GUI (`traza_punto`),
     y con el paso 2.1 UNA sola vez (EXT-8, PC-12). F2.LUZ cuelga de
@@ -1726,7 +1760,10 @@ def desarrollo_de_verificaciones(informe: Any) -> Tuple[Tuple[str, Optional[Any]
     salida: List[Tuple[str, Optional[Any]]] = []
     for _fase, v in verificaciones_publicadas(informe):
         paso = getattr(v, "paso", None)
-        if paso is not None:
+        if getattr(v, "estado", None) is EstadoDeVerificacion.NO_APLICA:
+            salida.append((v.codigo or "", NoAplica(v.codigo or "",
+                                                     v.motivo_no_aplica)))
+        elif paso is not None:
             if id(paso) in ya_impresos:
                 continue
             salida.append((v.codigo or "", paso))
@@ -1779,6 +1816,10 @@ def _tabla_verificaciones(informe: Any) -> str:
                                'title="Adopcion sobre un vacio normativo '
                                'verificado: ver el bloque de acotaciones">'
                                "&#9755; acotacion</a>")
+        elif v.estado is EstadoDeVerificacion.NO_APLICA:
+            # Una fila que no se evaluo no tiene umbral que etiquetar: decir
+            # «[N] constante normativa» aqui era mentir sobre una celda vacia.
+            umbral = "&ndash;"
         else:
             umbral = f"{_etiqueta_html('N')} constante normativa"
         codigo = v.codigo or fase.split(" - ")[0]
@@ -1819,8 +1860,11 @@ def _tabla_verificaciones(informe: Any) -> str:
     # por que no pueden tener fundamento normativo hoy (`_paso_ausente`).
     desarrollo = []
     for codigo, paso in desarrollo_de_verificaciones(informe):
-        desarrollo.append(bloque_paso(paso) if paso is not None
-                          else _paso_ausente(codigo))
+        if isinstance(paso, NoAplica):
+            desarrollo.append(_no_aplica_html(paso))
+        else:
+            desarrollo.append(bloque_paso(paso) if paso is not None
+                              else _paso_ausente(codigo))
     detalle = (f"<h4>{_esc(TITULO_TRAZA_VERIFICACIONES)}</h4>"
                + "".join(desarrollo)) if any(desarrollo) else ""
     return "<h4>Verificaciones</h4>" \
@@ -3185,7 +3229,7 @@ def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
         pasos, _ultimo = traza_hidraulica(punto)
         vistos.extend(pasos)
         vistos.extend(p for _c, p in desarrollo_de_verificaciones(punto)
-                      if p is not None)
+                      if p is not None and not isinstance(p, NoAplica))
     return tuple(vistos)
 
 
