@@ -2114,6 +2114,11 @@ def test_las_tres_caras_restantes_se_construyen_y_declaran_de_verdad(tmp_path):
         assert o["cara_modelo"] == cara, (cara, o["clave"])
         assert o["campo_construido"], f"{cara}: el pie no construyo el campo"
         assert o["widgets"] > 10, (cara, o["widgets"])
+        # La CARA esta pintada, no solo la carcasa (auditor de C09: con los
+        # tres `_pintar_*` en no-op la ventana seguia sumando 20 widgets).
+        assert o["la_cara_esta_pintada"], (cara, o["texto_de_la_cara"])
+        # Y se declaro PULSANDO el boton, no llamando al metodo.
+        assert o["boton_construido"], cara
         # El malo no deja rastro.
         assert o["rotulo_tras_malo"].startswith("No se declaro"), o
         assert o["en_caliente_tras_malo"] is False
@@ -2128,6 +2133,10 @@ def test_las_tres_caras_restantes_se_construyen_y_declaran_de_verdad(tmp_path):
     # resolucion: la fila de la tabla, el catalogo que NO es norma, el
     # proyectista.
     assert "MC_HHD.T10" in obs["RANGO"]["procedencia_tras_bueno"]
+    # La validacion al escribir de la cara RANGO avisa del 9.0 antes de
+    # pulsar, y no dice nada del 4.5.
+    assert obs["RANGO"]["validacion_al_escribir_tras_malo"], obs["RANGO"]
+    assert "6.0" in obs["RANGO"]["validacion_al_escribir_tras_malo"]
     assert "NO es una norma" in obs["CATALOGO"]["procedencia_tras_bueno"]
     assert "proyectista" in obs["CAMPO"]["procedencia_tras_bueno"]
 

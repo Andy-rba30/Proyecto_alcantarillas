@@ -117,7 +117,8 @@ LUZ = _fundamento(
     # compara el umbral (la abertura de la estructura, no el ancho del
     # cauce). La discrepancia DIS-LUZ-DENOMINACION llega por estas citas.
     citas=("MC_HHD.4.1.1.3.1", "MC_HHD.4.1.1.5.1",
-           "MP.GLOSARIO#OBRAS_DE_ARTE_MENORES", "AASHTO_LRFD_9.1.2#BRIDGE"),
+           "MP.GLOSARIO#OBRAS_DE_ARTE_MENORES", "AASHTO_LRFD_9.1.2#BRIDGE",
+           "HDS5_3ED.1.2#NBIS"),
     que_pasa_si_no_se_hace=(
         "Un cruce de luz mayor o igual a 6.0 m se dimensionaria con el "
         "aparato de una alcantarilla, y la memoria citaria numerales de un "

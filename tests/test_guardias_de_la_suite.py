@@ -718,10 +718,9 @@ SIN_CASO_PATRON = {
     # contrasta `siguiente_diametro` contra las TABLAS y no contra la formula
     # (conflicto #7), y la exencion habria sobrevivido a la mitad de su
     # motivo. Lo que SIGUE sin dorado esta censado en el propio fixture
-    # (`CP11_SERIES_NOMINALES['concreto_reforzado'] is None`, con test): la
-    # serie del concreto, porque AASHTO M 170M-04 Tablas 1 a 5 no estan
-    # transcritas -- OCR inutilizable; se leen por imagen en una sesion
-    # propia --.
+    # (`CP11_SERIES_NOMINALES['sin_dorado']`, con test): desde el cierre de
+    # C09 esta vacio, porque la serie del concreto entro por imagen de la
+    # Tabla 5 de M 170M (PDF 10, el unico escaneo real del ejemplar).
     # M8_estructural SALIO DE LA LISTA EN C7, y el motivo por el que estaba
     # sigue siendo cierto -- lo que cambio es que ya no cubre al modulo
     # ENTERO --. La exencion decia: «faltan AASHTO M 170M-04 Tablas 1 a 5

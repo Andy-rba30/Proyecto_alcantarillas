@@ -1532,15 +1532,26 @@ CP11_SERIES_NOMINALES = {
                      3450, 3600),
         "techo_de_la_serie_mm": 3600,
     },
-    "concreto_reforzado": None,
-    "sin_dorado": {
-        "concreto_reforzado": ("AASHTO M 170M-04 / ASTM C 76M-02, Tablas 1 a "
-                               "5 (columna «Internal Designated Diameter, "
-                               "mm»), en normas/ pero SIN TRANSCRIBIR: el "
-                               "PDF es un escaneo con OCR inutilizable y las "
-                               "cinco tablas se leen por imagen, en una "
-                               "sesion propia"),
+    "concreto_reforzado": {
+        "tabla": "AASHTO_M170M.T5",
+        "columna": "dn_mm",
+        "fuente_derivada": ("AASHTO M 170M-04, Tabla 5 (Clase V), leida por "
+                            "imagen de la pag. PDF 10 --el unico escaneo "
+                            "real del ejemplar; las Tablas 1 a 4 son "
+                            "recomposiciones OCR con digitos equivocados-- "
+                            "(cierre C09, SIS-F-13)"),
+        # Leidos de la Tabla 5 (PDF 10, rotada): 27 diametros, paso 75 mm
+        # hasta 900 y 150 mm de 900 a 3600. La serie designada es la misma
+        # en las cinco clases; ver la interpretacion de la tabla.
+        "serie_mm": (300, 375, 450, 525, 600, 675, 750, 825, 900, 1050,
+                     1200, 1350, 1500, 1650, 1800, 1950, 2100, 2250, 2400,
+                     2550, 2700, 2850, 3000, 3150, 3300, 3450, 3600),
+        "techo_de_la_serie_mm": 3600,
     },
+    # Desde el cierre de C09 los tres materiales tienen dorado de TABLA. El
+    # censo de lo que sigue sin caso patron es el de test_guardias_de_la_suite
+    # (M10, expediente vial).
+    "sin_dorado": {},
 }
 
 

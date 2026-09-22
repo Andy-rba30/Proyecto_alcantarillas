@@ -855,15 +855,18 @@ SIN_TABLAS_HEQ_EN_MP = AfirmacionNegativa(
 # ---------------------------------------------------------------------------
 # R48-001 (cierre C11): que magnitud compara el umbral de 6.0 m. El Manual de
 # Hidrologia escribe «luz» sin definirla; el glosario del Manual de Puentes
-# define «luz libre» (obras de arte menores) y «luz del tramo» (entre ejes
-# de apoyo); AASHTO, a la que el 4.1.1.5.1 remite, escribe «opening». Ninguna
-# de las tres es el ANCHO DEL CAUCE NATURAL, y ese era el hallazgo.
+# USA «luz libre» en la entrada de las obras de arte menores (la define su
+# Fig. 1.10-a: por vano, entre pilares); AASHTO, a la que el 4.1.1.5.1
+# remite, escribe «opening»; y HDS-5 §1.2 escribe para que sirve el ancho
+# TOTAL de un cruce multibarril. Ninguna de las cuatro es el ANCHO DEL CAUCE
+# NATURAL, y ese era el hallazgo; en que magnitud discrepan lo dice
+# DIS-LUZ-DENOMINACION.
 # ---------------------------------------------------------------------------
 MP_GLOSARIO_OBRAS_MENORES = _cita(
     id="MP.GLOSARIO#OBRAS_DE_ARTE_MENORES",
     fuente_id="MP",
     numeral="Glosario",
-    titulo_numeral="GLOSARIO",
+    titulo_numeral="GLOSARIO DE TERMINOS",
     pagina_impresa="45",
     pagina_pdf=46,
     pagina_pdf_titulo=45,
@@ -877,7 +880,113 @@ MP_GLOSARIO_OBRAS_MENORES = _cita(
     nota=("La magnitud que el glosario compara con los 6.00 m es la LUZ "
           "LIBRE de la obra, no el ancho del cauce que la obra salva. El "
           "glosario empieza en la pag. impresa 44 (PDF 45), donde imprime "
-          "su titulo; esta entrada esta en la 45 (PDF 46)."),
+          "su titulo «GLOSARIO DE TERMINOS»; esta entrada esta en la 45 "
+          "(PDF 46). Que es «luz libre» NO lo dice esta entrada: lo dibuja "
+          "la Fig. 1.10-a (MP.1.10#FIG_1_10A_LUZ_LIBRE), por VANO."),
+)
+
+MP_FIG_1_10A_LUZ_LIBRE = _cita(
+    id="MP.1.10#FIG_1_10A_LUZ_LIBRE",
+    fuente_id="MP",
+    numeral="Figura 1.10-a",
+    titulo_numeral="Figura 1.10-a Puentes Tipo Viga",
+    pagina_impresa="73",
+    pagina_pdf=74,
+    texto_literal=Verbatim(texto="C = LUZ LIBRE", pagina_pdf=74),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=CIERRE,
+    nota=("Rotulo de la figura, leido sobre la pagina renderizada: la cota "
+          "«C = LUZ LIBRE» va entre el PILAR N° 1 y el PILAR N° 2 --un solo "
+          "vano--, mientras «L = LONGITUD» cubre todo entre estribos y "
+          "«L1, L2 = LUZ DE TRAMO» van entre ejes de apoyo. Es la unica "
+          "definicion de luz libre del Manual de Puentes, y es POR VANO: "
+          "bajo esta lectura un marco de tres celdas de 2.5 m tiene luz "
+          "libre 2.5 m. La parte EN CONTRA de DIS-LUZ-DENOMINACION."),
+)
+
+HDS5_NBIS_MULTIBARRIL = _cita(
+    id="HDS5_3ED.1.2#NBIS",
+    fuente_id="HDS5_3ED",
+    numeral="1.2",
+    titulo_numeral="COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS",
+    pagina_impresa="1.3",
+    pagina_pdf=41,
+    texto_literal=Verbatim(
+        texto=("It is important to recognize that culverts exceeding a 20 ft "
+               "(6.1 m) span width (either as a single barrel or the total "
+               "width of a multiple barrel crossing) are considered bridges "
+               "in the National Bridge Inspection Standards (NBIS) and "
+               "therefore subject to routine inspection according to NBIS "
+               "requirements."),
+        pagina_pdf=41),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=CIERRE,
+    nota=("La unica fuente de normas/ que dice que ancho cuenta en un cruce "
+          "de VARIOS barriles: el TOTAL («the total width of a multiple "
+          "barrel crossing»), para la clasificacion como puente (NBIS). Es "
+          "la parte que sostiene la lectura de `luz_m` como abertura total "
+          "del cruce (DIS-LUZ-DENOMINACION). El parrafo siguiente, en la "
+          "pag. 1.4, matiza que para el METODO HIDRAULICO la guia razonable "
+          "es modelar como puente «a single culvert with a span of 20 ft "
+          "(6.1 m) or more» (HDS5_3ED.1.2#MODELO)."),
+)
+
+HDS5_MODELO_PUENTE = _cita(
+    id="HDS5_3ED.1.2#MODELO",
+    fuente_id="HDS5_3ED",
+    numeral="1.2",
+    titulo_numeral="COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS",
+    pagina_impresa="1.4",
+    pagina_pdf=42,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Based on NBIS regulations, as well as hydraulic issues, a "
+               "reasonable guideline is to use bridge based modeling for a "
+               "single culvert with a span of 20 ft (6.1 m) or more, given "
+               "that such structures will typically operate with free "
+               "surface flow."),
+        pagina_pdf=42),
+    caracter=Caracter.RECOMENDACION,
+    metodo=AMBOS,
+    sesion=CIERRE,
+    nota=("«A reasonable guideline»: RECOMENDACION, no definicion. Distingue "
+          "dos cosas que DIS-LUZ-DENOMINACION separa: la clasificacion "
+          "administrativa del cruce (ancho total, NBIS, pag. 1.3) y el "
+          "metodo hidraulico (luz de UN barril). Este proyecto aplica el "
+          "umbral de 6.0 m del Manual de Hidrologia a la denominacion "
+          "--alcantarilla o puente-- y por eso lee el ancho total."),
+)
+
+# ---------------------------------------------------------------------------
+# AASHTO M 170M-04, Tabla 5 (Clase V): la UNICA de las cinco tablas de
+# diseno que el ejemplar de normas/ conserva como escaneo real (pag. PDF 10,
+# girada 90 grados; la continuacion en la PDF 11). Las Tablas 1 a 4 son
+# recomposiciones OCR con digitos equivocados en la propia imagen (SIS-F-13,
+# cierre C09). Leida por IMAGEN a 2.0x, rotada.
+# ---------------------------------------------------------------------------
+AASHTO_M170M_T5 = _cita(
+    id="AASHTO_M170M.T5",
+    fuente_id="AASHTO_M170M",
+    numeral="Table 5",
+    titulo_numeral="Table 5—Design Requirements for Class V Reinforced Concrete Pipe",
+    pagina_impresa="M 170M-10",
+    pagina_pdf=10,
+    texto_literal=Verbatim(
+        texto="Table 5—Design Requirements for Class V Reinforced Concrete Pipe",
+        pagina_pdf=10),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=CIERRE,
+    nota=("La pagina PDF 10 es un escaneo real, legible, impreso girado 90 "
+          "grados (el rotulo de pie «M 170M-10» y «TS-4a» van verticales). "
+          "La columna «Internal Designed Diameter, mm» --asi la imprime, con "
+          "«Designed» y no «Designated»-- tiene 27 filas de 300 a 3600 mm, y "
+          "es la serie que CP11 usa como dorado del concreto. Las columnas de "
+          "espesor de pared B (300 a 1200 mm) y C (300 a 1800 mm) son "
+          "legibles y se transcriben; las de refuerzo no, porque ningun "
+          "modulo las consume (M8 no dimensiona el tubo de concreto)."),
 )
 
 AASHTO_DEF_BRIDGE = _cita(
@@ -898,7 +1007,10 @@ AASHTO_DEF_BRIDGE = _cita(
     nota=("Es la definicion a la que remite el num. 4.1.1.5.1 del Manual de "
           "Hidrologia («siguiendo lo establecido en las especificaciones "
           "AASHTO LRFD»). La magnitud es «an opening»: la ABERTURA de la "
-          "estructura, y 20.0 ft son 6.096 m, no 6.0 m: el Manual redondea."),
+          "estructura. 20.0 ft son 6.096 m y el Manual escribe 6.0 m sin "
+          "decir como pasa de una cifra a la otra: la diferencia esta "
+          "declarada en DIS-LUZ-DENOMINACION y el codigo compara los 6.0 m "
+          "del Manual ([N], el mas exigente de los dos)."),
 )
 
 # ===========================================================================

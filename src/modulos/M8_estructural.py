@@ -29,8 +29,9 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
     1-2  Seleccionar clase/calibre segun la altura real de relleno y
          verificar que esa altura cae en su rango admisible.
          `seleccionar_clase_calibre()` -- se detiene con
-         CriterioPendienteError: la tabla del concreto (AASHTO M 170M-04
-         Tablas 1 a 5) no esta transcrita, y para el TMC no hay tabla sino
+         CriterioPendienteError: las clases D-load del concreto (AASHTO
+         M 170M-04 Tablas 1 a 4; la Tabla 5 esta transcrita por imagen solo
+         en diametros y paredes) no estan transcritas, y para el TMC no hay tabla sino
          el procedimiento de ASTM A796/A796M (num. 7 a 11), que no esta
          implementado -- sus Tablas 3 a 17 de propiedades seccionales SI
          estan transcritas en el registro (N1) como insumo --. Ver el

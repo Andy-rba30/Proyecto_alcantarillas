@@ -151,12 +151,14 @@ def denominacion_por_luz(luz_m: Optional[float],
     4.1.1.5.1). Binario: no existe una tercera denominacion intermedia.
 
     QUE MAGNITUD COMPARA (R48-001, DIS-LUZ-DENOMINACION): la ABERTURA libre
-    que el cruce exige de la estructura --la «luz libre» del glosario del
-    Manual de Puentes, el «opening» de AASHTO 1.2, a la que el 4.1.1.5.1
-    remite--, no el ancho del cauce natural. En un marco multicelda es la
-    abertura total del cruce y no la luz de una celda: partir en celdas lo
-    que se salva no cambia lo que se salva, y es la lectura conservadora
-    (manda al Manual de Puentes el cruce que lo exige).
+    que el cruce exige de la estructura --el «opening» de AASHTO 1.2, a la
+    que el 4.1.1.5.1 remite--, no el ancho del cauce natural. En un marco
+    multicelda es el ancho TOTAL del cruce, que es lo que HDS-5 §1.2 (pag.
+    1.3) escribe para la clasificacion como puente («the total width of a
+    multiple barrel crossing»); la Fig. 1.10-a del Manual de Puentes dibuja
+    la luz libre POR VANO y es la lectura en contra, declarada en la
+    discrepancia. La CIFRA es la del Manual de Hidrologia, 6.0 m [N], mas
+    exigente que los 20.0 ft = 6.096 m de AASHTO.
 
     La tolerancia se aplica del lado exigente. Una luz que el punto flotante
     deja en 5.999999999 es una luz de 6.0 m mal representada, y 6.0 m es
@@ -194,15 +196,16 @@ def verificar_luz(luz_m: Optional[float],
             formula_cita_id="MC_HHD.4.1.1.3.1",
             citas_textuales=("MC_HHD.4.1.1.3.1", "MC_HHD.4.1.1.5.1",
                              "MP.GLOSARIO#OBRAS_DE_ARTE_MENORES",
-                             "AASHTO_LRFD_9.1.2#BRIDGE"),
+                             "AASHTO_LRFD_9.1.2#BRIDGE",
+                             "HDS5_3ED.1.2#NBIS"),
             discrepancias=("DIS-LUZ-DENOMINACION",),
             sustitucion=(
                 Magnitud("luz", float(luz_m), "m",
                          "abertura libre que el cruce exige de la "
-                         "estructura (luz libre del glosario del Manual de "
-                         "Puentes, «opening» de AASHTO 1.2), declarada con "
-                         "--luz o por --datos-externos: NO es columna del "
-                         "CSV y NO es el ancho del cauce natural "
+                         "estructura («opening» de AASHTO 1.2; en un cruce "
+                         "multicelda el ancho TOTAL, HDS-5 1.2), declarada "
+                         "con --luz o por --datos-externos: NO es columna "
+                         "del CSV y NO es el ancho del cauce natural "
                          "(DIS-LUZ-DENOMINACION)",
                          cifras=CIFRAS_FACTOR),),
             resultado=Magnitud("denominacion", denominacion.value, "",

@@ -771,7 +771,8 @@ def test_un_diametro_sin_fila_en_la_tabla_de_espesores_se_reclama_por_su_nombre(
 # el PDF es un dorado que no sale de la formula. El concreto sigue sin serie
 # (M 170M Tablas 1-5 sin transcribir) y el propio fixture lo dice.
 
-_MATERIALES_CP11 = [("hdpe", TipoMaterial.HDPE), ("tmc", TipoMaterial.TMC)]
+_MATERIALES_CP11 = [("hdpe", TipoMaterial.HDPE), ("tmc", TipoMaterial.TMC),
+                    ("concreto_reforzado", TipoMaterial.CONCRETO_REFORZADO)]
 
 
 def _serie_del_registro(tabla_id: str, columna: str) -> tuple:
@@ -864,12 +865,15 @@ def test_CP11_el_tope_del_hdpe_es_la_ultima_fila_de_su_serie():
     assert tope_tmc_mm in tmc["serie_mm"] and tope_tmc_mm < tmc["techo_de_la_serie_mm"]
 
 
-def test_CP11_el_concreto_sigue_sin_dorado_y_el_fixture_lo_dice():
+def test_CP11_el_concreto_tiene_dorado_desde_el_cierre_de_C09():
     """
-    Una exencion que se retira a medias tiene que dejar dicho que mitad
-    sigue abierta: la serie del concreto no esta transcrita, y el caso lo
-    declara con la fuente concreta en vez de inventarla.
+    Hasta el cierre de C09 el concreto era la mitad que seguia abierta («M
+    170M Tablas 1-5 sin transcribir»). La Tabla 5 (Clase V) del ejemplar es
+    un escaneo real y su serie esta transcrita por imagen: el dorado existe
+    y el censo de lo que sigue sin dorado esta vacio.
     """
-    assert CP11_SERIES_NOMINALES["concreto_reforzado"] is None
-    razon = CP11_SERIES_NOMINALES["sin_dorado"]["concreto_reforzado"]
-    assert "M 170M" in razon and "SIN TRANSCRIBIR" in razon
+    caso = CP11_SERIES_NOMINALES["concreto_reforzado"]
+    assert caso is not None and caso["tabla"] == "AASHTO_M170M.T5"
+    assert CP11_SERIES_NOMINALES["sin_dorado"] == {}
+    assert len(caso["serie_mm"]) == 27
+    assert caso["serie_mm"][0] == 300 and caso["serie_mm"][-1] == 3600

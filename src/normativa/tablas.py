@@ -4086,4 +4086,82 @@ DG2018_T304_11 = _tabla(
     alcance=Integra(),
 )
 
+# ---------------------------------------------------------------------------
+# AASHTO M 170M-04, Tabla 5 (Clase V), por IMAGEN de la pag. PDF 10 (cierre
+# C09, SIS-F-13). Solo las columnas que se leen sin duda: el diametro
+# designado y los espesores de pared B y C. Las celdas que la pagina imprime
+# como raya («—») no se transcriben: la fila no lleva esa clave.
+# ---------------------------------------------------------------------------
+_NO_USADA_CONCRETO = NoUsada(por_que_no=(
+    "ningun modulo dimensiona hoy el tubo de concreto por clase D-load: la "
+    "columna de diametros es el dorado de CP11 para `M2.siguiente_diametro` "
+    "(contraste de la progresion contra la serie de la norma de producto, "
+    "conflicto #7) y los espesores son el insumo de la verificacion "
+    "pendiente de 'espesor_pared_conducto', que los leyo por imagen"))
+
+T_M170M_T5 = _tabla(
+    id="AASHTO_M170M.T5",
+    cita_id="AASHTO_M170M.T5",
+    titulo_literal="Table 5—Design Requirements for Class V Reinforced Concrete Pipe",
+    encabezados_superiores=("Reinforcement, cm²/Linear m of Pipe Wall",
+                            "Wall A", "Wall B", "Wall C"),
+    columnas=(
+        ColumnaDeTabla(id="dn_mm", etiqueta_literal="Internal Designed Diameter, mm",
+                       unidad="mm", uso=_NO_USADA_CONCRETO),
+        ColumnaDeTabla(id="wall_b_mm", etiqueta_literal="Wall Thickness, mm",
+                       unidad="mm", uso=_NO_USADA_CONCRETO),
+        ColumnaDeTabla(id="wall_c_mm", etiqueta_literal="Wall Thickness, mm",
+                       unidad="mm", uso=_NO_USADA_CONCRETO),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"AASHTO_M170M.T5#d{dn}",
+            etiqueta_literal=str(dn),
+            valores={"dn_mm": dn,
+                     **({"wall_b_mm": wb} if wb is not None else {}),
+                     **({"wall_c_mm": wc} if wc is not None else {})},
+            uso=_NO_USADA_CONCRETO)
+        # (diametro, pared B, pared C) leidos de la pag. PDF 10 rotada; None
+        # donde la pagina imprime raya.
+        for dn, wb, wc in (
+            (300, 50, 69), (375, 57, 75), (450, 63, 82), (525, 69, 88),
+            (600, 75, 94), (675, 82, 100), (750, 88, 107), (825, 94, 113),
+            (900, 100, 119), (1050, 113, 132), (1200, 125, 144),
+            (1350, None, 157), (1500, None, 169), (1650, None, 182),
+            (1800, None, 194),
+            (1950, None, None), (2100, None, None), (2250, None, None),
+            (2400, None, None), (2550, None, None), (2700, None, None),
+            (2850, None, None), (3000, None, None), (3150, None, None),
+            (3300, None, None), (3450, None, None), (3600, None, None),
+        )),
+    alcance=Integra(),
+    interpretacion=Interpretacion(
+        texto=("El ejemplar de normas/ conserva esta tabla como ESCANEO REAL "
+               "(PDF 10, girado 90 grados) y las Tablas 1 a 4 como "
+               "recomposiciones OCR cuya imagen trae digitos equivocados "
+               "(371 por 375, 1390 por 1350, «3tS0», «6tXI») y filas "
+               "superpuestas. Por eso la serie de diametros del concreto se "
+               "toma de la Clase V: la serie designada es la misma en las "
+               "cinco clases --la norma tabula por diametro y clase--, y es "
+               "lo unico que el registro afirma de esta transcripcion."),
+        en_contra=(
+            "las Tablas 1 a 4 (Clases I a IV) NO estan transcritas y no se "
+            "puede comprobar contra ESTE ejemplar que sus filas de diametro "
+            "coincidan con las de la Tabla 5; la coincidencia se apoya en "
+            "que la norma tabula la misma serie designada por clase",
+            "la pagina PDF 11 (continuacion de la Tabla 5, rotada 180 "
+            "grados) vuelve a ser OCR y no se transcribe",
+        ),
+        a_favor=(
+            "la Tabla 1 (Clase I, PDF 3), aun recompuesta, empieza en 1500 y "
+            "termina en 3450/3600 con el mismo paso de 150 mm; la Tabla 3 "
+            "(Clase III, PDF 6) empieza en 300 con el mismo paso de 75 mm",
+            "las trece celdas de pared B que 'espesor_pared_conducto' leyo "
+            "por imagen de las Tablas 2 y 3 coinciden, de 900 a 1200 mm, con "
+            "la columna B de esta tabla (100, 113, 125)",
+        ),
+    ),
+)
+
+
 TABLAS: Dict[str, TablaNormativa] = {t.id: t for t in _TODAS}

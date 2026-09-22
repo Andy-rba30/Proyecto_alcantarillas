@@ -65,44 +65,59 @@ DIS_HDS5_EDICIONES = _d(
 # ---------------------------------------------------------------------------
 DIS_LUZ_DENOMINACION = _d(
     id="DIS-LUZ-DENOMINACION",
-    objeto=("la magnitud que el umbral de 6.0 m de la denominacion "
-            "alcantarilla/puente compara"),
+    objeto=("la MAGNITUD que el umbral de denominacion alcantarilla/puente "
+            "compara (que «luz» es, y en un cruce multicelda cual) y su CIFRA "
+            "(6.0 m frente a 20.0 ft = 6.096 m)"),
     partes=(
         Parte(quien="MC_HHD",
               que_dice=("«la estructura cuya luz sea menor a 6.0 m» y «cuya "
                         "luz sea mayor o igual a 6.0 m, siguiendo lo "
                         "establecido en las especificaciones AASHTO LRFD»: "
-                        "escribe «luz» y no la define"),
+                        "escribe «luz» sin definirla y la cifra 6.0 m"),
               cita_id="MC_HHD.4.1.1.5.1"),
         Parte(quien="MP",
               que_dice=("obras de arte menores son las de «luz libre menor "
-                        "que 6.00 m (20 ft)»; y define aparte la «luz del "
-                        "tramo» entre ejes de apoyo"),
-              cita_id="MP.GLOSARIO#OBRAS_DE_ARTE_MENORES"),
+                        "que 6.00 m (20 ft)», y su Fig. 1.10-a dibuja la luz "
+                        "libre POR VANO, entre pilares: bajo esta lectura "
+                        "un marco de tres celdas de 2.5 m tiene luz libre "
+                        "2.5 m y es obra de arte menor"),
+              cita_id="MP.1.10#FIG_1_10A_LUZ_LIBRE"),
         Parte(quien="AASHTO_LRFD_9",
               que_dice=("«Any structure having an opening not less than "
-                        "20.0 ft»: la ABERTURA de la estructura"),
+                        "20.0 ft»: la ABERTURA de la estructura, y 20.0 ft "
+                        "son 6.096 m, no 6.0"),
               cita_id="AASHTO_LRFD_9.1.2#BRIDGE"),
+        Parte(quien="HDS5_3ED",
+              que_dice=("los cruces que superan 20 ft (6.1 m) de luz «either "
+                        "as a single barrel or the total width of a multiple "
+                        "barrel crossing» son puentes para el NBIS; y para "
+                        "el metodo hidraulico la guia razonable es modelar "
+                        "como puente «a single culvert with a span of 20 ft "
+                        "(6.1 m) or more»"),
+              cita_id="HDS5_3ED.1.2#NBIS"),
     ),
-    gana="AASHTO_LRFD_9",
-    por_que=("el propio Manual de Hidrologia remite a AASHTO para la "
-             "definicion, y las tres fuentes coinciden en lo que importa "
-             "aqui: la magnitud es una propiedad de la ESTRUCTURA (su "
-             "abertura o luz libre), no el ancho del cauce natural. Por eso "
-             "`luz_m` es la abertura libre que el cruce exige de la "
-             "estructura --la que el proyectista lee de la topografia como "
-             "lo que hay que salvar-- y M1 la compara entera: en un marco "
-             "multicelda es la abertura total del cruce, no la luz de una "
-             "celda, porque partir en celdas lo que se salva no cambia lo "
-             "que se salva. Es la lectura conservadora: manda al Manual de "
-             "Puentes el cruce que lo exige"),
-    efecto_si_se_sigue_la_otra=("leer «luz libre» como la de CADA celda "
-                                "dejaria diseñar con el Manual de Hidrologia "
+    gana="HDS5_3ED",
+    por_que=("en la MAGNITUD: es la unica de las cuatro que dice que ancho "
+             "cuenta en un cruce de varias celdas --el total del cruce, para "
+             "la clasificacion como puente--, y las otras tres coinciden en "
+             "lo que descarta el hallazgo R48-001: la luz es una propiedad "
+             "de la ESTRUCTURA (su abertura o luz libre), no el ancho del "
+             "cauce natural. Por eso `luz_m` es la abertura libre que el "
+             "cruce exige de la estructura, leida de la topografia, y M1 la "
+             "compara entera; es ademas la lectura conservadora, porque "
+             "manda al Manual de Puentes el cruce que lo exige. En la CIFRA "
+             "gana el Manual de Hidrologia: el codigo compara 6.0 m ([N], "
+             "LUZ_MAX_ALCANTARILLA), mas exigente que los 6.096 m de AASHTO "
+             "y de HDS-5; una luz de 6.05 m es puente aqui y no alli"),
+    efecto_si_se_sigue_la_otra=("con la luz libre POR VANO de la Fig. 1.10-a "
                                 "un cruce de 8 m salvado con tres celdas de "
-                                "2.5 m, que AASHTO llama puente; y comparar "
-                                "el ANCHO DEL CAUCE en vez de la abertura de "
-                                "la estructura --lo que el hallazgo R48-001 "
-                                "leyo en el codigo-- confundiria el dato "
+                                "2.5 m seria obra de arte menor y se "
+                                "disenaria con el Manual de Hidrologia, "
+                                "mientras el NBIS lo cuenta como puente; y "
+                                "con los 6.096 m de AASHTO una luz entre "
+                                "6.0 y 6.096 m dejaria de ser puente. Lo que "
+                                "el hallazgo leyo en el codigo --comparar el "
+                                "ANCHO DEL CAUCE-- confundiria el dato "
                                 "hidraulico con el estructural"),
     estado=EstadoDiscrepancia.ABIERTA,
 )

@@ -3228,29 +3228,32 @@ símbolo.
 
 # Parte XXXVIII — Lo que el cierre de C09, C11 y C14 dejó escrito: la magnitud de la luz, el registro único, las tres caras y el ejemplar ilegible
 
-## C11-01 · El umbral de 6.0 m compara la abertura de la estructura, y la discrepancia entre las tres fuentes queda declarada en el paso
+## C11-01 · El umbral de 6.0 m compara la abertura de la estructura, y la discrepancia entre las cuatro fuentes queda declarada en el paso
 
 - **Cerrado (C11):** R48-001 denunciaba que M1 comparaba con 6.0 m «el ancho
   del cauce natural» cuando la norma ancla el umbral a la luz libre de la
-  ESTRUCTURA. Hoy el registro lleva las dos definiciones que faltaban
-  —`MP.GLOSARIO#OBRAS_DE_ARTE_MENORES` («luz libre menor que 6.00 m») y
-  `AASHTO_LRFD_9.1.2#BRIDGE` («an opening not less than 20.0 ft»), verificadas
-  contra sus páginas—, la discrepancia `DIS-LUZ-DENOMINACION` (ABIERTA, gana
-  AASHTO porque el 4.1.1.5.1 remite a ella) llega a la memoria por el paso
-  F2.LUZ —la vía 2 del canal vuelve a tener usuario de producción, D9-01— y
-  por el fundamento, y `luz_m` dice lo que es: la abertura libre que el cruce
-  exige de la estructura, no el ancho del cauce; en un marco multicelda, la
-  abertura total.
-- **Abierto:** esa última lectura —la abertura total y no la de una celda—
-  no la escribe ninguna fuente de `normas/`: es la lectura conservadora
-  (manda al Manual de Puentes el cruce que lo exige) y queda declarada en
-  el `por_que` de la discrepancia y en el docstring de
-  `denominacion_por_luz`, no como criterio, porque no tiene un rango que
-  elegir sino dos lecturas, y la otra deja diseñar como alcantarilla un
-  cruce de 8 m que AASHTO llama puente.
-- **Qué haría falta:** una fuente que defina la abertura de un marco
-  multicelda (la práctica del inventario de puentes de FHWA lo hace, y no
-  está en `normas/`); con ella la lectura pasaría a cita.
+  ESTRUCTURA. Hoy el registro lleva las definiciones que faltaban, todas
+  verificadas contra su página: `MP.GLOSARIO#OBRAS_DE_ARTE_MENORES» («luz
+  libre menor que 6.00 m»), `MP.1.10#FIG_1_10A_LUZ_LIBRE` (la Fig. 1.10-a,
+  que dibuja la luz libre POR VANO, entre pilares), `AASHTO_LRFD_9.1.2#BRIDGE`
+  («an opening not less than 20.0 ft») y `HDS5_3ED.1.2#NBIS` («the total
+  width of a multiple barrel crossing» cuenta como puente para el NBIS; y el
+  matiz hidráulico de `HDS5_3ED.1.2#MODELO`). La discrepancia
+  `DIS-LUZ-DENOMINACION` nombra el desacuerdo REAL —por vano contra ancho
+  total, 6.0 m contra 6.096 m— y quién gana en cada cosa: en la magnitud
+  HDS-5 (ancho total del cruce, la lectura conservadora), en la cifra el
+  Manual de Hidrología (6.0 m, [N]). Llega a la memoria por el paso F2.LUZ
+  —la vía 2 del canal vuelve a tener usuario, D9-01— y por el fundamento, y
+  `luz_m` dice lo que es. El auditor adversarial de C09/C11/C14 refutó la
+  primera versión, que afirmaba «las tres fuentes coinciden» y razonaba el
+  multicelda por cuenta propia: las dos citas que faltaban estaban en
+  `normas/`.
+- **Abierto:** el caso del hallazgo (8 m salvados con tres celdas de 2.5 m)
+  sigue saliendo PUENTE, ahora con la fuente que lo sostiene en vez de con
+  un argumento; y HDS-5 distingue clasificación (ancho total) de método
+  hidráulico (un barril), distinción que este proyecto no necesita porque
+  el umbral de 6.0 m decide la denominación, no el método.
+- **Qué haría falta:** nada para el hallazgo.
 - **Dónde vive:** `src/normativa/discrepancias.py::DIS_LUZ_DENOMINACION`
 
 ## C14-01 · El registro normativo es una sola instancia
@@ -3280,19 +3283,24 @@ símbolo.
 - **Qué haría falta:** ese CI.
 - **Dónde vive:** `tests/apoyo/gui_caras_normativa.py::CARAS`
 
-## C09-02 · La serie de diámetros de M 170M no se puede transcribir de este ejemplar, y la ficha de la fuente lo dice
+## C09-02 · La serie de diámetros del concreto se transcribió por imagen de la única tabla legible de M 170M, y la ficha de la fuente dice cuáles no lo son
 
-- **Cerrado (C09), en lo que se podía:** SIS-F-13 y NOR-PRO-04 esperaban
-  «M 170M Tablas 1–5 sin transcribir» como si fuera trabajo pendiente de
-  transcriptor. Se intentó: las páginas PDF 3 a 7 renderizadas a 2.5x son
-  una recomposición OCR y no un escaneo; los dígitos vienen equivocados en
-  la propia imagen (371 por 375, 1390 por 1350, «3tS0», «6tXI»), filas
-  enteras se superponen y las páginas 8 y 10 están en blanco. Transcribir
-  de ahí sería inventar (regla 8). La nota de `fuentes.AASHTO_M170M` dejó
-  de prometer «renderizar la página y leerla» y dice lo medido.
-- **Abierto:** la serie del concreto en `CP11_SERIES_NOMINALES` sigue sin
-  dorado, y M10 sigue sin caso patrón (expediente vial): las dos mitades
-  que las fichas ya nombraban.
-- **Qué haría falta:** otro ejemplar de M 170M (o la M 170M-23 que la
-  vigencia ya pide para gabinete).
-- **Dónde vive:** `src/normativa/fuentes.py::AASHTO_M170M`
+- **Cerrado (C09):** SIS-F-13 y NOR-PRO-04 esperaban «M 170M Tablas 1–5 sin
+  transcribir». Medido página a página: las Tablas 1 a 4 (PDF 3–7, 9) son
+  recomposiciones OCR con dígitos equivocados en la propia imagen (371 por
+  375, 1390 por 1350, «3tS0», «6tXI») y filas superpuestas, y transcribir
+  de ahí sería inventar (regla 8); la Tabla 5 (Clase V, PDF 10, girada 90°)
+  es un escaneo real y legible. Su columna de diámetros (27 filas, 300 a
+  3600 mm) y sus paredes B y C están en `AASHTO_M170M.T5` por imagen, con la
+  interpretación en contra declarada (las Clases I a IV no se pueden
+  contrastar contra este ejemplar). CP11 tiene por fin dorado de tabla para
+  los tres materiales y `M2.siguiente_diametro` se contrasta contra la serie
+  del concreto. La primera versión de este cierre decía «PDF 10 en blanco»
+  y «hace falta otro ejemplar»; el auditor adversarial lo refutó renderizando
+  la página, y tenía razón.
+- **Abierto:** las clases D-load (Tablas 1–4) siguen sin transcribir, que es
+  lo que `clases_producto_por_relleno` necesitaría para el concreto; y M10
+  sigue sin caso patrón (expediente vial).
+- **Qué haría falta:** otro ejemplar de M 170M para las Tablas 1 a 4 (o la
+  M 170M-23 que la vigencia ya pide para gabinete).
+- **Dónde vive:** `src/normativa/tablas.py::T_M170M_T5`

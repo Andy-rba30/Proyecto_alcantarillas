@@ -33,7 +33,8 @@ from src.normativa.esquema import EstadoDiscrepancia
 
 RAIZ = Path(__file__).resolve().parents[1]
 DIS = "DIS-LUZ-DENOMINACION"
-CITAS_NUEVAS = ("MP.GLOSARIO#OBRAS_DE_ARTE_MENORES", "AASHTO_LRFD_9.1.2#BRIDGE")
+CITAS_NUEVAS = ("MP.GLOSARIO#OBRAS_DE_ARTE_MENORES", "AASHTO_LRFD_9.1.2#BRIDGE",
+                "MP.1.10#FIG_1_10A_LUZ_LIBRE", "HDS5_3ED.1.2#NBIS", "HDS5_3ED.1.2#MODELO")
 
 
 # ===========================================================================
@@ -53,15 +54,22 @@ def test_r48001_la_discrepancia_esta_declarada_viva_y_gana_aashto():
     d = reg.discrepancia(DIS)
     assert d.viva
     assert d.estado is EstadoDiscrepancia.ABIERTA
-    assert d.gana == "AASHTO_LRFD_9"
-    assert {p.quien for p in d.partes} == {"MC_HHD", "MP", "AASHTO_LRFD_9"}
+    assert d.gana == "HDS5_3ED"
+    assert {p.quien for p in d.partes} == {"MC_HHD", "MP", "AASHTO_LRFD_9", "HDS5_3ED"}
     assert "cauce" in d.por_que.lower()
+    # La discrepancia REAL entre fuentes, no una coincidencia disfrazada:
+    # la luz libre por vano (Fig. 1.10-a) contra el ancho total (NBIS), y
+    # 6.0 m contra 6.096 m, con cual gana en cada cosa.
+    assert "6.096" in d.por_que and "6.0 m" in d.por_que
+    assert "POR VANO" in " ".join(p.que_dice for p in d.partes)
+    assert "total width" in " ".join(p.que_dice for p in d.partes)
 
 
 def test_r48001_el_paso_de_la_luz_declara_la_discrepancia_y_la_magnitud():
     v = M1.verificar_luz(3.0, "A-01")
     assert DIS in v.paso.discrepancias
-    for cita_id in ("MP.GLOSARIO#OBRAS_DE_ARTE_MENORES", "AASHTO_LRFD_9.1.2#BRIDGE"):
+    for cita_id in ("MP.GLOSARIO#OBRAS_DE_ARTE_MENORES", "AASHTO_LRFD_9.1.2#BRIDGE",
+                    "HDS5_3ED.1.2#NBIS"):
         assert cita_id in v.paso.citas_textuales
     luz = v.paso.sustitucion[0]
     assert "cauce" in luz.procedencia.lower()
@@ -101,9 +109,28 @@ def test_pc31_los_cuatro_sitios_del_dictamen_comparten_la_instancia():
 # SIS-F-13 / NOR-PRO-04, mitad concreto
 # ===========================================================================
 
-def test_sisf13_la_fuente_m170m_dice_que_sus_tablas_no_se_pueden_transcribir():
+def test_sisf13_la_fuente_m170m_dice_que_tablas_son_ocr_y_cual_es_escaneo():
+    """
+    Las Tablas 1 a 4 no se pueden transcribir del ejemplar (imagen OCR con
+    digitos equivocados) y la Tabla 5 si (PDF 10, escaneo real): la nota lo
+    dice con esas palabras, sin prometer de mas ni de menos.
+    """
     f = registro.construir().fuente("AASHTO_M170M")
-    nota = f.nota.lower()
-    assert "no se puede" in nota or "no se pueden" in nota
-    assert "371" in f.nota and "1390" in f.nota
-    assert "renderizar la pagina y leerla" not in nota
+    nota = f.nota
+    assert "Tablas 1 a 4" in nota and "NO se pueden" in nota
+    assert "371" in nota and "1390" in nota
+    assert "Tabla 5" in nota and "PDF 10" in nota and "AASHTO_M170M.T5" in nota
+
+
+def test_sisf13_la_serie_del_concreto_esta_transcrita_por_imagen_de_la_tabla_5():
+    from tests.fixtures.casos_patron import CP11_SERIES_NOMINALES
+    reg = registro.construir()
+    t = reg.tabla("AASHTO_M170M.T5")
+    serie = tuple(sorted(int(v) for v in t.columna_como_dict("dn_mm").values()))
+    assert len(serie) == 27 and serie[0] == 300 and serie[-1] == 3600
+    assert serie == CP11_SERIES_NOMINALES["concreto_reforzado"]["serie_mm"]
+    # Pared B solo hasta 1200 y pared C hasta 1800: donde la pagina imprime
+    # raya, la fila no lleva la clave.
+    b = t.columna_como_dict("wall_b_mm"); c = t.columna_como_dict("wall_c_mm")
+    assert len(b) == 11 and len(c) == 15
+    assert reg.cita("AASHTO_M170M.T5").verificado is not None
