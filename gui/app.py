@@ -4,7 +4,9 @@ gui/app.py
 ==========
 Interfaz grafica del expediente de alcantarillas. Reutiliza el patron de
 `legacy/Tc.py`: Tkinter + ttkbootstrap, Notebook por pestanas, MarcoScroll y
-Tooltip, los dos por `gui/componentes.py`.
+Tooltip, los dos por `gui/componentes.py`, que desde el rediseño visual es
+tambien el unico sitio donde vive el tema (paleta, tipografia y estilos con
+nombre; ver mas abajo).
 
 Que NO reutiliza este archivo, dicho porque el encabezado lo afirmaba (SIS-A-12)
 ---------------------------------------------------------------------------
@@ -33,6 +35,26 @@ No reimplementa el pipeline: llama a las mismas funciones que usa `cli.py`
 (`cargar_datos_externos`, `correr`, `informe_json`, `exportar_html`,
 `exportar_pdf`) para que la GUI y la linea de comandos vean siempre el mismo
 expediente.
+
+El tema (rediseño visual, bloque 1)
+-----------------------------------
+Como se ve la ventana se decide en UN sitio, `gui/componentes.py`: la
+paleta con nombre (`FONDO`, `SUPERFICIE`, `AZUL`, `VERDE`, `AMBAR`, `ROJO` y
+sus fondos suaves), la tipografia resuelta contra las fuentes instaladas
+(`Tipografia`, IBM Plex si esta y la del sistema si no; monoespaciada para
+numeros y claves) y los estilos ttk con nombre que `aplicar_tema` configura
+antes de construir el primer widget. Este archivo pide estilos por su nombre
+(`Fondo.TFrame`, `Titulo.TLabel`, `Res.TLabel`...) y componentes por su
+clase --- `Panel` (plano, sin borde, titulo en mayusculas pequeñas),
+`Insignia` (estado con TEXTO sobre fondo suave: el color acompaña, nunca
+sustituye) y `TituloDeVista` («PASO n / 4», titulo y subtitulo, leidos de
+`VISTAS`) --- y no escribe un solo color ni cuerpo de letra. Lo que Tk no
+da y el estilo de referencia pide, se declara y no se simula: no hay radios
+de 6-8 px ni sombras, porque un `tk.Button` y un `ttk.Frame` no los tienen.
+La barra superior lleva el nombre del proyecto y las acciones principales,
+y va EMPAQUETADA ANTES que el Notebook: hasta el bloque 1 iba despues, y en
+la geometria por defecto (1100x800) el alto natural del Notebook la dejaba
+fuera de la pantalla con el boton de EJECUTAR dentro.
 
 Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
 -----------------------------------------------------------
@@ -276,9 +298,11 @@ from gui import ayuda_entrada as ayuda_ent  # noqa: E402
 from gui import editores as ged  # noqa: E402
 from gui import exportacion_pdf as expdf  # noqa: E402
 from gui import ventana_normativa as ventana_norma  # noqa: E402
+from gui import componentes as comp  # noqa: E402
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR,  # noqa: E402
-                             COLOR_OK, BotonAccion, BotonAyuda, MarcoScroll,
-                             Tooltip, interpretar_texto_declarado)
+                             COLOR_OK, BotonAccion, BotonAyuda, Insignia,
+                             MarcoScroll, Panel, TituloDeVista, Tooltip,
+                             interpretar_texto_declarado)
 
 try:
     import ttkbootstrap as tb
@@ -435,6 +459,25 @@ CAMPOS_EXTERNOS = (
      "Equivale a la bandera --categoria-tr de la linea de comandos.", ""),
 )
 
+# LAS CUATRO VISTAS, con el titulo y el subtitulo que encabezan cada pestaña
+# («PASO n / 4», titulo, subtitulo). El numero de paso es la POSICION en esta
+# tupla y el total su longitud: ninguno se escribe dos veces. El texto de la
+# pestaña del Notebook es el mismo titulo, precedido del numero.
+VISTAS = (
+    ("Datos de entrada",
+     "El CSV de puntos criticos, los datos que no son columna, el alcance de "
+     "la corrida y el anticipo de lo que va a faltar."),
+    ("Criterios",
+     "Los criterios adoptados y su estado; aqui se declaran los pendientes, "
+     "solo para esta corrida o en el archivo."),
+    ("Resultados por punto",
+     "Una fila por punto de la ultima corrida y, al seleccionarla, sus "
+     "verificaciones y bloqueos."),
+    ("Resumen",
+     "El estado del expediente, los criterios que bloquearon una etapa y la "
+     "exportacion de la memoria."),
+)
+
 # El texto del boton de ejecucion, UNA vez: se restaura en dos sitios despues
 # de correr y una tercera copia divergiria. Sin codigos de modulo (G1): que
 # la corrida ejecuta M0 a M10 lo dicen su tooltip y la barra de estado.
@@ -547,7 +590,10 @@ class ExpedienteApp:
         self.txt_detalle.configure(state="disabled")
         self.btn_traza.deshabilitar(MOTIVO_SIN_PUNTO)
         for lbl in self.lbl_resumen.values():
-            lbl.config(text="-", foreground="")
+            if isinstance(lbl, Insignia):
+                lbl.configurar("-", comp.INSIGNIA_NEUTRA)
+            else:
+                lbl.config(text="-", foreground="")
         self.lbl_estado.config(text=f"Sin informe vigente: {motivo}.")
 
     # ------------------------------------------------------------------
@@ -563,67 +609,129 @@ class ExpedienteApp:
             self.style = ttk.Style()
             if "clam" in self.style.theme_names():
                 self.style.theme_use("clam")
+        # EL TEMA, UNA VEZ Y ANTES DE CUALQUIER WIDGET: `aplicar_tema` deja
+        # configurados los estilos con nombre que las cuatro pestañas piden
+        # (`gui/componentes.py`) y resuelve la tipografia contra las fuentes
+        # instaladas, que es lo que `BotonAccion` y los `tk.Text` leen al
+        # construirse. Ningun color ni cuerpo de letra se decide en este
+        # archivo.
+        self.tipografia = comp.aplicar_tema(self.style, self.root)
 
-        self.style.configure("TLabel", font=("Segoe UI", 9))
-        self.style.configure("Header.TLabel", font=("Segoe UI", 10, "bold"), foreground="#2c3e50")
-        self.style.configure("Ayuda.TLabel", font=("Segoe UI", 8, "italic"), foreground="#666666")
-        self.style.configure("Error.TLabel", font=("Segoe UI", 8, "bold"), foreground=COLOR_ERROR)
-        self.style.configure("Res.TLabel", font=("Consolas", 11, "bold"), foreground="#1b4f72")
-
-        contenedor = ttk.Frame(self.root, padding=10)
+        contenedor = ttk.Frame(self.root, style="Fondo.TFrame")
         contenedor.pack(fill="both", expand=True)
 
-        self.nb = ttk.Notebook(contenedor)
-        self.nb.pack(fill="both", expand=True)
+        # LA BARRA SUPERIOR Y LA DE ESTADO SE EMPAQUETAN ANTES QUE EL
+        # NOTEBOOK, y no es estilo: `pack` reparte el alto en orden, y la
+        # barra de acciones --- con el boton de EJECUTAR --- iba DESPUES del
+        # Notebook, cuyo alto natural (medido: 1002 px, el de la pestaña 2)
+        # supera el de la ventana por defecto (800 px). En esa geometria la
+        # barra entera quedaba fuera de la pantalla y el boton principal no
+        # se veia. Empaquetadas primero, arriba y abajo, no se pueden
+        # desplazar: el que cede es el Notebook, que tiene scroll.
+        self._construir_barra_superior(contenedor)
+        self._construir_barra_de_estado(contenedor)
 
+        self.nb = ttk.Notebook(contenedor)
+        self.nb.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+
+        # LA PESTAÑA 2 TAMBIEN SE DESPLAZA, como la 1 y la 4, y es una medida
+        # del bloque 1 del rediseño y no una eleccion: con la cabecera de la
+        # vista, los cuatro paneles y el editor tipado montado, la columna
+        # unica de la pestaña pide mas alto del que tiene una ventana de
+        # 1000 px, y en una geometria fija el que cedia era el `PanedWindow`
+        # de la tabla, que llegaba a quedarse sin una sola fila visible. El
+        # bloque 2 (tabla con el detalle a la derecha) devuelve la vista a
+        # una sola pantalla; hasta entonces, la tabla conserva sus filas y
+        # lo que no cabe se alcanza con la rueda.
         self.tab_datos = MarcoScroll(self.nb)
-        self.tab_criterios = ttk.Frame(self.nb)
-        self.tab_puntos = ttk.Frame(self.nb)
+        self.tab_criterios = MarcoScroll(self.nb)
+        self.tab_puntos = ttk.Frame(self.nb, style="Fondo.TFrame")
         self.tab_resumen = MarcoScroll(self.nb)
-        self.nb.add(self.tab_datos, text="  1. Datos de entrada  ")
-        self.nb.add(self.tab_criterios, text="  2. Criterios  ")
-        self.nb.add(self.tab_puntos, text="  3. Resultados por punto  ")
-        self.nb.add(self.tab_resumen, text="  4. Resumen  ")
+        pestanas = (self.tab_datos, self.tab_criterios, self.tab_puntos,
+                    self.tab_resumen)
+        rotulo = {pestana: f"  {n}. {titulo}  "
+                  for n, (pestana, (titulo, _sub))
+                  in enumerate(zip(pestanas, VISTAS), start=1)}
+        self.nb.add(self.tab_datos, text=rotulo[self.tab_datos])
+        self.nb.add(self.tab_criterios, text=rotulo[self.tab_criterios])
+        self.nb.add(self.tab_puntos, text=rotulo[self.tab_puntos])
+        self.nb.add(self.tab_resumen, text=rotulo[self.tab_resumen])
 
         self._construir_tab_datos(self.tab_datos.interior)
-        self._construir_tab_criterios(self.tab_criterios)
+        self._construir_tab_criterios(self.tab_criterios.interior)
         self._construir_tab_puntos(self.tab_puntos)
         self._construir_tab_resumen(self.tab_resumen.interior)
 
-        barra = ttk.Frame(contenedor, padding=(0, 10, 0, 0))
-        barra.pack(fill="x")
-        # «Nuevo proyecto» es como se crea OTRA obra sobre el mismo
-        # despliegue (EXT-10): se carga una sesion vacia, nunca se vacia
-        # datos_sitio.py ni criterios_adoptados.py.
-        ttk.Button(barra, text="Nuevo proyecto", command=self.nuevo_proyecto).pack(side="left", padx=4)
-        ttk.Button(barra, text="Guardar sesion", command=self.guardar_sesion).pack(side="left", padx=4)
-        ttk.Button(barra, text="Cargar sesion", command=self.cargar_sesion).pack(side="left", padx=4)
-        ttk.Button(barra, text="Importar decisiones",
-                   command=self.importar_decisiones).pack(side="left", padx=4)
-        # La barra de estado es el sitio de los codigos de modulo (G1): aqui
-        # pueden leerse sin colarse en las etiquetas de los campos.
-        self.lbl_estado = ttk.Label(barra, text="Sin ejecutar (módulos M0 a M10).",
-                                    style="Ayuda.TLabel")
-        self.lbl_estado.pack(side="left", padx=(12, 0))
-
-        self.btn_ejecutar = BotonAccion(
-            barra, TEXTO_BOTON_EJECUTAR, letra=BotonAccion.GRANDE,
-            fondo="#2e86c1", activebackground="#21618c", activeforeground="white",
-            command=self.ejecutar_pipeline,
-            ayuda="Corre el pipeline completo (M0 -> M10) con el CSV, los\n"
-                  "datos externos y el alcance elegidos arriba.",
-        )
-        self.btn_ejecutar.pack(side="right", padx=4, ipadx=14, ipady=6)
         # Control-Return ejecuta desde cualquier campo (EXT-8, PC-17): la
         # accion principal de la ventana tiene atajo, y el mismo `command`
         # del boton, para que las dos puertas hagan exactamente lo mismo.
         self.root.bind("<Control-Return>", lambda _evt: self.ejecutar_pipeline())
 
+    def _cabecera_de_vista(self, master, pestana):
+        """
+        La cabecera «PASO n / 4», titulo y subtitulo de `pestana`, leida de
+        `VISTAS` por la POSICION de la pestaña en el Notebook: el numero de
+        paso no se escribe en ningun sitio. La devuelve sin empaquetar: cada
+        pestaña la coloca segun su geometria (`pack` o `grid`).
+        """
+        indice = self.nb.index(pestana)
+        titulo, subtitulo = VISTAS[indice]
+        return TituloDeVista(master, indice + 1, len(VISTAS), titulo, subtitulo)
+
+    def _construir_barra_superior(self, contenedor):
+        """
+        La barra compacta de arriba: el nombre del proyecto --- el que se
+        teclea en la pestaña 1, leido de la misma variable --- y las acciones
+        principales de la ventana, con EJECUTAR a la derecha.
+        """
+        barra = ttk.Frame(contenedor, style="Fondo.TFrame", padding=(12, 10, 12, 8))
+        barra.pack(side="top", fill="x")
+        self.lbl_proyecto = ttk.Label(barra, text="", style="Proyecto.TLabel")
+        self.lbl_proyecto.pack(side="left", padx=(0, 16))
+        self.proyecto_var.trace_add("write", lambda *_a: self._pintar_nombre_del_proyecto())
+        self._pintar_nombre_del_proyecto()
+
+        self.btn_ejecutar = BotonAccion(
+            barra, TEXTO_BOTON_EJECUTAR, letra=BotonAccion.GRANDE,
+            fondo=comp.AZUL, activebackground=comp.AZUL_OSCURO,
+            activeforeground="white",
+            command=self.ejecutar_pipeline,
+            ayuda="Corre el pipeline completo (M0 -> M10) con el CSV, los\n"
+                  "datos externos y el alcance elegidos en la pestaña 1.\n"
+                  "Atajo: Control+Intro.",
+        )
+        self.btn_ejecutar.pack(side="right", padx=(8, 0), ipadx=12, ipady=4)
+        # «Nuevo proyecto» es como se crea OTRA obra sobre el mismo
+        # despliegue (EXT-10): se carga una sesion vacia, nunca se vacia
+        # datos_sitio.py ni criterios_adoptados.py.
+        for texto, comando in (("Nuevo proyecto", self.nuevo_proyecto),
+                               ("Guardar sesion", self.guardar_sesion),
+                               ("Cargar sesion", self.cargar_sesion),
+                               ("Importar decisiones", self.importar_decisiones)):
+            ttk.Button(barra, text=texto, command=comando).pack(side="left", padx=(0, 6))
+
+    def _construir_barra_de_estado(self, contenedor):
+        """
+        La barra de estado, abajo. Es el sitio de los codigos de modulo (G1):
+        aqui pueden leerse sin colarse en las etiquetas de los campos.
+        """
+        pie = ttk.Frame(contenedor, style="Fondo.TFrame", padding=(12, 4, 12, 8))
+        pie.pack(side="bottom", fill="x")
+        self.lbl_estado = ttk.Label(pie, text="Sin ejecutar (módulos M0 a M10).",
+                                    style="Estado.TLabel")
+        self.lbl_estado.pack(side="left")
+
+    def _pintar_nombre_del_proyecto(self):
+        """El nombre tecleado en la pestaña 1; sin el, el titulo de la ventana."""
+        nombre = self.proyecto_var.get().strip()
+        self.lbl_proyecto.config(text=nombre or self.root.title())
+
     # -------------------------- Pestana 1 -----------------------------
     def _construir_tab_datos(self, p):
-        ttk.Label(p, text="1. Proyecto y CSV", style="Header.TLabel").pack(anchor="w")
-        f_proj = ttk.Frame(p)
-        f_proj.pack(fill="x", pady=(6, 14))
+        self._cabecera_de_vista(p, self.tab_datos).pack(anchor="w", fill="x", pady=(0, 12))
+        panel_proyecto = Panel(p, "Proyecto y CSV")
+        panel_proyecto.pack(fill="x", pady=(0, 10))
+        f_proj = panel_proyecto.interior
         f_proj.columnconfigure(1, weight=1)
 
         ttk.Label(f_proj, text="Nombre del proyecto:").grid(row=0, column=0, sticky="w", padx=5, pady=4)
@@ -687,10 +795,14 @@ class ExpedienteApp:
                            "la memoria imprime de que archivo salio cada [S]. Vacio,\n"
                            "gobiernan los del archivo: la obra del repositorio.")
 
-        ttk.Separator(p, orient="horizontal").pack(fill="x", pady=6)
+        self.lbl_error_datos = ttk.Label(f_proj, text="", style="Error.TLabel",
+                                         wraplength=820, justify="left")
+        self.lbl_error_datos.grid(row=4, column=0, columnspan=3, sticky="w",
+                                  padx=5, pady=(6, 0))
 
-        ttk.Label(p, text="2. Datos declarados (no son columna del CSV)",
-                  style="Header.TLabel").pack(anchor="w", pady=(8, 0))
+        panel_datos = Panel(p, "Datos declarados (no son columna del CSV)")
+        panel_datos.pack(fill="x", pady=(0, 10))
+        p = panel_datos.interior
         # El texto visible no nombra banderas de la CLI (G1): la equivalencia
         # exacta de cada campo vive en su tooltip, que es donde se lee al
         # preguntarse por ESE campo.
@@ -737,12 +849,19 @@ class ExpedienteApp:
                 self.lbl_no_aplica[clave].grid(row=fila, column=3, sticky="w",
                                                 padx=(12, 0))
 
-        ttk.Separator(p, orient="horizontal").pack(fill="x", pady=6)
+        ttk.Label(
+            p,
+            text="Ningún dato de esta sección tiene valor por defecto: sin declararlo, "
+                 "la etapa que lo necesita queda registrada como bloqueo en el informe "
+                 "(no se sustituye por un número plausible).",
+            style="Ayuda.TLabel", wraplength=820, justify="left",
+        ).pack(anchor="w", padx=5, pady=(6, 0))
 
         # Sin «(--alcance)» en el rotulo (G1): la bandera equivalente la dicen
         # los tooltips de los dos botones de opcion.
-        ttk.Label(p, text="3. Alcance de la corrida",
-                  style="Header.TLabel").pack(anchor="w", pady=(8, 0))
+        panel_alcance = Panel(panel_datos.master, "Alcance de la corrida")
+        panel_alcance.pack(fill="x", pady=(0, 10))
+        p = panel_alcance.interior
         ttk.Label(
             p,
             text="Es una bifurcación DECLARADA, no una poda. Con 'expediente' "
@@ -781,9 +900,9 @@ class ExpedienteApp:
         # de la pestana 4, que se puebla despues de ejecutar. El boton de
         # EJECUTAR no se entera de que este panel existe: correr siempre se
         # puede, y el pipeline convierte cada falta en un Bloqueo declarado.
-        ttk.Separator(p, orient="horizontal").pack(fill="x", pady=6)
-        f_ant = ttk.LabelFrame(p, text="Anticipo antes de correr", padding=10)
-        f_ant.pack(fill="x", pady=(8, 0))
+        panel_anticipo = Panel(panel_alcance.master, "Anticipo antes de correr")
+        panel_anticipo.pack(fill="x", pady=(0, 10))
+        f_ant = panel_anticipo.interior
         ttk.Label(f_ant, text=antc.AVISO_DEL_ANTICIPO, style="Ayuda.TLabel",
                   wraplength=900, justify="left").pack(anchor="w", pady=(0, 6))
 
@@ -867,17 +986,6 @@ class ExpedienteApp:
 
         self._pintar_anticipo()
 
-        self.lbl_error_datos = ttk.Label(p, text="", style="Error.TLabel", wraplength=820, justify="left")
-        self.lbl_error_datos.pack(anchor="w", padx=5, pady=(10, 0))
-
-        ttk.Label(
-            p,
-            text="Ningún dato de esta sección tiene valor por defecto: sin declararlo, "
-                 "la etapa que lo necesita queda registrada como bloqueo en el informe "
-                 "(no se sustituye por un número plausible).",
-            style="Ayuda.TLabel", wraplength=820, justify="left",
-        ).pack(anchor="w", padx=5, pady=(6, 0))
-
     # LA CLAVE DE `cli` QUE LLEVA CADA CAMPO DE LA VENTANA. Los rotulos de
     # `CAMPOS_EXTERNOS` son los de la GUI (`l_hidraulico`) y las claves con las
     # que `cli` razona son las del expediente (`L_hidraulico_m`): la traduccion
@@ -931,7 +1039,7 @@ class ExpedienteApp:
         """
         for familias, lbl in self.lbl_seccion_familia.items():
             if self.puntos_familia is None:
-                lbl.config(text="— puntos", foreground="#666666")
+                lbl.config(text="— puntos", foreground=comp.TEXTO_SUAVE)
                 continue
             partes = []
             for familia in familias:
@@ -940,7 +1048,7 @@ class ExpedienteApp:
                               + ("" if n == 1 else "s"))
             texto = " · ".join(partes) + " en el CSV"
             if any(self.puntos_familia.get(f, 0) for f in familias):
-                lbl.config(text=texto, foreground="#666666")
+                lbl.config(text=texto, foreground=comp.TEXTO_SUAVE)
             else:
                 lbl.config(text=texto, foreground=COLOR_AVISO)
 
@@ -1046,17 +1154,17 @@ class ExpedienteApp:
                 contraste = None
         if contraste is None:
             self.lbl_anticipo_csv.config(text=antc.SIN_CSV,
-                                         foreground="#666666")
+                                         foreground=comp.TEXTO_SUAVE)
         else:
             self.lbl_anticipo_csv.config(
                 text="\n".join(antc.lineas_del_contraste(contraste)),
-                foreground=("#666666" if contraste.cabecera_completa
+                foreground=(comp.TEXTO_SUAVE if contraste.cabecera_completa
                             else COLOR_AVISO))
 
         diferido = antc.diferimientos_del_alcance(alcance)
         self.lbl_anticipo_diferido.config(
             text="\n".join(antc.lineas_de_diferimientos(diferido)),
-            foreground=COLOR_AVISO if diferido.difiere_algo else "#666666")
+            foreground=COLOR_AVISO if diferido.difiere_algo else comp.TEXTO_SUAVE)
 
         # Bloque 4 (PF-2). Los datos externos se arman por la MISMA puerta
         # que la corrida (`cli.cargar_datos_externos` con el JSON de la
@@ -1067,7 +1175,7 @@ class ExpedienteApp:
         for item in self.tree_prevuelo.get_children():
             self.tree_prevuelo.delete(item)
         if contraste is None:
-            self.lbl_anticipo_prevuelo.config(text=antc.SIN_CSV, foreground="#666666")
+            self.lbl_anticipo_prevuelo.config(text=antc.SIN_CSV, foreground=comp.TEXTO_SUAVE)
             return
         ruta_externos = self.datos_externos_var.get().strip() or None
         try:
@@ -1082,7 +1190,7 @@ class ExpedienteApp:
         lineas = antc.lineas_del_prevuelo(estimado)
         detiene = any(e.detiene for e in estimado)
         self.lbl_anticipo_prevuelo.config(
-            text=lineas[0], foreground=COLOR_AVISO if detiene else "#666666")
+            text=lineas[0], foreground=COLOR_AVISO if detiene else comp.TEXTO_SUAVE)
         for e in estimado:
             familia = "" if e.familia is None else f" ({e.familia.value})"
             self.tree_prevuelo.insert("", "end", values=(
@@ -1157,15 +1265,17 @@ class ExpedienteApp:
     # -------------------------- Pestana 2 -----------------------------
     def _construir_tab_criterios(self, p):
         p.columnconfigure(0, weight=1)
-        # La fila 2 es el `PanedWindow` (tabla + detalle): es la unica que
-        # crece. La 0 es el encabezado, la 1 el filtro, la 3 el bloque de
-        # declaracion y la 4 la linea de estado.
-        p.rowconfigure(2, weight=1)
+        # La fila 2 es el `PanedWindow` (tabla + detalle). La 0 es la cabecera
+        # de la vista, la 1 el panel del filtro y el recuento, y la 3 el panel
+        # de declaracion con su linea de estado. `p` es el interior de un
+        # `MarcoScroll` (ver `_crear_interfaz`): cada fila toma su alto natural
+        # y la vista se desplaza.
 
-        f_cab = ttk.Frame(p, padding=(10, 10, 10, 0))
-        f_cab.grid(row=0, column=0, sticky="ew")
-        ttk.Label(f_cab, text="Criterios adoptados (criterios_adoptados.py)",
-                  style="Header.TLabel").pack(anchor="w")
+        self._cabecera_de_vista(p, self.tab_criterios).grid(row=0, column=0, sticky="ew",
+                                           pady=(0, 8))
+        panel_filtro = Panel(p, "Filtro y recuento")
+        panel_filtro.grid(row=1, column=0, sticky="ew", pady=(0, 8))
+        f_cab = panel_filtro.interior
         ttk.Label(
             f_cab,
             # Las CUATRO que este archivo tiene, y solo esas (SIS-A-11).
@@ -1193,8 +1303,8 @@ class ExpedienteApp:
                  "tiene y que sigue diciendo otra cosa. La memoria imprime los "
                  "pisados en su propio bloque, con el valor del archivo al lado: "
                  "sirven para TANTEAR, no para entregar.",
-            style="Ayuda.TLabel", wraplength=980, justify="left",
-        ).pack(anchor="w", pady=(2, 8))
+            style="Ayuda.TLabel", wraplength=1180, justify="left",
+        ).pack(anchor="w", pady=(0, 8))
 
         # --- El filtro y el recuento -------------------------------------
         # Con 69 criterios --- 33 de ellos pendientes --- encontrar los que
@@ -1204,8 +1314,8 @@ class ExpedienteApp:
         # Los dos numeros se calculan en `_llenar_tabla_criterios`, sobre las
         # mismas filas que se pintan: un contador que se calculara aparte
         # podria decir un numero y la tabla mostrar otro.
-        f_filtro = ttk.Frame(p, padding=(10, 0, 10, 6))
-        f_filtro.grid(row=1, column=0, sticky="ew")
+        f_filtro = ttk.Frame(f_cab)
+        f_filtro.pack(fill="x")
         f_filtro.columnconfigure(4, weight=1)
 
         ttk.Label(f_filtro, text="Estado:").grid(row=0, column=0, sticky="w")
@@ -1227,8 +1337,7 @@ class ExpedienteApp:
         cmb_ambito = ttk.Combobox(
             f_filtro, textvariable=self.filtro_ambito_var, state="readonly",
             width=38, values=[rotulo for rotulo, _t in FILTROS_DE_AMBITO])
-        cmb_ambito.grid(row=1, column=1, columnspan=2, sticky="w",
-                        padx=(6, 16), pady=(6, 0))
+        cmb_ambito.grid(row=1, column=1, sticky="w", padx=(6, 16), pady=(6, 0))
         Tooltip(cmb_ambito,
                 "Ninguna de las dos opciones se elige a mano aqui:\n"
                 "  - «este alcance» es el que declaraste en la pestana 1;\n"
@@ -1239,17 +1348,18 @@ class ExpedienteApp:
                 "Filtrar no es ocultar: el recuento sigue diciendo cuantos hay\n"
                 "en total y cuantos esconde el filtro.")
 
+        # El aviso del ambito («el filtro esconde N») va DEBAJO de los
+        # filtros y vacio no ocupa fila: ambito y fase comparten la fila 1.
         self.lbl_ambito = ttk.Label(f_filtro, text="", style="Ayuda.TLabel")
-        self.lbl_ambito.grid(row=1, column=3, columnspan=2, sticky="w",
-                             pady=(6, 0))
+        self.lbl_ambito.grid(row=2, column=1, columnspan=4, sticky="w")
 
-        ttk.Label(f_filtro, text="Fase:").grid(row=2, column=0, sticky="w",
+        ttk.Label(f_filtro, text="Fase:").grid(row=1, column=2, sticky="w",
                                                pady=(6, 0))
         self.filtro_fase_var = tk.StringVar(value=FILTRO_FASE_TODAS)
         cmb_fase = ttk.Combobox(
             f_filtro, textvariable=self.filtro_fase_var, state="readonly",
             width=64, values=[FILTRO_FASE_TODAS] + _fases_del_censo())
-        cmb_fase.grid(row=2, column=1, columnspan=3, sticky="w",
+        cmb_fase.grid(row=1, column=3, columnspan=2, sticky="w",
                       padx=(6, 16), pady=(6, 0))
         Tooltip(cmb_fase,
                 "La fase del calculo en que se usa cada criterio, DERIVADA\n"
@@ -1269,8 +1379,9 @@ class ExpedienteApp:
                 "Busca en la CLAVE y en el CONCEPTO, sin distinguir mayusculas.\n"
                 "Se aplica junto con el filtro de estado, no en su lugar.")
 
-        self.lbl_recuento_criterios = ttk.Label(f_filtro, text="",
-                                                 style="Header.TLabel")
+        # El recuento es una INSIGNIA: texto («39 de 79 pendientes») sobre el
+        # fondo suave del estado, rojo mientras quede alguno y verde cuando no.
+        self.lbl_recuento_criterios = Insignia(f_filtro, "", comp.INSIGNIA_NEUTRA)
         self.lbl_recuento_criterios.grid(row=0, column=4, sticky="e")
 
         # --- La tabla y el detalle, con el reparto en manos del usuario ----
@@ -1280,17 +1391,22 @@ class ExpedienteApp:
         # Con el divisor movible y su barra de scroll, el reparto lo decide
         # quien esta mirando, que es lo unico que sabe si en ese momento le
         # importa mas la lista o el texto de una fila.
-        panel = ttk.PanedWindow(p, orient="vertical")
-        panel.grid(row=2, column=0, sticky="nsew", padx=10)
+        # Con alto PEDIDO: dentro del marco desplazable un `PanedWindow`
+        # sin alto propio nace plano, porque su alto natural no lo dan sus
+        # paneles sino este argumento. Es el area de arranque de tabla mas
+        # detalle; el divisor sigue moviendose dentro de ella.
+        panel = ttk.PanedWindow(p, orient="vertical", height=440)
+        panel.grid(row=2, column=0, sticky="nsew")
 
-        f_tabla = ttk.Frame(panel)
-        panel.add(f_tabla, weight=2)
+        panel_tabla = Panel(panel, "Criterios adoptados (criterios_adoptados.py)")
+        panel.add(panel_tabla, weight=2)
+        f_tabla = panel_tabla.interior
         f_tabla.columnconfigure(0, weight=1)
         f_tabla.rowconfigure(0, weight=1)
 
         cols = ("clave", "etiqueta", "concepto", "valor", "estado", "fuente")
         self.tree_criterios_todos = ttk.Treeview(
-            f_tabla, columns=cols, show="headings", height=12)
+            f_tabla, columns=cols, show="headings", height=10)
         encabezados = [
             ("clave", "Clave", 190, "w"),  # literal-ok: ancho de columna, px
             ("etiqueta", "Etq.", 45, "center"),  # literal-ok: ancho de columna, px
@@ -1303,17 +1419,17 @@ class ExpedienteApp:
             self.tree_criterios_todos.heading(col, text=txt)
             self.tree_criterios_todos.column(col, width=ancho, anchor=anchor)
         self.tree_criterios_todos.grid(row=0, column=0, sticky="nsew")
-        self.tree_criterios_todos.tag_configure("pendiente", background="#fdecea",
+        self.tree_criterios_todos.tag_configure("pendiente", background=comp.ROJO_SUAVE,
                                                  foreground=COLOR_ERROR)
         self.tree_criterios_todos.tag_configure("declarado_corrida",
-                                                 background="#fef9e7",
+                                                 background=comp.AMBAR_SUAVE,
                                                  foreground=COLOR_AVISO)
         # El pisado se pinta como AVISO y con fondo propio: no es un vacio
         # (rojo) ni un valor del archivo (verde) ni un hueco rellenado
         # (ambar claro). Es el unico estado en que la tabla y el archivo
         # discrepan, y tiene que verse de un vistazo.
         self.tree_criterios_todos.tag_configure("pisado_corrida",
-                                                 background="#fdebd0",
+                                                 background=comp.PISADO_SUAVE,
                                                  foreground=COLOR_AVISO)
         self.tree_criterios_todos.tag_configure("resuelto", foreground=COLOR_OK)
         self.tree_criterios_todos.bind("<<TreeviewSelect>>", self._al_seleccionar_criterio)
@@ -1337,9 +1453,9 @@ class ExpedienteApp:
         self.tree_criterios_todos.configure(xscroll=scroll_ch.set)
         scroll_ch.grid(row=1, column=0, sticky="ew")
 
-        f_detalle = ttk.LabelFrame(panel, text="Detalle del criterio seleccionado",
-                                    padding=10)
-        panel.add(f_detalle, weight=1)
+        panel_detalle = Panel(panel, "Detalle del criterio seleccionado")
+        panel.add(panel_detalle, weight=1)
+        f_detalle = panel_detalle.interior
         f_detalle.columnconfigure(0, weight=1)
         f_detalle.rowconfigure(0, weight=1)
 
@@ -1349,8 +1465,7 @@ class ExpedienteApp:
         # tenia antes de todo esto --- y el divisor no arreglaba nada hasta
         # que alguien lo arrastrara. Doce lineas visibles de arranque, el resto
         # por la barra, y el reparto en manos del usuario a partir de ahi.
-        self.txt_detalle_criterio = tk.Text(f_detalle, height=12, wrap="word",
-                                             font=("Consolas", 9))
+        self.txt_detalle_criterio = comp.texto_plano(f_detalle, height=7, wrap="word")
         self.txt_detalle_criterio.grid(row=0, column=0, sticky="nsew")
         scroll_det = ttk.Scrollbar(f_detalle, orient="vertical",
                                     command=self.txt_detalle_criterio.yview)
@@ -1358,9 +1473,9 @@ class ExpedienteApp:
         scroll_det.grid(row=0, column=1, sticky="ns")
         self.txt_detalle_criterio.configure(state="disabled")
 
-        f_declarar = ttk.LabelFrame(p, text="Declarar valor para el criterio pendiente",
-                                     padding=10)
-        f_declarar.grid(row=3, column=0, sticky="ew", padx=10, pady=10)
+        panel_declarar = Panel(p, "Declarar valor para el criterio pendiente")
+        panel_declarar.grid(row=3, column=0, sticky="ew", pady=(8, 0))
+        f_declarar = panel_declarar.interior
         f_declarar.columnconfigure(1, weight=1)
 
         ttk.Label(f_declarar, text="Criterio:").grid(row=0, column=0, sticky="w", padx=(0, 6))
@@ -1412,7 +1527,9 @@ class ExpedienteApp:
         f_botones.grid(row=3, column=0, columnspan=2, sticky="w", pady=(4, 0))
 
         self.btn_aplicar_corrida = BotonAccion(
-            f_botones, "Aplicar solo a esta corrida", fondo="#2e86c1", command=self._aplicar_valor_corrida,
+            f_botones, "Aplicar solo a esta corrida", fondo=comp.AZUL,
+            activebackground=comp.AZUL_OSCURO, activeforeground="white",
+            command=self._aplicar_valor_corrida,
             motivo=MOTIVO_SIN_CRITERIO,
             ayuda="El valor se usa en la proxima ejecucion del calculo, pero\n"
                   "criterios_adoptados.py NO se modifica. Entra ENTERO y en una\n"
@@ -1432,7 +1549,7 @@ class ExpedienteApp:
 
         self.btn_ventana_norma = BotonAccion(
             f_botones, "Ver la norma y declarar desde la tabla...",
-            fondo="#5d6d7e",
+            fondo=comp.TEXTO_SUAVE,
             command=self._abrir_ventana_normativa, motivo=MOTIVO_SIN_CRITERIO,
             ayuda="Abre la ventana emergente de la variable: la tabla COMPLETA\n"
                   "con su numeral, su pagina impresa, sus notas al pie y sus\n"
@@ -1450,7 +1567,7 @@ class ExpedienteApp:
 
         self.btn_guardar_archivo = BotonAccion(
             f_permanente, "Guardar en archivo fuente (permanente)",
-            fondo="#c0392b",
+            fondo=comp.ROJO,
             command=self._guardar_valor_en_archivo, motivo=MOTIVO_SIN_CRITERIO,
             ayuda=
                   # SIS-A-14: decia 'Reescribe \'valor=None\'', y reescribe
@@ -1466,9 +1583,11 @@ class ExpedienteApp:
                   "se rechazan y se editan a mano.")
         self.btn_guardar_archivo.pack(side="left", ipadx=6, ipady=3)
 
-        self.lbl_estado_criterio = ttk.Label(p, text="", style="Ayuda.TLabel",
+        # La linea de estado del panel, DENTRO del panel que la produce.
+        self.lbl_estado_criterio = ttk.Label(f_declarar, text="", style="Ayuda.TLabel",
                                               wraplength=980, justify="left")
-        self.lbl_estado_criterio.grid(row=4, column=0, sticky="w", padx=10, pady=(0, 10))
+        self.lbl_estado_criterio.grid(row=6, column=0, columnspan=2, sticky="w",
+                                      pady=(8, 0))
 
         self._clave_criterio_seleccionado = None
         self._seleccion_fuera_del_filtro = False
@@ -1563,7 +1682,7 @@ class ExpedienteApp:
         self.lbl_ambito.config(
             text=texto,
             foreground=(COLOR_AVISO if ambito == AMBITO_BLOQUEANTES
-                        and self.informe is None else "#666666"))
+                        and self.informe is None else comp.TEXTO_SUAVE))
 
     def _tag_del_filtro(self):
         """El tag de `_estado_criterio` que pide el filtro, o None si «Todos»."""
@@ -1735,8 +1854,8 @@ class ExpedienteApp:
         # deja de ser cierto que sea la seleccionada.
         if self._seleccion_fuera_del_filtro:
             texto += " (incluida 1 que no encaja, para no perderla de vista)"
-        self.lbl_recuento_criterios.config(
-            text=texto, foreground=COLOR_ERROR if pendientes else COLOR_OK)
+        self.lbl_recuento_criterios.configurar(
+            texto, comp.INSIGNIA_ERROR if pendientes else comp.INSIGNIA_OK)
 
     def _al_seleccionar_criterio(self, _evt=None):
         seleccion = self.tree_criterios_todos.selection()
@@ -2106,10 +2225,15 @@ class ExpedienteApp:
     # -------------------------- Pestana 3 -----------------------------
     def _construir_tab_puntos(self, p):
         p.columnconfigure(0, weight=1)
-        p.rowconfigure(0, weight=1)
+        # La fila 0 es la cabecera de la vista; la 1, la tabla, y la 2 el
+        # detalle: las dos ultimas crecen.
+        p.rowconfigure(1, weight=1)
 
-        f_tabla = ttk.Frame(p, padding=10)
-        f_tabla.grid(row=0, column=0, sticky="nsew")
+        self._cabecera_de_vista(p, self.tab_puntos).grid(row=0, column=0, sticky="ew",
+                                           padx=14, pady=(12, 10))
+        panel_tabla = Panel(p, "Resultados de la ultima corrida")
+        panel_tabla.grid(row=1, column=0, sticky="nsew", padx=14, pady=(0, 8))
+        f_tabla = panel_tabla.interior
         f_tabla.columnconfigure(0, weight=1)
         f_tabla.rowconfigure(0, weight=1)
 
@@ -2121,7 +2245,7 @@ class ExpedienteApp:
             ("id", "Punto", 70, "w"),  # literal-ok: ancho de columna, px
             ("progresiva", "Progresiva", 90, "center"),  # literal-ok: ancho de columna, px
             ("familia", "Familia", 60, "center"),  # literal-ok: ancho de columna, px
-            ("dimensionado", "Dimensionado", 90, "center"),  # literal-ok: ancho de columna, px
+            ("dimensionado", "Dimensionado", 105, "center"),  # literal-ok: ancho de columna, px
             ("material", "Material", 140, "w"),  # literal-ok: ancho de columna, px
             # LA COLUMNA DICE LA SECCION Y NO UN DIAMETRO (C8). Con «D (m)»,
             # un marco de 1.20 x 0.90 y otro de 2.00 x 0.90 salian los dos
@@ -2143,7 +2267,8 @@ class ExpedienteApp:
             self.tree_puntos.heading(col, text=txt)
             self.tree_puntos.column(col, width=ancho, anchor=anchor)
         self.tree_puntos.grid(row=0, column=0, sticky="nsew")
-        self.tree_puntos.tag_configure("no_dimensionado", background="#fdecea")
+        self.tree_puntos.tag_configure("no_dimensionado", background=comp.ROJO_SUAVE,
+                                       foreground=COLOR_ERROR)
         self.tree_puntos.tag_configure("con_bloqueos", foreground=COLOR_AVISO)
         self.tree_puntos.bind("<<TreeviewSelect>>", self._al_seleccionar_punto)
 
@@ -2151,14 +2276,16 @@ class ExpedienteApp:
         self.tree_puntos.configure(yscroll=scroll.set)
         scroll.grid(row=0, column=1, sticky="ns")
 
-        f_encabezado = ttk.Frame(p, padding=(10, 0))
-        f_encabezado.grid(row=1, column=0, sticky="ew")
-        ttk.Label(f_encabezado, text="Detalle del punto seleccionado",
-                  style="Header.TLabel").pack(side="left")
+        panel_detalle = Panel(p, "Detalle del punto seleccionado")
+        panel_detalle.grid(row=2, column=0, sticky="nsew", padx=14, pady=(0, 12))
+        p.rowconfigure(2, weight=1)
+        f_encabezado = ttk.Frame(panel_detalle.interior)
+        f_encabezado.pack(fill="x")
         # La traza de procedencia (G4). El contenido lo produce
         # `src/traza_punto.py`; el boton solo abre la ventana que lo pinta.
         self.btn_traza = BotonAccion(
-            f_encabezado, "¿De donde sale este numero?", fondo="#2e86c1",
+            f_encabezado, "¿De donde sale este numero?", fondo=comp.AZUL,
+            activebackground=comp.AZUL_OSCURO, activeforeground="white",
             command=self._abrir_traza_punto, motivo=MOTIVO_SIN_CORRIDA,
             letra=BotonAccion.DISCRETA,
             ayuda="Los PasoDeMemoria del punto seleccionado, en el orden en\n"
@@ -2167,15 +2294,14 @@ class ExpedienteApp:
                   "cada valor, el umbral con su caracter y el veredicto con\n"
                   "su margen. Las verificaciones sin paso salen con su hueco\n"
                   "declarado, nunca en blanco.")
-        self.btn_traza.pack(side="left", padx=(12, 0), ipadx=6)
+        self.btn_traza.pack(side="left", ipadx=6)
 
-        f_detalle = ttk.Frame(p, padding=10)
-        f_detalle.grid(row=2, column=0, sticky="nsew")
-        p.rowconfigure(2, weight=1)
+        f_detalle = ttk.Frame(panel_detalle.interior)
+        f_detalle.pack(fill="both", expand=True, pady=(8, 0))
         f_detalle.columnconfigure(0, weight=1)
         f_detalle.rowconfigure(0, weight=1)
 
-        self.txt_detalle = tk.Text(f_detalle, height=12, wrap="word", font=("Consolas", 9))
+        self.txt_detalle = comp.texto_plano(f_detalle, height=12, wrap="word")
         self.txt_detalle.grid(row=0, column=0, sticky="nsew")
         self.txt_detalle.configure(state="disabled")
         scroll_det = ttk.Scrollbar(f_detalle, orient="vertical", command=self.txt_detalle.yview)
@@ -2225,40 +2351,42 @@ class ExpedienteApp:
         `LineaDeTraza`: si la capa de contenido añade un registro nuevo sin
         estilo, la linea sale en texto normal en vez de perderse.
         """
-        ventana = tk.Toplevel(self.root)
+        ventana = tk.Toplevel(self.root, background=comp.SUPERFICIE)
         ventana.title(f"Traza de procedencia - {traza.id_punto}")
         ventana.bind("<Escape>", lambda _evt: ventana.destroy())   # PC-17
         ventana.geometry("980x680")  # literal-ok: tamano inicial de la ventana, px
         ventana.columnconfigure(0, weight=1)
         ventana.rowconfigure(0, weight=1)
 
-        texto = tk.Text(ventana, wrap="word", font=("Segoe UI", 9),
-                        padx=12, pady=10)  # literal-ok: margenes del texto, px
+        ui = self.tipografia.ui
+        texto = tk.Text(ventana, wrap="word", font=ui(comp.CUERPO_PT),
+                        background=comp.SUPERFICIE, foreground=comp.TEXTO,
+                        relief="flat", padx=12, pady=10)  # literal-ok: margenes del texto, px
         texto.grid(row=0, column=0, sticky="nsew")
         scroll = ttk.Scrollbar(ventana, orient="vertical", command=texto.yview)
         texto.configure(yscroll=scroll.set)
         scroll.grid(row=0, column=1, sticky="ns")
 
-        texto.tag_configure("titulo_punto", font=("Segoe UI", 12, "bold"),
+        texto.tag_configure("titulo_punto", font=ui(comp.TITULO_PT, "bold"),
                             spacing3=8)  # literal-ok: espaciado, px
-        texto.tag_configure("seccion", font=("Segoe UI", 10, "bold"),
+        texto.tag_configure("seccion", font=ui(comp.CUERPO_PT, "bold"),
                             spacing1=12, spacing3=4,  # literal-ok: espaciado, px
                             underline=True)
         texto.tag_configure("aviso", foreground=COLOR_AVISO,
                             lmargin1=12, lmargin2=12)  # literal-ok: sangria, px
-        texto.tag_configure("entrada", font=("Segoe UI", 9, "bold"),
+        texto.tag_configure("entrada", font=ui(comp.CUERPO_PT, "bold"),
                             spacing1=8)  # literal-ok: espaciado, px
         texto.tag_configure("hueco", foreground=COLOR_AVISO,
-                            font=("Segoe UI", 9, "bold"),
+                            font=ui(comp.CUERPO_PT, "bold"),
                             spacing1=8)  # literal-ok: espaciado, px
-        texto.tag_configure("rotulo", font=("Segoe UI", 9, "bold"),
+        texto.tag_configure("rotulo", font=ui(comp.CUERPO_PT, "bold"),
                             lmargin1=16, lmargin2=16)  # literal-ok: sangria, px
         # Los tres registros de la §4.4, con los mismos papeles que las
         # clases CSS .fuente / .interpretacion / texto normal de la memoria.
-        texto.tag_configure(tp.REGISTRO_FUENTE, font=("Segoe UI", 9, "italic"),
-                            background="#f7f7f4",
+        texto.tag_configure(tp.REGISTRO_FUENTE, font=ui(comp.CUERPO_PT, "italic"),
+                            background=comp.FONDO,
                             lmargin1=28, lmargin2=28)  # literal-ok: sangria, px
-        texto.tag_configure(tp.REGISTRO_INTERPRETACION, background="#fdf8ee",
+        texto.tag_configure(tp.REGISTRO_INTERPRETACION, background=comp.AMBAR_SUAVE,
                             lmargin1=28, lmargin2=28)  # literal-ok: sangria, px
         texto.tag_configure(tp.REGISTRO_PROYECTO,
                             lmargin1=28, lmargin2=28)  # literal-ok: sangria, px
@@ -2284,31 +2412,41 @@ class ExpedienteApp:
 
     # -------------------------- Pestana 4 -----------------------------
     def _construir_tab_resumen(self, p):
-        ttk.Label(p, text="Estado del expediente", style="Header.TLabel").pack(anchor="w")
+        self._cabecera_de_vista(p, self.tab_resumen).pack(anchor="w", fill="x", pady=(0, 12))
 
-        f_res = ttk.LabelFrame(p, text="Resumen", padding=12)
-        f_res.pack(fill="x", pady=(8, 12))
+        panel_resumen = Panel(p, "Estado del expediente")
+        panel_resumen.pack(fill="x", pady=(0, 10))
+        f_res = panel_resumen.interior
         f_res.columnconfigure(1, weight=1)
 
+        # Dos clases de fila: las que dicen un DATO (el CSV y el alcance, en
+        # monoespaciada) y las que dicen un ESTADO (las seis cuentas y el
+        # cierre), que son INSIGNIAS: el numero o el «si/no» como texto, y el
+        # fondo suave del estado que `_llenar_resumen` les da al pintar.
         etiquetas = ["CSV", "Alcance de la corrida", "Puntos del expediente",
                      "Puntos dimensionados", "Verificaciones incumplidas",
                      "Etapas bloqueadas", "Diferidas por alcance",
                      "Expediente cerrado"]
+        de_dato = {"CSV", "Alcance de la corrida"}
         self.lbl_resumen = {}
         for fila, txt in enumerate(etiquetas):
             ttk.Label(f_res, text=f"{txt}:").grid(row=fila, column=0, sticky="w", pady=3)
-            lbl = ttk.Label(f_res, text="-", style="Res.TLabel")
+            if txt in de_dato:
+                lbl = ttk.Label(f_res, text="-", style="Res.TLabel")
+            else:
+                lbl = Insignia(f_res, "-", comp.INSIGNIA_NEUTRA)
             lbl.grid(row=fila, column=1, sticky="w", padx=12, pady=3)
             self.lbl_resumen[txt] = lbl
 
-        ttk.Label(p, text="Criterios pendientes que bloquearon una etapa (Sec. 0.7)",
-                  style="Header.TLabel").pack(anchor="w", pady=(4, 2))
-        ttk.Label(p, text="Un criterio con valor=None cuya etapa se invoco en esta corrida. "
-                          "No es un defecto silencioso: el calculo se detuvo hasta declararlo.",
+        panel_bloqueos = Panel(p, "Criterios pendientes que bloquearon una etapa (Sec. 0.7)")
+        panel_bloqueos.pack(fill="x", pady=(0, 10))
+        ttk.Label(panel_bloqueos.interior,
+                  text="Un criterio con valor=None cuya etapa se invoco en esta corrida. "
+                       "No es un defecto silencioso: el calculo se detuvo hasta declararlo.",
                   style="Ayuda.TLabel", wraplength=820, justify="left").pack(anchor="w", pady=(0, 8))
 
-        f_crit = ttk.Frame(p)
-        f_crit.pack(fill="both", expand=False, pady=4)
+        f_crit = ttk.Frame(panel_bloqueos.interior)
+        f_crit.pack(fill="both", expand=False)
         # RESPONSABLE Y EVIDENCIA (E-B, E13 reducido): QUIEN aporta el valor
         # y CON QUE se sostiene, derivados de la ficha por `src/responsable.py`
         # y traidos en `CriterioBloqueante`. La pestaña pinta; no escribe.
@@ -2333,9 +2471,9 @@ class ExpedienteApp:
         self.tree_criterios.configure(yscroll=scroll_c.set)
         scroll_c.pack(side="left", fill="y")
 
-        ttk.Separator(p, orient="horizontal").pack(fill="x", pady=12)
-
-        ttk.Label(p, text="Exportacion", style="Header.TLabel").pack(anchor="w", pady=(0, 6))
+        panel_exportacion = Panel(p, "Exportacion")
+        panel_exportacion.pack(fill="x", pady=(0, 10))
+        p = panel_exportacion.interior
         f_exp = ttk.Frame(p)
         f_exp.pack(fill="x")
 
@@ -2345,24 +2483,28 @@ class ExpedienteApp:
         # grises y el usuario tenia que deducirlo. Es el bloqueo mas frecuente
         # de esta ventana y era el unico mudo.
         self.btn_json = BotonAccion(
-            f_exp, "Exportar JSON", fondo="#16a085",
+            f_exp, "Exportar JSON", fondo=comp.VERDE,
             command=self.exportar_json, motivo=MOTIVO_SIN_CORRIDA,
             ayuda="El informe completo de la corrida en JSON.")
         self.btn_json.pack(side="left", padx=(0, 8), ipadx=8, ipady=4)
 
         self.btn_html = BotonAccion(
-            f_exp, "Exportar memoria (HTML)", fondo="#2e86c1", command=self.exportar_html, motivo=MOTIVO_SIN_CORRIDA,
+            f_exp, "Exportar memoria (HTML)", fondo=comp.AZUL,
+            activebackground=comp.AZUL_OSCURO, activeforeground="white",
+            command=self.exportar_html, motivo=MOTIVO_SIN_CORRIDA,
             ayuda="La memoria de calculo (M11) con la plantilla que\n"
                   "corresponde al alcance de la corrida.")
         self.btn_html.pack(side="left", padx=8, ipadx=8, ipady=4)
 
         self.btn_pdf = BotonAccion(
-            f_exp, "Exportar memoria (PDF)", fondo="#8e44ad", command=self.exportar_pdf, motivo=MOTIVO_SIN_CORRIDA,
+            f_exp, "Exportar memoria (PDF)", fondo=comp.AZUL_OSCURO,
+            command=self.exportar_pdf, motivo=MOTIVO_SIN_CORRIDA,
             ayuda=self._ayuda_del_pdf())
         self.btn_pdf.pack(side="left", padx=8, ipadx=8, ipady=4)
 
         self.btn_csv = BotonAccion(
-            f_exp, "Exportar cuadro resumen (CSV)", fondo="#16a085", command=self.exportar_csv, motivo=MOTIVO_SIN_CORRIDA,
+            f_exp, "Exportar cuadro resumen (CSV)", fondo=comp.VERDE,
+            command=self.exportar_csv, motivo=MOTIVO_SIN_CORRIDA,
             ayuda="El cuadro resumen (entregable 3 de M11), una fila\n"
                   "por punto, en una hoja de calculo.")
         self.btn_csv.pack(side="left", padx=8, ipadx=8, ipady=4)
@@ -2372,7 +2514,7 @@ class ExpedienteApp:
         # correr --- contra un JSON del disco, por `src/comparador.py`. Nunca
         # recalcula: compara dos volcados.
         self.btn_comparar = BotonAccion(
-            f_exp, "Comparar con otro JSON...", fondo="#5d6d7e",
+            f_exp, "Comparar con otro JSON...", fondo=comp.TEXTO_SUAVE,
             command=self.comparar_informe, motivo=MOTIVO_SIN_CORRIDA,
             ayuda="Compara el volcado de esta corrida con otro informe_json\n"
                   "(otra version del CSV, de los criterios o del codigo), por\n"
@@ -2655,18 +2797,25 @@ class ExpedienteApp:
         # es una etapa que ESTA corrida declaro fuera de su alcance. Se
         # imprime aparte, con su fundamento, porque «cerrado a nivel de
         # perfil» no significa que el expediente este completo.
-        self.lbl_resumen["Diferidas por alcance"].config(
-            text=str(r.diferidas),
-            foreground=COLOR_AVISO if r.diferidas else COLOR_OK)
-        self.lbl_resumen["Puntos del expediente"].config(text=str(r.puntos))
-        self.lbl_resumen["Puntos dimensionados"].config(text=str(r.dimensionados))
-        self.lbl_resumen["Verificaciones incumplidas"].config(
-            text=str(r.incumplidas), foreground=COLOR_ERROR if r.incumplidas else COLOR_OK)
-        self.lbl_resumen["Etapas bloqueadas"].config(
-            text=str(r.bloqueadas), foreground=COLOR_AVISO if r.bloqueadas else COLOR_OK)
-        self.lbl_resumen["Expediente cerrado"].config(
-            text="si" if r.cerrado else "no",
-            foreground=COLOR_OK if r.cerrado else COLOR_ERROR)
+        # Cada insignia lleva el numero como TEXTO y el estado como fondo:
+        # el color acompaña, no sustituye.
+        self.lbl_resumen["Diferidas por alcance"].configurar(
+            str(r.diferidas),
+            comp.INSIGNIA_AVISO if r.diferidas else comp.INSIGNIA_OK)
+        self.lbl_resumen["Puntos del expediente"].configurar(
+            str(r.puntos), comp.INSIGNIA_INFO)
+        self.lbl_resumen["Puntos dimensionados"].configurar(
+            str(r.dimensionados),
+            comp.INSIGNIA_OK if r.dimensionados == r.puntos else comp.INSIGNIA_AVISO)
+        self.lbl_resumen["Verificaciones incumplidas"].configurar(
+            str(r.incumplidas),
+            comp.INSIGNIA_ERROR if r.incumplidas else comp.INSIGNIA_OK)
+        self.lbl_resumen["Etapas bloqueadas"].configurar(
+            str(r.bloqueadas),
+            comp.INSIGNIA_AVISO if r.bloqueadas else comp.INSIGNIA_OK)
+        self.lbl_resumen["Expediente cerrado"].configurar(
+            "si" if r.cerrado else "no",
+            comp.INSIGNIA_OK if r.cerrado else comp.INSIGNIA_ERROR)
 
         for item in self.tree_criterios.get_children():
             self.tree_criterios.delete(item)
@@ -2890,7 +3039,7 @@ class ExpedienteApp:
         return resultado
 
     def _mostrar_comparacion(self, resultado, ruta):
-        ventana = tk.Toplevel(self.root)
+        ventana = tk.Toplevel(self.root, background=comp.SUPERFICIE)
         ventana.title("Comparacion de dos informe_json")
         ventana.geometry("900x500")
         ventana.transient(self.root)
@@ -2898,7 +3047,7 @@ class ExpedienteApp:
         ttk.Label(ventana, text=f"Esta corrida (A) frente a {ruta} (B)",
                   style="Header.TLabel", wraplength=860, justify="left").pack(
                       anchor="w", padx=10, pady=(10, 4))
-        texto = tk.Text(ventana, wrap="word", font=("Consolas", 9))
+        texto = comp.texto_plano(ventana, wrap="word")
         texto.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         texto.insert("1.0", "\n".join(resultado.lineas()))
         texto.configure(state="disabled")

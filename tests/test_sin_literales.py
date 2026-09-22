@@ -301,6 +301,10 @@ CONSTRUCTORES_DE_PRESENTACION = {
     "Separator", "Notebook", "Canvas", "Scrollbar", "Toplevel", "Checkbutton",
     "Combobox", "Radiobutton", "Spinbox", "Progressbar", "Menu", "Style",
     "PanedWindow", "Listbox", "Scale",
+    # el `tk.Text` con la cara del tema (`gui/componentes.texto_plano`,
+    # rediseño visual bloque 1): recibe `height` en lineas como el Text al
+    # que envuelve, y por lo mismo su interior admite el entero de geometria.
+    "texto_plano",
     # geometria, estilo y configuracion
     "pack", "grid", "place", "configure", "config",
     "columnconfigure", "rowconfigure",
@@ -886,16 +890,22 @@ CENSO_DE_MARCAS = {
     # `_rueda` a `NOTCH_RUEDA` (misma marca) y entraron los dos numeros de
     # boton de X11 (`BOTON_RUEDA_ARRIBA`, `BOTON_RUEDA_ABAJO`), que son
     # aritmetica del evento y no geometria de widget.
-    "gui/componentes.py": 6,
+    # 6 -> 9 en el bloque 1 del rediseño visual: los tres cuerpos de letra
+    # del tema (`CUERPO_PT`, `PEQUENA_PT`, `TITULO_PT`), nombrados en el
+    # unico sitio donde se decide la tipografia. Son los que sustituyen a
+    # las tres marcas que `gui/ventana_normativa.py` llevaba por lo mismo
+    # (y que por eso desaparecen de su fila): el censo sube 3 aqui y baja 3
+    # alli, y ninguna magnitud del expediente entro ni salio.
+    "gui/componentes.py": 9,
     # EXT-8 (PC-11): el umbral de puntos a partir del que se ofrece la via
     # del navegador --- una MEDIDA del dictamen, no un valor de proyecto ---
     # y las lineas de la cola del diagnostico del hijo.
     "gui/exportacion_pdf.py": 2,
-    # Los tres cuerpos de letra de la ventana. Estan nombrados --- y no
-    # escritos dentro de cada llamada --- porque un tamano dentro de un
-    # condicional no es argumento DIRECTO de un widget y el barrido no lo
-    # exime; nombrarlos es ademas lo que se querria igual.
-    "gui/ventana_normativa.py": 3,
+    # `gui/ventana_normativa.py` llevaba 3: los tres cuerpos de letra de la
+    # ventana, nombrados porque un tamano dentro de un condicional no es
+    # argumento DIRECTO de un widget. El bloque 1 del rediseño visual los
+    # movio al tema (`gui/componentes.py`, ver arriba) y la ventana los pide
+    # por nombre: 3 -> 0, y por eso desaparece del censo.
     # 4 -> 5 en S20: `MILIMETROS_POR_METRO`, la conversion al DIAMETRO
     # DESIGNADO de las normas de producto, que tabulan en milimetros enteros
     # mientras el calculo trabaja en metros. Misma naturaleza que

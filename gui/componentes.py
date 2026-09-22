@@ -36,9 +36,54 @@ import re
 import tkinter as tk
 from tkinter import ttk
 
-COLOR_ERROR = "#e74c3c"
-COLOR_AVISO = "#b9770e"
-COLOR_OK = "#27ae60"
+# ---------------------------------------------------------------------------
+# El tema «Blueprint Slate»: paleta, tipografia y estilos con nombre
+# ---------------------------------------------------------------------------
+# UN SOLO SITIO para como se ve la interfaz. Hasta el rediseño visual cada
+# ventana escribia sus propias tuplas de fuente («Segoe UI», 9) y sus propios
+# hexadecimales, y la ventana principal, la emergente, los editores y la
+# ayuda de entrada divergian en cuerpo de letra y en color. Lo que sigue es
+# la paleta con nombre, la tipografia resuelta contra las fuentes instaladas
+# y `aplicar_tema`, que configura los estilos ttk CON NOMBRE que las cuatro
+# pestañas y las ventanas emergentes usan. Ningun color ni tamaño se decide
+# fuera de aqui; quien construye un widget pide el estilo por su nombre.
+#
+# La paleta es la del estilo de referencia («Blueprint Slate»): fondo de la
+# ventana, superficies de los paneles, un azul de accion, y tres colores de
+# estado --- verde, ambar, rojo --- cada uno con su fondo suave para las
+# insignias. NINGUN ESTADO SE COMUNICA SOLO POR COLOR: toda insignia y toda
+# fila coloreada llevan el texto del estado al lado, porque el color es la
+# segunda señal y no la primera.
+FONDO = "#EEF0F3"          # fondo de la ventana y de las zonas entre paneles
+SUPERFICIE = "#F8F9FB"     # superficie de los paneles, tablas y campos
+LINEA = "#D7DCE3"          # lineas finas: bordes de campo, separadores
+TEXTO = "#1E2730"          # texto principal
+TEXTO_SUAVE = "#5C6773"    # texto secundario: ayudas, subtitulos, cabeceras
+AZUL = "#2F6FB0"           # accion principal y foco
+AZUL_OSCURO = "#245A90"    # el azul al pulsar
+VERDE = "#157A4B"          # cumple / resuelto / cerrado
+AMBAR = "#A96A10"          # aviso / declarado en caliente / diferido
+ROJO = "#B23A2C"           # no cumple / pendiente / error
+AZUL_SUAVE = "#E4EDF7"     # fondo de la fila seleccionada y de la insignia «info»
+VERDE_SUAVE = "#E2F1E9"
+AMBAR_SUAVE = "#FAEFDB"
+ROJO_SUAVE = "#F8E4E1"
+GRIS_SUAVE = "#E6E9EE"     # insignia neutra: «sin corrida», «-»
+PISADO_SUAVE = "#F5E3C8"   # el pisado en caliente, distinto del declarado
+BLANCO = "#FFFFFF"         # el campo donde se teclea
+
+# Los tres nombres con que el resto de la interfaz pide los colores de
+# estado. Se conservan porque los llamadores (`gui/editores.py`,
+# `gui/ventana_normativa.py`, `gui/ayuda_entrada.py`) los leen por este
+# nombre; lo que cambio es el valor, que ahora sale de la paleta de arriba.
+COLOR_ERROR = ROJO
+COLOR_AVISO = AMBAR
+COLOR_OK = VERDE
+
+# El azul del icono de ayuda «i». Es el mismo tono del boton de EJECUTAR de la
+# ventana principal: un icono de ayuda no compite con la accion, la acompaña.
+COLOR_AYUDA_FONDO = AZUL
+COLOR_AYUDA_ACTIVO = AZUL_OSCURO
 
 # El par del boton DESHABILITADO. No es estetica: es que un boton apagado
 # tiene que poder LEERSE, porque su texto es lo unico que dice que haria si
@@ -48,17 +93,301 @@ COLOR_OK = "#27ae60"
 # `disabledforeground`, que por defecto es `#a3a3a3` ---, de modo que el texto
 # apagado queda sobre el MISMO color vivo del boton encendido. Medido sobre la
 # ventana real, con los cinco fondos que este proyecto usa, el contraste que
-# salia era de 1.30:1 a 2.33:1 (el peor, `#a3a3a3` sobre el verde `#16a085` de
-# los botones de exportacion). El minimo legible es 4.5:1. Con este par sale
+# salia era de 1.30:1 a 2.33:1 (el peor, `#a3a3a3` sobre el verde de los
+# botones de exportacion). El minimo legible es 4.5:1. Con este par sale
 # 6.93:1, y el fondo apagado ademas se DISTINGUE del encendido, que es la otra
-# mitad de la senal.
-# El azul del icono de ayuda «i». Es el mismo tono del boton de EJECUTAR de la
-# ventana principal: un icono de ayuda no compite con la accion, la acompaña.
-COLOR_AYUDA_FONDO = "#2e86c1"
-COLOR_AYUDA_ACTIVO = "#21618c"
-
+# mitad de la señal.
 COLOR_BOTON_APAGADO_FONDO = "#dfe3e6"
 COLOR_BOTON_APAGADO_TEXTO = "#3d4b59"
+
+# LA TIPOGRAFIA. Tres cuerpos de letra, nombrados --- y no escritos dentro de
+# cada llamada --- porque son la decision de la interfaz entera y la tupla
+# que los lleva se construye en `Tipografia`, no dentro de un widget. El
+# barrido de literales de la capa de presentacion exime el entero que es
+# argumento DIRECTO de una llamada de widget, y estos no lo son: van
+# marcados, y `tests/test_sin_literales.py` los censa.
+CUERPO_PT = 10     # literal-ok: cuerpo de letra de la interfaz, pt
+PEQUENA_PT = 9     # literal-ok: letra pequeña (ayudas, rotulos de panel, insignias), pt
+TITULO_PT = 14     # literal-ok: titulo de cada vista, pt
+
+# Las familias, en orden de preferencia: IBM Plex si esta instalada, si no la
+# del sistema (Segoe UI / Consolas en Windows, DejaVu en Linux). La
+# monoespaciada es para numeros y claves; la de interfaz para todo lo demas.
+FAMILIAS_UI = ("IBM Plex Sans", "Segoe UI", "Noto Sans", "DejaVu Sans",
+               "Helvetica")
+FAMILIAS_MONO = ("IBM Plex Mono", "Consolas", "Cascadia Mono",
+                 "DejaVu Sans Mono", "Menlo", "Courier New")
+
+
+class Tipografia:
+    """
+    Las dos familias resueltas y los constructores de tuplas de fuente.
+
+    `ui(tamano, *peso)` y `mono(tamano, *peso)` devuelven la tupla que Tk
+    espera (`(familia, tamano, "bold")`). Se pide por nombre de cuerpo
+    (`CUERPO_PT`, `PEQUENA_PT`, `TITULO_PT`), nunca con un numero suelto.
+    """
+
+    def __init__(self, ui_familia, mono_familia):
+        self.ui_familia = ui_familia
+        self.mono_familia = mono_familia
+
+    def ui(self, tamano=CUERPO_PT, *peso):
+        return (self.ui_familia, tamano, *peso)
+
+    def mono(self, tamano=CUERPO_PT, *peso):
+        return (self.mono_familia, tamano, *peso)
+
+
+# La tipografia ACTIVA. Nace con las familias de Windows --- las que la
+# interfaz usaba hasta el rediseño --- y `aplicar_tema` la resuelve contra
+# las fuentes instaladas en cuanto hay un `Tk` con el que preguntar.
+_TIPOGRAFIA = Tipografia(FAMILIAS_UI[1], FAMILIAS_MONO[1])
+
+
+def tipografia():
+    """La tipografia activa: la resuelta por `aplicar_tema`, o la de arranque."""
+    return _TIPOGRAFIA
+
+
+def _primera_instalada(preferidas, instaladas):
+    for familia in preferidas:
+        if familia in instaladas:
+            return familia
+    return preferidas[-1]
+
+
+def resolver_tipografia(root):
+    """
+    Elige la primera familia instalada de cada lista y la deja activa.
+
+    Pregunta a Tk (`tkinter.font.families`), que es lo unico que sabe que
+    fuentes hay en ESTA maquina; sin `Tk` no hay a quien preguntar y se
+    conserva la de arranque.
+    """
+    global _TIPOGRAFIA
+    try:
+        from tkinter import font as tkfont
+        instaladas = set(tkfont.families(root))
+    except (tk.TclError, ImportError, AttributeError):
+        return _TIPOGRAFIA
+    _TIPOGRAFIA = Tipografia(_primera_instalada(FAMILIAS_UI, instaladas),
+                             _primera_instalada(FAMILIAS_MONO, instaladas))
+    return _TIPOGRAFIA
+
+
+# Las insignias de estado. Cada estado es un par (fondo suave, texto), y el
+# estilo ttk de cada una se llama `<estado>.Insignia.TLabel`. Los cinco
+# estados son los de la INTERFAZ (como se pinta una cosa), no los del
+# calculo: el texto de la insignia es el que dice «cumple», «PENDIENTE»,
+# «no cerrado»... y sale siempre del programa.
+INSIGNIA_OK = "ok"
+INSIGNIA_AVISO = "aviso"
+INSIGNIA_ERROR = "error"
+INSIGNIA_INFO = "info"
+INSIGNIA_NEUTRA = "neutra"
+INSIGNIAS = {
+    INSIGNIA_OK: (VERDE_SUAVE, VERDE),
+    INSIGNIA_AVISO: (AMBAR_SUAVE, AMBAR),
+    INSIGNIA_ERROR: (ROJO_SUAVE, ROJO),
+    INSIGNIA_INFO: (AZUL_SUAVE, AZUL),
+    INSIGNIA_NEUTRA: (GRIS_SUAVE, TEXTO_SUAVE),
+}
+
+
+def estilo_de_insignia(estado):
+    if estado not in INSIGNIAS:
+        raise ValueError(f"insignia sin estado conocido: {estado!r}")
+    return f"{estado}.Insignia.TLabel"
+
+
+def aplicar_tema(style, root=None):
+    """
+    Configura los estilos ttk CON NOMBRE del tema, sobre el `Style` que la
+    ventana ya tiene (el de ttkbootstrap si cargo, el de ttk si no).
+
+    Los nombres que el resto de la interfaz pide:
+
+    - marcos: `TFrame` (superficie), `Fondo.TFrame`, `Panel.TFrame`;
+    - textos: `TLabel` (cuerpo, sobre superficie), `Fondo.TLabel`,
+      `Paso.TLabel` («PASO n / 4»), `Titulo.TLabel`, `Subtitulo.TLabel`,
+      `TituloPanel.TLabel` (mayusculas pequeñas), `Header.TLabel`,
+      `Ayuda.TLabel`, `Error.TLabel`, `Res.TLabel` (monoespaciada en
+      negrita), `Mono.TLabel`, `Estado.TLabel` (la barra de estado),
+      `Proyecto.TLabel` (el nombre del proyecto en la barra superior);
+    - insignias: `<estado>.Insignia.TLabel`, por `estilo_de_insignia`;
+    - tablas: `Treeview` y `Treeview.Heading`, planas y densas;
+    - el resto (`TEntry`, `TCombobox`, `TButton`, `TNotebook`,
+      `TScrollbar`, `TPanedwindow`, `TSeparator`, `TRadiobutton`) toma la
+      paleta sin cambiar de nombre.
+
+    Se llama UNA vez, antes de construir widgets, porque `BotonAccion` y los
+    `tk.Text` leen la tipografia resuelta al construirse.
+    """
+    tipo = resolver_tipografia(root) if root is not None else tipografia()
+    ui, mono = tipo.ui, tipo.mono
+    if root is not None:
+        root.configure(background=FONDO)
+
+    style.configure(".", background=SUPERFICIE, foreground=TEXTO, font=ui(),
+                    bordercolor=LINEA, lightcolor=SUPERFICIE, darkcolor=LINEA,
+                    troughcolor=FONDO, focuscolor=AZUL,
+                    selectbackground=AZUL_SUAVE, selectforeground=TEXTO)
+    style.configure("TFrame", background=SUPERFICIE)
+    style.configure("Fondo.TFrame", background=FONDO)
+    style.configure("Panel.TFrame", background=SUPERFICIE)
+
+    style.configure("TLabel", background=SUPERFICIE, foreground=TEXTO, font=ui())
+    style.configure("Fondo.TLabel", background=FONDO)
+    style.configure("Paso.TLabel", background=FONDO, foreground=AZUL,
+                    font=ui(PEQUENA_PT, "bold"))
+    style.configure("Titulo.TLabel", background=FONDO, foreground=TEXTO,
+                    font=ui(TITULO_PT, "bold"))
+    style.configure("Subtitulo.TLabel", background=FONDO, foreground=TEXTO_SUAVE,
+                    font=ui())
+    style.configure("TituloPanel.TLabel", background=SUPERFICIE,
+                    foreground=TEXTO_SUAVE, font=ui(PEQUENA_PT, "bold"))
+    style.configure("Header.TLabel", font=ui(CUERPO_PT, "bold"), foreground=TEXTO)
+    style.configure("Ayuda.TLabel", font=ui(PEQUENA_PT), foreground=TEXTO_SUAVE)
+    style.configure("Error.TLabel", font=ui(PEQUENA_PT, "bold"), foreground=ROJO)
+    style.configure("Res.TLabel", font=mono(CUERPO_PT, "bold"), foreground=TEXTO)
+    style.configure("Mono.TLabel", font=mono())
+    style.configure("Estado.TLabel", background=FONDO, foreground=TEXTO_SUAVE,
+                    font=ui(PEQUENA_PT))
+    style.configure("Proyecto.TLabel", background=FONDO, foreground=TEXTO,
+                    font=ui(CUERPO_PT, "bold"))
+    for estado, (fondo, frente) in INSIGNIAS.items():
+        style.configure(estilo_de_insignia(estado), background=fondo,
+                        foreground=frente, font=mono(PEQUENA_PT, "bold"),
+                        padding=(7, 2))
+
+    style.configure("TEntry", fieldbackground=BLANCO, bordercolor=LINEA,
+                    lightcolor=LINEA, darkcolor=LINEA, insertcolor=TEXTO,
+                    padding=(5, 3))
+    style.map("TEntry", bordercolor=[("focus", AZUL)],
+              lightcolor=[("focus", AZUL)], darkcolor=[("focus", AZUL)])
+    style.configure("TCombobox", fieldbackground=BLANCO, background=SUPERFICIE,
+                    bordercolor=LINEA, lightcolor=LINEA, darkcolor=LINEA,
+                    arrowcolor=TEXTO_SUAVE, padding=(5, 3))
+    style.map("TCombobox", fieldbackground=[("readonly", BLANCO)],
+              bordercolor=[("focus", AZUL)])
+    style.configure("TButton", font=ui(), background=SUPERFICIE,
+                    foreground=TEXTO, bordercolor=LINEA, lightcolor=SUPERFICIE,
+                    darkcolor=LINEA, focuscolor=SUPERFICIE, padding=(10, 4))
+    style.map("TButton", background=[("active", AZUL_SUAVE)],
+              bordercolor=[("active", AZUL)])
+    style.configure("TRadiobutton", background=SUPERFICIE, foreground=TEXTO,
+                    font=ui(), indicatorcolor=BLANCO, focuscolor=SUPERFICIE)
+    style.map("TRadiobutton", indicatorcolor=[("selected", AZUL)],
+              background=[("active", SUPERFICIE)])
+    style.configure("TCheckbutton", background=SUPERFICIE, foreground=TEXTO,
+                    font=ui())
+    style.configure("TSeparator", background=LINEA)
+    style.configure("TScrollbar", troughcolor=FONDO, background=LINEA,
+                    bordercolor=FONDO, lightcolor=LINEA, darkcolor=LINEA,
+                    arrowcolor=TEXTO_SUAVE, arrowsize=12)
+    style.map("TScrollbar", background=[("active", TEXTO_SUAVE)])
+    style.configure("TPanedwindow", background=FONDO)
+    style.configure("Sash", sashthickness=6, gripcount=0)
+
+    style.configure("Treeview", background=SUPERFICIE, fieldbackground=SUPERFICIE,
+                    foreground=TEXTO, font=ui(), rowheight=22,
+                    bordercolor=LINEA, lightcolor=SUPERFICIE, darkcolor=LINEA)
+    style.configure("Treeview.Heading", background=FONDO, foreground=TEXTO_SUAVE,
+                    font=ui(PEQUENA_PT, "bold"), relief="flat",
+                    bordercolor=LINEA, padding=(6, 4))
+    style.map("Treeview", background=[("selected", AZUL_SUAVE)],
+              foreground=[("selected", TEXTO)])
+    style.map("Treeview.Heading", background=[("active", FONDO)],
+              relief=[("active", "flat"), ("pressed", "flat")])
+
+    style.configure("TNotebook", background=FONDO, borderwidth=0,
+                    tabmargins=(0, 0, 0, 0))
+    style.configure("TNotebook.Tab", background=FONDO, foreground=TEXTO_SUAVE,
+                    font=ui(), padding=(14, 6), borderwidth=0,
+                    focuscolor=FONDO)
+    style.map("TNotebook.Tab", background=[("selected", SUPERFICIE)],
+              foreground=[("selected", TEXTO)],
+              expand=[("selected", (0, 0, 0, 0))])
+    return tipo
+
+
+def texto_plano(master, **kw):
+    """
+    Un `tk.Text` con la cara del tema: superficie, linea fina, monoespaciada
+    del cuerpo de la interfaz. Es el widget de los paneles de detalle y de
+    la comparacion; quien lo pide pasa `height`, `wrap` y lo demas.
+    """
+    opciones = dict(background=SUPERFICIE, foreground=TEXTO, relief="flat",
+                    highlightbackground=LINEA, highlightcolor=AZUL,
+                    insertbackground=TEXTO, font=tipografia().mono(CUERPO_PT))
+    opciones.update(kw)
+    return tk.Text(master, highlightthickness=1, padx=8, pady=6, **opciones)
+
+
+class Panel(ttk.Frame):
+    """
+    Panel plano sin borde, sobre superficie, con su titulo en MAYUSCULAS
+    pequeñas. El contenido se agrega en `.interior`.
+
+    Es lo que sustituye al `ttk.LabelFrame` de borde y titulo en cuerpo: el
+    titulo en mayusculas pequeñas en `TEXTO_SUAVE` es el rotulo de seccion
+    del estilo de referencia, y el borde lo pone el CONTRASTE de la
+    superficie contra el fondo, no una linea.
+    """
+
+    def __init__(self, master, titulo, **kw):
+        super().__init__(master, style="Panel.TFrame", **kw)
+        self.configure(padding=(12, 8, 12, 10))
+        self.titulo = ttk.Label(self, text=titulo.upper(),
+                                style="TituloPanel.TLabel")
+        self.titulo.pack(anchor="w", pady=(0, 4))
+        self.interior = ttk.Frame(self, style="Panel.TFrame")
+        self.interior.pack(fill="both", expand=True)
+
+
+class Insignia(ttk.Label):
+    """
+    Insignia de estado: texto corto sobre fondo suave, en monoespaciada.
+
+    LLEVA SIEMPRE TEXTO: el estado se lee, y el color lo acompaña. Por eso el
+    constructor exige el texto y `configurar` cambia texto y estado en la
+    misma llamada; una insignia sin texto seria un estado comunicado solo por
+    color.
+    """
+
+    def __init__(self, master, texto, estado=INSIGNIA_NEUTRA, **kw):
+        super().__init__(master, text=texto, style=estilo_de_insignia(estado),
+                         **kw)
+        self.estado = estado
+
+    def configurar(self, texto, estado):
+        self.estado = estado
+        self.configure(text=texto, style=estilo_de_insignia(estado))
+
+
+class TituloDeVista(ttk.Frame):
+    """
+    La cabecera de cada pestaña: «PASO n / N» en azul pequeño, el titulo de
+    la vista y su subtitulo. Los tres textos los da el llamador; el rotulo
+    del paso se ARMA aqui para que las cuatro pestañas lo digan igual.
+
+    Es un `ttk.Frame` --- y no una clase con `pack`/`grid` propios --- para
+    que el llamador lo coloque con los geometry managers de Tk, que el
+    barrido de literales reconoce; redefinirlos aqui les quitaria a TODAS las
+    llamadas `pack` de este archivo la exencion de geometria.
+    """
+
+    def __init__(self, master, numero, total, titulo, subtitulo):
+        super().__init__(master, style="Fondo.TFrame")
+        self.paso = ttk.Label(self, text=f"PASO {numero} / {total}",
+                              style="Paso.TLabel")
+        self.paso.pack(anchor="w")
+        self.titulo = ttk.Label(self, text=titulo, style="Titulo.TLabel")
+        self.titulo.pack(anchor="w")
+        self.subtitulo = ttk.Label(self, text=subtitulo,
+                                   style="Subtitulo.TLabel", justify="left")
+        self.subtitulo.pack(anchor="w", pady=(2, 0))
 
 
 # ---------------------------------------------------------------------------
@@ -197,8 +526,9 @@ class Tooltip:
         self._tip.wm_overrideredirect(True)
         self._tip.wm_geometry(f"+{x}+{y}")
         tk.Label(
-            self._tip, text=self.texto, justify="left", background="#ffffe0",
-            relief="solid", borderwidth=1, font=("Segoe UI", 8), padx=6, pady=3,
+            self._tip, text=self.texto, justify="left", background=BLANCO,
+            foreground=TEXTO, relief="solid", borderwidth=1,
+            font=tipografia().ui(PEQUENA_PT), padx=8, pady=4,
         ).pack()
 
     def _ocultar(self, _evt=None):
@@ -242,16 +572,17 @@ def unidades_de_rueda(*, num, delta):
 class MarcoScroll(ttk.Frame):
     """Contenedor con scroll vertical: el contenido se agrega en `.interior`."""
 
-    def __init__(self, master, **kw):
-        super().__init__(master, **kw)
-        self.canvas = tk.Canvas(self, highlightthickness=0, borderwidth=0)
+    def __init__(self, master, fondo=FONDO, estilo_interior="Fondo.TFrame", **kw):
+        super().__init__(master, style=estilo_interior, **kw)
+        self.canvas = tk.Canvas(self, highlightthickness=0, borderwidth=0,
+                                background=fondo)
         self.vbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.vbar.set)
 
         self.canvas.pack(side="left", fill="both", expand=True)
         self.vbar.pack(side="right", fill="y")
 
-        self.interior = ttk.Frame(self.canvas, padding=14)
+        self.interior = ttk.Frame(self.canvas, padding=14, style=estilo_interior)
         self._id_win = self.canvas.create_window((0, 0), window=self.interior, anchor="nw")
 
         self.interior.bind("<Configure>", self._ajustar_region)
@@ -406,12 +737,13 @@ class BotonAccion:
             opciones.update(bg=fondo, fg=texto_color)
         # Tres llamadas y no una con la fuente en una variable: escrita asi, la
         # tupla es argumento DIRECTO de `tk.Button` en los tres casos.
+        tipo = tipografia()
         if letra == self.GRANDE:
-            self.boton = tk.Button(master, font=("Segoe UI", 10, "bold"), **opciones)
+            self.boton = tk.Button(master, font=tipo.ui(CUERPO_PT + 1, "bold"), **opciones)
         elif letra == self.DISCRETA:
-            self.boton = tk.Button(master, font=("Segoe UI", 9), **opciones)
+            self.boton = tk.Button(master, font=tipo.ui(PEQUENA_PT), **opciones)
         else:
-            self.boton = tk.Button(master, font=("Segoe UI", 9, "bold"), **opciones)
+            self.boton = tk.Button(master, font=tipo.ui(PEQUENA_PT, "bold"), **opciones)
         self.tooltip = Tooltip(self.boton, ayuda)
         self.rotulo = None
         self._pintar(motivo is None)
@@ -508,7 +840,7 @@ class BotonAyuda:
     def __init__(self, master, comando, ayuda):
         self.boton = tk.Button(
             master, text="i", command=comando, relief="flat", cursor="hand2",
-            width=2, font=("Segoe UI", 9, "bold"),
+            width=2, font=tipografia().ui(PEQUENA_PT, "bold"),
             bg=COLOR_AYUDA_FONDO, fg="white", activebackground=COLOR_AYUDA_ACTIVO,
             activeforeground="white")
         self.tooltip = Tooltip(self.boton, ayuda)

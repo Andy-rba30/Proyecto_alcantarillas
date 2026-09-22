@@ -45,6 +45,7 @@ from tkinter import messagebox, ttk
 
 from src import declaracion as dec
 from src import ventana_normativa as vn
+from gui import componentes as comp
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR, COLOR_OK,
                              CampoValidable, MarcoScroll, Tooltip,
                              interpretar_texto_declarado)
@@ -65,14 +66,12 @@ AVISO_R1 = (
     "memoria: con la fila, la cita, las alternativas descartadas y la fecha."
 )
 
-# Las tres fuentes de la ventana. Se nombran porque el barrido de literales de
-# la capa de presentacion exime el entero que es argumento DIRECTO de una
-# llamada de widget, y un tamano dentro de un condicional no lo es. Nombrarlas
-# es ademas lo que se querria de todas formas: tres nombres en vez de la misma
-# tupla repetida veinte veces.
-FUENTE_CUERPO = ("Segoe UI", 9)             # literal-ok: cuerpo de letra, pt
-FUENTE_NEGRITA = ("Segoe UI", 9, "bold")    # literal-ok: cuerpo de letra, pt
-FUENTE_TITULO = ("Segoe UI", 11, "bold")    # literal-ok: cuerpo de letra, pt
+# Las fuentes de la ventana SALEN DEL TEMA (`gui/componentes.py`): la misma
+# tipografia y los mismos cuerpos que la ventana principal, resueltos contra
+# las fuentes instaladas. Hasta el rediseño visual esta ventana llevaba sus
+# tres tuplas propias de 9 pt y divergia de la principal en cuerpo de
+# letra. Se piden AL CONSTRUIR (`_fuente_cuerpo` y hermanas), no al
+# importar, porque la tipografia se resuelve cuando existe un `Tk`.
 
 AVISO_CATALOGO = (
     "Este valor NO tiene numeral y no puede sostener una cita. Un catalogo no "
@@ -119,10 +118,29 @@ class VentanaNormativa(tk.Toplevel):
         self._construir()
 
     # ------------------------------------------------------------------
+    # Las fuentes del tema, pedidas por nombre de cuerpo
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _fuente_cuerpo():
+        return comp.tipografia().ui(comp.CUERPO_PT)
+
+    @staticmethod
+    def _fuente_negrita():
+        return comp.tipografia().ui(comp.CUERPO_PT, "bold")
+
+    @staticmethod
+    def _fuente_titulo():
+        return comp.tipografia().ui(comp.CUERPO_PT + 2, "bold")
+
+    # ------------------------------------------------------------------
     # Carcasa
     # ------------------------------------------------------------------
     def _construir(self):
-        marco = MarcoScroll(self)
+        # La emergente es UNA hoja: superficie de punta a punta, sin paneles,
+        # de modo que el marco desplazable va sobre la superficie y no sobre
+        # el fondo de la ventana principal.
+        self.configure(background=comp.SUPERFICIE)
+        marco = MarcoScroll(self, fondo=comp.SUPERFICIE, estilo_interior="TFrame")
         marco.pack(fill="both", expand=True)
         p = marco.interior
 
@@ -139,7 +157,7 @@ class VentanaNormativa(tk.Toplevel):
     def _cabecera(self, p):
         v = self.ventana
         ttk.Label(p, text=f"[{v.etiqueta}] {v.clave}",
-                  font=("Segoe UI", 12, "bold")).pack(anchor="w")
+                  font=comp.tipografia().ui(comp.TITULO_PT, "bold")).pack(anchor="w")
         self._parrafo(p, v.concepto, negrita=True)
         self._parrafo(p, f"Unidad: {v.unidad}   ·   Modo de resolucion: "
                          f"{v.modo}   ·   Poblacion: {v.poblacion}   ·   "
@@ -151,7 +169,7 @@ class VentanaNormativa(tk.Toplevel):
         marca = " [declarado para esta corrida, no en archivo]" \
             if v.declarada_en_caliente else ""
         ttk.Label(p, text=f"Valor efectivo: {valor}{marca}",
-                  font=("Consolas", 10, "bold")).pack(anchor="w", pady=6)
+                  font=comp.tipografia().mono(comp.CUERPO_PT, "bold")).pack(anchor="w", pady=6)
         if v.justificacion:
             self._parrafo(p, f"Justificacion declarada: {v.justificacion}")
         if v.fuente:
@@ -177,7 +195,7 @@ class VentanaNormativa(tk.Toplevel):
                 getattr(self, f"_bloque_{bloque}")(p, extra)
 
     def _bloque_titulo_literal(self, p, t):
-        ttk.Label(p, text=t.titulo_literal, font=("Segoe UI", 11, "bold"),
+        ttk.Label(p, text=t.titulo_literal, font=self._fuente_titulo(),
                   wraplength=980, justify="left").pack(anchor="w")
 
     def _bloque_linea_de_cita(self, p, t):
@@ -204,8 +222,8 @@ class VentanaNormativa(tk.Toplevel):
             apagada = "  (atenuada)" if c.atenuada else ""
             tree.heading(c.id, text=f"{c.etiqueta_literal}{unidad}{apagada}")
             tree.column(c.id, width=150, anchor="center")
-        tree.tag_configure("atenuada", foreground="#999999")
-        tree.tag_configure("no_elegible", background="#fdecea",
+        tree.tag_configure("atenuada", foreground=comp.TEXTO_SUAVE)
+        tree.tag_configure("no_elegible", background=comp.ROJO_SUAVE,
                            foreground=COLOR_ERROR)
         for f in t.filas:
             tags = []
@@ -254,7 +272,7 @@ class VentanaNormativa(tk.Toplevel):
                              "condicion de aplicacion.")
             return
         ttk.Label(p, text="Condicion de aplicacion de cada fila",
-                  font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(8, 2))
+                  font=self._fuente_negrita()).pack(anchor="w", pady=(8, 2))
         for f in con_condicion:
             for texto in f.condiciones:
                 self._parrafo(p, f"   {f.etiqueta_legible}: «{texto}»")
@@ -284,7 +302,7 @@ class VentanaNormativa(tk.Toplevel):
         if not t.notas_al_pie:
             return
         ttk.Label(p, text="Notas al pie de la tabla, integras",
-                  font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(8, 2))
+                  font=self._fuente_negrita()).pack(anchor="w", pady=(8, 2))
         for nota in t.notas_al_pie:
             self._parrafo(p, f"   ({nota.marca}) {nota.texto}")
 
@@ -292,7 +310,7 @@ class VentanaNormativa(tk.Toplevel):
         if not t.modificadores:
             return
         ttk.Label(p, text="Modificadores que la fuente aplica sobre esta tabla",
-                  font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(8, 2))
+                  font=self._fuente_negrita()).pack(anchor="w", pady=(8, 2))
         for m in t.modificadores:
             self._parrafo(p, f"   {m.concepto} - {m.sobre_que}", negrita=True)
             self._parrafo(p, f"      Texto literal: «{m.texto_literal}»")
@@ -312,7 +330,7 @@ class VentanaNormativa(tk.Toplevel):
 
     def _bloque_cita_textual(self, p, t):
         ttk.Label(p, text="Cita textual que sostiene la tabla",
-                  font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(8, 2))
+                  font=self._fuente_negrita()).pack(anchor="w", pady=(8, 2))
         if t.texto_previo:
             self._parrafo(p, f"   Parrafo previo: «{t.texto_previo}»")
         self._parrafo(p, f"   «{t.cita_textual}»")
@@ -353,7 +371,7 @@ class VentanaNormativa(tk.Toplevel):
     # ------------------------------------------------------------------
     def _pintar_rango(self, p):
         r = self.ventana.rango
-        ttk.Label(p, text=r.titulo_de_la_tabla, font=("Segoe UI", 11, "bold"),
+        ttk.Label(p, text=r.titulo_de_la_tabla, font=self._fuente_titulo(),
                   wraplength=980, justify="left").pack(anchor="w")
         self._parrafo(p, f"Fila: {r.fila_legible}   ·   Columna: {r.columna_id}")
         self._parrafo(p, f"Que acota: {r.que_acota}")
@@ -378,7 +396,7 @@ class VentanaNormativa(tk.Toplevel):
                         r.interpretacion_del_proyectista, COLOR_AVISO)
 
     def _bloque_de_rango(self, p, titulo, rango, extra=""):
-        ttk.Label(p, text=titulo, font=("Segoe UI", 10, "bold")).pack(
+        ttk.Label(p, text=titulo, font=self._fuente_negrita()).pack(
             anchor="w", pady=(8, 2))
         self._parrafo(p, f"   {rango.frase}")
         self._parrafo(p, f"   {rango.rotulo}")
@@ -420,7 +438,7 @@ class VentanaNormativa(tk.Toplevel):
     def _pintar_catalogo(self, p):
         c = self.ventana.catalogo
         self._aviso(p, "ESTO NO ES UNA NORMA", AVISO_CATALOGO, COLOR_ERROR)
-        ttk.Label(p, text=c.titulo, font=("Segoe UI", 11, "bold"),
+        ttk.Label(p, text=c.titulo, font=self._fuente_titulo(),
                   wraplength=980, justify="left").pack(anchor="w")
         self._parrafo(p, f"Catalogo: {c.catalogo_id}   ·   Ambito: "
                          f"{c.proveedor_o_ambito}")
@@ -515,7 +533,9 @@ class VentanaNormativa(tk.Toplevel):
                              "tabla y no una fila.")
 
         boton = tk.Button(marco, text="Declarar para esta corrida",
-                          font=("Segoe UI", 9, "bold"), bg="#2e86c1",
+                          font=comp.tipografia().ui(comp.PEQUENA_PT, "bold"),
+                          bg=comp.AZUL, activebackground=comp.AZUL_OSCURO,
+                          activeforeground="white",
                           fg="white", relief="flat", cursor="hand2",
                           command=self._declarar)
         boton.grid(row=4, column=0, columnspan=2, sticky="w", padx=6, pady=8,
@@ -580,7 +600,7 @@ class VentanaNormativa(tk.Toplevel):
     # Utilidades de pintado
     # ------------------------------------------------------------------
     def _parrafo(self, p, texto, negrita=False):
-        fuente = FUENTE_NEGRITA if negrita else FUENTE_CUERPO
+        fuente = self._fuente_negrita() if negrita else self._fuente_cuerpo()
         ttk.Label(p, text=texto, wraplength=980, justify="left",
                   font=fuente).pack(anchor="w", pady=2)
 
@@ -588,9 +608,9 @@ class VentanaNormativa(tk.Toplevel):
         marco = ttk.Frame(p, padding=6)
         marco.pack(fill="x", pady=4)
         ttk.Label(marco, text=titulo, foreground=color,
-                  font=FUENTE_NEGRITA).pack(anchor="w")
+                  font=self._fuente_negrita()).pack(anchor="w")
         ttk.Label(marco, text=texto, wraplength=960, justify="left",
-                  font=FUENTE_CUERPO).pack(anchor="w")
+                  font=self._fuente_cuerpo()).pack(anchor="w")
 
 
 def abrir(master, clave, al_declarar=None) -> Optional[VentanaNormativa]:

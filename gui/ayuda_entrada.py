@@ -49,6 +49,7 @@ from tkinter import ttk
 from src import ayuda_entrada as ay
 from src.modelos import Familia
 
+from gui import componentes as comp
 from gui.componentes import COLOR_AVISO, COLOR_OK, Tooltip
 
 # Los nombres de las tres pestanas, que ademas son los modos con que se
@@ -93,7 +94,7 @@ def _texto_solo_lectura(master, contenido, alto):
     Se deja habilitado y se bloquean las teclas que escriben: copiar (Ctrl-C,
     Ctrl-A) sigue funcionando porque no modifican el buffer.
     """
-    txt = tk.Text(master, height=alto, wrap="none", font=("Consolas", 9),
+    txt = tk.Text(master, height=alto, wrap="none", font=comp.tipografia().mono(comp.CUERPO_PT),
                   borderwidth=1, relief="solid")
     txt.insert("1.0", contenido)
     # 0x4 es el bit de Control en el `state` de un evento de Tk: con el pulsado
@@ -112,6 +113,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
 
     def __init__(self, master, pestana=PESTANA_CSV):
         super().__init__(master)
+        self.configure(background=comp.FONDO)
         self.title(TITULO)
         self.geometry("1040x780")
         self.minsize(760, 520)
@@ -153,13 +155,13 @@ class VentanaAyudaEntrada(tk.Toplevel):
         cab.grid(row=0, column=0, sticky="ew")
         ttk.Label(cab, text=f"El encabezado tiene {len(fichas)} columnas, en "
                             "este orden exacto.",
-                  font=("Segoe UI", 10, "bold")).pack(anchor="w")
+                  font=comp.tipografia().ui(comp.CUERPO_PT, "bold")).pack(anchor="w")
         ttk.Label(
             cab,
             text="Pegalo en una hoja vacia para empezar. Se lee de "
                  "M0_carga.COLUMNAS, que sale de los campos de PuntoCritico: "
                  "si manana el proyecto gana una columna, aparece aqui sola.",
-            font=("Segoe UI", 8, "italic"), foreground="#666666",
+            font=comp.tipografia().ui(comp.PEQUENA_PT), foreground=comp.TEXTO_SUAVE,
             wraplength=980, justify="left").pack(anchor="w", pady=(2, 6))
 
         caja = ttk.Frame(p, padding=(8, 0))
@@ -175,7 +177,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
 
         ttk.Label(p, text=f"La fila lleva {len(fichas)} celdas, ni una mas: "
                           f"{ay.fila_de_ejemplo()}",
-                  font=("Consolas", 8), foreground="#666666").grid(
+                  font=comp.tipografia().mono(comp.PEQUENA_PT), foreground=comp.TEXTO_SUAVE).grid(
             row=2, column=0, sticky="w", padx=8, pady=(2, 8))
 
         panel = ttk.PanedWindow(p, orient="vertical")
@@ -223,7 +225,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
         # pide, y con 8 la ficha de una columna se cortaba justo antes de «SE
         # LEE DE», que es la linea por la que se abre esta ayuda. Medido sobre
         # la ventana real, no supuesto.
-        self.txt_csv = tk.Text(f_det, height=10, wrap="word", font=("Consolas", 9))
+        self.txt_csv = tk.Text(f_det, height=10, wrap="word", font=comp.tipografia().mono(comp.CUERPO_PT))
         self.txt_csv.grid(row=0, column=0, sticky="nsew")
         scroll_det = ttk.Scrollbar(f_det, orient="vertical",
                                     command=self.txt_csv.yview)
@@ -257,10 +259,10 @@ class VentanaAyudaEntrada(tk.Toplevel):
                      else "solo en " + ", ".join(f"Familia {f.value}"
                                                  for f in familias))
             ttk.Label(marco, text=f"· {cuales}  ({donde})",
-                      font=("Consolas", 9)).grid(row=fila * 2, column=0,
+                      font=comp.tipografia().mono(comp.CUERPO_PT)).grid(row=fila * 2, column=0,
                                                   sticky="w")
             ttk.Label(marco, text=f"    lo debe: {quien}",
-                      font=("Segoe UI", 8, "italic"), foreground="#666666",
+                      font=comp.tipografia().ui(comp.PEQUENA_PT), foreground=comp.TEXTO_SUAVE,
                       wraplength=960, justify="left").grid(
                 row=fila * 2 + 1, column=0, sticky="w", pady=(0, 4))
 
@@ -305,7 +307,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
         cab = ttk.Frame(p, padding=(8, 8, 8, 0))
         cab.grid(row=0, column=0, sticky="ew")
         ttk.Label(cab, text=f"El JSON admite {len(fichas)} claves, y solo esas.",
-                  font=("Segoe UI", 10, "bold")).pack(anchor="w")
+                  font=comp.tipografia().ui(comp.CUERPO_PT, "bold")).pack(anchor="w")
         ttk.Label(
             cab,
             text="Las dos secciones son opcionales. Una clave mal escrita NO "
@@ -313,7 +315,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
                  "deje el punto sin luz por un error de tipeo. Los valores son "
                  "numeros en SI, salvo 'categoria_tr', que es la fila de la "
                  "Tabla N 02.",
-            font=("Segoe UI", 8, "italic"), foreground="#666666",
+            font=comp.tipografia().ui(comp.PEQUENA_PT), foreground=comp.TEXTO_SUAVE,
             wraplength=980, justify="left").pack(anchor="w", pady=(2, 6))
 
         caja = ttk.Frame(p, padding=(8, 0))
@@ -362,7 +364,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
                  "variables_entrada.py, el mismo del que sale la ayuda del "
                  "CSV: las dos claves que ademas son columna dicen aqui lo "
                  "mismo que alli.",
-            font=("Segoe UI", 8, "italic"), foreground="#666666",
+            font=comp.tipografia().ui(comp.PEQUENA_PT), foreground=comp.TEXTO_SUAVE,
             wraplength=980, justify="left").grid(
             row=3, column=0, sticky="w", padx=8, pady=8)
 
@@ -385,7 +387,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
         cab.grid(row=0, column=0, sticky="ew")
         ttk.Label(cab, text="Las palabras con que este programa describe el "
                             "expediente.",
-                  font=("Segoe UI", 10, "bold")).pack(anchor="w")
+                  font=comp.tipografia().ui(comp.CUERPO_PT, "bold")).pack(anchor="w")
         ttk.Label(
             cab,
             text="Donde se usan: la pestana 1 agrupa los datos por FAMILIA y "
@@ -395,7 +397,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
                  "su procedencia («¿de donde sale este numero?»). Las listas "
                  "de abajo son derivadas; los parrafos son texto estable de "
                  "src/ayuda_entrada.py.",
-            font=("Segoe UI", 8, "italic"), foreground="#666666",
+            font=comp.tipografia().ui(comp.PEQUENA_PT), foreground=comp.TEXTO_SUAVE,
             wraplength=980, justify="left").pack(anchor="w", pady=(2, 6))
 
         panel = ttk.PanedWindow(p, orient="vertical")
@@ -407,7 +409,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
         f_prosa.columnconfigure(0, weight=1)
         f_prosa.rowconfigure(0, weight=1)
         self.txt_conceptos = tk.Text(f_prosa, height=16, wrap="word",
-                                     font=("Consolas", 9))
+                                     font=comp.tipografia().mono(comp.CUERPO_PT))
         self.txt_conceptos.grid(row=0, column=0, sticky="nsew")
         scroll_prosa = ttk.Scrollbar(f_prosa, orient="vertical",
                                      command=self.txt_conceptos.yview)

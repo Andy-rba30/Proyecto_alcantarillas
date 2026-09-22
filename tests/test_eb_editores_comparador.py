@@ -1002,7 +1002,12 @@ def test_eb_los_editores_tipados_en_la_ventana_de_verdad(tmp_path):
     assert r["serie"]["literal"].startswith("[[1.2, 0.9]")
     # 2. El dict del receptor: un campo fuera de ventana se pinta en rojo, el
     #    boton no declara NADA, y con el campo corregido entra entero.
-    assert r["receptor"]["color_n_fuera"] == "#e74c3c"
+    # El rojo es EL DE LA PALETA del tema (`gui/componentes.COLOR_ERROR`), no
+    # un hexadecimal copiado: el rediseño visual (bloque 1) lo movio de
+    # «#e74c3c» a `ROJO` y lo que este test fija es que el campo fuera de
+    # ventana se pinta con el color de error de la interfaz, sea cual sea.
+    from gui import componentes as gcomp
+    assert r["receptor"]["color_n_fuera"] == gcomp.COLOR_ERROR
     assert r["receptor"]["rechazado"].startswith("Error:")
     assert r["receptor"]["declarado_tras_rechazo"] is False
     assert r["receptor"]["declarado"]["n"] == pytest.approx(0.03, rel=REL_TRANSPORTE)
