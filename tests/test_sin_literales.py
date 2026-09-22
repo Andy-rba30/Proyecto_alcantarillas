@@ -301,10 +301,11 @@ CONSTRUCTORES_DE_PRESENTACION = {
     "Separator", "Notebook", "Canvas", "Scrollbar", "Toplevel", "Checkbutton",
     "Combobox", "Radiobutton", "Spinbox", "Progressbar", "Menu", "Style",
     "PanedWindow", "Listbox", "Scale",
-    # el `tk.Text` con la cara del tema (`gui/componentes.texto_plano`,
-    # rediseño visual bloque 1): recibe `height` en lineas como el Text al
-    # que envuelve, y por lo mismo su interior admite el entero de geometria.
-    "texto_plano",
+    # los dos `tk.Text` con la cara del tema (`gui/componentes.texto_plano`,
+    # rediseño visual bloque 1, y `texto_prosa`, bloque 4): reciben `height`
+    # en lineas como el Text al que envuelven, y por lo mismo su interior
+    # admite el entero de geometria.
+    "texto_plano", "texto_prosa",
     # geometria, estilo y configuracion
     "pack", "grid", "place", "configure", "config",
     "columnconfigure", "rowconfigure",

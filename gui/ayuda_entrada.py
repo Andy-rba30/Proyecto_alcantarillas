@@ -94,8 +94,9 @@ def _texto_solo_lectura(master, contenido, alto):
     Se deja habilitado y se bloquean las teclas que escriben: copiar (Ctrl-C,
     Ctrl-A) sigue funcionando porque no modifican el buffer.
     """
-    txt = tk.Text(master, height=alto, wrap="none", font=comp.tipografia().mono(comp.CUERPO_PT),
-                  borderwidth=1, relief="solid")
+    # La caja copiable con la cara del tema (superficie y linea fina), en
+    # monoespaciada porque es una cabecera que se pega tal cual.
+    txt = comp.texto_plano(master, height=alto, wrap="none")
     txt.insert("1.0", contenido)
     # 0x4 es el bit de Control en el `state` de un evento de Tk: con el pulsado
     # la tecla es un atajo (Ctrl-C, Ctrl-A) y no una escritura, y por eso pasa.
@@ -225,7 +226,7 @@ class VentanaAyudaEntrada(tk.Toplevel):
         # pide, y con 8 la ficha de una columna se cortaba justo antes de «SE
         # LEE DE», que es la linea por la que se abre esta ayuda. Medido sobre
         # la ventana real, no supuesto.
-        self.txt_csv = tk.Text(f_det, height=10, wrap="word", font=comp.tipografia().mono(comp.CUERPO_PT))
+        self.txt_csv = comp.texto_prosa(f_det, height=10, wrap="word")
         self.txt_csv.grid(row=0, column=0, sticky="nsew")
         scroll_det = ttk.Scrollbar(f_det, orient="vertical",
                                     command=self.txt_csv.yview)
@@ -268,32 +269,28 @@ class VentanaAyudaEntrada(tk.Toplevel):
 
     def _al_elegir_columna(self, _evt=None):
         seleccion = self.tree_csv.selection()
-        self.txt_csv.configure(state="normal")
-        self.txt_csv.delete("1.0", "end")
-        if seleccion:
-            f = self._fichas_csv[seleccion[0]]
-            # EL ORDEN LO DECIDIO LA VENTANA REAL, no el gusto. Con «SE LEE DE»
-            # en segundo lugar, la ficha de `sucs_fundacion` --- 1236 caracteres
-            # de trazabilidad --- empujaba la NOTA fuera del panel, y la nota es
-            # justo lo que el proyectista necesita: QUE ESCRIBIR en la celda.
-            # Se ordena por accionabilidad y la prosa larga queda al final, que
-            # es donde el scroll molesta menos.
-            lineas = [f"{f.clave}   [{f.unidad}]", "",
-                      f"CONCEPTO   {f.concepto}"]
-            if f.nota:
-                lineas += ["", f"NOTA       {f.nota}"]
-            if f.dominio_declarado:
-                lineas += ["", f"RANGO      {f.dominio_declarado}"]
-            if f.limite_fisico is not None:
-                lineas += ["",
-                           f"LIMITE     {f.limite_fisico.rotulo}: "
-                           f"{f.limite_fisico.frase}",
-                           f"           {f.limite_fisico.que_pasa_fuera}"]
-            for vacio in f.vacios:
-                lineas += ["", f"VACIA      {vacio.quien_lo_debe}"]
-            lineas += ["", f"SE LEE DE  {f.de_donde_sale}"]
-            self.txt_csv.insert("1.0", "\n".join(lineas))
-        self.txt_csv.configure(state="disabled")
+        if not seleccion:
+            comp.escribir_campos(self.txt_csv, ())
+            return
+        f = self._fichas_csv[seleccion[0]]
+        # EL ORDEN LO DECIDIO LA VENTANA REAL, no el gusto. Con «SE LEE DE»
+        # en segundo lugar, la ficha de `sucs_fundacion` --- 1236 caracteres
+        # de trazabilidad --- empujaba la NOTA fuera del panel, y la nota es
+        # justo lo que el proyectista necesita: QUE ESCRIBIR en la celda.
+        # Se ordena por accionabilidad y la prosa larga queda al final, que
+        # es donde el scroll molesta menos. Cada campo es un bloque con su
+        # rotulo (bloque 4 del rediseño): el contenido es el de la ficha.
+        campos = [("Concepto", f.concepto), ("Nota", f.nota),
+                  ("Rango", f.dominio_declarado)]
+        if f.limite_fisico is not None:
+            campos.append(("Limite", f"{f.limite_fisico.rotulo}: "
+                                     f"{f.limite_fisico.frase}\n"
+                                     f"{f.limite_fisico.que_pasa_fuera}"))
+        for vacio in f.vacios:
+            campos.append(("Vacia", vacio.quien_lo_debe))
+        campos.append(("Se lee de", f.de_donde_sale))
+        comp.escribir_campos(self.txt_csv, campos,
+                             titulo=f"{f.clave}   [{f.unidad}]")
 
     # ------------------------------------------------------------------
     # Pestana 2: el JSON
@@ -403,26 +400,24 @@ class VentanaAyudaEntrada(tk.Toplevel):
         panel = ttk.PanedWindow(p, orient="vertical")
         panel.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 8))
 
-        f_prosa = ttk.LabelFrame(panel, text="Familias, etiquetas y estados",
-                                 padding=8)
-        panel.add(f_prosa, weight=3)  # literal-ok: reparto del PanedWindow
+        panel_prosa = comp.Panel(panel, "Familias, etiquetas y estados")
+        panel.add(panel_prosa, weight=3)  # literal-ok: reparto del PanedWindow
+        f_prosa = panel_prosa.interior
         f_prosa.columnconfigure(0, weight=1)
         f_prosa.rowconfigure(0, weight=1)
-        self.txt_conceptos = tk.Text(f_prosa, height=16, wrap="word",
-                                     font=comp.tipografia().mono(comp.CUERPO_PT))
+        self.txt_conceptos = comp.texto_prosa(f_prosa, height=16, wrap="word")
         self.txt_conceptos.grid(row=0, column=0, sticky="nsew")
         scroll_prosa = ttk.Scrollbar(f_prosa, orient="vertical",
                                      command=self.txt_conceptos.yview)
         self.txt_conceptos.configure(yscrollcommand=scroll_prosa.set)
         scroll_prosa.grid(row=0, column=1, sticky="ns")
-        self.txt_conceptos.insert("1.0", self._texto_de_conceptos())
-        self.txt_conceptos.configure(state="disabled")
+        self._pintar_conceptos(self.txt_conceptos)
 
-        f_glosario = ttk.LabelFrame(
-            panel, text="Glosario de simbolos y unidades (el censo de "
-                        "variables_entrada.py, entero)",
-            padding=8)
-        panel.add(f_glosario, weight=2)  # literal-ok: reparto del PanedWindow
+        panel_glosario = comp.Panel(
+            panel, "Glosario de simbolos y unidades (el censo de "
+                   "variables_entrada.py, entero)")
+        panel.add(panel_glosario, weight=2)  # literal-ok: reparto del PanedWindow
+        f_glosario = panel_glosario.interior
         f_glosario.columnconfigure(0, weight=1)
         f_glosario.rowconfigure(0, weight=1)
 
@@ -443,49 +438,48 @@ class VentanaAyudaEntrada(tk.Toplevel):
                 "", "end", iid=f.clave,
                 values=(f.clave, f.unidad, f.poblacion, f.fase, f.concepto))
 
-    def _texto_de_conceptos(self):
+    def _pintar_conceptos(self, texto):
         """
-        El texto de la mitad de prosa, ARMADO de las fichas y de nada mas:
-        este metodo elige sangrias y subrayados, no contenido. Si una frase
-        de aqui arriba esta mal, se corrige en `src/ayuda_entrada.py` (los
-        parrafos) o en la declaracion de la que su ficha deriva (las listas).
+        La mitad de prosa, ARMADA de las fichas y de nada mas: este metodo
+        elige etiquetas de prosa (seccion, rotulo, cuerpo, mono), no
+        contenido. Si una frase de aqui esta mal, se corrige en
+        `src/ayuda_entrada.py` (los parrafos) o en la declaracion de la que
+        su ficha deriva (las listas). Hasta el bloque 4 del rediseño esto
+        era un texto monoespaciado con subrayados de «=».
         """
-        lineas = []
+        texto.configure(state="normal")
+        texto.delete("1.0", "end")
 
         def seccion(titulo):
-            if lineas:
-                lineas.append("")
-            # `extend` y no `+=`: el aumentado REBINDEA y volveria `lineas`
-            # local de esta funcion anidada (UnboundLocalError, medido).
-            lineas.extend([titulo, "=" * len(titulo), ""])
+            texto.insert("end", titulo + "\n", "seccion")
+
+        def parrafo(contenido, etiqueta="cuerpo"):
+            texto.insert("end", contenido + "\n", (etiqueta, "sangria"))
 
         familias = ay.fichas_de_familias()
-        seccion(f"LAS {len(familias)} FAMILIAS ({familias[0].numeral})")
+        seccion(f"Las {len(familias)} familias ({familias[0].numeral})")
         for f in familias:
-            lineas.append(f.rotulo)
-            lineas.append(f"    De donde sale su Q: {f.origen_del_caudal}")
+            texto.insert("end", f.rotulo + "\n", "rotulo")
+            parrafo(f"De donde sale su Q: {f.origen_del_caudal}")
             for nota in f.notas:
-                lineas.append(f"    Nota: {nota}")
-            lineas.append("")
+                parrafo(f"Nota: {nota}", "suave")
 
         etiquetas = ay.fichas_de_etiquetas()
-        seccion(f"LAS {len(etiquetas)} ETIQUETAS DE UN VALOR")
-        lineas += ["Todo valor del proyecto lleva una, de mas determinado a "
-                   "mas elegido:", ""]
+        seccion(f"Las {len(etiquetas)} etiquetas de un valor")
+        texto.insert("end", "Todo valor del proyecto lleva una, de mas "
+                            "determinado a mas elegido:\n", "cuerpo")
         for f in etiquetas:
-            lineas.append(f"{f.rotulo}  {f.nombre}")
-            lineas.append(f"    {f.explicacion}")
-            lineas.append(f"    Vive en: {f.archivo}")
-            lineas.append("")
+            texto.insert("end", f"{f.rotulo}  {f.nombre}\n", "rotulo")
+            parrafo(f.explicacion)
+            parrafo(f"Vive en: {f.archivo}", "mono")
 
         estados = ay.fichas_de_estados()
-        seccion("ESTADOS DE UN CRITERIO")
+        seccion("Estados de un criterio")
         for f in estados:
-            lineas.append(f"{f.rotulo}")
-            lineas.append(f"    {f.explicacion}")
-            lineas.append(f"    (sale de: {f.origen})")
-            lineas.append("")
-        return "\n".join(lineas).rstrip() + "\n"
+            texto.insert("end", f.rotulo + "\n", "rotulo")
+            parrafo(f.explicacion)
+            parrafo(f"(sale de: {f.origen})", "mono")
+        texto.configure(state="disabled")
 
 
 def abrir(master, pestana=PESTANA_CSV):

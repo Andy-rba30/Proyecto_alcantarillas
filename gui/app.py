@@ -1521,7 +1521,7 @@ class ExpedienteApp:
         # tenia antes de todo esto --- y el divisor no arreglaba nada hasta
         # que alguien lo arrastrara. Doce lineas visibles de arranque, el resto
         # por la barra, y el reparto en manos del usuario a partir de ahi.
-        self.txt_detalle_criterio = comp.texto_plano(f_detalle, height=9, wrap="word")
+        self.txt_detalle_criterio = comp.texto_prosa(f_detalle, height=9, wrap="word")
         self.txt_detalle_criterio.grid(row=0, column=0, sticky="nsew")
         scroll_det = ttk.Scrollbar(f_detalle, orient="vertical",
                                     command=self.txt_detalle_criterio.yview)
@@ -1917,8 +1917,6 @@ class ExpedienteApp:
 
     def _al_seleccionar_criterio(self, _evt=None):
         seleccion = self.tree_criterios_todos.selection()
-        self.txt_detalle_criterio.configure(state="normal")
-        self.txt_detalle_criterio.delete("1.0", "end")
         # La linea de estado se limpia AL CAMBIAR DE FILA, y solo entonces.
         # Sin limpiarla, el "Error: ..." de un criterio se quedaba escrito
         # debajo del siguiente, que es atribuirle a una fila el problema de
@@ -1937,7 +1935,7 @@ class ExpedienteApp:
             for boton in (self.btn_aplicar_corrida, self.btn_quitar_declarado,
                           self.btn_guardar_archivo, self.btn_ventana_norma):
                 boton.deshabilitar(MOTIVO_SIN_CRITERIO)
-            self.txt_detalle_criterio.configure(state="disabled")
+            comp.escribir_campos(self.txt_detalle_criterio, ())
             return
 
         clave = seleccion[0]
@@ -1951,25 +1949,22 @@ class ExpedienteApp:
         # caracteres y el mas largo tiene 4900, contra los ~45 que entran en la
         # columna. Ninguna anchura de columna arregla eso; el sitio donde el
         # texto entero cabe es este panel, y por eso encabeza.
-        lineas = [
-            f"Fuente        : {c.fuente}",
-            f"Justificacion : {c.justificacion}",
-            f"Se resuelve   : {ve.variable(clave).modo.value} "
-            "(doble clic abre su ventana normativa)",
-        ]
+        # Cada campo de la ficha es un bloque (rotulo en mayusculas pequeñas,
+        # valor debajo): el contenido es el de la ficha, la forma la pone
+        # `comp.escribir_campos` (bloque 4 del rediseño).
         procedencia = dec.procedencia_de(clave)
-        if procedencia is not None:
-            lineas.append(f"Procedencia   : {procedencia.como_texto()}")
-        if c.reemplazado_por:
-            lineas.append(f"Se sustituye por: {c.reemplazado_por}")
-        if c.sensibilidad:
-            lineas.append(f"Sensibilidad  : {c.sensibilidad}")
-        if c.trazabilidad:
-            lineas.append(f"Trazabilidad  : {c.trazabilidad}")
-        if c.verificacion_pendiente:
-            lineas.append(f">> VERIFICAR  : {c.verificacion_pendiente}")
-        self.txt_detalle_criterio.insert("1.0", "\n".join(lineas))
-        self.txt_detalle_criterio.configure(state="disabled")
+        campos = [
+            ("Fuente", c.fuente),
+            ("Justificacion", c.justificacion),
+            ("Se resuelve", f"{ve.variable(clave).modo.value} "
+                            "(doble clic abre su ventana normativa)"),
+            ("Procedencia", procedencia.como_texto() if procedencia is not None else ""),
+            ("Se sustituye por", c.reemplazado_por),
+            ("Sensibilidad", c.sensibilidad),
+            ("Trazabilidad", c.trazabilidad),
+            ("Verificar", c.verificacion_pendiente, "aviso"),
+        ]
+        comp.escribir_campos(self.txt_detalle_criterio, campos)
 
         valor_actual = ca.criterio_efectivo(clave).valor
         # El editor primero y el literal despues, bajo la misma guardia de
@@ -2436,7 +2431,7 @@ class ExpedienteApp:
         f_detalle.grid(row=6, column=0, sticky="nsew", pady=(10, 0))
         f_detalle.columnconfigure(0, weight=1)
         f_detalle.rowconfigure(0, weight=1)
-        self.txt_detalle = comp.texto_plano(f_detalle, height=8, wrap="word")
+        self.txt_detalle = comp.texto_prosa(f_detalle, height=8, wrap="word")
         self.txt_detalle.grid(row=0, column=0, sticky="nsew")
         self.txt_detalle.configure(state="disabled")
         scroll_det = ttk.Scrollbar(f_detalle, orient="vertical", command=self.txt_detalle.yview)
@@ -2448,11 +2443,10 @@ class ExpedienteApp:
         for arbol in (self.tree_verificaciones, self.tree_bloqueos):
             for item in arbol.get_children():
                 arbol.delete(item)
-        self.txt_detalle.configure(state="normal")
-        self.txt_detalle.delete("1.0", "end")
         if informe_punto is None:
             self.lbl_punto_seleccionado.config(text=MOTIVO_SIN_PUNTO)
             self.insignia_dimensionado.configurar("", comp.INSIGNIA_NEUTRA)
+            comp.escribir_lineas_de_cli(self.txt_detalle, ())
         else:
             punto = informe_punto.punto
             self.lbl_punto_seleccionado.config(
@@ -2479,8 +2473,9 @@ class ExpedienteApp:
             for b in informe_punto.bloqueos:
                 self.tree_bloqueos.insert("", "end", values=(
                     b.tipo.value, b.etapa, b.mensaje), tags=(b.tipo.value,))
-            self.txt_detalle.insert("1.0", "\n".join(cli._lineas_punto(informe_punto)))
-        self.txt_detalle.configure(state="disabled")
+            # El MISMO texto que imprime la CLI, pintado con las etiquetas de
+            # prosa: ni una palabra distinta, solo tipografia.
+            comp.escribir_lineas_de_cli(self.txt_detalle, cli._lineas_punto(informe_punto))
         self.btn_traza.estado(informe_punto is not None, MOTIVO_SIN_PUNTO)
 
     def _punto_seleccionado(self):

@@ -404,6 +404,113 @@ def texto_plano(master, **kw):
     return tk.Text(master, highlightthickness=1, padx=8, pady=6, **opciones)
 
 
+# ---------------------------------------------------------------------------
+# Texto en PROSA: para leer, con la tipografia de interfaz y etiquetas con
+# nombre (bloque 4 del rediseño visual)
+# ---------------------------------------------------------------------------
+# Hasta el bloque 4 los paneles de detalle y la ayuda volcaban su contenido
+# en un `tk.Text` monoespaciado, rotulo, dos puntos y texto corrido, con
+# subrayados de «=» a mano: se leia como una consola. El contenido sigue
+# siendo el MISMO (las fichas, las lineas de la CLI); lo que cambia es que
+# se escribe con etiquetas --- titulo, seccion, rotulo, cuerpo, sangria,
+# suave, mono, aviso --- sobre la tipografia de interfaz, y la monoespaciada
+# queda para lo que es codigo o clave. Las tres funciones de escritura de
+# abajo eligen etiquetas; no eligen contenido.
+ETIQUETAS_DE_PROSA = ("titulo", "seccion", "rotulo", "cuerpo", "sangria",
+                      "suave", "mono", "aviso")
+
+
+def configurar_prosa(texto):
+    """Configura las etiquetas de `ETIQUETAS_DE_PROSA` sobre un `tk.Text`."""
+    ui, mono = tipografia().ui, tipografia().mono
+    texto.tag_configure("titulo", font=ui(CUERPO_PT + 2, "bold"), spacing3=6)
+    texto.tag_configure("seccion", font=ui(PEQUENA_PT, "bold"),
+                        foreground=TEXTO_SUAVE, spacing1=10, spacing3=2)
+    texto.tag_configure("rotulo", font=ui(CUERPO_PT, "bold"), spacing1=8)
+    texto.tag_configure("cuerpo", font=ui(CUERPO_PT), spacing3=3)
+    texto.tag_configure("sangria", lmargin1=18, lmargin2=18)
+    texto.tag_configure("suave", font=ui(PEQUENA_PT), foreground=TEXTO_SUAVE)
+    texto.tag_configure("mono", font=mono(PEQUENA_PT))
+    texto.tag_configure("aviso", font=ui(CUERPO_PT, "bold"), foreground=AMBAR)
+
+
+def texto_prosa(master, **kw):
+    """
+    Un `tk.Text` para LEER: superficie, linea fina, tipografia de interfaz
+    y las etiquetas de prosa ya configuradas. Quien lo pide pasa `height`,
+    `wrap` y lo demas; el contenido se escribe con `escribir_campos`,
+    `escribir_lineas_de_cli` o con `insert` y una etiqueta de la lista.
+    """
+    opciones = dict(background=SUPERFICIE, foreground=TEXTO, relief="flat",
+                    highlightbackground=LINEA, highlightcolor=AZUL,
+                    insertbackground=TEXTO, font=tipografia().ui(CUERPO_PT),
+                    spacing1=2, spacing3=2)
+    opciones.update(kw)
+    texto = tk.Text(master, highlightthickness=1, padx=10, pady=8, **opciones)
+    configurar_prosa(texto)
+    return texto
+
+
+def escribir_campos(texto, campos, titulo=None):
+    """
+    Escribe una lista de (rotulo, valor[, etiqueta]) como bloques: el rotulo
+    en mayusculas pequeñas y el valor debajo como parrafo. `etiqueta` es la
+    del valor (`cuerpo` si no se dice; `aviso` para lo que hay que mirar).
+    Un valor vacio no se escribe. El widget vuelve a solo lectura al final.
+    """
+    texto.configure(state="normal")
+    texto.delete("1.0", "end")
+    if titulo:
+        texto.insert("end", titulo + "\n", "titulo")
+    for campo in campos:
+        rotulo, valor = campo[0], campo[1]
+        etiqueta = campo[2] if len(campo) > 2 else "cuerpo"
+        if valor is None or str(valor).strip() == "":
+            continue
+        texto.insert("end", rotulo.upper() + "\n", "seccion")
+        texto.insert("end", str(valor).strip() + "\n", etiqueta)
+    texto.configure(state="disabled")
+
+
+def _es_separador(linea):
+    limpia = linea.strip()
+    return bool(limpia) and set(limpia) <= {"-", "="}
+
+
+def escribir_lineas_de_cli(texto, lineas):
+    """
+    Escribe las lineas que la CLI imprime de un punto (`cli._lineas_punto`)
+    con las etiquetas de prosa: los separadores de guiones no se pintan, la
+    primera linea es el titulo, una linea que termina en dos puntos es una
+    seccion, lo que empieza por `[` (las marcas de veredicto y de bloqueo)
+    va en monoespaciada, y la sangria de la CLI se conserva como margen.
+    El TEXTO de cada linea es el de la CLI, sin cambiar una palabra.
+    """
+    texto.configure(state="normal")
+    texto.delete("1.0", "end")
+    titulo_pendiente = True
+    for linea in lineas:
+        if _es_separador(linea) or not linea.strip():
+            continue
+        contenido = linea.strip()
+        if titulo_pendiente:
+            texto.insert("end", contenido + "\n", "titulo")
+            titulo_pendiente = False
+            continue
+        sangria = len(linea) - len(linea.lstrip(" "))
+        etiquetas = ("sangria",) if sangria > len(linea[:sangria]) // 2 + 2 else ()
+        if contenido.endswith(":") and not any(ch.isdigit() for ch in contenido):
+            texto.insert("end", contenido + "\n", ("seccion",) + etiquetas)
+        elif contenido.startswith("["):
+            # Los huecos con que la CLI alinea columnas se colapsan: aqui no
+            # hay columna que alinear y el hueco se lee como un salto.
+            texto.insert("end", re.sub(r" {3,}", "  ", contenido) + "\n",
+                         ("mono",) + etiquetas)
+        else:
+            texto.insert("end", contenido + "\n", ("cuerpo",) + etiquetas)
+    texto.configure(state="disabled")
+
+
 def repartir_al_mostrar(paned):
     """
     Coloca el divisor de un `PanedWindow` de dos paneles segun los PESOS con
