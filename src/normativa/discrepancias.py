@@ -61,6 +61,53 @@ DIS_HDS5_EDICIONES = _d(
 )
 
 # ---------------------------------------------------------------------------
+# R48-001 (cierre C11): que magnitud compara el umbral de 6.0 m
+# ---------------------------------------------------------------------------
+DIS_LUZ_DENOMINACION = _d(
+    id="DIS-LUZ-DENOMINACION",
+    objeto=("la magnitud que el umbral de 6.0 m de la denominacion "
+            "alcantarilla/puente compara"),
+    partes=(
+        Parte(quien="MC_HHD",
+              que_dice=("«la estructura cuya luz sea menor a 6.0 m» y «cuya "
+                        "luz sea mayor o igual a 6.0 m, siguiendo lo "
+                        "establecido en las especificaciones AASHTO LRFD»: "
+                        "escribe «luz» y no la define"),
+              cita_id="MC_HHD.4.1.1.5.1"),
+        Parte(quien="MP",
+              que_dice=("obras de arte menores son las de «luz libre menor "
+                        "que 6.00 m (20 ft)»; y define aparte la «luz del "
+                        "tramo» entre ejes de apoyo"),
+              cita_id="MP.GLOSARIO#OBRAS_DE_ARTE_MENORES"),
+        Parte(quien="AASHTO_LRFD_9",
+              que_dice=("«Any structure having an opening not less than "
+                        "20.0 ft»: la ABERTURA de la estructura"),
+              cita_id="AASHTO_LRFD_9.1.2#BRIDGE"),
+    ),
+    gana="AASHTO_LRFD_9",
+    por_que=("el propio Manual de Hidrologia remite a AASHTO para la "
+             "definicion, y las tres fuentes coinciden en lo que importa "
+             "aqui: la magnitud es una propiedad de la ESTRUCTURA (su "
+             "abertura o luz libre), no el ancho del cauce natural. Por eso "
+             "`luz_m` es la abertura libre que el cruce exige de la "
+             "estructura --la que el proyectista lee de la topografia como "
+             "lo que hay que salvar-- y M1 la compara entera: en un marco "
+             "multicelda es la abertura total del cruce, no la luz de una "
+             "celda, porque partir en celdas lo que se salva no cambia lo "
+             "que se salva. Es la lectura conservadora: manda al Manual de "
+             "Puentes el cruce que lo exige"),
+    efecto_si_se_sigue_la_otra=("leer «luz libre» como la de CADA celda "
+                                "dejaria diseñar con el Manual de Hidrologia "
+                                "un cruce de 8 m salvado con tres celdas de "
+                                "2.5 m, que AASHTO llama puente; y comparar "
+                                "el ANCHO DEL CAUCE en vez de la abertura de "
+                                "la estructura --lo que el hallazgo R48-001 "
+                                "leyo en el codigo-- confundiria el dato "
+                                "hidraulico con el estructural"),
+    estado=EstadoDiscrepancia.ABIERTA,
+)
+
+# ---------------------------------------------------------------------------
 # Las TRES erratas de imprenta de la cadena sismica del Manual de Puentes
 # ---------------------------------------------------------------------------
 DIS_KAE_SIGNO = _d(

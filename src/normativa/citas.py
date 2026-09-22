@@ -72,6 +72,8 @@ FECHA_EXT7 = "2026-09-20"
 POR_EXT7 = "ext/EXT-7 · verificador-normativo"
 FECHA_EA = "2026-09-21"
 POR_EA = "ext/E-A · verificador-normativo"
+FECHA_CIERRE = "2026-09-22"
+POR_CIERRE = "cierre/C11 · verificador-normativo"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
@@ -86,6 +88,7 @@ EXT3 = (FECHA_EXT3, POR_EXT3)
 EXT6 = (FECHA_EXT6, POR_EXT6)
 EXT7 = (FECHA_EXT7, POR_EXT7)
 EA = (FECHA_EA, POR_EA)
+CIERRE = (FECHA_CIERRE, POR_CIERRE)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -847,6 +850,56 @@ SIN_TABLAS_HEQ_EN_MP = AfirmacionNegativa(
         "empuje pasivo"),
     cita_id="MP.2.4.2.2#SOBRECARGA")
 
+
+
+# ---------------------------------------------------------------------------
+# R48-001 (cierre C11): que magnitud compara el umbral de 6.0 m. El Manual de
+# Hidrologia escribe «luz» sin definirla; el glosario del Manual de Puentes
+# define «luz libre» (obras de arte menores) y «luz del tramo» (entre ejes
+# de apoyo); AASHTO, a la que el 4.1.1.5.1 remite, escribe «opening». Ninguna
+# de las tres es el ANCHO DEL CAUCE NATURAL, y ese era el hallazgo.
+# ---------------------------------------------------------------------------
+MP_GLOSARIO_OBRAS_MENORES = _cita(
+    id="MP.GLOSARIO#OBRAS_DE_ARTE_MENORES",
+    fuente_id="MP",
+    numeral="Glosario",
+    titulo_numeral="GLOSARIO",
+    pagina_impresa="45",
+    pagina_pdf=46,
+    pagina_pdf_titulo=45,
+    texto_literal=Verbatim(
+        texto=("OBRAS DE ARTE MENORES: Son aquellas obras cuya luz libre es "
+               "menor que 6.00 m (20 ft)."),
+        pagina_pdf=46),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=CIERRE,
+    nota=("La magnitud que el glosario compara con los 6.00 m es la LUZ "
+          "LIBRE de la obra, no el ancho del cauce que la obra salva. El "
+          "glosario empieza en la pag. impresa 44 (PDF 45), donde imprime "
+          "su titulo; esta entrada esta en la 45 (PDF 46)."),
+)
+
+AASHTO_DEF_BRIDGE = _cita(
+    id="AASHTO_LRFD_9.1.2#BRIDGE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="1.2",
+    titulo_numeral="DEFINITIONS",
+    pagina_impresa="1-2",
+    pagina_pdf=17,
+    texto_literal=Verbatim(
+        texto=("Bridge\u2014Any structure having an opening not less than "
+               "20.0 ft that forms part of a highway or that is located over "
+               "or under a highway."),
+        pagina_pdf=17),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=CIERRE,
+    nota=("Es la definicion a la que remite el num. 4.1.1.5.1 del Manual de "
+          "Hidrologia («siguiendo lo establecido en las especificaciones "
+          "AASHTO LRFD»). La magnitud es «an opening»: la ABERTURA de la "
+          "estructura, y 20.0 ft son 6.096 m, no 6.0 m: el Manual redondea."),
+)
 
 # ===========================================================================
 # AASHTO LRFD 9a ed.  (por capitulo: base cap. 3 = 54)

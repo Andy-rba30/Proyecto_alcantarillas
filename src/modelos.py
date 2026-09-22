@@ -1830,7 +1830,7 @@ class Geometria:
 
     @property
     def y_sobre_D(self) -> float:
-        """Relacion de llenado. V1 exige y/D <= Y_SOBRE_D_MAX."""
+        """Relacion de llenado. V1 exige y/D <= el maximo adoptado (0.75 por defecto)."""
         return self.y / self.seccion.altura
 
     @property

@@ -164,7 +164,10 @@ def test_lo_que_la_corrida_no_toca_no_se_vuelca(reg, informe, memoria):
     es contra la hoja de ruta: hoy no hay ninguna ABIERTA_CONTRA_HOJA_DE_RUTA.
     """
     abiertas = {d.id for d in reg.discrepancias_abiertas()}
-    assert abiertas == {"DIS-AASHTO-GAMMA-EV-12.6.1"}, (
+    # Dos abiertas desde el cierre de C11 (R48-001): la de gamma_EV y la de
+    # que magnitud compara el umbral de 6.0 m (`DIS-LUZ-DENOMINACION`, que
+    # tampoco es contra la hoja de ruta: es entre las tres fuentes).
+    assert abiertas == {"DIS-AASHTO-GAMMA-EV-12.6.1", "DIS-LUZ-DENOMINACION"}, (
         "cambio el censo de abiertas: revisa el test")
     assert not any(d.estado is EstadoDiscrepancia.ABIERTA_CONTRA_HOJA_DE_RUTA
                    for d in reg.discrepancias), (
@@ -306,13 +309,20 @@ def test_la_via_del_paso_quedo_sin_usuario_al_resolver_FORMAS(informe, memoria, 
         "se reescribe con el")
     assert viva in reg.discrepancias_que_tocan(citas_v7)
 
-    # Censo: ningun paso de produccion declara hoy una discrepancia. Es un
-    # hecho medido, no una regla: el dia que uno la declare, esta linea
-    # falla y obliga a convertirla en el caso real de la via.
+    # Censo: desde el cierre de C11 (R48-001) la via 2 VUELVE A TENER un
+    # usuario de produccion, y es el caso real que este test dice arriba que
+    # habria que escribir: el paso 2.1 (F2.LUZ) declara
+    # `DIS-LUZ-DENOMINACION`, que habla de la MAGNITUD que ese paso compara
+    # (la abertura de la estructura, no el ancho del cauce). No es un
+    # duplicado de la via 1: la discrepancia toca tambien las citas del
+    # fundamento, pero el paso la declara porque es SU numero el que esta en
+    # discusion, que es para lo que la via 2 existe (ficha D9-01).
     declaran = {(p.codigo, d) for p in pasos for d in p.discrepancias}
-    assert declaran == set(), (
-        f"la via 2 volvio a tener usuario de produccion: {sorted(declaran)}; "
+    assert declaran == {("2.1", "DIS-LUZ-DENOMINACION")}, (
+        f"la via 2 cambio de usuario de produccion: {sorted(declaran)}; "
         "reescribe este test con ese caso")
+    assert reg.discrepancia("DIS-LUZ-DENOMINACION").viva
+    assert "DIS-LUZ-DENOMINACION" in memoria
 
 
 def test_la_via_del_criterio_existe_porque_V9_no_emite_paso(reg):

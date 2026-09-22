@@ -834,10 +834,13 @@ class _Externo:
 _EXTERNOS: Dict[str, _Externo] = {
 
     "luz_m": _Externo(
-        concepto="Luz del cruce (ancho libre que hay que salvar), de la "
-                 "topografia o del QGIS. Decide el umbral binario de la Sec. "
-                 "2.1: un cruce de 6 m o mas es PUENTE y queda fuera de "
-                 "alcance (Sec. 3.1)",
+        concepto="Luz del cruce: la abertura libre que la estructura tiene "
+                 "que dar (luz libre del glosario del Manual de Puentes, "
+                 "«opening» de AASHTO 1.2), de la topografia o del QGIS; NO "
+                 "es el ancho del cauce natural. Decide el umbral binario de "
+                 "la Sec. 2.1: un cruce de 6 m o mas es PUENTE y queda fuera "
+                 "de alcance (Sec. 3.1). En un marco multicelda es la "
+                 "abertura total, no la de una celda",
         unidad="m",
         resolucion=Libre(
             que_lo_fija="la topografia o el QGIS del corredor; se declara "

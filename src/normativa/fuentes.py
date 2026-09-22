@@ -549,8 +549,16 @@ AASHTO_M170M = Fuente(
             "5 con las de este ejemplar")
     ),
     nota=("Escaneo con OCR de mala calidad: el volcado devuelve «Speciñcation» "
-          "y «Rcinforcc». Sirve para orientarse; para CITAR hay que renderizar "
-          "la pagina y leerla. "
+          "y «Rcinforcc». Sirve para orientarse, y NO MAS QUE ESO: las "
+          "Tablas 1 a 5 (paginas PDF 3 a 7) no se pueden transcribir de este "
+          "ejemplar, medido en el cierre de SIS-F-13 renderizando las paginas "
+          "a 2.5x: la imagen es una recomposicion OCR y no un escaneo, los "
+          "digitos vienen equivocados en la propia imagen (371 por 375, 1390 "
+          "por 1350, «3tS0» por 3150, «6tXI» por 600) y filas enteras se "
+          "superponen (2100 sobre 2250); las paginas PDF 8 y 10 estan en "
+          "blanco. La serie de diametros del concreto (CP11, M2) sigue sin "
+          "dorado por esta razon y no por falta de transcriptor: hace falta "
+          "OTRO ejemplar. "
           "VIGENCIA (T1): AASHTO "
           "publica M 170M-23 (agosto de 2023; equivalente ASTM C76M-22; "
           "distribuidores accuristech y globalspec), posterior a la M 170M-04 "

@@ -2805,12 +2805,12 @@ CRITERIOS: Dict[str, Criterio] = {
                         "razon escrita, siempre mayor o igual que el 25 % "
                         "recomendado; o una exigencia normativa que lo "
                         "convierta en [N] sin recomendacion de por medio",
-        sensibilidad=("y/D = 0.75, el complemento del 25 % de borde libre que "
-                      "la fuente recomienda como minimo y que el proyecto "
-                      "adopta por defecto",
-                      "cualquier y/D menor que declare el proyectista: la "
-                      "recomendacion es un minimo de borde libre y solo se "
-                      "puede endurecer. Un valor mayor se rechaza en V1"),
+        # Ventana NUMERICA porque sus dos extremos existen sin inventar
+        # nada: el techo es el 0.75 que la fuente recomienda (solo se puede
+        # endurecer) y el piso es el dominio fisico de una relacion de
+        # llenado. Asi la PUERTA rechaza 0.9 antes de correr, y no solo el
+        # consumidor (auditor de C05).
+        sensibilidad=(0.0, Y_SOBRE_D_MAX),
         resolucion=Libre(
             que_lo_fija="el proyectista, a partir de la recomendacion del "
                         "num. 4.1.1.3.7 b); el 0.75 es el valor por defecto",

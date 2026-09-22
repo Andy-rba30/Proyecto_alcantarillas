@@ -40,7 +40,7 @@ from src.modulos import M5_verificaciones as M5
 from src.modulos import M11_reporte as M11
 from src.modulos.M2_material import catalogo
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
-from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 
 from tests.test_M5_verificaciones import _punto, _resultado
 
@@ -169,14 +169,24 @@ def test_pc24_endurecer_v2_cambia_el_veredicto(limpio):
 
 
 @pytest.mark.parametrize("clave,laxo", [(CLAVE_V1, 0.80), (CLAVE_V2, 0.20)])
-def test_pc24_relajar_la_recomendacion_se_rechaza_en_el_consumidor(limpio, concreto, clave, laxo):
+def test_pc24_relajar_la_recomendacion_se_rechaza_en_el_consumidor(limpio, concreto, clave, laxo, monkeypatch):
     """
     El mismo contrato que 'riesgo_admisible_propietario' en M1: la
     recomendacion es un extremo y solo se puede endurecer. Un y/D maximo
     mayor que 0.75 o un piso menor que 0.25 m/s no son una adopcion: son
-    salirse de lo que la fuente concede, y el consumidor lo dice.
+    salirse de lo que la fuente concede, y el consumidor lo dice. Para V1
+    la PUERTA ya rechaza el 0.80 (ventana numerica), asi que la guardia del
+    consumidor --la segunda linea, EXT-5-02-- se prueba haciendole llegar el
+    valor por debajo de la puerta.
     """
-    ca.establecer_valor_dinamico(clave, laxo)
+    if clave == CLAVE_V1:
+        with pytest.raises(ValueError):
+            ca.establecer_valor_dinamico(clave, laxo)
+        original = ca.valor
+        monkeypatch.setattr(M5.ca, "valor",
+                            lambda k: laxo if k == clave else original(k))
+    else:
+        ca.establecer_valor_dinamico(clave, laxo)
     with pytest.raises(DatoInvalidoError) as exc:
         if clave == CLAVE_V1:
             M5.v1_borde_libre(D=0.90, material=concreto, punto=_punto(),
@@ -194,10 +204,11 @@ def test_pc24_la_igualdad_con_la_recomendacion_pasa(limpio, concreto):
     assert M5.v1_borde_libre(D=0.90, material=concreto, punto=_punto(),
                              resultado=_resultado(y_normal=0.60)).cumple
     assert M5.v2_velocidad_minima(resultado=_resultado(V=1.5)).cumple
-    # Y la banda de tolerancia va del lado que concede, no del que relaja.
-    ca.establecer_valor_dinamico(CLAVE_V1, Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO / 2)
-    assert M5.v1_borde_libre(D=0.90, material=concreto, punto=_punto(),
-                             resultado=_resultado(y_normal=0.60)).cumple
+    # Y la banda de tolerancia del consumidor va del lado que concede, no
+    # del que relaja: la guardia de V2 (ventana simbolica) admite el piso
+    # recomendado menos medio TOL.
+    ca.establecer_valor_dinamico(CLAVE_V2, V_MIN - TOL_UMBRAL_NORMATIVO / 2)
+    assert M5.v2_velocidad_minima(resultado=_resultado(V=1.5)).cumple
 
 
 # ===========================================================================
@@ -253,3 +264,64 @@ def test_r48030_los_criterios_ya_no_declaran_la_discrepancia_abierta():
         assert "DISCREPANCIA ABIERTA" not in c.fuente, clave
         assert "por extraer" not in c.fuente, clave
         assert "R48-030" in c.fuente or "enmendada" in c.fuente, clave
+
+
+# ===========================================================================
+# Lo que dejo el auditor adversarial de C05
+# ===========================================================================
+
+def test_pc24_endurecido_la_memoria_no_dice_la_cifra_de_la_fuente_como_aplicada(limpio, concreto):
+    """
+    Con 0.65 / 0.35 declarados, la formula, la descripcion del umbral y el
+    margen del veredicto llevan el valor ADOPTADO; y ningun texto cableado
+    (el `que_paso` del fundamento, el «que» del bloque de umbrales) afirma
+    0.75 o 0.25 como el umbral aplicado: lo dicen como «por defecto».
+    """
+    ca.establecer_valor_dinamico(CLAVE_V1, 0.65)
+    ca.establecer_valor_dinamico(CLAVE_V2, 0.35)
+    v1 = M5.v1_borde_libre(D=0.90, material=concreto, punto=_punto(),
+                           resultado=_resultado(y_normal=0.54))   # y/D = 0.60
+    assert "0.65" in v1.paso.formula
+    assert "35 %" in v1.paso.umbral.descripcion
+    assert v1.paso.veredicto.margen == pytest.approx(0.65 - 0.60, rel=REL_TRANSPORTE)
+    v2 = M5.v2_velocidad_minima(resultado=_resultado(V=1.5))
+    assert "0.35" in v2.paso.formula
+    assert v2.paso.veredicto.margen == pytest.approx(1.5 - 0.35, rel=REL_TRANSPORTE)
+    from src.normativa import registro
+    reg = registro.construir()
+    for fid, cifra in (("F5.V1", "0.75"), ("F5.V2", "0.25")):
+        que = reg.fundamento(fid).que_paso
+        assert "por defecto" in que and cifra in que, que
+    for codigo, cifra in (("V1", "0.75"), ("V2", "0.25")):
+        que = UMBRALES_POR_CODIGO[codigo]["que"]
+        assert "por defecto" in que and cifra in que, que
+
+
+def test_pc24_la_puerta_de_v1_rechaza_el_valor_laxo_antes_de_correr(limpio):
+    """(0, 0.75) es numerica: los dos extremos existen sin inventar nada."""
+    with pytest.raises(ValueError):
+        ca.establecer_valor_dinamico(CLAVE_V1, 0.9)
+    piso, techo = ca.CRITERIOS[CLAVE_V1].sensibilidad
+    assert piso == pytest.approx(0.0, abs=ABS_CERO)
+    assert techo == pytest.approx(Y_SOBRE_D_MAX, rel=REL_TRANSPORTE)
+
+
+def test_pc24_un_piso_laxo_sale_como_bloqueo_del_criterio_y_no_como_no_factible(limpio):
+    """
+    El auditor midio que `MD.disenar_punto` tragaba el DatoInvalidoError del
+    consumidor como «material no evaluable» (tres veces) y el punto salia NO
+    FACTIBLE con `criterio: None`. Hoy sale como bloqueo DATO_INVALIDO con la
+    clave del criterio en `campo`, en la etapa de MD.
+    """
+    from src import servicio
+    from src.modelos import TipoDeBloqueo
+    import cli
+    ca.establecer_valor_dinamico(CLAVE_V2, 0.20)
+    externos = cli.cargar_datos_externos(None, {"luz_m": 3.0, "L_hidraulico_m": 120.0})
+    informe = servicio.correr(RAIZ / "tests" / "ejemplo_puntos.csv", externos,
+                              alcance=cli.ALCANCE_PERFIL)
+    a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
+    assert not a01.dimensionado
+    tipos = [(b.tipo, getattr(b, "campo", None)) for b in a01.bloqueos]
+    assert (TipoDeBloqueo.DATO_INVALIDO, CLAVE_V2) in tipos, tipos
+    assert TipoDeBloqueo.DISENO_NO_FACTIBLE not in {t for t, _ in tipos}

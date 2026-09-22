@@ -581,6 +581,7 @@ condición escrita.
   sigue sin ejecutarlos.
 - **Qué haría falta:** infraestructura de CI con entorno gráfico
   (instalar `python3-tk` + `xvfb`), no un test más.
+- **Cerrada en C09 (2026-09-22):** las tres caras y `_declarar` corren bajo Tk; ver C09-01.
 - **Dónde vive:** `tests/test_gui_contrato.py::test_la_ventana_normativa_se_construye_y_se_cierra_de_verdad`
   (el smoke que lanza es `tests/apoyo/gui_smoke_normativa.py`; los cuatro
   tests de ventana comparten el `skipif` de `_interprete_con_ventana`).
@@ -621,6 +622,7 @@ condición escrita.
   columna «Internal Designated Diameter, mm» de las Tablas 1 a 5 de M 170M-04
   y añadirla a CP11; para M10, no una norma sino el expediente vial. Están en
   la §15 del plan, y ahora también en la guardia, con su fuente concreta.
+- **C09:** el ejemplar de M 170M no es transcribible; ver C09-02.
 - **Dónde vive:** `tests/test_guardias_de_la_suite.py::SIN_CASO_PATRON`
 
 ---
@@ -1297,6 +1299,8 @@ y que no queda escrita en ningún otro registro.
   sustituye y a la que el cruce por cita no alcance —por ejemplo, una que las
   citas del `Fundamento` de ese paso no toquen—, y entonces reescribir el test
   con ese caso, no al revés.
+- **Desde C11 (R48-001) la vía tiene usuario otra vez:** el paso 2.1 declara
+  `DIS-LUZ-DENOMINACION`, sobre la magnitud que ese paso compara.
 - **Dónde vive:** `tests/test_canal_discrepancias.py::test_la_via_del_paso_quedo_sin_usuario_al_resolver_FORMAS`
 
 
@@ -3191,13 +3195,18 @@ símbolo.
   `riesgo_admisible_propietario` en M1). V1 y V2 llevan `criterio_aplicado`
   y su `Umbral` también, de modo que la fila de la memoria imprime [A] y la
   remisión al criterio en vez de «[N] constante normativa».
-- **Abierto:** la sensibilidad es simbólica (dos textos), no un par
-  numérico: la puerta no evalúa un valor laxo y es el consumidor quien lo
-  rechaza, en la Fase 5 del punto. Un par numérico exigiría un extremo que
-  ninguna fuente escribe (¿cuánto borde libre como máximo?), y eso sería
-  inventarlo.
+- **Abierto:** la ventana de V2 es simbólica: su piso lo escribe la fuente
+  (0.25 m/s) y ningún techo la acota, así que la puerta no evalúa un piso
+  laxo y es el consumidor quien lo rechaza. El auditor de C05 midió que MD
+  tragaba ese rechazo como «material no evaluable» y sacaba el punto como
+  NO FACTIBLE con `criterio: None`; hoy `MD.disenar_punto` acumula el
+  `DatoInvalidoError` cuyo `campo` es clave de criterio y lo relanza
+  (`_exigir_criterios_validos`), de modo que sale como bloqueo
+  `DATO_INVALIDO` con la clave. La de V1 sí es numérica, (0, 0.75): los dos
+  extremos existen sin inventar nada, y la puerta rechaza 0.9 antes de
+  correr.
 - **Qué haría falta:** nada para el hallazgo. Si alguna fuente acotara el
-  otro extremo, la ventana pasaría a numérica y la puerta la evaluaría.
+  techo del piso de velocidad, la ventana de V2 pasaría a numérica.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::_umbral_adoptado_v1`
 
 ## C05-02 · La hoja de ruta nombra a WSDOT y al valor; la fuente sigue fuera de `normas/`
@@ -3216,3 +3225,74 @@ símbolo.
 - **Qué haría falta:** traer la Tabla 8-4 a `normas/` y transcribirla al
   registro; entonces el [C] tendría cita verificable.
 - **Dónde vive:** `src/normativa/fuentes.py::WSDOT_HM`
+
+# Parte XXXVIII — Lo que el cierre de C09, C11 y C14 dejó escrito: la magnitud de la luz, el registro único, las tres caras y el ejemplar ilegible
+
+## C11-01 · El umbral de 6.0 m compara la abertura de la estructura, y la discrepancia entre las tres fuentes queda declarada en el paso
+
+- **Cerrado (C11):** R48-001 denunciaba que M1 comparaba con 6.0 m «el ancho
+  del cauce natural» cuando la norma ancla el umbral a la luz libre de la
+  ESTRUCTURA. Hoy el registro lleva las dos definiciones que faltaban
+  —`MP.GLOSARIO#OBRAS_DE_ARTE_MENORES` («luz libre menor que 6.00 m») y
+  `AASHTO_LRFD_9.1.2#BRIDGE` («an opening not less than 20.0 ft»), verificadas
+  contra sus páginas—, la discrepancia `DIS-LUZ-DENOMINACION` (ABIERTA, gana
+  AASHTO porque el 4.1.1.5.1 remite a ella) llega a la memoria por el paso
+  F2.LUZ —la vía 2 del canal vuelve a tener usuario de producción, D9-01— y
+  por el fundamento, y `luz_m` dice lo que es: la abertura libre que el cruce
+  exige de la estructura, no el ancho del cauce; en un marco multicelda, la
+  abertura total.
+- **Abierto:** esa última lectura —la abertura total y no la de una celda—
+  no la escribe ninguna fuente de `normas/`: es la lectura conservadora
+  (manda al Manual de Puentes el cruce que lo exige) y queda declarada en
+  el `por_que` de la discrepancia y en el docstring de
+  `denominacion_por_luz`, no como criterio, porque no tiene un rango que
+  elegir sino dos lecturas, y la otra deja diseñar como alcantarilla un
+  cruce de 8 m que AASHTO llama puente.
+- **Qué haría falta:** una fuente que defina la abertura de un marco
+  multicelda (la práctica del inventario de puentes de FHWA lo hace, y no
+  está en `normas/`); con ella la lectura pasaría a cita.
+- **Dónde vive:** `src/normativa/discrepancias.py::DIS_LUZ_DENOMINACION`
+
+## C14-01 · El registro normativo es una sola instancia
+
+- **Cerrado (C14):** PC-31 medía cinco construcciones y cuatro instancias
+  de `Registro`. `registro.construir` lleva `functools.lru_cache(maxsize=1)`
+  y los cuatro sitios que el dictamen nombró comparten la instancia (test).
+  Es seguro porque el registro no lleva estado de corrida: lo único que
+  deriva y guarda, `_referenciadas`, sale de las tablas y citas del archivo.
+- **Abierto:** nada.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/normativa/registro.py::construir`
+
+## C09-01 · Las tres caras restantes de la ventana normativa y su camino de declarar corren bajo Tk
+
+- **Cerrado (C09):** el alcance que el auditor de I1b dejó medido como
+  abierto en SIS-F-01 —`_pintar_rango`, `_pintar_catalogo`, `_pintar_campo`
+  y `_declarar` sin construirse nunca bajo un Tk real— lo cubre
+  `tests/apoyo/gui_caras_normativa.py` (el décimo test de ventana real):
+  una clave por cara, medida contra el modelo y no copiada; un valor malo
+  que no deja rastro y uno bueno que deja los cuatro (rótulo, caliente,
+  procedencia, callback).
+- **Abierto:** lo que la ficha original llamó entorno: la suite corre las
+  ventanas cuando ALGÚN intérprete del contenedor levanta un Tk, y sin él
+  salta. Un CI con servidor X virtual sigue siendo infraestructura, no un
+  test.
+- **Qué haría falta:** ese CI.
+- **Dónde vive:** `tests/apoyo/gui_caras_normativa.py::CARAS`
+
+## C09-02 · La serie de diámetros de M 170M no se puede transcribir de este ejemplar, y la ficha de la fuente lo dice
+
+- **Cerrado (C09), en lo que se podía:** SIS-F-13 y NOR-PRO-04 esperaban
+  «M 170M Tablas 1–5 sin transcribir» como si fuera trabajo pendiente de
+  transcriptor. Se intentó: las páginas PDF 3 a 7 renderizadas a 2.5x son
+  una recomposición OCR y no un escaneo; los dígitos vienen equivocados en
+  la propia imagen (371 por 375, 1390 por 1350, «3tS0», «6tXI»), filas
+  enteras se superponen y las páginas 8 y 10 están en blanco. Transcribir
+  de ahí sería inventar (regla 8). La nota de `fuentes.AASHTO_M170M` dejó
+  de prometer «renderizar la página y leerla» y dice lo medido.
+- **Abierto:** la serie del concreto en `CP11_SERIES_NOMINALES` sigue sin
+  dorado, y M10 sigue sin caso patrón (expediente vial): las dos mitades
+  que las fichas ya nombraban.
+- **Qué haría falta:** otro ejemplar de M 170M (o la M 170M-23 que la
+  vigencia ya pide para gabinete).
+- **Dónde vive:** `src/normativa/fuentes.py::AASHTO_M170M`

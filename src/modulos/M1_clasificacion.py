@@ -150,6 +150,14 @@ def denominacion_por_luz(luz_m: Optional[float],
     Alcantarilla o puente, segun el umbral de 6.0 m (num. 4.1.1.3.1 y
     4.1.1.5.1). Binario: no existe una tercera denominacion intermedia.
 
+    QUE MAGNITUD COMPARA (R48-001, DIS-LUZ-DENOMINACION): la ABERTURA libre
+    que el cruce exige de la estructura --la «luz libre» del glosario del
+    Manual de Puentes, el «opening» de AASHTO 1.2, a la que el 4.1.1.5.1
+    remite--, no el ancho del cauce natural. En un marco multicelda es la
+    abertura total del cruce y no la luz de una celda: partir en celdas lo
+    que se salva no cambia lo que se salva, y es la lectura conservadora
+    (manda al Manual de Puentes el cruce que lo exige).
+
     La tolerancia se aplica del lado exigente. Una luz que el punto flotante
     deja en 5.999999999 es una luz de 6.0 m mal representada, y 6.0 m es
     puente: sumarla al lado de la alcantarilla convertiria un puente en
@@ -184,11 +192,18 @@ def verificar_luz(luz_m: Optional[float],
             que="Denominacion de la obra: alcantarilla o puente",
             formula="luz < 6.0 m -> alcantarilla; luz >= 6.0 m -> puente",
             formula_cita_id="MC_HHD.4.1.1.3.1",
-            citas_textuales=("MC_HHD.4.1.1.3.1", "MC_HHD.4.1.1.5.1"),
+            citas_textuales=("MC_HHD.4.1.1.3.1", "MC_HHD.4.1.1.5.1",
+                             "MP.GLOSARIO#OBRAS_DE_ARTE_MENORES",
+                             "AASHTO_LRFD_9.1.2#BRIDGE"),
+            discrepancias=("DIS-LUZ-DENOMINACION",),
             sustitucion=(
                 Magnitud("luz", float(luz_m), "m",
-                         "luz del cruce, declarada con --luz o por "
-                         "--datos-externos: NO es columna del CSV",
+                         "abertura libre que el cruce exige de la "
+                         "estructura (luz libre del glosario del Manual de "
+                         "Puentes, «opening» de AASHTO 1.2), declarada con "
+                         "--luz o por --datos-externos: NO es columna del "
+                         "CSV y NO es el ancho del cauce natural "
+                         "(DIS-LUZ-DENOMINACION)",
                          cifras=CIFRAS_FACTOR),),
             resultado=Magnitud("denominacion", denominacion.value, "",
                                "lectura del umbral de los dos numerales"),

@@ -2081,6 +2081,57 @@ def test_la_ventana_normativa_se_construye_y_se_cierra_de_verdad(tmp_path):
     assert obs["emergentes_tras_cerrar"] == 0
 
 
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_las_tres_caras_restantes_se_construyen_y_declaran_de_verdad(tmp_path):
+    """
+    El ALCANCE que el auditor adversarial de I1b dejo medido como abierto en
+    SIS-F-01: el smoke de arriba abre la cara TABLA, y `_pintar_rango`,
+    `_pintar_catalogo`, `_pintar_campo` y el camino de `_declarar` seguian
+    sin construirse bajo Tk. `tests/apoyo/gui_caras_normativa.py` abre las
+    tres caras con una clave de cada una --- medida contra el modelo, no
+    copiada ---, teclea un valor MALO y uno BUENO y declara por el mismo
+    metodo que cuelga del boton: el malo no deja rastro (rotulo «No se
+    declaro», nada en caliente, sin procedencia, sin callback) y el bueno
+    deja los cuatro (rotulo «Declarado», en caliente, procedencia que lo
+    nombra, callback con la clave).
+    """
+    import json
+    import subprocess
+
+    destino = tmp_path / "caras.json"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_caras_normativa",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"el apoyo de las tres caras fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads(destino.read_text(encoding="utf-8"))
+    assert set(obs) == {"RANGO", "CATALOGO", "CAMPO"}
+    for cara, o in obs.items():
+        assert o["cara_modelo"] == cara, (cara, o["clave"])
+        assert o["campo_construido"], f"{cara}: el pie no construyo el campo"
+        assert o["widgets"] > 10, (cara, o["widgets"])
+        # El malo no deja rastro.
+        assert o["rotulo_tras_malo"].startswith("No se declaro"), o
+        assert o["en_caliente_tras_malo"] is False
+        assert o["procedencia_tras_malo"] is False
+        assert o["callback_tras_malo"] == []
+        # El bueno deja los cuatro.
+        assert o["rotulo_tras_bueno"].startswith("Declarado para esta corrida"), o
+        assert o["en_caliente_tras_bueno"] is True
+        assert o["procedencia_tras_bueno"]
+        assert o["callback_tras_bueno"] == [o["clave"]]
+    # Y cada cara dice de donde viene el valor con las palabras de su
+    # resolucion: la fila de la tabla, el catalogo que NO es norma, el
+    # proyectista.
+    assert "MC_HHD.T10" in obs["RANGO"]["procedencia_tras_bueno"]
+    assert "NO es una norma" in obs["CATALOGO"]["procedencia_tras_bueno"]
+    assert "proyectista" in obs["CAMPO"]["procedencia_tras_bueno"]
+
+
 # ===========================================================================
 # G1: la pestana 1 agrupada por familia (derivado) y sin jerga de CLI
 # ===========================================================================

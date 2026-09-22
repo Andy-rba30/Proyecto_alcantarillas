@@ -6,9 +6,11 @@ Fase 5 de la hoja de ruta: las ONCE verificaciones de la tabla principal
 un bool desnudo), mas `verificar()`, el agregado que MD.py llama con la firma
 que declara su Protocol `Verificador`.
 
-    V1  Borde libre               y/D <= 0.75                    [N] 4.1.1.3.7 b)
+    V1  Borde libre               y/D <= adoptado (0.75 por     [N] verificar, 4.1.1.3.7 b)
+                                  defecto; [A] 'borde_libre_y_sobre_d_max')
                                   (RECOMENDACION aplicada como umbral duro)
-    V2  Velocidad minima          V >= 0.25 m/s                   [N] 4.1.1.3.6
+    V2  Velocidad minima          V >= adoptado (0.25 m/s por    [N] verificar, 4.1.1.3.6
+                                  defecto; [A] 'velocidad_minima_autolimpieza_m_s')
                                   (RECOMENDACION aplicada como umbral duro;
                                   se evalua con la rama n_max, la estimacion
                                   BAJA de velocidad -- ver `v2_velocidad_minima`)
@@ -727,7 +729,8 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
         de la altura, diámetro o flecha de la estructura."
 
     ES UNA RECOMENDACION, IGUAL QUE EL PISO DE V2, y esta funcion la aplica
-    igualmente como umbral duro (`y/D <= 0.75` decide `cumple`), que es la
+    igualmente como umbral duro (`y/D <= y_sobre_D_max` decide `cumple`, con
+    el 0.75 recomendado por defecto en 'borde_libre_y_sobre_d_max'), que es la
     lectura conservadora y la que el proyecto adopta. El matiz viaja en
     `NUMERAL_V1`, que es lo unico que la memoria imprime de V1. Hasta esta
     correccion `NUMERAL_V1` era el numeral desnudo mientras `NUMERAL_V2` si
@@ -795,7 +798,7 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     umbral = _umbral_de(
         "V1", valor=y_sobre_D_max, unidad="",
         descripcion=f"y/{simbolo} maximo admisible (borde libre >= "
-                    f"{1 - y_sobre_D_max:.0%} de {nombre})",
+                    f"{1 - y_sobre_D_max:.0%} de {nombre})".replace("% de", " % de"),
         criterio=CRITERIO_BORDE_LIBRE)
     nota = (
         "El numeral RECOMIENDA este borde libre; aqui se aplica como umbral "
@@ -869,7 +872,9 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
 
     (1) El 0.25 es una RECOMENDACION, no una prohibicion -- el numeral dice
         "recomendandose". Esta funcion lo aplica igualmente como umbral duro
-        (`V >= V_MIN` decide `cumple`), que es la lectura conservadora y es la
+        (`V >= v_min` decide `cumple`, con los 0.25 m/s recomendados por
+        defecto en 'velocidad_minima_autolimpieza_m_s'), que es la lectura
+        conservadora y es la
         que el proyecto adopta. Pero el matiz no puede quedarse en el codigo:
         `NUMERAL_V2` lo lleva escrito, de modo que la memoria lo imprime junto
         al resultado y un revisor que vea un punto rechazado por V2 sepa que

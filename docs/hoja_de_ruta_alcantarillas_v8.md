@@ -534,6 +534,15 @@ Resolver con **bisección o Brent sobre θ ∈ (0, 2π)**.
 > corregida en la etiqueta y el código no**: la memoria imprime el matiz
 > («recomienda») pero el valor sigue rotulado [N]. Lo que EXT-3 sí cambió del
 > régimen —el tirante y la velocidad que V1/V2 comparan— está en el código.
+>
+> **Corregido (`PC-24`, cierre C05, 2026-09-22).** El párrafo anterior ya no
+> describe el código: la adopción vive en `criterios_adoptados.py` como dos
+> criterios [A] de perfil con el valor recomendado por defecto,
+> `'borde_libre_y_sobre_d_max'` (0.75) y `'velocidad_minima_autolimpieza_m_s'`
+> (0.25 m/s), que sólo se pueden endurecer (M5 rechaza un y/D máximo mayor o
+> un piso menor); las cifras siguen [N] en `constantes_normativas` porque las
+> escribe el Manual, y V1/V2 declaran `criterio_aplicado`. La ficha
+> `EXT-3-01` quedó cerrada (C05-01).
 
 #### 4.1.1 Por qué el n de HDPE es un rango y no 0.012 — **corrección**
 

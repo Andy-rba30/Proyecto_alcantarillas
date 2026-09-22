@@ -19,6 +19,8 @@ la hace el consumidor.
 
 from __future__ import annotations
 
+import functools
+
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from .esquema import (
@@ -509,11 +511,21 @@ class Registro:
         return frozenset(self._referenciadas)
 
 
+@functools.lru_cache(maxsize=1)
 def construir() -> Registro:
     """
-    Arma el registro. Import diferido a proposito: `citas.py` y `tablas.py`
-    importan `esquema` y `fuentes`, y si `registro` los importara arriba
-    tendriamos un ciclo en cuanto uno de ellos quisiera consultar el registro.
+    Arma el registro UNA vez y devuelve siempre la misma instancia (PC-31,
+    cierre C14). Hasta entonces se construia cinco veces en cuatro instancias
+    distintas (`ca._registro`, `modelos._registro_normativo`,
+    `constantes_normativas._reg`, `M11._reg_M11`): sin daño medido (~2 ms),
+    pero cuatro copias de un objeto que se define como UNICO. Compartirlo es
+    seguro porque el registro no lleva estado de corrida: `_referenciadas`
+    se deriva de las tablas y citas del archivo, no de lo que una corrida
+    invoca (eso vive en `ContextoCorrida`, EXT-4).
+
+    Import diferido a proposito: `citas.py` y `tablas.py` importan `esquema`
+    y `fuentes`, y si `registro` los importara arriba tendriamos un ciclo en
+    cuanto uno de ellos quisiera consultar el registro.
     """
     from . import citas as _citas
     from . import discrepancias as _discrepancias

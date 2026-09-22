@@ -659,6 +659,7 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     pendientes: List[CriterioPendienteError] = []
     faltantes: List[DatoFaltanteError] = []
     no_evaluables: List[MetodoNoEvaluableError] = []
+    invalidos_de_criterio: List[DatoInvalidoError] = []
 
     for material in candidatos:
         try:
@@ -688,6 +689,24 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
             no_evaluables.append(exc)
             continue
+        except DatoInvalidoError as exc:
+            if exc.campo in ca.CRITERIOS:
+                # Tampoco es un descarte (auditor de C05): el dato invalido
+                # es el VALOR DE UN CRITERIO que un consumidor rechazo --el
+                # y/D maximo o el piso de velocidad relajados por encima de
+                # lo que la fuente concede--, y eso vale igual para todos
+                # los materiales. Tragarlo aqui rotulaba «material no
+                # evaluable» tres veces y sacaba el punto como NO FACTIBLE
+                # con `criterio: None`; lo que corresponde es el bloqueo
+                # DATO_INVALIDO con la clave del criterio, como en la Fase 2
+                # con 'riesgo_admisible_propietario'.
+                fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
+                invalidos_de_criterio.append(exc)
+                continue
+            # Un dato invalido DEL PUNTO (M3/M4) sigue siendo del material
+            # que lo detecto: cae en la rama de abajo.
+            fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
+            continue
         except ErrorProyecto as exc:
             # Un material que revienta se descarta COMO MATERIAL y el bucle
             # sigue con el siguiente candidato. Antes la excepcion subia hasta
@@ -705,14 +724,16 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             # este material por descarte de otro que nunca se llego a evaluar,
             # y la memoria no podria defender la eleccion de Sec. 3.4.
             _exigir_criterios_declarados(pendientes)
+            _exigir_criterios_validos(invalidos_de_criterio)
             _exigir_metodo_evaluable(no_evaluables)
             return resultado
 
         fallos.append(f"{material.nombre}: {motivo}")
 
     # Ningun candidato cerro. Antes de declarar el punto NO FACTIBLE hay que
-    # poder afirmar que todos se evaluaron de verdad: ver las dos funciones.
+    # poder afirmar que todos se evaluaron de verdad: ver las tres funciones.
     _exigir_criterios_declarados(pendientes)
+    _exigir_criterios_validos(invalidos_de_criterio)
     _exigir_metodo_evaluable(no_evaluables)
 
     if faltantes and len(faltantes) == len(candidatos):
@@ -744,6 +765,18 @@ def _exigir_metodo_evaluable(
     """
     if no_evaluables:
         raise no_evaluables[0]
+
+
+def _exigir_criterios_validos(
+        invalidos: Sequence[DatoInvalidoError]) -> None:
+    """
+    El valor de un criterio que un consumidor rechazo (auditor de C05) sale
+    del punto como DatoInvalidoError con la clave del criterio en `campo`,
+    nunca como «no factible»: no se evaluo ningun material, se rechazo la
+    adopcion. Se relanza el primero, como con los pendientes.
+    """
+    if invalidos:
+        raise invalidos[0]
 
 
 def _exigir_criterios_declarados(

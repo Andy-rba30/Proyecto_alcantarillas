@@ -112,7 +112,12 @@ LUZ = _fundamento(
         "hace ANTES que ningun otro porque decide que norma se aplica al "
         "resto: no es una etiqueta descriptiva, es la eleccion del marco."),
     verbo=Verbo.DEFINE,
-    citas=("MC_HHD.4.1.1.3.1", "MC_HHD.4.1.1.5.1"),
+    # R48-001 (cierre C11): las dos definiciones a las que el 4.1.1.5.1
+    # remite o con las que convive, para que la memoria diga QUE magnitud
+    # compara el umbral (la abertura de la estructura, no el ancho del
+    # cauce). La discrepancia DIS-LUZ-DENOMINACION llega por estas citas.
+    citas=("MC_HHD.4.1.1.3.1", "MC_HHD.4.1.1.5.1",
+           "MP.GLOSARIO#OBRAS_DE_ARTE_MENORES", "AASHTO_LRFD_9.1.2#BRIDGE"),
     que_pasa_si_no_se_hace=(
         "Un cruce de luz mayor o igual a 6.0 m se dimensionaria con el "
         "aparato de una alcantarilla, y la memoria citaria numerales de un "
@@ -347,8 +352,9 @@ PERFIL = _fundamento(
 V1 = _fundamento(
     id="F5.V1",
     fase=F5,
-    que_paso=("V1 - Borde libre: y <= 0.75 de la altura, diametro o flecha "
-              "de la estructura"),
+    que_paso=("V1 - Borde libre: y no mayor que la relacion de llenado "
+              "adoptada (por defecto 0.75 de la altura, diametro o flecha "
+              "de la estructura, el complemento del 25 % recomendado)"),
     por_que=(
         "Una alcantarilla que trabaja a seccion llena deja de comportarse como "
         "un canal y pasa a comportarse como un conducto a presion: la "
@@ -435,7 +441,8 @@ VC1 = _fundamento(
 V2 = _fundamento(
     id="F5.V2",
     fase=F5,
-    que_paso="V2 - Velocidad minima de autolimpieza: V >= 0.25 m/s",
+    que_paso=("V2 - Velocidad minima de autolimpieza: V no menor que el "
+              "piso adoptado (por defecto los 0.25 m/s recomendados)"),
     por_que=(
         "El piso de velocidad no protege el conducto: protege su CAPACIDAD. "
         "Por debajo de cierta velocidad el material fino en suspension "

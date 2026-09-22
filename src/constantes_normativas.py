@@ -1187,7 +1187,8 @@ def _nota_de_tabla(tabla_id: str, empieza_con: str) -> str:
 UMBRALES_DE_VERIFICACION = (
     {"codigo": "V1",
      "fundamento": "F5.V1",
-     "que": "Borde libre: y/D <= 0.75 (minimo 25 % de borde libre)",
+     "que": "Borde libre: y/D no mayor que la relacion de llenado adoptada "
+            "(por defecto 0.75: minimo 25 % de borde libre)",
      "citas": ("MC_HHD.4.1.1.3.7b",),
      "literales_de_tabla": (),
      "aplicacion": "Se aplica como umbral DURO (un punto con y/D por encima "
@@ -1201,7 +1202,8 @@ UMBRALES_DE_VERIFICACION = (
                    "y/D."},
     {"codigo": "V2",
      "fundamento": "F5.V2",
-     "que": "Velocidad minima de autolimpieza: V >= 0.25 m/s",
+     "que": "Velocidad minima de autolimpieza: V no menor que el piso "
+            "adoptado (por defecto 0.25 m/s)",
      # DOS citas para una sola oracion del Manual, y no es redundancia: la
      # primera mitad («se debera verificar») es EXIGENCIA y la segunda
      # («recomendandose que... 0.25 m/s») es RECOMENDACION. Verificar el piso
