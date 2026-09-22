@@ -77,6 +77,7 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `AASHTO_LRFD_9.1.2#BRIDGE` | 1.2 | «DEFINITIONS» | pág. impresa **1-2** · PDF 17 | definicion | 2026-09-22 · ambos |
 | `AASHTO_LRFD_9.10.5.4.2` | 10.5.4.2 | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.10.5.4.2#ESPECTRO` | 10.5.4.2, configuracion licuada | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | recomendacion | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.11.6.3.3#EXC` | 11.6.3.3 | «Eccentricity Limits» | pág. impresa **11-24** · PDF 1493 | exigencia | 2026-09-12 · texto |
@@ -113,6 +114,8 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.T3.4.1-1` | Table 3.4.1-1 | «Load Combinations and Load Factors» | pág. impresa **3-17** · PDF 71 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.T3.4.1-2` | Table 3.4.1-2 | «Load Factors for Permanent Loads» | pág. impresa **3-18** · PDF 72 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.T5.10.1-1` | Table 5.10.1-1 | «Minimum Cover for Main Reinforcing Steel (in.)» | pág. impresa **5-169** · PDF 528 | exigencia | 2026-08-28 · ambos |
+
+> **`AASHTO_LRFD_9.1.2#BRIDGE`** — Es la definicion a la que remite el num. 4.1.1.5.1 del Manual de Hidrologia («siguiendo lo establecido en las especificaciones AASHTO LRFD»). La magnitud es «an opening»: la ABERTURA de la estructura. 20.0 ft son 6.096 m y el Manual escribe 6.0 m sin decir como pasa de una cifra a la otra: la diferencia esta declarada en DIS-LUZ-DENOMINACION y el codigo compara los 6.0 m del Manual ([N], el mas exigente de los dos).
 
 > **`AASHTO_LRFD_9.10.5.4.2`** — POR DONDE ENTRA LA LICUEFACCION EN AASHTO, que no es por la clase de sitio: es la Seccion 10, Cimentaciones, bajo 10.5.4 «Extreme Events Limit States». Y el disparador lo dice todo -- zona sismica 3 o 4, MAS napa freatica en los 50 ft superiores, MAS caracteristicas de suelo por (N1)60, q_ciN, V_s1 o unidad geologica con antecedente de licuefaccion --: ninguna de las tres condiciones menciona la clase de sitio. «Site Class F» no aparece en NINGUNA pagina de la Seccion 10.
 
@@ -189,12 +192,15 @@ línea que se pueda romper.
 | `AASHTO_M170M.1.1` | 1.1 | «SCOPE» | pág. impresa **M 170M-1** · PDF 1 | definicion | 2026-09-20 · imagen renderizada |
 | `AASHTO_M170M.1.1#NOTA1` | 1.2, Note 1 | «SCOPE» | pág. impresa **M 170M-1** · PDF 1 | definicion | 2026-09-20 · imagen renderizada |
 | `AASHTO_M170M.T1_T5#DIAMETROS` | Tables 1 to 5 | «Table 1—Design Requirements for Class I Reinforced Concrete Pipe» | pág. impresa **M 170M-3** · PDF 3 | definicion | 2026-09-12 · imagen renderizada |
+| `AASHTO_M170M.T5` | Table 5 | «Table 5—Design Requirements for Class V Reinforced Concrete Pipe» | pág. impresa **M 170M-10** · PDF 10 | definicion | 2026-09-22 · imagen renderizada |
 
 > **`AASHTO_M170M.1.1`** — Leida sobre la PDF 1 renderizada a escala 3.0 (el OCR imprime «iniendcd io be used» y «culvens»). Cubre TUBERIA («pipe»); un marco rectangular vaciado in situ no es tuberia y esta norma no lo rige. La PDF 1 rotula ademas «AASHTO Designation: M 170M-04» y «ASTM Designation: C 76M-02», que es la doble designacion del rotulo que M2 imprime.
 
 > **`AASHTO_M170M.1.1#NOTA1`** — LO QUE LA NORMA DICE QUE NO ES: ni cama, ni relleno, ni la relacion entre la carga de campo y la clase. La nota sigue: la experiencia muestra que el buen desempeño depende de elegir la clase, la cama y el relleno, y el propietario «is cautioned that he must correlate the field requirements with the class of pipe specified». Es la misma clausula que M 36 lleva en su 1.3 y A760 en su 1.4, y la razon de que 'clases_producto_por_relleno' sea un criterio del proyecto y no una lectura de la norma.
 
 > **`AASHTO_M170M.T1_T5#DIAMETROS`** — ES EL ANCLA DE DIS-HR-D-MAX: la envolvente de diametros de las cinco tablas, leida TABLA POR TABLA sobre las paginas renderizadas (escaneo con OCR inutilizable; ver la Fuente). Columna «Internal Designated Diameter, mm»: Tabla 1 (Clase I, PDF 3): 1500 a 3450; Tabla 2 (Clase II, PDF 4-5): 300 a 3450; Tabla 3 (Clase III, PDF 6-7): 300 a 3600; Tabla 4 (Clase IV, PDF 8-9): arranca en 300 y SU MAXIMO NO ES VERIFICABLE en este ejemplar -- la tinta de la mitad baja de la PDF 8 no esta en el escaneo --; Tabla 5 (Clase V, PDF 10-11): 300 a 3600. La envolvente NO es uniforme y por eso «Tablas 1 a 5: de 300 a 3600» solo es cierta leida como CONJUNTO. Encima de lo tabulado, el num. 7.2 «Modified and Special Designs» (PDF 13) preve, con permiso del propietario, «special designs for sizes and loads beyond those shown in Tables 1 to 5» (7.2.1); y el num. 4.1 «CLASSIFICATION» (PDF 2) remite: «The corresponding strength requirements are prescribed in Tables 1 to 5.» DOS RESERVAS DE LEGIBILIDAD, ninguna contraria: el rotulo al pie de la PDF 3 esta degradado (la correspondencia «M 170M-3» la fijan los rotulos legibles de las paginas vecinas M 170M-2 y M 170M-4 y la regla de paginacion), y los digitos del numero de tabla en las paginas de continuacion (PDF 7 y 9) no se leen: la asignacion de cada continuacion a su tabla es por secuencia de rotulos y coherencia de filas.
+
+> **`AASHTO_M170M.T5`** — La pagina PDF 10 es un escaneo real, legible, impreso girado 90 grados (el rotulo de pie «M 170M-10» y «TS-4a» van verticales). La columna «Internal Designed Diameter, mm» --asi la imprime, con «Designed» y no «Designated»-- tiene 27 filas de 300 a 3600 mm, y es la serie que CP11 usa como dorado del concreto. Las columnas de espesor de pared B (300 a 1200 mm) y C (300 a 1800 mm) son legibles y se transcriben; las de refuerzo no, porque ningun modulo las consume (M8 no dimensiona el tubo de concreto).
 
 ### AASHTO M 294-11 «Tubería corrugada de polietileno, 300 a 1500 mm (12 a 60 in.) de diámetro» — TRADUCCION NO OFICIAL al español  (`AASHTO_M294_TRAD`)
 
@@ -419,6 +425,8 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `HDS5_3ED.1.2#MODELO` | 1.2 | «COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS» | pág. impresa **1.4** · PDF 42 | recomendacion | 2026-09-22 · ambos |
+| `HDS5_3ED.1.2#NBIS` | 1.2 | «COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS» | pág. impresa **1.3** · PDF 41 | definicion | 2026-09-22 · ambos |
 | `HDS5_3ED.3.1.3#SUMERGENCIA` | 3.1.3 | «Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.3#TRANSICION` | 3.1.3 | «Inlet Control» | pág. impresa **3.4** · PDF 86 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.3.1.4#0_75D` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | exigencia | 2026-09-21 · texto |
@@ -445,6 +453,10 @@ línea que se pueda romper.
 | `HDS5_3ED.A.3#FORMAS` | A.3 | «A.3  INLET CONTROL DIMENSIONLESS DESIGN CURVES» | pág. impresa **A.2** · PDF 191 | exigencia | 2026-09-07 · texto |
 | `HDS5_3ED.TA.1` | Table A.1 | «Constants for Inlet Control Equations for Charts in Appendix G.» | pág. impresa **A.8** · PDF 197 | definicion | 2026-08-28 · ambos |
 | `HDS5_3ED.TC.2` | Table C.2 | «Entrance Loss Coefficients.» | pág. impresa **C.6** · PDF 216 | definicion | 2026-08-28 · ambos |
+
+> **`HDS5_3ED.1.2#MODELO`** — «A reasonable guideline»: RECOMENDACION, no definicion. Distingue dos cosas que DIS-LUZ-DENOMINACION separa: la clasificacion administrativa del cruce (ancho total, NBIS, pag. 1.3) y el metodo hidraulico (luz de UN barril). Este proyecto aplica el umbral de 6.0 m del Manual de Hidrologia a la denominacion --alcantarilla o puente-- y por eso lee el ancho total.
+
+> **`HDS5_3ED.1.2#NBIS`** — La unica fuente de normas/ que dice que ancho cuenta en un cruce de VARIOS barriles: el TOTAL («the total width of a multiple barrel crossing»), para la clasificacion como puente (NBIS). Es la parte que sostiene la lectura de `luz_m` como abertura total del cruce (DIS-LUZ-DENOMINACION). El parrafo siguiente, en la pag. 1.4, matiza que para el METODO HIDRAULICO la guia razonable es modelar como puente «a single culvert with a span of 20 ft (6.1 m) or more» (HDS5_3ED.1.2#MODELO).
 
 > **`HDS5_3ED.3.1.3#SUMERGENCIA`** — El parrafo sigue con la Fig. 3.1D: «submergence of both the inlet and the outlet ends of the culvert does not assure full flow». Sostiene que LLENO, en `modelos.RegimenBarril`, describe la salida y el tramo aguas abajo del resalto, no la longitud entera.
 
@@ -569,6 +581,7 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `MP.1.10#FIG_1_10A_LUZ_LIBRE` | Figura 1.10-a | «Figura 1.10-a Puentes Tipo Viga» | pág. impresa **73** · PDF 74 | definicion | 2026-09-22 · imagen renderizada |
 | `MP.2.1.4.3.9` | 2.1.4.3.9 | «Aparatos de Apoyo» | pág. impresa **91** · PDF 92 | exigencia | 2026-08-28 · ambos |
 | `MP.2.3.1.1.12.3#EXC_ESTATICA` | 2.3.1.1.12.3 | «Límites de Excentricidad» | pág. impresa **250** · PDF 251 | exigencia | 2026-09-12 · texto |
 | `MP.2.4.2.2#SOBRECARGA` | 2.4.2.2 | «Cargas de Suelo: EH, ES, y DD» | pág. impresa **102** · PDF 103 | exigencia | 2026-08-28 · ambos |
@@ -582,11 +595,14 @@ línea que se pueda romper.
 | `MP.2.8.1.1.14.1#EXC` | 2.8.1.1.14.1 | «Generalidades» | pág. impresa **253** · PDF 254 | exigencia | 2026-09-12 · texto |
 | `MP.2.8.1.1.14.2.1#ROCA` | 2.8.1.1.14.2.1 | «Caracterización de la Aceleración en la Base del Muro de Contención» | pág. impresa **254** · PDF 255 | exigencia | 2026-09-12 · ambos |
 | `MP.A.11.3.1#KAE` | A.11.3.1, ec. A.11.3.1-2 | «Método de Mononobe -Okabe» | pág. impresa **586** · PDF 587 | aproximacion | 2026-09-12 · ambos |
+| `MP.GLOSARIO#OBRAS_DE_ARTE_MENORES` | Glosario | «GLOSARIO DE TERMINOS» | pág. impresa **45** · PDF 46 | definicion | 2026-09-22 · ambos |
 | `MP.INTRODUCCION#LRFD_2014` | Introducción al Manual de Puentes | «INTRODUCCIÓN AL MANUAL DE PUENTES» | pág. impresa **43** · PDF 44 | permiso | 2026-09-20 · ambos |
 | `MP.T2.4.3.11.2.1.2-1` | Tabla 2.4.3.11.2.1.2-1 | «Efectos de Sitio» | pág. impresa **123** · PDF 124 | exigencia | 2026-08-28 · imagen renderizada |
 | `MP.T2.4.5.3.1-1` | 2.4.5.3.1, Tabla 2.4.5.3.1-1 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
 | `MP.T2.4.5.3.1-2` | 2.4.5.3.1, Tabla 2.4.5.3.1-2 | «Factores de Carga y Combinaciones» | pág. impresa **143** · PDF 144 | exigencia | 2026-08-28 · texto |
 | `MP.T2.9.1.5.5.3-1` | 2.9.1.5.5.3, Tabla 2.9.1.5.5.3-1 | «Recubrimiento de Concreto» | pág. impresa **377** · PDF 378 | exigencia | 2026-08-28 · texto |
+
+> **`MP.1.10#FIG_1_10A_LUZ_LIBRE`** — Rotulo de la figura, leido sobre la pagina renderizada: la cota «C = LUZ LIBRE» va entre el PILAR N° 1 y el PILAR N° 2 --un solo vano--, mientras «L = LONGITUD» cubre todo entre estribos y «L1, L2 = LUZ DE TRAMO» van entre ejes de apoyo. Es la unica definicion de luz libre del Manual de Puentes, y es POR VANO: bajo esta lectura un marco de tres celdas de 2.5 m tiene luz libre 2.5 m. La parte EN CONTRA de DIS-LUZ-DENOMINACION.
 
 > **`MP.2.1.4.3.9`** — NOR-PUE-01 / MAT-D5. ESTE NUMERAL NO SOSTIENE LA SOBRECARGA DE TRASDOS y esta aqui para que se vea que no la sostiene. No contiene la palabra «sobrecarga», ni «trasdós», ni «relleno equivalente», ni el valor 0.60: va de aparatos de apoyo (bearings), y su contexto lo confirma (2.1.4.3.7 Drenaje, 2.1.4.3.8 Pavimentación, 2.1.4.3.9 Aparatos de Apoyo, 2.1.5 Señalización). El texto que si sostiene la sobrecarga esta en el num. 2.4.2.2 — ver MP.2.4.2.2#SOBRECARGA. El numeral falso estaba propagado a seis puntos del repositorio.
 
@@ -613,6 +629,8 @@ línea que se pueda romper.
 > **`MP.2.8.1.1.14.2.1#ROCA`** — LA FRASE CONTIENE LAS DOS MITADES DE DIS-MP-KH0-ROCA: la prosa correcta («estará basado en 1.2 veces el coeficiente...») y el parentesis mal compuesto, con el 1.2 del lado IZQUIERDO de la igualdad -- confirmado sobre la imagen renderizada, por eso el metodo es AMBOS; en el impreso el «=» va compuesto a nivel de subindice y hay salto de linea entre «1.2» y «kh0»; la transcripcion lineal es fiel --. El rotulo de remision debajo del titulo imprime «(11.6.5.2.1AASHTO)» sin espacio. Que el lado correcto sea k_h0 = 1.2·F_pga·PGA lo dice AASHTO 11.6.5.2.1, no este parentesis: por eso gana la prosa (ver la discrepancia).
 
 > **`MP.A.11.3.1#KAE`** — EL CORCHETE DEL DENOMINADOR IMPRIME «[1 −√ ...]^-2», SIGNO MENOS: trazo horizontal unico, sin trazo vertical, decidido sobre la imagen renderizada a 6x -- es la errata de imprenta que DIS-MP-KAE-SIGNO declara; AASHTO imprime «[1 + raiz(...)]» y gana --. La etiqueta impresa de la ecuacion es «Donde (A.11.3.1-2. AASHTO)», con punto tras el 2. El espaciado del titulo, «Mononobe -Okabe» (espacio antes del guion, ninguno despues), es de la fuente y se conserva. Unidades imperiales (kcf, ft), como en el apendice AASHTO del que se transcribe.
+
+> **`MP.GLOSARIO#OBRAS_DE_ARTE_MENORES`** — La magnitud que el glosario compara con los 6.00 m es la LUZ LIBRE de la obra, no el ancho del cauce que la obra salva. El glosario empieza en la pag. impresa 44 (PDF 45), donde imprime su titulo «GLOSARIO DE TERMINOS»; esta entrada esta en la 45 (PDF 46). Que es «luz libre» NO lo dice esta entrada: lo dibuja la Fig. 1.10-a (MP.1.10#FIG_1_10A_LUZ_LIBRE), por VANO.
 
 > **`MP.INTRODUCCION#LRFD_2014`** — «AASTHO» y «Septima» sin tilde son de la fuente (sic). La Presentacion (PDF 42, impresa 41) lo repite: la actualizacion «se elaboró incorporando en gran parte las Especificaciones Técnicas de las Normas Americanas AASHTO LRFD, Septima Edición del año 2014». El registro cita la 9a ed. (2020) y la 10a (2024) esta publicada: el MP ancla la 7a y PERMITE las posteriores a «la entidad y/o propietario» --- no al proyectista, que propone ---, de modo que la eleccion entre 9a y 10a es tecnica (DIS-MP-LRFD-EDICION dice por que la 9a es admisible; cual rige es de 'edicion_que_rige_el_expediente').
 
@@ -756,6 +774,49 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 >  Category B—Epoxy coated or galvanized meeting ASTM A775/A775M
 
 >  Category C—Materials meeting AASHTO M 334M/M 334
+
+### `AASHTO_M170M.T5` — Table 5—Design Requirements for Class V Reinforced Concrete Pipe
+
+- Cita: `AASHTO_M170M.T5`
+- Tabla completa · el calculo usa 0 de 3 columnas y 0 de 27 filas
+- Columna «Internal Designed Diameter, mm» transcrita y **no usada**: ningun modulo dimensiona hoy el tubo de concreto por clase D-load: la columna de diametros es el dorado de CP11 para `M2.siguiente_diametro` (contraste de la progresion contra la serie de la norma de producto, conflicto #7) y los espesores son el insumo de la verificacion pendiente de 'espesor_pared_conducto', que los leyo por imagen
+- Columna «Wall Thickness, mm» transcrita y **no usada**: ningun modulo dimensiona hoy el tubo de concreto por clase D-load: la columna de diametros es el dorado de CP11 para `M2.siguiente_diametro` (contraste de la progresion contra la serie de la norma de producto, conflicto #7) y los espesores son el insumo de la verificacion pendiente de 'espesor_pared_conducto', que los leyo por imagen
+- Columna «Wall Thickness, mm» transcrita y **no usada**: ningun modulo dimensiona hoy el tubo de concreto por clase D-load: la columna de diametros es el dorado de CP11 para `M2.siguiente_diametro` (contraste de la progresion contra la serie de la norma de producto, conflicto #7) y los espesores son el insumo de la verificacion pendiente de 'espesor_pared_conducto', que los leyo por imagen
+- **Interpretación del proyectista, no de la fuente**: El ejemplar de normas/ conserva esta tabla como ESCANEO REAL (PDF 10, girado 90 grados) y las Tablas 1 a 4 como recomposiciones OCR cuya imagen trae digitos equivocados (371 por 375, 1390 por 1350, «3tS0», «6tXI») y filas superpuestas. Por eso la serie de diametros del concreto se toma de la Clase V: la serie designada es la misma en las cinco clases --la norma tabula por diametro y clase--, y es lo unico que el registro afirma de esta transcripcion.
+  - En contra: las Tablas 1 a 4 (Clases I a IV) NO estan transcritas y no se puede comprobar contra ESTE ejemplar que sus filas de diametro coincidan con las de la Tabla 5; la coincidencia se apoya en que la norma tabula la misma serie designada por clase
+  - En contra: la pagina PDF 11 (continuacion de la Tabla 5, rotada 180 grados) vuelve a ser OCR y no se transcribe
+  - A favor: la Tabla 1 (Clase I, PDF 3), aun recompuesta, empieza en 1500 y termina en 3450/3600 con el mismo paso de 150 mm; la Tabla 3 (Clase III, PDF 6) empieza en 300 con el mismo paso de 75 mm
+  - A favor: las trece celdas de pared B que 'espesor_pared_conducto' leyo por imagen de las Tablas 2 y 3 coinciden, de 900 a 1200 mm, con la columna B de esta tabla (100, 113, 125)
+
+| Fila | Internal Designed Diameter, mm | Wall Thickness, mm | Wall Thickness, mm | Uso |
+|---|---|---|---|---|
+| 300 | 300 | 50 | 69 | no usada |
+| 375 | 375 | 57 | 75 | no usada |
+| 450 | 450 | 63 | 82 | no usada |
+| 525 | 525 | 69 | 88 | no usada |
+| 600 | 600 | 75 | 94 | no usada |
+| 675 | 675 | 82 | 100 | no usada |
+| 750 | 750 | 88 | 107 | no usada |
+| 825 | 825 | 94 | 113 | no usada |
+| 900 | 900 | 100 | 119 | no usada |
+| 1050 | 1050 | 113 | 132 | no usada |
+| 1200 | 1200 | 125 | 144 | no usada |
+| 1350 | 1350 |  | 157 | no usada |
+| 1500 | 1500 |  | 169 | no usada |
+| 1650 | 1650 |  | 182 | no usada |
+| 1800 | 1800 |  | 194 | no usada |
+| 1950 | 1950 |  |  | no usada |
+| 2100 | 2100 |  |  | no usada |
+| 2250 | 2250 |  |  | no usada |
+| 2400 | 2400 |  |  | no usada |
+| 2550 | 2550 |  |  | no usada |
+| 2700 | 2700 |  |  | no usada |
+| 2850 | 2850 |  |  | no usada |
+| 3000 | 3000 |  |  | no usada |
+| 3150 | 3150 |  |  | no usada |
+| 3300 | 3300 |  |  | no usada |
+| 3450 | 3450 |  |  | no usada |
+| 3600 | 3600 |  |  | no usada |
 
 ### `AASHTO_M294_TRAD.T7.2.2` — Espesor de pared
 
@@ -1605,7 +1666,7 @@ recomienda.
 |---|---|---|---|---|
 | `F1.TW` | Fase 1 - Datos de entrada | TW en el cuerpo receptor: nivel de agua durante la avenida, por Manning en la seccion del receptor (Sec. 1.3) | **define** | `MC_HHD.4.1.1.3.6` |
 | `F10.CUNETA` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud maxima de recorrido de la cuneta, que fija el espaciamiento de las alcantarillas de alivio | **obliga** | `MC_HHD.4.1.2.1d` |
-| `F2.LUZ` | Fase 2 - Clasificacion y periodo de retorno | Denominacion de la obra por su luz: alcantarilla o puente | **define** | `MC_HHD.4.1.1.3.1`, `MC_HHD.4.1.1.5.1` |
+| `F2.LUZ` | Fase 2 - Clasificacion y periodo de retorno | Denominacion de la obra por su luz: alcantarilla o puente | **define** | `MC_HHD.4.1.1.3.1`, `MC_HHD.4.1.1.5.1`, `MP.GLOSARIO#OBRAS_DE_ARTE_MENORES`, `AASHTO_LRFD_9.1.2#BRIDGE`, `HDS5_3ED.1.2#NBIS` |
 | `F2.TR` | Fase 2 - Clasificacion y periodo de retorno | Periodo de retorno del caudal de diseno, obtenido del riesgo admisible y la vida util de la Tabla N 02 | **recomienda** | `MC_HHD.3.6` |
 | `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES`, `HDS5_3ED.5.4.3#REPARTO` |
 | `F3.D_MIN` | Fase 3 - Tipo, material y durabilidad | Seccion minima circular de 0.90 m (36") | **obliga** | `MC_HHD.4.1.1.3.4a` |
@@ -1621,8 +1682,8 @@ recomienda.
 | `F4.REGIMEN` | Fase 4 - Dimensionamiento hidraulico | Regimen del barril y velocidad a la salida, con el area que HDS-5 3.1.6 asigna a cada caso | **define** | `HDS5_3ED.3.1.6#V_SALIDA`, `HDS5_3ED.3.1.6#V_SALIDA_TW`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HDS5_3ED.3.1.3#SUMERGENCIA` |
 | `F4.SECCION` | Fase 4 - Dimensionamiento hidraulico | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | **define** | `MC_HHD.4.1.1.3.6` |
 | `F4.YC_RECT` | Fase 4 - Dimensionamiento hidraulico | Tirante critico de la seccion, y la energia critica H_c | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.A.2` |
-| `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y <= 0.75 de la altura, diametro o flecha de la estructura | **recomienda** | `MC_HHD.4.1.1.3.7b`, `MC_HHD.4.1.1.3.7b#LLENA` |
-| `F5.V2` | Fase 5 - Verificaciones | V2 - Velocidad minima de autolimpieza: V >= 0.25 m/s | **recomienda** | `MC_HHD.4.1.1.3.6#VMIN_INICIO`, `MC_HHD.4.1.1.3.6#VMIN` |
+| `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y no mayor que la relacion de llenado adoptada (por defecto 0.75 de la altura, diametro o flecha de la estructura, el complemento del 25 % recomendado) | **recomienda** | `MC_HHD.4.1.1.3.7b`, `MC_HHD.4.1.1.3.7b#LLENA` |
+| `F5.V2` | Fase 5 - Verificaciones | V2 - Velocidad minima de autolimpieza: V no menor que el piso adoptado (por defecto los 0.25 m/s recomendados) | **recomienda** | `MC_HHD.4.1.1.3.6#VMIN_INICIO`, `MC_HHD.4.1.1.3.6#VMIN` |
 | `F5.V2b` | Fase 5 - Verificaciones | V2b - Sedimentacion / colmatacion: el indicador de pendiente del HDS-5 mas el acceso de mantenimiento declarado | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO` |
 | `F5.V2b.REGIMEN` | Fase 5 - Verificaciones | V2b - El regimen con que se aplica el indicador de pendiente: umbral duro o indicador con aviso (`regimen_v2b`) | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO` |
 | `F5.V3` | Fase 5 - Verificaciones | V3 - Velocidad maxima admisible del revestimiento (Tabla N 10) | **obliga** | `MC_HHD.4.1.1.3.6#T10` |
@@ -1647,6 +1708,12 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: V7 pasaria a mayorar el lado estabilizante. Medido sobre la corrida del entregable de C7 -- C-01, marco 1.20 x 0.90 --: el estabilizante pasaria de 23.256 a 34.884 kN/m contra los mismos 20.405 kN/m de subpresion, y el margen se multiplicaria por cinco. O sea que seguir la otra parte NO endurece la verificacion: la ablanda, y un conducto que hoy no pasa pasaria. Es la direccion insegura, y es la razon de que esta discrepancia importe aunque su efecto hoy sea que ningun punto cambie de veredicto.
   - *AASHTO_LRFD_9 (Art. 3.4.1, = Manual de Puentes 2.4.5.3.1)*: manda investigar el MINIMO cuando la carga permanente aumenta la estabilidad: «Si la carga permanente aumenta la estabilidad ... tambien se debera investigar el valor minimo del factor de carga para dicha carga permanente»
   - *AASHTO_LRFD_9 (Art. 12.6.1, estructuras enterradas)*: manda aplicar el MAXIMO, sin salvedad: «For vertical earth pressure, the maximum load factor from Table 3.4.1-2 shall apply»
+- **`DIS-LUZ-DENOMINACION` — la MAGNITUD que el umbral de denominacion alcantarilla/puente compara (que «luz» es, y en un cruce multicelda cual) y su CIFRA (6.0 m frente a 20.0 ft = 6.096 m).** Gana **HDS5_3ED**: en la MAGNITUD: es la unica de las cuatro que dice que ancho cuenta en un cruce de varias celdas --el total del cruce, para la clasificacion como puente--, y las otras tres coinciden en lo que descarta el hallazgo R48-001: la luz es una propiedad de la ESTRUCTURA (su abertura o luz libre), no el ancho del cauce natural. Por eso `luz_m` es la abertura libre que el cruce exige de la estructura, leida de la topografia, y M1 la compara entera; es ademas la lectura conservadora, porque manda al Manual de Puentes el cruce que lo exige. En la CIFRA gana el Manual de Hidrologia: el codigo compara 6.0 m ([N], LUZ_MAX_ALCANTARILLA), mas exigente que los 6.096 m de AASHTO y de HDS-5; una luz de 6.05 m es puente aqui y no alli
+  - Si se sigue la otra: con la luz libre POR VANO de la Fig. 1.10-a un cruce de 8 m salvado con tres celdas de 2.5 m seria obra de arte menor y se disenaria con el Manual de Hidrologia, mientras el NBIS lo cuenta como puente; y con los 6.096 m de AASHTO una luz entre 6.0 y 6.096 m dejaria de ser puente. Lo que el hallazgo leyo en el codigo --comparar el ANCHO DEL CAUCE-- confundiria el dato hidraulico con el estructural
+  - *MC_HHD*: «la estructura cuya luz sea menor a 6.0 m» y «cuya luz sea mayor o igual a 6.0 m, siguiendo lo establecido en las especificaciones AASHTO LRFD»: escribe «luz» sin definirla y la cifra 6.0 m
+  - *MP*: obras de arte menores son las de «luz libre menor que 6.00 m (20 ft)», y su Fig. 1.10-a dibuja la luz libre POR VANO, entre pilares: bajo esta lectura un marco de tres celdas de 2.5 m tiene luz libre 2.5 m y es obra de arte menor
+  - *AASHTO_LRFD_9*: «Any structure having an opening not less than 20.0 ft»: la ABERTURA de la estructura, y 20.0 ft son 6.096 m, no 6.0
+  - *HDS5_3ED*: los cruces que superan 20 ft (6.1 m) de luz «either as a single barrel or the total width of a multiple barrel crossing» son puentes para el NBIS; y para el metodo hidraulico la guia razonable es modelar como puente «a single culvert with a span of 20 ft (6.1 m) or more»
 
 ### resuelta
 
@@ -1776,7 +1843,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 180.
+Citas sin firma de verificación: **5** de 186.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

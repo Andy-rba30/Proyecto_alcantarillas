@@ -592,7 +592,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4115**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4175**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
@@ -644,7 +644,64 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **PF-6 (2026-09-21) sumó DIECISIETE tests netos** (18
+independientes. **El cierre de los hallazgos abiertos (2026-09-22: C10,
+C05, C09, C11 y C14, cinco commits `cierre(...)` de `67d5810` a `19bcf5a`)
+sumó SESENTA tests netos**, y sólo uno depende de Tk: los 16 de
+`tests/test_cierre_c10.py` —C5-02 (la fila del ke recuperada por
+`M4._fila_del_ke_numerico`, rótulos sólo si el número es la celda, una fila
+«Box» rechazada para el tubo), PC-27 (`modelos.EstadoDeVerificacion` como
+fuente única con `cumple` y el veredicto del paso como vistas comprobadas,
+NO_APLICA con productor real en V5 de la Familia C, la marca en M11, la
+traza y la CLI de texto) y PC-32 (`esviaje_max_grados`, [A] opcional de
+perfil leído por `M7.factor_esviaje`), escritos en rojo con `xfail(strict=True)`
+—12 xfailed, 2 XPASS invariantes— y liberados, más los que dejó el auditor
+adversarial (el hueco censado impreso encima de la fila «no aplica», la CLI
+que decía `[OK]`, el mutante de la frontera del esviaje)—; los 17 de
+`tests/test_cierre_c05.py` —PC-24 (`borde_libre_y_sobre_d_max` y
+`velocidad_minima_autolimpieza_m_s`, [A] de perfil con el valor recomendado
+por defecto, sólo endurecibles: `_umbral_adoptado_v1/_v2`, V1 con ventana
+numérica (0, 0.75), y `MD.disenar_punto` relanzando el `DatoInvalidoError`
+de un criterio en vez de tragarlo como «material no evaluable») y R48-030
+(la v8 nombra WSDOT M 23-03.12 Tabla 8-4 en los seis sitios que decían «por
+extraer»), 14 en rojo y liberados, más los tres del auditor (la memoria bajo
+endurecimiento, la puerta de V1, el bloqueo del criterio)—; los 12 de
+`tests/test_cierre_varios.py` —R48-001 (cinco citas nuevas verificadas: el
+glosario y la Fig. 1.10-a del Manual de Puentes, AASHTO 1.2, HDS-5 §1.2 en
+sus dos páginas; `DIS-LUZ-DENOMINACION` con el desacuerdo real, por vano
+contra ancho total y 6.0 contra 6.096 m; la vía 2 del canal con usuario otra
+vez), PC-31 (`registro.construir` con `lru_cache`, una instancia) y SIS-F-13
+(la Tabla 5 de M 170M, PDF 10, el único escaneo real del ejemplar, transcrita
+por imagen en `AASHTO_M170M.T5`: CP11 con dorado para los tres materiales)—;
+el DUODÉCIMO test de ventana real de `test_gui_contrato`
+(`tests/apoyo/gui_caras_normativa.py`: RANGO, CATALOGO y CAMPO construidas y
+declaradas por `boton.invoke()`, SIS-F-01); dos parametrizados más en
+`test_M2_material` (el concreto en CP11); tres que crecen solos en
+`test_ext5_forma_gui` (76 → 79 criterios); y los nueve anclajes de
+`test_decisiones_diferidas` para las fichas de las Partes XXXVI a XXXVIII
+(C10-01..03, C05-01..02, C11-01, C14-01, C09-01..02). Ningún archivo restó
+tests: `test_M5`, `test_cli`, `test_canal_discrepancias` y
+`test_ext11_mutacion` reescribieron aserciones al contrato nuevo (V5 como
+fila «no aplica», `criterio_aplicado` en V1/V2, la discrepancia declarada
+por el paso 2.1, los operandos nuevos del censo de mutantes). Dos auditores
+adversariales por cluster; el segundo refutó dos cierres —«las tres fuentes
+coinciden» y «la PDF 10 está en blanco»— y los dos se rehicieron con las
+fuentes que faltaban (`19bcf5a`). La línea base de la Familia C se regeneró
+por FORMATO en cada cluster (clave `estado` del JSON, textos del ke y de
+V1/V2, criterios usados, citas del paso 2.1 y su discrepancia; ningún número
+de cálculo se movió). Aviso de entorno: durante la sesión `/dev/null` del
+contenedor quedó sustituido por un archivo regular (un `cli.py --json
+/dev/null` del auditor: `exportar` reemplaza el destino de forma atómica) y
+los tests del subproceso del PDF fallaron hasta restaurarlo con `mknod` en
+otra ruta y `mv`. Las cuatro configuraciones se MIDIERON sobre un checkout
+limpio (`git worktree`) de `origin/main` en `19bcf5a`, en serie y sin otra
+suite en marcha: las dos sin Tk sin `DISPLAY` y con un `xvfb-run` que falla,
+las dos sin PyMuPDF desinstalándolo y reinstalándolo; `collected = 4175` en
+las cuatro. Se midieron ANTES de sellar los documentos generados —los 13
+tests de sincronía de `manifiesto_citas`, `trazabilidad.csv`,
+`indice_formulas` y la convención de `test_ext9` fallaban en las cuatro por
+el mismo motivo, ninguno depende de PyMuPDF ni de Tk— y la tabla suma esos
+13 a cada `passed`; «sí · sí» se remidió sobre el commit de cierre con los
+sellos puestos, y es el par que llevan los sellos. **PF-6 (2026-09-21) sumó DIECISIETE tests netos** (18
 nuevos y un caso parametrizado retirado), y uno depende de Tk: los 15 de `tests/test_pf6_cabos.py` —los tres cabos, escritos primero
 en rojo con `xfail(strict=True)` por test (medidos 12 xfailed y 0 XPASS antes
 de tocar código) y liberados al corregir: (a) R48-007, el techo
@@ -1286,7 +1343,8 @@ post-N1: 1884; N2: 1895; T1: 1914; I4: 1953; T3: 1974; D9: 1975; PD: 1982;
 EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
 EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
-PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115. La
+PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
+4175. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1298,10 +1356,10 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4112 (medido en PF-6) | 3 |
-| sí | no | 4100 (derivado: 4084 de PF-5 + 16) | 15 |
-| no | sí | 4077 (derivado: 4060 de PF-5 + 17) | 38 |
-| no | no | 4065 (derivado: 4049 de PF-5 + 16) | 50 |
+| sí | sí | 4172 (medido en el cierre: 4159 + 13 de documentos generados sellados después) | 3 |
+| sí | no | 4159 (medido en el cierre: 4146 + 13) | 16 |
+| no | sí | 4137 (medido en el cierre: 4124 + 13) | 38 |
+| no | no | 4124 (medido en el cierre: 4111 + 13) | 51 |
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
