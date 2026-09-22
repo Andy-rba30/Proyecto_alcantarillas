@@ -313,6 +313,10 @@ CONSTRUCTORES_DE_PRESENTACION = {
     "column", "heading", "tag_configure", "create_window", "itemconfigure",
     "yview_scroll", "xview_scroll", "yview_moveto", "xview_moveto",
     "after", "bbox",
+    # el reparto de un PanedWindow y de un Notebook (rediseño visual,
+    # bloque 2): el peso de cada panel al añadirlo y la posicion del divisor
+    # son geometria de widget, como `grid` y `pack`.
+    "add", "sashpos",
 }
 
 NUMEROS_PERMITIDOS = {0, 1, 2}
@@ -877,7 +881,11 @@ CENSO_DE_MARCAS = {
     # (responsable, evidencia). Geometria de presentacion; el tamano de la
     # ventana de comparacion es una cadena de Tk («900x500») y no un literal
     # numerico, y por eso no lleva marca.
-    "gui/app.py": 50,
+    # 50 -> 58 en el bloque 2 del rediseño visual: los anchos de las ocho
+    # columnas de las dos tablas del detalle de la pestaña 3 (verificaciones
+    # con su estado, bloqueos con su tipo). Geometria de presentacion; el
+    # contenido lo da el `InformePunto`.
+    "gui/app.py": 58,
     # La ayuda de entrada de S22, mas la pestana de conceptos de G5. Ninguno
     # es una magnitud del expediente: la mascara del bit de Control de Tk
     # (0x4), los dos altos en lineas de las dos cajas copiables --- la cabecera

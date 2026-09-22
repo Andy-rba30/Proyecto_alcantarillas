@@ -383,6 +383,27 @@ def texto_plano(master, **kw):
     return tk.Text(master, highlightthickness=1, padx=8, pady=6, **opciones)
 
 
+def repartir_al_mostrar(paned):
+    """
+    Coloca el divisor de un `PanedWindow` de dos paneles segun los PESOS con
+    que se añadieron, la primera vez que el widget recibe su tamaño.
+
+    Sin esto el divisor nace donde lo dejan los anchos NATURALES de los dos
+    paneles --- y una tabla de doce columnas pide mas ancho que la ventana
+    entera ---, de modo que el peso solo repartia el sobrante y la columna
+    de la tabla se quedaba con lo que la otra no pedia (medido en el bloque
+    2: la columna del filtro nacia en 540 px con el recuento fuera de la
+    vista). A partir de la primera colocacion el divisor es del usuario.
+    """
+    def _colocar(evento):
+        paned.unbind("<Configure>", identificador)
+        pesos = [int(paned.pane(pane, "weight")) for pane in paned.panes()]
+        if len(pesos) != 2 or sum(pesos) <= 0:
+            return
+        paned.sashpos(0, evento.width * pesos[0] // sum(pesos))
+    identificador = paned.bind("<Configure>", _colocar, add="+")
+
+
 class Panel(ttk.Frame):
     """
     Panel plano sin borde, sobre superficie, con su titulo en MAYUSCULAS
