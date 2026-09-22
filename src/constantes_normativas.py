@@ -198,7 +198,12 @@ NUMERAL_BORDE_LIBRE = _reg.cita("MC_HHD.4.1.1.3.7b").como_texto()
 # numeral pelado en V1 leeria que el borde libre es una exigencia y el piso de
 # velocidad no, cuando la fuente los escribe igual. Los dos se aplican como
 # umbral duro por decision conservadora del proyecto, y las dos veces eso es
-# una ADOPCION que la memoria tiene que declarar.
+# una ADOPCION que la memoria tiene que declarar. DESDE C05 (PC-24) LA
+# ADOPCION TIENE SITIO PROPIO: los criterios [A] de perfil
+# 'borde_libre_y_sobre_d_max' y 'velocidad_minima_autolimpieza_m_s' de
+# criterios_adoptados.py, con estas dos cifras como valor por defecto y que
+# solo se pueden endurecer. Aqui quedan las CIFRAS que la fuente escribe
+# ([N], tabla); alli la ELECCION de aplicarlas como rechazo ([A]).
 V_MIN = 0.25                        # m/s -- ver abajo
 NUMERAL_V_MIN = _reg.cita("MC_HHD.4.1.1.3.6#VMIN").como_texto()
 # Texto que fija V_MIN, literal (MC-HHD, RD 20-2011-MTC/14, num. 4.1.1.3.6,
@@ -1185,12 +1190,15 @@ UMBRALES_DE_VERIFICACION = (
      "que": "Borde libre: y/D <= 0.75 (minimo 25 % de borde libre)",
      "citas": ("MC_HHD.4.1.1.3.7b",),
      "literales_de_tabla": (),
-     "aplicacion": "Se aplica como umbral DURO (un punto con y/D > 0.75 se "
-                   "marca 'NO cumple'). Es la lectura conservadora y es "
-                   "decision del proyecto, no exigencia del numeral. El 0.75 "
-                   "es ademas una DERIVACION aritmetica del 25 % que la "
-                   "fuente escribe (1 - 0.25): el numeral no imprime ni el "
-                   "0.75 ni la razon y/D."},
+     "aplicacion": "Se aplica como umbral DURO (un punto con y/D por encima "
+                   "del maximo adoptado se marca 'NO cumple'). Es la lectura "
+                   "conservadora y es decision del proyecto, no exigencia del "
+                   "numeral: la adopcion vive en el criterio [A] "
+                   "'borde_libre_y_sobre_d_max', con el 0.75 recomendado por "
+                   "defecto y que solo se puede endurecer. El 0.75 es ademas "
+                   "una DERIVACION aritmetica del 25 % que la fuente escribe "
+                   "(1 - 0.25): el numeral no imprime ni el 0.75 ni la razon "
+                   "y/D."},
     {"codigo": "V2",
      "fundamento": "F5.V2",
      "que": "Velocidad minima de autolimpieza: V >= 0.25 m/s",
@@ -1204,7 +1212,10 @@ UMBRALES_DE_VERIFICACION = (
      "matiz": "La oracion contiene las dos cosas: la OBLIGACION de verificar "
               "el minimo y la RECOMENDACION sobre su valor. El proyecto "
               "cumple la primera y endurece la segunda.",
-     "aplicacion": "Se aplica como umbral DURO, y se evalua con la velocidad "
+     "aplicacion": "Se aplica como umbral DURO, y la adopcion vive en el "
+                   "criterio [A] 'velocidad_minima_autolimpieza_m_s' (por "
+                   "defecto los 0.25 m/s recomendados; solo se puede "
+                   "endurecer). Se evalua con la velocidad "
                    "de la rama de n MAXIMO -- la estimacion BAJA de velocidad "
                    "--, que es el extremo conservador para un piso. La razon "
                    "del minimo es la sedimentacion que reduce capacidad, no el "

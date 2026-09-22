@@ -1586,6 +1586,7 @@ decía que EXT-3 la haría: se dejan aquí con su argumento y su sesión.
   de la fuente donde están como constantes de tabla (el 25 % y el 0.25 m/s
   SÍ los escribe el Manual: el patrón `F_PGA_TABLA` / `'F_pga'`) y regenere
   los manifiestos.
+- **Cerrada en C05:** los dos criterios existen; ver C05-01.
 - **Dónde vive:** `src/constantes_normativas.py::Y_SOBRE_D_MAX`
 
 ## EXT-3-02 · V1 y V2 se evalúan con el escenario de TW gobernante, no con los dos
@@ -1901,6 +1902,7 @@ una queda diferida a sabiendas.
   lo puede cerrar «de paso» sin escribir la sesión entera. Se dice aquí para
   que el tracker no lo dé por cerrado con un ID que no lo está.
 - **Qué haría falta:** la sesión EXT-3c que EXT-3-01 describe.
+- **Cerrada en C05:** ver C05-01.
 - **Dónde vive:** `src/constantes_normativas.py::Y_SOBRE_D_MAX`
 
 ## EXT-6-04 · La cláusula de alcance no crea un `Fundamento`: el rótulo del marco es texto del registro, no un paso
@@ -3169,3 +3171,48 @@ símbolo.
 - **Qué haría falta:** que el proyectista lo declare, o una guía técnica que
   lo acote, que lo pasaría a [C].
 - **Dónde vive:** `src/criterios_adoptados.py::CRITERIOS`
+
+# Parte XXXVII — Lo que el cierre de C05 dejó escrito: la adopción de V1 y V2 tiene sitio propio, y la hoja de ruta ya nombra a WSDOT
+
+## C05-01 · El umbral duro de V1 y V2 es un [A] de perfil con el valor recomendado por defecto, y sólo se puede endurecer
+
+- **Cerrado (C05):** PC-24 quedó en EXT-0 con la v8 enmendada («[N] el
+  deber de verificar, [A] el valor como umbral duro») y en EXT-3/EXT-6 con
+  la etiqueta del código sin mover (EXT-3-01, EXT-6-03). Hoy la adopción
+  vive donde manda la constitución: `borde_libre_y_sobre_d_max`
+  (valor `Y_SOBRE_D_MAX`) y `velocidad_minima_autolimpieza_m_s` (valor
+  `V_MIN`), [A] de perfil con sensibilidad y resolución `Libre`, y la cifra
+  sigue como [N] en `constantes_normativas.py` porque la escribe el Manual:
+  tabla y elección separadas, el patrón `F_PGA_TABLA` / `'F_pga'`. M5 los
+  lee por `_umbral_adoptado_v1` / `_umbral_adoptado_v2`, que rechazan con
+  `DatoInvalidoError` un y/D máximo mayor que 0.75 o un piso menor que
+  0.25 m/s: relajar una recomendación no es ejercer una adopción, es
+  salirse de lo que la fuente concede (el contrato de
+  `riesgo_admisible_propietario` en M1). V1 y V2 llevan `criterio_aplicado`
+  y su `Umbral` también, de modo que la fila de la memoria imprime [A] y la
+  remisión al criterio en vez de «[N] constante normativa».
+- **Abierto:** la sensibilidad es simbólica (dos textos), no un par
+  numérico: la puerta no evalúa un valor laxo y es el consumidor quien lo
+  rechaza, en la Fase 5 del punto. Un par numérico exigiría un extremo que
+  ninguna fuente escribe (¿cuánto borde libre como máximo?), y eso sería
+  inventarlo.
+- **Qué haría falta:** nada para el hallazgo. Si alguna fuente acotara el
+  otro extremo, la ventana pasaría a numérica y la puerta la evaluaría.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::_umbral_adoptado_v1`
+
+## C05-02 · La hoja de ruta nombra a WSDOT y al valor; la fuente sigue fuera de `normas/`
+
+- **Cerrado (C05):** R48-030 denunciaba que `v_max_tmc` y `v_max_hdpe`
+  llevaban 4.572 m/s de la Tabla 8-4 del WSDOT Hydraulics Manual
+  M 23-03.12 mientras la v8 decía «PPI/FHWA, valor por extraer» en seis
+  sitios, y el código declaraba «DISCREPANCIA ABIERTA CON LA HOJA DE RUTA».
+  Los seis sitios quedaron enmendados con «Corregido desde …» (§0.1, §0.3,
+  el tablero del TMC, la fila V3 de la Fase 5, el Tablero 1.3 y el Anexo
+  A), y la ficha de los dos criterios dice que la hoja está enmendada.
+- **Abierto:** lo que MAT-O14 ya decía y sigue siendo cierto: la Tabla 8-4
+  no está en `normas/` (`fuentes.WSDOT_HM` es una fuente ausente) y la cita
+  no es auditable contra un documento del repositorio. El Tablero 1.3 lo
+  deja como trabajo de gabinete.
+- **Qué haría falta:** traer la Tabla 8-4 a `normas/` y transcribirla al
+  registro; entonces el [C] tendría cita verificable.
+- **Dónde vive:** `src/normativa/fuentes.py::WSDOT_HM`

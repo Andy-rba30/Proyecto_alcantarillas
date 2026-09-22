@@ -71,6 +71,7 @@ from src.dominios import ESVIAJE_MAX
 from src.constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    H_O_CONDICION_TEXTO, H_O_NUMERAL,
                                    KE_HDS5_C2, MANNING, V_MIN,
+                                   Y_SOBRE_D_MAX,
                                    REGIMEN_CORTANTE_EN_EL_PLANO,
                                    REGIMEN_CORTANTE_PERPENDICULAR)
 from src.normativa import esquema as _esquema
@@ -2319,14 +2320,11 @@ CRITERIOS: Dict[str, Criterio] = {
                "las del Manual de Hidrologia. Mientras la tabla no se anexe, "
                "el numero se defiende por su conversion y por la coherencia "
                "con 'v_max_tmc', no por verificacion documental. "
-               "DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: "
-               "docs/hoja_de_ruta_alcantarillas_v8.md sigue escribiendo, en la fila "
-               "V3 de la tabla de la Fase 5, 'TMC y HDPE: PPI/FHWA, valor por "
-               "extraer', cuando el criterio esta cerrado desde hace varias "
-               "sesiones y ademas la fuente que lo cerro no es PPI/FHWA sino "
-               "WSDOT. La hoja de ruta es la que hay que corregir; mientras no "
-               "se corrija, quien la lea sin leer este archivo creera que el "
-               "techo del HDPE sigue vacio.",
+               "La hoja de ruta v8 quedo enmendada (R48-030): la fila V3 de "
+               "la Fase 5, el Tablero 1.3, el Anexo A y las tablas de sus "
+               "num. 0.1 y 0.3 nombran esta fuente y este valor, cada uno "
+               "con su nota de corregido desde la redaccion que decia "
+               "PPI/FHWA con el valor pendiente.",
         reemplazado_por="Ficha tecnica del producto seleccionado o "
                         "especificacion del fabricante con su propio techo de "
                         "velocidad; y, para el expediente, la transcripcion "
@@ -2389,12 +2387,11 @@ CRITERIOS: Dict[str, Criterio] = {
                "LIMITACION QUE HAY QUE DECLARAR (MAT-O14): la Tabla 8-4 de "
                "WSDOT NO esta en normas/ y esta cita no es auditable contra un "
                "documento del repositorio. "
-               "DISCREPANCIA ABIERTA CON LA HOJA DE RUTA: "
-               "docs/hoja_de_ruta_alcantarillas_v8.md sigue escribiendo, en la "
-               "fila V3 de la tabla de la Fase 5, 'TMC y HDPE: PPI/FHWA, valor "
-               "por extraer', aunque el criterio este cerrado y la fuente que "
-               "lo cerro sea WSDOT y no PPI/FHWA. La hoja de ruta es la que "
-               "hay que corregir.",
+               "La hoja de ruta v8 quedo enmendada (R48-030): la fila V3 de "
+               "la Fase 5, el Tablero 1.3, el Anexo A y las tablas de sus "
+               "num. 0.1 y 0.3 nombran esta fuente y este valor, cada uno "
+               "con su nota de corregido desde la redaccion que decia "
+               "PPI/FHWA con el valor pendiente.",
         reemplazado_por="Ficha tecnica del producto seleccionado, o el "
                         "modelado del calibre y el revestimiento en el "
                         "catalogo de M2 (que es lo que la fuente pide en vez "
@@ -2767,6 +2764,106 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    "borde_libre_y_sobre_d_max": Criterio(
+        valor=Y_SOBRE_D_MAX,        # el 0.75 que resulta del 25 % recomendado
+        # NIVEL MEDIDO por las dos corridas de `tests/test_nivel_medido.py`:
+        # V1 corre en el alcance de perfil y lee este criterio.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Relacion de llenado maxima y/D (o y/H) que el proyecto "
+                 "aplica como umbral duro en V1: el complemento del borde "
+                 "libre minimo adoptado",
+        justificacion="Decide el borde libre que el proyecto exige de verdad. "
+                      "El Manual escribe el borde libre como recomendacion: "
+                      "un minimo del 25 % de la altura, diametro o flecha de "
+                      "la estructura, del que el 0.75 es el complemento "
+                      "aritmetico. Verificar el borde libre es una exigencia "
+                      "del numeral; aplicar la cifra recomendada como rechazo "
+                      "de un escalon de diametro es una adopcion del "
+                      "proyectista, y por eso lleva etiqueta propia y ventana. "
+                      "El valor por defecto es el recomendado, de modo que sin "
+                      "tocar este criterio el calculo hace lo que hacia. Solo "
+                      "se puede endurecer: V1 rechaza con DatoInvalidoError "
+                      "una relacion de llenado mayor que 0.75, porque relajar "
+                      "una recomendacion de la fuente no es ejercer una "
+                      "adopcion sino salirse de lo que la fuente concede. "
+                      "Sensibilidad: con y/D = 0.70 un tubo de 0.90 m que "
+                      "cumple con 0.75 deja de cumplir con 0.65 y el diseno "
+                      "sube de escalon; la direccion de endurecer es siempre "
+                      "la segura (mas diametro, mas borde libre). A seccion "
+                      "llena no hay borde libre que medir y el veredicto se "
+                      "apoya en la exigencia del mismo parrafo, no en esta "
+                      "cifra",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.7 b) 'Borde libre', pag. "
+               "impresa 79 (PDF 82): recomienda como minimo el 25 % de la "
+               "altura, diametro o flecha de la estructura. La cifra vive "
+               "como [N] en constantes_normativas.Y_SOBRE_D_MAX; aqui vive "
+               "la adopcion de aplicarla como umbral duro",
+        reemplazado_por="Un borde libre distinto que el proyectista fije con "
+                        "razon escrita, siempre mayor o igual que el 25 % "
+                        "recomendado; o una exigencia normativa que lo "
+                        "convierta en [N] sin recomendacion de por medio",
+        sensibilidad=("y/D = 0.75, el complemento del 25 % de borde libre que "
+                      "la fuente recomienda como minimo y que el proyecto "
+                      "adopta por defecto",
+                      "cualquier y/D menor que declare el proyectista: la "
+                      "recomendacion es un minimo de borde libre y solo se "
+                      "puede endurecer. Un valor mayor se rechaza en V1"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, a partir de la recomendacion del "
+                        "num. 4.1.1.3.7 b); el 0.75 es el valor por defecto",
+            dominio="0 < y/D <= 0.75",
+        ),
+    ),
+    "velocidad_minima_autolimpieza_m_s": Criterio(
+        valor=V_MIN,                # el 0.25 m/s que la fuente recomienda
+        # NIVEL MEDIDO por las dos corridas de `tests/test_nivel_medido.py`:
+        # V2 corre en el alcance de perfil y lee este criterio.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Velocidad minima de autolimpieza, en m/s, que el proyecto "
+                 "aplica como umbral duro en V2",
+        justificacion="Decide el piso de velocidad que el proyecto exige de "
+                      "verdad. El Manual manda verificar que la velocidad "
+                      "minima no produzca sedimentacion, y la cifra del piso "
+                      "la escribe como recomendacion (0.25 m/s). Verificar es "
+                      "exigencia del numeral; aplicar la cifra recomendada "
+                      "como rechazo de un escalon es una adopcion del "
+                      "proyectista, con etiqueta propia y ventana. El valor "
+                      "por defecto es el recomendado, de modo que sin tocar "
+                      "este criterio el calculo hace lo que hacia. Solo se "
+                      "puede endurecer: V2 rechaza con DatoInvalidoError un "
+                      "piso menor que 0.25 m/s, porque relajar una "
+                      "recomendacion no es ejercer una adopcion. "
+                      "Sensibilidad: el piso casi nunca gobierna (haria falta "
+                      "una pendiente del orden de 0.00006 para violarlo con "
+                      "0.25 m/s); subirlo a 0.35 m/s empieza a rechazar "
+                      "tramos de pendiente muy baja, y la direccion de "
+                      "endurecer es la segura frente a la sedimentacion",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.6, parrafo posterior a la "
+               "Tabla N 10, pags. impresas 76-77 (PDF 79-80): manda "
+               "verificar la velocidad minima y recomienda que sea igual a "
+               "0.25 m/s. La cifra vive como [N] en "
+               "constantes_normativas.V_MIN; aqui vive la adopcion de "
+               "aplicarla como umbral duro",
+        reemplazado_por="Un piso distinto que el proyectista fije con razon "
+                        "escrita, siempre mayor o igual que el recomendado; "
+                        "o una exigencia normativa que lo convierta en [N]",
+        sensibilidad=("0.25 m/s, la velocidad minima que la fuente recomienda "
+                      "y que el proyecto adopta por defecto",
+                      "cualquier piso mayor que declare el proyectista: la "
+                      "recomendacion es un minimo y solo se puede endurecer. "
+                      "Un valor menor se rechaza en V2"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, a partir de la recomendacion del "
+                        "num. 4.1.1.3.6; 0.25 m/s es el valor por defecto",
+            dominio="V >= 0.25 m/s",
+        ),
+    ),
     "HW_D_max": Criterio(
         valor=1.5,
         nivel=NIVEL_PERFIL,

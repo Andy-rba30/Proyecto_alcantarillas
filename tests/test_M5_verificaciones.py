@@ -161,7 +161,9 @@ def test_v1_cumple_dentro_del_borde_libre():
     assert "RECOMIENDA" in v.numeral and "umbral duro" in v.numeral
     assert "pag. impresa 79" in v.numeral
     assert v.valor_admisible == pytest.approx(Y_SOBRE_D_MAX)
-    assert v.criterio_aplicado is None
+    # Desde C05 (PC-24) la fila declara la ADOPCION: el 0.75 se aplica como
+    # umbral duro por el criterio [A] 'borde_libre_y_sobre_d_max'.
+    assert v.criterio_aplicado == "borde_libre_y_sobre_d_max"
 
 
 def test_v1_incumple_sobre_el_borde_libre():
@@ -206,7 +208,7 @@ def test_v1_de_un_marco_sustituye_la_altura_y_no_un_diametro():
     with declarados(DECLARACIONES_CAJON):
         v = v1_borde_libre(D=1.50, material=_marco(), punto=_punto(),
                            resultado=_resultado(y_normal=1.00))
-    assert v.criterio_aplicado is None          # sigue siendo [N] puro
+    assert v.criterio_aplicado == "borde_libre_y_sobre_d_max"   # la adopcion (C05)
     assert "y/H" in v.paso.formula
     assert "altura interior de la celda" in v.paso.formula
     simbolos = [m.simbolo for m in v.paso.sustitucion]

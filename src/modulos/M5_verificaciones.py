@@ -452,6 +452,53 @@ ORIGENES_COTA_ENTRADA = {
 # Techo OPCIONAL del concreto. Se lee con `valor_si_declarado`, no con
 # `valor`: sin declarar no bloquea nada y V3 usa el maximo [N] de la tabla.
 CRITERIO_V_MAX_CONCRETO = "v_max_concreto_eleccion"
+# C05 (PC-24): el valor que V1 y V2 aplican como umbral duro es una ADOPCION
+# [A] --- las dos cifras llegan con «se recomienda» --- y vive en
+# criterios_adoptados.py con el valor recomendado por defecto. La cifra de la
+# fuente sigue siendo [N] en constantes_normativas.py (Y_SOBRE_D_MAX, V_MIN):
+# tabla y eleccion separadas. El contrato es el de
+# 'riesgo_admisible_propietario' en M1: solo se puede ENDURECER.
+CRITERIO_BORDE_LIBRE = "borde_libre_y_sobre_d_max"
+CRITERIO_V_MIN = "velocidad_minima_autolimpieza_m_s"
+
+
+def _umbral_adoptado_v1() -> float:
+    """
+    El y/D maximo que V1 aplica: el criterio [A] 'borde_libre_y_sobre_d_max',
+    que solo puede endurecer el 0.75 de la recomendacion (num. 4.1.1.3.7 b)).
+    Forma MAT-D13: condicion en positivo y negada, par culpable nombrado.
+    """
+    adoptado = float(ca.valor(CRITERIO_BORDE_LIBRE))
+    if not adoptado <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            CRITERIO_BORDE_LIBRE, valor=adoptado,
+            motivo=f"el Manual recomienda como minimo el 25 % de borde libre, "
+                   f"o sea y/D <= {Y_SOBRE_D_MAX}; el proyecto puede exigir "
+                   f"MAS borde libre (un y/D menor) pero no menos: {adoptado} "
+                   "relaja la recomendacion en vez de adoptarla, y eso no es "
+                   "una decision del proyectista sino salirse de lo que la "
+                   "fuente concede",
+        )
+    return adoptado
+
+
+def _umbral_adoptado_v2() -> float:
+    """
+    El piso de velocidad que V2 aplica: el criterio [A]
+    'velocidad_minima_autolimpieza_m_s', que solo puede endurecer los
+    0.25 m/s de la recomendacion (num. 4.1.1.3.6).
+    """
+    adoptado = float(ca.valor(CRITERIO_V_MIN))
+    if not adoptado >= V_MIN - TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            CRITERIO_V_MIN, valor=adoptado,
+            motivo=f"el Manual recomienda una velocidad minima de {V_MIN} m/s; "
+                   f"el proyecto puede exigir un piso MAYOR pero no menor: "
+                   f"{adoptado} m/s relaja la recomendacion en vez de "
+                   "adoptarla, y eso no es una decision del proyectista sino "
+                   "salirse de lo que la fuente concede",
+        )
+    return adoptado
 
 
 # ---------------------------------------------------------------------------
@@ -743,14 +790,18 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     simbolo_y = {REGIMEN_LLENO: "y", REGIMEN_PERFIL: "y_max",
                  REGIMEN_UNIFORME: "y_normal"}[regimen]
     y_sobre_D = y / D
-    cumple = y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO
+    y_sobre_D_max = _umbral_adoptado_v1()
+    cumple = y_sobre_D <= y_sobre_D_max + TOL_UMBRAL_NORMATIVO
     umbral = _umbral_de(
-        "V1", valor=Y_SOBRE_D_MAX, unidad="",
-        descripcion=f"y/{simbolo} maximo admisible (borde libre >= 25 % de "
-                    f"{nombre})")
+        "V1", valor=y_sobre_D_max, unidad="",
+        descripcion=f"y/{simbolo} maximo admisible (borde libre >= "
+                    f"{1 - y_sobre_D_max:.0%} de {nombre})",
+        criterio=CRITERIO_BORDE_LIBRE)
     nota = (
         "El numeral RECOMIENDA este borde libre; aqui se aplica como umbral "
-        "duro por decision conservadora del proyecto. La fuente no escribe "
+        f"duro por decision del proyecto, declarada en el criterio [A] "
+        f"'{CRITERIO_BORDE_LIBRE}' (por defecto el 0.75 recomendado; solo "
+        "se puede endurecer). La fuente no escribe "
         f"el 0.75 ni la razon y/{simbolo}: escribe «el 25 % de la altura, "
         "diametro o flecha de la estructura», y en esta seccion la magnitud "
         f"que corresponde de las tres es {nombre}.")
@@ -760,17 +811,18 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
         cumple=cumple,
         numeral=NUMERAL_V1,
         valor_obtenido=y_sobre_D,
-        valor_admisible=Y_SOBRE_D_MAX,
-        criterio_aplicado=None,          # [N] puro, sin criterio adoptado
+        valor_admisible=y_sobre_D_max,
+        criterio_aplicado=CRITERIO_BORDE_LIBRE,   # la adopcion, [A] (C05)
         codigo="V1",
         paso=paso(
             "F5.V1",
             codigo="V1",
             que="Borde libre: relacion de llenado del conducto",
-            formula=f"y/{simbolo} <= 0.75, donde 0.75 = 1 - 0.25 (el 25 % que "
-                    f"el numeral escribe como borde libre minimo) y "
-                    f"{simbolo} es {nombre}, una de las tres magnitudes "
-                    f"que el numeral enumera",
+            formula=f"y/{simbolo} <= {y_sobre_D_max:g}, el umbral adoptado en "
+                    f"'{CRITERIO_BORDE_LIBRE}' (por defecto 0.75 = 1 - 0.25, "
+                    f"el 25 % que el numeral escribe como borde libre minimo; "
+                    f"solo se puede endurecer) y {simbolo} es {nombre}, una "
+                    f"de las tres magnitudes que el numeral enumera",
             formula_cita_id="MC_HHD.4.1.1.3.7b",
             citas_textuales=citas_de_regimen,
             sustitucion=(
@@ -783,8 +835,8 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
                                cifras=CIFRAS_MAGNITUD),
             umbral=umbral,
             veredicto=_veredicto(
-                cumple, Y_SOBRE_D_MAX - y_sobre_D, "",
-                "margen de borde libre por encima del 25 % exigido"
+                cumple, y_sobre_D_max - y_sobre_D, "",
+                "margen de borde libre por encima del minimo adoptado"
                 if cumple else
                 "el barril va LLENO (TW >= D): no hay borde libre, y la "
                 "fuente lo prohibe expresamente (pag. impresa 79)"
@@ -908,21 +960,25 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
             "la de V3, que verifica un techo y usa la rama opuesta (MAT-D1). "
             "Vale porque el barril va parcialmente lleno bajo control de "
             "ENTRADA, en regimen uniforme (M4, paso 4.3b)")
-    cumple = V >= V_MIN - TOL_UMBRAL_NORMATIVO
-    umbral = _umbral_de("V2", valor=V_MIN, unidad="m/s",
-                        descripcion="velocidad minima de autolimpieza")
+    v_min = _umbral_adoptado_v2()
+    cumple = V >= v_min - TOL_UMBRAL_NORMATIVO
+    umbral = _umbral_de("V2", valor=v_min, unidad="m/s",
+                        descripcion="velocidad minima de autolimpieza",
+                        criterio=CRITERIO_V_MIN)
     return Verificacion(
         cumple=cumple,
         numeral=NUMERAL_V2,
         valor_obtenido=V,
-        valor_admisible=V_MIN,
-        criterio_aplicado=None,
+        valor_admisible=v_min,
+        criterio_aplicado=CRITERIO_V_MIN,        # la adopcion, [A] (C05)
         codigo="V2",
         paso=paso(
             "F5.V2",
             codigo="V2",
             que="Velocidad minima: comprobacion de autolimpieza",
-            formula="V >= 0.25 m/s",
+            formula=f"V >= {v_min:g} m/s, el piso adoptado en "
+                    f"'{CRITERIO_V_MIN}' (por defecto los 0.25 m/s que el "
+                    "numeral recomienda; solo se puede endurecer)",
             formula_cita_id="MC_HHD.4.1.1.3.6#VMIN",
             # LAS DOS MITADES DEL PARRAFO, y en este orden: primero la que
             # obliga a verificar, despues la que recomienda el valor. Leida
@@ -936,7 +992,7 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
                                "el piso", cifras=CIFRAS_MAGNITUD),
             umbral=umbral,
             veredicto=_veredicto(
-                cumple, V - V_MIN, "m/s",
+                cumple, V - v_min, "m/s",
                 "por encima del piso de autolimpieza" if cumple else
                 "por debajo del piso: el conducto puede sedimentar y perder "
                 "capacidad hidraulica"),

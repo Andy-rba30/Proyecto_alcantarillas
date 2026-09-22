@@ -184,9 +184,9 @@ SUPERVIVIENTES_CON_RAZON = {
         "equivalente: en el retorno UNIFORME a TOL `longitud_llena` es 0 (la rama sumergida deja la frontera en la clave, y una asintota a menos de 1e-9 m de la clave es el borde), y 0/L = 0·L",
     "src/modulos/M4_control.py::perfil_lamina::aritmetico::longitud_llena / L -> longitud_llena * L #5":
         "equivalente: la S1 de longitud cero exige g0.y <= y_c + TOL, y tras un tramo lleno g0.y es D > y_c: solo se llega sin tramo lleno, con `longitud_llena` = 0, y 0/L = 0·L",
-    "src/modulos/M5_verificaciones.py::v1_borde_libre::comparacion::y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO -> y_sobre_D < Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO":
+    "src/modulos/M5_verificaciones.py::v1_borde_libre::comparacion::y_sobre_D <= y_sobre_D_max + TOL_UMBRAL_NORMATIVO -> y_sobre_D < y_sobre_D_max + TOL_UMBRAL_NORMATIVO":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
-    "src/modulos/M5_verificaciones.py::v2_velocidad_minima::comparacion::V >= V_MIN - TOL_UMBRAL_NORMATIVO -> V > V_MIN - TOL_UMBRAL_NORMATIVO":
+    "src/modulos/M5_verificaciones.py::v2_velocidad_minima::comparacion::V >= v_min - TOL_UMBRAL_NORMATIVO -> V > v_min - TOL_UMBRAL_NORMATIVO":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
     "src/modulos/M5_verificaciones.py::v2b_sedimentacion::comparacion::resultado.S >= S_cauce - TOL_UMBRAL_NORMATIVO -> resultado.S > S_cauce - TOL_UMBRAL_NORMATIVO":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",

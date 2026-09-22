@@ -978,6 +978,10 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     # Cierre C10 (PC-32): el tope de esviaje que el proyecto acepta
     # construir, opcional; sin declarar no existe para M7 (MAT-O18).
     "esviaje_max_grados": _Meta(unidad="grados"),
+    # C05 (PC-24): las dos adopciones de V1 y V2, con el valor recomendado
+    # por defecto.
+    "borde_libre_y_sobre_d_max": _Meta(unidad="-"),
+    "velocidad_minima_autolimpieza_m_s": _Meta(unidad="m/s"),
     # E-A: la lectura de «most of its length» con que el paso 4.3c juzga la
     # primera condicion de uso de h_o sobre la fraccion llena que el perfil
     # de la lamina mide. La consume M4 (`CRITERIO_FRACCION_LLENA`).

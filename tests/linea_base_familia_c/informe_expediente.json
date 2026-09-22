@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "056d64ed39a222f5a9fd63a9f84194fff497aa51",
+    "criterios_sha1": "5f2d935bfe241c5862d58a9683fdd5cfdba25491",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -764,6 +764,13 @@
         "concepto": "Como se resuelve el acceso de mantenimiento para limpieza del conducto en cada punto, que es la mitad [A] de la fila V2b de la Fase 5 y contenido de los PLANOS (Sec. 11, entregable 7)"
       },
       {
+        "clave": "borde_libre_y_sobre_d_max",
+        "etiqueta": "A",
+        "valor": 0.75,
+        "declarado_en_caliente": false,
+        "concepto": "Relacion de llenado maxima y/D (o y/H) que el proyecto aplica como umbral duro en V1: el complemento del borde libre minimo adoptado"
+      },
+      {
         "clave": "categoria_refuerzo_aashto",
         "etiqueta": "A",
         "valor": null,
@@ -1076,6 +1083,13 @@
         "valor": 4.572,
         "declarado_en_caliente": false,
         "concepto": "Velocidad maxima admisible en TMC"
+      },
+      {
+        "clave": "velocidad_minima_autolimpieza_m_s",
+        "etiqueta": "A",
+        "valor": 0.25,
+        "declarado_en_caliente": false,
+        "concepto": "Velocidad minima de autolimpieza, en m/s, que el proyecto aplica como umbral duro en V2"
       }
     ],
     "sin_valor_declarados": [
