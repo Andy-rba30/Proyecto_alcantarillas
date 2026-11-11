@@ -1279,3 +1279,127 @@ N_CAJON = _fundamento(
         "revisor que abra la pag. impresa 75 no encontraria el cajon por "
         "ninguna parte."),
 )
+
+
+# ===========================================================================
+# --- T-2 --- (cadena T, 2026-11-11) · Pendiente del conducto
+# ===========================================================================
+# Tres fundamentos, los tres sobre la PENDIENTE DEL BARRIL (INF-3.2.7,
+# INF-5.1.6, INF-0.5):
+#
+#   F5.V10          la verificacion nueva: pendiente del conducto dentro de la
+#                   banda adoptada. Verbo DEFINE, y no OBLIGA aunque la cita
+#                   del Manual sea EXIGENCIA: lo que el Manual exige es
+#                   ESTUDIAR el cambio de pendiente, sin cifra; los dos
+#                   numeros de la banda son adopciones [A] apoyadas en lo que
+#                   el HDS-5 DESCRIBE. Poner OBLIGA pasaria T11 y seria el
+#                   mismo agujero que `F5.V1` y `F5.VC1` ya documentan.
+#   F4.HORIZONTAL   el barril con S = 0: no hay tirante normal, y el regimen
+#                   lo fija el extremo de aguas abajo. Verbo PERMITE: la
+#                   fuente dice «can be reasonably applied».
+#   F4.PISO_HW      la eleccion del piso de la carga de entrada cuando la
+#                   correccion por pendiente la anula. Es de ELECCION, como
+#                   `F5.V2b.REGIMEN`: la fuente define la Forma 1 y el
+#                   termino, no prescribe el piso.
+
+V10 = _fundamento(
+    id="F5.V10",
+    fase=F5,
+    que_paso=("V10 - Pendiente del conducto dentro de la banda adoptada: no "
+              "menor que la minima ni mayor que la maxima"),
+    por_que=(
+        "La pendiente del barril no es un dato neutro: mas plana que el cauce "
+        "deposita, mas empinada erosiona la salida y, pasado cierto punto, "
+        "pide del tubo cosas que este calculo no dimensiona. El Manual lo "
+        "escribe sin cifra --la pendiente no debe alterar "
+        "«desmesuradamente» la erosion y la sedimentacion, y sus cambios "
+        "«deben ser estudiados en forma cuidadosa»-- y ninguna fuente de "
+        "normas/ fija un minimo ni un maximo en numeros. Lo que hay son tres "
+        "hechos de la fuente tecnica: el HDS-5 admite el barril horizontal; "
+        "dice que la mayoria de las alcantarillas se construyen por debajo "
+        "del 10 % y que para esas no se usan medidas estructurales "
+        "especiales; y traza sus curvas de control de entrada al 2 % porque "
+        "el efecto de la pendiente es chico. Con eso el proyecto adopta una "
+        "BANDA --'pendiente_minima_conducto' y 'pendiente_maxima_conducto', "
+        "los dos [A] con ventana-- y esta verificacion dice si la pendiente "
+        "con que corrio el diseño cae dentro. No sustituye a las que miden "
+        "el efecto: la sedimentacion la siguen juzgando V2 (velocidad "
+        "minima) y V2b (indicador de pendiente frente al cauce), y la "
+        "erosion V3 (velocidad maxima) y la proteccion de salida."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.4.1.1.3.3",              # EXIGENCIA sin numero
+           "HDS5_3ED.3.3.4#HORIZONTAL",     # PERMISO: S = 0
+           "HDS5_3ED.5.4.4#PENDIENTE_10",   # DEFINICION -> sostiene DEFINE
+           "HDS5_3ED.5.4.4#PENDIENTE_20",   # RECOMENDACION
+           "HDS5_3ED.A.3#PENDIENTE_2"),     # DEFINICION
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta T-2 (INF-3.2.7): ninguna linea de codigo "
+        "miraba la pendiente del barril. Una celda cargada en 0.25 por "
+        "0.025 dimensionaba un tubo al 25 % sin una palabra sobre anclajes, "
+        "y un barril plano se rechazaba como dato invalido, que es lo "
+        "contrario de lo que la fuente admite."),
+)
+
+HORIZONTAL = _fundamento(
+    id="F4.HORIZONTAL",
+    fase=F4,
+    que_paso=("Barril horizontal (S = 0): no hay tirante normal, y el "
+              "regimen del conducto lo fija el extremo de aguas abajo"),
+    por_que=(
+        "Manning necesita pendiente: con S = 0 ningun tirante transporta el "
+        "caudal en flujo uniforme, y el tirante normal no existe. Eso no "
+        "hace imposible la obra. El HDS-5 dice que sus procedimientos de "
+        "control de entrada y de salida se pueden aplicar razonablemente a "
+        "un barril horizontal: en el control de entrada la correccion por "
+        "pendiente vale cero, y en el de salida la perdida H es la misma y "
+        "la caida S·L desaparece. Lo que cambia es de donde salen el tirante "
+        "y la velocidad DENTRO del barril: sin flujo uniforme, la lamina la "
+        "fija la salida --el tirante critico o el del receptor, el mayor-- "
+        "y sube hacia la entrada (perfil H2), de modo que el borde libre y "
+        "la velocidad minima se juzgan sobre el perfil de la lamina, la "
+        "velocidad maxima sobre la seccion de salida, y la velocidad que "
+        "recibe la proteccion es la de esa misma seccion."),
+    verbo=Verbo.PERMITE,
+    citas=("HDS5_3ED.3.3.4#HORIZONTAL",     # PERMISO -> sostiene PERMITE
+           "HDS5_3ED.3.3.4#KS",
+           "HDS5_3ED.3.3.4#H_SIN_AJUSTE",
+           "HDS5_3ED.3.5.1#H2"),
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta T-2 (INF-5.1.6): `M3.resolver_manning` y las "
+        "tres piezas de M4 rechazaban S = 0 con `DatoInvalidoError`, de modo "
+        "que un barril plano en una llanura --el caso que la fuente describe "
+        "para un flujo que puede ir en los dos sentidos-- no se podia "
+        "calcular, y quien lo necesitaba tecleaba una pendiente ficticia."),
+)
+
+PISO_HW = _fundamento(
+    id="F4.PISO_HW",
+    fase=F4,
+    que_paso=("Carga de control de entrada cuando la correccion por pendiente "
+              "Ks·S la deja nula o negativa: el piso adoptado "
+              "(`hw_entrada_fuera_de_rango`)"),
+    por_que=(
+        "El HDS-5 define la Forma 1 de la ecuacion no sumergida como la "
+        "energia especifica en el tirante critico, H_c, «adjusted with "
+        "correction factors», y de esos factores el de pendiente es una "
+        "recta sin tope: Ks·S, con Ks = -0.5. La misma fuente dice que ese "
+        "efecto es chico y que sus curvas se trazan al 2 %. Con un caudal "
+        "chico y una pendiente grande la recta se lleva la carga entera y "
+        "la ecuacion devuelve una lamina por debajo del fondo, que no "
+        "existe. La fuente no dice que hacer ahi. El proyecto elige entre "
+        "dos salidas declaradas: quedarse con la BASE de la ecuacion --H_c, "
+        "la carga minima con que la entrada pasa el caudal en regimen "
+        "critico-- o descartar la combinacion. La primera es del lado "
+        "seguro frente a lo que la ecuacion entregaba (una carga nula) y no "
+        "inventa un numero: es un resultado que el paso 4.2 ya tiene."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.A.2.1#FORMA_1",        # DEFINICION -> sostiene DEFINE
+           "HDS5_3ED.A.2.1#KS",
+           "HDS5_3ED.A.3#PENDIENTE_2"),
+    que_pasa_si_no_se_hace=(
+        "Lo que pasaba hasta PF-1: el punto salia «no factible» por una "
+        "condicion que ningun diametro resuelve, sin criterio a la vista. Y "
+        "lo que pasaba entre PF-1 y T-2: el criterio existia sin valor y la "
+        "corrida se detenia a pedirlo cada vez que un alivio pequeño caia en "
+        "un tramo empinado."),
+)

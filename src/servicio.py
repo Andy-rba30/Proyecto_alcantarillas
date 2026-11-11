@@ -1284,11 +1284,18 @@ def _verificador_perfil(informe: InformePunto):
             else:
                 exc.verificaciones_completadas = tuple(filas)
                 raise
-        try:
-            filas.append(M5.v9_disponibilidad_diametro(D=D, material=material))
-        except ErrorProyecto as exc:
-            exc.verificaciones_completadas = tuple(filas)
-            raise
+        # --- T-2 --- V10 (pendiente del conducto dentro de la banda adoptada)
+        # entra como OBLIGATORIA, igual que en `M5.verificar`: sus dos
+        # criterios tienen valor y no depende de ningun dato de expediente.
+        for pieza in (
+            lambda: M5.v9_disponibilidad_diametro(D=D, material=material),
+            lambda: M5.v10_pendiente_conducto(resultado=resultado),
+        ):
+            try:
+                filas.append(pieza())
+            except ErrorProyecto as exc:
+                exc.verificaciones_completadas = tuple(filas)
+                raise
         return tuple(filas)
 
     return verificar

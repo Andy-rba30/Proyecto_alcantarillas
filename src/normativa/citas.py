@@ -96,6 +96,13 @@ EXT7 = (FECHA_EXT7, POR_EXT7)
 EA = (FECHA_EA, POR_EA)
 CIERRE = (FECHA_CIERRE, POR_CIERRE)
 T0 = (FECHA_T0, POR_T0)
+# --- T-2 --- (cadena T). Mismo regimen que T-0: la propia sesion abrio cada
+# pagina por su capa de texto (y la Tabla A.1 y los formularios DG 1 ademas
+# por imagen), y la firma lo dice. `T2` ya existe y es OTRA sesion
+# (trazabilidad/T2, 2026-09-12): por eso el nombre largo.
+FECHA_TESIS_T2 = "2026-11-11"
+POR_TESIS_T2 = "tesis/T-2 · lectura directa de la pagina por la sesion"
+TESIS_T2 = (FECHA_TESIS_T2, POR_TESIS_T2)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -5924,6 +5931,234 @@ MP_KA_COULOMB = _cita(
           "«se puede tomar» es PERMISO: la fuente ofrece la expresion, no "
           "la impone; el proyecto la adopta como coeficiente estatico por "
           "homogeneidad con el sismico (EXT-M-06)."),
+)
+
+# ===========================================================================
+# --- T-2 --- (cadena T, 2026-11-11) · Pendiente del conducto, barril
+# horizontal y lo que HDS-5 dice de la correccion por pendiente
+# ---------------------------------------------------------------------------
+# NUEVE citas, leidas por la sesion sobre la capa de texto de cada pagina
+# (INF-3.2.7, INF-5.1.6, INF-0.5). Lo que sostienen y lo que NO:
+#
+#   * NINGUNA fuente de `normas/` fija una pendiente minima ni maxima de
+#     alcantarilla en CIFRAS. El Manual (4.1.1.3.3) exige que la pendiente no
+#     altere «desmesuradamente» la erosion y la sedimentacion, sin numero; el
+#     HDS-5 admite el barril horizontal (3.3.4), describe que la mayoria de
+#     las alcantarillas se construyen por debajo del 10 % y sin medidas
+#     estructurales especiales (5.4.4), y dice que sus curvas se trazan al
+#     2 % (A.3). Por eso los dos limites son criterios [A] con ventana
+#     (`pendiente_minima_conducto`, `pendiente_maxima_conducto`) y no [N].
+#   * El encargo de T-2 citaba «HDS-5 Tabla A.1, nota de Ks·S» para el piso
+#     de `hw_entrada_fuera_de_rango`. ESA NOTA NO EXISTE: la Tabla A.1 (PDF
+#     197) solo lleva al pie sus cuatro referencias bibliograficas. Lo que
+#     HDS-5 dice de Ks·S esta en la lista de variables del num. A.2.1
+#     (`HDS5_3ED.A.2.1#KS`), en el num. 3.3.4 y en el A.3, y se transcribe
+#     aqui con su pagina real.
+# ===========================================================================
+
+MC_HHD_4_1_1_3_3 = _cita(
+    id="MC_HHD.4.1.1.3.3",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.3",
+    titulo_numeral="Pendiente longitudinal",
+    pagina_impresa="71",
+    pagina_pdf=74,
+    texto_literal=Verbatim(
+        texto=("La pendiente longitudinal de la alcantarilla debe ser tal que "
+               "no altere desmesuradamente los procesos geomorfológicos, como "
+               "la erosión y sedimentación, por ello, los cambios de pendiente "
+               "deben ser estudiados en forma cuidadosa, para no incidir en "
+               "dichos procesos que pueden provocar el colapso de la "
+               "estructura."),
+        pagina_pdf=74),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T2,
+    nota=("EXIGENCIA SIN NUMERO. El numeral entero son dos parrafos: este y "
+          "la remision a la Lamina Nº 01 («ubicación típica de alcantarillas "
+          "respecto a la pendiente del cauce»). No fija pendiente minima ni "
+          "maxima, ni en porcentaje ni por material: obliga a ESTUDIAR el "
+          "cambio de pendiente. Las cifras «2 % en TMC, 1 % en marco» que "
+          "circulan en expedientes no salen de aqui."),
+)
+
+HDS5_3_3_4_HORIZONTAL = _cita(
+    id="HDS5_3ED.3.3.4#HORIZONTAL",
+    fuente_id="HDS5_3ED",
+    numeral="3.3.4",
+    titulo_numeral="Culverts with Horizontal or Adverse Slopes",
+    pagina_impresa="3.25",
+    pagina_pdf=107,
+    texto_literal=Verbatim(
+        texto=("The inlet and outlet control procedures that have been "
+               "described were established assuming that culverts have some "
+               "positive slope.  However, they can be reasonably applied to "
+               "culverts with no slope (horizontal) or an adverse slope."),
+        pagina_pdf=107),
+    caracter=Caracter.PERMISO,
+    sesion=TESIS_T2,
+    nota=("Es la frase que admite S = 0 (INF-5.1.6). La leyo T-0 y la dejo "
+          "sin cita; la transcribe T-2. El parrafo sigue con el caso en que "
+          "se usa («A horizontal slope is used when flow may occur in either "
+          "direction») y con una regla practica para la pendiente ADVERSA, "
+          "que este proyecto NO admite: S < 0 sigue siendo dato invalido."),
+)
+
+HDS5_3_3_4_KS = _cita(
+    id="HDS5_3ED.3.3.4#KS",
+    fuente_id="HDS5_3ED",
+    numeral="3.3.4",
+    titulo_numeral="Culverts with Horizontal or Adverse Slopes",
+    pagina_impresa="3.25",
+    pagina_pdf=107,
+    texto_literal=Verbatim(
+        texto=("The inlet control nomograph solution HW/D contains a small "
+               "slope correction term of -0.5S that was subtracted to account "
+               "for the control section occurring within the culvert and "
+               "slightly lower than the inlet invert."),
+        pagina_pdf=107),
+    caracter=Caracter.DEFINICION,
+    derivado_de="HDS5_3ED.3.3.4#HORIZONTAL",
+    sesion=TESIS_T2,
+    nota=("Dice QUE ES el termino Ks·S: la seccion de control queda dentro "
+          "del barril, algo mas baja que el fondo de la entrada. De ahi que "
+          "con S = 0 el termino valga cero, que es lo que la ecuacion (A.1) "
+          "da sola: la vineta que sigue manda SUMAR 0.01 al HW/D del "
+          "nomograma en un barril horizontal, y ese 0.01 es 0.5 x 0.02, la "
+          "correccion que el nomograma lleva restada por haberse trazado al "
+          "2 % (`HDS5_3ED.A.3#PENDIENTE_2`). El codigo resuelve la ecuacion, "
+          "no lee el nomograma, y por eso no suma nada: evalua Ks·S con la S "
+          "real."),
+)
+
+HDS5_3_3_4_H = _cita(
+    id="HDS5_3ED.3.3.4#H_SIN_AJUSTE",
+    fuente_id="HDS5_3ED",
+    numeral="3.3.4",
+    titulo_numeral="Culverts with Horizontal or Adverse Slopes",
+    pagina_impresa="3.25",
+    pagina_pdf=107,
+    texto_literal=Verbatim(
+        texto=("The outlet control nomograph solution for losses through the "
+               "barrel (H) for USGS flow type 4 and 6 can be used without "
+               "adjustment for both a horizontal slope and an adverse slope."),
+        pagina_pdf=107),
+    caracter=Caracter.PERMISO,
+    derivado_de="HDS5_3ED.3.3.4#HORIZONTAL",
+    sesion=TESIS_T2,
+    nota=("El control de salida no cambia con S = 0: H es la misma y la "
+          "caida S·L vale cero, de modo que HW = H + h_o."),
+)
+
+HDS5_3_5_1_H2 = _cita(
+    id="HDS5_3ED.3.5.1#H2",
+    fuente_id="HDS5_3ED",
+    numeral="3.5.1",
+    titulo_numeral="USGS Flow Types and Water Surface Profiles",
+    pagina_impresa="3.37",
+    pagina_pdf=119,
+    pagina_pdf_titulo=118,
+    texto_literal=Verbatim(
+        texto="In addition, the horizontal profiles of H2 and H3 were added.",
+        pagina_pdf=119),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T2,
+    nota=("La fuente NOMBRA los perfiles de pendiente horizontal (H2 y H3) "
+          "como parte de los que HY-8 calcula desde la version 7.3, y no los "
+          "desarrolla. El rotulo `TipoDePerfil.H2` es de aqui; el "
+          "procedimiento con que el proyecto lo integra es el mismo paso "
+          "directo de la pag. 3.12, con S = 0."),
+)
+
+HDS5_5_4_4_PENDIENTE_10 = _cita(
+    id="HDS5_3ED.5.4.4#PENDIENTE_10",
+    fuente_id="HDS5_3ED",
+    numeral="5.4.4",
+    titulo_numeral="Barrels on Steep Slopes",
+    pagina_impresa="5.16",
+    pagina_pdf=152,
+    texto_literal=Verbatim(
+        texto=("Most culverts are constructed on slopes that are less than "
+               "10% and the effects of slope are neglected in hydraulic "
+               "equations. For these culverts, no special structural measures "
+               "are used."),
+        pagina_pdf=152),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T2,
+    nota=("DESCRIBE una practica, no fija un limite: bajo el 10 % no hacen "
+          "falta medidas estructurales especiales. Es el unico numero sobre "
+          "pendiente maxima que trae una fuente de `normas/`, y por eso es "
+          "el valor que `pendiente_maxima_conducto` adopta como [A]. Entre "
+          "10 % y 20 % la misma pagina pide atar las ultimas secciones del "
+          "tubo; por encima del 20 %, `HDS5_3ED.5.4.4#PENDIENTE_20`."),
+)
+
+HDS5_5_4_4_PENDIENTE_20 = _cita(
+    id="HDS5_3ED.5.4.4#PENDIENTE_20",
+    fuente_id="HDS5_3ED",
+    numeral="5.4.4",
+    titulo_numeral="Barrels on Steep Slopes",
+    pagina_impresa="5.16",
+    pagina_pdf=152,
+    texto_literal=Verbatim(
+        texto=("For steep slopes (over 20%), the USBR hydraulic caution and "
+               "additional structural measures should be considered."),
+        pagina_pdf=152),
+    caracter=Caracter.RECOMENDACION,
+    derivado_de="HDS5_3ED.5.4.4#PENDIENTE_10",
+    sesion=TESIS_T2,
+    nota=("La cautela hidraulica del USBR que nombra esta en la misma "
+          "pagina: no dejar que el barril fluya lleno en caidas grandes. "
+          "Este programa no dimensiona anclajes ni ataduras de tubo: por eso "
+          "la ventana de `pendiente_maxima_conducto` termina en 0.10."),
+)
+
+HDS5_A3_PENDIENTE_2 = _cita(
+    id="HDS5_3ED.A.3#PENDIENTE_2",
+    fuente_id="HDS5_3ED",
+    numeral="A.3",
+    titulo_numeral="A.3  INLET CONTROL DIMENSIONLESS DESIGN CURVES",
+    pagina_impresa="A.2",
+    pagina_pdf=191,
+    pagina_pdf_titulo=191,
+    texto_literal=Verbatim(
+        texto=("A constant slope value of 2 percent (0.02) is usually "
+               "selected for the development of design curves.  This is "
+               "because the slope effect is small and the resultant headwater "
+               "is conservatively high for sites with slopes exceeding 2 "
+               "percent (except for mitered inlets)."),
+        pagina_pdf=191),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T2,
+    nota=("Dos cosas en una frase: que la correccion por pendiente es CHICA "
+          "(«the slope effect is small»), y que fijarla en el 2 % deja la "
+          "carga del lado conservador en pendientes mayores. Es el extremo "
+          "inferior de la ventana de `pendiente_maxima_conducto` (0.02: la "
+          "pendiente con que la fuente traza sus curvas) y el argumento con "
+          "que el proyecto lee el termino Ks·S como una correccion menor que "
+          "no puede anular la carga."),
+)
+
+HDS5_A21_FORMA_1 = _cita(
+    id="HDS5_3ED.A.2.1#FORMA_1",
+    fuente_id="HDS5_3ED",
+    numeral="A.2.1",
+    titulo_numeral="Unsubmerged Inlet Control Equations",
+    pagina_impresa="A.1",
+    pagina_pdf=190,
+    texto_literal=Verbatim(
+        texto=("Form (1) is based on the specific head at critical depth, "
+               "adjusted with correction factors."),
+        pagina_pdf=190),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T2,
+    nota=("LA BASE DE LA FORMA 1 ES H_c, y los demas terminos --K(q*)^M y "
+          "Ks·S-- son «correction factors». Es lo que sostiene el piso "
+          "«energia_critica» de `hw_entrada_fuera_de_rango`: cuando la "
+          "correccion por pendiente, extrapolada, anula la carga, el proyecto "
+          "se queda con la base de la que la ecuacion parte. LA FUENTE NO "
+          "PRESCRIBE ESE PISO --no dice que hacer cuando HWi/D sale nulo o "
+          "negativo--: por eso el criterio sigue siendo [A], con «descartar» "
+          "como alternativa, y no [C]."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

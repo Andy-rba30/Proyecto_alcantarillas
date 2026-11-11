@@ -1205,7 +1205,13 @@ UMBRALES_DE_VERIFICACION = (
                    "defecto y que solo se puede endurecer. El 0.75 es ademas "
                    "una DERIVACION aritmetica del 25 % que la fuente escribe "
                    "(1 - 0.25): el numeral no imprime ni el 0.75 ni la razon "
-                   "y/D."},
+                   "y/D. A SECCION LLENA V1 separa dos casos (T-2): llena por "
+                   "el CAUDAL DE DISEÑO, que no cumple siempre por la "
+                   "exigencia del mismo parrafo; y llena por el NIVEL DEL "
+                   "RECEPTOR (TW sobre la clave), donde lo que se hace lo "
+                   "declara el criterio [A] 'borde_libre_bajo_tw_ahogante' "
+                   "-- no cumple (valor del archivo), o aviso si con su "
+                   "propio caudal el barril conserva el borde libre --."},
     {"codigo": "V2",
      "fundamento": "F5.V2",
      "que": "Velocidad minima de autolimpieza: V no menor que el piso "
@@ -1238,20 +1244,25 @@ UMBRALES_DE_VERIFICACION = (
      "matiz": "La fuente escribe «are key indicators of potential problems», "
               "no un umbral: es un INDICADOR y no una prohibicion. Como se "
               "aplica lo declara el criterio 'regimen_v2b' [A] (PF-4), que "
-              "en el archivo lo endurece, igual que el proyecto endurece "
-              "las recomendaciones de V1 y de V2.",
+              "desde T-2 lo aplica en el archivo como la fuente lo escribe "
+              "-- indicador con aviso --; el umbral duro, que lo endurece "
+              "como el proyecto endurece las recomendaciones de V1 y de V2, "
+              "queda en la ventana.",
      "aplicacion": "De los DOS indicadores que el numeral nombra se evalua "
                    "UNO -- pendiente del barril frente a la del cauce --, "
                    "porque el otro exige el n de Manning del CAUCE NATURAL, "
                    "que no es columna de Sec. 1.2. Con que regimen se aplica "
                    "el indicador evaluable lo fija el criterio 'regimen_v2b' "
-                   "[A]: como umbral DURO que detiene el punto (valor del "
-                   "archivo), o como indicador con aviso, que se evalua "
-                   "igual, se imprime con veredicto INDICADOR y no descarta "
-                   "el diametro. La otra mitad de la "
+                   "[A]: como indicador con aviso (valor del archivo desde "
+                   "T-2), que se imprime con veredicto INDICADOR y no "
+                   "descarta el diametro, o como umbral DURO que detiene el "
+                   "punto; la comparacion es la misma en los dos. La otra "
+                   "mitad de la "
                    "fila V2b de la hoja de ruta -- el acceso de "
                    "mantenimiento, contenido de planos -- no es un numero: "
-                   "entra por el criterio 'acceso_mantenimiento_v2b', que se "
+                   "su EXIGENCIA es el num. 4.1.1.3.7 d) del Manual, y el "
+                   "dispositivo entra por el criterio "
+                   "'acceso_mantenimiento_v2b', que se "
                    "declara y se imprime, y sin el la verificacion se "
                    "detiene."},
     {"codigo": "V3",
@@ -1402,6 +1413,29 @@ UMBRALES_DE_VERIFICACION = (
                        "firmada. Por eso va aqui, rotulada como "
                        "transcripcion, y no arriba."),
      "aplicacion": H_O_CONDICION_APLICACION},
+    # --- T-2 --- (cadena T, 2026-11-11; INF-3.2.7) --------------------------
+    {"codigo": "V10",
+     "fundamento": "F5.V10",
+     "que": "Pendiente del conducto dentro de la banda adoptada: "
+            "S_min <= S_conducto <= S_max",
+     "citas": ("MC_HHD.4.1.1.3.3", "HDS5_3ED.3.3.4#HORIZONTAL",
+               "HDS5_3ED.5.4.4#PENDIENTE_10"),
+     "literales_de_tabla": (),
+     "matiz": "NINGUNA de las tres fija la banda. El Manual EXIGE que la "
+              "pendiente no altere desmesuradamente la erosion y la "
+              "sedimentacion, sin cifra; el HDS-5 PERMITE el barril "
+              "horizontal y DESCRIBE que bajo el 10 % no se usan medidas "
+              "estructurales especiales. Los dos numeros son adopcion del "
+              "proyectista.",
+     "aplicacion": "Se aplica como umbral DURO sobre la pendiente con que "
+                   "corrio el diseño. Los extremos viven en los criterios "
+                   "[A] 'pendiente_minima_conducto' (0.0: el barril "
+                   "horizontal que la fuente admite; ventana hasta 0.005) y "
+                   "'pendiente_maxima_conducto' (0.10; ventana desde 0.02, "
+                   "la pendiente de las curvas del HDS-5). No depende del "
+                   "diametro: incumplirla se resuelve con otra pendiente, no "
+                   "con otro tubo. No sustituye a V2, V2b ni V3, que juzgan "
+                   "el efecto de la pendiente."},
 )
 
 

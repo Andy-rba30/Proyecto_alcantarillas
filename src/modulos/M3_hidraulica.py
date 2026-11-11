@@ -108,8 +108,12 @@ diametro de la progresion de M2.
 Excepciones
 -----------
     DatoInvalidoError   D, Q, S o n no son fisicamente validos para plantear
-                        el problema (no negativos, no cero). No es el caso
-                        "sin solucion": ese es un None, no una excepcion.
+                        el problema: D, Q y n tienen que ser positivos, y S
+                        no puede ser NEGATIVA. No es el caso "sin solucion":
+                        ese es un None, no una excepcion. Y desde T-2 tampoco
+                        lo es S = 0 (barril horizontal), que hasta entonces
+                        se rechazaba aqui (INF-5.1.6): `resolver_manning`
+                        devuelve `SinTiranteNormal` y M4 sigue.
 
 Uso
 ---
@@ -126,7 +130,7 @@ Uso
 from __future__ import annotations
 
 import math
-from typing import Optional
+from typing import Optional, Tuple, Union
 
 # EL RESOLUTOR SE IMPORTA EN EL PUNTO DE USO (EXT-8, PC-10): `scipy.optimize`
 # costaba 230-310 ms en CADA `import cli`, tambien en una corrida que no
@@ -140,7 +144,9 @@ from src.constantes_normativas import K_MANNING_SI
 from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
                      Seccion, SeccionCircular,
                      Geometria, LimiteNumericoError, Magnitud, Material,
-                     PuntoCritico, SeccionReceptor, TiranteNormal,
+                     PuntoCritico, SECCION_RECEPTOR_ADOPTADA,
+                     SECCION_RECEPTOR_MEDIDA, SeccionReceptor,
+                     SinTiranteNormal, TiranteNormal,
                      TWDeterminado, ViaDelTW, paso)
 from src.tolerancias import TOL_BRENT, TOL_THETA_BORDE
 
@@ -185,9 +191,18 @@ def _validar_parametros(seccion: Seccion, Q: float, S: float, n: float) -> None:
     # programa donde hay un dato del expediente que no puede ser.
     if not Q > 0:
         raise DatoInvalidoError("Q", valor=Q, motivo="el caudal debe ser positivo")
-    if not S > 0:
-        raise DatoInvalidoError("S", valor=S, motivo="la pendiente debe ser positiva "
-                                                       "para que Manning tenga solucion real")
+    # --- T-2 --- (INF-5.1.6) LA GUARDIA ES SOLO CONTRA S < 0. Hasta T-2 era
+    # `not S > 0` y rechazaba el barril HORIZONTAL como dato invalido; el
+    # HDS-5 lo admite (num. 3.3.4, pag. impresa 3.25: «can be reasonably
+    # applied to culverts with no slope (horizontal)»), de modo que S = 0 es
+    # un dato valido que Manning no puede resolver, no un dato que no puede
+    # ser. La pendiente ADVERSA si se sigue rechazando: la fuente la trata
+    # como un asentamiento, no como un diseño. Forma MAT-D13: condicion en
+    # positivo y negada, para que un NaN tampoco pase.
+    if not S >= 0:
+        raise DatoInvalidoError("S", valor=S, motivo="la pendiente no puede ser "
+                                "negativa: S = 0 es un barril horizontal, que "
+                                "se admite; una pendiente adversa no")
     if not n > 0:
         raise DatoInvalidoError("n", valor=n, motivo="el coeficiente de Manning debe ser positivo")
 
@@ -327,6 +342,11 @@ def tirante_normal(seccion: Seccion, Q: float, S: float, n: float) -> Optional[G
     retiro. Escrita en positivo y negada (MAT-D13): `not Q < Q_lleno`.
     """
     _validar_parametros(seccion, Q, S, n)
+    # --- T-2 --- Con S = 0 el caudal a seccion llena vale 0 y la guardia de
+    # abajo devuelve None para todo Q > 0: «ningun tirante transporta Q en
+    # flujo uniforme», que con un barril horizontal es literalmente cierto.
+    # Quien distingue ese None del de «el escalon no alcanza» es
+    # `resolver_manning`, que para S = 0 no llega a llamar aqui.
     Q_lleno = (K_MANNING_SI / n) * seccion.area_llena \
         * seccion.radio_hidraulico_lleno ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, Sec. 4.1
     if not Q < Q_lleno:
@@ -349,7 +369,8 @@ def tirante_normal(seccion: Seccion, Q: float, S: float, n: float) -> Optional[G
 # Resolucion completa con la regla de doble n
 # ---------------------------------------------------------------------------
 
-def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material) -> Optional[TiranteNormal]:
+def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material
+                     ) -> Union[TiranteNormal, SinTiranteNormal, None]:
     """
     Resuelve el tirante normal (Sec. 4.1) aplicando la regla de doble n:
 
@@ -372,7 +393,22 @@ def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material) -
     Devuelve None si la resolucion de Brent con n_max no converge: el
     material no alcanza a transportar Q en flujo libre a esta D y S, y no
     hay geometria sobre la que evaluar las velocidades.
+
+    Y `SinTiranteNormal` SI EL BARRIL ES HORIZONTAL, S = 0 (T-2, INF-5.1.6):
+    no hay tirante normal para ningun caudal ni seccion, y eso no es «este
+    escalon no alcanza» --subir de diametro no lo cambia-- sino otro
+    regimen, el que el HDS-5 num. 3.3.4 (pag. impresa 3.25) admite. M4 lo
+    recibe y resuelve los dos controles y el perfil de la lamina sin flujo
+    uniforme. EL CERO ES EXACTO, como el de `TW_m`: es el centinela que el
+    proyectista escribe para «barril plano», no el resultado de una cuenta;
+    una pendiente diminuta y positiva (1e-9) no es un barril horizontal, es
+    una pendiente que Manning no puede aprovechar, y ahi la respuesta sigue
+    siendo None. La banda intermedia la acota V10 con
+    'pendiente_minima_conducto' (ficha T2-01 de decisiones_diferidas.md).
     """
+    _validar_parametros(seccion, Q, S, material.n_para_capacidad)
+    if not S > 0:
+        return SinTiranteNormal(S=S)
     geom = tirante_normal(seccion, Q, S, material.n_para_capacidad)
     if geom is None:
         return None
@@ -473,11 +509,19 @@ def tirante_normal_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:
     `LimiteNumericoError` y no un dato fuera de rango: cada dato cumple lo
     suyo y es la aritmetica la que no cierra (CLAUDE.md, quinta excepcion).
     """
-    if not Q > 0:
+    # --- T-2 --- (INF-5.1.7) EL RECEPTOR SECO SE ADMITE. Hasta T-2 la
+    # guardia era `not Q > 0`, M0 exigia lo mismo y la ayuda de la variable
+    # decia «m3/s >= 0»: un dren que no lleva agua durante la avenida --el
+    # dato de quien lo opera-- se rechazaba como invalido. Con Q = 0 no hay
+    # lamina: el tirante es cero por definicion y no hace falta Manning.
+    # Forma MAT-D13: en positivo y negada, un NaN tampoco pasa.
+    if not Q >= 0:
         raise DatoInvalidoError(
             "Q_receptor_m3s", valor=Q,
-            motivo="el caudal del receptor debe ser positivo para que "
-                   "Manning tenga solucion real")
+            motivo="el caudal del receptor no puede ser negativo (0 es un "
+                   "receptor seco)")
+    if not Q > 0:
+        return TW_SALIDA_LIBRE
     if not seccion.n > 0 or not seccion.S > 0:
         raise DatoInvalidoError(
             CRITERIO_SECCION_RECEPTOR, valor=(seccion.n, seccion.S),
@@ -507,6 +551,54 @@ def tirante_normal_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:
                f"{seccion.b_m} m con talud {seccion.z_HV} H:V, n = "
                f"{seccion.n} y S = {seccion.S} m/m no transporta ese caudal "
                "en ninguna profundidad con sentido fisico")
+
+
+def seccion_del_receptor(seccion_medida: Optional[SeccionReceptor] = None
+                         ) -> Tuple[SeccionReceptor, str]:
+    """
+    --- T-2 --- (INF-3.2.8) La seccion del receptor con que corre Sec. 1.3,
+    y DE DONDE SALE: la MEDIDA si el expediente la trae, la ADOPTADA si no.
+
+    La medida GANA siempre: es un levantamiento del dren o del canal (ancho
+    de fondo, talud, profundidad, n y pendiente; `servicio.CLAVES_RECEPTOR`
+    de --datos-externos, que el script de QGIS del proyecto puede exportar),
+    y un dato entregado no se sustituye por una adopcion. Con ella el
+    criterio 'seccion_receptor' NI SE INVOCA, de modo que la memoria no lo
+    lista entre los usados. Sin ella rige el criterio [A], y el rotulo que
+    vuelve --`SECCION_RECEPTOR_ADOPTADA`-- es el que la memoria imprime y
+    el que dispara el aviso de `tw_seccion_1_3`.
+    """
+    if seccion_medida is not None:
+        return seccion_medida, SECCION_RECEPTOR_MEDIDA
+    return _seccion_declarada(), SECCION_RECEPTOR_ADOPTADA
+
+
+def _de_la_seccion(origen: str) -> str:
+    """La procedencia de un campo de la seccion, segun de donde salio."""
+    if origen == SECCION_RECEPTOR_MEDIDA:
+        return ("seccion MEDIDA del receptor (--datos-externos, claves "
+                "`receptor_*`: levantamiento del dren o canal)")
+    return ("criterio 'seccion_receptor' [A]: seccion ADOPTADA por falta de "
+            "levantamiento")
+
+
+def _aviso_seccion_adoptada(via: ViaDelTW) -> str:
+    """
+    El aviso que dispara un TW obtenido con la seccion ADOPTADA (INF-3.2.8).
+    Un solo texto para la CLI, el JSON y la memoria.
+    """
+    que = ("el nivel de «receptor a seccion llena» es la profundidad adoptada"
+           if via is ViaDelTW.ESCENARIOS_ACOTADOS else
+           "el tirante del receptor sale de Manning sobre la geometria "
+           "adoptada")
+    return (f"TW del receptor: {SECCION_RECEPTOR_ADOPTADA} -- {que} en el "
+            f"criterio '{CRITERIO_SECCION_RECEPTOR}', no una medicion, y ese "
+            "TW entra al control de salida, al regimen del barril y a V1: "
+            "puede decidir el diametro. Lo sustituye el levantamiento del "
+            "receptor (claves `receptor_b_m`, `receptor_z_HV`, "
+            "`receptor_altura_m`, `receptor_n` y `receptor_S` de "
+            "--datos-externos), su nivel de agua (`cota_TW`) o un TW "
+            "declarado (`TW_m`)")
 
 
 def _seccion_declarada() -> SeccionReceptor:
@@ -576,7 +668,9 @@ def _paso_tw(*, punto: PuntoCritico, cota_fondo_salida: float,
 
 def tw_seccion_1_3(*, punto: PuntoCritico,
                    cota_fondo_salida: Optional[float],
-                   tw_declarado: Optional[float] = None) -> TWDeterminado:
+                   tw_declarado: Optional[float] = None,
+                   seccion_medida: Optional[SeccionReceptor] = None
+                   ) -> TWDeterminado:
     """
     El TW del punto por el procedimiento de Sec. 1.3, con la via por la que
     salio (SIS-B-04).
@@ -613,6 +707,12 @@ def tw_seccion_1_3(*, punto: PuntoCritico,
     es salida libre, TW = 0. Un TW negativo no significa nada fisico -- el
     conducto no puede tener menos que nada de agua encima -- y dejarlo pasar
     daria un h_o menor que el de la salida libre, que es imposible.
+
+    `seccion_medida` (T-2, INF-3.2.8): la seccion del receptor LEVANTADA, que
+    gana sobre el criterio 'seccion_receptor' en las vias 3 y 4
+    (`seccion_del_receptor`). El `TWDeterminado` dice con cual corrio
+    (`seccion`, `origen_seccion`) y, si fue la adoptada, lleva el AVISO que
+    la CLI, el JSON y la memoria imprimen.
     """
     # --- Via 1: declarado por el proyectista
     #
@@ -655,12 +755,16 @@ def tw_seccion_1_3(*, punto: PuntoCritico,
 
     # --- Via 3: el caudal del receptor + su seccion (pasos 1 y 2)
     if punto.Q_receptor_m3s is not None:
-        seccion = _seccion_declarada()
+        seccion, origen = seccion_del_receptor(seccion_medida)
+        de_la_seccion = _de_la_seccion(origen)
         y_n = tirante_normal_trapecial(Q=punto.Q_receptor_m3s, seccion=seccion)
         cota_agua = punto.cota_fondo_receptor + y_n
         tw = _tw_desde_cota(cota_agua, cota_fondo_salida)
         return TWDeterminado(
             valor=tw, via=ViaDelTW.MANNING_RECEPTOR, cota_TW_msnm=cota_agua,
+            seccion=seccion, origen_seccion=origen,
+            avisos=(() if origen == SECCION_RECEPTOR_MEDIDA else
+                    (_aviso_seccion_adoptada(ViaDelTW.MANNING_RECEPTOR),)),
             paso=_paso_tw(
                 punto=punto, cota_fondo_salida=cota_fondo_salida, tw=tw,
                 cota_agua=cota_agua, via=ViaDelTW.MANNING_RECEPTOR,
@@ -670,21 +774,25 @@ def tw_seccion_1_3(*, punto: PuntoCritico,
                              "diseño del receptor (ANA / Junta de Usuarios)",
                              cifras=CIFRAS_MAGNITUD),
                     Magnitud("b", seccion.b_m, "m",
-                             "solera de la seccion del receptor, criterio "
-                             "'seccion_receptor' [A]", cifras=CIFRAS_MAGNITUD),
+                             f"solera de la seccion del receptor, "
+                             f"{de_la_seccion}", cifras=CIFRAS_MAGNITUD),
                     Magnitud("z", seccion.z_HV, "H:V",
-                             "talud de la seccion del receptor, criterio "
-                             "'seccion_receptor' [A]", cifras=CIFRAS_MAGNITUD),
+                             f"talud de la seccion del receptor, "
+                             f"{de_la_seccion}", cifras=CIFRAS_MAGNITUD),
                     Magnitud("n_receptor", seccion.n, "",
-                             "Manning del receptor -- NO el del conducto --, "
-                             "criterio 'seccion_receptor' [A]",
+                             f"Manning del receptor -- NO el del conducto --, "
+                             f"{de_la_seccion}",
                              cifras=CIFRAS_FINA),
                     Magnitud("S_receptor", seccion.S, "m/m",
-                             "pendiente del receptor, criterio "
-                             "'seccion_receptor' [A]", cifras=CIFRAS_FINA),
+                             f"pendiente del receptor, {de_la_seccion}",
+                             cifras=CIFRAS_FINA),
                     Magnitud("y_n", y_n, "m",
                              "tirante normal en el receptor, paso 2: Manning "
-                             "sobre la seccion trapecial",
+                             "sobre la seccion trapecial"
+                             + ("" if punto.Q_receptor_m3s > 0 else
+                                ". El receptor va SECO (Q_receptor = 0): no "
+                                "hay lamina y el tirante es cero sin resolver "
+                                "nada"),
                              cifras=CIFRAS_MAGNITUD),
                     Magnitud("cota_fondo_receptor", punto.cota_fondo_receptor,
                              "msnm", "columna del CSV (Sec. 1.2)",
@@ -694,7 +802,8 @@ def tw_seccion_1_3(*, punto: PuntoCritico,
                              cifras=CIFRAS_MAGNITUD))))
 
     # --- Via 4: paso 3, los dos escenarios acotados
-    seccion = _seccion_declarada()
+    seccion, origen = seccion_del_receptor(seccion_medida)
+    de_la_seccion = _de_la_seccion(origen)
     cota_llena = punto.cota_fondo_receptor + seccion.altura_total_m
     tw_llena = _tw_desde_cota(cota_llena, cota_fondo_salida)
     escenarios = ((ESCENARIO_SALIDA_LIBRE, TW_SALIDA_LIBRE),
@@ -704,6 +813,9 @@ def tw_seccion_1_3(*, punto: PuntoCritico,
         valor=gobernante, via=ViaDelTW.ESCENARIOS_ACOTADOS,
         cota_TW_msnm=cota_fondo_salida + gobernante,
         escenarios=escenarios,
+        seccion=seccion, origen_seccion=origen,
+        avisos=(() if origen == SECCION_RECEPTOR_MEDIDA else
+                (_aviso_seccion_adoptada(ViaDelTW.ESCENARIOS_ACOTADOS),)),
         paso=_paso_tw(
             punto=punto, cota_fondo_salida=cota_fondo_salida, tw=gobernante,
             cota_agua=cota_fondo_salida + gobernante,
@@ -715,9 +827,9 @@ def tw_seccion_1_3(*, punto: PuntoCritico,
                          "definicion del escenario, no un valor adoptado",
                          cifras=CIFRAS_MAGNITUD),
                 Magnitud("altura_total", seccion.altura_total_m, "m",
-                         "profundidad de la seccion del receptor, criterio "
-                         "'seccion_receptor' [A]: es lo que acota el segundo "
-                         "escenario", cifras=CIFRAS_MAGNITUD),
+                         f"profundidad de la seccion del receptor, "
+                         f"{de_la_seccion}: es lo que acota el segundo "
+                         f"escenario", cifras=CIFRAS_MAGNITUD),
                 Magnitud("TW (seccion llena)", tw_llena, "m",
                          "segundo escenario del paso 3: el receptor corre a "
                          "seccion llena y su agua llega a la corona del bordo",
