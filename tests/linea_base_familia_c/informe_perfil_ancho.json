@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "106fb17b19cd8bceec5f797b3557af3b674ead9e",
+    "criterios_sha1": "15f9518233e9a900f0edde14c9e0cc938dd26720",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -186,8 +186,11 @@
         "S_cauce": {
           "valor": 0.006,
           "origen": "CSV Sec. 1.2, columna S_cauce"
-        }
+        },
+        "acceso_mantenimiento_previsto": null
       },
+      "tw_seccion_receptor": null,
+      "avisos": [],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -417,6 +420,17 @@
           "criterio_aplicado": "D_max_catalogo"
         },
         {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V10",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.006,
+          "valor_admisible": 0.1,
+          "criterio_aplicado": "pendiente_maxima_conducto"
+        },
+        {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
           "codigo": "G1",
           "numeral": "Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1)",
@@ -510,8 +524,11 @@
         "S_cauce": {
           "valor": 0.008,
           "origen": "CSV Sec. 1.2, columna S_cauce"
-        }
+        },
+        "acceso_mantenimiento_previsto": null
       },
+      "tw_seccion_receptor": null,
+      "avisos": [],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -741,6 +758,17 @@
           "criterio_aplicado": "D_max_catalogo"
         },
         {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V10",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.008,
+          "valor_admisible": 0.1,
+          "criterio_aplicado": "pendiente_maxima_conducto"
+        },
+        {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
           "codigo": "G1",
           "numeral": "Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1)",
@@ -834,8 +862,11 @@
         "S_cauce": {
           "valor": 0.01,
           "origen": "CSV Sec. 1.2, columna S_cauce"
-        }
+        },
+        "acceso_mantenimiento_previsto": null
       },
+      "tw_seccion_receptor": null,
+      "avisos": [],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -1056,8 +1087,11 @@
         "S_cauce": {
           "valor": 0.006,
           "origen": "datos externos (punto C-01)"
-        }
+        },
+        "acceso_mantenimiento_previsto": null
       },
+      "tw_seccion_receptor": null,
+      "avisos": [],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -1115,11 +1149,11 @@
           "criterio": "embocadura_cajon",
           "etiqueta": "A",
           "concepto": "Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)",
-          "fuente": "HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo contaba como tal --decia «y los tres que lo siguen (chaflan, bisel y esviaje)»--: es un valor de la columna 'Inlet Configuration' DENTRO de la Carta 11, bajo 'Rect. Box Concrete'. Y el del bisel superior es la Carta 13, que este proyecto NO tiene transcrita. Transcrita en normativa/tablas.py::T_HDS5_A1 y leida por constantes_normativas.HDS5_INLET, donde las quince filas de cajon transcritas estan como claves 'cajon_concreto_*'",
+          "fuente": "HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo contaba como tal --decia «y los tres que lo siguen (chaflan, bisel y esviaje)»--: es un valor de la columna 'Inlet Configuration' DENTRO de la Carta 11, bajo 'Rect. Box Concrete'. Y el del bisel superior es la Carta 13, 'Rect. Box Top Bev. Conc.', transcrita en T-2 (tres filas, aletas desplazadas de 45, 33.7 y 18.4 grados). Transcrita en normativa/tablas.py::T_HDS5_A1 y leida por constantes_normativas.HDS5_INLET, donde las dieciocho filas de cajon transcritas estan como claves 'cajon_concreto_*'",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "'embocadura_cajon' es un VACIO sin valor asignado (Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)). Debe resolverse antes de continuar: HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo contaba como tal --decia «y los tres que lo siguen (chaflan, bisel y esviaje)»--: es un valor de la columna 'Inlet Configuration' DENTRO de la Carta 11, bajo 'Rect. Box Concrete'. Y el del bisel superior es la Carta 13, que este proyecto NO tiene transcrita. Transcrita en normativa/tablas.py::T_HDS5_A1 y leida por constantes_normativas.HDS5_INLET, donde las quince filas de cajon transcritas estan como claves 'cajon_concreto_*'"
+          "mensaje": "'embocadura_cajon' es un VACIO sin valor asignado (Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)). Debe resolverse antes de continuar: HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo contaba como tal --decia «y los tres que lo siguen (chaflan, bisel y esviaje)»--: es un valor de la columna 'Inlet Configuration' DENTRO de la Carta 11, bajo 'Rect. Box Concrete'. Y el del bisel superior es la Carta 13, 'Rect. Box Top Bev. Conc.', transcrita en T-2 (tres filas, aletas desplazadas de 45, 33.7 y 18.4 grados). Transcrita en normativa/tablas.py::T_HDS5_A1 y leida por constantes_normativas.HDS5_INLET, donde las dieciocho filas de cajon transcritas estan como claves 'cajon_concreto_*'"
         }
       ]
     }
@@ -1201,6 +1235,13 @@
         "valor": "camara_o_buzon_en_cabecera",
         "declarado_en_caliente": false,
         "concepto": "Como se resuelve el acceso de mantenimiento para limpieza del conducto en cada punto, que es la mitad [A] de la fila V2b de la Fase 5 y contenido de los PLANOS (Sec. 11, entregable 7)"
+      },
+      {
+        "clave": "borde_libre_bajo_tw_ahogante",
+        "etiqueta": "A",
+        "valor": "no_cumple",
+        "declarado_en_caliente": false,
+        "concepto": "Que hace V1 (borde libre) cuando el barril va LLENO porque el nivel del cuerpo receptor alcanza la clave (TW >= D), y no porque el caudal de diseño lo llene"
       },
       {
         "clave": "borde_libre_y_sobre_d_max",
@@ -1413,6 +1454,20 @@
         "concepto": "Regla con la que se obtiene la cota del fondo de la entrada (invert) de cada punto, msnm, cuando la columna 'cota_fondo_entrada' del CSV no la trae medida"
       },
       {
+        "clave": "pendiente_maxima_conducto",
+        "etiqueta": "A",
+        "valor": 0.1,
+        "declarado_en_caliente": false,
+        "concepto": "Pendiente longitudinal MAXIMA que el proyecto admite en el barril de una alcantarilla (m/m); la aplica V10"
+      },
+      {
+        "clave": "pendiente_minima_conducto",
+        "etiqueta": "A",
+        "valor": 0.0,
+        "declarado_en_caliente": false,
+        "concepto": "Pendiente longitudinal MINIMA que el proyecto admite en el barril de una alcantarilla (m/m); la aplica V10"
+      },
+      {
         "clave": "peso_especifico_relleno_kn_m3",
         "etiqueta": "A",
         "valor": 17.0,
@@ -1422,7 +1477,7 @@
       {
         "clave": "regimen_v2b",
         "etiqueta": "A",
-        "valor": "umbral_duro",
+        "valor": "indicador_con_aviso",
         "declarado_en_caliente": false,
         "concepto": "Con que regimen se aplica el indicador de sedimentacion del HDS-5 num. 5.3.3 (pendiente del conducto frente a la del cauce natural) en la fila V2b: como umbral duro que detiene el punto, o como indicador que se imprime con aviso y no descarta el diametro"
       },
@@ -1500,7 +1555,6 @@
       "h_eq_bajo_altura_tabulada",
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
-      "hw_entrada_fuera_de_rango",
       "inclinacion_muro_beta",
       "ke_entrada_cajon",
       "metodo_estabilidad_global",
@@ -1528,6 +1582,7 @@
       "factores_carga_aashto",
       "geometria_control_salida",
       "hds5_embocadura_hdpe",
+      "hw_entrada_fuera_de_rango",
       "k_v",
       "longitud_proteccion_salida",
       "metodo_transicion_hds5",
@@ -1576,7 +1631,7 @@
         "clave": "embocadura_cajon",
         "etiqueta": "A",
         "concepto": "Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)",
-        "fuente": "HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo contaba como tal --decia «y los tres que lo siguen (chaflan, bisel y esviaje)»--: es un valor de la columna 'Inlet Configuration' DENTRO de la Carta 11, bajo 'Rect. Box Concrete'. Y el del bisel superior es la Carta 13, que este proyecto NO tiene transcrita. Transcrita en normativa/tablas.py::T_HDS5_A1 y leida por constantes_normativas.HDS5_INLET, donde las quince filas de cajon transcritas estan como claves 'cajon_concreto_*'",
+        "fuente": "HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo contaba como tal --decia «y los tres que lo siguen (chaflan, bisel y esviaje)»--: es un valor de la columna 'Inlet Configuration' DENTRO de la Carta 11, bajo 'Rect. Box Concrete'. Y el del bisel superior es la Carta 13, 'Rect. Box Top Bev. Conc.', transcrita en T-2 (tres filas, aletas desplazadas de 45, 33.7 y 18.4 grados). Transcrita en normativa/tablas.py::T_HDS5_A1 y leida por constantes_normativas.HDS5_INLET, donde las dieciocho filas de cajon transcritas estan como claves 'cajon_concreto_*'",
         "reemplazado_por": "El detalle de embocadura del cabezal que fije el expediente (Sec. 9.1), del que salen la carta y la fila de ke a la vez",
         "fases": [
           "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"

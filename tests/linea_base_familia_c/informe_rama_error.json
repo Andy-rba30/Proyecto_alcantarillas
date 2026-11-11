@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "106fb17b19cd8bceec5f797b3557af3b674ead9e",
+    "criterios_sha1": "15f9518233e9a900f0edde14c9e0cc938dd26720",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -74,8 +74,21 @@
         "S_cauce": {
           "valor": 0.006,
           "origen": "CSV Sec. 1.2, columna S_cauce"
-        }
+        },
+        "acceso_mantenimiento_previsto": null
       },
+      "tw_seccion_receptor": {
+        "origen": "seccion adoptada [A] por falta de levantamiento",
+        "via": "dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)",
+        "b_m": 2.0,
+        "z_HV": 1.5,
+        "S": 0.0008,
+        "n": 0.03,
+        "altura_total_m": 1.8
+      },
+      "avisos": [
+        "TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)"
+      ],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -175,8 +188,21 @@
         "S_cauce": {
           "valor": 0.008,
           "origen": "CSV Sec. 1.2, columna S_cauce"
-        }
+        },
+        "acceso_mantenimiento_previsto": null
       },
+      "tw_seccion_receptor": {
+        "origen": "seccion adoptada [A] por falta de levantamiento",
+        "via": "dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)",
+        "b_m": 2.0,
+        "z_HV": 1.5,
+        "S": 0.0008,
+        "n": 0.03,
+        "altura_total_m": 1.8
+      },
+      "avisos": [
+        "TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)"
+      ],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -276,8 +302,21 @@
         "S_cauce": {
           "valor": 0.01,
           "origen": "CSV Sec. 1.2, columna S_cauce"
-        }
+        },
+        "acceso_mantenimiento_previsto": null
       },
+      "tw_seccion_receptor": {
+        "origen": "seccion adoptada [A] por falta de levantamiento",
+        "via": "dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)",
+        "b_m": 2.0,
+        "z_HV": 1.5,
+        "S": 0.0008,
+        "n": 0.03,
+        "altura_total_m": 1.8
+      },
+      "avisos": [
+        "TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)"
+      ],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -387,8 +426,11 @@
           "origen": "M7.longitud_conducto (Sec. 7.B)"
         },
         "TW_m": null,
-        "S_cauce": null
+        "S_cauce": null,
+        "acceso_mantenimiento_previsto": null
       },
+      "tw_seccion_receptor": null,
+      "avisos": [],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -642,7 +684,6 @@
       "h_eq_bajo_altura_tabulada",
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
-      "hw_entrada_fuera_de_rango",
       "inclinacion_muro_beta",
       "ke_entrada_cajon",
       "metodo_estabilidad_global",
@@ -672,6 +713,7 @@
       "factores_carga_aashto",
       "geometria_control_salida",
       "hds5_embocadura_hdpe",
+      "hw_entrada_fuera_de_rango",
       "k_v",
       "longitud_proteccion_salida",
       "metodo_transicion_hds5",

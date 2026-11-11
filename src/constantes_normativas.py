@@ -749,7 +749,8 @@ KE_CAJON_C2 = frozenset(
 #            Es decir: la fuente lo da como REGLA sobre la configuracion de
 #            borde, no como dato por carta. Se aplica esa regla, y se aplica
 #            SOBRE EL ROTULO LITERAL de la fila, que es donde la fuente
-#            escribe «mitered». Ninguna de las quince filas del cajon lo es.
+#            escribe «mitered». Ninguna de las dieciocho filas del cajon lo
+#            es (quince hasta T-2, que sumo las tres de la Carta 13).
 _TA1 = _reg.tabla("HDS5_3ED.TA1")
 # LOS DOS VALORES QUE TOMA LA COLUMNA «Equation Form» DE LA TABLA A.1, con
 # nombre porque el 1 y el 2 sueltos en una comparacion no dicen nada. No son

@@ -40,9 +40,10 @@ el test fija que NO SE MUEVE, que es la parada (c) de la cadena.
 
 ESTOS TESTS NO SE ESCRIBIERON EN ROJO ANTES DEL CODIGO, y se dice: la sesion
 de T-2 implemento primero y escribio la aceptacion despues. Lo que si se
-MIDIO es que son rojos sobre el arbol anterior (`87d1ce7`, T-0): la medida
-esta en el informe de la sesion y en la ficha T2-07 de
-`docs/decisiones_diferidas.md`.
+MIDIO es cuantos son rojos sobre el arbol anterior (`87d1ce7`, T-0), con los
+nombres que ese arbol no tiene sustituidos por un marcador para que el
+archivo se recolecte: la medida, con los que valen antes y despues y por
+que, esta en la ficha T2-07 de `docs/decisiones_diferidas.md`.
 """
 
 from __future__ import annotations
@@ -707,8 +708,14 @@ def test_las_vias_1_y_2_no_usan_seccion_ni_avisan():
 ])
 def test_la_seccion_medida_entra_completa_y_fisica_o_no_entra(mala, tmp_path):
     """Es entrada del proyecto: se valida la forma y el dominio, no se rellena."""
-    with pytest.raises(DatoInvalidoError):
+    # El control: la seccion buena SI entra. Sin el, el rechazo de abajo
+    # valdria tambien en un arbol que no conociera la clave.
+    buena = _externos(tmp_path, {"puntos": {"A-01": {
+        "seccion_receptor_medida": MEDIDA_JSON}}})
+    assert buena.valor("A-01", servicio.CLAVE_SECCION_RECEPTOR_MEDIDA) == MEDIDA_JSON
+    with pytest.raises(DatoInvalidoError) as exc:
         _externos(tmp_path, {"puntos": {"A-01": {"seccion_receptor_medida": mala}}})
+    assert servicio.CLAVE_SECCION_RECEPTOR_MEDIDA in str(exc.value)
 
 
 def test_la_seccion_medida_por_punto_llega_a_la_corrida(tmp_path):

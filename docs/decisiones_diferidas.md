@@ -3447,3 +3447,194 @@ sesiones que siguen.
   orquestador asigne los seis sin prompt (T-11, en su censo final, es la última
   ocasión); y que cada prompt escriba el ID **canónico** al cerrar.
 - **Dónde vive:** `tests/test_t0_gobernanza.py::ALIAS_DE_LA_CADENA`
+
+---
+
+# Parte XLI — Lo que T-2 de la cadena T dejó escrito: el barril horizontal, el borde libre bajo el receptor, la sección medida y el ejemplo publicado
+
+T-2 (2026-11-11) cierra los huecos de método de la hidráulica que el INFORME lista en su
+§3.2 y en los ítems 6 y 7 del §5.1. Siete decisiones suyas no son un cierre limpio: unas
+contradicen lo que el prompt pedía porque la fuente no lo sostiene, otras dejan una
+alternativa sin aplicar porque decidirla es del proyectista.
+
+## T2-01 · `S = 0` se admite y se dice con un objeto propio; la pendiente adversa y `S_cauce = 0` siguen fuera, y queda una discontinuidad con la convención de PC-06
+
+- **Cerrado (T-2):** `INF-5.1.6`. `M3.resolver_manning`, `M4.control_entrada`,
+  `M4.control_salida` y `M4.perfil_lamina` admiten `S = 0`; la guardia (forma MAT-D13,
+  `not S >= 0`) rechaza sólo la pendiente negativa y el NaN. La fuente es HDS-5 num.
+  3.3.4, pág. impresa 3.25 / PDF 107 (citas `HDS5_3ED.3.3.4#HORIZONTAL`, `#KS`,
+  `#H_SIN_AJUSTE`). Con el barril horizontal Manning no tiene solución y M3 devuelve
+  `SinTiranteNormal` —ni excepción, porque el dato es válido, ni `None`, que significa
+  «el escalón no alcanza»—; el perfil de la lámina se integra con el mismo paso directo
+  y se rotula `TipoDePerfil.H2`; V1 y V2 se juzgan sobre el perfil, y V3 y el d50 sobre
+  la velocidad de salida. Medido: A-01 con `S_conducto = 0` y TW = 0.3 m dimensiona con
+  Ø 1.05 m bajo control de salida.
+- **Abierto:** tres cosas. (1) **La pendiente adversa.** El mismo numeral aplica sus
+  procedimientos a la pendiente adversa, que describe como asentamiento de la entrada;
+  el proyecto no diseña con ella y `S < 0` sigue siendo `DatoInvalidoError`. Es una
+  restricción del proyecto, no de la fuente. (2) **`S_cauce = 0` en el CSV** se sigue
+  rechazando (`M0_carga`: `0 < S_cauce < S_CAUCE_MAX`): T-2 no lo pedía y el barril horizontal se
+  declara por `S_conducto`. (3) **La discontinuidad.** Para `S` pequeña y positiva rige
+  la convención de PC-06 —si Q alcanza el caudal a sección llena de Manning, el escalón
+  no alcanza y se pasa al diámetro siguiente—, y para `S = 0` no hay caudal a sección
+  llena que comparar: el escalón se resuelve por el perfil. Medido con D = 0.90 m y
+  Q = 0.6 m³/s: `S = 0` se resuelve y `S = 0.001` devuelve `None`. Un barril casi
+  horizontal puede pedir entonces un diámetro mayor que uno horizontal.
+- **Qué haría falta:** para (3), resolver por el perfil también cuando `S > 0` y Q
+  supera el caudal a sección llena de Manning, en vez de saltar de diámetro. Cambia el
+  criterio de capacidad del catálogo entero y puede mover diámetros de la línea base:
+  es una decisión del dueño (parada (c) de la cadena), no un ajuste. Para (1), un caso
+  de obra que lo pida y la regla práctica del numeral (D/2). Para (2), que alguien lo
+  necesite: un cauce de pendiente nula no tiene tirante normal y V2b no tendría con
+  qué comparar.
+- **Dónde vive:** `src/modelos.py::SinTiranteNormal`
+
+## T2-02 · `borde_libre_bajo_tw_ahogante` queda en `no_cumple`: con `aviso`, A-02 pasa a dimensionarse en la corrida estrecha, y eso lo decide el proyectista
+
+- **Qué se difirió:** el cambio de conducta de V1 cuando el barril va lleno por el
+  nivel del receptor (TW ≥ D). T-2 separó los dos casos —lleno por el caudal de diseño,
+  que no cumple siempre (Manual, num. 4.1.1.3.7 b), pág. impresa 79, cita
+  `MC_HHD.4.1.1.3.7b#LLENA`), y lleno por el receptor— y creó el criterio [A] con dos
+  lecturas, pero dejó en el archivo la que ya regía.
+- **Por qué:** medido con el barrido sobre la corrida estrecha de la línea base
+  (`python cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance perfil --barrido
+  borde_libre_bajo_tw_ahogante=no_cumple,aviso`), en la que el TW sale de la vía 4 con
+  la sección **adoptada** del receptor. Con `no_cumple`: 0 de 4 puntos dimensionan.
+  Con `aviso`: **A-02 dimensiona con Ø 0.90 m** de concreto (TW = 1.196 m, régimen
+  lleno, control de salida, HW = 1.106 m, V1 como indicador); A-01 (TW = 1.112 m) y
+  B-01 (TW = 1.484 m) siguen sin dimensionar. Cambia qué puntos dimensionan en una
+  corrida de la línea base, que es la parada (c) de la cadena: no se aplica sin el
+  dueño. Y hay un argumento de fondo para no aplicarlo por defecto: en esa corrida el
+  TW no es una medición sino la profundidad total de una sección adoptada, de modo que
+  aceptar el ahogamiento sería aceptar la adopción.
+- **Qué haría falta:** que el dueño elija. Las opciones: (a) `no_cumple` (hoy), la
+  lectura literal del numeral; (b) `aviso`, que lee la prohibición como una regla sobre
+  el diseño del conducto y es la que conviene cuando el nivel del receptor está
+  **medido**; (c) `aviso` sólo cuando el TW viene de las vías 1 a 3, que exigiría una
+  tercera opción en la ventana. Con cualquiera, el barrido queda disponible.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::CRITERIO_BORDE_LIBRE_BAJO_TW`
+
+## T2-03 · La sección medida del receptor entra por `--datos-externos` como un objeto, no como columnas del CSV; y el aviso de sección adoptada sale también en la vía 3
+
+- **Qué se difirió:** las columnas de CSV para la sección del receptor. El prompt pedía
+  «entrada opcional de la sección medida (ancho de fondo, talud z, profundidad, n,
+  pendiente) que gana sobre el criterio»; entra por la clave `seccion_receptor_medida`
+  del JSON de datos externos, global o por punto, con los cinco campos de
+  `servicio.CAMPOS_SECCION_RECEPTOR`.
+- **Por qué:** cinco columnas más en el CSV son cinco celdas vacías por fila para todo
+  punto sin levantamiento y un cambio en `M0_carga.COLUMNAS` que T-1, T-4 y T-6 tocan
+  a la vez; y el levantamiento de un dren suele valer para varios cruces, que es lo
+  que el bloque `globales` del JSON ya resuelve. La sección entra completa o no entra:
+  un campo que falte, uno de más o uno fuera de dominio detienen la carga
+  (`DatoInvalidoError`); nunca se completa con el del criterio. El aviso «seccion
+  adoptada [A] por falta de levantamiento» sale en la vía 4, que es lo que el prompt
+  pedía, **y en la vía 3**, que también usa la sección: con caudal del receptor
+  documentado y sección adoptada, el tirante sigue saliendo de una geometría que
+  nadie midió. El script de QGIS del repositorio de cotas es referencia de dónde sale
+  el levantamiento; este programa no lo ejecuta.
+- **Qué haría falta:** si el dueño prefiere columnas, sumarlas a `M0_carga.COLUMNAS`
+  con `VACIOS_ADMITIDOS` y hacer que `_resolver_tw` las arme en una `SeccionReceptor`;
+  la puerta de M3 (`seccion_del_receptor(seccion_medida=…)`) no cambia.
+- **Dónde vive:** `src/servicio.py::CLAVE_SECCION_RECEPTOR_MEDIDA`
+
+## T2-04 · `regimen_v2b` y `hw_entrada_fuera_de_rango` reciben valor de archivo pero siguen siendo [A], no [C]; la «nota de Ks·S de la Tabla A.1» no existe, y la tabla no tiene filas de tubo con aleros
+
+- **Cerrado (T-2):** `INF-0.5`. `regimen_v2b = indicador_con_aviso` y
+  `hw_entrada_fuera_de_rango = energia_critica` son desde T-2 el valor del archivo, con
+  la otra opción en la ventana. La mitad [N] de la fila V2b tiene su cita
+  (`MC_HHD.4.1.1.3.7d`, Manual num. 4.1.1.3.7 d), pág. impresa 80 / PDF 83), y el dato
+  de si el acceso está previsto entra, opcional, por `acceso_mantenimiento_previsto`.
+  Medido antes y después sobre diez corridas (las de la línea base, la referencia y
+  la guía): ningún diámetro se mueve y los mismos puntos dimensionan.
+- **Abierto:** tres desacuerdos con el prompt, los tres por la fuente. (1) **Las
+  etiquetas.** El prompt pedía [C] para los dos. HDS-5 **define** el indicador de
+  sedimentación y la base de la Forma 1, pero no prescribe ni qué hacer cuando el
+  indicador se dispara ni un piso para la carga: sigue habiendo elección, y la
+  etiqueta sigue siendo [A] con su ventana. (2) **La cita.** El prompt nombraba «HDS-5
+  Tabla A.1 nota de Ks·S»; la Tabla A.1 (PDF 197) tiene una sola nota, bibliográfica.
+  Lo que sostiene la elección está en A.2.1 (pág. impresa A.1 / PDF 190, cita
+  `HDS5_3ED.A.2.1#FORMA_1`), en A.3 (pág. impresa A.2 / PDF 191, cita
+  `HDS5_3ED.A.3#PENDIENTE_2`) y en 3.3.4. (3) **Las filas.** El punto 4 pedía filas «para
+  aleros (cajón y tubo…)»: la tabla no tiene tubo circular con aleros. Se
+  transcribieron las ocho filas que faltaban de las cartas 1, 2, 3 y 13; las diez que
+  quedan fuera son de entradas mejoradas. Y un efecto que no es de la línea base pero
+  sí de un test: con los siete criterios del cajón declarados, la coronación del canal
+  y `S_conducto = 0.004`, C-01 pasa de no dimensionar (V2b) a dimensionar con el
+  indicador como aviso (`tests/test_pf4_regimen_v2b.py`).
+- **Qué haría falta:** para volver a la conducta anterior, declarar
+  `regimen_v2b=umbral_duro` o `hw_entrada_fuera_de_rango=descartar`. Para que alguno
+  de los dos sea [C], una fuente que prescriba la consecuencia y no sólo el indicador.
+- **Dónde vive:** `src/normativa/citas.py::HDS5_A21_FORMA_1`
+
+## T2-05 · El ejemplo publicado de HDS-5 (Design Guideline 1) se reproduce dentro de la tolerancia en la mayoría de las casillas; cinco quedan fuera, censadas con su causa, y dos filas no se comparan
+
+- **Cerrado (T-2):** `INF-3.2.2`, en la parte de validación externa. `CP_HDS5_DG1`
+  transcribe los dos ejemplos de la Design Guideline 1 de HDS-5 (formularios de las
+  págs. impresas DG1.4 / PDF 275 y DG1.10 / PDF 281) con la conversión de unidades en el
+  fixture, y el motor reproduce HW/D, la carga de entrada, d_c, h_o, H, la cota de
+  control de salida y la velocidad de salida. La tolerancia de lectura es del 3 % —los
+  valores publicados se leen de nomogramas y se imprimen con dos o tres cifras— y la
+  que la propia fuente declara para sus cartas es del ±10 % (num. 3.1.1, pág. impresa
+  3.1 / PDF 83).
+- **Abierto:** cinco casillas superan el 3 % y **no se ajustó ni el test ni el motor**;
+  están en `CP_HDS5_DG1["fuera_de_tolerancia"]` con la diferencia medida y su causa, y
+  el test exige en las dos direcciones que el censo diga la verdad (lo censado tiene
+  que estar fuera del 3 %; lo demás, dentro). (a) Tubo corrugado de 60 pulgadas con
+  anillo biselado de 45°: HW/D −3.1 % —el formulario lee 1.40 en el nomograma de la
+  Carta 3 y la ecuación (A.3) con las constantes de la Tabla A.1 da 1.357— y carga de
+  entrada −4.4 %, porque además la cifra impresa (7.10 pies) no es el producto de las
+  dos que tiene al lado (1.40 × 5.0 = 7.00). (b) Cajón de 6 × 5 pies, H −3.9 %: es
+  lectura del nomograma de control de salida; la fórmula que el propio formulario
+  imprime al pie da 3.41 pies con sus datos y el formulario anota 3.55. (c) Cajón de
+  5 × 5 con bisel de 45°, H −11.4 % y, arrastrada, la cota de control de salida
+  −5.6 %: la cifra impresa (5.0 pies) no se reproduce con la fórmula del formulario y
+  el ke = 0.2 que la misma fila declara, que da 4.43 pies; es una inconsistencia
+  interna de la fuente —pasar de ke 0.5 a 0.2 tiene que bajar H en 0.3·V²/2g = 0.67
+  pies y el formulario la baja 0.2—. Esa casilla es la única que queda fuera también
+  del ±10 %, y el test la exceptúa por nombre. Y en las dos filas de tubo corrugado no
+  se comparan H, la cota de control de salida ni la velocidad de salida, porque el
+  formulario no imprime el n con que entró al nomograma (`no_comparado`).
+- **Qué haría falta:** el n de las filas corrugadas (no está en la página), o un
+  ejemplo publicado resuelto por ecuación y no por nomograma: HY-8 con sus salidas
+  impresas serviría, y no está en `normas/`.
+- **Dónde vive:** `tests/fixtures/casos_patron.py::CP_HDS5_DG1`
+
+## T2-06 · HDS-5 §5.3.3 presenta dos indicadores de sedimentación y la aplicación evalúa uno: el segundo necesita el n del cauce natural, que no es un dato del proyecto
+
+- **Qué se difirió:** `INF-3.2.9`. El numeral, leído entero (págs. impresas 5.11 y
+  5.12 / PDF 147 y 148), nombra **dos** indicadores —la pendiente y la rugosidad del
+  conducto frente a las del cauce natural— y, sin cifra, otros factores: la magnitud
+  del caudal y el material del cauce, los cauces en agradación, los cambios de
+  pendiente a la entrada, las instalaciones multibarril y las entradas deprimidas.
+  V2b evalúa el primero (`S_conducto ≥ S_cauce`).
+- **Por qué:** comparar rugosidades exige el n de Manning del **cauce natural** en el
+  cruce, que no es columna del CSV ni dato externo, y el proyecto no lo suple con un
+  valor por defecto: sería inventar un dato de sitio. El n que sí existe, el del
+  criterio `seccion_receptor`, es del cuerpo receptor aguas abajo —un dren o un
+  canal—, no del cauce que llega a la alcantarilla. Y la fuente no dice qué diferencia
+  de rugosidad es un problema: ni siquiera con el dato habría umbral.
+- **Qué haría falta:** el n del cauce por punto, de campo (estudio hidrológico o
+  inspección), como columna opcional o dato externo; y una regla de comparación que
+  el proyectista adopte y declare, porque la fuente no la da. Hasta entonces la ficha
+  de `regimen_v2b` lo declara en `verificacion_pendiente` y la memoria lo imprime.
+- **Dónde vive:** `src/normativa/citas.py::HDS5_5_3_3_DEPRESION`
+
+## T2-07 · La aceptación de T-2 no se escribió en rojo antes del código: se midió después, y 31 de sus 121 tests valen antes y después
+
+- **Qué se difirió:** el orden que la casa sigue —el test en rojo con
+  `xfail(strict=True)`, y liberarlo al corregir—. T-2 implementó primero y escribió
+  `tests/test_t2_hidraulica.py` después.
+- **Por qué:** la sesión se interrumpió dos veces y el orden se perdió; se dice en vez
+  de reconstruirlo. Lo que se hizo para que la aceptación no fuera vacua: el archivo
+  se corrió contra un árbol exportado de `87d1ce7` (T-0), con los cuatro nombres de
+  `modelos.py` que ese árbol no tiene sustituidos por un marcador para que el archivo
+  se recolectara. **Medido: 90 rojos y 31 verdes.** Los 31 valen antes y después y son
+  guardias, no cierres: los tres de la pendiente negativa o NaN (ya se rechazaba), el
+  de las filas de la Tabla A.1 que el catálogo usa (no se movieron), las 24 casillas
+  de los tres cajones del ejemplo publicado (las Cartas 8 y 10 ya estaban
+  transcritas y el motor ya las reproducía), el censo de casillas fuera de tolerancia,
+  las cifras del formulario contra la página y los diámetros de la línea base.
+- **Qué haría falta:** nada que se pueda rehacer; el oráculo de cada test es la fuente
+  o un invariante, no la salida del programa, y un auditor adversarial revisa el
+  diff. Si alguno resultara verde sobre un mutante, se cierra con una aserción.
+- **Dónde vive:** `tests/test_t2_hidraulica.py::test_los_diametros_de_la_linea_base_no_se_movieron`

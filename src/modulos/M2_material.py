@@ -1014,10 +1014,11 @@ def catalogo(material: MaterialLike,
     salida NO existe, por dos razones que se acumulan:
 
       * `Material.hds5` NO es Optional. Sin `embocadura_cajon` no hay carta, y
-        no hay carta por defecto que poner: este repositorio tiene QUINCE
+        no hay carta por defecto que poner: este repositorio tiene DIECIOCHO
         filas de cajon de concreto transcritas de la Tabla A.1 -- Cartas 8 a
-        12; la tabla trae mas, y lo que queda fuera lo censa el `Acotada` de
-        `normativa/tablas.py::T_HDS5_A1` --, tres de Forma 1 y doce de Forma
+        13 (quince hasta T-2, que sumo la Carta 13); la tabla trae mas, y lo
+        que queda fuera lo censa el `Acotada` de
+        `normativa/tablas.py::T_HDS5_A1` --, tres de Forma 1 y quince de Forma
         2, y elegir una por el proyectista seria exactamente lo que esta
         sesion existe para no hacer.
       * El n del marco tiene el problema que este mismo modulo dejo advertido
