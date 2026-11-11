@@ -1109,7 +1109,7 @@ CP5DR_TRANSICION_CAJON = {
     "S_umbral": 0.21519208968426007,      # (c*16 + Y - K*3.5^M)/|Ks|
     "S_umbral_minimo_de_las_doce": 0.21519208968426007,
     "S_umbral_maximo_de_las_doce": 0.4933055559965851,
-    # Quince desde T-2 (INF-3.2.8), que transcribio las tres filas de la
+    # Quince desde T-2 (INF-3.2.2), que transcribio las tres filas de la
     # Carta 13 (bisel superior con aletas desplazadas). Eran doce, y las dos
     # claves de arriba conservan «de_las_doce» en el nombre: el minimo y el
     # maximo NO se movieron, porque los umbrales de las tres nuevas (0.2265,

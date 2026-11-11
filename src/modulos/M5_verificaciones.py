@@ -1,8 +1,8 @@
 """
 M5_verificaciones.py
 =====================
-Fase 5 de la hoja de ruta: las ONCE verificaciones de la tabla principal
-(V1 a V9), cada una como funcion propia que devuelve un `Verificacion` (nunca
+Fase 5 de la hoja de ruta: las DOCE verificaciones de la tabla principal
+(V1 a V10; once hasta T-2, que sumo V10), cada una como funcion propia que devuelve un `Verificacion` (nunca
 un bool desnudo), mas `verificar()`, el agregado que MD.py llama con la firma
 que declara su Protocol `Verificador`.
 
@@ -39,11 +39,13 @@ que declara su Protocol `Verificador`.
                                   ('pendiente_minima_conducto' y
                                   'pendiente_maxima_conducto'; T-2)
 
-Por que ya son ONCE funciones para las ONCE filas de la tabla de Fase 5
+Por que ya son DOCE funciones para las DOCE filas de la tabla de Fase 5
 ----------------------------------------------------------------------
-La tabla de Fase 5 de la hoja de ruta lista once verificaciones -- V1, V2,
-**V2b**, V3, V4, **V4b**, V5, V6, V7, V8, V9 -- y este modulo implementa las
-ONCE. Las dos que faltaban se cablearon en sesiones distintas y por la misma
+La tabla de Fase 5 de la hoja de ruta lista doce verificaciones -- V1, V2,
+**V2b**, V3, V4, **V4b**, V5, V6, V7, V8, V9 y, desde T-2, **V10** (la
+pendiente del conducto, que entro a la tabla y al modulo en el mismo
+cambio) -- y este modulo implementa las DOCE. Las dos que faltaban de las
+once primeras se cablearon en sesiones distintas y por la misma
 regla: cuando se pudo sostener el umbral con su fuente, no antes.
 
 **V2b - sedimentacion / colmatacion. IMPLEMENTADA desde S20**
@@ -162,8 +164,8 @@ Consecuencia practica: mientras 'remanso_derecho_via', 'TR_evento_extremo',
 `verificar()` (y por lo tanto `MD.disenar_punto` / `MD.disenar_lote`) se
 detiene con `CriterioPendienteError` para CUALQUIER punto. No es un defecto
 de este modulo: es la misma regla que ya aplica a 'TW_receptor' o
-'v_max_tmc' -- un vacio real bloquea el calculo, no lo esconde. Las once
-funciones individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI
+'v_max_tmc' -- un vacio real bloquea el calculo, no lo esconde. Las doce
+funciones individuales (v1_borde_libre, ..., v10_pendiente_conducto) SI
 son utilizables una por una hoy mismo; es el AGREGADO el que hereda el
 bloqueo de las pendientes.
 
@@ -615,7 +617,8 @@ CLAVE_HW_D_MAX = "HW_D_max"
 def verificaciones_no_evaluadas() -> Tuple[str, ...]:
     """
     Las filas de la tabla de Fase 5 que este modulo NO implementa como
-    verificacion. Desde S20 la tupla esta VACIA: las once se evaluan.
+    verificacion. Desde S20 la tupla esta VACIA: se evaluan todas (once
+    entonces, doce desde T-2).
 
     Misma forma y mismo proposito que
     `M8_estructural.verificacion_diferida_estructural`: lo que queda fuera del
@@ -2914,7 +2917,8 @@ def verificar(*, punto: PuntoCritico, material: Material,
              seccion: Seccion,
              resultado: ResultadoHidraulico) -> Tuple[Verificacion, ...]:
     """
-    Las once verificaciones de la Fase 5, en el orden de la tabla. Coincide
+    Las doce verificaciones de la Fase 5, en el orden de la tabla (V10, la
+    pendiente del conducto, cierra la tupla desde T-2). Coincide
     con la firma de `modulos.MD.Verificador`: MD la importa como
     `modulos.M5_verificaciones.verificar` cuando no se le inyecta otra.
 

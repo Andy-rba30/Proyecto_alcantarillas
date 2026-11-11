@@ -406,10 +406,13 @@ def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material
     siendo None. La banda intermedia la acota V10 con
     'pendiente_minima_conducto' (ficha T2-01 de decisiones_diferidas.md).
     """
-    _validar_parametros(seccion, Q, S, material.n_para_capacidad)
+    # `tirante_normal` valida los cuatro parametros (S < 0 y NaN incluidos) y
+    # con S = 0 devuelve None por su propia guardia de capacidad; por eso se
+    # llama PRIMERO y el caso horizontal se separa despues: una sola lectura
+    # del n de capacidad, y ninguna validacion duplicada aqui.
+    geom = tirante_normal(seccion, Q, S, material.n_para_capacidad)
     if not S > 0:
         return SinTiranteNormal(S=S)
-    geom = tirante_normal(seccion, Q, S, material.n_para_capacidad)
     if geom is None:
         return None
 

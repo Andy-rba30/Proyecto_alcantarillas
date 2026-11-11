@@ -440,18 +440,27 @@ línea que se pueda romper.
 | `HDS5_3ED.3.3.3#HO` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.3.3.3#HO_1_2D` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | exigencia | 2026-08-28 · texto |
 | `HDS5_3ED.3.3.3#HO_SUMERGIDA` | 3.3.3 | «Outlet Control» | pág. impresa **3.24** · PDF 106 | exigencia | 2026-08-28 · texto |
+| `HDS5_3ED.3.3.4#HORIZONTAL` | 3.3.4 | «Culverts with Horizontal or Adverse Slopes» | pág. impresa **3.25** · PDF 107 | permiso | 2026-11-11 · texto |
+| `HDS5_3ED.3.3.4#H_SIN_AJUSTE` | 3.3.4 | «Culverts with Horizontal or Adverse Slopes» | pág. impresa **3.25** · PDF 107 | permiso | 2026-11-11 · texto |
+| `HDS5_3ED.3.3.4#KS` | 3.3.4 | «Culverts with Horizontal or Adverse Slopes» | pág. impresa **3.25** · PDF 107 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.3.3.5#GOBIERNA` | 3.3.5 | «Evaluation of Results» | pág. impresa **3.25** · PDF 107 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.3.5#PERFIL` | 3.5 | «CULVERT DESIGN USING SOFTWARE (WATER SURFACE PROFILES)» | pág. impresa **3.36** · PDF 118 | definicion | 2026-09-21 · texto |
+| `HDS5_3ED.3.5.1#H2` | 3.5.1 | «USGS Flow Types and Water Surface Profiles» | pág. impresa **3.37** · PDF 119 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.3.5.1#S1` | 3.5.1 | «USGS Flow Types and Water Surface Profiles» | pág. impresa **3.37** · PDF 119 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.5.1#TIPO7` | 3.5.1 | «USGS Flow Types and Water Surface Profiles» | pág. impresa **3.38** · PDF 120 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.5.3.3#ALINEADO` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
+| `HDS5_3ED.5.3.3#DEPRESION` | 5.3.3 | «Sedimentation» | pág. impresa **5.12** · PDF 148 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.5.3.3#INDICADORES` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
 | `HDS5_3ED.5.4.3#REPARTO` | 5.4.3 | «Multiple Barrels» | pág. impresa **5.15** · PDF 151 | aproximacion | 2026-09-20 · texto |
+| `HDS5_3ED.5.4.4#PENDIENTE_10` | 5.4.4 | «Barrels on Steep Slopes» | pág. impresa **5.16** · PDF 152 | definicion | 2026-11-11 · texto |
+| `HDS5_3ED.5.4.4#PENDIENTE_20` | 5.4.4 | «Barrels on Steep Slopes» | pág. impresa **5.16** · PDF 152 | recomendacion | 2026-11-11 · texto |
 | `HDS5_3ED.A.2` | A.2, A.2.1 | «INLET CONTROL EQUATIONS» | pág. impresa **A.2** · PDF 191 | definicion | 2026-08-28 · texto |
+| `HDS5_3ED.A.2.1#FORMA_1` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.1** · PDF 190 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.A.2.1#KS` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.2** · PDF 191 | definicion | 2026-08-28 · texto |
 | `HDS5_3ED.A.2.1#QLIM` | A.2.1 | «Unsubmerged Inlet Control Equations» | pág. impresa **A.1** · PDF 190 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.A.2.2#QLIM` | A.2.2 | «Submerged Inlet Control Equations» | pág. impresa **A.2** · PDF 191 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.A.3#FORMAS` | A.3 | «A.3  INLET CONTROL DIMENSIONLESS DESIGN CURVES» | pág. impresa **A.2** · PDF 191 | exigencia | 2026-09-07 · texto |
+| `HDS5_3ED.A.3#PENDIENTE_2` | A.3 | «A.3  INLET CONTROL DIMENSIONLESS DESIGN CURVES» | pág. impresa **A.2** · PDF 191 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.A.3.1#CRITICO` | A.3.1 | «Elliptical Structural Plate Example» | pág. impresa **A.3** · PDF 192 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.TA.1` | Table A.1 | «Constants for Inlet Control Equations for Charts in Appendix G.» | pág. impresa **A.8** · PDF 197 | definicion | 2026-08-28 · ambos |
 | `HDS5_3ED.TC.2` | Table C.2 | «Entrance Loss Coefficients.» | pág. impresa **C.6** · PDF 216 | definicion | 2026-08-28 · ambos |
@@ -486,9 +495,17 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.3.3.3#HO_SUMERGIDA`** — Segunda mitad de la vineta de h_o, y es una condicion DISTINTA de la primera: aquella acota por llenado del barril, esta por sumergencia de la entrada. El expediente las leia como una sola.
 
+> **`HDS5_3ED.3.3.4#HORIZONTAL`** — Es la frase que admite S = 0 (INF-5.1.6). La leyo T-0 y la dejo sin cita; la transcribe T-2. El parrafo sigue con el caso en que se usa («A horizontal slope is used when flow may occur in either direction») y con una regla practica para la pendiente ADVERSA, que este proyecto NO admite: S < 0 sigue siendo dato invalido.
+
+> **`HDS5_3ED.3.3.4#H_SIN_AJUSTE`** — El control de salida no cambia con S = 0: H es la misma y la caida S·L vale cero, de modo que HW = H + h_o.
+
+> **`HDS5_3ED.3.3.4#KS`** — Dice QUE ES el termino Ks·S: la seccion de control queda dentro del barril, algo mas baja que el fondo de la entrada. De ahi que con S = 0 el termino valga cero, que es lo que la ecuacion (A.1) da sola: la vineta que sigue manda SUMAR 0.01 al HW/D del nomograma en un barril horizontal, y ese 0.01 es 0.5 x 0.02, la correccion que el nomograma lleva restada por haberse trazado al 2 % (`HDS5_3ED.A.3#PENDIENTE_2`). El codigo resuelve la ecuacion, no lee el nomograma, y por eso no suma nada: evalua Ks·S con la S real.
+
 > **`HDS5_3ED.3.3.5#GOBIERNA`** — Es el paso del PROCEDIMIENTO DE DISEÑO del Capitulo 3 («Culvert Hydraulic Design», num. 3.3 «Culvert Design Using Nomographs») que dice cual control gobierna. La oracion anterior fija el sujeto: «For the first alternative selected, compare the headwater elevations calculated for inlet and outlet control». Dos cosas que la frase dice y que el paso que la cita respeta: compara COTAS de carga (headwater elevations), que con los dos controles referidos al mismo fondo de entrada es comparar los dos HW; y «is designated» es una definicion del metodo, no una exigencia sobre el diseño. La oracion siguiente da la razon fisica: «The culvert can be expected to operate with that higher headwater for at least part of the time». Lo que el paso 4.4 hace ADEMAS --tomar como HW de salida el del remanso cuando la aproximacion de h_o esta fuera de rango-- no sale de aqui sino de la pag. 3.12 (`HDS5_3ED.3.1.4#0_75D`), que el paso cita aparte. Hasta T-0 el paso citaba `HDS5_3ED.A.2`, las ecuaciones de control de entrada (INF-5.1.10).
 
 > **`HDS5_3ED.3.5#PERFIL`** — La frase esta en el parrafo introductorio de la Seccion 3.5 que abre la pag. 3.36, justo ANTES del encabezado 3.5.1 (el encabezado 3.5 esta en la pag. 3.34, PDF 116), y es la que nombra las TRES salidas del perfil que E-A implementa: el tirante (V1), la velocidad (V2) y la longitud de barril lleno (la primera condicion de h_o). El parrafo sigue: «The profile is determined by first establishing if the culvert slope is supercritical (inlet control) or subcritical (outlet control). Next, the tailwater is used to establish which profile to assume and at what depth to start the profile».
+
+> **`HDS5_3ED.3.5.1#H2`** — La fuente NOMBRA los perfiles de pendiente horizontal (H2 y H3) como parte de los que HY-8 calcula desde la version 7.3, y no los desarrolla. El rotulo `TipoDePerfil.H2` es de aqui; el procedimiento con que el proyecto lo integra es el mismo paso directo de la pag. 3.12, con S = 0.
 
 > **`HDS5_3ED.3.5.1#S1`** — Parrafo «USGS Flow Type 1 (Inlet Control)». Es lo que sostiene `PerfilLamina.alcanza_entrada`: en pendiente pronunciada la S1 que arranca en el TW (o en y_c, con longitud cero) solo gobierna el HW si llega a la cara de entrada; si corta y_c antes, el control es de entrada y aguas arriba del resalto el flujo es supercritico. La fuente sigue con la localizacion del resalto por la profundidad secuente (JFt, JFf) y, en HY-8 7.3, por momentum: el proyecto NO situa el resalto --le basta saber que la S1 no llega-- y lo deja escrito en decisiones_diferidas.md.
 
@@ -496,13 +513,23 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.5.3.3#ALINEADO`** — Es la contracara del indicador y la que explica por que la verificacion pasa en la inmensa mayoria de los puntos de este corredor: Sec. 7.B fija que la alcantarilla sigue la pendiente del cauce, de modo que S_conducto = S_cauce salvo que el punto declare `S_conducto` aparte. El «generally» es de la fuente y se conserva: no dice «nunca».
 
+> **`HDS5_3ED.5.3.3#DEPRESION`** — Es el final del num. 5.3.3, ya en la pag. impresa 5.12, y lo que la fuente dice del caso que el primer indicador describe: el conducto mas plano que su cauce sedimenta SOBRE TODO con caudales bajos y SUELE limpiarse solo con los altos. La oracion siguiente pide abordar ese diseño con cautela y con mas investigacion de campo; no lo prohibe. Sostiene que el indicador se aplique como aviso (`regimen_v2b`). EL NUMERAL ENTERO, leido en T-2 (INF-3.2.9): ademas de los dos indicadores --pendiente y rugosidad-- nombra como factores la magnitud del caudal y el material del cauce, los cauces en agradacion, los cambios de pendiente a la entrada, las instalaciones multibarril y las entradas deprimidas. Ninguno lleva cifra.
+
 > **`HDS5_3ED.5.3.3#INDICADORES`** — LOS DOS INDICADORES SON COMPARACIONES, NO UMBRALES. La fuente no escribe ninguna cifra: nombra dos desigualdades entre el conducto y el cauce natural. La primera -- S_conducto < S_cauce -- este software la puede evaluar con dos columnas que ya tiene. La segunda -- n_conducto > n_cauce -- necesita el n del CAUCE NATURAL, que no es columna de Sec. 1.2 y por eso queda declarada, no adivinada.
 
 > **`HDS5_3ED.5.4.3#REPARTO`** — Es el sosten de la regla vinculante #3 (Q/N por barril) que hasta EXT-2 no estaba en el registro. La fuente lo escribe como un SUPUESTO («is assumed») condicionado a barriles hidraulicamente identicos -- misma seccion, misma cota de fondo, misma embocadura --, que es exactamente lo que `SeccionRectangular` modela: UNA celda repetida N veces. Para barriles distintos o con cotas distintas la misma pagina remite a un procedimiento iterativo o a una curva de funcionamiento combinada (Section 3.5), que el proyecto NO implementa: el criterio 'n_celdas_cajon' declara N celdas iguales y nada mas.
 
+> **`HDS5_3ED.5.4.4#PENDIENTE_10`** — DESCRIBE una practica, no fija un limite: bajo el 10 % no hacen falta medidas estructurales especiales. Es el unico numero sobre pendiente maxima que trae una fuente de `normas/`, y por eso es el valor que `pendiente_maxima_conducto` adopta como [A]. Entre 10 % y 20 % la misma pagina pide atar las ultimas secciones del tubo; por encima del 20 %, `HDS5_3ED.5.4.4#PENDIENTE_20`.
+
+> **`HDS5_3ED.5.4.4#PENDIENTE_20`** — La cautela hidraulica del USBR que nombra esta en la misma pagina: no dejar que el barril fluya lleno en caidas grandes. Este programa no dimensiona anclajes ni ataduras de tubo: por eso la ventana de `pendiente_maxima_conducto` termina en 0.10.
+
 > **`HDS5_3ED.A.2`** — NOR-HDS-03, confirmado: `Ku` y `Ks` estan en la LISTA DE VARIABLES de las ecuaciones del num. A.2.1, pag. impresa A.2, y NO en la Tabla A.1. La Tabla A.1 tiene nueve columnas y de constantes de la ecuacion solo cuatro -- K, M, c e Y --: no hay columna K_u ni columna K_s.
 
+> **`HDS5_3ED.A.2.1#FORMA_1`** — LA BASE DE LA FORMA 1 ES H_c, y los demas terminos --K(q*)^M y Ks·S-- son «correction factors». Es lo que sostiene el piso «energia_critica» de `hw_entrada_fuera_de_rango`: cuando la correccion por pendiente, extrapolada, anula la carga, el proyecto se queda con la base de la que la ecuacion parte. LA FUENTE NO PRESCRIBE ESE PISO --no dice que hacer cuando HWi/D sale nulo o negativo--: por eso el criterio sigue siendo [A], con «descartar» como alternativa, y no [C].
+
 > **`HDS5_3ED.A.2.1#QLIM`** — «apply up to ABOUT»: la fuente NO fija un umbral duro. Y los 3.5 son del sistema INGLES; su equivalente SI, entre parentesis, es 1.93. Como `caudal_adimensional` multiplica por KU_SI = 1.811, el q* que M4 compara ya esta en la escala inglesa y le corresponden 3.5 y 4.0: cambiarlos por los del parentesis seria aplicar dos veces la conversion.
+
+> **`HDS5_3ED.A.3#PENDIENTE_2`** — Dos cosas en una frase: que la correccion por pendiente es CHICA («the slope effect is small»), y que fijarla en el 2 % deja la carga del lado conservador en pendientes mayores. Es el extremo inferior de la ventana de `pendiente_maxima_conducto` (0.02: la pendiente con que la fuente traza sus curvas) y el argumento con que el proyecto lee el termino Ks·S como una correccion menor que no puede anular la carga.
 
 > **`HDS5_3ED.A.3.1#CRITICO`** — ES LA CONDICION DE FLUJO CRITICO ESCRITA POR LA FUENTE, y no con los simbolos del paso que la cita. La pagina la escribe como V_c^2/(2g) = y_h/2 con y_h = A_p/T_p el tirante hidraulico, y dos renglones despues como numero de Froude: «Since the Froude number equals 1.0 at critical depth, Vc can be determined from the Froude number equation», con Qc = Ap (g yh)^0.5. Sustituyendo V = Q/A y y_h = A/T, las dos son Q^2/g = A^3/T, que es la forma en que `M4._residuo_critico` la resuelve: la igualdad es algebra de una linea y la hace el proyecto, no la fuente. Esta en un EJEMPLO del Apendice A (el desarrollo de la curva adimensional de una seccion eliptica), no en un numeral de definiciones: el HDS-5 no dedica ningun apartado a definir el tirante critico --lo lee de las cartas del Apendice C (num. 3.3.3)--, y esta es la unica pagina del ejemplar que escribe la condicion con la que se calcula. La misma pagina define H_c/D = d_c/D + y_h/(2D), ec. (A.4), que es el H_c de la Forma 1.
 
@@ -525,6 +552,7 @@ línea que se pueda romper.
 | `MC_HHD.3.12.5#G` | 3.12.5 | «Otras Metodologías» | pág. impresa **63** · PDF 66 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.3.6` | 3.6 | «Selección del Período de Retorno» | pág. impresa **25** · PDF 28 | recomendacion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.1` | 4.1.1.3.1 | «Aspectos generales» | pág. impresa **70** · PDF 73 | definicion | 2026-08-28 · texto |
+| `MC_HHD.4.1.1.3.3` | 4.1.1.3.3 | «Pendiente longitudinal» | pág. impresa **71** · PDF 74 | exigencia | 2026-11-11 · texto |
 | `MC_HHD.4.1.1.3.4a` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | exigencia | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.4a#MARCO` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | recomendacion | 2026-09-07 · texto |
 | `MC_HHD.4.1.1.3.4a#MULTIPLES` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | recomendacion | 2026-09-07 · texto |
@@ -552,6 +580,8 @@ línea que se pueda romper.
 > **`MC_HHD.3.12.5#G`** — Primera de las DOS paginas del Manual donde 9.8 figura como gravedad.
 
 > **`MC_HHD.3.6`** — El numeral abre en la pag. impresa 23 (PDF 26); la Tabla Nº 02 y este parrafo estan en la 25 (PDF 28).
+
+> **`MC_HHD.4.1.1.3.3`** — EXIGENCIA SIN NUMERO. El numeral entero son dos parrafos: este y la remision a la Lamina Nº 01 («ubicación típica de alcantarillas respecto a la pendiente del cauce»). No fija pendiente minima ni maxima, ni en porcentaje ni por material: obliga a ESTUDIAR el cambio de pendiente. Las cifras «2 % en TMC, 1 % en marco» que circulan en expedientes no salen de aqui.
 
 > **`MC_HHD.4.1.1.3.5`** — Se declara aunque el proyecto no tome ningun valor de el: es el numeral con el que se confundio la Tabla Nº 09 antes de S5, y tenerlo escrito con su titulo es lo que impide repetir la confusion. NO contiene ninguna tabla de rugosidad.
 
@@ -1338,9 +1368,9 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `HDS5_3ED.TA1` — Table A.1.  Constants for Inlet Control Equations for Charts in Appendix G.
 
 - Cita: `HDS5_3ED.TA.1`
-- Transcripcion acotada · el calculo usa 8 de 10 columnas y 2 de 18 filas
-- **Transcripción acotada.** Razón: de las 36 filas de la tabla, este proyecto transcribe las que su catalogo puede alcanzar: las TRES CIRCULARES que sus materiales usan -- concreto a ras del muro, y las dos de metal corrugado, cabezal e inglete --, y, desde C2, las quince del cajon rectangular de concreto de las Cartas 8 a 12, que son las que la Familia C necesita. Las demas describen bordes o formas que ningun punto del corredor puede tener
-  - Qué queda fuera: de las circulares, las configuraciones de borde no adoptadas -- «Groove end w/headwall», «Groove end projecting», «Projecting» y los dos «Beveled ring» de la Carta 3 --. Del cajon rectangular de concreto, OCHO filas mas que la tabla si trae y que este proyecto no puede alcanzar: las tres de la Carta 13 «Rect. Box Top Bev. Conc.» (bisel superior con aletas desplazadas) y las cinco de «Rectangular Concrete» de las Cartas 57, 58 y 59, que son GARGANTAS DE TAPERED INLET y no embocaduras de barril. Y las cinco de tapered inlet circular y de cara eliptica, Cartas 55 y 56
+- Transcripcion acotada · el calculo usa 8 de 10 columnas y 2 de 26 filas
+- **Transcripción acotada.** Razón: de las 36 filas de la tabla, este proyecto transcribe las 26 que describen una EMBOCADURA DE BARRIL: las ocho circulares de las Cartas 1, 2 y 3 -- de las que el catalogo USA tres: concreto a escuadra a ras del muro y las dos de metal corrugado, cabezal e inglete --, y las dieciocho del cajon rectangular de concreto de las Cartas 8 a 13. Las cinco circulares y las tres de la Carta 13 que anadio T-2 no cambian ningun calculo: quedan disponibles para que la embocadura del cabezal nombre su fila
+  - Qué queda fuera: las diez filas de TAPERED INLET, que son caras y gargantas de una entrada abocinada y no embocaduras de barril: las dos de «Circular» de la Carta 55 (garganta lisa y rugosa), las tres de «Ellipital Face» de la Carta 56 y las cinco de «Rectangular Concrete» de las Cartas 57, 58 y 59
   - Dónde leerlo: HDS-5 3a ed., Tabla A.1, PDF 197. La pagina NO LLEVA FOLIO IMPRESO, de modo que la «pag. impresa A.8» que el repositorio declara es una INFERENCIA por secuencia (PDF 196 lleva A.7) y no una lectura. En I3 el verificador-normativo la confirmo CORRECTO-INFERIDO por texto con coordenadas Y por render de la pagina entera, los cuatro bordes: ningun folio en 197; vecinos leidos A.5@194 a A.7@196 y B.1@203; entre A.7 y B.1 van seis paginas sin folio (las tres apaisadas de tablas 197-199, la vertical de las Tablas A.4-A.6 en 200, la en blanco 201 y la portadilla del Apendice B en 202 -- esta frase decia «cuatro apaisadas» hasta I3), y ninguna asignacion alternativa de folios es consistente con los impresos. `pagina_impresa` se queda en «A.8»: es el valor que la regla de paginacion de T6 predice, y la nota de `HDS5_3ED.TA.1` es la que declara que no es una lectura
 - Columna «Nomograph Scale» transcrita y **no usada**: identifica la escala del nomograma impreso; este programa resuelve las ecuaciones y no lee nomogramas
 - Columna «References» transcrita y **no usada**: son las referencias bibliograficas de cada carta (Bossy 1963, FHWA 1974, NBS 5th, HEC 13); no entran en ninguna formula
@@ -1359,6 +1389,9 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 - Fila «12 -- Rect. Box 3/4" chamf. Conc. -- 45° non-offset wingwall flares»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
 - Fila «12 -- Rect. Box 3/4" chamf. Conc. -- 18.4° non-offset wingwall flares»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
 - Fila «12 -- Rect. Box 3/4" chamf. Conc. -- 18.4° non-offset wingwall flares 30° skewed barrel»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «13 -- Rect. Box Top Bev. Conc. -- 45° wingwall flares - offset»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «13 -- Rect. Box Top Bev. Conc. -- 33.7° wingwall flares - offset»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
+- Fila «13 -- Rect. Box Top Bev. Conc. -- 18.4° wingwall flares - offset»: **elección pendiente** (`COND-EMBOCADURA-CAJON`)
 - **Errata declarada**: `DIS-HDS5-APENDICE-G`
 - Vistas de cálculo derivadas: `HDS5_INLET`
 
@@ -1367,6 +1400,11 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | 1 -- Circular Concrete -- Square edge w/headwall | 1 | Circular Concrete | 1 | Square edge w/headwall | 1 | 0.0098 | 2.0 | 0.0398 | 0.67 | 1, 2 | usada |
 | 2 -- Circular CM -- Headwall | 2 | Circular CM | 1 | Headwall | 1 | 0.0078 | 2.0 | 0.0379 | 0.69 | 1, 2 | usada |
 | 2 -- Circular CM -- Mitered to slope | 2 | Circular CM | 2 | Mitered to slope | 1 | 0.021 | 1.33 | 0.0463 | 0.75 | 1, 2 | no usada |
+| 1 -- Circular Concrete -- Groove end w/headwall | 1 | Circular Concrete | 2 | Groove end w/headwall | 1 | 0.0018 | 2.0 | 0.0292 | 0.74 | 1, 2 | no usada |
+| 1 -- Circular Concrete -- Groove end projecting | 1 | Circular Concrete | 3 | Groove end projecting | 1 | 0.0045 | 2.0 | 0.0317 | 0.69 | 1, 2 | no usada |
+| 2 -- Circular CM -- Projecting | 2 | Circular CM | 3 | Projecting | 1 | 0.034 | 1.5 | 0.0553 | 0.54 | 1, 2 | no usada |
+| 3 -- Circular -- Beveled ring, 45° bevels | 3 | Circular | A | Beveled ring, 45° bevels | 1 | 0.0018 | 2.5 | 0.03 | 0.74 | 2 | no usada |
+| 3 -- Circular -- Beveled ring, 33.7° bevels* | 3 | Circular | B | Beveled ring, 33.7° bevels* | 1 | 0.0018 | 2.5 | 0.0243 | 0.83 | 2 | no usada |
 | 8 -- Rect. Box Concrete -- 30° to 75° wingwall flares | 8 | Rect. Box Concrete | 1 | 30° to 75° wingwall flares | 1 | 0.026 | 1.0 | 0.0347 | 0.81 | 1, 3 | pendiente |
 | 8 -- Rect. Box Concrete -- 90° and 15° wingwall flares | 8 | Rect. Box Concrete | 2 | 90° and 15° wingwall flares | 1 | 0.061 | 0.75 | 0.04 | 0.8 | 1, 3 | pendiente |
 | 8 -- Rect. Box Concrete -- 0° wingwall flares | 8 | Rect. Box Concrete | 3 | 0° wingwall flares | 1 | 0.061 | 0.75 | 0.0423 | 0.82 | 1, 3 | pendiente |
@@ -1382,6 +1420,9 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | 12 -- Rect. Box 3/4" chamf. Conc. -- 45° non-offset wingwall flares | 12 | Rect. Box 3/4" chamf. Conc. | 1 | 45° non-offset wingwall flares | 2 | 0.497 | 0.667 | 0.0339 | 0.803 | 3 | pendiente |
 | 12 -- Rect. Box 3/4" chamf. Conc. -- 18.4° non-offset wingwall flares | 12 | Rect. Box 3/4" chamf. Conc. | 2 | 18.4° non-offset wingwall flares | 2 | 0.493 | 0.667 | 0.0361 | 0.806 | 3 | pendiente |
 | 12 -- Rect. Box 3/4" chamf. Conc. -- 18.4° non-offset wingwall flares 30° skewed barrel | 12 | Rect. Box 3/4" chamf. Conc. | 3 | 18.4° non-offset wingwall flares 30° skewed barrel | 2 | 0.495 | 0.667 | 0.0386 | 0.71 | 3 | pendiente |
+| 13 -- Rect. Box Top Bev. Conc. -- 45° wingwall flares - offset | 13 | Rect. Box Top Bev. Conc. | 1 | 45° wingwall flares - offset | 2 | 0.497 | 0.667 | 0.0302 | 0.835 | 3 | pendiente |
+| 13 -- Rect. Box Top Bev. Conc. -- 33.7° wingwall flares - offset | 13 | Rect. Box Top Bev. Conc. | 2 | 33.7° wingwall flares - offset | 2 | 0.495 | 0.667 | 0.0252 | 0.881 | 3 | pendiente |
+| 13 -- Rect. Box Top Bev. Conc. -- 18.4° wingwall flares - offset | 13 | Rect. Box Top Bev. Conc. | 3 | 18.4° wingwall flares - offset | 2 | 0.493 | 0.667 | 0.0227 | 0.887 | 3 | pendiente |
 
 > ¹²³⁴ Bossy 1963
 
@@ -1682,16 +1723,19 @@ recomienda.
 | `F4.CONTROL` | Fase 4 - Dimensionamiento hidraulico | Carga a la entrada HW por los dos controles del HDS-5, entrada y salida, y adopcion del mayor | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.3.1.4#K`, `HDS5_3ED.3.3.5#GOBIERNA` |
 | `F4.FORMA_HDS5` | Fase 4 - Dimensionamiento hidraulico | Forma de la ecuacion de control de entrada del HDS-5 que aplica a esta seccion, y por que | **define** | `HDS5_3ED.A.2`, `HDS5_3ED.TA.1`, `HDS5_3ED.A.3#FORMAS` |
 | `F4.HO` | Fase 4 - Dimensionamiento hidraulico | Altura de la linea de energia a la salida, h_o = max(TW, (d_c + D)/2) | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.3.3.3#HO_SUMERGIDA`, `HDS5_3ED.3.3.3#HO_1_2D`, `HDS5_3ED.3.1.4#0_75D` |
+| `F4.HORIZONTAL` | Fase 4 - Dimensionamiento hidraulico | Barril horizontal (S = 0): no hay tirante normal, y el regimen del conducto lo fija el extremo de aguas abajo | **permite** | `HDS5_3ED.3.3.4#HORIZONTAL`, `HDS5_3ED.3.3.4#KS`, `HDS5_3ED.3.3.4#H_SIN_AJUSTE`, `HDS5_3ED.3.5.1#H2` |
 | `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning: UNA geometria (el tirante, con n_max) y DOS velocidades, una por cada extremo del rango de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.PERFIL` | Fase 4 - Dimensionamiento hidraulico | Perfil de la lamina de agua por paso directo desde la salida hacia la entrada: longitud a seccion llena y carga a la entrada por remanso (HDS-5 pag. 3.12 y Section 3.5) | **define** | `HDS5_3ED.3.1.4#REMANSO`, `HDS5_3ED.3.1.4#EMPALME`, `HDS5_3ED.3.1.4#HW_REMANSO`, `HDS5_3ED.3.1.4#0_75D`, `HDS5_3ED.3.5#PERFIL`, `HDS5_3ED.3.5.1#S1`, `HDS5_3ED.3.5.1#TIPO7`, `HDS5_3ED.3.3.3#HO` |
+| `F4.PISO_HW` | Fase 4 - Dimensionamiento hidraulico | Carga de control de entrada cuando la correccion por pendiente Ks·S la deja nula o negativa: el piso adoptado (`hw_entrada_fuera_de_rango`) | **define** | `HDS5_3ED.A.2.1#FORMA_1`, `HDS5_3ED.A.2.1#KS`, `HDS5_3ED.A.3#PENDIENTE_2` |
 | `F4.REGIMEN` | Fase 4 - Dimensionamiento hidraulico | Regimen del barril y velocidad a la salida, con el area que HDS-5 3.1.6 asigna a cada caso | **define** | `HDS5_3ED.3.1.6#V_SALIDA`, `HDS5_3ED.3.1.6#V_SALIDA_TW`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HDS5_3ED.3.1.3#SUMERGENCIA` |
 | `F4.SECCION` | Fase 4 - Dimensionamiento hidraulico | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | **define** | `MC_HHD.4.1.1.3.6` |
 | `F4.YC` | Fase 4 - Dimensionamiento hidraulico | Tirante critico de la seccion, y la energia critica H_c | **define** | `HDS5_3ED.3.3.3#HO`, `HDS5_3ED.A.2`, `HDS5_3ED.A.3.1#CRITICO` |
 | `F5.V1` | Fase 5 - Verificaciones | V1 - Borde libre: y no mayor que la relacion de llenado adoptada (por defecto 0.75 de la altura, diametro o flecha de la estructura, el complemento del 25 % recomendado) | **recomienda** | `MC_HHD.4.1.1.3.7b`, `MC_HHD.4.1.1.3.7b#LLENA` |
+| `F5.V10` | Fase 5 - Verificaciones | V10 - Pendiente del conducto dentro de la banda adoptada: no menor que la minima ni mayor que la maxima | **define** | `MC_HHD.4.1.1.3.3`, `HDS5_3ED.3.3.4#HORIZONTAL`, `HDS5_3ED.5.4.4#PENDIENTE_10`, `HDS5_3ED.5.4.4#PENDIENTE_20`, `HDS5_3ED.A.3#PENDIENTE_2` |
 | `F5.V2` | Fase 5 - Verificaciones | V2 - Velocidad minima de autolimpieza: V no menor que el piso adoptado (por defecto los 0.25 m/s recomendados) | **recomienda** | `MC_HHD.4.1.1.3.6#VMIN_INICIO`, `MC_HHD.4.1.1.3.6#VMIN` |
 | `F5.V2b` | Fase 5 - Verificaciones | V2b - Sedimentacion / colmatacion: el indicador de pendiente del HDS-5 mas el acceso de mantenimiento declarado | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO` |
-| `F5.V2b.REGIMEN` | Fase 5 - Verificaciones | V2b - El regimen con que se aplica el indicador de pendiente: umbral duro o indicador con aviso (`regimen_v2b`) | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO` |
+| `F5.V2b.REGIMEN` | Fase 5 - Verificaciones | V2b - El regimen con que se aplica el indicador de pendiente: umbral duro o indicador con aviso (`regimen_v2b`) | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO`, `HDS5_3ED.5.3.3#DEPRESION` |
 | `F5.V3` | Fase 5 - Verificaciones | V3 - Velocidad maxima admisible del revestimiento (Tabla N 10) | **obliga** | `MC_HHD.4.1.1.3.6#T10` |
 | `F5.V4` | Fase 5 - Verificaciones | V4 - Carga a la entrada bajo la subrasante, con el resguardo que fija el CBR | **obliga** | `MS.4.5.4`, `MS.9.1.3` |
 | `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
@@ -1849,7 +1893,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 188.
+Citas sin firma de verificación: **5** de 198.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`
