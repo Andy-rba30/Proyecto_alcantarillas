@@ -96,8 +96,11 @@ MD recibe L y TW en vez de derivarlos:
                           0.02 = 2 %). OPCIONALES y solo por el JSON: afinan
                           la longitud por extremo de 7.B. `bombeo` >= 0 baja
                           los dos bordes; `peralte` lleva signo, positivo
-                          sube el borde del lado de la entrada. Sin ellos la
-                          plataforma se toma horizontal.
+                          sube el borde del lado de la entrada. SON
+                          EXCLUYENTES en un mismo punto (una seccion tiene
+                          bombeo o peralte): los dos distintos de cero son
+                          `DatoInvalidoError`. Sin ellos la plataforma se
+                          toma horizontal, y la memoria lo avisa.
     categoria_tr          fila de la Tabla N 02 del punto ('quebrada_importante'
                           o 'quebrada_menor'). Sec. 2.2 la declara cauce por
                           cauce y el Manual no da un umbral para deducirla; sin

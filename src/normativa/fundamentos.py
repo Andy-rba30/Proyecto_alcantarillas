@@ -1343,9 +1343,11 @@ ESVIAJE_MAXIMO = _fundamento(
     que_paso="Esviaje del cruce frente al maximo que el proyecto adopta",
     por_que=(
         "Un cruce muy esviado alarga el conducto y complica la embocadura: "
-        "con el cabezal paralelo a la via, el agua entra al barril girando "
-        "el mismo angulo del esviaje, y el HDS-5 describe un maximo practico "
-        "de unos 45 grados para ese giro. El esviaje es un DATO del cruce "
+        "con el cabezal paralelo a la via, la CARA de la embocadura queda "
+        "esviada respecto del barril el mismo angulo del cruce -- el flujo, "
+        "alineado con el barril, no gira: lo esviado es la cara por la que "
+        "entra --, y el HDS-5 describe un maximo practico de unos 45 grados "
+        "para ese esviaje de embocadura. El esviaje es un DATO del cruce "
         "-- lo mide la topografia -- y no una decision del calculo, de modo "
         "que superarlo no invalida el punto: obliga a mirarlo en planta y a "
         "decidir si se acondiciona el cauce, que es la salida que el Manual "
@@ -1364,14 +1366,17 @@ LONGITUD_CONDUCTO = _fundamento(
     fase=F7,
     que_paso="Longitud del conducto sobre la seccion transversal del cruce",
     por_que=(
-        "La longitud no se elige: sale de superponer el conducto a la "
-        "seccion transversal de la via en el cruce. A cada lado el talud del "
-        "terraplen baja desde el borde de la plataforma hasta encontrar al "
-        "conducto, y como la entrada y la salida no estan a la misma cota "
-        "-- la salida queda mas baja en toda la caida --, los dos taludes no "
-        "recorren la misma altura. La longitud que entra al diseño "
-        "hidraulico es una APROXIMACION, y la fuente lo dice: se calcula "
-        "antes de conocer la seccion, porque la seccion depende de ella."),
+        "La longitud sale de superponer el conducto a la seccion "
+        "transversal de la via en el cruce: no es un dato que se ponga a "
+        "mano. A cada lado el talud del terraplen baja desde el borde de la "
+        "plataforma hasta encontrar al conducto, y como la entrada y la "
+        "salida no estan a la misma cota -- la salida queda mas baja en "
+        "toda la caida --, los dos taludes no recorren la misma altura. La "
+        "longitud que entra al diseño hidraulico es una APROXIMACION, y la "
+        "fuente lo dice: se calcula antes de conocer la seccion, porque la "
+        "seccion depende de ella. Lo que la fuente no fija, y el proyecto "
+        "elige y declara, es el metodo: hasta que nivel baja cada talud "
+        "mientras la seccion no se conoce."),
     verbo=Verbo.DEFINE,
     citas=("HDS5_3ED.2.2.4#LONGITUD", "HDS5_3ED.3.1.4#LONGITUD",
            "DG2018.304.10#T304.11", "DG2018.304.05#BOMBEO",

@@ -95,7 +95,9 @@ from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M6_proteccion import proteccion_salida
 from src.modulos import M3_hidraulica as M3
 from src.modulos.M7_geometria import (compatibilidad_geometrica,
-                                      cota_salida, longitud_conducto,
+                                      cota_salida,
+                                      exigir_transversales_compatibles,
+                                      longitud_conducto,
                                       longitud_del_conducto,
                                       pendiente_adoptada)
 # `altura_relleno_sobre_clave` vive en M5 y no aqui: la comparten V7 -- que
@@ -385,6 +387,13 @@ CLAVES_EXTERNAS: Tuple[str, ...] = ("luz_m", "TW_m", "longitud_m", "Q_m3s",
 #   bombeo   >= 0: baja los DOS bordes de la plataforma respecto del eje.
 #   peralte  con signo: positivo sube el borde del lado de la ENTRADA y baja
 #            el de la salida (giro alrededor del eje); negativo, al reves.
+# SON EXCLUYENTES EN UN MISMO PUNTO (auditor de T-6): una seccion tiene bombeo
+# -- tangente o contraperalte, DG-2018 num. 304.05 -- o peralte -- curva, num.
+# 304.06 --, nunca los dos. `cargar_datos_externos` lo comprueba sobre el par
+# EFECTIVO de cada punto (el valor por punto pisa al global), con
+# `M7.exigir_transversales_compatibles`, que es tambien la segunda linea
+# dentro de M7. Un valor declarado en cero no cuenta: es como un punto en
+# curva anula el bombeo declarado para todos.
 CLAVES_TRANSVERSALES: Tuple[str, ...] = ("bombeo", "peralte")
 CLAVES_EXTERNAS += CLAVES_TRANSVERSALES
 
@@ -715,7 +724,18 @@ def cargar_datos_externos(ruta: Optional[Path],
             continue
         globales[clave] = _dato_externo(clave, bruto,
                                         f"linea de comandos (--{clave})")
-    return DatosExternos(globales, por_punto)
+    externos = DatosExternos(globales, por_punto)
+    # --- T-6 --- bombeo y peralte, excluyentes sobre el par EFECTIVO: el de
+    # `globales` (vale para todo punto sin valor propio) y el de cada punto
+    # que declara alguno de los dos.
+    exigir_transversales_compatibles(*(
+        None if clave not in globales else globales[clave].valor
+        for clave in CLAVES_TRANSVERSALES))
+    for id_punto in por_punto:
+        exigir_transversales_compatibles(
+            *(externos.valor(id_punto, clave) for clave in CLAVES_TRANSVERSALES),
+            id_punto)
+    return externos
 
 
 def _exige_clave(clave: str, donde: str) -> None:
@@ -831,6 +851,10 @@ class InformePunto:
     # dimensione. `longitud_calculada` es None cuando la longitud se declaro.
     longitud_calculada: Optional[LongitudConducto] = None
     pendiente: Optional[PendienteAdoptada] = None
+    # (bombeo, peralte) declarados para el punto, o (None, None). Viajan a
+    # 7.B para que una pendiente transversal declarada junto a una longitud
+    # DECLARADA no se descarte en silencio: 7.B lo avisa.
+    transversales: Tuple[Optional[float], Optional[float]] = (None, None)
     # El TW con su PROCEDENCIA: por cual de las cuatro vias de Sec. 1.3 salio,
     # con que cota de agua y -- si fue por escenarios acotados -- con los dos
     # numeros del paso 3. `tw` sigue siendo el float que MD consume; esto es
@@ -1078,15 +1102,17 @@ def _resolver_longitud(informe: InformePunto,
             punto, externos.valor(punto.id, "S_conducto"))
     except DatoFaltanteError:
         informe.pendiente = None
+    informe.transversales = (externos.valor(punto.id, "bombeo"),
+                             externos.valor(punto.id, "peralte"))
     declarada = externos.dato(punto.id, "longitud_m")
     if declarada is not None:
         return declarada
+    bombeo, peralte = informe.transversales
     calculada = _etapa(
         informe.bloqueos, FASE_GEOMETRIA, "longitud del conducto (7.B)",
         lambda: longitud_del_conducto(
             punto, pendiente=informe.pendiente,
-            bombeo=externos.valor(punto.id, "bombeo"),
-            peralte=externos.valor(punto.id, "peralte")))
+            bombeo=bombeo, peralte=peralte))
     if calculada is None:
         return None
     informe.longitud_calculada = calculada
@@ -1481,7 +1507,11 @@ def _fase_7(informe: InformePunto) -> None:
             resultado=resultado.resultado_hidraulico,
             longitud=None if calculada is not None else informe.longitud.valor,
             longitud_calculada=calculada,
-            pendiente=informe.pendiente))
+            pendiente=informe.pendiente,
+            # Solo cuentan con la longitud DECLARADA (7.B avisa que no se
+            # aplican); con la calculada ya van dentro de `calculada`.
+            bombeo=informe.transversales[0],
+            peralte=informe.transversales[1]))
 
 
 def _fase_8(informe: InformePunto) -> None:

@@ -48,6 +48,7 @@ from src.modulos.M0_carga import cargar_puntos
 from src.modulos.M2_material import catalogo, espesor_pared
 from src.normativa import registro
 from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.fixtures.casos_patron import CP_T6_LONGITUD_POR_EXTREMO as CP
 from tests.apoyo.criterios import con_valor
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -69,6 +70,7 @@ L_SIMETRICA = (ANCHO + 2 * TALUD * H_EJE) / COS15
 # se escribe en el docstring (18.8694).
 ABS = 1e-9
 TOL_CUENTA = 1e-4
+TOL_ROTULO = 5e-3        # un numero escrito con dos o tres decimales en un texto
 
 
 def _igual(valor):
@@ -347,6 +349,296 @@ def test_un_borde_de_plataforma_bajo_el_fondo_es_dato_invalido():
     assert "borde de la plataforma" in exc.value.motivo
 
 
+# ---------------------------------------------------------------------------
+# Lo que dejo el auditor adversarial de T-6
+# ---------------------------------------------------------------------------
+
+def test_dorado_a_mano_de_la_longitud_por_extremo():
+    """
+    CP-T6 (tests/fixtures/casos_patron.py): la aritmetica esta escrita alli.
+    Aqui se rehace SIN la formula cerrada -- por la iteracion de punto fijo
+    de la identidad geometrica -- y se compara el modulo contra el dorado.
+    """
+    ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    tol = CP["tolerancia"]
+    # la iteracion: L <- (ancho + proy_entrada + talud*(H + S*L)) / cos
+    H = CP["cota_rasante"] - CP["cota_terreno"]
+    L = CP["longitud_formula_anterior"]
+    for _ in range(12):
+        L = (CP["ancho_plataforma"] + CP["talud"] * H
+             + CP["talud"] * (H + CP["S"] * L)) / CP["cos_esviaje"]
+    assert L == pytest.approx(CP["longitud_esperada"], abs=tol)
+    lc = M7.longitud_del_conducto(_punto())
+    assert lc.longitud == pytest.approx(CP["longitud_esperada"], abs=tol)
+    assert lc.proyeccion_entrada == pytest.approx(
+        CP["proyeccion_entrada_esperada"], abs=tol)
+    assert lc.proyeccion_salida == pytest.approx(
+        CP["proyeccion_salida_esperada"], abs=tol)
+    geo = _geometria()
+    assert geo.caida == pytest.approx(CP["caida_esperada"], abs=tol)
+    assert geo.cota_salida == pytest.approx(CP["cota_salida_esperada"], abs=tol)
+    # la formula anterior queda a 0.234 m: el dorado la separa
+    assert abs(CP["longitud_formula_anterior"] - lc.longitud) > 0.2
+
+
+def test_dorado_a_mano_con_peralte_con_fondo_medido_y_con_bombeo():
+    ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    tol = CP["tolerancia"]
+    peraltado = M7.longitud_del_conducto(_punto(), peralte=CP["peralte"])
+    assert peraltado.longitud == pytest.approx(
+        CP["longitud_con_peralte_esperada"], abs=tol)
+    assert peraltado.cota_borde_entrada == pytest.approx(
+        CP["cota_borde_entrada_con_peralte"], abs=tol)
+    assert peraltado.cota_borde_salida == pytest.approx(
+        CP["cota_borde_salida_con_peralte"], abs=tol)
+    assert peraltado.semilongitud_entrada == pytest.approx(
+        CP["semilongitud_entrada_con_peralte"], abs=tol)
+    assert peraltado.semilongitud_salida == pytest.approx(
+        CP["semilongitud_salida_con_peralte"], abs=tol)
+    medido = _geometria(_punto(
+        cota_fondo_entrada=CP["cota_fondo_entrada_medida"]))
+    assert medido.longitud == pytest.approx(
+        CP["longitud_con_fondo_medido_esperada"], abs=tol)
+    assert medido.cota_salida == pytest.approx(
+        CP["cota_salida_con_fondo_medido_esperada"], abs=tol)
+    bombeado = M7.longitud_del_conducto(_punto(), bombeo=CP["bombeo"])
+    assert bombeado.longitud == pytest.approx(
+        CP["longitud_con_bombeo_esperada"], abs=tol)
+
+
+def test_bombeo_y_peralte_a_la_vez_son_dato_invalido_y_nombran_el_par():
+    """
+    Auditor de T-6: se SUMABAN (A-01 con 0.02 y 0.04 daba 18.467 m). Una
+    seccion tiene bombeo o peralte: DG-2018 304.05 y 304.06.
+    """
+    for metodo in ("por_extremo", "terraplen_simetrico"):
+        ca.establecer_valor_dinamico(CLAVE_METODO, metodo)
+        with pytest.raises(DatoInvalidoError) as exc:
+            M7.longitud_del_conducto(_punto(), bombeo=0.02, peralte=0.04)
+        assert "bombeo" in exc.value.campo and "peralte" in exc.value.campo
+        assert "304.05" in exc.value.motivo and "304.06" in exc.value.motivo
+    with pytest.raises(DatoInvalidoError):
+        M7.longitud_declarada(_punto(), 20.0, bombeo=0.02, peralte=-0.04)
+    # un cero declarado NO cuenta: es como se anula el bombeo en una curva
+    ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    solo_peralte = M7.longitud_del_conducto(_punto(), peralte=0.04)
+    con_cero = M7.longitud_del_conducto(_punto(), bombeo=0.0, peralte=0.04)
+    assert con_cero.longitud == pytest.approx(solo_peralte.longitud, abs=ABS)
+    assert con_cero.longitud == pytest.approx(L_POR_EXTREMO, abs=ABS)
+
+
+def test_exigir_transversales_compatibles_solo_rechaza_el_par_no_nulo():
+    """La regla sola, que comparten M7 y la carga de datos externos."""
+    for par in ((None, None), (0.02, None), (None, -0.04), (0.0, 0.04),
+                (0.02, 0.0), (0.0, 0.0)):
+        M7.exigir_transversales_compatibles(*par, "A-01")      # no lanza
+    for par in ((0.02, 0.04), (0.02, -0.04), (0.001, 0.001)):
+        with pytest.raises(DatoInvalidoError) as exc:
+            M7.exigir_transversales_compatibles(*par, "A-01")
+        assert exc.value.id_punto == "A-01"
+
+
+@pytest.mark.parametrize("contenido", [
+    {"globales": {"bombeo": 0.02, "peralte": 0.04}},
+    {"puntos": {"A-01": {"bombeo": 0.02, "peralte": 0.04}}},
+    {"globales": {"bombeo": 0.02}, "puntos": {"A-02": {"peralte": -0.04}}},
+    {"globales": {"peralte": 0.04}, "puntos": {"A-02": {"bombeo": 0.02}}},
+])
+def test_el_par_bombeo_peralte_se_rechaza_al_cargar_tambien_por_globales(
+        tmp_path, contenido):
+    ruta = tmp_path / "ext.json"
+    ruta.write_text(json.dumps(contenido))
+    with pytest.raises(DatoInvalidoError) as exc:
+        cli.cargar_datos_externos(ruta, {"luz_m": 2.75})
+    assert "bombeo" in exc.value.campo and "peralte" in exc.value.campo
+
+
+def test_el_punto_en_curva_anula_el_bombeo_global_con_cero(tmp_path):
+    ruta = tmp_path / "ext.json"
+    ruta.write_text(json.dumps({
+        "globales": {"bombeo": 0.02, "TW_m": 0.3},
+        "puntos": {"A-02": {"bombeo": 0.0, "peralte": 0.04}}}))
+    informe = _correr(externos=ruta)
+    a01, a02 = informe.puntos[0], informe.puntos[1]
+    assert a01.longitud_calculada.bombeo == _igual(0.02)
+    assert a01.longitud_calculada.peralte is None
+    assert a02.longitud_calculada.peralte == _igual(0.04)
+    assert a02.longitud_calculada.cota_borde_entrada > \
+        a02.longitud_calculada.cota_borde_salida
+
+
+@pytest.mark.parametrize("clave, valor", [
+    ("bombeo", -0.5), ("bombeo", -0.02), ("bombeo", 2.0), ("peralte", 4.0),
+    ("peralte", -4.0), ("bombeo", float("nan")), ("peralte", float("inf")),
+    ("bombeo", True), ("peralte", "0.04"),
+])
+def test_la_segunda_linea_de_M7_rechaza_la_transversal_invalida(clave, valor):
+    """Auditor de T-6: bombeo = -0.5 llamado directo daba 28.93 m."""
+    ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    with pytest.raises(DatoInvalidoError) as exc:
+        M7.longitud_del_conducto(_punto(), **{clave: valor})
+    assert exc.value.campo == clave
+
+
+def test_la_plataforma_horizontal_se_avisa_con_su_sensibilidad():
+    """
+    Sin bombeo ni peralte la plataforma se toma horizontal, y eso se dice:
+    cada 1 % de bombeo acorta talud*ancho/(cos - talud*S) centimetros
+    (2.0 * 9.60 / 0.953926 = 20.1 en A-01; un 2 % son 0.40 m).
+    """
+    ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    lc = M7.longitud_del_conducto(_punto())
+    assert len(lc.avisos) == 1
+    assert "plataforma tomada horizontal" in lc.avisos[0]
+    assert "20.1 cm" in lc.avisos[0]
+    con_2 = M7.longitud_del_conducto(_punto(), bombeo=0.02)
+    assert lc.longitud - con_2.longitud == pytest.approx(
+        2 * 20.1 / 100, abs=TOL_ROTULO)
+    assert con_2.avisos == ()
+    assert M7.longitud_del_conducto(_punto(), peralte=0.04).avisos == ()
+    # llega a 7.B, a la nota del paso, al JSON y a la memoria
+    geo = _geometria()
+    assert lc.avisos[0] in geo.avisos
+    assert "plataforma tomada horizontal" in geo.pasos[2].nota_del_proyecto
+    informe = _correr()
+    volcado = cli.informe_json(informe)
+    g = next(p for p in volcado["puntos"] if p["id"] == "A-01")["geometria"]
+    assert any("plataforma tomada horizontal" in a for a in g["avisos"])
+    b01 = next(p for p in informe.puntos if p.punto.id == "B-01")
+    assert "plataforma tomada horizontal" in M11.memoria_de_punto(b01)
+
+
+def test_una_transversal_declarada_que_se_descarta_lo_dice():
+    """Con el metodo simetrico o con la longitud declarada, no en silencio."""
+    ca.establecer_valor_dinamico(CLAVE_METODO, "terraplen_simetrico")
+    lc = M7.longitud_del_conducto(_punto(), bombeo=0.02)
+    assert lc.longitud == pytest.approx(L_SIMETRICA, abs=ABS)
+    assert len(lc.avisos) == 1 and "NO aplicada" in lc.avisos[0]
+    assert "bombeo = 0.02" in lc.avisos[0]
+    assert "NO aplicada" in lc.pasos[-1].nota_del_proyecto
+    assert M7.longitud_del_conducto(_punto()).avisos == ()
+    declarada = _geometria(longitud=14.0, peralte=0.04)
+    assert any("NO aplicada" in a and "peralte = 0.04" in a
+               for a in declarada.avisos)
+    assert "NO aplicada" in declarada.pasos[2].nota_del_proyecto
+
+
+def test_una_transversal_con_longitud_declarada_se_avisa_en_la_corrida(tmp_path):
+    ruta = tmp_path / "ext.json"
+    ruta.write_text(json.dumps({
+        "globales": {"TW_m": 0.3},
+        "puntos": {"A-01": {"longitud_m": 18.0, "bombeo": 0.02}}}))
+    informe = _correr(externos=ruta)
+    a01 = informe.puntos[0]
+    assert a01.geometria is not None
+    assert a01.geometria.longitud == _igual(18.0)
+    assert any("NO aplicada" in a for a in a01.geometria.avisos)
+
+
+def test_el_fondo_adoptado_declara_el_sesgo_del_eje_en_el_paso_de_la_longitud():
+    """
+    'cota_terreno' es el terreno EN EL EJE. Con el fondo adoptado, el metodo
+    ancla ahi la entrada; para un lecho de pendiente S que pasara por esa
+    cota en el eje:
+        aguas arriba  (4.80 + 2.0*2.10) / (cos 15 + 0.012) = 9.2031 m
+        aguas abajo   (4.80 + 2.0*2.10) / (cos 15 - 0.012) = 9.4347 m
+        L = 18.638 m, 0.232 m menos que los 18.869 del metodo.
+    """
+    ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    L_eje = (4.80 + TALUD * H_EJE) / (COS15 + TALUD * S_A01) \
+        + (4.80 + TALUD * H_EJE) / (COS15 - TALUD * S_A01)
+    assert L_eje == pytest.approx(18.638, abs=TOL_ROTULO)
+    nota = M7.longitud_del_conducto(_punto()).pasos[-1].nota_del_proyecto
+    assert "18.638 m" in nota and "+0.232 m" in nota
+    assert "EJE" in nota and "cota_fondo_entrada" in nota
+    # con el fondo MEDIDO no hay sesgo que declarar
+    medido = M7.longitud_del_conducto(_punto(cota_fondo_entrada=41.50))
+    assert "EJE de la via" not in medido.pasos[-1].nota_del_proyecto
+
+
+@pytest.mark.parametrize("grados", [-10.0, -89.0, -0.001, float("nan")])
+def test_un_esviaje_negativo_llamado_directo_es_dato_invalido(grados):
+    """
+    Auditor de T-6: -89 grados daba factor 57.3, 3301 m de conducto y G3 en
+    «cumple». El dominio de M7 es el de M0, [0, 90).
+    """
+    punto = _punto(esviaje_grados=grados)
+    for llamada in (M7.factor_esviaje, M7.g3_esviaje,
+                    M7.longitud_del_conducto):
+        with pytest.raises(DatoInvalidoError) as exc:
+            llamada(punto)
+        assert exc.value.campo == "esviaje_grados"
+    assert M7.factor_esviaje(_punto(esviaje_grados=0.0)) == _igual(1.0)
+
+
+def test_el_error_del_denominador_nombra_el_par_esviaje_pendiente():
+    """cos(60) = 0.5 = 2.0 * 0.25: el mismo S tiene longitud con menos esviaje."""
+    ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    punto = _punto(esviaje_grados=60.0, S_cauce=0.26)
+    with pytest.raises(DatoInvalidoError) as exc:
+        M7.longitud_del_conducto(punto)
+    assert "esviaje_grados" in exc.value.campo
+    assert "S_conducto" in exc.value.campo
+    assert "esviaje" in exc.value.motivo and "pendiente" in exc.value.motivo
+    assert M7.longitud_conducto(replace(punto, esviaje_grados=15.0)) > 0
+
+
+def test_la_longitud_a_la_clave_es_cota_superior_de_la_de_entre_cabezales():
+    """
+    Auditor de T-6: el docstring decia «cota inferior». Un cabezal 0.30 m
+    sobre la clave acorta 2*2.0*0.30/0.953926 = 1.258 m MAS: 13.42 < 14.68.
+    """
+    ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    geo = _geometria()
+    con_cabezal_mas_alto = geo.longitud_a_la_clave \
+        - 2 * TALUD * 0.30 / (COS15 - TALUD * S_A01)
+    assert geo.longitud_a_la_clave == pytest.approx(14.68, abs=TOL_ROTULO)
+    assert con_cabezal_mas_alto == pytest.approx(13.42, abs=TOL_ROTULO)
+    assert con_cabezal_mas_alto < geo.longitud_a_la_clave < geo.longitud
+    doc = M7.longitud_a_la_clave.__doc__
+    assert "COTA SUPERIOR" in doc and "COTA INFERIOR" not in doc
+
+
+def test_los_textos_no_atribuyen_a_la_fuente_la_eleccion_del_proyecto():
+    """Medir al fondo es del proyecto; la cita sostiene la superposicion."""
+    ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    eleccion = M7.longitud_del_conducto(_punto()).pasos[-1].elecciones[0]
+    assert "eleccion del proyecto" in eleccion.por_que
+    assert "cota superior" in eleccion.por_que
+    nota = registro.construir().cita("HDS5_3ED.2.2.4#LONGITUD").nota
+    assert "Pavement Elevation" in nota
+    assert "CARA SUPERIOR DEL BARRIL" in nota
+    ficha = ca.CRITERIOS[CLAVE_METODO]
+    assert "no de la fuente" in ficha.justificacion
+    assert "0.9925" in ficha.justificacion and "1.0002" in ficha.justificacion
+    fundamento = registro.construir().fundamento("F7.ESVIAJE_MAX")
+    assert "no gira" in fundamento.por_que
+    assert "no se elige" not in registro.construir().fundamento(
+        "F7.LONGITUD").por_que
+    assert "inventar un valor normativo" in M7.factor_esviaje.__doc__   # citado
+    assert "adopcion declarada" in M7.factor_esviaje.__doc__
+
+
+def test_el_HW_de_salida_de_A01_con_la_longitud_a_la_clave_es_el_que_se_cita():
+    """
+    El numero que la ficha y la hoja de ruta dan para decir que la cota
+    superior de L no es el lado seguro: con L al fondo 0.9925 m, con L a la
+    clave 1.0002 m (7.7 mm mas), y gobierna la entrada con 1.042 m.
+    """
+    informe = _correr()
+    a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
+    h = a01.resultado.resultado_hidraulico
+    assert h.HW_salida == pytest.approx(0.9925, abs=TOL_CUENTA)
+    assert h.HW_entrada == pytest.approx(1.0420, abs=TOL_CUENTA)
+    # a mano: dHW/dL = friccion por metro - S, con R = D/4 y seccion llena
+    V = 1.167 / (math.pi / 4 * 0.90 ** 2)
+    por_metro = 19.63 * 0.013 ** 2 / (0.90 / 4) ** (4 / 3) * V ** 2 / (2 * 9.81)
+    dL = a01.geometria.longitud_a_la_clave - a01.geometria.longitud
+    HW_clave = h.HW_salida + (por_metro - S_A01) * dL
+    assert HW_clave == pytest.approx(1.0002, abs=TOL_CUENTA)
+    assert HW_clave < h.HW_entrada            # sigue gobernando la entrada
+
+
 def test_un_metodo_que_burla_la_puerta_lo_rechaza_el_consumidor():
     with con_valor(CLAVE_METODO, "a_ojo", motivo="guardia de M7 tras la puerta"):
         with pytest.raises(DatoInvalidoError) as exc:
@@ -592,8 +884,14 @@ def test_g2_lleva_paso_con_formula_sustituida_y_umbral_sin_cifra_de_fuente():
     assert _valor(p, "cota_fondo_receptor") == _igual(41.30)
     assert p.umbral.valor == pytest.approx(41.40, abs=ABS)
     assert p.umbral.criterio_aplicado == CLAVE_DESNIVEL
-    assert p.umbral.cita_id == "MC_HHD.4.1.1.3.3"
+    # Auditor de T-6: el umbral es un [A] y NO toma caracter EXIGENCIA del
+    # numeral de la pendiente, que no habla de la entrega. Su cita es la
+    # lamina, que tipifica (DEFINICION) y no acota.
+    assert p.umbral.cita_id == "MC_HHD.LAMINA_01"
+    assert p.umbral.caracter == "DEFINICION"
+    assert "EXIGENCIA" not in p.umbral.caracter
     assert "SIN CIFRA" in p.umbral.aplicacion
+    assert "ADOPCION" in p.umbral.aplicacion
     assert p.veredicto.tipo is TipoDeVeredicto.CUMPLE
     assert p.veredicto.margen == pytest.approx(41.987 - 41.40, abs=ABS)
     assert p.resultado.valor == pytest.approx(0.687, abs=ABS)

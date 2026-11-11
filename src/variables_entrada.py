@@ -930,8 +930,9 @@ _EXTERNOS: Dict[str, _Externo] = {
                  "transversal MEDIA de la semiplataforma (calzada y berma): "
                  "baja los dos bordes respecto de la rasante del eje y "
                  "acorta la proyeccion de los taludes en la longitud del "
-                 "conducto por extremo (Sec. 7.B). Sin declarar, la "
-                 "plataforma se toma horizontal",
+                 "conducto por extremo (Sec. 7.B). Excluyente con "
+                 "'peralte' en un mismo punto. Sin declarar, la plataforma "
+                 "se toma horizontal y la memoria lo avisa",
         unidad="m/m",
         resolucion=Libre(
             que_lo_fija="la seccion tipica del trazo (DG-2018 num. 304.05, "
@@ -951,7 +952,9 @@ _EXTERNOS: Dict[str, _Externo] = {
                  "la ENTRADA del conducto y baja el de la salida; negativo, "
                  "al reves. Gira la plataforma alrededor del eje: no cambia "
                  "la longitud del conducto y si la altura de terraplen de "
-                 "cada extremo (Sec. 7.B). Sin declarar vale cero",
+                 "cada extremo (Sec. 7.B). Excluyente con 'bombeo' en un "
+                 "mismo punto (el punto en curva declara `bombeo` = 0). Sin "
+                 "declarar vale cero",
         unidad="m/m",
         resolucion=Libre(
             que_lo_fija="la seccion tipica del trazo en curva (DG-2018 num. "

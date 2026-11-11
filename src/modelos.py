@@ -5373,3 +5373,7 @@ class LongitudConducto:
     semilongitud_entrada: Optional[float]
     semilongitud_salida: Optional[float]
     pasos: Tuple["PasoDeMemoria", ...] = ()
+    # Avisos de la longitud (auditor de T-6): la plataforma tomada horizontal
+    # por no declararse bombeo ni peralte, o una pendiente transversal
+    # declarada que el metodo o una longitud declarada dejan sin aplicar.
+    avisos: Tuple[str, ...] = ()

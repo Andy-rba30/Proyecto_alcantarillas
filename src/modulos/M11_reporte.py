@@ -1983,6 +1983,9 @@ def _bloques_fases_finales(informe: Any) -> str:
                 '<div class="nota"><p>El punto no se dimensiono y la Sec. '
                 "7.B no se evaluo; se publica la longitud con que corrio el "
                 "diseño hidraulico de cada escalon.</p></div>"
+                + "".join(
+                    f'<div class="aviso"><p><b>Aviso:</b> {_esc(a)}.</p></div>'
+                    for a in getattr(informe.longitud_calculada, "avisos", ()))
                 + bloque_pasos(pasos_7b, TITULO_TRAZA_GEOMETRIA_PREVIA))
 
     if informe.cama_apoyo is not None:

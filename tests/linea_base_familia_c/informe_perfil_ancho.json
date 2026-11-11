@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "7bf1546b24a7680db6c2358968a680d03737b188",
+    "criterios_sha1": "54877af2d0133b4b35f244b4db7739e4e02c9e2e",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -307,7 +307,8 @@
         "longitud_a_la_clave_m": 14.676193488190119,
         "desnivel_entrega_m": 0.6867836502339628,
         "avisos": [
-          "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
+          "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+          "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto"
         ],
         "factible": true,
         "delta_rasante_cm": null,
@@ -670,7 +671,8 @@
         "longitud_a_la_clave_m": 14.486917780360086,
         "desnivel_entrega_m": 0.6014580824774356,
         "avisos": [
-          "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
+          "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+          "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
         ],
         "factible": true,
         "delta_rasante_cm": null,

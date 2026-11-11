@@ -49,6 +49,7 @@ A-01  |  progresiva 0+380  |  Familia A
         longitud: metodo por_extremo; entre cabezales a la clave 14.676 m
         pendiente: S = 0.0060 m/m (S_cauce); caida 0.113 m
         aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
+        aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto
         factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
@@ -106,6 +107,7 @@ A-02  |  progresiva 1+920  |  Familia A
         longitud: metodo por_extremo; entre cabezales a la clave 14.487 m
         pendiente: S = 0.0080 m/m (S_cauce); caida 0.149 m
         aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
+        aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto
         factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)

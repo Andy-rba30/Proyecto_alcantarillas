@@ -888,16 +888,14 @@ def test_la_memoria_de_un_marco_no_dice_que_su_h_rec_sale_de_aashto(
 
 def test_M0_rechaza_el_esviaje_negativo_antes_de_que_M7_lo_vea(tmp_path):
     """
-    SIS-B-23. `factor_esviaje` admite (-ESVIAJE_MAX, ESVIAJE_MAX) y M0 exige
-    [0, ESVIAJE_MAX) al cargar el CSV: el rango de M7 es un SUPERCONJUNTO del
-    que M0 deja entrar, de modo que la mitad negativa de su guarda no la
-    alcanza ningun PuntoCritico que venga del expediente. Ese es el motivo de
-    que no tenga test que la ejecute, y este es el motivo escrito.
-
-    Se demuestra por las dos vias: el hecho (M0 rechaza el valor, con el
-    campo, antes de construir el punto) y la contencion de los dos rangos.
-    Falla el dia que alguien relaje M0 y deje pasar un esviaje negativo:
-    entonces la guarda de M7 deja de ser defensiva y necesita su propio test.
+    SIS-B-23, reescrito en T-6 (auditor adversarial). Hasta T-6
+    `factor_esviaje` admitia (-ESVIAJE_MAX, ESVIAJE_MAX), un SUPERCONJUNTO de
+    lo que M0 deja entrar, y la mitad negativa de su guarda se daba por
+    inalcanzable y sin test. Lo era desde el CSV y no lo era para quien llama
+    a M7 con un punto armado a mano: -89 grados daba factor 57.3 y 3301 m de
+    conducto. Ahora el dominio de M7 ES el de M0, [0, ESVIAJE_MAX), y las dos
+    puertas se comprueban: M0 rechaza el valor al cargar, con el campo, y M7
+    lo rechaza llamado directo.
     """
     origen = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
     lineas = origen.read_text(encoding="utf-8-sig").splitlines()
@@ -916,10 +914,11 @@ def test_M0_rechaza_el_esviaje_negativo_antes_de_que_M7_lo_vea(tmp_path):
     assert exc.value.campo == "esviaje_grados"
     assert "0 (cruce perpendicular)" in exc.value.motivo
 
-    # Y la contencion de los rangos, que es lo que hace defensiva a la guarda
-    # de M7: los dos extremos que M0 admite caen dentro de lo que M7 admite.
-    assert -ESVIAJE_MAX < 0 < ESVIAJE_MAX
-    assert -ESVIAJE_MAX < ESVIAJE_MAX - 0.1 < ESVIAJE_MAX
+    # Y la segunda linea, la de M7, con el mismo dominio.
+    with pytest.raises(DatoInvalidoError) as directo:
+        factor_esviaje(_punto(esviaje_grados=-15.0))
+    assert directo.value.campo == "esviaje_grados"
+    assert "no lleva signo" in directo.value.motivo
 
 
 def test_el_esviaje_perpendicular_y_el_casi_paralelo_si_los_admite_M7():

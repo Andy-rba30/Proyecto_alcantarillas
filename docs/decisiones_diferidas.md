@@ -3482,10 +3482,14 @@ manera que conviene poder discutir.
   a la clave (22 % menos), con el control de entrada gobernando en los dos
   casos.
 - **Qué haría falta:** que el cabezal por punto (T-7a) fije la cota de
-  coronación del muro de cabecera —la clave es su mínimo—; con ella la
-  longitud entre cabezales deja de ser una cota inferior. Si entonces se
-  quiere que el control de salida use esa longitud, hace falta `L` por
-  sección en MD, o declarar `longitud_m` por punto, que ya gana.
+  coronación del muro de cabecera —la clave es su mínimo—; con ella queda
+  cerrada la **longitud entre cabezales, que es la de construcción y
+  metrado**, y la longitud a la clave deja de ser sólo su cota superior. Si
+  entonces se quiere que el control de salida use esa longitud, hace falta
+  `L` por sección en MD, o declarar `longitud_m` por punto, que ya gana. El
+  tamaño de la memoria que los pasos de 7.B añaden (60.0 KB por punto a
+  expediente, 74.3 KB a perfil; el techo `KB_POR_PUNTO_MAX` sólo mide
+  expediente) lo reconcilia T-10, que es quien rehace la memoria.
 - **Dónde vive:** `src/modulos/M7_geometria.py::longitud_a_la_clave`
 
 ## T6-02 · El origen «mínima / máxima» de la pendiente existe en M7 y no gobierna nada hasta que T-2 cree sus dos criterios
@@ -3538,8 +3542,14 @@ manera que conviene poder discutir.
 
 - **Qué se difirió:** las dos claves nuevas de `servicio.CLAVES_EXTERNAS` no
   tienen bandera en la CLI ni campo en la pestaña 1 de la GUI, como
-  `S_conducto`. El método `terraplen_simetrico` no las lee aunque se declaren,
-  y su paso lo dice.
+  `S_conducto`. El método `terraplen_simetrico` no las lee aunque se
+  declaren, ni una longitud declarada (`longitud_m`): el paso lo dice y sale
+  un aviso. Son **excluyentes** en un mismo punto —una sección tiene bombeo
+  (tangente, DG-2018 304.05) o peralte (curva, 304.06)— y declararlas a la
+  vez es `DatoInvalidoError` sobre el par, también cuando una viene de
+  `globales`; un punto en curva anula el bombeo global con `bombeo` = 0. Y
+  su **ausencia** se avisa en cada punto, con lo que cada 1 % de bombeo
+  acortaría la longitud.
 - **Por qué:** son datos de la sección típica que afinan la longitud en
   décimas de metro (un bombeo de 2 % sobre 9.60 m de plataforma acorta 0.40
   m), no datos sin los que un punto no se dimensione; abrirles campo en la
@@ -3551,3 +3561,29 @@ manera que conviene poder discutir.
   mecánicos: `CLAVE_EXTERNA_DE_CAMPO` de `src/sesion.py` y `CAMPOS_EXTERNOS`
   de `gui/app.py`.
 - **Dónde vive:** `src/servicio.py::CLAVES_TRANSVERSALES`
+
+## T6-05 · La fuente sostiene la superposición aproximada del barril; medir al fondo es elección del proyecto, y no es el lado seguro por construcción
+
+- **Qué se difirió:** nada; es una atribución que el auditor adversarial de
+  T-6 corrigió y que conviene poder releer. La primera redacción decía que
+  bajar cada talud hasta el fondo del conducto era «lo que la fuente
+  describe».
+- **Por qué:** el HDS-5 2.2.4 b. sostiene la superposición **aproximada** del barril
+  estimado; su Figura 2.4 dibuja los taludes muriendo en la cara superior
+  del barril, y la Lámina Nº 01 a) del Manual, en la coronación de los
+  cabezales. Medir **al fondo** —un barril de altura cero— es elección del
+  proyecto y da la **cota superior** de la longitud; no es el lado seguro
+  por construcción: en A-01 el HW de salida es 0.9925 m con la longitud al
+  fondo y 1.0002 m con la longitud a la clave (alargar el conducto lo baja
+  7.7 mm), sin consecuencia allí porque gobierna la entrada (1.042 m). Y la
+  longitud a la clave es, a su vez, la cota **superior** de la longitud
+  entre cabezales: un cabezal 0.30 m sobre la clave da 13.42 m en A-01.
+  Con el fondo de entrada **adoptado** igual al terreno —la cota del
+  terreno en el eje— el método ancla ahí la entrada y carga toda la caída
+  aguas abajo: para un lecho que pasara por esa cota en el eje A-01 daría
+  18.638 m, no 18.869; el paso 7.B.3 lo dice junto al aviso «medir en el
+  cauce», y con el fondo medido es exacto.
+- **Qué haría falta:** la coronación del cabezal por punto (T-7a), que
+  convierte la cota superior en la longitud de construcción; o el fondo de
+  entrada medido en el cauce, que quita el sesgo del eje.
+- **Dónde vive:** `src/modulos/M7_geometria.py::longitud_del_conducto`

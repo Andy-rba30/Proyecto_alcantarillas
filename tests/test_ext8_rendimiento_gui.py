@@ -108,6 +108,9 @@ CORRIDAS_IMPORTTIME = 3
 # diseño) y 74.3 KB a alcance perfil, donde los puntos que dimensionan
 # llevan los cinco pasos de 7.B y los de G2 y G3. Es contenido del punto --
 # formula, sustitucion con procedencia y cita de cada paso--, no repeticion.
+# ESTE TECHO SOLO MIDE LA CORRIDA A EXPEDIENTE, y la de perfil pesa mas (74.3
+# KB): no se sube mas aqui. El tamaño de la memoria lo reconcilia T-10 de la
+# cadena T, que es quien rehace M11 (ficha T6-01 de decisiones_diferidas.md).
 KB_POR_PUNTO_MAX = 68.0
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon. El techo se fija con la misma holgura que el de KB.

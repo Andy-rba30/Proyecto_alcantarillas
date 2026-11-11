@@ -6059,13 +6059,21 @@ HDS5_2_2_4_LONGITUD = _cita(
           "streambed profile (Figure 2.4). This superposition establishes "
           "the inlet and outlet invert elevations». La Figura 2.4 (misma "
           "pagina, leida por imagen) dibuja la seccion A-A SOBRE EL EJE "
-          "ESVIADO del conducto, con «Shoulder Elevation» en cada borde, el "
-          "talud «Se : 1» a cada lado y un «Upstream Invert» mas alto que el "
-          "«Downstream Invert»: es la longitud POR EXTREMO, cada talud "
-          "bajando hasta el conducto en su lado, y no dos taludes iguales "
-          "medidos en el eje. El inciso «a. Cross Section» de la misma "
-          "pagina añade que la seccion que el proyectista necesita es la "
-          "del cruce, «skewed with reference to the roadway centerline»."),
+          "ESVIADO del conducto, con tres cotas rotuladas en la corona "
+          "-- «Pavement Elevation» en el borde izquierdo, «Centerline "
+          "Elevation» en el eje y «Shoulder Elevation» en el borde derecho "
+          "--, el talud «Se : 1» y un «Upstream Invert» mas alto que el "
+          "«Downstream Invert»: un talud a cada lado y dos fondos a cotas "
+          "distintas, no dos taludes iguales medidos en el eje. LOS TALUDES "
+          "DE LA FIGURA MUEREN EN LA CARA SUPERIOR DEL BARRIL, no en su "
+          "fondo. La cita sostiene la superposicion APROXIMADA del barril "
+          "estimado y nada mas: que el proyecto baje cada talud hasta el "
+          "fondo -- un barril de altura cero, porque la seccion no se "
+          "conoce todavia -- es eleccion suya, declarada en el criterio "
+          "'metodo_longitud_conducto', y da la cota superior de la "
+          "longitud. El inciso «a. Cross Section» de la misma pagina añade "
+          "que la seccion que el proyectista necesita es la del cruce, "
+          "«skewed with reference to the roadway centerline»."),
 )
 
 HDS5_3_1_4_LONGITUD = _cita(

@@ -574,3 +574,25 @@ Lo demás es **formato**, y entra por los cinco puntos del prompt:
   `hoja_ruta_sha1`: la v8 lleva la nota «Corregido (T-6)» en §7.B).
 - **Sin cambio de un byte:** `cli_expediente.txt`, los dos CSV de resumen,
   `memoria_punto_cajon.html` y `entradas_ampliadas.json`.
+
+**Lo que la columna «L ahora» NO es, dicho junto al aviso «medir en el
+cauce».** Los cuatro puntos adoptan el fondo de entrada igual a
+`cota_terreno`, que es el terreno **en el eje** de la vía
+(`docs/contrato_entradas.md`). El método por extremo ancla esa cota en la
+**entrada** del conducto y carga toda la caída aguas abajo. Para un lecho de
+pendiente `S` que pasara por esa cota en el eje —la entrada algo más alta, la
+salida algo más baja— la longitud de A-01 sería **18.638 m**: la fórmula
+anterior daba 18.635 y la nueva 18.869 (+0.232 m). El cálculo no se cambia
+—el perfil adoptado ya tenía ese sesgo en la cota de salida, y con
+`cota_fondo_entrada` medida es exacto—, pero el paso 7.B.3 lo escribe con su
+número en cada punto de fondo adoptado. Y medir **al fondo** es elección del
+proyecto, no de la fuente: es la cota superior de la longitud, y no el lado
+seguro por construcción (en A-01 el HW de salida es 0.9925 m con la longitud
+al fondo y 1.0002 m con la longitud a la clave; gobierna la entrada, 1.042 m).
+
+**Y dos avisos más por punto**, que dejó el auditor adversarial de T-6 y que
+son formato: «plataforma tomada horizontal: no se declaró `bombeo` ni
+`peralte`…» con lo que cada 1 % de bombeo acortaría la longitud (20.1 cm en
+A-01), en el bloque de la Fase 7, en `geometria.avisos` del JSON y en la nota
+del paso 7.B.3; y el umbral de G2 cita la Lámina Nº 01 (carácter DEFINICIÓN)
+en vez del numeral de la pendiente.
