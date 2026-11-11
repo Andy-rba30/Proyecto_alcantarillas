@@ -163,9 +163,9 @@ def test_las_nueve_verificaciones_de_perfil_llegan_a_la_memoria(informe_perfil):
     a01 = _punto(informe_perfil, "A-01")
     codigos = [v.codigo for _, v in a01.verificaciones() if v.codigo]
     # T-2 sumo V10 (la pendiente del conducto), que corre en los dos alcances
-    # y cierra la tabla de la Fase 5.
-    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V6",
-                       "V7", "V9", "V10", "G1", "G2"]
+    # y se evalua detras de V4b, antes del hueco de V5.
+    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V10", "V6",
+                       "V7", "V9", "G1", "G2"]
     assert all(v.cumple for _, v in a01.verificaciones())
 
 

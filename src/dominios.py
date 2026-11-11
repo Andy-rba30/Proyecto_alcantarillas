@@ -66,6 +66,21 @@ ESVIAJE_MAX = 90.0        # literal-ok: a 90 grados el conducto seria paralelo a
 # porcentaje: es el error de transcripcion mas frecuente de esta columna.
 S_CAUCE_MAX = 1.0
 
+# --- T-2 --- LA SECCION MEDIDA DEL RECEPTOR (`seccion_receptor_medida` de
+# --datos-externos) es entrada de usuario y dos de sus campos no tenian techo:
+# aceptaba n = 5.0. Los dos de abajo acotan lo que el dato PUEDE SER, no lo
+# que conviene que sea.
+#
+# n de Manning, s/m^(1/3). Ninguna tabla de las fuentes llega a la decima
+# parte de 1: la B.1 del HDS-5 (conductos) termina en 0.037 y la C.1 (cauces
+# naturales pequeños) no pasa de las decimas. Un valor >= 1 delata OTRA
+# magnitud en la celda --el coeficiente de Strickler, K = 1/n, que vale
+# decenas-- y no una rugosidad grande.
+N_MANNING_MAX_FISICO = 1.0
+# Profundidad total del dren o canal receptor, m. Un valor de 100 m o mas no
+# es un cauce hondo: es una celda en CENTIMETROS (110 por 1.10).
+ALTURA_RECEPTOR_MAX_FISICA_M = 100.0   # literal-ok: techo de dominio del dato, delata centimetros
+
 # Conversion de la notacion vial de progresivas ('0+380') a kilometros.
 METROS_POR_KM = 1000      # literal-ok: definicion de la unidad, no valor de proyecto
 

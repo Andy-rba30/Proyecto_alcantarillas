@@ -813,8 +813,8 @@ def test_perfil_intenta_v5_y_v8_pero_no_las_exige(monkeypatch):
                if v.codigo and v.codigo.startswith("V")]
     # Diez desde T-2, que sumo V10 (la pendiente del conducto): su banda son
     # dos criterios con valor y no depende de ningun dato de expediente.
-    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V6", "V7", "V9",
-                       "V10"]
+    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V10", "V6",
+                       "V7", "V9"]
 
 
 def test_perfil_no_ejecuta_fase_8_ni_cabezal(monkeypatch):
@@ -1630,8 +1630,9 @@ def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
 
     filas = exc.value.verificaciones_completadas
     # V5 va detras de VC1 como fila «no aplica» (C10, PC-27).
+    # Y V10 (T-2) detras de V4b, antes del hueco de V5.
     assert [v.codigo for v in filas] == ["V1", "V2", "V2b", "V3", "V4",
-                                         "V4b", "VC1", "V5", "V6"]
+                                         "V4b", "V10", "VC1", "V5", "V6"]
     con_nota = [v.codigo for v in filas
                 if v.paso is not None and v.paso.nota_del_proyecto]
     assert con_nota, ("ninguna de las verificaciones que sobrevivieron lleva "

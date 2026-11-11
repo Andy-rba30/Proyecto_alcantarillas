@@ -1044,6 +1044,10 @@ def _lineas_resumen(informe: Informe) -> List[str]:
     out.append(f"Puntos del expediente   : {r.puntos}")
     out.append(f"Puntos dimensionados    : {r.dimensionados}")
     out.append(f"Verificaciones incumplidas: {r.incumplidas}")
+    # T-2: las que salieron como INDICADOR (`[AVISO]` en la tabla del punto)
+    # no son incumplidas, y se cuentan aparte para que el 0 de arriba no las
+    # calle.
+    out.append(f"Verificaciones con aviso: {r.con_aviso}")
     out.append(f"Etapas bloqueadas       : {r.bloqueadas}")
     if r.diferidas:
         out.append(f"Diferidas por alcance   : {r.diferidas} (ver ALCANCE DE "

@@ -2222,13 +2222,21 @@ CRITERIOS: Dict[str, Criterio] = {
                       "pendiente que su efecto es chico (cita "
                       "HDS5_3ED.A.3#PENDIENTE_2). H_c es por tanto la base de "
                       "la que la ecuacion parte: un resultado que el paso 4.2 "
-                      "ya tiene, no un numero nuevo, y del lado seguro frente "
-                      "a lo que la ecuacion entregaba (carga nula o negativa, "
-                      "con la que V4 y la rasante de 7.A se evaluaban sin "
-                      "carga). No es la carga exacta: omite el termino "
-                      "K*(q*)^M de la contraccion de la entrada, que la "
-                      "subiria, y por eso el paso lo imprime como piso "
-                      "adoptado y no como resultado de la ecuacion. La fuente "
+                      "ya tiene, no un numero nuevo. Lo que el piso acota y "
+                      "lo que no: queda por encima de lo que la ecuacion "
+                      "entregaba (carga nula o negativa, con la que V4 y la "
+                      "rasante de 7.A se evaluaban sin carga), y solo en ese "
+                      "sentido es del lado seguro. No es una cota conservadora "
+                      "de la carga: omite el termino K*(q*)^M de la "
+                      "contraccion de la entrada y queda por debajo de la "
+                      "carga que la misma ecuacion da con el barril "
+                      "horizontal, de modo que el paso lo imprime como piso "
+                      "adoptado y no como resultado de la ecuacion. Y es un "
+                      "caso practicamente inalcanzable desde que la pendiente "
+                      "del conducto se limita a 0.10 m/m ('pendiente_maxima_"
+                      "conducto', V10): con el tubo de 0.90 m la ecuacion "
+                      "solo deja de entregar carga por debajo de 0.10 m/m "
+                      "con caudales menores de 0.005 m3/s. La fuente "
                       "no prescribe este piso ni ningun otro, de modo que la "
                       "etiqueta es [A] y «descartar» sigue en la ventana. "
                       "Lo que el piso hace y lo que no: acota el "
@@ -3885,20 +3893,29 @@ CRITERIOS: Dict[str, Criterio] = {
         nivel=NIVEL_PERFIL,         # lo consume V1 (Fase 5), que corre a perfil
         etiqueta="A",
         forma=FORMA_CATEGORIA,
-        # EL CONJUNTO CERRADO. «no_cumple»: el barril lleno por el nivel del
-        # receptor (TW >= D) deja V1 con cumple=False, como desde EXT-3.
-        # «aviso»: V1 juzga el borde libre con el tirante PROPIO del caudal
-        # de diseño (el normal de Manning), que es lo que el diametro puede
-        # resolver; si ese cumple, el ahogamiento por el receptor se imprime
-        # con veredicto INDICADOR (aviso) y no descarta el diametro; si no
-        # cumple, V1 NO cumple igual. Con S = 0 no hay tirante normal con
-        # que separar los dos casos y V1 no cumple bajo las dos opciones.
+        # EL CONJUNTO CERRADO. «no_cumple»: cuando el nivel del receptor
+        # toma el borde libre del barril V1 queda con cumple=False, como
+        # desde EXT-3. «aviso»: V1 juzga el borde libre con el tirante PROPIO
+        # del caudal de diseño (el normal de Manning), que es lo que el
+        # diametro puede resolver; si ese cumple, el remanso del receptor se
+        # imprime con veredicto INDICADOR (aviso) y no descarta el diametro;
+        # si no cumple, V1 NO cumple igual. Con S = 0 no hay tirante normal
+        # con que separar los dos casos y V1 no cumple bajo las dos opciones.
+        #
+        # EL CASO ES UNO A LO LARGO DE TODO EL TW: el TW por encima del
+        # llenado admisible (TW/D > 0.75 con el umbral por defecto), llegue o
+        # no a la clave. La primera redaccion de T-2 lo reconocia solo con el
+        # barril LLENO (TW >= D) y el auditor adversarial midio que «aviso»
+        # quedaba discontinua: mas ahogamiento era mas permisivo, y el tubo
+        # chico pasaba donde el grande no. El nombre de la clave conserva
+        # «ahogante» y cubre los dos tramos.
         sensibilidad=("no_cumple", "aviso"),
-        concepto="Que hace V1 (borde libre) cuando el barril va LLENO porque "
-                 "el nivel del cuerpo receptor alcanza la clave (TW >= D), y "
-                 "no porque el caudal de diseño lo llene",
-        justificacion="Decide como se lee el borde libre cuando la salida "
-                      "esta ahogada por el receptor. El Manual (num. "
+        concepto="Que hace V1 (borde libre) cuando es el nivel del cuerpo "
+                 "receptor, y no el caudal de diseño, el que deja al barril "
+                 "sin el borde libre: el tirante del receptor por encima del "
+                 "llenado admisible, llegue o no a la clave",
+        justificacion="Decide como se lee el borde libre cuando el nivel del "
+                      "receptor remansa o ahoga el barril. El Manual (num. "
                       "4.1.1.3.7 b), pag. impresa 79) prohibe diseñar la "
                       "alcantarilla para trabajar a seccion llena, por el "
                       "riesgo de obstruccion (cita MC_HHD.4.1.1.3.7b#LLENA), "
@@ -3912,6 +3929,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "alto que la clave durante la avenida; ningun diametro "
                       "menor que el tirante del receptor lo resuelve, y lo "
                       "que lo resuelve es la cota de la salida o la rasante. "
+                      "El caso del receptor no empieza en la clave: empieza "
+                      "donde el tirante del receptor supera el llenado "
+                      "admisible (0.75 de la altura con el umbral por "
+                      "defecto) y es el quien fija el tirante maximo dentro "
+                      "del barril, y la lectura es la misma desde ahi hasta "
+                      "el barril lleno, para que no cambie al cruzar la "
+                      "clave. "
                       "El numeral no distingue los dos casos. «no_cumple», "
                       "el valor del archivo, es la lectura literal y la "
                       "conservadora: el riesgo de obstruccion que el Manual "
@@ -3928,7 +3952,10 @@ CRITERIOS: Dict[str, Criterio] = {
                       "el borde libre, el ahogamiento por el receptor se "
                       "declara como aviso, con el tirante del receptor, su "
                       "via y la velocidad a seccion llena, que V2 sigue "
-                      "juzgando, y no descarta el diametro. Es la lectura "
+                      "juzgando, y no descarta el diametro. Con el barril "
+                      "horizontal no hay tirante normal con que separar los "
+                      "dos casos y V1 no cumple bajo las dos lecturas. Es la "
+                      "lectura "
                       "que conviene cuando el nivel del receptor esta medido "
                       "y es un hecho del sitio que la obra no puede cambiar; "
                       "con un tirante adoptado, aceptar el ahogamiento es "

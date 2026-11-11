@@ -1695,22 +1695,62 @@ CP_HDS5_DG1 = {
                            "d_c_ft": 4.1, "h_o_ft": 4.6, "H_ft": 2.9,
                            "EL_ho_ft": 105.5, "V_salida_ft_s": 15.6,
                            "control": "entrada"}},
-            # LOS DOS DE METAL CORRUGADO: SOLO EL CONTROL DE ENTRADA. El
-            # formulario imprime el n del tubo ADOPTADO (concreto, 0.012) y no
-            # el del CMP, de modo que H, EL_ho y la velocidad de salida de
-            # estas dos filas no se pueden reproducir sin suponer un n que la
-            # pagina no da; no se comparan y se dice (`no_comparado`).
+            # LOS DOS DE METAL CORRUGADO. El formulario imprime el n del tubo
+            # ADOPTADO (concreto, 0.012) y no el del CMP. Lo que NO depende de
+            # n se compara como en las demas filas (`publicado`: el control
+            # de entrada, d_c y h_o). Lo que SI depende --H, la cota de
+            # control de salida, cual control gobierna y la velocidad de la
+            # fila de 72 in, que es la normal-- se compara con el n ACOTADO
+            # por la propia fuente (`n_interpretado`, abajo): no se le pide al
+            # motor una cifra, se le pide que la cifra publicada caiga DENTRO
+            # del intervalo que da el rango de la Tabla B.1.
             {"id": "cmp_72_bisel_45",
              "D_in": 72.0, "carta": "circular_anillo_biselado_45",
              "n": None, "ke": 0.2,
              "publicado": {"HW_sobre_D": 0.96, "HW_entrada_ft": 5.76,
-                           "d_c_ft": 3.8}},
+                           "d_c_ft": 3.8, "h_o_ft": 4.9},
+             "publicado_con_n_interpretado": {
+                 "H_ft": 2.6, "EL_ho_ft": 105.5, "V_salida_ft_s": 9.0,
+                 "control": "entrada"}},
+            # LA UNICA FILA DE LOS DOS FORMULARIOS QUE GOBIERNA LA SALIDA
+            # (EL_ho 108.9 > EL_hi 107.0), y por eso se descarta («try
+            # smoother pipe», pag. impresa DG1.3). Su velocidad de salida no
+            # depende de n: es Q/A al tirante critico (TW < d_c).
             {"id": "cmp_60_bisel_45",
              "D_in": 60.0, "carta": "circular_anillo_biselado_45",
              "n": None, "ke": 0.2,
              "publicado": {"HW_sobre_D": 1.40, "HW_entrada_ft": 7.10,
-                           "d_c_ft": 4.1}},
+                           "d_c_ft": 4.1, "h_o_ft": 4.6},
+             "publicado_con_n_interpretado": {
+                 "H_ft": 6.3, "EL_ho_ft": 108.9, "V_salida_ft_s": 11.9,
+                 "control": "salida"}},
         ),
+        # EL n DEL METAL CORRUGADO ES UNA INTERPRETACION, y se declara. El
+        # enunciado dice «CMP with 2-2/3 by 1/2 in corrugations» (pag. impresa
+        # DG1.2, PDF 273) y no da n. La fuente lo acota en dos sitios:
+        #   * `rango`: Tabla B.1 «Manning's n Values for Culverts», pag.
+        #     impresa B.6 (PDF 208), fila «Corrugated Metal Pipe, Pipe-Arch
+        #     and Box (Annular Corrugations), 2-2/3 by 1/2 in»: 0.022-0.027.
+        #     (La fila helicoidal de la misma corrugacion da 0.011-0.023 y
+        #     remite a la Figura B.3; el enunciado no dice cual es, y el
+        #     nomograma de salida del CMP esta trazado con el n anular.)
+        #   * `tipico`: «Typical Manning's n values used for designing
+        #     culverts are n = 0.012 for smooth walled culverts and n = 0.024
+        #     for rough culverts (corrugated)», pag. impresa 3.8 (PDF 90); es
+        #     el n del nomograma de control de salida del CMP, «Head for
+        #     Standard C.M. Pipe Culverts Flowing Full, n = 0.024» (indice de
+        #     cartas, PDF 211).
+        # Medido: con el tipico el motor da H = 2.45 y 5.96 ft contra 2.6 y
+        # 6.3 publicados (-5.6 % y -5.5 %, dentro del 10 % de la fuente y
+        # fuera del 3 % de lectura); los dos publicados caen dentro del
+        # intervalo del rango ([2.21, 2.86] y [5.31, 7.03] ft), cerca de
+        # n = 0.025.
+        "n_interpretado": {
+            "tipico": 0.024, "pagina_pdf_tipico": 90,
+            "frase_tipico": "n = 0.024 for rough culverts (corrugated)",
+            "rango": (0.022, 0.027), "pagina_pdf_rango": 208,
+            "frase_rango": "0.022-0.027",
+        },
     },
     # --- DG 1.4: Q50 = 300 ft3/s, TW = 4.0 ft, So = 0.02, La = 250 ft,
     #     ELi = 100.0 ft, ELo = 95.0 ft; concreto, n = 0.012 (formulario).
@@ -1744,12 +1784,25 @@ CP_HDS5_DG1 = {
         ),
     },
     # LO QUE EL FORMULARIO PUBLICA Y NO SE COMPARA, con su razon.
+    # Desde la revision adversarial de T-2 las dos filas SI se comparan, por
+    # intervalo y con el n interpretado (`n_interpretado`); lo que sigue sin
+    # compararse CONTRA UNA CIFRA es lo de abajo.
     "no_comparado": {
-        "cmp_72_bisel_45": "H, EL_ho y V_salida: el formulario no imprime el "
-                           "n del metal corrugado",
-        "cmp_60_bisel_45": "H, EL_ho y V_salida: el formulario no imprime el "
-                           "n del metal corrugado",
+        "cmp_72_bisel_45": "H, EL_ho y V_salida no se comparan contra una "
+                           "cifra al 3 %: el formulario no imprime el n del "
+                           "metal corrugado. Se comprueba que lo publicado "
+                           "cae en el intervalo del rango de n de la Tabla "
+                           "B.1",
+        "cmp_60_bisel_45": "H y EL_ho no se comparan contra una cifra al 3 %, "
+                           "por lo mismo; se comprueban por intervalo. La "
+                           "velocidad de salida si (no depende de n)",
     },
+    # NINGUNA FILA CAE EN LA TRANSICION 3.5 < q* < 4.0 del control de entrada
+    # (q* = Ku·Q/(A·D^0.5), SI): los valores son 5.93, 4.56, 2.89 y 4.56 en el
+    # circular y 4.47, 5.37 y 5.37 en el cajon. El ejemplo publicado valida
+    # las dos ramas --una fila no sumergida, seis sumergidas-- y NO la recta
+    # de transicion, que sigue sostenida solo por los casos patron internos.
+    "q_estrella_transicion": (3.5, 4.0),
     # EL CENSO DE LO QUE QUEDA FUERA DEL 3 %, magnitud a magnitud, con la
     # diferencia MEDIDA (motor frente a publicado) y la causa. No se ajusta
     # la tolerancia ni el motor para vaciarlo (ficha T2-05).

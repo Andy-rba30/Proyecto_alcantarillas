@@ -1228,8 +1228,11 @@ def test_verificar_en_familia_C_corre_VC1_en_vez_de_V5(concreto):
     assert v5[0].estado is EstadoDeVerificacion.NO_APLICA
     assert v5[0].valor_obtenido is None and "VC1" in v5[0].motivo_no_aplica
     # Y la posicion importa: VC1 ocupa el hueco de V5, entre V4b y V6, y la
-    # fila «no aplica» de V5 va pegada detras de VC1.
-    assert codigos.index("VC1") == codigos.index("V4b") + 1
+    # fila «no aplica» de V5 va pegada detras de VC1. Desde T-2 entre V4b y
+    # el hueco va V10 (la pendiente del conducto), que se evalua ANTES para
+    # que una V5 o una VC1 que se detengan no la tapen.
+    assert codigos.index("V10") == codigos.index("V4b") + 1
+    assert codigos.index("VC1") == codigos.index("V10") + 1
     assert codigos.index("V5") == codigos.index("VC1") + 1
     assert codigos.index("V5") == codigos.index("V6") - 1
 

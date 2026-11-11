@@ -77,7 +77,8 @@ from src import datos_sitio as ds
 from src import declaracion as _declaracion
 from src.constantes_normativas import (CUANTIA_MIN_MURO,
                                        H_O_HW_SOBRE_D_MIN, RECUBRIMIENTO)
-from src.dominios import S_CAUCE_MAX
+from src.dominios import (ALTURA_RECEPTOR_MAX_FISICA_M, N_MANNING_MAX_FISICO,
+                          S_CAUCE_MAX)
 from src.modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE
 from src.modelos import ALCANCE_PERFIL as _ALCANCE_PERFIL
 from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
@@ -88,6 +89,7 @@ from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ProteccionSalida, PuntoCritico, ResultadoPunto,
                          AVISO_SIN_ACCESO_DE_MANTENIMIENTO, SeccionReceptor,
                          TipoDeBloqueo, TWDeterminado, Verificacion)
+from src.modelos import EstadoDeVerificacion
 from src.modulos.M0_carga import (cargar_puntos, cargar_puntos_de_bytes,
                                   leer_bytes)
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
@@ -596,6 +598,20 @@ def _seccion_receptor_externa(bruto: Any, origen: str) -> DatoDeclarado:
             motivo=f"fuera del rango fisico posible ({S_CAUCE_MAX}): una "
                    f"pendiente en m/m; un valor >= 1 delata una celda en "
                    f"PORCENTAJE; origen: {origen}")
+    # Los otros dos techos de dominio (`dominios.py`): lo que el dato puede
+    # ser, no lo que conviene que sea.
+    if not valores["n"] < N_MANNING_MAX_FISICO:
+        raise DatoInvalidoError(
+            f"{clave}.n", valor=valores["n"],
+            motivo=f"fuera del rango fisico posible ({N_MANNING_MAX_FISICO}): "
+                   f"un n de Manning >= 1 delata otra magnitud en la celda "
+                   f"(el coeficiente de Strickler, K = 1/n); origen: {origen}")
+    if not valores["altura_total_m"] < ALTURA_RECEPTOR_MAX_FISICA_M:
+        raise DatoInvalidoError(
+            f"{clave}.altura_total_m", valor=valores["altura_total_m"],
+            motivo=f"fuera del rango fisico posible "
+                   f"({ALTURA_RECEPTOR_MAX_FISICA_M} m): una profundidad asi "
+                   f"delata una celda en CENTIMETROS; origen: {origen}")
     return DatoDeclarado(nombre=clave, valor=valores, origen=origen)
 
 
@@ -982,14 +998,27 @@ class InformePunto:
     def incumplidas(self) -> Tuple[Verificacion, ...]:
         return tuple(v for _, v in self.verificaciones() if not v.cumple)
 
+    def con_aviso(self) -> Tuple[Verificacion, ...]:
+        """
+        --- T-2 --- Las verificaciones de la seccion aceptada cuyo estado es
+        INDICADOR: se dispararon y el diseño NO se detuvo (V2b bajo
+        'regimen_v2b' = indicador_con_aviso; V1 bajo
+        'borde_libre_bajo_tw_ahogante' = aviso). No son incumplidas --el
+        punto dimensiona-- y por eso mismo hay que contarlas aparte: un
+        RESUMEN que dijera «incumplidas: 0» y nada mas las callaria.
+        """
+        return tuple(v for _, v in self.verificaciones()
+                     if v.estado is EstadoDeVerificacion.INDICADOR)
+
     def avisos(self) -> Tuple[str, ...]:
         """
-        --- T-2 --- Los AVISOS del punto que no son de una verificacion ni de
-        un bloqueo: lo que la corrida tiene que decir en voz alta sin
-        detenerse. Hoy son dos: el TW obtenido con la seccion ADOPTADA del
-        receptor (INF-3.2.8, `TWDeterminado.avisos`) y el acceso de
-        mantenimiento declarado como NO previsto. Los imprimen la CLI, el
-        JSON y la memoria con el MISMO texto, que sale de aqui.
+        --- T-2 --- Los AVISOS del punto: lo que la corrida tiene que decir
+        en voz alta sin detenerse. Son tres clases: el TW obtenido con la
+        seccion ADOPTADA del receptor (INF-3.2.8, `TWDeterminado.avisos`),
+        el acceso de mantenimiento declarado como NO previsto, y cada
+        verificacion que salio como INDICADOR (`con_aviso`), con su codigo y
+        la explicacion de su veredicto. Los imprimen la CLI y el JSON con el
+        MISMO texto, que sale de aqui.
         """
         avisos: List[str] = []
         if self.tw_sec13 is not None:
@@ -997,6 +1026,13 @@ class InformePunto:
         acceso = self.acceso_mantenimiento
         if acceso is not None and acceso.valor is False:
             avisos.append(AVISO_SIN_ACCESO_DE_MANTENIMIENTO)
+        for v in self.con_aviso():
+            explicacion = (v.paso.veredicto.explicacion
+                           if v.paso is not None and v.paso.veredicto is not None
+                           else "")
+            avisos.append(
+                f"{v.codigo}: indicador disparado; el diseño no se detiene"
+                + (f" -- {explicacion}" if explicacion else ""))
         return tuple(avisos)
 
     def bloqueos_reales(self) -> Tuple[Bloqueo, ...]:
@@ -1024,9 +1060,12 @@ class InformeCabezal:
 @dataclass(frozen=True)
 class ResumenDeCorrida:
     """
-    Las seis cifras del RESUMEN, calculadas UNA vez en `Informe.resumen` y
+    Las cifras del RESUMEN, calculadas UNA vez en `Informe.resumen` y
     leidas por las tres capas que las imprimen: el volcado de la CLI, la
-    pestaña 4 de la GUI y el encabezado de la memoria HTML.
+    pestaña 4 de la GUI y el encabezado de la memoria HTML. Eran seis hasta
+    T-2, que sumo `con_aviso`: las verificaciones que salieron como
+    INDICADOR en la seccion aceptada. La imprimen la CLI y la memoria; la
+    pestaña 4 la muestra fila a fila y todavia no la cuenta.
 
     Existe por EXT-G-02: la GUI decia «Etapas bloqueadas: 12» y la CLI, sobre
     el mismo `Informe`, 1, porque una contaba `len(bloqueos())` --- con lo
@@ -1040,6 +1079,7 @@ class ResumenDeCorrida:
     bloqueadas: int          # reales: NO cuentan las diferidas por alcance
     diferidas: int
     cerrado: bool
+    con_aviso: int = 0       # T-2: verificaciones con veredicto INDICADOR
 
 
 @dataclass
@@ -1092,7 +1132,8 @@ class Informe:
             incumplidas=sum(len(i.incumplidas()) for i in self.puntos),
             bloqueadas=len(self.bloqueos_reales()),
             diferidas=len(self.diferidos()),
-            cerrado=self.cerrado)
+            cerrado=self.cerrado,
+            con_aviso=sum(len(i.con_aviso()) for i in self.puntos))
 
     @property
     def cerrado(self) -> bool:
@@ -1384,6 +1425,12 @@ def _verificador_perfil(informe: InformePunto):
             # `CriterioPendienteError` subiria y bloquearia el material, que
             # es lo que corresponde a un umbral sin declarar.
             lambda: M5.v4b_relacion_hw_d(D=D, resultado=resultado),
+            # --- T-2 --- V10 (pendiente del conducto dentro de la banda
+            # adoptada) entra como OBLIGATORIA y EN EL MISMO SITIO que en
+            # `M5.verificar`: detras de V4b y antes del hueco de V5. Sus dos
+            # criterios tienen valor y no depende del diametro ni de ningun
+            # dato de expediente.
+            lambda: M5.v10_pendiente_conducto(resultado=resultado),
         )
         for pieza in obligatorias_previas:
             try:
@@ -1444,18 +1491,11 @@ def _verificador_perfil(informe: InformePunto):
             else:
                 exc.verificaciones_completadas = tuple(filas)
                 raise
-        # --- T-2 --- V10 (pendiente del conducto dentro de la banda adoptada)
-        # entra como OBLIGATORIA, igual que en `M5.verificar`: sus dos
-        # criterios tienen valor y no depende de ningun dato de expediente.
-        for pieza in (
-            lambda: M5.v9_disponibilidad_diametro(D=D, material=material),
-            lambda: M5.v10_pendiente_conducto(resultado=resultado),
-        ):
-            try:
-                filas.append(pieza())
-            except ErrorProyecto as exc:
-                exc.verificaciones_completadas = tuple(filas)
-                raise
+        try:
+            filas.append(M5.v9_disponibilidad_diametro(D=D, material=material))
+        except ErrorProyecto as exc:
+            exc.verificaciones_completadas = tuple(filas)
+            raise
         return tuple(filas)
 
     return verificar

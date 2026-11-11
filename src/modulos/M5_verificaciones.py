@@ -865,6 +865,13 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
         el tirante PROPIO del caudal de diseño --`y_normal`--; si lo
         conserva, `cumple=True` con veredicto INDICADOR y el diametro no se
         descarta; si no, NO CUMPLE igual. La memoria imprime cual aplico.
+        EL MISMO CRITERIO GOBIERNA EL TRAMO ANTERIOR, cuando el TW queda
+        entre el llenado admisible y la clave (0.75·D < TW < D) y es el
+        tirante maximo del perfil: el borde libre lo toma el receptor igual
+        que con el barril lleno, y la lectura no puede cambiar al cruzar
+        TW = D. Bajo «no_cumple» nada se mueve (V1 ya no cumplia ahi, por el
+        tirante maximo del perfil); bajo «aviso» la lectura es continua y
+        monotona en el TW.
         Y el otro caso, el barril lleno POR EL CAUDAL DE DISEÑO (la lamina
         del perfil toca la clave con TW < D), NO CUMPLE siempre, con la
         misma cita, sin que el criterio intervenga.
@@ -886,17 +893,7 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     regimen = _regimen_de_v1_v2("V1", resultado, punto.id)
     lleno = regimen == REGIMEN_LLENO
     y_sobre_D_max = _umbral_adoptado_v1()
-    # --- T-2 --- (INF-3.2.6) DOS MANERAS DE IR LLENO, y V1 las separa:
-    #   * por el NIVEL DEL RECEPTOR (TW >= D): lo que V1 hace lo declara el
-    #     criterio [A] 'borde_libre_bajo_tw_ahogante';
-    #   * por el CAUDAL DE DISEÑO (la lamina toca la clave con TW < D): no
-    #     cumple siempre, por la exigencia de la pag. impresa 79, y ningun
-    #     criterio interviene.
-    lectura_tw = _lectura_bajo_tw_ahogante() if lleno else None
-    aviso_por_tw = False
     lleno_por_caudal = False
-    sustitucion_extra: Tuple[Magnitud, ...] = ()
-    elecciones: Tuple[EleccionDeProyecto, ...] = ()
     if lleno:
         y = D
         procedencia_y = (
@@ -905,56 +902,6 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
             "interior entera. NO es el tirante normal de Manning, que aqui "
             "no describe el flujo")
         citas_de_regimen = ("MC_HHD.4.1.1.3.7b#LLENA",)
-        # EL TIRANTE PROPIO DEL CAUDAL DE DISEÑO, que es lo que el diametro
-        # puede resolver: el normal de Manning. En un barril horizontal no
-        # existe, y entonces no hay con que separar los dos casos.
-        y_propio = resultado.y_normal
-        propio_cumple = (y_propio is not None and
-                         y_propio / D <= y_sobre_D_max + TOL_UMBRAL_NORMATIVO)
-        aviso_por_tw = lectura_tw == LECTURA_TW_AVISO and propio_cumple
-        sustitucion_extra = (
-            Magnitud("TW", resultado.TW_m if resultado.TW_m is not None
-                     else "no informado", "m" if resultado.TW_m is not None
-                     else "",
-                     "tirante del receptor sobre el fondo de la salida, el "
-                     "del paso 4.3: alcanza o supera la clave del barril, y "
-                     "por eso el regimen es LLENO POR EL NIVEL DEL RECEPTOR, "
-                     "no por el caudal de diseño",
-                     cifras=CIFRAS_MAGNITUD if resultado.TW_m is not None
-                     else None),
-            (Magnitud("y_normal", y_propio, "m",
-                      "tirante que el caudal de diseño tendria SIN el "
-                      "ahogamiento del receptor (M3, Manning con n_max): es "
-                      "el llenado que depende del diametro, y el que se juzga "
-                      "contra el borde libre cuando la lectura adoptada es "
-                      "«aviso»", cifras=CIFRAS_MAGNITUD)
-             if y_propio is not None else
-             Magnitud("y_normal", "no existe (S = 0)", "",
-                      "barril horizontal: no hay tirante normal con que "
-                      "separar el llenado propio del caudal del ahogamiento "
-                      "por el receptor, y V1 no cumple bajo las dos lecturas",
-                      cifras=None)),
-        )
-        elecciones = (EleccionDeProyecto(
-            que_se_adopto="lectura del borde libre con el barril lleno por "
-                          "el nivel del receptor (TW >= D)",
-            valor=str(lectura_tw),
-            entre=tuple(str(v) for v in
-                        ca.criterio(CRITERIO_BORDE_LIBRE_BAJO_TW).sensibilidad),
-            de_donde=f"el criterio '{CRITERIO_BORDE_LIBRE_BAJO_TW}' [A]: el "
-                     "numeral prohibe DISEÑAR para seccion llena y no "
-                     "distingue la que produce el caudal de la que produce "
-                     "el receptor",
-            por_que="«no_cumple» es la lectura literal: el riesgo de "
-                    "obstruccion que el Manual invoca existe igual con el "
-                    "barril ahogado. «aviso» lee que la prohibicion es sobre "
-                    "el diseño del conducto: si con su propio caudal conserva "
-                    "el borde libre, el ahogamiento se declara y no descarta "
-                    "el diametro, porque ningun diametro menor que el TW lo "
-                    "resuelve. La eleccion y su consecuencia estan en la "
-                    "ficha del criterio",
-            cita_id="MC_HHD.4.1.1.3.7b#LLENA",
-            clave_criterio=CRITERIO_BORDE_LIBRE_BAJO_TW),)
     elif regimen == REGIMEN_PERFIL:
         y = resultado.perfil.y_max_m
         lleno_por_caudal = not y < D - TOL_UMBRAL_NORMATIVO
@@ -987,6 +934,102 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
                  REGIMEN_UNIFORME: "y_normal"}[regimen]
     y_sobre_D = y / D
     cumple = y_sobre_D <= y_sobre_D_max + TOL_UMBRAL_NORMATIVO
+
+    # --- T-2 --- (INF-3.2.6) QUIEN LE QUITA EL BORDE LIBRE AL BARRIL: el
+    # caudal de diseño o el nivel del receptor. V1 separa los dos casos:
+    #   * por el CAUDAL DE DISEÑO (la lamina toca la clave con el TW por
+    #     debajo, o el tirante propio del caudal ya supera el llenado
+    #     admisible): no cumple siempre, y ningun criterio interviene;
+    #   * por el NIVEL DEL RECEPTOR: el TW queda por encima del llenado
+    #     admisible (TW/D > y/D maximo) y es el quien fija el tirante maximo
+    #     dentro del barril. Lo que V1 hace ahi lo declara el criterio [A]
+    #     'borde_libre_bajo_tw_ahogante'.
+    # EL CASO DEL RECEPTOR ES UNO SOLO A LO LARGO DE TODO EL TW, y no solo
+    # con el regimen LLENO (TW >= D). La primera redaccion de T-2 lo
+    # reconocia solo ahi, y el auditor adversarial midio la consecuencia en
+    # A-02 (Q = 0.48 m3/s, S = 0.008): bajo «aviso», con TW = 0.80 y 0.89 m
+    # el Ø 0.90 no pasaba; con TW = 0.90 pasaba; y con TW = 1.00 pasaba el
+    # Ø 0.90 y fallaba el Ø 1.05. Mas ahogamiento era mas permisivo y el
+    # tubo chico pasaba donde el grande no: una lectura discontinua en el TW
+    # no sirve para barrer la sensibilidad. La condicion es ahora la misma
+    # con el barril lleno y con el TW entre el llenado admisible y la clave:
+    # el tirante maximo no supera al TW (lo fija el receptor, no el caudal).
+    # EL BARRIL HORIZONTAL entra al caso por el TW solo: sobre un fondo plano
+    # la lamina sube siempre hacia la entrada (H2) y el tirante maximo queda
+    # por encima del TW, pero no hay tirante normal con que decir cuanto de
+    # ese llenado es del caudal. Se reconoce el caso para DECIRLO: bajo
+    # «aviso» no cumple igual, y la memoria explica por que.
+    TW = resultado.TW_m
+    remansado_por_receptor = (
+        regimen == REGIMEN_PERFIL and not lleno_por_caudal
+        and TW is not None
+        and not TW / D <= y_sobre_D_max + TOL_UMBRAL_NORMATIVO
+        and (not y > TW + TOL_UMBRAL_NORMATIVO
+             or resultado.sin_tirante_normal))
+    por_receptor = lleno or remansado_por_receptor
+    lectura_tw = _lectura_bajo_tw_ahogante() if por_receptor else None
+    aviso_por_tw = False
+    sustitucion_extra: Tuple[Magnitud, ...] = ()
+    elecciones: Tuple[EleccionDeProyecto, ...] = ()
+    if por_receptor:
+        # EL TIRANTE PROPIO DEL CAUDAL DE DISEÑO, que es lo que el diametro
+        # puede resolver: el normal de Manning. En un barril horizontal no
+        # existe, y entonces no hay con que separar los dos casos.
+        y_propio = resultado.y_normal
+        propio_cumple = (y_propio is not None and
+                         y_propio / D <= y_sobre_D_max + TOL_UMBRAL_NORMATIVO)
+        aviso_por_tw = lectura_tw == LECTURA_TW_AVISO and propio_cumple
+        sustitucion_extra = (
+            Magnitud("TW", TW if TW is not None
+                     else "no informado", "m" if TW is not None
+                     else "",
+                     "tirante del receptor sobre el fondo de la salida, el "
+                     "del paso 4.3: "
+                     + ("alcanza o supera la clave del barril, y "
+                        "por eso el regimen es LLENO POR EL NIVEL DEL "
+                        "RECEPTOR, no por el caudal de diseño"
+                        if lleno else
+                        "queda por encima del llenado admisible y por debajo "
+                        "de la clave, y es el tirante maximo dentro del "
+                        "barril: el borde libre lo toma EL NIVEL DEL "
+                        "RECEPTOR, no el caudal de diseño"),
+                     cifras=CIFRAS_MAGNITUD if TW is not None
+                     else None),
+            (Magnitud("y_normal", y_propio, "m",
+                      "tirante que el caudal de diseño tendria SIN el "
+                      "remanso del receptor (M3, Manning con n_max): es "
+                      "el llenado que depende del diametro, y el que se juzga "
+                      "contra el borde libre cuando la lectura adoptada es "
+                      "«aviso»", cifras=CIFRAS_MAGNITUD)
+             if y_propio is not None else
+             Magnitud("y_normal", "no existe (S = 0)", "",
+                      "barril horizontal: no hay tirante normal con que "
+                      "separar el llenado propio del caudal del remanso "
+                      "del receptor, y V1 no cumple bajo las dos lecturas",
+                      cifras=None)),
+        )
+        elecciones = (EleccionDeProyecto(
+            que_se_adopto="lectura del borde libre cuando lo toma el nivel "
+                          "del receptor (TW por encima del llenado "
+                          "admisible, llegue o no a la clave)",
+            valor=str(lectura_tw),
+            entre=tuple(str(v) for v in
+                        (ca.criterio(CRITERIO_BORDE_LIBRE_BAJO_TW).sensibilidad
+                         or ())),
+            de_donde=f"el criterio '{CRITERIO_BORDE_LIBRE_BAJO_TW}' [A]: el "
+                     "numeral prohibe DISEÑAR para seccion llena y "
+                     "recomienda un borde libre, y no distingue lo que "
+                     "produce el caudal de lo que produce el receptor",
+            por_que="«no_cumple» es la lectura literal: el riesgo de "
+                    "obstruccion que el Manual invoca existe igual con el "
+                    "barril remansado. «aviso» lee que la regla es sobre "
+                    "el diseño del conducto: si con su propio caudal conserva "
+                    "el borde libre, el remanso se declara y no descarta "
+                    "el diametro, porque ningun diametro menor que el TW lo "
+                    "resuelve. La eleccion y su consecuencia estan en la "
+                    "ficha del criterio",
+            cita_id="MC_HHD.4.1.1.3.7b#LLENA",
+            clave_criterio=CRITERIO_BORDE_LIBRE_BAJO_TW),)
     umbral = _umbral_de(
         "V1", valor=y_sobre_D_max, unidad="",
         descripcion=f"y/{simbolo} maximo admisible (borde libre >= "
@@ -1000,17 +1043,27 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
         f"el 0.75 ni la razon y/{simbolo}: escribe «el 25 % de la altura, "
         "diametro o flecha de la estructura», y en esta seccion la magnitud "
         f"que corresponde de las tres es {nombre}.")
-    if lleno:
+    if por_receptor:
         nota += (
-            " CASO APLICADO: barril LLENO POR EL NIVEL DEL RECEPTOR (TW >= "
-            f"{simbolo}), no por el caudal de diseño. Lo que V1 hace ahi lo "
+            " CASO APLICADO: "
+            + (f"barril LLENO POR EL NIVEL DEL RECEPTOR (TW >= {simbolo})"
+               if lleno else
+               "BORDE LIBRE TOMADO POR EL NIVEL DEL RECEPTOR (el TW queda "
+               f"entre el llenado admisible y {nombre}"
+               + (": el barril es horizontal y la lamina sube desde el hacia "
+                  "la entrada)" if resultado.sin_tirante_normal else
+                  ", y es el tirante maximo dentro del barril)"))
+            + ", no por el caudal de diseño. Lo que V1 hace ahi lo "
             f"declara el criterio [A] '{CRITERIO_BORDE_LIBRE_BAJO_TW}', que "
             f"en esta corrida vale «{lectura_tw}»: "
-            + ("NO CUMPLE, por la exigencia de la pag. impresa 79 leida al "
-               "pie de la letra." if lectura_tw == LECTURA_TW_NO_CUMPLE else
+            + (("NO CUMPLE, por la exigencia de la pag. impresa 79 leida al "
+                "pie de la letra." if lleno else
+                "NO CUMPLE: el borde libre se mide con el tirante del barril, "
+                "venga de donde venga.")
+               if lectura_tw == LECTURA_TW_NO_CUMPLE else
                "el borde libre se juzga con el tirante propio del caudal de "
                "diseño (y_normal); "
-               + ("lo conserva, de modo que el ahogamiento queda como AVISO "
+               + ("lo conserva, de modo que el remanso queda como AVISO "
                   "y no descarta el diametro."
                   if aviso_por_tw else
                   "NO lo conserva (o no existe, en un barril horizontal), de "
@@ -1030,9 +1083,14 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
             tipo=TipoDeVeredicto.INDICADOR,
             margen=y_sobre_D_max - y_sobre_D, unidad="",
             explicacion=(
-                "el barril va LLENO POR EL NIVEL DEL RECEPTOR (TW >= D) y no "
-                "tiene borde libre durante la avenida; con su propio caudal "
-                "lo conservaria. Bajo borde_libre_bajo_tw_ahogante = aviso "
+                ("el barril va LLENO POR EL NIVEL DEL RECEPTOR (TW >= D) y no "
+                 "tiene borde libre durante la avenida"
+                 if lleno else
+                 "el NIVEL DEL RECEPTOR deja al barril con menos borde libre "
+                 "del recomendado durante la avenida (TW por encima del "
+                 "llenado admisible)")
+                + "; con su propio caudal lo conservaria. Bajo "
+                "borde_libre_bajo_tw_ahogante = aviso "
                 "el diametro NO se descarta: ninguno menor que el TW lo "
                 "resuelve, y lo que lo resuelve es la cota de la salida o la "
                 "rasante. Queda como aviso: riesgo de obstruccion con el "
@@ -1049,6 +1107,9 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
             "el barril va LLENO POR EL CAUDAL DE DISEÑO: la lamina toca la "
             "clave, y la fuente lo prohibe expresamente (pag. impresa 79)"
             if lleno_por_caudal else
+            "el NIVEL DEL RECEPTOR deja al barril con menos borde libre del "
+            "recomendado (TW por encima del llenado admisible)"
+            if remansado_por_receptor else
             "el conducto trabaja con menos borde libre del recomendado")
     return Verificacion(
         cumple=cumple or aviso_por_tw,
@@ -2917,12 +2978,14 @@ def verificar(*, punto: PuntoCritico, material: Material,
              seccion: Seccion,
              resultado: ResultadoHidraulico) -> Tuple[Verificacion, ...]:
     """
-    Las doce verificaciones de la Fase 5, en el orden de la tabla (V10, la
-    pendiente del conducto, cierra la tupla desde T-2). Coincide
+    Las doce verificaciones de la Fase 5, en el orden de la tabla salvo
+    V10 (la pendiente del conducto, T-2), que la tabla lista al final y aqui
+    se evalua detras de V4b para que V5 y V8 no la tapen. Coincide
     con la firma de `modulos.MD.Verificador`: MD la importa como
     `modulos.M5_verificaciones.verificar` cuando no se le inyecta otra.
 
-    UNA SOLA POSICION DEPENDE DE LA FAMILIA, y es la septima: en la Familia C
+    UNA SOLA POSICION DEPENDE DE LA FAMILIA, y es la octava (la septima
+    hasta T-2, que intercalo V10 detras de V4b): en la Familia C
     la ocupa VC1 (cruce de canal) y en las demas V5 (remanso en el derecho de
     via). El resto se evalua igual en las tres. La justificacion de esa
     sustitucion --- que V5 presupone agua extendiendose sobre la plataforma y
@@ -2969,15 +3032,20 @@ def verificar(*, punto: PuntoCritico, material: Material,
         lambda: v3_velocidad_maxima(material=material, resultado=resultado),
         lambda: v4_carga_entrada(punto=punto, resultado=resultado),
         lambda: v4b_relacion_hw_d(D=D, resultado=resultado),
+        # --- T-2 --- V10 VA ANTES DEL HUECO DE V5, y no al final de la
+        # tabla. No depende del diametro, de la familia ni de ningun dato de
+        # expediente --su banda son dos criterios con valor--, y detras de V5
+        # y de V8 no llegaba a evaluarse en ninguna corrida de expediente del
+        # repositorio: las dos se detienen por un criterio pendiente y esta
+        # tupla se corta en la primera que se detiene. Lo midio el auditor
+        # adversarial de T-2.
+        lambda: v10_pendiente_conducto(resultado=resultado),
         pieza_del_hueco_de_V5(punto=punto, resultado=resultado)[1],
         lambda: v6_material_solido_arrastre(material=material),
         lambda: v7_flotacion(punto=punto, material=material,
                              seccion=seccion, resultado=resultado),
         lambda: v8_evento_extremo(punto=punto, resultado=resultado),
         lambda: v9_disponibilidad_diametro(D=D, material=material),
-        # --- T-2 --- V10, al final: no depende del diametro ni de la
-        # familia, y su banda es de dos criterios con valor.
-        lambda: v10_pendiente_conducto(resultado=resultado),
     )
     for pieza in piezas:
         try:

@@ -273,6 +273,7 @@ Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 3
 Verificaciones incumplidas: 0
+Verificaciones con aviso: 0
 Etapas bloqueadas       : 1
 Diferidas por alcance   : 11 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : no
@@ -380,6 +381,7 @@ Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 4
 Verificaciones incumplidas: 0
+Verificaciones con aviso: 0
 Etapas bloqueadas       : 0
 Diferidas por alcance   : 13 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : si
@@ -389,8 +391,8 @@ Expediente cerrado      : si
 
 ## 5. Cómo se lee el RESUMEN
 
-Las seis cifras las calcula una sola vez `Informe.resumen()` (un
-`ResumenDeCorrida`) y las leen las tres capas que las imprimen: la consola, la
+Las cifras las calcula una sola vez `Informe.resumen()` (un
+`ResumenDeCorrida`) y las leen las capas que las imprimen: la consola, la
 pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
 
 - **Puntos del expediente / Puntos dimensionados.** Cuántas filas cargó el CSV
@@ -401,6 +403,11 @@ pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
 - **Verificaciones incumplidas.** Las V1…V10, VC1, G1, G2 que se evaluaron y no
   cumplen en la sección aceptada. Un **[AVISO]** (veredicto indicador, como
   V2b bajo `regimen_v2b = indicador_con_aviso`) no cuenta aquí.
+- **Verificaciones con aviso.** Las que salieron como **[AVISO]** en la
+  sección aceptada: el indicador se disparó y el diseño **no** se detuvo. No
+  impiden cerrar, pero hay que leerlas: cada una sale además como una línea
+  `aviso:` en el bloque de su punto, con su código. La consola y la memoria
+  la cuentan; la pestaña 4 la muestra fila a fila.
 - **Etapas bloqueadas.** Las etapas que se detuvieron y **cuentan para el
   cierre**: un `CriterioPendienteError` (falta declarar un criterio), un
   `DatoFaltanteError` (falta un dato), un `DatoInvalidoError`, un

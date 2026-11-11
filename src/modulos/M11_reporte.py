@@ -2210,10 +2210,19 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
         resultado = informe.resultado
         material = resultado.material
         h = resultado.resultado_hidraulico
+        # --- T-2 --- Con el barril HORIZONTAL (S = 0) no hay velocidad
+        # uniforme: las dos celdas van VACIAS, como toda celda del CSV que
+        # no tiene dato. `_num(None)` devuelve la marca de la memoria HTML
+        # (una entidad `&ndash;`), que en un CSV es basura para quien lo abre
+        # en una hoja de calculo: no se pasa por el.
+        if h.sin_tirante_normal:
+            velocidades = ["", ""]
+        else:
+            velocidades = [_num(h.V_erosion, FMT_2),
+                           _num(h.V_sedimentacion, FMT_2)]
         fila.extend([
             material.tipo.value, material.nombre, material.norma_producto,
-            resultado.seccion.etiqueta(), _num(h.V_erosion, FMT_2),
-            _num(h.V_sedimentacion, FMT_2),
+            resultado.seccion.etiqueta(), *velocidades,
             _num(resultado.y_sobre_D, FMT_2), _num(h.HW, FMT_2),
             h.control_gobernante.value,
         ])
@@ -3567,6 +3576,9 @@ def _resumen_expediente(informe: Any) -> str:
                _td(str(r.dimensionados), "num")]),
         _fila([_td("<b>Verificaciones incumplidas</b>"),
                _td(str(r.incumplidas), "num")]),
+        _fila([_td("<b>Verificaciones con aviso</b> (indicador disparado; "
+                   "el diseño no se detiene)"),
+               _td(str(r.con_aviso), "num")]),
         _fila([_td("<b>Etapas bloqueadas</b>"),
                _td(str(r.bloqueadas), "num")]),
         _fila([_td("<b>Diferidas por alcance</b> (no cuentan para el cierre)"),
