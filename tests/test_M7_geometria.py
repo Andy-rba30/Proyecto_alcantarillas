@@ -505,7 +505,11 @@ def test_g2_incumple_cuando_la_salida_queda_bajo_el_receptor():
     v = g2_cota_salida(punto=punto, cota_salida_m=41.10)
     assert not v.cumple
     assert v.codigo == "G2"
-    assert v.criterio_aplicado is None          # compara dos cotas, sin criterio
+    # T-6: G2 dejo de comparar dos cotas «sin criterio». El desnivel minimo
+    # de entrega es un [A] con ficha, y con su valor de archivo (0.0) el
+    # admisible sigue siendo el fondo del receptor.
+    assert v.criterio_aplicado == "desnivel_minimo_entrega_m"
+    assert v.valor_admisible == pytest.approx(41.30, rel=REL_TRANSPORTE)
 
 
 # ---------------------------------------------------------------------------
@@ -525,7 +529,9 @@ def test_7B_con_longitud_dada_arma_la_geometria_y_las_dos_verificaciones(hdpe):
     geo = compatibilidad_geometrica(punto=punto, material=hdpe, seccion=SeccionCircular(D=1.50),
                                     resultado=_resultado(), longitud=20.0)
 
-    assert [v.codigo for v in geo.verificaciones] == ["G1", "G2"]
+    # T-6: G3 es el AVISO de esviaje (cumple siempre; no cuenta para
+    # `factible`).
+    assert [v.codigo for v in geo.verificaciones] == ["G1", "G2", "G3"]
     assert geo.factible
     assert geo.S_conducto == pytest.approx(punto.S_cauce)
     assert geo.caida == pytest.approx(0.006 * 20.0)
@@ -993,10 +999,19 @@ def talud_declarado():
         sensibilidad=None,
         justificacion="CASO PATRON CP-9, no el expediente: talud elegido "
                       "para que 2*t, t^2 y 2/t den tres numeros distintos")
+    # T-6: CP-9 ES EL DORADO DEL TERRAPLEN SIMETRICO -- 2 * talud * altura,
+    # la misma para los dos taludes --, que desde T-6 es el caso particular
+    # conservado y no el metodo del archivo. El fixture declara el metodo al
+    # que su dorado pertenece, por la via de produccion (cae en la ventana),
+    # y lo retira al salir. El metodo por extremo tiene su propio dorado a
+    # mano en tests/test_t6_geometria.py.
+    ca.establecer_valor_dinamico("metodo_longitud_conducto",
+                                 "terraplen_simetrico")
     try:
         yield CP9["talud_de_prueba"]
     finally:
         ca.CRITERIOS[CRITERIO_TALUD] = del_archivo
+        ca.quitar_valor_dinamico("metodo_longitud_conducto")
     assert ca.valor(CRITERIO_TALUD) == del_archivo.valor
 
 

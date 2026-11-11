@@ -76,8 +76,11 @@ FORMA_DEL_CAJON = {
 
 # Las seis claves de `cli.CLAVES_EXTERNAS` que no son columna, ni dato de
 # sitio, ni criterio, y que hasta EXT-5 no estaban en el censo.
+# Desde T-6 de la cadena T son ocho: entraron `bombeo` y `peralte`, la
+# pendiente transversal de la plataforma que afina la longitud de 7.B. El
+# nombre de la constante se conserva: lo usan los tests de abajo.
 SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
-                 "L_hidraulico_m", "categoria_tr")
+                 "L_hidraulico_m", "categoria_tr", "bombeo", "peralte")
 
 
 def _formas_de(clave):

@@ -1203,6 +1203,18 @@ def paso_pendiente(pendiente: PendienteAdoptada):
     )
 
 
+def _procedencia_de_la_entrada(entrada) -> str:
+    """
+    De donde sale la cota de entrada, en una linea: la procedencia completa
+    ya la imprime el paso G1 y el parrafo de la Fase 7, y repetirla entera en
+    cada sustitucion engorda la memoria sin decir nada nuevo.
+    """
+    if entrada.medida:
+        return "MEDIDA: columna cota_fondo_entrada del CSV"
+    return (f"ADOPTADA: regla '{entrada.regla}' del criterio "
+            "'origen_cota_fondo_entrada' [A], no medida")
+
+
 def _metodo_longitud() -> MetodoLongitud:
     """
     El metodo declarado en 'metodo_longitud_conducto', validado como segunda
@@ -1260,7 +1272,7 @@ def _exigir_dato_transversal(clave: str, valor: Optional[float],
                              punto: PuntoCritico) -> float:
     """Bombeo o peralte: None es «no declarado» y vale 0; si viene, finito."""
     if valor is None:
-        return 0.0      # literal-ok: plataforma horizontal, el caso particular
+        return 0.0      # plataforma horizontal: el caso particular
     if isinstance(valor, bool) or not isinstance(valor, (int, float)) \
             or not math.isfinite(valor):
         raise DatoInvalidoError(
@@ -1420,9 +1432,14 @@ def longitud_del_conducto(punto: PuntoCritico, *,
                    "(tolerancias.py): la diferencia entre el coseno y "
                    "talud*S ya no esta determinada en doble precision y la "
                    "longitud de 7.B tampoco")
+    # La guarda INTERNA nombra la magnitud que desborda de verdad (SIS-G-01):
+    # el producto del talud por las alturas, antes que la longitud que lo
+    # contiene.
+    proyeccion_sin_caida = _exigir_finito("proyeccion_taludes",
+                                          talud * (H_e + H_s0), punto)
     longitud = _exigir_finito(
         "longitud_conducto",
-        (ancho + talud * (H_e + H_s0)) / denominador, punto)
+        (ancho + proyeccion_sin_caida) / denominador, punto)
     caida = S * longitud
     H_s = H_s0 + caida
     for lado, altura, borde in (("entrada", H_e, borde_e),
@@ -1448,7 +1465,7 @@ def longitud_del_conducto(punto: PuntoCritico, *,
         Magnitud("talud", talud, "H:V", f"criterio '{CRITERIO_TALUD}' [A]",
                  cifras=CIFRAS_MAGNITUD),
         Magnitud("cota_entrada", entrada.valor, "msnm",
-                 f"{entrada.rotulo}: {entrada.procedencia}",
+                 _procedencia_de_la_entrada(entrada),
                  cifras=CIFRAS_MAGNITUD),
     ]
     if bombeo is not None:
@@ -1461,11 +1478,11 @@ def longitud_del_conducto(punto: PuntoCritico, *,
             "DG-2018 num. 304.06): positivo sube el borde de la entrada",
             cifras=CIFRAS_FINA))
     procedencia_borde = (
-        "cota de rasante del CSV, corregida por la pendiente transversal "
-        "declarada sobre medio ancho de plataforma"
+        "cota de rasante, corregida por la pendiente transversal declarada "
+        "sobre medio ancho"
         if bombeo is not None or peralte is not None else
-        "cota de rasante del CSV: sin bombeo ni peralte declarados, la "
-        "plataforma se toma horizontal")
+        "cota de rasante: plataforma horizontal, sin bombeo ni peralte "
+        "declarados")
     sustitucion += [
         Magnitud("cota_borde_entrada", borde_e, "msnm", procedencia_borde,
                  cifras=CIFRAS_MAGNITUD),
@@ -1474,14 +1491,13 @@ def longitud_del_conducto(punto: PuntoCritico, *,
         Magnitud("H_entrada", H_e, "m",
                  "cota_borde_entrada - cota_entrada", cifras=CIFRAS_MAGNITUD),
         Magnitud("H_salida0", H_s0, "m",
-                 "cota_borde_salida - cota_entrada: altura del borde de "
-                 "salida sobre el fondo de la ENTRADA; la caida S*L que "
-                 "falta para llegar al fondo de la salida esta en el "
-                 "denominador", cifras=CIFRAS_MAGNITUD),
+                 "cota_borde_salida - cota_entrada; la caida S*L hasta el "
+                 "fondo de la salida esta en el denominador",
+                 cifras=CIFRAS_MAGNITUD),
         Magnitud("cos(esviaje)", coseno, "-", "1 / factor del paso 7.B.2",
                  cifras=CIFRAS_FINA),
-        Magnitud("S", S, "m/m", f"pendiente adoptada del conducto: "
-                 f"{pendiente.procedencia}", cifras=CIFRAS_FINA),
+        Magnitud("S", S, "m/m", "pendiente adoptada del conducto "
+                 f"(origen: {pendiente.origen.value})", cifras=CIFRAS_FINA),
     ]
     paso_longitud = paso(
         "F7.LONGITUD",
@@ -1696,9 +1712,10 @@ def _paso_cota_salida(*, punto: PuntoCritico, longitud: float, S: float,
         citas_textuales=("HDS5_3ED.2.2.4#LONGITUD", "MC_HHD.LAMINA_01"),
         sustitucion=(
             Magnitud("cota_entrada", entrada.valor, "msnm",
-                     f"{entrada.rotulo}: {entrada.procedencia}",
+                     _procedencia_de_la_entrada(entrada),
                      cifras=CIFRAS_MAGNITUD),
-            Magnitud("S", S, "m/m", f"paso 7.B.1: {pendiente.procedencia}",
+            Magnitud("S", S, "m/m",
+                     f"paso 7.B.1 (origen: {pendiente.origen.value})",
                      cifras=CIFRAS_FINA),
             Magnitud("L", longitud, "m", "paso 7.B.3",
                      cifras=CIFRAS_MAGNITUD),

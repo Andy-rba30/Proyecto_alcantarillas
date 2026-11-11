@@ -1092,7 +1092,7 @@ def _resolver_longitud(informe: InformePunto,
     informe.longitud_calculada = calculada
     return DatoDeclarado(
         "longitud_m", calculada.longitud,
-        f"M7.longitud_del_conducto (Sec. 7.B, metodo {calculada.metodo.value})")
+        f"M7.longitud_conducto (Sec. 7.B, metodo {calculada.metodo.value})")
 
 
 def _S_del_diseno(informe: InformePunto,

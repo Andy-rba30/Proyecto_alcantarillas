@@ -396,6 +396,15 @@ def traza_del_punto(informe_punto: Any) -> TrazaDelPunto:
         secciones.append(SeccionDeTraza(
             _M11.TITULO_TRAZA_VERIFICACIONES, tuple(entradas)))
 
+    # --- T-6 --- La geometria de 7.B, despues de las verificaciones, que es
+    # el orden en que M11 la imprime (`_bloques_fases_finales`).
+    pasos_7b, previa = _M11.traza_geometria(informe_punto)
+    if pasos_7b:
+        secciones.append(SeccionDeTraza(
+            _M11.TITULO_TRAZA_GEOMETRIA_PREVIA if previa
+            else _M11.TITULO_TRAZA_GEOMETRIA,
+            tuple(_detalle(p, reg) for p in pasos_7b)))
+
     estado = ("dimensionado" if informe_punto.dimensionado
               else "sin dimensionar")
     titulo = (f"{punto.id} | progresiva {punto.progresiva_display} | "

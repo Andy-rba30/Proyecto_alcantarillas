@@ -99,7 +99,16 @@ CORRIDAS_IMPORTTIME = 3
 # 51.4 KB por punto (misma corrida, mismo metodo). Es contenido del punto
 # --la sustitucion del perfil con sus procedencias--, no repeticion, y el
 # techo se vuelve a fijar con holgura sobre la medida nueva.
-KB_POR_PUNTO_MAX = 60.0
+# T-6 de la cadena T (2026-11-11) LO VOLVIO A SUBIR, y por lo mismo: los
+# pasos de la Sec. 7.B, que hasta entonces iban como una frase. Medido con
+# este mismo metodo sobre el arbol anterior a T-6 (`87d1ce7`): 54.9 KB por
+# punto -- el techo de 60 ya estaba a 5 KB, porque nadie lo remidio desde
+# E-A--; con T-6, 60.0 KB a alcance expediente (cada punto imprime, aunque
+# no dimensione, el factor de esviaje y la longitud con que corrio el
+# diseño) y 74.3 KB a alcance perfil, donde los puntos que dimensionan
+# llevan los cinco pasos de 7.B y los de G2 y G3. Es contenido del punto --
+# formula, sustitucion con procedencia y cita de cada paso--, no repeticion.
+KB_POR_PUNTO_MAX = 68.0
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon. El techo se fija con la misma holgura que el de KB.
 PAGINAS_POR_PUNTO_MAX = 19

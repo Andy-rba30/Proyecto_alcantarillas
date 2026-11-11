@@ -921,6 +921,48 @@ _EXTERNOS: Dict[str, _Externo] = {
             opciones=tuple(c.value for c in CategoriaTR),
         ),
     ),
+
+    # --- T-6 --- La pendiente transversal de la plataforma en el cruce. Las
+    # dos entran a `M7.longitud_del_conducto` como argumento, resueltas por
+    # `servicio._resolver_longitud`, y por eso la fase se declara.
+    "bombeo": _Externo(
+        concepto="Bombeo de la plataforma en el cruce, como pendiente "
+                 "transversal MEDIA de la semiplataforma (calzada y berma): "
+                 "baja los dos bordes respecto de la rasante del eje y "
+                 "acorta la proyeccion de los taludes en la longitud del "
+                 "conducto por extremo (Sec. 7.B). Sin declarar, la "
+                 "plataforma se toma horizontal",
+        unidad="m/m",
+        resolucion=Libre(
+            que_lo_fija="la seccion tipica del trazo (DG-2018 num. 304.05, "
+                        "Tabla 304.03)",
+            dominio="m/m >= 0 (0.02 = 2 %); un valor >= 1 delata un bombeo "
+                    "en porcentaje",
+        ),
+        dominio="S_CAUCE_MAX",
+        fase_declarada=_FASE_DE_MODULO["M7_geometria"],
+        nota="Solo actua con 'metodo_longitud_conducto' = por_extremo; el "
+             "metodo del terraplen simetrico no la lee",
+    ),
+
+    "peralte": _Externo(
+        concepto="Peralte de la plataforma en el cruce, como pendiente "
+                 "transversal con signo: positivo sube el borde del lado de "
+                 "la ENTRADA del conducto y baja el de la salida; negativo, "
+                 "al reves. Gira la plataforma alrededor del eje: no cambia "
+                 "la longitud del conducto y si la altura de terraplen de "
+                 "cada extremo (Sec. 7.B). Sin declarar vale cero",
+        unidad="m/m",
+        resolucion=Libre(
+            que_lo_fija="la seccion tipica del trazo en curva (DG-2018 num. "
+                        "304.06)",
+            dominio="m/m con signo (0.04 = 4 %); un valor absoluto >= 1 "
+                    "delata un peralte en porcentaje",
+        ),
+        dominio="S_CAUCE_MAX",
+        fase_declarada=_FASE_DE_MODULO["M7_geometria"],
+        nota="Solo actua con 'metodo_longitud_conducto' = por_extremo",
+    ),
 }
 
 
@@ -1179,6 +1221,9 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "v_max_concreto_eleccion": _Meta(unidad="m/s"),
     "v_max_hdpe": _Meta(unidad="m/s"),
     "v_max_tmc": _Meta(unidad="m/s"),
+    # --- T-6 ---
+    "metodo_longitud_conducto": _Meta(unidad="-"),
+    "desnivel_minimo_entrega_m": _Meta(unidad="m"),
 }
 
 

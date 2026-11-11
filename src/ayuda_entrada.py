@@ -59,7 +59,8 @@ La del JSON: las OCHO claves de `servicio.CLAVES_EXTERNAS` estan en el censo des
 EXT-5 (EXT-G-03). Dos (`Q_m3s`, `S_cauce`) como columnas del CSV, que ademas
 lo son; las otras seis (`luz_m`, `TW_m`, `longitud_m`, `S_conducto`,
 `L_hidraulico_m`, `categoria_tr`) como la poblacion `dato_externo` de
-`variables_entrada`. Hasta EXT-5 esas seis iban vacias y esta ayuda lo decia,
+`variables_entrada`. (Desde T-6 de la cadena T el conteo es DIEZ y OCHO:
+entraron `bombeo` y `peralte`, tambien como `dato_externo`.) Hasta EXT-5 esas seis iban vacias y esta ayuda lo decia,
 prefiriendo un hueco declarado a parsear la prosa del docstring de `cli.py`
 --- y sigue sin parsearla: un docstring no es una interfaz ---. Lo que cambio
 es donde vive la declaracion: en el censo, que es el mismo sitio del que

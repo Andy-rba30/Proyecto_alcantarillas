@@ -101,6 +101,15 @@ def _pasos_de(informe):
             _anota(getattr(punto.proteccion, "paso", None))
         if punto.espaciamiento is not None:
             _anota(getattr(punto.espaciamiento, "paso", None))
+        # T-6: 7.B emite pasos propios (pendiente, esviaje, longitud, cota de
+        # salida, encaje). Si el punto no llego a 7.B, la longitud que se
+        # calculo antes de la Fase 4 trae igual los suyos.
+        geometria = getattr(punto, "geometria", None)
+        calculada = getattr(punto, "longitud_calculada", None)
+        if geometria is not None:
+            vistos.extend(geometria.pasos)
+        elif calculada is not None:
+            vistos.extend(calculada.pasos)
     for recubrimiento in informe.cabezal.recubrimientos:
         _anota(getattr(recubrimiento, "paso", None))
     return vistos
@@ -410,6 +419,16 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
     # del expediente y no por falta de fundamento.
     sin_alcanzar = {
         "F7.RELLENO",       # 7.A se detiene en 'espesor_pared_conducto'
+        # T-6: los siete de 7.B. Cinco cuelgan de un punto DIMENSIONADO, por
+        # la misma razon que F6.LAUSHEY -- esta corrida no dimensiona
+        # ninguno --. F7.ESVIAJE y F7.LONGITUD no lo necesitan (la longitud se
+        # calcula antes de la Fase 4 y sus dos pasos se emiten aunque el
+        # punto no cierre), pero esta corrida DECLARA la longitud
+        # (`longitud_m` = 14.0): no hay longitud calculada ni metodo que
+        # imprimir. Que los siete se emiten lo mide
+        # tests/test_t6_geometria.py, sin declararla.
+        "F7.PENDIENTE", "F7.COTA_SALIDA", "F7.ENCAJE", "F7.ENTREGA",
+        "F7.ESVIAJE_MAX", "F7.ESVIAJE", "F7.LONGITUD",
         "F8.RECUBRIMIENTO",  # 9.4 se detiene en 'categoria_refuerzo_aashto'
         "F10.CUNETA",       # falta el dato 'L_hidraulico_m'
         "F6.LAUSHEY",       # Fase 6 cuelga de un punto dimensionado
