@@ -738,6 +738,38 @@ def test_los_limites_gobiernan_solo_sobre_la_pendiente_del_cauce(
     assert declarada.origen is modelos.OrigenPendiente.DECLARADA
 
 
+def test_el_limite_que_gobierna_llega_al_diseno_al_TW_y_a_7B(monkeypatch):
+    """
+    De punta a punta, con el minimo por ENCIMA de la pendiente del cauce de
+    A-01 (0.006): la Fase 4 corre con 0.007, 7.B cae 0.007*L y la memoria
+    dice que gobierna el minimo. La pendiente no se elige dos veces (MAT-D9):
+    si el limite se quedara en M7 y MD siguiera con la del cauce, el HW y la
+    cota de salida saldrian de dos pendientes distintas.
+    """
+    limites = {M7.CRITERIO_PENDIENTE_MINIMA: 0.007,
+               M7.CRITERIO_PENDIENTE_MAXIMA: None}
+    monkeypatch.setattr(M7, "_limite_de_pendiente", limites.get)
+    informe = _correr()
+    a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
+    assert a01.pendiente.origen is modelos.OrigenPendiente.MINIMA
+    assert a01.resultado.resultado_hidraulico.S == _igual(0.007)
+    geo = a01.geometria
+    assert geo.S_conducto == _igual(0.007)
+    assert geo.pendiente.origen is modelos.OrigenPendiente.MINIMA
+    L = (ANCHO + TALUD * 2 * H_EJE) / (COS15 - TALUD * 0.007)
+    assert geo.longitud == pytest.approx(L, abs=ABS)
+    assert geo.caida == pytest.approx(0.007 * L, abs=ABS)
+    assert geo.cota_salida == pytest.approx(TERRENO - 0.007 * L, abs=ABS)
+    # A-02 (0.008) queda por encima del minimo: sigue con la del cauce
+    a02 = next(p for p in informe.puntos if p.punto.id == "A-02")
+    assert a02.pendiente.origen is modelos.OrigenPendiente.CAUCE
+    assert a02.resultado.resultado_hidraulico.S == _igual(0.008)
+    # C-01 la DECLARA (0.004 < 0.007) y el limite no la pisa
+    c01 = next(p for p in informe.puntos if p.punto.id == "C-01")
+    assert c01.pendiente.origen is modelos.OrigenPendiente.DECLARADA
+    assert c01.pendiente.valor == _igual(0.004)
+
+
 def test_dos_limites_cruzados_son_dato_invalido(monkeypatch):
     limites = {M7.CRITERIO_PENDIENTE_MINIMA: 0.05,
                M7.CRITERIO_PENDIENTE_MAXIMA: 0.002}

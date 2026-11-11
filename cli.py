@@ -26,8 +26,9 @@ Que reporta por punto
     B x H en un marco: lo nombra la propia seccion (`Seccion.etiqueta`)
     control gobernante (entrada / salida) y la hidraulica que lo sostiene
     verificaciones con su numeral: la luz de Sec. 2.1, V1-V9 de la Fase 5 y
-        G1/G2 de Sec. 7.B, cada una con valor obtenido, admisible y el
-        criterio adoptado del que sale el umbral
+        G1/G2 de Sec. 7.B (y G3, el aviso de esviaje, desde T-6), cada una
+        con valor obtenido, admisible y el criterio adoptado del que sale el
+        umbral
     los criterios pendientes que bloquearon una etapa, con el concepto y la
         fuente que los resolveria
 

@@ -1730,7 +1730,7 @@ recomienda.
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
 | `F7.COTA_SALIDA` | Fase 7 - Compatibilidad geometrica | Caida del conducto y cota de fondo de la salida | **define** | `MC_HHD.LAMINA_01`, `HDS5_3ED.2.2.4#LONGITUD` |
 | `F7.ENCAJE` | Fase 7 - Compatibilidad geometrica | Encaje de la seccion adoptada en la seccion transversal: longitud entre cabezales a la clave | **obliga** | `HDS5_3ED.3.3.5#ENCAJE`, `HDS5_3ED.3.1.4#LONGITUD` |
-| `F7.ENTREGA` | Fase 7 - Compatibilidad geometrica | Entrega al cuerpo receptor: cota de salida frente a su fondo | **obliga** | `MC_HHD.4.1.1.3.3`, `MC_HHD.LAMINA_01` |
+| `F7.ENTREGA` | Fase 7 - Compatibilidad geometrica | Entrega al cuerpo receptor: cota de salida frente a su fondo | **define** | `MC_HHD.LAMINA_01`, `MC_HHD.4.1.1.3.3` |
 | `F7.ESVIAJE` | Fase 7 - Compatibilidad geometrica | Factor de esviaje, 1 / cos(esviaje) | **define** | `HDS5_3ED.5.4.1#ESVIAJE`, `MC_HHD.4.1.1.3.2` |
 | `F7.ESVIAJE_MAX` | Fase 7 - Compatibilidad geometrica | Esviaje del cruce frente al maximo que el proyecto adopta | **recomienda** | `HDS5_3ED.5.4.2#MAXIMO_PRACTICO`, `MC_HHD.4.1.1.3.2` |
 | `F7.LONGITUD` | Fase 7 - Compatibilidad geometrica | Longitud del conducto sobre la seccion transversal del cruce | **define** | `HDS5_3ED.2.2.4#LONGITUD`, `HDS5_3ED.3.1.4#LONGITUD`, `DG2018.304.10#T304.11`, `DG2018.304.05#BOMBEO`, `DG2018.304.06#PERALTE` |

@@ -3751,11 +3751,16 @@ class CompatibilidadGeometrica:
     `longitud` = (ancho de plataforma + proyeccion de taludes) * factor de
     esviaje, en metros. `caida` = S * longitud, y `cota_salida` = cota de
     entrada - caida.
+    Como se obtuvo la proyeccion -- por extremo, con el terraplen simetrico,
+    o despejada de una longitud declarada -- lo dice `longitud_calculada`
+    (T-6); `proyeccion_taludes` es siempre la suma de los dos lados.
 
     Las verificaciones llevan codigo G1/G2 para no confundirse con las V1-V9
     de la Fase 5: son de otra fase y de otro modulo. La lista es corta a
-    proposito -- ver "Por que 7.B solo trae dos verificaciones" en el
-    docstring de M7.
+    proposito -- ver "Por que 7.B trae dos verificaciones con umbral y un
+    aviso" en el docstring de M7. Desde T-6 hay una tercera fila, G3, que es
+    el AVISO de esviaje: `cumple` es True siempre y por eso no entra en
+    `verificaciones_incumplidas` ni cambia `factible`.
 
     `S_conducto` es la pendiente CON LA QUE CORRIO EL DISENO
     (`ResultadoHidraulico.S`), no una que esta fase vuelva a elegir. Sec. 7.B

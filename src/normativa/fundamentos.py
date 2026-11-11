@@ -1410,13 +1410,19 @@ ENTREGA = _fundamento(
         "El conducto entrega el agua a un cauce que tiene su propio fondo. "
         "Una salida por DEBAJO de ese fondo queda enterrada: el receptor la "
         "colmata y el conducto trabaja ahogado en sedimento. Una salida muy "
-        "por ENCIMA descarga en caida y socava. Las dos alteran los procesos "
-        "de erosion y sedimentacion que el Manual manda no alterar, y por "
-        "eso la cota de salida se contrasta con la del fondo del receptor; "
-        "cuanto desnivel se exige entre las dos no lo dice ninguna fuente y "
-        "es una adopcion del proyecto."),
-    verbo=Verbo.OBLIGA,
-    citas=("MC_HHD.4.1.1.3.3", "MC_HHD.LAMINA_01"),
+        "por ENCIMA descarga en caida y socava. Son las dos formas en que la "
+        "obra altera la erosion y la sedimentacion del cauce, que es lo que "
+        "el Manual manda cuidar al fijar la pendiente -- y la cota de salida "
+        "es consecuencia directa de la pendiente --. El Manual tipifica las "
+        "ubicaciones de la salida respecto del cauce y NO dice cuanto "
+        "desnivel debe haber: contrastar la cota de salida con el fondo del "
+        "receptor es la lectura del proyecto, y el desnivel exigido una "
+        "adopcion suya."),
+    # DEFINE y no OBLIGA: la Lamina N 01 tipifica (DEFINICION) y el num.
+    # 4.1.1.3.3 obliga sobre la PENDIENTE, no sobre la entrega. Escribir «el
+    # Manual obliga a verificar la entrega» seria atribuirle lo que no dice.
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.LAMINA_01", "MC_HHD.4.1.1.3.3"),
     que_pasa_si_no_se_hace=(
         "La obra puede quedar proyectada con la salida bajo el fondo del "
         "dren que la recibe, y eso no se corrige subiendo la rasante: se "

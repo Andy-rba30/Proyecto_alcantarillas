@@ -1849,13 +1849,16 @@ def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion
                             "mas el desnivel de entrega adoptado",
                 valor=cota_minima, unidad="msnm", cita_id=cita,
                 caracter=_caracter_de(cita),
-                aplicacion="EXIGENCIA SIN CIFRA: la fuente manda que la "
-                           "pendiente no altere la erosion y la "
-                           "sedimentacion y no dice cuanto debe quedar la "
-                           "salida sobre el receptor. El numero es del "
-                           "proyecto: el desnivel del criterio [A], que en "
-                           "0.0 exige solo que la salida no quede enterrada "
-                           "bajo el fondo del receptor.",
+                aplicacion="EXIGENCIA SIN CIFRA, Y SOBRE LA PENDIENTE: la "
+                           "fuente manda que la pendiente no altere la "
+                           "erosion y la sedimentacion; no habla de la "
+                           "entrega ni dice cuanto debe quedar la salida "
+                           "sobre el receptor. Contrastar la cota de salida "
+                           "-- que la pendiente determina -- es lectura del "
+                           "proyecto, y el numero tambien: el desnivel del "
+                           "criterio [A], que en 0.0 exige solo que la "
+                           "salida no quede enterrada bajo el fondo del "
+                           "receptor.",
                 criterio_aplicado=CRITERIO_DESNIVEL_ENTREGA),
             veredicto=Veredicto(
                 tipo=(TipoDeVeredicto.CUMPLE if cumple

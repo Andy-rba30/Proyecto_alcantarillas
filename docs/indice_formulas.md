@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-11 · Commit del árbol de origen: `c459634+cambios-sin-commit` · Suite: 4301 passed, 17 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado; rama tesis/T-6, FASE A)
+> **Sello.** Fecha de generación: 2026-11-11 · Commit del árbol de origen: `3b28e26+cambios-sin-commit` · Suite: 4302 passed, 17 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado; rama tesis/T-6, FASE A)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
