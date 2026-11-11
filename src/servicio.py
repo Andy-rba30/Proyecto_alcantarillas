@@ -87,13 +87,17 @@ from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          Familia, MetodoNoEvaluableError, PasoDiseno,
                          ProteccionSalida, PuntoCritico, ResultadoPunto,
                          TipoDeBloqueo, TWDeterminado, Verificacion)
+from src.modelos import (LongitudConducto, OrigenPendiente,      # --- T-6 ---
+                         PendienteAdoptada)
 from src.modulos.M0_carga import (cargar_puntos, cargar_puntos_de_bytes,
                                   leer_bytes)
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M6_proteccion import proteccion_salida
 from src.modulos import M3_hidraulica as M3
 from src.modulos.M7_geometria import (compatibilidad_geometrica,
-                                      cota_salida, longitud_conducto)
+                                      cota_salida, longitud_conducto,
+                                      longitud_del_conducto,
+                                      pendiente_adoptada)
 # `altura_relleno_sobre_clave` vive en M5 y no aqui: la comparten V7 -- que
 # pesa ese relleno como EV -- y la Fase 8, que con el entra a la norma de
 # producto. La resta estaba escrita en los dos sitios y la copia de la CLI
@@ -290,6 +294,11 @@ COLUMNAS_DEL_TW: Tuple[str, ...] = ("cota_TW", "Q_receptor_m3s")
 # tiene su regla explicita en el pre-vuelo, y el test de PF-2 fija que la
 # particion sea exacta: una clave nueva sin regla ni via alterna no pasa.
 EXTERNOS_CON_VIA_ALTERNA: Tuple[str, ...] = ("longitud_m", "categoria_tr", "S_conducto")
+# --- T-6 --- `bombeo` y `peralte` (pendiente transversal de la plataforma,
+# DG-2018 num. 304.05 y 304.06) tampoco son faltas: sin declarar, la longitud
+# de 7.B toma la plataforma horizontal a la cota de rasante, que es el caso
+# particular que `M7.longitud_del_conducto` declara en su paso.
+EXTERNOS_CON_VIA_ALTERNA += ("bombeo", "peralte")
 
 
 def tw_sin_via_de_sec_1_3(tw_declarado: Optional[float], cota_TW: Optional[float],
@@ -370,6 +379,14 @@ CLAVES_TEXTO: Tuple[str, ...] = ("categoria_tr",)
 CLAVES_EXTERNAS: Tuple[str, ...] = ("luz_m", "TW_m", "longitud_m", "Q_m3s",
                                     "S_conducto", "S_cauce",
                                     "L_hidraulico_m") + CLAVES_TEXTO
+# --- T-6 --- La pendiente transversal de la plataforma en el cruce, cuando
+# la seccion tipica la da (m/m: 0.02 = 2 %). Son datos del TRAZO, opcionales
+# y sin valor por defecto; entran por --datos-externos, como `S_conducto`.
+#   bombeo   >= 0: baja los DOS bordes de la plataforma respecto del eje.
+#   peralte  con signo: positivo sube el borde del lado de la ENTRADA y baja
+#            el de la salida (giro alrededor del eje); negativo, al reves.
+CLAVES_TRANSVERSALES: Tuple[str, ...] = ("bombeo", "peralte")
+CLAVES_EXTERNAS += CLAVES_TRANSVERSALES
 
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
@@ -572,6 +589,17 @@ _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
                    "una pendiente de conducto en m/m: es la MISMA magnitud "
                    "que `S_cauce` y el mismo error de transcripcion, y ademas "
                    "esta es la que entra en Manning"),
+    # --- T-6 --- Las dos pendientes TRANSVERSALES se acotan con el mismo
+    # techo de escritura: el DG-2018 las tabula en porcentaje (2.0, 2.5; 4.0
+    # a 12.0) y un `"bombeo": 2.0` es exactamente la celda cargada en
+    # porcentaje que este techo existe para atrapar. Para `peralte`, que
+    # lleva signo, se compara el valor absoluto.
+    "bombeo": (S_CAUCE_MAX,
+               "una pendiente transversal en m/m (0.02 = 2 %): un valor >= 1 "
+               "delata un bombeo escrito en PORCENTAJE"),
+    "peralte": (S_CAUCE_MAX,
+                "una pendiente transversal en m/m (0.04 = 4 %): un valor "
+                "absoluto >= 1 delata un peralte escrito en PORCENTAJE"),
 }
 
 
@@ -609,14 +637,20 @@ def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     # proyectista escribe en el JSON o en la bandera; un TW de 1e-15 m no es
     # salida libre, es un tirante absurdo, y taparlo con una tolerancia lo
     # convertiria en salida libre en silencio.
-    if valor < 0 or (valor == 0 and clave != "TW_m"):
+    # --- T-6 --- `bombeo` admite 0 (plataforma sin bombeo, declarada como
+    # tal) y `peralte` admite 0 y signo: positivo sube el borde del lado de
+    # la entrada, negativo el de la salida. Son las unicas dos claves con
+    # esa regla, y estan nombradas en `CLAVES_TRANSVERSALES`.
+    if clave == "peralte":
+        pass
+    elif valor < 0 or (valor == 0 and clave not in ("TW_m", "bombeo")):
         raise DatoInvalidoError(
             clave, valor=bruto,
             motivo=f"tiene que ser positivo (TW admite 0 = salida libre); "
                    f"origen: {origen}",
         )
     techo = _DOMINIO_DE_CLAVE.get(clave)
-    if techo is not None and valor >= techo[0]:
+    if techo is not None and abs(valor) >= techo[0]:
         raise DatoInvalidoError(
             clave, valor=bruto,
             motivo=f"fuera del rango fisico posible ({techo[0]}): {techo[1]}; "
@@ -789,6 +823,14 @@ class InformePunto:
     categoria_tr: Optional[DatoDeclarado] = None
     longitud: Optional[DatoDeclarado] = None
     tw: Optional[DatoDeclarado] = None
+    # --- T-6 --- La longitud CALCULADA con lo que la produjo (metodo, altura
+    # de terraplen por extremo, pasos de memoria) y la pendiente adoptada con
+    # su origen. `longitud` sigue siendo el float que MD consume; esto es lo
+    # que la memoria imprime, el mismo par que `tw` / `tw_sec13`. Las dos se
+    # resuelven ANTES de la Fase 4 y por eso existen aunque el punto no
+    # dimensione. `longitud_calculada` es None cuando la longitud se declaro.
+    longitud_calculada: Optional[LongitudConducto] = None
+    pendiente: Optional[PendienteAdoptada] = None
     # El TW con su PROCEDENCIA: por cual de las cuatro vias de Sec. 1.3 salio,
     # con que cota de agua y -- si fue por escenarios acotados -- con los dos
     # numeros del paso 3. `tw` sigue siendo el float que MD consume; esto es
@@ -1024,15 +1066,47 @@ def _resolver_longitud(informe: InformePunto,
     distintas en el mismo punto darian dos cotas de salida distintas.
     """
     punto = informe.punto_de_calculo
+    # --- T-6 --- LA PENDIENTE SE RESUELVE AQUI, una vez, con su origen
+    # (`M7.pendiente_adoptada`): la necesita la longitud por extremo -- la
+    # salida queda S*L mas baja -- y es la misma que despues usan el TW, MD y
+    # 7.B. Si no se puede resolver (ni `S_conducto` ni `S_cauce`), aqui NO se
+    # bloquea: se deja en None y se detiene quien de verdad la necesite, con
+    # el nombre del dato -- el metodo por extremo en esta misma etapa, o el
+    # TW y MD donde ya se detenian.
+    try:
+        informe.pendiente = pendiente_adoptada(
+            punto, externos.valor(punto.id, "S_conducto"))
+    except DatoFaltanteError:
+        informe.pendiente = None
     declarada = externos.dato(punto.id, "longitud_m")
     if declarada is not None:
         return declarada
-    longitud = _etapa(informe.bloqueos, FASE_GEOMETRIA,
-                      "longitud del conducto (7.B)",
-                      lambda: longitud_conducto(punto))
-    if longitud is None:
+    calculada = _etapa(
+        informe.bloqueos, FASE_GEOMETRIA, "longitud del conducto (7.B)",
+        lambda: longitud_del_conducto(
+            punto, pendiente=informe.pendiente,
+            bombeo=externos.valor(punto.id, "bombeo"),
+            peralte=externos.valor(punto.id, "peralte")))
+    if calculada is None:
         return None
-    return DatoDeclarado("longitud_m", longitud, "M7.longitud_conducto (Sec. 7.B)")
+    informe.longitud_calculada = calculada
+    return DatoDeclarado(
+        "longitud_m", calculada.longitud,
+        f"M7.longitud_del_conducto (Sec. 7.B, metodo {calculada.metodo.value})")
+
+
+def _S_del_diseno(informe: InformePunto,
+                  externos: DatosExternos) -> Optional[float]:
+    """
+    La pendiente que se entrega al TW y a MD (T-6): la declarada, el limite
+    adoptado cuando gobierna, o None -- «la del cauce», que es lo que esas
+    dos piezas resuelven por su cuenta con `punto.exigir("S_cauce")` y lo que
+    recibian antes de T-6 cuando nadie declaraba `S_conducto`.
+    """
+    pendiente = informe.pendiente
+    if pendiente is not None and pendiente.origen is not OrigenPendiente.CAUCE:
+        return pendiente.valor
+    return externos.valor(informe.punto_de_calculo.id, "S_conducto")
 
 
 def _resolver_tw(informe: InformePunto, externos: DatosExternos,
@@ -1063,7 +1137,7 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
     """
     punto = informe.punto_de_calculo
     declarado = externos.dato(punto.id, "TW_m")
-    S = externos.valor(punto.id, "S_conducto")
+    S = _S_del_diseno(informe, externos)      # T-6: la pendiente ADOPTADA
 
     def resolver():
         declarado_a_mano = (declarado.valor if declarado is not None else None)
@@ -1343,7 +1417,7 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
     verificar = (_verificador_perfil(informe)
                  if alcance == ALCANCE_PERFIL else None)
     Q = externos.valor(punto.id, "Q_m3s")
-    S = externos.valor(punto.id, "S_conducto")
+    S = _S_del_diseno(informe, externos)      # T-6: la pendiente ADOPTADA
     # `informe.traza.append` es el observador de MD: los escalones quedan
     # anotados aunque la etapa termine en DisenoNoFactibleError, que es cuando
     # la memoria mas necesita ver que se probo.
@@ -1395,13 +1469,19 @@ def _fase_6(informe: InformePunto) -> None:
 def _fase_7(informe: InformePunto) -> None:
     """7.B con la SECCION adoptada y la MISMA longitud que uso la Fase 4."""
     resultado = informe.resultado
+    # --- T-6 --- Si la longitud se CALCULO, viaja el objeto entero (metodo,
+    # alturas por extremo, pasos); si se DECLARO, el escalar, y 7.B lo rotula
+    # como declarado. En los dos casos es la misma L que uso la Fase 4.
+    calculada = informe.longitud_calculada
     informe.geometria = _etapa(
         informe.bloqueos, FASE_GEOMETRIA, "compatibilidad geometrica (7.B)",
         lambda: compatibilidad_geometrica(
             punto=informe.punto_de_calculo, material=resultado.material,
             seccion=resultado.seccion,
             resultado=resultado.resultado_hidraulico,
-            longitud=informe.longitud.valor))
+            longitud=None if calculada is not None else informe.longitud.valor,
+            longitud_calculada=calculada,
+            pendiente=informe.pendiente))
 
 
 def _fase_8(informe: InformePunto) -> None:

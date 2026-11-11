@@ -96,6 +96,10 @@ EXT7 = (FECHA_EXT7, POR_EXT7)
 EA = (FECHA_EA, POR_EA)
 CIERRE = (FECHA_CIERRE, POR_CIERRE)
 T0 = (FECHA_T0, POR_T0)
+# --- T-6 ---
+FECHA_T6 = "2026-11-11"
+POR_T6 = "tesis/T-6 · lectura directa de la pagina por la sesion"
+T6 = (FECHA_T6, POR_T6)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -5924,6 +5928,300 @@ MP_KA_COULOMB = _cita(
           "«se puede tomar» es PERMISO: la fuente ofrece la expresion, no "
           "la impone; el proyecto la adopta como coeficiente estatico por "
           "homogeneidad con el sismico (EXT-M-06)."),
+)
+
+# ===========================================================================
+# --- T-6 --- Geometria: longitud por extremo, esviaje, pendiente y entrega
+# (INF-3.3.3, INF-5.1.18). Diez citas, leidas por la sesion contra el PDF:
+# por TEXTO las nueve de articulado y por IMAGEN la Lamina N 01, que es un
+# plano. Ninguna fija un NUMERO de proyecto: sostienen el PROCEDIMIENTO
+# (longitud aproximada sobre la seccion transversal y encaje posterior,
+# HDS-5), la CONVENCION del esviaje (HDS-5 5.4.1), el unico pronunciamiento
+# de fuente sobre un maximo practico (HDS-5 5.4.2, del esviaje de la
+# EMBOCADURA) y lo que el Manual del MTC exige de la ubicacion y de la
+# pendiente. El desnivel de entrega y el esviaje maximo siguen siendo [A].
+# ===========================================================================
+
+MC_HHD_4_1_1_3_2 = _cita(
+    id="MC_HHD.4.1.1.3.2",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.2",
+    titulo_numeral="Ubicación en planta",
+    pagina_impresa="71",
+    pagina_pdf=74,
+    pagina_pdf_titulo=74,
+    texto_literal=Verbatim(
+        texto=("La ubicación en planta ideal es la que sigue la dirección de "
+               "la corriente"),
+        pagina_pdf=74),
+    # DEFINICION: dice cual es la ubicacion «ideal», no la manda. La oracion
+    # sigue con un PERMISO («sin embargo, según requerimiento del Proyecto
+    # la ubicación natural puede desplazarse, lo cual implica el
+    # acondicionamiento del cauce»), que es lo que hace del esviaje un dato
+    # de entrada y no un incumplimiento.
+    caracter=Caracter.DEFINICION,
+    sesion=T6,
+    nota=("El numeral NO da un esviaje maximo ni una longitud: dice que lo "
+          "ideal es seguir la corriente y que desplazar la ubicacion natural "
+          "obliga a acondicionar el cauce a la entrada y a la salida con "
+          "obras de encauzamiento. Es el fundamento de que el conducto se "
+          "tienda esviado (factor 1/cos) en vez de rectificar el cruce."),
+)
+
+MC_HHD_4_1_1_3_3 = _cita(
+    id="MC_HHD.4.1.1.3.3",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.3",
+    titulo_numeral="Pendiente longitudinal",
+    pagina_impresa="71",
+    pagina_pdf=74,
+    pagina_pdf_titulo=74,
+    texto_literal=Verbatim(
+        texto=("La pendiente longitudinal de la alcantarilla debe ser tal "
+               "que no altere desmesuradamente los procesos geomorfológicos, "
+               "como la erosión y sedimentación"),
+        pagina_pdf=74),
+    # EXIGENCIA SIN NUMERO («debe ser tal que»): obliga a cuidar la
+    # pendiente y no dice cual. Ni pendiente minima, ni maxima, ni desnivel
+    # de entrega: los tres son adopcion del proyecto.
+    caracter=Caracter.EXIGENCIA,
+    sesion=T6,
+    nota=("El numeral entero son dos oraciones: esta, que sigue «por ello, "
+          "los cambios de pendiente deben ser estudiados en forma cuidadosa, "
+          "para no incidir en dichos procesos que pueden provocar el colapso "
+          "de la estructura», y la remision a la Lamina N 01. NO HABLA DE LA "
+          "ENTREGA al receptor ni de remanso, y no trae ninguna cifra: quien "
+          "lo cite para un desnivel minimo de entrega o para una pendiente "
+          "minima le atribuye lo que no dice. Lo que sostiene es que la cota "
+          "de salida y la pendiente del conducto se VERIFIQUEN contra el "
+          "cauce; el valor contra el que se verifican es [A]."),
+)
+
+LAMINA_01 = _cita(
+    id="MC_HHD.LAMINA_01",
+    fuente_id="MC_HHD",
+    numeral="Lámina Nº 01",
+    # El cajetin imprime el titulo en tres renglones apilados («UBICACIÓN
+    # TÍPICA DE ALCANTARILLAS» / «RESPECTO A LA PENDIENTE» / «DEL CAUCE») y
+    # la capa de texto los entrega como corridas separadas: se guarda el
+    # primero, por la misma limitacion declarada en `MC_HHD.LAMINA_03`.
+    titulo_numeral="UBICACIÓN TÍPICA DE ALCANTARILLAS",
+    jerarquia_numeral=(),
+    pagina_impresa="206",
+    pagina_pdf=209,
+    pagina_pdf_titulo=209,
+    texto_literal=Verbatim(
+        texto="c) SALIDA SOBRE LA PENDIENTE NATURAL",
+        pagina_pdf=209),
+    # DEFINICION: la lamina TIPIFICA cinco ubicaciones y no manda ninguna.
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=T6,
+    nota=("Es un plano, leido sobre la pagina renderizada. Cinco esquemas: "
+          "a) siguiendo la pendiente natural del cauce; b) entrada bajo la "
+          "pendiente natural; c) salida sobre la pendiente natural; d) "
+          "entrada bajo y salida sobre la pendiente natural; e) pendientes "
+          "pronunciadas (con muro y anclaje). En a) el conducto va de "
+          "cabezal a cabezal sobre el fondo del cauce y los taludes del "
+          "terraplen mueren en la coronacion de los cabezales. En c) y d) la "
+          "salida queda POR ENCIMA del cauce, con dos notas del propio "
+          "plano: «la posibilidad de dejar el tubo en voladizo debe ser "
+          "analizada estructuralmente. El terreno a la salida debe ser roca "
+          "u otro material resistente a la erosión» y «alcantarillas "
+          "pequeñas pueden descargar con seguridad sobre un talud de "
+          "enrocado». NO ACOTA NINGUNA DIMENSION: ni el desnivel de la "
+          "salida ni la longitud. Sostiene que una salida elevada sobre el "
+          "fondo del receptor exige proteccion, y por eso el desnivel de "
+          "entrega no es conservador en un solo sentido."),
+)
+
+HDS5_2_2_4_LONGITUD = _cita(
+    id="HDS5_3ED.2.2.4#LONGITUD",
+    fuente_id="HDS5_3ED",
+    numeral="2.2.4 b.",
+    titulo_numeral="Roadway Data",
+    pagina_impresa="2.8",
+    pagina_pdf=70,
+    pagina_pdf_titulo=69,
+    texto_literal=Verbatim(
+        texto=("These elevations and the resulting culvert length are "
+               "approximate since the final culvert barrel size must still "
+               "be determined."),
+        pagina_pdf=70),
+    # APROXIMACION, y la palabra es de la fuente: «approximate».
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=T6,
+    nota=("Inciso «b. Culvert Length» del num. 2.2.4, que abre en la pag. "
+          "impresa 2.7 (PDF 69). Las dos oraciones anteriores dicen COMO se "
+          "obtiene: «The dimensions are obtained by superimposing the "
+          "estimated culvert barrel on the roadway cross section and the "
+          "streambed profile (Figure 2.4). This superposition establishes "
+          "the inlet and outlet invert elevations». La Figura 2.4 (misma "
+          "pagina, leida por imagen) dibuja la seccion A-A SOBRE EL EJE "
+          "ESVIADO del conducto, con «Shoulder Elevation» en cada borde, el "
+          "talud «Se : 1» a cada lado y un «Upstream Invert» mas alto que el "
+          "«Downstream Invert»: es la longitud POR EXTREMO, cada talud "
+          "bajando hasta el conducto en su lado, y no dos taludes iguales "
+          "medidos en el eje. El inciso «a. Cross Section» de la misma "
+          "pagina añade que la seccion que el proyectista necesita es la "
+          "del cruce, «skewed with reference to the roadway centerline»."),
+)
+
+HDS5_3_1_4_LONGITUD = _cita(
+    id="HDS5_3ED.3.1.4#LONGITUD",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.4",
+    titulo_numeral="Outlet Control",
+    pagina_impresa="3.9",
+    pagina_pdf=91,
+    pagina_pdf_titulo=87,
+    texto_literal=Verbatim(
+        texto=("Because the design height of the barrel and the slope "
+               "influence the actual length, an approximation of barrel "
+               "length is usually necessary to begin the design process."),
+        pagina_pdf=91),
+    caracter=Caracter.APROXIMACION,
+    sesion=T6,
+    nota=("Lista «Factors Influencing Outlet Control», que empieza en la "
+          "pag. impresa 3.8 (PDF 90); el numeral abre en la 3.5 (PDF 87). La oracion anterior define la "
+          "magnitud: «Barrel length is the total culvert length from the "
+          "entrance to the exit of the culvert». Es la razon, escrita por "
+          "la fuente, de que la longitud del diseño hidraulico se calcule "
+          "ANTES de conocer la seccion y por eso sin su altura: la altura "
+          "del barril y la pendiente mueven la longitud real, y el diseño "
+          "arranca con una aproximacion."),
+)
+
+HDS5_3_3_5_ENCAJE = _cita(
+    id="HDS5_3ED.3.3.5#ENCAJE",
+    fuente_id="HDS5_3ED",
+    numeral="3.3.5",
+    titulo_numeral="Evaluation of Results",
+    pagina_impresa="3.25",
+    pagina_pdf=107,
+    pagina_pdf_titulo=107,
+    texto_literal=Verbatim(
+        texto=("Once the barrel is selected it must be fitted into the "
+               "roadway cross section."),
+        pagina_pdf=107),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T6,
+    nota=("La oracion que sigue dice que se comprueba al encajar: «The "
+          "culvert barrel must have adequate cover, the length should be "
+          "close to the approximate length, and the headwalls and wingwalls "
+          "must be dimensioned». La cobertura es G1 (7.A); la longitud "
+          "«close to the approximate length» es el paso 7.B.5 de este "
+          "proyecto, que la fuente escribe con «should» y SIN TOLERANCIA: no "
+          "hay cifra de cuanto es «close», y el proyecto no la inventa -- "
+          "imprime las dos longitudes y su diferencia."),
+)
+
+HDS5_5_4_1_ESVIAJE = _cita(
+    id="HDS5_3ED.5.4.1#ESVIAJE",
+    fuente_id="HDS5_3ED",
+    numeral="5.4.1",
+    titulo_numeral="Skewed Barrels",
+    pagina_impresa="5.12",
+    pagina_pdf=148,
+    pagina_pdf_titulo=148,
+    texto_literal=Verbatim(
+        texto=("For any other alignment, the barrel skew angle is the angle "
+               "from a line normal to the highway to the culvert centerline."),
+        pagina_pdf=148),
+    caracter=Caracter.DEFINICION,
+    sesion=T6,
+    nota=("Es la convencion de `esviaje_grados`: 0 = perpendicular («A "
+          "culvert aligned normal to the roadway centerline has a zero "
+          "barrel skew angle», oracion anterior). El mismo numeral nombra la "
+          "consecuencia geometrica que 1/cos(esviaje) cuantifica: tender el "
+          "barril sobre el cauce tiene la desventaja de que «the inlet may "
+          "be skewed with respect to the culvert barrel and the culvert "
+          "will be longer»."),
+)
+
+HDS5_5_4_2_MAXIMO = _cita(
+    id="HDS5_3ED.5.4.2#MAXIMO_PRACTICO",
+    fuente_id="HDS5_3ED",
+    numeral="5.4.2",
+    titulo_numeral="Skewed Inlets",
+    pagina_impresa="5.13",
+    pagina_pdf=149,
+    pagina_pdf_titulo=149,
+    texto_literal=Verbatim(
+        texto=("The inlet skew angle varies from 0-degrees to a practical "
+               "maximum of about 45-degrees."),
+        pagina_pdf=149),
+    # RECOMENDACION, y es la lectura mas debil que la frase admite: la
+    # fuente DESCRIBE un maximo practico («about»), sin «shall» ni «should».
+    # No es EXIGENCIA y por eso el tope del proyecto es aviso y no bloqueo.
+    caracter=Caracter.RECOMENDACION,
+    sesion=T6,
+    nota=("HABLA DEL ESVIAJE DE LA EMBOCADURA («inlet skew angle», el "
+          "angulo de la cara del conducto con la normal al barril), NO del "
+          "esviaje del barril. La oracion siguiente da la razon -- «The "
+          "upper limit is dictated by the difficulty in transitioning the "
+          "flow from the stream into the culvert» -- y el parrafo siguiente "
+          "el puente entre los dos angulos: «Culverts which have a barrel "
+          "skew angle often have an inlet skew angle as well. This is "
+          "because headwalls are generally constructed parallel to a "
+          "roadway centerline to avoid warping of the embankment fill». Con "
+          "el cabezal PARALELO a la via, que es la disposicion que este "
+          "proyecto supone (terraplen sin alabear), el esviaje de la "
+          "embocadura es igual al del barril y el maximo practico de 45 "
+          "grados le alcanza; con el terraplen alabeado para dejar la "
+          "embocadura normal al barril (Figura 5.16) no le alcanza. Por eso "
+          "'esviaje_max_grados' es [A] y no [C]: la analogia depende de una "
+          "disposicion constructiva que el expediente decide."),
+)
+
+DG2018_304_05_BOMBEO = _cita(
+    id="DG2018.304.05#BOMBEO",
+    fuente_id="DG2018",
+    numeral="304.05",
+    titulo_numeral="Bombeo",
+    pagina_impresa="195",
+    pagina_pdf=196,
+    pagina_pdf_titulo=196,
+    texto_literal=Verbatim(
+        texto=("En tramos en tangente o en curvas en contraperalte, las "
+               "calzadas deben tener una inclinación transversal mínima "
+               "denominada bombeo, con la finalidad de evacuar las aguas "
+               "superficiales."),
+        pagina_pdf=196),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T6,
+    nota=("La Tabla 304.03 «Valores del bombeo de la calzada» (misma "
+          "pagina) da 2.0 % y 2.5 % para pavimento asfaltico o de concreto "
+          "Portland segun la precipitacion sea menor o mayor de 500 mm/año, "
+          "2.5 % y 2.5-3.0 % para tratamiento superficial y 3.0-3.5 % y "
+          "3.0-4.0 % para afirmado. NO SE TRANSCRIBE como tabla ni se adopta "
+          "un valor: el bombeo de la seccion tipica es un dato del trazo "
+          "(dato externo 'bombeo'), y sin el la plataforma se toma "
+          "horizontal a la cota de rasante. La berma lleva su propia "
+          "inclinacion (num. 304.04.02, Figura 304.03), de modo que el dato "
+          "que entra es la pendiente transversal MEDIA de la semiplataforma."),
+)
+
+DG2018_304_06_PERALTE = _cita(
+    id="DG2018.304.06#PERALTE",
+    fuente_id="DG2018",
+    numeral="304.06",
+    titulo_numeral="Peralte",
+    pagina_impresa="196",
+    pagina_pdf=197,
+    pagina_pdf_titulo=197,
+    texto_literal=Verbatim(
+        texto=("Inclinación transversal de la carretera en los tramos de "
+               "curva, destinada a contrarrestar la fuerza centrífuga del "
+               "vehículo."),
+        pagina_pdf=197),
+    caracter=Caracter.DEFINICION,
+    sesion=T6,
+    nota=("Los maximos de la Tabla 304.05 (misma pagina: 4.0 a 12.0 % segun "
+          "la zona) no se usan aqui. El peralte del cruce es un dato del "
+          "trazo (dato externo 'peralte'): sube un borde de la plataforma y "
+          "baja el otro."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
