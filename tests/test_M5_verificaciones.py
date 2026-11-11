@@ -342,10 +342,24 @@ def test_v9_de_un_marco_cita_la_progresion_y_no_el_tope_del_tubo():
     assert not fuera.cumple
 
 
-def test_v9_de_un_tubo_sigue_citando_el_tope_de_catalogo(concreto):
+def test_v9_de_un_tubo_cita_el_criterio_que_fijo_su_tope(concreto):
+    """
+    Hasta T-4 este test se llamaba «…sigue citando el tope de catalogo» y
+    esperaba 'D_max_catalogo' con 2.70 m. Desde T-4 el tope del tubo lo fija
+    la norma de producto --en concreto, el ultimo diametro con diseño
+    estandar de M 170M, que son los mismos 2.70 m, ahora con fuente-- y V9
+    cita el criterio que GOBERNO, que viaja en
+    `Material.D_max_criterio` (INF-3.3.1). Con la disponibilidad declarada
+    por debajo, vuelve a citar 'D_max_catalogo'.
+    """
     v = v9_disponibilidad_diametro(D=0.90, material=concreto)
-    assert v.criterio_aplicado == "D_max_catalogo"
+    assert v.criterio_aplicado == "D_max_norma_producto"
     assert v.valor_admisible == pytest.approx(2.70, rel=REL_TRANSPORTE)
+    with declarados({"D_max_catalogo": {"concreto_reforzado": 2.40}}):
+        local = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+        v = v9_disponibilidad_diametro(D=0.90, material=local)
+    assert v.criterio_aplicado == "D_max_catalogo"
+    assert v.valor_admisible == pytest.approx(2.40, rel=REL_TRANSPORTE)
 
 
 # ===========================================================================
@@ -1021,7 +1035,11 @@ def test_la_eleccion_de_fila_de_V7_sale_de_su_fundamento_y_lista_las_siete(
     )
     v = v7_flotacion(punto=_punto(), material=concreto,
                      seccion=SeccionCircular(D=0.90), resultado=_resultado())
-    (e,) = v.paso.elecciones
+    # Dos elecciones desde T-4: la de la fila de gamma_p y la del espesor que
+    # separa el diametro hidraulico del exterior (F3.D_EXTERIOR).
+    e, e_espesor = v.paso.elecciones
+    assert e_espesor.fundamento_id == "F3.D_EXTERIOR"
+    assert e_espesor.clave_criterio == "espesor_pared_conducto"
 
     assert e.fundamento_id == "F5.V7_FILA"
     assert e.por_que == construir().fundamento("F5.V7_FILA").por_que
@@ -1080,8 +1098,9 @@ def test_la_fila_de_gamma_p_de_un_marco_es_la_de_porticos_rigidos(monkeypatch):
     # El numero coincide -- por eso hacia falta mirar la fila.
     assert g_marco.gamma_EV == pytest.approx(g_tubo.gamma_EV, rel=REL_TRANSPORTE)
     # Y la memoria del marco imprime SU fila, no la del tubo.
-    (e,) = v.paso.elecciones
+    e, e_espesor = v.paso.elecciones
     assert "Pórticos rígidos" in str(e.valor)
+    assert e_espesor.clave_criterio == "espesor_pared_cajon"
 
 
 def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
@@ -1152,8 +1171,9 @@ def test_v9_cumple_bajo_el_tope(concreto):
     assert v.cumple
     assert v.codigo == "V9"
     assert v.valor_admisible == pytest.approx(concreto.D_max)
-    # El tope es de CATALOGO, no de la norma de producto (NOR-PRO-01/02).
-    assert v.criterio_aplicado == "D_max_catalogo"
+    # Desde T-4 el tope del tubo es el de la serie de su norma de producto,
+    # y el criterio que V9 cita es el que lo fijo (INF-3.3.1).
+    assert v.criterio_aplicado == "D_max_norma_producto"
 
 
 def test_v9_incumple_sobre_el_tope(hdpe):

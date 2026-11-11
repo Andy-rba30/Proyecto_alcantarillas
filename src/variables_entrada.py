@@ -706,28 +706,29 @@ _COLUMNAS: Dict[str, _Columna] = {
                    "(granulometria y limites de Atterberg)",
             trazabilidad_exigida="calicata, profundidad de muestreo, "
                                  "laboratorio y fecha. Es obligatoria en el "
-                                 "encabezado de Sec. 1.2 aunque hoy ningun "
-                                 "modulo la lea, y las dos cosas son "
-                                 "correctas a la vez. HAY DOS CONSUMIDORES "
-                                 "PLAUSIBLES Y NINGUNO ESTA CABLEADO, por "
-                                 "razones distintas. (1) `c_phi_fundacion`, "
-                                 "el destino declarado: es de EXPEDIENTE y lo "
-                                 "consumen E1-E5 de la Sec. 9.3, que esta CLI "
-                                 "no ensambla; el dia que se ensamblen, el "
-                                 "dato ya esta. (2) El num. 4.1.1.3.4 a), que "
-                                 "recomienda el marco segun la calidad del "
-                                 "suelo de fundacion: ese NO se cablea, y EL "
-                                 "VACIO ES DEL MANUAL, NO DEL PROYECTO -- la "
-                                 "fuente no define «mala calidad», no da "
-                                 "umbral ni clasificacion ni remision, de "
-                                 "modo que el mapeo SUCS -> mala calidad "
-                                 "habria que INVENTARLO --. Esta medido y "
-                                 "escrito, con su literal verificado, en la "
+                                 "encabezado de Sec. 1.2. DESDE T-4 LA LEE "
+                                 "`M2.matriz_durabilidad` (INF-5.1.9), para "
+                                 "UN aviso: el num. 4.1.1.3.4 a) recomienda "
+                                 "el marco cuando el suelo de fundacion es "
+                                 "de mala calidad, y EL MANUAL NO DEFINE "
+                                 "«mala calidad» -- sin umbral, sin lista "
+                                 "de grupos, sin remision; medido en la "
                                  "condicion `COND-MARCO-SUELO-MALA-CALIDAD` "
-                                 "de `normativa/citas.py`, que por eso la "
-                                 "resuelve como `NoEvaluable` y no como un "
-                                 "dato pendiente. C6 lo reviso y confirmo la "
-                                 "decision; la ficha esta en "
+                                 "de `normativa/citas.py` --. El mapeo no se "
+                                 "invento: que grupos SUCS cuentan lo "
+                                 "declara el criterio [A] "
+                                 "'sucs_fundacion_deficiente', elegido "
+                                 "dentro de la Figura 3 de la E.050 y, por "
+                                 "defecto, los tres suelos organicos sobre "
+                                 "los que su Art. 24 no deja cimentar. ES UN "
+                                 "AVISO Y NO UN FILTRO: no cambia el "
+                                 "material ni la seccion. El otro consumidor "
+                                 "plausible, `c_phi_fundacion` (el destino "
+                                 "declarado), sigue sin cablear: es de "
+                                 "EXPEDIENTE y lo consumen E1-E5 de la Sec. "
+                                 "9.3, que esta CLI no ensambla; el dia que "
+                                 "se ensamblen, el dato ya esta. Fichas "
+                                 "C6-01 y T4-05 de "
                                  "`docs/decisiones_diferidas.md`",
         ),
         criterio_destino="c_phi_fundacion",
@@ -1254,6 +1255,16 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "v_max_concreto_eleccion": _Meta(unidad="m/s"),
     "v_max_hdpe": _Meta(unidad="m/s"),
     "v_max_tmc": _Meta(unidad="m/s"),
+    # --- T-4 --- Materiales, topes y durabilidad (INF-5.1.17, INF-3.3.1,
+    # INF-5.1.9). Los cuatro los consume M2 y su fase se deduce de ahi.
+    "corrugacion_y_espesor_tmc": _Meta(unidad="- (corrugacion/espesor, mm)"),
+    "D_max_norma_producto": _Meta(unidad="m"),
+    "durabilidad_tmc_umbrales": _Meta(unidad="pH y ohm-cm"),
+    "sucs_fundacion_deficiente": _Meta(unidad="- (simbolos SUCS)"),
+    # Auditoria de T-4 (H3): los criterios de suelo agresivo para acero
+    # galvanizado enterrado, por analogia, y su efecto sobre el TMC.
+    "suelo_agresivo_acero_lrfd": _Meta(unidad="pH, ohm-cm y ppm"),
+    "suelo_agresivo_lrfd_sobre_tmc": _Meta(unidad="-"),
 }
 
 

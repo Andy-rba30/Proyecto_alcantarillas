@@ -30,7 +30,8 @@ from src.modelos import (CriterioPendienteError, DatoFaltanteError,
 from src.modulos.M0_carga import cargar_puntos
 from src.modulos.M2_material import (CRITERIO_ESPESOR_PARED, catalogo,
                                  espesor_pared, materiales_candidatos,
-                                 siguiente_diametro, siguiente_seccion)
+                                 siguiente_diametro, siguiente_seccion,
+                                 tope_de_diametro)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
 from tests.apoyo.criterios import con_valor, declarados
 from tests.fixtures.casos_patron import CP11_SERIES_NOMINALES
@@ -74,6 +75,9 @@ def test_admite_el_tipo_de_material_como_string():
 
 
 @pytest.mark.parametrize("material, esperado", [
+    # 2.70 m: hasta T-4, un tope de catalogo [A] sin respaldo; desde T-4, el
+    # ultimo diametro con DISEÑO ESTANDAR de AASHTO M 170M-04 (por encima,
+    # diseño especial de su Seccion 7.2). El numero no se movio (INF-3.3.1).
     (TipoMaterial.CONCRETO_REFORZADO, 2.70),
     (TipoMaterial.TMC, 2.10),
     (TipoMaterial.HDPE, 1.50),
@@ -116,7 +120,10 @@ def test_catalogo_devuelve_un_material_completo():
     concreto = catalogo(TipoMaterial.CONCRETO_REFORZADO)
     assert isinstance(concreto, Material)
     assert concreto.tipo is TipoMaterial.CONCRETO_REFORZADO
+    # 2.70 m: el ultimo diametro con diseño estandar de M 170M ([C] desde
+    # T-4; hasta T-4 el mismo numero era un tope de catalogo [A]).
     assert concreto.D_max == pytest.approx(2.70)
+    assert concreto.D_max_criterio == "D_max_norma_producto"
     assert concreto.n_min == pytest.approx(0.010)
     assert concreto.n_max == pytest.approx(0.013)
     assert concreto.v_max_tabla10 == pytest.approx((3.0, 6.0))
@@ -126,9 +133,16 @@ def test_catalogo_devuelve_un_material_completo():
 
 
 def test_el_hdpe_usa_el_rango_de_manning_por_analogia():
+    """
+    EL NOMBRE ES EL DE ANTES DE T-4 y se conserva para no perder el hilo: el
+    rango del HDPE YA NO es una analogia con el concreto (0.010 a 0.013). Es
+    la fila «Corrugated Polyethylene, Smooth» de la Table B.1 de HDS-5, 0.009
+    a 0.015, y se lee del registro (INF-3.2.1). El dorado contra el PDF esta
+    en `tests/test_t4_materiales_durabilidad.py`.
+    """
     hdpe = catalogo(TipoMaterial.HDPE)
-    assert hdpe.n_min == pytest.approx(0.010)
-    assert hdpe.n_max == pytest.approx(0.013)
+    assert hdpe.n_min == pytest.approx(0.009)
+    assert hdpe.n_max == pytest.approx(0.015)
     assert hdpe.seccion_eg2013 == "508"
     assert hdpe.h_relleno_min_eg2013 == pytest.approx(0.30)   # [N] directo, sin vacio
 
@@ -822,14 +836,18 @@ def test_CP11_la_serie_del_hdpe_es_la_que_escribe_el_numeral_7_2_1():
 @pytest.mark.parametrize("material,tipo", _MATERIALES_CP11)
 def test_CP11_M2_recorre_exactamente_las_filas_de_la_serie(material, tipo):
     """
-    Entre el piso peruano ([N], 0.90 m) y el tope de catalogo ([A]), M2 emite
+    Entre el piso peruano ([N], 0.90 m) y el tope del material, M2 emite
     EXACTAMENTE las filas de la serie de la norma de producto: ni un
     diametro que la serie no tabule, ni una fila de la serie que se salte.
-    Ni el piso ni el tope los fija el caso: se leen de sus simbolos.
+    Ni el piso ni el tope los fija el caso: se leen de sus simbolos. Desde
+    T-4 el tope lo resuelve `M2.tope_de_diametro` (la norma de producto y,
+    en TMC, la corrugacion adoptada). El del concreto sigue en 2700 mm: es
+    el ultimo diametro con diseño estandar de M 170M, no la ultima fila de
+    su serie.
     """
     caso = CP11_SERIES_NOMINALES[material]
     piso_mm = round(DIAMETRO_MIN * MILIMETROS_POR_METRO)
-    tope_mm = round(ca.valor("D_max_catalogo")[material] * MILIMETROS_POR_METRO)
+    tope_mm = round(tope_de_diametro(tipo)[0] * MILIMETROS_POR_METRO)
     esperada = tuple(d for d in caso["serie_mm"] if piso_mm <= d <= tope_mm)
     assert esperada, "el caso no tiene filas entre piso y tope: revisa el fixture"
     assert _serie_recorrida_por_M2(tipo) == esperada
@@ -852,17 +870,28 @@ def test_CP11_las_filas_bajo_el_piso_las_excluye_el_Manual_y_no_la_tabla():
 
 def test_CP11_el_tope_del_hdpe_es_la_ultima_fila_de_su_serie():
     """
-    El unico de los tres topes de catalogo que coincide con el techo de una
-    norma de producto -- segun la traduccion no oficial de M 294-11 --. Es
-    lo que N2 midio y lo que 'D_max_catalogo' declara como extremo del HDPE;
-    en TMC el tope corta la serie por dentro y esto NO se cumple.
+    SIGUE SIENDO EL UNICO de los tres topes que coincide con el techo de su
+    serie --segun la traduccion no oficial de M 294-11--. Desde T-4 los
+    otros dos dicen por que cortan la serie por dentro: en TMC, 2100 mm es
+    el mayor diametro en que la corrugacion adoptada (68 por 13 mm) es
+    estandar segun la Table 6 de M 36; en concreto, 2700 mm es el ultimo
+    diametro con diseño estandar de M 170M, cuya serie sigue hasta 3600 mm
+    como diseño especial (Seccion 7.2), sin pared tabulada.
     """
     hdpe = CP11_SERIES_NOMINALES["hdpe"]
-    tope_mm = round(ca.valor("D_max_catalogo")["hdpe"] * MILIMETROS_POR_METRO)
+    tope_mm = round(tope_de_diametro(TipoMaterial.HDPE)[0] * MILIMETROS_POR_METRO)
     assert tope_mm == hdpe["techo_de_la_serie_mm"] == hdpe["serie_mm"][-1]
+    concreto = CP11_SERIES_NOMINALES["concreto_reforzado"]
+    tope_concreto_mm = round(
+        tope_de_diametro(TipoMaterial.CONCRETO_REFORZADO)[0] * MILIMETROS_POR_METRO)
+    assert tope_concreto_mm == 2700
+    assert tope_concreto_mm in concreto["serie_mm"]
+    assert tope_concreto_mm < concreto["serie_mm"][-1]
     tmc = CP11_SERIES_NOMINALES["tmc"]
-    tope_tmc_mm = round(ca.valor("D_max_catalogo")["tmc"] * MILIMETROS_POR_METRO)
+    tope_tmc, criterio_tmc, _rotulo = tope_de_diametro(TipoMaterial.TMC)
+    tope_tmc_mm = round(tope_tmc * MILIMETROS_POR_METRO)
     assert tope_tmc_mm in tmc["serie_mm"] and tope_tmc_mm < tmc["techo_de_la_serie_mm"]
+    assert criterio_tmc == "corrugacion_y_espesor_tmc"
 
 
 def test_CP11_el_concreto_tiene_dorado_desde_el_cierre_de_C09():

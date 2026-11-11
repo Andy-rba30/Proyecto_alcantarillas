@@ -267,11 +267,12 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
                      Verificacion, eleccion,
                      exigir_seccion_coherente, paso)
-from src.modulos.M2_material import (CRITERIO_D_MAX_CATALOGO,
+from src.modulos.M2_material import (CRITERIO_D_MAX_NORMA,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
                                  espesor_pared,
-                                 numero_de_celdas)
+                                 numero_de_celdas,
+                                 procedencia_del_espesor)
 from src.modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
@@ -1631,16 +1632,47 @@ def _paso_v3(*, resultado: ResultadoHidraulico, v_max: float,
                         "declara aparte, en el bloque de umbrales",
                 clave_criterio=clave))
     elif clave is not None:
+        # LA ETIQUETA SE LEE DE LA FICHA, no se escribe aqui (T-4, INF-3.2.4).
+        # Este texto decia «[C], con fuente WSDOT» para los dos materiales, y
+        # desde T-4 es cierto solo para el HDPE: la fuente PROHIBE el
+        # termoplastico en abrasion severa (§8-3.3), y para el metal no fija
+        # limite --pide mas calibre o solera de concreto--, de modo que el
+        # techo del TMC es una adopcion [A] con ventana. Imprimir la misma
+        # frase para los dos volveria a presentar como limite de la fuente lo
+        # que el proyecto eligio.
+        ficha = ca.criterio(clave)
+        if ficha.etiqueta == "C":
+            de_donde = (f"el criterio adoptado '{clave}' [C], con fuente "
+                        "WSDOT Hydraulics Manual, §8-3.3 y Table 8-4")
+            por_que = ("la Tabla Nº 10 NO lista este material: no tiene fila. "
+                       "El vacio esta verificado (afirmacion negativa del "
+                       "registro) y se cubre con fuente tecnica reconocida, "
+                       "que es lo que la etiqueta [C] declara: la fuente no "
+                       "admite tuberia termoplastica en abrasion severa, y "
+                       "el umbral de velocidad de ese nivel es el que se "
+                       "adopta como techo")
+            entre = ()
+        else:
+            de_donde = (f"el criterio adoptado '{clave}' [{ficha.etiqueta}], "
+                        "una adopcion del proyecto con ventana de "
+                        "sensibilidad: ninguna fuente fija este valor como "
+                        "limite del material")
+            por_que = ("la Tabla Nº 10 NO lista este material: no tiene fila. "
+                       "Para la tuberia metalica la fuente tecnica consultada "
+                       "no prohibe ninguna velocidad --pide aumentar el "
+                       "espesor o revestir la solera segun el nivel de "
+                       "abrasion--, de modo que el techo es una eleccion del "
+                       "proyecto y se defiende con su ventana. Lo que V3 "
+                       "admite por debajo del techo no sustituye la "
+                       "proteccion contra la abrasion que el sitio exija")
+            entre = (tuple(f"{v} m/s" for v in ficha.sensibilidad)
+                     if isinstance(ficha.sensibilidad, tuple) else ())
         elecciones.append(EleccionDeProyecto(
             que_se_adopto="techo de velocidad",
             valor=f"{v_max} m/s",
-            entre=(),
-            de_donde=f"el criterio adoptado '{clave}' [C], con fuente WSDOT "
-                     "Hydraulics Manual",
-            por_que="la Tabla Nº 10 NO lista este material: no tiene fila. El "
-                    "vacio esta verificado (afirmacion negativa del registro) "
-                    "y se cubre con fuente tecnica reconocida, que es lo que "
-                    "la etiqueta [C] declara",
+            entre=entre,
+            de_donde=de_donde,
+            por_que=por_que,
             clave_criterio=clave))
     return paso(
         "F5.V3",
@@ -1720,16 +1752,34 @@ def v3_velocidad_maxima(*, material: Material,
 
     TMC y HDPE: la Tabla N 10 no los cubre (Tablero 1.3). El valor sale de
     `criterios_adoptados.valor('v_max_tmc' | 'v_max_hdpe')`, hoy 4.572 m/s los
-    dos -- la conversion exacta de las 15 ft/s de la fuente, que antes se
-    escribia redondeada a 4.6 y quedaba 0.6 % POR ENCIMA del techo declarado
-    duro (MAT-O14) --, con cita de WSDOT Hydraulics Manual M 23-03.12, Cap. 8,
-    Tabla 8-4 (el vacio que la hoja de ruta declaraba quedo cerrado; esa tabla
-    NO esta en normas/ y la cita no es auditable contra el repositorio, lo que
-    el propio criterio declara). Se leen con
-    `ca.valor`, no con `ca.valor_si_declarado`: no son opcionales -- si
-    alguien los vaciara, V3 debe detenerse y no caer a un techo inventado,
-    porque para estos materiales no hay ningun valor normativo de respaldo
-    al que volver. Son un techo escalar, de modo que esta rama no cambia.
+    dos -- la conversion exacta de 15 ft/s, que antes se escribia redondeada
+    a 4.6 y quedaba 0.6 % POR ENCIMA del techo declarado duro (MAT-O14) --.
+
+    LOS DOS NUMEROS COINCIDEN Y NO SON LA MISMA COSA (T-4, INF-3.2.4), y la
+    asimetria es deliberada:
+
+      * 'v_max_hdpe' es [C]. WSDOT Hydraulics Manual M 23-03.12, §8-3.3, no
+        admite tuberia termoplastica en condiciones severamente abrasivas, y
+        su Table 8-4 pone el nivel severo por encima de 15 ft/s. La
+        prohibicion sale del §8-3.3; de la tabla sale solo el umbral.
+      * 'v_max_tmc' es [A], con ventana (3.048, 4.572) m/s. Para el metal la
+        misma tabla NO prohibe: pide mas calibre o solera de concreto. El
+        techo del TMC es una adopcion del proyecto.
+
+    Y LO QUE V3 NO HACE: no CLASIFICA el sitio. Al HDPE le aplica como techo
+    el umbral de velocidad del nivel severo --tomar la velocidad sola como
+    suficiente es una lectura del proyecto, declarada como `Interpretacion`
+    de la tabla: la Table 8-4 define cada nivel tambien por la carga de fondo
+    y su nota dice que no hace falta que concurran todas las condiciones--.
+    El NIVEL de abrasion del sitio es otro dato, de campo y opcional, y quien
+    lo aplica es la matriz de durabilidad de M2 (`M2.matriz_durabilidad`),
+    que excluye el HDPE en el nivel severo aunque la velocidad sea menor.
+
+    Se leen con `ca.valor`, no con `ca.valor_si_declarado`: no son
+    opcionales -- si alguien los vaciara, V3 debe detenerse y no caer a un
+    techo inventado, porque para estos materiales no hay ningun valor
+    normativo de respaldo al que volver. Son un techo escalar, de modo que
+    esta rama no cambia.
     """
     if material.tipo in CRITERIO_V_MAX:
         clave = CRITERIO_V_MAX[material.tipo]
@@ -2560,6 +2610,21 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
     estabilizante = g.gamma_DC * DC + g.gamma_EV * EV
     desestabilizante = g.gamma_WA * U
 
+    # DE DONDE SALIO t, dicho en el paso (T-4, INF-5.1.17). Hasta T-4 el TMC
+    # y el HDPE no llegaban aqui --no tenian espesor--, y cuando el unico
+    # material era el concreto bastaba la ficha del criterio. Con tres
+    # origenes distintos, V7 dice cual es el del material que juzga.
+    texto_t, cita_t, clave_t = procedencia_del_espesor(material)
+    eleccion_t = eleccion(
+        "F3.D_EXTERIOR",
+        que_se_adopto="espesor que separa el diametro hidraulico del "
+                      "exterior",
+        valor=f"t = {t:.5g} m",
+        entre=(),
+        de_donde=texto_t,
+        cita_id=cita_t,
+        clave_criterio=clave_t)
+
     cumple = estabilizante >= desestabilizante - TOL_UMBRAL_NORMATIVO
     return Verificacion(
         cumple=cumple,
@@ -2632,7 +2697,7 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
                 de_donde="la Tabla 2.4.5.3.1-2 del Manual de Puentes "
                          "(= 3.4.1-2 de AASHTO LRFD), pag. impresa 143",
                 cita_id="MP.T2.4.5.3.1-2",
-                clave_criterio=CRITERIO_FACTORES_CARGA),),
+                clave_criterio=CRITERIO_FACTORES_CARGA), eleccion_t),
         ),
     )
 
@@ -2705,8 +2770,16 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     costado arrastrar los cuatro sitios para no ganar ningun numero. Lo que si
     cambio es DE DONDE SALE EL TOPE, porque atribuirlo mal era una cita falsa:
 
-      * circular: el tope sale del criterio 'D_max_catalogo' [A] y se compara
-        contra el diametro interior;
+      * circular: el tope lo resuelve `M2.tope_de_diametro` y se compara
+        contra el diametro interior. Hasta T-4 salia del criterio
+        'D_max_catalogo' [A]; desde T-4 sale de la norma de producto
+        ('D_max_norma_producto' [C]: en concreto, el ultimo diametro con
+        diseño estandar de M 170M, 2.70 m), del mayor diametro estandar
+        de la corrugacion adoptada en TMC ('corrugacion_y_espesor_tmc' [A])
+        o, si el proyectista la declara por debajo, de la disponibilidad
+        ('D_max_catalogo' [A], opcional). `Material.D_max_criterio` dice
+        cual de los tres goberno y esa es la clave que viaja en
+        `criterio_aplicado`;
       * marco: el tope es la MAYOR altura interior de la progresion que el
         expediente declara en 'secciones_cajon_normalizadas' [A], y se compara
         contra la altura de la seccion adoptada. Atribuir el tope de un cajon
@@ -2714,7 +2787,13 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
         -- habria puesto en la memoria un numero verdadero bajo una
         procedencia falsa.
 
-    NO ES UN UMBRAL NORMATIVO EN NINGUNA DE LAS DOS FORMAS (NOR-PRO-01,
+    LO QUE SIGUE DESCRIBE EL ESTADO ANTERIOR A T-4, y se conserva porque es
+    el argumento por el que el tope dejo de ser una adopcion sin respaldo:
+    «NO ES UN UMBRAL NORMATIVO EN NINGUNA DE LAS DOS FORMAS» era cierto del
+    2.70 / 2.10 / 1.50 m de 'D_max_catalogo', y en el tubo ya no lo es del
+    tope de la serie (INF-3.3.1). Para el marco sigue valiendo entero.
+
+    NO ERA UN UMBRAL NORMATIVO EN NINGUNA DE LAS DOS FORMAS (NOR-PRO-01,
     NOR-PRO-02, MAT-O8). El tope circular se atribuia a ASTM C76/AASHTO M170,
     AASHTO M36/ASTM A760 y AASHTO M294, y ninguna de las dos primeras lo
     sostiene: A760 tabula diametros nominales hasta 3600 mm y M 170M igual.
@@ -2735,7 +2814,8 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
         valor_obtenido=D,
         valor_admisible=material.D_max,
         criterio_aplicado=(CRITERIO_SECCIONES_CAJON if de_cajon
-                           else CRITERIO_D_MAX_CATALOGO),
+                           else material.D_max_criterio
+                           or CRITERIO_D_MAX_NORMA),
         codigo="V9",
     )
 

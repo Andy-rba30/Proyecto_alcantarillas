@@ -177,7 +177,10 @@ def _material_concreto() -> Material:
         nombre="Concreto reforzado",
         n_min=n_min,
         n_max=n_max,
-        D_max=ca.valor("D_max_catalogo")["concreto_reforzado"],
+        # Desde T-4 el tope sale de la serie de la norma de producto
+        # ('D_max_norma_producto' [C]); 'D_max_catalogo' es opcional y sin
+        # valor. El rotulo de catalogo sigue siendo el de la ficha.
+        D_max=ca.valor("D_max_norma_producto")["concreto_reforzado"],
         D_max_de_catalogo=ca.criterio("D_max_catalogo").de_catalogo,
         norma_producto="ASTM C76 / AASHTO M170",
         hds5=ConstantesHDS5.desde_dict(

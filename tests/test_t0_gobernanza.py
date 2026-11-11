@@ -570,10 +570,17 @@ def test_las_dos_fuentes_nuevas_viven_solo_en_el_repositorio_de_normas():
         assert Path(fu.FUENTES[id_].archivo_pdf).name not in en_la_app
 
 
-def test_ninguna_cita_se_apoya_todavia_en_las_dos_fuentes_nuevas():
-    """T-0 las da de alta; citarlas (con pagina y frase) es de T-4 y T-8."""
+def test_hec14_sigue_sin_citas_y_wsdot_las_tiene_desde_t4():
+    """
+    T-0 dio de alta las dos fuentes sin citas; citarlas (con pagina y frase)
+    era de T-4 y T-8. T-4 cito el WSDOT Hydraulics Manual --abrasion, pH,
+    resistividad, velocidad--, cada cita verificada contra su pagina por
+    `test_normativa_pdf`; HEC-14 sigue sin citas hasta T-8. El test se
+    llamaba «…ninguna cita se apoya todavia en las dos fuentes nuevas».
+    """
     reg = _registro.construir()
-    assert not reg.citas_de("HEC14") and not reg.citas_de("WSDOT_HM")
+    assert not reg.citas_de("HEC14")
+    assert reg.citas_de("WSDOT_HM")
 
 
 def test_el_indice_del_registro_las_lista_como_presentes():

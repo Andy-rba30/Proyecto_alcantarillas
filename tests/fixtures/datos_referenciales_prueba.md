@@ -69,7 +69,9 @@ valores encima pisaría trabajo ya verificado con cita.
 *   ~~**umbral_area_quebrada_importante_ha**: `100.0` (ha)~~ --- CERRADO en S20 con ESTE MISMO valor y ventana (50, 200) ha. Ya no hay nada que aplicar.
 *   ~~**v_max_hdpe**: `6.0` (m/s)~~ --- CERRADO en el codigo con otro valor y
     otra fuente: `4.572` m/s [C], WSDOT Tabla 8-4. No aplicar.
-*   ~~**v_max_tmc**: `4.5` (m/s)~~ --- idem: `4.572` m/s [C]. No aplicar.
+*   ~~**v_max_tmc**: `4.5` (m/s)~~ --- idem: `4.572` m/s. Era [C] hasta T-4 y
+    es [A] con ventana (3.048, 4.572) desde T-4: la fuente no fija ese valor
+    como limite del metal (INF-3.2.4). No aplicar.
 
 ## 3. Normas de Producto
 *   **clases_producto_por_relleno**: `"Clase_III"`

@@ -1002,15 +1002,33 @@ def test_un_numero_de_celdas_que_no_es_un_entero_mayor_que_cero_es_invalido(
 # no oficial, cita AASHTO_M294_TRAD.7.2.1) termina en 1500 mm, que es el tope
 # --. La memoria no puede negar lo que el registro acredita, y el descarte
 # sigue siendo de catalogo en los tres.
+#
+# Y DESDE T-4 LA NEGACION SOLO QUEDA PARA LA DISPONIBILIDAD DECLARADA. El
+# tope del HDPE es el ultimo tamaño de la serie de su norma de producto y el
+# del concreto el ultimo diametro con diseño estandar de la suya
+# ('D_max_norma_producto' [C]); el del TMC, el mayor
+# diametro en que la corrugacion adoptada es estandar
+# ('corrugacion_y_espesor_tmc' [A]); y «NO es un tope de <norma>» solo es
+# cierto --y solo se escribe-- cuando el proyectista declaro 'D_max_catalogo'
+# por debajo (INF-3.3.1).
 def test_el_motivo_de_descarte_no_niega_para_el_hdpe_lo_que_el_registro_acredita():
     from src.modulos.M2_material import catalogo
     from src.modulos.MD import _motivo_descarte
     hdpe = _motivo_descarte(catalogo(TipoMaterial.HDPE), "x")
     assert "NO es un tope de" not in hdpe
-    assert "coincide con el techo de la serie" in hdpe
+    assert "ultimo tamaño de la serie de" in hdpe
     assert "traduccion no oficial" in hdpe        # el rotulo de la norma lo lleva
-    assert "descarte es de catalogo" in hdpe
-    for tipo in (TipoMaterial.CONCRETO_REFORZADO, TipoMaterial.TMC):
-        otro = _motivo_descarte(catalogo(tipo), "x")
-        assert "NO es un tope de" in otro
-        assert "coincide con el techo" not in otro
+    assert "'D_max_norma_producto' [C]" in hdpe and "1.50 m" in hdpe
+    concreto = _motivo_descarte(catalogo(TipoMaterial.CONCRETO_REFORZADO), "x")
+    assert "NO es un tope de" not in concreto
+    assert "'D_max_norma_producto' [C]" in concreto and "2.70 m" in concreto
+    assert "ultimo diametro con diseño estandar" in concreto
+    assert "diseño especial del fabricante" in concreto
+    tmc = _motivo_descarte(catalogo(TipoMaterial.TMC), "x")
+    assert "NO es un tope de" not in tmc
+    assert "'corrugacion_y_espesor_tmc' [A]" in tmc and "2.10 m" in tmc
+    assert "sigue por encima con otra corrugacion" in tmc
+    with declarados({"D_max_catalogo": {"concreto_reforzado": 2.40}}):
+        local = _motivo_descarte(catalogo(TipoMaterial.CONCRETO_REFORZADO), "x")
+    assert "NO es un tope de" in local
+    assert "'D_max_catalogo' [A]" in local and "2.40 m" in local

@@ -544,3 +544,73 @@ la Fase 5 sin los criterios del cajón. Y `borde_libre_bajo_tw_ahogante`
 queda en `no_cumple` por decisión del dueño del proyecto, que es la conducta
 anterior: con `aviso`, A-02 pasaría a dimensionarse en la corrida estrecha
 (ficha `T2-02` de `docs/decisiones_diferidas.md`).
+
+## Regenerada en T-4 (2026-11-11): más materiales evaluados, ningún diámetro ni veredicto
+
+T-4 de la cadena T cambia de dónde salen el espesor de pared, el tope de
+diámetro, el n del HDPE y la etiqueta de `v_max_tmc`, y añade la matriz de
+durabilidad. **Antes y después se midieron las cuatro corridas**, comparando
+JSON ruta a ruta contra `87d1ce7`: por punto, el material y la sección
+adoptados, la terna (código, estado, valor admisible) de cada verificación y
+el tipo de cada bloqueo. **Son idénticos en los doce pares punto × corrida.**
+Tres de los trece archivos no cambian un byte: los dos CSV de resumen —donde
+viven el diámetro, las velocidades, el HW y el control— y
+`memoria_punto_cajon.html`.
+
+**Material y diámetro adoptados, antes → después:**
+
+| Corrida | A-01 | A-02 | B-01 | C-01 |
+|---|---|---|---|---|
+| perfil ancha | concreto Ø 0.90 → **igual** | concreto Ø 0.90 → **igual** | sin dimensionar → igual | sin dimensionar → igual |
+| perfil estrecha | sin dimensionar → igual | sin dimensionar → igual | sin dimensionar → igual | sin dimensionar → igual |
+| expediente | sin dimensionar → igual | sin dimensionar → igual | sin dimensionar → igual | sin dimensionar → igual |
+| rama de error | sin dimensionar → igual | sin dimensionar → igual | sin dimensionar → igual | sin dimensionar → igual |
+
+**Diámetros movidos: ninguno. Veredictos movidos: ninguno. Valores admisibles
+movidos: ninguno** —el de V9 sigue en 2.700 m: una primera versión de T-4 lo
+llevó a 3.600 m y la auditoría adversarial lo refutó contra la fuente (por
+encima de 2700 mm AASHTO M 170M no tabula diseño estándar)—.
+
+Lo que cambia, clasificado:
+
+- **La lista de materiales EVALUADOS (movimiento declarado, `INF-5.1.17`).**
+  En la corrida ancha, B-01 pasa de 10 a 21 escalones: el concreto recorre
+  los mismos 8; el TMC va ahora de 0.90 a 2.10 m (antes se detenía en 0.90 m
+  por `DatoFaltanteError` de `espesor_pared_conducto[tmc]`) y el HDPE de
+  0.90 a 1.35 m (antes, igual en 0.90 m). El punto sigue «no factible», con
+  el mismo tipo de bloqueo, y su motivo cambia de texto: el TMC termina como
+  el concreto, en la clave que alcanza la subrasante; y el del HDPE dice
+  ahora cuántos escalones se evaluaron y desde cuál no («NO SE EVALUO desde
+  Ø 1.35 m hasta el tope…» por la fila que la Table A12-11 de AASHTO LRFD no
+  trae). En las otras tres corridas el motivo de los puntos de tubo cambia
+  de texto por la misma razón, y el HDPE de 0.90 m de A-01 en la de
+  expediente se evalúa e incumple V1 con su n máximo de 0.015 (`INF-3.2.1`).
+- **V9 de A-01 y A-02 (corrida ancha): mismo admisible, otro criterio.**
+  `D_max_catalogo` [A] → `D_max_norma_producto` [C] (`INF-3.3.1`), con la
+  clave nueva `diseno.dimension_max_criterio` en el JSON.
+- **Formato — durabilidad.** Cada punto que pasa la Fase 2 gana en el
+  volcado la línea «Sec. 3.3 durabilidad: sin ensayos, matriz no aplicada» y
+  la del suelo de fundación, el bloque «Durabilidad de los materiales
+  (Sec. 3.3)» en la memoria y la clave `durabilidad` en el JSON. La línea
+  del suelo dice que SM, SP-SM y ML no están en el conjunto declarado
+  deficiente, que eso no los califica como aptos y remite al Art. 38 de la
+  E.050 (`INF-5.1.9`). **Los tres puntos con TMC candidata (A-01, A-02,
+  B-01) ganan además el aviso fijo del Manual de Hidrología** —núm.
+  4.1.1.3.7 f) y g): el Manual no recomienda alcantarillas metálicas en
+  condiciones muy agresivas—, que no depende de ningún ensayo; C-01, donde
+  la TMC no es candidata, no lo lleva.
+- **Criterios usados.** Sale `D_max_catalogo` (opcional y sin valor: nadie
+  lo declara) y entran `D_max_norma_producto`, `corrugacion_y_espesor_tmc` y
+  `sucs_fundacion_deficiente`; cambian el valor y la etiqueta de
+  `n_manning_hdpe` ([N→] (0.010, 0.013) → [C] (0.009, 0.015)), la etiqueta
+  de `v_max_tmc` ([C] → [A]) y los textos de `v_max_hdpe`,
+  `espesor_pared_conducto` (gana la entrada del HDPE) y `D_max_catalogo`.
+  En `verificacion_pendiente` sale `D_max_catalogo` y entran los dos
+  primeros.
+- **Huellas y recuento.** `criterios_sha1`, `hoja_ruta_sha1` (la v8
+  enmendada) y «79 criterios declarados» → «85» en las memorias (los dos
+  últimos, de la auditoría: `suelo_agresivo_acero_lrfd` y
+  `suelo_agresivo_lrfd_sobre_tmc`, que sin ensayos nadie invoca); siguen
+  siendo 36 sin valor.
+- **V7 (corrida ancha).** El paso de flotación gana la elección
+  `F3.D_EXTERIOR`, que dice de dónde salió el espesor; el número no cambia.

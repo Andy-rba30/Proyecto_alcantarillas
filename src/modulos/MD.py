@@ -47,9 +47,13 @@ Lo que MD NO hace
   tope de CATALOGO y V9 son el MISMO hecho, y quien lo declare como
   `Verificacion` con su criterio es M5, que ya recibe D y `material.D_max`.
   MD lo reporta como texto en el motivo de descarte, no como verificacion.
-  Ese tope NO es normativo: sale del criterio 'D_max_catalogo' [A] y las
-  normas de producto a las que se le atribuia no lo sostienen (NOR-PRO-01,
-  NOR-PRO-02). El motivo de descarte lo dice con esas palabras.
+  Hasta T-4 ese tope salia del criterio 'D_max_catalogo' [A] y las normas
+  de producto a las que se le atribuia no lo sostenian (NOR-PRO-01,
+  NOR-PRO-02). Desde T-4 sale de la serie de la norma de producto
+  ('D_max_norma_producto' [C]), del mayor diametro estandar de la
+  corrugacion adoptada en TMC, o de la disponibilidad declarada si el
+  proyectista la baja; `Material.D_max_criterio` dice cual de los tres
+  goberno y el motivo de descarte lo dice con esas palabras.
 - No itera puntos. El bucle exterior "para cada punto" no esta aqui porque
   cada punto entra con su L y su TW propios (arriba) y porque la hoja de ruta
   no declara que hacer con el lote cuando UN punto sale no factible: si aborta
@@ -148,6 +152,7 @@ from src import criterios_adoptados as ca
 from src.modelos import (CriterioPendienteError,
                      DatoFaltanteError,
                      DatoInvalidoError,
+                     DictamenDurabilidad,
                      DisenoNoFactibleError,
                      ErrorProyecto,
                      Familia,
@@ -161,13 +166,21 @@ from src.modelos import (CriterioPendienteError,
                      Seccion,
                      TipoMaterial,
                      Verificacion)
-from src.modulos.M2_material import (CRITERIO_SECCIONES_CAJON,
+from src.modulos.M2_material import (CRITERIO_CALIBRE_TMC,
+                                 CRITERIO_D_MAX_CATALOGO,
+                                 CRITERIO_D_MAX_NORMA,
+                                 CRITERIO_SECCIONES_CAJON,
                                  materiales_candidatos, siguiente_seccion)
 from src.modulos.M3_hidraulica import resolver_manning
 from src.modulos.M4_control import caudal_por_celda, resolver_control
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_BUCLE = "Sec. 2 de la guia de sesiones (Fases 4 y 5)"
+
+# El texto con que la traza marca un escalon que se detuvo en una excepcion
+# de proyecto. Lo escribe `_motivo_escalon_fallido` y lo lee
+# `_motivo_escalones_sin_evaluar`: una sola cadena, para que no diverjan.
+MARCA_ESCALON_SIN_EVALUAR = "el escalon no se pudo evaluar"
 
 MENSAJE_DIAMETRO_SUPERADO = "material descartado por diámetro requerido"
 
@@ -295,7 +308,7 @@ def _motivo_escalon_fallido(seccion: Seccion, exc: ErrorProyecto) -> str:
     MD no reinterpreta la excepcion ni la reclasifica: la cita entera, con su
     tipo. Corregir el tipo o el campo de la excepcion es de M5, no de aqui.
     """
-    return (f"{seccion.etiqueta()}: el escalon no se pudo evaluar -- "
+    return (f"{seccion.etiqueta()}: {MARCA_ESCALON_SIN_EVALUAR} -- "
             f"{type(exc).__name__}: {exc}")
 
 
@@ -341,26 +354,52 @@ def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
     catalogo tambien en HDPE: la eleccion es la misma para los tres
     materiales y este mensaje lo dice; lo que cambia es la atribucion.
     """
-    clave = (CRITERIO_SECCIONES_CAJON
-             if material.forma is FormaSeccion.RECTANGULAR
-             else "D_max_catalogo")
-    # Y LA ATRIBUCION DEL MARCO ES LA TERCERA FORMA desde EXT-6 (EXT-N-03):
-    # no hay norma de producto que negar. «NO es un tope de AASHTO M 170M-04»
-    # para un marco era falso dos veces: el marco no es tuberia y M 170M no
-    # lo rige, y este mensaje sale por stdout, JSON y tabla de bloqueos cada
-    # vez que un marco agota su serie.
+    # Y DESDE T-4 EL TOPE TIENE TRES ORIGENES POSIBLES EN UN TUBO, y el motivo
+    # nombra el que goberno (INF-3.3.1). Los dos parrafos de arriba describen
+    # el estado anterior, en que el unico origen era 'D_max_catalogo' [A]:
+    #   * la serie de la norma de producto ('D_max_norma_producto' [C]);
+    #   * el mayor diametro en que la corrugacion adoptada es estandar (solo
+    #     TMC, 'corrugacion_y_espesor_tmc' [A]);
+    #   * la disponibilidad que el proyectista declare por debajo
+    #     ('D_max_catalogo' [A], opcional).
+    # `Material.D_max_criterio` lo trae de M2; un Material construido a mano
+    # sin ese campo se lee como tope de la norma, que es el caso sin elegir.
+    # En CONCRETO «la norma» no es la ultima fila de la serie sino el ultimo
+    # diametro con diseño estandar (2.70 m): ver la rama de abajo.
     if material.forma is FormaSeccion.RECTANGULAR:
-        atribucion = ("no hay norma de producto que tope la altura de un "
-                      f"marco vaciado in situ ({material.norma_producto}): el "
-                      "tope es el de la serie declarada")
-    elif material.tipo is TipoMaterial.HDPE:
-        atribucion = (f"coincide con el techo de la serie de "
-                      f"{material.norma_producto}, num. 7.2.1, y aun asi el "
-                      "descarte es de catalogo, no de norma")
+        # LA ATRIBUCION DEL MARCO (EXT-6, EXT-N-03): no hay norma de producto
+        # que negar. «NO es un tope de AASHTO M 170M-04» para un marco era
+        # falso dos veces: el marco no es tuberia y M 170M no lo rige.
+        origen = (f"tope de la serie declarada {material.D_max:.2f} m, "
+                  f"criterio '{CRITERIO_SECCIONES_CAJON}'; no hay norma de "
+                  "producto que tope la altura de un marco vaciado in situ "
+                  f"({material.norma_producto}): el tope es el de la serie "
+                  "declarada")
+    elif material.D_max_criterio == CRITERIO_D_MAX_CATALOGO:
+        origen = (f"tope de disponibilidad declarado {material.D_max:.2f} m, "
+                  f"criterio '{CRITERIO_D_MAX_CATALOGO}' [A]; NO es un tope "
+                  f"de {material.norma_producto}, cuya serie sigue por "
+                  "encima: es lo que el proyectista declaro que el mercado "
+                  "ofrece")
+    elif material.D_max_criterio == CRITERIO_CALIBRE_TMC:
+        origen = (f"mayor diametro en que la corrugacion adoptada es "
+                  f"estandar, {material.D_max:.2f} m, criterio "
+                  f"'{CRITERIO_CALIBRE_TMC}' [A]; la serie de "
+                  f"{material.norma_producto} sigue por encima con otra "
+                  "corrugacion")
+    elif material.tipo is TipoMaterial.CONCRETO_REFORZADO:
+        # El concreto NO topa en la ultima fila de su serie: topa en el
+        # ultimo diametro con diseño estandar (auditoria de T-4, H2).
+        origen = (f"ultimo diametro con diseño estandar tabulado en "
+                  f"{material.norma_producto}, {material.D_max:.2f} m, "
+                  f"criterio '{CRITERIO_D_MAX_NORMA}' [C]; por encima la "
+                  "norma remite a un diseño especial del fabricante "
+                  "(Seccion 7.2), que este catalogo no recorre")
     else:
-        atribucion = f"NO es un tope de {material.norma_producto}"
-    return (f"{MENSAJE_DIAMETRO_SUPERADO} (tope de catalogo adoptado "
-            f"{material.D_max:.2f} m, criterio '{clave}'; {atribucion}). "
+        origen = (f"ultimo tamaño de la serie de {material.norma_producto}, "
+                  f"{material.D_max:.2f} m, criterio "
+                  f"'{CRITERIO_D_MAX_NORMA}' [C]")
+    return (f"{MENSAJE_DIAMETRO_SUPERADO} ({origen}). "
             f"Ultimo intento: {ultimo_motivo}")
 
 
@@ -577,7 +616,9 @@ def _caudal_por_barril(Q: float, material: Material) -> float:
 def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
                   Q: Optional[float] = None, S: Optional[float] = None,
                   verificar: Optional[Verificador] = None,
-                  registrar: Optional[Registrador] = None) -> ResultadoPunto:
+                  registrar: Optional[Registrador] = None,
+                  durabilidad: Optional[DictamenDurabilidad] = None,
+                  ) -> ResultadoPunto:
     """
     Diseño hidraulico completo de un punto critico: recorre los materiales
     candidatos de M2 (Sec. 3.4) y, dentro de cada uno, el catalogo ascendente
@@ -601,6 +642,10 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             alcantarilla es la del cauce y que V2 nunca la restringe (Sec. 5.2).
     verificar   funcion de la Fase 5. Por defecto, la de M5 (ver el docstring
             del modulo).
+    durabilidad dictamen de `M2.matriz_durabilidad` para este punto (Sec.
+            3.3; T-4). Los materiales que excluye no entran en el bucle; sin
+            dictamen, o con uno no aplicado por falta de ensayos, los
+            candidatos son los de siempre.
     registrar   observador opcional del bucle (ver `disenar_material`). Recibe
             los escalones de TODOS los materiales recorridos, en orden, tambien
             cuando la llamada termina en DisenoNoFactibleError: la traza de un
@@ -650,10 +695,11 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     Q = punto.exigir("Q_m3s") if Q is None else Q
     S = punto.exigir("S_cauce") if S is None else S
 
-    candidatos = materiales_candidatos(punto)
+    candidatos = materiales_candidatos(punto, durabilidad)
     if not candidatos:
         raise DisenoNoFactibleError(
-            motivo=_motivo_sin_candidatos(punto), id_punto=punto.id)
+            motivo=_motivo_sin_candidatos(punto, durabilidad),
+            id_punto=punto.id)
 
     fallos: List[str] = []
     pendientes: List[CriterioPendienteError] = []
@@ -661,11 +707,23 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     no_evaluables: List[MetodoNoEvaluableError] = []
     invalidos_de_criterio: List[DatoInvalidoError] = []
 
+    # Los escalones de CADA material, ademas de pasarlos al observador: es
+    # lo que permite decir, cuando un material se detiene por un dato que
+    # falta, cuales de sus escalones SI se evaluaron y desde cual no (H1 de
+    # la auditoria de T-4).
+    escalones: List[PasoDiseno] = []
+
+    def _anota(paso: PasoDiseno) -> None:
+        escalones.append(paso)
+        if registrar is not None:
+            registrar(paso)
+
     for material in candidatos:
+        del escalones[:]
         try:
             resultado, motivo = disenar_material(
                 punto, material, Q=Q, S=S, L=L, TW=TW, verificar=verificar,
-                registrar=registrar)
+                registrar=_anota)
         except CriterioPendienteError as exc:
             # Bloqueo, no descarte: este material no se evaluo, y "no se
             # evaluo" no es "no cumple". Se anota aparte de `fallos` porque
@@ -679,7 +737,8 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             # candidatos les falta uno, el punto no es «no factible», esta
             # incompleto, y lo que sale es el primer DatoFaltanteError con su
             # `campo`, que es la columna que el tablero tiene que mostrar.
-            fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
+            fallos.append(f"{material.nombre}: "
+                          f"{_motivo_escalones_sin_evaluar(material, escalones, exc)}")
             faltantes.append(exc)
             continue
         except MetodoNoEvaluableError as exc:
@@ -726,6 +785,7 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             _exigir_criterios_declarados(pendientes)
             _exigir_criterios_validos(invalidos_de_criterio)
             _exigir_metodo_evaluable(no_evaluables)
+            _exigir_datos_presentes(faltantes)
             return resultado
 
         fallos.append(f"{material.nombre}: {motivo}")
@@ -748,6 +808,63 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
         motivo="ningun material candidato cumple la Fase 5. " + " | ".join(fallos),
         id_punto=punto.id,
     )
+
+
+def _exigir_datos_presentes(faltantes: Sequence[DatoFaltanteError]) -> None:
+    """
+    Antes de ACEPTAR un candidato, ninguno de los anteriores --todos mas
+    preferentes en el orden de M2-- puede haberse detenido por un dato que
+    falta (H1 de la auditoria de T-4). Es la misma regla que ya valia para
+    los criterios pendientes, los criterios invalidos y el metodo no
+    evaluable, y faltaba aqui: un material cuyo catalogo no se pudo recorrer
+    entero porque a un escalon le falta el espesor de pared NO se evaluo, y
+    adoptar el siguiente seria elegirlo por descarte de uno que nadie
+    termino de mirar. Medido por el auditor: un punto cuyo concreto
+    incumplia V3 hasta el ultimo escalon con pared declarada salia
+    DIMENSIONADO en TMC, sin bloqueo. Se relanza el primero, con su `campo`:
+    es un bloqueo por dato, y dice que dato.
+
+    NO VALE AL REVES, y es deliberado: cuando NINGUN candidato cierra, un
+    material con escalones sin evaluar no convierte el punto en «incompleto»
+    --los que si se evaluaron incumplen, y eso es lo que el punto es--; el
+    motivo lista los escalones que no se evaluaron y por que dato
+    (`_motivo_escalones_sin_evaluar`), y solo si a TODOS les falto un dato
+    sale `DatoFaltanteError` (PC-28).
+    """
+    if faltantes:
+        raise faltantes[0]
+
+
+def _motivo_escalones_sin_evaluar(material: Material,
+                                  escalones: Sequence[PasoDiseno],
+                                  exc: DatoFaltanteError) -> str:
+    """
+    El motivo de un material que se detuvo a MITAD de su catalogo por un
+    dato que falta: cuantos escalones se evaluaron --e incumplieron--, desde
+    cual no se evaluo, hasta que tope, y por que dato. Sin esto el texto
+    decia «material no evaluable» de un material con tres escalones
+    evaluados, y callaba que los dos ultimos no se miraron.
+    """
+    # El escalon que se detuvo PUEDE traer verificaciones --las que se
+    # evaluaron antes de que faltara el dato--: lo que lo distingue es la
+    # marca de su motivo, no que venga vacio. Y un escalon sin
+    # verificaciones puede estar evaluado: el conducto que no transporta el
+    # caudal en flujo libre no llega a la Fase 5.
+    sin_evaluar = [e for e in escalones
+                   if MARCA_ESCALON_SIN_EVALUAR in e.motivo]
+    evaluados = [e for e in escalones if e not in sin_evaluar]
+    desde = (sin_evaluar[0].seccion.etiqueta() if sin_evaluar
+             else "el primer escalon")
+    partes = []
+    if evaluados:
+        partes.append(
+            f"{len(evaluados)} escalon(es) evaluado(s), de "
+            f"{evaluados[0].seccion.etiqueta()} a "
+            f"{evaluados[-1].seccion.etiqueta()}, y ninguno cumple")
+    partes.append(
+        f"NO SE EVALUO desde {desde} hasta el tope del material "
+        f"({material.D_max:.2f} m) por falta del dato '{exc.campo}'")
+    return "; ".join(partes) + f". {type(exc).__name__}: {exc}"
 
 
 def _exigir_metodo_evaluable(
@@ -817,9 +934,19 @@ def _exigir_criterios_declarados(
         raise pendientes[0]
 
 
-def _motivo_sin_candidatos(punto: PuntoCritico) -> str:
+def _motivo_sin_candidatos(
+        punto: PuntoCritico,
+        durabilidad: Optional[DictamenDurabilidad] = None) -> str:
     """
     M2 devolvio la tupla vacia.
+
+    DESDE T-4 HAY UNA VIA REAL: la matriz de durabilidad (Sec. 3.3) puede
+    excluir a todos los candidatos de la familia --TMC por pH o resistividad
+    y HDPE por abrasion severa no vacian la tupla, porque el concreto no se
+    excluye por ningun ensayo; el caso queda cubierto para una familia o una
+    regla futura--. El motivo cita entonces cada exclusion, que es lo que el
+    proyectista necesita leer; sin dictamen o sin exclusiones, el mensaje
+    generico de siempre.
 
     NO SE BORRA, SE ESTRECHA (regla vinculante #10 de la Familia C). Su rama
     de Familia C SALIO en C5 -- desde que M2 ofrece el marco, esa familia ya
@@ -833,6 +960,13 @@ def _motivo_sin_candidatos(punto: PuntoCritico) -> str:
     diametro, por disponibilidad -- puede vaciarla. El mensaje generico lo
     cubre.
     """
+    if durabilidad is not None and durabilidad.excluidos:
+        exclusiones = "; ".join(
+            f"{tipo.value}: {durabilidad.motivo_de_exclusion(tipo)}"
+            for tipo in durabilidad.excluidos)
+        return (f"la matriz de durabilidad (Sec. 3.3) excluye a todos los "
+                f"materiales candidatos de la Familia {punto.familia.value}: "
+                f"{exclusiones}")
     return (f"M2 (Sec. 3.4) no ofrece material candidato para la Familia "
             f"{punto.familia.value}")
 

@@ -66,7 +66,7 @@ la tabla familia por familia está en `docs/guia_perfil.md` §1.1.
 | `cota_fondo_receptor` | msnm | Topografía / QGIS | Fondo del dren, quebrada o canal que recibe la descarga (el script la lee a 13 m del eje, aguas abajo) | La carga se detiene |
 | `Q_receptor_m3s` | m³/s | **ANA / Junta** | Caudal de diseño del cuerpo receptor. Es la vía 3 del TW (Manning en el receptor). **0 es un receptor seco** y se admite desde T-2 (TW = 0, salida libre); negativo, no | Puede ir vacía en las tres familias; el TW sale por otra vía |
 | `cota_TW` | msnm | **ANA / Junta** | Nivel de agua del receptor durante la avenida, ya calculado fuera. Es la vía 2 del TW | Puede ir vacía en las tres familias |
-| `sucs_fundacion` | texto | **EMS** | Clasificación SUCS del suelo de fundación, de la calicata más cercana | La carga se detiene (hoy ningún módulo la lee: `INF-5.1.9`) |
+| `sucs_fundacion` | texto | **EMS** | Clasificación SUCS del suelo de fundación, de la calicata más cercana | La carga se detiene. Desde T-4 la lee la matriz de durabilidad para el aviso «suelo de fundación deficiente → marco» (`INF-5.1.9`): compara el grupo con el conjunto del criterio `sucs_fundacion_deficiente` `[A]`; no cambia material ni sección |
 | `NF_profundidad_m` | m | **EMS** | Profundidad del nivel freático **en el cruce**, medida por punto. La lee V7 (flotación) | Puede ir vacía; V7 queda pendiente de ese dato |
 | `cota_fondo_entrada` | msnm | Topografía / QGIS | Invert de entrada **medido** en el cauce, aguas arriba | Puede ir vacía: rige el criterio `origen_cota_fondo_entrada` (hoy «igual al terreno»), que es una adopción y no una medición (`INF-5.1.18`) |
 | `cota_coronacion_canal` | msnm | Topografía / QGIS | La más baja de las dos coronaciones del canal en el cruce. La compara VC1 | Puede ir vacía; en la Familia C, VC1 queda pendiente de ese dato |
@@ -97,6 +97,31 @@ Un dato externo que **todavía no tiene clave**: el ancho del derecho de vía po
 tramo). La hoja de ruta lo declara dato externo desde T-0 (fila V5 de la Fase 5) y el
 programa lo reclama con `DatoFaltanteError` cuando V5 llega a pedirlo; no hay todavía
 puerta por la que declararlo.
+
+### 3.1 Ensayos de durabilidad — opcionales, por el mismo JSON (T-4)
+
+Seis claves más entran por `--datos-externos`, en la sección `globales` (valen para todo
+el sitio) o en `puntos` (una calicata; pisa al del sitio). **Son opcionales y ninguna
+tiene valor por defecto**: no están en `servicio.CLAVES_EXTERNAS` —esas son datos que
+alguna etapa exige— sino en `servicio.CLAVES_DE_DURABILIDAD`, y su ausencia no detiene
+nada. Las aplica la matriz de durabilidad de la Fase 3 (`M2.matriz_durabilidad`, hoja de
+ruta §3.4). La cadena T no las rellena ni las deduce.
+
+| Clave | Unidad | Origen | Qué es | Qué hace la matriz con ella |
+|---|---|---|---|---|
+| `sulfatos_suelo_ppm` | ppm (mg/kg) | **EMS** | Sulfato soluble en agua (SO₄) presente en el suelo. La Tabla 4.4 de E.060 lo lee en % en peso: 1 % = 10 000 ppm | Fija la exposición del concreto y le **exige** cemento, a/c y f'c. No excluye |
+| `sulfatos_agua_ppm` | ppm | **EMS** | Sulfato (SO₄) en el agua, la otra escala de la misma tabla | Ídem; con las dos, rige la más exigente |
+| `cloruros_ppm` | ppm | **EMS** | Cloruros en suelo o agua | Para el concreto **avisa** (E.060 4.4.2 no da umbral en ppm). Para la TMC, sobre 100 ppm el suelo cuenta como agresivo por analogía con AASHTO LRFD 11.10.6.4.2a: **aviso** y exigencia de protección (o exclusión, si se declara `suelo_agresivo_lrfd_sobre_tmc` = `excluye`) |
+| `pH` | — | **EMS** | pH del suelo o del agua | Fuera de 5.0–8.5 **excluye la TMC**; menor de 5.8 le **exige** protección; fuera de 5–10, suelo agresivo por analogía |
+| `resistividad_ohm_cm` | ohm·cm | **EMS** | Resistividad del suelo o del agua | Menor de 1000 **excluye la TMC**; menor de 3000, suelo agresivo por analogía (**aviso**) |
+| `abrasion` | texto | **Estudio hidrológico · campo** | Nivel de abrasión del sitio, uno de los cuatro de la Tabla 8-4 del WSDOT Hydraulics Manual: `no_abrasivo`, `poco_abrasivo`, `moderadamente_abrasivo`, `severamente_abrasivo`. Depende de la carga de fondo y de la pendiente además de la velocidad: **no se deduce de la velocidad** | Severo **excluye el HDPE**; moderado o severo **avisa** al metal y al concreto |
+
+**Si no se declara ninguna**, la matriz no actúa, los tres materiales siguen candidatos y
+la memoria de cada punto imprime «durabilidad: sin ensayos, matriz no aplicada» (más el
+aviso fijo del Manual para la TMC, que no depende de ensayos). Los sulfatos son **el
+mismo ensayo** que el dato de sitio `exposicion_quimica_ems` (recubrimiento del cabezal):
+si los dos están declarados y dan exposiciones distintas, la matriz lo avisa. Cada
+concentración admite de 0 a 1 000 000 ppm.
 
 ---
 
@@ -184,11 +209,12 @@ nombre definitivo.
 | Cuencas por obra (área, longitud y pendiente del cauce, cobertura, suelo) y serie de precipitación máxima de la estación | Estudio hidrológico · SENAMHI | T-1 | El caudal entra ya calculado por `Q_m3s`, que seguirá ganando cuando venga lleno |
 | Tratamiento de los años FEN de la serie (`homogeneidad_serie_fen`) | Estudio hidrológico | T-1 | El criterio está vacío y **no detiene nada**: ningún módulo lo lee (`INF-5.1.1`) |
 | Sección medida del receptor (ancho de fondo, talud, profundidad, n, pendiente) | Topografía / QGIS · ANA / Junta | T-2 — **hecho**: es `seccion_receptor_medida` de la sección 3 | Rige la sección **adoptada** del criterio `seccion_receptor`, con aviso en la memoria |
-| Ensayos de durabilidad por sitio o por punto: sulfatos, cloruros, pH, resistividad, abrasión | EMS | T-4 | La matriz de materiales no filtra por durabilidad |
 | Parámetros de resistencia del suelo: φ, c, γ, capacidad portante admisible | EMS | T-7b | Los criterios de la Fase 9 están vacíos y el cabezal no se verifica |
 | Profundidad de socavación estimada a la salida; tipo de terreno del cauce receptor | Estudio hidrológico · EMS | T-8 | La protección de salida se calcula solo con el d₅₀ de Laushey |
 | Sección de la cuneta, ancho tributario y pendiente longitudinal de la rasante | Trazo | T-9 | `L_hidraulico_m` entra declarado |
 | Riesgo admisible y vida útil (`riesgo_admisible_propietario`), desplazamiento sísmico admisible del cabezal, tipo de cabezal | **Propietario** | T-7a, T-7b | Rigen los máximos recomendados de la Tabla N° 02; el resto está sin declarar |
+
+*(La fila de T-4 —ensayos de durabilidad por sitio o por punto— pasó al §3.1 al cerrar T-4.)*
 
 Al terminar la cadena, el programa deja de detenerse por criterios vacíos y se detiene
 solo por entradas de esta lista que falten. Es lo que un jurado acepta: «este dato lo da

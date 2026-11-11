@@ -251,10 +251,28 @@ def seleccionar_clase_calibre(*, material: Material, altura_relleno: float):
     PROCEDIMIENTO -- area de pared requerida con SF = 2, pandeo, costura,
     factor de flexibilidad, cobertura minima del num. 11.1 -- y ese
     procedimiento no esta implementado; implementarlo es una sesion de
-    calculo propia, con caso patron. Es el mismo vacio de norma de producto
-    que 'espesor_pared_conducto' declara para la geometria fisica, y los dos
-    se cierran juntos: el espesor de pared es una consecuencia de la clase o
-    el calibre que aqui se seleccione. Se detiene en
+    calculo propia, con caso patron.
+
+    LO QUE CAMBIO EN T-4, y lo que NO: este parrafo decia que el espesor de
+    pared «es una consecuencia de la clase o el calibre que aqui se
+    seleccione» y que los dos vacios «se cierran juntos». T-4 cerro uno solo.
+    La GEOMETRIA ya no espera a esta funcion: el catalogo de M2 trae para el
+    TMC una plancha ADOPTADA ('corrugacion_y_espesor_tmc' [A], 68 por 13 mm
+    y 2.01 mm) y para el HDPE el diametro exterior maximo de AASHTO LRFD,
+    de modo que 7.A y V7 corren. El CALIBRE sigue abierto y sigue siendo de
+    esta funcion: esa plancha no esta verificada estructuralmente, y no
+    cumple el factor de flexibilidad del num. 10.3 de A796 (0.245 mm/N con
+    13 mm de profundidad) por encima de unos 1.39 m de diametro, aunque el
+    catalogo la ofrece hasta 2.10 m, que es el tope de la corrugacion. Y lo
+    que `M2.espesor_pared` devuelve para TMC y HDPE NO ES UN ESPESOR
+    ESTRUCTURAL: es la ENVOLVENTE geometrica (exterior menos interior, entre
+    dos) --profundidad de corrugacion mas plancha, o altura del perfil--. El
+    area, el momento de inercia y el radio de giro de cada plancha estan en
+    `constantes_normativas.TMC_PLANCHA_CORRUGADA`. Quien implemente esta
+    funcion tiene que seleccionar el calibre con esos y devolver al catalogo
+    la plancha que resulte (ficha T4-08 de `docs/decisiones_diferidas.md`).
+
+    Se detiene en
     'clases_producto_por_relleno' (ver su justificacion en
     criterios_adoptados.py). HDPE no tiene tabla de clase por altura: su
     verificacion detallada queda diferida al expediente por el item 5 (ver

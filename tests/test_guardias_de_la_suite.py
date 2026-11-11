@@ -472,7 +472,9 @@ def test_los_dos_v_max_cerrados_no_pueden_volver_al_vacio_en_silencio():
         criterio = ca.CRITERIOS[clave]
         assert criterio.valor is not None, (
             f"'{clave}' volvio al vacio: el .md de fixtures lo declara cerrado")
-        assert criterio.etiqueta == "C"
+        # [C] el HDPE y [A] el TMC desde T-4 (INF-3.2.4): la fuente prohibe
+        # el termoplastico en abrasion severa y al metal no le fija limite.
+        assert criterio.etiqueta == {"v_max_hdpe": "C", "v_max_tmc": "A"}[clave]
         assert "WSDOT" in (criterio.fuente or ""), (
             f"'{clave}' cambio de fuente: el .md cita WSDOT Tabla 8-4")
     assert "4.572" in REFERENCIAL.read_text(encoding="utf-8")

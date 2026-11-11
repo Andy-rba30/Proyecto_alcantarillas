@@ -136,11 +136,17 @@ def test_las_dos_ramas_comparten_la_misma_geometria(concreto):
 
 
 def test_hdpe_tambien_aplica_doble_n_por_el_rango_de_criterios_adoptados(hdpe):
-    """Sec. 4.1.1: el n de HDPE es un RANGO (0.010-0.013), no un valor puntual;
+    """Sec. 4.1.1: el n de HDPE es un RANGO, no un valor puntual;
     resolver_manning() debe seguir dando una V de erosion distinta de la
-    velocidad implicita en la rama de capacidad."""
+    velocidad implicita en la rama de capacidad.
+
+    Desde T-4 el rango es 0.009-0.015 (HDS-5 Table B.1) y no el 0.010-0.013
+    del concreto. El caudal del caso patron se calculo con n = 0.013: con el
+    n maximo del HDPE ese mismo caudal ya no cabe en el tubo y
+    `resolver_manning` devuelve None, que es correcto. Se escala el caudal
+    por el cociente de los dos n para medir el mismo tirante del caso."""
     c = CP2_GEOMETRIA_MANNING
-    Q = c["Q_con_n_max_esperado"]
+    Q = c["Q_con_n_max_esperado"] * c["n_max"] / hdpe.n_max
 
     assert hdpe.n_min != hdpe.n_max
     resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=hdpe)

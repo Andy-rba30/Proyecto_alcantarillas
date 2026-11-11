@@ -104,6 +104,33 @@ Ninguna tiene valor por defecto. Sin declararla, la etapa que la
 necesita queda bloqueada y el informe lo dice; no se sustituye por un numero
 plausible.
 
+Y UNA TERCERA CLASE DESDE T-4, QUE NO ES DE `CLAVES_EXTERNAS`: LOS ENSAYOS DE
+DURABILIDAD (Sec. 3.3 y 3.4 de la hoja de ruta). Entran por el mismo JSON de
+`--datos-externos` -- en `globales` para todo el sitio, en `puntos` para una
+calicata, que pisa al del sitio -- y no tienen bandera. Son OPCIONALES: su
+ausencia no bloquea ninguna etapa, y por eso viven en
+`servicio.CLAVES_DE_DURABILIDAD` y no en la tupla de arriba, cuyas claves son
+datos que alguna etapa exige. Tampoco tienen valor por defecto:
+
+    sulfatos_suelo_ppm   ppm   sulfato (SO4) en el suelo; la Tabla 4.4 de
+                               E.060 lo lee en % en peso (1 % = 10 000 ppm).
+    sulfatos_agua_ppm    ppm   sulfato en el agua: la otra escala de la tabla.
+    cloruros_ppm         ppm   cloruros; la norma no da umbral: solo avisa.
+    pH                   -     pH del suelo o del agua.
+    resistividad_ohm_cm  ohm-cm
+    abrasion             texto nivel de abrasion del sitio, uno de los cuatro
+                               de la Table 8-4 del WSDOT Hydraulics Manual
+                               (`no_abrasivo`, `poco_abrasivo`,
+                               `moderadamente_abrasivo`,
+                               `severamente_abrasivo`). Es un dato de campo:
+                               no se deduce de la velocidad.
+
+Con ellos `M2.matriz_durabilidad` filtra los materiales candidatos del punto
+(pH y resistividad excluyen la TMC; la abrasion severa, el HDPE; los sulfatos
+exigen al concreto su cemento) y el informe lo imprime con sus citas. Sin
+ninguno, la matriz no actua y cada punto dice «durabilidad: sin ensayos,
+matriz no aplicada».
+
 Que hace con un criterio pendiente
 ----------------------------------
 Lo registra como bloqueo de la etapa donde salto -- con clave, concepto y
@@ -214,11 +241,13 @@ from src.modulos.M11_reporte import (CriterioBloqueante,  # noqa: F401
 # que es donde se resuelve el nombre: en EXT-9 los tres sitios de la suite
 # que lo hacian sobre `cli` migraron.
 from src.servicio import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, DECIMALES_FACTOR,
+                          ETAPA_DURABILIDAD,
                           FASE_CABEZAL, DatoDeclarado, Informe, InformeCabezal,
                           InformePunto, _fmt, advertencia_de_corredor_de,
                           cargar_datos_externos, cargar_datos_sitio, correr)
 from src.servicio import (  # noqa: F401  (reexportaciones: contrato GUI/suite)
-    CLAVES_EXTERNAS, DatosExternos, FAMILIAS_QUE_USAN, FASE_ESTRUCTURAL,
+    CLAVES_DE_DURABILIDAD, CLAVES_EXTERNAS, DatosExternos, FAMILIAS_QUE_USAN,
+    FASE_ESTRUCTURAL,
     MODULOS_DIFERIDOS_POR_ALCANCE, NOTA_ESTABILIDAD_CABEZAL,
     VERIFICACIONES_DIFERIDAS_POR_ALCANCE, _DOMINIO_DE_CLAVE,
     _avisar_ids_desconocidos, _bloqueo, _compuerta_metodo_h_o, _dato_externo,
@@ -343,6 +372,9 @@ def _clasificacion_json(c: Clasificacion) -> Dict[str, Any]:
 CLAVES_DISENO_JSON = (
     "material", "tipo", "norma_producto", "alcance_norma_producto",
     "seccion_eg2013", "n_min", "n_max", "seccion", "dimension_max_catalogo_m",
+    # T-4: el criterio que fijo ese tope (serie de la norma, corrugacion,
+    # disponibilidad declarada o serie del marco).
+    "dimension_max_criterio",
     "control_gobernante", "Q_m3s", "S_m_m", "V_erosion_m_s",
     "V_sedimentacion_m_s", "y_normal_m", "y_critico_m", "HW_entrada_m",
     "HW_salida_m", "HW_gobernante_m", "Q_celda_m3s", "numero_celdas",
@@ -378,6 +410,11 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "n_min": _num(material.n_min), "n_max": _num(material.n_max),
             "seccion": resultado.seccion.etiqueta(),
             "dimension_max_catalogo_m": _num(material.D_max),
+            # --- T-4 --- De donde salio ese tope: la serie de la norma de
+            # producto, la corrugacion adoptada (TMC), la disponibilidad
+            # declarada o la serie del marco. Sin esta clave el numero de
+            # arriba no dice si lo fija una norma o una eleccion.
+            "dimension_max_criterio": material.D_max_criterio,
             "control_gobernante": hidraulica.control_gobernante.value,
             # Q y S son los del DISEÑO, no los de la columna del CSV: la
             # Familia B y la C traen su propio caudal (Sec. 2.3) y el punto que
@@ -533,6 +570,58 @@ def _espaciamiento_json(e: Espaciamiento) -> Dict[str, Any]:
             "criterio_normativo": e.criterio_normativo}
 
 
+def _durabilidad_json(dictamen) -> Optional[Dict[str, Any]]:
+    """
+    El dictamen de la matriz de durabilidad del punto (Sec. 3.3; T-4). None
+    solo cuando la etapa se bloqueo, y entonces el bloqueo esta en la lista
+    del punto. `aplicada: false` es el caso sin ensayos: la matriz no actuo y
+    `resumen` lo dice con el texto de `modelos.DURABILIDAD_SIN_ENSAYOS`.
+    """
+    if dictamen is None:
+        return None
+    ensayos = dictamen.ensayos
+    return {
+        "aplicada": dictamen.aplicada,
+        "resumen": dictamen.resumen,
+        "ensayos": ({} if ensayos is None else {
+            clave: {"valor": getattr(ensayos, clave),
+                    "origen": ensayos.origen_de(clave)}
+            for clave in ensayos.declarados}),
+        "materiales_excluidos": [t.value for t in dictamen.excluidos],
+        "suelo_fundacion": dictamen.suelo_fundacion,
+        "reglas": [{"ensayo": r.ensayo,
+                    "material": None if r.material is None else r.material.value,
+                    "efecto": r.efecto.value, "texto": r.texto,
+                    "citas": list(r.cita_ids),
+                    "criterio": r.criterio or None}
+                   for r in dictamen.reglas],
+    }
+
+
+def _lineas_durabilidad(informe: InformePunto) -> List[str]:
+    """
+    Las lineas de la Sec. 3.3 en el volcado de texto. La primera va SIEMPRE
+    --con ensayos o sin ellos--, porque «no se aplico» es un hecho del
+    expediente que el lector tiene que ver en cada punto, no deducir de que
+    falte un bloque.
+    """
+    d = informe.durabilidad
+    if d is None:
+        # Dos casos distintos: la etapa se bloqueo, y se dice; o el punto no
+        # llego a la Fase 3 (se detuvo en la Fase 2), y no hay nada que decir.
+        if any(b.etapa == ETAPA_DURABILIDAD for b in informe.bloqueos):
+            return [f"{SANGRIA}Sec. 3.3 durabilidad: no evaluada (ver "
+                    "bloqueos)"]
+        return []
+    out = [f"{SANGRIA}Sec. 3.3 {d.resumen}"]
+    out.extend(f"{SANGRIA}        [{r.efecto.value}] "
+               f"{'general' if r.material is None else r.material.value}: "
+               f"{r.texto}" for r in d.reglas)
+    if not any(r.ensayo == "sucs_fundacion" for r in d.reglas):
+        out.append(f"{SANGRIA}        {d.suelo_fundacion}")
+    return out
+
+
 def _punto_json(informe: InformePunto) -> Dict[str, Any]:
     punto = informe.punto
     salida: Dict[str, Any] = {
@@ -562,6 +651,7 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "avisos": list(informe.avisos()),
         "clasificacion": (None if informe.clasificacion is None
                           else _clasificacion_json(informe.clasificacion)),
+        "durabilidad": _durabilidad_json(informe.durabilidad),
         "diseno": (None if not informe.dimensionado
                    else _diseno_json(informe.resultado)),
         "proteccion_salida": (None if informe.proteccion is None
@@ -807,6 +897,8 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         out.append(f"{SANGRIA}Fase 2  {c.denominacion.value} "
                    f"(luz {_fmt(c.luz_m)} m, num. {c.verificacion_luz.numeral}) "
                    f"| {tr}")
+
+    out.extend(_lineas_durabilidad(informe))
 
     if informe.dimensionado:
         r = informe.resultado

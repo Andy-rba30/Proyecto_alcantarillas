@@ -70,10 +70,16 @@ from typing import Any, Optional, Tuple, Dict, List, Set
 from src.dominios import ESVIAJE_MAX
 from src.constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    H_O_CONDICION_TEXTO, H_O_NUMERAL,
-                                   KE_HDS5_C2, MANNING, V_MIN,
+                                   KE_HDS5_C2, V_MIN,
                                    Y_SOBRE_D_MAX,
                                    REGIMEN_CORTANTE_EN_EL_PLANO,
                                    REGIMEN_CORTANTE_PERPENDICULAR)
+# --- T-4 --- las vistas y unidades que los criterios nuevos DERIVAN.
+from src.constantes_normativas import (D_INICIO, SIMBOLOS_SUCS,
+                                   TMC_PLANCHA_CORRUGADA,
+                                   DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM)
+from src.constantes_fisicas import PULGADA_EN_MM
+from src.dominios import MILIMETROS_POR_METRO
 from src.normativa import esquema as _esquema
 from src.normativa import registro as _registro_normativo
 from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
@@ -84,7 +90,7 @@ from src.modelos import NIVEL_EXPEDIENTE as _NIVEL_EXPEDIENTE
 from src.modelos import NIVEL_PERFIL as _NIVEL_PERFIL
 from src.modelos import NIVELES as _NIVELES
 
-# Las CUATRO importaciones de constantes normativas que hace este archivo
+# Las importaciones de constantes normativas que hace este archivo
 # entran por la misma razon, y ninguna transcribe nada: referencian lo que ya
 # esta transcrito en su archivo.
 #
@@ -95,11 +101,11 @@ from src.modelos import NIVELES as _NIVELES
 # argumento que el de `MANNING`, y el mismo que sostiene toda la regla de las
 # segundas transcripciones.
 #
-# `MANNING`: 'n_manning_hdpe' es un [N->] -- una fila de esa tabla aplicada
-# por analogia a un material que la tabla no lista -- y su valor tiene que SER
-# esa fila, no una copia que puede quedar desincronizada. Un [N->] que duplica
-# el literal de su origen no es una analogia declarada: son dos numeros
-# iguales por casualidad hasta que uno cambie.
+# `MANNING` SE IMPORTABA AQUI HASTA T-4 por 'n_manning_hdpe', que era un [N->]
+# -- la fila del concreto de esa tabla aplicada por analogia --. Desde T-4 el
+# n del HDPE es [C] y se lee de la fila del polietileno de la Table B.1 del
+# HDS-5 (`_N_MANNING_HDPE_HDS5`), con el mismo argumento: el valor tiene que
+# SER la fila transcrita, no una copia que puede quedar desincronizada.
 #
 # `H_O_NUMERAL` y `H_O_CONDICION_TEXTO`: la condicion de uso que HDS-5 impone
 # a h_o (num. 3.3.3) es lo que hace pendiente la verificacion de
@@ -885,6 +891,78 @@ def _tabla_recubrimiento_aashto_mm() -> Dict[str, Dict[str, float]]:
 
 
 _TABLA_RECUBRIMIENTO_AASHTO_MM = _tabla_recubrimiento_aashto_mm()
+
+
+# --- T-4 --- La doble n del HDPE, DERIVADA de la fila transcrita de la Table
+# B.1 del HDS-5 (`HDS5_3ED.TB.1`) y no escrita a mano: es el valor y la
+# ventana de 'n_manning_hdpe'. Mismo patron que la tabla de arriba.
+def _n_manning_hdpe_hds5() -> Tuple[float, float]:
+    from src.normativa import registro as _rn
+    fila = _rn.construir().tabla("HDS5_3ED.TB.1").fila(
+        "polietileno_corrugado_liso")
+    return (float(fila.valores["n_min"]), float(fila.valores["n_max"]))
+
+
+_N_MANNING_HDPE_HDS5 = _n_manning_hdpe_hds5()
+
+
+# --- T-4 --- El espesor del HDPE, DERIVADO de la Table A12-11 de AASHTO LRFD
+# (`AASHTO_LRFD_9.TA12-11`): el t que lleva el diametro DESIGNADO del catalogo
+# hasta el diametro exterior MAXIMO del producto, t = (Max. OD - D) / 2. El
+# designado en mm de cada tamaño en pulgadas se lee de la serie de la propia
+# norma de producto (`AASHTO_M294_TRAD.T7.2.2`: «900 (36)», «1050 (42)»,
+# «1200 (48)»), no se calcula. Solo los tamaños del catalogo (de 0.90 m en
+# adelante) y solo los que la tabla de AASHTO trae: tres filas.
+def _espesor_hdpe_de_aashto() -> Dict[int, float]:
+    from src.normativa import registro as _rn
+    reg = _rn.construir()
+    designado_mm = {f.valores["dn_in"]: f.valores["dn_mm"]
+                    for f in reg.tabla("AASHTO_M294_TRAD.T7.2.2").filas}
+    piso_mm = round(D_INICIO * MILIMETROS_POR_METRO)
+    espesores = {}
+    for fila in reg.tabla("AASHTO_LRFD_9.TA12-11").filas:
+        dn_mm = designado_mm[fila.valores["nominal_in"]]
+        if dn_mm < piso_mm:
+            continue
+        od_max_m = fila.valores["od_max_in"] * PULGADA_EN_MM / MILIMETROS_POR_METRO
+        espesores[dn_mm] = round((od_max_m - dn_mm / MILIMETROS_POR_METRO) / 2,
+                                 _DECIMALES_DE_ESPESOR)
+    return espesores
+
+
+# Diezmilesima de metro: la tabla da el diametro exterior a la decima de
+# pulgada (2.5 mm), de modo que mas cifras no son informacion.
+_DECIMALES_DE_ESPESOR = 5
+_ESPESOR_HDPE_AASHTO = _espesor_hdpe_de_aashto()
+
+
+# --- T-4 --- El tope de la SERIE de cada norma de producto, DERIVADO de la
+# ultima fila de las tres tablas del registro, en metros.
+def _topes_de_la_norma_de_producto() -> Dict[str, float]:
+    from src.normativa import registro as _rn
+    reg = _rn.construir()
+    topes = {
+        material: max(f.valores["dn_mm"] for f in reg.tabla(tabla).filas)
+        / MILIMETROS_POR_METRO
+        for material, tabla in (
+            ("tmc", "AASHTO_M36.T6"),
+            ("hdpe", "AASHTO_M294_TRAD.T7.2.2"))
+    }
+    # EL CONCRETO NO TOMA LA ULTIMA FILA DE SU SERIE (auditoria de T-4, H2):
+    # M 170M lista diametros hasta 3600 mm, pero por encima de 2700 mm no
+    # tabula pared ni acero -- son los diseños especiales de su Seccion 7.2 --.
+    # El tope es el mayor diametro con diseño estandar.
+    return {"concreto_reforzado":
+            DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM / MILIMETROS_POR_METRO,
+            **topes}
+
+
+_TOPES_DE_LA_NORMA_DE_PRODUCTO = _topes_de_la_norma_de_producto()
+
+# --- T-4 --- Los dos conjuntos cerrados que se derivan de una vista de
+# `constantes_normativas`: las planchas del TMC y los simbolos SUCS.
+_CLAVES_DE_PLANCHA_TMC = tuple(TMC_PLANCHA_CORRUGADA)
+_SIMBOLOS_SUCS_E050 = SIMBOLOS_SUCS
 
 
 # El recorrido de los coeficientes de la Tabla C.2 del HDS-5, DERIVADO de la
@@ -2286,205 +2364,285 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "n_manning_hdpe": Criterio(
-        # El valor NO se escribe: se LEE de la tabla normativa de la que sale
-        # por analogia. Escrito a mano era el mismo par (0.010, 0.013) copiado
-        # del concreto, sin nada que ligara las dos copias: si alguien
-        # corrigiera la Tabla N 09, esta seguiria con el valor viejo y la
-        # "analogia" habria dejado de serlo en silencio (SIS-D-11).
-        valor=MANNING["concreto_tubo_recto"],   # RANGO (n_min, n_max), no puntual
+        # --- T-4 --- DEJA DE SER UNA ANALOGIA CON EL CONCRETO (INF-3.2.1).
+        # Hasta T-4 valia `MANNING["concreto_tubo_recto"]` = (0.010, 0.013),
+        # la fila del concreto de la Tabla N 09 peruana aplicada [N->] a un
+        # material que esa tabla no lista. La fuente tecnica que SI tabula el
+        # polietileno corrugado estaba en normas/ desde el principio: HDS-5
+        # 3a ed., Apendice B, Table B.1, fila «Corrugated Polyethylene /
+        # Smooth», 0.009-0.015 (pag. impresa B.6). Ni AASHTO M 294-11 (leida
+        # entera, traduccion no oficial) ni el WSDOT Hydraulics Manual (su
+        # Table 4-1 es una tabla de REFERENCIAS, sin valores) traen un n.
+        #
+        # El valor NO se escribe: se LEE de la fila transcrita en el registro
+        # (`_N_MANNING_HDPE_HDS5`), por lo mismo que antes se leia de MANNING.
+        valor=_N_MANNING_HDPE_HDS5,     # RANGO (n_min, n_max), no puntual
         nivel=NIVEL_PERFIL,
-        etiqueta="N->",             # analogia normativa declarada, no adopcion
+        etiqueta="C",               # fuente tecnica reconocida (FHWA), ya no analogia
         forma=FORMA_PAR_ORDENADO,
         concepto="Coeficiente de rugosidad de Manning para HDPE de interior liso",
         justificacion="Decide el coeficiente de rugosidad de Manning que se "
-                      "aplica al HDPE de interior liso. La fuente (Tabla N 09 "
-                      "del Manual de Hidrologia, num. 4.1.1.3.6, transcrita "
-                      "en constantes_normativas.TABLA_09_FILAS y leida por "
-                      "constantes_normativas.MANNING) tabula materiales y no "
-                      "lista el HDPE. Se adopta por analogia la fila del "
-                      "concreto de tubo recto y libre de basuras, tomando el "
-                      "rango completo (0.010, 0.013) y no un valor puntual: "
-                      "la regla de doble n pide los dos extremos -- n_max "
-                      "para capacidad y n_min para velocidad y socavacion -- "
-                      "y con un solo numero una de las dos verificaciones "
-                      "deja de ser conservadora. La etiqueta es [N->] y no "
-                      "[A] por la regla de coherencia de la hoja de ruta "
-                      "(num. 40): un criterio justificado invocando una "
-                      "disposicion normativa no puede etiquetarse [A], y aqui "
-                      "la justificacion es una fila de una tabla normativa "
-                      "aplicada por analogia a un material que esa tabla no "
-                      "lista, que es la definicion de [N->]; "
-                      "'resguardo_HW_subrasante' lleva [N->] por lo mismo. El "
-                      "Anexo A de la hoja de ruta escribe [A] para este "
-                      "criterio y se contradice con su propia regla de "
-                      "coherencia: manda la regla, no la fila del indice",
-        fuente="Analogia a la fila 'A.2 NO METALICOS - a. Concreto - tubo recto "
-               "y libre de basuras' de la Tabla N 09 del Manual de Hidrologia "
-               "(MTC, RD 20-2011-MTC/14), num. 4.1.1.3.6 'Diseno hidraulico', "
-               "pag. impresa 75; transcrita completa en "
-               "constantes_normativas.TABLA_09_FILAS y leida por "
-               "constantes_normativas.MANNING. "
-               "NUMERAL CORREGIDO: este campo citaba el num. 4.1.1.3.5, que es "
-               "'Recomendaciones y factores a tomar en cuenta para el diseno de "
-               "una alcantarilla' y no contiene ninguna tabla de rugosidad. La "
-               "Tabla N 09 la llama el num. 4.1.1.3.6 ('n: Coeficiente de "
-               "Manning (Ver Tabla N 09)', pag. impresa 74), verificado sobre "
-               "el PDF de normas/. "
-               "QUE COLUMNAS TOMA LA ANALOGIA: la MINIMO (0.010) y la MAXIMO "
-               "(0.013), no la NORMAL (0.011), porque la regla de doble n pide "
-               "los dos extremos y no el valor corriente",
-        reemplazado_por="Ficha tecnica del producto seleccionado",
-        sensibilidad=MANNING["concreto_tubo_recto"],
+                      "aplica al HDPE de interior liso. La Tabla N 09 del "
+                      "Manual de Hidrologia tabula materiales y no lista el "
+                      "polietileno, y la norma de producto del HDPE tampoco "
+                      "trae un coeficiente de rugosidad. El vacio se cubre "
+                      "con la fuente tecnica que el Manual ya toma para la "
+                      "hidraulica de alcantarillas: la tabla de valores de n "
+                      "para alcantarillas del manual HDS-5 de la FHWA, cuya "
+                      "fila del polietileno corrugado de interior liso da el "
+                      "rango 0.009 a 0.015. Se toma el rango completo y no "
+                      "un valor puntual: la regla de doble n pide los dos "
+                      "extremos -- el maximo para capacidad y tirante, el "
+                      "minimo para velocidad maxima y socavacion -- y con un "
+                      "solo numero una de las dos verificaciones deja de ser "
+                      "conservadora. Frente a la fila del concreto de tubo "
+                      "recto de la Tabla N 09, que es la que el proyecto "
+                      "aplicaba por analogia, el rango de la fuente es mas "
+                      "ancho en los dos sentidos: exige mas diametro por "
+                      "capacidad y da mas velocidad contra el techo. La "
+                      "fuente advierte que sus valores son de laboratorio y "
+                      "que los de campo pueden variar por abrasion, "
+                      "corrosion, deflexion y juntas",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), Apendice B, Table B.1 "
+               "'Manning's n Values for Culverts', pag. impresa B.6 (PDF "
+               "208): fila 'Corrugated Polyethylene / Smooth', 0.009-0.015, "
+               "con referencias Barfuss & Tullis 1988 y Tullis et al. 1990. "
+               "Tabla HDS5_3ED.TB.1 del registro, transcrita integra (trece "
+               "filas) y cita HDS5_3ED.TB.1 con su nota al pie 1. "
+               "LO QUE NO LO DA: la Tabla N 09 del Manual de Hidrologia "
+               "(num. 4.1.1.3.6, pag. impresa 75) no lista el HDPE "
+               "(afirmacion negativa SIN_HDPE_T09); AASHTO M 294-11, en "
+               "normas/ como traduccion no oficial, no trae coeficiente de "
+               "rugosidad en ninguna de sus 17 hojas (buscado 'Manning' y "
+               "'rugosidad': cero apariciones); y la Table 4-1 del WSDOT "
+               "Hydraulics Manual M 23-03.12 (pag. impresa 4-7) es una tabla "
+               "de referencias que remite a HEC-22, sin valores. "
+               "HASTA T-4 este criterio era [N->]: la fila del concreto de "
+               "tubo recto de la Tabla N 09, (0.010, 0.013), por analogia. QUE LA "
+               "FILA ES LA DE INTERIOR LISO lo respalda la norma peruana de "
+               "construccion: EG-2013, Subseccion 508.02 a), pag. impresa "
+               "981 (cita EG2013.508.02a), define el tubo de PAD/HDPE como "
+               "de superficie interior lisa y pared exterior corrugada, "
+               "clasificacion tipo S",
+        reemplazado_por="Ficha tecnica del producto seleccionado, con el n "
+                        "del fabricante y el ensayo que lo respalda",
+        # LA VENTANA ES EL RANGO DE LA PROPIA FILA: dentro de el se puede
+        # declarar un par mas estrecho (el del fabricante); fuera de el, el
+        # valor ya no lo sostiene esta fuente.
+        sensibilidad=_N_MANNING_HDPE_HDS5,
         verificacion_pendiente="Confirmar que el HDPE especificado es de INTERIOR "
-                               "LISO. El de interior corrugado tiene n del orden de "
-                               "0.018-0.025 y la analogia seria gruesamente insegura",
+                               "LISO (Tipo S o Tipo D de AASHTO M 294). El de "
+                               "interior corrugado (Tipo C) tiene en la misma "
+                               "tabla n = 0.018-0.025 y aplicarle esta fila "
+                               "seria gruesamente inseguro en capacidad",
         resolucion=DeTabla(
-            tablas=("MC_HHD.T09",),
-            fila_id="concreto_tubo_recto",
-            que_elige="la fila cuyo par (minimo, maximo) se aplica al HDPE "
-                      "POR ANALOGIA. La analogia es la etiqueta [N->]: la "
-                      "Tabla N 09 no tabula el HDPE",
+            tablas=("HDS5_3ED.TB.1",),
+            fila_id="polietileno_corrugado_liso",
+            que_elige="la fila cuyo par (minimo, maximo) es la doble n del "
+                      "HDPE de interior liso. La Tabla N 09 peruana no "
+                      "tabula el polietileno: la fila es de la fuente "
+                      "tecnica, y por eso la etiqueta es [C]",
         ),
     ),
 
     "v_max_hdpe": Criterio(
         # 15 ft/s x 0.3048 m/ft = 4.572 m/s EXACTOS. Antes decia 4.6 (MAT-O14):
-        # un techo declarado DURO -- por encima de el la fuente prohibe el
-        # material -- redondeado HACIA ARRIBA queda 0.6 % por encima del techo
-        # que dice aplicar, o sea admite velocidades que la fuente no admite.
-        # Un minimo se redondea hacia arriba y un maximo hacia abajo; aqui no
-        # hace falta redondear ninguno de los dos lados porque la conversion es
+        # un maximo redondeado HACIA ARRIBA queda 0.6 % por encima del corte
+        # que dice aplicar. Un minimo se redondea hacia arriba y un maximo
+        # hacia abajo; aqui no hace falta redondear porque la conversion es
         # exacta.
+        #
+        # --- T-4 --- LA FICHA SE REESCRIBE CONTRA EL PDF (INF-3.2.4). Decia
+        # «Tabla 8-4 ... Techo duro: por encima de 15 ft/s el termoplastico
+        # ... su uso queda prohibido». Dos cosas eran falsas: la Tabla 8-4 no
+        # es de velocidades maximas sino de NIVELES DE ABRASION, y la
+        # prohibicion no esta en ella sino en el §8-3.3, atada al NIVEL y no
+        # a la velocidad sola. Las dos citas van separadas en el registro
+        # (WSDOT_HM.8-3.3#SEVERA y WSDOT_HM.T8-4) y la lectura que las une
+        # --la velocidad por si sola como criterio suficiente-- esta
+        # declarada como `Interpretacion` de la tabla. Sigue siendo [C]: la
+        # fuente asocia al termoplastico un «shall not be used».
         valor=4.572,
         nivel=NIVEL_PERFIL,
-        etiqueta="C",               # Anexo A y Sec. 0.1: la fuente (WSDOT)
+        etiqueta="C",               # fuente tecnica reconocida (WSDOT)
         forma=FORMA_FLOAT,
-                                    # es tecnica reconocida, no una adopcion libre
         concepto="Velocidad maxima admisible en HDPE",
-        justificacion="La Tabla N 10 del Manual MTC no cubre materiales flexibles",
-        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026), Cap. 8, S8-6, "
-               "Tabla 8-4 'Pipe Abrasion Levels', pp. 8-27/8-28. Techo duro: "
-               "por encima de 15 ft/s el termoplastico no puede reforzarse "
-               "estructuralmente y su uso queda prohibido en esa condicion. "
-               "EL VALOR ES LA CONVERSION EXACTA DE LAS 15 ft/s: "
-               "15 x 0.3048 = 4.572 m/s. "
-               "ESTADO DE LA FUENTE DESDE T-0 (2026-11-11; MAT-O14): el "
-               "manual esta en el repositorio de normas y en el registro "
-               "como fuente presente (WSDOT_HM, M 23-03.12, abril 2026; la "
-               "Tabla 8-4 ocupa las pags. impresas 8-27 y 8-28, PDF 242 y "
-               "243), pero NO en normas/ de este repositorio, y el registro "
-               "todavia no tiene la CITA transcrita con su frase y su firma: "
-               "es trabajo de T-4. Lo que T-0 leyo al darla de alta, para "
-               "que T-4 lo resuelva: la prohibicion del termoplastico en "
-               "condicion severamente abrasiva NO esta en la tabla sino en "
-               "el num. 8-3.3, pag. impresa 8-13 (PDF 228); la tabla aporta "
-               "el umbral de 15 ft/s de ese nivel. Hasta T-0 esta ficha "
-               "atribuia la prohibicion a la propia tabla y decia que la "
-               "fuente no estaba disponible. "
-               "La hoja de ruta v8 quedo enmendada (R48-030): la fila V3 de "
-               "la Fase 5, el Tablero 1.3, el Anexo A y las tablas de sus "
-               "num. 0.1 y 0.3 nombran esta fuente y este valor, cada uno "
-               "con su nota de corregido desde la redaccion que decia "
-               "PPI/FHWA con el valor pendiente.",
+        justificacion="Decide el techo de velocidad de la verificacion V3 "
+                      "para el HDPE. La Tabla N 10 del Manual de Hidrologia "
+                      "no lista materiales flexibles y el inciso de abrasion "
+                      "del mismo Manual manda considerarla sin dar un "
+                      "numero. La fuente tecnica adoptada prohibe el "
+                      "termoplastico en sitios de abrasion severa, porque "
+                      "no se puede reforzar, y describe ese nivel por tres "
+                      "caracteristicas del sitio, una de las cuales es una "
+                      "velocidad mayor de 15 ft/s, que son 4.572 m/s. El "
+                      "proyecto toma esa velocidad por si sola como criterio "
+                      "suficiente para clasificar el sitio como severamente "
+                      "abrasivo: es una lectura conservadora que la fuente "
+                      "permite -- su nota dice que no hace falta que "
+                      "concurran las tres caracteristicas -- y que no "
+                      "impone, porque una velocidad mayor sin carga de fondo "
+                      "no es abrasion severa. El nivel de abrasion del "
+                      "sitio, cuando el estudio de campo lo declara, entra "
+                      "ademas por la matriz de durabilidad y descarta el "
+                      "HDPE aunque la velocidad sea menor",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026), fuente "
+               "WSDOT_HM del registro, con el PDF en el repositorio de "
+               "normas. LA PROHIBICION: num. 8-3.3 'Thermoplastic Pipe: "
+               "General', pag. impresa 8-13 (PDF 228), cita "
+               "WSDOT_HM.8-3.3#SEVERA: el termoplastico no se usa en "
+               "condiciones severamente abrasivas como las describe la "
+               "Tabla 8-4. EL UMBRAL: num. 8-6 'Abrasion', Table 8-4 'Pipe "
+               "Abrasion Levels', pags. impresas 8-27 y 8-28 (PDF 242 y "
+               "243), tabla y cita WSDOT_HM.T8-4: la fila 'Severely "
+               "abrasive' se describe, entre otras dos caracteristicas, por "
+               "velocidades mayores de 15 ft/s. EL VALOR ES LA CONVERSION "
+               "EXACTA: 15 x 0.3048 = 4.572 m/s. LA TABLA NO PROHIBE NADA AL "
+               "TERMOPLASTICO: la celda de proteccion de su fila severa, en "
+               "esta edicion, no lo nombra. SEGUNDA FUENTE DEL CORTE: AASHTO "
+               "LRFD 9a ed., C12.6.9, pag. impresa 12-24, nivel 4 de "
+               "abrasion de la FHWA (cita AASHTO_LRFD_9.C12.6.9#NIVEL_4). "
+               "La hoja de ruta v8 nombra esta fuente y este valor en la "
+               "fila V3 de la Fase 5, el Tablero 1.3 y el Anexo A",
         reemplazado_por="Ficha tecnica del producto seleccionado o "
-                        "especificacion del fabricante con su propio techo de "
-                        "velocidad; y, para el expediente, la transcripcion "
-                        "de la Tabla 8-4 al repositorio de normas",
+                        "especificacion del fabricante con su propio techo "
+                        "de velocidad; o el nivel de abrasion del sitio "
+                        "declarado por el estudio de campo, que es el "
+                        "criterio que la fuente escribe",
         # POR QUE NO LLEVA `vacio_verificado`, siendo una afirmacion negativa
         # sobre la Tabla N 10 (SIS-D-12): el campo es para el valor que cubre
-        # un vacio AGOTADO -- una busqueda cerrada fuente por fuente que
-        # termino sin encontrar nada. El ejemplo que este comentario citaba
-        # -- 'h_relleno_min_concreto_tmc' en Sec. 14.a -- ya no sirve como
-        # ejemplo de nada: aquel vacio se declaro agotado sin haber mirado
-        # AASHTO LRFD Art. 12.6.6.3, que lo cerraba, y el criterio se retiro
-        # (NOR-VAC-01). Aqui no hubo vacio que agotar: la busqueda ENCONTRO
-        # una fuente tecnica reconocida y el valor sale de ella. Es una cita
-        # cerrada, que el manifiesto registra en su Sec. 10-bis, y por eso
-        # este criterio es [C] con fuente y no una adopcion sobre un hueco.
-        # Marcarlo como vacio verificado lo imprimiria en el bloque de
-        # acotaciones de la memoria, que dice "el proyectista adopto esto
-        # donde la norma no dice nada": seria falso.
+        # un vacio AGOTADO sin encontrar nada. Aqui la busqueda ENCONTRO una
+        # fuente tecnica reconocida y el valor sale de ella: es [C].
         #
-        # LA VENTANA (PC-02): el techo es el de la propia Tabla 8-4 -- por
-        # encima de 15 ft/s la fuente PROHIBE el termoplastico, de modo que
-        # el proyectista no puede adoptar mas --, y el piso es la velocidad
-        # minima [N] de la Sec. 5.2 (`V_MIN`, 0.25 m/s): un techo de
-        # velocidad por debajo del piso normativo no deja ninguna banda
-        # admisible y no es una adopcion defendible. Sin ventana el criterio
-        # aceptaba -1.0, 0.0 y 100.0 m/s por `--declarar`. El piso NO sale
-        # de la Tabla 8-4 (sus bandas inferiores no estan transcritas al
-        # registro; desde T-0 el PDF si esta, en el repositorio de normas, y
-        # transcribirlas es de T-4): sale de la norma peruana que ya rige V2.
+        # LA VENTANA (PC-02): el techo es el corte de 15 ft/s --por encima,
+        # bajo la lectura declarada, la fuente no admite el termoplastico-- y
+        # el piso es la velocidad minima de V2 (`V_MIN`, 0.25 m/s): un techo
+        # por debajo del piso no deja banda admisible. A diferencia de
+        # 'v_max_tmc', aqui el piso NO se sube a los 10 ft/s del §3-3.5: ese
+        # numeral habla de abrasion por arrastre y nombra al metal y al
+        # concreto como los que necesitan mas espesor, y del termoplastico
+        # dice que resiste mejor; no hay en la fuente una razon para que el
+        # proyectista no pueda adoptar un techo mas bajo para el HDPE.
         sensibilidad=(V_MIN, 4.572),
         resolucion=Libre(
-            que_lo_fija="el proyectista, adoptando el techo de la Tabla 8-4 "
-                        "del WSDOT Hydraulics Manual, que es fuente tecnica "
+            que_lo_fija="el proyectista, leyendo el corte de velocidad de "
+                        "la fila severa de la Tabla 8-4 del WSDOT "
+                        "Hydraulics Manual como criterio suficiente de la "
+                        "prohibicion del num. 8-3.3. Es fuente tecnica "
                         "reconocida y no norma peruana",
             dominio="m/s > 0",
-            tabla_pendiente="WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 "
-                            "'Pipe Abrasion Levels' (pags. impresas 8-27 y "
-                            "8-28). WSDOT_HM es fuente PRESENTE del registro "
-                            "desde T-0, con el PDF en el repositorio de "
-                            "normas y no en normas/; la tabla sigue sin "
-                            "transcribir (T-4)",
         ),
     ),
 
     "v_max_tmc": Criterio(
-        # Mismo motivo que en 'v_max_hdpe' (MAT-O14): 15 ft/s = 4.572 m/s
-        # exactos. Aqui la fuente no fija techo absoluto y el numero es una
-        # adopcion conservadora del proyecto anclada en el mismo umbral, de
-        # modo que redondear hacia arriba tampoco tiene apoyo.
+        # 15 ft/s = 4.572 m/s exactos (MAT-O14); el numero no se mueve.
+        #
+        # --- T-4 --- PASA DE [C] A [A] (INF-3.2.4; opcion A, decidida por
+        # el dueño del proyecto el 2026-11-11 y verificada contra el PDF).
+        # NINGUNA fuente de normas/ fija una velocidad maxima para la
+        # tuberia metalica corrugada: la Tabla N 10 no la lista, el inciso
+        # de abrasion del Manual es cualitativo, la norma de producto
+        # (AASHTO M 36 num. 1.2) reconoce ambientes severos sin cuantificar,
+        # ASTM A796 remite a pavimentar la solera, y la Tabla 8-4 de WSDOT
+        # --la que esta ficha citaba como fuente de un «techo»-- clasifica
+        # SITIOS por abrasion y al metal le prescribe remedio, no
+        # prohibicion. Un numero que ninguna fuente escribe como limite es
+        # una adopcion: [A], con ventana.
+        #
+        # LO QUE LA FICHA DECIA Y SE RETIRA: «limite de diseño conservador»
+        # y «por encima de este valor exige mayor calibre o revestimiento».
+        # Lo segundo era falso tal como estaba: la fuente manda aumentar uno
+        # o dos calibres ya desde 6 ft/s, en el nivel moderado.
+        #
+        # LA ASIMETRIA CON 'v_max_hdpe', que lleva el MISMO numero y es [C]:
+        # al termoplastico la fuente le asocia una prohibicion («shall not
+        # be used», §8-3.3) en el nivel que ese corte describe; al metal, en
+        # el mismo nivel, un remedio. El numero es el mismo; lo que la
+        # fuente hace con el, no.
         valor=4.572,
         nivel=NIVEL_PERFIL,
-        etiqueta="C",               # idem v_max_hdpe: Anexo A lo etiqueta [C]
+        etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Velocidad maxima admisible en TMC",
-        justificacion="La Tabla N 10 del Manual MTC no cubre materiales flexibles",
-        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026), Cap. 8, S8-6, "
-               "Tabla 8-4 'Pipe Abrasion Levels', pp. 8-27/8-28. La fuente NO "
-               "fija techo absoluto para metal -- por encima de este valor "
-               "exige mayor calibre o revestimiento, no prohibe el material. "
-               "Se adopta como limite de diseno conservador el mismo umbral "
-               "de 15 ft/s = 4.572 m/s (conversion exacta), porque el catalogo "
-               "de M2 no modela proteccion adicional por calibre. "
-               "ESTADO DE LA FUENTE DESDE T-0 (2026-11-11; MAT-O14): el "
-               "manual esta en el repositorio de normas y en el registro "
-               "como fuente presente (WSDOT_HM, M 23-03.12, abril 2026; "
-               "Tabla 8-4 en las pags. impresas 8-27 y 8-28, PDF 242 y 243), "
-               "pero NO en normas/ de este repositorio, y la CITA con su "
-               "frase y su firma sigue sin transcribir al registro: es "
-               "trabajo de T-4, que ademas decide si este valor sigue "
-               "siendo [C] --la tabla es de niveles de abrasion y no fija "
-               "techo para el metal-- o pasa a [A] con ventana. "
-               "La hoja de ruta v8 quedo enmendada (R48-030): la fila V3 de "
-               "la Fase 5, el Tablero 1.3, el Anexo A y las tablas de sus "
-               "num. 0.1 y 0.3 nombran esta fuente y este valor, cada uno "
-               "con su nota de corregido desde la redaccion que decia "
-               "PPI/FHWA con el valor pendiente.",
-        reemplazado_por="Ficha tecnica del producto seleccionado, o el "
-                        "modelado del calibre y el revestimiento en el "
-                        "catalogo de M2 (que es lo que la fuente pide en vez "
-                        "de un techo unico); y, para el expediente, la "
-                        "transcripcion de la Tabla 8-4 al repositorio de "
-                        "normas",
-        # Mismo motivo que en 'v_max_hdpe' para no llevar `vacio_verificado`:
-        # cita cerrada sobre fuente tecnica (Sec. 10-bis del manifiesto), no
-        # dossier de vacio agotado (SIS-D-12).
-        # La ventana, por lo mismo que en 'v_max_hdpe' (PC-02): techo de la
-        # Tabla 8-4 y piso en la velocidad minima normativa `V_MIN`.
-        sensibilidad=(V_MIN, 4.572),
+        justificacion="Decide el techo de velocidad de la verificacion V3 "
+                      "para la tuberia metalica corrugada. Ninguna fuente "
+                      "consultada fija una velocidad maxima para este "
+                      "material: la Tabla N 10 del Manual de Hidrologia no "
+                      "lo lista, el inciso de abrasion del mismo Manual "
+                      "manda considerarla al elegir el material y no da un "
+                      "numero, y la norma de producto reconoce ambientes "
+                      "severos sin cuantificarlos. El proyecto adopta como "
+                      "techo el corte entre los niveles de abrasion moderado "
+                      "y severo de la tabla de niveles de abrasion del "
+                      "manual de hidraulica adoptado, 15 ft/s, que son "
+                      "4.572 m/s. Ese corte es una clasificacion del sitio "
+                      "que depende tambien de la carga de fondo y de la "
+                      "pendiente, no un limite de velocidad, y para el metal "
+                      "la fuente no prohibe nada en ningun nivel: prescribe "
+                      "aumentar el espesor de la plancha o revestir la "
+                      "solera, y lo prescribe ya desde 6 ft/s, que son "
+                      "1.829 m/s. La verificacion V3 no sustituye esa "
+                      "proteccion de la solera, que se decide con el nivel "
+                      "de abrasion del sitio. Sensibilidad (3.048, 4.572) "
+                      "m/s: el piso son los 10 ft/s a partir de los cuales "
+                      "la misma fuente dice que la abrasion puede crecer de "
+                      "forma significativa y pide tratar el caso; el techo "
+                      "es el valor adoptado, y no se sube porque por encima "
+                      "de el la fuente clasifica el sitio como severamente "
+                      "abrasivo. Bajar el techo dentro de la ventana "
+                      "descarta antes el material o lleva a un diametro "
+                      "mayor; no mueve ninguna otra verificacion",
+        fuente="NINGUNA NORMA NI FUENTE TECNICA FIJA EL VALOR COMO LIMITE. "
+               "Lo que cada fuente dice, verificado sobre el PDF: (1) Manual "
+               "de Hidrologia, Hidraulica y Drenaje (MTC), num. 4.1.1.3.7 e) "
+               "'Abrasion', pag. impresa 81 (cita MC_HHD.4.1.1.3.7e): "
+               "cualitativo; su Tabla N 10 (num. 4.1.1.3.6, pag. impresa "
+               "76) no lista metal ni plastico (afirmacion negativa "
+               "SIN_TMC_NI_HDPE_T10). (2) WSDOT Hydraulics Manual M "
+               "23-03.12 (abril 2026), num. 8-6, Table 8-4 'Pipe Abrasion "
+               "Levels', pags. impresas 8-27 y 8-28 (PDF 242 y 243), tabla "
+               "y cita WSDOT_HM.T8-4: cuatro niveles de abrasion; el severo "
+               "se describe por velocidades mayores de 15 ft/s entre otras "
+               "dos caracteristicas, y para el metal pide al menos dos "
+               "calibres mas o solera de concreto; el moderado, de 6 a "
+               "15 ft/s, uno o dos calibres mas. EL VALOR ADOPTADO ES LA "
+               "CONVERSION EXACTA DE ESE CORTE: 15 x 0.3048 = 4.572 m/s. "
+               "(3) El mismo manual, num. 3-3.5 'Velocities in Culverts: "
+               "General', pag. impresa 3-11 (PDF 76), cita "
+               "WSDOT_HM.3-3.5#10FTS: por encima de unos 10 ft/s "
+               "(3.048 m/s) la abrasion puede crecer de forma "
+               "significativa; es el piso de la ventana. (4) AASHTO LRFD 9a "
+               "ed., C12.6.9, pag. impresa 12-24 (cita "
+               "AASHTO_LRFD_9.C12.6.9#NIVEL_4): los niveles de abrasion de "
+               "la FHWA ponen el mismo corte de 15.0 ft/s para el nivel 4, "
+               "tambien como clasificacion. (5) AASHTO M 36-03 (2007), num. "
+               "1.2, pag. impresa M 36-1 (cita AASHTO_M36.1.2): sin umbral. "
+               "(6) ASTM A796/A796M-13, num. 21.1 (PDF 6): donde haga falta "
+               "resistencia adicional a la abrasion remite a pavimentar la "
+               "solera, sin limite de velocidad. "
+               "HASTA T-4 este criterio era [C] y atribuia el valor a la "
+               "Tabla 8-4 como techo de la fuente",
+        reemplazado_por="El nivel de abrasion del sitio declarado por el "
+                        "estudio de campo (dato de entrada `abrasion` de la "
+                        "matriz de durabilidad) junto con el espesor de "
+                        "plancha y la proteccion de solera que la Tabla 8-4 "
+                        "pide para ese nivel, que es el criterio que la "
+                        "fuente escribe en lugar de un techo unico; o la "
+                        "ficha tecnica del producto seleccionado",
+        # LA VENTANA CAMBIA DE PISO EN T-4: era (V_MIN, 4.572), con el piso
+        # en la velocidad minima de V2 (PC-02), y pasa a (3.048, 4.572). El
+        # techo 4.6 que proponia la cadena T no tiene respaldo: son 15.09
+        # ft/s, reintroduce el redondeo que MAT-O14 corrigio y entra en la
+        # banda que la fuente clasifica como severa.
+        sensibilidad=(3.048, 4.572),
         resolucion=Libre(
-            que_lo_fija="el proyectista, adoptando el mismo techo que el "
-                        "HDPE porque la fuente NO fija techo absoluto para "
-                        "el metal",
-            dominio="m/s > 0",
-            tabla_pendiente="WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 "
-                            "'Pipe Abrasion Levels' (pags. impresas 8-27 y "
-                            "8-28). WSDOT_HM es fuente PRESENTE del registro "
-                            "desde T-0, con el PDF en el repositorio de "
-                            "normas y no en normas/; la tabla sigue sin "
-                            "transcribir (T-4)",
+            que_lo_fija="el proyectista: ninguna fuente fija un techo de "
+                        "velocidad para el metal corrugado. Adopta el corte "
+                        "entre los niveles moderado y severo de la Tabla "
+                        "8-4 del WSDOT Hydraulics Manual, que es una "
+                        "clasificacion de abrasion y no un limite",
+            dominio="m/s, entre los 10 ft/s del num. 3-3.5 y los 15 ft/s "
+                    "de la Tabla 8-4 del WSDOT Hydraulics Manual",
         ),
     ),
 
@@ -4774,129 +4932,86 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- T-4 --- PASA A SER OPCIONAL Y SIN VALOR (INF-3.3.1). Hasta T-4
+    # valia {concreto 2.70, TMC 2.10, HDPE 1.50} m: tres topes [A] de los
+    # que dos no tenian respaldo documental (la propia ficha lo decia en
+    # `verificacion_pendiente`). El tope que rige por defecto es ahora el
+    # de la SERIE de la norma de producto, 'D_max_norma_producto' [C], y
+    # este criterio queda como lo que su nombre dice: la disponibilidad
+    # de mercado, que el proyectista declara SI la conoce y que solo
+    # puede BAJAR el tope de la serie (`M2.tope_de_diametro` rechaza con
+    # DatoInvalidoError un valor por encima). Sin declarar no hay tope de
+    # catalogo y no se imprime ninguno.
+    #
+    # NIVEL MEDIDO por la TERCERA corrida de `tests/test_nivel_medido.py`
+    # (opcional=True se lee con `valor_si_declarado()`, que no registra el
+    # uso mientras el criterio siga vacio): declarado en caliente con los
+    # topes de la serie, la corrida de perfil lo invoca en M2 sin mover
+    # ningun resultado.
     "D_max_catalogo": Criterio(
-        valor={"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50},
+        valor=None,                 # OPCIONAL: sin valor, rige la serie de la norma
+        opcional=True,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_DICT_CON_CAMPOS,
-        # DIS-HR-D-MAX viajo por este campo mientras estuvo viva -- V9
-        # consulta el tope y ni siquiera emite paso, de modo que la via del
-        # criterio era la unica --. I2 corrigio la v8 (§3.2, §3.4, Tablero
-        # 1.2, Anexos A/B/C) y la paso a RESUELTA: lo resuelto es material
-        # del manifiesto, no de la memoria. Lo que la memoria SI sigue
-        # diciendo vive en `de_catalogo` y en la advertencia de `resolucion`:
-        # que el tope es de catalogo y el descarte, adoptado.
-        concepto="Diametro maximo que el proyecto admite por material, como "
-                 "tope de DISPONIBILIDAD (catalogo), no como tope normativo",
+        concepto="Diametro maximo que el mercado local entrega por material, "
+                 "en metros: tope de disponibilidad (catalogo) que solo puede "
+                 "bajar el tope de la serie de la norma de producto",
         de_catalogo="TOPE DE CATALOGO, NO DE NORMA. Imprimir siempre asi: "
                     "'diametro maximo adoptado por disponibilidad de mercado'. "
-                    "Las normas de producto que el proyecto cita para cada "
-                    "material NO topan el diametro donde este criterio lo topa "
-                    "-- A760/A760M-10 tabula hasta 3600 mm y M 170M-04 tambien; "
-                    "la excepcion es el HDPE, cuya serie en AASHTO M 294-11 SI "
-                    "termina en 1500 mm, verificado en N2 sobre una TRADUCCION "
-                    "NO OFICIAL sin firma --, de modo que atribuirles el tope "
-                    "seria una cita falsa en concreto y TMC, y en HDPE seria "
-                    "atribuir a AASHTO lo que solo dice un traductor anonimo. "
-                    "Es tambien el aviso de que superar el tope NO significa "
-                    "'material inexistente': significa 'fuera del catalogo "
-                    "adoptado', y se levanta declarando otro tope",
-        justificacion="Decide el tope de diametro por material que el "
-                      "proyecto admite, como tope de disponibilidad de "
-                      "catalogo y no como tope normativo. El tope existe por "
-                      "una razon de calculo real: sin el, el solver de la "
-                      "Fase 4 converge a un diametro que nadie fabrica ni "
-                      "transporta a la obra. Lo que las fuentes dicen esta "
-                      "verificado en contra y anotado en `fuente` y en la "
-                      "discrepancia del registro que este criterio llevo "
-                      "declarada mientras estuvo viva, resuelta en I2 al "
-                      "corregirse la v8: las normas de producto tabulan "
-                      "hasta 3600 mm y ninguna topa donde el proyecto topa, "
-                      "de modo que imprimir estos topes rotulados como norma "
-                      "seria una cita falsa que ademas descarta materiales en "
-                      "silencio. Lo que no resuelven: cual es el tope que a "
-                      "esta obra le conviene -- eso es disponibilidad del "
-                      "mercado local, no norma, y por eso la eleccion es [A]. "
-                      "Se adoptan 2.70 m (concreto reforzado), 2.10 m (TMC) y "
-                      "1.50 m (HDPE), y los dos primeros no se suben a 3.60 m: "
-                      "subirlos seria "
-                      "cambiar una adopcion no declarada por otra, porque lo "
-                      "que la verificacion sostiene es que la norma no topa "
-                      "donde el proyecto topa, no cual tope conviene a esta "
-                      "obra; en HDPE no hay a que subir, porque la serie de "
-                      "M 294-11 termina en 1500 mm (N2, sobre su traduccion no "
-                      "oficial). Elegir el tope real es del expediente (ver "
-                      "`reemplazado_por`); mientras tanto, los tres valores "
-                      "adoptados son los conservadores en su unico efecto -- "
-                      "descartan material antes, nunca despues, y el tope no "
-                      "entra en ninguna formula de dimensionamiento, de modo "
-                      "que un tope mas alto solo puede ampliar el conjunto de "
-                      "disenos admisibles. Consecuencia que la memoria "
-                      "declara: V9 "
-                      "(`M5_verificaciones.v9_disponibilidad_diametro`) y "
-                      "`M2_material.siguiente_diametro` descartan material "
-                      "contra este tope, y ese descarte es adoptado -- un "
-                      "punto no factible por diametro con 2.10 m de TMC no es "
-                      "un punto que la norma prohiba resolver con TMC",
-        fuente="NINGUNA NORMA. Verificado en contra por lectura directa del "
-               "PDF: ASTM A760/A760M-10, Tabla 1 'Tamaños de tuberia', pag. 3, "
-               "tabula diametros nominales de 100 mm (4 in) a 3600 mm (144 in) "
-               "-- 2100 mm es una fila mas de la serie, no un maximo. AASHTO M "
-               "170M-04, Tablas 1 a 5 (Clases I a V), tabula de 300 a 3600 mm y "
-               "su Seccion 7.2 preve ademas 'special designs for sizes and loads "
-               "beyond those shown in Tables 1 to 5'. AASHTO M 294-11 esta en "
-               "normas/ desde N2 como TRADUCCION NO OFICIAL (fuente "
-               "AASHTO_M294_TRAD; el original en ingles sigue ausente): su "
-               "num. 1.1.1 y su num. 7.2.1 (citas AASHTO_M294_TRAD.1.1.1 y "
-               ".7.2.1, sin firma porque el ejemplar no imprime folio, T6) "
-               "cierran la serie de "
-               "tamaños nominales en 1500 mm, de modo que el tope de 1.50 m "
-               "del HDPE es el unico de los tres que coincide con el techo de "
-               "su norma de producto -- segun la traduccion --",
-        sensibilidad=("topes adoptados: concreto 2.70 / TMC 2.10 / HDPE "
-                      "1.50 m (los que el proyecto aplica hoy)",
-                      "topes de la serie tabulada: 3.60 m en concreto y en "
-                      "TMC (M 170M-04 Tablas 1-5 y A760 Tabla 1); en HDPE, "
-                      "1.50 m (AASHTO M 294-11 num. 7.2.1, traduccion no "
-                      "oficial, N2): el tope adoptado ES el techo de la "
-                      "serie, de modo que la ventana del HDPE queda cerrada "
-                      "POR ARRIBA -- no hay serie M 294 por encima -- y sigue "
-                      "abierta por abajo: un tope menor por disponibilidad "
-                      "real (un proveedor que solo sirva hasta 1.20 m) es una "
-                      "eleccion legitima de este mismo criterio, ver "
-                      "`reemplazado_por`. Entre los "
-                      "dos extremos, lo unico que cambia "
-                      "es CUANTOS puntos salen 'no factible por diametro': el "
-                      "tope no entra en ninguna formula de dimensionamiento"),
+                    "Es un tope que el proyectista declara por debajo del de "
+                    "la serie de la norma de producto ('D_max_norma_producto') "
+                    "porque el mercado local no entrega el producto mas alla. "
+                    "Superarlo NO significa 'material inexistente': significa "
+                    "'fuera del catalogo declarado', y se levanta declarando "
+                    "otro tope o retirando la declaracion",
+        justificacion="Decide, cuando se declara, el diametro maximo que el "
+                      "mercado local entrega de cada material. Es opcional y "
+                      "no un vacio: sin declarar, el catalogo llega hasta el "
+                      "mayor diametro de la serie que tabula la norma de "
+                      "producto de cada material, y el calculo no se detiene. "
+                      "Ninguna norma dice que diametros se consiguen en una "
+                      "obra concreta: eso es disponibilidad del mercado, no "
+                      "norma, y por eso la eleccion es del proyectista. La "
+                      "declaracion solo puede bajar el tope de la serie, "
+                      "nunca subirlo: un diametro que la norma de producto "
+                      "no tabula no es un producto que un catalogo pueda "
+                      "ofrecer bajo esa norma. El tope no entra en ninguna "
+                      "formula de dimensionamiento; lo unico que cambia al "
+                      "declararlo es cuantos puntos quedan sin solucion por "
+                      "diametro en ese material, y ese descarte se imprime "
+                      "como adoptado por disponibilidad y no como exigencia",
+        fuente="NINGUNA NORMA fija la disponibilidad de mercado. El tope que "
+               "rige cuando este criterio no se declara es el de la serie de "
+               "la norma de producto de cada material, en "
+               "'D_max_norma_producto': AASHTO M 170M-04 Tablas 1 a 5 "
+               "(concreto, 300 a 3600 mm), AASHTO M 36-03 (2007) Table 6 "
+               "(TMC, 100 a 3600 mm; cada corrugacion es estandar en una "
+               "parte de la serie) y AASHTO M 294-11 num. 7.2.1 (HDPE, 300 a "
+               "1500 mm, traduccion no oficial). HASTA T-4 este criterio "
+               "valia 2.70 m (concreto), 2.10 m (TMC) y 1.50 m (HDPE) como "
+               "adopcion sin respaldo documental en los dos primeros",
+        sensibilidad=("sin declarar: rige el tope de la serie de la norma de "
+                      "producto ('D_max_norma_producto')",
+                      "declarado: un diametro por material, en metros, menor "
+                      "o igual que el tope de la serie de ese material; lo "
+                      "unico que cambia es cuantos puntos salen 'no factible "
+                      "por diametro'"),
         reemplazado_por="Disponibilidad real de mercado para el corredor, "
-                        "declarada en el expediente con su respaldo (consulta a "
-                        "fabricantes, o el tope de la serie tabulada de cada "
-                        "norma de producto si el proyecto decide no acotar). "
-                        "Mientras no se declare, el descarte por diametro se "
-                        "imprime como adoptado",
-        verificacion_pendiente="Los topes de concreto y TMC siguen sin respaldo "
-                               "documental: ninguna norma los escribe. El de "
-                               "HDPE (1.50 m), el mas restrictivo, quedo "
-                               "contrastado en N2 contra la serie de AASHTO "
-                               "M 294-11 -- coincide con su techo -- pero sobre "
-                               "una TRADUCCION NO OFICIAL sin firma: lo que "
-                               "falta es reverificarlo contra el original en "
-                               "ingles (FUENTES_AUSENTES['AASHTO_M294'])",
+                        "declarada en el expediente con su respaldo "
+                        "(consulta a fabricantes y proveedores)",
         resolucion=DeCatalogo(
             catalogo_id="CAT_TUBERIA_LOCAL",
-            que_elige="el tope de diametro por material que el proyecto "
-                      "admite por DISPONIBILIDAD en el mercado local",
-            advertencia="NINGUNA norma sostiene los topes de concreto y TMC: "
-                        "ASTM A760/A760M-10 tabula de 100 a 3600 mm y AASHTO "
-                        "M 170M-04 de 300 a 3600 mm con diseños especiales "
-                        "por encima (NOR-PRO-01, NOR-PRO-02). El del HDPE "
-                        "coincide con el techo de la serie de AASHTO M 294-11 "
-                        "(300 a 1500 mm), verificado en N2 sobre una "
-                        "traduccion no oficial y sin firma. Imprimirlos "
-                        "rotulados como norma seria una cita falsa en dos de "
-                        "tres y una cita imprecisa en el tercero, y ademas "
-                        "descartan material: la memoria tiene que decir que "
-                        "el descarte es de catalogo",
+            que_elige="el tope de diametro por material que el mercado "
+                      "local entrega, cuando es menor que el de la serie de "
+                      "la norma de producto",
+            advertencia="NINGUNA norma sostiene un tope de disponibilidad: "
+                        "es un dato de mercado. Las series de las normas de "
+                        "producto llegan a 3600 mm en concreto (AASHTO "
+                        "M 170M-04) y en TMC (AASHTO M 36 / ASTM A760) y a "
+                        "1500 mm en HDPE (AASHTO M 294-11, traduccion no "
+                        "oficial). Declarado, el descarte por diametro se "
+                        "imprime como de catalogo, no de norma",
         ),
     ),
 
@@ -5567,36 +5682,47 @@ CRITERIOS: Dict[str, Criterio] = {
         # de 0.90 m sin que nada avisara; con la columna, un diametro que no
         # este declarado DETIENE el material con su causa.
         #
-        # DE DONDE SALEN LOS TRECE NUMEROS. AASHTO M 170M-04, columna «Wall
-        # Thickness» de la PARED B, Tabla 2 (Clase II) y Tabla 3 (Clase III),
-        # que imprimen los MISMOS espesores para el mismo diametro designado:
-        # el espesor lo fija la pared, no la clase, y eso es lo que
-        # independiza este criterio de 'clases_producto_por_relleno'
-        # (Fase 8), que sigue abierto. Leidos sobre la IMAGEN renderizada del
-        # PDF, no sobre su texto: el archivo de normas/ es un escaneo con OCR
-        # inservible para tablas (`Wa8 A`, `y,‹g|;`, `iOU`). La lectura se
-        # cruzo ademas contra la regularidad que las trece filas cumplen sin
-        # excepcion, t = D/12 + 25 mm, que reproduce cada valor con el mismo
-        # redondeo que imprime la tabla (1050 -> 112.5 -> 113;
+        # DE DONDE SALEN LOS TRECE NUMEROS DEL CONCRETO. AASHTO M 170M-04,
+        # columna «Wall Thickness» de la PARED B, Tabla 2 (Clase II) y Tabla
+        # 3 (Clase III), que imprimen los MISMOS espesores para el mismo
+        # diametro designado: el espesor lo fija la pared, no la clase, y eso
+        # es lo que independiza este criterio de
+        # 'clases_producto_por_relleno' (Fase 8), que sigue abierto. Leidos
+        # sobre la IMAGEN renderizada del PDF, no sobre su texto: el archivo
+        # de normas/ es un escaneo con OCR inservible para tablas. La lectura
+        # se cruzo ademas contra la regularidad que las trece filas cumplen
+        # sin excepcion, t = D/12 + 25 mm, que reproduce cada valor con el
+        # mismo redondeo que imprime la tabla (1050 -> 112.5 -> 113;
         # 1350 -> 137.5 -> 138; 2250 -> 212.5 -> 213).
         #
-        # TMC Y HDPE NO SE DECLARAN, y no es un olvido: el espesor util del
-        # TMC es altura de corrugacion mas calibre de plancha, y el calibre
-        # es 'clases_producto_por_relleno', que es de Fase 8 -- expediente --;
-        # el del HDPE no lo trae AASHTO M 294-11 -- en normas/ desde N2 como
-        # TRADUCCION NO OFICIAL --: su 7.2.2 tabula el espesor MINIMO de la
-        # pared interior, no la altura del perfil corrugado, y no fija el
-        # diametro exterior (SIN_DIAMETRO_EXTERIOR_M294_TRAD). Los dos
-        # materiales se detienen con
-        # `DatoFaltanteError` nombrando su fuente ausente, MD los descarta
-        # como candidatos con esa causa escrita, y el punto sigue
-        # dimensionandose en concreto. Es la diferencia entre un material sin
-        # fuente y un numero inventado.
+        # --- T-4 --- EL HDPE Y EL TMC DEJAN DE DESCARTARSE (INF-5.1.17,
+        # INF-3.3.4). Hasta T-4 este criterio declaraba SOLO el concreto: el
+        # TMC y el HDPE se detenian con `DatoFaltanteError` antes de llegar a
+        # 7.A y a V7, y la matriz de materiales degeneraba a concreto.
+        #
+        #   HDPE  TRES FILAS (900, 1050 y 1200 mm), DERIVADAS de la Table
+        #         A12-11 de AASHTO LRFD 9a ed. (`_ESPESOR_HDPE_AASHTO`): el t
+        #         que hace D + 2t = «Max. OD» de la fila de 36, 42 y 48 in.
+        #         La norma de producto no fija el diametro exterior
+        #         (SIN_DIAMETRO_EXTERIOR_M294_TRAD) y esa tabla si. Las filas
+        #         de 1350 y 1500 mm NO se declaran: la tabla termina en
+        #         48 in y no se extrapola; el material se detiene en ese
+        #         escalon nombrando la fila que falta.
+        #   TMC   NO SE DECLARA AQUI: su «espesor» es la profundidad de la
+        #         corrugacion mas el espesor de la plancha, y cual corrugacion
+        #         y cual plancha lo elige 'corrugacion_y_espesor_tmc' [A].
+        #         `M2.espesor_pared_de_tmc` lo deriva de ese criterio para
+        #         los diametros en que la corrugacion es estandar. Una
+        #         entrada «tmc» declarada AQUI manda sobre la derivada (es el
+        #         espesor del producto ya especificado, y un dato del
+        #         producto no se sustituye por una regla): es por donde la
+        #         corrida de pruebas declara su TMC sintetico.
         valor={"concreto_reforzado": {900: 0.100, 1050: 0.113, 1200: 0.125,
                                       1350: 0.138, 1500: 0.150, 1650: 0.163,
                                       1800: 0.175, 1950: 0.188, 2100: 0.200,
                                       2250: 0.213, 2400: 0.225, 2550: 0.238,
-                                      2700: 0.250}},
+                                      2700: 0.250},
+               "hdpe": _ESPESOR_HDPE_AASHTO},
         nivel=NIVEL_PERFIL,
         # LA VENTANA ES SIMBOLICA PORQUE LA ELECCION LO ES: M 170M-04 tabula
         # TRES paredes por diametro (A, B y C) y no dice cual usar. La B es la
@@ -5606,97 +5732,567 @@ CRITERIOS: Dict[str, Criterio] = {
         # y la C, mas espesor, seria conservadora en los dos frentes a costa
         # de una rasante mas alta. Un rango numerico no puede defender un
         # valor que es una tabla: lo que se defiende es la COLUMNA elegida.
-        sensibilidad=("Pared A (AASHTO M 170M-04, Tablas 1 a 5)",
-                      "Pared B (AASHTO M 170M-04, Tablas 1 a 5) -- adoptada",
-                      "Pared C (AASHTO M 170M-04, Tablas 1 a 5)"),
+        sensibilidad=("Concreto: Pared A (AASHTO M 170M-04, Tablas 1 a 5)",
+                      "Concreto: Pared B (AASHTO M 170M-04, Tablas 1 a 5) -- "
+                      "adoptada",
+                      "Concreto: Pared C (AASHTO M 170M-04, Tablas 1 a 5)",
+                      "HDPE: el t que da el diametro exterior maximo de la "
+                      "Table A12-11 de AASHTO LRFD -- adoptado; o el del "
+                      "perfil del fabricante, que no puede ser mayor",
+                      "TMC: se elige en 'corrugacion_y_espesor_tmc'"),
         etiqueta="A",
         forma=FORMA_DICT_CON_CAMPOS,
         concepto="Espesor de pared del conducto por material, en metros: la "
                  "distancia entre la superficie interior y la exterior que "
                  "separa el diametro hidraulico D del diametro exterior "
                  "D_ext = D + 2*t",
-        justificacion="Decide el espesor de pared t por material -- la "
-                      "distancia que separa el diametro hidraulico D del "
-                      "exterior D_ext = D + 2*t -- y bloquea hasta que se "
-                      "declare. El catalogo de Sec. 3.2 modela el tubo con un "
-                      "solo diametro, el interior, y hay dos sitios donde el "
-                      "que hace falta es el exterior. Primero, la clave "
-                      "fisica: EG-2013 Subseccion 508.07 mide el relleno "
-                      "minimo desde la clave de la tuberia, que es la "
-                      "superficie exterior, de modo que calcular la clave "
-                      "como cota de entrada + D la deja corta en t y la "
-                      "rasante minima sale corta en t -- una rasante fijada "
-                      "en ese minimo deja del orden de 0.20 m reales de "
-                      "recubrimiento donde EG-2013 exige 0.30 m, deficit del "
-                      "33 % para D = 0.90 m de concreto. Segundo, el empuje "
-                      "de flotacion: el num. 2.4.3.8.2 del Manual de Puentes "
+        justificacion="Decide el espesor de pared t por material y por "
+                      "diametro designado -- la distancia que separa el "
+                      "diametro hidraulico D del exterior D_ext = D + 2*t --. "
+                      "El catalogo de Sec. 3.2 modela el tubo con un solo "
+                      "diametro, el interior, y hay dos sitios donde el que "
+                      "hace falta es el exterior. Primero, la clave fisica: "
+                      "EG-2013 Subseccion 508.07 mide el relleno minimo "
+                      "desde la clave de la tuberia, que es la superficie "
+                      "exterior, de modo que calcular la clave como cota de "
+                      "entrada + D la deja corta en t. Segundo, el empuje de "
+                      "flotacion: el num. 2.4.3.8.2 del Manual de Puentes "
                       "define la subpresion sobre el volumen desplazado, que "
-                      "es el exterior, y calcular U = gamma_w*(pi/4)*D^2 con "
-                      "el D interior subestima la carga desestabilizante -- "
-                      "el lado contrario del conservador: con t = 0.100 m en "
-                      "un tubo de concreto de D = 0.90 m, D_ext = 1.10 m y "
-                      "ese U queda un 33.1 % por debajo (0.90^2/1.10^2 - 1 = "
-                      "-0.331). Lo que las fuentes no resuelven con un numero "
-                      "unico: el espesor no es un dato por material, es una "
-                      "consecuencia de la clase o calibre que se especifique, "
-                      "y esa seleccion es el vacio que "
-                      "'clases_producto_por_relleno' ya declara abierto para "
-                      "la Fase 8. En concreto, AASHTO M 170M-04 tabula tres "
-                      "espesores por diametro (paredes A, B y C, Tablas 1 a "
-                      "5) y elegir cual se usa es del proyectista; en TMC el "
-                      "espesor util es la altura de corrugacion mas el "
-                      "calibre de la plancha -- la corrugacion admisible por "
-                      "diametro esta en la Tabla 1 de A760 y el calibre sigue "
-                      "abierto en 'clases_producto_por_relleno' --; en HDPE "
-                      "es la altura del perfil corrugado, que AASHTO M 294-11 "
-                      "no fija (verificado en N2 sobre su traduccion no "
-                      "oficial: el 7.2.2 tabula solo el espesor minimo de la "
-                      "pared interior, y ninguna hoja da el diametro "
-                      "exterior). Con una fuente que exige elegir, otra que "
-                      "depende de un vacio ya declarado y una tercera que no "
-                      "trae el dato, no hay transcripcion que hacer: hay una "
-                      "adopcion que declarar, y por eso [A] y no [C]. Se "
-                      "adopta bloquear y no aproximar t a cero del lado "
-                      "seguro, porque no hay un lado seguro unico y aqui las "
-                      "dos direcciones coinciden en contra: en 7.A un t mayor "
-                      "sube la clave y exige mas rasante (t = 0 es inseguro), "
-                      "y en V7 un t mayor sube el empuje U (t = 0 tambien es "
-                      "inseguro); aun asi, adoptar un numero sin declararlo "
-                      "seria rellenar el vacio en silencio",
-        fuente="PENDIENTE - por material: AASHTO M 170M-04, Tablas 1 a 5, "
-               "columna 'Wall Thickness' de las paredes A, B y C por diametro "
-               "designado (concreto reforzado, con la eleccion de pared por "
-               "declarar); ASTM A760/A760M-10 Tabla 1 (tamaños de corrugacion "
-               "admisibles por diametro nominal) junto con el calibre de la "
-               "plancha que fije la Fase 8 (TMC); AASHTO M 294-11 (HDPE), en "
-               "normas/ desde N2 como traduccion no oficial, que NO fija la "
-               "altura del perfil ni el diametro exterior (afirmacion "
-               "negativa SIN_DIAMETRO_EXTERIOR_M294_TRAD, tabla "
-               "AASHTO_M294_TRAD.T7.2.2): el dato tiene que venir del "
-               "fabricante del perfil especificado",
-        reemplazado_por="El espesor de pared de la clase, calibre o perfil "
-                        "efectivamente especificado en el expediente. Se cierra "
-                        "junto con 'clases_producto_por_relleno': son el mismo "
-                        "vacio de norma de producto visto desde dos fases -- "
-                        "alli la clase por altura de relleno, aqui el espesor "
-                        "que esa clase implica",
-        verificacion_pendiente="El espesor real NO es constante por material: "
-                               "crece con el diametro. Este criterio lo declara "
-                               "como un escalar por material, que es lo que el "
-                               "nivel de perfil (Sec. 1.4) admite; el "
-                               "expediente lo sustituye por la tabla espesor x "
-                               "diametro x clase. Mientras sea escalar hay que "
-                               "declararlo para el diametro MAYOR que el "
-                               "material vaya a usar, que es donde el espesor "
-                               "es mayor y la clave queda mas alta",
+                      "es el exterior; con t = 0.100 m en un tubo de "
+                      "concreto de D = 0.90 m, D_ext = 1.10 m y el empuje "
+                      "calculado con el diametro interior queda un 33.1 % "
+                      "por debajo. Lo que las fuentes no resuelven con un "
+                      "numero unico es distinto en cada material. En "
+                      "concreto, la norma de producto tabula tres espesores "
+                      "por diametro (paredes A, B y C) y no dice cual usar: "
+                      "se adopta la pared B, la intermedia. En polietileno "
+                      "corrugado, la norma de producto no fija el diametro "
+                      "exterior ni la altura del perfil; la tabla de "
+                      "propiedades de tuberia corrugada de polietileno del "
+                      "apendice de la Seccion 12 de las especificaciones "
+                      "LRFD da el diametro exterior maximo del producto para "
+                      "cada tamaño nominal hasta 48 in, y se adopta el t que "
+                      "lleva el diametro designado hasta ese maximo: "
+                      "0.090 m, 0.085 m y 0.099 m para 0.90 m, 1.05 m y "
+                      "1.20 m. En metal corrugado el espesor no se declara "
+                      "aqui: es la profundidad de la corrugacion mas el "
+                      "espesor de la plancha, y los elige otro criterio. En "
+                      "los tres materiales un t mayor es el lado conservador "
+                      "en los dos sitios: sube la clave y exige mas rasante, "
+                      "y sube el empuje de flotacion mas que el peso del "
+                      "relleno. Por eso se adopta la pared intermedia del "
+                      "concreto y no la mas delgada, y el diametro exterior "
+                      "maximo del polietileno y no uno tipico",
+        fuente="CONCRETO: AASHTO M 170M-04, Tablas 2 y 3, columna 'Wall "
+               "Thickness' de la pared B, leida por imagen (trece filas, 900 "
+               "a 2700 mm); la Tabla 5 (Clase V), transcrita en "
+               "AASHTO_M170M.T5, coincide en las tres filas que comparte "
+               "(900, 1050 y 1200 mm). Las filas de 2850 a 3600 mm de la "
+               "serie no se declaran: no se leyeron. HDPE: AASHTO LRFD 9a "
+               "ed. (2020), Apendice A12, Table A12-11 'PE Corrugated Pipes "
+               "(AASHTO M 294)', pag. impresa 12-108 (PDF 1746), columna "
+               "'Max. OD', filas de 36, 42 y 48 in: 42.5, 48.0 y 55.0 in "
+               "(tabla y cita AASHTO_LRFD_9.TA12-11). t = (Max. OD x 0.0254 "
+               "- D designado) / 2: (1.0795 - 0.900)/2 = 0.08975 m; (1.2192 "
+               "- 1.050)/2 = 0.0846 m; (1.3970 - 1.200)/2 = 0.0985 m. La "
+               "norma de producto, AASHTO M 294-11 (traduccion no oficial), "
+               "NO fija el diametro exterior (afirmacion negativa "
+               "SIN_DIAMETRO_EXTERIOR_M294_TRAD) y la tabla de AASHTO LRFD "
+               "no trae 54 ni 60 in: las filas de 1350 y 1500 mm siguen sin "
+               "fuente. TMC: se deriva de 'corrugacion_y_espesor_tmc' "
+               "(AASHTO M 36 Table 1 y num. 8.1.1; ASTM A796 Tables 5, 7 y "
+               "9)",
+        reemplazado_por="El espesor de pared de la clase, el calibre o el "
+                        "perfil efectivamente especificado en el expediente: "
+                        "la pared de la clase que resulte de la Fase 8 "
+                        "(concreto), y el diametro exterior de la ficha del "
+                        "fabricante del perfil (HDPE), que ademas cerraria "
+                        "las filas de 1350 y 1500 mm",
+        verificacion_pendiente="(1) Las filas de 1350 y 1500 mm del HDPE no "
+                               "tienen fuente en normas/: AASHTO LRFD Table "
+                               "A12-11 termina en 48 in. El HDPE se detiene "
+                               "en esos dos escalones con el dato que falta. "
+                               "(2) El t del HDPE sale del diametro exterior "
+                               "MAXIMO de una tabla de propiedades de diseño, "
+                               "no de un producto: confirmar con la ficha "
+                               "del fabricante, que solo puede dar un valor "
+                               "menor o igual. (3) La pared del concreto "
+                               "depende de la clase que fije la Fase 8 solo "
+                               "si esa clase se fabrica con otra pared: "
+                               "confirmar al especificar",
         resolucion=Libre(
-            que_lo_fija="la clase o el calibre del producto especificado; "
-                        "mientras no se especifique, el proyectista lo "
-                        "declara con la fuente que lo sostenga",
-            dominio="m > 0, y menor que el radio interior",
-            tabla_pendiente="AASHTO M 170M-04, Tablas 1 a 5, columna 'Wall "
-                            "Thickness' por diametro designado. Esta en "
-                            "normas/ y su PDF no entrega texto",
+            que_lo_fija="la clase o el perfil del producto especificado; "
+                        "mientras no se especifique, el proyectista adopta "
+                        "la pared B de AASHTO M 170M-04 para el concreto y "
+                        "el diametro exterior maximo de AASHTO LRFD Table "
+                        "A12-11 para el HDPE",
+            dominio="m > 0, y menor que el radio interior; una tabla por "
+                    "material con el diametro designado en mm como clave",
+        ),
+    ),
+
+    # ----------------------------------------------------------------------
+    # --- T-4 --- (cadena T, 2026-11-11) CUATRO CRITERIOS NUEVOS, al final de
+    # la seccion del catalogo: la corrugacion y la plancha del TMC, el tope
+    # de la serie de la norma de producto, los umbrales de durabilidad del
+    # acero corrugado y el conjunto de suelos de fundacion deficientes.
+    # ----------------------------------------------------------------------
+
+    # LA CLAVE ES «corrugacion/espesor» COMO SE IMPRIMEN: «68x13/2.01» es
+    # la corrugacion de 68 por 13 mm con plancha de 2.01 mm. Las claves
+    # admisibles son las filas de `constantes_normativas.
+    # TMC_PLANCHA_CORRUGADA`, que se DERIVA de las Tablas 5, 7 y 9 de
+    # ASTM A796 y de la Table 1 de AASHTO M 36: el conjunto cerrado no se
+    # escribe a mano.
+    #
+    # ES BARRIBLE (PF-3): `--barrido corrugacion_y_espesor_tmc=68x13/1.63,
+    # 68x13/2.01,68x13/2.77` corre una vez por plancha. Lo que T-5
+    # consumira de la MISMA fila --area, inercia y radio de giro de la
+    # seccion-- viaja en la vista de `constantes_normativas`.
+    "corrugacion_y_espesor_tmc": Criterio(
+        valor="68x13/2.01",
+        nivel=NIVEL_PERFIL,         # lo consume M2 al armar el catalogo del
+                                    # TMC, que la corrida de perfil recorre
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=_CLAVES_DE_PLANCHA_TMC,
+        concepto="Corrugacion y espesor de plancha de la tuberia metalica "
+                 "corrugada del catalogo: de ellos sale el diametro "
+                 "exterior D_ext = D + 2 x (profundidad de corrugacion + "
+                 "espesor de plancha), en que diametros es estandar el "
+                 "producto y, en la Fase 8, las propiedades de la seccion",
+        justificacion="Decide que producto de tuberia metalica corrugada "
+                      "modela el catalogo: la corrugacion y el espesor de la "
+                      "plancha. La norma de producto lista siete espesores "
+                      "de plancha y cuatro corrugaciones y deja la eleccion "
+                      "al comprador, que la hace con el diseño estructural; "
+                      "ese diseño es de la Fase 8 y a nivel de perfil "
+                      "todavia no existe. Se adopta la corrugacion de 68 por "
+                      "13 mm, que la norma de producto marca como estandar "
+                      "de 300 mm a 2100 mm de diametro, con plancha de "
+                      "2.01 mm, que es el cuarto de los siete espesores de "
+                      "la norma. El unico respaldo de practica disponible es "
+                      "de segunda mano y esta declarado como tal en la "
+                      "fuente: el expediente de referencia de la tesis, "
+                      "segun el informe que lo resume, adopta 2.0 mm con "
+                      "esa corrugacion en tuberia de 0.90 m y de 1.20 m. "
+                      "Con esa eleccion el diametro exterior es el interior "
+                      "mas dos veces 0.015 m. La "
+                      "eleccion mueve tres cosas y ninguna es hidraulica: "
+                      "el diametro exterior, y con el la clave fisica y el "
+                      "empuje de flotacion, en milimetros; el diametro "
+                      "maximo del catalogo, porque la corrugacion de 68 por "
+                      "13 mm no es estandar por encima de 2100 mm y las de "
+                      "25 mm de profundidad lo son hasta 3600 mm; y, en la "
+                      "Fase 8, la resistencia de la pared. El coeficiente de "
+                      "rugosidad no cambia con esta eleccion: sale de la "
+                      "fila de metal corrugado de la Tabla N 09, que no "
+                      "distingue corrugaciones. El tope de 2100 mm es el de "
+                      "la corrugacion y no el de la plancha: con 2.01 mm de "
+                      "espesor el factor de flexibilidad de instalacion en "
+                      "terraplen de la norma de diseño estructural, que para "
+                      "13 mm de profundidad no puede pasar de 0.245 mm/N, se "
+                      "supera desde un diametro de unos 1.39 m, de modo que "
+                      "los escalones mayores del catalogo necesitan mas "
+                      "espesor u otra corrugacion. Esa comprobacion y la "
+                      "eleccion del calibre son de la Fase 8, tambien a "
+                      "nivel de perfil; aqui el espesor solo fija la "
+                      "envolvente geometrica del tubo",
+        fuente="AASHTO M 36-03 (2007): num. 8.1.2 y Table 7 'Thicknesses of "
+               "Metallic-Coated Steel Sheet', pags. impresas M 36-10 y "
+               "M 36-12 (el comprador elige el espesor de entre 1.02, 1.32, "
+               "1.63, 2.01, 2.77, 3.51 y 4.27 mm; cita AASHTO_M36.T7); "
+               "Table 1 'Corrugation Requirements', pag. impresa M 36-6 "
+               "(las cuatro corrugaciones y la definicion de profundidad; "
+               "cita AASHTO_M36.T1); num. 8.1.1, pag. impresa M 36-10 (el "
+               "diametro nominal se mide en la cresta interior; cita "
+               "AASHTO_M36.8.1.1); Table 6 'Pipe Sizes', pag. impresa "
+               "M 36-11 (en que diametros es estandar cada corrugacion; "
+               "tabla AASHTO_M36.T6). ASTM A796/A796M-13, Tables 5, 7 y 9 "
+               "(propiedades de la seccion por espesor; tablas "
+               "ASTM_A796.T5, .T7 y .T9). LA ELECCION NO ESTA EN NINGUNA "
+               "NORMA: la Nota 9 de la Table 7 de M 36 remite el espesor al "
+               "diseño estructural. RESPALDO DE PRACTICA, de segunda mano: "
+               "segun el INFORME de evaluacion de la app (seccion 1.1), que "
+               "resume el expediente de referencia de la tesis ('2.7 "
+               "Estudio de Estructuras de Obras de Arte y Drenaje', "
+               "repositorio VARIOS), su memoria de TMC de 36 y 48 pulgadas "
+               "calcula un area requerida que 'espesor 1,6 mm pasa' y "
+               "adopta 2,0 mm con corrugacion 68 x 13; la pagina del PDF "
+               "original no se verifico en esta sesion: el PDF no esta en "
+               "normas/",
+        reemplazado_por="La corrugacion y el espesor que resulten del "
+                        "diseño estructural de la Fase 8 (ASTM A796 num. 7 a "
+                        "11, o AASHTO LRFD Art. 12.7) para la altura de "
+                        "relleno real de cada punto, y la disponibilidad "
+                        "del producto en el mercado",
+        verificacion_pendiente="FACTOR DE FLEXIBILIDAD: ASTM A796/A796M-13, "
+                               "num. 10.3 (PDF 4), limita FF = s2/(E I) a "
+                               "0.245 mm/N con corrugacion de 13 mm en "
+                               "terraplen; con I = 39.20 mm4/mm (Tabla 5, "
+                               "2.01 mm) y E = 200 000 MPa el diametro "
+                               "limite es raiz(0.245 x 200000 x 39.20) = "
+                               "1386 mm. El catalogo ofrece esta plancha "
+                               "hasta 2100 mm porque el tope es el de la "
+                               "corrugacion; lo cierra la Fase 8. "
+                               "El espesor de 2.01 mm no esta verificado "
+                               "estructuralmente para ningun punto: la Fase "
+                               "8 (empuje de anillo, pandeo, costura, "
+                               "factor de flexibilidad, cobertura minima) "
+                               "no esta implementada. A nivel de perfil el "
+                               "espesor solo fija el diametro exterior, "
+                               "donde 1 mm de plancha mueve 2 mm",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, de entre las corrugaciones y los "
+                        "espesores que AASHTO M 36 lista; la norma remite "
+                        "la eleccion al diseño estructural",
+            dominio="una clave 'corrugacion/espesor' de las tablas de "
+                    "propiedades de ASTM A796 (Tables 5, 7 y 9); el "
+                    "conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    # EL TOPE QUE RIGE POR DEFECTO DESDE T-4 (INF-3.3.1): el mayor
+    # diametro designado de la SERIE que tabula la norma de producto de
+    # cada material. No se escribe: se DERIVA de las tres tablas del
+    # registro (`_TOPES_DE_LA_NORMA_DE_PRODUCTO`).
+    #
+    # PARA EL TMC NO ES EL TOPE EFECTIVO: la serie de AASHTO M 36 llega a
+    # 3600 mm, pero cada corrugacion es estandar solo en una parte de
+    # ella. `M2.tope_de_diametro` toma el menor entre este tope y el
+    # mayor diametro en que la corrugacion adoptada
+    # ('corrugacion_y_espesor_tmc') lleva «X» en la Table 6: 2100 mm con
+    # 68 por 13 mm.
+    "D_max_norma_producto": Criterio(
+        valor=_TOPES_DE_LA_NORMA_DE_PRODUCTO,
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Diametro maximo de la serie que tabula la norma de "
+                 "producto de cada material, en metros: el tope del "
+                 "catalogo de diametros cuando no se declara uno de "
+                 "disponibilidad de mercado",
+        justificacion="Decide hasta que diametro recorre el catalogo cada "
+                      "material: hasta el mayor diametro que su norma de "
+                      "producto cubre con un producto definido. En tuberia "
+                      "de concreto reforzado son 2.70 m: la serie de "
+                      "diametros designados de la norma sigue hasta 3.60 m, "
+                      "pero por encima de 2.70 m sus tablas no dan espesor "
+                      "de pared ni area de acero y remiten a un diseño "
+                      "especial que propone el fabricante y aprueba el "
+                      "propietario. En tuberia metalica corrugada y en "
+                      "polietileno corrugado es el mayor diametro designado "
+                      "de la serie, 3.60 m y 1.50 m. El tope existe por una "
+                      "razon de calculo: sin el, la progresion de diametros "
+                      "no termina. En tuberia metalica la serie completa no "
+                      "esta disponible en cada corrugacion: la norma marca "
+                      "en que diametros es estandar cada una, y el tope "
+                      "efectivo es el de la corrugacion adoptada, 2.10 m "
+                      "con la de 68 por 13 mm. Que el tope sea el de la "
+                      "norma no garantiza que el producto se consiga: la "
+                      "disponibilidad de mercado se declara aparte y solo "
+                      "puede bajarlo",
+        fuente="CONCRETO: AASHTO M 170M-04. Mayor diametro con diseño "
+               "estandar, 2700 mm: Tabla 1 (Clase I, pag. PDF 3), filas de "
+               "1500 a 2700 mm con pared y acero y filas de 2850 a 3450 mm "
+               "con llamada a nota y rayas; Tabla 3 (Clase III, pags. PDF 6 "
+               "y 7), ultima fila con acero la de 2700 mm. Por encima, num. "
+               "7.2.1 y 7.2.2 'Modified and Special Designs', pag. impresa "
+               "M 170M-13 (citas AASHTO_M170M.7.2.1 y AASHTO_M170M.7.2.2, "
+               "leidas por imagen; el cuerpo de la Tabla 2 y el final de la "
+               "Tabla 4 no se leen en el ejemplar). TMC: AASHTO M 36-03 "
+               "(2007), Table 6 'Pipe Sizes', pag. impresa M 36-11, de 100 a "
+               "3600 mm (tabla AASHTO_M36.T6; coincide con la Tabla 1 de "
+               "ASTM A760/A760M-10, ASTM_A760.T1). HDPE: AASHTO M 294-11, "
+               "num. 1.1.1 y 7.2.1, tamaños nominales de 300 a 1500 mm "
+               "(tabla AASHTO_M294_TRAD.T7.2.2; TRADUCCION NO OFICIAL, sin "
+               "firma porque el ejemplar no imprime folio)",
+        reemplazado_por="La edicion vigente de cada norma de producto, si "
+                        "cambia la serie; para bajar el tope, la "
+                        "disponibilidad de mercado declarada en "
+                        "'D_max_catalogo'; y, para un tubo de concreto de "
+                        "2850 a 3600 mm, el diseño especial aprobado del "
+                        "fabricante, con su espesor de pared",
+        verificacion_pendiente="El tope del HDPE (1.50 m) se lee de una "
+                               "traduccion no oficial de AASHTO M 294-11: "
+                               "falta reverificarlo contra el original en "
+                               "ingles (FUENTES_AUSENTES['AASHTO_M294']). "
+                               "El del concreto se leyo por imagen de las "
+                               "Tablas 1 y 3 de AASHTO M 170M-04; el cuerpo "
+                               "de la Tabla 2 y el final de la Tabla 4 no "
+                               "se leen en el ejemplar",
+        resolucion=DeTabla(
+            tablas=("AASHTO_M170M.T5", "AASHTO_M36.T6",
+                    "AASHTO_M294_TRAD.T7.2.2"),
+            que_elige="el mayor diametro que cada norma de producto cubre. "
+                      "No hay eleccion del proyectista: en TMC y HDPE es la "
+                      "ultima fila de la tabla; en concreto, la ultima fila "
+                      "con diseño estandar (2700 mm), que no es la ultima "
+                      "de la serie",
+        ),
+    ),
+
+    # LOS TRES UMBRALES CON QUE LA MATRIZ DE DURABILIDAD DESCARTA EL TMC
+    # (`M2.matriz_durabilidad`). Son [C]: la norma peruana solo escribe
+    # el umbral de PROTECCION (pH < 5.8, EG-2013 507.10, [N] en
+    # `constantes_normativas.PH_MIN_AGUA_TMC_SIN_PROTECCION`), no el de
+    # inadmisibilidad. Sin ensayo declarado ninguno de los tres actua.
+    "durabilidad_tmc_umbrales": Criterio(
+        valor={"pH_min": 5.0, "pH_max": 8.5,
+               "resistividad_min_ohm_cm": 1000.0},
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Umbrales de pH y de resistividad del suelo o del agua "
+                 "fuera de los cuales la tuberia de acero corrugado deja de "
+                 "ser material candidato",
+        justificacion="Decide a partir de que pH y de que resistividad la "
+                      "matriz de durabilidad retira la tuberia metalica "
+                      "corrugada de los materiales candidatos de un punto. "
+                      "El Manual de Hidrologia nombra las condiciones que "
+                      "corroen una alcantarilla -- suelos y aguas acidos o "
+                      "alcalinos, y la conductividad electrica del suelo -- "
+                      "y no les pone umbral; las especificaciones generales "
+                      "de construccion exigen proteger la tuberia metalica "
+                      "cuando el agua tiene pH menor de 5.8, sin prohibir "
+                      "el material; y la norma de producto reconoce que hay "
+                      "ambientes en que ningun recubrimiento metalico "
+                      "basta, sin decir cuales. El vacio se cubre con el "
+                      "manual de hidraulica de una agencia vial que si los "
+                      "cuantifica: con pH menor de 5.0 o mayor de 8.5, o "
+                      "con resistividad menor de 1000 ohm-cm, solo admite "
+                      "los materiales de su zona de corrosion severa, que "
+                      "son concreto, termoplastico y aluminio. Los umbrales "
+                      "son de una agencia de otro pais y de otro clima: se "
+                      "adoptan como criterio de descarte porque son los "
+                      "unicos escritos, y el proyectista puede "
+                      "endurecerlos dentro de la ventana, nunca relajarlos. "
+                      "Entre pH 5.0 y 5.8 la tuberia metalica sigue "
+                      "candidata con el requisito peruano de proteccion",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026): num. 8-5.1 "
+               "'pH', pag. impresa 8-25 (PDF 240), cita WSDOT_HM.8-5.1#PH "
+               "(pH menor de 5.0 o mayor de 8.5: sitio no apto, solo tubos "
+               "de la Zona de Corrosion III); num. 8-5.2 'Resistivity', pag. "
+               "impresa 8-26 (PDF 241), cita WSDOT_HM.8-5.2#RESISTIVIDAD "
+               "(menos de 1,000 ohm-cm: solo materiales de la Zona III); "
+               "num. 8-4.3 'Corrosion Zone III', pag. impresa 8-17 (PDF "
+               "232), cita WSDOT_HM.8-4.3#ZONA_III, y su Table 8-3 (pag. "
+               "impresa 8-25): concreto, termoplastico y aluminio, ningun "
+               "tubo de acero. NORMA PERUANA, que no da estos umbrales: "
+               "EG-2013 Subseccion 507.10 (pH < 5.8: proteger; cita "
+               "EG2013.507.10) y Manual de Hidrologia num. 4.1.1.3.7 f) y "
+               "g) (citas MC_HHD.4.1.1.3.7f#TMC y .7g#AGRESIVAS), "
+               "cualitativos. NORMA DE PRODUCTO: AASHTO M 36 num. 1.2 (cita "
+               "AASHTO_M36.1.2), sin umbral",
+        reemplazado_por="Un estudio de durabilidad del corredor que estime "
+                        "la vida util de la tuberia metalica con el pH y la "
+                        "resistividad medidos (el propio manual remite al "
+                        "metodo del departamento de transporte de "
+                        "California), o la especificacion de un "
+                        "recubrimiento con vida util garantizada",
+        # VENTANA POR CAMPO. pH_min entre el umbral de la fuente tecnica y el
+        # de PROTECCION de la norma peruana (5.8): declarar 5.8 es tratar el
+        # «será necesario proteger» de EG-2013 como descarte, la lectura mas
+        # exigente que una fuente respalda. pH_max y la resistividad no
+        # tienen una segunda fuente verificada: su ventana es el dominio en
+        # que el umbral conserva sentido (de neutro a la escala entera; de
+        # cero a diez veces el valor de la fuente), no una banda de practica.
+        #
+        # H4 DE LA AUDITORIA DE T-4: LAS TRES VENTANAS SOLO ENDURECEN. La
+        # primera version dejaba pH_max hasta 14 y la resistividad minima
+        # desde 0, que APAGAN el filtro declarando un valor: la ficha decia
+        # «solo se puede endurecer» y la puerta no lo cumplia. Ahora cada
+        # ventana va del valor de la fuente hacia el lado exigente: pH_max
+        # de neutro al 8.5 de la fuente; resistividad minima del 1000 de la
+        # fuente al 3000 ohm-cm con que AASHTO LRFD define el suelo no
+        # agresivo para acero galvanizado ('suelo_agresivo_acero_lrfd').
+        sensibilidad={"pH_min": (5.0, 5.8), "pH_max": (7.0, 8.5),
+                      "resistividad_min_ohm_cm": (1000.0, 3000.0)},
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando los umbrales del WSDOT "
+                        "Hydraulics Manual, que es fuente tecnica reconocida "
+                        "y no norma peruana",
+            dominio="pH adimensional, de 0 a 14; resistividad en ohm-cm, "
+                    "positiva",
+        ),
+    ),
+
+    # EL CONSUMIDOR QUE `sucs_fundacion` NO TENIA (INF-5.1.9). La columna
+    # es obligatoria en el CSV y hasta T-4 no la leia ningun modulo
+    # (ficha C6-01 de decisiones_diferidas.md, que dejo dicho por que no
+    # se cableaba: el Manual no define «mala calidad»). Lo que T-4 abre
+    # NO es un mapeo inventado: es un conjunto DECLARADO, [A], apoyado en
+    # la unica lista peruana de suelos que no sirven de apoyo, y produce
+    # un AVISO en la memoria -- no cambia material ni seccion --.
+    "sucs_fundacion_deficiente": Criterio(
+        valor=("OL", "OH", "PT"),
+        nivel=NIVEL_PERFIL,         # lo lee `M2.matriz_durabilidad`, que la
+                                    # corrida de perfil ejecuta por punto
+        etiqueta="A",
+        forma=FORMA_SERIE_DE_CLAVES,
+        concepto="Grupos de la clasificacion SUCS del suelo de fundacion "
+                 "que el proyecto cuenta como deficientes, para avisar de "
+                 "que el Manual recomienda en ese caso la alcantarilla tipo "
+                 "marco de concreto",
+        justificacion="Decide que grupos SUCS del suelo de fundacion "
+                      "disparan el aviso de suelo deficiente. El Manual de "
+                      "Hidrologia recomienda la alcantarilla tipo marco de "
+                      "concreto cuando el suelo de fundacion es de mala "
+                      "calidad y no dice que suelo lo es: no da umbral, ni "
+                      "clasificacion, ni remision a otra norma. La fuente "
+                      "peruana mas cercana es la norma de suelos y "
+                      "cimentaciones, que prohibe cimentar sobre turba y "
+                      "sobre suelo organico; en su figura de simbolos SUCS "
+                      "esos materiales son la turba y los limos y arcillas "
+                      "organicos de baja y de alta plasticidad. Se adoptan "
+                      "esos tres grupos, que son el conjunto minimo: los "
+                      "que una norma peruana excluye como apoyo. Esa norma "
+                      "es de edificaciones y no de obras viales, y por eso "
+                      "el conjunto es una adopcion y no una exigencia. No "
+                      "se añaden las arcillas de alta plasticidad ni los "
+                      "limos, que un estudio de suelos puede calificar de "
+                      "deficientes por su capacidad portante o su "
+                      "asentamiento: ninguna fuente consultada lo dice por "
+                      "el solo simbolo, y el proyectista puede declararlos. "
+                      "El aviso no cambia el material ni la seccion que el "
+                      "calculo adopta",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.1.3.4 a), pag. impresa 72 (cita "
+               "MC_HHD.4.1.1.3.4a#MARCO, condicion "
+               "COND-MARCO-SUELO-MALA-CALIDAD): recomienda el marco con "
+               "suelos de fundacion de mala calidad, sin definirlos. NTE "
+               "E.050 Suelos y Cimentaciones, Art. 24 'Suelos no permitidos "
+               "para apoyar las cimentaciones', pag. impresa 37 (cita "
+               "E050.24): turba, suelo organico, tierra vegetal y rellenos; "
+               "y su Figura 3 'Simbologia de Suelos (Referencial)', pag. "
+               "impresa 31 (tabla y cita E050.FIG3): OL, OH y Pt son los "
+               "simbolos del suelo organico y de la turba",
+        reemplazado_por="El estudio de mecanica de suelos del expediente, "
+                        "que califica el suelo de fundacion de cada cruce "
+                        "por su capacidad portante y su asentamiento, no "
+                        "por su simbolo",
+        # LA VENTANA ES EL CONJUNTO DE LOS QUINCE SIMBOLOS de la Figura 3 de
+        # la E.050, DERIVADO de la tabla transcrita. Un simbolo doble de
+        # frontera («SP-SM», «CL-ML») se compara por sus dos mitades.
+        sensibilidad=_SIMBOLOS_SUCS_E050,
+        resolucion=DeTabla(
+            tablas=("E050.FIG3",),
+            que_elige="los simbolos SUCS que cuentan como suelo de "
+                      "fundacion deficiente; los tres adoptados son los que "
+                      "el Art. 24 de la misma norma no permite como apoyo",
+        ),
+    ),
+
+    # --- T-4 (auditoria adversarial, H3) --- LOS CRITERIOS ELECTROQUIMICOS
+    # DE AASHTO LRFD PARA ACERO GALVANIZADO ENTERRADO, y que hace la matriz
+    # de durabilidad con ellos. Son DOS criterios porque son dos preguntas:
+    # los NUMEROS son de la fuente ([C]); aplicarlos a una alcantarilla es
+    # una analogia, y QUE EFECTO tiene esa analogia sobre el TMC es una
+    # eleccion del proyecto ([A]).
+    "suelo_agresivo_acero_lrfd": Criterio(
+        valor={"pH_min": 5.0, "pH_max": 10.0,
+               "resistividad_min_ohm_cm": 3000.0,
+               "cloruros_max_ppm": 100.0, "sulfatos_max_ppm": 200.0},
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Criterios electroquimicos del suelo no agresivo para "
+                 "acero galvanizado enterrado: intervalo de pH, resistividad "
+                 "minima y contenidos maximos de cloruros y de sulfatos",
+        justificacion="Decide cuando la matriz de durabilidad considera "
+                      "agresivo para la tuberia metalica el suelo de un "
+                      "punto con ensayos declarados. La norma peruana de "
+                      "construccion exige proteger la tuberia metalica "
+                      "cuando los suelos circundantes presentan sustancias "
+                      "agresivas y no las cuantifica; la norma de diseño "
+                      "adoptada si cuantifica el suelo no agresivo para "
+                      "acero galvanizado, aunque lo hace para refuerzos de "
+                      "muros y anclajes y no para alcantarillas. El proyecto "
+                      "toma esos numeros como la lectura cuantitativa de la "
+                      "clausula peruana, por analogia de metal, "
+                      "recubrimiento y medio. Basta incumplir uno para que "
+                      "el suelo cuente como agresivo. El contenido de "
+                      "materia organica, que la fuente limita al 1 por "
+                      "ciento, no entra porque no hay dato de entrada que lo "
+                      "traiga, y la dispensa que la fuente permite con "
+                      "resistividad de 5000 ohm-cm o mas no se aplica, del "
+                      "lado seguro. Sin ensayos declarados ninguno actua",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed.: Art. "
+               "11.10.6.4.2a 'Steel Reinforcements', pag. impresa 11-89 (PDF "
+               "1558), cita AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO: pH de 5 "
+               "a 10, resistividad de al menos 3000 ohm-cm, cloruros hasta "
+               "100 ppm, sulfatos hasta 200 ppm, materia organica hasta 1 "
+               "por ciento; Art. 11.12.8 'Corrosion Protection', pag. "
+               "impresa 11-134 (PDF 1603), cita "
+               "AASHTO_LRFD_9.11.12.8#AGRESIVO: la misma lista, y que basta "
+               "incumplir un criterio. Segunda fuente, menos estricta salvo "
+               "en el pH: Art. 10.7.5, pag. impresa 10-125 (PDF 1414), cita "
+               "AASHTO_LRFD_9.10.7.5#INDICATIVOS, indicativos para pilotes. "
+               "NINGUNO DE LOS TRES ARTICULOS ES DE ALCANTARILLAS: la "
+               "aplicacion es por analogia",
+        reemplazado_por="Un criterio de agresividad del suelo escrito para "
+                        "tuberia de acero corrugado por una norma o un "
+                        "manual de drenaje, o el estudio de durabilidad del "
+                        "corredor",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando por analogia los "
+                        "criterios que AASHTO LRFD escribe para refuerzos "
+                        "de acero galvanizado enterrados",
+            dominio="pH adimensional, de 0 a 14; resistividad en ohm-cm, "
+                    "positiva; concentraciones en ppm, no negativas",
+        ),
+    ),
+
+    "suelo_agresivo_lrfd_sobre_tmc": Criterio(
+        valor="aviso",
+        nivel=NIVEL_PERFIL,         # lo lee `M2.matriz_durabilidad` cuando
+                                    # el punto trae ensayos
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("aviso", "excluye"),
+        concepto="Que hace la matriz de durabilidad con la tuberia metalica "
+                 "cuando el suelo resulta agresivo segun los criterios de "
+                 "acero galvanizado enterrado aplicados por analogia: avisar "
+                 "y exigir proteccion, o excluir el material",
+        justificacion="Decide si un suelo agresivo segun los criterios "
+                      "electroquimicos adoptados por analogia saca a la "
+                      "tuberia metalica de los materiales candidatos o solo "
+                      "lo advierte. Los criterios son de la norma de diseño "
+                      "adoptada, pero estan escritos para refuerzos de muros "
+                      "de suelo reforzado y para anclajes, piezas delgadas "
+                      "cuya seccion resistente se pierde con la corrosion, "
+                      "y no para un tubo que admite proteccion de solera, "
+                      "mas espesor o recubrimiento. Por eso el valor del "
+                      "archivo es aviso: la exclusion del material se "
+                      "reserva a la fuente tecnica que habla de tuberia, por "
+                      "pH y por resistividad, y la analogia deja la tuberia "
+                      "metalica como candidata con el aviso impreso y con "
+                      "la exigencia de proteccion de la norma peruana de "
+                      "construccion. La opcion excluye es la lectura "
+                      "estricta de la misma analogia y existe para medir "
+                      "cuanto cambia el expediente si se adopta: con ella un "
+                      "suelo con cloruros o sulfatos sobre el criterio, o "
+                      "con resistividad entre 1000 y 3000 ohm-cm, descarta "
+                      "el material. Ninguna de las dos mueve un numero de "
+                      "calculo: cambia que materiales se evaluan. Sin "
+                      "ensayos declarados ninguna actua",
+        fuente="NINGUNA FUENTE FIJA ESTE EFECTO. Los criterios son de AASHTO "
+               "LRFD 9a ed., Art. 11.10.6.4.2a (pag. impresa 11-89) y Art. "
+               "11.12.8 (pag. impresa 11-134), escritos para refuerzos de "
+               "acero enterrados; el efecto sobre una alcantarilla metalica "
+               "es adopcion del proyecto. La exclusion por pH y por "
+               "resistividad con fuente especifica de tuberia esta en "
+               "'durabilidad_tmc_umbrales' (WSDOT Hydraulics Manual, num. "
+               "8-5.1 y 8-5.2) y la exigencia de proteccion en EG-2013 "
+               "507.10",
+        reemplazado_por="Un criterio de agresividad escrito para tuberia de "
+                        "acero corrugado, que diga que hacer con el material "
+                        "y no solo cuando el suelo es agresivo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente define cuando el suelo "
+                        "es agresivo para acero galvanizado enterrado y no "
+                        "dice que hacer con una alcantarilla",
+            dominio="una de las dos opciones: aviso o excluye",
         ),
     ),
 

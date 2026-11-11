@@ -1259,6 +1259,14 @@ TITULO_TRAZA_HIDRAULICA = "Desarrollo del calculo hidraulico (Fases 3 y 4)"
 TITULO_TRAZA_HIDRAULICA_ULTIMO = ("Desarrollo del calculo hidraulico del "
                                   "ultimo escalon evaluado (Fases 3 y 4)")
 TITULO_TRAZA_VERIFICACIONES = "Desarrollo de cada verificacion"
+# --- T-4 --- La matriz de durabilidad (Sec. 3.3 de la hoja de ruta).
+TITULO_DURABILIDAD = "Durabilidad de los materiales (Sec. 3.3)"
+# El nombre de la etapa, que es el de `servicio.ETAPA_DURABILIDAD`. Se repite
+# aqui y no se importa porque M11 no importa del servicio (la capa de reporte
+# no conoce la orquestacion); `tests/test_t4_materiales_durabilidad.py`
+# comprueba que los dos textos sean el mismo.
+ETAPA_DURABILIDAD = "matriz de durabilidad (Sec. 3.3)"
+TITULO_TRAZA_DURABILIDAD = "Desarrollo de la matriz de durabilidad (Sec. 3.3)"
 
 
 def traza_clasificacion(informe: Any) -> Tuple[Any, ...]:
@@ -1274,6 +1282,17 @@ def traza_clasificacion(informe: Any) -> Tuple[Any, ...]:
     if tr is not None:
         pasos.append(tr)
     return tuple(pasos)
+
+
+def traza_durabilidad(informe: Any) -> Tuple[Any, ...]:
+    """
+    Los pasos de la matriz de durabilidad del punto (Sec. 3.3; T-4): uno por
+    ensayo declarado y, si el suelo de fundacion esta en el conjunto
+    declarado deficiente, el del aviso de marco. Vacia sin ensayos y sin
+    aviso, y tambien cuando la etapa se bloqueo.
+    """
+    dictamen = getattr(informe, "durabilidad", None)
+    return () if dictamen is None else tuple(dictamen.pasos)
 
 
 def traza_tw(informe: Any) -> Optional[Any]:
@@ -1984,6 +2003,54 @@ def _tabla_bloqueos(bloqueos: Sequence[Any]) -> str:
     return "".join(partes)
 
 
+def _bloque_durabilidad(informe: Any) -> str:
+    """
+    La Sec. 3.3 del punto: que hizo la matriz de durabilidad con los
+    materiales candidatos (T-4; INF-3.3.1, INF-5.1.9).
+
+    SE IMPRIME EN TODO PUNTO QUE LLEGA A LA FASE 3, con ensayos o sin
+    ellos. Sin ensayos la matriz no
+    actua y el bloque lo dice con el texto de `DictamenDurabilidad.resumen`;
+    callarlo dejaria al lector suponiendo que los tres materiales pasaron
+    una matriz que nunca corrio. M11 no decide nada aqui: el efecto de cada
+    regla, su texto y sus citas vienen del dictamen que M2 emite.
+    """
+    dictamen = getattr(informe, "durabilidad", None)
+    if dictamen is None:
+        # El punto no llego a la Fase 3 (se detuvo en la Fase 2): no hay
+        # bloque. Si llego y la etapa se bloqueo, se dice.
+        if not any(getattr(b, "etapa", "") == ETAPA_DURABILIDAD
+                   for b in getattr(informe, "bloqueos", ())):
+            return ""
+        return (f"<h4>{_esc(TITULO_DURABILIDAD)}</h4>"
+                '<div class="nota"><p>La matriz de durabilidad no se pudo '
+                "evaluar en este punto; el motivo esta en la tabla de "
+                "bloqueos y el bucle de materiales no corrio.</p></div>")
+    partes = [f"<h4>{_esc(TITULO_DURABILIDAD)}</h4>",
+              f'<div class="nota"><p><b>{_esc(dictamen.resumen)}</b></p>'
+              f"<p>{_esc(dictamen.suelo_fundacion)}</p></div>"]
+    if dictamen.reglas:
+        filas = [_fila(["<th>Dato</th>", "<th>Material</th>",
+                        "<th>Efecto</th>", "<th>Lo que la matriz deja "
+                        "escrito</th>", "<th>Citas</th>"])]
+        for regla in dictamen.reglas:
+            material = ("todos" if regla.material is None
+                        else regla.material.value)
+            filas.append(_fila([
+                _td(f"<code>{_esc(regla.ensayo)}</code>"),
+                _td(_esc(material)),
+                _td(f"<b>{_esc(regla.efecto.value)}</b>"),
+                _td(_esc(regla.texto)),
+                _td("<br>".join(f"<code>{_esc(c)}</code>"
+                                for c in regla.cita_ids)),
+            ], "fila-incumple" if regla.efecto.value == "excluye" else ""))
+        partes.append('<table class="compacta">' + "".join(filas)
+                      + "</table>")
+    partes.append(bloque_pasos(traza_durabilidad(informe),
+                               TITULO_TRAZA_DURABILIDAD))
+    return "".join(partes)
+
+
 def _pasos_de_clasificacion(informe: Any) -> str:
     """La traza de la Fase 2: denominacion por luz y periodo de retorno."""
     return bloque_pasos(traza_clasificacion(informe),
@@ -2114,6 +2181,7 @@ def memoria_de_punto(informe: Any) -> str:
         _tabla_datos(informe),
         _tabla_clasificacion(informe),
         _pasos_de_clasificacion(informe),
+        _bloque_durabilidad(informe),
         _tabla_iteraciones(informe),
         _tabla_diseno(informe),
         _paso_del_tw(informe),
@@ -2589,6 +2657,7 @@ def pasos_del_informe(informe: Any) -> Tuple[Any, ...]:
             vistos.extend(punto.resultado.resultado_hidraulico.pasos)
         if getattr(punto, "tw_sec13", None) is not None:
             _anota(getattr(punto.tw_sec13, "paso", None))
+        vistos.extend(traza_durabilidad(punto))
         if punto.proteccion is not None:
             _anota(getattr(punto.proteccion, "paso", None))
         if punto.espaciamiento is not None:
@@ -3282,6 +3351,7 @@ def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
     vistos: List[Any] = []
     for punto in informe.puntos:
         vistos.extend(traza_clasificacion(punto))
+        vistos.extend(traza_durabilidad(punto))
         tw = traza_tw(punto)
         if tw is not None:
             vistos.append(tw)

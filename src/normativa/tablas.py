@@ -2941,8 +2941,10 @@ T_M294_TRAD_7_2_2 = _tabla(
                "la Sección 9.6.4."),
         pagina_pdf=5),
     columnas=(
+        # --- T-4 --- Idem: el extremo de esta columna es el tope de la serie
+        # del HDPE en 'D_max_norma_producto' [C].
         ColumnaDeTabla(id="dn_mm", etiqueta_literal="Diámetro, mm (in.)",
-                       unidad="mm", uso=_NO_USADA_M294_DIAMETRO),
+                       unidad="mm", uso=Usada(por=("M2.tope_de_diametro",))),
         ColumnaDeTabla(id="dn_in", etiqueta_literal="Diámetro, mm (in.)",
                        unidad="in",
                        uso=NoUsada(por_que_no=(
@@ -3233,17 +3235,23 @@ T_M36_T6 = _tabla(
                "each size of pipe are also shown in Table 6."),
         pagina_pdf=11),
     columnas=(
+        # --- T-4 --- El diametro y las tres corrugaciones de PLANCHA se
+        # consumen desde T-4: `constantes_normativas.DIAMETROS_ESTANDAR_TMC`
+        # deriva de aqui para que diametros es estandar cada corrugacion, y
+        # con eso M2 fija el tope de la serie del TMC para la corrugacion
+        # adoptada ('corrugacion_y_espesor_tmc') y declara solo esas filas de
+        # espesor. La de 38x6.5 y las tres de costilla siguen sin consumidor.
         ColumnaDeTabla(id="dn_mm",
                        etiqueta_literal="Nominal Inside Diameter, mm",
-                       unidad="mm", uso=_NO_USADA_TMC),
+                       unidad="mm", uso=Usada(por=("M2.tope_de_diametro",))),
         ColumnaDeTabla(id="c38x6_5", etiqueta_literal="38 by 6.5 mm",
                        unidad="", uso=_NO_USADA_TMC),
         ColumnaDeTabla(id="c68x13", etiqueta_literal="68 by 13 mm",
-                       unidad="", uso=_NO_USADA_TMC),
+                       unidad="", uso=Usada(por=("M2.tope_de_diametro",))),
         ColumnaDeTabla(id="c75x25", etiqueta_literal="75 by 25 mm",
-                       unidad="", uso=_NO_USADA_TMC),
+                       unidad="", uso=Usada(por=("M2.tope_de_diametro",))),
         ColumnaDeTabla(id="c125x25", etiqueta_literal="125 by 25 mm",
-                       unidad="", uso=_NO_USADA_TMC),
+                       unidad="", uso=Usada(por=("M2.tope_de_diametro",))),
         # El encabezado de esta columna lleva la llamada a la nota b.
         ColumnaDeTabla(id="r19x19x190", etiqueta_literal="19 by 19 by 190 mm",
                        unidad="", uso=_NO_USADA_TMC),
@@ -3314,6 +3322,7 @@ T_M36_T6 = _tabla(
                    "applicable to helically corrugated pipe."),
             pagina_pdf=12)),
     ),
+    vistas_de_calculo=("DIAMETROS_ESTANDAR_TMC",),
 )
 
 # ===========================================================================
@@ -3734,14 +3743,26 @@ _NOTA_A_ESPESOR_1_02 = (
 _NOTA_A_EFECTIVAS = "Net effective properties at full yield stress."
 
 
+# --- T-4 --- EL ESPESOR ESPECIFICADO DEJA DE SER «NO USADO» en las tres
+# corrugaciones de plancha que el catalogo recorre (Tablas 5, 7 y 9: 68x13,
+# 75x25 y 125x25 mm): `constantes_normativas.TMC_PLANCHA_CORRUGADA` lo deriva
+# de aqui y `M2.espesor_pared_de_tmc` lo suma a la profundidad de la
+# corrugacion para obtener el diametro exterior. Las demas columnas (A, I, r,
+# costura) viajan en la MISMA vista para T-5 y siguen sin consumidor de
+# calculo: son el insumo del procedimiento de A796 que la Fase 8 no
+# implementa todavia.
+_USADA_ESPESOR_TMC = Usada(por=("M2.espesor_pared_de_tmc",))
+
+
 def _columnas_plancha(unidad_inercia: str,
-                      rotulo_angulo: str = "Tangent Angle, Δ,°") -> tuple:
+                      rotulo_angulo: str = "Tangent Angle, Δ,°",
+                      uso_espesor=_NO_USADA_A796) -> tuple:
     # `rotulo_angulo`: las Tablas 3 y 9 imprimen «Δ,°» y las 5 y 7 «Δ, °»,
     # con espacio. Lo midio el verificador de N1 y se transcribe cada una
     # como se imprime.
     return (
         ColumnaDeTabla(id="t_mm", etiqueta_literal="Specified Thickness, mm",
-                       unidad="mm", uso=_NO_USADA_A796),
+                       unidad="mm", uso=uso_espesor),
         ColumnaDeTabla(id="A", etiqueta_literal="Area of Section, A, mm²/mm",
                        unidad="mm²/mm", uso=_NO_USADA_A796),
         ColumnaDeTabla(id="TL", etiqueta_literal="Tangent Length, TL, mm",
@@ -3801,7 +3822,8 @@ T_A796_T5 = _tabla(
         "Ultimate Longitudinal Seam Strength of Riveted or Spot Welded "
         "Corrugated Steel Pipe in kN per m of Seam",
         "8-mm Rivets", "10-mm Rivets"),
-    columnas=_columnas_plancha("mm⁴/mm", "Tangent Angle, Δ, °") + (
+    columnas=_columnas_plancha("mm⁴/mm", "Tangent Angle, Δ, °",
+                               uso_espesor=_USADA_ESPESOR_TMC) + (
         ColumnaDeTabla(id="s8_single", etiqueta_literal="Single",
                        unidad="kN/m", uso=_NO_USADA_A796),
         ColumnaDeTabla(id="s8_double", etiqueta_literal="Double",
@@ -3841,6 +3863,7 @@ T_A796_T5 = _tabla(
         NotaAlPie(marca="A", texto=Verbatim(texto=_NOTA_A_ESPESOR_1_02,
                                             pagina_pdf=8)),
     ),
+    vistas_de_calculo=("TMC_PLANCHA_CORRUGADA",),
 )
 
 T_A796_T7 = _tabla(
@@ -3855,7 +3878,8 @@ T_A796_T7 = _tabla(
         "10-mm Rivets", "11-mm Rivets"),
     # «I, mm⁴/m»: ERRATA DE LA FUENTE, transcrita como se imprime (ver la
     # Interpretacion y la nota de la cita ASTM_A796.T7).
-    columnas=_columnas_plancha("mm⁴/m", "Tangent Angle, Δ, °") + (
+    columnas=_columnas_plancha("mm⁴/m", "Tangent Angle, Δ, °",
+                               uso_espesor=_USADA_ESPESOR_TMC) + (
         ColumnaDeTabla(id="s10_double", etiqueta_literal="Double",
                        unidad="kN/m", uso=_NO_USADA_A796),
         ColumnaDeTabla(id="s11_double", etiqueta_literal="Double",
@@ -3888,6 +3912,7 @@ T_A796_T7 = _tabla(
             "del mismo orden que los de la Table 9 (145.03 a 411.18), de "
             "profundidad de corrugacion vecina y rotulada «mm⁴/mm».",
         )),
+    vistas_de_calculo=("TMC_PLANCHA_CORRUGADA",),
 )
 
 T_A796_T9 = _tabla(
@@ -3901,7 +3926,7 @@ T_A796_T9 = _tabla(
                "some of these dimensions, are used in other places in this "
                "practice."),
         pagina_pdf=10),
-    columnas=_columnas_plancha("mm⁴/mm"),
+    columnas=_columnas_plancha("mm⁴/mm", uso_espesor=_USADA_ESPESOR_TMC),
     filas=(
         # leidas de la pag. PDF 10 (mitad superior).
         _fila_plancha("ASTM_A796.T9", 1.63, 1.681, 18.5, 35.58, 145.03, 9.289),
@@ -3911,6 +3936,7 @@ T_A796_T9 = _tabla(
         _fila_plancha("ASTM_A796.T9", 4.27, 4.627, 14.3, 37.39, 411.18, 9.426),
     ),
     alcance=Integra(),
+    vistas_de_calculo=("TMC_PLANCHA_CORRUGADA",),
 )
 
 
@@ -4229,6 +4255,10 @@ T_M170M_T5 = _tabla(
     encabezados_superiores=("Reinforcement, cm²/Linear m of Pipe Wall",
                             "Wall A", "Wall B", "Wall C"),
     columnas=(
+        # --- T-4 --- La columna de diametros NO fija el tope del concreto:
+        # la serie llega a 3600 mm, pero por encima de 2700 mm las tablas no
+        # traen pared ni acero (diseño especial, Seccion 7.2). El tope sale
+        # de `constantes_normativas.DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM`.
         ColumnaDeTabla(id="dn_mm", etiqueta_literal="Internal Designed Diameter, mm",
                        unidad="mm", uso=_NO_USADA_CONCRETO),
         ColumnaDeTabla(id="wall_b_mm", etiqueta_literal="Wall Thickness, mm",
@@ -4284,6 +4314,666 @@ T_M170M_T5 = _tabla(
             "la columna B de esta tabla (100, 113, 125)",
         ),
     ),
+)
+
+
+# ===========================================================================
+# --- T-4 --- (cadena T, 2026-11-11) Seis tablas para materiales, espesores,
+# topes y durabilidad. Cada una dice como se leyo.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# AASHTO LRFD 9a ed., Apendice A12, Table A12-11 -- PE corrugado (M 294).
+# Por TEXTO (pag. impresa 12-108, PDF 1746) y contrastada sobre la pagina
+# renderizada a escala 1.3: ocho filas, seis columnas, una nota al pie.
+#
+# ES LA UNICA FUENTE DE normas/ QUE DA EL DIAMETRO EXTERIOR DEL HDPE. Su
+# norma de producto, M 294-11, no lo fija (SIN_DIAMETRO_EXTERIOR_M294_TRAD);
+# AASHTO LRFD lo tabula como «Max. OD», el techo del diametro exterior del
+# producto de cada tamaño nominal. Con el, 'espesor_pared_conducto' declara
+# para el HDPE el t que hace D + 2t = OD maximo, que es el lado conservador
+# en los dos sitios donde entra (clave fisica mas alta en 7.A; volumen
+# desplazado mayor en V7).
+#
+# UNIDADES INGLESAS, transcritas como se imprimen. La conversion vive en el
+# criterio, no aqui.
+# ---------------------------------------------------------------------------
+_NO_USADA_TA12_11 = NoUsada(por_que_no=(
+    "el calculo no la consume todavia: A, c e I minimos de la pared son el "
+    "insumo del diseño estructural del termoplastico por AASHTO LRFD 12.12 "
+    "(empuje, pandeo, deformacion), que la Fase 8 difiere al expediente y "
+    "T-5 implementa; el diametro interior minimo es una tolerancia de "
+    "producto que el catalogo no verifica"))
+
+_USADA_OD_HDPE = Usada(por=("criterios_adoptados['espesor_pared_conducto']",))
+
+T_AASHTO_TA12_11 = _tabla(
+    id="AASHTO_LRFD_9.TA12-11",
+    cita_id="AASHTO_LRFD_9.TA12-11",
+    titulo_literal="Table A12-11—PE Corrugated Pipes (AASHTO M 294)",
+    columnas=(
+        ColumnaDeTabla(id="nominal_in", etiqueta_literal="Nominal Size (in.)",
+                       unidad="in", uso=_USADA_OD_HDPE),
+        ColumnaDeTabla(id="id_min_in", etiqueta_literal="Min. ID (in.)",
+                       unidad="in", uso=_NO_USADA_TA12_11),
+        ColumnaDeTabla(id="od_max_in", etiqueta_literal="Max. OD (in.)",
+                       unidad="in", uso=_USADA_OD_HDPE),
+        ColumnaDeTabla(id="A_min", etiqueta_literal="Min. A (in.2/ft)",
+                       unidad="in²/ft", uso=_NO_USADA_TA12_11),
+        ColumnaDeTabla(id="c_min", etiqueta_literal="Min. c (in.)",
+                       unidad="in", uso=_NO_USADA_TA12_11),
+        ColumnaDeTabla(id="I_min", etiqueta_literal="Min. I (in.4/in.)",
+                       unidad="in⁴/in", uso=_NO_USADA_TA12_11),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"AASHTO_LRFD_9.TA12-11#n{nominal}",
+            # La pagina imprime «42*» y «48*»: el asterisco es la llamada.
+            etiqueta_literal=f"{nominal}*" if nota else str(nominal),
+            valores={"nominal_in": nominal, "id_min_in": id_min,
+                     "od_max_in": od_max, "A_min": a, "c_min": c, "I_min": i},
+            llamadas_a_nota=(("*",) if nota else ()),
+            # El catalogo recorre 900 + 150k mm: de las ocho filas solo las
+            # de 36, 42 y 48 in (900, 1050 y 1200 mm) tienen escalon.
+            uso=(_USADA_OD_HDPE if nominal >= 36 else NoUsada(por_que_no=(
+                "tamaño nominal por debajo del piso de 0.90 m de la "
+                "progresion del catalogo (num. 4.1.1.3.4 a) del Manual de "
+                "Hidrologia): ningun escalon lo recorre"))))
+        # (nominal, Min. ID, Max. OD, Min. A, Min. c, Min. I, nota) de la
+        # pag. PDF 1746.
+        for nominal, id_min, od_max, a, c, i, nota in (
+            (12, 11.8, 14.7, 1.5, 0.35, 0.024, False),
+            (15, 14.8, 18.0, 1.9, 0.45, 0.053, False),
+            (18, 17.7, 21.5, 2.3, 0.50, 0.062, False),
+            (24, 23.6, 28.7, 3.1, 0.65, 0.116, False),
+            (30, 29.5, 36.4, 3.9, 0.75, 0.163, False),
+            (36, 35.5, 42.5, 4.5, 0.90, 0.222, False),
+            (42, 41.5, 48.0, 4.69, 1.11, 0.543, True),
+            (48, 47.5, 55.0, 5.15, 1.15, 0.543, True),
+        )),
+    notas_al_pie=(
+        NotaAlPie(marca="*", texto=Verbatim(
+            texto=("For the 42.0-in. and 48.0-in. pipe, the wall thickness "
+                   "should be designed using the long-term tensile strength "
+                   "provision, i.e., 900 psi, until new design criteria are "
+                   "established in the AASHTO bridge and structures "
+                   "specifications."),
+            pagina_pdf=1746)),
+    ),
+    # INTEGRA: ocho filas, de 12 a 48 in; la tabla siguiente (A12-12) es de
+    # otro producto (PE acostillado, ASTM F894).
+    alcance=Integra(),
+    lagunas=(
+        Laguna(
+            que_no_cubre=("los tamaños nominales de 54 y 60 in (1350 y "
+                          "1500 mm), que la serie de AASHTO M 294-11 SI "
+                          "incluye (num. 7.2.1, traduccion no oficial): la "
+                          "tabla termina en 48 in"),
+            con_que_regla=("ninguna: no se extrapola el diametro exterior. "
+                           "'espesor_pared_conducto' no declara esas dos "
+                           "filas para el HDPE y `M2.espesor_pared` detiene "
+                           "el material en ese escalon con DatoFaltanteError, "
+                           "nombrando la fila que falta"),
+            quien_lo_cierra="criterios_adoptados['espesor_pared_conducto']",
+            si_nadie_lo_cierra=Efecto.BLOQUEA),
+    ),
+    interpretacion=Interpretacion(
+        texto=("«Max. OD» se lee como el techo del diametro exterior del "
+               "producto: el t que 'espesor_pared_conducto' declara para el "
+               "HDPE es el que hace D + 2t = Max. OD sobre el diametro "
+               "DESIGNADO del catalogo (0.90, 1.05 y 1.20 m), no sobre el "
+               "«Min. ID» de la fila"),
+        en_contra=(
+            "Es una tabla de PROPIEDADES para el diseño estructural (Apendice "
+            "A12), no una especificacion de producto: el diametro exterior "
+            "real lo fija el fabricante del perfil y puede ser menor.",
+            "El catalogo designa 900, 1050 y 1200 mm donde la fila dice 36, "
+            "42 y 48 in (914.4, 1066.8 y 1219.2 mm): el t declarado se mide "
+            "desde el designado, de modo que es entre 7 y 10 mm mayor que "
+            "(Max. OD - nominal)/2. Va del lado conservador en 7.A y en V7.",
+            "La cobertura minima de la Tabla 12.6.6.3-1 para termoplastico "
+            "se entra con el diametro INTERIOR, de modo que este t no la "
+            "mueve.",
+        )),
+)
+
+
+# ---------------------------------------------------------------------------
+# AASHTO M 36-03 (2007), Table 1 -- requisitos de corrugacion. Por IMAGEN
+# (raster puro): PDF 7, pagina entera a 100 dpi y recorte a 220 dpi.
+#
+# QUE APORTA: la definicion de PROFUNDIDAD (nota b) y los cuatro tamaños
+# nominales. El rotulo «68 by 13» es paso por profundidad NOMINALES; la
+# columna «Minimum Depth» es la tolerancia de fabricacion (12 mm). Para el
+# diametro exterior se toma la nominal, que es la mayor de las dos.
+# ---------------------------------------------------------------------------
+_NO_USADA_M36_T1 = NoUsada(por_que_no=(
+    "tolerancia de FABRICACION de la corrugacion (paso maximo, profundidad "
+    "minima, radio interior): el calculo no verifica el producto contra su "
+    "norma de fabricacion. Se transcribe integra porque una tabla podada no "
+    "deja ver que se eligio una columna"))
+
+_USADA_PROFUNDIDAD = Usada(por=("M2.espesor_pared_de_tmc",))
+
+T_M36_T1 = _tabla(
+    id="AASHTO_M36.T1",
+    cita_id="AASHTO_M36.T1",
+    titulo_literal=("Table 1—Corrugation Requirements for Type I, IA, II, "
+                    "IIA, and III Pipe"),
+    encabezados_superiores=("Inside Radius",),
+    columnas=(
+        # LA PAGINA IMPRIME UNA COLUMNA «Nominal Size, mm» con celdas «68 by
+        # 13»: aqui se parte en dos con la MISMA etiqueta literal, una por
+        # numero, por lo mismo que la tabulacion 6.2.2.1 de A796 con
+        # «ft [m]». La particion es del proyecto; los numeros, de la pagina.
+        ColumnaDeTabla(id="paso_nominal_mm",
+                       etiqueta_literal="Nominal Size, mm", unidad="mm",
+                       uso=_NO_USADA_M36_T1),
+        ColumnaDeTabla(id="profundidad_nominal_mm",
+                       etiqueta_literal="Nominal Size, mm", unidad="mm",
+                       uso=_USADA_PROFUNDIDAD),
+        ColumnaDeTabla(id="paso_max_mm", etiqueta_literal="Maximum Pitch, mm",
+                       unidad="mm", uso=_NO_USADA_M36_T1),
+        ColumnaDeTabla(id="profundidad_min_mm",
+                       etiqueta_literal="Minimum Depth, mm", unidad="mm",
+                       uso=_NO_USADA_M36_T1),
+        ColumnaDeTabla(id="radio_nominal_mm", etiqueta_literal="Nominal, mm",
+                       unidad="mm", uso=_NO_USADA_M36_T1),
+        ColumnaDeTabla(id="radio_min_mm", etiqueta_literal="Minimum, mm",
+                       unidad="mm", uso=_NO_USADA_M36_T1),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"AASHTO_M36.T1#c{clave}",
+            etiqueta_literal=etiqueta,
+            valores={"paso_nominal_mm": paso, "profundidad_nominal_mm": prof,
+                     "paso_max_mm": paso_max, "profundidad_min_mm": prof_min,
+                     "radio_nominal_mm": r_nom, "radio_min_mm": r_min},
+            llamadas_a_nota=(("d",) if clave == "38x6_5" else ()),
+            uso=(_USADA_PROFUNDIDAD if clave != "38x6_5" else NoUsada(
+                por_que_no=("la corrugacion de 38 por 6.5 mm solo es estandar "
+                            "hasta 450 mm de diametro (AASHTO_M36.T6), por "
+                            "debajo del piso de 0.90 m del catalogo"))))
+        # (clave, etiqueta impresa, paso y profundidad nominales del rotulo,
+        #  Maximum Pitch, Minimum Depth, Inside Radius nominal y minimo).
+        for clave, etiqueta, paso, prof, paso_max, prof_min, r_nom, r_min in (
+            ("38x6_5", "38 by 6.5", 38, 6.5, 48, 6.0, 7, 6.5),
+            ("68x13", "68 by 13", 68, 13, 73, 12, 17, 12),
+            ("75x25", "75 by 25", 75, 25, 83, 24, 14, 12),
+            ("125x25", "125 by 25", 125, 25, 135, 24, 40, 36),
+        )),
+    notas_al_pie=(
+        NotaAlPie(marca="a", texto=Verbatim(
+            texto=("Pitch is measured from crest to crest of corrugation, at "
+                   "90 degrees to the direction of corrugation."),
+            pagina_pdf=7)),
+        NotaAlPie(marca="b", texto=Verbatim(
+            texto=("Depth is measured as the vertical distance from a "
+                   "straightedge resting on the corrugation crests parallel "
+                   "to the axis of the pipe to the bottom of the intervening "
+                   "valley. If the depth measurement of one or more "
+                   "corrugations is less than the value indicated herein, "
+                   "the depth of all corrugations between seams shall be "
+                   "measured, and the requirements of Table 2 shall be "
+                   "applied. (See Section 7.2.1.)"),
+            pagina_pdf=7)),
+        NotaAlPie(marca="c", texto=Verbatim(
+            texto=("Minimum inside radius requirement does not apply to a "
+                   "corrugation containing a helical lock seam."),
+            pagina_pdf=7)),
+        NotaAlPie(marca="d", texto=Verbatim(
+            texto=("The corrugation size of 38 by 6.5 mm is available only "
+                   "in helically corrugated pipe."),
+            pagina_pdf=7)),
+    ),
+    alcance=Integra(),
+    interpretacion=Interpretacion(
+        texto=("La altura total del perfil corrugado --lo que separa el "
+               "diametro interior del exterior en cada lado-- es la "
+               "profundidad NOMINAL de la corrugacion mas el espesor de la "
+               "plancha: D_ext = D + 2 x (profundidad + espesor)"),
+        en_contra=(
+            "La norma no escribe esa suma: es geometria del proyecto sobre "
+            "dos definiciones suyas (la profundidad de cresta a valle sobre "
+            "una misma cara, nota b; el diametro nominal medido en la cresta "
+            "interior, num. 8.1.1).",
+            "La profundidad real puede ser menor que la nominal: la tabla "
+            "admite 12 mm de minimo donde el rotulo dice 13. Tomar la "
+            "nominal da un diametro exterior mayor, que es el lado "
+            "conservador en 7.A (clave mas alta) y en V7 (mas volumen "
+            "desplazado).",
+            "En tuberia de corrugacion HELICOIDAL la circunferencia exterior "
+            "depende del angulo de la helice (Nota 7 del num. 8.1.1); el "
+            "diametro exterior en un corte perpendicular al eje sigue siendo "
+            "el de esta suma.",
+        ),
+        a_favor=(
+            "ASTM A796 Table 5 se titula «... for Corrugation: 68 by 13 mm» "
+            "y da r = 4.37 mm para 2.01 mm de espesor: un radio de giro de "
+            "un tercio de la profundidad, que es lo que corresponde a un "
+            "perfil de 13 mm de altura de onda.",
+        )),
+    vistas_de_calculo=("TMC_PLANCHA_CORRUGADA",),
+)
+
+
+# ---------------------------------------------------------------------------
+# AASHTO M 36-03 (2007), Table 7 -- espesores de plancha con recubrimiento
+# metalico. Por IMAGEN: PDF 13, pagina entera a 100 dpi y recorte a 220 dpi.
+# Siete espesores por seis especificaciones de recubrimiento; «X» = el
+# espesor esta incluido en esa especificacion (nota a). La celda vacia se
+# transcribe NO_IMPRESO.
+# ---------------------------------------------------------------------------
+_RECUBRIMIENTOS_M36 = ("m218_zinc", "m274_alt2", "m289_al_zn",
+                       "a885_aramida", "a929_zn5", "a929_alt1")
+
+_NO_USADA_M36_T7 = NoUsada(por_que_no=(
+    "el catalogo no distingue el tipo de recubrimiento metalico de la "
+    "plancha: el material del proyecto es TMC GALVANIZADA (M 218, la primera "
+    "columna) y elegir otro recubrimiento es una decision de durabilidad que "
+    "la matriz de la Sec. 3.3 deja al proyectista"))
+
+T_M36_T7 = _tabla(
+    id="AASHTO_M36.T7",
+    cita_id="AASHTO_M36.T7",
+    titulo_literal="Table 7—Thicknesses of Metallic-Coated Steel Sheet",
+    encabezados_superiores=("Specification Designation",),
+    texto_previo=Verbatim(
+        # El num. 8.1.2 (pag. impresa M 36-10, PDF 11), que hace vinculante
+        # a la tabla: el espesor se ELIGE de ella, y lo elige el comprador.
+        texto=("Sheet Thickness—Sheet thickness shall be specified by the "
+               "purchaser from the specified sheet thicknesses listed in "
+               "Table 7 (Notes 8 and 9)."),
+        pagina_pdf=11),
+    columnas=(
+        ColumnaDeTabla(id="t_mm", etiqueta_literal="Specified Thickness, mm",
+                       unidad="mm",
+                       uso=Usada(por=(
+                           "criterios_adoptados['corrugacion_y_espesor_tmc']",))),
+        ColumnaDeTabla(id="m218_zinc", etiqueta_literal="M 218, Zinc Coated",
+                       unidad="",
+                       uso=Usada(por=(
+                           "criterios_adoptados['corrugacion_y_espesor_tmc']",))),
+        ColumnaDeTabla(id="m274_alt2",
+                       etiqueta_literal="M 274 AlT2, Aluminum Coated",
+                       unidad="", uso=_NO_USADA_M36_T7),
+        ColumnaDeTabla(id="m289_al_zn",
+                       etiqueta_literal=("M 289, 55 Percent Aluminum-Zinc "
+                                         "Alloy Coated"),
+                       unidad="", uso=_NO_USADA_M36_T7),
+        ColumnaDeTabla(id="a885_aramida",
+                       etiqueta_literal="A 885, Zinc and Aramid Fiber Coated",
+                       unidad="", uso=_NO_USADA_M36_T7),
+        ColumnaDeTabla(id="a929_zn5",
+                       etiqueta_literal="A 929M Zn-5 Al-MM, Alloy Coated",
+                       unidad="", uso=_NO_USADA_M36_T7),
+        ColumnaDeTabla(id="a929_alt1",
+                       etiqueta_literal="A 929M AlT1, Aluminum Coated",
+                       unidad="", uso=_NO_USADA_M36_T7),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"AASHTO_M36.T7#t{t_mm:.2f}",
+            etiqueta_literal=f"{t_mm:.2f}",
+            valores={"t_mm": t_mm,
+                     **{col: ("X" if marca == "X" else CeldaSinValor.NO_IMPRESO)
+                        for col, marca in zip(_RECUBRIMIENTOS_M36, marcas)}},
+            uso=Usada(por=(
+                "criterios_adoptados['corrugacion_y_espesor_tmc']",)))
+        # (espesor, marcas en el orden M 218, M 274, M 289, A 885, A 929M
+        #  Zn-5, A 929M AlT1) leidos de la pag. PDF 13.
+        for t_mm, marcas in (
+            (1.02, "X.X.X."),
+            (1.32, "XXX.XX"),
+            (1.63, "XXXXXX"),
+            (2.01, "XXXXXX"),
+            (2.77, "XXXXXX"),
+            (3.51, "XXXXXX"),
+            (4.27, "X..XX."),
+        )),
+    notas_al_pie=(
+        NotaAlPie(marca="a", texto=Verbatim(
+            texto=("An “X” indicates sheet thickness included in the "
+                   "applicable specification for coating types listed."),
+            pagina_pdf=13)),
+    ),
+    alcance=Integra(),
+)
+
+
+# ---------------------------------------------------------------------------
+# WSDOT Hydraulics Manual M 23-03.12, Table 8-4 «Pipe Abrasion Levels». Por
+# TEXTO: pags. impresas 8-27 y 8-28 (PDF 242 y 243). Cuatro filas.
+#
+# TRES COLUMNAS IMPRESAS, y la del medio («General Site Characteristics») es
+# una celda con TRES viñetas --carga de fondo, pendiente y velocidad--, que
+# aqui van como tres columnas con la misma etiqueta literal: el calculo
+# necesita distinguir la velocidad de las otras dos, y la pagina imprime las
+# tres. La particion es del proyecto.
+#
+# LO QUE ESTA TABLA NO ES: no es una tabla de velocidades maximas. Las
+# velocidades son UNA de tres caracteristicas con que la fuente describe un
+# nivel de abrasion, y la nota que la introduce dice que no hace falta que
+# concurran las tres.
+# ---------------------------------------------------------------------------
+_USADA_ABRASION = Usada(por=("M2.matriz_durabilidad",))
+
+T_WSDOT_T8_4 = _tabla(
+    id="WSDOT_HM.T8-4",
+    cita_id="WSDOT_HM.T8-4",
+    titulo_literal="Table 8-4 Pipe Abrasion Levels",
+    texto_previo=Verbatim(
+        texto=("Four abrasion levels have been developed to assist the PEO "
+               "in quantifying the abrasion potential of a site. The "
+               "abrasion levels are identified in Table 8-4."),
+        pagina_pdf=242),
+    columnas=(
+        ColumnaDeTabla(id="nivel", etiqueta_literal="Abrasion Level",
+                       unidad="", uso=_USADA_ABRASION),
+        ColumnaDeTabla(id="carga_de_fondo",
+                       etiqueta_literal="General Site Characteristics",
+                       unidad="", uso=_USADA_ABRASION),
+        ColumnaDeTabla(id="pendiente",
+                       etiqueta_literal="General Site Characteristics",
+                       unidad="", uso=_USADA_ABRASION),
+        ColumnaDeTabla(id="velocidad",
+                       etiqueta_literal="General Site Characteristics",
+                       unidad="ft/s", uso=_USADA_ABRASION),
+        ColumnaDeTabla(id="proteccion",
+                       etiqueta_literal="Recommended Invert Protection",
+                       unidad="", uso=_USADA_ABRASION),
+    ),
+    filas=(
+        FilaDeTabla(
+            id="WSDOT_HM.T8-4#no_abrasivo", etiqueta_literal="Non-abrasive",
+            valores={
+                "nivel": "Non-abrasive",
+                "carga_de_fondo": "Little or no bed load",
+                "pendiente": "Slope less than 1%",
+                "velocidad": "Velocities less than 3 ft/s",
+                "proteccion": (
+                    "Generally, most pipes may be used under these "
+                    "circumstances, if a protective treatment is deemed "
+                    "necessary for metal pipes, any of the protective "
+                    "treatments specified in Section 8-5.3.1 would be "
+                    "adequate.")},
+            uso=_USADA_ABRASION),
+        FilaDeTabla(
+            id="WSDOT_HM.T8-4#poco_abrasivo", etiqueta_literal="Low abrasive",
+            valores={
+                "nivel": "Low abrasive",
+                "carga_de_fondo": "Minor bed loads of sands, silts, and clays",
+                "pendiente": "Slopes 1%–2%",
+                "velocidad": "Velocities less than 6 ft/s",
+                "proteccion": (
+                    "For metal pipes, an additional gage thickness may be "
+                    "specified if existing pipes in the vicinity show "
+                    "susceptibility to abrasion, or any of the protective "
+                    "treatments specified in Section 8-5.3.1 would be "
+                    "adequate.")},
+            uso=_USADA_ABRASION),
+        FilaDeTabla(
+            id="WSDOT_HM.T8-4#moderadamente_abrasivo",
+            etiqueta_literal="Moderately abrasive",
+            valores={
+                "nivel": "Moderately abrasive",
+                "carga_de_fondo": ("Moderate bed loads of sands and gravels, "
+                                   "with stone sizes up to about 3 inches"),
+                "pendiente": "Slopes 2%–4%",
+                "velocidad": "Velocities from 6 to 15 ft/s",
+                "proteccion": (
+                    "Metal pipe thickness shall be increased one or two "
+                    "standard gages. The PEO may want to consider a "
+                    "concrete-lined alternative. Concrete pipe and box "
+                    "culverts shall be specified with an increased wall "
+                    "thickness or an increased concrete compressive "
+                    "strength. Thermoplastic pipe may be used without "
+                    "additional treatments.")},
+            uso=_USADA_ABRASION),
+        FilaDeTabla(
+            id="WSDOT_HM.T8-4#severamente_abrasivo",
+            etiqueta_literal="Severely abrasive",
+            valores={
+                "nivel": "Severely abrasive",
+                "carga_de_fondo": ("Heavy bed loads of sands, gravel, and "
+                                   "rocks, with stone sizes up to 12 inches "
+                                   "or larger"),
+                "pendiente": "Slopes steeper than 4%",
+                "velocidad": "Velocities greater than 15 ft/s",
+                "proteccion": (
+                    "Metal pipe thickness shall be increased at least two "
+                    "standard gages, or the pipe invert shall be lined with "
+                    "concrete. Box culverts shall be specified with an "
+                    "increased wall thickness or an increased concrete "
+                    "compressive strength. Sacrificial metal pipe exhibits "
+                    "better abrasion characteristics than metal or concrete. "
+                    "However, it generally cannot be reinforced to provide "
+                    "additional invert protection and shall not be used in "
+                    "this condition.")},
+            uso=_USADA_ABRASION),
+    ),
+    alcance=Integra(),
+    interpretacion=Interpretacion(
+        texto=("El proyecto toma el corte de 15 ft/s (4.572 m/s) entre los "
+               "niveles «moderately» y «severely abrasive» como techo de "
+               "velocidad de V3 para TMC y HDPE, es decir: toma la velocidad "
+               "POR SI SOLA como criterio suficiente para clasificar el "
+               "sitio como severamente abrasivo"),
+        en_contra=(
+            "La tabla clasifica el SITIO por tres caracteristicas (carga de "
+            "fondo, pendiente y velocidad), no fija una velocidad maxima "
+            "para ningun material.",
+            "Para el METAL la tabla no prohibe nada en ningun nivel: "
+            "prescribe remedio (mas calibre o solera de concreto), y el "
+            "«shall» de aumentar uno o dos calibres ya rige desde 6 ft/s en "
+            "el nivel moderado. V3 no sustituye esa proteccion.",
+            "La prohibicion del termoplastico en el nivel severo NO esta en "
+            "esta tabla sino en el §8-3.3 (WSDOT_HM.8-3.3#SEVERA). La fila "
+            "severa de esta edicion no nombra al termoplastico: su ultima "
+            "frase habla de «Sacrificial metal pipe», y por su redaccion "
+            "(«exhibits better abrasion characteristics than metal or "
+            "concrete», la misma que el §3-3.5 aplica al termoplastico) "
+            "parece una errata del ejemplar. Es inferencia, no texto: se "
+            "transcribe como se imprime.",
+            "Los cortes inferiores (3 y 6 ft/s) no entran en ninguna "
+            "verificacion del proyecto; el de 6 ft/s (1.829 m/s) es desde "
+            "donde la fuente pide mas calibre para el metal.",
+        ),
+        a_favor=(
+            "La nota que introduce la tabla (WSDOT_HM.T8-4) dice que no hace "
+            "falta que concurran todos los criterios de un nivel para "
+            "asignarlo: clasificar por la velocidad sola es una lectura "
+            "conservadora que la fuente admite.",
+            "AASHTO LRFD C12.6.9 (AASHTO_LRFD_9.C12.6.9#NIVEL_4) pone el "
+            "mismo corte de 15.0 ft/s para el nivel 4 de abrasion de la FHWA.",
+        )),
+    vistas_de_calculo=("NIVELES_DE_ABRASION",),
+)
+
+
+# ---------------------------------------------------------------------------
+# HDS-5 3a ed. (FHWA-HIF-12-026), Apendice B, Table B.1 «Manning's n Values
+# for Culverts». Por TEXTO (pag. impresa B.6, PDF 208) y contrastada fila a
+# fila sobre la pagina renderizada a escala 1.3. Trece filas.
+#
+# LA COLUMNA «Manning's n» IMPRIME UN RANGO («0.010-0.011») y aqui va como
+# dos columnas, minimo y maximo, con la misma etiqueta literal: la regla de
+# doble n del proyecto (v8 §4.1) consume los dos extremos por separado.
+# ---------------------------------------------------------------------------
+_NO_USADA_TB1 = NoUsada(por_que_no=(
+    "el n de este material sale de la Tabla N 09 del Manual de Hidrologia, "
+    "que es norma peruana [N] y manda sobre una fuente [C]; la fila se "
+    "transcribe porque una tabla podada no deja ver de que se eligio la del "
+    "polietileno, y porque su rango sirve de contraste externo del n peruano"))
+
+_USADA_N_HDPE = Usada(por=("criterios_adoptados['n_manning_hdpe']",))
+
+T_HDS5_B1 = _tabla(
+    id="HDS5_3ED.TB.1",
+    cita_id="HDS5_3ED.TB.1",
+    titulo_literal="B.1.  Manning's n Values for Culverts.",
+    columnas=(
+        ColumnaDeTabla(id="tipo", etiqueta_literal="Type of Culvert",
+                       unidad="", uso=_USADA_N_HDPE),
+        ColumnaDeTabla(id="rugosidad",
+                       etiqueta_literal="Roughness or Corrugation",
+                       unidad="", uso=_USADA_N_HDPE),
+        ColumnaDeTabla(id="n_min", etiqueta_literal="Manning's n", unidad="",
+                       uso=_USADA_N_HDPE),
+        ColumnaDeTabla(id="n_max", etiqueta_literal="Manning's n", unidad="",
+                       uso=_USADA_N_HDPE),
+        ColumnaDeTabla(id="referencia", etiqueta_literal="Reference",
+                       unidad="",
+                       uso=NoUsada(por_que_no=(
+                           "bibliografia de la fuente: documenta de que "
+                           "ensayo sale cada rango, no entra en el calculo"))),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"HDS5_3ED.TB.1#{clave}",
+            etiqueta_literal=tipo,
+            valores={"tipo": tipo, "rugosidad": rugosidad, "n_min": n_min,
+                     "n_max": n_max, "referencia": referencia},
+            llamadas_a_nota=(("2",) if nota_2 else ()),
+            uso=(_USADA_N_HDPE if clave == "polietileno_corrugado_liso"
+                 else _NO_USADA_TB1))
+        for clave, tipo, rugosidad, n_min, n_max, referencia, nota_2 in (
+            ("concrete_pipe", "Concrete Pipe", "Smooth", 0.010, 0.011,
+             "Straub et al. 1960; May et al. 1986; Tullis 1986 & 1991a",
+             False),
+            ("concrete_boxes", "Concrete Boxes", "Smooth", 0.012, 0.015,
+             "FHWA 1961", False),
+            ("spiral_rib_metal_pipe", "Spiral Rib Metal Pipe", "Smooth",
+             0.012, 0.013, "Tullis 1983 & 1991b", False),
+            ("cmp_helicoidal_68x13",
+             "Corrugated Metal Pipe (Helical Corrugations)",
+             "2-2/3 by 1/2 in 68 by 13 mm", 0.011, 0.023,
+             "FHWA 1980; Tullis 1991c", True),
+            ("cmp_helicoidal_150x25",
+             "Corrugated Metal Pipe (Helical Corrugations)",
+             "6 by 1 in 150 by 25 mm", 0.022, 0.025, "FHWA 1980", True),
+            ("cmp_anular_68x13",
+             "Corrugated Metal Pipe, Pipe-Arch and Box (Annular Corrugations)",
+             "2-2/3 by 1/2 in 68 by 13 mm", 0.022, 0.027, "FHWA 1980", True),
+            ("cmp_anular_125x25",
+             "Corrugated Metal Pipe, Pipe-Arch and Box (Annular Corrugations)",
+             "5 by 1 in 125 by 25 mm", 0.025, 0.026, "FHWA 1980", True),
+            ("cmp_anular_75x25",
+             "Corrugated Metal Pipe, Pipe-Arch and Box (Annular Corrugations)",
+             "3 by 1 in 75 by 25 mm", 0.027, 0.028, "FHWA 1980", True),
+            ("plancha_estructural_150x50",
+             "Corrugated Metal Structural Plate (Annular Corrugations)",
+             "6 by 2 in 150 by 50 mm", 0.033, 0.035, "FHWA 1980", True),
+            ("plancha_estructural_230x64",
+             "Corrugated Metal Structural Plate (Annular Corrugations)",
+             "9 by 2-1/2 in 230 by 64 mm", 0.033, 0.037, "FHWA 1980", True),
+            ("polietileno_corrugado_liso", "Corrugated Polyethylene",
+             "Smooth", 0.009, 0.015,
+             "Barfuss & Tullis 1988; Tullis et al. 1990", False),
+            ("polietileno_corrugado_corrugado", "Corrugated Polyethylene",
+             "Corrugated", 0.018, 0.025, "Clyde 1980; USBR 1985", False),
+            ("pvc", "Polyvinyl chloride (PVC)", "Smooth", 0.009, 0.011,
+             "Neale and Price 1964; Bishop and Jeppson 1975", False),
+        )),
+    notas_al_pie=(
+        NotaAlPie(marca="1", texto=Verbatim(
+            texto=("The Manning's n values indicated in this table were "
+                   "obtained in the laboratory and are supported by the "
+                   "provided reference. Actual field values for culverts may "
+                   "vary depending on the effect of abrasion, corrosion, "
+                   "deflection, and joint conditions."),
+            pagina_pdf=208)),
+        NotaAlPie(marca="2", texto=Verbatim(
+            texto="See Figure B.3, Manning's n varies with barrel size.",
+            pagina_pdf=208)),
+    ),
+    alcance=Integra(),
+    interpretacion=Interpretacion(
+        texto=("El par (minimo, maximo) de la fila «Corrugated Polyethylene "
+               "/ Smooth» se toma entero como la doble n del HDPE de "
+               "interior liso: 0.015 para capacidad y tirante, 0.009 para "
+               "velocidad maxima y socavacion"),
+        en_contra=(
+            "Son valores de LABORATORIO (nota 1): la fuente advierte que los "
+            "de campo pueden variar por abrasion, corrosion, deflexion y "
+            "juntas, y no dice hacia donde.",
+            "La fila vale para el interior LISO (tuberia Tipo S o D de "
+            "M 294). Con interior corrugado (Tipo C) rige la fila siguiente, "
+            "0.018-0.025, y usar esta seria gruesamente inseguro en "
+            "capacidad.",
+            "El rango es mas ancho que el del concreto de la Tabla N 09 "
+            "peruana (0.010-0.013), que es el que el proyecto aplicaba por "
+            "analogia: baja el n minimo y sube el maximo.",
+        )),
+)
+
+
+# ---------------------------------------------------------------------------
+# E.050, Figura 3 «Simbologia de Suelos (Referencial)». Por TEXTO (pag. 31).
+# Quince simbolos SUCS con su descripcion. NO ES UNA TABLA IMPRESA: es una
+# figura con tres columnas (divisiones mayores, simbolo SUCS con su grafico,
+# descripcion); se modela como tabla porque el criterio
+# 'sucs_fundacion_deficiente' elige simbolos de ella. La columna del simbolo
+# GRAFICO (la trama) no se transcribe: no es texto.
+# ---------------------------------------------------------------------------
+_USADA_SUCS = Usada(por=("criterios_adoptados['sucs_fundacion_deficiente']",))
+
+T_E050_FIG3 = _tabla(
+    id="E050.FIG3",
+    cita_id="E050.FIG3",
+    titulo_literal="Simbología de Suelos (Referencial)",
+    columnas=(
+        ColumnaDeTabla(id="division", etiqueta_literal="DIVISIONES MAYORES",
+                       unidad="",
+                       uso=NoUsada(por_que_no=(
+                           "agrupa los simbolos; el criterio elige por "
+                           "simbolo, no por division"))),
+        ColumnaDeTabla(id="simbolo", etiqueta_literal="SUCS", unidad="",
+                       uso=_USADA_SUCS),
+        ColumnaDeTabla(id="descripcion", etiqueta_literal="DESCRIPCIÓN",
+                       unidad="", uso=_USADA_SUCS),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"E050.FIG3#{simbolo.upper()}",
+            etiqueta_literal=simbolo,
+            valores={"division": division, "simbolo": simbolo,
+                     "descripcion": descripcion},
+            uso=_USADA_SUCS)
+        for division, simbolo, descripcion in (
+            ("SUELOS GRANULARES / GRAVA Y SUELOS GRAVOSOS", "GW",
+             "GRAVA BIEN GRADUADA"),
+            ("SUELOS GRANULARES / GRAVA Y SUELOS GRAVOSOS", "GP",
+             "GRAVA MAL GRADUADA"),
+            ("SUELOS GRANULARES / GRAVA Y SUELOS GRAVOSOS", "GM",
+             "GRAVA LIMOSA"),
+            ("SUELOS GRANULARES / GRAVA Y SUELOS GRAVOSOS", "GC",
+             "GRAVA ARCILLOSA"),
+            ("SUELOS GRANULARES / ARENA Y SUELOS ARENOSOS", "SW",
+             "ARENA BIEN GRADUADA"),
+            ("SUELOS GRANULARES / ARENA Y SUELOS ARENOSOS", "SP",
+             "ARENA MAL GRADUADA"),
+            ("SUELOS GRANULARES / ARENA Y SUELOS ARENOSOS", "SM",
+             "ARENA LIMOSA"),
+            ("SUELOS GRANULARES / ARENA Y SUELOS ARENOSOS", "SC",
+             "ARENA ARCILLOSA"),
+            ("SUELOS FINOS / LIMOS Y ARCILLAS (LL < 50)", "ML",
+             "LIMO INORGÁNICO DE BAJA PLASTICIDAD"),
+            ("SUELOS FINOS / LIMOS Y ARCILLAS (LL < 50)", "CL",
+             "ARCILLA INORGÁNICA DE BAJA PLASTICIDAD"),
+            ("SUELOS FINOS / LIMOS Y ARCILLAS (LL < 50)", "OL",
+             "LIMO ORGÁNICO O ARCILLA ORGÁNICA DE BAJA PLASTICIDAD"),
+            ("SUELOS FINOS / LIMOS Y ARCILLAS (LL > 50)", "MH",
+             "LIMO INORGÁNICO DE ALTA PLASTICIDAD"),
+            ("SUELOS FINOS / LIMOS Y ARCILLAS (LL > 50)", "CH",
+             "ARCILLA INORGÁNICA DE ALTA PLASTICIDAD"),
+            ("SUELOS FINOS / LIMOS Y ARCILLAS (LL > 50)", "OH",
+             "LIMO ORGÁNICO O ARCILLA ORGÁNICA DE ALTA PLASTICIDAD"),
+            ("SUELOS ALTAMENTE ORGÁNICOS", "Pt",
+             "TURBA Y OTROS SUELOS ALTAMENTE ORGÁNICOS."),
+        )),
+    alcance=Integra(),
+    vistas_de_calculo=("SIMBOLOS_SUCS",),
 )
 
 
