@@ -55,10 +55,11 @@ Las dos ayudas salen del mismo censo
 La del CSV: las columnas tienen concepto, unidad y `resolucion` en el censo,
 porque son una de sus poblaciones.
 
-La del JSON: las OCHO claves de `servicio.CLAVES_EXTERNAS` estan en el censo desde
+La del JSON: las claves de `servicio.CLAVES_EXTERNAS` estan en el censo desde
 EXT-5 (EXT-G-03). Dos (`Q_m3s`, `S_cauce`) como columnas del CSV, que ademas
-lo son; las otras seis (`luz_m`, `TW_m`, `longitud_m`, `S_conducto`,
-`L_hidraulico_m`, `categoria_tr`) como la poblacion `dato_externo` de
+lo son; las demas (`luz_m`, `TW_m`, `longitud_m`, `S_conducto`,
+`L_hidraulico_m`, `categoria_tr` y, desde T-2, `seccion_receptor_medida` y
+`acceso_mantenimiento_previsto`) como la poblacion `dato_externo` de
 `variables_entrada`. Hasta EXT-5 esas seis iban vacias y esta ayuda lo decia,
 prefiriendo un hueco declarado a parsear la prosa del docstring de `cli.py`
 --- y sigue sin parsearla: un docstring no es una interfaz ---. Lo que cambio
@@ -246,10 +247,10 @@ def vacios_por_quien_lo_debe() -> Tuple[Tuple[str, Tuple[str, ...], Tuple[Famili
 class FichaDeClaveExterna:
     """
     Una clave de `servicio.CLAVES_EXTERNAS`, con lo que de ella se DERIVA del
-    censo de `variables_entrada`: las ocho estan censadas desde EXT-5
+    censo de `variables_entrada`: todas estan censadas desde EXT-5
     (EXT-G-03) --- las dos que ademas son columna del CSV, como columnas; las
-    seis restantes, como la poblacion `DATO_EXTERNO` ---. Hasta entonces las
-    seis iban vacias y la ventana lo decia, prefiriendo un hueco declarado a
+    restantes, como la poblacion `DATO_EXTERNO` ---. Hasta entonces las
+    seis que habia iban vacias y la ventana lo decia, prefiriendo un hueco declarado a
     una frase inventada; la frase ya no se inventa: se lee del censo, que es
     el mismo sitio del que salen las fichas de las columnas.
     """
@@ -269,7 +270,7 @@ class FichaDeClaveExterna:
 
 def fichas_de_datos_externos() -> Tuple[FichaDeClaveExterna, ...]:
     """
-    Las ocho claves del JSON, en el orden en que el servicio de calculo las
+    Las claves del JSON, en el orden en que el servicio de calculo las
     declara (`servicio.CLAVES_EXTERNAS`).
 
     Hasta EXT-9 se leian de `cli`, importado DENTRO de la funcion para que

@@ -86,6 +86,7 @@ from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          DisenoNoFactibleError, ErrorProyecto, Espaciamiento,
                          Familia, MetodoNoEvaluableError, PasoDiseno,
                          ProteccionSalida, PuntoCritico, ResultadoPunto,
+                         AVISO_SIN_ACCESO_DE_MANTENIMIENTO, SeccionReceptor,
                          TipoDeBloqueo, TWDeterminado, Verificacion)
 from src.modulos.M0_carga import (cargar_puntos, cargar_puntos_de_bytes,
                                   leer_bytes)
@@ -289,11 +290,18 @@ COLUMNAS_DEL_TW: Tuple[str, ...] = ("cota_TW", "Q_receptor_m3s")
 # queda de `CLAVES_EXTERNAS` sin columna --- luz_m, TW_m, L_hidraulico_m ---
 # tiene su regla explicita en el pre-vuelo, y el test de PF-2 fija que la
 # particion sea exacta: una clave nueva sin regla ni via alterna no pasa.
-EXTERNOS_CON_VIA_ALTERNA: Tuple[str, ...] = ("longitud_m", "categoria_tr", "S_conducto")
+EXTERNOS_CON_VIA_ALTERNA: Tuple[str, ...] = (
+    "longitud_m", "categoria_tr", "S_conducto",
+    # --- T-2 --- Las dos claves que T-2 abre son OPCIONALES y ninguna falta
+    # detiene nada: sin la seccion medida del receptor rige la adoptada del
+    # criterio 'seccion_receptor' (y la memoria lo avisa), y sin la
+    # declaracion del acceso de mantenimiento el punto se calcula igual.
+    "seccion_receptor_medida", "acceso_mantenimiento_previsto")
 
 
 def tw_sin_via_de_sec_1_3(tw_declarado: Optional[float], cota_TW: Optional[float],
-                          Q_receptor: Optional[float]) -> bool:
+                          Q_receptor: Optional[float],
+                          hay_seccion_medida: bool = False) -> bool:
     """
     True cuando ninguna de las vias de Sec. 1.3 es recorrible con lo que hay
     --- ni TW declarado, ni `cota_TW`, ni Manning en el receptor (que exige
@@ -302,7 +310,11 @@ def tw_sin_via_de_sec_1_3(tw_declarado: Optional[float], cota_TW: Optional[float
     para decidir si consulta ese criterio, y el pre-vuelo (PF-2) para decir
     que el punto caera ahi sin correr nada.
     """
+    # --- T-2 --- Con la seccion MEDIDA del receptor (`seccion_receptor_
+    # medida` de --datos-externos) la via 4 se recorre aunque el criterio
+    # 'seccion_receptor' este vacio: la medida gana y el criterio no se lee.
     return (tw_declarado is None and cota_TW is None and Q_receptor is None
+            and not hay_seccion_medida
             and ca.valor_si_declarado(CRITERIO_SECCION_RECEPTOR) is None)
 
 
@@ -367,9 +379,35 @@ CRITERIO_SECCION_RECEPTOR = "seccion_receptor"
 # Las dos clases estan en el docstring del modulo. Las de texto van aparte
 # porque no se validan como numero.
 CLAVES_TEXTO: Tuple[str, ...] = ("categoria_tr",)
-CLAVES_EXTERNAS: Tuple[str, ...] = ("luz_m", "TW_m", "longitud_m", "Q_m3s",
-                                    "S_conducto", "S_cauce",
-                                    "L_hidraulico_m") + CLAVES_TEXTO
+# --- T-2 --- (cadena T, 2026-11-11). DOS CLAVES NUEVAS, y ninguna es un
+# numero suelto, de modo que cada una va en su clase y se valida por ella:
+#
+#   seccion_receptor_medida        (INF-3.2.8) la seccion LEVANTADA del
+#       receptor, como objeto con los MISMOS cinco campos del criterio
+#       'seccion_receptor' -- b_m, z_HV, S, n, altura_total_m --. Es entrada
+#       del proyecto (topografia / ANA / Junta; el script de QGIS del
+#       proyecto la puede exportar): opcional, sin valor por defecto, y
+#       cuando viene GANA sobre el criterio adoptado en las vias 3 y 4 del
+#       TW. Un objeto y no cinco claves porque media seccion no es una
+#       seccion: los cinco campos entran juntos o no entra ninguno.
+#   acceso_mantenimiento_previsto  (INF-0.5) booleano por punto: si los
+#       planos preven el acceso de limpieza que el num. 4.1.1.3.7 d) del
+#       Manual exige. Opcional; no decide ningun calculo: se imprime, y
+#       `false` dispara un aviso.
+CLAVE_SECCION_RECEPTOR_MEDIDA = "seccion_receptor_medida"
+CLAVE_ACCESO_MANTENIMIENTO = "acceso_mantenimiento_previsto"
+CLAVES_OBJETO: Tuple[str, ...] = (CLAVE_SECCION_RECEPTOR_MEDIDA,)
+CLAVES_BOOLEANAS: Tuple[str, ...] = (CLAVE_ACCESO_MANTENIMIENTO,)
+CAMPOS_SECCION_RECEPTOR: Tuple[str, ...] = ("b_m", "z_HV", "S", "n",
+                                            "altura_total_m")
+# Las claves numericas que admiten el CERO como dato, cada una con su
+# significado: TW = 0 es salida libre y, desde T-2, S_conducto = 0 es un
+# barril horizontal (INF-5.1.6; HDS-5 num. 3.3.4).
+CLAVES_QUE_ADMITEN_CERO: Tuple[str, ...] = ("TW_m", "S_conducto")
+CLAVES_EXTERNAS: Tuple[str, ...] = (("luz_m", "TW_m", "longitud_m", "Q_m3s",
+                                     "S_conducto", "S_cauce",
+                                     "L_hidraulico_m") + CLAVES_TEXTO
+                                    + CLAVES_OBJETO + CLAVES_BOOLEANAS)
 
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
@@ -472,7 +510,93 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
                 clave, valor=bruto,
                 motivo=f"tiene que ser texto no vacio; origen: {origen}")
         return DatoDeclarado(nombre=clave, valor=bruto.strip(), origen=origen)
+    if clave in CLAVES_BOOLEANAS:
+        return _booleano_externo(clave, bruto, origen)
+    if clave == CLAVE_SECCION_RECEPTOR_MEDIDA:
+        return _seccion_receptor_externa(bruto, origen)
     return _numero_externo(clave, bruto, origen)
+
+
+def _booleano_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
+    """
+    --- T-2 --- Un dato externo booleano es `true` o `false` del JSON, y nada
+    mas: ni 0/1, ni "si"/"no". Es la contracara de PC-33 (un booleano no es
+    un numero): un numero tampoco es un booleano, y `"acceso_mantenimiento_
+    previsto": 0` no dice si el acceso esta previsto o si alguien dejo un
+    cero de relleno.
+    """
+    if not isinstance(bruto, bool):
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo=f"tiene que ser un booleano del JSON (true o false), no "
+                   f"{type(bruto).__name__}; origen: {origen}")
+    return DatoDeclarado(nombre=clave, valor=bruto, origen=origen)
+
+
+def _seccion_receptor_externa(bruto: Any, origen: str) -> DatoDeclarado:
+    """
+    --- T-2 --- (INF-3.2.8) La seccion MEDIDA del receptor, validada campo a
+    campo: es entrada del proyecto y entra completa o no entra.
+
+    Los cinco campos son los del criterio 'seccion_receptor' y de
+    `modelos.SeccionReceptor`, con los mismos nombres y unidades, para que
+    quien pase de la seccion adoptada a la levantada no tenga que traducir
+    nada: `b_m` (ancho de fondo, m), `z_HV` (talud, H:V), `altura_total_m`
+    (profundidad del fondo a la corona, m), `n` (Manning del receptor) y `S`
+    (pendiente del receptor, m/m). El dominio es el FISICO, no una banda de
+    practica: una medicion no se acota con la ventana de una adopcion.
+    """
+    clave = CLAVE_SECCION_RECEPTOR_MEDIDA
+    if not isinstance(bruto, dict):
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo=f"tiene que ser un objeto con los cinco campos de la "
+                   f"seccion ({', '.join(CAMPOS_SECCION_RECEPTOR)}); "
+                   f"origen: {origen}")
+    faltan = [c for c in CAMPOS_SECCION_RECEPTOR if c not in bruto]
+    sobran = [c for c in bruto if c not in CAMPOS_SECCION_RECEPTOR]
+    if faltan or sobran:
+        raise DatoInvalidoError(
+            clave, valor=sorted(bruto),
+            motivo=f"la seccion medida lleva exactamente los campos "
+                   f"{', '.join(CAMPOS_SECCION_RECEPTOR)}: "
+                   + (f"faltan {faltan}" if faltan else "")
+                   + ("; " if faltan and sobran else "")
+                   + (f"sobran {sobran}" if sobran else "")
+                   + f". Media seccion no es una seccion; origen: {origen}")
+    valores: Dict[str, float] = {}
+    for campo in CAMPOS_SECCION_RECEPTOR:
+        crudo = bruto[campo]
+        if isinstance(crudo, bool) or not isinstance(crudo, (int, float)) \
+                or not math.isfinite(crudo):
+            raise DatoInvalidoError(
+                f"{clave}.{campo}", valor=crudo,
+                motivo=f"no es un numero finito (SI); origen: {origen}")
+        valores[campo] = float(crudo)
+    # b_m y z_HV admiten el cero por separado (cuneta triangular, canal
+    # rectangular) y no los dos a la vez: eso no es una seccion, es una linea.
+    for campo in ("b_m", "z_HV"):
+        if not valores[campo] >= 0:
+            raise DatoInvalidoError(
+                f"{clave}.{campo}", valor=valores[campo],
+                motivo=f"no puede ser negativo; origen: {origen}")
+    if not valores["b_m"] + valores["z_HV"] > 0:
+        raise DatoInvalidoError(
+            clave, valor=(valores["b_m"], valores["z_HV"]),
+            motivo=f"con ancho de fondo 0 y talud 0 a la vez no hay seccion: "
+                   f"es una linea; origen: {origen}")
+    for campo in ("S", "n", "altura_total_m"):
+        if not valores[campo] > 0:
+            raise DatoInvalidoError(
+                f"{clave}.{campo}", valor=valores[campo],
+                motivo=f"tiene que ser positivo; origen: {origen}")
+    if not valores["S"] < S_CAUCE_MAX:
+        raise DatoInvalidoError(
+            f"{clave}.S", valor=valores["S"],
+            motivo=f"fuera del rango fisico posible ({S_CAUCE_MAX}): una "
+                   f"pendiente en m/m; un valor >= 1 delata una celda en "
+                   f"PORCENTAJE; origen: {origen}")
+    return DatoDeclarado(nombre=clave, valor=valores, origen=origen)
 
 
 # EL DOMINIO FISICO DE UNA CLAVE QUE TAMBIEN ES COLUMNA. Cuando el mismo dato
@@ -609,10 +733,18 @@ def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     # proyectista escribe en el JSON o en la bandera; un TW de 1e-15 m no es
     # salida libre, es un tirante absurdo, y taparlo con una tolerancia lo
     # convertiria en salida libre en silencio.
-    if valor < 0 or (valor == 0 and clave != "TW_m"):
+    #
+    # --- T-2 --- (INF-5.1.6) `S_conducto` ADMITE EL MISMO CERO, por la misma
+    # razon: es el centinela con que el proyectista declara un barril
+    # HORIZONTAL, que el HDS-5 admite (num. 3.3.4) y que M3 y M4 resuelven
+    # desde T-2. `S_cauce` NO lo admite por esta puerta ni por la columna: la
+    # pendiente del cauce natural es una medicion de M0 que T-2 no toca
+    # (ficha T2-01).
+    if valor < 0 or (valor == 0 and clave not in CLAVES_QUE_ADMITEN_CERO):
         raise DatoInvalidoError(
             clave, valor=bruto,
-            motivo=f"tiene que ser positivo (TW admite 0 = salida libre); "
+            motivo=f"tiene que ser positivo (TW admite 0 = salida libre y "
+                   f"S_conducto admite 0 = barril horizontal); "
                    f"origen: {origen}",
         )
     techo = _DOMINIO_DE_CLAVE.get(clave)
@@ -794,6 +926,10 @@ class InformePunto:
     # numeros del paso 3. `tw` sigue siendo el float que MD consume; esto es
     # lo que la memoria imprime, y son dos cosas distintas a proposito.
     tw_sec13: Optional[TWDeterminado] = None
+    # --- T-2 --- Lo que el punto declaro sobre el acceso de mantenimiento
+    # (`acceso_mantenimiento_previsto`, booleano opcional de --datos-
+    # externos), o None si no declaro nada. No entra en ningun calculo.
+    acceso_mantenimiento: Optional[DatoDeclarado] = None
     # La pendiente del CAUCE cuando la columna va vacia y la aporta el
     # Tablero 3.1. Se guarda como `DatoDeclarado` -- no se mete de tapadillo
     # en `punto` -- porque la memoria tiene que decir de donde salio: la fila
@@ -845,6 +981,23 @@ class InformePunto:
 
     def incumplidas(self) -> Tuple[Verificacion, ...]:
         return tuple(v for _, v in self.verificaciones() if not v.cumple)
+
+    def avisos(self) -> Tuple[str, ...]:
+        """
+        --- T-2 --- Los AVISOS del punto que no son de una verificacion ni de
+        un bloqueo: lo que la corrida tiene que decir en voz alta sin
+        detenerse. Hoy son dos: el TW obtenido con la seccion ADOPTADA del
+        receptor (INF-3.2.8, `TWDeterminado.avisos`) y el acceso de
+        mantenimiento declarado como NO previsto. Los imprimen la CLI, el
+        JSON y la memoria con el MISMO texto, que sale de aqui.
+        """
+        avisos: List[str] = []
+        if self.tw_sec13 is not None:
+            avisos.extend(self.tw_sec13.avisos)
+        acceso = self.acceso_mantenimiento
+        if acceso is not None and acceso.valor is False:
+            avisos.append(AVISO_SIN_ACCESO_DE_MANTENIMIENTO)
+        return tuple(avisos)
 
     def bloqueos_reales(self) -> Tuple[Bloqueo, ...]:
         """
@@ -1064,11 +1217,17 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
     punto = informe.punto_de_calculo
     declarado = externos.dato(punto.id, "TW_m")
     S = externos.valor(punto.id, "S_conducto")
+    # --- T-2 --- (INF-3.2.8) La seccion MEDIDA del receptor, si el
+    # expediente la trae: gana sobre el criterio 'seccion_receptor' en las
+    # vias 3 y 4, y M3 dice en el paso con cual corrio.
+    medida = externos.valor(punto.id, CLAVE_SECCION_RECEPTOR_MEDIDA)
+    seccion_medida = (None if medida is None else SeccionReceptor(**medida))
 
     def resolver():
         declarado_a_mano = (declarado.valor if declarado is not None else None)
         if tw_sin_via_de_sec_1_3(declarado_a_mano, punto.cota_TW,
-                                 punto.Q_receptor_m3s):
+                                 punto.Q_receptor_m3s,
+                                 hay_seccion_medida=seccion_medida is not None):
             # Ninguna de las cuatro vias de Sec. 1.3 es recorrible: se cae al
             # criterio, que es la ultima puerta y la que detiene con su ficha
             # entera. Se consulta con `valor`, no con `valor_si_declarado`,
@@ -1086,7 +1245,8 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
             fondo_salida = cota_salida(punto=punto, longitud=longitud.valor,
                                        S=pendiente)
         return M3.tw_seccion_1_3(punto=punto, cota_fondo_salida=fondo_salida,
-                                 tw_declarado=declarado_a_mano)
+                                 tw_declarado=declarado_a_mano,
+                                 seccion_medida=seccion_medida)
 
     resuelto = _etapa(informe.bloqueos, FASE_DISENO,
                       "tirante en el receptor (TW, Sec. 1.3)", resolver)
@@ -1785,6 +1945,11 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     nivel de perfil; con el perfil que M4 emite desde E-A, no se alcanza.
     """
     informe = InformePunto(punto=punto)
+    # --- T-2 --- La declaracion del acceso de mantenimiento, si la hay: no
+    # depende de ninguna fase y se anota antes que nada, para que viaje
+    # tambien en el punto que no llega a dimensionarse.
+    informe.acceso_mantenimiento = externos.dato(punto.id,
+                                                 CLAVE_ACCESO_MANTENIMIENTO)
 
     if punto.familia is Familia.C:
         _declarar_alcance_familia_c(informe)

@@ -889,7 +889,12 @@ _EXTERNOS: Dict[str, _Externo] = {
         unidad="m/m",
         resolucion=Libre(
             que_lo_fija="el perfil longitudinal con que se tiende el barril",
-            dominio="m/m > 0; un valor >= 1 delata una celda en porcentaje",
+            # --- T-2 --- (INF-5.1.6) El cero se admite: es un barril
+            # HORIZONTAL (HDS-5 num. 3.3.4). La banda que el proyecto adopta
+            # la verifica V10 ('pendiente_minima_conducto' y
+            # 'pendiente_maxima_conducto').
+            dominio="m/m >= 0 (0 = barril horizontal); un valor >= 1 delata "
+                    "una celda en porcentaje",
         ),
         dominio="S_CAUCE_MAX",
     ),
@@ -920,6 +925,53 @@ _EXTERNOS: Dict[str, _Externo] = {
                         "02; M1 la valida contra sus filas",
             opciones=tuple(c.value for c in CategoriaTR),
         ),
+    ),
+
+    # --- T-2 --- (cadena T, 2026-11-11) -------------------------------------
+    "seccion_receptor_medida": _Externo(
+        concepto="Seccion transversal MEDIDA del cuerpo receptor (dren, "
+                 "quebrada o canal) en la descarga: un objeto con el ancho de "
+                 "fondo `b_m`, el talud `z_HV` (H:V), la profundidad del "
+                 "fondo a la corona `altura_total_m`, el Manning `n` y la "
+                 "pendiente `S` del receptor. Cuando viene, GANA sobre la "
+                 "seccion adoptada del criterio 'seccion_receptor' en las "
+                 "vias 3 y 4 del TW (Sec. 1.3), y la memoria deja de avisar "
+                 "que el TW sale de una adopcion",
+        unidad="objeto (m, H:V, m, -, m/m)",
+        resolucion=Libre(
+            que_lo_fija="el levantamiento topografico del receptor (el script "
+                        "de QGIS del proyecto puede exportarlo) y, para n y "
+                        "S, quien opera el dren o canal (ANA / Junta de "
+                        "Usuarios); es entrada del proyecto, opcional y sin "
+                        "valor por defecto",
+            dominio="los cinco campos juntos: b_m >= 0 y z_HV >= 0 (no los "
+                    "dos nulos a la vez); altura_total_m, n y S > 0; S < 1",
+        ),
+        criterio_destino="seccion_receptor",
+        fase_declarada=_FASE_DE_MODULO["M3_hidraulica"],
+        nota="La lee `servicio._resolver_tw` y se la pasa a "
+             "`M3.tw_seccion_1_3`; ningun modulo de calculo la consume por "
+             "su nombre, y por eso la fase se declara",
+    ),
+
+    "acceso_mantenimiento_previsto": _Externo(
+        concepto="Si los planos preven el acceso de mantenimiento y limpieza "
+                 "del conducto en el punto: la exigencia del num. 4.1.1.3.7 "
+                 "d) del Manual de Hidrologia. Booleano, opcional. No decide "
+                 "ningun calculo: `true` se imprime en la memoria y `false` "
+                 "dispara un aviso. El DISPOSITIVO lo declara el criterio "
+                 "'acceso_mantenimiento_v2b'",
+        unidad="booleano",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, punto a punto, sobre los planos del "
+                        "cabezal",
+            opciones=("true", "false"),
+        ),
+        criterio_destino="acceso_mantenimiento_v2b",
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="La lee `servicio.correr_punto` y viaja en "
+             "`InformePunto.acceso_mantenimiento`; ningun modulo de calculo "
+             "la consume, y por eso la fase se declara",
     ),
 }
 

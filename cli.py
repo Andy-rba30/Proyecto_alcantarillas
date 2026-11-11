@@ -46,7 +46,12 @@ diferencia importa porque se corrigen en sitios distintos:
 
   (a) MAGNITUDES QUE NO SON COLUMNA. `luz_m`, `TW_m`, `longitud_m`,
       `S_conducto`, `L_hidraulico_m` y `categoria_tr`. Sec. 1.2 no las trae y
-      ningun numeral las deduce.
+      ningun numeral las deduce. Y, desde T-2, dos que no son un numero
+      suelto y solo entran por el JSON: `seccion_receptor_medida` (la seccion
+      levantada del receptor, un objeto con b_m, z_HV, S, n y altura_total_m,
+      que gana sobre la adoptada del criterio 'seccion_receptor') y
+      `acceso_mantenimiento_previsto` (booleano: si los planos preven el
+      acceso de limpieza del num. 4.1.1.3.7 d)). Las dos son opcionales.
   (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
       La columna existe y para la Familia C va vacia a proposito
       (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el
@@ -290,6 +295,20 @@ def _dato_json(dato: Optional[DatoDeclarado]) -> Optional[Dict[str, Any]]:
     return {"valor": _num(dato.valor), "origen": dato.origen}
 
 
+def _seccion_receptor_json(tw) -> Optional[Dict[str, Any]]:
+    """
+    --- T-2 --- La seccion del receptor con que corrio Sec. 1.3 y de donde
+    salio (medida o adoptada), o None si la via del TW no usa seccion
+    (declarado, `cota_TW`) o el TW no llego a determinarse.
+    """
+    if tw is None or tw.seccion is None:
+        return None
+    sec = tw.seccion
+    return {"origen": tw.origen_seccion, "via": tw.via.value,
+            "b_m": _num(sec.b_m), "z_HV": _num(sec.z_HV), "S": _num(sec.S),
+            "n": _num(sec.n), "altura_total_m": _num(sec.altura_total_m)}
+
+
 def _bloqueo_json(bloqueo: Bloqueo) -> Dict[str, Any]:
     return {"fase": bloqueo.fase, "etapa": bloqueo.etapa,
             "tipo": bloqueo.tipo.value,
@@ -531,7 +550,16 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
                              "categoria_tr": _dato_json(informe.categoria_tr),
                              "longitud_m": _dato_json(informe.longitud),
                              "TW_m": _dato_json(informe.tw),
-                             "S_cauce": _dato_json(informe.s_cauce)},
+                             "S_cauce": _dato_json(informe.s_cauce),
+                             # --- T-2 --- el booleano opcional del acceso de
+                             # mantenimiento (num. 4.1.1.3.7 d)), o null.
+                             "acceso_mantenimiento_previsto":
+                                 _dato_json(informe.acceso_mantenimiento)},
+        # --- T-2 --- (INF-3.2.8) CON QUE SECCION DEL RECEPTOR SE OBTUVO EL
+        # TW, cuando la via la usa: la geometria y si es MEDIDA o ADOPTADA.
+        # Y los avisos del punto, con el mismo texto que la memoria.
+        "tw_seccion_receptor": _seccion_receptor_json(informe.tw_sec13),
+        "avisos": list(informe.avisos()),
         "clasificacion": (None if informe.clasificacion is None
                           else _clasificacion_json(informe.clasificacion)),
         "diseno": (None if not informe.dimensionado
@@ -790,11 +818,20 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         out.append(f"{SANGRIA}        Control  : {h.control_gobernante.value} "
                    f"(HW = {_fmt(h.HW)} m; entrada {_fmt(h.HW_entrada)} / "
                    f"salida {_fmt(h.HW_salida)})")
-        out.append(f"{SANGRIA}        Hidraulica: y_n = {_fmt(h.y_normal)} m, "
-                   f"y_c = {_fmt(h.y_critico)} m, "
-                   f"V_erosion = {_fmt(h.V_erosion)} m/s (n min), "
-                   f"V_sedimentacion = {_fmt(h.V_sedimentacion)} m/s (n max), "
-                   f"Q = {_fmt(h.Q)} m3/s, S = {_fmt(h.S, DECIMALES_PENDIENTE)} m/m")
+        if h.sin_tirante_normal:
+            # --- T-2 --- Barril horizontal (S = 0): no hay tirante normal ni
+            # velocidades de Manning que imprimir, y se dice (INF-5.1.6).
+            out.append(f"{SANGRIA}        Hidraulica: BARRIL HORIZONTAL, sin "
+                       f"tirante normal ni velocidad uniforme (HDS-5 3.3.4); "
+                       f"y_c = {_fmt(h.y_critico)} m, "
+                       f"Q = {_fmt(h.Q)} m3/s, S = "
+                       f"{_fmt(h.S, DECIMALES_PENDIENTE)} m/m")
+        else:
+            out.append(f"{SANGRIA}        Hidraulica: y_n = {_fmt(h.y_normal)} m, "
+                       f"y_c = {_fmt(h.y_critico)} m, "
+                       f"V_erosion = {_fmt(h.V_erosion)} m/s (n min), "
+                       f"V_sedimentacion = {_fmt(h.V_sedimentacion)} m/s (n max), "
+                       f"Q = {_fmt(h.Q)} m3/s, S = {_fmt(h.S, DECIMALES_PENDIENTE)} m/m")
         out.append(f"{SANGRIA}        Longitud : L = {_fmt(informe.longitud.valor)} m "
                    f"({informe.longitud.origen}) | TW = "
                    f"{_fmt(informe.tw.valor)} m ({informe.tw.origen})")
@@ -883,6 +920,17 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"{_fmt(e.espaciamiento_max)} m (gobierna {e.gobierna.value}; "
                    f"normativo {_fmt(e.L_normativo)} / hidraulico "
                    f"{_fmt(e.L_hidraulico)})")
+
+    # --- T-2 --- Los avisos del punto (TW con la seccion adoptada del
+    # receptor, acceso de mantenimiento declarado como no previsto) y la
+    # declaracion del acceso cuando si esta previsto. Van tambien cuando el
+    # punto no dimensiona: el TW adoptado puede ser justamente el motivo.
+    acceso = informe.acceso_mantenimiento
+    if acceso is not None and acceso.valor is True:
+        out.append(f"{SANGRIA}Acceso de mantenimiento: previsto en los planos "
+                   f"({acceso.origen}; exigencia del num. 4.1.1.3.7 d))")
+    for aviso in informe.avisos():
+        out.append(f"{SANGRIA}aviso: {aviso}")
 
     out.extend(_lineas_bloqueos(informe.bloqueos))
     return out

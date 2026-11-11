@@ -2357,6 +2357,20 @@ SECCION_RECEPTOR_MEDIDA = "seccion medida (levantamiento del receptor)"
 SECCION_RECEPTOR_ADOPTADA = "seccion adoptada [A] por falta de levantamiento"
 ORIGENES_SECCION_RECEPTOR = (SECCION_RECEPTOR_MEDIDA, SECCION_RECEPTOR_ADOPTADA)
 
+# --- T-2 --- El aviso de un punto que declara que NO tiene previsto el acceso
+# de mantenimiento (`acceso_mantenimiento_previsto = false` en
+# --datos-externos). La EXIGENCIA es del Manual (num. 4.1.1.3.7 d), cita
+# MC_HHD.4.1.1.3.7d); el texto de aqui es del proyecto y lo dice. Vive en
+# este modulo porque lo imprimen el servicio (CLI y JSON) y la memoria (M11),
+# y M11 no importa del servicio.
+AVISO_SIN_ACCESO_DE_MANTENIMIENTO = (
+    "Acceso de mantenimiento: el punto declara que NO esta previsto "
+    "(acceso_mantenimiento_previsto = false). El Manual de Hidrologia, num. "
+    "4.1.1.3.7 d) 'Mantenimiento y limpieza', exige que las dimensiones de "
+    "la alcantarilla permitan el mantenimiento y la limpieza en su interior: "
+    "hay que preverlo en los planos (criterio 'acceso_mantenimiento_v2b') o "
+    "declarar la limitacion")
+
 
 class ViaDelTW(str, Enum):
     """

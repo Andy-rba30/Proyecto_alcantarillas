@@ -150,7 +150,8 @@ from src.modulos.M8_estructural import verificacion_diferida_estructural
 # Los rotulos de alcance viven en modelos.py, no en cli.py: M11 los necesita y
 # no puede importar la CLI --- es la CLI quien importa M11 ---. Ver la nota de
 # su declaracion.
-from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, ContextoCorrida,
+from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
+                     AVISO_SIN_ACCESO_DE_MANTENIMIENTO, ContextoCorrida,
                      ControlGobernante, EstadoDeVerificacion,
                      MOTIVO_METODO_NO_EVALUABLE, TipoDeVeredicto)
 
@@ -1061,15 +1062,26 @@ def _tabla_diseno(informe: Any) -> str:
                    + f" &middot; S = "
                    f"{_num(hidraulica.S, FMT_4)} m/m (la del diseño: la del "
                    "cauce salvo que el punto declare la suya) &middot; "
-                   f"y<sub>n</sub> = "
-                   f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
-                   f"{_num(hidraulica.y_critico)} m &middot; "
-                   f"V<sub>erosion</sub> = "
-                   f"{_num(hidraulica.V_erosion, FMT_2)} m/s (con n minimo, "
-                   f"contra el techo de V3) &middot; "
-                   f"V<sub>sedimentacion</sub> = "
-                   f"{_num(hidraulica.V_sedimentacion, FMT_2)} m/s (con n "
-                   f"maximo, contra el piso de V2)")]),
+                   + (
+                       # --- T-2 --- Barril horizontal: no hay tirante normal
+                       # ni velocidades de Manning, y la fila lo DICE en vez
+                       # de imprimir tres celdas vacias (INF-5.1.6).
+                       "<b>barril HORIZONTAL</b>: no hay tirante normal ni "
+                       "velocidad uniforme (HDS-5 num. 3.3.4); el tirante y "
+                       "las velocidades del conducto salen del perfil de la "
+                       "lamina y de la seccion de salida (pasos 4.1, 4.3b y "
+                       f"4.3c) &middot; y<sub>c</sub> = "
+                       f"{_num(hidraulica.y_critico)} m"
+                       if getattr(hidraulica, "sin_tirante_normal", False) else
+                       f"y<sub>n</sub> = "
+                       f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
+                       f"{_num(hidraulica.y_critico)} m &middot; "
+                       f"V<sub>erosion</sub> = "
+                       f"{_num(hidraulica.V_erosion, FMT_2)} m/s (con n minimo, "
+                       f"contra el techo de V3) &middot; "
+                       f"V<sub>sedimentacion</sub> = "
+                       f"{_num(hidraulica.V_sedimentacion, FMT_2)} m/s (con n "
+                       f"maximo, contra el piso de V2)"))]),
         _fila([_td("<b>Control gobernante</b>"),
                _td(f"{_esc(hidraulica.control_gobernante.value)} &mdash; "
                    f"HW = {_num(hidraulica.HW)} m (entrada "
@@ -2014,7 +2026,42 @@ def _paso_del_tw(informe: Any) -> str:
               'las unicas verificaciones que dependen del TW, tienen su peor '
               'caso en el TW mayor. Los dos numeros se imprimen para que se '
               'pueda comprobar en vez de creerlo.</p></div>')
-    return bloque_pasos((paso,), TITULO_TRAZA_TW) + escenarios
+    # --- T-2 --- (INF-3.2.8) CON QUE SECCION DEL RECEPTOR se obtuvo el TW,
+    # cuando la via la usa: «seccion adoptada [A] por falta de levantamiento»
+    # o «seccion medida», con el rotulo que M3 puso y sin redactarlo aqui; y
+    # el AVISO que dispara la adoptada. El texto es el de
+    # `TWDeterminado.avisos`, el mismo que imprimen la CLI y el JSON.
+    de_la_seccion = ""
+    if getattr(tw, "origen_seccion", ""):
+        de_la_seccion = (
+            '<div class="nota"><p><b>Seccion del receptor con que se obtuvo '
+            f'este TW:</b> {_esc(tw.origen_seccion)}.</p></div>')
+    avisos = "".join(f'<div class="aviso"><p><b>Aviso.</b> {_esc(a)}</p></div>'
+                     for a in getattr(tw, "avisos", ()))
+    return (bloque_pasos((paso,), TITULO_TRAZA_TW) + escenarios
+            + de_la_seccion + avisos)
+
+
+def _acceso_de_mantenimiento(informe: Any) -> str:
+    """
+    --- T-2 --- Lo que el punto declaro sobre el acceso de mantenimiento
+    (`acceso_mantenimiento_previsto`, booleano opcional de --datos-externos):
+    previsto, o NO previsto con su aviso. Sin declaracion no imprime nada: el
+    dispositivo lo dice el criterio 'acceso_mantenimiento_v2b' en el paso de
+    V2b, con la exigencia del num. 4.1.1.3.7 d) citada.
+    """
+    acceso = getattr(informe, "acceso_mantenimiento", None)
+    if acceso is None:
+        return ""
+    if acceso.valor is True:
+        return ('<div class="nota"><p><b>Acceso de mantenimiento:</b> el punto '
+                'declara que esta PREVISTO en los planos '
+                f'({_esc(acceso.origen)}). Es la exigencia del num. 4.1.1.3.7 '
+                'd) del Manual; el dispositivo lo declara el criterio '
+                "'acceso_mantenimiento_v2b'.</p></div>")
+    return (f'<div class="aviso"><p><b>Aviso.</b> '
+            f'{_esc(AVISO_SIN_ACCESO_DE_MANTENIMIENTO)} '
+            f'({_esc(acceso.origen)}).</p></div>')
 
 
 def _pasos_hidraulicos_del_punto(informe: Any) -> str:
@@ -2072,6 +2119,7 @@ def memoria_de_punto(informe: Any) -> str:
         _paso_del_tw(informe),
         _pasos_hidraulicos_del_punto(informe),
         _tabla_verificaciones(informe),
+        _acceso_de_mantenimiento(informe),
         _bloques_fases_finales(informe),
         _tabla_bloqueos(informe.bloqueos),
         "</div>",

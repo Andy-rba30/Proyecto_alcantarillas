@@ -2923,8 +2923,11 @@ class ExpedienteApp:
                 material = r.material.nombre
                 seccion = r.seccion.etiqueta()
                 control, HW = h.control_gobernante.value, f"{h.HW:.3f}"
-                V_ero = f"{h.V_erosion:.2f}"
-                V_sed = f"{h.V_sedimentacion:.2f}"
+                # --- T-2 --- En un barril horizontal (S = 0) no hay
+                # velocidades de Manning: la celda lo dice con el guion.
+                V_ero = "-" if h.V_erosion is None else f"{h.V_erosion:.2f}"
+                V_sed = ("-" if h.V_sedimentacion is None
+                         else f"{h.V_sedimentacion:.2f}")
             else:
                 material = seccion = control = HW = V_ero = V_sed = "-"
 
