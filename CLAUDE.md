@@ -193,7 +193,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -205,7 +205,11 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   entero), divergencia fijada por test. Las seis claves de
   `servicio.CLAVES_EXTERNAS` (en `cli` hasta EXT-9) que no son columna del CSV son desde EXT-5 la cuarta
   población del censo, `Poblacion.DATO_EXTERNO`, y la ayuda del JSON se
-  deriva de ahí (EXT-G-03).
+  deriva de ahí (EXT-G-03). Son ocho desde T-2, que sumó las dos que no son
+  una magnitud: `seccion_receptor_medida` (un objeto: la sección levantada
+  del receptor, que gana sobre el criterio `seccion_receptor`) y
+  `acceso_mantenimiento_previsto` (un booleano por punto); las dos,
+  opcionales y sin valor por defecto.
 - **El estado con que corrió el expediente viaja en el informe, no se lee
   del proceso al exportar (EXT-4).** Los tres archivos de valores llevan
   estado de proceso —el registro de usos, las declaraciones en caliente, el
@@ -281,7 +285,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -316,7 +320,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -670,7 +674,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4235**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4405**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son siete saltos más sin él, descritos en «Dónde
@@ -714,9 +718,11 @@ están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonce
   T1, que sumó el de la resolución impresa del Manual de Puentes), que se
   saltan sin PyMuPDF —dependencia de TEST, no de producción—. Ése es el eje
   que S12 documentó. Con los marcados `pdf` de otros archivos eran 35 en
-  total hasta T-0, y son **39** desde T-0, que sumó cuatro en
+  total hasta T-0, **39** desde T-0, que sumó cuatro en
   `tests/test_t0_gobernanza.py` (la portada, las páginas y la paginación de
-  HEC-14 y del WSDOT Hydraulics Manual).
+  HEC-14 y del WSDOT Hydraulics Manual), y son **40** desde T-2, que sumó
+  el de las cifras del ejemplo publicado de HDS-5 contra su página
+  (`tests/test_t2_hidraulica.py`).
 
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
@@ -727,7 +733,68 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-0 de la cadena T (2026-11-11) sumó CINCUENTA Y SIETE
+independientes. **T-2 de la cadena T (2026-11-11) sumó CIENTO SETENTA
+tests netos** (172 nuevos y dos casos parametrizados que desaparecen), y
+uno solo lleva la marca `pdf`; ninguno depende de Tk: los 159 de
+`tests/test_t2_hidraulica.py` —la aceptación de los cierres de método de la
+hidráulica: el barril horizontal (`S = 0` en M3 y M4, HDS-5 num. 3.3.4;
+`modelos.SinTiranteNormal`, perfil `H2`, V1/V2 sobre el perfil y V3/d50
+sobre la velocidad de salida, también con el control de entrada
+gobernando), la banda de pendiente y V10 (`M5.v10_pendiente_conducto`,
+evaluada detrás de V4b para que V5 y V8 no la tapen en el alcance de
+expediente), el borde libre cuando lo toma el nivel del receptor
+(`borde_libre_bajo_tw_ahogante`, con la monotonía de la lectura «aviso» a
+lo largo del TW medida con seis TW y dos diámetros), la sección medida del
+receptor con su validación de forma y de dominio, las 26 filas de la Tabla
+A.1 valor a valor, el ejemplo publicado de HDS-5 (`CP_HDS5_DG1`: tolerancia
+de lectura del 3 %, cinco casillas fuera censadas con su causa, las dos
+filas de metal corrugado por intervalo con el n acotado por la Tabla B.1, y
+ninguna fila en la transición), los indicadores que suben a los avisos y al
+RESUMEN, el receptor seco y los diámetros de la línea base leídos del
+archivo comprometido—; los siete anclajes de `test_decisiones_diferidas`
+para las fichas de la Parte XLI (T2-01..07); los tres que crecen solos en
+`test_ext5_forma_gui` con los tres criterios nuevos (79 → 82); uno en
+`test_M3_hidraulica` y uno en `test_M4_control` (la pendiente NaN junto a la
+negativa); y uno en `test_pf4_regimen_v2b` (C-01 sin declarar el régimen).
+Los dos que desaparecen: el caso de `hw_entrada_fuera_de_rango` en el
+parametrizado de vacíos de `test_criterios_adoptados` y su ejemplo de
+`--declarar` en `test_guia_perfil`, porque el criterio ya tiene valor de
+archivo. **Estos tests no se escribieron en rojo antes del código**: se
+midieron después contra un árbol exportado de `87d1ce7` —126 rojos y 33
+verdes, que son guardias que valen antes y después— y la mutación de lo
+tocado se midió con el arnés de EXT-11 (283 mutantes, 28 vivos, listados
+uno a uno en la ficha T2-07). Se reescribieron al contrato nuevo, sin
+sumar ni restar, `test_M5_verificaciones` (doce filas y doce funciones;
+V10 entre V4b y el hueco de V5), `test_cierre_perfil`, `test_cli`,
+`test_ayuda_entrada`, `test_ea_perfil_lamina` (el perfil `H2`),
+`test_ext11_mutacion` (dos claves del censo cambian de texto),
+`test_ext11_propiedades` (el receptor seco), `test_memoria_sustentada` (dos
+fundamentos que la corrida por defecto no alcanza), `test_pf1_hw_fuera_de_
+rango` y `test_pf4_regimen_v2b` (los dos criterios con valor de archivo; el
+caso patrón de PF-1, con S = 0.40, abre el techo de V10 para seguir midiendo
+el piso), `test_seccion_rectangular` (quince cartas de cajón de Forma 2,
+con el mínimo y el máximo sin mover) y `test_t0_gobernanza`, cuya tabla de
+lo que cada prompt escribe en el tracker deja de fijar «cerrados == los de
+T-0» y crece con cada integración. Cierra INF-5.1.6 e INF-5.1.7; en parte
+INF-3.2.2, INF-3.2.6, INF-3.2.7 e INF-3.2.8; INF-3.2.5 por verificación
+contra el PDF, sin tocar V4; e INF-3.2.9 queda diferido con ficha. Dos
+valores de archivo cambian —`regimen_v2b` a `indicador_con_aviso` y
+`hw_entrada_fuera_de_rango` a `energia_critica`— y los dos siguen siendo
+[A]; `borde_libre_bajo_tw_ahogante` queda en `no_cumple` por decisión del
+dueño, con «aviso» como alternativa barrible. La línea base de la Familia C
+se regeneró por FORMATO, clasificado diferencia a diferencia con el
+comparador de E-B (README de la línea base): la fila V10, los avisos, la
+línea «Verificaciones con aviso» del RESUMEN, las huellas y los recuentos;
+los dos CSV de resumen no cambian un byte y **ningún diámetro se movió**
+(diez corridas medidas antes y después). De las cuatro configuraciones se
+MIDIÓ UNA, «sí · no», sobre `origin/main` en el commit `tesis(T-2)`, con el
+repositorio de normas enlazado: 4389 passed, 16 skipped, collected 4405 (y
+sin `NORMAS_DIR`, sobre el mismo árbol: 4382 passed, 23 skipped). Las otras
+tres se dicen como **derivadas**, por la misma razón que en T-0 —el
+contenedor no tiene `tkinter` y no se puede instalar—: de los 170, uno
+lleva la marca `pdf` (40 saltos sin PyMuPDF donde eran 39) y ninguno
+depende de Tk (siguen siendo 13).
+**T-0 de la cadena T (2026-11-11) sumó CINCUENTA Y SIETE
 tests netos** (58 nuevos y uno retirado de un censo), sobre un árbol que ya
 llevaba TRES que esta tabla no contaba: el orquestador de la cadena midió
 `c2262a2` en «sí · no» y dio 4162 passed, 16 skipped, collected **4178**,
@@ -1482,7 +1549,7 @@ EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
-4178; T-0 de la cadena T: 4235. La
+4178; T-0 de la cadena T: 4235; T-2: 4405. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1494,17 +1561,18 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4232 (**derivado** en T-0, no medido: el contenedor no tiene tkinter) | 3 |
-| sí | no | 4219 (**MEDIDO** en T-0 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
-| no | sí | 4193 (**derivado**, no medido) | 42 |
-| no | no | 4180 (**derivado**, no medido) | 55 |
+| sí | sí | 4402 (**derivado** en T-2, no medido: el contenedor no tiene tkinter) | 3 |
+| sí | no | 4389 (**MEDIDO** en T-2 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
+| no | sí | 4362 (**derivado**, no medido) | 43 |
+| no | no | 4349 (**derivado**, no medido) | 56 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan siete menos y saltan
-siete más (medido en «sí · no»: 4212 passed, 23 skipped); las dos sin
+siete más (medido en «sí · no»: 4382 passed, 23 skipped); las dos sin
 PyMuPDF, uno menos y uno más, porque seis de los siete ya iban saltados por
 la marca `pdf`. Hasta T-0 la tabla decía 4172 / 4159 / 4137 / 4124, medidos
-los cuatro en el cierre del 2026-09-22 sobre `19bcf5a`.
+los cuatro en el cierre del 2026-09-22 sobre `19bcf5a`; tras T-0, 4232 /
+4219 / 4193 / 4180, medida sólo la segunda.
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes

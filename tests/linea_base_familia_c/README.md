@@ -509,23 +509,27 @@ los dos CSV de resumen byte a byte. Lo que cambia, entero:
     (`null`: nadie lo declara), `tw_seccion_receptor` y `avisos`;
   - la verificación **V10** (pendiente del conducto) en los dos puntos que
     llegan a la Fase 5 en la corrida ancha de perfil, A-01 y A-02: cumple en
-    los dos (0.006 y 0.008 contra 0.10);
+    los dos (0.006 y 0.008 contra 0.10), y va detrás de V4b;
   - en el bloque de criterios: `pendiente_minima_conducto`,
     `pendiente_maxima_conducto` y `borde_libre_bajo_tw_ahogante` entre los
-    usados; `regimen_v2b.valor` de `umbral_duro` a `indicador_con_aviso`;
-    `hw_entrada_fuera_de_rango` deja la lista de los sin valor (36 → 35) y
-    `verificacion_pendiente` pasa de 22 a 23;
+    usados —los dos de pendiente también en la corrida de expediente, donde
+    V10 se evalúa antes de que V5 se detenga—; `regimen_v2b.valor` de
+    `umbral_duro` a `indicador_con_aviso`; `hw_entrada_fuera_de_rango` deja
+    la lista de los sin valor (36 → 35) y `verificacion_pendiente` pasa de 22
+    a 23;
   - los textos `fuente` y `mensaje` del bloqueo de `embocadura_cajon` (la
     ficha dice ahora dieciocho filas de cajón, con la Carta 13).
-- **Los cuatro `cli_*.txt`:** la fila `[OK] V10` de A-01 y A-02 (corrida
+- **Los cuatro `cli_*.txt`:** la línea nueva del RESUMEN, «Verificaciones con
+  aviso: 0», en los cuatro; la fila `[OK] V10` de A-01 y A-02 (corrida
   ancha); la línea `aviso: TW del receptor: seccion adoptada [A] por falta de
   levantamiento…` en los tres puntos cuyo TW sale de la vía 4 (corrida
   estrecha y rama de error); y el texto `fuente` de `embocadura_cajon`.
 - **Las tres memorias de la CLI:** las dos huellas (`hoja_ruta_sha1`,
   `criterios_sha1`), el recuento «79 criterios declarados, 36 todavia sin
-  valor» → «82 … 35», la fila V10 del bloque de umbrales y de la tabla de
-  cada punto que llega a la Fase 5, el aviso de la sección adoptada en el
-  paso 1.3, las fichas de los criterios usados y las citas nuevas del anexo.
+  valor» → «82 … 35», la fila «Verificaciones con aviso» del resumen, la fila
+  V10 del bloque de umbrales y de la tabla de cada punto que llega a la
+  Fase 5, el aviso de la sección adoptada en el paso 1.3, las fichas de los
+  criterios usados y las citas nuevas del anexo.
 - **`memoria_punto_cajon.html`, una línea:** la traza del punto, por el texto
   de la ficha de `embocadura_cajon` y la cita del num. 4.1.1.3.7 d) en el
   paso de V2b.
@@ -537,6 +541,6 @@ el TW declarado de 1.00 m, y C-01 se detiene donde se detenía, en
 `embocadura_cajon`. El cambio de `regimen_v2b` no alcanza a ningún punto de
 estas corridas: el único con `S_conducto < S_cauce` es C-01, que no llega a
 la Fase 5 sin los criterios del cajón. Y `borde_libre_bajo_tw_ahogante`
-queda en `no_cumple`, que es la conducta anterior: con `aviso`, A-02 pasaría
-a dimensionarse en la corrida estrecha (ficha `T2-02` de
-`docs/decisiones_diferidas.md`).
+queda en `no_cumple` por decisión del dueño del proyecto, que es la conducta
+anterior: con `aviso`, A-02 pasaría a dimensionarse en la corrida estrecha
+(ficha `T2-02` de `docs/decisiones_diferidas.md`).

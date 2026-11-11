@@ -112,6 +112,30 @@ ALIAS_DE_LA_CADENA = {
 CERRADOS_EN_T0 = {"INF-5.1.1", "INF-5.1.2", "INF-5.1.4", "INF-5.1.10",
                   "INF-5.1.11", "INF-5.1.14"}
 
+# LO QUE CADA PROMPT DE LA CADENA DEJA ESCRITO EN EL TRACKER, por estado. Esta
+# tabla crece con cada prompt que integra: T-2 la abrio para que el test de
+# abajo, que hasta entonces fijaba «cerrados == los de T-0», no hubiera que
+# reescribirlo en cada integracion. Un hallazgo cerrado EN PARTE o verificado
+# sin correccion no es «Cerrado»: lleva su propio estado, que el tracker ya
+# usaba en las filas de las auditorias anteriores.
+ESTADO_CERRADO = "Cerrado"
+ESTADO_PARCIAL = "Cerrado parcial"
+ESTADO_VERIFICADO = "Verificado (sin correccion)"
+ESTADOS_DE_UNA_FILA_INF = ("Abierto", ESTADO_CERRADO, ESTADO_PARCIAL,
+                           ESTADO_VERIFICADO, "N/A (sin trabajo)")
+LO_QUE_ESCRIBIO_CADA_PROMPT = {
+    "T-0": {ESTADO_CERRADO: CERRADOS_EN_T0},
+    "T-2": {
+        ESTADO_CERRADO: {"INF-5.1.6", "INF-5.1.7"},
+        # T-2 hizo su parte y queda otra: T-6 (origen de la pendiente en M7),
+        # la decision del dueño sobre «aviso», el levantamiento del receptor
+        # y la corrida de HY-8 de T-11.
+        ESTADO_PARCIAL: {"INF-3.2.2", "INF-3.2.6", "INF-3.2.7", "INF-3.2.8"},
+        # La analogia de V4 se verifico contra el PDF y no se toco V4.
+        ESTADO_VERIFICADO: {"INF-3.2.5"},
+    },
+}
+
 
 @pytest.fixture(scope="module")
 def filas():
@@ -143,15 +167,30 @@ def test_cada_fila_INF_lleva_severidad_cluster_prompt_y_estado(filas_inf):
         assert f["Hallazgo"].strip() and f["Ubicación (archivo:línea del informe)"].strip(), id_
         # La columna «Fase» dice que prompt lo cierra, o que ninguno lo nombra.
         assert re.search(r"T-\d", f["Fase"]) or "ningún prompt" in f["Fase"], (id_, f["Fase"])
-        assert f["Estado"] in ("Abierto", "Cerrado", "N/A (sin trabajo)"), (id_, f["Estado"])
+        assert f["Estado"] in ESTADOS_DE_UNA_FILA_INF, (id_, f["Estado"])
 
 
-def test_T0_cierra_los_que_dice_y_deja_abiertos_los_demas(filas_inf):
-    cerrados = {i for i, f in filas_inf.items() if f["Estado"] == "Cerrado"}
-    assert cerrados == CERRADOS_EN_T0
-    for id_ in cerrados:
-        assert "T-0" in filas_inf[id_]["Commit / PR"], id_
-        assert "cadena T, T-0" in filas_inf[id_]["Responsable"], id_
+def test_cada_prompt_escribe_los_estados_que_dice_y_deja_abiertos_los_demas(filas_inf):
+    """
+    Hasta T-2 se llamaba `test_T0_cierra_los_que_dice_y_deja_abiertos_los_
+    demas` y fijaba que los cerrados fueran exactamente los de T-0. Fija lo
+    mismo para cada prompt que integra: las filas que dice, con el estado que
+    dice, su responsable y su commit; y ninguna otra fila INF- fuera de
+    «Abierto» o «N/A».
+    """
+    for estado in (ESTADO_CERRADO, ESTADO_PARCIAL, ESTADO_VERIFICADO):
+        en_el_tracker = {i for i, f in filas_inf.items() if f["Estado"] == estado}
+        declarados = set()
+        for prompt, por_estado in LO_QUE_ESCRIBIO_CADA_PROMPT.items():
+            for id_ in por_estado.get(estado, ()):
+                declarados.add(id_)
+                assert prompt in filas_inf[id_]["Commit / PR"], id_
+                assert f"cadena T, {prompt}" in filas_inf[id_]["Responsable"], id_
+        assert en_el_tracker == declarados, estado
+    # Un mismo hallazgo no figura en dos estados ni en dos prompts.
+    todos = [i for por_estado in LO_QUE_ESCRIBIO_CADA_PROMPT.values()
+             for ids in por_estado.values() for i in ids]
+    assert len(todos) == len(set(todos))
     # Lo que el INFORME reviso y dio por correcto no es trabajo pendiente.
     sin_trabajo = {i for i, f in filas_inf.items() if f["Estado"] == "N/A (sin trabajo)"}
     assert sin_trabajo == {"INF-3.2.3", "INF-3.3.2", "INF-3.3.6"}

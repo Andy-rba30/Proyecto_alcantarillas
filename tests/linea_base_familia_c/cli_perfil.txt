@@ -145,6 +145,7 @@ Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 0
 Verificaciones incumplidas: 0
+Verificaciones con aviso: 0
 Etapas bloqueadas       : 5
 Diferidas por alcance   : 8 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : no

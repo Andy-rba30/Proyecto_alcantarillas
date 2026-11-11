@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "15f9518233e9a900f0edde14c9e0cc938dd26720",
+    "criterios_sha1": "42a0a1ce1da0c84e18367c4015bb6921d671f0dd",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -388,6 +388,17 @@
         },
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V10",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.006,
+          "valor_admisible": 0.1,
+          "criterio_aplicado": "pendiente_maxima_conducto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "codigo": "V6",
           "numeral": "3.1",
           "estado": "cumple",
@@ -418,17 +429,6 @@
           "valor_obtenido": 0.9,
           "valor_admisible": 2.7,
           "criterio_aplicado": "D_max_catalogo"
-        },
-        {
-          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
-          "codigo": "V10",
-          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16)",
-          "estado": "cumple",
-          "cumple": true,
-          "veredicto": "cumple",
-          "valor_obtenido": 0.006,
-          "valor_admisible": 0.1,
-          "criterio_aplicado": "pendiente_maxima_conducto"
         },
         {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
@@ -726,6 +726,17 @@
         },
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V10",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.008,
+          "valor_admisible": 0.1,
+          "criterio_aplicado": "pendiente_maxima_conducto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "codigo": "V6",
           "numeral": "3.1",
           "estado": "cumple",
@@ -756,17 +767,6 @@
           "valor_obtenido": 0.9,
           "valor_admisible": 2.7,
           "criterio_aplicado": "D_max_catalogo"
-        },
-        {
-          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
-          "codigo": "V10",
-          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16)",
-          "estado": "cumple",
-          "cumple": true,
-          "veredicto": "cumple",
-          "valor_obtenido": 0.008,
-          "valor_admisible": 0.1,
-          "criterio_aplicado": "pendiente_maxima_conducto"
         },
         {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
@@ -1241,7 +1241,7 @@
         "etiqueta": "A",
         "valor": "no_cumple",
         "declarado_en_caliente": false,
-        "concepto": "Que hace V1 (borde libre) cuando el barril va LLENO porque el nivel del cuerpo receptor alcanza la clave (TW >= D), y no porque el caudal de diseño lo llene"
+        "concepto": "Que hace V1 (borde libre) cuando es el nivel del cuerpo receptor, y no el caudal de diseño, el que deja al barril sin el borde libre: el tirante del receptor por encima del llenado admisible, llegue o no a la clave"
       },
       {
         "clave": "borde_libre_y_sobre_d_max",
