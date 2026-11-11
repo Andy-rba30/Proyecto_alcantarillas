@@ -164,12 +164,22 @@ def test_las_alternativas_descartadas_distinguen_tres_motivos():
     no son lo mismo, y una memoria que las listara juntas sugeriria que las
     tres se compararon. Dos de ellas no se podian comparar.
     """
+    # El caso se mudo de 'n_manning_hdpe' a 'ke_entrada' en T-4. Con el n
+    # del HDPE leido de la Table B.1 de HDS-5 (INF-3.2.1) esa tabla dejo de
+    # tener alternativas VIVAS --solo una fila es del polietileno de interior
+    # liso; las demas son otros materiales que el calculo no usa--, y la
+    # primera adaptacion debilito el test a `assert motivos`. La Tabla C.2
+    # del ke si las tiene: otras embocaduras de tubo de concreto que el
+    # proyectista pudo elegir.
     procedencia = dec.declarar_desde_tabla(
-        "n_manning_hdpe", (0.010, 0.013), filas=("concreto_tubo_recto",))
+        "ke_entrada", 0.5, filas=("concreto_headwall_square_edge",))
     motivos = {a.motivo for a in procedencia.alternativas_descartadas}
     assert any("alternativa viva" in m for m in motivos)
+    assert len(motivos) > 1, (
+        "todas las alternativas descartadas llevan el mismo motivo: el test "
+        "ya no distingue nada")
     assert all(a.motivo.strip() for a in procedencia.alternativas_descartadas)
-    assert all(a.id != "concreto_tubo_recto"
+    assert all(a.id != "concreto_headwall_square_edge"
                for a in procedencia.alternativas_descartadas)
 
 

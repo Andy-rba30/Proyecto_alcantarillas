@@ -805,6 +805,18 @@ M8 y de M11 que su propio alcance excluye.
 
 ## C6-01 · `sucs_fundacion` se carga, se valida y no la lee ningún módulo
 
+> **Superada en parte por T-4 (ficha T4-05, `INF-5.1.9`).** Desde T-4 la
+> columna SÍ tiene consumidor: `M2.matriz_durabilidad` la lee para el aviso de
+> marco del num. 4.1.1.3.4 a). El mapeo SUCS → «mala calidad» sigue sin estar
+> en el Manual y **no se inventó**: lo declara el criterio [A]
+> `sucs_fundacion_deficiente`, que tiene valor —los tres suelos orgánicos del
+> Art. 24 de la E.050, la «candidata peruana» que esta misma ficha nombraba— y
+> por eso no entra en `criterios_sin_valor()` como el vacío bloqueante que el
+> último párrafo de abajo descartaba con razón. Lo que sigue describe el
+> estado anterior y se conserva porque el argumento —el vacío es del Manual—
+> es el que obliga a que sea un aviso con conjunto declarado y no una regla.
+> El primer consumidor, `c_phi_fundacion`, sigue sin cablear.
+
 - **Qué se difirió:** conectar la columna al num. 4.1.1.3.4 a), que recomienda
   el marco según la calidad del suelo de fundación. Es el **segundo**
   consumidor plausible; el declarado, `c_phi_fundacion`, es de expediente y lo
@@ -3648,3 +3660,280 @@ alternativa sin aplicar porque decidirla es del proyectista.
   `SUPERVIVIENTES_CON_RAZON` de EXT-11 no se amplió con los que no estaban, ni la
   lista se comprueba contra el arnés en cada corrida: es trabajo de T-10.
 - **Dónde vive:** `tests/test_t2_hidraulica.py::MUTANTES_VIVOS_DE_T2`
+
+# Parte XLII — Lo que T-4 de la cadena T dejó escrito: espesores, topes, velocidad máxima, durabilidad y dos hallazgos sin prompt
+
+T-4 cerró `INF-5.1.17`, `INF-3.3.1`, `INF-3.3.4`, `INF-3.2.4`, la mitad del HDPE de
+`INF-3.2.1` y, por encargo del orquestador, `INF-5.1.9` e `INF-5.1.16`. Estas
+fichas registran lo que quedó **decidido con argumento** o **abierto con nombre**, y
+lo que la cadena suponía y la fuente no sostiene.
+
+## T4-01 · El espesor del TMC es profundidad de corrugación más plancha; el del HDPE sale del diámetro exterior máximo de AASHTO LRFD, y dos tamaños se quedan sin fila
+
+- **Qué se difirió:** las filas de **1350 y 1500 mm** del HDPE en
+  `espesor_pared_conducto`. El resto del punto 1 del prompt está cerrado
+  (`INF-5.1.17`, `INF-3.3.4`): el TMC y el HDPE ya no se descartan por falta de
+  espesor y llegan al recubrimiento mínimo de 7.A y a V7.
+- **Por qué:** el prompt pedía el espesor «por tabla» de la norma de producto, y
+  ninguna de las dos lo da como tal. **TMC:** el diámetro nominal se mide en la
+  cresta interior (AASHTO M 36 núm. 8.1.1, pág. M 36-10), de modo que lo que separa
+  el diámetro hidráulico del exterior es la profundidad de la corrugación (Table 1,
+  pág. M 36-6: 13 mm en la de 68 por 13) **más** el espesor de la plancha (ASTM A796
+  Tabla 5): 15.01 mm con la adopción `corrugacion_y_espesor_tmc` [A] = `68x13/2.01`.
+  El criterio se barre dentro de las diecisiete planchas tabuladas. Que 2.0 mm y
+  68×13 sea «la práctica del expediente de referencia» **no se verificó de primera
+  mano**: la pág. 57 del PDF «VARIOS» no estaba disponible y la ficha lo dice como
+  dato de segunda mano, por el INFORME §1.1. **HDPE:** AASHTO M 294 (traducción no
+  oficial) tabula el espesor mínimo de la pared **interior**, no la altura del
+  perfil, y no da diámetro exterior. Sí lo da la Table A12-11 de AASHTO LRFD (pág.
+  12-108, PDF 1746), como **máximo** del producto: t = (OD máx − D)/2, que es el
+  lado seguro para la clave y para el volumen de V7. Esa tabla termina en 48 in. Para
+  1350 y 1500 mm no hay fuente en el repositorio de normas, y la fila se queda sin
+  escribir: `DatoFaltanteError` que nombra la fila, sin interpolar.
+  Dos cosas más, medidas: (a) el mínimo de relleno del HDPE de EG-2013 508.07
+  (0.30 m) **participa y no gobierna**: la cobertura de AASHTO para el termoplástico
+  es 0.61 m bajo pavimento y 0.3048 m sin él; (b)
+  `conftest.py` **conserva** su espesor sintético de TMC y HDPE (22 tests de fórmula
+  usan diámetros que ninguna serie tiene), menor que el del archivo: la suite corre
+  con él y la línea base con el del archivo.
+- **Qué haría falta:** la ficha de un fabricante de tubería de PE corrugado de 1350 y
+  1500 mm con su diámetro exterior (se declara en `espesor_pared_conducto["hdpe"]`),
+  o una edición de AASHTO LRFD cuya tabla llegue a 60 in; y el PDF «VARIOS» para
+  pasar de segunda a primera mano la práctica del calibre.
+- **Dónde vive:** `src/modulos/M2_material.py::espesor_pared_de_tmc`
+
+## T4-02 · El tope de diámetro es el de la norma de producto —en concreto, el último diámetro con diseño estándar—; la disponibilidad de mercado es opcional y sólo puede bajarlo
+
+- **Qué se difirió:** los tubos de concreto de **2850 a 3600 mm**, que AASHTO M 170M
+  lista como diseños especiales. El catálogo no los recorre.
+- **Por qué:** `D_max_catalogo` valía 2.70 / 2.10 / 1.50 m como [A], y su propia
+  ficha admitía que los dos primeros no tenían respaldo. Desde T-4 el tope lo
+  resuelve `M2.tope_de_diametro` como el **menor** de tres cosas, y dice cuál gobernó
+  (`Material.D_max_criterio`): la **norma de producto** (`D_max_norma_producto` [C]:
+  2.70 / 3.60 / 1.50 m); en TMC, el mayor diámetro en que la **corrugación adoptada**
+  es estándar según la Table 6 de M 36 (2100 mm con 68 por 13); y, **si el
+  proyectista la declara**, la disponibilidad (`D_max_catalogo` [A], ahora opcional y
+  sin valor), que se rechaza con `DatoInvalidoError` si supera a las otras dos.
+  **Ninguno de los tres topes efectivos se movió**; lo que cambió es que ahora
+  tienen de dónde salir. **El del concreto, corregido por la auditoría adversarial
+  (H2):** la primera versión de T-4 lo llevó a 3.60 m —la última fila de la serie— y
+  dejó escrito que «faltaba transcribir» la pared de 2850 a 3600 mm. **La norma no
+  la tabula.** Leído por imagen, tabla a tabla: en la Tabla 1 (Clase I, PDF 3) las
+  filas de 1500 a 2700 mm traen pared y acero (2700: pared B 250 mm) y las de 2850 a
+  3450 mm llevan llamada a nota y rayas; en la Tabla 3 (Clase III, PDF 6–7) la
+  última fila con acero es la de 2700 mm. La nota manda a la Sección 7.2, y su
+  7.2.1 (pág. impresa M 170M-13) los llama «special designs for pipe sizes that do
+  not have steel reinforcement areas shown in Tables 1 to 5»; el **7.2.2** —no el
+  7.2.3, como citaba el auditor— exige que su descripción «shall include the wall
+  thickness». El tope es por tanto **2.70 m, el último diámetro con diseño
+  estándar** (`constantes_normativas.DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM`,
+  citas `AASHTO_M170M.7.2.1` y `.7.2.2`), y coincide con la última fila de pared B
+  declarada: ningún escalón del concreto puede detenerse por falta de espesor. No
+  leído en el ejemplar: el cuerpo de la Tabla 2 (PDF 4) y el final de la Tabla 4.
+- **Qué haría falta:** para ofrecer un tubo de concreto de 2850 a 3600 mm, el diseño
+  especial aprobado de un fabricante con su espesor de pared, y entonces una puerta
+  que lo admita —hoy no existe: declarar la pared en `espesor_pared_conducto` no
+  basta, porque el tope no pasa de 2.70 m—; y, de quien conozca el mercado, el valor
+  de `D_max_catalogo`.
+- **Dónde vive:** `src/modulos/M2_material.py::tope_de_diametro`
+
+## T4-03 · `v_max_tmc` es [A] con ventana y `v_max_hdpe` sigue [C]: los dos valen 4.572 m/s y no son la misma cosa
+
+- **Qué se difirió:** la sustitución del techo por la regla de nivel de abrasión
+  (opción B del dictamen), que el dueño descartó: se aplicó la **opción A**
+  (`INF-3.2.4`).
+- **Por qué:** WSDOT Hydraulics Manual M 23-03.12 **prohíbe** el termoplástico en
+  abrasión severa (§8-3.3, pág. 8-13) y describe ese nivel, entre otras dos
+  características, por velocidades mayores de 15 ft/s (Table 8-4, págs. 8-27 y 8-28):
+  el techo del HDPE es [C], con la prohibición citada de donde está y la tabla sólo
+  para el umbral, y la lectura —tomar la velocidad sola como suficiente— declarada
+  como `Interpretacion` de la tabla. Para el **metal** la misma tabla no prohíbe
+  nada en ningún nivel: pide más calibre o solera de concreto, y lo pide ya desde
+  6 ft/s (1.829 m/s). El techo del TMC es por tanto una **adopción**: [A], valor
+  4.572 m/s, ventana **(3.048, 4.572)** —el piso son los 10 ft/s del §3-3.5 (pág.
+  3-11), el techo no es 4.6—, sin «límite conservador» ni «por encima de este valor
+  exige mayor calibre» en la ficha. `M5._paso_v3` lee la etiqueta de la ficha y ya no
+  imprime «[C], con fuente WSDOT» para los dos. **V3 no deduce el nivel de abrasión
+  de la velocidad**: el nivel es un dato de campo opcional y lo aplica la matriz de
+  durabilidad. Consumidores de la ventana vieja `(V_MIN, 4.572)` del TMC, revisados:
+  dos tests llevaban el techo del TMC al piso de la ventana (`test_pf3_barrido`,
+  `test_ext11_propiedades`) y ahora lo hacen con `con_valor`, diciéndolo.
+- **Qué haría falta:** para volver a [C], una fuente que fije una velocidad máxima
+  para la tubería metálica corrugada; ninguna de las seis consultadas lo hace (la
+  ficha las lista con página).
+- **Dónde vive:** `src/criterios_adoptados.py::v_max_tmc`
+
+## T4-04 · La matriz de durabilidad filtra de verdad, con ensayos opcionales que entran por `--datos-externos` y no por `CLAVES_EXTERNAS`
+
+- **Qué se difirió:** un umbral de cloruros para el **concreto** y la casa de [S] de
+  corredor (`datos_sitio.py`) para los ensayos.
+- **Por qué:** `M2.matriz_durabilidad` devuelve un dictamen y
+  `M2.materiales_candidatos` lo aplica; `MD.disenar_punto` lo recibe del servicio.
+  Sin ensayos no actúa y la memoria imprime «durabilidad: sin ensayos, matriz no
+  aplicada» en cada punto que llega a la Fase 3. Cada regla lleva sólo la fuente que
+  la sostiene: **pH** fuera de 5.0–8.5 y **resistividad** menor de 1000 ohm-cm
+  excluyen el TMC (WSDOT §8-5.1 y §8-5.2; criterio [C] `durabilidad_tmc_umbrales`,
+  que sólo se puede endurecer); pH menor de 5.8 **exige** proteger la tubería
+  metálica ([N], EG-2013 507.10, que lo escribe para el agua que conduce el tubo: con
+  una sola clave `pH` se aplica al valor declarado, lado seguro); **abrasión** severa
+  excluye el HDPE (§8-3.3) y **avisa** al metal y al concreto; los **sulfatos**
+  **exigen** al concreto el cemento, la a/c y el f'c de la Tabla 4.4 de E.060 y nunca
+  lo excluyen. Decisiones que no son del prompt: (a) **dos claves de sulfatos**
+  (`sulfatos_suelo_ppm`, `sulfatos_agua_ppm`) y no una `sulfatos_ppm`, porque la
+  Tabla 4.4 tiene dos escalas —% en peso en el suelo, ppm en el agua— y una sola
+  clave sería ambigua; (b) para el **concreto** los cloruros avisan y no deciden,
+  porque E.060 4.4.2 define la exposición por el origen del cloruro y no por un
+  umbral en ppm; (c) las seis claves entran
+  por el mismo JSON de `--datos-externos` (sección `globales` para el sitio, `puntos`
+  para una calicata) y **no** están en `servicio.CLAVES_EXTERNAS`, cuyas claves son
+  datos que alguna etapa **exige**: metidas ahí, el pre-vuelo las habría anunciado
+  como seis faltas por punto; (d) si la etapa se bloquea, el bucle de materiales
+  **no corre** sin filtro; (e) «suelo de fundación deficiente → marco» es aviso y
+  no filtro (ficha T4-05).
+  Lo que la auditoría adversarial corrigió de esta ficha —umbral de cloruros para
+  el acero, la segunda mitad de EG-2013 507.10, el aviso fijo y el cruce con el [S]
+  del EMS— está en la ficha T4-09.
+- **Qué haría falta:** decidir si los ensayos de corredor merecen ficha en
+  `datos_sitio.py` —hoy un ensayo «del sitio» es un global del JSON, con su origen
+  impreso—; y un umbral de cloruros para el concreto, que E.060 no da.
+- **Dónde vive:** `src/modulos/M2_material.py::matriz_durabilidad`
+
+## T4-05 · `sucs_fundacion` tiene consumidor: el aviso de marco, con el conjunto de suelos declarado y no inventado
+
+- **Qué se difirió:** que el aviso se convierta en regla (cambiar el tipo de obra), y
+  el primer consumidor de la columna, `c_phi_fundacion`.
+- **Por qué:** `INF-5.1.9` —columna obligatoria que ningún módulo leía— lo asignó el
+  orquestador a T-4. El Manual (núm. 4.1.1.3.4 a) **recomienda** el marco cuando el
+  suelo de fundación es de mala calidad y **no define** «mala calidad» (ficha C6-01,
+  condición `COND-MARCO-SUELO-MALA-CALIDAD`). No se inventó el mapeo: el criterio [A]
+  `sucs_fundacion_deficiente` declara el conjunto, se elige dentro de los quince
+  símbolos de la Figura 3 de la E.050 (pág. 31) y vale por defecto `OL`, `OH`, `PT`
+  —los suelos orgánicos y la turba sobre los que el Art. 24 de la E.050 (pág. 37) no
+  deja cimentar—. `M2.matriz_durabilidad` parte los suelos de frontera (`CL-OL`),
+  rechaza un conjunto con símbolos que no existen, no avisa en la Familia C (ya es
+  marco) y, ante una celda que no es SUCS, lo dice sin detener. Es **aviso** porque el
+  párrafo de la fuente es recomendación atenuada y un `Fundamento` con verbo de
+  obligación no pasaría T11. Los cuatro puntos del fixture (SM, SP-SM, SM, ML) no
+  están en el conjunto: ganan una línea, no un aviso, y ningún resultado cambia.
+- **Qué haría falta:** un estudio de suelos que diga, para la obra, qué grupos tratar
+  como deficientes (se declara en el criterio); y la Sec. 9.3 ensamblada para el
+  otro consumidor.
+- **Dónde vive:** `src/criterios_adoptados.py::sucs_fundacion_deficiente`
+
+## T4-06 · `DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO` se conserva sin consumidor: la «rama inactiva» de la hoja de ruta no existe y no se le inventa una
+
+- **Qué se difirió:** programar la rama de selva alta que la hoja de ruta §3.1 pide
+  («programar la rama y declararla inactiva»). `INF-5.1.16`.
+- **Por qué:** comprobado por AST sobre `src/modulos/`, `src/servicio.py` y
+  `cli.py`: **ningún módulo nombra la constante**; la rama inactiva no existe. Lo que
+  sí existe es la cita `MC_HHD.4.1.1.3.7a` con su condición `COND-SELVA-ALTA` y la
+  constante en `CONSTANTES_DE_REFERENCIA`. No se cablea por dos razones: (1) ningún
+  dato de entrada dice en qué región natural está la obra —ni columna del CSV ni [S]
+  de `datos_sitio.py`—, de modo que una rama necesitaría **primero** una entrada que
+  nadie ha pedido, y activarla por defecto sería inventar el dato; (2) el corredor
+  del repositorio es de costa, donde la hoja de ruta dice que no aplica. Una rama
+  que nunca se ejecuta y no tiene con qué decidir si se ejecuta es código muerto con
+  apariencia de regla. La constante se queda porque es un valor [N] recomendado,
+  verificado contra su página, que el día que haya región natural se usa tal cual.
+- **Qué haría falta:** un [S] de corredor `region_natural` (o equivalente) en
+  `datos_sitio.py` con su trazabilidad, y entonces la rama en `M2.catalogo`: piso de
+  diámetro del TMC igual a la constante cuando la región es selva alta, como
+  recomendación impresa y no como rechazo —la fuente recomienda—.
+- **Dónde vive:** `src/constantes_normativas.py::DIAMETRO_MIN_TMC_SELVA_ALTA_RECOMENDADO`
+
+## T4-07 · El n de Manning del HDPE es [C] de HDS-5 (0.009 a 0.015): la cadena esperaba WSDOT Tabla 4-1 o un [A] de 0.009 a 0.013
+
+- **Qué se difirió:** nada; se registra la discrepancia entre el prompt y la fuente.
+- **Por qué:** el punto 5 pedía dejar la analogía con el concreto y citar una fuente
+  «si alguna da n» —nombraba la Tabla 4-1 de WSDOT—, o declarar un [A] con ventana
+  (0.009, 0.013). Leída, la Table 4-1 de WSDOT (PDF 93) es una tabla de
+  **referencias**, sin valores de n. La que sí los da es la **Table B.1 de HDS-5**
+  (pág. B.6, PDF 208), fila «Corrugated Polyethylene, Smooth»: 0.009–0.015. Es fuente
+  técnica reconocida y ya adoptada por el proyecto, de modo que el criterio es [C] y
+  no [A], su valor se **deriva** de la tabla del registro y su ventana es el rango de
+  la fila. El rango es más ancho que el del concreto en los dos sentidos: n máximo
+  0.015 pide más diámetro por capacidad; n mínimo 0.009 da más velocidad contra el
+  techo de V3. M 294 no trae n.
+- **Qué haría falta:** nada para el perfil. Un fabricante con ensayo propio puede
+  estrechar el rango declarándolo dentro de la ventana.
+- **Dónde vive:** `src/criterios_adoptados.py::n_manning_hdpe`
+
+## T4-08 · Entrada obligada de T-5: la plancha adoptada del TMC no cumple el factor de flexibilidad hasta su tope, y `espesor_pared` de TMC y HDPE es una ENVOLVENTE geométrica
+
+- **Qué se difirió:** la verificación estructural del calibre del TMC —factor de
+  flexibilidad, empuje de anillo, pandeo, costura— y la del perfil del HDPE. Son de
+  la Fase 8 (T-5), **también a nivel de perfil**.
+- **Por qué:** lo midió la auditoría adversarial de T-4 (H7). El catálogo ofrece la
+  plancha adoptada (`corrugacion_y_espesor_tmc` = 68 por 13 mm, 2.01 mm) hasta
+  2.10 m, que es el tope de la **corrugación** (Table 6 de M 36), no el de la
+  plancha. ASTM A796 núm. 10.3 (PDF 4) limita el factor de flexibilidad FF =
+  s²/(E·I) a 0.245 mm/N para 13 mm de profundidad en terraplén; con I = 39.20 mm⁴/mm
+  (Tabla 5) y E = 200 000 MPa el diámetro límite es √(0.245 × 200 000 × 39.20) ≈
+  1386 mm. De 1.50 a 2.10 m esa plancha **no cumple** y el catálogo la recorre igual.
+  M2 no duplica la Fase 8: lo dice la ficha del criterio, el rótulo del tope
+  (`ROTULO_TOPE_DE_CORRUGACION`) y el docstring de `M8.seleccionar_clase_calibre`,
+  que ya no afirma que el espesor es consecuencia del calibre que la Fase 8
+  seleccione. **Y una advertencia de tipo:** lo que `M2.espesor_pared` devuelve para
+  TMC y HDPE es una **ENVOLVENTE** geométrica —(exterior − interior)/2: profundidad
+  de corrugación más plancha, o altura del perfil hasta el diámetro exterior
+  máximo—, que sirve para la clave física (7.A) y el volumen desplazado (V7). **No
+  es un espesor estructural**: quien lo use como tal para un área o una inercia se
+  equivoca en un orden de magnitud.
+- **Qué haría falta:** que T-5 seleccione el calibre por punto con el área, la
+  inercia y el radio de giro de `constantes_normativas.TMC_PLANCHA_CORRUGADA`, rechace
+  o suba de plancha donde el FF no cumpla, y devuelva al catálogo la plancha que
+  resulte (el espesor de la envolvente cambia con ella).
+- **Dónde vive:** `src/modulos/M2_material.py::ROTULO_TOPE_DE_CORRUGACION`
+
+## T4-09 · El suelo agresivo para el acero se lee de AASHTO LRFD por analogía y por defecto avisa; EG-2013 507.10 se aplica entera; los ensayos no entraron al censo de variables
+
+- **Qué se difirió:** la entrada de las seis claves de durabilidad al censo
+  `variables_entrada` y a la ayuda del JSON; unificar los sulfatos con el [S]
+  `exposicion_quimica_ems`; la nota (*) de las Tablas 4.2 y 4.4 de E.060.
+- **Por qué:** correcciones de la auditoría adversarial de T-4 (H3 a H6, H8). AASHTO
+  LRFD da criterios electroquímicos para **acero galvanizado enterrado** —Art.
+  11.10.6.4.2a (pág. 11-89) y 11.12.8 (pág. 11-134): pH 5 a 10, resistividad ≥ 3000
+  ohm-cm, cloruros ≤ 100 ppm, sulfatos ≤ 200 ppm; 10.7.5 (pág. 10-125), indicativos
+  para pilotes—. Son de refuerzos de muros y anclajes, **no de alcantarillas**: la
+  matriz los aplica **por analogía** (`suelo_agresivo_acero_lrfd` [C]) y su efecto
+  sobre la TMC es un [A] de perfil que vale **`aviso`** —decisión del orquestador: la
+  exclusión se reserva a las fuentes de alcantarillas—, con `excluye` declarable y
+  barrible. La materia orgánica no entra (no hay dato) y la dispensa con ≥ 5000
+  ohm-cm no se aplica. La segunda mitad de EG-2013 507.10 —«o que los suelos
+  circundantes presenten sustancias agresivas»— **exige** proteger la TMC con
+  sulfatos sobre la exposición insignificante de E.060 o con ese suelo agresivo;
+  qué cuenta como «sustancias agresivas» es **lectura del proyecto**, dicha en la
+  regla y en el fundamento `F3.DUR.SUELO_AGRESIVO` (no como objeto `Interpretacion`,
+  que en el registro cuelga de las tablas). El texto cualitativo del Manual (núm.
+  4.1.1.3.7 f y g) es un **aviso fijo** de la TMC candidata. Las ventanas de
+  `durabilidad_tmc_umbrales` sólo endurecen. Si los sulfatos de la matriz y el [S]
+  del EMS dan exposiciones distintas, la matriz **avisa**: no se unificaron, porque
+  una entrada es de perfil y por punto y la otra de expediente y de corredor. Las
+  seis claves no entraron al censo: el de datos externos se deriva de
+  `servicio.CLAVES_EXTERNAS`, que el pre-vuelo de PF-2 lee como «dato que una etapa
+  exige», y abrir una población «opcional» es un cambio de esquema del censo.
+- **Qué haría falta:** una población de datos opcionales en `variables_entrada`, con
+  ficha en la ayuda del JSON y panel en la pestaña 1, que el pre-vuelo no cuente
+  como falta; y un criterio de agresividad escrito para tubería de acero corrugado.
+- **Dónde vive:** `src/criterios_adoptados.py::suelo_agresivo_lrfd_sobre_tmc`
+
+## T4-10 · Un dato que falta en un candidato anterior bloquea la aceptación de uno posterior: el «caso mixto» de PC-28 cambia
+
+- **Qué se difirió:** nada; se registra una inversión de contrato aceptada por el
+  orquestador.
+- **Por qué:** EXT-1 (PC-28) dejó dicho que si a TODOS los candidatos les faltaba un
+  dato el punto salía con `DatoFaltanteError`, y dejó **sin cambio** el caso mixto: si
+  a uno le faltaba y otro posterior cerraba, se adoptaba el posterior. El auditor
+  adversarial de T-4 (H1) lo midió sobre el pipeline real: un punto cuyo concreto
+  incumplía V3 hasta el último escalón con pared declarada, y se detenía en el
+  siguiente por falta de espesor, salía **dimensionado en TMC sin bloqueo** — elegido
+  por descarte de un material más preferente que nadie terminó de evaluar. Desde T-4
+  vale la regla que ya valía para criterios pendientes, criterios inválidos y método
+  no evaluable: antes de aceptar un candidato, ninguno anterior puede haberse detenido
+  por un dato que falta; se relanza el primero, con su campo. Al revés no cambia:
+  cuando ninguno cierra, el punto sigue «no factible» si los escalones evaluados
+  incumplen, y el motivo dice cuáles no se evaluaron y por qué dato.
+- **Qué haría falta:** nada. Quien quiera el comportamiento anterior tiene que
+  declarar el dato que falta, que es lo que el bloqueo pide.
+- **Dónde vive:** `src/modulos/MD.py::_exigir_datos_presentes`
+

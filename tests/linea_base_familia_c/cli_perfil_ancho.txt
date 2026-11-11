@@ -7,6 +7,9 @@ CSV: tests/ejemplo_puntos.csv    generado (UTC): <UTC>
 A-01  |  progresiva 0+380  |  Familia A
 ------------------------------------------------------------------------------
   Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 71 anios
+  Sec. 3.3 durabilidad: sin ensayos, matriz no aplicada
+          [avisa] tmc: aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio
+          suelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos
   Fase 4  Material : Concreto reforzado (AASHTO M 170M-04 / ASTM C 76M-02 (metrica))
           Seccion  : Ø 0.90 m (interior)
           Control  : entrada (HW = 1.042 m; entrada 1.042 / salida 0.993)
@@ -35,7 +38,7 @@ A-01  |  progresiva 0+380  |  Familia A
     [OK] V7   Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3) obtenido 15.988 | admisible 9.323
         umbral del criterio 'factores_carga_aashto' [A]
     [OK] V9   Sec. 3.2 (V9, nuevo en v7)   obtenido 0.900 | admisible 2.700
-        umbral del criterio 'D_max_catalogo' [A]
+        umbral del criterio 'D_max_norma_producto' [C]
     [OK] G1   Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1) obtenido 44.200 | admisible 44.092
         umbral del criterio 'resguardo_HW_subrasante' [N->]
     [OK] G2   Sec. 7.B (cotas amarradas al fondo del receptor) obtenido 41.988 | admisible 41.300
@@ -60,6 +63,9 @@ A-01  |  progresiva 0+380  |  Familia A
 A-02  |  progresiva 1+920  |  Familia A
 ------------------------------------------------------------------------------
   Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 71 anios
+  Sec. 3.3 durabilidad: sin ensayos, matriz no aplicada
+          [avisa] tmc: aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio
+          suelo de fundacion SP-SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos
   Fase 4  Material : Concreto reforzado (AASHTO M 170M-04 / ASTM C 76M-02 (metrica))
           Seccion  : Ø 0.90 m (interior)
           Control  : entrada (HW = 0.572 m; entrada 0.572 / salida 0.562)
@@ -88,7 +94,7 @@ A-02  |  progresiva 1+920  |  Familia A
     [OK] V7   Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3) obtenido 16.830 | admisible 9.323
         umbral del criterio 'factores_carga_aashto' [A]
     [OK] V9   Sec. 3.2 (V9, nuevo en v7)   obtenido 0.900 | admisible 2.700
-        umbral del criterio 'D_max_catalogo' [A]
+        umbral del criterio 'D_max_norma_producto' [C]
     [OK] G1   Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1) obtenido 42.000 | admisible 41.372
         umbral del criterio 'resguardo_HW_subrasante' [N->]
     [OK] G2   Sec. 7.B (cotas amarradas al fondo del receptor) obtenido 39.704 | admisible 39.100
@@ -113,6 +119,9 @@ A-02  |  progresiva 1+920  |  Familia A
 B-01  |  progresiva 2+450  |  Familia B
 ------------------------------------------------------------------------------
   Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 35 anios
+  Sec. 3.3 durabilidad: sin ensayos, matriz no aplicada
+          [avisa] tmc: aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio
+          suelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos
   Fase 4  sin dimensionar
           S_cauce  : 0.0100 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
@@ -125,7 +134,7 @@ B-01  |  progresiva 2+450  |  Familia B
         falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
     [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
-        Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | TMC galvanizada: material no evaluable: DatoFaltanteError: Falta el dato 'espesor_pared_conducto[tmc]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «tmc». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE no la trae AASHTO M 294-11 -- en normas/ como traduccion no oficial: su 7.2.2 da el espesor minimo de la pared interior, no la altura del perfil corrugado, y ninguna hoja fija el diametro exterior --. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7) | HDPE: material no evaluable: DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «hdpe». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE no la trae AASHTO M 294-11 -- en normas/ como traduccion no oficial: su 7.2.2 da el espesor minimo de la pared interior, no la altura del perfil corrugado, y ninguna hoja fija el diametro exterior --. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7)
+        Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.065 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | HDPE: 3 escalon(es) evaluado(s), de Ø 0.90 m a Ø 1.20 m, y ninguno cumple; NO SE EVALUO desde Ø 1.35 m hasta el tope del material (1.50 m) por falta del dato 'espesor_pared_conducto[hdpe][1350]'. DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe][1350]'. el criterio 'espesor_pared_conducto' declara «hdpe» pero no la fila de 1350 mm. Los diametros declarados son [900, 1050, 1200]. Falta esa fila en su fuente (columna 'Max. OD' de la Table A12-11 de AASHTO LRFD, que termina en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro exterior de la ficha del fabricante): no se interpola ni se toma la fila vecina, porque el espesor gobierna la clave fisica (7.A) y el volumen desplazado de V7 y los dos quedan del lado inseguro si se estima por lo bajo
     [DatoFaltanteError] Fase 10 - Espaciamiento de alivio (M10) -> espaciamiento maximo entre alivios
         Falta el dato 'L_hidraulico_m'. Sec. 10 describe el procedimiento de la cuneta pero no fija su seccion, su n de Manning ni la formula de intensidad: la longitud por capacidad hidraulica se declara, no se deduce
 
@@ -133,6 +142,8 @@ B-01  |  progresiva 2+450  |  Familia B
 C-01  |  progresiva 3+100  |  Familia C
 ------------------------------------------------------------------------------
   Fase 2  alcantarilla (luz 2.750 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR no procede (ver fundamento en el JSON)
+  Sec. 3.3 durabilidad: sin ensayos, matriz no aplicada
+          suelo de fundacion ML: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos
   Fase 4  sin dimensionar
           S_cauce  : 0.0060 m/m (datos externos (punto C-01))
   Verificaciones:

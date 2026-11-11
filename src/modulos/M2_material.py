@@ -36,13 +36,22 @@ mientras que la fila de HDPE sale del criterio.
 Dos datos del catalogo cambiaron de sitio y de naturaleza (cluster C01):
 
     D_max            ya NO sale de `constantes_normativas.D_MAX`, que se
-                     retiro de alli: los topes no salen de las normas de
-                     producto a las que se les atribuian (A760 tabula hasta
-                     3600 mm, M 170M tambien -- NOR-PRO-01, NOR-PRO-02,
-                     MAT-O8). Salen del criterio 'D_max_catalogo' [A], que
-                     ademas trae en `de_catalogo` el rotulo con que hay que
-                     imprimirlos. `Material.D_max_de_catalogo` lo transporta
-                     para que la memoria no vuelva a llamarlos normativos.
+                     retiro de alli: los topes de 2.70 / 2.10 / 1.50 m no
+                     salian de las normas de producto a las que se les
+                     atribuian (A760 tabula hasta 3600 mm, M 170M tambien --
+                     NOR-PRO-01, NOR-PRO-02, MAT-O8). DESDE T-4 (INF-3.3.1)
+                     el tope es el de la norma de producto
+                     ('D_max_norma_producto' [C]: 2.70 / 3.60 / 1.50 m; en
+                     el concreto, el mayor diametro con DISEÑO ESTANDAR de
+                     M 170M --su serie sigue hasta 3600 mm como diseño
+                     especial, sin pared tabulada--; en el TMC, acotado a
+                     los diametros en que la corrugacion adoptada es
+                     estandar), y la disponibilidad de mercado
+                     ('D_max_catalogo' [A], opcional y sin valor) solo puede
+                     BAJARLO. Lo resuelve `tope_de_diametro`, y
+                     `Material.D_max_criterio` dice de cual de los dos salio
+                     para que la memoria no llame «de catalogo» a un tope de
+                     norma ni al reves.
     h_relleno_min    ya NO existe como campo. El recubrimiento minimo dejo de
                      ser un escalar por material: se CALCULA en
                      `M7_geometria.altura_recubrimiento` como el mayor entre
@@ -55,22 +64,35 @@ Dos datos del catalogo cambiaron de sitio y de naturaleza (cluster C01):
 Y uno es nuevo:
 
     espesor_pared    m, el t que separa el diametro interior del exterior.
-                     Sale del criterio 'espesor_pared_conducto' [A], hoy SIN
-                     VALOR. Es lo que le faltaba al catalogo para que la clave
+                     Es lo que le faltaba al catalogo para que la clave
                      fisica y el volumen desplazado no se calculasen con el
-                     diametro interior (MAT-D3, MAT-D4).
+                     diametro interior (MAT-D3, MAT-D4). DESDE T-4
+                     (INF-5.1.17) los TRES materiales lo tienen: el concreto
+                     y el HDPE del criterio 'espesor_pared_conducto' [A]
+                     (pared B de M 170M; diametro exterior maximo de AASHTO
+                     LRFD Table A12-11) y el TMC DERIVADO de
+                     'corrugacion_y_espesor_tmc' [A] por
+                     `espesor_pared_de_tmc` (profundidad de corrugacion mas
+                     espesor de plancha). Hasta T-4 solo lo tenia el
+                     concreto, y los otros dos se descartaban antes de 7.A y
+                     de V7.
 
 Campos que el catalogo puede dejar en None, a proposito
 --------------------------------------------------------
 Cuatro criterios alimentan campos que `Material` declara `Optional`:
 'n_manning_hdpe', 'v_max_tmc', 'v_max_hdpe' y 'espesor_pared_conducto'.
 
-ESTADO HOY: los tres primeros tienen valor y el cuarto no.
-'v_max_tmc' = 'v_max_hdpe' = 4.572 m/s [C] (WSDOT, Tabla 8-4: 15 ft/s);
-'n_manning_hdpe' = la fila del concreto de la Tabla N 09 [N->];
-'espesor_pared_conducto' = SIN VALOR [A], y bloquea en su punto de uso
-(`Seccion.ancho_exterior` / `Seccion.canto_exterior`, que llaman
-`M5_verificaciones.cota_clave` y `M8_estructural`/V7).
+ESTADO HOY (T-4): los cuatro tienen valor. 'v_max_tmc' = 4.572 m/s [A] y
+'v_max_hdpe' = 4.572 m/s [C] (el corte de 15 ft/s entre los niveles de
+abrasion moderado y severo de la Tabla 8-4 de WSDOT; para el termoplastico
+el §8-3.3 lo prohibe en el nivel severo, para el metal ninguna fuente fija
+techo); 'n_manning_hdpe' = (0.009, 0.015) [C], la fila del polietileno de
+interior liso de la Table B.1 del HDS-5; 'espesor_pared_conducto' = la pared
+B del concreto y el t del HDPE [A]. El mecanismo de abajo se conserva para
+quien vacie alguno: el bloqueo salta en el punto de uso
+(`M5_verificaciones.cota_clave` y V7 para el espesor).
+ESTE BLOQUE DECIA «los tres primeros tienen valor y el cuarto no» y que el
+n del HDPE era «la fila del concreto de la Tabla N 09 [N->]».
 
 El cuarto criterio de esta lista era antes 'h_relleno_min_concreto_tmc', con
 valor 0.30 m: se RETIRO al cerrarse NOR-VAC-01 -- el vacio que cubria no era
@@ -106,7 +128,8 @@ darle un punto de uso que bloquee, como tienen los otros tres.
 
 Sec. 3.2 - Catalogo de diametros
 ---------------------------------
-Progresion 0.90 m + pasos de 0.15 m, topada por material. El 0.90 sale del
+Progresion 0.90 m + pasos de 0.15 m, topada por material (desde T-4, por
+la serie de la norma de producto: ver `tope_de_diametro`). El 0.90 sale del
 num. 4.1.1.3.4 a) y NO es un piso incondicional: el numeral lo escribe "en
 carreteras de alto volumen de transito" -- condicion que este proyecto no puede
 afirmar, porque la clase de via depende del IMDA -- y exceptua expresamente los
@@ -115,14 +138,17 @@ candidatos", mas abajo, y `constantes_normativas.DIAMETRO_MIN_AMBITO`).
 Aplicarlo igual a las Familias A y B es una adopcion declarada, y su direccion
 NO es uniformemente conservadora: mas diametro da mas borde libre (favorable a
 V1) y menos velocidad (desfavorable al piso de V2). Los dos numeros de la progresion viven en el criterio
-'diametros_normalizados' [C]; los tres topes, en 'D_max_catalogo' [A]. Estan
-separados porque no son la misma clase de dato: el paso se verifica contra la
-serie de diametros nominales de las normas de producto y los topes NO salen de
-ninguna norma -- son de catalogo, y como tales descartan material por
-DISPONIBILIDAD, no por exigencia (NOR-PRO-01, NOR-PRO-02). Que no se usen
-catalogos de proveedor para la PROGRESION es lo que preserva la neutralidad
-comercial en obra publica; el tope, en cambio, es inevitablemente una decision
-sobre lo que se consigue, y por eso va declarado como adopcion.
+'diametros_normalizados' [C]; los tres topes, en 'D_max_norma_producto' [C]
+desde T-4. ESTE PARRAFO DECIA que los topes vivian en 'D_max_catalogo' [A] y
+que «NO salen de ninguna norma»: era cierto de los 2.70 / 2.10 / 1.50 m que
+el proyecto aplicaba (NOR-PRO-01, NOR-PRO-02) y deja de serlo al sustituirlos
+por el ultimo diametro que cada norma de producto cubre con un producto
+definido (en concreto, 2.70 m: el ultimo con diseño estandar). Que no
+se usen catalogos de proveedor para la PROGRESION ni para el tope es lo que
+preserva la neutralidad comercial en obra publica; lo que se consigue en el
+mercado es otra pregunta, la contesta el proyectista en 'D_max_catalogo'
+[A] -- opcional, y solo para BAJAR el tope -- y el descarte que produzca se
+imprime como de disponibilidad, no como exigencia.
 
     NOTA DE CONSERVADURISMO (declarar en la memoria): 0.90 m redondo
     subestima el equivalente exacto de 36" (0.9144 m) en aproximadamente
@@ -144,10 +170,26 @@ de la Tabla N 10 (V_MAX['concreto']), ambas [N] en constantes_normativas.py.
 TMC tiene su propia subfila en la Tabla N 09
 (MANNING['metal_corrugado_dren_aguas_lluvias'] -- ver `_MANNING_CLAVE`, que
 declara por que esa y no la de sub-dren) pero no tiene fila en la Tabla N 10:
-su velocidad maxima es el criterio 'v_max_tmc'. HDPE no esta en ninguna de las
-dos tablas del Manual MTC: su n sale del criterio 'n_manning_hdpe' (la subfila
-completa del concreto por analogia, [N->]) y su velocidad maxima del criterio
-'v_max_hdpe'.
+su velocidad maxima es el criterio 'v_max_tmc' [A]. HDPE no esta en ninguna de
+las dos tablas del Manual MTC: su n sale del criterio 'n_manning_hdpe' ([C],
+la fila del polietileno de interior liso de la Table B.1 del HDS-5; hasta T-4
+era la subfila del concreto por analogia) y su velocidad maxima del criterio
+'v_max_hdpe' [C].
+
+LA MATRIZ DE DURABILIDAD ES UN FILTRO REAL DESDE T-4 (INF-3.3.1; v8 §3.3).
+`matriz_durabilidad(punto, ensayos)` recibe los ensayos del punto --pH,
+resistividad, sulfatos, cloruros y nivel de abrasion: datos del EMS y del
+estudio de campo, todos opcionales y sin valor por defecto-- y devuelve un
+`DictamenDurabilidad` con lo que cada uno hace a cada material: EXCLUYE (el
+TMC fuera del intervalo de pH o bajo el piso de resistividad; el HDPE en
+abrasion severa), EXIGE (cemento y relacion a/c del concreto por sulfatos;
+proteccion del TMC con agua de pH menor de 5.8) o AVISA (cloruros, abrasion
+del metal y del concreto, suelo de fundacion deficiente).
+`materiales_candidatos(punto, durabilidad=...)` retira los excluidos. SIN
+ENSAYOS LA MATRIZ NO ACTUA: los candidatos son los de la familia y el
+dictamen lo dice (`modelos.DURABILIDAD_SIN_ENSAYOS`). Lo que M2 SIGUE sin
+hacer es elegir: el orden de los candidatos no cambia y MD adopta el primero
+que cierra.
 
 El marco de la Familia C -- ANTES "sin candidatos", y ya no
 -------------------------------------------------------------
@@ -221,13 +263,25 @@ from src.constantes_normativas import (ALCANCE_NORMA_PRODUCTO, CARTAS_CAJON_TA1,
                                    SECCION_EG2013,
                                    SECCION_EG2013_CAJON,
                                    TABLA_09_FILAS, V_MAX)
-from src.dominios import MILIMETROS_POR_METRO
+# --- T-4 --- las vistas del TMC, de la abrasion y del SUCS, y el [N] del pH.
+from src.constantes_normativas import (DIAMETROS_ESTANDAR_TMC,
+                                   EXPOSICION_ESPECIAL,
+                                   NIVEL_DE_ABRASION_SEVERO,
+                                   NIVELES_DE_ABRASION,
+                                   NUMERAL_PH_MIN_TMC,
+                                   PH_MIN_AGUA_TMC_SIN_PROTECCION,
+                                   SIMBOLOS_SUCS, SULFATOS,
+                                   TMC_PLANCHA_CORRUGADA)
+from src.dominios import MILIMETROS_POR_METRO, PPM_POR_PORCIENTO
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, ConstantesHDS5,
                      DatoFaltanteError, DatoInvalidoError,
-                     EleccionDeProyecto, Familia, FormaSeccion, Magnitud,
-                     Material, PasoDeMemoria, PuntoCritico, Seccion,
+                     DictamenDurabilidad, EfectoDeDurabilidad,
+                     EleccionDeProyecto, EnsayosDurabilidad,
+                     Familia, FormaSeccion, Magnitud,
+                     Material, PasoDeMemoria, PuntoCritico,
+                     ReglaDeDurabilidad, Seccion,
                      SeccionCircular, SeccionRectangular, TipoDeVeredicto,
-                     TipoMaterial, Veredicto, paso)
+                     TipoMaterial, Umbral, Veredicto, paso)
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 NUMERAL_CATALOGO = "Sec. 3.2"     # nuevo en v7, sin numeral MTC propio
@@ -236,6 +290,11 @@ NUMERAL_MATERIAL = "Sec. 3.4"
 CRITERIO_DIAMETROS = "diametros_normalizados"
 CRITERIO_D_MAX_CATALOGO = "D_max_catalogo"
 CRITERIO_ESPESOR_PARED = "espesor_pared_conducto"
+# --- T-4 --- los cuatro criterios que T-4 abre y que lee este modulo.
+CRITERIO_D_MAX_NORMA = "D_max_norma_producto"
+CRITERIO_CALIBRE_TMC = "corrugacion_y_espesor_tmc"
+CRITERIO_DURABILIDAD_TMC = "durabilidad_tmc_umbrales"
+CRITERIO_SUCS_DEFICIENTE = "sucs_fundacion_deficiente"
 # El del MARCO es otro criterio y no una entrada mas del de arriba: aquel
 # es una TABLA por diametro designado de tuberia y este un ESCALAR
 # adoptado. Meterlos en el mismo dict obligaria a que el marco tuviera un
@@ -458,8 +517,169 @@ def _progresion() -> dict:
     return ca.valor(CRITERIO_DIAMETROS)
 
 
-def _topes() -> dict:
-    return ca.valor(CRITERIO_D_MAX_CATALOGO)
+# --- T-4 --- El rotulo con que se imprime el tope cuando sale de la SERIE
+# de la norma de producto. Es lo contrario del rotulo de `de_catalogo`: aqui
+# el tope SI es el de la norma, y decirlo importa tanto como importaba no
+# decirlo cuando no lo era (NOR-PRO-01, NOR-PRO-02).
+ROTULO_TOPE_DE_SERIE = (
+    "TOPE DE LA NORMA DE PRODUCTO: mayor diametro que la norma de producto "
+    "cubre para este material (criterio "
+    f"'{CRITERIO_D_MAX_NORMA}' [C]); en tuberia de concreto, el mayor con "
+    "diseño estandar tabulado: por encima es diseño especial del "
+    "fabricante. No es un dato de mercado: que el "
+    "producto se consiga en la obra se declara aparte, en "
+    f"'{CRITERIO_D_MAX_CATALOGO}' [A], y solo puede bajarlo")
+ROTULO_TOPE_DE_CORRUGACION = (
+    "TOPE DE LA CORRUGACION ADOPTADA: mayor diametro en que la corrugacion "
+    f"de '{CRITERIO_CALIBRE_TMC}' [A] es estandar en la Table 6 de AASHTO "
+    "M 36 (igual a la Tabla 1 de ASTM A760). La serie de la norma llega mas "
+    "lejos con las corrugaciones de 25 mm de profundidad: superarlo se "
+    "resuelve declarando otra corrugacion, no otro material. ES EL TOPE DE "
+    "LA CORRUGACION Y NO EL DE LA PLANCHA: que el espesor adoptado resista "
+    "y cumpla el factor de flexibilidad de ASTM A796 en cada diametro lo "
+    "verifica la Fase 8, no este catalogo")
+
+
+def tope_de_diametro(material: MaterialLike) -> Tuple[float, str, str]:
+    """
+    El diametro maximo que el catalogo recorre para ese material, m, con la
+    CLAVE del criterio que lo fija y el ROTULO con que hay que imprimirlo
+    (Sec. 3.2; INF-3.3.1).
+
+        tope = min( serie de la norma de producto ,
+                    [TMC] mayor diametro estandar de la corrugacion adoptada ,
+                    [si se declara] disponibilidad de mercado )
+
+    DE DONDE SALE CADA TERMINO:
+
+      * la norma: 'D_max_norma_producto' [C]. En TMC y HDPE, la ultima fila
+        de AASHTO M 36 Table 6 (3600 mm) y de AASHTO M 294-11 num. 7.2.2
+        (1500 mm, traduccion no oficial). En CONCRETO, 2700 mm: el mayor
+        diametro con diseño estandar de AASHTO M 170M-04 (Tablas 1 y 3). Su
+        serie sigue hasta 3600 mm, pero esas filas llevan rayas y remiten a
+        la Seccion 7.2: son diseños especiales cuya pared da el fabricante
+        (`constantes_normativas.DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM`);
+      * la corrugacion: AASHTO M 36 Table 6 marca con «X» en que diametros es
+        estandar cada una; con la de 68 por 13 mm el ultimo es 2100 mm
+        (`constantes_normativas.DIAMETROS_ESTANDAR_TMC`);
+      * la disponibilidad: 'D_max_catalogo' [A], OPCIONAL y sin valor. Solo
+        puede BAJAR el tope: un valor por encima del de la serie se rechaza
+        con `DatoInvalidoError`, porque un diametro que la norma de producto
+        no tabula no es un producto que un catalogo pueda ofrecer bajo ella.
+
+    HASTA T-4 el tope eran 2.70 / 2.10 / 1.50 m de 'D_max_catalogo', [A] sin
+    respaldo en concreto y TMC. El 2.10 m del TMC y el 1.50 m del HDPE NO se
+    mueven --ahora tienen de donde salir--. El del concreto TAMPOCO: una
+    primera version de T-4 lo llevo a 3.60 m, la ultima fila de la serie, y
+    la auditoria lo refuto contra la fuente (H2): por encima de 2700 mm la
+    norma no tabula pared ni acero. Sigue en 2.70 m, ahora con fuente y
+    pagina.
+
+    Y EL TOPE NO DICE QUE EL PRODUCTO SIRVA ESTRUCTURALMENTE HASTA AHI. El
+    2.10 m del TMC es el de la CORRUGACION (Table 6 de M 36), no el de la
+    plancha: con 68 por 13 mm y 2.01 mm el factor de flexibilidad de ASTM
+    A796 deja de cumplirse mucho antes. Eso lo comprueba la Fase 8, no este
+    catalogo (ver el rotulo `ROTULO_TOPE_DE_CORRUGACION`).
+    """
+    tipo = _tipo_material(material)
+    serie = ca.valor(CRITERIO_D_MAX_NORMA)
+    if not isinstance(serie, dict) or tipo.value not in serie:
+        raise DatoInvalidoError(
+            campo=CRITERIO_D_MAX_NORMA, valor=serie,
+            motivo=f"el criterio no trae el tope de la serie de "
+                   f"«{tipo.value}». Es un dict por material con el diametro "
+                   "maximo en METROS")
+    tope = _espesor_valido(CRITERIO_D_MAX_NORMA, serie[tipo.value],
+                           que_es=f"el tope de la serie de «{tipo.value}» es "
+                                  "un diametro en METROS")
+    clave, rotulo = CRITERIO_D_MAX_NORMA, ROTULO_TOPE_DE_SERIE
+
+    if tipo is TipoMaterial.TMC:
+        estandar = max(_diametros_estandar_de_la_corrugacion()) \
+            / MILIMETROS_POR_METRO
+        if estandar < tope - TOL_UMBRAL_NORMATIVO:
+            tope, clave, rotulo = (estandar, CRITERIO_CALIBRE_TMC,
+                                   ROTULO_TOPE_DE_CORRUGACION)
+
+    local = _valor_si_declarado(CRITERIO_D_MAX_CATALOGO)
+    if local is not None:
+        if not isinstance(local, dict):
+            raise DatoInvalidoError(
+                campo=CRITERIO_D_MAX_CATALOGO, valor=local,
+                motivo="la disponibilidad de mercado se declara como un dict "
+                       "por material, con el diametro maximo en METROS: "
+                       "{'concreto_reforzado': 2.40, 'tmc': 1.80}")
+        if tipo.value in local:
+            disponible = _espesor_valido(
+                CRITERIO_D_MAX_CATALOGO, local[tipo.value],
+                que_es=f"el tope de disponibilidad de «{tipo.value}» es un "
+                       "diametro en METROS")
+            if disponible > tope + TOL_UMBRAL_NORMATIVO:
+                raise DatoInvalidoError(
+                    campo=CRITERIO_D_MAX_CATALOGO, valor=disponible,
+                    motivo=f"la disponibilidad de mercado declarada para "
+                           f"«{tipo.value}» ({disponible} m) supera el tope "
+                           f"que la norma de producto da ({tope} m, criterio "
+                           f"'{clave}'). Este criterio solo puede BAJAR el "
+                           "tope: un diametro que la norma no tabula no es "
+                           "un producto de catalogo bajo esa norma")
+            if disponible < tope - TOL_UMBRAL_NORMATIVO:
+                tope, clave = disponible, CRITERIO_D_MAX_CATALOGO
+                rotulo = ca.criterio(CRITERIO_D_MAX_CATALOGO).de_catalogo
+    return tope, clave, rotulo
+
+
+def _calibre_de_tmc() -> dict:
+    """
+    La fila de `TMC_PLANCHA_CORRUGADA` que 'corrugacion_y_espesor_tmc' elige.
+    Una clave que no es fila de la vista es `DatoInvalidoError`: la puerta de
+    declaracion ya la rechaza (forma `categoria`), y esta es la segunda linea
+    para quien la esquive.
+    """
+    clave = ca.valor(CRITERIO_CALIBRE_TMC)
+    if clave not in TMC_PLANCHA_CORRUGADA:
+        raise DatoInvalidoError(
+            campo=CRITERIO_CALIBRE_TMC, valor=clave,
+            motivo="tiene que ser una de las claves 'corrugacion/espesor' de "
+                   "las Tablas 5, 7 y 9 de ASTM A796: "
+                   f"{', '.join(TMC_PLANCHA_CORRUGADA)}")
+    return TMC_PLANCHA_CORRUGADA[clave]
+
+
+def _diametros_estandar_de_la_corrugacion() -> Tuple[int, ...]:
+    """Los diametros (mm) en que la corrugacion adoptada es estandar."""
+    return DIAMETROS_ESTANDAR_TMC[_calibre_de_tmc()["corrugacion"]]
+
+
+def espesor_pared_de_tmc() -> dict:
+    """
+    El «espesor de pared» de la tuberia metalica corrugada, por diametro
+    designado: {mm: t en metros}, con
+
+        t = profundidad nominal de la corrugacion + espesor de la plancha
+
+    para los diametros en que la corrugacion adoptada es ESTANDAR (AASHTO
+    M 36 Table 6). Es lo que separa el diametro interior del exterior:
+    D_ext = D + 2t.
+
+    POR QUE ES UNA SUMA, que la norma no escribe: AASHTO M 36 num. 8.1.1 mide
+    el diametro nominal en la cresta INTERIOR de las corrugaciones (cita
+    AASHTO_M36.8.1.1) y la nota b de su Table 1 define la profundidad de
+    cresta a valle sobre una misma cara de la plancha (cita AASHTO_M36.T1),
+    de modo que la cresta exterior queda a profundidad + espesor de la
+    interior. Es geometria del proyecto sobre dos definiciones de la fuente,
+    declarada como `Interpretacion` de la tabla AASHTO_M36.T1.
+
+    Con la adopcion de perfil (68 por 13 mm, plancha de 2.01 mm) da
+    0.013 + 0.00201 = 0.01501 m en todo diametro de 300 a 2100 mm. El
+    espesor NO depende del diametro; lo que depende es EN CUALES existe.
+
+    Un diametro fuera de los estandar no lleva fila, y `espesor_pared`
+    detiene ahi el material con `DatoFaltanteError`.
+    """
+    calibre = _calibre_de_tmc()
+    t = calibre["profundidad_m"] + calibre["espesor_m"]
+    return {mm: t for mm in DIAMETROS_ESTANDAR_TMC[calibre["corrugacion"]]}
 
 
 # ---------------------------------------------------------------------------
@@ -565,14 +785,14 @@ def espesor_pared(material: Material, D: float) -> float:
                 f"no trae entrada para «{material.tipo.value}». Es un dict "
                 "por material y cada entrada necesita su propia fuente: la "
                 "del concreto es la columna 'Wall Thickness' de las Tablas 1 "
-                "a 5 de AASHTO M 170M-04, la del TMC depende del calibre que "
-                "fije la Fase 8 ('clases_producto_por_relleno') y la del "
-                "HDPE no la trae AASHTO M 294-11 -- en normas/ como "
-                "traduccion no oficial: su 7.2.2 da el espesor minimo de la "
-                "pared interior, no la altura del perfil corrugado, y "
-                "ninguna hoja fija el diametro exterior --. Sin "
-                "espesor no hay diametro exterior, y sin diametro exterior no "
-                "hay clave fisica (7.A) ni volumen desplazado (V7)"
+                "a 5 de AASHTO M 170M-04, la del HDPE el diametro exterior "
+                "maximo de la Table A12-11 de AASHTO LRFD (su norma de "
+                "producto, AASHTO M 294-11 -- en normas/ como traduccion no "
+                "oficial --, no fija el diametro exterior) y la del TMC se "
+                f"deriva de '{CRITERIO_CALIBRE_TMC}' cuando no se declara. "
+                "Sin espesor no hay diametro exterior, y sin diametro "
+                "exterior no hay clave fisica (7.A) ni volumen desplazado "
+                "(V7)"
             ),
         )
     ca.valor(CRITERIO_ESPESOR_PARED)          # registra el uso para M11
@@ -593,8 +813,8 @@ def espesor_pared(material: Material, D: float) -> float:
                 f"el criterio '{CRITERIO_ESPESOR_PARED}' declara "
                 f"«{material.tipo.value}» pero no la fila de {designado} mm. "
                 f"Los diametros declarados son "
-                f"{sorted(por_diametro)}. Falta transcribir esa fila de la "
-                "columna 'Wall Thickness' de la norma de producto: no se "
+                f"{sorted(por_diametro)}. Falta esa fila en su fuente "
+                f"({_FUENTE_DEL_ESPESOR[material.tipo]}): no se "
                 "interpola ni se toma la fila vecina, porque el espesor "
                 "gobierna la clave fisica (7.A) y el volumen desplazado de V7 "
                 "y los dos quedan del lado inseguro si se estima por lo bajo"
@@ -605,6 +825,56 @@ def espesor_pared(material: Material, D: float) -> float:
         que_es=f"el espesor declarado para '{material.tipo.value}' en el "
                f"diametro {designado} mm es una celda de la columna 'Wall "
                f"Thickness', en METROS")
+
+
+# --- T-4 --- De donde sale la tabla de espesores de cada material, para el
+# mensaje de la fila que falta. Hasta T-4 el mensaje decia «la columna 'Wall
+# Thickness' de la norma de producto» para los tres, que solo es cierto del
+# concreto.
+_FUENTE_DEL_ESPESOR = {
+    TipoMaterial.CONCRETO_REFORZADO: (
+        "columna 'Wall Thickness' de la pared B de AASHTO M 170M-04, de "
+        "900 a 2700 mm, que es el ultimo diametro con diseño estandar: por "
+        "encima la norma no tabula pared (diseño especial, Seccion 7.2) y "
+        "la da el fabricante"),
+    TipoMaterial.TMC: (
+        f"'{CRITERIO_CALIBRE_TMC}': la corrugacion adoptada no es estandar "
+        "en ese diametro segun la Table 6 de AASHTO M 36; se resuelve "
+        "declarando otra corrugacion"),
+    TipoMaterial.HDPE: (
+        "columna 'Max. OD' de la Table A12-11 de AASHTO LRFD, que termina "
+        "en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro "
+        "exterior de la ficha del fabricante"),
+}
+
+
+def procedencia_del_espesor(material: Material) -> Tuple[str, str, str]:
+    """
+    De donde sale el espesor de pared de ese material: (texto para la
+    memoria, id de la cita del registro o cadena vacia, clave del criterio).
+
+    Existe para que V7 --que es donde el espesor entra en un numero que se
+    juzga-- pueda decir en su paso de donde salio t, en vez de dejar al
+    revisor buscandolo en la ficha de un criterio que es un dict de dicts.
+    """
+    if material.forma is FormaSeccion.RECTANGULAR:
+        return ("espesor de pared del marco, escalar declarado por el "
+                "proyectista", "", CRITERIO_ESPESOR_PARED_CAJON)
+    declarados = _valor_si_declarado(CRITERIO_ESPESOR_PARED) or {}
+    if material.tipo is TipoMaterial.TMC and \
+            material.tipo.value not in declarados:
+        calibre = ca.valor(CRITERIO_CALIBRE_TMC)
+        return (f"profundidad de la corrugacion mas espesor de la plancha "
+                f"de la fila '{calibre}' (AASHTO M 36 Table 1 y num. 8.1.1; "
+                f"ASTM A796)", "AASHTO_M36.T1", CRITERIO_CALIBRE_TMC)
+    if material.tipo is TipoMaterial.HDPE:
+        return ("el t que lleva el diametro designado hasta el diametro "
+                "exterior maximo de la Table A12-11 de AASHTO LRFD, o el "
+                "que el proyectista declare en su lugar",
+                "AASHTO_LRFD_9.TA12-11", CRITERIO_ESPESOR_PARED)
+    return (f"tabla declarada en '{CRITERIO_ESPESOR_PARED}' para "
+            f"'{material.tipo.value}' (concreto: pared B de AASHTO "
+            "M 170M-04)", "", CRITERIO_ESPESOR_PARED)
 
 
 def _espesor_valido(campo: str, t: Any, *, que_es: str) -> float:
@@ -685,7 +955,7 @@ def siguiente_diametro(material: MaterialLike,
     tipo = _tipo_material(material)
     prog = _progresion()
     inicio, paso = prog["inicio"], prog["paso"]
-    tope = _topes()[tipo.value]      # tope de CATALOGO, no normativo
+    tope, _clave, _rotulo = tope_de_diametro(tipo)
 
     if D is None:
         return inicio
@@ -1090,9 +1360,23 @@ def catalogo(material: MaterialLike,
             "'seccion inexistente' -- un marco se vacia in situ en la "
             "dimension que se arme -- sino 'fuera de la serie declarada', y "
             "se levanta declarando la serie completa")
+        D_max_criterio = CRITERIO_SECCIONES_CAJON
     else:
-        D_max = _topes()[tipo.value]
-        D_max_rotulo = ca.criterio(CRITERIO_D_MAX_CATALOGO).de_catalogo
+        D_max, D_max_criterio, D_max_rotulo = tope_de_diametro(tipo)
+
+    # --- T-4 --- EL TMC NO SE DECLARA EN 'espesor_pared_conducto': su t se
+    # DERIVA de la corrugacion y la plancha adoptadas. Una entrada «tmc»
+    # declarada alli MANDA sobre la derivada --es el espesor de un producto
+    # ya especificado, y un dato del producto no se sustituye por una
+    # regla--; sin ella, se deriva. Si el criterio entero esta vacio no se
+    # deriva nada: `espesor_pared` bloquea para los tres materiales, como
+    # antes.
+    espesor_del_material = (None if espesores is None
+                            else espesores.get(tipo.value))
+    if espesores is not None and espesor_del_material is None \
+            and tipo is TipoMaterial.TMC \
+            and forma is not FormaSeccion.RECTANGULAR:
+        espesor_del_material = espesor_pared_de_tmc()
 
     return Material(
         tipo=tipo,
@@ -1109,7 +1393,7 @@ def catalogo(material: MaterialLike,
         # [N] directo de EG-2013 508.07 y SOLO para HDPE: los otros dos
         # materiales no tienen minimo en el EG-2013, y su None significa eso.
         h_relleno_min_eg2013=H_RELLENO_MIN[_EG2013_CLAVE[tipo]],
-        espesor_pared=None if espesores is None else espesores.get(tipo.value),
+        espesor_pared=espesor_del_material,
         # LA SECCION DEL EG-2013 NO SALE DEL MATERIAL SOLO, y hasta C7 si:
         # las cuatro entradas de `SECCION_EG2013` son de TUBERIA -- los cuatro
         # titulos impresos empiezan por esa palabra --, de modo que un marco
@@ -1123,6 +1407,7 @@ def catalogo(material: MaterialLike,
         forma=forma,
         pasos=(_pasos_del_marco() if forma is FormaSeccion.RECTANGULAR
                else ()),
+        D_max_criterio=D_max_criterio,
     )
 
 
@@ -1362,11 +1647,35 @@ def _fila_manning(tipo: TipoMaterial, forma: FormaSeccion) -> str:
 # Filtro de candidatos
 # ---------------------------------------------------------------------------
 
-def materiales_candidatos(punto: PuntoCritico) -> Tuple[Material, ...]:
+def tipos_candidatos(punto: PuntoCritico) -> Tuple[TipoMaterial, ...]:
+    """
+    Los TIPOS de material que la familia del punto admite (Sec. 2.3 y 3.4),
+    sin construir su catalogo: el marco de concreto en la Familia C; los tres
+    en las otras dos. Lo comparten `materiales_candidatos` y
+    `matriz_durabilidad`, que necesita saber a que materiales les aplica una
+    regla sin exigir antes los criterios del cajon.
+    """
+    if punto.familia is Familia.C:
+        return (TipoMaterial.CONCRETO_REFORZADO,)
+    return tuple(TipoMaterial)
+
+
+def materiales_candidatos(
+        punto: PuntoCritico,
+        durabilidad: Optional[DictamenDurabilidad] = None,
+) -> Tuple[Material, ...]:
     """
     Materiales candidatos para el punto, ANTES de dimensionar (Sec. 3.2 +
     Sec. 3.4). No elige uno: entrega el catalogo completo de los que tienen
     sentido para la familia del punto.
+
+    DESDE T-4 LA MATRIZ DE DURABILIDAD LOS FILTRA (INF-3.3.1). `durabilidad`
+    es el dictamen de `matriz_durabilidad` para este punto: los materiales
+    que excluye no entran en la tupla, y el ORDEN de los que quedan no
+    cambia. Sin dictamen, o con uno «no aplicado» (el punto no trae
+    ensayos), devuelve lo mismo que antes. Puede devolver la tupla VACIA
+    --todos los candidatos de la familia excluidos--: MD lo convierte en
+    `DisenoNoFactibleError` con las exclusiones citadas.
 
     LA FAMILIA C YA NO DEVUELVE LA TUPLA VACIA, y es el cambio que abre C5.
     Devuelve UN candidato: el marco de concreto reforzado, que es la seccion
@@ -1384,7 +1693,768 @@ def materiales_candidatos(punto: PuntoCritico) -> Tuple[Material, ...]:
     una afirmacion sobre el EXPEDIENTE. Ver "El marco de la Familia C" en el
     docstring del modulo.
     """
+    excluidos = () if durabilidad is None else durabilidad.excluidos
+    forma = (FormaSeccion.RECTANGULAR if punto.familia is Familia.C
+             else FormaSeccion.CIRCULAR)
+    return tuple(catalogo(tipo, forma=forma)
+                 for tipo in tipos_candidatos(punto)
+                 if tipo not in excluidos)
+
+
+# ---------------------------------------------------------------------------
+# --- T-4 --- Sec. 3.3 - La matriz de durabilidad
+# ---------------------------------------------------------------------------
+
+CODIGO_DURABILIDAD = "DUR"
+# Auditoria de T-4 (H3): los criterios de suelo agresivo para acero
+# galvanizado enterrado (AASHTO LRFD, por analogia) y su efecto sobre el TMC.
+CRITERIO_SUELO_AGRESIVO = "suelo_agresivo_acero_lrfd"
+CRITERIO_EFECTO_SUELO_AGRESIVO = "suelo_agresivo_lrfd_sobre_tmc"
+EFECTO_AVISO, EFECTO_EXCLUYE = "aviso", "excluye"
+# El [S] del EMS que M9 lee para el recubrimiento del cabezal: el mismo
+# ensayo de sulfatos por otra puerta (H8). Aqui solo se CONTRASTA.
+CRITERIO_EXPOSICION_EMS = "exposicion_quimica_ems"
+
+
+def _avisos_fijos_del_metal(punto: PuntoCritico) -> Tuple[ReglaDeDurabilidad, ...]:
+    """
+    El aviso que NO depende de ningun ensayo (H6 de la auditoria de T-4).
+
+    El Manual de Hidrologia (num. 4.1.1.3.7 f y g, pags. impresas 81 a 83) no
+    recomienda la alcantarilla metalica en condiciones muy agresivas --aguas
+    salinas o acidas, suelos alcalinos, suelos con turba-- y pide proteccion
+    para cualquier material cerca del mar. Es texto cualitativo: no hay
+    ensayo que lo dispare ni umbral que comparar, de modo que se imprime
+    SIEMPRE que la TMC es candidata, para que el proyectista compruebe la
+    condicion del sitio. No excluye ni exige: avisa.
+
+    Con turba en la clasificacion del suelo de fundacion (`PT`) hay ademas
+    un segundo aviso, este si ligado a un dato: es una de las condiciones
+    que el inciso g) nombra.
+    """
+    if TipoMaterial.TMC not in tipos_candidatos(punto):
+        return ()
+    reglas = [ReglaDeDurabilidad(
+        ensayo="condicion_del_sitio", material=TipoMaterial.TMC,
+        efecto=EfectoDeDurabilidad.AVISA,
+        texto=("aviso fijo, sin ensayo que lo dispare: el Manual de "
+               "Hidrologia no recomienda alcantarillas metalicas en "
+               "condiciones muy agresivas --aguas salinas o acidas, suelos "
+               "alcalinos o con turba-- y pide proteccion para cualquier "
+               "material en zonas costeras cercanas al mar. Antes de adoptar "
+               "TMC hay que verificar la condicion del sitio"),
+        cita_ids=("MC_HHD.4.1.1.3.7f#COSTA", "MC_HHD.4.1.1.3.7g#AGRESIVAS"))]
+    if "PT" in componentes_sucs(punto.sucs_fundacion):
+        reglas.append(ReglaDeDurabilidad(
+            ensayo="sucs_fundacion", material=TipoMaterial.TMC,
+            efecto=EfectoDeDurabilidad.AVISA,
+            texto=(f"suelo de fundacion {punto.sucs_fundacion}: con turba, "
+                   "el Manual de Hidrologia no recomienda alcantarillas "
+                   "metalicas"),
+            cita_ids=("MC_HHD.4.1.1.3.7g#AGRESIVAS",)))
+    return tuple(reglas)
+
+
+def _valor_sin_registrar_uso(clave: str) -> Any:
+    """
+    El valor efectivo de un criterio SIN registrarlo como usado: para
+    CONTRASTAR un dato con otro, no para calcular con el. `ca.valor` lo
+    anotaria entre los criterios que la corrida uso, y un criterio de
+    expediente contrastado desde la Fase 3 apareceria como invocado a nivel
+    de perfil sin que ningun numero dependa de el.
+    """
+    return ca.valores_dinamicos().get(clave, ca.CRITERIOS[clave].valor)
+
+
+def _umbral_de_cita(*, descripcion: str, valor: Any, unidad: str,
+                    cita_id: str, aplicacion: str,
+                    criterio: Optional[str] = None) -> Umbral:
+    """
+    Un `Umbral` cuyo CARACTER se lee de su cita y no se escribe aqui: es lo
+    que impide rotular «exigencia» lo que la fuente recomienda (NOR-MEM-01).
+    """
+    from src.modelos import _registro_normativo
+    caracter = _registro_normativo().cita(cita_id).caracter.value.upper()
+    return Umbral(descripcion=descripcion, valor=valor, unidad=unidad,
+                  cita_id=cita_id, caracter=caracter, aplicacion=aplicacion,
+                  criterio_aplicado=criterio)
+
+
+def _umbrales_de_durabilidad_tmc() -> dict:
+    """
+    Los tres umbrales de 'durabilidad_tmc_umbrales' [C], comprobados antes de
+    usarlos: un dict con los tres campos, cada uno un numero finito, y el
+    intervalo de pH en orden. La puerta de declaracion ya exige la ventana
+    por campo; esto es la segunda linea, como en `_par_de_manning`.
+    """
+    u = ca.valor(CRITERIO_DURABILIDAD_TMC)
+    campos = ("pH_min", "pH_max", "resistividad_min_ohm_cm")
+    if not isinstance(u, dict) or any(c not in u for c in campos):
+        raise DatoInvalidoError(
+            campo=CRITERIO_DURABILIDAD_TMC, valor=u,
+            motivo=f"tiene que ser un dict con los campos {campos}")
+    for c in campos:
+        if not ca._es_real(u[c]) or not math.isfinite(u[c]):
+            raise DatoInvalidoError(
+                campo=CRITERIO_DURABILIDAD_TMC, valor=u[c],
+                motivo=f"el campo '{c}' tiene que ser un numero finito")
+    if not u["pH_min"] <= u["pH_max"]:
+        raise DatoInvalidoError(
+            campo=CRITERIO_DURABILIDAD_TMC, valor=(u["pH_min"], u["pH_max"]),
+            motivo="el intervalo de pH esta invertido: pH_min tiene que ser "
+                   "<= pH_max")
+    return u
+
+
+def componentes_sucs(sucs: str) -> Tuple[str, ...]:
+    """
+    Los simbolos SUCS de una clasificacion, en MAYUSCULAS: uno para un suelo
+    de grupo simple («SM»), dos para uno de frontera («SP-SM», «CL-ML»).
+    """
+    return tuple(parte.strip().upper()
+                 for parte in str(sucs).replace("/", "-").split("-")
+                 if parte.strip())
+
+
+def _regla_del_suelo_de_fundacion(punto: PuntoCritico):
+    """
+    El aviso «suelo de fundacion deficiente -> marco» (v8 §3.1; num.
+    4.1.1.3.4 a) del Manual de Hidrologia), que es el consumidor de la
+    columna `sucs_fundacion` (INF-5.1.9).
+
+    Devuelve (linea, reglas, pasos). La LINEA se devuelve siempre: dice que
+    se leyo y contra que conjunto. La regla y su paso, solo si alguno de los
+    simbolos del punto esta en 'sucs_fundacion_deficiente' [A] y el punto NO
+    es ya un marco (Familia C): ahi la recomendacion ya esta cumplida.
+
+    ES UN AVISO Y NO UN FILTRO: no cambia el material ni la seccion. El
+    Manual RECOMIENDA el marco y no define «mala calidad»; que simbolos
+    cuentan lo declara el proyecto, apoyado en E.050 Art. 24.
+    """
+    declarado = ca.valor(CRITERIO_SUCS_DEFICIENTE)
+    # La guardia del CONSUMIDOR, que aqui es la primera linea y no la
+    # segunda: la puerta de una serie de claves comprueba la forma, no que
+    # cada clave sea un simbolo de la tabla. Un simbolo que no existe en la
+    # Figura 3 de la E.050 nunca coincidiria con ningun suelo y el aviso
+    # quedaria apagado sin que nadie lo notara.
+    if not isinstance(declarado, (tuple, list)) or any(
+            not isinstance(x, str) or x.upper() not in SIMBOLOS_SUCS
+            for x in declarado):
+        raise DatoInvalidoError(
+            campo=CRITERIO_SUCS_DEFICIENTE, valor=declarado,
+            motivo="el conjunto de suelos de fundacion deficientes se "
+                   "declara como una serie de simbolos SUCS de la Figura 3 "
+                   f"de la E.050: {', '.join(SIMBOLOS_SUCS)}")
+    deficientes = tuple(x.upper() for x in declarado)
+    simbolos = componentes_sucs(punto.sucs_fundacion)
+    conjunto = ", ".join(deficientes)
+    desconocidos = tuple(x for x in simbolos if x not in SIMBOLOS_SUCS)
+    if not simbolos or desconocidos:
+        return ((f"suelo de fundacion '{punto.sucs_fundacion}': no es una "
+                 "clasificacion SUCS de la Figura 3 de la E.050 y no se pudo "
+                 f"contrastar con el conjunto declarado deficiente "
+                 f"({conjunto}; criterio '{CRITERIO_SUCS_DEFICIENTE}' [A])"),
+                (), ())
+    malos = tuple(x for x in simbolos if x in deficientes)
+    if not malos:
+        # NO ES UNA CALIFICACION DE APTITUD (H9 de la auditoria de T-4). La
+        # linea decia solo «no esta entre los grupos deficientes», que para
+        # una arena limosa bajo la napa se lee como «apto» y no lo es: la
+        # E.050 manda evaluar la licuacion de los suelos granulares. No se
+        # decide aqui que simbolos son licuables --seria inventar el mapeo--:
+        # se remite al articulo para todo suelo que no este en el conjunto.
+        return ((f"suelo de fundacion {punto.sucs_fundacion}: no esta entre "
+                 f"los grupos SUCS declarados deficientes ({conjunto}; "
+                 f"criterio '{CRITERIO_SUCS_DEFICIENTE}' [A]). Eso no lo "
+                 "califica como apto: este aviso no evalua capacidad "
+                 "portante, asentamientos ni licuacion; bajo el nivel "
+                 "freatico, la E.050 (Art. 38, pag. 51) manda evaluar la "
+                 "licuacion de los suelos granulares y de algunos con finos"),
+                (), ())
     if punto.familia is Familia.C:
-        return (catalogo(TipoMaterial.CONCRETO_REFORZADO,
-                         forma=FormaSeccion.RECTANGULAR),)
-    return tuple(catalogo(tipo) for tipo in TipoMaterial)
+        return ((f"suelo de fundacion {punto.sucs_fundacion}: grupo "
+                 f"declarado deficiente ({conjunto}; criterio "
+                 f"'{CRITERIO_SUCS_DEFICIENTE}' [A]); la obra ya es un marco "
+                 "de concreto, que es lo que el Manual recomienda en ese "
+                 "caso"), (), ())
+    texto = (f"suelo de fundacion {punto.sucs_fundacion}: grupo declarado "
+             f"deficiente ({conjunto}; criterio "
+             f"'{CRITERIO_SUCS_DEFICIENTE}' [A]). La E.050 (Art. 24) no "
+             "permite cimentar sobre turba ni suelo organico y manda "
+             "removerlos en la totalidad del terreno y reemplazarlos por "
+             "relleno controlado; el Manual recomienda ademas, con suelo de "
+             "fundacion de mala calidad, la alcantarilla tipo marco de "
+             "concreto. El calculo NO cambia el tipo ni el material por "
+             "este aviso: lo decide el proyectista con el estudio de suelos")
+    regla = ReglaDeDurabilidad(
+        ensayo="sucs_fundacion", material=None,
+        efecto=EfectoDeDurabilidad.AVISA, texto=texto,
+        cita_ids=("MC_HHD.4.1.1.3.4a#MARCO", "E050.24", "E050.24#REMOVER"),
+        criterio=CRITERIO_SUCS_DEFICIENTE)
+    paso_ = paso(
+        "F3.DUR.SUELO_FUNDACION", codigo=CODIGO_DURABILIDAD,
+        que="Suelo de fundacion: grupo SUCS frente al conjunto declarado "
+            "deficiente",
+        formula="grupo SUCS del punto en el conjunto declarado deficiente",
+        citas_textuales=("MC_HHD.4.1.1.3.4a#MARCO", "E050.24",
+                         "E050.24#REMOVER"),
+        sustitucion=(
+            Magnitud("SUCS", punto.sucs_fundacion, "",
+                     "columna sucs_fundacion del CSV (Sec. 1.2): "
+                     "clasificacion de la calicata del punto"),
+            Magnitud("conjunto deficiente", conjunto, "",
+                     f"criterio '{CRITERIO_SUCS_DEFICIENTE}' [A]")),
+        resultado=Magnitud("grupos deficientes del punto", ", ".join(malos),
+                           "", "interseccion de los dos anteriores"),
+        nota_del_proyecto=texto)
+    return texto, (regla,), (paso_,)
+
+
+def matriz_durabilidad(
+        punto: PuntoCritico,
+        ensayos: Optional[EnsayosDurabilidad] = None) -> DictamenDurabilidad:
+    """
+    La matriz de durabilidad de la Sec. 3.3 de la hoja de ruta, aplicada a UN
+    punto: que hace cada ensayo declarado con cada material candidato.
+
+    ENTRADAS: los seis ensayos de `EnsayosDurabilidad`, TODOS opcionales y
+    sin valor por defecto --son del EMS y del estudio de campo
+    (docs/contrato_entradas.md)--, y la columna `sucs_fundacion` del CSV.
+    SIN ENSAYOS LA MATRIZ NO ACTUA: devuelve un dictamen con
+    `aplicada=False`, sin reglas de ensayo ni pasos, y la memoria imprime
+    `modelos.DURABILIDAD_SIN_ENSAYOS`. No se supone un ambiente «benigno» ni
+    uno «agresivo»: no hay dato.
+
+    LAS REGLAS, cada una con la fuente que la sostiene y solo con ella:
+
+    pH (suelo o agua)
+        fuera de [pH_min, pH_max] de 'durabilidad_tmc_umbrales' [C] (5.0 a
+        8.5: WSDOT §8-5.1)                -> TMC EXCLUIDA
+        dentro, y menor de 5.8 ([N], EG-2013 507.10)
+                                          -> TMC sigue, EXIGE proteccion
+        (EG-2013 escribe ese 5.8 para el AGUA que conduce el tubo; hay una
+        sola clave `pH`, y se le aplica sea del agua o del suelo: es el
+        lado seguro, y la regla lo deja dicho)
+        concreto y HDPE: el pH no los excluye (WSDOT §8-3.1, §8-3.3, §8-4.3)
+    resistividad (suelo o agua)
+        menor de resistividad_min_ohm_cm (1000: WSDOT §8-5.2)
+                                          -> TMC EXCLUIDA
+    abrasion (nivel del sitio, WSDOT Table 8-4)
+        severa   -> HDPE EXCLUIDO (WSDOT §8-3.3); TMC y concreto, AVISO: la
+                    fuente pide mas espesor o solera de concreto
+        moderada -> TMC y concreto, AVISO
+    sulfatos (suelo en ppm -> % en peso; o agua en ppm): fila de la Tabla
+        4.4 de E.060 -> concreto EXIGE el cemento, la a/c maxima y el f'c
+        minimo de la fila. NUNCA excluye: la norma no prohibe el concreto en
+        ninguna exposicion.
+    cloruros -> AVISO: E.060 4.4.2 exige la fila de cloruros de la Tabla 4.2
+        y el recubrimiento del 7.7 cuando el concreto reforzado queda
+        expuesto a cloruros de sal, agua salobre o agua de mar, y NO fija
+        un umbral en ppm; el Manual de Hidrologia advierte del acero en agua
+        salina, tambien sin numero. El ensayo no decide solo.
+    suelo de fundacion (columna `sucs_fundacion`) -> AVISO de marco si el
+        grupo esta en 'sucs_fundacion_deficiente' [A]. No es un ensayo de
+        durabilidad y se evalua siempre.
+
+    LO QUE AÑADIO LA AUDITORIA ADVERSARIAL DE T-4:
+
+    suelo agresivo para el acero (pH, resistividad, cloruros o sulfatos del
+        suelo fuera de 'suelo_agresivo_acero_lrfd' [C]: AASHTO LRFD
+        11.10.6.4.2a y 11.12.8, criterios de refuerzos enterrados aplicados
+        POR ANALOGIA) -> TMC con AVISO, o EXCLUIDA si
+        'suelo_agresivo_lrfd_sobre_tmc' [A] vale «excluye» (vale «aviso»)
+    suelos circundantes agresivos (ese suelo agresivo, o sulfatos sobre la
+        exposicion insignificante de E.060 T4.4) -> TMC EXIGE proteccion
+        ([N], la segunda mitad de EG-2013 507.10)
+    aviso FIJO del Manual (4.1.1.3.7 f y g), sin ensayo: toda TMC candidata;
+        y contra el metal si el suelo de fundacion trae turba (PT)
+    dos entradas del mismo ensayo de sulfatos que se contradicen (estas
+        claves y el [S] 'exposicion_quimica_ems') -> AVISO de incoherencia
+
+    Las reglas de un material que no es candidato en la familia del punto
+    (TMC y HDPE en la Familia C) no se emiten: no hay nada que excluir.
+
+    NO ELIGE MATERIAL. Devuelve un dictamen; quien filtra es
+    `materiales_candidatos` y quien adopta, MD.
+    """
+    linea_suelo, reglas_suelo, pasos_suelo = \
+        _regla_del_suelo_de_fundacion(punto)
+    # Los avisos que no dependen de ningun ensayo (H6): van con ensayos o
+    # sin ellos, despues de las reglas de ensayo y antes de la del suelo.
+    reglas_suelo = _avisos_fijos_del_metal(punto) + reglas_suelo
+    if ensayos is None or not ensayos.hay_ensayos:
+        return DictamenDurabilidad(aplicada=False, reglas=reglas_suelo,
+                                   pasos=pasos_suelo, ensayos=ensayos,
+                                   suelo_fundacion=linea_suelo)
+
+    candidatos = tipos_candidatos(punto)
+    reglas: list = []
+    pasos: list = []
+
+    def regla(ensayo, material, efecto, texto, citas, criterio=""):
+        if material is None or material in candidatos:
+            reglas.append(ReglaDeDurabilidad(
+                ensayo=ensayo, material=material, efecto=efecto, texto=texto,
+                cita_ids=tuple(citas), criterio=criterio))
+
+    tmc, hdpe, concreto = (TipoMaterial.TMC, TipoMaterial.HDPE,
+                           TipoMaterial.CONCRETO_REFORZADO)
+
+    # ---- pH -----------------------------------------------------------------
+    if ensayos.pH is not None:
+        u = _umbrales_de_durabilidad_tmc()
+        pH, pH_min, pH_max = ensayos.pH, u["pH_min"], u["pH_max"]
+        dentro = pH_min - TOL_UMBRAL_NORMATIVO <= pH <= pH_max + TOL_UMBRAL_NORMATIVO
+        exige = dentro and pH < PH_MIN_AGUA_TMC_SIN_PROTECCION - TOL_UMBRAL_NORMATIVO
+        if not dentro:
+            regla("pH", tmc, EfectoDeDurabilidad.EXCLUYE,
+                  f"pH = {pH:g} fuera del intervalo {pH_min:g} a {pH_max:g} "
+                  f"en que la fuente tecnica admite tuberia de acero "
+                  f"(criterio '{CRITERIO_DURABILIDAD_TMC}' [C]): la TMC "
+                  "galvanizada no es candidata en este punto",
+                  ("WSDOT_HM.8-5.1#PH", "WSDOT_HM.8-4.3#ZONA_III"),
+                  CRITERIO_DURABILIDAD_TMC)
+        elif exige:
+            regla("pH", tmc, EfectoDeDurabilidad.EXIGE,
+                  f"pH = {pH:g} menor de "
+                  f"{PH_MIN_AGUA_TMC_SIN_PROTECCION:g}: la TMC sigue "
+                  "candidata y la especificacion tiene que incluir la "
+                  f"proteccion de la tuberia ({NUMERAL_PH_MIN_TMC}); el "
+                  "producto y el procedimiento son del proyecto. La norma "
+                  "lo escribe para el agua que conduce el tubo; aqui se "
+                  "aplica al pH declarado, sea del agua o del suelo, que "
+                  "es el lado seguro",
+                  ("EG2013.507.10",))
+        margen = min(pH - pH_min, pH_max - pH)
+        pasos.append(paso(
+            "F3.DUR.PH", codigo=CODIGO_DURABILIDAD,
+            que="Durabilidad: pH del sitio frente al intervalo en que se "
+                "admite tuberia de acero corrugado",
+            formula="pH_min <= pH <= pH_max",
+            citas_textuales=("WSDOT_HM.8-5.1#PH", "EG2013.507.10",
+                             "WSDOT_HM.8-4.3#ZONA_III"),
+            sustitucion=(
+                Magnitud("pH", pH, "", ensayos.origen_de("pH"),
+                         cifras=CIFRAS_FACTOR),
+                Magnitud("pH_min", pH_min, "",
+                         f"criterio '{CRITERIO_DURABILIDAD_TMC}' [C]",
+                         cifras=CIFRAS_FACTOR),
+                Magnitud("pH_max", pH_max, "",
+                         f"criterio '{CRITERIO_DURABILIDAD_TMC}' [C]",
+                         cifras=CIFRAS_FACTOR),
+                Magnitud("pH de proteccion", PH_MIN_AGUA_TMC_SIN_PROTECCION,
+                         "", f"[N] {NUMERAL_PH_MIN_TMC}",
+                         cifras=CIFRAS_FACTOR)),
+            resultado=Magnitud("pH", pH, "", "el ensayo, contrastado contra "
+                               "el intervalo", cifras=CIFRAS_FACTOR),
+            umbral=_umbral_de_cita(
+                descripcion="intervalo de pH del suelo o del agua en que la "
+                            "fuente admite tuberia de acero",
+                valor=f"{pH_min:g} a {pH_max:g}", unidad="",
+                cita_id="WSDOT_HM.8-5.1#PH",
+                aplicacion="fuera del intervalo la TMC galvanizada sale de "
+                           "los materiales candidatos del punto; el "
+                           "concreto y el HDPE no se excluyen por pH",
+                criterio=CRITERIO_DURABILIDAD_TMC),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.CUMPLE if dentro
+                      else TipoDeVeredicto.NO_CUMPLE),
+                margen=margen, unidad="",
+                explicacion=(
+                    "la TMC sigue candidata, con la proteccion que exige "
+                    "EG-2013 507.10" if exige else
+                    "la TMC sigue candidata por pH" if dentro else
+                    "la TMC galvanizada queda fuera de los candidatos")),
+        ))
+
+    # ---- resistividad -------------------------------------------------------
+    if ensayos.resistividad_ohm_cm is not None:
+        u = _umbrales_de_durabilidad_tmc()
+        rho, rho_min = ensayos.resistividad_ohm_cm, u["resistividad_min_ohm_cm"]
+        basta = rho >= rho_min - TOL_UMBRAL_NORMATIVO
+        if not basta:
+            regla("resistividad_ohm_cm", tmc, EfectoDeDurabilidad.EXCLUYE,
+                  f"resistividad = {rho:g} ohm-cm menor de {rho_min:g} "
+                  f"ohm-cm (criterio '{CRITERIO_DURABILIDAD_TMC}' [C]): la "
+                  "TMC galvanizada no es candidata en este punto",
+                  ("WSDOT_HM.8-5.2#RESISTIVIDAD", "WSDOT_HM.8-4.3#ZONA_III"),
+                  CRITERIO_DURABILIDAD_TMC)
+        pasos.append(paso(
+            "F3.DUR.RESISTIVIDAD", codigo=CODIGO_DURABILIDAD,
+            que="Durabilidad: resistividad del sitio frente al minimo con "
+                "que se admite tuberia de acero corrugado",
+            formula="resistividad >= resistividad_min",
+            citas_textuales=("WSDOT_HM.8-5.2#RESISTIVIDAD",
+                             "WSDOT_HM.8-4.3#ZONA_III"),
+            sustitucion=(
+                Magnitud("resistividad", rho, "ohm-cm",
+                         ensayos.origen_de("resistividad_ohm_cm"),
+                         cifras=CIFRAS_FACTOR),
+                Magnitud("resistividad_min", rho_min, "ohm-cm",
+                         f"criterio '{CRITERIO_DURABILIDAD_TMC}' [C]",
+                         cifras=CIFRAS_FACTOR)),
+            resultado=Magnitud("resistividad", rho, "ohm-cm",
+                               "el ensayo, contrastado contra el minimo",
+                               cifras=CIFRAS_FACTOR),
+            umbral=_umbral_de_cita(
+                descripcion="resistividad minima del suelo o del agua con "
+                            "que la fuente admite tuberia de acero",
+                valor=rho_min, unidad="ohm-cm",
+                cita_id="WSDOT_HM.8-5.2#RESISTIVIDAD",
+                aplicacion="por debajo la TMC galvanizada sale de los "
+                           "materiales candidatos del punto",
+                criterio=CRITERIO_DURABILIDAD_TMC),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.CUMPLE if basta
+                      else TipoDeVeredicto.NO_CUMPLE),
+                margen=rho - rho_min, unidad="ohm-cm",
+                explicacion=("la TMC sigue candidata por resistividad"
+                             if basta else
+                             "la TMC galvanizada queda fuera de los "
+                             "candidatos")),
+        ))
+
+    # ---- abrasion -----------------------------------------------------------
+    if ensayos.abrasion is not None:
+        nivel = ensayos.abrasion
+        if nivel not in NIVELES_DE_ABRASION:
+            raise DatoInvalidoError(
+                "abrasion", valor=nivel, id_punto=punto.id,
+                motivo="el nivel de abrasion del sitio tiene que ser uno de "
+                       "los cuatro de la Table 8-4 del WSDOT Hydraulics "
+                       f"Manual: {', '.join(NIVELES_DE_ABRASION)}")
+        indice = NIVELES_DE_ABRASION.index(nivel)
+        severo = nivel == NIVEL_DE_ABRASION_SEVERO
+        moderado_o_mas = indice >= NIVELES_DE_ABRASION.index(
+            NIVEL_DE_ABRASION_SEVERO) - 1
+        if severo:
+            regla("abrasion", hdpe, EfectoDeDurabilidad.EXCLUYE,
+                  f"nivel de abrasion '{nivel}': la fuente no admite el "
+                  "termoplastico en ese nivel porque no se puede reforzar; "
+                  "el HDPE no es candidato en este punto",
+                  ("WSDOT_HM.8-3.3#SEVERA", "WSDOT_HM.T8-4"))
+        if moderado_o_mas:
+            regla("abrasion", tmc, EfectoDeDurabilidad.AVISA,
+                  f"nivel de abrasion '{nivel}': para el metal la Table 8-4 "
+                  "de WSDOT pide aumentar el espesor de plancha "
+                  + ("al menos dos calibres o revestir la solera con "
+                     "concreto" if severo else "uno o dos calibres")
+                  + f" (el del catalogo es el de '{CRITERIO_CALIBRE_TMC}'); "
+                  "con condiciones muy agresivas el Manual de Hidrologia no "
+                  "recomienda la alcantarilla metalica. V3 no sustituye esa "
+                  "proteccion",
+                  ("WSDOT_HM.T8-4", "MC_HHD.4.1.1.3.7g#AGRESIVAS"),
+                  CRITERIO_CALIBRE_TMC)
+            regla("abrasion", concreto, EfectoDeDurabilidad.AVISA,
+                  f"nivel de abrasion '{nivel}': para el concreto la Table "
+                  "8-4 de WSDOT pide especificar mas espesor de pared o mas "
+                  "resistencia a compresion",
+                  ("WSDOT_HM.T8-4",))
+        pasos.append(paso(
+            "F3.DUR.ABRASION", codigo=CODIGO_DURABILIDAD,
+            que="Durabilidad: nivel de abrasion del sitio frente al nivel "
+                "en que la fuente no admite termoplastico",
+            formula="nivel de abrasion del sitio < nivel severo",
+            citas_textuales=("WSDOT_HM.8-3.3#SEVERA", "WSDOT_HM.T8-4",
+                             "MC_HHD.4.1.1.3.7e"),
+            sustitucion=(
+                Magnitud("nivel de abrasion", nivel, "",
+                         ensayos.origen_de("abrasion")),),
+            resultado=Magnitud("nivel de abrasion", nivel, "",
+                               "dato de campo del sitio: no se deduce de la "
+                               "velocidad"),
+            umbral=_umbral_de_cita(
+                descripcion="nivel de abrasion en que la fuente no admite "
+                            "tuberia termoplastica",
+                valor=NIVEL_DE_ABRASION_SEVERO, unidad="",
+                cita_id="WSDOT_HM.8-3.3#SEVERA",
+                aplicacion="en el nivel severo el HDPE sale de los "
+                           "materiales candidatos del punto; el metal y el "
+                           "concreto siguen, con el aviso de la proteccion "
+                           "que la tabla pide"),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.NO_CUMPLE if severo
+                      else TipoDeVeredicto.CUMPLE),
+                explicacion=("el HDPE queda fuera de los candidatos"
+                             if severo else
+                             "el HDPE sigue candidato por abrasion")),
+        ))
+
+    # ---- sulfatos -----------------------------------------------------------
+    exposicion_sulfatos = None
+    if ensayos.sulfatos_suelo_ppm is not None \
+            or ensayos.sulfatos_agua_ppm is not None:
+        suelo_pct = (None if ensayos.sulfatos_suelo_ppm is None
+                     else ensayos.sulfatos_suelo_ppm / PPM_POR_PORCIENTO)
+        fila = _fila_de_sulfatos(suelo_pct, ensayos.sulfatos_agua_ppm)
+        exposicion = exposicion_sulfatos = fila["exposicion"]
+        # EL MISMO ENSAYO DEL EMS POR DOS PUERTAS (H8): estas dos claves y el
+        # dato de sitio 'exposicion_quimica_ems', que M9 lee para el
+        # recubrimiento del cabezal. Si las dos estan declaradas y dan
+        # exposiciones distintas, se avisa: el programa no decide cual vale.
+        ems = _valor_sin_registrar_uso(CRITERIO_EXPOSICION_EMS)
+        if isinstance(ems, dict) and (ems.get("so4_suelo_pct") is not None
+                                      or ems.get("so4_agua_ppm") is not None):
+            del_ems = _fila_de_sulfatos(ems.get("so4_suelo_pct"),
+                                        ems.get("so4_agua_ppm"))["exposicion"]
+            if del_ems != exposicion:
+                regla("sulfatos", None, EfectoDeDurabilidad.AVISA,
+                      f"INCOHERENCIA ENTRE DOS ENTRADAS DEL MISMO ENSAYO: "
+                      f"los sulfatos declarados para esta matriz dan "
+                      f"exposicion '{exposicion}' y el dato de sitio "
+                      f"'{CRITERIO_EXPOSICION_EMS}', que fija el "
+                      f"recubrimiento del cabezal, da '{del_ems}'. Son el "
+                      "mismo ensayo del estudio de suelos por dos puertas: "
+                      "hay que corregir la que este mal antes de entregar",
+                      ("E060.T4.4",), CRITERIO_EXPOSICION_EMS)
+        if fila["a_c_max"] is not None:
+            regla("sulfatos", concreto, EfectoDeDurabilidad.EXIGE,
+                  f"exposicion a sulfatos '{exposicion}' (E.060 Tabla 4.4): "
+                  f"el concreto sigue candidato y su especificacion exige "
+                  f"cemento {' o '.join(fila['cementos'])}, relacion "
+                  f"agua-material cementante maxima {fila['a_c_max']} y f'c "
+                  f"minimo {fila['fc_min_MPa']} MPa",
+                  ("E060.T4.4",))
+        sustitucion = []
+        if ensayos.sulfatos_suelo_ppm is not None:
+            sustitucion.append(Magnitud(
+                "SO4 en el suelo", ensayos.sulfatos_suelo_ppm, "ppm",
+                ensayos.origen_de("sulfatos_suelo_ppm"), cifras=CIFRAS_FACTOR))
+            sustitucion.append(Magnitud(
+                "SO4 en el suelo", suelo_pct, "% en peso",
+                "el mismo dato en la unidad de la Tabla 4.4: 1 % = 10 000 "
+                "ppm", cifras=CIFRAS_FINA))
+        if ensayos.sulfatos_agua_ppm is not None:
+            sustitucion.append(Magnitud(
+                "SO4 en el agua", ensayos.sulfatos_agua_ppm, "ppm",
+                ensayos.origen_de("sulfatos_agua_ppm"), cifras=CIFRAS_FACTOR))
+        pasos.append(paso(
+            "F3.DUR.SULFATOS", codigo=CODIGO_DURABILIDAD,
+            que="Durabilidad: exposicion del concreto a sulfatos",
+            formula="fila de la Tabla 4.4 de E.060 que alcanza el ensayo; "
+                    "con las dos escalas, la mas exigente",
+            formula_cita_id="E060.T4.4",
+            citas_textuales=("E060.T4.4",),
+            sustitucion=tuple(sustitucion),
+            resultado=Magnitud("exposicion a sulfatos", exposicion, "",
+                               "fila de la Tabla 4.4 de E.060"),
+            nota_del_proyecto=(
+                "El concreto no se excluye por sulfatos en ninguna "
+                "exposicion: la norma le exige cemento, relacion "
+                "agua-material cementante y resistencia. La exposicion "
+                "insignificante no exige nada."),
+        ))
+
+    # ---- cloruros -----------------------------------------------------------
+    if ensayos.cloruros_ppm is not None:
+        fila_cl = EXPOSICION_ESPECIAL["cloruros"]
+        regla("cloruros_ppm", concreto, EfectoDeDurabilidad.AVISA,
+              f"cloruros = {ensayos.cloruros_ppm:g} ppm declarados: si el "
+              "proyectista determina que el concreto reforzado queda "
+              "expuesto a cloruros de sal, agua salobre o agua de mar, "
+              "E.060 4.4.2 exige relacion agua-material cementante maxima "
+              f"{fila_cl['a_c_max']}, f'c minimo {fila_cl['fc_min_MPa']} MPa "
+              "y el recubrimiento minimo del 7.7. La norma define la "
+              "exposicion por el origen del cloruro y no por un umbral en "
+              "ppm: el ensayo no decide solo",
+              ("E060.4.4.2", "E060.T4.2"))
+        # El aviso del TMC por cloruros «sin umbral» salio en la auditoria
+        # de T-4 (H3): para el acero galvanizado enterrado AASHTO LRFD si
+        # da umbral, y lo aplica el bloque de suelo agresivo, mas abajo.
+        pasos.append(paso(
+            "F3.DUR.CLORUROS", codigo=CODIGO_DURABILIDAD,
+            que="Durabilidad: cloruros declarados y proteccion del acero "
+                "del concreto reforzado",
+            formula="para el concreto, sin umbral numerico en la fuente: "
+                    "la exposicion se define por el origen del cloruro",
+            citas_textuales=("E060.4.4.2", "MC_HHD.4.1.1.3.7f#SALINIDAD"),
+            sustitucion=(
+                Magnitud("cloruros", ensayos.cloruros_ppm, "ppm",
+                         ensayos.origen_de("cloruros_ppm"),
+                         cifras=CIFRAS_FACTOR),),
+            resultado=Magnitud("cloruros", ensayos.cloruros_ppm, "ppm",
+                               "el ensayo, sin umbral contra el que "
+                               "contrastarlo", cifras=CIFRAS_FACTOR),
+            nota_del_proyecto=(
+                "El concreto no se excluye por este dato. Queda escrito "
+                "el requisito que E.060 impone al concreto reforzado si la "
+                "exposicion aplica, y quien lo decide. Para la tuberia "
+                "metalica los cloruros SI tienen umbral, por analogia: ver "
+                "el paso de suelo agresivo."),
+        ))
+
+    # ---- suelo agresivo para el acero galvanizado (H3 y H5) -------------------
+    # Los criterios electroquimicos de AASHTO LRFD para refuerzos de acero
+    # enterrados, aplicados POR ANALOGIA. El efecto sobre el TMC es una
+    # eleccion declarada ('suelo_agresivo_lrfd_sobre_tmc' [A]): por defecto
+    # AVISA; «excluye» es la lectura estricta, para la sensibilidad.
+    medidas = (("pH", ensayos.pH, "pH", ""),
+               ("resistividad_ohm_cm", ensayos.resistividad_ohm_cm,
+                "resistividad", "ohm-cm"),
+               ("cloruros_ppm", ensayos.cloruros_ppm, "cloruros", "ppm"),
+               ("sulfatos_suelo_ppm", ensayos.sulfatos_suelo_ppm,
+                "sulfatos en el suelo", "ppm"))
+    motivos_lrfd: list = []
+    if tmc in candidatos and any(v is not None for _c, v, _n, _u in medidas):
+        u = ca.valor(CRITERIO_SUELO_AGRESIVO)
+        campos = ("pH_min", "pH_max", "resistividad_min_ohm_cm",
+                  "cloruros_max_ppm", "sulfatos_max_ppm")
+        if not isinstance(u, dict) or any(
+                c not in u or not ca._es_real(u[c]) or not math.isfinite(u[c])
+                for c in campos):
+            raise DatoInvalidoError(
+                campo=CRITERIO_SUELO_AGRESIVO, valor=u,
+                motivo=f"tiene que ser un dict con los campos {campos}, "
+                       "cada uno un numero finito")
+        tol = TOL_UMBRAL_NORMATIVO
+        if ensayos.pH is not None and not (
+                u["pH_min"] - tol <= ensayos.pH <= u["pH_max"] + tol):
+            motivos_lrfd.append(f"pH = {ensayos.pH:g} fuera de "
+                                f"{u['pH_min']:g} a {u['pH_max']:g}")
+        if ensayos.resistividad_ohm_cm is not None and not (
+                ensayos.resistividad_ohm_cm
+                >= u["resistividad_min_ohm_cm"] - tol):
+            motivos_lrfd.append(
+                f"resistividad = {ensayos.resistividad_ohm_cm:g} ohm-cm "
+                f"menor de {u['resistividad_min_ohm_cm']:g} ohm-cm")
+        if ensayos.cloruros_ppm is not None and not (
+                ensayos.cloruros_ppm <= u["cloruros_max_ppm"] + tol):
+            motivos_lrfd.append(
+                f"cloruros = {ensayos.cloruros_ppm:g} ppm mayor de "
+                f"{u['cloruros_max_ppm']:g} ppm")
+        if ensayos.sulfatos_suelo_ppm is not None and not (
+                ensayos.sulfatos_suelo_ppm <= u["sulfatos_max_ppm"] + tol):
+            motivos_lrfd.append(
+                f"sulfatos en el suelo = {ensayos.sulfatos_suelo_ppm:g} ppm "
+                f"mayor de {u['sulfatos_max_ppm']:g} ppm")
+        agresivo = bool(motivos_lrfd)
+        efecto_lrfd = EFECTO_AVISO
+        if agresivo:
+            efecto_lrfd = ca.valor(CRITERIO_EFECTO_SUELO_AGRESIVO)
+            if efecto_lrfd not in (EFECTO_AVISO, EFECTO_EXCLUYE):
+                raise DatoInvalidoError(
+                    campo=CRITERIO_EFECTO_SUELO_AGRESIVO, valor=efecto_lrfd,
+                    motivo=f"tiene que ser '{EFECTO_AVISO}' o "
+                           f"'{EFECTO_EXCLUYE}'")
+            regla("suelo_agresivo", tmc,
+                  (EfectoDeDurabilidad.EXCLUYE
+                   if efecto_lrfd == EFECTO_EXCLUYE
+                   else EfectoDeDurabilidad.AVISA),
+                  "suelo agresivo segun AASHTO LRFD 11.10.6.4.2a (criterio "
+                  "de refuerzos de acero galvanizado enterrados, aplicado "
+                  "por analogia): " + "; ".join(motivos_lrfd)
+                  + (". La TMC galvanizada no es candidata en este punto "
+                     f"(criterio '{CRITERIO_EFECTO_SUELO_AGRESIVO}' [A] = "
+                     f"'{EFECTO_EXCLUYE}')" if efecto_lrfd == EFECTO_EXCLUYE
+                     else ". La TMC sigue candidata: la analogia avisa y no "
+                          f"excluye (criterio "
+                          f"'{CRITERIO_EFECTO_SUELO_AGRESIVO}' [A] = "
+                          f"'{EFECTO_AVISO}')"),
+                  ("AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO",
+                   "AASHTO_LRFD_9.11.12.8#AGRESIVO",
+                   "AASHTO_LRFD_9.10.7.5#INDICATIVOS"),
+                  CRITERIO_SUELO_AGRESIVO)
+        pasos.append(paso(
+            "F3.DUR.SUELO_AGRESIVO", codigo=CODIGO_DURABILIDAD,
+            que="Durabilidad: agresividad del suelo para el acero "
+                "galvanizado, por analogia con los refuerzos enterrados",
+            formula="pH en el intervalo, resistividad sobre el minimo, "
+                    "cloruros y sulfatos bajo el maximo; basta incumplir "
+                    "uno",
+            citas_textuales=("AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO",
+                             "AASHTO_LRFD_9.11.12.8#AGRESIVO",
+                             "AASHTO_LRFD_9.10.7.5#INDICATIVOS",
+                             "EG2013.507.10"),
+            sustitucion=tuple(
+                Magnitud(nombre, valor, unidad, ensayos.origen_de(clave),
+                         cifras=CIFRAS_FACTOR)
+                for clave, valor, nombre, unidad in medidas
+                if valor is not None),
+            resultado=Magnitud(
+                "criterios incumplidos",
+                "; ".join(motivos_lrfd) or "ninguno", "",
+                f"contraste con el criterio '{CRITERIO_SUELO_AGRESIVO}' [C]"),
+            umbral=_umbral_de_cita(
+                descripcion="suelo no agresivo para acero galvanizado "
+                            "enterrado",
+                valor=(f"pH {u['pH_min']:g} a {u['pH_max']:g}; resistividad "
+                       f">= {u['resistividad_min_ohm_cm']:g} ohm-cm; "
+                       f"cloruros <= {u['cloruros_max_ppm']:g} ppm; "
+                       f"sulfatos <= {u['sulfatos_max_ppm']:g} ppm"),
+                unidad="", cita_id="AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO",
+                aplicacion="la fuente lo escribe para refuerzos de muros de "
+                           "suelo reforzado; aqui se aplica por analogia al "
+                           "tubo de acero corrugado galvanizado, y su "
+                           "efecto lo fija el criterio "
+                           f"'{CRITERIO_EFECTO_SUELO_AGRESIVO}' [A]",
+                criterio=CRITERIO_SUELO_AGRESIVO),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.NO_CUMPLE if agresivo
+                      else TipoDeVeredicto.CUMPLE),
+                explicacion=(
+                    "suelo no agresivo para el acero galvanizado segun el "
+                    "criterio adoptado" if not agresivo else
+                    "suelo agresivo: la TMC galvanizada queda fuera de los "
+                    "candidatos" if efecto_lrfd == EFECTO_EXCLUYE else
+                    "suelo agresivo: la TMC sigue candidata, con aviso y "
+                    "con la proteccion que exige EG-2013 507.10")),
+        ))
+
+    # ---- EG-2013 507.10, la mitad de los SUELOS (H5) --------------------------
+    # La clausula tiene dos disparadores: el pH del agua (arriba) y «que los
+    # suelos circundantes presenten sustancias agresivas», que la norma no
+    # cuantifica. LECTURA DEL PROYECTO, declarada en el texto de la regla y
+    # en el fundamento F3.DUR.SUELO_AGRESIVO: cuentan como tales los
+    # sulfatos por encima de la exposicion insignificante de E.060 Tabla
+    # 4.4 y un suelo agresivo segun los criterios de arriba.
+    con_sulfatos = (exposicion_sulfatos is not None
+                    and exposicion_sulfatos != SULFATOS[0]["exposicion"])
+    if tmc in candidatos and (con_sulfatos or motivos_lrfd):
+        causas = []
+        if con_sulfatos:
+            causas.append(f"exposicion a sulfatos '{exposicion_sulfatos}' "
+                          "(E.060 Tabla 4.4)")
+        if motivos_lrfd:
+            causas.append("suelo agresivo segun los criterios de AASHTO "
+                          "LRFD 11.10.6.4.2a adoptados por analogia")
+        regla("suelo_agresivo", tmc, EfectoDeDurabilidad.EXIGE,
+              "suelos circundantes con sustancias agresivas ("
+              + "; ".join(causas) + "): la especificacion de la TMC tiene "
+              f"que incluir la proteccion de la tuberia "
+              f"({NUMERAL_PH_MIN_TMC}); el producto y el procedimiento son "
+              "del proyecto. LECTURA DEL PROYECTO: la norma no dice que "
+              "sustancias ni en que cantidad; se leen como agresivas las "
+              "dos escalas numericas disponibles",
+              ("EG2013.507.10",))
+
+    return DictamenDurabilidad(
+        aplicada=True, reglas=tuple(reglas) + reglas_suelo,
+        pasos=tuple(pasos) + pasos_suelo, ensayos=ensayos,
+        suelo_fundacion=linea_suelo)
+
+
+def _fila_de_sulfatos(so4_suelo_pct: Optional[float],
+                      so4_agua_ppm: Optional[float]) -> dict:
+    """
+    La fila de la Tabla 4.4 de E.060 (`constantes_normativas.SULFATOS`) que
+    alcanza el ensayo; con las dos escalas, la MAS exigente.
+
+    ES LA MISMA REGLA que `M9.clase_exposicion_sulfatos` aplica al dato de
+    sitio 'exposicion_quimica_ems' para el recubrimiento del cabezal, escrita
+    sobre la MISMA tabla y con el MISMO campo `limite_inferior_estricto` que
+    cierra el borde de 2,0 %. No se importa de M9 para no hacer depender el
+    catalogo de la Fase 3 del modulo de la Fase 9; `tests/
+    test_t4_materiales_durabilidad.py` contrasta las dos sobre una malla para
+    que no diverjan.
+    """
+    indice = 0
+    for posicion, fila in enumerate(SULFATOS):
+        estricto = fila["limite_inferior_estricto"]
+        for medida, clave in ((so4_suelo_pct, "so4_suelo_pct"),
+                              (so4_agua_ppm, "so4_agua_ppm")):
+            if medida is None:
+                continue
+            minimo = fila[clave][0]
+            if (medida > minimo) if estricto else (medida >= minimo):
+                indice = max(indice, posicion)
+    return SULFATOS[indice]

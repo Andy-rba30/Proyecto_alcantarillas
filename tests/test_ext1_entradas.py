@@ -542,9 +542,19 @@ def test_disenar_punto_relanza_el_dato_faltante_comun_a_todos(monkeypatch):
     assert exc.value.campo == "Q_evento_extremo_m3s"
 
 
-def test_si_un_candidato_posterior_cierra_el_dato_faltante_no_lo_impide(
+def test_si_un_candidato_posterior_cierra_el_dato_faltante_del_anterior_bloquea(
         monkeypatch):
-    """Sin cambio de contrato: el descarte por material sigue igual."""
+    """
+    EL CONTRATO SE INVIRTIO EN T-4 (H1 de su auditoria adversarial), y este
+    test se llamaba «…el dato faltante no lo impide». EXT-1 (PC-28) habia
+    dejado sin cambio el caso mixto: si a un candidato le faltaba un dato y
+    uno posterior cerraba, se adoptaba el posterior. Medido por el auditor
+    sobre el pipeline real, eso dimensionaba un punto en TMC cuando al
+    concreto --mas preferente-- le faltaba la pared de un escalon y nadie
+    habia terminado de evaluarlo. Ahora vale la misma regla que para los
+    criterios pendientes y el metodo no evaluable: se relanza el primer
+    `DatoFaltanteError`, con su campo.
+    """
     vistos = []
 
     def uno_falta_otro_cierra(punto, material, **kw):
@@ -554,8 +564,11 @@ def test_si_un_candidato_posterior_cierra_el_dato_faltante_no_lo_impide(
         return "RESULTADO", ""
 
     monkeypatch.setattr(MD, "disenar_material", uno_falta_otro_cierra)
-    assert MD.disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
-                            verificar=_nada_cumple) == "RESULTADO"
+    with pytest.raises(DatoFaltanteError) as exc:
+        MD.disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
+                         verificar=_nada_cumple)
+    assert exc.value.campo == "x"
+    assert len(vistos) == 2, "el segundo candidato se evalua; no se adopta"
 
 
 # ===========================================================================

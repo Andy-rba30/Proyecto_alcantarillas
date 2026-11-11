@@ -1408,3 +1408,245 @@ PISO_HW = _fundamento(
         "corrida se detenia a pedirlo cada vez que un alivio pequeño caia en "
         "un tramo empinado."),
 )
+
+
+# --- T-4 --- (cadena T, 2026-11-11) Fase 3: el diametro exterior y la matriz
+# de durabilidad (v8 §3.2, §3.3 y §3.4).
+# ---------------------------------------------------------------------------
+# SEIS fundamentos de la matriz --uno por ensayo, mas el del suelo de
+# fundacion-- y el del diametro exterior. Cada uno lleva el verbo que sus
+# citas sostienen (T11): los umbrales de pH y resistividad son EXIGENCIA en
+# su fuente («only ... are acceptable», «será necesario proteger»); el suelo
+# de fundacion es una RECOMENDACION del Manual.
+#
+# NINGUNO SE EMITE EN LA CORRIDA DE REFERENCIA, y no es un olvido: los cuatro
+# puntos de `tests/ejemplo_puntos.csv` no traen ensayos de durabilidad --son
+# entradas del EMS que el programa no rellena (docs/contrato_entradas.md)-- y
+# sin datos la matriz no actua. Estan censados con esa razon en
+# `tests/test_memoria_sustentada.py`, y `tests/test_t4_materiales_durabilidad.py`
+# los ejercita declarando los ensayos.
+# ===========================================================================
+
+D_EXTERIOR = _fundamento(
+    id="F3.D_EXTERIOR",
+    fase=F3,
+    que_paso=("Espesor de pared del conducto: lo que separa el diametro "
+              "hidraulico D del diametro exterior D_ext = D + 2t"),
+    por_que=(
+        "El catalogo dimensiona con el diametro INTERIOR, que es el nominal "
+        "de las tres normas de producto, y hay dos sitios donde lo que hace "
+        "falta es el exterior: la clave fisica desde la que se mide el "
+        "relleno (7.A) y el volumen que el conducto desplaza bajo el "
+        "freatico (V7). Lo que separa uno de otro NO es la misma cosa en los "
+        "tres materiales: en el tubo de concreto es el espesor de la pared; "
+        "en el metal corrugado, la profundidad de la corrugacion mas el "
+        "espesor de la plancha, porque el diametro nominal se mide en la "
+        "cresta INTERIOR y la profundidad de cresta a valle sobre una misma "
+        "cara; en el polietileno corrugado, la altura del perfil, que su "
+        "norma de producto no fija y que aqui sale del diametro exterior "
+        "MAXIMO que AASHTO LRFD tabula para el producto."),
+    verbo=Verbo.DEFINE,
+    citas=("AASHTO_M36.T1",              # DEFINICION -> sostiene DEFINE
+           "AASHTO_M36.8.1.1",
+           "AASHTO_LRFD_9.TA12-11",      # DEFINICION
+           "EG2013.508.02a"),            # interior liso, exterior corrugado
+    que_pasa_si_no_se_hace=(
+        "La clave se calcula con el diametro interior y la rasante minima "
+        "sale corta en t; y la subpresion de V7 se calcula sobre un volumen "
+        "menor que el desplazado, del lado inseguro (MAT-D3, MAT-D4). O, que "
+        "es lo que pasaba hasta T-4, el TMC y el HDPE se descartan antes de "
+        "llegar a 7.A y a V7 por no tener espesor, y la matriz de materiales "
+        "degenera a concreto (INF-5.1.17)."),
+)
+
+DUR_PH = _fundamento(
+    id="F3.DUR.PH",
+    fase=F3,
+    que_paso=("Matriz de durabilidad: pH del suelo o del agua frente a los "
+              "umbrales de la tuberia de acero corrugado"),
+    por_que=(
+        "El acero se corroe en medios acidos y alcalinos, y la corrosion "
+        "perfora la solera antes de que el conducto cumpla su vida util. La "
+        "norma peruana de construccion pone el umbral a partir del cual la "
+        "tuberia metalica tiene que protegerse; la fuente tecnica que el "
+        "proyecto adopta para el vacio que esa norma deja --a partir de que "
+        "pH el acero deja de ser alternativa aunque se proteja-- pone un "
+        "intervalo fuera del cual solo valen concreto, termoplastico y "
+        "aluminio. Al concreto y al polietileno el pH no los excluye."),
+    verbo=Verbo.OBLIGA,
+    citas=("EG2013.507.10",              # EXIGENCIA -> sostiene OBLIGA
+           "WSDOT_HM.8-5.1#PH",          # EXIGENCIA
+           "WSDOT_HM.8-4.3#ZONA_III",
+           "WSDOT_HM.8-3.1#CONCRETO",
+           "MC_HHD.4.1.1.3.7f#TMC",
+           "AASHTO_M36.1.2",
+           "MC_HHD.4.1.1.3.4b"),
+    que_pasa_si_no_se_hace=(
+        "El TMC entra como candidato en un sitio donde su norma de producto "
+        "reconoce que ningun recubrimiento metalico basta, y el expediente "
+        "lo elegiria --o lo descartaria-- sin haber mirado el unico dato que "
+        "lo decide."),
+)
+
+DUR_RESISTIVIDAD = _fundamento(
+    id="F3.DUR.RESISTIVIDAD",
+    fase=F3,
+    que_paso=("Matriz de durabilidad: resistividad del suelo o del agua "
+              "frente al umbral de la tuberia de acero corrugado"),
+    por_que=(
+        "La resistividad mide la facilidad con que el suelo o el agua "
+        "conducen corriente: cuanto menor, mas rapida la corrosion "
+        "electroquimica del acero. Un suelo salino con freatico somero es el "
+        "caso tipico de resistividad baja. La fuente tecnica pone el umbral "
+        "por debajo del cual el acero deja de ser alternativa."),
+    verbo=Verbo.OBLIGA,
+    citas=("WSDOT_HM.8-5.2#RESISTIVIDAD",     # EXIGENCIA -> sostiene OBLIGA
+           "WSDOT_HM.8-4.3#ZONA_III",
+           "MC_HHD.4.1.1.3.7f#SALINIDAD"),
+    que_pasa_si_no_se_hace=(
+        "Se especifica tuberia metalica en un suelo que la corroe a corto "
+        "plazo: es lo que el Manual de Hidrologia advierte del agua con alta "
+        "salinidad sin dar el numero."),
+)
+
+DUR_ABRASION = _fundamento(
+    id="F3.DUR.ABRASION",
+    fase=F3,
+    que_paso=("Matriz de durabilidad: nivel de abrasion del sitio frente a "
+              "lo que cada material admite"),
+    por_que=(
+        "La abrasion desgasta la solera por el arrastre de arenas, gravas y "
+        "piedras, y depende de la carga de fondo tanto como de la velocidad. "
+        "El termoplastico resiste la abrasion igual o mejor que los otros "
+        "materiales, pero no se puede REFORZAR: por eso la fuente lo prohibe "
+        "en el nivel severo, donde al metal y al concreto les pide mas "
+        "espesor o solera de concreto. El nivel del sitio es un dato de "
+        "campo --granulometria del lecho, pendiente, historial de las obras "
+        "vecinas--, no un resultado del calculo hidraulico."),
+    verbo=Verbo.OBLIGA,
+    citas=("WSDOT_HM.8-3.3#SEVERA",           # EXIGENCIA -> sostiene OBLIGA
+           "WSDOT_HM.T8-4",
+           "WSDOT_HM.3-3.5#10FTS",
+           "AASHTO_LRFD_9.C12.6.9#NIVEL_4",
+           "MC_HHD.4.1.1.3.7e",
+           "MC_HHD.4.1.1.3.7g#AGRESIVAS"),
+    que_pasa_si_no_se_hace=(
+        "El nivel de abrasion solo entraria al diseño por la velocidad de "
+        "V3, que es una de sus tres caracteristicas: un cauce de pendiente "
+        "suave con carga de fondo pesada pasaria V3 con un material que la "
+        "fuente no admite ahi."),
+)
+
+DUR_SULFATOS = _fundamento(
+    id="F3.DUR.SULFATOS",
+    fase=F3,
+    que_paso=("Matriz de durabilidad: sulfatos del suelo o del agua y "
+              "requisitos del concreto"),
+    por_que=(
+        "Los sulfatos atacan la pasta de cemento. La norma peruana de "
+        "concreto no prohibe el concreto en ningun nivel de exposicion: le "
+        "exige un tipo de cemento, una relacion agua-material cementante "
+        "maxima y una resistencia minima que crecen con la exposicion. Por "
+        "eso el ensayo no descarta el material: lo deja candidato CON el "
+        "requisito escrito."),
+    verbo=Verbo.OBLIGA,
+    citas=("E060.T4.4",),                     # EXIGENCIA
+    que_pasa_si_no_se_hace=(
+        "El tubo o el marco de concreto se especifican con cemento comun en "
+        "un suelo que lo degrada, y la memoria no deja constancia del "
+        "requisito que el ensayo imponia."),
+)
+
+DUR_CLORUROS = _fundamento(
+    id="F3.DUR.CLORUROS",
+    fase=F3,
+    que_paso=("Matriz de durabilidad: cloruros del suelo o del agua y "
+              "proteccion del refuerzo y del acero"),
+    por_que=(
+        "Los cloruros corroen el acero: el refuerzo del concreto y la "
+        "plancha de la tuberia metalica. La norma peruana de concreto exige "
+        "una mezcla mas cerrada y el recubrimiento minimo cuando el concreto "
+        "reforzado va a estar expuesto a cloruros de sal, agua salobre o "
+        "agua de mar, y NO pone un umbral en ppm: define la exposicion por "
+        "el origen del cloruro. Por eso el ensayo no decide solo. Declarado "
+        "el contenido de cloruros, la memoria deja escrito el requisito y "
+        "quien tiene que decidir si la exposicion aplica."),
+    verbo=Verbo.OBLIGA,
+    citas=("E060.4.4.2",                      # EXIGENCIA -> sostiene OBLIGA
+           "E060.T4.2",
+           "MC_HHD.4.1.1.3.7f#SALINIDAD",
+           "MC_HHD.4.1.1.3.7f#COSTA"),
+    que_pasa_si_no_se_hace=(
+        "Un ensayo con cloruros se queda en el EMS y no llega a la eleccion "
+        "de material ni a la especificacion del concreto, en un corredor "
+        "costero de riego donde es el dato esperable."),
+)
+
+DUR_SUELO_FUNDACION = _fundamento(
+    id="F3.DUR.SUELO_FUNDACION",
+    fase=F3,
+    que_paso=("Suelo de fundacion deficiente: aviso de que el Manual "
+              "recomienda el marco de concreto"),
+    por_que=(
+        "Un conducto flexible reparte la carga al suelo que lo rodea y uno "
+        "rigido de seccion circular la concentra en su cama: sobre un suelo "
+        "de fundacion malo los dos se asientan de forma desigual. El marco "
+        "apoya en una losa. El Manual lo recomienda para ese caso y no dice "
+        "que suelo es de mala calidad; el proyecto declara cuales cuenta "
+        "como tales, apoyado en los que la norma peruana de cimentaciones "
+        "no permite como apoyo. Es un AVISO: no cambia el material ni la "
+        "seccion que el calculo adopta."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.4a#MARCO",         # RECOMENDACION -> RECOMIENDA
+           "E050.24",
+           "E050.24#REMOVER",                 # la norma manda reemplazarlos
+           "E050.38.1",                       # lo que este aviso NO evalua
+           "E050.FIG3"),
+    que_pasa_si_no_se_hace=(
+        "La clasificacion SUCS de la calicata se carga y nadie la lee "
+        "(INF-5.1.9): un tubo sobre turba o suelo organico sale de la "
+        "corrida sin una sola linea que lo advierta."),
+)
+
+
+# --- T-4 (auditoria adversarial, H3, H5, H6) --- Suelo agresivo para el acero.
+DUR_SUELO_AGRESIVO = _fundamento(
+    id="F3.DUR.SUELO_AGRESIVO",
+    fase=F3,
+    que_paso=("Matriz de durabilidad: agresividad del suelo para la tuberia "
+              "de acero corrugado galvanizado"),
+    por_que=(
+        "La norma peruana de construccion exige proteger la tuberia metalica "
+        "cuando el agua tiene un pH menor de 5.8 o cuando los suelos "
+        "circundantes presentan sustancias agresivas, y no dice cuales ni en "
+        "que cantidad. El Manual de Hidrologia advierte lo mismo sin numero: "
+        "cerca del mar, con aguas salinas o acidas, en suelos alcalinos o "
+        "con turba, no recomienda la alcantarilla metalica. El proyecto lee "
+        "«sustancias agresivas» con las dos unicas escalas numericas que "
+        "tiene a mano y lo declara como lectura suya: la exposicion a "
+        "sulfatos de la norma de concreto por encima de insignificante, y "
+        "los criterios electroquimicos con que AASHTO LRFD define el suelo "
+        "no agresivo para acero galvanizado enterrado --pH de 5 a 10, "
+        "resistividad de al menos 3000 ohm-cm, cloruros hasta 100 ppm y "
+        "sulfatos hasta 200 ppm--. Esos criterios son de refuerzos de muros "
+        "y de anclajes, no de alcantarillas: se aplican por analogia de "
+        "metal, recubrimiento y medio, y por eso su efecto por defecto es "
+        "un aviso; la exclusion del material se reserva a la fuente tecnica "
+        "que habla de tuberia. El mismo cuerpo da, para pilotes, indicativos "
+        "menos estrictos: resistividad menor de 2000 ohm-cm, pH menor de "
+        "5.5, sulfatos sobre 1000 ppm y cloruros en el agua sobre 500 ppm."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("AASHTO_LRFD_9.10.7.5#INDICATIVOS",      # RECOMENDACION
+           "AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO",
+           "AASHTO_LRFD_9.11.12.8#AGRESIVO",
+           "EG2013.507.10",
+           "MC_HHD.4.1.1.3.7f#COSTA",
+           "MC_HHD.4.1.1.3.7g#AGRESIVAS"),
+    que_pasa_si_no_se_hace=(
+        "Un tubo de acero galvanizado queda candidato en un suelo con 2000 "
+        "ppm de cloruros y 1500 ohm-cm sin una linea que lo advierta, porque "
+        "el filtro de la fuente de alcantarillas solo mira pH y resistividad "
+        "bajo 1000 ohm-cm; y la mitad de la clausula de la norma peruana "
+        "--los suelos circundantes-- no se aplica nunca."),
+)
+

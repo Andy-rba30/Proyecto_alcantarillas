@@ -546,13 +546,20 @@ def test_T21_los_verbatim_del_registro_conservan_sus_diacriticos(reg):
         # caracteres y ni una sola vocal acentuada. Comprobado sobre la pagina
         # por `verificador-normativo` en C2.
         "MC_HHD.4.1.1.3.7d",
+        # E.050, Art. 24, pag. 37: «Estos materiales no permitidos tienen que
+        # ser removidos en la totalidad del terreno, antes de ejecutar
+        # cualquier tipo de obra en el terreno y ser reemplazados con
+        # materiales que cumplan lo indicado en el numeral 25.4.» Leida sobre
+        # la pagina en T-4: ninguna vocal acentuada en la frase.
+        "E050.24#REMOVER",
     }
     minimo_para_sospechar = 120   # literal-ok: longitud a partir de la cual un
                                   # texto en español sin tildes es sospechoso
     tildes = set("áéíóúÁÉÍÓÚñÑüÜ")
     sospechosos = []
     for c in reg.citas:
-        if reg.fuente(c.fuente_id).id.startswith(("AASHTO", "ASTM", "HDS")):
+        if reg.fuente(c.fuente_id).id.startswith(("AASHTO", "ASTM", "HDS",
+                                                  "WSDOT")):
             continue        # el corpus en ingles no lleva tildes, y es correcto
         if c.id in sin_tildes_en_el_original:
             continue

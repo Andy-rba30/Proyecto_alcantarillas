@@ -80,6 +80,9 @@ FECHA_CIERRE = "2026-09-22"
 POR_CIERRE = "cierre/C11 · verificador-normativo"
 FECHA_T0 = "2026-11-11"
 POR_T0 = "tesis/T-0 · lectura directa de la pagina por la sesion"
+# --- T-4 ---
+FECHA_T4 = "2026-11-11"
+POR_T4 = "tesis/T-4 · lectura directa de la pagina por la sesion"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
@@ -103,6 +106,7 @@ T0 = (FECHA_T0, POR_T0)
 FECHA_TESIS_T2 = "2026-11-11"
 POR_TESIS_T2 = "tesis/T-2 · lectura directa de la pagina por la sesion"
 TESIS_T2 = (FECHA_TESIS_T2, POR_TESIS_T2)
+T4 = (FECHA_T4, POR_T4)      # --- T-4 ---
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -6191,6 +6195,834 @@ HDS5_A21_FORMA_1 = _cita(
           "PRESCRIBE ESE PISO --no dice que hacer cuando HWi/D sale nulo o "
           "negativo--: por eso el criterio sigue siendo [A], con «descartar» "
           "como alternativa, y no [C]."),
+)
+
+
+# --- T-4 --- (cadena T, 2026-11-11) Materiales, espesores, topes y
+# durabilidad: INF-5.1.17, INF-3.3.1, INF-3.3.4, INF-3.2.4, INF-3.2.1 (mitad
+# HDPE), INF-5.1.9.
+# ---------------------------------------------------------------------------
+# COMO SE LEYERON. Las de WSDOT, HDS-5, AASHTO LRFD, el Manual de Hidrologia,
+# EG-2013 y E.050 por TEXTO, abriendo la pagina declarada (T2, T3 y T6 las
+# comprueban en cada corrida con PyMuPDF). Las cuatro de AASHTO M 36 por
+# IMAGEN: el ejemplar es raster puro, y se renderizaron las PDF 2, 7, 11 y 13
+# (100 dpi la pagina entera y 170 a 220 dpi los recortes de las tablas).
+# NINGUNA paso por el subagente verificador: las leyo la propia sesion, y la
+# firma lo dice (`POR_T4`), como las dos de T-0.
+#
+# LO QUE ESTE BLOQUE CORRIGE DE LO QUE EL PROYECTO CITABA: 'v_max_tmc' y
+# 'v_max_hdpe' atribuian a la Tabla 8-4 de WSDOT un «techo de velocidad» y la
+# prohibicion del termoplastico. La tabla es de NIVELES DE ABRASION y no
+# prohibe nada al termoplastico; la prohibicion esta en el §8-3.3 y esta
+# atada al NIVEL, no a la velocidad sola. Las dos citas van separadas para
+# que ninguna ficha pueda volver a fundirlas.
+# ===========================================================================
+
+WSDOT_8_3_3_SEVERA = _cita(
+    id="WSDOT_HM.8-3.3#SEVERA",
+    fuente_id="WSDOT_HM",
+    numeral="8-3.3",
+    titulo_numeral="Thermoplastic Pipe: General",
+    pagina_impresa="8-13",
+    pagina_pdf=228,
+    texto_literal=Verbatim(
+        texto=("However, because thermoplastic pipe cannot be structurally "
+               "reinforced, it shall not be used for severely abrasive "
+               "conditions as described in Table 8-4."),
+        pagina_pdf=228),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T4,
+    nota=("ES LA UNICA FRASE DEL MANUAL QUE PROHIBE UN MATERIAL POR ABRASION, "
+          "y la prohibicion cuelga del NIVEL («severely abrasive conditions as "
+          "described in Table 8-4»), no de una velocidad. La frase anterior "
+          "del mismo parrafo dice lo contrario de lo que se esperaria de un "
+          "material prohibido: «Laboratory testing indicates that the "
+          "resistance of thermoplastic pipe to abrasive bed loads is equal to "
+          "or greater than that of other types of pipe material»; la razon de "
+          "la prohibicion es que no se puede REFORZAR. El mismo parrafo "
+          "declara al termoplastico resistente a pH y resistividad y "
+          "aceptable en las tres zonas de corrosion sin tratamiento. "
+          "Sostiene 'v_max_hdpe' [C] y la regla de abrasion de la matriz de "
+          "durabilidad (`M2.matriz_durabilidad`)."),
+)
+
+WSDOT_T8_4 = _cita(
+    id="WSDOT_HM.T8-4",
+    fuente_id="WSDOT_HM",
+    numeral="Table 8-4",
+    titulo_numeral="Pipe Abrasion Levels",
+    pagina_impresa="8-27",
+    pagina_pdf=242,
+    texto_literal=Verbatim(
+        texto=("The abrasion level descriptions are intended to serve as "
+               "general guidance only; not all of the criteria listed for a "
+               "particular abrasion level need to be present to justify "
+               "placing a site at that level."),
+        pagina_pdf=242),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("LA TABLA OCUPA DOS PAGINAS: las tres primeras filas en la 8-27 "
+          "(PDF 242) y la cuarta, «Severely abrasive», en la 8-28 (PDF 243). "
+          "ES UNA TABLA DE NIVELES DE ABRASION, NO DE VELOCIDADES MAXIMAS: "
+          "cada nivel se describe por tres caracteristicas del sitio (carga "
+          "de fondo, pendiente y velocidad) y el `texto_literal` --el segundo "
+          "parrafo del §8-6 «Abrasion», que la introduce-- dice que no hace "
+          "falta que concurran las tres. Por eso tomar la velocidad sola como "
+          "criterio suficiente de «severamente abrasivo» es una lectura que "
+          "la fuente PERMITE y no impone (`Interpretacion` de la tabla). "
+          "DEFINICION y no EXIGENCIA para la cita: los «shall» estan en las "
+          "celdas de «Recommended Invert Protection» (mas calibre para el "
+          "metal desde el nivel moderado), no en la clasificacion."),
+)
+
+WSDOT_3_3_5 = _cita(
+    id="WSDOT_HM.3-3.5#10FTS",
+    fuente_id="WSDOT_HM",
+    numeral="3-3.5",
+    titulo_numeral="Velocities in Culverts: General",
+    pagina_impresa="3-11",
+    pagina_pdf=76,
+    texto_literal=Verbatim(
+        texto=("If velocities exceed about 10 ft/s, abrasion due to bed load "
+               "movement through the culvert and erosion downstream of the "
+               "outlet can increase significantly."),
+        pagina_pdf=76),
+    caracter=Caracter.RECOMENDACION,
+    sesion=T4,
+    nota=("10 ft/s = 3.048 m/s ES UMBRAL DE CONSULTA, NO PROHIBICION. El "
+          "mismo numeral dice antes que las alcantarillas con velocidades "
+          "«in the range of 3 to 10 feet per second (ft/s) tend to have fewer "
+          "operational problems» y que fuera de ese rango hay que tratarlo "
+          "con el ingeniero regional; y despues, que «Corrugated metal "
+          "culverts may be designed with extra thickness to account for "
+          "possible abrasion». Es el PISO de la ventana de 'v_max_tmc' [A]: "
+          "por debajo de el la propia fuente no ve problema de abrasion que "
+          "justifique un techo mas bajo."),
+)
+
+WSDOT_8_5_1 = _cita(
+    id="WSDOT_HM.8-5.1#PH",
+    fuente_id="WSDOT_HM",
+    numeral="8-5.1",
+    titulo_numeral="pH",
+    pagina_impresa="8-25",
+    pagina_pdf=240,
+    texto_literal=Verbatim(
+        texto=("When the pH is less than 5.0 or greater than 8.5, the site "
+               "will be considered unsuitable and only Corrosion Zone III "
+               "pipes, as discussed in Section 8-4.3, are acceptable."),
+        pagina_pdf=240),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T4,
+    nota=("EL pH ES «soil or water pH» (primer parrafo del §8-5, misma "
+          "pagina). Fuera de 5.0-8.5 solo valen los tubos de la Zona de "
+          "Corrosion III, que el §8-4.3 y la Tabla 8-3 (misma pagina) "
+          "limitan a concreto, termoplastico y aluminio: NINGUN tubo de "
+          "acero. La pagina siguiente (8-26) repite el intervalo: «the "
+          "acceptable range of 5.0 to 8.5». Es criterio de una agencia vial "
+          "de EE. UU. --fuente tecnica reconocida, [C]--, no norma peruana: "
+          "el umbral peruano es el de EG-2013 507.10 (pH < 5.8 exige "
+          "proteger la tuberia), que no prohibe el material."),
+)
+
+WSDOT_8_5_2 = _cita(
+    id="WSDOT_HM.8-5.2#RESISTIVIDAD",
+    fuente_id="WSDOT_HM",
+    numeral="8-5.2",
+    titulo_numeral="Resistivity",
+    pagina_impresa="8-26",
+    pagina_pdf=241,
+    texto_literal=Verbatim(
+        texto=("If the resistivity is less than 1,000 ohm-cm for a location, "
+               "then Corrosion Zone III pipe materials are the only "
+               "acceptable alternatives."),
+        pagina_pdf=241),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T4,
+    nota=("La resistividad es «the measure of the ability of soil or water "
+          "to pass electric current» (misma pagina): el dato puede ser del "
+          "suelo o del agua, y rige el menor. Por debajo de 1 000 ohm-cm "
+          "solo valen los materiales de la Zona III (concreto, termoplastico "
+          "y aluminio): el acero corrugado queda fuera."),
+)
+
+WSDOT_8_4_3 = _cita(
+    id="WSDOT_HM.8-4.3#ZONA_III",
+    fuente_id="WSDOT_HM",
+    numeral="8-4.3",
+    titulo_numeral="Corrosion Zone III",
+    pagina_impresa="8-17",
+    pagina_pdf=232,
+    texto_literal=Verbatim(
+        texto=("Concrete and thermoplastic pipe are allowed for use in this "
+               "zone without protective treatments."),
+        pagina_pdf=232),
+    caracter=Caracter.PERMISO,
+    sesion=T4,
+    nota=("LA ZONA III ES LA DE CORROSION SEVERA, y la misma pagina la "
+          "describe con palabras que valen para un corredor costero de riego: "
+          "«Low-lying roadways ... and coastal areas subjected to the "
+          "influence of saltwater bays, marshes, and tide flats». La frase "
+          "sigue en la 8-18: el aluminio se admite con las condiciones del "
+          "§8-3. La Tabla 8-3 (pag. 8-25, PDF 240) lista las alternativas "
+          "aceptables y no trae ningun tubo de acero."),
+)
+
+WSDOT_8_3_1 = _cita(
+    id="WSDOT_HM.8-3.1#CONCRETO",
+    fuente_id="WSDOT_HM",
+    numeral="8-3.1",
+    titulo_numeral="Concrete Pipe",
+    pagina_impresa="8-10",
+    pagina_pdf=225,
+    pagina_pdf_titulo=224,
+    texto_literal=Verbatim(
+        texto=("Concrete pipe is permitted anywhere in the state, regardless "
+               "of corrosion zone, pH, or resistivity."),
+        pagina_pdf=225),
+    caracter=Caracter.PERMISO,
+    sesion=T4,
+    nota=("El numeral abre en la 8-9 (PDF 224) y la frase esta en la 8-10. "
+          "Es lo que sostiene que la matriz de durabilidad NO excluya al "
+          "concreto por pH ni por resistividad; lo que el concreto si "
+          "recibe son REQUISITOS de mezcla y recubrimiento, y esos salen de "
+          "la norma peruana (E.060 Tablas 4.2 y 4.4, Art. 4.4.2)."),
+)
+
+AASHTO_C12_6_9 = _cita(
+    id="AASHTO_LRFD_9.C12.6.9#NIVEL_4",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C12.6.9",
+    titulo_numeral="Corrosive and Abrasive Conditions",
+    pagina_impresa="12-24",
+    pagina_pdf=1662,
+    texto_literal=Verbatim(
+        texto=("Level 4—Severe abrasive conditions exist in areas of heavy "
+               "bed loads of sand, gravel, and rock and velocities exceeding "
+               "15.0 ft/s."),
+        pagina_pdf=1662),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("SEGUNDA FUENTE DEL CORTE DE 15 ft/s, y dice lo mismo que la "
+          "primera: es un NIVEL de abrasion de la FHWA (carga de fondo pesada "
+          "Y velocidad), no un techo de velocidad. Los otros tres niveles, en "
+          "la misma columna: Level 1 sin carga de fondo y velocidades muy "
+          "bajas; Level 2 «velocities of 5.0 ft/s or less»; Level 3 «between "
+          "5.0 ft/s and 15.0 ft/s». El corte inferior es 5.0 ft/s aqui y "
+          "6 ft/s en la Tabla 8-4 de WSDOT: las dos clasificaciones no "
+          "coinciden por abajo y si por arriba. El articulado 12.6.9 (misma "
+          "pagina) no fija ningun limite: pide que la vida util del material "
+          "iguale o supere la de la alcantarilla y nombra los remedios "
+          "usuales para el metal («increased gauge thickness», «protective "
+          "linings»)."),
+)
+
+AASHTO_TA12_11 = _cita(
+    id="AASHTO_LRFD_9.TA12-11",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table A12-11",
+    titulo_numeral="PE Corrugated Pipes (AASHTO M 294)",
+    pagina_impresa="12-108",
+    pagina_pdf=1746,
+    texto_literal=Verbatim(
+        texto="Table A12-11—PE Corrugated Pipes (AASHTO M 294)",
+        pagina_pdf=1746),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("ES LA FUENTE DEL DIAMETRO EXTERIOR DEL HDPE, que su norma de "
+          "producto no trae (afirmacion negativa "
+          "SIN_DIAMETRO_EXTERIOR_M294_TRAD). Apendice A12 «PLATE, PIPE, AND "
+          "PIPE ARCH PROPERTIES» de la Seccion 12: para cada tamaño nominal "
+          "de tuberia corrugada de PE bajo M 294 tabula el diametro interior "
+          "MINIMO, el diametro exterior MAXIMO y las propiedades minimas de "
+          "la pared (A, c, I). OCHO filas, de 12 a 48 in: NO trae 54 ni 60 "
+          "in, de modo que para 1350 y 1500 mm el diametro exterior sigue "
+          "sin fuente y 'espesor_pared_conducto' no declara esas filas. "
+          "Unidades inglesas; la conversion a metros (1 in = 0.0254 m "
+          "exactos) es del proyecto. La nota al pie de la tabla avisa de que "
+          "para 42 y 48 in el espesor de pared se diseñe con la resistencia "
+          "a traccion de largo plazo (900 psi): es de la Fase 8 (T-5), no del "
+          "diametro exterior."),
+)
+
+HDS5_TB1 = _cita(
+    id="HDS5_3ED.TB.1",
+    fuente_id="HDS5_3ED",
+    numeral="Table B.1",
+    titulo_numeral="Manning's n Values for Culverts.",
+    pagina_impresa="B.6",
+    pagina_pdf=208,
+    texto_literal=Verbatim(
+        texto=("The Manning's n values indicated in this table were obtained "
+               "in the laboratory and are supported by the provided "
+               "reference. Actual field values for culverts may vary "
+               "depending on the effect of abrasion, corrosion, deflection, "
+               "and joint conditions."),
+        pagina_pdf=208),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("LA PAGINA ROTULA «B.1.  Manning's n Values for Culverts.» SIN LA "
+          "PALABRA «Table»; el numeral «Table B.1» es como el propio HDS-5 "
+          "la llama en el cuerpo. El `texto_literal` es su nota al pie 1, y "
+          "va a proposito: los n son de LABORATORIO y la fuente advierte que "
+          "los de campo pueden variar por abrasion, corrosion, deflexion y "
+          "juntas. La fila «Corrugated Polyethylene / Smooth», 0.009-0.015 "
+          "(Barfuss & Tullis 1988; Tullis et al. 1990), es la que cierra "
+          "'n_manning_hdpe' como [C]: hasta T-4 era la fila del concreto de "
+          "la Tabla N 09 aplicada por analogia."),
+)
+
+MC_HHD_4_1_1_3_4b = _cita(
+    id="MC_HHD.4.1.1.3.4b",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.4 b)",
+    titulo_numeral="b)  Materiales",
+    jerarquia_numeral=("4.1.1.3.4  Elección del tipo de alcantarilla",),
+    pagina_impresa="73",
+    pagina_pdf=76,
+    texto_literal=Verbatim(
+        texto=("En conclusión no es posible dar una regla general para la "
+               "elección del tipo de material a emplear en la construcción "
+               "de la alcantarilla, sino que además de los aspectos "
+               "mencionados anteriormente depende del tipo de suelo, del "
+               "agua y principalmente de la disponibilidad de materiales en "
+               "el lugar."),
+        pagina_pdf=76),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("EL MANUAL NO DA REGLA DE ELECCION DE MATERIAL, y lo dice con esas "
+          "palabras. La frase anterior enumera de que depende: «tiempo de "
+          "vida útil, costo, resistencia, rugosidad, condiciones del "
+          "terreno, resistencia a la corrosión, abrasión, fuego e "
+          "impermeabilidad». Es lo que hace de la matriz de durabilidad un "
+          "FILTRO con fuentes tecnicas y no una eleccion normativa: el "
+          "Manual nombra los factores (suelo, agua) y no pone umbrales."),
+)
+
+MC_HHD_4_1_1_3_7e = _cita(
+    id="MC_HHD.4.1.1.3.7e",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 e)",
+    titulo_numeral="e)  Abrasión",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="81",
+    pagina_pdf=84,
+    texto_literal=Verbatim(
+        texto=("Es importante tomar en cuenta este fenómeno al momento de "
+               "elegir el tipo de material del cual estará constituida la "
+               "alcantarilla."),
+        pagina_pdf=84),
+    caracter=Caracter.RECOMENDACION,
+    sesion=T4,
+    nota=("CUALITATIVO, SIN NINGUN VALOR: el inciso define la abrasion «la "
+          "erosión del material de la alcantarilla por la acción de sólidos "
+          "flotantes transportados por el cauce natural» y dice de que "
+          "depende («carácter y cantidad de material de arrastre, duración, "
+          "frecuencia y velocidad del flujo»), pero no escribe ninguna "
+          "velocidad maxima para el metal ni para el plastico. La Tabla N 10 "
+          "(num. 4.1.1.3.6) tampoco los lista. Es la razon de que "
+          "'v_max_tmc' sea [A]: la norma peruana manda considerar la "
+          "abrasion y no da el numero."),
+)
+
+MC_HHD_4_1_1_3_7f_SALINIDAD = _cita(
+    id="MC_HHD.4.1.1.3.7f#SALINIDAD",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 f)",
+    titulo_numeral="f)  Corrosión",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="81",
+    pagina_pdf=84,
+    texto_literal=Verbatim(
+        texto=("El agua con alta salinidad causa intensa corrosión a corto "
+               "plazo en el acero."),
+        pagina_pdf=84),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("El parrafo anterior nombra las tres condiciones que la matriz de "
+          "durabilidad recibe como ensayo: «condiciones alcalinas y ácidas "
+          "presentes en el suelo y en el agua, y la conductividad eléctrica "
+          "del suelo» --o sea pH y resistividad--. NO DA UMBRAL de salinidad "
+          "ni de cloruros: por eso 'cloruros_ppm' produce un AVISO y no un "
+          "descarte."),
+)
+
+MC_HHD_4_1_1_3_7f_COSTA = _cita(
+    id="MC_HHD.4.1.1.3.7f#COSTA",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 f)",
+    titulo_numeral="f)  Corrosión",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="81",
+    pagina_pdf=84,
+    texto_literal=Verbatim(
+        texto=("Es importante señalar que cualquier material utilizado en la "
+               "construcción de alcantarillas expuesto al agua de mar o "
+               "cuando las alcantarillas se ubiquen en zonas costeras "
+               "cercanas al mar requieren"),
+        pagina_pdf=84),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T4,
+    nota=("LA FRASE SE CORTA DONDE LA CORTA LA PAGINA: «...requieren» es el "
+          "ultimo renglon de la pag. impresa 81, y sigue en la 82 (PDF 85) "
+          "con «algún tipo de protección para asegurar su vida útil». Dice "
+          "CUALQUIER material, no solo el metal, y no cuantifica «cercanas "
+          "al mar»: el corredor del repositorio (La Union, Bajo Piura) esta "
+          "en la costa, y si la frase le alcanza lo decide el proyectista "
+          "con el EMS, no este registro."),
+)
+
+MC_HHD_4_1_1_3_7f_TMC = _cita(
+    id="MC_HHD.4.1.1.3.7f#TMC",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 f)",
+    titulo_numeral="f)  Corrosión",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="82",
+    pagina_pdf=85,
+    pagina_pdf_titulo=84,
+    texto_literal=Verbatim(
+        texto=("En el caso de alcantarillas de metal corrugado generalmente "
+               "se utiliza capas protectoras tales como recubrimientos "
+               "asfálticos, sin embargo, esta medida muchas veces no es "
+               "suficiente, por lo que un material de mayor resistencia "
+               "sería el más adecuado para actuar en medios muy agresivos."),
+        pagina_pdf=85),
+    caracter=Caracter.RECOMENDACION,
+    sesion=T4,
+    nota=("El inciso abre en la pag. impresa 81 (PDF 84) y este parrafo esta "
+          "en la 82. La frase anterior, misma pagina: «los suelos con alto "
+          "contenido de materia orgánica son nocivos para los metales ya que "
+          "se corroen»."),
+)
+
+MC_HHD_4_1_1_3_7g = _cita(
+    id="MC_HHD.4.1.1.3.7g#AGRESIVAS",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 g)",
+    titulo_numeral="g)  Seguridad y vida útil",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="82",
+    pagina_pdf=85,
+    texto_literal=Verbatim(
+        texto=("Cuando las condiciones de exposición son muy agresivas, "
+               "tales como velocidades excesivas con presencia de elementos "
+               "abrasivos en el flujo, presencia de aguas salinas o ácidas "
+               "provenientes de establecimientos mineros, suelos alcalinos y "
+               "suelos con presencia de turba, el recubrimiento asfáltico no "
+               "ofrece una protección suficiente, bajo estas condiciones no "
+               "es recomendable el uso de alcantarillas metálicas"),
+        pagina_pdf=85),
+    caracter=Caracter.RECOMENDACION,
+    sesion=T4,
+    nota=("LA ORACION SIGUE, y se corta aqui a proposito antes del salto de "
+          "pagina: «..., por ello, se recomienda el uso de otros materiales "
+          "para la construcción de» (fin de la impresa 82) «alcantarillas, "
+          "como concreto de alta resistencia o tubos de alta densidad» "
+          "(impresa 83, PDF 86). ES RECOMENDACION («no es recomendable»), no "
+          "prohibicion, y NO CUANTIFICA ninguna de las condiciones: no dice "
+          "que velocidad es excesiva ni que salinidad es agresiva. La matriz "
+          "de durabilidad la imprime como AVISO cuando un ensayo declarado "
+          "cae en una de esas condiciones; el descarte del TMC por pH o por "
+          "resistividad sale de los umbrales de WSDOT §8-5 [C]."),
+)
+
+EG_507_10 = _cita(
+    id="EG2013.507.10",
+    fuente_id="EG2013",
+    numeral="507.10",
+    titulo_numeral="Aguas y Suelos agresivos",
+    pagina_impresa="974",
+    pagina_pdf=982,
+    texto_literal=Verbatim(
+        texto=("Si las aguas que han de conducir los tubos presentan un pH "
+               "menor de 5.8, o que los suelos circundantes presenten "
+               "sustancias agresivas, será necesario proteger la tubería "
+               "cuyo producto y procedimiento será acorde al Proyecto o "
+               "aprobación del Supervisor"),
+        pagina_pdf=982),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T4,
+    nota=("ES EL UNICO UMBRAL NUMERICO DE DURABILIDAD DE LA TUBERIA QUE LA "
+          "NORMA PERUANA ESCRIBE, y esta en la Seccion 507 «Tubería metálica "
+          "corrugada»: pH < 5.8 del AGUA QUE CONDUCE el tubo. EXIGE PROTEGER, "
+          "no prohibe el material, y no dice con que («acorde al Proyecto»). "
+          "«Sustancias agresivas» del suelo no se cuantifica. Las Secciones "
+          "505, 506 y 508 (concreto simple, concreto reforzado y polietileno) "
+          "no traen clausula equivalente: buscadas por «agresiv», «corrosi», "
+          "«salin», «pH» y «resistividad» en las pags. PDF 940 a 1000."),
+)
+
+E050_ART_24 = _cita(
+    id="E050.24",
+    fuente_id="E050",
+    numeral="Art. 24",
+    titulo_numeral="Suelos no permitidos para apoyar las cimentaciones",
+    pagina_impresa="37",
+    pagina_pdf=37,
+    texto_literal=Verbatim(
+        texto=("No se cimienta sobre los siguientes tipos de materiales: "
+               "turba, suelo orgánico, tierra vegetal, relleno de desmonte o "
+               "rellenos sanitario o industrial, ni Rellenos No Controlados."),
+        pagina_pdf=37),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T4,
+    nota=("ES LA FUENTE PERUANA MAS CERCANA A «suelos de fundación de mala "
+          "calidad», que el num. 4.1.1.3.4 a) del Manual de Hidrologia "
+          "nombra y no define (COND-MARCO-SUELO-MALA-CALIDAD). La E.050 es "
+          "de EDIFICACIONES y no de obras viales: por eso el conjunto "
+          "'sucs_fundacion_deficiente' es [A] --una adopcion apoyada en "
+          "esta lista-- y no [N]. De los materiales que el articulo "
+          "enumera, solo dos tienen simbolo SUCS (Figura 3 de la misma "
+          "norma): la turba (Pt) y el suelo organico (OL, OH); la tierra "
+          "vegetal y los rellenos no se clasifican por SUCS."),
+)
+
+E050_FIG_3 = _cita(
+    id="E050.FIG3",
+    fuente_id="E050",
+    numeral="Figura 3",
+    titulo_numeral="Simbología de Suelos (Referencial)",
+    pagina_impresa="31",
+    pagina_pdf=31,
+    texto_literal=Verbatim(
+        texto="TURBA Y OTROS SUELOS ALTAMENTE ORGÁNICOS.",
+        pagina_pdf=31),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("Los quince simbolos SUCS con su descripcion: GW, GP, GM, GC, SW, "
+          "SP, SM, SC, ML, CL, OL, MH, CH, OH y Pt. La figura se rotula "
+          "«(Referencial)». Es el conjunto cerrado del que "
+          "'sucs_fundacion_deficiente' elige, transcrito en la tabla "
+          "E050.FIG3. Los simbolos DOBLES de un suelo de frontera («SP-SM» "
+          "en el CSV de ejemplo) no estan en la figura: se componen de dos "
+          "de estos."),
+)
+
+AASHTO_M36_1_2 = _cita(
+    id="AASHTO_M36.1.2",
+    fuente_id="AASHTO_M36",
+    numeral="1.2",
+    titulo_numeral="SCOPE",
+    pagina_impresa="M 36-1",
+    pagina_pdf=2,
+    texto_literal=Verbatim(
+        texto=("The several different metallic coatings may not provide "
+               "equal protection of the base metal against corrosion or "
+               "abrasion in all environments, or both. Some environments "
+               "may be so severe that none of the metallic coatings included "
+               "in this specification will provide adequate protection."),
+        pagina_pdf=2),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=T4,
+    nota=("RASTER PURO: leida sobre la PDF 2 renderizada a 130 dpi. LA "
+          "NORMA DE PRODUCTO DEL TMC NO FIJA NINGUN UMBRAL de pH, "
+          "resistividad, salinidad ni velocidad: reconoce que hay ambientes "
+          "en que ningun recubrimiento metalico basta y remite la proteccion "
+          "adicional a M 190 (recubrimiento bituminoso) y M 245 (precubierto "
+          "de polimero), que no estan en normas/. Su 1.3 excluye ademas "
+          "cama, relleno y la relacion entre carga de tierra y espesor de "
+          "plancha."),
+)
+
+AASHTO_M36_T1 = _cita(
+    id="AASHTO_M36.T1",
+    fuente_id="AASHTO_M36",
+    numeral="Table 1",
+    titulo_numeral=("Corrugation Requirements for Type I, IA, II, IIA, and "
+                    "III Pipe"),
+    pagina_impresa="M 36-6",
+    pagina_pdf=7,
+    texto_literal=Verbatim(
+        texto=("Depth is measured as the vertical distance from a "
+               "straightedge resting on the corrugation crests parallel to "
+               "the axis of the pipe to the bottom of the intervening "
+               "valley."),
+        pagina_pdf=7),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=T4,
+    nota=("RASTER PURO: leida sobre la PDF 7 renderizada a 100 dpi entera y "
+          "el recorte de las Tablas 1 y 2 a 220 dpi. El `texto_literal` es la "
+          "nota b de la tabla, y es la que hace falta: la PROFUNDIDAD de la "
+          "corrugacion se mide de cresta a valle sobre la MISMA cara de la "
+          "plancha, de modo que la altura total del perfil --lo que separa "
+          "el diametro interior del exterior-- es profundidad MAS espesor de "
+          "plancha. La nota sigue con el procedimiento de arbitraje de la "
+          "Tabla 2 cuando una corrugacion mide menos que el minimo."),
+)
+
+AASHTO_M36_8_1_1 = _cita(
+    id="AASHTO_M36.8.1.1",
+    fuente_id="AASHTO_M36",
+    numeral="8.1.1",
+    titulo_numeral="Pipe Dimensions",
+    pagina_impresa="M 36-10",
+    pagina_pdf=11,
+    texto_literal=Verbatim(
+        texto=("The average inside diameter of circular pipe and pipe to be "
+               "reformed into pipe-arches shall not vary more than 1 percent "
+               "or 13 mm, whichever is greater, from the nominal diameter "
+               "when measured on the inside crest of the corrugations for "
+               "Type I pipe"),
+        pagina_pdf=11),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=T4,
+    nota=("RASTER PURO: leida sobre la mitad inferior de la PDF 11 "
+          "renderizada a 170 dpi. EL DIAMETRO NOMINAL DEL TMC ES EL INTERIOR, "
+          "MEDIDO EN LA CRESTA INTERIOR de las corrugaciones. Es lo que "
+          "permite escribir D_ext = D + 2 x (profundidad de corrugacion + "
+          "espesor de plancha). La primera frase del numeral manda elegir el "
+          "diametro nominal de la Tabla 6 (AASHTO_M36.T6), que marca ademas "
+          "las corrugaciones estandar de cada diametro; y el 8.1.2, misma "
+          "pagina, que el espesor de plancha lo especifique el comprador de "
+          "entre los de la Tabla 7."),
+)
+
+AASHTO_M36_T7 = _cita(
+    id="AASHTO_M36.T7",
+    fuente_id="AASHTO_M36",
+    numeral="Table 7",
+    titulo_numeral="Thicknesses of Metallic-Coated Steel Sheet",
+    pagina_impresa="M 36-12",
+    pagina_pdf=13,
+    texto_literal=Verbatim(
+        texto=("An “X” indicates sheet thickness included in the applicable "
+               "specification for coating types listed."),
+        pagina_pdf=13),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=T4,
+    nota=("RASTER PURO: leida sobre la PDF 13 renderizada a 100 dpi entera y "
+          "el recorte de la tabla a 220 dpi. SIETE ESPESORES ESPECIFICADOS "
+          "DE PLANCHA: 1.02, 1.32, 1.63, 2.01, 2.77, 3.51 y 4.27 mm; la "
+          "columna del galvanizado (M 218, «Zinc Coated») los marca los "
+          "siete. Son los mismos siete de las Tablas 3 a 9 de ASTM A796, que "
+          "es donde estan sus propiedades seccionales (A, I, r). La Nota 9, "
+          "debajo de la tabla, dice que el espesor requerido lo determina "
+          "el comprador con los criterios de diseño de AASHTO («Standard "
+          "Specifications for Highway Bridges, Division I, Section 12, or "
+          "other appropriate guidelines»): la norma de producto LISTA los "
+          "espesores y no elige ninguno."),
+)
+
+
+# --- T-4 (auditoria adversarial, H2) --- AASHTO M 170M-04: hasta que diametro
+# hay DISEÑO ESTANDAR tabulado, y que pasa por encima. La ficha de
+# 'D_max_norma_producto' decia que la serie del concreto llega a 3600 mm y
+# que «faltaba transcribir» la pared de 2850 a 3600: la norma NO la tabula.
+AASHTO_M170M_7_2_1 = _cita(
+    id="AASHTO_M170M.7.2.1",
+    fuente_id="AASHTO_M170M",
+    numeral="7.2.1",
+    titulo_numeral="Modified and Special Designs",
+    pagina_impresa="M 170M-13",
+    pagina_pdf=13,
+    texto_literal=Verbatim(
+        texto=("If permitted by the owner the manufacturer may request "
+               "approval by the owner of modified designs that differ from "
+               "the designs in Section 7.1; or special designs for sizes and "
+               "loads beyond those shown in Tables 1 to 5, Section 7.1, or "
+               "special designs for pipe sizes that do not have steel "
+               "reinforcement areas shown in Tables 1 to 5 of Section 7.1."),
+        pagina_pdf=13),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=T4,
+    nota=("Leida sobre la PDF 13 renderizada; la capa visible del ejemplar "
+          "es un OCR defectuoso («pemiitted», «mquest», «reinfomenicnt») y la "
+          "transcripcion corrige esas letras. LO QUE SOSTIENE: los tamaños "
+          "que las Tablas 1 a 5 listan SIN area de acero no tienen diseño "
+          "estandar; son diseños especiales que el fabricante propone y el "
+          "propietario aprueba. LEIDO TABLA A TABLA SOBRE LAS PAGINAS "
+          "RENDERIZADAS (T-4, 2026-11-11): Tabla 1 (Clase I, PDF 3), filas "
+          "de 1500 a 2700 mm con pared y acero --la de 2700: pared A 225 mm, "
+          "pared B 250 mm-- y filas de 2850, 3000, 3150, 3300 y 3450 mm con "
+          "llamada a nota y rayas; Tabla 3 (Clase III, PDF 6-7), la ultima "
+          "fila con acero es la de 2700 mm y las de 3000, 3150 y 3600 llevan "
+          "llamada y rayas (las de 2850, 3300 y 3450 no se leen en el "
+          "ejemplar); Tabla 5 (Clase V, PDF 10), pared tabulada hasta 1800 "
+          "mm (AASHTO_M170M.T5). La nota al pie de las tablas, leida en la "
+          "PDF 3 y en la PDF 5: «For modified or special designs, see "
+          "Section 7.2 ...» y «Pipe over 2400 mm in diameter shall have two "
+          "circular cages or an inner circular cage plus one elliptical "
+          "cage». NO LEIDO: el cuerpo de la Tabla 2 (PDF 4) y el maximo de "
+          "la Tabla 4, cuya mitad baja no esta en el escaneo. Con lo leido, "
+          "el mayor diametro con diseño estandar es 2700 mm en las dos "
+          "clases que se pudieron leer hasta el final."),
+)
+
+AASHTO_M170M_7_2_2 = _cita(
+    id="AASHTO_M170M.7.2.2",
+    fuente_id="AASHTO_M170M",
+    numeral="7.2.2",
+    titulo_numeral="Modified and Special Designs",
+    pagina_impresa="M 170M-13",
+    pagina_pdf=13,
+    texto_literal=Verbatim(
+        texto=("The descriptions of modified or special designs shall "
+               "include the wall thickness, the concrete strength, and the "
+               "area, type, placement, number of layers, and strength of the "
+               "steel reinforcement."),
+        pagina_pdf=13),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=T4,
+    nota=("Leida sobre la PDF 13 renderizada, con el mismo OCR defectuoso "
+          "(«conwetc strength», «rind st ngth»). EL ESPESOR DE PARED DE UN "
+          "DISEÑO ESPECIAL LO DA EL FABRICANTE en su descripcion: la norma "
+          "no lo tabula. Es la segunda frase del 7.2.2; la primera exige que "
+          "el diseño se base en evaluaciones racionales o empiricas de la "
+          "resistencia ultima y del agrietamiento. El 7.2.3 pide al "
+          "fabricante la prueba de adecuacion (ensayos de tres aristas)."),
+)
+
+
+# --- T-4 (auditoria adversarial, H3, H9, H11) ---
+AASHTO_LRFD_11_10_6_4_2A = _cita(
+    id="AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.10.6.4.2a",
+    titulo_numeral="Steel Reinforcements",
+    pagina_impresa="11-89",
+    pagina_pdf=1558,
+    pagina_pdf_titulo=1557,     # el numeral abre en la 11-88; la lista, en la 11-89
+    texto_literal=Verbatim(
+        texto=("Soils shall typically be considered nonaggressive if they "
+               "meet the following criteria:"),
+        pagina_pdf=1558),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("El numeral abre en la pag. impresa 11-88 (PDF 1557) y la lista "
+          "esta en la 11-89: pH = 5 to 10; Resistivity >= 3000 ohm-cm; "
+          "Chlorides <= 100 ppm; Sulfates <= 200 ppm; Organic Content <= 1 "
+          "percent. ES UN CRITERIO PARA EL RELLENO DE MUROS DE SUELO "
+          "REFORZADO CON ACERO GALVANIZADO, no para alcantarillas: define en "
+          "que suelo valen las tasas de perdida de galvanizado y de acero "
+          "del propio articulo. El proyecto lo aplica al tubo de acero "
+          "corrugado galvanizado POR ANALOGIA --mismo metal, mismo "
+          "recubrimiento, mismo medio--, y por eso el efecto por defecto es "
+          "un aviso y no una exclusion (criterio "
+          "'suelo_agresivo_lrfd_sobre_tmc')."),
+)
+
+AASHTO_LRFD_11_12_8 = _cita(
+    id="AASHTO_LRFD_9.11.12.8#AGRESIVO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.12.8",
+    titulo_numeral="Corrosion Protection",
+    pagina_impresa="11-134",
+    pagina_pdf=1603,
+    texto_literal=Verbatim(
+        texto=("Soils not meeting one or more of these criteria shall be "
+               "considered to be aggressive."),
+        pagina_pdf=1603),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("Muros de suelo claveteado (soil nail). Repite la lista del "
+          "11.10.6.4.2a con «Resistivity >= 3,000 ohm-cm» y «Organic Content "
+          "<= 1 percent by weight», y añade las dos frases que aquel no "
+          "trae: basta incumplir UNO de los criterios para que el suelo sea "
+          "agresivo, y «If the resistivity is greater than or equal 5,000 "
+          "ohm-cm, the chlorides and sulfates requirements may be waived». "
+          "Esa dispensa es potestativa y la matriz NO la aplica: es el lado "
+          "seguro."),
+)
+
+AASHTO_LRFD_10_7_5 = _cita(
+    id="AASHTO_LRFD_9.10.7.5#INDICATIVOS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.7.5",
+    titulo_numeral="Corrosion and Deterioration",
+    pagina_impresa="10-125",
+    pagina_pdf=1414,
+    texto_literal=Verbatim(
+        texto=("The following soil or site conditions should be considered "
+               "as indicative of a potential pile deterioration or corrosion "
+               "situation:"),
+        pagina_pdf=1414),
+    caracter=Caracter.RECOMENDACION,
+    sesion=T4,
+    nota=("PILOTES. La lista de suelo: «resistivity less than 2,000 ohm-cm», "
+          "«pH less than 5.5», «pH between 5.5 and 8.5 in soils with high "
+          "organic content», «sulfate concentrations greater than 1,000 "
+          "ppm», rellenos sanitarios y de escoria, drenaje minero o "
+          "industrial. La de agua: «chloride content greater than 500 ppm». "
+          "El comentario C10.7.5 dice que los valores se adaptaron de Fang "
+          "(1991) y Tomlinson (1987). SON INDICATIVOS («should be considered "
+          "as indicative») Y MENOS ESTRICTOS que los del 11.10.6.4.2a salvo "
+          "en el pH: se citan como segunda fuente del mismo cuerpo; los "
+          "numeros que la matriz compara son los del 11.10.6.4.2a."),
+)
+
+E050_ART_24_REMOVER = _cita(
+    id="E050.24#REMOVER",
+    fuente_id="E050",
+    numeral="Art. 24",
+    titulo_numeral="Suelos no permitidos para apoyar las cimentaciones",
+    pagina_impresa="37",
+    pagina_pdf=37,
+    texto_literal=Verbatim(
+        texto=("Estos materiales no permitidos tienen que ser removidos en "
+               "la totalidad del terreno, antes de ejecutar cualquier tipo "
+               "de obra en el terreno y ser reemplazados con materiales que "
+               "cumplan lo indicado en el numeral 25.4."),
+        pagina_pdf=37),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T4,
+    nota=("La segunda frase del articulo, que la cita E050.24 no traia: la "
+          "norma no se limita a prohibir cimentar sobre turba y suelo "
+          "organico, MANDA REMOVERLOS Y REEMPLAZARLOS por relleno controlado. "
+          "El aviso de suelo de fundacion deficiente lo dice con estas "
+          "palabras (H9 de la auditoria de T-4)."),
+)
+
+E050_ART_38_1 = _cita(
+    id="E050.38.1",
+    fuente_id="E050",
+    numeral="Art. 38, 38.1",
+    titulo_numeral="Licuación de suelos",
+    pagina_impresa="51",
+    pagina_pdf=51,
+    texto_literal=Verbatim(
+        texto=("las vibraciones de los sismos pueden generar el fenómeno "
+               "denominado Licuación, el cual consiste en la pérdida "
+               "momentánea de la resistencia al corte del suelo"),
+        pagina_pdf=51),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("El 38.1 lo dice de los suelos granulares y de algunos suelos "
+          "granulares con finos cohesivos ubicados bajo la napa freatica; el "
+          "38.2, en la misma pagina, lista las caracteristicas que el suelo "
+          "tiene que presentar a la vez para ser susceptible, y el 38.5 "
+          "(pag. 52) manda el analisis del potencial de licuacion por Seed e "
+          "Idriss. ESTE PROGRAMA NO EVALUA LA LICUACION: la cita existe para "
+          "que la linea «no esta entre los grupos declarados deficientes» "
+          "de un suelo SM, SP o ML no se lea como «apto» (H9)."),
+)
+
+EG2013_508_02_A = _cita(
+    id="EG2013.508.02a",
+    fuente_id="EG2013",
+    numeral="508.02 a",
+    titulo_numeral="Tubos de polietileno de alta densidad (PAD o HDPE)",
+    pagina_impresa="981",
+    pagina_pdf=989,
+    texto_literal=Verbatim(
+        texto=("Es una tubería estructural con superficie interior lisa "
+               "integrada y pared exterior corrugada."),
+        pagina_pdf=989),
+    caracter=Caracter.DEFINICION,
+    sesion=T4,
+    nota=("La norma peruana de construccion DEFINE el producto: interior "
+          "liso y pared exterior corrugada; sigue «Debe cumplir con la guía "
+          "AASHTO, clasificación tipo “S”» y remite a AASHTO M294. Respalda "
+          "DOS cosas de T-4: que la fila de n que corresponde al HDPE en la "
+          "Table B.1 de HDS-5 es la de interior liso («Smooth») y no la "
+          "corrugada, y que el diametro exterior del tubo no es el interior "
+          "mas una pared delgada sino mas la altura de un perfil corrugado."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

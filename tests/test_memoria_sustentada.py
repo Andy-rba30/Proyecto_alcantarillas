@@ -97,6 +97,9 @@ def _pasos_de(informe):
         # fundamento F1.TW quedaria contado como "declarado y nunca usado".
         if getattr(punto, "tw_sec13", None) is not None:
             _anota(getattr(punto.tw_sec13, "paso", None))
+        # La matriz de durabilidad (T-4) emite un paso por ensayo declarado.
+        if getattr(punto, "durabilidad", None) is not None:
+            vistos.extend(punto.durabilidad.pasos)
         if punto.proteccion is not None:
             _anota(getattr(punto.proteccion, "paso", None))
         if punto.espaciamiento is not None:
@@ -409,6 +412,19 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
     # Las fases que la corrida por defecto no alcanza, cada una por un vacio
     # del expediente y no por falta de fundamento.
     sin_alcanzar = {
+        # --- T-4 --- LA MATRIZ DE DURABILIDAD Y EL ESPESOR. Los seis F3.DUR.*
+        # los emite `M2.matriz_durabilidad`, uno por ensayo DECLARADO, y la
+        # corrida por defecto no declara ninguno --es justo el caso «sin
+        # ensayos, matriz no aplicada»--; el del suelo de fundacion sale solo
+        # si el SUCS del punto esta en el conjunto declarado deficiente, y
+        # ninguno de los cuatro del fixture lo esta. F3.D_EXTERIOR viaja como
+        # ELECCION en el paso de V7, que esta corrida no alcanza (misma razon
+        # que F5.V7_FILA, abajo). Que los siete se emiten se MIDE en
+        # `tests/test_t4_materiales_durabilidad.py`, no se afirma aqui.
+        "F3.DUR.PH", "F3.DUR.RESISTIVIDAD", "F3.DUR.ABRASION",
+        "F3.DUR.SULFATOS", "F3.DUR.CLORUROS", "F3.DUR.SUELO_FUNDACION",
+        "F3.DUR.SUELO_AGRESIVO",    # idem: solo con ensayos (auditoria, H3)
+        "F3.D_EXTERIOR",
         "F7.RELLENO",       # 7.A se detiene en 'espesor_pared_conducto'
         "F8.RECUBRIMIENTO",  # 9.4 se detiene en 'categoria_refuerzo_aashto'
         "F10.CUNETA",       # falta el dato 'L_hidraulico_m'

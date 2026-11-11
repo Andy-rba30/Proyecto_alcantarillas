@@ -263,7 +263,15 @@ def test_r48030_los_criterios_ya_no_declaran_la_discrepancia_abierta():
         c = ca.CRITERIOS[clave]
         assert "DISCREPANCIA ABIERTA" not in c.fuente, clave
         assert "por extraer" not in c.fuente, clave
-        assert "R48-030" in c.fuente or "enmendada" in c.fuente, clave
+    # Hasta T-4 las dos fichas decian ademas que la hoja de ruta estaba
+    # «enmendada» (R48-030). T-4 reescribio las dos (INF-3.2.4): la del HDPE
+    # sigue apoyada en la fuente y nombra la hoja de ruta v8; la del TMC paso
+    # a [A] y dice que ninguna fuente fija el valor como limite.
+    assert "WSDOT_HM.8-3.3#SEVERA" in ca.CRITERIOS["v_max_hdpe"].fuente
+    assert "hoja de ruta v8" in ca.CRITERIOS["v_max_hdpe"].fuente
+    assert ca.CRITERIOS["v_max_tmc"].etiqueta == "A"
+    assert "NINGUNA NORMA NI FUENTE TECNICA FIJA EL VALOR COMO LIMITE" \
+        in ca.CRITERIOS["v_max_tmc"].fuente
 
 
 # ===========================================================================

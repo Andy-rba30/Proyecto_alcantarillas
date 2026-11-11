@@ -88,16 +88,33 @@ CONDICION_PAVIMENTO_DE_PRUEBA = "flexible"
 # Los DOS materiales que el expediente no puede declarar, para la corrida de
 # pruebas
 # ---------------------------------------------------------------------------
-# 'espesor_pared_conducto' quedo declarado en el expediente SOLO para el
-# concreto reforzado, y no por descuido: es el unico de los tres materiales
-# cuya norma de producto esta en `normas/` (AASHTO M 170M-04, columna «Wall
-# Thickness» de la pared B). El TMC depende del calibre de plancha que fija la
-# Fase 8 -- 'clases_producto_por_relleno', que es de expediente y sigue
-# abierto -- y el del HDPE no lo trae AASHTO M 294-11 (en normas/ desde N2
-# como traduccion no oficial: tabula el espesor minimo de la pared interior,
-# no la altura del perfil corrugado). En
-# una corrida real los dos se descartan como candidatos con su causa escrita,
-# y el punto se dimensiona en concreto.
+# HASTA T-4 'espesor_pared_conducto' estaba declarado en el expediente SOLO
+# para el concreto reforzado, y en una corrida real el TMC y el HDPE se
+# descartaban como candidatos por no tener espesor (INF-5.1.17). DESDE T-4 EL
+# EXPEDIENTE TIENE LOS TRES: el del TMC lo deriva `M2.espesor_pared_de_tmc`
+# de la corrugacion y el calibre adoptados ('corrugacion_y_espesor_tmc' [A]:
+# 13 mm + 2.01 mm = 0.01501 m), y el del HDPE sale del diametro exterior
+# maximo de la Table A12-11 de AASHTO LRFD (900, 1050 y 1200 mm; M 294 no
+# trae la altura del perfil).
+#
+# Y AUN ASI ESTA DECLARACION DE PRUEBA SE CONSERVA, por la razon de abajo y
+# solo por ella: una entrada «tmc» o «hdpe» DECLARADA gana a la derivada, de
+# modo que dentro de la suite los dos materiales corren con los espesores
+# sinteticos de aqui y no con los del expediente. Los tests que miden los
+# del expediente (`tests/test_t4_materiales_durabilidad.py`) RETIRAN esta
+# declaracion con `quitar_valor_dinamico` antes de medir. La linea base no
+# pasa por aqui: la genera la CLI en subproceso, con los valores del archivo.
+#
+# LOS DOS VALORES SINTETICOS QUEDAN POR DEBAJO DE LOS DEL ARCHIVO (0.013
+# frente a 0.01501 m en TMC; 0.050 frente a 0.0846-0.0985 m en HDPE), y eso
+# hay que saberlo: un test que mida la clave fisica o V7 con ellos mide la
+# FORMULA, no el expediente. Se intento retirarlos en la auditoria de T-4
+# (H11) y no se puede sin reescribir los tests de formula: medido, 22 tests
+# de M5 y M7 dejan de correr porque usan diametros que ninguna serie tabula
+# (0.60 m, 0.75 m) y el derivado no les da fila. Lo que compensa: los
+# espesores DERIVADOS se ejercitan en `tests/test_t4_materiales_durabilidad.py`
+# (clave fisica de 7.A y volumen de V7 recalculados a mano, sobre A-01 y
+# B-01, en TMC y en HDPE) y en la linea base.
 #
 # LOS TESTS UNITARIOS DE M7 Y M5 SI LOS NECESITAN, porque prueban FORMULAS --
 # la clave fisica, el volumen desplazado, el tamizado de 7.A -- sobre

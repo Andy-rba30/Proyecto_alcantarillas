@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "42a0a1ce1da0c84e18367c4015bb6921d671f0dd",
+    "criterios_sha1": "6402ab29dab726e24362a5920480090f90467393",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -204,6 +204,26 @@
         "TR_fundamento": "categoria derivada del area de cuenca (850.0 ha) con el criterio 'umbral_area_quebrada_importante_ha'",
         "datos_pendientes": []
       },
+      "durabilidad": {
+        "aplicada": false,
+        "resumen": "durabilidad: sin ensayos, matriz no aplicada",
+        "ensayos": {},
+        "materiales_excluidos": [],
+        "suelo_fundacion": "suelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos",
+        "reglas": [
+          {
+            "ensayo": "condicion_del_sitio",
+            "material": "tmc",
+            "efecto": "avisa",
+            "texto": "aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio",
+            "citas": [
+              "MC_HHD.4.1.1.3.7f#COSTA",
+              "MC_HHD.4.1.1.3.7g#AGRESIVAS"
+            ],
+            "criterio": null
+          }
+        ]
+      },
       "diseno": {
         "material": "Concreto reforzado",
         "tipo": "concreto_reforzado",
@@ -214,6 +234,7 @@
         "n_max": 0.013,
         "seccion": "Ø 0.90 m",
         "dimension_max_catalogo_m": 2.7,
+        "dimension_max_criterio": "D_max_norma_producto",
         "control_gobernante": "entrada",
         "Q_m3s": 1.167,
         "S_m_m": 0.006,
@@ -428,7 +449,7 @@
           "veredicto": null,
           "valor_obtenido": 0.9,
           "valor_admisible": 2.7,
-          "criterio_aplicado": "D_max_catalogo"
+          "criterio_aplicado": "D_max_norma_producto"
         },
         {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
@@ -542,6 +563,26 @@
         "TR_fundamento": "categoria derivada del area de cuenca (210.0 ha) con el criterio 'umbral_area_quebrada_importante_ha'",
         "datos_pendientes": []
       },
+      "durabilidad": {
+        "aplicada": false,
+        "resumen": "durabilidad: sin ensayos, matriz no aplicada",
+        "ensayos": {},
+        "materiales_excluidos": [],
+        "suelo_fundacion": "suelo de fundacion SP-SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos",
+        "reglas": [
+          {
+            "ensayo": "condicion_del_sitio",
+            "material": "tmc",
+            "efecto": "avisa",
+            "texto": "aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio",
+            "citas": [
+              "MC_HHD.4.1.1.3.7f#COSTA",
+              "MC_HHD.4.1.1.3.7g#AGRESIVAS"
+            ],
+            "criterio": null
+          }
+        ]
+      },
       "diseno": {
         "material": "Concreto reforzado",
         "tipo": "concreto_reforzado",
@@ -552,6 +593,7 @@
         "n_max": 0.013,
         "seccion": "Ø 0.90 m",
         "dimension_max_catalogo_m": 2.7,
+        "dimension_max_criterio": "D_max_norma_producto",
         "control_gobernante": "entrada",
         "Q_m3s": 0.48,
         "S_m_m": 0.008,
@@ -766,7 +808,7 @@
           "veredicto": null,
           "valor_obtenido": 0.9,
           "valor_admisible": 2.7,
-          "criterio_aplicado": "D_max_catalogo"
+          "criterio_aplicado": "D_max_norma_producto"
         },
         {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
@@ -880,6 +922,26 @@
         "TR_fundamento": "Familia B (Alcantarillas de alivio): Q del drenaje longitudinal (cuneta), que es la fila 'quebrada_menor' de la Tabla N 02 (Sec. 2.3)",
         "datos_pendientes": []
       },
+      "durabilidad": {
+        "aplicada": false,
+        "resumen": "durabilidad: sin ensayos, matriz no aplicada",
+        "ensayos": {},
+        "materiales_excluidos": [],
+        "suelo_fundacion": "suelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos",
+        "reglas": [
+          {
+            "ensayo": "condicion_del_sitio",
+            "material": "tmc",
+            "efecto": "avisa",
+            "texto": "aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio",
+            "citas": [
+              "MC_HHD.4.1.1.3.7f#COSTA",
+              "MC_HHD.4.1.1.3.7g#AGRESIVAS"
+            ],
+            "criterio": null
+          }
+        ]
+      },
       "diseno": null,
       "proteccion_salida": null,
       "geometria": null,
@@ -970,9 +1032,88 @@
           "material": "TMC galvanizada",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- DatoFaltanteError: Falta el dato 'espesor_pared_conducto[tmc]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «tmc». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE no la trae AASHTO M 294-11 -- en normas/ como traduccion no oficial: su 7.2.2 da el espesor minimo de la pared interior, no la altura del perfil corrugado, y ninguna hoja fija el diametro exterior --. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7)",
+          "motivo": "Ø 0.90 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 1.0 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.14933056388869193 frente a 0.25",
           "incumplidas": [
             "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.05 m",
+          "aceptado": false,
+          "motivo": "Ø 1.05 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.9523809523809534 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.1116535342266947 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.20 m",
+          "aceptado": false,
+          "motivo": "Ø 1.20 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.8333333333333334 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.09433268379459729 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.35 m",
+          "aceptado": false,
+          "motivo": "Ø 1.35 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.08356443571867275 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 14.463088466940132 frente a 14.673362599502088",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.50 m",
+          "aceptado": false,
+          "motivo": "Ø 1.50 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.07590843070742552 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 12.523744616940178 frente a 18.036534814586478",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.65 m",
+          "aceptado": false,
+          "motivo": "Ø 1.65 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.07007486255893863 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 9.895900766940231 frente a 21.74642104890267",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.80 m",
+          "aceptado": false,
+          "motivo": "Ø 1.80 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.06542817038220214 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 6.579556916940294 frente a 25.803021302450677",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.95 m",
+          "aceptado": false,
+          "motivo": "Ø 1.95 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.06160898349101529 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 2.574713066940145 frente a 30.206335575230472",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 2.10 m",
+          "aceptado": false,
+          "motivo": "Ø 2.10 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.065 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45)",
+          "incumplidas": [
             "V2"
           ]
         },
@@ -980,9 +1121,38 @@
           "material": "HDPE",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «hdpe». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE no la trae AASHTO M 294-11 -- en normas/ como traduccion no oficial: su 7.2.2 da el espesor minimo de la pared interior, no la altura del perfil corrugado, y ninguna hoja fija el diametro exterior --. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7)",
+          "motivo": "Ø 0.90 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 1.0 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.14933056388869193 frente a 0.25",
           "incumplidas": [
             "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "HDPE",
+          "seccion": "Ø 1.05 m",
+          "aceptado": false,
+          "motivo": "Ø 1.05 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.9523809523809534 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.1116535342266947 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "HDPE",
+          "seccion": "Ø 1.20 m",
+          "aceptado": false,
+          "motivo": "Ø 1.20 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.8333333333333334 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.09433268379459729 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "HDPE",
+          "seccion": "Ø 1.35 m",
+          "aceptado": false,
+          "motivo": "Ø 1.35 m: el escalon no se pudo evaluar -- DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe][1350]'. el criterio 'espesor_pared_conducto' declara «hdpe» pero no la fila de 1350 mm. Los diametros declarados son [900, 1050, 1200]. Falta esa fila en su fuente (columna 'Max. OD' de la Table A12-11 de AASHTO LRFD, que termina en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro exterior de la ficha del fabricante): no se interpola ni se toma la fila vecina, porque el espesor gobierna la clave fisica (7.A) y el volumen desplazado de V7 y los dos quedan del lado inseguro si se estima por lo bajo",
+          "incumplidas": [
             "V2"
           ]
         }
@@ -1039,7 +1209,7 @@
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | TMC galvanizada: material no evaluable: DatoFaltanteError: Falta el dato 'espesor_pared_conducto[tmc]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «tmc». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE no la trae AASHTO M 294-11 -- en normas/ como traduccion no oficial: su 7.2.2 da el espesor minimo de la pared interior, no la altura del perfil corrugado, y ninguna hoja fija el diametro exterior --. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7) | HDPE: material no evaluable: DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe]'. el criterio 'espesor_pared_conducto' esta declarado, pero no trae entrada para «hdpe». Es un dict por material y cada entrada necesita su propia fuente: la del concreto es la columna 'Wall Thickness' de las Tablas 1 a 5 de AASHTO M 170M-04, la del TMC depende del calibre que fije la Fase 8 ('clases_producto_por_relleno') y la del HDPE no la trae AASHTO M 294-11 -- en normas/ como traduccion no oficial: su 7.2.2 da el espesor minimo de la pared interior, no la altura del perfil corrugado, y ninguna hoja fija el diametro exterior --. Sin espesor no hay diametro exterior, y sin diametro exterior no hay clave fisica (7.A) ni volumen desplazado (V7)"
+          "mensaje": "Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.065 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | HDPE: 3 escalon(es) evaluado(s), de Ø 0.90 m a Ø 1.20 m, y ninguno cumple; NO SE EVALUO desde Ø 1.35 m hasta el tope del material (1.50 m) por falta del dato 'espesor_pared_conducto[hdpe][1350]'. DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe][1350]'. el criterio 'espesor_pared_conducto' declara «hdpe» pero no la fila de 1350 mm. Los diametros declarados son [900, 1050, 1200]. Falta esa fila en su fuente (columna 'Max. OD' de la Table A12-11 de AASHTO LRFD, que termina en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro exterior de la ficha del fabricante): no se interpola ni se toma la fila vecina, porque el espesor gobierna la clave fisica (7.A) y el volumen desplazado de V7 y los dos quedan del lado inseguro si se estima por lo bajo"
         },
         {
           "fase": "Fase 10 - Espaciamiento de alivio (M10)",
@@ -1107,6 +1277,14 @@
           "Q_m3s",
           "S_cauce"
         ]
+      },
+      "durabilidad": {
+        "aplicada": false,
+        "resumen": "durabilidad: sin ensayos, matriz no aplicada",
+        "ensayos": {},
+        "materiales_excluidos": [],
+        "suelo_fundacion": "suelo de fundacion ML: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos",
+        "reglas": []
       },
       "diseno": null,
       "proteccion_salida": null,
@@ -1205,15 +1383,15 @@
   "criterios": {
     "usados": [
       {
-        "clave": "D_max_catalogo",
-        "etiqueta": "A",
+        "clave": "D_max_norma_producto",
+        "etiqueta": "C",
         "valor": {
           "concreto_reforzado": 2.7,
-          "tmc": 2.1,
+          "tmc": 3.6,
           "hdpe": 1.5
         },
         "declarado_en_caliente": false,
-        "concepto": "Diametro maximo que el proyecto admite por material, como tope de DISPONIBILIDAD (catalogo), no como tope normativo"
+        "concepto": "Diametro maximo de la serie que tabula la norma de producto de cada material, en metros: el tope del catalogo de diametros cuando no se declara uno de disponibilidad de mercado"
       },
       {
         "clave": "HW_D_max",
@@ -1317,6 +1495,13 @@
         "concepto": "Condicion de la superficie de rodadura sobre el cruce, para elegir la fila de la Tabla 12.6.6.3-1: 'no_pavimentado', 'flexible' o 'rigido'"
       },
       {
+        "clave": "corrugacion_y_espesor_tmc",
+        "etiqueta": "A",
+        "valor": "68x13/2.01",
+        "declarado_en_caliente": false,
+        "concepto": "Corrugacion y espesor de plancha de la tuberia metalica corrugada del catalogo: de ellos sale el diametro exterior D_ext = D + 2 x (profundidad de corrugacion + espesor de plancha), en que diametros es estandar el producto y, en la Fase 8, las propiedades de la seccion"
+      },
+      {
         "clave": "diametros_normalizados",
         "etiqueta": "C",
         "valor": {
@@ -1351,6 +1536,11 @@
             "2400": 0.225,
             "2550": 0.238,
             "2700": 0.25
+          },
+          "hdpe": {
+            "900": 0.08975,
+            "1050": 0.0846,
+            "1200": 0.0985
           }
         },
         "declarado_en_caliente": false,
@@ -1438,10 +1628,10 @@
       },
       {
         "clave": "n_manning_hdpe",
-        "etiqueta": "N->",
+        "etiqueta": "C",
         "valor": [
-          0.01,
-          0.013
+          0.009,
+          0.015
         ],
         "declarado_en_caliente": false,
         "concepto": "Coeficiente de rugosidad de Manning para HDPE de interior liso"
@@ -1496,6 +1686,17 @@
         "concepto": "Resguardo entre nivel de agua a la entrada y subrasante"
       },
       {
+        "clave": "sucs_fundacion_deficiente",
+        "etiqueta": "A",
+        "valor": [
+          "OL",
+          "OH",
+          "PT"
+        ],
+        "declarado_en_caliente": false,
+        "concepto": "Grupos de la clasificacion SUCS del suelo de fundacion que el proyecto cuenta como deficientes, para avisar de que el Manual recomienda en ese caso la alcantarilla tipo marco de concreto"
+      },
+      {
         "clave": "talud_terraplen",
         "etiqueta": "A",
         "valor": 2.0,
@@ -1518,7 +1719,7 @@
       },
       {
         "clave": "v_max_tmc",
-        "etiqueta": "C",
+        "etiqueta": "A",
         "valor": 4.572,
         "declarado_en_caliente": false,
         "concepto": "Velocidad maxima admisible en TMC"
@@ -1570,13 +1771,14 @@
     ],
     "declarados_en_caliente": [],
     "verificacion_pendiente": [
-      "D_max_catalogo",
+      "D_max_norma_producto",
       "F_pga_lectura_columna_extrema",
       "PERFIL_SUELO_PRESUNTO",
       "acceso_mantenimiento_v2b",
       "borde_libre_canal_m",
       "cobertura_minima_aashto",
       "condicion_pavimento",
+      "corrugacion_y_espesor_tmc",
       "espesor_pared_conducto",
       "factor_muro_eleccion",
       "factores_carga_aashto",

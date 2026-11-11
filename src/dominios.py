@@ -96,3 +96,24 @@ CENTIMETROS_POR_METRO = 100   # literal-ok: definicion de la unidad, no valor de
 # definicion de la unidad, no un valor de proyecto -- no dice que diametros
 # existen, solo como se escribe el mismo diametro en la otra unidad.
 MILIMETROS_POR_METRO = 1000   # literal-ok: definicion de la unidad, no valor de proyecto
+
+
+# --- T-4 --- Los dos limites de los ensayos de durabilidad (matriz de la
+# Sec. 3.3). Mismo caso que los de arriba: acotan lo que el dato PUEDE SER o
+# definen una unidad; ninguno es un umbral de proyecto -- esos viven en
+# 'durabilidad_tmc_umbrales' [C] y en `constantes_normativas`.
+#
+# El pH es una escala de 0 a 14: un 70 delata un ensayo cargado en otra
+# magnitud, y un valor negativo no existe.
+PH_MAX_FISICO = 14.0      # literal-ok: extremo de la escala de pH, no un umbral de proyecto
+
+# Conversion de ppm en peso (mg/kg) a porcentaje en peso: la Tabla 4.4 de
+# E.060 tabula el sulfato del suelo en porcentaje y el laboratorio lo
+# informa en ppm.
+PPM_POR_PORCIENTO = 10000     # literal-ok: definicion de la unidad, no valor de proyecto
+
+# Techo de una concentracion en partes por millon: un millon de ppm es el
+# 100 % de la muestra. No acota una magnitud de proyecto: es la definicion de
+# la unidad, y existe para que la puerta rechace un ensayo mal tecleado.
+PPM_MAX_FISICO = 1000000    # literal-ok: definicion de la unidad (1e6 ppm = 100 %)
+

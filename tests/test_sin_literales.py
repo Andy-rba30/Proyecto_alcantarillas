@@ -928,7 +928,14 @@ CENSO_DE_MARCAS = {
     # fuente primaria y quedo `CBR_MIN_FISICO = 0.0`, cuyo literal es exento
     # (cero) y cuya marca por tanto no exime nada: se conserva como
     # justificacion escrita, igual que las demas del archivo, pero no cuenta.
-    "src/dominios.py": 5,    # T-2: el techo de la profundidad del receptor medido
+    # 4 -> 5 en T-2: el techo de la profundidad del receptor medido.
+    # 5 -> 7 en T-4: `PH_MAX_FISICO = 14.0` (el techo de la escala de pH con
+    # que la puerta rechaza un ensayo mal tecleado) y `PPM_POR_PORCIENTO =
+    # 10000` (la definicion de la unidad con que los sulfatos del suelo, en
+    # ppm, entran a la Tabla 4.4 de E.060, que esta en % en peso).
+    # 7 -> 8 en la auditoria de T-4 (H11): `PPM_MAX_FISICO = 1000000`, el
+    # techo de una concentracion en ppm (el 100 % de la muestra).
+    "src/dominios.py": 8,
     # UNA sola: `CIFRAS_MAGNITUD = 3`, los decimales con que la traza de la
     # memoria imprime una magnitud (§4.4). Es de la misma naturaleza que los
     # `FMT_*` de M11 --- cuantos decimales se escriben, no cuanto vale nada ---

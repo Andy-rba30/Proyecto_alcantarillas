@@ -76,15 +76,18 @@ from src import criterios_adoptados as ca
 from src import datos_sitio as ds
 from src import declaracion as _declaracion
 from src.constantes_normativas import (CUANTIA_MIN_MURO,
-                                       H_O_HW_SOBRE_D_MIN, RECUBRIMIENTO)
+                                       H_O_HW_SOBRE_D_MIN,
+                                       NIVELES_DE_ABRASION, RECUBRIMIENTO)
 from src.dominios import (ALTURA_RECEPTOR_MAX_FISICA_M, N_MANNING_MAX_FISICO,
-                          S_CAUCE_MAX)
+                          PH_MAX_FISICO, PPM_MAX_FISICO, S_CAUCE_MAX)
 from src.modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE
 from src.modelos import ALCANCE_PERFIL as _ALCANCE_PERFIL
 from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ContextoCorrida, CriterioPendienteError, DatoEfectivoDeSitio,
                          DatoFaltanteError, DatoInvalidoError,
-                         DisenoNoFactibleError, ErrorProyecto, Espaciamiento,
+                         DictamenDurabilidad,
+                         DisenoNoFactibleError, ENSAYOS_DE_DURABILIDAD,
+                         EnsayosDurabilidad, ErrorProyecto, Espaciamiento,
                          Familia, MetodoNoEvaluableError, PasoDiseno,
                          ProteccionSalida, PuntoCritico, ResultadoPunto,
                          AVISO_SIN_ACCESO_DE_MANTENIMIENTO, SeccionReceptor,
@@ -93,6 +96,7 @@ from src.modelos import EstadoDeVerificacion
 from src.modulos.M0_carga import (cargar_puntos, cargar_puntos_de_bytes,
                                   leer_bytes)
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
+from src.modulos.M2_material import matriz_durabilidad
 from src.modulos.M6_proteccion import proteccion_salida
 from src.modulos import M3_hidraulica as M3
 from src.modulos.M7_geometria import (compatibilidad_geometrica,
@@ -411,6 +415,32 @@ CLAVES_EXTERNAS: Tuple[str, ...] = (("luz_m", "TW_m", "longitud_m", "Q_m3s",
                                      "L_hidraulico_m") + CLAVES_TEXTO
                                     + CLAVES_OBJETO + CLAVES_BOOLEANAS)
 
+# --- T-4 --- LOS ENSAYOS DE DURABILIDAD (Sec. 3.3; INF-3.3.1).
+#
+# Entran por el MISMO archivo de `--datos-externos`, en las mismas dos
+# secciones --`globales` para el sitio entero, `puntos` para una calicata--,
+# y NO son claves de `CLAVES_EXTERNAS`. La separacion es deliberada y tiene
+# consecuencia: toda clave de `CLAVES_EXTERNAS` es un dato que ALGUNA ETAPA
+# EXIGE --su ausencia detiene o espera, y con esa lectura la consumen el
+# pre-vuelo (`anticipo.datos_faltantes_por_punto`), la ayuda de entrada y la
+# pestana 1--; un ensayo de durabilidad es OPCIONAL, sin valor por defecto, y
+# su ausencia no detiene nada: la matriz no actua y la memoria lo dice
+# (`modelos.DURABILIDAD_SIN_ENSAYOS`). Metidos en la tupla de arriba, el
+# pre-vuelo los habria anunciado como seis faltas por punto.
+#
+# Son datos [S] del EMS y del estudio de campo (docs/contrato_entradas.md):
+# el programa no los supone, no los interpola entre puntos y no los deduce
+# --el nivel de abrasion, en particular, NO se deduce de la velocidad--.
+# Los nombres son los de `modelos.ENSAYOS_DE_DURABILIDAD`, la misma tupla
+# que arma `EnsayosDurabilidad`: no hay segunda lista.
+CLAVES_DE_DURABILIDAD: Tuple[str, ...] = ENSAYOS_DE_DURABILIDAD
+CLAVES_DE_DURABILIDAD_TEXTO: Tuple[str, ...] = ("abrasion",)
+# Las que admiten el cero exacto: «no se detecto» es un resultado de ensayo
+# legitimo en una concentracion. El pH y la resistividad no lo admiten.
+CLAVES_DE_DURABILIDAD_CON_CERO: Tuple[str, ...] = (
+    "sulfatos_suelo_ppm", "sulfatos_agua_ppm", "cloruros_ppm")
+ETAPA_DURABILIDAD = "matriz de durabilidad (Sec. 3.3)"
+
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
 NOTA_ESTABILIDAD_CABEZAL = (
@@ -506,6 +536,8 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     los consume (M1 valida `categoria_tr` contra la Tabla N 02) y repetirlo
     aqui seria una segunda fuente de verdad.
     """
+    if clave in CLAVES_DE_DURABILIDAD:
+        return _dato_de_durabilidad(clave, bruto, origen)
     if clave in CLAVES_TEXTO:
         if not isinstance(bruto, str) or not bruto.strip():
             raise DatoInvalidoError(
@@ -613,6 +645,83 @@ def _seccion_receptor_externa(bruto: Any, origen: str) -> DatoDeclarado:
                    f"({ALTURA_RECEPTOR_MAX_FISICA_M} m): una profundidad asi "
                    f"delata una celda en CENTIMETROS; origen: {origen}")
     return DatoDeclarado(nombre=clave, valor=valores, origen=origen)
+
+
+def _dato_de_durabilidad(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
+    """
+    Valida un ensayo de durabilidad declarado (T-4). Es entrada de usuario y
+    se rechaza en la puerta, con la misma forma que `_numero_externo`:
+
+      * `abrasion` es TEXTO y tiene que ser uno de los cuatro niveles de la
+        Table 8-4 de WSDOT (`constantes_normativas.NIVELES_DE_ABRASION`). M2
+        lo vuelve a comprobar: esta es la primera linea, no la unica;
+      * los demas son numeros finitos, nunca booleanos, y no negativos. Las
+        tres concentraciones admiten el cero exacto; el pH y la resistividad
+        no, y el pH tiene ademas el techo fisico de `dominios.PH_MAX_FISICO`.
+
+    LAS CONCENTRACIONES TIENEN EL TECHO DE SU UNIDAD (`PPM_MAX_FISICO`, un
+    millon de ppm: el 100 % de la muestra). La resistividad no tiene techo:
+    `dominios.py` no lo declara y ponerlo aqui seria inventar un valor.
+    """
+    if clave in CLAVES_DE_DURABILIDAD_TEXTO:
+        if not isinstance(bruto, str) or bruto.strip() not in NIVELES_DE_ABRASION:
+            raise DatoInvalidoError(
+                clave, valor=bruto,
+                motivo="tiene que ser uno de los cuatro niveles de abrasion "
+                       "de la Table 8-4 del WSDOT Hydraulics Manual: "
+                       + ", ".join(NIVELES_DE_ABRASION)
+                       + f"; origen: {origen}")
+        return DatoDeclarado(nombre=clave, valor=bruto.strip(), origen=origen)
+    if isinstance(bruto, bool):
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo=f"es un booleano ({bruto!r}), no el resultado de un "
+                   f"ensayo; origen: {origen}")
+    try:
+        valor = float(bruto)
+    except (TypeError, ValueError):
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo=f"no es un numero; origen: {origen}") from None
+    if not math.isfinite(valor):
+        raise DatoInvalidoError(
+            clave, valor=bruto, motivo=f"no es finito; origen: {origen}")
+    admite_cero = clave in CLAVES_DE_DURABILIDAD_CON_CERO
+    if valor < 0 or (not admite_cero and not valor > 0):
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo=("no puede ser negativo" if admite_cero
+                    else "tiene que ser positivo") + f"; origen: {origen}")
+    if clave in CLAVES_DE_DURABILIDAD_CON_CERO and valor > PPM_MAX_FISICO:
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo=f"una concentracion en ppm no puede pasar de "
+                   f"{PPM_MAX_FISICO} (el 100 % de la muestra); origen: "
+                   f"{origen}")
+    if clave == "pH" and valor > PH_MAX_FISICO:
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo=f"fuera de la escala de pH (0 a {PH_MAX_FISICO:g}); "
+                   f"origen: {origen}")
+    return DatoDeclarado(nombre=clave, valor=valor, origen=origen)
+
+
+def ensayos_de_durabilidad(externos: "DatosExternos",
+                           id_punto: str) -> EnsayosDurabilidad:
+    """
+    Los ensayos de durabilidad que valen para ese punto, cada uno con su
+    origen: el del punto pisa al del sitio (`DatosExternos.dato`), y lo que
+    nadie declaro queda en None. NUNCA rellena: sin ningun ensayo devuelve un
+    `EnsayosDurabilidad` vacio, con el que la matriz no actua.
+    """
+    valores: Dict[str, Any] = {}
+    origenes: List[Tuple[str, str]] = []
+    for clave in CLAVES_DE_DURABILIDAD:
+        dato = externos.dato(id_punto, clave)
+        if dato is not None:
+            valores[clave] = dato.valor
+            origenes.append((clave, dato.origen))
+    return EnsayosDurabilidad(origenes=tuple(origenes), **valores)
 
 
 # EL DOMINIO FISICO DE UNA CLAVE QUE TAMBIEN ES COLUMNA. Cuando el mismo dato
@@ -833,11 +942,13 @@ def cargar_datos_externos(ruta: Optional[Path],
 
 
 def _exige_clave(clave: str, donde: str) -> None:
-    if clave not in CLAVES_EXTERNAS:
+    if clave not in CLAVES_EXTERNAS and clave not in CLAVES_DE_DURABILIDAD:
         raise DatoInvalidoError(
             "datos_externos", valor=clave,
             motivo=f"clave no reconocida en {donde}. Las admitidas son: "
-                   + ", ".join(CLAVES_EXTERNAS),
+                   + ", ".join(CLAVES_EXTERNAS)
+                   + "; y los ensayos de durabilidad, opcionales: "
+                   + ", ".join(CLAVES_DE_DURABILIDAD),
         )
 
 
@@ -957,6 +1068,11 @@ class InformePunto:
     # que la memoria imprima «columna vacia -- dato de un tablero externo» en
     # la fila de la columna Y el valor con su origen en la suya.
     punto_completado: Optional[PuntoCritico] = None
+    # --- T-4 --- El dictamen de la matriz de durabilidad (Sec. 3.3). Se
+    # calcula para todo punto que pasa la Fase 2, antes del bucle de MD.
+    # None si el punto no llego a la Fase 3, o si la etapa se bloqueo (hay
+    # entonces un bloqueo `ETAPA_DURABILIDAD` y el bucle de MD no corre).
+    durabilidad: Optional[DictamenDurabilidad] = None
     proteccion: Optional[ProteccionSalida] = None
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
@@ -1528,6 +1644,32 @@ def _fase_2(informe: InformePunto, externos: DatosExternos) -> bool:
                   lambda: exigir_alcance(informe.clasificacion)) is not None
 
 
+def _fase_durabilidad(informe: InformePunto,
+                      externos: DatosExternos) -> None:
+    """
+    Sec. 3.3: la matriz de durabilidad del punto (T-4; INF-3.3.1, INF-5.1.9).
+
+    Corre para todo punto que PASA LA FASE 2, antes del bucle de materiales
+    --es Fase 3--: no necesita el caudal ni la longitud, solo los ensayos
+    declarados --si los hay-- y la columna `sucs_fundacion`. Sin ensayos deja
+    un dictamen «no aplicado», que es lo que la memoria y el volcado imprimen
+    con `DURABILIDAD_SIN_ENSAYOS`. Un punto que se detiene en la Fase 2 (sin
+    luz, o con luz de puente) no llega aqui y no invoca ningun criterio: no
+    hay materiales que filtrar en una obra que no se va a dimensionar.
+
+    SI LA ETAPA SE BLOQUEA --un criterio de la matriz vaciado, un nivel de
+    abrasion que burlo la puerta-- `informe.durabilidad` queda en None y
+    `_fase_diseno` NO corre el bucle de MD: dimensionar con los tres
+    candidatos cuando el filtro no se pudo aplicar seria el relleno en
+    silencio que este proyecto prohibe.
+    """
+    punto = informe.punto_de_calculo
+    informe.durabilidad = _etapa(
+        informe.bloqueos, FASE_DISENO, ETAPA_DURABILIDAD,
+        lambda: matriz_durabilidad(
+            punto, ensayos_de_durabilidad(externos, punto.id)))
+
+
 def _fase_diseno(informe: InformePunto, externos: DatosExternos,
                  alcance: str = ALCANCE_EXPEDIENTE) -> None:
     """
@@ -1546,6 +1688,10 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
                   else _resolver_tw(informe, externos, informe.longitud))
     if informe.longitud is None or informe.tw is None:
         return
+    if informe.durabilidad is None:
+        # La matriz de durabilidad se bloqueo (ver `_fase_durabilidad`): su
+        # bloqueo ya esta registrado y el bucle no corre sin filtro.
+        return
 
     verificar = (_verificador_perfil(informe)
                  if alcance == ALCANCE_PERFIL else None)
@@ -1559,7 +1705,8 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
         lambda: disenar_punto(punto, L=informe.longitud.valor,
                               TW=informe.tw.valor, Q=Q, S=S,
                               verificar=verificar,
-                              registrar=informe.traza.append))
+                              registrar=informe.traza.append,
+                              durabilidad=informe.durabilidad))
 
     if informe.resultado is not None and not informe.resultado.aceptado:
         informe.bloqueos.append(Bloqueo(
@@ -1997,6 +2144,7 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     _completar_s_cauce(informe, externos)
 
     if _fase_2(informe, externos):
+        _fase_durabilidad(informe, externos)
         _fase_diseno(informe, externos, alcance)
         _compuerta_metodo_h_o(informe, alcance)
         if informe.dimensionado:

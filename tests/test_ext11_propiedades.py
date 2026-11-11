@@ -69,7 +69,7 @@ from src.modulos.M4_control import (caudal_por_celda, control_entrada,
                                     resolver_control)
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
 from tests.apoyo.aproximacion import REL_TRANSPORTE
-from tests.apoyo.criterios import declarados
+from tests.apoyo.criterios import con_valor, declarados
 from tests.fixtures.casos_patron import CP5D_FORMA2
 from tests.test_MD import _punto, _todo_cumple
 from tests.test_ext2_multicelda_transicion import CAJON_N3
@@ -432,7 +432,12 @@ def test_V3_juzga_la_estimacion_ALTA_y_no_la_baja(tipo, clave_v_max):
     techo = (normal.V_sedimentacion + normal.V_erosion) / 2
     r = resolver_control(sec, normal.geometria.A * normal.V_sedimentacion, S,
                          L_MARCO, TW_LIBRE, material, normal=normal)
-    with declarados({clave_v_max: techo}):
+    # `con_valor` y no `declarados`: desde T-4 'v_max_tmc' es [A] con
+    # ventana (3.048, 4.572) m/s y la puerta rechaza un techo de 1 m/s. Lo
+    # que se mide aqui es que rama de velocidad juzga V3, no la ventana.
+    with con_valor(clave_v_max, techo,
+                   motivo="techo entre las dos ramas de velocidad, fuera de "
+                          "la ventana de sensibilidad a proposito"):
         v3 = v3_velocidad_maxima(material=material, resultado=r)
     assert not v3.cumple
     assert v3.valor_obtenido == pytest.approx(normal.V_erosion, rel=REL_TRANSPORTE)
@@ -655,8 +660,11 @@ def test_el_motivo_de_descarte_nombra_el_criterio_de_la_progresion_de_cada_forma
     """`is RECTANGULAR -> is not` en `_motivo_descarte` solo cambiaba la clave del texto."""
     from src.modulos.MD import _motivo_descarte
     circular = catalogo(TipoMaterial.CONCRETO_REFORZADO)
-    assert "D_max_catalogo" in _motivo_descarte(circular, "ultimo motivo")
+    # 'D_max_norma_producto' desde T-4: el tope del tubo es el de la serie
+    # de su norma de producto y no 'D_max_catalogo' (INF-3.3.1).
+    assert "D_max_norma_producto" in _motivo_descarte(circular, "ultimo motivo")
     assert "secciones_cajon_normalizadas" in _motivo_descarte(marco, "ultimo motivo")
+    assert "D_max_norma_producto" not in _motivo_descarte(marco, "ultimo motivo")
     assert "D_max_catalogo" not in _motivo_descarte(marco, "ultimo motivo")
 
 

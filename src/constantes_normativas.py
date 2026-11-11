@@ -4040,3 +4040,125 @@ CONSTANTES_DE_REFERENCIA = (
 # de ahi sale la relacion a/c maxima, y de la a/c sale el factor que modifica
 # el recubrimiento del refuerzo. El insumo -- 'exposicion_quimica_ems' -- es
 # un [S] pendiente de ensayo, y mientras no llegue el calculo se detiene.
+
+
+# ===========================================================================
+# --- T-4 --- (cadena T, 2026-11-11) Materiales, espesores y durabilidad
+# ===========================================================================
+# CINCO VISTAS DE CALCULO Y UN [N]. Las cinco se DERIVAN del registro --no se
+# copian-- y son de fuentes tecnicas [C] (AASHTO M 36, ASTM A796, WSDOT) o de
+# una figura referencial de norma peruana (E.050): viven aqui por lo mismo
+# que `HDS5_INLET`, que tampoco es [N]: son TABLAS, y lo que el proyecto
+# ELIGE sobre ellas esta en `criterios_adoptados.py`
+# ('corrugacion_y_espesor_tmc', 'D_max_norma_producto',
+# 'sucs_fundacion_deficiente'). T13/T14 de `test_normativa` y
+# `tests/test_t4_materiales_durabilidad.py` las contrastan con su tabla.
+
+# ---- [N] EG-2013 Subseccion 507.10 «Aguas y Suelos agresivos», pag. 974 ---
+# El unico umbral numerico de durabilidad de TUBERIA que la norma peruana
+# escribe: con agua de pH menor de 5.8 «será necesario proteger la tubería»
+# metalica corrugada (cita EG2013.507.10). EXIGE PROTEGER, no prohibe: la
+# matriz de durabilidad (`M2.matriz_durabilidad`) lo aplica como REQUISITO
+# sobre el TMC, que sigue candidato. El umbral a partir del cual el acero
+# deja de ser alternativa aunque se proteja NO es peruano: es [C]
+# ('durabilidad_tmc_umbrales', WSDOT §8-5).
+PH_MIN_AGUA_TMC_SIN_PROTECCION = 5.8
+NUMERAL_PH_MIN_TMC = ("EG-2013, Subseccion 507.10 'Aguas y Suelos agresivos', "
+                      "pag. impresa 974")
+
+# ---- Las corrugaciones de PLANCHA del catalogo de TMC, con su geometria ---
+# Una entrada por (corrugacion, espesor especificado) de las Tablas 5, 7 y 9
+# de ASTM A796/A796M-13 --68x13, 75x25 y 125x25 mm, las tres que AASHTO M 36
+# Table 6 marca como estandar de 900 mm en adelante--, con la profundidad
+# NOMINAL de la corrugacion tomada del rotulo de AASHTO M 36 Table 1.
+#
+#   clave               «68x13/2.01»: corrugacion / espesor en mm, como se
+#                       imprime. Es lo que 'corrugacion_y_espesor_tmc' elige.
+#   profundidad_m       profundidad nominal de la corrugacion, en METROS.
+#   espesor_m           espesor especificado de la plancha, en METROS.
+#   A_mm2_mm, I_mm4_mm, r_mm   area, inercia y radio de giro de la seccion
+#                       por unidad de longitud, en las unidades de la tabla.
+#                       NO LOS CONSUME NINGUN MODULO HOY: son el insumo del
+#                       procedimiento de A796 (num. 7 a 10) que implementa
+#                       T-5, y viajan aqui para que no los vuelva a leer.
+#   tabla               de que tabla del registro sale la fila.
+#
+# EL ESPESOR DE 1.02 mm NO ENTRA: la nota A de las Tablas 3 y 5 lo reserva al
+# forro interior de la tuberia de doble pared o a tuberia temporal.
+from src.dominios import MILIMETROS_POR_METRO  # noqa: E402  (bloque T-4)
+
+_TABLAS_DE_PLANCHA_TMC = (("68x13", "ASTM_A796.T5"),
+                          ("75x25", "ASTM_A796.T7"),
+                          ("125x25", "ASTM_A796.T9"))
+
+
+def _plancha_corrugada_tmc() -> dict:
+    corrugaciones = _reg.tabla("AASHTO_M36.T1")
+    vista = {}
+    for corrugacion, tabla_id in _TABLAS_DE_PLANCHA_TMC:
+        profundidad_mm = corrugaciones.fila(
+            f"c{corrugacion}").valores["profundidad_nominal_mm"]
+        for fila in _reg.tabla(tabla_id).filas:
+            if fila.llamadas_a_nota:        # nota A: forro o tuberia temporal
+                continue
+            v = fila.valores
+            vista[f"{corrugacion}/{fila.etiqueta_literal}"] = {
+                "corrugacion": corrugacion,
+                "profundidad_m": profundidad_mm / MILIMETROS_POR_METRO,
+                "espesor_m": v["t_mm"] / MILIMETROS_POR_METRO,
+                "A_mm2_mm": v["A"], "I_mm4_mm": v["I"], "r_mm": v["r"],
+                "tabla": tabla_id,
+            }
+    return vista
+
+
+TMC_PLANCHA_CORRUGADA = _plancha_corrugada_tmc()
+
+# ---- En que diametros es ESTANDAR cada corrugacion: AASHTO M 36 Table 6 ---
+# {corrugacion: (diametros nominales en mm con «X»)}. La nota a de la tabla
+# dice que la X marca los tamaños de corrugacion estandar de cada diametro.
+# De aqui sale el tope del TMC para la corrugacion adoptada: 2100 mm con
+# 68x13 y 3600 mm con las dos de 25 mm de profundidad.
+DIAMETROS_ESTANDAR_TMC = {
+    corrugacion: tuple(
+        fila.valores["dn_mm"] for fila in _reg.tabla("AASHTO_M36.T6").filas
+        if fila.valores[f"c{corrugacion}"] == "X")
+    for corrugacion, _tabla_id in _TABLAS_DE_PLANCHA_TMC
+}
+NUMERAL_DIAMETROS_ESTANDAR_TMC = ("AASHTO M 36-03 (2007), Table 6 'Pipe "
+                                  "Sizes', pag. impresa M 36-11")
+
+# ---- Los cuatro niveles de abrasion: WSDOT M 23-03.12, Table 8-4 [C] ------
+# Las CLAVES con que el dato de entrada `abrasion` nombra el nivel del sitio
+# (docs/contrato_entradas.md), en el orden de la tabla, de menor a mayor.
+# El nivel es un dato de CAMPO; el programa no lo deduce de la velocidad.
+NIVELES_DE_ABRASION = tuple(
+    _reg.tabla("WSDOT_HM.T8-4").clave_corta(fila)
+    for fila in _reg.tabla("WSDOT_HM.T8-4").filas)
+NIVEL_DE_ABRASION_SEVERO = NIVELES_DE_ABRASION[-1]
+NUMERAL_NIVELES_DE_ABRASION = ("WSDOT Hydraulics Manual M 23-03.12 (abril "
+                               "2026), Table 8-4 'Pipe Abrasion Levels', "
+                               "pags. impresas 8-27 y 8-28")
+
+# ---- Los quince simbolos SUCS: E.050, Figura 3 (Referencial), pag. 31 -----
+# En MAYUSCULAS, que es como se comparan: la figura imprime «Pt» y los
+# ensayos lo escriben de las dos formas.
+SIMBOLOS_SUCS = tuple(fila.valores["simbolo"].upper()
+                      for fila in _reg.tabla("E050.FIG3").filas)
+NUMERAL_SIMBOLOS_SUCS = ("NTE E.050, Figura 3 'Simbologia de Suelos "
+                         "(Referencial)', pag. impresa 31")
+
+# --- T-4 (auditoria adversarial, H2) --- EL MAYOR DIAMETRO DE TUBERIA DE
+# CONCRETO CON DISEÑO ESTANDAR TABULADO en AASHTO M 170M-04. La serie de
+# diametros designados de las Tablas 1 a 5 llega a 3600 mm, pero las filas
+# por encima de 2700 mm llevan llamada a nota y rayas en lugar de pared y
+# acero: son los «special designs» de la Seccion 7.2, que el fabricante
+# propone con su espesor de pared y el propietario aprueba (citas
+# AASHTO_M170M.7.2.1 y AASHTO_M170M.7.2.2, leidas por imagen; la lectura
+# tabla a tabla esta en la nota de la primera). Es el tope del catalogo de
+# concreto: por encima no hay pared que leer de la norma.
+DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM = 2700
+NUMERAL_DIAMETRO_MAX_ESTANDAR_M170M = (
+    "AASHTO M 170M-04, Tablas 1 y 3 (pags. PDF 3 y 7): ultima fila con pared "
+    "y acero tabulados; por encima, diseño especial de la Seccion 7.2, num. "
+    "7.2.1 y 7.2.2 (pag. impresa M 170M-13)")

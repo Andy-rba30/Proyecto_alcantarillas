@@ -29,6 +29,7 @@ from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP7_CADENA_SISMICA,
                                          CP8_CONTROL_SALIDA)
 from tests.apoyo import estructura
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 
 CLAVES_PENDIENTES = criterios_sin_valor()
@@ -730,7 +731,10 @@ def test_la_escritura_permanente_se_niega_ante_un_valor_multilinea(
     ("F_pga", ("C", "D")),
     ("hds5_embocadura_hdpe", {"K": 0.0098, "M": 2.0}),
     ("diametros_normalizados", {"inicio": 0.9, "paso": 0.15}),
-    ("D_max_catalogo", {"tmc": 2.1, "hdpe": 1.5}),
+    # Hasta T-4 el cuarto caso era 'D_max_catalogo', un dict de una linea.
+    # Desde T-4 ese criterio es opcional y vale None --sin comas que cortar--,
+    # y el caso lo ocupa otro literal de una linea con comas.
+    ("sucs_fundacion_deficiente", ("OL", "OH")),
 ])
 def test_la_escritura_permanente_se_niega_ante_un_valor_de_UNA_LINEA_con_comas(
         tmp_path, criterios_restaurados, clave, nuevo):
@@ -824,9 +828,13 @@ def test_los_opcionales_declarados_hoy():
     esviaje (MAT-O18); declarado, lo aplica como tope del CSV.
     """
     opcionales = {k for k, c in CRITERIOS.items() if c.opcional}
+    # Y desde T-4 el cuarto, 'D_max_catalogo' (INF-3.3.1): sin declarar, el
+    # tope de diametro es el de la serie de la norma de producto; declarado,
+    # solo puede bajarlo.
     assert opcionales == {"v_max_concreto_eleccion",
                           "riesgo_admisible_propietario",
-                          "esviaje_max_grados"}
+                          "esviaje_max_grados",
+                          "D_max_catalogo"}
 
 
 def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():
@@ -939,14 +947,26 @@ def test_el_n_de_hdpe_es_un_rango_y_no_un_valor_puntual():
     """
     Un valor puntual rompe la regla de doble n (Sec. 4.1.1): con un solo
     numero, capacidad y velocidad usan la misma rugosidad y una de las dos
-    deja de ser conservadora. El rango es el del concreto, por analogia.
+    deja de ser conservadora.
+
+    HASTA T-4 el rango era el del concreto, por analogia (0.010 a 0.013).
+    Desde T-4 sale de la fila «Corrugated Polyethylene, Smooth» de la Table
+    B.1 de HDS-5 (0.009 a 0.015) y se lee del registro, no se copia: el
+    test contrasta el criterio contra la tabla (INF-3.2.1).
     """
+    from src.normativa import registro
     n = valor("n_manning_hdpe")
     assert isinstance(n, tuple) and len(n) == 2
     n_min, n_max = n
     assert n_min < n_max
-    assert n_min == pytest.approx(CP2_GEOMETRIA_MANNING["n_min"])
-    assert n_max == pytest.approx(CP2_GEOMETRIA_MANNING["n_max"])
+    fila = registro.construir().tabla("HDS5_3ED.TB.1").fila(
+        "polietileno_corrugado_liso")
+    de_la_tabla = (fila.valores["n_min"], fila.valores["n_max"])
+    assert (n_min, n_max) == pytest.approx(de_la_tabla, rel=REL_TRANSPORTE)
+    assert (n_min, n_max) == pytest.approx((0.009, 0.015), rel=REL_TRANSPORTE)
+    # Y ya no coincide con el del concreto: la analogia se retiro.
+    assert n_min < CP2_GEOMETRIA_MANNING["n_min"]
+    assert n_max > CP2_GEOMETRIA_MANNING["n_max"]
 
 
 # ===========================================================================
@@ -1258,13 +1278,27 @@ def test_lo_que_declara_sin_consumidor_de_verdad_no_tiene_consumidor():
 # tope tabulan hasta 3600 mm (NOR-PRO-01, NOR-PRO-02, MAT-O8), de modo que
 # 2.70 / 2.10 / 1.50 son topes de catalogo adoptados por el proyecto.
 
-CLAVE_TOPES = "D_max_catalogo"
+#
+# Y DESDE T-4 (INF-3.3.1) LA CLAVE ES 'D_max_norma_producto' [C]: el tope de
+# la norma de producto de cada material (2.70 / 3.60 / 1.50 m: en concreto,
+# el ultimo diametro con diseño estandar; en TMC y HDPE, la ultima fila).
+# 'D_max_catalogo' queda como disponibilidad de mercado, opcional y sin
+# valor. El 2.10 m del TMC ya no esta en este dict: lo da la corrugacion
+# adoptada (`M2.tope_de_diametro`), y por eso el orden estricto de abajo se
+# comprueba sobre el tope EFECTIVO.
+CLAVE_TOPES = "D_max_norma_producto"
 
 
 def test_el_hdpe_es_el_material_con_el_tope_mas_restrictivo():
+    from src.modulos.M2_material import tope_de_diametro
     topes = valor(CLAVE_TOPES)
     assert topes["hdpe"] == min(topes.values())
-    assert topes["hdpe"] < topes["tmc"] < topes["concreto_reforzado"]
+    assert topes["hdpe"] < topes["concreto_reforzado"] < topes["tmc"]
+    efectivos = {m: tope_de_diametro(m)[0] for m in topes}
+    assert efectivos["hdpe"] < efectivos["tmc"] < efectivos["concreto_reforzado"]
+    assert efectivos == pytest.approx(
+        {"concreto_reforzado": 2.70, "tmc": 2.10, "hdpe": 1.50},
+        rel=REL_TRANSPORTE)
 
 
 def test_todos_los_topes_de_diametro_son_alcanzables_desde_la_progresion():

@@ -281,11 +281,24 @@ def test_pf3_el_punto_que_deja_de_dimensionar_dice_que_verificacion_lo_tumbo(tmp
     # solo, A-01 sigue dimensionando en TMC (medido: Ø 1.20 m); para que el
     # punto NO dimensione, las otras dos familias llevan su limite al piso de
     # su ventana por `declaraciones_base`, que acompaña a las dos corridas.
+    #
+    # DESDE T-4 EL TMC NO SE PUEDE LLEVAR AL PISO POR LA PUERTA: 'v_max_tmc'
+    # es [A] con ventana (3.048, 4.572) m/s (INF-3.2.4) y con 3.048 m/s el
+    # TMC sigue cumpliendo V3 en A-01. Se lleva por debajo de su ventana con
+    # `con_valor`, que esquiva la puerta y lo dice; el HDPE sigue entrando
+    # por `declaraciones_base`, y es el que mide que la base acompaña a las
+    # dos corridas.
+    from tests.apoyo.criterios import con_valor
     ventana = ca.criterio("v_max_concreto_eleccion").sensibilidad
-    base = {k: ca.criterio(k).sensibilidad[0] for k in ("v_max_tmc", "v_max_hdpe")}
-    r = barrido.barrer(_csv_a01(tmp_path), _externos(), cli.ALCANCE_PERFIL,
-                       "v_max_concreto_eleccion", (ventana[1], ventana[0]),
-                       nota=NOTA, declaraciones_base=base, volcar=cli.informe_json)
+    base = {"v_max_hdpe": ca.criterio("v_max_hdpe").sensibilidad[0]}
+    with con_valor("v_max_tmc", base["v_max_hdpe"],
+                   motivo="techo del TMC por debajo de su ventana para que "
+                          "ningun material cierre: lo que se mide es el "
+                          "barrido, no la ventana"):
+        r = barrido.barrer(_csv_a01(tmp_path), _externos(), cli.ALCANCE_PERFIL,
+                           "v_max_concreto_eleccion", (ventana[1], ventana[0]),
+                           nota=NOTA, declaraciones_base=base,
+                           volcar=cli.informe_json)
     alta, baja = (next(f for f in r.filas if f.valor == v) for v in (ventana[1], ventana[0]))
     assert alta.dimensionado and alta.incumplidas_en_la_progresion == ()
     assert alta.material and "oncreto" in alta.material

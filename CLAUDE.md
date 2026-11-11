@@ -193,7 +193,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -285,7 +285,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -320,7 +320,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -641,14 +641,16 @@ del nombre en las dos carpetas:
   viven **sólo** en el repositorio de normas y están censadas en
   `fuentes.SOLO_EN_EL_REPO_NORMAS`. Copiarlas a `normas/` pone en rojo la
   guardia de PC-23 (`tests/test_ext6_registro_normativo.py`).
-- **Sin `NORMAS_DIR` la suite queda verde y SALTA siete tests**, que es un
+- **Sin `NORMAS_DIR` la suite queda verde y SALTA doce tests** (siete hasta
+  T-2; T-4 sumó los cinco de `tests/test_t4_materiales_durabilidad.py` que
+  abren el WSDOT Hydraulics Manual), que es un
   tercer eje de entorno además de PyMuPDF y Tk: los dos T0 de
   `test_normativa_pdf` (verifican las dieciséis fuentes que sí están y
   después saltan nombrando las dos que faltan), los cuatro de
   `tests/test_t0_gobernanza.py` que abren los dos PDF nuevos, y la mitad de
   la guardia de PC-23 que mira el repositorio enlazado. `verificar_sesion.py`
   lo dice en su paso 5 como AVISO. **Una sesión de la cadena T no cierra con
-  esos siete saltados**: enlaza el repositorio y los corre.
+  esos doce saltados**: enlaza el repositorio y los corre.
 - **Un `NORMAS_DIR` que apunta a una carpeta que no existe no se calla**:
   `FileNotFoundError`. Quien definió la variable quiso enlazar el repositorio,
   y caer en silencio a `normas/` le daría una suite verde que no verificó lo
@@ -674,10 +676,10 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4406**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4537**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
-o no por `NORMAS_DIR`: son siete saltos más sin él, descritos en «Dónde
+o no por `NORMAS_DIR`: son doce saltos más sin él (siete hasta T-2), descritos en «Dónde
 están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
 
@@ -720,9 +722,12 @@ están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonce
   que S12 documentó. Con los marcados `pdf` de otros archivos eran 35 en
   total hasta T-0, **39** desde T-0, que sumó cuatro en
   `tests/test_t0_gobernanza.py` (la portada, las páginas y la paginación de
-  HEC-14 y del WSDOT Hydraulics Manual), y son **40** desde T-2, que sumó
+  HEC-14 y del WSDOT Hydraulics Manual), **40** desde T-2, que sumó
   el de las cifras del ejemplo publicado de HDS-5 contra su página
-  (`tests/test_t2_hidraulica.py`).
+  (`tests/test_t2_hidraulica.py`), y son **55** desde T-4, que sumó los
+  quince de `tests/test_t4_materiales_durabilidad.py` que fijan en su página
+  los números que el cálculo toma de WSDOT, AASHTO LRFD, HDS-5, EG-2013,
+  ASTM A796 y la E.050.
 
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
@@ -733,7 +738,61 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-2 de la cadena T (2026-11-11) sumó CIENTO SETENTA Y UN
+independientes. **T-4 de la cadena T (2026-11-11, integrado el 12 detrás de
+T-2) sumó CIENTO TREINTA Y UN tests netos**, quince con la marca `pdf` y
+ninguno dependiente de Tk: los 115 de
+`tests/test_t4_materiales_durabilidad.py` —la aceptación de material,
+durabilidad y topes: el espesor de pared del TMC derivado de la corrugación
+y la plancha adoptadas (`corrugacion_y_espesor_tmc` [A]: 13 + 2.01 mm, M 36
+Table 1 y núm. 8.1.1) y el del HDPE del diámetro exterior máximo de AASHTO
+LRFD Table A12-11, con 7.A y V7 recalculados a mano sobre A-01 y B-01; el
+tope de diámetro por norma de producto (`D_max_norma_producto` [C]: 2.70 /
+3.60 / 1.50 m, y en concreto el último DISEÑO ESTÁNDAR de M 170M, no la
+última fila de su serie), la corrugación como tope del TMC y
+`D_max_catalogo` [A] opcional que sólo baja; `v_max_tmc` [A] con ventana
+(3.048, 4.572) y `v_max_hdpe` [C] citado del §8-3.3 de WSDOT; el n del HDPE
+[C] de HDS-5 Table B.1; la matriz de durabilidad como filtro real de
+`M2.materiales_candidatos` con seis ensayos opcionales que entran por
+`--datos-externos` (`servicio.CLAVES_DE_DURABILIDAD`, fuera de
+`CLAVES_EXTERNAS` para que el pre-vuelo no los anuncie como faltas) y que
+sin ensayos imprime «durabilidad: sin ensayos, matriz no aplicada»; el aviso
+de marco leído de `sucs_fundacion` contra `sucs_fundacion_deficiente` [A]; y
+las correcciones del auditor adversarial (H1 a H11), entre ellas que
+`MD.disenar_punto` no acepta un candidato si uno ANTERIOR quedó sin evaluar
+por un dato que falta —lo que invierte el «caso mixto» que EXT-1 había
+dejado sin cambio en PC-28, ficha T4-10—, los criterios electroquímicos de
+AASHTO LRFD para acero galvanizado enterrado aplicados por analogía
+(`suelo_agresivo_acero_lrfd` [C]) con efecto declarado
+(`suelo_agresivo_lrfd_sobre_tmc` [A] = `aviso` | `excluye`), EG-2013 507.10
+aplicada entera y el aviso fijo del Manual para la TMC candidata—; los diez
+anclajes de `test_decisiones_diferidas` para las fichas de la Parte XLII
+(T4-01..10); y los seis que crecen solos en `test_ext5_forma_gui` con los
+seis criterios nuevos (88 donde T-2 dejó 82). No se
+escribieron en rojo primero: el registro y las fichas fueron antes, y el
+archivo lo dice. Ningún archivo restó tests; se reescribieron al contrato
+nuevo `test_M2_material`, `test_M3_hidraulica`, `test_M5_verificaciones`,
+`test_MD`, `test_criterios_adoptados`, `test_declaracion`,
+`test_ext11_propiedades`, `test_pf3_barrido`, `test_cierre_c05`,
+`test_guardias_de_la_suite`, `test_memoria_sustentada`, `test_sin_literales`
+(`src/dominios.py`: 8), `test_normativa` y `test_ext1_entradas` (el caso
+mixto de PC-28), y `test_t0_gobernanza` ganó la fila de T-4 en
+`LO_QUE_ESCRIBIO_CADA_PROMPT`. Cierra INF-5.1.17, INF-3.3.4, INF-3.3.1,
+INF-3.2.4, INF-5.1.9 e INF-5.1.16, y en parte INF-3.2.1 (sólo el HDPE). La
+línea base de la Familia C se regeneró sobre el árbol fusionado y se midió
+contra `ad5cb97` en los doce pares punto × corrida: material, sección,
+código, estado, veredicto, valor obtenido y admisible de cada verificación y
+tipo de cada bloqueo son idénticos; cambian la lista de materiales EVALUADOS
+(B-01 de la corrida ancha pasa de 10 a 21 escalones), el texto de los
+motivos, el criterio que V9 cita, las líneas y el bloque de durabilidad, los
+criterios usados y las huellas; los dos CSV de resumen y la memoria del
+cajón no cambian un byte, y **ningún diámetro se movió**. De las cuatro
+configuraciones se MIDIÓ UNA, «sí · no», con el repositorio de normas
+enlazado: 4521 passed, 16 skipped, collected 4537 (y sin `NORMAS_DIR`, sobre
+el mismo árbol: 4509 passed, 28 skipped). **Las otras tres se dicen como
+derivadas, no como medidas**, por lo mismo que en T-0: el contenedor no
+tiene `tkinter` y desinstalar PyMuPDF apagaría la verificación normativa de
+la sesión; la derivación suma 131 a las de T-2 y pasa 15 de ellos a
+`skipped` en las dos columnas sin PyMuPDF. **T-2 de la cadena T (2026-11-11) sumó CIENTO SETENTA Y UN
 tests netos** (173 nuevos y dos casos parametrizados que desaparecen), y
 uno solo lleva la marca `pdf`; ninguno depende de Tk: los 160 de
 `tests/test_t2_hidraulica.py` —la aceptación de los cierres de método de la
@@ -1552,7 +1611,7 @@ EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
-4178; T-0 de la cadena T: 4235; T-2: 4406. La
+4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1564,16 +1623,18 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4403 (**derivado** en T-2, no medido: el contenedor no tiene tkinter) | 3 |
-| sí | no | 4390 (**MEDIDO** en T-2 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
-| no | sí | 4363 (**derivado**, no medido) | 43 |
-| no | no | 4350 (**derivado**, no medido) | 56 |
+| sí | sí | 4534 (**derivado** en T-4, no medido: el contenedor no tiene tkinter) | 3 |
+| sí | no | 4521 (**MEDIDO** en T-4 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
+| no | sí | 4479 (**derivado**, no medido) | 58 |
+| no | no | 4466 (**derivado**, no medido) | 71 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
-(`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan siete menos y saltan
-siete más (medido en «sí · no»: 4383 passed, 23 skipped); las dos sin
-PyMuPDF, uno menos y uno más, porque seis de los siete ya iban saltados por
-la marca `pdf`. Hasta T-0 la tabla decía 4172 / 4159 / 4137 / 4124, medidos
+(`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DOCE menos y saltan
+doce más desde T-4 (medido en «sí · no»: 4509 passed, 28 skipped; eran siete
+hasta T-2: T-4 sumó los cinco de `tests/test_t4_materiales_durabilidad.py`
+que abren el WSDOT Hydraulics Manual); las dos sin PyMuPDF, uno menos y uno
+más, porque los otros once ya iban saltados por la marca `pdf`. Tras T-2 la
+tabla decía 4403 / 4390 / 4363 / 4350, medida sólo la segunda. Hasta T-0 la tabla decía 4172 / 4159 / 4137 / 4124, medidos
 los cuatro en el cierre del 2026-09-22 sobre `19bcf5a`; tras T-0, 4232 /
 4219 / 4193 / 4180, medida sólo la segunda.
 

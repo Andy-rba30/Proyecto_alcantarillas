@@ -134,6 +134,15 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # La analogia de V4 se verifico contra el PDF y no se toco V4.
         ESTADO_VERIFICADO: {"INF-3.2.5"},
     },
+    "T-4": {
+        # Con los numeros del INFORME: el prompt cita INF-5.1.17 como
+        # «INF-5.1.13». INF-5.1.9 e INF-5.1.16 no los nombraba ningun prompt
+        # y el orquestador los asigno a T-4.
+        ESTADO_CERRADO: {"INF-5.1.17", "INF-3.3.4", "INF-3.3.1", "INF-3.2.4",
+                         "INF-5.1.9", "INF-5.1.16"},
+        # Solo la mitad del HDPE: `n_manning_cajon` sigue vacio.
+        ESTADO_PARCIAL: {"INF-3.2.1"},
+    },
 }
 
 
@@ -570,10 +579,17 @@ def test_las_dos_fuentes_nuevas_viven_solo_en_el_repositorio_de_normas():
         assert Path(fu.FUENTES[id_].archivo_pdf).name not in en_la_app
 
 
-def test_ninguna_cita_se_apoya_todavia_en_las_dos_fuentes_nuevas():
-    """T-0 las da de alta; citarlas (con pagina y frase) es de T-4 y T-8."""
+def test_hec14_sigue_sin_citas_y_wsdot_las_tiene_desde_t4():
+    """
+    T-0 dio de alta las dos fuentes sin citas; citarlas (con pagina y frase)
+    era de T-4 y T-8. T-4 cito el WSDOT Hydraulics Manual --abrasion, pH,
+    resistividad, velocidad--, cada cita verificada contra su pagina por
+    `test_normativa_pdf`; HEC-14 sigue sin citas hasta T-8. El test se
+    llamaba «…ninguna cita se apoya todavia en las dos fuentes nuevas».
+    """
     reg = _registro.construir()
-    assert not reg.citas_de("HEC14") and not reg.citas_de("WSDOT_HM")
+    assert not reg.citas_de("HEC14")
+    assert reg.citas_de("WSDOT_HM")
 
 
 def test_el_indice_del_registro_las_lista_como_presentes():
