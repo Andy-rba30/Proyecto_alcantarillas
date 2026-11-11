@@ -1127,10 +1127,16 @@ H_O_CONDICION_APLICACION = (
 # Existe por NOR-MEM-01, que es un defecto del PRODUCTO y no del codigo: el
 # matiz "el numeral recomienda, no prohibe" viajaba solo dentro de
 # M5.NUMERAL_V2, o sea dentro de la tabla de verificaciones de cada punto. Esa
-# tabla no se imprime si el punto no llego a evaluarse -- y hoy no llega,
-# porque 'homogeneidad_serie_fen' bloquea el Q de toda la Familia A --, de modo
+# tabla no se imprime si el punto no llego a evaluarse -- y en la corrida de
+# referencia de entonces no llegaba: se detenia antes, en un criterio sin
+# declarar --, de modo
 # que la palabra "recomend" aparecia CERO veces en la memoria generada mientras
 # el repositorio afirmaba que era "lo unico que la memoria imprime de V2".
+# (Este comentario atribuia la detencion a que «'homogeneidad_serie_fen'
+# bloquea el Q de toda la Familia A» hasta T-0, INF-5.1.1: ningun modulo lee
+# ese criterio y un Q vacio es `DatoFaltanteError`. La razon del bloque no
+# cambia: una tabla que depende de un resultado no puede ser el unico sitio
+# donde viaje el caracter de un umbral.)
 #
 # Un umbral aplicado como exigencia cuando la fuente lo escribe como
 # recomendacion es una decision del proyecto, no una lectura de la norma, y se

@@ -210,7 +210,7 @@ def test_una_fila_por_formula_distinta_y_las_emisiones_suman_los_pasos(pasos):
     # Las firmas de la corrida de referencia son al menos las de la cadena
     # hidraulica: si M4 dejara de emitir alguna, el indice lo diria.
     fundamentos = {f.fundamento_id for f in filas}
-    assert {"F4.SECCION", "F4.MANNING", "F4.YC_RECT", "F4.FORMA_HDS5",
+    assert {"F4.SECCION", "F4.MANNING", "F4.YC", "F4.FORMA_HDS5",
             "F4.CONTROL", "F4.HO", "F5.V1", "F5.V2", "F5.V2b", "F5.V3",
             "F5.V4", "F1.TW", "F2.LUZ", "F2.TR"} <= fundamentos
 
@@ -220,7 +220,7 @@ def test_las_filas_conservan_el_orden_de_la_memoria_dentro_de_cada_fase(pasos):
     filas = ind.filas_del_indice(pasos, ind.emisores_por_fundamento())
     ids = [f.fundamento_id for f in filas]
     assert ids.index("F4.SECCION") < ids.index("F4.MANNING") \
-        < ids.index("F4.YC_RECT") < ids.index("F4.HO")
+        < ids.index("F4.YC") < ids.index("F4.HO")
     assert ids.index("F5.V1") < ids.index("F5.V4")
 
 

@@ -245,40 +245,52 @@ contrasta contra CP-8 y contra el valor que saldria con 29.
     SOLO para la formula de Laushey de M6. Son dos constantes con dos
     origenes y el proyecto las mantiene separadas a proposito.
 
-h_o TIENE NUMERAL Y TIENE CONDICION DE USO, y hasta esta correccion el
-modulo no traia ninguna de las dos (NOR-HDS-05). Es el num. 3.3.3 "Outlet
-Control", pag. impresa 3.24 de la 3a ed., y alli mismo dice que la
-aproximacion "can only be used if the barrel flows full for most of its
-length" y que "it should not be used if the inlet is not submerged". Este
-modulo la aplica SIEMPRE, tambien cuando el barril no llena, porque
-comprobarlo exige un perfil de la lamina de agua que el script no calcula.
-No se disimula: el texto literal y su condicion viven en
-`constantes_normativas.H_O_NUMERAL` / `H_O_CONDICION_TEXTO`, entran en
-`UMBRALES_DE_VERIFICACION` -- uno de los bloques que M11 imprime sin depender
-de ningun resultado, junto al de alcance y al de acotaciones -- y la
-verificacion pendiente esta declarada en el criterio
-'geometria_control_salida', que presupone exactamente lo mismo.
+h_o TIENE NUMERAL Y TIENE CONDICION DE USO, y hasta NOR-HDS-05 el modulo no
+traia ninguna de las dos. Es el num. 3.3.3 "Outlet Control", pag. impresa
+3.24 de la 3a ed., y alli mismo dice que la aproximacion "can only be used if
+the barrel flows full for most of its length" y que "it should not be used if
+the inlet is not submerged". `control_salida()` la CALCULA siempre -- es una
+pieza y no decide nada --; lo que se hace con su numero lo decide
+`hw_gobernante()` con el perfil de la lamina delante (ver abajo). El texto
+literal y su condicion viven en `constantes_normativas.H_O_NUMERAL` /
+`H_O_CONDICION_TEXTO` y entran en `UMBRALES_DE_VERIFICACION` -- uno de los
+bloques que M11 imprime sin depender de ningun resultado, junto al de alcance
+y al de acotaciones --.
 
-De las tres condiciones que HDS-5 le pone a h_o, DOS se evaluan punto por
-punto -- los limites HW/D < 0.75 ("should not be used") y HW/D < 1.2
-("caution should be used"), en `control_salida()` --, y la tercera, que el
-barril fluya lleno, no: exige un perfil de la lamina de agua que este script
-no calcula. Declarar las tres sin evaluar ninguna, pudiendo evaluar dos, era
-extender a toda la nota una imposibilidad que solo vale para una, y dejaba la
-memoria avisando de que "algun punto podria estar fuera de rango" sin decir
-cual lo esta.
+LAS TRES CONDICIONES QUE HDS-5 LE PONE A h_o SE EVALUAN PUNTO POR PUNTO DESDE
+E-A (2026-09-21). Los dos limites sobre HW/D -- < 0.75 ("should not be used")
+y < 1.2 ("caution should be used") -- los evalua `control_salida()`. La
+tercera, que el barril fluya lleno en la mayor parte de su longitud, la MIDE
+`perfil_lamina()` por paso directo y la imprime el paso 4.3c contra el
+criterio [A] 'fraccion_llena_mayor_parte'.
 
-Y DESDE EXT-3 EL LIMITE DE 0.75 NO ES UN AVISO (EXT-M-02, v8 §4.3 enmendada en
-EXT-0). Cuando el control de salida gobierna y HW/D cae bajo 0.75 el metodo
-aproximado NO esta definido para ese punto: el HW que sale no es un resultado
-sino un numero fuera del dominio del metodo. Este modulo sigue sin lanzar --
-calcula, marca `h_o_fuera_de_rango` y juzga el paso F4.HO como DIFERIDO con
-el motivo «metodo no evaluable» -- y quien convierte la bandera en `Bloqueo`
-es la corrida (`servicio.correr_punto`), leyendo el MISMO campo que el paso juzga:
-diferible a nivel de perfil, no a nivel de expediente. Nunca es un
-`Verificacion(cumple=False)`: subir de diametro solo baja HW/D (0.589 ->
-0.526 medido) y recorrer el catalogo hasta `DisenoNoFactibleError` seria
-rechazar por una condicion que ningun diametro puede cumplir.
+    ESTOS DOS PARRAFOS DECIAN LO CONTRARIO HASTA T-0 (INF-5.1.4): que el
+    modulo aplicaba h_o «SIEMPRE, tambien cuando el barril no llena, porque
+    comprobarlo exige un perfil de la lamina de agua que el script no
+    calcula», y que la tercera condicion «no» se evaluaba. Fue cierto hasta
+    E-A, que implemento el perfil, y el docstring no se entero.
+
+BAJO 0.75 LA APROXIMACION NO SE USA, y el paso F4.HO lo juzga NO_CUMPLE --no
+DIFERIDO--. Cuando la aproximacion daria control de salida con HW/D < 0.75,
+el HW de salida que compite es el del REMANSO (paso 4.3d; HDS-5 pag. impresa
+3.12: «For lower headwaters, backwater calculations are required»); si el
+remanso no alcanza la entrada, el control de salida no impone carga y
+gobierna la ENTRADA. En la banda 0.75-1.2 compite el mayor de aproximacion y
+remanso, y por encima de 1.2 la aproximacion sola, con el remanso impreso
+como comprobacion. Lo que NO se cumple es la condicion de USO de la
+aproximacion, no el diseño: por eso es el veredicto de un paso de memoria y
+nunca una `Verificacion(cumple=False)` -- subir de diametro solo baja HW/D
+(0.589 -> 0.526 medido), y rechazar por ahi seria rechazar por una condicion
+que ningun diametro puede cumplir --.
+
+    ENTRE EXT-3 Y E-A FUE DE OTRA MANERA, y este parrafo lo seguia contando en
+    presente (INF-5.1.4): sin remanso que poner en su lugar, el paso se
+    juzgaba DIFERIDO con el motivo «metodo no evaluable» y la corrida
+    (`servicio.correr_punto`) convertia la bandera `h_o_fuera_de_rango` en
+    un `Bloqueo` diferible a perfil. Con perfil la bandera queda en False
+    --donde la aproximacion esta fuera de rango, no se usa-- y esa compuerta
+    se conserva como guardia sin alcance en produccion (ficha EA-04 de
+    docs/decisiones_diferidas.md).
 
 Regimen del barril y velocidad de salida (HDS-5 3.1.6; EXT-3)
 --------------------------------------------------------------
@@ -289,8 +301,11 @@ hacian siempre con el flujo uniforme de M3 (EXT-M-01, PC-04):
     LLENO               TW >= D: el TW llena el barril hasta la clave. V1 y V2
                         se comparan con D y con Q_celda/A_llena.
     PARCIALMENTE LLENO  en otro caso. Bajo control de ENTRADA el tirante es
-                        el normal (M3); bajo control de SALIDA no se conoce
-                        sin el perfil de la lamina y V1/V2 quedan pendientes.
+                        el normal (M3); bajo control de SALIDA es el del
+                        perfil de la lamina (E-A): V1 compara su tirante
+                        maximo y V2 su velocidad minima, Q_celda/A(y_max).
+                        (Hasta E-A este renglon decia que no se conocia y
+                        que V1 y V2 quedaban sin evaluar; INF-5.1.4.)
 
     V_salida            control de SALIDA: Q_celda / A(min(D, max(TW, y_c)))
                         -- tirante critico, TW o seccion entera, segun el TW
@@ -319,14 +334,26 @@ nivel del receptor.
 
 Excepciones
 -----------
-    DatoInvalidoError        Q, D, S, L, n o TW no son fisicamente validos
-                             para plantear el problema.
-    DisenoNoFactibleError    la combinacion Q/D/S lleva la Forma 1 fuera de
-                             rango y devuelve HWi/D <= 0 (ver mas arriba). No
-                             es un dato invalido: el dato esta bien y lo que
-                             no cierra es el metodo sobre esa combinacion.
-    CriterioPendienteError   llega desde 'ke_entrada' o
-                             'geometria_control_salida' si alguno se vacia.
+    DatoInvalidoError        Q, D, S, L, n, ke o TW no son fisicamente validos
+                             para plantear el problema; o un criterio trae
+                             un valor que no es de su conjunto.
+    CriterioPendienteError   (1) la correccion por pendiente deja HWi/D <= 0
+                             y 'hw_entrada_fuera_de_rango' esta sin declarar
+                             (PF-1): el mensaje lleva el par (Q, S) y S*;
+                             (2) llega desde 'ke_entrada', 'ke_entrada_cajon',
+                             'geometria_control_salida',
+                             'metodo_transicion_hds5' o
+                             'fraccion_llena_mayor_parte' si alguno se vacia.
+    DisenoNoFactibleError    SOLO si 'hw_entrada_fuera_de_rango' esta
+                             declarado «descartar» y HWi/D <= 0. NO ES FIJA:
+                             hasta PF-1 este bloque la daba como la salida
+                             unica de ese caso (INF-5.1.4), y desde PF-1 es
+                             una de tres -- sin declarar, CriterioPendiente;
+                             «energia_critica», HW = H_c con su piso impreso;
+                             «descartar», esta --.
+    LimiteNumericoError      cada dato pasa su validacion y la aritmetica no
+                             cabe: el area critica se anula en el borde del
+                             intervalo, o una carga sale no finita.
 
 Uso
 ---
@@ -2152,6 +2179,16 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
     # posteriores lo consumen (la Forma 1 por H_c, y h_o del control de
     # salida). Vale para las dos formas, y por eso lo usan las dos.
     #
+    # DESDE T-0 EL CODIGO DEL PASO ES `F4.YC` (INF-5.1.10): `F4.YC_RECT`
+    # nombraba solo a la rectangular y el paso se emite tambien para la
+    # circular. El nombre anterior sigue resolviendo como alias
+    # (`normativa.fundamentos.ALIAS_DE_FUNDAMENTO`) para quien lea una traza
+    # guardada. Y gana `formula_cita_id`, que no tenia (C4-1): la condicion
+    # de flujo critico tal como la escribe el HDS-5 en su pag. A.3
+    # (`HDS5_3ED.A.3.1#CRITICO`), que no depende de la forma de ecuacion --
+    # las dos formulas de abajo son esa misma condicion, resuelta por Brent o
+    # despejada --.
+    #
     # LA FORMULA SI DEPENDE DE LA VIA, y `critico.cerrado` es quien lo sabe.
     # Imprimir «resuelta con Brent» sobre un numero que salio de una formula
     # cerrada dejaria al revisor sin poder rehacerlo, que es exactamente el
@@ -2171,7 +2208,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      "del tirante", cifras=CIFRAS_FACTOR))
 
     de_critico = paso(
-        "F4.YC_RECT",
+        "F4.YC",
         codigo="4.2.1",
         que="Tirante critico de la seccion",
         formula=("y_c = (q^2/g)^(1/3) con q = Q/T: la solucion CERRADA de "
@@ -2179,6 +2216,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                  if critico.cerrado else
                  "Q^2 / g = A^3 / T, resuelta con Brent sobre el parametro de "
                  "llenado de la seccion"),
+        formula_cita_id="HDS5_3ED.A.3.1#CRITICO",
         sustitucion=tuple(magnitudes_criticas),
         resultado=Magnitud("y_c", critico.y_c, "m",
                            "tirante critico; no depende de n",
@@ -2858,8 +2896,12 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                 "si 0.75 <= HW_aprox/D < 1.2, y el de la aproximacion (4.3) si "
                 "no; sin remanso que alcance la entrada bajo 0.75, gobierna la "
                 "entrada",
-        formula_cita_id="HDS5_3ED.A.2",
-        citas_textuales=("HDS5_3ED.3.1.4#0_75D",),
+        # T-0 (INF-5.1.10): este paso citaba `HDS5_3ED.A.2`, que son las
+        # ECUACIONES DE CONTROL DE ENTRADA y no dicen cual de los dos
+        # controles manda. Lo dice el procedimiento de diseño del Capitulo 3:
+        # num. 3.3.5 «Evaluation of Results», pag. impresa 3.25 / PDF 107.
+        formula_cita_id="HDS5_3ED.3.3.5#GOBIERNA",
+        citas_textuales=("HDS5_3ED.3.3.5#GOBIERNA", "HDS5_3ED.3.1.4#0_75D"),
         sustitucion=(
             Magnitud("HW_entrada", entrada.HW, "m", "pieza 4.2",
                      cifras=CIFRAS_MAGNITUD),

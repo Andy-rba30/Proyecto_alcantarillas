@@ -669,12 +669,12 @@ def test_el_paso_del_critico_dice_por_que_via_se_resolvio():
     cerrada deja al revisor sin poder rehacerlo. Es el mismo defecto que C3
     tuvo que corregir en el paso de la Forma 2, mudado a la otra pieza.
     """
-    del_marco = _paso(_pasos_del_marco(), "F4.YC_RECT")
+    del_marco = _paso(_pasos_del_marco(), "F4.YC")
     assert "solucion CERRADA" in del_marco.formula
     assert "sin Brent" in del_marco.formula
     assert "T" in [mag.simbolo for mag in del_marco.sustitucion]
 
-    de_la_circular = _paso(_pasos_circulares(), "F4.YC_RECT")
+    de_la_circular = _paso(_pasos_circulares(), "F4.YC")
     assert "Brent" in de_la_circular.formula
     assert "CERRADA" not in de_la_circular.formula
     assert "T" not in [mag.simbolo for mag in de_la_circular.sustitucion]
@@ -689,7 +689,7 @@ def test_el_paso_del_critico_no_toma_prestado_el_fundamento_de_los_controles():
     for pasos in (_pasos_del_marco(), _pasos_circulares()):
         critico = [p for p in pasos if p.codigo == "4.2.1"]
         assert len(critico) == 1
-        assert critico[0].fundamento_id == "F4.YC_RECT"
+        assert critico[0].fundamento_id == "F4.YC"
 
 
 def test_la_sustitucion_de_los_pasos_nombra_las_dimensiones_de_la_forma():
@@ -812,15 +812,15 @@ def test_la_memoria_dice_cuando_el_critico_queda_topado():
     ciega a la forma (`seccion.altura`, que es contrato del protocolo).
     """
     caso = CP6R_TECHO_DEL_CRITICO
-    topado = _paso(_pasos_del_marco(Q=caso["Q"], S=caso["S"]), "F4.YC_RECT")
+    topado = _paso(_pasos_del_marco(Q=caso["Q"], S=caso["S"]), "F4.YC")
     assert "queda topado" in topado.nota_del_proyecto
     assert "num. 3.3.3" in topado.nota_del_proyecto
 
     # Y NO se imprime cuando no muerde, ni en el marco ni en la circular.
     assert "queda topado" not in _paso(_pasos_del_marco(),
-                                       "F4.YC_RECT").nota_del_proyecto
+                                       "F4.YC").nota_del_proyecto
     assert "queda topado" not in _paso(_pasos_circulares(),
-                                       "F4.YC_RECT").nota_del_proyecto
+                                       "F4.YC").nota_del_proyecto
 
 
 def test_la_guardia_de_finitud_esta_escrita_en_positivo_y_negada():

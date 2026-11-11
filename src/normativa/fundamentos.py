@@ -40,11 +40,44 @@ from .esquema import EstadoFundamento, Fundamento, Verbo
 
 FUNDAMENTOS: Dict[str, Fundamento] = {}
 
+# LOS CODIGOS DE PASO QUE CAMBIARON DE NOMBRE, y a cual apuntan hoy (T-0).
+#
+# El id de un fundamento es tambien el CODIGO DEL PASO que lo emite: viaja en
+# `PasoDeMemoria.fundamento_id`, es el ancla de la ficha en la memoria HTML y
+# la clave con que un lector de la traza busca un paso. Renombrarlo sin mas
+# rompe a quien guardo el nombre viejo --una traza volcada, un indice de
+# formulas sellado, un script que filtra pasos--. Por eso el nombre anterior
+# no se borra: se censa aqui, y las tres puertas que resuelven un id lo
+# entienden (`Registro.fundamento`, `modelos.paso` y `id_vigente`, que es la
+# que un lector usa para comparar un id guardado con uno recien emitido).
+#
+# UN ALIAS NO ES UN SEGUNDO FUNDAMENTO: no esta en `FUNDAMENTOS`, no aparece
+# en `Registro.fundamentos` ni en los manifiestos, y lo que se EMITE es
+# siempre el id vigente. Solo sirve para leer.
+#
+#   F4.YC_RECT -> F4.YC   el paso del tirante critico. El id decia «RECT»
+#                         porque lo redacto el plan de la Familia C para el
+#                         marco, y desde C4 funda el paso de LAS DOS formas
+#                         (anotado como C4-2 en docs/ruta_familia_c.md, sin
+#                         corregir; INF-5.1.10).
+ALIAS_DE_FUNDAMENTO: Dict[str, str] = {
+    "F4.YC_RECT": "F4.YC",
+}
+
+
+def id_vigente(id_: str) -> str:
+    """El id con que hoy se emite un fundamento, dado el vigente o un alias."""
+    return ALIAS_DE_FUNDAMENTO.get(id_, id_)
+
 
 def _fundamento(**kw) -> Fundamento:
     f = Fundamento(**kw)
     if f.id in FUNDAMENTOS:
         raise ValueError(f"fundamento duplicado: {f.id}")
+    if f.id in ALIAS_DE_FUNDAMENTO:
+        raise ValueError(
+            f"«{f.id}» es el nombre ANTERIOR de «{ALIAS_DE_FUNDAMENTO[f.id]}» "
+            "(ALIAS_DE_FUNDAMENTO): un alias no puede volver a ser un id")
     FUNDAMENTOS[f.id] = f
     return f
 
@@ -219,7 +252,11 @@ CONTROL = _fundamento(
         "exige MAS carga, porque es el que el flujo tiene que vencer para "
         "pasar. Calcular uno solo no es un atajo: es no saber cual se calculo."),
     verbo=Verbo.DEFINE,
-    citas=("HDS5_3ED.A.2", "HDS5_3ED.3.1.4#K"),
+    # T-0 (INF-5.1.10): entra la tercera, que es la que dice «adopcion del
+    # mayor». Las dos primeras sostienen como se calcula cada control; ninguna
+    # decia cual manda, y el paso 4.4 citaba la A.2 --ecuaciones de entrada--
+    # como si lo dijera.
+    citas=("HDS5_3ED.A.2", "HDS5_3ED.3.1.4#K", "HDS5_3ED.3.3.5#GOBIERNA"),
     que_pasa_si_no_se_hace=(
         "El HW impreso seria el de un regimen que quiza no gobierna, y las "
         "verificaciones que cuelgan de el --V4 resguardo bajo subrasante, V5 "
@@ -1119,8 +1156,15 @@ SECCION = _fundamento(
 # Lo que NO cambia: el `verbo`. DEFINE esta sostenido por el `caracter` de las
 # dos citas (A.2 es DEFINICION, 3.3.3#HO es APROXIMACION) y es el correcto:
 # el paso no afirma una obligacion, afirma una cadena de dependencias.
-YC_RECT = _fundamento(
-    id="F4.YC_RECT",
+#
+# T-0 (INF-5.1.10): EL ID PASA A `F4.YC`. Decia `F4.YC_RECT` y fundaba el paso
+# de las dos formas desde C4; el nombre anterior sigue resolviendo como alias
+# (`ALIAS_DE_FUNDAMENTO`, arriba). Gana ademas la cita que le faltaba: la
+# condicion de flujo critico que la fuente escribe (`HDS5_3ED.A.3.1#CRITICO`),
+# que es la `formula_cita_id` del paso. Las otras dos se conservan: sostienen
+# el `por_que` --para que se calcula--, no la formula.
+YC = _fundamento(
+    id="F4.YC",
     fase=F4,
     que_paso="Tirante critico de la seccion, y la energia critica H_c",
     por_que=(
@@ -1145,7 +1189,8 @@ YC_RECT = _fundamento(
         "HDS-5 en su num. 3.3.3."),
     verbo=Verbo.DEFINE,
     citas=("HDS5_3ED.3.3.3#HO",     # sostiene DEFINE (definicion/aproximacion)
-           "HDS5_3ED.A.2"),         # DEFINICION
+           "HDS5_3ED.A.2",          # DEFINICION
+           "HDS5_3ED.A.3.1#CRITICO"),   # DEFINICION: la condicion de flujo critico
     que_pasa_si_no_se_hace=(
         "El control de salida se queda sin h_o y la Forma 1 sin H_c: los dos "
         "pasos que producen el HW gobernante. Y si en vez de la solucion "
@@ -1159,6 +1204,10 @@ YC_RECT = _fundamento(
         "ya siguen F4.MANNING, F5.V2b y F4.FORMA_HDS5, y que este fundamento "
         "rompia hasta que la auditoria de C4 lo vio."),
 )
+
+
+# El nombre de Python anterior, para quien lo importaba: es el MISMO objeto.
+YC_RECT = YC
 
 
 # ===========================================================================

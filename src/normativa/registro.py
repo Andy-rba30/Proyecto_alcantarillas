@@ -90,6 +90,13 @@ class Registro:
             raise KeyError(f"no hay tabla «{id_}» en el registro") from None
 
     def fundamento(self, id_: str) -> Fundamento:
+        # Un codigo de paso renombrado sigue resolviendo por su nombre
+        # anterior (`fundamentos.ALIAS_DE_FUNDAMENTO`, T-0): lo que se
+        # devuelve es el fundamento vigente, el mismo objeto.
+        # Import diferido, como en `construir`: este modulo no importa los
+        # catalogos en su cabecera.
+        from .fundamentos import id_vigente
+        id_ = id_vigente(id_)
         try:
             return self._fundamentos[id_]
         except KeyError:

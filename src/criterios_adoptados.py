@@ -1791,7 +1791,15 @@ CRITERIOS: Dict[str, Criterio] = {
         # ramas seria afirmar algo sobre un archivo que nadie ha abierto, que
         # es la clase de relleno silencioso que CLAUDE.md llama "el peor error
         # posible en este proyecto".
-        valor=None,                 # VACIO: bloquea el Q de diseno de TODOS los puntos
+        # VACIO, Y NO BLOQUEA NADA POR SI MISMO. Este renglon decia «bloquea
+        # el Q de diseno de TODOS los puntos» hasta T-0 (INF-5.1.1), y no es
+        # lo que el programa hace: ningun modulo lee este criterio, un
+        # `Q_m3s` vacio en la Familia A es `DatoFaltanteError` (falta el
+        # DATO, no la declaracion) y un CSV con el caudal lleno corre entero.
+        # Lo que el vacio declara es que el SUSTENTO de ese caudal no esta
+        # en el expediente; `verificacion_pendiente`, abajo, ya lo decia con
+        # todas las letras. T-1 de la cadena T le da consumidor real.
+        valor=None,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_STR,
@@ -1887,9 +1895,9 @@ CRITERIOS: Dict[str, Criterio] = {
                       "A. No decide la eleccion de fila -- que cauce cae en "
                       "quebrada importante y cual en quebrada menor --, que "
                       "es otro eje y vive en "
-                      "'umbral_area_quebrada_importante_ha', sin valor y "
-                      "bloqueando: aqui se declara, para una fila ya elegida, "
-                      "que R y que n adopta el Propietario",
+                      "'umbral_area_quebrada_importante_ha', declarado en "
+                      "100 ha con ventana: aqui se declara, para una fila ya "
+                      "elegida, que R y que n adopta el Propietario",
         fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, "
                "RD 20-2011-MTC/14), Tabla N 02 'VALORES MAXIMOS RECOMENDADOS "
                "DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE', num. 3.6, "
@@ -2311,15 +2319,22 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026), Cap. 8, S8-6, "
                "Tabla 8-4 'Pipe Abrasion Levels', pp. 8-27/8-28. Techo duro: "
                "por encima de 15 ft/s el termoplastico no puede reforzarse "
-               "estructuralmente y su uso queda prohibido por la propia tabla. "
+               "estructuralmente y su uso queda prohibido en esa condicion. "
                "EL VALOR ES LA CONVERSION EXACTA DE LAS 15 ft/s: "
                "15 x 0.3048 = 4.572 m/s. "
-               "LIMITACION QUE HAY QUE DECLARAR (MAT-O14): la Tabla 8-4 de "
-               "WSDOT NO esta en normas/, de modo que esta cita no es "
-               "auditable contra un documento del repositorio como si lo son "
-               "las del Manual de Hidrologia. Mientras la tabla no se anexe, "
-               "el numero se defiende por su conversion y por la coherencia "
-               "con 'v_max_tmc', no por verificacion documental. "
+               "ESTADO DE LA FUENTE DESDE T-0 (2026-11-11; MAT-O14): el "
+               "manual esta en el repositorio de normas y en el registro "
+               "como fuente presente (WSDOT_HM, M 23-03.12, abril 2026; la "
+               "Tabla 8-4 ocupa las pags. impresas 8-27 y 8-28, PDF 242 y "
+               "243), pero NO en normas/ de este repositorio, y el registro "
+               "todavia no tiene la CITA transcrita con su frase y su firma: "
+               "es trabajo de T-4. Lo que T-0 leyo al darla de alta, para "
+               "que T-4 lo resuelva: la prohibicion del termoplastico en "
+               "condicion severamente abrasiva NO esta en la tabla sino en "
+               "el num. 8-3.3, pag. impresa 8-13 (PDF 228); la tabla aporta "
+               "el umbral de 15 ft/s de ese nivel. Hasta T-0 esta ficha "
+               "atribuia la prohibicion a la propia tabla y decia que la "
+               "fuente no estaba disponible. "
                "La hoja de ruta v8 quedo enmendada (R48-030): la fila V3 de "
                "la Fase 5, el Tablero 1.3, el Anexo A y las tablas de sus "
                "num. 0.1 y 0.3 nombran esta fuente y este valor, cada uno "
@@ -2351,8 +2366,9 @@ CRITERIOS: Dict[str, Criterio] = {
         # velocidad por debajo del piso normativo no deja ninguna banda
         # admisible y no es una adopcion defendible. Sin ventana el criterio
         # aceptaba -1.0, 0.0 y 100.0 m/s por `--declarar`. El piso NO sale
-        # de la Tabla 8-4 (sus bandas inferiores no estan en normas/ y no se
-        # transcriben de memoria): sale de la norma peruana que ya rige V2.
+        # de la Tabla 8-4 (sus bandas inferiores no estan transcritas al
+        # registro; desde T-0 el PDF si esta, en el repositorio de normas, y
+        # transcribirlas es de T-4): sale de la norma peruana que ya rige V2.
         sensibilidad=(V_MIN, 4.572),
         resolucion=Libre(
             que_lo_fija="el proyectista, adoptando el techo de la Tabla 8-4 "
@@ -2360,9 +2376,11 @@ CRITERIOS: Dict[str, Criterio] = {
                         "reconocida y no norma peruana",
             dominio="m/s > 0",
             tabla_pendiente="WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 "
-                            "'Pipe Abrasion Levels'. WSDOT_HM es una fuente "
-                            "AUSENTE del registro: el documento no esta en "
-                            "normas/",
+                            "'Pipe Abrasion Levels' (pags. impresas 8-27 y "
+                            "8-28). WSDOT_HM es fuente PRESENTE del registro "
+                            "desde T-0, con el PDF en el repositorio de "
+                            "normas y no en normas/; la tabla sigue sin "
+                            "transcribir (T-4)",
         ),
     ),
 
@@ -2384,9 +2402,15 @@ CRITERIOS: Dict[str, Criterio] = {
                "Se adopta como limite de diseno conservador el mismo umbral "
                "de 15 ft/s = 4.572 m/s (conversion exacta), porque el catalogo "
                "de M2 no modela proteccion adicional por calibre. "
-               "LIMITACION QUE HAY QUE DECLARAR (MAT-O14): la Tabla 8-4 de "
-               "WSDOT NO esta en normas/ y esta cita no es auditable contra un "
-               "documento del repositorio. "
+               "ESTADO DE LA FUENTE DESDE T-0 (2026-11-11; MAT-O14): el "
+               "manual esta en el repositorio de normas y en el registro "
+               "como fuente presente (WSDOT_HM, M 23-03.12, abril 2026; "
+               "Tabla 8-4 en las pags. impresas 8-27 y 8-28, PDF 242 y 243), "
+               "pero NO en normas/ de este repositorio, y la CITA con su "
+               "frase y su firma sigue sin transcribir al registro: es "
+               "trabajo de T-4, que ademas decide si este valor sigue "
+               "siendo [C] --la tabla es de niveles de abrasion y no fija "
+               "techo para el metal-- o pasa a [A] con ventana. "
                "La hoja de ruta v8 quedo enmendada (R48-030): la fila V3 de "
                "la Fase 5, el Tablero 1.3, el Anexo A y las tablas de sus "
                "num. 0.1 y 0.3 nombran esta fuente y este valor, cada uno "
@@ -2410,9 +2434,11 @@ CRITERIOS: Dict[str, Criterio] = {
                         "el metal",
             dominio="m/s > 0",
             tabla_pendiente="WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 "
-                            "'Pipe Abrasion Levels'. WSDOT_HM es una fuente "
-                            "AUSENTE del registro: el documento no esta en "
-                            "normas/",
+                            "'Pipe Abrasion Levels' (pags. impresas 8-27 y "
+                            "8-28). WSDOT_HM es fuente PRESENTE del registro "
+                            "desde T-0, con el PDF en el repositorio de "
+                            "normas y no en normas/; la tabla sigue sin "
+                            "transcribir (T-4)",
         ),
     ),
 

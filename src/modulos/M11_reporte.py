@@ -563,7 +563,7 @@ def ruta_hoja_de_ruta(dir_docs: Optional[Path] = None) -> Path:
 
 def version_hoja_de_ruta(ruta: Path) -> str:
     """
-    Version declarada en el titulo de la hoja de ruta ('... · v7').
+    Version declarada en el titulo de la hoja de ruta ('... · v8'; decia «v7» hasta T-0, INF-5.1.11).
 
     Se lee del documento, no del nombre del archivo ni de una constante: la
     version es una afirmacion de la fuente normativa. Si el titulo no la trae,
@@ -3136,11 +3136,13 @@ def bloque_umbrales() -> str:
     VERIFICACIONES (NOR-MEM-01). El matiz "el numeral recomienda, no prohibe"
     viajaba unicamente dentro de `M5.NUMERAL_V2`, o sea dentro de la tabla de
     verificaciones de cada punto. Esa tabla solo se imprime si el punto llego
-    a evaluarse, y hoy no llega -- 'homogeneidad_serie_fen' bloquea el Q de
-    toda la Familia A --, de modo que la palabra "recomend" aparecia CERO
-    veces en la memoria generada mientras el repositorio afirmaba que era "lo
-    unico que la memoria imprime de V2". La afirmacion era cierta sobre el
-    codigo y falsa sobre el producto.
+    a evaluarse, y en la corrida de referencia de entonces no llegaba -- se
+    detenia antes, en un criterio sin declarar --, de modo que la palabra
+    "recomend" aparecia CERO veces en la memoria generada mientras el
+    repositorio afirmaba que era "lo unico que la memoria imprime de V2". La
+    afirmacion era cierta sobre el codigo y falsa sobre el producto. (Hasta
+    T-0 este parrafo atribuia la detencion a un criterio de hidrologia que
+    ningun modulo lee, INF-5.1.1; la razon del bloque no dependia de eso.)
 
     Este bloque no depende de ningun resultado: declara el marco normativo con
     que se verifica, se imprima o no una sola fila de verificacion. Un umbral

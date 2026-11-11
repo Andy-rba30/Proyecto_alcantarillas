@@ -14,6 +14,7 @@ Los tres docs/auditorias/auditoria_*.md son evidencia historica: los conteos
 que citan son de cuando se hizo la auditoria y NO deben actualizarse. Por eso
 el chequeo 2 los excluye.
 """
+import os
 import re
 import subprocess
 import sys
@@ -46,7 +47,16 @@ AVISOS = []
 # items ALTA/CRITICA de los temarios de refutacion R95/R48 cuya sustancia no
 # tenia fila de estado (R95-031, R48-001, R48-006, R48-007, R48-019, R48-025,
 # R48-030). El 234 de CLAUDE.md sigue siendo el de «las tres auditorias».
-HALLAZGOS_EN_LA_MATRIZ = 303   # literal-ok: tamaño del tracker de auditorias
+#
+# 367 = 303 + 64 desde T-0 de la cadena T (2026-11-11): los hallazgos del
+# INFORME_evaluacion_app_alcantarillas_vs_PDF.md con prefijo INF-, con el
+# numero del INFORME como ID canonico --- 18 del §5.1 (INF-5.1.1 ... .18), 7
+# del §5.2, 30 filas de las cuatro tablas del §3 (6 + 9 + 8 + 7), 7 apartados
+# del §4 y los puntos 4 y 5 del §0 (INF-0.4, INF-0.5), que no tienen fila en
+# ninguna tabla y que la cadena cita ---. El alias con que cada prompt cita
+# un hallazgo esta en «Vinculos cruzados» de su fila y en la nota inicial de
+# docs/planes_mejora/09_CADENA_PROMPTS_TESIS.md.
+HALLAZGOS_EN_LA_MATRIZ = 367   # literal-ok: tamaño del tracker de auditorias
 ANCHO_CONSOLA = 66             # literal-ok: ancho de la caja del resumen
 
 # Evidencia historica: no deben reflejar el estado actual.
@@ -203,6 +213,40 @@ if openpyxl:
     if parciales:
         ok(f"{len(parciales)} parcial(es); "
            f"{len(parciales) - len(huerfanos_fase)} esperan una fase futura")
+
+# ----------------------------------------------------------------- 5. normas
+# DONDE ESTAN LOS PDF (T-0). Se buscan por la misma puerta que usa la suite
+# --- `fuentes.directorios_de_normas()`: `$NORMAS_DIR`, el clon del
+# repositorio de normas, y despues `normas/` mientras exista --- y se dice
+# cuales faltan. Que falten las de `SOLO_EN_EL_REPO_NORMAS` sin la variable
+# definida es un AVISO y no un fallo: la suite del paso 1 quedo verde
+# SALTANDO los tests que las abren, y eso hay que leerlo aqui, no deducirlo
+# del numero de `skipped`. Cualquier otra falta si es un fallo: una fuente
+# presente sin PDF no se puede reverificar.
+print("\n5. PDF de normas (NORMAS_DIR y normas/)")
+from src.normativa import fuentes as _fuentes   # noqa: E402
+
+try:
+    carpetas = _fuentes.directorios_de_normas()
+except FileNotFoundError as exc:
+    carpetas = ()
+    fallo(str(exc))
+for carpeta in carpetas:
+    print(f"          {carpeta}")
+if carpetas:
+    sin_pdf = sorted(f.id for f in _fuentes.FUENTES.values()
+                     if not _fuentes.ruta_pdf(f).exists())
+    solo_alli = set(_fuentes.SOLO_EN_EL_REPO_NORMAS)
+    enlazado = bool(os.environ.get(_fuentes.VARIABLE_NORMAS_DIR, "").strip())
+    if not sin_pdf:
+        ok(f"las {len(_fuentes.FUENTES)} fuentes presentes tienen su PDF en disco")
+    elif set(sin_pdf) <= solo_alli and not enlazado:
+        aviso(f"sin {_fuentes.VARIABLE_NORMAS_DIR}: {', '.join(sin_pdf)} viven "
+              "solo en el repositorio de normas y NO se abrieron; los tests "
+              "`pdf` que las verifican se saltaron (ver CLAUDE.md)")
+    else:
+        fallo("fuentes presentes sin PDF en ninguna carpeta de normas: "
+              + ", ".join(sin_pdf))
 
 # ----------------------------------------------------------------- resumen
 print("\n" + "=" * ANCHO_CONSOLA)

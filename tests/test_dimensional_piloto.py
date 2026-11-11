@@ -200,7 +200,7 @@ RELACIONES: Dict[str, Tuple[Relacion, ...]] = {
          "/ v['n_max']"),
     ),
     # M4 --- Q^2/g = A^3/T, con A ~ D^2 y T ~ D.
-    "F4.YC_RECT@4.2.1": (
+    "F4.YC@4.2.1": (
         ("y_c~D", "r", "v['D']"),
         ("Q^2/g=A^3/T", "v['Q'] ** 2 / g", "v['D'] ** 5"),
     ),
