@@ -3522,8 +3522,8 @@ alternativa sin aplicar porque decidirla es del proyectista.
   del JSON de datos externos, global o por punto, con los cinco campos de
   `servicio.CAMPOS_SECCION_RECEPTOR`.
 - **Por qué:** cinco columnas más en el CSV son cinco celdas vacías por fila para todo
-  punto sin levantamiento y un cambio en `M0_carga.COLUMNAS` que T-1, T-4 y T-6 tocan
-  a la vez; y el levantamiento de un dren suele valer para varios cruces, que es lo
+  punto sin levantamiento y un cambio en `M0_carga.COLUMNAS`, que otros prompts de la
+  cadena tocan a la vez; y el levantamiento de un dren suele valer para varios cruces, que es lo
   que el bloque `globales` del JSON ya resuelve. La sección entra completa o no entra:
   un campo que falte, uno de más o uno fuera de dominio detienen la carga
   (`DatoInvalidoError`); nunca se completa con el del criterio. El aviso «seccion
