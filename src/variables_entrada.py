@@ -1061,8 +1061,31 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "umbral duro que detiene el punto, o como indicador con aviso "
              "que se evalua igual, se imprime con veredicto INDICADOR y no "
              "descarta el diametro. Lo consume V2b, que la corrida de perfil "
-             "invoca como obligatoria; el valor del archivo es el umbral "
-             "duro, la conducta de S20."),
+             "invoca como obligatoria; el valor del archivo es, desde T-2, "
+             "el indicador con aviso (hasta entonces el umbral duro, la "
+             "conducta de S20)."),
+    # --- T-2 --- (cadena T, 2026-11-11): la banda de pendiente del conducto
+    # que aplica V10 y la lectura de V1 con el barril lleno por el receptor.
+    "pendiente_minima_conducto": _Meta(
+        unidad="m/m",
+        nota="Extremo inferior de la banda que V10 aplica a la pendiente con "
+             "que corrio el diseño. Vale 0.0 porque el HDS-5 admite el "
+             "barril horizontal (num. 3.3.4) y ninguna fuente fija un "
+             "minimo; la sedimentacion la juzgan V2 y V2b."),
+    "pendiente_maxima_conducto": _Meta(
+        unidad="m/m",
+        nota="Extremo superior de la banda de V10. Vale 0.10: el HDS-5 "
+             "(num. 5.4.4) describe que bajo el 10 % no se usan medidas "
+             "estructurales especiales, que este programa no dimensiona. No "
+             "sustituye a V3, que sigue juzgando la velocidad."),
+    "borde_libre_bajo_tw_ahogante": _Meta(
+        unidad="-",
+        nota="Que hace V1 cuando el barril va lleno por el NIVEL DEL "
+             "RECEPTOR (TW sobre la clave) y no por el caudal de diseño: "
+             "«no_cumple» (valor del archivo, la conducta desde EXT-3) o "
+             "«aviso», que juzga el borde libre con el tirante propio del "
+             "caudal y, si lo conserva, no descarta el diametro. Solo se "
+             "invoca en un punto con TW >= D."),
     "borde_libre_canal_m": _Meta(
         unidad="m",
         fase_declarada="Fase 5 - Verificaciones (VC1, cruce de canal)",

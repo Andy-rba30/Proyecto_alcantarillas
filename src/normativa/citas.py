@@ -6138,6 +6138,38 @@ HDS5_A3_PENDIENTE_2 = _cita(
           "no puede anular la carga."),
 )
 
+HDS5_5_3_3_DEPRESION = _cita(
+    id="HDS5_3ED.5.3.3#DEPRESION",
+    fuente_id="HDS5_3ED",
+    numeral="5.3.3",
+    titulo_numeral="Sedimentation",
+    pagina_impresa="5.12",
+    pagina_pdf=148,
+    pagina_pdf_titulo=147,
+    texto_literal=Verbatim(
+        texto=("Culverts built with an upstream depression possess a barrel "
+               "slope which is less than that of the natural channel.  "
+               "Sedimentation is the likely result, especially during times "
+               "of low flow.  However, self-cleaning usually occurs during "
+               "periods of high discharge."),
+        pagina_pdf=148),
+    caracter=Caracter.DEFINICION,
+    derivado_de="HDS5_3ED.5.3.3#INDICADORES",
+    sesion=TESIS_T2,
+    nota=("Es el final del num. 5.3.3, ya en la pag. impresa 5.12, y lo que "
+          "la fuente dice del caso que el primer indicador describe: el "
+          "conducto mas plano que su cauce sedimenta SOBRE TODO con caudales "
+          "bajos y SUELE limpiarse solo con los altos. La oracion siguiente "
+          "pide abordar ese diseño con cautela y con mas investigacion de "
+          "campo; no lo prohibe. Sostiene que el indicador se aplique como "
+          "aviso (`regimen_v2b`). EL NUMERAL ENTERO, leido en T-2 (INF-3.2.9): "
+          "ademas de los dos indicadores --pendiente y rugosidad-- nombra "
+          "como factores la magnitud del caudal y el material del cauce, los "
+          "cauces en agradacion, los cambios de pendiente a la entrada, las "
+          "instalaciones multibarril y las entradas deprimidas. Ninguno "
+          "lleva cifra."),
+)
+
 HDS5_A21_FORMA_1 = _cita(
     id="HDS5_3ED.A.2.1#FORMA_1",
     fuente_id="HDS5_3ED",

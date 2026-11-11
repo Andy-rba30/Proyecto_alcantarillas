@@ -557,7 +557,12 @@ V2B_REGIMEN = _fundamento(
         "indicador y del acceso de limpieza sin descartar un marco que "
         "cumple todo lo demas."),
     verbo=Verbo.DEFINE,
-    citas=("HDS5_3ED.5.3.3#INDICADORES", "HDS5_3ED.5.3.3#ALINEADO"),
+    # --- T-2 --- La tercera cita es lo que la fuente dice del caso que el
+    # indicador describe (pag. impresa 5.12): sedimenta sobre todo con
+    # caudales bajos y suele limpiarse solo con los altos. Es lo que
+    # sostiene el valor de archivo `indicador_con_aviso`.
+    citas=("HDS5_3ED.5.3.3#INDICADORES", "HDS5_3ED.5.3.3#ALINEADO",
+           "HDS5_3ED.5.3.3#DEPRESION"),
     que_pasa_si_no_se_hace=(
         "Lo que paso entre S20 y PF-4: el indicador se aplicaba como umbral "
         "duro sin que ningun criterio lo dijera, y en la corrida de perfil "
