@@ -57,6 +57,28 @@ explicito y no un valor que este modulo elija.
                  `ResultadoHidraulico.S`; V2 nunca la restringe (Sec. 5.2)
     cota salida = cota de entrada - S * longitud
 
+DESDE T-6 (cadena T, 2026-11-11) LA «PROYECCION DE TALUDES» TIENE METODO
+DECLARADO, y la primera linea de arriba dejo de bastar. El criterio [A]
+'metodo_longitud_conducto' elige entre dos:
+
+    por_extremo          cada talud baja desde el borde de la plataforma
+                         hasta el FONDO del conducto en SU extremo, y la
+                         salida queda S*L mas baja que la entrada (HDS-5
+                         3a ed., num. 2.2.4 b. y Figura 2.4, pag. impresa
+                         2.8):
+                             L = [ancho + talud * (H_entrada + H_salida0)]
+                                 / [cos(esviaje) - talud * S]
+                         Es el valor del archivo.
+    terraplen_simetrico  los dos taludes bajan la altura del eje, rasante -
+                         terreno: la formula anterior, conservada como caso
+                         particular (INF-3.3.3 la señalo).
+
+La longitud se resuelve UNA vez, antes de la Fase 4 (`longitud_del_conducto`),
+y 7.B recibe ese mismo objeto. Y 7.B dejo de ser un parrafo en la memoria:
+emite los pasos 7.B.1 (pendiente adoptada, con su origen), 7.B.2 (factor de
+esviaje), 7.B.3 (longitud), 7.B.4 (caida y cota de salida) y 7.B.5 (encaje de
+la seccion adoptada: longitud entre cabezales a la clave, HDS-5 num. 3.3.5).
+
 LA PENDIENTE NO SE ELIGE DOS VECES (MAT-D9). Sec. 7.B dice que la pendiente de
 la alcantarilla es la del cauce, y esa sigue siendo la regla del proyecto: el
 valor por defecto lo pone la Fase 4, que resuelve `punto.exigir("S_cauce")`
@@ -181,23 +203,33 @@ Si M7 eligiera su propia cota de entrada o copiara la tabla, la rasante se
 fijaria contra una condicion y V4 se verificaria contra otra, y el
 acoplamiento seguiria abierto por la puerta de atras.
 
-Por que 7.B solo trae dos verificaciones
------------------------------------------
+Por que 7.B trae dos verificaciones con umbral y un aviso
+----------------------------------------------------------
 De los cinco puntos que Sec. 7.B enumera, tres son CALCULOS y no chequeos
 (longitud, esviaje y pendiente: la hoja fija como se obtienen, no un umbral
-que puedan incumplir) y viajan como campos de `CompatibilidadGeometrica`. Los
-dos que si tienen umbral son:
+que puedan incumplir) y viajan como campos y como pasos de
+`CompatibilidadGeometrica`. Los dos que si tienen umbral son:
 
     G1  rasante congelada        cota de rasante >= la minima de 7.A
-    G2  cota de salida           cota de salida >= cota de fondo del receptor
+    G2  entrega al receptor      cota de salida >= cota de fondo del receptor
+                                 + 'desnivel_minimo_entrega_m'
 
-G2 es una INTERPRETACION declarada, no un criterio con fuente propia: Sec.
-7.B pide las cotas de entrada y salida "amarradas al perfil del cauce y a la
-cota de fondo del receptor", y la lectura minima de ese amarre es que la
-salida no quede enterrada bajo el fondo del cuerpo receptor. No lleva ningun
-parametro adoptado -- compara dos elevaciones del expediente y nada mas -- y
-por eso no crea criterio. Un desnivel MINIMO de entrega sobre ese fondo si
-seria un criterio, la hoja de ruta no lo da, y por lo tanto no se exige aqui.
+y desde T-6 hay una tercera fila que NO es un umbral de aceptacion:
+
+    G3  esviaje (AVISO)          esviaje <= 'esviaje_max_grados'; `cumple`
+                                 es True siempre, y por encima del maximo el
+                                 paso lleva veredicto INDICADOR
+
+G2 ES UNA INTERPRETACION CON CRITERIO DECLARADO. Sec. 7.B pide las cotas de
+entrada y salida "amarradas al perfil del cauce y a la cota de fondo del
+receptor", y la lectura minima de ese amarre es que la salida no quede
+enterrada bajo el fondo del cuerpo receptor. Hasta T-6 este parrafo decia que
+G2 «no lleva ningun parametro adoptado» y que un desnivel minimo de entrega
+«no se exige aqui» porque la hoja de ruta no lo da. La hoja de ruta lo declara
+criterio desde T-0 y T-6 lo creo: 'desnivel_minimo_entrega_m' [A], con valor
+0.0 m -- que es exactamente la comparacion anterior -- y ventana hasta 0.30
+m. Ninguna fuente da el numero (el num. 4.1.1.3.3 del Manual exige cuidar la
+pendiente y no habla de la entrega), y por eso es [A].
 
 Excepciones
 -----------
@@ -209,6 +241,10 @@ Excepciones
                              'condicion_pavimento' (bloquea el recubrimiento
                              minimo, tambien para los tres);
                              'talud_terraplen' (bloquea la longitud de 7.B).
+                             Desde T-6 tambien 'metodo_longitud_conducto',
+                             'desnivel_minimo_entrega_m' y
+                             'esviaje_max_grados', los tres con valor de
+                             archivo.
     DisenoNoFactibleError    lo lanzan `TamizadoRasante.exigir_factible()` y
                              `CompatibilidadGeometrica.exigir_factible()`, con
                              `delta_rasante_m` cargado. NUNCA una excepcion
@@ -218,8 +254,14 @@ Excepciones
                              delta en `delta_rasante_cm` y quien quiera la
                              excepcion la pide.
     DatoInvalidoError        el paquete estructural no es positivo (la
-                             subrasante no queda bajo la rasante, Sec. 1.5) o
-                             el esviaje no admite cruce.
+                             subrasante no queda bajo la rasante, Sec. 1.5),
+                             el esviaje no admite cruce, o -- en la longitud
+                             por extremo -- la pendiente alcanza a la del
+                             talud vista sobre el eje del conducto, o un
+                             borde de la plataforma queda bajo el fondo.
+    DatoFaltanteError        'S_cauce', cuando la longitud por extremo
+                             necesita la pendiente y el punto no trae ni la
+                             del cauce ni una declarada.
 
 Uso
 ---
@@ -1601,6 +1643,20 @@ def longitud_conducto(punto: PuntoCritico, *,
                                  peralte=peralte).longitud
 
 
+def _clave_sobre_el_fondo(punto: PuntoCritico, material: Material,
+                          seccion: Seccion) -> float:
+    """
+    Altura de la clave FISICA sobre el fondo de la entrada, m.
+
+    No se recalcula aqui: es `M5.cota_clave` menos la cota de entrada, la
+    MISMA clave que usan 7.A y V7 (MAT-D4). Si la definicion de la clave
+    cambia para una forma -- el marco con su espesor de losa --, el encaje la
+    hereda sin tocar este modulo.
+    """
+    return (cota_clave(punto=punto, material=material, seccion=seccion)
+            - cota_de_entrada(punto).valor)
+
+
 def longitud_a_la_clave(*, punto: PuntoCritico, material: Material,
                         seccion: Seccion,
                         longitud: LongitudConducto) -> Optional[float]:
@@ -1615,7 +1671,8 @@ def longitud_a_la_clave(*, punto: PuntoCritico, material: Material,
     dimensioned»). Con muro de cabecera el talud no baja hasta el fondo sino
     hasta la coronacion del muro, que como minimo esta a la clave exterior:
 
-        c = altura interior + espesor de pared     (la clave FISICA, MAT-D4)
+        c = cota de clave - cota de entrada        (la clave FISICA, MAT-D4:
+                                                    altura interior + pared)
         L_clave = [ancho + talud * (H_entrada + H_salida0 - 2 c)]
                   / [cos(esviaje) - talud * S]
 
@@ -1630,8 +1687,7 @@ def longitud_a_la_clave(*, punto: PuntoCritico, material: Material,
     """
     if longitud.metodo is not MetodoLongitud.POR_EXTREMO:
         return None
-    altura = seccion.altura
-    c = altura + espesor_pared(material, altura)
+    c = _clave_sobre_el_fondo(punto, material, seccion)
     denominador = 1.0 / longitud.factor_esviaje - longitud.talud * longitud.S
     H0 = (longitud.altura_entrada
           + (longitud.cota_borde_salida - longitud.cota_referencia_entrada))
@@ -1641,11 +1697,11 @@ def longitud_a_la_clave(*, punto: PuntoCritico, material: Material,
         / denominador, punto)
 
 
-def _paso_encaje(*, material: Material, seccion: Seccion,
+def _paso_encaje(*, punto: PuntoCritico, material: Material,
+                 seccion: Seccion,
                  longitud: LongitudConducto, L_clave: float):
     """El `PasoDeMemoria` 7.B.5: la seccion adoptada encajada en el cruce."""
-    altura = seccion.altura
-    c = altura + espesor_pared(material, altura)
+    c = _clave_sobre_el_fondo(punto, material, seccion)
     diferencia = longitud.longitud - L_clave
     return paso(
         "F7.ENCAJE",
@@ -1985,7 +2041,8 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                                   seccion=seccion,
                                   longitud=longitud_calculada)
     if L_clave is not None:
-        pasos.append(_paso_encaje(material=material, seccion=seccion,
+        pasos.append(_paso_encaje(punto=punto, material=material,
+                                  seccion=seccion,
                                   longitud=longitud_calculada,
                                   L_clave=L_clave))
 

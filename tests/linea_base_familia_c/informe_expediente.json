@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "106fb17b19cd8bceec5f797b3557af3b674ead9e",
+    "criterios_sha1": "7bf1546b24a7680db6c2358968a680d03737b188",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -50,8 +50,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.6349712473815,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.86939162767301,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 0.3,
@@ -165,8 +165,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.26952104328892,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.567739690320675,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 0.3,
@@ -266,8 +266,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.400000000000013,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.775510204081645,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 1.0,
@@ -392,8 +392,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 21.24648990617824,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 21.44458651089384,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 0.3,
@@ -872,6 +872,13 @@
         "valor": 0.5,
         "declarado_en_caliente": false,
         "concepto": "Coeficiente de perdida de carga en la embocadura (ke)"
+      },
+      {
+        "clave": "metodo_longitud_conducto",
+        "etiqueta": "A",
+        "valor": "por_extremo",
+        "declarado_en_caliente": false,
+        "concepto": "Metodo con que se calcula la longitud del conducto de la Sec. 7.B cuando no se declara: con la misma altura de terraplen en los dos taludes, o con la de cada extremo"
       },
       {
         "clave": "metodo_transicion_hds5",

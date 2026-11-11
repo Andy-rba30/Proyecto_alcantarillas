@@ -121,7 +121,7 @@ sigue vacío —`Q_m3s`, `area_ha`, `S_cauce`— entra por la sección 2.
 
 ## 2. Lo que no es columna del CSV: `--datos-externos`
 
-Ocho datos entran por un JSON aparte (`servicio.CLAVES_EXTERNAS`). Seis no
+Diez datos entran por un JSON aparte (`servicio.CLAVES_EXTERNAS`). Ocho no
 son columna del CSV; dos (`Q_m3s`, `S_cauce`) sí lo son y entran también por
 aquí porque la Familia C las deja vacías por tablero. La tabla dice de cada
 clave si tiene bandera de línea de comandos, qué familias la usan y qué pasa
@@ -138,12 +138,18 @@ si no se declara:
 | `S_cauce` | sí | número | — | las tres | vale la celda del CSV |
 | `L_hidraulico_m` | no | número | `--l-hidraulico` | B | el pre-vuelo la lista como falta |
 | `categoria_tr` | no | texto | `--categoria-tr` | A, B | el programa la resuelve por otra vía |
+| `bombeo` | no | número | — | las tres | el programa la resuelve por otra vía |
+| `peralte` | no | número | — | las tres | el programa la resuelve por otra vía |
 <!-- fin: externos -->
 
 «Por otra vía» quiere decir: `longitud_m` la calcula la Fase 7.B con las
-cotas del CSV; `categoria_tr` cae en el criterio de la Tabla N° 02 (Familia A)
-o en la fila fija de la Sec. 2.3 (Familia B); y `S_conducto` cae en
-`S_cauce`. `TW_m` tiene además su propia cadena (Sec. 1.3: `cota_TW`, Manning
+cotas del CSV, el talud, el esviaje y la pendiente (criterio
+`metodo_longitud_conducto`; la memoria dice qué método se usó); `categoria_tr`
+cae en el criterio de la Tabla N° 02 (Familia A) o en la fila fija de la Sec.
+2.3 (Familia B); `S_conducto` cae en `S_cauce`; y `bombeo` y `peralte` —la
+pendiente transversal de la plataforma en el cruce, en m/m: `0.02` es 2 %—
+valen cero, o sea la plataforma horizontal a la cota de rasante. Estas dos
+sólo afinan la longitud del conducto y no tienen bandera: van en el JSON. `TW_m` tiene además su propia cadena (Sec. 1.3: `cota_TW`, Manning
 en el receptor con `Q_receptor_m3s`, y por último el criterio `TW_receptor`).
 
 El archivo tiene dos secciones, las dos opcionales: `globales`, que vale para

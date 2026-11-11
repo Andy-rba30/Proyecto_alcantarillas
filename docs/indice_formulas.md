@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-11 · Commit del árbol de origen: `c2262a2+cambios-sin-commit` · Suite: 4219 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-11 · Commit del árbol de origen: `c459634+cambios-sin-commit` · Suite: 4301 passed, 17 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado; rama tesis/T-6, FASE A)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -38,7 +38,7 @@
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **146** · fórmulas distintas: **25** · fundamentos ejercitados: **16** de 30.
+Pasos emitidos: **146** · fórmulas distintas: **25** · fundamentos ejercitados: **16** de 37.
 
 ## 2. Índice
 
@@ -124,6 +124,13 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | sin `paso()`; entra por otra puerta desde `M5_verificaciones` |
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | `M5_verificaciones` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | `M6_proteccion` |
+| `F7.COTA_SALIDA` | Fase 7 - Compatibilidad geometrica | Caida del conducto y cota de fondo de la salida | `M7_geometria` |
+| `F7.ENCAJE` | Fase 7 - Compatibilidad geometrica | Encaje de la seccion adoptada en la seccion transversal: longitud entre cabezales a la clave | `M7_geometria` |
+| `F7.ENTREGA` | Fase 7 - Compatibilidad geometrica | Entrega al cuerpo receptor: cota de salida frente a su fondo | `M7_geometria` |
+| `F7.ESVIAJE` | Fase 7 - Compatibilidad geometrica | Factor de esviaje, 1 / cos(esviaje) | `M7_geometria` |
+| `F7.ESVIAJE_MAX` | Fase 7 - Compatibilidad geometrica | Esviaje del cruce frente al maximo que el proyecto adopta | `M7_geometria` |
+| `F7.LONGITUD` | Fase 7 - Compatibilidad geometrica | Longitud del conducto sobre la seccion transversal del cruce | `M7_geometria` |
+| `F7.PENDIENTE` | Fase 7 - Compatibilidad geometrica | Pendiente adoptada del conducto, con su origen | `M7_geometria` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | `M7_geometria` |
 | `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | `M9_cabezal` |
 

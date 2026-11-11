@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "106fb17b19cd8bceec5f797b3557af3b674ead9e",
+    "criterios_sha1": "7bf1546b24a7680db6c2358968a680d03737b188",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -64,11 +64,11 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.6349712473815,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.86939162767301,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
-          "valor": 1.1118098274842794,
+          "valor": 1.1132163497660343,
           "origen": "Sec. 1.3 -- dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)"
         },
         "S_cauce": {
@@ -165,11 +165,11 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.26952104328892,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.567739690320675,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
-          "valor": 1.196156168346306,
+          "valor": 1.1985419175225616,
           "origen": "Sec. 1.3 -- dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)"
         },
         "S_cauce": {
@@ -266,11 +266,11 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.400000000000013,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.775510204081645,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
-          "valor": 1.4839999999999947,
+          "valor": 1.4877551020408148,
           "origen": "Sec. 1.3 -- dos escenarios acotados, sin caudal documentado (paso 3 de Sec. 1.3)"
         },
         "S_cauce": {
@@ -382,10 +382,7 @@
           "origen": "linea de comandos (--luz_m)"
         },
         "categoria_tr": null,
-        "longitud_m": {
-          "valor": 21.24648990617824,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
-        },
+        "longitud_m": null,
         "TW_m": null,
         "S_cauce": null
       },
@@ -440,8 +437,8 @@
           "mensaje": "ALCANCE DEL REQUISITO DE LA SEC. 2.3 -- FAMILIA C (cruces de canal y dren). La Sec. 2.3 de la hoja de ruta enuncia, para la Familia C, un requisito que ninguna otra familia tiene: la obra NO PUEDE ALTERAR LA RASANTE HIDRAULICA NI EL BORDE LIBRE DEL CANAL. Son DOS exigencias en una frase, y esta corrida evalua UNA. LO QUE SI SE EVALUA -- el borde libre. La verificacion VC1 compara el nivel que el agua alcanza a la entrada (cota del fondo del canal en el cruce mas la carga HW que gobierna) contra la coronacion del canal menos su borde libre, y emite veredicto con margen en metros. La coronacion es columna del CSV -- `cota_coronacion_canal`, dato de sitio [S] del levantamiento de los cruces -- y el borde libre sale del criterio 'borde_libre_canal_m' [A]. Sin cualquiera de los dos VC1 SE DETIENE: no devuelve «no evaluable» ni da el requisito por cumplido. DE DONDE SALE EL BORDE LIBRE, QUE NO ES UN VALOR NORMATIVO DEL CANAL. El Manual de Hidrologia NO fija borde libre para un canal: barridas sus 225 paginas, «borde libre» aparece en dos apartados y ninguno tiene por objeto un canal -- el num. 4.1.1.3.7 b) es de ALCANTARILLAS y es relativo (>= 25 % de la altura del barril), y el num. 4.1.1.4.1 e) es de BADENES y mide contra la superficie de rodadura --. El proyecto adopta el par 0.30-0.50 m del segundo, en su extremo SUPERIOR, que aqui es el conservador porque el borde libre se resta de la coronacion. Son dos decisiones del proyectista y no una lectura de la fuente: la ANALOGIA (de la calzada de un baden a la coronacion de un canal) y la ELECCION dentro de una banda para la que el Manual no da regla. LO QUE NO SE EVALUA -- la rasante hidraulica. VC1 acota el NIVEL que el agua alcanza; no mide EN CUANTO la obra levanta el pelo de agua del canal respecto del que tendria sin ella. Un punto puede cumplir VC1 con holgura y haber elevado la rasante hidraulica del canal en una fraccion apreciable de su calado. Medirlo exige el tirante normal del canal en la seccion del cruce -- su geometria trapecial (ancho de solera y talud) y su n de Manning, ninguno de los dos columna de la Sec. 1.2 -- y la extension aguas arriba del remanso, que VC1 tampoco acota: mide EN LA SECCION DEL CRUCE, de modo que un tercero situado mas arriba, donde el canal tenga la coronacion mas baja, puede quedar afectado por un remanso que en el cruce cumple. V5 NO SE EVALUA EN ESTA FAMILIA, y no por falta de datos: por no aplicar. Su umbral es el ancho del derecho de via y presupone agua extendiendose lateralmente sobre la plataforma al remansarse contra el terraplen; en un paso de canal el agua sube confinada entre las dos coronaciones. VC1 ocupa su posicion en la tabla de la Fase 5 y mide contra la cota que si gobierna. La sustitucion no pierde alcance -- el umbral de V5 era un ancho, no una longitud aguas arriba -- pero tampoco cierra el hueco entero, y por eso el parrafo anterior existe. QUE SIGNIFICA UN «CUMPLE» EN UN PUNTO DE ESTA FAMILIA: que la obra es admisible como alcantarilla de paso Y que no invade el borde libre adoptado del canal en la seccion del cruce. NO significa que la alteracion de la rasante hidraulica del canal se haya medido. QUE CIERRA ESTA DECLARACION: la geometria de la seccion del canal (ancho de solera y talud) y su n de Manning en cada cruce, para calcular su tirante normal y con el la alteracion; y el borde libre que el propio canal adopto en SU proyecto (ANA o Junta de Usuarios del Bajo Piura), que sustituiria a la analogia con el baden."
         },
         {
-          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
-          "etapa": "tirante en el receptor (TW, Sec. 1.3)",
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "etapa": "longitud del conducto (7.B)",
           "tipo": "DatoFaltanteError",
           "criterio": null,
           "etiqueta": null,
@@ -558,6 +555,13 @@
         },
         "declarado_en_caliente": false,
         "concepto": "Constantes de control de entrada HDS-5 para tuberia HDPE"
+      },
+      {
+        "clave": "metodo_longitud_conducto",
+        "etiqueta": "A",
+        "valor": "por_extremo",
+        "declarado_en_caliente": false,
+        "concepto": "Metodo con que se calcula la longitud del conducto de la Sec. 7.B cuando no se declara: con la misma altura de terraplen en los dos taludes, o con la de cada extremo"
       },
       {
         "clave": "n_manning_hdpe",
