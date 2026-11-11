@@ -548,7 +548,9 @@ def test_la_transicion_no_monotona_tambien_en_carta_de_cajon_y_marco():
     PUNTO 8 DEL PROMPT DE C4, con el numero delante. La propiedad que C3
     declaro sobre la Carta 9 evaluada en una circular se repite donde
     corresponde -- carta de cajon y seccion rectangular --, y ademas se barren
-    las DOCE cartas de cajon con Forma 2 para quedarse con la peor.
+    las cartas de cajon con Forma 2 para quedarse con la peor (doce cuando
+    se escribio; quince desde T-2, que transcribio la Carta 13 sin mover ni
+    el minimo ni el maximo).
 
     NO MUERDE EN ESTE PROYECTO: la pendiente mas alta del expediente de prueba
     es 0.010 m/m y el umbral mas bajo de las doce es 0.215192, veintiuna veces

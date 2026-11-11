@@ -39,6 +39,7 @@ from src.constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
                                    Y_SOBRE_D_MAX)
 from src.dominios import CBR_MIN_FISICO
 from src.modelos import (ControlGobernante, CriterioPendienteError,
+                         TipoDeVeredicto,
                          EstadoDeVerificacion,
                      DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
                      Familia, FormaSeccion, PuntoCritico, ResultadoHidraulico,
@@ -1227,8 +1228,11 @@ def test_verificar_en_familia_C_corre_VC1_en_vez_de_V5(concreto):
     assert v5[0].estado is EstadoDeVerificacion.NO_APLICA
     assert v5[0].valor_obtenido is None and "VC1" in v5[0].motivo_no_aplica
     # Y la posicion importa: VC1 ocupa el hueco de V5, entre V4b y V6, y la
-    # fila «no aplica» de V5 va pegada detras de VC1.
-    assert codigos.index("VC1") == codigos.index("V4b") + 1
+    # fila «no aplica» de V5 va pegada detras de VC1. Desde T-2 entre V4b y
+    # el hueco va V10 (la pendiente del conducto), que se evalua ANTES para
+    # que una V5 o una VC1 que se detengan no la tapen.
+    assert codigos.index("V10") == codigos.index("V4b") + 1
+    assert codigos.index("VC1") == codigos.index("V10") + 1
     assert codigos.index("V5") == codigos.index("VC1") + 1
     assert codigos.index("V5") == codigos.index("V6") - 1
 
@@ -1434,11 +1438,12 @@ def test_una_regla_no_implementada_es_dato_invalido_no_un_fallo_de_programa():
             cota_de_entrada(_punto())
 
 
-def test_las_once_filas_de_la_fase_5_tienen_su_funcion():
+def test_las_doce_filas_de_la_fase_5_tienen_su_funcion():
     """
-    La tabla de Fase 5 de la hoja de ruta tiene ONCE filas y este modulo tiene
-    ONCE funciones. Ninguna queda como ejercicio de resta del lector, que es
-    lo que SIS-A-13 y MAT-O15 reprochaban de V2b.
+    La tabla de Fase 5 de la hoja de ruta tiene DOCE filas y este modulo tiene
+    DOCE funciones (once hasta T-2, que sumo V10, la pendiente del conducto,
+    a la tabla y al modulo en el mismo cambio). Ninguna queda como ejercicio
+    de resta del lector, que es lo que SIS-A-13 y MAT-O15 reprochaban de V2b.
 
     LAS DOS QUE FALTABAN SE CABLEARON EN SESIONES DISTINTAS, y este test las
     vigila a las dos: V4b en S14 (`v4b_relacion_hw_d`), una vez cerrada la
@@ -1482,8 +1487,10 @@ def test_las_once_filas_de_la_fase_5_tienen_su_funcion():
     funciones = [n.name for n in ast.parse(modulo).body
                  if isinstance(n, ast.FunctionDef) and re.match(r"v\d+b?_", n.name)
                  and n.name != "v5_no_aplica_en_canal"]
-    assert len(filas) == 11, f"la tabla de Fase 5 ya no tiene once filas: {filas}"
-    assert len(funciones) == 11, f"M5 ya no tiene once verificaciones: {funciones}"
+    assert len(filas) == 12, f"la tabla de Fase 5 ya no tiene doce filas: {filas}"
+    assert len(funciones) == 12, f"M5 ya no tiene doce verificaciones: {funciones}"
+    assert sorted(filas) == sorted(f.split("_")[0].upper().replace("B", "b")
+                                   for f in funciones)
     assert len(textos) == len(filas) - len(funciones)
 
 
@@ -1498,10 +1505,24 @@ def test_v2b_compara_la_pendiente_del_conducto_con_la_del_cauce():
     assert igual.cumple and igual.codigo == "V2b"
     assert igual.criterio_aplicado == "acceso_mantenimiento_v2b"
 
-    mas_plano = v2b_sedimentacion(
-        punto=punto, resultado=_resultado(S=punto.S_cauce / 2))
+    # T-2: el valor de archivo de 'regimen_v2b' es «indicador_con_aviso», y
+    # el «no cumple» es el del regimen «umbral_duro», que sigue en la ventana.
+    # Los dos regimenes hacen LA MISMA comparacion; cambia el veredicto.
+    ca.establecer_valor_dinamico("regimen_v2b", "umbral_duro")
+    try:
+        mas_plano = v2b_sedimentacion(
+            punto=punto, resultado=_resultado(S=punto.S_cauce / 2))
+    finally:
+        ca.quitar_valor_dinamico("regimen_v2b")
     assert not mas_plano.cumple
     assert "colmatacion" in mas_plano.paso.veredicto.explicacion
+
+    avisado = v2b_sedimentacion(
+        punto=punto, resultado=_resultado(S=punto.S_cauce / 2))
+    assert avisado.cumple
+    assert avisado.paso.veredicto.tipo is TipoDeVeredicto.INDICADOR
+    assert avisado.valor_obtenido == mas_plano.valor_obtenido
+    assert avisado.valor_admisible == mas_plano.valor_admisible
 
 
 def test_v2b_se_detiene_sin_el_acceso_de_mantenimiento_declarado():

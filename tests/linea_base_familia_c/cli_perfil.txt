@@ -11,6 +11,7 @@ A-01  |  progresiva 0+380  |  Familia A
           S_cauce  : 0.0060 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  aviso: TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
@@ -29,6 +30,7 @@ A-02  |  progresiva 1+920  |  Familia A
           S_cauce  : 0.0080 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  aviso: TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
@@ -47,6 +49,7 @@ B-01  |  progresiva 2+450  |  Familia B
           S_cauce  : 0.0100 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  aviso: TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
@@ -142,6 +145,7 @@ Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 0
 Verificaciones incumplidas: 0
+Verificaciones con aviso: 0
 Etapas bloqueadas       : 5
 Diferidas por alcance   : 8 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : no

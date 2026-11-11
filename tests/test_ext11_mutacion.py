@@ -190,9 +190,13 @@ SUPERVIVIENTES_CON_RAZON = {
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
     "src/modulos/M5_verificaciones.py::v2b_sedimentacion::comparacion::resultado.S >= S_cauce - TOL_UMBRAL_NORMATIVO -> resultado.S > S_cauce - TOL_UMBRAL_NORMATIVO":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
-    "src/modulos/M5_verificaciones.py::v3_velocidad_maxima::comparacion::resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO -> resultado.V_erosion < v_max + TOL_UMBRAL_NORMATIVO":
+    # T-2: las dos claves de V3 cambiaron de TEXTO y no de mutante. La
+    # comparacion lee ahora `V` (la velocidad con que V3 juzga: V_erosion en
+    # flujo uniforme, V_salida con el barril horizontal) y no
+    # `resultado.V_erosion`; el operador y la banda son los mismos.
+    "src/modulos/M5_verificaciones.py::v3_velocidad_maxima::comparacion::V <= v_max + TOL_UMBRAL_NORMATIVO -> V < v_max + TOL_UMBRAL_NORMATIVO":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
-    "src/modulos/M5_verificaciones.py::v3_velocidad_maxima::comparacion::resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO -> resultado.V_erosion < v_max + TOL_UMBRAL_NORMATIVO #2":
+    "src/modulos/M5_verificaciones.py::v3_velocidad_maxima::comparacion::V <= v_max + TOL_UMBRAL_NORMATIVO -> V < v_max + TOL_UMBRAL_NORMATIVO #2":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",
     "src/modulos/M5_verificaciones.py::altura_relleno_sobre_clave::comparacion::altura <= TOL_UMBRAL_NORMATIVO -> altura < TOL_UMBRAL_NORMATIVO":
         "equivalente: `<=`/`>=` frente a `<`/`>` con la banda TOL_UMBRAL_NORMATIVO solo difieren en la igualdad exacta umbral ± 1e-9, de medida nula en punto flotante",

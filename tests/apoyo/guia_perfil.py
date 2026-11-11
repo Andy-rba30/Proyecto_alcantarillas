@@ -123,11 +123,18 @@ def tabla_externos() -> str:
     filas = []
     for clave in servicio.CLAVES_EXTERNAS:
         es_columna = clave in M0.COLUMNAS
-        tipo = "texto" if clave in servicio.CLAVES_TEXTO else "número"
+        # T-2 sumo dos claves que no son una magnitud: un objeto (la seccion
+        # medida del receptor) y un booleano (el acceso de mantenimiento).
+        tipo = ("texto" if clave in servicio.CLAVES_TEXTO
+                else "objeto" if clave in servicio.CLAVES_OBJETO
+                else "booleano" if clave in servicio.CLAVES_BOOLEANAS
+                else "número")
         familias = servicio.FAMILIAS_QUE_USAN.get(clave)
         usan = ("las tres" if familias is None
                 else ", ".join(f.value for f in familias))
-        if clave in servicio.EXTERNOS_CON_VIA_ALTERNA:
+        if clave in servicio.CLAVES_BOOLEANAS:
+            si_falta = "es opcional: sin ella no se afirma nada"
+        elif clave in servicio.EXTERNOS_CON_VIA_ALTERNA:
             si_falta = "el programa la resuelve por otra vía"
         elif es_columna:
             si_falta = "vale la celda del CSV"

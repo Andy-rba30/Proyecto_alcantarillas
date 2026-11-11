@@ -928,7 +928,7 @@ CENSO_DE_MARCAS = {
     # fuente primaria y quedo `CBR_MIN_FISICO = 0.0`, cuyo literal es exento
     # (cero) y cuya marca por tanto no exime nada: se conserva como
     # justificacion escrita, igual que las demas del archivo, pero no cuenta.
-    "src/dominios.py": 4,
+    "src/dominios.py": 5,    # T-2: el techo de la profundidad del receptor medido
     # UNA sola: `CIFRAS_MAGNITUD = 3`, los decimales con que la traza de la
     # memoria imprime una magnitud (§4.4). Es de la misma naturaleza que los
     # `FMT_*` de M11 --- cuantos decimales se escriben, no cuanto vale nada ---

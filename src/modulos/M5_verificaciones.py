@@ -1,8 +1,8 @@
 """
 M5_verificaciones.py
 =====================
-Fase 5 de la hoja de ruta: las ONCE verificaciones de la tabla principal
-(V1 a V9), cada una como funcion propia que devuelve un `Verificacion` (nunca
+Fase 5 de la hoja de ruta: las DOCE verificaciones de la tabla principal
+(V1 a V10; once hasta T-2, que sumo V10), cada una como funcion propia que devuelve un `Verificacion` (nunca
 un bool desnudo), mas `verificar()`, el agregado que MD.py llama con la firma
 que declara su Protocol `Verificador`.
 
@@ -15,8 +15,10 @@ que declara su Protocol `Verificador`.
                                   se evalua con la rama n_max, la estimacion
                                   BAJA de velocidad -- ver `v2_velocidad_minima`)
     V2b Sedimentacion/colmatacion S_conducto >= S_cauce   [C] HDS-5 num. 5.3.3
-                                  + acceso de mantenimiento    [A]
-                                  (INDICADOR aplicado como umbral duro; el
+                                  + acceso de mantenimiento    [N] 4.1.1.3.7 d) + [A]
+                                  (INDICADOR, aplicado con el regimen de
+                                  'regimen_v2b' [A]: con aviso desde T-2,
+                                  umbral duro hasta entonces; el
                                   segundo indicador del numeral queda
                                   declarado pendiente -- ver
                                   `v2b_sedimentacion`)
@@ -33,12 +35,17 @@ que declara su Protocol `Verificador`.
                                   'peso_especifico_relleno_kn_m3'              [A]
     V8  Evento extremo (FEN)      sin TR mayor ni umbral -> pendiente      [A]
     V9  Disponibilidad de diametro  D <= tope de M2                        [C]
+    V10 Pendiente del conducto    S_min <= S_conducto <= S_max              [A]
+                                  ('pendiente_minima_conducto' y
+                                  'pendiente_maxima_conducto'; T-2)
 
-Por que ya son ONCE funciones para las ONCE filas de la tabla de Fase 5
+Por que ya son DOCE funciones para las DOCE filas de la tabla de Fase 5
 ----------------------------------------------------------------------
-La tabla de Fase 5 de la hoja de ruta lista once verificaciones -- V1, V2,
-**V2b**, V3, V4, **V4b**, V5, V6, V7, V8, V9 -- y este modulo implementa las
-ONCE. Las dos que faltaban se cablearon en sesiones distintas y por la misma
+La tabla de Fase 5 de la hoja de ruta lista doce verificaciones -- V1, V2,
+**V2b**, V3, V4, **V4b**, V5, V6, V7, V8, V9 y, desde T-2, **V10** (la
+pendiente del conducto, que entro a la tabla y al modulo en el mismo
+cambio) -- y este modulo implementa las DOCE. Las dos que faltaban de las
+once primeras se cablearon en sesiones distintas y por la misma
 regla: cuando se pudo sostener el umbral con su fuente, no antes.
 
 **V2b - sedimentacion / colmatacion. IMPLEMENTADA desde S20**
@@ -157,8 +164,8 @@ Consecuencia practica: mientras 'remanso_derecho_via', 'TR_evento_extremo',
 `verificar()` (y por lo tanto `MD.disenar_punto` / `MD.disenar_lote`) se
 detiene con `CriterioPendienteError` para CUALQUIER punto. No es un defecto
 de este modulo: es la misma regla que ya aplica a 'TW_receptor' o
-'v_max_tmc' -- un vacio real bloquea el calculo, no lo esconde. Las once
-funciones individuales (v1_borde_libre, ..., v9_disponibilidad_diametro) SI
+'v_max_tmc' -- un vacio real bloquea el calculo, no lo esconde. Las doce
+funciones individuales (v1_borde_libre, ..., v10_pendiente_conducto) SI
 son utilizables una por una hoy mismo; es el AGREGADO el que hereda el
 bloqueo de las pendientes.
 
@@ -313,7 +320,12 @@ def _regimen_de_v1_v2(codigo: str, resultado: ResultadoHidraulico,
     """
     if resultado.regimen_barril is RegimenBarril.LLENO:
         return REGIMEN_LLENO
-    if resultado.control_gobernante is ControlGobernante.SALIDA:
+    # --- T-2 --- (INF-5.1.6) EL BARRIL HORIZONTAL VA SIEMPRE POR EL PERFIL,
+    # tambien cuando el mayor HW es el de la entrada: con S = 0 no hay
+    # tirante normal ni velocidad uniforme que comparar (`y_normal` es None),
+    # y la lamina dentro del conducto es la que sube desde la salida (H2).
+    if (resultado.control_gobernante is ControlGobernante.SALIDA
+            or resultado.sin_tirante_normal):
         if resultado.perfil is None:
             raise MetodoNoEvaluableError(
                 que=codigo, procedimiento=PROCEDIMIENTO_PERFIL_LAMINA,
@@ -428,6 +440,19 @@ NUMERAL_V7 = ("Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; "
               "procedimiento: Fase 8, item 3)")
 NUMERAL_V8 = "Fase 5, V8"
 NUMERAL_V9 = "Sec. 3.2 (V9, nuevo en v7)"
+# --- T-2 --- V10 lleva su sustento LARGO, como V1, V2 y V2b, y por la misma
+# razon: es lo unico que la tabla de verificaciones imprime. Los dos limites
+# son adopciones [A]; lo que las fuentes dicen --y lo que NO dicen-- va aqui.
+NUMERAL_V10 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 "Pendiente '
+               'longitudinal", pag. impresa 71: exige que la pendiente no '
+               'altere "desmesuradamente" la erosion y la sedimentacion, SIN '
+               'fijar cifra. La banda es adopcion del proyectista '
+               "('pendiente_minima_conducto' y 'pendiente_maxima_conducto' "
+               '[A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril '
+               'horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la '
+               'mayoria de las alcantarillas se construyen por debajo del '
+               '10 %, sin medidas estructurales especiales (num. 5.4.4, pag. '
+               'impresa 5.16)')
 
 CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
@@ -482,6 +507,66 @@ CRITERIO_V_MAX_CONCRETO = "v_max_concreto_eleccion"
 CRITERIO_BORDE_LIBRE = "borde_libre_y_sobre_d_max"
 CRITERIO_V_MIN = "velocidad_minima_autolimpieza_m_s"
 
+# --- T-2 --- (cadena T, 2026-11-11) -----------------------------------------
+# LA LECTURA DEL BORDE LIBRE CUANDO EL BARRIL VA LLENO POR EL RECEPTOR
+# (INF-3.2.6), y LA BANDA DE PENDIENTE DEL CONDUCTO (INF-3.2.7). Los tres son
+# criterios [A] de perfil con ventana; las fichas dicen que sostiene cada
+# valor. `limites_de_pendiente()` es la lectura UNICA de la banda: la usa V10
+# aqui y la usara M7 (T-6) para decir si la pendiente adoptada la gobierna la
+# minima o la maxima.
+CRITERIO_BORDE_LIBRE_BAJO_TW = "borde_libre_bajo_tw_ahogante"
+LECTURA_TW_NO_CUMPLE = "no_cumple"
+LECTURA_TW_AVISO = "aviso"
+LECTURAS_BAJO_TW = (LECTURA_TW_NO_CUMPLE, LECTURA_TW_AVISO)
+CRITERIO_PENDIENTE_MINIMA = "pendiente_minima_conducto"
+CRITERIO_PENDIENTE_MAXIMA = "pendiente_maxima_conducto"
+
+
+def _lectura_bajo_tw_ahogante() -> str:
+    """
+    La lectura declarada en 'borde_libre_bajo_tw_ahogante', validada como
+    segunda linea (la puerta ya exige la categoria): forma MAT-D13.
+    """
+    lectura = ca.valor(CRITERIO_BORDE_LIBRE_BAJO_TW)   # CriterioPendienteError
+    if not (isinstance(lectura, str) and lectura in LECTURAS_BAJO_TW):
+        raise DatoInvalidoError(
+            campo=CRITERIO_BORDE_LIBRE_BAJO_TW, valor=lectura,
+            motivo=(f"'{CRITERIO_BORDE_LIBRE_BAJO_TW}' vale {lectura!r} y las "
+                    f"unicas opciones son "
+                    f"{', '.join(map(repr, LECTURAS_BAJO_TW))}: es un "
+                    "conjunto cerrado"))
+    return lectura
+
+
+def limites_de_pendiente() -> Tuple[float, float]:
+    """
+    (S_min, S_max): la banda de pendiente del conducto que el proyecto
+    adopta, de los criterios [A] 'pendiente_minima_conducto' y
+    'pendiente_maxima_conducto' (Manual num. 4.1.1.3.3, sin cifra; HDS-5 num.
+    3.3.4 y 5.4.4).
+
+    Es la lectura unica de la banda, con su guardia cruzada: una minima mayor
+    que la maxima no deja pendiente admisible y es un par de declaraciones
+    que se contradicen, no un dato del punto. Forma MAT-D13: condicion en
+    positivo y negada, mensaje con el PAR culpable.
+    """
+    s_min = float(ca.valor(CRITERIO_PENDIENTE_MINIMA))
+    s_max = float(ca.valor(CRITERIO_PENDIENTE_MAXIMA))
+    if not s_min >= 0:
+        raise DatoInvalidoError(
+            CRITERIO_PENDIENTE_MINIMA, valor=s_min,
+            motivo="la pendiente minima del conducto no puede ser negativa: "
+                   "0 es el barril horizontal, y la pendiente adversa no se "
+                   "admite")
+    if not s_min <= s_max:
+        raise DatoInvalidoError(
+            CRITERIO_PENDIENTE_MAXIMA, valor=s_max,
+            motivo=f"la banda de pendiente del conducto queda vacia con el "
+                   f"par ('{CRITERIO_PENDIENTE_MINIMA}' = {s_min}, "
+                   f"'{CRITERIO_PENDIENTE_MAXIMA}' = {s_max}): la minima "
+                   "supera a la maxima y ninguna pendiente cumpliria V10")
+    return s_min, s_max
+
 
 def _umbral_adoptado_v1() -> float:
     """
@@ -532,7 +617,8 @@ CLAVE_HW_D_MAX = "HW_D_max"
 def verificaciones_no_evaluadas() -> Tuple[str, ...]:
     """
     Las filas de la tabla de Fase 5 que este modulo NO implementa como
-    verificacion. Desde S20 la tupla esta VACIA: las once se evaluan.
+    verificacion. Desde S20 la tupla esta VACIA: se evaluan todas (once
+    entonces, doce desde T-2).
 
     Misma forma y mismo proposito que
     `M8_estructural.verificacion_diferida_estructural`: lo que queda fuera del
@@ -596,6 +682,9 @@ CITA_DEL_UMBRAL = {
     # cuando la fuente lo recomienda sobre un baden.
     "VC1": "MC_HHD.4.1.1.4.1e#RANGO",
     "V7": "MP.T2.4.5.3.1-2",
+    # --- T-2 --- V10: la cita que lleva el NUMERO de la banda (el 10 %). La
+    # del Manual obliga a estudiar la pendiente y no dice cuanto.
+    "V10": "HDS5_3ED.5.4.4#PENDIENTE_10",
 }
 
 
@@ -762,13 +851,30 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     `y_normal`:
 
       * barril LLENO (TW >= D, `ResultadoHidraulico.regimen_barril`): el
-        tirante es D entero, y/D = 1 y NO CUMPLE. Aqui el veredicto no se
+        tirante es D entero, y/D = 1. Aqui el veredicto no se
         apoya en la recomendacion del 25 % sino en la exigencia del mismo
         parrafo --«las alcantarillas no deben ser diseñadas para trabajar a
         seccion llena» (pag. impresa 79, `MC_HHD.4.1.1.3.7b#LLENA`)--, que
         viaja como cita textual del paso. Hasta EXT-3 esta funcion media el
         tirante normal tambien ahi y daba [OK] con y/D = 0.135 sobre un
         barril que la misma memoria decia ahogado.
+        DESDE T-2 (INF-3.2.6) ESE CASO TIENE NOMBRE Y CRITERIO: es el barril
+        lleno POR EL NIVEL DEL RECEPTOR, y lo que V1 hace lo declara el [A]
+        'borde_libre_bajo_tw_ahogante'. «no_cumple» (valor del archivo, la
+        conducta de EXT-3): NO CUMPLE. «aviso»: el borde libre se juzga con
+        el tirante PROPIO del caudal de diseño --`y_normal`--; si lo
+        conserva, `cumple=True` con veredicto INDICADOR y el diametro no se
+        descarta; si no, NO CUMPLE igual. La memoria imprime cual aplico.
+        EL MISMO CRITERIO GOBIERNA EL TRAMO ANTERIOR, cuando el TW queda
+        entre el llenado admisible y la clave (0.75·D < TW < D) y es el
+        tirante maximo del perfil: el borde libre lo toma el receptor igual
+        que con el barril lleno, y la lectura no puede cambiar al cruzar
+        TW = D. Bajo «no_cumple» nada se mueve (V1 ya no cumplia ahi, por el
+        tirante maximo del perfil); bajo «aviso» la lectura es continua y
+        monotona en el TW.
+        Y el otro caso, el barril lleno POR EL CAUDAL DE DISEÑO (la lamina
+        del perfil toca la clave con TW < D), NO CUMPLE siempre, con la
+        misma cita, sin que el criterio intervenga.
       * parcialmente lleno bajo control de ENTRADA: `y_normal`, resuelto con
         n_max (rama de capacidad): mas rugosidad da mas tirante para el mismo
         Q, o sea el extremo conservador para una verificacion de borde libre.
@@ -779,10 +885,15 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
         Hasta E-A esta funcion lo decia con `MetodoNoEvaluableError`, que
         queda como fallback de un resultado sin perfil (ver
         `_regimen_de_v1_v2`). No inventa un criterio de llenado.
+      * barril HORIZONTAL (S = 0; T-2, INF-5.1.6): no hay tirante normal, y
+        el tirante es el maximo del perfil cualquiera que sea el control que
+        da la mayor carga.
     """
     simbolo, nombre, procedencia = _magnitud_de_llenado(material)
     regimen = _regimen_de_v1_v2("V1", resultado, punto.id)
     lleno = regimen == REGIMEN_LLENO
+    y_sobre_D_max = _umbral_adoptado_v1()
+    lleno_por_caudal = False
     if lleno:
         y = D
         procedencia_y = (
@@ -793,14 +904,24 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
         citas_de_regimen = ("MC_HHD.4.1.1.3.7b#LLENA",)
     elif regimen == REGIMEN_PERFIL:
         y = resultado.perfil.y_max_m
+        lleno_por_caudal = not y < D - TOL_UMBRAL_NORMATIVO
         procedencia_y = (
             "tirante MAXIMO del perfil de la lamina de agua (M4, paso 4.3c/"
-            "4.3d, con n_max): el barril va parcialmente lleno bajo control "
-            "de SALIDA, el control esta aguas abajo y la lamina sube desde "
-            "max(y_c, TW) hacia la entrada, de modo que el tirante uniforme "
-            "de Manning no describe el flujo; el borde libre se juzga donde "
-            "menos hay")
-        citas_de_regimen = ()
+            "4.3d, con n_max): "
+            + ("el barril es HORIZONTAL (S = 0) y no tiene tirante normal, "
+               "de modo que la lamina dentro del conducto es la que sube "
+               "desde max(y_c, TW) hacia la entrada"
+               if resultado.sin_tirante_normal else
+               "el barril va parcialmente lleno bajo control "
+               "de SALIDA, el control esta aguas abajo y la lamina sube desde "
+               "max(y_c, TW) hacia la entrada, de modo que el tirante uniforme "
+               "de Manning no describe el flujo")
+            + "; el borde libre se juzga donde menos hay")
+        # LLENO POR EL CAUDAL DE DISEÑO: la lamina toca la clave con el TW
+        # por debajo de ella. Es el caso que la frase prohibitiva del
+        # numeral describe sin matiz, y se cita.
+        citas_de_regimen = (("MC_HHD.4.1.1.3.7b#LLENA",) if lleno_por_caudal
+                            else ())
     else:
         y = resultado.y_normal
         procedencia_y = (
@@ -812,8 +933,103 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     simbolo_y = {REGIMEN_LLENO: "y", REGIMEN_PERFIL: "y_max",
                  REGIMEN_UNIFORME: "y_normal"}[regimen]
     y_sobre_D = y / D
-    y_sobre_D_max = _umbral_adoptado_v1()
     cumple = y_sobre_D <= y_sobre_D_max + TOL_UMBRAL_NORMATIVO
+
+    # --- T-2 --- (INF-3.2.6) QUIEN LE QUITA EL BORDE LIBRE AL BARRIL: el
+    # caudal de diseño o el nivel del receptor. V1 separa los dos casos:
+    #   * por el CAUDAL DE DISEÑO (la lamina toca la clave con el TW por
+    #     debajo, o el tirante propio del caudal ya supera el llenado
+    #     admisible): no cumple siempre, y ningun criterio interviene;
+    #   * por el NIVEL DEL RECEPTOR: el TW queda por encima del llenado
+    #     admisible (TW/D > y/D maximo) y es el quien fija el tirante maximo
+    #     dentro del barril. Lo que V1 hace ahi lo declara el criterio [A]
+    #     'borde_libre_bajo_tw_ahogante'.
+    # EL CASO DEL RECEPTOR ES UNO SOLO A LO LARGO DE TODO EL TW, y no solo
+    # con el regimen LLENO (TW >= D). La primera redaccion de T-2 lo
+    # reconocia solo ahi, y el auditor adversarial midio la consecuencia en
+    # A-02 (Q = 0.48 m3/s, S = 0.008): bajo «aviso», con TW = 0.80 y 0.89 m
+    # el Ø 0.90 no pasaba; con TW = 0.90 pasaba; y con TW = 1.00 pasaba el
+    # Ø 0.90 y fallaba el Ø 1.05. Mas ahogamiento era mas permisivo y el
+    # tubo chico pasaba donde el grande no: una lectura discontinua en el TW
+    # no sirve para barrer la sensibilidad. La condicion es ahora la misma
+    # con el barril lleno y con el TW entre el llenado admisible y la clave:
+    # el tirante maximo no supera al TW (lo fija el receptor, no el caudal).
+    # EL BARRIL HORIZONTAL entra al caso por el TW solo: sobre un fondo plano
+    # la lamina sube siempre hacia la entrada (H2) y el tirante maximo queda
+    # por encima del TW, pero no hay tirante normal con que decir cuanto de
+    # ese llenado es del caudal. Se reconoce el caso para DECIRLO: bajo
+    # «aviso» no cumple igual, y la memoria explica por que.
+    TW = resultado.TW_m
+    remansado_por_receptor = (
+        regimen == REGIMEN_PERFIL and not lleno_por_caudal
+        and TW is not None
+        and not TW / D <= y_sobre_D_max + TOL_UMBRAL_NORMATIVO
+        and (not y > TW + TOL_UMBRAL_NORMATIVO
+             or resultado.sin_tirante_normal))
+    por_receptor = lleno or remansado_por_receptor
+    lectura_tw = _lectura_bajo_tw_ahogante() if por_receptor else None
+    aviso_por_tw = False
+    sustitucion_extra: Tuple[Magnitud, ...] = ()
+    elecciones: Tuple[EleccionDeProyecto, ...] = ()
+    if por_receptor:
+        # EL TIRANTE PROPIO DEL CAUDAL DE DISEÑO, que es lo que el diametro
+        # puede resolver: el normal de Manning. En un barril horizontal no
+        # existe, y entonces no hay con que separar los dos casos.
+        y_propio = resultado.y_normal
+        propio_cumple = (y_propio is not None and
+                         y_propio / D <= y_sobre_D_max + TOL_UMBRAL_NORMATIVO)
+        aviso_por_tw = lectura_tw == LECTURA_TW_AVISO and propio_cumple
+        sustitucion_extra = (
+            Magnitud("TW", TW if TW is not None
+                     else "no informado", "m" if TW is not None
+                     else "",
+                     "tirante del receptor sobre el fondo de la salida, el "
+                     "del paso 4.3: "
+                     + ("alcanza o supera la clave del barril, y "
+                        "por eso el regimen es LLENO POR EL NIVEL DEL "
+                        "RECEPTOR, no por el caudal de diseño"
+                        if lleno else
+                        "queda por encima del llenado admisible y por debajo "
+                        "de la clave, y es el tirante maximo dentro del "
+                        "barril: el borde libre lo toma EL NIVEL DEL "
+                        "RECEPTOR, no el caudal de diseño"),
+                     cifras=CIFRAS_MAGNITUD if TW is not None
+                     else None),
+            (Magnitud("y_normal", y_propio, "m",
+                      "tirante que el caudal de diseño tendria SIN el "
+                      "remanso del receptor (M3, Manning con n_max): es "
+                      "el llenado que depende del diametro, y el que se juzga "
+                      "contra el borde libre cuando la lectura adoptada es "
+                      "«aviso»", cifras=CIFRAS_MAGNITUD)
+             if y_propio is not None else
+             Magnitud("y_normal", "no existe (S = 0)", "",
+                      "barril horizontal: no hay tirante normal con que "
+                      "separar el llenado propio del caudal del remanso "
+                      "del receptor, y V1 no cumple bajo las dos lecturas",
+                      cifras=None)),
+        )
+        elecciones = (EleccionDeProyecto(
+            que_se_adopto="lectura del borde libre cuando lo toma el nivel "
+                          "del receptor (TW por encima del llenado "
+                          "admisible, llegue o no a la clave)",
+            valor=str(lectura_tw),
+            entre=tuple(str(v) for v in
+                        (ca.criterio(CRITERIO_BORDE_LIBRE_BAJO_TW).sensibilidad
+                         or ())),
+            de_donde=f"el criterio '{CRITERIO_BORDE_LIBRE_BAJO_TW}' [A]: el "
+                     "numeral prohibe DISEÑAR para seccion llena y "
+                     "recomienda un borde libre, y no distingue lo que "
+                     "produce el caudal de lo que produce el receptor",
+            por_que="«no_cumple» es la lectura literal: el riesgo de "
+                    "obstruccion que el Manual invoca existe igual con el "
+                    "barril remansado. «aviso» lee que la regla es sobre "
+                    "el diseño del conducto: si con su propio caudal conserva "
+                    "el borde libre, el remanso se declara y no descarta "
+                    "el diametro, porque ningun diametro menor que el TW lo "
+                    "resuelve. La eleccion y su consecuencia estan en la "
+                    "ficha del criterio",
+            cita_id="MC_HHD.4.1.1.3.7b#LLENA",
+            clave_criterio=CRITERIO_BORDE_LIBRE_BAJO_TW),)
     umbral = _umbral_de(
         "V1", valor=y_sobre_D_max, unidad="",
         descripcion=f"y/{simbolo} maximo admisible (borde libre >= "
@@ -827,10 +1043,76 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
         f"el 0.75 ni la razon y/{simbolo}: escribe «el 25 % de la altura, "
         "diametro o flecha de la estructura», y en esta seccion la magnitud "
         f"que corresponde de las tres es {nombre}.")
+    if por_receptor:
+        nota += (
+            " CASO APLICADO: "
+            + (f"barril LLENO POR EL NIVEL DEL RECEPTOR (TW >= {simbolo})"
+               if lleno else
+               "BORDE LIBRE TOMADO POR EL NIVEL DEL RECEPTOR (el TW queda "
+               f"entre el llenado admisible y {nombre}"
+               + (": el barril es horizontal y la lamina sube desde el hacia "
+                  "la entrada)" if resultado.sin_tirante_normal else
+                  ", y es el tirante maximo dentro del barril)"))
+            + ", no por el caudal de diseño. Lo que V1 hace ahi lo "
+            f"declara el criterio [A] '{CRITERIO_BORDE_LIBRE_BAJO_TW}', que "
+            f"en esta corrida vale «{lectura_tw}»: "
+            + (("NO CUMPLE, por la exigencia de la pag. impresa 79 leida al "
+                "pie de la letra." if lleno else
+                "NO CUMPLE: el borde libre se mide con el tirante del barril, "
+                "venga de donde venga.")
+               if lectura_tw == LECTURA_TW_NO_CUMPLE else
+               "el borde libre se juzga con el tirante propio del caudal de "
+               "diseño (y_normal); "
+               + ("lo conserva, de modo que el remanso queda como AVISO "
+                  "y no descarta el diametro."
+                  if aviso_por_tw else
+                  "NO lo conserva (o no existe, en un barril horizontal), de "
+                  "modo que V1 NO CUMPLE igual."))
+            + " El TW y su via estan en el paso 1.3; si sale de la seccion "
+              "ADOPTADA del receptor, es esa adopcion la que decide.")
+    elif lleno_por_caudal:
+        nota += (
+            " CASO APLICADO: barril LLENO POR EL CAUDAL DE DISEÑO -- la "
+            "lamina toca la clave con el TW por debajo de ella --: NO CUMPLE "
+            "por la exigencia de la pag. impresa 79, y el criterio "
+            f"'{CRITERIO_BORDE_LIBRE_BAJO_TW}' no interviene.")
     de_alcance = _nota_de_alcance(
         punto, "la altura interior del propio barril")
+    if aviso_por_tw:
+        veredicto = Veredicto(
+            tipo=TipoDeVeredicto.INDICADOR,
+            margen=y_sobre_D_max - y_sobre_D, unidad="",
+            explicacion=(
+                ("el barril va LLENO POR EL NIVEL DEL RECEPTOR (TW >= D) y no "
+                 "tiene borde libre durante la avenida"
+                 if lleno else
+                 "el NIVEL DEL RECEPTOR deja al barril con menos borde libre "
+                 "del recomendado durante la avenida (TW por encima del "
+                 "llenado admisible)")
+                + "; con su propio caudal lo conservaria. Bajo "
+                "borde_libre_bajo_tw_ahogante = aviso "
+                "el diametro NO se descarta: ninguno menor que el TW lo "
+                "resuelve, y lo que lo resuelve es la cota de la salida o la "
+                "rasante. Queda como aviso: riesgo de obstruccion con el "
+                "receptor en ese nivel"))
+    else:
+        veredicto = _veredicto(
+            cumple, y_sobre_D_max - y_sobre_D, "",
+            "margen de borde libre por encima del minimo adoptado"
+            if cumple else
+            "el barril va LLENO POR EL NIVEL DEL RECEPTOR (TW >= D): no hay "
+            "borde libre, y la fuente prohibe diseñar para seccion llena "
+            "(pag. impresa 79)"
+            if lleno else
+            "el barril va LLENO POR EL CAUDAL DE DISEÑO: la lamina toca la "
+            "clave, y la fuente lo prohibe expresamente (pag. impresa 79)"
+            if lleno_por_caudal else
+            "el NIVEL DEL RECEPTOR deja al barril con menos borde libre del "
+            "recomendado (TW por encima del llenado admisible)"
+            if remansado_por_receptor else
+            "el conducto trabaja con menos borde libre del recomendado")
     return Verificacion(
-        cumple=cumple,
+        cumple=cumple or aviso_por_tw,
         numeral=NUMERAL_V1,
         valor_obtenido=y_sobre_D,
         valor_admisible=y_sobre_D_max,
@@ -850,20 +1132,15 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
             sustitucion=(
                 Magnitud(simbolo_y, y, "m",
                          procedencia_y, cifras=CIFRAS_MAGNITUD),
-                Magnitud(simbolo, D, "m", procedencia, cifras=CIFRAS_FACTOR)),
+                Magnitud(simbolo, D, "m", procedencia, cifras=CIFRAS_FACTOR))
+            + sustitucion_extra,
             resultado=Magnitud(f"y/{simbolo}", y_sobre_D, "",
                                f"{simbolo_y} / {simbolo}, "
                                f"calculado en esta verificacion",
                                cifras=CIFRAS_MAGNITUD),
             umbral=umbral,
-            veredicto=_veredicto(
-                cumple, y_sobre_D_max - y_sobre_D, "",
-                "margen de borde libre por encima del minimo adoptado"
-                if cumple else
-                "el barril va LLENO (TW >= D): no hay borde libre, y la "
-                "fuente lo prohibe expresamente (pag. impresa 79)"
-                if lleno else
-                "el conducto trabaja con menos borde libre del recomendado"),
+            veredicto=veredicto,
+            elecciones=elecciones,
             nota_del_proyecto=f"{nota} {de_alcance}".strip(),
         ),
     )
@@ -971,10 +1248,14 @@ def v2_velocidad_minima(*, resultado: ResultadoHidraulico) -> Verificacion:
         simbolo_V = "V_min"
         procedencia_V = (
             "M4 (paso 4.3c/4.3d): Q_celda / A(y_max), la velocidad MINIMA del "
-            "perfil de la lamina de agua, con n_max. El barril va parcialmente "
-            "lleno bajo control de SALIDA y el control esta aguas abajo: la "
-            "velocidad uniforme de M3 no describe este flujo, y el piso de "
-            "autolimpieza se juzga donde la velocidad es menor")
+            "perfil de la lamina de agua, con n_max. "
+            + ("El barril es HORIZONTAL (S = 0): no hay velocidad uniforme, "
+               "y el piso de autolimpieza se juzga donde la velocidad es "
+               "menor" if resultado.sin_tirante_normal else
+               "El barril va parcialmente "
+               "lleno bajo control de SALIDA y el control esta aguas abajo: la "
+               "velocidad uniforme de M3 no describe este flujo, y el piso de "
+               "autolimpieza se juzga donde la velocidad es menor"))
     else:
         V = resultado.V_sedimentacion
         simbolo_V = "V_sedimentacion"
@@ -1082,11 +1363,14 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
 
         umbral_duro          el indicador disparado deja `cumple=False` y MD
                              descarta la seccion (conducta de S20; valor del
-                             archivo).
+                             archivo entre PF-4 y T-2).
         indicador_con_aviso  la comparacion es LA MISMA (mismos numeros, el
                              mismo margen) y `cumple=True` siempre: el paso
                              lleva veredicto INDICADOR cuando se dispara,
                              CUMPLE cuando no, y el diametro no se descarta.
+                             Valor del archivo desde T-2: es aplicar la
+                             fuente como esta escrita, y lo unico coherente
+                             con admitir el barril horizontal (INF-5.1.6).
 
     El matiz viaja ademas en `NUMERAL_V2B` y en `UMBRALES_DE_VERIFICACION`,
     que es lo que M11 imprime siempre.
@@ -1164,8 +1448,12 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
                 "acceso de mantenimiento",
             formula="S_conducto >= S_cauce",
             formula_cita_id="HDS5_3ED.5.3.3#INDICADORES",
+            # --- T-2 --- La tercera es la EXIGENCIA [N] de la otra mitad de
+            # la fila: el num. 4.1.1.3.7 d) «Mantenimiento y limpieza». El
+            # dispositivo de acceso sigue siendo el [A] de abajo.
             citas_textuales=("HDS5_3ED.5.3.3#INDICADORES",
-                             "HDS5_3ED.5.3.3#ALINEADO"),
+                             "HDS5_3ED.5.3.3#ALINEADO",
+                             "MC_HHD.4.1.1.3.7d"),
             sustitucion=(
                 Magnitud("S_conducto", resultado.S, "m/m",
                          "pendiente CON QUE CORRIO EL DISEÑO (la del cauce, "
@@ -1212,7 +1500,11 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
                     de_donde="el criterio 'acceso_mantenimiento_v2b' [A]: "
                              "ninguna norma de normas/ prescribe el dispositivo",
                     por_que="la fila V2b de la hoja de ruta es [N] + [A], y esta "
-                            "es la mitad [A]. El indicador de pendiente dice si "
+                            "es la mitad [A]. La mitad [N] es la exigencia del "
+                            "num. 4.1.1.3.7 d) del Manual -- las dimensiones "
+                            "deben permitir el mantenimiento y la limpieza --, "
+                            "que no dice CON QUE se entra. El indicador de "
+                            "pendiente dice si "
                             "el punto TIENDE a colmatarse; el acceso dice si se "
                             "va a poder limpiar cuando lo haga. El diametro "
                             "minimo de 0.90 m garantiza que una persona quepa, "
@@ -1228,10 +1520,11 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
                 "exigencia: como se aplica lo declara el criterio "
                 "'regimen_v2b' [A] -- en esta corrida, "
                 + ("como INDICADOR CON AVISO, que se evalua igual y no "
-                   "descarta el diametro." if aviso else
+                   "descarta el diametro; es el valor del archivo desde T-2."
+                   if aviso else
                    "como UMBRAL DURO, que detiene el punto cuando se "
-                   "dispara; es la lectura mas conservadora y la del "
-                   "archivo.")),
+                   "dispara; es la lectura mas conservadora, declarada para "
+                   "esta corrida.")),
         ),
     )
 
@@ -1259,6 +1552,45 @@ def _regimen_v2b() -> str:
 # ---------------------------------------------------------------------------
 # V3 - Velocidad maxima (Tabla N 10 / vacios PPI-FHWA)
 # ---------------------------------------------------------------------------
+
+def _velocidad_de_v3(resultado: ResultadoHidraulico) -> Magnitud:
+    """
+    La velocidad que V3 compara contra el techo, con su procedencia.
+
+    En flujo uniforme es `V_erosion`, la rama de n MINIMO (la estimacion
+    ALTA: el extremo conservador contra un techo). --- T-2 --- EN UN BARRIL
+    HORIZONTAL (S = 0, INF-5.1.6) no hay velocidad uniforme: la mayor del
+    barril es la de la seccion de SALIDA, porque sobre un fondo horizontal
+    la lamina es subcritica y baja hacia la salida (perfil H2), donde pasa
+    por min(D, max(TW, y_c)). Es `ResultadoHidraulico.V_salida` (HDS-5 num.
+    3.1.6, pag. impresa 3.18), que no lleva n. No se le busca un sustituto
+    con Manning, que ahi no tiene solucion.
+    """
+    if not resultado.sin_tirante_normal:
+        return Magnitud(
+            "V_erosion", resultado.V_erosion, "m/s",
+            "M3, velocidad de la rama de n MINIMO -- la estimacion "
+            "ALTA de velocidad, que es el extremo conservador contra "
+            "un TECHO. No es la de V2, que verifica un piso y usa la "
+            "rama opuesta", cifras=CIFRAS_MAGNITUD)
+    if resultado.V_salida is None:
+        raise MetodoNoEvaluableError(
+            que="V3",
+            procedimiento="la velocidad a la salida de HDS-5 3.1.6, que "
+                          "`M4.resolver_control` emite en "
+                          "`ResultadoHidraulico.V_salida`: este resultado no "
+                          "la trae",
+            motivo="el barril es horizontal (S = 0), no hay velocidad "
+                   "uniforme de Manning, y la maxima del conducto es la de "
+                   "la seccion de salida")
+    return Magnitud(
+        "V_salida", resultado.V_salida.valor, "m/s",
+        "M4 (paso 4.3b): Q_celda / A(min(D, max(TW, y_c))), la velocidad de "
+        "la seccion de SALIDA (HDS-5 num. 3.1.6). El barril es HORIZONTAL "
+        "(S = 0): no hay velocidad uniforme, la lamina baja hacia la salida "
+        "y esa es la velocidad MAXIMA del conducto. No lleva n de Manning",
+        cifras=CIFRAS_MAGNITUD)
+
 
 def _paso_v3(*, resultado: ResultadoHidraulico, v_max: float,
              clave, cumple: bool, material: Material, de_tabla: bool):
@@ -1316,13 +1648,9 @@ def _paso_v3(*, resultado: ResultadoHidraulico, v_max: float,
         que="Velocidad maxima: comprobacion contra el techo del revestimiento",
         formula="V <= v_max del revestimiento",
         formula_cita_id="MC_HHD.4.1.1.3.6#T10",
-        sustitucion=(
-            Magnitud("V_erosion", resultado.V_erosion, "m/s",
-                     "M3, velocidad de la rama de n MINIMO -- la estimacion "
-                     "ALTA de velocidad, que es el extremo conservador contra "
-                     "un TECHO. No es la de V2, que verifica un piso y usa la "
-                     "rama opuesta", cifras=CIFRAS_MAGNITUD),),
-        resultado=Magnitud("V_erosion", resultado.V_erosion, "m/s",
+        sustitucion=(_velocidad_de_v3(resultado),),
+        resultado=Magnitud(_velocidad_de_v3(resultado).simbolo,
+                           _velocidad_de_v3(resultado).valor, "m/s",
                            "la misma velocidad, contrastada contra el techo",
                            cifras=CIFRAS_MAGNITUD),
         umbral=_umbral_de("V3", valor=v_max, unidad="m/s",
@@ -1330,7 +1658,7 @@ def _paso_v3(*, resultado: ResultadoHidraulico, v_max: float,
                                       f"«{material.nombre}»",
                           criterio=clave),
         veredicto=_veredicto(
-            cumple, v_max - resultado.V_erosion, "m/s",
+            cumple, v_max - _velocidad_de_v3(resultado).valor, "m/s",
             "por debajo del maximo admisible del revestimiento" if cumple else
             "por encima del maximo: el flujo abrasiona el revestimiento"),
         elecciones=tuple(elecciones),
@@ -1406,11 +1734,12 @@ def v3_velocidad_maxima(*, material: Material,
     if material.tipo in CRITERIO_V_MAX:
         clave = CRITERIO_V_MAX[material.tipo]
         v_max = ca.valor(clave)     # CriterioPendienteError mientras falte
-        cumple = resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO
+        V = _velocidad_de_v3(resultado).valor   # V_erosion; V_salida si S = 0
+        cumple = V <= v_max + TOL_UMBRAL_NORMATIVO
         return Verificacion(
             cumple=cumple,
             numeral=NUMERAL_V3,
-            valor_obtenido=resultado.V_erosion,
+            valor_obtenido=V,
             valor_admisible=v_max,
             criterio_aplicado=clave,
             codigo="V3",
@@ -1432,11 +1761,12 @@ def v3_velocidad_maxima(*, material: Material,
             v_max = adoptado
             clave = CRITERIO_V_MAX_CONCRETO
 
-    cumple = resultado.V_erosion <= v_max + TOL_UMBRAL_NORMATIVO
+    V = _velocidad_de_v3(resultado).valor       # V_erosion; V_salida si S = 0
+    cumple = V <= v_max + TOL_UMBRAL_NORMATIVO
     return Verificacion(
         cumple=cumple,
         numeral=NUMERAL_V3,
-        valor_obtenido=resultado.V_erosion,
+        valor_obtenido=V,
         valor_admisible=v_max,
         criterio_aplicado=clave,   # None = [N] puro de la Tabla N 10
         codigo="V3",
@@ -2411,6 +2741,145 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 
 
 # ---------------------------------------------------------------------------
+# --- T-2 --- V10 - Pendiente del conducto dentro de la banda adoptada
+# ---------------------------------------------------------------------------
+
+def v10_pendiente_conducto(*, resultado: ResultadoHidraulico) -> Verificacion:
+    """
+    S_min <= S_conducto <= S_max, con la banda de los criterios [A]
+    'pendiente_minima_conducto' y 'pendiente_maxima_conducto' (T-2,
+    INF-3.2.7).
+
+    QUE DICE LA FUENTE Y QUE NO. El Manual (num. 4.1.1.3.3 «Pendiente
+    longitudinal», pag. impresa 71) exige que la pendiente de la
+    alcantarilla no altere «desmesuradamente» la erosion y la sedimentacion
+    y que sus cambios se estudien con cuidado; NO fija cifra, ni minima ni
+    maxima. El HDS-5 admite el barril horizontal (num. 3.3.4, pag. impresa
+    3.25) y DESCRIBE que la mayoria de las alcantarillas se construyen por
+    debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag.
+    impresa 5.16). De ahi la banda adoptada: 0.0 a 0.10, cada extremo con su
+    ventana y su ficha. Es [A]: un punto rechazado por V10 no lo rechaza la
+    norma, lo rechaza la banda que el proyecto adopto.
+
+    LA PENDIENTE QUE SE JUZGA es `resultado.S`, la pendiente CON QUE CORRIO
+    EL DISEÑO --la del cauce salvo que el punto declare `S_conducto`--, que
+    es la misma que usa la Fase 7 (MAT-D9). No se vuelve a elegir aqui.
+
+    NO DEPENDE DEL DIAMETRO, y hay que decirlo: si la pendiente cae fuera de
+    la banda, ningun escalon del catalogo la cumple y el punto sale «no
+    factible» con V10 incumplida en toda su progresion. El remedio no es
+    otro tubo: es otra pendiente (`S_conducto`), o declarar otra banda con
+    su razon.
+
+    NO SUSTITUYE A LAS QUE MIDEN EL EFECTO. La sedimentacion la juzgan V2
+    (velocidad minima) y V2b (indicador de pendiente frente al cauce); la
+    erosion, V3 (velocidad maxima) y la proteccion de la Fase 6. V10 acota
+    la geometria; aquellas, lo que el agua hace con ella.
+    """
+    S = resultado.S
+    s_min, s_max = limites_de_pendiente()
+    sobre_la_minima = S >= s_min - TOL_UMBRAL_NORMATIVO
+    bajo_la_maxima = S <= s_max + TOL_UMBRAL_NORMATIVO
+    cumple = sobre_la_minima and bajo_la_maxima
+    # EL EXTREMO QUE SE IMPRIME COMO ADMISIBLE es el que el punto incumple;
+    # si cumple los dos, el maximo, que es el que tiene consecuencia de obra.
+    gobierna_minima = not sobre_la_minima
+    admisible = s_min if gobierna_minima else s_max
+    criterio = (CRITERIO_PENDIENTE_MINIMA if gobierna_minima
+                else CRITERIO_PENDIENTE_MAXIMA)
+    margen = (S - s_min) if gobierna_minima else (s_max - S)
+    umbral = _umbral_de(
+        "V10", valor=admisible, unidad="m/m",
+        descripcion=("pendiente minima adoptada del conducto"
+                     if gobierna_minima else
+                     "pendiente maxima adoptada del conducto: hasta ella la "
+                     "fuente no pide medidas estructurales especiales"),
+        criterio=criterio)
+
+    def _eleccion(clave: str, que: str, valor: float, por_que: str,
+                  cita: str) -> EleccionDeProyecto:
+        return EleccionDeProyecto(
+            que_se_adopto=que, valor=f"{valor:g} m/m",
+            # La ventana es parte de la ficha, pero un caso patron puede
+            # sustituir el criterio entero sin ella: entonces no hay «entre».
+            entre=tuple(f"{v:g} m/m"
+                        for v in (ca.criterio(clave).sensibilidad or ())),
+            de_donde=f"el criterio '{clave}' [A]: ninguna fuente de normas/ "
+                     "fija esta pendiente en cifras",
+            por_que=por_que, cita_id=cita, clave_criterio=clave)
+
+    return Verificacion(
+        cumple=cumple,
+        numeral=NUMERAL_V10,
+        valor_obtenido=S,
+        valor_admisible=admisible,
+        criterio_aplicado=criterio,
+        codigo="V10",
+        paso=paso(
+            "F5.V10",
+            codigo="V10",
+            que="Pendiente del conducto: dentro de la banda adoptada",
+            formula="S_min <= S_conducto <= S_max",
+            formula_cita_id="MC_HHD.4.1.1.3.3",
+            citas_textuales=("MC_HHD.4.1.1.3.3", "HDS5_3ED.3.3.4#HORIZONTAL",
+                             "HDS5_3ED.5.4.4#PENDIENTE_10"),
+            sustitucion=(
+                Magnitud("S_conducto", S, "m/m",
+                         "pendiente CON QUE CORRIO EL DISEÑO (la del cauce, "
+                         "salvo que el punto declare `S_conducto`)",
+                         cifras=CIFRAS_FINA),
+                Magnitud("S_min", s_min, "m/m",
+                         f"criterio '{CRITERIO_PENDIENTE_MINIMA}' [A]",
+                         cifras=CIFRAS_FINA),
+                Magnitud("S_max", s_max, "m/m",
+                         f"criterio '{CRITERIO_PENDIENTE_MAXIMA}' [A]",
+                         cifras=CIFRAS_FINA)),
+            resultado=Magnitud(
+                "S_conducto - S_min" if gobierna_minima
+                else "S_max - S_conducto", margen, "m/m",
+                "holgura respecto del extremo de la banda que se imprime "
+                "como admisible: negativa es fuera de la banda",
+                cifras=CIFRAS_FINA),
+            umbral=umbral,
+            veredicto=_veredicto(
+                cumple, margen, "m/m",
+                "la pendiente del conducto esta dentro de la banda adoptada"
+                if cumple else
+                "el conducto queda MAS PLANO que la pendiente minima adoptada"
+                if gobierna_minima else
+                "el conducto queda MAS EMPINADO que la pendiente maxima "
+                "adoptada: por encima de ella la fuente pide medidas "
+                "estructurales que este calculo no dimensiona"),
+            elecciones=(
+                _eleccion(
+                    CRITERIO_PENDIENTE_MINIMA,
+                    "pendiente minima admitida en el conducto", s_min,
+                    "el Manual no fija cifra y el HDS-5 admite el barril "
+                    "horizontal; la sedimentacion la juzgan V2 y V2b, no "
+                    "esta banda", "HDS5_3ED.3.3.4#HORIZONTAL"),
+                _eleccion(
+                    CRITERIO_PENDIENTE_MAXIMA,
+                    "pendiente maxima admitida en el conducto", s_max,
+                    "el HDS-5 describe que bajo el 10 % no se usan medidas "
+                    "estructurales especiales; este programa no dimensiona "
+                    "anclajes ni ataduras", "HDS5_3ED.5.4.4#PENDIENTE_10")),
+            nota_del_proyecto=(
+                "LA BANDA ES DEL PROYECTO, NO DE LA NORMA: el Manual exige "
+                "estudiar la pendiente y no la acota en cifras. Esta "
+                "verificacion no depende del diametro -- la pendiente es la "
+                "misma en todo el catalogo --, de modo que incumplirla no se "
+                "resuelve con otro tubo sino con otra pendiente del conducto "
+                "(`S_conducto`) o con otra banda, declarada con su razon. Y "
+                "no sustituye a V2, V2b y V3, que juzgan lo que el agua hace "
+                "con esa pendiente."
+                + (" EL BARRIL ES HORIZONTAL (S = 0): no hay tirante normal, "
+                   "y el paso 4.1 dice de donde salen entonces el tirante y "
+                   "la velocidad." if resultado.sin_tirante_normal else "")),
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Agregado: la firma que llama MD.py
 # ---------------------------------------------------------------------------
 
@@ -2509,11 +2978,14 @@ def verificar(*, punto: PuntoCritico, material: Material,
              seccion: Seccion,
              resultado: ResultadoHidraulico) -> Tuple[Verificacion, ...]:
     """
-    Las once verificaciones de la Fase 5, en el orden de la tabla. Coincide
+    Las doce verificaciones de la Fase 5, en el orden de la tabla salvo
+    V10 (la pendiente del conducto, T-2), que la tabla lista al final y aqui
+    se evalua detras de V4b para que V5 y V8 no la tapen. Coincide
     con la firma de `modulos.MD.Verificador`: MD la importa como
     `modulos.M5_verificaciones.verificar` cuando no se le inyecta otra.
 
-    UNA SOLA POSICION DEPENDE DE LA FAMILIA, y es la septima: en la Familia C
+    UNA SOLA POSICION DEPENDE DE LA FAMILIA, y es la octava (la septima
+    hasta T-2, que intercalo V10 detras de V4b): en la Familia C
     la ocupa VC1 (cruce de canal) y en las demas V5 (remanso en el derecho de
     via). El resto se evalua igual en las tres. La justificacion de esa
     sustitucion --- que V5 presupone agua extendiendose sobre la plataforma y
@@ -2560,6 +3032,14 @@ def verificar(*, punto: PuntoCritico, material: Material,
         lambda: v3_velocidad_maxima(material=material, resultado=resultado),
         lambda: v4_carga_entrada(punto=punto, resultado=resultado),
         lambda: v4b_relacion_hw_d(D=D, resultado=resultado),
+        # --- T-2 --- V10 VA ANTES DEL HUECO DE V5, y no al final de la
+        # tabla. No depende del diametro, de la familia ni de ningun dato de
+        # expediente --su banda son dos criterios con valor--, y detras de V5
+        # y de V8 no llegaba a evaluarse en ninguna corrida de expediente del
+        # repositorio: las dos se detienen por un criterio pendiente y esta
+        # tupla se corta en la primera que se detiene. Lo midio el auditor
+        # adversarial de T-2.
+        lambda: v10_pendiente_conducto(resultado=resultado),
         pieza_del_hueco_de_V5(punto=punto, resultado=resultado)[1],
         lambda: v6_material_solido_arrastre(material=material),
         lambda: v7_flotacion(punto=punto, material=material,

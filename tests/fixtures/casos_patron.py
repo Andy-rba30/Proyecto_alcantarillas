@@ -1109,7 +1109,12 @@ CP5DR_TRANSICION_CAJON = {
     "S_umbral": 0.21519208968426007,      # (c*16 + Y - K*3.5^M)/|Ks|
     "S_umbral_minimo_de_las_doce": 0.21519208968426007,
     "S_umbral_maximo_de_las_doce": 0.4933055559965851,
-    "cartas_cajon_forma_2": 12,
+    # Quince desde T-2 (INF-3.2.2), que transcribio las tres filas de la
+    # Carta 13 (bisel superior con aletas desplazadas). Eran doce, y las dos
+    # claves de arriba conservan «de_las_doce» en el nombre: el minimo y el
+    # maximo NO se movieron, porque los umbrales de las tres nuevas (0.2265,
+    # 0.2853 y 0.3441) caen dentro del intervalo.
+    "cartas_cajon_forma_2": 15,
     "cartas_cajon_forma_1": 3,
 
     "S_ensayada": 0.30,                   # por encima del umbral
@@ -1585,4 +1590,244 @@ CP12_REGIMEN_LLENO = {
     "V_llena_esperada": 0.07859503363, # m/s, Q/A_llena -- por debajo de V_MIN
     "y_sobre_D_esperado": 1,          # el tirante del regimen es D entero
     "tolerancia": 1e-9,               # los dorados llevan 9 decimales
+}
+
+
+# ---------------------------------------------------------------------------
+# --- T-2 --- CP-HDS5-DG1 · EJEMPLOS PUBLICADOS DEL HDS-5 (validacion externa)
+# ---------------------------------------------------------------------------
+# EL PRIMER DORADO DEL REPOSITORIO QUE NO SALE DE UNA FORMULA RECOMPUTADA SINO
+# DE UNA CORRIDA EXTERNA CITABLE (conflicto #7 de la matriz de auditorias;
+# INF-3.2.2). Son los dos ejemplos de diseño que el Cap. III del HDS-5 remite a
+# su «Design Guideline 1» (num. 3.3.6 «Example Problems», pag. impresa 3.26,
+# PDF 108), con control de ENTRADA y de SALIDA calculados los dos:
+#
+#   DG 1.3  «Circular culvert»   enunciado y resultados: pags. impresas DG1.1
+#           a DG1.3 (PDF 272-274); FORMULARIO con los intermedios («DG 1.3.3
+#           Culvert Design Form», Example Problem No. 1): pag. impresa DG1.4,
+#           PDF 275.
+#   DG 1.4  «Box culvert»        enunciado y resultados: pags. impresas DG1.8
+#           y DG1.9 (PDF 279-280); FORMULARIO («DG 1.4.3 Culvert Design
+#           Form», Example Problem No. 2): pag. impresa DG1.10, PDF 281.
+#
+# Los dos formularios son IMAGEN, sin capa de texto: se leyeron sobre la
+# pagina renderizada (T-2, 2026-11-11). Los enunciados si tienen texto.
+#
+# UNIDADES. La fuente resuelve los dos en unidades inglesas («The complete
+# customary unit (CU) solution is detailed below») y da de la solucion SI solo
+# un resumen, con la advertencia de que «direct conversion of the CU solution
+# to SI may yield slightly different results» (pag. impresa DG1.2). El codigo
+# opera en SI. LA CONVERSION SE HACE AQUI, en el fixture, y solo en un
+# sentido: los DATOS se convierten de pies a metros con el factor exacto
+# (1 ft = 0.3048 m; 1 ft3/s = 0.3048^3 m3/s), el motor corre en SI, y los
+# RESULTADOS del motor se llevan a pies para compararlos con la cifra impresa.
+# Los diametros nominales en pulgadas se convierten igual (54 in = 1.3716 m):
+# NO se usan los «1500 mm» de la solucion SI, que es otro tubo.
+#
+# QUE FILA DE LA TABLA A.1 CORRESPONDE A CADA RENGLON DEL FORMULARIO, que es
+# una lectura y se declara:
+#   «Conc. Circ. - groove end»     Carta 1, escala 2, «Groove end w/headwall».
+#        El formulario no dice si la campana va en cabezal o saliente. Se
+#        toma la de cabezal porque el enunciado diseña en cabezal («in
+#        headwall», pag. DG1.2) y porque es la que reproduce la lectura: con
+#        la escala 3 («Groove end projecting») el 54 in da HW/D = 1.799, +1.6
+#        % sobre el 1.77 publicado; con la escala 2, 1.761 (-0.5 %).
+#   «C.M.P. - bevel 45° in headwall»  Carta 3, escala A, «Beveled ring, 45°
+#        bevels».
+#   «Box - Sq. edge» (90° headwall)   Carta 8, escala 2, «90° and 15° wingwall
+#        flares»: el cabezal a 90° con borde a escuadra (el enunciado nombra
+#        las cartas 8B, 10B, 14B y 15B).
+#   «Box - 45° bevel»                 Carta 10, escala 2, «90° headwall w/45°
+#        bevels».
+#
+# LA TOLERANCIA, DECLARADA ANTES DE COMPARAR Y CON SU RAZON. Las cifras
+# publicadas son LECTURAS DE NOMOGRAMA redondeadas (HW/D a dos decimales, las
+# alturas a 0.1 ft); el motor resuelve las ecuaciones de las que el nomograma
+# sale. Dos tolerancias, y las dos se aplican:
+#
+#   tolerancia_de_la_fuente = 10 %   la que el propio HDS-5 declara para su
+#        procedimiento: «it should be assumed that the results of the
+#        procedure are accurate to within plus or minus ten percent, in terms
+#        of headwater elevation» (num. 3.1.1, pag. impresa 3.1, PDF 83).
+#   tolerancia_de_lectura   =  3 %   la del proyecto, mas estrecha: lo que
+#        cabe esperar entre una ecuacion y la lectura de su propio nomograma
+#        (dos decimales de HW/D sobre un valor del orden de 1.5 son ~1.3 %;
+#        0.1 ft sobre 4 ft son 2.5 %).
+#
+# Toda magnitud comparada tiene que caer dentro del 3 %, SALVO las que el
+# censo `fuera_de_tolerancia` nombra una a una con su causa. El censo se
+# comprueba en las dos direcciones --lo que nombra tiene que estar de verdad
+# fuera del 3 %-- para que no pueda esconder una magnitud que cumple, y NO se
+# ajusta la tolerancia para vaciarlo: la causa de cada una esta en la ficha
+# T2-05 de docs/decisiones_diferidas.md.
+PIE_EN_METROS = 0.3048              # definicion exacta del pie internacional
+PULGADA_EN_METROS = 0.0254          # definicion exacta de la pulgada
+
+CP_HDS5_DG1 = {
+    "fuente": "HDS-5 3a ed. (FHWA-HIF-12-026, abril 2012), Design Guideline 1 "
+              "«Culvert Design Using Nomographs»: DG 1.3 (circular) y DG 1.4 "
+              "(cajon); formularios en las pags. impresas DG1.4 (PDF 275) y "
+              "DG1.10 (PDF 281)",
+    "tolerancia_de_lectura": 0.03,
+    "tolerancia_de_la_fuente": 0.10,
+    "pagina_pdf_tolerancia_de_la_fuente": 83,
+    "frase_tolerancia_de_la_fuente": (
+        "accurate to within plus or minus ten percent, in terms of headwater "
+        "elevation"),
+    # --- DG 1.3: Q25 = 200 ft3/s, TW = 3.5 ft, So = 0.01, La = 200 ft,
+    #     ELi = 100.0 ft, ELo = 98.0 ft (pag. impresa DG1.2 y formulario).
+    "circular": {
+        "pagina_pdf_enunciado": 273, "pagina_pdf_formulario": 275,
+        "Q_ft3_s": 200.0, "TW_ft": 3.5, "S": 0.01, "L_ft": 200.0,
+        "EL_i_ft": 100.0, "EL_o_ft": 98.0,
+        "filas": (
+            {"id": "rcp_54_groove",        # el diseño ADOPTADO por el ejemplo
+             "D_in": 54.0, "carta": "circular_concreto_groove_end_headwall",
+             "n": 0.012, "ke": 0.2,        # n impreso en el formulario
+             "publicado": {"HW_sobre_D": 1.77, "HW_entrada_ft": 7.97,
+                           "d_c_ft": 4.1, "h_o_ft": 4.3, "H_ft": 4.7,
+                           "EL_ho_ft": 107.0, "V_salida_ft_s": 15.3,
+                           "control": "entrada"}},
+            {"id": "rcp_60_groove",
+             "D_in": 60.0, "carta": "circular_concreto_groove_end_headwall",
+             "n": 0.012, "ke": 0.2,
+             "publicado": {"HW_sobre_D": 1.36, "HW_entrada_ft": 6.80,
+                           "d_c_ft": 4.1, "h_o_ft": 4.6, "H_ft": 2.9,
+                           "EL_ho_ft": 105.5, "V_salida_ft_s": 15.6,
+                           "control": "entrada"}},
+            # LOS DOS DE METAL CORRUGADO. El formulario imprime el n del tubo
+            # ADOPTADO (concreto, 0.012) y no el del CMP. Lo que NO depende de
+            # n se compara como en las demas filas (`publicado`: el control
+            # de entrada, d_c y h_o). Lo que SI depende --H, la cota de
+            # control de salida, cual control gobierna y la velocidad de la
+            # fila de 72 in, que es la normal-- se compara con el n ACOTADO
+            # por la propia fuente (`n_interpretado`, abajo): no se le pide al
+            # motor una cifra, se le pide que la cifra publicada caiga DENTRO
+            # del intervalo que da el rango de la Tabla B.1.
+            {"id": "cmp_72_bisel_45",
+             "D_in": 72.0, "carta": "circular_anillo_biselado_45",
+             "n": None, "ke": 0.2,
+             "publicado": {"HW_sobre_D": 0.96, "HW_entrada_ft": 5.76,
+                           "d_c_ft": 3.8, "h_o_ft": 4.9},
+             "publicado_con_n_interpretado": {
+                 "H_ft": 2.6, "EL_ho_ft": 105.5, "V_salida_ft_s": 9.0,
+                 "control": "entrada"}},
+            # LA UNICA FILA DE LOS DOS FORMULARIOS QUE GOBIERNA LA SALIDA
+            # (EL_ho 108.9 > EL_hi 107.0), y por eso se descarta («try
+            # smoother pipe», pag. impresa DG1.3). Su velocidad de salida no
+            # depende de n: es Q/A al tirante critico (TW < d_c).
+            {"id": "cmp_60_bisel_45",
+             "D_in": 60.0, "carta": "circular_anillo_biselado_45",
+             "n": None, "ke": 0.2,
+             "publicado": {"HW_sobre_D": 1.40, "HW_entrada_ft": 7.10,
+                           "d_c_ft": 4.1, "h_o_ft": 4.6},
+             "publicado_con_n_interpretado": {
+                 "H_ft": 6.3, "EL_ho_ft": 108.9, "V_salida_ft_s": 11.9,
+                 "control": "salida"}},
+        ),
+        # EL n DEL METAL CORRUGADO ES UNA INTERPRETACION, y se declara. El
+        # enunciado dice «CMP with 2-2/3 by 1/2 in corrugations» (pag. impresa
+        # DG1.2, PDF 273) y no da n. La fuente lo acota en dos sitios:
+        #   * `rango`: Tabla B.1 «Manning's n Values for Culverts», pag.
+        #     impresa B.6 (PDF 208), fila «Corrugated Metal Pipe, Pipe-Arch
+        #     and Box (Annular Corrugations), 2-2/3 by 1/2 in»: 0.022-0.027.
+        #     (La fila helicoidal de la misma corrugacion da 0.011-0.023 y
+        #     remite a la Figura B.3; el enunciado no dice cual es, y el
+        #     nomograma de salida del CMP esta trazado con el n anular.)
+        #   * `tipico`: «Typical Manning's n values used for designing
+        #     culverts are n = 0.012 for smooth walled culverts and n = 0.024
+        #     for rough culverts (corrugated)», pag. impresa 3.8 (PDF 90); es
+        #     el n del nomograma de control de salida del CMP, «Head for
+        #     Standard C.M. Pipe Culverts Flowing Full, n = 0.024» (indice de
+        #     cartas, PDF 211).
+        # Medido: con el tipico el motor da H = 2.45 y 5.96 ft contra 2.6 y
+        # 6.3 publicados (-5.6 % y -5.5 %, dentro del 10 % de la fuente y
+        # fuera del 3 % de lectura); los dos publicados caen dentro del
+        # intervalo del rango ([2.21, 2.86] y [5.31, 7.03] ft), cerca de
+        # n = 0.025.
+        "n_interpretado": {
+            "tipico": 0.024, "pagina_pdf_tipico": 90,
+            "frase_tipico": "n = 0.024 for rough culverts (corrugated)",
+            "rango": (0.022, 0.027), "pagina_pdf_rango": 208,
+            "frase_rango": "0.022-0.027",
+        },
+    },
+    # --- DG 1.4: Q50 = 300 ft3/s, TW = 4.0 ft, So = 0.02, La = 250 ft,
+    #     ELi = 100.0 ft, ELo = 95.0 ft; concreto, n = 0.012 (formulario).
+    "cajon": {
+        "pagina_pdf_enunciado": 279, "pagina_pdf_formulario": 281,
+        "Q_ft3_s": 300.0, "TW_ft": 4.0, "S": 0.02, "L_ft": 250.0,
+        "EL_i_ft": 100.0, "EL_o_ft": 95.0,
+        "filas": (
+            {"id": "cajon_6x5_escuadra",
+             "B_ft": 6.0, "H_ft": 5.0, "carta": "cajon_concreto_aletas_90_15",
+             "n": 0.012, "ke": 0.5,
+             "publicado": {"HW_sobre_D": 1.57, "HW_entrada_ft": 7.9,
+                           "d_c_ft": 4.2, "h_o_ft": 4.6, "H_ft": 3.55,
+                           "EL_ho_ft": 103.2, "V_salida_ft_s": 21.1,
+                           "control": "entrada"}},
+            {"id": "cajon_5x5_escuadra",
+             "B_ft": 5.0, "H_ft": 5.0, "carta": "cajon_concreto_aletas_90_15",
+             "n": 0.012, "ke": 0.5,
+             "publicado": {"HW_sobre_D": 1.91, "HW_entrada_ft": 9.6,
+                           "d_c_ft": 4.8, "h_o_ft": 4.9, "H_ft": 5.2,
+                           "EL_ho_ft": 105.1, "V_salida_ft_s": 20.8,
+                           "control": "entrada"}},
+            {"id": "cajon_5x5_bisel_45",   # el diseño ADOPTADO por el ejemplo
+             "B_ft": 5.0, "H_ft": 5.0,
+             "carta": "cajon_concreto_cabezal_90_bisel_45",
+             "n": 0.012, "ke": 0.2,
+             "publicado": {"HW_sobre_D": 1.71, "HW_entrada_ft": 8.55,
+                           "d_c_ft": 4.8, "h_o_ft": 4.9, "H_ft": 5.0,
+                           "EL_ho_ft": 104.9, "V_salida_ft_s": 20.8,
+                           "control": "entrada"}},
+        ),
+    },
+    # LO QUE EL FORMULARIO PUBLICA Y NO SE COMPARA, con su razon.
+    # Desde la revision adversarial de T-2 las dos filas SI se comparan, por
+    # intervalo y con el n interpretado (`n_interpretado`); lo que sigue sin
+    # compararse CONTRA UNA CIFRA es lo de abajo.
+    "no_comparado": {
+        "cmp_72_bisel_45": "H, EL_ho y V_salida no se comparan contra una "
+                           "cifra al 3 %: el formulario no imprime el n del "
+                           "metal corrugado. Se comprueba que lo publicado "
+                           "cae en el intervalo del rango de n de la Tabla "
+                           "B.1",
+        "cmp_60_bisel_45": "H y EL_ho no se comparan contra una cifra al 3 %, "
+                           "por lo mismo; se comprueban por intervalo. La "
+                           "velocidad de salida si (no depende de n)",
+    },
+    # NINGUNA FILA CAE EN LA TRANSICION 3.5 < q* < 4.0 del control de entrada
+    # (q* = Ku·Q/(A·D^0.5), SI): los valores son 5.93, 4.56, 2.89 y 4.56 en el
+    # circular y 4.47, 5.37 y 5.37 en el cajon. El ejemplo publicado valida
+    # las dos ramas --una fila no sumergida, seis sumergidas-- y NO la recta
+    # de transicion, que sigue sostenida solo por los casos patron internos.
+    "q_estrella_transicion": (3.5, 4.0),
+    # EL CENSO DE LO QUE QUEDA FUERA DEL 3 %, magnitud a magnitud, con la
+    # diferencia MEDIDA (motor frente a publicado) y la causa. No se ajusta
+    # la tolerancia ni el motor para vaciarlo (ficha T2-05).
+    "fuera_de_tolerancia": {
+        ("cmp_60_bisel_45", "HW_sobre_D"): (
+            "-3.1 %: lectura de la Carta 3B. La ec. (A.3) con c = 0.0300 e "
+            "Y = 0.74 da 1.357 para q* = 4.555; el formulario lee 1.40"),
+        ("cmp_60_bisel_45", "HW_entrada_ft"): (
+            "-4.4 %: ademas de la lectura anterior, la cifra impresa (7.10 "
+            "ft) no es el producto de las dos que tiene al lado (1.40 x 5.0 "
+            "ft = 7.00 ft)"),
+        ("cajon_6x5_escuadra", "H_ft"): (
+            "-3.9 %: lectura del nomograma de control de salida (Carta 15B). "
+            "La formula (7) que el propio formulario imprime al pie da 3.41 "
+            "ft con sus datos (A = 30 ft2, R = 30/22 ft, n = 0.012, L = 250 "
+            "ft, ke = 0.5); el formulario anota 3.55"),
+        ("cajon_5x5_bisel_45", "H_ft"): (
+            "-11.4 %: la cifra impresa (5.0 ft) NO se reproduce con la "
+            "formula (7) del pie del formulario y el ke = 0.2 que la misma "
+            "fila declara, que da 4.43 ft; con ke = 0.5 daria 5.10 ft, que es "
+            "la fila de encima (5.2). Es una inconsistencia interna de la "
+            "fuente: pasar de ke 0.5 a 0.2 tiene que bajar H en 0.3 x V^2/2g "
+            "= 0.67 ft, y el formulario la baja 0.2 ft"),
+        ("cajon_5x5_bisel_45", "EL_ho_ft"): (
+            "-5.6 % sobre H + h_o (la altura sobre el fondo de la salida): "
+            "arrastra el H de la linea anterior"),
+    },
 }

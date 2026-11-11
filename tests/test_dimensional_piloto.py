@@ -285,6 +285,15 @@ RELACIONES: Dict[str, Tuple[Relacion, ...]] = {
         ("cota_entrada+HW", "r", "v['cota_entrada'] + v['HW']"),
         ("cota_subrasante-resguardo", "v['cota_subrasante']", "v['resguardo']"),
     ),
+    # M5 --- S_min <= S_conducto <= S_max (T-2). El resultado es la holgura
+    # respecto del extremo que se imprime como admisible, una diferencia de
+    # pendientes; y los dos extremos de la banda tienen la dimension de la
+    # pendiente que acotan. Entra al piloto porque V10 se evalua ANTES de
+    # que V5 se detenga, de modo que la corrida de referencia la alcanza.
+    "F5.V10@V10": (
+        ("S_max-S_conducto", "r", "v['S_max'] - v['S_conducto']"),
+        ("S_min~S_conducto", "v['S_min']", "v['S_conducto']"),
+    ),
 }
 
 # Las relaciones que NO cierran, con la razon. El test exige igualdad exacta

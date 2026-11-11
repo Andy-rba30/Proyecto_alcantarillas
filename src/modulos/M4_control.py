@@ -372,7 +372,7 @@ from __future__ import annotations
 
 import math
 import numbers
-from typing import NamedTuple, Optional, Tuple
+from typing import NamedTuple, Optional, Tuple, Union
 
 # EL RESOLUTOR SE IMPORTA EN EL PUNTO DE USO (EXT-8, PC-10): `scipy.optimize`
 # costaba 230-310 ms en CADA `import cli`, tambien en una corrida que no
@@ -398,9 +398,11 @@ from src.modelos import (CriterioPendienteError, PisoDeCargaEntrada,
                      LimiteNumericoError, Magnitud, Material,
                      MOTIVO_METODO_NO_EVALUABLE, PerfilLamina, RegimenBarril,
                      RegimenEntrada,
-                     ResultadoHidraulico, TiranteCritico, TipoDePerfil,
+                     ResultadoHidraulico, SinTiranteNormal, TiranteCritico,
+                     TipoDePerfil,
                      TipoDeVeredicto,
-                     TiranteNormal, TransicionEntrada, Umbral, Veredicto, paso)
+                     TiranteNormal, TransicionEntrada, Umbral, Veredicto,
+                     eleccion, paso)
 from src.modulos.M2_material import CRITERIO_N_CELDAS_CAJON, numero_de_celdas
 from src.modulos.M3_hidraulica import geometria, resolver_manning
 from src.tolerancias import (PASOS_PERFIL_LAMINA, TOL_ASINTOTA_PERFIL,
@@ -445,6 +447,29 @@ def _validar_positivo(nombre: str, dato: float, motivo: str) -> None:
     # positivo, y quien lo detiene es la guardia de finitud a la SALIDA.
     if not dato > 0:
         raise DatoInvalidoError(nombre, valor=dato, motivo=motivo)
+
+
+def _validar_pendiente(S: float) -> None:
+    """
+    --- T-2 --- (INF-5.1.6) La pendiente del conducto no puede ser NEGATIVA;
+    S = 0, el barril horizontal, se admite.
+
+    Hasta T-2 las tres piezas (`control_entrada`, `control_salida`,
+    `perfil_lamina`) llamaban a `_validar_positivo("S", ...)` y rechazaban el
+    barril horizontal como dato invalido. El HDS-5 lo admite (num. 3.3.4,
+    pag. impresa 3.25, `HDS5_3ED.3.3.4#HORIZONTAL`): con S = 0 la correccion
+    por pendiente del control de entrada vale cero, la perdida H del control
+    de salida es la misma y la caida S·L desaparece. La pendiente ADVERSA
+    sigue fuera: la fuente la describe como un asentamiento de la entrada,
+    con su propia regla practica, y este proyecto no la diseña. Forma
+    MAT-D13: condicion en positivo y negada, un NaN tampoco pasa.
+    """
+    if not S >= 0:
+        raise DatoInvalidoError(
+            "S", valor=S,
+            motivo="la pendiente del conducto no puede ser negativa: S = 0 "
+                   "es un barril horizontal, que se admite (HDS-5 num. "
+                   "3.3.4); una pendiente adversa no")
 
 
 def _validar_ke(ke: object, campo: str) -> float:
@@ -1053,7 +1078,7 @@ def control_entrada(Q: float, seccion: Seccion, S: float, hds5: ConstantesHDS5,
     (y para poder probar esta pieza sin depender de la anterior).
     """
     _validar_Q_D(Q, seccion)
-    _validar_positivo("S", S, "la pendiente del conducto debe ser positiva")
+    _validar_pendiente(S)       # S = 0 se admite: Ks*S = 0 (T-2, HDS-5 3.3.4)
 
     if critico is None:
         critico = tirante_critico(Q, seccion)
@@ -1280,7 +1305,7 @@ def control_salida(Q: float, seccion: Seccion, S: float, L: float, TW: float,
     control de entrada en `hw_gobernante()`.
     """
     _validar_Q_D(Q, seccion)
-    _validar_positivo("S", S, "la pendiente del conducto debe ser positiva")
+    _validar_pendiente(S)       # S = 0 se admite: S*L = 0 (T-2, HDS-5 3.3.4)
     _validar_positivo("L", L, "la longitud del conducto debe ser positiva")
     # `not TW >= 0` y no `TW < 0` (PC-05, forma MAT-D13): un TW = NaN pasaba
     # y HW salia NaN.
@@ -1499,7 +1524,8 @@ def regimen_del_barril(TW: float, seccion: Seccion) -> RegimenBarril:
 
 
 def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
-                        critico: TiranteCritico, normal: TiranteNormal,
+                        critico: TiranteCritico,
+                        normal: Union[TiranteNormal, SinTiranteNormal],
                         control: ControlGobernante) -> Tuple[Magnitud, float]:
     """
     (V_salida, y_salida) por HDS-5 3.1.6: la velocidad a la SALIDA del
@@ -1517,8 +1543,17 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
     recibia siempre hasta EXT-3, tambien bajo control de salida, donde en
     pendiente suave con salida libre la velocidad a y_c es MAYOR (1.508 vs
     1.184 m/s en el caso del dictamen) y la piedra salia chica.
+
+    BARRIL HORIZONTAL (T-2, INF-5.1.6): con S = 0 no hay tirante normal
+    (`normal` es un `SinTiranteNormal`), y la regla de la pag. 3.24 no se
+    puede aplicar aunque el mayor HW sea el de la entrada. Se aplica la de la
+    pag. 3.18 --el area al tirante min(D, max(TW, y_c))--, que es ademas la
+    que describe el flujo: sobre un fondo horizontal la lamina es subcritica
+    y baja hacia la salida, donde pasa por el tirante critico o por el TW.
+    El paso lo dice en su procedencia.
     """
-    if control is ControlGobernante.ENTRADA:
+    horizontal = isinstance(normal, SinTiranteNormal)
+    if control is ControlGobernante.ENTRADA and not horizontal:
         salida_llena = ("" if TW < seccion.altura - TOL_UMBRAL_NORMATIVO else
                         ". Con el TW sobre la clave la seccion de SALIDA va "
                         "llena tras el resalto (HDS-5 3.1.3, Fig. 3.1C/D) y la "
@@ -1569,17 +1604,25 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
                    f"(y_salida = {y_salida!r} m, con TW = {TW!r} m y "
                    f"y_c = {critico.y_c!r} m) no es positiva y la velocidad "
                    "de salida de HDS-5 3.1.6 no se puede formar")
+    por_horizontal = (
+        "" if not horizontal else
+        " BARRIL HORIZONTAL (S = 0): no hay tirante normal, de modo que esta "
+        "regla se aplica cualquiera que sea el control que da la mayor carga "
+        "(HDS-5 num. 3.3.4, pag. impresa 3.25); sobre un fondo horizontal la "
+        "lamina es subcritica y baja hacia la salida, que es donde la "
+        "velocidad del barril es MAXIMA")
     return Magnitud(
         "V_salida", Q_celda / A, "m/s",
         f"HDS-5 num. 3.1.6 (pag. impresa 3.18): bajo control de SALIDA el "
         f"area de la velocidad de salida la fija el TW; aqui {caso}. No lleva "
         f"n de Manning: es un caudal entre un area, y por eso no entra en la "
-        f"regla de doble n",
+        f"regla de doble n.{por_horizontal}",
         cifras=CIFRAS_MAGNITUD), y_salida
 
 
 def _regimen_y_salida(*, Q_celda: float, seccion: Seccion, TW: float,
-                      critico: TiranteCritico, normal: TiranteNormal,
+                      critico: TiranteCritico,
+                      normal: Union[TiranteNormal, SinTiranteNormal],
                       control: ControlGobernante) -> _RegimenYSalida:
     """La pieza 5 entera, resuelta UNA vez: el resultado y el paso la comparten."""
     V_salida, y_salida = velocidad_de_salida(
@@ -1744,11 +1787,19 @@ def perfil_lamina(*, Q_celda: float, seccion: Seccion, S: float, L: float,
     desde alli sigue la linea de energia llena (Fig. 3.7B). Asi el perfil no
     necesita `normal` y vale igual cuando M3 no tiene solucion.
 
+    Y POR ESO VALE TAMBIEN PARA EL BARRIL HORIZONTAL (T-2, INF-5.1.6). Con
+    S = 0 la pendiente de friccion es positiva en todo tirante, de modo que
+    Sf - S > 0 siempre: la lamina sube aguas arriba desde max(y_c, TW) sin
+    asintota --no hay y_n-- hasta cruzar la entrada o tocar la clave, y de
+    ahi sigue la linea de energia llena. Es el perfil H2 (`TipoDePerfil.H2`,
+    HDS-5 3.5.1), y sale de la misma escalera sin una rama propia: lo unico
+    que cambia es el rotulo.
+
     Devuelve un `PerfilLamina`; nunca `None`. Cuando el remanso no alcanza
     la entrada lo dice `alcanza_entrada=False` con `x_fin_remanso_m`.
     """
     _validar_Q_D(Q_celda, seccion)
-    _validar_positivo("S", S, "la pendiente del conducto debe ser positiva")
+    _validar_pendiente(S)       # S = 0 se admite: perfil H2 (T-2)
     _validar_positivo("L", L, "la longitud del conducto debe ser positiva")
     _validar_positivo("n", n, "el coeficiente de Manning debe ser positivo")
     if not TW >= 0:
@@ -1866,7 +1917,14 @@ def perfil_lamina(*, Q_celda: float, seccion: Seccion, S: float, L: float,
         raiz = _llenado_donde_Sf_iguala_S(seccion, Q_celda, n, S, llenado_actual,
                                           llenado_max)
         if raiz is None:
-            objetivo, terminal, tipo = llenado_max, "clave", TipoDePerfil.M2
+            # --- T-2 --- Con S = 0 no hay raiz NUNCA (Sf > 0 para todo
+            # tirante): la lamina sube sin asintota hasta la clave o hasta
+            # la entrada, y el perfil es el H2 de un fondo horizontal
+            # (HDS-5 3.5.1, pag. impresa 3.37). Con S > 0 es la M2 de
+            # siempre, que no encuentra y_n bajo la clave.
+            objetivo, terminal, tipo = (
+                llenado_max, "clave",
+                TipoDePerfil.M2 if S > 0 else TipoDePerfil.H2)
         else:
             objetivo, terminal, tipo = raiz, "", TipoDePerfil.M2
             y_asintota = seccion.geometria_en(raiz).y
@@ -1977,6 +2035,66 @@ def perfil_lamina(*, Q_celda: float, seccion: Seccion, S: float, L: float,
 # viene retirando. El unico que si juzga es el de h_o, y su umbral son las
 # CONDICIONES DE USO que la propia fuente le pone (NOR-HDS-05).
 
+def _paso_horizontal(*, Q: float, Q_celda: float, celdas: int, S: float,
+                     material: Material):
+    """
+    --- T-2 --- El paso 4.1 de un barril HORIZONTAL (S = 0): por que no hay
+    tirante normal y de donde salen entonces el tirante y la velocidad del
+    conducto (INF-5.1.6; HDS-5 num. 3.3.4, pag. impresa 3.25). Ocupa el
+    sitio del paso de Manning, que con S = 0 no tiene nada que resolver.
+    """
+    return paso(
+        "F4.HORIZONTAL",
+        codigo="4.1",
+        que="Barril horizontal: no hay tirante normal",
+        formula="Q = (k_n/n) * A * R^(2/3) * S^(1/2) con S = 0 da Q = 0 para "
+                "todo tirante: ningun flujo uniforme transporta el caudal de "
+                "diseño. El regimen del conducto lo fija el extremo de aguas "
+                "abajo (pasos 4.3, 4.3b y 4.3c)",
+        formula_cita_id="MC_HHD.4.1.1.3.6",
+        citas_textuales=("HDS5_3ED.3.3.4#HORIZONTAL", "HDS5_3ED.3.3.4#KS",
+                         "HDS5_3ED.3.3.4#H_SIN_AJUSTE", "HDS5_3ED.3.5.1#H2"),
+        sustitucion=(
+            Magnitud("Q", Q_celda, "m3/s",
+                     (f"caudal de UNA celda, Q/N con N = {celdas} del paso "
+                      f"del reparto (caudal del punto: "
+                      f"{Q:.{CIFRAS_MAGNITUD}f} m3/s)")
+                     if celdas != 1 else
+                     "caudal de diseño CON QUE CORRIO el punto",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("S", S, "m/m",
+                     "pendiente con que corrio el diseño: el punto declara "
+                     "'S_conducto' = 0, un barril horizontal. Es la MISMA "
+                     "que usa la Fase 7 (MAT-D9)", cifras=CIFRAS_FINA),
+            Magnitud("n_max", material.n_para_capacidad, "",
+                     f"extremo superior del rango de la Tabla Nº 09 para "
+                     f"«{material.nombre}»: es el n de la friccion del "
+                     f"control de salida y del perfil de la lamina",
+                     cifras=CIFRAS_FINA)),
+        resultado=Magnitud("y_normal", "no existe (S = 0)", "",
+                           "sin pendiente no hay flujo uniforme: no se "
+                           "resuelve ni se sustituye por otro numero",
+                           cifras=None),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="paso de calculo: no contrasta contra "
+                                        "ningun umbral"),
+        nota_del_proyecto=(
+            "LO QUE CAMBIA EN UN BARRIL HORIZONTAL, y lo que no. No cambia "
+            "el procedimiento de la carga: el control de entrada se resuelve "
+            "con la misma ecuacion, cuya correccion por pendiente Ks*S vale "
+            "cero, y el de salida con la misma H y sin caida S*L (pasos 4.2 "
+            "y 4.3). Cambia de donde salen el tirante y la velocidad DENTRO "
+            "del conducto, porque el flujo uniforme no existe: V1 y V2 "
+            "juzgan el tirante maximo y la velocidad minima del perfil de la "
+            "lamina (paso 4.3c, un H2 que sube desde la salida), V3 juzga la "
+            "velocidad de la seccion de salida, que es la MAXIMA del barril, "
+            "y esa misma velocidad es la que recibe la proteccion de la Fase "
+            "6 (paso 4.3b). No hay regla de doble n para las velocidades: "
+            "ninguna sale de Manning. La pendiente adversa (S < 0) NO se "
+            "admite."),
+    )
+
+
 def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entrada,
                        salida, control, gobierna_salida,
                        Q_celda: Optional[float] = None, celdas: int = 1,
@@ -2065,7 +2183,22 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
     # `g.R`, `g.y` --: no se recalculan con `seccion.area(y)` ni con
     # `seccion.perimetro(y)`, que es exactamente lo que la regla vinculante
     # #12 existe para impedir.
-    geometria_normal = normal.geometria
+    # --- T-2 --- EL BARRIL HORIZONTAL (S = 0) NO TIENE TIRANTE NORMAL, y los
+    # dos pasos 4.1 lo dicen en vez de imprimir una geometria que no existe:
+    # el de la seccion se resuelve en el tirante CRITICO --el unico tirante de
+    # trabajo que el barril horizontal tiene antes del perfil--, y el de
+    # Manning se sustituye por el paso F4.HORIZONTAL (mas abajo).
+    horizontal = isinstance(normal, SinTiranteNormal)
+    geometria_normal = critico.geometria if horizontal else normal.geometria
+    Y_N_NO_EXISTE = "no existe (S = 0)"
+    del_tirante = (
+        "tirante CRITICO del paso 4.2: el barril es horizontal (S = 0) y no "
+        "tiene tirante normal, de modo que la seccion se resuelve en el "
+        "tirante con que el agua pasa por la salida libre"
+        if horizontal else
+        "tirante normal, que es el que resuelve el paso "
+        "siguiente: Brent recorre ESTA misma seccion hasta que "
+        "Manning iguala el caudal de diseño")
     # LA FILA DEL PASO 4.1 QUE ES LA ALTURA DEL BARRIL, para que los pasos 4.2
     # y 4.3 puedan apuntar a ella por su nombre: `magnitudes_de_forma()` la
     # pone la ULTIMA a proposito («D» en la circular, «H» en el marco), y el
@@ -2080,10 +2213,7 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         formula=seccion.formula_geometria(),
         formula_cita_id="MC_HHD.4.1.1.3.6",
         sustitucion=seccion.magnitudes_de_forma() + (
-            Magnitud("y", geometria_normal.y, "m",
-                     "tirante normal, que es el que resuelve el paso "
-                     "siguiente: Brent recorre ESTA misma seccion hasta que "
-                     "Manning iguala el caudal de diseño",
+            Magnitud("y", geometria_normal.y, "m", del_tirante,
                      cifras=CIFRAS_MAGNITUD),
             Magnitud("A", geometria_normal.A, "m2",
                      "area hidraulica a ese tirante; sale de la formula de "
@@ -2108,7 +2238,9 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
             f"ella sin que cambie el procedimiento."),
     )
 
-    de_manning = paso(
+    de_manning = _paso_horizontal(
+        Q=Q, Q_celda=Q_celda, celdas=celdas, S=S, material=material,
+        ) if horizontal else paso(
         "F4.MANNING",
         codigo="4.1",
         que="Tirante normal y velocidades en el conducto",
@@ -2435,6 +2567,23 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                            cifras=CIFRAS_MAGNITUD),
         veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
                             explicacion="paso de calculo"),
+        # --- T-2 --- EL PISO, COMO ELECCION CON FUNDAMENTO. Hasta T-2 la
+        # adopcion solo se contaba en la nota del paso, en prosa del modulo;
+        # ahora viaja como `EleccionDeProyecto` cuyo `por_que` sale de
+        # `F4.PISO_HW` (verbo DEFINE, sostenido por HDS5_3ED.A.2.1#FORMA_1).
+        elecciones=(() if piso is None else (eleccion(
+            "F4.PISO_HW",
+            que_se_adopto="carga de control de entrada cuando la correccion "
+                          "por pendiente Ks*S la deja nula o negativa",
+            valor=str(piso.adoptado),
+            entre=tuple(str(v) for v in
+                        ca.criterio(CRITERIO_HW_FUERA_DE_RANGO).sensibilidad),
+            de_donde=f"el criterio '{piso.criterio}' [A]: la fuente define "
+                     "la Forma 1 como H_c ajustada con factores de "
+                     "correccion y no dice que hacer cuando el de pendiente "
+                     "anula la carga",
+            cita_id="HDS5_3ED.A.2.1#FORMA_1",
+            clave_criterio=piso.criterio),)),
         nota_del_proyecto=(
             "Las constantes K, M, c e Y salen de la Tabla A.1, carta y "
             "escala de la embocadura adoptada; las ECUACIONES salen del num. "
@@ -2598,9 +2747,14 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                      f"del paso 4.1", cifras=CIFRAS_FACTOR),
             Magnitud("y_c", critico.y_c, "m", "tirante critico del paso 4.2",
                      cifras=CIFRAS_MAGNITUD),
-            Magnitud("y_n", normal.geometria.y, "m",
-                     "tirante normal del paso 4.1, con n_max",
-                     cifras=CIFRAS_MAGNITUD),
+            (Magnitud("y_n", Y_N_NO_EXISTE, "",
+                      "barril horizontal: no hay tirante normal (paso 4.1), "
+                      "y la velocidad a la salida se mide en min(D, max(TW, "
+                      "y_c)) cualquiera que sea el control", cifras=None)
+             if horizontal else
+             Magnitud("y_n", normal.geometria.y, "m",
+                      "tirante normal del paso 4.1, con n_max",
+                      cifras=CIFRAS_MAGNITUD)),
             Magnitud("Q_celda", Q_celda, "m3/s",
                      "caudal de UNA celda, el mismo con que se resolvieron "
                      "los pasos 4.1 a 4.3", cifras=CIFRAS_MAGNITUD),
@@ -2664,9 +2818,13 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
                  "acotado a D (pag. 3.12, «critical depth at the culvert "
                  "outlet or … the tailwater depth, whichever is higher»)",
                  cifras=CIFRAS_MAGNITUD),
-        Magnitud("y_n", normal.geometria.y, "m",
-                 "tirante normal del paso 4.1, con n_max (Manning con "
-                 "K_MANNING_SI = 1)", cifras=CIFRAS_MAGNITUD),
+        (Magnitud("y_n", Y_N_NO_EXISTE, "",
+                  "barril horizontal: no hay tirante normal (paso 4.1) ni "
+                  "asintota hacia la que el perfil tienda", cifras=None)
+         if horizontal else
+         Magnitud("y_n", normal.geometria.y, "m",
+                  "tirante normal del paso 4.1, con n_max (Manning con "
+                  "K_MANNING_SI = 1)", cifras=CIFRAS_MAGNITUD)),
         (Magnitud("y_n'", perfil.y_asintota_m, "m",
                   "la asintota del perfil: el tirante en que la Ec. 3.7 da "
                   "Sf = S con el mismo n. Queda un 0.05 % por encima de y_n "
@@ -2677,7 +2835,9 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
          Magnitud("y_n'", "sin asintota bajo la clave", "",
                   "la Ec. 3.7 no da Sf = S entre la frontera y la clave: la "
                   "lamina termina en y_c (S1), en la clave (M2 que se "
-                  "empalma con la linea llena) o va llena", cifras=None)),
+                  "empalma con la linea llena; o H2, en un barril "
+                  "horizontal, donde Sf > S = 0 en todo tirante) o va llena",
+                  cifras=None)),
         Magnitud("y_c", critico.y_c, "m",
                  "tirante critico del paso 4.2: el limite de la curva S1 y "
                  "la frontera con salida libre", cifras=CIFRAS_MAGNITUD),
@@ -2707,7 +2867,8 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
         Magnitud("perfil", perfil.tipo.value, "",
                  "rotulo del perfil resuelto (HDS-5 Section 3.5.1): M1 baja "
                  "hacia y_n desde un TW alto, M2 sube hacia y_n, S1 baja "
-                 "hacia y_c en pendiente pronunciada, uniforme si la "
+                 "hacia y_c en pendiente pronunciada, H2 sube sin asintota "
+                 "sobre un fondo horizontal (S = 0), uniforme si la "
                  "frontera es y_n, llena si la linea de energia llena "
                  "alcanza la entrada", cifras=None),
         Magnitud("escalones", perfil.rungs, "",
@@ -2978,7 +3139,7 @@ def caudal_por_celda(Q: float, material: Material) -> Tuple[float, int]:
 
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
                      material: Material,
-                     normal: Optional[TiranteNormal] = None
+                     normal: Union[TiranteNormal, SinTiranteNormal, None] = None
                      ) -> Optional[ResultadoHidraulico]:
     """
     Resultado hidraulico completo de una combinacion punto/material/diametro:
@@ -3019,6 +3180,16 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
     procedencia, mas el bloque h_o entero (h_o, TW, `ahogado_por_TW`) que
     hasta entonces se quedaba en `ControlSalida` (SIS-B-18). `control_salida`
     no cambia: la pieza 5 lee lo que aquella ya calculo.
+
+    Y DESDE T-2 RESUELVE EL BARRIL HORIZONTAL (INF-5.1.6). Con S = 0 M3
+    devuelve `SinTiranteNormal` y no `None`: no es «esta seccion no
+    alcanza», es que no hay flujo uniforme. Las tres piezas corren igual
+    --el control de entrada con Ks·S = 0, el de salida con S·L = 0 y el
+    perfil de la lamina, que es un H2-- y lo que cambia es lo que el
+    resultado lleva: `y_normal`, `V_erosion` y `V_sedimentacion` van en
+    `None` (no existen), y V1, V2, V3 y la Fase 6 leen el perfil y la
+    velocidad de la seccion de salida (`ResultadoHidraulico.
+    sin_tirante_normal`). HDS-5 num. 3.3.4, pag. impresa 3.25.
     """
     Q_celda, celdas = caudal_por_celda(Q, material)
     if normal is None:
@@ -3058,11 +3229,14 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
     HW_salida_efectivo = (perfil.HW_efectivo_m if perfil.HW_efectivo_m is not None
                           else salida.HW)
 
+    horizontal = isinstance(normal, SinTiranteNormal)
     return ResultadoHidraulico(
-        y_normal=normal.geometria.y,
+        # Sin tirante normal (barril horizontal) los tres van en None: no
+        # existen, y no se les pone un sustituto (T-2).
+        y_normal=None if horizontal else normal.geometria.y,
         y_critico=critico.y_c,
-        V_erosion=normal.V_erosion,
-        V_sedimentacion=normal.V_sedimentacion,
+        V_erosion=None if horizontal else normal.V_erosion,
+        V_sedimentacion=None if horizontal else normal.V_sedimentacion,
         Q=Q,
         # Q y S salen en el resultado porque son los datos CON QUE SE
         # RESOLVIO, no los de la columna: la Familia B y la C traen su propio

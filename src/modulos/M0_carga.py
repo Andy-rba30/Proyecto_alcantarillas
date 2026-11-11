@@ -586,9 +586,18 @@ def _valida_rangos(v: Dict[str, Optional[float]], id_punto: str) -> None:
         _exige(0 < v["S_cauce"] < S_CAUCE_MAX, "S_cauce", v["S_cauce"], id_punto,
                "la pendiente del cauce va en m/m y es mayor que 0 y menor que "
                f"{S_CAUCE_MAX}; si venia en porcentaje, divide entre cien")
+    # --- T-2 --- (INF-5.1.7) EL RECEPTOR SECO SE ADMITE: `Q_receptor_m3s = 0`
+    # es un dato valido --un dren que no lleva agua durante la avenida, dicho
+    # por quien lo opera-- y hasta T-2 se rechazaba aqui con «> 0» mientras la
+    # ficha de la variable (`variables_entrada`) decia «m3/s >= 0». Con cero,
+    # la via 3 del TW no resuelve Manning: el tirante del receptor es cero
+    # (`M3.tirante_normal_trapecial`). Lo que sigue sin poder ser es un
+    # caudal NEGATIVO. No es un valor por defecto: la celda vacia sigue
+    # siendo «sin dato», no «seco».
     if v["Q_receptor_m3s"] is not None:
-        _exige(v["Q_receptor_m3s"] > 0, "Q_receptor_m3s", v["Q_receptor_m3s"],
-               id_punto, "el caudal de diseno del receptor es positivo")
+        _exige(v["Q_receptor_m3s"] >= 0, "Q_receptor_m3s", v["Q_receptor_m3s"],
+               id_punto, "el caudal de diseno del receptor no puede ser "
+                         "negativo (0 es un receptor seco)")
 
     # El CBR de la subrasante define el resguardo de V4 (Sec. 5.1). Su rango
     # fisico es el de una proporcion positiva; que sea alto o bajo no lo

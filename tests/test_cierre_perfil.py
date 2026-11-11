@@ -162,7 +162,9 @@ def test_las_nueve_verificaciones_de_perfil_llegan_a_la_memoria(informe_perfil):
     """
     a01 = _punto(informe_perfil, "A-01")
     codigos = [v.codigo for _, v in a01.verificaciones() if v.codigo]
-    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V6",
+    # T-2 sumo V10 (la pendiente del conducto), que corre en los dos alcances
+    # y se evalua detras de V4b, antes del hueco de V5.
+    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V10", "V6",
                        "V7", "V9", "G1", "G2"]
     assert all(v.cumple for _, v in a01.verificaciones())
 
@@ -446,13 +448,11 @@ def test_todo_criterio_que_la_corrida_de_perfil_invoca_esta_clasificado(
 #                   detienen el punto de Familia C. Ese es su trabajo.
 VACIOS_DE_PERFIL_NO_INVOCADOS = [
     "TW_receptor", "homogeneidad_serie_fen",
-    # PF-1 (PC-03): que se adopta cuando la correccion por pendiente deja la
-    # carga a la entrada bajo cero. Lo consume M4, que SI corre a perfil,
-    # pero el corredor del repositorio (S_cauce 0.006-0.008) queda muy por
-    # debajo del S* de cualquier punto (~0.38 con D = 0.90) y la corrida no
-    # llega a el; `tests/test_pf1_hw_fuera_de_rango.py` lo invoca con el caso
-    # de la ficha.
-    "hw_entrada_fuera_de_rango",
+    # 'hw_entrada_fuera_de_rango' (PF-1, PC-03) estuvo aqui hasta T-2, que le
+    # dio valor de archivo («energia_critica», INF-0.5): ya no es un vacio.
+    # Sigue sin invocarlo esta corrida --el corredor del repositorio (S_cauce
+    # 0.006-0.008) queda muy por debajo del S* de cualquier punto (~0.38 con
+    # D = 0.90)-- y lo sigue ejercitando `tests/test_pf1_hw_fuera_de_rango.py`.
 ]
 VACIOS_DE_PERFIL_DEL_CAJON = [
     "secciones_cajon_normalizadas",   # la progresion B*H

@@ -547,7 +547,12 @@ def test_P8_en_el_umbral_exacto_las_verificaciones_escalares_cumplen():
 # --- Guardias de entrada que ningun test tocaba -----------------------------
 
 def test_las_guardias_del_receptor_trapecial_rechazan_lo_que_dicen_rechazar():
-    """`P > 0`, `n > 0`, `S > 0` y `Q > 0` de la Sec. 1.3: en el borde, y no solo lejos."""
+    """
+    `P > 0`, `n > 0`, `S > 0` y `Q >= 0` de la Sec. 1.3: en el borde, y no
+    solo lejos. La del caudal era `Q > 0` hasta T-2 (INF-5.1.7): Q = 0 es un
+    receptor seco y entrega tirante nulo; lo que se rechaza es el negativo.
+    """
+    from tests.apoyo.aproximacion import ABS_CERO
     from src.modelos import DatoInvalidoError, SeccionReceptor
     from src.modulos.M3_hidraulica import (caudal_manning_trapecial,
                                            tirante_normal_trapecial)
@@ -562,7 +567,9 @@ def test_las_guardias_del_receptor_trapecial_rechazan_lo_que_dicen_rechazar():
         with pytest.raises(DatoInvalidoError):
             tirante_normal_trapecial(Q=0.5, seccion=SeccionReceptor(**mala))
     with pytest.raises(DatoInvalidoError):
-        tirante_normal_trapecial(Q=0.0, seccion=SeccionReceptor(**buena))
+        tirante_normal_trapecial(Q=-ABS_CERO, seccion=SeccionReceptor(**buena))
+    seco = tirante_normal_trapecial(Q=0.0, seccion=SeccionReceptor(**buena))
+    assert seco == pytest.approx(0.0, abs=ABS_CERO)
 
 
 def test_la_cota_de_agua_del_TW_es_el_fondo_de_la_salida_mas_el_tirante():

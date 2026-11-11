@@ -64,7 +64,7 @@ la tabla familia por familia está en `docs/guia_perfil.md` §1.1.
 | `esviaje_grados` | ° | Topografía / QGIS | Ángulo entre el eje del conducto y la **perpendicular** al eje de la vía. Ver la §5 | La carga se detiene |
 | `ancho_plataforma` | m | Trazo | Sección típica de la vía (DG-2018) | La carga se detiene |
 | `cota_fondo_receptor` | msnm | Topografía / QGIS | Fondo del dren, quebrada o canal que recibe la descarga (el script la lee a 13 m del eje, aguas abajo) | La carga se detiene |
-| `Q_receptor_m3s` | m³/s | **ANA / Junta** | Caudal de diseño del cuerpo receptor. Es la vía 3 del TW (Manning en el receptor) | Puede ir vacía en las tres familias; el TW sale por otra vía |
+| `Q_receptor_m3s` | m³/s | **ANA / Junta** | Caudal de diseño del cuerpo receptor. Es la vía 3 del TW (Manning en el receptor). **0 es un receptor seco** y se admite desde T-2 (TW = 0, salida libre); negativo, no | Puede ir vacía en las tres familias; el TW sale por otra vía |
 | `cota_TW` | msnm | **ANA / Junta** | Nivel de agua del receptor durante la avenida, ya calculado fuera. Es la vía 2 del TW | Puede ir vacía en las tres familias |
 | `sucs_fundacion` | texto | **EMS** | Clasificación SUCS del suelo de fundación, de la calicata más cercana | La carga se detiene (hoy ningún módulo la lee: `INF-5.1.9`) |
 | `NF_profundidad_m` | m | **EMS** | Profundidad del nivel freático **en el cruce**, medida por punto. La lee V7 (flotación) | Puede ir vacía; V7 queda pendiente de ese dato |
@@ -76,7 +76,8 @@ la tabla familia por familia está en `docs/guia_perfil.md` §1.1.
 ## 3. Datos externos — `--datos-externos` y sus banderas
 
 Lo que no es columna del CSV entra por un JSON aparte (`servicio.CLAVES_EXTERNAS`), por
-punto o global, o por su bandera de línea de comandos. Las ocho claves:
+punto o global, o por su bandera de línea de comandos. Las diez claves (ocho hasta T-2,
+que sumó las dos últimas):
 
 | Clave | Unidad | Origen | Qué es | Si no se declara |
 |---|---|---|---|---|
@@ -84,10 +85,12 @@ punto o global, o por su bandera de línea de comandos. Las ocho claves:
 | `TW_m` | m | **ANA / Junta** (o escenario declarado) | Tirante del receptor sobre el fondo de la salida, declarado a mano. Es la vía 1 del TW y manda sobre las demás | Se intenta `cota_TW`, luego `Q_receptor_m3s`, luego los dos escenarios acotados con `seccion_receptor`; por último, el criterio `TW_receptor` |
 | `longitud_m` | m | Trazo | Longitud del conducto, cuando se quiere declarar en vez de calcular | La calcula la Fase 7.B con las cotas, el ancho y el esviaje |
 | `Q_m3s` | m³/s | Estudio hidrológico · ANA / Junta | El mismo dato de la columna, para los puntos que la dejan vacía (Familia C) | Vale la celda del CSV |
-| `S_conducto` | m/m | Trazo | Pendiente del barril, cuando no es la del cauce | Vale `S_cauce` |
+| `S_conducto` | m/m | Trazo | Pendiente del barril, cuando no es la del cauce. Admite **0** (barril horizontal, HDS-5 num. 3.3.4) desde T-2; negativa, no | Vale `S_cauce` |
 | `S_cauce` | m/m | Topografía / QGIS · ANA / Junta | La misma de la columna, para la Familia C (pendiente del canal) | Vale la celda del CSV |
 | `L_hidraulico_m` | m | Estudio hidrológico | Longitud de cuneta a la que se agota su capacidad (Familia B, Fase 10) | Se detiene la etapa de espaciamiento (Fase 10) del punto: el dato no se deduce |
 | `categoria_tr` | texto | Estudio hidrológico | Fila de la Tabla N° 02 que corresponde al cauce (quebrada importante o menor) | Familia A: la decide `area_ha` contra el criterio `umbral_area_quebrada_importante_ha`. Familia B: fila fija |
+| `seccion_receptor_medida` | objeto: `b_m` (m), `z_HV` (H:V), `S` (m/m), `n` (—), `altura_total_m` (m) | Topografía / QGIS · **ANA / Junta** | Sección **medida** del cuerpo receptor (levantamiento): ancho de solera, talud, pendiente longitudinal, n de Manning y profundidad total. Gana sobre el criterio `seccion_receptor` en las vías 3 y 4 del TW (T-2, `INF-3.2.8`) | Rige la sección **adoptada** del criterio `seccion_receptor`, y la memoria lo dice con un aviso: «seccion adoptada [A] por falta de levantamiento». Si se declara incompleta, la carga se detiene: no se completa con la del criterio |
+| `acceso_mantenimiento_previsto` | booleano (`true` / `false`) | **Proyectista** (planos) | Si los planos del punto prevén el acceso de mantenimiento que declara el criterio `acceso_mantenimiento_v2b` (Manual, num. 4.1.1.3.7 d)) (T-2, `INF-0.5`) | No se afirma nada. Con `false`, la memoria y la CLI imprimen un aviso; no cambia ningún veredicto |
 
 Un dato externo que **todavía no tiene clave**: el ancho del derecho de vía por punto,
 `ancho_derecho_via_m` (origen: **Trazo**, la resolución que aprueba el derecho de vía del
@@ -180,7 +183,7 @@ nombre definitivo.
 |---|---|---|---|
 | Cuencas por obra (área, longitud y pendiente del cauce, cobertura, suelo) y serie de precipitación máxima de la estación | Estudio hidrológico · SENAMHI | T-1 | El caudal entra ya calculado por `Q_m3s`, que seguirá ganando cuando venga lleno |
 | Tratamiento de los años FEN de la serie (`homogeneidad_serie_fen`) | Estudio hidrológico | T-1 | El criterio está vacío y **no detiene nada**: ningún módulo lo lee (`INF-5.1.1`) |
-| Sección medida del receptor (ancho de fondo, talud, profundidad, n, pendiente) | Topografía / QGIS · ANA / Junta | T-2 | Rige la sección **adoptada** del criterio `seccion_receptor` |
+| Sección medida del receptor (ancho de fondo, talud, profundidad, n, pendiente) | Topografía / QGIS · ANA / Junta | T-2 — **hecho**: es `seccion_receptor_medida` de la sección 3 | Rige la sección **adoptada** del criterio `seccion_receptor`, con aviso en la memoria |
 | Ensayos de durabilidad por sitio o por punto: sulfatos, cloruros, pH, resistividad, abrasión | EMS | T-4 | La matriz de materiales no filtra por durabilidad |
 | Parámetros de resistencia del suelo: φ, c, γ, capacidad portante admisible | EMS | T-7b | Los criterios de la Fase 9 están vacíos y el cabezal no se verifica |
 | Profundidad de socavación estimada a la salida; tipo de terreno del cauce receptor | Estudio hidrológico · EMS | T-8 | La protección de salida se calcula solo con el d₅₀ de Laushey |

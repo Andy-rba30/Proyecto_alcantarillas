@@ -99,7 +99,15 @@ CORRIDAS_IMPORTTIME = 3
 # 51.4 KB por punto (misma corrida, mismo metodo). Es contenido del punto
 # --la sustitucion del perfil con sus procedencias--, no repeticion, y el
 # techo se vuelve a fijar con holgura sobre la medida nueva.
-KB_POR_PUNTO_MAX = 60.0
+# T-2 (2026-11-11) LO VOLVIO A SUBIR, y por lo mismo: medido sobre el arbol
+# anterior (`87d1ce7`) el coste ya era de 54.9 KB por punto --los cierres de
+# C05/C10 y PF-4 lo habian acercado al techo sin pasarlo--, y T-2 lo lleva a
+# 60.8 KB con contenido del punto: el paso de V10 con sus dos elecciones y
+# tres citas, que a nivel de expediente se evalua ANTES de que V5 se detenga
+# y por eso llega a la memoria de cada punto; la eleccion del borde libre
+# bajo el TW del receptor en V1; y los avisos. La holgura es la proporcion
+# que se dejo en E-A (60 sobre 51.4).
+KB_POR_PUNTO_MAX = 70.0
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon. El techo se fija con la misma holgura que el de KB.
 PAGINAS_POR_PUNTO_MAX = 19

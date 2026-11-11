@@ -434,9 +434,16 @@ def test_una_carta_en_inglete_invierte_el_signo(hds5):
     assert fuerte.HW > suave.HW
 
 
-def test_control_entrada_valida_la_pendiente(hds5):
+@pytest.mark.parametrize("S", [-0.001, float("nan")])
+def test_control_entrada_valida_la_pendiente(hds5, S):
+    """
+    T-2 (INF-5.1.6): la guardia es solo contra S < 0. El barril horizontal
+    (S = 0) dejo de ser un dato invalido --el HDS-5 lo admite, num. 3.3.4-- y
+    lo que el control de entrada hace con el esta en
+    tests/test_t2_hidraulica.py.
+    """
     with pytest.raises(DatoInvalidoError) as exc:
-        control_entrada(Q=1.0, seccion=SeccionCircular(0.90), S=0.0, hds5=hds5)
+        control_entrada(Q=1.0, seccion=SeccionCircular(0.90), S=S, hds5=hds5)
     assert exc.value.campo == "S"
 
 
@@ -558,7 +565,8 @@ def test_un_TW_mas_alto_sube_el_HW_de_salida():
 
 
 @pytest.mark.parametrize("kwargs, campo", [
-    ({"Q": 1.0, "seccion": SeccionCircular(0.90), "S": 0.0, "L": 20.0, "TW": 0.0, "n": 0.013}, "S"),
+    # T-2 (INF-5.1.6): S = 0 se admite; la guardia es contra S < 0.
+    ({"Q": 1.0, "seccion": SeccionCircular(0.90), "S": -0.001, "L": 20.0, "TW": 0.0, "n": 0.013}, "S"),
     ({"Q": 1.0, "seccion": SeccionCircular(0.90), "S": 0.005, "L": 0.0, "TW": 0.0, "n": 0.013}, "L"),
     ({"Q": 1.0, "seccion": SeccionCircular(0.90), "S": 0.005, "L": 20.0, "TW": -0.1, "n": 0.013}, "TW"),
     ({"Q": 1.0, "seccion": SeccionCircular(0.90), "S": 0.005, "L": 20.0, "TW": 0.0, "n": 0.0}, "n"),
@@ -781,9 +789,12 @@ def test_la_correccion_por_pendiente_no_puede_dejar_la_carga_bajo_cero(
     S = 0.40                      # m/m
     assert 0 < S < S_CAUCE_MAX, "el caso dejo de ser una pendiente posible"
 
-    # Sin declarar: el vacio detiene el calculo (PF-1, PC-03).
-    with pytest.raises(CriterioPendienteError) as pendiente:
-        control_entrada(Q=Q, seccion=SeccionCircular(D), S=S, hds5=hds5)
+    # Sin declarar: el vacio detiene el calculo (PF-1, PC-03). Desde T-2 el
+    # archivo trae «energia_critica», y el vacio se repone para el bloque: lo
+    # que se fija es que un criterio sin valor DETIENE, no que siga vacio.
+    with sin_valor("hw_entrada_fuera_de_rango"):
+        with pytest.raises(CriterioPendienteError) as pendiente:
+            control_entrada(Q=Q, seccion=SeccionCircular(D), S=S, hds5=hds5)
     assert pendiente.value.clave == "hw_entrada_fuera_de_rango"
 
     # Declarado «descartar»: la conducta anterior, con su motivo entero.
@@ -1327,7 +1338,7 @@ def test_bajo_forma_2_la_transicion_puede_decrecer_con_el_caudal():
 # crown»: un coeficiente declarado a secas es indecidible.
 
 from src.modelos import FormaSeccion, SeccionRectangular
-from tests.apoyo.criterios import con_valor, declarados       # noqa: E402
+from tests.apoyo.criterios import con_valor, declarados, sin_valor  # noqa: E402
 
 _CAJON = {
     "embocadura_cajon": "cajon_concreto_aletas_30_75",

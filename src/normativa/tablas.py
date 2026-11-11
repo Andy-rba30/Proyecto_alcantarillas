@@ -1677,7 +1677,8 @@ T_MP_F_PGA = _tabla(
 # ===========================================================================
 # HDS-5 — Tabla A.1, constantes de las ecuaciones de control de entrada
 # ===========================================================================
-# ACOTADA A LAS TRES CARTAS DEL CATALOGO, y con la razon. De sus NUEVE
+# ACOTADA A LAS EMBOCADURAS DE BARRIL (hasta T-2, a las tres cartas del
+# catalogo y las quince del cajon; ver `alcance`), y con la razon. De sus NUEVE
 # columnas impresas, cuatro son constantes de la ecuacion (K, M, c, Y) y las
 # otras cinco identifican la carta; de ahi que el repositorio afirmara que la
 # tabla «contiene solo K, M, c e Y» -- cierto en cuanto a CONSTANTES DE
@@ -1770,6 +1771,89 @@ T_HDS5_A1 = _tabla(
                 "porque su Ks de +0.7 es el que se confunde con el ke de 0.7 "
                 "de la Tabla C.2 -- dos coeficientes distintos con el mismo "
                 "numero"))),
+
+        # --- T-2 --- (cadena T, 2026-11-11; INF-3.2.2) ----------------------
+        # LAS CINCO FILAS CIRCULARES QUE FALTABAN DE LAS CARTAS 1, 2 Y 3, leidas
+        # de la PDF 197 por su capa de texto y contra la pagina renderizada.
+        # Se transcriben para que la embocadura del tubo pueda NOMBRAR una fila
+        # distinta de la adoptada (T-7a): campana («Groove end») con cabezal o
+        # saliente, metal corrugado saliente, y los dos anillos biselados de la
+        # Carta 3. NINGUNA cambia lo que el proyecto calcula hoy: las tres
+        # filas que el catalogo usa siguen arriba, sin tocar.
+        #
+        # LA TABLA A.1 NO TIENE FILA DE «TUBO CON ALEROS», y hay que decirlo
+        # porque el encargo la daba por existente: las Cartas 1 a 3 separan el
+        # BORDE (a escuadra, campana, bisel) y si el tubo va en cabezal o
+        # saliente, no el angulo de las aletas. Los aleros con angulo son
+        # filas del CAJON (Cartas 8, 9, 12 y 13). Para el tubo con cabezal Y
+        # aleros la fila de control de entrada es la misma del cabezal, y la
+        # de ke lo dice con sus palabras: «Headwall or headwall and
+        # wingwalls» (Tabla C.2, pag. impresa C.6).
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#circular_concreto_groove_end_headwall",
+            etiqueta_literal="Groove end w/headwall",
+            jerarquia=("1", "Circular Concrete"),
+            valores={"chart_no": 1, "shape_and_material": "Circular Concrete",
+                     "nomograph_scale": 2,
+                     "inlet_configuration": "Groove end w/headwall",
+                     "equation_form": 1, "K": 0.0018, "M": 2.0,
+                     "c": 0.0292, "Y": 0.74, "references": "1, 2"},
+            uso=NoUsada(por_que_no=(
+                "el catalogo del proyecto adopta el tubo a escuadra a ras del "
+                "muro; la campana con cabezal se transcribe como alternativa "
+                "que la embocadura puede nombrar (T-7a) y porque es la fila "
+                "del ejemplo publicado con que se valida el motor (DG 1.3, "
+                "tubo de concreto «groove end»: `casos_patron.CP_HDS5_DG1`)"))),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#circular_concreto_groove_end_projecting",
+            etiqueta_literal="Groove end projecting",
+            jerarquia=("1", "Circular Concrete"),
+            valores={"chart_no": 1, "shape_and_material": "Circular Concrete",
+                     "nomograph_scale": 3,
+                     "inlet_configuration": "Groove end projecting",
+                     "equation_form": 1, "K": 0.0045, "M": 2.0,
+                     "c": 0.0317, "Y": 0.69, "references": "1, 2"},
+            uso=NoUsada(por_que_no=(
+                "este proyecto no proyecta tubo saliente del relleno; "
+                "alternativa transcrita, no adoptada"))),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#circular_cmp_projecting",
+            etiqueta_literal="Projecting",
+            jerarquia=("2", "Circular CM"),
+            valores={"chart_no": 2, "shape_and_material": "Circular CM",
+                     "nomograph_scale": 3, "inlet_configuration": "Projecting",
+                     "equation_form": 1, "K": 0.0340, "M": 1.50,
+                     "c": 0.0553, "Y": 0.54, "references": "1, 2"},
+            uso=NoUsada(por_que_no=(
+                "este proyecto no proyecta tubo saliente del relleno; "
+                "alternativa transcrita, no adoptada"))),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#circular_anillo_biselado_45",
+            etiqueta_literal="Beveled ring, 45° bevels",
+            jerarquia=("3", "Circular"),
+            valores={"chart_no": 3, "shape_and_material": "Circular",
+                     "nomograph_scale": "A",
+                     "inlet_configuration": "Beveled ring, 45° bevels",
+                     "equation_form": 1, "K": 0.0018, "M": 2.50,
+                     "c": 0.0300, "Y": 0.74, "references": "2"},
+            uso=NoUsada(por_que_no=(
+                "el catalogo no ofrece anillo biselado; alternativa "
+                "transcrita, no adoptada. La forma es «Circular» a secas: la "
+                "Carta 3 no distingue concreto de metal corrugado"))),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#circular_anillo_biselado_337",
+            # EL ASTERISCO ES DE LA PAGINA, y la pagina no imprime la nota a
+            # la que llama: se transcribe como esta y no se le inventa una.
+            etiqueta_literal="Beveled ring, 33.7° bevels*",
+            jerarquia=("3", "Circular"),
+            valores={"chart_no": 3, "shape_and_material": "Circular",
+                     "nomograph_scale": "B",
+                     "inlet_configuration": "Beveled ring, 33.7° bevels*",
+                     "equation_form": 1, "K": 0.0018, "M": 2.50,
+                     "c": 0.0243, "Y": 0.83, "references": "2"},
+            uso=NoUsada(por_que_no=(
+                "el catalogo no ofrece anillo biselado; alternativa "
+                "transcrita, no adoptada"))),
 
         # =================================================================
         # CARTAS 8 A 12 - CAJON RECTANGULAR DE CONCRETO (sesion C2)
@@ -1955,6 +2039,43 @@ T_HDS5_A1 = _tabla(
                      "equation_form": 2, "K": 0.495, "M": 0.667,
                      "c": 0.0386, "Y": 0.71, "references": "3"},
             uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        # --- T-2 --- LA CARTA 13, «Rect. Box Top Bev. Conc.» -----------------
+        # Las tres filas de cajon con ALETAS DESPLAZADAS («offset») y bisel
+        # superior, que hasta T-2 quedaban censadas como fuera de alcance. Con
+        # ellas el cajon tiene transcritas TODAS sus filas de aletas de la
+        # Tabla A.1 (Cartas 8, 9, 12 y 13). Son Forma 2, como las Cartas 9 a
+        # 12, y otro «Shape and Material» mas: el bisel superior va en el
+        # nombre de la forma, igual que el chaflan de la Carta 12.
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_bisel_superior_aletas_45_desplazadas",
+            etiqueta_literal="45° wingwall flares - offset",
+            jerarquia=("13", "Rect. Box Top Bev. Conc."),
+            valores={"chart_no": 13, "shape_and_material": "Rect. Box Top Bev. Conc.",
+                     "nomograph_scale": 1,
+                     "inlet_configuration": "45° wingwall flares - offset",
+                     "equation_form": 2, "K": 0.497, "M": 0.667,
+                     "c": 0.0302, "Y": 0.835, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_bisel_superior_aletas_337_desplazadas",
+            etiqueta_literal="33.7° wingwall flares - offset",
+            jerarquia=("13", "Rect. Box Top Bev. Conc."),
+            valores={"chart_no": 13, "shape_and_material": "Rect. Box Top Bev. Conc.",
+                     "nomograph_scale": 2,
+                     "inlet_configuration": "33.7° wingwall flares - offset",
+                     "equation_form": 2, "K": 0.495, "M": 0.667,
+                     "c": 0.0252, "Y": 0.881, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
+        FilaDeTabla(
+            id="HDS5_3ED.TA1#cajon_concreto_bisel_superior_aletas_184_desplazadas",
+            etiqueta_literal="18.4° wingwall flares - offset",
+            jerarquia=("13", "Rect. Box Top Bev. Conc."),
+            valores={"chart_no": 13, "shape_and_material": "Rect. Box Top Bev. Conc.",
+                     "nomograph_scale": 3,
+                     "inlet_configuration": "18.4° wingwall flares - offset",
+                     "equation_form": 2, "K": 0.493, "M": 0.667,
+                     "c": 0.0227, "Y": 0.887, "references": "3"},
+            uso=PendienteDeCondicion(condicion_id="COND-EMBOCADURA-CAJON")),
     ),
     notas_al_pie=(
         NotaAlPie(marca="¹²³⁴", texto=Verbatim(
@@ -1984,25 +2105,27 @@ T_HDS5_A1 = _tabla(
         # hermana de la errata `DIS-HDS5-APENDICE-G` que esta tabla ya
         # declara. Queda ANOTADA y sin ID propio: abrir una `Discrepancia`
         # nueva no es trabajo de C2.
-        razon=("de las 36 filas de la tabla, este proyecto transcribe las "
-               "que su catalogo puede alcanzar: las TRES CIRCULARES que sus "
-               "materiales usan -- concreto a ras del muro, y las dos de "
-               "metal corrugado, cabezal e inglete --, y, desde C2, "
-               "las quince del cajon rectangular de concreto de las Cartas 8 "
-               "a 12, que son las que la Familia C necesita. Las demas "
-               "describen bordes o formas que ningun punto del corredor "
-               "puede tener"),
+        # REESCRITO EN T-2 (cadena T, INF-3.2.2). Decia que el proyecto
+        # transcribia «las TRES CIRCULARES» y «las quince del cajon», y que
+        # quedaban fuera cinco bordes circulares y las tres filas de la Carta
+        # 13. T-2 las transcribe: son las embocaduras que una eleccion de
+        # cabezal y aleros puede nombrar. Lo que sigue fuera son las diez
+        # filas de TAPERED INLET, que no son embocaduras de barril.
+        razon=("de las 36 filas de la tabla, este proyecto transcribe las 26 "
+               "que describen una EMBOCADURA DE BARRIL: las ocho circulares "
+               "de las Cartas 1, 2 y 3 -- de las que el catalogo USA tres: "
+               "concreto a escuadra a ras del muro y las dos de metal "
+               "corrugado, cabezal e inglete --, y las dieciocho del cajon "
+               "rectangular de concreto de las Cartas 8 a 13. Las cinco "
+               "circulares y las tres de la Carta 13 que anadio T-2 no "
+               "cambian ningun calculo: quedan disponibles para que la "
+               "embocadura del cabezal nombre su fila"),
         que_queda_fuera=(
-            "de las circulares, las configuraciones de borde no adoptadas "
-            "-- «Groove end w/headwall», «Groove end projecting», "
-            "«Projecting» y los dos «Beveled ring» de la Carta 3 --. Del "
-            "cajon rectangular de concreto, OCHO filas mas que la tabla si "
-            "trae y que este proyecto no puede alcanzar: las tres de la "
-            "Carta 13 «Rect. Box Top Bev. Conc.» (bisel superior con aletas "
-            "desplazadas) y las cinco de «Rectangular Concrete» de las "
-            "Cartas 57, 58 y 59, que son GARGANTAS DE TAPERED INLET y no "
-            "embocaduras de barril. Y las cinco de tapered inlet circular y "
-            "de cara eliptica, Cartas 55 y 56"),
+            "las diez filas de TAPERED INLET, que son caras y gargantas de "
+            "una entrada abocinada y no embocaduras de barril: las dos de "
+            "«Circular» de la Carta 55 (garganta lisa y rugosa), las tres de "
+            "«Ellipital Face» de la Carta 56 y las cinco de «Rectangular "
+            "Concrete» de las Cartas 57, 58 y 59"),
         donde_leerlo=(
             "HDS-5 3a ed., Tabla A.1, PDF 197. La pagina NO LLEVA FOLIO "
             "IMPRESO, de modo que la «pag. impresa A.8» que el repositorio "

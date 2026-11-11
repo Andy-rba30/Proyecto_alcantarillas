@@ -2164,7 +2164,22 @@ CRITERIOS: Dict[str, Criterio] = {
         # calculo con excepcion; la decision de clase (CriterioPendienteError
         # y no MetodoNoEvaluableError) esta en la ficha PF-1-01 de
         # docs/decisiones_diferidas.md.
-        valor=None,                 # VACIO: solo bloquea si algun punto cae fuera de rango
+        # --- T-2 --- (cadena T, 2026-11-11; INF-0.5, punto 6 del encargo):
+        # DEJA DE ESTAR VACIO. Se adopta «energia_critica», con lo que el
+        # HDS-5 SI dice: que la Forma 1 es H_c «adjusted with correction
+        # factors» (num. A.2.1, pag. impresa A.1, cita
+        # `HDS5_3ED.A.2.1#FORMA_1`) y que el efecto de la pendiente es chico
+        # (num. A.3, `HDS5_3ED.A.3#PENDIENTE_2`). Cuando la correccion,
+        # extrapolada, anula la carga, el proyecto se queda con la base de la
+        # ecuacion. DOS COSAS QUE EL ENCARGO PEDIA Y NO SE HICIERON, porque
+        # la fuente no las sostiene: (1) la cita «HDS-5 Tabla A.1, nota de
+        # Ks·S» NO EXISTE --la Tabla A.1 (PDF 197) solo lleva al pie sus
+        # referencias bibliograficas--; (2) la etiqueta [C]: HDS-5 no
+        # prescribe este piso ni ningun otro, de modo que sigue siendo una
+        # adopcion con alternativa, [A]. Ningun punto de la linea base cae
+        # fuera de rango (S 0.004-0.010 frente a S* >= 0.27): el valor no
+        # toca ningun resultado del repositorio.
+        valor="energia_critica",
         nivel=NIVEL_PERFIL,         # lo consume M4 (Fase 4), que corre a perfil;
                                     # el corredor del repositorio nunca lo invoca
                                     # (S_cauce 0.006-0.008 frente a S* ~ 0.38)
@@ -2199,7 +2214,32 @@ CRITERIOS: Dict[str, Criterio] = {
                       "el codigo seria rellenar el vacio en silencio; "
                       "descartar sin decirlo era un no factible definitivo "
                       "por una condicion que el proyectista podia resolver "
-                      "declarando. Lo que el piso hace y lo que no: acota el "
+                      "declarando. Se adopta «energia_critica» como valor de "
+                      "archivo por lo que la fuente si dice: define la Forma "
+                      "1 como la energia especifica en el tirante critico "
+                      "ajustada con factores de correccion (cita "
+                      "HDS5_3ED.A.2.1#FORMA_1) y dice del termino de "
+                      "pendiente que su efecto es chico (cita "
+                      "HDS5_3ED.A.3#PENDIENTE_2). H_c es por tanto la base de "
+                      "la que la ecuacion parte: un resultado que el paso 4.2 "
+                      "ya tiene, no un numero nuevo. Lo que el piso acota y "
+                      "lo que no: queda por encima de lo que la ecuacion "
+                      "entregaba (carga nula o negativa, con la que V4 y la "
+                      "rasante de 7.A se evaluaban sin carga), y solo en ese "
+                      "sentido es del lado seguro. No es una cota conservadora "
+                      "de la carga: omite el termino K*(q*)^M de la "
+                      "contraccion de la entrada y queda por debajo de la "
+                      "carga que la misma ecuacion da con el barril "
+                      "horizontal, de modo que el paso lo imprime como piso "
+                      "adoptado y no como resultado de la ecuacion. Y es un "
+                      "caso practicamente inalcanzable desde que la pendiente "
+                      "del conducto se limita a 0.10 m/m ('pendiente_maxima_"
+                      "conducto', V10): con el tubo de 0.90 m la ecuacion "
+                      "solo deja de entregar carga por debajo de 0.10 m/m "
+                      "con caudales menores de 0.005 m3/s. La fuente "
+                      "no prescribe este piso ni ningun otro, de modo que la "
+                      "etiqueta es [A] y «descartar» sigue en la ventana. "
+                      "Lo que el piso hace y lo que no: acota el "
                       "signo. Solo gobierna cuando la ecuacion no entrega "
                       "carga (S > S*); por debajo de S* la ecuacion puede dar "
                       "una carga positiva menor que H_c y se acepta tal cual "
@@ -2218,11 +2258,17 @@ CRITERIOS: Dict[str, Criterio] = {
                       "las cartas de Forma 1 del catalogo circular, donde S* "
                       "no crece con D; bajo Forma 2 un D mayor puede llevar "
                       "la rama a la (A.2), sin Ks*S, y S* deja de existir",
-        fuente="PENDIENTE - HDS-5 3a ed. (FHWA-HIF-12-026), num. A.2 'INLET "
-               "CONTROL EQUATIONS', pag. impresa A.1-A.2 (PDF 190-191): las "
-               "ecs. (A.1) y (A.3) con su termino Ks*S, sin acotar su rango "
-               "de pendiente. Requiere decision del proyectista sobre el "
-               "piso; ninguna fuente de normas/ lo fija",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. A.2 'INLET CONTROL "
+               "EQUATIONS', pag. impresa A.1-A.2 (PDF 190-191): las ecs. "
+               "(A.1) y (A.3) con su termino Ks*S, sin acotar su rango de "
+               "pendiente; num. A.2.1, pag. impresa A.1 (cita "
+               "HDS5_3ED.A.2.1#FORMA_1): «Form (1) is based on the specific "
+               "head at critical depth, adjusted with correction factors»; "
+               "num. A.3, pag. impresa A.2 (cita HDS5_3ED.A.3#PENDIENTE_2): "
+               "«the slope effect is small». La fuente define la base y el "
+               "termino y NO fija el piso: adoptarlo es decision del "
+               "proyectista (Fundamento F4.PISO_HW, verbo DEFINE). La Tabla "
+               "A.1 no lleva nota alguna sobre Ks*S",
         reemplazado_por="Un procedimiento de control de entrada valido para "
                         "pendientes de ese orden (curvas de HDS-5 para "
                         "pendientes fuertes, o ensayo), que ninguna fuente de "
@@ -2987,7 +3033,22 @@ CRITERIOS: Dict[str, Criterio] = {
                       "ningun otro del Manual de Suelos. La adopcion se "
                       "sostiene entonces en la ausencia de alternativa "
                       "nacional, no en un conservadurismo demostrado, y asi "
-                      "se imprime",
+                      "se imprime. Cuando gobierna: la verificacion compara "
+                      "niveles (la cota de fondo de la entrada mas la carga, "
+                      "contra la cota de subrasante menos el resguardo de la "
+                      "fila de CBR del punto), de modo que decide la "
+                      "aceptacion de un diametro cuando el relleno sobre la "
+                      "entrada es bajo o cuando el CBR de la subrasante cae "
+                      "en una fila de resguardo mayor (de 0.60 m con CBR de "
+                      "20 % o mas, hasta 1.20 m con CBR menor de 3 %). En "
+                      "ese caso el remedio no es solo otro diametro: el "
+                      "mismo parrafo de la fuente ofrece subdrenes, capas "
+                      "drenantes o elevar la rasante (cita MS.4.5.4), y la "
+                      "elevacion necesaria la calcula el tamizado de la Fase "
+                      "7. En el corredor del repositorio no descarta ningun "
+                      "diametro: el punto mas ajustado de la corrida de "
+                      "perfil con los datos externos completos, A-01, cumple "
+                      "con 0.108 m de margen",
         fuente="Manual de Suelos MTC, numeral 4.5.4 (pags. 41-42) y 9.1(3) "
                "(pags. 89-90), que repite la tabla en el capitulo de "
                "estabilizacion",
@@ -3538,11 +3599,24 @@ CRITERIOS: Dict[str, Criterio] = {
                       "la impone, y sin esta declaracion un expediente podria "
                       "cerrar con los planos sin acceso de limpieza y nada lo "
                       "recordaria",
-        fuente="PENDIENTE - Fase 5, fila V2b de la hoja de ruta ('[N] + [A]') "
-               "y Sec. 11, entregable 7 (planos). Ninguna norma de normas/ "
-               "prescribe el dispositivo de acceso: el HDS-5 num. 5.3.3 "
-               "describe el fenomeno y el Manual de Hidrologia fija el "
-               "diametro minimo por mantenibilidad, no el acceso",
+        # --- T-2 --- (cadena T; INF-0.5, punto 6): la `fuente` dejo de
+        # decir «PENDIENTE». La mitad [N] de la fila es el num. 4.1.1.3.7 d)
+        # «Mantenimiento y limpieza» (cita MC_HHD.4.1.1.3.7d, EXIGENCIA sin
+        # numero), que el paso de V2b imprime; lo que sigue siendo [A] es el
+        # DISPOSITIVO, que el numeral no prescribe. Y el dato de si el
+        # acceso esta PREVISTO en cada punto entra, opcional, por
+        # `acceso_mantenimiento_previsto` de --datos-externos.
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.7 d) 'Mantenimiento y "
+               "limpieza', pag. impresa 80 (PDF 83), cita MC_HHD.4.1.1.3.7d: "
+               "las dimensiones de la alcantarilla deben permitir el "
+               "mantenimiento y la limpieza en su interior, y hace falta un "
+               "programa de mantenimiento con inspecciones. Es la EXIGENCIA "
+               "[N] de la fila V2b de la hoja de ruta ('[N] + [A]'); el "
+               "DISPOSITIVO de acceso no lo prescribe ese numeral ni ninguna "
+               "otra norma de normas/ (el HDS-5 num. 5.3.3 describe el "
+               "fenomeno), y es lo que este criterio adopta. Sec. 11, "
+               "entregable 7 (planos)",
         sensibilidad=("camara_o_buzon_en_cabecera",
                       "acceso_por_cabezal_sin_obra_adicional",
                       "sin_acceso_declarado_como_limitacion"),
@@ -3573,10 +3647,26 @@ CRITERIOS: Dict[str, Criterio] = {
     # COMPARACION (S_conducto >= S_cauce) sigue en M5 y no pasa por aqui.
     "regimen_v2b": Criterio(
         # NO VACIO, y es deliberado: dejarlo vacio detendria los cuatro
-        # puntos de toda corrida de perfil, y PF-4 no mueve ningun numero de
-        # la linea base. `umbral_duro` es la conducta que el proyecto tenia
-        # desde S20, ahora dicha con ficha. Quien quiera la otra la declara.
-        valor="umbral_duro",
+        # puntos de toda corrida de perfil. PF-4 lo dejo en `umbral_duro`,
+        # la conducta que el proyecto tenia desde S20.
+        #
+        # --- T-2 --- (cadena T, 2026-11-11; INF-0.5, punto 6 del encargo):
+        # EL VALOR DE ARCHIVO PASA A `indicador_con_aviso`, que es aplicar la
+        # fuente como la fuente esta escrita --«are key indicators of
+        # potential problems», sin umbral-- y la unica lectura coherente con
+        # admitir el barril horizontal (INF-5.1.6): con el umbral duro un
+        # conducto con S = 0 quedaba descartado SIEMPRE frente a un cauce de
+        # pendiente positiva, y lo que T-2 abria por M3 y M4 se cerraba aqui.
+        # `umbral_duro` sigue en la ventana y se barre (`--barrido
+        # regimen_v2b=indicador_con_aviso,umbral_duro`). MEDIDO antes de
+        # cambiarlo: ningun punto de la linea base tiene S_conducto <
+        # S_cauce salvo C-01 en la corrida ancha, que se detiene antes, en
+        # los criterios del cajon; ningun diametro se mueve y ninguna corrida
+        # de la linea base cambia que puntos dimensiona. LA ETIQUETA SIGUE
+        # SIENDO [A] y no [C], que es lo que el encargo pedia: la fuente
+        # define el indicador y NO prescribe el regimen, y una eleccion con
+        # dos opciones defendibles es [A] con ventana (ficha T2-04).
+        valor="indicador_con_aviso",
         nivel=NIVEL_PERFIL,         # lo consume V2b, que la corrida de perfil
                                     # invoca como obligatoria (servicio y M5)
         etiqueta="A",
@@ -3610,25 +3700,33 @@ CRITERIOS: Dict[str, Criterio] = {
                       "eleccion se declara con ficha, ventana y procedencia "
                       "en vez de vivir cableada en la verificacion. Las dos "
                       "opciones son defendibles y no valen lo mismo en toda "
-                      "obra. «umbral_duro», el valor del archivo, es la "
-                      "lectura mas conservadora del indicador y la que "
+                      "obra. «indicador_con_aviso», el valor del archivo, "
+                      "aplica la fuente como esta escrita: un indicador se "
+                      "reconoce y se declara, no rechaza una seccion. El "
+                      "indicador se evalua igual (mismos numeros, mismo "
+                      "margen), se imprime con el texto literal de la fuente "
+                      "y el veredicto de indicador, y queda como constancia "
+                      "de mantenimiento junto al acceso de limpieza declarado "
+                      "en 'acceso_mantenimiento_v2b'. Tres razones lo "
+                      "sostienen como valor de archivo. Primera: la fuente no "
+                      "fija umbral ni consecuencia, y de la entrada deprimida "
+                      "dice que la sedimentacion ocurre sobre todo con "
+                      "caudales bajos y que el conducto suele limpiarse solo "
+                      "con los altos (cita HDS5_3ED.5.3.3#DEPRESION). "
+                      "Segunda: la misma fuente admite el barril horizontal "
+                      "(cita HDS5_3ED.3.3.4#HORIZONTAL), que con el umbral "
+                      "duro quedaria descartado siempre frente a un cauce de "
+                      "pendiente positiva. Tercera: en un cruce de canal "
+                      "(Familia C) la pendiente del conducto suele venir "
+                      "fijada por el canal, y con el umbral duro una "
+                      "pendiente menor que la del cauce (0.004 m/m frente a "
+                      "0.006 m/m en el punto C-01 del corredor) descarta la "
+                      "progresion entera de marcos aunque cumplan todo lo "
+                      "demas. «umbral_duro» es la lectura mas conservadora: "
                       "obliga a reconsiderar la rasante en una entrada "
-                      "deprimida, que es justo el caso que el HDS-5 describe "
-                      "como «built with an upstream depression». "
-                      "«indicador_con_aviso» existe porque en un cruce de "
-                      "canal (Familia C) la pendiente del conducto suele "
-                      "venir fijada por el canal y no por el proyectista: "
-                      "con el umbral duro, una pendiente de conducto menor "
-                      "que la del cauce (0.004 frente a 0.006 en el punto "
-                      "C-01 del corredor) descarta la progresion entera de "
-                      "marcos aunque cumplan todo lo demas, y la unica salida "
-                      "es editar el dato. Bajo aviso el indicador se evalua "
-                      "igual, se imprime con el texto literal de la fuente y "
-                      "el veredicto INDICADOR, y queda como constancia de "
-                      "mantenimiento junto al acceso de limpieza declarado "
-                      "en 'acceso_mantenimiento_v2b'. Ninguna de las dos "
-                      "opciones mueve un numero de calculo: solo cambia si "
-                      "el punto se detiene",
+                      "deprimida, y queda en la ventana para barrerla. "
+                      "Ninguna de las dos opciones mueve un numero de "
+                      "calculo: solo cambia si el punto se detiene",
         fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 5.3.3 'Sedimentation', "
                "pag. impresa 5.11 (PDF 147): cita HDS5_3ED.5.3.3#INDICADORES "
                "(caracter DEFINICION) y su contracara HDS5_3ED.5.3.3#ALINEADO. "
@@ -3641,12 +3739,251 @@ CRITERIOS: Dict[str, Criterio] = {
                                "exige el n de Manning del CAUCE NATURAL, que "
                                "no es columna de Sec. 1.2 ni la fija la hoja "
                                "de ruta, y PF-4 no lo inventa. Este criterio "
-                               "gobierna solo lo que se hace con el primero",
+                               "gobierna solo lo que se hace con el primero. "
+                               "T-2 (INF-3.2.9) leyo el numeral entero: ademas "
+                               "de los dos indicadores nombra como factores la "
+                               "magnitud del caudal, el material del cauce, "
+                               "los cauces en agradacion, las instalaciones "
+                               "multibarril y las entradas deprimidas, ninguno "
+                               "con cifra; el n del cauce no se supone ni se "
+                               "le pone valor por defecto (ficha T2-06 de "
+                               "docs/decisiones_diferidas.md)",
         resolucion=Libre(
             que_lo_fija="el proyectista: la fuente define un indicador y no "
                         "prescribe que hacer cuando se dispara; ninguna "
                         "norma de normas/ ni la hoja de ruta lo fija",
             dominio="declaracion del regimen; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-2 --- (cadena T, 2026-11-11) · tres criterios [A] de perfil
+    # =======================================================================
+    # La banda de pendiente del conducto (V10, INF-3.2.7) y la lectura del
+    # borde libre cuando el barril va lleno por el nivel del receptor (V1,
+    # INF-3.2.6). Los consume M5 y M7 los leera en T-6 por
+    # `M5.limites_de_pendiente()`.
+    "pendiente_minima_conducto": Criterio(
+        # EL VALOR ES 0.0 Y NO UNA CIFRA DE PRACTICA, y es deliberado: es lo
+        # unico que una fuente de normas/ sostiene. El Manual no da numero;
+        # el HDS-5 admite expresamente el barril horizontal. Las cifras que
+        # circulan (0.5 % «para autolimpieza», 1 % en marcos, 2 % en TMC) son
+        # practica de expediente y ninguna esta en normas/: por eso van en la
+        # VENTANA --hasta 0.005-- y no en el valor. Quien quiera exigir una
+        # pendiente minima positiva la declara y la barre.
+        valor=0.0,
+        nivel=NIVEL_PERFIL,         # lo consume V10 (Fase 5), que corre a perfil
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Pendiente longitudinal MINIMA que el proyecto admite en el "
+                 "barril de una alcantarilla (m/m); la aplica V10",
+        justificacion="Decide por debajo de que pendiente el proyecto no "
+                      "tiende un conducto. El Manual (num. 4.1.1.3.3) exige "
+                      "que la pendiente no altere desmesuradamente la erosion "
+                      "y la sedimentacion y que sus cambios se estudien con "
+                      "cuidado, sin fijar cifra; el HDS-5 (num. 3.3.4) admite "
+                      "el barril horizontal: dice que sus procedimientos de "
+                      "control de entrada y de salida se pueden aplicar "
+                      "razonablemente a un conducto sin pendiente (cita "
+                      "HDS5_3ED.3.3.4#HORIZONTAL). Ninguna fuente de normas/ "
+                      "fija una pendiente minima en numeros, y el valor "
+                      "adoptado es el que la fuente sostiene: 0.0 m/m, el "
+                      "barril horizontal admitido. La pendiente minima no es "
+                      "lo que protege de la sedimentacion en este calculo: "
+                      "eso lo hacen V2, que exige la velocidad minima con el "
+                      "caudal de diseño, y V2b, que avisa cuando el conducto "
+                      "queda mas plano que su cauce. Con 0.0 m/m la "
+                      "verificacion V10 no rechaza ningun conducto por abajo "
+                      "y no mueve ningun diseño; lo que hace es dejar escrito "
+                      "que no se exige pendiente minima y por que. "
+                      "Sensibilidad: de 0.0 m/m a 0.005 m/m (0.5 %), la cifra "
+                      "de practica mas extendida para autolimpieza. Subirla "
+                      "rechaza los conductos mas tendidos: con 0.005 m/m el "
+                      "punto C-01 de la corrida ancha (pendiente del conducto "
+                      "de 0.004 m/m) dejaria de cumplir V10, y ninguno de los "
+                      "otros",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.3 'Pendiente longitudinal', "
+               "pag. impresa 71 (PDF 74), cita MC_HHD.4.1.1.3.3: exigencia "
+               "cualitativa, sin cifra. HDS-5 3a ed. (FHWA-HIF-12-026), num. "
+               "3.3.4 'Culverts with Horizontal or Adverse Slopes', pag. "
+               "impresa 3.25 (PDF 107), cita HDS5_3ED.3.3.4#HORIZONTAL: "
+               "admite S = 0. Ninguna de las dos fija un minimo; el valor es "
+               "adopcion del proyectista (Fundamento F5.V10, verbo DEFINE)",
+        reemplazado_por="Una pendiente minima que fije el expediente por "
+                        "material y por tipo de cauce, con su fuente, o la "
+                        "que resulte de un estudio de transporte de "
+                        "sedimentos del cauce",
+        sensibilidad=(0.0, 0.005),
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ni el Manual ni el HDS-5 fijan una "
+                        "pendiente minima en cifras; el HDS-5 admite el "
+                        "barril horizontal",
+            dominio="m/m, de 0.0 (barril horizontal) a 0.005",
+        ),
+    ),
+
+    "pendiente_maxima_conducto": Criterio(
+        valor=0.10,
+        nivel=NIVEL_PERFIL,         # lo consume V10 (Fase 5), que corre a perfil
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Pendiente longitudinal MAXIMA que el proyecto admite en el "
+                 "barril de una alcantarilla (m/m); la aplica V10",
+        justificacion="Decide por encima de que pendiente el proyecto no "
+                      "tiende un conducto sin un estudio aparte. El Manual "
+                      "(num. 4.1.1.3.3) no fija cifra. El HDS-5 (num. 5.4.4 "
+                      "'Barrels on Steep Slopes') DESCRIBE que la mayoria de "
+                      "las alcantarillas se construyen con pendientes "
+                      "menores del 10 % y que para ellas no se usan medidas "
+                      "estructurales especiales; entre el 10 % y el 20 % "
+                      "pide atar las ultimas secciones del tubo, y por "
+                      "encima del 20 % medidas estructurales adicionales y "
+                      "la cautela hidraulica del USBR. El alcance del "
+                      "proyecto no incluye el dimensionamiento de anclajes, "
+                      "ataduras ni bloques de empuje: 0.10 m/m es el limite "
+                      "hasta el que la fuente dice que no hacen falta, y por "
+                      "eso es el valor adoptado y el techo de la ventana. El "
+                      "piso de la ventana, 0.02 m/m, es la pendiente con que "
+                      "el HDS-5 traza sus curvas de control de entrada (num. "
+                      "A.3), porque el efecto de la pendiente es chico y "
+                      "fijarla ahi deja la carga del lado conservador en "
+                      "pendientes mayores: un proyecto que no quiera salir de "
+                      "la pendiente de las cartas declara 0.02 m/m. La "
+                      "pendiente maxima no sustituye a V3: la velocidad "
+                      "maxima admisible del revestimiento se sigue "
+                      "verificando con la velocidad calculada, y puede "
+                      "rechazar un conducto bastante antes del 10 % (en "
+                      "concreto, 6.0 m/s). Sensibilidad: en el corredor del "
+                      "repositorio la pendiente va de 0.004 m/m a 0.010 m/m y "
+                      "ningun valor de la ventana rechaza un punto",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 5.4.4 'Barrels on Steep "
+               "Slopes', pag. impresa 5.16 (PDF 152), citas "
+               "HDS5_3ED.5.4.4#PENDIENTE_10 («Most culverts are constructed "
+               "on slopes that are less than 10% ... no special structural "
+               "measures are used», caracter DEFINICION) y "
+               "HDS5_3ED.5.4.4#PENDIENTE_20; num. A.3, pag. impresa A.2 (PDF "
+               "191), cita HDS5_3ED.A.3#PENDIENTE_2 (curvas al 2 %). El "
+               "Manual de Hidrologia, num. 4.1.1.3.3, pag. impresa 71, no "
+               "fija cifra. La fuente describe una practica; el limite es "
+               "adopcion del proyectista (Fundamento F5.V10, verbo DEFINE)",
+        reemplazado_por="El diseño estructural del conducto en pendiente "
+                        "(anclajes, ataduras entre tubos, bloques de empuje) "
+                        "que el expediente desarrolle para un punto "
+                        "concreto, que permitiria admitir pendientes mayores "
+                        "en ese punto",
+        sensibilidad=(0.02, 0.10),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre lo que el HDS-5 num. 5.4.4 "
+                        "describe: bajo el 10 % no se usan medidas "
+                        "estructurales especiales",
+            dominio="m/m, de 0.02 (pendiente de las curvas del HDS-5) a 0.10",
+        ),
+    ),
+
+    "borde_libre_bajo_tw_ahogante": Criterio(
+        # EL VALOR DE ARCHIVO ES LA CONDUCTA QUE EL PROYECTO YA TENIA (EXT-3):
+        # con el TW sobre la clave V1 NO cumple. No se cambia: «aviso» puede
+        # hacer dimensionar puntos que hoy no dimensionan --la corrida
+        # estrecha de la linea base, que toma el TW de la via 4-- y mover un
+        # diametro es decision del dueño (parada (c) de la cadena T). La
+        # alternativa queda en la ventana y se barre.
+        valor="no_cumple",
+        nivel=NIVEL_PERFIL,         # lo consume V1 (Fase 5), que corre a perfil
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO. «no_cumple»: cuando el nivel del receptor
+        # toma el borde libre del barril V1 queda con cumple=False, como
+        # desde EXT-3. «aviso»: V1 juzga el borde libre con el tirante PROPIO
+        # del caudal de diseño (el normal de Manning), que es lo que el
+        # diametro puede resolver; si ese cumple, el remanso del receptor se
+        # imprime con veredicto INDICADOR (aviso) y no descarta el diametro;
+        # si no cumple, V1 NO cumple igual. Con S = 0 no hay tirante normal
+        # con que separar los dos casos y V1 no cumple bajo las dos opciones.
+        #
+        # EL CASO ES UNO A LO LARGO DE TODO EL TW: el TW por encima del
+        # llenado admisible (TW/D > 0.75 con el umbral por defecto), llegue o
+        # no a la clave. La primera redaccion de T-2 lo reconocia solo con el
+        # barril LLENO (TW >= D) y el auditor adversarial midio que «aviso»
+        # quedaba discontinua: mas ahogamiento era mas permisivo, y el tubo
+        # chico pasaba donde el grande no. El nombre de la clave conserva
+        # «ahogante» y cubre los dos tramos.
+        sensibilidad=("no_cumple", "aviso"),
+        concepto="Que hace V1 (borde libre) cuando es el nivel del cuerpo "
+                 "receptor, y no el caudal de diseño, el que deja al barril "
+                 "sin el borde libre: el tirante del receptor por encima del "
+                 "llenado admisible, llegue o no a la clave",
+        justificacion="Decide como se lee el borde libre cuando el nivel del "
+                      "receptor remansa o ahoga el barril. El Manual (num. "
+                      "4.1.1.3.7 b), pag. impresa 79) prohibe diseñar la "
+                      "alcantarilla para trabajar a seccion llena, por el "
+                      "riesgo de obstruccion (cita MC_HHD.4.1.1.3.7b#LLENA), "
+                      "y recomienda un borde libre minimo del 25 % (cita "
+                      "MC_HHD.4.1.1.3.7b). Hay dos maneras de llegar a la "
+                      "seccion llena y no son la misma. Por el caudal de "
+                      "diseño: el conducto es chico para su caudal; subir de "
+                      "diametro lo resuelve, y ahi V1 no cumple siempre, sin "
+                      "que este criterio intervenga. Por el nivel del "
+                      "receptor: el dren o el canal de aguas abajo esta mas "
+                      "alto que la clave durante la avenida; ningun diametro "
+                      "menor que el tirante del receptor lo resuelve, y lo "
+                      "que lo resuelve es la cota de la salida o la rasante. "
+                      "El caso del receptor no empieza en la clave: empieza "
+                      "donde el tirante del receptor supera el llenado "
+                      "admisible (0.75 de la altura con el umbral por "
+                      "defecto) y es el quien fija el tirante maximo dentro "
+                      "del barril, y la lectura es la misma desde ahi hasta "
+                      "el barril lleno, para que no cambie al cruzar la "
+                      "clave. "
+                      "El numeral no distingue los dos casos. «no_cumple», "
+                      "el valor del archivo, es la lectura literal y la "
+                      "conservadora: el riesgo de obstruccion que el Manual "
+                      "invoca existe igual con el barril ahogado por el "
+                      "receptor, porque el material flotante no tiene por "
+                      "donde pasar, y por eso el diseño no se acepta mientras "
+                      "el tirante del receptor alcance la clave. Su "
+                      "consecuencia: el diametro lo decide el tirante del "
+                      "receptor, y cuando ese tirante sale del escenario de "
+                      "receptor a seccion llena con la seccion adoptada "
+                      "(Sec. 1.3, paso 3) lo decide una adopcion. «aviso» "
+                      "lee que la prohibicion es sobre el diseño del "
+                      "conducto: si con su propio caudal el barril conserva "
+                      "el borde libre, el ahogamiento por el receptor se "
+                      "declara como aviso, con el tirante del receptor, su "
+                      "via y la velocidad a seccion llena, que V2 sigue "
+                      "juzgando, y no descarta el diametro. Con el barril "
+                      "horizontal no hay tirante normal con que separar los "
+                      "dos casos y V1 no cumple bajo las dos lecturas. Es la "
+                      "lectura "
+                      "que conviene cuando el nivel del receptor esta medido "
+                      "y es un hecho del sitio que la obra no puede cambiar; "
+                      "con un tirante adoptado, aceptar el ahogamiento es "
+                      "aceptar la adopcion. Sensibilidad en esta obra: en la "
+                      "corrida sin tirante declarado ni caudal del receptor, "
+                      "con «no_cumple» ninguno de los cuatro puntos "
+                      "dimensiona y con «aviso» el punto A-02 dimensiona con "
+                      "un tubo de 0.90 m de diametro, ahogado por un tirante "
+                      "del receptor de 1.196 m",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.7 b) 'Borde libre', pag. "
+               "impresa 79 (PDF 82), citas MC_HHD.4.1.1.3.7b#LLENA "
+               "(exigencia: no diseñar para seccion llena) y "
+               "MC_HHD.4.1.1.3.7b (recomendacion del 25 %). El numeral no "
+               "distingue la seccion llena por el caudal de la seccion "
+               "llena por el nivel del receptor: la lectura es adopcion del "
+               "proyectista. HDS-5 3a ed., num. 3.1.6, pag. impresa 3.18 "
+               "(cita HDS5_3ED.3.1.6#V_SALIDA_TW), para el regimen: con el "
+               "TW sobre la clave la seccion de salida es la entera",
+        reemplazado_por="El nivel de agua del receptor MEDIDO o calculado "
+                        "por quien lo opera (ANA / Junta de Usuarios), con el "
+                        "que la cota de la salida se fija por encima de el, "
+                        "o se acepta el ahogamiento como condicion del sitio",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el numeral prohibe diseñar para "
+                        "seccion llena y no dice que hacer cuando la llena "
+                        "el nivel del receptor",
+            dominio="declaracion de la lectura; el conjunto cerrado de "
                     "valores admisibles viaja en `sensibilidad`",
         ),
     ),
@@ -4098,20 +4435,20 @@ CRITERIOS: Dict[str, Criterio] = {
                       "(Tabla A.1; los bloques de cajon estan transcritos en "
                       "normativa/tablas.py::T_HDS5_A1 y los lee "
                       "constantes_normativas.HDS5_INLET) trae, en la "
-                      "transcripcion de este repositorio, quince filas de "
-                      "cajon -- Cartas 8 a 12 --: tres de Forma 1 (Carta 8) y "
-                      "doce de Forma 2 (Cartas 9 a 12; medido: Carta 9 con 2 "
-                      "filas, la 10 con 3, la 11 con 4 y la 12 con 3), y las "
+                      "transcripcion de este repositorio, dieciocho filas de "
+                      "cajon -- Cartas 8 a 13 --: tres de Forma 1 (Carta 8) y "
+                      "quince de Forma 2 (Cartas 9 a 13; medido: Carta 9 con "
+                      "2 filas, la 10 con 3, la 11 con 4, la 12 con 3 y la 13 "
+                      "con 3), y las "
                       "dos ecuaciones no se parecen -- la Forma 1 arranca de "
                       "H_c/D y corrige por pendiente, la Forma 2 no lleva "
                       "ninguno de los dos terminos. Ese censo es de la "
                       "transcripcion y no de la tabla: la Tabla A.1 trae mas "
                       "cajon del que este proyecto alcanza, y lo que queda "
                       "fuera esta censado fila por fila en el `Acotada` de "
-                      "`normativa/tablas.py::T_HDS5_A1` -- las tres filas de "
-                      "la Carta 13, la del bisel superior, y las cinco de las "
+                      "`normativa/tablas.py::T_HDS5_A1` -- las cinco de las "
                       "Cartas 57 a 59, que son gargantas de tapered inlet --; "
-                      "quien declare una embocadura que caiga en esas ocho "
+                      "quien declare una embocadura que caiga en esas cinco "
                       "tiene que transcribirlas primero. El esviaje no es un "
                       "bloque de la tabla: es un valor de la columna de "
                       "configuracion de entrada dentro de la Carta 11. Lo que "
@@ -4129,7 +4466,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "deja el control de entrada y el de salida hablando de "
                       "dos embocaduras distintas. La sensibilidad separa las "
                       "dos familias -- Carta 8 (Forma 1) frente a Cartas 9 a "
-                      "12 (Forma 2) -- porque entre una y otra no cambia solo "
+                      "13 (Forma 2) -- porque entre una y otra no cambia solo "
                       "una constante: cambia la ecuacion",
         fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, "
                "bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo "
@@ -4138,11 +4475,12 @@ CRITERIOS: Dict[str, Criterio] = {
                "contaba como tal --decia «y los tres que lo siguen (chaflan, "
                "bisel y esviaje)»--: es un valor de la columna 'Inlet "
                "Configuration' DENTRO de la Carta 11, bajo 'Rect. Box "
-               "Concrete'. Y el del bisel superior es la Carta 13, que este "
-               "proyecto NO tiene transcrita. Transcrita en "
+               "Concrete'. Y el del bisel superior es la Carta 13, 'Rect. "
+               "Box Top Bev. Conc.', transcrita en T-2 (tres filas, aletas "
+               "desplazadas de 45, 33.7 y 18.4 grados). Transcrita en "
                "normativa/tablas.py::T_HDS5_A1 y leida por "
-               "constantes_normativas.HDS5_INLET, donde las quince filas de "
-               "cajon transcritas estan como claves 'cajon_concreto_*'",
+               "constantes_normativas.HDS5_INLET, donde las dieciocho filas "
+               "de cajon transcritas estan como claves 'cajon_concreto_*'",
         reemplazado_por="El detalle de embocadura del cabezal que fije el "
                         "expediente (Sec. 9.1), del que salen la carta y la "
                         "fila de ke a la vez",
@@ -4150,9 +4488,9 @@ CRITERIOS: Dict[str, Criterio] = {
             "Carta 8 (Forma 1), aletas de 30 a 75 grados: K = 0.026, M = "
             "1.00. Es la unica familia de cajon que usa la ecuacion (A.1), la "
             "que arranca de H_c/D",
-            "Cartas 9 a 12 (Forma 2) -- aletas, chaflan, bisel o esviaje; la "
-            "12 es la familia 'Rect. Box 3/4\" chamf. Conc.', que la "
-            "redaccion anterior dejaba fuera de esta ventana --: K entre 0.486 "
+            "Cartas 9 a 13 (Forma 2) -- aletas, chaflan, bisel o esviaje; la "
+            "12 es la familia 'Rect. Box 3/4\" chamf. Conc.' y la 13 la del "
+            "bisel superior con aletas desplazadas --: K entre 0.486 "
             "y 0.545 con M = 0.667. La ecuacion (A.2) no lleva H_c/D ni Ks*S, "
             "de modo que entre una carta de Forma 1 y una de Forma 2 no "
             "cambia solo una constante: cambia la ecuacion",

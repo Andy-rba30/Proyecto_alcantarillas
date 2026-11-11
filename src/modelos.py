@@ -583,6 +583,14 @@ class TipoDePerfil(str, Enum):
     S1 = "S1"
     UNIFORME = "uniforme"
     LLENA = "llena"
+    # --- T-2 --- (INF-5.1.6). Barril HORIZONTAL, S = 0: no hay tirante normal
+    # hacia el que tender, y la lamina sube aguas arriba desde max(y_c, TW)
+    # sin asintota, hasta la entrada o hasta la clave. El rotulo es el que la
+    # fuente nombra (HDS-5 3.5.1, pag. impresa 3.37, `HDS5_3ED.3.5.1#H2`:
+    # «the horizontal profiles of H2 and H3 were added»); el H3 --supercritico
+    # sobre fondo horizontal-- no puede arrancar en la salida y este
+    # procedimiento no lo produce.
+    H2 = "H2"
 
 
 class CondicionRasante(str, Enum):
@@ -1899,6 +1907,36 @@ class TiranteNormal:
 
 
 @dataclass(frozen=True)
+class SinTiranteNormal:
+    """
+    --- T-2 --- Lo que M3 devuelve cuando el barril es HORIZONTAL (S = 0): no
+    hay tirante normal, y eso no es «el conducto no alcanza» (INF-5.1.6).
+
+    TRES RESPUESTAS DISTINTAS DE `M3.resolver_manning`, y esta es la tercera:
+
+        TiranteNormal      hay flujo uniforme que transporta Q.
+        None               con esta S > 0 ningun tirante transporta Q en
+                           lamina libre: el escalon no alcanza y MD pasa al
+                           siguiente.
+        SinTiranteNormal   S = 0: Manning no tiene solucion para NINGUN
+                           caudal ni NINGUNA seccion, y subir de diametro no
+                           lo cambia. No es un fallo del escalon: es otro
+                           regimen. HDS-5 num. 3.3.4 (pag. impresa 3.25,
+                           `HDS5_3ED.3.3.4#HORIZONTAL`) admite el barril
+                           horizontal, y M4 lo resuelve con el control de
+                           entrada (Ks·S = 0), el de salida (S·L = 0) y el
+                           perfil de la lamina desde la salida (H2).
+
+    Es un objeto y no un `None` con otro nombre para que quien lo reciba no
+    pueda confundir las dos lecturas: `if normal is None` sigue significando
+    lo de siempre. No lleva geometria ni velocidades porque no las hay; lleva
+    la pendiente con que se pidio, para que el paso de memoria la imprima.
+    """
+
+    S: float = 0.0            # m/m - la pendiente del barril: nula
+
+
+@dataclass(frozen=True)
 class TiranteCritico:
     """
     Salida de la primera pieza de M4 (Sec. 4.2.1): tirante critico de la
@@ -2313,6 +2351,27 @@ class SeccionReceptor:
     altura_total_m: float      # m   - profundidad de la seccion (fondo a corona)
 
 
+# --- T-2 --- De donde salio la seccion del receptor con que se obtuvo el TW
+# (vias 3 y 4 de Sec. 1.3). Son ROTULOS que la memoria imprime tal cual.
+SECCION_RECEPTOR_MEDIDA = "seccion medida (levantamiento del receptor)"
+SECCION_RECEPTOR_ADOPTADA = "seccion adoptada [A] por falta de levantamiento"
+ORIGENES_SECCION_RECEPTOR = (SECCION_RECEPTOR_MEDIDA, SECCION_RECEPTOR_ADOPTADA)
+
+# --- T-2 --- El aviso de un punto que declara que NO tiene previsto el acceso
+# de mantenimiento (`acceso_mantenimiento_previsto = false` en
+# --datos-externos). La EXIGENCIA es del Manual (num. 4.1.1.3.7 d), cita
+# MC_HHD.4.1.1.3.7d); el texto de aqui es del proyecto y lo dice. Vive en
+# este modulo porque lo imprimen el servicio (CLI y JSON) y la memoria (M11),
+# y M11 no importa del servicio.
+AVISO_SIN_ACCESO_DE_MANTENIMIENTO = (
+    "Acceso de mantenimiento: el punto declara que NO esta previsto "
+    "(acceso_mantenimiento_previsto = false). El Manual de Hidrologia, num. "
+    "4.1.1.3.7 d) 'Mantenimiento y limpieza', exige que las dimensiones de "
+    "la alcantarilla permitan el mantenimiento y la limpieza en su interior: "
+    "hay que preverlo en los planos (criterio 'acceso_mantenimiento_v2b') o "
+    "declarar la limitacion")
+
+
 class ViaDelTW(str, Enum):
     """
     Por cual de los cuatro caminos de Sec. 1.3 se obtuvo el TW de un punto.
@@ -2357,6 +2416,15 @@ class TWDeterminado:
     cota_TW_msnm: Optional[float] = None           # msnm - cuando se conoce
     escenarios: Tuple[Tuple[str, float], ...] = ()
     paso: Optional["PasoDeMemoria"] = None
+    # --- T-2 --- (INF-3.2.8). CON QUE SECCION DEL RECEPTOR se obtuvo, cuando
+    # la via la usa (3 y 4): la geometria, y de donde salio --MEDIDA por
+    # levantamiento, o ADOPTADA por el criterio [A] 'seccion_receptor'--. Y
+    # los AVISOS que la via dispara: el de la via 4 con seccion adoptada es
+    # el que dice que el TW que decide el diametro es una adopcion. Viajan
+    # aqui para que la CLI, el JSON y la memoria impriman el MISMO texto.
+    seccion: Optional["SeccionReceptor"] = None
+    origen_seccion: str = ""                       # uno de ORIGENES_SECCION_RECEPTOR, o ""
+    avisos: Tuple[str, ...] = ()
 
 
 # ===========================================================================
@@ -2480,10 +2548,16 @@ class ResultadoHidraulico:
     la compuerta `servicio._compuerta_metodo_h_o` sigue guardando.
     """
 
-    y_normal: float                       # m  - con n_max (Sec. 4.1)
+    # --- T-2 --- LOS TRES DE MANNING SON `None` EN UN BARRIL HORIZONTAL
+    # (S = 0, INF-5.1.6): no hay tirante normal ni velocidad uniforme, y un
+    # numero puesto ahi seria inventado. `sin_tirante_normal` lo dice en una
+    # palabra; V1 y V2 leen entonces el perfil de la lamina, V3 y la Fase 6
+    # la velocidad de la seccion de salida (`V_salida`), y los lectores que
+    # imprimen (CLI, JSON, memoria, ventana) escriben «no existe (S = 0)».
+    y_normal: Optional[float]             # m  - con n_max (Sec. 4.1)
     y_critico: float                      # m  - Q^2*T/(g*A^3) = 1 (Sec. 4.2)
-    V_erosion: float                      # m/s - con n_min (Sec. 4.1)
-    V_sedimentacion: float                # m/s - con n_max (Sec. 4.1)
+    V_erosion: Optional[float]            # m/s - con n_min (Sec. 4.1)
+    V_sedimentacion: Optional[float]      # m/s - con n_max (Sec. 4.1)
     Q: float                              # m3/s - caudal de diseno del punto
     S: float                              # m/m - pendiente con que corrio el
                                           # diseno (la del cauce salvo que el
@@ -2538,6 +2612,17 @@ class ResultadoHidraulico:
     def __post_init__(self) -> None:
         if self.Q_celda_m3s is None:
             object.__setattr__(self, "Q_celda_m3s", self.Q)
+
+    @property
+    def sin_tirante_normal(self) -> bool:
+        """
+        --- T-2 --- True si el barril es horizontal (S = 0) y por tanto no
+        hay flujo uniforme: `y_normal`, `V_erosion` y `V_sedimentacion` son
+        `None` (HDS-5 num. 3.3.4; `SinTiranteNormal`). Es el predicado UNICO
+        con que M5, la Fase 6 y los lectores eligen de donde sale el tirante
+        y la velocidad del barril.
+        """
+        return self.y_normal is None
 
     @property
     def HW(self) -> float:
@@ -4739,9 +4824,13 @@ class ResultadoPunto:
         # tirante es la altura entera; bajo control de SALIDA con el barril
         # parcialmente lleno es el maximo del perfil de la lamina; solo bajo
         # control de ENTRADA vale y_normal.
+        # --- T-2 --- y sin tirante normal (barril horizontal, S = 0) el
+        # tirante es el del perfil tambien cuando gobierna la entrada: es lo
+        # que V1 compara ahi (`M5._regimen_de_v1_v2`).
         if h.regimen_barril is RegimenBarril.LLENO:
             y = altura
-        elif h.control_gobernante is ControlGobernante.SALIDA:
+        elif (h.control_gobernante is ControlGobernante.SALIDA
+              or h.sin_tirante_normal):
             if h.perfil is None:
                 return None
             y = h.perfil.y_max_m

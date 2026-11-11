@@ -175,15 +175,25 @@ def csv_con_coronacion(tmp_path):
 # ===========================================================================
 
 
-def test_pf4_la_ficha_es_una_categoria_de_perfil_con_valor_umbral_duro():
+def test_pf4_la_ficha_es_una_categoria_de_perfil_con_valor_de_archivo():
+    """
+    T-2 (INF-0.5) CAMBIO EL VALOR DE ARCHIVO de «umbral_duro» a
+    «indicador_con_aviso»: PF-4 dejo la conducta de S20 para no mover la
+    linea base, y T-2 midio que el cambio no mueve ningun diametro ni que
+    puntos se dimensionan en las corridas de la linea base (C-01, el unico
+    con S_conducto < S_cauce, se detiene antes en los criterios del cajon).
+    Lo demas de la ficha es lo de PF-4: categoria de perfil, [A], dos
+    opciones cerradas.
+    """
     c = ca.criterio(CLAVE)
     assert c.etiqueta == "A"
     assert c.nivel == ca.NIVEL_PERFIL
     assert c.forma == ca.FORMA_CATEGORIA
     assert c.sensibilidad == (UMBRAL_DURO, INDICADOR_CON_AVISO)
     # NO VACIO: dejarlo vacio detendria los cuatro puntos de toda corrida de
-    # perfil, y esta sesion no mueve ningun numero de la linea base.
-    assert c.valor == UMBRAL_DURO
+    # perfil. Y la etiqueta sigue siendo [A]: la fuente define el indicador
+    # y no prescribe que hacer con el.
+    assert c.valor == INDICADOR_CON_AVISO
     assert c.resolucion is not None, "[A] de perfil sin procedencia"
     # La segunda mitad del indicador (n de Manning del cauce natural) sigue
     # pendiente como hoy: la ficha lo dice, no lo inventa.
@@ -253,15 +263,18 @@ def test_pf4_m11_pinta_el_indicador_como_aviso_y_no_como_incumple_ni_diferido():
 # ===========================================================================
 
 
-def test_pf4_bajo_umbral_duro_el_indicador_disparado_sigue_deteniendo(_limpio):
+def test_pf4_con_el_valor_del_archivo_el_indicador_disparado_avisa(_limpio):
     """
-    Vale ANTES y DESPUES: es la conducta de S20, que el valor del archivo
-    conserva. Se escribe para que el regimen nuevo no la mueva por accidente.
+    Hasta T-2 este test fijaba la conducta de S20 («umbral_duro», entonces
+    valor del archivo: el indicador disparado detenia). El valor del archivo
+    es desde T-2 «indicador_con_aviso», y lo que se fija sin declarar nada es
+    eso; la conducta de S20 la sigue fijando el test de abajo, con
+    «umbral_duro» declarado.
     """
     punto = _punto()
     v = M5.v2b_sedimentacion(punto=punto, resultado=_resultado(S=punto.S_cauce / 2))
-    assert not v.cumple
-    assert v.paso.veredicto.tipo is TipoDeVeredicto.NO_CUMPLE
+    assert v.cumple
+    assert v.paso.veredicto.tipo is TipoDeVeredicto.INDICADOR
 
 
 def test_pf4_bajo_umbral_duro_declarado_la_conducta_es_la_misma(_limpio):
@@ -342,7 +355,7 @@ def test_pf4_con_el_valor_del_archivo_la_linea_base_ancha_no_mueve_un_numero(tmp
     assert resultado.iguales, "\n".join(resultado.lineas())
     usados = {u["clave"]: u for u in generado["criterios"]["usados"]}
     assert CLAVE in usados
-    assert usados[CLAVE]["valor"] == UMBRAL_DURO
+    assert usados[CLAVE]["valor"] == INDICADOR_CON_AVISO      # T-2
     assert usados[CLAVE]["declarado_en_caliente"] is False
     assert ca.CRITERIOS[CLAVE].nivel == ca.NIVEL_PERFIL
 
@@ -360,17 +373,45 @@ def test_pf4_la_corrida_de_perfil_invoca_el_regimen_y_por_eso_es_de_perfil():
 # ===========================================================================
 
 
-def test_pf4_sin_declarar_c01_no_dimensiona_y_el_motivo_nombra_v2b(tmp_path, csv_con_coronacion):
+def test_pf4_bajo_umbral_duro_c01_no_dimensiona_y_el_motivo_nombra_v2b(tmp_path, csv_con_coronacion):
     """
-    Vale ANTES y DESPUES: con el valor del archivo (umbral duro) los tres
-    marcos de la progresion de C-01 se descartan por V2b, que es la evidencia
-    de la revision de E-B que motivo PF-4 (0.004 frente a 0.006).
+    Con «umbral_duro» los tres marcos de la progresion de C-01 se descartan
+    por V2b, que es la evidencia de la revision de E-B que motivo PF-4 (0.004
+    frente a 0.006). Hasta T-2 era la corrida SIN declarar, porque ese era el
+    valor del archivo; desde T-2 el archivo trae «indicador_con_aviso» y el
+    umbral duro se declara. No es una corrida de la linea base: los siete
+    criterios del cajon y la coronacion del canal los pone este test.
     """
-    _, informe, _ = _correr_cli(tmp_path, cajon=True, csv=csv_con_coronacion)
+    _, informe, _ = _correr_cli(tmp_path, f"{CLAVE}={UMBRAL_DURO}", cajon=True,
+                                csv=csv_con_coronacion)
     c01 = _punto_json(informe, "C-01")
     assert not c01["dimensionado"]
     assert c01["iteraciones"] and all(
         "V2b" in it["incumplidas"] for it in c01["iteraciones"])
+
+
+def test_t2_sin_declarar_c01_dimensiona_con_el_valor_del_archivo(tmp_path, csv_con_coronacion):
+    """
+    La otra mitad, que es lo que T-2 cambio: sin declarar el regimen, la
+    misma corrida dimensiona C-01 y V2b sale como indicador. Es el unico
+    escenario de la suite en que el cambio de valor de archivo decide si un
+    punto se dimensiona, y por eso se fija con su seccion.
+    """
+    _, informe, _ = _correr_cli(tmp_path, cajon=True, csv=csv_con_coronacion)
+    c01 = _punto_json(informe, "C-01")
+    assert c01["dimensionado"], c01.get("bloqueos")
+    v2b = next(v for v in c01["verificaciones"] if v["codigo"] == "V2b")
+    assert v2b["cumple"] is True
+    assert v2b["veredicto"] == TipoDeVeredicto.INDICADOR.value
+    usados = {u["clave"]: u for u in informe["criterios"]["usados"]}
+    assert usados[CLAVE]["valor"] == INDICADOR_CON_AVISO
+    assert usados[CLAVE]["declarado_en_caliente"] is False
+    aceptada = next(it for it in c01["iteraciones"] if it["aceptado"])
+    declarado = _correr_cli(tmp_path, f"{CLAVE}={INDICADOR_CON_AVISO}",
+                            cajon=True, csv=csv_con_coronacion)[1]
+    aceptada_declarado = next(it for it in _punto_json(declarado, "C-01")["iteraciones"]
+                              if it["aceptado"])
+    assert aceptada["seccion"] == aceptada_declarado["seccion"]
 
 
 def test_pf4_declarando_indicador_con_aviso_c01_dimensiona_y_la_memoria_avisa(

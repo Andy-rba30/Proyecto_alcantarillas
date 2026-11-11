@@ -121,7 +121,7 @@ sigue vacío —`Q_m3s`, `area_ha`, `S_cauce`— entra por la sección 2.
 
 ## 2. Lo que no es columna del CSV: `--datos-externos`
 
-Ocho datos entran por un JSON aparte (`servicio.CLAVES_EXTERNAS`). Seis no
+Diez datos entran por un JSON aparte (`servicio.CLAVES_EXTERNAS`). Ocho no
 son columna del CSV; dos (`Q_m3s`, `S_cauce`) sí lo son y entran también por
 aquí porque la Familia C las deja vacías por tablero. La tabla dice de cada
 clave si tiene bandera de línea de comandos, qué familias la usan y qué pasa
@@ -138,13 +138,21 @@ si no se declara:
 | `S_cauce` | sí | número | — | las tres | vale la celda del CSV |
 | `L_hidraulico_m` | no | número | `--l-hidraulico` | B | el pre-vuelo la lista como falta |
 | `categoria_tr` | no | texto | `--categoria-tr` | A, B | el programa la resuelve por otra vía |
+| `seccion_receptor_medida` | no | objeto | — | las tres | el programa la resuelve por otra vía |
+| `acceso_mantenimiento_previsto` | no | booleano | — | las tres | es opcional: sin ella no se afirma nada |
 <!-- fin: externos -->
 
 «Por otra vía» quiere decir: `longitud_m` la calcula la Fase 7.B con las
 cotas del CSV; `categoria_tr` cae en el criterio de la Tabla N° 02 (Familia A)
-o en la fila fija de la Sec. 2.3 (Familia B); y `S_conducto` cae en
-`S_cauce`. `TW_m` tiene además su propia cadena (Sec. 1.3: `cota_TW`, Manning
-en el receptor con `Q_receptor_m3s`, y por último el criterio `TW_receptor`).
+o en la fila fija de la Sec. 2.3 (Familia B); `S_conducto` cae en
+`S_cauce` (y admite 0, el barril horizontal); y `seccion_receptor_medida`
+—la sección **medida** del dren o canal receptor: `b_m`, `z_HV`, `S`, `n` y
+`altura_total_m`— cae en la sección **adoptada** del criterio
+`seccion_receptor`, con un aviso en la memoria. `TW_m` tiene además su propia
+cadena (Sec. 1.3: `cota_TW`, Manning en el receptor con `Q_receptor_m3s`, y por
+último el criterio `TW_receptor`). `acceso_mantenimiento_previsto` es un
+`true` / `false` por punto: dice si los planos prevén el acceso de limpieza, y
+con `false` la memoria lo avisa.
 
 El archivo tiene dos secciones, las dos opcionales: `globales`, que vale para
 todos los puntos, y `puntos`, por `id`. **Un valor por punto pisa al global; una
@@ -170,9 +178,12 @@ global de 0.3 m es un escenario del ejemplo, no un dato de la vía; el caudal y
 la pendiente de C-01 son los del **canal** (Sec. 2.3), no los de una cuenca; y
 `S_conducto` se declara **igual** que `S_cauce`. La verificación V2b compara la
 pendiente del conducto con la del cauce (HDS-5 §5.3.3, indicador de
-sedimentación) y, con el valor de archivo del criterio `regimen_v2b`, un
-conducto **menos** empinado que el cauce descarta la sección. Esa es la regla
-`S_conducto ≥ S_cauce` que el punto C-01 necesita para dimensionar.
+sedimentación). Con el valor de archivo del criterio `regimen_v2b`
+(`indicador_con_aviso`), un conducto **menos** empinado que el cauce no
+descarta la sección: sale como **[AVISO]** en la tabla del punto. Quien declare
+`regimen_v2b=umbral_duro` vuelve a la regla dura, `S_conducto ≥ S_cauce`, y
+entonces un conducto más tendido que el cauce no dimensiona. Con las dos
+pendientes iguales, como aquí, el indicador no se dispara en ningún régimen.
 
 La luz va por bandera (`--luz`), porque vale para los cuatro puntos y es lo
 primero que la corrida mira: un cruce de 6 m o más es puente y queda fuera del
@@ -262,6 +273,7 @@ Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 3
 Verificaciones incumplidas: 0
+Verificaciones con aviso: 0
 Etapas bloqueadas       : 1
 Diferidas por alcance   : 11 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : no
@@ -271,7 +283,7 @@ Tres puntos y no cuatro: C-01 es un cruce de canal, su sección es un marco
 de concreto, y el marco tiene criterios sin valor que el programa **no rellena
 por su cuenta**. El bloque «CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA»
 nombra el primero que la corrida encontró (`embocadura_cajon`), y el
-pre-vuelo de la sección 1.2 ya había listado los diez. Es la sección 4.
+pre-vuelo de la sección 1.2 ya había listado los nueve. Es la sección 4.
 
 ---
 
@@ -292,7 +304,6 @@ dentro de la que se elige. La tabla sale de esas fichas:
 | `embocadura_cajon` | [A] | `str` | la clave de una fila de `HDS5_3ED.TA1`, `HDS5_3ED.TC2` |
 | `espesor_pared_cajon` | [A] | `float` | metros, > 0 |
 | `homogeneidad_serie_fen` | [A] | `str` | declaracion del tratamiento estadistico |
-| `hw_entrada_fuera_de_rango` | [A] | `categoria` | una de: `energia_critica`, `descartar` |
 | `ke_entrada_cajon` | [C] | `str` | la clave de una fila de `HDS5_3ED.TC2` |
 | `n_celdas_cajon` | [A] | `int` | entero >= 1 |
 | `n_manning_cajon` | [N->] | `str` | la clave de una fila de `MC_HHD.T09` |
@@ -302,13 +313,11 @@ dentro de la que se elige. La tabla sale de esas fichas:
 Siete son **del cajón** (la sección rectangular de la Familia C) y los invoca
 cualquier cruce de canal: `embocadura_cajon`, `ke_entrada_cajon`,
 `n_manning_cajon`, `n_celdas_cajon`, `secciones_cajon_normalizadas`,
-`espesor_pared_cajon` y `cobertura_minima_cajon`. Los otros tres sólo se
+`espesor_pared_cajon` y `cobertura_minima_cajon`. Los otros dos sólo se
 invocan en condiciones que este ejemplo no alcanza: `TW_receptor` es la última
 puerta del TW (Sec. 1.3) cuando no hay ni `TW_m`, ni `cota_TW`, ni caudal del
-receptor; `hw_entrada_fuera_de_rango` sólo cuando la carta de control de
-entrada no tiene dominio para el par (Q, S) de un punto (v8 §4.2); y
-`homogeneidad_serie_fen` es un hecho sobre la serie de precipitación de la
-Fase 1-bis, que este software no procesa.
+receptor; y `homogeneidad_serie_fen` es un hecho sobre la serie de
+precipitación de la Fase 1-bis, que este software no procesa.
 
 **Cómo se declara, no qué.** `--declarar CLAVE=VALOR` declara un criterio
 **sólo para esa corrida**: el archivo no se toca y la memoria imprime el valor
@@ -328,7 +337,6 @@ para elegir):
 --declarar embocadura_cajon=cajon_concreto_aletas_30_75
 --declarar espesor_pared_cajon=0.20
 --declarar "homogeneidad_serie_fen=serie con 1983, 1998 y 2017: ajuste con y sin ellos, adoptado el conservador"
---declarar hw_entrada_fuera_de_rango=energia_critica
 --declarar ke_entrada_cajon=cajon_aletas_30_75_escuadra
 --declarar n_celdas_cajon=1
 --declarar n_manning_cajon=concreto_afinado
@@ -373,6 +381,7 @@ Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 4
 Verificaciones incumplidas: 0
+Verificaciones con aviso: 0
 Etapas bloqueadas       : 0
 Diferidas por alcance   : 13 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : si
@@ -382,8 +391,8 @@ Expediente cerrado      : si
 
 ## 5. Cómo se lee el RESUMEN
 
-Las seis cifras las calcula una sola vez `Informe.resumen()` (un
-`ResumenDeCorrida`) y las leen las tres capas que las imprimen: la consola, la
+Las cifras las calcula una sola vez `Informe.resumen()` (un
+`ResumenDeCorrida`) y las leen las capas que las imprimen: la consola, la
 pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
 
 - **Puntos del expediente / Puntos dimensionados.** Cuántas filas cargó el CSV
@@ -391,9 +400,14 @@ pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
   sus verificaciones). Un punto **no dimensionado** tiene, en su bloque, la
   razón: un criterio pendiente, un dato que falta o «no factible» con el
   delta de rasante que haría falta.
-- **Verificaciones incumplidas.** Las V1…V9, VC1, G1, G2 que se evaluaron y no
+- **Verificaciones incumplidas.** Las V1…V10, VC1, G1, G2 que se evaluaron y no
   cumplen en la sección aceptada. Un **[AVISO]** (veredicto indicador, como
   V2b bajo `regimen_v2b = indicador_con_aviso`) no cuenta aquí.
+- **Verificaciones con aviso.** Las que salieron como **[AVISO]** en la
+  sección aceptada: el indicador se disparó y el diseño **no** se detuvo. No
+  impiden cerrar, pero hay que leerlas: cada una sale además como una línea
+  `aviso:` en el bloque de su punto, con su código. La consola y la memoria
+  la cuentan; la pestaña 4 la muestra fila a fila.
 - **Etapas bloqueadas.** Las etapas que se detuvieron y **cuentan para el
   cierre**: un `CriterioPendienteError` (falta declarar un criterio), un
   `DatoFaltanteError` (falta un dato), un `DatoInvalidoError`, un

@@ -463,6 +463,16 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # es que el paso se escribio sin su fundamento». C3 escribio el paso
         # -- `M4._pasos_hidraulicos::de_forma` -- y ahora lo emite toda
         # corrida que dimensione un punto.
+        #
+        # LOS DOS DE T-2, por la razon de F6.LAUSHEY y no por un vacio: su
+        # paso existe y la corrida por defecto no cae en el caso. Ningun punto
+        # del corredor tiene el barril horizontal (S de 0.004 a 0.010) ni una
+        # pendiente que saque la carta de su rango (S* ~ 0.38 con D = 0.90).
+        # QUE LOS PASOS EXISTEN SE COMPRUEBA en `tests/test_t2_hidraulica.py`,
+        # que corre los dos casos y lee el fundamento del paso y de la
+        # eleccion.
+        "F4.HORIZONTAL",    # el paso 4.1 del barril con S = 0
+        "F4.PISO_HW",       # la eleccion del piso de la carga a la entrada
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar
