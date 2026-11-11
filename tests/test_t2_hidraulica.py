@@ -418,6 +418,11 @@ def test_v10_juzga_la_pendiente_del_diseno_contra_la_banda(S, cumple, criterio):
     assert v.paso.fundamento_id == "F5.V10"
     assert {e.clave_criterio for e in v.paso.elecciones} == {
         "pendiente_minima_conducto", "pendiente_maxima_conducto"}
+    # Cada eleccion imprime SU ventana, la de la ficha: es lo que dice
+    # dentro de que se eligio.
+    ventanas = {e.clave_criterio: e.entre for e in v.paso.elecciones}
+    assert ventanas["pendiente_minima_conducto"] == ("0 m/m", "0.005 m/m")
+    assert ventanas["pendiente_maxima_conducto"] == ("0.02 m/m", "0.1 m/m")
 
 
 def test_v10_rechaza_por_abajo_cuando_se_declara_una_minima_positiva():
@@ -440,6 +445,23 @@ def test_la_banda_vacia_es_un_par_de_criterios_que_se_contradicen():
             M5.limites_de_pendiente()
     assert "pendiente_minima_conducto" in str(exc.value)
     assert "pendiente_maxima_conducto" in str(exc.value)
+
+
+def test_una_banda_de_un_solo_valor_no_es_una_contradiccion():
+    """
+    La guardia cruzada rechaza la minima POR ENCIMA de la maxima, no la
+    igualdad: quien fije la pendiente del conducto en un unico valor declara
+    una banda degenerada y valida, y V10 la cumple justo en ese valor.
+    """
+    with con_valor("pendiente_minima_conducto", 0.02,
+                   motivo="caso sintetico: la minima igual a la maxima, que "
+                          "la ventana del archivo (0 a 0.005) no alcanza"):
+        ca.establecer_valor_dinamico("pendiente_maxima_conducto", 0.02)
+        assert M5.limites_de_pendiente() == pytest.approx(
+            (0.02, 0.02), rel=REL_TRANSPORTE)
+        assert M5.v10_pendiente_conducto(resultado=_resultado(S=0.02)).cumple
+        assert not M5.v10_pendiente_conducto(resultado=_resultado(S=0.021)).cumple
+        assert not M5.v10_pendiente_conducto(resultado=_resultado(S=0.019)).cumple
 
 
 def test_v10_esta_en_los_dos_verificadores_y_no_toca_a_v2b(tmp_path, concreto):
@@ -520,6 +542,11 @@ def test_lleno_por_el_receptor_no_cumple_con_el_valor_de_archivo(concreto):
     assert eleccion.valor == "no_cumple"
     assert "LLENO POR EL NIVEL DEL RECEPTOR" in v.paso.nota_del_proyecto
     assert "«no_cumple»" in v.paso.nota_del_proyecto
+    assert "NO CUMPLE, por la exigencia" in v.paso.nota_del_proyecto
+    assert "queda como AVISO" not in v.paso.nota_del_proyecto
+    # El margen es el de la comparacion: no hay borde libre (0.75 - 1.0).
+    assert v.paso.veredicto.margen == pytest.approx(Y_SOBRE_D_MAX - 1.0,
+                                                    rel=REL_FORMULA)
     assert "borde_libre_bajo_tw_ahogante" in ca.criterios_usados()
 
 
@@ -537,6 +564,30 @@ def test_lleno_por_el_receptor_bajo_aviso_no_descarta_si_el_caudal_cabe(concreto
     assert simbolos["y_normal"].valor == pytest.approx(r.y_normal,
                                                        rel=REL_TRANSPORTE)
     assert simbolos["TW"].valor == pytest.approx(r.TW_m, rel=REL_TRANSPORTE)
+    assert simbolos["TW"].unidad == "m"
+    # La nota dice el caso y la lectura que aplico, y el margen sigue siendo
+    # el de la comparacion (negativo: el barril va lleno).
+    nota = v.paso.nota_del_proyecto
+    assert "«aviso»" in nota and "queda como AVISO" in nota
+    assert "NO CUMPLE, por la exigencia" not in nota
+    assert v.paso.veredicto.margen == pytest.approx(Y_SOBRE_D_MAX - 1.0,
+                                                    rel=REL_FORMULA)
+
+
+def test_el_consumidor_rechaza_una_lectura_que_burla_la_puerta(concreto):
+    """
+    Segunda linea de guardia (ficha EXT-5-02): la puerta del criterio ya
+    rechaza lo que no es de la ventana, y V1 no se fia de ella. Un texto que
+    no es una de las dos lecturas no se interpreta: se detiene.
+    """
+    sec, r = _lleno_por_receptor(concreto)
+    for malo in ("indicador", "", 1):
+        with con_valor("borde_libre_bajo_tw_ahogante", malo,
+                       motivo="probar la guardia del consumidor de V1"):
+            with pytest.raises(DatoInvalidoError,
+                               match="borde_libre_bajo_tw_ahogante"):
+                M5.v1_borde_libre(D=sec.altura, material=concreto,
+                                  punto=_punto(), resultado=r)
 
 
 def test_bajo_aviso_el_caudal_que_no_cabe_sigue_sin_cumplir(concreto):
@@ -552,6 +603,8 @@ def test_bajo_aviso_el_caudal_que_no_cabe_sigue_sin_cumplir(concreto):
                           resultado=r)
     assert not v.cumple
     assert v.paso.veredicto.tipo is TipoDeVeredicto.NO_CUMPLE
+    assert "NO lo conserva" in v.paso.nota_del_proyecto
+    assert "queda como AVISO" not in v.paso.nota_del_proyecto
 
 
 def test_bajo_aviso_un_barril_horizontal_ahogado_no_cumple(concreto):
@@ -716,6 +769,31 @@ def test_la_seccion_medida_entra_completa_y_fisica_o_no_entra(mala, tmp_path):
     with pytest.raises(DatoInvalidoError) as exc:
         _externos(tmp_path, {"puntos": {"A-01": {"seccion_receptor_medida": mala}}})
     assert servicio.CLAVE_SECCION_RECEPTOR_MEDIDA in str(exc.value)
+
+
+@pytest.mark.parametrize("buena", [
+    dict(MEDIDA_JSON, b_m=0.0),                 # cuneta triangular
+    dict(MEDIDA_JSON, z_HV=0.0),                # canal rectangular
+    dict(MEDIDA_JSON, b_m=0.5, z_HV=0.5),       # solera y talud iguales
+    dict(MEDIDA_JSON, S=0.999),                 # justo bajo el techo del dominio
+    dict(MEDIDA_JSON, altura_total_m=0.4, n=0.011, S=0.0002),
+])
+def test_la_seccion_medida_admite_lo_que_es_una_seccion(buena, tmp_path):
+    """
+    La otra mitad de la validacion: no rechaza de mas. El ancho de fondo y el
+    talud admiten el cero por separado, y ningun campo tiene un piso oculto.
+    """
+    externos = _externos(tmp_path, {"globales": {"seccion_receptor_medida": buena}})
+    leida = externos.valor("A-01", servicio.CLAVE_SECCION_RECEPTOR_MEDIDA)
+    assert leida == {k: float(v) for k, v in buena.items()}
+    assert SeccionReceptor(**leida).altura_total_m > 0
+
+
+def test_la_pendiente_de_la_seccion_medida_va_en_m_por_m(tmp_path):
+    """S = 1 (el techo de `dominios.S_CAUCE_MAX`) delata una celda en porcentaje."""
+    with pytest.raises(DatoInvalidoError, match="seccion_receptor_medida.S"):
+        _externos(tmp_path, {"globales": {
+            "seccion_receptor_medida": dict(MEDIDA_JSON, S=1.0)}})
 
 
 def test_la_seccion_medida_por_punto_llega_a_la_corrida(tmp_path):

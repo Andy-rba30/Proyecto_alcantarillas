@@ -3619,7 +3619,7 @@ alternativa sin aplicar porque decidirla es del proyectista.
   de `regimen_v2b` lo declara en `verificacion_pendiente` y la memoria lo imprime.
 - **Dónde vive:** `src/normativa/citas.py::HDS5_5_3_3_DEPRESION`
 
-## T2-07 · La aceptación de T-2 no se escribió en rojo antes del código: se midió después, y 31 de sus 121 tests valen antes y después
+## T2-07 · La aceptación de T-2 no se escribió en rojo antes del código: se midió después, y 31 de sus 129 tests valen antes y después
 
 - **Qué se difirió:** el orden que la casa sigue —el test en rojo con
   `xfail(strict=True)`, y liberarlo al corregir—. T-2 implementó primero y escribió
@@ -3628,13 +3628,23 @@ alternativa sin aplicar porque decidirla es del proyectista.
   de reconstruirlo. Lo que se hizo para que la aceptación no fuera vacua: el archivo
   se corrió contra un árbol exportado de `87d1ce7` (T-0), con los cuatro nombres de
   `modelos.py` que ese árbol no tiene sustituidos por un marcador para que el archivo
-  se recolectara. **Medido: 90 rojos y 31 verdes.** Los 31 valen antes y después y son
+  se recolectara. **Medido: 98 rojos y 31 verdes.** Los 31 valen antes y después y son
   guardias, no cierres: los tres de la pendiente negativa o NaN (ya se rechazaba), el
   de las filas de la Tabla A.1 que el catálogo usa (no se movieron), las 24 casillas
   de los tres cajones del ejemplo publicado (las Cartas 8 y 10 ya estaban
   transcritas y el motor ya las reproducía), el censo de casillas fuera de tolerancia,
   las cifras del formulario contra la página y los diámetros de la línea base.
 - **Qué haría falta:** nada que se pueda rehacer; el oráculo de cada test es la fuente
-  o un invariante, no la salida del programa, y un auditor adversarial revisa el
-  diff. Si alguno resultara verde sobre un mutante, se cierra con una aserción.
+  o un invariante, no la salida del programa. Se midió además la mutación de lo que
+  T-2 tocó, con el arnés de EXT-11 (`tests/apoyo/mutacion.py`) sobre quince funciones
+  de M3, M4, M5 y `servicio` y seis archivos de tests: 217 mutantes, 180 muertos en la
+  primera vuelta. Entre los vivos había huecos reales de la lógica nueva —la guardia
+  del consumidor de V1, la banda de un solo valor, el texto y el margen del caso
+  aplicado, la ventana de las elecciones de V10, los bordes de la sección medida— y se
+  cerraron con ocho tests: en la segunda vuelta mueren 192 y quedan 25 vivos. De
+  ésos, 8 ya están en el censo de EXT-11; los otros 17 son de la banda de tolerancia
+  de un umbral (5), de texto o formato de la memoria y de los mensajes, o ramas de
+  código anterior que matan archivos que esta medida no corrió. **No se censaron uno
+  a uno**: el censo de EXT-11 no se amplió a las funciones nuevas, y hacerlo es
+  trabajo de T-10.
 - **Dónde vive:** `tests/test_t2_hidraulica.py::test_los_diametros_de_la_linea_base_no_se_movieron`
