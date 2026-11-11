@@ -172,7 +172,8 @@ def test_todo_criterio_de_perfil_sin_valor_tiene_ficha_declarable():
     assert sorted(claves) == [
         "TW_receptor", "cobertura_minima_cajon", "embocadura_cajon",
         "espesor_pared_cajon", "homogeneidad_serie_fen",
-        "hw_entrada_fuera_de_rango",     # PF-1 (PC-03): el piso de la carga a la entrada
+        # 'hw_entrada_fuera_de_rango' (PF-1, PC-03) salio de esta lista en
+        # T-2: el archivo trae «energia_critica» (INF-0.5).
         "ke_entrada_cajon", "n_celdas_cajon", "n_manning_cajon",
         "secciones_cajon_normalizadas"]
     for clave in claves:

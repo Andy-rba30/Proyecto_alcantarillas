@@ -310,6 +310,36 @@ NF_profundidad_m,cota_fondo_entrada,cota_coronacion_canal
 > de arriba («fluye lleno») lleva el matiz desde esta misma sesión; hasta EXT-3
 > se leía como flujo a presión en toda la longitud.
 
+> **Corregido (`INF-3.2.2`, `INF-5.1.7`, T-2, 2026-11-11).** Tres cosas de
+> las vías 3 y 4, y las tres son de entrada o de impresión: ningún número de
+> la línea base se mueve.
+>
+> **(a) La sección del receptor puede venir MEDIDA, y entonces gana.** Hasta
+> T-2 la sección entraba sólo por el criterio `seccion_receptor` **[A]**, de
+> modo que el TW de las vías 3 y 4 salía siempre de una geometría adoptada
+> aunque existiera el levantamiento. Entra ahora, opcional y sin valor por
+> defecto, por la clave **`seccion_receptor_medida`** de `--datos-externos`
+> (global o por punto): un objeto con los cinco campos de
+> `servicio.CAMPOS_SECCION_RECEPTOR` —`b_m`, `z_HV`, `S`, `n`,
+> `altura_total_m`—, los mismos del criterio. Si está, `M3.seccion_del_receptor`
+> la usa y el criterio no se invoca; si falta un campo o uno no es un número
+> positivo, la carga se detiene (`DatoInvalidoError`): no se completa con el
+> del criterio.
+>
+> **(b) La memoria dice de dónde salió la sección, y avisa.** El paso 1.3 y el
+> JSON por punto (`tw_seccion_receptor`) llevan el origen
+> —«seccion medida (levantamiento del receptor)» o «seccion adoptada [A] por
+> falta de levantamiento» (`modelos.SECCION_RECEPTOR_MEDIDA` /
+> `SECCION_RECEPTOR_ADOPTADA`)— y, cuando es adoptada, un **aviso**
+> (`TWDeterminado.avisos`, `InformePunto.avisos()`): bajo la vía 4 el TW que
+> gobierna el diseño es la profundidad total de una sección que nadie midió.
+> El aviso no cambia el veredicto de ninguna verificación.
+>
+> **(c) `Q_receptor_m3s = 0` es un receptor seco, no un dato inválido.** M0
+> rechazaba el cero junto con los negativos; un dren que no lleva agua durante
+> la avenida es un hecho del sitio. Con 0 la vía 3 entrega TW = 0 (salida
+> libre) y lo dice; el negativo se sigue rechazando.
+
 ### 1.4 Densidad de investigación geotécnica
 
 **Manual de Suelos, num. 4.2, Cuadro 4.1** (pág. impresa 28). Nivel **Perfil**: **si no existe información secundaria en el tramo**, número de calicatas del Cuadro 4.1 **espaciadas cada 4.0 km** — el orden de prelación que la fuente imprime es usar *primero* la información secundaria existente. Ese 4.0 km **no está en el Cuadro 4.1** sino en un párrafo del num. 4.2, pág. impresa 29; el mismo párrafo fija **2.0 km** para factibilidad y prefactibilidad, ése sí incondicional.
@@ -616,6 +646,10 @@ $$\frac{HW_i}{D} = c\,(q^*)^{2} + Y + K_s\,S$$
 >
 > *Corregido (`PF-1`, PC-03, 2026-09-21): el párrafo anterior describía la conducta del software hasta PF-1 y ya no es la que hay. El rechazo era **definitivo y mudo** —descartaba el material entero y el bloqueo viajaba sin criterio, invisible en el tablero de pendientes—, y la regla de la constitución para un vacío que ni esta hoja ni la fuente fijan no es descartar: es la entrada con valor vacío, etiqueta [A] y la excepción que detiene el cálculo hasta que el proyectista declare. Desde PF-1 ese vacío es el criterio [A] de perfil `hw_entrada_fuera_de_rango` (`M4._resolver_hw_fuera_de_rango`): sin declarar, `CriterioPendienteError` con el par (Q, S) y el S* de la carta; declarado «energia_critica», HW = H_c —la energía específica crítica que el paso 4.2.1 ya resolvió— con el piso impreso en la memoria junto al HW/D que la ecuación devolvió; declarado «descartar», la conducta que este párrafo describía. El piso **acota el signo y no impone H_c como mínimo**: por debajo de S* la ecuación sigue entregando su carga, aunque sea menor que H_c, y por eso la carga salta en S*; la ficha del criterio lo declara. Sigue sin ponerse un piso en el código: lo que cambia es que ahora hay un sitio donde declararlo. El resto de esta nota —el umbral, lo que cierra y lo que queda abierto— no cambia.*
 >
+> *Corregido (`INF-0.5`, T-2, 2026-11-11): el criterio `hw_entrada_fuera_de_rango` ya no está vacío en el archivo: vale **`energia_critica`**, con etiqueta **[A]** y «descartar» en su ventana. La cadena T pedía etiquetarlo [C] citando una «nota de Ks·S de la Tabla A.1»; **esa nota no existe** —verificado contra la página (Tabla A.1, PDF 197: su única nota es bibliográfica)— y la fuente **no prescribe piso alguno**, de modo que la etiqueta sigue siendo [A]. Lo que la fuente sí dice, y sostiene la elección: «Form (1) is based on the specific head at critical depth, adjusted with correction factors.» (A.2.1, pág. impresa A.1 / PDF 190, cita `HDS5_3ED.A.2.1#FORMA_1`) y «the slope effect is small» (A.3, pág. impresa A.2 / PDF 191, cita `HDS5_3ED.A.3#PENDIENTE_2`). H_c es la base de la que la ecuación parte y un número que el paso 4.2.1 ya tiene. Ninguna corrida de la línea base cae fuera de rango (hace falta S > 0.27 en D = 0.90 m), así que ningún número se movió.*
+>
+> *Corregido (`INF-5.1.6`, T-2, 2026-11-11): **S = 0 se admite** en `M3.resolver_manning`, `M4.control_entrada`, `M4.control_salida` y `M4.perfil_lamina`; la guardia (forma MAT-D13, `not S >= 0`) rechaza sólo la pendiente negativa y el NaN. Fuente: HDS-5 num. 3.3.4 «Culverts with Horizontal or Adverse Slopes», pág. impresa 3.25 / PDF 107, citas `HDS5_3ED.3.3.4#HORIZONTAL`, `#KS` y `#H_SIN_AJUSTE`. Con S = 0: (1) Manning no tiene tirante normal y M3 lo dice con `modelos.SinTiranteNormal` —ni excepción ni `None`—; (2) el término `K_s·S` vale cero —el «+0.01» que el numeral manda sumar al HW/D del nomograma es 0.5 × 0.02, la corrección que el nomograma lleva restada por haberse trazado al 2 %; el código resuelve la ecuación con la S real y no suma nada—; (3) la pérdida H del control de salida es la misma y la caída S·L desaparece; (4) el perfil de la lámina se integra con el mismo paso directo y se rotula **H2** (`TipoDePerfil.H2`; la fuente nombra los perfiles horizontales en 3.5.1, pág. impresa 3.37 / PDF 119); (5) V1 y V2 se juzgan sobre el perfil, y V3 y el d50 sobre la velocidad de salida. **Lo que la fuente admite y el proyecto no:** el mismo numeral aplica sus procedimientos a la pendiente **adversa**, que describe como asentamiento de la entrada («Adverse slopes can occur when entrances settle more than outlet»); este proyecto no diseña con ella y S < 0 sigue siendo dato inválido. `S_cauce = 0` tampoco se admite en el CSV: quien quiera el barril horizontal lo declara por `S_conducto` (ficha `T2-01` de `docs/decisiones_diferidas.md`, que registra además la discontinuidad con la convención de PC-06 para S pequeña y positiva).*
+>
 > **Cuánto cierra este rechazo, con números.** Cierra el signo y poco más. Con `S = 0.37706` el diseño se sigue aceptando con HW = +10⁻⁶ m, y V4 y 7.A quedan evaluados **0.1695 m** del lado no conservador —el 94 % del error—: de los 0.1798 m que el hallazgo denuncia, el rechazo retira 0.0103, el **5.7 %**. En el corredor de este expediente (S_cauce = 0.006–0.008) no se dispara nunca: en D = 0.90 hace falta `S > 0.27` y además Q = 0.025 m³/s. Acotar el rango de validez **entero** de la corrección exige una pendiente máxima que ni esta hoja ni el manual escriben, y ponerla sería inventarla: **queda abierto**.
 
 | Configuración | K | M | c | Y | K_s |
@@ -625,6 +659,8 @@ $$\frac{HW_i}{D} = c\,(q^*)^{2} + Y + K_s\,S$$
 | Circular CMP — mitered to slope | 0.0210 | 1.33 | 0.0463 | 0.75 | +0.7 |
 
 > **Corregido (`DIS-HR-FORMAS-HDS5`, D9).** Esta tabla presentaba `K, M, c, Y` como si **una sola** ecuación las consumiera. **`K` y `M` están ajustadas cada una a SU forma**: son dos regresiones distintas sobre dos conjuntos de ensayos, y la Tabla A.1 lo hace visible en la columna «Equation Form» de cada fila (de las 18 filas transcritas en `T_HDS5_A1`, las doce de Forma 2 del cajón llevan M = 0.667 y las seis de Forma 1 traen M = 2.00, 1.33, 1.0 o 0.75; la Tabla A.1 entera, con sus 36 filas, trae más valores en cada forma). Las tres filas de arriba son Forma 1 y con ellas la (A.1) es la ecuación correcta. Quien implemente el cajón leyendo sólo esta hoja copiará la (A.1) y le cambiará las constantes por las de una carta de Forma 2, y el HW le saldrá **MAYOR que el real**: la (A.1) arrastra dos términos que la (A.2) no tiene, `H_c/D` y `K_s·S`, y el que domina es el primero, por dos órdenes de magnitud. Medido en la auditoría de I3 sobre el marco de la línea base de la Familia C (2.00 × 1.50 m, Q = 6 m³/s, S = 0.004, Carta 10 escala 1): **3.047 m frente a 1.592 m reales, +91 %** — sobrediseño y falsos no-factibles, con sus deltas de rasante inventados. Para que la dirección se invirtiera haría falta `S > 2·H_c/D`, fuera incluso de `dominios.S_CAUCE_MAX`. **Ojo con la dirección**: la fila D-9 de `docs/ruta_familia_c.md` decía desde C2 «el HW sale menor, lado no conservador», mirando el término `K_s·S` sin mirar el `H_c/D` que la copia arrastra; la auditoría adversarial de I3 lo refutó con ese número, y la dirección corregida vive en `DIS-HR-FORMAS-HDS5.efecto_si_se_sigue_la_otra` y en `F4.FORMA_HDS5`. El error no falla ruidosamente: el resultado es positivo y plausible, y ninguna guardia de signo lo ve.
+
+> **Corregido (`INF-3.2.8`, T-2, 2026-11-11).** La cadena T pedía transcribir las filas de la Tabla A.1 «para aleros (cajón y tubo, socket/bevel)». Verificado contra la página (HDS-5 3.ª ed., Tabla A.1, PDF 197): **la tabla no tiene filas de tubo circular con aleros** —los aleros («wingwall flares») sólo existen en las cartas de cajón (8, 9, 11, 12, 13)—. Lo que se transcribió, fila a fila contra la página, son las ocho que faltaban de las cartas en uso: Carta 1 esc. 2 y 3 (concreto, espiga «groove end» con cabezal y saliente), Carta 2 esc. 3 (CMP saliente), Carta 3 esc. A y B (anillos biselados de 45° y 33.7°) y Carta 13 esc. 1 a 3 (cajón con bisel superior y aletas desplazadas de 45°, 33.7° y 18.4°). `T_HDS5_A1` tiene ahora 26 filas de las 36 de la tabla (las diez que quedan fuera son las de entradas mejoradas «tapered», que el proyecto no diseña); la Tabla C.2 (`T_HDS5_C2`, PDF 233) ya estaba transcrita entera. **La embocadura adoptada no cambia** —la línea de abajo sigue valiendo—: las filas nuevas son elegibles para quien declare otra, y ninguna corrida de la línea base las usa.
 
 **Configuración adoptada por diseño:** tubo a ras del muro (*square edge w/headwall*), coherente con el detalle de cabezal de la Fase 9.
 
@@ -792,6 +828,17 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 | **V7** | Flotación del conducto | **γ_DC,min · DC + γ_EV,min · EV ≥ γ_WA · U.** Tubería vacía, NF en su cota más alta. Las cargas que estabilizan (peso propio DC y peso del relleno EV) se **minoran**; la subpresión, que desestabiliza (WA), se **mayora**. Con el mínimo de la fila que corresponde a un **conducto enterrado** en la Tabla 2.4.5.3.1-2 es la forma 0.90·(DC + EV) ≥ 1.00·U. **Corrección** (`MAT-D8`, `NOR-PUE-03`): esa tabla no tiene un γ_EV único, lo desglosa por **tipo de estructura** —«Estructura rígida enterrada» 1.30/0.90, «Alcantarillas termoplásticas» 1.30/0.90, flexibles «Entre otros» 1.95/0.90, y **«Muros y estribos de retención» 1.35/1.00**, que es la del cabezal de §Fase 9—. El 0.90 de V7 es el del conducto y no vale para el cabezal. **Corrige la redacción anterior**, ΣW ≥ FS · U, que era un factor de seguridad global de tensión admisible dentro de un marco LRFD (§0.2) | [N] subpresión 2.4.3.8.2 + [N] los γ (Manual de Puentes, Tablas 2.4.5.3.1-1/-2, pág. impresa 143) + [A] la fila de γp por estructura (`factores_carga_aashto`) |
 | **V8** | Evento extremo (FEN) | A TR mayor: la vía **no colapsa** aunque desborde | [N] verificación, no diseño |
 | **V9** | **Disponibilidad de diámetro** | D requerido ≤ tope de la norma de producto del material | **[C]** — nuevo en v7 |
+| **V10** | **Pendiente del conducto** | **`pendiente_minima_conducto` ≤ S ≤ `pendiente_maxima_conducto`**, con la pendiente con que se dimensionó (`ResultadoHidraulico.S`) | **[N] el deber**, 4.1.1.3.3 «Pendiente longitudinal», pág. impresa 71 (sin cifra) · **[A] la banda**: 0.0 (HDS-5 3.3.4, barril horizontal) a 0.10 (HDS-5 5.4.4, pág. impresa 5.16) — nuevo en T-2 (`INF-5.1.6`, `INF-3.2.7`) |
+
+> **Corregido (`INF-5.1.6`, `INF-3.2.7`, `INF-3.2.6`, `INF-0.5`, T-2, 2026-11-11).** Cuatro cosas de esta tabla.
+>
+> **V10 es nueva y no mueve ningún diseño.** El Manual exige cuidar la pendiente y no da número (num. 4.1.1.3.3, pág. impresa 71 / PDF 74, cita `MC_HHD.4.1.1.3.3`: «La pendiente longitudinal de la alcantarilla debe ser tal que no altere desmesuradamente los procesos geomorfológicos, como la erosión y sedimentación…»). La banda es adopción: el piso, **0.0**, es el barril horizontal que el HDS-5 admite (num. 3.3.4), con ventana hasta 0.005; el techo, **0.10**, es el límite hasta el que el HDS-5 dice que no hacen falta anclajes («Most culverts are constructed on slopes that are less than 10% and the effects of slope are neglected in hydraulic equations. For these culverts, no special structural measures are used.», num. 5.4.4, pág. impresa 5.16 / PDF 152, cita `HDS5_3ED.5.4.4#PENDIENTE_10`), con ventana desde 0.02, la pendiente con que se trazaron las cartas (A.3). V10 no depende del diámetro: si no cumple, el remedio es otra pendiente. Vive en `M5.v10_pendiente_conducto`, corre en los dos alcances y **no cambia V2b**, que sigue comparando S_conducto con S_cauce. En el corredor del repositorio (0.004 a 0.010) cumple siempre.
+>
+> **V1 distingue por qué va lleno el barril** (`borde_libre_bajo_tw_ahogante` **[A]**, `no_cumple` / `aviso`). «A sección llena no cumple» sigue valiendo sin matiz cuando el barril llena **por el caudal de diseño** (num. 4.1.1.3.7 b), pág. impresa 79). Cuando llena **por el nivel del receptor** (TW ≥ D) el numeral no distingue el caso y la lectura se declara: `no_cumple`, el valor del archivo, es la literal; `aviso` acepta el diámetro si con su propio caudal el barril conserva el borde libre, y lo imprime como indicador con el TW y su vía. **El valor del archivo es `no_cumple` porque `aviso` cambia qué puntos se dimensionan** en la corrida estrecha de la línea base (A-02 pasa a dimensionar con Ø 0.90 m, ahogado por un TW de 1.196 m que sale de la vía 4 con la sección adoptada): es una decisión del proyectista y queda como alternativa barrible (`--barrido borde_libre_bajo_tw_ahogante=no_cumple,aviso`; ficha `T2-02`).
+>
+> **V2b: el valor de archivo de `regimen_v2b` pasa a `indicador_con_aviso`**, que es aplicar la fuente como está escrita (ver la nota de §5.2). La etiqueta sigue siendo [A]: el HDS-5 define el indicador y no prescribe qué hacer con él.
+>
+> **V3 y V2 con barril horizontal** se juzgan con la velocidad del régimen del barril (perfil H2 y velocidad de salida), porque no hay tirante normal.
 
 ### 5.1 Resguardo de V4 — valor y advertencia
 
@@ -884,6 +931,38 @@ La norma no protege del riesgo real, que es la **colmatación** en una llanura d
 > segundo indicador —el n de Manning del cauce natural— sigue pendiente bajo
 > los dos regímenes, como dice el párrafo de arriba.*
 >
+> *Corregido (`INF-0.5`, `INF-3.2.9`, T-2, 2026-11-11): el valor de archivo de
+> `regimen_v2b` pasa de `umbral_duro` a **`indicador_con_aviso`**, y
+> `umbral_duro` queda en la ventana. Medido antes y después sobre las diez
+> corridas de la línea base: no cambia ningún diámetro ni qué puntos se
+> dimensionan (C-01, el único punto con S_conducto < S_cauce, se detiene antes
+> en los criterios del cajón). La etiqueta **no** pasa a [C], como pedía la
+> cadena T: la fuente define el indicador y no dice qué hacer con él. Lo que
+> sostiene la elección es el final del numeral, ya en la pág. impresa 5.12
+> (PDF 148, cita `HDS5_3ED.5.3.3#DEPRESION`): «Culverts built with an upstream
+> depression possess a barrel slope which is less than that of the natural
+> channel. Sedimentation is the likely result, especially during times of low
+> flow. However, self-cleaning usually occurs during periods of high
+> discharge.» **El numeral entero, leído en T-2:** presenta DOS indicadores
+> —pendiente y rugosidad del conducto frente a las del cauce— y nombra además,
+> sin cifra, la magnitud del caudal y el material del cauce, los cauces en
+> agradación, los cambios de pendiente a la entrada, las instalaciones
+> multibarril y las entradas deprimidas. **La aplicación evalúa uno**, la
+> pendiente. El segundo exige el n de Manning del cauce natural, que no es
+> columna del CSV ni dato externo y **no se suple con un valor por defecto**:
+> queda diferido con símbolo (`CRITERIOS["regimen_v2b"].verificacion_pendiente`,
+> ficha `T2-06` de `docs/decisiones_diferidas.md`).*
+>
+> *Corregido (`INF-0.5`, T-2): la mitad [N] de la fila es el num. 4.1.1.3.7 d)
+> «Mantenimiento y limpieza» del Manual (pág. impresa 80 / PDF 83, cita
+> `MC_HHD.4.1.1.3.7d`), que el paso de V2b imprime; el criterio
+> `acceso_mantenimiento_v2b` sigue siendo [A] porque lo que adopta es el
+> DISPOSITIVO, que el numeral no prescribe. Y si el acceso está PREVISTO en
+> los planos de cada punto entra, opcional y sin valor por defecto, por la
+> clave booleana `acceso_mantenimiento_previsto` de `--datos-externos`: con
+> `false` la memoria y la CLI imprimen el aviso
+> `modelos.AVISO_SIN_ACCESO_DE_MANTENIMIENTO`; sin el dato no se afirma nada.*
+>
 > **La mitad [A] dejó de ser un párrafo.** El acceso de mantenimiento entra por
 > el criterio `acceso_mantenimiento_v2b`, que **detiene** la corrida mientras
 > siga vacío. Antes era una constancia que la memoria imprimía y que nadie
@@ -948,6 +1027,8 @@ Nota constructiva [N] (EG-2013 508.08, pág. impresa 985): el equipo pesado no c
 > **7.B corre con LA MISMA pendiente que la Fase 4, no con una suya** (`MAT-D9`). «La del cauce» es la regla y sigue siéndolo: es el valor por defecto, `S_cauce` de §1.2. Pero no todos los puntos la usan —la Familia B se dimensiona con el caudal del drenaje longitudinal y la C con el del canal (§2.3), y esos cruces declaran su propia pendiente por la vía de datos externos (`S_conducto`)—, y hasta esta corrección 7.B **no se enteraba**: el HW, las velocidades y el tirante salían de la pendiente declarada, mientras la caída `S·L` y la cota de salida se recalculaban con la del cauce. Dos pendientes en el mismo punto, ninguna marcada como distinta de la otra en el informe. La pendiente viaja ahora dentro del resultado hidráulico (`ResultadoHidraulico.S`) y `M7.compatibilidad_geometrica` la lee de ahí: **ya no es argumento suyo**, de modo que no puede volver a elegirse dos veces.
 
 > **Corregido (`INF-3.2.7`, `INF-5.1.6`, `INF-5.1.18`, T-0, 2026-11-11).** Dos renglones de la lista de arriba dejan de ser prosa y **pasan a criterios declarables**, que crean T-2 y T-6 de la cadena T; aquí no se adelanta ningún valor. **(a) Pendiente del conducto.** «La del cauce (V2 nunca la restringe). La restricción real es constructiva» describía un límite sin nombrarlo. Pasan a ser dos criterios `[A]` de perfil con ventana, **`pendiente_minima_conducto`** y **`pendiente_maxima_conducto`**, con la verificación que los aplica (T-2), y M7 imprime cuál de los tres orígenes de la pendiente adoptada gobernó —la del cauce, la declarada (`S_conducto`) o la mínima/máxima— (T-6). Con ellos la pendiente **nula** deja de ser un dato inválido: el HDS-5 aplica sus procedimientos a barriles horizontales (num. 3.3.4 «Culverts with Horizontal or Adverse Slopes», pág. impresa 3.25 / PDF 107: «they can be reasonably applied to culverts with no slope (horizontal) or an adverse slope»; leído en T-0, sin cita en el registro todavía: la transcribe T-2). **(b) Entrega al receptor.** «Amarradas … a la cota de fondo del receptor» se verifica hoy como `cota_salida ≥ cota_fondo_receptor` (`M7`, G2), sin margen. Pasa a exigir un **desnivel mínimo de entrega**, el criterio `[A]` **`desnivel_minimo_entrega_m`** (T-6): `cota_salida ≥ cota_fondo_receptor + desnivel`. **(c)** y la cota de fondo de ENTRADA, que cuando la columna `cota_fondo_entrada` viene vacía se adopta igual a la del terreno de la plataforma (`origen_cota_fondo_entrada`), pasa a imprimirse como adoptada y a marcar el delta de rasante de 7.A como provisional (T-6). **Hoy el código no tiene ninguno de los tres criterios**: no existe verificación de pendiente mínima ni máxima, `S = 0` se rechaza con `DatoInvalidoError` en M3 y M4, y G2 compara sin desnivel.
+
+> **Corregido (`INF-5.1.6`, `INF-3.2.7`, T-2, 2026-11-11).** La última frase de la nota anterior ya no es cierta en su parte (a): **los dos criterios de pendiente existen** (`pendiente_minima_conducto` = 0.0, ventana 0.0–0.005; `pendiente_maxima_conducto` = 0.10, ventana 0.02–0.10), los aplica **V10** (`M5.v10_pendiente_conducto`; fila nueva de la Fase 5) y `S = 0` se admite en M3 y M4 (nota de §4.2). `M5.limites_de_pendiente()` devuelve el par y es lo que M7 (T-6) tiene que leer para decir cuál de los orígenes de la pendiente gobernó. Las partes (b) y (c) siguen pendientes de T-6.
 
 **Acoplamiento circular declarado:** rasante → paquete estructural → subrasante → CBR → resguardo → V4 → rasante. Se corta fijando la rasante en 7.A y congelándola.
 

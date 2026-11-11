@@ -811,7 +811,10 @@ def test_perfil_intenta_v5_y_v8_pero_no_las_exige(monkeypatch):
     perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
     codigos = [v.codigo for _, v in _punto(perfil, "A-01").verificaciones()
                if v.codigo and v.codigo.startswith("V")]
-    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V6", "V7", "V9"]
+    # Diez desde T-2, que sumo V10 (la pendiente del conducto): su banda son
+    # dos criterios con valor y no depende de ningun dato de expediente.
+    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V6", "V7", "V9",
+                       "V10"]
 
 
 def test_perfil_no_ejecuta_fase_8_ni_cabezal(monkeypatch):
@@ -1778,9 +1781,16 @@ def test_s_cauce_declarada_llega_a_V2b_y_sale_con_su_procedencia(tmp_path):
     # el caso del num. 5.3.3 del HDS-5: V2b tiene que decir NO CUMPLE, con
     # margen -0.002. Bajo la tautología diría «cumple» con margen 0.000, y es
     # la inversión de un veredicto de verificación.
+    #
+    # DESDE T-2 EL VALOR DE ARCHIVO DE 'regimen_v2b' ES «indicador_con_aviso»
+    # y el indicador disparado se imprime como INDICADOR, no como «NO
+    # cumple». Lo que este test mide no cambia: bajo la tautologia el
+    # indicador NO se dispararia y la fila diria «cumple». El «NO cumple» de
+    # «umbral_duro» lo fija `tests/test_pf4_regimen_v2b.py`.
     assert _celda_de(html, "Pendiente del cauce (efectiva)") == "0.006"
     fila_v2b = _fila_de_verificacion(html, "V2b")
-    assert "NO cumple" in fila_v2b
+    assert "INDICADOR (aviso)" in fila_v2b
+    assert 'class="fila-indicador"' in fila_v2b
     assert "0.004" in fila_v2b        # obtenido: la pendiente del BARRIL
     assert "0.006" in fila_v2b        # admisible: la del CAUCE
 

@@ -275,9 +275,14 @@ def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
         assert f.concepto == v.concepto and f.concepto, f.clave
         assert f.unidad == v.unidad and f.unidad, f.clave
         assert f.de_donde_sale == ve.como_se_lee(v), f.clave
+    # Eran seis hasta T-2, que sumo las dos que no son magnitudes: la seccion
+    # MEDIDA del receptor (un objeto) y si el acceso de mantenimiento esta
+    # previsto (un booleano). Las dos, opcionales y sin valor por defecto.
     seis = {f.clave for f in fichas if f.clave not in m0.COLUMNAS}
     assert seis == {"luz_m", "TW_m", "longitud_m", "S_conducto",
-                    "L_hidraulico_m", "categoria_tr"}
+                    "L_hidraulico_m", "categoria_tr",
+                    "seccion_receptor_medida",
+                    "acceso_mantenimiento_previsto"}
     for clave in seis:
         assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
 

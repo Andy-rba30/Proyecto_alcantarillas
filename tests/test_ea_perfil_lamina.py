@@ -112,8 +112,10 @@ def _E_y_Sf(seccion, Q, n, y):
 # ===========================================================================
 
 def test_el_tipo_del_perfil_vive_en_modelos_y_el_resultado_lo_lleva_en_un_campo():
+    # H2 es de T-2 (INF-5.1.6): el perfil del barril horizontal, que el
+    # HDS-5 nombra en el num. 3.5.1 (pag. impresa 3.37).
     assert {m.name for m in modelos.TipoDePerfil} == {
-        "M1", "M2", "S1", "UNIFORME", "LLENA"}
+        "M1", "M2", "S1", "UNIFORME", "LLENA", "H2"}
     campos = {f.name for f in modelos.PerfilLamina.__dataclass_fields__.values()}
     assert {"tipo", "y_salida_m", "alcanza_entrada", "x_fin_remanso_m",
             "y_entrada_m", "V_entrada_m_s", "HW_remanso_m", "longitud_llena_m",

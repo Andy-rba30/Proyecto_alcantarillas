@@ -2736,7 +2736,10 @@ def v10_pendiente_conducto(*, resultado: ResultadoHidraulico) -> Verificacion:
                   cita: str) -> EleccionDeProyecto:
         return EleccionDeProyecto(
             que_se_adopto=que, valor=f"{valor:g} m/m",
-            entre=tuple(f"{v:g} m/m" for v in ca.criterio(clave).sensibilidad),
+            # La ventana es parte de la ficha, pero un caso patron puede
+            # sustituir el criterio entero sin ella: entonces no hay «entre».
+            entre=tuple(f"{v:g} m/m"
+                        for v in (ca.criterio(clave).sensibilidad or ())),
             de_donde=f"el criterio '{clave}' [A]: ninguna fuente de normas/ "
                      "fija esta pendiente en cifras",
             por_que=por_que, cita_id=cita, clave_criterio=clave)

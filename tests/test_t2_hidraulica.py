@@ -677,8 +677,9 @@ def test_la_seccion_medida_gana_en_la_via_3_y_manning_cierra():
     y_n = tw.cota_TW_msnm - punto.cota_fondo_receptor
     A = (MEDIDA.b_m + MEDIDA.z_HV * y_n) * y_n
     P = MEDIDA.b_m + 2 * y_n * math.sqrt(1 + MEDIDA.z_HV ** 2)
-    assert (1 / MEDIDA.n) * A * (A / P) ** (2 / 3) * math.sqrt(MEDIDA.S) == \
-        pytest.approx(Q, abs=ABS_BRENT)
+    # Manning rehecho aparte, sin la funcion de M3.
+    Q_de_vuelta = (1 / MEDIDA.n) * A * (A / P) ** (2 / 3) * math.sqrt(MEDIDA.S)
+    assert Q_de_vuelta == pytest.approx(Q, abs=ABS_BRENT)
     # Con la adoptada, la misma via avisa.
     adoptada = M3.tw_seccion_1_3(punto=punto, cota_fondo_salida=41.0)
     assert adoptada.origen_seccion == SECCION_RECEPTOR_ADOPTADA

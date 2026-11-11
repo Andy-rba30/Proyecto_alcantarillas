@@ -244,8 +244,15 @@ def test_none_no_es_una_excepcion():
      "el diametro debe ser positivo"),
     ({"D": 0.90, "Q": -1.0, "S": 0.005, "n": 0.013}, "Q",
      "el caudal debe ser positivo"),
-    ({"D": 0.90, "Q": 1.0, "S": 0.0, "n": 0.013}, "S",
-     "la pendiente debe ser positiva para que Manning tenga solucion real"),
+    # T-2 (INF-5.1.6): la guardia es solo contra S < 0. S = 0 es el barril
+    # horizontal que el HDS-5 admite (num. 3.3.4) y ya no es un dato invalido;
+    # lo que M3 hace con el esta en tests/test_t2_hidraulica.py.
+    ({"D": 0.90, "Q": 1.0, "S": -0.001, "n": 0.013}, "S",
+     "la pendiente no puede ser negativa: S = 0 es un barril horizontal, que "
+     "se admite; una pendiente adversa no"),
+    ({"D": 0.90, "Q": 1.0, "S": float("nan"), "n": 0.013}, "S",
+     "la pendiente no puede ser negativa: S = 0 es un barril horizontal, que "
+     "se admite; una pendiente adversa no"),
     ({"D": 0.90, "Q": 1.0, "S": 0.005, "n": 0.0}, "n",
      "el coeficiente de Manning debe ser positivo"),
 ])

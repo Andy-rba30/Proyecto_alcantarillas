@@ -54,7 +54,9 @@ from src.modelos import (ConstantesHDS5, CriterioPendienteError,
                          TipoMaterial)
 from src.modulos import M4_control as M4
 from src.modulos.M2_material import catalogo
+from src.modulos.M5_verificaciones import CRITERIO_PENDIENTE_MAXIMA
 from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.criterios import con_valor, sin_valor
 from tests.fixtures.casos_patron import CP5D_FORMA2
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -83,6 +85,9 @@ ESCALON_S = 1e-3
 # de proyecto, y medido: con 8 m el punto llega a MD y dimensiona.
 CAIDA_RECEPTOR_M = 8.0
 TW_DEL_CASO_M = 0.10
+# El techo de V10 que deja pasar la pendiente del caso (T-2): por encima de
+# 0.40 y dentro del dominio del dato. Es un numero del caso patron.
+PENDIENTE_MAXIMA_DEL_CASO = 0.50
 
 
 @pytest.fixture
@@ -115,8 +120,12 @@ def _s_limite_forma_1(Q, D, hds5):
 def test_pf1_la_carta_fuera_de_rango_es_un_vacio_declarable(hds5, Q, S, _limpio):
     assert 0 < S < S_CAUCE_MAX
     assert S > _s_limite_forma_1(Q, D_MINIMO, hds5), "el caso dejo de estar fuera de rango"
-    with pytest.raises(CriterioPendienteError) as exc:
-        M4.control_entrada(Q=Q, seccion=SeccionCircular(D_MINIMO), S=S, hds5=hds5)
+    # T-2 (INF-0.5) dio valor de archivo al criterio («energia_critica»). Lo
+    # que este test fija es permanente --un criterio sin valor DETIENE con el
+    # par culpable--, y el vacio se repone para el bloque.
+    with sin_valor(CLAVE):
+        with pytest.raises(CriterioPendienteError) as exc:
+            M4.control_entrada(Q=Q, seccion=SeccionCircular(D_MINIMO), S=S, hds5=hds5)
     assert exc.value.clave == CLAVE
     assert not ca.declarado_en_caliente(CLAVE)
     texto = str(exc.value)
@@ -136,8 +145,12 @@ def test_pf1_el_limite_de_signo_es_el_analitico_y_control_entrada_lo_publica(hds
     # Un escalon por debajo la carta entrega carga; uno por encima, no.
     entrada = M4.control_entrada(Q=Q, seccion=seccion, S=limite - ESCALON_S, hds5=hds5)
     assert entrada.HW > 0 and entrada.piso is None
-    with pytest.raises(CriterioPendienteError):
-        M4.control_entrada(Q=Q, seccion=seccion, S=limite + ESCALON_S, hds5=hds5)
+    with sin_valor(CLAVE):
+        with pytest.raises(CriterioPendienteError):
+            M4.control_entrada(Q=Q, seccion=seccion, S=limite + ESCALON_S, hds5=hds5)
+    # Y con el valor del archivo (T-2), el mismo escalon adopta el piso.
+    con_piso = M4.control_entrada(Q=Q, seccion=seccion, S=limite + ESCALON_S, hds5=hds5)
+    assert con_piso.piso is not None and con_piso.piso.adoptado == ENERGIA_CRITICA
 
 
 
@@ -172,7 +185,10 @@ def test_pf1_declarado_descartar_es_no_factible_con_el_par_y_el_limite(hds5, _li
 
 def test_pf1_la_ficha_del_criterio_es_de_perfil_categorica_y_con_ventana():
     c = ca.CRITERIOS[CLAVE]
-    assert c.valor is None and c.etiqueta == "A"
+    # T-2 (INF-0.5): el archivo trae «energia_critica». La etiqueta sigue
+    # siendo [A] --la fuente no prescribe piso alguno-- y «descartar» sigue
+    # en la ventana.
+    assert c.valor == ENERGIA_CRITICA and c.etiqueta == "A"
     assert c.nivel == ca.NIVEL_PERFIL
     assert c.forma == ca.FORMA_CATEGORIA
     assert c.sensibilidad == (ENERGIA_CRITICA, DESCARTAR)
@@ -216,7 +232,8 @@ def _correr(ruta):
 
 def test_pf1_el_bloqueo_viaja_con_criterio_y_la_pestana_4_lo_pinta(tmp_path, _limpio):
     Q, S = CASOS_DE_LA_FICHA[0]
-    informe = _correr(_csv_de_un_punto(tmp_path, Q, S))
+    with sin_valor(CLAVE):                 # T-2: el archivo ya trae valor
+        informe = _correr(_csv_de_un_punto(tmp_path, Q, S))
     punto = informe.puntos[0]
     assert not punto.dimensionado
     bloqueos = [b for b in punto.bloqueos if b.tipo is TipoDeBloqueo.CRITERIO_PENDIENTE
@@ -238,7 +255,20 @@ def test_pf1_el_bloqueo_viaja_con_criterio_y_la_pestana_4_lo_pinta(tmp_path, _li
 def test_pf1_declarado_en_caliente_el_punto_dimensiona_y_la_memoria_lo_declara(tmp_path, _limpio):
     Q, S = CASOS_DE_LA_FICHA[0]
     ca.establecer_valor_dinamico(CLAVE, ENERGIA_CRITICA)
-    informe = _correr(_csv_de_un_punto(tmp_path, Q, S))
+    # T-2 sumo V10, que con la banda del archivo (techo 0.10) rechaza la
+    # pendiente de este caso patron (0.40) en cualquier diametro. El caso se
+    # eligio para caer fuera del rango de la carta, no por plausible, y lo que
+    # mide es el piso de la carga: se abre el techo de V10 para el bloque. Que
+    # V10 lo rechaza con la banda del archivo se fija justo debajo.
+    ruta = _csv_de_un_punto(tmp_path, Q, S)
+    rechazado = _correr(ruta).puntos[0]
+    assert not rechazado.dimensionado
+    assert any("V10" in b.mensaje for b in rechazado.bloqueos)
+    with con_valor(CRITERIO_PENDIENTE_MAXIMA, PENDIENTE_MAXIMA_DEL_CASO,
+                   motivo="caso patron de PC-03: una pendiente de 0.40 m/m, "
+                          "fuera de la banda de V10, elegida para que la "
+                          "correccion Ks*S deje la carga bajo cero"):
+        informe = _correr(ruta)
     punto = informe.puntos[0]
     assert punto.dimensionado, [(b.tipo, b.mensaje[:120]) for b in punto.bloqueos]
     assert CLAVE in informe.contexto.criterios_usados

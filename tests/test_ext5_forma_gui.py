@@ -76,8 +76,12 @@ FORMA_DEL_CAJON = {
 
 # Las seis claves de `cli.CLAVES_EXTERNAS` que no son columna, ni dato de
 # sitio, ni criterio, y que hasta EXT-5 no estaban en el censo.
+# Eran seis hasta T-2, que sumo las dos ultimas (la seccion medida del
+# receptor y si el acceso de mantenimiento esta previsto). El nombre de la
+# tupla se conserva: lo leen los tests de abajo.
 SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
-                 "L_hidraulico_m", "categoria_tr")
+                 "L_hidraulico_m", "categoria_tr",
+                 "seccion_receptor_medida", "acceso_mantenimiento_previsto")
 
 
 def _formas_de(clave):
