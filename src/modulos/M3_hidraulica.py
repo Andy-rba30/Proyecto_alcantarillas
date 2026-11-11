@@ -405,6 +405,19 @@ def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material
     una pendiente que Manning no puede aprovechar, y ahi la respuesta sigue
     siendo None. La banda intermedia la acota V10 con
     'pendiente_minima_conducto' (ficha T2-01 de decisiones_diferidas.md).
+
+    LA DISCONTINUIDAD QUE ESO DEJA, Y SU DIRECCION (medida; auditor de T-2).
+    Con D = 0.90 m, Q = 0.6 m3/s, L = 18 m y salida libre, el perfil de la
+    lamina (`M4.perfil_lamina`) da y_max/D = 0.6426 con S = 0, 0.6291 con
+    S = 0.0005 y 0.6151 con S = 0.001: el barril horizontal es la ENVOLVENTE,
+    el mayor llenado de los tres, de modo que aceptarlo no es lo optimista.
+    Lo SOBRECONSERVADOR es el None de aqui para 0 < S <~ 0.00105 --hasta que
+    el caudal a seccion llena de Manning alcanza a Q--: ese tubo se rechaza
+    sin integrar el perfil, que daria MENOS llenado que el horizontal. La
+    consecuencia hay que saberla: declarar S = 0 en vez de 0.001 da un tubo
+    menor, y no porque el horizontal conduzca mejor sino porque un caso se
+    resuelve por el perfil y el otro por la capacidad de Manning (PC-06).
+    Unificarlos cambia el criterio de capacidad de todo el catalogo.
     """
     # `tirante_normal` valida los cuatro parametros (S < 0 y NaN incluidos) y
     # con S = 0 devuelve None por su propia guardia de capacidad; por eso se

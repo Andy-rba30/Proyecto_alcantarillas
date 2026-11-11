@@ -674,7 +674,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4405**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4406**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son siete saltos más sin él, descritos en «Dónde
@@ -733,9 +733,9 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-2 de la cadena T (2026-11-11) sumó CIENTO SETENTA
-tests netos** (172 nuevos y dos casos parametrizados que desaparecen), y
-uno solo lleva la marca `pdf`; ninguno depende de Tk: los 159 de
+independientes. **T-2 de la cadena T (2026-11-11) sumó CIENTO SETENTA Y UN
+tests netos** (173 nuevos y dos casos parametrizados que desaparecen), y
+uno solo lleva la marca `pdf`; ninguno depende de Tk: los 160 de
 `tests/test_t2_hidraulica.py` —la aceptación de los cierres de método de la
 hidráulica: el barril horizontal (`S = 0` en M3 y M4, HDS-5 num. 3.3.4;
 `modelos.SinTiranteNormal`, perfil `H2`, V1/V2 sobre el perfil y V3/d50
@@ -760,16 +760,19 @@ Los dos que desaparecen: el caso de `hw_entrada_fuera_de_rango` en el
 parametrizado de vacíos de `test_criterios_adoptados` y su ejemplo de
 `--declarar` en `test_guia_perfil`, porque el criterio ya tiene valor de
 archivo. **Estos tests no se escribieron en rojo antes del código**: se
-midieron después contra un árbol exportado de `87d1ce7` —126 rojos y 33
+midieron después contra un árbol exportado de `87d1ce7` —126 rojos y 34
 verdes, que son guardias que valen antes y después— y la mutación de lo
-tocado se midió con el arnés de EXT-11 (283 mutantes, 28 vivos, listados
-uno a uno en la ficha T2-07). Se reescribieron al contrato nuevo, sin
+tocado se midió con el arnés de EXT-11 (283 mutantes, 28 vivos, censados
+uno a uno en `MUTANTES_VIVOS_DE_T2`; ficha T2-07). Se reescribieron al contrato nuevo, sin
 sumar ni restar, `test_M5_verificaciones` (doce filas y doce funciones;
 V10 entre V4b y el hueco de V5), `test_cierre_perfil`, `test_cli`,
 `test_ayuda_entrada`, `test_ea_perfil_lamina` (el perfil `H2`),
 `test_ext11_mutacion` (dos claves del censo cambian de texto),
 `test_ext11_propiedades` (el receptor seco), `test_memoria_sustentada` (dos
-fundamentos que la corrida por defecto no alcanza), `test_pf1_hw_fuera_de_
+fundamentos que la corrida por defecto no alcanza), `test_dimensional_piloto`
+(la relación de V10, que la corrida de referencia ya alcanza), `test_ext8`
+(el techo de tamaño por punto, remedido: 60.8 KB), `test_sin_literales` (la
+marca nueva de `dominios.py`), `test_pf1_hw_fuera_de_
 rango` y `test_pf4_regimen_v2b` (los dos criterios con valor de archivo; el
 caso patrón de PF-1, con S = 0.40, abre el techo de V10 para seguir midiendo
 el piso), `test_seccion_rectangular` (quince cartas de cajón de Forma 2,
@@ -788,10 +791,10 @@ línea «Verificaciones con aviso» del RESUMEN, las huellas y los recuentos;
 los dos CSV de resumen no cambian un byte y **ningún diámetro se movió**
 (diez corridas medidas antes y después). De las cuatro configuraciones se
 MIDIÓ UNA, «sí · no», sobre `origin/main` en el commit `tesis(T-2)`, con el
-repositorio de normas enlazado: 4389 passed, 16 skipped, collected 4405 (y
-sin `NORMAS_DIR`, sobre el mismo árbol: 4382 passed, 23 skipped). Las otras
+repositorio de normas enlazado: 4390 passed, 16 skipped, collected 4406 (y
+sin `NORMAS_DIR`, sobre el mismo árbol: 4383 passed, 23 skipped). Las otras
 tres se dicen como **derivadas**, por la misma razón que en T-0 —el
-contenedor no tiene `tkinter` y no se puede instalar—: de los 170, uno
+contenedor no tiene `tkinter` y no se puede instalar—: de los 171, uno
 lleva la marca `pdf` (40 saltos sin PyMuPDF donde eran 39) y ninguno
 depende de Tk (siguen siendo 13).
 **T-0 de la cadena T (2026-11-11) sumó CINCUENTA Y SIETE
@@ -1549,7 +1552,7 @@ EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
-4178; T-0 de la cadena T: 4235; T-2: 4405. La
+4178; T-0 de la cadena T: 4235; T-2: 4406. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1561,14 +1564,14 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4402 (**derivado** en T-2, no medido: el contenedor no tiene tkinter) | 3 |
-| sí | no | 4389 (**MEDIDO** en T-2 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
-| no | sí | 4362 (**derivado**, no medido) | 43 |
-| no | no | 4349 (**derivado**, no medido) | 56 |
+| sí | sí | 4403 (**derivado** en T-2, no medido: el contenedor no tiene tkinter) | 3 |
+| sí | no | 4390 (**MEDIDO** en T-2 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
+| no | sí | 4363 (**derivado**, no medido) | 43 |
+| no | no | 4350 (**derivado**, no medido) | 56 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan siete menos y saltan
-siete más (medido en «sí · no»: 4382 passed, 23 skipped); las dos sin
+siete más (medido en «sí · no»: 4383 passed, 23 skipped); las dos sin
 PyMuPDF, uno menos y uno más, porque seis de los siete ya iban saltados por
 la marca `pdf`. Hasta T-0 la tabla decía 4172 / 4159 / 4137 / 4124, medidos
 los cuatro en el cierre del 2026-09-22 sobre `19bcf5a`; tras T-0, 4232 /

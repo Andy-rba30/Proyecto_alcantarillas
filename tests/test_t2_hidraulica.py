@@ -98,6 +98,69 @@ REL_PERFIL = 1e-6         # el balance de energia entre dos estaciones del perfi
 ABS_BRENT = 1e-7          # una raiz de Brent contra su identidad (xtol 1e-10)
 
 
+# LOS MUTANTES QUE QUEDAN VIVOS, UNO A UNO (ficha T2-07). Medidos con el arnes
+# de EXT-11 (`tests/apoyo/mutacion.py`) sobre veinte funciones tocadas por T-2
+# --`v1_borde_libre`, `v10_pendiente_conducto`, `limites_de_pendiente`,
+# `_lectura_bajo_tw_ahogante`, `_velocidad_de_v3`, `_regimen_de_v1_v2` (M5);
+# `seccion_del_receptor`, `tirante_normal_trapecial`, `resolver_manning`,
+# `_validar_parametros`, `_de_la_seccion` (M3); `_validar_pendiente`,
+# `velocidad_de_salida` (M4); `y_sobre_D`, `sin_tirante_normal` (modelos);
+# `_seccion_receptor_externa`, `_booleano_externo`, `_numero_externo`,
+# `con_aviso`, `avisos` (servicio)-- contra este archivo y los de M3, M5,
+# EXT-1, EXT-3 y las propiedades de EXT-11: 283 mutantes, 254 muertos, y uno
+# mas con un test añadido despues de la medida. Cada entrada: (funcion,
+# mutante, clase). No se comprueban contra el arnes en cada corrida --el
+# censo que si lo hace es el de EXT-11, y ampliarlo es de T-10--; lo que se
+# fija es que la lista no crezca ni pierda su clase en silencio.
+BANDA = "banda de tolerancia de un umbral: solo difiere en la igualdad exacta umbral +- 1e-9"
+SIN_CASO = "guardia o corchete sin caso que la distinga"
+TEXTO = "texto o formato de la memoria o de un mensaje"
+SIN_CONSTRUIR = "ningun camino del programa construye el caso"
+OTRO_ARCHIVO = "muere con otro archivo de la suite (medido aparte contra los objetivos de EXT-11)"
+MUTANTES_VIVOS_DE_T2 = (
+    ("v1_borde_libre", "y_sobre_D <= max + TOL -> <", BANDA),          # ya censado en EXT-11
+    ("v1_borde_libre", "TW / D <= max + TOL -> <", BANDA),
+    ("v1_borde_libre", "y_propio / D <= max + TOL -> <", BANDA),
+    ("v1_borde_libre", "y < D - TOL -> <=", BANDA),
+    ("v1_borde_libre", "y > TW + TOL -> >=", BANDA),
+    ("v1_borde_libre", "max + TOL -> max - TOL (2.a aparicion)", BANDA),
+    ("v1_borde_libre", "max + TOL -> max - TOL (3.a aparicion)", BANDA),
+    ("v10_pendiente_conducto", "S >= s_min - TOL -> >", BANDA),
+    ("v10_pendiente_conducto", "S <= s_max + TOL -> <", BANDA),
+    ("velocidad_de_salida", "y_salida < D - TOL -> <=", BANDA),          # censado
+    ("velocidad_de_salida", "TW > y_c -> >=", BANDA),                    # censado
+    ("velocidad_de_salida", "TW < altura - TOL -> <=", BANDA),           # censado
+    ("velocidad_de_salida", "altura - TOL -> altura + TOL", BANDA),      # censado
+    ("velocidad_de_salida", "D - TOL -> D + TOL", BANDA),
+    ("velocidad_de_salida", "A > 0 -> A >= 0", SIN_CASO),                # censado
+    ("tirante_normal_trapecial", "semilla del corchete 1.0 -> 2.0", SIN_CASO),   # censado
+    ("tirante_normal_trapecial", "duplicacion del corchete 2 -> 3", SIN_CASO),   # censado
+    ("tirante_normal_trapecial", "f(y_hi) > 0 -> >= 0", SIN_CASO),               # censado
+    ("tirante_normal_trapecial", "f(y_hi) > 0 -> > 1", SIN_CASO),
+    ("v1_borde_libre", "cifras de la magnitud TW: TW is not None -> is None", TEXTO),
+    ("v1_borde_libre", "rotulo del umbral: 1 - max -> 1 + max", TEXTO),
+    ("v1_borde_libre", "rotulo del umbral: 1 -> 2", TEXTO),
+    ("_seccion_receptor_externa", "separador del mensaje: faltan and sobran -> or", TEXTO),
+    ("_numero_externo", "indice de techo[0] en el mensaje: 0 -> 1", TEXTO),
+    ("_numero_externo", "indice de techo[1] en el mensaje: 1 -> 2", TEXTO),
+    ("InformePunto.avisos", "paso is not None and veredicto is not None -> or",
+     SIN_CONSTRUIR),
+    ("ResultadoPunto.y_sobre_D", "resultado_hidraulico is None or seccion is None -> and",
+     SIN_CONSTRUIR),
+    ("_numero_externo", "valor >= techo[0] -> >", OTRO_ARCHIVO),
+)
+
+
+def test_el_censo_de_mutantes_vivos_de_t2_dice_cuantos_y_de_que_clase():
+    """La lista de la ficha T2-07: 28, sin repetidos y cada uno con su clase."""
+    assert len(MUTANTES_VIVOS_DE_T2) == len(set(MUTANTES_VIVOS_DE_T2)) == 28
+    por_clase = {}
+    for _funcion, _mutante, clase in MUTANTES_VIVOS_DE_T2:
+        por_clase[clase] = por_clase.get(clase, 0) + 1
+    assert por_clase == {BANDA: 14, SIN_CASO: 5, TEXTO: 6, SIN_CONSTRUIR: 2,
+                         OTRO_ARCHIVO: 1}
+
+
 @pytest.fixture(autouse=True)
 def _limpio():
     """Ningun test deja una declaracion en caliente para el siguiente."""
