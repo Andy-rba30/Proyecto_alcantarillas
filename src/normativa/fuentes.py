@@ -1,8 +1,12 @@
 """
-Las fuentes normativas del proyecto: las dieciseis que estan en `normas/`,
-las catorce que se citan y NO estan (§8 del diseño, §15 del plan) y los dos
-PDF que estan en `normas/` y no se registran, censados con su motivo
-(`PRESENTES_SIN_REGISTRAR`, PC-23). Hasta N1 eran trece y trece -- este
+Las fuentes normativas del proyecto: las dieciocho presentes --dieciseis en
+`normas/` y, desde T-0, dos que viven SOLO en el repositorio de normas
+enlazado por `NORMAS_DIR` (`SOLO_EN_EL_REPO_NORMAS`: HEC-14 y el WSDOT
+Hydraulics Manual)--, las doce que se citan y NO estan (§8 del diseño, §15
+del plan) y los dos PDF que estan en `normas/` y no se registran, censados
+con su motivo (`PRESENTES_SIN_REGISTRAR`, PC-23). DONDE ESTAN LOS PDF EN
+DISCO lo resuelve este modulo y nadie mas: `directorios_de_normas()` y
+`ruta_pdf()`, al final del archivo. Hasta N1 eran trece y trece -- este
 encabezado decia «once» y llevaba tiempo sin contar: el censo de ausentes
 tenia trece entradas --; ASTM A796/A796M-13 entro en `normas/` en pre-N1 y
 N1 la paso del censo de ausentes a este. EXT-6 paso el DG-2018 de ausente a
@@ -38,6 +42,16 @@ paginas confirman cada desfase, no dos o tres a ojo:
     AASHTO M 294-11 (trad.) . SIN FOLIO: ninguna de sus 17 hojas imprime
                                   numero de pagina (N2, por texto en las 17
                                   y por imagen en la 1, la 5 y la 8)
+    HEC-14 3a ed ............ por capitulo; diecisiete bases medidas (T-0):
+                                  270 de 287 confirman; las 17 que no son la
+                                  portada, el formulario, la fe de erratas,
+                                  las diez romanas (i-x) y cuatro del cuerpo
+                                  sin folio extraible (PDF 15, 143, 148, 222)
+    WSDOT M 23-03.12 ........ por capitulo; quince bases medidas (T-0): 311
+                                  de 325 confirman por la cabecera «Page c-n»;
+                                  las 14 que no son la portada, el aviso
+                                  legal y los doce folios romanos del indice
+                                  (i a xii, PDF 3 a 14)
 
 Las paginas que no confirman son las que no imprimen numero -- portadas,
 separadores y las laminas fotograficas del Manual de Puentes --, no
@@ -90,6 +104,8 @@ POSTERIOR; el ejemplar imprime «R.D. N° 041-2016-MTC/14» en sus PDF 2 y 3.
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 from .esquema import (
@@ -135,6 +151,7 @@ from .esquema import (
 # en su lectura. Lo que eso deja para gabinete esta en `pendiente_gabinete`.
 VIGENCIA_VERIFICADA_EL = "2026-09-14"
 VIGENCIA_VERIFICADA_EL_EXT6 = "2026-09-20"
+VIGENCIA_VERIFICADA_EL_T0 = "2026-11-11"
 VIGENCIA_COMO = (
     "busqueda web (WebSearch) sobre resultados de las paginas del emisor y "
     "de repositorios oficiales; ninguna pagina fue legible directamente desde "
@@ -145,6 +162,14 @@ VIGENCIA_COMO_EXT6 = (
     "El Peruano y gob.pe (MTC); las paginas tampoco fueron legibles "
     "directamente, de modo que la confirmacion es por lo que los resultados "
     "transcriben de ellas y no por su lectura")
+
+VIGENCIA_COMO_T0 = (
+    "busqueda web (WebSearch) desde el entorno de T-0 sobre resultados del "
+    "sitio del emisor (wsdot.wa.gov, fhwa.dot.gov) y de repositorios que lo "
+    "reproducen; las paginas del emisor tampoco fueron legibles directamente "
+    "(los dos hosts estan fuera de la red permitida de la sesion), de modo "
+    "que la confirmacion es por lo que los resultados transcriben de ellas y "
+    "no por su lectura")
 
 # Los tres estados, con el nombre corto que el resto de la casa ya usaba.
 # Son el ENUM, no cadenas: `estado_de_vigencia` devuelve uno de estos.
@@ -172,7 +197,8 @@ def _posterior(edicion_posterior: str, *, acto_aprobatorio: str = "",
 
 
 # ===========================================================================
-# Las dieciseis fuentes que SI estan en normas/
+# Las dieciseis fuentes que SI estan en normas/ (las dos que T-0 dio de alta
+# desde el repositorio de normas van despues de DG2018)
 # ===========================================================================
 
 MC_HHD = Fuente(
@@ -936,14 +962,203 @@ DG2018 = Fuente(
         "resultados."),
 )
 
+# ===========================================================================
+# T-0 - Las dos fuentes tecnicas que llegaron al repositorio de normas
+# ===========================================================================
+# HEC-14 Y EL WSDOT HYDRAULICS MANUAL ESTUVIERON EN EL CENSO DE AUSENTES hasta
+# T-0 (2026-11-11). El dueño del proyecto las subio al repositorio de normas
+# (`Andy-rba30/Normas`, commit `eebfcca`) y T-0 las da de alta aqui con sha1,
+# paginas y paginacion MEDIDOS abriendo cada PDF, para que T-4 (velocidad y
+# abrasion en TMC y HDPE) y T-8 (proteccion de salida) puedan citarlas con
+# pagina. Tres cosas que conviene leer antes de usarlas:
+#
+#   1. NO ESTAN EN `normas/` DE LA APP, y es deliberado: esa carpeta no gana
+#      PDF (T-12 los retira; INF-5.2.3 es el problema de redistribuir normas
+#      con copyright en un repositorio publico). Viven en el repositorio de
+#      normas y se encuentran por `NORMAS_DIR` (`ruta_pdf`, abajo). Por eso
+#      estan en `SOLO_EN_EL_REPO_NORMAS`: la guardia de PC-23 las espera
+#      alli, y un checkout sin ese repositorio enlazado SALTA los tests que
+#      las abren en vez de fallar.
+#   2. T-0 NO TRANSCRIBE NINGUNA CITA SUYA. `citas.py` no tiene ninguna
+#      `Cita` con estos `fuente_id`: una cita es numeral, pagina impresa,
+#      pagina PDF y frase leida, y eso es de la sesion que la consume. Lo que
+#      la `nota` de cada una adelanta --la pagina de la Tabla 8-4, el indice
+#      real de capitulos de HEC-14-- esta leido del PDF y sirve para ORIENTAR
+#      esa transcripcion, no para sustituirla.
+#   3. SON [C]: fuente tecnica reconocida de EE.UU., no norma peruana. Que
+#      esten presentes no convierte en [N] nada que se apoye en ellas.
+HEC14 = Fuente(
+    id="HEC14",
+    titulo=("HEC-14 «Hydraulic Design of Energy Dissipators for Culverts and "
+            "Channels» (Hydraulic Engineering Circular No. 14, "
+            "FHWA-NHI-06-086)"),
+    emisor="FHWA — Federal Highway Administration / National Highway Institute",
+    # LO QUE LA PORTADA IMPRIME (PDF 1): «Publication No. FHWA-NHI-06-086 /
+    # July 2006 / Hydraulic Engineering Circular No. 14, Third Edition». La
+    # PDF 3 es una hoja añadida, «Listing of Updates and Corrections (errata &
+    # corrigenda)», con ocho correcciones del Capitulo 4 fechadas el 13 de
+    # agosto y el 1 de octubre de 2012 y la frase «This list includes all
+    # known items as of Monday 1 October 2012»: el ejemplar es la tercera
+    # edicion de 2006 CON su fe de erratas de 2012 delante, y por eso tiene
+    # 287 paginas.
+    edicion="Third Edition, July 2006 (con la fe de erratas del 1 de octubre "
+            "de 2012 en la PDF 3)",
+    anio=2006,
+    archivo_pdf="normas/hec14.pdf",
+    sha1="1bffcbe220cd67e4c0de8b87b46d1ece64ce7217",
+    paginas_pdf=287,
+    # MEDIDO en T-0 barriendo las 287 paginas: el folio «c-n» es la ULTIMA
+    # linea de texto de cada pagina del cuerpo. Diecisiete bases; 270 paginas
+    # confirman. No confirman las trece preliminares (PDF 1 portada, PDF 2
+    # formulario DOT F 1700.7, PDF 3 fe de erratas, PDF 4-13 romanas i a x) y
+    # cuatro del cuerpo cuyo folio no sale por texto (PDF 15 = 1-2, PDF 143 =
+    # 8-20, PDF 148 = 8-25 y PDF 222 = 11-1, que lo imprime ARRIBA): las
+    # cuatro caen donde la base de su capitulo predice. El separador es el
+    # guion, no el punto: «10-1» no es 10,1.
+    paginacion=PorCapitulo(base={
+        "1": 13, "2": 27, "3": 31, "4": 41, "5": 53, "6": 63, "7": 77,
+        "8": 123, "9": 157, "10": 201, "11": 221, "12": 245,
+        "A": 249, "B": 259, "C": 277, "D": 279, "R": 283,
+    }),
+    vigencia=Vigencia(
+        estado=VIGENCIA_CONFIRMADA, fecha=VIGENCIA_VERIFICADA_EL_T0,
+        como=VIGENCIA_COMO_T0,
+        pendiente_gabinete=("leer la biblioteca de hidraulica de la FHWA "
+                            "(fhwa.dot.gov/engineering/hydraulics), que no "
+                            "fue legible, y confirmar que no hay cuarta "
+                            "edicion")),
+    nota=(
+        "ENTRO EN EL REPOSITORIO DE NORMAS (commit eebfcca) Y T-0 LA DIO DE "
+        "ALTA el 2026-11-11; hasta entonces era AUSENTE con «el "
+        "dimensionamiento de disipadores, fuera de alcance hoy». Lo que el "
+        "proyecto le va a pedir es de T-8: el apron de enrocado al que HDS-5 "
+        "remite en su Sec. 5.3.2 «Scour at Outlets», pag. impresa 5.11 "
+        "(«many state DOTs use riprap aprons (HEC-14, Section 10.2)», segun "
+        "lo declara `M6_proteccion`), que hoy ese modulo cubre solo con el "
+        "d50 de Laushey del Manual MTC. "
+        "EL INDICE REAL DE CAPITULOS, leido de las paginas de arranque de "
+        "cada uno, porque la cadena T los cita de memoria y tres no "
+        "coinciden: 1 Energy Dissipator Design (1-1, PDF 14); 2 Erosion "
+        "Hazards (2-1, PDF 28); 3 Culvert Outlet Velocity and Velocity "
+        "Modification (3-1, PDF 32); 4 Flow Transitions (4-1, PDF 42); 5 "
+        "Estimating Scour at Culvert Outlets (5-1, PDF 54); 6 Hydraulic Jump "
+        "(6-1, PDF 64); 7 Internal (Integrated) Dissipators (7-1, PDF 78); 8 "
+        "Stilling Basins (8-1, PDF 124); 9 Streambed Level Dissipators (9-1, "
+        "PDF 158); 10 Riprap Basins and Aprons (10-1, PDF 202: 10.1 Riprap "
+        "Basin, 10.2 Riprap Aprons, 10.3 riprap aguas abajo de disipadores); "
+        "11 Drop Structures (11-1, PDF 222); 12 Stilling Wells (12-1, PDF "
+        "246); Apendice A sistema metrico (A-1, PDF 250); B tirante critico "
+        "y flujo uniforme por forma (B-1, PDF 260); C consideraciones "
+        "estructurales (C-1, PDF 278); D Riprap Apron Sizing Equations (D-1, "
+        "PDF 280); Referencias (R-1, PDF 284). O sea: la SOCAVACION a la "
+        "salida es el Capitulo 5 (no el 3), la VELOCIDAD de salida el 3 (no "
+        "el 4-5) y los disipadores INTERNOS el 7. "
+        "TEXTO: la prosa se extrae bien; las ECUACIONES salen partidas en "
+        "renglones sueltos (la 10.1 llega como fragmentos «h», «⎛ D ⎞», "
+        "«s = 0.86⎜»), de modo que una formula se transcribe mirando la "
+        "pagina renderizada y no copiando el volcado. Opera en unidades "
+        "duales, SI primero («m (ft)»). "
+        "VIGENCIA (T-0): los resultados de busqueda del sitio de la FHWA y "
+        "de los repositorios estatales que la reproducen listan HEC 14 como "
+        "tercera edicion, FHWA-NHI-06-086, julio de 2006, con la fe de "
+        "erratas del 1 de octubre de 2012; ninguno menciona una cuarta "
+        "edicion, y la propia fe de erratas dice «No update to the "
+        "publication is planned at this time»."),
+)
+
+WSDOT_HM = Fuente(
+    id="WSDOT_HM",
+    titulo="WSDOT Hydraulics Manual (M 23-03)",
+    emisor=("Washington State Department of Transportation — Engineering "
+            "and Regional Operations, Hydraulics Office"),
+    # LO QUE LA PORTADA IMPRIME (PDF 1): «Hydraulics Manual / M 23-03.12 /
+    # April 2026 / Engineering and Regional Operations Hydraulics Office», y
+    # cada pagina del cuerpo lo repite en su cabecera («WSDOT Hydraulics
+    # Manual M 23-03.12 / Page 8-27 / April 2026»). El censo de ausentes
+    # decia «M 23-03, 2019» por suponer la edicion; los criterios 'v_max_tmc'
+    # y 'v_max_hdpe' ya citaban «M 23-03.12 (abril 2026)», y ESA es la que
+    # llego: no hay dos ediciones entre las que elegir.
+    edicion="M 23-03.12, April 2026",
+    anio=2026,
+    archivo_pdf="normas/HydraulicsManual.pdf",
+    sha1="b34bb7bd448c249301e2a1a82234be70e8b6d916",
+    paginas_pdf=325,
+    # MEDIDO en T-0 barriendo las 325 paginas por la cabecera «Page c-n»:
+    # quince bases, confirmadas por 311 paginas. El capitulo 9 es una sola
+    # pagina (9-1, PDF 265) y los apendices 2A, 7A, 7B y 10A tienen base
+    # propia (el 10A son nueve paginas, PDF 290-298; «G» es el glosario). Las
+    # catorce que no confirman son las preliminares: PDF 1 portada, PDF 2
+    # aviso legal y PDF 3-14, el indice, foliado en romanas (i a xii). La
+    # etiqueta lleva guion y el capitulo puede llevar letra: «10A-2» no es
+    # un numero.
+    paginacion=PorCapitulo(base={
+        "1": 14, "2": 36, "2A": 63, "3": 65, "4": 86, "5": 100, "6": 120,
+        "7": 130, "7A": 210, "7B": 211, "8": 215, "9": 264, "10": 265,
+        "10A": 289, "G": 298,
+    }),
+    vigencia=Vigencia(
+        estado=VIGENCIA_CONFIRMADA, fecha=VIGENCIA_VERIFICADA_EL_T0,
+        como=VIGENCIA_COMO_T0,
+        pendiente_gabinete=("leer la pagina del manual en wsdot.wa.gov, que "
+                            "no fue legible: los resultados dan capitulos ya "
+                            "rotulados M 23-03.12 (abril de 2026) y una "
+                            "pagina indice que todavia anunciaba la .11 "
+                            "(abril de 2025)")),
+    nota=(
+        "ENTRO EN EL REPOSITORIO DE NORMAS (commit eebfcca) Y T-0 LA DIO DE "
+        "ALTA el 2026-11-11; hasta entonces era AUSENTE y 'v_max_tmc' y "
+        "'v_max_hdpe' la citaban sin poder abrirla (MAT-O14, R48-030). "
+        "LO QUE DICE DONDE LO DICE, leido del ejemplar para que T-4 lo "
+        "transcriba con su firma: el §8-6 «Abrasion» abre en la pag. impresa "
+        "8-27 (PDF 242) y la Tabla 8-4 «Pipe Abrasion Levels» ocupa la 8-27 y "
+        "la 8-28 (PDF 242-243). ES UNA TABLA DE NIVELES DE ABRASION, NO DE "
+        "VELOCIDADES MAXIMAS: cuatro filas --Non-abrasive («Velocities less "
+        "than 3 ft/s»), Low abrasive («less than 6 ft/s»), Moderately "
+        "abrasive («from 6 to 15 ft/s») y Severely abrasive («greater than "
+        "15 ft/s»)-- con la proteccion de solera recomendada en cada una. La "
+        "prohibicion del termoplastico en el nivel severo NO esta en la "
+        "tabla sino en el §8-3.3 «Thermoplastic Pipe», pag. impresa 8-13 "
+        "(PDF 228): «because thermoplastic pipe cannot be structurally "
+        "reinforced, it shall not be used for severely abrasive conditions "
+        "as described in Table 8-4». Y EN ESTA EDICION la fila «Severely "
+        "abrasive» de la tabla (pag. 8-28) no nombra al termoplastico: su "
+        "ultima frase dice «Sacrificial metal pipe exhibits better abrasion "
+        "characteristics than metal or concrete. However, it generally "
+        "cannot be reinforced to provide additional invert protection and "
+        "shall not be used in this condition», y para el metal pide «at "
+        "least two standard gages» o solera de concreto, sin prohibirlo. De "
+        "modo que el techo de 15 ft/s = 4.572 m/s del HDPE se sostiene por "
+        "el §8-3.3 MAS el umbral de la tabla, y el del TMC no es un techo "
+        "de la fuente: es lo que la ficha de 'v_max_tmc' ya declaraba, y lo "
+        "que T-4 punto 3 tiene que resolver. "
+        "UNIDADES: inglesas (ft/s, in). "
+        "VIGENCIA (T-0): los resultados de busqueda del sitio de WSDOT "
+        "muestran capitulos del manual rotulados «M 23-03.12, April 2026», "
+        "que es la edicion de este ejemplar, y ninguna posterior; la pagina "
+        "indice del manual todavia listaba la M 23-03.11 (abril de 2025). "
+        "El manual se revisa cada año: quien lo cite en 2027 tiene que "
+        "volver a mirar."),
+)
+
 FUENTES: Dict[str, Fuente] = {
     f.id: f for f in (
         MC_HHD, MP, MS, EG2013, E030, E050, E060,
         HDS5_3ED, HDS5_SI_1985, AASHTO_LRFD_9,
         AASHTO_M170M, AASHTO_M36, ASTM_A760, ASTM_A796, AASHTO_M294_TRAD,
-        DG2018,
+        DG2018, HEC14, WSDOT_HM,
     )
 }
+
+# LAS FUENTES PRESENTES CUYO PDF NO ESTA EN `normas/` DE ESTE REPOSITORIO:
+# viven solo en el repositorio de normas y se encuentran por `NORMAS_DIR`
+# (ver `directorios_de_normas`). Es un censo y no una propiedad de `Fuente`
+# porque es un estado TRANSITORIO del repositorio, no del documento: T-12
+# retira los PDF de `normas/` y entonces TODAS las presentes vivirian alli,
+# y esta tupla deja de hacer falta. Mientras tanto la lee la guardia de
+# PC-23 (`tests/test_ext6_registro_normativo.py`), que exige que estos NO
+# aparezcan en `normas/` de la app y que, si el repositorio de normas esta
+# enlazado, SI aparezcan en el.
+SOLO_EN_EL_REPO_NORMAS: Tuple[str, ...] = ("HEC14", "WSDOT_HM")
 
 
 # ===========================================================================
@@ -1147,17 +1362,13 @@ ASTM_A807 = _ausente(
         esfuerzo=Esfuerzo.COMPRA,
         sustituto_vigente="ninguno; la remision se retira, no se sustituye"))
 
-WSDOT_HM = _ausente(
-    "WSDOT_HM", "WSDOT Hydraulics Manual", "Washington State DOT",
-    "M 23-03", 2019,
-    Ausencia(
-        por_que_se_cita=("es la fuente tecnica con que se cubren los techos "
-                         "de velocidad de TMC y HDPE, que la Tabla N 10 del "
-                         "Manual no lista"),
-        que_desbloquearia="'v_max_tmc' y 'v_max_hdpe', hoy [C] sin PDF",
-        esfuerzo=Esfuerzo.DESCARGA_PUBLICA,
-        sustituto_vigente=("los dos criterios siguen [C] y la ventana los "
-                           "rotula «fuente no disponible en el expediente»")))
+# WSDOT_HM SALIO DE ESTE CENSO EN T-0: esta arriba, entre las presentes, con
+# sha1, 325 paginas y paginacion por capitulo medidos. Su ficha de ausente
+# decia «M 23-03, 2019» y que desbloquearia «'v_max_tmc' y 'v_max_hdpe', hoy
+# [C] sin PDF». Conseguida y leida, lo que desbloquea es la CITA con pagina
+# de la Tabla 8-4 y del §8-3.3 --que T-4 transcribe--, y lo que hace aparecer
+# es que la tabla es de niveles de abrasion y no de velocidades maximas: el
+# techo del HDPE lo sostiene el §8-3.3 y el del TMC no es de la fuente.
 
 # DG2018 SALIO DE ESTE CENSO EN EXT-6: esta arriba, entre las presentes, con
 # sha1, 285 paginas y desfase +1 medidos. Su ficha de ausente decia que
@@ -1250,14 +1461,11 @@ AASHTO_M273 = _ausente(
                            "Seccion 5 y Art. 12.11 y construido por EG-2013 "
                            "503 y 504")))
 
-HEC14 = _ausente(
-    "HEC14", "HEC-14 «Hydraulic Design of Energy Dissipators for Culverts "
-    "and Channels»", "FHWA", "Third Edition", 2006,
-    Ausencia(
-        por_que_se_cita="disipadores de energia a la salida",
-        que_desbloquearia="el dimensionamiento de disipadores, fuera de alcance hoy",
-        esfuerzo=Esfuerzo.DESCARGA_PUBLICA,
-        sustituto_vigente="Laushey (num. 4.1.1.3.7 c) del Manual) para d50"))
+# HEC14 SALIO DE ESTE CENSO EN T-0: esta arriba, entre las presentes, con
+# sha1, 287 paginas y paginacion por capitulo medidos. Su ficha de ausente
+# decia que desbloquearia «el dimensionamiento de disipadores, fuera de
+# alcance hoy»: sigue fuera de alcance mientras T-8 no lo implemente, pero
+# ya no por falta de la fuente.
 
 LEY_29338 = _ausente(
     "LEY_29338", "Ley 29338, Ley de Recursos Hidricos, y su reglamento",
@@ -1272,12 +1480,29 @@ SERIES_SENAMHI_ANA = _ausente(
     "SERIES_SENAMHI_ANA", "Series hidrometeorologicas SENAMHI / ANA para la "
     "cuenca del corredor", "SENAMHI / ANA", "series de estacion", 0,
     Ausencia(
-        por_que_se_cita=("el Q de diseño de toda la Familia A depende de "
-                         "ellas via 'homogeneidad_serie_fen'"),
-        que_desbloquearia=("el Q de la Familia A, hoy bloqueado. Es la "
-                           "ausencia mas cara del expediente"),
+        # CORREGIDO EN T-0 (INF-5.1.1). Esta ficha decia «el Q de la Familia
+        # A, hoy bloqueado» y «ninguno: el calculo se detiene, y debe», y
+        # ninguna de las dos cosas la hace el programa: ningun modulo lee
+        # 'homogeneidad_serie_fen' (`variables_entrada` lo censa sin
+        # consumidor), un `Q_m3s` vacio en la Familia A es `DatoFaltanteError`
+        # y no `CriterioPendienteError`, y un CSV con el caudal lleno corre
+        # sin que nadie pregunte por la serie. Lo que la serie sostiene es el
+        # SUSTENTO del caudal, que es responsabilidad del estudio
+        # hidrologico; T-1 le da consumidor real al criterio.
+        por_que_se_cita=("el sustento del Q de diseño de toda la Familia A "
+                         "sale de ellas: sin la serie no hay IDF ni "
+                         "tratamiento de la poblacion mixta por FEN que "
+                         "declarar ('homogeneidad_serie_fen')"),
+        que_desbloquearia=("el SUSTENTO del Q de la Familia A, que hoy "
+                           "entra ya calculado por la columna `Q_m3s` sin "
+                           "que el programa pueda comprobar de que serie "
+                           "salio. Es la ausencia mas cara del expediente"),
         esfuerzo=Esfuerzo.GABINETE,
-        sustituto_vigente="ninguno: el calculo se detiene, y debe"))
+        sustituto_vigente=("ninguno. El programa NO se detiene por ella: un "
+                           "`Q_m3s` lleno se calcula y el criterio sale en "
+                           "el bloque de pendientes sin haber frenado nada; "
+                           "quien recibe el CSV exige aparte el estudio "
+                           "hidrologico que lo respalda")))
 
 MEYERHOF_1957 = _ausente(
     "MEYERHOF_1957", "Meyerhof, G. G. (1957), abacos de N_cq y N_gamma_q",
@@ -1483,3 +1708,108 @@ def ausentes_por_esfuerzo() -> Tuple[Fuente, ...]:
     orden = {e: i for i, e in enumerate(Esfuerzo)}
     return tuple(sorted(FUENTES_AUSENTES.values(),
                         key=lambda f: (orden[f.ausencia.esfuerzo], f.id)))
+
+
+# ===========================================================================
+# T-0 - DONDE ESTAN LOS PDF EN DISCO: `NORMAS_DIR`, con caida a `normas/`
+# ===========================================================================
+# `Fuente.archivo_pdf` es un nombre LOGICO --«normas/hif12026.pdf»--, no una
+# ruta que se pueda abrir tal cual: dice como se llama el archivo dentro de
+# la carpeta de normas, este donde este esa carpeta. Hasta T-0 cada lector
+# componia `RAIZ / fuente.archivo_pdf` por su cuenta (cuatro sitios en la
+# suite y uno en `extraccion`), lo que cableaba la carpeta `normas/` de este
+# repositorio como unico lugar posible. Desde T-0 hay DOS lugares, en este
+# orden, y una sola puerta que los conoce:
+#
+#   1. `$NORMAS_DIR`, si la variable esta definida: el clon del repositorio
+#      de normas (`Andy-rba30/Normas`). Admite la raiz del clon o su
+#      subcarpeta `normas/`, que es donde ese repositorio guarda los PDF.
+#   2. `normas/` de este repositorio, MIENTRAS EXISTA (T-12 la retira).
+#
+# POR QUE UNA VARIABLE Y NO UN SUBMODULO NI UN ENLACE SIMBOLICO (decision de
+# T-0, ficha T0-01 de docs/decisiones_diferidas.md): el repositorio de normas
+# lleva documentos con copyright y T-12 recomendara hacerlo privado; un
+# submodulo ataria cada clon de la app a una credencial sobre ese
+# repositorio y dejaria su URL y su commit versionados aqui, y un enlace
+# simbolico `normas -> ...` no convive con la carpeta `normas/` real que
+# T-12 todavia no ha retirado. La variable no versiona nada, funciona con el
+# repositorio publico o privado, y deja que un despliegue que solo CALCULA
+# --que no necesita ni un PDF-- no tenga que clonar 330 MB.
+#
+# NINGUN MODULO DE CALCULO LLAMA A ESTO, y tiene que seguir asi: abrir un PDF
+# es cosa de quien VERIFICA (la suite `-m pdf`, `python3 -m
+# src.normativa.extraccion`, `verificar_sesion.py`), no de quien calcula. El
+# registro se construye sin tocar el disco.
+VARIABLE_NORMAS_DIR = "NORMAS_DIR"
+DIRECTORIO_NORMAS_DEL_REPOSITORIO = Path(__file__).resolve().parents[2] / "normas"   # literal-ok: profundidad del paquete en el arbol
+SUBCARPETA_DEL_REPO_NORMAS = "normas"
+
+
+def directorios_de_normas() -> Tuple[Path, ...]:
+    """
+    Las carpetas donde se buscan los PDF, en orden de precedencia: la de
+    `$NORMAS_DIR` (si la variable esta definida y no vacia) y `normas/` de
+    este repositorio (si existe).
+
+    Un `NORMAS_DIR` que apunta a una carpeta inexistente lanza
+    `FileNotFoundError` y no se ignora: quien definio la variable quiso
+    enlazar el repositorio de normas, y caer en silencio a `normas/` le
+    daria una suite verde que no verifico lo que el creia. Es un fallo de
+    entorno, no del expediente, y por eso no es `ErrorProyecto` (CLAUDE.md,
+    «Excepciones»).
+    """
+    carpetas = []
+    declarado = os.environ.get(VARIABLE_NORMAS_DIR, "").strip()
+    if declarado:
+        enlazado = Path(declarado).expanduser()
+        if not enlazado.is_dir():
+            raise FileNotFoundError(
+                f"{VARIABLE_NORMAS_DIR}={declarado!r} no es una carpeta. "
+                "Tiene que apuntar al clon del repositorio de normas (su "
+                f"raiz o su subcarpeta «{SUBCARPETA_DEL_REPO_NORMAS}/»); "
+                "ver «Donde estan los PDF de normas» en CLAUDE.md")
+        subcarpeta = enlazado / SUBCARPETA_DEL_REPO_NORMAS
+        # La raiz del clon no tiene PDF sueltos: los guarda en su subcarpeta.
+        carpetas.append(subcarpeta if subcarpeta.is_dir()
+                        and not any(enlazado.glob("*.pdf")) else enlazado)
+    if DIRECTORIO_NORMAS_DEL_REPOSITORIO.is_dir():
+        carpetas.append(DIRECTORIO_NORMAS_DEL_REPOSITORIO)
+    return tuple(carpetas)
+
+
+def ruta_pdf(fuente) -> Path:
+    """
+    La ruta en disco del PDF de una `Fuente` presente (o de un
+    `PdfPresenteSinRegistrar`): la primera carpeta de `directorios_de_normas`
+    que tenga un archivo con ese NOMBRE.
+
+    Si ninguna lo tiene NO lanza: devuelve la ruta donde se le esperaba --en
+    la primera carpeta de la lista-- para que quien llama decida con
+    `.exists()` si salta, falla o lo dice, y para que el mensaje nombre un
+    sitio concreto. Una fuente AUSENTE no tiene PDF que buscar y eso si es
+    un error de quien llama.
+    """
+    if not getattr(fuente, "archivo_pdf", None):
+        raise ValueError(
+            f"«{getattr(fuente, 'id', fuente)}» no declara `archivo_pdf`: "
+            "una fuente ausente no tiene PDF contra el que verificar")
+    nombre = Path(fuente.archivo_pdf).name
+    carpetas = directorios_de_normas()
+    for carpeta in carpetas:
+        candidata = carpeta / nombre
+        if candidata.exists():
+            return candidata
+    return (carpetas[0] if carpetas else DIRECTORIO_NORMAS_DEL_REPOSITORIO) / nombre
+
+
+def pdf_en_disco() -> Dict[str, Path]:
+    """
+    {nombre de archivo: ruta} de todo PDF que hay en `directorios_de_normas`,
+    con la misma precedencia que `ruta_pdf` (gana la primera carpeta). Es lo
+    que la guardia de PC-23 y `python3 -m src.normativa.extraccion` recorren.
+    """
+    encontrados: Dict[str, Path] = {}
+    for carpeta in directorios_de_normas():
+        for pdf in sorted(carpeta.glob("*.pdf")):
+            encontrados.setdefault(pdf.name, pdf)
+    return encontrados

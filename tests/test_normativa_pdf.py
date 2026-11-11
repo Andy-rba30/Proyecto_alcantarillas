@@ -9,7 +9,12 @@ CIERTA. Sin ellos, `Verificado` es una etiqueta que alguien escribio y nadie
 comprobo -- que es exactamente el estado del que sale este cluster.
 
 SE SALTAN, NO FALLAN, si PyMuPDF no esta instalado o si falta un PDF de
-`normas/`. Es deliberado: `requirements.txt` es lo que hace falta para
+`normas/`. Y DESDE T-0 «normas/» SON DOS CARPETAS, en este orden: la del
+repositorio de normas enlazado por `NORMAS_DIR` y la `normas/` de este
+repositorio mientras exista (`fuentes.ruta_pdf`). HEC-14 y el WSDOT
+Hydraulics Manual viven solo en la primera: sin `NORMAS_DIR` los dos T0 de
+abajo verifican las dieciseis fuentes que si estan y despues SALTAN nombrando
+las dos que faltan, en vez de dar por verificado lo que no abrieron. Es deliberado: `requirements.txt` es lo que hace falta para
 CALCULAR una alcantarilla y `requirements-dev.txt` lo que hace falta para
 COMPROBAR que lo calculado se apoya en lo que las normas dicen. Un despliegue
 que solo produzca memorias no necesita ni la libreria ni los 250 MB de PDF.
@@ -30,6 +35,7 @@ from pathlib import Path
 
 import pytest
 
+from src.normativa import fuentes as _fuentes
 from src.normativa import registro as _registro
 from src.normativa.esquema import (
     SinDeterminar,
@@ -60,7 +66,20 @@ def reg():
 
 
 def _ruta(fuente) -> Path:
-    return RAIZ / fuente.archivo_pdf
+    """Donde esta el PDF en disco: `NORMAS_DIR` primero, `normas/` despues."""
+    return _fuentes.ruta_pdf(fuente)
+
+
+def _saltar_si_faltan(faltan) -> None:
+    """
+    Lo que SI estaba ya se comprobo cuando esto se llama: el salto dice que
+    la verificacion quedo INCOMPLETA y por que, que no es lo mismo que pasar.
+    """
+    if faltan:
+        pytest.skip(
+            "sin PDF en disco: " + ", ".join(faltan) + ". Las demas fuentes "
+            f"se verificaron; enlace el repositorio de normas con "
+            f"{_fuentes.VARIABLE_NORMAS_DIR} para verificar tambien estas")
 
 
 def _citas_verificables(reg):
@@ -86,11 +105,12 @@ def test_T0_el_sha1_de_cada_fuente_coincide_con_el_PDF(reg):
     aunque siga escrita. Por eso el mensaje lista cuantas citas quedan sin
     respaldo, y por eso el arreglo NO es actualizar el sha1: es reverificar.
     """
-    caducadas = []
+    caducadas, faltan = [], []
     for f in reg.fuentes:
         ruta = _ruta(f)
         if not ruta.exists():
-            pytest.skip(f"falta {f.archivo_pdf}")
+            faltan.append(f.archivo_pdf)
+            continue
         real = sha1_de(ruta)
         if real != f.sha1:
             caducadas.append(
@@ -99,6 +119,7 @@ def test_T0_el_sha1_de_cada_fuente_coincide_con_el_PDF(reg):
     assert not caducadas, (
         "PDF cambiados; las citas que se apoyan en ellos dejan de estar "
         "verificadas:\n  " + "\n  ".join(caducadas))
+    _saltar_si_faltan(faltan)
 
 
 def test_T0_el_numero_de_paginas_declarado_es_el_real(reg):
@@ -106,11 +127,14 @@ def test_T0_el_numero_de_paginas_declarado_es_el_real(reg):
     Barato y acota `pagina_pdf` sin abrir la pagina: una cita a la pagina 400
     de un PDF de 323 no puede ser cierta.
     """
+    faltan = []
     for f in reg.fuentes:
         ruta = _ruta(f)
         if not ruta.exists():
-            pytest.skip(f"falta {f.archivo_pdf}")
+            faltan.append(f.archivo_pdf)
+            continue
         assert numero_de_paginas(ruta) == f.paginas_pdf, f.id
+    _saltar_si_faltan(faltan)
 
 
 def test_T0_ninguna_cita_apunta_fuera_del_PDF(reg):
@@ -375,7 +399,7 @@ def test_T1_la_resolucion_del_Manual_de_Puentes_es_la_que_el_ejemplar_imprime(re
     """
     f = reg.fuente("MP")
     texto = normalizar(" ".join(
-        texto_de_pagina(RAIZ / f.archivo_pdf, n) for n in (2, 3)))
+        texto_de_pagina(_ruta(f), n) for n in (2, 3)))
     assert normalizar("041-2016-MTC/14") in texto, (
         "el ejemplar ya no imprime la RD 041-2016-MTC/14 en sus PDF 2-3: "
         "o cambio el archivo (y T0 lo dira) o la lectura de T1 estaba mal")

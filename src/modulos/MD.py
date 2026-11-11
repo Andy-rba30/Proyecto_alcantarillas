@@ -872,10 +872,17 @@ def disenar_lote(puntos: Iterable[PuntoCritico], *, L: float, TW: float,
     con el siguiente punto sin abortar. Un fallo de programa (ImportError,
     ValueError) SI se propaga, porque indica que el modulo esta incompleto.
 
-    Cuando un criterio pendiente bloquea TODOS los puntos (p.ej. Q_m3s = None
-    en toda la Familia A porque 'homogeneidad_serie_fen' esta vacio), la lista
-    resultante tendra todos los puntos fallidos con CriterioPendienteError. Eso
-    es informacion correcta: el bloqueo lo declara el criterio, no el lote.
+    Cuando un criterio pendiente bloquea TODOS los puntos (p.ej. 'ke_entrada'
+    retirado, que M4 consulta en cada punto), la lista resultante tendra todos
+    los puntos fallidos con CriterioPendienteError. Eso es informacion
+    correcta: el bloqueo lo declara el criterio, no el lote. Y cuando lo que
+    falta es un DATO (p.ej. `Q_m3s` vacio en un punto de Familia A), ese punto
+    sale fallido con DatoFaltanteError y los demas siguen.
+
+    El ejemplo de este parrafo era, hasta T-0, «Q_m3s = None en toda la
+    Familia A porque 'homogeneidad_serie_fen' esta vacio», y mezclaba las dos
+    cosas (INF-5.1.1): ese criterio no lo lee ningun modulo y no bloquea
+    nada; un caudal vacio es un dato faltante, no un criterio pendiente.
 
     L, TW, Q, S y verificar se aplican a todos los puntos. Para puntos con
     geometria o caudal individualmente distintos -- lo habitual en la Fase 7 --

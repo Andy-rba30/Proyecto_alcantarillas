@@ -455,3 +455,42 @@ el marco 1.20 × 0.90 m, V2b sale `cumple=True` con veredicto `indicador`, y
 la memoria imprime el literal del 5.3.3 desde el registro con la marca de
 aviso.
 
+
+## Regenerada en T-0 (2026-11-11): formato, y ningún número
+
+T-0 de la cadena T (`docs/planes_mejora/09_CADENA_PROMPTS_TESIS.md`) no toca
+fórmulas ni umbrales: corrige textos, renombra un código de paso con alias,
+cambia dos citas de fórmula y enmienda la hoja de ruta. La línea base se
+regeneró y se comparó archivo por archivo contra la de `c2262a2`, troceando
+cada HTML por etiquetas. **Seis de los trece archivos no cambian un byte**:
+los cuatro `cli_*.txt`, los dos CSV de resumen —que son donde viven el
+diámetro, las velocidades, el HW y el control de cada punto— y
+`entradas_ampliadas.json` aparte. Lo que cambia, entero:
+
+- **Los tres JSON: una sola línea cada uno**, la huella `criterios_sha1`
+  (`criterios_adoptados.py` cambió comentarios y los textos `fuente` de dos
+  fichas). Ningún otro campo: los diámetros, tirantes, velocidades y cargas
+  son los mismos números, dígito a dígito.
+- **Las tres memorias de la CLI, 29 cambios cada una en 17 clases**:
+  - «(v7)» → «(v8)» en el pie y en la tabla de trazabilidad: M11 lee la
+    versión del encabezado de la hoja de ruta, que T-0 corrigió;
+  - las dos huellas, `hoja_ruta_sha1` (la v8 enmendada) y `criterios_sha1`;
+  - el código de paso `F4.YC_RECT` → `F4.YC`, en el rótulo del paso, en su
+    remisión y en el ancla de su ficha del anexo (4 + 3 + 1);
+  - la procedencia de la fórmula del tirante crítico, que no existía, en
+    cada paso 4.2.1 (3): «num. A.3.1 · … · pág. impresa A.3 · PDF 192»;
+  - la procedencia de la fórmula del paso 4.4, de «num. A.2, A.2.1 · INLET
+    CONTROL EQUATIONS» a «num. 3.3.5 · Evaluation of Results · pág. impresa
+    3.25 · PDF 107» (3), y esa cita entre las del paso (3) y las del
+    fundamento `F4.CONTROL` (1);
+  - las dos citas nuevas en el anexo de citas, con su frase literal (2), y
+    la de la A.3.1 entre las del fundamento `F4.YC` (1);
+  - los textos de `v_max_tmc` y `v_max_hdpe` en el bloque de criterios: el
+    campo `fuente` de cada uno (1 + 1) y su `tabla_pendiente` (2), que dejan
+    de decir que WSDOT es una fuente ausente.
+- **`memoria_punto_cajon.html`, 5 cambios**: el código de paso y su remisión,
+  y las dos procedencias de fórmula.
+
+**Diámetros movidos: ninguno.** A-01 y A-02 siguen en Ø 0.90 m de concreto
+reforzado en la corrida ancha de perfil, y los otros puntos se detienen
+donde se detenían.

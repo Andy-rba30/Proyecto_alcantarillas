@@ -5,7 +5,11 @@ TODAS las que llevan `verificado` pasaron por el subagente
 `verificador-normativo` -- en la sesion S12 las primeras, en la S13 el bloque
 de clase de sitio -- contra el PDF cuyo sha1 declara la `Fuente`. Ninguna se acepto sin ese paso, y ninguna pagina se calculo a ojo
 desde el desfase: donde el verificador no pudo leer, el campo queda en
-`POR_TRANSCRIBIR` y la cita NO lleva firma.
+`POR_TRANSCRIBIR` y la cita NO lleva firma. LAS DOS DE T-0 (cadena T,
+2026-11-11: `HDS5_3ED.3.3.5#GOBIERNA` y `HDS5_3ED.A.3.1#CRITICO`) no pasaron
+por ese subagente: las leyo la propia sesion abriendo la pagina por texto, y
+su firma lo dice (`POR_T0`). Lo que las sostiene es lo mismo que a las demas:
+`test_normativa_pdf` T2 y T6 buscan la frase en la pagina declarada.
 
 POR QUE ESTO ES UN ARCHIVO Y NO SEIS CADENAS. El numeral `2.1.4.3.9` estaba
 escrito en seis sitios del repositorio como seis cadenas independientes que
@@ -74,6 +78,8 @@ FECHA_EA = "2026-09-21"
 POR_EA = "ext/E-A · verificador-normativo"
 FECHA_CIERRE = "2026-09-22"
 POR_CIERRE = "cierre/C11 · verificador-normativo"
+FECHA_T0 = "2026-11-11"
+POR_T0 = "tesis/T-0 · lectura directa de la pagina por la sesion"
 
 S12 = (FECHA_S12, POR_S12)
 S13 = (FECHA_S13, POR_S13)
@@ -89,6 +95,7 @@ EXT6 = (FECHA_EXT6, POR_EXT6)
 EXT7 = (FECHA_EXT7, POR_EXT7)
 EA = (FECHA_EA, POR_EA)
 CIERRE = (FECHA_CIERRE, POR_CIERRE)
+T0 = (FECHA_T0, POR_T0)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -106,6 +113,10 @@ _SHA = {
     "ASTM_A760": "47d0d447143ca158615dff7dec79f2f7a8975732",
     "ASTM_A796": "df7858f04caf61bc1c3a4ea3d664e38cacddee25",
     "DG2018": "96ea04423a7e0e7fc44b5cd5d8824d6166a8e816",
+    # Las dos que T-0 dio de alta. Ninguna cita las usa todavia: estan aqui
+    # para que T-4 y T-8 firmen las suyas sin tocar esta tabla.
+    "HEC14": "1bffcbe220cd67e4c0de8b87b46d1ece64ce7217",
+    "WSDOT_HM": "b34bb7bd448c249301e2a1a82234be70e8b6d916",
 }
 
 _TODAS = []
@@ -1952,6 +1963,82 @@ HDS5_A22_QLIM = _cita(
                "4.0 (2.21 SI)."),
         pagina_pdf=191),
     caracter=Caracter.APROXIMACION,
+)
+
+# ---------------------------------------------------------------------------
+# T-0 - Las dos citas que dos pasos de M4 pedian y no tenian (INF-5.1.10)
+# ---------------------------------------------------------------------------
+# EL PASO DEL TIRANTE CRITICO NO LLEVABA `formula_cita_id` (anotado como C4-1
+# en docs/ruta_familia_c.md) y el paso «cual control gobierna» llevaba la del
+# num. A.2, que son las ECUACIONES DE CONTROL DE ENTRADA y no dicen nada de
+# cual de los dos controles manda. Las dos frases que si lo dicen estan en el
+# ejemplar y se leyeron en T-0, por texto, contra las PDF 192 y 107.
+HDS5_A31_CRITICO = _cita(
+    id="HDS5_3ED.A.3.1#CRITICO",
+    fuente_id="HDS5_3ED",
+    numeral="A.3.1",
+    titulo_numeral="Elliptical Structural Plate Example",
+    # EL NUMERAL ABRE AL PIE DE LA PAGINA IMPRESA A.2 (PDF 191) y la frase
+    # esta en la A.3 (PDF 192): se cita la pagina de la frase y se declara
+    # donde esta el titulo, como en `HDS5_3ED.A.3#FORMAS`.
+    pagina_impresa="A.3",
+    pagina_pdf=192,
+    pagina_pdf_titulo=191,
+    texto_literal=Verbatim(
+        texto=("At critical depth, the critical velocity head is equal to "
+               "one-half the hydraulic depth."),
+        pagina_pdf=192),
+    caracter=Caracter.DEFINICION,
+    sesion=T0,
+    nota=("ES LA CONDICION DE FLUJO CRITICO ESCRITA POR LA FUENTE, y no con "
+          "los simbolos del paso que la cita. La pagina la escribe como "
+          "V_c^2/(2g) = y_h/2 con y_h = A_p/T_p el tirante hidraulico, y dos "
+          "renglones despues como numero de Froude: «Since the Froude number "
+          "equals 1.0 at critical depth, Vc can be determined from the Froude "
+          "number equation», con Qc = Ap (g yh)^0.5. Sustituyendo V = Q/A y "
+          "y_h = A/T, las dos son Q^2/g = A^3/T, que es la forma en que "
+          "`M4._residuo_critico` la resuelve: la igualdad es algebra de una "
+          "linea y la hace el proyecto, no la fuente. Esta en un EJEMPLO del "
+          "Apendice A (el desarrollo de la curva adimensional de una seccion "
+          "eliptica), no en un numeral de definiciones: el HDS-5 no dedica "
+          "ningun apartado a definir el tirante critico --lo lee de las "
+          "cartas del Apendice C (num. 3.3.3)--, y esta es la unica pagina "
+          "del ejemplar que escribe la condicion con la que se calcula. La "
+          "misma pagina define H_c/D = d_c/D + y_h/(2D), ec. (A.4), que es el "
+          "H_c de la Forma 1."),
+)
+
+HDS5_3_3_5_GOBIERNA = _cita(
+    id="HDS5_3ED.3.3.5#GOBIERNA",
+    fuente_id="HDS5_3ED",
+    numeral="3.3.5",
+    titulo_numeral="Evaluation of Results",
+    pagina_impresa="3.25",
+    pagina_pdf=107,
+    pagina_pdf_titulo=107,
+    texto_literal=Verbatim(
+        texto=("The higher of the two is designated the controlling "
+               "headwater elevation."),
+        pagina_pdf=107),
+    caracter=Caracter.DEFINICION,
+    sesion=T0,
+    nota=("Es el paso del PROCEDIMIENTO DE DISEÑO del Capitulo 3 («Culvert "
+          "Hydraulic Design», num. 3.3 «Culvert Design Using Nomographs») "
+          "que dice cual control gobierna. La oracion anterior fija el "
+          "sujeto: «For the first alternative selected, compare the "
+          "headwater elevations calculated for inlet and outlet control». "
+          "Dos cosas que la frase dice y que el paso que la cita respeta: "
+          "compara COTAS de carga (headwater elevations), que con los dos "
+          "controles referidos al mismo fondo de entrada es comparar los dos "
+          "HW; y «is designated» es una definicion del metodo, no una "
+          "exigencia sobre el diseño. La oracion siguiente da la razon "
+          "fisica: «The culvert can be expected to operate with that higher "
+          "headwater for at least part of the time». Lo que el paso 4.4 hace "
+          "ADEMAS --tomar como HW de salida el del remanso cuando la "
+          "aproximacion de h_o esta fuera de rango-- no sale de aqui sino de "
+          "la pag. 3.12 (`HDS5_3ED.3.1.4#0_75D`), que el paso cita aparte. "
+          "Hasta T-0 el paso citaba `HDS5_3ED.A.2`, las ecuaciones de "
+          "control de entrada (INF-5.1.10)."),
 )
 
 HDS5_TA1 = _cita(

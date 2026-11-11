@@ -10,6 +10,13 @@ Existe para que verificar una cita no exija escribir un script cada vez:
     python3 -m src.normativa.extraccion sha1 <pdf>
 
 `<pdf>` admite un fragmento del nombre: "Puentes", "Hidro", "E.060".
+
+DONDE SE BUSCAN (T-0): en las carpetas de `fuentes.directorios_de_normas()`
+--`$NORMAS_DIR`, el clon del repositorio de normas, y despues `normas/` de
+este repositorio mientras exista--, de modo que `hec14` y `HydraulicsManual`,
+que viven solo en el repositorio de normas, se resuelven igual que el resto:
+
+    NORMAS_DIR=/ruta/al/clon/de/Normas python3 -m src.normativa.extraccion sha1 hec14
 """
 
 from __future__ import annotations
@@ -26,18 +33,20 @@ from .pdf import (
     texto_de_pagina,
 )
 
-NORMAS = Path(__file__).resolve().parents[3] / "normas"   # literal-ok: profundidad del paquete en el arbol
-
-
 def _resolver(fragmento: str) -> Path:
     ruta = Path(fragmento)
     if ruta.exists():
         return ruta
+    # Import en el punto de uso: `fuentes` importa el esquema entero y este
+    # modulo se carga tambien para ordenes que traen la ruta completa.
+    from ..fuentes import VARIABLE_NORMAS_DIR, pdf_en_disco
     objetivo = normalizar(fragmento)
-    candidatos = [p for p in sorted(NORMAS.glob("*.pdf"))
-                  if objetivo in normalizar(p.name)]
+    candidatos = [p for nombre, p in sorted(pdf_en_disco().items())
+                  if objetivo in normalizar(nombre)]
     if not candidatos:
-        raise SystemExit(f"ningun PDF de normas/ contiene «{fragmento}»")
+        raise SystemExit(
+            f"ningun PDF de las carpetas de normas contiene «{fragmento}» "
+            f"(se busca en ${VARIABLE_NORMAS_DIR} y en normas/)")
     if len(candidatos) > 1:
         nombres = "\n  ".join(p.name for p in candidatos)
         raise SystemExit(f"«{fragmento}» es ambiguo:\n  {nombres}")

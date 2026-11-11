@@ -1188,7 +1188,6 @@ PUBLICAS_SIN_REFERENCIA_EN_TESTS = {
     "M11_reporte.ancla_de_discrepancia": "la llama `bloque_discrepancias` (M11, anexo EXT-8); se ejercita con cada memoria",
     "M11_reporte.ancla_de_umbral": "la llama `anexo_referencias` (M11, anexo EXT-8); se ejercita con cada memoria",
     "M11_reporte.bloque_paso": "la llama `bloque_pasos` (M11); se ejercita con cada memoria",
-    "M11_reporte.bloque_umbrales": "la llama `memoria_html_por_partes` (M11); se ejercita con cada memoria",
     "M11_reporte.bloque_homonimias": "la llama `memoria_html_por_partes` (M11); se ejercita con cada memoria",
     "M11_reporte.bloque_alcance": "la llama `memoria_html_por_partes` (M11); se ejercita con cada memoria",
     "M2_material.alcance_norma_producto_de": "la llama `_diseno_json` (cli); la ejercita test_cli por el JSON",

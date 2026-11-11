@@ -21,6 +21,28 @@ memoria en HTML. `requirements-dev.txt` es aparte y solo hace falta para
 **comprobar** que lo calculado se apoya en lo que las normas dicen (lee su
 encabezado: explica por qué están separados).
 
+### Los PDF de las normas: `NORMAS_DIR`
+
+Calcular no necesita ningún PDF. **Verificar** las citas contra su fuente sí
+(`pytest -m pdf`), y los PDF se buscan primero en la carpeta que nombre la
+variable de entorno `NORMAS_DIR` —el clon del repositorio de normas— y
+después en `normas/` de este repositorio, mientras exista:
+
+```
+export NORMAS_DIR=/ruta/al/clon/de/Normas
+```
+
+Dos fuentes (HEC-14 y el WSDOT Hydraulics Manual) viven sólo en ese
+repositorio: sin la variable, los tests que las abren se saltan diciéndolo. El
+porqué y el detalle están en `CLAUDE.md`, «Dónde están los PDF de normas».
+
+### Qué datos necesita, y quién los aporta
+
+El programa no rellena ninguna entrada de diseño. Qué columnas, datos
+externos y datos de sitio recibe, de qué estudio sale cada uno (hidrológico,
+ANA / Junta de Usuarios, EMS, topografía, trazo) y la convención de esviaje
+(0° = cruce perpendicular) están en `docs/contrato_entradas.md`.
+
 ## Cómo se corre
 
 ```

@@ -3328,3 +3328,122 @@ símbolo.
   retira de verdad, la columna tendría que llevar el paso activo, y esta
   ficha se reescribe.
 - **Dónde vive:** `gui/componentes.py::NavegacionLateral`
+
+# Parte XL — Lo que T-0 de la cadena T dejó escrito: gobernanza, especificación y enlace a las normas
+
+T-0 (2026-11-11) abre la cadena T (`docs/planes_mejora/09_CADENA_PROMPTS_TESIS.md`), que
+implementa el `INFORME_evaluacion_app_alcantarillas_vs_PDF.md`. No toca fórmulas ni
+umbrales. Cuatro decisiones suyas no son un cierre sino algo que queda dicho para las
+sesiones que siguen.
+
+## T0-01 · Los PDF de normas se encuentran por `NORMAS_DIR`, con caída a `normas/`; las dos fuentes nuevas viven sólo en el repositorio de normas
+
+- **Qué se difirió:** retirar los 18 PDF de `normas/` (es de T-12) y transcribir las
+  citas de HEC-14 y del WSDOT Hydraulics Manual (son de T-8 y T-4). T-0 hizo lo que
+  les abre el camino: una sola puerta, `fuentes.ruta_pdf`, que busca cada PDF por su
+  nombre primero en la carpeta de la variable `NORMAS_DIR` —el clon del repositorio
+  de normas, su raíz o su subcarpeta `normas/`— y después en `normas/` de este
+  repositorio mientras exista; y las dos fuentes dadas de alta como presentes, con
+  sha1, páginas, edición y paginación por capítulo medidos abriendo los PDF.
+- **Por qué:** se eligió la variable y no un submódulo ni un enlace simbólico porque
+  el repositorio de normas lleva documentos con copyright y T-12 recomendará hacerlo
+  privado: un submódulo ataría cada clon de la app a una credencial sobre él y dejaría
+  su URL y su commit versionados aquí; un enlace simbólico `normas → …` no convive con
+  la carpeta `normas/` real que todavía no se ha retirado. La variable no versiona
+  nada y deja que un despliegue que sólo calcula no clone 330 MB. Y `hec14.pdf` y
+  `HydraulicsManual.pdf` **no se copiaron a `normas/`**: esa carpeta no gana PDF
+  (`INF-5.2.3`). Consecuencia que hay que conocer: **hay un tercer eje de entorno**,
+  «repositorio de normas enlazado sí / no». Sin `NORMAS_DIR` la suite queda verde con
+  siete saltos más —los dos T0 de `test_normativa_pdf`, que verifican las dieciséis
+  fuentes que sí están y después saltan nombrando las dos que faltan; los cuatro
+  tests de `test_t0_gobernanza` que abren los dos PDF; y la mitad de la guardia de
+  PC-23 que mira el repositorio enlazado—, y `verificar_sesion.py` lo dice en su paso
+  5 como aviso. Un `NORMAS_DIR` que apunta a una carpeta inexistente **no** se calla:
+  `FileNotFoundError`.
+- **Qué haría falta:** T-12 retira los PDF de `normas/` y, con ellos, el censo
+  `SOLO_EN_EL_REPO_NORMAS`, que es transitorio: entonces todas las fuentes presentes
+  viven en el repositorio de normas y la guardia de PC-23 se reescribe sobre una sola
+  carpeta. T-4 y T-8 transcriben las citas con su firma; la `nota` de cada fuente
+  adelanta dónde dice cada cosa (la Tabla 8-4 es de niveles de abrasión, no de
+  velocidades máximas, y la prohibición del termoplástico está en el §8-3.3; en HEC-14
+  la socavación es el capítulo 5 y no el 3). La vigencia de las dos se confirmó por
+  búsqueda web, sin leer las páginas del emisor: queda para gabinete.
+- **Dónde vive:** `src/normativa/fuentes.py::directorios_de_normas`
+
+## T0-02 · El código de paso del tirante crítico es `F4.YC`; `F4.YC_RECT` sigue resolviendo como alias, y el índice de fórmulas se regeneró con la corrida que hay
+
+- **Cerrado (T-0):** `INF-5.1.10`. El paso 4.2.1 se emitía con el código `F4.YC_RECT`
+  también para la sección circular (anotado como C4-2 en `docs/ruta_familia_c.md`) y
+  sin `formula_cita_id` (C4-1); el paso 4.4, «cuál control gobierna», citaba las
+  ecuaciones de control de entrada. Hoy el código es `F4.YC`, la fórmula cita la
+  condición de flujo crítico que HDS-5 escribe en su pág. A.3 (`HDS5_3ED.A.3.1#CRITICO`)
+  y el paso 4.4 cita el num. 3.3.5 del procedimiento de diseño
+  (`HDS5_3ED.3.3.5#GOBIERNA`, pág. impresa 3.25). Las dos citas se leyeron por texto
+  contra el PDF y las fija `test_normativa_pdf`.
+- **Abierto:** el nombre anterior no se borró. `ALIAS_DE_FUNDAMENTO` lo censa y lo
+  entienden `Registro.fundamento`, `modelos.paso` e `id_vigente`; lo que se **emite** es
+  siempre `F4.YC`. Un lector que guardó una traza con `F4.YC_RECT` la sigue pudiendo
+  resolver; uno que **filtra** pasos recién emitidos por el nombre viejo tiene que
+  pasar su id por `id_vigente`. El ancla de la ficha en la memoria HTML cambia con el
+  id. `docs/indice_formulas.md` se regeneró con la corrida de referencia de siempre,
+  que llega a M4 y **no dimensiona** ningún punto (0 de 4): sus filas del paso 4.2.1
+  y del 4.4 ya llevan las dos citas nuevas, pero las fórmulas de lo que esa corrida no
+  alcanza —V7, VC1, Laushey— siguen sin fila.
+- **Qué haría falta:** retirar el alias cuando ningún lector externo dependa del
+  nombre viejo (hoy no hay ninguno en el repositorio: la suite migró entera); y
+  regenerar el índice con una corrida que dimensione los cuatro puntos, que es el
+  punto 3 de T-10.
+- **Dónde vive:** `src/normativa/fundamentos.py::ALIAS_DE_FUNDAMENTO`
+
+## T0-03 · La hoja de ruta declara desde T-0 cosas que el código todavía no hace: el conjunto de aceptación de la Familia B y cuatro enmiendas prospectivas
+
+- **Qué se difirió:** la implementación de cinco enmiendas de la v8 que T-0 escribió
+  como especificación y no como descripción del código: §1.1 (el caudal lo calculará
+  `MH_hidrologia`, T-1), §2.3 (la Familia B se acepta con V1 + V2 + V4 + V5 +
+  espaciamiento de la Fase 10), la fila V5 (método de remanso sin adoptar y
+  `ancho_derecho_via_m` como dato externo), §7.B (pendiente mínima y máxima del
+  conducto y desnivel mínimo de entrega pasan a criterios, T-2 y T-6) y §9 (cabezal
+  por punto y con aleros, T-7).
+- **Por qué:** es el orden que la casa sigue —«si un cambio contradice la v8, primero
+  se enmienda la v8»— y T-0 no toca lógica. Cada nota dice qué hace **hoy** el código,
+  para que nadie la lea como descripción: `PERFILES[Familia.B].verificaciones_aceptacion`
+  sigue en `None`, `S = 0` se rechaza, G2 compara sin desnivel, la Fase 9 es «del
+  proyecto» y V5 se detiene. La de la Familia B es la única que **declara un conjunto**
+  que la hoja no traía; no es una elección nueva —son las cuatro que la sección nombra
+  para la A, porque la Fase 5 no exime a ninguna familia, más el espaciamiento que la
+  propia frase de la B ya nombraba—, y aun así es una frase de la fuente de verdad
+  escrita por una sesión: **el dueño del proyecto puede corregirla**, y no mueve
+  ningún número porque ningún módulo despacha sobre ese campo (`SIS-B-13`).
+- **Qué haría falta:** que cada prompt cierre lo suyo y retire de su nota el «hoy el
+  código…». Para la Familia B, que T-9 —que convierte el espaciamiento en una
+  verificación que puede fallar— le dé código de verificación y escriba la tupla; el
+  prompt de T-9 **no lo pide** y hay que decírselo. Para V5, nada de la cadena la
+  implementa: sigue diferida, y T-11 la lista entre lo que requiere entrada del
+  proyecto.
+- **Dónde vive:** `src/modulos/M1_clasificacion.py::PERFILES`
+
+## T0-04 · Los `INF-` del tracker llevan el número del INFORME, no el de los prompts; cuatro no tienen prompt, y la severidad es una propuesta
+
+- **Qué se difirió:** nada del INFORME se dejó sin fila, pero tres cosas del alta son
+  decisiones y no transcripción. (1) El ID canónico es el del INFORME (`INF-5.1.10` es
+  su ítem 10), aunque la cadena cite ese hallazgo como «INF-5.1.9»: seis prompts usan
+  un número que no es el del ítem, y T-8 y T-9 usan el mismo para dos distintos. (2)
+  Las tablas del §3 van **por fila** (`INF-3.2.7`), y los puntos 4 y 5 del §0 entran
+  como `INF-0.4` e `INF-0.5` porque no tienen fila en ninguna tabla y la cadena los
+  cita. (3) La severidad de las 64 filas es una **propuesta de T-0**: el INFORME no la
+  asigna por hallazgo.
+- **Por qué:** un tracker con los números de los prompts tendría dos filas
+  «INF-5.1.11» y ninguna para tres ítems del INFORME. Con el número del INFORME cada
+  hallazgo tiene una fila y cada alias lleva a una sola: la tabla de equivalencias
+  está al principio de la copia de la cadena y en «Vínculos cruzados» de cada fila, y
+  el test la fija en las dos direcciones. Cuatro hallazgos del §5.1 **no los nombra
+  ningún prompt** —`INF-5.1.3` (el umbral de 100 ha justificado con el fixture),
+  `INF-5.1.8` (`area_ha` obligatoria en la Familia B sin consumidor), `INF-5.1.9`
+  (`sucs_fundacion` obligatoria y nunca leída) e `INF-5.1.16` (una constante sin
+  consumidor)—, y dos filas del §3 tampoco (`INF-3.2.5`, la analogía de V4;
+  `INF-3.2.9`, el segundo indicador de sedimentación): quedan abiertos con su prompt
+  vecino escrito, no escondidos bajo otro.
+- **Qué haría falta:** que el dueño confirme o corrija las severidades; que el
+  orquestador asigne los seis sin prompt (T-11, en su censo final, es la última
+  ocasión); y que cada prompt escriba el ID **canónico** al cerrar.
+- **Dónde vive:** `tests/test_t0_gobernanza.py::ALIAS_DE_LA_CADENA`

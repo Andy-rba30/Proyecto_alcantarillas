@@ -105,19 +105,38 @@ con `CriterioPendienteError` desde un criterio nuevo en
 `criterios_adoptados.py` ('remanso_derecho_via', 'TR_evento_extremo'), con su
 justificacion y lo que falta para resolverlo.
 
-TW -- Sec. 1.3 ("TW se calcula, no se mide"), diferido y declarado
-------------------------------------------------------------------
-El TW que consume la Fase 4 entra por el criterio 'TW_receptor' (Tablero
-3.1), NO por el procedimiento de tres pasos de Sec. 1.3 (Q del receptor de
-ANA/Junta -> Manning en la seccion del receptor -> cota de agua). Ese
-procedimiento no esta implementado en ningun modulo, y la consecuencia hay
-que decirla porque no se adivina: **un CSV que traiga 'Q_receptor_m3s' y
-'cota_TW' llenos sigue exigiendo el TW declarado** (`--tw` en la CLI o el
-criterio), porque ningun modulo lee esas dos columnas -- viajan a la memoria
-como datos del expediente y nada mas. Lo que falta no es una conversion sino
-el paso 2 entero: la seccion transversal del receptor, que no es columna de
-Sec. 1.2. Mientras tanto el bloqueo es ruidoso (`CriterioPendienteError`
-sobre 'TW_receptor'), nunca un relleno silencioso.
+TW -- Sec. 1.3 ("TW se calcula, no se mide"): lo resuelve M3, no este modulo
+---------------------------------------------------------------------------
+El TW que consume la Fase 4 sale del procedimiento de Sec. 1.3, implementado
+en `M3_hidraulica.tw_seccion_1_3` (SIS-B-04) y orquestado por
+`servicio._resolver_tw`. Son CUATRO VIAS en orden de precedencia, y la via
+por la que salio queda escrita en `TWDeterminado.via` y en el paso F1.TW de
+la memoria:
+
+    1. declarado a mano (`--tw` / `TW_m` de --datos-externos);
+    2. la columna `cota_TW` del CSV, que es el paso 2 resuelto fuera: se
+       resta la cota de fondo de la salida;
+    3. la columna `Q_receptor_m3s` + el criterio [A] 'seccion_receptor':
+       Manning en la seccion trapecial del receptor (pasos 1 y 2);
+    4. sin caudal documentado, los dos escenarios acotados del paso 3
+       --salida libre y receptor a seccion llena, con 'seccion_receptor'--,
+       y gobierna el mayor.
+
+El criterio 'TW_receptor' (Tablero 3.1) sigue existiendo como ULTIMA puerta
+--`CriterioPendienteError`, nunca un relleno silencioso-- para el punto que
+no puede recorrer ninguna de las cuatro (`servicio.tw_sin_via_de_sec_1_3`).
+M5 no interviene: V4 y V4b reciben el HW que M4 calculo con ese TW.
+
+    ESTE APARTADO SE TITULABA «diferido y declarado» Y DECIA LO CONTRARIO
+    HASTA T-0 (INF-5.1.4): que el procedimiento de tres pasos «no esta
+    implementado en ningun modulo», que «un CSV que traiga 'Q_receptor_m3s'
+    y 'cota_TW' llenos sigue exigiendo el TW declarado» y que «ningun modulo
+    lee esas dos columnas». Fue cierto hasta S20, que escribio
+    `tw_seccion_1_3`; desde entonces las dos columnas son las vias 2 y 3.
+    Lo que sigue sin ser columna de Sec. 1.2 es la SECCION del receptor:
+    es el criterio [A] 'seccion_receptor', una adopcion con ventana y no una
+    medicion, y cuando el TW sale por la via 4 esa adopcion puede decidir
+    el diametro (INFORME §3.2, fila «Tailwater»; lo trata T-2).
 
 V7 SI tiene formula y metodo -- Fase 8, item 3 de la hoja de ruta, y
 `modulos.M8_estructural` la implementa completa ("tuberia vacia, NF en su cota

@@ -1,6 +1,8 @@
-# Hoja de ruta — Diseño de alcantarillas y cabezales · v7
+# Hoja de ruta — Diseño de alcantarillas y cabezales · v8
 **Vía de evitamiento, distrito de La Unión (Piura) — nivel de perfil**
 *Cierres normativos integrados. Pendientes segregados por naturaleza.*
+
+> **Corregido (`INF-5.1.11`, T-0, 2026-11-11).** Este encabezado decía «· v7» dentro de un archivo que se llama `hoja_de_ruta_alcantarillas_v8.md` y al que todo el repositorio —`CLAUDE.md`, el código, las notas de este mismo documento— cita como «la v8». Se corrige el título y **no se reescribe la tabla de versiones de abajo**: sus filas describen lo que integró cada versión hasta la v7 y son historia. Lo que distingue a la v8 no es una fila más sino las **enmiendas fechadas que cada apartado lleva como nota «Corregido (…)»**, cada una con el ID del hallazgo que la motivó; el clon del repositorio tiene un solo commit, de modo que qué cambió exactamente al renombrar el archivo de v7 a v8 no se puede reconstruir desde el historial, y aquí no se inventa. T-0 de la cadena T (`docs/planes_mejora/09_CADENA_PROMPTS_TESIS.md`) añade las de §1.1, §1.2, §2.3, la fila V5 de la Fase 5, §7.B, §9 y los Anexos A y B. Cuatro de ellas son **prospectivas**: declaran lo que la hoja pasa a pedir y qué prompt de la cadena lo implementa, y dicen qué hace hoy el código mientras tanto.
 
 ---
 
@@ -14,6 +16,7 @@
 | v5 | Corrección de la clase de sitio. Control de salida incorporado |
 | v6 | Gobierno centralizado de criterios. Cadena sísmica desagregada |
 | **v7** | **Siete cierres integrados. Catálogo de diámetros normalizado. Tablero de pendientes segregado en tres categorías.** |
+| **v8** | **Este archivo.** La v7 enmendada en sitio por las sesiones de corrección: cada cambio es una nota «Corregido (…)» en el apartado que corrige, con su ID. El encabezado decía «v7» hasta T-0 (`INF-5.1.11`) |
 
 ### Cambios respecto de la v6
 
@@ -57,7 +60,7 @@
 | Materiales, camas, rellenos, ejecución, partidas | **EG-2013, Sección 500** (RD 22-2013-MTC/14) | [N] |
 | Diámetros normalizados y clases de tubería | **ASTM C76 / AASHTO M170** (concreto), **AASHTO M36 / ASTM A760** (TMC), **AASHTO M294 / ASTM F2306** (HDPE) | [C] normas de producto |
 | Control de entrada y salida, HW/D | **HDS-5 (FHWA), 3ª edición, abril 2012** | [C] |
-| Velocidades máximas en materiales flexibles | **WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 «Pipe Abrasion Levels»** (fuente técnica; NO está en `normas/`) | [C] — 4.572 m/s (15 ft/s) para TMC y HDPE, `'v_max_tmc'` / `'v_max_hdpe'`. *Corregido desde* «PPI / FHWA — valores por extraer» (`R48-030`, `MAT-O14`): la fuente que cerró el criterio es WSDOT, no PPI/FHWA, y el valor está extraído |
+| Velocidades máximas en materiales flexibles | **WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4 «Pipe Abrasion Levels»** (fuente técnica; NO está en `normas/` de este repositorio — *desde T-0, 2026-11-11, sí está en el repositorio de normas y en el registro como fuente presente `WSDOT_HM`, con la Tabla 8-4 en las págs. impresas 8-27 y 8-28; la cita con su frase la transcribe T-4*) | [C] — 4.572 m/s (15 ft/s) para TMC y HDPE, `'v_max_tmc'` / `'v_max_hdpe'`. *Corregido desde* «PPI / FHWA — valores por extraer» (`R48-030`, `MAT-O14`): la fuente que cerró el criterio es WSDOT, no PPI/FHWA, y el valor está extraído |
 
 ### 0.2 Regla de consistencia carga–resistencia — RESUELTA
 
@@ -200,13 +203,18 @@ La inconsistencia Clase D/F que motivó la v5 no fue un error de cálculo: fue e
 | Clasificación SUCS de fundación | — | Calicata más cercana | [N] E.050 |
 | Familia | A/B/C | Fase 2 | [N] |
 
+> **Corregido (`INF-3.1.5`, `INF-5.2.5`, T-0, 2026-11-11).** La fila «Caudal de diseño Q» da como origen «Tc.py + IDF con TR de Fase 2». **El programa no calcula el caudal y `legacy/Tc.py` no corre en este repositorio** (importa `matplotlib` en su nivel superior, que no está en `requirements.txt`; `CLAUDE.md`, sección GUI): `Q_m3s` entra **ya calculado** por la columna del CSV, y lo único que el programa comprueba de él es que sea positivo y finito. Desde T-0 el origen que esta hoja declara es otro: **el caudal lo calculará el módulo de hidrología `MH_hidrologia` que crea T-1** de la cadena T —tiempo de concentración (Manual, §3.9 y Tabla 05), intensidad desde la serie de la estación y la relación IDF (§3.7, §3.8.1), coeficiente C (Tabla 08) y método racional (§3.12.2), con el TR de la Fase 2—, **sin quitar la vía actual**: si `Q_m3s` viene lleno, gana, y la memoria lo imprime como caudal declarado por el estudio hidrológico. `legacy/Tc.py` queda como antecedente. **Mientras T-1 no exista**, el único origen real del caudal es el estudio hidrológico externo que llena la columna, y `M1_clasificacion.PERFILES[Familia.A].origen_del_caudal` sigue nombrando a `Tc.py`: lo cambia T-1 con su test. Las entradas de diseño y quién las aporta están en `docs/contrato_entradas.md`.
+
 ### 1.2 Encabezado del CSV
 
 ```
 id,progresiva_km,familia,Q_m3s,area_ha,S_cauce,cota_terreno,cota_rasante,
 cota_subrasante,cbr_subrasante,esviaje_grados,ancho_plataforma,
-cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion
+cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion,
+NF_profundidad_m,cota_fondo_entrada,cota_coronacion_canal
 ```
+
+> **Corregido (`INF-5.1.11`, T-0, 2026-11-11).** Este encabezado listaba **16** columnas y el programa carga **19**: las de `M0_carga.COLUMNAS`, que no es una lista escrita a mano sino los campos de `modelos.PuntoCritico` en su orden. Las tres que faltaban aquí se añadieron al final del tipo, cada una por una corrección ya cerrada, y la hoja no se enteró: **`NF_profundidad_m`** (profundidad del nivel freático en el cruce, dato de sitio `[S]` medido punto a punto; la lee V7), **`cota_fondo_entrada`** (el invert de entrada MEDIDO; vacía, rige el criterio `origen_cota_fondo_entrada`) y **`cota_coronacion_canal`** (la cota del labio del canal que compara `VC1` en la Familia C). Las tres admiten celda vacía; qué celdas pueden venir vacías, y en qué familia, lo fija `M0_carga.VACIOS_ADMITIDOS` y no esta hoja. Un test (`tests/test_t0_gobernanza.py`) compara este bloque con `M0_carga.COLUMNAS`, para que no vuelvan a separarse. El origen de cada columna —quién la mide y con qué— está en `docs/contrato_entradas.md`.
 
 ### 1.3 TW: se calcula, no se mide
 
@@ -381,7 +389,9 @@ $$R = 1-\left(1-\frac{1}{T}\right)^{n} \quad\Longrightarrow\quad T = \frac{1}{1-
 
 **A — Alcantarillas de paso.** Q hidrológico propio. TR 71 o 35 años. Aceptación: V1 + V2 + V4 + V5.
 
-**B — Alcantarillas de alivio.** Q del drenaje longitudinal. TR 35 años. Espaciamiento por Fase 10. Terraplén <1.5 m sin bordillo (geomalla); >1.5 m con bordillo y bajantes a ambos lados, a un solo lado en curvas peraltadas.
+**B — Alcantarillas de alivio.** Q del drenaje longitudinal. TR 35 años. Espaciamiento por Fase 10. Terraplén <1.5 m sin bordillo (geomalla); >1.5 m con bordillo y bajantes a ambos lados, a un solo lado en curvas peraltadas. Aceptación: V1 + V2 + V4 + V5 + espaciamiento de la Fase 10 (ver la nota).
+
+> **Corregido (`INF-5.1.11`, T-0, 2026-11-11).** Esta sección declaraba el conjunto de verificaciones de aceptación de la Familia A («V1 + V2 + V4 + V5») y, con otra redacción, el de la C («No puede alterar la rasante hidráulica ni el borde libre del canal», que el código lee como `VC1`), y **no decía nada de la B**. El código lo refleja tal cual: `M1_clasificacion.PERFILES[Familia.B].verificaciones_aceptacion` vale `None`, con el comentario «Sec. 2.3 no declara conjunto propio». **Desde T-0 la hoja lo declara**, y lo que declara no es una elección nueva sino lo que sus otros apartados ya dicen: (a) una alcantarilla de alivio es el mismo conducto de cruce que una de paso con otro origen de caudal, y la tabla de la Fase 5 no exime a ninguna familia —de ahí **V1 + V2 + V4 + V5**, las que esta sección nombra para la A—; (b) lo que la B tiene de propio es que su posición no la fija un cauce sino la cuneta que descarga, y eso es el **espaciamiento de la Fase 10**, que esta misma frase ya nombraba. **Lo que NO cambia**: el conjunto es la *huella* de lo que esta sección nombra, no un filtro —la Fase 5 sigue aplicándose entera, punto por punto, a las tres familias, y ningún módulo despacha sobre ese campo (`modelos.PerfilFamilia`, `SIS-B-13`)—. **Lo que queda por hacer en el código**: `verificaciones_aceptacion` de la B sigue en `None` porque la verificación de espaciamiento no tiene todavía código de verificación propio (lo que hoy devuelve `M10_espaciamiento.espaciamiento_alivio` cumple siempre, por construcción: `INF-5.1.12`); lo cablea **T-9**, que es el prompt que la convierte en una verificación real, y hasta entonces la discrepancia entre esta frase y el `None` del código queda **declarada aquí** y en la ficha `T0-03` de `docs/decisiones_diferidas.md`.
 
 **C — Cruces de canales y drenes.** Q = caudal de diseño del canal (ANA / Junta). **No puede alterar la rasante hidráulica ni el borde libre del canal.** Requiere autorización de obras en fuente natural / faja marginal. Marco o multicelda. **Bloqueada por falta del dato de ANA** — ver Tablero 3.
 
@@ -777,7 +787,7 @@ $$h_o = \max\left(TW,\ \frac{y_c + D}{2}\right)$$
 | **V3** | Velocidad máxima | **Solo techo admisible.** Concreto **V ≤ 6.0 m/s**; ladrillo con concreto **V ≤ 3.5**; mampostería de piedra **V ≤ 2.0**. El par de la Tabla Nº 10 es un rango de valores MÁXIMOS según calidad del revestimiento, **no** un piso y un techo: el extremo inferior es el máximo admisible del acabado más pobre, y V3 no lo exige como mínimo. El piso universal de autolimpieza es **V2** (0.25 m/s). **TMC y HDPE: `[C]` V ≤ 4.572 m/s** (15 ft/s, WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4; `'v_max_tmc'`, `'v_max_hdpe'`). *Corregido desde* «PPI/FHWA, valor por extraer» (`R48-030`, `MAT-O14`) | [N] Tabla Nº 10, num. 4.1.1.3.6, pág. 76 / [C] WSDOT M 23-03.12 Tabla 8-4 |
 | **V4** | Carga a la entrada HW | **cota de entrada + HW ≤ cota de subrasante − resguardo(CBR)** — *corregido desde* «HW ≤ cota de subrasante − resguardo(CBR)», que comparaba una **carga** con una **cota** (`MAT-O5`); ver la nota de datum en 5.1 | **[N→]** ver 5.1 |
 | **V4b** | Relación HW/D | 1.2 – 1.5 | **[A]** — *corregido desde `[C]`.* El HDS-5 **no fija** HW/D: su num. 2.2.5 d) «Agency Constraints», pág. impresa **2.10** (la v8 citaba la 2.14, que trata de espolones de escombros y seguridad vial) **describe** lo que imponen las agencias viales de EE. UU. — «The allowable HW/D ratio varies throughout the country, but commonly ranges from 1.0 to 1.5» — y en el Perú la agencia es el MTC, que no fija ninguno. Elegir 1.5, que es el extremo **menos restrictivo**, es adopción del proyectista. **Implementada** en `M5.v4b_relacion_hw_d` (S14), una vez cerrada la procedencia del umbral: el HW que se divide entre D es el del control **gobernante**, porque lo que la fuente acota es el embalse que la obra produce. Ref. `NOR-HDS-02`, `MAT-D2`, `SIS-A-02`, `SIS-B-02` |
-| **V5** | Remanso aguas arriba | Embalse dentro del **derecho de vía**, sin afectación a terceros ni a faja marginal | **Tres etiquetas, no una** — *corregido desde* «[N] DG-2018 + Ley 29338» (`EXT-N-04`, EXT-0). (a) **El requisito jurídico es [N]**: el derecho de vía es bien de dominio público (DG-2018 num. 304.07.01) y su ancho mínimo lo fija la **Tabla 304.09** por clase de carretera (16 a 40 m), incrementado en 5.00 m «del borde más alejado de las obras de drenaje» (num. **304.07.02**, págs. impresas 198-199, PDF 199-200; verificado); la faja marginal, Ley 29338. (b) **El método hidráulico** con que se decide si el embalse cabe en esa faja es **[A]** (`remanso_derecho_via`): el 304.07 no enuncia condición hidráulica alguna, y el código ya lo lleva como [A] de expediente (`SIN_FUNDAMENTO` F5.V5) — la contradicción viva era esta hoja. (c) **El ancho del derecho de vía de ESTE corredor es un dato de sitio [S]** (`ancho_derecho_via_m`), que hoy no llega por ninguna vía y detiene V5. En la Familia C V5 no se difiere: se sustituye (`VC1-02`). La DG-2018 está en `normas/` desde el 2026-09-18 y entra al registro en EXT-6 |
+| **V5** | Remanso aguas arriba | Embalse dentro del **derecho de vía**, sin afectación a terceros ni a faja marginal | **Tres etiquetas, no una** — *corregido desde* «[N] DG-2018 + Ley 29338» (`EXT-N-04`, EXT-0). (a) **El requisito jurídico es [N]**: el derecho de vía es bien de dominio público (DG-2018 num. 304.07.01) y su ancho mínimo lo fija la **Tabla 304.09** por clase de carretera (16 a 40 m), incrementado en 5.00 m «del borde más alejado de las obras de drenaje» (num. **304.07.02**, págs. impresas 198-199, PDF 199-200; verificado); la faja marginal, Ley 29338. (b) **El método hidráulico** con que se decide si el embalse cabe en esa faja es **[A]** (`remanso_derecho_via`): el 304.07 no enuncia condición hidráulica alguna, y el código ya lo lleva como [A] de expediente (`SIN_FUNDAMENTO` F5.V5) — la contradicción viva era esta hoja. (c) **El ancho del derecho de vía de ESTE corredor es un dato de sitio [S]** (`ancho_derecho_via_m`), que hoy no llega por ninguna vía y detiene V5. En la Familia C V5 no se difiere: se sustituye (`VC1-02`). La DG-2018 está en `normas/` desde el 2026-09-18 y entra al registro en EXT-6. **Corregido (`INF-0.5`, T-0, 2026-11-11), dos precisiones sobre (b) y (c):** *el método de remanso* sigue siendo el criterio `[A]` `remanso_derecho_via`, **sin valor** —esta hoja no adopta ninguno: ni el nivel horizontal a la cota del HW proyectado sobre el terreno, ni una curva de remanso aguas arriba—, y elegirlo es del proyectista; *el ancho* `ancho_derecho_via_m` se declara aquí como **dato externo del proyecto, por punto** (lo fija la resolución que aprueba el derecho de vía del tramo, sobre el piso de la Tabla 304.09; no lo mide el programa ni es igual en todo el corredor): debe entrar como las demás claves de `--datos-externos`, y **hoy no es una de ellas** (`servicio.CLAVES_EXTERNAS` no lo lista; V5 lo reclama con `DatoFaltanteError` una vez declarado el método). Ningún prompt de la cadena T implementa V5: queda **diferida con este texto**, y T-11 la lista entre lo que sigue requiriendo entrada del proyecto (`docs/contrato_entradas.md`) |
 | **V6** | Material sólido de arrastre | Con palizada: sección única mayor | [N] |
 | **V7** | Flotación del conducto | **γ_DC,min · DC + γ_EV,min · EV ≥ γ_WA · U.** Tubería vacía, NF en su cota más alta. Las cargas que estabilizan (peso propio DC y peso del relleno EV) se **minoran**; la subpresión, que desestabiliza (WA), se **mayora**. Con el mínimo de la fila que corresponde a un **conducto enterrado** en la Tabla 2.4.5.3.1-2 es la forma 0.90·(DC + EV) ≥ 1.00·U. **Corrección** (`MAT-D8`, `NOR-PUE-03`): esa tabla no tiene un γ_EV único, lo desglosa por **tipo de estructura** —«Estructura rígida enterrada» 1.30/0.90, «Alcantarillas termoplásticas» 1.30/0.90, flexibles «Entre otros» 1.95/0.90, y **«Muros y estribos de retención» 1.35/1.00**, que es la del cabezal de §Fase 9—. El 0.90 de V7 es el del conducto y no vale para el cabezal. **Corrige la redacción anterior**, ΣW ≥ FS · U, que era un factor de seguridad global de tensión admisible dentro de un marco LRFD (§0.2) | [N] subpresión 2.4.3.8.2 + [N] los γ (Manual de Puentes, Tablas 2.4.5.3.1-1/-2, pág. impresa 143) + [A] la fila de γp por estructura (`factores_carga_aashto`) |
 | **V8** | Evento extremo (FEN) | A TR mayor: la vía **no colapsa** aunque desborde | [N] verificación, no diseño |
@@ -937,6 +947,8 @@ Nota constructiva [N] (EG-2013 508.08, pág. impresa 985): el equipo pesado no c
 
 > **7.B corre con LA MISMA pendiente que la Fase 4, no con una suya** (`MAT-D9`). «La del cauce» es la regla y sigue siéndolo: es el valor por defecto, `S_cauce` de §1.2. Pero no todos los puntos la usan —la Familia B se dimensiona con el caudal del drenaje longitudinal y la C con el del canal (§2.3), y esos cruces declaran su propia pendiente por la vía de datos externos (`S_conducto`)—, y hasta esta corrección 7.B **no se enteraba**: el HW, las velocidades y el tirante salían de la pendiente declarada, mientras la caída `S·L` y la cota de salida se recalculaban con la del cauce. Dos pendientes en el mismo punto, ninguna marcada como distinta de la otra en el informe. La pendiente viaja ahora dentro del resultado hidráulico (`ResultadoHidraulico.S`) y `M7.compatibilidad_geometrica` la lee de ahí: **ya no es argumento suyo**, de modo que no puede volver a elegirse dos veces.
 
+> **Corregido (`INF-3.2.7`, `INF-5.1.6`, `INF-5.1.18`, T-0, 2026-11-11).** Dos renglones de la lista de arriba dejan de ser prosa y **pasan a criterios declarables**, que crean T-2 y T-6 de la cadena T; aquí no se adelanta ningún valor. **(a) Pendiente del conducto.** «La del cauce (V2 nunca la restringe). La restricción real es constructiva» describía un límite sin nombrarlo. Pasan a ser dos criterios `[A]` de perfil con ventana, **`pendiente_minima_conducto`** y **`pendiente_maxima_conducto`**, con la verificación que los aplica (T-2), y M7 imprime cuál de los tres orígenes de la pendiente adoptada gobernó —la del cauce, la declarada (`S_conducto`) o la mínima/máxima— (T-6). Con ellos la pendiente **nula** deja de ser un dato inválido: el HDS-5 aplica sus procedimientos a barriles horizontales (num. 3.3.4 «Culverts with Horizontal or Adverse Slopes», pág. impresa 3.25 / PDF 107: «they can be reasonably applied to culverts with no slope (horizontal) or an adverse slope»; leído en T-0, sin cita en el registro todavía: la transcribe T-2). **(b) Entrega al receptor.** «Amarradas … a la cota de fondo del receptor» se verifica hoy como `cota_salida ≥ cota_fondo_receptor` (`M7`, G2), sin margen. Pasa a exigir un **desnivel mínimo de entrega**, el criterio `[A]` **`desnivel_minimo_entrega_m`** (T-6): `cota_salida ≥ cota_fondo_receptor + desnivel`. **(c)** y la cota de fondo de ENTRADA, que cuando la columna `cota_fondo_entrada` viene vacía se adopta igual a la del terreno de la plataforma (`origen_cota_fondo_entrada`), pasa a imprimirse como adoptada y a marcar el delta de rasante de 7.A como provisional (T-6). **Hoy el código no tiene ninguno de los tres criterios**: no existe verificación de pendiente mínima ni máxima, `S = 0` se rechaza con `DatoInvalidoError` en M3 y M4, y G2 compara sin desnivel.
+
 **Acoplamiento circular declarado:** rasante → paquete estructural → subrasante → CBR → resguardo → V4 → rasante. Se corta fijando la rasante en 7.A y congelándola.
 
 ---
@@ -975,6 +987,8 @@ Partidas independientes: 505.A, 506.A, 507.A/B, 508.A.
 ---
 
 ## Fase 9 — Cabezal y aletas
+
+> **Corregido (`INF-5.1.15`, `INF-3.4.1`, `INF-3.4.2`, T-0, 2026-11-11).** Esta fase está escrita para **un** cabezal, sin decir de qué punto, y el código la siguió al pie de la letra: la Fase 9 es «del proyecto» —una sola `GeometriaCabezal` para todo el corredor, también para el marco de la Familia C, mientras el nivel freático que entra en sus empujes sí es el de cada punto—, el predimensionamiento es un criterio vacío (`predimensionamiento_cabezal`) y **las aletas no existen**: no hay ni función ni tipo, solo el criterio `angulo_aletas`, también vacío. Desde T-0 esta hoja pide otra cosa, y la implementa T-7 de la cadena T en tres pasos: **el cabezal es POR PUNTO** —cada alcantarilla dimensionada tiene el suyo, con su D o B×H, su HW de diseño, su cota de fondo, su altura de terraplén y su NF— **y tiene aleros** con geometría propia (ángulo, longitud, alturas inicial y final), coherentes con la embocadura adoptada en §4.2: si la embocadura pasa a ser con aleros, k_e y la carta de control de entrada cambian con ella, que es la frase «ambas decisiones deben moverse juntas» de §9.1 llevada a su consecuencia (T-7a); la estabilidad se **ensambla** por punto en un solo marco de verificación —hoy M9 mezcla factores de carga LRFD con factores de seguridad globales de E.050 sin decir si las cargas son factoradas o de servicio (`INF-5.1.5`)—, y **qué marco rige lo decide el dueño del proyecto**, no esta hoja ni el prompt (T-7b); y el armado o la alternativa ciclópea (T-7c). **Hoy** nada de eso está: §9.2 a §9.4 siguen describiendo las piezas —cargas, cadena sísmica, factores, cuantías— que M9 implementa como biblioteca sin ensamblar, y siguen valiendo como tales.
 
 ### 9.1 Condición normativa
 
@@ -1220,7 +1234,7 @@ Los pendientes no son homogéneos. Separarlos por naturaleza permite estimar esf
 | M_w para licuefacción | [A] | **Sin valor.** Tablero 2.2 |
 | Constantes HDS-5 para HDPE | [C] | Carta *Circular Concrete, square edge*. Condicionado a HDPE de interior liso |
 | k_e (coeficiente de pérdida de entrada, §4.3) | [C] | HDS-5, embocadura square edge with headwall. **Cerrado en implementación** — sin numeral peruano |
-| n de Manning para HDPE | [N→] | **Rango (0.010, 0.013)** por analogía. No valor puntual. El código lo **lee de** `constantes_normativas.MANNING["concreto_recto"]`, no lo copia: una analogía que duplica el literal de su origen deja de serlo en cuanto uno de los dos cambie |
+| n de Manning para HDPE | [N→] | **Rango (0.010, 0.013)** por analogía. No valor puntual. El código lo **lee de** `constantes_normativas.MANNING["concreto_tubo_recto"]` (*corregido en T-0, `INF-5.1.11`: decía `["concreto_recto"]`, clave que no existe*), no lo copia: una analogía que duplica el literal de su origen deja de serlo en cuanto uno de los dos cambie |
 | Velocidad máxima en HDPE y TMC | [C] | **4.572 m/s** (15 ft/s), WSDOT Hydraulics Manual M 23-03.12, Tabla 8-4; fuente ausente de `normas/` (`MAT-O14`). *Corregido desde* «Sin valor. Fuente identificada (PPI/FHWA), valores por extraer» (`R48-030`) |
 | Progresión de diámetros | [C] | 0.90 m + 0.15 m; los topes superiores son de catálogo `[A]` (`'D_max_catalogo'`) — §3.2, `DIS-HR-D-MAX` |
 | HW/D máximo (1.5) | [A] | Sensibilidad (1.2, 1.5), **subrango** de la banda 1.0–1.5 que el HDS-5 describe (no prescribe). Corregido desde [C]. Ref. `NOR-HDS-02` |
@@ -1249,7 +1263,7 @@ DIAMETRO_MIN_SELVA_ALTA = 1.22      # m = 48"; NO aplica en costa (4.1.1.3.7 a)
 Y_SOBRE_D_MAX = 0.75                # borde libre >= 25% (4.1.1.3.7 b)
 V_MIN = 0.25                        # m/s (4.1.1.3.6)
 LAUSHEY_K = 3.1                     # d50 = V^2/(3.1*g), metrico (4.1.1.3.7 c)
-G = 9.8                             # m/s2
+G_LAUSHEY = 9.8                     # m/s2; SOLO para Laushey (M6). Ver la nota.
 
 RIESGO_ADMISIBLE = {                # Tabla N 02, num. 3.6
     "quebrada_importante": {"R": 0.30, "n": 25},   # -> TR = 71 anios
@@ -1258,9 +1272,9 @@ RIESGO_ADMISIBLE = {                # Tabla N 02, num. 3.6
 # TR = 1 / (1 - (1-R)**(1/n))       # sin piso normativo
 
 MANNING = {                         # Tabla N 09: (n_min, n_max)
-    "metal_corrugado": (0.021, 0.030),
-    "concreto_recto":  (0.010, 0.013),
-    "madera_duelas":   (0.010, 0.014),
+    "metal_corrugado_dren_aguas_lluvias": (0.021, 0.030),
+    "concreto_tubo_recto":                (0.010, 0.013),
+    "madera_duelas":                      (0.010, 0.014),
     # HDPE no listado -> criterios_adoptados.valor("n_manning_hdpe")
 }
 # n_max -> capacidad y tirante ; n_min -> velocidad y socavacion
@@ -1276,6 +1290,9 @@ V_MAX = {         # Tabla N 10 "Velocidades maximas admisibles" (4.1.1.3.6, pag.
 # minimo de autolimpieza es V2 = 0.25 m/s (misma pagina) y vale para todos.
 
 LONG_MAX_CUNETA = {"seca": 250.0, "muy_lluviosa": 200.0}   # m (4.1.2.1 d)
+
+# ================= constantes_fisicas.py (NO es [N]: ver la nota) ==========
+G = 9.81                            # m/s2; gravedad generica: M4 y todo lo demas
 
 # ================= HDS-5 (FHWA) 3a ed., abril 2012 =========================
 # Apendice A, Tabla A.1, pag. A.8
@@ -1388,6 +1405,8 @@ ZONA_SISMICA_LA_UNION = 4
 Z_E030 = 0.45                       # Tr = 475 anios - NO se usa para el cabezal
 PERFIL_SUELO_PRESUNTO = "S5"        # suelos potencialmente licuables (Art. 14.6)
 ```
+
+> **Corregido (`INF-5.1.11`, `INF-5.1.14`, T-0, 2026-11-11).** Tres cosas de este anexo no coincidían con el código que dice describir, y las tres se corrigen aquí porque quien lea la hoja sin leer el código programaría con ellas. **(1) Las claves de Manning.** El anexo escribía `"metal_corrugado"` y `"concreto_recto"`; ninguna de las dos existe. `constantes_normativas.MANNING` se deriva de la transcripción completa de la Tabla Nº 09 (`TABLA_09_FILAS`) y sus claves nombran la **fila**: `"metal_corrugado_dren_aguas_lluvias"` (0.021, 0.030) —la tabla tiene además `"metal_corrugado_subdren"` (0.017, 0.021), que no es la del TMC de cruce— y `"concreto_tubo_recto"` (0.010, 0.013) —además de `"concreto_afinado"` (0.011, 0.014)—. La clave larga no es adorno: con la corta no se sabía cuál de las dos filas de cada material se estaba leyendo. **(2) La gravedad son DOS constantes y este anexo traía una.** Decía `G = 9.8` a secas. En el código hay `constantes_fisicas.G = 9.81` m/s², la aceleración estándar, que usan M4 (tirante crítico, control de salida, perfil de lámina) y todo lo demás; y `constantes_normativas.G_LAUSHEY = 9.8` m/s², que usa **solo** M6 en la fórmula de d₅₀ de la Fase 6. **(3) Por qué son dos, dicho una sola vez** (era `INF-5.1.14`: «declaradas, pero sin unificar la explicación»): el 9.8 es el valor de g que el propio Manual escribe —en sus num. 3.12.5 y 4.1.1.5.4 b.2.4), ver la nota de la Fase 6—, y la fórmula de Laushey es del Manual: se evalúa con la g del Manual para que el d₅₀ sea el que el Manual daría. El 9.81 es una constante física universal y **no es `[N]`**: por eso vive en `constantes_fisicas.py` y no en este anexo de constantes normativas, donde aparece solo para que no se confunda con la otra. Se mantienen separadas **a propósito** —unificarlas en 9.81 movería el d₅₀ de Laushey un 0.1 % respecto del que la fuente produce; unificarlas en 9.8 metería en HDS-5 una gravedad que HDS-5 no usa— y con nombres distintos, para que una obra no tenga dos valores de «g» conviviendo sin declararlo. La diferencia entre ambas en cualquier resultado es del orden del 0.1 %.
 
 ---
 

@@ -55,8 +55,10 @@ TEMARIOS = (RAIZ / "docs" / "auditorias" / "temario_refutar_95.json",
             RAIZ / "docs" / "auditorias" / "temario_refutar_48.json")
 SEVERIDADES_QUE_SE_CRUZAN = ("ALTA", "CRITICA", "CRÍTICA")
 PATRON_ID_TEMARIO = re.compile(r"R(?:95|48)-\d{3}")
-# El tamaño del tracker que `verificar_sesion.py` fija (303 desde EXT-0).
-FILAS_ESPERADAS = 303
+# El tamaño del tracker que `verificar_sesion.py` fija (303 desde EXT-0; 367
+# desde T-0 de la cadena T, que dio de alta los 64 hallazgos `INF-` del
+# INFORME del 2026-11-10: `tests/test_t0_gobernanza.py` fija cuales son).
+FILAS_ESPERADAS = 367
 
 # (c): item del temario -> fila NOR-* que trata el mismo hallazgo. Cada
 # entrada se leyo contra el enunciado del item y el titulo de la fila.

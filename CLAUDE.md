@@ -7,7 +7,9 @@
   numeral se verifica contra ese archivo. Nunca se inventa un numeral.
 - Si la hoja de ruta y tu conocimiento previo discrepan, gana la hoja de ruta.
 - **La única excepción a lo anterior: la fuente primaria.** Si la hoja de ruta
-  discrepa del documento normativo original —el PDF en `normas/`— y la
+  discrepa del documento normativo original —el PDF en `normas/`, o en el
+  repositorio de normas enlazado por `NORMAS_DIR` (ver «Dónde están los PDF
+  de normas»)— y la
   discrepancia se **verifica contra ese PDF**, gana la fuente primaria. Tu
   conocimiento previo no es fuente primaria: una verificación es citar numeral,
   página impresa y texto literal del documento. Cuando ganes por esta vía tienes
@@ -591,6 +593,63 @@ ErrorProyecto.
   de origen, alcance, par de la suite con su entorno) lo pone quien regenera
   y el test lo LEE del documento para comparar el cuerpo y no la fecha.
 
+## Dónde están los PDF de normas: `NORMAS_DIR`, con caída a `normas/`
+
+**Decisión de T-0 de la cadena T (2026-11-11), opción (a): una variable de
+entorno, no un submódulo ni un enlace simbólico.** Los PDF se buscan en dos
+carpetas, en este orden, y una sola puerta las conoce
+(`src/normativa/fuentes.py`: `directorios_de_normas()`, `ruta_pdf(fuente)`,
+`pdf_en_disco()`):
+
+1. la que nombre la variable **`NORMAS_DIR`**: el clon del repositorio de
+   normas (`Andy-rba30/Normas`). Vale la raíz del clon o su subcarpeta
+   `normas/`, que es donde ese repositorio guarda los PDF;
+2. `normas/` de este repositorio, **mientras exista** (T-12 la retira).
+
+El comando, que es el que usa toda sesión de la cadena T:
+
+    git clone https://github.com/Andy-rba30/Normas.git /ruta/a/Normas   # una vez
+    export NORMAS_DIR=/ruta/a/Normas
+    python3 -m pytest -q -p no:cacheprovider --no-header
+
+Y para leer un PDF con la herramienta de siempre, que resuelve el fragmento
+del nombre en las dos carpetas:
+
+    NORMAS_DIR=/ruta/a/Normas python3 -m src.normativa.extraccion texto hec14 202
+
+- **Por qué una variable.** El repositorio de normas lleva documentos con
+  copyright (AASHTO, ASTM) y T-12 recomendará hacerlo privado. Un submódulo
+  ataría cada clon de la app a una credencial sobre él y versionaría aquí su
+  URL y su commit; un enlace simbólico `normas → …` no convive con la carpeta
+  `normas/` real que todavía no se ha retirado. La variable no versiona nada,
+  vale con el repositorio público o privado, y un despliegue que sólo calcula
+  no tiene que clonar 330 MB: **ningún módulo de cálculo abre un PDF**, sólo
+  quien verifica (los tests `-m pdf`, `python3 -m src.normativa.extraccion`,
+  `verificar_sesion.py`). Ficha T0-01 de `docs/decisiones_diferidas.md`.
+- **`Fuente.archivo_pdf` es un nombre lógico** («normas/hif12026.pdf»), no
+  una ruta: dice cómo se llama el archivo dentro de la carpeta de normas, esté
+  donde esté. Nadie compone `RAIZ / fuente.archivo_pdf`: se llama a
+  `fuentes.ruta_pdf(fuente)`, que devuelve la ruta donde el archivo está, o
+  donde se le esperaba si no está (y entonces quien llama decide si salta).
+- **`normas/` de la app NO gana PDF.** Las dos fuentes que T-0 dio de alta
+  —HEC-14 (`hec14.pdf`, FHWA-NHI-06-086, 3.ª ed., julio de 2006) y el WSDOT
+  Hydraulics Manual (`HydraulicsManual.pdf`, M 23-03.12, abril de 2026)—
+  viven **sólo** en el repositorio de normas y están censadas en
+  `fuentes.SOLO_EN_EL_REPO_NORMAS`. Copiarlas a `normas/` pone en rojo la
+  guardia de PC-23 (`tests/test_ext6_registro_normativo.py`).
+- **Sin `NORMAS_DIR` la suite queda verde y SALTA siete tests**, que es un
+  tercer eje de entorno además de PyMuPDF y Tk: los dos T0 de
+  `test_normativa_pdf` (verifican las dieciséis fuentes que sí están y
+  después saltan nombrando las dos que faltan), los cuatro de
+  `tests/test_t0_gobernanza.py` que abren los dos PDF nuevos, y la mitad de
+  la guardia de PC-23 que mira el repositorio enlazado. `verificar_sesion.py`
+  lo dice en su paso 5 como AVISO. **Una sesión de la cadena T no cierra con
+  esos siete saltados**: enlaza el repositorio y los corre.
+- **Un `NORMAS_DIR` que apunta a una carpeta que no existe no se calla**:
+  `FileNotFoundError`. Quien definió la variable quiso enlazar el repositorio,
+  y caer en silencio a `normas/` le daría una suite verde que no verificó lo
+  que creía.
+
 ## Cierre de tarea: la entrega es `origin/main`
 
 **Una tarea no está terminada hasta que su trabajo está en `origin/main`.**
@@ -611,9 +670,11 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4175**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4235**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
-regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
+regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
+o no por `NORMAS_DIR`: son siete saltos más sin él, descritos en «Dónde
+están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
 
 - `tests/test_MD.py` YA NO SALTA. Hasta EXT-11 tenía el `skipped`
@@ -652,7 +713,10 @@ regresión**. Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 - Y aparte, en bloque, los **33** de `tests/test_normativa_pdf.py` (32 hasta
   T1, que sumó el de la resolución impresa del Manual de Puentes), que se
   saltan sin PyMuPDF —dependencia de TEST, no de producción—. Ése es el eje
-  que S12 documentó.
+  que S12 documentó. Con los marcados `pdf` de otros archivos eran 35 en
+  total hasta T-0, y son **39** desde T-0, que sumó cuatro en
+  `tests/test_t0_gobernanza.py` (la portada, las páginas y la paginación de
+  HEC-14 y del WSDOT Hydraulics Manual).
 
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
@@ -663,7 +727,61 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **El cierre de los hallazgos abiertos (2026-09-22: C10,
+independientes. **T-0 de la cadena T (2026-11-11) sumó CINCUENTA Y SIETE
+tests netos** (58 nuevos y uno retirado de un censo), sobre un árbol que ya
+llevaba TRES que esta tabla no contaba: el orquestador de la cadena midió
+`c2262a2` en «sí · no» y dio 4162 passed, 16 skipped, collected **4178**,
+contra los 4175 que aquí se leían. El clon tiene un solo commit y los tres
+no se pueden atribuir por historial; `c2262a2` es el cuarto bloque del
+rediseño visual de la GUI, que sumó al menos el anclaje de la ficha
+REDISEÑO-3-01 en `test_decisiones_diferidas`, y ninguno de los tres depende
+de PyMuPDF ni de Tk (los 16 saltos de «sí · no» son los mismos). Los 58 de
+T-0: los 53 de `tests/test_t0_gobernanza.py` —la aceptación de la
+gobernanza de la cadena T, escrita primero en rojo con `xfail(strict=True)`
+de módulo (medidos 50 xfailed y 3 XPASS antes de tocar nada; los tres valen
+antes y después) y liberada al corregir: las 64 filas `INF-` del tracker con
+el número del INFORME como ID canónico y cada alias de la cadena llevando a
+una sola fila; la hoja de ruta v8 titulada v8, con el encabezado del CSV de
+`M0_carga.COLUMNAS` y las claves de Manning y las dos gravedades del Anexo B
+comparadas por AST con el código; los docstrings de M1, M4, M5, MD y M11 que
+dejaron de afirmar lo que el código no hace (`_lo_que_afirma` descuenta lo
+que el docstring cita entre «»: la casa no borra la frase que corrige); el
+código de paso `F4.YC` con `F4.YC_RECT` como alias y las dos citas nuevas de
+HDS-5; el contrato de entradas, que nombra cada columna, cada dato externo y
+cada [S]; `NORMAS_DIR` con su caída y su error; HEC-14 y WSDOT como fuente
+presente con la paginación que predice sus páginas; y la huella de la copia
+de la cadena—, el de `test_ext6_registro_normativo` que mira el repositorio
+de normas enlazado (la mitad de PC-23 que T-0 abre) y los cuatro anclajes de
+`test_decisiones_diferidas` para las fichas de la Parte XL (T0-01..04). El
+retirado: `M11_reporte.bloque_umbrales` sale del censo
+`PUBLICAS_SIN_REFERENCIA_EN_TESTS`, porque un test ya la nombra. Ningún
+archivo más sumó ni restó: `test_seccion_rectangular`, `test_M4_control`,
+`test_ext2`, `test_dimensional_piloto` y `test_indice_formulas` cambian el
+literal `F4.YC_RECT` por `F4.YC`; `test_normativa_pdf` y `test_ext6` buscan
+los PDF por `fuentes.ruta_pdf`; `test_vigencia_fuentes` y `test_ext6`
+admiten la tercera fecha de verificación; `test_ext11_cruce_temarios` espera
+367 filas. Cierra INF-5.1.1, INF-5.1.2, INF-5.1.4, INF-5.1.10, INF-5.1.11 e
+INF-5.1.14. La línea base de la Familia C se regeneró por FORMATO,
+clasificado diferencia a diferencia (README de la línea base): las dos
+huellas, «(v7)» → «(v8)», el código de paso y su ancla, las dos
+procedencias de fórmula, las dos citas nuevas en el anexo y los textos de
+`v_max_tmc` / `v_max_hdpe`; los cuatro `cli_*.txt` y los dos CSV de resumen
+no cambian un byte, los tres JSON sólo en `criterios_sha1`, y **ningún
+diámetro se movió**. De las cuatro configuraciones se MIDIÓ UNA, «sí · no»,
+sobre `origin/main` en el commit `tesis(T-0)`, con el repositorio de normas
+enlazado: 4219 passed, 16 skipped, collected 4235 (y sin `NORMAS_DIR`, sobre
+el mismo árbol: 4212 passed, 23 skipped). **Las otras tres NO se pudieron
+medir en el contenedor de T-0 y se dicen como derivadas, no como medidas**:
+no tiene `tkinter` en ninguno de sus cuatro intérpretes (medido:
+`python3`, 3.11, 3.12 y 3.13 dan `ModuleNotFoundError`) y `apt-get install
+python3-tk` devuelve 503 según lo midió la sesión orquestadora de la cadena
+(el espejo de paquetes no responde desde esa red), de modo que las dos
+columnas «Ventana Tk = sí» no se pueden levantar; y las dos
+«PyMuPDF = no» exigen desinstalarlo, que en un contenedor que no puede
+reinstalar con garantía es apagar la mitad de la verificación normativa de
+la sesión. La derivación: de los 58, cuatro llevan la marca `pdf` (39 saltos
+sin PyMuPDF donde eran 35) y ninguno depende de Tk (siguen siendo 13).
+**El cierre de los hallazgos abiertos (2026-09-22: C10,
 C05, C09, C11 y C14, cinco commits `cierre(...)` de `67d5810` a `19bcf5a`)
 sumó SESENTA tests netos**, y sólo uno depende de Tk: los 16 de
 `tests/test_cierre_c10.py` —C5-02 (la fila del ke recuperada por
@@ -1363,7 +1481,8 @@ EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 2367; EXT-6: 2417; EXT-7: 2475; EXT-8: 2515; EXT-9: 2532; EXT-10: 2617;
 EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
-4175. La
+4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
+4178; T-0 de la cadena T: 4235. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1375,10 +1494,17 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4172 (medido en el cierre: 4159 + 13 de documentos generados sellados después) | 3 |
-| sí | no | 4159 (medido en el cierre: 4146 + 13) | 16 |
-| no | sí | 4137 (medido en el cierre: 4124 + 13) | 38 |
-| no | no | 4124 (medido en el cierre: 4111 + 13) | 51 |
+| sí | sí | 4232 (**derivado** en T-0, no medido: el contenedor no tiene tkinter) | 3 |
+| sí | no | 4219 (**MEDIDO** en T-0 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
+| no | sí | 4193 (**derivado**, no medido) | 42 |
+| no | no | 4180 (**derivado**, no medido) | 55 |
+
+Las cuatro filas son **con el repositorio de normas enlazado**
+(`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan siete menos y saltan
+siete más (medido en «sí · no»: 4212 passed, 23 skipped); las dos sin
+PyMuPDF, uno menos y uno más, porque seis de los siete ya iban saltados por
+la marca `pdf`. Hasta T-0 la tabla decía 4172 / 4159 / 4137 / 4124, medidos
+los cuatro en el cierre del 2026-09-22 sobre `19bcf5a`.
 
 **Cómo se consigue la columna «Ventana Tk = sí», que S21 dio por imposible.**
 S21 escribió que el contenedor no tiene `tkinter` en ninguno de sus intérpretes
@@ -1418,7 +1544,8 @@ Este repositorio tiene 234 hallazgos de tres auditorías externas
 (`docs/auditorias/auditoria_matematica.md`, `auditoria_sistema.md`,
 `auditoria_normativa.md`), ya cruzados en
 `docs/auditorias/matriz_cruzada_auditorias.xlsx` (14 clusters por causa raíz, 8
-conflictos resueltos). Ese archivo es el TRACKER: el estado de cada hallazgo se
+conflictos resueltos; desde T-0, cinco clusters más, C15 a C19, para los
+hallazgos `INF-`). Ese archivo es el TRACKER: el estado de cada hallazgo se
 marca ahí, en las columnas Estado / Responsable / Commit. El PLAN es
 `docs/hoja_de_ruta_correcciones_v12.md`. **Desde EXT-0 (2026-09-20) la hoja
 `Hallazgos` tiene 303 filas, no 237**: entraron los 23 hallazgos de la
@@ -1429,7 +1556,19 @@ siete ítems `R95-`/`R48-` de los temarios de refutación que no tenían fila de
 estado, y `C5-02`. Su plan es la cadena `docs/planes_mejora/07_CADENA_PROMPTS_EXT.md`
 (serie de commits `ext(EXT-n)`), y un hallazgo puede volver de «Cerrado» a
 «Reabierto (EXT-0)» cuando llega un argumento nuevo: le pasó a NOR-HDS-05,
-NOR-HID-02 y SIS-B-22.
+NOR-HID-02 y SIS-B-22. **Y desde T-0 (2026-11-11) tiene 367 filas**: entraron
+los 64 hallazgos del `INFORME_evaluacion_app_alcantarillas_vs_PDF.md`
+(repositorio `Cotas-esviaje-alcantarillas`) con prefijo `INF-`, y cinco
+clusters nuevos, C15 a C19, para las causas raíz que las tres auditorías no
+tenían (hidrología, Fase 8, cabezal por punto, protección y espaciamiento,
+criterios vacíos). Su plan es la cadena T,
+`docs/planes_mejora/09_CADENA_PROMPTS_TESIS.md` (serie de commits
+`tesis(T-n)`). **El ID de un `INF-` es el número del INFORME, no el que
+escribe el prompt**: la cadena cita seis hallazgos del §5.1 con un número
+que no es el de su ítem, y la tabla de equivalencias está al principio de
+ese documento y en «Vínculos cruzados» de cada fila (ficha T0-04). Quien
+cierre uno escribe el canónico. Las entradas de diseño que la cadena no
+rellena —y quién debe cada una— están en `docs/contrato_entradas.md`.
 
 **Dónde vive una decisión DIFERIDA**, que no es lo mismo que su estado:
 `docs/decisiones_diferidas.md`. Un objeto que se conserva sin consumidor, un

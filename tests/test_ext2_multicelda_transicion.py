@@ -192,7 +192,7 @@ def test_el_paso_de_manning_imprime_el_Q_con_que_M3_resolvio():
     de la celda; el del punto se lee en el paso del reparto.
     """
     pasos = _disenar_marco_n3().resultado_hidraulico.pasos
-    for fundamento in ("F4.MANNING", "F4.YC_RECT"):
+    for fundamento in ("F4.MANNING", "F4.YC"):
         p = next(p for p in pasos if p.fundamento_id == fundamento)
         Q = next(m for m in p.sustitucion if m.simbolo == "Q")
         assert Q.valor == pytest.approx(Q_CELDA, rel=REL_TRANSPORTE), fundamento

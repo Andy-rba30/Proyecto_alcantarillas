@@ -50,8 +50,13 @@ Excepciones
                              necesita y la fila trajo vacio.
     DatoInvalidoError        la luz esta pero no puede ser (nula o negativa), o
                              la categoria de TR no es una fila de la Tabla N 02.
-    CriterioPendienteError   Familia A sin categoria declarada: el umbral que
-                             separa quebrada importante de menor sigue vacio.
+    CriterioPendienteError   Familia A sin categoria declarada Y con el
+                             criterio 'umbral_area_quebrada_importante_ha'
+                             sin valor. HOY NO OCURRE con el archivo tal como
+                             esta: el criterio vale 100.0 ha y el area decide
+                             la fila. Ocurre si una sesion lo vacia (los tests
+                             lo hacen con `sin_valor`). Este renglon decia «el
+                             umbral ... sigue vacio» hasta T-0 (INF-5.1.2).
     DisenoNoFactibleError    solo desde `exigir_alcance()`: el punto es puente.
 
 Uso
@@ -70,10 +75,14 @@ Uso
     #               GUI. El 2.75 es el canal del ejemplo de Sec. 2.1 que si
     #               es alcantarilla, no una medicion.
     #   categorias  fila de la Tabla N 02 de cada punto de Familia A
-    #               (Sec. 2.2, cauce por cauce). SIN ELLA EL EJEMPLO NO CORRE:
-    #               se detiene con CriterioPendienteError sobre
-    #               'umbral_area_quebrada_importante_ha', como anuncia el
-    #               bloque de excepciones de arriba.
+    #               (Sec. 2.2, cauce por cauce). Si se omite, la fila la
+    #               decide el area de cuenca contra el criterio
+    #               'umbral_area_quebrada_importante_ha' (100 ha): con el
+    #               fixture, A-01 (850 ha) y A-02 (210 ha) saldrian LOS DOS
+    #               como quebrada importante, TR 71. Aqui se declara A-02
+    #               como quebrada menor para que el ejemplo muestre las dos
+    #               filas. (Hasta T-0 este comentario decia que sin ella el
+    #               ejemplo se detenia con CriterioPendienteError; INF-5.1.2.)
     luces = {"A-01": 2.75, "A-02": 1.80, "B-01": 1.20, "C-01": 2.75}
     categorias = {"A-01": CategoriaTR.QUEBRADA_IMPORTANTE,
                   "A-02": CategoriaTR.QUEBRADA_MENOR}
@@ -645,8 +654,10 @@ def periodo_retorno_de(punto: PuntoCritico,
     TR del punto segun su familia (Sec. 2.2 + Sec. 2.3).
 
         Familia A  la hoja de ruta admite 71 o 35 y no dice cual. Se usa la
-                   categoria declarada por el que llama; si no la hay, se lee
-                   el criterio pendiente y el calculo se detiene.
+                   categoria declarada por el que llama; si no la hay, la
+                   decide el area de cuenca contra el criterio [A]
+                   'umbral_area_quebrada_importante_ha' (`_categoria_por_area`).
+                   Solo si ese criterio esta sin valor el calculo se detiene.
         Familia B  fila fija: alcantarilla de alivio = descarga de cunetas ->
                    quebrada menor -> TR 35 anios (Sec. 2.3, explicito).
         Familia C  no tiene TR: su caudal es el de diseno del canal, que fija
@@ -695,10 +706,22 @@ def periodo_retorno_de(punto: PuntoCritico,
 
 def _categoria_por_area(punto: PuntoCritico) -> CategoriaTR:
     """
-    Unica via automatica para la Familia A, y esta bloqueada a proposito: el
-    criterio no tiene valor y `valor()` lanza CriterioPendienteError antes de
-    mirar el area. Si algun dia se le pone umbral, el area de cuenca -- el dato
-    que Sec. 1.1 llama "solo clasificador" -- decide la fila.
+    Unica via automatica para la Familia A: el area de cuenca -- el dato que
+    Sec. 1.1 llama "solo clasificador" -- contra el criterio [A]
+    'umbral_area_quebrada_importante_ha', hoy declarado en 100.0 ha con
+    ventana (50.0, 200.0). Con area >= umbral el cauce es quebrada importante
+    (TR 71); por debajo, quebrada menor (TR 35).
+
+    `valor()` se consulta ANTES de leer el area, de modo que con el criterio
+    vacio lanza CriterioPendienteError y el area no se mira: es la conducta
+    que los tests ejercitan retirando el valor, no la del archivo.
+
+    HASTA T-0 ESTE DOCSTRING DECIA que la via «esta bloqueada a proposito: el
+    criterio no tiene valor» y hablaba de «si algun dia se le pone umbral».
+    Se le puso --el encabezado del modulo ya lo decia-- y aqui no se corrigio
+    (INF-5.1.2). Que el valor adoptado sea DEFENDIBLE es otra pregunta, y esta
+    abierta: su ficha lo justifica con las areas de los dos puntos del
+    fixture de pruebas (INF-5.1.3).
 
     La tolerancia va del lado conservador: en el empate exacto gana quebrada
     importante, que es la fila de TR mayor y por tanto de mayor caudal.
