@@ -47,3 +47,15 @@ texto literal del PDF contradice la premisa de una decisión, NO la apliques: de
 6. **«Sin enrocado»**: nunca como conclusión. La protección de Laushey/envolvente se calcula y se mantiene SIEMPRE; el contraste
    con la Tabla Nº 11 informa si el terreno resistiría, y suprimir la protección queda sujeto a inspección de campo (HDS-5 5.3.2),
    dicho en el paso y en los avisos. (Sin `tipo_terreno_receptor` la conducta de hoy no cambia.)
+
+## T-3 (Familia C) — decidido por el dueño el 2026-11-12 ~16:55 UTC («aplica tu recomendación»)
+1. **Progresión de secciones del marco (`secciones_cajon_normalizadas`)**: se MANTIENE como valor de archivo la que ya usaba el
+   proyecto —(1.20, 0.90), (1.50, 1.20), (2.00, 1.50)—, [A] con su ventana; la de la cadena (anchos 1.00–4.00 paso 0.50, alturas
+   1.00–3.00 paso 0.25) NO se activa porque no contiene 1.20 × 0.90 y deja a C-01 sin dimensionar (no cabe bajo una rasante con poco
+   relleno). Ampliarla (alturas 0.60 y 0.75 m, más anchos) queda diferida a cuando exista la sección real del canal de ANA / la
+   Junta: ficha con símbolo. Deja de ser «provisional»: es la decisión.
+2. **Embocadura del cajón**: queda la de aletas de 30° a 75° que dejó T-3; la coherencia embocadura ↔ ke ↔ carta la cierra T-7a.
+3. **VC2**: aviso, no bloqueo (para bloquear haría falta la tolerancia del proyecto del canal).
+
+Pendientes de respuesta del dueño (T-9, recomendación del orquestador dada, NO aprobada todavía): valor de `seccion_cuneta`
+(0.40 × 1.20 m), borde libre de la cuneta, TR de 35 años (a verificar por el auditor), obras A como extremo de tramo.
