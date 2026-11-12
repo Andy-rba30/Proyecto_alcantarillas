@@ -57,5 +57,15 @@ texto literal del PDF contradice la premisa de una decisión, NO la apliques: de
 2. **Embocadura del cajón**: queda la de aletas de 30° a 75° que dejó T-3; la coherencia embocadura ↔ ke ↔ carta la cierra T-7a.
 3. **VC2**: aviso, no bloqueo (para bloquear haría falta la tolerancia del proyecto del canal).
 
+## T-7a (cabezal: geometría y aleros) — decidido por el dueño el 2026-11-12 ~17:10 UTC («sigue con tu recomendación»)
+Se ACEPTAN, sujetas a lo que diga la auditoría adversarial (si el auditor las refuta con la fuente, gana la fuente):
+1. Longitud de aleros con **cos α** (α medido desde el eje del conducto, convención de la Tabla C.2 de HDS-5), no el «sen α» del prompt.
+2. Pie del cabezal de salida en **la más baja** entre la solera y el fondo del receptor (A-01: −0.69 m de desplante; lado seguro).
+3. Caja receptora **sin aleros** (Lámina 02-A), no los 60° del prompt.
+4. En la integración de T-7a se ABRE LA PUERTA de `ancho_derecho_via_m` como dato externo (opcional, sin valor por defecto, con
+   forma y dominio), para que V5 deje de detener siempre la corrida de expediente y la Fase 9 por punto se alcance de punta a punta
+   (hallazgo T7A-01); sin el dato, V5 sigue bloqueando como hoy.
+5. Orden: no se lanza nada nuevo hasta que T-5 y las correcciones de T-8 entren en main y se mida la cuota.
+
 Pendientes de respuesta del dueño (T-9, recomendación del orquestador dada, NO aprobada todavía): valor de `seccion_cuneta`
 (0.40 × 1.20 m), borde libre de la cuneta, TR de 35 años (a verificar por el auditor), obras A como extremo de tramo.
