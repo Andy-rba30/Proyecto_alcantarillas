@@ -39,3 +39,12 @@ ventana + UNA ventana completa de 5 horas más, y 8 puntos del semanal de Fable.
 | 2026-11-12 04:04 | 10 % | 79 % | 95 % (Fable, último dato) | — | tres agentes Opus: T-6 cierre, T-8, T-5 (≈ 1 punto semanal cada 11 min) |
 | 2026-11-12 04:26 | 14 % | 80 % | 95 % (Fable, último dato) | — | T-6 integrado (`7e74065`): LOTE 1 COMPLETO; T-8 corrigiendo e integrando, T-5 en FASE A (ambos Opus) |
 | 2026-11-12 04:28 | 15 % | 80 % | **97 %** (Fable) | — | MARCA 96–97 % DE FABLE: guardado completo y prompt entregado al dueño. El orquestador deja de programar revisiones periódicas (cada una gasta Fable) |
+
+## Tercera sesión (reanudada 2026-11-12 15:33 UTC; el orquestador vuelve a correr en Fable porque así se abrió la sesión)
+
+Fuente: `list_events(kinds=["rate_limit_event"])` de la sesión nueva. El evento ya NO trae la ventana de 5 horas mientras no hay aviso.
+OJO: `resetsAt` = 1795028400 = **mié 18-nov 19:00 UTC** para las dos ventanas semanales (la sesión anterior anotó «sáb 14 05:00 UTC»).
+
+| Momento (UTC) | 5 horas | Semanal · todos | Semanal · Fable | Nota |
+|---|---|---|---|---|
+| 2026-11-12 15:33 | s/d (sin aviso) | 73 % | **95 %** | arranque: lectura del estado, suite de `df1b23c`, cuatro agentes Opus lanzados (auditoría T-5; FASE A de T-3, T-7a, T-9) |

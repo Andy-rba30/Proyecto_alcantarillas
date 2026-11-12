@@ -15,16 +15,24 @@ Entorno: `pip install -r requirements.txt -r requirements-dev.txt openpyxl`; `ex
 - **T-6: `7e74065`** (geometría; LOTE 1 COMPLETO). Par con NORMAS_DIR: 4850 passed / 16 skipped / 4866 (sin NORMAS_DIR 4832/34). Diámetros movidos: ninguno; L por extremo (+0.9 a +2 %).
 - **T-8: `df1b23c`** (protección de entrada y salida; hecho y auditado con Opus; FALTA la auditoría con Fable). Par con NORMAS_DIR: 4960 passed / 16 skipped / 4976 (sin NORMAS_DIR 4942/34). Diámetros y números de Laushey sin mover. Pendiente del dueño: `regla_espesor_longitud_proteccion_salida` (`manual` hoy / `envolvente_hec14`).
 
-## Lote 1 (ramas en el remoto; NADA en main todavía)
-| Prompt | Rama (commit al guardar) | Estado |
+## En curso (tercera sesión, reanudada 2026-11-12 15:35 UTC) — ramas en el remoto; NADA de esto en main todavía
+| Prompt | Rama | Estado |
 |---|---|---|
-| T-5 estructural | `tesis/T-5` (desde `7fb7926`) | FASE A empezada con **Opus 5.5, esfuerzo extra**; FASE A HECHA con Opus (`ab7fc3a`: 4632/16/4648 sobre base `7fb7926`; material/diámetro adoptados sin mover; `F8.*` corren en Fase 5 también a perfil). Auditor adversarial (Opus) EN CURSO; después correcciones + FASE B tras T-8. Decisiones a confirmar por el dueño: `fabricacion_tmc` por defecto remachada simple; instalación Tipo 3, η 1.05, relleno Cl-95. Residuos: D-load de Clases I/III/IV/V de M 170M «ilegibles» (el auditor lo está comprobando), costura empernada, flexión combinada del HDPE, plancha elegida no vuelve a 7.A/V7 (T5-03). Falta la auditoría con Fable |
+| T-5 estructural | `tesis/T-5` (`ab7fc3a`, base `7fb7926`) | FASE A hecha con Opus (4632/16/4648 sobre su base). La auditoría Opus de la sesión anterior se PERDIÓ con el corte: relanzada (Opus, esfuerzo extra) → informe en `AUDITORIA_T-5_opus.md` de esta carpeta cuando llegue. Después: correcciones + FASE B sobre `origin/main`. Decisiones a confirmar por el dueño: `fabricacion_tmc` remachada simple; instalación Tipo 3, η 1.05, relleno Cl-95. Falta la auditoría con Fable |
+| T-3 Familia C | `tesis/T-3` (desde `df1b23c`) | FASE A lanzada (Opus, esfuerzo extra); encargo: `ENCARGO_COMUN_FASE_A.md` + `PRECISIONES_T-3.md` |
+| T-7a cabezal geometría | `tesis/T-7a` (desde `df1b23c`) | FASE A lanzada (Opus, esfuerzo extra); `PRECISIONES_T-7a.md` |
+| T-9 espaciamiento | `tesis/T-9` (desde `df1b23c`) | FASE A lanzada (Opus, esfuerzo extra); `PRECISIONES_T-9.md` (+ INF-5.1.8 + aceptación de la Familia B) |
 
-Orden de integración (serie; cada uno: rebase sobre origin/main aplastado en UN commit `tesis(T-n): …`, resolver conflictos y
-censos, regenerar los cuatro documentos generados y la línea base, tracker xlsx, decisiones_diferidas, tabla de CLAUDE.md, suite
-verde con NORMAS_DIR, push): ~~T-2~~, ~~T-4~~, ~~T-1~~, ~~T-6~~ (LOTE 1 HECHO). ~~T-8~~ (hecho). Siguiente en entrar: **T-5** (auditoría Opus en curso; después correcciones + FASE B sobre `df1b23c`); T-8 cuando termine y se audite. Ningún diámetro del fixture puede moverse (A-01 y A-02 Ø 0.90).
+Los agentes empujan WIP a su rama tras cada commit: si hay corte, se retoma desde `origin/tesis/T-n` con el mismo encargo
+(«continúa: mira `git log`/`git status` y completa lo que falte»).
 
-## Aviso de cuota (2026-11-12 04:30 UTC)
+Orden de integración (serie; cada uno: rebase sobre origin/main aplastado en UN commit `tesis(T-n): …`, censos, generados, línea
+base, tracker, decisiones_diferidas, tabla de CLAUDE.md, suite verde con NORMAS_DIR, `git push origin HEAD:main`):
+**T-5 → T-3 → T-9 → T-7a** (T-3 antes que T-7a por `embocadura_cajon`; T-5 antes que T-3 por M8/marco). Después T-7b → T-7c (Fable),
+T-10 (Opus) → T-11 (Fable) → T-12 (Opus). Auditorías con Fable pendientes: **T-8** (ya en main: pasada de correcciones), T-5, T-3,
+T-9, T-7a. Ningún diámetro del fixture puede moverse (A-01 y A-02 Ø 0.90).
+
+## Aviso de cuota (histórico, 2026-11-12 04:30 UTC; el dato vigente está en USO.md)
 Semanal de Fable al 97 % (marca del dueño alcanzada: guardado y prompt entregados); semanal de todos los modelos al 80 %; ambos
 reinician el sábado 14 a las 05:00 UTC. El orquestador de la sesión original corre en Fable: una sesión NUEVA debe orquestar con
 Opus 5.5 y reservar Fable (desde el sábado) para las auditorías adversariales pendientes (T-8, T-5 y los que se hagan con Opus) y

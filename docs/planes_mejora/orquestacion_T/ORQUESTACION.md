@@ -7,7 +7,7 @@ Trabajas en español (código, docstrings, commits), como el repositorio.
 
 | Qué | Ruta |
 |---|---|
-| Repo de trabajo (app) | `/home/user/proyecto_alcantarillas` (o el worktree que te indique el orquestador) |
+| Repo de trabajo (app) | el worktree que te indique el orquestador (`/home/user/wt/T-n`); `/home/user/wt/main` es un checkout de `origin/main` SÓLO de consulta y `/home/user/Proyecto_alcantarillas` es del orquestador: no los toques |
 | Cadena T (especificación de los prompts y sus REGLAS COMUNES §2) | `docs/planes_mejora/09_CADENA_PROMPTS_TESIS.md` del repo (copia fiel + NOTA DEL ORQUESTADOR al principio: **léela**, trae la tabla de equivalencias de IDs `INF-` —el ID canónico es el del INFORME, no el que escribe el prompt— y tres hechos que corrigen prompts posteriores) |
 | Contrato de entradas que la cadena NO rellena | `docs/contrato_entradas.md` |
 | INFORME (especificación) | `/home/user/andy-rba30/cotas-esviaje-alcantarillas/INFORME_evaluacion_app_alcantarillas_vs_PDF.md` |
@@ -35,7 +35,7 @@ Trabajas en español (código, docstrings, commits), como el repositorio.
   solo antes de concluir nada; no lo relajes.
 - Leer un PDF: `import fitz; d = fitz.open(ruta); d[i].get_text()` (i = página PDF − 1). Declara siempre página impresa Y página del PDF.
   Si una página es escaneo sin texto, renderízala (`page.get_pixmap(dpi=150).save(png)`) y léela como imagen con tu herramienta Read.
-- No dejes archivos temporales en el repo: usa `/tmp/claude-0/-home-user/8c9a9d01-15e4-5a10-91d4-d894b414664c/scratchpad/`.
+- No dejes archivos temporales en el repo: usa `/tmp/claude-0/-home-user-Proyecto-alcantarillas/003c3043-1fc3-5405-8650-52c813ca2100/scratchpad/`.
 - NUNCA escribas sobre `/dev/null` con `cli.py --json /dev/null` (CLAUDE.md cuenta el incidente).
 
 ## Reglas que el dueño del proyecto declaró NO NEGOCIABLES
@@ -105,7 +105,7 @@ pasará un auditor adversarial sobre tu diff: deja el trabajo auditable.
 
   ```
   Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
-  Claude-Session: https://claude.ai/code/session_011fq2pFDnSitdx4Vq8wp8Zz
+  Claude-Session: https://claude.ai/code/session_015HTdHjggReUnNNncetQU39
   ```
 
 - No escribas el identificador del modelo en ningún otro sitio del repo (ni en docs, ni en el tracker: como «Responsable» usa
@@ -143,3 +143,31 @@ incluido push a `origin/main` y medición del par sobre ese árbol.
 5. SHA del commit (y si quedó en `origin/main` o sólo en la rama).
 6. Paradas obligatorias que encontraste (pregunta + opciones + recomendación), si hubo.
 7. Cualquier cosa del prompt que NO hiciste, dicho sin adornos. No reportes como hecho lo que no verificaste.
+
+## ENMIENDA DE LA SESIÓN DE REANUDACIÓN (2026-11-12, tercera sesión) — gana sobre lo de arriba donde discrepe
+
+- **Base**: `origin/main` = `df1b23c` (T-0, T-2, T-4, T-1, T-6 y T-8 integrados). Par de referencia con `NORMAS_DIR`:
+  **4960 passed / 16 skipped / 4976 collected** (sin `NORMAS_DIR`: 4942 / 34). 102 criterios, 35 sin valor.
+  `docs/decisiones_diferidas.md` tiene ocupadas las Partes hasta la XLV (T-8): usa rótulo provisional y se renumera al integrar.
+- **Rutas**: INFORME y script QGIS en `/home/user/andy-rba30/cotas-esviaje-alcantarillas/`; PDF en
+  `/home/user/andy-rba30/normas/normas/` (`export NORMAS_DIR=/home/user/andy-rba30/normas`). Temporales SÓLO en
+  `/tmp/claude-0/-home-user-Proyecto-alcantarillas/003c3043-1fc3-5405-8650-52c813ca2100/scratchpad/T-n/` (créala).
+- **Guardado de progreso (obligatorio, puede haber cortes por límite de uso en cualquier momento)**: commit intermedio en tu rama
+  cada vez que tengas un bloque coherente y `git push -u origin tesis/T-n` (o `--force-with-lease` tras un rebase) después de CADA
+  commit. Nunca `git stash`. Si te cortan, otro agente retoma desde la rama del remoto: deja el mensaje del commit diciendo qué falta.
+- **FASE B (integrar)** en esta sesión: `git fetch origin main`; rebase de tu rama sobre `origin/main` aplastada en UN commit
+  `tesis(T-n): …`; ritual entero; suite verde; `git push origin HEAD:main` (fast-forward del remoto; si lo rechaza porque `main`
+  avanzó, vuelve a rebasar, re-mide y reintenta; nunca `--force` sobre `main`); después `git fetch origin main`, confirma
+  `git rev-parse origin/main == HEAD` y remide el par sobre ese árbol. Deja también la rama `tesis/T-n` empujada en ese commit.
+- **4 CPU compartidas entre varios agentes**: no lances la suite entera más de lo necesario (itera con los tests afectados);
+  la suite entera puede tardar 8–15 min con la máquina cargada. Los tests de TIEMPO que fallen bajo carga se repiten solos.
+- **Lecciones añadidas por T-6 y T-8** (además de las de arriba): un bloqueo leído FUERA de `servicio._etapa` tumba la corrida
+  (toda excepción de `ErrorProyecto` nueva se captura como `Bloqueo` del punto); un `MetodoNoEvaluableError` lleva el rótulo de
+  SU fuente (`rotulo=`), no el de HDS-5; un verbo de obligación exige una cita con ese carácter (si la fuente dice «is typically»,
+  es `Interpretacion`); los techos de tamaño de la memoria (`tests/test_ext8_*`: KB y páginas por punto) se REMIDEN y se dicen, no
+  se relajan a ojo; la tabla `LO_QUE_ESCRIBIO_CADA_PROMPT` y los censos (criterios 102, `CLAVES_EXTERNAS` 18, marcas `literal-ok`
+  de `dominios.py` 11) se recalculan sobre el árbol fusionado.
+- **Informe final**: además de devolverlo, ESCRÍBELO en
+  `/tmp/claude-0/-home-user-Proyecto-alcantarillas/003c3043-1fc3-5405-8650-52c813ca2100/scratchpad/INFORME_T-n_<fase>.md`
+  y devuelve al orquestador un resumen de MENOS DE 400 PALABRAS con: IDs (entero / en parte / no), tests nuevos y par medido,
+  números movidos («diámetros movidos: ninguno» o la lista), diferidos, SHA y rama, paradas para el dueño.
