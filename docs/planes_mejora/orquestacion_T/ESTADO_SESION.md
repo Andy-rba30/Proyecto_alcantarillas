@@ -28,6 +28,12 @@ con Fable lanzadas para T-8 (`ENCARGO_AUDITORIA_T-8_fable.md` → `AUDITORIA_T-8
 para T-5 (`ENCARGO_AUDITORIA_T-5_fable.md`, en paralelo con la de Opus). Desde ahora: auditorías, T-7b, T-7c y T-11 con Fable; lo
 ya lanzado con Opus sigue con Opus.
 
+**REPARTO VIGENTE (dueño, 2026-11-12 ~16:10 UTC; sustituye al de «Decisiones del dueño» de abajo): «usa Fable en lo importante,
+Opus puede usarse para lo sencillo».** Fable: auditorías adversariales, correcciones de auditoría, integraciones (FASE B) de los
+prompts de cálculo, implementación de T-7b, T-7c, T-11 y de cualquier prompt de cálculo que se lance de aquí en adelante.
+Opus 5.5: lo sencillo (T-12, regeneración de documentos, tareas mecánicas, T-10 si resulta mecánico). Las FASE A de T-3, T-7a y
+T-9 ya lanzadas con Opus NO se interrumpen (su trabajo está guardado en sus ramas); las audita y las corrige/integra Fable.
+
 Los agentes empujan WIP a su rama tras cada commit: si hay corte, se retoma desde `origin/tesis/T-n` con el mismo encargo
 («continúa: mira `git log`/`git status` y completa lo que falte»).
 
