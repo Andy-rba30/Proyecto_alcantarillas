@@ -632,7 +632,7 @@ de `7fb7926`:
   cambian un byte.
 - **Una verificación nueva en A-01 y A-02 (corrida ancha):** `F8.CLASE`, detrás
   de V9, con la D-load requerida por el método indirecto de AASHTO LRFD
-  12.10.4.3 (37.108 y 36.743 N/m/mm) frente a los 50.0 de la Clase II; cumple.
+  12.10.4.3 (37.424 y 37.042 N/m/mm) frente a los 50.0 de la Clase II; cumple.
   En el volcado de texto, la línea «Fase 8  Clase II; relleno … m + paquete
   0.150 m; relleno maximo 3.183 m»; en el JSON, el bloque `estructural` del
   punto (antes `null` a nivel de perfil) con la selección, las alturas, el

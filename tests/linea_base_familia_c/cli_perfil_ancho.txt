@@ -39,7 +39,7 @@ A-01  |  progresiva 0+380  |  Familia A
         umbral del criterio 'factores_carga_aashto' [A]
     [OK] V9   Sec. 3.2 (V9, nuevo en v7)   obtenido 0.900 | admisible 2.700
         umbral del criterio 'D_max_norma_producto' [C]
-    [OK] F8.CLASE AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02) obtenido 37.108 | admisible 50.000
+    [OK] F8.CLASE AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02) obtenido 37.424 | admisible 50.000
         umbral del criterio 'clases_producto_por_relleno' [C]
     [OK] G1   Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1) obtenido 44.200 | admisible 44.092
         umbral del criterio 'resguardo_HW_subrasante' [N->]
@@ -98,7 +98,7 @@ A-02  |  progresiva 1+920  |  Familia A
         umbral del criterio 'factores_carga_aashto' [A]
     [OK] V9   Sec. 3.2 (V9, nuevo en v7)   obtenido 0.900 | admisible 2.700
         umbral del criterio 'D_max_norma_producto' [C]
-    [OK] F8.CLASE AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02) obtenido 36.743 | admisible 50.000
+    [OK] F8.CLASE AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02) obtenido 37.042 | admisible 50.000
         umbral del criterio 'clases_producto_por_relleno' [C]
     [OK] G1   Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1) obtenido 42.000 | admisible 41.372
         umbral del criterio 'resguardo_HW_subrasante' [N->]

@@ -3083,7 +3083,9 @@ def verificar(*, punto: PuntoCritico, material: Material,
     """
     Las doce verificaciones de la Fase 5, en el orden de la tabla salvo
     V10 (la pendiente del conducto, T-2), que la tabla lista al final y aqui
-    se evalua detras de V4b para que V5 y V8 no la tapen. Coincide
+    se evalua detras de V4b para que V5 y V8 no la tapen. Y detras de V9,
+    desde T-5, las de la Fase 8 del conducto (`fase_8_estructural`, codigos
+    F8.*), solo si todo lo anterior cumple. Coincide
     con la firma de `modulos.MD.Verificador`: MD la importa como
     `modulos.M5_verificaciones.verificar` cuando no se le inyecta otra.
 

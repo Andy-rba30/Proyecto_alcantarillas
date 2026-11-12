@@ -105,13 +105,14 @@ def _altura(punto, material, D):
                                         seccion=SeccionCircular(D))
 
 
-def _hl93_a_mano(H_ft, Di_ft, LLDF):
+def _hl93_a_mano(H_ft, Di_ft, LLDF, DE_ft=None):
     """
     3.6.1.2.6b en su unidad: kip, pies y ksf. Implementacion INDEPENDIENTE
     de M8 (no comparte una linea), para contrastar la conversion a SI.
     """
     wt, lt, sw = 20 / 12, 10 / 12, 6.0
-    IM = max(0.0, 33 * (1 - 0.125 * H_ft))
+    DE_ft = H_ft if DE_ft is None else DE_ft
+    IM = max(0.0, 33 * (1 - 0.125 * DE_ft))
     if H_ft > 8.0 and H_ft > Di_ft:       # 3.6.1.2.6a: se puede despreciar
         return (0.0, 0.0, IM)
     mejor = None
@@ -138,6 +139,7 @@ def test_la_carga_viva_sobre_el_concreto_de_A01_es_la_calculada_a_mano():
     g = CP["LL_concreto"]
     cv = M8.carga_viva_enterrada(H=CP["H_relleno"]["concreto_reforzado"]
                                  + CP["e_paquete"], D_i=CP["D"],
+                                 D_E=g["D_E_m"],
                                  conducto=M8.CONDUCTO_TUBO_CONCRETO)
     assert cv.LLDF == pytest.approx(g["LLDF"], rel=REL)
     assert cv.IM_pct == pytest.approx(g["IM_pct"], rel=REL)
@@ -588,7 +590,8 @@ def test_el_marco_da_la_demanda_de_la_losa_y_difiere_el_portico(a01):
     gamma_s = CN.PESO_SUELO_COMPACTADO_KN_M3
     w_EV = d.F_e * (gamma_s * 1.00 + CN.PESO_PAQUETE_ESTRUCTURAL_KN_M3 * 0.15)
     assert d.w_tierra_kPa == pytest.approx(w_EV, rel=REL_CONVERSION)
-    PL_ksf, _, _ = _hl93_a_mano(1.15 / PIE_EN_METROS, 2.00 / PIE_EN_METROS, 1.15)
+    PL_ksf, _, _ = _hl93_a_mano(1.15 / PIE_EN_METROS, 2.00 / PIE_EN_METROS,
+                                1.15, DE_ft=1.00 / PIE_EN_METROS)
     assert d.w_viva_kPa == pytest.approx(PL_ksf * KSF_EN_KPA, rel=REL_CONVERSION)
     w_u = 1.05 * (1.35 * w_EV + 1.75 * d.w_viva_kPa)
     assert d.w_u_kPa == pytest.approx(w_u, rel=REL_CONVERSION)

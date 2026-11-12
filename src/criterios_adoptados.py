@@ -5846,8 +5846,8 @@ CRITERIOS: Dict[str, Criterio] = {
     # escribe a mano.
     #
     # ES BARRIBLE (PF-3): `--barrido corrugacion_y_espesor_tmc=68x13/1.63,
-    # 68x13/2.01,68x13/2.77` corre una vez por plancha. Lo que T-5
-    # consumira de la MISMA fila --area, inercia y radio de giro de la
+    # 68x13/2.01,68x13/2.77` corre una vez por plancha. Lo que la Fase 8
+    # (T-5) consume de la MISMA fila --area, inercia y radio de giro de la
     # seccion-- viaja en la vista de `constantes_normativas`.
     "corrugacion_y_espesor_tmc": Criterio(
         valor="68x13/2.01",
@@ -5866,8 +5866,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "plancha. La norma de producto lista siete espesores "
                       "de plancha y cuatro corrugaciones y deja la eleccion "
                       "al comprador, que la hace con el diseño estructural; "
-                      "ese diseño es de la Fase 8 y a nivel de perfil "
-                      "todavia no existe. Se adopta la corrugacion de 68 por "
+                      "ese diseño es de la Fase 8, que desde T-5 lo hace "
+                      "tambien a nivel de perfil. Se adopta la corrugacion de 68 por "
                       "13 mm, que la norma de producto marca como estandar "
                       "de 300 mm a 2100 mm de diametro, con plancha de "
                       "2.01 mm, que es el cuarto de los siete espesores de "
@@ -5935,13 +5935,14 @@ CRITERIOS: Dict[str, Criterio] = {
                                "1386 mm. El catalogo ofrece esta plancha "
                                "hasta 2100 mm porque el tope es el de la "
                                "corrugacion; lo cierra la Fase 8. "
-                               "El espesor de 2.01 mm no esta verificado "
-                               "estructuralmente para ningun punto: la Fase "
-                               "8 (empuje de anillo, pandeo, costura, "
-                               "factor de flexibilidad, cobertura minima) "
-                               "no esta implementada. A nivel de perfil el "
-                               "espesor solo fija el diametro exterior, "
-                               "donde 1 mm de plancha mueve 2 mm",
+                               "Desde T-5 la Fase 8 verifica la plancha punto "
+                               "a punto (F8.AREA, F8.COSTURA y F8.FF, por "
+                               "AASHTO LRFD 12.7.2) y, si la adoptada no "
+                               "alcanza, prueba las mas gruesas de la misma "
+                               "corrugacion y AVISA: la envolvente geometrica "
+                               "de 7.A y V7 sigue armada con la adoptada, "
+                               "donde 1 mm de plancha mueve 2 mm del "
+                               "diametro exterior (ficha T5-03)",
         resolucion=Libre(
             que_lo_fija="el proyectista, de entre las corrugaciones y los "
                         "espesores que AASHTO M 36 lista; la norma remite "

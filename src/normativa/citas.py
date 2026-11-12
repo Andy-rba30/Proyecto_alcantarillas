@@ -6447,8 +6447,9 @@ AASHTO_TA12_11 = _cita(
           "Unidades inglesas; la conversion a metros (1 in = 0.0254 m "
           "exactos) es del proyecto. La nota al pie de la tabla avisa de que "
           "para 42 y 48 in el espesor de pared se diseñe con la resistencia "
-          "a traccion de largo plazo (900 psi): es de la Fase 8 (T-5), no del "
-          "diametro exterior."),
+          "a traccion de largo plazo (900 psi): es de la Fase 8, no del "
+          "diametro exterior, y `M8.verificar_hdpe` la aplica en esas dos "
+          "filas con las propiedades de largo plazo (T-5)."),
 )
 
 HDS5_TB1 = _cita(

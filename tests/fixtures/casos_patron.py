@@ -1862,28 +1862,30 @@ CP_HDS5_DG1 = {
 #     w_w = 20/12 + 6 + 1.24528*3.6089 + 0.17717 = 12.338 ft; P = 32 kip
 #   H_int-p (camion) = (14 - 10/12)/1.24528 = 10.573 ft > H:
 #     l_w = 10/12 + 1.24528*3.6089 = 5.3274 ft
-#   IM = 33 (1 - 0.125*3.6089) = 18.113 %
-#   P_L = 32 (1.18113)(1.20)/(12.338*5.3274) = 0.69003 ksf = 33.039 kPa
-#   (el tandem, con los ejes interactuando, da 0.6158 ksf: gobierna el camion)
+#   IM con D_E = 0.95 m = 3.1168 ft, la cubierta de TIERRA (sin el paquete,
+#   el IM mayor): 33 (1 - 0.125*3.1168) = 20.143 %
+#   P_L = 32 (1.20143)(1.20)/(12.338*5.3274) = 0.70189 ksf = 33.607 kPa
+#   (el tandem, con los ejes interactuando, da 0.6264 ksf: gobierna el camion)
 #
 # EL CONCRETO (metodo indirecto, 12.10.4.3.1, PDF 1702; VAF Tipo 3 = 1.40,
 # Tabla 12.10.2.1-3, PDF 1691; B_FE Tabla 12.10.4.3.2a-1, PDF 1703; B_FLL
 # Tabla 12.10.4.3.2c-1, PDF 1704):
 #   W_E = 1.40 (3.6089 ft)(120*3.1168 + 140*0.4921) = 2237.8 lb/ft
 #   W_F = 62.4 pi/4 (2.9528)^2 = 427.3 lb/ft
-#   W_L = 690.03 psf * min(l_w, B_c = 3.6089 ft) = 2490.3 lb/ft
+#   W_L = 701.89 psf * min(l_w, B_c = 3.6089 ft) = 2533.1 lb/ft
 #   B_FE = 2.4 - 0.1 (35.433 - 24)/12 = 2.3047 (Tipo 3); B_FLL = 2.2
-#   D = (12/35.433)[(2237.8 + 427.3)/2.3047 + 2490.3/2.2] = 774.97 lb/ft/ft
-#     = 37.106 N/m/mm  <  50.0 de la Clase II: Clase II
+#   D = (12/35.433)[(2237.8 + 427.3)/2.3047 + 2533.1/2.2] = 781.56 lb/ft/ft
+#     = 37.421 N/m/mm  <  50.0 de la Clase II: Clase II
 #
 # EL TMC (12.7.2, PDF 1663-1665; eta 1.05, gamma_EV 1.95, gamma_LL 1.75):
-#   H = 1.185 m = 3.888 ft, LLDF 1.15: P_L = 0.68758 ksf (camion)
+#   H = 1.185 m = 3.888 ft, LLDF 1.15, D_E = 1.035 m: IM = 18.993 %,
+#   P_L = 0.69951 ksf (camion)
 #   P_sp = 120*3.3957 + 140*0.4921 = 476.38 psf; P_w = 62.4*1.5256 = 95.20 psf
 #   P_FD = 1.05 (1.95*476.38 + 95.20) = 1075.37 psf
-#   T_L = 1075.37*2.9528/2 + 1.05*1.75*687.58*2.9528*1/2 = 3452.9 lb/ft
-#       = 50.391 kN/m
+#   T_L = 1075.37*2.9528/2 + 1.05*1.75*699.51*2.9528*1/2 = 3485.3 lb/ft
+#       = 50.864 kN/m
 #   f_cr (12.7.2.4, r = 4.371 mm) = 42.015 ksi > F_y = 33 ksi
-#   A_req = (3452.9/12 lb/in)/(33 000 psi) = 0.0087195 in2/in = 0.22147 mm2/mm
+#   A_req = (3485.3/12 lb/in)/(33 000 psi) = 0.0088012 in2/in = 0.22355 mm2/mm
 #
 # EL HDPE (12.12, perfil minimo de 36 in de la Tabla A12-11, PDF 1746;
 # Cl-95, 75 años; suma por duracion):
@@ -1894,9 +1896,10 @@ CP_HDS5_DG1 = {
 #   S_H,ini = 0.24982 -> F_2 = 0.82617
 #   T_d = 1.05 (1.95*0.73674*493.60 + 110.5)(1.77083) = 1524.0 lb/ft
 #   A_eff,75 = 0.5*0.375*3.0*0.25/0.9 = 0.15625 in2/in -> eps_d = 0.038705
-#   T_l = 1.05*1.75*749.88*1*1*0.82617*1.77083 = 2015.8 lb/ft
-#   A_eff,ini = 0.16875 in2/in -> eps_l = 0.0090498
-#   eps_uc = 0.047755 > phi_T eps_yc = 0.041: NO CUMPLE
+#   P_L (D_E = 0.96 m: IM = 20.008 %) = 0.76277 ksf
+#   T_l = 1.05*1.75*762.77*1*1*0.82617*1.77083 = 2050.5 lb/ft
+#   A_eff,ini = 0.16875 in2/in -> eps_l = 0.0092055
+#   eps_uc = 0.047910 > phi_T eps_yc = 0.041: NO CUMPLE
 #
 # EL CONTRASTE ASD (ASTM A796 num. 8; el expediente de referencia «VARIOS»):
 # D = 0.90 m, DL = 4.5 kPa y LL = 86 kPa (la H20 de 6.2.2.1 a 1 ft):
@@ -1921,14 +1924,14 @@ CP_FASE_8_ESTRUCTURAL = {
     "e_paquete": 0.15,
     "tolerancia_rel": 1e-3,
     # Carga viva sobre el concreto, H = 1.10 m.
-    "LL_concreto": {"LLDF": 1.24528, "IM_pct": 18.113, "l_w_m": 1.62380,
-                    "P_L_kPa": 33.039, "vehiculo": "camion"},
-    "concreto": {"W_E_kN_m": 32.658, "W_F_kN_m": 6.2359, "W_L_kN_m": 36.342,
-                 "B_FE": 2.3047, "B_FLL": 2.2, "D_req_N_m_mm": 37.106,
+    "LL_concreto": {"LLDF": 1.24528, "IM_pct": 20.143, "l_w_m": 1.62380,
+                    "P_L_kPa": 33.607, "vehiculo": "camion", "D_E_m": 0.95},
+    "concreto": {"W_E_kN_m": 32.658, "W_F_kN_m": 6.2359, "W_L_kN_m": 36.968,
+                 "B_FE": 2.3047, "B_FLL": 2.2, "D_req_N_m_mm": 37.421,
                  "clase": "II", "D_clase": 50.0},
-    "tmc": {"P_L_kPa": 32.921, "T_L_kN_m": 50.391, "f_cr_MPa": 289.68,
-            "A_req_mm2_mm": 0.22147, "plancha": "68x13/2.01"},
-    "hdpe": {"eps_d": 0.038705, "eps_l": 0.0090498, "eps_uc": 0.047755,
+    "tmc": {"P_L_kPa": 33.493, "T_L_kN_m": 50.864, "f_cr_MPa": 289.68,
+            "A_req_mm2_mm": 0.22355, "plancha": "68x13/2.01"},
+    "hdpe": {"eps_d": 0.038705, "eps_l": 0.0092055, "eps_uc": 0.047910,
              "eps_lim": 0.041, "cumple_empuje": False},
     "varios_asd": {"S_m": 0.90, "P_kPa": 90.5, "T_kN_m": 40.725,
                    "A_fy230": 0.35413, "A_fy225": 0.36200,

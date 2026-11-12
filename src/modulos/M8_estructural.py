@@ -28,14 +28,16 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
 
     1-2  Seleccionar clase/calibre segun la altura real de relleno y
          verificar que esa altura cae en su rango admisible.
-         `seleccionar_clase_calibre()` -- se detiene con
-         CriterioPendienteError: las clases D-load del concreto (AASHTO
-         M 170M-04 Tablas 1 a 4; la Tabla 5 esta transcrita por imagen solo
-         en diametros y paredes) no estan transcritas, y para el TMC no hay tabla sino
-         el procedimiento de ASTM A796/A796M (num. 7 a 11), que no esta
-         implementado -- sus Tablas 3 a 17 de propiedades seccionales SI
-         estan transcritas en el registro (N1) como insumo --. Ver el
-         criterio 'clases_producto_por_relleno' en criterios_adoptados.py.
+         DESDE T-5 SE CALCULA (INF-3.3.5), con el ítem 5: ver el bloque
+         «--- T-5 ---» al final del modulo. La clase del concreto sale del
+         metodo indirecto de AASHTO LRFD 12.10.4.3 contra la D-load de la
+         clase (de M 170M solo la Clase II es legible: 'clases_producto_por_
+         relleno'); el calibre del TMC, de AASHTO LRFD 12.7.2 con la
+         progresion de plancha; el perfil del HDPE, de 12.12 con el perfil
+         minimo de la Tabla A12-11. El «rango admisible» es el RELLENO
+         MAXIMO de lo elegido, que cada resultado imprime.
+         `verificaciones_estructurales()` (Fase 5, codigos F8.*) y
+         `seleccionar_clase_calibre()` (etapa de la Fase 8).
 
     3    Flotacion (V7), obligatoria con NF a 1.4 m.
          `empuje_flotacion_kn_m()`, `peso_relleno_kn_m()` y
@@ -65,11 +67,13 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
     5    Rigidez de anillo, pandeo y resistencia de costura por AASHTO LRFD
          Sec. 12 (que el Manual de Puentes NO incorpora), o clase D-load
          con factor de cama.
-         `verificacion_diferida_estructural()` -- NO se calcula, por
-         decision EXPRESA de la hoja de ruta ("Diferir al expediente").
-         Devuelve el texto que declara el diferimiento con su fundamento,
-         para que M11 lo imprima; no es un vacio a rellenar, es un alcance
-         que la propia Fase 8 excluye del script.
+         DESDE T-5 SE CALCULA, contra la letra de la v8 («Diferir al
+         expediente», que su nota «Corregido (INF-3.3.5, T-5)» enmienda):
+         sin el, una corrida de perfil aceptaba tubos que no existen (ficha
+         T4-08). `verificacion_diferida_estructural()` devuelve hoy solo lo
+         que sigue sin verificarse, con su razon (el diseño del portico del
+         marco, la flexion combinada del HDPE, las clases ilegibles de
+         M 170M, la costura empernada...).
 
 Por que V7 ya no usa un factor de seguridad global
 ----------------------------------------------------
@@ -149,7 +153,7 @@ en un punto cuyo NF todavia no ha medido el estudio geotecnico.
 
 Excepciones
 -----------
-    CriterioPendienteError   'clases_producto_por_relleno' (items 1-2);
+    CriterioPendienteError   los criterios de la Fase 8 si se vacian (T-5);
                              'espesor_pared_conducto' (el D exterior de U y
                              de EV, via Seccion.ancho_exterior);
                              'peso_especifico_relleno_kn_m3' (V7, via
@@ -159,7 +163,16 @@ Excepciones
     DatoInvalidoError        la eleccion de 'factores_carga_aashto' no cubre
                              el material del punto, nombra una fila que no
                              esta en la Tabla 2.4.5.3.1-2, o nombra una cuyo
-                             extremo la fuente declara N/A.
+                             extremo la fuente declara N/A; un paquete
+                             estructural negativo (rasante bajo subrasante).
+    DatoFaltanteError        (T-5) la D-load de una clase de M 170M que el
+                             ejemplar no deja leer; la resistencia de una
+                             costura empernada; el perfil de un HDPE que la
+                             Tabla A12-11 no trae.
+    MetodoNoEvaluableError   (T-5) relleno fuera del dominio de la carga viva
+                             de AASHTO LRFD 3.6.1.2.6 (menos de 2.0 ft sobre
+                             concreto o marco, 1.0 ft o menos sobre un
+                             flexible).
 
 Uso
 ---
@@ -167,7 +180,9 @@ Uso
                                         verificacion_diferida_estructural)
 
     cama = cama_apoyo_relleno_lateral(material)          # informativo
-    diferido = verificacion_diferida_estructural()       # tupla de avisos
+    diferido = verificacion_diferida_estructural()       # lo que no se verifica
+    r = verificar_conducto(punto=p, material=m, seccion=s,
+                           altura_relleno=h)             # Fase 8 (T-5)
 """
 
 from __future__ import annotations
@@ -786,6 +801,7 @@ def _presion_de_un_vehiculo(H: float, D_i: float, LLDF: float, IM: float,
 
 
 def carga_viva_enterrada(*, H: float, D_i: float, conducto: str,
+                         D_E: Optional[float] = None,
                          id_punto=None) -> CargaVivaEnterrada:
     """
     Presion vertical de la carga viva HL-93 sobre el conducto, kPa (AASHTO
@@ -793,7 +809,10 @@ def carga_viva_enterrada(*, H: float, D_i: float, conducto: str,
     enterrados del Manual de Puentes 2.4.3.2.2.2/.3/.5/.6 y 2.4.3.3.2).
 
     `H` es la profundidad del relleno sobre el conducto hasta la RASANTE
-    --relleno mas paquete estructural--, `D_i` el diametro interior o la luz
+    --relleno mas paquete estructural--, que es la que distribuye la carga;
+    `D_E`, la «cubierta de tierra» del IM, es el relleno SIN el paquete
+    (subrasante menos clave): leerla asi da el IM mayor, que es el lado
+    conservador (por defecto, `H`). `D_i` es el diametro interior o la luz
     libre. Trafico PARALELO al vano y un carril (3.6.1.2.6a): el de casi toda
     alcantarilla vial (C3.6.1.2.6b). Gobierna el mayor de camion y tandem.
 
@@ -806,6 +825,7 @@ def carga_viva_enterrada(*, H: float, D_i: float, conducto: str,
     """
     H = _finito_positivo("H_relleno_total", H, id_punto)
     D_i = _finito_positivo("D_interior", D_i, id_punto)
+    D_E = H if D_E is None else _finito_positivo("D_E", D_E, id_punto)
     if conducto == CONDUCTO_FLEXIBLE:
         minimo = _CN.RELLENO_MIN_METODO_NO_CONCRETO_M
         fuera = not H > minimo + TOL_UMBRAL_NORMATIVO
@@ -825,7 +845,7 @@ def carga_viva_enterrada(*, H: float, D_i: float, conducto: str,
                     f"{regla} {minimo:.4f} m para este conducto"),
             id_punto=id_punto, rotulo=MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL)
     LLDF = _lldf(D_i, conducto)
-    IM = incremento_dinamico_enterrado(H)
+    IM = incremento_dinamico_enterrado(D_E)
     m = _CN.PRESENCIA_MULTIPLE_UN_CARRIL
     despreciada = H > _CN.RELLENO_DESPRECIA_CARGA_VIVA_M and H > D_i
     if despreciada:
@@ -850,8 +870,10 @@ def carga_viva_enterrada(*, H: float, D_i: float, conducto: str,
                  + (" (tubo de concreto: interpolado por diametro)"
                     if conducto == CONDUCTO_TUBO_CONCRETO else ""),
                  cifras=CIFRAS_FACTOR),
-        Magnitud("IM", IM, "%", "33 (1 - 0.125 D_E), D_E en pies (Manual de "
-                 "Puentes 2.4.3.3.2)", cifras=CIFRAS_MAGNITUD),
+        Magnitud("IM", IM, "%", f"33 (1 - 0.125 D_E), D_E en pies (Manual de "
+                 f"Puentes 2.4.3.3.2), con D_E = {D_E:.3f} m de cubierta de "
+                 "tierra: el relleno sin el paquete estructural, que da el IM "
+                 "mayor", cifras=CIFRAS_MAGNITUD),
         Magnitud("m", m, "", "un carril cargado, Tabla 2.4.3.2.2.6-1 del "
                  "Manual de Puentes", cifras=CIFRAS_FACTOR),
         Magnitud("P", P, "kN", f"ruedas que interactuan del {vehiculo} HL-93 "
@@ -1092,7 +1114,7 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
     W_F = GAMMA_AGUA_KN_M3 * seccion.area_llena
 
     def _demanda(H: float):
-        cv = carga_viva_enterrada(H=H + e_paq, D_i=D,
+        cv = carga_viva_enterrada(H=H + e_paq, D_i=D, D_E=H,
                                   conducto=CONDUCTO_TUBO_CONCRETO,
                                   id_punto=punto.id)
         fila = (_CN.BFLL_RELLENO_MENOR_2_PIES
@@ -1373,7 +1395,7 @@ def verificar_tmc(*, punto: PuntoCritico, material: Material,
     nf = punto.NF_profundidad_m
 
     def _empuje(H_rel: float, t_env: float):
-        cv = carga_viva_enterrada(H=H_rel + e_paq, D_i=D,
+        cv = carga_viva_enterrada(H=H_rel + e_paq, D_i=D, D_E=H_rel,
                                   conducto=CONDUCTO_FLEXIBLE, id_punto=punto.id)
         P_sp = gamma_s * H_rel + gamma_p * e_paq
         H_w = D / 2 + t_env       # agua hasta la clave: la hipotesis de V7
@@ -1739,7 +1761,8 @@ def verificar_hdpe(*, punto: PuntoCritico, material: Material,
 
     def _estado(H: float) -> dict:
         H_total = H + e_paq
-        cv = carga_viva_enterrada(H=H_total, D_i=D, conducto=CONDUCTO_FLEXIBLE,
+        cv = carga_viva_enterrada(H=H_total, D_i=D, D_E=H,
+                                  conducto=CONDUCTO_FLEXIBLE,
                                   id_punto=punto.id)
         P_sp = gamma_s * (H + 0.11 * D_o) + gamma_p * e_paq  # literal-ok: el 0.11 D_o de la Eq. 12.12.3.7-3
         H_w = D_o / 2
@@ -1989,7 +2012,8 @@ def demanda_marco(*, punto: PuntoCritico, material: Material,
     F_e = min(1 + 0.20 * H_total / B_c,                    # literal-ok: el 0.20 de la Eq. 12.11.2.2.1-2
               _CN.FE_CAJON_MAX_COMPACTADO)
     w_EV = F_e * (gamma_s * H_rel + gamma_p * e_paq)
-    cv = carga_viva_enterrada(H=H_total, D_i=seccion.B, conducto=CONDUCTO_CAJON,
+    cv = carga_viva_enterrada(H=H_total, D_i=seccion.B, D_E=H_rel,
+                              conducto=CONDUCTO_CAJON,
                               id_punto=punto.id)
     eta = _eta()
     gamma_EV, fila_EV = _gamma_ev_max(material)

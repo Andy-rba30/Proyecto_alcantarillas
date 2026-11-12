@@ -4078,9 +4078,9 @@ NUMERAL_PH_MIN_TMC = ("EG-2013, Subseccion 507.10 'Aguas y Suelos agresivos', "
 #   espesor_m           espesor especificado de la plancha, en METROS.
 #   A_mm2_mm, I_mm4_mm, r_mm   area, inercia y radio de giro de la seccion
 #                       por unidad de longitud, en las unidades de la tabla.
-#                       NO LOS CONSUME NINGUN MODULO HOY: son el insumo del
-#                       procedimiento de A796 (num. 7 a 10) que implementa
-#                       T-5, y viajan aqui para que no los vuelva a leer.
+#                       Desde T-5 los consume la Fase 8 del TMC
+#                       (`M8.verificar_tmc`, AASHTO LRFD 12.7.2), y viajan
+#                       aqui para que no los vuelva a leer.
 #   tabla               de que tabla del registro sale la fila.
 #
 # EL ESPESOR DE 1.02 mm NO ENTRA: la nota A de las Tablas 3 y 5 lo reserva al

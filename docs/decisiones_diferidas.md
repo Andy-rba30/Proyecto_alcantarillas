@@ -3983,7 +3983,7 @@ registran lo que quedó **decidido con argumento** o **abierto con nombre**.
   Fase 8 levanta `DatoFaltanteError` sobre `'clases_producto_por_relleno'`
   nombrando lo que falta. Subir de diámetro no lo resuelve (W_E crece con B_c y
   S_i con D). En el expediente de referencia no se alcanza: A-01 y A-02 piden
-  37.1 y 36.7 N/m/mm con la instalación Tipo 3, y su relleno máximo con la
+  37.4 y 37.0 N/m/mm con la instalación Tipo 3, y su relleno máximo con la
   Clase II es 3.18 m.
 - **Qué haría falta:** un ejemplar legible de M 170M (la vigente) o de ASTM C76M,
   y añadir sus filas al dict del criterio; no hay que tocar código.
@@ -4057,7 +4057,7 @@ registran lo que quedó **decidido con argumento** o **abierto con nombre**.
   de Poisson del suelo (0.40) **no tiene fuente** en el repositorio: la norma lo
   remite a la literatura geotécnica. Medido: con el relleno por defecto
   (arcilla al 95 %, la columna más desfavorable que el EG-2013 508.07 admite) el
-  HDPE de 0.90 m de A-01 **no cumple** el empuje (ε = 0.0478 > 0.041) ni la
+  HDPE de 0.90 m de A-01 **no cumple** el empuje (ε = 0.0479 > 0.041) ni la
   deflexión (6.3 % > 5 %); con arena al 95 % mejora. No mueve la línea base: el
   concreto cierra antes.
 - **Qué haría falta:** la ficha del perfil del fabricante (A, I, c y la geometría
@@ -4072,9 +4072,15 @@ registran lo que quedó **decidido con argumento** o **abierto con nombre**.
 - **Por qué:** el HL-93 (32.0 kip el eje del camión, 25.0 kip el tándem), la
   presencia múltiple de un carril (1.20) y el IM de componentes enterrados
   (33 (1 − 0.125 D_E) %, D_E en pies) son del Manual de Puentes [N]; la
-  distribución por el relleno no la trae el Manual y se toma de AASHTO LRFD
-  3.6.1.2.6 [C], con tráfico paralelo al vano y un carril (el de casi toda
-  alcantarilla vial, C3.6.1.2.6b). Fuera de su dominio (menos de 2.0 ft sobre
+  distribución por el relleno no la trae el Manual —su 2.4.3.2.2 pasa del área
+  de contacto de los neumáticos (3.6.1.2.5 AASHTO) a la presencia múltiple, y
+  ninguna sección del ejemplar remite a 3.6.1.2.6: buscado en el texto
+  extraído— y se toma de AASHTO LRFD 3.6.1.2.6 [C], con tráfico paralelo al
+  vano y un carril (el de casi toda
+  alcantarilla vial, C3.6.1.2.6b). La «cubierta de tierra» D_E del IM se toma
+  como el relleno SIN el paquete estructural (subrasante menos clave), que da
+  el IM mayor; la profundidad que distribuye la carga sí llega a la rasante.
+  Fuera de su dominio (menos de 2.0 ft sobre
   concreto o marco, 1.0 ft o menos sobre un flexible) la Fase 8 se detiene con
   `MetodoNoEvaluableError` (rótulo `MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL`),
   diferido a nivel de perfil como V1/V2. W_L = P_L min(l_w, B_c) sobre el tubo

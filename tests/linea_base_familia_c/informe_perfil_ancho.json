@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "ebbc934695b23c0065a62603b2a1f2e4da0feb33",
+    "criterios_sha1": "fc388f11c1557de77c63e794cf1252e8a16868d4",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -332,7 +332,7 @@
             "que": "Carga viva HL-93 sobre el conducto (gobierna el camion)",
             "resultado": {
               "simbolo": "P_L",
-              "valor": 33.038867401126474,
+              "valor": 33.606708738549926,
               "unidad": "kPa"
             }
           },
@@ -507,7 +507,7 @@
           "estado": "cumple",
           "cumple": true,
           "veredicto": "cumple",
-          "valor_obtenido": 37.108354880956476,
+          "valor_obtenido": 37.42382229063617,
           "valor_admisible": 50.0,
           "criterio_aplicado": "clases_producto_por_relleno"
         },
@@ -751,7 +751,7 @@
             "que": "Carga viva HL-93 sobre el conducto (gobierna el camion)",
             "resultado": {
               "simbolo": "P_L",
-              "valor": 31.121233861478345,
+              "valor": 31.659198709627155,
               "unidad": "kPa"
             }
           },
@@ -926,7 +926,7 @@
           "estado": "cumple",
           "cumple": true,
           "veredicto": "cumple",
-          "valor_obtenido": 36.742767546737795,
+          "valor_obtenido": 37.04163690682047,
           "valor_admisible": 50.0,
           "criterio_aplicado": "clases_producto_por_relleno"
         },
