@@ -4029,9 +4029,13 @@ registran lo que quedó **decidido con argumento** o **abierto con nombre**.
   clave que 12.7.2.2 toma de 12.12.3.4 se lee como la de campo libre a la cota
   de la clave, sin el K_γE del termoplástico (C12.7.2.2; es la misma que A796
   núm. 9.1 mayora con 1.95). Con los datos de «VARIOS» (D 0.90 m, DL 4.5 kPa,
-  LL 86 kPa H-20) el contraste da C = 40.725 kN/m y A = 0.354 mm²/mm con
-  f_y = 230 MPa, que es el redondeo del expediente; con el 225 de A796-13,
-  0.362 (+2.2 %). Y la H-20 de A796 6.2.2.1 (86.2 kPa a 1 ft, con impacto) **no
+  LL 86 kPa H-20; **según el INFORME §1.1**, las páginas del PDF original no se
+  verificaron en esta sesión) el contraste da C = 40.725 kN/m y A = 0.354 mm²/mm
+  con f_y = 230 MPa, que es el redondeo del expediente; con el 225 de A796-13,
+  0.362 (+2.2 %). Su D/r = 207 es el de la plancha de 1.63 mm y el pandeo no
+  gobierna. Su FF de 0.109 mm/N **no se reproduce** con las inercias de la
+  Tabla 5 de A796 (0.131 con 1.63 mm, 0.103 con 2.01): usa otra tabla de
+  propiedades; los dos lados quedan bajo el límite de 0.245. Y la H-20 de A796 6.2.2.1 (86.2 kPa a 1 ft, con impacto) **no
   se compara** con el HL-93: a 1 ft el método de 3.6.1.2.6 ni siquiera aplica a
   un flexible, y apenas por encima (0.31 m) el HL-93 da más del doble.
 - **Qué haría falta:** nada.

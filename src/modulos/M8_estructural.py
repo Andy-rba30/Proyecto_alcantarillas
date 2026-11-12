@@ -1847,6 +1847,10 @@ def verificar_hdpe(*, punto: PuntoCritico, material: Material,
                  f"{lp} años", cifras=CIFRAS_FACTOR),
         Magnitud("F_2", est["F_2_ini"], "", "Eq. 12.12.3.5-8 con el modulo "
                  "inicial", cifras=CIFRAS_FACTOR),
+        Magnitud("C_L", est["C_L"], "", "l_w/D_o <= 1 (Eq. 12.12.3.5-5)",
+                 cifras=CIFRAS_FACTOR),
+        Magnitud("F_1", est["F_1"], "", "0.75 D_o/l_w >= F_min (Eqs. "
+                 "12.12.3.5-6 y -7)", cifras=CIFRAS_FACTOR),
     )
     v_emp = _verificacion_f8(paso("F8.HDPE_EMPUJE", **_campos_f8(
             codigo=CODIGO_EMPUJE,

@@ -399,6 +399,46 @@ def test_la_plancha_adoptada_falla_el_factor_de_flexibilidad_desde_1_39_m():
         43 * 25.4 / (KIP_EN_KN * 1000), rel=REL_CONVERSION)
 
 
+def test_con_relleno_somero_y_luz_grande_F1_pasa_de_1_y_el_empuje_lo_lleva(a01):
+    """
+    F_1 = 0.75 S/l_w >= F_min (Eq. 12.7.2.2-3): con 1.50 m de luz y poco
+    relleno el area cargada es corta y F_1 supera 1. El empuje del paso es
+    exactamente el de la Eq. 12.7.2.2-1 con sus propias magnitudes.
+    """
+    mat = _material(TipoMaterial.TMC)
+    H = _altura(a01, mat, 1.50)
+    r = M8.verificar_tmc(punto=a01, material=mat,
+                         seccion=SeccionCircular(1.50), altura_relleno=H)
+    (p_empuje,) = [p for p in r.pasos if p.codigo == "F8.T"]
+    m = {x.simbolo: x.valor for x in p_empuje.sustitucion}
+    (p_ll,) = [p for p in r.pasos if p.codigo == "F8.LL"]
+    l_w = {x.simbolo: x.valor for x in p_ll.sustitucion}["l_w"]
+    F_1 = max(0.75 * 1.50 / l_w, max(CN.F_MIN_NUMERADOR_M / 1.50, 1.0))
+    assert F_1 > 1.0
+    assert m["F_1"] == pytest.approx(F_1, rel=REL_CONVERSION)
+    assert m["C_L"] == pytest.approx(min(l_w, 1.50), rel=REL_CONVERSION)
+    P_FD = m["eta"] * (m["gamma_EV"] * m["P_sp"] + m["gamma_WA"] * m["P_w"])
+    P_FL = m["eta"] * m["gamma_LL"] * m["P_L"]
+    assert p_empuje.resultado.valor == pytest.approx(
+        P_FD * 1.50 / 2 + P_FL * m["C_L"] * m["F_1"] / 2, rel=REL_CONVERSION)
+
+
+def test_el_relleno_maximo_es_el_PRIMER_cruce_y_no_cualquiera():
+    """
+    La carga viva decrece con la profundidad y se desprecia de golpe a 8 ft:
+    el margen puede bajar de cero, volver a subir y bajar otra vez. El
+    relleno maximo es el primer cruce; un Brent sobre el intervalo entero
+    podria devolver el segundo, que es el lado inseguro.
+    """
+    def margen_con_hundimiento(H):
+        return 1.0 if H < 1.0 else (-1.0 if H < 2.0 else (1.0 if H < 5.0 else 5.0 - H))
+    H_max = M8._relleno_maximo(margen_con_hundimiento, 0.5, 0.90)
+    assert H_max == pytest.approx(1.0, abs=ABS_ALTURA_M)
+    assert M8._relleno_maximo(lambda H: -1.0, 0.5, 0.90) is None
+    assert M8._relleno_maximo(lambda H: 3.0 - H, 0.5, 0.90) == pytest.approx(
+        3.0, abs=ABS_ALTURA_M)
+
+
 def test_la_costura_empernada_no_tiene_tabla_y_se_detiene_pidiendola(
         del_expediente, a01):
     mat = _material(TipoMaterial.TMC)
@@ -451,13 +491,43 @@ def test_bajo_un_terraplen_alto_la_remachada_simple_no_desarrolla_el_empuje(
     assert all(v.cumple for v in r.verificaciones)
 
 
+def test_por_encima_de_la_tabla_507_01_el_factor_de_flexibilidad_sube_la_plancha(
+        a01):
+    """
+    1.95 m: la Tabla 507-01 del EG-2013 ya no tabula (termina en 1.80 m) y
+    el piso es la plancha adoptada (2.01 mm). Las de 2.01, 2.77 y 3.51 mm no
+    cumplen el FF de 0.2455 mm/N; la primera que cumple es la de 4.27 (con
+    costura remachada doble, para que la costura no decida antes).
+    """
+    mat = _material(TipoMaterial.TMC)
+    assert M8.espesor_minimo_tmc_eg2013(1.95) is None
+    with declarados({"fabricacion_tmc": "anular_remachada_doble"}):
+        r = M8.verificar_tmc(punto=a01, material=mat,
+                             seccion=SeccionCircular(1.95),
+                             altura_relleno=1.50)
+    assert r.seleccion == "68x13/4.27"
+    limite = CN.FF_LIMITE_ACERO_MM_N["68x13"]
+    for clave in ("68x13/2.01", "68x13/2.77", "68x13/3.51"):
+        I = CN.TMC_PLANCHA_CORRUGADA[clave]["I_mm4_mm"]
+        assert 1950.0 ** 2 / (CN.ACERO_TMC_EM_MPA * I) > limite, clave
+    nota = r.verificaciones[0].paso.nota_del_proyecto
+    assert "68x13/2.01, 68x13/2.77, 68x13/3.51, 68x13/4.27" in nota
+    assert r.verificaciones[2].cumple
+
+
 def test_el_contraste_asd_reproduce_el_expediente_VARIOS():
     """
     ASTM A796 num. 8 (tensiones admisibles): el expediente «VARIOS» publica
     C = 40.7 kN/m y A = 0.354 mm2/mm para D = 0.90 m con DL 4.5 + LL 86 kPa
-    (H20). Se reproduce con f_y = 230 MPa, que es su redondeo; con el 225
+    (H20) --SEGUN EL INFORME §1.1; las paginas del PDF original no se
+    verificaron en esta sesion: no esta en normas/--. Se reproduce con
+    f_y = 230 MPa, que es su redondeo (su f_c = 115 MPa es 230/2); con el 225
     MPa de A796-13 la misma cuenta da 0.362 (+2.2 %), que es la diferencia
-    DECLARADA. El pandeo no gobierna: f_c = 289 MPa > f_y.
+    DECLARADA. El pandeo no gobierna: con la plancha de 1.63 mm (r = 4.348,
+    D/r = 207, la cifra del expediente) f_c = 289 MPa > f_y. El FF del
+    expediente (0.109 mm/N) NO se reproduce con las inercias de la Tabla 5
+    de A796 (0.131 con 1.63 mm, 0.103 con 2.01): usa otra tabla de
+    propiedades, y los dos lados quedan bajo el limite de 0.245.
     """
     g = CP["varios_asd"]
     T, f, A = M8.area_requerida_asd_a796(S_m=g["S_m"], P_kPa=g["P_kPa"],
@@ -475,6 +545,14 @@ def test_el_contraste_asd_reproduce_el_expediente_VARIOS():
                                       E=CN.A796_E_MPA, F_u=CN.A796_FU_MPA,
                                       k=CN.A796_K_SUELO)
     assert fc == pytest.approx(289.2, abs=ABS_PANDEO_MPA) and fc > 230.0
+    S_mm = g["S_m"] * 1000
+    D_sobre_r = S_mm / g["r_mm"]
+    assert D_sobre_r == pytest.approx(207.0, abs=ABS_PANDEO_MPA)
+    ff = {clave: S_mm ** 2 / (CN.A796_E_MPA
+                               * CN.TMC_PLANCHA_CORRUGADA[clave]["I_mm4_mm"])
+          for clave in ("68x13/1.63", "68x13/2.01")}
+    assert ff["68x13/2.01"] < g["FF_publicado"] < ff["68x13/1.63"]
+    assert max(ff.values()) < CN.FF_LIMITE_ACERO_MM_N["68x13"]
 
 
 def test_la_H20_de_A796_frente_al_HL93_a_la_misma_profundidad():
@@ -512,6 +590,47 @@ def test_el_hdpe_de_A01_empuje_calculado_a_mano_con_la_suma_por_duracion(
     assert empuje.cumple is g["cumple_empuje"]
     assert r.seleccion == "" and r.relleno_maximo_m is None
     assert "AASHTO_LRFD_9.12.12.3.10.1c#EP" in empuje.paso.citas_textuales
+    # El pandeo y la deflexion, tambien a mano (caso patron).
+    assert pandeo.valor_obtenido == pytest.approx(g["u_bck"], rel=REL)
+    assert pandeo.cumple
+    sust = {m.simbolo: m.valor for m in pandeo.paso.sustitucion}
+    assert sust["eps_bck,lp"] == pytest.approx(g["eps_bck_lp"], rel=REL)
+    assert sust["eps_bck,ini"] == pytest.approx(g["eps_bck_ini"], rel=REL)
+    assert deflexion.valor_obtenido == pytest.approx(g["Delta_m"], rel=REL)
+    assert not deflexion.cumple
+    sust = {m.simbolo: m.valor for m in deflexion.paso.sustitucion}
+    assert sust["eps_sc"] == pytest.approx(g["eps_sc"], rel=REL)
+
+
+@pytest.mark.parametrize("D, nota", ((0.90, False), (1.05, True), (1.20, True)))
+def test_la_llamada_de_la_tabla_A12_11_lleva_la_carga_viva_a_largo_plazo(
+        del_expediente, a01, D, nota):
+    """
+    42 y 48 in llevan «*» (diseñar con la resistencia de largo plazo): la
+    carga viva se trata con el area efectiva y el modulo de largo plazo.
+    """
+    mat = _material(TipoMaterial.HDPE)
+    r = M8.verificar_hdpe(punto=a01, material=mat, seccion=SeccionCircular(D),
+                          altura_relleno=_altura(a01, mat, D))
+    empuje = r.verificaciones[0]
+    sust = {m.simbolo: m.valor for m in empuje.paso.sustitucion}
+    iguales = sust["A_eff,ini"] == pytest.approx(sust["A_eff,lp"],
+                                                 rel=REL_TRANSPORTE)
+    assert iguales is nota
+    assert ("llamada «*»" in empuje.paso.nota_del_proyecto) is nota
+    # C_L = l_w/D_o <= 1 y F_1 = 0.75 D_o/l_w >= F_min, con el l_w del paso
+    # de la carga viva y el D_o maximo de la Tabla A12-11.
+    (p_ll,) = [p for p in r.pasos if p.codigo == "F8.LL"]
+    l_w = {x.simbolo: x.valor for x in p_ll.sustitucion}["l_w"]
+    D_o = CN.PE_M294_PERFIL_MINIMO[round(D * 1000)]["od_max_m"]
+    assert sust["C_L"] == pytest.approx(min(l_w / D_o, 1.0), rel=REL_CONVERSION)
+    assert sust["F_1"] == pytest.approx(
+        max(0.75 * D_o / l_w, max(CN.F_MIN_NUMERADOR_M / D, 1.0)),
+        rel=REL_CONVERSION)
+    # El umbral del pandeo es phi_bck de la Tabla 12.5.5-1.
+    assert r.verificaciones[1].valor_admisible == pytest.approx(
+        CN.PHI_PANDEO_PE, rel=REL_TRANSPORTE)
+    assert CN.PHI_PANDEO_PE == pytest.approx(0.70, rel=REL_TRANSPORTE)
 
 
 def test_el_area_efectiva_sale_del_minimo_de_M294_y_del_tiempo():

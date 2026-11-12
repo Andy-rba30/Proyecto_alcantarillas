@@ -1900,6 +1900,16 @@ CP_HDS5_DG1 = {
 #   T_l = 1.05*1.75*762.77*1*1*0.82617*1.77083 = 2050.5 lb/ft
 #   A_eff,ini = 0.16875 in2/in -> eps_l = 0.0092055
 #   eps_uc = 0.047910 > phi_T eps_yc = 0.041: NO CUMPLE
+#   Pandeo (12.12.3.10.1e, C_n 0.55, nu 0.40): R_h = 11.4/(11 + 3.2472/3.1496)
+#     = 0.94755; [0.9*0.58766*0.2/0.36]^(2/3) = 0.4420
+#     eps_bck,75 = 1.2*0.55*(21*0.222)^(1/3)*0.4420*0.94755/(0.15625*21)
+#                = 0.14072; eps_bck,ini (110 ksi, A 0.16875) = 0.043200
+#     u = 0.038705/0.14072 + 0.0092055/0.043200 = 0.48814 <= 0.70: cumple
+#   Deflexion (12.12.2.2, K_B 0.10, D_L 1.5): E I/R^3 = 21000*0.222/19.483^3
+#     = 0.63037 psi; 0.061 M_s = 35.847 psi
+#     Spangler = 0.1 (1.5*3.42778 + 5.2970) 42.5 / 36.478 = 1.2162 in
+#     eps_sc = 69.97/3281.25 + 92.99/18562.5 = 0.026335 -> 1.0262 in
+#     Delta = 2.2424 in = 0.056957 m > 0.05*0.90 = 0.045 m: NO CUMPLE
 #
 # EL CONTRASTE ASD (ASTM A796 num. 8; el expediente de referencia «VARIOS»):
 # D = 0.90 m, DL = 4.5 kPa y LL = 86 kPa (la H20 de 6.2.2.1 a 1 ft):
@@ -1932,8 +1942,13 @@ CP_FASE_8_ESTRUCTURAL = {
     "tmc": {"P_L_kPa": 33.493, "T_L_kN_m": 50.864, "f_cr_MPa": 289.68,
             "A_req_mm2_mm": 0.22355, "plancha": "68x13/2.01"},
     "hdpe": {"eps_d": 0.038705, "eps_l": 0.0092055, "eps_uc": 0.047910,
+             "eps_bck_lp": 0.14072, "eps_bck_ini": 0.043200, "u_bck": 0.48814,
+             "Delta_m": 0.056957, "eps_sc": 0.026335,
              "eps_lim": 0.041, "cumple_empuje": False},
+    # Segun el INFORME §1.1 (repositorio Cotas-esviaje-alcantarillas): las
+    # paginas del PDF «VARIOS» no se verificaron en esta sesion.
     "varios_asd": {"S_m": 0.90, "P_kPa": 90.5, "T_kN_m": 40.725,
                    "A_fy230": 0.35413, "A_fy225": 0.36200,
-                   "A_publicado": 0.354, "r_mm": 4.348},
+                   "A_publicado": 0.354, "r_mm": 4.348,
+                   "FF_publicado": 0.109},
 }
