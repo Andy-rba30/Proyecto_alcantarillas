@@ -617,3 +617,39 @@ Lo que cambia, clasificado:
   criterios sin valor siguen siendo los que eran (35).
 - **V7 (corrida ancha).** El paso de flotación gana la elección
   `F3.D_EXTERIOR`, que dice de dónde salió el espesor; el número no cambia.
+
+## Regenerada en T-5 (2026-11-12): la Fase 8 del conducto entra a la tabla; ningún diámetro ni material
+
+T-5 (`INF-3.3.5`) implementa la Fase 8 real del conducto. Clasificado diferencia
+a diferencia con el comparador de E-B (`cli.py --comparar`) contra la línea base
+de `7fb7926`:
+
+- **Ningún diámetro, material, sección, código de estado ni veredicto previo se
+  movió.** A-01 y A-02 siguen dimensionados en concreto reforzado de 0.90 m;
+  B-01 sigue «no factible» (incumple V2 en todo diámetro, y la Fase 8 no corre
+  sobre un escalón que ya incumple); C-01 sigue detenido en los criterios del
+  cajón. Los dos CSV de resumen, `cli_perfil.txt` y la memoria del cajón no
+  cambian un byte.
+- **Una verificación nueva en A-01 y A-02 (corrida ancha):** `F8.CLASE`, detrás
+  de V9, con la D-load requerida por el método indirecto de AASHTO LRFD
+  12.10.4.3 (37.108 y 36.743 N/m/mm) frente a los 50.0 de la Clase II; cumple.
+  En el volcado de texto, la línea «Fase 8  Clase II; relleno … m + paquete
+  0.150 m; relleno maximo 3.183 m»; en el JSON, el bloque `estructural` del
+  punto (antes `null` a nivel de perfil) con la selección, las alturas, el
+  relleno máximo, los tres pasos (carga viva, carga de tierra, relleno máximo) y
+  la lista de lo que la Fase 8 sigue sin verificar; en la memoria, el bloque
+  «Fase 8 — Estructural del conducto» con sus pasos y «Fase 8 — Lo que no se
+  verifica».
+- **El diferimiento de la Fase 8 cambió de texto y de alcance:** «Fase 8
+  completa diferida al expediente» → «Fase 8: cama de apoyo y demanda del marco
+  diferidas al expediente», con el mensaje que dice que la clase, el calibre o
+  el perfil SÍ se verifican a nivel de perfil.
+- **Criterios.** `clases_producto_por_relleno` deja de estar vacío (pasa de
+  `sin_valor_declarados` a los que tienen valor: 35 → 34 sin valor) y entra en
+  `verificacion_pendiente` (24 → 25) por su nota de legibilidad del ejemplar;
+  entran entre los usados `clases_producto_por_relleno` e
+  `instalacion_estandar_concreto` (los otros cuatro criterios nuevos son del
+  TMC y del HDPE, que esta corrida no alcanza: el concreto cierra antes). El
+  recuento de criterios declarados en las memorias pasa de 88 a 93.
+- **Huellas:** `criterios_sha1` (JSON y memorias) y `hoja_ruta_sha1` (memorias:
+  la nota «Corregido (`INF-3.3.5`, T-5)» de la Fase 8 de la v8).

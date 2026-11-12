@@ -35,7 +35,7 @@ Del resto de la lista, lo que sigue vacio hoy: `v_max_concreto_eleccion`,
 `pendiente_relleno_trasdos_i`, `inclinacion_muro_beta`,
 `friccion_muro_suelo_delta`, `punto_aplicacion_incremento_sismico`,
 `angulo_aletas`, `predimensionamiento_cabezal`, `metodo_estabilidad_global`,
-`TR_evento_extremo`, `clases_producto_por_relleno`,
+`TR_evento_extremo`,
 `c_phi_fundacion`, `capacidad_portante_adm`, `phi_relleno_trasdos`,
 `TW_receptor` y `remanso_derecho_via`. Para
 esos, la frase original sigue valiendo y los tests de invariante lo exigen.
@@ -74,7 +74,11 @@ valores encima pisaría trabajo ya verificado con cita.
     como limite del metal (INF-3.2.4). No aplicar.
 
 ## 3. Normas de Producto
-*   **clases_producto_por_relleno**: `"Clase_III"`
+*   ~~**clases_producto_por_relleno**: `"Clase_III"`~~ --- CERRADO en T-5 con
+    otra forma y otro valor: `{"concreto_reforzado": {"II": 50.0}}` [C], la
+    D-load de 0.3 mm de la Clase II de AASHTO M 170M (la unica legible en el
+    ejemplar), contra la que la Fase 8 ELIGE la clase por el metodo indirecto
+    de AASHTO LRFD 12.10.4.3. Una clase no se declara: se calcula. No aplicar.
 
 ## 4. Datos externos (Tablero 3 — no cierran vía código, son de sitio)
 *   **c_phi_fundacion**: `{'phi': 28.0, 'c': 0.0}` (SUCS SM)

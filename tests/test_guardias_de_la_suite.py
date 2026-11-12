@@ -494,9 +494,9 @@ def test_los_simbolos_que_el_fixture_nombra_existen_de_verdad():
     # hoy `DatoFaltanteError`, que SI es `ErrorProyecto`, de modo que
     # declarar su criterio ya no tumba la corrida. Es el mismo movimiento que
     # S16 hizo con `v5_remanso`.
+    # T-5 RETIRO OTRO: `seleccionar_clase_calibre` tiene cuerpo (INF-3.3.5)
+    # y se vigila desde el otro lado, con los dos de S20.
     esperados = {
-        "M8_estructural.py::seleccionar_clase_calibre":
-            ("src/modulos/M8_estructural.py", "seleccionar_clase_calibre"),
         "M9_cabezal.py::verificar_estabilidad_global":
             ("src/modulos/M9_cabezal.py", "verificar_estabilidad_global"),
     }
@@ -517,7 +517,8 @@ def test_los_simbolos_que_el_fixture_nombra_existen_de_verdad():
     # a levantar `AssertionError`, el .md tendria que volver a nombrarlo.
     for archivo, funcion in (
             ("src/modulos/M5_verificaciones.py", "v8_evento_extremo"),
-            ("src/modulos/M2_material.py", "espesor_pared")):
+            ("src/modulos/M2_material.py", "espesor_pared"),
+            ("src/modulos/M8_estructural.py", "seleccionar_clase_calibre")):
         arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8-sig"))
         nodo = next((n for n in ast.walk(arbol)
                      if isinstance(n, ast.FunctionDef) and n.name == funcion), None)

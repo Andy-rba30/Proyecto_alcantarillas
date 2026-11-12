@@ -6311,126 +6311,86 @@ CRITERIOS: Dict[str, Criterio] = {
     # ser uniforme dentro del tramo; repetirlo en las cuatro filas del CSV
     # habria fingido cuatro mediciones donde hubo una descripcion de zona.
 
+    # --- T-5 --- (cadena T; INF-3.3.5) DEJA DE SER UN VACIO, y lo que pasa a
+    # tener valor es SOLO lo que el ejemplar de M 170M deja leer. La version
+    # anterior lo declaraba [C] sin valor, de nivel expediente, porque «falta
+    # TRANSCRIBIR» las Tablas 1 a 5 (concreto) e «IMPLEMENTAR» el
+    # procedimiento de A796 (TMC). T-5 implementa los procedimientos (M8,
+    # concreto por el metodo indirecto de AASHTO LRFD 12.10.4.3, TMC por
+    # 12.7.2, HDPE por 12.12) y transcribe la tabla HASTA DONDE SE LEE: de
+    # las cinco D-load de 0.3 mm solo la de la Clase II es legible (cita
+    # AASHTO_M170M.T2#DLOAD); las otras cuatro NO se completan de memoria.
+    # Lo que el valor dice es eso, y el consumidor (`M8.verificar_concreto`)
+    # se detiene con DatoFaltanteError, nombrando la clase, cuando la D-load
+    # requerida supera la ultima clase transcrita. Pasa a nivel de PERFIL:
+    # lo invoca la verificacion F8.CLASE de la Fase 5, que la corrida de
+    # perfil evalua (medido en tests/test_nivel_medido.py).
     "clases_producto_por_relleno": Criterio(
-        valor=None,                 # VACIO: bloquea la seleccion de Fase 8, items 1-2
-        nivel=NIVEL_EXPEDIENTE,
+        valor={
+            # {material: {clase: D-load de 0.3 mm en N/m/mm}}. Una clase que
+            # no esta es una clase cuya D-load no se pudo leer: la norma la
+            # tiene; este ejemplar no la deja ver.
+            "concreto_reforzado": {"II": 50.0},
+        },
+        nivel=NIVEL_PERFIL,
         etiqueta="C",
         forma=FORMA_DICT_CON_CAMPOS,
-        # HASTA N1 ESTE CRITERIO DECLARABA `discrepancias=("DIS-HR-A807",)`:
-        # era la unica via por la que la discrepancia viva contra la Fase 8
-        # de la v8 llegaba a la memoria (via 3, `Criterio.discrepancias`),
-        # porque sus partes no tenian cita -- A796 y A807 eran fuentes
-        # ausentes --. N1 incorporo A796 a normas/, le dio citas a las
-        # partes, corrigio la fila de la v8 y la paso a RESUELTA; y una
-        # resuelta no se declara (guardia `_verificar_discrepancias`): es
-        # material del manifiesto, no de la memoria. La via 3 queda sin
-        # usuario de produccion, censado en test_canal_discrepancias.
-        concepto="Tabla de clase (concreto, AASHTO M 170M-04, Clases I a V) o "
-                 "calibre (TMC, ASTM A796/A796M) admisible segun la altura de "
-                 "relleno sobre la clave, para Fase 8 items 1-2: seleccionar "
-                 "la clase/calibre por altura real y verificar que esa "
-                 "altura cae en el rango admisible de la clase elegida",
-        justificacion="Decide de que tabla saldra la clase (concreto) o el "
-                      "calibre (TMC) admisible por altura de relleno, y hoy "
-                      "es un vacio declarado, por dos razones distintas que "
-                      "conviene no mezclar. CONCRETO: la fuente es AASHTO "
-                      "M 170M-04, Tablas 1 a 5 (clases I a V por diametro); "
-                      "esta en normas/ pero su PDF no entrega texto, y falta "
-                      "TRANSCRIBIRLA. TMC: la fuente es ASTM A796/A796M-13, "
-                      "la practica de diseno estructural de tuberia de acero "
-                      "corrugado, en normas/ desde pre-N1 y en el registro "
-                      "desde N1 -- y leida entera no tabula el calibre por "
-                      "altura de cobertura: el espesor es la SALIDA de su "
-                      "procedimiento (num. 7 a 10: presion de diseno, "
-                      "empuje, area de pared requerida con SF = 2, pandeo, "
-                      "costura, factor de flexibilidad) elegida de sus "
-                      "Tablas 2 a 35 (num. 8.1.1.2), y la cobertura minima "
-                      "sale de las ecs. (13) a (16) de su num. 11.1 con dos "
-                      "pisos (300 mm siempre; 600 mm si el espesor es menor "
-                      "de 1.32 mm). Afirmacion negativa con su ambito: "
-                      "SIN_TABLA_CALIBRE_POR_COBERTURA_A796. De modo que la "
-                      "mitad TMC no se cierra transcribiendo sino "
-                      "IMPLEMENTANDO ese procedimiento en M8 -- sesion de "
-                      "calculo propia, con caso patron y con los [A] que el "
-                      "procedimiento pide (metodo ASD o LRFD del num. 7.1, "
-                      "clase de carga del num. 11.1, peso del relleno, "
-                      "rigidez del suelo) --. Lo que SI esta transcrito: las "
-                      "siete tablas SI de propiedades seccionales de las "
-                      "corrugaciones del catalogo (ASTM_A796.T3, T5, T7, T9, "
-                      "T11, T15 y T17: que espesores existen y con que A, I "
-                      "y r), la carga viva por cobertura (ASTM_A796.6.2.2.1), "
-                      "los limites del factor de flexibilidad (10.2, 10.3) y "
-                      "las cargas por eje (11.1). La atribucion queda "
-                      "VERIFICADA y no solo argumentada: A807/A807M es "
-                      "practica de INSTALACION (A796 num. 22.1, cita "
-                      "ASTM_A796.22.1), que es para lo que EG-2013 "
-                      "507.05/.06/.08 la invocan, y DIS-HR-A807 quedo "
-                      "RESUELTA al corregirse la fila de la v8. HDPE (AASHTO "
-                      "M 294-11) no tiene tabla de clase por altura, y desde "
-                      "N2 esta VERIFICADO y no solo afirmado -- sobre la "
-                      "traduccion no oficial del ejemplar: su num. 1.4 "
-                      "excluye camas, relleno y carga de cubierta y remite el "
-                      "diseño estructural a AASHTO LRFD Seccion 12 "
-                      "(afirmacion negativa SIN_CLASE_POR_ALTURA_M294_TRAD, "
-                      "con las 17 hojas como ambito) --; su "
-                      "seleccion depende de un calculo de rigidez de anillo "
-                      "que Fase 8, item 5, difiere expresamente al expediente "
-                      "tecnico. La relacion luz/corrugacion esta cerrada "
-                      "desde I1: Tabla 1 de A760 y Tabla 6 de M 36 "
-                      "transcritas como ASTM_A760.T1 y AASHTO_M36.T6 y "
-                      "cruzadas por CORR-TAMANOS-TMC",
-        fuente="PENDIENTE - AASHTO M 170M-04, Tablas 1 a 5 (clases I a V por "
-              "diametro, concreto): en normas/, PDF sin texto, falta EXTRAER "
-              "la tabla completa (clase x diametro x rango de altura de "
-              "relleno). ASTM A796/A796M-13 (TMC): en normas/ y en el "
-              "registro (N1), y NO trae tabla de calibre por altura -- trae "
-              "el procedimiento (num. 7 a 11) y las tablas de propiedades "
-              "seccionales, transcritas (ASTM_A796.T3 a T17) --; falta "
-              "IMPLEMENTAR el procedimiento. La relacion luz/corrugacion YA "
-              "ESTA TRANSCRITA (I1): ASTM_A760.T1 y AASHTO_M36.T6 en "
-              "src/normativa/tablas.py, cruzadas por CORR-TAMANOS-TMC",
-        reemplazado_por="Para el concreto: la tabla de clase por altura de "
-                        "relleno de M 170M, extraida y transcrita con su "
-                        "numeral. Para el TMC: el procedimiento de A796 "
-                        "implementado en M8 (sesion propia con caso patron), "
-                        "que devuelve el espesor requerido para la altura "
-                        "real del punto y verifica la cobertura minima del "
-                        "num. 11.1. Cierra ademas 'espesor_pared_conducto': "
-                        "el espesor de pared es una consecuencia de la clase, "
-                        "el calibre o el perfil que aqui se seleccione",
-        verificacion_pendiente="POR QUE ES [C] Y NO [A], que es la unica "
-                               "combinacion de este archivo (un [C] sin "
-                               "valor): la etiqueta la fija DE DONDE saldra "
-                               "el valor, no si ya lo tiene. Aqui la fuente "
-                               "tecnica existe, esta identificada y es "
-                               "reconocida (AASHTO M 170M-04, ASTM A796/A796M): "
-                               "lo que falta es TRANSCRIBIRLA (concreto) o "
-                               "APLICARLA (TMC), no elegir. Un [A] seria lo "
-                               "contrario: no hay fuente y decide el "
-                               "proyectista -- que es justo el caso de "
-                               "'espesor_pared_conducto', su gemelo por la "
-                               "otra punta: alli M 170M ofrece TRES paredes "
-                               "por diametro y hay que elegir una. Matiz "
-                               "desde N1: el procedimiento de A796 pide "
-                               "elecciones propias (ASD o LRFD, clase de "
-                               "carga, peso del relleno), que seran [A] "
-                               "APARTE el dia que se implemente; este "
-                               "criterio sigue siendo la fuente de la que "
-                               "sale el valor, y esa fuente es [C]. El "
-                               "precedente interno es 'v_max_tmc' / "
-                               "'v_max_hdpe', que fueron [C] sin valor por la "
-                               "misma razon y hoy valen 4.572 sin haber cambiado "
-                               "de etiqueta",
+        concepto="Resistencia de producto por clase del tubo de concreto "
+                 "reforzado (AASHTO M 170M-04: D-load para producir una "
+                 "grieta de 0.3 mm, en N/m/mm), contra la que la Fase 8 "
+                 "elige la clase minima del punto. Para el TMC y el HDPE no "
+                 "hay tabla de clase: el calibre y el perfil salen del "
+                 "procedimiento de AASHTO LRFD 12.7 y 12.12 que M8 implementa",
+        justificacion="La norma peruana de construccion manda que el "
+                      "proyecto indique la clase del tubo conforme a AASHTO "
+                      "M 170M, y la norma de diseño la elige comparando la "
+                      "D-load requerida con la de la clase. Lo que este "
+                      "criterio declara es la columna de la norma de "
+                      "producto que esa comparacion necesita, transcrita "
+                      "hasta donde el ejemplar la deja leer: la D-load de "
+                      "0.3 mm de la Clase II, 50.0 N/m/mm, impresa al pie de "
+                      "su tabla, que tiene filas con pared B y acero de 300 "
+                      "a 2700 mm. Las de las Clases I, III, IV y V no se leen "
+                      "en el ejemplar --sus tablas son recomposiciones OCR "
+                      "con digitos equivocados-- y no se escriben de memoria: "
+                      "si un punto pide mas que la Clase II, la Fase 8 se "
+                      "detiene diciendo que clase falta transcribir. La Clase "
+                      "I, ademas, solo se tabula de 1500 mm en adelante. Para "
+                      "el TMC (ASTM A796, AASHTO LRFD 12.7) y el HDPE (AASHTO "
+                      "LRFD 12.12) no hay clase por altura: el espesor de la "
+                      "plancha y la verificacion del perfil son la salida de "
+                      "su procedimiento, que M8 corre con la altura real de "
+                      "cada punto",
+        fuente="AASHTO M 170M-04, Tabla 2 'Design Requirements for Class II "
+               "Reinforced Concrete Pipe' (continuacion), pag. impresa M 170M-5, "
+               "leida por imagen: «D-load to produce a 0.3-mm crack 50.0» "
+               "(cita AASHTO_M170M.T2#DLOAD). AASHTO LRFD 9a ed., Art. "
+               "12.10.4.3.1, pag. impresa 12-64: «The D-load for a particular "
+               "class and size of pipe shall be determined in accordance with "
+               "AASHTO M 170M» (cita AASHTO_LRFD_9.12.10.4.3.1#DLOAD). EG-2013 "
+               "506.02, pag. impresa 959: la clase se indica en el Proyecto "
+               "(cita EG2013.506.02#CLASE). ASTM A796/A796M-13 y AASHTO LRFD "
+               "12.7 y 12.12 para el TMC y el HDPE, sin tabla de clase "
+               "(afirmaciones negativas SIN_TABLA_CALIBRE_POR_COBERTURA_A796 "
+               "y SIN_CLASE_POR_ALTURA_M294_TRAD)",
+        reemplazado_por="Las D-load de 0.3 mm de las Clases I, III, IV y V, "
+                        "leidas en un ejemplar legible de AASHTO M 170M "
+                        "(la M 170M-23 vigente, o ASTM C76M): se añaden aqui "
+                        "como filas del dict, sin tocar el codigo",
+        verificacion_pendiente="LEGIBILIDAD DEL EJEMPLAR (medida en T-5, "
+                               "pagina por pagina y por imagen): Clase II "
+                               "0.3 mm = 50.0 (PDF 5, legible); Clase III, "
+                               "ultima = 100.0 (PDF 7), 0.3 mm no se ve; "
+                               "Clase V, «\\ 40.0» y «1 ISD» (PDF 11, el "
+                               "primer digito ilegible); Clases I y IV, "
+                               "ilegibles. Con solo la Clase II un tubo que "
+                               "pida mas se detiene en vez de recibir una "
+                               "clase que el ejemplar no deja verificar",
         resolucion=Libre(
-            que_lo_fija="la clase o el calibre del producto que el proyecto "
-                        "especifique para cada altura de relleno",
-            tabla_pendiente="AASHTO M 170M-04 Tablas 1 a 5 (concreto): en "
-                            "normas/, PDF sin texto, sin transcribir. ASTM "
-                            "A796/A796M-13 (calibre TMC): en normas/ y en el "
-                            "registro desde N1; no hay tabla que transcribir "
-                            "sino procedimiento que implementar (num. 7 a "
-                            "11), con sus Tablas 3 a 17 ya transcritas como "
-                            "insumo",
+            que_lo_fija="la norma de producto, por clase; el proyecto solo "
+                        "transcribe lo que el ejemplar deja leer",
+            tabla_pendiente="AASHTO M 170M-04 Tablas 1, 3, 4 y 5: D-load de "
+                            "0.3 mm ilegible en el ejemplar de normas/",
         ),
     ),
 
@@ -6485,6 +6445,237 @@ CRITERIOS: Dict[str, Criterio] = {
                         "del material de cantera propuesto o un valor de "
                         "practica corriente declarado con su fuente",
             dominio="kN/m3 > 0",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-5 --- (cadena T, 2026-11-12) CINCO CRITERIOS NUEVOS de la Fase 8,
+    # al final de su seccion. Los cinco son [A] de PERFIL: los invocan las
+    # verificaciones F8.* de la Fase 5, que deciden si la combinacion
+    # material / diametro / plancha / clase EXISTE (medido en
+    # tests/test_nivel_medido.py). Cada uno trae por defecto la opcion MAS
+    # DESFAVORABLE que la norma peruana de construccion admite, con la
+    # ventana de lo que admite, y la ficha dice de donde sale cada extremo.
+    # Los numeros de las tablas sobre las que eligen viven en
+    # constantes_normativas, bloque «--- T-5 ---».
+    # =======================================================================
+
+    "instalacion_estandar_concreto": Criterio(
+        valor="tipo_3",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("tipo_1", "tipo_2", "tipo_3"),
+        concepto="Tipo de instalacion estandar del tubo de concreto (AASHTO "
+                 "LRFD 12.10.2.1, Tablas 12.10.2.1-1 y -3): fija el factor de "
+                 "arqueo vertical de la carga de tierra y el factor de cama "
+                 "con que la Fase 8 elige la clase",
+        justificacion="Decide con que instalacion se verifica el tubo de "
+                      "concreto. La norma de diseño define cuatro tipos por "
+                      "el suelo y la compactacion de la cama, los riñones y "
+                      "los costados; la norma peruana de construccion pide "
+                      "cama y sujecion de material de subbase compactadas "
+                      "hasta un sexto del diametro exterior y, por encima, "
+                      "el relleno general compactado al 90 % del Proctor "
+                      "Modificado con cualquier suelo apto para terraplen. "
+                      "Con eso no garantiza el 95 % de suelo granular en toda "
+                      "la zona de riñones que pide el Tipo 1, y si excluye el "
+                      "Tipo 4, que no exige compactacion. El Tipo 3 es el mas "
+                      "desfavorable que la norma peruana admite --el de "
+                      "menor compactacion que todavia la exige, valido con "
+                      "suelos limosos o arcillosos al 95 % del Proctor "
+                      "Estandar-- y es el valor por defecto. Declarar el Tipo "
+                      "2 o el 1 exige que las especificaciones del proyecto "
+                      "pidan esa cama y ese relleno, y con el 1 la D-load se "
+                      "multiplica por 1.10",
+        fuente="AASHTO LRFD 9a ed., Art. 12.10.2.1 y Tablas 12.10.2.1-1 (pag. "
+               "impresa 12-50) y 12.10.2.1-3 (pag. 12-53); Art. 12.10.4.3.1 y "
+               "Tabla 12.10.4.3.2a-1 (pags. 12-64 y 12-65). EG-2013 506.07, "
+               "506.10 y 506.11 (pags. impresas 960 y 961) y 205.12(c)(1) "
+               "(pag. 193) para lo que la norma peruana exige (citas "
+               "EG2013.506.10 y EG2013.205.12#COMPACTACION). LA ELECCION DEL "
+               "TIPO NO ESTA EN NINGUNA NORMA: la lectura de que EG-2013 no "
+               "alcanza al Tipo 1 y excluye al 4 es del proyecto",
+        reemplazado_por="El tipo de instalacion que las especificaciones "
+                        "tecnicas del expediente fijen para la cama y el "
+                        "relleno del tubo de concreto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con las especificaciones de cama y "
+                        "relleno del expediente",
+            dominio="uno de los tres tipos que la compactacion del EG-2013 "
+                    "admite; el conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    "fabricacion_tmc": Criterio(
+        valor="anular_remachada_simple",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("helicoidal", "anular_remachada_simple",
+                      "anular_remachada_doble", "anular_empernada"),
+        concepto="Fabricacion de la tuberia metalica corrugada: helicoidal "
+                 "(costura engargolada o soldada, sin costura longitudinal) o "
+                 "anular con costura longitudinal remachada (simple o doble) "
+                 "o empernada. Decide si la Fase 8 verifica la costura y con "
+                 "que resistencia",
+        justificacion="Decide si la verificacion estructural del TMC incluye "
+                      "la costura longitudinal. La norma de diseño la exige "
+                      "solo a la tuberia con costura longitudinal; la "
+                      "helicoidal no la tiene. La norma peruana de "
+                      "construccion admite la tuberia de 68 por 13 mm de "
+                      "900 a 2100 mm conforme a la norma de producto, que "
+                      "cubre las dos fabricaciones, y nombra pernos y "
+                      "tuercas entre sus accesorios sin fijar la "
+                      "fabricacion. El valor por defecto es la anular "
+                      "remachada simple: la mas desfavorable de las que "
+                      "tienen resistencia de costura tabulada (Tabla 5 de "
+                      "ASTM A796, remaches de 8 mm hasta 2.01 mm de plancha y "
+                      "de 10 mm desde 2.77). La empernada no tiene tabla para "
+                      "esta corrugacion en ninguna de las dos fuentes del "
+                      "repositorio: declararla detiene la Fase 8 pidiendo la "
+                      "resistencia de costura del fabricante. La helicoidal "
+                      "no verifica costura",
+        fuente="AASHTO LRFD 9a ed., Art. 12.7.2.5 (pag. impresa 12-27) y "
+               "Tabla 12.5.5-1 (pag. 12-12); ASTM A796/A796M-13 num. 8.1.3.1 y "
+               "Tabla 5 (PDF 4 y 8, por imagen); AASHTO LRFD Tabla A12-7 (pag. "
+               "12-106); EG-2013 507.02 a) (pag. impresa 969). LA ELECCION NO "
+               "ESTA EN NINGUNA NORMA",
+        reemplazado_por="La fabricacion del producto que el expediente "
+                        "especifique y, si es empernada, la resistencia de "
+                        "costura que el fabricante garantice",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el producto que especifique",
+            dominio="una de las cuatro fabricaciones; el conjunto cerrado "
+                    "viaja en `sensibilidad`",
+        ),
+    ),
+
+    "eta_importancia_operativa_conducto": Criterio(
+        valor=1.05,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.95, 1.05),
+        concepto="Modificador de las cargas por importancia operativa, eta_I, "
+                 "en las verificaciones de resistencia del TMC y del HDPE "
+                 "(AASHTO LRFD 12.5.4 y Manual de Puentes 2.3.2.5). Con "
+                 "eta_D = eta_R = 1.00 es el eta de la carga de tierra y de "
+                 "la carga viva",
+        justificacion="Decide cuanto se mayoran las cargas por la importancia "
+                      "de la via. La norma de diseño considera redundantes a "
+                      "las estructuras enterradas y deja la importancia "
+                      "operativa al propietario; el Manual de Puentes la "
+                      "gradua en 1.05 o mas para puentes criticos o "
+                      "esenciales, 1.00 para los tipicos y 0.95 o mas para "
+                      "los de relativa menor importancia. Mientras el "
+                      "propietario no la declare, el valor por defecto es el "
+                      "extremo mas desfavorable de esa graduacion, 1.05. No "
+                      "afecta al tubo de concreto, que se verifica por el "
+                      "metodo indirecto en servicio, sin factores",
+        fuente="Manual de Puentes, num. 2.3.2.5 «Importancia Operativa», pag. "
+               "impresa 99 (cita MP.2.3.2.5); AASHTO LRFD 9a ed., Art. 12.5.4, "
+               "pag. impresa 12-11 (cita AASHTO_LRFD_9.12.5.4). La "
+               "clasificacion de esta via la hace el propietario",
+        reemplazado_por="La importancia operativa que el propietario declare "
+                        "para la via",
+        resolucion=Libre(
+            que_lo_fija="el propietario, por la importancia operativa de la "
+                        "via",
+            dominio="0.95 a 1.05 (Manual de Puentes 2.3.2.5)",
+        ),
+    ),
+
+    "relleno_estructural_hdpe": Criterio(
+        valor="Cl-95",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("Sn-100", "Sn-95", "Si-95", "Cl-95"),
+        concepto="Suelo y compactacion del relleno estructural del HDPE, como "
+                 "columna de la Tabla 12.12.3.5-1 de AASHTO LRFD (Sn, Si o Cl; "
+                 "% del Proctor Estandar): de ella sale el modulo "
+                 "restringido del suelo M_s del arqueo, el pandeo y la "
+                 "deflexion",
+        justificacion="Decide con que rigidez de suelo se verifica el tubo de "
+                      "polietileno. La norma peruana de construccion pide "
+                      "compactar el relleno a mas del 95 % del Proctor "
+                      "Modificado con cualquier material apto para "
+                      "terraplen, sin fijar el tipo de suelo; el 95 % del "
+                      "Modificado es por lo menos el 95 % del Estandar con "
+                      "que la norma de diseño gradua su tabla, de modo que "
+                      "admite las columnas de 95 y 100. Sin el ensayo del "
+                      "material de relleno el valor por defecto es el mas "
+                      "desfavorable de los admitidos, la arcilla limosa "
+                      "compactada al 95 %. Declarar una arena exige que las "
+                      "especificaciones lo pidan",
+        fuente="AASHTO LRFD 9a ed., Tabla 12.12.3.5-1 (pag. impresa 12-81) y "
+               "Tabla 12.12.3.5-2 (pag. 12-82); EG-2013 508.07 (pag. impresa "
+               "984, cita EG2013.508.07#COMPACTACION). LA ELECCION NO ESTA EN "
+               "NINGUNA NORMA",
+        reemplazado_por="El suelo y la compactacion que las especificaciones "
+                        "del expediente fijen para el relleno del HDPE, con "
+                        "su ensayo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el material de relleno que "
+                        "especifique",
+            dominio="una columna de la Tabla 12.12.3.5-1 que la compactacion "
+                    "del EG-2013 admite; el conjunto cerrado viaja en "
+                    "`sensibilidad`",
+        ),
+    ),
+
+    "parametros_diseno_hdpe": Criterio(
+        valor={"K_gamma_E": 1.5, "D_L": 1.5, "K_B": 0.10,
+               "nu_suelo": 0.40, "deflexion_admisible": 0.05,
+               "anios_largo_plazo": 75.0},
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        sensibilidad={"K_gamma_E": (1.0, 1.5), "D_L": (1.0, 6.0),
+                      "K_B": (0.083, 0.110), "nu_suelo": (0.25, 0.45),
+                      "deflexion_admisible": (0.02, 0.05),
+                      "anios_largo_plazo": (50.0, 75.0)},
+        concepto="Parametros del procedimiento de AASHTO LRFD 12.12 para el "
+                 "HDPE que la norma deja al diseñador: factor de instalacion "
+                 "K_gammaE, factor de retardo de la deflexion D_L, "
+                 "coeficiente de cama K_B, coeficiente de Poisson del suelo, "
+                 "deflexion admisible (fraccion del diametro) y duracion de "
+                 "las propiedades de largo plazo del PE (50 o 75 años)",
+        justificacion="Decide los seis numeros del procedimiento del "
+                      "termoplastico que la norma de diseño no fija. Cada "
+                      "uno toma el valor que la propia norma llama tipico o "
+                      "el extremo desfavorable de su rango: el factor de "
+                      "instalacion 1.5, el que la norma da como tipico para "
+                      "la seguridad tradicional (menos exige control de "
+                      "obra); el retardo de la deflexion 1.5, tipico segun "
+                      "la norma, cuyo comentario recoge valores de 1.0 a "
+                      "6.0; el coeficiente de cama 0.10, tipico, entre 0.083 "
+                      "y 0.110; la deflexion admisible del cinco por ciento, "
+                      "el limite que el comentario considera en general "
+                      "apropiado; y las propiedades a 75 años, la columna "
+                      "mas desfavorable de la tabla. El "
+                      "coeficiente de Poisson del suelo no lo da ninguna "
+                      "fuente del repositorio --la norma remite a la "
+                      "literatura geotecnica--: 0.40 es el extremo alto del "
+                      "rango corriente, que reduce el pandeo general, "
+                      "coherente con el relleno arcilloso por defecto",
+        fuente="AASHTO LRFD 9a ed.: 12.12.3.5 (pag. impresa 12-78, K_gammaE; "
+               "cita AASHTO_LRFD_9.12.12.3.5), 12.12.2.2 y C12.12.2.2 (pags. "
+               "12-74 y 12-75, D_L, K_B y el 5 %; citas "
+               "AASHTO_LRFD_9.12.12.2.2 y .C12.12.2.2), Tabla 12.12.3.3-1 "
+               "(pag. 12-77, propiedades a 50 y 75 años) y 12.12.3.10.1e (pag. "
+               "12-87, nu: la norma remite el coeficiente de Poisson del "
+               "suelo a las referencias geotecnicas). El valor de nu NO TIENE "
+               "FUENTE en el repositorio",
+        reemplazado_por="Los parametros que fije el expediente con su "
+                        "control de obra y, para nu, el del ensayo del "
+                        "relleno",
+        resolucion=Libre(
+            que_lo_fija="el proyectista; la norma da el valor tipico o el "
+                        "rango de cada uno, salvo nu",
+            dominio="las ventanas por campo de `sensibilidad`; "
+                    "anios_largo_plazo es 50 o 75",
         ),
     ),
 

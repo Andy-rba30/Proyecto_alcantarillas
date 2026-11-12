@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `1ad0520+cambios-sin-commit` · Suite: 4521 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `7fb7926+cambios-sin-commit` · Suite: 4626 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -38,7 +38,7 @@
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **155** · fórmulas distintas: **26** · fundamentos ejercitados: **17** de 41.
+Pasos emitidos: **155** · fórmulas distintas: **26** · fundamentos ejercitados: **17** de 52.
 
 ## 2. Índice
 
@@ -136,5 +136,16 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | `M5_verificaciones` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | `M6_proteccion` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | `M7_geometria` |
+| `F8.CARGA_TIERRA` | Fase 8 - Verificacion estructural del conducto | Carga de tierra sobre el conducto: prisma de relleno y paquete estructural, con la interaccion suelo-estructura de su tipo | `M8_estructural` |
+| `F8.CARGA_VIVA` | Fase 8 - Verificacion estructural del conducto | Carga viva HL-93 a la profundidad de la clave: presion vertical por la rueda distribuida a traves del relleno | `M8_estructural` |
+| `F8.CLASE_CONCRETO` | Fase 8 - Verificacion estructural del conducto | Clase del tubo de concreto reforzado por el metodo indirecto: D-load requerida frente a la D-load de la clase | `M8_estructural` |
+| `F8.HDPE_DEFLEXION` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deflexion vertical de servicio | `M8_estructural` |
+| `F8.HDPE_EMPUJE` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deformacion de compresion por el empuje frente a su limite | `M8_estructural` |
+| `F8.HDPE_PANDEO` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: pandeo general del anillo | `M8_estructural` |
+| `F8.MARCO_DEMANDA` | Fase 8 - Verificacion estructural del conducto | Marco de concreto: cargas sobre la losa superior y momento de referencia; el diseño de la seccion se difiere | `M8_estructural` |
 | `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | `M9_cabezal` |
+| `F8.TMC_AREA` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: empuje de anillo mayorado frente a la resistencia de la pared, con el pandeo | `M8_estructural` |
+| `F8.TMC_ASD` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: contraste por tensiones admisibles (ASTM A796, num. 8), que no rige | `M8_estructural` |
+| `F8.TMC_COSTURA` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: resistencia de la costura longitudinal | `M8_estructural` |
+| `F8.TMC_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion | `M8_estructural` |
 

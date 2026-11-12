@@ -1275,6 +1275,17 @@ CASO_G2 = ("X-6,0+380,A,6,850,0.012,42.10,52.20,52.05,8.5,15,9.60,41.30,,,"
            "SM,,,")
 
 
+# --- T-5 --- EL CASO G2 PASA POR LA FASE 8 REAL desde T-5, y con la
+# fabricacion del TMC por defecto (anular remachada SIMPLE, la mas
+# desfavorable con costura tabulada) ninguna plancha de 68 x 13 desarrolla
+# el empuje de ~8.5 m de relleno sobre 1.95 m: el TMC se descartaria por
+# F8.COSTURA y el caso dejaria de medir lo que mide (la evaluacion entera del
+# concreto). Los dos tests H1 declaran por eso la remachada DOBLE, que la
+# ventana del criterio admite; que la simple NO alcanza lo fija
+# `tests/test_t5_estructural_conducto.py`.
+FABRICACION_DEL_CASO_G2 = {"fabricacion_tmc": "anular_remachada_doble"}
+
+
 def _correr_csv(tmp_path, fila):
     cabecera = CSV_EJEMPLO.read_text(encoding="utf-8").splitlines()[0]
     ruta = tmp_path / "caso.csv"
@@ -1295,7 +1306,8 @@ def test_h1_el_caso_del_auditor_adopta_tmc_porque_el_concreto_se_evaluo_entero(
     TMC es entonces legitimo. Antes el concreto se detenia en 2.85 m por
     falta de pared y el TMC se adoptaba igual, sin bloqueo.
     """
-    punto = _correr_csv(tmp_path, CASO_G2)
+    with declarados(FABRICACION_DEL_CASO_G2):
+        punto = _correr_csv(tmp_path, CASO_G2)
     assert punto.dimensionado and punto.resultado.material.tipo is TMC
     del_concreto = [e for e in punto.traza if "oncreto" in e.material]
     assert del_concreto[-1].seccion.etiqueta() == "Ø 2.70 m"
@@ -1315,7 +1327,7 @@ def test_h1_un_candidato_anterior_sin_evaluar_por_dato_bloquea_al_posterior(
     del_archivo = ca.CRITERIOS[CLAVE_ESPESOR_PARED].valor
     recortado = {**del_archivo, "concreto_reforzado": {
         d: t for d, t in del_archivo["concreto_reforzado"].items() if d <= 1950}}
-    with declarados({CLAVE_ESPESOR_PARED: recortado}):
+    with declarados({CLAVE_ESPESOR_PARED: recortado, **FABRICACION_DEL_CASO_G2}):
         punto = _correr_csv(tmp_path, CASO_G2)
     assert not punto.dimensionado
     (bloqueo,) = [b for b in punto.bloqueos if "MD" in b.etapa]

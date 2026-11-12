@@ -988,6 +988,21 @@ CENSO_DE_MARCAS = {
     # literales por linea, el 4 y el 3) y el 100 que lleva la fraccion llena
     # a porcentaje en el TEXTO del paso 4.3c.
     "src/modulos/M4_control.py": 8,
+    # --- T-5 --- 0 -> 27 con la Fase 8 real (INF-3.3.5). Todos son
+    # coeficientes de las ecuaciones TRANSCRITAS de AASHTO LRFD que M8
+    # escribe en la forma de la fuente: el 0.06 D_i y el 100 de (1 + IM/100)
+    # de 3.6.1.2.6b; el 24, el 48 y el 12 del pandeo de 12.7.2.4; el 0.75 de
+    # F_1 (12.7.2.2-3 y 12.12.3.5-6, dos lineas); el 0.11 D_o del prisma
+    # (12.12.3.7-3); los cuatro de VAF (12.12.3.5-3) y los dos de F_2
+    # (12.12.3.5-8); el 1.2, el 3 de 1/3 y el 3 de 2/3 del pandeo general
+    # (12.12.3.10.1e-2) y los dos de R_h (-3); el 0.061 y el cubo de R de
+    # Spangler (12.12.2.2-2); el 0.20 de F_e del marco (12.11.2.2.1-2) y el 8 de
+    # w L^2/8; el 4 del radio medio (D + D_o)/4 y el cubo del factor de
+    # unidad mm4/mm -> m4/m; y dos de presentacion (los cinco decimales de
+    # una deformacion y el 100 del porcentaje de la deflexion admisible).
+    # NINGUNO es un valor de proyecto: los valores estan en
+    # constantes_normativas (bloque T-5) y criterios_adoptados.
+    "src/modulos/M8_estructural.py": 27,
     # 1 -> 0 en C7, y por eso desaparece del censo: el `pi/4` de la
     # subpresion se fue a `SeccionCircular.area_exterior`. M8 dejo de
     # saber que forma tiene el conducto, que es justo lo que se buscaba.

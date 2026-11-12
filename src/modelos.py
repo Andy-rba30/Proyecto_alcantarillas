@@ -314,12 +314,22 @@ class MetodoNoEvaluableError(ErrorProyecto):
     """
 
     def __init__(self, que: str, procedimiento: str, motivo: str,
-                 id_punto: Optional[str] = None) -> None:
+                 id_punto: Optional[str] = None, *,
+                 rotulo: Optional[str] = None) -> None:
         self.que = que
         self.procedimiento = procedimiento
         self.motivo = motivo
         self.id_punto = id_punto
-        texto = f"{MOTIVO_METODO_NO_EVALUABLE}: {que}"
+        # `rotulo` (T-1): el encabezado del mensaje. Por defecto es el de
+        # siempre, `MOTIVO_METODO_NO_EVALUABLE`, que NOMBRA A HDS-5 porque
+        # los dos casos de EXT-3 son de HDS-5. La hidrologia de T-1 levanta
+        # esta misma excepcion por limites del Manual de Hidrologia (Kirpich
+        # fuera de su rango de pendiente, el metodo racional por encima de
+        # 10 km2), y encabezarla con «HDS-5 3.24» seria una cita falsa: pasa
+        # `MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA`. El `str()` sigue empezando
+        # siempre por «método no evaluable (».
+        self.rotulo = MOTIVO_METODO_NO_EVALUABLE if rotulo is None else rotulo
+        texto = f"{self.rotulo}: {que}"
         if id_punto:
             texto += f" del punto {id_punto}"
         texto += f" -- {motivo}. Hace falta: {procedimiento}"
@@ -5454,3 +5464,90 @@ class DictamenDurabilidad:
         fuera = ", ".join(m.value for m in self.excluidos) or "ninguno"
         return (f"durabilidad: matriz aplicada con {declarados}; materiales "
                 f"excluidos: {fuera}")
+
+
+# ===========================================================================
+# --- T-5 --- (cadena T, 2026-11-12) Fase 8: estructural del conducto
+# (INF-3.3.5). Lo que M8 devuelve. Viven aqui por la regla de la casa: son
+# tipos que fluyen entre M8, la Fase 5 (M5 y el verificador de perfil del
+# servicio), el servicio y M11.
+# ===========================================================================
+
+@dataclass(frozen=True)
+class CargaVivaEnterrada:
+    """
+    La carga viva HL-93 a la profundidad del conducto (AASHTO LRFD
+    3.6.1.2.6, con el HL-93 y el IM del Manual de Puentes). Todo en SI.
+
+    `vehiculo` dice cual de los dos gobernó ("camion" o "tandem"); `P_kN` es
+    la carga de las ruedas que interactuan sobre el area `l_w x w_w`;
+    `despreciada` es True cuando el relleno supera 8 ft y la luz
+    (3.6.1.2.6a) y entonces `P_L_kPa` vale 0. `paso` es el desarrollo.
+    """
+    H_m: float
+    LLDF: float
+    IM_pct: float
+    m: float
+    vehiculo: str
+    P_kN: float
+    l_w_m: float
+    w_w_m: float
+    P_L_kPa: float
+    despreciada: bool
+    paso: "PasoDeMemoria"
+
+
+@dataclass(frozen=True)
+class DemandaMarco:
+    """
+    La demanda sobre la losa superior del marco (AASHTO LRFD 12.11) que el
+    diseño de la seccion --diferido al expediente-- tiene que cubrir. Es
+    una DEMANDA, no una verificacion: no hay resistencia contra que
+    compararla mientras la seccion no se diseñe.
+    """
+    F_e: float
+    w_tierra_kPa: float
+    w_viva_kPa: float
+    w_u_kPa: float
+    luz_m: float
+    M_u_referencia_kNm_m: float
+    pasos: Tuple["PasoDeMemoria", ...]
+
+
+@dataclass(frozen=True)
+class ResultadoEstructural:
+    """
+    La Fase 8 de un conducto: las cargas, lo que se eligio (clase, plancha o
+    perfil), las verificaciones que deciden si la combinacion EXISTE y el
+    relleno maximo con que la eleccion sigue cumpliendo.
+
+    `verificaciones` son las que la Fase 5 suma a su tabla (codigos F8.*):
+    deciden, igual que V1 a V10, si el escalon se acepta. `pasos` son los de
+    la carga y la seleccion, que no juzgan; `avisos` sube a
+    `InformePunto.avisos()`; `diferido` lista lo que de verdad sigue fuera
+    del alcance. `seleccion` es el texto de lo elegido ("Clase II",
+    "68x13/2.77", ...) y vacio si nada cumple.
+    """
+    material: str
+    H_relleno_m: float
+    e_paquete_m: float
+    H_total_m: float
+    seleccion: str
+    relleno_maximo_m: Optional[float]
+    verificaciones: Tuple["Verificacion", ...]
+    pasos: Tuple["PasoDeMemoria", ...]
+    avisos: Tuple[str, ...] = ()
+    diferido: Tuple[str, ...] = ()
+    demanda_marco: Optional[DemandaMarco] = None
+
+    @property
+    def cumple(self) -> bool:
+        return all(v.cumple for v in self.verificaciones)
+
+
+# --- T-5 --- El mismo estado cuando lo que no alcanza es el metodo de la
+# carga viva a traves del relleno de AASHTO LRFD 3.6.1.2.6a (relleno menor
+# que el de su dominio). Mismo recurso que T-1: encabezarla con «HDS-5
+# 3.24» seria una cita falsa (`MetodoNoEvaluableError.rotulo`).
+MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL = (
+    "método no evaluable (AASHTO LRFD 3.6.1.2.6a)")

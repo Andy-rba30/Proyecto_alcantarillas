@@ -635,6 +635,9 @@ CITAS_SIN_FIRMA_A_PROPOSITO = (
     "AASHTO_M294_TRAD.1.4",
     "AASHTO_M294_TRAD.7.2.1",
     "AASHTO_M294_TRAD.7.2.2",
+    # --- T-5 --- la quinta, misma razon: el num. 7.7 (ensayo de compresion)
+    # con que M8 obtiene el area efectiva del perfil del HDPE.
+    "AASHTO_M294_TRAD.7.7",
 )
 
 

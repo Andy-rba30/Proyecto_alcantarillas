@@ -489,6 +489,18 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # eleccion.
         "F4.HORIZONTAL",    # el paso 4.1 del barril con S = 0
         "F4.PISO_HW",       # la eleccion del piso de la carga a la entrada
+        # --- T-5 --- LOS ONCE DE LA FASE 8, por la razon de F6.LAUSHEY: los
+        # emite M8 sobre un escalon que pasa toda la tabla de la Fase 5, y
+        # esta corrida no dimensiona ningun punto (V5 se detiene antes). QUE
+        # LOS PASOS EXISTEN SE COMPRUEBA en `tests/test_t5_estructural_
+        # conducto.py`, que corre los tres materiales y el marco y lee el
+        # fundamento de cada paso; y en la corrida de perfil de la linea base,
+        # donde A-01 y A-02 imprimen F8.CARGA_VIVA, F8.CARGA_TIERRA y
+        # F8.CLASE_CONCRETO.
+        "F8.CARGA_VIVA", "F8.CARGA_TIERRA", "F8.CLASE_CONCRETO",
+        "F8.TMC_AREA", "F8.TMC_COSTURA", "F8.TMC_FF", "F8.TMC_ASD",
+        "F8.HDPE_EMPUJE", "F8.HDPE_PANDEO", "F8.HDPE_DEFLEXION",
+        "F8.MARCO_DEMANDA",
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar

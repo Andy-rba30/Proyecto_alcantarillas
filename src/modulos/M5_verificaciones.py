@@ -277,7 +277,8 @@ from src.modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
                                     filas_ev_de_la_tabla,
-                                    peso_relleno_kn_m)
+                                    peso_relleno_kn_m,
+                                    verificaciones_estructurales)
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 # DE DONDE SALEN EL TIRANTE Y LA VELOCIDAD QUE V1 Y V2 COMPARAN, dicho una
@@ -2824,6 +2825,28 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
 # --- T-2 --- V10 - Pendiente del conducto dentro de la banda adoptada
 # ---------------------------------------------------------------------------
 
+def fase_8_estructural(*, punto: PuntoCritico, material: Material,
+                       seccion: Seccion) -> Tuple[Verificacion, ...]:
+    """
+    --- T-5 --- Las verificaciones estructurales del conducto que deciden si
+    el escalon EXISTE (INF-3.3.5): la clase del tubo de concreto, el area de
+    pared con pandeo, la costura y el factor de flexibilidad del TMC, y el
+    empuje, el pandeo y la deflexion del HDPE. Las calcula
+    `M8.verificaciones_estructurales` con la altura REAL de relleno sobre la
+    clave fisica (`altura_relleno_sobre_clave`, la misma de V7); el marco no
+    aporta ninguna --su diseño se difiere al expediente--.
+
+    Entran a la tabla de la Fase 5 DETRAS de V9 y con codigo «F8.*», como
+    V7 --que es Fase 8, item 3-- ya entraba: no son filas de la tabla de la
+    hoja de ruta sino de la Fase 8, que la corrida ensambla aqui porque
+    deciden la aceptacion del escalon igual que una V.
+    """
+    altura = altura_relleno_sobre_clave(punto=punto, material=material,
+                                        seccion=seccion)
+    return verificaciones_estructurales(punto=punto, material=material,
+                                        seccion=seccion, altura_relleno=altura)
+
+
 def v10_pendiente_conducto(*, resultado: ResultadoHidraulico) -> Verificacion:
     """
     S_min <= S_conducto <= S_max, con la banda de los criterios [A]
@@ -3137,4 +3160,15 @@ def verificar(*, punto: PuntoCritico, material: Material,
         # Familia C, detras de VC1 va la V5 que VC1 sustituye, con su motivo.
         if hechas[-1].codigo == "VC1":
             hechas.append(v5_no_aplica_en_canal(punto=punto))
+    # --- T-5 --- LA FASE 8 DEL CONDUCTO, detras de la tabla y SOLO si todo
+    # lo anterior cumple: un escalon que ya incumple una V se rechaza igual,
+    # y evaluarle la Fase 8 dejaria que un dato estructural que falta tapara
+    # el incumplimiento hidraulico que de verdad lo descarta.
+    if all(v.cumple for v in hechas):
+        try:
+            hechas.extend(fase_8_estructural(punto=punto, material=material,
+                                             seccion=seccion))
+        except ErrorProyecto as exc:
+            exc.verificaciones_completadas = tuple(hechas)
+            raise
     return tuple(hechas)
