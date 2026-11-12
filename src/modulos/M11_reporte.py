@@ -2134,20 +2134,32 @@ def _bloques_fases_finales(informe: Any) -> str:
                                      lambda: ())())
                 + bloque_pasos(pasos_7b, TITULO_TRAZA_GEOMETRIA_PREVIA))
 
+    # --- T-5 --- Lo que la Fase 8 sigue sin verificar, UNA vez por punto,
+    # con su razon: desde T-5 ya no es el item 5 entero (lo implementa M8),
+    # solo lo que de verdad queda fuera. Se imprime LO DEL CONDUCTO DE ESTE
+    # PUNTO (`ResultadoEstructural.diferido`), no la lista de todos los
+    # materiales: el bloque del tubo de concreto listaba el portico del
+    # marco, la flexion del HDPE y la costura empernada del TMC (auditoria de
+    # T-5). Solo el punto que trae la cama y no el conducto imprime la lista
+    # entera (`verificacion_diferida_estructural`).
+    estructural = getattr(informe, "estructural", None)
+    diferidas = "".join(
+        f'<div class="nota"><p>{_esc(t)}</p></div>'
+        for t in (estructural.diferido
+                  if estructural is not None and estructural.diferido
+                  else verificacion_diferida_estructural()))
+    if estructural is not None:
+        partes.append(_bloque_estructural(estructural))
     if informe.cama_apoyo is not None:
         c = informe.cama_apoyo
-        # El item 5 de Fase 8 (rigidez de anillo, pandeo, costura) esta
-        # diferido al expediente por decision expresa de la hoja de ruta.
-        # M8 declara ese texto "para que M11 lo imprima siempre junto al
-        # resto de Fase 8", y hasta ahora solo lo imprimia el JSON.
-        diferidas = "".join(
-            f'<div class="nota"><p>{_esc(t)}</p></div>'
-            for t in verificacion_diferida_estructural())
         partes.append(
             "<h4>Fase 8 &mdash; Cama de apoyo y relleno lateral</h4>"
             f"<p>Cama de apoyo: {_esc(c.cama_apoyo)}. Sujecion y relleno "
             f"lateral: {_esc(c.sujecion_relleno_lateral)} "
-            f"(num. {_esc(c.numeral)}).</p>" + diferidas)
+            f"(num. {_esc(c.numeral)}).</p>")
+    if estructural is not None or informe.cama_apoyo is not None:
+        partes.append("<h4>Fase 8 &mdash; Lo que no se verifica</h4>"
+                      + diferidas)
 
     if informe.espaciamiento is not None:
         e = informe.espaciamiento
@@ -2160,6 +2172,36 @@ def _bloques_fases_finales(informe: Any) -> str:
             f"{_num(e.L_hidraulico, FMT_2)} m), num. {_esc(e.numeral)}.</p>")
 
     return "".join(partes)
+
+
+def _bloque_estructural(r: Any) -> str:
+    """
+    --- T-5 --- La Fase 8 del conducto (INF-3.3.5): lo elegido, las alturas
+    con que se verifico, el relleno maximo y los pasos de carga que emitio
+    M8. Las verificaciones F8.* NO se repiten aqui: estan en la tabla de la
+    Fase 5, con su paso. Formatea; no calcula.
+    """
+    avisos = "".join(f'<div class="aviso"><p>{_esc(a)}</p></div>'
+                     for a in r.avisos)
+    if r.demanda_marco is not None:
+        d = r.demanda_marco
+        cabeza = (
+            "<p>Marco: <b>diseño del portico diferido al expediente</b>. "
+            f"Demanda de referencia de la losa superior M<sub>ref</sub> = "
+            f"{_num(d.M_u_referencia_kNm_m, FMT_2)} kN&middot;m/m "
+            f"(w<sub>u</sub> = {_num(d.w_u_kPa, FMT_2)} kPa, L = "
+            f"{_num(d.luz_m, FMT_2)} m, F<sub>e</sub> = {_num(d.F_e)}).</p>")
+    else:
+        maximo = ("&mdash;" if r.relleno_maximo_m is None
+                  else f"{_num(r.relleno_maximo_m, FMT_2)} m")
+        cabeza = (
+            f"<p>Seleccion: <b>{_esc(r.seleccion or 'ninguna cumple')}</b>. "
+            f"Relleno sobre la clave {_num(r.H_relleno_m)} m mas paquete "
+            f"estructural {_num(r.e_paquete_m)} m (profundidad para la carga "
+            f"viva {_num(r.H_total_m)} m). Relleno maximo con lo elegido: "
+            f"{maximo}.</p>")
+    return ("<h4>Fase 8 &mdash; Estructural del conducto</h4>" + cabeza
+            + avisos + bloque_pasos(r.pasos, "Desarrollo de la Fase 8"))
 
 
 def _tabla_bloqueos(bloqueos: Sequence[Any]) -> str:

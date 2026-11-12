@@ -431,8 +431,8 @@ pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
   sus verificaciones). Un punto **no dimensionado** tiene, en su bloque, la
   razón: un criterio pendiente, un dato que falta o «no factible» con el
   delta de rasante que haría falta.
-- **Verificaciones incumplidas.** Las V1…V10, VC1, G1, G2 que se evaluaron y no
-  cumplen en la sección aceptada. Un **[AVISO]** (veredicto indicador, como
+- **Verificaciones incumplidas.** Las V1…V10, VC1, las `F8.*` de la Fase 8
+  (desde T-5), G1 y G2 que se evaluaron y no cumplen en la sección aceptada. Un **[AVISO]** (veredicto indicador, como
   V2b bajo `regimen_v2b = indicador_con_aviso`) no cuenta aquí.
 - **Verificaciones con aviso.** Las que salieron como **[AVISO]** en la
   sección aceptada: el indicador se disparó y el diseño **no** se detuvo. No
@@ -448,8 +448,10 @@ pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
 - **Diferidas por alcance.** Lo que **esta corrida declaró fuera de su
   alcance** y por eso no cuenta como bloqueo: con `--alcance perfil`, las
   verificaciones V5 (remanso en el derecho de vía) y V8 (evento extremo) se
-  intentan y su fallo se difiere; la Fase 8 (estructural del conducto) y la
-  Fase 9 (cabezal) no se ejecutan; y en la Familia C la mitad del requisito de
+  intentan y su fallo se difiere; de la Fase 8 (estructural del conducto) no
+  se ejecutan la cama de apoyo ni la demanda del marco —la clase, el calibre o
+  el perfil del tubo SÍ se verifican, como filas `F8.*` de la Fase 5, desde
+  T-5—; la Fase 9 (cabezal) no se ejecuta; y en la Familia C la mitad del requisito de
   la Sec. 2.3 que VC1 no mide (la rasante hidráulica del canal) queda
   declarada. Cada una está en el bloque «ALCANCE DE LA CORRIDA» con su
   fundamento, y todas se ejecutan sin cambios con `--alcance expediente`.

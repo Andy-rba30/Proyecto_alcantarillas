@@ -16,8 +16,8 @@ estetico: cada una rompe la corrida o exige inventar un dato.
 
 ## Grupo 1 - El consumidor es un stub que aborta la corrida (4)
 
-`TR_evento_extremo`, `clases_producto_por_relleno`, `metodo_estabilidad_global`
-y --- en su dia --- `remanso_derecho_via`.
+`TR_evento_extremo`, `metodo_estabilidad_global` y --- en su dia ---
+`remanso_derecho_via` y `clases_producto_por_relleno` (este, retirado en T-5).
 
 > **CORREGIDO EN S16 (SIS-F-15): hoy son TRES, no cuatro.**
 > `remanso_derecho_via` **ya no aborta la corrida**. El stub de `AssertionError`
@@ -55,11 +55,20 @@ declarado por un crash.
 > explicado, no por un crash. El aviso que la mina daba era cierto --- la
 > logica de V8 no esta escrita --- y el medio era el equivocado.
 
+> **T-5 RETIRO UN SITIO MAS, y por el camino contrario: escribiendo la
+> logica.** `M8_estructural.seleccionar_clase_calibre` ya no lee
+> `clases_producto_por_relleno` para detenerse: el criterio tiene valor (la
+> D-load de 0.3 mm de la Clase II de AASHTO M 170M) y la funcion elige la
+> clase del concreto, el calibre del TMC y el perfil del HDPE por AASHTO LRFD
+> 12.10, 12.7 y 12.12 (INF-3.3.5). Lo que no se puede verificar sale como
+> `DatoFaltanteError` o `MetodoNoEvaluableError`, que SI son `ErrorProyecto`.
+> Y `clases_producto_por_relleno` no se aplica con el `"Clase_III"` del
+> fixture: una clase no se declara, se calcula.
+
 Sitios, ANCLADOS POR SIMBOLO y no por numero de linea (corregido en S16: las
 cinco referencias `archivo:linea` de esta lista estaban corridas, y una de las
 cinco ya no existe):
 
-    clases_producto_por_relleno  M8_estructural.py::seleccionar_clase_calibre
     metodo_estabilidad_global    M9_cabezal.py::verificar_estabilidad_global
 
 Y los `AssertionError` hermanos que NO cuelgan de este fixture, para que la

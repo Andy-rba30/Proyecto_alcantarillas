@@ -164,9 +164,10 @@ def test_las_nueve_verificaciones_de_perfil_llegan_a_la_memoria(informe_perfil):
     codigos = [v.codigo for _, v in a01.verificaciones() if v.codigo]
     # T-2 sumo V10 (la pendiente del conducto), que corre en los dos alcances
     # y se evalua detras de V4b, antes del hueco de V5. G3 (T-6) es el aviso
-    # de esviaje de 7.B: cumple siempre, no bloquea.
+    # de esviaje de 7.B: cumple siempre, no bloquea. T-5 sumo la Fase 8 del
+    # conducto detras de V9: el tubo de concreto de A-01 lleva F8.CLASE.
     assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V10", "V6",
-                       "V7", "V9", "G1", "G2", "G3"]
+                       "V7", "V9", "F8.CLASE", "G1", "G2", "G3"]
     assert all(v.cumple for _, v in a01.verificaciones())
 
 

@@ -2946,13 +2946,14 @@ T_M294_TRAD_7_2_2 = _tabla(
         # del HDPE en 'D_max_norma_producto' [C].
         ColumnaDeTabla(id="dn_mm", etiqueta_literal="Diámetro, mm (in.)",
                        unidad="mm", uso=Usada(por=("M2.tope_de_diametro",))),
+        # --- T-5 --- la pulgada designada es la LLAVE con que la vista
+        # PE_M294_PERFIL_MINIMO une esta serie con la Table A12-11 de AASHTO
+        # LRFD, que tabula por tamaño nominal en pulgadas. No es una
+        # conversion: es el nombre del tamaño en las dos fuentes.
         ColumnaDeTabla(id="dn_in", etiqueta_literal="Diámetro, mm (in.)",
                        unidad="in",
-                       uso=NoUsada(por_que_no=(
-                           "el calculo opera en SI; la pulgada es la unidad "
-                           "IMPRESA entre parentesis, que el num. 1.3 de la "
-                           "propia fuente declara no necesariamente exacta, "
-                           "y sin ella la conversion no se puede comprobar"))),
+                       uso=Usada(por=(
+                           "constantes_normativas.PE_M294_PERFIL_MINIMO",))),
         ColumnaDeTabla(id="t_mm", etiqueta_literal="Espesor de pared, mm (in.)",
                        unidad="mm", uso=_NO_USADA_M294_ESPESOR),
         ColumnaDeTabla(id="t_in", etiqueta_literal="Espesor de pared, mm (in.)",
@@ -3381,13 +3382,15 @@ T_M36_T6 = _tabla(
 # ===========================================================================
 
 _NO_USADA_A796 = NoUsada(por_que_no=(
-    "ningun modulo de calculo consume hoy esta tabla: es INSUMO del "
-    "procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items "
-    "1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue "
-    "vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese "
-    "procedimiento, no transcribiendo una tabla que la norma no tiene --. "
-    "Hasta entonces la tabla documenta que ESPESORES existen para cada "
-    "corrugacion y con que rigidez, para quien especifique el producto"))
+    "ningun modulo de calculo consume esta tabla o columna. Desde T-5 la "
+    "Fase 8 verifica el TMC por AASHTO LRFD 12.7.2 (LRFD), con la carga viva "
+    "HL-93 del Manual de Puentes y no la H20, con los limites de flexibilidad "
+    "de la Tabla 12.5.6.1-1 y con las propiedades seccionales y la costura de "
+    "las Tablas 5, 7 y 9 de esta norma, que son las de las corrugaciones del "
+    "catalogo; el procedimiento por tensiones admisibles de ASTM A796 (num. 6 "
+    "a 11) se imprime solo como CONTRASTE, con sus propios parametros del num. "
+    "4. Lo demas documenta que espesores existen para cada corrugacion y con "
+    "que rigidez, para quien especifique el producto"))
 
 T_A796_6_2_2_1 = _tabla(
     id="ASTM_A796.6.2.2.1",
@@ -3753,11 +3756,18 @@ _NOTA_A_EFECTIVAS = "Net effective properties at full yield stress."
 # calculo: son el insumo del procedimiento de A796 que la Fase 8 no
 # implementa todavia.
 _USADA_ESPESOR_TMC = Usada(por=("M2.espesor_pared_de_tmc",))
+# --- T-5 --- Lo que la Fase 8 consume de las Tablas 5, 7 y 9 (las tres
+# corrugaciones del catalogo): A, I y r de cada plancha, por la vista
+# TMC_PLANCHA_CORRUGADA, y las columnas de costura, por la vista
+# COSTURA_REMACHADA_TMC_KN_M. La Tabla 3 (38 x 6.5, helicoidal) no es del
+# catalogo y sigue sin consumidor.
+_USADA_TMC_FASE_8 = Usada(por=("M8.verificar_tmc",))
 
 
 def _columnas_plancha(unidad_inercia: str,
                       rotulo_angulo: str = "Tangent Angle, Δ,°",
-                      uso_espesor=_NO_USADA_A796) -> tuple:
+                      uso_espesor=_NO_USADA_A796,
+                      uso_seccion=_NO_USADA_A796) -> tuple:
     # `rotulo_angulo`: las Tablas 3 y 9 imprimen «Δ,°» y las 5 y 7 «Δ, °»,
     # con espacio. Lo midio el verificador de N1 y se transcribe cada una
     # como se imprime.
@@ -3765,29 +3775,36 @@ def _columnas_plancha(unidad_inercia: str,
         ColumnaDeTabla(id="t_mm", etiqueta_literal="Specified Thickness, mm",
                        unidad="mm", uso=uso_espesor),
         ColumnaDeTabla(id="A", etiqueta_literal="Area of Section, A, mm²/mm",
-                       unidad="mm²/mm", uso=_NO_USADA_A796),
+                       unidad="mm²/mm", uso=uso_seccion),
         ColumnaDeTabla(id="TL", etiqueta_literal="Tangent Length, TL, mm",
                        unidad="mm", uso=_NO_USADA_A796),
         ColumnaDeTabla(id="delta", etiqueta_literal=rotulo_angulo,
                        unidad="°", uso=_NO_USADA_A796),
         ColumnaDeTabla(id="I",
                        etiqueta_literal=f"Moment of Inertia, I, {unidad_inercia}",
-                       unidad=unidad_inercia, uso=_NO_USADA_A796),
+                       unidad=unidad_inercia, uso=uso_seccion),
         ColumnaDeTabla(id="r", etiqueta_literal="Radius of Gyration, r, mm",
-                       unidad="mm", uso=_NO_USADA_A796),
+                       unidad="mm", uso=uso_seccion),
     )
 
 
 def _fila_plancha(tabla: str, t_mm: float, A: float, TL: float, delta: float,
                   I: float, r: float, nota_a: bool = False,
                   **costura) -> FilaDeTabla:
+    # --- T-5 --- las filas de las Tablas 5, 7 y 9 las consume la Fase 8;
+    # la de 1.02 mm (nota A: forro o tuberia temporal) y las de la Tabla 3
+    # (fuera del catalogo) siguen sin consumidor.
+    consumida = tabla in _TABLAS_DE_PLANCHA_FASE_8 and not nota_a
     return FilaDeTabla(
         id=f"{tabla}#t{t_mm:.2f}",
         etiqueta_literal=f"{t_mm:.2f}",
         valores={"t_mm": t_mm, "A": A, "TL": TL, "delta": delta, "I": I,
                  "r": r, **costura},
         llamadas_a_nota=(("A",) if nota_a else ()),
-        uso=_NO_USADA_A796)
+        uso=_USADA_TMC_FASE_8 if consumida else _NO_USADA_A796)
+
+
+_TABLAS_DE_PLANCHA_FASE_8 = ("ASTM_A796.T5", "ASTM_A796.T7", "ASTM_A796.T9")
 
 
 _NA = CeldaSinValor.NO_APLICA     # la pagina imprime «. . .»
@@ -3824,15 +3841,16 @@ T_A796_T5 = _tabla(
         "Corrugated Steel Pipe in kN per m of Seam",
         "8-mm Rivets", "10-mm Rivets"),
     columnas=_columnas_plancha("mm⁴/mm", "Tangent Angle, Δ, °",
-                               uso_espesor=_USADA_ESPESOR_TMC) + (
+                               uso_espesor=_USADA_ESPESOR_TMC,
+                               uso_seccion=_USADA_TMC_FASE_8) + (
         ColumnaDeTabla(id="s8_single", etiqueta_literal="Single",
-                       unidad="kN/m", uso=_NO_USADA_A796),
+                       unidad="kN/m", uso=_USADA_TMC_FASE_8),
         ColumnaDeTabla(id="s8_double", etiqueta_literal="Double",
-                       unidad="kN/m", uso=_NO_USADA_A796),
+                       unidad="kN/m", uso=_USADA_TMC_FASE_8),
         ColumnaDeTabla(id="s10_single", etiqueta_literal="Single",
-                       unidad="kN/m", uso=_NO_USADA_A796),
+                       unidad="kN/m", uso=_USADA_TMC_FASE_8),
         ColumnaDeTabla(id="s10_double", etiqueta_literal="Double",
-                       unidad="kN/m", uso=_NO_USADA_A796),
+                       unidad="kN/m", uso=_USADA_TMC_FASE_8),
     ),
     filas=(
         # leidas de la pag. PDF 8 (mitad inferior). Las cuatro columnas de
@@ -3864,7 +3882,7 @@ T_A796_T5 = _tabla(
         NotaAlPie(marca="A", texto=Verbatim(texto=_NOTA_A_ESPESOR_1_02,
                                             pagina_pdf=8)),
     ),
-    vistas_de_calculo=("TMC_PLANCHA_CORRUGADA",),
+    vistas_de_calculo=("TMC_PLANCHA_CORRUGADA", "COSTURA_REMACHADA_TMC_KN_M"),
 )
 
 T_A796_T7 = _tabla(
@@ -3880,11 +3898,12 @@ T_A796_T7 = _tabla(
     # «I, mm⁴/m»: ERRATA DE LA FUENTE, transcrita como se imprime (ver la
     # Interpretacion y la nota de la cita ASTM_A796.T7).
     columnas=_columnas_plancha("mm⁴/m", "Tangent Angle, Δ, °",
-                               uso_espesor=_USADA_ESPESOR_TMC) + (
+                               uso_espesor=_USADA_ESPESOR_TMC,
+                               uso_seccion=_USADA_TMC_FASE_8) + (
         ColumnaDeTabla(id="s10_double", etiqueta_literal="Double",
-                       unidad="kN/m", uso=_NO_USADA_A796),
+                       unidad="kN/m", uso=_USADA_TMC_FASE_8),
         ColumnaDeTabla(id="s11_double", etiqueta_literal="Double",
-                       unidad="kN/m", uso=_NO_USADA_A796),
+                       unidad="kN/m", uso=_USADA_TMC_FASE_8),
     ),
     filas=(
         # leidas de la pag. PDF 9 (mitad central). Sin fila de 1.02 mm y sin
@@ -3913,7 +3932,7 @@ T_A796_T7 = _tabla(
             "del mismo orden que los de la Table 9 (145.03 a 411.18), de "
             "profundidad de corrugacion vecina y rotulada «mm⁴/mm».",
         )),
-    vistas_de_calculo=("TMC_PLANCHA_CORRUGADA",),
+    vistas_de_calculo=("TMC_PLANCHA_CORRUGADA", "COSTURA_REMACHADA_TMC_KN_M"),
 )
 
 T_A796_T9 = _tabla(
@@ -3927,7 +3946,8 @@ T_A796_T9 = _tabla(
                "some of these dimensions, are used in other places in this "
                "practice."),
         pagina_pdf=10),
-    columnas=_columnas_plancha("mm⁴/mm", uso_espesor=_USADA_ESPESOR_TMC),
+    columnas=_columnas_plancha("mm⁴/mm", uso_espesor=_USADA_ESPESOR_TMC,
+                               uso_seccion=_USADA_TMC_FASE_8),
     filas=(
         # leidas de la pag. PDF 10 (mitad superior).
         _fila_plancha("ASTM_A796.T9", 1.63, 1.681, 18.5, 35.58, 145.03, 9.289),
@@ -4340,13 +4360,22 @@ T_M170M_T5 = _tabla(
 # criterio, no aqui.
 # ---------------------------------------------------------------------------
 _NO_USADA_TA12_11 = NoUsada(por_que_no=(
-    "el calculo no la consume todavia: A, c e I minimos de la pared son el "
-    "insumo del diseño estructural del termoplastico por AASHTO LRFD 12.12 "
-    "(empuje, pandeo, deformacion), que la Fase 8 difiere al expediente y "
-    "T-5 implementa; el diametro interior minimo es una tolerancia de "
-    "producto que el catalogo no verifica"))
+    "el diametro interior minimo es una tolerancia de producto que el "
+    "catalogo no verifica"))
+# --- T-5 --- A e I minimos de la pared los consume la Fase 8 del HDPE
+# (empuje, pandeo y deflexion por AASHTO LRFD 12.12), por la vista
+# PE_M294_PERFIL_MINIMO. La c minima no: solo entra en la deformacion
+# combinada de flexion (12.12.3.10.2), que la Fase 8 difiere.
+_USADA_PERFIL_HDPE = Usada(por=("M8.verificar_hdpe",))
+_NO_USADA_C_TA12_11 = NoUsada(por_que_no=(
+    "la distancia a la fibra extrema solo entra en la deformacion combinada "
+    "de flexion y empuje (AASHTO LRFD 12.12.3.10.2), que la Fase 8 difiere "
+    "al expediente: el minimo de la tabla no describe la geometria del "
+    "perfil que esa comprobacion necesita"))
 
 _USADA_OD_HDPE = Usada(por=("criterios_adoptados['espesor_pared_conducto']",))
+_USADA_OD_Y_PERFIL_HDPE = Usada(
+    por=("criterios_adoptados['espesor_pared_conducto']", "M8.verificar_hdpe"))
 
 T_AASHTO_TA12_11 = _tabla(
     id="AASHTO_LRFD_9.TA12-11",
@@ -4358,13 +4387,13 @@ T_AASHTO_TA12_11 = _tabla(
         ColumnaDeTabla(id="id_min_in", etiqueta_literal="Min. ID (in.)",
                        unidad="in", uso=_NO_USADA_TA12_11),
         ColumnaDeTabla(id="od_max_in", etiqueta_literal="Max. OD (in.)",
-                       unidad="in", uso=_USADA_OD_HDPE),
+                       unidad="in", uso=_USADA_OD_Y_PERFIL_HDPE),
         ColumnaDeTabla(id="A_min", etiqueta_literal="Min. A (in.2/ft)",
-                       unidad="in²/ft", uso=_NO_USADA_TA12_11),
+                       unidad="in²/ft", uso=_USADA_PERFIL_HDPE),
         ColumnaDeTabla(id="c_min", etiqueta_literal="Min. c (in.)",
-                       unidad="in", uso=_NO_USADA_TA12_11),
+                       unidad="in", uso=_NO_USADA_C_TA12_11),
         ColumnaDeTabla(id="I_min", etiqueta_literal="Min. I (in.4/in.)",
-                       unidad="in⁴/in", uso=_NO_USADA_TA12_11),
+                       unidad="in⁴/in", uso=_USADA_PERFIL_HDPE),
     ),
     filas=tuple(
         FilaDeTabla(
@@ -4376,7 +4405,7 @@ T_AASHTO_TA12_11 = _tabla(
             llamadas_a_nota=(("*",) if nota else ()),
             # El catalogo recorre 900 + 150k mm: de las ocho filas solo las
             # de 36, 42 y 48 in (900, 1050 y 1200 mm) tienen escalon.
-            uso=(_USADA_OD_HDPE if nominal >= 36 else NoUsada(por_que_no=(
+            uso=(_USADA_OD_Y_PERFIL_HDPE if nominal >= 36 else NoUsada(por_que_no=(
                 "tamaño nominal por debajo del piso de 0.90 m de la "
                 "progresion del catalogo (num. 4.1.1.3.4 a) del Manual de "
                 "Hidrologia): ningun escalon lo recorre"))))
@@ -4436,6 +4465,7 @@ T_AASHTO_TA12_11 = _tabla(
             "se entra con el diametro INTERIOR, de modo que este t no la "
             "mueve.",
         )),
+    vistas_de_calculo=("PE_M294_PERFIL_MINIMO",),
 )
 
 

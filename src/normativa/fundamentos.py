@@ -2312,3 +2312,343 @@ ENCAJE = _fundamento(
         "la suya, y nadie sabria cuanto se aparta la longitud construida de "
         "la que uso el calculo hidraulico."),
 )
+
+
+# ===========================================================================
+# --- T-5 --- (cadena T, 2026-11-12) Fase 8: estructural del conducto
+# (INF-3.3.5). Un fundamento por paso. El reparto de fuentes esta escrito en
+# el bloque T-5 de `citas.py`: el HL-93 y su IM son del Manual de Puentes
+# [N]; la distribucion a traves del relleno y el diseño de cada conducto, de
+# la Seccion 12 de AASHTO LRFD [C], que el Manual no incorpora; la clase del
+# tubo y el espesor minimo del TMC, del EG-2013 [N].
+# ===========================================================================
+
+CARGA_VIVA_ENTERRADA = _fundamento(
+    id="F8.CARGA_VIVA",
+    fase=F8,
+    que_paso=("Carga viva HL-93 a la profundidad de la clave: presion "
+              "vertical por la rueda distribuida a traves del relleno"),
+    por_que=(
+        "El conducto bajo la via recibe los ejes de los vehiculos atenuados "
+        "por el relleno que tiene encima: cuanto menos relleno, mas presion. "
+        "La norma de diseño de puentes manda llevar la carga de cada rueda "
+        "como uniforme sobre un rectangulo que crece con la profundidad --el "
+        "area de contacto del neumatico mas el relleno multiplicado por un "
+        "factor de distribucion--, con UN carril cargado y su factor de "
+        "presencia multiple cuando el trafico corre paralelo al vano, que "
+        "es el caso de casi toda alcantarilla vial, y solo con los ejes del "
+        "camion y del tandem de diseño. El incremento por carga dinamica de "
+        "lo enterrado decrece con la profundidad y se anula a 8 pies. Con "
+        "mas de 8 pies de relleno que ademas superan la luz, la carga viva "
+        "se puede despreciar."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.3.6.1.2.6a#RELLENO",      # EXIGENCIA
+           "AASHTO_LRFD_9.3.6.1.2.6a#EJES",
+           "AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL",
+           "AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE",
+           "AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS",
+           "AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO",
+           "AASHTO_LRFD_9.T3.6.1.2.6a-1",
+           "AASHTO_LRFD_9.3.6.1.2.6b#PL",
+           "AASHTO_LRFD_9.C3.6.1.2.6b",
+           "MP.2.4.3.2.2.2",
+           "MP.2.4.3.2.2.3",
+           "MP.2.4.3.2.2.5",
+           "MP.2.4.3.2.2.6",
+           "MP.2.4.3.3.2",
+           "AASHTO_LRFD_9.12.11.2.1#LL"),
+    que_pasa_si_no_se_hace=(
+        "El conducto se verifica solo con el peso del relleno, que es lo "
+        "que pasaba hasta T-5: el rotulo HL-93 aparecia en la memoria y la "
+        "carga viva nunca entraba al tubo (INF-3.3.5). Con un metro de "
+        "relleno la rueda distribuida es del orden del propio relleno."),
+)
+
+CARGA_TIERRA = _fundamento(
+    id="F8.CARGA_TIERRA",
+    fase=F8,
+    que_paso=("Carga de tierra sobre el conducto: prisma de relleno y "
+              "paquete estructural, con la interaccion suelo-estructura de "
+              "su tipo"),
+    por_que=(
+        "El peso del relleno es la carga permanente del conducto. No pesa "
+        "igual sobre todos: un tubo rigido atrae parte del relleno de los "
+        "costados y recibe mas que su prisma --el factor de arqueo vertical "
+        "de las instalaciones estandar, o el de interaccion suelo-estructura "
+        "del marco, que crece con la altura de relleno y tiene tope--, y un "
+        "tubo flexible se calcula con la presion de campo libre a la cota de "
+        "su clave. El peso especifico del suelo no puede tomarse menor que "
+        "un piso que fija la norma de diseño, y a falta de un ensayo el "
+        "Manual de Puentes da el de un suelo compactado y el de una "
+        "superficie de rodadura."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.10.2.1#VAF",            # EXIGENCIA
+           "AASHTO_LRFD_9.12.10.2.1#PESO_MIN",
+           "AASHTO_LRFD_9.12.10.2.2",
+           "AASHTO_LRFD_9.C12.7.2.2",
+           "AASHTO_LRFD_9.12.11.2.2.1",
+           "MP.2.4.2.1#PESOS"),
+    que_pasa_si_no_se_hace=(
+        "La clase o el calibre se eligen contra una carga que no es la del "
+        "punto: con el peso especifico que V7 adopta del lado bajo --el que "
+        "es conservador para la flotacion-- el tubo quedaria cargado de "
+        "menos."),
+)
+
+CLASE_CONCRETO = _fundamento(
+    id="F8.CLASE_CONCRETO",
+    fase=F8,
+    que_paso=("Clase del tubo de concreto reforzado por el metodo indirecto: "
+              "D-load requerida frente a la D-load de la clase"),
+    por_que=(
+        "La norma peruana de construccion manda que el proyecto indique la "
+        "clase del tubo conforme a la norma de producto, y la norma de "
+        "diseño da el procedimiento para elegirla: la carga de tierra, la "
+        "del agua que lleva el tubo y la carga viva, cada una dividida por "
+        "el factor de cama de su tipo de instalacion, se convierten en la "
+        "carga de tres apoyos por metro de longitud y milimetro de diametro "
+        "que el tubo tiene que resistir sin abrir una grieta de 0.3 mm. La "
+        "clase que la cumple es la del punto, y el relleno con que esa clase "
+        "deja de cumplir es el maximo admisible."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.10.4.3.1",               # EXIGENCIA
+           "AASHTO_LRFD_9.12.10.4.3.1#TIPO1",
+           "AASHTO_LRFD_9.12.10.4.3.1#DLOAD",
+           "AASHTO_LRFD_9.12.10.4.3.2a",
+           "AASHTO_LRFD_9.12.10.4.3.2c",
+           "AASHTO_LRFD_9.12.10.2.3",
+           "AASHTO_M170M.T2#DLOAD",
+           "AASHTO_M170M.T1#DIAMETROS",
+           "AASHTO_LRFD_9.T12.10.2.1-1",
+           "AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR",
+           "EG2013.506.02#CLASE",
+           "EG2013.506.07",
+           "EG2013.506.10",
+           "EG2013.T205-01",
+           "EG2013.205.12#COMPACTACION"),
+    que_pasa_si_no_se_hace=(
+        "El expediente especifica un tubo de concreto sin clase, que es lo "
+        "que la norma peruana prohibe dejar sin indicar, y la clase se "
+        "decide en obra con un catalogo."),
+)
+
+TMC_AREA_Y_PANDEO = _fundamento(
+    id="F8.TMC_AREA",
+    fase=F8,
+    que_paso=("Tuberia metalica corrugada: empuje de anillo mayorado frente "
+              "a la resistencia de la pared, con el pandeo"),
+    por_que=(
+        "Un tubo flexible trabaja como un anillo comprimido: la presion de "
+        "la clave por el radio es el empuje que la pared tiene que resistir. "
+        "La norma de diseño lo verifica en resistencia, con las cargas "
+        "mayoradas y el factor de resistencia de la pared, y exige "
+        "comprobar el pandeo: si la tension critica de pandeo queda por "
+        "debajo de la fluencia, manda ella. La plancha que lo cumple es el "
+        "calibre del punto, y no puede ser mas delgada que el minimo que la "
+        "norma peruana de construccion fija por diametro."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.7.2.2",                  # EXIGENCIA
+           "AASHTO_LRFD_9.C12.7.2.2",
+           "AASHTO_LRFD_9.12.7.2.3",
+           "AASHTO_LRFD_9.12.7.2.4",
+           "AASHTO_LRFD_9.12.5.4",
+           "AASHTO_LRFD_9.1.3.5",
+           "AASHTO_LRFD_9.12.5.5",
+           "AASHTO_LRFD_9.TA12-9",
+           "MP.2.3.2.5",
+           "ASTM_A796.9.1",
+           "ASTM_A796.T5",
+           "EG2013.T507-01"),
+    que_pasa_si_no_se_hace=(
+        "El catalogo ofrece la plancha adoptada en todos los diametros de "
+        "su corrugacion sin que nadie haya comprobado que resiste el relleno "
+        "y el trafico del punto, ni que cumple el espesor minimo peruano."),
+)
+
+TMC_COSTURA = _fundamento(
+    id="F8.TMC_COSTURA",
+    fase=F8,
+    que_paso="Tuberia metalica corrugada: resistencia de la costura longitudinal",
+    por_que=(
+        "En la tuberia armada con costura longitudinal --remachada, soldada "
+        "por puntos o empernada-- el empuje del anillo pasa por la costura, "
+        "y la norma de diseño exige que su resistencia mayorada lo "
+        "desarrolle. La tuberia helicoidal con costura engargolada o soldada "
+        "no tiene costura longitudinal y el criterio no aplica."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.7.2.5",                  # EXIGENCIA
+           "ASTM_A796.8.1.3.1",
+           "ASTM_A796.T5",
+           "AASHTO_LRFD_9.12.5.5",
+           "EG2013.507.02#EMPERNADA"),
+    que_pasa_si_no_se_hace=(
+        "Una tuberia anular se especifica sin saber si su costura aguanta el "
+        "empuje que la pared si aguanta: falla por la union."),
+)
+
+TMC_FLEXIBILIDAD = _fundamento(
+    id="F8.TMC_FF",
+    fase=F8,
+    que_paso="Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion",
+    por_que=(
+        "Antes de que el relleno la sostenga, la tuberia tiene que tener "
+        "rigidez para el transporte, el manejo y la compactacion del relleno "
+        "lateral sin perder la forma. La norma de diseño la mide con el "
+        "factor de flexibilidad --el cuadrado del diametro sobre la rigidez "
+        "de la pared-- y le pone un tope por material y profundidad de "
+        "corrugacion. Es una exigencia constructiva, no un estado limite de "
+        "servicio."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.5.6.1#FF",               # EXIGENCIA
+           "ASTM_A796.10.3"),
+    que_pasa_si_no_se_hace=(
+        "Una plancha delgada en un diametro grande --2.01 mm desde 1.39 m "
+        "con la corrugacion de 68 por 13-- se deforma al compactar el "
+        "relleno: lo que el auditor de T-4 midio (ficha T4-08)."),
+)
+
+TMC_CONTRASTE_ASD = _fundamento(
+    id="F8.TMC_ASD",
+    fase=F8,
+    que_paso=("Tuberia metalica corrugada: contraste por tensiones admisibles "
+              "(ASTM A796, num. 8), que no rige"),
+    por_que=(
+        "La practica de diseño de la tuberia de acero corrugado admite dos "
+        "metodos, tensiones admisibles o factores de carga y resistencia. "
+        "El proyecto verifica por factores de carga y resistencia de "
+        "extremo a extremo y no mezcla los dos en una comprobacion; el area "
+        "requerida por tensiones admisibles se imprime al lado como "
+        "contraste, porque es el procedimiento que siguen los expedientes y "
+        "manuales de fabricantes con que la tesis se compara."),
+    verbo=Verbo.PERMITE,
+    citas=("ASTM_A796.7.1",                           # PERMISO
+           "ASTM_A796.8.1.1.2#SELECCION",
+           "ASTM_A796.6.2.2.1"),
+    que_pasa_si_no_se_hace=(
+        "La memoria no se puede comparar con la de un expediente que diseño "
+        "por tensiones admisibles, y la diferencia entre los dos metodos "
+        "queda sin explicar."),
+)
+
+HDPE_EMPUJE = _fundamento(
+    id="F8.HDPE_EMPUJE",
+    fase=F8,
+    que_paso=("Tuberia de polietileno corrugado: deformacion de compresion "
+              "por el empuje frente a su limite"),
+    por_que=(
+        "En el termoplastico el limite no es una tension sino una "
+        "deformacion: el empuje del anillo, dividido por el area efectiva "
+        "del perfil y el modulo del material para la duracion de la carga, "
+        "no puede pasar la deformacion de compresion mayorada que la norma "
+        "de diseño fija para el polietileno. La carga sale del prisma de "
+        "suelo corregido por el arqueo vertical, que depende de la rigidez "
+        "relativa del suelo y del tubo, y del factor de instalacion. El area "
+        "efectiva descuenta el pandeo local de los elementos del perfil, y "
+        "sin la geometria del perfil se puede obtener del ensayo de "
+        "compresion que la norma de producto exige al fabricante."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.12.3.10.1d",             # EXIGENCIA
+           "AASHTO_LRFD_9.12.12.3.10.1c#EP",
+           "AASHTO_LRFD_9.12.12.3.5",
+           "AASHTO_LRFD_9.T12.12.3.3-1",
+           "AASHTO_LRFD_9.T12.12.3.5-1",
+           "AASHTO_LRFD_9.12.12.3.10.1b#STUB",
+           "AASHTO_M294_TRAD.7.7",
+           "AASHTO_LRFD_9.TA12-11",
+           "AASHTO_LRFD_9.12.12.3.2",
+           "AASHTO_LRFD_9.C12.12.3.2",
+           "AASHTO_LRFD_9.T12.12.3.5-2",
+           "AASHTO_LRFD_9.12.5.4",
+           "AASHTO_LRFD_9.1.3.5",
+           "MP.2.3.2.5",
+           "EG2013.508.02#GRANULAR",
+           "EG2013.T301-01",
+           "EG2013.508.07#COMPACTACION"),
+    que_pasa_si_no_se_hace=(
+        "El HDPE se acepta por hidraulica y por recubrimiento sin que nadie "
+        "verifique su pared: es el material mas sensible al relleno de los "
+        "tres."),
+)
+
+HDPE_PANDEO = _fundamento(
+    id="F8.HDPE_PANDEO",
+    fase=F8,
+    que_paso="Tuberia de polietileno corrugado: pandeo general del anillo",
+    por_que=(
+        "Un anillo flexible rodeado de suelo puede pandear como conjunto "
+        "antes de que la pared alcance su deformacion limite. La norma de "
+        "diseño da la deformacion de pandeo general en funcion de la "
+        "rigidez del perfil y del modulo del suelo, y exige que la "
+        "deformacion del empuje no pase de esa capacidad por su factor de "
+        "resistencia, que es bajo porque el pandeo colapsa el conducto."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.12.3.10.1e",             # EXIGENCIA
+           "AASHTO_LRFD_9.12.12.3.3#PANDEO",          # EXIGENCIA
+           "AASHTO_LRFD_9.12.12.3.10.1c#EP",
+           "AASHTO_LRFD_9.T12.12.3.5-1",
+           "AASHTO_LRFD_9.12.5.5"),
+    que_pasa_si_no_se_hace=(
+        "El tubo cumple la deformacion de su pared y aun asi colapsa por "
+        "inestabilidad con un relleno de baja rigidez."),
+)
+
+HDPE_DEFLEXION = _fundamento(
+    id="F8.HDPE_DEFLEXION",
+    fase=F8,
+    que_paso="Tuberia de polietileno corrugado: deflexion vertical de servicio",
+    por_que=(
+        "La norma de diseño exige que la deflexion total del tubo, por "
+        "flexion del anillo mas acortamiento circunferencial, no pase de la "
+        "admisible, y su comentario pone la admisible en el cinco por ciento "
+        "del diametro como limite generalmente apropiado."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.12.2.2",                 # EXIGENCIA
+           "AASHTO_LRFD_9.C12.12.2.2"),
+    que_pasa_si_no_se_hace=(
+        "Un tubo ovalizado reduce su seccion hidraulica y abre sus juntas: "
+        "es la falla de servicio tipica del termoplastico mal rellenado."),
+)
+
+# --- T-5 (cierre) --- El factor de flexibilidad del termoplastico, que la
+# FASE A no verificaba (auditoria): 12.5.3 lo enumera entre los estados
+# limite de resistencia del tubo termoplastico («Flexibility limit»).
+HDPE_FLEXIBILIDAD = _fundamento(
+    id="F8.HDPE_FF",
+    fase=F8,
+    que_paso=("Tuberia de polietileno corrugado: factor de flexibilidad para "
+              "el manejo y la instalacion"),
+    por_que=(
+        "Un tubo demasiado flexible se deforma al manipularlo y al compactar "
+        "el relleno a sus costados antes de que el suelo lo sostenga. La "
+        "norma de diseño limita por eso el factor de flexibilidad del tubo "
+        "termoplastico, que calcula con el diametro, el modulo de "
+        "elasticidad inicial y el momento de inercia del perfil."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.5.6.3",                  # EXIGENCIA
+           "AASHTO_LRFD_9.12.12.3.6",                 # EXIGENCIA
+           "AASHTO_LRFD_9.TA12-11"),
+    que_pasa_si_no_se_hace=(
+        "Se adopta un perfil que resiste el empuje ya enterrado pero que no "
+        "llega a ese estado: se ovaliza durante la instalacion."),
+)
+
+MARCO_DEMANDA = _fundamento(
+    id="F8.MARCO_DEMANDA",
+    fase=F8,
+    que_paso=("Marco de concreto: cargas sobre la losa superior y "
+              "momento de referencia; el diseño de la seccion se difiere"),
+    por_que=(
+        "Para el marco no hay clase de catalogo: la losa y los muros se "
+        "diseñan como elementos de concreto armado con las cargas de la "
+        "Seccion 12 --el relleno con su factor de interaccion, que tiene "
+        "tope con relleno compactado a los costados, y la rueda distribuida "
+        "a traves del relleno--. La hoja de ruta deja el diseño de la "
+        "seccion del marco fuera del alcance de este programa: aqui se "
+        "calcula la demanda que ese diseño tiene que cubrir."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.11.2.2.1",               # EXIGENCIA
+           "AASHTO_LRFD_9.12.11.2.1#LL"),
+    que_pasa_si_no_se_hace=(
+        "El marco llega al expediente sin la carga con que hay que "
+        "diseñarlo, y la memoria dice «diferido» sin decir que se difiere."),
+)

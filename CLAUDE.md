@@ -211,7 +211,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -303,7 +303,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -340,7 +340,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -404,7 +404,15 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   describía una excepción más estrecha que la que el proyecto tiene. La
   alternativa —estrechar el código— habría obligado a inventar una excepción
   nueva para el mismo problema del revisor: falta un dato que hay que
-  conseguir.
+  conseguir. **Y desde T-5 la Fase 8 la levanta por tres datos de PRODUCTO**
+  que el programa no puede elegir: la D-load de una clase de AASHTO M 170M
+  que el ejemplar de `normas/` no deja leer (`clases_producto_por_relleno`),
+  el perfil del tubo de HDPE que solo da su fabricante
+  (`perfil_hdpe_fabricante`) y la resistencia de una costura empernada del
+  TMC. Los tres detienen un escalón que CUMPLE toda la tabla de la Fase 5, y
+  por eso `MD.disenar_punto` los relanza cuando ningún candidato cierra
+  (`ATRIBUTO_ESCALON_CUMPLE_LO_DEMAS`): un punto al que solo le falta un
+  dato no es «no factible» (ficha T5-10).
 - DatoInvalidoError: el dato **está** pero no puede ser: no es del tipo
   esperado, cae fuera del rango físico de dominios.py, o contradice a otro
   dato de su misma fila (§1.5). Hermana de DatoFaltanteError y no la misma:
@@ -472,7 +480,12 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   `MOTIVO_METODO_NO_EVALUABLE_HEC14`; y dentro de la Fase 6 NO viaja como
   `Bloqueo`: la Fase 6 corre después del dimensionado, la captura y la
   convierte en el aviso del contraste que no se evaluó (rige el d50 de
-  Laushey, ficha T8-01). Y desde EXT-3 `Bloqueo` vive en `modelos.py`
+  Laushey, ficha T8-01). Y desde T-5 la levanta M8 cuando el relleno queda
+  fuera del dominio del método de la carga viva a través del relleno de
+  AASHTO LRFD 3.6.1.2.6a (menos de 2.0 ft sobre un tubo de concreto o un
+  marco, 1.0 ft o menos sobre un flexible), encabezada con
+  `MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL`: diferible a nivel de perfil,
+  como V1/V2. Y desde EXT-3 `Bloqueo` vive en `modelos.py`
   con `tipo: TipoDeBloqueo` (str Enum cuyos valores son los textos que la
   línea base ya imprimía): la vía `servicio._etapa` → `servicio._bloqueo` descrita
   arriba no cambia, `cli` lo reexporta.
@@ -718,7 +731,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4976**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **5177**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
@@ -773,7 +786,12 @@ están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonce
   (catorce hechos del capítulo III del Manual de Hidrología y seis del
   capítulo 2 de WSDOT). Contados con `--collect-only -m pdf` son **76**
   sobre el árbol de T-1 y eran 56 sobre `7fb7926`, uno más que el 55 de la
-  frase anterior: la diferencia es de antes de T-1 y no se rastreó.
+  frase anterior: la diferencia es de antes de T-1 y no se rastreó. T-5 sumó
+  **veintiocho** (trece en `tests/test_t5_estructural_conducto.py` y quince
+  en `tests/test_t5_correcciones_auditoria.py`, que fijan en su página los
+  números y las frases de AASHTO LRFD, el Manual de Puentes y el EG-2013 en
+  que se apoya la Fase 8): son **104** sobre el árbol de T-5. Ninguno abre
+  HEC-14 ni WSDOT, de modo que el eje de `NORMAS_DIR` no se mueve.
 
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
@@ -784,7 +802,111 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-8 de la cadena T (2026-11-12, integrado detrás de T-6)
+independientes. **T-5 de la cadena T (2026-11-12, integrado detrás de T-8: el
+primero del segundo lote) sumó DOSCIENTOS UN tests netos**, veintiocho con la
+marca `pdf` y ninguno dependiente de Tk ni del repositorio de normas: los 105
+de `tests/test_t5_estructural_conducto.py` y los 74 de
+`tests/test_t5_correcciones_auditoria.py` —**la Fase 8 REAL del conducto**
+(`src/modulos/M8_estructural.py`, INF-3.3.5): la carga de tierra sobre la
+altura real de relleno más el paquete estructural y la carga viva HL-93 del
+Manual de Puentes distribuida a través del relleno por AASHTO LRFD 3.6.1.2.6
+[C], con el IM de componentes enterrados (`M8.carga_viva_enterrada`: GOBIERNA
+EL VEHÍCULO DE MAYOR EFECTO sobre el conducto, que cada consumidor pasa en
+`efecto=`, no el de mayor presión; fuera del dominio del método,
+`MetodoNoEvaluableError` con `MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL`); el
+tubo de concreto por el método indirecto de 12.10.4.3 contra la D-load de
+0.3 mm de la clase de M 170M (`M8.verificar_concreto`); el TMC por 12.7.2
+—empuje, área con pandeo, costura y factor de flexibilidad— con progresión
+de plancha dentro de la corrugación adoptada y el mínimo de la Tabla 507-01
+del EG-2013, y ASTM A796 solo como contraste por tensiones admisibles que no
+rige (`M8.verificar_tmc`); el HDPE por 12.12 —empuje, pandeo general,
+deflexión y factor de flexibilidad— (`M8.verificar_hdpe`); la demanda de la
+losa superior del marco con el pórtico diferido (`M8.demanda_marco`); y el
+relleno máximo de lo elegido, por el primer cruce del margen. **Lo que
+decide si la combinación material / diámetro / plancha / clase EXISTE corre
+también a nivel de perfil**, como filas `F8.*` de la tabla de la Fase 5
+(`M5.fase_8_estructural`), detrás de V9 y solo si todo lo anterior cumple; a
+perfil se difieren la cama de apoyo y la demanda del marco (ficha T5-01). La
+mina `AssertionError` de `M8.seleccionar_clase_calibre` quedó retirada. **La
+FASE A la auditaron dos auditores adversariales independientes (AJUSTADO los
+dos) y el dueño del proyecto decidió el 2026-11-12 las siete preguntas que
+dejaban abiertas; el cierre las aplicó, y conviene leerlas porque cuatro
+contradicen lo que la FASE A había escrito:** (1) la instalación del tubo de
+concreto es el Tipo 3 de archivo con `tipo_4` DENTRO de la ventana y el Tipo
+4 impreso al lado como contraste (pasos `F8.TIPO4` y `F8.HMAX_TIPO4`); la
+correspondencia del EG-2013 con el Tipo 3 es lectura del proyecto y tiene una
+condición, dicha en la `Interpretacion` de la cita —los numerales del tubo de
+concreto son 506.07, 506.10 y 506.11 → 502 → 205.12(c)(1), 95 % del Proctor
+Modificado en el solado y la sujeción y 90 % en el relleno; el 508.07 que la
+decisión citaba es del polietileno— (ficha T5-12); (2) las propiedades de
+sección del HDPE son DATO DEL FABRICANTE (`perfil_hdpe_fabricante`, [A]
+opcional sin valor por defecto): sin ellas el HDPE queda «no verificado con
+un producto real» —`DatoFaltanteError` con la cota inferior del perfil mínimo
+de la Tabla A12-11 en el mensaje, que AASHTO C12.12.3.2 declara «not
+meaningful for design»— y NO se adopta; el relleno de archivo es `Si-95`, la
+columna menos favorable de las que corresponden al material granular que el
+EG-2013 508.02 d) exige, y no `Cl-95`, con el que el perfil mínimo no cumple
+a ninguna altura (fichas T5-05 y T5-10); (3) `fabricacion_tmc` es la
+remachada simple, la costura más débil TABULADA, y el resultado avisa siempre
+que el EG-2013 507.02 a) describe tubería empernada; el caso G2 de la
+auditoría de T-4 (TMC de 1.95 m con ~8.5 m de relleno) deja de dimensionarse
+y su test se reescribió DECLARÁNDOLO, no en silencio como en la FASE A (ficha
+T5-08); (4) la carga viva pasados 8.0 ft de relleno se CONSERVA: despreciarla
+es el permiso de 3.6.1.2.6a y lo declara `carga_viva_bajo_relleno_alto` [A]
+(ficha T5-11); (5) η_I = 1.05 no lo prescribe ninguna fuente para una
+estructura enterrada: es la clasificación de importancia del Propietario, [A]
+con la ventana del Manual de Puentes 2.3.2.5, y η_R = 1.00 por 12.5.4; (6) un
+tubo de concreto que pide más que la Clase II —la única D-load legible del
+ejemplar de M 170M— BLOQUEA el punto con el mensaje que nombra las clases que
+faltan para ese diámetro, y el ejemplar legible va a la lista de entradas del
+dueño (`docs/contrato_entradas.md`); la clase no se ofrece por debajo del
+primer diámetro que la norma le tabula (ficha T5-02); (7) el pandeo general
+del HDPE va con el módulo de la vida de diseño, como manda la letra de
+12.12.3.3, con la suma por duración al lado y rigiendo la mayor (ficha
+T5-13). **Y una regla de MD que sale de ahí:** un punto al que solo le falta
+un dato no es «no factible» —cuando la Fase 8 detiene por dato faltante un
+escalón que cumple toda la tabla, `MD.disenar_punto` relanza ese
+`DatoFaltanteError`—; el HDPE es el último candidato de M2, de modo que su
+dato no bloquea a ningún otro (regla T4-10). Los dorados
+(`CP_FASE_8_ESTRUCTURAL` y `CP_FASE_8_CIERRE`) están calculados a mano en
+unidades inglesas, con la aritmética escrita. **Ni los tests de la FASE A ni
+los de las correcciones se escribieron en rojo primero**: los de las
+correcciones se midieron contra la FASE A rebasada (`1768b45`) y 48 de 71
+fallan allí —los 23 que valen antes y después son quince literales del PDF y
+ocho guardias—; y veinticuatro mutantes dirigidos, los que las dos auditorías
+habían dejado vivos, mueren todos (ficha T5-14). Los otros 22 netos: los
+catorce anclajes de `test_decisiones_diferidas` para las fichas de la Parte
+XLVI (T5-01..14); los siete que crecen solos en `test_ext5_forma_gui` con los
+siete criterios nuevos (109 donde T-8 dejó 102; los sin valor bajan de 35 a
+34, porque `clases_producto_por_relleno` deja de estar vacío y
+`perfil_hdpe_fabricante` es opcional y no cuenta: los opcionales vuelven a
+ser cuatro); dos en `test_t4_materiales_durabilidad` (el caso G2, que pasa de
+un test a tres); y uno MENOS en `test_criterios_adoptados` (el caso de
+`clases_producto_por_relleno` en el parametrizado de vacíos). Se reescribieron
+al contrato nuevo `test_M8_estructural`, `test_cli`, `test_cierre_perfil` (la
+fila `F8.CLASE` detrás de V9), `test_memoria_sustentada` (doce fundamentos
+`F8.*` que la corrida por defecto no alcanza), `test_sin_literales`
+(`src/modulos/M8_estructural.py`: 29), `test_normativa`,
+`test_guardias_de_la_suite` y `test_t0_gobernanza`, que ganó la fila de T-5.
+Cierra INF-3.3.5, con residuales declarados que dependen de entradas (las
+clases ilegibles de M 170M, el perfil del fabricante del HDPE, la costura
+empernada del TMC y el pórtico del marco). **La línea base de la Familia C se
+regeneró sobre el árbol fusionado y se midió contra `df1b23c` con el
+comparador de E-B**: 18 diferencias en el JSON ancho, todas de T-5 —la fila
+`F8.CLASE` de A-01 y A-02 (37.42 y 37.04 frente a 50.0 N/m/mm), su bloque
+`estructural` (Clase II, relleno máximo 2.851 m; 1.691 m con el Tipo 4), el
+texto del diferimiento de la Fase 8, tres criterios usados, las huellas y los
+recuentos— y 3 de huella y recuento en los otros dos; los dos CSV de resumen,
+tres de los cuatro `cli_*.txt` y la memoria del cajón no cambian un byte, y
+**ningún diámetro ni material se movió** (A-01 y A-02 siguen en concreto de
+0.90 m). Los techos de `test_ext8` se remidieron y no se mueven (70.3 KB y
+20.3 páginas por punto a expediente). De las cuatro configuraciones se MIDIÓ
+UNA, «sí · no», con el repositorio de normas enlazado: 5161 passed, 16
+skipped, collected 5177 (y sin `NORMAS_DIR`, sobre el mismo árbol: 5143
+passed, 34 skipped). **Las otras tres se dicen como derivadas, no como
+medidas**, por lo mismo que en T-0: la derivación suma 201 a las de T-8 y
+pasa 28 de ellos a `skipped` en las dos columnas sin PyMuPDF.
+**T-8 de la cadena T (2026-11-12, integrado detrás de T-6)
 sumó CIENTO DIEZ tests**, ninguno con la marca `pdf` ni dependiente de Tk ni
 del repositorio de normas: los 96 de `tests/test_t8_proteccion.py` —la Fase 6
 de entrada y salida, con el d50 de Laushey del Manual (núm. 4.1.1.3.7 c))
@@ -1910,7 +2032,7 @@ EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
 4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728; T-6:
-4866; T-8: 4976. La
+4866; T-8: 4976; T-5: 5177. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1922,21 +2044,22 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4973 (**derivado** en T-8, no medido: el contenedor no tiene tkinter) | 3 |
-| sí | no | 4960 (**MEDIDO** en T-8 sobre el árbol fusionado, con `NORMAS_DIR`) | 16 |
-| no | sí | 4898 (**derivado**, no medido) | 78 |
-| no | no | 4885 (**derivado**, no medido) | 91 |
+| sí | sí | 5174 (**derivado** en T-5, no medido: el contenedor no tiene tkinter) | 3 |
+| sí | no | 5161 (**MEDIDO** en T-5 sobre el árbol fusionado, con `NORMAS_DIR`) | 16 |
+| no | sí | 5071 (**derivado**, no medido) | 106 |
+| no | no | 5058 (**derivado**, no medido) | 119 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
-dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-8: 4942
-passed, 34 skipped;
+dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-5: 5143
+passed, 34 skipped; sobre el de T-8, 4942 y 34;
 ni T-6 ni T-8 sumaron ninguno que abra el repositorio de normas; eran
 siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
 `tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
 Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
 2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
-iban saltados por la marca `pdf`. Tras T-6 la tabla decía 4863 / 4850 / 4788
+iban saltados por la marca `pdf`. Tras T-8 la tabla decía 4973 / 4960 / 4898
+/ 4885, medida sólo la segunda. Tras T-6 la tabla decía 4863 / 4850 / 4788
 / 4775, medida sólo la segunda. Tras T-1 la tabla decía 4725 / 4712 / 4650
 / 4637, medida sólo la segunda. Tras T-4 la tabla decía 4534 / 4521 / 4479
 / 4466, medida sólo la segunda. Tras T-2 la

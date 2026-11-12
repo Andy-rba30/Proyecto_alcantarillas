@@ -183,6 +183,23 @@ NUMERAL_BUCLE = "Sec. 2 de la guia de sesiones (Fases 4 y 5)"
 MARCA_ESCALON_SIN_EVALUAR = "el escalon no se pudo evaluar"
 
 MENSAJE_DIAMETRO_SUPERADO = "material descartado por diámetro requerido"
+# --- T-5 (cierre) --- Las verificaciones de la Fase 8 del conducto entran a
+# la tabla de la Fase 5 con este prefijo (`M8.CODIGOS_FASE_8`). Cuando el
+# ULTIMO escalon de un material solo incumple verificaciones de este grupo,
+# el catalogo no se agoto por la hidraulica sino por la estructura, y el
+# motivo lo dice detras del texto del Anexo B, que no se parafrasea
+# (auditoria de T-5: el motivo «descartado por diametro requerido» a secas
+# era engañoso para un TMC cuya costura no desarrolla el empuje).
+# El atributo con que `M5.verificar` y el verificador de perfil del servicio
+# marcan la excepcion de un escalon que cumple TODA la tabla de la Fase 5 y
+# al que solo detiene lo que la Fase 8 no pudo evaluar (ver `disenar_punto`).
+ATRIBUTO_ESCALON_CUMPLE_LO_DEMAS = "escalon_cumple_lo_demas"
+PREFIJO_CODIGO_FASE_8 = "F8."
+ACLARACION_DESCARTE_POR_FASE_8 = (
+    "El catalogo NO se agoto por la hidraulica: el ultimo escalon pasa la "
+    "tabla de la Fase 5 e incumple la verificacion ESTRUCTURAL de la Fase 8 "
+    "(codigos F8.*); lo que hace falta no es un tubo mayor sino otra clase, "
+    "plancha, fabricacion o material")
 
 MODULO_VERIFICACIONES = "src.modulos.M5_verificaciones"
 FUNCION_VERIFICACIONES = "verificar"
@@ -322,7 +339,8 @@ def _motivo_material_fallido(exc: ErrorProyecto) -> str:
     return f"material no evaluable: {type(exc).__name__}: {exc}"
 
 
-def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
+def _motivo_descarte(material: Material, ultimo_motivo: str,
+                     por_fase_8: bool = False) -> str:
     """
     El material se quedo sin catalogo: se agoto la progresion de Sec. 3.2 bajo
     el tope de CATALOGO del material. Lleva el mensaje textual del Anexo B y,
@@ -400,7 +418,8 @@ def _motivo_descarte(material: Material, ultimo_motivo: str) -> str:
                   f"{material.D_max:.2f} m, criterio "
                   f"'{CRITERIO_D_MAX_NORMA}' [C]")
     return (f"{MENSAJE_DIAMETRO_SUPERADO} ({origen}). "
-            f"Ultimo intento: {ultimo_motivo}")
+            f"Ultimo intento: {ultimo_motivo}"
+            + (f". {ACLARACION_DESCARTE_POR_FASE_8}" if por_fase_8 else ""))
 
 
 # ---------------------------------------------------------------------------
@@ -462,6 +481,7 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     Q_barril = _caudal_por_barril(Q, material)
     seccion = siguiente_seccion(material)    # primer escalon del catalogo
     ultimo_motivo = "el catalogo no ofrecio ninguna seccion"
+    ultimo_por_fase_8 = False
     visitadas: List[Seccion] = []
 
     while seccion is not None:
@@ -490,6 +510,7 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
             if normal is None:
                 ultimo_motivo = _motivo_sin_flujo_libre(seccion, Q_barril, S,
                                                         material)
+                ultimo_por_fase_8 = False
                 _registrar(registrar, material, seccion, aceptado=False,
                            motivo=ultimo_motivo)
             else:
@@ -527,6 +548,9 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
                     ), ""
 
                 ultimo_motivo = _motivo_incumplimiento(seccion, verificaciones)
+                ultimo_por_fase_8 = all(
+                    (v.codigo or "").startswith(PREFIJO_CODIGO_FASE_8)
+                    for v in verificaciones if not v.cumple)
                 _registrar(registrar, material, seccion, aceptado=False,
                            motivo=ultimo_motivo,
                            verificaciones=verificaciones,
@@ -551,7 +575,8 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
 
         seccion = siguiente_seccion(material, seccion)
 
-    return None, _motivo_descarte(material, ultimo_motivo)
+    return None, _motivo_descarte(material, ultimo_motivo,
+                                  por_fase_8=ultimo_por_fase_8)
 
 
 def _mismo_escalon(a: Seccion, b: Seccion) -> bool:
@@ -795,6 +820,23 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     _exigir_criterios_declarados(pendientes)
     _exigir_criterios_validos(invalidos_de_criterio)
     _exigir_metodo_evaluable(no_evaluables)
+
+    # --- T-5 (cierre) --- UN PUNTO AL QUE SOLO LE FALTA UN DATO NO ES «NO
+    # FACTIBLE». Desde T-5 la Fase 8 puede detener con `DatoFaltanteError` un
+    # escalon que CUMPLE toda la tabla de la Fase 5: el tubo de concreto que
+    # pide una clase de M 170M sin transcribir, el HDPE sin el perfil del
+    # fabricante. Ese material no fallo: quedo sin verificar con un dato que
+    # se puede conseguir, y declarar el punto «no factible» seria decir que
+    # no cumple (decision del dueño del proyecto, 2026-11-12: «no verificado
+    # con un producto real», no un «no cumple» a secas). Se relanza ese
+    # `DatoFaltanteError`, con su campo. No cambia la otra mitad de la ficha
+    # T4-10: el dato que falta ANTES de la tabla (la pared de un diametro)
+    # en un material cuyos escalones evaluados incumplen sigue saliendo «no
+    # factible» con el motivo, porque ahi nadie sabe si ese escalon cumpliria.
+    decisivos = [exc for exc in faltantes
+                 if getattr(exc, ATRIBUTO_ESCALON_CUMPLE_LO_DEMAS, False)]
+    if decisivos:
+        raise decisivos[0]
 
     if faltantes and len(faltantes) == len(candidatos):
         # A TODOS les falto un dato (PC-28): degradarlo a DisenoNoFactibleError

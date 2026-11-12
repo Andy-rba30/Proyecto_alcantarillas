@@ -169,6 +169,16 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # INFORME: el prompt cita INF-5.1.13 como «INF-5.1.11».
         ESTADO_CERRADO: {"INF-3.3.7", "INF-5.1.13"},
     },
+    "T-5": {
+        # La Fase 8 real del conducto. Con los numeros del INFORME: el prompt
+        # la cita como «INF-5.1.5 "Fase 8 no verifica nada"» y como «INF-3.3
+        # "carga viva / clase / relleno maximo"», y es INF-3.3.5 (el
+        # INF-5.1.5 canonico es la mezcla de marcos del cabezal, de T-7b, y
+        # sigue abierto). Cerrado con residuales declarados que dependen de
+        # entradas: las clases de M 170M ilegibles, el perfil del fabricante
+        # del HDPE y la costura empernada del TMC (fichas T5-02, T5-10, T5-03).
+        ESTADO_CERRADO: {"INF-3.3.5"},
+    },
 }
 
 

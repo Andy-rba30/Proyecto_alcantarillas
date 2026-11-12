@@ -2041,3 +2041,270 @@ CP_T6_LONGITUD_POR_EXTREMO = {
     # formula anterior) es 0.234 m.
     "tolerancia": 1e-5,                          # m
 }
+
+
+# ===========================================================================
+# --- T-5 --- CP_FASE_8_ESTRUCTURAL: la Fase 8 real del conducto (INF-3.3.5)
+# ===========================================================================
+#
+# LOS DORADOS SE CALCULARON A MANO, EN UNIDADES INGLESAS, ecuacion por
+# ecuacion de AASHTO LRFD 9a ed. (kip, ft, in, psf, ksi), y no con M8: es la
+# unidad en que la fuente escribe las ecuaciones, de modo que la conversion a
+# SI que M8 hace UNA vez (constantes_normativas, bloque T-5) queda probada por
+# el contraste. Pesos: 120 pcf el relleno compactado y 140 pcf el paquete
+# (Manual de Puentes Tabla 2.4.2.1-1, PDF 103), 62.4 pcf el agua (AASHTO
+# 12.10.2.2, PDF 1692). La unica diferencia de constante con M8 es la del
+# agua (9.81 kN/m3 = 62.45 pcf, +0.08 %), y por eso la tolerancia es
+# relativa 1e-3.
+#
+# EL PUNTO ES A-01 DEL FIXTURE (tests/ejemplo_puntos.csv): subrasante 44.05,
+# rasante 44.20 (paquete 0.15 m), con el concreto de 0.90 m que la corrida de
+# perfil dimensiona. Las alturas de relleno sobre la clave fisica son las de
+# `M5.altura_relleno_sobre_clave` con cada envolvente de pared: 0.950 m el
+# concreto (t = 0.100), 1.035 m el TMC (68 x 13 + 2.01 = 0.015), 0.960 m el
+# HDPE (t = 0.08975, OD maximo de la Tabla A12-11).
+#
+# LA CARGA VIVA (3.6.1.2.6b, PDF 81-82; HL-93 del Manual 2.4.3.2.2.2/.3,
+# PDF 105; m = 1.20, PDF 106; IM 2.4.3.3.2, PDF 110), concreto, H = 1.10 m
+# = 3.6089 ft, D_i = 2.9528 ft:
+#   LLDF = 1.15 + 0.60 (2.9528 - 2)/6 = 1.24528           (Tabla 3.6.1.2.6a-1)
+#   H_int-t = (6 - 20/12 - 0.06*2.9528)/1.24528 = 3.3375 ft < H: interactuan
+#     w_w = 20/12 + 6 + 1.24528*3.6089 + 0.17717 = 12.338 ft; P = 32 kip
+#   H_int-p (camion) = (14 - 10/12)/1.24528 = 10.573 ft > H:
+#     l_w = 10/12 + 1.24528*3.6089 = 5.3274 ft
+#   IM con D_E = 0.95 m = 3.1168 ft, la cubierta de TIERRA (sin el paquete,
+#   el IM mayor): 33 (1 - 0.125*3.1168) = 20.143 %
+#   P_L = 32 (1.20143)(1.20)/(12.338*5.3274) = 0.70189 ksf = 33.607 kPa
+#   (el tandem, con los ejes interactuando, da 0.6264 ksf: gobierna el camion)
+#
+# EL CONCRETO (metodo indirecto, 12.10.4.3.1, PDF 1702; VAF Tipo 3 = 1.40,
+# Tabla 12.10.2.1-3, PDF 1691; B_FE Tabla 12.10.4.3.2a-1, PDF 1703; B_FLL
+# Tabla 12.10.4.3.2c-1, PDF 1704):
+#   W_E = 1.40 (3.6089 ft)(120*3.1168 + 140*0.4921) = 2237.8 lb/ft
+#   W_F = 62.4 pi/4 (2.9528)^2 = 427.3 lb/ft
+#   W_L = 701.89 psf * min(l_w, B_c = 3.6089 ft) = 2533.1 lb/ft
+#   B_FE = 2.4 - 0.1 (35.433 - 24)/12 = 2.3047 (Tipo 3); B_FLL = 2.2
+#   D = (12/35.433)[(2237.8 + 427.3)/2.3047 + 2533.1/2.2] = 781.56 lb/ft/ft
+#     = 37.421 N/m/mm  <  50.0 de la Clase II: Clase II
+#
+# EL TMC (12.7.2, PDF 1663-1665; eta 1.05, gamma_EV 1.95, gamma_LL 1.75):
+#   H = 1.185 m = 3.888 ft, LLDF 1.15, D_E = 1.035 m: IM = 18.993 %,
+#   P_L = 0.69951 ksf (camion)
+#   P_sp = 120*3.3957 + 140*0.4921 = 476.38 psf; P_w = 62.4*1.5256 = 95.20 psf
+#   P_FD = 1.05 (1.95*476.38 + 95.20) = 1075.37 psf
+#   T_L = 1075.37*2.9528/2 + 1.05*1.75*699.51*2.9528*1/2 = 3485.3 lb/ft
+#       = 50.864 kN/m
+#   f_cr (12.7.2.4, r = 4.371 mm) = 42.015 ksi > F_y = 33 ksi
+#   A_req = (3485.3/12 lb/in)/(33 000 psi) = 0.0088012 in2/in = 0.22355 mm2/mm
+#
+# EL HDPE (12.12, perfil minimo de 36 in de la Tabla A12-11, PDF 1746;
+# Cl-95, 75 años; suma por duracion):
+#   P_sp = 120 (3.1496 + 0.11*3.5417) + 140*0.4921 = 493.60 psf = 3.4278 psi
+#   M_s = 0.530 + 0.095 (2.4278/4) = 0.58766 ksi              (Tabla 12.12.3.5-1)
+#   R = (35.433 + 42.5)/4 = 19.483 in; A_g = 0.375 in2/in
+#   S_H,75 = 0.9*0.58766*19.483/(21*0.375) = 1.3085 -> VAF = 0.73674
+#   S_H,ini = 0.24982 -> F_2 = 0.82617
+#   T_d = 1.05 (1.95*0.73674*493.60 + 110.5)(1.77083) = 1524.0 lb/ft
+#   A_eff,75 = 0.5*0.375*3.0*0.25/0.9 = 0.15625 in2/in -> eps_d = 0.038705
+#   P_L (D_E = 0.96 m: IM = 20.008 %) = 0.76277 ksf
+#   T_l = 1.05*1.75*762.77*1*1*0.82617*1.77083 = 2050.5 lb/ft
+#   A_eff,ini = 0.16875 in2/in -> eps_l = 0.0092055
+#   eps_uc = 0.047910 > phi_T eps_yc = 0.041: NO CUMPLE
+#   Pandeo (12.12.3.10.1e, C_n 0.55, nu 0.40): R_h = 11.4/(11 + 3.2472/3.1496)
+#     = 0.94755; [0.9*0.58766*0.2/0.36]^(2/3) = 0.4420
+#     eps_bck,75 = 1.2*0.55*(21*0.222)^(1/3)*0.4420*0.94755/(0.15625*21)
+#                = 0.14072; eps_bck,ini (110 ksi, A 0.16875) = 0.043200
+#     u = 0.038705/0.14072 + 0.0092055/0.043200 = 0.48814 <= 0.70: cumple
+#     (suma por duracion). Y POR LA LETRA DE 12.12.3.3 (cierre de T-5), todo
+#     con el modulo de 75 años: F_2,75 = 0.95/(1 + 0.6*1.3085) = 0.53218;
+#     T_l,75 = 1.05*1.75*762.77*0.53218*1.77083 = 1320.9 lb/ft;
+#     eps_l,75 = (1320.9/12)/(0.15625*21000) = 0.033545;
+#     u = (0.038705 + 0.033545)/0.14072 = 0.51342. Rige la mayor: 0.51342.
+#   Deflexion (12.12.2.2, K_B 0.10, D_L 1.5): E I/R^3 = 21000*0.222/19.483^3
+#     = 0.63037 psi; 0.061 M_s = 35.847 psi
+#     Spangler = 0.1 (1.5*3.42778 + 5.2970) 42.5 / 36.478 = 1.2162 in
+#     eps_sc = 69.97/3281.25 + 92.99/18562.5 = 0.026335 -> 1.0262 in
+#     Delta = 2.2424 in = 0.056957 m > 0.05*0.90 = 0.045 m: NO CUMPLE
+#
+# EL CONTRASTE ASD (ASTM A796 num. 8; el expediente de referencia «VARIOS»):
+# D = 0.90 m, DL = 4.5 kPa y LL = 86 kPa (la H20 de 6.2.2.1 a 1 ft):
+#   C = 90.5 * 0.90/2 = 40.725 kN/m
+#   A = 40.725 * 2 / 230 = 0.35413 mm2/mm (el 0.354 del expediente, que
+#       redondea F_y a 230 MPa); con el 225 MPa de A796-13 num. 4: 0.36200
+_CP_F8_H_REL = {"concreto_reforzado": 0.950, "tmc": 1.035, "hdpe": 0.960}
+
+
+def _cp_f8_punto_A01():
+    """A-01 de tests/ejemplo_puntos.csv, cargado por M0 (sin copiar valores)."""
+    from pathlib import Path
+    from src.modulos.M0_carga import cargar_puntos
+    ruta = Path(__file__).resolve().parent.parent / "ejemplo_puntos.csv"
+    return next(p for p in cargar_puntos(ruta) if p.id == "A-01")
+
+
+CP_FASE_8_ESTRUCTURAL = {
+    "punto_A01": _cp_f8_punto_A01,
+    "D": 0.90,
+    "H_relleno": _CP_F8_H_REL,
+    "e_paquete": 0.15,
+    "tolerancia_rel": 1e-3,
+    # Carga viva sobre el concreto, H = 1.10 m.
+    "LL_concreto": {"LLDF": 1.24528, "IM_pct": 20.143, "l_w_m": 1.62380,
+                    "P_L_kPa": 33.607, "vehiculo": "camion", "D_E_m": 0.95},
+    "concreto": {"W_E_kN_m": 32.658, "W_F_kN_m": 6.2359, "W_L_kN_m": 36.968,
+                 "B_FE": 2.3047, "B_FLL": 2.2, "D_req_N_m_mm": 37.421,
+                 "clase": "II", "D_clase": 50.0},
+    "tmc": {"P_L_kPa": 33.493, "T_L_kN_m": 50.864, "f_cr_MPa": 289.68,
+            "A_req_mm2_mm": 0.22355, "plancha": "68x13/2.01"},
+    "hdpe": {"eps_d": 0.038705, "eps_l": 0.0092055, "eps_uc": 0.047910,
+             "eps_bck_lp": 0.14072, "eps_bck_ini": 0.043200, "u_bck": 0.48814,
+             "u_letra": 0.51342,
+             "Delta_m": 0.056957, "eps_sc": 0.026335,
+             "eps_lim": 0.041, "cumple_empuje": False},
+    # Segun el INFORME §1.1 (repositorio Cotas-esviaje-alcantarillas): las
+    # paginas del PDF «VARIOS» no se verificaron en esta sesion.
+    "varios_asd": {"S_m": 0.90, "P_kPa": 90.5, "T_kN_m": 40.725,
+                   "A_fy230": 0.35413, "A_fy225": 0.36200,
+                   "A_publicado": 0.354, "r_mm": 4.348,
+                   "FF_publicado": 0.109},
+}
+
+
+# ===========================================================================
+# --- T-5 (cierre) --- CP_FASE_8_CIERRE: los dorados de las correcciones de
+# las dos auditorias adversariales (2026-11-12)
+# ===========================================================================
+#
+# CALCULADOS A MANO EN UNIDADES INGLESAS, igual que CP_FASE_8_ESTRUCTURAL y
+# con las mismas constantes (120 y 140 pcf, 62.4 pcf el agua, HL-93 de 32 y
+# 25 kip, m = 1.20), SIN M8. Cada uno fija algo que la FASE A no fijaba.
+#
+# (1) GOBIERNA EL VEHICULO DE MAYOR EFECTO. Tubo de concreto de 2.10 m (pared
+# de 0.200 m: B_c = 2.50 m = 8.2021 ft), 0.47 m de relleno sobre la clave y
+# 0.15 m de paquete, Tipo 3:
+#   H = 0.62 m = 2.0341 ft; D_i = 6.8898 ft; D_E = 1.5420 ft
+#   LLDF = 1.15 + 0.60 (6.8898 - 2)/6 = 1.63898; IM = 33 (1 - 0.125*1.5420)
+#        = 26.639 %
+#   H_int-t = (6 - 1.6667 - 0.06*6.8898)/1.63898 = 2.3917 ft > H: una rueda
+#     w_w = 1.6667 + 1.63898*2.0341 + 0.4134 = 5.4139 ft
+#   CAMION: H_int-p = (14 - 0.8333)/1.63898 = 8.03 ft > H: P = 16 kip,
+#     l_w = 0.8333 + 3.3338 = 4.1672 ft
+#     P_L = 16 (1.26639)(1.2)/(4.1672*5.4139) = 1.0777 ksf = 51.602 kPa
+#     W_L = 1077.7 psf * min(4.1672, 8.2021) = 4491.1 lb/ft = 65.543 kN/m
+#   TANDEM: H_int-p = (4 - 0.8333)/1.63898 = 1.932 ft < H: P = 25 kip,
+#     l_w = 0.8333 + 4 + 3.3338 = 8.1672 ft
+#     P_L = 25 (1.26639)(1.2)/(8.1672*5.4139) = 0.8592 ksf = 41.140 kPa
+#     W_L = 859.2 psf * min(8.1672, 8.2021) = 7017.4 lb/ft = 102.41 kN/m
+#   El camion da MAS PRESION (51.6 contra 41.1 kPa) y el tandem MAS CARGA
+#   (102.4 contra 65.5 kN/m): gobierna el tandem.
+#   W_E = 1.40 (8.2021)(120*1.5420 + 140*0.4921) = 2915.9 lb/ft
+#   W_F = 62.4 pi/4 (6.8898)^2 = 2326.4 lb/ft; B_FE(82.68 in, Tipo 3) = 2.2;
+#   B_FLL = 2.2
+#   D = (12/82.677)[(2915.9 + 2326.4)/2.2 + 7017.4/2.2] = 808.83 lb/ft/ft
+#     = 38.727 N/m/mm  (con el camion: 642.16 lb/ft/ft = 30.747 N/m/mm)
+#
+# (2) LA CARGA VIVA SE CONSERVA PASADOS LOS 8 FT. Tubo de concreto de 0.90 m
+# de A-01 con 2.90 m de relleno (H = 3.05 m = 10.0066 ft > 8 ft y > la luz),
+# Tipo 3; IM = 0:
+#   W_E = 1.40 (3.6089)(120*9.5144 + 140*0.4921) = 6116.7 lb/ft; W_F = 427.3
+#   TANDEM (ruedas y ejes interactuando): l_w = 0.8333 + 4 + 12.4610 =
+#     17.2943 ft; w_w = 1.6667 + 6 + 12.4610 + 0.1772 = 20.3048 ft;
+#     P_L = 50 (1.2)/(17.2943*20.3048) = 0.17086 ksf = 8.181 kPa
+#     W_L = 170.86 * 3.6089 = 616.6 lb/ft (camion: 513.4 lb/ft)
+#   D conservando = (12/35.433)[(6116.7 + 427.3)/2.3047 + 616.6/2.2]
+#     = 1056.5 lb/ft/ft = 50.587 N/m/mm > 50.0: la Clase II NO alcanza
+#   D despreciando = (12/35.433)(6544.0/2.3047) = 961.6 lb/ft/ft
+#     = 46.043 N/m/mm < 50.0: «cumplia»
+#
+# (3) EL TIPO 4 AL LADO. A-01, tubo de 0.90 m, 0.95 m de relleno:
+#   W_E = 1.45 (3.6089)(120*3.1168 + 140*0.4921) = 2317.7 lb/ft; B_FE = 1.7
+#   D_T4 = (12/35.433)[(2317.7 + 427.3)/1.7 + 2533.1/2.2] = 936.79 lb/ft/ft
+#     = 44.854 N/m/mm  (Tipo 3: 37.421)
+#
+# (4) EL HDPE QUE CUMPLE, con el relleno de archivo (Si-95) y el perfil
+# minimo de 36 in declarado como del fabricante, en A-01 (0.960 m):
+#   P_sp = 493.60 psf = 3.4278 psi; M_s = 1.415 + 0.255 (2.4278/4) = 1.56977
+#   S_H,75 = 0.9*1.56977*19.483/(21*0.375) = 3.4953 -> VAF = 0.50265,
+#     F_2,75 = 0.95/(1 + 0.6*3.4953) = 0.30673
+#   S_H,ini = 0.66729 -> F_2,ini = 0.67839
+#   T_d = 1.05 (1.95*0.50265*493.60 + 110.5)(1.77083) = 1105.0 lb/ft
+#     -> eps_d = (1105.0/12)/(0.15625*21000) = 0.028065
+#   T_l = 1.05*1.75*762.77*0.67839*1.77083 = 1683.7 lb/ft
+#     -> eps_l = (1683.7/12)/(0.16875*110000) = 0.007559
+#   eps_uc = 0.035624 <= 0.041: CUMPLE
+#   Pandeo: R_h = 0.94755; [0.9*1.56977*0.2/0.36]^(2/3) = 0.85094
+#     eps_bck,75 = 1.2*0.55*(21*0.222)^(1/3)*0.85094*0.94755/(0.15625*21)
+#                = 0.27092; eps_bck,ini = 0.083169
+#     suma por duracion: 0.028065/0.27092 + 0.007559/0.083169 = 0.19448
+#     letra de 12.12.3.3: eps_l,75 = (1.05*1.75*762.77*0.30673*1.77083/12)
+#       /(0.15625*21000) = 0.019334; (0.028065 + 0.019334)/0.27092 = 0.17496
+#     rige la mayor: 0.19448 <= 0.70: CUMPLE (aqui gobierna la suma por
+#     duracion; con Cl-95 gobierna la letra: CP_FASE_8_ESTRUCTURAL)
+#   Deflexion: 1.2490 in = 0.031725 m <= 0.05*0.90 = 0.045 m: CUMPLE
+#   FF (12.12.3.6, con el diametro EXTERIOR y el modulo INICIAL):
+#     42.5^2/(110*0.222) = 73.97 in/kip = 0.42236 mm/N <= 95.0 in/kip
+#     = 0.54246 mm/N: CUMPLE
+#   El relleno maximo cae entre 1.40 m (eps_uc = 0.040041) y 1.60 m
+#   (eps_uc = 0.042580, ya con el tandem gobernando P_L C_L F_1).
+#
+# (5) LA RAMA ELASTICA DEL PANDEO DEL TMC (Eq. 12.7.2.4-2), que ningun test
+# tocaba: r = 4.371 mm (0.17209 in), k = 0.22, E_m = 29 000 ksi, F_u = 45 ksi
+#   umbral S = (r/k) sqrt(24 E_m/F_u) = 0.78221*124.365 = 97.280 in = 2470.9 mm
+#   S = 3000 mm = 118.110 in > umbral:
+#     f_cr = 12 E_m/(k S/r)^2 = 348 000/(150.995)^2 = 15.2635 ksi = 105.238 MPa
+#
+# (6) EL NIVEL FREATICO SOBRE LA CLAVE. TMC de 0.90 m de A-01 (H_rel 1.035 m,
+# envolvente 0.015 m): la clave exterior queda en 44.05 - 1.035 = 43.015, el
+# centro en 43.015 - 0.015 - 0.45 = 42.550 msnm. Con el terreno en 44.00 y el
+# NF a 0.30 m: agua en 43.70, H_w = 1.150 m en vez de D/2 + t = 0.465 m.
+#   Delta T_L = eta gamma_WA gamma_w (1.150 - 0.465) S/2
+#             = 1.05*1.0*9.81*0.685*0.45 = 3.1751 kN/m
+# HDPE de 0.90 m (H_rel 0.960, D_o = 1.0795 m): centro en 44.05 - 0.960 -
+# 0.53975 = 42.55025; H_w = 1.14975 m en vez de D_o/2 = 0.53975 m.
+#   Delta T_d = 1.05*1.0*9.81*0.61000*1.0795/2 = 3.3914 kN/m
+#   Delta eps_d = 3.3914/(A_eff,75 E_75) = 3.3914/(0.00396875*144 790)
+#               = 0.0059019
+#
+# (7) F_1 > 1 Y EL CAMBIO DE VEHICULO EN UN FLEXIBLE. TMC de 2.10 m (6.8898
+# ft), LLDF 1.15, paquete 0.15 m (el dorado que el test de la FASE A no
+# tenia: reconstruia T_L con la formula de M8 y las magnitudes del paso):
+#   H_rel = 0.40 m: H = 1.8045 ft; IM = 33 (1 - 0.125*1.3123) = 27.587 %
+#     una rueda: w_w = 1.6667 + 2.0751 + 0.4134 = 4.1552 ft;
+#     l_w = 0.8333 + 2.0751 = 2.9085 ft = 0.8865 m (los dos vehiculos)
+#     camion: P_L = 16 (1.27587)(1.2)/(2.9085*4.1552) = 2.0270 ksf = 97.053 kPa
+#     tandem: 12.5 kip -> 1.5836 ksf = 75.823 kPa
+#     C_L = l_w = 0.8865 m; F_1 = 0.75*6.8898/2.9085 = 1.77665 (> F_min = 1)
+#     P_L C_L F_1 = 152.86 (camion) contra 119.42 kN/m: gobierna el CAMION
+#   H_rel = 0.99 m: H = 3.7402 ft; IM = 19.602 %; ruedas interactuando,
+#     w_w = 12.3812 ft
+#     camion: l_w = 5.1345 ft = 1.5650 m; P_L = 0.72245 ksf = 34.591 kPa;
+#       F_1 = max(0.75*6.8898/5.1345, 1) = 1.00639; efecto 54.48 kN/m
+#     tandem: l_w = 9.1345 ft = 2.7842 m > S -> C_L = S = 2.10 m;
+#       P_L = 0.63451 ksf = 30.381 kPa; F_1 = 1; efecto 63.80 kN/m
+#     gobierna el TANDEM, que presiona menos.
+CP_FASE_8_CIERRE = {
+    "tmc_f1": {"D": 2.10,
+               0.40: {"vehiculo": "camion", "P_L_kPa": 97.053, "C_L_m": 0.8865,
+                      "F_1": 1.77665, "efecto_kN_m": 152.86},
+               0.99: {"vehiculo": "tandem", "P_L_kPa": 30.381, "C_L_m": 2.10,
+                      "F_1": 1.0, "efecto_kN_m": 63.80}},
+    "tolerancia_rel": 1e-3,
+    "efecto": {"D": 2.10, "t": 0.200, "H_rel": 0.47, "e_paq": 0.15,
+               "camion": {"P_L_kPa": 51.602, "l_w_m": 1.27016,
+                          "W_L_kN_m": 65.543, "D_N_m_mm": 30.747},
+               "tandem": {"P_L_kPa": 41.140, "l_w_m": 2.48936,
+                          "W_L_kN_m": 102.41, "D_N_m_mm": 38.727},
+               "gobierna": "tandem"},
+    "conservar": {"D": 0.90, "H_rel": 2.90, "P_L_kPa": 8.181,
+                  "vehiculo": "tandem", "D_conservando": 50.587,
+                  "D_despreciando": 46.043, "D_clase": 50.0},
+    "tipo_4": {"D": 0.90, "D_T4": 44.854, "D_T3": 37.421},
+    "hdpe_si95": {"eps_d": 0.028065, "eps_l": 0.007559, "eps_uc": 0.035624,
+                  "u_duracion": 0.19448, "u_letra": 0.17496,
+                  "Delta_m": 0.031725, "FF_mm_N": 0.42236,
+                  "FF_lim_mm_N": 0.54246, "H_max_entre": (1.40, 1.60)},
+    "pandeo_elastico": {"r_mm": 4.371, "S_umbral_mm": 2470.9,
+                        "S_mm": 3000.0, "f_cr_MPa": 105.238},
+    "nf": {"cota_terreno": 44.00, "NF": 0.30, "delta_T_tmc_kN_m": 3.1751,
+           "delta_eps_d_hdpe": 0.0059019},
+}

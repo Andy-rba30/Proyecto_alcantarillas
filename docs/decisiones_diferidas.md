@@ -4365,3 +4365,410 @@ no son un cierre limpio.
   ningún dato válido alcanza, y dos de presentación (las cifras de ρ en la sustitución y
   la nota vacía frente a `None`). No se censan uno a uno: ampliar el censo es de T-10.
 - **Dónde vive:** `tests/test_t8_proteccion.py::test_hec14_la_socavacion_es_el_capitulo_5_y_el_apron_el_10`
+
+---
+
+# Parte XLVI — Lo que T-5 de la cadena T dejó escrito: la Fase 8 real del conducto
+
+T-5 (2026-11-12) cerró `INF-3.3.5` (el «5.1.5 Fase 8 no verifica nada» de la cadena; el
+`INF-5.1.5` canónico es la mezcla de marcos del cabezal, de T-7b). Estas fichas
+registran lo que quedó **decidido con argumento** o **abierto con nombre**. Las nueve
+primeras son de la FASE A; **dos auditorías adversariales independientes** la
+encontraron AJUSTADA, y el dueño del proyecto decidió el mismo día las siete preguntas
+que dejaban abiertas: las fichas `T5-10` a `T5-14` son del cierre, y las nueve primeras
+se corrigieron donde las auditorías las desmintieron (cada una lo dice).
+
+## T5-01 · La Fase 8 que decide si el escalón existe corre a nivel de perfil, detrás de V9 y solo si todo lo anterior cumple
+
+- **Qué se difirió:** a nivel de perfil, la cama de apoyo (ítem 4) y la demanda
+  del marco; el diseño del pórtico, en los dos alcances.
+- **Por qué:** la v8 difería el ítem 5 entero al expediente, y T4-08 dejó dicho
+  que la plancha adoptada del TMC no cumple el factor de flexibilidad desde
+  ~1.39 m: una corrida de perfil que aceptara ese escalón aceptaría un tubo que
+  no existe. Por eso lo que decide la **existencia** —la clase del concreto, el
+  calibre del TMC, el perfil del HDPE— entra a la tabla de la Fase 5 como
+  verificaciones `F8.*` (`M5.fase_8_estructural`), igual que V7, que ya es
+  Fase 8. Corren **solo si todo lo anterior cumple**: un escalón que incumple
+  una V se rechaza igual, y evaluarle la Fase 8 dejaría que un dato estructural
+  que falta (una clase de M 170M sin transcribir) tapara el incumplimiento que
+  de verdad lo descarta (lo de B-01, que incumple V2 en todo diámetro). La
+  consecuencia: la memoria de un escalón rechazado por una V no imprime su
+  Fase 8. La etapa `servicio._fase_8_conducto` vuelve a llamar a la misma
+  función sobre la sección aceptada para quedarse con lo que no es una
+  verificación (pasos de carga, relleno máximo, avisos) en
+  `InformePunto.estructural`. El relleno máximo se busca por el PRIMER cruce
+  del margen (muestreo de `TRAMOS_BUSQUEDA_RELLENO_MAXIMO` tramos y Brent),
+  porque la carga viva decrece con la profundidad mientras la de tierra crece
+  —y, si el proyecto declara tomar el permiso de 3.6.1.2.6a (T5-11), se
+  desprecia de golpe a 8 ft—: el margen no es monótono.
+- **Qué haría falta:** nada para el perfil. Para el expediente, el diseño del
+  pórtico (T5-07).
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::fase_8_estructural`
+
+## T5-02 · De M 170M solo se lee la D-load de la Clase II, y un tubo que pida más BLOQUEA el punto
+
+- **Qué se difirió:** las D-load de 0.3 mm de las Clases I, III, IV y V.
+- **Por qué:** el ejemplar de AASHTO M 170M-04 de `normas/` es una recomposición
+  OCR con dígitos equivocados; leído página por página y por imagen —por la FASE A
+  y otra vez por los dos auditores—, solo la D-load de 0.3 mm de la Clase II es
+  legible (50.0 N/m/mm, Tabla 2, pág. M 170M-5, cita `AASHTO_M170M.T2#DLOAD`).
+  Ninguna otra se completa de memoria: si la D-load requerida supera la de la
+  mayor clase transcrita, la Fase 8 levanta `DatoFaltanteError` sobre
+  `'clases_producto_por_relleno'` nombrando **las clases que la norma tabula para
+  ese diámetro y faltan** y lo que lo destraba. **Es decisión del dueño del
+  proyecto (2026-11-12) BLOQUEAR**: la solución de un tubo que pide más que la
+  Clase II es una clase superior, no un tubo mayor para esquivarla. La versión
+  anterior de esta ficha lo justificaba con «subir de diámetro no lo resuelve (W_E
+  crece con B_c y S_i con D)», y **es falso en general** (auditoría): con 0.50 m de
+  relleno la D-load baja al crecer el diámetro —52.2, 41.7 y 36.0 N/m/mm en 0.90,
+  1.20 y 1.50 m—; solo sube con relleno profundo. Tres cosas más del cierre: la
+  clase no se ofrece por debajo del primer diámetro que la norma le tabula
+  (`DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM`: la Clase I desde 1500 mm; sin eso,
+  completar el criterio hacía que un tubo de 0.90 m saliera «Clase I»); con las
+  clases superiores todas transcritas, un tubo que no alcanza **no cumple**
+  (`cumple=False` frente a la mayor) en vez de pedir un dato que ya no falta; y
+  una clave que no sea una de las cinco clases es `DatoInvalidoError`. En el
+  expediente de referencia no se alcanza: A-01 y A-02 piden 37.4 y 37.0 N/m/mm
+  con el Tipo 3, y su relleno máximo con la Clase II es **2.85 m** (3.18 m en la
+  FASE A, que despreciaba la carga viva pasados 8 ft: T5-11).
+- **Qué haría falta:** un ejemplar legible de M 170M (la vigente) o de ASTM C76M
+  —**entrada que debe conseguir el dueño**: `docs/contrato_entradas.md`— y añadir
+  sus filas al dict del criterio.
+- **Dónde vive:** `src/modulos/M8_estructural.py::clases_de_concreto_para`
+
+## T5-03 · El TMC sube de plancha dentro de su corrugación, la Tabla 507-01 del EG-2013 pone el piso, y la plancha elegida no se devuelve a la geometría
+
+- **Qué se difirió:** devolver al catálogo la plancha que la Fase 8 elige, para
+  que la envolvente de 7.A y V7 se recalcule con ella; la costura **empernada**.
+- **Por qué:** la progresión recorre las planchas de la corrugación adoptada
+  desde el mayor de la plancha adoptada y del mínimo de la Tabla 507-01 del
+  EG-2013 (cita `EG2013.T507-01`; para un diámetro entre dos filas se toma la
+  fila SUPERIOR, lectura del lado del mayor espesor; por encima de 1.80 m la
+  tabla calla y manda el cálculo), y solo las que la fabricación declarada
+  puede hacer: con costura remachada, la Tabla 5 de ASTM A796 imprime «. . .»
+  donde la combinación no se fabrica (la de 1.32 mm, sin costura tabulada, no
+  se ofrece). La clave sube con una plancha más gruesa y el relleno se
+  recalcula con cada una; la envolvente de 7.A y V7 sigue armada con la
+  adoptada, y cuando la elegida es otra el punto lo **avisa** («Declare la
+  plancha requerida…»): son décimas de milímetro de clave (0.76 mm en 1.20 m)
+  y declararla es una línea, mientras que iterar la geometría desde la Fase 8
+  sería un bucle nuevo sobre MD. La empernada no tiene tabla para 68 por 13 en
+  ninguna fuente del repositorio (A796 Tablas 5 y 7 y AASHTO A12-7 son de
+  remaches): declararla detiene la Fase 8 pidiendo la resistencia del
+  fabricante. El valor de archivo de `'fabricacion_tmc'` es la remachada
+  simple, la costura más débil de las **tabuladas** (decisión del dueño,
+  2026-11-12). **La frase que cerraba esta ficha —«el EG-2013 507.02 nombra
+  pernos y tuercas entre los accesorios sin fijar la fabricación»— la desmintió
+  la auditoría**: el 507.02 a) describe «tubos conformados estructuralmente de
+  planchas», con el «perforado» de las planchas y las normas de sus pernos y
+  tuercas: es tubería **empernada** (cita `EG2013.507.02#EMPERNADA`, con su
+  `Interpretacion`). Por eso un `F8.COSTURA` que cumple con la remachada no es
+  la costura del producto peruano, y el resultado lo **avisa siempre**
+  (`AVISO_COSTURA_DE_OTRA_FABRICACION`, en el paso y en los avisos del punto).
+  Cuando la costura no desarrolla el empuje con ninguna plancha, el veredicto
+  dice si otra fabricación tabulada lo haría; la progresión sube de plancha —y
+  con ella de costura— dentro de la tabla, pero **no cambia sola la
+  fabricación**, que es una elección declarada.
+- **Qué haría falta:** que la plancha elegida viaje a `M2.espesor_pared` (el
+  catálogo la consultaría en vez de la adoptada) y la resistencia de costura
+  empernada del producto que se especifique.
+- **Dónde vive:** `src/modulos/M8_estructural.py::verificar_tmc`
+
+## T5-04 · El TMC rige por LRFD y A796 es solo contraste: el expediente de referencia «VARIOS» se reproduce, y su H-20 no es el HL-93
+
+- **Qué se difirió:** nada; se declara el marco de cada número.
+- **Por qué:** AASHTO LRFD 12.7.2 es de factores de carga y resistencia (γ_EV
+  1.95 de la fila flexible de la Tabla 2.4.5.3.1-2, γ_LL 1.75, φ de la Tabla
+  12.5.5-1, η de 12.5.4); ASTM A796 núm. 8 es de tensiones admisibles (SF = 2,
+  f_y 225 MPa). Mezclarlos —un γ de LRFD con un FS de A796— es la incoherencia
+  que la Sec. 0.2 prohíbe, y no ocurre: el FS solo vive en
+  `M8.area_requerida_asd_a796`, que imprime un paso rotulado «NO RIGE»
+  (fijado por AST en `tests/test_t5_estructural_conducto.py`). La presión de
+  clave que 12.7.2.2 toma de 12.12.3.4 se lee como la de campo libre a la cota
+  de la clave, sin el K_γE del termoplástico (C12.7.2.2; es la misma que A796
+  núm. 9.1 mayora con 1.95). Con los datos de «VARIOS» (D 0.90 m, DL 4.5 kPa,
+  LL 86 kPa H-20; **según el INFORME §1.1**, las páginas del PDF original no se
+  verificaron en esta sesión) el contraste da C = 40.725 kN/m y A = 0.354 mm²/mm
+  con f_y = 230 MPa, que es el redondeo del expediente; con el 225 de A796-13,
+  0.362 (+2.2 %). Su D/r = 207 es el de la plancha de 1.63 mm y el pandeo no
+  gobierna. Su FF de 0.109 mm/N **no se reproduce** con las inercias de la
+  Tabla 5 de A796 (0.131 con 1.63 mm, 0.103 con 2.01): usa otra tabla de
+  propiedades; los dos lados quedan bajo el límite de 0.245. Y la H-20 de A796 6.2.2.1 (86.2 kPa a 1 ft, con impacto) **no
+  se compara** con el HL-93: a 1 ft el método de 3.6.1.2.6 ni siquiera aplica a
+  un flexible, y apenas por encima (0.31 m) el HL-93 da más del doble.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M8_estructural.py::area_requerida_asd_a796`
+
+## T5-05 · El HDPE se calcula con tres lecturas declaradas, y sin el perfil del fabricante no tiene veredicto
+
+- **Qué se difirió:** la deformación combinada de flexión y empuje
+  (12.12.3.10.2) y el pandeo local por elementos del perfil (12.12.3.10.1b),
+  que necesitan la geometría idealizada del perfil.
+- **Por qué:** sin esa geometría, el área efectiva sale del **mínimo de producto**
+  que M 294 núm. 7.7 exige al ensayo de compresión (traducción no oficial):
+  A_eff = 0.5 A_g F_u,ini K_t / F_u por la Eq. 12.12.3.10.1b-5 (0.45 A_g inicial,
+  0.417 A_g a 75 años). **La deformación de empuje se suma por duración** (lectura
+  de la definición de E_p en 12.12.3.10.1c): la de las cargas permanentes con las
+  propiedades de largo plazo, la de la carga viva con las iniciales; el pandeo
+  general **no** se suma así desde el cierre (T5-13). En 42 y 48 in la llamada
+  «*» de la Tabla A12-11 lleva también la carga viva al largo plazo. R = (D +
+  D_o)/4 a falta del centroide. El ν del suelo (0.40) **no tiene fuente**.
+  **Lo que la FASE A no decía, y las dos auditorías midieron:** con su relleno
+  por defecto (`Cl-95`) y el perfil mínimo de la Tabla A12-11, el HDPE de 900 a
+  1200 mm **no cumple a ninguna altura de relleno**; la ficha decía solo que «el
+  de 0.90 m de A-01 no cumple». Dos causas: (a) **el relleno**: `Cl-95` se
+  justificaba con «cualquier material apto para terraplén» y omitía el EG-2013
+  **508.02 d)**, que manda la cama y la sujeción lateral de material **granular**
+  de la Sección 301 (finos de 5 a 25 %, IP de 4 a 9): el valor de archivo pasa a
+  `Si-95`, la columna menos favorable de las que corresponden a ese material
+  (cita `EG2013.508.02#GRANULAR`, con su `Interpretacion`), y `Cl-95` queda en la
+  ventana como cota conservadora; (b) **el perfil**: T5-10. Con `Si-95` y el
+  perfil mínimo de 36 in, el de 0.90 m de A-01 da ε = 0.0356 ≤ 0.041, u = 0.194
+  ≤ 0.70, 3.5 % ≤ 5 % y FF = 0.422 ≤ 0.542 mm/N (el factor de flexibilidad de
+  12.12.3.6 no se verificaba), con 1.48 m de relleno máximo. No mueve la línea
+  base: el concreto cierra antes.
+- **Qué haría falta:** la geometría idealizada del perfil del fabricante o el
+  ensayo T 341 para el área efectiva, y el ν del ensayo del relleno.
+- **Dónde vive:** `src/modulos/M8_estructural.py::_evaluar_hdpe`
+
+## T5-06 · La carga viva HL-93 atraviesa el relleno por 3.6.1.2.6, y los pesos que cargan no son los que estabilizan
+
+- **Qué se difirió:** la distribución para relleno somero (4.6.2.10) y el
+  análisis «more comprehensive» por debajo de 1 ft.
+- **Por qué:** el HL-93 (32.0 kip el eje del camión, 25.0 kip el tándem), la
+  presencia múltiple de un carril (1.20) y el IM de componentes enterrados
+  (33 (1 − 0.125 D_E) %, D_E en pies) son del Manual de Puentes [N]; la
+  distribución por el relleno no la trae el Manual —su 2.4.3.2.2 pasa del área
+  de contacto de los neumáticos (3.6.1.2.5 AASHTO) a la presencia múltiple, y
+  ninguna sección del ejemplar remite a 3.6.1.2.6: buscado en el texto
+  extraído— y se toma de AASHTO LRFD 3.6.1.2.6 [C], con tráfico paralelo al
+  vano y un carril (el de casi toda
+  alcantarilla vial, C3.6.1.2.6b). **GOBIERNA EL VEHÍCULO DE MAYOR EFECTO, no el
+  de mayor presión** (auditoría: la FASE A elegía por presión, y su test
+  repetía la misma regla): lo que carga al conducto es P_L por el largo del
+  área cargada que cae sobre él, y con poco relleno y luz grande el tándem da
+  menos presión sobre un área más larga y carga más —en el tubo de concreto de
+  2.10 m con 0.47 m de relleno, 102.4 kN/m contra 65.5, y la D-load 38.7 contra
+  30.7 N/m/mm—; cada consumidor pasa su medida (`efecto=`: W_L el concreto, P_L
+  C_L F_1 los flexibles, P_L el marco, que la aplica a toda la luz). La «cubierta de tierra» D_E del IM se toma
+  como el relleno SIN el paquete estructural (subrasante menos clave), que da
+  el IM mayor; la profundidad que distribuye la carga sí llega a la rasante.
+  Fuera de su dominio (menos de 2.0 ft sobre
+  concreto o marco, 1.0 ft o menos sobre un flexible) la Fase 8 se detiene con
+  `MetodoNoEvaluableError` (rótulo `MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL`),
+  diferido a nivel de perfil como V1/V2. W_L = P_L min(l_w, B_c) sobre el tubo
+  de concreto es lectura del proyecto. **Los pesos**: el relleno carga con el
+  mayor de `'peso_especifico_relleno_kn_m3'` [A] (17.0, el extremo bajo porque
+  en V7 estabiliza), del 0.120 kcf que el Manual permite usar a falta de
+  información precisa (Tabla 2.4.2.1-1) y, en el concreto, del piso de 110
+  lb/ft³ de 12.10.2.1; el paquete pesa 0.140 kcf. El agua llega al menos a la
+  clave (la hipótesis de V7) o al NF del punto medido desde la cota de terreno
+  si queda más alto; el suelo pesa húmedo también bajo el agua (cota superior).
+- **Qué haría falta:** implementar 4.6.2.10 si el corredor tuviera rellenos de
+  menos de 2 ft.
+- **Dónde vive:** `src/modulos/M8_estructural.py::carga_viva_enterrada`
+
+## T5-07 · Del marco se calcula la demanda, y el pórtico se difiere
+
+- **Qué se difirió:** el análisis y el diseño del pórtico (momentos en losa y
+  muros, acero; AASHTO LRFD Sección 5 y 12.11.3 a 12.11.5) y el empuje lateral
+  del relleno sobre los muros.
+- **Por qué:** la v8 manda el «diseño completo por AASHTO LRFD Sección 5» del
+  marco y no lo lleva al script. Lo que T-5 calcula es la DEMANDA de la losa
+  superior: F_e = 1 + 0.20 H/B_c con el tope de 1.15 del relleno compactado
+  (12.11.2.2.1; el EG-2013 exige compactarlo), la carga viva de 3.6.1.2.6 y
+  M_ref = w_u L²/8 en kN·m/m, la cota superior del momento positivo como viga
+  simplemente apoyada. El peso propio de la losa no entra (necesita su canto y
+  el peso del concreto, que son del diseño diferido); el empuje lateral necesita
+  el coeficiente de empuje del suelo del conducto, que el proyecto no declara.
+  La sección del marco la define T-3; mientras sus criterios de cajón no se
+  declaren, el marco se detiene antes, en `CriterioPendienteError`.
+- **Qué haría falta:** el diseño del pórtico con sus criterios (canto,
+  recubrimiento, f'c, el ángulo de fricción del relleno del conducto).
+- **Dónde vive:** `src/modulos/M8_estructural.py::demanda_marco`
+
+## T5-08 · El caso de la auditoría de T-4 deja de dimensionarse con la fabricación de archivo: cambio declarado y aprobado por el dueño
+
+- **Qué se difirió:** nada; se registra un cambio de veredicto fuera de la línea
+  base, **aprobado por el dueño del proyecto el 2026-11-12**.
+- **Por qué:** el caso G2 del auditor adversarial de T-4 (rasante 52.20 m, Q =
+  6 m³/s, ~8.5 m de relleno) se adoptaba en TMC de 1.95 m sin ninguna
+  verificación estructural. Con la Fase 8 real y la costura remachada SIMPLE
+  de archivo, ninguna plancha de 68 por 13 desarrolla el empuje (320.7 kN/m
+  en 1.95 m frente a 0.67 × 374 = 250.6 kN/m de la de 4.27 mm, la última de la
+  tabla: la progresión sube hasta ella antes de rendirse) y el TMC se descarta
+  por `F8.COSTURA`; con la DOBLE (0.67 × 748) o la helicoidal se dimensiona con
+  la plancha de 4.27 mm. **La FASE A había resuelto el test de T-4 que fijaba esa
+  adopción añadiéndole la remachada doble, sin subir la pregunta** (PARADA (c),
+  auditoría): el cierre restauró el test de `origin/main` y lo reescribió a la
+  verdad nueva **declarándolo** —qué pasaba, qué pasa y por qué—, con el caso de
+  la fabricación declarada al lado.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `tests/test_t4_materiales_durabilidad.py::test_h1_el_caso_del_auditor_ya_no_adopta_tmc_con_la_costura_de_archivo`
+
+## T5-09 · Los valores de archivo de los [A] de la Fase 8 NO son todos «lo más desfavorable», y cada uno dice qué es
+
+- **Qué se difirió:** nada; se declara la regla de cada valor de archivo.
+- **Por qué:** la versión anterior de esta ficha decía que los cinco [A] nuevos
+  «traen por defecto lo más desfavorable que la norma peruana admite», y las dos
+  auditorías lo desmintieron en cuatro de cinco. Lo que cada uno es desde el
+  cierre (y quién lo decidió):
+  `'instalacion_estandar_concreto'` = **Tipo 3**, la instalación que la
+  compactación exigida por el EG-2013 corresponde, con `tipo_4` **dentro de la
+  ventana** (la FASE A lo dejaba fuera: «el Tipo 4 no la exige y queda fuera» era
+  una lógica invertida, porque diseñar con el Tipo 4 es siempre válido y más
+  desfavorable) y el Tipo 4 **impreso al lado** como contraste (decisión del
+  dueño; T5-12); `'fabricacion_tmc'` = remachada simple, la costura más débil
+  **tabulada**, que no es la del producto que el EG-2013 describe (T5-03);
+  `'eta_importancia_operativa_conducto'` = 1.05: **ninguna fuente lo prescribe
+  para una estructura enterrada** —12.5.4 solo fija la redundancia (η_R = 1.00) y
+  1.3.5 dice «The Owner may declare»—; es la clasificación de importancia que
+  hace el Propietario (vía de acceso en emergencia, FEN), [A] con la ventana del
+  Manual de Puentes 2.3.2.5 (decisión del dueño); `'relleno_estructural_hdpe'` =
+  `Si-95`, la columna menos favorable de las que corresponden al material
+  granular del 508.02 d) (T5-05); `'parametros_diseno_hdpe'`, los valores que
+  la norma llama **típicos** —K_B 0.10 y D_L 1.5 no son el extremo desfavorable
+  de sus ventanas, que serían 0.110 y 6.0; ν = 0.40 tampoco (0.45), y no tiene
+  fuente— y las propiedades a 75 años; `'carga_viva_bajo_relleno_alto'` =
+  conservar (T5-11); y `'perfil_hdpe_fabricante'`, sin valor (T5-10). Los siete
+  son de perfil, con ventana, y se barren con `--barrido`. **Qué corrida midió
+  el nivel de cada uno** está escrito en la cabecera de su bloque en
+  `criterios_adoptados.py`: dos los alcanza la corrida de referencia y cinco la
+  corrida que excluye el concreto (y el TMC) por catálogo.
+- **Qué haría falta:** las especificaciones técnicas del expediente (cama,
+  relleno, producto) y la declaración del propietario sobre la vía.
+- **Dónde vive:** `src/criterios_adoptados.py::instalacion_estandar_concreto`
+
+## T5-10 · Sin el perfil del fabricante el HDPE queda «no verificado con un producto real», no se adopta, y el punto no sale «no factible»
+
+- **Qué se difirió:** el veredicto del HDPE, hasta que el expediente declare el
+  perfil del producto.
+- **Por qué:** decisión del dueño del proyecto (2026-11-12) sobre el hallazgo que
+  las dos auditorías dieron por el más grave. AASHTO LRFD 12.12.3.2 dice que las
+  propiedades de sección «should be determined from cut sections of pipe or
+  obtained from the pipe manufacturer», y su comentario que los mínimos que las
+  especificaciones traían —los de la Tabla A12-11— «have been minimum values and
+  are not meaningful for design» (citas `AASHTO_LRFD_9.12.12.3.2` y
+  `.C12.12.3.2`). El criterio `'perfil_hdpe_fabricante'` es por eso un [A]
+  **opcional sin valor por defecto**: `{'900': {'A_mm2_mm', 'I_mm4_mm', 'od_m'}}`,
+  cada propiedad no menor que el mínimo de la tabla. Sin él,
+  `M8.verificar_hdpe` calcula con el perfil mínimo solo para dar la **cota
+  inferior** (`M8.cota_inferior_hdpe`, `ResultadoEstructural.cota_inferior`), y
+  se detiene con `DatoFaltanteError` sobre el criterio, con los cuatro números
+  de la cota y el rótulo `ROTULO_HDPE_SIN_PRODUCTO` en el mensaje. **El HDPE no
+  se adopta sin ese dato.** Dos consecuencias cuidadas: (1) el HDPE es el
+  ÚLTIMO candidato del orden de M2, de modo que su dato faltante no bloquea a
+  ningún material anterior (regla T4-10) ni mueve el fixture —medido: A-01 y A-02
+  siguen en concreto de 0.90 m, B-01 «no factible» por V2, C-01 en los criterios
+  del cajón—; (2) **un punto al que solo le falta un dato no es «no factible»**:
+  cuando la Fase 8 detiene por dato faltante un escalón que CUMPLE toda la tabla
+  de la Fase 5 (este caso, y el tubo de concreto sin clase transcrita), `MD`
+  relanza ese `DatoFaltanteError` en vez de `DisenoNoFactibleError`
+  (`ATRIBUTO_ESCALON_CUMPLE_LO_DEMAS`); la otra mitad de T4-10 —el dato que falta
+  ANTES de la tabla en un material cuyos escalones evaluados incumplen— no
+  cambia. El área efectiva sigue saliendo del mínimo de M 294 núm. 7.7 aunque el
+  perfil esté declarado (T5-05).
+- **Qué haría falta:** el catálogo o la certificación del fabricante del tubo
+  que el expediente especifique (EG-2013 508.02 b)): entrada del
+  `docs/contrato_entradas.md`.
+- **Dónde vive:** `src/modulos/M8_estructural.py::cota_inferior_hdpe`
+
+## T5-11 · La carga viva bajo relleno alto se conserva: el permiso de 3.6.1.2.6a no se toma en silencio
+
+- **Qué se difirió:** nada; se declara una elección.
+- **Por qué:** AASHTO LRFD 3.6.1.2.6a dice que los efectos de la carga viva «may
+  be neglected» cuando el relleno supera 8.0 ft y la luz (y, en varios vanos, la
+  distancia entre las caras interiores de los muros extremos). Es un PERMISO, y
+  la FASE A lo tomaba siempre, sin criterio ni aviso: entre ~2.85 y 3.18 m de
+  relleno el programa aceptaba un tubo de concreto de 0.90 m Clase II que con
+  la carga viva no alcanza (50.59 N/m/mm con 2.90 m, contra 46.04
+  despreciándola). El criterio `'carga_viva_bajo_relleno_alto'` [A] vale
+  `conservar` (decisión del dueño, 2026-11-12; es el lado seguro) y
+  `despreciar_3_6_1_2_6a` queda como alternativa barrible, que cuando se toma
+  sale en el paso, en la cita y **en los avisos del punto**. El marco de varias
+  celdas usa para el permiso la distancia entre muros extremos (N B + (N − 1) t,
+  con los muros interiores del espesor de los exteriores a falta del diseño), no
+  la luz de una celda. Movimiento declarado de la línea base: el relleno máximo
+  de A-01 y A-02 pasa de 3.183 a 2.851 m; no es un diámetro.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M8_estructural.py::regla_de_la_carga_viva_bajo_relleno_alto`
+
+## T5-12 · El tubo de concreto se verifica con el Tipo 3 y el Tipo 4 se imprime al lado: la correspondencia con el EG-2013 es lectura del proyecto, y tiene una condición
+
+- **Qué se difirió:** nada; se declara una lectura y lo que tiene en contra.
+- **Por qué:** decisión del dueño del proyecto (2026-11-12): valor de archivo
+  Tipo 3 —la hipótesis de cálculo tiene que coincidir con lo que la
+  especificación garantiza—, `tipo_4` dentro de la ventana y el Tipo 4 impreso
+  como contraste (pasos `F8.TIPO4` y `F8.HMAX_TIPO4`; en A-01, 44.85 N/m/mm y
+  1.69 m de relleno máximo contra 37.42 y 2.85). **Una precisión contra la
+  fuente primaria**: la decisión citaba el EG-2013 508.07 (más del 95 % del
+  Proctor Modificado), que es el numeral de la tubería de **polietileno**. Para
+  el tubo de concreto rigen el 506.07 y el 506.10 (solado de subbase granular de
+  15 cm y sujeción hasta un sexto del diámetro exterior, compactados como la
+  corona: 95 % del Proctor Modificado) y, por encima, el 506.11 → Sección 502 →
+  205.12(c)(1): los materiales de terraplén (A-1-a, A-1-b, A-2-4, A-2-6, A-3) al
+  **90 %** del Proctor Modificado. La decisión se aplica igual —el EG-2013 exige
+  compactar todo el relleno, que es lo que el Tipo 4 no pide—, con la
+  justificación corregida y la condición dicha en la `Interpretacion` de la cita
+  `AASHTO_LRFD_9.T12.10.2.1-1`: la Tabla 12.10.2.1-1 gradúa en Proctor
+  **Estándar** y remite la equivalencia con el Modificado a la Tabla 27.5.2.2-3
+  de la especificación de construcción de AASHTO, que no está en `normas/`; sin
+  ella, el 90 % del Modificado garantiza el Tipo 3 con suelo granular o limoso
+  (85 y 90 %), y no con el más plástico que el EG-2013 admite (A-2-6), para el
+  que la tabla pide 95 %.
+- **Qué haría falta:** las especificaciones de cama y relleno del expediente, o
+  la Tabla 27.5.2.2-3 de AASHTO LRFD Bridge Construction Specifications.
+- **Dónde vive:** `src/modulos/M8_estructural.py::_contraste_tipo_4`
+
+## T5-13 · El pandeo general del HDPE va con el módulo de la vida de diseño, y rige el mayor de dos términos
+
+- **Qué se difirió:** nada; se corrige una lectura que no estaba anclada.
+- **Por qué:** AASHTO LRFD 12.12.3.3: «Investigation of general buckling shall be
+  based on the value of modulus of elasticity that represents the design life of
+  the project» (cita `AASHTO_LRFD_9.12.12.3.3#PANDEO`, EXIGENCIA). La FASE A
+  sumaba el pandeo por duración —la carga viva contra la capacidad con el módulo
+  inicial— apoyándose en la definición de E_p de 12.12.3.10.1c, que es de la
+  deformación de compresión, y no citaba esa frase (auditoría). Desde el cierre
+  `u_letra` = (ε_d + ε_l,lp)/ε_bck,lp, con la carga viva, su arqueo y su área
+  efectiva de largo plazo, es la letra de 12.12.3.3 (decisión del dueño); la suma
+  por duración (`u_duracion`) se conserva **al lado** y rige **la mayor**, porque
+  cuál es mayor depende del suelo: con `Cl-95` la letra (0.513 contra 0.488 en
+  A-01), con `Si-95` y `Sn-95` la suma por duración (0.194 contra 0.175). El
+  paso imprime las dos y dice cuál gobierna.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M8_estructural.py::_evaluar_hdpe`
+
+## T5-14 · Lo que las dos auditorías adversariales de T-5 encontraron, lo que se corrigió y lo que se refutó
+
+- **Qué se difirió:** cortar la progresión de diámetros de un material cuando el
+  último escalón solo incumple la Fase 8 (se refuta: ver abajo), y la
+  devolución de la plancha elegida a la geometría (T5-03, sin cambio).
+- **Por qué:** veredicto AJUSTADO de las dos, sin bloqueantes; cinco hallazgos
+  ALTA entre las dos (vehículo por presión, permiso de 8 ft, HDPE excluido en
+  todo el dominio, «Tipo 3 el más desfavorable», el test de T-4 reescrito en
+  silencio). Corregidos todos: T5-06, T5-11, T5-05 y T5-10, T5-12 y T5-09, T5-08.
+  De los MEDIA y BAJA: el carácter del umbral se lee de la cita y ya no se
+  escribe "EXIGENCIA" a mano (la deflexión del 5 % es la RECOMENDACIÓN de
+  C12.12.2.2); lo que no se verifica se imprime **por material**
+  (`ResultadoEstructural.diferido`), no la lista de todos; guardias de segunda
+  línea en `carga_viva_enterrada` (conducto fuera del conjunto cerrado) y en
+  `incremento_dinamico_enterrado` (una cubierta negativa daba un IM de 100.7 %);
+  la fila «< 2.0 ft» de B_FLL era código muerto y se retiró; el piso de 110
+  lb/ft³ no puede gobernar y el docstring lo dice; el contraste ASD dice que no
+  es «A796 puro» (lleva el m = 1.20 y el IM de LRFD); la lectura de 12.7.2.2 sin
+  K_γE queda declarada en el paso como la de la menor demanda; y los huecos que
+  dejó la mutación (deflexión admisible, rama elástica del pandeo, relleno
+  máximo del TMC y del HDPE, muestreo del primer cruce, nivel freático,
+  márgenes, marco con H ≠ 1) tienen test con dorado a mano
+  (`CP_FASE_8_CIERRE`). **Refutado con evidencia:** que el TMC «sube de diámetro
+  inútilmente» cuando falla la Fase 8 (O-H14) no se corrige cortando la
+  progresión, porque la monotonía no vale en general —el propio auditor mide en
+  el concreto que la D-load baja al crecer el diámetro con relleno somero—; lo
+  que se corrige es el motivo, que ahora dice que el catálogo no se agotó por la
+  hidráulica (`ACLARACION_DESCARTE_POR_FASE_8`). **Los tests de las correcciones
+  no se escribieron en rojo antes del código**: se midió el rojo contra la FASE A
+  rebasada (`1768b45`): 48 de 71 fallan allí; los 23 que valen antes y después
+  son 15 literales del PDF y 8 guardias (entre ellas las que matan mutantes de
+  código que ya era correcto).
+- **Qué haría falta:** nada.
+- **Dónde vive:** `tests/test_t5_correcciones_auditoria.py::test_cada_consumidor_pasa_su_medida_del_efecto`

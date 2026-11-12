@@ -6076,3 +6076,112 @@ class LongitudConducto:
     # por no declararse bombeo ni peralte, o una pendiente transversal
     # declarada que el metodo o una longitud declarada dejan sin aplicar.
     avisos: Tuple[str, ...] = ()
+
+
+# ===========================================================================
+# --- T-5 --- (cadena T, 2026-11-12) Fase 8: estructural del conducto
+# (INF-3.3.5). Lo que M8 devuelve. Viven aqui por la regla de la casa: son
+# tipos que fluyen entre M8, la Fase 5 (M5 y el verificador de perfil del
+# servicio), el servicio y M11.
+# ===========================================================================
+
+@dataclass(frozen=True)
+class CargaVivaEnterrada:
+    """
+    La carga viva HL-93 a la profundidad del conducto (AASHTO LRFD
+    3.6.1.2.6, con el HL-93 y el IM del Manual de Puentes). Todo en SI.
+
+    `vehiculo` dice cual de los dos gobernó ("camion" o "tandem"), y
+    GOBIERNA EL DE MAYOR EFECTO, no el de mayor presion (auditoria de T-5):
+    lo que carga al conducto es la presion por el largo del area cargada que
+    cae sobre el --W_L = P_L min(l_w, B_c) en el tubo de concreto, P_L C_L
+    F_1 en los flexibles--, y con poco relleno y luz grande el tandem (ejes
+    a 4 ft) da menos presion sobre un area mas larga y carga mas. `efecto`
+    es el valor de esa medida para el que gobierna, `efecto_descripcion`
+    dice cual es, y `candidatos` trae los DOS vehiculos como tuplas
+    (vehiculo, P_kN, l_w_m, w_w_m, P_L_kPa, efecto). `P_kN` es la carga de
+    las ruedas que interactuan sobre el area `l_w x w_w`. `despreciada` es
+    True solo cuando el criterio 'carga_viva_bajo_relleno_alto' toma el
+    PERMISO de 3.6.1.2.6a (relleno de mas de 8 ft que ademas supera la luz)
+    y entonces `P_L_kPa` vale 0; `en_zona_de_permiso` dice si el relleno
+    esta en esa zona, se tome o no el permiso. `paso` es el desarrollo.
+    """
+    H_m: float
+    LLDF: float
+    IM_pct: float
+    m: float
+    vehiculo: str
+    P_kN: float
+    l_w_m: float
+    w_w_m: float
+    P_L_kPa: float
+    despreciada: bool
+    paso: "PasoDeMemoria"
+    efecto: float = 0.0
+    efecto_descripcion: str = ""
+    candidatos: Tuple[Tuple[str, float, float, float, float, float], ...] = ()
+    en_zona_de_permiso: bool = False
+
+
+@dataclass(frozen=True)
+class DemandaMarco:
+    """
+    La demanda sobre la losa superior del marco (AASHTO LRFD 12.11) que el
+    diseño de la seccion --diferido al expediente-- tiene que cubrir. Es
+    una DEMANDA, no una verificacion: no hay resistencia contra que
+    compararla mientras la seccion no se diseñe.
+    """
+    F_e: float
+    w_tierra_kPa: float
+    w_viva_kPa: float
+    w_u_kPa: float
+    luz_m: float
+    M_u_referencia_kNm_m: float
+    pasos: Tuple["PasoDeMemoria", ...]
+
+
+@dataclass(frozen=True)
+class ResultadoEstructural:
+    """
+    La Fase 8 de un conducto: las cargas, lo que se eligio (clase, plancha o
+    perfil), las verificaciones que deciden si la combinacion EXISTE y el
+    relleno maximo con que la eleccion sigue cumpliendo.
+
+    `verificaciones` son las que la Fase 5 suma a su tabla (codigos F8.*):
+    deciden, igual que V1 a V10, si el escalon se acepta. `pasos` son los de
+    la carga y la seleccion, que no juzgan; `avisos` sube a
+    `InformePunto.avisos()`; `diferido` lista lo que de verdad sigue fuera
+    del alcance. `seleccion` es el texto de lo elegido ("Clase II",
+    "68x13/2.77", ...) y vacio si nada cumple.
+
+    `cota_inferior` es True SOLO en el resultado del HDPE calculado con el
+    perfil MINIMO de la Tabla A12-11 de AASHTO LRFD por no haberse declarado
+    el del fabricante: sus veredictos no son los de un producto real
+    (C12.12.3.2) y por eso ese resultado no llega nunca a la tabla de la
+    Fase 5 --`M8.verificar_hdpe` se detiene con `DatoFaltanteError` y lo
+    lleva dentro--; se obtiene con `M8.cota_inferior_hdpe`.
+    """
+    material: str
+    H_relleno_m: float
+    e_paquete_m: float
+    H_total_m: float
+    seleccion: str
+    relleno_maximo_m: Optional[float]
+    verificaciones: Tuple["Verificacion", ...]
+    pasos: Tuple["PasoDeMemoria", ...]
+    avisos: Tuple[str, ...] = ()
+    diferido: Tuple[str, ...] = ()
+    demanda_marco: Optional[DemandaMarco] = None
+    cota_inferior: bool = False
+
+    @property
+    def cumple(self) -> bool:
+        return all(v.cumple for v in self.verificaciones)
+
+
+# --- T-5 --- El mismo estado cuando lo que no alcanza es el metodo de la
+# carga viva a traves del relleno de AASHTO LRFD 3.6.1.2.6a (relleno menor
+# que el de su dominio). Mismo recurso que T-1: encabezarla con «HDS-5
+# 3.24» seria una cita falsa (`MetodoNoEvaluableError.rotulo`).
+MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL = (
+    "método no evaluable (AASHTO LRFD 3.6.1.2.6a)")

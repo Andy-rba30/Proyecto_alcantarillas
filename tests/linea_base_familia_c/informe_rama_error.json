@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "0592f597933796ae5fd92bdbfb5bd893ea7b6cde",
+    "criterios_sha1": "27600c7bc50365a9413d10826698d31d8a1bd04a",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -845,7 +845,6 @@
       "capacidad_portante_adm",
       "categoria_refuerzo_aashto",
       "clase_sitio",
-      "clases_producto_por_relleno",
       "cobertura_minima_cajon",
       "cortante_alto_muro_e060_art_11_10_10_2",
       "cuantia_vertical_cortante_alto_e060_art_11_10_10_3",
@@ -881,6 +880,7 @@
       "PERFIL_SUELO_PRESUNTO",
       "acceso_mantenimiento_v2b",
       "borde_libre_canal_m",
+      "clases_producto_por_relleno",
       "cobertura_minima_aashto",
       "coeficiente_uniformidad_temez",
       "condicion_pavimento",

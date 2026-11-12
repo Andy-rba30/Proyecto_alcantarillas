@@ -3,8 +3,12 @@ tests/test_M8_estructural.py
 =============================
 Fase 8 (M8_estructural.py):
 
-    seleccionar_clase_calibre()      CriterioPendienteError:
-                                      'clases_producto_por_relleno' vacio.
+    seleccionar_clase_calibre()      DESDE T-5 tiene cuerpo (INF-3.3.5): la
+                                      clase, el calibre o el perfil por AASHTO
+                                      LRFD 12.10 / 12.7 / 12.12, y la demanda
+                                      del marco. Sus dorados estan en
+                                      tests/test_t5_estructural_conducto.py;
+                                      aqui, lo que cambio de contrato.
     empuje_flotacion_kn_m()          U = gamma_agua * (pi/4) * D^2, siempre
                                       calculable: la hipotesis es sumersion
                                       completa y por eso NO usa el valor del
@@ -24,7 +28,8 @@ Fase 8 (M8_estructural.py):
                                       global: es el equilibrio de factores de
                                       carga LRFD.
     cama_apoyo_relleno_lateral()     tabla 8.1, [N] literal, sin vacio.
-    verificacion_diferida_estructural()  tupla de avisos, nunca calcula.
+    verificacion_diferida_estructural()  tupla de lo que la Fase 8 sigue sin
+                                      verificar, con su razon; nunca calcula.
 """
 
 import math
@@ -66,14 +71,29 @@ def hdpe():
 # Items 1-2 - Seleccion de clase/calibre
 # ===========================================================================
 
-def test_seleccionar_clase_calibre_lanza_pendiente(concreto):
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        seleccionar_clase_calibre(material=concreto, altura_relleno=1.0)
+def test_seleccionar_clase_calibre_sin_la_tabla_de_clases_lanza_pendiente(
+        concreto):
+    """
+    Hasta T-5: siempre CriterioPendienteError y, con valor, AssertionError.
+    Desde T-5 el criterio tiene valor; vaciado en caliente, la Fase 8 se
+    detiene en el, que es la vigilancia que queda de aquel test.
+    """
+    from tests.fixtures.casos_patron import CP_FASE_8_ESTRUCTURAL
+    punto = CP_FASE_8_ESTRUCTURAL["punto_A01"]()
+    with sin_valor("clases_producto_por_relleno"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            seleccionar_clase_calibre(punto=punto, material=concreto,
+                                      seccion=SeccionCircular(0.90),
+                                      altura_relleno=0.95)
     assert excinfo.value.clave == "clases_producto_por_relleno"
 
 
-def test_clases_producto_por_relleno_esta_declarado_vacio():
-    assert "clases_producto_por_relleno" in ca.criterios_sin_valor()
+def test_clases_producto_por_relleno_ya_no_esta_vacio():
+    assert "clases_producto_por_relleno" not in ca.criterios_sin_valor()
+    valor = ca.CRITERIOS["clases_producto_por_relleno"].valor
+    assert set(valor) == {"concreto_reforzado"}
+    assert valor["concreto_reforzado"] == pytest.approx({"II": 50.0},
+                                                        rel=REL_TRANSPORTE)
 
 
 # ===========================================================================
@@ -301,15 +321,25 @@ def test_cama_apoyo_relleno_lateral_hdpe(hdpe):
 
 
 # ===========================================================================
-# Item 5 - Diferido al expediente (nunca calcula)
+# Item 5 - Lo que la Fase 8 sigue sin verificar (nunca calcula)
 # ===========================================================================
 
-def test_verificacion_diferida_no_lanza_y_devuelve_los_tres_avisos():
+def test_verificacion_diferida_dice_solo_lo_que_de_verdad_queda_fuera():
+    """
+    Hasta T-5 devolvia tres avisos --rigidez de anillo, pandeo y costura
+    «diferidos al expediente»-- que T-5 implemento. Hoy nombra solo lo que
+    sigue fuera: el diseño del portico, el empuje lateral del marco, la
+    flexion combinada del HDPE, el metodo directo, las clases ilegibles de
+    M 170M y la costura empernada.
+    """
     avisos = verificacion_diferida_estructural()
-    assert len(avisos) == 3
+    assert avisos == (M8.DIFERIDO_MARCO, M8.DIFERIDO_EMPUJE_LATERAL_MARCO,
+                      M8.DIFERIDO_FLEXION_HDPE, M8.DIFERIDO_PANDEO_LOCAL_HDPE,
+                      M8.DIFERIDO_CONCRETO_DIRECTO,
+                      M8.DIFERIDO_CLASES_M170M, M8.DIFERIDO_COSTURA_EMPERNADA)
     conceptos = " ".join(avisos).lower()
-    for palabra in ("rigidez de anillo", "pandeo", "costura"):
-        assert palabra in conceptos
+    assert "rigidez de anillo" not in conceptos
+    assert "diseño del portico" in conceptos
 
 
 # ===========================================================================

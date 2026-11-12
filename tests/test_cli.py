@@ -570,17 +570,24 @@ def test_las_fases_6_y_7_corren_sobre_el_punto_dimensionado(informe_dimensionado
 def test_la_fase_8_corre_sobre_el_concreto_real_que_el_producto_dimensiono(
         informe_dimensionado):
     """
-    PC-20, la Fase 8: el expediente no puede dimensionar (V5/V8 vacias) y
-    el perfil la difiere, de modo que la unica forma de ejercitarla sobre un
-    resultado del producto es LLAMARLA sobre una copia del punto real. Llega
-    a la cama de apoyo del concreto y se detiene en la clase de producto,
-    que es lo que `test_la_clase_de_producto_sigue_bloqueada` fija.
+    PC-20, la Fase 8. DESDE T-5 LA MITAD QUE DECIDE SI EL TUBO EXISTE YA
+    CORRIO en la corrida de perfil --la clase del concreto, como F8.CLASE de
+    la Fase 5, y lo demas en `informe.estructural`--; la etapa `_fase_8`
+    (cama de apoyo y demanda del marco) la difiere el alcance, y la unica
+    forma de ejercitarla sobre un resultado del producto es LLAMARLA sobre
+    una copia del punto real. Llega a la cama de apoyo del concreto y ya NO
+    se detiene en la clase de producto (INF-3.3.5).
     """
     for id_punto in PUNTOS_QUE_DIMENSIONAN_EN_PERFIL:
-        p = _copia_ligera_del_punto(_punto(informe_dimensionado, id_punto))
+        original = _punto(informe_dimensionado, id_punto)
+        assert original.estructural is not None, id_punto
+        assert original.estructural.seleccion == "Clase II", id_punto
+        p = _copia_ligera_del_punto(original)
         servicio._fase_8(p)
         assert p.cama_apoyo is not None, id_punto
-        assert "clases_producto_por_relleno" in _claves_bloqueantes(p), id_punto
+        assert "clases_producto_por_relleno" not in _claves_bloqueantes(p), id_punto
+        assert not [b for b in p.bloqueos if b.fase == cli.FASE_ESTRUCTURAL
+                    and not b.diferido_por_alcance], id_punto
     # La fixture de modulo no se toco.
     assert _punto(informe_dimensionado, "A-01").cama_apoyo is None
 
@@ -590,10 +597,20 @@ def test_la_fase_7_usa_la_misma_longitud_que_la_fase_4(informe_dimensionado):
     assert a01.geometria.longitud == a01.longitud.valor
 
 
-def test_la_clase_de_producto_sigue_bloqueada(informe_dimensionado):
-    a01 = _copia_ligera_del_punto(_punto(informe_dimensionado, "A-01"))
-    servicio._fase_8(a01)
-    assert "clases_producto_por_relleno" in _claves_bloqueantes(a01)
+def test_la_clase_de_producto_se_elige_en_la_fase_5_y_no_bloquea(
+        informe_dimensionado):
+    """
+    Este test se llamaba `test_la_clase_de_producto_sigue_bloqueada` y fijaba
+    la MINA de M8: 'clases_producto_por_relleno' vacio y, detras,
+    `AssertionError`. T-5 la retiro (INF-3.3.5): la clase del tubo de A-01
+    se elige por el metodo indirecto de AASHTO LRFD 12.10.4.3 y viaja como
+    F8.CLASE en la tabla de la Fase 5, contra la D-load de la Clase II.
+    """
+    a01 = _punto(informe_dimensionado, "A-01")
+    (clase,) = [v for _, v in a01.verificaciones() if v.codigo == "F8.CLASE"]
+    assert clase.cumple and clase.valor_admisible == pytest.approx(50.0)
+    assert clase.criterio_aplicado == "clases_producto_por_relleno"
+    assert "clases_producto_por_relleno" not in _claves_bloqueantes(a01)
 
 
 # ---------------------------------------------------------------------------
@@ -819,24 +836,35 @@ def test_perfil_intenta_v5_y_v8_pero_no_las_exige(monkeypatch):
 
 def test_perfil_no_ejecuta_fase_8_ni_cabezal(monkeypatch):
     """
-    2.b: ni `_fase_8` ni `correr_cabezal` corren en perfil. El espia sobre
-    `seleccionar_clase_calibre` documenta ademas la MINA de M8: esa funcion
-    es una guarda deliberada (AssertionError en cuanto
-    'clases_producto_por_relleno' tenga valor, porque la tabla no esta
-    transcrita) y en alcance perfil NUNCA se alcanza. Que este test siga
-    exigiendo "cero llamadas" es lo que mantiene visible que, antes de
-    declarar ese criterio, hay que escribir el cuerpo de la funcion.
+    2.b: ni la ETAPA `_fase_8` ni `correr_cabezal` corren en perfil. Hasta
+    T-5 el espia sobre `seleccionar_clase_calibre` vigilaba la MINA de M8
+    (AssertionError en cuanto 'clases_producto_por_relleno' tuviera valor);
+    T-5 escribio su cuerpo, y lo que este test fija hoy es la frontera nueva:
+    la clase, el calibre o el perfil del conducto corren en perfil como F8.*
+    de la Fase 5 (por `M8.verificaciones_estructurales`), y la etapa que el
+    alcance difiere --la demanda del marco por `seleccionar_clase_calibre` y
+    la cama de apoyo-- no se llama.
     """
     _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
     llamadas = []
     # Se patchea donde el nombre se RESUELVE: el servicio (EXT-9).
     monkeypatch.setattr(servicio, "seleccionar_clase_calibre",
                         lambda **kw: llamadas.append(kw))
+    monkeypatch.setattr(servicio, "cama_apoyo_relleno_lateral",
+                        lambda material: llamadas.append("cama"))
     monkeypatch.setattr(servicio, "cadena_sismica",
                         lambda: llamadas.append("cabezal"))
 
     perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
     assert llamadas == []
+    # Lo que SI corre en perfil desde T-5: la Fase 8 del conducto, en la
+    # tabla de la Fase 5 y en `estructural`.
+    dimensionados = [i for i in perfil.puntos if i.dimensionado]
+    assert dimensionados
+    for i in dimensionados:
+        assert any((v.codigo or "").startswith("F8.")
+                   for _, v in i.verificaciones()), i.punto.id
+        assert i.estructural is not None and i.cama_apoyo is None, i.punto.id
     assert perfil.cabezal.cadena is None
     fases_8 = [b for i in perfil.puntos for b in i.bloqueos
                if b.fase == cli.FASE_ESTRUCTURAL]
@@ -900,7 +928,9 @@ def test_perfil_deja_constancia_en_texto_y_json(monkeypatch):
     assert "ALCANCE DE LA CORRIDA" in texto
     assert "Alcance declarado: perfil" in texto
     assert "remanso_derecho_via" in texto
-    assert "Fase 8 completa diferida" in texto
+    # Desde T-5 la Fase 8 NO se difiere entera: solo la cama y el marco.
+    assert "Fase 8: cama de apoyo y demanda del marco diferidas" in texto
+    assert "Fase 8 completa diferida" not in texto
     assert "Fase 9 completa diferida" in texto
 
 

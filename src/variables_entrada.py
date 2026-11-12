@@ -1481,6 +1481,16 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     # --- T-6 ---
     "metodo_longitud_conducto": _Meta(unidad="-"),
     "desnivel_minimo_entrega_m": _Meta(unidad="m"),
+    # --- T-5 --- La Fase 8 del conducto (INF-3.3.5). Los siete los consume
+    # M8 y su fase se deduce de ahi.
+    "instalacion_estandar_concreto": _Meta(unidad="- (tipo de instalacion)"),
+    "fabricacion_tmc": _Meta(unidad="-"),
+    "eta_importancia_operativa_conducto": _Meta(unidad="-"),
+    "relleno_estructural_hdpe": _Meta(unidad="- (columna de la Tabla 12.12.3.5-1)"),
+    "parametros_diseno_hdpe": _Meta(unidad="-, -, -, -, fraccion de D, años"),
+    # --- T-5 (cierre) --- Los dos que salieron de las auditorias.
+    "carga_viva_bajo_relleno_alto": _Meta(unidad="-"),
+    "perfil_hdpe_fabricante": _Meta(unidad="mm2/mm, mm4/mm, m (por diametro en mm)"),
 }
 
 

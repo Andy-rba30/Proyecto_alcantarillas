@@ -111,6 +111,12 @@ T4 = (FECHA_T4, POR_T4)      # --- T-4 ---
 FECHA_T6 = "2026-11-11"
 POR_T6 = "tesis/T-6 · lectura directa de la pagina por la sesion"
 T6 = (FECHA_T6, POR_T6)
+# --- T-5 --- Mismo regimen que T-0, T-2 y T-4: la propia sesion abrio cada
+# pagina (por texto AASHTO LRFD, el Manual de Puentes y EG-2013; por imagen
+# ASTM A796 y AASHTO M 170M, que no entregan texto utilizable).
+FECHA_T5 = "2026-11-12"
+POR_T5 = "tesis/T-5 · lectura directa de la pagina por la sesion"
+T5 = (FECHA_T5, POR_T5)
 
 _SHA = {
     "MC_HHD": "a31e853b8171b931863d7afa4379bbbc57cacb0d",
@@ -6445,8 +6451,9 @@ AASHTO_TA12_11 = _cita(
           "Unidades inglesas; la conversion a metros (1 in = 0.0254 m "
           "exactos) es del proyecto. La nota al pie de la tabla avisa de que "
           "para 42 y 48 in el espesor de pared se diseñe con la resistencia "
-          "a traccion de largo plazo (900 psi): es de la Fase 8 (T-5), no del "
-          "diametro exterior."),
+          "a traccion de largo plazo (900 psi): es de la Fase 8, no del "
+          "diametro exterior, y `M8.verificar_hdpe` la aplica en esas dos "
+          "filas con las propiedades de largo plazo (T-5)."),
 )
 
 HDS5_TB1 = _cita(
@@ -9045,5 +9052,1472 @@ EG2013_T511_06_NOTA_5A = _cita(
           "el rotulo de la FILA «Tamaño de Abertura Aparente (3) (4) (5)» y "
           "la celda «0,22(5)»: la nota vale para la fila entera."),
 )
+
+
+# ===========================================================================
+# --- T-5 --- (cadena T, 2026-11-12) Fase 8: estructural del conducto.
+# INF-3.3.5. Las de AASHTO LRFD, el Manual de Puentes y EG-2013 se leyeron
+# por TEXTO, abriendo la pagina declarada (T2, T3 y T6 las comprueban en cada
+# corrida); las de ASTM A796 y AASHTO M 170M por IMAGEN (las dos fuentes no
+# entregan texto utilizable). Ninguna paso por el subagente verificador: las
+# leyo la propia sesion, y la firma lo dice (`POR_T5`).
+#
+# EL REPARTO ENTRE LAS FUENTES, que es lo primero que un jurado pregunta:
+# la CARGA VIVA es el HL-93 del Manual de Puentes [N] (ejes, separaciones,
+# area de contacto, presencia multiple, IM de componentes enterrados) y su
+# DISTRIBUCION a traves del relleno es AASHTO LRFD 3.6.1.2.6 [C], que el
+# Manual no transcribe; el diseño de cada conducto es la Seccion 12 de
+# AASHTO LRFD [C], que el Manual no incorpora (v8, Fase 8); y la norma
+# peruana de construccion pone dos cosas propias: la clase del tubo de
+# concreto la indica el Proyecto conforme a M 170M (506.02) y el espesor
+# minimo del TMC por diametro (Tabla 507-01).
+# ===========================================================================
+
+AASHTO_3_6_1_2_6A_RELLENO = _cita(
+    id="AASHTO_LRFD_9.3.6.1.2.6a#RELLENO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.6.1.2.6a",
+    titulo_numeral="3.6.1.2.6a—General",
+    pagina_impresa="3-26",
+    pagina_pdf=80,
+    texto_literal=Verbatim(
+        texto=("Where the depth of fill over round, nonconcrete culverts is "
+               "greater than 1.0 ft, or when the depth of fill over flat top "
+               "three-sided, or long-span concrete arch culverts, or concrete "
+               "pipe is 2.0 ft or greater the live load shall be distributed "
+               "to the structure as wheel loads, uniformly distributed over a "
+               "rectangular area with sides equal to the dimension of the "
+               "tire contact area specified in Article 3.6.1.2.5 increased by "
+               "the live load distribution factors (LLDF) specified in Table "
+               "3.6.1.2.6a-1, and the provisions of Articles 3.6.1.2.6b and "
+               "3.6.1.2.6c."),
+        pagina_pdf=80),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("ES EL METODO DE LA CARGA VIVA SOBRE EL CONDUCTO, y tiene DOS "
+          "dominios distintos: mas de 1.0 ft de relleno para la tuberia que no "
+          "es de concreto y 2.0 ft o mas para el tubo de concreto. Por debajo "
+          "el mismo numeral manda otra cosa (Eq. 4.6.2.10.2-1 para el tubo de "
+          "concreto, «more comprehensive methods» con menos de 1.0 ft), que "
+          "este programa no implementa: lo dice como metodo no evaluable. "
+          "El Manual de Puentes no transcribe este numeral (su 2.4.3.2 trae "
+          "el HL-93 y el 2.4.3.3.2 el IM de lo enterrado, no la "
+          "distribucion a traves del relleno): por eso es [C]."),
+)
+
+AASHTO_3_6_1_2_6A_EJES = _cita(
+    id="AASHTO_LRFD_9.3.6.1.2.6a#EJES",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.6.1.2.6a",
+    titulo_numeral="3.6.1.2.6a—General",
+    pagina_impresa="3-26",
+    pagina_pdf=80,
+    texto_literal=Verbatim(
+        texto=("Only the axle loads of the design truck or design tandem of "
+               "Articles 3.6.1.2.2 and 3.6.1.2.3, respectively shall be "
+               "applied as live load on culverts, regardless of traffic "
+               "orientation."),
+        pagina_pdf=80),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("«respectively shall» SIN coma: asi lo entrega la capa de texto "
+          "del ejemplar. Es lo que deja fuera la carga de carril del HL-93: "
+          "en una alcantarilla solo cuentan los ejes del camion y del tandem."),
+)
+
+AASHTO_3_6_1_2_6A_UN_CARRIL = _cita(
+    id="AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.6.1.2.6a",
+    titulo_numeral="3.6.1.2.6a—General",
+    pagina_impresa="3-26",
+    pagina_pdf=80,
+    texto_literal=Verbatim(
+        texto=("For traffic parallel to the span, culverts shall be analyzed "
+               "for a single loaded lane with the single lane multiple "
+               "presence factor."),
+        pagina_pdf=80),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("El trafico «paralelo al vano» es el de la inmensa mayoria de las "
+          "alcantarillas viales (C3.6.1.2.6b, misma columna de la pag. "
+          "3-27): el vano de un tubo es su diametro, medido a lo largo de la "
+          "via. La lectura de que las obras de este expediente caen ahi es "
+          "del proyecto y la dice el paso de la carga viva."),
+)
+
+AASHTO_3_6_1_2_6A_DESPRECIABLE = _cita(
+    id="AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.6.1.2.6a",
+    titulo_numeral="3.6.1.2.6a—General",
+    pagina_impresa="3-26",
+    pagina_pdf=80,
+    texto_literal=Verbatim(
+        texto=("For single-span culverts, the effects of live load may be "
+               "neglected where the depth of fill is more than 8.0 ft and "
+               "exceeds the span length;"),
+        pagina_pdf=80),
+    caracter=Caracter.PERMISO,
+    sesion=T5,
+)
+
+AASHTO_3_6_1_2_6A_CONCRETO_SOMERO = _cita(
+    id="AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.6.1.2.6a",
+    titulo_numeral="3.6.1.2.6a—General",
+    pagina_impresa="3-26",
+    pagina_pdf=80,
+    texto_literal=Verbatim(
+        texto=("Live load shall be distributed to concrete pipe culverts "
+               "with less than 2.0 ft of cover in accordance with Eq. "
+               "4.6.2.10.2-1, regardless of the direction of travel."),
+        pagina_pdf=80),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Es el caso que este programa NO implementa: con menos de 2.0 ft "
+          "(0.6096 m) de relleno sobre un tubo de concreto la Fase 8 se "
+          "detiene con MetodoNoEvaluableError en vez de aplicar fuera de su "
+          "dominio la distribucion de 3.6.1.2.6b."),
+)
+
+AASHTO_T3_6_1_2_6A_1 = _cita(
+    id="AASHTO_LRFD_9.T3.6.1.2.6a-1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 3.6.1.2.6a-1",
+    titulo_numeral=("Table 3.6.1.2.6a-1—Live Load Distribution Factor (LLDF) "
+                    "for Buried Structures"),
+    pagina_impresa="3-27",
+    pagina_pdf=81,
+    texto_literal=Verbatim(texto="1.15 for diameter 2.0 ft or less",
+                           pagina_pdf=81),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+    nota=("Dos filas: «Concrete Pipe with fill depth 2.0 ft or greater» "
+          "(1.15 para diametro de 2.0 ft o menos, 1.75 para 8.0 ft o mas, "
+          "«Linearly interpolate for LLDF between these limits») y «All "
+          "other culverts and buried structures» (1.15). El «diameter» se "
+          "lee como el diametro INTERIOR del catalogo; vista de calculo en "
+          "constantes_normativas (LLDF_*)."),
+)
+
+AASHTO_3_6_1_2_6B_PL = _cita(
+    id="AASHTO_LRFD_9.3.6.1.2.6b#PL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.6.1.2.6b",
+    titulo_numeral="3.6.1.2.6b—Traffic Parallel to the Culvert Span",
+    pagina_impresa="3-28",
+    pagina_pdf=82,
+    pagina_pdf_titulo=81,
+    texto_literal=Verbatim(
+        texto="The live load vertical crown pressure shall be determined as:",
+        pagina_pdf=82),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Las ecuaciones 3.6.1.2.6b-1 a -7 (pags. 3-27 y 3-28) se leyeron "
+          "renderizadas: H_int-t = (s_w - w_t/12 - 0.06 D_i/12)/LLDF; "
+          "w_w = w_t/12 + LLDF(H) + 0.06 D_i/12 (mas s_w si H >= H_int-t); "
+          "H_int-p = (s_a - l_t/12)/LLDF; l_w = l_t/12 + LLDF(H) (mas s_a si "
+          "H >= H_int-p); P_L = P(1 + IM/100)(m)/A_LL. La ec. -1 escribe D_j "
+          "y la lista de simbolos D_i: errata tipografica de la fuente, el "
+          "simbolo es el mismo. Las cifras en pulgadas y pies se convierten "
+          "a SI una sola vez (constantes_fisicas)."),
+)
+
+AASHTO_C3_6_1_2_6B = _cita(
+    id="AASHTO_LRFD_9.C3.6.1.2.6b",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C3.6.1.2.6b",
+    titulo_numeral="C3.6.1.2.6b",
+    pagina_impresa="3-27",
+    pagina_pdf=81,
+    texto_literal=Verbatim(
+        texto=("The case where traffic is parallel to the culvert span "
+               "applies to the vast majority of highway culverts."),
+        pagina_pdf=81),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+)
+
+MP_2_4_3_2_2_2 = _cita(
+    id="MP.2.4.3.2.2.2",
+    fuente_id="MP",
+    numeral="2.4.3.2.2.2",
+    titulo_numeral="Camión de Diseño",
+    pagina_impresa="104",
+    pagina_pdf=105,
+    texto_literal=Verbatim(
+        texto=("la distancia entre los dos ejes de 32.0-kips (14.55 t.) será "
+               "tomada como aquella que, estando entre los límites de 14.0 ft "
+               "(4.27 m.) y 30.0 ft (9.14 m.), resulta en los mayores "
+               "efectos."),
+        pagina_pdf=105),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+    nota=("El eje del camion HL-93 en la unidad primaria del Manual, 32.0 "
+          "kip; el «(14.55 t.)» es una equivalencia redondeada. Para la carga "
+          "sobre una alcantarilla la separacion que gobierna es la MINIMA, "
+          "14.0 ft, que es la que acerca los ejes."),
+)
+
+MP_2_4_3_2_2_3 = _cita(
+    id="MP.2.4.3.2.2.3",
+    fuente_id="MP",
+    numeral="2.4.3.2.2.3",
+    titulo_numeral="Tándem de Diseño",
+    pagina_impresa="104",
+    pagina_pdf=105,
+    texto_literal=Verbatim(
+        texto=("El tándem de diseño consistirá en un conjunto de dos ejes, "
+               "cada uno con una carga de 25.0 kip (11.4 t.), espaciados a "
+               "4.0 ft (1.20 m.). La distancia entre las ruedas de cada eje, "
+               "en dirección transversal, será de 6.0 ft (1.80 m.)."),
+        pagina_pdf=105),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+)
+
+MP_2_4_3_2_2_5 = _cita(
+    id="MP.2.4.3.2.2.5",
+    fuente_id="MP",
+    numeral="2.4.3.2.2.5",
+    titulo_numeral="Área de Contacto de los Neumáticos",
+    pagina_impresa="104",
+    pagina_pdf=105,
+    texto_literal=Verbatim(
+        texto=("El área de contacto de una rueda consistente de una o dos "
+               "neumáticos se asumirá como un rectángulo de 20.0 in. (0.50 "
+               "m.) de ancho en dirección transversal del puente y 10.0 in. "
+               "(0.25 m.) en el sentido del eje longitudinal del mismo."),
+        pagina_pdf=105),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+)
+
+MP_2_4_3_2_2_6 = _cita(
+    id="MP.2.4.3.2.2.6",
+    fuente_id="MP",
+    numeral="2.4.3.2.2.6",
+    titulo_numeral="Presencia Múltiple de Sobrecargas",
+    pagina_impresa="105",
+    pagina_pdf=106,
+    texto_literal=Verbatim(
+        texto="Se deberán utilizar al investigar el efecto de un carril cargado,",
+        pagina_pdf=106),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("La frase introduce el uso obligatorio de la Tabla 2.4.3.2.2.6-1 "
+          "con UN carril cargado: «1 | 1.20» (misma pagina)."),
+)
+
+MP_2_4_3_3_2 = _cita(
+    id="MP.2.4.3.3.2",
+    fuente_id="MP",
+    numeral="2.4.3.3.2",
+    titulo_numeral="Componentes Enterrados",
+    pagina_impresa="109",
+    pagina_pdf=110,
+    texto_literal=Verbatim(
+        texto=("El incremento por carga dinámica para alcantarillas y otras "
+               "estructuras enterradas, en porcentaje, se deberá tomar "
+               "como:"),
+        pagina_pdf=110),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Sigue la ec. 2.4.3.3.2-1 (3.6.2.2-1 AASHTO): IM = 33(1.0 - "
+          "0.125 D_E) >= 0 %, con «D_E = profundidad mínima de la cubierta de "
+          "tierra sobre la estructura (ft)». El Manual conserva los PIES: "
+          "la pendiente en SI es 0.125/0.3048 por metro "
+          "(IM_ENTERRADO_PENDIENTE_SI)."),
+)
+
+MP_2_4_2_1_PESOS = _cita(
+    id="MP.2.4.2.1#PESOS",
+    fuente_id="MP",
+    numeral="2.4.2.1, Tabla 2.4.2.1-1",
+    titulo_numeral="Cargas Muertas: DC, DW, y EV",
+    pagina_impresa="102",
+    pagina_pdf=103,
+    pagina_pdf_titulo=102,
+    texto_literal=Verbatim(
+        texto=("A falta de una información precisa, podrán usarse los pesos "
+               "específicos de la tabla siguiente:"),
+        pagina_pdf=103),
+    caracter=Caracter.PERMISO,
+    sesion=T5,
+    nota=("Tabla 2.4.2.1-1 «Pesos específicos» (3.5.1-1 AASHTO), en kcf: "
+          "«Arena, limo o arcilla compactado 0.120» y «Superficies de "
+          "desgaste bituminosos 0.140» (igual que «Laminados grava, macadam, "
+          "o de lastre»). PERMISO, no exigencia: rige a falta de informacion "
+          "precisa, y el relleno de este proyecto no la tiene."),
+)
+
+MP_2_3_2_5 = _cita(
+    id="MP.2.3.2.5",
+    fuente_id="MP",
+    numeral="2.3.2.5",
+    titulo_numeral="Importancia Operativa",
+    pagina_impresa="99",
+    pagina_pdf=100,
+    texto_literal=Verbatim(
+        texto=("El propietario puede declarar si un puente, o algun "
+               "componente estructural y conexión tienen importancia "
+               "operativa."),
+        pagina_pdf=100),
+    caracter=Caracter.PERMISO,
+    sesion=T5,
+    nota=("Para resistencia: eta_I >= 1.05 criticos o esenciales, = 1.00 "
+          "tipicos, >= 0.95 de relativa menor importancia (misma pagina). "
+          "AASHTO 12.5.4 lo aplica a las estructuras enterradas."),
+)
+
+AASHTO_12_5_4 = _cita(
+    id="AASHTO_LRFD_9.12.5.4",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.5.4",
+    titulo_numeral="12.5.4—Load Modifiers and Load Factors",
+    pagina_impresa="12-11",
+    pagina_pdf=1649,
+    texto_literal=Verbatim(
+        texto=("For strength limit states, buried structures shall be "
+               "considered redundant."),
+        pagina_pdf=1649),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Con eta_D = 1.00 (diseño convencional) y eta_R = 1.00 "
+          "(redundante), el modificador de la carga es el de importancia "
+          "operativa, que declara el propietario (MP.2.3.2.5)."),
+)
+
+AASHTO_12_5_5 = _cita(
+    id="AASHTO_LRFD_9.12.5.5",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.5.5",
+    titulo_numeral="12.5.5—Resistance Factors",
+    pagina_impresa="12-11",
+    pagina_pdf=1649,
+    texto_literal=Verbatim(
+        texto=("Resistance factors for buried structures shall be taken as "
+               "specified in Table 12.5.5-1."),
+        pagina_pdf=1649),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Tabla 12.5.5-1 (pag. 12-12): tubo metalico helicoidal, area y "
+          "pandeo 1.00; anular remachado o empernado, area y pandeo 1.00 y "
+          "costura longitudinal 0.67; PE: empuje 1.00, rigidez del suelo "
+          "0.90, pandeo global 0.70, flexion 1.00."),
+)
+
+AASHTO_12_5_6_1_FF = _cita(
+    id="AASHTO_LRFD_9.12.5.6.1#FF",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.5.6.1",
+    titulo_numeral="12.5.6.1—Corrugated Metal Pipe and Structural Plate Structures",
+    pagina_impresa="12-13",
+    pagina_pdf=1651,
+    texto_literal=Verbatim(
+        texto=("Flexibility factors for corrugated metal pipe, structural "
+               "plate structures, and steel-reinforced thermoplastic culverts "
+               "shall not exceed the values specified in Table 12.5.6.1-1."),
+        pagina_pdf=1651),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Tabla 12.5.6.1-1: acero, corrugacion de 0.25 y 0.5 in, 43 in/kip "
+          "(= 0.2455 mm/N); 1.0 in, 33 in/kip. Coincide con ASTM A796 num. "
+          "10.3 para terraplen (0.245 mm/N con 13 mm): no hay discrepancia. "
+          "C12.5.6.1: son exigencias CONSTRUCTIVAS, no un estado limite de "
+          "servicio."),
+)
+
+AASHTO_12_7_2_2 = _cita(
+    id="AASHTO_LRFD_9.12.7.2.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.7.2.2",
+    titulo_numeral="12.7.2.2—Thrust",
+    pagina_impresa="12-25",
+    pagina_pdf=1663,
+    texto_literal=Verbatim(
+        texto="The factored thrust, TL, per unit length of wall shall be taken as:",
+        pagina_pdf=1663),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("T_L = P_FD(S)/2 + P_FL(C_L)F_1/2; C_L = l_w <= S; F_1 = 0.75S/l_w "
+          ">= F_min; F_min = 15/(12(S)) >= 1. P_FD «as specified in Article "
+          "12.12.3.4 with VAF taken as 1.0 and D_o taken as S»: la lectura del "
+          "proyecto de esa remision esta en la Interpretacion del paso."),
+)
+
+AASHTO_C12_7_2_2 = _cita(
+    id="AASHTO_LRFD_9.C12.7.2.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C12.7.2.2",
+    titulo_numeral="C12.7.2.2",
+    pagina_impresa="12-25",
+    pagina_pdf=1663,
+    texto_literal=Verbatim(
+        texto=("Factored vertical crown pressure is calculated as the "
+               "factored free-field soil pressure at the elevation of the "
+               "top of the structure, plus the factored live load pressure "
+               "distributed through the soil cover to the top of the "
+               "structure."),
+        pagina_pdf=1663),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+)
+
+AASHTO_12_7_2_3 = _cita(
+    id="AASHTO_LRFD_9.12.7.2.3",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.7.2.3",
+    titulo_numeral="12.7.2.3—Wall Resistance",
+    pagina_impresa="12-26",
+    pagina_pdf=1664,
+    texto_literal=Verbatim(
+        texto=("The factored axial resistance, Rn, per unit length of wall, "
+               "without consideration of buckling, shall be taken as:"),
+        pagina_pdf=1664),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+)
+
+AASHTO_12_7_2_4 = _cita(
+    id="AASHTO_LRFD_9.12.7.2.4",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.7.2.4",
+    titulo_numeral="12.7.2.4—Resistance to Buckling",
+    pagina_impresa="12-26",
+    pagina_pdf=1664,
+    texto_literal=Verbatim(
+        texto=("The wall area, calculated using Eq. 12.7.2.3-1, shall be "
+               "investigated for buckling. If fcr < Fy, A shall be "
+               "recalculated using fcr in lieu of Fy."),
+        pagina_pdf=1664),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Ecs. 12.7.2.4-1 y -2 con k = «soil stiffness factor taken as "
+          "0.22» (misma pagina); C12.7.2.4 lo llama conservador."),
+)
+
+AASHTO_12_7_2_5 = _cita(
+    id="AASHTO_LRFD_9.12.7.2.5",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.7.2.5",
+    titulo_numeral="12.7.2.5—Seam Resistance",
+    pagina_impresa="12-27",
+    pagina_pdf=1665,
+    texto_literal=Verbatim(
+        texto=("For pipe fabricated with longitudinal seams, the factored "
+               "resistance of the seam shall be sufficient to develop the "
+               "factored thrust in the pipe wall, TL."),
+        pagina_pdf=1665),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Solo para costura LONGITUDINAL: la tuberia helicoidal con costura "
+          "engargolada o soldada no la tiene (ASTM A796 num. 8.1.3.1). La "
+          "resistencia nominal de la costura remachada de 68 x 13 mm esta en "
+          "la Tabla 5 de A796 (tabla ASTM_A796.T5) y en la Tabla A12-7 de "
+          "AASHTO; la EMPERNADA de esa corrugacion no esta en ninguna de las "
+          "dos."),
+)
+
+AASHTO_TA12_9 = _cita(
+    id="AASHTO_LRFD_9.TA12-9",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table A12-9",
+    titulo_numeral=("Table A12-9—Mechanical Properties for Spiral Rib and "
+                    "Corrugated Metal Pipe and Pipe Arch"),
+    pagina_impresa="12-107",
+    pagina_pdf=1745,
+    texto_literal=Verbatim(
+        texto=("Shall meet the requirements of AASHTO M 167M/M 167 (ASTM "
+               "A761/A761M), M 218, and M 246 (ASTM A742)"),
+        pagina_pdf=1745),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+    nota=("Fila «Steel(3)»: F_u 45.0 ksi, F_y 33.0 ksi, E_m 29,000 ksi; la "
+          "nota (3) es el texto literal. Son las cifras de la comprobacion "
+          "LRFD que rige. ASTM A796 num. 4 escribe 225 / 310 / 200 000 MPa "
+          "(redondeo metrico de las mismas): se usan solo en el contraste "
+          "ASD."),
+)
+
+AASHTO_12_10_2_1_PESO_MIN = _cita(
+    id="AASHTO_LRFD_9.12.10.2.1#PESO_MIN",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.10.2.1",
+    titulo_numeral="12.10.2.1 Standard Installations",
+    pagina_impresa="12-52",
+    pagina_pdf=1690,
+    pagina_pdf_titulo=1688,
+    texto_literal=Verbatim(
+        texto=("The unit weight of soil used to calculate earth load shall be "
+               "the estimated unit weight for the soils specified for the "
+               "pipe soil installation but shall not be taken to be less "
+               "than 110 lb/ft3."),
+        pagina_pdf=1690),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+)
+
+AASHTO_12_10_2_1_VAF = _cita(
+    id="AASHTO_LRFD_9.12.10.2.1#VAF",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.10.2.1",
+    titulo_numeral="12.10.2.1 Standard Installations",
+    pagina_impresa="12-52",
+    pagina_pdf=1690,
+    pagina_pdf_titulo=1688,
+    texto_literal=Verbatim(
+        texto=("Standard installations for both embankments and trenches "
+               "shall be designed for positive projection, embankment loading "
+               "conditions where Fe shall be taken as the vertical arching "
+               "factor, VAF, specified in Table 12.10.2.1-3 for each type of "
+               "standard installation."),
+        pagina_pdf=1690),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("W_E = F_e w B_c H (Eq. 12.10.2.1-1). Tabla 12.10.2.1-3 (pag. "
+          "12-53): VAF 1.35 / 1.40 / 1.40 / 1.45 para los Tipos 1 a 4. Los "
+          "requisitos de cada tipo, Tabla 12.10.2.1-1 (pag. 12-50)."),
+)
+
+AASHTO_12_10_2_2 = _cita(
+    id="AASHTO_LRFD_9.12.10.2.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.10.2.2",
+    titulo_numeral="12.10.2.2 Pipe Fluid Weight",
+    pagina_impresa="12-54",
+    pagina_pdf=1692,
+    texto_literal=Verbatim(
+        texto=("The unfactored weight of fluid, WF, in the pipe shall be "
+               "considered in design based on a fluid weight of 62.4 lb/ft3, "
+               "unless otherwise specified."),
+        pagina_pdf=1692),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("62.4 lb/ft3 = 9.80 kN/m3; el programa usa el peso especifico del "
+          "agua de constantes_fisicas (9.81 kN/m3), la misma magnitud "
+          "fisica: 0.1 % de diferencia, del lado mayor."),
+)
+
+AASHTO_12_10_2_3 = _cita(
+    id="AASHTO_LRFD_9.12.10.2.3",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.10.2.3",
+    titulo_numeral="12.10.2.3—Live Loads",
+    pagina_impresa="12-54",
+    pagina_pdf=1692,
+    texto_literal=Verbatim(
+        texto=("For standard installations, the live load on the pipe shall "
+               "be assumed to have a uniform vertical distribution across the "
+               "top of the pipe and the same distribution across the bottom "
+               "of the pipe as given in Figure 12.10.2.1-1."),
+        pagina_pdf=1692),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+)
+
+AASHTO_12_10_4_3_1 = _cita(
+    id="AASHTO_LRFD_9.12.10.4.3.1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.10.4.3.1",
+    titulo_numeral="12.10.4.3.1—Bearing Resistance",
+    pagina_impresa="12-64",
+    pagina_pdf=1702,
+    texto_literal=Verbatim(
+        texto=("The three-edge bearing resistance of the reinforced concrete "
+               "pipe, corresponding to an experimentally tested service load, "
+               "shall not be less than the design load determined for the "
+               "pipe as installed, taken as:"),
+        pagina_pdf=1702),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("D = (12/S_i)((W_E + W_F)/B_FE + W_L/B_FLL) (Eq. 12.10.4.3.1-1, en "
+          "kip/ft y pulgadas): en SI, D en N/m/mm con W en N/m y S_i en mm, "
+          "sin factor de unidad. Es estado limite de SERVICIO: sin factores "
+          "de carga ni de resistencia."),
+)
+
+AASHTO_12_10_4_3_1_TIPO1 = _cita(
+    id="AASHTO_LRFD_9.12.10.4.3.1#TIPO1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.10.4.3.1",
+    titulo_numeral="12.10.4.3.1—Bearing Resistance",
+    pagina_impresa="12-64",
+    pagina_pdf=1702,
+    texto_literal=Verbatim(
+        texto=("For Type 1 installations, D loads, as calculated above, shall "
+               "be modified by multiplying by an installation factor of "
+               "1.10."),
+        pagina_pdf=1702),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+)
+
+AASHTO_12_10_4_3_1_DLOAD = _cita(
+    id="AASHTO_LRFD_9.12.10.4.3.1#DLOAD",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.10.4.3.1",
+    titulo_numeral="12.10.4.3.1—Bearing Resistance",
+    pagina_impresa="12-64",
+    pagina_pdf=1702,
+    texto_literal=Verbatim(
+        texto=("The D-load for a particular class and size of pipe shall be "
+               "determined in accordance with AASHTO M 170M"),
+        pagina_pdf=1702),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+)
+
+AASHTO_12_10_4_3_2A = _cita(
+    id="AASHTO_LRFD_9.12.10.4.3.2a",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.10.4.3.2a",
+    titulo_numeral="12.10.4.3.2a—Earth Load Bedding Factor for Circular Pipe",
+    pagina_impresa="12-65",
+    pagina_pdf=1703,
+    texto_literal=Verbatim(
+        texto=("Earth load bedding factors, BFE, for circular pipe are "
+               "presented in Table 12.10.4.3.2a-1."),
+        pagina_pdf=1703),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+    nota=("Tabla 12.10.4.3.2a-1: B_FE por diametro (12, 24, 36, 72 y 144 in) "
+          "y tipo de instalacion; «For pipe diameters other than those "
+          "listed ... may be determined by interpolation»."),
+)
+
+AASHTO_12_10_4_3_2C = _cita(
+    id="AASHTO_LRFD_9.12.10.4.3.2c",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.10.4.3.2c",
+    titulo_numeral="12.10.4.3.2c—Live Load Bedding Factors",
+    pagina_impresa="12-66",
+    pagina_pdf=1704,
+    texto_literal=Verbatim(
+        texto=("The bedding factor, BFLL, for live load, WL, for both "
+               "circular pipe and arch and for elliptical pipe shall be taken "
+               "as specified in Table 12.10.4.3.2c-1."),
+        pagina_pdf=1704),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+)
+
+AASHTO_M170M_T2_DLOAD = _cita(
+    id="AASHTO_M170M.T2#DLOAD",
+    fuente_id="AASHTO_M170M",
+    numeral="Table 2",
+    titulo_numeral="Design Requirements for Class II Reinforced Concrete Pipe",
+    pagina_impresa="M 170M-5",
+    pagina_pdf=5,
+    texto_literal=Verbatim(texto="D-load to produce a 0.3-mm crack 50.0",
+                           pagina_pdf=5),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=T5,
+    nota=("LEIDO POR IMAGEN, y es LA UNICA D-load de 0.3 mm LEGIBLE en el "
+          "ejemplar. La pag. PDF 5 («Table 2—Continued») imprime al pie "
+          "«D-load to produce a 0.3-mm crack 50.0» y «D-load to produce the "
+          "ultimate load ?S.0» (el primer digito, ilegible). Las Tablas 1, 3, "
+          "4 y 5 son recomposiciones OCR con digitos equivocados (nota de la "
+          "Fuente): la de la Clase V imprime «\\ 40.0», la de la Clase III "
+          "solo la ultima, «100.0», y la Clase I e IV no se leen. NO SE "
+          "COMPLETAN DE MEMORIA: las Clases I, III, IV y V quedan sin D-load "
+          "en 'clases_producto_por_relleno' y el paso lo dice. Y la Tabla 2 "
+          "(PDF 4) tiene filas con pared B y acero de 300 a 2700 mm: la "
+          "Clase II existe en todo el catalogo de concreto."),
+)
+
+EG2013_506_02_CLASE = _cita(
+    id="EG2013.506.02#CLASE",
+    fuente_id="EG2013",
+    numeral="506.02",
+    titulo_numeral="Tubería",
+    pagina_impresa="959",
+    pagina_pdf=967,
+    texto_literal=Verbatim(
+        texto=("La tubería deberá cumplir los requisitos de materiales, "
+               "diseño y manufactura establecidos en la especificación AASHTO "
+               "M-170M. La clase de tubería y su diámetro interno, se deberán "
+               "indicar en el Proyecto."),
+        pagina_pdf=967),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("La norma peruana manda que el PROYECTO indique la clase: es la "
+          "salida de la Fase 8 para el tubo de concreto, no una entrada."),
+)
+
+EG2013_506_10 = _cita(
+    id="EG2013.506.10",
+    fuente_id="EG2013",
+    numeral="506.10",
+    titulo_numeral="Sujeción",
+    pagina_impresa="961",
+    pagina_pdf=969,
+    texto_literal=Verbatim(
+        texto=("éste se deberá aumentar y compactar en capas a los lados de la "
+               "tubería y hacia arriba, al mismo nivel de densidad exigido "
+               "para el solado, hasta una altura no menor a 1/6 del diámetro "
+               "exterior de ella."),
+        pagina_pdf=969),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Por encima de 1/6 del diametro exterior el relleno es el de la "
+          "Seccion 502 (506.11), que remite a la densidad de 205.12(c)(1): "
+          "90 % del Proctor Modificado en base y cuerpo. Con esas dos "
+          "exigencias el EG-2013 no garantiza el 95 % de Categoria I en toda "
+          "la zona de riñones que pide el Tipo 1 de AASHTO, y si excluye el "
+          "Tipo 4, que no exige compactacion: es la lectura con que "
+          "'instalacion_estandar_concreto' fija su ventana."),
+)
+
+EG2013_205_12_COMPACTACION = _cita(
+    id="EG2013.205.12#COMPACTACION",
+    fuente_id="EG2013",
+    numeral="205.12 c) 1",
+    titulo_numeral="Compactación",
+    pagina_impresa="193",
+    pagina_pdf=201,
+    texto_literal=Verbatim(
+        texto=("el 90% de la máxima densidad obtenida en el ensayo Proctor "
+               "Modificado de referencia (De) para la base y cuerpo del "
+               "terraplén"),
+        pagina_pdf=201),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Y «el 95% ... cuando se verifique la compactación de la corona "
+          "del terraplén». La Seccion 502 (rellenos para estructuras) remite "
+          "a estos mismos niveles (502.09(c)(1))."),
+)
+
+EG2013_T507_01 = _cita(
+    id="EG2013.T507-01",
+    fuente_id="EG2013",
+    numeral="507.02 a), Tabla 507-01",
+    titulo_numeral="Espesores Mínimos de Alcantarillas Circulares y Abovedadas",
+    pagina_impresa="970",
+    pagina_pdf=978,
+    texto_literal=Verbatim(
+        texto=("Los espesores mínimos para las tuberías con los respectivos "
+               "diámetros serán los indicados en la Tabla 507-01."),
+        pagina_pdf=978),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Circular: 0.60 m -> 1.80 mm; 0.90 -> 2.00; 1.20 -> 2.50; 1.50 -> "
+          "3.00; 1.80 -> 3.30 (al pie: «ASTM–A–760, TABLA 1 – ASTM–A-929 – "
+          "TABLA 4»). ES LA UNICA CIFRA PERUANA SOBRE EL CALIBRE DEL TMC y "
+          "hasta T-5 ningun modulo la leia: la plancha adoptada de 2.01 mm "
+          "queda por debajo del minimo desde 1.20 m de diametro. Vista de "
+          "calculo: ESPESOR_MIN_TMC_EG2013_MM."),
+)
+
+EG2013_508_07_COMPACTACION = _cita(
+    id="EG2013.508.07#COMPACTACION",
+    fuente_id="EG2013",
+    numeral="508.07",
+    titulo_numeral="Colocación del relleno alrededor de la estructura",
+    pagina_impresa="984",
+    pagina_pdf=992,
+    texto_literal=Verbatim(
+        texto=("El relleno deberá compactarse hasta alcanzar una densidad "
+               "mayor al 95% de la Máxima Densidad Seca-M.D.S. del Próctor "
+               "Modificado"),
+        pagina_pdf=992),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("El material del relleno es el de la Seccion 502 (mismo numeral), "
+          "y el de la cama y la SUJECION LATERAL lo fija el 508.02 d): "
+          "granular (cita EG2013.508.02#GRANULAR). Con 95 % del Proctor "
+          "MODIFICADO la compactacion es al menos la de las columnas «-95» de "
+          "la Tabla 12.12.3.5-1 de AASHTO (Proctor ESTANDAR, T 99), porque la "
+          "densidad maxima del ensayo modificado no es menor que la del "
+          "estandar. La version anterior de esta nota decia que el tipo de "
+          "suelo no lo fija la norma y que por eso se tomaba «el mas "
+          "desfavorable» (Cl-95): omitia el 508.02 d) (auditoria de T-5)."),
+)
+
+AASHTO_12_11_2_1 = _cita(
+    id="AASHTO_LRFD_9.12.11.2.1#LL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.2.1",
+    titulo_numeral="12.11.2.1—General",
+    pagina_impresa="12-68",
+    pagina_pdf=1706,
+    texto_literal=Verbatim(
+        texto=("Distribution of wheel loads to culverts with 2.0 ft or more "
+               "of cover shall be as specified in Article 3.6.1.2.6."),
+        pagina_pdf=1706),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+)
+
+AASHTO_12_11_2_2_1 = _cita(
+    id="AASHTO_LRFD_9.12.11.2.2.1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.11.2.2.1",
+    titulo_numeral="12.11.2.2.1—Embankment and Trench Conditions",
+    pagina_impresa="12-69",
+    pagina_pdf=1707,
+    texto_literal=Verbatim(
+        texto=("Fe shall not exceed 1.15 for installations with compacted "
+               "fill along the sides of the box section, or 1.40 for "
+               "installations with uncompacted fill along the sides of the "
+               "box section."),
+        pagina_pdf=1707),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota="W_E = F_e gamma_s B_c H con F_e = 1 + 0.20 H/B_c (Eqs. 12.11.2.2.1-1 y -2).",
+)
+
+AASHTO_T12_12_3_3_1 = _cita(
+    id="AASHTO_LRFD_9.T12.12.3.3-1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 12.12.3.3-1",
+    titulo_numeral="Table 12.12.3.3-1—Mechanical Properties of Thermoplastic Pipe",
+    pagina_impresa="12-77",
+    pagina_pdf=1715,
+    texto_literal=Verbatim(
+        texto="Table 12.12.3.3-1—Mechanical Properties of Thermoplastic Pipe",
+        pagina_pdf=1715),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+    nota=("Fila «Corrugated PE Pipe – AASHTO M 294» (leida renderizada): "
+          "5.0 % | 4.1 % | F_u 3.0 ksi, E 110.0 ksi (inicial) | 0.90, 22 (50 "
+          "años) | 0.90, 21 (75 años)."),
+)
+
+AASHTO_12_12_3_5 = _cita(
+    id="AASHTO_LRFD_9.12.12.3.5",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.12.3.5",
+    titulo_numeral="12.12.3.5—Factored and Service Loads",
+    pagina_impresa="12-78",
+    pagina_pdf=1716,
+    texto_literal=Verbatim(texto="The factored thrust shall be taken as:",
+                           pagina_pdf=1716),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Eqs. 12.12.3.5-1 a -8, leidas renderizadas; K_gammaE «installation "
+          "factor typically taken as 1.5 to provide traditional safety» "
+          "(misma pagina); K_2 = 1.0 para el empuje en el arranque (pag. "
+          "12-79)."),
+)
+
+AASHTO_T12_12_3_5_1 = _cita(
+    id="AASHTO_LRFD_9.T12.12.3.5-1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 12.12.3.5-1",
+    titulo_numeral="Table 12.12.3.5-1—Ms Based on Soil Type and Compaction Condition",
+    pagina_impresa="12-81",
+    pagina_pdf=1719,
+    texto_literal=Verbatim(
+        texto="Table 12.12.3.5-1—Ms Based on Soil Type and Compaction Condition",
+        pagina_pdf=1719),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+    nota=("M_s en ksi por nivel de P_sp (1, 5, 10, 20, 40 y 60 psi) y por "
+          "suelo y compactacion (Sn, Si, Cl; % del Proctor ESTANDAR, nota 2). "
+          "Entre niveles se interpola (pag. 12-80)."),
+)
+
+AASHTO_12_12_3_10_1B_STUB = _cita(
+    id="AASHTO_LRFD_9.12.12.3.10.1b#STUB",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.12.3.10.1b",
+    titulo_numeral="12.12.3.10.1b—Local Buckling Effective Area",
+    pagina_impresa="12-85",
+    pagina_pdf=1723,
+    pagina_pdf_titulo=1722,
+    texto_literal=Verbatim(
+        texto=("As an alternate to determining the effective area by the "
+               "calculation procedure presented above, the results of the "
+               "stub compression test, AASHTO T 341, may be used, in which "
+               "case the effective area, Aeff, shall satisfy:"),
+        pagina_pdf=1723),
+    caracter=Caracter.PERMISO,
+    sesion=T5,
+    nota=("A_eff = P_st K_t / F_u <= A_g (Eq. 12.12.3.10.1b-5); K_t de la "
+          "Tabla 12.12.3.10.1b-1 (PE: 0.9 inicial, 0.3 a 50 años, 0.25 a 75)."),
+)
+
+AASHTO_12_12_3_10_1C_EP = _cita(
+    id="AASHTO_LRFD_9.12.12.3.10.1c#EP",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.12.3.10.1c",
+    titulo_numeral="12.12.3.10.1c—Compression Strain",
+    pagina_impresa="12-86",
+    pagina_pdf=1724,
+    pagina_pdf_titulo=1723,
+    texto_literal=Verbatim(
+        texto=("short-term modulus for short-term loading or long-term modulus "
+               "of pipe material for long-term loading as specified in Table "
+               "12.12.3.3-1"),
+        pagina_pdf=1724),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Es la definicion de E_p en las Eqs. 12.12.3.10.1c-1 y -2. De ella "
+          "lee el proyecto que la deformacion se SUMA por duracion: la de las "
+          "cargas permanentes con el modulo y el area efectiva de largo plazo "
+          "y la de la carga viva con los iniciales (Interpretacion en el paso "
+          "F8.EMPUJE)."),
+)
+
+AASHTO_12_12_3_10_1D = _cita(
+    id="AASHTO_LRFD_9.12.12.3.10.1d",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.12.3.10.1d",
+    titulo_numeral="12.12.3.10.1d—Thrust Strain Limits",
+    pagina_impresa="12-86",
+    pagina_pdf=1724,
+    texto_literal=Verbatim(
+        texto="The factored compression strain due to thrust, εuc, shall satisfy:",
+        pagina_pdf=1724),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+)
+
+AASHTO_12_12_3_10_1E = _cita(
+    id="AASHTO_LRFD_9.12.12.3.10.1e",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.12.3.10.1e",
+    titulo_numeral="12.12.3.10.1e—General Buckling Strain Limits",
+    pagina_impresa="12-86",
+    pagina_pdf=1724,
+    texto_literal=Verbatim(
+        texto=("The factored compression strain due to thrust, incorporating "
+               "local buckling effects, εuc, shall satisfy:"),
+        pagina_pdf=1724),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("eps_bck = 1.2 C_n (E_p I_p)^(1/3) [phi_s M_s (1-2nu)/(1-nu)^2]^(2/3) "
+          "R_h / (A_eff E_p), R_h = 11.4/(11 + D/(12H)), C_n = 0.55 (pag. "
+          "12-87). Adimensional en cualquier sistema coherente de unidades."),
+)
+
+AASHTO_12_12_2_2 = _cita(
+    id="AASHTO_LRFD_9.12.12.2.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.12.2.2",
+    titulo_numeral="12.12.2.2—Deflection Requirement",
+    pagina_impresa="12-75",
+    pagina_pdf=1713,
+    pagina_pdf_titulo=1712,
+    texto_literal=Verbatim(
+        texto=("Total deflection, calculated using Spangler’s expression for "
+               "predicting flexural deflection in combination with the "
+               "expression for circumferential shortening, shall be "
+               "determined as:"),
+        pagina_pdf=1713),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Eq. 12.12.2.2-2: Delta_t = K_B(D_L P_sp + C_L P_L) D_o / (1000(E_p "
+          "I_p/R^3 + 0.061 M_s)) + eps_sc D; «D_L ... a value of 1.5 is "
+          "typical» y «K_B ... a value of 0.10 is typical». El 1000 es el "
+          "paso de ksi a psi: en SI desaparece."),
+)
+
+AASHTO_C12_12_2_2 = _cita(
+    id="AASHTO_LRFD_9.C12.12.2.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C12.12.2.2",
+    titulo_numeral="C12.12.2.2",
+    pagina_impresa="12-74",
+    pagina_pdf=1712,
+    texto_literal=Verbatim(
+        texto=("The construction specifications set the allowable deflection, "
+               "ΔA, for thermoplastic pipe at five percent as a generally "
+               "appropriate limit."),
+        pagina_pdf=1712),
+    caracter=Caracter.RECOMENDACION,
+    sesion=T5,
+)
+
+AASHTO_M294_TRAD_7_7 = _cita(
+    id="AASHTO_M294_TRAD.7.7",
+    fuente_id="AASHTO_M294_TRAD",
+    numeral="7.7",
+    titulo_numeral="Ensayo de compresión",
+    pagina_impresa="s/n",
+    pagina_pdf=8,
+    texto_literal=Verbatim(
+        texto=("La capacidad de compresión del perfil en cualquier probeta en "
+               "el ensayo de compresión no deberá ser inferior al 50 por "
+               "ciento del área transversal bruta multiplicada por el límite "
+               "elástico mínimo especificado cuando se ejecuta el ensayo de "
+               "acuerdo con la Sección 9.8."),
+        pagina_pdf=8),
+    caracter=Caracter.EXIGENCIA,
+    verificada=False,
+    nota=("SIN FIRMA A PROPOSITO, no sin verificar: traduccion no oficial de "
+          "AASHTO M 294-11. Lo que acredita es lo que la traduccion imprime, y "
+          "sin folio no se firma (mismo regimen que las otras cuatro citas de "
+          "esta fuente; leida en texto e imagen por T-5). Es el MINIMO de producto "
+          "con que el programa obtiene el area efectiva del perfil sin "
+          "conocer su geometria: P_st >= 0.5 A_g F_y, y por 12.12.3.10.1b-5, "
+          "A_eff = P_st K_t / F_u."),
+)
+
+ASTM_A796_9_1 = _cita(
+    id="ASTM_A796.9.1",
+    fuente_id="ASTM_A796",
+    numeral="9.1",
+    titulo_numeral="Factored Loads",
+    pagina_impresa="4",
+    pagina_pdf=4,
+    jerarquia_numeral=("9.", "Design by LRFD Method"),
+    texto_literal=Verbatim(
+        texto=("The pipe shall be designed to resist the following "
+               "combination of factored earth load (EL) and live load plus "
+               "impact (LL + IL):"),
+        pagina_pdf=4),
+    caracter=Caracter.EXIGENCIA,
+    metodo=IMAGEN,
+    sesion=T5,
+    nota=("Sigue la ec. (8), P_f = 1.95 EL + 1.75 (LL + IL), con EL = Hw "
+          "(ec. 1, la columna de suelo SOBRE el tubo). Es la lectura que la "
+          "practica especifica del acero corrugado hace de la presion de "
+          "clave: sin factor de instalacion ni nivel de arranque, y coincide "
+          "con C12.7.2.2 de AASHTO. Leida por imagen (PDF 4)."),
+)
+
+ASTM_A796_8_1_3_1 = _cita(
+    id="ASTM_A796.8.1.3.1",
+    fuente_id="ASTM_A796",
+    numeral="8.1.3.1",
+    titulo_numeral="Required Seam Strength",
+    pagina_impresa="4",
+    pagina_pdf=4,
+    texto_literal=Verbatim(
+        texto=("Since helical lockseam and welded-seam pipe have no "
+               "longitudinal seams, this criterion is not valid for these "
+               "types of pipe."),
+        pagina_pdf=4),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=T5,
+)
+
+
+# ===========================================================================
+# --- T-5 (cierre) --- Las citas que pidieron las dos auditorias adversariales
+# y las decisiones del dueño del 2026-11-12. Leidas por la sesion de cierre
+# abriendo cada pagina: por TEXTO las de AASHTO LRFD y EG-2013; por IMAGEN la
+# de AASHTO M 170M.
+# ===========================================================================
+
+AASHTO_3_6_1_2_6A_VARIOS_VANOS = _cita(
+    id="AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.6.1.2.6a",
+    titulo_numeral="3.6.1.2.6a—General",
+    pagina_impresa="3-26",
+    pagina_pdf=80,
+    texto_literal=Verbatim(
+        texto=("for multiple span culverts, the effects may be neglected "
+               "where the depth of fill exceeds the distance between inside "
+               "faces of end walls."),
+        pagina_pdf=80),
+    caracter=Caracter.PERMISO,
+    sesion=T5,
+    nota=("La segunda mitad del permiso de #DESPRECIABLE: en una alcantarilla "
+          "de VARIOS vanos la condicion no es la luz de un vano sino la "
+          "distancia entre las caras interiores de los muros extremos. El "
+          "marco de varias celdas la usa (`M8.demanda_marco`); el permiso "
+          "solo se toma si 'carga_viva_bajo_relleno_alto' lo declara."),
+)
+
+AASHTO_1_3_5 = _cita(
+    id="AASHTO_LRFD_9.1.3.5",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="1.3.5",
+    titulo_numeral="1.3.5—Operational Importance",
+    pagina_impresa="1-7",
+    pagina_pdf=22,
+    texto_literal=Verbatim(
+        texto=("The Owner may declare a bridge or any structural component "
+               "and connection thereof to be of operational priority."),
+        pagina_pdf=22),
+    caracter=Caracter.PERMISO,
+    sesion=T5,
+    nota=("Es quien fija eta_I: el Propietario. La misma pagina gradua eta_I "
+          ">= 1.05 (critical or essential), 1.00 (typical) y >= 0.95 "
+          "(relatively less important), que es la graduacion que el Manual de "
+          "Puentes 2.3.2.5 traduce. NINGUNA de las dos prescribe 1.05 para "
+          "una estructura enterrada: 12.5.4 solo fija la redundancia."),
+)
+
+AASHTO_T12_10_2_1_1 = _cita(
+    id="AASHTO_LRFD_9.T12.10.2.1-1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 12.10.2.1-1",
+    titulo_numeral=("Table 12.10.2.1-1—Standard Embankment Installation Soils "
+                    "and Minimum Compaction Requirements"),
+    pagina_impresa="12-50",
+    pagina_pdf=1688,
+    texto_literal=Verbatim(
+        texto=("No compaction required, except if Category III, use 85% "
+               "Category III"),
+        pagina_pdf=1688),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("La fila del Tipo 4, riñones y costado inferior. Las otras tres "
+          "(misma pagina): Tipo 1, riñones 95 % Categoria I, costado 90 % I, "
+          "95 % II o 100 % III; Tipo 2, riñones 90 % I o 95 % II, costado "
+          "85 % I, 90 % II o 95 % III; Tipo 3, riñones y costado 85 % I, 90 % "
+          "II o 95 % III. Cama: D_o/24, no menos de 3.0 in, en los Tipos 1 a "
+          "3 sobre suelo; ninguna en el Tipo 4."),
+    interpretacion=Interpretacion(
+        texto=("El proyecto lee la exigencia del EG-2013 para el tubo de "
+               "concreto --solado de subbase granular de 15 cm y sujecion "
+               "hasta un sexto del diametro exterior al 95 % del Proctor "
+               "Modificado (506.07 y 506.10), y por encima el relleno para "
+               "estructuras al 90 % del Proctor Modificado con los materiales "
+               "de terraplen (506.11, 502.02 y 205.12)-- como una instalacion "
+               "de Tipo 3 de esta tabla."),
+        en_contra=(
+            "la tabla gradua la compactacion en Proctor ESTANDAR y remite la "
+            "equivalencia con el Modificado a la Tabla 27.5.2.2-3 de la "
+            "especificacion de construccion de AASHTO, que no esta en "
+            "normas/: lo unico que se puede afirmar sin ella es que el 90 % "
+            "del Modificado es por lo menos el 90 % del Estandar",
+            "con el 90 % del Estandar el Tipo 3 queda garantizado para las "
+            "Categorias I y II (85 y 90 %), pero no para la III, que pide "
+            "95 %; y el EG-2013 admite en un terraplen el suelo A-2-6, que la "
+            "Tabla 12.12.3.5-2 de la misma norma agrupa con las arcillas",
+            "la definicion de las Categorias I, II y III tampoco esta en la "
+            "especificacion de diseño: se leen por analogia con Sn, Si y Cl "
+            "de la Tabla 12.12.3.5-2",
+            "la sujecion granular del EG-2013 llega a un sexto del diametro "
+            "exterior, y la zona de riñones de la tabla, hasta el eje del "
+            "tubo",
+        ),
+        a_favor=(
+            "el EG-2013 exige compactar TODO el relleno, que es justo lo que "
+            "el Tipo 4 no pide: verificar con el Tipo 4 supone una "
+            "instalacion peor que la que la especificacion garantiza",
+            "el solado y la sujecion son de subbase granular al 95 % del "
+            "Proctor Modificado, mejor que lo que el Tipo 3 pide en esa zona",
+            "el Tipo 4 queda dentro de la ventana del criterio y la Fase 8 "
+            "imprime al lado la D-load, la clase y el relleno maximo que "
+            "saldrian con el: el peso de esta lectura queda a la vista",
+            "es la decision del dueño del proyecto (2026-11-12)",
+        ),
+    ),
+)
+
+AASHTO_T12_10_2_1_1_PROCTOR = _cita(
+    id="AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 12.10.2.1-1",
+    titulo_numeral=("Table 12.10.2.1-1—Standard Embankment Installation Soils "
+                    "and Minimum Compaction Requirements"),
+    pagina_impresa="12-51",
+    pagina_pdf=1689,
+    pagina_pdf_titulo=1688,
+    texto_literal=Verbatim(
+        texto=("shall be taken to refer to a soil material category with a "
+               "minimum standard proctor compaction of 95 percent. Equivalent "
+               "modified proctor values shall be as given in Table 27.5.2.2-3 "
+               "of the AASHTO LRFD Bridge Construction Specifications."),
+        pagina_pdf=1689),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+    nota=("La primera de las interpretaciones que la norma pone al pie de la "
+          "tabla. La Tabla 27.5.2.2-3 que nombra NO esta en normas/."),
+)
+
+EG2013_506_07 = _cita(
+    id="EG2013.506.07",
+    fuente_id="EG2013",
+    numeral="506.07",
+    titulo_numeral="Solado",
+    pagina_impresa="960",
+    pagina_pdf=968,
+    texto_literal=Verbatim(
+        texto=("su compactación mínima será la que se especifica para la "
+               "corona en la Subsección"),
+        pagina_pdf=968),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("El solado: «una capa o solado de material granular, que cumplan "
+          "con las características de material para subbase, de por lo menos "
+          "15 cm de espesor compactado», compactado como la corona del "
+          "terraplen (205.12(c)(1): 95 % del Proctor Modificado). La sujecion "
+          "(506.10) sube con el mismo material y la misma densidad hasta un "
+          "sexto del diametro exterior; el relleno (506.11) es el de la "
+          "Seccion 502."),
+)
+
+EG2013_T205_01 = _cita(
+    id="EG2013.T205-01",
+    fuente_id="EG2013",
+    numeral="205.02, Tabla 205-01",
+    titulo_numeral="Requisitos de los materiales",
+    pagina_impresa="186",
+    pagina_pdf=194,
+    texto_literal=Verbatim(
+        texto="A-1-a, A-1-b, A-2-4, A-2-6 y A-3",
+        pagina_pdf=194),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Los materiales de terraplen, que la Seccion 502 (502.02, pag. "
+          "impresa 895) manda usar en los rellenos para estructuras: «Tipo de "
+          "Material: A-1-a, A-1-b, A-2-4, A-2-6 y A-3», con indice de "
+          "plasticidad menor de 11 en base y cuerpo y menor de 10 en la "
+          "corona. El A-2-6 es el mas plastico de los cinco, y la Tabla "
+          "12.12.3.5-2 de AASHTO LRFD lo agrupa con las arcillas (Cl)."),
+)
+
+EG2013_507_02_EMPERNADA = _cita(
+    id="EG2013.507.02#EMPERNADA",
+    fuente_id="EG2013",
+    numeral="507.02 a)",
+    titulo_numeral=("Tubos conformados estructuralmente de planchas o láminas "
+                    "corrugadas de acero galvanizado en caliente"),
+    pagina_impresa="969",
+    pagina_pdf=977,
+    texto_literal=Verbatim(
+        texto=("Para los tubos, circulares y/o abovedados y sus accesorios "
+               "(pernos, tuercas) de corruga (68mm x 13mm), del rango de las "
+               "dimensiones corresponden a 900 mm y 2100 mm de diámetro, se "
+               "seguirá la especificación ASTM A-929 y AASHTO M-36 / ASTM "
+               "A-760."),
+        pagina_pdf=977),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("El mismo inciso fija las normas de los pernos (ASTM A-449 / F568 "
+          "y A 307 Grado A) y de las tuercas (A-563 Grado C), y habla del "
+          "«corrugado, perforado y formación de las planchas»."),
+    interpretacion=Interpretacion(
+        texto=("El proyecto lee que el producto que la norma peruana describe "
+               "para la corrugacion de 68 por 13 mm es tuberia ARMADA con "
+               "pernos, es decir, con costura longitudinal empernada."),
+        en_contra=(
+            "el inciso no usa la palabra «costura» ni dice que la union "
+            "longitudinal sea empernada: nombra los pernos como accesorios",
+            "las normas de producto que cita (AASHTO M 36 / ASTM A 760) "
+            "cubren tambien la tuberia helicoidal y la remachada",
+        ),
+        a_favor=(
+            "el titulo habla de tubos «conformados estructuralmente de "
+            "planchas», y el texto del perforado de las planchas y de las "
+            "normas de pernos y tuercas: una tuberia helicoidal o remachada "
+            "no lleva pernos estructurales",
+            "la lectura no decide el valor de archivo de 'fabricacion_tmc' "
+            "--la empernada no tiene resistencia tabulada y detendria la "
+            "Fase 8--: solo obliga a AVISAR que la costura se verifico con "
+            "la resistencia de otra fabricacion",
+        ),
+    ),
+)
+
+EG2013_508_02_GRANULAR = _cita(
+    id="EG2013.508.02#GRANULAR",
+    fuente_id="EG2013",
+    numeral="508.02 d)",
+    titulo_numeral="Material para cama de asiento",
+    pagina_impresa="982",
+    pagina_pdf=990,
+    texto_literal=Verbatim(
+        texto=("La cama de asiento y la sujeción lateral se construirán con "
+               "material granular cuyas características estarán de acuerdo "
+               "con lo establecido en la Subsección 400.02 y la Sección 301."),
+        pagina_pdf=990),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("La Seccion 301 es la de los afirmados: franjas granulometricas "
+          "con 5 a 25 % de finos e indice de plasticidad de 4 a 9 (cita "
+          "EG2013.T301-01). La misma letra dice que la cama «estará "
+          "constituida por arena gruesa»."),
+    interpretacion=Interpretacion(
+        texto=("El proyecto lee el material granular de la Seccion 301 como "
+               "un suelo de las columnas Sn o Si de la Tabla 12.12.3.5-1 de "
+               "AASHTO LRFD, y adopta la menos favorable de las dos (Si) al "
+               "95 % para la zona de la que depende el modulo del suelo."),
+        en_contra=(
+            "la Tabla 12.12.3.5-2 dice que sus correlaciones con otros tipos "
+            "de suelo son aproximadas",
+            "por la columna de clasificacion ASTM de esa tabla, una arena o "
+            "grava arcillosa con mas del 20 % de finos seria Cl, y la franja "
+            "F de la Tabla 301-01 admite hasta 25 %: la columna Cl no queda "
+            "excluida del todo, y por eso sigue en la ventana del criterio",
+        ),
+        a_favor=(
+            "por la columna de clasificacion AASHTO M 145, que es la del "
+            "EG-2013, un material con no mas de 25 % de finos e indice de "
+            "plasticidad de 4 a 9 es A-1 o A-2-4: Sn o Si. Los grupos de la "
+            "columna Cl (A-2-6, A-2-7, A-5, A-6) piden un indice de "
+            "plasticidad de 11 o mas, o son limos y arcillas",
+            "el 508.07 exige mas del 95 % del Proctor Modificado, que es al "
+            "menos el 95 % del Estandar de la tabla",
+        ),
+    ),
+)
+
+EG2013_T301_01 = _cita(
+    id="EG2013.T301-01",
+    fuente_id="EG2013",
+    numeral="301.02, Tabla 301-01",
+    titulo_numeral="Tabla 301-01",
+    pagina_impresa="238",
+    pagina_pdf=246,
+    texto_literal=Verbatim(
+        texto="Índice de Plasticidad: 4-9%",
+        pagina_pdf=246),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Requisitos del afirmado, al pie de la Tabla 301-01 (franjas A-1, "
+          "A-2, C, D, E y F, con 5-20, 5-20, 5-15, 5-20, 6-20 y 8-25 % que "
+          "pasa el tamiz N.° 200): limite liquido 35 % max., indice de "
+          "plasticidad 4-9 %, CBR 40 % min."),
+)
+
+AASHTO_T12_12_3_5_2 = _cita(
+    id="AASHTO_LRFD_9.T12.12.3.5-2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="Table 12.12.3.5-2",
+    titulo_numeral=("Table 12.12.3.5-2—Equivalent ASTM and AASHTO Soil "
+                    "Classifications"),
+    pagina_impresa="12-82",
+    pagina_pdf=1720,
+    texto_literal=Verbatim(
+        texto="The correlations to other soil types are approximate.",
+        pagina_pdf=1720),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+    nota=("Sn (Gravelly sand, SW): SW, SP, GW, GP, arenas y gravas con 12 % "
+          "de finos o menos; AASHTO M 145 A-1, A-3. Si (Sandy silt, ML): GM, "
+          "SM, ML, y GC y SC con menos de 20 % que pasa el tamiz N.° 200; "
+          "A-2-4, A-2-5, A-4. Cl (Silty clay, CL): CL, MH, GC, SC, y GC y SC "
+          "con mas de 20 %; A-2-6, A-2-7, A-5, A-6. La nota 2 de la Tabla "
+          "12.12.3.5-1 (pag. 12-81): el sufijo es el % de la densidad maxima "
+          "de AASHTO T 99 (Proctor Estandar)."),
+)
+
+AASHTO_12_12_3_2 = _cita(
+    id="AASHTO_LRFD_9.12.12.3.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.12.3.2",
+    titulo_numeral="12.12.3.2—Section Properties",
+    pagina_impresa="12-76",
+    pagina_pdf=1714,
+    pagina_pdf_titulo=1713,
+    texto_literal=Verbatim(
+        texto=("be determined from cut sections of pipe or obtained from the "
+               "pipe manufacturer."),
+        pagina_pdf=1714),
+    caracter=Caracter.RECOMENDACION,
+    sesion=T5,
+    nota=("La frase empieza al pie de la pag. 12-75 (PDF 1713): «Section "
+          "properties for thermoplastic pipe, including wall area, moment of "
+          "inertia, and profile geometry should», y termina en la 12-76. El "
+          "verbo es «should»: RECOMENDACION. El titulo del numeral esta en la "
+          "PDF 1713."),
+)
+
+AASHTO_C12_12_3_2 = _cita(
+    id="AASHTO_LRFD_9.C12.12.3.2",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C12.12.3.2",
+    titulo_numeral="C12.12.3.2",
+    pagina_impresa="12-76",
+    pagina_pdf=1714,
+    pagina_pdf_titulo=1713,
+    texto_literal=Verbatim(
+        texto=("have been minimum values and are not meaningful for design."),
+        pagina_pdf=1714),
+    caracter=Caracter.DEFINICION,
+    sesion=T5,
+    nota=("Comentario. La frase empieza en la pag. 12-75: «Historically, "
+          "AASHTO bridge specifications have contained minimum values for "
+          "the moment of inertia and wall area of thermoplastic pipe; "
+          "however, these values», y sigue en la 12-76: «... Thus, there is "
+          "no way to provide meaningful generic information on section "
+          "properties.» Son los minimos de la Tabla A12-11: con ellos el "
+          "resultado es una COTA INFERIOR, no un veredicto sobre un producto "
+          "(`M8.cota_inferior_hdpe`)."),
+)
+
+AASHTO_12_12_3_3_PANDEO = _cita(
+    id="AASHTO_LRFD_9.12.12.3.3#PANDEO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.12.3.3",
+    titulo_numeral="12.12.3.3—Chemical and Mechanical",
+    pagina_impresa="12-76",
+    pagina_pdf=1714,
+    texto_literal=Verbatim(
+        texto=("Investigation of general buckling shall be based on the value "
+               "of modulus of elasticity that represents the design life of "
+               "the project."),
+        pagina_pdf=1714),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("La frase anterior deja al Ingeniero la eleccion entre propiedades "
+          "iniciales y de largo plazo «Except for buckling». Es lo que manda "
+          "el pandeo general del HDPE: TODO con el modulo de la vida de "
+          "diseño (50 o 75 años), tambien la parte de la carga viva. La FASE "
+          "A de T-5 sumaba el pandeo por duracion (la carga viva con el "
+          "modulo inicial) y no citaba esta frase."),
+)
+
+AASHTO_12_12_3_6 = _cita(
+    id="AASHTO_LRFD_9.12.12.3.6",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.12.3.6",
+    titulo_numeral="12.12.3.6—Handling and Installation",
+    pagina_impresa="12-82",
+    pagina_pdf=1720,
+    texto_literal=Verbatim(
+        texto=("The flexibility factor, FF, shall be limited as specified in "
+               "Article 12.5.6.3."),
+        pagina_pdf=1720),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("Eq. 12.12.3.6-1: FF = S^2/(E I), con I el momento de inercia "
+          "(in4/in), E el modulo de elasticidad INICIAL (ksi) y S el "
+          "«diameter of pipe» (in). La norma no dice que diametro: el "
+          "proyecto toma el EXTERIOR, que da el FF mayor."),
+)
+
+AASHTO_12_5_6_3 = _cita(
+    id="AASHTO_LRFD_9.12.5.6.3",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.5.6.3",
+    titulo_numeral="12.5.6.3—Thermoplastic and Fiberglass Pipe",
+    pagina_impresa="12-14",
+    pagina_pdf=1652,
+    texto_literal=Verbatim(
+        texto=("Flexibility factor, FF, of thermoplastic and fiberglass pipe "
+               "shall not exceed 95.0 in./kip."),
+        pagina_pdf=1652),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T5,
+    nota=("95.0 in/kip = 0.5425 mm/N. Vista de calculo: "
+          "FF_LIMITE_TERMOPLASTICO_MM_N."),
+)
+
+AASHTO_M170M_T1_DIAMETROS = _cita(
+    id="AASHTO_M170M.T1#DIAMETROS",
+    fuente_id="AASHTO_M170M",
+    numeral="Table 1",
+    titulo_numeral="Design Requirements for Class I Reinforced Concrete Pipe",
+    pagina_impresa="M 170M-3",
+    pagina_pdf=3,
+    texto_literal=Verbatim(texto="1500", pagina_pdf=3),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=T5,
+    nota=("LEIDO POR IMAGEN. La primera fila de la Tabla 1 (Clase I) es la de "
+          "1500 mm: la norma no tabula la Clase I por debajo. Las Tablas 2 a "
+          "5 (Clases II a V; PDF 4, 6, 8 y 10) empiezan en 300 mm. Vista de "
+          "calculo: DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM. El ultimo "
+          "diametro con diseño estandar de cada clase NO se transcribe: solo "
+          "se lee con seguridad en las Clases I y II (2700 mm) y V (1800 mm, "
+          "pared C); por encima la norma remite al diseño especial de su "
+          "num. 7.2, y el tope de 2700 mm del catalogo de concreto lo fija "
+          "DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM."),
+)
+
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

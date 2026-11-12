@@ -123,6 +123,14 @@ CORRIDAS_IMPORTTIME = 3
 # holgado le esconderia a T-10 lo que cada prompt intermedio añada. Este
 # techo solo mide la corrida a EXPEDIENTE; la de perfil pesa mas (87.6 KB
 # por punto, 76.8 sobre `5bca7c6`) y no tiene techo (ficha T6-01).
+# T-5 (2026-11-12, integrado detras de T-8) LOS REMIDIO Y NO LOS MUEVE:
+# 70.3 KB y 20.3 paginas por punto a expediente (sobre `df1b23c`, con este
+# mismo metodo: 70.3 y 20.7). A expediente los puntos del fixture se detienen
+# en V5 y V8 antes de la Fase 8, de modo que sus pasos no llegan a esa
+# memoria; lo que T-5 añade ahi es fijo (fichas de siete criterios), y por
+# eso el coste MARGINAL no cambia. La de perfil, que no tiene techo, pasa de
+# 94.7 a 101.4 KB por punto: el bloque «Fase 8 — Estructural del conducto» de
+# cada punto dimensionado, con sus pasos y el contraste del Tipo 4.
 KB_POR_PUNTO_MAX = 71.0
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6 (ver arriba).

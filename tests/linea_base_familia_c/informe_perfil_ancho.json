@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "0592f597933796ae5fd92bdbfb5bd893ea7b6cde",
+    "criterios_sha1": "27600c7bc50365a9413d10826698d31d8a1bd04a",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -46,7 +46,7 @@
       {
         "punto": "A-01",
         "fase": "Fase 8 - Estructural del conducto (M8)",
-        "etapa": "Fase 8 completa diferida al expediente (alcance perfil)",
+        "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
         "tipo": "DiferidoPorAlcance",
         "criterio": null,
         "etiqueta": null,
@@ -55,7 +55,7 @@
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente"
+        "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
       },
       {
         "punto": "A-02",
@@ -88,7 +88,7 @@
       {
         "punto": "A-02",
         "fase": "Fase 8 - Estructural del conducto (M8)",
-        "etapa": "Fase 8 completa diferida al expediente (alcance perfil)",
+        "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
         "tipo": "DiferidoPorAlcance",
         "criterio": null,
         "etiqueta": null,
@@ -97,7 +97,7 @@
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente"
+        "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
       },
       {
         "punto": "B-01",
@@ -443,7 +443,70 @@
           "mensaje": "factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
         }
       },
-      "estructural": null,
+      "estructural": {
+        "material": "concreto_reforzado",
+        "seleccion": "Clase II",
+        "H_relleno_m": 0.9499999999999957,
+        "e_paquete_m": 0.15000000000000568,
+        "H_total_m": 1.1000000000000014,
+        "relleno_maximo_m": 2.8507897689129,
+        "avisos": [],
+        "pasos": [
+          {
+            "codigo": "F8.LL",
+            "que": "Carga viva HL-93 sobre el conducto (gobierna el camion, por efecto)",
+            "resultado": {
+              "simbolo": "P_L",
+              "valor": 33.606708738549926,
+              "unidad": "kPa"
+            }
+          },
+          {
+            "codigo": "F8.EV",
+            "que": "Carga de tierra sobre el tubo de concreto (instalacion estandar)",
+            "resultado": {
+              "simbolo": "W_E",
+              "valor": 32.65848373363465,
+              "unidad": "kN/m"
+            }
+          },
+          {
+            "codigo": "F8.HMAX",
+            "que": "Relleno maximo sobre la clave con la Clase II",
+            "resultado": {
+              "simbolo": "H_max",
+              "valor": 2.8507897689129,
+              "unidad": "m"
+            }
+          },
+          {
+            "codigo": "F8.TIPO4",
+            "que": "Contraste con la instalacion Tipo 4 (sin compactacion exigida): D-load requerida -- NO RIGE",
+            "resultado": {
+              "simbolo": "D_T4",
+              "valor": 44.85713263178623,
+              "unidad": "N/m/mm"
+            }
+          },
+          {
+            "codigo": "F8.HMAX_TIPO4",
+            "que": "Contraste con la instalacion Tipo 4: relleno maximo con la Clase II -- NO RIGE",
+            "resultado": {
+              "simbolo": "H_max_T4",
+              "valor": 1.6905327891073711,
+              "unidad": "m"
+            }
+          }
+        ],
+        "demanda_marco": null,
+        "cama_apoyo": null,
+        "sujecion_relleno_lateral": null,
+        "numeral": null,
+        "verificacion_diferida": [
+          "Metodo directo del tubo de concreto (AASHTO LRFD 12.10.4.2): no se usa; la clase sale del metodo indirecto de 12.10.4.3, que la norma admite como alternativa",
+          "D-load de 0.3 mm de las Clases I, III, IV y V de AASHTO M 170M: ilegibles en el ejemplar de normas/ y no transcritas; un tubo que pida mas que la Clase II se detiene diciendo que clases faltan y que lo destraba un ejemplar legible de M 170M o de ASTM C76M ('clases_producto_por_relleno')"
+        ]
+      },
       "espaciamiento_alivio": null,
       "iteraciones": [
         {
@@ -577,6 +640,17 @@
           "criterio_aplicado": "D_max_norma_producto"
         },
         {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "F8.CLASE",
+          "numeral": "AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 37.42382229063617,
+          "valor_admisible": 50.0,
+          "criterio_aplicado": "clases_producto_por_relleno"
+        },
+        {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
           "codigo": "G1",
           "numeral": "Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1)",
@@ -640,7 +714,7 @@
         },
         {
           "fase": "Fase 8 - Estructural del conducto (M8)",
-          "etapa": "Fase 8 completa diferida al expediente (alcance perfil)",
+          "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
           "tipo": "DiferidoPorAlcance",
           "criterio": null,
           "etiqueta": null,
@@ -649,7 +723,7 @@
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente"
+          "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
         }
       ]
     },
@@ -937,7 +1011,70 @@
           "mensaje": "factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
         }
       },
-      "estructural": null,
+      "estructural": {
+        "material": "concreto_reforzado",
+        "seleccion": "Clase II",
+        "H_relleno_m": 1.0,
+        "e_paquete_m": 0.14999999999999858,
+        "H_total_m": 1.1499999999999986,
+        "relleno_maximo_m": 2.8507897689128248,
+        "avisos": [],
+        "pasos": [
+          {
+            "codigo": "F8.LL",
+            "que": "Carga viva HL-93 sobre el conducto (gobierna el camion, por efecto)",
+            "resultado": {
+              "simbolo": "P_L",
+              "valor": 31.659198709627155,
+              "unidad": "kPa"
+            }
+          },
+          {
+            "codigo": "F8.EV",
+            "que": "Carga de tierra sobre el tubo de concreto (instalacion estandar)",
+            "resultado": {
+              "simbolo": "W_E",
+              "valor": 34.10997189957385,
+              "unidad": "kN/m"
+            }
+          },
+          {
+            "codigo": "F8.HMAX",
+            "que": "Relleno maximo sobre la clave con la Clase II",
+            "resultado": {
+              "simbolo": "H_max",
+              "valor": 2.8507897689128248,
+              "unidad": "m"
+            }
+          },
+          {
+            "codigo": "F8.TIPO4",
+            "que": "Contraste con la instalacion Tipo 4 (sin compactacion exigida): D-load requerida -- NO RIGE",
+            "resultado": {
+              "simbolo": "D_T4",
+              "valor": 44.75774930134446,
+              "unidad": "N/m/mm"
+            }
+          },
+          {
+            "codigo": "F8.HMAX_TIPO4",
+            "que": "Contraste con la instalacion Tipo 4: relleno maximo con la Clase II -- NO RIGE",
+            "resultado": {
+              "simbolo": "H_max_T4",
+              "valor": 1.6905327891080435,
+              "unidad": "m"
+            }
+          }
+        ],
+        "demanda_marco": null,
+        "cama_apoyo": null,
+        "sujecion_relleno_lateral": null,
+        "numeral": null,
+        "verificacion_diferida": [
+          "Metodo directo del tubo de concreto (AASHTO LRFD 12.10.4.2): no se usa; la clase sale del metodo indirecto de 12.10.4.3, que la norma admite como alternativa",
+          "D-load de 0.3 mm de las Clases I, III, IV y V de AASHTO M 170M: ilegibles en el ejemplar de normas/ y no transcritas; un tubo que pida mas que la Clase II se detiene diciendo que clases faltan y que lo destraba un ejemplar legible de M 170M o de ASTM C76M ('clases_producto_por_relleno')"
+        ]
+      },
       "espaciamiento_alivio": null,
       "iteraciones": [
         {
@@ -1071,6 +1208,17 @@
           "criterio_aplicado": "D_max_norma_producto"
         },
         {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "F8.CLASE",
+          "numeral": "AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 37.04163690682047,
+          "valor_admisible": 50.0,
+          "criterio_aplicado": "clases_producto_por_relleno"
+        },
+        {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
           "codigo": "G1",
           "numeral": "Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1)",
@@ -1134,7 +1282,7 @@
         },
         {
           "fase": "Fase 8 - Estructural del conducto (M8)",
-          "etapa": "Fase 8 completa diferida al expediente (alcance perfil)",
+          "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
           "tipo": "DiferidoPorAlcance",
           "criterio": null,
           "etiqueta": null,
@@ -1143,7 +1291,7 @@
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente"
+          "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
         }
       ]
     },
@@ -1728,6 +1876,24 @@
         "concepto": "Relacion de llenado maxima y/D (o y/H) que el proyecto aplica como umbral duro en V1: el complemento del borde libre minimo adoptado"
       },
       {
+        "clave": "carga_viva_bajo_relleno_alto",
+        "etiqueta": "A",
+        "valor": "conservar",
+        "declarado_en_caliente": false,
+        "concepto": "Que hace la Fase 8 con la carga viva cuando el relleno sobre el conducto supera 8.0 ft (2.44 m) y ademas la luz: conservarla, distribuida a traves del relleno como a cualquier otra profundidad, o despreciarla como la norma de diseño permite (AASHTO LRFD 3.6.1.2.6a)"
+      },
+      {
+        "clave": "clases_producto_por_relleno",
+        "etiqueta": "C",
+        "valor": {
+          "concreto_reforzado": {
+            "II": 50.0
+          }
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Resistencia de producto por clase del tubo de concreto reforzado (AASHTO M 170M-04: D-load para producir una grieta de 0.3 mm, en N/m/mm), contra la que la Fase 8 elige la clase minima del punto. Para el TMC y el HDPE no hay tabla de clase: el calibre y el perfil salen del procedimiento de AASHTO LRFD 12.7 y 12.12 que M8 implementa"
+      },
+      {
         "clave": "cobertura_minima_aashto",
         "etiqueta": "C",
         "valor": {
@@ -1919,6 +2085,13 @@
         "concepto": "Constantes de control de entrada HDS-5 para tuberia HDPE"
       },
       {
+        "clave": "instalacion_estandar_concreto",
+        "etiqueta": "A",
+        "valor": "tipo_3",
+        "declarado_en_caliente": false,
+        "concepto": "Tipo de instalacion estandar del tubo de concreto (AASHTO LRFD 12.10.2.1, Tablas 12.10.2.1-1 y -3): fija el factor de arqueo vertical de la carga de tierra y el factor de cama con que la Fase 8 elige la clase"
+      },
+      {
         "clave": "ke_entrada",
         "etiqueta": "C",
         "valor": 0.5,
@@ -2076,7 +2249,6 @@
       "capacidad_portante_adm",
       "categoria_refuerzo_aashto",
       "clase_sitio",
-      "clases_producto_por_relleno",
       "cobertura_minima_cajon",
       "cortante_alto_muro_e060_art_11_10_10_2",
       "cuantia_vertical_cortante_alto_e060_art_11_10_10_3",
@@ -2110,6 +2282,7 @@
       "PERFIL_SUELO_PRESUNTO",
       "acceso_mantenimiento_v2b",
       "borde_libre_canal_m",
+      "clases_producto_por_relleno",
       "cobertura_minima_aashto",
       "coeficiente_uniformidad_temez",
       "condicion_pavimento",

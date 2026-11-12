@@ -1286,22 +1286,84 @@ def _correr_csv(tmp_path, fila):
     return punto
 
 
-def test_h1_el_caso_del_auditor_adopta_tmc_porque_el_concreto_se_evaluo_entero(
+# --- T-5 (cierre) --- EL CASO G2 CAMBIO DE RESULTADO, Y SE DECLARA.
+#
+# QUE PASABA (T-4, hasta `df1b23c`): el concreto se evaluaba entero, se
+# descartaba por V3, y el punto salia DIMENSIONADO en TMC de 1.95 m. La Fase 8
+# no corria a nivel de perfil: nadie verificaba que ese tubo, con ~8.5 m de
+# relleno, resistiera.
+#
+# QUE PASA (T-5): la Fase 8 corre tambien a perfil, y con la fabricacion del
+# TMC de archivo --costura anular remachada SIMPLE, la mas debil tabulada--
+# NINGUNA plancha de 68 x 13 desarrolla el empuje de anillo: 320.7 kN/m en
+# 1.95 m (340.2 en 2.10 m) contra phi_s SS = 0.67 x 374 = 250.6 kN/m de la
+# plancha de 4.27 mm, la ultima de la Tabla 5 de ASTM A796. La progresion
+# sube de plancha (y con ella de costura) dentro de la tabla antes de
+# rendirse, y el TMC se descarta por F8.COSTURA; el HDPE no llega a ese
+# diametro. El punto ya no se dimensiona.
+#
+# POR QUE: el dueño del proyecto lo APROBO el 2026-11-12, con el valor de
+# archivo de 'fabricacion_tmc' en la remachada simple. Con la remachada DOBLE
+# o la helicoidal --que la ventana del criterio admite y hay que declarar--
+# el TMC de 1.95 m se dimensiona con la plancha de 4.27 mm, y eso se fija
+# tambien aqui para que el caso siga midiendo lo que media: que el concreto
+# se evalua ENTERO antes de que otro material se adopte.
+def test_h1_el_caso_del_auditor_ya_no_adopta_tmc_con_la_costura_de_archivo(
         del_expediente, tmp_path):
     """
     Rasante alta, Q = 6 m3/s, S = 0.012, TW = 0.3: el concreto incumple V3 en
-    TODA su progresion. Con el tope en el ultimo diseño estandar (2.70 m,
-    H2) el concreto se EVALUA ENTERO y se descarta por catalogo; adoptar el
-    TMC es entonces legitimo. Antes el concreto se detenia en 2.85 m por
-    falta de pared y el TMC se adoptaba igual, sin bloqueo.
+    TODA su progresion y se evalua ENTERO (tope en el ultimo diseño estandar,
+    2.70 m, H2 de T-4). Hasta T-5 el TMC de 1.95 m se adoptaba; desde T-5 la
+    Fase 8 lo descarta por la costura remachada simple (ver el bloque de
+    arriba: cambio declarado y aprobado por el dueño del proyecto).
     """
     punto = _correr_csv(tmp_path, CASO_G2)
-    assert punto.dimensionado and punto.resultado.material.tipo is TMC
     del_concreto = [e for e in punto.traza if "oncreto" in e.material]
     assert del_concreto[-1].seccion.etiqueta() == "Ø 2.70 m"
     assert not [e for e in del_concreto
                 if MD.MARCA_ESCALON_SIN_EVALUAR in e.motivo], (
         "algun escalon del concreto quedo sin evaluar")
+    # LA VERDAD NUEVA: no se dimensiona, y el motivo nombra la costura.
+    assert not punto.dimensionado
+    (bloqueo,) = [b for b in punto.bloqueos if "MD" in b.etapa]
+    assert bloqueo.tipo.value == "DisenoNoFactibleError"
+    del_tmc = [e for e in punto.traza if "TMC" in e.material]
+    assert [e.seccion.etiqueta() for e in del_tmc][-2:] == ["Ø 1.95 m",
+                                                              "Ø 2.10 m"]
+    for escalon in del_tmc[-2:]:
+        assert "incumple F8.COSTURA" in escalon.motivo
+        # ...y SOLO la costura: el area y el factor de flexibilidad los
+        # resuelve la progresion de plancha.
+        fallan = [v.codigo for v in escalon.verificaciones if not v.cumple]
+        assert fallan == ["F8.COSTURA"]
+        costura = next(v for v in escalon.verificaciones
+                       if v.codigo == "F8.COSTURA")
+        # La plancha con que se rinde es la ULTIMA de la tabla: subio antes.
+        assert "68x13/4.27" in costura.paso.que
+        assert costura.valor_admisible == pytest.approx(0.67 * 374.0)
+        assert "anular_remachada_doble" in costura.paso.veredicto.explicacion
+    assert MD.ACLARACION_DESCARTE_POR_FASE_8 in bloqueo.mensaje
+
+
+@pytest.mark.parametrize("fabricacion", ("anular_remachada_doble",
+                                         "helicoidal"))
+def test_h1_con_otra_fabricacion_declarada_el_caso_del_auditor_adopta_tmc(
+        del_expediente, tmp_path, fabricacion):
+    """
+    Lo que el caso G2 media en T-4, con la fabricacion DECLARADA: el concreto
+    se evalua entero y el TMC de 1.95 m se adopta --ahora con la plancha de
+    4.27 mm que la Fase 8 exige, y con el aviso de que la costura se verifico
+    con la resistencia de otra fabricacion (o no se verifico, si es
+    helicoidal)--.
+    """
+    with declarados({"fabricacion_tmc": fabricacion}):
+        punto = _correr_csv(tmp_path, CASO_G2)
+    assert punto.dimensionado and punto.resultado.material.tipo is TMC
+    assert punto.resultado.seccion.etiqueta() == "Ø 1.95 m"
+    assert punto.estructural.seleccion == "68x13/4.27"
+    del_concreto = [e for e in punto.traza if "oncreto" in e.material]
+    assert del_concreto[-1].seccion.etiqueta() == "Ø 2.70 m"
+    assert any("EG-2013 507.02 a)" in a for a in punto.avisos())
 
 
 def test_h1_un_candidato_anterior_sin_evaluar_por_dato_bloquea_al_posterior(
@@ -1311,15 +1373,31 @@ def test_h1_un_candidato_anterior_sin_evaluar_por_dato_bloquea_al_posterior(
     concreto le falta la pared de un escalon que tendria que evaluar, el
     punto NO sale dimensionado en TMC; sale bloqueado por el dato que falta,
     con su campo.
+
+    DESDE T-5 EL TMC DE ESTE CASO SOLO CIERRA CON OTRA FABRICACION (ver el
+    bloque de arriba), de modo que la regla --un candidato anterior sin
+    evaluar bloquea al POSTERIOR QUE CIERRA-- se mide declarando la
+    remachada doble. Con la de archivo no cierra ninguno, y entonces vale la
+    otra mitad de la ficha T4-10: el punto es «no factible» y el motivo dice
+    que escalones del concreto no se evaluaron y por que dato.
     """
     del_archivo = ca.CRITERIOS[CLAVE_ESPESOR_PARED].valor
     recortado = {**del_archivo, "concreto_reforzado": {
         d: t for d, t in del_archivo["concreto_reforzado"].items() if d <= 1950}}
-    with declarados({CLAVE_ESPESOR_PARED: recortado}):
+    with declarados({CLAVE_ESPESOR_PARED: recortado,
+                     "fabricacion_tmc": "anular_remachada_doble"}):
         punto = _correr_csv(tmp_path, CASO_G2)
     assert not punto.dimensionado
     (bloqueo,) = [b for b in punto.bloqueos if "MD" in b.etapa]
     assert bloqueo.tipo.value == "DatoFaltanteError"
+    assert "espesor_pared_conducto[concreto_reforzado][2100]" in bloqueo.mensaje
+    # Con la fabricacion de archivo ninguno cierra: «no factible», y el
+    # motivo sigue nombrando el dato que le falto al concreto.
+    with declarados({CLAVE_ESPESOR_PARED: recortado}):
+        punto = _correr_csv(tmp_path, CASO_G2)
+    assert not punto.dimensionado
+    (bloqueo,) = [b for b in punto.bloqueos if "MD" in b.etapa]
+    assert bloqueo.tipo.value == "DisenoNoFactibleError"
     assert "espesor_pared_conducto[concreto_reforzado][2100]" in bloqueo.mensaje
 
 

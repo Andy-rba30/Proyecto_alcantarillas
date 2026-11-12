@@ -242,7 +242,8 @@ from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ResultadoPunto, TipoDeVeredicto, Verificacion)
 from src.modulos import M2_material as M2
 from src.modulos import M5_verificaciones as M5
-from src.modulos.M8_estructural import verificacion_diferida_estructural
+from src.modulos.M8_estructural import (CODIGO_PASO_HMAX_TIPO4,
+                                        verificacion_diferida_estructural)
 # La agregacion de criterios bloqueantes y el armado de la memoria son de la
 # Fase 11: viven en M11 y aqui solo se usan. `CriterioBloqueante` se
 # reexporta porque el JSON y el volcado de texto de esta CLI lo siguen
@@ -910,13 +911,54 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "verificaciones_no_evaluadas": list(M5.verificaciones_no_evaluadas()),
         "bloqueos": [_bloqueo_json(b) for b in informe.bloqueos],
     }
+    # --- T-5 --- La Fase 8: lo que eligio y su relleno maximo (los dos
+    # alcances, conducto circular dimensionado), la demanda del marco y la
+    # cama de apoyo (expediente), y lo que sigue sin verificarse. Las
+    # verificaciones F8.* viajan en `verificaciones`, con la fase del diseño.
+    if informe.estructural is not None or informe.cama_apoyo is not None:
+        salida["estructural"] = _estructural_json(informe)
+    return salida
+
+
+def _estructural_json(informe: InformePunto) -> Dict[str, Any]:
+    """--- T-5 --- El bloque `estructural` del punto (INF-3.3.5)."""
+    r = informe.estructural
+    bloque: Dict[str, Any] = {
+        "material": None if r is None else r.material,
+        "seleccion": None if r is None else (r.seleccion or None),
+        "H_relleno_m": None if r is None else _num(r.H_relleno_m),
+        "e_paquete_m": None if r is None else _num(r.e_paquete_m),
+        "H_total_m": None if r is None else _num(r.H_total_m),
+        "relleno_maximo_m": (None if r is None or r.relleno_maximo_m is None
+                             else _num(r.relleno_maximo_m)),
+        "avisos": [] if r is None else list(r.avisos),
+        "pasos": [] if r is None else [
+            {"codigo": p.codigo, "que": p.que,
+             "resultado": {"simbolo": p.resultado.simbolo,
+                           "valor": _num(p.resultado.valor),
+                           "unidad": p.resultado.unidad}}
+            for p in r.pasos],
+        "demanda_marco": (None if r is None or r.demanda_marco is None else {
+            "F_e": _num(r.demanda_marco.F_e),
+            "w_tierra_kPa": _num(r.demanda_marco.w_tierra_kPa),
+            "w_viva_kPa": _num(r.demanda_marco.w_viva_kPa),
+            "w_u_kPa": _num(r.demanda_marco.w_u_kPa),
+            "luz_m": _num(r.demanda_marco.luz_m),
+            "M_ref_kNm_m": _num(r.demanda_marco.M_u_referencia_kNm_m)}),
+        "cama_apoyo": None, "sujecion_relleno_lateral": None, "numeral": None,
+        # Lo que no se verifica DEL CONDUCTO DE ESTE PUNTO; la lista de
+        # todos los materiales solo cuando el punto trae la cama y no el
+        # conducto (auditoria de T-5).
+        "verificacion_diferida": list(
+            r.diferido if r is not None and r.diferido
+            else verificacion_diferida_estructural()),
+    }
     if informe.cama_apoyo is not None:
-        salida["estructural"] = {
+        bloque.update({
             "cama_apoyo": informe.cama_apoyo.cama_apoyo,
             "sujecion_relleno_lateral": informe.cama_apoyo.sujecion_relleno_lateral,
-            "numeral": informe.cama_apoyo.numeral,
-            "verificacion_diferida": list(verificacion_diferida_estructural())}
-    return salida
+            "numeral": informe.cama_apoyo.numeral})
+    return bloque
 
 
 def _cabezal_json(informe: InformeCabezal) -> Dict[str, Any]:
@@ -1296,6 +1338,26 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         # punto, por `InformePunto.avisos()`, una sola vez (y tambien cuando
         # el punto no dimensiona).
         out.append(f"{SANGRIA_DETALLE}{g.tamizado.mensaje}")
+    # --- T-5 --- La Fase 8 del conducto: lo elegido y su relleno maximo, o
+    # la demanda del marco; los avisos salen con los del punto.
+    r = informe.estructural
+    if r is not None and r.demanda_marco is not None:
+        out.append(f"{SANGRIA}Fase 8  marco: diseño del portico diferido al "
+                   f"expediente; demanda M_ref = "
+                   f"{_fmt(r.demanda_marco.M_u_referencia_kNm_m)} kN.m/m")
+    elif r is not None:
+        maximo = ("-" if r.relleno_maximo_m is None
+                  else f"{_fmt(r.relleno_maximo_m)} m")
+        # El contraste con la instalacion Tipo 4 del tubo de concreto (no
+        # rige), leido del paso que M8 emite: la CLI no calcula.
+        tipo4 = next((p for p in r.pasos
+                      if p.codigo == CODIGO_PASO_HMAX_TIPO4), None)
+        contraste = ("" if tipo4 is None else
+                     f" (con instalacion Tipo 4: {_fmt(tipo4.resultado.valor)} m)")
+        out.append(f"{SANGRIA}Fase 8  {r.seleccion or 'ninguna cumple'}; "
+                   f"relleno {_fmt(r.H_relleno_m)} m + paquete "
+                   f"{_fmt(r.e_paquete_m)} m; relleno maximo {maximo}"
+                   f"{contraste}")
     if informe.cama_apoyo is not None:
         out.append(f"{SANGRIA}Fase 8  cama: {informe.cama_apoyo.cama_apoyo} "
                    f"(num. {informe.cama_apoyo.numeral})")

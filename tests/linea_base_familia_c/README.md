@@ -861,3 +861,63 @@ se detenían, con los mismos bloqueos. **Los números de Laushey no se movieron*
 y 0.274 m, espesor 0.592 y 0.479 m, longitud 5.000 m. La Fase 6 corre después del
 dimensionado y no lo realimenta; «Verificaciones con aviso» del RESUMEN no cambia, porque
 ningún paso de la Fase 6 de este fixture tiene veredicto INDICADOR.
+
+## Regenerada en T-5 (2026-11-12, integrado detrás de T-8): la Fase 8 del conducto entra a la tabla; ningún diámetro ni material
+
+T-5 de la cadena T (`INF-3.3.5`) implementa la Fase 8 real del conducto, y su cierre
+aplica las correcciones de dos auditorías adversariales y las decisiones del dueño del
+proyecto del 2026-11-12. Se regeneró sobre el árbol ya fusionado con T-8 y se midió
+contra la línea base de `df1b23c` (`tesis(T-8)`), diferencia a diferencia con el
+comparador de E-B (`cli.py --comparar`), con `diff` y con `cmp`:
+
+- **Ningún diámetro, material, sección, estado, veredicto, admisible ni tipo de bloqueo
+  previo se movió.** A-01 y A-02 siguen dimensionados en concreto reforzado de 0.90 m;
+  B-01 sigue «no factible» (incumple V2 en todo diámetro, y la Fase 8 no corre sobre un
+  escalón que ya incumple); C-01 sigue detenido en los criterios del cajón; a expediente
+  los cuatro se detienen donde se detenían. Los dos CSV de resumen, `cli_perfil.txt`,
+  `cli_expediente.txt`, `cli_rama_error.txt` y la memoria del cajón **no cambian un
+  byte** (`cmp`).
+- **`informe_perfil_ancho.json`: 18 diferencias, todas de T-5.** Una verificación nueva
+  en A-01 y en A-02, `F8.CLASE`, detrás de V9: la D-load requerida por el método
+  indirecto de AASHTO LRFD 12.10.4.3 (37.424 y 37.042 N/m/mm) frente a los 50.0 de la
+  Clase II; cumple. El bloque `estructural` de los dos puntos (antes `null` a nivel de
+  perfil): la selección («Clase II»), las alturas, **el relleno máximo, 2.851 m**, los
+  pasos —carga viva (`F8.LL`), carga de tierra (`F8.EV`), relleno máximo (`F8.HMAX`) y
+  los dos del **contraste con la instalación Tipo 4**, que no rige (`F8.TIPO4`: 44.86 y
+  44.76 N/m/mm; `F8.HMAX_TIPO4`: 1.691 m)— y lo que la Fase 8 no verifica **de ese
+  conducto** (el método directo y las clases ilegibles de M 170M, no la lista de todos
+  los materiales). El bloqueo diferido de la Fase 8 cambia de etapa y de mensaje en
+  los dos puntos («Fase 8 completa diferida al expediente» → «Fase 8: cama de apoyo y
+  demanda del marco diferidas al expediente»: la clase, el calibre o el perfil SÍ se
+  verifican a nivel de perfil). Tres criterios pasan a usados
+  (`clases_producto_por_relleno`, `instalacion_estandar_concreto` y
+  `carga_viva_bajo_relleno_alto`); `sin_valor_declarados` 35 → 34
+  (`clases_producto_por_relleno` deja de estar vacío) y `verificacion_pendiente` 27 →
+  28 (su nota de legibilidad del ejemplar); `criterios_sha1`.
+- **`informe_expediente.json` e `informe_rama_error.json`: 3 diferencias cada uno**, las
+  de huella y recuento (`criterios_sha1`, 35 → 34, 27 → 28). Ninguna por punto.
+- **`cli_perfil_ancho.txt`:** la fila `[OK] F8.CLASE …` con su criterio, en A-01 y A-02;
+  la línea «Fase 8  Clase II; relleno 0.950 m + paquete 0.150 m; relleno maximo 2.851 m
+  (con instalacion Tipo 4: 1.691 m)» (1.000 m en A-02); y el texto del diferimiento de
+  la Fase 8, en los dos puntos y en el bloque de alcance.
+- **Las tres memorias de la CLI:** `criterios_sha1`, `hoja_ruta_sha1` (la nota
+  «Corregido (`INF-3.3.5`, T-5)» de la Fase 8 de la v8), el recuento «102 criterios
+  declarados, 35 todavia sin valor» → «109 … 34» (siete criterios nuevos de la Fase 8;
+  `clases_producto_por_relleno` deja de estar vacío y `perfil_hdpe_fabricante` es
+  opcional y no cuenta), el texto de dos fichas que nombraban la Fase 8 como no
+  implementada, y en la ancha el bloque «Fase 8 — Estructural del conducto» de A-01 y
+  A-02 con sus pasos y «Fase 8 — Lo que no se verifica».
+
+**Lo que la FASE A de T-5 había movido y el cierre corrigió** (no llegó a `main`): el
+relleno máximo de A-01 y A-02 salía 3.183 m porque la carga viva se despreciaba pasados
+8.0 ft de relleno por el permiso de AASHTO LRFD 3.6.1.2.6a, tomado en silencio; con la
+carga viva conservada (`carga_viva_bajo_relleno_alto` = `conservar`, decisión del dueño)
+es 2.851 m. La D-load de los dos puntos no cambió con la corrección del vehículo que
+gobierna (por efecto y no por presión): en un tubo de 0.90 m el área cargada de los dos
+vehículos es más larga que el tubo y el efecto ordena igual que la presión.
+
+**Fuera de la línea base sí cambia el resultado**, y está declarado (ficha T5-08 y
+`tests/test_t4_materiales_durabilidad.py`): el caso G2 de la auditoría de T-4 (TMC de
+1.95 m con ~8.5 m de relleno) deja de dimensionarse con la costura de archivo; un tubo
+de concreto que pida más que la Clase II bloquea el punto; y el HDPE no se adopta sin
+el perfil del fabricante.

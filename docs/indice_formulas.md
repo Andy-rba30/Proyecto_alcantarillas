@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `7e74065+cambios-sin-commit` · Suite: 4960 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `df1b23c+cambios-sin-commit` · Suite: 5161 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -38,7 +38,7 @@
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **158** · fórmulas distintas: **27** · fundamentos ejercitados: **18** de 66.
+Pasos emitidos: **158** · fórmulas distintas: **27** · fundamentos ejercitados: **18** de 78.
 
 ## 2. Índice
 
@@ -153,7 +153,19 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F7.LONGITUD` | Fase 7 - Compatibilidad geometrica | Longitud del conducto sobre la seccion transversal del cruce | `M7_geometria` |
 | `F7.PENDIENTE` | Fase 7 - Compatibilidad geometrica | Pendiente adoptada del conducto, con su origen | `M7_geometria` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | `M7_geometria` |
+| `F8.CARGA_TIERRA` | Fase 8 - Verificacion estructural del conducto | Carga de tierra sobre el conducto: prisma de relleno y paquete estructural, con la interaccion suelo-estructura de su tipo | `M8_estructural` |
+| `F8.CARGA_VIVA` | Fase 8 - Verificacion estructural del conducto | Carga viva HL-93 a la profundidad de la clave: presion vertical por la rueda distribuida a traves del relleno | `M8_estructural` |
+| `F8.CLASE_CONCRETO` | Fase 8 - Verificacion estructural del conducto | Clase del tubo de concreto reforzado por el metodo indirecto: D-load requerida frente a la D-load de la clase | `M8_estructural` |
+| `F8.HDPE_DEFLEXION` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deflexion vertical de servicio | `M8_estructural` |
+| `F8.HDPE_EMPUJE` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deformacion de compresion por el empuje frente a su limite | `M8_estructural` |
+| `F8.HDPE_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: factor de flexibilidad para el manejo y la instalacion | `M8_estructural` |
+| `F8.HDPE_PANDEO` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: pandeo general del anillo | `M8_estructural` |
+| `F8.MARCO_DEMANDA` | Fase 8 - Verificacion estructural del conducto | Marco de concreto: cargas sobre la losa superior y momento de referencia; el diseño de la seccion se difiere | `M8_estructural` |
 | `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | `M9_cabezal` |
+| `F8.TMC_AREA` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: empuje de anillo mayorado frente a la resistencia de la pared, con el pandeo | `M8_estructural` |
+| `F8.TMC_ASD` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: contraste por tensiones admisibles (ASTM A796, num. 8), que no rige | `M8_estructural` |
+| `F8.TMC_COSTURA` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: resistencia de la costura longitudinal | `M8_estructural` |
+| `F8.TMC_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion | `M8_estructural` |
 | `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | `MH_hidrologia` |
 | `FH.C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura vegetal, tipo de suelo y pendiente del terreno | `MH_hidrologia` |
 | `FH.FEN` | Fase 1-bis - Hidrologia: caudal de diseño | Contraste del tratamiento de los años FEN: la lluvia de diseño adoptada frente a la de la serie completa y la de la serie sin los años FEN | `MH_hidrologia` |

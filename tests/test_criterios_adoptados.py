@@ -833,9 +833,14 @@ def test_los_opcionales_declarados_hoy():
     # Y desde T-4 el cuarto, 'D_max_catalogo' (INF-3.3.1): sin declarar, el
     # tope de diametro es el de la serie de la norma de producto; declarado,
     # solo puede bajarlo.
+    # Y desde el cierre de T-5 el quinto... que es el cuarto vivo:
+    # 'perfil_hdpe_fabricante' (auditoria de T-5 y decision del dueño): sin
+    # declarar, el HDPE queda «no verificado con un producto real» y no se
+    # adopta; declarado, se verifica con las propiedades del fabricante.
     assert opcionales == {"v_max_concreto_eleccion",
                           "riesgo_admisible_propietario",
-                          "D_max_catalogo"}
+                          "D_max_catalogo",
+                          "perfil_hdpe_fabricante"}
 
 
 def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():

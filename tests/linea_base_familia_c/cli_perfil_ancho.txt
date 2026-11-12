@@ -40,6 +40,8 @@ A-01  |  progresiva 0+380  |  Familia A
         umbral del criterio 'factores_carga_aashto' [A]
     [OK] V9   Sec. 3.2 (V9, nuevo en v7)   obtenido 0.900 | admisible 2.700
         umbral del criterio 'D_max_norma_producto' [C]
+    [OK] F8.CLASE AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02) obtenido 37.424 | admisible 50.000
+        umbral del criterio 'clases_producto_por_relleno' [C]
     [OK] G1   Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1) obtenido 44.200 | admisible 44.092
         umbral del criterio 'resguardo_HW_subrasante' [N->]
     [OK] G2   Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A]) obtenido 41.987 | admisible 41.300
@@ -59,6 +61,7 @@ A-01  |  progresiva 0+380  |  Familia A
         longitud: metodo por_extremo; entre cabezales a la clave 14.676 m
         pendiente: S = 0.0060 m/m (S_cauce); caida 0.113 m
         factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
+  Fase 8  Clase II; relleno 0.950 m + paquete 0.150 m; relleno maximo 2.851 m (con instalacion Tipo 4: 1.691 m)
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto
@@ -75,8 +78,8 @@ A-01  |  progresiva 0+380  |  Familia A
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
         falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
-    [DiferidoPorAlcance] Fase 8 - Estructural del conducto (M8) -> Fase 8 completa diferida al expediente (alcance perfil)
-        clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente
+    [DiferidoPorAlcance] Fase 8 - Estructural del conducto (M8) -> Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)
+        la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente
 
 ------------------------------------------------------------------------------
 A-02  |  progresiva 1+920  |  Familia A
@@ -115,6 +118,8 @@ A-02  |  progresiva 1+920  |  Familia A
         umbral del criterio 'factores_carga_aashto' [A]
     [OK] V9   Sec. 3.2 (V9, nuevo en v7)   obtenido 0.900 | admisible 2.700
         umbral del criterio 'D_max_norma_producto' [C]
+    [OK] F8.CLASE AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02) obtenido 37.042 | admisible 50.000
+        umbral del criterio 'clases_producto_por_relleno' [C]
     [OK] G1   Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1) obtenido 42.000 | admisible 41.372
         umbral del criterio 'resguardo_HW_subrasante' [N->]
     [OK] G2   Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A]) obtenido 39.701 | admisible 39.100
@@ -134,6 +139,7 @@ A-02  |  progresiva 1+920  |  Familia A
         longitud: metodo por_extremo; entre cabezales a la clave 14.487 m
         pendiente: S = 0.0080 m/m (S_cauce); caida 0.149 m
         factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
+  Fase 8  Clase II; relleno 1.000 m + paquete 0.150 m; relleno maximo 2.851 m (con instalacion Tipo 4: 1.691 m)
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto
@@ -149,8 +155,8 @@ A-02  |  progresiva 1+920  |  Familia A
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
         falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
-    [DiferidoPorAlcance] Fase 8 - Estructural del conducto (M8) -> Fase 8 completa diferida al expediente (alcance perfil)
-        clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente
+    [DiferidoPorAlcance] Fase 8 - Estructural del conducto (M8) -> Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)
+        la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente
 
 ------------------------------------------------------------------------------
 B-01  |  progresiva 2+450  |  Familia B
@@ -219,8 +225,8 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
     fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   [A-01] Fase 8 - Estructural del conducto (M8)
-    Fase 8 completa diferida al expediente (alcance perfil)
-    clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente
+    Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)
+    la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente
   [A-02] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V5 diferida al expediente (alcance perfil)
     falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
@@ -230,8 +236,8 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
     fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
   [A-02] Fase 8 - Estructural del conducto (M8)
-    Fase 8 completa diferida al expediente (alcance perfil)
-    clase o calibre por norma de producto (items 1-2) y cama de apoyo (item 4) no se ejecutan en alcance de perfil: son verificacion estructural del conducto, que la hoja de ruta difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al expediente la verificacion detallada'). Disponibles sin cambios con --alcance expediente
+    Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)
+    la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente
   [B-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V5 diferida al expediente (alcance perfil)
     falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)

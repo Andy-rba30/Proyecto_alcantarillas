@@ -100,7 +100,8 @@ from src.modelos import (Bloqueo, CaudalDeDiseno, Clasificacion,
                          MaterialLecho, ProteccionEntrada, SocavacionSalida,
                          TIPO_LECHO_COHESIVO, TIPO_LECHO_NO_COHESIVO,
                          TIPOS_DE_LECHO,
-                         AVISO_SIN_ACCESO_DE_MANTENIMIENTO, SeccionReceptor,
+                         AVISO_SIN_ACCESO_DE_MANTENIMIENTO,
+                         FormaSeccion, ResultadoEstructural, SeccionReceptor,
                          TipoDeBloqueo, TWDeterminado, Verificacion)
 from src.modelos import EstadoDeVerificacion, TipoDeVeredicto
 from src.modelos import (CotaDeEntrada, LongitudConducto,      # --- T-6 ---
@@ -134,8 +135,10 @@ from src.modulos.M7_geometria import (aviso_de_pendiente,
 # `cota_clave` (MAT-D4), que por eso tambien vive en M5.
 from src.modulos.M5_verificaciones import altura_relleno_sobre_clave
 from src.modulos.M5_verificaciones import cota_de_entrada   # --- T-6 ---
-from src.modulos.M8_estructural import (cama_apoyo_relleno_lateral,
-                                        seleccionar_clase_calibre)
+from src.modulos.M8_estructural import (CODIGOS_FASE_8,
+                                        cama_apoyo_relleno_lateral,
+                                        seleccionar_clase_calibre,
+                                        verificar_conducto)
 from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
                                     nota_excepcion_refuerzo_minimo,
                                     cadena_sismica,
@@ -535,6 +538,11 @@ CLAVES_DE_DURABILIDAD_TEXTO: Tuple[str, ...] = ("abrasion",)
 CLAVES_DE_DURABILIDAD_CON_CERO: Tuple[str, ...] = (
     "sulfatos_suelo_ppm", "sulfatos_agua_ppm", "cloruros_ppm")
 ETAPA_DURABILIDAD = "matriz de durabilidad (Sec. 3.3)"
+# --- T-5 --- Las dos etapas de la Fase 8 que la corrida registra aparte de
+# las verificaciones F8.* de la Fase 5 (ver `_fase_8_conducto`).
+ETAPA_ESTRUCTURAL_CONDUCTO = ("clase, calibre o perfil del conducto y relleno "
+                              "maximo (items 1-2 y 5)")
+ETAPA_DEMANDA_MARCO = "demanda de la losa superior del marco (12.11.2)"
 
 # --- T-6 --- La pendiente transversal de la plataforma en el cruce, cuando
 # la seccion tipica la da (m/m: 0.02 = 2 %). Son datos del TRAZO, opcionales
@@ -1360,6 +1368,14 @@ class InformePunto:
     socavacion: Optional[SocavacionSalida] = None
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
+    # --- T-5 --- La Fase 8 del conducto de la seccion aceptada: la clase, la
+    # plancha o el perfil elegidos, el relleno maximo, los pasos de carga y
+    # los avisos (INF-3.3.5). Sus verificaciones F8.* son las MISMAS que la
+    # Fase 5 ya puso en `resultado.verificaciones`; aqui viaja lo demas. None
+    # si el punto no se dimensiono, si la Fase 5 difirio la Fase 8 (relleno
+    # fuera del dominio del metodo de la carga viva, a nivel de perfil) o si
+    # es un marco a nivel de perfil (su demanda es de expediente).
+    estructural: Optional[ResultadoEstructural] = None
     espaciamiento: Optional[Espaciamiento] = None
     # Escalones que MD probo, en orden. Es el entregable 1 de la Fase 11
     # ("iteraciones"): la memoria tiene que poder decir por que se descarto el
@@ -1522,6 +1538,12 @@ class InformePunto:
                       self.socavacion):
             if pieza is not None:
                 avisos.extend(pieza.avisos)
+        # --- T-5 --- Y los de la Fase 8: la plancha del TMC que la Fase 8
+        # exige mas gruesa que la adoptada para la geometria, la costura
+        # verificada con la resistencia de otra fabricacion, y la carga viva
+        # despreciada por el permiso de 3.6.1.2.6a cuando el proyecto lo toma.
+        if self.estructural is not None:
+            avisos.extend(self.estructural.avisos)
         return tuple(avisos)
 
     def bloqueos_reales(self) -> Tuple[Bloqueo, ...]:
@@ -1906,9 +1928,13 @@ def _verificador_perfil(informe: InformePunto):
     V5 y que CLAUDE.md contempla expresamente para el dato que un tablero
     externo tendria que aportar. El aviso sigue siendo ruidoso y ahora es del
     expediente, no del programa. (La mina hermana,
-    `M8.seleccionar_clase_calibre` con 'clases_producto_por_relleno', esta
-    documentada donde se salta la Fase 8 en `correr_punto`; y la de
-    `M2.espesor_pared` se cerro en la misma sesion y por la misma razon.)
+    `M8.seleccionar_clase_calibre` con 'clases_producto_por_relleno', la
+    retiro T-5 escribiendo su cuerpo; y la de `M2.espesor_pared` se cerro en
+    la misma sesion que la de V8 y por la misma razon.)
+
+    --- T-5 --- Y detras de V9, las verificaciones F8.* de la Fase 8 del
+    conducto (`M5.fase_8_estructural`), OBLIGATORIAS salvo el «metodo no
+    evaluable» de la carga viva con relleno somero, que se difiere.
     """
     ya_registrados: set = set()
 
@@ -2049,6 +2075,28 @@ def _verificador_perfil(informe: InformePunto):
         except ErrorProyecto as exc:
             exc.verificaciones_completadas = tuple(filas)
             raise
+        # --- T-5 --- LA FASE 8 DEL CONDUCTO, en el mismo sitio que en
+        # `M5.verificar` y con la misma condicion (todo lo anterior cumple).
+        # Es OBLIGATORIA: decide si el escalon existe. La unica salvedad es
+        # la del METODO, como en V1/V2: con el relleno fuera del dominio de
+        # la carga viva de 3.6.1.2.6 sale `MetodoNoEvaluableError`, que a
+        # nivel de perfil se difiere y el punto sigue dimensionandose.
+        if all(v.cumple for v in filas):
+            try:
+                filas.extend(M5.fase_8_estructural(
+                    punto=punto, material=material, seccion=seccion))
+            except MetodoNoEvaluableError as exc:
+                if ALCANCE_PERFIL in ALCANCES_QUE_DIFIEREN_METODO_NO_EVALUABLE:
+                    _diferir_verificacion(informe, "F8", exc, ya_registrados)
+                else:
+                    exc.verificaciones_completadas = tuple(filas)
+                    raise
+            except ErrorProyecto as exc:
+                exc.verificaciones_completadas = tuple(filas)
+                # Mismo aviso a MD que en `M5.verificar`: el escalon cumple
+                # toda la tabla y solo lo detiene la Fase 8.
+                exc.escalon_cumple_lo_demas = True
+                raise
         return tuple(filas)
 
     return verificar
@@ -2381,38 +2429,66 @@ def _fase_7(informe: InformePunto) -> None:
             peralte=informe.transversales[1]))
 
 
+def _fase_8_conducto(informe: InformePunto) -> None:
+    """
+    --- T-5 --- La Fase 8 del conducto circular de la seccion aceptada, en
+    LOS DOS ALCANCES: la clase, la plancha o el perfil elegidos, el relleno
+    maximo, los pasos de carga y los avisos, en `informe.estructural`.
+
+    Sus verificaciones ya corrieron en la Fase 5 (`M5.fase_8_estructural`,
+    codigos F8.*) y decidieron la aceptacion del escalon; esto vuelve a
+    llamar a la MISMA funcion de M8 sobre la seccion aceptada para quedarse
+    con lo que no es una verificacion. Es determinista: las verificaciones
+    que devuelve son iguales a las de la tabla. No corre si la Fase 5 la
+    difirio (relleno fuera del dominio del metodo de la carga viva, a nivel
+    de perfil): no hay F8 en la tabla, y volver a intentarla repetiria el
+    mismo bloqueo. El marco no pasa por aqui: su demanda es de expediente
+    (`_fase_8`).
+    """
+    resultado = informe.resultado
+    if resultado.material.forma is FormaSeccion.RECTANGULAR:
+        return
+    if not any(v.codigo in CODIGOS_FASE_8 for v in resultado.verificaciones):
+        return
+    punto = informe.punto_de_calculo
+    informe.estructural = _etapa(
+        informe.bloqueos, FASE_ESTRUCTURAL, ETAPA_ESTRUCTURAL_CONDUCTO,
+        lambda: verificar_conducto(
+            punto=punto, material=resultado.material, seccion=resultado.seccion,
+            altura_relleno=altura_relleno_sobre_clave(
+                punto=punto, material=resultado.material,
+                seccion=resultado.seccion)))
+
+
 def _fase_8(informe: InformePunto) -> None:
     """
-    Estructural del conducto. La flotacion (item 3) ya viaja como V7 en la
-    tabla de la Fase 5: aqui van la clase o calibre de la norma de producto
-    (items 1-2) y la cama de apoyo (item 4). El item 5 esta diferido al
-    expediente por la propia hoja de ruta y se imprime como nota.
+    La etapa de la Fase 8 que el alcance de perfil difiere: la DEMANDA del
+    marco (12.11.2; el diseño del portico se difiere al expediente) y la cama
+    de apoyo (item 4). La flotacion (item 3) viaja como V7 y las
+    verificaciones del conducto (items 1-2 y 5) como F8.* en la tabla de la
+    Fase 5; lo demas del conducto circular, en `_fase_8_conducto`.
 
-    Los items 1-2 son hoy un tope declarado en M8: en cuanto
-    'clases_producto_por_relleno' tenga valor, `seleccionar_clase_calibre`
-    lanza AssertionError porque la tabla todavia no esta transcrita. Esa
-    excepcion NO se atrapa -- es un modulo incompleto, no un expediente
-    incompleto -- y sale con su traza para que se vea que falta implementarla.
+    HASTA T-5 AQUI ESTABA LA MINA: `seleccionar_clase_calibre` terminaba en
+    `AssertionError` en cuanto 'clases_producto_por_relleno' tuviera valor.
+    T-5 escribio su cuerpo (INF-3.3.5) y lo que no se puede calcular sale
+    como `ErrorProyecto` del expediente, que `_etapa` registra.
     """
     resultado = informe.resultado
     material, seccion = resultado.material, resultado.seccion
     punto = informe.punto_de_calculo
-
-    # Altura real de relleno sobre la clave FISICA (con espesor de pared), la
-    # misma definicion que usa V7: subrasante menos clave, no el minimo de 7.A.
-    # Se pide a M5 en vez de restarse aqui: esta copia iba sin la guarda de
-    # `DatoInvalidoError` que V7 si tenia, y una altura negativa habria
-    # entrado a la tabla de clases de la norma de producto el dia en que
-    # 'clases_producto_por_relleno' se declare (SIS-A-21).
-    altura = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
-                    "altura de relleno sobre la clave",
-                    lambda: altura_relleno_sobre_clave(
-                        punto=punto, material=material, seccion=seccion))
-    if altura is not None:
-        _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
-               "clase o calibre por norma de producto (items 1-2)",
-               lambda: seleccionar_clase_calibre(material=material,
-                                                 altura_relleno=altura))
+    if material.forma is FormaSeccion.RECTANGULAR:
+        # Altura real de relleno sobre la clave FISICA (con espesor de pared),
+        # la misma definicion que usa V7: subrasante menos clave (SIS-A-21).
+        altura = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
+                        "altura de relleno sobre la clave",
+                        lambda: altura_relleno_sobre_clave(
+                            punto=punto, material=material, seccion=seccion))
+        if altura is not None:
+            informe.estructural = _etapa(
+                informe.bloqueos, FASE_ESTRUCTURAL, ETAPA_DEMANDA_MARCO,
+                lambda: seleccionar_clase_calibre(
+                    punto=punto, material=material, seccion=seccion,
+                    altura_relleno=altura))
     informe.cama_apoyo = _etapa(informe.bloqueos, FASE_ESTRUCTURAL,
                                 "cama de apoyo y relleno lateral (item 4)",
                                 lambda: cama_apoyo_relleno_lateral(material))
@@ -2443,25 +2519,27 @@ def _diferir_fase_8(informe: InformePunto) -> None:
     Constancia del salto de la Fase 8 en alcance de perfil. La etapa completa
     queda disponible, sin cambios, con --alcance expediente.
 
-    MINA DELIBERADA (no desactivar): `M8.seleccionar_clase_calibre` termina
-    en `raise AssertionError` en cuanto 'clases_producto_por_relleno' tenga
-    valor -- el criterio tendria dato pero la tabla de la norma de producto
-    no esta transcrita ni la logica escrita. En alcance de perfil esta guarda
-    nunca se alcanza porque la Fase 8 no corre; NO por eso deja de ser
-    necesaria: antes de declarar ese criterio hay que escribir el cuerpo de
-    la funcion. Igual que su hermana `M5.v8_evento_extremo` con
-    'TR_evento_extremo' (documentada en `_verificador_perfil`).
+    DESDE T-5 NO SE DIFIERE LA FASE 8 ENTERA, y el mensaje lo dice. Lo que
+    decide si el escalon existe --la clase del tubo de concreto, el calibre
+    del TMC, el perfil del HDPE (items 1-2 y 5)-- corre a nivel de perfil
+    como verificaciones F8.* de la Fase 5 (ver `_verificador_perfil`), igual
+    que la flotacion (item 3) como V7. Lo que se difiere es lo que no decide
+    la existencia: la cama de apoyo para los planos (item 4) y la demanda
+    del marco, cuyo diseño la hoja de ruta deja al expediente. La mina que
+    este docstring describia (`seleccionar_clase_calibre` con
+    `AssertionError`) la retiro T-5 escribiendo su cuerpo.
     """
     informe.bloqueos.append(Bloqueo(
         fase=FASE_ESTRUCTURAL,
-        etapa=f"Fase 8 completa diferida al expediente (alcance {ALCANCE_PERFIL})",
+        etapa=(f"Fase 8: cama de apoyo y demanda del marco diferidas al "
+               f"expediente (alcance {ALCANCE_PERFIL})"),
         tipo=TipoDeBloqueo.DIFERIDO_POR_ALCANCE,
-        mensaje=("clase o calibre por norma de producto (items 1-2) y cama "
-                 "de apoyo (item 4) no se ejecutan en alcance de perfil: son "
-                 "verificacion estructural del conducto, que la hoja de ruta "
-                 "difiere al expediente (Sec. 7.A / Fase 8, 'Diferir al "
-                 "expediente la verificacion detallada'). Disponibles sin "
-                 "cambios con --alcance expediente"),
+        mensaje=("la cama de apoyo y relleno lateral (item 4) y la demanda "
+                 "de la losa del marco (12.11.2; el diseño del portico es de "
+                 "expediente por la hoja de ruta) no se ejecutan en alcance "
+                 "de perfil. La clase, el calibre o el perfil del conducto "
+                 "(items 1-2 y 5) SI se verifican: son las filas F8.* de la "
+                 "Fase 5. Disponibles sin cambios con --alcance expediente"),
         diferido_por_alcance=True))
 
 
@@ -2748,8 +2826,11 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
     de ella siguen (la Fase 10 no necesita el diametro, por ejemplo).
 
     Con alcance de perfil, la Fase 5 difiere V5 y V8 (ver
-    `_verificador_perfil`) y la Fase 8 no se ejecuta: queda como bloqueo
-    diferido con su fundamento (ver `_diferir_fase_8`). Y en los dos alcances,
+    `_verificador_perfil`) y de la Fase 8 se difiere SOLO lo que no decide si
+    el escalon existe --la cama de apoyo y la demanda del marco, ver
+    `_diferir_fase_8`--: desde T-5 la clase, la plancha o el perfil del
+    conducto se verifican tambien a perfil (filas F8.* de la Fase 5 y
+    `_fase_8_conducto`). Y en los dos alcances,
     tras el bucle de MD, la compuerta de h_o (`_compuerta_metodo_h_o`, EXT-3):
     un punto dimensionado bajo control de salida con HW/D < 0.75 y SIN perfil
     de la lamina lleva el bloqueo «metodo no evaluable», diferido solo a
@@ -2782,6 +2863,7 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
             _fase_6(informe, externos)
             _fase_7(informe)
             _fase_6_socavacion(informe, externos)
+            _fase_8_conducto(informe)
             if _difiere(alcance, "M8_estructural"):
                 _diferir_fase_8(informe)
             else:

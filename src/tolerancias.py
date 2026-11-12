@@ -167,3 +167,19 @@ TOL_COMPARADOR_REL = 1e-9
 # NO es un valor de proyecto: no entra en ninguna formula ni mueve ningun
 # resultado. Solo decide cuando dos celdas dejan de ser la misma medida.
 TOL_REL_AREA_ESCRITA_DOS_VECES = 1e-2
+
+
+# ---------------------------------------------------------------------------
+# --- T-5 --- La busqueda del relleno maximo de la Fase 8
+# ---------------------------------------------------------------------------
+# `M8._relleno_maximo` busca el PRIMER relleno sobre la clave en que la
+# clase, la plancha o el perfil elegidos dejan de cumplir. El margen no es
+# monotono en todo el intervalo --la carga viva decrece con la profundidad
+# mientras la de tierra crece, y se desprecia de golpe pasados los 8.0 ft--,
+# de modo que un Brent sobre el intervalo entero podria devolver un cruce
+# POSTERIOR al primero, que es el lado inseguro. Se muestrea el intervalo en
+# este numero de tramos y se aplica Brent (con TOL_BRENT) en el primero que
+# cambia de signo. Es una resolucion numerica: solo un hundimiento del margen
+# mas estrecho que un tramo --del orden de un centimetro en los rellenos de
+# esta obra-- podria escaparsele.
+TRAMOS_BUSQUEDA_RELLENO_MAXIMO = 400
