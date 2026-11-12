@@ -3917,3 +3917,23 @@ lo que la cadena suponía y la fuente no sostiene.
   como falta; y un criterio de agresividad escrito para tubería de acero corrugado.
 - **Dónde vive:** `src/criterios_adoptados.py::suelo_agresivo_lrfd_sobre_tmc`
 
+## T4-10 · Un dato que falta en un candidato anterior bloquea la aceptación de uno posterior: el «caso mixto» de PC-28 cambia
+
+- **Qué se difirió:** nada; se registra una inversión de contrato aceptada por el
+  orquestador.
+- **Por qué:** EXT-1 (PC-28) dejó dicho que si a TODOS los candidatos les faltaba un
+  dato el punto salía con `DatoFaltanteError`, y dejó **sin cambio** el caso mixto: si
+  a uno le faltaba y otro posterior cerraba, se adoptaba el posterior. El auditor
+  adversarial de T-4 (H1) lo midió sobre el pipeline real: un punto cuyo concreto
+  incumplía V3 hasta el último escalón con pared declarada, y se detenía en el
+  siguiente por falta de espesor, salía **dimensionado en TMC sin bloqueo** — elegido
+  por descarte de un material más preferente que nadie terminó de evaluar. Desde T-4
+  vale la regla que ya valía para criterios pendientes, criterios inválidos y método
+  no evaluable: antes de aceptar un candidato, ninguno anterior puede haberse detenido
+  por un dato que falta; se relanza el primero, con su campo. Al revés no cambia:
+  cuando ninguno cierra, el punto sigue «no factible» si los escalones evaluados
+  incumplen, y el motivo dice cuáles no se evaluaron y por qué dato.
+- **Qué haría falta:** nada. Quien quiera el comportamiento anterior tiene que
+  declarar el dato que falta, que es lo que el bloqueo pide.
+- **Dónde vive:** `src/modulos/MD.py::_exigir_datos_presentes`
+

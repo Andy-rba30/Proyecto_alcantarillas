@@ -550,9 +550,11 @@ anterior: con `aviso`, A-02 pasaría a dimensionarse en la corrida estrecha
 T-4 de la cadena T cambia de dónde salen el espesor de pared, el tope de
 diámetro, el n del HDPE y la etiqueta de `v_max_tmc`, y añade la matriz de
 durabilidad. **Antes y después se midieron las cuatro corridas**, comparando
-JSON ruta a ruta contra `87d1ce7`: por punto, el material y la sección
-adoptados, la terna (código, estado, valor admisible) de cada verificación y
-el tipo de cada bloqueo. **Son idénticos en los doce pares punto × corrida.**
+JSON ruta a ruta —en la rama contra `87d1ce7` y, al integrar detrás de T-2,
+otra vez contra `ad5cb97`, con los valores de archivo de T-2 ya presentes—:
+por punto, el material y la sección
+adoptados, el código, el estado, el veredicto, el valor obtenido y el
+admisible de cada verificación, y el tipo de cada bloqueo. **Son idénticos en los doce pares punto × corrida.**
 Tres de los trece archivos no cambian un byte: los dos CSV de resumen —donde
 viven el diámetro, las velocidades, el HW y el control— y
 `memoria_punto_cajon.html`.
@@ -608,9 +610,10 @@ Lo que cambia, clasificado:
   En `verificacion_pendiente` sale `D_max_catalogo` y entran los dos
   primeros.
 - **Huellas y recuento.** `criterios_sha1`, `hoja_ruta_sha1` (la v8
-  enmendada) y «79 criterios declarados» → «85» en las memorias (los dos
+  enmendada) y el recuento de criterios declarados en las memorias, 82 → 88 sobre el
+  árbol de T-2 (seis de T-4; los dos
   últimos, de la auditoría: `suelo_agresivo_acero_lrfd` y
-  `suelo_agresivo_lrfd_sobre_tmc`, que sin ensayos nadie invoca); siguen
-  siendo 36 sin valor.
+  `suelo_agresivo_lrfd_sobre_tmc`, que sin ensayos nadie invoca); los
+  criterios sin valor siguen siendo los que eran (35).
 - **V7 (corrida ancha).** El paso de flotación gana la elección
   `F3.D_EXTERIOR`, que dice de dónde salió el espesor; el número no cambia.

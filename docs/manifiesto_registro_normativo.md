@@ -80,6 +80,9 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.1.2#BRIDGE` | 1.2 | «DEFINITIONS» | pág. impresa **1-2** · PDF 17 | definicion | 2026-09-22 · ambos |
 | `AASHTO_LRFD_9.10.5.4.2` | 10.5.4.2 | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.10.5.4.2#ESPECTRO` | 10.5.4.2, configuracion licuada | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | recomendacion | 2026-08-29 · texto |
+| `AASHTO_LRFD_9.10.7.5#INDICATIVOS` | 10.7.5 | «Corrosion and Deterioration» | pág. impresa **10-125** · PDF 1414 | recomendacion | 2026-11-11 · texto |
+| `AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO` | 11.10.6.4.2a | «Steel Reinforcements» | pág. impresa **11-89** · PDF 1558 | definicion | 2026-11-11 · texto |
+| `AASHTO_LRFD_9.11.12.8#AGRESIVO` | 11.12.8 | «Corrosion Protection» | pág. impresa **11-134** · PDF 1603 | definicion | 2026-11-11 · texto |
 | `AASHTO_LRFD_9.11.6.3.3#EXC` | 11.6.3.3 | «Eccentricity Limits» | pág. impresa **11-24** · PDF 1493 | exigencia | 2026-09-12 · texto |
 | `AASHTO_LRFD_9.11.6.5.1#EXC` | 11.6.5.1 | «General» | pág. impresa **11-25** · PDF 1494 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.11.6.5.2.1#ROCA` | 11.6.5.2.1 | «Characterization of Acceleration at Wall Base» | pág. impresa **11-27** · PDF 1496 | exigencia | 2026-08-28 · texto |
@@ -104,6 +107,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.5.10.1#PISO` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.A11.3.1#KAE` | A11.3.1, ec. A11.3.1-1 | «Mononobe–Okabe Method» | pág. impresa **11-145** · PDF 1614 | aproximacion | 2026-08-28 · imagen renderizada |
 | `AASHTO_LRFD_9.C12.6.2.3` | C12.6.2.3 | «Uplift» | pág. impresa **12-19** · PDF 1657 | recomendacion | 2026-08-28 · texto |
+| `AASHTO_LRFD_9.C12.6.9#NIVEL_4` | C12.6.9 | «Corrosive and Abrasive Conditions» | pág. impresa **12-24** · PDF 1662 | definicion | 2026-11-11 · texto |
 | `AASHTO_LRFD_9.C3.10.3.1-1#PASO1` | Tabla C3.10.3.1-1, paso 1 | «Steps for Site Classification» | pág. impresa **3-103** · PDF 157 | recomendacion | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.C3.11.6.4` | C3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | definicion | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.C3.4.1#GAMMA_EQ` | C3.4.1 | «3.4.1-Load Factors and Load Combinations» | pág. impresa **3-10** · PDF 64 | recomendacion | 2026-08-28 · ambos |
@@ -114,12 +118,19 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.T3.4.1-1` | Table 3.4.1-1 | «Load Combinations and Load Factors» | pág. impresa **3-17** · PDF 71 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.T3.4.1-2` | Table 3.4.1-2 | «Load Factors for Permanent Loads» | pág. impresa **3-18** · PDF 72 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.T5.10.1-1` | Table 5.10.1-1 | «Minimum Cover for Main Reinforcing Steel (in.)» | pág. impresa **5-169** · PDF 528 | exigencia | 2026-08-28 · ambos |
+| `AASHTO_LRFD_9.TA12-11` | Table A12-11 | «PE Corrugated Pipes (AASHTO M 294)» | pág. impresa **12-108** · PDF 1746 | definicion | 2026-11-11 · texto |
 
 > **`AASHTO_LRFD_9.1.2#BRIDGE`** — Es la definicion a la que remite el num. 4.1.1.5.1 del Manual de Hidrologia («siguiendo lo establecido en las especificaciones AASHTO LRFD»). La magnitud es «an opening»: la ABERTURA de la estructura. 20.0 ft son 6.096 m y el Manual escribe 6.0 m sin decir como pasa de una cifra a la otra: la diferencia esta declarada en DIS-LUZ-DENOMINACION y el codigo compara los 6.0 m del Manual ([N], el mas exigente de los dos).
 
 > **`AASHTO_LRFD_9.10.5.4.2`** — POR DONDE ENTRA LA LICUEFACCION EN AASHTO, que no es por la clase de sitio: es la Seccion 10, Cimentaciones, bajo 10.5.4 «Extreme Events Limit States». Y el disparador lo dice todo -- zona sismica 3 o 4, MAS napa freatica en los 50 ft superiores, MAS caracteristicas de suelo por (N1)60, q_ciN, V_s1 o unidad geologica con antecedente de licuefaccion --: ninguna de las tres condiciones menciona la clase de sitio. «Site Class F» no aparece en NINGUNA pagina de la Seccion 10.
 
 > **`AASHTO_LRFD_9.10.5.4.2#ESPECTRO`** — EL ARGUMENTO POSITIVO, y es el que convierte NOR-AAS-02 de argumento por silencio en argumento por coherencia interna de la fuente. Si un suelo licuable fuera Clase F por serlo, su fila no tendria factor -- son cinco asteriscos -- y no habria espectro «no licuado» con que empezar. AASHTO manda justo lo contrario: analizar primero SIN licuefaccion y despues CON ella, con el mismo espectro; y en la pag. impresa 10-35 acota el espectro especifico de sitio a no menos de dos tercios del que da el procedimiento general «modified by the site factors in Article 3.10.3.2». Es decir: AASHTO ESPERA que a un sitio licuable le aplique un factor de sitio TABULADO de 3.10.3.2. Eso es incompatible con que la licuefaccion lo hiciera Clase F por si sola.
+
+> **`AASHTO_LRFD_9.10.7.5#INDICATIVOS`** — PILOTES. La lista de suelo: «resistivity less than 2,000 ohm-cm», «pH less than 5.5», «pH between 5.5 and 8.5 in soils with high organic content», «sulfate concentrations greater than 1,000 ppm», rellenos sanitarios y de escoria, drenaje minero o industrial. La de agua: «chloride content greater than 500 ppm». El comentario C10.7.5 dice que los valores se adaptaron de Fang (1991) y Tomlinson (1987). SON INDICATIVOS («should be considered as indicative») Y MENOS ESTRICTOS que los del 11.10.6.4.2a salvo en el pH: se citan como segunda fuente del mismo cuerpo; los numeros que la matriz compara son los del 11.10.6.4.2a.
+
+> **`AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO`** — El numeral abre en la pag. impresa 11-88 (PDF 1557) y la lista esta en la 11-89: pH = 5 to 10; Resistivity >= 3000 ohm-cm; Chlorides <= 100 ppm; Sulfates <= 200 ppm; Organic Content <= 1 percent. ES UN CRITERIO PARA EL RELLENO DE MUROS DE SUELO REFORZADO CON ACERO GALVANIZADO, no para alcantarillas: define en que suelo valen las tasas de perdida de galvanizado y de acero del propio articulo. El proyecto lo aplica al tubo de acero corrugado galvanizado POR ANALOGIA --mismo metal, mismo recubrimiento, mismo medio--, y por eso el efecto por defecto es un aviso y no una exclusion (criterio 'suelo_agresivo_lrfd_sobre_tmc').
+
+> **`AASHTO_LRFD_9.11.12.8#AGRESIVO`** — Muros de suelo claveteado (soil nail). Repite la lista del 11.10.6.4.2a con «Resistivity >= 3,000 ohm-cm» y «Organic Content <= 1 percent by weight», y añade las dos frases que aquel no trae: basta incumplir UNO de los criterios para que el suelo sea agresivo, y «If the resistivity is greater than or equal 5,000 ohm-cm, the chlorides and sulfates requirements may be waived». Esa dispensa es potestativa y la matriz NO la aplica: es el lado seguro.
 
 > **`AASHTO_LRFD_9.11.6.3.3#EXC`** — Es el numeral al que la remision impresa del Manual -- «(11.6.3.3 AASHTO)», bajo su encabezado errado 2.3.1.1.12.3 -- llega: existe, se titula «Eccentricity Limits» y su cuerpo articulado (columna izquierda; el C11.6.3.3 va aparte) impone el mismo limite estatico. La remision es correcta aunque el numeral peruano este mal impreso, que es lo que DIS-MP-NUMERAL-2.3.1.1.12.3 declara. Para roca, la frase hermana dice «middle nine-tenths». En el flujo del PDF «two-thirds» va partido con guion a fin de renglon; la busqueda normalizada lo reconstruye.
 
@@ -165,6 +176,8 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.C12.6.2.3`** — DICE «the culvert», NO «pipe», y eso importa: es de las pocas frases de la Sec. 12 sobre flotacion que no se restringe a tuberia. Pero es comentario y dice `should`: sostiene la FORMA de la comparacion -- peso de la clave contra empuje -- y no el criterio de aceptacion. Un factor de seguridad numerico NO sale de aqui, y atribuirselo seria inventarle una exigencia.
 
+> **`AASHTO_LRFD_9.C12.6.9#NIVEL_4`** — SEGUNDA FUENTE DEL CORTE DE 15 ft/s, y dice lo mismo que la primera: es un NIVEL de abrasion de la FHWA (carga de fondo pesada Y velocidad), no un techo de velocidad. Los otros tres niveles, en la misma columna: Level 1 sin carga de fondo y velocidades muy bajas; Level 2 «velocities of 5.0 ft/s or less»; Level 3 «between 5.0 ft/s and 15.0 ft/s». El corte inferior es 5.0 ft/s aqui y 6 ft/s en la Tabla 8-4 de WSDOT: las dos clasificaciones no coinciden por abajo y si por arriba. El articulado 12.6.9 (misma pagina) no fija ningun limite: pide que la vida util del material iguale o supere la de la alcantarilla y nombra los remedios usuales para el metal («increased gauge thickness», «protective linings»).
+
 > **`AASHTO_LRFD_9.C3.10.3.1-1#PASO1`** — ES COMENTARIO Y POR ESO NO ESTRECHA EL ARTICULADO -- lleva prefijo `C` y cuelga del epigrafe C3.10.3.1 --, pero importa por algo que el debate «lista abierta o cerrada» estaba tapando: el paso 1 no es retorico, es un PROCEDIMIENTO. Manda comprobar esas categorias y, si el sitio no cae en ninguna, seguir al paso 2 (capa blanda -> Clase E) y al paso 3 (calcular v_s, N o s_u sobre los 100 ft superiores -> Clase A a E). En ninguno de los tres pasos hay una ruta que lleve de «suelo licuable» a la Clase F. Refuta por su cuenta la version fuerte de NOR-AAS-02 que la refutacion adversarial R95-073 ya habia tumbado: el «the three categories» existe, pero esta aqui, no en el articulado.
 
 > **`AASHTO_LRFD_9.C3.11.6.4`** — HALLAZGO DE S12, y es el que obliga a matizar el conflicto #4: NO EXISTE en el articulado ninguna frase que reparta las dos tablas. El cuerpo normativo las cita JUNTAS Y SIN CONDICIONANTE («may be taken from Tables 3.11.6.4-1 and 3.11.6.4-2»). Lo que las reparte son (a) los TITULOS de las tablas y (b) este comentario, que no es articulado. Y no ofrecen un eje libre «orientacion»: ofrecen dos BINOMIOS ACOPLADOS -- estribo+perpendicular y muro de contencion+paralelo --. No hay tabla para «muro perpendicular» ni para «estribo paralelo».
@@ -185,18 +198,26 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.T5.10.1-1`** — TRES categorias de acero -- A, B y C --, bajo el encabezado de grupo «Reinforcing Material Category», y la tabla peruana tiene UNA sola columna porque cubre una sola categoria: la no protegida. Es la clave de NOR-AAS-01: los 3.0 in de «Coastal» son de la Categoria A, y con B o C la tabla baja a 2.0 in = 50.8 mm, con lo que la regla del mayor la pasaria a ganar E.060.
 
+> **`AASHTO_LRFD_9.TA12-11`** — ES LA FUENTE DEL DIAMETRO EXTERIOR DEL HDPE, que su norma de producto no trae (afirmacion negativa SIN_DIAMETRO_EXTERIOR_M294_TRAD). Apendice A12 «PLATE, PIPE, AND PIPE ARCH PROPERTIES» de la Seccion 12: para cada tamaño nominal de tuberia corrugada de PE bajo M 294 tabula el diametro interior MINIMO, el diametro exterior MAXIMO y las propiedades minimas de la pared (A, c, I). OCHO filas, de 12 a 48 in: NO trae 54 ni 60 in, de modo que para 1350 y 1500 mm el diametro exterior sigue sin fuente y 'espesor_pared_conducto' no declara esas filas. Unidades inglesas; la conversion a metros (1 in = 0.0254 m exactos) es del proyecto. La nota al pie de la tabla avisa de que para 42 y 48 in el espesor de pared se diseñe con la resistencia a traccion de largo plazo (900 psi): es de la Fase 8 (T-5), no del diametro exterior.
+
 ### AASHTO M 170M-04 «Standard Specification for Reinforced Concrete Culvert, Storm Drain, and Sewer Pipe [Metric]»  (`AASHTO_M170M`)
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
 | `AASHTO_M170M.1.1` | 1.1 | «SCOPE» | pág. impresa **M 170M-1** · PDF 1 | definicion | 2026-09-20 · imagen renderizada |
 | `AASHTO_M170M.1.1#NOTA1` | 1.2, Note 1 | «SCOPE» | pág. impresa **M 170M-1** · PDF 1 | definicion | 2026-09-20 · imagen renderizada |
+| `AASHTO_M170M.7.2.1` | 7.2.1 | «Modified and Special Designs» | pág. impresa **M 170M-13** · PDF 13 | definicion | 2026-11-11 · imagen renderizada |
+| `AASHTO_M170M.7.2.2` | 7.2.2 | «Modified and Special Designs» | pág. impresa **M 170M-13** · PDF 13 | exigencia | 2026-11-11 · imagen renderizada |
 | `AASHTO_M170M.T1_T5#DIAMETROS` | Tables 1 to 5 | «Table 1—Design Requirements for Class I Reinforced Concrete Pipe» | pág. impresa **M 170M-3** · PDF 3 | definicion | 2026-09-12 · imagen renderizada |
 | `AASHTO_M170M.T5` | Table 5 | «Table 5—Design Requirements for Class V Reinforced Concrete Pipe» | pág. impresa **M 170M-10** · PDF 10 | definicion | 2026-09-22 · imagen renderizada |
 
 > **`AASHTO_M170M.1.1`** — Leida sobre la PDF 1 renderizada a escala 3.0 (el OCR imprime «iniendcd io be used» y «culvens»). Cubre TUBERIA («pipe»); un marco rectangular vaciado in situ no es tuberia y esta norma no lo rige. La PDF 1 rotula ademas «AASHTO Designation: M 170M-04» y «ASTM Designation: C 76M-02», que es la doble designacion del rotulo que M2 imprime.
 
 > **`AASHTO_M170M.1.1#NOTA1`** — LO QUE LA NORMA DICE QUE NO ES: ni cama, ni relleno, ni la relacion entre la carga de campo y la clase. La nota sigue: la experiencia muestra que el buen desempeño depende de elegir la clase, la cama y el relleno, y el propietario «is cautioned that he must correlate the field requirements with the class of pipe specified». Es la misma clausula que M 36 lleva en su 1.3 y A760 en su 1.4, y la razon de que 'clases_producto_por_relleno' sea un criterio del proyecto y no una lectura de la norma.
+
+> **`AASHTO_M170M.7.2.1`** — Leida sobre la PDF 13 renderizada; la capa visible del ejemplar es un OCR defectuoso («pemiitted», «mquest», «reinfomenicnt») y la transcripcion corrige esas letras. LO QUE SOSTIENE: los tamaños que las Tablas 1 a 5 listan SIN area de acero no tienen diseño estandar; son diseños especiales que el fabricante propone y el propietario aprueba. LEIDO TABLA A TABLA SOBRE LAS PAGINAS RENDERIZADAS (T-4, 2026-11-11): Tabla 1 (Clase I, PDF 3), filas de 1500 a 2700 mm con pared y acero --la de 2700: pared A 225 mm, pared B 250 mm-- y filas de 2850, 3000, 3150, 3300 y 3450 mm con llamada a nota y rayas; Tabla 3 (Clase III, PDF 6-7), la ultima fila con acero es la de 2700 mm y las de 3000, 3150 y 3600 llevan llamada y rayas (las de 2850, 3300 y 3450 no se leen en el ejemplar); Tabla 5 (Clase V, PDF 10), pared tabulada hasta 1800 mm (AASHTO_M170M.T5). La nota al pie de las tablas, leida en la PDF 3 y en la PDF 5: «For modified or special designs, see Section 7.2 ...» y «Pipe over 2400 mm in diameter shall have two circular cages or an inner circular cage plus one elliptical cage». NO LEIDO: el cuerpo de la Tabla 2 (PDF 4) y el maximo de la Tabla 4, cuya mitad baja no esta en el escaneo. Con lo leido, el mayor diametro con diseño estandar es 2700 mm en las dos clases que se pudieron leer hasta el final.
+
+> **`AASHTO_M170M.7.2.2`** — Leida sobre la PDF 13 renderizada, con el mismo OCR defectuoso («conwetc strength», «rind st ngth»). EL ESPESOR DE PARED DE UN DISEÑO ESPECIAL LO DA EL FABRICANTE en su descripcion: la norma no lo tabula. Es la segunda frase del 7.2.2; la primera exige que el diseño se base en evaluaciones racionales o empiricas de la resistencia ultima y del agrietamiento. El 7.2.3 pide al fabricante la prueba de adecuacion (ensayos de tres aristas).
 
 > **`AASHTO_M170M.T1_T5#DIAMETROS`** — ES EL ANCLA DE DIS-HR-D-MAX: la envolvente de diametros de las cinco tablas, leida TABLA POR TABLA sobre las paginas renderizadas (escaneo con OCR inutilizable; ver la Fuente). Columna «Internal Designated Diameter, mm»: Tabla 1 (Clase I, PDF 3): 1500 a 3450; Tabla 2 (Clase II, PDF 4-5): 300 a 3450; Tabla 3 (Clase III, PDF 6-7): 300 a 3600; Tabla 4 (Clase IV, PDF 8-9): arranca en 300 y SU MAXIMO NO ES VERIFICABLE en este ejemplar -- la tinta de la mitad baja de la PDF 8 no esta en el escaneo --; Tabla 5 (Clase V, PDF 10-11): 300 a 3600. La envolvente NO es uniforme y por eso «Tablas 1 a 5: de 300 a 3600» solo es cierta leida como CONJUNTO. Encima de lo tabulado, el num. 7.2 «Modified and Special Designs» (PDF 13) preve, con permiso del propietario, «special designs for sizes and loads beyond those shown in Tables 1 to 5» (7.2.1); y el num. 4.1 «CLASSIFICATION» (PDF 2) remite: «The corresponding strength requirements are prescribed in Tables 1 to 5.» DOS RESERVAS DE LEGIBILIDAD, ninguna contraria: el rotulo al pie de la PDF 3 esta degradado (la correspondencia «M 170M-3» la fijan los rotulos legibles de las paginas vecinas M 170M-2 y M 170M-4 y la regla de paginacion), y los digitos del numero de tabla en las paginas de continuacion (PDF 7 y 9) no se leen: la asignacion de cada continuacion a su tabla es por secuencia de rotulos y coherencia de filas.
 
@@ -224,11 +245,23 @@ línea que se pueda romper.
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
 | `AASHTO_M36.1.1` | 1.1 | «SCOPE» | pág. impresa **M 36-1** · PDF 2 | definicion | 2026-09-20 · imagen renderizada |
+| `AASHTO_M36.1.2` | 1.2 | «SCOPE» | pág. impresa **M 36-1** · PDF 2 | definicion | 2026-11-11 · imagen renderizada |
+| `AASHTO_M36.8.1.1` | 8.1.1 | «Pipe Dimensions» | pág. impresa **M 36-10** · PDF 11 | exigencia | 2026-11-11 · imagen renderizada |
+| `AASHTO_M36.T1` | Table 1 | «Corrugation Requirements for Type I, IA, II, IIA, and III Pipe» | pág. impresa **M 36-6** · PDF 7 | definicion | 2026-11-11 · imagen renderizada |
 | `AASHTO_M36.T6` | Table 6 | «Table 6—Pipe Sizes» | pág. impresa **M 36-11** · PDF 12 | definicion | 2026-09-12 · imagen renderizada |
+| `AASHTO_M36.T7` | Table 7 | «Thicknesses of Metallic-Coated Steel Sheet» | pág. impresa **M 36-12** · PDF 13 | definicion | 2026-11-11 · imagen renderizada |
 
 > **`AASHTO_M36.1.1`** — RASTER PURO: leida sobre la PDF 2 renderizada a escala 3.0. La portada rotula «AASHTO Designation: M 36-03 (2007)» y «ASTM Designation: A 760/A 760M-01a». Cubre tuberia de acero corrugado para drenaje pluvial, subdrenes y alcantarillas; el resto del numeral 1.1 enumera los recubrimientos metalicos (zinc, aluminio tipo 2, aleacion 55 % Al-Zn, Zn-5 % Al-mischmetal, aluminio tipo 1) y no se transcribe. La MISMA clausula, en español, es el 1.1 de A760 (`corresponde_en`).
 
+> **`AASHTO_M36.1.2`** — RASTER PURO: leida sobre la PDF 2 renderizada a 130 dpi. LA NORMA DE PRODUCTO DEL TMC NO FIJA NINGUN UMBRAL de pH, resistividad, salinidad ni velocidad: reconoce que hay ambientes en que ningun recubrimiento metalico basta y remite la proteccion adicional a M 190 (recubrimiento bituminoso) y M 245 (precubierto de polimero), que no estan en normas/. Su 1.3 excluye ademas cama, relleno y la relacion entre carga de tierra y espesor de plancha.
+
+> **`AASHTO_M36.8.1.1`** — RASTER PURO: leida sobre la mitad inferior de la PDF 11 renderizada a 170 dpi. EL DIAMETRO NOMINAL DEL TMC ES EL INTERIOR, MEDIDO EN LA CRESTA INTERIOR de las corrugaciones. Es lo que permite escribir D_ext = D + 2 x (profundidad de corrugacion + espesor de plancha). La primera frase del numeral manda elegir el diametro nominal de la Tabla 6 (AASHTO_M36.T6), que marca ademas las corrugaciones estandar de cada diametro; y el 8.1.2, misma pagina, que el espesor de plancha lo especifique el comprador de entre los de la Tabla 7.
+
+> **`AASHTO_M36.T1`** — RASTER PURO: leida sobre la PDF 7 renderizada a 100 dpi entera y el recorte de las Tablas 1 y 2 a 220 dpi. El `texto_literal` es la nota b de la tabla, y es la que hace falta: la PROFUNDIDAD de la corrugacion se mide de cresta a valle sobre la MISMA cara de la plancha, de modo que la altura total del perfil --lo que separa el diametro interior del exterior-- es profundidad MAS espesor de plancha. La nota sigue con el procedimiento de arbitraje de la Tabla 2 cuando una corrugacion mide menos que el minimo.
+
 > **`AASHTO_M36.T6`** — RASTER PURO: leida entera sobre la pagina PDF 12 renderizada (escalas 4.0 y 8.0; las filas 2550-3600 exigieron la segunda para separar las columnas de costilla). La pagina impresa lleva el rotulo «M 36-11» al pie, que confirma el desfase +1 de la Fuente.
+
+> **`AASHTO_M36.T7`** — RASTER PURO: leida sobre la PDF 13 renderizada a 100 dpi entera y el recorte de la tabla a 220 dpi. SIETE ESPESORES ESPECIFICADOS DE PLANCHA: 1.02, 1.32, 1.63, 2.01, 2.77, 3.51 y 4.27 mm; la columna del galvanizado (M 218, «Zinc Coated») los marca los siete. Son los mismos siete de las Tablas 3 a 9 de ASTM A796, que es donde estan sus propiedades seccionales (A, I, r). La Nota 9, debajo de la tabla, dice que el espesor requerido lo determina el comprador con los criterios de diseño de AASHTO («Standard Specifications for Highway Bridges, Division I, Section 12, or other appropriate guidelines»): la norma de producto LISTA los espesores y no elige ninguno.
 
 ### ASTM A760/A760M-10 «Especificacion Estandar para Tuberia de Acero Corrugado, con Recubrimiento Metalico, para Alcantarillas y Drenajes»  (`ASTM_A760`)
 
@@ -342,19 +375,31 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `E050.20` | Art. 20.2 y 20.3 | «Capacidad de carga» | pág. impresa **33** · PDF 33 | exigencia | 2026-08-28 · texto |
 | `E050.21` | Art. 21.1 y 21.2 | «Factor de seguridad frente a una falla por corte» | pág. impresa **34** · PDF 34 | exigencia | 2026-08-28 · texto |
+| `E050.24` | Art. 24 | «Suelos no permitidos para apoyar las cimentaciones» | pág. impresa **37** · PDF 37 | exigencia | 2026-11-11 · texto |
+| `E050.24#REMOVER` | Art. 24 | «Suelos no permitidos para apoyar las cimentaciones» | pág. impresa **37** · PDF 37 | exigencia | 2026-11-11 · texto |
 | `E050.30.3` | Art. 30.3 | «Cimentaciones superficiales en taludes o en su cercanía» | pág. impresa **39** · PDF 39 | exigencia | 2026-08-28 · texto |
+| `E050.38.1` | Art. 38, 38.1 | «Licuación de suelos» | pág. impresa **51** · PDF 51 | definicion | 2026-11-11 · texto |
 | `E050.38.4.3` | 38.4.3 | Licuación de suelos › «Exploración de campo» | pág. impresa **51** · PDF 51 | exigencia | 2026-08-28 · texto |
 | `E050.39.13.6` | 39.13.6 a) y b) | Sostenimiento de excavaciones › «Muros de contención» | pág. impresa **72** · PDF 72 | exigencia | 2026-08-28 · ambos |
+| `E050.FIG3` | Figura 3 | «Simbología de Suelos (Referencial)» | pág. impresa **31** · PDF 31 | definicion | 2026-11-11 · texto |
 
 > **`E050.20`** — El repositorio citaba «Art. 20» a secas; los numerales exactos son 20.2 (cohesivos, phi = 0) y 20.3 (friccionantes, c = 0). El simbolo phi no sobrevive a la extraccion de texto -- la norma lo compone con fuente simbolica --, y por eso el `texto_literal` es el inciso que si se puede buscar.
 
 > **`E050.21`** — LA SEGUNDA CONDICION NO ES «SISMICA» A SECAS: es «solicitacion maxima de sismo O VIENTO (la que sea mas desfavorable)». El viento esta dentro de la misma casilla, y la clave «sismico» del repositorio lo excluia (NOR-E050-01).
 
+> **`E050.24`** — ES LA FUENTE PERUANA MAS CERCANA A «suelos de fundación de mala calidad», que el num. 4.1.1.3.4 a) del Manual de Hidrologia nombra y no define (COND-MARCO-SUELO-MALA-CALIDAD). La E.050 es de EDIFICACIONES y no de obras viales: por eso el conjunto 'sucs_fundacion_deficiente' es [A] --una adopcion apoyada en esta lista-- y no [N]. De los materiales que el articulo enumera, solo dos tienen simbolo SUCS (Figura 3 de la misma norma): la turba (Pt) y el suelo organico (OL, OH); la tierra vegetal y los rellenos no se clasifican por SUCS.
+
+> **`E050.24#REMOVER`** — La segunda frase del articulo, que la cita E050.24 no traia: la norma no se limita a prohibir cimentar sobre turba y suelo organico, MANDA REMOVERLOS Y REEMPLAZARLOS por relleno controlado. El aviso de suelo de fundacion deficiente lo dice con estas palabras (H9 de la auditoria de T-4).
+
 > **`E050.30.3`** — AQUI la norma SI dice «condiciones sismicas». Es el unico de los tres numerales de FS que usa esa palabra.
+
+> **`E050.38.1`** — El 38.1 lo dice de los suelos granulares y de algunos suelos granulares con finos cohesivos ubicados bajo la napa freatica; el 38.2, en la misma pagina, lista las caracteristicas que el suelo tiene que presentar a la vez para ser susceptible, y el 38.5 (pag. 52) manda el analisis del potencial de licuacion por Seed e Idriss. ESTE PROGRAMA NO EVALUA LA LICUACION: la cita existe para que la linea «no esta entre los grupos declarados deficientes» de un suelo SM, SP o ML no se lea como «apto» (H9).
 
 > **`E050.38.4.3`** — NOR-E050-02, cerrado, y con un hallazgo de mas. (1) EL ESPACIAMIENTO SI TIENE NUMERAL: es este, y el repositorio lo declaraba «sin numeral». Ademas va reforzado con «obligatoriamente». (2) LO GRAVE, que el repositorio omitia: los dos valores viven bajo «Articulo 38.- Licuacion de suelos», y el 38.4.1 los dispara SOLO «Cuando la historia sismica del lugar haga sospechar la posibilidad de ocurrencia de Licuacion». NO son el programa de SPT general de E.050 -- ese esta en el 14.2.3 y la Tabla 3, pags. 18-19 --: son el programa de exploracion PARA ANALISIS DE LICUEFACCION. Citarlos como minimos universales del SPT extiende la norma mas alla de lo que dice.
 
 > **`E050.39.13.6`** — NOR-E050-01, cerrado. La palabra «sismico» NO APARECE en este numeral: la segunda condicion se llama «Condición Pseudo - dinámico» en a-2 y «condición pseudo-dinámica» en b). No es un sinonimo decorativo -- designa el METODO de analisis, coeficiente sismico horizontal aplicado como fuerza estatica equivalente --, y E.050 usa CUATRO vocabularios distintos para esa casilla segun el numeral: «sismo o viento» (Art. 21.2), «condiciones sismicas» (Art. 30.3), «pseudo-dinamico» (39.13.6) y «dinamico» a secas (Anexo I, pag. impresa 74). Y una coletilla que el repositorio no recogia cierra el numeral y condiciona a) y b) por igual: «En todos los casos respecto al estado límite del suelo».
+
+> **`E050.FIG3`** — Los quince simbolos SUCS con su descripcion: GW, GP, GM, GC, SW, SP, SM, SC, ML, CL, OL, MH, CH, OH y Pt. La figura se rotula «(Referencial)». Es el conjunto cerrado del que 'sucs_fundacion_deficiente' elige, transcrito en la tabla E050.FIG3. Los simbolos DOBLES de un suelo de frontera («SP-SM» en el CSV de ejemplo) no estan en la figura: se componen de dos de estos.
 
 ### Norma Tecnica E.060 «Concreto Armado»  (`E060`)
 
@@ -407,6 +452,8 @@ línea que se pueda romper.
 | `EG2013.503.04#T503_07` | 503.04, Tabla 503-07 | «Clases de concreto» | pág. impresa **912** · PDF 920 | exigencia | 2026-08-28 · ambos |
 | `EG2013.503.10h#CAJON` | 503.10 h) | «Operaciones para el vaciado de la mezcla» | pág. impresa **926** · PDF 934 | recomendacion | 2026-08-28 · texto |
 | `EG2013.506.01#ALCANCE` | 506.01 | «Descripción» | pág. impresa **959** · PDF 967 | definicion | 2026-08-28 · texto |
+| `EG2013.507.10` | 507.10 | «Aguas y Suelos agresivos» | pág. impresa **974** · PDF 982 | exigencia | 2026-11-11 · texto |
+| `EG2013.508.02a` | 508.02 a | «Tubos de polietileno de alta densidad (PAD o HDPE)» | pág. impresa **981** · PDF 989 | definicion | 2026-11-11 · texto |
 | `EG2013.508.07#RELLENO_MIN` | 508.07 | «Colocación del relleno alrededor de la estructura» | pág. impresa **984** · PDF 992 | exigencia | 2026-08-28 · texto |
 
 > **`EG2013.205.12c1`** — ES LA REMISION DE SEGUNDO NIVEL de tres de las cuatro fichas de cama y relleno: el «95 % MDS» que el expediente les atribuia no es literal de las Secciones 505, 506 ni 507 -- llega desde aqui, por remision. El valor es correcto; lo que faltaba era decir por que via llega, que es la diferencia entre una cita y una deduccion.
@@ -418,6 +465,10 @@ línea que se pueda romper.
 > **`EG2013.503.10h#CAJON`** — ES LA UNICA MENCION DEL CAJON DE CONCRETO EN TODO EL EG-2013 -- barrido de las 1282 paginas, ver SIN_PARTIDA_DE_CAJON_EG2013 -- y hay que leerla por lo que prueba y no por lo que dice. LO QUE PRUEBA: que el EG-2013 CONTEMPLA la alcantarilla de cajon de concreto y la regula bajo la Seccion 503, «Concreto estructural». Una norma que fija plazo de desencofrado de la placa superior de un cajon esta regulando su vaciado in situ. LO QUE NO DICE: nada sobre pago, ni sobre cobertura, ni sobre dimensiones. Y su CARACTER no es exigencia: el parrafo que la introduce dice «Excepcionalmente si las operaciones de campo no estan controladas por pruebas de laboratorio la siguiente lista PUEDE ser empleada como GUIA para el tiempo minimo requerido antes de la remocion de encofrados y soportes». O sea que el plazo es guia condicionada; lo que NO es condicionado es la existencia de la fila, que es lo unico que este proyecto le pide.
 
 > **`EG2013.506.01#ALCANCE`** — LO QUE ESTA CITA HACE ES DELIMITAR, y por eso es DEFINICION y no EXIGENCIA: no prohibe nada, dice de que trata la Seccion. Su objeto es «la instalacion de TUBOS», y las otras tres piezas de la misma Seccion lo confirman -- 506.02 remite a AASHTO M-170M y pide el «diametro interno», y la partida 506.A del Anexo 2 se mide en METRO LINEAL --. Un marco vaciado in situ no tiene diametro interior ni se mide por metro lineal de tubo suministrado: la 506 no lo alcanza. Los cuatro titulos de las Secciones 505 a 508 empiezan por «Tuberia».
+
+> **`EG2013.507.10`** — ES EL UNICO UMBRAL NUMERICO DE DURABILIDAD DE LA TUBERIA QUE LA NORMA PERUANA ESCRIBE, y esta en la Seccion 507 «Tubería metálica corrugada»: pH < 5.8 del AGUA QUE CONDUCE el tubo. EXIGE PROTEGER, no prohibe el material, y no dice con que («acorde al Proyecto»). «Sustancias agresivas» del suelo no se cuantifica. Las Secciones 505, 506 y 508 (concreto simple, concreto reforzado y polietileno) no traen clausula equivalente: buscadas por «agresiv», «corrosi», «salin», «pH» y «resistividad» en las pags. PDF 940 a 1000.
+
+> **`EG2013.508.02a`** — La norma peruana de construccion DEFINE el producto: interior liso y pared exterior corrugada; sigue «Debe cumplir con la guía AASHTO, clasificación tipo “S”» y remite a AASHTO M294. Respalda DOS cosas de T-4: que la fila de n que corresponde al HDPE en la Table B.1 de HDS-5 es la de interior liso («Smooth») y no la corrugada, y que el diametro exterior del tubo no es el interior mas una pared delgada sino mas la altura de un perfil corrugado.
 
 > **`EG2013.508.07#RELLENO_MIN`** — NOR-EG-01 / NOR-EG-02. La pagina impresa es la 984 (PDF 992). La 982 (PDF 990) trae 508.02 b), c) y d) -- calidad del tubo, muestreo y material para cama de asiento --, nada de altura de relleno. El desfase de este documento es +8, el mayor del corpus, y confundir impresa con PDF produce exactamente ese error. NO CONFUNDIR CON SU VECINA: el 508.08 (pag. impresa 985) tambien dice 0,30 m, pero es la exigencia de EJECUCION -- que el equipo pesado no circule antes de alcanzarla --, no la altura minima de diseño. Dos frases con el mismo numero en paginas contiguas.
 
@@ -463,6 +514,7 @@ línea que se pueda romper.
 | `HDS5_3ED.A.3#PENDIENTE_2` | A.3 | «A.3  INLET CONTROL DIMENSIONLESS DESIGN CURVES» | pág. impresa **A.2** · PDF 191 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.A.3.1#CRITICO` | A.3.1 | «Elliptical Structural Plate Example» | pág. impresa **A.3** · PDF 192 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.TA.1` | Table A.1 | «Constants for Inlet Control Equations for Charts in Appendix G.» | pág. impresa **A.8** · PDF 197 | definicion | 2026-08-28 · ambos |
+| `HDS5_3ED.TB.1` | Table B.1 | «Manning's n Values for Culverts.» | pág. impresa **B.6** · PDF 208 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.TC.2` | Table C.2 | «Entrance Loss Coefficients.» | pág. impresa **C.6** · PDF 216 | definicion | 2026-08-28 · ambos |
 
 > **`HDS5_3ED.1.2#MODELO`** — «A reasonable guideline»: RECOMENDACION, no definicion. Distingue dos cosas que DIS-LUZ-DENOMINACION separa: la clasificacion administrativa del cruce (ancho total, NBIS, pag. 1.3) y el metodo hidraulico (luz de UN barril). Este proyecto aplica el umbral de 6.0 m del Manual de Hidrologia a la denominacion --alcantarilla o puente-- y por eso lee el ancho total.
@@ -535,6 +587,8 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.TA.1`** — ERRATA DE LA PROPIA FUENTE, hallada al verificar: el titulo dice «for Charts in Appendix G» y en esta 3a edicion NO EXISTE un Apendice G -- las cartas estan en el Apendice C. Se transcribe como lo imprime, con la advertencia, para que quien lo busque lo encuentre. SEGUNDA REMISION RANCIA DE LA MISMA FUENTE, hallada en C2 y sin ID propio todavia: el num. A.3.1 (pag. impresa A.2, PDF 191) dice «From Table A.1, Chart 34, Scale 3», y la carta 34 -- Pipe Arch CM -- esta en la Tabla A.2 de esta edicion, no en la A.1. Explica por que el repositorio llego a afirmar que la Tabla A.1 trae pipe-arch, que no lo trae. Y LA PAGINA IMPRESA «A.8» ES INFERIDA, NO LEIDA: PDF 197 no lleva folio. La inferencia por secuencia es correcta (PDF 196 lleva A.7) y la regla de paginacion la predice; queda dicho aqui porque «pagina impresa» nombra algo que en esta pagina no esta impreso. VERIFICADO EN I3 (verificador-normativo, metodo texto extraido con coordenadas + render de la pagina entera, los cuatro bordes): PDF 197 no imprime folio en ningun borde -- la pagina esta almacenada apaisada de forma nativa (792x612, rotation=0), asi que el barrido de texto no pierde nada --; los folios vecinos leidos son A.5@194, A.6@195, A.7@196 y B.1@203; entre A.7 y B.1 van SEIS paginas sin folio y no «cuatro apaisadas», como decia esta nota hasta I3: las cinco del Apendice A -- tres apaisadas de tablas (197-199), la VERTICAL de las Tablas A.4-A.6 (200) y la en blanco (201) -- mas la portadilla del Apendice B (202), que por regla del documento nunca folia. La cadena «A.8» no aparece en ninguna pagina del PDF, y ningun esquema consistente con los folios impresos puede asignar a PDF 197 otro numero: la unica lectura alternativa no es otro folio, es «sin folio». Veredicto: CORRECTO-INFERIDO; `pagina_impresa` se queda en «A.8» -- es el valor que la regla de paginacion de T6 predice -- y esta nota es la que dice que no es una lectura.
 
+> **`HDS5_3ED.TB.1`** — LA PAGINA ROTULA «B.1.  Manning's n Values for Culverts.» SIN LA PALABRA «Table»; el numeral «Table B.1» es como el propio HDS-5 la llama en el cuerpo. El `texto_literal` es su nota al pie 1, y va a proposito: los n son de LABORATORIO y la fuente advierte que los de campo pueden variar por abrasion, corrosion, deflexion y juntas. La fila «Corrugated Polyethylene / Smooth», 0.009-0.015 (Barfuss & Tullis 1988; Tullis et al. 1990), es la que cierra 'n_manning_hdpe' como [C]: hasta T-4 era la fila del concreto de la Tabla N 09 aplicada por analogia.
+
 > **`HDS5_3ED.TC.2`** — NOR-HDS-01, confirmado contra el PDF. La cita original decia «pagina C.2», que es EL NUMERO DE LA TABLA LEIDO COMO PAGINA: la pag. impresa C.2 (PDF 212) es la continuacion del indice de cartas del apendice. La tabla esta en la C.6 (PDF 216).
 
 ### HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-IP-85-15), copia rotulada «SI» por sus cartas metricas  (`HDS5_SI_1985`)
@@ -558,6 +612,7 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.3.4a#MULTIPLES` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | recomendacion | 2026-09-07 · texto |
 | `MC_HHD.4.1.1.3.4a#NIVELES` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | permiso | 2026-09-07 · texto |
 | `MC_HHD.4.1.1.3.4a#TIPOS` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **71** · PDF 74 | definicion | 2026-09-07 · texto |
+| `MC_HHD.4.1.1.3.4b` | 4.1.1.3.4 b) | 4.1.1.3.4  Elección del tipo de alcantarilla › «b)  Materiales» | pág. impresa **73** · PDF 76 | definicion | 2026-11-11 · texto |
 | `MC_HHD.4.1.1.3.5` | 4.1.1.3.5 | «Recomendaciones y factores a tomar en cuenta para el diseño de una alcantarilla» | pág. impresa **73** · PDF 76 | recomendacion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.6` | 4.1.1.3.6 | «Diseño hidráulico» | pág. impresa **74** · PDF 77 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.6#T09` | 4.1.1.3.6, Tabla Nº 09 | «Diseño hidráulico» | pág. impresa **75** · PDF 78 | definicion | 2026-08-28 · ambos |
@@ -570,6 +625,11 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.3.7c` | 4.1.1.3.7 c), ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | aproximacion | 2026-08-28 · imagen renderizada |
 | `MC_HHD.4.1.1.3.7c#G` | 4.1.1.3.7 c), lista de variables de la ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.7d` | 4.1.1.3.7 d) | 4.1.1.3.7  Consideraciones para el diseño › «d)  Mantenimiento y limpieza» | pág. impresa **80** · PDF 83 | exigencia | 2026-09-07 · texto |
+| `MC_HHD.4.1.1.3.7e` | 4.1.1.3.7 e) | 4.1.1.3.7  Consideraciones para el diseño › «e)  Abrasión» | pág. impresa **81** · PDF 84 | recomendacion | 2026-11-11 · texto |
+| `MC_HHD.4.1.1.3.7f#COSTA` | 4.1.1.3.7 f) | 4.1.1.3.7  Consideraciones para el diseño › «f)  Corrosión» | pág. impresa **81** · PDF 84 | exigencia | 2026-11-11 · texto |
+| `MC_HHD.4.1.1.3.7f#SALINIDAD` | 4.1.1.3.7 f) | 4.1.1.3.7  Consideraciones para el diseño › «f)  Corrosión» | pág. impresa **81** · PDF 84 | definicion | 2026-11-11 · texto |
+| `MC_HHD.4.1.1.3.7f#TMC` | 4.1.1.3.7 f) | 4.1.1.3.7  Consideraciones para el diseño › «f)  Corrosión» | pág. impresa **82** · PDF 85 | recomendacion | 2026-11-11 · texto |
+| `MC_HHD.4.1.1.3.7g#AGRESIVAS` | 4.1.1.3.7 g) | 4.1.1.3.7  Consideraciones para el diseño › «g)  Seguridad y vida útil» | pág. impresa **82** · PDF 85 | recomendacion | 2026-11-11 · texto |
 | `MC_HHD.4.1.1.4.1e` | 4.1.1.4.1 e) | 4.1.1.4   BADENES › 4.1.1.4.1  Consideraciones para el diseño › «e)   Borde libre» | pág. impresa **85** · PDF 88 | exigencia | 2026-09-08 · texto |
 | `MC_HHD.4.1.1.4.1e#RANGO` | 4.1.1.4.1 e), segunda oracion | 4.1.1.4   BADENES › 4.1.1.4.1  Consideraciones para el diseño › «e)   Borde libre» | pág. impresa **85** · PDF 88 | recomendacion | 2026-09-08 · texto |
 | `MC_HHD.4.1.1.5.1` | 4.1.1.5.1 | 4.1.1.5  PUENTES › «Aspectos generales» | pág. impresa **87** · PDF 90 | definicion | 2026-08-28 · texto |
@@ -582,6 +642,8 @@ línea que se pueda romper.
 > **`MC_HHD.3.6`** — El numeral abre en la pag. impresa 23 (PDF 26); la Tabla Nº 02 y este parrafo estan en la 25 (PDF 28).
 
 > **`MC_HHD.4.1.1.3.3`** — EXIGENCIA SIN NUMERO. El numeral entero son dos parrafos: este y la remision a la Lamina Nº 01 («ubicación típica de alcantarillas respecto a la pendiente del cauce»). No fija pendiente minima ni maxima, ni en porcentaje ni por material: obliga a ESTUDIAR el cambio de pendiente. Las cifras «2 % en TMC, 1 % en marco» que circulan en expedientes no salen de aqui.
+
+> **`MC_HHD.4.1.1.3.4b`** — EL MANUAL NO DA REGLA DE ELECCION DE MATERIAL, y lo dice con esas palabras. La frase anterior enumera de que depende: «tiempo de vida útil, costo, resistencia, rugosidad, condiciones del terreno, resistencia a la corrosión, abrasión, fuego e impermeabilidad». Es lo que hace de la matriz de durabilidad un FILTRO con fuentes tecnicas y no una eleccion normativa: el Manual nombra los factores (suelo, agua) y no pone umbrales.
 
 > **`MC_HHD.4.1.1.3.5`** — Se declara aunque el proyecto no tome ningun valor de el: es el numeral con el que se confundio la Tabla Nº 09 antes de S5, y tenerlo escrito con su titulo es lo que impide repetir la confusion. NO contiene ninguna tabla de rugosidad.
 
@@ -602,6 +664,16 @@ línea que se pueda romper.
 > **`MC_HHD.4.1.1.3.7c`** — La ec. (49) es d50 = V² / (3.1 g). La extraccion de texto la devuelve desordenada («) 1.3 ( 2 50 g V d =») por el orden de trazado, de modo que la lectura fiable es la de la pagina renderizada: el metodo de esta cita es IMAGEN y decirlo es parte de la verificacion.
 
 > **`MC_HHD.4.1.1.3.7c#G`** — NOR-HID-01 / MAT-O7. ESTE NUMERAL NO ESCRIBE NINGUN VALOR DE g: define el simbolo y su unidad. El 9.8 que el proyecto usa SI esta en el Manual, en otros dos numerales (ver MC_HHD.3.12.5 y MC_HHD.4.1.1.5.4b24), y el 9.81 no aparece ni una vez en las 225 paginas. Se corrige la ATRIBUCION, no el numero.
+
+> **`MC_HHD.4.1.1.3.7e`** — CUALITATIVO, SIN NINGUN VALOR: el inciso define la abrasion «la erosión del material de la alcantarilla por la acción de sólidos flotantes transportados por el cauce natural» y dice de que depende («carácter y cantidad de material de arrastre, duración, frecuencia y velocidad del flujo»), pero no escribe ninguna velocidad maxima para el metal ni para el plastico. La Tabla N 10 (num. 4.1.1.3.6) tampoco los lista. Es la razon de que 'v_max_tmc' sea [A]: la norma peruana manda considerar la abrasion y no da el numero.
+
+> **`MC_HHD.4.1.1.3.7f#COSTA`** — LA FRASE SE CORTA DONDE LA CORTA LA PAGINA: «...requieren» es el ultimo renglon de la pag. impresa 81, y sigue en la 82 (PDF 85) con «algún tipo de protección para asegurar su vida útil». Dice CUALQUIER material, no solo el metal, y no cuantifica «cercanas al mar»: el corredor del repositorio (La Union, Bajo Piura) esta en la costa, y si la frase le alcanza lo decide el proyectista con el EMS, no este registro.
+
+> **`MC_HHD.4.1.1.3.7f#SALINIDAD`** — El parrafo anterior nombra las tres condiciones que la matriz de durabilidad recibe como ensayo: «condiciones alcalinas y ácidas presentes en el suelo y en el agua, y la conductividad eléctrica del suelo» --o sea pH y resistividad--. NO DA UMBRAL de salinidad ni de cloruros: por eso 'cloruros_ppm' produce un AVISO y no un descarte.
+
+> **`MC_HHD.4.1.1.3.7f#TMC`** — El inciso abre en la pag. impresa 81 (PDF 84) y este parrafo esta en la 82. La frase anterior, misma pagina: «los suelos con alto contenido de materia orgánica son nocivos para los metales ya que se corroen».
+
+> **`MC_HHD.4.1.1.3.7g#AGRESIVAS`** — LA ORACION SIGUE, y se corta aqui a proposito antes del salto de pagina: «..., por ello, se recomienda el uso de otros materiales para la construcción de» (fin de la impresa 82) «alcantarillas, como concreto de alta resistencia o tubos de alta densidad» (impresa 83, PDF 86). ES RECOMENDACION («no es recomendable»), no prohibicion, y NO CUANTIFICA ninguna de las condiciones: no dice que velocidad es excesiva ni que salinidad es agresiva. La matriz de durabilidad la imprime como AVISO cuando un ensayo declarado cae en una de esas condiciones; el descarte del TMC por pH o por resistividad sale de los umbrales de WSDOT §8-5 [C].
 
 > **`MC_HHD.4.1.1.4.1e`** — «debe contemplar mantener» es EXIGENCIA, y lo que exige es que HAYA borde libre: no fija cuanto. El cuanto esta en la oracion siguiente y es RECOMENDACION --- por eso son dos citas y no una, igual que el par VMIN_INICIO / VMIN de V2 ---. Fundir las dos en un solo objeto haria pasar por exigido el 0.30-0.50, que la fuente solo recomienda.
 
@@ -711,6 +783,32 @@ línea que se pueda romper.
 
 > **`MS.9.1.3`** — El apartado 3) CRUZA EL SALTO DE PAGINA: arranca en la impresa 89 (PDF 90) y termina en la 90 (PDF 91), donde se imprimen el 1.00 m, el 1.20 m y la frase de los remedios («En caso necesario, se colocarán subdrenes o capas anticontaminantes y/o drenantes o se elevará la rasante hasta el nivel necesario»). El `texto_literal` es la mitad que cabe en la pagina que la cita declara, porque es la que T2 tiene que poder encontrar ahi. Segunda ocurrencia de la MISMA regla, con las mismas cuatro cifras, y con tres diferencias literales: dice «La superficie» donde el 4.5.4 dice «El nivel superior», dice «extraordinaria y muy buena» donde aquel dice «excelente - muy buena», y NO enuncia los intervalos numericos de CBR. Los intervalos solo estan en el 4.5.4, y por eso la cita del proyecto al 4.5.4 es la correcta.
 
+### WSDOT Hydraulics Manual (M 23-03)  (`WSDOT_HM`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `WSDOT_HM.3-3.5#10FTS` | 3-3.5 | «Velocities in Culverts: General» | pág. impresa **3-11** · PDF 76 | recomendacion | 2026-11-11 · texto |
+| `WSDOT_HM.8-3.1#CONCRETO` | 8-3.1 | «Concrete Pipe» | pág. impresa **8-10** · PDF 225 | permiso | 2026-11-11 · texto |
+| `WSDOT_HM.8-3.3#SEVERA` | 8-3.3 | «Thermoplastic Pipe: General» | pág. impresa **8-13** · PDF 228 | exigencia | 2026-11-11 · texto |
+| `WSDOT_HM.8-4.3#ZONA_III` | 8-4.3 | «Corrosion Zone III» | pág. impresa **8-17** · PDF 232 | permiso | 2026-11-11 · texto |
+| `WSDOT_HM.8-5.1#PH` | 8-5.1 | «pH» | pág. impresa **8-25** · PDF 240 | exigencia | 2026-11-11 · texto |
+| `WSDOT_HM.8-5.2#RESISTIVIDAD` | 8-5.2 | «Resistivity» | pág. impresa **8-26** · PDF 241 | exigencia | 2026-11-11 · texto |
+| `WSDOT_HM.T8-4` | Table 8-4 | «Pipe Abrasion Levels» | pág. impresa **8-27** · PDF 242 | definicion | 2026-11-11 · texto |
+
+> **`WSDOT_HM.3-3.5#10FTS`** — 10 ft/s = 3.048 m/s ES UMBRAL DE CONSULTA, NO PROHIBICION. El mismo numeral dice antes que las alcantarillas con velocidades «in the range of 3 to 10 feet per second (ft/s) tend to have fewer operational problems» y que fuera de ese rango hay que tratarlo con el ingeniero regional; y despues, que «Corrugated metal culverts may be designed with extra thickness to account for possible abrasion». Es el PISO de la ventana de 'v_max_tmc' [A]: por debajo de el la propia fuente no ve problema de abrasion que justifique un techo mas bajo.
+
+> **`WSDOT_HM.8-3.1#CONCRETO`** — El numeral abre en la 8-9 (PDF 224) y la frase esta en la 8-10. Es lo que sostiene que la matriz de durabilidad NO excluya al concreto por pH ni por resistividad; lo que el concreto si recibe son REQUISITOS de mezcla y recubrimiento, y esos salen de la norma peruana (E.060 Tablas 4.2 y 4.4, Art. 4.4.2).
+
+> **`WSDOT_HM.8-3.3#SEVERA`** — ES LA UNICA FRASE DEL MANUAL QUE PROHIBE UN MATERIAL POR ABRASION, y la prohibicion cuelga del NIVEL («severely abrasive conditions as described in Table 8-4»), no de una velocidad. La frase anterior del mismo parrafo dice lo contrario de lo que se esperaria de un material prohibido: «Laboratory testing indicates that the resistance of thermoplastic pipe to abrasive bed loads is equal to or greater than that of other types of pipe material»; la razon de la prohibicion es que no se puede REFORZAR. El mismo parrafo declara al termoplastico resistente a pH y resistividad y aceptable en las tres zonas de corrosion sin tratamiento. Sostiene 'v_max_hdpe' [C] y la regla de abrasion de la matriz de durabilidad (`M2.matriz_durabilidad`).
+
+> **`WSDOT_HM.8-4.3#ZONA_III`** — LA ZONA III ES LA DE CORROSION SEVERA, y la misma pagina la describe con palabras que valen para un corredor costero de riego: «Low-lying roadways ... and coastal areas subjected to the influence of saltwater bays, marshes, and tide flats». La frase sigue en la 8-18: el aluminio se admite con las condiciones del §8-3. La Tabla 8-3 (pag. 8-25, PDF 240) lista las alternativas aceptables y no trae ningun tubo de acero.
+
+> **`WSDOT_HM.8-5.1#PH`** — EL pH ES «soil or water pH» (primer parrafo del §8-5, misma pagina). Fuera de 5.0-8.5 solo valen los tubos de la Zona de Corrosion III, que el §8-4.3 y la Tabla 8-3 (misma pagina) limitan a concreto, termoplastico y aluminio: NINGUN tubo de acero. La pagina siguiente (8-26) repite el intervalo: «the acceptable range of 5.0 to 8.5». Es criterio de una agencia vial de EE. UU. --fuente tecnica reconocida, [C]--, no norma peruana: el umbral peruano es el de EG-2013 507.10 (pH < 5.8 exige proteger la tuberia), que no prohibe el material.
+
+> **`WSDOT_HM.8-5.2#RESISTIVIDAD`** — La resistividad es «the measure of the ability of soil or water to pass electric current» (misma pagina): el dato puede ser del suelo o del agua, y rige el menor. Por debajo de 1 000 ohm-cm solo valen los materiales de la Zona III (concreto, termoplastico y aluminio): el acero corrugado queda fuera.
+
+> **`WSDOT_HM.T8-4`** — LA TABLA OCUPA DOS PAGINAS: las tres primeras filas en la 8-27 (PDF 242) y la cuarta, «Severely abrasive», en la 8-28 (PDF 243). ES UNA TABLA DE NIVELES DE ABRASION, NO DE VELOCIDADES MAXIMAS: cada nivel se describe por tres caracteristicas del sitio (carga de fondo, pendiente y velocidad) y el `texto_literal` --el segundo parrafo del §8-6 «Abrasion», que la introduce-- dice que no hace falta que concurran las tres. Por eso tomar la velocidad sola como criterio suficiente de «severamente abrasivo» es una lectura que la fuente PERMITE y no impone (`Interpretacion` de la tabla). DEFINICION y no EXIGENCIA para la cita: los «shall» estan en las celdas de «Recommended Invert Protection» (mas calibre para el metal desde el nivel moderado), no en la clasificacion.
+
 ## 5. Tablas normativas
 
 El rótulo de completitud **no lo escribe nadie**: lo deriva la tabla de
@@ -811,6 +909,33 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 
 >  Category C—Materials meeting AASHTO M 334M/M 334
 
+### `AASHTO_LRFD_9.TA12-11` — Table A12-11—PE Corrugated Pipes (AASHTO M 294)
+
+- Cita: `AASHTO_LRFD_9.TA12-11`
+- Tabla completa · el calculo usa 2 de 6 columnas y 3 de 8 filas
+- Columna «Min. ID (in.)» transcrita y **no usada**: el calculo no la consume todavia: A, c e I minimos de la pared son el insumo del diseño estructural del termoplastico por AASHTO LRFD 12.12 (empuje, pandeo, deformacion), que la Fase 8 difiere al expediente y T-5 implementa; el diametro interior minimo es una tolerancia de producto que el catalogo no verifica
+- Columna «Min. A (in.2/ft)» transcrita y **no usada**: el calculo no la consume todavia: A, c e I minimos de la pared son el insumo del diseño estructural del termoplastico por AASHTO LRFD 12.12 (empuje, pandeo, deformacion), que la Fase 8 difiere al expediente y T-5 implementa; el diametro interior minimo es una tolerancia de producto que el catalogo no verifica
+- Columna «Min. c (in.)» transcrita y **no usada**: el calculo no la consume todavia: A, c e I minimos de la pared son el insumo del diseño estructural del termoplastico por AASHTO LRFD 12.12 (empuje, pandeo, deformacion), que la Fase 8 difiere al expediente y T-5 implementa; el diametro interior minimo es una tolerancia de producto que el catalogo no verifica
+- Columna «Min. I (in.4/in.)» transcrita y **no usada**: el calculo no la consume todavia: A, c e I minimos de la pared son el insumo del diseño estructural del termoplastico por AASHTO LRFD 12.12 (empuje, pandeo, deformacion), que la Fase 8 difiere al expediente y T-5 implementa; el diametro interior minimo es una tolerancia de producto que el catalogo no verifica
+- **Laguna de la fuente**: los tamaños nominales de 54 y 60 in (1350 y 1500 mm), que la serie de AASHTO M 294-11 SI incluye (num. 7.2.1, traduccion no oficial): la tabla termina en 48 in. Se cierra con: ninguna: no se extrapola el diametro exterior. 'espesor_pared_conducto' no declara esas dos filas para el HDPE y `M2.espesor_pared` detiene el material en ese escalon con DatoFaltanteError, nombrando la fila que falta (`criterios_adoptados['espesor_pared_conducto']`)
+- **Interpretación del proyectista, no de la fuente**: «Max. OD» se lee como el techo del diametro exterior del producto: el t que 'espesor_pared_conducto' declara para el HDPE es el que hace D + 2t = Max. OD sobre el diametro DESIGNADO del catalogo (0.90, 1.05 y 1.20 m), no sobre el «Min. ID» de la fila
+  - En contra: Es una tabla de PROPIEDADES para el diseño estructural (Apendice A12), no una especificacion de producto: el diametro exterior real lo fija el fabricante del perfil y puede ser menor.
+  - En contra: El catalogo designa 900, 1050 y 1200 mm donde la fila dice 36, 42 y 48 in (914.4, 1066.8 y 1219.2 mm): el t declarado se mide desde el designado, de modo que es entre 7 y 10 mm mayor que (Max. OD - nominal)/2. Va del lado conservador en 7.A y en V7.
+  - En contra: La cobertura minima de la Tabla 12.6.6.3-1 para termoplastico se entra con el diametro INTERIOR, de modo que este t no la mueve.
+
+| Fila | Nominal Size (in.) | Min. ID (in.) | Max. OD (in.) | Min. A (in.2/ft) | Min. c (in.) | Min. I (in.4/in.) | Uso |
+|---|---|---|---|---|---|---|---|
+| 12 | 12 | 11.8 | 14.7 | 1.5 | 0.35 | 0.024 | no usada |
+| 15 | 15 | 14.8 | 18.0 | 1.9 | 0.45 | 0.053 | no usada |
+| 18 | 18 | 17.7 | 21.5 | 2.3 | 0.5 | 0.062 | no usada |
+| 24 | 24 | 23.6 | 28.7 | 3.1 | 0.65 | 0.116 | no usada |
+| 30 | 30 | 29.5 | 36.4 | 3.9 | 0.75 | 0.163 | no usada |
+| 36 | 36 | 35.5 | 42.5 | 4.5 | 0.9 | 0.222 | usada |
+| 42* | 42 | 41.5 | 48.0 | 4.69 | 1.11 | 0.543 | usada |
+| 48* | 48 | 47.5 | 55.0 | 5.15 | 1.15 | 0.543 | usada |
+
+> * For the 42.0-in. and 48.0-in. pipe, the wall thickness should be designed using the long-term tensile strength provision, i.e., 900 psi, until new design criteria are established in the AASHTO bridge and structures specifications.
+
 ### `AASHTO_M170M.T5` — Table 5—Design Requirements for Class V Reinforced Concrete Pipe
 
 - Cita: `AASHTO_M170M.T5`
@@ -857,8 +982,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `AASHTO_M294_TRAD.T7.2.2` — Espesor de pared
 
 - Cita: `AASHTO_M294_TRAD.7.2.2`
-- Tabla completa · el calculo usa 0 de 4 columnas y 0 de 12 filas
-- Columna «Diámetro, mm (in.)» transcrita y **no usada**: M2 recorre la progresion [C] 'diametros_normalizados' (0.90 m + 0.15 m), no esta tabla: la serie de la norma de producto es el DORADO contra el que el caso patron CP11 (tests/fixtures/casos_patron.py) contrasta esa progresion para el HDPE, y el extremo que la sensibilidad de 'D_max_catalogo' declara para el HDPE. Consumida por un test y por una ficha, no por un modulo de calculo
+- Tabla completa · el calculo usa 1 de 4 columnas y 0 de 12 filas
 - Columna «Diámetro, mm (in.)» transcrita y **no usada**: el calculo opera en SI; la pulgada es la unidad IMPRESA entre parentesis, que el num. 1.3 de la propia fuente declara no necesariamente exacta, y sin ella la conversion no se puede comprobar
 - Columna «Espesor de pared, mm (in.)» transcrita y **no usada**: ningun modulo consume el espesor minimo de la pared interior del HDPE: no es el t que separa D interior de D exterior que 'espesor_pared_conducto' necesita (la altura del perfil corrugado no esta en la fuente) y el proyecto no verifica hoy el producto contra su norma de fabricacion. Se transcribe integra porque una tabla podada no deja ver que se eligio una columna
 - Columna «Espesor de pared, mm (in.)» transcrita y **no usada**: ningun modulo consume el espesor minimo de la pared interior del HDPE: no es el t que separa D interior de D exterior que 'espesor_pared_conducto' necesita (la altura del perfil corrugado no esta en la fuente) y el proyecto no verifica hoy el producto contra su norma de fabricacion. Se transcribe integra porque una tabla podada no deja ver que se eligio una columna
@@ -884,19 +1008,47 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | 1350 (54) | 1350 | 54 | 2.0 | 0.08 | no usada |
 | 1500 (60) | 1500 | 60 | 2.0 | 0.08 | no usada |
 
+### `AASHTO_M36.T1` — Table 1—Corrugation Requirements for Type I, IA, II, IIA, and III Pipe
+
+- Cita: `AASHTO_M36.T1`
+- Tabla completa · el calculo usa 1 de 6 columnas y 3 de 4 filas
+- Columna «Nominal Size, mm» transcrita y **no usada**: tolerancia de FABRICACION de la corrugacion (paso maximo, profundidad minima, radio interior): el calculo no verifica el producto contra su norma de fabricacion. Se transcribe integra porque una tabla podada no deja ver que se eligio una columna
+- Columna «Maximum Pitch, mm» transcrita y **no usada**: tolerancia de FABRICACION de la corrugacion (paso maximo, profundidad minima, radio interior): el calculo no verifica el producto contra su norma de fabricacion. Se transcribe integra porque una tabla podada no deja ver que se eligio una columna
+- Columna «Minimum Depth, mm» transcrita y **no usada**: tolerancia de FABRICACION de la corrugacion (paso maximo, profundidad minima, radio interior): el calculo no verifica el producto contra su norma de fabricacion. Se transcribe integra porque una tabla podada no deja ver que se eligio una columna
+- Columna «Nominal, mm» transcrita y **no usada**: tolerancia de FABRICACION de la corrugacion (paso maximo, profundidad minima, radio interior): el calculo no verifica el producto contra su norma de fabricacion. Se transcribe integra porque una tabla podada no deja ver que se eligio una columna
+- Columna «Minimum, mm» transcrita y **no usada**: tolerancia de FABRICACION de la corrugacion (paso maximo, profundidad minima, radio interior): el calculo no verifica el producto contra su norma de fabricacion. Se transcribe integra porque una tabla podada no deja ver que se eligio una columna
+- **Interpretación del proyectista, no de la fuente**: La altura total del perfil corrugado --lo que separa el diametro interior del exterior en cada lado-- es la profundidad NOMINAL de la corrugacion mas el espesor de la plancha: D_ext = D + 2 x (profundidad + espesor)
+  - En contra: La norma no escribe esa suma: es geometria del proyecto sobre dos definiciones suyas (la profundidad de cresta a valle sobre una misma cara, nota b; el diametro nominal medido en la cresta interior, num. 8.1.1).
+  - En contra: La profundidad real puede ser menor que la nominal: la tabla admite 12 mm de minimo donde el rotulo dice 13. Tomar la nominal da un diametro exterior mayor, que es el lado conservador en 7.A (clave mas alta) y en V7 (mas volumen desplazado).
+  - En contra: En tuberia de corrugacion HELICOIDAL la circunferencia exterior depende del angulo de la helice (Nota 7 del num. 8.1.1); el diametro exterior en un corte perpendicular al eje sigue siendo el de esta suma.
+  - A favor: ASTM A796 Table 5 se titula «... for Corrugation: 68 by 13 mm» y da r = 4.37 mm para 2.01 mm de espesor: un radio de giro de un tercio de la profundidad, que es lo que corresponde a un perfil de 13 mm de altura de onda.
+- Vistas de cálculo derivadas: `TMC_PLANCHA_CORRUGADA`
+
+| Fila | Nominal Size, mm | Nominal Size, mm | Maximum Pitch, mm | Minimum Depth, mm | Nominal, mm | Minimum, mm | Uso |
+|---|---|---|---|---|---|---|---|
+| 38 by 6.5 | 38 | 6.5 | 48 | 6.0 | 7 | 6.5 | no usada |
+| 68 by 13 | 68 | 13 | 73 | 12 | 17 | 12 | usada |
+| 75 by 25 | 75 | 25 | 83 | 24 | 14 | 12 | usada |
+| 125 by 25 | 125 | 25 | 135 | 24 | 40 | 36 | usada |
+
+> a Pitch is measured from crest to crest of corrugation, at 90 degrees to the direction of corrugation.
+
+> b Depth is measured as the vertical distance from a straightedge resting on the corrugation crests parallel to the axis of the pipe to the bottom of the intervening valley. If the depth measurement of one or more corrugations is less than the value indicated herein, the depth of all corrugations between seams shall be measured, and the requirements of Table 2 shall be applied. (See Section 7.2.1.)
+
+> c Minimum inside radius requirement does not apply to a corrugation containing a helical lock seam.
+
+> d The corrugation size of 38 by 6.5 mm is available only in helically corrugated pipe.
+
 ### `AASHTO_M36.T6` — Table 6—Pipe Sizes
 
 - Cita: `AASHTO_M36.T6`
-- Tabla completa · el calculo usa 0 de 9 columnas y 0 de 31 filas
-- Columna «Nominal Inside Diameter, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- dejo de estar bloqueada por una fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como insumo. Se cierra implementando ese procedimiento, no transcribiendo
+- Tabla completa · el calculo usa 4 de 9 columnas y 0 de 31 filas
 - Columna «38 by 6.5 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- dejo de estar bloqueada por una fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como insumo. Se cierra implementando ese procedimiento, no transcribiendo
-- Columna «68 by 13 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- dejo de estar bloqueada por una fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como insumo. Se cierra implementando ese procedimiento, no transcribiendo
-- Columna «75 by 25 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- dejo de estar bloqueada por una fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como insumo. Se cierra implementando ese procedimiento, no transcribiendo
-- Columna «125 by 25 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- dejo de estar bloqueada por una fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como insumo. Se cierra implementando ese procedimiento, no transcribiendo
 - Columna «19 by 19 by 190 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- dejo de estar bloqueada por una fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como insumo. Se cierra implementando ese procedimiento, no transcribiendo
 - Columna «19 by 25 by 292 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- dejo de estar bloqueada por una fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como insumo. Se cierra implementando ese procedimiento, no transcribiendo
 - Columna «19 by 25 by 216 mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- dejo de estar bloqueada por una fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como insumo. Se cierra implementando ese procedimiento, no transcribiendo
 - Columna «Minimum Outside Circumference, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy la relacion diametro/corrugacion: es el insumo de la mitad TRANSCRIBIBLE de la verificacion pendiente del TMC declarada en 'clases_producto_por_relleno' (NOR-PRO-04), y la consulta el proyectista al especificar el producto. La otra mitad -- el calibre por altura de cobertura -- dejo de estar bloqueada por una fuente ausente en N1 (ASTM A796/A796M-13 esta en normas/) y resulto no ser una tabla: A796 fija el calibre por PROCEDIMIENTO (num. 7 a 11), con sus Tablas 3 a 17 -- transcritas aqui, una por corrugacion -- como insumo. Se cierra implementando ese procedimiento, no transcribiendo
+- Vistas de cálculo derivadas: `DIAMETROS_ESTANDAR_TMC`
 
 | Fila | Nominal Inside Diameter, mm | 38 by 6.5 mm | 68 by 13 mm | 75 by 25 mm | 125 by 25 mm | 19 by 19 by 190 mm | 19 by 25 by 292 mm | 19 by 25 by 216 mm | Minimum Outside Circumference, mm | Uso |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -937,6 +1089,28 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 > b Rib sizes 19 by 19 by 190 mm and 19 by 25 by 292 mm.
 
 > c Measured in valley of annular corrugations. Not applicable to helically corrugated pipe.
+
+### `AASHTO_M36.T7` — Table 7—Thicknesses of Metallic-Coated Steel Sheet
+
+- Cita: `AASHTO_M36.T7`
+- Tabla completa · el calculo usa 2 de 7 columnas y 7 de 7 filas
+- Columna «M 274 AlT2, Aluminum Coated» transcrita y **no usada**: el catalogo no distingue el tipo de recubrimiento metalico de la plancha: el material del proyecto es TMC GALVANIZADA (M 218, la primera columna) y elegir otro recubrimiento es una decision de durabilidad que la matriz de la Sec. 3.3 deja al proyectista
+- Columna «M 289, 55 Percent Aluminum-Zinc Alloy Coated» transcrita y **no usada**: el catalogo no distingue el tipo de recubrimiento metalico de la plancha: el material del proyecto es TMC GALVANIZADA (M 218, la primera columna) y elegir otro recubrimiento es una decision de durabilidad que la matriz de la Sec. 3.3 deja al proyectista
+- Columna «A 885, Zinc and Aramid Fiber Coated» transcrita y **no usada**: el catalogo no distingue el tipo de recubrimiento metalico de la plancha: el material del proyecto es TMC GALVANIZADA (M 218, la primera columna) y elegir otro recubrimiento es una decision de durabilidad que la matriz de la Sec. 3.3 deja al proyectista
+- Columna «A 929M Zn-5 Al-MM, Alloy Coated» transcrita y **no usada**: el catalogo no distingue el tipo de recubrimiento metalico de la plancha: el material del proyecto es TMC GALVANIZADA (M 218, la primera columna) y elegir otro recubrimiento es una decision de durabilidad que la matriz de la Sec. 3.3 deja al proyectista
+- Columna «A 929M AlT1, Aluminum Coated» transcrita y **no usada**: el catalogo no distingue el tipo de recubrimiento metalico de la plancha: el material del proyecto es TMC GALVANIZADA (M 218, la primera columna) y elegir otro recubrimiento es una decision de durabilidad que la matriz de la Sec. 3.3 deja al proyectista
+
+| Fila | Specified Thickness, mm | M 218, Zinc Coated | M 274 AlT2, Aluminum Coated | M 289, 55 Percent Aluminum-Zinc Alloy Coated | A 885, Zinc and Aramid Fiber Coated | A 929M Zn-5 Al-MM, Alloy Coated | A 929M AlT1, Aluminum Coated | Uso |
+|---|---|---|---|---|---|---|---|---|
+| 1.02 | 1.02 | X |  | X |  | X |  | usada |
+| 1.32 | 1.32 | X | X | X |  | X | X | usada |
+| 1.63 | 1.63 | X | X | X | X | X | X | usada |
+| 2.01 | 2.01 | X | X | X | X | X | X | usada |
+| 2.77 | 2.77 | X | X | X | X | X | X | usada |
+| 3.51 | 3.51 | X | X | X | X | X | X | usada |
+| 4.27 | 4.27 | X |  |  | X | X |  | usada |
+
+> a An “X” indicates sheet thickness included in the applicable specification for coating types listed.
 
 ### `ASTM_A760.T1` — TABLA 1 Tamaños de tubería
 
@@ -1199,8 +1373,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `ASTM_A796.T5` — TABLE 5 Sectional Properties of Corrugated Steel Sheets for Corrugation: 68 by 13 mm (Annular or Helical) [SI Units]
 
 - Cita: `ASTM_A796.T5`
-- Tabla completa · el calculo usa 0 de 10 columnas y 0 de 7 filas
-- Columna «Specified Thickness, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
+- Tabla completa · el calculo usa 1 de 10 columnas y 0 de 7 filas
 - Columna «Area of Section, A, mm²/mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Tangent Length, TL, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Tangent Angle, Δ, °» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
@@ -1210,6 +1383,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 - Columna «Double» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Single» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Double» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
+- Vistas de cálculo derivadas: `TMC_PLANCHA_CORRUGADA`
 
 | Fila | Specified Thickness, mm | Area of Section, A, mm²/mm | Tangent Length, TL, mm | Tangent Angle, Δ, ° | Moment of Inertia, I, mm⁴/mm | Radius of Gyration, r, mm | Single | Double | Single | Double | Uso |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -1226,8 +1400,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `ASTM_A796.T7` — TABLE 7 Sectional Properties of Corrugated Steel Sheets for Corrugation: 75 by 25 mm (Annular or Helical) [SI Units]
 
 - Cita: `ASTM_A796.T7`
-- Tabla completa · el calculo usa 0 de 8 columnas y 0 de 6 filas
-- Columna «Specified Thickness, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
+- Tabla completa · el calculo usa 1 de 8 columnas y 0 de 6 filas
 - Columna «Area of Section, A, mm²/mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Tangent Length, TL, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Tangent Angle, Δ, °» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
@@ -1237,6 +1410,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 - Columna «Double» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - **Interpretación del proyectista, no de la fuente**: El momento de inercia de esta tabla se lee en mm⁴/mm, como en las otras seis, aunque el encabezado imprima «mm⁴/m»
   - En contra: La pagina imprime «I, mm⁴/m», y esta transcripcion respeta el rotulo en la etiqueta de la columna: la lectura en mm⁴/mm es del proyecto, apoyada en que los valores (112.94 a 411.04) son del mismo orden que los de la Table 9 (145.03 a 411.18), de profundidad de corrugacion vecina y rotulada «mm⁴/mm».
+- Vistas de cálculo derivadas: `TMC_PLANCHA_CORRUGADA`
 
 | Fila | Specified Thickness, mm | Area of Section, A, mm²/mm | Tangent Length, TL, mm | Tangent Angle, Δ, ° | Moment of Inertia, I, mm⁴/m | Radius of Gyration, r, mm | Double | Double | Uso |
 |---|---|---|---|---|---|---|---|---|---|
@@ -1250,13 +1424,13 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `ASTM_A796.T9` — TABLE 9 Sectional Properties of Corrugated Steel Sheets for Corrugation: 125 by 25 mm (Helical) [SI Units]
 
 - Cita: `ASTM_A796.T9`
-- Tabla completa · el calculo usa 0 de 6 columnas y 0 de 5 filas
-- Columna «Specified Thickness, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
+- Tabla completa · el calculo usa 1 de 6 columnas y 0 de 5 filas
 - Columna «Area of Section, A, mm²/mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Tangent Length, TL, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Tangent Angle, Δ,°» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Moment of Inertia, I, mm⁴/mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
 - Columna «Radius of Gyration, r, mm» transcrita y **no usada**: ningun modulo de calculo consume hoy esta tabla: es INSUMO del procedimiento de diseño de ASTM A796 (num. 6 a 11) que Fase 8, items 1-2, todavia no implementa -- 'clases_producto_por_relleno' sigue vacio, y desde N1 dice que la mitad TMC se cierra IMPLEMENTANDO ese procedimiento, no transcribiendo una tabla que la norma no tiene --. Hasta entonces la tabla documenta que ESPESORES existen para cada corrugacion y con que rigidez, para quien especifique el producto
+- Vistas de cálculo derivadas: `TMC_PLANCHA_CORRUGADA`
 
 | Fila | Specified Thickness, mm | Area of Section, A, mm²/mm | Tangent Length, TL, mm | Tangent Angle, Δ,° | Moment of Inertia, I, mm⁴/mm | Radius of Gyration, r, mm | Uso |
 |---|---|---|---|---|---|---|---|
@@ -1295,6 +1469,31 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | Gravas, limo arenoso y arcilla | 1.5 | 1.75 | 2.0 | no usada |
 | Arena | 2.0 | 2.25 | 2.5 | no usada |
 | Enrocado | 1.0 | 1.25 | 1.5 | no usada |
+
+### `E050.FIG3` — Simbología de Suelos (Referencial)
+
+- Cita: `E050.FIG3`
+- Tabla completa · el calculo usa 2 de 3 columnas y 15 de 15 filas
+- Columna «DIVISIONES MAYORES» transcrita y **no usada**: agrupa los simbolos; el criterio elige por simbolo, no por division
+- Vistas de cálculo derivadas: `SIMBOLOS_SUCS`
+
+| Fila | DIVISIONES MAYORES | SUCS | DESCRIPCIÓN | Uso |
+|---|---|---|---|---|
+| GW | SUELOS GRANULARES / GRAVA Y SUELOS GRAVOSOS | GW | GRAVA BIEN GRADUADA | usada |
+| GP | SUELOS GRANULARES / GRAVA Y SUELOS GRAVOSOS | GP | GRAVA MAL GRADUADA | usada |
+| GM | SUELOS GRANULARES / GRAVA Y SUELOS GRAVOSOS | GM | GRAVA LIMOSA | usada |
+| GC | SUELOS GRANULARES / GRAVA Y SUELOS GRAVOSOS | GC | GRAVA ARCILLOSA | usada |
+| SW | SUELOS GRANULARES / ARENA Y SUELOS ARENOSOS | SW | ARENA BIEN GRADUADA | usada |
+| SP | SUELOS GRANULARES / ARENA Y SUELOS ARENOSOS | SP | ARENA MAL GRADUADA | usada |
+| SM | SUELOS GRANULARES / ARENA Y SUELOS ARENOSOS | SM | ARENA LIMOSA | usada |
+| SC | SUELOS GRANULARES / ARENA Y SUELOS ARENOSOS | SC | ARENA ARCILLOSA | usada |
+| ML | SUELOS FINOS / LIMOS Y ARCILLAS (LL < 50) | ML | LIMO INORGÁNICO DE BAJA PLASTICIDAD | usada |
+| CL | SUELOS FINOS / LIMOS Y ARCILLAS (LL < 50) | CL | ARCILLA INORGÁNICA DE BAJA PLASTICIDAD | usada |
+| OL | SUELOS FINOS / LIMOS Y ARCILLAS (LL < 50) | OL | LIMO ORGÁNICO O ARCILLA ORGÁNICA DE BAJA PLASTICIDAD | usada |
+| MH | SUELOS FINOS / LIMOS Y ARCILLAS (LL > 50) | MH | LIMO INORGÁNICO DE ALTA PLASTICIDAD | usada |
+| CH | SUELOS FINOS / LIMOS Y ARCILLAS (LL > 50) | CH | ARCILLA INORGÁNICA DE ALTA PLASTICIDAD | usada |
+| OH | SUELOS FINOS / LIMOS Y ARCILLAS (LL > 50) | OH | LIMO ORGÁNICO O ARCILLA ORGÁNICA DE ALTA PLASTICIDAD | usada |
+| Pt | SUELOS ALTAMENTE ORGÁNICOS | Pt | TURBA Y OTROS SUELOS ALTAMENTE ORGÁNICOS. | usada |
 
 ### `E060.T4.2` — TABLA 4.2 REQUISITOS PARA CONDICIONES ESPECIALES DE EXPOSICIÓN
 
@@ -1425,6 +1624,36 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | 13 -- Rect. Box Top Bev. Conc. -- 18.4° wingwall flares - offset | 13 | Rect. Box Top Bev. Conc. | 3 | 18.4° wingwall flares - offset | 2 | 0.493 | 0.667 | 0.0227 | 0.887 | 3 | pendiente |
 
 > ¹²³⁴ Bossy 1963
+
+### `HDS5_3ED.TB.1` — B.1.  Manning's n Values for Culverts.
+
+- Cita: `HDS5_3ED.TB.1`
+- Tabla completa · el calculo usa 4 de 5 columnas y 1 de 13 filas
+- Columna «Reference» transcrita y **no usada**: bibliografia de la fuente: documenta de que ensayo sale cada rango, no entra en el calculo
+- **Interpretación del proyectista, no de la fuente**: El par (minimo, maximo) de la fila «Corrugated Polyethylene / Smooth» se toma entero como la doble n del HDPE de interior liso: 0.015 para capacidad y tirante, 0.009 para velocidad maxima y socavacion
+  - En contra: Son valores de LABORATORIO (nota 1): la fuente advierte que los de campo pueden variar por abrasion, corrosion, deflexion y juntas, y no dice hacia donde.
+  - En contra: La fila vale para el interior LISO (tuberia Tipo S o D de M 294). Con interior corrugado (Tipo C) rige la fila siguiente, 0.018-0.025, y usar esta seria gruesamente inseguro en capacidad.
+  - En contra: El rango es mas ancho que el del concreto de la Tabla N 09 peruana (0.010-0.013), que es el que el proyecto aplicaba por analogia: baja el n minimo y sube el maximo.
+
+| Fila | Type of Culvert | Roughness or Corrugation | Manning's n | Manning's n | Reference | Uso |
+|---|---|---|---|---|---|---|
+| Concrete Pipe | Concrete Pipe | Smooth | 0.01 | 0.011 | Straub et al. 1960; May et al. 1986; Tullis 1986 & 1991a | no usada |
+| Concrete Boxes | Concrete Boxes | Smooth | 0.012 | 0.015 | FHWA 1961 | no usada |
+| Spiral Rib Metal Pipe | Spiral Rib Metal Pipe | Smooth | 0.012 | 0.013 | Tullis 1983 & 1991b | no usada |
+| Corrugated Metal Pipe (Helical Corrugations) | Corrugated Metal Pipe (Helical Corrugations) | 2-2/3 by 1/2 in 68 by 13 mm | 0.011 | 0.023 | FHWA 1980; Tullis 1991c | no usada |
+| Corrugated Metal Pipe (Helical Corrugations) | Corrugated Metal Pipe (Helical Corrugations) | 6 by 1 in 150 by 25 mm | 0.022 | 0.025 | FHWA 1980 | no usada |
+| Corrugated Metal Pipe, Pipe-Arch and Box (Annular Corrugations) | Corrugated Metal Pipe, Pipe-Arch and Box (Annular Corrugations) | 2-2/3 by 1/2 in 68 by 13 mm | 0.022 | 0.027 | FHWA 1980 | no usada |
+| Corrugated Metal Pipe, Pipe-Arch and Box (Annular Corrugations) | Corrugated Metal Pipe, Pipe-Arch and Box (Annular Corrugations) | 5 by 1 in 125 by 25 mm | 0.025 | 0.026 | FHWA 1980 | no usada |
+| Corrugated Metal Pipe, Pipe-Arch and Box (Annular Corrugations) | Corrugated Metal Pipe, Pipe-Arch and Box (Annular Corrugations) | 3 by 1 in 75 by 25 mm | 0.027 | 0.028 | FHWA 1980 | no usada |
+| Corrugated Metal Structural Plate (Annular Corrugations) | Corrugated Metal Structural Plate (Annular Corrugations) | 6 by 2 in 150 by 50 mm | 0.033 | 0.035 | FHWA 1980 | no usada |
+| Corrugated Metal Structural Plate (Annular Corrugations) | Corrugated Metal Structural Plate (Annular Corrugations) | 9 by 2-1/2 in 230 by 64 mm | 0.033 | 0.037 | FHWA 1980 | no usada |
+| Corrugated Polyethylene | Corrugated Polyethylene | Smooth | 0.009 | 0.015 | Barfuss & Tullis 1988; Tullis et al. 1990 | usada |
+| Corrugated Polyethylene | Corrugated Polyethylene | Corrugated | 0.018 | 0.025 | Clyde 1980; USBR 1985 | no usada |
+| Polyvinyl chloride (PVC) | Polyvinyl chloride (PVC) | Smooth | 0.009 | 0.011 | Neale and Price 1964; Bishop and Jeppson 1975 | no usada |
+
+> 1 The Manning's n values indicated in this table were obtained in the laboratory and are supported by the provided reference. Actual field values for culverts may vary depending on the effect of abrasion, corrosion, deflection, and joint conditions.
+
+> 2 See Figure B.3, Manning's n varies with barrel size.
 
 ### `HDS5_3ED.TC2` — Table C.2.  Entrance Loss Coefficients.
 
@@ -1672,6 +1901,26 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 
 > Fuente Fuente:  Elaboración Propia, teniendo en cuenta el Tipo de Carretera establecido en la RD 037-2008-MTC/14 y el Manual de Ensayo de Materiales del MTC
 
+### `WSDOT_HM.T8-4` — Table 8-4 Pipe Abrasion Levels
+
+- Cita: `WSDOT_HM.T8-4`
+- Tabla completa · el calculo usa 5 de 5 columnas y 4 de 4 filas
+- **Interpretación del proyectista, no de la fuente**: El proyecto toma el corte de 15 ft/s (4.572 m/s) entre los niveles «moderately» y «severely abrasive» como techo de velocidad de V3 para TMC y HDPE, es decir: toma la velocidad POR SI SOLA como criterio suficiente para clasificar el sitio como severamente abrasivo
+  - En contra: La tabla clasifica el SITIO por tres caracteristicas (carga de fondo, pendiente y velocidad), no fija una velocidad maxima para ningun material.
+  - En contra: Para el METAL la tabla no prohibe nada en ningun nivel: prescribe remedio (mas calibre o solera de concreto), y el «shall» de aumentar uno o dos calibres ya rige desde 6 ft/s en el nivel moderado. V3 no sustituye esa proteccion.
+  - En contra: La prohibicion del termoplastico en el nivel severo NO esta en esta tabla sino en el §8-3.3 (WSDOT_HM.8-3.3#SEVERA). La fila severa de esta edicion no nombra al termoplastico: su ultima frase habla de «Sacrificial metal pipe», y por su redaccion («exhibits better abrasion characteristics than metal or concrete», la misma que el §3-3.5 aplica al termoplastico) parece una errata del ejemplar. Es inferencia, no texto: se transcribe como se imprime.
+  - En contra: Los cortes inferiores (3 y 6 ft/s) no entran en ninguna verificacion del proyecto; el de 6 ft/s (1.829 m/s) es desde donde la fuente pide mas calibre para el metal.
+  - A favor: La nota que introduce la tabla (WSDOT_HM.T8-4) dice que no hace falta que concurran todos los criterios de un nivel para asignarlo: clasificar por la velocidad sola es una lectura conservadora que la fuente admite.
+  - A favor: AASHTO LRFD C12.6.9 (AASHTO_LRFD_9.C12.6.9#NIVEL_4) pone el mismo corte de 15.0 ft/s para el nivel 4 de abrasion de la FHWA.
+- Vistas de cálculo derivadas: `NIVELES_DE_ABRASION`
+
+| Fila | Abrasion Level | General Site Characteristics | General Site Characteristics | General Site Characteristics | Recommended Invert Protection | Uso |
+|---|---|---|---|---|---|---|
+| Non-abrasive | Non-abrasive | Little or no bed load | Slope less than 1% | Velocities less than 3 ft/s | Generally, most pipes may be used under these circumstances, if a protective treatment is deemed necessary for metal pipes, any of the protective treatments specified in Section 8-5.3.1 would be adequate. | usada |
+| Low abrasive | Low abrasive | Minor bed loads of sands, silts, and clays | Slopes 1%–2% | Velocities less than 6 ft/s | For metal pipes, an additional gage thickness may be specified if existing pipes in the vicinity show susceptibility to abrasion, or any of the protective treatments specified in Section 8-5.3.1 would be adequate. | usada |
+| Moderately abrasive | Moderately abrasive | Moderate bed loads of sands and gravels, with stone sizes up to about 3 inches | Slopes 2%–4% | Velocities from 6 to 15 ft/s | Metal pipe thickness shall be increased one or two standard gages. The PEO may want to consider a concrete-lined alternative. Concrete pipe and box culverts shall be specified with an increased wall thickness or an increased concrete compressive strength. Thermoplastic pipe may be used without additional treatments. | usada |
+| Severely abrasive | Severely abrasive | Heavy bed loads of sands, gravel, and rocks, with stone sizes up to 12 inches or larger | Slopes steeper than 4% | Velocities greater than 15 ft/s | Metal pipe thickness shall be increased at least two standard gages, or the pipe invert shall be lined with concrete. Box culverts shall be specified with an increased wall thickness or an increased concrete compressive strength. Sacrificial metal pipe exhibits better abrasion characteristics than metal or concrete. However, it generally cannot be reinforced to provide additional invert protection and shall not be used in this condition. | usada |
+
 ## 6. Condiciones que detienen el cálculo
 
 Lo indeterminado bloquea; lo que no bloquea lleva su justificación
@@ -1716,6 +1965,14 @@ recomienda.
 | `F2.LUZ` | Fase 2 - Clasificacion y periodo de retorno | Denominacion de la obra por su luz: alcantarilla o puente | **define** | `MC_HHD.4.1.1.3.1`, `MC_HHD.4.1.1.5.1`, `MP.GLOSARIO#OBRAS_DE_ARTE_MENORES`, `AASHTO_LRFD_9.1.2#BRIDGE`, `HDS5_3ED.1.2#NBIS` |
 | `F2.TR` | Fase 2 - Clasificacion y periodo de retorno | Periodo de retorno del caudal de diseno, obtenido del riesgo admisible y la vida util de la Tabla N 02 | **recomienda** | `MC_HHD.3.6` |
 | `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES`, `HDS5_3ED.5.4.3#REPARTO` |
+| `F3.DUR.ABRASION` | Fase 3 - Tipo, material y durabilidad | Matriz de durabilidad: nivel de abrasion del sitio frente a lo que cada material admite | **obliga** | `WSDOT_HM.8-3.3#SEVERA`, `WSDOT_HM.T8-4`, `WSDOT_HM.3-3.5#10FTS`, `AASHTO_LRFD_9.C12.6.9#NIVEL_4`, `MC_HHD.4.1.1.3.7e`, `MC_HHD.4.1.1.3.7g#AGRESIVAS` |
+| `F3.DUR.CLORUROS` | Fase 3 - Tipo, material y durabilidad | Matriz de durabilidad: cloruros del suelo o del agua y proteccion del refuerzo y del acero | **obliga** | `E060.4.4.2`, `E060.T4.2`, `MC_HHD.4.1.1.3.7f#SALINIDAD`, `MC_HHD.4.1.1.3.7f#COSTA` |
+| `F3.DUR.PH` | Fase 3 - Tipo, material y durabilidad | Matriz de durabilidad: pH del suelo o del agua frente a los umbrales de la tuberia de acero corrugado | **obliga** | `EG2013.507.10`, `WSDOT_HM.8-5.1#PH`, `WSDOT_HM.8-4.3#ZONA_III`, `WSDOT_HM.8-3.1#CONCRETO`, `MC_HHD.4.1.1.3.7f#TMC`, `AASHTO_M36.1.2`, `MC_HHD.4.1.1.3.4b` |
+| `F3.DUR.RESISTIVIDAD` | Fase 3 - Tipo, material y durabilidad | Matriz de durabilidad: resistividad del suelo o del agua frente al umbral de la tuberia de acero corrugado | **obliga** | `WSDOT_HM.8-5.2#RESISTIVIDAD`, `WSDOT_HM.8-4.3#ZONA_III`, `MC_HHD.4.1.1.3.7f#SALINIDAD` |
+| `F3.DUR.SUELO_AGRESIVO` | Fase 3 - Tipo, material y durabilidad | Matriz de durabilidad: agresividad del suelo para la tuberia de acero corrugado galvanizado | **recomienda** | `AASHTO_LRFD_9.10.7.5#INDICATIVOS`, `AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO`, `AASHTO_LRFD_9.11.12.8#AGRESIVO`, `EG2013.507.10`, `MC_HHD.4.1.1.3.7f#COSTA`, `MC_HHD.4.1.1.3.7g#AGRESIVAS` |
+| `F3.DUR.SUELO_FUNDACION` | Fase 3 - Tipo, material y durabilidad | Suelo de fundacion deficiente: aviso de que el Manual recomienda el marco de concreto | **recomienda** | `MC_HHD.4.1.1.3.4a#MARCO`, `E050.24`, `E050.24#REMOVER`, `E050.38.1`, `E050.FIG3` |
+| `F3.DUR.SULFATOS` | Fase 3 - Tipo, material y durabilidad | Matriz de durabilidad: sulfatos del suelo o del agua y requisitos del concreto | **obliga** | `E060.T4.4` |
+| `F3.D_EXTERIOR` | Fase 3 - Tipo, material y durabilidad | Espesor de pared del conducto: lo que separa el diametro hidraulico D del diametro exterior D_ext = D + 2t | **define** | `AASHTO_M36.T1`, `AASHTO_M36.8.1.1`, `AASHTO_LRFD_9.TA12-11`, `EG2013.508.02a` |
 | `F3.D_MIN` | Fase 3 - Tipo, material y durabilidad | Seccion minima circular de 0.90 m (36") | **obliga** | `MC_HHD.4.1.1.3.4a` |
 | `F3.MANTENIMIENTO` | Fase 3 - Tipo, material y durabilidad | Cota inferior de la progresion de secciones: dimension interior que permite mantener y limpiar el conducto | **obliga** | `MC_HHD.4.1.1.3.7d` |
 | `F3.SECCION_CANAL` | Fase 3 - Tipo, material y durabilidad | Adopcion de la seccion del cajon en un cruce de canal de riego, fuera del piso de 0.90 m | **obliga** | `MC_HHD.4.1.1.3.4a` |
@@ -1893,7 +2150,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 198.
+Citas sin firma de verificación: **5** de 229.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

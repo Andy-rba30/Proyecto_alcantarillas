@@ -134,6 +134,15 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # La analogia de V4 se verifico contra el PDF y no se toco V4.
         ESTADO_VERIFICADO: {"INF-3.2.5"},
     },
+    "T-4": {
+        # Con los numeros del INFORME: el prompt cita INF-5.1.17 como
+        # «INF-5.1.13». INF-5.1.9 e INF-5.1.16 no los nombraba ningun prompt
+        # y el orquestador los asigno a T-4.
+        ESTADO_CERRADO: {"INF-5.1.17", "INF-3.3.4", "INF-3.3.1", "INF-3.2.4",
+                         "INF-5.1.9", "INF-5.1.16"},
+        # Solo la mitad del HDPE: `n_manning_cajon` sigue vacio.
+        ESTADO_PARCIAL: {"INF-3.2.1"},
+    },
 }
 
 
