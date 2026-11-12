@@ -354,6 +354,14 @@ def traza_del_punto(informe_punto: Any) -> TrazaDelPunto:
             _M11.TITULO_TRAZA_CLASIFICACION,
             tuple(_detalle(p, reg) for p in pasos_fase2)))
 
+    pasos_hidrologia = _M11.traza_hidrologia(informe_punto)
+    if pasos_hidrologia:
+        caudal = informe_punto.caudal
+        secciones.append(SeccionDeTraza(
+            _M11.TITULO_TRAZA_HIDROLOGIA,
+            tuple(_detalle(p, reg) for p in pasos_hidrologia),
+            aviso=" ".join((f"{caudal.leyenda}.", *caudal.avisos))))
+
     paso_tw = _M11.traza_tw(informe_punto)
     if paso_tw is not None:
         secciones.append(SeccionDeTraza(

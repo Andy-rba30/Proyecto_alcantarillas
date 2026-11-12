@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `1ad0520+cambios-sin-commit` · Suite: 4521 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `7fb7926+cambios-sin-commit` · Suite: 4712 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -38,13 +38,14 @@
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **155** · fórmulas distintas: **26** · fundamentos ejercitados: **17** de 41.
+Pasos emitidos: **158** · fórmulas distintas: **27** · fundamentos ejercitados: **18** de 50.
 
 ## 2. Índice
 
 | Fase | Módulo emisor | Código | Paso | Fundamento | Fórmula | Cita de la fórmula | Variables (símbolo [unidad] ← procedencia) | Resultado | Umbral | Emisiones |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Fase 1 - Datos de entrada | `M3_hidraulica` | `1.3` | TW en el cuerpo receptor durante la avenida | `F1.TW` (define) | `TW = cota_TW - cota_fondo_salida` | num. 4.1.1.3.6 · 'Diseño hidráulico' · pag. impresa 74 · PDF 77 | **TW** [m] ← «declarado por el proyectista (--tw o TW_m de --datos-externos): manda sobre el calculo» | **TW** [m] | — | 4 |
+| Fase 1-bis - Hidrologia: caudal de diseño | `MH_hidrologia` | `1b.8` | Caudal especifico del caudal de diseño (contraste de plausibilidad) | `FH.Q_ESPECIFICO` (define) | `q = Q / A ; C·I = q / 0.278   [de la ecuacion (28)]` | num. 3.12.2 · ESTIMACIÓN DE CAUDALES · 'Método Racional' · pag. impresa 49 · PDF 52 | **Q** [m3/s] ← «Q declarado por el estudio hidrológico: CSV Sec. 1.2, columna Q_m3s»<br>**A** [km2] ← «CSV Sec. 1.2, columna area_ha, de ha a km2» | **q** [m3/s por km2] | — | 3 |
 | Fase 2 - Clasificacion y periodo de retorno | `M1_clasificacion` | `2.1` | Denominacion de la obra: alcantarilla o puente | `F2.LUZ` (define) | `luz < 6.0 m -> alcantarilla; luz >= 6.0 m -> puente` | num. 4.1.1.3.1 · 'Aspectos generales' · pag. impresa 70 · PDF 73 | **luz** [m] ← «abertura libre que el cruce exige de la estructura («opening» de AASHTO 1.2; en un cruce multicelda el ancho TOTAL, HDS-5 1.2), declarada con --luz o por --datos-externos: NO es columna del CSV y NO es el ancho del cauce natural (DIS-LUZ-DENOMINACION)» | **denominacion** [adimensional] | luz maxima de una alcantarilla [m] · num. 4.1.1.3.1 · 'Aspectos generales' · pag. impresa 70 · PDF 73 | 4 |
 | Fase 2 - Clasificacion y periodo de retorno | `M1_clasificacion` | `2.2` | Periodo de retorno del caudal de diseño | `F2.TR` (recomienda) | `R = 1 - (1 - 1/T)^n, despejada en T: T = 1 / (1 - (1 - R)^(1/n))` | num. 3.6 · 'Selección del Período de Retorno' · pag. impresa 25 · PDF 28 | **R** [adimensional] ← «riesgo admisible de falla de la fila «Alcantarillas de paso de quebradas importantes y badenes»» ‖ «riesgo admisible de falla de la fila «Alcantarillas de paso quebradas menores y descarga de agua de cunetas»»<br>**n** [anios] ← «vida util de la misma fila, que la tabla escribe en su nota al pie (**)» | **TR** [anios] | riesgo admisible maximo recomendado para esta fila [adimensional] · num. 3.6 · 'Selección del Período de Retorno' · pag. impresa 25 · PDF 28 | 3 |
 | Fase 4 - Dimensionamiento hidraulico | `M4_control` | `4.1` | Area, perimetro mojado y radio hidraulico de la seccion, para el tirante de trabajo | `F4.SECCION` (define) | `A = (D^2/8)(theta - sen theta), P = D*theta/2, R = A/P, con theta el angulo mojado` | num. 4.1.1.3.6 · 'Diseño hidráulico' · pag. impresa 74 · PDF 77 | **D** [m] ← «diametro interior del barril, que en un circulo es tambien su altura interior: el «D» de HDS-5»<br>**y** [m] ← «tirante normal, que es el que resuelve el paso siguiente: Brent recorre ESTA misma seccion hasta que Manning iguala el caudal de diseño»<br>**A** [m2] ← «area hidraulica a ese tirante; sale de la formula de arriba y no se vuelve a calcular en ningun otro sitio»<br>**P** [m] ← «perimetro mojado a ese tirante, por la misma via» | **R** [m] | — | 9 |
@@ -137,4 +138,12 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | `M6_proteccion` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | `M7_geometria` |
 | `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | `M9_cabezal` |
+| `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | `MH_hidrologia` |
+| `FH.C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura vegetal, tipo de suelo y pendiente del terreno | `MH_hidrologia` |
+| `FH.FEN` | Fase 1-bis - Hidrologia: caudal de diseño | Contraste del tratamiento de los años FEN: la lluvia de diseño adoptada frente a la de la serie completa y la de la serie sin los años FEN | `MH_hidrologia` |
+| `FH.INTENSIDAD` | Fase 1-bis - Hidrologia: caudal de diseño | Intensidad de la lluvia de diseño para una duracion igual al tiempo de concentracion, desde la precipitacion maxima en 24 horas | `MH_hidrologia` |
+| `FH.KS` | Fase 1-bis - Hidrologia: caudal de diseño | Prueba de bondad de ajuste de Kolmogorov-Smirnov: D = max \|Fo(xm) − F(xm)\| contra el valor critico d de la Tabla Nº 03 | `MH_hidrologia` |
+| `FH.RACIONAL` | Fase 1-bis - Hidrologia: caudal de diseño | Caudal de diseño por el metodo racional, Q = 0.278 · C · I · A | `MH_hidrologia` |
+| `FH.SERIE` | Fase 1-bis - Hidrologia: caudal de diseño | Serie de precipitacion maxima en 24 horas de la estacion: longitud de registro, años FEN que contiene y como se tratan | `MH_hidrologia` |
+| `FH.TC` | Fase 1-bis - Hidrologia: caudal de diseño | Tiempo de concentracion de la cuenca, por el metodo declarado en el CSV de cuencas | `MH_hidrologia` |
 

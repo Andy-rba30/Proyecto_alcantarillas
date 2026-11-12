@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "6402ab29dab726e24362a5920480090f90467393",
+    "criterios_sha1": "96ee8f075ecb99a115f285f67909e6359a19a4be",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -87,6 +87,7 @@
         "altura_total_m": 1.8
       },
       "avisos": [
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
         "TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)"
       ],
       "clasificacion": {
@@ -94,13 +95,29 @@
         "denominacion": "alcantarilla",
         "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
         "familia": "A",
-        "origen_del_caudal": "Q hidrologico propio de la cuenca (Tc.py + IDF con el TR de la Fase 2)",
+        "origen_del_caudal": "Q hidrologico propio de la cuenca: declarado por el estudio hidrologico en la columna Q_m3s, o calculado por MH_hidrologia (metodo racional con el TR de la Fase 2)",
         "TR_procede": true,
         "TR_anios": 71,
         "TR_categoria": "quebrada_importante",
         "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
         "TR_fundamento": "categoria derivada del area de cuenca (850.0 ha) con el criterio 'umbral_area_quebrada_importante_ha'",
         "datos_pendientes": []
+      },
+      "caudal": {
+        "Q_m3s": 1.167,
+        "origen": "declarado",
+        "leyenda": "Q declarado por el estudio hidrológico",
+        "de_donde": "CSV Sec. 1.2, columna Q_m3s",
+        "area_km2": 8.5,
+        "q_especifico_m3s_km2": 0.13729411764705882,
+        "lamina_equivalente_mm_h": 0.493863732543377,
+        "tratamiento_fen": null,
+        "avisos": [
+          "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        ],
+        "pasos": [
+          "1b.8"
+        ]
       },
       "durabilidad": {
         "aplicada": false,
@@ -221,6 +238,7 @@
         "altura_total_m": 1.8
       },
       "avisos": [
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
         "TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)"
       ],
       "clasificacion": {
@@ -228,13 +246,29 @@
         "denominacion": "alcantarilla",
         "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
         "familia": "A",
-        "origen_del_caudal": "Q hidrologico propio de la cuenca (Tc.py + IDF con el TR de la Fase 2)",
+        "origen_del_caudal": "Q hidrologico propio de la cuenca: declarado por el estudio hidrologico en la columna Q_m3s, o calculado por MH_hidrologia (metodo racional con el TR de la Fase 2)",
         "TR_procede": true,
         "TR_anios": 71,
         "TR_categoria": "quebrada_importante",
         "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
         "TR_fundamento": "categoria derivada del area de cuenca (210.0 ha) con el criterio 'umbral_area_quebrada_importante_ha'",
         "datos_pendientes": []
+      },
+      "caudal": {
+        "Q_m3s": 0.48,
+        "origen": "declarado",
+        "leyenda": "Q declarado por el estudio hidrológico",
+        "de_donde": "CSV Sec. 1.2, columna Q_m3s",
+        "area_km2": 2.1,
+        "q_especifico_m3s_km2": 0.22857142857142856,
+        "lamina_equivalente_mm_h": 0.8221993833504624,
+        "tratamiento_fen": null,
+        "avisos": [
+          "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        ],
+        "pasos": [
+          "1b.8"
+        ]
       },
       "durabilidad": {
         "aplicada": false,
@@ -355,6 +389,7 @@
         "altura_total_m": 1.8
       },
       "avisos": [
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
         "TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)"
       ],
       "clasificacion": {
@@ -362,13 +397,29 @@
         "denominacion": "alcantarilla",
         "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
         "familia": "B",
-        "origen_del_caudal": "Q del drenaje longitudinal (cuneta)",
+        "origen_del_caudal": "Q del drenaje longitudinal (cuneta): declarado en la columna Q_m3s, o calculado por MH_hidrologia con el area tributaria de la cuneta",
         "TR_procede": true,
         "TR_anios": 35,
         "TR_categoria": "quebrada_menor",
         "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
-        "TR_fundamento": "Familia B (Alcantarillas de alivio): Q del drenaje longitudinal (cuneta), que es la fila 'quebrada_menor' de la Tabla N 02 (Sec. 2.3)",
+        "TR_fundamento": "Familia B (Alcantarillas de alivio): Q del drenaje longitudinal (cuneta): declarado en la columna Q_m3s, o calculado por MH_hidrologia con el area tributaria de la cuneta, que es la fila 'quebrada_menor' de la Tabla N 02 (Sec. 2.3)",
         "datos_pendientes": []
+      },
+      "caudal": {
+        "Q_m3s": 0.095,
+        "origen": "declarado",
+        "leyenda": "Q declarado por el estudio hidrológico",
+        "de_donde": "CSV Sec. 1.2, columna Q_m3s",
+        "area_km2": 0.18,
+        "q_especifico_m3s_km2": 0.5277777777777778,
+        "lamina_equivalente_mm_h": 1.8984812150279775,
+        "tratamiento_fen": null,
+        "avisos": [
+          "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        ],
+        "pasos": [
+          "1b.8"
+        ]
       },
       "durabilidad": {
         "aplicada": false,
@@ -507,6 +558,7 @@
           "S_cauce"
         ]
       },
+      "caudal": null,
       "durabilidad": {
         "aplicada": false,
         "resumen": "durabilidad: sin ensayos, matriz no aplicada",
@@ -798,8 +850,10 @@
       "acceso_mantenimiento_v2b",
       "borde_libre_canal_m",
       "cobertura_minima_aashto",
+      "coeficiente_uniformidad_temez",
       "condicion_pavimento",
       "corrugacion_y_espesor_tmc",
+      "distribucion_precipitacion_maxima",
       "espesor_pared_conducto",
       "factor_muro_eleccion",
       "factores_carga_aashto",
@@ -812,6 +866,7 @@
       "n_manning_hdpe",
       "origen_cota_fondo_entrada",
       "regimen_v2b",
+      "relacion_intensidad_duracion",
       "resguardo_HW_subrasante",
       "seccion_receptor",
       "talud_terraplen",

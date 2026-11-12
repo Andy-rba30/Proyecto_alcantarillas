@@ -48,7 +48,7 @@ import io
 import math
 from dataclasses import fields
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, FrozenSet
 
 from src.dominios import (CBR_MIN_FISICO, ESVIAJE_MAX, METROS_POR_KM, S_CAUCE_MAX)
 from src.modelos import (CabeceraCSV, DatoFaltanteError, DatoInvalidoError,
@@ -279,11 +279,23 @@ def leer_bytes(ruta: Any) -> bytes:
     return Path(ruta).read_bytes()
 
 
-def cargar_puntos_de_bytes(datos: bytes, nombre: str) -> List[PuntoCritico]:
+def cargar_puntos_de_bytes(datos: bytes, nombre: str, *,
+                           ids_con_caudal_calculable: FrozenSet[str] = frozenset(),
+                           ) -> List[PuntoCritico]:
     """
     `cargar_puntos` sobre un contenido ya leido. `nombre` es el del archivo,
     solo para los mensajes; la codificacion es la misma que la de la ruta
     (UTF-8 con BOM opcional, que es lo que deja Excel en Windows).
+
+    `ids_con_caudal_calculable` (T-1): los ids de las Familias A y B cuyo
+    caudal el programa PUEDE calcular en esta corrida, porque tienen cuenca
+    y estacion declaradas (`EntradaHidrologica.ids_calculables`). Solo para
+    ellos se admite `Q_m3s` vacio; para todos los demas --y siempre que no se
+    pase nada, que es el defecto-- la celda vacia sigue siendo
+    `DatoFaltanteError('Q_m3s')`, como antes de T-1. No es un sexto grupo de
+    `VACIOS_ADMITIDOS`: aquellos son permisos del ARCHIVO, validos en
+    cualquier corrida, y este depende de lo que la corrida trae ademas del
+    archivo.
     """
     archivo = io.StringIO(datos.decode("utf-8-sig"), newline="")
     lector = csv.DictReader(archivo, restkey=_SOBRANTES, restval=None)
@@ -295,7 +307,7 @@ def cargar_puntos_de_bytes(datos: bytes, nombre: str) -> List[PuntoCritico]:
         )
     _valida_encabezado(lector.fieldnames, Path(nombre))
     # La fila 1 es el encabezado: la primera fila de datos es la 2.
-    puntos = [_punto_desde_fila(fila, numero)
+    puntos = [_punto_desde_fila(fila, numero, ids_con_caudal_calculable)
               for numero, fila in enumerate(lector, start=2)]
 
     if not puntos:
@@ -390,7 +402,16 @@ def _valida_ids_unicos(puntos: List[PuntoCritico]) -> None:
 # Una fila
 # ---------------------------------------------------------------------------
 
-def _punto_desde_fila(fila: Dict[str, Any], numero: int) -> PuntoCritico:
+# La columna cuyo vacio depende de la CORRIDA y no solo del archivo (T-1), y
+# las familias en que eso vale: en la C el caudal es el del canal y su vacio
+# ya esta admitido por tablero (`_VACIAS_FAMILIA_C`).
+COLUMNA_CAUDAL = "Q_m3s"
+FAMILIAS_CON_CAUDAL_HIDROLOGICO: Tuple[Familia, ...] = (Familia.A, Familia.B)
+
+
+def _punto_desde_fila(fila: Dict[str, Any], numero: int,
+                      ids_con_caudal_calculable: FrozenSet[str] = frozenset(),
+                      ) -> PuntoCritico:
     sobrantes = fila.pop(_SOBRANTES, None)
     id_punto = _texto(fila, "id", f"(fila {numero})", numero)
 
@@ -425,11 +446,25 @@ def _punto_desde_fila(fila: Dict[str, Any], numero: int) -> PuntoCritico:
                 if columna not in _no_marca_pendiente():
                     pendientes.append(columna)
                 continue
-            raise DatoFaltanteError(
-                columna, id_punto=id_punto,
-                detalle=f"la fila {numero} la deja vacia y no es de las que "
-                        "dependen de un tablero externo",
-            )
+            if (columna == COLUMNA_CAUDAL
+                    and familia in FAMILIAS_CON_CAUDAL_HIDROLOGICO
+                    and id_punto in ids_con_caudal_calculable):
+                # EL CAUDAL LO CALCULARA LA FASE 1-bis (T-1). No se marca en
+                # `pendientes_externos`: la fila no espera a un tercero, la
+                # corrida trae la cuenca y la estacion con que calcularlo.
+                valores[columna] = None
+                continue
+            detalle = (f"la fila {numero} la deja vacia y no es de las que "
+                       "dependen de un tablero externo")
+            if columna == COLUMNA_CAUDAL \
+                    and familia in FAMILIAS_CON_CAUDAL_HIDROLOGICO:
+                detalle += (". El caudal de un punto de Familia A o B entra "
+                            "declarado en esta columna, o lo calcula el "
+                            "programa si la corrida trae la cuenca de la "
+                            "obra y la serie de su estacion (--cuencas y "
+                            "--estacion): este punto no tiene ninguna de las "
+                            "dos cosas")
+            raise DatoFaltanteError(columna, id_punto=id_punto, detalle=detalle)
         valores[columna] = _a_float(bruto, columna, id_punto)
 
     _valida_rangos(valores, id_punto)

@@ -617,3 +617,55 @@ Lo que cambia, clasificado:
   criterios sin valor siguen siendo los que eran (35).
 - **V7 (corrida ancha).** El paso de flotación gana la elección
   `F3.D_EXTERIOR`, que dice de dónde salió el espesor; el número no cambia.
+
+## Regenerada en T-1 (2026-11-12, integrado detrás de T-2 y T-4): el origen del caudal y un aviso; ningún número
+
+T-1 de la cadena T crea la Fase 1-bis (`src/modulos/MH_hidrologia.py`): el caudal de
+las Familias A y B se puede **calcular** dentro del programa con `--cuencas` y
+`--estacion`. Las corridas de esta línea base **no traen** esas dos entradas y sus
+puntos de Familia A y B llevan `Q_m3s` lleno: el caudal sigue entrando declarado y
+ningún cálculo cambia. La línea base se regeneró sobre el árbol fusionado y se midió
+contra `7fb7926` (T-0 + T-2 + T-4) en los **doce pares punto × corrida** de los tres
+JSON: `dimensionado`, material, tipo, sección, norma de producto, caudal, pendiente,
+carga y control gobernante del diseño; código, estado, veredicto, valor obtenido y
+admisible de cada verificación; fase, etapa, tipo, criterio y campo de cada bloqueo;
+las iteraciones enteras, el periodo de retorno, la protección de salida, la geometría,
+el bloque estructural, la durabilidad, la sección del receptor y los datos declarados
+son **idénticos**. Diez de los 13 archivos cambian; los dos CSV de resumen y
+`memoria_punto_cajon.html` no cambian un byte. Lo que cambia, entero:
+
+- **Los cuatro `cli_*.txt`, seis líneas nuevas cada uno**, dos por cada punto de
+  Familia A y B: «Fase 1b Q declarado por el estudio hidrológico: Q = … | Q/A = …
+  (C*I = …)», y la línea `aviso:` permanente del caudal declarado —el criterio
+  `homogeneidad_serie_fen` rige sólo el caudal que el programa calcula, y al declarado
+  no se le atribuye ningún tratamiento—, que sale con los demás avisos del punto
+  (`InformePunto.avisos()`, de T-2). La línea «Verificaciones con aviso» del RESUMEN
+  no cambia: un caudal declarado no dispara ningún indicador de la hidrología.
+- **Los tres JSON, en cinco clases** (medido ruta a ruta):
+  - la clave nueva `caudal` de cada punto: `origen` «declarado», la leyenda, el caudal
+    específico Q/A, la lámina equivalente, `tratamiento_fen` en `null`, el aviso y el
+    paso `1b.8`; `null` en C-01, que es Familia C;
+  - `avisos` de A-01, A-02 y B-01: una entrada más, la primera, con ese aviso;
+  - `clasificacion.origen_del_caudal` de los tres (deja de nombrar a `Tc.py` y nombra
+    la columna `Q_m3s` y a `MH_hidrologia`) y `clasificacion.TR_fundamento` de B-01,
+    que cita ese mismo texto;
+  - `criterios.verificacion_pendiente`: tres entradas más
+    (`distribucion_precipitacion_maxima`, `relacion_intensidad_duracion`,
+    `coeficiente_uniformidad_temez`). Las listas de criterios **usados** y **sin
+    valor** no cambian: ninguna corrida invoca la hidrología;
+  - la huella `criterios_sha1`.
+- **Las tres memorias de la CLI:** las dos huellas (`criterios_sha1`; `hoja_ruta_sha1`
+  por las notas de T-1 en la v8) y el recuento de criterios, de 88 a **95** (los siete
+  de T-1, todos con valor de archivo: «35 todavía sin valor» no cambia); la fila
+  «Familia» de la clasificación de A-01, A-02 y B-01, con el origen del caudal nuevo;
+  el bloque nuevo «Caudal de diseño y su origen (Fase 1-bis)» de esos tres puntos —la
+  leyenda, el aviso y el paso `1b.8` del caudal específico, que **no juzga** (sin
+  umbral)—; la ficha de `umbral_area_quebrada_importante_ha`, cuya `justificacion` ya
+  no se apoya en los puntos del fixture (`INF-5.1.3`; el valor y la ventana son los
+  mismos); la ficha de `homogeneidad_serie_fen` entre los criterios sin valor
+  (concepto, fuente y ventana nuevos); y el fundamento `FH.Q_ESPECIFICO` con sus dos
+  citas (`MC_HHD.3.12.2`, `MC_HHD.3.13`) en el anexo.
+
+**Diámetros movidos: ninguno.** A-01 y A-02 siguen en Ø 0.90 m de concreto reforzado
+en la corrida ancha de perfil, B-01 y C-01 se detienen donde se detenían, y el periodo
+de retorno de los tres puntos es el mismo (71, 71 y 35 años).

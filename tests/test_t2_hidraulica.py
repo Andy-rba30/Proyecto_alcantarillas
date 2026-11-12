@@ -75,6 +75,12 @@ from src.modelos import (AVISO_SIN_ACCESO_DE_MANTENIMIENTO, ConstantesHDS5,
                          SinTiranteNormal, TipoDePerfil, TipoDeVeredicto,
                          TipoMaterial, TiranteNormal, ViaDelTW)
 from src.modulos import M0_carga as M0
+# T-1 (integrado detras de T-2 y T-4): todo punto de Familia A o B con el
+# caudal DECLARADO lleva un aviso permanente --el criterio FEN no lo alcanza--
+# y sale por `InformePunto.avisos()` con los demas. Los tests de abajo que
+# decian «sin avisos» dicen ahora «sin mas aviso que ese».
+from src.modulos.MH_hidrologia import (
+    AVISO_FEN_DEL_CAUDAL_DECLARADO as AVISO_DEL_CAUDAL_DECLARADO)
 from src.modulos import M3_hidraulica as M3
 from src.modulos import M4_control as M4
 from src.modulos import M5_verificaciones as M5
@@ -1142,16 +1148,17 @@ def test_la_seccion_medida_por_punto_llega_a_la_corrida(tmp_path):
         "puntos": {"A-02": {"seccion_receptor_medida": MEDIDA_JSON}}})
     a01, a02 = _punto_de(informe, "A-01"), _punto_de(informe, "A-02")
     assert a02.tw_sec13.origen_seccion == SECCION_RECEPTOR_MEDIDA
-    assert a02.tw_sec13.seccion == MEDIDA and a02.avisos() == ()
+    assert a02.tw_sec13.seccion == MEDIDA
+    assert a02.avisos() == (AVISO_DEL_CAUDAL_DECLARADO,)
     assert a01.tw_sec13.origen_seccion == SECCION_RECEPTOR_ADOPTADA
-    assert len(a01.avisos()) == 1
+    assert len(a01.avisos()) == 2 and a01.avisos()[0] == AVISO_DEL_CAUDAL_DECLARADO
     volcado = {p["id"]: p for p in cli.informe_json(informe)["puntos"]}
     assert volcado["A-02"]["tw_seccion_receptor"]["origen"] == SECCION_RECEPTOR_MEDIDA
     assert volcado["A-02"]["tw_seccion_receptor"]["altura_total_m"] == \
         pytest.approx(1.10, rel=REL_TRANSPORTE)
-    assert volcado["A-02"]["avisos"] == []
+    assert volcado["A-02"]["avisos"] == [AVISO_DEL_CAUDAL_DECLARADO]
     assert volcado["A-01"]["avisos"] == list(a01.avisos())
-    assert f"aviso: {a01.avisos()[0]}" in cli.volcar(informe)
+    assert f"aviso: {a01.avisos()[-1]}" in cli.volcar(informe)
     from src.modulos import M11_reporte as M11
     html_a01 = M11.memoria_de_punto(a01)
     html_a02 = M11.memoria_de_punto(a02)
@@ -1698,8 +1705,10 @@ def test_el_acceso_de_mantenimiento_es_un_booleano_opcional_por_punto(tmp_path):
         "globales": {"TW_m": 0.3, "acceso_mantenimiento_previsto": True},
         "puntos": {"A-02": {"acceso_mantenimiento_previsto": False}}})
     a01, a02 = _punto_de(informe, "A-01"), _punto_de(informe, "A-02")
-    assert a01.acceso_mantenimiento.valor is True and a01.avisos() == ()
-    assert a02.avisos() == (AVISO_SIN_ACCESO_DE_MANTENIMIENTO,)
+    assert a01.acceso_mantenimiento.valor is True
+    assert a01.avisos() == (AVISO_DEL_CAUDAL_DECLARADO,)
+    assert a02.avisos() == (AVISO_DEL_CAUDAL_DECLARADO,
+                            AVISO_SIN_ACCESO_DE_MANTENIMIENTO)
     assert "4.1.1.3.7 d)" in AVISO_SIN_ACCESO_DE_MANTENIMIENTO
     texto = cli.volcar(informe)
     assert "Acceso de mantenimiento: previsto en los planos" in texto
@@ -1709,7 +1718,8 @@ def test_el_acceso_de_mantenimiento_es_un_booleano_opcional_por_punto(tmp_path):
         "acceso_mantenimiento_previsto"]["valor"] is True
     # No decide nada: el mismo punto sin la declaracion dimensiona igual.
     sin = _punto_de(_correr(tmp_path, {"globales": {"TW_m": 0.3}}), "A-02")
-    assert sin.acceso_mantenimiento is None and sin.avisos() == ()
+    assert sin.acceso_mantenimiento is None
+    assert sin.avisos() == (AVISO_DEL_CAUDAL_DECLARADO,)
     assert sin.resultado.seccion == a02.resultado.seccion
     for mala in (1, 0, "si", "true", None):
         with pytest.raises(DatoInvalidoError):

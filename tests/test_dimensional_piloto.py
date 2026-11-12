@@ -411,6 +411,31 @@ CONSTANTES_SI: Dict[str, ConstanteSI] = {
              "nuevo que PD no abrio (ficha I4-01). Desde E-A la nombra el paso "
              "4.3c (F4.PERFIL): la Ec. 3.7 del paso directo lleva "
              "K_FRICCION_SI en su formula y en su sustitucion."),
+    # T-1 (auditoria): el 0.278 del metodo racional. Es la unica de las
+    # cuatro que NO es una constante dimensional: con I en L/T y A en L^2 la
+    # ecuacion (28) ya da L^3/T, y el 0.278 solo cambia unidades DENTRO del
+    # sistema metrico (mm/h · km2 -> m3/s). Su equivalente ingles, 1.008,
+    # hace lo mismo dentro del suyo (in/h · acres -> cfs), de modo que uno no
+    # se obtiene del otro con el pie: no cierra desde el comentario, y esta
+    # nota dice por que. Las otras constantes `_SI` de la hidrologia son
+    # diccionarios de coeficientes y exponentes y no entran a este censo, que
+    # es de asignaciones numericas.
+    "RACIONAL_COEFICIENTE_SI": ConstanteSI(
+        dimension=ADIM,
+        formula="c * v['C'] * v['I'] * v['A']",
+        simbolos={"C": ADIM, "I": L / T, "A": L ** 2},
+        cierra_a=L ** 3 / T,
+        imperial_en_comentario=r"Imperial:\s*([0-9.]+)",
+        huella_en_los_pasos=r"RACIONAL_COEFICIENTE_SI|Q = 0\.278",
+        cierra_desde_el_comentario=False,
+        la_nombra_algun_paso=False,
+        nota="Q = 0.278·C·I·A: el 0.278 es 1/3.6, el paso de mm/h·km2 a "
+             "m3/s, y no lleva dimension. El 1.008 ingles es el paso de "
+             "in/h·acres a cfs: son dos conversiones de unidades, cada una "
+             "dentro de su sistema, y no se relacionan por una potencia del "
+             "pie. Ningun paso de M3-M5 la nombra: la usa la Fase 1-bis "
+             "(paso 1b.7), que esta corrida no ejercita porque trae el "
+             "caudal declarado."),
 }
 
 

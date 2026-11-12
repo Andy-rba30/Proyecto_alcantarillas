@@ -244,7 +244,8 @@ from src.servicio import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, DECIMALES_FACTOR,
                           ETAPA_DURABILIDAD,
                           FASE_CABEZAL, DatoDeclarado, Informe, InformeCabezal,
                           InformePunto, _fmt, advertencia_de_corredor_de,
-                          cargar_datos_externos, cargar_datos_sitio, correr)
+                          cargar_datos_externos, cargar_datos_sitio,
+                          cargar_hidrologia, correr)
 from src.servicio import (  # noqa: F401  (reexportaciones: contrato GUI/suite)
     CLAVES_DE_DURABILIDAD, CLAVES_EXTERNAS, DatosExternos, FAMILIAS_QUE_USAN,
     FASE_ESTRUCTURAL,
@@ -570,6 +571,32 @@ def _espaciamiento_json(e: Espaciamiento) -> Dict[str, Any]:
             "criterio_normativo": e.criterio_normativo}
 
 
+def _caudal_json(c: Any) -> Dict[str, Any]:
+    """El caudal de diseño de un punto y de donde salio (T-1, Fase 1-bis)."""
+    salida: Dict[str, Any] = {
+        "Q_m3s": _num(c.Q_m3s), "origen": c.origen, "leyenda": c.leyenda,
+        "de_donde": c.de_donde,
+        "area_km2": _num(c.area_km2),
+        "q_especifico_m3s_km2": _num(c.q_especifico_m3s_km2),
+        "lamina_equivalente_mm_h": _num(c.lamina_equivalente_mm_h),
+        "tratamiento_fen": c.tratamiento_fen,
+        "avisos": list(c.avisos),
+        "pasos": [p.codigo for p in c.pasos]}
+    if c.calculado:
+        salida.update({
+            "TR_anios": c.TR_anios, "metodo_tc": c.metodo_tc,
+            "tc_min": _num(c.tc_min),
+            "duracion_min": _num(c.duracion_min),
+            "I_mm_h": _num(c.I_mm_h), "C": _num(c.C),
+            "K_uniformidad": _num(c.K_uniformidad),
+            "P24_TR_mm": _num(c.P24_TR_mm), "distribucion": c.distribucion,
+            "ajustes": [{"distribucion": a.distribucion, "n": a.n,
+                         "D": _num(a.D), "d_critico": _num(a.d_critico),
+                         "alfa": a.alfa, "acepta": a.acepta,
+                         "P_TR_mm": _num(a.P_TR_mm)} for a in c.ajustes]})
+    return salida
+
+
 def _durabilidad_json(dictamen) -> Optional[Dict[str, Any]]:
     """
     El dictamen de la matriz de durabilidad del punto (Sec. 3.3; T-4). None
@@ -651,6 +678,11 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "avisos": list(informe.avisos()),
         "clasificacion": (None if informe.clasificacion is None
                           else _clasificacion_json(informe.clasificacion)),
+        # EL CAUDAL DE DISEÑO CON SU ORIGEN (T-1): declarado por el estudio
+        # hidrologico o calculado por la Fase 1-bis. None en la Familia C y
+        # cuando el calculo se detuvo (el bloqueo dice por que).
+        "caudal": (None if informe.caudal is None
+                   else _caudal_json(informe.caudal)),
         "durabilidad": _durabilidad_json(informe.durabilidad),
         "diseno": (None if not informe.dimensionado
                    else _diseno_json(informe.resultado)),
@@ -748,6 +780,21 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
     """
     bloqueantes = criterios_bloqueantes(informe)
     contexto = ContextoCorrida.de(informe)
+    salida = _informe_json_base(informe, bloqueantes, contexto)
+    if informe.hidrologia is not None:
+        # Solo cuando la corrida trajo --cuencas y --estacion (T-1): de que
+        # archivos salieron las entradas de la Fase 1-bis.
+        salida["expediente"]["hidrologia"] = {
+            "cuencas": informe.hidrologia.origen_cuencas,
+            "estacion": informe.hidrologia.origen_estacion,
+            "obras_con_cuenca": sorted(informe.hidrologia.cuencas),
+            "estaciones": sorted(informe.hidrologia.estaciones)}
+    return salida
+
+
+def _informe_json_base(informe: Informe, bloqueantes: Any,
+                       contexto: Any) -> Dict[str, Any]:
+    """El dict del expediente, sin el bloque opcional de la hidrologia."""
     return {
         "expediente": {
             "csv": str(informe.csv), "generado_utc": informe.generado,
@@ -898,6 +945,23 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"(luz {_fmt(c.luz_m)} m, num. {c.verificacion_luz.numeral}) "
                    f"| {tr}")
 
+    if informe.caudal is not None:
+        c = informe.caudal
+        especifico = ("" if c.q_especifico_m3s_km2 is None else
+                      f" | Q/A = {_fmt(c.q_especifico_m3s_km2)} m3/s por km2 "
+                      f"(C*I = {_fmt(c.lamina_equivalente_mm_h, DECIMALES_FACTOR)} mm/h)")
+        out.append(f"{SANGRIA}Fase 1b {c.leyenda}: Q = {_fmt(c.Q_m3s)} m3/s"
+                   f"{especifico}")
+        if c.calculado:
+            out.append(f"{SANGRIA}        Hidrologia: TR {c.TR_anios} anios, "
+                       f"P24 = {_fmt(c.P24_TR_mm, DECIMALES_FACTOR)} mm "
+                       f"({c.distribucion}; FEN: {c.tratamiento_fen}), "
+                       f"tc = {_fmt(c.tc_min, DECIMALES_FACTOR)} min, "
+                       f"I = {_fmt(c.I_mm_h, DECIMALES_FACTOR)} mm/h, "
+                       f"C = {_fmt(c.C, DECIMALES_FACTOR)}, "
+                       f"A = {_fmt(c.area_km2)} km2")
+        # Los avisos de la Fase 1-bis NO se imprimen aqui: salen con los
+        # demas del punto, por `InformePunto.avisos()` (T-2), una sola vez.
     out.extend(_lineas_durabilidad(informe))
 
     if informe.dimensionado:
@@ -1411,6 +1475,20 @@ def _parser() -> argparse.ArgumentParser:
                         "como <csv>.informe.json)")
     p.add_argument("--datos-externos", type=Path, dest="datos_externos",
                    help="JSON con los datos declarados, globales y por punto")
+    p.add_argument("--cuencas", type=Path, dest="cuencas",
+                   help="CSV de cuencas, una fila por obra (id, area_km2, "
+                        "L_cauce_m, S_cauce_cuenca, S_terreno, cobertura, "
+                        "suelo, estacion, metodo_tc; segun el metodo, "
+                        "H_desnivel_m, ajuste_kirpich y CN). Con --estacion, el "
+                        "programa calcula el caudal de los puntos de Familia "
+                        "A y B que traigan Q_m3s vacio (Fase 1-bis). Si "
+                        "Q_m3s viene lleno, gana el declarado")
+    p.add_argument("--estacion", type=Path, dest="estacion",
+                   help="CSV de la serie de precipitacion maxima en 24 h "
+                        "(estacion, anio, p24_mm, fen). La columna fen dice, "
+                        "anio por anio y sin celdas vacias, cuales son del "
+                        "fenomeno El Nino; como se tratan "
+                        "se declara con --declarar homogeneidad_serie_fen=...")
     p.add_argument("--datos-sitio", type=Path, dest="datos_sitio",
                    help="JSON con los datos de sitio [S] de la obra que se "
                         "calcula (EXT-10): por clave, {valor, trazabilidad, "
@@ -1694,7 +1772,9 @@ def _barrer_desde_cli(args, externos: DatosExternos) -> int:
         try:
             resultado = _barrido.barrer(
                 args.csv, externos, args.alcance, clave, valores,
-                fila=args.barrido_fila, nota=args.barrido_nota, volcar=informe_json)
+                fila=args.barrido_fila, nota=args.barrido_nota,
+                hidrologia=cargar_hidrologia(args.cuencas, args.estacion),
+                volcar=informe_json)
         except ErrorProyecto as exc:
             print(f"El barrido de {texto!r} se detuvo en el expediente: {exc}",
                   file=sys.stderr)
@@ -1708,7 +1788,8 @@ def _barrer_desde_cli(args, externos: DatosExternos) -> int:
     return 0
 
 
-def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str) -> int:
+def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str,
+              hidrologia: Any = None) -> int:
     """
     Imprime los cuatro bloques del anticipo de la pestaña 1 y devuelve 0 si
     ninguna falta estimada detiene una etapa, 1 si alguna lo hace. No corre
@@ -1731,9 +1812,22 @@ def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str) -> int:
     for linea in _antc.lineas_de_diferimientos(_antc.diferimientos_del_alcance(alcance)):
         print(f"  {linea}")
     print("\n== Datos que faltan, punto a punto ==")
-    estimado = _antc.datos_faltantes_por_punto(ruta_csv, externos, alcance)
+    # LAS DOS ENTRADAS DE LA HIDROLOGIA (T-1, auditoria): con --cuencas y
+    # --estacion el pre-vuelo las CARGA --un archivo mal escrito sale aqui--
+    # y deja de llamar falta a un Q_m3s vacio que la corrida va a calcular;
+    # lo que NO hace es calcularlo, y lo dice en vez de callarlo.
+    calculables = (frozenset() if hidrologia is None
+                   else hidrologia.ids_calculables())
+    estimado = _antc.datos_faltantes_por_punto(
+        ruta_csv, externos, alcance, ids_con_caudal_calculable=calculables)
     for linea in _antc.lineas_del_prevuelo(estimado):
         print(f"  {linea}")
+    if hidrologia is not None:
+        print("\n  Aviso: --cuencas y --estacion se cargaron y se validaron, "
+              "pero el pre-vuelo NO calcula la hidrologia. Un Q_m3s vacio con "
+              "cuenca y estacion figura como «" + _antc.ETAPA_DEPENDE_DE_LA_HIDROLOGIA
+              + "»: la corrida puede detenerlo por un criterio sin declarar "
+              "o por un metodo no evaluable.")
     # EL CODIGO DE SALIDA LEE LOS DOS BLOQUES QUE DETIENEN (auditor
     # adversarial de PF-2): una cabecera incompleta o una columna que no
     # admite vacio detienen la carga igual que una falta por punto, y salir
@@ -1852,12 +1946,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if args.prevuelo:
             # EL PRE-VUELO Y SALIR (PF-2): nada de lo de abajo corre. Los
             # cuatro bloques los produce `src/anticipo.py`; aqui se imprimen.
-            return _prevuelo(args.csv, externos, args.alcance)
+            return _prevuelo(args.csv, externos, args.alcance,
+                             cargar_hidrologia(args.cuencas, args.estacion))
         if args.barridos:
             # EL BARRIDO Y SALIR (PF-3): el expediente no se corre ni se
             # exporta; el barrido es un anexo de la tesis, no una memoria.
             return _barrer_desde_cli(args, externos)
-        informe = correr(args.csv, externos, alcance=args.alcance)
+        # LAS DOS ENTRADAS DE LA FASE 1-bis (T-1): se cargan aqui, dentro
+        # del mismo `try`, porque un CSV de cuencas mal escrito es un
+        # expediente que no se puede cargar, igual que el de puntos.
+        hidrologia = cargar_hidrologia(args.cuencas, args.estacion)
+        informe = correr(args.csv, externos, alcance=args.alcance,
+                         hidrologia=hidrologia)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         # UnicodeDecodeError es subclase de ValueError y no entra sola: un CSV
         # guardado en ANSI por Excel -- con las eñes del castellano -- salia

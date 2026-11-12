@@ -104,6 +104,7 @@ def verificar_valores(clave: str, valores: Sequence[Any], *, fila: str = "",
 def barrer(ruta_csv: Path, externos: Any, alcance: str, clave: str,
            valores: Sequence[Any], *, fila: str = "", nota: str = "",
            declaraciones_base: Optional[Mapping[str, Any]] = None,
+           hidrologia: Any = None,
            volcar: Callable[[servicio.Informe], Dict[str, Any]]) -> ResultadoDeBarrido:
     """
     Corre el pipeline una vez por cada valor de `valores` con `clave`
@@ -118,7 +119,11 @@ def barrer(ruta_csv: Path, externos: Any, alcance: str, clave: str,
     corridas ademas de las que el proceso ya tenia al entrar (por el mismo
     camino que `--declarar`: `establecer_valor_dinamico`, con su guardia y
     sin procedencia). `volcar` convierte cada `Informe` en el dict que el
-    comparador lee (`cli.informe_json`).
+    comparador lee (`cli.informe_json`). `hidrologia` (T-1) son las entradas
+    de la Fase 1-bis que `servicio.cargar_hidrologia` devolvio, o None: se
+    pasan tal cual a cada corrida, de modo que los criterios hidrologicos
+    (distribucion, tratamiento FEN, relacion intensidad-duracion) se pueden
+    barrer igual que los demas.
 
     Lanza `ValueError` (o `KeyError` si la clave no existe) ANTES de la
     primera corrida si algun valor no pasa la puerta; los errores del
@@ -139,7 +144,8 @@ def barrer(ruta_csv: Path, externos: Any, alcance: str, clave: str,
             for k, v in base.items():
                 _ca.establecer_valor_dinamico(k, v)
             procedencia = _sed.declarar(clave, valor, fila=fila, nota=nota)
-            informe = servicio.correr(ruta_csv, externos, alcance=alcance)
+            informe = servicio.correr(ruta_csv, externos, alcance=alcance,
+                                      hidrologia=hidrologia)
             corridas.append((valor, procedencia.como_texto(), volcar(informe)))
     finally:
         _dec.restaurar_sesion(entrada, sustituir=True)

@@ -342,6 +342,11 @@ def lineas_de_diferimientos(diferido: DiferimientosDelAlcance) -> Tuple[str, ...
 DETIENE = "detiene"
 ESPERA = "espera"
 ETAPA_CARGA = "carga del CSV (M0, Sec. 1.2)"
+# T-1 (auditoria): el caudal de una fila de Familia A o B que va vacio y
+# tiene cuenca y estacion en la corrida NO detiene la carga -- M0 la admite--,
+# y que el caudal salga depende de un calculo que el pre-vuelo no hace.
+ETAPA_DEPENDE_DE_LA_HIDROLOGIA = ("depende de la hidrologia (Fase 1-bis, no "
+                                  "evaluada en pre-vuelo)")
 COLUMNA = "columna del CSV"
 EXTERNO = "dato externo"
 # Los modulos del censo que LEEN la columna sin consumirla en un calculo: la
@@ -411,10 +416,19 @@ def _numero_o_none(celda: str) -> Optional[float]:
 
 
 def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
-                              alcance: str) -> Tuple[DatoFaltanteEstimado, ...]:
+                              alcance: str, *,
+                              ids_con_caudal_calculable: frozenset = frozenset(),
+                              ) -> Tuple[DatoFaltanteEstimado, ...]:
     """
     El bloque 4: lo que le falta a cada fila del CSV para que la corrida de
     ese alcance no se detenga por un dato, sin ejecutar el pipeline.
+
+    `ids_con_caudal_calculable` son las obras cuya cuenca y estacion trae la
+    corrida (`EntradaHidrologica.ids_calculables`, el mismo conjunto que M0
+    recibe): en ellas un `Q_m3s` vacio de Familia A o B no detiene la carga.
+    El pre-vuelo NO calcula la hidrologia y lo dice: esa fila «depende de la
+    hidrologia», que puede detenerse por un criterio sin declarar o por un
+    metodo no evaluable.
 
     `externos` es el `DatosExternos` que la corrida recibiria (el JSON de
     `--datos-externos` mas las banderas): una clave declarada ahi, global o
@@ -454,6 +468,16 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                     anadir(columna, COLUMNA,
                            f"{concepto}. La celda {fila[columna]!r} no es un numero",
                            ETAPA_CARGA, True)
+                continue
+            if (columna == m0.COLUMNA_CAUDAL
+                    and familia in m0.FAMILIAS_CON_CAUDAL_HIDROLOGICO
+                    and id_punto in ids_con_caudal_calculable):
+                anadir(columna, COLUMNA,
+                       f"{concepto}. La celda va vacia y la corrida trae la "
+                       "cuenca de la obra y la serie de su estacion: el "
+                       "caudal lo calcula el programa, si sus criterios "
+                       "estan declarados y el metodo es evaluable",
+                       ETAPA_DEPENDE_DE_LA_HIDROLOGIA, False)
                 continue
             if columna not in admiten:
                 # LA CARGA VA PRIMERO (auditor adversarial de PF-2): en una

@@ -149,3 +149,21 @@ TOL_ASINTOTA_PERFIL = 1e-12
 # ellas.
 TOL_COMPARADOR_ABS = 1e-9
 TOL_COMPARADOR_REL = 1e-9
+
+# ---------------------------------------------------------------------------
+# El area de una obra escrita DOS VECES (T-1, auditoria adversarial)
+# ---------------------------------------------------------------------------
+# Con --cuencas el area de la cuenca de una obra esta en dos archivos y en dos
+# unidades: `area_ha` en el CSV de puntos (la que clasifica la obra y fija su
+# periodo de retorno) y `area_km2` en el CSV de cuencas (la que entra al metodo
+# racional). Son el mismo dato y tienen que decir lo mismo; cuando no, el
+# programa no elige una: se detiene con `DatoInvalidoError` nombrando el par.
+#
+# La tolerancia existe porque las dos se teclean REDONDEADAS, cada una en su
+# unidad. Dos escrituras del mismo numero a tres cifras significativas
+# difieren a lo sumo un 1 % (medio por ciento cada una), y eso no es una
+# contradiccion sino un redondeo. Por encima, son dos areas.
+#
+# NO es un valor de proyecto: no entra en ninguna formula ni mueve ningun
+# resultado. Solo decide cuando dos celdas dejan de ser la misma medida.
+TOL_REL_AREA_ESCRITA_DOS_VECES = 1e-2

@@ -7025,4 +7025,751 @@ EG2013_508_02_A = _cita(
           "mas una pared delgada sino mas la altura de un perfil corrugado."),
 )
 
+
+# ===========================================================================
+# --- T-1 --- Manual de Hidrologia, cap. III: la hidrologia que calcula
+# `MH_hidrologia` (cadena T, 2026-11-11)
+# ===========================================================================
+# Leidas por la sesion abriendo cada pagina por TEXTO, y las que llevan una
+# formula tambien por IMAGEN (render a 110 dpi): la extraccion de texto parte
+# las ecuaciones en renglones sueltos («385 .0 77 .0 . . 01947 .0») y de ahi
+# no se transcribe un exponente. Desfase +3 en todas (pag. impresa + 3 = PDF).
+#
+# LO QUE EL PROMPT DE T-1 SUPONIA Y LA FUENTE NO TRAE, dicho donde se cita:
+#   * la Tabla Nº 05 NO lista a Temez: sus seis filas son Kirpich, California
+#     Culverts Practice, Izzard, Federal Aviation Administration, onda
+#     cinematica y retardo SCS. La formula de Temez es la ecuacion (30) del
+#     num. 3.12.2.1 «Método Racional Modificado» (pag. impresa 51), con L en
+#     km y Tc en HORAS;
+#   * la Tabla Nº 04 NO es de «coeficientes regionales»: es de coeficientes
+#     de DURACION, de 1 a 48 horas;
+#   * la Tabla Nº 08 NO tiene fila de pavimento ni de talud;
+#   * el num. 3.12.2 NO trae ejemplo numerico;
+#   * el limite del metodo racional es «A<10 Km2», desigualdad estricta.
+FECHA_T1 = "2026-11-11"
+POR_T1 = "tesis/T-1 · lectura directa de la pagina por la sesion"
+T1 = (FECHA_T1, POR_T1)
+
+MC_HHD_3_4_FEN = _cita(
+    id="MC_HHD.3.4#FEN",
+    fuente_id="MC_HHD",
+    numeral="3.4",
+    titulo_numeral="Evaluación de la Información Hidrológica",
+    pagina_impresa="22",
+    pagina_pdf=25,
+    pagina_pdf_titulo=24,
+    texto_literal=Verbatim(
+        texto=("dicha información deberá incluir los años en que se han "
+               "registrado los eventos del fenómeno “El Niño”, sin embargo "
+               "dado que durante el evento del fenómeno del niño la "
+               "información no es medida ya que normalmente se estiman "
+               "valores extraordinarios, esta información debe ser evaluada "
+               "de tal manera que no se originen sobredimensionamientos en "
+               "las obras."),
+        pagina_pdf=25),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T1,
+    nota=("El numeral abre en la pag. impresa 21 (PDF 24) y esta oracion "
+          "esta en la 22 (PDF 25). Son DOS mandatos en una oracion y tiran "
+          "en sentidos opuestos: la serie «deberá incluir» los años del "
+          "Niño, y esos años deben «ser evaluados» para no "
+          "sobredimensionar. La fuente no dice COMO evaluarlos: de ahi el "
+          "criterio 'homogeneidad_serie_fen'."),
+)
+
+MC_HHD_3_4_REGISTRO = _cita(
+    id="MC_HHD.3.4#REGISTRO",
+    fuente_id="MC_HHD",
+    numeral="3.4",
+    titulo_numeral="Evaluación de la Información Hidrológica",
+    pagina_impresa="22",
+    pagina_pdf=25,
+    pagina_pdf_titulo=24,
+    texto_literal=Verbatim(
+        texto="se recomienda contar con un mínimo de 25 años de registro",
+        pagina_pdf=25),
+    caracter=Caracter.RECOMENDACION,
+    sesion=T1,
+    derivado_de="MC_HHD.3.4#FEN",
+    nota=("Misma oracion que MC_HHD.3.4#FEN, otra clausula. Es «se "
+          "recomienda»: una serie mas corta no queda prohibida, y por eso "
+          "el paso de la serie lo imprime como INDICADOR y no detiene."),
+)
+
+MC_HHD_3_7_1 = _cita(
+    id="MC_HHD.3.7.1",
+    fuente_id="MC_HHD",
+    numeral="3.7.1",
+    titulo_numeral="Modelos de distribución",
+    jerarquia_numeral=("ANALISIS ESTADISTICO DE DATOS HIDROLOGICOS",),
+    pagina_impresa="25",
+    pagina_pdf=28,
+    texto_literal=Verbatim(
+        texto=("En la estadística existen diversas funciones de distribución "
+               "de probabilidad teóricas; recomendándose utilizar las "
+               "siguientes funciones:"),
+        pagina_pdf=28),
+    caracter=Caracter.RECOMENDACION,
+    sesion=T1,
+    nota=("La lista de ocho (i a viii) se imprime en la pag. impresa 26 "
+          "(PDF 29): Normal, Log Normal 2 parámetros, Log Normal 3 "
+          "parámetros, Gamma 2 parámetros, Gamma 3 parámetros, Log Pearson "
+          "tipo III, Gumbel y Log Gumbel. El Manual imprime la funcion de "
+          "cada una y SOLO de tres dice como se estiman sus parametros: la "
+          "Normal (media y desviacion estandar, 3.7.1.1), la Log Normal de "
+          "2 parametros (media y desviacion de los logaritmos, 3.7.1.2) y "
+          "Gumbel (metodo de momentos, 3.7.1.7)."),
+)
+
+MC_HHD_3_7_1_1 = _cita(
+    id="MC_HHD.3.7.1.1",
+    fuente_id="MC_HHD",
+    numeral="3.7.1.1",
+    titulo_numeral="Distribución Normal",
+    pagina_impresa="26",
+    pagina_pdf=29,
+    texto_literal=Verbatim(
+        texto=("µ = parámetro de localización, igual a la media aritmética "
+               "de x."),
+        pagina_pdf=29),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("Ecuacion (2), la densidad normal. El renglon siguiente dice lo "
+          "mismo del otro parametro: «S = parámetro de escala, igual a la "
+          "desviación estándar de x.»"),
+)
+
+MC_HHD_3_7_1_2 = _cita(
+    id="MC_HHD.3.7.1.2",
+    fuente_id="MC_HHD",
+    numeral="3.7.1.2",
+    titulo_numeral="Distribución  Log  Normal  2  Parámetros",
+    pagina_impresa="27",
+    pagina_pdf=30,
+    pagina_pdf_titulo=29,
+    texto_literal=Verbatim(
+        texto=("Donde Sy es la desviación estándar de los datos de la "
+               "muestra transformada."),
+        pagina_pdf=30),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("La pagina imprime, vistas en imagen, Y = Σ log xi / n y "
+          "Sy = raiz( Σ (yi − Y)² / (n − 1) ): la desviacion es la MUESTRAL, "
+          "con n − 1. El numeral escribe «y=log(x)» sin decir la base; el "
+          "cuantil no depende de ella mientras se use la misma para ajustar "
+          "y para invertir, y el proyecto usa el logaritmo natural."),
+)
+
+MC_HHD_3_7_1_7 = _cita(
+    id="MC_HHD.3.7.1.7",
+    fuente_id="MC_HHD",
+    numeral="3.7.1.7",
+    titulo_numeral="Distribución Gumbel",
+    pagina_impresa="29",
+    pagina_pdf=32,
+    texto_literal=Verbatim(
+        texto=("Utilizando el método de momentos, se obtienen las siguientes "
+               "relaciones:"),
+        pagina_pdf=32),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("Ecuacion (9): F(x) = exp(−exp(−α(x − β))). Las dos relaciones, "
+          "vistas en imagen: α = 1.2825 / σ y β = µ − 0.45 σ. Los dos "
+          "numeros son los que la pagina imprime (los exactos son π/√6 = "
+          "1.28255 y 0.5772·√6/π = 0.45005). La pagina NO dice para que "
+          "tamaño de muestra valen ni menciona correccion alguna por n."),
+    interpretacion=Interpretacion(
+        texto=("Las dos relaciones impresas son las de la distribucion de "
+               "Gumbel para una muestra infinita (las asintoticas): no "
+               "llevan la correccion por tamaño de muestra del factor de "
+               "frecuencia de Gumbel-Chow. El proyecto las aplica tal como "
+               "el Manual las imprime, a la serie del tamaño que sea."),
+        en_contra=(
+            "con series cortas las relaciones asintoticas dan un cuantil "
+            "MENOR que el del factor de frecuencia corregido por el tamaño "
+            "de la muestra, y la diferencia crece al acortarse la serie: es "
+            "el lado no conservador",
+            "el Manual no dice que sean asintoticas: es lectura del "
+            "proyecto sobre los valores 1.2825 y 0.45, que son π/√6 y "
+            "0.5772·√6/π",
+        ),
+        a_favor=(
+            "son las unicas que el Manual imprime, y adoptar la correccion "
+            "por n seria tomar un procedimiento de una fuente que no esta "
+            "en normas/",
+            "el paso del ajuste imprime la lluvia de las tres distribuciones "
+            "evaluadas, de modo que el peso de esta eleccion queda a la vista",
+        )),
+)
+
+MC_HHD_3_7_2_KS = _cita(
+    id="MC_HHD.3.7.2b",
+    fuente_id="MC_HHD",
+    numeral="3.7.2 b)",
+    titulo_numeral="b) Prueba Kolmogorov – Smirnov",
+    jerarquia_numeral=("3.7.2 Pruebas de bondad de ajuste",),
+    pagina_impresa="32",
+    pagina_pdf=35,
+    texto_literal=Verbatim(
+        texto="Si D<d, se acepta la hipótesis nula.",
+        pagina_pdf=35),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("D = máx |Fo(xm) − F(xm)| y, ecuacion (13), Fo(xm) = 1 − m/(n+1), "
+          "con m el numero de orden del dato en una lista de MAYOR a menor. "
+          "El valor critico d sale de la Tabla Nº 03 de la misma pagina. La "
+          "desigualdad es estricta: D = d no acepta."),
+)
+
+MC_HHD_3_7_2_KS_ELIGE = _cita(
+    id="MC_HHD.3.7.2b#ELIGE",
+    fuente_id="MC_HHD",
+    numeral="3.7.2 b)",
+    titulo_numeral="b) Prueba Kolmogorov – Smirnov",
+    jerarquia_numeral=("3.7.2 Pruebas de bondad de ajuste",),
+    pagina_impresa="32",
+    pagina_pdf=35,
+    texto_literal=Verbatim(
+        texto=("Método por el cual se comprueba la bondad de ajuste de las "
+               "distribuciones, asimismo permite elegir la más "
+               "representativa, es decir la de mejor ajuste."),
+        pagina_pdf=35),
+    caracter=Caracter.PERMISO,
+    sesion=T1,
+    derivado_de="MC_HHD.3.7.2b",
+    nota=("Es lo que sostiene el valor de archivo del criterio "
+          "'distribucion_precipitacion_maxima' (la de menor D): la fuente "
+          "PERMITE elegir asi, no lo manda."),
+)
+
+MC_HHD_T03 = _cita(
+    id="MC_HHD.3.7.2b#T03",
+    fuente_id="MC_HHD",
+    numeral="3.7.2 b)",
+    titulo_numeral="b) Prueba Kolmogorov – Smirnov",
+    jerarquia_numeral=("3.7.2 Pruebas de bondad de ajuste",),
+    pagina_impresa="32",
+    pagina_pdf=35,
+    texto_literal=Verbatim(
+        texto=("TABLA Nº 03: Valores críticos d para la prueba Kolmogorov – "
+               "Smirnov"),
+        pagina_pdf=35),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("La tabla empieza en la pag. impresa 32 (PDF 35: n = 5 a 25) y "
+          "termina en la 33 (PDF 36: n = 30, 35 y 40, y «Fuente: Aparicio, "
+          "1999.»)."),
+)
+
+MC_HHD_3_8_1_DURACION = _cita(
+    id="MC_HHD.3.8.1#DURACION",
+    fuente_id="MC_HHD",
+    numeral="3.8.1",
+    titulo_numeral="Curvas Intensidad – Duración – Frecuencia",
+    pagina_impresa="36",
+    pagina_pdf=39,
+    pagina_pdf_titulo=36,
+    texto_literal=Verbatim(
+        texto=("La duración de la lluvia de diseño es igual al tiempo de "
+               "concentración (tc) para el área de drenaje en consideración"),
+        pagina_pdf=39),
+    caracter=Caracter.DEFINICION,
+    sesion=T1,
+)
+
+MC_HHD_T04 = _cita(
+    id="MC_HHD.3.8.1#T04",
+    fuente_id="MC_HHD",
+    numeral="3.8.1",
+    titulo_numeral="Curvas Intensidad – Duración – Frecuencia",
+    pagina_impresa="36",
+    pagina_pdf=39,
+    pagina_pdf_titulo=36,
+    texto_literal=Verbatim(
+        texto=("los mismos que podrán usarse, con criterio y cautela para el "
+               "cálculo de la intensidad, cuando no se disponga de mejor "
+               "información."),
+        pagina_pdf=39),
+    caracter=Caracter.PERMISO,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("La Tabla Nº 04 empieza en la pag. impresa 36 (PDF 39: 1 a 8 "
+          "horas) y termina en la 37 (PDF 40: 10 a 48 horas). El coeficiente "
+          "multiplica a la precipitacion maxima en 24 horas y da la "
+          "PRECIPITACION de esa duracion; la intensidad es ese producto "
+          "entre la duracion."),
+)
+
+MC_HHD_3_8_1_DICK_PESCHKE = _cita(
+    id="MC_HHD.3.8.1#DICK_PESCHKE",
+    fuente_id="MC_HHD",
+    numeral="3.8.1",
+    titulo_numeral="Curvas Intensidad – Duración – Frecuencia",
+    pagina_impresa="37",
+    pagina_pdf=40,
+    pagina_pdf_titulo=36,
+    texto_literal=Verbatim(
+        texto=("Para el caso de duraciones de tormenta menores a 1 hora, o no "
+               "se cuente con registros pluviográficos que permitan obtener "
+               "las intensidades máximas, estas pueden ser calculadas  "
+               "mediante la metodología de Dick Peschke (Guevara, 1991) que "
+               "relaciona la duración de la tormenta con la precipitación "
+               "máxima en 24 horas."),
+        pagina_pdf=40),
+    caracter=Caracter.PERMISO,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("Ecuacion (16), vista en imagen: Pd = P24h · (d / 1440)^0.25, con "
+          "d en MINUTOS y las dos precipitaciones en mm. Y a renglon "
+          "seguido: «La intensidad se halla dividiendo la precipitación Pd "
+          "entre la duración.» Las dos condiciones van unidas por «o»: "
+          "basta con no tener registros pluviograficos, que es el caso de "
+          "una serie de maximas en 24 horas."),
+)
+
+MC_HHD_T05 = _cita(
+    id="MC_HHD.3.9#T05",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="39",
+    pagina_pdf=42,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Las ecuaciones para calcular el tiempo de concentración se "
+               "muestran en la Tabla Nº 05."),
+        pagina_pdf=42),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("La Tabla Nº 05 ocupa las pags. impresas 39 (PDF 42: Kirpich, "
+          "California Culverts Practice, Izzard y Federal Aviation "
+          "Administration) y 40 (PDF 43: ecuaciones de onda cinematica y "
+          "ecuacion de retardo SCS). Su encabezado dice «FÓRMULA PARA tc "
+          "(minutos)». NO lista a Temez."),
+)
+
+MC_HHD_T05_KIRPICH = _cita(
+    id="MC_HHD.3.9#T05_KIRPICH",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="39",
+    pagina_pdf=42,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Desarrollada a partir de información del SCS en siete "
+               "cuencas rurales de Tennessee con canales bien definidos y "
+               "pendientes empinadas (3 a 10%)"),
+        pagina_pdf=42),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=T1,
+    derivado_de="MC_HHD.3.9#T05",
+    nota=("Fila «Kirpich (1940)». La formula, vista en imagen: "
+          "tc = 0.01947 · L^0.77 · S^−0.385, con «L = longitud del canal "
+          "desde aguas arriba hasta la salida, m.» y «S = pendiente promedio "
+          "de la cuenca, m/m». La observacion sigue: para flujo superficial "
+          "en superficies de concreto o asfalto se debe multiplicar tc por "
+          "0.4; para canales de concreto, por 0.2; ningun ajuste para flujo "
+          "superficial en suelo descubierto o para flujo en cunetas. El "
+          "«(3 a 10%)» es la poblacion de la que salio la formula."),
+    interpretacion=Interpretacion(
+        texto=("La observacion de la Tabla N 05 DESCRIBE las cuencas de las "
+               "que salio la formula (pendientes de 3 a 10 %); no prohibe "
+               "usarla fuera. El proyecto la lee como poblacion de "
+               "desarrollo, y que se hace con una cuenca fuera de ella lo "
+               "decide el criterio 'tc_fuera_de_la_poblacion_del_metodo': no "
+               "evaluar (valor de archivo) o evaluar con aviso. Y la S: la "
+               "tabla la llama «pendiente promedio de la cuenca» y el "
+               "proyecto le pasa la pendiente media del cauce principal "
+               "(columna S_cauce_cuenca), que es la que acompaña a la "
+               "longitud del canal de la misma formula."),
+        en_contra=(
+            "la tabla dice «pendiente promedio de la cuenca», no «del "
+            "cauce»: la del terreno de la cuenca suele ser mayor que la del "
+            "cauce, y con una S mayor la formula da un tiempo de "
+            "concentracion menor y mas intensidad; pasarle la del cauce es "
+            "el lado no conservador",
+            "fuera de 3 a 10 % la formula sigue dando un numero y la tabla "
+            "no dice que sea invalido: «no evaluar» es mas estricto que la "
+            "fuente",
+        ),
+        a_favor=(
+            "la formula original de Kirpich relaciona la longitud del canal "
+            "con su desnivel, y la fila vecina de la misma tabla (California "
+            "Culverts Practice, «esencialmente es la ecuación de Kirpich») "
+            "usa el desnivel entre la divisoria y la salida sobre la "
+            "longitud del curso de agua, que es la pendiente del cauce",
+            "extrapolar una formula empirica fuera de las cuencas de las "
+            "que salio es lo que la cadena de correcciones del proyecto "
+            "(INF-3.1.2) señala como el riesgo de la llanura",
+        )),
+)
+
+MC_HHD_T05_CALIFORNIA = _cita(
+    id="MC_HHD.3.9#T05_CALIFORNIA",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="39",
+    pagina_pdf=42,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Esencialmente es la ecuación de Kirpich; desarrollada para "
+               "pequeñas cuencas montañosas en California."),
+        pagina_pdf=42),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=T1,
+    derivado_de="MC_HHD.3.9#T05",
+    nota=("Fila «California Culverts Practice (1942)». La formula, vista en "
+          "imagen: tc = 0.0195 · (L³ / H)^0.385, con «L = longitud del curso "
+          "de agua más largo, m.» y «H = diferencia de nivel entre la "
+          "divisoria de aguas y la salida, m.» La observacion NO escribe un "
+          "rango numerico propio."),
+    interpretacion=Interpretacion(
+        texto=("La fila de California no escribe rango propio, pero dice de "
+               "si misma que «esencialmente es la ecuación de Kirpich» y que "
+               "se desarrollo para pequeñas cuencas montañosas. El proyecto "
+               "le aplica por eso la MISMA poblacion de desarrollo que a "
+               "Kirpich --pendiente de 3 a 10 %, medida aqui como H / L-- y "
+               "el mismo criterio 'tc_fuera_de_la_poblacion_del_metodo': si "
+               "Kirpich no se evalua para una cuenca, California tampoco."),
+        en_contra=(
+            "la fila de California no imprime el «(3 a 10%)»: aplicarselo "
+            "es lectura del proyecto, no texto de la fuente",
+        ),
+        a_favor=(
+            "con H = S·L las dos formulas dan el mismo numero (0.0195 "
+            "frente a 0.01947, L^1.155·H^-0.385 frente a L^0.77·S^-0.385): "
+            "sin el mismo trato, el limite de una se salta cambiando el "
+            "nombre del metodo",
+            "«pequeñas cuencas montañosas» es mas estrecho, no mas ancho, "
+            "que «pendientes empinadas (3 a 10%)»",
+        )),
+)
+
+MC_HHD_3_12_2 = _cita(
+    id="MC_HHD.3.12.2",
+    fuente_id="MC_HHD",
+    numeral="3.12.2",
+    titulo_numeral="Método Racional",
+    jerarquia_numeral=("ESTIMACIÓN DE CAUDALES",),
+    pagina_impresa="49",
+    pagina_pdf=52,
+    texto_literal=Verbatim(texto="Q = 0,278 CIA", pagina_pdf=52),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("Ecuacion (28). Las unidades estan en la pag. impresa 50 (PDF "
+          "53): Q «Descarga máxima de diseño (m3/s)», C «Coeficiente de "
+          "escorrentía (Ver Tabla Nº 08)», I «Intensidad de precipitación "
+          "máxima horaria (mm/h)», A «Área de la cuenca (Km2).» El 0,278 es "
+          "1/3.6, la conversion de mm/h·km² a m³/s: es el mismo cociente "
+          "que el num. 4.1.2.1 b) escribe como C·I·A/3.6. El numeral NO "
+          "trae ejemplo numerico."),
+)
+
+MC_HHD_3_12_2_AREA = _cita(
+    id="MC_HHD.3.12.2#AREA",
+    fuente_id="MC_HHD",
+    numeral="3.12.2",
+    titulo_numeral="Método Racional",
+    jerarquia_numeral=("ESTIMACIÓN DE CAUDALES",),
+    pagina_impresa="49",
+    pagina_pdf=52,
+    texto_literal=Verbatim(texto="Muy usado para cuencas, A<10 Km2.",
+                           pagina_pdf=52),
+    caracter=Caracter.APROXIMACION,
+    sesion=T1,
+    derivado_de="MC_HHD.3.12.2",
+    nota=("La desigualdad es ESTRICTA: 10 km² exactos quedan fuera. Y el "
+          "verbo es descriptivo («Muy usado para»): la fuente no prohibe el "
+          "metodo por encima, dice donde se usa. El proyecto lo aplica como "
+          "limite de validez y por encima no evalua, remitiendo al "
+          "hidrograma unitario del num. 3.12.3."),
+)
+
+MC_HHD_T08 = _cita(
+    id="MC_HHD.3.12.2#T08",
+    fuente_id="MC_HHD",
+    numeral="3.12.2",
+    titulo_numeral="Método Racional",
+    jerarquia_numeral=("ESTIMACIÓN DE CAUDALES",),
+    pagina_impresa="50",
+    pagina_pdf=53,
+    pagina_pdf_titulo=52,
+    texto_literal=Verbatim(
+        texto=("El valor del coeficiente de escorrentía se establecerá de "
+               "acuerdo a las características hidrológicas y geomorfológicas "
+               "de las quebradas cuyos cursos interceptan el alineamiento de "
+               "la carretera en estudio."),
+        pagina_pdf=53),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("Es la oracion que sigue a la Tabla Nº 08. La tabla da el NUMERO; "
+          "que fila describe a la cuenca lo establece el estudio, con sus "
+          "caracteristicas: por eso cobertura y suelo son columnas del CSV "
+          "de cuencas y no una eleccion del programa."),
+)
+
+MC_HHD_3_12_2_1_TC = _cita(
+    id="MC_HHD.3.12.2.1#TC",
+    fuente_id="MC_HHD",
+    numeral="3.12.2.1",
+    titulo_numeral="Método Racional Modificado",
+    pagina_impresa="51",
+    pagina_pdf=54,
+    pagina_pdf_titulo=53,
+    texto_literal=Verbatim(
+        texto=("drenaje naturales con áreas menores de 770 km2 y con tiempos "
+               "de concentración (Tc) de entre 0.25 y 24 horas"),
+        pagina_pdf=54),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("Ecuacion (30), apartado «A) Tiempo de Concentración (Tc)», vista "
+          "en imagen: Tc = 0.3 · (L / S^0.25)^0.76, con «L= Longitud del "
+          "cauce mayor (km)» y «S= Pendiente promedio del cauce mayor "
+          "(m/m)»; Tc sale en HORAS (lo dicen el rango de arriba y el "
+          "apartado B). Es la formula de Temez, y vive AQUI y no en la "
+          "Tabla Nº 05. El rango de area y de Tc es el del metodo racional "
+          "modificado entero, del que esta formula es una pieza: el "
+          "proyecto toma SOLO la formula del tiempo de concentracion y le "
+          "aplica ese rango como validez; no usa el resto del metodo "
+          "(coeficiente de uniformidad, factor reductor, numero de curva)."),
+)
+
+MC_HHD_3_13 = _cita(
+    id="MC_HHD.3.13",
+    fuente_id="MC_HHD",
+    numeral="3.13",
+    titulo_numeral="Avenida de Diseño",
+    pagina_impresa="65",
+    pagina_pdf=68,
+    texto_literal=Verbatim(
+        texto=("La Avenida de Diseño es el caudal que se escoge, mediante "
+               "diversas consideraciones, para dimensionar un proyecto (o "
+               "una parte de él)."),
+        pagina_pdf=68),
+    caracter=Caracter.DEFINICION,
+    sesion=T1,
+    nota=("El numeral no da formula ni umbral: remite al estudio hidrologico "
+          "(«Estimación de Caudales») y a «la experiencia y el buen tino del "
+          "ingeniero proyectista». Por eso el caudal especifico Q/A se "
+          "imprime como contraste y no se juzga contra nada."),
+)
+
+MC_HHD_CUNETA_APORTE = _cita(
+    id="MC_HHD.4.1.2.1b",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 b)",
+    titulo_numeral="b) Caudal Q de aporte",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="177",
+    pagina_pdf=180,
+    texto_literal=Verbatim(
+        texto=("Es el caudal calculado en el área de aporte correspondiente "
+               "a la longitud de cuneta. Se calcula mediante la siguiente "
+               "expresión:"),
+        pagina_pdf=180),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("La expresion, vista en imagen: Q = C·I·A / 3.6, con Q en m3/s, "
+          "«C : Coeficiente de escurrimiento de la cuenca», «A : Área "
+          "aportante en Km2» e «I : Intensidad de la lluvia de diseño en "
+          "mm/h». Es la ecuacion (28) del num. 3.12.2 con el 0,278 escrito "
+          "como 1/3.6. La pagina le imprime DOS numeros de ecuacion, (118) y "
+          "(147): no se cita por numero."),
+)
+
+# --- T-1, tras el auditor adversarial: las otras filas de la Tabla N 05, el
+# coeficiente de uniformidad del metodo de Temez, el tratamiento especial de
+# Piura y Tumbes, y las tres citas de WSDOT que cubren lo que el Manual no fija
+# (duracion minima de la lluvia y coeficiente de una superficie pavimentada).
+
+MC_HHD_T05_FAA = _cita(
+    id="MC_HHD.3.9#T05_FAA",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="39",
+    pagina_pdf=42,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Desarrollada de información sobre el drenaje de aeropuertos "
+               "recopilada por el Corps of Engineers: el método tiene como "
+               "finalidad el ser usado en problemas de drenaje de aeropuertos "
+               "pero ha sido frecuentemente usado para flujo superficial en "
+               "cuencas urbanas."),
+        pagina_pdf=42),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=T1,
+    derivado_de="MC_HHD.3.9#T05",
+    nota=("Fila «Federal Aviation Administration (1970)». La formula, vista "
+          "en imagen: tc = 0.7035 · (1.1 − C) · L^0.50 / S^0.333, con «C = "
+          "coeficiente de escorrentía del método racional», «L = longitud "
+          "del flujo superficial, m.» y «S = pendiente de la superficie, "
+          "m/m». Es una formula de FLUJO SUPERFICIAL (sobre una superficie, "
+          "no por un cauce) y la observacion no le escribe rango numerico: "
+          "es la que el proyecto ofrece para una plataforma, un talud o una "
+          "cuenca plana sin cauce definido."),
+)
+
+MC_HHD_T05_SCS = _cita(
+    id="MC_HHD.3.9#T05_SCS",
+    fuente_id="MC_HHD",
+    numeral="3.9",
+    titulo_numeral="Tiempo de Concentración",
+    pagina_impresa="40",
+    pagina_pdf=43,
+    pagina_pdf_titulo=41,
+    texto_literal=Verbatim(
+        texto=("Ecuación desarrollada por el SCS a partir de información de "
+               "cuencas de uso agrícola; ha sido adaptada a pequeñas cuencas "
+               "urbanas con áreas inferiores a 800 Ha"),
+        pagina_pdf=43),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=T1,
+    derivado_de="MC_HHD.3.9#T05",
+    nota=("Fila «Ecuación de retardo SCS (1973)». La formula, vista en "
+          "imagen: tc = 0.0136 · L^0.8 · (1000/CN − 9)^0.7 / S^0.5, con «L = "
+          "longitud hidráulica de la cuenca (mayor trayectoria de flujo), "
+          "m.», «CN = Número de curva SCS» y «S = pendiente promedio de la "
+          "cuenca, m/m». La observacion sigue: buena cuando el area esta "
+          "completamente pavimentada, tiende a sobreestimar en areas mixtas, "
+          "y «la ecuación supone que tc = 1.67 x retardo de la cuenca». Las "
+          "«800 Ha» son la poblacion a la que se adapto; el proyecto las "
+          "trata como a los «3 a 10%» de Kirpich."),
+)
+
+MC_HHD_3_12_2_1_K = _cita(
+    id="MC_HHD.3.12.2.1#K",
+    fuente_id="MC_HHD",
+    numeral="3.12.2.1",
+    titulo_numeral="Método Racional Modificado",
+    pagina_impresa="51",
+    pagina_pdf=54,
+    pagina_pdf_titulo=53,
+    texto_literal=Verbatim(texto="Q =   0,278 CIAK", pagina_pdf=54),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=T1,
+    nota=("Ecuacion (29), con «K : Coeficiente de Uniformidad». Su apartado "
+          "«B) Coeficiente de Uniformidad» da la ecuacion (31), vista en "
+          "imagen: K = 1 + Tc^1.25 / (Tc^1.25 + 14), con «Tc= Tiempo de "
+          "concentración (horas)». K es siempre mayor que 1 y crece con Tc "
+          "(1.01 a 0.25 h, 1.07 a 1 h, 1.79 a 24 h). El metodo trae ademas "
+          "su propia intensidad (ec. 34), su factor reductor por area (ec. "
+          "32) y su coeficiente C por numero de curva (ec. 35), que el "
+          "proyecto NO usa: toma la formula del tiempo de concentracion "
+          "(ec. 30) y, con ella, este coeficiente."),
+)
+
+MC_HHD_3_12_5_PIURA = _cita(
+    id="MC_HHD.3.12.5#PIURA",
+    fuente_id="MC_HHD",
+    numeral="3.12.5",
+    titulo_numeral="Otras Metodologías",
+    pagina_impresa="64",
+    pagina_pdf=67,
+    pagina_pdf_titulo=65,
+    texto_literal=Verbatim(
+        texto=("departamentos de Piura y Tumbes, donde es necesario un "
+               "tratamiento especial del análisis para determinar el caudal "
+               "de diseño."),
+        pagina_pdf=67),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T1,
+    nota=("La oracion entera: «Otra metodología es la que resalte la "
+          "influencia de El Fenómeno “El Niño”, en especial en la Vertiente "
+          "del Pacífico del Perú, departamentos de Piura y Tumbes, donde es "
+          "necesario un tratamiento especial del análisis para determinar "
+          "el caudal de diseño.» El Manual lo dice de los caudales y no da "
+          "el tratamiento; el proyecto lo imprime en la memoria hidrologica "
+          "porque el ajuste de una sola distribucion a una serie con años "
+          "de El Niño puede dejar la lluvia de diseño por debajo de lo ya "
+          "observado, y eso se avisa en el paso del ajuste."),
+)
+
+WSDOT_TC_MINIMO = _cita(
+    id="WSDOT_HM.2-6.3#TC_MINIMO",
+    fuente_id="WSDOT_HM",
+    numeral="2-6.3",
+    titulo_numeral="Time of Concentration",
+    pagina_impresa="2-10",
+    pagina_pdf=46,
+    pagina_pdf_titulo=45,
+    texto_literal=Verbatim(
+        texto=("If the total time of concentration is less than 5 minutes, a "
+               "minimum of 5 minutes shall be used as the duration (see "
+               "Section 2-6.4 for details)."),
+        pagina_pdf=46),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T1,
+    nota=("El num. 2-6.4 «Rainfall Intensity» (pag. impresa 2-11, PDF 47) "
+          "lo repite --«PEOs shall never use a time of concentration that is "
+          "less than 5 minutes for intensity calculations»-- y da las dos "
+          "razones: las curvas intensidad-duracion por debajo de ese tiempo "
+          "son extrapolacion, y la lluvia tarda en generar escorrentia. Es "
+          "una exigencia de WSDOT para SUS curvas; aqui cubre un vacio del "
+          "Manual peruano (que no fija duracion minima, barrido entero) y "
+          "entra como [C], no como norma."),
+)
+
+WSDOT_T2_2 = _cita(
+    id="WSDOT_HM.2-6.2#T2-2",
+    fuente_id="WSDOT_HM",
+    numeral="2-6.2",
+    titulo_numeral="Runoff Coefficients",
+    pagina_impresa="2-9",
+    pagina_pdf=45,
+    pagina_pdf_titulo=44,
+    texto_literal=Verbatim(
+        texto=("Runoff Coefficients for the Rational Method: 10-Year Return "
+               "Frequency"),
+        pagina_pdf=45),
+    caracter=Caracter.DEFINICION,
+    sesion=T1,
+    nota=("Table 2-2: veintiseis coberturas por tres columnas de pendiente "
+          "(Flat, Rolling 2%–10%, Hilly Over 10%). «Pavement and roofs» vale "
+          "0.90 en las tres; «Side slopes, earth» 0.60; «Side slopes, turf» "
+          "0.30; «Earth shoulders» 0.50. Son coeficientes para una tormenta "
+          "de 10 años de periodo de retorno: ver WSDOT_HM.2-6.2#FRECUENCIA."),
+)
+
+WSDOT_C_FRECUENCIA = _cita(
+    id="WSDOT_HM.2-6.2#FRECUENCIA",
+    fuente_id="WSDOT_HM",
+    numeral="2-6.2",
+    titulo_numeral="Runoff Coefficients",
+    pagina_impresa="2-8",
+    pagina_pdf=44,
+    texto_literal=Verbatim(
+        texto=("Generally, when designing for a 25-year frequency, the "
+               "coefficient shall be increased by 10 percent; when designing "
+               "for a 50-year frequency, the coefficient shall be increased "
+               "by 20 percent; and when designing for a 100-year frequency, "
+               "the coefficient shall be increased by 25 percent."),
+        pagina_pdf=44),
+    caracter=Caracter.EXIGENCIA,
+    sesion=T1,
+    nota=("La oracion anterior fija la base: «The coefficients in Table 2-2 "
+          "are applicable for peak storms of 10-year frequency.» Y la "
+          "siguiente el tope: «The runoff coefficient shall not be increased "
+          "above 0.95, unless approved by the RHE.» La fuente nombra tres "
+          "frecuencias (25, 50 y 100 años) y no dice que hacer entre ellas "
+          "ni por encima de 100."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

@@ -143,6 +143,18 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # Solo la mitad del HDPE: `n_manning_cajon` sigue vacio.
         ESTADO_PARCIAL: {"INF-3.2.1"},
     },
+    "T-1": {
+        # La hidrologia dentro del programa (Fase 1-bis). INF-5.1.3 no lo
+        # nombraba ningun prompt y el orquestador lo asigno a T-1.
+        ESTADO_CERRADO: {"INF-3.1.2", "INF-3.1.3", "INF-3.1.5", "INF-3.1.6",
+                         "INF-5.2.5", "INF-5.1.3"},
+        # INF-3.1.1: la delimitacion de la cuenca sobre plano es una entrada
+        # del estudio hidrologico; el programa la recibe y la contrasta.
+        # INF-3.1.4: el tratamiento FEN tiene consumidor y regla; quien fija
+        # R y n sigue siendo del Propietario, y el analisis de dos
+        # poblaciones no se evalua.
+        ESTADO_PARCIAL: {"INF-3.1.1", "INF-3.1.4"},
+    },
 }
 
 
@@ -366,9 +378,13 @@ def test_nadie_afirma_ya_que_el_criterio_FEN_bloquea_el_caudal():
     umbrales = _lo_que_afirma(M11_reporte.bloque_umbrales.__doc__)
     assert "bloquea el Q" not in umbrales
     assert "bloqueado" not in fu.SERIES_SENAMHI_ANA.ausencia.que_desbloquearia
-    # El hecho que sostiene la correccion, medido por el consumo declarado.
+    # El hecho que sostenia la correccion en T-0 era que NADIE consumia el
+    # criterio (`consumido_por` vacio). T-1 le dio consumidor real --la Fase
+    # 1-bis-- y este renglon afirma ahora eso: lo lee `MH_hidrologia` y nadie
+    # mas, y sigue sin bloquear un caudal DECLARADO (lo mide
+    # tests/test_t1_hidrologia.py).
     from src import variables_entrada as ve
-    assert not ve.variable("homogeneidad_serie_fen").consumido_por
+    assert ve.variable("homogeneidad_serie_fen").consumido_por == ("MH_hidrologia",)
 
 
 def _pasos(forma: FormaSeccion):
@@ -586,10 +602,15 @@ def test_hec14_sigue_sin_citas_y_wsdot_las_tiene_desde_t4():
     resistividad, velocidad--, cada cita verificada contra su pagina por
     `test_normativa_pdf`; HEC-14 sigue sin citas hasta T-8. El test se
     llamaba «…ninguna cita se apoya todavia en las dos fuentes nuevas».
+
+    T-1 (auditoria) sumo TRES del capitulo 2 del mismo manual (hidrologia):
+    la duracion minima de la lluvia y la tabla de coeficientes de
+    escorrentia con su incremento por frecuencia.
     """
     reg = _registro.construir()
     assert not reg.citas_de("HEC14")
-    assert reg.citas_de("WSDOT_HM")
+    assert {"WSDOT_HM.2-6.3#TC_MINIMO", "WSDOT_HM.2-6.2#T2-2",
+            "WSDOT_HM.2-6.2#FRECUENCIA"} <= {c.id for c in reg.citas_de("WSDOT_HM")}
 
 
 def test_el_indice_del_registro_las_lista_como_presentes():

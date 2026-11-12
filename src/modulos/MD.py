@@ -1015,8 +1015,11 @@ def disenar_lote(puntos: Iterable[PuntoCritico], *, L: float, TW: float,
 
     El ejemplo de este parrafo era, hasta T-0, «Q_m3s = None en toda la
     Familia A porque 'homogeneidad_serie_fen' esta vacio», y mezclaba las dos
-    cosas (INF-5.1.1): ese criterio no lo lee ningun modulo y no bloquea
-    nada; un caudal vacio es un dato faltante, no un criterio pendiente.
+    cosas (INF-5.1.1): un caudal vacio es un dato faltante, no un criterio
+    pendiente. Ese criterio no lo lee este modulo: desde T-1 lo lee
+    `MH_hidrologia`, ANTES de que el punto llegue aqui, y solo cuando el
+    caudal lo calcula el programa (--cuencas y --estacion); con el caudal
+    declarado en `Q_m3s` no bloquea nada.
 
     L, TW, Q, S y verificar se aplican a todos los puntos. Para puntos con
     geometria o caudal individualmente distintos -- lo habitual en la Fase 7 --

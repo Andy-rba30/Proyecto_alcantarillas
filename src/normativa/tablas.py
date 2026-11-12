@@ -30,6 +30,7 @@ from typing import Dict
 
 from .esquema import (
     Acotada,
+    AfirmacionNegativa,
     CeldaSinValor,
     ColumnaDeTabla,
     CondicionAplicacion,
@@ -4976,5 +4977,513 @@ T_E050_FIG3 = _tabla(
     vistas_de_calculo=("SIMBOLOS_SUCS",),
 )
 
+
+
+# ===========================================================================
+# --- T-1 --- Manual de Hidrologia, cap. III: las cuatro tablas de la
+# hidrologia que calcula `MH_hidrologia` (cadena T, 2026-11-11)
+# ===========================================================================
+# Transcritas por la sesion sobre la pagina renderizada y contrastadas con la
+# extraccion de texto. Las cuatro son INTEGRAS.
+
+# --- Tabla Nº 03: valores criticos de Kolmogorov-Smirnov --------------------
+# OCHO filas (n = 5, 10, ..., 40) y tres niveles de significancia. La pagina
+# no dice que hacer con un n que no este tabulado ni con n > 40: es una
+# laguna de la fuente, y como la cierra el proyecto esta escrito en ella.
+_USO_T03 = Usada(por=("MH.valor_critico_ks",))
+
+T03 = _tabla(
+    id="MC_HHD.T03",
+    cita_id="MC_HHD.3.7.2b#T03",
+    titulo_literal=("TABLA Nº 03: Valores críticos d para la prueba "
+                    "Kolmogorov – Smirnov"),
+    columnas=(
+        ColumnaDeTabla(id="n", etiqueta_literal="TAMAÑO DE LA MUESTRA",
+                       unidad="", uso=_USO_T03),
+        ColumnaDeTabla(id="alfa_0_10", etiqueta_literal="α = 0.10",
+                       unidad="", uso=_USO_T03),
+        ColumnaDeTabla(id="alfa_0_05", etiqueta_literal="α = 0.05",
+                       unidad="", uso=_USO_T03),
+        ColumnaDeTabla(id="alfa_0_01", etiqueta_literal="α = 0.01",
+                       unidad="", uso=_USO_T03),
+    ),
+    filas=tuple(
+        FilaDeTabla(id=f"MC_HHD.T03#n{n}", etiqueta_literal=str(n),
+                    valores={"n": n, "alfa_0_10": a10, "alfa_0_05": a05,
+                             "alfa_0_01": a01},
+                    uso=_USO_T03)
+        for n, a10, a05, a01 in (
+            (5, 0.51, 0.56, 0.67), (10, 0.37, 0.41, 0.49),
+            (15, 0.30, 0.34, 0.40), (20, 0.26, 0.29, 0.35),
+            (25, 0.24, 0.26, 0.32), (30, 0.22, 0.24, 0.29),
+            (35, 0.20, 0.22, 0.27), (40, 0.19, 0.21, 0.25),
+        )),
+    fuente_declarada_por_la_tabla="Aparicio, 1999.",
+    lagunas=(
+        Laguna(
+            que_no_cubre=("un tamaño de muestra que no sea uno de los ocho "
+                          "tabulados (5, 10, ..., 40), y todo n mayor de 40. "
+                          "La pagina no manda interpolar ni da la expresion "
+                          "para muestras grandes, y una serie de maximas "
+                          "anuales casi nunca tiene un n multiplo de cinco"),
+            con_que_regla=("el proyecto NO interpola ni extrapola la tabla: "
+                           "calcula el valor critico EXACTO del mismo "
+                           "estadistico para el n de la serie (el cuantil "
+                           "1 − α de la distribucion bilateral de "
+                           "Kolmogorov-Smirnov para muestra finita, "
+                           "`scipy.stats.kstwo`), que es una identidad "
+                           "matematica y no un valor adoptado. Lo que lo "
+                           "autoriza es que ese calculo REPRODUCE las "
+                           "veinticuatro celdas impresas a sus dos "
+                           "decimales, comprobado celda a celda en "
+                           "tests/test_t1_hidrologia.py: la tabla es ese "
+                           "cuantil redondeado. En un n tabulado se usa la "
+                           "celda impresa"),
+            quien_lo_cierra="MH_hidrologia.valor_critico_ks",
+            si_nadie_lo_cierra=Efecto.BLOQUEA),
+    ),
+    alcance=Integra(),
+    vistas_de_calculo=("TABLA_03_KS",),
+)
+
+
+# --- Tabla Nº 04: coeficientes de duracion ----------------------------------
+# DIECISEIS filas, de 1 a 48 horas. No es de «coeficientes regionales».
+_USO_T04 = Usada(por=("MH.coeficiente_de_duracion",))
+
+T04 = _tabla(
+    id="MC_HHD.T04",
+    cita_id="MC_HHD.3.8.1#T04",
+    titulo_literal=("TABLA Nº 04: Coeficientes de duración lluvias entre 48 "
+                    "horas y una hora"),
+    columnas=(
+        ColumnaDeTabla(id="duracion_h",
+                       etiqueta_literal="DURACIÓN DE LA PRECIPITACIÓN EN HORAS",
+                       unidad="h", uso=_USO_T04),
+        ColumnaDeTabla(id="coeficiente", etiqueta_literal="COEFICIENTE",
+                       unidad="", uso=_USO_T04),
+    ),
+    filas=tuple(
+        FilaDeTabla(id=f"MC_HHD.T04#h{h}", etiqueta_literal=str(h),
+                    valores={"duracion_h": h, "coeficiente": k},
+                    uso=_USO_T04)
+        for h, k in (
+            (1, 0.25), (2, 0.31), (3, 0.38), (4, 0.44), (5, 0.50), (6, 0.56),
+            (8, 0.64), (10, 0.73), (12, 0.79), (14, 0.83), (16, 0.87),
+            (18, 0.90), (20, 0.93), (22, 0.97), (24, 1.00), (48, 1.32),
+        )),
+    fuente_declarada_por_la_tabla=("Manual para el Diseño de Carreteras "
+                                   "Pavimentadas de Bajo Volumen de Tránsito"),
+    lagunas=(
+        Laguna(
+            que_no_cubre=("las duraciones que no son una de las dieciseis "
+                          "tabuladas: la pagina no dice que se interpole "
+                          "entre filas"),
+            con_que_regla=("interpolacion LINEAL entre las dos filas "
+                           "vecinas, que es lectura del proyecto y se "
+                           "imprime como tal en el paso. Solo se alcanza si "
+                           "el criterio 'relacion_intensidad_duracion' elige "
+                           "esta tabla; el valor de archivo es la relacion "
+                           "de Dick y Peschke, que no necesita interpolar"),
+            quien_lo_cierra="criterios_adoptados['relacion_intensidad_duracion']",
+            si_nadie_lo_cierra=Efecto.BLOQUEA),
+        Laguna(
+            que_no_cubre=("las duraciones MENORES de una hora, que son las "
+                          "de casi toda cuenca pequeña y de toda cuneta: la "
+                          "tabla empieza en 1 hora y su titulo lo dice"),
+            con_que_regla=("ninguna: por debajo de una hora la tabla no se "
+                           "extrapola y el calculo se detiene remitiendo a "
+                           "la relacion de Dick y Peschke, que es la que el "
+                           "mismo numeral nombra para ese caso"),
+            # La cierra el MISMO criterio que elige la tabla: con el valor
+            # de archivo (Dick y Peschke) esta laguna no se alcanza, y con
+            # la tabla elegida y una duracion menor de una hora
+            # `MH.coeficiente_de_duracion` se detiene.
+            quien_lo_cierra="criterios_adoptados['relacion_intensidad_duracion']",
+            si_nadie_lo_cierra=Efecto.BLOQUEA),
+    ),
+    alcance=Integra(),
+    vistas_de_calculo=("TABLA_04_COEFICIENTES_DE_DURACION",),
+)
+
+
+# --- Tabla Nº 05: formulas del tiempo de concentracion ----------------------
+# SEIS filas, ENTERA: metodo, formula con sus variables y observaciones. Las
+# celdas de formula NO son texto de la pagina sino su lectura en imagen
+# escrita en una linea (la extraccion de texto las desordena); las de
+# observaciones son el texto de la pagina, recompuesto de sus renglones. La
+# frase que cada paso entrecomilla sale de la CITA de su fila, no de aqui.
+_NO_USADA_T05_ITERATIVA = NoUsada(por_que_no=(
+    "la propia observacion dice que la solucion es ITERATIVA --la formula "
+    "pide la intensidad de la lluvia, que depende del tiempo de concentracion "
+    "que se busca-- y pide ademas un dato de la superficie que el CSV de "
+    "cuencas no trae (el coeficiente de retardo de Izzard, el n de Manning de "
+    "la onda cinematica). Diferida con ficha (T1-07)"))
+
+T05 = _tabla(
+    id="MC_HHD.T05",
+    cita_id="MC_HHD.3.9#T05",
+    titulo_literal=("TABLA Nº 05: Fórmulas para el cálculo del tiempo de "
+                    "concentración"),
+    texto_previo=Verbatim(
+        texto=("Las ecuaciones para calcular el tiempo de concentración se "
+               "muestran en la Tabla Nº 05."),
+        pagina_pdf=42),
+    columnas=(
+        ColumnaDeTabla(id="metodo", etiqueta_literal="MÉTODO Y FECHA",
+                       unidad="", uso=Usada(por=("MH.tiempo_de_concentracion",))),
+        ColumnaDeTabla(id="formula",
+                       etiqueta_literal="FÓRMULA PARA tc (minutos)",
+                       unidad="min",
+                       uso=Usada(por=("MH.tc_kirpich_min",
+                                      "MH.tc_california_min",
+                                      "MH.tc_faa_min", "MH.tc_retardo_scs_min"))),
+        ColumnaDeTabla(id="observaciones", etiqueta_literal="OBSERVACIONES",
+                       unidad="",
+                       uso=Usada(por=("MH.poblacion_del_metodo",))),
+    ),
+    filas=(
+        FilaDeTabla(
+            id="MC_HHD.T05#kirpich", etiqueta_literal="Kirpich (1940)",
+            valores={"metodo": "Kirpich (1940)",
+                     "formula": "tc = 0.01947 · L^0.77 · S^-0.385 ; L = "
+                                "longitud del canal desde aguas arriba hasta "
+                                "la salida, m ; S = pendiente promedio de la "
+                                "cuenca, m/m",
+                     "observaciones": (
+                         "Desarrollada a partir de información del SCS en "
+                         "siete cuencas rurales de Tennessee con canales "
+                         "bien definidos y pendientes empinadas (3 a 10%); "
+                         "para flujo superficial en superficies de concreto "
+                         "o asfalto se debe multiplicar tc por 0.4; para "
+                         "canales de concreto se debe multiplicar por 0.2; "
+                         "no se debe hacer ningún ajuste para flujo "
+                         "superficial en suelo descubierto o para flujo en "
+                         "cunetas.")},
+            uso=Usada(por=("MH.tc_kirpich_min",))),
+        FilaDeTabla(
+            id="MC_HHD.T05#california_culverts_practice",
+            etiqueta_literal="California Culverts Practice (1942)",
+            valores={"metodo": "California Culverts Practice (1942)",
+                     "formula": "tc = 0.0195 · (L^3 / H)^0.385 ; L = longitud "
+                                "del curso de agua más largo, m ; H = "
+                                "diferencia de nivel entre la divisoria de "
+                                "aguas y la salida, m",
+                     "observaciones": (
+                         "Esencialmente es la ecuación de Kirpich; "
+                         "desarrollada para pequeñas cuencas montañosas en "
+                         "California.")},
+            uso=Usada(por=("MH.tc_california_min",))),
+        FilaDeTabla(
+            id="MC_HHD.T05#izzard", etiqueta_literal="Izzard (1946)",
+            valores={"metodo": "Izzard (1946)",
+                     "formula": "tc = 525 · (0.0000276·i + c) · L^0.33 / "
+                                "(S^0.333 · i^0.667) ; i = intensidad de "
+                                "lluvia, mm/h ; c = coeficiente de retardo ; "
+                                "L = longitud de la trayectoria de flujo, m ; "
+                                "S = pendiente de la trayectoria de flujo, m/m",
+                     "observaciones": (
+                         "Desarrollada experimentalmente en laboratorio por "
+                         "el Bureau of Public Roads para flujo superficial "
+                         "en caminos y Áreas de céspedes; los valores del "
+                         "coeficiente de retardo varían desde 0.0070 para "
+                         "pavimentos muy lisos hasta 0.012 para pavimentos "
+                         "de concreto y 0.06 para superficies densamente "
+                         "cubiertas de pasto; la solución requiere de "
+                         "procesos iterativos; el producto de i por L debe "
+                         "ser ≤ 3800.")},
+            uso=_NO_USADA_T05_ITERATIVA),
+        FilaDeTabla(
+            id="MC_HHD.T05#federal_aviation_administration",
+            etiqueta_literal="Federal Aviation Administration (1970)",
+            valores={"metodo": "Federal Aviation Administration (1970)",
+                     "formula": "tc = 0.7035 · (1.1 − C) · L^0.50 / S^0.333 ; "
+                                "C = coeficiente de escorrentía del método "
+                                "racional ; L = longitud del flujo "
+                                "superficial, m ; S = pendiente de la "
+                                "superficie, m/m",
+                     "observaciones": (
+                         "Desarrollada de información sobre el drenaje de "
+                         "aeropuertos recopilada por el Corps of Engineers: "
+                         "el método tiene como finalidad el ser usado en "
+                         "problemas de drenaje de aeropuertos pero ha sido "
+                         "frecuentemente usado para flujo superficial en "
+                         "cuencas urbanas.")},
+            uso=Usada(por=("MH.tc_faa_min",))),
+        FilaDeTabla(
+            id="MC_HHD.T05#onda_cinematica",
+            etiqueta_literal=("Ecuaciones de onda cinemática Morgali y "
+                              "Linsley (1965) Aron y Erborge (1973)"),
+            valores={"metodo": "Ecuaciones de onda cinemática",
+                     "formula": "tc = 7 · L^0.6 · n^0.6 / (I^0.4 · S^0.3) ; "
+                                "L = longitud del flujo superficial, m ; n = "
+                                "coeficiente de rugosidad de Manning ; I = "
+                                "intensidad de lluvia, mm/h ; S = pendiente "
+                                "promedio del terreno, m/m",
+                     "observaciones": (
+                         "Ecuación para flujo superficial desarrollada a "
+                         "partir de análisis de onda cinemática de la "
+                         "escorrentía superficial desde superficies "
+                         "desarrolladas; el método requiere iteraciones "
+                         "debido a que tanto I (Intensidad de lluvia) como "
+                         "tc son desconocidos, la superposición de una "
+                         "curva de intensidad – duración – frecuencia da "
+                         "una solución gráfica directa para tc.")},
+            uso=_NO_USADA_T05_ITERATIVA),
+        FilaDeTabla(
+            id="MC_HHD.T05#retardo_scs",
+            etiqueta_literal="Ecuación de retardo SCS (1973)",
+            valores={"metodo": "Ecuación de retardo SCS (1973)",
+                     "formula": "tc = 0.0136 · L^0.8 · (1000/CN − 9)^0.7 / "
+                                "S^0.5 ; L = longitud hidráulica de la "
+                                "cuenca (mayor trayectoria de flujo), m ; "
+                                "CN = Número de curva SCS ; S = pendiente "
+                                "promedio de la cuenca, m/m",
+                     "observaciones": (
+                         "Ecuación desarrollada por el SCS a partir de "
+                         "información de cuencas de uso agrícola; ha sido "
+                         "adaptada a pequeñas cuencas urbanas con áreas "
+                         "inferiores a 800 Ha; se ha encontrado que "
+                         "generalmente es buena cuando el área se encuentra "
+                         "completamente pavimentada; para áreas mixtas "
+                         "tiene tendencia a la sobreestimación; se aplican "
+                         "factores de ajuste para corregir efectos de "
+                         "mejoras en canales e impermeabilización de "
+                         "superficies; la ecuación supone que tc = 1.67 x "
+                         "retardo de la cuenca.")},
+            uso=Usada(por=("MH.tc_retardo_scs_min",))),
+    ),
+    afirmaciones_negativas=(
+        AfirmacionNegativa(
+            que_no_dice=("la Tabla Nº 05 no lista la formula de Temez. Sus "
+                         "seis filas son Kirpich, California Culverts "
+                         "Practice, Izzard, Federal Aviation Administration, "
+                         "onda cinematica y retardo SCS"),
+            ambito_barrido=("la tabla entera, pags. impresas 39 y 40 (PDF 42 "
+                            "y 43), en texto y en imagen; y el Manual entero "
+                            "por la cadena «mez»: Temez solo aparece en el "
+                            "num. 3.12.2.1, pag. impresa 50 (PDF 53)"),
+            cita_id="MC_HHD.3.12.2.1#TC"),
+        AfirmacionNegativa(
+            que_no_dice=("ni la Tabla Nº 05 ni el resto del Manual fijan una "
+                         "duracion minima de la lluvia de diseño ni un "
+                         "tiempo de concentracion minimo"),
+            ambito_barrido=("el Manual entero, 225 paginas, por las cadenas "
+                            "«mínim» y «minut» junto a «concentración» y "
+                            "«duración»"),
+            cita_id="MC_HHD.3.9#T05"),
+    ),
+    fuente_declarada_por_la_tabla="* SCS   Soil Conservation Service",
+    alcance=Integra(),
+    vistas_de_calculo=("TC_KIRPICH_SI", "TC_CALIFORNIA_SI", "TC_FAA_SI",
+                       "TC_RETARDO_SCS_SI"),
+)
+
+
+# --- Tabla Nº 08: coeficientes de escorrentia del metodo racional -----------
+# QUINCE filas (cinco coberturas por tres tipos de suelo) y cinco columnas de
+# pendiente del terreno. NO tiene fila de pavimento ni de talud: la que
+# describe una superficie pavimentada la elige quien llena el CSV de cuencas.
+_USO_T08 = Usada(por=("MH.coeficiente_de_escorrentia",))
+_PENDIENTES_T08 = (
+    ("pronunciada", "PRONUNCIADA > 50%"),
+    ("alta", "ALTA > 20%"),
+    ("media", "MEDIA > 5%"),
+    ("suave", "SUAVE > 1%"),
+    ("despreciable", "DESPRECIABLE < 1%"),
+)
+
+T08 = _tabla(
+    id="MC_HHD.T08",
+    cita_id="MC_HHD.3.12.2#T08",
+    titulo_literal="TABLA Nº 08:   Coeficientes de escorrentía método racional",
+    encabezados_superiores=("COBERTURA VEGETAL", "TIPO DE SUELO",
+                            "PENDIENTE DEL TERRENO"),
+    columnas=tuple(
+        ColumnaDeTabla(id=clave, etiqueta_literal=rotulo, unidad="",
+                       uso=_USO_T08)
+        for clave, rotulo in _PENDIENTES_T08),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"MC_HHD.T08#{cobertura}__{suelo}",
+            etiqueta_literal=rotulo_suelo,
+            jerarquia=(rotulo_cobertura,),
+            valores=dict(zip((c for c, _ in _PENDIENTES_T08), celdas)),
+            uso=_USO_T08)
+        # (clave y rotulo de la cobertura, clave y rotulo del suelo, y las
+        # cinco celdas en el orden de la pagina: pronunciada, alta, media,
+        # suave, despreciable). Quince filas, leidas de la imagen.
+        for cobertura, rotulo_cobertura, suelo, rotulo_suelo, celdas in (
+            ("sin_vegetacion", "Sin vegetación", "impermeable", "Impermeable",
+             (0.80, 0.75, 0.70, 0.65, 0.60)),
+            ("sin_vegetacion", "Sin vegetación", "semipermeable", "Semipermeable",
+             (0.70, 0.65, 0.60, 0.55, 0.50)),
+            ("sin_vegetacion", "Sin vegetación", "permeable", "Permeable",
+             (0.50, 0.45, 0.40, 0.35, 0.30)),
+            ("cultivos", "Cultivos", "impermeable", "Impermeable",
+             (0.70, 0.65, 0.60, 0.55, 0.50)),
+            ("cultivos", "Cultivos", "semipermeable", "Semipermeable",
+             (0.60, 0.55, 0.50, 0.45, 0.40)),
+            ("cultivos", "Cultivos", "permeable", "Permeable",
+             (0.40, 0.35, 0.30, 0.25, 0.20)),
+            ("pastos_vegetacion_ligera", "Pastos, vegetación ligera",
+             "impermeable", "Impermeable", (0.65, 0.60, 0.55, 0.50, 0.45)),
+            ("pastos_vegetacion_ligera", "Pastos, vegetación ligera",
+             "semipermeable", "Semipermeable", (0.55, 0.50, 0.45, 0.40, 0.35)),
+            ("pastos_vegetacion_ligera", "Pastos, vegetación ligera",
+             "permeable", "Permeable", (0.35, 0.30, 0.25, 0.20, 0.15)),
+            ("hierba_grama", "Hierba, grama", "impermeable", "Impermeable",
+             (0.60, 0.55, 0.50, 0.45, 0.40)),
+            ("hierba_grama", "Hierba, grama", "semipermeable", "Semipermeable",
+             (0.50, 0.45, 0.40, 0.35, 0.30)),
+            ("hierba_grama", "Hierba, grama", "permeable", "Permeable",
+             (0.30, 0.25, 0.20, 0.15, 0.10)),
+            ("bosques_densa_vegetacion", "Bosques, densa vegetación",
+             "impermeable", "Impermeable", (0.55, 0.50, 0.45, 0.40, 0.35)),
+            ("bosques_densa_vegetacion", "Bosques, densa vegetación",
+             "semipermeable", "Semipermeable", (0.45, 0.40, 0.35, 0.30, 0.25)),
+            ("bosques_densa_vegetacion", "Bosques, densa vegetación",
+             "permeable", "Permeable", (0.25, 0.20, 0.15, 0.10, 0.05)),
+        )),
+    lagunas=(
+        Laguna(
+            que_no_cubre=("una pendiente del terreno de EXACTAMENTE 1 %: la "
+                          "columna «SUAVE» se rotula «> 1%» y la "
+                          "«DESPRECIABLE» «< 1%», las dos con desigualdad "
+                          "estricta. Las otras tres fronteras (5, 20 y 50 %) "
+                          "si quedan cubiertas: «> 5%» deja el 5 % exacto en "
+                          "la columna anterior"),
+            con_que_regla=("el proyecto lee la columna «SUAVE», que es la de "
+                           "mayor coeficiente y por tanto el lado "
+                           "conservador (mas caudal), y el paso lo imprime"),
+            quien_lo_cierra="MH_hidrologia.clase_de_pendiente",
+            si_nadie_lo_cierra=Efecto.BLOQUEA),
+    ),
+    afirmaciones_negativas=(
+        AfirmacionNegativa(
+            que_no_dice=("la Tabla Nº 08 no tiene fila de pavimento, de "
+                         "plataforma ni de talud de terraplen: sus cinco "
+                         "coberturas son Sin vegetación, Cultivos, Pastos y "
+                         "vegetación ligera, Hierba y grama, y Bosques y "
+                         "densa vegetación"),
+            ambito_barrido=("la tabla entera, pag. impresa 50 (PDF 53), en "
+                            "texto y en imagen; y el num. 4.1.2.1 b) «Caudal "
+                            "Q de aporte» (pag. impresa 177), que pide el "
+                            "«Coeficiente de escurrimiento de la cuenca» sin "
+                            "dar tabla propia para la plataforma"),
+            cita_id="MC_HHD.3.12.2#T08"),
+    ),
+    interpretacion=Interpretacion(
+        texto=("La columna se elige con la pendiente del TERRENO de la "
+               "cuenca, que el CSV de cuencas trae en la columna obligatoria "
+               "`S_terreno`. El programa NO entra a la tabla con la "
+               "pendiente del cauce (`S_cauce_cuenca`): son dos magnitudes "
+               "y la una no rellena a la otra."),
+        en_contra=(
+            "pide al estudio hidrologico un dato mas por cuenca: una cuenca "
+            "sin pendiente media del terreno medida no se calcula, aunque "
+            "su cauce si tenga pendiente",
+        ),
+        a_favor=(
+            "la tabla dice «PENDIENTE DEL TERRENO» y no «del cauce»",
+            "la pendiente del cauce principal es, en general, MENOR que la "
+            "pendiente media del terreno de su cuenca: leer la tabla con "
+            "ella puede caer una columna a la derecha y dar un coeficiente "
+            "menor, que es el lado NO conservador. Hasta la auditoria de "
+            "T-1 el programa hacia eso cuando la celda iba vacia",
+        )),
+    alcance=Integra(),
+    vistas_de_calculo=("TABLA_08_COEFICIENTE_DE_ESCORRENTIA",
+                       "TABLA_08_PENDIENTES"),
+)
+
+
+# --- WSDOT Hydraulics Manual, Table 2-2: coeficientes de escorrentia --------
+# [C], no norma peruana: cubre el vacio de la Tabla N 08, que no tiene fila
+# de pavimento ni de talud. VEINTISEIS filas por tres columnas, ENTERA. El
+# calculo consume cuatro filas, las de la plataforma de una carretera, y las
+# cuatro valen lo mismo en las tres columnas. Son coeficientes de 10 AÑOS de
+# periodo de retorno: el incremento por frecuencia esta en su cita.
+_NO_USADA_T2_2 = NoUsada(por_que_no=(
+    "la cobertura de una cuenca natural la da la Tabla Nº 08 del Manual "
+    "peruano, que es [N]; de esta tabla el proyecto toma SOLO las "
+    "superficies de la plataforma vial que aquella no tiene"))
+_USO_T2_2 = Usada(por=("MH.coeficiente_de_superficie_vial",))
+_FILAS_VIALES_T2_2 = {"pavement_and_roofs": "pavimento",
+                      "earth_shoulders": "berma_de_tierra",
+                      "side_slopes_earth": "talud_de_tierra",
+                      "side_slopes_turf": "talud_con_cesped"}
+
+T_WSDOT_2_2 = _tabla(
+    id="WSDOT_HM.T2-2",
+    cita_id="WSDOT_HM.2-6.2#T2-2",
+    titulo_literal=("Runoff Coefficients for the Rational Method: 10-Year "
+                    "Return Frequency"),
+    columnas=(
+        ColumnaDeTabla(id="flat", etiqueta_literal="Flat", unidad="",
+                       uso=_USO_T2_2),
+        ColumnaDeTabla(id="rolling", etiqueta_literal="Rolling (2%–10%)",
+                       unidad="", uso=_USO_T2_2),
+        ColumnaDeTabla(id="hilly", etiqueta_literal="Hilly (Over 10%)",
+                       unidad="", uso=_USO_T2_2),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"WSDOT_HM.T2-2#{_FILAS_VIALES_T2_2.get(clave, clave)}",
+            etiqueta_literal=rotulo,
+            valores={"flat": flat, "rolling": rolling, "hilly": hilly},
+            uso=_USO_T2_2 if clave in _FILAS_VIALES_T2_2 else _NO_USADA_T2_2)
+        for clave, rotulo, flat, rolling, hilly in (
+            ("pavement_and_roofs", "Pavement and roofs", 0.90, 0.90, 0.90),
+            ("earth_shoulders", "Earth shoulders", 0.50, 0.50, 0.50),
+            ("drives_and_walks", "Drives and walks", 0.75, 0.80, 0.85),
+            ("gravel_pavement", "Gravel pavement", 0.50, 0.55, 0.60),
+            ("city_business_areas", "City business areas", 0.80, 0.85, 0.85),
+            ("suburban_residential", "Suburban residential", 0.25, 0.35, 0.40),
+            ("single_family_residential", "Single-family residential",
+             0.30, 0.40, 0.50),
+            ("multi_units_detached", "Multi units, detached", 0.40, 0.50, 0.60),
+            ("multi_units_attached", "Multi units, attached", 0.60, 0.65, 0.70),
+            ("lawns_very_sandy_soil", "Lawns, very sandy soil", 0.05, 0.07, 0.10),
+            ("lawns_sandy_soil", "Lawns, sandy soil", 0.10, 0.15, 0.20),
+            ("lawns_heavy_soil", "Lawns, heavy soil", 0.17, 0.22, 0.35),
+            ("grass_shoulders", "Grass shoulders", 0.25, 0.25, 0.25),
+            ("side_slopes_earth", "Side slopes, earth", 0.60, 0.60, 0.60),
+            ("side_slopes_turf", "Side slopes, turf", 0.30, 0.30, 0.30),
+            ("median_areas_turf", "Median areas, turf", 0.25, 0.30, 0.30),
+            ("cultivated_land_clay_and_loam", "Cultivated land, clay, and loam",
+             0.50, 0.55, 0.60),
+            ("cultivated_land_sand_and_gravel",
+             "Cultivated land, sand, and gravel", 0.25, 0.30, 0.35),
+            ("industrial_areas_light", "Industrial areas, light", 0.50, 0.70, 0.80),
+            ("industrial_areas_heavy", "Industrial areas, heavy", 0.60, 0.80, 0.90),
+            ("parks_and_cemeteries", "Parks and cemeteries", 0.10, 0.15, 0.25),
+            ("playgrounds", "Playgrounds", 0.20, 0.25, 0.30),
+            ("woodland_and_forests", "Woodland and forests", 0.10, 0.15, 0.20),
+            ("meadows_and_pasture_land", "Meadows and pasture land",
+             0.25, 0.30, 0.35),
+            ("pasture_with_frozen_ground", "Pasture with frozen ground",
+             0.40, 0.45, 0.50),
+            ("unimproved_areas", "Unimproved areas", 0.10, 0.20, 0.30),
+        )),
+    lagunas=(
+        Laguna(
+            que_no_cubre=("un periodo de retorno que no sea 10, 25, 50 o 100 "
+                          "años: la fuente da el incremento del coeficiente "
+                          "para esos tres (10, 20 y 25 %) y no dice que "
+                          "hacer entre ellos ni por encima de 100"),
+            con_que_regla=("el proyecto toma el incremento de la frecuencia "
+                           "tabulada inmediatamente MAYOR o igual, que es el "
+                           "lado conservador porque el incremento crece con "
+                           "el periodo de retorno, y el paso lo imprime; por "
+                           "encima de 100 años no hay frecuencia mayor que "
+                           "tomar y el calculo se detiene como metodo no "
+                           "evaluable"),
+            quien_lo_cierra="criterios_adoptados['coeficiente_escorrentia_superficie_vial']",
+            si_nadie_lo_cierra=Efecto.BLOQUEA),
+    ),
+    alcance=Integra(),
+    vistas_de_calculo=("coeficiente_escorrentia_superficie_vial",),
+)
 
 TABLAS: Dict[str, TablaNormativa] = {t.id: t for t in _TODAS}

@@ -719,9 +719,13 @@ def _categoria_por_area(punto: PuntoCritico) -> CategoriaTR:
     HASTA T-0 ESTE DOCSTRING DECIA que la via «esta bloqueada a proposito: el
     criterio no tiene valor» y hablaba de «si algun dia se le pone umbral».
     Se le puso --el encabezado del modulo ya lo decia-- y aqui no se corrigio
-    (INF-5.1.2). Que el valor adoptado sea DEFENDIBLE es otra pregunta, y esta
-    abierta: su ficha lo justifica con las areas de los dos puntos del
-    fixture de pruebas (INF-5.1.3).
+    (INF-5.1.2). Que el valor adoptado sea DEFENDIBLE era otra pregunta, y
+    T-0 la dejo escrita aqui: «su ficha lo justifica con las areas de los dos
+    puntos del fixture de pruebas» (INF-5.1.3). T-1 reescribio la ficha sin
+    tocar el valor: el umbral es una adopcion del proyecto que ninguna fuente
+    fija, y se defiende con la direccion del conservadurismo (bajarlo solo
+    sube el periodo de retorno), con el barrido de su ventana y con la via
+    de declarar la categoria cauce por cauce, no con ningun punto.
 
     La tolerancia va del lado conservador: en el empate exacto gana quebrada
     importante, que es la fila de TR mayor y por tanto de mayor caudal.
@@ -767,7 +771,12 @@ PERFILES: Dict[Familia, PerfilFamilia] = {
     Familia.A: PerfilFamilia(
         familia=Familia.A,
         nombre="Alcantarillas de paso",
-        origen_del_caudal="Q hidrologico propio de la cuenca (Tc.py + IDF con "
+        # T-1 (INF-5.2.5): hasta entonces decia «(Tc.py + IDF con el TR de
+        # la Fase 2)», y `legacy/Tc.py` no corre en este repositorio. El
+        # caudal entra declarado por la columna, o lo calcula la Fase 1-bis.
+        origen_del_caudal="Q hidrologico propio de la cuenca: declarado por "
+                          "el estudio hidrologico en la columna Q_m3s, o "
+                          "calculado por MH_hidrologia (metodo racional con "
                           "el TR de la Fase 2)",
         categoria_tr=None,          # "TR 71 o 35 anios": la hoja no fija cual
         campos_requeridos=("Q_m3s", "area_ha", "S_cauce"),
@@ -782,7 +791,12 @@ PERFILES: Dict[Familia, PerfilFamilia] = {
     Familia.B: PerfilFamilia(
         familia=Familia.B,
         nombre="Alcantarillas de alivio",
-        origen_del_caudal="Q del drenaje longitudinal (cuneta)",
+        # T-1, punto 4: el caudal de la cuneta se calcula con el MISMO
+        # modulo que el de una quebrada --el area tributaria de plataforma y
+        # talud es su «cuenca», la cuneta su «cauce»-- o entra declarado.
+        origen_del_caudal="Q del drenaje longitudinal (cuneta): declarado en "
+                          "la columna Q_m3s, o calculado por MH_hidrologia "
+                          "con el area tributaria de la cuneta",
         categoria_tr=CategoriaTR.QUEBRADA_MENOR,   # "descarga de cunetas" -> TR 35
         campos_requeridos=("Q_m3s",),
         verificaciones_aceptacion=None,            # Sec. 2.3 no declara conjunto propio

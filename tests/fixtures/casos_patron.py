@@ -1831,3 +1831,131 @@ CP_HDS5_DG1 = {
             "arrastra el H de la linea anterior"),
     },
 }
+
+
+# ---------------------------------------------------------------------------
+# CP-13 · Hidrologia (Fase 1-bis, T-1): tiempo de concentracion, ajuste de
+# frecuencia, intensidad y metodo racional -- Manual de Hidrologia, cap. III
+# ---------------------------------------------------------------------------
+# DORADOS CALCULADOS A MANO, Y SE DICE: el Manual no trae ejemplo numerico de
+# ninguna de estas formulas (leidos enteros el num. 3.9 con su Tabla N 05, el
+# 3.8.1, el 3.7 y el 3.12.2; pags. impresas 25 a 51). Cada valor esperado
+# sale de la formula que la pagina imprime, con la cuenta escrita al lado, y
+# lleva cinco o seis cifras: la `tolerancia` relativa del caso es esa
+# precision de escritura, no la del programa. NO son la salida del modulo.
+# Las entradas son numeros redondos inventados para la cuenta; no son de
+# ninguna cuenca ni de ninguna estacion.
+CP13_HIDROLOGIA = {
+    "tolerancia": 5e-5,               # relativa: dorados escritos con 5-6 cifras
+
+    # Kirpich, Tabla N 05: tc = 0.01947 · L^0.77 · S^-0.385 [min; m, m/m]
+    #   1000^0.77 = 10^2.31 = 204.174 ; 0.05^-0.385 = e^(0.385·2.99573) = 3.16883
+    #   tc = 0.01947 · 204.174 · 3.16883 = 12.5969 min
+    "kirpich": {"L_m": 1000.0, "S": 0.05, "tc_min_esperado": 12.5969,
+                "rango_S": (0.03, 0.10),
+                "ajustes": {"superficie_de_concreto_o_asfalto": 0.4,
+                            "canal_de_concreto": 0.2}},
+
+    # California Culverts Practice, Tabla N 05: tc = 0.0195 · (L^3/H)^0.385
+    #   L^3/H = 1e9/50 = 2e7 ; (2e7)^0.385 = e^(0.385·16.8112) = 646.989
+    #   tc = 0.0195 · 646.989 = 12.6163 min
+    # Es la misma cuenca que la de Kirpich (H = S·L = 50 m), y la tabla dice
+    # que «esencialmente es la ecuación de Kirpich»: 12.62 frente a 12.60.
+    "california": {"L_m": 1000.0, "H_m": 50.0, "tc_min_esperado": 12.6163,
+                   "coincide_con_kirpich_dentro_de": 0.01},
+
+    # Temez, ecuacion (30) del num. 3.12.2.1: Tc = 0.3 · (L/S^0.25)^0.76 [h; km]
+    #   0.01^0.25 = 0.316228 ; 5/0.316228 = 15.8114 ; 15.8114^0.76 = 8.15112
+    #   Tc = 0.3 · 8.15112 = 2.44534 h
+    # Y una cuneta de 200 m al 0.5 %: 0.005^0.25 = 0.265915 ; 0.2/0.265915 =
+    # 0.752120 ; ^0.76 = 0.805339 ; Tc = 0.241602 h, por debajo de 0.25 h.
+    # Federal Aviation Administration, Tabla N 05:
+    # tc = 0.7035 · (1.1 − C) · L^0.50 / S^0.333 [min; m, m/m]
+    #   100^0.5 = 10 ; 0.02^0.333 = e^(0.333 · −3.912023) = e^−1.302704 = 0.271796
+    #   tc = 0.7035 · 0.5 · 10 / 0.271796 = 12.9417 min
+    # El exponente es 0.333 como lo imprime la tabla, no 1/3.
+    "faa": {"C": 0.6, "L_m": 100.0, "S": 0.02, "tc_min_esperado": 12.9417},
+
+    # Ecuacion de retardo SCS, Tabla N 05:
+    # tc = 0.0136 · L^0.8 · (1000/CN − 9)^0.7 / S^0.5 [min; m, m/m]
+    #   1000^0.8 = 10^2.4 = 251.189 ; 1000/80 − 9 = 3.5 ; 3.5^0.7 =
+    #   e^(0.7 · 1.252763) = 2.40352 ; 0.04^0.5 = 0.2
+    #   tc = 0.0136 · 251.189 · 2.40352 / 0.2 = 41.0541 min
+    "retardo_scs": {"L_m": 1000.0, "CN": 80.0, "S": 0.04, "area_km2": 2.0,
+                    "tc_min_esperado": 41.0541, "area_max_km2": 8.0},
+
+    # Coeficiente de uniformidad, ecuacion (31) del num. 3.12.2.1:
+    # K = 1 + Tc^1.25 / (Tc^1.25 + 14), Tc en horas
+    #   Tc = 1: K = 1 + 1/15 = 1.066667
+    #   Tc = 2: 2^1.25 = 2.378414 ; K = 1 + 2.378414/16.378414 = 1.145216
+    "uniformidad": {"casos": ((1.0, 1.066667), (2.0, 1.145216))},
+
+    # Superficies de la plataforma vial (WSDOT Hydraulics Manual, Table 2-2 y
+    # num. 2-6.2): C de 10 años, +10 % a 25, +20 % a 50, +25 % a 100, tope
+    # 0.95; entre frecuencias, el incremento de la inmediatamente mayor.
+    #   talud de tierra: 0.60 ; 0.60·1.10 = 0.66 ; 35 años -> el de 50:
+    #   0.60·1.20 = 0.72 ; 0.60·1.25 = 0.75
+    #   pavimento: 0.90 ; 0.90·1.10 = 0.99 -> tope 0.95
+    "superficie_vial": {"casos": (("talud_de_tierra", 10.0, 0.60, False),
+                                  ("talud_de_tierra", 25.0, 0.66, False),
+                                  ("talud_de_tierra", 35.0, 0.72, False),
+                                  ("talud_de_tierra", 100.0, 0.75, False),
+                                  ("berma_de_tierra", 5.0, 0.50, False),
+                                  ("talud_con_cesped", 50.0, 0.36, False),
+                                  ("pavimento", 10.0, 0.90, False),
+                                  ("pavimento", 25.0, 0.95, True)),
+                        "sin_incremento_por_encima_de": 100.0},
+
+    "temez": {"L_km": 5.0, "S": 0.01, "area_km2": 8.0, "Tc_h_esperado": 2.44534,
+              "rango_h": (0.25, 24.0), "area_max_km2": 770.0,
+              "fuera_de_rango": {"L_km": 0.2, "S": 0.005, "area_km2": 0.05,
+                                 "Tc_h": 0.241602}},
+
+    # Dick y Peschke, ecuacion (16): Pd = P24 · (d/1440)^0.25 ; I = Pd/(d/60)
+    #   d = 60: (1/24)^0.25 = 0.451801 -> Pd = 45.1801 mm, I = 45.1801 mm/h
+    #   d = 30: (1/48)^0.25 = 0.379918 -> Pd = 37.9918 mm, I = 75.9836 mm/h
+    "dick_peschke": {"P24_mm": 100.0,
+                     "casos": ({"d_min": 60.0, "Pd_mm": 45.1801, "I_mm_h": 45.1801},
+                               {"d_min": 30.0, "Pd_mm": 37.9918, "I_mm_h": 75.9836},
+                               {"d_min": 1440.0, "Pd_mm": 100.0, "I_mm_h": 4.16667})},
+
+    # Tabla N 04, 1.5 h: interpolacion lineal entre 1 h (0.25) y 2 h (0.31):
+    #   k = 0.28 -> Pd = 28 mm ; I = 28/1.5 = 18.6667 mm/h
+    "tabla_04": {"P24_mm": 100.0, "d_min": 90.0, "k": 0.28, "Pd_mm": 28.0,
+                 "I_mm_h": 18.6667, "fila_exacta": (6.0, 0.56)},
+
+    # Gumbel por momentos (num. 3.7.1.7): alfa = 1.2825/sigma ; beta = mu −
+    # 0.45·sigma ; x_T = beta − ln(−ln(1 − 1/T))/alfa
+    #   mu = 100, sigma = 20: alfa = 0.064125 ; beta = 91
+    #   T = 50: −ln(−ln 0.98) = 3.90194 -> x = 91 + 3.90194/0.064125 = 151.849
+    #   T = 71: −ln(−ln(70/71)) = 4.25560 -> x = 91 + 4.25560/0.064125 = 157.364
+    "gumbel": {"media": 100.0, "desviacion": 20.0,
+               "cuantiles": ((50.0, 151.849), (71.0, 157.364))},
+
+    # Normal y log normal de 2 parametros sobre la serie 10..50 (num. 3.7.1.1
+    # y 3.7.1.2), y su Kolmogorov-Smirnov (num. 3.7.2 b):
+    #   media 30 ; S = raiz(1000/4) = 15.8114 ; z(1 − 1/50) = 2.05375
+    #   normal:     30 + 2.05375 · 15.8114 = 62.4726
+    #   log normal: Y = 3.26008, Sy = 0.635509 (ln, n − 1) -> exp(Y + z·Sy) = 96.0876
+    #   K-S normal: Fo = 5/6, 4/6, 3/6, 2/6, 1/6 (de mayor a menor) ;
+    #     F(50) = 0.897048, F(40) = 0.736455, F(30) = 0.5 -> diferencias
+    #     0.06371, 0.06979, 0, 0.06979, 0.06371 ; D = 0.06979 < d(5; 0.05) = 0.56
+    "serie": {"valores": (10.0, 20.0, 30.0, 40.0, 50.0), "TR": 50.0,
+              "alfa": 0.05, "media": 30.0, "S": 15.8114,
+              "normal_P_TR": 62.4726, "lognormal_P_TR": 96.0876,
+              "D_normal": 0.06979, "tolerancia_D": 1e-3, "d_critico": 0.56},
+
+    # Metodo racional, ecuacion (28): Q = 0.278 · C · I · A [m3/s; mm/h; km2]
+    #   0.278 · 0.5 · 50 · 2 = 13.9 m3/s
+    # Con el coeficiente de uniformidad de Tc = 2 h (ecuacion 29):
+    #   13.9 · 1.145216 = 15.9185 m3/s
+    # El caudal de aporte de una cuneta (num. 4.1.2.1 b, que escribe
+    # C·I·A/3.6) se calcula con ESTE mismo 0.278: no hay segundo coeficiente.
+    "racional": {"C": 0.5, "I_mm_h": 50.0, "area_km2": 2.0, "Q_m3s": 13.9,
+                 "area_limite_km2": 10.0, "K": 1.145216, "Q_con_K_m3s": 15.9185},
+
+    # Caudal especifico del punto A-01 del INFORME (§3.1): 1.167 m3/s sobre
+    # 850 ha. q = 1.167/8.5 = 0.137294 m3/s por km2 ; C·I = q/0.278 = 0.49386
+    "caudal_especifico": {"Q_m3s": 1.167, "area_km2": 8.5,
+                          "q_m3s_km2": 0.137294, "lamina_mm_h": 0.49386},
+}

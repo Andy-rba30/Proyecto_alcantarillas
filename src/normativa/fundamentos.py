@@ -845,6 +845,260 @@ CUNETA = _fundamento(
 
 
 # ===========================================================================
+# --- T-1 --- Fase 1-bis - Hidrologia: el caudal de diseño (MH_hidrologia)
+# ===========================================================================
+# Los nueve pasos de la memoria hidrologica de un punto, en el orden en que
+# se emiten: la serie, el ajuste de frecuencia, la prueba de bondad, el
+# contraste del tratamiento FEN, el tiempo de concentracion, la intensidad, el
+# coeficiente C, el caudal por el metodo racional y el caudal especifico. El
+# ultimo se emite tambien cuando el caudal entra DECLARADO por `Q_m3s`.
+FH = "Fase 1-bis - Hidrologia: caudal de diseño"
+
+H_SERIE = _fundamento(
+    id="FH.SERIE",
+    fase=FH,
+    que_paso=("Serie de precipitacion maxima en 24 horas de la estacion: "
+              "longitud de registro, años FEN que contiene y como se tratan"),
+    por_que=(
+        "El caudal de diseño sale de una extrapolacion estadistica, y esa "
+        "extrapolacion vale lo que valga la serie. En el norte del Peru la "
+        "serie de maximas anuales no es de una sola poblacion: los años del "
+        "fenomeno El Niño traen valores que no pertenecen a la misma "
+        "poblacion que los años neutros. El Manual manda las dos cosas a la "
+        "vez --que la serie los incluya, y que se evaluen para no "
+        "sobredimensionar-- y no dice como: por eso que años FEN trae la "
+        "serie es un HECHO que declara el archivo de la estacion, y como se "
+        "tratan es una DECISION del proyectista (criterio "
+        "'homogeneidad_serie_fen'), y las dos se imprimen antes que ningun "
+        "numero."),
+    verbo=Verbo.OBLIGA,
+    citas=("MC_HHD.3.4#FEN",            # EXIGENCIA -> sostiene OBLIGA
+           "MC_HHD.3.4#REGISTRO",       # RECOMENDACION (los 25 años)
+           "MC_HHD.3.12.5#PIURA"),      # EXIGENCIA (tratamiento especial)
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta T-1 (INF-5.1.1, INF-3.1.4): el caudal entraba "
+        "ya calculado y nada obligaba a decir con que serie ni que se hizo "
+        "con 1983, 1998 y 2017. Un ajuste dominado por dos o tres valores "
+        "extraordinarios, o uno que los dejo fuera, dan caudales muy "
+        "distintos, y sin la declaracion no se sabe cual de los dos se esta "
+        "leyendo."),
+)
+
+H_AJUSTE = _fundamento(
+    id="FH.AJUSTE",
+    fase=FH,
+    que_paso=("Precipitacion maxima en 24 horas para el periodo de retorno, "
+              "por ajuste de una distribucion de probabilidad a la serie"),
+    por_que=(
+        "El periodo de retorno de la Fase 2 (71 o 35 años) suele ser mayor "
+        "que la longitud del registro, de modo que la precipitacion de "
+        "diseño no se lee de la serie: se extrapola con un modelo de "
+        "probabilidad ajustado a ella. El Manual recomienda ocho "
+        "distribuciones y solo de tres escribe como se estiman los "
+        "parametros (Normal, Log Normal de 2 parametros y Gumbel); el "
+        "programa ajusta esas tres con las expresiones que el Manual "
+        "imprime y no evalua las otras cinco, porque elegirles un estimador "
+        "seria adoptar un procedimiento sin fuente. Una distribucion puede "
+        "pasar la prueba de bondad y aun asi dejar la lluvia de diseño por "
+        "debajo de un valor que la serie ya registro con un periodo de "
+        "retorno menor que el de diseño: ocurre cuando el ajuste describe "
+        "bien los años corrientes y no los extremos, y por eso el paso "
+        "contrasta la lluvia de diseño contra el maximo observado y lo "
+        "avisa."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.3.7.1",              # RECOMENDACION -> sostiene RECOMIENDA
+           "MC_HHD.3.7.1.1", "MC_HHD.3.7.1.2", "MC_HHD.3.7.1.7",
+           "MC_HHD.3.7.2b"),            # la ec. (13), del periodo empirico
+    que_pasa_si_no_se_hace=(
+        "La precipitacion de diseño seria el maximo observado, o un numero "
+        "traido de otro estudio: en los dos casos sin periodo de retorno "
+        "asociado, que es justo lo que la Tabla Nº 02 fija."),
+)
+
+H_KS = _fundamento(
+    id="FH.KS",
+    fase=FH,
+    que_paso=("Prueba de bondad de ajuste de Kolmogorov-Smirnov: D = max "
+              "|Fo(xm) − F(xm)| contra el valor critico d de la Tabla Nº 03"),
+    por_que=(
+        "Ajustar una distribucion siempre da parametros; lo que no da es la "
+        "garantia de que la serie se parezca a ella. La prueba compara la "
+        "probabilidad empirica de cada dato con la del modelo y se queda con "
+        "la mayor diferencia: si no baja del valor critico, la hipotesis de "
+        "que la serie sale de esa distribucion se rechaza y la extrapolacion "
+        "no se sostiene. La misma prueba permite elegir, entre las "
+        "distribuciones ajustadas, la de menor diferencia."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.3.7.2b",             # DEFINICION -> sostiene DEFINE
+           "MC_HHD.3.7.2b#T03", "MC_HHD.3.7.2b#ELIGE"),
+    que_pasa_si_no_se_hace=(
+        "Se extrapolaria a 71 años con un modelo que la propia serie "
+        "desmiente, y el caudal llevaria una precision que no tiene."),
+)
+
+H_FEN = _fundamento(
+    id="FH.FEN",
+    fase=FH,
+    que_paso=("Contraste del tratamiento de los años FEN: la lluvia de "
+              "diseño adoptada frente a la de la serie completa y la de la "
+              "serie sin los años FEN"),
+    por_que=(
+        "El Manual manda que la serie incluya los años del fenomeno El Niño "
+        "y dice que en Piura y Tumbes hace falta un tratamiento especial; "
+        "la hoja de ruta lo concreta: reportar el ajuste con esos años y "
+        "sin ellos, y adoptar el mas conservador. Este paso hace las dos "
+        "cosas que se pueden comprobar: imprime la lluvia de diseño de las "
+        "dos series y juzga si la adoptada es la mayor. Declarar el "
+        "tratamiento sin los años FEN sigue siendo posible --la decision es "
+        "del proyectista--, pero cuando da menos lluvia que la serie "
+        "completa no cumple la regla y el calculo hidrologico del punto se "
+        "detiene; el paso se imprime cuando la lluvia adoptada es la mas "
+        "conservadora de las dos, o igual."),
+    verbo=Verbo.OBLIGA,
+    citas=("MC_HHD.3.4#FEN",                # EXIGENCIA -> sostiene OBLIGA
+           "MC_HHD.3.12.5#PIURA"),          # EXIGENCIA
+    que_pasa_si_no_se_hace=(
+        "Quitar de la serie los tres años que mas llovio es la forma mas "
+        "facil de que una distribucion ajuste bien, y tambien la de bajar la "
+        "lluvia de diseño a la mitad sin que la memoria lo delate."),
+)
+
+H_TC = _fundamento(
+    id="FH.TC",
+    fase=FH,
+    que_paso=("Tiempo de concentracion de la cuenca, por el metodo declarado "
+              "en el CSV de cuencas"),
+    por_que=(
+        "El metodo racional supone que el caudal pico llega cuando toda la "
+        "cuenca aporta a la vez, y eso ocurre cuando la lluvia dura lo que "
+        "tarda en llegar el agua desde el punto mas alejado: por eso la "
+        "duracion de la lluvia de diseño es el tiempo de concentracion, y de "
+        "el depende la intensidad. Las formulas son empiricas y cada una "
+        "salio de un tipo de cuenca; fuera de esa poblacion la formula sigue "
+        "dando un numero, que es lo peligroso. El paso compara la cuenca "
+        "contra la poblacion que la fuente describe para el metodo, y que "
+        "se hace fuera de ella lo decide un criterio declarado: no evaluar, "
+        "o evaluar con aviso."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.3.9#T05",            # DEFINICION -> sostiene DEFINE
+           "MC_HHD.3.9#T05_KIRPICH", "MC_HHD.3.9#T05_CALIFORNIA",
+           "MC_HHD.3.9#T05_FAA", "MC_HHD.3.9#T05_SCS",
+           "MC_HHD.3.12.2.1#TC"),
+    que_pasa_si_no_se_hace=(
+        "La intensidad se tomaria para una duracion arbitraria. Con la "
+        "relacion de Dick y Peschke la intensidad varia con la duracion "
+        "elevada a −0.75: a mitad de duracion, un 68 % mas de intensidad y "
+        "de caudal."),
+)
+
+H_INTENSIDAD = _fundamento(
+    id="FH.INTENSIDAD",
+    fase=FH,
+    que_paso=("Intensidad de la lluvia de diseño para una duracion igual al "
+              "tiempo de concentracion, desde la precipitacion maxima en 24 "
+              "horas"),
+    por_que=(
+        "La estacion entrega lluvia acumulada en 24 horas, y el metodo "
+        "racional pide la intensidad de una lluvia que dura minutos. Sin "
+        "registros pluviograficos esa intensidad no se mide: se estima con "
+        "una relacion entre la precipitacion de 24 horas y la de una "
+        "duracion menor. El Manual ofrece dos --la de Dick y Peschke, para "
+        "cualquier duracion hasta 24 horas, y los coeficientes de duracion "
+        "de su Tabla Nº 04, desde una hora--, y las dos son permisos, no "
+        "mandatos: cual se usa es un criterio declarado. Para duraciones de "
+        "uno o dos minutos esas relaciones son una extrapolacion que da "
+        "intensidades irreales, y el Manual no fija una duracion minima: "
+        "la cubre un criterio con fuente tecnica, y cuando el tiempo de "
+        "concentracion queda por debajo la lluvia de diseño dura ese "
+        "minimo."),
+    verbo=Verbo.PERMITE,
+    citas=("MC_HHD.3.8.1#DICK_PESCHKE",     # PERMISO -> sostiene PERMITE
+           "MC_HHD.3.8.1#T04", "MC_HHD.3.8.1#DURACION",
+           "WSDOT_HM.2-6.3#TC_MINIMO"),     # [C]: la duracion minima
+    que_pasa_si_no_se_hace=(
+        "No hay intensidad que meter en la ecuacion (28), o se mete la "
+        "media de 24 horas, que para una cuenca de minutos subestima el "
+        "caudal en mas de un orden de magnitud."),
+)
+
+H_C = _fundamento(
+    id="FH.C",
+    fase=FH,
+    que_paso=("Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura "
+              "vegetal, tipo de suelo y pendiente del terreno"),
+    por_que=(
+        "El metodo racional mete todas las perdidas --infiltracion, "
+        "intercepcion, almacenamiento-- en un solo numero, y por eso ese "
+        "numero decide el caudal en la misma proporcion que la intensidad. "
+        "El Manual lo tabula por tres caracteristicas de la cuenca y manda "
+        "establecerlo de acuerdo con ellas: el programa no acepta un "
+        "coeficiente tecleado, lee la celda que corresponde a la cobertura y "
+        "el suelo que el estudio declara y a la pendiente del terreno de la "
+        "cuenca. La tabla del Manual no tiene fila para una superficie "
+        "pavimentada ni para un talud: para esas cuatro superficies de la "
+        "plataforma el coeficiente sale de una fuente tecnica, con su "
+        "incremento por periodo de retorno, y se dice que no es norma."),
+    verbo=Verbo.OBLIGA,
+    citas=("MC_HHD.3.12.2#T08",             # EXIGENCIA -> sostiene OBLIGA
+           "WSDOT_HM.2-6.2#T2-2", "WSDOT_HM.2-6.2#FRECUENCIA"),   # [C]
+    que_pasa_si_no_se_hace=(
+        "El coeficiente seria un numero suelto sin fila que lo respalde: "
+        "entre el menor y el mayor de la tabla (0.05 y 0.80) el caudal "
+        "cambia dieciseis veces."),
+)
+
+H_RACIONAL = _fundamento(
+    id="FH.RACIONAL",
+    fase=FH,
+    que_paso="Caudal de diseño por el metodo racional, Q = 0.278 · C · I · A",
+    por_que=(
+        "Es el paso que convierte la lluvia de diseño en el caudal con que "
+        "se dimensiona el conducto: intensidad por area da un caudal de "
+        "lluvia, el coeficiente C deja la parte que escurre y el 0.278 "
+        "pasa de mm/h por km² a m³/s. El metodo supone lluvia uniforme "
+        "sobre toda la cuenca durante el tiempo de concentracion, y eso solo "
+        "es razonable en cuencas chicas: el Manual lo situa por debajo de "
+        "10 km², y por encima el programa no lo evalua. Para una cuneta es "
+        "la misma expresion, escrita C·I·A/3.6. Cuando el tiempo de "
+        "concentracion sale de la formula de Temez, que es una pieza del "
+        "metodo racional modificado, el caudal lleva ademas el coeficiente "
+        "de uniformidad K de ese metodo: usar su tiempo de concentracion "
+        "sin su K es tomar medio metodo, y K es siempre mayor que 1."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.3.12.2",                 # DEFINICION -> sostiene DEFINE
+           "MC_HHD.3.12.2#AREA", "MC_HHD.4.1.2.1b", "MC_HHD.3.12.2.1#K"),
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta T-1 (INF-3.1.5): el caudal entraba ya "
+        "calculado por una columna del CSV y la memoria no podia decir de "
+        "que cuenca, de que lluvia ni con que coeficiente salio."),
+)
+
+H_Q_ESPECIFICO = _fundamento(
+    id="FH.Q_ESPECIFICO",
+    fase=FH,
+    que_paso=("Caudal especifico Q/A del caudal de diseño, como contraste de "
+              "plausibilidad"),
+    por_que=(
+        "El caudal de diseño es el numero del que cuelga toda la obra y es "
+        "tambien el que menos se puede comprobar desde el conducto: un "
+        "caudal diez veces menor que el real pasa todas las verificaciones "
+        "hidraulicas. El cociente Q/A lo pone en una escala comparable "
+        "entre cuencas, y dividido entre 0.278 dice a que lamina de "
+        "escorrentia C·I equivale, que se puede contrastar a simple vista "
+        "con la lluvia de la zona. El Manual define la avenida de diseño y "
+        "no le pone umbral: por eso este paso no juzga, informa."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.3.13",                   # DEFINICION -> sostiene DEFINE
+           "MC_HHD.3.12.2"),
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta T-1 (INF-3.1.6): del caudal declarado solo "
+        "se comprobaba que fuera positivo y finito, y 850 ha con "
+        "1.167 m³/s pasaban sin que nada dijera que eso es medio milimetro "
+        "por hora de escorrentia."),
+)
+
+
+# ===========================================================================
 # Lo que NO tiene fundamento, y por que. Censo, no omision.
 # ===========================================================================
 # (id del paso, por que no puede tener `Fundamento` hoy, que haria falta)

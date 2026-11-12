@@ -603,8 +603,32 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `MC_HHD.3.12.2` | 3.12.2 | ESTIMACIÓN DE CAUDALES › «Método Racional» | pág. impresa **49** · PDF 52 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.12.2#AREA` | 3.12.2 | ESTIMACIÓN DE CAUDALES › «Método Racional» | pág. impresa **49** · PDF 52 | aproximacion | 2026-11-11 · texto |
+| `MC_HHD.3.12.2#T08` | 3.12.2 | ESTIMACIÓN DE CAUDALES › «Método Racional» | pág. impresa **50** · PDF 53 | exigencia | 2026-11-11 · ambos |
+| `MC_HHD.3.12.2.1#K` | 3.12.2.1 | «Método Racional Modificado» | pág. impresa **51** · PDF 54 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.12.2.1#TC` | 3.12.2.1 | «Método Racional Modificado» | pág. impresa **51** · PDF 54 | aproximacion | 2026-11-11 · ambos |
 | `MC_HHD.3.12.5#G` | 3.12.5 | «Otras Metodologías» | pág. impresa **63** · PDF 66 | definicion | 2026-08-28 · ambos |
+| `MC_HHD.3.12.5#PIURA` | 3.12.5 | «Otras Metodologías» | pág. impresa **64** · PDF 67 | exigencia | 2026-11-11 · texto |
+| `MC_HHD.3.13` | 3.13 | «Avenida de Diseño» | pág. impresa **65** · PDF 68 | definicion | 2026-11-11 · texto |
+| `MC_HHD.3.4#FEN` | 3.4 | «Evaluación de la Información Hidrológica» | pág. impresa **22** · PDF 25 | exigencia | 2026-11-11 · texto |
+| `MC_HHD.3.4#REGISTRO` | 3.4 | «Evaluación de la Información Hidrológica» | pág. impresa **22** · PDF 25 | recomendacion | 2026-11-11 · texto |
 | `MC_HHD.3.6` | 3.6 | «Selección del Período de Retorno» | pág. impresa **25** · PDF 28 | recomendacion | 2026-08-28 · ambos |
+| `MC_HHD.3.7.1` | 3.7.1 | ANALISIS ESTADISTICO DE DATOS HIDROLOGICOS › «Modelos de distribución» | pág. impresa **25** · PDF 28 | recomendacion | 2026-11-11 · texto |
+| `MC_HHD.3.7.1.1` | 3.7.1.1 | «Distribución Normal» | pág. impresa **26** · PDF 29 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.7.1.2` | 3.7.1.2 | «Distribución  Log  Normal  2  Parámetros» | pág. impresa **27** · PDF 30 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.7.1.7` | 3.7.1.7 | «Distribución Gumbel» | pág. impresa **29** · PDF 32 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.7.2b` | 3.7.2 b) | 3.7.2 Pruebas de bondad de ajuste › «b) Prueba Kolmogorov – Smirnov» | pág. impresa **32** · PDF 35 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.7.2b#ELIGE` | 3.7.2 b) | 3.7.2 Pruebas de bondad de ajuste › «b) Prueba Kolmogorov – Smirnov» | pág. impresa **32** · PDF 35 | permiso | 2026-11-11 · texto |
+| `MC_HHD.3.7.2b#T03` | 3.7.2 b) | 3.7.2 Pruebas de bondad de ajuste › «b) Prueba Kolmogorov – Smirnov» | pág. impresa **32** · PDF 35 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.8.1#DICK_PESCHKE` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **37** · PDF 40 | permiso | 2026-11-11 · ambos |
+| `MC_HHD.3.8.1#DURACION` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **36** · PDF 39 | definicion | 2026-11-11 · texto |
+| `MC_HHD.3.8.1#T04` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **36** · PDF 39 | permiso | 2026-11-11 · ambos |
+| `MC_HHD.3.9#T05` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.9#T05_CALIFORNIA` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | aproximacion | 2026-11-11 · ambos |
+| `MC_HHD.3.9#T05_FAA` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | aproximacion | 2026-11-11 · ambos |
+| `MC_HHD.3.9#T05_KIRPICH` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | aproximacion | 2026-11-11 · ambos |
+| `MC_HHD.3.9#T05_SCS` | 3.9 | «Tiempo de Concentración» | pág. impresa **40** · PDF 43 | aproximacion | 2026-11-11 · ambos |
 | `MC_HHD.4.1.1.3.1` | 4.1.1.3.1 | «Aspectos generales» | pág. impresa **70** · PDF 73 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.3` | 4.1.1.3.3 | «Pendiente longitudinal» | pág. impresa **71** · PDF 74 | exigencia | 2026-11-11 · texto |
 | `MC_HHD.4.1.1.3.4a` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | exigencia | 2026-08-28 · texto |
@@ -634,12 +658,59 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.4.1e#RANGO` | 4.1.1.4.1 e), segunda oracion | 4.1.1.4   BADENES › 4.1.1.4.1  Consideraciones para el diseño › «e)   Borde libre» | pág. impresa **85** · PDF 88 | recomendacion | 2026-09-08 · texto |
 | `MC_HHD.4.1.1.5.1` | 4.1.1.5.1 | 4.1.1.5  PUENTES › «Aspectos generales» | pág. impresa **87** · PDF 90 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.5.4b24#G` | 4.1.1.5.4 b.2.4), ec. (63) | b.2.) Socavación General › «Método de Laursen» | pág. impresa **111** · PDF 114 | definicion | 2026-08-28 · ambos |
+| `MC_HHD.4.1.2.1b` | 4.1.2.1 b) | 4.1.2.1 Cunetas › «b) Caudal Q de aporte» | pág. impresa **177** · PDF 180 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.4.1.2.1d` | 4.1.2.1 d) | 4.1.2.1 Cunetas › «d) Desagüe de las cunetas» | pág. impresa **179** · PDF 182 | exigencia | 2026-08-28 · ambos |
 | `MC_HHD.LAMINA_03` | Lámina Nº 03 | «SECCIONES TÍPICAS DE ALCANTARILLAS» | pág. impresa **209** · PDF 212 | definicion | 2026-09-07 · imagen renderizada |
 
+> **`MC_HHD.3.12.2`** — Ecuacion (28). Las unidades estan en la pag. impresa 50 (PDF 53): Q «Descarga máxima de diseño (m3/s)», C «Coeficiente de escorrentía (Ver Tabla Nº 08)», I «Intensidad de precipitación máxima horaria (mm/h)», A «Área de la cuenca (Km2).» El 0,278 es 1/3.6, la conversion de mm/h·km² a m³/s: es el mismo cociente que el num. 4.1.2.1 b) escribe como C·I·A/3.6. El numeral NO trae ejemplo numerico.
+
+> **`MC_HHD.3.12.2#AREA`** — La desigualdad es ESTRICTA: 10 km² exactos quedan fuera. Y el verbo es descriptivo («Muy usado para»): la fuente no prohibe el metodo por encima, dice donde se usa. El proyecto lo aplica como limite de validez y por encima no evalua, remitiendo al hidrograma unitario del num. 3.12.3.
+
+> **`MC_HHD.3.12.2#T08`** — Es la oracion que sigue a la Tabla Nº 08. La tabla da el NUMERO; que fila describe a la cuenca lo establece el estudio, con sus caracteristicas: por eso cobertura y suelo son columnas del CSV de cuencas y no una eleccion del programa.
+
+> **`MC_HHD.3.12.2.1#K`** — Ecuacion (29), con «K : Coeficiente de Uniformidad». Su apartado «B) Coeficiente de Uniformidad» da la ecuacion (31), vista en imagen: K = 1 + Tc^1.25 / (Tc^1.25 + 14), con «Tc= Tiempo de concentración (horas)». K es siempre mayor que 1 y crece con Tc (1.01 a 0.25 h, 1.07 a 1 h, 1.79 a 24 h). El metodo trae ademas su propia intensidad (ec. 34), su factor reductor por area (ec. 32) y su coeficiente C por numero de curva (ec. 35), que el proyecto NO usa: toma la formula del tiempo de concentracion (ec. 30) y, con ella, este coeficiente.
+
+> **`MC_HHD.3.12.2.1#TC`** — Ecuacion (30), apartado «A) Tiempo de Concentración (Tc)», vista en imagen: Tc = 0.3 · (L / S^0.25)^0.76, con «L= Longitud del cauce mayor (km)» y «S= Pendiente promedio del cauce mayor (m/m)»; Tc sale en HORAS (lo dicen el rango de arriba y el apartado B). Es la formula de Temez, y vive AQUI y no en la Tabla Nº 05. El rango de area y de Tc es el del metodo racional modificado entero, del que esta formula es una pieza: el proyecto toma SOLO la formula del tiempo de concentracion y le aplica ese rango como validez; no usa el resto del metodo (coeficiente de uniformidad, factor reductor, numero de curva).
+
 > **`MC_HHD.3.12.5#G`** — Primera de las DOS paginas del Manual donde 9.8 figura como gravedad.
 
+> **`MC_HHD.3.12.5#PIURA`** — La oracion entera: «Otra metodología es la que resalte la influencia de El Fenómeno “El Niño”, en especial en la Vertiente del Pacífico del Perú, departamentos de Piura y Tumbes, donde es necesario un tratamiento especial del análisis para determinar el caudal de diseño.» El Manual lo dice de los caudales y no da el tratamiento; el proyecto lo imprime en la memoria hidrologica porque el ajuste de una sola distribucion a una serie con años de El Niño puede dejar la lluvia de diseño por debajo de lo ya observado, y eso se avisa en el paso del ajuste.
+
+> **`MC_HHD.3.13`** — El numeral no da formula ni umbral: remite al estudio hidrologico («Estimación de Caudales») y a «la experiencia y el buen tino del ingeniero proyectista». Por eso el caudal especifico Q/A se imprime como contraste y no se juzga contra nada.
+
+> **`MC_HHD.3.4#FEN`** — El numeral abre en la pag. impresa 21 (PDF 24) y esta oracion esta en la 22 (PDF 25). Son DOS mandatos en una oracion y tiran en sentidos opuestos: la serie «deberá incluir» los años del Niño, y esos años deben «ser evaluados» para no sobredimensionar. La fuente no dice COMO evaluarlos: de ahi el criterio 'homogeneidad_serie_fen'.
+
+> **`MC_HHD.3.4#REGISTRO`** — Misma oracion que MC_HHD.3.4#FEN, otra clausula. Es «se recomienda»: una serie mas corta no queda prohibida, y por eso el paso de la serie lo imprime como INDICADOR y no detiene.
+
 > **`MC_HHD.3.6`** — El numeral abre en la pag. impresa 23 (PDF 26); la Tabla Nº 02 y este parrafo estan en la 25 (PDF 28).
+
+> **`MC_HHD.3.7.1`** — La lista de ocho (i a viii) se imprime en la pag. impresa 26 (PDF 29): Normal, Log Normal 2 parámetros, Log Normal 3 parámetros, Gamma 2 parámetros, Gamma 3 parámetros, Log Pearson tipo III, Gumbel y Log Gumbel. El Manual imprime la funcion de cada una y SOLO de tres dice como se estiman sus parametros: la Normal (media y desviacion estandar, 3.7.1.1), la Log Normal de 2 parametros (media y desviacion de los logaritmos, 3.7.1.2) y Gumbel (metodo de momentos, 3.7.1.7).
+
+> **`MC_HHD.3.7.1.1`** — Ecuacion (2), la densidad normal. El renglon siguiente dice lo mismo del otro parametro: «S = parámetro de escala, igual a la desviación estándar de x.»
+
+> **`MC_HHD.3.7.1.2`** — La pagina imprime, vistas en imagen, Y = Σ log xi / n y Sy = raiz( Σ (yi − Y)² / (n − 1) ): la desviacion es la MUESTRAL, con n − 1. El numeral escribe «y=log(x)» sin decir la base; el cuantil no depende de ella mientras se use la misma para ajustar y para invertir, y el proyecto usa el logaritmo natural.
+
+> **`MC_HHD.3.7.1.7`** — Ecuacion (9): F(x) = exp(−exp(−α(x − β))). Las dos relaciones, vistas en imagen: α = 1.2825 / σ y β = µ − 0.45 σ. Los dos numeros son los que la pagina imprime (los exactos son π/√6 = 1.28255 y 0.5772·√6/π = 0.45005). La pagina NO dice para que tamaño de muestra valen ni menciona correccion alguna por n.
+
+> **`MC_HHD.3.7.2b`** — D = máx |Fo(xm) − F(xm)| y, ecuacion (13), Fo(xm) = 1 − m/(n+1), con m el numero de orden del dato en una lista de MAYOR a menor. El valor critico d sale de la Tabla Nº 03 de la misma pagina. La desigualdad es estricta: D = d no acepta.
+
+> **`MC_HHD.3.7.2b#ELIGE`** — Es lo que sostiene el valor de archivo del criterio 'distribucion_precipitacion_maxima' (la de menor D): la fuente PERMITE elegir asi, no lo manda.
+
+> **`MC_HHD.3.7.2b#T03`** — La tabla empieza en la pag. impresa 32 (PDF 35: n = 5 a 25) y termina en la 33 (PDF 36: n = 30, 35 y 40, y «Fuente: Aparicio, 1999.»).
+
+> **`MC_HHD.3.8.1#DICK_PESCHKE`** — Ecuacion (16), vista en imagen: Pd = P24h · (d / 1440)^0.25, con d en MINUTOS y las dos precipitaciones en mm. Y a renglon seguido: «La intensidad se halla dividiendo la precipitación Pd entre la duración.» Las dos condiciones van unidas por «o»: basta con no tener registros pluviograficos, que es el caso de una serie de maximas en 24 horas.
+
+> **`MC_HHD.3.8.1#T04`** — La Tabla Nº 04 empieza en la pag. impresa 36 (PDF 39: 1 a 8 horas) y termina en la 37 (PDF 40: 10 a 48 horas). El coeficiente multiplica a la precipitacion maxima en 24 horas y da la PRECIPITACION de esa duracion; la intensidad es ese producto entre la duracion.
+
+> **`MC_HHD.3.9#T05`** — La Tabla Nº 05 ocupa las pags. impresas 39 (PDF 42: Kirpich, California Culverts Practice, Izzard y Federal Aviation Administration) y 40 (PDF 43: ecuaciones de onda cinematica y ecuacion de retardo SCS). Su encabezado dice «FÓRMULA PARA tc (minutos)». NO lista a Temez.
+
+> **`MC_HHD.3.9#T05_CALIFORNIA`** — Fila «California Culverts Practice (1942)». La formula, vista en imagen: tc = 0.0195 · (L³ / H)^0.385, con «L = longitud del curso de agua más largo, m.» y «H = diferencia de nivel entre la divisoria de aguas y la salida, m.» La observacion NO escribe un rango numerico propio.
+
+> **`MC_HHD.3.9#T05_FAA`** — Fila «Federal Aviation Administration (1970)». La formula, vista en imagen: tc = 0.7035 · (1.1 − C) · L^0.50 / S^0.333, con «C = coeficiente de escorrentía del método racional», «L = longitud del flujo superficial, m.» y «S = pendiente de la superficie, m/m». Es una formula de FLUJO SUPERFICIAL (sobre una superficie, no por un cauce) y la observacion no le escribe rango numerico: es la que el proyecto ofrece para una plataforma, un talud o una cuenca plana sin cauce definido.
+
+> **`MC_HHD.3.9#T05_KIRPICH`** — Fila «Kirpich (1940)». La formula, vista en imagen: tc = 0.01947 · L^0.77 · S^−0.385, con «L = longitud del canal desde aguas arriba hasta la salida, m.» y «S = pendiente promedio de la cuenca, m/m». La observacion sigue: para flujo superficial en superficies de concreto o asfalto se debe multiplicar tc por 0.4; para canales de concreto, por 0.2; ningun ajuste para flujo superficial en suelo descubierto o para flujo en cunetas. El «(3 a 10%)» es la poblacion de la que salio la formula.
+
+> **`MC_HHD.3.9#T05_SCS`** — Fila «Ecuación de retardo SCS (1973)». La formula, vista en imagen: tc = 0.0136 · L^0.8 · (1000/CN − 9)^0.7 / S^0.5, con «L = longitud hidráulica de la cuenca (mayor trayectoria de flujo), m.», «CN = Número de curva SCS» y «S = pendiente promedio de la cuenca, m/m». La observacion sigue: buena cuando el area esta completamente pavimentada, tiende a sobreestimar en areas mixtas, y «la ecuación supone que tc = 1.67 x retardo de la cuenca». Las «800 Ha» son la poblacion a la que se adapto; el proyecto las trata como a los «3 a 10%» de Kirpich.
 
 > **`MC_HHD.4.1.1.3.3`** — EXIGENCIA SIN NUMERO. El numeral entero son dos parrafos: este y la remision a la Lamina Nº 01 («ubicación típica de alcantarillas respecto a la pendiente del cauce»). No fija pendiente minima ni maxima, ni en porcentaje ni por material: obliga a ESTUDIAR el cambio de pendiente. Las cifras «2 % en TMC, 1 % en marco» que circulan en expedientes no salen de aqui.
 
@@ -682,6 +753,8 @@ línea que se pueda romper.
 > **`MC_HHD.4.1.1.5.1`** — NOR-HID-05, cerrado: el numeral ARRANCA en la pag. impresa 86 (PDF 89) y la frase que sostiene el valor esta en la 87 (PDF 90). La cita anterior decia «pag. 88», donde el Manual imprime «a.1) Topografía – Batimetría del cauce y zonas adyacentes», del num. 4.1.1.5.2.
 
 > **`MC_HHD.4.1.1.5.4b24#G`** — Segunda y ultima pagina del Manual donde 9.8 figura como gravedad. Es socavacion general por contraccion en PUENTES, no la de salida de alcantarilla: sostiene el NUMERO, no el numeral de Laushey.
+
+> **`MC_HHD.4.1.2.1b`** — La expresion, vista en imagen: Q = C·I·A / 3.6, con Q en m3/s, «C : Coeficiente de escurrimiento de la cuenca», «A : Área aportante en Km2» e «I : Intensidad de la lluvia de diseño en mm/h». Es la ecuacion (28) del num. 3.12.2 con el 0,278 escrito como 1/3.6. La pagina le imprime DOS numeros de ecuacion, (118) y (147): no se cita por numero.
 
 > **`MC_HHD.4.1.2.1d`** — NOR-HID-02, cerrado en sus DOS extremos. (1) LA PAGINA: el repositorio citaba la impresa 178, que trae la TABLA Nº 34 de dimensiones minimas del apartado c); el apartado d) esta en la 179. (2) EL CARACTER: las dos cifras NO tienen la misma fuerza. El 250 es «será ... como máximo», exigencia con valvula de escape expresa («deberán justificarse técnicamente»); el 200 es «se recomienda reducir», recomendacion pura. Tratarlas como un dict de topes duros equivalentes borra la diferencia. Ademas la fuente nombra solo DOS regimenes en este apartado y deja sin longitud el regimen «lluvioso» intermedio de su propia Tabla Nº 34.
 
@@ -787,6 +860,9 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `WSDOT_HM.2-6.2#FRECUENCIA` | 2-6.2 | «Runoff Coefficients» | pág. impresa **2-8** · PDF 44 | exigencia | 2026-11-11 · texto |
+| `WSDOT_HM.2-6.2#T2-2` | 2-6.2 | «Runoff Coefficients» | pág. impresa **2-9** · PDF 45 | definicion | 2026-11-11 · texto |
+| `WSDOT_HM.2-6.3#TC_MINIMO` | 2-6.3 | «Time of Concentration» | pág. impresa **2-10** · PDF 46 | exigencia | 2026-11-11 · texto |
 | `WSDOT_HM.3-3.5#10FTS` | 3-3.5 | «Velocities in Culverts: General» | pág. impresa **3-11** · PDF 76 | recomendacion | 2026-11-11 · texto |
 | `WSDOT_HM.8-3.1#CONCRETO` | 8-3.1 | «Concrete Pipe» | pág. impresa **8-10** · PDF 225 | permiso | 2026-11-11 · texto |
 | `WSDOT_HM.8-3.3#SEVERA` | 8-3.3 | «Thermoplastic Pipe: General» | pág. impresa **8-13** · PDF 228 | exigencia | 2026-11-11 · texto |
@@ -794,6 +870,12 @@ línea que se pueda romper.
 | `WSDOT_HM.8-5.1#PH` | 8-5.1 | «pH» | pág. impresa **8-25** · PDF 240 | exigencia | 2026-11-11 · texto |
 | `WSDOT_HM.8-5.2#RESISTIVIDAD` | 8-5.2 | «Resistivity» | pág. impresa **8-26** · PDF 241 | exigencia | 2026-11-11 · texto |
 | `WSDOT_HM.T8-4` | Table 8-4 | «Pipe Abrasion Levels» | pág. impresa **8-27** · PDF 242 | definicion | 2026-11-11 · texto |
+
+> **`WSDOT_HM.2-6.2#FRECUENCIA`** — La oracion anterior fija la base: «The coefficients in Table 2-2 are applicable for peak storms of 10-year frequency.» Y la siguiente el tope: «The runoff coefficient shall not be increased above 0.95, unless approved by the RHE.» La fuente nombra tres frecuencias (25, 50 y 100 años) y no dice que hacer entre ellas ni por encima de 100.
+
+> **`WSDOT_HM.2-6.2#T2-2`** — Table 2-2: veintiseis coberturas por tres columnas de pendiente (Flat, Rolling 2%–10%, Hilly Over 10%). «Pavement and roofs» vale 0.90 en las tres; «Side slopes, earth» 0.60; «Side slopes, turf» 0.30; «Earth shoulders» 0.50. Son coeficientes para una tormenta de 10 años de periodo de retorno: ver WSDOT_HM.2-6.2#FRECUENCIA.
+
+> **`WSDOT_HM.2-6.3#TC_MINIMO`** — El num. 2-6.4 «Rainfall Intensity» (pag. impresa 2-11, PDF 47) lo repite --«PEOs shall never use a time of concentration that is less than 5 minutes for intensity calculations»-- y da las dos razones: las curvas intensidad-duracion por debajo de ese tiempo son extrapolacion, y la lluvia tarda en generar escorrentia. Es una exigencia de WSDOT para SUS curvas; aqui cubre un vacio del Manual peruano (que no fija duracion minima, barrido entero) y entra como [C], no como norma.
 
 > **`WSDOT_HM.3-3.5#10FTS`** — 10 ft/s = 3.048 m/s ES UMBRAL DE CONSULTA, NO PROHIBICION. El mismo numeral dice antes que las alcantarillas con velocidades «in the range of 3 to 10 feet per second (ft/s) tend to have fewer operational problems» y que fuera de ese rango hay que tratarlo con el ingeniero regional; y despues, que «Corrugated metal culverts may be designed with extra thickness to account for possible abrasion». Es el PISO de la ventana de 'v_max_tmc' [A]: por debajo de el la propia fuente no ve problema de abrasion que justifique un techo mas bajo.
 
@@ -1721,6 +1803,101 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 
 >  El Propietario de una Obra es el que define el riesgo admisible de falla y la vida útil de las obras.
 
+### `MC_HHD.T03` — TABLA Nº 03: Valores críticos d para la prueba Kolmogorov – Smirnov
+
+- Cita: `MC_HHD.3.7.2b#T03`
+- Tabla completa · el calculo usa 4 de 4 columnas y 8 de 8 filas
+- Fuente que la tabla se atribuye: *Aparicio, 1999.*
+- **Laguna de la fuente**: un tamaño de muestra que no sea uno de los ocho tabulados (5, 10, ..., 40), y todo n mayor de 40. La pagina no manda interpolar ni da la expresion para muestras grandes, y una serie de maximas anuales casi nunca tiene un n multiplo de cinco. Se cierra con: el proyecto NO interpola ni extrapola la tabla: calcula el valor critico EXACTO del mismo estadistico para el n de la serie (el cuantil 1 − α de la distribucion bilateral de Kolmogorov-Smirnov para muestra finita, `scipy.stats.kstwo`), que es una identidad matematica y no un valor adoptado. Lo que lo autoriza es que ese calculo REPRODUCE las veinticuatro celdas impresas a sus dos decimales, comprobado celda a celda en tests/test_t1_hidrologia.py: la tabla es ese cuantil redondeado. En un n tabulado se usa la celda impresa (`MH_hidrologia.valor_critico_ks`)
+- Vistas de cálculo derivadas: `TABLA_03_KS`
+
+| Fila | TAMAÑO DE LA MUESTRA | α = 0.10 | α = 0.05 | α = 0.01 | Uso |
+|---|---|---|---|---|---|
+| 5 | 5 | 0.51 | 0.56 | 0.67 | usada |
+| 10 | 10 | 0.37 | 0.41 | 0.49 | usada |
+| 15 | 15 | 0.3 | 0.34 | 0.4 | usada |
+| 20 | 20 | 0.26 | 0.29 | 0.35 | usada |
+| 25 | 25 | 0.24 | 0.26 | 0.32 | usada |
+| 30 | 30 | 0.22 | 0.24 | 0.29 | usada |
+| 35 | 35 | 0.2 | 0.22 | 0.27 | usada |
+| 40 | 40 | 0.19 | 0.21 | 0.25 | usada |
+
+### `MC_HHD.T04` — TABLA Nº 04: Coeficientes de duración lluvias entre 48 horas y una hora
+
+- Cita: `MC_HHD.3.8.1#T04`
+- Tabla completa · el calculo usa 2 de 2 columnas y 16 de 16 filas
+- Fuente que la tabla se atribuye: *Manual para el Diseño de Carreteras Pavimentadas de Bajo Volumen de Tránsito*
+- **Laguna de la fuente**: las duraciones que no son una de las dieciseis tabuladas: la pagina no dice que se interpole entre filas. Se cierra con: interpolacion LINEAL entre las dos filas vecinas, que es lectura del proyecto y se imprime como tal en el paso. Solo se alcanza si el criterio 'relacion_intensidad_duracion' elige esta tabla; el valor de archivo es la relacion de Dick y Peschke, que no necesita interpolar (`criterios_adoptados['relacion_intensidad_duracion']`)
+- **Laguna de la fuente**: las duraciones MENORES de una hora, que son las de casi toda cuenca pequeña y de toda cuneta: la tabla empieza en 1 hora y su titulo lo dice. Se cierra con: ninguna: por debajo de una hora la tabla no se extrapola y el calculo se detiene remitiendo a la relacion de Dick y Peschke, que es la que el mismo numeral nombra para ese caso (`criterios_adoptados['relacion_intensidad_duracion']`)
+- Vistas de cálculo derivadas: `TABLA_04_COEFICIENTES_DE_DURACION`
+
+| Fila | DURACIÓN DE LA PRECIPITACIÓN EN HORAS | COEFICIENTE | Uso |
+|---|---|---|---|
+| 1 | 1 | 0.25 | usada |
+| 2 | 2 | 0.31 | usada |
+| 3 | 3 | 0.38 | usada |
+| 4 | 4 | 0.44 | usada |
+| 5 | 5 | 0.5 | usada |
+| 6 | 6 | 0.56 | usada |
+| 8 | 8 | 0.64 | usada |
+| 10 | 10 | 0.73 | usada |
+| 12 | 12 | 0.79 | usada |
+| 14 | 14 | 0.83 | usada |
+| 16 | 16 | 0.87 | usada |
+| 18 | 18 | 0.9 | usada |
+| 20 | 20 | 0.93 | usada |
+| 22 | 22 | 0.97 | usada |
+| 24 | 24 | 1.0 | usada |
+| 48 | 48 | 1.32 | usada |
+
+### `MC_HHD.T05` — TABLA Nº 05: Fórmulas para el cálculo del tiempo de concentración
+
+- Cita: `MC_HHD.3.9#T05`
+- Tabla completa · el calculo usa 3 de 3 columnas y 4 de 6 filas
+- Fuente que la tabla se atribuye: ** SCS   Soil Conservation Service*
+- **Afirmación negativa**: la Tabla Nº 05 no lista la formula de Temez. Sus seis filas son Kirpich, California Culverts Practice, Izzard, Federal Aviation Administration, onda cinematica y retardo SCS. Ámbito barrido: la tabla entera, pags. impresas 39 y 40 (PDF 42 y 43), en texto y en imagen; y el Manual entero por la cadena «mez»: Temez solo aparece en el num. 3.12.2.1, pag. impresa 50 (PDF 53)
+- **Afirmación negativa**: ni la Tabla Nº 05 ni el resto del Manual fijan una duracion minima de la lluvia de diseño ni un tiempo de concentracion minimo. Ámbito barrido: el Manual entero, 225 paginas, por las cadenas «mínim» y «minut» junto a «concentración» y «duración»
+- Vistas de cálculo derivadas: `TC_KIRPICH_SI`, `TC_CALIFORNIA_SI`, `TC_FAA_SI`, `TC_RETARDO_SCS_SI`
+
+| Fila | MÉTODO Y FECHA | FÓRMULA PARA tc (minutos) | OBSERVACIONES | Uso |
+|---|---|---|---|---|
+| Kirpich (1940) | Kirpich (1940) | tc = 0.01947 · L^0.77 · S^-0.385 ; L = longitud del canal desde aguas arriba hasta la salida, m ; S = pendiente promedio de la cuenca, m/m | Desarrollada a partir de información del SCS en siete cuencas rurales de Tennessee con canales bien definidos y pendientes empinadas (3 a 10%); para flujo superficial en superficies de concreto o asfalto se debe multiplicar tc por 0.4; para canales de concreto se debe multiplicar por 0.2; no se debe hacer ningún ajuste para flujo superficial en suelo descubierto o para flujo en cunetas. | usada |
+| California Culverts Practice (1942) | California Culverts Practice (1942) | tc = 0.0195 · (L^3 / H)^0.385 ; L = longitud del curso de agua más largo, m ; H = diferencia de nivel entre la divisoria de aguas y la salida, m | Esencialmente es la ecuación de Kirpich; desarrollada para pequeñas cuencas montañosas en California. | usada |
+| Izzard (1946) | Izzard (1946) | tc = 525 · (0.0000276·i + c) · L^0.33 / (S^0.333 · i^0.667) ; i = intensidad de lluvia, mm/h ; c = coeficiente de retardo ; L = longitud de la trayectoria de flujo, m ; S = pendiente de la trayectoria de flujo, m/m | Desarrollada experimentalmente en laboratorio por el Bureau of Public Roads para flujo superficial en caminos y Áreas de céspedes; los valores del coeficiente de retardo varían desde 0.0070 para pavimentos muy lisos hasta 0.012 para pavimentos de concreto y 0.06 para superficies densamente cubiertas de pasto; la solución requiere de procesos iterativos; el producto de i por L debe ser ≤ 3800. | no usada |
+| Federal Aviation Administration (1970) | Federal Aviation Administration (1970) | tc = 0.7035 · (1.1 − C) · L^0.50 / S^0.333 ; C = coeficiente de escorrentía del método racional ; L = longitud del flujo superficial, m ; S = pendiente de la superficie, m/m | Desarrollada de información sobre el drenaje de aeropuertos recopilada por el Corps of Engineers: el método tiene como finalidad el ser usado en problemas de drenaje de aeropuertos pero ha sido frecuentemente usado para flujo superficial en cuencas urbanas. | usada |
+| Ecuaciones de onda cinemática Morgali y Linsley (1965) Aron y Erborge (1973) | Ecuaciones de onda cinemática | tc = 7 · L^0.6 · n^0.6 / (I^0.4 · S^0.3) ; L = longitud del flujo superficial, m ; n = coeficiente de rugosidad de Manning ; I = intensidad de lluvia, mm/h ; S = pendiente promedio del terreno, m/m | Ecuación para flujo superficial desarrollada a partir de análisis de onda cinemática de la escorrentía superficial desde superficies desarrolladas; el método requiere iteraciones debido a que tanto I (Intensidad de lluvia) como tc son desconocidos, la superposición de una curva de intensidad – duración – frecuencia da una solución gráfica directa para tc. | no usada |
+| Ecuación de retardo SCS (1973) | Ecuación de retardo SCS (1973) | tc = 0.0136 · L^0.8 · (1000/CN − 9)^0.7 / S^0.5 ; L = longitud hidráulica de la cuenca (mayor trayectoria de flujo), m ; CN = Número de curva SCS ; S = pendiente promedio de la cuenca, m/m | Ecuación desarrollada por el SCS a partir de información de cuencas de uso agrícola; ha sido adaptada a pequeñas cuencas urbanas con áreas inferiores a 800 Ha; se ha encontrado que generalmente es buena cuando el área se encuentra completamente pavimentada; para áreas mixtas tiene tendencia a la sobreestimación; se aplican factores de ajuste para corregir efectos de mejoras en canales e impermeabilización de superficies; la ecuación supone que tc = 1.67 x retardo de la cuenca. | usada |
+
+### `MC_HHD.T08` — TABLA Nº 08:   Coeficientes de escorrentía método racional
+
+- Cita: `MC_HHD.3.12.2#T08`
+- Tabla completa · el calculo usa 5 de 5 columnas y 15 de 15 filas
+- **Laguna de la fuente**: una pendiente del terreno de EXACTAMENTE 1 %: la columna «SUAVE» se rotula «> 1%» y la «DESPRECIABLE» «< 1%», las dos con desigualdad estricta. Las otras tres fronteras (5, 20 y 50 %) si quedan cubiertas: «> 5%» deja el 5 % exacto en la columna anterior. Se cierra con: el proyecto lee la columna «SUAVE», que es la de mayor coeficiente y por tanto el lado conservador (mas caudal), y el paso lo imprime (`MH_hidrologia.clase_de_pendiente`)
+- **Afirmación negativa**: la Tabla Nº 08 no tiene fila de pavimento, de plataforma ni de talud de terraplen: sus cinco coberturas son Sin vegetación, Cultivos, Pastos y vegetación ligera, Hierba y grama, y Bosques y densa vegetación. Ámbito barrido: la tabla entera, pag. impresa 50 (PDF 53), en texto y en imagen; y el num. 4.1.2.1 b) «Caudal Q de aporte» (pag. impresa 177), que pide el «Coeficiente de escurrimiento de la cuenca» sin dar tabla propia para la plataforma
+- **Interpretación del proyectista, no de la fuente**: La columna se elige con la pendiente del TERRENO de la cuenca, que el CSV de cuencas trae en la columna obligatoria `S_terreno`. El programa NO entra a la tabla con la pendiente del cauce (`S_cauce_cuenca`): son dos magnitudes y la una no rellena a la otra.
+  - En contra: pide al estudio hidrologico un dato mas por cuenca: una cuenca sin pendiente media del terreno medida no se calcula, aunque su cauce si tenga pendiente
+  - A favor: la tabla dice «PENDIENTE DEL TERRENO» y no «del cauce»
+  - A favor: la pendiente del cauce principal es, en general, MENOR que la pendiente media del terreno de su cuenca: leer la tabla con ella puede caer una columna a la derecha y dar un coeficiente menor, que es el lado NO conservador. Hasta la auditoria de T-1 el programa hacia eso cuando la celda iba vacia
+- Vistas de cálculo derivadas: `TABLA_08_COEFICIENTE_DE_ESCORRENTIA`, `TABLA_08_PENDIENTES`
+
+| Fila | PRONUNCIADA > 50% | ALTA > 20% | MEDIA > 5% | SUAVE > 1% | DESPRECIABLE < 1% | Uso |
+|---|---|---|---|---|---|---|
+| Sin vegetación -- Impermeable | 0.8 | 0.75 | 0.7 | 0.65 | 0.6 | usada |
+| Sin vegetación -- Semipermeable | 0.7 | 0.65 | 0.6 | 0.55 | 0.5 | usada |
+| Sin vegetación -- Permeable | 0.5 | 0.45 | 0.4 | 0.35 | 0.3 | usada |
+| Cultivos -- Impermeable | 0.7 | 0.65 | 0.6 | 0.55 | 0.5 | usada |
+| Cultivos -- Semipermeable | 0.6 | 0.55 | 0.5 | 0.45 | 0.4 | usada |
+| Cultivos -- Permeable | 0.4 | 0.35 | 0.3 | 0.25 | 0.2 | usada |
+| Pastos, vegetación ligera -- Impermeable | 0.65 | 0.6 | 0.55 | 0.5 | 0.45 | usada |
+| Pastos, vegetación ligera -- Semipermeable | 0.55 | 0.5 | 0.45 | 0.4 | 0.35 | usada |
+| Pastos, vegetación ligera -- Permeable | 0.35 | 0.3 | 0.25 | 0.2 | 0.15 | usada |
+| Hierba, grama -- Impermeable | 0.6 | 0.55 | 0.5 | 0.45 | 0.4 | usada |
+| Hierba, grama -- Semipermeable | 0.5 | 0.45 | 0.4 | 0.35 | 0.3 | usada |
+| Hierba, grama -- Permeable | 0.3 | 0.25 | 0.2 | 0.15 | 0.1 | usada |
+| Bosques, densa vegetación -- Impermeable | 0.55 | 0.5 | 0.45 | 0.4 | 0.35 | usada |
+| Bosques, densa vegetación -- Semipermeable | 0.45 | 0.4 | 0.35 | 0.3 | 0.25 | usada |
+| Bosques, densa vegetación -- Permeable | 0.25 | 0.2 | 0.15 | 0.1 | 0.05 | usada |
+
 ### `MC_HHD.T09` — TABLA  Nº  09:  Valores del Coeficiente de Rugosidad de Manning (n)
 
 - Cita: `MC_HHD.4.1.1.3.6#T09`
@@ -1901,6 +2078,42 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 
 > Fuente Fuente:  Elaboración Propia, teniendo en cuenta el Tipo de Carretera establecido en la RD 037-2008-MTC/14 y el Manual de Ensayo de Materiales del MTC
 
+### `WSDOT_HM.T2-2` — Runoff Coefficients for the Rational Method: 10-Year Return Frequency
+
+- Cita: `WSDOT_HM.2-6.2#T2-2`
+- Tabla completa · el calculo usa 3 de 3 columnas y 4 de 26 filas
+- **Laguna de la fuente**: un periodo de retorno que no sea 10, 25, 50 o 100 años: la fuente da el incremento del coeficiente para esos tres (10, 20 y 25 %) y no dice que hacer entre ellos ni por encima de 100. Se cierra con: el proyecto toma el incremento de la frecuencia tabulada inmediatamente MAYOR o igual, que es el lado conservador porque el incremento crece con el periodo de retorno, y el paso lo imprime; por encima de 100 años no hay frecuencia mayor que tomar y el calculo se detiene como metodo no evaluable (`criterios_adoptados['coeficiente_escorrentia_superficie_vial']`)
+- Vistas de cálculo derivadas: `coeficiente_escorrentia_superficie_vial`
+
+| Fila | Flat | Rolling (2%–10%) | Hilly (Over 10%) | Uso |
+|---|---|---|---|---|
+| Pavement and roofs | 0.9 | 0.9 | 0.9 | usada |
+| Earth shoulders | 0.5 | 0.5 | 0.5 | usada |
+| Drives and walks | 0.75 | 0.8 | 0.85 | no usada |
+| Gravel pavement | 0.5 | 0.55 | 0.6 | no usada |
+| City business areas | 0.8 | 0.85 | 0.85 | no usada |
+| Suburban residential | 0.25 | 0.35 | 0.4 | no usada |
+| Single-family residential | 0.3 | 0.4 | 0.5 | no usada |
+| Multi units, detached | 0.4 | 0.5 | 0.6 | no usada |
+| Multi units, attached | 0.6 | 0.65 | 0.7 | no usada |
+| Lawns, very sandy soil | 0.05 | 0.07 | 0.1 | no usada |
+| Lawns, sandy soil | 0.1 | 0.15 | 0.2 | no usada |
+| Lawns, heavy soil | 0.17 | 0.22 | 0.35 | no usada |
+| Grass shoulders | 0.25 | 0.25 | 0.25 | no usada |
+| Side slopes, earth | 0.6 | 0.6 | 0.6 | usada |
+| Side slopes, turf | 0.3 | 0.3 | 0.3 | usada |
+| Median areas, turf | 0.25 | 0.3 | 0.3 | no usada |
+| Cultivated land, clay, and loam | 0.5 | 0.55 | 0.6 | no usada |
+| Cultivated land, sand, and gravel | 0.25 | 0.3 | 0.35 | no usada |
+| Industrial areas, light | 0.5 | 0.7 | 0.8 | no usada |
+| Industrial areas, heavy | 0.6 | 0.8 | 0.9 | no usada |
+| Parks and cemeteries | 0.1 | 0.15 | 0.25 | no usada |
+| Playgrounds | 0.2 | 0.25 | 0.3 | no usada |
+| Woodland and forests | 0.1 | 0.15 | 0.2 | no usada |
+| Meadows and pasture land | 0.25 | 0.3 | 0.35 | no usada |
+| Pasture with frozen ground | 0.4 | 0.45 | 0.5 | no usada |
+| Unimproved areas | 0.1 | 0.2 | 0.3 | no usada |
+
 ### `WSDOT_HM.T8-4` — Table 8-4 Pipe Abrasion Levels
 
 - Cita: `WSDOT_HM.T8-4`
@@ -2001,6 +2214,15 @@ recomienda.
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | **obliga** | `AASHTO_LRFD_9.12.6.6.3#COBERTURA`, `EG2013.508.07#RELLENO_MIN` |
 | `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | **obliga** | `E060.7.7.1`, `AASHTO_LRFD_9.T5.10.1-1` |
+| `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | **recomienda** | `MC_HHD.3.7.1`, `MC_HHD.3.7.1.1`, `MC_HHD.3.7.1.2`, `MC_HHD.3.7.1.7`, `MC_HHD.3.7.2b` |
+| `FH.C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura vegetal, tipo de suelo y pendiente del terreno | **obliga** | `MC_HHD.3.12.2#T08`, `WSDOT_HM.2-6.2#T2-2`, `WSDOT_HM.2-6.2#FRECUENCIA` |
+| `FH.FEN` | Fase 1-bis - Hidrologia: caudal de diseño | Contraste del tratamiento de los años FEN: la lluvia de diseño adoptada frente a la de la serie completa y la de la serie sin los años FEN | **obliga** | `MC_HHD.3.4#FEN`, `MC_HHD.3.12.5#PIURA` |
+| `FH.INTENSIDAD` | Fase 1-bis - Hidrologia: caudal de diseño | Intensidad de la lluvia de diseño para una duracion igual al tiempo de concentracion, desde la precipitacion maxima en 24 horas | **permite** | `MC_HHD.3.8.1#DICK_PESCHKE`, `MC_HHD.3.8.1#T04`, `MC_HHD.3.8.1#DURACION`, `WSDOT_HM.2-6.3#TC_MINIMO` |
+| `FH.KS` | Fase 1-bis - Hidrologia: caudal de diseño | Prueba de bondad de ajuste de Kolmogorov-Smirnov: D = max |Fo(xm) − F(xm)| contra el valor critico d de la Tabla Nº 03 | **define** | `MC_HHD.3.7.2b`, `MC_HHD.3.7.2b#T03`, `MC_HHD.3.7.2b#ELIGE` |
+| `FH.Q_ESPECIFICO` | Fase 1-bis - Hidrologia: caudal de diseño | Caudal especifico Q/A del caudal de diseño, como contraste de plausibilidad | **define** | `MC_HHD.3.13`, `MC_HHD.3.12.2` |
+| `FH.RACIONAL` | Fase 1-bis - Hidrologia: caudal de diseño | Caudal de diseño por el metodo racional, Q = 0.278 · C · I · A | **define** | `MC_HHD.3.12.2`, `MC_HHD.3.12.2#AREA`, `MC_HHD.4.1.2.1b`, `MC_HHD.3.12.2.1#K` |
+| `FH.SERIE` | Fase 1-bis - Hidrologia: caudal de diseño | Serie de precipitacion maxima en 24 horas de la estacion: longitud de registro, años FEN que contiene y como se tratan | **obliga** | `MC_HHD.3.4#FEN`, `MC_HHD.3.4#REGISTRO`, `MC_HHD.3.12.5#PIURA` |
+| `FH.TC` | Fase 1-bis - Hidrologia: caudal de diseño | Tiempo de concentracion de la cuenca, por el metodo declarado en el CSV de cuencas | **define** | `MC_HHD.3.9#T05`, `MC_HHD.3.9#T05_KIRPICH`, `MC_HHD.3.9#T05_CALIFORNIA`, `MC_HHD.3.9#T05_FAA`, `MC_HHD.3.9#T05_SCS`, `MC_HHD.3.12.2.1#TC` |
 
 ## 7. Discrepancias declaradas
 
@@ -2150,7 +2372,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 229.
+Citas sin firma de verificación: **5** de 257.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

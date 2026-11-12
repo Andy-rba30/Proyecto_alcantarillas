@@ -963,6 +963,31 @@ _TOPES_DE_LA_NORMA_DE_PRODUCTO = _topes_de_la_norma_de_producto()
 # `constantes_normativas`: las planchas del TMC y los simbolos SUCS.
 _CLAVES_DE_PLANCHA_TMC = tuple(TMC_PLANCHA_CORRUGADA)
 _SIMBOLOS_SUCS_E050 = SIMBOLOS_SUCS
+# --- T-1 --- Las cuatro superficies de la plataforma vial que la Tabla N 08
+# del Manual de Hidrologia no tiene, leidas de la Table 2-2 del WSDOT
+# Hydraulics Manual tal como esta en el registro (no copiadas a mano). Las
+# cuatro filas valen lo mismo en las tres columnas de pendiente de esa tabla,
+# y el helper lo EXIGE: si una transcripcion futura las separase, habria que
+# elegir columna y esto dejaria de ser un numero por superficie.
+SUPERFICIES_VIALES_WSDOT = ("pavimento", "berma_de_tierra", "talud_de_tierra",
+                            "talud_con_cesped")
+
+
+def _coeficientes_de_superficies_viales() -> Dict[str, float]:
+    from src.normativa import registro as _rn
+    tabla = _rn.construir().tabla("WSDOT_HM.T2-2")
+    salida: Dict[str, float] = {}
+    for clave in SUPERFICIES_VIALES_WSDOT:
+        celdas = set(tabla.fila(clave).valores.values())
+        if len(celdas) != 1:
+            raise ValueError(
+                f"WSDOT_HM.T2-2#{clave}: la fila ya no vale lo mismo en sus "
+                f"tres columnas ({sorted(celdas)}); hay que elegir columna")
+        salida[clave] = float(celdas.pop())
+    return salida
+
+
+_COEFICIENTES_VIALES_WSDOT = _coeficientes_de_superficies_viales()
 
 
 # El recorrido de los coeficientes de la Tabla C.2 del HDS-5, DERIVADO de la
@@ -1859,73 +1884,123 @@ CRITERIOS: Dict[str, Criterio] = {
     # ----------------------- HIDROLOGIA -----------------------------------
 
     "homogeneidad_serie_fen": Criterio(
-        # EL UNICO CRITERIO DE PERFIL QUE S20 NO PUDO DECLARAR, y hay que
-        # decir por que no: no es una eleccion que el proyectista pueda tomar
-        # sentado. Las dos ramas que la Fase 1-bis abre --la serie CONTIENE
-        # 1983, 1998 y 2017, o NO los contiene-- son un HECHO sobre un
-        # conjunto de datos, no una adopcion; y ese conjunto de datos -- la
-        # serie SENAMHI de la estacion, con su longitud de registro y sus
-        # años faltantes -- no esta en este expediente. Elegir una de las dos
-        # ramas seria afirmar algo sobre un archivo que nadie ha abierto, que
-        # es la clase de relleno silencioso que CLAUDE.md llama "el peor error
-        # posible en este proyecto".
-        # VACIO, Y NO BLOQUEA NADA POR SI MISMO. Este renglon decia «bloquea
-        # el Q de diseno de TODOS los puntos» hasta T-0 (INF-5.1.1), y no es
-        # lo que el programa hace: ningun modulo lee este criterio, un
-        # `Q_m3s` vacio en la Familia A es `DatoFaltanteError` (falta el
-        # DATO, no la declaracion) y un CSV con el caudal lleno corre entero.
-        # Lo que el vacio declara es que el SUSTENTO de ese caudal no esta
-        # en el expediente; `verificacion_pendiente`, abajo, ya lo decia con
-        # todas las letras. T-1 de la cadena T le da consumidor real.
+        # VACIO, Y DESDE T-1 CON CONSUMIDOR REAL: `MH_hidrologia`.
+        #
+        # Hasta T-0 este renglon decia «bloquea el Q de diseno de TODOS los
+        # puntos», y no era lo que el programa hacia: ningun modulo leia el
+        # criterio (INF-5.1.1). T-0 corrigio la frase; T-1 corrige el hecho.
+        # Hoy pasa esto, y son dos conductas distintas a proposito:
+        #
+        #   * el caudal lo CALCULA el programa (--cuencas y --estacion, con
+        #     `Q_m3s` vacio): `MH_hidrologia.precipitacion_de_diseno` invoca
+        #     este criterio y, sin valor, el calculo hidrologico del punto se
+        #     detiene con `CriterioPendienteError`. No hay tratamiento por
+        #     defecto;
+        #   * el caudal entra DECLARADO por la columna `Q_m3s`: no se detiene
+        #     nada --ese caudal es responsabilidad del estudio hidrologico que
+        #     lo entrego-- y la memoria imprime SIEMPRE un aviso: este
+        #     criterio rige solo el caudal que el programa calcula, y del
+        #     declarado el programa no sabe que se hizo con los años FEN. No
+        #     se lee el criterio en esa rama: atribuir al estudio externo un
+        #     tratamiento declarado para otros puntos seria inventarle una
+        #     procedencia (auditor adversarial de T-1).
+        #
+        # EL HECHO Y LA DECISION VAN SEPARADOS. Que años de El Niño contiene
+        # la serie es un hecho, y lo declara el CSV de la estacion en su
+        # columna `fen`, año por año; este criterio es SOLO la decision de
+        # que se hace con ellos. Por eso sigue vacio en el archivo: se decide
+        # con la serie delante, y la serie es una entrada del proyecto
+        # (docs/contrato_entradas.md).
         valor=None,
-        nivel=NIVEL_PERFIL,
+        nivel=NIVEL_PERFIL,         # lo consume la Fase 1-bis, que produce el
+                                    # caudal con que se dimensiona a perfil
         etiqueta="A",
-        forma=FORMA_STR,
-        # LAS DOS RAMAS QUE LA FASE 1-bis ABRE, que son la ventana entera: la
-        # serie contiene los años FEN o no los contiene, y cada rama tiene su
-        # tratamiento escrito en la hoja de ruta. No hay un tercer camino, y
-        # por eso la ventana es simbolica y cerrada. Se escribe aunque el
-        # criterio siga vacio -- ver la nota sobre el valor --: cual de las
-        # dos aplica es un HECHO sobre la serie SENAMHI, y el hecho no se
-        # puede declarar sin la serie; la ventana, en cambio, se conoce desde
-        # el primer dia.
-        sensibilidad=("la serie CONTIENE 1983, 1998 y 2017: reportar el "
-                      "ajuste con y sin ellos y adoptar el mas conservador",
-                      "la serie NO los contiene: el Q de diseño esta "
-                      "subestimado y es una limitacion central declarada"),
-        concepto="Tratamiento de la poblacion mixta de la serie de precipitacion "
-                 "maxima anual (anios FEN frente a anios neutros)",
-        justificacion="La serie de Piura no es de poblacion unica: 1983, 1998 y "
-                      "2017 no pertenecen estadisticamente a la misma poblacion "
-                      "que los anios neutros. Si la serie los CONTIENE, el ajuste "
-                      "K-S puede estar dominado por dos o tres outliers y hay que "
-                      "reportar el ajuste con y sin ellos y adoptar el mas "
-                      "conservador. Si NO los contiene, el Q de diseno esta "
-                      "subestimado de forma grave y es una limitacion central",
-        fuente="PENDIENTE - Fase 1-bis de la hoja de ruta. Requiere la serie "
-               "SENAMHI con su longitud de registro, estacion y anios faltantes",
-        reemplazado_por="Analisis de homogeneidad sobre la serie SENAMHI completa",
-        verificacion_pendiente="Tablero 3.2: verificar si la serie contiene 1983, "
-                               "1998 y 2017. Va ANTES de la Fase 4. "
-                               "COMO BLOQUEA, que no es como los demas y "
-                               "conviene saberlo (SIS-B-11): ningun modulo "
-                               "llama a `valor('homogeneidad_serie_fen')`. El "
-                               "bloqueo es INDIRECTO -- el hidrologo no "
-                               "entrega Q hasta cerrar la homogeneidad, la "
-                               "columna 'Q_m3s' llega vacia y salta "
-                               "DatoFaltanteError -- y esta escrito en el "
-                               "docstring de `MD.disenar_lote`. La "
-                               "consecuencia: si el CSV trae 'Q_m3s' LLENO, "
-                               "nada obliga a declarar como se trato la "
-                               "poblacion mixta, y este criterio saldra en el "
-                               "bloque de pendientes de la memoria sin haber "
-                               "detenido nada. Quien reciba un CSV con Q ya "
-                               "calculado tiene que exigir, aparte, el "
-                               "analisis de homogeneidad que lo respalda",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO, que es la ventana entera (T-1). Hasta T-1 eran
+        # dos frases --la serie contiene esos años o no los contiene--, que
+        # describian un hecho y no una eleccion: el hecho paso al CSV de la
+        # estacion y aqui quedan los tres tratamientos.
+        #   serie_completa    el ajuste se hace con todos los años, FEN
+        #                     incluidos, que es lo que el num. 3.4 manda
+        #                     incluir.
+        #   serie_sin_fen     el ajuste se hace sin los años marcados FEN.
+        #                     Se puede declarar; cuando da MENOS lluvia que
+        #                     la serie completa incumple la regla de la hoja
+        #                     de ruta (adoptar el mas conservador) y el
+        #                     calculo hidrologico del punto SE DETIENE, con
+        #                     las dos lluvias en el mensaje. Si da igual o
+        #                     mas, pasa y el paso 1b.3b lo imprime. Decision
+        #                     del dueño de la hoja de ruta (ficha T1-09).
+        #   dos_poblaciones   analisis de poblacion mixta. Se puede declarar
+        #                     y el calculo se detiene con «metodo no
+        #                     evaluable»: ni el Manual ni ninguna fuente de
+        #                     normas/ da el procedimiento.
+        # Con cualquiera de los dos primeros la memoria imprime la
+        # precipitacion de diseño de las dos series, lado a lado.
+        sensibilidad=("serie_completa", "serie_sin_fen", "dos_poblaciones"),
+        concepto="Tratamiento de los anios del fenomeno El Nino en la serie "
+                 "de precipitacion maxima en 24 horas de la estacion, al "
+                 "ajustar la distribucion de la que sale la lluvia de diseno",
+        justificacion="Decide con que anios de la serie se ajusta la "
+                      "distribucion de probabilidad de la que sale la "
+                      "precipitacion de diseno. La fuente (num. 3.4 del "
+                      "Manual de Hidrologia, cita MC_HHD.3.4#FEN) manda dos "
+                      "cosas en la misma oracion: que la serie incluya los "
+                      "anios del fenomeno El Nino, y que esos anios se "
+                      "evaluen para no sobredimensionar las obras. Lo que no "
+                      "dice es como se evaluan, y la hoja de ruta (Fase "
+                      "1-bis) lo deja como decision a declarar: la serie de "
+                      "Piura es de poblacion mixta, porque los anios de El "
+                      "Nino extraordinario no pertenecen a la misma "
+                      "poblacion estadistica que los anios neutros. La hoja "
+                      "de ruta fija ademas la regla: reportar el ajuste con "
+                      "esos anios y sin ellos, y adoptar el mas conservador. "
+                      "Se ofrecen tres tratamientos. Con la serie completa "
+                      "las distribuciones de cola corta suelen fallar la "
+                      "prueba de bondad, y la que la pasa puede dejar la "
+                      "lluvia de diseno por debajo de los anios del fenomeno "
+                      "ya registrados: el paso del ajuste lo contrasta y lo "
+                      "avisa. Sin los anios del fenomeno el ajuste mejora y "
+                      "la lluvia de diseno baja, que es el lado no "
+                      "conservador: se puede declarar, y el programa lo "
+                      "juzga contra la regla de la hoja de ruta; cuando da "
+                      "menos que la serie completa el calculo del punto se "
+                      "detiene, y cuando da igual o mas, pasa. "
+                      "El analisis de dos poblaciones es el que describe el "
+                      "fenomeno, y no se evalua porque ninguna fuente del "
+                      "expediente entrega su procedimiento. No se adopta un "
+                      "valor de archivo: la eleccion depende de cuantos "
+                      "anios del fenomeno trae la serie y de que tan lejos "
+                      "quedan del resto, y eso solo se ve con la serie "
+                      "delante. Sensibilidad: la memoria imprime la "
+                      "precipitacion de diseno con la serie completa y sin "
+                      "los anios del fenomeno, de modo que la diferencia "
+                      "entre los dos tratamientos queda a la vista en cada "
+                      "punto",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.4 "
+               "'Evaluación de la Información Hidrológica', pag. impresa 22 "
+               "(PDF 25): cita MC_HHD.3.4#FEN, caracter EXIGENCIA sobre "
+               "incluir y evaluar los anios del fenomeno El Nino, sin "
+               "procedimiento. Hoja de ruta, Fase 1-bis. Requiere la serie "
+               "de la estacion con su columna `fen` (--estacion)",
+        reemplazado_por="Analisis de homogeneidad sobre la serie SENAMHI "
+                        "completa, firmado por el estudio hidrologico",
+        verificacion_pendiente="El tratamiento 'dos_poblaciones' no tiene "
+                               "procedimiento en ninguna fuente de normas/: "
+                               "declararlo detiene el calculo hidrologico "
+                               "con «metodo no evaluable». Y cuando el "
+                               "caudal entra por la columna 'Q_m3s' este "
+                               "criterio no detiene nada: quien reciba un "
+                               "CSV con el caudal ya calculado tiene que "
+                               "exigir, aparte, el analisis de homogeneidad "
+                               "que lo respalda (la memoria lo avisa)",
         resolucion=Libre(
-            que_lo_fija="el proyectista, al tratar la poblacion mixta de la "
-                        "serie (años FEN frente a años neutros)",
-            dominio="declaracion del tratamiento estadistico",
+            que_lo_fija="el proyectista, con la serie de la estacion "
+                        "delante: el num. 3.4 del Manual manda incluir y "
+                        "evaluar los años del fenomeno El Niño y no dice "
+                        "como",
+            dominio="declaracion del tratamiento; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
         ),
     ),
 
@@ -2008,17 +2083,19 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "umbral_area_quebrada_importante_ha": Criterio(
-        # ha. ADOPCION CONSERVADORA Y ESTABLE PARA ESTE CORREDOR: por
-        # debajo de las areas de sus dos puntos de Familia A (A-01, 850 ha;
-        # A-02, 210 ha), de modo que los DOS quedan como "quebrada
-        # importante" y toman el TR mayor de la Tabla N 02 (71 años en vez de
-        # 35). El rango declarado entero, (50, 200) ha, da esa misma
-        # clasificacion: la adopcion no cambia de resultado en ningun punto
-        # de su propia ventana, que es lo que la hace defendible sin tener el
-        # estudio hidrologico de la cuenca.
+        # ha. ADOPCION DEL PROYECTO, SIN FUENTE QUE LA FIJE, y la ficha lo dice
+        # asi desde T-1 (INF-5.1.3). Hasta entonces este comentario y la
+        # `justificacion` defendian el 100 con las areas de los dos puntos de
+        # Familia A de `tests/ejemplo_puntos.csv` --«por debajo de las areas
+        # de sus dos puntos»--, que es un argumento circular: el umbral se
+        # justificaba con los datos de prueba que el propio umbral clasifica,
+        # y M1 dice de esos puntos que no son del expediente. El VALOR no
+        # cambia (moverlo cambiaria el periodo de retorno de un punto real);
+        # cambia lo que lo sostiene, que ahora es lo que la fuente dice, lo
+        # que no dice, la direccion del conservadurismo y el barrido.
         valor=100.0,
         nivel=NIVEL_PERFIL,
-        sensibilidad=(50.0, 200.0),  # ha; toda la ventana deja los dos puntos de Familia A en TR 71
+        sensibilidad=(50.0, 200.0),  # ha; la ventana se barre: `--barrido umbral_area_quebrada_importante_ha=50,100,200`
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Area de cuenca a partir de la cual el cauce de un punto de "
@@ -2026,37 +2103,42 @@ CRITERIOS: Dict[str, Criterio] = {
                  "vez de 'quebrada menor' (TR 35) en la Tabla N 02",
         justificacion="Decide a partir de que area de cuenca el cauce de un "
                       "punto de Familia A se clasifica como quebrada "
-                      "importante (TR 71) en vez de quebrada menor (TR 35). "
-                      "La fuente (Tabla N 02, num. 3.6 del Manual de "
-                      "Hidrologia, transcrita en "
-                      "constantes_normativas.TABLA_02_FILAS) entrega las dos "
-                      "filas con su riesgo admisible R y su vida util n, y de "
-                      "ahi sale el TR de cada categoria. Lo que no entrega -- "
-                      "ni esa tabla ni ningun otro apartado del Manual, "
-                      "verificado contra el texto -- es una regla de "
-                      "asignacion fisica que diga cuando un cauce cae en una "
-                      "categoria o en la otra: no hay umbral de area, ni de "
-                      "caudal, ni de longitud, ni de orden de cauce; el "
-                      "Manual nombra las categorias y las tarifa, no las "
-                      "define. Sec. 2.3 de la hoja de ruta hereda el hueco y "
-                      "se limita a decir que la Familia A lleva TR 71 o 35 "
-                      "anios. Se adopta un umbral de area de cuenca, y es [A] "
-                      "y no [C] porque no hay fuente tecnica reconocida que "
-                      "fije el criterio: el vacio esta en la norma y no se "
-                      "cubre prestandolo de otra. El area se elige como "
-                      "descriptor porque es el unico dato del CSV que Sec. "
-                      "1.1 califica expresamente de solo clasificador: no "
-                      "entra en ninguna formula y existe justamente para "
-                      "esto; el Manual tampoco dice que haya que clasificar "
-                      "por area, de modo que elegir el descriptor tambien es "
-                      "parte de la adopcion. Sensibilidad: entre una fila y "
-                      "la otra el TR se duplica, y con el suben la intensidad "
-                      "de la IDF y el Q de diseno de todos los puntos de "
-                      "paso. La alternativa sin este criterio es clasificar "
-                      "cauce por cauce y pasar la categoria explicita a M1, "
-                      "que la acepta como argumento: la eleccion se documenta "
-                      "entonces punto por punto en la memoria en vez de por "
-                      "regla",
+                      "importante (periodo de retorno de 71 anios) en vez de "
+                      "quebrada menor (35 anios). La fuente (Tabla N 02, "
+                      "num. 3.6 del Manual de Hidrologia, transcrita en "
+                      "constantes_normativas.TABLA_02_FILAS) nombra las dos "
+                      "categorias y les asigna riesgo admisible y vida util, "
+                      "de donde sale el periodo de retorno de cada una. Lo "
+                      "que no entrega -- ni esa tabla, ni sus notas al pie, "
+                      "ni ningun otro apartado del Manual, verificado contra "
+                      "el texto -- es una regla que diga cuando un cauce cae "
+                      "en una categoria o en la otra: no hay umbral de area, "
+                      "ni de caudal, ni de longitud, ni de orden de cauce. "
+                      "El Manual nombra las categorias y las tarifa, no las "
+                      "define, y la hoja de ruta (Sec. 2.3) hereda el hueco. "
+                      "Se adopta un umbral de area de cuenca, y es una "
+                      "adopcion del proyecto en sus dos mitades: el "
+                      "descriptor (el area, que es el dato que la Sec. 1.1 "
+                      "califica de solo clasificador) y el numero. Ninguna "
+                      "fuente tecnica reconocida fija el numero, y por eso "
+                      "la etiqueta no es la de un vacio cubierto con fuente "
+                      "ajena. Los 100 ha (1 km2) no se defienden por lo que "
+                      "clasifican en un conjunto de puntos dado, sino por "
+                      "tres cosas que no dependen de ningun punto. Primera, "
+                      "la direccion: bajar el umbral solo puede pasar cauces "
+                      "de quebrada menor a quebrada importante, que es mas "
+                      "periodo de retorno y mas caudal, de modo que el "
+                      "extremo bajo de la ventana es el conservador. "
+                      "Segunda, la sensibilidad: entre una fila y la otra el "
+                      "periodo de retorno se duplica, y la ventana de 50 a "
+                      "200 ha se barre para mostrar que puntos del "
+                      "expediente cambian de fila y cuanto cambia su "
+                      "diametro; un punto que cambia dentro de la ventana "
+                      "no esta decidido por la norma sino por esta adopcion, "
+                      "y la memoria lo tiene que decir. Tercera, la via "
+                      "alterna: la categoria se puede declarar cauce por "
+                      "cauce, y entonces este criterio no interviene y la "
+                      "eleccion se documenta punto por punto",
         fuente="PENDIENTE - Manual de Hidrologia, Hidraulica y Drenaje (MTC), "
                "Tabla N 02 (num. 3.6): da R y n por categoria de cauce y NO "
                "define 'quebrada importante' ni 'quebrada menor' por umbral "
@@ -2073,6 +2155,387 @@ CRITERIOS: Dict[str, Criterio] = {
                         "cauce y las tarifa, y NO da regla de asignacion "
                         "fisica -- ni area, ni caudal, ni orden de cauce",
             dominio="ha > 0",
+        ),
+    ),
+
+    # --- T-1 --- las tres decisiones del calculo hidrologico (MH) ----------
+    # Solo se invocan cuando el caudal lo CALCULA el programa (--cuencas y
+    # --estacion con `Q_m3s` vacio). Las tres llevan valor de archivo con su
+    # fuente y su ventana, y las tres se pueden barrer. Lo que NO es criterio
+    # y si entrada: el metodo del tiempo de concentracion va por cuenca, en
+    # la columna `metodo_tc` del CSV de cuencas, porque su validez depende
+    # de la pendiente de CADA cuenca y un valor unico para el corredor
+    # dejaria fuera de rango a las que no se le parecen.
+
+    "distribucion_precipitacion_maxima": Criterio(
+        valor="mejor_ajuste_ks",
+        # NIVEL POR LA REGLA, medido por `tests/test_t1_hidrologia.py`: lo
+        # invoca la Fase 1-bis en una corrida `--alcance perfil` con cuencas
+        # y estacion. Las corridas del fixture traen `Q_m3s` lleno y no
+        # llegan a el.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # La regla de eleccion mas las ocho distribuciones del num. 3.7.1.
+        # Cinco de las ocho se pueden declarar y NO se evaluan: ver
+        # `verificacion_pendiente`.
+        sensibilidad=("mejor_ajuste_ks", "normal", "lognormal_2p", "gumbel",
+                      "lognormal_3p", "gamma_2p", "gamma_3p",
+                      "log_pearson_3", "log_gumbel"),
+        concepto="Distribucion de probabilidad con que se ajusta la serie de "
+                 "precipitacion maxima en 24 horas para obtener la lluvia "
+                 "del periodo de retorno de diseno",
+        justificacion="Decide con que modelo de probabilidad se extrapola la "
+                      "serie de la estacion hasta el periodo de retorno de "
+                      "diseno. La fuente (num. 3.7.1 del Manual de "
+                      "Hidrologia, cita MC_HHD.3.7.1) recomienda ocho "
+                      "distribuciones sin preferir ninguna, y su num. 3.7.2 "
+                      "(cita MC_HHD.3.7.2b#ELIGE) dice que la prueba de "
+                      "Kolmogorov-Smirnov permite elegir la mas "
+                      "representativa, la de mejor ajuste. Se adopta esa "
+                      "regla como valor de archivo: se ajustan las "
+                      "distribuciones que el programa evalua y se toma la de "
+                      "menor diferencia maxima D, siempre que pase la "
+                      "prueba. La alternativa es declarar una distribucion "
+                      "concreta, que entonces se usa aunque otra ajuste "
+                      "mejor, y tambien tiene que pasar la prueba. "
+                      "La regla tiene un limite que hay que conocer: la "
+                      "prueba mide la mayor diferencia de probabilidad sobre "
+                      "toda la serie, y una serie de poblacion mixta -- anios "
+                      "corrientes y dos o tres anios del fenomeno El Nino -- "
+                      "puede ajustar muy bien en el cuerpo y dejar los "
+                      "extremos por encima de la lluvia de diseno. Pasar la "
+                      "prueba no garantiza que el periodo de retorno de "
+                      "diseno cubra lo ya observado; por eso el paso del "
+                      "ajuste contrasta la lluvia de diseno con el maximo de "
+                      "la serie y lo avisa cuando queda por debajo. "
+                      "Sensibilidad: la memoria imprime la precipitacion de "
+                      "diseno de cada distribucion evaluada, con su D, de "
+                      "modo que el efecto de elegir otra se lee en el mismo "
+                      "paso; entre las tres la lluvia de diseno puede diferir "
+                      "mas de un 20 %, y la de menor D no es por fuerza la "
+                      "mayor",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.7.1 "
+               "'Modelos de distribución', pag. impresa 25 (PDF 28), y num. "
+               "3.7.2 b) 'Prueba Kolmogorov – Smirnov', pag. impresa 32 "
+               "(PDF 35): citas MC_HHD.3.7.1 (RECOMENDACION) y "
+               "MC_HHD.3.7.2b#ELIGE (PERMISO)",
+        verificacion_pendiente="De las ocho distribuciones del num. 3.7.1 el "
+                               "programa evalua tres: normal, log normal de "
+                               "2 parametros y Gumbel, que son las unicas de "
+                               "las que el Manual imprime como se estiman "
+                               "los parametros (num. 3.7.1.1, 3.7.1.2 y "
+                               "3.7.1.7). Declarar cualquiera de las otras "
+                               "cinco detiene el calculo con «metodo no "
+                               "evaluable»: falta una fuente que fije su "
+                               "estimador. 'mejor_ajuste_ks' elige entre las "
+                               "tres evaluadas, no entre las ocho",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el Manual recomienda ocho "
+                        "distribuciones y permite elegir por la prueba de "
+                        "Kolmogorov-Smirnov; no manda ninguna",
+            dominio="declaracion de la distribucion o de la regla de "
+                    "eleccion; el conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    "nivel_significancia_ks": Criterio(
+        valor=0.05,                 # alfa, adimensional
+        nivel=NIVEL_PERFIL,         # mismo consumidor y misma medida que
+                                    # 'distribucion_precipitacion_maxima'
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.01, 0.10),  # las columnas extremas de la Tabla N 03
+        concepto="Nivel de significancia alfa con que se lee el valor "
+                 "critico de la prueba de Kolmogorov-Smirnov",
+        justificacion="Decide con que nivel de significancia se acepta o se "
+                      "rechaza el ajuste de la distribucion. La fuente "
+                      "(Tabla N 03 del Manual de Hidrologia, cita "
+                      "MC_HHD.3.7.2b#T03) tabula el valor critico para tres "
+                      "niveles, 0.10, 0.05 y 0.01, y el texto habla del "
+                      "nivel de significancia seleccionado sin seleccionar "
+                      "ninguno. Se adopta 0.05, la columna central de la "
+                      "tabla. La ventana son sus dos columnas extremas. La "
+                      "direccion importa y no es la intuitiva: con alfa = "
+                      "0.10 el valor critico es menor y la prueba rechaza "
+                      "mas ajustes, de modo que el extremo alto de la "
+                      "ventana es el exigente; con alfa = 0.01 casi "
+                      "cualquier distribucion pasa. Sensibilidad: para una "
+                      "serie de 25 anios el valor critico va de 0.24 a 0.32 "
+                      "entre los dos extremos; el nivel no mueve la lluvia "
+                      "de diseno, solo decide si el ajuste se acepta",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.7.2 "
+               "b) y Tabla N 03 'Valores críticos d para la prueba "
+               "Kolmogorov – Smirnov', pags. impresas 32 y 33 (PDF 35 y 36): "
+               "citas MC_HHD.3.7.2b y MC_HHD.3.7.2b#T03",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la Tabla N 03 ofrece tres niveles "
+                        "y el Manual no elige ninguno",
+            dominio="probabilidad adimensional, entre las columnas extremas "
+                    "de la Tabla N 03",
+        ),
+    ),
+
+    "relacion_intensidad_duracion": Criterio(
+        valor="dick_peschke",
+        nivel=NIVEL_PERFIL,         # mismo consumidor y misma medida que
+                                    # 'distribucion_precipitacion_maxima'
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("dick_peschke", "tabla_04_coeficientes_de_duracion"),
+        concepto="Relacion con que la precipitacion maxima en 24 horas se "
+                 "lleva a la intensidad de una lluvia de duracion igual al "
+                 "tiempo de concentracion",
+        justificacion="Decide como se obtiene la intensidad de diseno a "
+                      "partir de la lluvia de 24 horas cuando no hay "
+                      "registros pluviograficos. La fuente (num. 3.8.1 del "
+                      "Manual de Hidrologia) ofrece dos caminos y los dos "
+                      "son permisos: la relacion de Dick y Peschke (cita "
+                      "MC_HHD.3.8.1#DICK_PESCHKE), para duraciones menores "
+                      "de 1 hora o cuando no hay pluviografo, y los "
+                      "coeficientes de duracion de su Tabla N 04 (cita "
+                      "MC_HHD.3.8.1#T04), de 1 a 48 horas, que el propio "
+                      "texto pide usar con criterio y cautela. Se adopta "
+                      "Dick y Peschke por dos razones: es la unica de las "
+                      "dos que cubre las duraciones menores de 1 hora, que "
+                      "son las de una cuneta y de casi toda cuenca pequena, "
+                      "y da mas lluvia que la tabla en todo el tramo comun "
+                      "por debajo de 24 horas, que es el lado conservador. "
+                      "Sensibilidad: para una "
+                      "duracion de 1 hora Dick y Peschke asigna el 45 % de "
+                      "la lluvia de 24 horas y la Tabla N 04 el 25 %, de "
+                      "modo que la intensidad y el caudal son un 81 % "
+                      "mayores con el valor adoptado; a 6 horas, 71 % "
+                      "frente a 56 %",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.8.1 "
+               "'Curvas Intensidad – Duración – Frecuencia', ecuacion (16) "
+               "en la pag. impresa 37 (PDF 40) y Tabla N 04 en las pags. "
+               "impresas 36 y 37 (PDF 39 y 40): citas "
+               "MC_HHD.3.8.1#DICK_PESCHKE y MC_HHD.3.8.1#T04, las dos de "
+               "caracter PERMISO",
+        verificacion_pendiente="La Tabla N 04 no dice que se interpole "
+                               "entre sus filas ni cubre menos de 1 hora: "
+                               "con ella elegida, una duracion intermedia "
+                               "se interpola linealmente por lectura del "
+                               "proyecto y una menor de 1 hora detiene el "
+                               "calculo. La relacion regional I = K·T^m/t^n "
+                               "(ecuacion 17) no se evalua: sus tres "
+                               "factores son datos de un estudio regional "
+                               "que el expediente no trae",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el num. 3.8.1 permite las dos "
+                        "relaciones y no manda ninguna",
+            dominio="declaracion de la relacion; el conjunto cerrado viaja "
+                    "en `sensibilidad`",
+        ),
+    ),
+
+    # --- T-1, tras el auditor adversarial: cuatro decisiones mas -----------
+
+    "duracion_minima_lluvia_min": Criterio(
+        valor=5.0,                  # minutos
+        nivel=NIVEL_PERFIL,         # lo invoca la Fase 1-bis en cada caudal
+                                    # calculado (medido en test_t1_hidrologia)
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        # La ventana: desde el minimo que la fuente manda hasta el intervalo
+        # mas corto del que, segun la misma fuente, suele haber dato medido.
+        sensibilidad=(5.0, 15.0),
+        concepto="Duracion minima de la lluvia de diseno: el piso que se "
+                 "aplica cuando el tiempo de concentracion calculado queda "
+                 "por debajo",
+        justificacion="Fija la menor duracion de lluvia con que se calcula "
+                      "la intensidad de diseno. El vacio es de la norma "
+                      "peruana: el Manual de Hidrologia iguala la duracion "
+                      "al tiempo de concentracion (cita "
+                      "MC_HHD.3.8.1#DURACION) y no le pone piso, de modo que "
+                      "una cuneta corta o una plataforma dan tiempos de 1 a "
+                      "2 min y las relaciones de intensidad, extrapoladas "
+                      "hasta ahi, entregan intensidades de mas de 1000 mm/h. "
+                      "Lo cubre el Hydraulics Manual de WSDOT (cita "
+                      "WSDOT_HM.2-6.3#TC_MINIMO), que manda usar 5 min como "
+                      "duracion cuando el tiempo de concentracion es menor, "
+                      "y da dos razones: las curvas de intensidad por debajo "
+                      "de ese tiempo son extrapolacion, y la lluvia tarda en "
+                      "generar escorrentia. Se aplica asi: si el tiempo de "
+                      "concentracion es menor que el minimo, la lluvia de "
+                      "diseno dura el minimo y el paso lo dice. La direccion "
+                      "es la no conservadora -- un piso mas alto baja la "
+                      "intensidad -- y por eso se adopta el extremo bajo de "
+                      "la ventana, que es el que la fuente escribe. "
+                      "Sensibilidad: con la relacion de Dick y Peschke la "
+                      "intensidad varia con la duracion elevada a -0.75, de "
+                      "modo que pasar de 5 a 10 min la reduce un 41 % y a "
+                      "15 min un 56 %",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril de 2026), num. "
+               "2-6.3 'Time of Concentration', pag. impresa 2-10 (PDF 46): "
+               "cita WSDOT_HM.2-6.3#TC_MINIMO, caracter EXIGENCIA; repetido "
+               "en el num. 2-6.4 'Rainfall Intensity', pag. impresa 2-11 "
+               "(PDF 47). Fuente tecnica, no norma peruana",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre el minimo de la fuente "
+                        "tecnica: el Manual de Hidrologia no fija ninguno",
+            dominio="minutos > 0",
+        ),
+    ),
+
+    "tc_fuera_de_la_poblacion_del_metodo": Criterio(
+        valor="no_evaluable",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("no_evaluable", "indicador_con_aviso"),
+        concepto="Que se hace cuando la cuenca queda fuera de la poblacion "
+                 "de la que salio la formula de tiempo de concentracion "
+                 "declarada",
+        justificacion="Decide si una formula empirica de tiempo de "
+                      "concentracion se evalua en una cuenca que no se "
+                      "parece a las cuencas de las que salio. La fuente "
+                      "(Tabla N 05 del Manual de Hidrologia) describe esa "
+                      "poblacion en sus observaciones -- pendientes de 3 a "
+                      "10 % para Kirpich, cuencas de menos de 800 ha para la "
+                      "ecuacion de retardo -- y no dice que hacer fuera: "
+                      "describe, no prohibe. Se adopta no evaluar, que es "
+                      "mas estricto que la fuente: el calculo del punto se "
+                      "detiene y pide otro metodo. Se adopta asi porque "
+                      "extrapolar una formula empirica es justo el riesgo de "
+                      "un corredor de llanura, donde las pendientes no "
+                      "llegan al 1 %. El mismo trato se da a la formula de "
+                      "California, porque la tabla dice de ella que es "
+                      "esencialmente la de Kirpich: sin eso el limite se "
+                      "saltaria cambiando el nombre del metodo. La "
+                      "alternativa evalua la formula igual y lo imprime como "
+                      "indicador con aviso. No alcanza a la formula de "
+                      "Temez, cuya fuente si escribe un rango de aplicacion, "
+                      "ni a la de la Federal Aviation Administration, a la "
+                      "que la tabla no le describe poblacion numerica. "
+                      "Sensibilidad: el criterio no mueve el tiempo de "
+                      "concentracion, solo decide si el punto se calcula o "
+                      "se detiene",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), Tabla N 05 "
+               "'Fórmulas para el cálculo del tiempo de concentración', "
+               "pags. impresas 39 y 40 (PDF 42 y 43), columna de "
+               "observaciones: citas MC_HHD.3.9#T05_KIRPICH, "
+               "MC_HHD.3.9#T05_CALIFORNIA y MC_HHD.3.9#T05_SCS, de caracter "
+               "APROXIMACION. La tabla describe la poblacion; el trato "
+               "fuera de ella es adopcion del proyecto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la Tabla N 05 describe de que "
+                        "cuencas salio cada formula y no dice que hacer "
+                        "fuera de ellas",
+            dominio="declaracion del trato; el conjunto cerrado viaja en "
+                    "`sensibilidad`",
+        ),
+    ),
+
+    "coeficiente_uniformidad_temez": Criterio(
+        valor="aplicar",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("aplicar", "no_aplicar"),
+        concepto="Si el caudal lleva el coeficiente de uniformidad K del "
+                 "metodo racional modificado cuando el tiempo de "
+                 "concentracion sale de la formula de Temez",
+        justificacion="Decide que se hace con el resto del metodo cuando de "
+                      "el se toma una sola pieza. La formula de Temez (cita "
+                      "MC_HHD.3.12.2.1#TC) no es una fila de la Tabla N 05: "
+                      "es la ecuacion del tiempo de concentracion del metodo "
+                      "racional modificado, cuyo caudal lleva un coeficiente "
+                      "de uniformidad K mayor que 1 (cita "
+                      "MC_HHD.3.12.2.1#K) y ademas su propia intensidad y su "
+                      "propio coeficiente de escorrentia por numero de "
+                      "curva. El proyecto usa esa formula con el metodo "
+                      "racional simple, que es un uso hibrido y se declara "
+                      "como tal. Se adopta aplicar K: es del mismo numeral, "
+                      "crece con el tiempo de concentracion y corrige "
+                      "justamente lo que el racional simple supone y una "
+                      "cuenca de varias horas no cumple, la lluvia uniforme "
+                      "en el tiempo; y es el lado conservador, porque K "
+                      "sube el caudal. La alternativa calcula con la "
+                      "ecuacion del racional simple sin K. Sensibilidad: K "
+                      "vale 1.07 para un tiempo de concentracion de 1 h, "
+                      "1.15 para 2 h y 1.29 para 4 h, de modo que no "
+                      "aplicarlo baja el caudal entre un 6 y un 22 % en ese "
+                      "tramo",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "3.12.2.1 'Método Racional Modificado', ecuaciones (29), (30) "
+               "y (31), pag. impresa 51 (PDF 54): citas MC_HHD.3.12.2.1#K "
+               "(DEFINICION) y MC_HHD.3.12.2.1#TC (APROXIMACION)",
+        verificacion_pendiente="El metodo racional modificado completo no "
+                               "esta implementado: su intensidad, su factor "
+                               "reductor por area y su coeficiente de "
+                               "escorrentia por numero de curva no se usan "
+                               "(ficha T1-08 de docs/decisiones_diferidas.md). "
+                               "Lo que se calcula con la formula de Temez es "
+                               "un hibrido declarado, con o sin K",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el Manual da K dentro de un metodo "
+                        "del que el proyecto toma solo el tiempo de "
+                        "concentracion, y no dice si K acompaña a esa pieza "
+                        "fuera del metodo",
+            dominio="declaracion; el conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    "coeficiente_escorrentia_superficie_vial": Criterio(
+        valor={
+            # Coeficientes de 10 AÑOS de periodo de retorno, DERIVADOS de la
+            # Table 2-2 del registro por `_coeficientes_de_superficies_viales`.
+            "coeficientes_10_anios": _COEFICIENTES_VIALES_WSDOT,
+            # El incremento que el num. 2-6.2 manda al diseñar para una
+            # tormenta menos frecuente, por periodo de retorno en años.
+            "incremento_por_periodo_de_retorno": {"10": 0.0, "25": 0.10,
+                                                  "50": 0.20, "100": 0.25},
+            "tope": 0.95,
+        },
+        nivel=NIVEL_PERFIL,         # lo invoca la Fase 1-bis cuando la
+                                    # cobertura de la fila es una superficie
+                                    # vial (medido en test_t1_hidrologia)
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Coeficiente de escorrentia de las superficies de la "
+                 "plataforma vial que la Tabla N 08 no tiene: pavimento, "
+                 "berma de tierra y talud de tierra o con cesped, con su "
+                 "incremento por periodo de retorno",
+        justificacion="Da el coeficiente de escorrentia del area tributaria "
+                      "de una cuneta. El vacio es de la norma peruana: la "
+                      "Tabla N 08 del Manual de Hidrologia tabula cinco "
+                      "coberturas de cuenca natural y no tiene fila para una "
+                      "superficie pavimentada ni para un talud, y el num. "
+                      "4.1.2.1 b) pide el coeficiente de escurrimiento de la "
+                      "cuenca de la cuneta sin dar tabla. Lo cubre la Table "
+                      "2-2 del Hydraulics Manual de WSDOT (cita "
+                      "WSDOT_HM.2-6.2#T2-2), de la que se toman solo cuatro "
+                      "filas: pavimento 0.90, berma de tierra 0.50, talud de "
+                      "tierra 0.60 y talud con cesped 0.30, que valen lo "
+                      "mismo en las tres columnas de pendiente. Esos numeros "
+                      "son de una tormenta de 10 anios de periodo de "
+                      "retorno; la misma fuente (cita "
+                      "WSDOT_HM.2-6.2#FRECUENCIA) manda aumentarlos un 10 % "
+                      "para 25 anios, un 20 % para 50 y un 25 % para 100, "
+                      "sin pasar de 0.95. Entre esas frecuencias la fuente "
+                      "no dice nada: se toma el incremento de la frecuencia "
+                      "tabulada inmediatamente mayor, que es el lado "
+                      "conservador; por encima de 100 anios no hay "
+                      "frecuencia mayor que tomar y el calculo se detiene. "
+                      "Con el periodo de retorno de 35 anios de una "
+                      "alcantarilla de alivio el pavimento queda en el tope, "
+                      "0.95, y el talud de tierra en 0.72. No sustituye a la "
+                      "Tabla N 08 para una cuenca natural: una cobertura de "
+                      "cuenca se sigue leyendo de la tabla peruana",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril de 2026), Table "
+               "2-2 'Runoff Coefficients for the Rational Method: 10-Year "
+               "Return Frequency', pag. impresa 2-9 (PDF 45), y num. 2-6.2 "
+               "'Runoff Coefficients', pag. impresa 2-8 (PDF 44): citas "
+               "WSDOT_HM.2-6.2#T2-2 y WSDOT_HM.2-6.2#FRECUENCIA. Fuente "
+               "tecnica, no norma peruana",
+        resolucion=Derivada(
+            de=("WSDOT_HM.T2-2",),
+            regla="las cuatro filas viales de la tabla del registro, leidas "
+                  "por `_coeficientes_de_superficies_viales()`; los "
+                  "incrementos y el tope son los del num. 2-6.2 de la misma "
+                  "fuente (cita WSDOT_HM.2-6.2#FRECUENCIA)",
         ),
     ),
 

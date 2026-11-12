@@ -491,10 +491,15 @@ def test_los_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
     'TW_receptor'          Sec. 1.3 lo dejo como ULTIMA puerta. Con el
                            expediente aportando el caudal del receptor, la
                            corrida no llega a el.
-    'homogeneidad_serie_fen'  No es una eleccion: es un hecho sobre la serie
-                           SENAMHI, que no esta en el expediente. Elegir una
-                           de sus dos ramas seria afirmar algo sobre un
-                           archivo que nadie abrio.
+    'homogeneidad_serie_fen'  Desde T-1 SI es una eleccion --que se hace
+                           con los años FEN de la serie: los tres
+                           tratamientos de su ventana-- y la lee
+                           `MH_hidrologia`. Esta corrida no la invoca porque
+                           trae el caudal declarado en `Q_m3s`; y sigue vacia
+                           porque se decide con la serie delante, que es una
+                           entrada del proyecto. (Hasta T-1 este renglon la
+                           llamaba «un hecho sobre la serie»: el hecho --que
+                           años son FEN-- paso al CSV de la estacion.)
 
     LOS SIETE DEL CAJON -- cinco de C5 y dos de C7 --, que esta corrida SI
     invoca. Los cinco de C5, por una razon que

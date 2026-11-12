@@ -2721,11 +2721,16 @@ def v8_evento_extremo(*, punto: PuntoCritico,
     - Criterio SIN valor -> `CriterioPendienteError` (la lanza `ca.valor`).
     - Criterio CON valor -> `DatoFaltanteError`. Declarar el TR del evento
       extremo NO cierra V8: sigue faltando el CAUDAL que a ese TR le
-      corresponde. Este software no hace hidrologia -- el Q de diseño entra
-      como columna del CSV, calculado aparte (Sec. 1.2, `legacy/Tc.py`) --,
-      de modo que un TR de 500 años sin su Q es un numero sin nada que
-      correr por M3/M4. El revisor tiene que AÑADIR ese caudal, y por eso es
-      Faltante y no Invalido (CLAUDE.md).
+      corresponde. Hasta T-1 este renglon decia «Este software no hace
+      hidrologia»; desde T-1 la hace (`MH_hidrologia`, Fase 1-bis), y
+      `caudal_de_diseno(cuenca, serie, TR)` vale para cualquier TR, tambien
+      el del evento extremo. Lo que sigue sin existir es el ENLACE: V8 no
+      recibe la cuenca ni la serie, no hay clave por la que declarar
+      `Q_evento_extremo_m3s`, y la comparacion contra la corona del
+      terraplen no esta escrita (ficha T1-03 de
+      `docs/decisiones_diferidas.md`). Un TR de 500 años sin su Q es un
+      numero sin nada que correr por M3/M4. El revisor tiene que AÑADIR ese
+      caudal, y por eso es Faltante y no Invalido (CLAUDE.md).
 
     Hasta S20 esta segunda rama era un `raise AssertionError` desnudo, y
     estaba declarada como «mina deliberada» en `servicio._verificador_perfil`. La
@@ -2743,12 +2748,16 @@ def v8_evento_extremo(*, punto: PuntoCritico,
         detalle=(
             f"el criterio '{CRITERIO_EVENTO_EXTREMO}' esta declarado, pero V8 "
             "sigue sin poder resolverse: falta el CAUDAL correspondiente a "
-            "ese periodo de retorno mayor. Este software no calcula "
-            "hidrologia -- el Q de diseño entra como columna del CSV "
-            "(Sec. 1.2) --, de modo que sin ese segundo caudal no hay nada "
-            "que correr por M3/M4 ni HW que comparar contra la corona del "
-            "terraplen. La hoja de ruta fija el requisito y no el metodo: "
-            "mientras no exista, V8 no se declara cumplida"
+            "ese periodo de retorno mayor, y la comparacion que V8 haria "
+            "con el. Desde T-1 el programa SABE calcular ese caudal "
+            "(`MH_hidrologia.caudal_de_diseno` admite cualquier periodo de "
+            "retorno, con la cuenca y la estacion de --cuencas y "
+            "--estacion), pero V8 no lo pide todavia ni hay puerta por la "
+            "que declararlo: el enlace esta diferido (ficha T1-03 de "
+            "docs/decisiones_diferidas.md). Sin ese segundo caudal no hay "
+            "nada que correr por M3/M4 ni HW que comparar contra la corona "
+            "del terraplen. La hoja de ruta fija el requisito y no el "
+            "metodo: mientras no exista, V8 no se declara cumplida"
         ),
     )
 

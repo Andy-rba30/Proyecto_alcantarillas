@@ -176,6 +176,24 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   por las dos puertas (mismo JSON, mismos usos y misma huella del CSV, con y
   sin banderas y `--declarar`; la puerta `--sesion` la fija EXT-8 por el
   subproceso del PDF).
+- **La hidrología es un módulo aparte que sólo conoce el servicio (T-1).**
+  `src/modulos/MH_hidrologia.py` es la Fase 1-bis: calcula el caudal de un
+  punto de Familia A o B a partir de `--cuencas` y `--estacion`
+  (`servicio.cargar_hidrologia`, `servicio._fase_hidrologia`), y lo importa
+  SÓLO `src/servicio.py` (fijado por AST). El caudal calculado entra al
+  pipeline como `Q_m3s` del punto de cálculo, igual que el declarado, y
+  ningún módulo de M1 a M11 sabe de cuál de los dos se trata salvo por
+  `InformePunto.caudal` (un `CaudalDeDiseno` de `modelos.py`, con su origen,
+  sus pasos y sus avisos). Tres reglas que no se negocian: un `Q_m3s` lleno
+  GANA y no se recalcula ni se corrige; la serie, las cuencas y los años FEN
+  son entradas del proyecto (`docs/contrato_entradas.md` §2-bis) y el
+  repositorio no trae ninguna salvo las sintéticas de
+  `tests/fixtures/hidrologia/`, rotuladas; y ninguna función pública del
+  módulo entrega una lluvia o un caudal de diseño sin pasar por el criterio
+  `homogeneidad_serie_fen` (`precipitacion_de_diseno`, `caudal_de_diseno` y
+  `caudal_de_aporte_cuneta` son las tres puertas; esta última es el enlace
+  para la longitud de cuneta de la Fase 10). La GUI y la sesión todavía no
+  conocen las dos entradas (ficha T1-04).
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None
@@ -193,7 +211,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -285,7 +303,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -308,8 +326,10 @@ consecuencias que conviene leer antes de tocar el campo:
   con esas palabras, apoyados en `variables_entrada.consumido_por`.
 - **El límite se conoce por MUTACIÓN, no por lectura.** Cambiando el nivel de
   cinco de los trece murieron cuatro tests y sobrevivió uno:
-  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **diez** sin
-  consumidor (ocho hasta T1; T1 sumó `edicion_que_rige_el_expediente`, la
+  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **nueve** sin
+  consumidor (diez hasta T-1, que le dio consumidor real a
+  `homogeneidad_serie_fen` —`MH_hidrologia.precipitacion_de_diseno`— y lo
+  sacó del censo; ocho hasta T1; T1 sumó `edicion_que_rige_el_expediente`, la
   decisión de marco normativo del expediente, que ningún módulo consume, y
   EXT-6 su mitad legal, `edicion_legal_que_rige_el_expediente`, partida de
   aquélla porque el Manual de Puentes está derogado por RD y las normas
@@ -320,7 +340,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -368,7 +388,10 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   casos el campo `campo` nombra el DATO, no una columna, y el mensaje dice de
   dónde tendría que venir. **En S20 se le sumaron tres casos vivos más, y los
   tres son la misma forma:** el caudal del evento extremo que V8 pide una vez
-  declarado su TR (`Q_evento_extremo_m3s`; este software no hace hidrología),
+  declarado su TR (`Q_evento_extremo_m3s`; la frase decía «este software no
+  hace hidrología», y desde T-1 la hace: la Fase 1-bis calcula el caudal de
+  DISEÑO con `--cuencas` y `--estacion`. El del evento extremo sigue siendo
+  un dato que falta, porque V8 todavía no se lo pide —ficha T1-03—),
   y las dos entradas que `espesor_pared_conducto` puede no traer — el material
   cuya norma de producto no está en `normas/`, y la fila de diámetro que nadie
   transcribió—. Los tres eran `AssertionError` desnudos: **una excepción que no
@@ -433,8 +456,15 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   `TipoDeBloqueo.METODO_NO_EVALUABLE`, **diferible a nivel de perfil y no de
   expediente** (v8 §4.3), y `MD.disenar_punto` la acumula como a los criterios
   pendientes en vez de descartar el material o degradarla a
-  `DisenoNoFactibleError`. Su `str()` empieza siempre por
-  `MOTIVO_METODO_NO_EVALUABLE`. Y desde EXT-3 `Bloqueo` vive en `modelos.py`
+  `DisenoNoFactibleError`. Su `str()` empieza por
+  `MOTIVO_METODO_NO_EVALUABLE` —el rótulo de los dos casos de HDS-5— o, desde
+  T-1, por el que el constructor reciba en `rotulo=`: la Fase 1-bis levanta
+  la MISMA excepción por los límites del Manual de Hidrología (el método
+  racional desde 10 km², Témez fuera de 0.25–24 h, una distribución sin
+  estimador impreso, un ajuste que no pasa K-S, `serie_sin_fen` con menos
+  lluvia que la serie completa) y la encabeza con
+  `MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA`, porque encabezarla con HDS-5 sería
+  una cita falsa (ficha T1-06). Y desde EXT-3 `Bloqueo` vive en `modelos.py`
   con `tipo: TipoDeBloqueo` (str Enum cuyos valores son los textos que la
   línea base ya imprimía): la vía `servicio._etapa` → `servicio._bloqueo` descrita
   arriba no cambia, `cli` lo reexporta.
@@ -482,9 +512,12 @@ ErrorProyecto.
   `CampoValidable` es su `_campo_validable` con la validación al escribir que
   exige la Sec. 4.3; y el patrón de plantilla `%%` vive en
   `M11_reporte.PlantillaHTML`. Se escribe GUI leyendo `gui/componentes.py`.
-  `legacy/Tc.py` **se conserva** —no es código muerto: la §1.2 de la hoja de
-  ruta lo nombra como origen del caudal de diseño Q, que entra al calculador
-  como columna del CSV— pero se lee como ANTECEDENTE, no como plantilla viva.
+  `legacy/Tc.py` **se conserva** —la §1.2 de la hoja de ruta lo nombraba como
+  origen del caudal de diseño Q— pero se lee como ANTECEDENTE, no como
+  plantilla viva. **Desde T-1 ya no es el origen de nada**: el caudal de un
+  punto de Familia A o B entra declarado por la columna `Q_m3s` o lo calcula
+  `src/modulos/MH_hidrologia.py`, `PERFILES[...].origen_del_caudal` lo dice
+  así, y el encabezado de `legacy/Tc.py` lleva la marca SUPERSEDED.
   Su estatus completo está en su propio encabezado y en
   `docs/decisiones_diferidas.md`.
 - **Desde E-B la pestaña 2 declara por editores TIPADOS, y el literal sigue
@@ -641,16 +674,17 @@ del nombre en las dos carpetas:
   viven **sólo** en el repositorio de normas y están censadas en
   `fuentes.SOLO_EN_EL_REPO_NORMAS`. Copiarlas a `normas/` pone en rojo la
   guardia de PC-23 (`tests/test_ext6_registro_normativo.py`).
-- **Sin `NORMAS_DIR` la suite queda verde y SALTA doce tests** (siete hasta
-  T-2; T-4 sumó los cinco de `tests/test_t4_materiales_durabilidad.py` que
-  abren el WSDOT Hydraulics Manual), que es un
+- **Sin `NORMAS_DIR` la suite queda verde y SALTA dieciocho tests** (siete
+  hasta T-2; T-4 sumó los cinco de `tests/test_t4_materiales_durabilidad.py`
+  que abren el WSDOT Hydraulics Manual, y T-1 los seis de
+  `tests/test_t1_hidrologia.py` que abren su capítulo 2), que es un
   tercer eje de entorno además de PyMuPDF y Tk: los dos T0 de
   `test_normativa_pdf` (verifican las dieciséis fuentes que sí están y
   después saltan nombrando las dos que faltan), los cuatro de
   `tests/test_t0_gobernanza.py` que abren los dos PDF nuevos, y la mitad de
   la guardia de PC-23 que mira el repositorio enlazado. `verificar_sesion.py`
   lo dice en su paso 5 como AVISO. **Una sesión de la cadena T no cierra con
-  esos doce saltados**: enlaza el repositorio y los corre.
+  esos dieciocho saltados**: enlaza el repositorio y los corre.
 - **Un `NORMAS_DIR` que apunta a una carpeta que no existe no se calla**:
   `FileNotFoundError`. Quien definió la variable quiso enlazar el repositorio,
   y caer en silencio a `normas/` le daría una suite verde que no verificó lo
@@ -676,10 +710,10 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4537**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4728**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
-o no por `NORMAS_DIR`: son doce saltos más sin él (siete hasta T-2), descritos en «Dónde
+o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
 están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonces eran tres
 (la primera viñeta de abajo explica la que desapareció):
 
@@ -727,7 +761,11 @@ están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonce
   (`tests/test_t2_hidraulica.py`), y son **55** desde T-4, que sumó los
   quince de `tests/test_t4_materiales_durabilidad.py` que fijan en su página
   los números que el cálculo toma de WSDOT, AASHTO LRFD, HDS-5, EG-2013,
-  ASTM A796 y la E.050.
+  ASTM A796 y la E.050. T-1 sumó **veinte** en `tests/test_t1_hidrologia.py`
+  (catorce hechos del capítulo III del Manual de Hidrología y seis del
+  capítulo 2 de WSDOT). Contados con `--collect-only -m pdf` son **76**
+  sobre el árbol de T-1 y eran 56 sobre `7fb7926`, uno más que el 55 de la
+  frase anterior: la diferencia es de antes de T-1 y no se rastreó.
 
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
@@ -738,7 +776,87 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-4 de la cadena T (2026-11-11, integrado el 12 detrás de
+independientes. **T-1 de la cadena T (2026-11-11, integrado el 12 detrás de T-2 y T-4) sumó
+CIENTO NOVENTA Y UN tests**, veinte con la marca `pdf` y ninguno dependiente
+de Tk: los 113 de `tests/test_t1_hidrologia.py` y los 59 de
+`tests/test_MH_hidrologia.py` —la hidrología DENTRO del programa: el módulo
+nuevo `src/modulos/MH_hidrologia.py` (Fase 1-bis, importado sólo por
+`servicio.py`, con un test que lo fija por AST) calcula el caudal de un punto
+de Familia A o B por el método racional (`Q = 0.278·C·I·A`, Manual de
+Hidrología núm. 3.12.2, ec. 28, con «A<10 Km2» estricto) a partir de dos
+entradas opcionales que van juntas, `--cuencas` y `--estacion`, y deja
+**nueve pasos de memoria** con su cita (1b.1 a 1b.8 y 1b.3b); la precedencia
+no cambia —`Q_m3s` en `--datos-externos`, la columna `Q_m3s` llena, y sólo
+con la celda vacía el cálculo— y un caudal declarado se imprime como «Q
+declarado por el estudio hidrológico» con su contraste Q/A (paso 1b.8, sin
+umbral: el núm. 3.13 no pone uno); el tiempo de concentración lo declara cada
+fila del CSV de cuencas entre CUATRO filas de la Tabla Nº 05 (Kirpich,
+California, FAA y retardo SCS; la tabla está entera en el registro e Izzard
+y onda cinemática quedan diferidas) y Témez, que **no es fila de esa tabla**
+sino la ec. (30) del núm. 3.12.2.1; la lluvia de diseño sale del ajuste de la
+serie P24 con las tres distribuciones de las que el Manual imprime el
+estimador (Normal, Log Normal 2P, Gumbel) y Kolmogorov–Smirnov, y la
+intensidad de Dick y Peschke o de la Tabla Nº 04;
+`homogeneidad_serie_fen` tiene **consumidor real** y es una categoría de
+tres tratamientos sin valor de archivo: sin declararlo el caudal calculado
+se detiene, y un caudal declarado nunca recibe `tratamiento_fen`. La
+auditoría adversarial dejó trece correcciones (H1 a H13), entre ellas: la
+lluvia de diseño que queda por debajo de un año ya registrado se contrasta
+con la probabilidad observada de la ec. (13) y se avisa (paso 1b.2; cita
+`MC_HHD.3.12.5#PIURA`); una celda `fen` vacía no es un «no»; `S_terreno` es
+columna obligatoria y la Tabla Nº 08 no se lee nunca con la pendiente del
+cauce; la población de la que salió cada fórmula de tc es DESCRIPCIÓN de la
+tabla y lo que se hace fuera lo decide `tc_fuera_de_la_poblacion_del_metodo`
+[A], con el mismo trato para Kirpich y California; la duración de la lluvia
+no baja de `duracion_minima_lluvia_min` [C] (5 min, WSDOT núm. 2-6.3); con
+Témez el caudal lleva el coeficiente de uniformidad K por
+`coeficiente_uniformidad_temez` [A] (uso híbrido declarado); una superficie
+de la plataforma vial toma su C de `coeficiente_escorrentia_superficie_vial`
+[C] (WSDOT Table 2-2), nunca de una fila de la Tabla Nº 08 puesta por
+omisión; `area_ha` y `area_km2` de la misma cuenca tienen que decir lo
+mismo; y **la regla de la hoja de ruta se restauró y es dura** —«reportar el
+ajuste con y sin ellos, adoptar el más conservador»: `serie_sin_fen` con
+menos lluvia que la serie completa DETIENE el cálculo hidrológico del punto,
+por decisión del dueño (ficha T1-09)—. Los dorados (`CP13_HIDROLOGIA`) están
+calculados a mano, porque el Manual no trae ejemplo numérico, y los datos de
+`tests/fixtures/hidrologia/` son sintéticos y lo dicen en su primera línea—;
+los nueve anclajes de `test_decisiones_diferidas` para las fichas de la Parte
+XLIII (T1-01..09); los siete que crecen solos en `test_ext5_forma_gui` con
+los siete criterios nuevos (95 donde T-4 dejó 88, y los sin valor siguen
+siendo 35); y los tres de `test_dimensional_piloto` con
+`RACIONAL_COEFICIENTE_SI` en su censo. **No se escribieron en rojo
+primero**: el archivo de aceptación lo dice y midió el rojo sobre `87d1ce7`
+(105 xfailed y 14 XPASS de 119). Ningún archivo restó tests; se reescribieron
+`test_t2_hidraulica` (dos tests que decían «sin avisos» dicen «sin más aviso
+que el del caudal declarado»), `test_cierre_perfil`, `test_nivel_medido`
+(`homogeneidad_serie_fen` sale de `SIN_CONSUMIDOR_Y_SIN_MEDIDA`),
+`test_memoria_sustentada` (ocho fundamentos `FH.*` que sólo se emiten con el
+caudal calculado), `test_sin_literales` (`src/dominios.py`: 10),
+`test_normativa`, `test_traza_punto` y `test_t0_gobernanza`, que ganó la
+fila de T-1 en `LO_QUE_ESCRIBIO_CADA_PROMPT`. Tres cosas de la integración
+con T-2: los avisos de la Fase 1-bis salen por `InformePunto.avisos()` con
+los demás del punto, una sola vez; todo punto de Familia A o B con el caudal
+declarado lleva ahí un aviso PERMANENTE (el criterio FEN no lo alcanza); y un
+paso de la Fase 1-bis con veredicto INDICADOR cuenta en
+`ResumenDeCorrida.con_aviso` junto a las verificaciones
+(`InformePunto.indicadores_de_hidrologia`). Cierra INF-3.1.2, INF-3.1.3,
+INF-3.1.5, INF-3.1.6, INF-5.2.5 e INF-5.1.3, y en parte INF-3.1.1 (la
+delimitación de la cuenca es una entrada) e INF-3.1.4 (quién fija R y n
+sigue siendo del Propietario). La línea base de la Familia C se regeneró
+sobre el árbol fusionado y se midió contra `7fb7926` en los doce pares punto
+× corrida: material, sección, código, estado, veredicto, valor obtenido y
+admisible de cada verificación, tipo de cada bloqueo, iteraciones,
+durabilidad y periodo de retorno son idénticos; cambian la línea «Fase 1b Q
+declarado…», el aviso permanente, la clave `caudal`, el origen del caudal en
+la clasificación, tres entradas de `verificacion_pendiente`, las huellas y
+el recuento de criterios; los dos CSV de resumen y la memoria del cajón no
+cambian un byte, y **ningún diámetro se movió**. De las cuatro
+configuraciones se MIDIÓ UNA, «sí · no», con el repositorio de normas
+enlazado: 4712 passed, 16 skipped, collected 4728 (y sin `NORMAS_DIR`, sobre
+el mismo árbol: 4694 passed, 34 skipped). **Las otras tres se dicen como
+derivadas, no como medidas**, por lo mismo que en T-0: la derivación suma
+191 a las de T-4 y pasa 20 de ellos a `skipped` en las dos columnas sin
+PyMuPDF. **T-4 de la cadena T (2026-11-11, integrado el 12 detrás de
 T-2) sumó CIENTO TREINTA Y UN tests netos**, quince con la marca `pdf` y
 ninguno dependiente de Tk: los 115 de
 `tests/test_t4_materiales_durabilidad.py` —la aceptación de material,
@@ -1611,7 +1729,7 @@ EXT-0: 1986; EXT-1: 2078; EXT-2: 2097; EXT-3: 2127; EXT-4: 2160; EXT-5:
 EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
-4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537. La
+4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1623,17 +1741,20 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4534 (**derivado** en T-4, no medido: el contenedor no tiene tkinter) | 3 |
-| sí | no | 4521 (**MEDIDO** en T-4 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
-| no | sí | 4479 (**derivado**, no medido) | 58 |
-| no | no | 4466 (**derivado**, no medido) | 71 |
+| sí | sí | 4725 (**derivado** en T-1, no medido: el contenedor no tiene tkinter) | 3 |
+| sí | no | 4712 (**MEDIDO** en T-1 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
+| no | sí | 4650 (**derivado**, no medido) | 78 |
+| no | no | 4637 (**derivado**, no medido) | 91 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
-(`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DOCE menos y saltan
-doce más desde T-4 (medido en «sí · no»: 4509 passed, 28 skipped; eran siete
-hasta T-2: T-4 sumó los cinco de `tests/test_t4_materiales_durabilidad.py`
-que abren el WSDOT Hydraulics Manual); las dos sin PyMuPDF, uno menos y uno
-más, porque los otros once ya iban saltados por la marca `pdf`. Tras T-2 la
+(`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
+dieciocho más desde T-1 (medido en «sí · no»: 4694 passed, 34 skipped; eran
+siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
+`tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
+Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
+2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
+iban saltados por la marca `pdf`. Tras T-4 la tabla decía 4534 / 4521 / 4479
+/ 4466, medida sólo la segunda. Tras T-2 la
 tabla decía 4403 / 4390 / 4363 / 4350, medida sólo la segunda. Hasta T-0 la tabla decía 4172 / 4159 / 4137 / 4124, medidos
 los cuatro en el cierre del 2026-09-22 sobre `19bcf5a`; tras T-0, 4232 /
 4219 / 4193 / 4180, medida sólo la segunda.

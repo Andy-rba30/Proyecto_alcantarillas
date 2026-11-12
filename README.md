@@ -53,6 +53,20 @@ python -m gui.app          # la ventana
 De un CSV nuevo a las tres familias dimensionadas a nivel de perfil, paso a
 paso y con comandos que la suite ejecuta: `docs/guia_perfil.md`.
 
+**El caudal de diseño** de un punto de Familia A o B entra declarado en la
+columna `Q_m3s`, o lo calcula el programa por el método racional (Manual de
+Hidrología del MTC, cap. III) si esa celda va vacía y la corrida trae la
+cuenca de la obra y la serie de lluvia de su estación:
+
+```
+python cli.py <csv de puntos> --cuencas cuencas.csv --estacion estacion.csv \
+       --declarar homogeneidad_serie_fen=serie_completa --alcance perfil
+```
+
+Si `Q_m3s` viene lleno, gana el declarado. Las columnas de los dos archivos y
+quién aporta cada una están en `docs/contrato_entradas.md` §2-bis; ninguna
+tiene valor por defecto.
+
 ## Exportar a PDF desde la ventana: en un proceso aparte
 
 Desde EXT-8 el botón «Exportar memoria (PDF)» no escribe el PDF en el hilo de la
