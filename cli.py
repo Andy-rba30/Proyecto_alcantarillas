@@ -560,7 +560,7 @@ def _lineas_fase_6(informe: InformePunto) -> List[str]:
                      f"clase {a.clase}, L = {_fmt(a.longitud)} m, e = "
                      f"{_fmt(a.espesor)} m, ancho final "
                      f"{_fmt(a.ancho_final)} m")
-        out.append(f"{SANGRIA_DETALLE}apron de HEC-14 (contraste): D50 = "
+        out.append(f"{SANGRIA_DETALLE}apron de HEC-14: D50 = "
                    f"{_fmt(a.D50_requerido)} m, {geometria} (Sec. 10.2)")
     e = informe.proteccion_entrada
     if e is not None:
@@ -595,12 +595,16 @@ def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
               "criterio_espesor": p.criterio_espesor,
               "criterio_longitud": p.criterio_longitud,
               "advertencias": list(p.advertencias)}
-    # --- T-8 --- Lo que la Fase 6 añade al lado de Laushey. `requerida` es
-    # null cuando el punto no declaro el terreno del receptor (y entonces
-    # d50, espesor y longitud llevan numero, como antes de T-8), true cuando
-    # la velocidad de salida supera la admisible de la Tabla Nº 11 y false
-    # cuando no la supera: en ese caso los tres van en null, porque no hay
-    # enrocado que dimensionar.
+    # --- T-8 --- Lo que la Fase 6 añade a Laushey. `d50_m`, `espesor_m` y
+    # `longitud_m` son los que RIGEN por la regla declarada y llevan siempre
+    # numero; `d50_laushey_m` es el del Manual, rija o no. `requerida` es lo
+    # que INFORMA el contraste con la Tabla Nº 11: true si la velocidad de
+    # salida supera la admisible, false si no la supera (el terreno la
+    # resistiria segun la tabla; la proteccion se mantiene igual) y null si
+    # el punto no declaro el terreno o si el contraste no concluye
+    # (`velocidad_admisible.concluyente` false).
+    salida["d50_laushey_m"] = _num(p.d50_laushey)
+    salida["rige_la_envolvente"] = p.rige_la_envolvente
     salida["requerida"] = p.requerida
     salida["froude_salida"] = None if p.froude is None else {
         "Fr": _num(p.froude.Fr), "y_equivalente_m": _num(p.froude.y_equivalente),
@@ -640,7 +644,7 @@ def _admisible_json(v) -> Optional[Dict[str, Any]]:
         return None
     return {"tipo_terreno": v.tipo_terreno, "regimen_flujo": v.regimen_flujo,
             "V_m_s": _num(v.V), "V_admisible_m_s": _num(v.V_admisible),
-            "supera": v.supera}
+            "supera": v.supera, "concluyente": v.concluyente}
 
 
 def _proteccion_entrada_json(p) -> Dict[str, Any]:
@@ -673,8 +677,8 @@ def _socavacion_json(s) -> Dict[str, Any]:
                 "origen_duracion": e.origen_duracion,
                 "duracion_por_criterio": e.duracion_por_criterio,
                 "duracion_acotada": e.duracion_acotada,
-                "profundidad_al_techo_de_la_ventana_m": _num(
-                    e.profundidad_al_techo_de_la_ventana),
+                "duracion_alternativa_min": _num(e.duracion_alternativa_min),
+                "profundidad_alternativa_m": _num(e.profundidad_alternativa),
                 "Cs": _num(e.Cs), "Ch": _num(e.Ch)}}
 
 
@@ -1290,13 +1294,16 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
 
     if informe.proteccion is not None:
         p = informe.proteccion
-        if p.d50 is None:
-            # --- T-8 --- la Tabla Nº 11 no pide proteger: no hay d50.
-            out.append(f"{SANGRIA}Fase 6  salida sin enrocado: la velocidad "
-                       f"de salida ({_fmt(p.V)} m/s) no supera la admisible "
-                       f"del terreno "
-                       f"({_fmt(p.velocidad_admisible.V_admisible)} m/s, "
-                       "Tabla N 11 del Manual)")
+        if p.rige_la_envolvente:
+            # LA LINEA SEPARA LOS ORIGENES (H1 de la segunda auditoria de
+            # T-8): con la envolvente, el espesor y la longitud salen de la
+            # Tabla 10.1 de HEC-14 y no del numeral del Manual, que solo da
+            # el d50 de Laushey.
+            out.append(f"{SANGRIA}Fase 6  d50 = {_fmt(p.d50_laushey)} m "
+                       f"(num. {p.numeral}); rige la envolvente con HEC-14: "
+                       f"d50 {_fmt(p.d50)} m, espesor {_fmt(p.espesor)} m, "
+                       f"longitud {_fmt(p.longitud)} m (Ec. 10.4 y Tabla "
+                       "10.1)")
         else:
             out.append(f"{SANGRIA}Fase 6  d50 = {_fmt(p.d50)} m, espesor "
                        f"{_fmt(p.espesor)} m, longitud {_fmt(p.longitud)} m "

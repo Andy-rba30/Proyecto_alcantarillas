@@ -166,7 +166,10 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
     },
     "T-8": {
         # La proteccion de entrada y salida (Fase 6). Con los numeros del
-        # INFORME: el prompt cita INF-5.1.13 como «INF-5.1.11».
+        # INFORME: el prompt cita INF-5.1.13 como «INF-5.1.11». La pasada de
+        # correcciones de la segunda auditoria (integrada detras de T-5) no
+        # cambia ningun estado: escribe una NOTA en INF-3.3.7, INF-5.1.13 y
+        # MAT-X6, delante del texto que ya tenian.
         ESTADO_CERRADO: {"INF-3.3.7", "INF-5.1.13"},
     },
     "T-5": {

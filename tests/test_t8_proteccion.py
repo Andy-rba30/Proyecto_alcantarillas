@@ -30,6 +30,25 @@ rojos, 5 errores y 1 verde (la guardia de las tres advertencias). La mutacion
 de M6 contra este archivo, con el arnes de EXT-11: 337 de 375 muertos (ficha
 T8-06 de `docs/decisiones_diferidas.md`). El bloque 10 lo dejo el auditor
 adversarial de T-8 (tres refutados y cinco ajustes; ver cada test).
+
+REESCRITO A LA VERDAD NUEVA EL 2026-11-12, y se declara que cambio y por que
+(segunda auditoria de T-8 y decisiones del dueño de esa fecha; la aceptacion
+de la pasada esta en `tests/test_t8_correcciones.py`):
+
+  * RIGE LA ENVOLVENTE. 'regla_espesor_longitud_proteccion_salida' vale
+    «envolvente_hec14»: la piedra es el mayor de Laushey y de la Ec. (10.4),
+    y el espesor y la longitud los mayores de lo adoptado y de la Tabla 10.1.
+    Los tests que fijaban «espesor = 1.75·d50» y «longitud = 5.0 m» sobre la
+    corrida por defecto los fijan ahora sobre `corrida_manual`, que declara
+    la regla anterior y tiene que dar EXACTAMENTE aquellos numeros; sobre la
+    corrida por defecto fijan lo nuevo (A-01 y A-02: 0.770 m y 5.40 m).
+  * «SIN ENROCADO» NO ES UNA CONCLUSION. Bajo la admisible de la Tabla Nº 11
+    la proteccion se calcula y se mantiene; los tests que esperaban `d50 is
+    None` y las celdas vacias del resumen esperan el numero y el aviso.
+  * LA DURACION POR CRITERIO SON 360 MIN [A], no 30 [C]. Los ejemplos
+    resueltos de HEC-14 usan t = 30 min y lo DECLARAN (`duracion_pico_min`).
+  * LA NOTA (5) b de la Tabla 511-06 vale solo en la columna «>50».
+  * EL LIMITE DEL APRON es 1.524 m (60 in), no 1.500.
 """
 
 from __future__ import annotations
@@ -99,8 +118,30 @@ def _punto(informe, id_punto):
 
 @pytest.fixture(scope="module")
 def corrida_base(tmp_path_factory):
-    """La corrida ancha SIN ningun dato de T-8: la conducta de antes de T-8."""
+    """La corrida ancha SIN ningun dato de T-8, con la regla del archivo."""
     return _correr_ancho(tmp_path_factory.mktemp("base"))
+
+
+CRITERIO_REGLA = "regla_espesor_longitud_proteccion_salida"
+
+
+def _con_regla(regla, funcion):
+    """Ejecuta `funcion()` con la regla declarada en caliente, y la repone."""
+    ca.establecer_valor_dinamico(CRITERIO_REGLA, regla)
+    try:
+        return funcion()
+    finally:
+        ca.quitar_valor_dinamico(CRITERIO_REGLA)
+
+
+@pytest.fixture(scope="module")
+def corrida_manual(tmp_path_factory):
+    """
+    La misma corrida con la regla «manual» declarada: la conducta de antes
+    de la decision del 2026-11-12, numero por numero.
+    """
+    return _con_regla("manual",
+                      lambda: _correr_ancho(tmp_path_factory.mktemp("manual")))
 
 
 # ===========================================================================
@@ -166,25 +207,43 @@ def test_la_tabla_11_del_manual_es_la_del_pdf():
 # 1 · Laushey se conserva: mismos numeros que antes de T-8
 # ===========================================================================
 
-def test_sin_datos_nuevos_la_salida_da_los_numeros_de_antes(corrida_base):
+def test_sin_datos_nuevos_la_salida_da_los_numeros_de_antes(corrida_manual,
+                                                            corrida_base):
     """
-    d50 = V^2/(3.1·9.8), espesor = 1.75·d50 y longitud 5.0 m: la conducta de
-    antes de T-8, recomputada a mano sobre la V_salida de cada punto.
+    Con la regla «manual»: d50 = V^2/(3.1·9.8), espesor = 1.75·d50 y longitud
+    5.0 m, la conducta de antes de T-8, recomputada a mano sobre la V_salida
+    de cada punto. Con la regla del archivo (la envolvente) el d50 de Laushey
+    es el MISMO --se publica siempre-- y en estos dos puntos es ademas el que
+    rige, porque la Ec. (10.4) pide menos piedra.
     """
     for id_punto in ("A-01", "A-02"):
-        p = _punto(corrida_base, id_punto).proteccion
+        p = _punto(corrida_manual, id_punto).proteccion
         d50 = p.V ** 2 / (3.1 * 9.8)
         assert p.d50 == pytest.approx(d50, rel=REL_FORMULA)
         assert p.espesor == pytest.approx(1.75 * d50, rel=REL_FORMULA)
         assert p.longitud == pytest.approx(5.0, rel=REL_FORMULA)
-        assert p.requerida is None
+        assert p.requerida is None and not p.rige_la_envolvente
+        q = _punto(corrida_base, id_punto).proteccion
+        assert q.d50_laushey == pytest.approx(d50, rel=REL_FORMULA)
+        assert q.d50 == pytest.approx(d50, rel=REL_FORMULA)
+        assert q.rige_la_envolvente
     assert LAUSHEY_K == pytest.approx(3.1, rel=REL_TRANSPORTE) and G_LAUSHEY == pytest.approx(9.8, rel=REL_TRANSPORTE)
 
 
-def test_las_tres_advertencias_de_siempre_viajan_con_el_d50(corrida_base):
+def test_las_tres_advertencias_de_siempre_viajan_con_el_d50(corrida_base,
+                                                            corrida_manual):
+    """
+    Tres advertencias siempre. Las dos primeras no cambian; la del ALCANCE
+    dice cual de las dos reglas rigio (con la envolvente, «el d50 que rige
+    sale del Manual» seria falso donde HEC-14 pide mas piedra).
+    """
+    manual = _punto(corrida_manual, "A-01").proteccion
+    assert manual.advertencias == M6.ADVERTENCIAS_PROTECCION_SALIDA
     p = _punto(corrida_base, "A-01").proteccion
-    assert p.advertencias == M6.ADVERTENCIAS_PROTECCION_SALIDA
+    assert p.advertencias == M6.ADVERTENCIAS_PROTECCION_SALIDA_ENVOLVENTE
     assert len(p.advertencias) == 3
+    assert p.advertencias[:2] == manual.advertencias[:2]
+    assert "rige la ENVOLVENTE" in p.advertencias[2]
 
 
 def test_proteccion_salida_solo_con_V_no_añade_pasos_de_HEC14():
@@ -270,9 +329,14 @@ def test_apron_es_adimensional_el_ejemplo_ingles_da_lo_mismo_en_SI():
     Ejemplo CU (pag. 10-19): Q = 85 ft3/s, D = 5 ft, TW = 1.6 ft -> 0.43 ft.
     La Ec. (10.4) es adimensional: convertido a SI (0.3048 m/ft) y llevado a
     escala geometrica λ = 0.9 (longitudes por λ, caudal por λ^2.5) el D50
-    sale 0.43 ft · 0.3048 · λ. La escala hace falta porque D = 5 ft = 1.524 m
-    queda justo sobre el limite de 1500 mm de la Tabla 1.1 (la fuente lo
-    imprime «1500 mm (60 in)»: el SI es la conversion redondeada).
+    sale 0.43 ft · 0.3048 · λ.
+
+    PRUEBA DE LA FORMULA, que se conserva: la escala de Froude deja intactos
+    Q/(g^0.5·D^2.5) y D/TW, y el oraculo es el numero impreso. La escala se
+    introdujo porque D = 5 ft = 1.524 m quedaba sobre el limite de 1500 mm
+    que T-8 transcribio de la Tabla 1.1 («1500 mm (60 in)»); desde la segunda
+    auditoria (H5) el limite es 60 in y el ejemplo entra TAMBIEN a su escala
+    real, en `tests/test_t8_correcciones.py`.
     """
     lam = 0.9
     a = M6.apron_hec14(Q_celda=85 / FT3_POR_M3 * lam ** 2.5,
@@ -332,13 +396,18 @@ def test_apron_que_no_cabe_en_la_tabla_lo_dice_y_nombra_la_lamina_04():
     assert any("Lámina Nº 04" in x for x in avisos)
 
 
-def test_el_contraste_avisa_cuando_lo_adoptado_queda_corto(corrida_base):
+def test_el_contraste_avisa_cuando_lo_adoptado_queda_corto(corrida_manual,
+                                                           corrida_base):
     """
     A-01 del fixture: HEC-14 da clase 4 (L = 6·0.9 = 5.4 m, profundidad
-    2.2·0.35 = 0.77 m) y el proyecto adopta 5.0 m y 1.75·d50: la corrida avisa
-    las dos cosas, y los avisos llegan a `InformePunto.avisos()`.
+    2.2·0.35 = 0.77 m). Con la regla «manual» el proyecto adopta 5.0 m y
+    1.75·d50, y la corrida avisa las dos cosas, que llegan a
+    `InformePunto.avisos()`. Con la envolvente (el archivo) lo que rige ya
+    no queda corto, y esos dos avisos callan.
     """
-    a01 = _punto(corrida_base, "A-01")
+    assert not any("longitud adoptada (5.00 m" in x or "espesor adoptado" in x
+                   for x in _punto(corrida_base, "A-01").avisos())
+    a01 = _punto(corrida_manual, "A-01")
     apron = a01.proteccion.apron
     assert apron.clase == 4
     assert apron.longitud == pytest.approx(6 * 0.9, rel=REL_FORMULA)
@@ -351,10 +420,11 @@ def test_el_contraste_avisa_cuando_lo_adoptado_queda_corto(corrida_base):
 def test_conducto_mayor_de_1500_mm_es_limite_del_apron():
     """
     Nota 8 de la Tabla 1.1 «Energy Dissipators and Limitations»: el apron
-    vale para conductos de hasta 1500 mm de alto. Es un LIMITE, como los
-    otros, y no un aviso (auditoria de T-8, hallazgo 9).
+    vale para conductos de hasta «1500 mm (60 in)» de alto. Es un LIMITE,
+    como los otros, y no un aviso (auditoria de T-8, hallazgo 9). De las dos
+    cifras rige 60 in = 1.524 m (segunda auditoria, H5).
     """
-    with pytest.raises(MetodoNoEvaluableError, match="1.50 m") as e:
+    with pytest.raises(MetodoNoEvaluableError, match="60 in") as e:
         M6.apron_hec14(Q_celda=2.0, seccion=SeccionCircular(1.8), TW=0.8,
                        y_salida=None, y_critico=0.7)
     assert e.value.rotulo == MOTIVO_METODO_NO_EVALUABLE_HEC14
@@ -367,15 +437,22 @@ def test_conducto_mayor_de_1500_mm_es_limite_del_apron():
 # 4 · Velocidad admisible del cauce (Manual, Tabla Nº 11)
 # ===========================================================================
 
-def test_bajo_la_admisible_no_hay_enrocado_que_dimensionar():
+def test_bajo_la_admisible_la_proteccion_se_mantiene_y_se_dice():
     """
     Grava gruesa, flujo intermitente: 2.40 m/s. Con V = 2.0 el terreno la
-    resiste: `requerida` False, sin d50 ni advertencias, y el paso 6.4 CUMPLE.
+    resistiria segun la tabla: `requerida` False y el paso 6.4 CUMPLE. Hasta
+    la decision del dueño del 2026-11-12 eso dejaba la salida «sin enrocado»
+    (d50 None); ahora la proteccion se calcula y se mantiene, y el aviso dice
+    que suprimirla queda sujeto a inspeccion de campo. d50 = 4/30.38.
     """
     p = M6.proteccion_salida(V=_V(2.0), tipo_terreno="graduado_grava_gruesa",
                              regimen_flujo="intermitente")
-    assert p.requerida is False and p.d50 is None and p.espesor is None
-    assert p.advertencias == ()
+    assert p.requerida is False
+    assert p.d50 == pytest.approx(4.0 / (3.1 * 9.8), rel=REL_FORMULA)
+    assert p.espesor is not None and p.longitud is not None
+    assert len(p.advertencias) == 3
+    assert any("se MANTIENE" in x and "inspeccion de campo" in x
+               for x in p.avisos)
     assert p.velocidad_admisible.V_admisible == pytest.approx(2.40, rel=REL_TRANSPORTE)
     assert p.velocidad_admisible.paso.veredicto.tipo is TipoDeVeredicto.CUMPLE
 
@@ -432,12 +509,15 @@ def test_la_nota_5b_lleva_la_abertura_a_030_en_suelo_cohesivo_con_IP_mayor_7():
                                   ).abertura_aparente_max_mm == pytest.approx(0.30, rel=REL_TRANSPORTE)
     assert M6.requisito_de_filtro(pasa_200_pct=60.0, indice_plasticidad=5.0
                                   ).abertura_aparente_max_mm == pytest.approx(0.22, rel=REL_TRANSPORTE)
-    # La llamada (5) la lleva el rotulo de la FILA: vale en las tres
-    # columnas (auditoria de T-8, hallazgo 8; la primera lectura daba 0.25).
+    # TERCERA LECTURA, y la que queda (segunda auditoria de T-8, H4; decision
+    # del dueño del 2026-11-12): la primera de T-8 daba 0.25 en «15-50», el
+    # primer auditor la llevo a 0.30 en las tres columnas, y el segundo midio
+    # que eso RELAJA la celda. La nota (5) b vale donde la celda lleva la
+    # llamada, «>50»; en las otras dos rige la celda.
     assert M6.requisito_de_filtro(pasa_200_pct=30.0, indice_plasticidad=10.0
-                                  ).abertura_aparente_max_mm == pytest.approx(0.30, rel=REL_TRANSPORTE)
+                                  ).abertura_aparente_max_mm == pytest.approx(0.25, rel=REL_TRANSPORTE)
     assert M6.requisito_de_filtro(pasa_200_pct=10.0, indice_plasticidad=10.0
-                                  ).abertura_aparente_max_mm == pytest.approx(0.30, rel=REL_TRANSPORTE)
+                                  ).abertura_aparente_max_mm == pytest.approx(0.43, rel=REL_TRANSPORTE)
 
 
 def test_sin_el_pasante_el_filtro_se_declara_y_no_se_dimensiona():
@@ -527,7 +607,8 @@ def test_hoya_no_cohesiva_reproduce_el_ejemplo_SI_de_hec14():
                              D16_m=0.001)
     h = M6.hoya_de_socavacion_hec14(
         Q_celda=0.764, seccion=SeccionCircular(0.457), S=0.02,
-        V=_V(3.0), altura_caida_m=0.914, material=material)
+        V=_V(3.0), altura_caida_m=0.914, material=material,
+        duracion_pico_min=30.0)       # el ejemplo lo da: t = 30 min
     assert h.profundidad == pytest.approx(1.13434, rel=REL_ARITMETICA)
     assert h.profundidad == pytest.approx(1.14, rel=REL_EJEMPLO_IMPRESO)
     assert h.ancho == pytest.approx(8.82, rel=REL_EJEMPLO_IMPRESO)
@@ -553,7 +634,7 @@ def test_hoya_cohesiva_reproduce_el_ejemplo_SI_de_hec14():
         pytest.approx(39.9, rel=REL_EJEMPLO_IMPRESO)
     h = M6.hoya_de_socavacion_hec14(
         Q_celda=1.133, seccion=SeccionCircular(0.61), S=0.0, V=_V(3.88),
-        altura_caida_m=0.0,
+        altura_caida_m=0.0, duracion_pico_min=30.0,    # «Use 30 minutes»
         material=MaterialLecho(tipo="cohesivo", IP=12.0, Sv_Pa=23970.0))
     assert h.profundidad == pytest.approx(1.206, rel=REL_ARITMETICA_CORTA)
     assert h.profundidad == pytest.approx(1.2, rel=REL_EJEMPLO_IMPRESO)
@@ -649,7 +730,10 @@ def test_sin_revestimiento_pero_con_hoya_se_avisa_el_desplante(corrida_base):
         seccion=a01.resultado.seccion, altura_caida_m=0.3,
         material=MaterialLecho(tipo="no_cohesivo", D84_m=0.02, D16_m=0.002),
         proteccion_requerida=False)
-    assert any("no pide revestir" in x and "5.1.3" in x for x in s.avisos)
+    # Segun la Tabla Nº 11 el terreno resistiria, y aun asi hay hoya: el
+    # aviso lo dice en nombre del proyecto (no «la tabla no pide revestir»).
+    assert any("el terreno resistiria" in x and "5.1.3" in x
+               for x in s.avisos)
 
 
 # ===========================================================================
@@ -681,9 +765,13 @@ def test_con_los_datos_del_sitio_la_fase_6_se_completa(corrida_con_datos):
     assert a01.proteccion.filtro.columna == "< 15"
     assert a01.socavacion.origen == ORIGEN_SOCAVACION_ESTIMADA
     assert a01.socavacion.estimada.duracion_min == pytest.approx(60.0, rel=REL_TRANSPORTE)
-    # A-02 descarga a 2.9 m/s sobre piedras > 20 cm (3.00 m/s): no se reviste.
+    # A-02 descarga a 2.9 m/s sobre piedras > 20 cm (3.00 m/s): el terreno
+    # la resistiria segun la tabla, y la proteccion se MANTIENE (decision del
+    # dueño del 2026-11-12; antes quedaba «sin enrocado», con d50 None).
     a02 = _punto(corrida_con_datos, "A-02")
-    assert a02.proteccion.requerida is False and a02.proteccion.d50 is None
+    assert a02.proteccion.requerida is False
+    assert a02.proteccion.d50 == pytest.approx(
+        a02.proteccion.V ** 2 / (3.1 * 9.8), rel=REL_FORMULA)
     assert a02.socavacion.origen == ORIGEN_SOCAVACION_DECLARADA
 
 
@@ -716,22 +804,31 @@ def test_el_json_lleva_las_tres_piezas_de_la_fase_6(corrida_con_datos):
     assert a01["proteccion_salida"]["apron_hec14"]["clase"] == 4
     assert a01["proteccion_entrada"]["revestimiento"] == "emboquillado_de_piedra"
     assert a01["socavacion_salida"]["origen"] == ORIGEN_SOCAVACION_ESTIMADA
-    assert a02["proteccion_salida"]["d50_m"] is None
+    assert a02["proteccion_salida"]["requerida"] is False
+    assert a02["proteccion_salida"]["d50_m"] is not None
+    assert a02["proteccion_salida"]["d50_laushey_m"] == \
+        a02["proteccion_salida"]["d50_m"]
     assert a02["socavacion_salida"]["profundidad_para_desplante_m"] == \
         pytest.approx(0.8, rel=REL_TRANSPORTE)
 
 
-def test_sin_enrocado_el_resumen_deja_las_celdas_vacias(corrida_con_datos,
-                                                        tmp_path):
+def test_bajo_la_admisible_el_resumen_lleva_la_proteccion(corrida_con_datos,
+                                                          tmp_path):
+    """
+    A-02, bajo la admisible del terreno. Hasta la decision del 2026-11-12 el
+    resumen decia «sin enrocado» y el CSV dejaba las tres celdas VACIAS,
+    iguales a las de una Fase 6 bloqueada (H11 de la segunda auditoria). Hoy
+    llevan los numeros que rigen, y nada dice «sin enrocado».
+    """
     a02 = _punto(corrida_con_datos, "A-02")
-    assert "sin enrocado" in M11.fila_resumen(a02, "cabezal")
+    assert "sin enrocado" not in M11.fila_resumen(a02, "cabezal")
     fila = M11._fila_resumen_csv(a02, "cabezal")
     for columna in ("proteccion_d50_m", "proteccion_espesor_m",
                     "proteccion_longitud_m"):
-        assert fila[M11.COLUMNAS_RESUMEN_CSV.index(columna)] == ""
-    assert "sin enrocado" in M11.memoria_de_punto(a02)
-    texto = cli.volcar(corrida_con_datos)
-    assert "salida sin enrocado" in texto
+        assert fila[M11.COLUMNAS_RESUMEN_CSV.index(columna)] != ""
+    assert "sin enrocado" not in M11.memoria_de_punto(a02)
+    assert "sin enrocado" not in cli.volcar(corrida_con_datos)
+    assert any("se MANTIENE" in x for x in a02.avisos())
 
 
 def test_la_traza_de_la_fase_6_la_imprime_la_memoria(corrida_con_datos):
@@ -818,9 +915,11 @@ def test_las_seis_claves_son_externas_opcionales_sin_valor_por_defecto():
 
 
 def test_los_criterios_nuevos_de_la_hoya_tienen_ficha_y_ventana():
+    # Era [C] con 30 min; desde la decision del dueño del 2026-11-12 es una
+    # ELECCION [A] en la ventana 30-360, con 360 de valor de archivo.
     t = ca.CRITERIOS["duracion_caudal_pico_socavacion_min"]
-    assert t.etiqueta == "C" and t.valor == pytest.approx(30.0, rel=REL_TRANSPORTE)
-    assert t.sensibilidad[0] == pytest.approx(30.0, rel=REL_TRANSPORTE)
+    assert t.etiqueta == "A" and t.valor == pytest.approx(360.0, rel=REL_TRANSPORTE)
+    assert t.sensibilidad == pytest.approx((30.0, 360.0), rel=REL_TRANSPORTE)
     lectura = ca.CRITERIOS["lectura_coeficientes_socavacion_hec14"]
     assert lectura.etiqueta == "A"
     assert lectura.valor == M6.LECTURA_ENVOLVENTE
@@ -872,7 +971,7 @@ def test_hoya_cohesiva_en_un_marco_usa_el_tirante_equivalente_y_alfa_e():
     """
     h = M6.hoya_de_socavacion_hec14(
         Q_celda=1.0, seccion=SeccionRectangular(B=1.2, H=1.0), S=0.0,
-        V=_V(2.5), altura_caida_m=1.0,
+        V=_V(2.5), altura_caida_m=1.0, duracion_pico_min=30.0,
         material=MaterialLecho(tipo="cohesivo", IP=12.0, Sv_Pa=23970.0))
     assert h.profundidad == pytest.approx(1.46688, rel=REL_ARITMETICA)
     assert h.ancho == pytest.approx(7.61251, rel=REL_ARITMETICA)
@@ -1058,25 +1157,28 @@ LECHO_ARENOSO = {"tipo": "no_cohesivo", "D84_m": 0.0005, "D16_m": 0.00008}
 
 def test_aud1_la_duracion_por_criterio_avisa_y_da_la_sensibilidad(tmp_path):
     """
-    Hallazgo 1. Sin `duracion_caudal_pico_min` rige el [C] de 30 min, que es
-    lo que HEC-14 5.1.2 manda «lacking this knowledge» y el extremo NO
-    conservador de la ventana: la corrida lo AVISA y da la profundidad al
-    techo (360 min). Con θ = 0.06 (no cohesivo): ×(360/30)^0.06 = ×1.161.
+    Hallazgo 1, reescrito a la decision del 2026-11-12. Sin
+    `duracion_caudal_pico_min` rige el criterio [A], que ya no son los 30 min
+    que HEC-14 5.1.2 recomienda «lacking this knowledge» sino 360: la corrida
+    lo AVISA y da al lado la profundidad con 30 min, la otra punta de la
+    ventana. Con θ = 0.06 (no cohesivo): ×(30/360)^0.06 = 1/1.161 = ×0.861.
     """
     informe = _correr_ancho(tmp_path, {"A-01": {
         "material_lecho_salida": LECHO_ARENOSO}})
     a01 = _punto(informe, "A-01")
     hoya = a01.socavacion.estimada
     assert hoya.duracion_por_criterio and not hoya.duracion_acotada
-    assert hoya.duracion_techo_min == pytest.approx(360.0, rel=REL_TRANSPORTE)
-    assert hoya.profundidad_al_techo_de_la_ventana == pytest.approx(
-        hoya.profundidad * 12 ** 0.06, rel=REL_FORMULA)
-    assert any("extremo NO conservador" in x and "360 min" in x
-               for x in a01.avisos())
+    assert hoya.duracion_min == pytest.approx(360.0, rel=REL_TRANSPORTE)
+    assert hoya.duracion_alternativa_min == pytest.approx(30.0,
+                                                          rel=REL_TRANSPORTE)
+    assert hoya.profundidad_alternativa == pytest.approx(
+        hoya.profundidad / 12 ** 0.06, rel=REL_FORMULA)
+    assert any("adopcion del proyecto" in x and "360 min" in x
+               and "Con t = 30 min" in x for x in a01.avisos())
     nota = next(p for p in hoya.pasos if p.codigo == "6.11").nota_del_proyecto
     assert "SENSIBILIDAD A LA DURACION" in nota
     # El numero de la nota es el de la formula, no solo la frase.
-    assert f"seria {hoya.profundidad * 12 ** 0.06:.3f} m (×1.161)" in nota
+    assert f"seria {hoya.profundidad / 12 ** 0.06:.3f} m (×0.861)" in nota
 
 
 def test_aud1_una_duracion_menor_de_30_min_se_acota_y_no_deja_sin_dato(tmp_path):
@@ -1088,8 +1190,11 @@ def test_aud1_una_duracion_menor_de_30_min_se_acota_y_no_deja_sin_dato(tmp_path)
     con_20 = _punto(_correr_ancho(tmp_path, {"A-01": {
         "material_lecho_salida": LECHO_ARENOSO,
         "duracion_caudal_pico_min": 20}}), "A-01")
+    # El termino de comparacion es la hoya de 30 min DECLARADOS: el criterio
+    # por falta del dato da hoy la de 360.
     sin_dato = _punto(_correr_ancho(tmp_path, {"A-01": {
-        "material_lecho_salida": LECHO_ARENOSO}}), "A-01")
+        "material_lecho_salida": LECHO_ARENOSO,
+        "duracion_caudal_pico_min": 30}}), "A-01")
     hoya = con_20.socavacion.estimada
     assert hoya is not None and hoya.duracion_acotada
     assert hoya.duracion_min == pytest.approx(30.0, rel=REL_TRANSPORTE)
@@ -1144,47 +1249,55 @@ def test_aud3_un_IP_fuera_del_rango_avisa_y_no_bloquea(tmp_path):
             "tipo": "cohesivo", "IP": -1, "Sv_Pa": 2e4}}}})
 
 
-def test_aud4_la_salida_sin_enrocado_avisa_con_la_frase_del_hds5():
+def test_aud4_bajo_la_admisible_el_aviso_cita_la_frase_del_hds5():
     """
-    Hallazgo 4: «no hay nada que revestir» es lectura del proyecto, y el
-    HDS-5 5.3.2 dice que el apron es practica corriente salvo que el campo
-    diga que no hace falta. El aviso lo cita (del registro) y el fundamento
-    ya no lleva OBLIGA.
+    Hallazgo 4 de la primera auditoria, y lo que la decision 6 del dueño
+    (2026-11-12) hizo con el: «sin enrocado» no es una conclusion. El HDS-5
+    5.3.2 dice que el apron es practica corriente salvo que el campo diga que
+    no hace falta; el aviso lo cita (del registro), la proteccion se
+    mantiene, y el fundamento no lleva OBLIGA.
     """
     from src.normativa.esquema import Verbo
     reg = _registro.construir()
     p = M6.proteccion_salida(V=_V(1.0), tipo_terreno="grava_fina",
                              regimen_flujo="intermitente")
-    assert p.requerida is False
+    assert p.requerida is False and p.d50 is not None
     literal = reg.cita("HDS5_3ED.5.3.2#PRACTICA").texto_literal.texto
-    assert any("lectura del proyecto" in x and literal in x for x in p.avisos)
+    assert any("inspeccion de campo" in x and literal in x for x in p.avisos)
+    assert not any("SIN enrocado" in x for x in p.avisos)
     assert reg.fundamento("F6.V_ADMISIBLE").verbo is not Verbo.OBLIGA
     assert reg.cita("HDS5_3ED.5.3.2#PRACTICA").interpretacion is not None
 
 
-def test_aud5_el_espesor_bajo_2_d50_se_avisa_siempre(corrida_base):
+def test_aud5_el_espesor_bajo_2_d50_se_avisa_siempre(corrida_manual,
+                                                     corrida_base):
     """
-    Hallazgo 5 (i): 1.75·d50 queda bajo el piso de HEC-14 («to a limit of
-    2.0D50»; «at least 2D50 thick») en TODO punto que dimensiona; en A-02 no
-    se avisaba porque el espesor absoluto superaba el de la clase 1.
+    Hallazgo 5 (i): con la regla «manual», 1.75·d50 queda bajo el piso de
+    HEC-14 («to a limit of 2.0D50»; «at least 2D50 thick») en TODO punto que
+    dimensiona; en A-02 no se avisaba porque el espesor absoluto superaba el
+    de la clase 1. Con la envolvente (el archivo) el espesor que rige es el
+    de la Tabla 10.1 y el aviso calla.
     """
     for id_punto in ("A-01", "A-02"):
-        avisos = _punto(corrida_base, id_punto).avisos()
+        avisos = _punto(corrida_manual, id_punto).avisos()
         assert any("1.75 veces el d50" in x and "to a limit of 2.0D50" in x
                    for x in avisos), id_punto
+        assert not any("veces el d50" in x and "bajo el piso" in x
+                       for x in _punto(corrida_base, id_punto).avisos())
     # 2.0·0.35 = 0.70 m: un espesor de 0.80 m alcanza el piso y no se avisa;
     # uno de 0.60 m (1.71 veces) se avisa.
     assert M6._aviso_espesor_bajo_el_piso(0.80, 0.35) == ()
     assert "1.71 veces el d50" in M6._aviso_espesor_bajo_el_piso(0.60, 0.35)[0]
 
 
-def test_aud5_la_clase_de_la_piedra_adoptada_se_contrasta(corrida_base):
+def test_aud5_la_clase_de_la_piedra_adoptada_se_contrasta(corrida_manual):
     """
-    Hallazgo 5 (ii), A-02: la Ec. (10.4) pide la clase 1, y la piedra que el
-    proyecto pone (d50 = 0.274 m) es de la clase 4: L = 6·0.9 = 5.4 m y
-    profundidad 2.2·0.35 = 0.77 m, mas que lo adoptado (5.0 m y 0.479 m).
+    Hallazgo 5 (ii), A-02 con la regla «manual»: la Ec. (10.4) pide la clase
+    1, y la piedra que el proyecto pone (d50 = 0.274 m) es de la clase 4: L =
+    6·0.9 = 5.4 m y profundidad 2.2·0.35 = 0.77 m, mas que lo adoptado (5.0 m
+    y 0.479 m).
     """
-    a02 = _punto(corrida_base, "A-02")
+    a02 = _punto(corrida_manual, "A-02")
     p = a02.proteccion
     assert p.apron.clase == 1
     c = p.clase_de_la_piedra
@@ -1210,46 +1323,55 @@ def test_aud5_la_clase_de_la_piedra_adoptada_se_contrasta(corrida_base):
     assert any("supera la mayor clase" in x for x in
                M6._avisos_de_la_piedra(sin_clase, espesor=1.0, longitud=5.0))
     # En A-01 la clase de la piedra es la misma del apron: no se repite.
-    a01 = _punto(corrida_base, "A-01")
+    a01 = _punto(corrida_manual, "A-01")
     assert a01.proteccion.clase_de_la_piedra.clase == a01.proteccion.apron.clase
     assert not any("piedra que el proyecto pone" in x for x in a01.avisos())
 
 
-def test_aud5_la_regla_envolvente_toma_el_mayor_y_manual_no_mueve_nada(
+def test_aud5_la_regla_envolvente_toma_el_mayor_y_manual_reproduce_lo_de_antes(
         corrida_base):
     """
-    Hallazgo 5 (iv): la decision del dueño preparada sin cambiar el
-    resultado. «manual» (el archivo) deja lo adoptado; «envolvente_hec14»
-    toma el mayor de lo adoptado y de HEC-14.
+    Hallazgo 5 (iv), y la decision del dueño del 2026-11-12: la envolvente
+    es el valor de archivo y «manual» la alternativa barrible que deja lo
+    adoptado, como antes. A-02: Laushey 0.274 m (clase 4), la Ec. (10.4) pide
+    menos piedra (clase 1); rige Laushey, con 2.2·0.35 = 0.770 m y 6·0.9 =
+    5.40 m de la clase 4.
     """
     a02 = _punto(corrida_base, "A-02")
     r, seccion = a02.resultado.resultado_hidraulico, a02.resultado.seccion
-    assert ca.valor("regla_espesor_longitud_proteccion_salida") == "manual"
-    manual = M6.proteccion_salida(V=r.V_salida, resultado=r, seccion=seccion)
+    assert ca.valor(CRITERIO_REGLA) == "envolvente_hec14"
+    manual = _con_regla("manual", lambda: M6.proteccion_salida(
+        V=r.V_salida, resultado=r, seccion=seccion))
     assert manual.espesor == pytest.approx(manual.espesor_adoptado,
                                            rel=REL_TRANSPORTE)
+    assert manual.espesor == pytest.approx(1.75 * manual.d50, rel=REL_FORMULA)
     assert manual.longitud == pytest.approx(5.0, rel=REL_TRANSPORTE)
-    ca.establecer_valor_dinamico("regla_espesor_longitud_proteccion_salida",
-                                 "envolvente_hec14")
-    try:
-        env = M6.proteccion_salida(V=r.V_salida, resultado=r, seccion=seccion)
-    finally:
-        ca.quitar_valor_dinamico("regla_espesor_longitud_proteccion_salida")
+    assert "6.6c" not in [x.codigo for x in manual.pasos]
+    env = M6.proteccion_salida(V=r.V_salida, resultado=r, seccion=seccion)
     assert env.d50 == pytest.approx(manual.d50, rel=REL_TRANSPORTE)
+    assert env.d50_laushey == pytest.approx(manual.d50, rel=REL_TRANSPORTE)
     assert env.espesor == pytest.approx(2.2 * 0.35, rel=REL_FORMULA)
     assert env.longitud == pytest.approx(6 * 0.9, rel=REL_FORMULA)
+    assert env.espesor_adoptado == pytest.approx(manual.espesor,
+                                                 rel=REL_FORMULA)
     assert "6.6c" in [x.codigo for x in env.pasos]
-    assert any("rige la envolvente" in x for x in env.avisos)
-    # Sin apron evaluable y con una piedra que no tiene clase, la envolvente
-    # no tiene con que comparar: rige lo adoptado y se dice.
-    sin_clase = M6.clase_hec14_de_la_piedra(d50=0.6, D=0.9)
-    e, L, paso_regla, avisos = M6._regla_espesor_longitud(
-        regla="envolvente_hec14", espesor=0.5, longitud=5.0, apron=None,
-        clase=sin_clase)
-    assert e == pytest.approx(0.5, rel=REL_TRANSPORTE)
-    assert L == pytest.approx(5.0, rel=REL_TRANSPORTE)
-    assert paso_regla is None
-    assert len(avisos) == 1 and "no es evaluable" in avisos[0]
+    assert any("rige la envolvente" in x and "rige Laushey" in x
+               for x in env.avisos)
+    # Sin apron evaluable la envolvente no tiene con que comparar: rige
+    # Laushey con lo adoptado y se dice.
+    sin_apron = M6._regla_de_la_proteccion(
+        regla="envolvente_hec14", d50_laushey=0.6, mult_espesor=1.75,
+        longitud_adoptada=5.0, apron=None)
+    assert sin_apron.d50 == pytest.approx(0.6, rel=REL_TRANSPORTE)
+    assert sin_apron.espesor == pytest.approx(1.75 * 0.6, rel=REL_FORMULA)
+    assert sin_apron.longitud == pytest.approx(5.0, rel=REL_TRANSPORTE)
+    assert sin_apron.paso is None and not sin_apron.rige_la_envolvente
+    assert len(sin_apron.avisos) == 1
+    assert "no es evaluable" in sin_apron.avisos[0]
+    with pytest.raises(DatoInvalidoError):
+        M6._regla_de_la_proteccion(
+            regla="la_que_sea", d50_laushey=0.3, mult_espesor=1.75,
+            longitud_adoptada=5.0, apron=None)
 
 
 def test_aud6_la_hoya_dice_desde_que_cota_se_mide(corrida_base):
@@ -1309,7 +1431,7 @@ def test_aud9_el_tirante_de_borde_bajo_control_de_salida_se_avisa(corrida_base):
     r = _punto(corrida_base, "A-01").resultado.resultado_hidraulico
     salida = replace(r, control_gobernante=ControlGobernante.SALIDA,
                      y_salida_m=r.y_critico)
-    assert any("subestimados" in x for x in M6._aviso_tirante_de_borde(salida))
+    assert any("cota inferior" in x for x in M6._aviso_tirante_de_borde(salida))
     assert not M6._aviso_tirante_de_borde(r)     # control de entrada
 
 

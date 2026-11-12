@@ -2036,15 +2036,26 @@ def _bloques_fases_finales(informe: Any) -> str:
         p = informe.proteccion
         avisos = "".join(f'<div class="aviso"><p>{_esc(a)}</p></div>'
                          for a in p.advertencias)
-        if p.d50 is None:
-            # --- T-8 --- la Tabla Nº 11 no pide proteger: no hay enrocado.
+        # La proteccion lleva SIEMPRE numero (decision del dueño del
+        # 2026-11-12: «sin enrocado» no es una conclusion del programa). Lo
+        # que cambia es a QUE se atribuye: con la envolvente, el espesor y
+        # la longitud --y la piedra, cuando HEC-14 pide mas-- no salen del
+        # numeral del Manual ni de los dos criterios a secas.
+        if p.rige_la_envolvente:
             resumen = (
-                "<p>Salida <b>sin enrocado</b>: la velocidad de SALIDA de "
-                f"HDS-5 3.1.6, V = {_num(p.V, FMT_2)} m/s, no supera la "
-                "maxima admisible del terreno del receptor "
-                f"({_num(p.velocidad_admisible.V_admisible, FMT_2)} m/s, "
-                "Tabla N&ordm; 11 del Manual): el desarrollo, en el paso "
-                "6.4.</p>")
+                f"<p>d<sub>50</sub> = {_num(p.d50)} m, espesor "
+                f"{_num(p.espesor)} m y longitud {_num(p.longitud)} m: rige "
+                "la ENVOLVENTE del Manual y de HEC-14 (regla "
+                f"<code>{_esc(p.regla_espesor_longitud)}</code>; el "
+                "desarrollo, en el paso 6.6c). El d<sub>50</sub> de Laushey "
+                f"(num. {_esc(p.numeral)}) es {_num(p.d50_laushey)} m, y lo "
+                f"adoptado por los criterios "
+                f"<code>{_esc(p.criterio_espesor)}</code> y "
+                f"<code>{_esc(p.criterio_longitud)}</code>, "
+                f"{_num(p.espesor_adoptado)} m y "
+                f"{_num(p.longitud_adoptada)} m. Todo con la velocidad de "
+                f"SALIDA de HDS-5 3.1.6 V = {_num(p.V, FMT_2)} m/s (su "
+                "procedencia, en el paso 6.1).</p>")
         else:
             resumen = (
                 f"<p>d<sub>50</sub> = {_num(p.d50)} m (num. "
@@ -2484,13 +2495,9 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
         celdas.append(_td(VACIO))
     else:
         p = informe.proteccion
-        if p.d50 is None:
-            # --- T-8 --- la Tabla Nº 11 no pide proteger la salida.
-            celdas.append(_td("sin enrocado<br>(V &le; admisible)"))
-        else:
-            celdas.append(_td(f"d50 {_num(p.d50)} m<br>e "
-                              f"{_num(p.espesor, FMT_2)} m "
-                              f"&middot; L {_num(p.longitud, FMT_2)} m"))
+        celdas.append(_td(f"d50 {_num(p.d50)} m<br>e "
+                          f"{_num(p.espesor, FMT_2)} m "
+                          f"&middot; L {_num(p.longitud, FMT_2)} m"))
 
     celdas.append(_td(tipo_cabezal))
     clase = "" if informe.dimensionado else "fila-incumple"
@@ -2549,16 +2556,13 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
     if informe.proteccion is None:
         fila.extend(["", "", ""])
     else:
+        # Las tres celdas llevan SIEMPRE numero cuando la Fase 6 corrio
+        # (H11 de la segunda auditoria de T-8: «sin enrocado» las dejaba
+        # vacias, iguales a las de una fase bloqueada; desde la decision del
+        # dueño del 2026-11-12 la proteccion se calcula y se mantiene
+        # siempre). Son las que RIGEN por la regla declarada.
         p = informe.proteccion
-        if p.d50 is None:
-            # --- T-8 --- Sin enrocado (la velocidad de salida no supera la
-            # admisible del terreno): las tres celdas van VACIAS, como toda
-            # celda del CSV sin dato. `_num(None)` devuelve la marca de la
-            # memoria HTML, que en un CSV es basura.
-            fila.extend(["", "", ""])
-        else:
-            fila.extend([_num(p.d50), _num(p.espesor, FMT_2),
-                         _num(p.longitud)])
+        fila.extend([_num(p.d50), _num(p.espesor, FMT_2), _num(p.longitud)])
 
     fila.append(tipo_cabezal)
     return fila
