@@ -4415,8 +4415,8 @@ CRITERIOS: Dict[str, Criterio] = {
     # =======================================================================
     # La banda de pendiente del conducto (V10, INF-3.2.7) y la lectura del
     # borde libre cuando el barril va lleno por el nivel del receptor (V1,
-    # INF-3.2.6). Los consume M5 y M7 los leera en T-6 por
-    # `M5.limites_de_pendiente()`.
+    # INF-3.2.6). Los consume M5, y M7 lee la banda desde T-6 por
+    # `M5.limites_de_pendiente()` (`M7.pendiente_adoptada`).
     "pendiente_minima_conducto": Criterio(
         # EL VALOR ES 0.0 Y NO UNA CIFRA DE PRACTICA, y es deliberado: es lo
         # unico que una fuente de normas/ sostiene. El Manual no da numero;

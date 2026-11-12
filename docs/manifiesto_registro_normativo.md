@@ -339,12 +339,18 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `DG2018.304.05#BOMBEO` | 304.05 | «Bombeo» | pág. impresa **195** · PDF 196 | exigencia | 2026-11-11 · texto |
+| `DG2018.304.06#PERALTE` | 304.06 | «Peralte» | pág. impresa **196** · PDF 197 | definicion | 2026-11-11 · texto |
 | `DG2018.304.07.01` | 304.07.01 | 304.07 Derecho de Vía o faja de dominio › «Generalidades» | pág. impresa **198** · PDF 199 | definicion | 2026-09-20 · ambos |
 | `DG2018.304.07.02` | 304.07.02 | 304.07 Derecho de Vía o faja de dominio › «Ancho y aprobación del Derecho de Vía» | pág. impresa **198** · PDF 199 | exigencia | 2026-09-20 · ambos |
 | `DG2018.304.07.02#INCREMENTO` | 304.07.02 | 304.07 Derecho de Vía o faja de dominio › «Ancho y aprobación del Derecho de Vía» | pág. impresa **199** · PDF 200 | exigencia | 2026-09-20 · ambos |
 | `DG2018.304.07.02#INCREMENTO_DRENAJE` | 304.07.02 | 304.07 Derecho de Vía o faja de dominio › «Ancho y aprobación del Derecho de Vía» | pág. impresa **199** · PDF 200 | exigencia | 2026-09-20 · ambos |
 | `DG2018.304.07.02#T304.09` | Tabla 304.09 | 304.07 Derecho de Vía o faja de dominio › «Anchos mínimos de Derecho de Vía» | pág. impresa **199** · PDF 200 | definicion | 2026-09-20 · ambos |
 | `DG2018.304.10#T304.11` | 304.10, Tabla 304.11 | «Taludes» | pág. impresa **208** · PDF 209 | definicion | 2026-09-20 · ambos |
+
+> **`DG2018.304.05#BOMBEO`** — La Tabla 304.03 «Valores del bombeo de la calzada» (misma pagina) da 2.0 % y 2.5 % para pavimento asfaltico o de concreto Portland segun la precipitacion sea menor o mayor de 500 mm/año, 2.5 % y 2.5-3.0 % para tratamiento superficial y 3.0-3.5 % y 3.0-4.0 % para afirmado. NO SE TRANSCRIBE como tabla ni se adopta un valor: el bombeo de la seccion tipica es un dato del trazo (dato externo 'bombeo'), y sin el la plataforma se toma horizontal a la cota de rasante. La berma lleva su propia inclinacion (num. 304.04.02, Figura 304.03), de modo que el dato que entra es la pendiente transversal MEDIA de la semiplataforma.
+
+> **`DG2018.304.06#PERALTE`** — Los maximos de la Tabla 304.05 (misma pagina: 4.0 a 12.0 % segun la zona) no se usan aqui. El peralte del cruce es un dato del trazo (dato externo 'peralte'): sube un borde de la plataforma y baja el otro.
 
 > **`DG2018.304.07.01`** — LA REMISION AL RNGIV (DS 034-2008-MTC) ES LO QUE ESTA CITA ACREDITA, y el Reglamento NO esta en normas/: el archivo que hubo hasta 5196dd2 era la publicacion de El Peruano de 2006, no el decreto de 2008 (ver `fuentes.RNGIV`). La pagina imprime a continuacion seis conceptos (ancho y aprobacion, libre disponibilidad, registro, propiedad, propiedad restringida, condiciones de uso) que remiten al Reglamento y no se transcriben: ninguno trae numero.
 
@@ -478,12 +484,14 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `HDS5_3ED.1.2#MODELO` | 1.2 | «COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS» | pág. impresa **1.4** · PDF 42 | recomendacion | 2026-09-22 · ambos |
 | `HDS5_3ED.1.2#NBIS` | 1.2 | «COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS» | pág. impresa **1.3** · PDF 41 | definicion | 2026-09-22 · ambos |
+| `HDS5_3ED.2.2.4#LONGITUD` | 2.2.4 b. | «Roadway Data» | pág. impresa **2.8** · PDF 70 | aproximacion | 2026-11-11 · ambos |
 | `HDS5_3ED.3.1.3#SUMERGENCIA` | 3.1.3 | «Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.3#TRANSICION` | 3.1.3 | «Inlet Control» | pág. impresa **3.4** · PDF 86 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.3.1.4#0_75D` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | exigencia | 2026-09-21 · texto |
 | `HDS5_3ED.3.1.4#EMPALME` | 3.1.4, ec. (3.7) | «Outlet Control» | pág. impresa **3.12** · PDF 94 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.1.4#HW_REMANSO` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.1.4#K` | 3.1.4, ec. (3.4b) | «Outlet Control» | pág. impresa **3.10** · PDF 92 | definicion | 2026-08-28 · texto |
+| `HDS5_3ED.3.1.4#LONGITUD` | 3.1.4 | «Outlet Control» | pág. impresa **3.9** · PDF 91 | aproximacion | 2026-11-11 · texto |
 | `HDS5_3ED.3.1.4#REMANSO` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.1.6#V_SALIDA` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.6#V_SALIDA_TW` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
@@ -494,6 +502,7 @@ línea que se pueda romper.
 | `HDS5_3ED.3.3.4#HORIZONTAL` | 3.3.4 | «Culverts with Horizontal or Adverse Slopes» | pág. impresa **3.25** · PDF 107 | permiso | 2026-11-11 · texto |
 | `HDS5_3ED.3.3.4#H_SIN_AJUSTE` | 3.3.4 | «Culverts with Horizontal or Adverse Slopes» | pág. impresa **3.25** · PDF 107 | permiso | 2026-11-11 · texto |
 | `HDS5_3ED.3.3.4#KS` | 3.3.4 | «Culverts with Horizontal or Adverse Slopes» | pág. impresa **3.25** · PDF 107 | definicion | 2026-11-11 · texto |
+| `HDS5_3ED.3.3.5#ENCAJE` | 3.3.5 | «Evaluation of Results» | pág. impresa **3.25** · PDF 107 | exigencia | 2026-11-11 · texto |
 | `HDS5_3ED.3.3.5#GOBIERNA` | 3.3.5 | «Evaluation of Results» | pág. impresa **3.25** · PDF 107 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.3.5#PERFIL` | 3.5 | «CULVERT DESIGN USING SOFTWARE (WATER SURFACE PROFILES)» | pág. impresa **3.36** · PDF 118 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.5.1#H2` | 3.5.1 | «USGS Flow Types and Water Surface Profiles» | pág. impresa **3.37** · PDF 119 | definicion | 2026-11-11 · texto |
@@ -502,6 +511,8 @@ línea que se pueda romper.
 | `HDS5_3ED.5.3.3#ALINEADO` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
 | `HDS5_3ED.5.3.3#DEPRESION` | 5.3.3 | «Sedimentation» | pág. impresa **5.12** · PDF 148 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.5.3.3#INDICADORES` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
+| `HDS5_3ED.5.4.1#ESVIAJE` | 5.4.1 | «Skewed Barrels» | pág. impresa **5.12** · PDF 148 | definicion | 2026-11-11 · texto |
+| `HDS5_3ED.5.4.2#MAXIMO_PRACTICO` | 5.4.2 | «Skewed Inlets» | pág. impresa **5.13** · PDF 149 | recomendacion | 2026-11-11 · texto |
 | `HDS5_3ED.5.4.3#REPARTO` | 5.4.3 | «Multiple Barrels» | pág. impresa **5.15** · PDF 151 | aproximacion | 2026-09-20 · texto |
 | `HDS5_3ED.5.4.4#PENDIENTE_10` | 5.4.4 | «Barrels on Steep Slopes» | pág. impresa **5.16** · PDF 152 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.5.4.4#PENDIENTE_20` | 5.4.4 | «Barrels on Steep Slopes» | pág. impresa **5.16** · PDF 152 | recomendacion | 2026-11-11 · texto |
@@ -521,6 +532,8 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.1.2#NBIS`** — La unica fuente de normas/ que dice que ancho cuenta en un cruce de VARIOS barriles: el TOTAL («the total width of a multiple barrel crossing»), para la clasificacion como puente (NBIS). Es la parte que sostiene la lectura de `luz_m` como abertura total del cruce (DIS-LUZ-DENOMINACION). El parrafo siguiente, en la pag. 1.4, matiza que para el METODO HIDRAULICO la guia razonable es modelar como puente «a single culvert with a span of 20 ft (6.1 m) or more» (HDS5_3ED.1.2#MODELO).
 
+> **`HDS5_3ED.2.2.4#LONGITUD`** — Inciso «b. Culvert Length» del num. 2.2.4, que abre en la pag. impresa 2.7 (PDF 69). Las dos oraciones anteriores dicen COMO se obtiene: «The dimensions are obtained by superimposing the estimated culvert barrel on the roadway cross section and the streambed profile (Figure 2.4). This superposition establishes the inlet and outlet invert elevations». La Figura 2.4 (misma pagina, leida por imagen) dibuja la seccion A-A SOBRE EL EJE ESVIADO del conducto, con tres cotas rotuladas en la corona -- «Pavement Elevation» en el borde izquierdo, «Centerline Elevation» en el eje y «Shoulder Elevation» en el borde derecho --, el talud «Se : 1» y un «Upstream Invert» mas alto que el «Downstream Invert»: un talud a cada lado y dos fondos a cotas distintas, no dos taludes iguales medidos en el eje. LOS TALUDES DE LA FIGURA MUEREN EN LA CARA SUPERIOR DEL BARRIL, no en su fondo. La cita sostiene la superposicion APROXIMADA del barril estimado y nada mas: que el proyecto baje cada talud hasta el fondo -- un barril de altura cero, porque la seccion no se conoce todavia -- es eleccion suya, declarada en el criterio 'metodo_longitud_conducto', y da la cota superior de la longitud. El inciso «a. Cross Section» de la misma pagina añade que la seccion que el proyectista necesita es la del cruce, «skewed with reference to the roadway centerline».
+
 > **`HDS5_3ED.3.1.3#SUMERGENCIA`** — El parrafo sigue con la Fig. 3.1D: «submergence of both the inlet and the outlet ends of the culvert does not assure full flow». Sostiene que LLENO, en `modelos.RegimenBarril`, describe la salida y el tramo aguas abajo del resalto, no la longitud entera.
 
 > **`HDS5_3ED.3.1.3#TRANSICION`** — NOR-HDS-06, cerrado: ESTE es el numeral de la zona de transicion, no el «Cap. IV» que el criterio citaba. El Capitulo 4 de la 3a ed. se titula «CULVERT DESIGN FOR AQUATIC ORGANISM PASSAGE (AOP)» -- paso de fauna acuatica -- y tampoco se salva leyendolo como la edicion de 1985, cuyo Capitulo 4 es «Tapered Inlets». Es el mismo patron que NOR-PUE-01: el numeral existe y su titulo no corresponde. La otra mitad de la cita vieja, «y Apendice A», SI era correcta: la misma regla esta en el num. A.2.
@@ -532,6 +545,8 @@ línea que se pueda romper.
 > **`HDS5_3ED.3.1.4#HW_REMANSO`** — Es la forma del HW por remanso: HW = y_entrada + (1 + ke)·V_entrada²/2g, con las velocidades de aproximacion y de salida nulas (num. 3.3.3, «assumed to be zero for the manual method»). Con la linea llena de punta a punta reproduce exactamente HW = H + h_o - S·L de `control_salida` con h_o = TW.
 
 > **`HDS5_3ED.3.1.4#K`** — El 19.63 ESTA en la fuente, no es derivacion. El numeral abre en la pag. impresa 3.5 y la ecuacion esta en la 3.10.
+
+> **`HDS5_3ED.3.1.4#LONGITUD`** — Lista «Factors Influencing Outlet Control», que empieza en la pag. impresa 3.8 (PDF 90); el numeral abre en la 3.5 (PDF 87). La oracion anterior define la magnitud: «Barrel length is the total culvert length from the entrance to the exit of the culvert». Es la razon, escrita por la fuente, de que la longitud del diseño hidraulico se calcule ANTES de conocer la seccion y por eso sin su altura: la altura del barril y la pendiente mueven la longitud real, y el diseño arranca con una aproximacion.
 
 > **`HDS5_3ED.3.1.4#REMANSO`** — Es el procedimiento en prosa (pieza 1 del paquete I1): la frontera aguas abajo max(y_c, TW) y la marcha hacia la entrada. La frase anterior dice para que casos: «Backwater calculations may be required for the partly full flow conditions shown in Figures 3.7A and C».
 
@@ -553,6 +568,8 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.3.3.4#KS`** — Dice QUE ES el termino Ks·S: la seccion de control queda dentro del barril, algo mas baja que el fondo de la entrada. De ahi que con S = 0 el termino valga cero, que es lo que la ecuacion (A.1) da sola: la vineta que sigue manda SUMAR 0.01 al HW/D del nomograma en un barril horizontal, y ese 0.01 es 0.5 x 0.02, la correccion que el nomograma lleva restada por haberse trazado al 2 % (`HDS5_3ED.A.3#PENDIENTE_2`). El codigo resuelve la ecuacion, no lee el nomograma, y por eso no suma nada: evalua Ks·S con la S real.
 
+> **`HDS5_3ED.3.3.5#ENCAJE`** — La oracion que sigue dice que se comprueba al encajar: «The culvert barrel must have adequate cover, the length should be close to the approximate length, and the headwalls and wingwalls must be dimensioned». La cobertura es G1 (7.A); la longitud «close to the approximate length» es el paso 7.B.5 de este proyecto, que la fuente escribe con «should» y SIN TOLERANCIA: no hay cifra de cuanto es «close», y el proyecto no la inventa -- imprime las dos longitudes y su diferencia.
+
 > **`HDS5_3ED.3.3.5#GOBIERNA`** — Es el paso del PROCEDIMIENTO DE DISEÑO del Capitulo 3 («Culvert Hydraulic Design», num. 3.3 «Culvert Design Using Nomographs») que dice cual control gobierna. La oracion anterior fija el sujeto: «For the first alternative selected, compare the headwater elevations calculated for inlet and outlet control». Dos cosas que la frase dice y que el paso que la cita respeta: compara COTAS de carga (headwater elevations), que con los dos controles referidos al mismo fondo de entrada es comparar los dos HW; y «is designated» es una definicion del metodo, no una exigencia sobre el diseño. La oracion siguiente da la razon fisica: «The culvert can be expected to operate with that higher headwater for at least part of the time». Lo que el paso 4.4 hace ADEMAS --tomar como HW de salida el del remanso cuando la aproximacion de h_o esta fuera de rango-- no sale de aqui sino de la pag. 3.12 (`HDS5_3ED.3.1.4#0_75D`), que el paso cita aparte. Hasta T-0 el paso citaba `HDS5_3ED.A.2`, las ecuaciones de control de entrada (INF-5.1.10).
 
 > **`HDS5_3ED.3.5#PERFIL`** — La frase esta en el parrafo introductorio de la Seccion 3.5 que abre la pag. 3.36, justo ANTES del encabezado 3.5.1 (el encabezado 3.5 esta en la pag. 3.34, PDF 116), y es la que nombra las TRES salidas del perfil que E-A implementa: el tirante (V1), la velocidad (V2) y la longitud de barril lleno (la primera condicion de h_o). El parrafo sigue: «The profile is determined by first establishing if the culvert slope is supercritical (inlet control) or subcritical (outlet control). Next, the tailwater is used to establish which profile to assume and at what depth to start the profile».
@@ -568,6 +585,10 @@ línea que se pueda romper.
 > **`HDS5_3ED.5.3.3#DEPRESION`** — Es el final del num. 5.3.3, ya en la pag. impresa 5.12, y lo que la fuente dice del caso que el primer indicador describe: el conducto mas plano que su cauce sedimenta SOBRE TODO con caudales bajos y SUELE limpiarse solo con los altos. La oracion siguiente pide abordar ese diseño con cautela y con mas investigacion de campo; no lo prohibe. Sostiene que el indicador se aplique como aviso (`regimen_v2b`). EL NUMERAL ENTERO, leido en T-2 (INF-3.2.9): ademas de los dos indicadores --pendiente y rugosidad-- nombra como factores la magnitud del caudal y el material del cauce, los cauces en agradacion, los cambios de pendiente a la entrada, las instalaciones multibarril y las entradas deprimidas. Ninguno lleva cifra.
 
 > **`HDS5_3ED.5.3.3#INDICADORES`** — LOS DOS INDICADORES SON COMPARACIONES, NO UMBRALES. La fuente no escribe ninguna cifra: nombra dos desigualdades entre el conducto y el cauce natural. La primera -- S_conducto < S_cauce -- este software la puede evaluar con dos columnas que ya tiene. La segunda -- n_conducto > n_cauce -- necesita el n del CAUCE NATURAL, que no es columna de Sec. 1.2 y por eso queda declarada, no adivinada.
+
+> **`HDS5_3ED.5.4.1#ESVIAJE`** — Es la convencion de `esviaje_grados`: 0 = perpendicular («A culvert aligned normal to the roadway centerline has a zero barrel skew angle», oracion anterior). El mismo numeral nombra la consecuencia geometrica que 1/cos(esviaje) cuantifica: tender el barril sobre el cauce tiene la desventaja de que «the inlet may be skewed with respect to the culvert barrel and the culvert will be longer».
+
+> **`HDS5_3ED.5.4.2#MAXIMO_PRACTICO`** — HABLA DEL ESVIAJE DE LA EMBOCADURA («inlet skew angle», el angulo de la cara del conducto con la normal al barril), NO del esviaje del barril. La oracion siguiente da la razon -- «The upper limit is dictated by the difficulty in transitioning the flow from the stream into the culvert» -- y el parrafo siguiente el puente entre los dos angulos: «Culverts which have a barrel skew angle often have an inlet skew angle as well. This is because headwalls are generally constructed parallel to a roadway centerline to avoid warping of the embankment fill». Con el cabezal PARALELO a la via, que es la disposicion que este proyecto supone (terraplen sin alabear), el esviaje de la embocadura es igual al del barril y el maximo practico de 45 grados le alcanza; con el terraplen alabeado para dejar la embocadura normal al barril (Figura 5.16) no le alcanza. Por eso 'esviaje_max_grados' es [A] y no [C]: la analogia depende de una disposicion constructiva que el expediente decide.
 
 > **`HDS5_3ED.5.4.3#REPARTO`** — Es el sosten de la regla vinculante #3 (Q/N por barril) que hasta EXT-2 no estaba en el registro. La fuente lo escribe como un SUPUESTO («is assumed») condicionado a barriles hidraulicamente identicos -- misma seccion, misma cota de fondo, misma embocadura --, que es exactamente lo que `SeccionRectangular` modela: UNA celda repetida N veces. Para barriles distintos o con cotas distintas la misma pagina remite a un procedimiento iterativo o a una curva de funcionamiento combinada (Section 3.5), que el proyecto NO implementa: el criterio 'n_celdas_cajon' declara N celdas iguales y nada mas.
 
@@ -630,6 +651,7 @@ línea que se pueda romper.
 | `MC_HHD.3.9#T05_KIRPICH` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | aproximacion | 2026-11-11 · ambos |
 | `MC_HHD.3.9#T05_SCS` | 3.9 | «Tiempo de Concentración» | pág. impresa **40** · PDF 43 | aproximacion | 2026-11-11 · ambos |
 | `MC_HHD.4.1.1.3.1` | 4.1.1.3.1 | «Aspectos generales» | pág. impresa **70** · PDF 73 | definicion | 2026-08-28 · texto |
+| `MC_HHD.4.1.1.3.2` | 4.1.1.3.2 | «Ubicación en planta» | pág. impresa **71** · PDF 74 | definicion | 2026-11-11 · texto |
 | `MC_HHD.4.1.1.3.3` | 4.1.1.3.3 | «Pendiente longitudinal» | pág. impresa **71** · PDF 74 | exigencia | 2026-11-11 · texto |
 | `MC_HHD.4.1.1.3.4a` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | exigencia | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.4a#MARCO` | 4.1.1.3.4 a) | 4.1.1.3.4  Elección del tipo de alcantarilla › «a)  Tipo y sección» | pág. impresa **72** · PDF 75 | recomendacion | 2026-09-07 · texto |
@@ -660,6 +682,7 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.5.4b24#G` | 4.1.1.5.4 b.2.4), ec. (63) | b.2.) Socavación General › «Método de Laursen» | pág. impresa **111** · PDF 114 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.2.1b` | 4.1.2.1 b) | 4.1.2.1 Cunetas › «b) Caudal Q de aporte» | pág. impresa **177** · PDF 180 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.4.1.2.1d` | 4.1.2.1 d) | 4.1.2.1 Cunetas › «d) Desagüe de las cunetas» | pág. impresa **179** · PDF 182 | exigencia | 2026-08-28 · ambos |
+| `MC_HHD.LAMINA_01` | Lámina Nº 01 | «UBICACIÓN TÍPICA DE ALCANTARILLAS» | pág. impresa **206** · PDF 209 | definicion | 2026-11-11 · imagen renderizada |
 | `MC_HHD.LAMINA_03` | Lámina Nº 03 | «SECCIONES TÍPICAS DE ALCANTARILLAS» | pág. impresa **209** · PDF 212 | definicion | 2026-09-07 · imagen renderizada |
 
 > **`MC_HHD.3.12.2`** — Ecuacion (28). Las unidades estan en la pag. impresa 50 (PDF 53): Q «Descarga máxima de diseño (m3/s)», C «Coeficiente de escorrentía (Ver Tabla Nº 08)», I «Intensidad de precipitación máxima horaria (mm/h)», A «Área de la cuenca (Km2).» El 0,278 es 1/3.6, la conversion de mm/h·km² a m³/s: es el mismo cociente que el num. 4.1.2.1 b) escribe como C·I·A/3.6. El numeral NO trae ejemplo numerico.
@@ -712,6 +735,8 @@ línea que se pueda romper.
 
 > **`MC_HHD.3.9#T05_SCS`** — Fila «Ecuación de retardo SCS (1973)». La formula, vista en imagen: tc = 0.0136 · L^0.8 · (1000/CN − 9)^0.7 / S^0.5, con «L = longitud hidráulica de la cuenca (mayor trayectoria de flujo), m.», «CN = Número de curva SCS» y «S = pendiente promedio de la cuenca, m/m». La observacion sigue: buena cuando el area esta completamente pavimentada, tiende a sobreestimar en areas mixtas, y «la ecuación supone que tc = 1.67 x retardo de la cuenca». Las «800 Ha» son la poblacion a la que se adapto; el proyecto las trata como a los «3 a 10%» de Kirpich.
 
+> **`MC_HHD.4.1.1.3.2`** — El numeral NO da un esviaje maximo ni una longitud: dice que lo ideal es seguir la corriente y que desplazar la ubicacion natural obliga a acondicionar el cauce a la entrada y a la salida con obras de encauzamiento. Es el fundamento de que el conducto se tienda esviado (factor 1/cos) en vez de rectificar el cruce.
+
 > **`MC_HHD.4.1.1.3.3`** — EXIGENCIA SIN NUMERO. El numeral entero son dos parrafos: este y la remision a la Lamina Nº 01 («ubicación típica de alcantarillas respecto a la pendiente del cauce»). No fija pendiente minima ni maxima, ni en porcentaje ni por material: obliga a ESTUDIAR el cambio de pendiente. Las cifras «2 % en TMC, 1 % en marco» que circulan en expedientes no salen de aqui.
 
 > **`MC_HHD.4.1.1.3.4b`** — EL MANUAL NO DA REGLA DE ELECCION DE MATERIAL, y lo dice con esas palabras. La frase anterior enumera de que depende: «tiempo de vida útil, costo, resistencia, rugosidad, condiciones del terreno, resistencia a la corrosión, abrasión, fuego e impermeabilidad». Es lo que hace de la matriz de durabilidad un FILTRO con fuentes tecnicas y no una eleccion normativa: el Manual nombra los factores (suelo, agua) y no pone umbrales.
@@ -757,6 +782,8 @@ línea que se pueda romper.
 > **`MC_HHD.4.1.2.1b`** — La expresion, vista en imagen: Q = C·I·A / 3.6, con Q en m3/s, «C : Coeficiente de escurrimiento de la cuenca», «A : Área aportante en Km2» e «I : Intensidad de la lluvia de diseño en mm/h». Es la ecuacion (28) del num. 3.12.2 con el 0,278 escrito como 1/3.6. La pagina le imprime DOS numeros de ecuacion, (118) y (147): no se cita por numero.
 
 > **`MC_HHD.4.1.2.1d`** — NOR-HID-02, cerrado en sus DOS extremos. (1) LA PAGINA: el repositorio citaba la impresa 178, que trae la TABLA Nº 34 de dimensiones minimas del apartado c); el apartado d) esta en la 179. (2) EL CARACTER: las dos cifras NO tienen la misma fuerza. El 250 es «será ... como máximo», exigencia con valvula de escape expresa («deberán justificarse técnicamente»); el 200 es «se recomienda reducir», recomendacion pura. Tratarlas como un dict de topes duros equivalentes borra la diferencia. Ademas la fuente nombra solo DOS regimenes en este apartado y deja sin longitud el regimen «lluvioso» intermedio de su propia Tabla Nº 34.
+
+> **`MC_HHD.LAMINA_01`** — Es un plano, leido sobre la pagina renderizada. Cinco esquemas: a) siguiendo la pendiente natural del cauce; b) entrada bajo la pendiente natural; c) salida sobre la pendiente natural; d) entrada bajo y salida sobre la pendiente natural; e) pendientes pronunciadas (con muro y anclaje). En a) el conducto va de cabezal a cabezal sobre el fondo del cauce y los taludes del terraplen mueren en la coronacion de los cabezales. En c) y d) la salida queda POR ENCIMA del cauce, con dos notas del propio plano: «la posibilidad de dejar el tubo en voladizo debe ser analizada estructuralmente. El terreno a la salida debe ser roca u otro material resistente a la erosión» y «alcantarillas pequeñas pueden descargar con seguridad sobre un talud de enrocado». NO ACOTA NINGUNA DIMENSION: ni el desnivel de la salida ni la longitud. Sostiene que una salida elevada sobre el fondo del receptor exige proteccion, y por eso el desnivel de entrega no es conservador en un solo sentido.
 
 ### Manual de Puentes  (`MP`)
 
@@ -2212,6 +2239,13 @@ recomienda.
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | **define** | `MP.2.4.5.2#EV`, `MP.T2.4.5.3.1-2` |
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | **recomienda** | `MC_HHD.4.1.1.4.1e`, `MC_HHD.4.1.1.4.1e#RANGO` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
+| `F7.COTA_SALIDA` | Fase 7 - Compatibilidad geometrica | Caida del conducto y cota de fondo de la salida | **define** | `MC_HHD.LAMINA_01`, `HDS5_3ED.2.2.4#LONGITUD` |
+| `F7.ENCAJE` | Fase 7 - Compatibilidad geometrica | Encaje de la seccion adoptada en la seccion transversal: longitud entre cabezales a la clave | **obliga** | `HDS5_3ED.3.3.5#ENCAJE`, `HDS5_3ED.3.1.4#LONGITUD` |
+| `F7.ENTREGA` | Fase 7 - Compatibilidad geometrica | Entrega al cuerpo receptor: cota de salida frente a su fondo | **define** | `MC_HHD.LAMINA_01`, `MC_HHD.4.1.1.3.3` |
+| `F7.ESVIAJE` | Fase 7 - Compatibilidad geometrica | Factor de esviaje, 1 / cos(esviaje) | **define** | `HDS5_3ED.5.4.1#ESVIAJE`, `MC_HHD.4.1.1.3.2` |
+| `F7.ESVIAJE_MAX` | Fase 7 - Compatibilidad geometrica | Esviaje del cruce frente al maximo que el proyecto adopta | **recomienda** | `HDS5_3ED.5.4.2#MAXIMO_PRACTICO`, `MC_HHD.4.1.1.3.2` |
+| `F7.LONGITUD` | Fase 7 - Compatibilidad geometrica | Longitud del conducto sobre la seccion transversal del cruce | **define** | `HDS5_3ED.2.2.4#LONGITUD`, `HDS5_3ED.3.1.4#LONGITUD`, `DG2018.304.10#T304.11`, `DG2018.304.05#BOMBEO`, `DG2018.304.06#PERALTE` |
+| `F7.PENDIENTE` | Fase 7 - Compatibilidad geometrica | Pendiente adoptada del conducto, con su origen | **obliga** | `MC_HHD.4.1.1.3.3`, `HDS5_3ED.5.3.3#ALINEADO` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | **obliga** | `AASHTO_LRFD_9.12.6.6.3#COBERTURA`, `EG2013.508.07#RELLENO_MIN` |
 | `F8.RECUBRIMIENTO` | Fase 8 - Verificacion estructural del conducto | Recubrimiento del refuerzo, por la regla del mayor entre E.060 y AASHTO | **obliga** | `E060.7.7.1`, `AASHTO_LRFD_9.T5.10.1-1` |
 | `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | **recomienda** | `MC_HHD.3.7.1`, `MC_HHD.3.7.1.1`, `MC_HHD.3.7.1.2`, `MC_HHD.3.7.1.7`, `MC_HHD.3.7.2b` |
@@ -2372,7 +2406,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 257.
+Citas sin firma de verificación: **5** de 266.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

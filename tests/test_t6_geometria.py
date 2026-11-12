@@ -1092,6 +1092,24 @@ def test_una_pendiente_declarada_negativa_o_no_finita_no_se_adopta(S):
     assert M7.pendiente_adoptada(_punto(), S_declarada=0.0).valor == _igual(0.0)
 
 
+def test_el_desnivel_frente_al_cauce_tiene_signo_y_puede_no_existir():
+    """Positivo: conducto mas tendido que el cauce. Sin cauce, no hay numero."""
+    tendido = M7.pendiente_adoptada(_punto(S_cauce=0.010), S_declarada=0.004)
+    assert M7.desnivel_frente_al_cauce(tendido, 20.0) == pytest.approx(
+        0.12, abs=ABS)                                   # (0.010 - 0.004) * 20
+    empinado = M7.pendiente_adoptada(_punto(S_cauce=0.002), S_declarada=0.004)
+    assert M7.desnivel_frente_al_cauce(empinado, 20.0) == pytest.approx(
+        -0.04, abs=ABS)
+    sin_cauce = M7.pendiente_adoptada(_punto(S_cauce=None), S_declarada=0.004)
+    assert M7.desnivel_frente_al_cauce(sin_cauce, 20.0) is None
+    # y sin longitud el aviso lleva la expresion, no un numero
+    with_max = M7.PendienteAdoptada(
+        valor=0.02, origen=modelos.OrigenPendiente.MAXIMA, S_cauce=0.03,
+        S_declarada=None, S_minima=0.0, S_maxima=0.02, procedencia="prueba")
+    assert "(S_cauce - S_conducto) x L" in M7.aviso_de_pendiente(with_max)
+    assert "0.20 m en este punto" in M7.aviso_de_pendiente(with_max, 20.0)
+
+
 def test_el_limite_que_gobierna_llega_al_diseno_al_TW_y_a_7B():
     """
     De punta a punta, con el minimo por ENCIMA de la pendiente del cauce de
@@ -1220,6 +1238,8 @@ def test_el_maximo_gobierna_y_el_punto_dimensiona_con_V2b_como_indicador(
     assert v2b.estado is modelos.EstadoDeVerificacion.INDICADOR
     geo = a01.geometria
     desnivel = (0.030 - 0.02) * geo.longitud
+    assert M7.desnivel_frente_al_cauce(geo.pendiente, geo.longitud) == \
+        pytest.approx(desnivel, abs=ABS)
     (aviso,) = [a for a in a01.avisos() if "maximo adoptado" in a]
     assert "estructura de caida o de disipacion" in aviso
     assert "regimen_v2b" in aviso and "0.03 m/m" in aviso

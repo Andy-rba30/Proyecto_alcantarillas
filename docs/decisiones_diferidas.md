@@ -4110,11 +4110,12 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
 
 # Parte XLIV — Lo que T-6 de la cadena T dejó escrito: la geometría de 7.B
 
-T-6 (2026-11-11) cerró la cota de fondo de entrada adoptada sin aviso
-(`INF-5.1.18`), la longitud con la altura del eje para los dos taludes y los
-pasos de 7.B que iban como frase (`INF-3.3.3`), y la mitad de M7 de la
-pendiente del conducto (`INF-3.2.7`). Cuatro cosas quedaron decididas de una
-manera que conviene poder discutir.
+T-6 (2026-11-11, integrado el 12 detrás de T-2, T-4 y T-1) cerró la cota de
+fondo de entrada adoptada sin aviso (`INF-5.1.18`), la longitud con la altura
+del eje para los dos taludes y los pasos de 7.B que iban como frase
+(`INF-3.3.3`), y la mitad de M7 de la pendiente del conducto (`INF-3.2.7`,
+que T-2 había abierto con la banda y V10). Cinco cosas quedaron decididas de
+una manera que conviene poder discutir.
 
 ## T6-01 · El diseño corre con la longitud aproximada al fondo; la longitud entre cabezales a la clave se imprime y no la sustituye
 
@@ -4144,31 +4145,44 @@ manera que conviene poder discutir.
   metrado**, y la longitud a la clave deja de ser sólo su cota superior. Si
   entonces se quiere que el control de salida use esa longitud, hace falta
   `L` por sección en MD, o declarar `longitud_m` por punto, que ya gana. El
-  tamaño de la memoria que los pasos de 7.B añaden (60.0 KB por punto a
-  expediente, 74.3 KB a perfil; el techo `KB_POR_PUNTO_MAX` sólo mide
-  expediente) lo reconcilia T-10, que es quien rehace la memoria.
+  tamaño de la memoria que los pasos de 7.B añaden (70.3 KB por punto a
+  expediente donde `5bca7c6` medía 63.7, y 87.7 KB a perfil donde medía
+  76.8; el techo `KB_POR_PUNTO_MAX` sólo mide expediente y quedó pegado a la
+  medida) lo reconcilia T-10, que es quien rehace la memoria.
 - **Dónde vive:** `src/modulos/M7_geometria.py::longitud_a_la_clave`
 
-## T6-02 · El origen «mínima / máxima» de la pendiente existe en M7 y no gobierna nada hasta que T-2 cree sus dos criterios
+## T6-02 · M7 acota la pendiente del cauce a la banda de T-2 y V10 juzga la que quedó: V10 sólo se incumple con una pendiente declarada
 
-- **Qué se difirió:** `M7.pendiente_adoptada` resuelve la pendiente del
-  conducto con tres orígenes —la del cauce, la declarada, o el límite
-  adoptado cuando gobierna—, pero los criterios `pendiente_minima_conducto` y
-  `pendiente_maxima_conducto` los crea T-2 de la cadena T. M7 los lee **por
-  clave**: mientras no existan en `CRITERIOS`, o existan sin valor, el tercer
-  origen no se activa.
-- **Por qué:** T-6 y T-2 corren en paralelo y dos sesiones no crean el mismo
-  criterio. Y una regla del límite que conviene dejar escrita: gobierna sólo
-  sobre la pendiente del **cauce**. Una pendiente **declarada**
-  (`S_conducto`) es una decisión del expediente y el cálculo no la recorta:
-  la juzga la verificación de pendiente de la Fase 5 (V10, de T-2).
-- **Qué haría falta:** integrar T-6 después de T-2. El test
-  `test_con_los_criterios_de_T2_la_pendiente_del_cauce_se_acota_de_verdad`
-  está condicionado a la existencia de las dos claves y se libera solo;
-  comprueba además que con los valores de archivo de T-2 ninguna pendiente de
-  cauce del fixture queda fuera de los límites (si alguna quedara, movería la
-  pendiente de diseño de ese punto: parada obligatoria de la cadena).
-- **Dónde vive:** `src/modulos/M7_geometria.py::_limite_de_pendiente`
+- **Qué se difirió:** nada queda diferido; es un reparto entre dos piezas que
+  leen la misma banda (`M5.limites_de_pendiente()`, lectura única de
+  `pendiente_minima_conducto` y `pendiente_maxima_conducto`) y que el auditor
+  de T-6 pidió dejar escrito. `M7.pendiente_adoptada` resuelve la pendiente
+  una vez, antes de la Fase 4, con tres orígenes: la **declarada**
+  (`S_conducto`), que no se recorta; el **extremo** de la banda cuando la
+  pendiente del **cauce** lo traspasa (origen «mínima» o «máxima»); y la del
+  cauce. V10 juzga la pendiente con que corrió el diseño: como la del cauce
+  ya llega dentro de la banda, en la corrida del servicio V10 sólo puede
+  incumplirse con una pendiente declarada.
+- **Por qué:** la cadena pide que 7.B deje la pendiente con su origen
+  («mín/máx si gobierna»), y un punto cuyo cauce se sale de la banda no tiene
+  remedio en el catálogo: V10 no depende del diámetro. Acotar no resuelve la
+  obra y por eso se **avisa** (`M7.aviso_de_pendiente`, por
+  `InformePunto.avisos()`, con el desnivel en metros en el paso 7.B.4). Con
+  la **máxima**, el conducto queda más tendido que su cauce: el desnivel
+  (S_cauce − S)·L pide una estructura de caída o de disipación que el
+  programa no dimensiona, y V2b lo juzga según `regimen_v2b` —con
+  `indicador_con_aviso`, el valor de archivo, el punto dimensiona con el
+  indicador disparado; con `umbral_duro` no dimensiona y el motivo nombra
+  V2b—. Con la **mínima**, la salida queda bajo el cauce natural y G2 la
+  juzga contra el fondo del receptor. Una pendiente de cauce no positiva o no
+  finita no se sustituye por un extremo: es `DatoInvalidoError`.
+- **Qué haría falta:** dimensionar la caída o el disipador cuando gobierna
+  la máxima (la protección de salida es de otro prompt de la cadena). Con
+  los valores de archivo (0.0 y 0.10) el fixture no se mueve: sus pendientes
+  de cauce van de 0.006 a 0.010 y la mínima, 0.0, no puede gobernar sobre un
+  cauce positivo. Los casos patrón con cauce fuera de la banda
+  (`test_pf1_hw_fuera_de_rango`) pasaron a declarar su pendiente.
+- **Dónde vive:** `src/modulos/M7_geometria.py::pendiente_adoptada`
 
 ## T6-03 · El desnivel de entrega (0.0 m) y el esviaje máximo (45°) son adopciones: ninguna fuente da el número del primero, y el del segundo es una analogía
 
@@ -4177,8 +4191,8 @@ manera que conviene poder discutir.
   entrega a nivel del fondo del receptor, que es lo que G2 verificaba sin
   ficha—, con ventana (0.0, 0.30). `esviaje_max_grados` vale **45°**, con
   ventana (45, 60), deja de ser opcional y superarlo es **aviso** (G3,
-  veredicto INDICADOR) en vez del `DatoInvalidoError` que dejó el cierre de
-  C10 (ficha C10-03).
+  veredicto INDICADOR, que sale por `InformePunto.con_aviso` como V2b) en
+  vez del `DatoInvalidoError` que dejó el cierre de C10 (ficha C10-03).
 - **Por qué:** el núm. 4.1.1.3.3 del Manual del MTC —al que la cadena remite
   el desnivel— son dos oraciones sin cifra que no hablan de la entrega; su
   Lámina Nº 01 tipifica las ubicaciones sin acotar ninguna y advierte que una

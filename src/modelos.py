@@ -5743,10 +5743,11 @@ class OrigenPendiente(str, Enum):
     MAXIMA     la del cauce supera 'pendiente_maxima_conducto' y gobierna el
                maximo adoptado.
 
-    Los dos ultimos solo pueden darse cuando esos criterios existen y tienen
-    valor (los crea T-2), y solo sobre la pendiente del CAUCE: una pendiente
-    declarada es una decision del expediente y el calculo no la pisa -- la
-    juzga la verificacion de pendiente de la Fase 5.
+    Los dos ultimos se dan solo sobre la pendiente del CAUCE, contra la banda
+    de T-2 (`M5.limites_de_pendiente()`): una pendiente declarada es una
+    decision del expediente y el calculo no la pisa -- la juzga V10, la
+    verificacion de pendiente de la Fase 5 --. Con ellos el conducto deja de
+    seguir a su cauce, y `M7.aviso_de_pendiente` dice que trae consigo.
     """
     CAUCE = "S_cauce"
     DECLARADA = "S_conducto declarada"
@@ -5762,9 +5763,10 @@ class PendienteAdoptada:
     longitud, el TW, el diseño hidraulico y 7.B (MAT-D9: la pendiente no se
     elige dos veces).
 
-    `S_minima` y `S_maxima` son los limites adoptados VIGENTES en la corrida,
-    o None cuando el criterio no existe o no tiene valor: se guardan para que
-    la memoria diga contra que se comparo, no solo que gano.
+    `S_minima` y `S_maxima` son los extremos de la banda adoptada VIGENTES en
+    la corrida, o None cuando la pendiente es DECLARADA (entonces la banda no
+    se lee aqui: la aplica V10): se guardan para que la memoria diga contra
+    que se comparo, no solo que gano.
     """
     valor: float
     origen: OrigenPendiente

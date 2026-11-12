@@ -670,10 +670,12 @@ son **idénticos**. Diez de los 13 archivos cambian; los dos CSV de resumen y
 en la corrida ancha de perfil, B-01 y C-01 se detienen donde se detenían, y el periodo
 de retorno de los tres puntos es el mismo (71, 71 y 35 años).
 
-## Lo que movió T-6 (2026-11-11): la longitud del conducto, y con ella la caída, la cota de salida y el HW de salida
+## Lo que movió T-6 (2026-11-12, integrado detrás de T-2, T-4 y T-1): la longitud del conducto, y con ella la caída, la cota de salida y el HW de salida
 
 T-6 de la cadena T (geometría) **sí mueve números**, y cada uno tiene su
-causa. Son los que dependen de la longitud del conducto, que pasa de
+causa. La columna «antes» es la línea base de `5bca7c6` (T-0 + T-2 + T-4 +
+T-1), contra la que se midió el árbol fusionado con el comparador de E-B
+(`cli.py --comparar`) en los tres JSON y en los doce pares punto × corrida. Son los que dependen de la longitud del conducto, que pasa de
 calcularse con la altura del eje para los dos taludes a calcularse **por
 extremo** (criterio `[A]` `metodo_longitud_conducto` = `por_extremo`; HDS-5
 núm. 2.2.4 b. y Figura 2.4, pág. impresa 2.8): el talud de la salida baja
@@ -711,8 +713,12 @@ ahora; la progresión de secciones probadas y el motivo de cada descarte son los
 mismos.
 
 **Diámetros movidos: ninguno.** A-01 y A-02 siguen en Ø 0.90 m de concreto
-reforzado, control de entrada, con las mismas doce verificaciones en
-«cumple»; B-01 y C-01 siguen sin dimensionar por lo mismo que antes. Medido
+reforzado, control de entrada, con las mismas verificaciones de `5bca7c6`
+en «cumple», más G3; B-01 y C-01 siguen sin dimensionar por lo mismo que
+antes, con las mismas iteraciones y el mismo tipo en cada bloqueo. Y la
+banda de pendiente de T-2 (0.0 a 0.10), que M7 aplica desde T-6 a la
+pendiente del cauce, **no mueve ninguna**: las del fixture van de 0.006 a
+0.010 y los cuatro puntos conservan su origen (cauce, o declarada en C-01). Medido
 además con el método anterior declarado (`--declarar
 metodo_longitud_conducto=terraplen_simetrico`): reproduce las longitudes de la
 columna «antes» dígito a dígito.
@@ -738,15 +744,31 @@ Lo demás es **formato**, y entra por los cinco puntos del prompt:
   `tamizado.provisional`. El `origen` de `longitud_m` nombra el método.
 - **Aviso de fondo adoptado.** Los cuatro puntos adoptan el fondo de entrada
   igual al terreno: el mensaje de 7.A termina en «PROVISIONAL: fondo de
-  entrada adoptado igual al terreno de plataforma: medir en el cauce» y la
-  Fase 7 lo imprime como aviso. Las cotas de rasante mínima **no cambian**
-  (44.092 y 41.372 msnm).
+  entrada adoptado igual al terreno de plataforma: medir en el cauce» y el
+  aviso sale con los demás del punto. Las cotas de rasante mínima **no
+  cambian** (44.092 y 41.372 msnm).
+- **Los avisos salen por `InformePunto.avisos()`, una vez.** En los cuatro
+  `cli_*.txt` cada punto con longitud calculada gana dos líneas `aviso:`
+  —el fondo adoptado y la plataforma horizontal—, también B-01 y C-01, que
+  no dimensionan: su longitud ya entró al diseño de cada escalón. Las mismas
+  dos entran en la lista `avisos` del punto en el JSON. G3 no se disparó en
+  ningún punto (15°, 5°, 0° y 30° contra 45°) y por eso «Verificaciones con
+  aviso» no cambia.
+- **V10.** La procedencia de `S_conducto` en su paso y su nota dicen ahora el
+  reparto con M7 (la pendiente del cauce fuera de la banda la sustituye el
+  extremo; V10 sólo la incumple una declarada), y lo mismo el texto de
+  `UMBRALES_DE_VERIFICACION`. Ningún valor de V10 cambia.
+- **Criterios usados.** Entran `metodo_longitud_conducto`,
+  `desnivel_minimo_entrega_m` y `esviaje_max_grados`; y en
+  `informe_rama_error.json` también `pendiente_minima_conducto` y
+  `pendiente_maxima_conducto`, que M7 lee antes de la Fase 4 aunque el punto
+  no llegue a V10.
 - **Memorias.** Los pasos 7.B.1 a 7.B.5 de los puntos que dimensionan y los
   7.B.2 y 7.B.3 de los que no; los de G2 y G3 en el desarrollo de
   verificaciones; los fundamentos y las citas de esos pasos en el anexo; tres
   criterios más entre los usados; y las dos huellas (`criterios_sha1`,
   `hoja_ruta_sha1`: la v8 lleva la nota «Corregido (T-6)» en §7.B).
-- **Sin cambio de un byte:** `cli_expediente.txt`, los dos CSV de resumen,
+- **Sin cambio de un byte:** los dos CSV de resumen,
   `memoria_punto_cajon.html` y `entradas_ampliadas.json`.
 
 **Lo que la columna «L ahora» NO es, dicho junto al aviso «medir en el
@@ -767,6 +789,6 @@ al fondo y 1.0002 m con la longitud a la clave; gobierna la entrada, 1.042 m).
 **Y dos avisos más por punto**, que dejó el auditor adversarial de T-6 y que
 son formato: «plataforma tomada horizontal: no se declaró `bombeo` ni
 `peralte`…» con lo que cada 1 % de bombeo acortaría la longitud (20.1 cm en
-A-01), en el bloque de la Fase 7, en `geometria.avisos` del JSON y en la nota
+A-01), entre los avisos del punto, en `geometria.avisos` del JSON y en la nota
 del paso 7.B.3; y el umbral de G2 cita la Lámina Nº 01 (carácter DEFINICIÓN)
 en vez del numeral de la pendiente.

@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "96ee8f075ecb99a115f285f67909e6359a19a4be",
+    "criterios_sha1": "9d49da29a7ba22d6296757c35053ac419fdcf874",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -176,8 +176,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.6349712473815,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.86939162767301,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 0.3,
@@ -191,7 +191,9 @@
       },
       "tw_seccion_receptor": null,
       "avisos": [
-        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto"
       ],
       "clasificacion": {
         "luz_m": 2.75,
@@ -261,7 +263,7 @@
         "y_normal_m": 0.6271229622477936,
         "y_critico_m": 0.6399701975127118,
         "HW_entrada_m": 1.0420015370127218,
-        "HW_salida_m": 0.9929215494142943,
+        "HW_salida_m": 0.9924896843910613,
         "HW_gobernante_m": 1.0420015370127218,
         "Q_celda_m3s": 1.167,
         "numero_celdas": 1,
@@ -273,13 +275,13 @@
         "h_o_m": 0.7699850987563559,
         "TW_m": 0.3,
         "ahogado_por_TW": false,
-        "HW_sobre_D_salida": 1.1032461660158825,
+        "HW_sobre_D_salida": 1.102766315990068,
         "h_o_fuera_de_rango": false,
         "h_o_requiere_cautela": false,
         "perfil_tipo": "S1",
         "perfil_alcanza_entrada": false,
         "perfil_HW_remanso_m": null,
-        "perfil_HW_aproximado_m": 0.9929215494142943,
+        "perfil_HW_aproximado_m": 0.9924896843910613,
         "perfil_sustituye_aproximacion": false,
         "perfil_y_entrada_m": null,
         "perfil_y_max_m": 0.6399701975127118,
@@ -308,8 +310,8 @@
       },
       "geometria": {
         "numeral": "Sec. 7.B",
-        "longitud_m": 18.6349712473815,
-        "proyeccion_taludes_m": 8.400000000000007,
+        "longitud_m": 18.86939162767301,
+        "proyeccion_taludes_m": 8.626432699532081,
         "factor_esviaje": 1.035276180410083,
         "altura_terraplen_m": 2.1000000000000014,
         "S_conducto": 0.006,
@@ -322,18 +324,47 @@
           "procedencia": "regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida",
           "nota": "no es cota medida: sale de la regla declarada en ese criterio mientras el expediente no entregue la cota de invert de entrada por punto"
         },
-        "cota_salida_msnm": 41.988190172515715,
-        "caida_m": 0.111809827484289,
+        "cota_salida_msnm": 41.98678365023396,
+        "caida_m": 0.11321634976603806,
+        "longitud_calculo": {
+          "metodo": "por_extremo",
+          "talud_H_V": 2.0,
+          "bombeo_m_m": null,
+          "peralte_m_m": null,
+          "cota_borde_entrada_msnm": 44.2,
+          "cota_borde_salida_msnm": 44.2,
+          "altura_terraplen_entrada_m": 2.1000000000000014,
+          "altura_terraplen_salida_m": 2.2132163497660393,
+          "proyeccion_talud_entrada_m": 4.200000000000003,
+          "proyeccion_talud_salida_m": 4.426432699532079,
+          "semilongitud_entrada_m": 9.31748562369075,
+          "semilongitud_salida_m": 9.55190600398226
+        },
+        "S_conducto_origen": {
+          "origen": "S_cauce",
+          "S_cauce": 0.006,
+          "S_declarada": null,
+          "S_minima": 0.0,
+          "S_maxima": 0.1,
+          "procedencia": "pendiente del cauce (`S_cauce`): el conducto sigue al cauce, que es la regla de la Sec. 7.B"
+        },
+        "longitud_a_la_clave_m": 14.676193488190119,
+        "desnivel_entrega_m": 0.6867836502339628,
+        "avisos": [
+          "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+          "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto"
+        ],
         "factible": true,
         "delta_rasante_cm": null,
         "tamizado": {
+          "provisional": true,
           "cota_rasante_min_msnm": 44.09200153701273,
           "cota_rasante_actual_msnm": 44.2,
           "cota_por_recubrimiento_msnm": 43.55480000000001,
           "cota_por_resguardo_msnm": 44.09200153701273,
           "condicion_gobernante": "resguardo",
           "criterio_gobernante": "resguardo_HW_subrasante",
-          "mensaje": "factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo)"
+          "mensaje": "factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
         }
       },
       "estructural": null,
@@ -483,13 +514,24 @@
         {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
           "codigo": "G2",
-          "numeral": "Sec. 7.B (cotas amarradas al fondo del receptor)",
+          "numeral": "Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A])",
           "estado": "cumple",
           "cumple": true,
-          "veredicto": null,
-          "valor_obtenido": 41.988190172515715,
+          "veredicto": "cumple",
+          "valor_obtenido": 41.98678365023396,
           "valor_admisible": 41.3,
-          "criterio_aplicado": null
+          "criterio_aplicado": "desnivel_minimo_entrega_m"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G3",
+          "numeral": "Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 num. 5.4.2, por analogia; AVISO, el esviaje es dato de entrada)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 15.0,
+          "valor_admisible": 45.0,
+          "criterio_aplicado": "esviaje_max_grados"
         }
       ],
       "verificaciones_no_evaluadas": [],
@@ -553,8 +595,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.26952104328892,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.567739690320675,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 0.3,
@@ -568,7 +610,9 @@
       },
       "tw_seccion_receptor": null,
       "avisos": [
-        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
       ],
       "clasificacion": {
         "luz_m": 2.75,
@@ -638,7 +682,7 @@
         "y_normal_m": 0.3358338199114026,
         "y_critico_m": 0.4031436347123781,
         "HW_entrada_m": 0.5720081284009831,
-        "HW_salida_m": 0.5617898928238432,
+        "HW_salida_m": 0.55961390820666,
         "HW_gobernante_m": 0.5720081284009831,
         "Q_celda_m3s": 0.48,
         "numero_celdas": 1,
@@ -650,13 +694,13 @@
         "h_o_m": 0.6515718173561891,
         "TW_m": 0.3,
         "ahogado_por_TW": false,
-        "HW_sobre_D_salida": 0.6242109920264924,
+        "HW_sobre_D_salida": 0.6217932313407334,
         "h_o_fuera_de_rango": false,
         "h_o_requiere_cautela": false,
         "perfil_tipo": "S1",
         "perfil_alcanza_entrada": false,
         "perfil_HW_remanso_m": null,
-        "perfil_HW_aproximado_m": 0.5617898928238432,
+        "perfil_HW_aproximado_m": 0.55961390820666,
         "perfil_sustituye_aproximacion": true,
         "perfil_y_entrada_m": null,
         "perfil_y_max_m": 0.4031436347123781,
@@ -685,8 +729,8 @@
       },
       "geometria": {
         "numeral": "Sec. 7.B",
-        "longitud_m": 18.26952104328892,
-        "proyeccion_taludes_m": 8.599999999999996,
+        "longitud_m": 18.567739690320675,
+        "proyeccion_taludes_m": 8.897083835045125,
         "factor_esviaje": 1.0038198375433474,
         "altura_terraplen_m": 2.1499999999999986,
         "S_conducto": 0.008,
@@ -699,18 +743,47 @@
           "procedencia": "regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida",
           "nota": "no es cota medida: sale de la regla declarada en ese criterio mientras el expediente no entregue la cota de invert de entrada por punto"
         },
-        "cota_salida_msnm": 39.70384383165369,
-        "caida_m": 0.14615616834631134,
+        "cota_salida_msnm": 39.70145808247744,
+        "caida_m": 0.1485419175225654,
+        "longitud_calculo": {
+          "metodo": "por_extremo",
+          "talud_H_V": 2.0,
+          "bombeo_m_m": null,
+          "peralte_m_m": null,
+          "cota_borde_entrada_msnm": 42.0,
+          "cota_borde_salida_msnm": 42.0,
+          "altura_terraplen_entrada_m": 2.1499999999999986,
+          "altura_terraplen_salida_m": 2.298541917522564,
+          "proyeccion_talud_entrada_m": 4.299999999999997,
+          "proyeccion_talud_salida_m": 4.597083835045128,
+          "semilongitud_entrada_m": 9.13476052164446,
+          "semilongitud_salida_m": 9.432979168676216
+        },
+        "S_conducto_origen": {
+          "origen": "S_cauce",
+          "S_cauce": 0.008,
+          "S_declarada": null,
+          "S_minima": 0.0,
+          "S_maxima": 0.1,
+          "procedencia": "pendiente del cauce (`S_cauce`): el conducto sigue al cauce, que es la regla de la Sec. 7.B"
+        },
+        "longitud_a_la_clave_m": 14.486917780360086,
+        "desnivel_entrega_m": 0.6014580824774356,
+        "avisos": [
+          "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+          "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
+        ],
         "factible": true,
         "delta_rasante_cm": null,
         "tamizado": {
+          "provisional": true,
           "cota_rasante_min_msnm": 41.37200812840098,
           "cota_rasante_actual_msnm": 42.0,
           "cota_por_recubrimiento_msnm": 41.3048,
           "cota_por_resguardo_msnm": 41.37200812840098,
           "condicion_gobernante": "resguardo",
           "criterio_gobernante": "resguardo_HW_subrasante",
-          "mensaje": "factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo)"
+          "mensaje": "factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
         }
       },
       "estructural": null,
@@ -860,13 +933,24 @@
         {
           "fase": "Fase 7 - Compatibilidad geometrica (M7)",
           "codigo": "G2",
-          "numeral": "Sec. 7.B (cotas amarradas al fondo del receptor)",
+          "numeral": "Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A])",
           "estado": "cumple",
           "cumple": true,
-          "veredicto": null,
-          "valor_obtenido": 39.70384383165369,
+          "veredicto": "cumple",
+          "valor_obtenido": 39.70145808247744,
           "valor_admisible": 39.1,
-          "criterio_aplicado": null
+          "criterio_aplicado": "desnivel_minimo_entrega_m"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G3",
+          "numeral": "Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 num. 5.4.2, por analogia; AVISO, el esviaje es dato de entrada)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 5.0,
+          "valor_admisible": 45.0,
+          "criterio_aplicado": "esviaje_max_grados"
         }
       ],
       "verificaciones_no_evaluadas": [],
@@ -930,8 +1014,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.400000000000013,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.775510204081645,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 1.0,
@@ -945,7 +1029,9 @@
       },
       "tw_seccion_receptor": null,
       "avisos": [
-        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
       ],
       "clasificacion": {
         "luz_m": 2.75,
@@ -1301,8 +1387,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 21.24648990617824,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 21.44458651089384,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 0.3,
@@ -1315,7 +1401,10 @@
         "acceso_mantenimiento_previsto": null
       },
       "tw_seccion_receptor": null,
-      "avisos": [],
+      "avisos": [
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 22.4 cm en este punto"
+      ],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -1557,6 +1646,13 @@
         "concepto": "Corrugacion y espesor de plancha de la tuberia metalica corrugada del catalogo: de ellos sale el diametro exterior D_ext = D + 2 x (profundidad de corrugacion + espesor de plancha), en que diametros es estandar el producto y, en la Fase 8, las propiedades de la seccion"
       },
       {
+        "clave": "desnivel_minimo_entrega_m",
+        "etiqueta": "A",
+        "valor": 0.0,
+        "declarado_en_caliente": false,
+        "concepto": "Desnivel minimo, en metros, que la cota de fondo de la salida del conducto debe guardar SOBRE la cota de fondo del cuerpo receptor (verificacion G2 de la Sec. 7.B)"
+      },
+      {
         "clave": "diametros_normalizados",
         "etiqueta": "C",
         "valor": {
@@ -1607,6 +1703,13 @@
         "valor": 1.75,
         "declarado_en_caliente": false,
         "concepto": "Espesor de la capa de proteccion, como multiplo de d50"
+      },
+      {
+        "clave": "esviaje_max_grados",
+        "etiqueta": "A",
+        "valor": 45.0,
+        "declarado_en_caliente": false,
+        "concepto": "Esviaje maximo, en grados, por encima del cual el cruce se señala para revision en planta (aviso, no bloqueo)"
       },
       {
         "clave": "factores_carga_aashto",
@@ -1673,6 +1776,13 @@
         "valor": 5.0,
         "declarado_en_caliente": false,
         "concepto": "Longitud de la proteccion aguas abajo de la salida"
+      },
+      {
+        "clave": "metodo_longitud_conducto",
+        "etiqueta": "A",
+        "valor": "por_extremo",
+        "declarado_en_caliente": false,
+        "concepto": "Metodo con que se calcula la longitud del conducto de la Sec. 7.B cuando no se declara: con la misma altura de terraplen en los dos taludes, o con la de cada extremo"
       },
       {
         "clave": "metodo_transicion_hds5",

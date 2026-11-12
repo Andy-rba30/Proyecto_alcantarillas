@@ -94,6 +94,17 @@ resultado hidraulico, que es la salida de quien la resolvio, y 7.B la lee de
 ahi: si el proyecto quiere cambiarla, se cambia en la Fase 4 y las dos cosas
 se mueven juntas.
 
+DESDE T-6 QUIEN LA RESUELVE ES `pendiente_adoptada`, una vez y ANTES de la
+Fase 4, con su ORIGEN: la declarada (`S_conducto`), el extremo de la banda
+adoptada cuando la pendiente del cauce lo traspasa (los dos criterios de T-2,
+leidos con `M5.limites_de_pendiente()`), o la del cauce. `servicio` pasa ese
+mismo valor a la longitud, al TW por cota, a MD y a 7.B. El reparto con V10
+-- este modulo ACOTA la pendiente del cauce y lo avisa; V10 JUZGA la que
+quedo y solo puede incumplirse con una declarada -- y lo que cada extremo
+trae consigo (una caida o un disipador que el programa no dimensiona; una
+salida bajo el cauce natural) estan en el docstring de esa funcion y en
+`aviso_de_pendiente`.
+
 El 1/cos(esviaje) no es un coeficiente adoptado: es la identidad geometrica
 del cruce oblicuo -- el eje del conducto es la hipotenusa del ancho que
 atraviesa -- del mismo orden que el T = D*sen(theta/2) de `modelos.SeccionCircular.ancho_superficial_en_llenado`.

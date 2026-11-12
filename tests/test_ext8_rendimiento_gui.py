@@ -107,10 +107,26 @@ CORRIDAS_IMPORTTIME = 3
 # y por eso llega a la memoria de cada punto; la eleccion del borde libre
 # bajo el TW del receptor en V1; y los avisos. La holgura es la proporcion
 # que se dejo en E-A (60 sobre 51.4).
-KB_POR_PUNTO_MAX = 70.0
+# T-6 (2026-11-12, integrado detras de T-2, T-4 y T-1) LO SUBE OTRA VEZ, Y
+# ESTA VEZ SIN HOLGURA. Medido con este mismo metodo sobre `5bca7c6`, el
+# arbol al que T-6 se integra: 63.7 KB y 18.7 paginas por punto --T-4 y T-1
+# habian gastado casi toda la holgura de T-2 sin pasar el techo, y las
+# paginas quedaban a un tercio de pagina del suyo--. Con T-6: 70.3 KB y 20.7
+# paginas, por los pasos de la Sec. 7.B, que hasta T-6 iban como una frase
+# con los numeros dentro: cada punto imprime, aunque no dimensione, el
+# factor de esviaje y la longitud con que corrio el diseño, y el que
+# dimensiona los cinco pasos de 7.B y los de G2 y G3. Es contenido del punto
+# --formula, sustitucion con procedencia y cita de cada paso--, no
+# repeticion. LOS DOS TECHOS QUEDAN PEGADOS A LA MEDIDA (71 sobre 70.3; 21
+# sobre 20.7) y no con la proporcion de E-A: el tamaño de la memoria lo
+# reconcilia T-10 de la cadena T, que es quien rehace M11, y un techo
+# holgado le esconderia a T-10 lo que cada prompt intermedio añada. Este
+# techo solo mide la corrida a EXPEDIENTE; la de perfil pesa mas (87.7 KB
+# por punto, 76.8 sobre `5bca7c6`) y no tiene techo (ficha T6-01).
+KB_POR_PUNTO_MAX = 71.0
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
-# del perfil por escalon. El techo se fija con la misma holgura que el de KB.
-PAGINAS_POR_PUNTO_MAX = 19
+# del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6 (ver arriba).
+PAGINAS_POR_PUNTO_MAX = 21
 
 
 def _arbol(ruta: Path) -> ast.Module:

@@ -1458,8 +1458,8 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
             sustitucion=(
                 Magnitud("S_conducto", resultado.S, "m/m",
                          "pendiente CON QUE CORRIO EL DISEÑO (paso 7.B.1: "
-                         "la del cauce, el extremo de la banda si la del "
-                         "cauce la traspasa, o la `S_conducto` declarada)",
+                         "cauce, extremo de la banda o `S_conducto` "
+                         "declarada)",
                          cifras=CIFRAS_FINA),
                 Magnitud("S_cauce", S_cauce, "m/m",
                          "pendiente del CAUCE NATURAL, columna del CSV "
@@ -2929,8 +2929,8 @@ def v10_pendiente_conducto(*, resultado: ResultadoHidraulico) -> Verificacion:
             sustitucion=(
                 Magnitud("S_conducto", S, "m/m",
                          "pendiente CON QUE CORRIO EL DISEÑO (paso 7.B.1: "
-                         "la del cauce, el extremo de la banda si la del "
-                         "cauce la traspasa, o la `S_conducto` declarada)",
+                         "cauce, extremo de la banda o `S_conducto` "
+                         "declarada)",
                          cifras=CIFRAS_FINA),
                 Magnitud("S_min", s_min, "m/m",
                          f"criterio '{CRITERIO_PENDIENTE_MINIMA}' [A]",
@@ -2974,11 +2974,10 @@ def v10_pendiente_conducto(*, resultado: ResultadoHidraulico) -> Verificacion:
                 "misma en todo el catalogo --, de modo que incumplirla no se "
                 "resuelve con otro tubo sino con otra pendiente del conducto "
                 "(`S_conducto`) o con otra banda, declarada con su razon. "
-                "A la pendiente del CAUCE que se sale de la banda la "
-                "sustituye el extremo antes del diseño (paso 7.B.1, con su "
-                "aviso), de modo que aqui solo puede incumplir una pendiente "
-                "declarada. Y no sustituye a V2, V2b y V3, que juzgan lo que "
-                "el agua hace con esa pendiente."
+                "La pendiente del CAUCE fuera de la banda la sustituye el "
+                "extremo antes del diseño (paso 7.B.1): aqui solo incumple "
+                "una declarada. Y no sustituye a V2, V2b y V3, que juzgan lo "
+                "que el agua hace con esa pendiente."
                 + (" EL BARRIL ES HORIZONTAL (S = 0): no hay tirante normal, "
                    "y el paso 4.1 dice de donde salen entonces el tirante y "
                    "la velocidad." if resultado.sin_tirante_normal else "")),

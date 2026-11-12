@@ -127,10 +127,12 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
     "T-0": {ESTADO_CERRADO: CERRADOS_EN_T0},
     "T-2": {
         ESTADO_CERRADO: {"INF-5.1.6", "INF-5.1.7"},
-        # T-2 hizo su parte y queda otra: T-6 (origen de la pendiente en M7),
-        # la decision del dueño sobre «aviso», el levantamiento del receptor
-        # y la corrida de HY-8 de T-11.
-        ESTADO_PARCIAL: {"INF-3.2.2", "INF-3.2.6", "INF-3.2.7", "INF-3.2.8"},
+        # T-2 hizo su parte y queda otra: la decision del dueño sobre
+        # «aviso», el levantamiento del receptor y la corrida de HY-8 de
+        # T-11. INF-3.2.7 (la pendiente) estuvo aqui hasta que T-6 hizo la
+        # mitad de M7 y lo cerro: figura en la fila de T-6, porque un
+        # hallazgo no se declara en dos prompts.
+        ESTADO_PARCIAL: {"INF-3.2.2", "INF-3.2.6", "INF-3.2.8"},
         # La analogia de V4 se verifico contra el PDF y no se toco V4.
         ESTADO_VERIFICADO: {"INF-3.2.5"},
     },
@@ -154,6 +156,13 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # R y n sigue siendo del Propietario, y el analisis de dos
         # poblaciones no se evalua.
         ESTADO_PARCIAL: {"INF-3.1.1", "INF-3.1.4"},
+    },
+    "T-6": {
+        # La geometria de 7.B. Con los numeros del INFORME: el prompt cita
+        # INF-5.1.18 como «INF-5.1.14». INF-3.2.7 lo abrio T-2 (la banda y
+        # V10) y lo cierra T-6 con el origen de la pendiente en M7; su fila
+        # del tracker conserva el texto de T-2 detras de «Anterior:».
+        ESTADO_CERRADO: {"INF-5.1.18", "INF-3.3.3", "INF-3.2.7"},
     },
 }
 

@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "96ee8f075ecb99a115f285f67909e6359a19a4be",
+    "criterios_sha1": "9d49da29a7ba22d6296757c35053ac419fdcf874",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -50,8 +50,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.6349712473815,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.86939162767301,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 0.3,
@@ -65,7 +65,9 @@
       },
       "tw_seccion_receptor": null,
       "avisos": [
-        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto"
       ],
       "clasificacion": {
         "luz_m": 2.75,
@@ -208,8 +210,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.26952104328892,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.567739690320675,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 0.3,
@@ -223,7 +225,9 @@
       },
       "tw_seccion_receptor": null,
       "avisos": [
-        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
       ],
       "clasificacion": {
         "luz_m": 2.75,
@@ -350,8 +354,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 18.400000000000013,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 18.775510204081645,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 1.0,
@@ -365,7 +369,9 @@
       },
       "tw_seccion_receptor": null,
       "avisos": [
-        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
       ],
       "clasificacion": {
         "luz_m": 2.75,
@@ -517,8 +523,8 @@
         },
         "categoria_tr": null,
         "longitud_m": {
-          "valor": 21.24648990617824,
-          "origen": "M7.longitud_conducto (Sec. 7.B)"
+          "valor": 21.44458651089384,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
         },
         "TW_m": {
           "valor": 0.3,
@@ -531,7 +537,10 @@
         "acceso_mantenimiento_previsto": null
       },
       "tw_seccion_receptor": null,
-      "avisos": [],
+      "avisos": [
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 22.4 cm en este punto"
+      ],
       "clasificacion": {
         "luz_m": 2.75,
         "denominacion": "alcantarilla",
@@ -1028,6 +1037,13 @@
         "valor": 0.5,
         "declarado_en_caliente": false,
         "concepto": "Coeficiente de perdida de carga en la embocadura (ke)"
+      },
+      {
+        "clave": "metodo_longitud_conducto",
+        "etiqueta": "A",
+        "valor": "por_extremo",
+        "declarado_en_caliente": false,
+        "concepto": "Metodo con que se calcula la longitud del conducto de la Sec. 7.B cuando no se declara: con la misma altura de terraplen en los dos taludes, o con la de cada extremo"
       },
       {
         "clave": "metodo_transicion_hds5",
