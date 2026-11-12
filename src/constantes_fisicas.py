@@ -70,5 +70,21 @@ N_POR_KN = 1000.0
 PIE_EN_METROS = 0.3048
 PULGADA_EN_MM = 25.4
 
+# --- T-5 --- 1 lbf = 0.45359237 kg x 9.80665 m/s2 = 4.4482216152605 N, EXACTO
+# por definicion (libra-masa internacional de 1959 por la gravedad estandar
+# de la CGPM). Mismo caso que PIE_EN_METROS: es un factor de unidad, no un
+# valor de proyecto, y hace falta porque el Manual de Puentes y la Seccion 12
+# de AASHTO LRFD escriben los ejes del HL-93 en kip (1 kip = 1000 lbf) y las
+# tablas de la Seccion 12 en ksi, psi y pcf. Las conversiones derivadas se
+# escriben UNA vez, aqui, y no en cada consumidor.
+LIBRA_FUERZA_EN_N = 4.4482216152605
+KPA_POR_MPA = 1000.0
+KIP_EN_KN = LIBRA_FUERZA_EN_N                        # 1 kip = 1000 lbf
+PSI_EN_MPA = LIBRA_FUERZA_EN_N / PULGADA_EN_MM ** 2  # N/mm2 por psi: 0.006895
+PSI_EN_KPA = PSI_EN_MPA * KPA_POR_MPA                # 6.895 kPa
+KSI_EN_MPA = PSI_EN_KPA                              # 1 ksi = 6.895 MPa
+PCF_EN_KN_M3 = LIBRA_FUERZA_EN_N / N_POR_KN / PIE_EN_METROS ** 3   # 0.1571
+KCF_EN_KN_M3 = PCF_EN_KN_M3 * N_POR_KN               # 1 kcf = 157.09 kN/m3
+
 GAMMA_AGUA = RHO_AGUA * G                   # N/m3  = 9810.0
 GAMMA_AGUA_KN_M3 = GAMMA_AGUA / N_POR_KN    # kN/m3 = 9.81, unidad del calculo

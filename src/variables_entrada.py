@@ -1265,6 +1265,13 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     # galvanizado enterrado, por analogia, y su efecto sobre el TMC.
     "suelo_agresivo_acero_lrfd": _Meta(unidad="pH, ohm-cm y ppm"),
     "suelo_agresivo_lrfd_sobre_tmc": _Meta(unidad="-"),
+    # --- T-5 --- La Fase 8 del conducto (INF-3.3.5). Los cinco los consume
+    # M8 y su fase se deduce de ahi.
+    "instalacion_estandar_concreto": _Meta(unidad="- (tipo de instalacion)"),
+    "fabricacion_tmc": _Meta(unidad="-"),
+    "eta_importancia_operativa_conducto": _Meta(unidad="-"),
+    "relleno_estructural_hdpe": _Meta(unidad="- (columna de la Tabla 12.12.3.5-1)"),
+    "parametros_diseno_hdpe": _Meta(unidad="-, -, -, -, fraccion de D, años"),
 }
 
 

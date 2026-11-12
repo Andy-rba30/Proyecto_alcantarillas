@@ -4162,3 +4162,286 @@ NUMERAL_DIAMETRO_MAX_ESTANDAR_M170M = (
     "AASHTO M 170M-04, Tablas 1 y 3 (pags. PDF 3 y 7): ultima fila con pared "
     "y acero tabulados; por encima, diseño especial de la Seccion 7.2, num. "
     "7.2.1 y 7.2.2 (pag. impresa M 170M-13)")
+
+
+# ===========================================================================
+# --- T-5 --- (cadena T, 2026-11-12) Fase 8: estructural del conducto
+# ===========================================================================
+# DOS CLASES DE NUMERO EN ESTE BLOQUE, y no se mezclan:
+#
+#   [N]  los del Manual de Puentes (HL-93, presencia multiple, IM de
+#        componentes enterrados, pesos especificos) y del EG-2013 (espesor
+#        minimo de la tuberia metalica corrugada): norma peruana vigente.
+#   [C]  VISTAS DE TABLA de AASHTO LRFD 9a ed., Seccion 12, y de ASTM
+#        A796/A796M-13, con el mismo regimen que las vistas de T-4: son
+#        TABLAS de una fuente tecnica reconocida; lo que el proyecto ELIGE
+#        sobre ellas (el tipo de instalacion, la fabricacion del TMC, el
+#        relleno del HDPE, la importancia operativa) esta en
+#        `criterios_adoptados.py`, bloque «--- T-5 ---».
+#
+# Las cifras se escriben EN LA UNIDAD QUE LA FUENTE IMPRIME (kip, ft, in,
+# ksi, psi, pcf, in/kip) y se convierten a SI una sola vez, aqui debajo, con
+# los factores exactos de `constantes_fisicas`. Cada pagina se leyo en la
+# sesion de T-5 (por texto las de AASHTO, el Manual de Puentes y EG-2013;
+# por imagen las de ASTM A796) y la cita del registro que la sostiene esta
+# nombrada en el comentario de cada bloque.
+# ===========================================================================
+from src.constantes_fisicas import (KCF_EN_KN_M3, KIP_EN_KN,  # noqa: E402
+                                    KSI_EN_MPA, PCF_EN_KN_M3,  # (bloque T-5)
+                                    PIE_EN_METROS, PSI_EN_KPA,
+                                    PULGADA_EN_MM)
+
+_M_POR_PULG = PULGADA_EN_MM / MILIMETROS_POR_METRO
+
+# ---- [N] HL-93: camion y tandem de diseño (Manual de Puentes) -------------
+# 2.4.3.2.2.2 «Camión de Diseño» y 2.4.3.2.2.3 «Tándem de Diseño», pag.
+# impresa 104 (PDF 105); citas MP.2.4.3.2.2.2 y MP.2.4.3.2.2.3. El Manual
+# escribe kip y ft y pone entre parentesis una equivalencia REDONDEADA
+# (14.55 t, 4.27 m, 1.20 m, 1.80 m); se convierte el valor primario con el
+# factor exacto: 32.0 kip = 142.34 kN (las «14.55 t» darian 142.69 kN).
+# Para alcantarillas solo cuentan los EJES (AASHTO 3.6.1.2.6a, cita
+# AASHTO_LRFD_9.3.6.1.2.6a#EJES): no hay carga de carril.
+EJE_CAMION_HL93_KIP = 32.0
+EJE_TANDEM_HL93_KIP = 25.0
+SEPARACION_EJES_CAMION_MIN_PIE = 14.0     # el minimo de 14 a 30 ft: el que
+                                          # acerca los ejes y gobierna
+SEPARACION_EJES_TANDEM_PIE = 4.0
+SEPARACION_RUEDAS_PIE = 6.0               # transversal, los dos vehiculos
+EJE_CAMION_HL93_KN = EJE_CAMION_HL93_KIP * KIP_EN_KN
+EJE_TANDEM_HL93_KN = EJE_TANDEM_HL93_KIP * KIP_EN_KN
+SEPARACION_EJES_CAMION_MIN_M = SEPARACION_EJES_CAMION_MIN_PIE * PIE_EN_METROS
+SEPARACION_EJES_TANDEM_M = SEPARACION_EJES_TANDEM_PIE * PIE_EN_METROS
+SEPARACION_RUEDAS_M = SEPARACION_RUEDAS_PIE * PIE_EN_METROS
+NUMERAL_HL93_EJES = ("Manual de Puentes, num. 2.4.3.2.2.2 «Camión de Diseño» "
+                     "y 2.4.3.2.2.3 «Tándem de Diseño», pag. impresa 104")
+
+# ---- [N] Area de contacto del neumatico: 2.4.3.2.2.5, pag. impresa 104 ----
+# 20.0 in de ancho (transversal) por 10.0 in de largo (longitudinal); son
+# los w_t y l_t de AASHTO 3.6.1.2.6b. Cita MP.2.4.3.2.2.5.
+ANCHO_NEUMATICO_PULG = 20.0
+LARGO_NEUMATICO_PULG = 10.0
+ANCHO_NEUMATICO_M = ANCHO_NEUMATICO_PULG * _M_POR_PULG
+LARGO_NEUMATICO_M = LARGO_NEUMATICO_PULG * _M_POR_PULG
+
+# ---- [N] Presencia multiple: Tabla 2.4.3.2.2.6-1, pag. impresa 105 --------
+# Un carril cargado: m = 1.20. Para alcantarillas con trafico paralelo al
+# vano AASHTO 3.6.1.2.6a manda UN carril con su factor (cita
+# AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL). Cita MP.2.4.3.2.2.6.
+PRESENCIA_MULTIPLE_UN_CARRIL = 1.20
+
+# ---- [N] IM de componentes enterrados: 2.4.3.3.2, pag. impresa 109 --------
+# IM = 33 (1.0 - 0.125 D_E) >= 0 %, con D_E en PIES (el Manual conserva la
+# unidad de AASHTO 3.6.2.2). La pendiente en SI es 0.125/0.3048 = 0.4101 por
+# metro; NO se usa 0.125 sobre metros, que daria un IM casi tres veces mas
+# alto a la misma profundidad. Cita MP.2.4.3.3.2.
+IM_ENTERRADO_MAXIMO_PCT = 33.0
+IM_ENTERRADO_PENDIENTE_POR_PIE = 0.125
+IM_ENTERRADO_PENDIENTE_SI = IM_ENTERRADO_PENDIENTE_POR_PIE / PIE_EN_METROS
+
+# ---- [N] Pesos especificos: Tabla 2.4.2.1-1, pag. impresa 102 -------------
+# «A falta de una información precisa, podrán usarse...» (PERMISO; cita
+# MP.2.4.2.1#PESOS). Dos filas: «Arena, limo o arcilla compactado» 0.120 kcf
+# para el relleno sobre el conducto y «Superficies de desgaste bituminosos»
+# 0.140 kcf (la misma cifra que «Laminados grava, macadam, o de lastre»)
+# para el paquete estructural. Que fila describe cada capa es lectura del
+# proyecto, y la dice el paso de la carga de tierra.
+PESO_SUELO_COMPACTADO_KCF = 0.120
+PESO_PAQUETE_ESTRUCTURAL_KCF = 0.140
+PESO_SUELO_COMPACTADO_KN_M3 = PESO_SUELO_COMPACTADO_KCF * KCF_EN_KN_M3
+PESO_PAQUETE_ESTRUCTURAL_KN_M3 = PESO_PAQUETE_ESTRUCTURAL_KCF * KCF_EN_KN_M3
+
+# ---- [N] EG-2013 Tabla 507-01 «Espesores Mínimos de Alcantarillas ---------
+# Circulares y Abovedadas», pag. impresa 970 (PDF 978): {diametro mm:
+# espesor minimo mm}. Es la UNICA cifra peruana sobre el calibre del TMC, y
+# hasta T-5 no la leia nadie (la ficha de cama de 507 la mencionaba de paso).
+# Cinco filas, de 0.60 a 1.80 m; para los diametros intermedios del catalogo
+# rige la fila del diametro tabulado inmediato SUPERIOR (lectura del
+# proyecto, del lado del mayor espesor), y por encima de 1.80 m la tabla no
+# dice nada: ahi gobierna solo el procedimiento. Cita EG2013.T507-01.
+ESPESOR_MIN_TMC_EG2013_MM = {600: 1.80, 900: 2.00, 1200: 2.50, 1500: 3.00,
+                             1800: 3.30}
+
+# ---- [C] Tabla 3.6.1.2.6a-1 de AASHTO LRFD (pag. 3-27): LLDF -------------
+# «Concrete Pipe with fill depth 2.0 ft or greater»: 1.15 para diametro de
+# 2.0 ft o menos, 1.75 para 8.0 ft o mas, interpolacion lineal entre medias;
+# «All other culverts and buried structures»: 1.15. Cita
+# AASHTO_LRFD_9.T3.6.1.2.6a-1.
+LLDF_TUBO_CONCRETO_D_MIN_M = 2.0 * PIE_EN_METROS
+LLDF_TUBO_CONCRETO_D_MAX_M = 8.0 * PIE_EN_METROS
+LLDF_TUBO_CONCRETO_MIN = 1.15
+LLDF_TUBO_CONCRETO_MAX = 1.75
+LLDF_OTRAS_ALCANTARILLAS = 1.15
+# 3.6.1.2.6a (pag. 3-26): el metodo de la rueda distribuida vale con relleno
+# de MAS de 1.0 ft (no-concreto) o de 2.0 ft O MAS (tubo de concreto), y la
+# carga viva se desprecia con relleno de mas de 8.0 ft que ademas supera la
+# luz (alcantarilla de un solo vano). Citas AASHTO_LRFD_9.3.6.1.2.6a#RELLENO
+# y #DESPRECIABLE.
+RELLENO_MIN_METODO_NO_CONCRETO_M = 1.0 * PIE_EN_METROS
+RELLENO_MIN_METODO_TUBO_CONCRETO_M = 2.0 * PIE_EN_METROS
+RELLENO_DESPRECIA_CARGA_VIVA_M = 8.0 * PIE_EN_METROS
+
+# ---- [C] Tubo de concreto: AASHTO LRFD 12.10 (pags. 12-50 a 12-66) --------
+# VAF = Fe de las instalaciones estandar (Tabla 12.10.2.1-3, pag. 12-53;
+# cita AASHTO_LRFD_9.12.10.2.1#VAF); peso del suelo nunca menor de
+# 110 lb/ft3 (12.10.2.1, pag. 12-52; cita #PESO_MIN); factor de instalacion
+# 1.10 para el Tipo 1 (12.10.4.3.1, pag. 12-64; cita #TIPO1).
+VAF_INSTALACION_ESTANDAR = {"tipo_1": 1.35, "tipo_2": 1.40, "tipo_3": 1.40,
+                            "tipo_4": 1.45}
+PESO_SUELO_MIN_TUBO_CONCRETO_PCF = 110.0
+PESO_SUELO_MIN_TUBO_CONCRETO_KN_M3 = (PESO_SUELO_MIN_TUBO_CONCRETO_PCF
+                                      * PCF_EN_KN_M3)
+FACTOR_INSTALACION_TIPO_1 = 1.10
+# Tabla 12.10.4.3.2a-1 «Bedding Factors for Circular Pipe» (pag. 12-65):
+# B_FE por diametro (in) y tipo; entre filas se interpola (12.10.4.3.2a).
+BFE_DIAMETROS_PULG = (12.0, 24.0, 36.0, 72.0, 144.0)
+BFE_POR_TIPO = {"tipo_1": (4.4, 4.2, 4.0, 3.8, 3.6),
+                "tipo_2": (3.2, 3.0, 2.9, 2.8, 2.8),
+                "tipo_3": (2.5, 2.4, 2.3, 2.2, 2.2),
+                "tipo_4": (1.7, 1.7, 1.7, 1.7, 1.7)}
+# Tabla 12.10.4.3.2c-1 «Bedding Factors, BFLL» (pag. 12-66): por diametro
+# (in) y por relleno menor de 2.0 ft o desde 2.0 ft; «30 and larger» = 2.2.
+BFLL_DIAMETROS_PULG = (12.0, 18.0, 24.0, 30.0)
+BFLL_RELLENO_MENOR_2_PIES = (3.2, 3.2, 3.2, 2.2)
+BFLL_RELLENO_DESDE_2_PIES = (2.4, 2.4, 2.4, 2.2)
+
+# ---- [C] Tubo de acero corrugado: AASHTO LRFD 12.5, 12.7 y A12 ------------
+# Propiedades del acero, Tabla A12-9 (pag. 12-107): F_u 45.0 ksi, F_y 33.0
+# ksi, E_m 29 000 ksi. Factores de resistencia, Tabla 12.5.5-1 (pag. 12-12):
+# area de pared y pandeo 1.00, costura longitudinal 0.67. Rigidez del suelo
+# k = 0.22 (12.7.2.4, pag. 12-26). Limite del factor de flexibilidad, Tabla
+# 12.5.6.1-1 (pag. 12-13), en in/kip por PROFUNDIDAD de corrugacion: 0.25 y
+# 0.5 in -> 43; 1.0 in -> 33. Citas AASHTO_LRFD_9.TA12-9, .12.5.5,
+# .12.7.2.4, .12.5.6.1#FF.
+ACERO_TMC_FU_MPA = 45.0 * KSI_EN_MPA
+ACERO_TMC_FY_MPA = 33.0 * KSI_EN_MPA
+ACERO_TMC_EM_MPA = 29000.0 * KSI_EN_MPA
+PHI_AREA_Y_PANDEO_TMC = 1.00
+PHI_COSTURA_LONGITUDINAL_TMC = 0.67
+K_RIGIDEZ_SUELO_TMC = 0.22
+FF_LIMITE_ACERO_IN_KIP = {"68x13": 43.0, "75x25": 33.0, "125x25": 33.0}
+FF_LIMITE_ACERO_MM_N = {c: v * PULGADA_EN_MM / (KIP_EN_KN * 1000.0)
+                        for c, v in FF_LIMITE_ACERO_IN_KIP.items()}
+# F_min = 15/(12 S) >= 1 (Eq. 12.7.2.2-4, S en ft): el 15 son PULGADAS.
+F_MIN_NUMERADOR_M = 15.0 * _M_POR_PULG
+# ASTM A796/A796M-13 num. 4 y 8 (por imagen, PDF 2 a 4): las cifras SI de
+# la practica, para el CONTRASTE ASD (no rige): f_y 225 MPa, f_u 310 MPa,
+# E 200 000 MPa ("all other corrugations"), SF 2 sobre el area de pared.
+A796_FY_MPA = 225.0
+A796_FU_MPA = 310.0
+A796_E_MPA = 200000.0
+A796_SF_AREA = 2.0
+A796_K_SUELO = 0.22
+
+# ---- [C] Polietileno corrugado: AASHTO LRFD 12.12 -------------------------
+# Tabla 12.12.3.3-1 (pag. 12-77), fila «Corrugated PE Pipe - AASHTO M 294»:
+# deformacion limite de traccion de servicio 5.0 %, de compresion mayorada
+# 4.1 %; F_u y E inicial 3.0 / 110.0 ksi, a 50 anos 0.90 / 22, a 75 anos
+# 0.90 / 21. Cita AASHTO_LRFD_9.T12.12.3.3-1.
+PE_M294_EPS_YT = 0.050
+PE_M294_EPS_YC = 0.041
+PE_M294_PROPIEDADES_KSI = {"inicial": (3.0, 110.0), "50": (0.90, 22.0),
+                           "75": (0.90, 21.0)}
+# Tabla 12.12.3.10.1b-1 «Time Factor» (pag. 12-85), columna PE.
+KT_PE = {"inicial": 0.9, "50": 0.3, "75": 0.25}
+# Tabla 12.5.5-1, «PE and PVC pipe»: empuje 1.00, rigidez del suelo 0.90,
+# pandeo global 0.70.
+PHI_EMPUJE_PE = 1.00
+PHI_SUELO_PE = 0.90
+PHI_PANDEO_PE = 0.70
+# 12.12.3.10.1e (pag. 12-87): C_n = 0.55; K_2 = 1.0 para el empuje en el
+# arranque (12.12.3.5, pag. 12-79).
+CN_PANDEO_PE = 0.55
+K2_EMPUJE_ARRANQUE = 1.0
+# Tabla 12.12.3.5-1 «Ms Based on Soil Type and Compaction Condition» (pag.
+# 12-81), en ksi, por nivel de P_sp en psi. Las columnas son las cuatro que
+# la compactacion del EG-2013 admite (ver 'relleno_estructural_hdpe').
+MS_NIVELES_PSP_PSI = (1.0, 5.0, 10.0, 20.0, 40.0, 60.0)
+MS_TABLA_KSI = {"Sn-100": (2.350, 3.450, 4.200, 5.500, 7.500, 9.300),
+                "Sn-95": (2.000, 2.600, 3.000, 3.450, 4.250, 5.000),
+                "Si-95": (1.415, 1.670, 1.770, 1.880, 2.090, None),
+                "Cl-95": (0.530, 0.625, 0.690, 0.740, 0.815, 0.895)}
+# AASHTO M 294-11 num. 7.7 (traduccion no oficial, hoja 8): la capacidad de
+# compresion del perfil no puede ser inferior al 50 % del area bruta por el
+# limite elastico minimo especificado. Cita AASHTO_M294_TRAD.7.7.
+M294_FRACCION_CAPACIDAD_COMPRESION = 0.5
+
+# ---- [C] Marco de concreto: AASHTO LRFD 12.11.2.2.1 (pag. 12-69) ----------
+# F_e = 1 + 0.20 H/B_c, que no puede pasar de 1.15 con relleno compactado a
+# los lados ni de 1.40 sin compactar. Cita AASHTO_LRFD_9.12.11.2.2.1.
+FE_CAJON_MAX_COMPACTADO = 1.15
+FE_CAJON_MAX_SIN_COMPACTAR = 1.40
+
+# ---- [C] El perfil MINIMO del PE corrugado por diametro designado ---------
+# DERIVADO de la Table A12-11 de AASHTO LRFD (pag. 12-108, tabla
+# AASHTO_LRFD_9.TA12-11) y de la serie de M 294 (AASHTO_M294_TRAD.T7.2.2,
+# que dice que «900 (36)» es el designado de 36 in): {mm: {...}} en SI. Son
+# los MINIMOS de producto (Min. A, Min. c, Min. I) y el exterior MAXIMO: la
+# Fase 8 verifica el perfil mas debil que la norma admite. Se derivan las
+# ocho filas; el catalogo recorre solo las de 900 mm en adelante (su piso), y
+# 1350 y 1500 mm no estan en la tabla: la Fase 8 no las alcanza porque el
+# espesor de pared del HDPE ('espesor_pared_conducto', T-4) tampoco las trae
+# y la geometria se detiene antes. `nota_largo_plazo` marca las filas con la
+# llamada «*» de la tabla (42 y 48 in): «the wall thickness should be
+# designed using the long-term tensile strength provision».
+_MM2_POR_MM_POR_PULG2_PIE = PULGADA_EN_MM ** 2 / (PIE_EN_METROS
+                                                 * MILIMETROS_POR_METRO)
+_MM4_POR_MM_POR_PULG4_PULG = PULGADA_EN_MM ** 3
+
+
+def _perfil_minimo_pe_m294() -> dict:
+    designado_mm = {f.valores["dn_in"]: f.valores["dn_mm"]
+                    for f in _reg.tabla("AASHTO_M294_TRAD.T7.2.2").filas}
+    vista = {}
+    for fila in _reg.tabla("AASHTO_LRFD_9.TA12-11").filas:
+        v = fila.valores
+        dn_mm = designado_mm[v["nominal_in"]]
+        vista[dn_mm] = {
+            "nominal_in": v["nominal_in"],
+            "id_min_m": v["id_min_in"] * _M_POR_PULG,
+            "od_max_m": v["od_max_in"] * _M_POR_PULG,
+            "A_mm2_mm": v["A_min"] * _MM2_POR_MM_POR_PULG2_PIE,
+            "c_mm": v["c_min"] * PULGADA_EN_MM,
+            "I_mm4_mm": v["I_min"] * _MM4_POR_MM_POR_PULG4_PULG,
+            "nota_largo_plazo": bool(fila.llamadas_a_nota),
+        }
+    return vista
+
+
+PE_M294_PERFIL_MINIMO = _perfil_minimo_pe_m294()
+
+# ---- [C] Resistencia ultima de la costura longitudinal REMACHADA del TMC --
+# DERIVADA de las columnas de costura de las Tablas 5 y 7 de ASTM A796/A796M-13
+# (PDF 8 y 9, por imagen; «Ultimate Longitudinal Seam Strength of Riveted or
+# Spot Welded Corrugated Steel Pipe in kN per m of Seam»), por plancha de
+# `TMC_PLANCHA_CORRUGADA`: {clave: {"simple": kN/m o None, "doble": ...}}.
+# Cada espesor trae un solo diametro de remache con valor (8 mm hasta 2.01 mm
+# y 10 mm desde 2.77 en la de 68 x 13; 10 u 11 mm dobles en la de 75 x 25);
+# la celda «. . .» es una combinacion que no se fabrica y queda None. La de
+# 125 x 25 es solo helicoidal (titulo de la Tabla 9): no tiene costura.
+_COLUMNAS_COSTURA_TMC = {
+    "ASTM_A796.T5": {"simple": ("s8_single", "s10_single"),
+                     "doble": ("s8_double", "s10_double")},
+    "ASTM_A796.T7": {"simple": (), "doble": ("s10_double", "s11_double")},
+    "ASTM_A796.T9": {"simple": (), "doble": ()},
+}
+
+
+def _costura_remachada_tmc() -> dict:
+    vista = {}
+    for clave, plancha in TMC_PLANCHA_CORRUGADA.items():
+        etiqueta = clave.split("/")[1]
+        fila = next(f for f in _reg.tabla(plancha["tabla"]).filas
+                    if f.etiqueta_literal == etiqueta)
+        vista[clave] = {}
+        for remache, columnas in _COLUMNAS_COSTURA_TMC[plancha["tabla"]].items():
+            con_valor = [float(fila.valores[c]) for c in columnas
+                         if isinstance(fila.valores[c], (int, float))]
+            if len(con_valor) > 1:
+                raise ValueError(
+                    f"{clave}: la tabla da costura {remache} con dos remaches; "
+                    "cual se fabrica es una eleccion que esta vista no hace")
+            vista[clave][remache] = con_valor[0] if con_valor else None
+    return vista
+
+
+COSTURA_REMACHADA_TMC_KN_M = _costura_remachada_tmc()
