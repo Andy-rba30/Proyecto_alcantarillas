@@ -287,6 +287,14 @@ def test_h1_fuera_de_la_tabla_la_envolvente_da_cotas_inferiores_y_lo_dice(
     assert p.longitud == pytest.approx(8.0, rel=REL_FORMULA)
     assert any("COTAS INFERIORES" in x and "no un diseño" in x
                for x in p.avisos)
+    # Con D = 0.90 m (la longitud es 8·D, no 8/D: con D = 1 no se distinguen):
+    #   Q/(g^0.5·D^2.5) = 6.0/(3.13209·0.768433) = 2.49295; ^(4/3) = 3.38044
+    #   D50 = 0.2·0.9·3.38044·(0.9/0.36) = 1.5212 m;  L = 8·0.9 = 7.20 m
+    r09 = _tubo_lleno(resultado_a01, D=0.9, Q=6.0, TW=0.36, V=2.0)
+    q = M6.proteccion_salida(V=r09.V_salida, resultado=r09,
+                             seccion=SeccionCircular(0.9))
+    assert q.d50 == pytest.approx(1.5212, rel=REL_ARITMETICA)
+    assert q.longitud == pytest.approx(8 * 0.9, rel=REL_FORMULA)
 
 
 def test_h1_donde_hec14_no_es_evaluable_rige_laushey_y_se_avisa(
@@ -681,10 +689,19 @@ def test_h6_bajo_la_admisible_el_veredicto_habla_en_nombre_del_proyecto():
     assert "la Tabla Nº 11 no pide" not in v.paso.veredicto.explicacion
     assert "el proyecto" in v.paso.veredicto.explicacion
     # La lectura viaja en la cara del proyecto, leida del registro.
-    lectura = _registro.construir().cita(
-        "MC_HHD.4.1.1.3.7c#PROTECCION").interpretacion.texto
+    reg = _registro.construir()
+    lectura = reg.cita("MC_HHD.4.1.1.3.7c#PROTECCION").interpretacion.texto
     assert lectura in v.paso.nota_del_proyecto
     assert "MC_HHD.4.1.1.3.7c#PROTECCION" in v.paso.citas_textuales
+    # La de «no basta para suprimir la proteccion» es de la SALIDA: en la
+    # entrada el revestimiento lo declara otro criterio, y no se imprime.
+    mantener = reg.cita("HDS5_3ED.5.3.2#PRACTICA").interpretacion.texto
+    assert mantener in v.paso.nota_del_proyecto
+    entrada = M6.velocidad_admisible_del_cauce(
+        V=_V(1.0), tipo_terreno="grava_fina", regimen_flujo="intermitente",
+        donde=M6.DONDE_ENTRADA)
+    assert lectura in entrada.paso.nota_del_proyecto
+    assert mantener not in entrada.paso.nota_del_proyecto
 
 
 def test_h6_el_aviso_de_la_hoya_sin_revestir_no_atribuye_a_la_tabla(
@@ -1057,6 +1074,23 @@ def test_h15_sin_tirante_de_salida_el_apron_dice_que_no_sabe_el_regimen(
                        y_salida=None, y_critico=0.640)
     assert a.regimen_determinado is False
     assert not a.ajustado_por_supercritico
+
+    def procedencia(apron, simbolo):
+        return next(m.procedencia for m in apron.pasos[0].sustitucion
+                    if m.simbolo == simbolo)
+    # La procedencia del diametro dice cual de los tres casos fue.
+    assert "REGIMEN NO DETERMINADO" in procedencia(a, "D")
+    ajustado = M6.apron_hec14(Q_celda=1.167, seccion=SeccionCircular(0.9),
+                              TW=0.30, y_salida=0.627, y_critico=0.640)
+    assert "D' = (D + yn)/2" in procedencia(ajustado, "D")
+    assert "REGIMEN NO DETERMINADO" not in procedencia(ajustado, "D")
+    sin_ajuste = M6.apron_hec14(Q_celda=1.167, seccion=SeccionCircular(0.9),
+                                TW=0.50, y_salida=0.9, y_critico=0.640)
+    assert procedencia(sin_ajuste, "D") == "diametro interior del conducto"
+    # Y la del TW, si se acoto al piso o es el del punto.
+    assert "se usa ese piso" in procedencia(ajustado, "TW")
+    assert procedencia(sin_ajuste, "TW") == \
+        "tirante del cuerpo receptor del punto (Sec. 1.3)"
     sin_tirante = replace(resultado_a01, y_salida_m=None)
     p = M6.proteccion_salida(V=sin_tirante.V_salida, resultado=sin_tirante,
                              seccion=SeccionCircular(0.9))

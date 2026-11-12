@@ -4555,6 +4555,16 @@ T8-07 a T8-12 son nuevas. Lo que ya no es cierto de la frase de arriba: desde es
   ventana 30–360 que la fuente sostiene» —la fuente sostiene el piso de 30 min y la razón
   para no quedarse en él («2/3 to 3/4»), no el techo de 360, que es adopción del proyecto—.
   La decisión se aplicó (360 min, [A]) y la ficha del criterio lo declara.
-- **Qué haría falta:** nada que se pueda rehacer. La mutación de M6 no se remidió en
-  esta pasada: la cifra de la ficha T8-06 (472 de 514) es del M6 de `df1b23c`, que cambió.
+- **Qué haría falta:** nada que se pueda rehacer. La mutación de M6 se **remidió** con el
+  arnés de EXT-11 sobre el M6 de esta pasada, contra los dos archivos
+  (`tests/test_t8_proteccion.py` y `tests/test_t8_correcciones.py`): 574 mutantes, **531
+  muertos (92.5 %)** en la medida entera. De los 43 vivos, cinco eran huecos del código
+  nuevo —la procedencia del diámetro y del TW en el paso 6.5, la lectura que sólo se imprime
+  en la salida, y la longitud `8·D` de fuera de tabla, que con D = 1 m no se distinguía de
+  `8/D`— y se cerraron con aserciones: remedidas sólo las tres funciones tocadas (90
+  mutantes, 82 muertos), el total queda en **536 de 574 (93.4 %)**, sumando una medida
+  entera y una parcial, y se dice así. Los 38 que quedan son de banda de tolerancia
+  (`±TOL_UMBRAL_NORMATIVO`, `<` frente a `<=`, que sólo difieren a 1e-9 del borde y cuyo
+  comportamiento EN el borde sí está fijado por test desde esta pasada), los tres
+  equivalentes de la ficha T8-06 y los de presentación; no se censan uno a uno (T-10).
 - **Dónde vive:** `tests/test_t8_correcciones.py::test_manual_sigue_dando_exactamente_los_numeros_de_antes`
