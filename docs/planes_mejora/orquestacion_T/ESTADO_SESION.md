@@ -19,6 +19,7 @@ Entorno: `pip install -r requirements.txt -r requirements-dev.txt openpyxl`; `ex
 | Prompt | Rama | Estado |
 |---|---|---|
 | T-5 estructural | `tesis/T-5` (`ab7fc3a`, base `7fb7926`; respaldo `tesis/T-5-faseA`) | FASE A hecha con Opus. DOS auditorías adversariales llegadas (16:10 UTC), ambas AJUSTADO, 0 bloqueantes, «diámetros movidos: ninguno»: `AUDITORIA_T-5_opus.md` (3 ALTA, 5 MEDIA, 6 BAJA) y `AUDITORIA_T-5_fable.md` (2 ALTA, 5 MEDIA, 8 BAJA), en esta carpeta. EN CURSO (Fable): correcciones + FASE B → `ENCARGO_T-5_correcciones_y_faseB.md` (trae las resoluciones provisionales del orquestador; informe en `INFORME_T-5_final.md` del scratchpad). Preguntas al dueño que saldrán de ahí: instalación Tipo 3/4, HDPE (propiedades del fabricante, relleno), `fabricacion_tmc` y el TMC Ø 1.95 del test de T-4, carga viva sobre 8 ft, η 1.05, ejemplar legible de M 170M |
+| T-8 correcciones | `tesis/T-8-correcciones` (desde `df1b23c`; worktree `T-8c`) | Auditoría Fable de T-8 llegada (16:20 UTC): AJUSTADO, 0 bloqueantes, 2 ALTA (la `envolvente_hec14` suprime los avisos de la piedra; «sin enrocado» decidido con una velocidad que es cota inferior), 4 MEDIA, 8 BAJA; línea base correcta y sin mover → `AUDITORIA_T-8_fable.md`. EN CURSO (Fable): pasada de correcciones → `ENCARGO_T-8_correcciones.md`; integra DESPUÉS de T-5 (si T-5 no entró al acabar su FASE A, espera a que se le reanude). Preguntas al dueño: alcance de la regla manual/envolvente (¿incluye la piedra?), digitalizar Figs. 3.3–3.4 de HEC-14, desplante a 30 o 360 min, nota (5) b de la Tabla 511-06, 1.500 vs 1.524 m |
 | T-3 Familia C | `tesis/T-3` (desde `df1b23c`) | FASE A lanzada (Opus, esfuerzo extra); encargo: `ENCARGO_COMUN_FASE_A.md` + `PRECISIONES_T-3.md` |
 | T-7a cabezal geometría | `tesis/T-7a` (desde `df1b23c`) | FASE A lanzada (Opus, esfuerzo extra); `PRECISIONES_T-7a.md` |
 | T-9 espaciamiento | `tesis/T-9` (desde `df1b23c`) | FASE A lanzada (Opus, esfuerzo extra); `PRECISIONES_T-9.md` (+ INF-5.1.8 + aceptación de la Familia B) |
@@ -39,7 +40,7 @@ Los agentes empujan WIP a su rama tras cada commit: si hay corte, se retoma desd
 
 Orden de integración (serie; cada uno: rebase sobre origin/main aplastado en UN commit `tesis(T-n): …`, censos, generados, línea
 base, tracker, decisiones_diferidas, tabla de CLAUDE.md, suite verde con NORMAS_DIR, `git push origin HEAD:main`):
-**T-5 → T-3 → T-9 → T-7a** (T-3 antes que T-7a por `embocadura_cajon`; T-5 antes que T-3 por M8/marco). Después T-7b → T-7c (Fable),
+**T-5 → T-8 (correcciones) → T-3 → T-9 → T-7a** (T-3 antes que T-7a por `embocadura_cajon`; T-5 antes que T-3 por M8/marco). Después T-7b → T-7c (Fable),
 T-10 (Opus) → T-11 (Fable) → T-12 (Opus). Auditorías con Fable pendientes: **T-8** (ya en main: pasada de correcciones), T-5, T-3,
 T-9, T-7a. Ningún diámetro del fixture puede moverse (A-01 y A-02 Ø 0.90).
 
