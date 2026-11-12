@@ -140,19 +140,27 @@ si no se declara:
 | `categoria_tr` | no | texto | `--categoria-tr` | A, B | el programa la resuelve por otra vía |
 | `seccion_receptor_medida` | no | objeto | — | las tres | el programa la resuelve por otra vía |
 | `acceso_mantenimiento_previsto` | no | booleano | — | las tres | es opcional: sin ella no se afirma nada |
+| `bombeo` | no | número | — | las tres | el programa la resuelve por otra vía |
+| `peralte` | no | número | — | las tres | el programa la resuelve por otra vía |
 <!-- fin: externos -->
 
 «Por otra vía» quiere decir: `longitud_m` la calcula la Fase 7.B con las
-cotas del CSV; `categoria_tr` cae en el criterio de la Tabla N° 02 (Familia A)
-o en la fila fija de la Sec. 2.3 (Familia B); `S_conducto` cae en
-`S_cauce` (y admite 0, el barril horizontal); y `seccion_receptor_medida`
-—la sección **medida** del dren o canal receptor: `b_m`, `z_HV`, `S`, `n` y
-`altura_total_m`— cae en la sección **adoptada** del criterio
-`seccion_receptor`, con un aviso en la memoria. `TW_m` tiene además su propia
-cadena (Sec. 1.3: `cota_TW`, Manning en el receptor con `Q_receptor_m3s`, y por
-último el criterio `TW_receptor`). `acceso_mantenimiento_previsto` es un
-`true` / `false` por punto: dice si los planos prevén el acceso de limpieza, y
-con `false` la memoria lo avisa.
+cotas del CSV, el talud, el esviaje y la pendiente (criterio
+`metodo_longitud_conducto`; la memoria dice qué método se usó); `categoria_tr`
+cae en el criterio de la Tabla N° 02 (Familia A) o en la fila fija de la Sec.
+2.3 (Familia B); `S_conducto` cae en `S_cauce` (y admite 0, el barril
+horizontal); `seccion_receptor_medida` —la sección **medida** del dren o canal
+receptor: `b_m`, `z_HV`, `S`, `n` y `altura_total_m`— cae en la sección
+**adoptada** del criterio `seccion_receptor`, con un aviso en la memoria; y
+`bombeo` y `peralte` —la pendiente transversal de la plataforma en el cruce,
+en m/m: `0.02` es 2 %— valen cero, o sea la plataforma horizontal a la cota de
+rasante (la memoria lo avisa). Estas dos sólo afinan la longitud del conducto,
+no tienen bandera —van en el JSON— y son **excluyentes** en un mismo punto: una
+sección tiene bombeo o peralte, y declarar los dos distintos de cero detiene la
+carga. `TW_m` tiene además su propia cadena (Sec. 1.3: `cota_TW`, Manning en el
+receptor con `Q_receptor_m3s`, y por último el criterio `TW_receptor`).
+`acceso_mantenimiento_previsto` es un `true` / `false` por punto: dice si los
+planos prevén el acceso de limpieza, y con `false` la memoria lo avisa.
 
 El archivo tiene dos secciones, las dos opcionales: `globales`, que vale para
 todos los puntos, y `puntos`, por `id`. **Un valor por punto pisa al global; una
@@ -462,8 +470,8 @@ corrida usó, no el estado del proceso al exportar.
   por punto, con estas columnas (`M11.COLUMNAS_RESUMEN_CSV`):
 
   <!-- generado: csv_resumen -->
-  `id`, `progresiva`, `familia`, `TR_anios`, `tipo_hidraulico`, `material`, `norma_producto`, `seccion`, `V_erosion_ms`, `V_sedimentacion_ms`, `y_sobre_D`, `HW_m`, `control_gobernante`, `proteccion_d50_m`, `proteccion_espesor_m`, `proteccion_longitud_m`, `tipo_cabezal`
-  <!-- fin: csv_resumen -->
+`id`, `progresiva`, `familia`, `TR_anios`, `tipo_hidraulico`, `material`, `norma_producto`, `seccion`, `V_erosion_ms`, `V_sedimentacion_ms`, `y_sobre_D`, `HW_m`, `control_gobernante`, `proteccion_d50_m`, `proteccion_espesor_m`, `proteccion_longitud_m`, `tipo_cabezal`
+<!-- fin: csv_resumen -->
 
 - **Sesión.** La escribe la ventana (`python -m gui.app`, botón «Guardar
   sesion»): un JSON con el proyecto, las rutas del CSV, del JSON externo y del
@@ -472,8 +480,8 @@ corrida usó, no el estado del proceso al exportar.
   claves (`sesion.sesion_vacia`):
 
   <!-- generado: sesion -->
-  Formato 3: `formato_version`, `app_version`, `id`, `proyecto`, `csv`, `datos_externos`, `datos_sitio`, `externos`, `alcance`, `criterios`, `sitio`, `csv_sha1`, `corridas`.
-  <!-- fin: sesion -->
+Formato 3: `formato_version`, `app_version`, `id`, `proyecto`, `csv`, `datos_externos`, `datos_sitio`, `externos`, `alcance`, `criterios`, `sitio`, `csv_sha1`, `corridas`.
+<!-- fin: sesion -->
 
   La CLI la **lee** con `--sesion` y repone todo por el mismo camino con
   guardia que «Cargar sesion»; una bandera escrita gana a lo que la sesión

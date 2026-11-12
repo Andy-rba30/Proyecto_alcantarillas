@@ -825,7 +825,9 @@ def test_los_opcionales_declarados_hoy():
     maximos recomendados de la Tabla N 02) y el criterio permite endurecerlo,
     sin bloquear si nadie lo declara. Y desde el cierre de C10 entro el
     tercero, 'esviaje_max_grados' (PC-32): sin declarar, M7 no acota el
-    esviaje (MAT-O18); declarado, lo aplica como tope del CSV.
+    esviaje (MAT-O18); declarado, lo aplica como tope del CSV. Y EN T-6 SALIO:
+    la cadena T le dio valor (45 grados, ventana 45-60, aviso y no bloqueo),
+    de modo que ya no es un opcional sin declarar sino un [A] con valor.
     """
     opcionales = {k for k, c in CRITERIOS.items() if c.opcional}
     # Y desde T-4 el cuarto, 'D_max_catalogo' (INF-3.3.1): sin declarar, el
@@ -833,7 +835,6 @@ def test_los_opcionales_declarados_hoy():
     # solo puede bajarlo.
     assert opcionales == {"v_max_concreto_eleccion",
                           "riesgo_admisible_propietario",
-                          "esviaje_max_grados",
                           "D_max_catalogo"}
 
 

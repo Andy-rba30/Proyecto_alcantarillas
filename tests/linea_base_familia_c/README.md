@@ -669,3 +669,104 @@ son **idénticos**. Diez de los 13 archivos cambian; los dos CSV de resumen y
 **Diámetros movidos: ninguno.** A-01 y A-02 siguen en Ø 0.90 m de concreto reforzado
 en la corrida ancha de perfil, B-01 y C-01 se detienen donde se detenían, y el periodo
 de retorno de los tres puntos es el mismo (71, 71 y 35 años).
+
+## Lo que movió T-6 (2026-11-11): la longitud del conducto, y con ella la caída, la cota de salida y el HW de salida
+
+T-6 de la cadena T (geometría) **sí mueve números**, y cada uno tiene su
+causa. Son los que dependen de la longitud del conducto, que pasa de
+calcularse con la altura del eje para los dos taludes a calcularse **por
+extremo** (criterio `[A]` `metodo_longitud_conducto` = `por_extremo`; HDS-5
+núm. 2.2.4 b. y Figura 2.4, pág. impresa 2.8): el talud de la salida baja
+`S·L` más que el de la entrada, y `L = [ancho + talud·(H_e + H_s0)] /
+[cos(esviaje) − talud·S]` en vez de `(ancho + 2·talud·H_eje) / cos(esviaje)`.
+Con el fondo de entrada igual al terreno —los cuatro puntos del fixture— las
+dos fórmulas difieren sólo en el factor `cos / (cos − talud·S)`.
+
+| Punto | L antes (m) | L ahora (m) | factor | Causa |
+|---|---|---|---|---|
+| A-01 | 18.6350 | 18.8694 | 1.0126 | talud 2.0 × S 0.006, esviaje 15° |
+| A-02 | 18.2695 | 18.5677 | 1.0163 | talud 2.0 × S 0.008, esviaje 5° |
+| B-01 | 18.4000 | 18.7755 | 1.0204 | talud 2.0 × S 0.010, esviaje 0° |
+| C-01 | 21.2465 | 21.4446 | 1.0093 | talud 2.0 × S 0.004 (`S_conducto`), esviaje 30° |
+
+De la longitud cuelgan, en la corrida ancha de perfil (`--datos-externos`), los
+únicos dos puntos que dimensionan:
+
+| Punto | Magnitud | Antes | Ahora | Causa |
+|---|---|---|---|---|
+| A-01 | caída `S·L` (m) | 0.1118 | 0.1132 | `0.006 × L` |
+| A-01 | cota de salida (msnm) | 41.9882 | 41.9868 | `42.10 − caída` |
+| A-01 | HW de salida (m) | 0.9929 | 0.9925 | +0.0010 de fricción, −0.0014 de caída |
+| A-01 | HW gobernante (m) | 1.0420 | 1.0420 | **no cambia**: gobierna la entrada |
+| A-02 | caída `S·L` (m) | 0.1462 | 0.1485 | `0.008 × L` |
+| A-02 | cota de salida (msnm) | 39.7038 | 39.7015 | `39.85 − caída` |
+| A-02 | HW de salida (m) | 0.5618 | 0.5596 | fricción y caída, como en A-01 |
+| A-02 | HW gobernante (m) | 0.5720 | 0.5720 | **no cambia**: gobierna la entrada |
+
+Y en la corrida estrecha (sin TW declarado, `informe_rama_error.json`), el TW
+de la vía 4 de la Sec. 1.3, que se mide sobre el fondo de la **salida** y por
+eso sube lo que la salida baja: A-01 1.1118 → 1.1132 m, A-02 1.1962 → 1.1985 m,
+B-01 1.4840 → 1.4878 m. Ningún punto dimensionaba en esa corrida ni dimensiona
+ahora; la progresión de secciones probadas y el motivo de cada descarte son los
+mismos.
+
+**Diámetros movidos: ninguno.** A-01 y A-02 siguen en Ø 0.90 m de concreto
+reforzado, control de entrada, con las mismas doce verificaciones en
+«cumple»; B-01 y C-01 siguen sin dimensionar por lo mismo que antes. Medido
+además con el método anterior declarado (`--declarar
+metodo_longitud_conducto=terraplen_simetrico`): reproduce las longitudes de la
+columna «antes» dígito a dígito.
+
+**Un bloqueo cambia de etapa, no de causa.** C-01 en las dos corridas
+estrechas no trae pendiente (ni `S_cauce` ni `S_conducto`). Antes se detenía
+en «tirante en el receptor (TW, Sec. 1.3)», que era la primera etapa en
+pedirla; ahora se detiene una etapa antes, en «longitud del conducto (7.B)»,
+porque la longitud por extremo necesita la pendiente. El dato que falta es el
+mismo (`DatoFaltanteError` sobre `S_cauce`), y su `longitud_m` pasa de 21.2465
+a `null`.
+
+Lo demás es **formato**, y entra por los cinco puntos del prompt:
+
+- **Verificaciones.** G2 lleva criterio (`desnivel_minimo_entrega_m`, 0.0 m:
+  el admisible sigue siendo el fondo del receptor), numeral nuevo y paso de
+  memoria; aparece **G3**, el aviso de esviaje (`esviaje_max_grados` = 45°),
+  en «cumple» para 15° y 5°.
+- **JSON, bloque `geometria`.** Claves nuevas: `longitud_calculo` (método,
+  bordes de plataforma, altura de terraplén y proyección de talud por
+  extremo, semilongitudes), `S_conducto_origen`, `longitud_a_la_clave_m`
+  (14.676 m en A-01, 14.487 m en A-02), `desnivel_entrega_m`, `avisos` y
+  `tamizado.provisional`. El `origen` de `longitud_m` nombra el método.
+- **Aviso de fondo adoptado.** Los cuatro puntos adoptan el fondo de entrada
+  igual al terreno: el mensaje de 7.A termina en «PROVISIONAL: fondo de
+  entrada adoptado igual al terreno de plataforma: medir en el cauce» y la
+  Fase 7 lo imprime como aviso. Las cotas de rasante mínima **no cambian**
+  (44.092 y 41.372 msnm).
+- **Memorias.** Los pasos 7.B.1 a 7.B.5 de los puntos que dimensionan y los
+  7.B.2 y 7.B.3 de los que no; los de G2 y G3 en el desarrollo de
+  verificaciones; los fundamentos y las citas de esos pasos en el anexo; tres
+  criterios más entre los usados; y las dos huellas (`criterios_sha1`,
+  `hoja_ruta_sha1`: la v8 lleva la nota «Corregido (T-6)» en §7.B).
+- **Sin cambio de un byte:** `cli_expediente.txt`, los dos CSV de resumen,
+  `memoria_punto_cajon.html` y `entradas_ampliadas.json`.
+
+**Lo que la columna «L ahora» NO es, dicho junto al aviso «medir en el
+cauce».** Los cuatro puntos adoptan el fondo de entrada igual a
+`cota_terreno`, que es el terreno **en el eje** de la vía
+(`docs/contrato_entradas.md`). El método por extremo ancla esa cota en la
+**entrada** del conducto y carga toda la caída aguas abajo. Para un lecho de
+pendiente `S` que pasara por esa cota en el eje —la entrada algo más alta, la
+salida algo más baja— la longitud de A-01 sería **18.638 m**: la fórmula
+anterior daba 18.635 y la nueva 18.869 (+0.232 m). El cálculo no se cambia
+—el perfil adoptado ya tenía ese sesgo en la cota de salida, y con
+`cota_fondo_entrada` medida es exacto—, pero el paso 7.B.3 lo escribe con su
+número en cada punto de fondo adoptado. Y medir **al fondo** es elección del
+proyecto, no de la fuente: es la cota superior de la longitud, y no el lado
+seguro por construcción (en A-01 el HW de salida es 0.9925 m con la longitud
+al fondo y 1.0002 m con la longitud a la clave; gobierna la entrada, 1.042 m).
+
+**Y dos avisos más por punto**, que dejó el auditor adversarial de T-6 y que
+son formato: «plataforma tomada horizontal: no se declaró `bombeo` ni
+`peralte`…» con lo que cada 1 % de bombeo acortaría la longitud (20.1 cm en
+A-01), en el bloque de la Fase 7, en `geometria.avisos` del JSON y en la nota
+del paso 7.B.3; y el umbral de G2 cita la Lámina Nº 01 (carácter DEFINICIÓN)
+en vez del numeral de la pendiente.

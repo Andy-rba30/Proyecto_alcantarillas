@@ -80,13 +80,13 @@ EXTERNOS_POR_PUNTO = {"C-01": {"Q_m3s": 0.65, "S_conducto": 0.004}}
 # la fila de concreto de la Tabla N 10, que es lo que rige sin declarar; el
 # riesgo del Propietario repite los maximos recomendados de la Tabla N 02 para
 # la fila que esta corrida usa.
-# El esviaje maximo (C10, PC-32) se declara por ENCIMA de todo esviaje del
-# CSV de referencia (el mayor es C-01, 30 grados), de modo que M7 lo invoca
-# y ningun punto se detiene.
+# El esviaje maximo (C10, PC-32) estuvo aqui hasta T-6 de la cadena T, que
+# le dio valor (45 grados) y lo saco de los opcionales: desde entonces lo
+# invoca la corrida de perfil sin declararlo (G3 de 7.B) y lo mide la primera
+# corrida, no esta.
 OPCIONALES_PARA_MEDIR = {
     "v_max_concreto_eleccion": 6.0,
     "riesgo_admisible_propietario": {"quebrada_importante": {"R": 0.30, "n": 25}},
-    "esviaje_max_grados": 60.0,
 }
 
 

@@ -1276,6 +1276,11 @@ TITULO_DURABILIDAD = "Durabilidad de los materiales (Sec. 3.3)"
 # comprueba que los dos textos sean el mismo.
 ETAPA_DURABILIDAD = "matriz de durabilidad (Sec. 3.3)"
 TITULO_TRAZA_DURABILIDAD = "Desarrollo de la matriz de durabilidad (Sec. 3.3)"
+# --- T-6 --- los pasos de 7.B (pendiente, esviaje, longitud, cota de salida
+# y encaje), que hasta T-6 iban como una frase con los numeros dentro.
+TITULO_TRAZA_GEOMETRIA = "Desarrollo de la geometria del conducto (Sec. 7.B)"
+TITULO_TRAZA_GEOMETRIA_PREVIA = ("Longitud del conducto calculada antes del "
+                                 "diseño (Sec. 7.B)")
 
 
 def traza_clasificacion(informe: Any) -> Tuple[Any, ...]:
@@ -1313,6 +1318,26 @@ def traza_durabilidad(informe: Any) -> Tuple[Any, ...]:
     """
     dictamen = getattr(informe, "durabilidad", None)
     return () if dictamen is None else tuple(dictamen.pasos)
+
+
+def traza_geometria(informe: Any) -> Tuple[Tuple[Any, ...], bool]:
+    """
+    (pasos, previa): los pasos de la Sec. 7.B que la memoria publica (T-6).
+
+    Si el punto llego a 7.B son los de `CompatibilidadGeometrica.pasos`
+    --pendiente adoptada, factor de esviaje, longitud, caida y cota de
+    salida, encaje-- y `previa` es False. Si NO llego (no dimensiono), la
+    longitud ya se habia calculado antes de la Fase 4 y sus pasos se publican
+    igual, con `previa` True para que el consumidor lo diga: es calculo que
+    el pipeline hizo y que entro al control de salida de cada escalon.
+    """
+    geometria = getattr(informe, "geometria", None)
+    if geometria is not None:
+        return tuple(getattr(geometria, "pasos", ())), False
+    calculada = getattr(informe, "longitud_calculada", None)
+    if calculada is None:
+        return (), False
+    return tuple(calculada.pasos), True
 
 
 def traza_tw(informe: Any) -> Optional[Any]:
@@ -1961,20 +1986,58 @@ def _bloques_fases_finales(informe: Any) -> str:
         # proyectista declaro en 'origen_cota_fondo_entrada' (SIS-A-04). Se
         # imprime marcada, con la clave del criterio delante, porque un
         # numero en msnm sin marca se lee como cota levantada en campo.
+        # --- T-6 --- LA MARCA DE LA COTA DE ENTRADA DICE CUAL DE LAS DOS
+        # FUE. Este parrafo escribia «adoptada ... no es cota medida» SIEMPRE,
+        # tambien cuando la columna `cota_fondo_entrada` traia el fondo
+        # medido: el texto y el volcado de la CLI ya lo distinguian y la
+        # memoria no. Los avisos (fondo adoptado, esviaje sobre el maximo)
+        # salen del objeto de 7.B, no se redactan aqui.
+        if g.cota_entrada.medida:
+            origen_entrada = ("<b>medida</b>: columna "
+                              "<code>cota_fondo_entrada</code> del CSV")
+        else:
+            origen_entrada = (
+                "<b>adoptada</b>, criterio "
+                f"<code>{_esc(CRITERIO_ORIGEN_COTA_ENTRADA)}</code>: no es "
+                "cota medida")
+        avisos = "".join(f'<div class="aviso"><p><b>Aviso:</b> {_esc(a)}.'
+                         "</p></div>" for a in getattr(g, "avisos", ()))
+        calculada = getattr(g, "longitud_calculada", None)
+        metodo = ("" if calculada is None else
+                  f" (metodo <code>{_esc(calculada.metodo.value)}</code>)")
+        pendiente = getattr(g, "pendiente", None)
+        origen_s = ("" if pendiente is None else
+                    f", pendiente {_num(g.S_conducto, FMT_4)} m/m "
+                    f"(origen: {_esc(pendiente.origen.value)})")
+        pasos_7b, _previa = traza_geometria(informe)
         partes.append(
             "<h4>Fase 7 &mdash; Compatibilidad geometrica</h4>"
-            f"<p>L = {_num(g.longitud, FMT_2)} m, esviaje afectando con factor "
-            f"{_num(g.factor_esviaje)}; cota de entrada {_num(g.cota_entrada.valor)} ({_esc(g.cota_entrada.rotulo)}) "
-            "msnm (<b>adoptada</b>, criterio "
-            f"<code>{_esc(CRITERIO_ORIGEN_COTA_ENTRADA)}</code>: no es cota "
-            "medida) y de salida "
+            f"<p>L = {_num(g.longitud, FMT_2)} m{metodo}, esviaje afectando con factor "
+            f"{_num(g.factor_esviaje)}{origen_s}; cota de entrada {_num(g.cota_entrada.valor)} ({_esc(g.cota_entrada.rotulo)}) "
+            f"msnm ({origen_entrada}) y de salida "
             f"{_num(g.cota_salida)} msnm (caida "
             f"{_num(g.caida)} m), num. {_esc(g.numeral)}. Compatibilidad "
             f"7.B (G1 y G2): {estado_7b}. Tamizado 7.A (G1): "
             f"{estado_7a}, gobierna la condicion "
             f"<b>{_esc(t.condicion_gobernante.value)}</b> "
             f"(criterio <code>{_esc(t.criterio_gobernante)}</code>).{delta}</p>"
-            f'<div class="nota"><p>{_esc(t.mensaje)}</p></div>')
+            + avisos
+            + f'<div class="nota"><p>{_esc(t.mensaje)}</p></div>'
+            + bloque_pasos(pasos_7b, TITULO_TRAZA_GEOMETRIA))
+    else:
+        # --- T-6 --- el punto no llego a 7.B, pero la longitud se calculo
+        # ANTES de la Fase 4 y entro al control de salida de cada escalon.
+        pasos_7b, previa = traza_geometria(informe)
+        if pasos_7b and previa:
+            partes.append(
+                "<h4>Fase 7 &mdash; Longitud del conducto</h4>"
+                '<div class="nota"><p>El punto no se dimensiono y la Sec. '
+                "7.B no se evaluo; se publica la longitud con que corrio el "
+                "diseño hidraulico de cada escalon.</p></div>"
+                + "".join(
+                    f'<div class="aviso"><p><b>Aviso:</b> {_esc(a)}.</p></div>'
+                    for a in getattr(informe.longitud_calculada, "avisos", ()))
+                + bloque_pasos(pasos_7b, TITULO_TRAZA_GEOMETRIA_PREVIA))
 
     if informe.cama_apoyo is not None:
         c = informe.cama_apoyo
@@ -2707,6 +2770,7 @@ def pasos_del_informe(informe: Any) -> Tuple[Any, ...]:
             _anota(getattr(punto.proteccion, "paso", None))
         if punto.espaciamiento is not None:
             _anota(getattr(punto.espaciamiento, "paso", None))
+        vistos.extend(traza_geometria(punto)[0])          # --- T-6 ---
     for recubrimiento in informe.cabezal.recubrimientos:
         _anota(getattr(recubrimiento, "paso", None))
     return tuple(vistos)
@@ -3405,6 +3469,7 @@ def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
         vistos.extend(pasos)
         vistos.extend(p for _c, p in desarrollo_de_verificaciones(punto)
                       if p is not None and not isinstance(p, NoAplica))
+        vistos.extend(traza_geometria(punto)[0])          # --- T-6 ---
     return tuple(vistos)
 
 
