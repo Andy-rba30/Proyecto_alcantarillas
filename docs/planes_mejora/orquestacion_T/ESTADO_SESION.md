@@ -23,6 +23,11 @@ Entorno: `pip install -r requirements.txt -r requirements-dev.txt openpyxl`; `ex
 | T-7a cabezal geometría | `tesis/T-7a` (desde `df1b23c`) | FASE A lanzada (Opus, esfuerzo extra); `PRECISIONES_T-7a.md` |
 | T-9 espaciamiento | `tesis/T-9` (desde `df1b23c`) | FASE A lanzada (Opus, esfuerzo extra); `PRECISIONES_T-9.md` (+ INF-5.1.8 + aceptación de la Familia B) |
 
+**2026-11-12 ~16:00 UTC — el dueño restablece Fable («úsalo de manera normal, no te limites a Opus 5.5»)**: auditorías adversariales
+con Fable lanzadas para T-8 (`ENCARGO_AUDITORIA_T-8_fable.md` → `AUDITORIA_T-8_fable.md`; correcciones en una pasada sobre main) y
+para T-5 (`ENCARGO_AUDITORIA_T-5_fable.md`, en paralelo con la de Opus). Desde ahora: auditorías, T-7b, T-7c y T-11 con Fable; lo
+ya lanzado con Opus sigue con Opus.
+
 Los agentes empujan WIP a su rama tras cada commit: si hay corte, se retoma desde `origin/tesis/T-n` con el mismo encargo
 («continúa: mira `git log`/`git status` y completa lo que falte»).
 
