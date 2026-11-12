@@ -56,3 +56,8 @@ OJO: `resetsAt` = 1795028400 = **mié 18-nov 19:00 UTC** para las dos ventanas s
 (auditorías adversariales y sus correcciones en prompts de cálculo, T-7b, T-7c, T-11); todo lo demás —integraciones mecánicas,
 regeneración de documentos, T-10, T-12— con Opus. Siguen vigentes las marcas de 96–97 % (guardar + prompt) y 99 % (revisar avance).
 | 2026-11-12 16:12 | s/d | **40 %** | s/d (15 % a las 16:00) | llegan las dos auditorías de T-5; se lanza con Fable el agente de correcciones + integración. Ritmo del semanal de todos los modelos: ≈ 0.5 puntos/min con 5–6 agentes (26 % → 40 % en 28 min) |
+| 2026-11-12 16:40 | s/d | **53 %** | **45 %** | Fable subió 30 puntos en 40 min (dos auditorías Fable terminadas + dos agentes Fable de correcciones + orquestador). T-9 FASE A terminada (Opus, `304cea6`). DOSIFICACIÓN (regla del 50 %): se PARA la auditoría Fable de T-9 recién lanzada; Fable queda sólo para T-5 (correcciones + integración) y T-8 (correcciones), ya avanzados; las auditorías de T-9, T-3 y T-7a esperan a que esos dos entren en main |
+
+**Estimación (16:40 UTC):** ≈ 0.75 puntos/min de Fable con dos agentes Fable + orquestador; ≈ 0.45 puntos/min del semanal general
+con cinco agentes. Quedan 55 puntos de Fable y 47 del general: alcanza para aterrizar T-5 y T-8 y cerrar las FASE A de T-3 y T-7a,
+NO para auditar, corregir e integrar T-3, T-7a y T-9 ni para T-7b…T-12. Reinicio que da el evento: mié 18-nov 19:00 UTC.
