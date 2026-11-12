@@ -558,8 +558,10 @@ def test_T21_los_verbatim_del_registro_conservan_sus_diacriticos(reg):
     tildes = set("áéíóúÁÉÍÓÚñÑüÜ")
     sospechosos = []
     for c in reg.citas:
+        # HEC entro en T-8, con las primeras citas de HEC-14: es de la FHWA,
+        # como el HDS-5, y esta en ingles.
         if reg.fuente(c.fuente_id).id.startswith(("AASHTO", "ASTM", "HDS",
-                                                  "WSDOT")):
+                                                  "WSDOT", "HEC")):
             continue        # el corpus en ingles no lleva tildes, y es correcto
         if c.id in sin_tildes_en_el_original:
             continue

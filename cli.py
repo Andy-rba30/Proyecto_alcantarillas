@@ -56,6 +56,15 @@ diferencia importa porque se corrigen en sitios distintos:
       Desde T-6 tambien `bombeo` y `peralte`, la pendiente transversal de la
       plataforma en el cruce: opcionales, excluyentes entre si, y sin ellas
       la longitud por extremo toma la plataforma horizontal y lo avisa.
+      Y, desde T-8, las de la Fase 6, tambien opcionales y por punto o
+      globales: `tipo_terreno_receptor` y `tipo_terreno_entrada` (fila de
+      la Tabla N 11 del Manual: el material del cauce a la salida y a la
+      entrada), `regimen_flujo_descarga` (su columna: intermitente o
+      permanente), `material_lecho_salida` (objeto del EMS con el suelo del
+      lecho: tipo, D84_m y D16_m o IP y Sv_Pa, y pasa_200_pct),
+      `duracion_caudal_pico_min` (minutos, del estudio hidrologico) y
+      `profundidad_socavacion_estimada_m` (de un estudio del cauce; gana
+      sobre la hoya que estima el programa).
   (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
       La columna existe y para la Familia C va vacia a proposito
       (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el
@@ -113,6 +122,17 @@ MD recibe L y TW en vez de derivarlos:
                           cauce y el Manual no da un umbral para deducirla; sin
                           ella la Familia A se detiene en
                           'umbral_area_quebrada_importante_ha'.
+    tipo_terreno_receptor, tipo_terreno_entrada, regimen_flujo_descarga
+                          fila y columna de la Tabla N 11 del Manual para el
+                          cauce de salida y el de entrada. Sin ellas la Fase 6
+                          dimensiona el enrocado como antes de T-8 y AVISA que
+                          no comparo con la velocidad admisible del terreno.
+    material_lecho_salida suelo del lecho a la salida (EMS). Sin el, la hoya
+                          de socavacion de HEC-14 Cap. 5 no se estima y el
+                          filtro no elige columna de EG-2013; la corrida avisa.
+    duracion_caudal_pico_min  min. Sin ella rige el criterio
+                          'duracion_caudal_pico_socavacion_min'.
+    profundidad_socavacion_estimada_m  m. Admite 0; si falta, la estimada.
 
 Ninguna tiene valor por defecto. Sin declararla, la etapa que la
 necesita queda bloqueada y el informe lo dice; no se sustituye por un numero
@@ -517,6 +537,50 @@ def _campo_del_perfil(perfil: Optional[PerfilLamina], lector) -> Any:
     return None if perfil is None else lector(perfil)
 
 
+def _lineas_fase_6(informe: InformePunto) -> List[str]:
+    """
+    --- T-8 --- Lo que la Fase 6 añade al d50: el Froude de la salida, el
+    apron de HEC-14, la proteccion de la entrada y la profundidad de
+    socavacion para el desplante. Los avisos de la fase no van aqui: salen
+    con los del punto (`InformePunto.avisos`).
+    """
+    out: List[str] = []
+    p = informe.proteccion
+    if p.froude is not None:
+        regimen = {True: "supercritico", False: "subcritico o critico",
+                   None: "regimen no determinado"}[p.froude.supercritico]
+        out.append(f"{SANGRIA_DETALLE}Froude de HEC-14 a la salida: Fr_e = "
+                   f"{_fmt(p.froude.Fr)} (ye = "
+                   f"{_fmt(p.froude.y_equivalente)} m, HEC-14 num. 10.1.1); "
+                   f"{regimen} por el tirante contra el critico")
+    a = p.apron
+    if a is not None:
+        geometria = ("fuera de la Tabla 10.1" if a.clase is None else
+                     f"clase {a.clase}, L = {_fmt(a.longitud)} m, e = "
+                     f"{_fmt(a.espesor)} m, ancho final "
+                     f"{_fmt(a.ancho_final)} m")
+        out.append(f"{SANGRIA_DETALLE}apron de HEC-14 (contraste): D50 = "
+                   f"{_fmt(a.D50_requerido)} m, {geometria} (Sec. 10.2)")
+    e = informe.proteccion_entrada
+    if e is not None:
+        velocidad = ("sin velocidad publicada" if e.V_entrada is None
+                     else f"V en la boca = {_fmt(e.V_entrada)} m/s")
+        out.append(f"{SANGRIA_DETALLE}entrada: {velocidad}; revestimiento "
+                   f"adoptado: {e.revestimiento} (criterio "
+                   f"{e.criterio_revestimiento})")
+    s = informe.socavacion
+    if s is not None:
+        valor = (s.origen if s.profundidad_para_desplante is None
+                 else f"{_fmt(s.profundidad_para_desplante)} m ({s.origen}), "
+                      f"medida desde {s.referencia}"
+                      + ("" if s.cota_fondo_de_la_hoya is None else
+                         f": fondo de la hoya a "
+                         f"{_fmt(s.cota_fondo_de_la_hoya)} msnm"))
+        out.append(f"{SANGRIA_DETALLE}socavacion a la salida para el "
+                   f"desplante: {valor}")
+    return out
+
+
 def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
     # La clave dice QUE velocidad es, como en el bloque de hidraulica: desde
     # EXT-3 el d50 de Laushey se calcula con la velocidad de SALIDA de HDS-5
@@ -524,12 +588,93 @@ def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
     # coincide con `V_erosion` y bajo control de salida no. La clave se
     # llamaba "V_erosion_m_s" y habria seguido diciendo una rama que ya no es
     # la que entra: es la ambiguedad que MAT-D1 vino a quitar, al reves.
-    return {"numeral": p.numeral, "V_salida_m_s": _num(p.V),
-            "d50_m": _num(p.d50),
-            "espesor_m": _num(p.espesor), "longitud_m": _num(p.longitud),
-            "criterio_espesor": p.criterio_espesor,
-            "criterio_longitud": p.criterio_longitud,
-            "advertencias": list(p.advertencias)}
+    salida = {"numeral": p.numeral, "V_salida_m_s": _num(p.V),
+              "d50_m": _num(p.d50),
+              "espesor_m": _num(p.espesor), "longitud_m": _num(p.longitud),
+              "criterio_espesor": p.criterio_espesor,
+              "criterio_longitud": p.criterio_longitud,
+              "advertencias": list(p.advertencias)}
+    # --- T-8 --- Lo que la Fase 6 añade al lado de Laushey. `requerida` es
+    # null cuando el punto no declaro el terreno del receptor (y entonces
+    # d50, espesor y longitud llevan numero, como antes de T-8), true cuando
+    # la velocidad de salida supera la admisible de la Tabla Nº 11 y false
+    # cuando no la supera: en ese caso los tres van en null, porque no hay
+    # enrocado que dimensionar.
+    salida["requerida"] = p.requerida
+    salida["froude_salida"] = None if p.froude is None else {
+        "Fr": _num(p.froude.Fr), "y_equivalente_m": _num(p.froude.y_equivalente),
+        "area_m2": _num(p.froude.A), "supercritico": p.froude.supercritico,
+        "seccion_llena": p.froude.seccion_llena}
+    salida["velocidad_admisible"] = _admisible_json(p.velocidad_admisible)
+    a = p.apron
+    salida["apron_hec14"] = None if a is None else {
+        "D50_requerido_m": _num(a.D50_requerido), "D_m": _num(a.D),
+        "D_de_calculo_m": _num(a.D_de_calculo),
+        "ajustado_por_supercritico": a.ajustado_por_supercritico,
+        "TW_m": _num(a.TW), "TW_de_calculo_m": _num(a.TW_de_calculo),
+        "TW_acotado": a.TW_acotado, "clase": a.clase,
+        "D50_clase_m": _num(a.D50_clase), "longitud_m": _num(a.longitud),
+        "espesor_m": _num(a.espesor), "ancho_final_m": _num(a.ancho_final)}
+    c = p.clase_de_la_piedra
+    salida["clase_hec14_de_la_piedra"] = None if c is None else {
+        "d50_m": _num(c.d50_de_partida), "clase": c.clase,
+        "D50_clase_m": _num(c.D50_clase), "longitud_m": _num(c.longitud),
+        "espesor_m": _num(c.espesor), "ancho_final_m": _num(c.ancho_final)}
+    salida["regla_espesor_longitud"] = p.regla_espesor_longitud
+    salida["espesor_adoptado_m"] = _num(p.espesor_adoptado)
+    salida["longitud_adoptada_m"] = _num(p.longitud_adoptada)
+    f = p.filtro
+    salida["filtro"] = None if f is None else {
+        "requisito": f.texto, "clase_geotextil": f.clase_geotextil,
+        "pasa_200_pct": _num(f.pasa_200_pct), "columna_tabla_511_06": f.columna,
+        "permitividad_min_s1": _num(f.permitividad_min_s1),
+        "abertura_aparente_max_mm": _num(f.abertura_aparente_max_mm),
+        "citas": list(f.citas)}
+    return salida
+
+
+def _admisible_json(v) -> Optional[Dict[str, Any]]:
+    """--- T-8 --- La comparacion con la Tabla Nº 11, o null si no se hizo."""
+    if v is None:
+        return None
+    return {"tipo_terreno": v.tipo_terreno, "regimen_flujo": v.regimen_flujo,
+            "V_m_s": _num(v.V), "V_admisible_m_s": _num(v.V_admisible),
+            "supera": v.supera}
+
+
+def _proteccion_entrada_json(p) -> Dict[str, Any]:
+    """--- T-8 --- La proteccion de la ENTRADA (INF-5.1.13)."""
+    return {"tipo_embocadura": p.tipo_embocadura,
+            "V_entrada_m_s": _num(p.V_entrada),
+            "revestimiento": p.revestimiento,
+            "criterio_revestimiento": p.criterio_revestimiento,
+            "elementos": list(p.elementos), "requerida": p.requerida,
+            "velocidad_admisible": _admisible_json(p.velocidad_admisible)}
+
+
+def _socavacion_json(s) -> Dict[str, Any]:
+    """
+    --- T-8 --- La profundidad de socavacion a la salida que se entrega al
+    desplante del cabezal, con su origen, y la hoya estimada si la hay.
+    """
+    e = s.estimada
+    return {"profundidad_para_desplante_m": _num(s.profundidad_para_desplante),
+            "origen": s.origen, "declarada_m": _num(s.declarada_m),
+            "referencia": s.referencia,
+            "cota_referencia_msnm": _num(s.cota_referencia),
+            "cota_fondo_de_la_hoya_msnm": _num(s.cota_fondo_de_la_hoya),
+            "motivo_no_estimada": s.motivo_no_estimada,
+            "hoya_estimada": None if e is None else {
+                "metodo": e.metodo, "profundidad_m": _num(e.profundidad),
+                "ancho_m": _num(e.ancho), "longitud_m": _num(e.longitud),
+                "distancia_al_maximo_m": _num(e.distancia_al_maximo),
+                "duracion_min": _num(e.duracion_min),
+                "origen_duracion": e.origen_duracion,
+                "duracion_por_criterio": e.duracion_por_criterio,
+                "duracion_acotada": e.duracion_acotada,
+                "profundidad_al_techo_de_la_ventana_m": _num(
+                    e.profundidad_al_techo_de_la_ventana),
+                "Cs": _num(e.Cs), "Ch": _num(e.Ch)}}
 
 
 def _geometria_t6_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
@@ -741,6 +886,12 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
                    else _diseno_json(informe.resultado)),
         "proteccion_salida": (None if informe.proteccion is None
                               else _proteccion_json(informe.proteccion)),
+        # --- T-8 --- las otras dos piezas de la Fase 6.
+        "proteccion_entrada": (
+            None if informe.proteccion_entrada is None
+            else _proteccion_entrada_json(informe.proteccion_entrada)),
+        "socavacion_salida": (None if informe.socavacion is None
+                              else _socavacion_json(informe.socavacion)),
         "geometria": (None if informe.geometria is None
                       else _geometria_json(informe.geometria)),
         "estructural": None,
@@ -1097,11 +1248,20 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
 
     if informe.proteccion is not None:
         p = informe.proteccion
-        out.append(f"{SANGRIA}Fase 6  d50 = {_fmt(p.d50)} m, espesor "
-                   f"{_fmt(p.espesor)} m, longitud {_fmt(p.longitud)} m "
-                   f"(num. {p.numeral})")
+        if p.d50 is None:
+            # --- T-8 --- la Tabla Nº 11 no pide proteger: no hay d50.
+            out.append(f"{SANGRIA}Fase 6  salida sin enrocado: la velocidad "
+                       f"de salida ({_fmt(p.V)} m/s) no supera la admisible "
+                       f"del terreno "
+                       f"({_fmt(p.velocidad_admisible.V_admisible)} m/s, "
+                       "Tabla N 11 del Manual)")
+        else:
+            out.append(f"{SANGRIA}Fase 6  d50 = {_fmt(p.d50)} m, espesor "
+                       f"{_fmt(p.espesor)} m, longitud {_fmt(p.longitud)} m "
+                       f"(num. {p.numeral})")
         for advertencia in p.advertencias:
             out.append(f"{SANGRIA_DETALLE}aviso: {advertencia}")
+        out.extend(_lineas_fase_6(informe))
     if informe.geometria is not None:
         g = informe.geometria
         # La cota de entrada NO es un dato del CSV: sale de la regla que el

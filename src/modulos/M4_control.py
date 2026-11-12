@@ -3280,6 +3280,9 @@ def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,
         TW_m=salida.TW,
         ahogado_por_TW=salida.ahogado_por_TW,
         perfil=perfil,
+        # --- T-8 --- la velocidad critica del paso 4.2, para la proteccion
+        # de la entrada (Fase 6): no se recalcula alli.
+        V_critica_m_s=critico.V,
         pasos=_pasos_hidraulicos(
             seccion=seccion, Q=Q, S=S, L=L, TW=TW, material=material, normal=normal,
             critico=critico, entrada=entrada, salida=salida, control=control,

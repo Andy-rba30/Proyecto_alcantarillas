@@ -199,17 +199,23 @@ def _punto_de(informe, id_punto):
 
 def _avisos_sin_geometria(punto):
     """
-    Los avisos del punto sin los de la geometria de 7.B.
+    Los avisos del punto sin los de la geometria de 7.B NI los de la Fase 6.
 
     T-6 (integrado detras de T-1) los saca por `InformePunto.avisos()` como a
     los demas: el fondo de entrada adoptado igual al terreno y la plataforma
-    tomada horizontal acompañan a todo punto del ejemplo. Los tests de abajo
-    que fijan la tupla ENTERA la fijan sin ellos --tienen su test en
-    `test_t6_geometria`--, para seguir diciendo lo que decian: que T-2 no
-    añade ningun aviso mas que los suyos.
+    tomada horizontal acompañan a todo punto del ejemplo. T-8 hace lo mismo
+    con los de la Fase 6 (terreno del cauce, lecho, contraste con HEC-14),
+    que salen en todo punto dimensionado. Los tests de abajo que fijan la
+    tupla ENTERA la fijan sin ellos --tienen su test en `test_t6_geometria`
+    y en `test_t8_proteccion`--, para seguir diciendo lo que decian: que T-2
+    no añade ningun aviso mas que los suyos. Los de la Fase 6 se restan por
+    pieza, no por texto.
     """
-    geometria = punto.avisos_de_geometria()
-    return tuple(a for a in punto.avisos() if a not in geometria)
+    otros = set(punto.avisos_de_geometria())
+    for pieza in (punto.proteccion, punto.proteccion_entrada, punto.socavacion):
+        if pieza is not None:
+            otros |= set(pieza.avisos)
+    return tuple(a for a in punto.avisos() if a not in otros)
 
 
 def _verificacion(informe_punto, codigo):

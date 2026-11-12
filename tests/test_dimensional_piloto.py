@@ -436,6 +436,26 @@ CONSTANTES_SI: Dict[str, ConstanteSI] = {
              "pie. Ningun paso de M3-M5 la nombra: la usa la Fase 1-bis "
              "(paso 1b.7), que esta corrida no ejercita porque trae el "
              "caudal declarado."),
+    # T-8: la constante de la Ec. (5.4) de HEC-14 (tension tractiva critica
+    # de un lecho cohesivo). Es una PRESION y se suma a Sv: tiene su misma
+    # dimension. No cierra desde el comentario con el chequeo de este
+    # archivo, que solo convierte longitudes, y lo dice la nota.
+    "HEC14_TAU_C_ALFA_U_SI": ConstanteSI(
+        dimension=M / (L * T ** 2),
+        formula="c / v['Sv']",
+        simbolos={"Sv": M / (L * T ** 2)},
+        cierra_a=ADIM,
+        imperial_en_comentario=r"Imperial:\s*([0-9.]+)",
+        huella_en_los_pasos=r"HEC14_TAU_C_ALFA_U_SI|alfa_u",
+        cierra_desde_el_comentario=False,
+        la_nombra_algun_paso=False,
+        nota="αu se suma a la resistencia al corte saturada Sv: es una "
+             "presion. Su imperial, 180 lb/ft2, es una FUERZA por area y la "
+             "conversion pasa por la libra-fuerza, no solo por el pie: 180 · "
+             "4.44822 / 0.3048^2 = 8618.4 N/m2, a 0.14 % del 8630 impreso; "
+             "este chequeo, que multiplica por 0.3048^L, no la puede cerrar. "
+             "La nombra el paso 6.10 de M6 (fuera del piloto M3-M5, que es lo "
+             "que este censo barre)."),
 }
 
 

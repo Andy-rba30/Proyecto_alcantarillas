@@ -78,6 +78,11 @@ from src import declaracion as _declaracion
 from src.constantes_normativas import (CUANTIA_MIN_MURO,
                                        H_O_HW_SOBRE_D_MIN,
                                        NIVELES_DE_ABRASION, RECUBRIMIENTO)
+# --- T-8 --- las filas y columnas de la Tabla Nº 11 y el techo de un
+# porcentaje: con ellos se valida en la PUERTA lo que el punto declara.
+from src.dominios import PORCENTAJE_POR_UNIDAD
+from src.constantes_normativas import (REGIMENES_DE_FLUJO_T11,
+                                       V_MAX_NO_REVESTIDOS)
 from src.dominios import (ALTURA_RECEPTOR_MAX_FISICA_M, N_MANNING_MAX_FISICO,
                           PH_MAX_FISICO, PPM_MAX_FISICO, S_CAUCE_MAX)
 from src.modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE
@@ -92,6 +97,9 @@ from src.modelos import (Bloqueo, CaudalDeDiseno, Clasificacion,
                          EnsayosDurabilidad, ErrorProyecto, Espaciamiento,
                          Familia, MetodoNoEvaluableError, PasoDiseno,
                          ProteccionSalida, PuntoCritico, ResultadoPunto,
+                         MaterialLecho, ProteccionEntrada, SocavacionSalida,
+                         TIPO_LECHO_COHESIVO, TIPO_LECHO_NO_COHESIVO,
+                         TIPOS_DE_LECHO,
                          AVISO_SIN_ACCESO_DE_MANTENIMIENTO, SeccionReceptor,
                          TipoDeBloqueo, TWDeterminado, Verificacion)
 from src.modelos import EstadoDeVerificacion, TipoDeVeredicto
@@ -108,7 +116,9 @@ from src.modulos.M0_carga import (COLUMNA_CAUDAL,
 from src.modulos import MH_hidrologia as MH
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
-from src.modulos.M6_proteccion import proteccion_salida
+from src.modulos.M6_proteccion import (EMBOCADURA_CABEZAL_RECTO,
+                                       proteccion_entrada, proteccion_salida,
+                                       socavacion_salida)
 from src.modulos import M3_hidraulica as M3
 from src.modulos.M7_geometria import (aviso_de_pendiente,
                                       compatibilidad_geometrica,
@@ -322,7 +332,16 @@ EXTERNOS_CON_VIA_ALTERNA: Tuple[str, ...] = (
     # detiene nada: sin la seccion medida del receptor rige la adoptada del
     # criterio 'seccion_receptor' (y la memoria lo avisa), y sin la
     # declaracion del acceso de mantenimiento el punto se calcula igual.
-    "seccion_receptor_medida", "acceso_mantenimiento_previsto")
+    "seccion_receptor_medida", "acceso_mantenimiento_previsto",
+    # --- T-8 --- Las seis claves de la Fase 6 son OPCIONALES y ninguna falta
+    # detiene nada: sin el terreno del cauce el enrocado se dimensiona como
+    # antes de T-8 (y la corrida lo avisa); sin el suelo del lecho la hoya de
+    # socavacion no se estima (y lo avisa); la duracion del caudal pico cae
+    # en el criterio 'duracion_caudal_pico_socavacion_min'; y la profundidad
+    # declarada, si falta, deja la estimada.
+    "tipo_terreno_receptor", "tipo_terreno_entrada", "regimen_flujo_descarga",
+    "material_lecho_salida", "duracion_caudal_pico_min",
+    "profundidad_socavacion_estimada_m")
 # --- T-6 --- `bombeo` y `peralte` (pendiente transversal de la plataforma,
 # DG-2018 num. 304.05 y 304.06) tampoco son faltas: sin declarar, la longitud
 # de 7.B toma la plataforma horizontal a la cota de rasante, que es el caso
@@ -396,7 +415,7 @@ ETAPA_CAUDAL_CALCULADO = "caudal de diseno por el metodo racional"
 ETAPA_AREA_DE_LA_CUENCA = "area de la cuenca (area_ha frente a area_km2)"
 ORIGEN_Q_DE_COLUMNA = "CSV Sec. 1.2, columna Q_m3s"
 FASE_DISENO = "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"
-FASE_PROTECCION = "Fase 6 - Proteccion de salida (M6)"
+FASE_PROTECCION = "Fase 6 - Proteccion de entrada y salida (M6)"
 FASE_GEOMETRIA = "Fase 7 - Compatibilidad geometrica (M7)"
 # --- T-6 --- La etapa en que se detiene un punto cuya pendiente no se puede
 # adoptar por algo que no es la falta del dato (`_resolver_longitud`).
@@ -441,11 +460,55 @@ CAMPOS_SECCION_RECEPTOR: Tuple[str, ...] = ("b_m", "z_HV", "S", "n",
 # Las claves numericas que admiten el CERO como dato, cada una con su
 # significado: TW = 0 es salida libre y, desde T-2, S_conducto = 0 es un
 # barril horizontal (INF-5.1.6; HDS-5 num. 3.3.4).
-CLAVES_QUE_ADMITEN_CERO: Tuple[str, ...] = ("TW_m", "S_conducto")
+# --- T-8 --- (cadena T). SEIS CLAVES NUEVAS, las de la Fase 6. Todas son
+# entradas del PROYECTO (EMS, estudio hidrologico, reconocimiento del cauce):
+# opcionales, por punto o globales, y NINGUNA tiene valor por defecto.
+#
+#   tipo_terreno_receptor     fila de la Tabla Nº 11 del Manual que describe
+#       el material del cauce RECEPTOR, sobre el que descarga la salida.
+#   tipo_terreno_entrada      la misma fila, para el cauce de APROXIMACION.
+#   regimen_flujo_descarga    columna de la Tabla Nº 11: si el flujo que pasa
+#       por la obra es «intermitente» o «permanente».
+#   material_lecho_salida     objeto con el suelo del lecho a la salida, del
+#       EMS: `tipo` ("no_cohesivo" con `D84_m` y `D16_m`, o "cohesivo" con
+#       `IP` y `Sv_Pa`) para la hoya de socavacion de HEC-14 Cap. 5, y
+#       `pasa_200_pct` para el geotextil de filtro (EG-2013, Tabla 511-06).
+#   duracion_caudal_pico_min  duracion del caudal pico, en minutos (estudio
+#       hidrologico): el tiempo t de la hoya de socavacion.
+#   profundidad_socavacion_estimada_m   la socavacion a la salida que da un
+#       estudio del cauce; GANA sobre la estimada por el programa. Admite 0
+#       (lecho de roca: el estudio dice que no hay socavacion).
+#
+# Las tres primeras se validan AQUI contra la tabla y no en M6, a diferencia
+# de `categoria_tr`: un terreno mal escrito tiene que detener la CARGA, no
+# convertirse en un bloqueo de la Fase 6 que deje al punto sin su d50.
+CLAVE_TERRENO_RECEPTOR = "tipo_terreno_receptor"
+CLAVE_TERRENO_ENTRADA = "tipo_terreno_entrada"
+CLAVE_REGIMEN_FLUJO = "regimen_flujo_descarga"
+CLAVE_MATERIAL_LECHO = "material_lecho_salida"
+CLAVE_DURACION_PICO = "duracion_caudal_pico_min"
+CLAVE_SOCAVACION_DECLARADA = "profundidad_socavacion_estimada_m"
+CLAVES_DE_CATALOGO: Dict[str, Tuple[str, ...]] = {
+    CLAVE_TERRENO_RECEPTOR: tuple(V_MAX_NO_REVESTIDOS),
+    CLAVE_TERRENO_ENTRADA: tuple(V_MAX_NO_REVESTIDOS),
+    CLAVE_REGIMEN_FLUJO: tuple(REGIMENES_DE_FLUJO_T11),
+}
+CAMPOS_MATERIAL_LECHO: Tuple[str, ...] = ("tipo", "D84_m", "D16_m", "IP",
+                                          "Sv_Pa", "pasa_200_pct")
+CAMPOS_DEL_LECHO_POR_TIPO: Dict[str, Tuple[str, ...]] = {
+    TIPO_LECHO_NO_COHESIVO: ("D84_m", "D16_m"),
+    TIPO_LECHO_COHESIVO: ("IP", "Sv_Pa"),
+}
+CLAVES_T8: Tuple[str, ...] = (tuple(CLAVES_DE_CATALOGO)
+                              + (CLAVE_MATERIAL_LECHO, CLAVE_DURACION_PICO,
+                                 CLAVE_SOCAVACION_DECLARADA))
+CLAVES_QUE_ADMITEN_CERO: Tuple[str, ...] = ("TW_m", "S_conducto",
+                                            CLAVE_SOCAVACION_DECLARADA)
 CLAVES_EXTERNAS: Tuple[str, ...] = (("luz_m", "TW_m", "longitud_m", "Q_m3s",
                                      "S_conducto", "S_cauce",
                                      "L_hidraulico_m") + CLAVES_TEXTO
-                                    + CLAVES_OBJETO + CLAVES_BOOLEANAS)
+                                    + CLAVES_OBJETO + CLAVES_BOOLEANAS
+                                    + CLAVES_T8)
 
 # --- T-4 --- LOS ENSAYOS DE DURABILIDAD (Sec. 3.3; INF-3.3.1).
 #
@@ -602,7 +665,115 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         return _booleano_externo(clave, bruto, origen)
     if clave == CLAVE_SECCION_RECEPTOR_MEDIDA:
         return _seccion_receptor_externa(bruto, origen)
+    if clave in CLAVES_DE_CATALOGO:
+        return _de_catalogo_externo(clave, bruto, origen)
+    if clave == CLAVE_MATERIAL_LECHO:
+        return _material_lecho_externo(bruto, origen)
     return _numero_externo(clave, bruto, origen)
+
+
+def _de_catalogo_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
+    """
+    --- T-8 --- Un dato externo que nombra una fila o una columna de una
+    tabla normativa: texto, y uno de los valores de `CLAVES_DE_CATALOGO`.
+    """
+    admitidos = CLAVES_DE_CATALOGO[clave]
+    if not isinstance(bruto, str) or bruto.strip() not in admitidos:
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo="tiene que ser una de las claves de la Tabla Nº 11 del "
+                   "Manual de Hidrologia (num. 4.1.1.3.6): "
+                   + ", ".join(admitidos) + f"; origen: {origen}")
+    return DatoDeclarado(nombre=clave, valor=bruto.strip(), origen=origen)
+
+
+def _material_lecho_externo(bruto: Any, origen: str) -> DatoDeclarado:
+    """
+    --- T-8 --- El suelo del lecho a la salida, del EMS, validado campo a
+    campo y devuelto como `modelos.MaterialLecho`.
+
+    TRES FORMAS VALIDAS, y solo tres:
+        {"pasa_200_pct": 35}                                    solo el filtro
+        {"tipo": "no_cohesivo", "D84_m": ..., "D16_m": ...}     Ec. (5.1)
+        {"tipo": "cohesivo", "IP": ..., "Sv_Pa": ...}           Ec. (5.2)-(5.4)
+    (las dos ultimas admiten ademas `pasa_200_pct`). Un `tipo` sin sus dos
+    campos, o un campo del otro tipo, detienen la carga: medio ensayo no es
+    un ensayo, y un campo que no entra en la ecuacion del tipo declarado es
+    un dato que el proyectista cree estar usando. El dominio es el fisico; el
+    rango de VALIDEZ de las ecuaciones (indice de plasticidad de 5 a 16) no
+    se juzga aqui: es del metodo, y M6 lo declara no evaluable.
+    """
+    clave = CLAVE_MATERIAL_LECHO
+    if not isinstance(bruto, dict) or not bruto:
+        raise DatoInvalidoError(
+            clave, valor=bruto,
+            motivo="tiene que ser un objeto con alguno de los campos "
+                   f"{', '.join(CAMPOS_MATERIAL_LECHO)}; origen: {origen}")
+    sobran = [c for c in bruto if c not in CAMPOS_MATERIAL_LECHO]
+    if sobran:
+        raise DatoInvalidoError(
+            clave, valor=sorted(bruto),
+            motivo=f"campos no reconocidos: {sobran}. Los admitidos son "
+                   f"{', '.join(CAMPOS_MATERIAL_LECHO)}; origen: {origen}")
+    valores: Dict[str, Any] = {}
+    for campo, crudo in bruto.items():
+        if campo == "tipo":
+            if crudo not in TIPOS_DE_LECHO:
+                raise DatoInvalidoError(
+                    f"{clave}.tipo", valor=crudo,
+                    motivo="es '" + "' o '".join(TIPOS_DE_LECHO)
+                           + f"'; origen: {origen}")
+            valores[campo] = crudo
+            continue
+        if isinstance(crudo, bool) or not isinstance(crudo, (int, float)) \
+                or not math.isfinite(crudo):
+            raise DatoInvalidoError(
+                f"{clave}.{campo}", valor=crudo,
+                motivo=f"no es un numero finito (SI); origen: {origen}")
+        valores[campo] = float(crudo)
+    tipo = valores.get("tipo")
+    de_ecuacion = [c for c in valores if c not in ("tipo", "pasa_200_pct")]
+    if tipo is None and de_ecuacion:
+        raise DatoInvalidoError(
+            clave, valor=sorted(bruto),
+            motivo=f"los campos {de_ecuacion} son de la hoya de socavacion y "
+                   "hace falta `tipo` para saber que ecuacion de HEC-14 los "
+                   f"usa; origen: {origen}")
+    if tipo is not None:
+        propios = CAMPOS_DEL_LECHO_POR_TIPO[tipo]
+        faltan = [c for c in propios if c not in valores]
+        ajenos = [c for c in de_ecuacion if c not in propios]
+        if faltan or ajenos:
+            raise DatoInvalidoError(
+                clave, valor=sorted(bruto),
+                motivo=f"un lecho '{tipo}' lleva exactamente "
+                       f"{' y '.join(propios)}: "
+                       + (f"faltan {faltan}" if faltan else "")
+                       + ("; " if faltan and ajenos else "")
+                       + (f"sobran {ajenos}, que son del otro tipo"
+                          if ajenos else "")
+                       + f"; origen: {origen}")
+    for campo in ("D84_m", "D16_m", "Sv_Pa"):
+        if campo in valores and not valores[campo] > 0:
+            raise DatoInvalidoError(
+                f"{clave}.{campo}", valor=valores[campo],
+                motivo=f"tiene que ser positivo; origen: {origen}")
+    if "IP" in valores and not valores["IP"] >= 0:
+        raise DatoInvalidoError(
+            f"{clave}.IP", valor=valores["IP"],
+            motivo=f"un indice de plasticidad no es negativo; origen: {origen}")
+    if "D84_m" in valores and not valores["D84_m"] >= valores["D16_m"]:
+        raise DatoInvalidoError(
+            clave, valor=(valores["D84_m"], valores["D16_m"]),
+            motivo="D84 no puede ser menor que D16: son percentiles de la "
+                   f"misma curva granulometrica; origen: {origen}")
+    if "pasa_200_pct" in valores and \
+            not 0 <= valores["pasa_200_pct"] <= PORCENTAJE_POR_UNIDAD:
+        raise DatoInvalidoError(
+            f"{clave}.pasa_200_pct", valor=valores["pasa_200_pct"],
+            motivo=f"es un porcentaje en peso, entre 0 y 100; origen: {origen}")
+    return DatoDeclarado(nombre=clave, valor=MaterialLecho(**valores),
+                         origen=origen)
 
 
 def _booleano_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
@@ -939,9 +1110,10 @@ def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
                              and clave not in CLAVES_QUE_ADMITEN_CERO):
         raise DatoInvalidoError(
             clave, valor=bruto,
-            motivo=f"tiene que ser positivo (TW admite 0 = salida libre y "
-                   f"S_conducto admite 0 = barril horizontal); "
-                   f"origen: {origen}",
+            motivo=f"tiene que ser positivo (TW admite 0 = salida libre, "
+                   f"S_conducto admite 0 = barril horizontal y la "
+                   f"profundidad de socavacion declarada admite 0 = sin "
+                   f"socavacion); origen: {origen}",
         )
     techo = _DOMINIO_DE_CLAVE.get(clave)
     if techo is not None and abs(valor) >= techo[0]:
@@ -1181,6 +1353,11 @@ class InformePunto:
     # entonces un bloqueo `ETAPA_DURABILIDAD` y el bucle de MD no corre).
     durabilidad: Optional[DictamenDurabilidad] = None
     proteccion: Optional[ProteccionSalida] = None
+    # --- T-8 --- Las otras dos piezas de la Fase 6: la proteccion de la
+    # ENTRADA y la profundidad de socavacion a la salida que se entrega al
+    # desplante del cabezal (la hoya de HEC-14 Cap. 5, o la declarada).
+    proteccion_entrada: Optional[ProteccionEntrada] = None
+    socavacion: Optional[SocavacionSalida] = None
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
     espaciamiento: Optional[Espaciamiento] = None
@@ -1249,6 +1426,22 @@ class InformePunto:
         return tuple(p for p in self.caudal.pasos
                      if p.veredicto is not None
                      and p.veredicto.tipo is TipoDeVeredicto.INDICADOR)
+
+    def indicadores_de_proteccion(self) -> Tuple[Any, ...]:
+        """
+        --- T-8 --- Los pasos de la Fase 6 que salieron como INDICADOR: la
+        velocidad de salida o de entrada supera la admisible del terreno
+        (Tabla Nº 11) y el diseño no se detiene. Cuentan en el RESUMEN junto
+        a las verificaciones con aviso, como los de la Fase 1-bis; su texto
+        esta en `avisos()`.
+        """
+        pasos = []
+        for pieza in (self.proteccion, self.proteccion_entrada):
+            if pieza is not None:
+                pasos.extend(p for p in pieza.pasos
+                             if p.veredicto is not None
+                             and p.veredicto.tipo is TipoDeVeredicto.INDICADOR)
+        return tuple(pasos)
 
     def avisos_de_geometria(self) -> Tuple[str, ...]:
         """
@@ -1322,6 +1515,13 @@ class InformePunto:
             avisos.append(
                 f"{v.codigo}: indicador disparado; el diseño no se detiene"
                 + (f" -- {explicacion}" if explicacion else ""))
+        # --- T-8 --- Los de la Fase 6: lo que no se pudo comparar o estimar
+        # por falta de un dato del sitio, lo que la fuente no cubre, y donde
+        # lo adoptado queda por debajo de lo que HEC-14 daria.
+        for pieza in (self.proteccion, self.proteccion_entrada,
+                      self.socavacion):
+            if pieza is not None:
+                avisos.extend(pieza.avisos)
         return tuple(avisos)
 
     def bloqueos_reales(self) -> Tuple[Bloqueo, ...]:
@@ -1429,6 +1629,7 @@ class Informe:
             # que son lo mismo un escalon antes: un contraste que se disparo
             # sin detener el punto.
             con_aviso=sum(len(i.con_aviso()) + len(i.indicadores_de_hidrologia())
+                          + len(i.indicadores_de_proteccion())
                           for i in self.puntos))
 
     @property
@@ -2065,10 +2266,17 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
             mensaje=informe.resultado.motivo_rechazo or "sin motivo declarado"))
 
 
-def _fase_6(informe: InformePunto) -> None:
+def _fase_6(informe: InformePunto,
+            externos: Optional[DatosExternos] = None) -> None:
     """
-    Proteccion de salida por Laushey, con la velocidad de SALIDA de HDS-5
-    3.1.6 que M4 emite (EXT-3; PC-04, EXT-M-01).
+    Proteccion de SALIDA y de ENTRADA (T-8). La de salida conserva Laushey,
+    con la velocidad de SALIDA de HDS-5 3.1.6 que M4 emite (EXT-3; PC-04,
+    EXT-M-01), y le añade el Froude, la velocidad admisible del terreno, el
+    apron de HEC-14 y el filtro; la de entrada es nueva (INF-5.1.13). Los
+    datos de SITIO que cada una pide --terreno del cauce, regimen del flujo,
+    pasante del tamiz N.º 200-- salen de `externos` por punto; los que
+    falten no detienen nada: M6 lo avisa. La socavacion va aparte, en
+    `_fase_6_socavacion`, porque necesita la cota de salida de la Fase 7.
 
     Hasta EXT-3 entraba `V_erosion` -- la rama de n minimo del flujo uniforme,
     la estimacion ALTA -- por ser el lado conservador de una proteccion cuyo
@@ -2091,9 +2299,64 @@ def _fase_6(informe: InformePunto) -> None:
             f"el resultado hidraulico de {informe.punto.id} no trae la "
             "velocidad de salida (ResultadoHidraulico.V_salida): la Fase 6 "
             "no elige una velocidad por su cuenta")
+    id_punto = informe.punto.id
+    dato = (lambda clave: None) if externos is None else \
+        (lambda clave: externos.valor(id_punto, clave))
+    lecho = dato(CLAVE_MATERIAL_LECHO)
+    regimen = dato(CLAVE_REGIMEN_FLUJO)
+    seccion = informe.resultado.seccion
     informe.proteccion = _etapa(
         informe.bloqueos, FASE_PROTECCION, "d50, espesor y longitud",
-        lambda: proteccion_salida(V=resultado.V_salida))
+        lambda: proteccion_salida(
+            V=resultado.V_salida, resultado=resultado, seccion=seccion,
+            tipo_terreno=dato(CLAVE_TERRENO_RECEPTOR), regimen_flujo=regimen,
+            pasa_200_pct=None if lecho is None else lecho.pasa_200_pct,
+            # El indice de plasticidad solo cuenta para el filtro si el lecho
+            # es COHESIVO (nota (5) b de la Tabla 511-06 de EG-2013).
+            indice_plasticidad_lecho=(
+                lecho.IP if lecho is not None
+                and lecho.tipo == TIPO_LECHO_COHESIVO else None),
+            tipo_lecho=None if lecho is None else lecho.tipo))
+    # La embocadura es hoy la ADOPTADA para todo el proyecto (HDS-5 «square
+    # edge w/ headwall»): el cabezal por punto (T-7a) pasara la suya aqui.
+    informe.proteccion_entrada = _etapa(
+        informe.bloqueos, FASE_PROTECCION, "proteccion de la entrada",
+        lambda: proteccion_entrada(
+            resultado=resultado, tipo_embocadura=EMBOCADURA_CABEZAL_RECTO,
+            tipo_terreno=dato(CLAVE_TERRENO_ENTRADA), regimen_flujo=regimen))
+
+
+def _fase_6_socavacion(informe: InformePunto,
+                       externos: Optional[DatosExternos] = None) -> None:
+    """
+    --- T-8 --- La profundidad de socavacion a la salida para el desplante
+    del cabezal: la declarada si el punto la trae, y la hoya de HEC-14 Cap. 5
+    si declara el suelo del lecho. Corre DESPUES de la Fase 7, porque la
+    altura del fondo de la salida sobre el lecho es la cota de salida de 7.B
+    menos `cota_fondo_receptor`; si 7.B no la dio, M6 dice que falta.
+    """
+    resultado = informe.resultado.resultado_hidraulico
+    id_punto = informe.punto.id
+    dato = (lambda clave: None) if externos is None else \
+        (lambda clave: externos.valor(id_punto, clave))
+    geometria = informe.geometria
+    caida = (None if geometria is None else
+             geometria.cota_salida - informe.punto_de_calculo.cota_fondo_receptor)
+    proteccion = informe.proteccion
+    informe.socavacion = _etapa(
+        informe.bloqueos, FASE_PROTECCION, "socavacion local a la salida",
+        lambda: socavacion_salida(
+            resultado=resultado, seccion=informe.resultado.seccion,
+            altura_caida_m=caida, material=dato(CLAVE_MATERIAL_LECHO),
+            duracion_pico_min=dato(CLAVE_DURACION_PICO),
+            declarada_m=dato(CLAVE_SOCAVACION_DECLARADA),
+            longitud_proteccion_m=(None if proteccion is None
+                                   else proteccion.longitud),
+            proteccion_requerida=(None if proteccion is None
+                                  else proteccion.requerida),
+            cota_fondo_receptor=informe.punto_de_calculo.cota_fondo_receptor,
+            cota_solera_salida=(None if geometria is None
+                                else geometria.cota_salida)))
 
 
 def _fase_7(informe: InformePunto) -> None:
@@ -2516,8 +2779,9 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
         _fase_diseno(informe, externos, alcance)
         _compuerta_metodo_h_o(informe, alcance)
         if informe.dimensionado:
-            _fase_6(informe)
+            _fase_6(informe, externos)
             _fase_7(informe)
+            _fase_6_socavacion(informe, externos)
             if _difiere(alcance, "M8_estructural"):
                 _diferir_fase_8(informe)
             else:

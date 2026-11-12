@@ -461,6 +461,9 @@ línea que se pueda romper.
 | `EG2013.507.10` | 507.10 | «Aguas y Suelos agresivos» | pág. impresa **974** · PDF 982 | exigencia | 2026-11-11 · texto |
 | `EG2013.508.02a` | 508.02 a | «Tubos de polietileno de alta densidad (PAD o HDPE)» | pág. impresa **981** · PDF 989 | definicion | 2026-11-11 · texto |
 | `EG2013.508.07#RELLENO_MIN` | 508.07 | «Colocación del relleno alrededor de la estructura» | pág. impresa **984** · PDF 992 | exigencia | 2026-08-28 · texto |
+| `EG2013.511.08#EROSION` | 511.08 | «511.08 Geotextiles usados en control permanente de erosión» | pág. impresa **1014** · PDF 1022 | definicion | 2026-11-12 · texto |
+| `EG2013.511.08#NOTA_5A` | 511.08, Tabla 511-06, nota (5) a | «511.08 Geotextiles usados en control permanente de erosión» | pág. impresa **1015** · PDF 1023 | recomendacion | 2026-11-12 · texto |
+| `EG2013.511.08#T511_06` | 511.08, Tabla 511-06 | «511.08 Geotextiles usados en control permanente de erosión» | pág. impresa **1015** · PDF 1023 | exigencia | 2026-11-12 · texto |
 
 > **`EG2013.205.12c1`** — ES LA REMISION DE SEGUNDO NIVEL de tres de las cuatro fichas de cama y relleno: el «95 % MDS» que el expediente les atribuia no es literal de las Secciones 505, 506 ni 507 -- llega desde aqui, por remision. El valor es correcto; lo que faltaba era decir por que via llega, que es la diferencia entre una cita y una deduccion.
 
@@ -478,6 +481,12 @@ línea que se pueda romper.
 
 > **`EG2013.508.07#RELLENO_MIN`** — NOR-EG-01 / NOR-EG-02. La pagina impresa es la 984 (PDF 992). La 982 (PDF 990) trae 508.02 b), c) y d) -- calidad del tubo, muestreo y material para cama de asiento --, nada de altura de relleno. El desfase de este documento es +8, el mayor del corpus, y confundir impresa con PDF produce exactamente ese error. NO CONFUNDIR CON SU VECINA: el 508.08 (pag. impresa 985) tambien dice 0,30 m, pero es la exigencia de EJECUCION -- que el equipo pesado no circule antes de alcanzarla --, no la altura minima de diseño. Dos frases con el mismo numero en paginas contiguas.
 
+> **`EG2013.511.08#EROSION`** — Define el AMBITO: el geotextil que va entre un enrocado y el suelo. El parrafo siguiente dice «La función principal del geotextil es la filtración». EL NUMERAL NO OBLIGA A PONER FILTRO: especifica el geotextil cuando el proyecto lo pone. EG-2013 no trae la palabra «emboquillado» en ninguna de sus 1282 paginas (barrido por texto en T-8), y su Seccion 603 «Defensas ribereñas» trata el enrocado de ribera, no el de salida de alcantarilla.
+
+> **`EG2013.511.08#NOTA_5A`** — Frase completa: «Debería efectuarse un diseño del geotextil para un sitio específico especialmente si uno o más de los siguientes suelos problemáticos son encontrados: suelos inestables o altamente erosionables tales como los limos no cohesivos; suelos de gradación abierta; suelos laminados alternando arenas y limos; arcillas dispersivas y/o polvo de roca.» La llamada (5) la llevan el rotulo de la FILA «Tamaño de Abertura Aparente (3) (4) (5)» y la celda «0,22(5)»: la nota vale para la fila entera.
+
+> **`EG2013.511.08#T511_06`** — La Tabla 511-06 «Geotextiles para control permanente de erosión-requerimientos» entra por el «Porcentaje de Suelo in Situ que pasa Tamiz N.º 200 (0,075 mm)» en tres columnas (< 15, 15-50, > 50) y fija la permitividad minima (0,7 / 0,2 / 0,1 s-1) y el tamaño de abertura aparente maximo (0,43 / 0,25 / 0,22 mm); la clase es la 1 de la Tabla 511-01 (la 2 para los tejidos de monofilamento) y la estabilidad ultravioleta, 50 % tras 500 horas. Su nota (5) pide un diseño especifico en suelos problematicos y da 0,30 mm para cohesivos con indice de plasticidad mayor de 7. El dato que la tabla pide --el pasante del tamiz N.º 200-- es del EMS.
+
 ### HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-HIF-12-026)  (`HDS5_3ED`)
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
@@ -485,6 +494,7 @@ línea que se pueda romper.
 | `HDS5_3ED.1.2#MODELO` | 1.2 | «COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS» | pág. impresa **1.4** · PDF 42 | recomendacion | 2026-09-22 · ambos |
 | `HDS5_3ED.1.2#NBIS` | 1.2 | «COMPARISONS BETWEEN CULVERTS, BRIDGES, AND STORM DRAINS» | pág. impresa **1.3** · PDF 41 | definicion | 2026-09-22 · ambos |
 | `HDS5_3ED.2.2.4#LONGITUD` | 2.2.4 b. | «Roadway Data» | pág. impresa **2.8** · PDF 70 | aproximacion | 2026-11-11 · ambos |
+| `HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA` | 3.1.3 | «3.1.3  Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-11-12 · texto |
 | `HDS5_3ED.3.1.3#SUMERGENCIA` | 3.1.3 | «Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.3#TRANSICION` | 3.1.3 | «Inlet Control» | pág. impresa **3.4** · PDF 86 | aproximacion | 2026-08-28 · texto |
 | `HDS5_3ED.3.1.4#0_75D` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | exigencia | 2026-09-21 · texto |
@@ -508,6 +518,9 @@ línea que se pueda romper.
 | `HDS5_3ED.3.5.1#H2` | 3.5.1 | «USGS Flow Types and Water Surface Profiles» | pág. impresa **3.37** · PDF 119 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.3.5.1#S1` | 3.5.1 | «USGS Flow Types and Water Surface Profiles» | pág. impresa **3.37** · PDF 119 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.5.1#TIPO7` | 3.5.1 | «USGS Flow Types and Water Surface Profiles» | pág. impresa **3.38** · PDF 120 | definicion | 2026-09-21 · texto |
+| `HDS5_3ED.5.3.1#ENTRADA` | 5.3.1 | «5.3.1  Scour at Inlets» | pág. impresa **5.9** · PDF 145 | definicion | 2026-11-12 · texto |
+| `HDS5_3ED.5.3.2#APRON` | 5.3.2 | «5.3.2  Scour at Outlets» | pág. impresa **5.11** · PDF 147 | definicion | 2026-11-12 · texto |
+| `HDS5_3ED.5.3.2#PRACTICA` | 5.3.2 | «5.3.2  Scour at Outlets» | pág. impresa **5.11** · PDF 147 | definicion | 2026-11-12 · texto |
 | `HDS5_3ED.5.3.3#ALINEADO` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
 | `HDS5_3ED.5.3.3#DEPRESION` | 5.3.3 | «Sedimentation» | pág. impresa **5.12** · PDF 148 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.5.3.3#INDICADORES` | 5.3.3 | «Sedimentation» | pág. impresa **5.11** · PDF 147 | definicion | 2026-08-30 · texto |
@@ -533,6 +546,8 @@ línea que se pueda romper.
 > **`HDS5_3ED.1.2#NBIS`** — La unica fuente de normas/ que dice que ancho cuenta en un cruce de VARIOS barriles: el TOTAL («the total width of a multiple barrel crossing»), para la clasificacion como puente (NBIS). Es la parte que sostiene la lectura de `luz_m` como abertura total del cruce (DIS-LUZ-DENOMINACION). El parrafo siguiente, en la pag. 1.4, matiza que para el METODO HIDRAULICO la guia razonable es modelar como puente «a single culvert with a span of 20 ft (6.1 m) or more» (HDS5_3ED.1.2#MODELO).
 
 > **`HDS5_3ED.2.2.4#LONGITUD`** — Inciso «b. Culvert Length» del num. 2.2.4, que abre en la pag. impresa 2.7 (PDF 69). Las dos oraciones anteriores dicen COMO se obtiene: «The dimensions are obtained by superimposing the estimated culvert barrel on the roadway cross section and the streambed profile (Figure 2.4). This superposition establishes the inlet and outlet invert elevations». La Figura 2.4 (misma pagina, leida por imagen) dibuja la seccion A-A SOBRE EL EJE ESVIADO del conducto, con tres cotas rotuladas en la corona -- «Pavement Elevation» en el borde izquierdo, «Centerline Elevation» en el eje y «Shoulder Elevation» en el borde derecho --, el talud «Se : 1» y un «Upstream Invert» mas alto que el «Downstream Invert»: un talud a cada lado y dos fondos a cotas distintas, no dos taludes iguales medidos en el eje. LOS TALUDES DE LA FIGURA MUEREN EN LA CARA SUPERIOR DEL BARRIL, no en su fondo. La cita sostiene la superposicion APROXIMADA del barril estimado y nada mas: que el proyecto baje cada talud hasta el fondo -- un barril de altura cero, porque la seccion no se conoce todavia -- es eleccion suya, declarada en el criterio 'metodo_longitud_conducto', y da la cota superior de la longitud. El inciso «a. Cross Section» de la misma pagina añade que la seccion que el proyectista necesita es la del cruce, «skewed with reference to the roadway centerline».
+
+> **`HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA`** — Lo dice de las Figuras 3.1A y 3.1C, el Tipo 1 del USGS, con la entrada NO sumergida. Sostiene la velocidad que el proyecto lee en la boca cuando gobierna el control de entrada: la critica. Con la entrada sumergida (Figuras 3.1B y 3.1D) la boca trabaja como orificio y la fuente no da la velocidad en ella.
 
 > **`HDS5_3ED.3.1.3#SUMERGENCIA`** — El parrafo sigue con la Fig. 3.1D: «submergence of both the inlet and the outlet ends of the culvert does not assure full flow». Sostiene que LLENO, en `modelos.RegimenBarril`, describe la salida y el tramo aguas abajo del resalto, no la longitud entera.
 
@@ -580,6 +595,12 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.3.5.1#TIPO7`** — Parrafo «USGS Flow Type 7 (Outlet Control)»; el de los tipos 4 y 6, en la misma pagina, dice lo mismo para el barril lleno «for most of its length» (FFt/FFc) y que con «tailwater … higher than the culvert crown at the exit … the barrel flows full (FFf)». Es la fuente de que la fraccion llena sea un RESULTADO del perfil y no una lectura, y de los rotulos M1/M2 de `modelos.TipoDePerfil`.
 
+> **`HDS5_3ED.5.3.1#ENTRADA`** — El parrafo anterior describe el mecanismo: al contraerse el flujo hacia el barril, vortices y zonas de alta velocidad atacan los taludes del terraplen junto a la boca, y a menudo se forma una hoya aguas arriba del piso del conducto. La fuente ENUMERA las medidas y no las dimensiona ni dice cual corresponde a que embocadura: la asignacion por tipo de embocadura es lectura del proyecto.
+
+> **`HDS5_3ED.5.3.2#APRON`** — Describe una practica y remite a HEC-14 Sec. 10.2. El parrafo termina: «Providing scour protection for large floods or when more serious erosion problems exist requires protection measures designed based on HEC-14». En la pag. impresa 5.9 el mismo numeral dice que los metodos para estimar la hoya de socavacion local estan en HEC-14.
+
+> **`HDS5_3ED.5.3.2#PRACTICA`** — La frase que sigue a la de HDS5_3ED.5.3.2#APRON. Describe una practica: el apron se pone salvo que el campo diga que no hace falta. Es lo que juega en contra de no revestir cuando la velocidad no supera la Tabla Nº 11, y la salida sin enrocado lo avisa citandola.
+
 > **`HDS5_3ED.5.3.3#ALINEADO`** — Es la contracara del indicador y la que explica por que la verificacion pasa en la inmensa mayoria de los puntos de este corredor: Sec. 7.B fija que la alcantarilla sigue la pendiente del cauce, de modo que S_conducto = S_cauce salvo que el punto declare `S_conducto` aparte. El «generally» es de la fuente y se conserva: no dice «nunca».
 
 > **`HDS5_3ED.5.3.3#DEPRESION`** — Es el final del num. 5.3.3, ya en la pag. impresa 5.12, y lo que la fuente dice del caso que el primer indicador describe: el conducto mas plano que su cauce sedimenta SOBRE TODO con caudales bajos y SUELE limpiarse solo con los altos. La oracion siguiente pide abordar ese diseño con cautela y con mas investigacion de campo; no lo prohibe. Sostiene que el indicador se aplique como aviso (`regimen_v2b`). EL NUMERAL ENTERO, leido en T-2 (INF-3.2.9): ademas de los dos indicadores --pendiente y rugosidad-- nombra como factores la magnitud del caudal y el material del cauce, los cauces en agradacion, los cambios de pendiente a la entrada, las instalaciones multibarril y las entradas deprimidas. Ninguno lleva cifra.
@@ -619,6 +640,86 @@ línea que se pueda romper.
 | `HDS5_SI_1985.EC4B#K` | ecs. (4b) y (5) | «Hydraulics of Outlet Control» | pág. impresa **s/n** · PDF 54 | definicion | **NO verificada** |
 
 > **`HDS5_SI_1985.EC4B#K`** — SIN FIRMA A PROPOSITO, no sin verificar: la paginacion de la fuente es `SinDeterminar` (la copia no imprime folios; `pagina_impresa` dice «s/n» por eso) y el invariante T6 impide firmar una pagina PDF de una fuente sin paginacion medida. El contenido esta verificado de hecho (trazabilidad/T2 · verificador-normativo, 2026-09-12, metodo AMBOS): POR IMAGEN, la ec. rotulada (4b) imprime Hf = [29 n² L / R^1.33]·V²/2g y la (5) H = [1 + ke + 29 n² L / R^1.33]·V²/2g -- constante 29, no 19.63; las ecuaciones son imagenes incrustadas y no salen en la capa de texto --. POR TEXTO, las definiciones llevan rotulo dual «ft (m)» (el Verbatim es una de ellas) y «19.63» da cero paginas en las 410 del documento. Es el ancla de DIS-HDS5-EDICIONES: leer el 29 «en SI» multiplica el termino de friccion por 29/19.63 = 1.477 (+47.7 % sobre el TERMINO), que en CP-8 sube H de 0.4977 a 0.5455 m (+9.6 % sobre H); es lo que K_FRICCION_SI existe para atrapar. Las dos bases se dicen juntas porque el repositorio las mezclo (EXT-G-03).
+
+### HEC-14 «Hydraulic Design of Energy Dissipators for Culverts and Channels» (Hydraulic Engineering Circular No. 14, FHWA-NHI-06-086)  (`HEC14`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `HEC14.1#T1_1_APRON` | 1, Table 1.1, nota 8 | «CHAPTER 1: ENERGY DISSIPATOR DESIGN» | pág. impresa **1-2** · PDF 15 | aproximacion | 2026-11-12 · texto |
+| `HEC14.10.1#DOS_D50` | 10.1 | «10.1 RIPRAP BASIN» | pág. impresa **10-1** · PDF 202 | recomendacion | 2026-11-12 · texto |
+| `HEC14.10.1.1#YE` | 10.1.1 | «10.1.1 Design Development» | pág. impresa **10-2** · PDF 203 | definicion | 2026-11-12 · texto |
+| `HEC14.10.2#ANCHO` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | permiso | 2026-11-12 · texto |
+| `HEC14.10.2#EC_10_4` | 10.2, Ec. (10.4) | «10.2 RIPRAP APRON» | pág. impresa **10-17** · PDF 218 | recomendacion | 2026-11-12 · ambos |
+| `HEC14.10.2#EC_10_5` | 10.2, Ec. (10.5) | «10.2 RIPRAP APRON» | pág. impresa **10-17** · PDF 218 | definicion | 2026-11-12 · ambos |
+| `HEC14.10.2#FILTRO` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | recomendacion | 2026-11-12 · texto |
+| `HEC14.10.2#PROFUNDIDAD` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | recomendacion | 2026-11-12 · texto |
+| `HEC14.10.2#T10_1` | 10.2, Table 10.1 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | recomendacion | 2026-11-12 · ambos |
+| `HEC14.10.2#TW` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-17** · PDF 218 | aproximacion | 2026-11-12 · texto |
+| `HEC14.10.2#TW_ALTO` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | aproximacion | 2026-11-12 · texto |
+| `HEC14.3#CONTINUIDAD` | 3 | «CHAPTER 3: CULVERT OUTLET VELOCITY AND VELOCITY MODIFICATION» | pág. impresa **3-1** · PDF 32 | definicion | 2026-11-12 · texto |
+| `HEC14.3.1.3#BORDE` | 3.1.3 | «3.1.3 Unsubmerged Outlets (Brink Depth)» | pág. impresa **3-3** · PDF 34 | definicion | 2026-11-12 · texto |
+| `HEC14.5#PEOR_CASO` | 5 | «CHAPTER 5: ESTIMATING SCOUR AT CULVERT OUTLETS» | pág. impresa **5-1** · PDF 54 | definicion | 2026-11-12 · texto |
+| `HEC14.5.1#EC_5_1` | 5.1, Ec. (5.1) | «COHESIONLESS SOILS» | pág. impresa **5-1** · PDF 54 | aproximacion | 2026-11-12 · ambos |
+| `HEC14.5.1.1#T5_1` | 5.1.1, Table 5.1 | «5.1.1 Scour Hole Geometry» | pág. impresa **5-2** · PDF 55 | definicion | 2026-11-12 · texto |
+| `HEC14.5.1.2#NO_BAJO_30` | 5.1.2 | «5.1.2 Time of Scour» | pág. impresa **5-2** · PDF 55 | aproximacion | 2026-11-12 · texto |
+| `HEC14.5.1.2#T30` | 5.1.2 | «5.1.2 Time of Scour» | pág. impresa **5-2** · PDF 55 | recomendacion | 2026-11-12 · texto |
+| `HEC14.5.1.3#CABEZAL` | 5.1.3 | «5.1.3 Headwalls» | pág. impresa **5-2** · PDF 55 | recomendacion | 2026-11-12 · texto |
+| `HEC14.5.1.4#T5_2` | 5.1.4, Table 5.2 | «5.1.4 Drop Height» | pág. impresa **5-3** · PDF 56 | definicion | 2026-11-12 · texto |
+| `HEC14.5.1.5#T5_3` | 5.1.5, Table 5.3 | «5.1.5 Slope» | pág. impresa **5-3** · PDF 56 | definicion | 2026-11-12 · texto |
+| `HEC14.5.2#EC_5_2` | 5.2, Ec. (5.2) y (5.3) | «COHESIVE SOILS» | pág. impresa **5-6** · PDF 59 | aproximacion | 2026-11-12 · ambos |
+| `HEC14.5.2#EC_5_4` | 5.2, Ec. (5.4) | «COHESIVE SOILS» | pág. impresa **5-7** · PDF 60 | definicion | 2026-11-12 · ambos |
+| `HEC14.5.2#RANGO_IP` | 5.2 | «COHESIVE SOILS» | pág. impresa **5-7** · PDF 60 | aproximacion | 2026-11-12 · texto |
+| `HEC14.D#SOLO_VELOCIDAD` | D | «APPENDIX D: RIPRAP APRON SIZING EQUATIONS» | pág. impresa **D-2** · PDF 281 | recomendacion | 2026-11-12 · texto |
+
+> **`HEC14.1#T1_1_APRON`** — Es la nota 8 de la Table 1.1 «Energy Dissipators and Limitations», y cuelga de la fila «Riprap apron» (Chapter 10), cuya columna de Froude dice «na». La Sec. 10.2 lo dice como poblacion y no como prohibicion: «The most commonly used device for outlet protection, primarily for culverts 1500 mm (60 in) or smaller, is a riprap apron» (pag. impresa 10-16). Por eso un conducto mas alto sale con AVISO y no como metodo no evaluable. La misma tabla limita la POZA de enrocado (riprap basin) a Fr < 3.
+
+> **`HEC14.10.1#DOS_D50`** — Es de la POZA de enrocado, no del apron; se cita porque fija el mismo piso que la Tabla 10.1 alcanza para las piedras grandes (cita HEC14.10.2#PROFUNDIDAD). La Figura 10.1 de la misma pagina, leida por imagen, mide hs DESDE la solera de salida del conducto hasta el fondo de la poza.
+
+> **`HEC14.10.1.1#YE`** — Sigue: «For rectangular culverts, ye = yo (culvert brink depth). For circular culverts, ye = (A/2)^1/2, where A is the brink area». El paso 1 del procedimiento (num. 10.1.5, pag. impresa 10-5) forma con el el numero de Froude de la salida, Fr = Vo / (g·ye)^1/2. Es el Froude que HEC-14 usa para sus disipadores; el apron de la Ec. (10.4) no lo lleva.
+
+> **`HEC14.10.2#ANCHO`** — El ejemplo resuelto de la pag. impresa 10-19 (PDF 220) lo escribe: «Width (at apron end) = 3D + (2/3)L». El 3D es el ancho del apron en la boca de la Figura 10.4 y el (2/3)L el abocinado de 1:3 por cada lado.
+
+> **`HEC14.10.2#EC_10_4`** — La Ec. (10.4), leida de la pagina renderizada: D50 = 0.2·D·[Q / (g^0.5·D^2.5)]^(4/3)·(D / TW), con D50, D y TW en m (ft), Q en m3/s (ft3/s) y g = 9.81 m/s2 (32.2 ft/s2). ES ADIMENSIONAL --el grupo Q/(g^0.5·D^2.5) no tiene unidades--, de modo que el 0.2 vale igual en SI y en unidades inglesas y no hay coeficiente que convertir. El Apendice D (Ec. D.5, pag. impresa D-2) da la misma relacion SIN la gravedad, D50 = 0.020·D·[Q/(α·D^2.5)]^(4/3)·(D/TW) con α = 0.55 (SI) y 1.0 (CU): esa forma SI depende de unidades y no es la que se usa. «RECOMMENDED FOR CIRCULAR CULVERTS»: no cubre el marco. La ecuacion supone una piedra de gravedad especifica 2.65.
+
+> **`HEC14.10.2#EC_10_5`** — La Ec. (10.5), leida de la pagina renderizada: D' = (D + yn)/2, con D' «adjusted culvert rise» e yn «normal (supercritical) depth in the culvert». D' entra en la Ec. (10.4) en lugar de D.
+
+> **`HEC14.10.2#FILTRO`** — HEC 11 no esta en el repositorio de normas: el diseño del filtro no se transcribe. Lo que se cita es que el apron LLEVA filtro.
+
+> **`HEC14.10.2#PROFUNDIDAD`** — El piso del espesor del apron: 2.0·D50. El criterio 'espesor_proteccion_salida' adopta 1.75·d50 (ventana 1.5-2.0) y queda siempre bajo ese piso salvo en el techo de su ventana, que lo iguala: la Fase 6 lo avisa en todo punto que dimensiona.
+
+> **`HEC14.10.2#T10_1`** — ES UN EJEMPLO, y la fuente lo dice dos veces: en el titulo («Example») y en la pag. 10-17 («A project or design standard can be developed such as the example from the Federal Highway Administration Federal Lands Highway Division»). Seis clases: D50 de 125, 150, 250, 350, 500 y 550 mm; longitud del apron 4D, 4D, 5D, 6D, 7D y 8D, con la nota «D is the culvert rise»; profundidad 3.5, 3.3, 2.4, 2.2, 2.0 y 2.0 veces D50. Debajo: «Table 10.1 provides guidance on the apron length and depth». La clase es la de D50 mayor o igual que el requerido (pag. 10-17).
+
+> **`HEC14.10.2#TW`** — EL LIMITE DE VALIDEZ DE LA Ec. (10.4), con sus dos lados. Por abajo, el ejemplo resuelto de la pag. impresa 10-18 enseña que hacer: con TW/D = 0.33 «This is less than 0.4D, therefore, use TW = 0.4D». Por arriba, la pag. 10-18 remite a OTRO procedimiento (cita HEC14.10.2#TW_ALTO).
+
+> **`HEC14.10.2#TW_ALTO`** — Con el TW sobre la clave la Ec. (10.4) queda FUERA de su rango aceptable y la fuente manda a la Figura 10.3 (atenuacion de la velocidad aguas abajo) y a la Sec. 10.3 para dimensionar la piedra. La Figura 10.3 es una familia de curvas que este programa no tiene digitalizada: ese caso sale como metodo no evaluable, no con la ecuacion extrapolada.
+
+> **`HEC14.3#CONTINUIDAD`** — Sigue: «The flow area, A, for determining outlet velocity is calculated using the culvert outlet depth that is consistent with the culvert flow type», y el num. 3.1.2 (pag. impresa 3-2, PDF 33) da la regla de HDS-5 que M4 aplica: «the higher of the tailwater or critical depth», o la seccion llena con la salida sumergida (3.1.1). Es la relacion con que M6 asigna a la velocidad de salida su area, A = Q/V, para el tirante equivalente del Froude; los procedimientos de HEC-14 hacen lo mismo («A = Q/Vo», pag. impresa 9-40, PDF 197).
+
+> **`HEC14.3.1.3#BORDE`** — Con el TW bajo el tirante critico, el tirante en el borde de la salida (brink depth) es MENOR que el critico: la velocidad real a la salida es MAYOR que Q/A(yc), que es la que M4 toma por HDS-5 3.1.6. El mismo numeral lo dice al aproximar el borde con las curvas criticas: «Since critical depth is larger than brink depth, determining brink depth in this manner is not conservative, but is acceptable». Las Figuras 3.3 y 3.4 dan el borde y no estan digitalizadas.
+
+> **`HEC14.5#PEOR_CASO`** — Dos limites en el mismo parrafo: las ecuaciones dan la hoya MAXIMA de los ensayos («worst-case») y «do not include long-term channel degradation of the downstream channel». El capitulo abre diciendo de que depende el metodo: caudal, forma del conducto, tipo de suelo, duracion del flujo, pendiente, altura del conducto sobre el lecho y tirante de aguas abajo; el tirante de aguas abajo NO entra en la Ec. (5.1).
+
+> **`HEC14.5.1#EC_5_1`** — La Ec. (5.1), leida de la pagina renderizada: [hs/Rc, Ws/Rc, Ls/Rc, Vs/Rc^3] = Cs·Ch·(α / σ^(1/3))·[Q / (g^0.5·Rc^2.5)]^β·(t/316)^θ, con Rc «hydraulic radius at the end of the culvert (assuming full flow)», t «time in minutes» y σ = (D84/D16)^0.5. ES ADIMENSIONAL salvo por el tiempo: el 316 esta en minutos y vale igual en SI y en unidades inglesas. ERRATA DE LA FUENTE: la lista de variables de esta pagina remite «Cs … see Table 5.2» y «Ch … see Table 5.3», y las tablas estan al reves --la 5.2 es de Ch (altura sobre el lecho) y la 5.3 de Cs (pendiente)--, como dicen sus titulos y el texto de los num. 5.1.4 y 5.1.5.
+
+> **`HEC14.5.1.1#T5_1`** — α, β, θ: profundidad 2.27, 0.39, 0.06; ancho 6.94, 0.53, 0.08; longitud 17.10, 0.47, 0.10; volumen 127.08, 1.24, 0.18. El numeral dice ademas que la profundidad maxima se da a unos 0.4·Ls aguas abajo de la salida (Fletcher y Grace, 1972) y que la hoya maxima ocurre con tirantes de aguas abajo menores que la mitad de la altura del conducto (Bohan, 1970).
+
+> **`HEC14.5.1.2#NO_BAJO_30`** — LIMITE DE VALIDEZ: con t < 30 min los exponentes no aplican. El mismo numeral dice que entre 2/3 y 3/4 de la profundidad maxima se alcanza en los primeros 30 minutos.
+
+> **`HEC14.5.1.2#T30`** — «This knowledge» es la duracion del caudal pico. Para suelos cohesivos la pag. impresa 5-7 repite la regla: «Use 30 minutes for t in Equation 5.2 and Equation 5.3 if it is not known».
+
+> **`HEC14.5.1.3#CABEZAL`** — Es la frase que liga la hoya de socavacion con el DESPLANTE del cabezal de salida. Antes dice que el cabezal perpendicular desplaza la hoya aguas abajo sin cambiar esencialmente su magnitud (Ruff et al., 1982).
+
+> **`HEC14.5.1.4#T5_2`** — Hd = altura del fondo de la salida sobre el lecho, en DIAMETROS («Hd is the height above bed in pipe diameters»): filas 0, 1, 2 y 4. Ch de profundidad 1.00, 1.22, 1.26, 1.34; de ancho 1.00, 1.51, 1.54, 1.66; de longitud 1.00, 0.73, 0.73, 0.73; de volumen 1.00, 1.28, 1.47, 1.55. La tabla no dice como leer entre filas ni mas alla de Hd = 4.
+
+> **`HEC14.5.1.5#T5_3`** — Pendiente en %: filas 0, 2, 5 y «>7». Cs de profundidad 1.00, 1.03, 1.08, 1.12; de ancho 1.00, 1.28, 1.28, 1.28; de longitud 1.00, 1.17, 1.17, 1.17; de volumen 1.00, 1.30, 1.30, 1.30. La tabla no dice como leer entre filas, ni entre el 5 % y el 7 %.
+
+> **`HEC14.5.2#EC_5_2`** — Ec. (5.2), conducto circular: [hs/D, Ws/D, Ls/D, Vs/D^3] = Cs·Ch·α·(ρV²/τc)^β·(t/316)^θ. Ec. (5.3), otras formas: lo mismo con ye = (A/2)^1/2 en lugar de D y αe en lugar de α. V es la velocidad media de salida, ρ = 1000 kg/m3 (1.94 slugs/ft3) y τc la tension tractiva critica de la Ec. (5.4). El numero ρV²/τc es adimensional; lo que depende de unidades es αu de la Ec. (5.4).
+
+> **`HEC14.5.2#EC_5_4`** — Ec. (5.4): τc = 0.001·(Sv + αu)·tan(30 + 1.73·PI), con el argumento de la tangente en GRADOS (el ejemplo resuelve tan (50.76) con PI = 12), Sv la resistencia al corte saturada y αu «unit conversion constant, 8630 N/m2 (SI), 180 lb/ft2 (CU)». τc sale en N/m2. La Tabla 5.4 (misma pagina) da α, β, θ y αe: profundidad 0.86, 0.18, 0.10, 1.37; ancho 3.55, 0.17, 0.07, 5.63; longitud 2.82, 0.33, 0.09, 4.48; volumen 0.62, 0.93, 0.23, 2.48.
+
+> **`HEC14.5.2#RANGO_IP`** — LIMITE DE VALIDEZ. El suelo ensayado fue UNA arcilla arenosa (58 % arena, 27 % arcilla, 15 % limo, indice de plasticidad 15; pag. impresa 5-6).
+
+> **`HEC14.D#SOLO_VELOCIDAD`** — Las dos ecuaciones que HEC-14 descarta son las que dimensionan la piedra SOLO con la velocidad de salida: D.2 (Berry, 1948; Peterka, 1978), D50 = α·V² con α = 0.0413 en SI, y D.3 (Searcy, 1967; la de la edicion anterior de HEC-14 y de HEC 11), D50 = 0.692/(S − 1)·V²/(2g). Ninguna de las dos es la de Laushey, que HEC-14 no nombra. El apendice compara seis relaciones sobre diez casos de HY8 y retiene la de Fletcher y Grace (Ec. D.5), que es la Ec. (10.4) del Capitulo 10 escrita sin la gravedad. La lectura de que la ec. (49) del Manual pertenece a la misma familia que D.2 y D.3 es del proyecto y va en `M6_proteccion`, no aqui.
 
 ### Manual de Hidrologia, Hidraulica y Drenaje  (`MC_HHD`)
 
@@ -663,13 +764,18 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.3.6` | 4.1.1.3.6 | «Diseño hidráulico» | pág. impresa **74** · PDF 77 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.6#T09` | 4.1.1.3.6, Tabla Nº 09 | «Diseño hidráulico» | pág. impresa **75** · PDF 78 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.6#T10` | 4.1.1.3.6, Tabla Nº 10 | «Diseño hidráulico» | pág. impresa **76** · PDF 79 | exigencia | 2026-08-28 · ambos |
+| `MC_HHD.4.1.1.3.6#T11` | 4.1.1.3.6, Tabla Nº 11 | «Diseño hidráulico» | pág. impresa **77** · PDF 80 | exigencia | 2026-11-12 · ambos |
 | `MC_HHD.4.1.1.3.6#VMIN` | 4.1.1.3.6, párrafo posterior a la Tabla Nº 10 | «Diseño hidráulico» | pág. impresa **77** · PDF 80 | recomendacion | 2026-08-28 · ambos |
 | `MC_HHD.4.1.1.3.6#VMIN_INICIO` | 4.1.1.3.6, párrafo posterior a la Tabla Nº 10 (primera mitad) | «Diseño hidráulico» | pág. impresa **76** · PDF 79 | exigencia | 2026-08-28 · ambos |
+| `MC_HHD.4.1.1.3.6#V_SALIDA` | 4.1.1.3.6, párrafo anterior a la Tabla Nº 11 | «Diseño hidráulico» | pág. impresa **77** · PDF 80 | exigencia | 2026-11-12 · texto |
 | `MC_HHD.4.1.1.3.7a` | 4.1.1.3.7 a) | 4.1.1.3.7  Consideraciones para el diseño › «a)   Material sólido de arrastre» | pág. impresa **79** · PDF 82 | recomendacion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.7b` | 4.1.1.3.7 b) | 4.1.1.3.7  Consideraciones para el diseño › «b)  Borde libre» | pág. impresa **79** · PDF 82 | recomendacion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.3.7b#LLENA` | 4.1.1.3.7 b) | 4.1.1.3.7  Consideraciones para el diseño › «b)  Borde libre» | pág. impresa **79** · PDF 82 | exigencia | 2026-09-20 · texto |
 | `MC_HHD.4.1.1.3.7c` | 4.1.1.3.7 c), ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | aproximacion | 2026-08-28 · imagen renderizada |
+| `MC_HHD.4.1.1.3.7c#ALIVIADERO` | 4.1.1.3.7 c) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | permiso | 2026-11-12 · texto |
 | `MC_HHD.4.1.1.3.7c#G` | 4.1.1.3.7 c), lista de variables de la ec. (49) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | definicion | 2026-08-28 · ambos |
+| `MC_HHD.4.1.1.3.7c#PROTECCION` | 4.1.1.3.7 c) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **79** · PDF 82 | recomendacion | 2026-11-12 · texto |
+| `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS` | 4.1.1.3.7 c) | 4.1.1.3.7  Consideraciones para el diseño › «c)  Socavación local a la salida de la alcantarilla» | pág. impresa **80** · PDF 83 | recomendacion | 2026-11-12 · texto |
 | `MC_HHD.4.1.1.3.7d` | 4.1.1.3.7 d) | 4.1.1.3.7  Consideraciones para el diseño › «d)  Mantenimiento y limpieza» | pág. impresa **80** · PDF 83 | exigencia | 2026-09-07 · texto |
 | `MC_HHD.4.1.1.3.7e` | 4.1.1.3.7 e) | 4.1.1.3.7  Consideraciones para el diseño › «e)  Abrasión» | pág. impresa **81** · PDF 84 | recomendacion | 2026-11-11 · texto |
 | `MC_HHD.4.1.1.3.7f#COSTA` | 4.1.1.3.7 f) | 4.1.1.3.7  Consideraciones para el diseño › «f)  Corrosión» | pág. impresa **81** · PDF 84 | exigencia | 2026-11-11 · texto |
@@ -683,7 +789,10 @@ línea que se pueda romper.
 | `MC_HHD.4.1.2.1b` | 4.1.2.1 b) | 4.1.2.1 Cunetas › «b) Caudal Q de aporte» | pág. impresa **177** · PDF 180 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.4.1.2.1d` | 4.1.2.1 d) | 4.1.2.1 Cunetas › «d) Desagüe de las cunetas» | pág. impresa **179** · PDF 182 | exigencia | 2026-08-28 · ambos |
 | `MC_HHD.LAMINA_01` | Lámina Nº 01 | «UBICACIÓN TÍPICA DE ALCANTARILLAS» | pág. impresa **206** · PDF 209 | definicion | 2026-11-11 · imagen renderizada |
+| `MC_HHD.LAMINA_02` | Anexos, Lámina Nº 02 | «TIPO  TMC CON PROTECCIÓN DE» | pág. impresa **207** · PDF 210 | definicion | 2026-11-12 · ambos |
 | `MC_HHD.LAMINA_03` | Lámina Nº 03 | «SECCIONES TÍPICAS DE ALCANTARILLAS» | pág. impresa **209** · PDF 212 | definicion | 2026-09-07 · imagen renderizada |
+| `MC_HHD.LAMINA_04` | Anexos, Lámina Nº 04 | «PERFIL LONGITUDINAL Y SECCIÓN TÍPICAS» | pág. impresa **210** · PDF 213 | definicion | 2026-11-12 · ambos |
+| `MC_HHD.LAMINA_05` | Anexos, Lámina Nº 05 | «ALCANTARILLA  CON  ENROCADO» | pág. impresa **211** · PDF 214 | definicion | 2026-11-12 · ambos |
 
 > **`MC_HHD.3.12.2`** — Ecuacion (28). Las unidades estan en la pag. impresa 50 (PDF 53): Q «Descarga máxima de diseño (m3/s)», C «Coeficiente de escorrentía (Ver Tabla Nº 08)», I «Intensidad de precipitación máxima horaria (mm/h)», A «Área de la cuenca (Km2).» El 0,278 es 1/3.6, la conversion de mm/h·km² a m³/s: es el mismo cociente que el num. 4.1.2.1 b) escribe como C·I·A/3.6. El numeral NO trae ejemplo numerico.
 
@@ -747,9 +856,13 @@ línea que se pueda romper.
 
 > **`MC_HHD.4.1.1.3.6#T10`** — El titulo se imprime en DOS renglones y el segundo dice solo «revestidos»; el `texto_literal` es el primero, que es el que se puede buscar de corrido. El titulo completo esta en `TablaNormativa.titulo_literal`.
 
+> **`MC_HHD.4.1.1.3.6#T11`** — El titulo se imprime en DOS renglones y el segundo dice solo «revestidos»: mismo caso que la Tabla Nº 10. Trece filas de terreno y DOS columnas de valores, «FLUJO INTERMITENTE (M/S)» y «FLUJO PERMANENTE (M/S)»; seis de las filas cuelgan del encabezado «Material graduado (no coloidal)», que no lleva valores. Al pie: «Fuente: Manual de Carreteras de California». Leida por texto y por imagen; la transcripcion entera es `TablaNormativa` MC_HHD.T11.
+
 > **`MC_HHD.4.1.1.3.6#VMIN`** — El parrafo cruza el salto de pagina: arranca en la impresa 76 («Se deberá verificar que la velocidad mínima del flujo dentro del conducto no produzca sedimentación que pueda incidir en una») y el numero se imprime en la 77. El `texto_literal` es la mitad que contiene el valor, porque es la que T5 tiene que poder encontrar en la pagina que la cita declara.
 
 > **`MC_HHD.4.1.1.3.6#VMIN_INICIO`** — La frase se corta donde la corta la PAGINA, no donde conviene: «...incidir en una» es literalmente el ultimo renglon de la pag. impresa 76, y completarla aqui con «reducción de su capacidad hidráulica» produciria un texto que no esta en esta pagina y que el buscador de un lector no encuentra. La continuacion es `MC_HHD.4.1.1.3.6#VMIN`, y las dos juntas son la oracion entera.
+
+> **`MC_HHD.4.1.1.3.6#V_SALIDA`** — Es la frase que convierte la Tabla Nº 11 en un limite de la velocidad de SALIDA: «debe limitarse». El parrafo siguiente presenta la tabla «con valores máximos admisibles de velocidades de flujo según el tipo de material donde se desplaza». El Manual no dice que hacer cuando la velocidad los supera; lo dice el num. 4.1.1.3.7 c): proteger el cauce.
 
 > **`MC_HHD.4.1.1.3.7a`** — Las CUATRO caracteristicas a las que «el párrafo anterior» remite estan en la pag. impresa 78 (PDF 81), no en la 79: la cita del repositorio decia solo «pag. 79» y con eso el condicionante quedaba fuera del rango citado. El rango correcto es 78-79. El valor 1.22 m NO esta en la fuente: el Manual escribe «Ф 48”» y la conversion (48 in = 1.2192 m) es del proyecto.
 
@@ -759,7 +872,13 @@ línea que se pueda romper.
 
 > **`MC_HHD.4.1.1.3.7c`** — La ec. (49) es d50 = V² / (3.1 g). La extraccion de texto la devuelve desordenada («) 1.3 ( 2 50 g V d =») por el orden de trazado, de modo que la lectura fiable es la de la pagina renderizada: el metodo de esta cita es IMAGEN y decirlo es parte de la verificacion.
 
+> **`MC_HHD.4.1.1.3.7c#ALIVIADERO`** — La frase siguiente remite a la Lámina Nº 04 (cita MC_HHD.LAMINA_04). Es la alternativa que el Manual da cuando la velocidad es alta: no reviste el cauce, reduce la velocidad. El programa no la dimensiona.
+
 > **`MC_HHD.4.1.1.3.7c#G`** — NOR-HID-01 / MAT-O7. ESTE NUMERAL NO ESCRIBE NINGUN VALOR DE g: define el simbolo y su unidad. El 9.8 que el proyecto usa SI esta en el Manual, en otros dos numerales (ver MC_HHD.3.12.5 y MC_HHD.4.1.1.5.4b24), y el 9.81 no aparece ni una vez en las 225 paginas. Se corrige la ATRIBUCION, no el numero.
+
+> **`MC_HHD.4.1.1.3.7c#PROTECCION`** — LA ORACION CRUZA DE PAGINA: sigue en la impresa 80 (PDF 83) con «natural mediante la construcción de emboquillados de piedra…» (cita MC_HHD.4.1.1.3.7c#REVESTIMIENTOS). Nombra la ENTRADA junto a la salida: es el unico texto del Manual que sostiene una proteccion de entrada, y la sostiene como RECOMENDACION, sin formula ni dimension.
+
+> **`MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`** — Segunda mitad de la oracion. Enumera TRES clases de revestimiento --emboquillados de piedra, enchapado de rocas acomodadas, «otros tipos»-- sin preferir ninguna ni dar dimensiones: de ahi el conjunto cerrado del criterio 'tipo_proteccion_entrada'. Y fija el alcance en planta por un criterio fisico, no por una longitud: hasta donde la socavacion local no incida.
 
 > **`MC_HHD.4.1.1.3.7e`** — CUALITATIVO, SIN NINGUN VALOR: el inciso define la abrasion «la erosión del material de la alcantarilla por la acción de sólidos flotantes transportados por el cauce natural» y dice de que depende («carácter y cantidad de material de arrastre, duración, frecuencia y velocidad del flujo»), pero no escribe ninguna velocidad maxima para el metal ni para el plastico. La Tabla N 10 (num. 4.1.1.3.6) tampoco los lista. Es la razon de que 'v_max_tmc' sea [A]: la norma peruana manda considerar la abrasion y no da el numero.
 
@@ -784,6 +903,12 @@ línea que se pueda romper.
 > **`MC_HHD.4.1.2.1d`** — NOR-HID-02, cerrado en sus DOS extremos. (1) LA PAGINA: el repositorio citaba la impresa 178, que trae la TABLA Nº 34 de dimensiones minimas del apartado c); el apartado d) esta en la 179. (2) EL CARACTER: las dos cifras NO tienen la misma fuerza. El 250 es «será ... como máximo», exigencia con valvula de escape expresa («deberán justificarse técnicamente»); el 200 es «se recomienda reducir», recomendacion pura. Tratarlas como un dict de topes duros equivalentes borra la diferencia. Ademas la fuente nombra solo DOS regimenes en este apartado y deja sin longitud el regimen «lluvioso» intermedio de su propia Tabla Nº 34.
 
 > **`MC_HHD.LAMINA_01`** — Es un plano, leido sobre la pagina renderizada. Cinco esquemas: a) siguiendo la pendiente natural del cauce; b) entrada bajo la pendiente natural; c) salida sobre la pendiente natural; d) entrada bajo y salida sobre la pendiente natural; e) pendientes pronunciadas (con muro y anclaje). En a) el conducto va de cabezal a cabezal sobre el fondo del cauce y los taludes del terraplen mueren en la coronacion de los cabezales. En c) y d) la salida queda POR ENCIMA del cauce, con dos notas del propio plano: «la posibilidad de dejar el tubo en voladizo debe ser analizada estructuralmente. El terreno a la salida debe ser roca u otro material resistente a la erosión» y «alcantarillas pequeñas pueden descargar con seguridad sobre un talud de enrocado». NO ACOTA NINGUNA DIMENSION: ni el desnivel de la salida ni la longitud. Sostiene que una salida elevada sobre el fondo del receptor exige proteccion, y por eso el desnivel de entrega no es conservador en un solo sentido.
+
+> **`MC_HHD.LAMINA_02`** — ES UNA FIGURA, leida por imagen: «SECCIÓN TÍPICA DE ALCANTARILLA TIPO TMC CON PROTECCIÓN DE ENTRADA Y SALIDA». Rotula el «REVESTIMIENTO DE PIEDRA EMBOQUILLADA» del cauce, la «UÑA» al pie y la «PROTECCION DE DESCARGA» sobre «AFIRMADO COMPACTADO». Las dimensiones van como LETRAS (g, i, j, m, n, p, q) y la lamina no trae la tabla que les de valor: no fija ninguna medida. La Lámina 02-A (pag. impresa 208, PDF 211) añade la «ENTRADA TIPO CAJA RECEPTORA» y las salidas con y sin aleros, tambien con letras; la Lámina 03 (pag. impresa 209, PDF 212) rotula «CON PROTECCIÓN A LA ENTRADA Y SALIDA», con todas las cotas «VARIABLE».
+
+> **`MC_HHD.LAMINA_04`** — ES UNA FIGURA, leida por imagen: «PERFIL LONGITUDINAL Y SECCIÓN TÍPICAS DE ALIVIADERO CON DISIPADOR DE ENERGÍA HIDRÁULICA, A LA SALIDA DE ALCANTARILLAS». A diferencia de las Láminas 02, 03 y 05, ESTA SI LLEVA COTAS: escalones de concreto ciclopeo de 1.00 m de alto, losa de 0.15 m sobre 0.20 m de relleno granular, muros de 0.20 m en la corona y 0.30 m en la base (Sección B-B), tubos de drenaje perforados Ø4", y un dentellon final de «0.80 min.» de profundidad y 0.40 m de ancho. Las longitudes de los tramos van como «VARIABLE». Es el detalle tipico de una medida que el programa no dimensiona.
+
+> **`MC_HHD.LAMINA_05`** — ES UNA FIGURA, leida por imagen: «SECCIÓN TÍPICA DE CRUCE DE ALCANTARILLA CON ENROCADO DE PROTECCION A LA SALIDA». Dibuja el enrocado sobre el talud de salida hasta el fondo del cauce, y bajo el dos capas ROTULADAS: «FILTRO» y «CAMA DE APOYO». NO TRAE NINGUNA DIMENSION: los taludes van como «H:V» y las dos cotas del pie como «VARIABLE». El num. 4.1.1.3.7 c) la presenta con «En los Anexos: Lámina Nº 05, se aprecia una sección típica de alcantarilla con enrocado de protección a la salida» (pag. impresa 80). Lo unico que se le puede atribuir es que el enrocado tipico del Manual LLEVA filtro y cama de apoyo.
 
 ### Manual de Puentes  (`MP`)
 
@@ -1966,6 +2091,29 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | Ladrillo con concreto |  | 2.5 – 3.5 | no usada |
 | Mampostería de piedra y concreto |  | 2.0 | no usada |
 
+### `MC_HHD.T11` — TABLA  Nº  11:   Velocidades  máximas  admisibles (m/s) en canales no revestidos
+
+- Cita: `MC_HHD.4.1.1.3.6#T11`
+- Tabla completa · el calculo usa 3 de 3 columnas y 13 de 13 filas
+- Fuente que la tabla se atribuye: *Manual de Carreteras de California*
+- Vistas de cálculo derivadas: `V_MAX_NO_REVESTIDOS`
+
+| Fila | TIPO DE TERRENO | FLUJO  INTERMITENTE (M/S) | FLUJO  PERMANENTE (M/S) | Uso |
+|---|---|---|---|---|
+| Arena fina (no coloidal) |  | 0.75 | 0.75 | usada |
+| Arcilla arenosa (no coloidal) |  | 0.75 | 0.75 | usada |
+| Arcilla limosa (no coloidal) |  | 0.9 | 0.9 | usada |
+| Arcilla fina |  | 1.0 | 1.0 | usada |
+| Ceniza volcánica |  | 1.2 | 1.0 | usada |
+| Grava fina |  | 1.5 | 1.2 | usada |
+| Arcilla dura (coloidal) |  | 1.8 | 1.4 | usada |
+| Material graduado (no coloidal) -- Desde arcilla a grava |  | 2.0 | 1.5 | usada |
+| Material graduado (no coloidal) -- Desde limo a grava |  | 2.1 | 1.7 | usada |
+| Material graduado (no coloidal) -- Grava |  | 2.3 | 1.8 | usada |
+| Material graduado (no coloidal) -- Grava gruesa |  | 2.4 | 2.0 | usada |
+| Material graduado (no coloidal) -- Desde grava a piedras (< 15 cm) |  | 2.7 | 2.1 | usada |
+| Material graduado (no coloidal) -- Desde grava a piedras (> 20 cm) |  | 3.0 | 2.4 | usada |
+
 ### `MP.TCOMB` — Tabla 2.4.5.3.1-1 Combinaciones de Carga y Factores de Carga
 
 - Cita: `MP.T2.4.5.3.1-1`
@@ -2238,7 +2386,16 @@ recomienda.
 | `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | **define** | `MP.2.4.5.2#EV`, `MP.T2.4.5.3.1-2` |
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | **recomienda** | `MC_HHD.4.1.1.4.1e`, `MC_HHD.4.1.1.4.1e#RANGO` |
+| `F6.APRON` | Fase 6 - Proteccion de entrada y salida | Tamaño de piedra del apron de enrocado por HEC-14, Ec. (10.4): D50 en funcion de Q, D y TW | **recomienda** | `HEC14.10.2#EC_10_4`, `HEC14.10.2#TW`, `HEC14.10.2#TW_ALTO`, `HEC14.10.2#EC_10_5`, `HEC14.1#T1_1_APRON`, `HDS5_3ED.5.3.2#APRON`, `HEC14.D#SOLO_VELOCIDAD` |
+| `F6.APRON_GEOMETRIA` | Fase 6 - Proteccion de entrada y salida | Clase de enrocado, longitud, profundidad y ancho del apron por la Tabla 10.1 de HEC-14 | **recomienda** | `HEC14.10.2#T10_1`, `HEC14.10.2#ANCHO`, `MC_HHD.LAMINA_05`, `MC_HHD.4.1.1.3.7c#ALIVIADERO`, `MC_HHD.LAMINA_04` |
+| `F6.ENTRADA` | Fase 6 - Proteccion de entrada y salida | Proteccion de la entrada: velocidad en la boca y revestimiento del cauce y del talud | **recomienda** | `MC_HHD.4.1.1.3.7c#PROTECCION`, `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`, `HDS5_3ED.5.3.1#ENTRADA`, `HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA`, `MC_HHD.LAMINA_02` |
+| `F6.FILTRO` | Fase 6 - Proteccion de entrada y salida | Filtro entre el enrocado y el suelo: requisitos del geotextil de control permanente de erosion | **recomienda** | `MC_HHD.LAMINA_05`, `HEC14.10.2#FILTRO`, `EG2013.511.08#EROSION`, `EG2013.511.08#T511_06`, `EG2013.511.08#NOTA_5A` |
+| `F6.FROUDE` | Fase 6 - Proteccion de entrada y salida | Numero de Froude a la salida del conducto, Fr = V / (g·ye)^0.5, con el tirante equivalente de HEC-14 | **define** | `HEC14.10.1.1#YE`, `HDS5_3ED.3.1.6#V_SALIDA`, `HEC14.3#CONTINUIDAD` |
+| `F6.GEOMETRIA_ADOPTADA` | Fase 6 - Proteccion de entrada y salida | Espesor y longitud de la proteccion de salida que el proyecto adopta | **recomienda** | `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`, `MC_HHD.4.1.1.3.7c` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
+| `F6.SOCAVACION` | Fase 6 - Proteccion de entrada y salida | Hoya de socavacion local a la salida por HEC-14, Cap. 5: profundidad, ancho y longitud | **recomienda** | `HEC14.5.1#EC_5_1`, `HEC14.5#PEOR_CASO`, `HEC14.5.1.1#T5_1`, `HEC14.5.1.4#T5_2`, `HEC14.5.1.5#T5_3`, `HEC14.5.1.2#T30`, `HEC14.5.1.2#NO_BAJO_30`, `HEC14.5.2#EC_5_2`, `HEC14.5.2#RANGO_IP`, `HEC14.5.2#EC_5_4` |
+| `F6.SOCAVACION_DESPLANTE` | Fase 6 - Proteccion de entrada y salida | Profundidad de socavacion que se entrega al desplante del cabezal de salida | **recomienda** | `HEC14.5.1.3#CABEZAL`, `HDS5_3ED.5.3.2#APRON` |
+| `F6.V_ADMISIBLE` | Fase 6 - Proteccion de entrada y salida | Velocidad del flujo contra la maxima admisible del terreno del cauce (Tabla Nº 11) | **recomienda** | `MC_HHD.4.1.1.3.6#V_SALIDA`, `MC_HHD.4.1.1.3.6#T11`, `MC_HHD.4.1.1.3.7c#PROTECCION`, `HDS5_3ED.5.3.2#PRACTICA` |
 | `F7.COTA_SALIDA` | Fase 7 - Compatibilidad geometrica | Caida del conducto y cota de fondo de la salida | **define** | `MC_HHD.LAMINA_01`, `HDS5_3ED.2.2.4#LONGITUD` |
 | `F7.ENCAJE` | Fase 7 - Compatibilidad geometrica | Encaje de la seccion adoptada en la seccion transversal: longitud entre cabezales a la clave | **obliga** | `HDS5_3ED.3.3.5#ENCAJE`, `HDS5_3ED.3.1.4#LONGITUD` |
 | `F7.ENTREGA` | Fase 7 - Compatibilidad geometrica | Entrega al cuerpo receptor: cota de salida frente a su fondo | **define** | `MC_HHD.LAMINA_01`, `MC_HHD.4.1.1.3.3` |
@@ -2406,7 +2563,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 266.
+Citas sin firma de verificación: **5** de 306.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

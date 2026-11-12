@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `5bca7c6+cambios-sin-commit` · Suite: 4850 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `7e74065+cambios-sin-commit` · Suite: 4960 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -38,7 +38,7 @@
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **158** · fórmulas distintas: **27** · fundamentos ejercitados: **18** de 57.
+Pasos emitidos: **158** · fórmulas distintas: **27** · fundamentos ejercitados: **18** de 66.
 
 ## 2. Índice
 
@@ -135,7 +135,16 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | `M5_verificaciones` |
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | sin `paso()`; entra por otra puerta desde `M5_verificaciones` |
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | `M5_verificaciones` |
+| `F6.APRON` | Fase 6 - Proteccion de entrada y salida | Tamaño de piedra del apron de enrocado por HEC-14, Ec. (10.4): D50 en funcion de Q, D y TW | `M6_proteccion` |
+| `F6.APRON_GEOMETRIA` | Fase 6 - Proteccion de entrada y salida | Clase de enrocado, longitud, profundidad y ancho del apron por la Tabla 10.1 de HEC-14 | `M6_proteccion` |
+| `F6.ENTRADA` | Fase 6 - Proteccion de entrada y salida | Proteccion de la entrada: velocidad en la boca y revestimiento del cauce y del talud | `M6_proteccion` |
+| `F6.FILTRO` | Fase 6 - Proteccion de entrada y salida | Filtro entre el enrocado y el suelo: requisitos del geotextil de control permanente de erosion | `M6_proteccion` |
+| `F6.FROUDE` | Fase 6 - Proteccion de entrada y salida | Numero de Froude a la salida del conducto, Fr = V / (g·ye)^0.5, con el tirante equivalente de HEC-14 | `M6_proteccion` |
+| `F6.GEOMETRIA_ADOPTADA` | Fase 6 - Proteccion de entrada y salida | Espesor y longitud de la proteccion de salida que el proyecto adopta | `M6_proteccion` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | `M6_proteccion` |
+| `F6.SOCAVACION` | Fase 6 - Proteccion de entrada y salida | Hoya de socavacion local a la salida por HEC-14, Cap. 5: profundidad, ancho y longitud | `M6_proteccion` |
+| `F6.SOCAVACION_DESPLANTE` | Fase 6 - Proteccion de entrada y salida | Profundidad de socavacion que se entrega al desplante del cabezal de salida | `M6_proteccion` |
+| `F6.V_ADMISIBLE` | Fase 6 - Proteccion de entrada y salida | Velocidad del flujo contra la maxima admisible del terreno del cauce (Tabla Nº 11) | `M6_proteccion` |
 | `F7.COTA_SALIDA` | Fase 7 - Compatibilidad geometrica | Caida del conducto y cota de fondo de la salida | `M7_geometria` |
 | `F7.ENCAJE` | Fase 7 - Compatibilidad geometrica | Encaje de la seccion adoptada en la seccion transversal: longitud entre cabezales a la clave | `M7_geometria` |
 | `F7.ENTREGA` | Fase 7 - Compatibilidad geometrica | Entrega al cuerpo receptor: cota de salida frente a su fondo | `M7_geometria` |

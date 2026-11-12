@@ -4262,3 +4262,106 @@ una manera que conviene poder discutir.
   convierte la cota superior en la longitud de construcción; o el fondo de
   entrada medido en el cauce, que quita el sesgo del eje.
 - **Dónde vive:** `src/modulos/M7_geometria.py::longitud_del_conducto`
+---
+
+# Parte XLV — Lo que T-8 de la cadena T dejó escrito: la Fase 6 de entrada y salida, el apron de HEC-14 y la hoya de socavación
+
+T-8 (2026-11-12) hace que la Fase 6 sea de verdad la protección de entrada y salida
+(`INF-3.3.7`, `INF-5.1.13`). Laushey sigue rigiendo; lo nuevo va al lado. Cinco decisiones
+no son un cierre limpio.
+
+## T8-01 · El apron de HEC-14 es contraste y no regla; el espesor adoptado queda siempre bajo su piso, y la decisión queda preparada
+
+- **Cerrado (T-8):** `INF-3.3.7` en su parte de salida. Froude con el tirante equivalente
+  (HEC-14 10.1.1) como parámetro y régimen por el tirante contra el crítico
+  (`flujo_supercritico`, una regla para el Froude y la Ec. 10.5); apron por la Ec.
+  (10.4)/(10.5) y la Tabla 10.1 con sus límites (circular, TW de 0.4D a 1.0D, alto de hasta
+  1500 mm); la clase que toca a la piedra adoptada (paso 6.6b); aviso en todo punto de que
+  1.75·d₅₀ queda bajo el piso de 2.0·D₅₀; la familia de Laushey frente al Apéndice D.
+- **Abierto:** (1) **qué rige**: el d₅₀ del Manual llena `ProteccionSalida.d50`; el espesor y
+  la longitud los decide el [A] `regla_espesor_longitud_proteccion_salida` (`manual`, la
+  conducta de hoy; `envolvente_hec14` toma el mayor). Es decisión del dueño. (2) El `y_n` de
+  la Ec. (10.5) es el de registro (n máximo). (3) Fuera: la poza (10.1), la Figura 10.3,
+  los disipadores (Caps. 7–9) y el aliviadero de la Lámina N° 04.
+- **Qué haría falta:** para (1), que el dueño elija la regla; para (2), publicar en M3 el
+  tirante con n mínimo; para (3), el diseño del disipador en el expediente.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::apron_hec14`
+
+## T8-02 · La Tabla N° 11 decide si se reviste la salida, y no revestir es lectura del proyecto
+
+- **Cerrado (T-8):** con `tipo_terreno_receptor` y `regimen_flujo_descarga` declarados, la
+  velocidad de salida se compara con la admisible: si no la supera, no hay enrocado
+  (`requerida` False, d₅₀ en `None`) y se AVISA que esa inversa es lectura del proyecto, con
+  la frase del HDS-5 5.3.2 (`citas.INTERPRETACION_SIN_ENROCADO`; el fundamento ya no
+  obliga). El terreno se cruza con el lecho declarado y la incoherencia se avisa.
+- **Abierto:** (1) en la **entrada** la comparación usa la velocidad en la boca del barril:
+  extensión del proyecto, del lado alto. (2) El terreno es un [S] por punto y entra por
+  `--datos-externos`, como la sección medida de T-2 (ficha T2-03), sin trazabilidad
+  obligatoria: no cambia las 19 columnas del CSV. (3) La inspección de campo que el HDS-5
+  pide para no revestir no es un dato del programa.
+- **Qué haría falta:** para (1), la sección del cauce de aproximación; para (2), una
+  decisión de producto sobre columnas opcionales con trazabilidad; para (3), el expediente.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::velocidad_admisible_del_cauce`
+
+## T8-03 · La protección de entrada declara la clase de revestimiento y lo que se protege; ninguna fuente de `normas/` le da dimensiones
+
+- **Cerrado (T-8):** `INF-5.1.13`. Criterio [A] `tipo_proteccion_entrada` con las tres
+  clases del num. 4.1.1.3.7 c); velocidad en la boca de lo que M4 resolvió; lo que se
+  protege por embocadura (lectura del proyecto sobre HDS-5 5.3.1).
+- **Abierto:** la longitud y el espesor del zampeado, la uña y el dentellón: las Láminas
+  02, 02-A y 03 los traen como letras o «VARIABLE». La embocadura es la adoptada para todo
+  el proyecto (`EMBOCADURA_CABEZAL_RECTO`); T-7a pasará la de cada punto.
+- **Qué haría falta:** T-7a punto 5 (geometría del zampeado y del dentellón como parte de
+  `GeometriaCabezal`) y pasar su embocadura a `proteccion_entrada`.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::EMBOCADURAS`
+
+## T8-04 · La hoya de socavación es HEC-14 Cap. 5 y no el 3; la duración y la referencia de hs las declara el proyecto
+
+- **Cerrado (T-8):** la Ec. (5.1) o (5.2)–(5.4) con sus dos ejemplos resueltos, entregada al
+  desplante (`socavacion_salida`, para T-7a; HEC-14 5.1.3), con la cota del fondo de la hoya.
+  La declarada gana. Sin la duración rige el [C] de 30 min, extremo no conservador: se avisa
+  con la profundidad a 360 min. Con menos de 30 min, cota superior con 30. Un IP fuera de
+  5–16 (también 0) avisa y no bloquea.
+- **Abierto:** (1) el lecho es dato del EMS y la línea base no lo trae. (2) HEC-14 Cap. 5
+  no dice desde qué cota se mide hs: el [A] `referencia_profundidad_socavacion` toma el
+  fondo del cauce (conservador; ~0.7 m más abajo que la solera en A-01). (3) La lectura
+  entre filas es [A]. (4) La degradación general (Cap. 2) no está incluida.
+- **Qué haría falta:** el EMS del lecho por punto o un estudio del cauce declarado como
+  `profundidad_socavacion_estimada_m` desde la misma referencia; T-7a para el desplante.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::socavacion_salida`
+
+## T8-05 · El filtro es un requisito declarado; EG-2013 no lo obliga, y su nota (5) vale para la fila
+
+- **Cerrado (T-8):** el filtro se declara (Lámina N° 05, HEC-14) y, con el pasante del
+  tamiz N° 200, se elige la columna de la Tabla 511-06 de EG-2013. La nota (5) la llama el
+  rótulo de la fila: (5) b lleva la abertura a 0.30 mm con un lecho cohesivo de IP > 7 en
+  las tres columnas, y (5) a se avisa con un lecho no cohesivo de más de la mitad de finos
+  (un limo en SUCS: lectura del proyecto).
+- **Abierto:** EG-2013 511.08 especifica el geotextil cuando se pone; no obliga a ponerlo,
+  de modo que el requisito no es [N]. El filtro granular no se diseña: HEC 11 no está en
+  `normas/`. Y sin el pasante del EMS no se elige columna.
+- **Qué haría falta:** HEC 11 o una norma peruana de filtros; el pasante por punto.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::requisito_de_filtro`
+
+## T8-06 · La aceptación de T-8 se escribió después del código; el rojo se midió contra la base y la mutación de M6 se midió con el arnés
+
+- **Qué se difirió:** el orden de la casa (rojo con `xfail(strict=True)` y liberar). El
+  prompt se retomó a medias de otra sesión, con el código ya escrito.
+- **Por qué:** se dice en vez de reconstruirlo. Medido contra `ad5cb97` con marcadores
+  para los nombres que no existían: 57 rojos, 5 errores y 1 verde (la guardia de las tres
+  advertencias, que vale antes y después). Los tests de validación de la carga miden el
+  MOTIVO: con sólo la clave pasaban vacuos en la base, que rechazaba las claves por
+  desconocidas. Los oráculos son los ejemplos resueltos de HEC-14 y la aritmética escrita.
+- **Qué haría falta:** nada que se pueda rehacer. Mutación con el arnés de EXT-11 sobre
+  M6 entero contra `tests/test_t8_proteccion.py`, en dos momentos. Antes del auditor
+  adversarial (375 mutantes): 296 muertos en la primera medida y 337 (89.9 %) tras los
+  tests que enseñó. Sobre el M6 final, ya con las correcciones del auditor y fusionado con
+  T-6 (514 mutantes): 448 muertos (87.2 %) en la primera medida —el código nuevo del
+  auditor tenía avisos sin texto comprobado— y **472 (91.8 %)** tras endurecer las
+  aserciones de los tests existentes, sin sumar tests. De los 42 vivos, 35 son de banda de
+  tolerancia (`TOL_UMBRAL_NORMATIVO`, `>` frente a `>=`), tres equivalentes (el
+  `or`/`and` del cruce del terreno con el lecho, donde con un dato ausente ninguna fila
+  coincide, y dos en `coeficiente_de_tabla`), dos de la guardia de salida de la hoya, que
+  ningún dato válido alcanza, y dos de presentación (las cifras de ρ en la sustitución y
+  la nota vacía frente a `None`). No se censan uno a uno: ampliar el censo es de T-10.
+- **Dónde vive:** `tests/test_t8_proteccion.py::test_hec14_la_socavacion_es_el_capitulo_5_y_el_apron_el_10`

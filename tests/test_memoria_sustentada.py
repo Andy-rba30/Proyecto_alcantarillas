@@ -104,8 +104,21 @@ def _pasos_de(informe):
         # La matriz de durabilidad (T-4) emite un paso por ensayo declarado.
         if getattr(punto, "durabilidad", None) is not None:
             vistos.extend(punto.durabilidad.pasos)
-        if punto.proteccion is not None:
-            _anota(getattr(punto.proteccion, "paso", None))
+        # --- T-8 --- La Fase 6 emite desde T-8 MAS de un paso y en TRES
+        # piezas: la proteccion de salida (Laushey y, al lado, lo de HEC-14),
+        # la de entrada y la socavacion. Se recorren aqui por su cuenta, sin
+        # `M11.traza_proteccion`, por la misma razon que el resto: un test que
+        # consume la funcion que audita deja de auditarla.
+        for pieza in (punto.proteccion,
+                      getattr(punto, "proteccion_entrada", None),
+                      getattr(punto, "socavacion", None)):
+            if pieza is None:
+                continue
+            pasos_de_la_pieza = tuple(getattr(pieza, "pasos", ()) or ())
+            if pasos_de_la_pieza:
+                vistos.extend(pasos_de_la_pieza)
+            else:
+                _anota(getattr(pieza, "paso", None))
         if punto.espaciamiento is not None:
             _anota(getattr(punto.espaciamiento, "paso", None))
         # T-6: 7.B emite pasos propios (pendiente, esviaje, longitud, cota de
@@ -526,6 +539,13 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # eleccion.
         "F4.HORIZONTAL",    # el paso 4.1 del barril con S = 0
         "F4.PISO_HW",       # la eleccion del piso de la carga a la entrada
+        # LOS NUEVE DE T-8, por la razon de F6.LAUSHEY: la Fase 6 cuelga de
+        # un punto dimensionado y esta corrida no dimensiona ninguno. Que
+        # los pasos existen y llevan su fundamento lo mide
+        # `tests/test_t8_proteccion.py` sobre la corrida ancha.
+        "F6.GEOMETRIA_ADOPTADA", "F6.FROUDE", "F6.V_ADMISIBLE", "F6.APRON",
+        "F6.APRON_GEOMETRIA", "F6.FILTRO", "F6.ENTRADA", "F6.SOCAVACION",
+        "F6.SOCAVACION_DESPLANTE",
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar

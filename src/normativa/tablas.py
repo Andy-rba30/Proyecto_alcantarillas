@@ -5486,4 +5486,125 @@ T_WSDOT_2_2 = _tabla(
     vistas_de_calculo=("coeficiente_escorrentia_superficie_vial",),
 )
 
+
+# ===========================================================================
+# --- T-8 --- Manual de Hidrologia — Tabla Nº 11, velocidades maximas
+# admisibles en canales no revestidos (pag. impresa 77, PDF 80)
+# ===========================================================================
+# La tabla que el Manual pone inmediatamente despues de exigir que la
+# velocidad de SALIDA de la alcantarilla se limite «a fin de evitar procesos
+# de socavación del cauce aguas abajo» (cita MC_HHD.4.1.1.3.6#V_SALIDA). Es
+# la hermana de la Tabla Nº 10 --aquella acota la velocidad DENTRO del
+# conducto revestido, esta la del cauce sin revestir-- y hasta T-8 no estaba
+# transcrita. Leida por texto y por imagen: trece filas de terreno y dos
+# columnas de valores. Seis filas cuelgan del encabezado «Material graduado
+# (no coloidal)», que no lleva valores; su clave lleva el prefijo
+# `graduado_` porque «Grava» a secas, sin el grupo, se confunde con la fila
+# «Grava fina» de arriba.
+#
+# CUAL FILA Y CUAL COLUMNA APLICAN A UN CRUCE no lo decide el proyecto: el
+# tipo de terreno del cauce es un dato de sitio por punto
+# (`tipo_terreno_receptor`, `tipo_terreno_entrada`) y el regimen del flujo
+# tambien (`regimen_flujo_descarga`). Sin ellos la comparacion no se hace.
+_USO_T11 = Usada(por=("M6.velocidad_admisible_del_cauce",))
+
+T11 = _tabla(
+    id="MC_HHD.T11",
+    cita_id="MC_HHD.4.1.1.3.6#T11",
+    titulo_literal=("TABLA  Nº  11:   Velocidades  máximas  admisibles (m/s) "
+                    "en canales no revestidos"),
+    texto_previo=Verbatim(
+        texto=("A continuación, se presenta una tabla con valores máximos "
+               "admisibles de velocidades de flujo según el tipo de material "
+               "donde se desplaza."),
+        pagina_pdf=80),
+    columnas=(
+        ColumnaDeTabla(id="terreno", etiqueta_literal="TIPO DE TERRENO",
+                       unidad="", uso=_USO_T11),
+        ColumnaDeTabla(id="intermitente",
+                       etiqueta_literal="FLUJO  INTERMITENTE (M/S)",
+                       unidad="m/s", uso=_USO_T11),
+        ColumnaDeTabla(id="permanente",
+                       etiqueta_literal="FLUJO  PERMANENTE (M/S)",
+                       unidad="m/s", uso=_USO_T11),
+    ),
+    filas=(
+        FilaDeTabla(
+            id="MC_HHD.T11#arena_fina_no_coloidal",
+            etiqueta_literal="Arena fina (no coloidal)",
+            valores={"intermitente": 0.75, "permanente": 0.75},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#arcilla_arenosa_no_coloidal",
+            etiqueta_literal="Arcilla arenosa (no coloidal)",
+            valores={"intermitente": 0.75, "permanente": 0.75},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#arcilla_limosa_no_coloidal",
+            etiqueta_literal="Arcilla limosa (no coloidal)",
+            valores={"intermitente": 0.90, "permanente": 0.90},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#arcilla_fina",
+            etiqueta_literal="Arcilla fina",
+            valores={"intermitente": 1.00, "permanente": 1.00},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#ceniza_volcanica",
+            etiqueta_literal="Ceniza volcánica",
+            valores={"intermitente": 1.20, "permanente": 1.00},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#grava_fina",
+            etiqueta_literal="Grava fina",
+            valores={"intermitente": 1.50, "permanente": 1.20},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#arcilla_dura_coloidal",
+            etiqueta_literal="Arcilla dura (coloidal)",
+            valores={"intermitente": 1.80, "permanente": 1.40},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#graduado_arcilla_a_grava",
+            jerarquia=("Material graduado (no coloidal)",),
+            etiqueta_literal="Desde arcilla a grava",
+            valores={"intermitente": 2.00, "permanente": 1.50},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#graduado_limo_a_grava",
+            jerarquia=("Material graduado (no coloidal)",),
+            etiqueta_literal="Desde limo a grava",
+            valores={"intermitente": 2.10, "permanente": 1.70},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#graduado_grava",
+            jerarquia=("Material graduado (no coloidal)",),
+            etiqueta_literal="Grava",
+            valores={"intermitente": 2.30, "permanente": 1.80},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#graduado_grava_gruesa",
+            jerarquia=("Material graduado (no coloidal)",),
+            etiqueta_literal="Grava gruesa",
+            valores={"intermitente": 2.40, "permanente": 2.00},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#graduado_grava_a_piedras_menor_15cm",
+            jerarquia=("Material graduado (no coloidal)",),
+            etiqueta_literal="Desde grava a piedras (< 15 cm)",
+            valores={"intermitente": 2.70, "permanente": 2.10},
+            uso=_USO_T11),
+        FilaDeTabla(
+            id="MC_HHD.T11#graduado_grava_a_piedras_mayor_20cm",
+            jerarquia=("Material graduado (no coloidal)",),
+            etiqueta_literal="Desde grava a piedras (> 20 cm)",
+            valores={"intermitente": 3.00, "permanente": 2.40},
+            uso=_USO_T11),
+    ),
+    fuente_declarada_por_la_tabla="Manual de Carreteras de California",
+    alcance=Integra(),
+    vistas_de_calculo=("V_MAX_NO_REVESTIDOS",),
+)
+
+
 TABLAS: Dict[str, TablaNormativa] = {t.id: t for t in _TODAS}

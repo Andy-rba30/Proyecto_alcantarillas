@@ -769,6 +769,240 @@ LAUSHEY = _fundamento(
 )
 
 
+# --- T-8 --- (cadena T) Los pasos que M6 emite desde T-8, ademas de Laushey:
+# el Froude de la salida, la velocidad admisible del cauce, el apron de
+# HEC-14, la geometria adoptada, el filtro, la proteccion de la entrada y la
+# hoya de socavacion. NINGUNO LLEVA `OBLIGA`. El de la velocidad admisible
+# lo llevo hasta la auditoria de T-8: su fuente escribe «debe limitarse»,
+# pero lo que el paso decide --que bajo la admisible no haya nada que
+# revestir-- es la INVERSA, que el Manual no escribe; es lectura del
+# proyecto (`citas.INTERPRETACION_SIN_ENROCADO`) y se recomienda, no se
+# obliga.
+FROUDE_SALIDA = _fundamento(
+    id="F6.FROUDE",
+    fase=F6,
+    que_paso=("Numero de Froude a la salida del conducto, Fr = V / "
+              "(g·ye)^0.5, con el tirante equivalente de HEC-14"),
+    por_que=(
+        "El Froude de la salida dice en que regimen entrega el conducto el "
+        "agua al cauce: por debajo de 1 la lamina sale subcritica y se "
+        "acomoda al tirante del receptor; por encima de 1 sale supercritica, "
+        "con mas energia cinetica que la que el cauce puede llevar, y la "
+        "pierde en un resalto o socavando. HEC-14 lo forma con un tirante "
+        "EQUIVALENTE --el tirante mismo en un marco, la raiz de la mitad del "
+        "area en un tubo-- para poder usar las mismas relaciones en las dos "
+        "formas, y con el clasifica y dimensiona sus disipadores. Aqui no "
+        "decide ninguna dimension: se publica para que el regimen de la "
+        "descarga conste junto a la velocidad con que se dimensiona la "
+        "proteccion."),
+    verbo=Verbo.DEFINE,
+    citas=("HEC14.10.1.1#YE", "HDS5_3ED.3.1.6#V_SALIDA",
+           "HEC14.3#CONTINUIDAD"),
+    que_pasa_si_no_se_hace=(
+        "La proteccion se dimensionaria con una velocidad sin saber si el "
+        "chorro sale en regimen rapido, que es cuando un apron plano deja "
+        "de bastar y la fuente pide un disipador."),
+)
+
+V_ADMISIBLE_CAUCE = _fundamento(
+    id="F6.V_ADMISIBLE",
+    fase=F6,
+    que_paso=("Velocidad del flujo contra la maxima admisible del terreno "
+              "del cauce (Tabla Nº 11)"),
+    por_que=(
+        "El conducto concentra el caudal en una seccion menor que la del "
+        "cauce y lo entrega mas rapido de lo que el cauce lo llevaba. Que "
+        "esa velocidad socave o no depende del material sobre el que "
+        "descarga: una grava gruesa resiste lo que una arena fina no. El "
+        "Manual exige limitar la velocidad de salida para que no socave el "
+        "cauce aguas abajo y da, por tipo de terreno, la velocidad maxima "
+        "que un cauce sin revestir admite. Si la velocidad calculada la "
+        "supera, el Manual recomienda proteger el cauce, y es entonces "
+        "cuando la piedra se dimensiona. Que con una velocidad menor no haya "
+        "nada que revestir no lo escribe el Manual: es lectura del proyecto, "
+        "y el HDS-5 la matiza --el apron es practica corriente salvo que el "
+        "campo diga que no hace falta--."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.6#V_SALIDA", "MC_HHD.4.1.1.3.6#T11",
+           "MC_HHD.4.1.1.3.7c#PROTECCION", "HDS5_3ED.5.3.2#PRACTICA"),
+    que_pasa_si_no_se_hace=(
+        "Se revestiria todo cauce por igual, o ninguno: sin comparar con lo "
+        "que el terreno resiste no se sabe en que salidas la socavacion es "
+        "un riesgo real."),
+)
+
+APRON_HEC14 = _fundamento(
+    id="F6.APRON",
+    fase=F6,
+    que_paso=("Tamaño de piedra del apron de enrocado por HEC-14, Ec. "
+              "(10.4): D50 en funcion de Q, D y TW"),
+    por_que=(
+        "La formula de Laushey del Manual dimensiona la piedra con una sola "
+        "variable, la velocidad. El apron de enrocado de HEC-14, que es al "
+        "que el HDS-5 remite, la dimensiona con tres: el caudal, el "
+        "diametro y el tirante del receptor, porque el mismo chorro socava "
+        "menos cuando descarga dentro de un colchon de agua. Las dos "
+        "responden a la misma pregunta por caminos distintos, y calcular "
+        "las dos deja ver cuanto pesa en este cruce lo que Laushey no mira. "
+        "HEC-14 compara seis ecuaciones de apron y descarta las que solo "
+        "miran la velocidad, porque no consideran el tirante del receptor. "
+        "La ecuacion es empirica, se ajusto sobre conductos circulares y "
+        "vale entre un tirante de aguas abajo de 0.4 y 1.0 diametros."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.10.2#EC_10_4", "HEC14.10.2#TW", "HEC14.10.2#TW_ALTO",
+           "HEC14.10.2#EC_10_5", "HEC14.1#T1_1_APRON",
+           "HDS5_3ED.5.3.2#APRON", "HEC14.D#SOLO_VELOCIDAD"),
+    que_pasa_si_no_se_hace=(
+        "La proteccion quedaria dimensionada solo por velocidad, sin el "
+        "contraste de la fuente a la que el propio HDS-5 remite el apron."),
+)
+
+APRON_GEOMETRIA = _fundamento(
+    id="F6.APRON_GEOMETRIA",
+    fase=F6,
+    que_paso=("Clase de enrocado, longitud, profundidad y ancho del apron "
+              "por la Tabla 10.1 de HEC-14"),
+    por_que=(
+        "Una piedra del tamaño justo colocada en un tramo corto solo corre "
+        "la erosion aguas abajo: lo que protege es el apron entero, con su "
+        "longitud, su espesor y su ancho. HEC-14 no da una formula para "
+        "ellos sino un ejemplo de estandar de proyecto --la tabla de la "
+        "Federal Lands Highway Division--, que liga la longitud a la altura "
+        "del conducto y el espesor al tamaño de la piedra, y abre el apron "
+        "en planta a razon de 1:3. Se usa como contraste de la longitud y "
+        "del espesor que el proyecto adopta, que no salen de ninguna norma "
+        "peruana: la Lámina Nº 05 del Manual dibuja el enrocado de salida "
+        "sin una sola dimension. Cuando la piedra que el chorro pide no "
+        "cabe en la tabla, un apron plano deja de ser la medida: el Manual "
+        "ofrece entonces reducir la velocidad con un aliviadero escalonado "
+        "(su Lámina Nº 04), y HEC-14 un disipador diseñado."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.10.2#T10_1", "HEC14.10.2#ANCHO", "MC_HHD.LAMINA_05",
+           "MC_HHD.4.1.1.3.7c#ALIVIADERO", "MC_HHD.LAMINA_04"),
+    que_pasa_si_no_se_hace=(
+        "La longitud y el espesor adoptados no tendrian contra que "
+        "compararse, y un apron corto o delgado pasaria sin aviso."),
+)
+
+GEOMETRIA_ADOPTADA = _fundamento(
+    id="F6.GEOMETRIA_ADOPTADA",
+    fase=F6,
+    que_paso=("Espesor y longitud de la proteccion de salida que el "
+              "proyecto adopta"),
+    por_que=(
+        "El Manual entrega el tamaño de la piedra y pide que el "
+        "revestimiento se extienda hasta donde la socavacion local deje de "
+        "incidir, pero no dice cuanto mide esa extension ni que espesor "
+        "lleva la capa. Sin esas dos medidas no hay pieza que construir ni "
+        "que presupuestar, y por eso el proyecto las adopta y las declara: "
+        "el espesor como multiplo del d50 y la longitud como una distancia "
+        "aguas abajo de la salida. Son adopciones con ventana, no valores "
+        "de norma, y se imprimen junto a lo que HEC-14 daria para el mismo "
+        "cruce."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.7c#REVESTIMIENTOS", "MC_HHD.4.1.1.3.7c"),
+    que_pasa_si_no_se_hace=(
+        "La proteccion seria un tamaño de piedra sin espesor ni longitud: "
+        "un numero que no se puede construir."),
+)
+
+FILTRO_ENROCADO = _fundamento(
+    id="F6.FILTRO",
+    fase=F6,
+    que_paso=("Filtro entre el enrocado y el suelo: requisitos del "
+              "geotextil de control permanente de erosion"),
+    por_que=(
+        "El enrocado deja pasar el agua entre las piedras, y esa agua "
+        "arrastra los finos del suelo que tiene debajo: sin una capa que "
+        "los retenga, el lecho se va por los huecos y la piedra se hunde "
+        "aunque su tamaño sea el correcto. La lamina tipica del Manual "
+        "dibuja el enrocado de salida con su filtro y su cama de apoyo, y "
+        "HEC-14 pide la manta de filtro bajo el apron. Cuando el filtro es "
+        "un geotextil, las especificaciones generales fijan lo que tiene "
+        "que cumplir, y lo fijan por el contenido de finos del suelo: "
+        "cuanto mas fino el suelo, menor la abertura admitida."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.LAMINA_05", "HEC14.10.2#FILTRO", "EG2013.511.08#EROSION",
+           "EG2013.511.08#T511_06", "EG2013.511.08#NOTA_5A"),
+    que_pasa_si_no_se_hace=(
+        "El enrocado se socava por debajo y falla, que es la forma mas "
+        "comun de perder una proteccion bien dimensionada."),
+)
+
+PROTECCION_ENTRADA = _fundamento(
+    id="F6.ENTRADA",
+    fase=F6,
+    que_paso=("Proteccion de la entrada: velocidad en la boca y "
+              "revestimiento del cauce y del talud"),
+    por_que=(
+        "En la entrada el agua se acelera para caber en el conducto. Esa "
+        "contraccion forma vortices y zonas de alta velocidad que atacan el "
+        "talud del terraplen junto a la boca, y a menudo abre una hoya "
+        "delante del piso del conducto. El Manual recomienda proteger el "
+        "cauce cuando la velocidad en la entrada es alta, y nombra el "
+        "emboquillado de piedra y el enchapado de roca; el HDS-5 enumera "
+        "lo que protege esa zona: el revestimiento del talud y del cauce, "
+        "el cabezal, los aleros y el dentellon. Ninguna de las dos fuentes "
+        "da dimensiones para la entrada, de modo que el paso publica la "
+        "velocidad con que el agua entra y lo que el proyecto adopta como "
+        "revestimiento, y deja la geometria al cabezal."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.7c#PROTECCION", "MC_HHD.4.1.1.3.7c#REVESTIMIENTOS",
+           "HDS5_3ED.5.3.1#ENTRADA", "HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA",
+           "MC_HHD.LAMINA_02"),
+    que_pasa_si_no_se_hace=(
+        "La obra quedaria protegida solo aguas abajo, y la erosion del "
+        "talud junto a la boca es la que descalza el cabezal de entrada."),
+)
+
+SOCAVACION_SALIDA = _fundamento(
+    id="F6.SOCAVACION",
+    fase=F6,
+    que_paso=("Hoya de socavacion local a la salida por HEC-14, Cap. 5: "
+              "profundidad, ancho y longitud"),
+    por_que=(
+        "Si la salida no se protege, o si la proteccion falla, el chorro "
+        "abre una hoya en el lecho al pie del conducto. Su profundidad es "
+        "lo que decide hasta donde tiene que bajar el cabezal de salida "
+        "para no quedar descalzado, y su longitud hasta donde alcanza el "
+        "daño. HEC-14 la estima con ecuaciones empiricas ajustadas sobre "
+        "ensayos que buscaban la hoya maxima: dependen del caudal, del "
+        "radio hidraulico del conducto, de la granulometria o de la "
+        "resistencia del suelo del lecho, de cuanto dura el caudal pico, de "
+        "la pendiente y de la altura de la salida sobre el lecho. Son una "
+        "estimacion del peor caso de la socavacion LOCAL: no incluyen la "
+        "degradacion general del cauce."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.5.1#EC_5_1", "HEC14.5#PEOR_CASO", "HEC14.5.1.1#T5_1",
+           "HEC14.5.1.4#T5_2", "HEC14.5.1.5#T5_3", "HEC14.5.1.2#T30",
+           "HEC14.5.1.2#NO_BAJO_30", "HEC14.5.2#EC_5_2", "HEC14.5.2#RANGO_IP",
+           "HEC14.5.2#EC_5_4"),
+    que_pasa_si_no_se_hace=(
+        "El desplante del cabezal de salida se fijaria sin saber cuanto "
+        "puede bajar el lecho a su pie."),
+)
+
+SOCAVACION_PARA_DESPLANTE = _fundamento(
+    id="F6.SOCAVACION_DESPLANTE",
+    fase=F6,
+    que_paso=("Profundidad de socavacion que se entrega al desplante del "
+              "cabezal de salida"),
+    por_que=(
+        "El cabezal de salida corre la hoya aguas abajo pero no la "
+        "reduce, y por eso HEC-14 pide que baje hasta la profundidad "
+        "maxima de socavacion. Esa profundidad puede venir de dos sitios: "
+        "de un estudio del cauce, que conoce el lecho y su historia, o de "
+        "la estimacion de este programa. Cuando el estudio existe manda el "
+        "estudio, y la estimacion se imprime al lado para que se vea cuanto "
+        "difieren."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HEC14.5.1.3#CABEZAL", "HDS5_3ED.5.3.2#APRON"),
+    que_pasa_si_no_se_hace=(
+        "El cabezal se cimentaria a la profundidad minima constructiva, "
+        "sin relacion con lo que el lecho puede perder."),
+)
+
+
 # ===========================================================================
 # Fase 7 - Compatibilidad geometrica
 # ===========================================================================

@@ -121,9 +121,9 @@ sigue vacío —`Q_m3s`, `area_ha`, `S_cauce`— entra por la sección 2.
 
 ## 2. Lo que no es columna del CSV: `--datos-externos`
 
-Diez datos entran por un JSON aparte (`servicio.CLAVES_EXTERNAS`). Ocho no
-son columna del CSV; dos (`Q_m3s`, `S_cauce`) sí lo son y entran también por
-aquí porque la Familia C las deja vacías por tablero. La tabla dice de cada
+Dieciocho datos entran por un JSON aparte (`servicio.CLAVES_EXTERNAS`).
+Dieciséis no son columna del CSV; dos (`Q_m3s`, `S_cauce`) sí lo son y entran
+también por aquí porque la Familia C las deja vacías por tablero. La tabla dice de cada
 clave si tiene bandera de línea de comandos, qué familias la usan y qué pasa
 si no se declara:
 
@@ -140,6 +140,12 @@ si no se declara:
 | `categoria_tr` | no | texto | `--categoria-tr` | A, B | el programa la resuelve por otra vía |
 | `seccion_receptor_medida` | no | objeto | — | las tres | el programa la resuelve por otra vía |
 | `acceso_mantenimiento_previsto` | no | booleano | — | las tres | es opcional: sin ella no se afirma nada |
+| `tipo_terreno_receptor` | no | texto | — | las tres | es opcional: sin ella la Fase 6 lo avisa |
+| `tipo_terreno_entrada` | no | texto | — | las tres | es opcional: sin ella la Fase 6 lo avisa |
+| `regimen_flujo_descarga` | no | texto | — | las tres | es opcional: sin ella la Fase 6 lo avisa |
+| `material_lecho_salida` | no | objeto | — | las tres | es opcional: sin ella la Fase 6 lo avisa |
+| `duracion_caudal_pico_min` | no | número | — | las tres | es opcional: sin ella la Fase 6 lo avisa |
+| `profundidad_socavacion_estimada_m` | no | número | — | las tres | es opcional: sin ella la Fase 6 lo avisa |
 | `bombeo` | no | número | — | las tres | el programa la resuelve por otra vía |
 | `peralte` | no | número | — | las tres | el programa la resuelve por otra vía |
 <!-- fin: externos -->
@@ -161,6 +167,20 @@ carga. `TW_m` tiene además su propia cadena (Sec. 1.3: `cota_TW`, Manning en el
 receptor con `Q_receptor_m3s`, y por último el criterio `TW_receptor`).
 `acceso_mantenimiento_previsto` es un `true` / `false` por punto: dice si los
 planos prevén el acceso de limpieza, y con `false` la memoria lo avisa.
+
+Las seis de la Fase 6 (T-8) son datos del sitio y del EMS, todas opcionales:
+`tipo_terreno_receptor` y `tipo_terreno_entrada` nombran la fila de la Tabla
+N° 11 del Manual (el material del cauce a la salida y a la entrada) y
+`regimen_flujo_descarga` su columna (`intermitente` o `permanente`); con ellas
+la velocidad se compara con la admisible del terreno, y si la de salida no la
+supera no hay enrocado que dimensionar. `material_lecho_salida` es el suelo del
+lecho (`tipo` `no_cohesivo` con `D84_m` y `D16_m`, o `cohesivo` con `IP` y
+`Sv_Pa`, y `pasa_200_pct`): con él se estima la hoya de socavación de HEC-14
+y se elige el geotextil de filtro. `duracion_caudal_pico_min` cae en el
+criterio `duracion_caudal_pico_socavacion_min` (30 min), y
+`profundidad_socavacion_estimada_m`, de un estudio del cauce, gana sobre la
+hoya estimada. Sin ellas la Fase 6 calcula lo que puede y lo avisa: el d₅₀ de
+Laushey sale como antes.
 
 El archivo tiene dos secciones, las dos opcionales: `globales`, que vale para
 todos los puntos, y `puntos`, por `id`. **Un valor por punto pisa al global; una

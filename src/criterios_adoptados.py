@@ -7130,10 +7130,30 @@ CRITERIOS: Dict[str, Criterio] = {
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Espesor de la capa de proteccion, como multiplo de d50",
+        # --- T-8 --- La justificacion y la fuente dicen desde T-8 contra que
+        # se contrasta el valor, sin cambiarlo (los mismos numeros en el
+        # fixture): HEC-14 ya esta en el repositorio de normas.
         justificacion="El Manual solo entrega d50 (Laushey). El espesor, la "
                       "longitud y la granulometria completa no estan normados. "
-                      "Se adopta el rango corriente 1.5-2.0 d50",
-        fuente="Practica corriente de diseno de enrocado",
+                      "Se adopta el rango corriente 1.5-2.0 d50. Desde T-8 "
+                      "se contrasta con HEC-14, y el contraste no lo "
+                      "respalda: la Tabla 10.1 de HEC-14 (un ejemplo de "
+                      "estandar de proyecto) pide al apron entre 3.5 y 2.0 "
+                      "veces el D50 de su clase, y su Sec. 10.1 pide a la "
+                      "poza de enrocado al menos 2 D50: el valor adoptado "
+                      "queda SIEMPRE bajo ese piso, y toda la ventana salvo "
+                      "su techo, que lo iguala. El valor no se cambia --es "
+                      "una adopcion sobre otra practica, y moverlo cambiaria "
+                      "lo que el proyecto ya declaro--, pero la Fase 6 "
+                      "imprime el apron de HEC-14 al lado, AVISA en todo "
+                      "punto que dimensiona que el multiplo queda bajo 2.0 "
+                      "(cita HEC14.10.2#PROFUNDIDAD) y la regla "
+                      "'regla_espesor_longitud_proteccion_salida' deja "
+                      "tomar la envolvente con HEC-14",
+        fuente="Practica corriente de diseno de enrocado. Contraste: HEC-14 "
+               "3a ed. (FHWA-NHI-06-086), Sec. 10.2, Table 10.1, pag. "
+               "impresa 10-18 (PDF 219), cita HEC14.10.2#T10_1, y Sec. 10.1, "
+               "pag. impresa 10-1 (PDF 202)",
         sensibilidad=(1.5, 2.0),
         resolucion=Libre(
             que_lo_fija="el proyectista, sobre la practica corriente de "
@@ -7143,16 +7163,18 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "longitud_proteccion_salida": Criterio(
-        # m. NO SALE DE NINGUNA NORMA DE normas/ y hay que decirlo asi: el
+        # m. NO SALE DE NINGUNA NORMA PERUANA y hay que decirlo asi: el
         # Manual MTC (num. 4.1.1.3.7 c) entrega d50 y nada mas, y el HDS-5
-        # 3.a ed. remite el dimensionamiento del apron a HEC-14 Sec. 10.2,
-        # que NO esta en el repositorio (comprobado: la unica mencion de
-        # `apron` en su Cap. 5 es esa remision). Es una adopcion del
-        # proyectista sobre practica corriente de enrocado a la salida, con
-        # su ventana declarada, y NO gobierna ninguna verificacion: la
-        # longitud de la proteccion no entra en V1-V9 ni en 7.A/7.B. Se
-        # declara para que la Fase 6 entregue una pieza dimensionada y para
-        # que el expediente sepa exactamente que numero tiene que confirmar.
+        # 3.a ed. remite el dimensionamiento del apron a HEC-14 Sec. 10.2.
+        # HEC-14 ESTA en el repositorio de normas desde T-0 (este comentario
+        # decia lo contrario hasta T-8): su Tabla 10.1 da la longitud del
+        # apron, de 4 a 8 veces la altura del conducto segun la clase de
+        # piedra, y la Fase 6 contrasta con ella este valor y avisa cuando es
+        # menor (y con la regla 'regla_espesor_longitud_proteccion_salida' en
+        # «envolvente_hec14» toma la mayor). Es una adopcion del proyectista
+        # sobre practica corriente de enrocado a la salida, con su ventana
+        # declarada, y NO gobierna ninguna verificacion: la longitud de la
+        # proteccion no entra en V1-V9 ni en 7.A/7.B.
         valor=5.0,
         nivel=NIVEL_PERFIL,
         sensibilidad=(3.0, 8.0),     # m; banda de practica de aprons de enrocado en conductos de 0.9-1.2 m
@@ -7164,9 +7186,16 @@ CRITERIOS: Dict[str, Criterio] = {
                       "LONGITUD aguas abajo, la granulometria completa y el "
                       "filtro quedan fuera de la norma. Sin filtro el enrocado "
                       "se socava por debajo y falla: la longitud sola no basta, "
-                      "pero sin ella no hay pieza que dimensionar",
+                      "pero sin ella no hay pieza que dimensionar. Desde T-8 "
+                      "la Fase 6 la contrasta con la longitud del apron de "
+                      "HEC-14 (Tabla 10.1: de 4 a 8 veces la altura del "
+                      "conducto segun la clase de piedra) y, si el lecho esta "
+                      "declarado, con la longitud de la hoya de socavacion de "
+                      "su Cap. 5, y avisa cuando la adoptada es menor",
         fuente="PENDIENTE - Sec. 6 de la hoja de ruta la marca [A] sin valor. "
-               "Practica corriente de diseno de enrocado o HEC-14",
+               "Practica corriente de diseno de enrocado o HEC-14. "
+               "Contraste desde T-8: HEC-14 3a ed., Sec. 10.2, Table 10.1, "
+               "pag. impresa 10-18 (PDF 219), cita HEC14.10.2#T10_1",
         reemplazado_por="Diseno de disipador o transicion del expediente",
         verificacion_pendiente="Con pendientes bajas los d50 son de 3-13 cm y lo "
                                "probable es que gobierne el emboquillado de piedra "
@@ -7175,6 +7204,244 @@ CRITERIOS: Dict[str, Criterio] = {
             que_lo_fija="el proyectista, sobre practica corriente de "
                         "enrocado o HEC-14; Sec. 6 la marca [A] sin valor",
             dominio="m > 0",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-8 --- (cadena T) · tres criterios de la Fase 6
+    # =======================================================================
+    # La proteccion de la ENTRADA (INF-5.1.13) y las dos lecturas que la hoya
+    # de socavacion de HEC-14 Cap. 5 deja abiertas. Los consume M6.
+    "tipo_proteccion_entrada": Criterio(
+        valor="emboquillado_de_piedra",
+        nivel=NIVEL_PERFIL,         # lo invoca la Fase 6 en toda corrida que dimensiona
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO son las tres clases que el Manual enumera, con
+        # sus palabras: no se añade ninguna.
+        sensibilidad=("emboquillado_de_piedra", "enchapado_de_roca_acomodada",
+                      "otro_revestimiento"),
+        concepto="Revestimiento con que se protege el cauce y el talud en la "
+                 "ENTRADA de la alcantarilla",
+        justificacion="Decide que revestimiento declara la memoria para la "
+                      "entrada. El Manual (num. 4.1.1.3.7 c)) recomienda "
+                      "proteger el cauce cuando la velocidad en la entrada, y "
+                      "particularmente en la salida, es alta, y enumera tres "
+                      "clases de revestimiento sin preferir ninguna ni dar "
+                      "dimensiones: emboquillados de piedra, enchapado de "
+                      "rocas acomodadas u otros tipos (citas "
+                      "MC_HHD.4.1.1.3.7c#PROTECCION y "
+                      "MC_HHD.4.1.1.3.7c#REVESTIMIENTOS). Las Láminas 02, "
+                      "02-A y 03 de sus Anexos dibujan la entrada de las "
+                      "alcantarillas tipicas con «revestimiento de piedra "
+                      "emboquillada» y su uña (cita MC_HHD.LAMINA_02), y ese "
+                      "es el motivo del valor adoptado: es el unico "
+                      "revestimiento de entrada que el Manual dibuja. Las "
+                      "laminas llevan las dimensiones como letras o como "
+                      "«variable», de modo que el criterio declara la CLASE "
+                      "de revestimiento y no una medida: la longitud y el "
+                      "espesor del zampeado y el dentellon son geometria del "
+                      "cabezal. No entra en ninguna formula ni mueve ningun "
+                      "resultado; cambia lo que la memoria declara para la "
+                      "entrada. Sensibilidad: las tres clases del numeral",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.1.3.7 c) 'Socavación local a la salida de la "
+               "alcantarilla', pags. impresas 79-80 (PDF 82-83), citas "
+               "MC_HHD.4.1.1.3.7c#PROTECCION y "
+               "MC_HHD.4.1.1.3.7c#REVESTIMIENTOS (recomendacion); Anexos, "
+               "Lámina Nº 02, pag. impresa 207 (PDF 210), cita "
+               "MC_HHD.LAMINA_02 (figura, sin dimensiones). HDS-5 3a ed., "
+               "num. 5.3.1 'Scour at Inlets', pag. impresa 5.9 (PDF 145), "
+               "cita HDS5_3ED.5.3.1#ENTRADA: enumera las medidas, sin "
+               "dimensionarlas. La eleccion entre las tres clases es "
+               "adopcion del proyectista",
+        reemplazado_por="El detalle de la entrada que fijen los planos del "
+                        "cabezal (zampeado, dentellon y revestimiento del "
+                        "talud), con sus dimensiones",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, entre las tres clases de "
+                        "revestimiento que el num. 4.1.1.3.7 c) enumera",
+            dominio="declaracion de la clase de revestimiento; el conjunto "
+                    "cerrado de valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    "duracion_caudal_pico_socavacion_min": Criterio(
+        # NIVEL NO MEDIDO POR CORRIDA, y se dice: solo se invoca cuando el
+        # punto declara `material_lecho_salida` SIN declarar
+        # `duracion_caudal_pico_min`, y ninguna de las tres corridas de
+        # `tests/test_nivel_medido.py` trae ese dato. Lo sostiene el censo:
+        # su unico consumidor es M6, que el alcance de perfil ejecuta; y lo
+        # mide `tests/test_t8_proteccion.py` con una corrida de perfil que si
+        # declara el lecho.
+        valor=30.0,                 # minutos
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        concepto="Duracion del caudal pico, en minutos, con que se estima "
+                 "la hoya de socavacion a la salida cuando el estudio "
+                 "hidrologico no la entrega",
+        justificacion="Decide el tiempo t de las ecuaciones de socavacion "
+                      "de HEC-14 cuando el punto no declara la duracion del "
+                      "caudal pico. La fuente lo fija: a falta de ese "
+                      "conocimiento recomienda usar 30 minutos (num. 5.1.2, "
+                      "cita HEC14.5.1.2#T30; lo repite para suelos cohesivos "
+                      "en la pag. impresa 5-7). No es un minimo conservador: "
+                      "la hoya crece con el tiempo, y el propio numeral dice "
+                      "que en los primeros 30 minutos se alcanzan entre 2/3 "
+                      "y 3/4 de la profundidad maxima. Con el exponente de "
+                      "tiempo de la Tabla 5.1 para la hoya en suelo no "
+                      "cohesivo, θ = 0.06, pasar de 30 a 120 minutos sube su "
+                      "hondura un 9 %; a 360 minutos, un 16 %. El dato "
+                      "externo "
+                      "`duracion_caudal_pico_min` gana cuando viene. "
+                      "Sensibilidad: de 30 minutos, por debajo de los cuales "
+                      "la fuente dice que sus exponentes no aplican (cita "
+                      "HEC14.5.1.2#NO_BAJO_30), a 360 minutos",
+        fuente="HEC-14 3a ed. (FHWA-NHI-06-086, julio de 2006), num. 5.1.2 "
+               "'Time of Scour', pag. impresa 5-2 (PDF 55), citas "
+               "HEC14.5.1.2#T30 (recomendacion: 30 minutos a falta de la "
+               "duracion) y HEC14.5.1.2#NO_BAJO_30 (los exponentes no "
+               "aplican a los primeros 30 minutos). El techo de la ventana, "
+               "360 minutos, no sale de la fuente: es adopcion del "
+               "proyectista para acotar la sensibilidad",
+        reemplazado_por="La duracion del caudal pico del hidrograma de "
+                        "diseño de cada cuenca, del estudio hidrologico "
+                        "(dato externo `duracion_caudal_pico_min`)",
+        sensibilidad=(30.0, 360.0),
+        resolucion=Libre(
+            que_lo_fija="HEC-14 num. 5.1.2: 30 minutos cuando no se conoce "
+                        "la duracion del caudal pico",
+            dominio="minutos, de 30 (limite de validez de los exponentes) "
+                    "a 360",
+        ),
+    ),
+
+    "lectura_coeficientes_socavacion_hec14": Criterio(
+        # NIVEL NO MEDIDO POR CORRIDA: como el anterior, solo se invoca con
+        # el lecho declarado. Mismo sosten y misma medida.
+        valor="envolvente_de_filas_vecinas",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("envolvente_de_filas_vecinas", "interpolacion_lineal"),
+        concepto="Como se leen la Tabla 5.2 (altura de la salida sobre el "
+                 "lecho) y la Tabla 5.3 (pendiente) de HEC-14 cuando el dato "
+                 "cae ENTRE dos filas",
+        justificacion="Decide el valor de los coeficientes Ch y Cs de la "
+                      "hoya de socavacion cuando la altura de caida o la "
+                      "pendiente del conducto no coinciden con una fila "
+                      "tabulada. Las dos tablas dan cuatro filas cada una "
+                      "(alturas de 0, 1, 2 y 4 diametros; pendientes de 0, "
+                      "2, 5 y mas de 7 %) y la fuente no dice como leer "
+                      "entre ellas: sus ejemplos caen justo en una fila "
+                      "(citas HEC14.5.1.4#T5_2 y HEC14.5.1.5#T5_3). "
+                      "«envolvente_de_filas_vecinas», el valor adoptado, "
+                      "toma para cada dimension de la hoya el MAYOR de los "
+                      "dos coeficientes vecinos: es la lectura que nunca "
+                      "queda por debajo de la tabla, tambien en la longitud, "
+                      "cuyo coeficiente BAJA con la altura de caida, de Ch = "
+                      "1.00 a Ch = 0.73. "
+                      "«interpolacion_lineal» interpola entre las dos filas, "
+                      "y entre el 5 % y el 7 % hacia la fila «>7». En la "
+                      "profundidad, que es la que fija el desplante del "
+                      "cabezal, la diferencia entre las dos lecturas es como "
+                      "mucho del 22 % (entre las filas de altura 0 y 1 "
+                      "diametro) y del 3 % en la pendiente por debajo del 2 "
+                      "%. Fuera de la tabla (mas de 4 diametros de caida) "
+                      "ninguna de las dos lecturas extrapola: el calculo se "
+                      "declara no evaluable",
+        fuente="HEC-14 3a ed. (FHWA-NHI-06-086), num. 5.1.4 'Drop Height', "
+               "Table 5.2, y num. 5.1.5 'Slope', Table 5.3, pag. impresa 5-3 "
+               "(PDF 56), citas HEC14.5.1.4#T5_2 y HEC14.5.1.5#T5_3. La "
+               "fuente tabula y no dice como leer entre filas: la lectura "
+               "es adopcion del proyectista",
+        reemplazado_por="Una estimacion de socavacion del estudio del cauce "
+                        "(dato externo `profundidad_socavacion_estimada_m`), "
+                        "que gana sobre la de este programa",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: las Tablas 5.2 y 5.3 de HEC-14 no "
+                        "dicen como leer entre filas",
+            dominio="declaracion de la lectura; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    # --- T-8, auditoria adversarial --- dos decisiones que el dueño todavia
+    # no tomo, PREPARADAS sin cambiar el resultado de hoy: con que regla se
+    # fijan el espesor y la longitud de la proteccion de salida, y desde
+    # que cota se mide la profundidad de socavacion.
+    "regla_espesor_longitud_proteccion_salida": Criterio(
+        # NIVEL MEDIDO POR CORRIDA: lo invoca la Fase 6 en todo punto que
+        # dimensiona (corrida ancha de perfil, A-01 y A-02).
+        valor="manual",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("manual", "envolvente_hec14"),
+        concepto="Regla con que se fijan el espesor y la longitud de la "
+                 "proteccion de salida",
+        justificacion="Decide si el espesor y la longitud de la proteccion "
+                      "de salida son los adoptados ('espesor_proteccion_salida', "
+                      "'longitud_proteccion_salida') o la envolvente de esos y "
+                      "de lo que HEC-14 daria. «manual», el valor del archivo, "
+                      "es la conducta anterior: lo adoptado rige y HEC-14 se "
+                      "imprime al lado con aviso. «envolvente_hec14» toma, "
+                      "cuando el apron de HEC-14 es evaluable, el mayor "
+                      "entre lo adoptado, la clase de la Tabla 10.1 que pide "
+                      "la Ec. (10.4) y la clase que corresponde a la piedra "
+                      "que el proyecto pone (cita HEC14.10.2#T10_1, y "
+                      "HEC14.10.2#PROFUNDIDAD para el piso del espesor, dos "
+                      "veces el D50). La eleccion es del dueño del proyecto y "
+                      "queda "
+                      "barrible: la auditoria de T-8 midio que el espesor "
+                      "adoptado queda siempre bajo ese piso",
+        fuente="HEC-14 3a ed., Sec. 10.2, Table 10.1, pag. impresa 10-18 "
+               "(PDF 219), citas HEC14.10.2#T10_1 y HEC14.10.2#PROFUNDIDAD. "
+               "La eleccion entre las dos reglas es adopcion del proyectista",
+        reemplazado_por="El diseño de la proteccion de salida del "
+                        "expediente, con la granulometria y el filtro",
+        resolucion=Libre(
+            que_lo_fija="el dueño del proyecto: conservar lo adoptado o "
+                        "tomar la envolvente con HEC-14",
+            dominio="declaracion de la regla; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    "referencia_profundidad_socavacion": Criterio(
+        # NIVEL NO MEDIDO POR CORRIDA: solo se invoca con el lecho declarado
+        # o la socavacion declarada; lo mide `tests/test_t8_proteccion.py`.
+        valor="fondo_del_cauce_receptor",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("fondo_del_cauce_receptor", "solera_de_salida"),
+        concepto="Cota desde la que se mide la profundidad de socavacion "
+                 "a la salida que se entrega al desplante del cabezal",
+        justificacion="Decide la cota del fondo de la hoya de socavacion. "
+                      "HEC-14 Cap. 5 no la define: llama hs a la profundidad "
+                      "de socavacion sin figura que la acote, y con la salida "
+                      "por encima del lecho (Tabla 5.2) las dos lecturas "
+                      "difieren en la caida, unos 0.7 m en A-01. La Figura "
+                      "10.1 de la poza de enrocado, otro metodo, mide hs "
+                      "desde la solera de salida (cita HEC14.10.1#DOS_D50). "
+                      "«fondo_del_cauce_receptor», el valor del archivo, es "
+                      "la lectura conservadora para el desplante: la hoya "
+                      "empieza en el lecho y queda a la caida mas abajo que "
+                      "con la otra. «solera_de_salida» es la de la Figura "
+                      "10.1. Una profundidad declarada por un estudio del "
+                      "cauce se mide desde la misma referencia",
+        fuente="HEC-14 3a ed., Cap. 5, pags. impresas 5-1 a 5-3 (PDF 54 a "
+               "56), sin figura que defina hs; Sec. 10.1, Figura 10.1, pag. "
+               "impresa 10-1 (PDF 202). La eleccion es adopcion del "
+               "proyectista",
+        reemplazado_por="El estudio de socavacion del cauce receptor, que "
+                        "dice su propia referencia",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente no fija la referencia",
+            dominio="declaracion de la referencia; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
         ),
     ),
 

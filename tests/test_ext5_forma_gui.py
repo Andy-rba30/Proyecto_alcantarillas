@@ -77,13 +77,19 @@ FORMA_DEL_CAJON = {
 # Las seis claves de `cli.CLAVES_EXTERNAS` que no son columna, ni dato de
 # sitio, ni criterio, y que hasta EXT-5 no estaban en el censo.
 # Eran seis hasta T-2, que sumo dos (la seccion medida del receptor y si el
-# acceso de mantenimiento esta previsto), y T-6 sumo otras dos (`bombeo` y
+# acceso de mantenimiento esta previsto); T-6 sumo otras dos (`bombeo` y
 # `peralte`, la pendiente transversal de la plataforma que afina la longitud
-# de 7.B). El nombre de la tupla se conserva: lo leen los tests de abajo.
+# de 7.B), y T-8 las seis de la Fase 6 (terreno del cauce, regimen del
+# flujo, suelo del lecho, duracion del caudal pico y socavacion declarada).
+# El nombre de la tupla se conserva: lo leen los tests de abajo.
 SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
                  "L_hidraulico_m", "categoria_tr",
                  "seccion_receptor_medida", "acceso_mantenimiento_previsto",
-                 "bombeo", "peralte")
+                 "bombeo", "peralte",
+                 "tipo_terreno_receptor", "tipo_terreno_entrada",
+                 "regimen_flujo_descarga", "material_lecho_salida",
+                 "duracion_caudal_pico_min",
+                 "profundidad_socavacion_estimada_m")
 
 
 def _formas_de(clave):
