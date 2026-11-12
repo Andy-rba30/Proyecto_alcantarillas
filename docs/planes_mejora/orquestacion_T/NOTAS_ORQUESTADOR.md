@@ -23,3 +23,11 @@
 ## Para el encargo de T-7a (del auditor de T-6)
 - Longitud entre cabezales (construcción/metrado) se cierra con la coronación del cabezal; hoy la hidráulica usa L al fondo (cota superior).
 ## Para T-9: H3/H12 de T-1 (duración mínima de lluvia y C de pavimento) deben estar resueltos.
+
+## PENDIENTE fuera de la cadena (dueño, 2026-11-12 ~17:15 UTC): armado del marco de la Familia C
+Ningún prompt de la cadena diseña en concreto armado la SECCIÓN del marco (pórtico cerrado: momentos y cortantes en losas y muros,
+acero por flexión, cortante, mínimo y de temperatura, fisuración). T-3 lo dimensiona hidráulicamente, T-5 entrega la demanda
+(AASHTO 12.11) y un paso «diseño del pórtico: diferido al expediente»; T-7c arma el CABEZAL, no el cajón. El orquestador propuso
+un prompt adicional (después de T-7c, reutilizando sus rutinas de flexión y cortante; una celda; AASHTO LRFD 12.11 y Sec. 5 /
+E.060). **Decisión del dueño: queda como PENDIENTE; para la tesis basta el dimensionamiento.** No se lanza. T-11 (censo final) y
+T-12 deben dejarlo dicho en `docs/decisiones_diferidas.md` y en el README como alcance declarado, no como omisión.

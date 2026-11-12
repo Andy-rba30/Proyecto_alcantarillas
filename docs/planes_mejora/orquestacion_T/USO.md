@@ -61,3 +61,5 @@ regeneración de documentos, T-10, T-12— con Opus. Siguen vigentes las marcas 
 **Estimación (16:40 UTC):** ≈ 0.75 puntos/min de Fable con dos agentes Fable + orquestador; ≈ 0.45 puntos/min del semanal general
 con cinco agentes. Quedan 55 puntos de Fable y 47 del general: alcanza para aterrizar T-5 y T-8 y cerrar las FASE A de T-3 y T-7a,
 NO para auditar, corregir e integrar T-3, T-7a y T-9 ni para T-7b…T-12. Reinicio que da el evento: mié 18-nov 19:00 UTC.
+| 2026-11-12 16:47 | s/d | 56 % | **51 %** (cruza la marca de 50 %) | T-3 FASE A terminada (`255c97a`) |
+| 2026-11-12 17:17 | s/d | **69 %** | **75 %** | T-7a FASE A terminada (`1b83d39`). Sólo quedan dos agentes Fable: T-5 (ya con CLAUDE.md y línea base; faltan generados sellados, suite final y push) y T-8 correcciones (FASE A casi cerrada). Fable sube ≈ 0.8 puntos/min: la marca de 96 % caería hacia las 17:45. MEDIDA: a T-8 correcciones se le ordena cerrar SÓLO la FASE A; su integración la hará un agente Opus (mecánica) cuando T-5 esté en main |
