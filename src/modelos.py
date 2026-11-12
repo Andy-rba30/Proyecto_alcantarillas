@@ -839,6 +839,20 @@ class CotaDeEntrada:
         """«MEDIDA» o «ADOPTADA», para los rotulos cortos del volcado."""
         return "MEDIDA" if self.medida else "ADOPTADA"
 
+    # --- T-6 ---
+    @property
+    def aviso(self) -> str:
+        """
+        El aviso que acompaña a una cota ADOPTADA igual al terreno
+        (INF-5.1.18), o cadena vacia cuando la cota es medida o sale de otra
+        regla. No es un incumplimiento ni detiene nada: dice que la rasante
+        minima de 7.A, V4 y V7 estan calculadas sobre una cota que nadie
+        midio, y que dato la sustituye (la columna `cota_fondo_entrada`).
+        """
+        if self.medida or self.regla != REGLA_FONDO_IGUAL_AL_TERRENO:
+            return ""
+        return AVISO_FONDO_ENTRADA_ADOPTADO
+
 
 # ===========================================================================
 # Material y geometria
@@ -3732,6 +3746,13 @@ class TamizadoRasante:
     criterio_resguardo: str
     id_punto: Optional[str] = None
     numeral: str = "Sec. 7.A"
+    # --- T-6 --- (INF-5.1.18). `provisional` es True cuando la cota de
+    # entrada sobre la que se levantan las DOS condiciones es adoptada igual
+    # al terreno y no medida en el cauce: la rasante minima y su delta valen
+    # lo que valga esa adopcion, y `aviso` lleva la frase que lo dice. Con la
+    # columna `cota_fondo_entrada` llena los dos quedan en False y "".
+    provisional: bool = False
+    aviso: str = ""
 
     @property
     def delta_rasante_cm(self) -> float:
@@ -3755,14 +3776,18 @@ class TamizadoRasante:
         La frase que Sec. 7.B exige devolver, en centimetros. Nunca un
         resultado silencioso: cuando el punto es factible tambien lo dice.
         """
+        # --- T-6 --- el delta (o su ausencia) es PROVISIONAL mientras el
+        # fondo de entrada sea el terreno adoptado: se dice en la misma frase.
+        cola = f" -- PROVISIONAL: {self.aviso}" if self.provisional else ""
         if self.factible:
             return (f"factible: la rasante {self.cota_rasante_actual:.3f} msnm "
                     f"alcanza la minima de 7.A ({self.cota_rasante_min:.3f} "
-                    f"msnm, gobierna {self.condicion_gobernante.value})")
+                    f"msnm, gobierna {self.condicion_gobernante.value})"
+                    + cola)
         return (f"no factible -> subir rasante {self.delta_rasante_cm:.1f} cm "
                 f"(de {self.cota_rasante_actual:.3f} a "
                 f"{self.cota_rasante_min:.3f} msnm; gobierna la condicion de "
-                f"{self.condicion_gobernante.value})")
+                f"{self.condicion_gobernante.value})" + cola)
 
     def exigir_factible(self) -> None:
         """
@@ -3835,11 +3860,16 @@ class CompatibilidadGeometrica:
     `longitud` = (ancho de plataforma + proyeccion de taludes) * factor de
     esviaje, en metros. `caida` = S * longitud, y `cota_salida` = cota de
     entrada - caida.
+    Como se obtuvo la proyeccion -- por extremo, con el terraplen simetrico,
+    o despejada de una longitud declarada -- lo dice `longitud_calculada`
+    (T-6); `proyeccion_taludes` es siempre la suma de los dos lados.
 
     Las verificaciones llevan codigo G1/G2 para no confundirse con las V1-V9
     de la Fase 5: son de otra fase y de otro modulo. La lista es corta a
-    proposito -- ver "Por que 7.B solo trae dos verificaciones" en el
-    docstring de M7.
+    proposito -- ver "Por que 7.B trae dos verificaciones con umbral y un
+    aviso" en el docstring de M7. Desde T-6 hay una tercera fila, G3, que es
+    el AVISO de esviaje: `cumple` es True siempre y por eso no entra en
+    `verificaciones_incumplidas` ni cambia `factible`.
 
     `S_conducto` es la pendiente CON LA QUE CORRIO EL DISENO
     (`ResultadoHidraulico.S`), no una que esta fase vuelva a elegir. Sec. 7.B
@@ -3876,6 +3906,32 @@ class CompatibilidadGeometrica:
     caida: float                          # m  - S*L
     verificaciones: Tuple[Verificacion, ...]
     numeral: str = "Sec. 7.B"
+    # --- T-6 --- Lo que 7.B CALCULA, con sus pasos. Todos con valor por
+    # defecto: un consumidor anterior a T-6 que construya este objeto sin
+    # ellos sigue funcionando, y M11 no imprime lo que no viene.
+    #   pasos                los `PasoDeMemoria` de 7.B en orden: pendiente
+    #                        adoptada, factor de esviaje, longitud, caida y
+    #                        cota de salida, encaje (G1, G2 y G3 llevan el
+    #                        suyo dentro de su `Verificacion`).
+    #   longitud_calculada   como salio L: metodo, altura del borde de la
+    #                        plataforma sobre el fondo EN CADA EXTREMO y la
+    #                        proyeccion de cada talud. Es lo que T-7a lee
+    #                        para la altura del cabezal y el largo del alero.
+    #   pendiente            la S del diseno CON SU ORIGEN (cauce, declarada,
+    #                        minima o maxima).
+    #   longitud_a_la_clave  longitud entre cabezales con el talud muriendo
+    #                        en la clave exterior de la seccion ADOPTADA
+    #                        (HDS-5 3.3.5); None cuando L es declarada o el
+    #                        metodo es el del terraplen simetrico.
+    #   desnivel_entrega     cota de salida - cota de fondo del receptor, m.
+    #   avisos               frases que la memoria imprime como aviso (fondo
+    #                        de entrada adoptado, esviaje sobre el maximo).
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    longitud_calculada: Optional["LongitudConducto"] = None
+    pendiente: Optional["PendienteAdoptada"] = None
+    longitud_a_la_clave: Optional[float] = None
+    desnivel_entrega: Optional[float] = None
+    avisos: Tuple[str, ...] = ()
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
@@ -5641,3 +5697,132 @@ class CaudalDeDiseno:
     @property
     def calculado(self) -> bool:
         return self.origen == ORIGEN_CAUDAL_CALCULADO
+# ===========================================================================
+# --- T-6 --- Geometria de 7.B: longitud por extremo y pendiente con origen
+# (INF-3.3.3, INF-5.1.18, INF-3.2.7)
+# ===========================================================================
+
+# La regla de 'origen_cota_fondo_entrada' que dispara el aviso, y el aviso.
+# El texto es el de la cadena T (T-6 punto 1) y vive aqui, junto al tipo que
+# lo emite (`CotaDeEntrada.aviso`), para que M7, la CLI y M11 impriman LA
+# MISMA frase.
+REGLA_FONDO_IGUAL_AL_TERRENO = "cota_terreno"
+AVISO_FONDO_ENTRADA_ADOPTADO = (
+    "fondo de entrada adoptado igual al terreno de plataforma: medir en el "
+    "cauce")
+
+
+class MetodoLongitud(str, Enum):
+    """
+    Como se obtuvo la longitud del conducto de Sec. 7.B.
+
+    TERRAPLEN_SIMETRICO  la formula anterior a T-6, conservada como caso
+                         particular: los dos taludes bajan la MISMA altura,
+                         la del eje (cota de rasante - cota de terreno).
+    POR_EXTREMO          cada talud baja desde el borde de la plataforma
+                         hasta el fondo del conducto EN SU EXTREMO; la salida
+                         queda S*L mas baja que la entrada (HDS-5 2.2.4 b.).
+    DECLARADA            `longitud_m` entro como dato externo: no se calcula.
+
+    Los dos primeros valores son los de la ventana del criterio
+    'metodo_longitud_conducto' [A].
+    """
+    TERRAPLEN_SIMETRICO = "terraplen_simetrico"
+    POR_EXTREMO = "por_extremo"
+    DECLARADA = "declarada"
+
+
+class OrigenPendiente(str, Enum):
+    """
+    De donde sale la pendiente con que corre el diseño (T-6 punto 5).
+
+    CAUCE      `S_cauce`: la regla de Sec. 7.B, el conducto sigue al cauce.
+    DECLARADA  el dato externo `S_conducto` del punto.
+    MINIMA     la del cauce queda bajo 'pendiente_minima_conducto' y gobierna
+               el minimo adoptado.
+    MAXIMA     la del cauce supera 'pendiente_maxima_conducto' y gobierna el
+               maximo adoptado.
+
+    Los dos ultimos se dan solo sobre la pendiente del CAUCE, contra la banda
+    de T-2 (`M5.limites_de_pendiente()`): una pendiente declarada es una
+    decision del expediente y el calculo no la pisa -- la juzga V10, la
+    verificacion de pendiente de la Fase 5 --. Con ellos el conducto deja de
+    seguir a su cauce, y `M7.aviso_de_pendiente` dice que trae consigo.
+    """
+    CAUCE = "S_cauce"
+    DECLARADA = "S_conducto declarada"
+    MINIMA = "pendiente_minima_conducto"
+    MAXIMA = "pendiente_maxima_conducto"
+
+
+@dataclass(frozen=True)
+class PendienteAdoptada:
+    """
+    La pendiente del conducto CON SU ORIGEN, m/m. La resuelve
+    `M7.pendiente_adoptada` UNA vez, antes de la Fase 4, y es la que usan la
+    longitud, el TW, el diseño hidraulico y 7.B (MAT-D9: la pendiente no se
+    elige dos veces).
+
+    `S_minima` y `S_maxima` son los extremos de la banda adoptada VIGENTES en
+    la corrida, o None cuando la pendiente es DECLARADA (entonces la banda no
+    se lee aqui: la aplica V10): se guardan para que la memoria diga contra
+    que se comparo, no solo que gano.
+    """
+    valor: float
+    origen: OrigenPendiente
+    S_cauce: Optional[float]
+    S_declarada: Optional[float]
+    S_minima: Optional[float]
+    S_maxima: Optional[float]
+    procedencia: str
+
+
+@dataclass(frozen=True)
+class LongitudConducto:
+    """
+    La longitud del conducto de Sec. 7.B con todo lo que la produjo.
+
+    Convenciones (todas en metros y msnm, sobre la seccion del cruce):
+
+      cota_borde_*        cota del borde de la plataforma en ese lado: la
+                          rasante del eje, corregida por bombeo y peralte
+                          cuando se declaran.
+      cota_referencia_*   cota a la que muere el talud en ese lado. En
+                          POR_EXTREMO es el fondo del conducto en ese extremo
+                          (la salida, S*L bajo la entrada); en
+                          TERRAPLEN_SIMETRICO, el terreno del eje en los dos.
+      altura_*            cota_borde - cota_referencia: la altura de
+                          terraplen que el talud baja en ese lado.
+      proyeccion_*        talud * altura: lo que ese talud añade, medido
+                          NORMAL a la via.
+      semilongitud_*      tramo de conducto, sobre su eje, entre el eje de la
+                          via y ese extremo.
+
+    Lo consume 7.B (cota de salida, encaje) y lo consumira el cabezal por
+    punto (T-7a): altura de terraplen en cada extremo y largo del alero.
+    `pasos` son los `PasoDeMemoria` que lo explican (factor de esviaje y
+    longitud), emitidos por el calculo.
+    """
+    longitud: float
+    metodo: MetodoLongitud
+    factor_esviaje: float
+    talud: Optional[float]
+    S: Optional[float]
+    bombeo: Optional[float]
+    peralte: Optional[float]
+    cota_borde_entrada: Optional[float]
+    cota_borde_salida: Optional[float]
+    cota_referencia_entrada: Optional[float]
+    cota_referencia_salida: Optional[float]
+    altura_entrada: Optional[float]
+    altura_salida: Optional[float]
+    proyeccion_entrada: Optional[float]
+    proyeccion_salida: Optional[float]
+    proyeccion_taludes: float
+    semilongitud_entrada: Optional[float]
+    semilongitud_salida: Optional[float]
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    # Avisos de la longitud (auditor de T-6): la plataforma tomada horizontal
+    # por no declararse bombeo ni peralte, o una pendiente transversal
+    # declarada que el metodo o una longitud declarada dejan sin aplicar.
+    avisos: Tuple[str, ...] = ()

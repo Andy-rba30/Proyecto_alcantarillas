@@ -95,6 +95,8 @@ from src.modelos import (Bloqueo, CaudalDeDiseno, Clasificacion,
                          AVISO_SIN_ACCESO_DE_MANTENIMIENTO, SeccionReceptor,
                          TipoDeBloqueo, TWDeterminado, Verificacion)
 from src.modelos import EstadoDeVerificacion, TipoDeVeredicto
+from src.modelos import (CotaDeEntrada, LongitudConducto,      # --- T-6 ---
+                         OrigenPendiente, PendienteAdoptada)
 from src.modulos.M0_carga import (COLUMNA_CAUDAL,
                                   FAMILIAS_CON_CAUDAL_HIDROLOGICO,
                                   cargar_puntos, cargar_puntos_de_bytes,
@@ -108,14 +110,20 @@ from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
 from src.modulos.M6_proteccion import proteccion_salida
 from src.modulos import M3_hidraulica as M3
-from src.modulos.M7_geometria import (compatibilidad_geometrica,
-                                      cota_salida, longitud_conducto)
+from src.modulos.M7_geometria import (aviso_de_pendiente,
+                                      compatibilidad_geometrica,
+                                      cota_salida,
+                                      exigir_transversales_compatibles,
+                                      longitud_conducto,
+                                      longitud_del_conducto,
+                                      pendiente_adoptada)
 # `altura_relleno_sobre_clave` vive en M5 y no aqui: la comparten V7 -- que
 # pesa ese relleno como EV -- y la Fase 8, que con el entra a la norma de
 # producto. La resta estaba escrita en los dos sitios y la copia de la CLI
 # iba SIN la guarda de cotas incoherentes (SIS-A-21). Es el mismo defecto de
 # `cota_clave` (MAT-D4), que por eso tambien vive en M5.
 from src.modulos.M5_verificaciones import altura_relleno_sobre_clave
+from src.modulos.M5_verificaciones import cota_de_entrada   # --- T-6 ---
 from src.modulos.M8_estructural import (cama_apoyo_relleno_lateral,
                                         seleccionar_clase_calibre)
 from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
@@ -315,6 +323,11 @@ EXTERNOS_CON_VIA_ALTERNA: Tuple[str, ...] = (
     # criterio 'seccion_receptor' (y la memoria lo avisa), y sin la
     # declaracion del acceso de mantenimiento el punto se calcula igual.
     "seccion_receptor_medida", "acceso_mantenimiento_previsto")
+# --- T-6 --- `bombeo` y `peralte` (pendiente transversal de la plataforma,
+# DG-2018 num. 304.05 y 304.06) tampoco son faltas: sin declarar, la longitud
+# de 7.B toma la plataforma horizontal a la cota de rasante, que es el caso
+# particular que `M7.longitud_del_conducto` declara en su paso.
+EXTERNOS_CON_VIA_ALTERNA += ("bombeo", "peralte")
 
 
 def tw_sin_via_de_sec_1_3(tw_declarado: Optional[float], cota_TW: Optional[float],
@@ -385,6 +398,9 @@ ORIGEN_Q_DE_COLUMNA = "CSV Sec. 1.2, columna Q_m3s"
 FASE_DISENO = "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"
 FASE_PROTECCION = "Fase 6 - Proteccion de salida (M6)"
 FASE_GEOMETRIA = "Fase 7 - Compatibilidad geometrica (M7)"
+# --- T-6 --- La etapa en que se detiene un punto cuya pendiente no se puede
+# adoptar por algo que no es la falta del dato (`_resolver_longitud`).
+ETAPA_PENDIENTE = "pendiente adoptada del conducto (7.B.1)"
 FASE_ESTRUCTURAL = "Fase 8 - Estructural del conducto (M8)"
 FASE_CABEZAL = "Fase 9 - Cabezal y aletas (M9)"
 FASE_ALIVIO = "Fase 10 - Espaciamiento de alivio (M10)"
@@ -456,6 +472,28 @@ CLAVES_DE_DURABILIDAD_TEXTO: Tuple[str, ...] = ("abrasion",)
 CLAVES_DE_DURABILIDAD_CON_CERO: Tuple[str, ...] = (
     "sulfatos_suelo_ppm", "sulfatos_agua_ppm", "cloruros_ppm")
 ETAPA_DURABILIDAD = "matriz de durabilidad (Sec. 3.3)"
+
+# --- T-6 --- La pendiente transversal de la plataforma en el cruce, cuando
+# la seccion tipica la da (m/m: 0.02 = 2 %). Son datos del TRAZO, opcionales
+# y sin valor por defecto; entran por --datos-externos, como `S_conducto`.
+#   bombeo   >= 0: baja los DOS bordes de la plataforma respecto del eje.
+#   peralte  con signo: positivo sube el borde del lado de la ENTRADA y baja
+#            el de la salida (giro alrededor del eje); negativo, al reves.
+# SON EXCLUYENTES EN UN MISMO PUNTO (auditor de T-6): una seccion tiene bombeo
+# -- tangente o contraperalte, DG-2018 num. 304.05 -- o peralte -- curva, num.
+# 304.06 --, nunca los dos. `cargar_datos_externos` lo comprueba sobre el par
+# EFECTIVO de cada punto (el valor por punto pisa al global), con
+# `M7.exigir_transversales_compatibles`, que es tambien la segunda linea
+# dentro de M7. Un valor declarado en cero no cuenta: es como un punto en
+# curva anula el bombeo declarado para todos.
+CLAVES_TRANSVERSALES: Tuple[str, ...] = ("bombeo", "peralte")
+CLAVES_EXTERNAS += CLAVES_TRANSVERSALES
+# `bombeo` admite el cero como dato (plataforma sin bombeo, declarada
+# como tal: es lo que declara un punto en curva) y `peralte` admite el cero
+# y el signo. La tupla del cero es la de T-2, ampliada; la del signo es
+# nueva, porque hasta T-6 ninguna clave externa numerica lo llevaba.
+CLAVES_QUE_ADMITEN_CERO += CLAVES_TRANSVERSALES
+CLAVES_CON_SIGNO: Tuple[str, ...] = ("peralte",)
 
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
@@ -837,6 +875,17 @@ _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
                    "una pendiente de conducto en m/m: es la MISMA magnitud "
                    "que `S_cauce` y el mismo error de transcripcion, y ademas "
                    "esta es la que entra en Manning"),
+    # --- T-6 --- Las dos pendientes TRANSVERSALES se acotan con el mismo
+    # techo de escritura: el DG-2018 las tabula en porcentaje (2.0, 2.5; 4.0
+    # a 12.0) y un `"bombeo": 2.0` es exactamente la celda cargada en
+    # porcentaje que este techo existe para atrapar. Para `peralte`, que
+    # lleva signo, se compara el valor absoluto.
+    "bombeo": (S_CAUCE_MAX,
+               "una pendiente transversal en m/m (0.02 = 2 %): un valor >= 1 "
+               "delata un bombeo escrito en PORCENTAJE"),
+    "peralte": (S_CAUCE_MAX,
+                "una pendiente transversal en m/m (0.04 = 4 %): un valor "
+                "absoluto >= 1 delata un peralte escrito en PORCENTAJE"),
 }
 
 
@@ -881,7 +930,13 @@ def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     # desde T-2. `S_cauce` NO lo admite por esta puerta ni por la columna: la
     # pendiente del cauce natural es una medicion de M0 que T-2 no toca
     # (ficha T2-01).
-    if valor < 0 or (valor == 0 and clave not in CLAVES_QUE_ADMITEN_CERO):
+    #
+    # --- T-6 --- `bombeo` admite 0 (plataforma sin bombeo, declarada como
+    # tal) y `peralte` admite 0 y signo: positivo sube el borde del lado de
+    # la entrada, negativo el de la salida (`CLAVES_CON_SIGNO`).
+    negativo_indebido = valor < 0 and clave not in CLAVES_CON_SIGNO
+    if negativo_indebido or (valor == 0
+                             and clave not in CLAVES_QUE_ADMITEN_CERO):
         raise DatoInvalidoError(
             clave, valor=bruto,
             motivo=f"tiene que ser positivo (TW admite 0 = salida libre y "
@@ -889,7 +944,7 @@ def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
                    f"origen: {origen}",
         )
     techo = _DOMINIO_DE_CLAVE.get(clave)
-    if techo is not None and valor >= techo[0]:
+    if techo is not None and abs(valor) >= techo[0]:
         raise DatoInvalidoError(
             clave, valor=bruto,
             motivo=f"fuera del rango fisico posible ({techo[0]}): {techo[1]}; "
@@ -954,7 +1009,18 @@ def cargar_datos_externos(ruta: Optional[Path],
             continue
         globales[clave] = _dato_externo(clave, bruto,
                                         f"linea de comandos (--{clave})")
-    return DatosExternos(globales, por_punto)
+    externos = DatosExternos(globales, por_punto)
+    # --- T-6 --- bombeo y peralte, excluyentes sobre el par EFECTIVO: el de
+    # `globales` (vale para todo punto sin valor propio) y el de cada punto
+    # que declara alguno de los dos.
+    exigir_transversales_compatibles(*(
+        None if clave not in globales else globales[clave].valor
+        for clave in CLAVES_TRANSVERSALES))
+    for id_punto in por_punto:
+        exigir_transversales_compatibles(
+            *(externos.valor(id_punto, clave) for clave in CLAVES_TRANSVERSALES),
+            id_punto)
+    return externos
 
 
 def _exige_clave(clave: str, donde: str) -> None:
@@ -1068,6 +1134,27 @@ class InformePunto:
     categoria_tr: Optional[DatoDeclarado] = None
     longitud: Optional[DatoDeclarado] = None
     tw: Optional[DatoDeclarado] = None
+    # --- T-6 --- La longitud CALCULADA con lo que la produjo (metodo, altura
+    # de terraplen por extremo, pasos de memoria) y la pendiente adoptada con
+    # su origen. `longitud` sigue siendo el float que MD consume; esto es lo
+    # que la memoria imprime, el mismo par que `tw` / `tw_sec13`. Las dos se
+    # resuelven ANTES de la Fase 4 y por eso existen aunque el punto no
+    # dimensione. `longitud_calculada` es None cuando la longitud se declaro.
+    longitud_calculada: Optional[LongitudConducto] = None
+    pendiente: Optional[PendienteAdoptada] = None
+    # (bombeo, peralte) declarados para el punto, o (None, None). Viajan a
+    # 7.B para que una pendiente transversal declarada junto a una longitud
+    # DECLARADA no se descarte en silencio: 7.B lo avisa.
+    transversales: Tuple[Optional[float], Optional[float]] = (None, None)
+    # La cota del fondo de la ENTRADA con su procedencia (medida, o adoptada
+    # por la regla de 'origen_cota_fondo_entrada'), resuelta antes de la Fase
+    # 4 como la pendiente. La usan V4 y 7.A dentro de MD, el TW por cota y
+    # 7.B; se guarda para que el aviso de fondo adoptado llegue a `avisos()`
+    # tambien en el punto que NO dimensiona, con cualquier metodo de longitud
+    # o con la longitud declarada (cierre de T-6). None si el punto no llego
+    # a tener longitud, o si la cota no se pudo resolver: entonces se
+    # detiene, con su nombre, quien la necesita.
+    cota_entrada: Optional[CotaDeEntrada] = None
     # El TW con su PROCEDENCIA: por cual de las cuatro vias de Sec. 1.3 salio,
     # con que cota de agua y -- si fue por escenarios acotados -- con los dos
     # numeros del paso 3. `tw` sigue siendo el float que MD consume; esto es
@@ -1163,6 +1250,44 @@ class InformePunto:
                      if p.veredicto is not None
                      and p.veredicto.tipo is TipoDeVeredicto.INDICADOR)
 
+    def avisos_de_geometria(self) -> Tuple[str, ...]:
+        """
+        --- T-6 --- Los avisos de la Sec. 7.B, en el orden del calculo: el
+        fondo de entrada adoptado igual al terreno («medir en el cauce»), la
+        pendiente que gobierna un extremo de la banda adoptada, la plataforma
+        tomada horizontal y la pendiente transversal declarada que no se
+        aplico. Si el punto llego a 7.B son los de
+        `CompatibilidadGeometrica.avisos`; si no llego, los de la cota de
+        entrada, la pendiente y la longitud que se resolvieron ANTES de la
+        Fase 4 y entraron al diseño de cada escalon: un punto que no
+        dimensiona los lleva igual, y en el MISMO orden.
+
+        EL DEL FONDO ADOPTADO SALE DE LA COTA DE ENTRADA, NO DE LA LONGITUD
+        (cierre de T-6): el metodo simetrico y la longitud declarada no lo
+        llevan, y V4, 7.A y el TW por cota usaron esa cota igual. Leerlo solo
+        de la longitud lo callaba en esos dos casos.
+
+        EL DE ESVIAJE NO ESTA AQUI: G3 es una verificacion con veredicto
+        INDICADOR y sale por `con_aviso`, como V2b. Asi cada aviso se imprime
+        una vez y el RESUMEN cuenta a G3 con las demas.
+        """
+        if self.geometria is not None:
+            return tuple(self.geometria.avisos)
+        candidatos: List[str] = []
+        if self.cota_entrada is not None:
+            candidatos.append(self.cota_entrada.aviso)
+        if self.pendiente is not None:
+            candidatos.append(aviso_de_pendiente(
+                self.pendiente,
+                None if self.longitud is None else self.longitud.valor))
+        if self.longitud_calculada is not None:
+            candidatos.extend(self.longitud_calculada.avisos)
+        avisos: List[str] = []
+        for aviso in candidatos:
+            if aviso and aviso not in avisos:
+                avisos.append(aviso)
+        return tuple(avisos)
+
     def avisos(self) -> Tuple[str, ...]:
         """
         --- T-2 --- Los AVISOS del punto: lo que la corrida tiene que decir
@@ -1186,6 +1311,10 @@ class InformePunto:
         acceso = self.acceso_mantenimiento
         if acceso is not None and acceso.valor is False:
             avisos.append(AVISO_SIN_ACCESO_DE_MANTENIMIENTO)
+        # --- T-6 --- Los de la geometria de 7.B, detras de los datos del
+        # punto y delante de los indicadores (G3, el de esviaje, es uno de
+        # ellos y sale en el bucle de abajo).
+        avisos.extend(self.avisos_de_geometria())
         for v in self.con_aviso():
             explicacion = (v.paso.veredicto.explicacion
                            if v.paso is not None and v.paso.veredicto is not None
@@ -1385,15 +1514,71 @@ def _resolver_longitud(informe: InformePunto,
     distintas en el mismo punto darian dos cotas de salida distintas.
     """
     punto = informe.punto_de_calculo
-    declarada = externos.dato(punto.id, "longitud_m")
-    if declarada is not None:
-        return declarada
-    longitud = _etapa(informe.bloqueos, FASE_GEOMETRIA,
-                      "longitud del conducto (7.B)",
-                      lambda: longitud_conducto(punto))
-    if longitud is None:
+    # --- T-6 --- LA PENDIENTE SE RESUELVE AQUI, una vez, con su origen
+    # (`M7.pendiente_adoptada`): la necesita la longitud por extremo -- la
+    # salida queda S*L mas baja -- y es la misma que despues usan el TW, MD y
+    # 7.B. Si no se puede resolver (ni `S_conducto` ni `S_cauce`), aqui NO se
+    # bloquea: se deja en None y se detiene quien de verdad la necesite, con
+    # el nombre del dato -- el metodo por extremo en esta misma etapa, o el
+    # TW y MD donde ya se detenian.
+    #
+    # CUALQUIER OTRO ErrorProyecto SI BLOQUEA, AQUI (cierre de T-6): la banda
+    # vacia o un extremo sin valor (`M5.limites_de_pendiente`), o una
+    # pendiente que no es un numero finito. Esta llamada esta FUERA de
+    # `_etapa`, y sin este `except` la excepcion salia de `correr_punto` y
+    # tumbaba la corrida entera, donde antes de T-6 la misma banda vacia la
+    # levantaba V10 dentro del bucle de MD y quedaba como bloqueo del punto.
+    informe.transversales = (externos.valor(punto.id, "bombeo"),
+                             externos.valor(punto.id, "peralte"))
+    try:
+        informe.pendiente = pendiente_adoptada(
+            punto, externos.valor(punto.id, "S_conducto"))
+    except DatoFaltanteError:
+        informe.pendiente = None
+    except ErrorProyecto as exc:
+        informe.pendiente = None
+        informe.bloqueos.append(_bloqueo(FASE_GEOMETRIA, ETAPA_PENDIENTE, exc))
         return None
-    return DatoDeclarado("longitud_m", longitud, "M7.longitud_conducto (Sec. 7.B)")
+    declarada = externos.dato(punto.id, "longitud_m")
+    if declarada is None:
+        bombeo, peralte = informe.transversales
+        calculada = _etapa(
+            informe.bloqueos, FASE_GEOMETRIA, "longitud del conducto (7.B)",
+            lambda: longitud_del_conducto(
+                punto, pendiente=informe.pendiente,
+                bombeo=bombeo, peralte=peralte))
+        if calculada is None:
+            return None
+        informe.longitud_calculada = calculada
+        longitud = DatoDeclarado(
+            "longitud_m", calculada.longitud,
+            f"M7.longitud_conducto (Sec. 7.B, metodo {calculada.metodo.value})")
+    else:
+        longitud = declarada
+    # La cota de entrada se guarda aqui SOLO para el aviso de fondo adoptado
+    # (`avisos_de_geometria`), y solo cuando hay longitud: es entonces cuando
+    # el punto sigue al TW por cota y a MD, que la usan (V4, 7.A). Si no se
+    # puede resolver, aqui NO se bloquea: la vuelven a pedir V4 y 7.A dentro
+    # de MD, y ahi se detienen con el nombre del dato o del criterio.
+    try:
+        informe.cota_entrada = cota_de_entrada(punto)
+    except ErrorProyecto:
+        informe.cota_entrada = None
+    return longitud
+
+
+def _S_del_diseno(informe: InformePunto,
+                  externos: DatosExternos) -> Optional[float]:
+    """
+    La pendiente que se entrega al TW y a MD (T-6): la declarada, el limite
+    adoptado cuando gobierna, o None -- «la del cauce», que es lo que esas
+    dos piezas resuelven por su cuenta con `punto.exigir("S_cauce")` y lo que
+    recibian antes de T-6 cuando nadie declaraba `S_conducto`.
+    """
+    pendiente = informe.pendiente
+    if pendiente is not None and pendiente.origen is not OrigenPendiente.CAUCE:
+        return pendiente.valor
+    return externos.valor(informe.punto_de_calculo.id, "S_conducto")
 
 
 def _resolver_tw(informe: InformePunto, externos: DatosExternos,
@@ -1424,7 +1609,7 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
     """
     punto = informe.punto_de_calculo
     declarado = externos.dato(punto.id, "TW_m")
-    S = externos.valor(punto.id, "S_conducto")
+    S = _S_del_diseno(informe, externos)      # T-6: la pendiente ADOPTADA
     # --- T-2 --- (INF-3.2.8) La seccion MEDIDA del receptor, si el
     # expediente la trae: gana sobre el criterio 'seccion_receptor' en las
     # vias 3 y 4, y M3 dice en el paso con cual corrio.
@@ -1861,7 +2046,7 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
     verificar = (_verificador_perfil(informe)
                  if alcance == ALCANCE_PERFIL else None)
     Q = externos.valor(punto.id, "Q_m3s")
-    S = externos.valor(punto.id, "S_conducto")
+    S = _S_del_diseno(informe, externos)      # T-6: la pendiente ADOPTADA
     # `informe.traza.append` es el observador de MD: los escalones quedan
     # anotados aunque la etapa termine en DisenoNoFactibleError, que es cuando
     # la memoria mas necesita ver que se probo.
@@ -1914,13 +2099,23 @@ def _fase_6(informe: InformePunto) -> None:
 def _fase_7(informe: InformePunto) -> None:
     """7.B con la SECCION adoptada y la MISMA longitud que uso la Fase 4."""
     resultado = informe.resultado
+    # --- T-6 --- Si la longitud se CALCULO, viaja el objeto entero (metodo,
+    # alturas por extremo, pasos); si se DECLARO, el escalar, y 7.B lo rotula
+    # como declarado. En los dos casos es la misma L que uso la Fase 4.
+    calculada = informe.longitud_calculada
     informe.geometria = _etapa(
         informe.bloqueos, FASE_GEOMETRIA, "compatibilidad geometrica (7.B)",
         lambda: compatibilidad_geometrica(
             punto=informe.punto_de_calculo, material=resultado.material,
             seccion=resultado.seccion,
             resultado=resultado.resultado_hidraulico,
-            longitud=informe.longitud.valor))
+            longitud=None if calculada is not None else informe.longitud.valor,
+            longitud_calculada=calculada,
+            pendiente=informe.pendiente,
+            # Solo cuentan con la longitud DECLARADA (7.B avisa que no se
+            # aplican); con la calculada ya van dentro de `calculada`.
+            bombeo=informe.transversales[0],
+            peralte=informe.transversales[1]))
 
 
 def _fase_8(informe: InformePunto) -> None:

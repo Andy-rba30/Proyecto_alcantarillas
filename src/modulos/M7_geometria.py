@@ -57,6 +57,28 @@ explicito y no un valor que este modulo elija.
                  `ResultadoHidraulico.S`; V2 nunca la restringe (Sec. 5.2)
     cota salida = cota de entrada - S * longitud
 
+DESDE T-6 (cadena T, 2026-11-11) LA «PROYECCION DE TALUDES» TIENE METODO
+DECLARADO, y la primera linea de arriba dejo de bastar. El criterio [A]
+'metodo_longitud_conducto' elige entre dos:
+
+    por_extremo          cada talud baja desde el borde de la plataforma
+                         hasta el FONDO del conducto en SU extremo, y la
+                         salida queda S*L mas baja que la entrada (HDS-5
+                         3a ed., num. 2.2.4 b. y Figura 2.4, pag. impresa
+                         2.8):
+                             L = [ancho + talud * (H_entrada + H_salida0)]
+                                 / [cos(esviaje) - talud * S]
+                         Es el valor del archivo.
+    terraplen_simetrico  los dos taludes bajan la altura del eje, rasante -
+                         terreno: la formula anterior, conservada como caso
+                         particular (INF-3.3.3 la señalo).
+
+La longitud se resuelve UNA vez, antes de la Fase 4 (`longitud_del_conducto`),
+y 7.B recibe ese mismo objeto. Y 7.B dejo de ser un parrafo en la memoria:
+emite los pasos 7.B.1 (pendiente adoptada, con su origen), 7.B.2 (factor de
+esviaje), 7.B.3 (longitud), 7.B.4 (caida y cota de salida) y 7.B.5 (encaje de
+la seccion adoptada: longitud entre cabezales a la clave, HDS-5 num. 3.3.5).
+
 LA PENDIENTE NO SE ELIGE DOS VECES (MAT-D9). Sec. 7.B dice que la pendiente de
 la alcantarilla es la del cauce, y esa sigue siendo la regla del proyecto: el
 valor por defecto lo pone la Fase 4, que resuelve `punto.exigir("S_cauce")`
@@ -71,6 +93,17 @@ el informe como distinta de la otra. Ahora la pendiente viaja dentro del
 resultado hidraulico, que es la salida de quien la resolvio, y 7.B la lee de
 ahi: si el proyecto quiere cambiarla, se cambia en la Fase 4 y las dos cosas
 se mueven juntas.
+
+DESDE T-6 QUIEN LA RESUELVE ES `pendiente_adoptada`, una vez y ANTES de la
+Fase 4, con su ORIGEN: la declarada (`S_conducto`), el extremo de la banda
+adoptada cuando la pendiente del cauce lo traspasa (los dos criterios de T-2,
+leidos con `M5.limites_de_pendiente()`), o la del cauce. `servicio` pasa ese
+mismo valor a la longitud, al TW por cota, a MD y a 7.B. El reparto con V10
+-- este modulo ACOTA la pendiente del cauce y lo avisa; V10 JUZGA la que
+quedo y solo puede incumplirse con una declarada -- y lo que cada extremo
+trae consigo (una caida o un disipador que el programa no dimensiona; una
+salida bajo el cauce natural) estan en el docstring de esa funcion y en
+`aviso_de_pendiente`.
 
 El 1/cos(esviaje) no es un coeficiente adoptado: es la identidad geometrica
 del cruce oblicuo -- el eje del conducto es la hipotenusa del ancho que
@@ -181,23 +214,33 @@ Si M7 eligiera su propia cota de entrada o copiara la tabla, la rasante se
 fijaria contra una condicion y V4 se verificaria contra otra, y el
 acoplamiento seguiria abierto por la puerta de atras.
 
-Por que 7.B solo trae dos verificaciones
------------------------------------------
+Por que 7.B trae dos verificaciones con umbral y un aviso
+----------------------------------------------------------
 De los cinco puntos que Sec. 7.B enumera, tres son CALCULOS y no chequeos
 (longitud, esviaje y pendiente: la hoja fija como se obtienen, no un umbral
-que puedan incumplir) y viajan como campos de `CompatibilidadGeometrica`. Los
-dos que si tienen umbral son:
+que puedan incumplir) y viajan como campos y como pasos de
+`CompatibilidadGeometrica`. Los dos que si tienen umbral son:
 
     G1  rasante congelada        cota de rasante >= la minima de 7.A
-    G2  cota de salida           cota de salida >= cota de fondo del receptor
+    G2  entrega al receptor      cota de salida >= cota de fondo del receptor
+                                 + 'desnivel_minimo_entrega_m'
 
-G2 es una INTERPRETACION declarada, no un criterio con fuente propia: Sec.
-7.B pide las cotas de entrada y salida "amarradas al perfil del cauce y a la
-cota de fondo del receptor", y la lectura minima de ese amarre es que la
-salida no quede enterrada bajo el fondo del cuerpo receptor. No lleva ningun
-parametro adoptado -- compara dos elevaciones del expediente y nada mas -- y
-por eso no crea criterio. Un desnivel MINIMO de entrega sobre ese fondo si
-seria un criterio, la hoja de ruta no lo da, y por lo tanto no se exige aqui.
+y desde T-6 hay una tercera fila que NO es un umbral de aceptacion:
+
+    G3  esviaje (AVISO)          esviaje <= 'esviaje_max_grados'; `cumple`
+                                 es True siempre, y por encima del maximo el
+                                 paso lleva veredicto INDICADOR
+
+G2 ES UNA INTERPRETACION CON CRITERIO DECLARADO. Sec. 7.B pide las cotas de
+entrada y salida "amarradas al perfil del cauce y a la cota de fondo del
+receptor", y la lectura minima de ese amarre es que la salida no quede
+enterrada bajo el fondo del cuerpo receptor. Hasta T-6 este parrafo decia que
+G2 «no lleva ningun parametro adoptado» y que un desnivel minimo de entrega
+«no se exige aqui» porque la hoja de ruta no lo da. La hoja de ruta lo declara
+criterio desde T-0 y T-6 lo creo: 'desnivel_minimo_entrega_m' [A], con valor
+0.0 m -- que es exactamente la comparacion anterior -- y ventana hasta 0.30
+m. Ninguna fuente da el numero (el num. 4.1.1.3.3 del Manual exige cuidar la
+pendiente y no habla de la entrega), y por eso es [A].
 
 Excepciones
 -----------
@@ -209,6 +252,10 @@ Excepciones
                              'condicion_pavimento' (bloquea el recubrimiento
                              minimo, tambien para los tres);
                              'talud_terraplen' (bloquea la longitud de 7.B).
+                             Desde T-6 tambien 'metodo_longitud_conducto',
+                             'desnivel_minimo_entrega_m' y
+                             'esviaje_max_grados', los tres con valor de
+                             archivo.
     DisenoNoFactibleError    lo lanzan `TamizadoRasante.exigir_factible()` y
                              `CompatibilidadGeometrica.exigir_factible()`, con
                              `delta_rasante_m` cargado. NUNCA una excepcion
@@ -218,8 +265,14 @@ Excepciones
                              delta en `delta_rasante_cm` y quien quiera la
                              excepcion la pide.
     DatoInvalidoError        el paquete estructural no es positivo (la
-                             subrasante no queda bajo la rasante, Sec. 1.5) o
-                             el esviaje no admite cruce.
+                             subrasante no queda bajo la rasante, Sec. 1.5),
+                             el esviaje no admite cruce, o -- en la longitud
+                             por extremo -- la pendiente alcanza a la del
+                             talud vista sobre el eje del conducto, o un
+                             borde de la plataforma queda bajo el fondo.
+    DatoFaltanteError        'S_cauce', cuando la longitud por extremo
+                             necesita la pendiente y el punto no trae ni la
+                             del cauce ni una declarada.
 
 Uso
 ---
@@ -246,20 +299,27 @@ import math
 from typing import Optional, Tuple
 
 from src import criterios_adoptados as ca
-from src.dominios import ESVIAJE_MAX
-from src.modelos import (CIFRAS_MAGNITUD, CompatibilidadGeometrica,
+from src.dominios import ESVIAJE_MAX, S_CAUCE_MAX
+from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD,
+                     CompatibilidadGeometrica,
                      CondicionRasante,
                      DatoInvalidoError, EleccionDeProyecto, FormaSeccion,
-                     LimiteNumericoError,
-                     Magnitud, Material, Seccion,
+                     LimiteNumericoError, LongitudConducto,
+                     Magnitud, Material, MetodoLongitud, OrigenPendiente,
+                     PendienteAdoptada, Seccion,
                      exigir_seccion_coherente,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
 from src.modulos.M2_material import espesor_pared
-from src.modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
+from src.modulos.M5_verificaciones import (CRITERIO_PENDIENTE_MAXIMA,
+                                       CRITERIO_PENDIENTE_MINIMA,
+                                       CRITERIO_REGIMEN_V2B,
+                                       CRITERIO_RESGUARDO, cota_clave,
                                        cota_de_entrada,
+                                       limites_de_pendiente,
                                        resguardo_por_cbr)
 from src.tolerancias import COS_ESVIAJE_MIN, TOL_UMBRAL_NORMATIVO
+from src.normativa import registro as _registro
 
 NUMERAL_7A = "Sec. 7.A"
 NUMERAL_7B = "Sec. 7.B"
@@ -297,7 +357,8 @@ def numeral_g1(material: Material) -> str:
     if material.forma is FormaSeccion.RECTANGULAR:
         return NUMERAL_G1_CAJON
     return NUMERAL_G1_CIRCULAR
-NUMERAL_G2 = "Sec. 7.B (cotas amarradas al fondo del receptor)"
+NUMERAL_G2 = ("Sec. 7.B (cotas amarradas al fondo del receptor; desnivel "
+              "de entrega: criterio 'desnivel_minimo_entrega_m' [A])")
 
 # LOS DOS MINIMOS QUE COMPITEN EN h_rec, con nombre, porque G1 tiene que
 # decir CUAL gano y no solo enunciar la regla. Hasta C7 el paso escribia «el
@@ -318,6 +379,25 @@ CRITERIO_TALUD = "talud_terraplen"
 CRITERIO_COBERTURA_AASHTO = "cobertura_minima_aashto"
 CRITERIO_COBERTURA_CAJON = "cobertura_minima_cajon"
 CRITERIO_CONDICION_PAVIMENTO = "condicion_pavimento"
+
+# --- T-6 --- Las claves que 7.B lee desde T-6.
+CRITERIO_METODO_LONGITUD = "metodo_longitud_conducto"
+CRITERIO_DESNIVEL_ENTREGA = "desnivel_minimo_entrega_m"
+CRITERIO_ESVIAJE_MAX = "esviaje_max_grados"
+# LA BANDA DE PENDIENTE ES DE T-2 Y AQUI NO SE VUELVE A LEER. Los criterios
+# 'pendiente_minima_conducto' y 'pendiente_maxima_conducto' los creo T-2 con
+# su lectura unica, `M5.limites_de_pendiente()` -- que trae la guardia cruzada
+# de la banda vacia --, y con la verificacion que los aplica (V10). Este
+# modulo importa de M5 las dos claves y la funcion: `pendiente_adoptada` dice
+# cual de los origenes gobierna y no tiene una segunda lectura de la banda.
+# Hasta integrar T-6 despues de T-2 esto era una lectura por clave que podia
+# no encontrarla (FASE A en paralelo); ya no hace falta.
+
+NUMERAL_G3 = ("Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 "
+              "num. 5.4.2, por analogia; AVISO, el esviaje es dato de "
+              "entrada)")
+METODOS_DE_LONGITUD = (MetodoLongitud.TERRAPLEN_SIMETRICO.value,
+                       MetodoLongitud.POR_EXTREMO.value)
 
 # Claves de la fila de 'cobertura_minima_aashto'. Los nombres reproducen la
 # nomenclatura del propio Art. 12.6.6.3 (S, Bc, ID) y no se reescriben aqui:
@@ -667,7 +747,8 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
     e_paq = espesor_paquete(punto)
     h_rec, minimo_que_gobierna = altura_recubrimiento(material=material,
                                                       seccion=seccion)
-    entrada = cota_de_entrada(punto).valor
+    cota_entrada = cota_de_entrada(punto)
+    entrada = cota_entrada.valor
     altura = seccion.altura
     clave = cota_clave(punto=punto, material=material, seccion=seccion)
     t_pared = espesor_pared(material, altura)
@@ -711,6 +792,11 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
         criterio_resguardo=CRITERIO_RESGUARDO,
         id_punto=punto.id,
         numeral=NUMERAL_7A,
+        # T-6 (INF-5.1.18): las dos condiciones se levantan sobre la cota de
+        # entrada. Si es el terreno adoptado y no el fondo medido, la rasante
+        # minima y su delta son PROVISIONALES y el objeto lo dice.
+        provisional=bool(cota_entrada.aviso),
+        aviso=cota_entrada.aviso,
     )
 
 
@@ -819,6 +905,13 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
                          "manda el RESGUARDO: la carga a la entrada exige mas "
                          "rasante que la cobertura del conducto"),
                 clave_criterio=tamizado.criterio_gobernante or ""),),
+            nota_del_proyecto=(
+                f"AVISO: {tamizado.aviso}. La cota de clave y la cota de "
+                "entrada de las dos condiciones salen de esa adopcion, de "
+                "modo que la rasante minima y el delta de rasante de este "
+                "paso son PROVISIONALES: con el fondo medido bajo el "
+                "terreno, las dos condiciones bajan lo mismo que el fondo."
+                if tamizado.provisional else ""),
         ),
     )
 
@@ -845,23 +938,26 @@ def factor_esviaje(punto: PuntoCritico) -> float:
     como "no alcanzable desde el CSV validado", y eso es INEXACTO: M0 valida
     `0 <= esviaje < 90` y esos valores pasan.
 
-    No se pone cota de cordura porque no hay ninguna que citar: ni la Sec.
-    7.B ni EG-2013 fijan un esviaje maximo constructivo, y elegir uno --
-    45, 60 grados -- seria inventar un valor normativo, que es lo que
-    CLAUDE.md prohibe expresamente. Lo que corresponde es que el numero se
-    VEA: una longitud de 1e6 m es absurda a simple vista en la memoria, y
-    G2 la contrasta contra la cota del receptor. Si el proyecto quiere una
-    cota, el camino es declararla como criterio [A] con su sensibilidad, no
-    escribirla aqui.
+    ESTA FUNCION NO PONE COTA DE CORDURA, y la razon cambio de redaccion en
+    T-6. Hasta entonces este parrafo decia que elegir un maximo -- 45, 60
+    grados -- «seria inventar un valor normativo». Sigue siendo cierto que
+    ninguna fuente fija un esviaje maximo del BARRIL (ni la Sec. 7.B ni
+    EG-2013), y por eso el numero no se escribe AQUI ni detiene el calculo;
+    lo que T-6 hizo es lo que el parrafo ya señalaba como camino: adoptarlo
+    como criterio [A] con su ventana ('esviaje_max_grados', 45 grados, por
+    analogia con el maximo practico del esviaje de embocadura del HDS-5), que
+    no es un valor normativo sino una adopcion declarada, y aplicarlo como
+    AVISO. La longitud de un esviaje absurdo sigue viendose en la memoria.
 
     Y ESE CAMINO EXISTE DESDE EL CIERRE DE C10 (PC-32): el criterio [A]
-    opcional 'esviaje_max_grados' de criterios_adoptados.py. Sin declarar,
-    nada cambia -- el parrafo anterior sigue vigente y el numero se ve --;
-    declarado, un esviaje que lo supere sale como `DatoInvalidoError` que
-    nombra al dato, al criterio y al maximo declarado: es un dato del CSV que
-    contradice una decision del proyecto, no un fallo de aritmetica, y por eso
-    no es LimiteNumericoError. La cota la elige el proyectista y queda
-    declarada con su sensibilidad; aqui solo se aplica.
+    'esviaje_max_grados' de criterios_adoptados.py. Hasta T-6 era opcional y,
+    declarado, un esviaje que lo superase salia de AQUI como
+    `DatoInvalidoError`. DESDE T-6 TIENE VALOR (45 grados, por analogia con
+    el maximo practico del esviaje de embocadura del HDS-5 num. 5.4.2) Y NO
+    SE APLICA EN ESTA FUNCION: el esviaje es un dato de entrada medido, y un
+    dato que supera una adopcion del proyecto se SEÑALA en vez de rechazarse.
+    El aviso lo emite `g3_esviaje` (verificacion G3 de 7.B, veredicto
+    INDICADOR); esta funcion calcula el factor para todo esviaje del dominio.
 
     LO QUE SI TIENE ES UNA GUARDIA DE SALIDA NUMERICA (PC-32, EXT-1), y
     conviene no confundirla con la cota anterior: por debajo de
@@ -874,28 +970,28 @@ def factor_esviaje(punto: PuntoCritico) -> float:
     tolerancia y un valor de proyecto. El 89.9 del dictamen (10 313 m) queda
     del lado que pasa, a proposito, por el parrafo anterior.
     """
-    if not (-ESVIAJE_MAX < punto.esviaje_grados < ESVIAJE_MAX):
+    # EL DOMINIO ES EL DE M0, [0, ESVIAJE_MAX), Y NO UN SUPERCONJUNTO (T-6,
+    # auditor adversarial). Esta guarda admitia (-ESVIAJE_MAX, ESVIAJE_MAX) y
+    # se apoyaba en que M0 rechaza el negativo al cargar (SIS-B-23): cierto
+    # para un punto que viene del CSV, falso para quien llama a M7 con un
+    # `PuntoCritico` armado a mano -- medido: -89 grados daba factor 57.3,
+    # 3301 m de conducto y G3 en «cumple» --. Un esviaje es el angulo con la
+    # normal a la via, sin signo. Forma MAT-D13: condicion en positivo y
+    # negada, para que un NaN tampoco pase.
+    if not (0 <= punto.esviaje_grados < ESVIAJE_MAX):
         raise DatoInvalidoError(
             "esviaje_grados", valor=punto.esviaje_grados, id_punto=punto.id,
             motivo=f"el esviaje va de 0 (cruce perpendicular) a {ESVIAJE_MAX} "
                    "grados, donde el conducto seria paralelo a la via y la "
-                   "longitud de 7.B no estaria definida",
+                   "longitud de 7.B no estaria definida; es el angulo con la "
+                   "normal al eje de la via y no lleva signo",
         )
-    maximo = ca.valor_si_declarado("esviaje_max_grados")
-    if maximo is not None and not punto.esviaje_grados <= maximo + TOL_UMBRAL_NORMATIVO:
-        # COTA DECLARADA, NO INVENTADA (PC-32, cierre C10). Solo actua cuando
-        # el proyectista declaro el criterio [A] opcional; sin el, el
-        # esviaje sigue sin tope (MAT-O18). Forma MAT-D13: condicion en
-        # positivo y negada, mensaje que nombra al dato y al criterio.
-        raise DatoInvalidoError(
-            "esviaje_grados", valor=punto.esviaje_grados, id_punto=punto.id,
-            motivo=f"el esviaje de {punto.esviaje_grados!r} grados supera el "
-                   f"maximo que el proyecto acepta construir, {maximo!r} "
-                   "grados, declarado en el criterio [A] 'esviaje_max_grados' "
-                   "(criterios_adoptados.py, PC-32). O se corrige el dato del "
-                   "CSV o se revisa la declaracion; el calculo no elige por "
-                   "el proyectista",
-        )
+    # --- T-6 --- EL TOPE YA NO SE APLICA AQUI. Desde el cierre de C10 esta
+    # funcion detenia con `DatoInvalidoError` todo esviaje sobre
+    # 'esviaje_max_grados' cuando el criterio estaba declarado. T-6 le da
+    # valor al criterio (45 grados) y cambia lo que hace: el esviaje es un
+    # DATO DE ENTRADA y superarlo es un AVISO que emite `g3_esviaje`, no un
+    # rechazo. El factor se calcula igual por encima del maximo.
     coseno = math.cos(math.radians(punto.esviaje_grados))
     if not coseno > COS_ESVIAJE_MIN:
         # GUARDIA DE SALIDA CON UMBRAL NOMBRADO (PC-32, patron SIS-G-01). El
@@ -1011,19 +1107,892 @@ def proyeccion_taludes(punto: PuntoCritico) -> float:
                           2 * talud * altura_terraplen(punto), punto)
 
 
-def longitud_conducto(punto: PuntoCritico) -> float:
-    """
-    Longitud del conducto, m (Sec. 7.B):
+# ---------------------------------------------------------------------------
+# --- T-6 --- Pendiente adoptada, longitud por extremo y pasos de 7.B
+# (INF-3.3.3, INF-5.1.18, INF-3.2.7)
+# ---------------------------------------------------------------------------
 
-        (ancho de plataforma + proyeccion de taludes) / cos(esviaje)
+def _caracter_de(cita_id: str) -> str:
+    """El caracter de una cita, leido del registro y no escrito a mano."""
+    return _registro.construir().cita(cita_id).caracter.value.upper()
+
+
+def pendiente_adoptada(punto: PuntoCritico,
+                       S_declarada: Optional[float] = None
+                       ) -> PendienteAdoptada:
+    """
+    La pendiente del conducto con su ORIGEN (Sec. 7.B; T-6 punto 5).
+
+    Tres origenes, en este orden:
+
+      1. DECLARADA   el punto trae `S_conducto` (dato externo). Es una
+                     decision del expediente para ese punto y el calculo no
+                     la pisa: si queda fuera de la banda adoptada, quien lo
+                     dice es V10 (`M5.v10_pendiente_conducto`).
+      2. MINIMA o    la pendiente del CAUCE queda bajo
+         MAXIMA      'pendiente_minima_conducto' o sobre
+                     'pendiente_maxima_conducto' y gobierna el extremo de la
+                     banda, leida de `M5.limites_de_pendiente()`.
+      3. CAUCE       `S_cauce`, la regla de Sec. 7.B: el conducto sigue al
+                     cauce. Es lo que el HDS-5 num. 5.3.3 asocia a la
+                     ausencia de problemas de sedimentacion.
+
+    EL REPARTO CON V10, que hay que decir porque las dos piezas leen la misma
+    banda: ESTA funcion acota la pendiente del CAUCE --el dato que nadie
+    eligio-- y lo declara con su origen y un aviso (`aviso_de_pendiente`);
+    V10 JUZGA la pendiente con que corrio el diseño, y como aqui la del cauce
+    ya sale dentro de la banda, V10 solo puede incumplirse con una pendiente
+    DECLARADA. Las dos usan la misma tolerancia (`TOL_UMBRAL_NORMATIVO`), de
+    modo que el extremo adoptado aqui cumple alli. Lo que el extremo trae
+    consigo no lo resuelve este modulo, y por eso se avisa:
+
+      MAXIMA  el conducto queda MAS TENDIDO que su cauce. El desnivel que el
+              barril no baja, (S_cauce - S_conducto) * L, hay que resolverlo
+              con una estructura de caida o de disipacion en un extremo, que
+              este calculo no dimensiona; y V2b compara S_conducto con
+              S_cauce y lo juzga segun 'regimen_v2b' (indicador con aviso, o
+              umbral duro: entonces el punto no dimensiona).
+      MINIMA  el conducto CAE MAS que su cauce: la salida queda
+              (S_conducto - S_cauce) * L bajo el cauce natural, y G2 la juzga
+              contra el fondo del receptor.
+
+    ES EL UNICO SITIO DONDE SE RESUELVE (MAT-D9: la pendiente no se elige dos
+    veces). `servicio` la llama antes de la Fase 4 y pasa el MISMO valor a la
+    longitud, al TW, a MD y a 7.B.
+
+    El Manual del MTC exige cuidar la pendiente y no da ninguna cifra (num.
+    4.1.1.3.3, pag. impresa 71): los dos extremos son criterios [A].
+
+    Excepciones: `DatoFaltanteError('S_cauce')` si no hay ni declaracion ni
+    pendiente de cauce; `DatoInvalidoError` si la pendiente no es un numero
+    finito y no negativo (segunda linea: M0 y la carga de datos externos ya
+    lo exigen) o si la banda adoptada queda vacia (de
+    `M5.limites_de_pendiente`).
+    """
+    if S_declarada is not None:
+        if not (S_declarada >= 0 and math.isfinite(S_declarada)):
+            raise DatoInvalidoError(
+                "S_conducto", valor=S_declarada, id_punto=punto.id,
+                motivo="la pendiente declarada del conducto tiene que ser un "
+                       "numero finito y no negativo (0 es el barril "
+                       "horizontal); la pendiente adversa no se admite")
+        return PendienteAdoptada(
+            valor=S_declarada, origen=OrigenPendiente.DECLARADA,
+            S_cauce=punto.S_cauce, S_declarada=S_declarada,
+            S_minima=None, S_maxima=None,
+            procedencia="dato externo `S_conducto` declarado para este "
+                        "punto: no es la pendiente del cauce, y la banda de "
+                        "pendiente adoptada no la sustituye (la juzga V10)")
+    S_cauce = punto.exigir("S_cauce")
+    if not (S_cauce > 0 and math.isfinite(S_cauce)):
+        raise DatoInvalidoError(
+            "S_cauce", valor=S_cauce, id_punto=punto.id,
+            motivo="la pendiente del cauce tiene que ser un numero finito y "
+                   "positivo para adoptarla como pendiente del conducto; un "
+                   "barril horizontal se declara con `S_conducto` = 0, no "
+                   "con la pendiente del cauce")
+    S_min, S_max = limites_de_pendiente()
+    if not S_cauce >= S_min - TOL_UMBRAL_NORMATIVO:
+        return PendienteAdoptada(
+            valor=S_min, origen=OrigenPendiente.MINIMA, S_cauce=S_cauce,
+            S_declarada=None, S_minima=S_min, S_maxima=S_max,
+            procedencia=f"criterio '{CRITERIO_PENDIENTE_MINIMA}': la "
+                        f"pendiente del cauce ({S_cauce!r}) queda por debajo "
+                        "y gobierna el minimo adoptado")
+    if not S_cauce <= S_max + TOL_UMBRAL_NORMATIVO:
+        return PendienteAdoptada(
+            valor=S_max, origen=OrigenPendiente.MAXIMA, S_cauce=S_cauce,
+            S_declarada=None, S_minima=S_min, S_maxima=S_max,
+            procedencia=f"criterio '{CRITERIO_PENDIENTE_MAXIMA}': la "
+                        f"pendiente del cauce ({S_cauce!r}) lo supera y "
+                        "gobierna el maximo adoptado")
+    return PendienteAdoptada(
+        valor=S_cauce, origen=OrigenPendiente.CAUCE, S_cauce=S_cauce,
+        S_declarada=None, S_minima=S_min, S_maxima=S_max,
+        procedencia="pendiente del cauce (`S_cauce`): el conducto sigue al "
+                    "cauce, que es la regla de la Sec. 7.B")
+
+
+def desnivel_frente_al_cauce(pendiente: PendienteAdoptada,
+                             longitud: float) -> Optional[float]:
+    """
+    (S_cauce - S_conducto) * L, en metros: lo que el cauce baja a lo largo
+    del conducto y el barril no (positivo: conducto mas tendido que el
+    cauce), o lo que el barril baja de mas (negativo). None si el punto no
+    tiene pendiente de cauce con que comparar (Sec. 7.B).
+
+    Es la magnitud de obra que trae consigo una pendiente que no es la del
+    cauce, y la que imprimen el paso 7.B.4 y `aviso_de_pendiente`.
+    """
+    if pendiente.S_cauce is None:
+        return None
+    return (pendiente.S_cauce - pendiente.valor) * longitud
+
+
+def aviso_de_pendiente(pendiente: PendienteAdoptada,
+                       longitud: Optional[float] = None) -> str:
+    """
+    El AVISO de una pendiente que gobierna un extremo de la banda adoptada, o
+    "" si el origen es el cauce o la declaracion (Sec. 7.B; T-6).
+
+    Una pendiente declarada no avisa aqui: es una decision del expediente y
+    la juzgan V10 (banda) y V2b (frente al cauce), cada una en su fila. Con
+    `longitud` el aviso lleva el desnivel en metros; sin ella, la expresion.
+    """
+    if pendiente.origen not in (OrigenPendiente.MINIMA, OrigenPendiente.MAXIMA):
+        return ""
+    desnivel = (None if longitud is None
+                else desnivel_frente_al_cauce(pendiente, longitud))
+    if pendiente.origen is OrigenPendiente.MAXIMA:
+        cuanto = ("(S_cauce - S_conducto) x L" if desnivel is None
+                  else f"{desnivel:.2f} m en este punto")
+        return (
+            f"pendiente del conducto limitada al maximo adoptado "
+            f"({pendiente.valor:g} m/m, criterio "
+            f"'{CRITERIO_PENDIENTE_MAXIMA}'): la del cauce es "
+            f"{pendiente.S_cauce:g} m/m. El conducto queda mas tendido que "
+            f"su cauce y el desnivel que el barril no baja, {cuanto}, "
+            "requiere una estructura de caida o de disipacion en un extremo "
+            "que este calculo no dimensiona; V2b juzga la sedimentacion "
+            f"segun '{CRITERIO_REGIMEN_V2B}'")
+    cuanto = ("(S_conducto - S_cauce) x L" if desnivel is None
+              else f"{-desnivel:.2f} m en este punto")
+    return (
+        f"pendiente del conducto elevada al minimo adoptado "
+        f"({pendiente.valor:g} m/m, criterio "
+        f"'{CRITERIO_PENDIENTE_MINIMA}'): la del cauce es "
+        f"{pendiente.S_cauce:g} m/m. El conducto cae mas que su cauce y la "
+        f"salida queda {cuanto} por debajo del cauce natural; G2 la juzga "
+        "contra el fondo del receptor")
+
+
+def _pendiente_del_diseno(punto: PuntoCritico, S: float) -> PendienteAdoptada:
+    """
+    El origen de una pendiente que llega ya resuelta en el resultado
+    hidraulico, cuando quien llama a 7.B no trae el `PendienteAdoptada`.
+
+    No vuelve a elegir: `S` es la del diseño. Solo la rotula comparandola con
+    lo que `pendiente_adoptada` resolveria sin declaracion; si coincide tiene
+    ese origen, y si no, fue declarada.
+    """
+    if punto.S_cauce is not None:
+        sin_declarar = pendiente_adoptada(punto)
+        if abs(sin_declarar.valor - S) <= TOL_UMBRAL_NORMATIVO:
+            return sin_declarar
+    return pendiente_adoptada(punto, S_declarada=S)
+
+
+def paso_pendiente(pendiente: PendienteAdoptada):
+    """El `PasoDeMemoria` 7.B.1: la pendiente adoptada y de donde sale."""
+    sustitucion = []
+    if pendiente.S_cauce is not None:
+        sustitucion.append(Magnitud(
+            "S_cauce", pendiente.S_cauce, "m/m",
+            "pendiente del cauce natural en el cruce (columna del CSV o dato "
+            "de tablero)", cifras=CIFRAS_FINA))
+    if pendiente.S_declarada is not None:
+        sustitucion.append(Magnitud(
+            "S_conducto declarada", pendiente.S_declarada, "m/m",
+            "dato externo `S_conducto` del punto", cifras=CIFRAS_FINA))
+    for simbolo, valor, clave in (
+            ("S_minima", pendiente.S_minima, CRITERIO_PENDIENTE_MINIMA),
+            ("S_maxima", pendiente.S_maxima, CRITERIO_PENDIENTE_MAXIMA)):
+        if valor is not None:
+            sustitucion.append(Magnitud(
+                simbolo, valor, "m/m", f"criterio '{clave}' [A]",
+                cifras=CIFRAS_FINA))
+    formula = {
+        OrigenPendiente.CAUCE: "S_conducto = S_cauce",
+        OrigenPendiente.DECLARADA: "S_conducto = S declarada para el punto",
+        OrigenPendiente.MINIMA: "S_conducto = S_minima  (S_cauce < S_minima)",
+        OrigenPendiente.MAXIMA: "S_conducto = S_maxima  (S_cauce > S_maxima)",
+    }[pendiente.origen]
+    aviso = aviso_de_pendiente(pendiente)
+    return paso(
+        "F7.PENDIENTE",
+        codigo="7.B.1",
+        que="Pendiente adoptada del conducto",
+        formula=formula,
+        formula_cita_id="MC_HHD.4.1.1.3.3",
+        citas_textuales=("MC_HHD.4.1.1.3.3", "HDS5_3ED.5.3.3#ALINEADO"),
+        sustitucion=tuple(sustitucion),
+        resultado=Magnitud("S_conducto", pendiente.valor, "m/m",
+                           pendiente.procedencia, cifras=CIFRAS_FINA),
+        elecciones=(EleccionDeProyecto(
+            que_se_adopto="origen de la pendiente del conducto",
+            valor=pendiente.origen.value,
+            entre=tuple(o.value for o in OrigenPendiente),
+            de_donde="la regla de la Sec. 7.B (el conducto sigue al cauce), "
+                     "la declaracion del punto y los limites de pendiente "
+                     "adoptados por el proyecto",
+            por_que=pendiente.procedencia),),
+        nota_del_proyecto=(
+            "La fuente exige cuidar la pendiente y no da cifra: ni minima, "
+            "ni maxima. Es la MISMA pendiente con que corre el diseño "
+            "hidraulico (Fase 4), el TW por cota y la caida de 7.B."
+            + (" La banda (S_minima, S_maxima) es la de V10, leida una "
+               "sola vez: aqui acota la pendiente del CAUCE, y V10 juzga la "
+               "pendiente con que corrio el diseño."
+               if pendiente.origen is not OrigenPendiente.DECLARADA else
+               " La pendiente DECLARADA no se acota aqui: V10 la juzga "
+               "contra la banda adoptada y V2b contra la del cauce.")
+            + (f" AVISO: {aviso}." if aviso else "")),
+    )
+
+
+def _procedencia_de_la_entrada(entrada) -> str:
+    """
+    De donde sale la cota de entrada, en una linea: la procedencia completa
+    ya la imprime el paso G1 y el parrafo de la Fase 7, y repetirla entera en
+    cada sustitucion engorda la memoria sin decir nada nuevo.
+    """
+    if entrada.medida:
+        return "MEDIDA: columna cota_fondo_entrada del CSV"
+    return (f"ADOPTADA: regla '{entrada.regla}' del criterio "
+            "'origen_cota_fondo_entrada' [A], no medida")
+
+
+def _metodo_longitud() -> MetodoLongitud:
+    """
+    El metodo declarado en 'metodo_longitud_conducto', validado como segunda
+    linea (la puerta ya rechaza lo que no esta en la ventana; forma MAT-D13).
+    """
+    metodo = ca.valor(CRITERIO_METODO_LONGITUD)
+    if not (isinstance(metodo, str) and metodo in METODOS_DE_LONGITUD):
+        raise DatoInvalidoError(
+            CRITERIO_METODO_LONGITUD, valor=metodo,
+            motivo=f"'{CRITERIO_METODO_LONGITUD}' vale {metodo!r} y las "
+                   f"unicas opciones son "
+                   f"{', '.join(map(repr, METODOS_DE_LONGITUD))}")
+    return MetodoLongitud(metodo)
+
+
+def _paso_factor(punto: PuntoCritico, factor: float):
+    """El `PasoDeMemoria` 7.B.2: el factor de esviaje."""
+    return paso(
+        "F7.ESVIAJE",
+        codigo="7.B.2",
+        que="Factor de esviaje del cruce",
+        formula="factor = 1 / cos(esviaje)",
+        formula_cita_id="HDS5_3ED.5.4.1#ESVIAJE",
+        citas_textuales=("HDS5_3ED.5.4.1#ESVIAJE", "MC_HHD.4.1.1.3.2"),
+        sustitucion=(Magnitud(
+            "esviaje", punto.esviaje_grados, "grados",
+            "columna esviaje_grados del CSV: angulo entre el eje del "
+            "conducto y la NORMAL al eje de la via (0 = cruce perpendicular)",
+            cifras=CIFRAS_MAGNITUD),),
+        resultado=Magnitud(
+            "factor", factor, "-",
+            "identidad geometrica del cruce oblicuo: el eje del conducto es "
+            "la hipotenusa del ancho que atraviesa", cifras=CIFRAS_FINA),
+    )
+
+
+def _eleccion_de_metodo(metodo: MetodoLongitud) -> EleccionDeProyecto:
+    return EleccionDeProyecto(
+        que_se_adopto="metodo de calculo de la longitud del conducto",
+        valor=metodo.value,
+        entre=tuple(str(v) for v in
+                    ca.criterio(CRITERIO_METODO_LONGITUD).sensibilidad),
+        de_donde=f"el criterio '{CRITERIO_METODO_LONGITUD}' [A]",
+        por_que=("la fuente describe superponer el conducto a la seccion "
+                 "transversal del cruce, con un talud a cada lado y la "
+                 "salida mas baja que la entrada; que cada talud baje hasta "
+                 "el FONDO -- como si el barril no tuviera altura -- es "
+                 "eleccion del proyecto, porque la seccion aun no se conoce, "
+                 "y da la cota superior de la longitud"
+                 if metodo is MetodoLongitud.POR_EXTREMO else
+                 "los dos taludes bajan la altura del eje (rasante - "
+                 "terreno): es la formula anterior a T-6, caso particular "
+                 "del metodo por extremo"),
+        clave_criterio=CRITERIO_METODO_LONGITUD)
+
+
+def _exigir_dato_transversal(clave: str, valor: Optional[float],
+                             punto: PuntoCritico) -> float:
+    """
+    Bombeo o peralte como numero valido. None es «no declarado» y vale 0.
+
+    Es la SEGUNDA linea: `servicio._numero_externo` ya valida lo que entra
+    por el JSON, pero esta funcion la alcanza tambien quien llama a M7
+    directamente (medido por el auditor de T-6: bombeo = -0.5 daba 28.93 m de
+    conducto sin excepcion). Finito, en m/m -- un valor absoluto >= 1 delata
+    un porcentaje, el mismo techo de escritura de las pendientes -- y, para
+    el bombeo, no negativo: un bombeo negativo no existe; una plataforma que
+    sube hacia un borde y baja hacia el otro es un peralte.
+    """
+    if valor is None:
+        return 0.0      # plataforma horizontal: el caso particular
+    if isinstance(valor, bool) or not isinstance(valor, (int, float)) \
+            or not math.isfinite(valor):
+        raise DatoInvalidoError(
+            clave, valor=valor, id_punto=punto.id,
+            motivo="la pendiente transversal de la plataforma es un numero "
+                   "finito en m/m (0.02 = 2 %)")
+    if not abs(valor) < S_CAUCE_MAX:
+        raise DatoInvalidoError(
+            clave, valor=valor, id_punto=punto.id,
+            motivo="una pendiente transversal en m/m (0.02 = 2 %): un valor "
+                   f"absoluto >= {S_CAUCE_MAX} delata un dato en PORCENTAJE")
+    if clave == "bombeo" and not valor >= 0:
+        raise DatoInvalidoError(
+            clave, valor=valor, id_punto=punto.id,
+            motivo="el bombeo es una pendiente transversal no negativa (baja "
+                   "los dos bordes de la plataforma); si un borde sube y el "
+                   "otro baja, el dato es `peralte`, que si lleva signo")
+    return float(valor)
+
+
+def exigir_transversales_compatibles(bombeo: Optional[float],
+                                     peralte: Optional[float],
+                                     id_punto: Optional[str] = None) -> None:
+    """
+    `bombeo` y `peralte` son EXCLUYENTES en un mismo punto.
+
+    Una seccion transversal tiene bombeo O peralte: el DG-2018 pide el bombeo
+    «en tramos en tangente o en curvas en contraperalte» (num. 304.05, pag.
+    impresa 195) y define el peralte como la inclinacion de la carretera «en
+    los tramos de curva» (num. 304.06, pag. impresa 196). Una plataforma
+    peraltada tiene una sola agua. Sumarlos -- lo que el calculo hacia hasta
+    la auditoria de T-6: A-01 con bombeo 0.02 y peralte 0.04 daba 18.467 m
+    donde el peralte solo da 18.869 -- baja los dos bordes de una seccion que
+    ya no tiene bombeo. `DatoInvalidoError` que nombra el PAR: el revisor
+    tiene que corregir uno de los dos. Un valor declarado en cero no cuenta:
+    `bombeo = 0` junto a un peralte es la forma de decir «aqui no hay bombeo»
+    cuando el bombeo viene declarado para todos los puntos.
+    """
+    hay_bombeo = bombeo is not None and abs(bombeo) > 0
+    hay_peralte = peralte is not None and abs(peralte) > 0
+    if hay_bombeo and hay_peralte:
+        raise DatoInvalidoError(
+            "bombeo y peralte", valor=(bombeo, peralte), id_punto=id_punto,
+            motivo=f"el punto declara a la vez bombeo ({bombeo!r}) y peralte "
+                   f"({peralte!r}), y una seccion transversal tiene uno u "
+                   "otro: bombeo en tangente (DG-2018 num. 304.05), peralte "
+                   "en curva (num. 304.06). Si el bombeo viene declarado "
+                   "para todos los puntos, el punto en curva lo anula "
+                   "declarando `bombeo` = 0 junto a su `peralte`")
+
+
+def _transversales_validas(punto: PuntoCritico, bombeo: Optional[float],
+                           peralte: Optional[float]) -> Tuple[float, float]:
+    """(bombeo, peralte) validados y compatibles; None vale 0."""
+    b = _exigir_dato_transversal("bombeo", bombeo, punto)
+    pe = _exigir_dato_transversal("peralte", peralte, punto)
+    exigir_transversales_compatibles(bombeo, peralte, punto.id)
+    return b, pe
+
+
+def _aviso_transversal_descartada(bombeo: Optional[float],
+                                  peralte: Optional[float],
+                                  motivo: str) -> Tuple[str, ...]:
+    """
+    El aviso de una pendiente transversal DECLARADA que el calculo no usa. Un
+    dato del expediente que se descarta sin decirlo deja a quien lo escribio
+    mirando una longitud calculada con otra seccion.
+    """
+    declarados = [f"{nombre} = {valor:g}"
+                  for nombre, valor in (("bombeo", bombeo), ("peralte", peralte))
+                  if valor is not None]
+    if not declarados:
+        return ()
+    return (f"pendiente transversal declarada y NO aplicada "
+            f"({', '.join(declarados)}): {motivo}",)
+
+
+def longitud_del_conducto(punto: PuntoCritico, *,
+                          pendiente: Optional[PendienteAdoptada] = None,
+                          bombeo: Optional[float] = None,
+                          peralte: Optional[float] = None
+                          ) -> LongitudConducto:
+    """
+    Longitud del conducto de Sec. 7.B, con el metodo declarado en
+    'metodo_longitud_conducto' [A] y los pasos que la explican.
+
+    POR EXTREMO (HDS-5 3a ed., num. 2.2.4 b. y Figura 2.4, pag. impresa 2.8):
+    el conducto se superpone a la seccion transversal DEL CRUCE (esviada). A
+    cada lado, el talud del terraplen baja desde el borde de la plataforma
+    hasta el fondo del conducto en ese extremo:
+
+        proyeccion_entrada = talud * (cota_borde_entrada - cota_entrada)
+        proyeccion_salida  = talud * (cota_borde_salida - cota_salida)
+        cota_salida        = cota_entrada - S * L
+        L * cos(esviaje)   = ancho + proyeccion_entrada + proyeccion_salida
+
+    y despejando L, que aparece en los dos miembros:
+
+        L = [ancho + talud * (H_entrada + H_salida0)]
+            / [cos(esviaje) - talud * S]
+
+    con H_entrada = cota_borde_entrada - cota_entrada y H_salida0 =
+    cota_borde_salida - cota_entrada (la altura del borde de salida sobre el
+    fondo de la ENTRADA; la caida esta en el denominador). El borde de la
+    plataforma es la rasante del eje, corregida cuando la seccion tipica lo
+    da (datos externos opcionales, DG-2018 num. 304.05 y 304.06):
+
+        cota_borde_entrada = cota_rasante + (peralte - bombeo) * ancho / 2
+        cota_borde_salida  = cota_rasante - (peralte + bombeo) * ancho / 2
+
+    `bombeo` >= 0 baja los dos bordes; `peralte` > 0 sube el de la entrada y
+    baja el de la salida (giro alrededor del eje), de modo que no cambia la
+    suma de las dos proyecciones -- ni L -- y si lo que cada talud recorre.
+
+    MEDIR AL FONDO ES ELECCION DEL PROYECTO, NO DE LA FUENTE. El HDS-5
+    describe superponer el barril ESTIMADO a la seccion transversal y llama
+    aproximada a la longitud que resulta (num. 2.2.4 b.); su Figura 2.4
+    dibuja los taludes muriendo en la cara SUPERIOR del barril, y la Lamina
+    N 01 a) del Manual del MTC, en la coronacion de los cabezales. Aqui el
+    talud baja hasta el fondo -- un barril de altura cero -- porque esta
+    longitud se necesita ANTES de conocer la seccion (num. 3.1.4, pag.
+    impresa 3.9: «an approximation of barrel length is usually necessary to
+    begin the design process»). Es la COTA SUPERIOR de la longitud, y no es
+    el lado seguro por construccion: alargar el conducto suma friccion y
+    resta caida, y con la pendiente de A-01 el HW de salida BAJA (0.9925 m
+    con la longitud al fondo, 1.0002 m con la longitud a la clave). La
+    longitud a la clave de la seccion adoptada la da `longitud_a_la_clave`,
+    despues del diseño.
+
+    CON EL FONDO DE ENTRADA ADOPTADO IGUAL AL TERRENO hay un sesgo que el paso
+    declara: 'cota_terreno' es la cota del terreno EN EL EJE, y este metodo
+    ancla ahi la ENTRADA y carga toda la caida aguas abajo. Con
+    `cota_fondo_entrada` medida en el cauce es exacto.
+
+    TERRAPLEN SIMETRICO: L = (ancho + 2 * talud * H_eje) / cos(esviaje), con
+    H_eje = cota de rasante - cota de TERRENO. Es la formula anterior a T-6 y
+    el caso particular de la de arriba con el fondo de entrada en el
+    terreno, sin bombeo y sin la caida en la proyeccion de salida. No lee la
+    pendiente ni los datos transversales.
+
+    `pendiente` es la que resolvio `pendiente_adoptada`; si no se pasa y el
+    metodo la necesita, se resuelve aqui con esa misma funcion.
+
+    Excepciones: `CriterioPendienteError` ('talud_terraplen', el metodo, o
+    la regla de la cota de entrada); `DatoFaltanteError('S_cauce')`;
+    `DatoInvalidoError` si un borde de la plataforma queda a la cota del
+    fondo o por debajo, o si talud * S alcanza a cos(esviaje) -- el talud no
+    llegaria nunca a encontrar un conducto que baja mas rapido que el --;
+    `LimiteNumericoError` en las guardias de salida (SIS-G-01, PC-32).
+    """
+    metodo = _metodo_longitud()
+    talud = ca.valor(CRITERIO_TALUD)
+    factor = factor_esviaje(punto)
+    ancho = punto.ancho_plataforma
+    eleccion = _eleccion_de_metodo(metodo)
+
+    if metodo is MetodoLongitud.TERRAPLEN_SIMETRICO:
+        _transversales_validas(punto, bombeo, peralte)
+        descartada = _aviso_transversal_descartada(
+            bombeo, peralte,
+            "el metodo terraplen_simetrico toma la plataforma horizontal y "
+            "no lee el bombeo ni el peralte")
+        altura = altura_terraplen(punto)
+        proyeccion = proyeccion_taludes(punto)
+        longitud = _exigir_finito("longitud_conducto",
+                                  (ancho + proyeccion) * factor, punto)
+        paso_longitud = paso(
+            "F7.LONGITUD",
+            codigo="7.B.3",
+            que="Longitud del conducto (terraplen simetrico)",
+            formula="L = (ancho + 2 * talud * H_eje) * factor",
+            formula_cita_id="HDS5_3ED.2.2.4#LONGITUD",
+            citas_textuales=("HDS5_3ED.2.2.4#LONGITUD",
+                             "DG2018.304.10#T304.11"),
+            sustitucion=(
+                Magnitud("ancho", ancho, "m",
+                         "columna ancho_plataforma del CSV",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("talud", talud, "H:V",
+                         f"criterio '{CRITERIO_TALUD}' [A]",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("H_eje", altura, "m",
+                         "cota de rasante - cota de terreno del CSV: la "
+                         "MISMA altura para los dos taludes",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("factor", factor, "-", "paso 7.B.2",
+                         cifras=CIFRAS_FINA)),
+            resultado=Magnitud("L", longitud, "m",
+                               "longitud APROXIMADA del conducto para el "
+                               "diseño hidraulico y para 7.B",
+                               cifras=CIFRAS_MAGNITUD),
+            elecciones=(eleccion,),
+            nota_del_proyecto=(
+                "Caso particular del metodo por extremo: supone el fondo de "
+                "la entrada en el terreno del eje, la plataforma horizontal "
+                "y la misma altura de talud en la salida que en la entrada, "
+                "aunque la salida quede S*L mas baja. No usa la cota de "
+                "fondo medida ni el bombeo o el peralte aunque se declaren."
+                + "".join(f" AVISO: {a}." for a in descartada)),
+        )
+        semi = longitud / 2
+        return LongitudConducto(
+            longitud=longitud, metodo=metodo, factor_esviaje=factor,
+            talud=talud, S=None, bombeo=None, peralte=None,
+            cota_borde_entrada=punto.cota_rasante,
+            cota_borde_salida=punto.cota_rasante,
+            cota_referencia_entrada=punto.cota_terreno,
+            cota_referencia_salida=punto.cota_terreno,
+            altura_entrada=altura, altura_salida=altura,
+            proyeccion_entrada=proyeccion / 2,
+            proyeccion_salida=proyeccion / 2,
+            proyeccion_taludes=proyeccion,
+            semilongitud_entrada=semi, semilongitud_salida=semi,
+            pasos=(_paso_factor(punto, factor), paso_longitud),
+            avisos=descartada)
+
+    # --- por extremo --------------------------------------------------------
+    if pendiente is None:
+        pendiente = pendiente_adoptada(punto)
+    S = pendiente.valor
+    b, pe = _transversales_validas(punto, bombeo, peralte)
+    entrada = cota_de_entrada(punto)
+    semiancho = ancho / 2
+    borde_e = punto.cota_rasante + (pe - b) * semiancho
+    borde_s = punto.cota_rasante - (pe + b) * semiancho
+    H_e = _exigir_finito("altura_terraplen", borde_e - entrada.valor, punto)
+    H_s0 = _exigir_finito("altura_terraplen", borde_s - entrada.valor, punto)
+    coseno = 1.0 / factor
+    denominador = coseno - talud * S
+    if not denominador > 0:
+        # EL ERROR ES DEL PAR, no de la pendiente sola: el mismo S tiene
+        # longitud con un esviaje menor. El campo y el motivo nombran los dos.
+        raise DatoInvalidoError(
+            "esviaje_grados y S_conducto",
+            valor=(punto.esviaje_grados, S), id_punto=punto.id,
+            motivo=f"con talud {talud!r} H:V y esviaje "
+                   f"{punto.esviaje_grados!r} grados, la pendiente del "
+                   f"conducto ({S!r}) hace talud*S = {talud * S!r} >= "
+                   f"cos(esviaje) = {coseno!r}: el conducto baja mas rapido "
+                   "que el talud visto sobre su eje y el talud de salida no "
+                   "lo alcanza nunca. La longitud de 7.B no esta definida "
+                   "con este par (esviaje, pendiente) para ese talud: o el "
+                   "esviaje es menor, o la pendiente lo es")
+    if not denominador > COS_ESVIAJE_MIN:
+        raise LimiteNumericoError(
+            "longitud_conducto", valor=denominador, id_punto=punto.id,
+            motivo=f"cos(esviaje) - talud*S = {denominador!r} queda por "
+                   f"debajo de COS_ESVIAJE_MIN = {COS_ESVIAJE_MIN!r} "
+                   "(tolerancias.py): la diferencia entre el coseno y "
+                   "talud*S ya no esta determinada en doble precision y la "
+                   "longitud de 7.B tampoco")
+    # La guarda INTERNA nombra la magnitud que desborda de verdad (SIS-G-01):
+    # el producto del talud por las alturas, antes que la longitud que lo
+    # contiene.
+    proyeccion_sin_caida = _exigir_finito("proyeccion_taludes",
+                                          talud * (H_e + H_s0), punto)
+    longitud = _exigir_finito(
+        "longitud_conducto",
+        (ancho + proyeccion_sin_caida) / denominador, punto)
+    caida = S * longitud
+    H_s = H_s0 + caida
+    for lado, altura, borde in (("entrada", H_e, borde_e),
+                                ("salida", H_s, borde_s)):
+        if not altura > TOL_UMBRAL_NORMATIVO:
+            raise DatoInvalidoError(
+                "cota_rasante", valor=punto.cota_rasante, id_punto=punto.id,
+                motivo=f"el borde de la plataforma del lado de la {lado} "
+                       f"({borde:.3f} msnm, con bombeo {b!r} y peralte "
+                       f"{pe!r}) no queda por encima del fondo del conducto "
+                       f"en ese extremo ({altura:+.3f} m): no hay talud de "
+                       "terraplen que proyectar")
+    proy_e = talud * H_e
+    proy_s = talud * H_s
+    proyeccion = _exigir_finito("proyeccion_taludes", proy_e + proy_s, punto)
+    # EL SESGO DEL FONDO ADOPTADO, dicho con su numero (auditor de T-6).
+    # 'cota_terreno' es el terreno EN EL EJE (docs/contrato_entradas.md). Con
+    # el fondo adoptado igual a ella, este metodo pone esa cota en la ENTRADA
+    # y carga toda la caida aguas abajo; un lecho de pendiente S que pasara
+    # por esa cota en el eje tendria la entrada mas alta y daria la longitud
+    # de abajo. No se cambia el calculo -- el perfil adoptado ya tenia ese
+    # sesgo en la cota de salida, y con el fondo MEDIDO es exacto --: se dice.
+    nota_del_eje = ""
+    if entrada.aviso:
+        L_por_el_eje = ((semiancho + talud * H_e) / (coseno + talud * S)
+                        + (semiancho + talud * H_s0) / denominador)
+        nota_del_eje = (
+            " El fondo de la entrada es ADOPTADO igual al terreno, que es la "
+            "cota del terreno en el EJE de la via: el metodo ancla ahi la "
+            "entrada y carga toda la caida aguas abajo. Para un lecho de "
+            "pendiente S que pasara por esa cota en el eje la longitud seria "
+            f"{L_por_el_eje:.3f} m ({longitud - L_por_el_eje:+.3f} m de "
+            "diferencia), que desaparece al medir `cota_fondo_entrada` en el "
+            "cauce.")
+    # LA PLATAFORMA HORIZONTAL SE AVISA: sin bombeo ni peralte declarados los
+    # dos bordes se toman a la cota de rasante, y el bombeo que toda calzada
+    # tiene (DG-2018 num. 304.05) acorta la longitud. La sensibilidad se da
+    # por punto: talud * ancho / (cos - talud*S) metros por unidad de
+    # pendiente transversal, que son los mismos centimetros por cada 1 %.
+    # EL AVISO DEL FONDO ADOPTADO VIAJA CON LA LONGITUD QUE LO CONSUMIO: este
+    # metodo ancla los dos taludes al fondo de la entrada, y si ese fondo es
+    # el terreno del eje la longitud lo hereda. Va aqui y no solo en 7.B para
+    # que lo lleve tambien el punto que no dimensiona, cuya longitud ya entro
+    # al control de salida de cada escalon (`InformePunto.avisos`).
+    avisos: Tuple[str, ...] = (entrada.aviso,) if entrada.aviso else ()
+    if bombeo is None and peralte is None:
+        avisos += (
+            "plataforma tomada horizontal: no se declaro `bombeo` ni "
+            "`peralte`. Declarar el bombeo de la seccion tipica: cada 1 % "
+            f"acorta la longitud {talud * ancho / denominador:.1f} cm en "
+            "este punto",)
+    # Lo que la formula anterior a T-6 daria con los mismos datos: se imprime
+    # junto al resultado para que la diferencia se vea (y se pueda defender).
+    L_simetrica = (ancho + 2 * talud * (punto.cota_rasante
+                                        - punto.cota_terreno)) * factor
+    sustitucion = [
+        Magnitud("ancho", ancho, "m", "columna ancho_plataforma del CSV",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("talud", talud, "H:V", f"criterio '{CRITERIO_TALUD}' [A]",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("cota_entrada", entrada.valor, "msnm",
+                 _procedencia_de_la_entrada(entrada),
+                 cifras=CIFRAS_MAGNITUD),
+    ]
+    if bombeo is not None:
+        sustitucion.append(Magnitud(
+            "bombeo", b, "m/m", "dato externo `bombeo` (seccion tipica; "
+            "DG-2018 num. 304.05)", cifras=CIFRAS_FINA))
+    if peralte is not None:
+        sustitucion.append(Magnitud(
+            "peralte", pe, "m/m", "dato externo `peralte` (seccion tipica; "
+            "DG-2018 num. 304.06): positivo sube el borde de la entrada",
+            cifras=CIFRAS_FINA))
+    procedencia_borde = (
+        "cota de rasante, corregida por la pendiente transversal declarada "
+        "sobre medio ancho"
+        if bombeo is not None or peralte is not None else
+        "cota de rasante: plataforma horizontal, sin bombeo ni peralte "
+        "declarados")
+    sustitucion += [
+        Magnitud("cota_borde_entrada", borde_e, "msnm", procedencia_borde,
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("cota_borde_salida", borde_s, "msnm", procedencia_borde,
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("H_entrada", H_e, "m",
+                 "cota_borde_entrada - cota_entrada", cifras=CIFRAS_MAGNITUD),
+        Magnitud("H_salida0", H_s0, "m",
+                 "cota_borde_salida - cota_entrada; la caida S*L hasta el "
+                 "fondo de la salida esta en el denominador",
+                 cifras=CIFRAS_MAGNITUD),
+        Magnitud("cos(esviaje)", coseno, "-", "1 / factor del paso 7.B.2",
+                 cifras=CIFRAS_FINA),
+        Magnitud("S", S, "m/m", "pendiente adoptada del conducto "
+                 f"(origen: {pendiente.origen.value})", cifras=CIFRAS_FINA),
+    ]
+    paso_longitud = paso(
+        "F7.LONGITUD",
+        codigo="7.B.3",
+        que="Longitud del conducto (por extremo)",
+        formula="L = [ancho + talud * (H_entrada + H_salida0)] "
+                "/ [cos(esviaje) - talud * S]",
+        formula_cita_id="HDS5_3ED.2.2.4#LONGITUD",
+        citas_textuales=("HDS5_3ED.2.2.4#LONGITUD", "HDS5_3ED.3.1.4#LONGITUD",
+                         "DG2018.304.10#T304.11")
+        + (("DG2018.304.05#BOMBEO",) if bombeo is not None else ())
+        + (("DG2018.304.06#PERALTE",) if peralte is not None else ()),
+        sustitucion=tuple(sustitucion),
+        resultado=Magnitud("L", longitud, "m",
+                           "longitud APROXIMADA del conducto, medida al "
+                           "fondo en cada extremo: la del diseño hidraulico "
+                           "y la de 7.B", cifras=CIFRAS_MAGNITUD),
+        elecciones=(eleccion,),
+        nota_del_proyecto=(
+            "La fuente describe superponer el barril estimado a la seccion "
+            "transversal del cruce y llama aproximada a la longitud que "
+            "resulta; la expresion cerrada es su algebra y la hace el "
+            "proyecto. Que el talud baje hasta el FONDO es eleccion del "
+            "proyecto (la seccion aun no se conoce): da la cota superior de "
+            "la longitud, y no es el lado seguro por construccion, porque "
+            "alargar el conducto suma friccion y resta caida. El talud de la "
+            f"entrada proyecta {proy_e:.3f} m y el de la salida "
+            f"{proy_s:.3f} m (la salida queda {caida:.3f} m mas baja). Con "
+            "el metodo del terraplen simetrico -- la formula anterior, caso "
+            f"particular de esta -- la longitud seria {L_simetrica:.3f} m."
+            + nota_del_eje
+            + "".join(f" AVISO: {a}." for a in avisos)),
+    )
+    semi_e = (semiancho + proy_e) * factor
+    return LongitudConducto(
+        longitud=longitud, metodo=metodo, factor_esviaje=factor,
+        talud=talud, S=S, bombeo=bombeo, peralte=peralte,
+        cota_borde_entrada=borde_e, cota_borde_salida=borde_s,
+        cota_referencia_entrada=entrada.valor,
+        cota_referencia_salida=entrada.valor - caida,
+        altura_entrada=H_e, altura_salida=H_s,
+        proyeccion_entrada=proy_e, proyeccion_salida=proy_s,
+        proyeccion_taludes=proyeccion,
+        semilongitud_entrada=semi_e,
+        semilongitud_salida=longitud - semi_e,
+        pasos=(_paso_factor(punto, factor), paso_longitud),
+        avisos=avisos)
+
+
+def longitud_declarada(punto: PuntoCritico, longitud: float,
+                       origen: str = "dato externo `longitud_m`", *,
+                       bombeo: Optional[float] = None,
+                       peralte: Optional[float] = None
+                       ) -> LongitudConducto:
+    """
+    La longitud que el expediente DECLARA (`longitud_m`), envuelta en el
+    mismo tipo que la calculada para que 7.B y la memoria digan de donde
+    salio. No calcula: la proyeccion de taludes es la que esa longitud
+    IMPLICA, no un calculo independiente.
+
+    `bombeo` y `peralte`, si el punto los declara, se validan igual y NO se
+    usan: una longitud declarada ya trae dentro la seccion con que se midio.
+    Que se descartan lo dicen el paso y un aviso.
+    """
+    _transversales_validas(punto, bombeo, peralte)
+    descartada = _aviso_transversal_descartada(
+        bombeo, peralte,
+        "la longitud del punto es DECLARADA (`longitud_m`) y no se calcula")
+    factor = factor_esviaje(punto)
+    proyeccion = longitud / factor - punto.ancho_plataforma
+    paso_longitud = paso(
+        "F7.LONGITUD",
+        codigo="7.B.3",
+        que="Longitud del conducto (declarada)",
+        formula="L = longitud declarada por el expediente",
+        formula_cita_id="HDS5_3ED.2.2.4#LONGITUD",
+        citas_textuales=("HDS5_3ED.2.2.4#LONGITUD",),
+        sustitucion=(
+            Magnitud("longitud_m", longitud, "m", origen,
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("factor", factor, "-", "paso 7.B.2",
+                     cifras=CIFRAS_FINA)),
+        resultado=Magnitud("L", longitud, "m",
+                           "longitud DECLARADA: no la calcula este modulo",
+                           cifras=CIFRAS_MAGNITUD),
+        nota_del_proyecto=(
+            "Un dato medido sobre la seccion transversal no se sustituye por "
+            "un metodo: 'metodo_longitud_conducto' no se aplica en este "
+            f"punto. Esta longitud implica {proyeccion:.3f} m de proyeccion "
+            "de taludes (L / factor - ancho de plataforma)."
+            + "".join(f" AVISO: {a}." for a in descartada)),
+    )
+    return LongitudConducto(
+        longitud=longitud, metodo=MetodoLongitud.DECLARADA,
+        factor_esviaje=factor, talud=None, S=None, bombeo=None, peralte=None,
+        cota_borde_entrada=None, cota_borde_salida=None,
+        cota_referencia_entrada=None, cota_referencia_salida=None,
+        altura_entrada=None, altura_salida=None,
+        proyeccion_entrada=None, proyeccion_salida=None,
+        proyeccion_taludes=proyeccion,
+        semilongitud_entrada=None, semilongitud_salida=None,
+        pasos=(_paso_factor(punto, factor), paso_longitud),
+        avisos=descartada)
+
+
+def longitud_conducto(punto: PuntoCritico, *,
+                      pendiente: Optional[PendienteAdoptada] = None,
+                      bombeo: Optional[float] = None,
+                      peralte: Optional[float] = None) -> float:
+    """
+    Longitud del conducto, m (Sec. 7.B): el escalar de
+    `longitud_del_conducto`, que es quien la calcula con el metodo declarado
+    en 'metodo_longitud_conducto' [A] y emite sus pasos. Se conserva para los
+    consumidores que solo necesitan el numero.
 
     Se detiene con CriterioPendienteError mientras 'talud_terraplen' siga
     vacio (ver `proyeccion_taludes`).
     """
+    return longitud_del_conducto(punto, pendiente=pendiente, bombeo=bombeo,
+                                 peralte=peralte).longitud
+
+
+def _clave_sobre_el_fondo(punto: PuntoCritico, material: Material,
+                          seccion: Seccion) -> float:
+    """
+    Altura de la clave FISICA sobre el fondo de la entrada, m.
+
+    No se recalcula aqui: es `M5.cota_clave` menos la cota de entrada, la
+    MISMA clave que usan 7.A y V7 (MAT-D4). Si la definicion de la clave
+    cambia para una forma -- el marco con su espesor de losa --, el encaje la
+    hereda sin tocar este modulo.
+    """
+    return (cota_clave(punto=punto, material=material, seccion=seccion)
+            - cota_de_entrada(punto).valor)
+
+
+def longitud_a_la_clave(*, punto: PuntoCritico, material: Material,
+                        seccion: Seccion,
+                        longitud: LongitudConducto) -> Optional[float]:
+    """
+    Longitud entre cabezales con el talud muriendo en la CLAVE exterior de
+    la seccion adoptada en cada extremo, m. None cuando no aplica.
+
+    Es el ENCAJE que el HDS-5 manda hacer despues del diseño (num. 3.3.5,
+    pag. impresa 3.25: «Once the barrel is selected it must be fitted into
+    the roadway cross section ... the length should be close to the
+    approximate length, and the headwalls and wingwalls must be
+    dimensioned»). Con muro de cabecera el talud no baja hasta el fondo sino
+    hasta la coronacion del muro, que como minimo esta a la clave exterior:
+
+        c = cota de clave - cota de entrada        (la clave FISICA, MAT-D4:
+                                                    altura interior + pared)
+        L_clave = [ancho + talud * (H_entrada + H_salida0 - 2 c)]
+                  / [cos(esviaje) - talud * S]
+
+    Es la COTA SUPERIOR de la longitud entre cabezales (la clave es el
+    minimo de la coronacion del muro, y un cabezal mas alto que la clave
+    acorta mas: 0.30 m sobre la clave en A-01 dan 13.42 m contra 14.68) y NO
+    sustituye a la longitud del diseño: la
+    friccion, la caida y la cota de salida se quedan con la aproximada, que
+    es la que uso la Fase 4. La definitiva -- que es la de construccion y
+    metrado -- la fija el cabezal por punto, cuando exista su coronacion.
+
+    Solo aplica al metodo por extremo: en el terraplen simetrico la
+    referencia es el terreno y no el conducto, y una longitud declarada no
+    se recalcula.
+    """
+    if longitud.metodo is not MetodoLongitud.POR_EXTREMO:
+        return None
+    c = _clave_sobre_el_fondo(punto, material, seccion)
+    denominador = 1.0 / longitud.factor_esviaje - longitud.talud * longitud.S
+    H0 = (longitud.altura_entrada
+          + (longitud.cota_borde_salida - longitud.cota_referencia_entrada))
     return _exigir_finito(
         "longitud_conducto",
-        (punto.ancho_plataforma + proyeccion_taludes(punto)) * factor_esviaje(punto),
-        punto)
+        (punto.ancho_plataforma + longitud.talud * (H0 - 2 * c))
+        / denominador, punto)
+
+
+def _paso_encaje(*, punto: PuntoCritico, material: Material,
+                 seccion: Seccion,
+                 longitud: LongitudConducto, L_clave: float):
+    """El `PasoDeMemoria` 7.B.5: la seccion adoptada encajada en el cruce."""
+    c = _clave_sobre_el_fondo(punto, material, seccion)
+    diferencia = longitud.longitud - L_clave
+    return paso(
+        "F7.ENCAJE",
+        codigo="7.B.5",
+        que="Encaje de la seccion adoptada: longitud entre cabezales a la "
+            "clave",
+        formula="L_clave = [ancho + talud * (H_entrada + H_salida0 - 2 * c)] "
+                "/ [cos(esviaje) - talud * S],  c = altura interior + "
+                "espesor de pared",
+        formula_cita_id="HDS5_3ED.3.3.5#ENCAJE",
+        citas_textuales=("HDS5_3ED.3.3.5#ENCAJE", "HDS5_3ED.3.1.4#LONGITUD"),
+        sustitucion=(
+            Magnitud("c", c, "m",
+                     f"altura interior de la seccion adoptada "
+                     f"({seccion.etiqueta()}) mas el espesor de pared: la "
+                     "clave EXTERIOR sobre el fondo", cifras=CIFRAS_MAGNITUD),
+            Magnitud("L", longitud.longitud, "m",
+                     "longitud aproximada del paso 7.B.3, medida al fondo",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("L_clave", L_clave, "m",
+                           "longitud entre cabezales si el talud muere en la "
+                           "clave exterior en los dos extremos",
+                           cifras=CIFRAS_MAGNITUD),
+        nota_del_proyecto=(
+            f"La longitud a la clave es {diferencia:.3f} m menor que la "
+            f"aproximada ({diferencia / longitud.longitud:.1%}). La fuente "
+            "pide que la longitud real quede «close to the approximate "
+            "length» y no da tolerancia: el proyecto no inventa una y deja "
+            "las dos a la vista. El diseño hidraulico, la caida y la cota "
+            "de salida usan la APROXIMADA (al fondo); la longitud entre "
+            "cabezales definitiva la fija la coronacion del muro de "
+            "cabecera, que este paso supone en la clave -- su minimo --."),
+    )
 
 
 def cota_salida(*, punto: PuntoCritico, longitud: float, S: float) -> float:
@@ -1043,26 +2012,234 @@ def cota_salida(*, punto: PuntoCritico, longitud: float, S: float) -> float:
                           cota_de_entrada(punto).valor - S * longitud, punto)
 
 
+def _paso_cota_salida(*, punto: PuntoCritico, longitud: float, S: float,
+                      caida: float, salida: float,
+                      pendiente: PendienteAdoptada):
+    """El `PasoDeMemoria` 7.B.4: la caida y la cota de fondo de la salida."""
+    entrada = cota_de_entrada(punto)
+    # Cuando gobierna un extremo de la banda, el conducto ya no sigue al
+    # cauce y la salida queda a otra cota que la del cauce natural: el
+    # desnivel se imprime con su numero, que es la magnitud de obra.
+    aviso = aviso_de_pendiente(pendiente, longitud)
+    desnivel = ()
+    if aviso:
+        desnivel = (Magnitud(
+            "(S_cauce - S) * L", desnivel_frente_al_cauce(pendiente, longitud),
+            "m", "desnivel entre la salida del conducto y el cauce natural "
+            "a esa distancia: positivo, la salida queda sobre el cauce "
+            "(conducto mas tendido); negativo, por debajo",
+            cifras=CIFRAS_MAGNITUD),)
+    return paso(
+        "F7.COTA_SALIDA",
+        codigo="7.B.4",
+        que="Caida del conducto y cota de fondo de la salida",
+        formula="caida = S * L ;  cota_salida = cota_entrada - caida",
+        formula_cita_id="HDS5_3ED.2.2.4#LONGITUD",
+        citas_textuales=("HDS5_3ED.2.2.4#LONGITUD", "MC_HHD.LAMINA_01"),
+        sustitucion=(
+            Magnitud("cota_entrada", entrada.valor, "msnm",
+                     _procedencia_de_la_entrada(entrada),
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("S", S, "m/m",
+                     f"paso 7.B.1 (origen: {pendiente.origen.value})",
+                     cifras=CIFRAS_FINA),
+            Magnitud("L", longitud, "m", "paso 7.B.3",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("caida", caida, "m", "S * L", cifras=CIFRAS_MAGNITUD),
+            *desnivel),
+        resultado=Magnitud("cota_salida", salida, "msnm",
+                           "cota de fondo de la salida: la que se amarra al "
+                           "receptor en G2", cifras=CIFRAS_MAGNITUD),
+        nota_del_proyecto=" ".join(nota for nota in (
+            f"AVISO: {entrada.aviso}. La cota de salida hereda esa adopcion "
+            "entera: si el fondo real de la entrada esta bajo el terreno, la "
+            "salida baja lo mismo." if entrada.aviso else "",
+            f"AVISO: {aviso}." if aviso else "") if nota),
+    )
+
+
 def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion:
     """
-    G2: la cota de salida no queda bajo el fondo del cuerpo receptor.
+    G2: la salida entrega sobre el fondo del cuerpo receptor, con el desnivel
+    minimo adoptado.
 
-    Interpretacion declarada del amarre que pide Sec. 7.B, sin parametro
-    adoptado de por medio: compara dos elevaciones del expediente. Un desnivel
-    minimo de entrega sobre ese fondo seria otro asunto, la hoja de ruta no lo
-    fija y por eso no se exige aqui (ver el docstring del modulo).
+        cota_salida >= cota_fondo_receptor + desnivel_minimo_entrega_m
+
+    El amarre lo pide la Sec. 7.B («cotas amarradas al perfil del cauce y a
+    la cota de fondo del receptor») y lo sostiene el Manual del MTC, que
+    exige que la pendiente de la alcantarilla no altere la erosion y la
+    sedimentacion (num. 4.1.1.3.3, pag. impresa 71). NINGUNA de las dos
+    fuentes da el desnivel: es el criterio [A] 'desnivel_minimo_entrega_m',
+    que en el archivo vale 0.0 -- la entrega a nivel, la conducta de esta
+    verificacion hasta T-6, cuando comparaba las dos cotas sin criterio --.
 
     Si falla, subir la rasante NO lo arregla: se corrige con la pendiente, con
     la longitud o con la cota del receptor. Por eso
     `CompatibilidadGeometrica.exigir_factible()` no le adjunta delta.
     """
+    desnivel = ca.valor(CRITERIO_DESNIVEL_ENTREGA)
+    if isinstance(desnivel, bool) or not isinstance(desnivel, (int, float)) \
+            or not desnivel >= 0:
+        raise DatoInvalidoError(
+            CRITERIO_DESNIVEL_ENTREGA, valor=desnivel, id_punto=punto.id,
+            motivo="el desnivel minimo de entrega es una altura en metros, "
+                   "no negativa (0 = entrega a nivel del fondo del receptor)")
+    cota_minima = punto.cota_fondo_receptor + desnivel
+    cumple = cota_salida_m >= cota_minima - TOL_UMBRAL_NORMATIVO
+    margen = cota_salida_m - cota_minima
+    # LA CITA DEL UMBRAL ES LA LAMINA, NO EL NUMERAL DE LA PENDIENTE (auditor
+    # de T-6). El num. 4.1.1.3.3 es una EXIGENCIA sobre la pendiente y no
+    # habla de la entrega: tomar de el el «caracter en la fuente» de un
+    # numero [A] imprimia EXIGENCIA encima de una adopcion. La Lamina N 01
+    # TIPIFICA (DEFINICION) las ubicaciones de la salida respecto del cauce
+    # -- a) a nivel, c) y d) sobre el -- y es lo unico que la fuente dice de
+    # la entrega; no acota el desnivel.
+    cita = "MC_HHD.LAMINA_01"
     return Verificacion(
-        cumple=cota_salida_m >= punto.cota_fondo_receptor - TOL_UMBRAL_NORMATIVO,
+        cumple=cumple,
         numeral=NUMERAL_G2,
         valor_obtenido=cota_salida_m,
-        valor_admisible=punto.cota_fondo_receptor,
-        criterio_aplicado=None,
+        valor_admisible=cota_minima,
+        criterio_aplicado=CRITERIO_DESNIVEL_ENTREGA,
         codigo="G2",
+        paso=paso(
+            "F7.ENTREGA",
+            codigo="G2",
+            que="Entrega al cuerpo receptor",
+            formula="cota_salida >= cota_fondo_receptor + desnivel_minimo",
+            formula_cita_id=cita,
+            citas_textuales=(cita, "MC_HHD.4.1.1.3.3"),
+            sustitucion=(
+                Magnitud("cota_salida", cota_salida_m, "msnm", "paso 7.B.4",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("cota_fondo_receptor", punto.cota_fondo_receptor,
+                         "msnm", "columna cota_fondo_receptor del CSV",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("desnivel_minimo", desnivel, "m",
+                         f"criterio '{CRITERIO_DESNIVEL_ENTREGA}' [A]",
+                         cifras=CIFRAS_MAGNITUD)),
+            resultado=Magnitud(
+                "cota_salida - cota_fondo_receptor",
+                cota_salida_m - punto.cota_fondo_receptor, "m",
+                "desnivel de entrega que resulta: lo que la salida queda "
+                "sobre el fondo del receptor", cifras=CIFRAS_MAGNITUD),
+            umbral=Umbral(
+                descripcion="cota minima de la salida: fondo del receptor "
+                            "mas el desnivel de entrega adoptado",
+                valor=cota_minima, unidad="msnm", cita_id=cita,
+                caracter=_caracter_de(cita),
+                aplicacion="ADOPCION DEL PROYECTO, SIN CIFRA DE FUENTE: la "
+                           "lamina tipifica donde puede quedar la salida "
+                           "respecto del cauce (a nivel, o sobre el con "
+                           "proteccion) y no acota ningun desnivel; el "
+                           "numeral de la pendiente (4.1.1.3.3) exige cuidar "
+                           "la erosion y la sedimentacion y no habla de la "
+                           "entrega. Contrastar la cota de salida con el "
+                           "fondo del receptor es lectura del proyecto, y el "
+                           "numero tambien: el desnivel del criterio [A], "
+                           "que en 0.0 exige solo que la salida no quede "
+                           "enterrada bajo el fondo del receptor.",
+                criterio_aplicado=CRITERIO_DESNIVEL_ENTREGA),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.CUMPLE if cumple
+                      else TipoDeVeredicto.NO_CUMPLE),
+                margen=margen, unidad="m",
+                explicacion=(
+                    "la salida entrega sobre el fondo del receptor con el "
+                    "desnivel adoptado" if cumple else
+                    "la salida queda por debajo de la cota minima de "
+                    "entrega: se corrige con la pendiente, con la longitud "
+                    "o con la cota del receptor, no subiendo la rasante")),
+            nota_del_proyecto=(
+                "El remanso del receptor no se cubre con este desnivel: "
+                "entra al control de salida por el TW de la Sec. 1.3. Un "
+                "desnivel mayor no es conservador sin mas: una salida "
+                "elevada descarga en caida y exige proteccion (Lamina N 01, "
+                "ubicaciones c y d)."),
+        ),
+    )
+
+
+def g3_esviaje(punto: PuntoCritico) -> Verificacion:
+    """
+    G3: el esviaje del cruce frente al maximo que el proyecto adopta
+    ('esviaje_max_grados' [A]). ES UN AVISO Y NUNCA BLOQUEA.
+
+    `cumple` es True siempre: el esviaje es un dato de entrada medido y el
+    calculo no lo rechaza por superar una adopcion. Cuando lo supera, el paso
+    lleva veredicto INDICADOR -- que la memoria pinta como aviso -- y dice
+    que hacer: revisar el cruce en planta y, si procede, acondicionar el
+    cauce (Manual del MTC, num. 4.1.1.3.2). El maximo se apoya POR ANALOGIA
+    en el maximo practico del esviaje de EMBOCADURA del HDS-5 (num. 5.4.2,
+    pag. impresa 5.13), que coincide con el del barril cuando el cabezal va
+    paralelo a la via.
+
+    Segunda linea sobre el maximo (la puerta ya exige su forma y su ventana):
+    un valor que no es un numero finito y positivo es `DatoInvalidoError`.
+    Sin ella, un NaN que burlara la puerta pintaba el aviso en todo punto
+    (`esviaje <= nan` es falso) y un infinito lo callaba en todos.
+    """
+    maximo = ca.valor(CRITERIO_ESVIAJE_MAX)
+    if isinstance(maximo, bool) or not isinstance(maximo, (int, float)) \
+            or not (maximo > 0 and math.isfinite(maximo)):
+        raise DatoInvalidoError(
+            CRITERIO_ESVIAJE_MAX, valor=maximo, id_punto=punto.id,
+            motivo="el esviaje maximo adoptado es un angulo en grados, "
+                   "finito y positivo, medido desde la normal al eje de la "
+                   "via")
+    esviaje = punto.esviaje_grados
+    dentro = esviaje <= maximo + TOL_UMBRAL_NORMATIVO
+    cita = "HDS5_3ED.5.4.2#MAXIMO_PRACTICO"
+    factor = factor_esviaje(punto)
+    return Verificacion(
+        cumple=True,
+        numeral=NUMERAL_G3,
+        valor_obtenido=esviaje,
+        valor_admisible=maximo,
+        criterio_aplicado=CRITERIO_ESVIAJE_MAX,
+        codigo="G3",
+        paso=paso(
+            "F7.ESVIAJE_MAX",
+            codigo="G3",
+            que="Esviaje del cruce frente al maximo adoptado (aviso)",
+            formula="esviaje <= esviaje_max",
+            formula_cita_id=cita,
+            citas_textuales=(cita, "MC_HHD.4.1.1.3.2"),
+            sustitucion=(
+                Magnitud("esviaje", esviaje, "grados",
+                         "columna esviaje_grados del CSV (dato de entrada)",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("factor", factor, "-",
+                         "paso 7.B.2: cuanto alarga este esviaje el conducto",
+                         cifras=CIFRAS_FINA)),
+            resultado=Magnitud("esviaje_max - esviaje", maximo - esviaje,
+                               "grados", "holgura frente al maximo adoptado",
+                               cifras=CIFRAS_MAGNITUD),
+            umbral=Umbral(
+                descripcion="esviaje maximo que el proyecto adopta sin "
+                            "revision en planta",
+                valor=maximo, unidad="grados", cita_id=cita,
+                caracter=_caracter_de(cita),
+                aplicacion="POR ANALOGIA y como AVISO: la fuente describe un "
+                           "maximo practico del esviaje de la EMBOCADURA, "
+                           "que es el del barril cuando el cabezal va "
+                           "paralelo a la via. El proyecto no lo aplica como "
+                           "limite: el esviaje es dato de entrada, y por "
+                           "encima del maximo el punto se señala y sigue.",
+                criterio_aplicado=CRITERIO_ESVIAJE_MAX),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.CUMPLE if dentro
+                      else TipoDeVeredicto.INDICADOR),
+                margen=maximo - esviaje, unidad="grados",
+                explicacion=(
+                    "el esviaje no supera el maximo adoptado" if dentro else
+                    "el esviaje SUPERA el maximo adoptado: el conducto se "
+                    f"alarga {factor:.2f} veces respecto del cruce a "
+                    "escuadra. Revisar el cruce en planta -- y la convencion "
+                    "del angulo, que se mide desde la NORMAL al eje -- y, si "
+                    "procede, acondicionar el cauce a la entrada y a la "
+                    "salida. El punto NO se detiene por esto")),
+        ),
     )
 
 
@@ -1073,13 +2250,17 @@ def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion
 def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                               seccion: Seccion,
                               resultado: ResultadoHidraulico,
-                              longitud: Optional[float] = None
+                              longitud: Optional[float] = None,
+                              longitud_calculada: Optional[LongitudConducto] = None,
+                              pendiente: Optional[PendienteAdoptada] = None,
+                              bombeo: Optional[float] = None,
+                              peralte: Optional[float] = None
                               ) -> CompatibilidadGeometrica:
     """
     Verificacion final de Sec. 7.B para un punto, con el diametro que la
     Fase 4 adopto: rehace el tamizado de 7.A con ESE diametro y su HW real,
-    calcula longitud, esviaje, pendiente y cotas, y devuelve las dos
-    verificaciones con umbral (G1 y G2).
+    calcula longitud, esviaje, pendiente y cotas, y devuelve las tres
+    verificaciones (G1 y G2 con umbral; G3, el aviso de esviaje).
 
     Argumentos
     ----------
@@ -1094,14 +2275,25 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                       (`ResultadoHidraulico.S`). La pendiente por eso no es
                       argumento de esta funcion: ver "LA PENDIENTE NO SE
                       ELIGE DOS VECES" en el docstring del modulo (MAT-D9).
-    longitud    m     longitud del conducto. Por defecto la calcula
-                      `longitud_conducto`, que exige 'talud_terraplen'. Se
-                      admite explicita para el punto cuya seccion transversal
-                      es asimetrica o esta medida en planos: quien la pase
-                      declara de donde la obtuvo, igual que MD con su L. En
-                      ese caso `proyeccion_taludes` sale despejada de la
-                      longitud dada, y es lo que esa longitud implica -- no un
-                      calculo independiente.
+    longitud    m     longitud DECLARADA del conducto (dato del expediente).
+                      Si no se pasa, la calcula `longitud_del_conducto` con
+                      el metodo de 'metodo_longitud_conducto'. En el caso
+                      declarado `proyeccion_taludes` sale despejada de la
+                      longitud dada, y es lo que esa longitud implica -- no
+                      un calculo independiente.
+    longitud_calculada  la `LongitudConducto` que ya se resolvio ANTES de la
+                      Fase 4 (T-6). Es la via de produccion: `servicio` la
+                      calcula una vez, se la da a MD como L y la pasa aqui,
+                      para que la longitud de 7.B sea LA MISMA del diseño.
+                      Excluye a `longitud`.
+    pendiente         el `PendienteAdoptada` que resolvio la pendiente del
+                      diseño, para imprimir su ORIGEN. Si no se pasa, se
+                      rotula comparando `resultado.S` con la del cauce. Tiene
+                      que valer `resultado.S`: si no, es un fallo de programa.
+    bombeo, peralte   pendiente transversal de la plataforma (datos externos
+                      opcionales, excluyentes entre si); solo se usan si la
+                      longitud se calcula aqui. Con una longitud declarada
+                      se validan y se AVISA que no se aplican.
 
     Devuelve el resultado tambien cuando NO cumple: `factible` es False y
     `delta_rasante_cm` trae el numero de Sec. 7.B. La excepcion, si se quiere,
@@ -1109,12 +2301,27 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
     `DisenoNoFactibleError` con el delta, nunca generica.
     """
     S = resultado.S          # la del diseno, no una nueva eleccion (MAT-D9)
-    factor = factor_esviaje(punto)
-    if longitud is None:
-        proyeccion = proyeccion_taludes(punto)      # exige 'talud_terraplen'
-        longitud = (punto.ancho_plataforma + proyeccion) * factor
-    else:
-        proyeccion = longitud / factor - punto.ancho_plataforma
+    if pendiente is None:
+        pendiente = _pendiente_del_diseno(punto, S)
+    elif abs(pendiente.valor - S) > TOL_UMBRAL_NORMATIVO:
+        raise ValueError(
+            f"7.B de {punto.id}: la pendiente adoptada ({pendiente.valor!r}) "
+            f"no es la del resultado hidraulico ({S!r}). La pendiente no se "
+            "elige dos veces (MAT-D9)")
+    if longitud_calculada is not None and longitud is not None:
+        raise ValueError(
+            "compatibilidad_geometrica: `longitud` (declarada) y "
+            "`longitud_calculada` se excluyen; es una u otra")
+    if longitud_calculada is None:
+        if longitud is None:
+            longitud_calculada = longitud_del_conducto(
+                punto, pendiente=pendiente, bombeo=bombeo, peralte=peralte)
+        else:
+            longitud_calculada = longitud_declarada(
+                punto, longitud, bombeo=bombeo, peralte=peralte)
+    longitud = longitud_calculada.longitud
+    factor = longitud_calculada.factor_esviaje
+    proyeccion = longitud_calculada.proyeccion_taludes
 
     tamizado = tamizado_rasante(punto=punto, material=material,
                                 seccion=seccion, HW=resultado.HW)
@@ -1123,10 +2330,35 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
     caida = S * longitud
     salida = cota_salida(punto=punto, longitud=longitud, S=S)
 
+    pasos = [paso_pendiente(pendiente), *longitud_calculada.pasos,
+             _paso_cota_salida(punto=punto, longitud=longitud, S=S,
+                               caida=caida, salida=salida,
+                               pendiente=pendiente)]
+    L_clave = longitud_a_la_clave(punto=punto, material=material,
+                                  seccion=seccion,
+                                  longitud=longitud_calculada)
+    if L_clave is not None:
+        pasos.append(_paso_encaje(punto=punto, material=material,
+                                  seccion=seccion,
+                                  longitud=longitud_calculada,
+                                  L_clave=L_clave))
+
     verificaciones: Tuple[Verificacion, ...] = (
         g1_rasante_congelada(tamizado),
         g2_cota_salida(punto=punto, cota_salida_m=salida),
+        g3_esviaje(punto),
     )
+    # LOS AVISOS DE 7.B, en el orden del calculo: el fondo de entrada
+    # adoptado, la pendiente que gobierna un extremo de la banda y los de la
+    # longitud. EL DE ESVIAJE NO VA AQUI: G3 es una verificacion con veredicto
+    # INDICADOR y viaja por la via de todas las que lo llevan
+    # (`InformePunto.con_aviso`), que es la que cuentan el RESUMEN, la CLI y
+    # el JSON. Repetirlo en esta lista lo imprimia dos veces.
+    avisos = []
+    for aviso in (entrada.aviso, aviso_de_pendiente(pendiente, longitud),
+                  *longitud_calculada.avisos):
+        if aviso and aviso not in avisos:
+            avisos.append(aviso)
 
     return CompatibilidadGeometrica(
         punto=punto,
@@ -1146,4 +2378,10 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
         caida=caida,
         verificaciones=verificaciones,
         numeral=NUMERAL_7B,
+        pasos=tuple(pasos),
+        longitud_calculada=longitud_calculada,
+        pendiente=pendiente,
+        longitud_a_la_clave=L_clave,
+        desnivel_entrega=salida - punto.cota_fondo_receptor,
+        avisos=tuple(avisos),
     )

@@ -40,6 +40,7 @@ tocar codigo y liberados al corregir.
 from __future__ import annotations
 
 import csv
+import json
 import math
 from pathlib import Path
 
@@ -225,7 +226,21 @@ def _csv_de_un_punto(tmp_path, Q, S):
 
 
 def _correr(ruta):
-    externos = cli.cargar_datos_externos(None, dict(luz_m=2.75, TW_m=TW_DEL_CASO_M))
+    """
+    La pendiente del caso va DECLARADA (`S_conducto`), ademas de en la
+    columna del cauce. Desde T-6 la pendiente del CAUCE que traspasa la banda
+    adoptada se sustituye por el extremo antes del diseño
+    (`M7.pendiente_adoptada`, origen «maxima»): con solo la columna, el 0.40
+    de este caso patron correria con 0.10 y la carta no saldria de su rango.
+    Una pendiente declarada no se acota --la juzga V10--, que es lo que este
+    archivo necesita y lo que su segundo test fija.
+    """
+    S = next(csv.DictReader(Path(ruta).open(encoding="utf-8")))["S_cauce"]
+    declarada = Path(ruta).with_name("pc03_externos.json")
+    declarada.write_text(json.dumps({"globales": {"S_conducto": float(S)}}),
+                         encoding="utf-8")
+    externos = cli.cargar_datos_externos(
+        declarada, dict(luz_m=2.75, TW_m=TW_DEL_CASO_M))
     return cli.correr(ruta, externos, alcance=cli.ALCANCE_PERFIL)
 
 
