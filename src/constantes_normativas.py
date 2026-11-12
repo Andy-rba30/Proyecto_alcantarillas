@@ -4473,9 +4473,14 @@ GEOTEXTIL_EROSION_CLASE = ("Clase 1 de la Tabla 511-01 (Clase 2 para "
                            "geotextiles tejidos de monofilamento)")
 # Nota (5) b de la misma tabla: «Para los suelos cohesivos con un índice de
 # plasticidad mayor a 7, el valor máximo promedio por rollo (VMPR) es de 0.30
-# mm». La llamada (5) la lleva la celda «0,22(5)» de la columna «>50»: es en
-# esa columna donde el proyecto la aplica (lectura declarada en
-# `M6.requisito_de_filtro`).
+# mm». El proyecto la aplica SOLO en la columna «>50», cuya celda «0,22(5)»
+# lleva la llamada, y no en las otras dos, donde relajaria (15-50: 0.25 ->
+# 0.30) lo que la celda fija. Es una LECTURA, declarada como `Interpretacion`
+# de la cita EG2013.511.08#T511_06, porque el rotulo de la fila tambien lleva
+# un «(5)»: la sostiene la Tabla 511-02 de la misma Seccion, que trae las dos
+# notas con numeros distintos y pone la de los suelos cohesivos solo en la
+# celda (cita EG2013.511.05#T511_02_NOTA_5). Decision del dueño del
+# 2026-11-12, hasta conseguir AASHTO M 288, que no esta en normas/.
 GEOTEXTIL_EROSION_IP_COHESIVO = 7.0
 GEOTEXTIL_EROSION_TAA_COHESIVO_MM = 0.30
 # El exponente del diametro (o del radio hidraulico) en el grupo de caudal
@@ -4484,8 +4489,18 @@ HEC14_EXPONENTE_LONGITUD_DEL_CAUDAL_ADIMENSIONAL = 2.5
 # Table 1.1 «Energy Dissipators and Limitations», nota 8 de la fila «Riprap
 # apron» (pag. impresa 1-2, PDF 15): «Culvert rise less than or equal to 1500
 # mm (60 in)». La Sec. 10.2 lo repite como poblacion: «primarily for culverts
-# 1500 mm (60 in) or smaller».
-HEC14_APRON_ALTURA_MAX_M = 1.5
+# 1500 mm (60 in) or smaller» (pag. impresa 10-16, PDF 217).
+#
+# LA FUENTE DA LAS DOS CIFRAS Y NO SON LA MISMA: 60 in = 1.524 m, 24 mm mas
+# que los 1500 mm. Rige 1.524 m, y es una LECTURA DECLARADA (decision del
+# dueño del 2026-11-12): es la que deja evaluar el ejemplo resuelto de la
+# propia fuente, que en unidades inglesas usa D = 5.0 ft = 60 in (pag.
+# impresa 10-19, PDF 220). Con 1.500 m ese ejemplo salia «no evaluable», y un
+# limite que deja fuera el ejemplo de quien lo escribe esta mal transcrito.
+# Ningun diametro de la progresion cae entre los dos (va de 0.15 en 0.15 m:
+# 1.50 entra con las dos cifras y 1.65 no entra con ninguna).
+# Imperial: 60 in, el que la fuente escribe al lado. 60·0.0254 = 1.524 m.
+HEC14_APRON_ALTURA_MAX_M = 1.524
 # El PISO del espesor de la capa de enrocado en HEC-14, en veces el D50:
 # «at least 2D50 thick» (poza, Sec. 10.1, pag. impresa 10-1) y «to a limit
 # of 2.0D50» (apron, Sec. 10.2, pag. impresa 10-18).

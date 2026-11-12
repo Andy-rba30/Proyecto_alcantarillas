@@ -10,23 +10,34 @@ el titulo dice. Lo que entrega, y con que fuente cada cosa:
 
 SALIDA (`proteccion_salida`)
     d50 de Laushey          Manual MTC, num. 4.1.1.3.7 c), ec. (49). Se
-                            CONSERVA tal cual: mismos numeros que antes de
-                            T-8 para todo punto que no declare el terreno.
-    espesor y longitud      criterios [A] 'espesor_proteccion_salida' y
-                            'longitud_proteccion_salida', sin cambio.
-    Froude de la salida     HEC-14 num. 10.1.1: Fr = V / (g·ye)^0.5.
+                            calcula y se imprime SIEMPRE.
+    apron de HEC-14         Sec. 10.2: D50 por la Ec. (10.4) en funcion de Q,
+                            D y TW, y clase, longitud, profundidad y ancho
+                            por la Tabla 10.1.
+    lo que RIGE             lo decide la regla [A]
+                            'regla_espesor_longitud_proteccion_salida':
+                            «envolvente_hec14» (el archivo): piedra = el
+                            MAYOR de Laushey y de la Ec. (10.4); espesor y
+                            longitud = el mayor de los adoptados y de los de
+                            la Tabla 10.1 para esa piedra. «manual»: Laushey
+                            y los adoptados ('espesor_proteccion_salida',
+                            'longitud_proteccion_salida'), con HEC-14 al lado
+                            y aviso donde pide mas. Donde HEC-14 no es
+                            evaluable rige Laushey con lo adoptado, y se
+                            avisa.
+    Froude de la salida     HEC-14 num. 10.1.1: Fr_e = V / (g·ye)^0.5. Es un
+                            parametro de diseño de esa fuente; el REGIMEN se
+                            lee del tirante contra el critico.
     velocidad admisible     Manual MTC, Tabla Nº 11, por el tipo de terreno
                             del cauce receptor, que es un DATO DE SITIO por
                             punto (`tipo_terreno_receptor` y
-                            `regimen_flujo_descarga`, datos externos). Si la
-                            velocidad de salida NO la supera, el Manual no
-                            pide proteger y la piedra NO se dimensiona; si la
-                            supera, se avisa y se dimensiona; si el dato
-                            falta, se dimensiona como antes y se avisa.
-    apron de HEC-14         Sec. 10.2: D50 por la Ec. (10.4) en funcion de Q,
-                            D y TW, y clase, longitud, profundidad y ancho
-                            por la Tabla 10.1. AL LADO de Laushey, como
-                            contraste: no sustituye a lo adoptado.
+                            `regimen_flujo_descarga`, datos externos). El
+                            contraste INFORMA y no decide: la proteccion se
+                            calcula y se mantiene siempre. Si la velocidad no
+                            supera la admisible, se dice que el terreno la
+                            resistiria segun la tabla y que suprimir la
+                            proteccion queda sujeto a inspeccion de campo
+                            (HDS-5 num. 5.3.2); si falta el dato, se avisa.
     filtro                  requisito DECLARADO: la Lámina Nº 05 del Manual lo
                             dibuja, HEC-14 lo pide, y EG-2013 511.08 fija lo
                             que el geotextil cumple segun el pasante del
@@ -59,13 +70,13 @@ disponibles en la zona, que es dato del proyecto), ni los disipadores
 internos de su Capitulo 7, ni el aliviadero escalonado de la Lámina Nº 04 del
 Manual (la medida que el num. 4.1.1.3.7 c) da para REDUCIR la velocidad); no
 digitaliza la Figura 10.3 (atenuacion de la velocidad con el TW sobre la
-clave), no diseña el filtro granular (HEC 11 no esta en el repositorio de
-normas) y no da dimensiones al revestimiento de la entrada, porque ninguna
-fuente de normas/ las da. Cada uno tiene su ficha en
-`docs/decisiones_diferidas.md`.
+clave) ni las Figuras 3.3 y 3.4 (tirante de borde con el TW bajo el critico),
+no diseña el filtro granular (HEC 11 no esta en el repositorio de normas) y
+no da dimensiones al revestimiento de la entrada, porque ninguna fuente de
+normas/ las da. Cada uno tiene su ficha en `docs/decisiones_diferidas.md`.
 
-DIVERGENCIA DECLARADA ENTRE LAS DOS FUENTES (MAT-X6)
----------------------------------------------------
+LAS DOS FUENTES DEL TAMAÑO DE LA PIEDRA, Y CUAL RIGE (MAT-X6)
+-------------------------------------------------------------
     Manual MTC, num. 4.1.1.3.7 c): d50 = V^2/(3.1*g). Funcion de UNA sola
         variable, la velocidad de salida.
 
@@ -74,11 +85,18 @@ DIVERGENCIA DECLARADA ENTRE LAS DOS FUENTES (MAT-X6)
         dimensiona en funcion de Q, D y TW.
 
 Hasta T-8 se calculaba solo el primero, porque HEC-14 no estaba en normas/.
-Hoy esta y se calculan los DOS. Sigue rigiendo el del Manual --norma peruana
-vigente [N]--, que es el que llena `ProteccionSalida.d50`; el de HEC-14 [C]
-se imprime al lado y, cuando pide mas piedra, mas espesor o mas longitud que
-lo adoptado, la corrida lo AVISA. No hay contradiccion que resolver: son dos
-metodos empiricos con variables distintas, y la memoria deja ver los dos.
+T-8 calculo los DOS y dejo rigiendo el del Manual, con el de HEC-14 al lado
+como contraste. La segunda auditoria de T-8 midio lo que esa regla callaba: a
+seccion llena y con TW = 0.4·D, `D50_HEC14 / d50_Laushey = 2.04·(D^2.5/Q)^
+(2/3)`, mayor que 1 siempre que Q/D^2.5 < 2.9, de modo que HEC-14 pide mas
+piedra que Laushey justo en la descarga lenta y caudalosa. EL DUEÑO DECIDIO
+EL 2026-11-12 QUE RIGE LA ENVOLVENTE: la piedra es la MAYOR de las dos, y el
+espesor y la longitud, los mayores de lo adoptado y de la Tabla 10.1 para esa
+piedra. No hay contradiccion que resolver --son dos metodos empiricos con
+variables distintas--, y la envolvente es el lado conservador de los dos. La
+regla anterior queda como «manual», barrible, y reproduce los numeros de
+antes. El d50 de Laushey se sigue publicando siempre, en
+`ProteccionSalida.d50_laushey` y en el paso 6.1.
 
 Y HAY UNA RAZON TECNICA PARA CALCULAR LOS DOS, que es lectura del proyecto
 y no de ninguna de las fuentes: la ec. (49) dimensiona con la velocidad sola
@@ -87,7 +105,7 @@ HEC-14 que la fuente NO recomienda «because they do not consider tailwater
 effects» (D.2 de Berry, 0.0413·V^2; D.3 de Searcy, 0.0214·V^2 con S = 2.65;
 cita HEC14.D#SOLO_VELOCIDAD). HEC-14 no nombra a Laushey; el coeficiente de
 la ec. (49) cae entre los de esas dos. La que HEC-14 retiene, Fletcher y
-Grace, es la Ec. (10.4) que se calcula al lado.
+Grace, es la Ec. (10.4).
 
 Excepciones
 -----------
@@ -95,12 +113,14 @@ Las funciones PUBLICAS de pieza (`apron_hec14`, `hoya_de_socavacion_hec14`,
 `velocidad_admisible_del_cauce`) lanzan la excepcion que corresponde:
 `DatoInvalidoError` (un dato que no puede ser), `DatoFaltanteError` (falta un
 dato del EMS), `MetodoNoEvaluableError` (la ecuacion no cubre el caso: marco,
-TW sobre la clave, conducto de mas de 1500 mm, caida mayor que la tabla,
+TW sobre la clave, conducto de mas de 60 in, caida mayor que la tabla,
 indice de plasticidad fuera de rango). Las tres funciones de FASE
 (`proteccion_salida`, `proteccion_entrada`, `socavacion_salida`) recogen las
 de METODO y de dato FALTANTE y las convierten en AVISO, porque lo que falta o
 no se puede evaluar en una pieza no debe dejar al punto sin las demas: un
-punto sin lecho declarado conserva su d50. Un dato INVALIDO no se recoge.
+punto sin lecho declarado conserva su d50, y un resultado hidraulico sin TW
+o sin tirante critico pierde el apron de HEC-14 y no el d50 de Laushey. Un
+dato INVALIDO no se recoge.
 
 QUE VELOCIDAD ENTRA (regla de doble n, Sec. 4.1)
 -------------------------------------------------
@@ -110,12 +130,20 @@ MINIMO -- la estimacion ALTA --; bajo control de salida y con el barril
 horizontal (S = 0, donde no hay tirante normal) es Q entre el area al tirante
 de salida. El Froude se forma con ESA velocidad y con el area que la
 continuidad le asigna, Q_celda / V, no con el tirante normal.
+
+DOS CASOS EN QUE ESA VELOCIDAD QUEDA CORTA, y se AVISAN sin tocar el numero,
+que es de M4: (1) control de salida con el TW bajo el critico: el tirante
+real en el borde es menor que el critico (HEC-14 num. 3.1.3) y la velocidad,
+mayor; (2) control de salida en la banda en que el tirante normal de n maximo
+es subcritico y el de n minimo seria supercritico: la estimacion alta de la
+regla de doble n es `V_erosion` y no la critica. En el primero, ademas, el
+contraste con la Tabla Nº 11 no concluye.
 """
 
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from src import criterios_adoptados as ca
 from src.constantes_fisicas import G, RHO_AGUA
@@ -196,10 +224,27 @@ ADVERTENCIA_ALCANCE_HDS5 = (
     "contraste, y la corrida avisa cuando pide mas que lo adoptado. La "
     "geometria de la proteccion se cierra en el expediente tecnico"
 )
+# La tercera advertencia cuando RIGE LA ENVOLVENTE (decision del dueño del
+# 2026-11-12): decir «el d50 que rige sale del Manual» seria falso justo
+# donde HEC-14 pide mas piedra.
+ADVERTENCIA_ALCANCE_ENVOLVENTE = (
+    "Alcance: rige la ENVOLVENTE de las dos fuentes. El Manual MTC (num. "
+    "4.1.1.3.7 c)) da el d50 de Laushey, funcion solo de V; HDS-5 3a ed. "
+    "(FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el "
+    "apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de "
+    "Q, D y TW. La piedra es la mayor de las dos, y el espesor y la longitud "
+    "los mayores de lo adoptado y de la Tabla 10.1 de HEC-14. La geometria "
+    "de la proteccion se cierra en el expediente tecnico"
+)
 ADVERTENCIAS_PROTECCION_SALIDA: Tuple[str, ...] = (
     ADVERTENCIA_NO_ES_DISENO,
     ADVERTENCIA_FALTA_FILTRO,
     ADVERTENCIA_ALCANCE_HDS5,
+)
+ADVERTENCIAS_PROTECCION_SALIDA_ENVOLVENTE: Tuple[str, ...] = (
+    ADVERTENCIA_NO_ES_DISENO,
+    ADVERTENCIA_FALTA_FILTRO,
+    ADVERTENCIA_ALCANCE_ENVOLVENTE,
 )
 
 # ---------------------------------------------------------------------------
@@ -267,6 +312,28 @@ def _literal(cita_id: str) -> str:
     """
     from src.normativa import registro as _registro    # perezoso: ciclo
     return _registro.construir().cita(cita_id).texto_literal.texto
+
+
+def _lectura(cita_id: str) -> str:
+    """
+    El texto de la `Interpretacion` que cuelga de una cita, LEIDO DEL
+    REGISTRO: lo que el proyecto lee en la fuente se imprime en la cara del
+    proyecto (`nota_del_proyecto`) con las mismas palabras con que el
+    registro lo declara, y no se redacta por segunda vez en el modulo.
+    """
+    from src.normativa import registro as _registro    # perezoso: ciclo
+    return ("LECTURA DEL PROYECTO, no texto de la fuente. "
+            + _registro.construir().cita(cita_id).interpretacion.texto)
+
+
+def _exigir_texto_de(nombre: str, valor: object, admitidos, motivo: str) -> None:
+    """
+    Guardia de segunda linea de una clave de catalogo (H7 de la segunda
+    auditoria de T-8): `valor in dict` con una lista levanta `TypeError`,
+    que no desciende de `ErrorProyecto`. Primero el tipo, despues el juego.
+    """
+    if not (isinstance(valor, str) and valor in admitidos):
+        raise DatoInvalidoError(nombre, valor=valor, motivo=motivo)
 
 
 def _exigir_velocidad(V: Magnitud, funcion: str) -> None:
@@ -389,13 +456,15 @@ def _paso_geometria_adoptada(d50: float, mult_espesor: float, espesor: float,
                     "hoya de socavacion",
             clave_criterio=CRITERIO_LONGITUD),
             EleccionDeProyecto(
-            que_se_adopto="regla del espesor y la longitud que rigen",
+            que_se_adopto="regla de la piedra, el espesor y la longitud "
+                          "que rigen",
             valor=regla,
             entre=tuple(ca.CRITERIOS[CRITERIO_REGLA].sensibilidad),
             de_donde=f"el criterio adoptado '{CRITERIO_REGLA}' [A]",
-            por_que="con «manual» rigen el espesor y la longitud de este "
-                    "paso; con «envolvente_hec14», el mayor de estos y de "
-                    "HEC-14 (paso 6.6c). La decision es del dueño del "
+            por_que="con «manual» rigen el d50 de Laushey y el espesor y "
+                    "la longitud de este paso; con «envolvente_hec14», en "
+                    "cada magnitud el mayor de eso y de HEC-14, la piedra "
+                    "incluida (paso 6.6c). La decision es del dueño del "
                     "proyecto",
             clave_criterio=CRITERIO_REGLA),),
     )
@@ -520,7 +589,8 @@ def froude_salida(*, V: Magnitud, Q_celda: float, seccion: Seccion,
 
 def velocidad_admisible_del_cauce(*, V: Magnitud, tipo_terreno: str,
                                   regimen_flujo: str,
-                                  donde: str = DONDE_SALIDA
+                                  donde: str = DONDE_SALIDA,
+                                  cota_inferior: bool = False
                                   ) -> VelocidadAdmisible:
     """
     Compara la velocidad del flujo con la maxima admisible del terreno, de
@@ -534,35 +604,45 @@ def velocidad_admisible_del_cauce(*, V: Magnitud, tipo_terreno: str,
 
     `tipo_terreno` y `regimen_flujo` son datos de SITIO: una clave de fila y
     una columna de la tabla. No tienen valor por defecto y no se deducen.
-    Superar la admisible NO es un incumplimiento del diseño: es lo que
-    dispara la proteccion, y por eso el veredicto es INDICADOR (aviso).
+
+    EL CONTRASTE INFORMA, NO DECIDE (decision del dueño del 2026-11-12).
+    Superar la admisible no es un incumplimiento del diseño --el veredicto
+    es INDICADOR (aviso)-- y NO superarla no suprime la proteccion: dice que
+    el terreno la resistiria segun la tabla. Que «alta», la palabra del num.
+    4.1.1.3.7 c), sea «mayor que la Tabla Nº 11» es lectura del proyecto, y
+    el paso la imprime como tal.
+
+    `cota_inferior` (H2 de la segunda auditoria): la velocidad que se compara
+    es MENOR que la real --control de salida con el TW bajo el critico, donde
+    M4 toma el tirante critico y el de borde es menor--. Si aun asi supera la
+    admisible, el contraste vale; si no la supera, NO CONCLUYE: el resultado
+    lleva `concluyente=False` y el veredicto es INDICADOR.
     """
     _exigir_velocidad(V, "velocidad_admisible_del_cauce")
-    if donde not in (DONDE_SALIDA, DONDE_ENTRADA):
-        raise ValueError(f"`donde` es '{DONDE_SALIDA}' o '{DONDE_ENTRADA}', "
-                         f"no {donde!r}")
+    _exigir_texto_de("donde", donde, (DONDE_SALIDA, DONDE_ENTRADA),
+                     f"es '{DONDE_SALIDA}' o '{DONDE_ENTRADA}'")
     dato = DATO_TERRENO_RECEPTOR if donde == DONDE_SALIDA else DATO_TERRENO_ENTRADA
-    if tipo_terreno not in V_MAX_NO_REVESTIDOS:
-        raise DatoInvalidoError(
-            dato, valor=tipo_terreno,
-            motivo="no es una fila de la Tabla Nº 11 del Manual. Las filas "
-                   "son: " + ", ".join(V_MAX_NO_REVESTIDOS))
-    if regimen_flujo not in REGIMENES_DE_FLUJO_T11:
-        raise DatoInvalidoError(
-            DATO_REGIMEN_FLUJO, valor=regimen_flujo,
-            motivo="no es una columna de la Tabla Nº 11 del Manual: "
-                   + " o ".join(REGIMENES_DE_FLUJO_T11))
+    _exigir_texto_de(dato, tipo_terreno, V_MAX_NO_REVESTIDOS,
+                     "no es una fila de la Tabla Nº 11 del Manual. Las filas "
+                     "son: " + ", ".join(V_MAX_NO_REVESTIDOS))
+    _exigir_texto_de(DATO_REGIMEN_FLUJO, regimen_flujo, REGIMENES_DE_FLUJO_T11,
+                     "no es una columna de la Tabla Nº 11 del Manual: "
+                     + " o ".join(REGIMENES_DE_FLUJO_T11))
     V_adm = V_MAX_NO_REVESTIDOS[tipo_terreno][regimen_flujo]
     supera = V.valor > V_adm + TOL_UMBRAL_NORMATIVO
+    concluyente = supera or not cota_inferior
     rotulo = TERRENO_T11_ROTULO[tipo_terreno]
     if donde == DONDE_SALIDA:
         codigo, lugar = "6.4", "a la salida"
-        aplicacion = ("si la velocidad de salida la supera, el proyecto "
-                      "protege el cauce y dimensiona la piedra (pasos 6.1, "
-                      "6.5 y 6.6); si no la supera, no reviste. No descarta "
-                      "el diametro: el techo de velocidad DENTRO del conducto "
-                      "es V3")
-        citas = ("MC_HHD.4.1.1.3.6#T11", "MC_HHD.4.1.1.3.6#V_SALIDA")
+        aplicacion = ("el contraste INFORMA: si la velocidad de salida supera "
+                      "la admisible, el terreno necesita la proteccion; si "
+                      "no la supera, el terreno la resistiria segun la "
+                      "tabla. En los dos casos el proyecto calcula y "
+                      "mantiene la proteccion (pasos 6.1, 6.5 y 6.6). No "
+                      "descarta el diametro: el techo de velocidad DENTRO "
+                      "del conducto es V3")
+        citas = ("MC_HHD.4.1.1.3.6#T11", "MC_HHD.4.1.1.3.6#V_SALIDA",
+                 "MC_HHD.4.1.1.3.7c#PROTECCION", "HDS5_3ED.5.3.2#PRACTICA")
     else:
         codigo, lugar = "6.8", "en la boca de entrada"
         aplicacion = ("EXTENSION DEL PROYECTO: el Manual presenta la tabla al "
@@ -580,16 +660,31 @@ def velocidad_admisible_del_cauce(*, V: Magnitud, tipo_terreno: str,
                         f"maxima admisible del terreno «{rotulo}» con flujo "
                         f"{regimen_flujo} ({V_adm:.2f} m/s, Tabla Nº 11): el "
                         "cauce se protege")
+    elif not concluyente:
+        veredicto = Veredicto(
+            tipo=TipoDeVeredicto.INDICADOR, margen=margen, unidad="m/s",
+            explicacion=f"el contraste con la Tabla Nº 11 no concluye: la "
+                        f"velocidad {lugar} ({V.valor:.2f} m/s) no supera la "
+                        f"maxima admisible del terreno «{rotulo}» con flujo "
+                        f"{regimen_flujo} ({V_adm:.2f} m/s), pero es una "
+                        "cota inferior de la real (se tomo al tirante "
+                        "critico y el de borde es menor, HEC-14 num. 3.1.3). "
+                        "No se afirma que el terreno la resista")
     else:
+        resto = ("la proteccion se calcula y se mantiene igual: suprimirla "
+                 "queda sujeto a inspeccion de campo (HDS-5 num. 5.3.2)"
+                 if donde == DONDE_SALIDA else
+                 "el proyecto no pide revestir el cauce de aproximacion por "
+                 "este contraste")
         veredicto = Veredicto(
             tipo=TipoDeVeredicto.CUMPLE, margen=margen, unidad="m/s",
             explicacion=f"la velocidad {lugar} no supera la maxima admisible "
                         f"del terreno «{rotulo}» con flujo {regimen_flujo}: "
-                        "el terreno natural la resiste y la Tabla Nº 11 no "
-                        "pide proteger")
+                        "segun la tabla el terreno natural la resistiria, y "
+                        "asi lo lee el proyecto; " + resto)
     return VelocidadAdmisible(
         donde=donde, tipo_terreno=tipo_terreno, regimen_flujo=regimen_flujo,
-        V=V.valor, V_admisible=V_adm, supera=supera,
+        V=V.valor, V_admisible=V_adm, supera=supera, concluyente=concluyente,
         paso=paso(
             "F6.V_ADMISIBLE",
             codigo=codigo,
@@ -619,7 +714,11 @@ def velocidad_admisible_del_cauce(*, V: Magnitud, tipo_terreno: str,
                          "limitarse»); la tabla da el maximo por tipo de "
                          "terreno",
                 aplicacion=aplicacion),
-            veredicto=veredicto))
+            veredicto=veredicto,
+            nota_del_proyecto=(
+                _lectura("MC_HHD.4.1.1.3.7c#PROTECCION")
+                + ("" if donde != DONDE_SALIDA else
+                   " " + _lectura("HDS5_3ED.5.3.2#PRACTICA")))))
 
 
 # ---------------------------------------------------------------------------
@@ -645,31 +744,35 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
         (`MetodoNoEvaluableError`), ni un tubo de varias celdas.
       * TW entre 0.4·D y 1.0·D. Por debajo se usa 0.4·D, como hace el ejemplo
         resuelto de la fuente («use TW = 0.4D»); el resultado lo dice. Por
-        encima la fuente manda a la Figura 10.3, que no esta digitalizada:
+        encima la fuente remite a la Figura 10.3, que no esta digitalizada:
         `MetodoNoEvaluableError`.
-      * Conducto de hasta 1500 mm de alto: la nota 8 de la Tabla 1.1
+      * Conducto de hasta 60 in de alto: la nota 8 de la Tabla 1.1
         «Energy Dissipators and Limitations» lo pone como LIMITE del apron
-        («Culvert rise less than or equal to 1500 mm»), y la Sec. 10.2 lo
-        repite como poblacion. Se trata como los otros limites: por encima,
-        `MetodoNoEvaluableError` (hallazgo 9 de la auditoria de T-8; hasta
-        entonces era un aviso).
+        («Culvert rise less than or equal to 1500 mm (60 in)»), y la Sec.
+        10.2 lo repite como poblacion. Las dos cifras no coinciden (60 in =
+        1.524 m) y rige 1.524 m, la que deja evaluar el ejemplo resuelto de
+        la propia fuente, de D = 5.0 ft (`HEC14_APRON_ALTURA_MAX_M`). Por
+        encima, `MetodoNoEvaluableError`, como los otros limites.
 
     «SUPERCRITICO EN EL CONDUCTO» se decide con `flujo_supercritico`, la
     MISMA regla que rotula el Froude, sobre `y_salida`: el tirante con que M4
     midio la velocidad de salida. Bajo control de entrada es el normal de
     registro (rama de n maximo); bajo control de salida y con el barril
     horizontal es max(TW, y_c), que nunca queda bajo el critico, y no hay
-    ajuste. D' = (D + y)/2 entra en la Ec. (10.4) y en los limites del TW; la
+    ajuste. D' = (D + y)/2 entra en la Ec. (10.4) y --LECTURA DEL PROYECTO,
+    `Interpretacion` de la cita HEC14.10.2#TW-- en los limites del TW; la
     longitud de la Tabla 10.1 usa D, la altura real del conducto («D is the
-    culvert rise»).
+    culvert rise»). Sin `y_salida` el regimen NO se puede decidir: no se
+    ajusta, y el resultado lo dice (`regimen_determinado` False) para que la
+    fase lo avise; antes se resolvia en silencio como «no supercritico».
 
     EL yn ES EL DE REGISTRO, Y NO ES EL LADO ALTO DEL D50, dicho para que no
     se lea de mas: la regla de doble n (Sec. 4.1) resuelve los TIRANTES con
     n_max, y este es el que M3 publica. Con n_min el tirante supercritico
     seria menor, D' tambien, y como D50 va con D'^(-4/3) la piedra saldria
-    algo mayor. El apron es CONTRASTE [C] salvo que el dueño elija la
-    envolvente ('regla_espesor_longitud_proteccion_salida'), y el paso lo
-    declara en la procedencia de D'.
+    algo mayor. El paso lo declara en la procedencia de D'. Si este D50
+    rige o es solo contraste lo decide la regla
+    'regla_espesor_longitud_proteccion_salida' en `proteccion_salida`.
     """
     _exigir_positivo("Q_celda", Q_celda, "caudal de un barril, m3/s")
     _exigir_no_negativo("TW", TW, "tirante del receptor, m")
@@ -700,12 +803,20 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
             que,
             procedimiento="un disipador diseñado por HEC-14 (Caps. 7 a 10), "
                           "que este programa no implementa",
-            motivo=f"el conducto mide {D:.2f} m de alto y la Tabla 1.1 de "
+            motivo=f"el conducto mide {D:.3f} m de alto y la Tabla 1.1 de "
                    "HEC-14 limita el apron de enrocado a conductos de hasta "
-                   f"{HEC14_APRON_ALTURA_MAX_M:.2f} m (nota 8)",
+                   f"1500 mm (60 in = {HEC14_APRON_ALTURA_MAX_M:.3f} m, que "
+                   "es la cifra que rige; nota 8)",
             rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
-    supercritico = bool(flujo_supercritico(y_salida, y_critico))
+    regimen = flujo_supercritico(y_salida, y_critico)
+    regimen_determinado = regimen is not None
+    supercritico = regimen is True
     D_calc = (D + y_salida) / 2 if supercritico else D
+    # Con que nombre se llama al diametro de los limites del TW en un
+    # mensaje: D' cuando la Ec. (10.5) lo ajusto (H10-a: decia «1·D = 0.764
+    # m» de un tubo de 0.90 m).
+    nombre_D = (f"D' = {D_calc:.3f} m (Ec. 10.5; el conducto mide "
+                f"{D:.3f} m)" if supercritico else f"D = {D_calc:.3f} m")
     tw_min = HEC14_APRON_TW_SOBRE_D_MIN * D_calc
     tw_max = HEC14_APRON_TW_SOBRE_D_MAX * D_calc
     if TW > tw_max + TOL_UMBRAL_NORMATIVO:
@@ -715,8 +826,8 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
                           "velocidad aguas abajo) con la Sec. 10.3, que este "
                           "programa no tiene digitalizada",
             motivo=f"el tirante del receptor (TW = {TW:.3f} m) supera el "
-                   f"rango aceptable de la ecuacion, TW <= "
-                   f"{HEC14_APRON_TW_SOBRE_D_MAX:g}·D = {tw_max:.3f} m",
+                   f"rango aceptable de la ecuacion, hasta "
+                   f"{HEC14_APRON_TW_SOBRE_D_MAX:g} veces {nombre_D}",
             rotulo=MOTIVO_METODO_NO_EVALUABLE_HEC14)
     acotado = TW < tw_min - TOL_UMBRAL_NORMATIVO
     TW_calc = tw_min if acotado else TW
@@ -725,7 +836,11 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
     D50 = (HEC14_APRON_COEFICIENTE * D_calc
            * adimensional ** HEC14_APRON_EXPONENTE * (D_calc / TW_calc))
 
-    procedencia_D = ("diametro interior del conducto" if not supercritico else
+    procedencia_D = (
+        "diametro interior del conducto. REGIMEN NO DETERMINADO: falta el "
+        "tirante de salida, la Ec. (10.5) no se aplico y, si el flujo fuera "
+        "supercritico, el D50 seria mayor" if not regimen_determinado else
+        "diametro interior del conducto" if not supercritico else
                      f"D' = (D + yn)/2 de la Ec. (10.5), con D = {D:.3f} m e "
                      f"yn = {y_salida:.3f} m: el flujo es supercritico "
                      f"(y < yc = {y_critico:.3f} m, la misma regla del paso "
@@ -734,9 +849,11 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
                      "mayor")
     procedencia_TW = (
         "tirante del cuerpo receptor del punto (Sec. 1.3)" if not acotado else
-        f"el del punto es {TW:.3f} m, menor que 0.4·D = {tw_min:.3f} m: se "
-        "usa 0.4·D, como el ejemplo resuelto de la fuente (pag. impresa "
-        "10-18), que es ademas lo que manda cuando el TW no se conoce")
+        f"el del punto es {TW:.3f} m, menor que "
+        f"{HEC14_APRON_TW_SOBRE_D_MIN:g} veces {nombre_D}, o sea "
+        f"{tw_min:.3f} m: se usa ese piso, como el ejemplo resuelto de la "
+        "fuente (pag. impresa 10-18), que es ademas lo que indica cuando el "
+        "TW no se conoce")
     paso_d50 = paso(
         "F6.APRON",
         codigo="6.5",
@@ -763,8 +880,13 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
                            cifras=CIFRAS_MAGNITUD),
         veredicto=Veredicto(
             tipo=TipoDeVeredicto.SIN_VEREDICTO,
-            explicacion="dimensionamiento de contraste [C]: no sustituye al "
-                        "d50 de Laushey, que es el del Manual"),
+            explicacion="dimensionamiento [C] por la ecuacion a la que el "
+                        "HDS-5 remite el apron; si rige o es contraste del "
+                        "d50 de Laushey lo decide la regla declarada (paso "
+                        "6.2)"),
+        # Los limites del TW con D' son lectura: solo se imprime cuando la
+        # Ec. (10.5) ajusto el diametro, que es cuando tiene efecto.
+        nota_del_proyecto=(_lectura("HEC14.10.2#TW") if supercritico else ""),
     )
 
     clase = D50_clase = k_long = k_esp = None
@@ -774,7 +896,8 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
             break
     comunes = dict(D50_requerido=D50, D=D, D_de_calculo=D_calc,
                    ajustado_por_supercritico=supercritico, TW=TW,
-                   TW_de_calculo=TW_calc, TW_acotado=acotado)
+                   TW_de_calculo=TW_calc, TW_acotado=acotado,
+                   regimen_determinado=regimen_determinado)
     if clase is None:
         mayor = HEC14_TABLA_10_1[-1]
         return ApronHEC14(**comunes, pasos=(paso_d50, paso(
@@ -842,8 +965,8 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
         veredicto=Veredicto(
             tipo=TipoDeVeredicto.SIN_VEREDICTO,
             explicacion="guia de la fuente (la tabla es un EJEMPLO de "
-                        "estandar de proyecto): se imprime como contraste de "
-                        "lo adoptado en el paso 6.2"),
+                        "estandar de proyecto): se compara con lo adoptado "
+                        "en el paso 6.2"),
         nota_del_proyecto=(
             "La Lámina Nº 05 del Manual dibuja el enrocado de salida sin "
             "ninguna dimension (taludes «H:V», cotas «VARIABLE»): no hay "
@@ -884,15 +1007,24 @@ def requisito_de_filtro(*, pasa_200_pct: Optional[float] = None,
     Los bordes de las columnas, como la tabla los escribe: «< 15», «15-50» y
     «> 50»; el 15 y el 50 justos caen en la columna central.
 
-    LA NOTA (5) LA LLEVA LA FILA ENTERA: el rotulo «Tamaño de Abertura
-    Aparente (3) (4) (5)» y, ademas, la celda «0,22(5)» (PDF 1023; la
-    primera lectura de T-8 la aplicaba solo a esa columna y el auditor la
-    refuto). Asi:
+    LA NOTA (5), Y QUE LLAMADA LLAMA A QUE NOTA. La tabla lleva «(5)» en el
+    rotulo «Tamaño de Abertura Aparente (3) (4) (5)» y en la celda «0,22(5)»
+    de la columna «>50» (PDF 1023), y dos notas, (5) a y (5) b. La primera
+    lectura de T-8 aplicaba la (5) b solo a esa columna, el primer auditor
+    la llevo a las tres y el segundo midio que en «15-50» eso RELAJA la
+    celda (0.25 -> 0.30 mm). Rige, por decision del dueño del 2026-11-12 y
+    como `Interpretacion` declarada de la cita EG2013.511.08#T511_06, la
+    lectura que no relaja: el rotulo llama a la (5) a y la celda a la (5) b.
+    La sostiene la Tabla 511-02 de la misma Seccion, que numera las dos notas
+    por separado y pone la de los suelos cohesivos solo en la celda (cita
+    EG2013.511.05#T511_02_NOTA_5). Asi:
       * (5) b, «para los suelos cohesivos con un índice de plasticidad mayor
         a 7, el valor máximo promedio por rollo es de 0.30 mm»: con un lecho
         COHESIVO declarado (`indice_plasticidad`, que solo se pasa si el
-        tipo del lecho es cohesivo) e IP > 7, la abertura es 0.30 mm en
-        cualquiera de las tres columnas.
+        tipo del lecho es cohesivo) e IP > 7, la abertura es 0.30 mm EN LA
+        COLUMNA «>50». En «15-50» y «<15» rige la celda; en «<15», donde la
+        otra lectura daria una abertura mas cerrada (0.30 contra 0.43 mm),
+        la corrida lo AVISA.
       * (5) a pide un diseño especifico del geotextil en suelos
         problematicos, y nombra primero «los limos no cohesivos» (cita
         EG2013.511.08#NOTA_5A): con un lecho NO cohesivo y mas de la mitad
@@ -929,21 +1061,43 @@ def requisito_de_filtro(*, pasa_200_pct: Optional[float] = None,
     if indice_plasticidad is not None:
         _exigir_no_negativo("IP", indice_plasticidad,
                             "indice de plasticidad del lecho")
-    por_nota_5b = (indice_plasticidad is not None
-                   and indice_plasticidad > GEOTEXTIL_EROSION_IP_COHESIVO)
+    cohesivo_plastico = (indice_plasticidad is not None
+                         and indice_plasticidad > GEOTEXTIL_EROSION_IP_COHESIVO)
+    # La columna cuya celda lleva la llamada (5): la ultima, «> 50».
+    en_la_columna_de_la_llamada = columna == rot_alto
+    por_nota_5b = cohesivo_plastico and en_la_columna_de_la_llamada
+    avisos_filtro: List[str] = []
     if por_nota_5b:
         abertura = GEOTEXTIL_EROSION_TAA_COHESIVO_MM
         procedencia_abertura = (
             f"nota (5) b de la Tabla 511-06: suelo cohesivo con indice de "
             f"plasticidad {indice_plasticidad:g} > "
-            f"{GEOTEXTIL_EROSION_IP_COHESIVO:g} (dato del EMS). La llamada "
-            "(5) la lleva el rotulo de la fila: vale en las tres columnas")
+            f"{GEOTEXTIL_EROSION_IP_COHESIVO:g} (dato del EMS), en la columna "
+            f"«{columna}», cuya celda lleva la llamada (5)")
+    elif cohesivo_plastico:
+        procedencia_abertura = (
+            f"celda de la Tabla 511-06 (valor maximo promedio por rollo). El "
+            f"lecho es cohesivo con indice de plasticidad "
+            f"{indice_plasticidad:g} > {GEOTEXTIL_EROSION_IP_COHESIVO:g}, "
+            f"pero la nota (5) b no se aplica en la columna «{columna}»: la "
+            "llamada la lleva la celda de «> 50» (ver «Lo que pone el "
+            "proyecto»)")
+        if abertura > GEOTEXTIL_EROSION_TAA_COHESIVO_MM:
+            avisos_filtro.append(
+                f"Filtro: el lecho es cohesivo con indice de plasticidad "
+                f"{indice_plasticidad:g} y cae en la columna «{columna}» de "
+                f"la Tabla 511-06 de EG-2013, donde rige la celda "
+                f"({abertura:g} mm). La nota (5) b de la tabla se lee solo "
+                "para la columna «> 50»; con la otra lectura de la llamada "
+                f"la abertura maxima seria "
+                f"{GEOTEXTIL_EROSION_TAA_COHESIVO_MM:.2f} mm, mas cerrada. "
+                "Lo decide AASHTO M 288, que no esta en normas/")
     else:
         procedencia_abertura = (
             "celda de la Tabla 511-06 (valor maximo promedio por rollo). "
-            "Su nota (5) b la lleva a 0.30 mm si el suelo es cohesivo con "
-            "indice de plasticidad mayor que 7, y el lecho no lo declara")
-    avisos_filtro: List[str] = []
+            "Su nota (5) b la lleva a 0.30 mm, en la columna «> 50», si el "
+            "suelo es cohesivo con indice de plasticidad mayor que 7, y el "
+            "lecho no lo declara")
     if (tipo_lecho == TIPO_LECHO_NO_COHESIVO
             and pasa_200_pct > PORCENTAJE_POR_UNIDAD / 2):
         avisos_filtro.append(
@@ -953,6 +1107,8 @@ def requisito_de_filtro(*, pasa_200_pct: Optional[float] = None,
             "«" + _literal("EG2013.511.08#NOTA_5A") + "» un diseño del "
             "geotextil para el sitio especifico: los valores de la tabla son "
             "por omision y no bastan")
+    citas_del_paso = CITAS_DEL_FILTRO + ("EG2013.511.08#NOTA_5A",) + (
+        ("EG2013.511.05#T511_02_NOTA_5",) if cohesivo_plastico else ())
     return RequisitoDeFiltro(
         clase_geotextil=GEOTEXTIL_EROSION_CLASE, pasa_200_pct=pasa_200_pct,
         columna=columna, permitividad_min_s1=permitividad,
@@ -974,7 +1130,11 @@ def requisito_de_filtro(*, pasa_200_pct: Optional[float] = None,
             formula="columna de la Tabla 511-06 por el pasante del tamiz "
                     "N.º 200",
             formula_cita_id="EG2013.511.08#T511_06",
-            citas_textuales=CITAS_DEL_FILTRO + ("EG2013.511.08#NOTA_5A",),
+            citas_textuales=citas_del_paso,
+            # La lectura de la llamada (5) solo cuenta cuando el lecho es
+            # cohesivo con IP > 7: ahi es donde decide un numero.
+            nota_del_proyecto=(_lectura("EG2013.511.08#T511_06")
+                               if cohesivo_plastico else ""),
             sustitucion=(
                 Magnitud("pasa N.º 200", pasa_200_pct, "%",
                          f"dato del EMS, `{DATO_MATERIAL_LECHO}.pasa_200_pct`",
@@ -1041,16 +1201,22 @@ def _avisos_del_contraste(apron: ApronHEC14, *, d50: float, espesor: float,
     return tuple(avisos)
 
 
-def clase_hec14_de_la_piedra(*, d50: float, D: float) -> ClaseHEC14:
+def clase_hec14_de_la_piedra(*, d50: float, D: float,
+                             origen: str = "Laushey, paso 6.1"
+                             ) -> ClaseHEC14:
     """
     La regla de clase de la Tabla 10.1 de HEC-14 aplicada a la piedra que el
-    PROYECTO pone (el d50 de Laushey), no a la que pide la Ec. (10.4): la
-    clase es la primera con D50 mayor o igual («The class of riprap to be
-    specified is that which has a D50 greater than or equal to the required
-    size», pag. impresa 10-17), y la tabla le da longitud kL·D, profundidad
-    ke·D50 de la clase y ancho final 3·D + (2/3)·L. Hallazgo 5 (ii) de la
-    auditoria de T-8: en A-02 la Ec. (10.4) pide la clase 1 y la piedra que
-    se pone, 0.274 m, es de la clase 4, que pide 5.4 m y 0.77 m.
+    PROYECTO pone, no a la que pide la Ec. (10.4): la clase es la primera con
+    D50 mayor o igual («The class of riprap to be specified is that which has
+    a D50 greater than or equal to the required size», pag. impresa 10-17), y
+    la tabla le da longitud kL·D, profundidad ke·D50 de la clase y ancho final
+    3·D + (2/3)·L. Hallazgo 5 (ii) de la auditoria de T-8: en A-02 la Ec.
+    (10.4) pide la clase 1 y la piedra que se pone, 0.274 m, es de la clase
+    4, que pide 5.4 m y 0.77 m.
+
+    `origen` dice de donde sale esa piedra, para la procedencia del paso: el
+    d50 de Laushey (con «manual», y con la envolvente cuando Laushey es el
+    mayor) o el de la Ec. (10.4) (con la envolvente cuando HEC-14 pide mas).
     """
     _exigir_positivo("d50", d50, "diametro medio de la piedra, m")
     _exigir_positivo("D", D, "altura del conducto, m")
@@ -1067,7 +1233,7 @@ def clase_hec14_de_la_piedra(*, d50: float, D: float) -> ClaseHEC14:
             formula_cita_id="HEC14.10.2#T10_1",
             citas_textuales=("HEC14.10.2#T10_1",),
             sustitucion=(
-                Magnitud("d50", d50, "m", "Laushey, paso 6.1",
+                Magnitud("d50", d50, "m", origen,
                          cifras=CIFRAS_MAGNITUD),
                 Magnitud("D50 de la clase mayor", mayor[1], "m",
                          f"clase {mayor[0]} de la Tabla 10.1",
@@ -1094,8 +1260,8 @@ def clase_hec14_de_la_piedra(*, d50: float, D: float) -> ClaseHEC14:
             formula_cita_id="HEC14.10.2#T10_1",
             citas_textuales=("HEC14.10.2#T10_1", "HEC14.10.2#PROFUNDIDAD"),
             sustitucion=(
-                Magnitud("d50", d50, "m", "Laushey, paso 6.1: la piedra que "
-                         "el proyecto pone", cifras=CIFRAS_MAGNITUD),
+                Magnitud("d50", d50, "m", f"{origen}: la piedra que el "
+                         "proyecto pone", cifras=CIFRAS_MAGNITUD),
                 Magnitud("clase", n_clase, "", "la primera de la Tabla 10.1 "
                          "con D50 mayor o igual que el d50 adoptado"),
                 Magnitud("D50_clase", d50_clase, "m", f"clase {n_clase}",
@@ -1112,8 +1278,9 @@ def clase_hec14_de_la_piedra(*, d50: float, D: float) -> ClaseHEC14:
                                cifras=CIFRAS_MAGNITUD),
             veredicto=Veredicto(
                 tipo=TipoDeVeredicto.SIN_VEREDICTO,
-                explicacion="guia de la fuente aplicada a la piedra adoptada: "
-                            "contraste de lo adoptado en el paso 6.2")))
+                explicacion="guia de la fuente aplicada a la piedra que el "
+                            "proyecto pone: se compara con lo adoptado en el "
+                            "paso 6.2")))
 
 
 def _avisos_de_la_piedra(clase: ClaseHEC14, *, espesor: float,
@@ -1153,38 +1320,114 @@ def _aviso_espesor_bajo_el_piso(espesor: float, d50: float) -> Tuple[str, ...]:
             f"'{CRITERIO_REGLA}'",)
 
 
-def _aviso_salida_sin_enrocado() -> str:
-    """Hallazgo 4 de la auditoria de T-8: la inversa es lectura del proyecto."""
-    return ("Proteccion de salida: SIN enrocado porque la velocidad de salida "
-            "no supera la admisible del terreno (Tabla Nº 11). Que eso baste "
-            "es lectura del proyecto, no texto del Manual; el HDS-5 (num. "
-            "5.3.2, pag. impresa 5.11) dice: «"
-            + _literal("HDS5_3ED.5.3.2#PRACTICA") + "». Hace falta esa "
-            "inspeccion de campo para sostener la salida sin proteccion")
-
-
-def _aviso_tirante_de_borde(resultado: ResultadoHidraulico) -> Tuple[str, ...]:
+def _aviso_el_terreno_resistiria(admisible: VelocidadAdmisible) -> str:
     """
-    Hallazgo 9 de la auditoria de T-8: bajo control de salida con el TW bajo
-    el critico, M4 toma la velocidad al tirante critico (HDS-5 3.1.6), y
-    HEC-14 3.1.3 dice que el flujo pasa por el critico AGUAS ARRIBA de la
-    salida: en el borde el tirante es menor y la velocidad mayor. V, el
-    Froude y el d50 quedan SUBESTIMADOS. Las Figuras 3.3 y 3.4, que dan el
-    borde, no estan digitalizadas: se avisa, no se corrige.
+    Decision 6 del dueño (2026-11-12): «sin enrocado» nunca es una conclusion
+    del programa. Cuando la velocidad no supera la admisible, el contraste
+    INFORMA y la proteccion se mantiene; suprimirla exige lo que el HDS-5
+    nombra, y el aviso lo cita del registro.
+    """
+    return (f"Proteccion de salida: la velocidad de salida "
+            f"({admisible.V:.2f} m/s) no supera la maxima admisible del "
+            f"terreno ({admisible.V_admisible:.2f} m/s, Tabla Nº 11): segun "
+            "la tabla el terreno la resistiria. La proteccion se calcula y "
+            "se MANTIENE: suprimirla queda sujeto a inspeccion de campo, "
+            "porque el HDS-5 (num. 5.3.2, pag. impresa 5.11) dice: «"
+            + _literal("HDS5_3ED.5.3.2#PRACTICA") + "»")
+
+
+def _aviso_el_contraste_no_concluye(admisible: VelocidadAdmisible) -> str:
+    """H2 de la segunda auditoria: con una cota inferior no se concluye."""
+    return (f"Proteccion de salida: el contraste con la Tabla Nº 11 no "
+            f"concluye. La velocidad de salida ({admisible.V:.2f} m/s) no "
+            f"supera la admisible del terreno ({admisible.V_admisible:.2f} "
+            "m/s), pero es una cota inferior de la real: se tomo al tirante "
+            "critico y en el borde el tirante es menor (HEC-14 num. 3.1.3). "
+            "No se afirma que el terreno la resista; la proteccion se "
+            "calcula y se mantiene")
+
+
+def _con_la_velocidad_al_critico(resultado: ResultadoHidraulico) -> bool:
+    """
+    La velocidad de salida se tomo con el tirante CRITICO: control de salida
+    (o barril horizontal) con el TW bajo el critico, primera viñeta de HDS-5
+    3.1.6. Es la condicion en que esa velocidad es una cota inferior.
     """
     por_la_salida = (resultado.control_gobernante is ControlGobernante.SALIDA
                      or resultado.sin_tirante_normal)
     y = resultado.y_salida_m
-    if not por_la_salida or y is None or \
-            abs(y - resultado.y_critico) > TOL_UMBRAL_NORMATIVO:
+    return bool(por_la_salida and y is not None
+                and resultado.y_critico is not None
+                and not abs(y - resultado.y_critico) > TOL_UMBRAL_NORMATIVO)
+
+
+def _aviso_tirante_de_borde(resultado: ResultadoHidraulico) -> Tuple[str, ...]:
+    """
+    Hallazgo 9 de la primera auditoria de T-8 y H2 de la segunda: bajo
+    control de salida con el TW bajo el critico, M4 toma la velocidad al
+    tirante critico (HDS-5 3.1.6), y HEC-14 3.1.3 dice que el flujo pasa por
+    el critico AGUAS ARRIBA de la salida: en el borde el tirante es menor y
+    la velocidad mayor. V, el Froude y el d50 son COTAS INFERIORES. Las
+    Figuras 3.3 y 3.4, que dan el borde, no estan digitalizadas (ficha
+    diferida): se avisa, no se corrige.
+
+    LA MAGNITUD QUE EL AVISO DA, Y DE DONDE SALE. Son dos lecturas de la
+    fuente hechas por la sesion, no un calculo del programa:
+      * Figura 3.4 (pag. impresa 3-6, PDF 37), leida por imagen en descarga
+        libre (TW/D -> 0): curvas KuQ/D^2.5 = 1.0, 2.0 y 3.0 -> yo/D = 0.323,
+        0.467 y 0.572. El tirante critico de esas descargas (Q²·T/(g·A³) = 1
+        en la seccion circular) es yc/D = 0.420, 0.604 y 0.743, y la razon
+        de areas A(yc)/A(yo), que es V_borde/V_critica, 1.43, 1.38 y 1.35.
+        Al cuadrado, que es como va el d50 de Laushey: 2.03, 1.90 y 1.81.
+      * El ejemplo resuelto de la pag. impresa 3-4 (PDF 35), con TW/D de
+        0.41 a 0.58, imprime A/D² al borde 0.5308, 0.4426, 0.3627 y 0.3130;
+        con sus tirantes criticos impresos (0.73, 0.70, 0.70 y 0.67 m) el
+        area critica es 0.5829, 0.4756, 0.4112 y 0.3395: de +8 % a +13 %.
+    """
+    if not _con_la_velocidad_al_critico(resultado):
         return ()
     return ("Proteccion de salida: la velocidad de salida se tomo con el "
             "tirante critico (HDS-5 num. 3.1.6) porque el TW queda bajo el. "
             "HEC-14 num. 3.1.3: «" + _literal("HEC14.3.1.3#BORDE") + "»; en "
             "el borde el tirante es MENOR que el critico y la velocidad "
-            "MAYOR, de modo que V, el Froude y el d50 quedan subestimados (no "
-            "conservador). Las Figuras 3.3 y 3.4 de HEC-14, que dan el "
-            "tirante de borde, no estan digitalizadas",)
+            "MAYOR, de modo que V, el Froude y el d50 de Laushey son una "
+            "cota inferior (no conservador). Magnitud, leida de la fuente y "
+            "no calculada: en la Figura 3.4 de HEC-14, con descarga libre, "
+            "la velocidad de borde es de 1.35 a 1.43 veces la critica, y el "
+            "d50 de Laushey, que va con V², de 1.8 a 2.0 veces el impreso; "
+            "en su ejemplo resuelto (pag. impresa 3-4, TW de 0.41 a 0.58 "
+            "diametros), de 1.08 a 1.13 veces. Las Figuras 3.3 y 3.4, que "
+            "dan el tirante de borde, no estan digitalizadas",)
+
+
+def _aviso_banda_de_regimen(resultado: ResultadoHidraulico
+                            ) -> Tuple[str, ...]:
+    """
+    H14 de la segunda auditoria de T-8 (es de M4, y aqui solo se AVISA): bajo
+    control de salida con la velocidad al critico, si la rama de n MINIMO de
+    la regla de doble n da una velocidad normal mayor que la critica, con n
+    minimo el tirante normal seria supercritico y la estimacion ALTA de la
+    velocidad de salida seria `V_erosion`, la que entra bajo control de
+    entrada. El auditor midio el salto en A-01: con S = 0.0058 (control de
+    entrada) 3.160 m/s y d50 = 0.329 m; con S = 0.0056 (control de salida)
+    2.412 m/s y d50 = 0.191 m.
+    """
+    if not _con_la_velocidad_al_critico(resultado) \
+            or resultado.sin_tirante_normal or resultado.V_erosion is None \
+            or resultado.V_salida is None:
+        return ()
+    V_alta, V = resultado.V_erosion, resultado.V_salida.valor
+    if not V_alta > V + TOL_UMBRAL_NORMATIVO:
+        return ()
+    return (f"Proteccion de salida: gobierna el control de salida y la "
+            f"velocidad de salida es la critica ({V:.3f} m/s), pero la rama "
+            f"de n minimo de la regla de doble n da una velocidad normal "
+            f"MAYOR ({V_alta:.3f} m/s): con n minimo el tirante normal seria "
+            "supercritico y la estimacion alta de la velocidad de salida "
+            f"seria esa. Con ella el d50 de Laushey seria "
+            f"{laushey_d50(V=V_alta):.3f} m y no {laushey_d50(V=V):.3f} m. "
+            "La velocidad de salida la fija M4 (HDS-5 num. 3.1.6) y aqui no "
+            "se cambia",)
 
 
 # La lectura del proyecto con que se cruza el terreno declarado del receptor
@@ -1192,6 +1435,13 @@ def _aviso_tirante_de_borde(resultado: ResultadoHidraulico) -> Tuple[str, ...]:
 # suelo cohesivo, las de arena, grava y piedra de suelo granular; la ceniza
 # volcanica y los dos materiales graduados «desde arcilla» y «desde limo» no
 # se cruzan. Solo alimenta un AVISO de incoherencia (hallazgo 9).
+#
+# LO QUE LA SEGUNDA AUDITORIA DEJO ABIERTO Y NO SE PUEDE CERRAR CON normas/:
+# las filas «Arcilla arenosa (no coloidal)» y «Arcilla limosa (no coloidal)»
+# podrian ser francos («loam») traducidos como arcilla --la tabla cita el
+# «Manual de Carreteras de California», que no esta en el repositorio--, y
+# entonces no serian cohesivas. La clasificacion sigue el NOMBRE impreso, y
+# por eso el aviso pide revisar los dos datos y no afirma cual esta mal.
 TERRENOS_COHESIVOS_T11 = ("arcilla_arenosa_no_coloidal",
                           "arcilla_limosa_no_coloidal", "arcilla_fina",
                           "arcilla_dura_coloidal")
@@ -1219,65 +1469,145 @@ def _aviso_terreno_contra_lecho(tipo_terreno: Optional[str],
     return ()
 
 
-def _regla_espesor_longitud(*, regla: str, espesor: float, longitud: float,
-                            apron: Optional[ApronHEC14],
-                            clase: Optional[ClaseHEC14]
-                            ) -> Tuple[float, float, Optional[PasoDeMemoria],
-                                       Tuple[str, ...]]:
+class _LoQueRige(NamedTuple):
+    """Lo que la regla declarada deja rigiendo en la proteccion de salida."""
+    d50: float
+    espesor: float
+    longitud: float
+    clase: Optional[ClaseHEC14]     # la de la piedra que el proyecto pone
+    paso: Optional[PasoDeMemoria]   # 6.6c, solo si se formo la envolvente
+    avisos: Tuple[str, ...]
+    rige_la_envolvente: bool
+
+
+def _regla_de_la_proteccion(*, regla: str, d50_laushey: float,
+                            mult_espesor: float, longitud_adoptada: float,
+                            apron: Optional[ApronHEC14]) -> _LoQueRige:
     """
-    La regla de 'regla_espesor_longitud_proteccion_salida'. «manual» (el
-    archivo): rige lo adoptado. «envolvente_hec14»: el mayor de lo adoptado,
-    la clase que pide la Ec. (10.4) y la clase de la piedra adoptada, cuando
-    HEC-14 es evaluable (el apron se calculo); si no lo es, rige lo adoptado
-    y se dice.
+    La regla de 'regla_espesor_longitud_proteccion_salida': que piedra, que
+    espesor y que longitud RIGEN.
+
+    «manual»: el d50 de Laushey, el espesor k·d50 y la longitud adoptada. Son
+    los numeros de antes de la decision del 2026-11-12, exactos.
+
+    «envolvente_hec14» (el archivo), cuando el apron de HEC-14 es evaluable:
+        piedra    d50 = max(d50 de Laushey, D50 de la Ec. (10.4))
+        clase     la de la Tabla 10.1 para ESA piedra (D50 mayor o igual)
+        espesor   max(k·d50, ke·D50 de la clase)
+        longitud  max(longitud adoptada, kL·D de la clase)
+    Basta la clase de la piedra que rige: esa piedra no es menor que la que
+    pide la Ec. (10.4), y en la Tabla 10.1 la longitud y la profundidad
+    crecen con la clase, de modo que cubre tambien la clase del apron.
+
+    SI LA PIEDRA QUE RIGE NO CABE EN LA TABLA 10.1 (mas de 0.55 m), la tabla
+    no da ni profundidad ni longitud. LECTURA DEL PROYECTO, declarada en el
+    paso y en el aviso: se toman como COTAS INFERIORES el limite que la
+    fuente escribe para las piedras mayores, 2.0 veces el D50 («to a limit of
+    2.0D50 for the larger riprap sizes»), y la longitud de su ultima clase,
+    8·D; y se avisa que la salida pide un disipador y que eso no es un diseño.
+
+    Si HEC-14 NO es evaluable en el punto (`apron` None: marco, varios
+    barriles, TW sobre la clave, conducto de mas de 60 in, falta un dato),
+    rige Laushey con lo adoptado, y se avisa.
     """
-    if regla not in (REGLA_MANUAL, REGLA_ENVOLVENTE):
-        raise DatoInvalidoError(
-            CRITERIO_REGLA, valor=regla,
-            motivo=f"es '{REGLA_MANUAL}' o '{REGLA_ENVOLVENTE}'")
+    _exigir_texto_de(CRITERIO_REGLA, regla, (REGLA_MANUAL, REGLA_ENVOLVENTE),
+                     f"es '{REGLA_MANUAL}' o '{REGLA_ENVOLVENTE}'")
+    espesor_adoptado = mult_espesor * d50_laushey
     if regla == REGLA_MANUAL:
-        return espesor, longitud, None, ()
-    candidatos = [(espesor, longitud, "lo adoptado")]
-    for fuente, origen in ((apron, "la clase que pide la Ec. (10.4)"),
-                           (clase, "la clase de la piedra adoptada")):
-        if fuente is not None and fuente.clase is not None:
-            candidatos.append((fuente.espesor, fuente.longitud, origen))
-    if len(candidatos) == 1:
-        return espesor, longitud, None, (
-            f"Proteccion de salida: la regla '{CRITERIO_REGLA}' pide la "
-            "envolvente con HEC-14 y HEC-14 no es evaluable en este punto: "
-            "rige lo adoptado",)
-    e_rige = max(c[0] for c in candidatos)
-    L_rige = max(c[1] for c in candidatos)
-    sustitucion = []
-    for e, L, origen in candidatos:
-        sustitucion.append(Magnitud(f"e, L ({origen})", f"{e:.3f} m, {L:.2f} m",
-                                    "", origen))
+        clase = (None if apron is None else
+                 clase_hec14_de_la_piedra(d50=d50_laushey, D=apron.D))
+        return _LoQueRige(d50_laushey, espesor_adoptado, longitud_adoptada,
+                          clase, None, (), False)
+    if apron is None:
+        return _LoQueRige(
+            d50_laushey, espesor_adoptado, longitud_adoptada, None, None,
+            (f"Proteccion de salida: la regla '{CRITERIO_REGLA}' pide la "
+             "envolvente con HEC-14 y HEC-14 no es evaluable en este punto: "
+             "rige el d50 de Laushey con el espesor y la longitud "
+             "adoptados",), False)
+    rige_hec14 = apron.D50_requerido > d50_laushey + TOL_UMBRAL_NORMATIVO
+    d50 = apron.D50_requerido if rige_hec14 else d50_laushey
+    origen = ("HEC-14 Ec. (10.4), paso 6.5" if rige_hec14
+              else "Laushey, paso 6.1")
+    clase = clase_hec14_de_la_piedra(d50=d50, D=apron.D, origen=origen)
+    e_multiplo = mult_espesor * d50
+    if clase.clase is not None:
+        e_tabla, L_tabla = clase.espesor, clase.longitud
+        de_la_tabla = f"clase {clase.clase} de la Tabla 10.1"
+        fuera = ()
+    else:
+        _n, _d50_mayor, kL_mayor, _ke = HEC14_TABLA_10_1[-1]
+        e_tabla = HEC14_ESPESOR_MIN_EN_D50 * d50
+        L_tabla = kL_mayor * apron.D
+        de_la_tabla = (f"fuera de la Tabla 10.1: cotas inferiores, "
+                       f"{HEC14_ESPESOR_MIN_EN_D50:g} veces el d50 y la "
+                       f"longitud de la ultima clase, {kL_mayor:g}·D")
+        fuera = (f"Proteccion de salida: la piedra que rige (d50 = {d50:.3f} "
+                 "m) no cabe en la Tabla 10.1 de HEC-14, que no da "
+                 "profundidad ni longitud para ella: el espesor y la "
+                 "longitud impresos son COTAS INFERIORES, lectura del "
+                 "proyecto sobre el limite de la fuente («"
+                 + _literal("HEC14.10.2#PROFUNDIDAD") + "») y la longitud de "
+                 "su ultima clase, y no un diseño. La salida pide un "
+                 "disipador",)
+    espesor = max(e_multiplo, e_tabla)
+    longitud = max(longitud_adoptada, L_tabla)
     paso_regla = paso(
         "F6.GEOMETRIA_ADOPTADA",
         codigo="6.6c",
-        que="Espesor y longitud que rigen por la regla declarada",
-        formula="e = max(e adoptado, e HEC-14);  L = max(L adoptada, L HEC-14)",
-        citas_textuales=("HEC14.10.2#T10_1", "HEC14.10.2#PROFUNDIDAD"),
-        sustitucion=tuple(sustitucion),
-        resultado=Magnitud("e", e_rige, "m",
-                           f"espesor que rige; longitud L = {L_rige:.2f} m",
+        que="Piedra, espesor y longitud que rigen por la regla declarada "
+            "(envolvente del Manual y de HEC-14)",
+        formula="d50 = max(d50 Laushey, D50 Ec. 10.4);  "
+                "e = max(k * d50, e HEC-14);  L = max(L adoptada, L HEC-14)",
+        citas_textuales=("MC_HHD.4.1.1.3.7c", "HEC14.10.2#EC_10_4",
+                         "HEC14.10.2#T10_1", "HEC14.10.2#PROFUNDIDAD"),
+        sustitucion=(
+            Magnitud("d50 Laushey", d50_laushey, "m", "paso 6.1",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("D50 Ec. 10.4", apron.D50_requerido, "m", "paso 6.5",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("d50", d50, "m", f"el mayor de los dos: {origen}",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("k * d50", e_multiplo, "m",
+                     f"espesor por el criterio '{CRITERIO_ESPESOR}' [A] "
+                     f"(k = {mult_espesor:g}) sobre la piedra que rige",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("e HEC-14", e_tabla, "m", de_la_tabla,
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("L adoptada", longitud_adoptada, "m",
+                     f"criterio '{CRITERIO_LONGITUD}' [A]",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("L HEC-14", L_tabla, "m", de_la_tabla,
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud("e", espesor, "m",
+                           f"espesor que rige; piedra d50 = {d50:.3f} m; "
+                           f"longitud L = {longitud:.2f} m",
                            cifras=CIFRAS_MAGNITUD),
         veredicto=Veredicto(
             tipo=TipoDeVeredicto.SIN_VEREDICTO,
-            explicacion="envolvente de lo adoptado y de HEC-14"),
+            explicacion="envolvente de lo que da el Manual (Laushey y lo "
+                        "adoptado) y de lo que da HEC-14 (Ec. 10.4 y Tabla "
+                        "10.1): en cada magnitud rige el mayor"),
         elecciones=(EleccionDeProyecto(
-            que_se_adopto="regla del espesor y la longitud de la proteccion",
+            que_se_adopto="regla de la piedra, el espesor y la longitud de "
+                          "la proteccion de salida",
             valor=regla,
             entre=tuple(ca.CRITERIOS[CRITERIO_REGLA].sensibilidad),
             de_donde=f"el criterio adoptado '{CRITERIO_REGLA}' [A]",
-            por_que="decision del dueño del proyecto entre lo adoptado y la "
-                    "envolvente con HEC-14",
+            por_que="decision del dueño del proyecto (2026-11-12): ninguna "
+                    "de las dos fuentes queda por debajo de la otra en todos "
+                    "los casos, y la envolvente es el lado conservador",
             clave_criterio=CRITERIO_REGLA),))
+    piedra = (f"piedra d50 {d50_laushey:.3f} -> {d50:.3f} m (rige la Ec. "
+              "(10.4) de HEC-14, que pide mas que Laushey)" if rige_hec14 else
+              f"piedra d50 = {d50:.3f} m (rige Laushey; la Ec. (10.4) de "
+              f"HEC-14 pide {apron.D50_requerido:.3f} m)")
     aviso = (f"Proteccion de salida: rige la envolvente con HEC-14 "
-             f"('{CRITERIO_REGLA}'): espesor {espesor:.3f} -> {e_rige:.3f} m, "
-             f"longitud {longitud:.2f} -> {L_rige:.2f} m")
-    return e_rige, L_rige, paso_regla, (aviso,)
+             f"('{CRITERIO_REGLA}'): {piedra}, espesor "
+             f"{espesor_adoptado:.3f} -> {espesor:.3f} m, longitud "
+             f"{longitud_adoptada:.2f} -> {longitud:.2f} m ({de_la_tabla})")
+    return _LoQueRige(d50, espesor, longitud, clase, paso_regla,
+                      (aviso,) + fuera, True)
 
 
 def proteccion_salida(*, V: Magnitud,
@@ -1290,9 +1620,9 @@ def proteccion_salida(*, V: Magnitud,
                       tipo_lecho: Optional[str] = None
                       ) -> ProteccionSalida:
     """
-    La proteccion de SALIDA entera: d50 de Laushey, espesor y longitud
-    adoptados, y --desde T-8-- el Froude de la salida, la comparacion con la
-    velocidad admisible del terreno, el apron de HEC-14 y el filtro.
+    La proteccion de SALIDA entera: d50 de Laushey, apron de HEC-14, lo que
+    rige por la regla declarada, y el Froude de la salida, el contraste con
+    la velocidad admisible del terreno y el filtro.
 
     `V` ES UNA `Magnitud` CON PROCEDENCIA, y no un float, desde EXT-3 (PC-04,
     EXT-M-01): la velocidad que entra a Laushey es la de SALIDA por HDS-5
@@ -1301,122 +1631,144 @@ def proteccion_salida(*, V: Magnitud,
     entrada, la del tirante normal con n_min--. La procedencia la trae el
     numero, y esta funcion la imprime sin reescribirla. Con el TW bajo el
     critico y el control de salida, HEC-14 3.1.3 dice que en el borde el
-    tirante es menor: esa velocidad queda corta y se AVISA.
+    tirante es menor: esa velocidad es una COTA INFERIOR y se AVISA, con la
+    magnitud que la fuente deja leer.
 
-    LLAMADA SOLO CON `V` HACE LO QUE HACIA ANTES DE T-8, numero por numero:
-    d50, espesor = k·d50 con 'espesor_proteccion_salida' (1.75, ventana
-    1.5-2.0) y longitud = 'longitud_proteccion_salida' (5.0 m, ventana
-    3.0-8.0), los dos [A] de nivel PERFIL y los dos DECLARADOS, de modo que
-    la llamada NO se detiene en ninguno; con la regla
-    'regla_espesor_longitud_proteccion_salida' en «manual», el valor del
-    archivo, esos son los que rigen.
+    LA PROTECCION SE CALCULA Y SE MANTIENE SIEMPRE (decision 6 del dueño,
+    2026-11-12): el d50, el espesor y la longitud llevan numero en todos los
+    casos. Lo que cambia es que rige:
 
-    LO QUE T-8 AÑADE, y cuando:
-      * `resultado` y `seccion` -> Froude de la salida (HEC-14 10.1.1), apron
-        de HEC-14 (Sec. 10.2) y la clase de la Tabla 10.1 que toca a la
-        piedra adoptada, con el TW, el caudal por barril y los tirantes que
-        M4 publico. Si la ecuacion del apron no cubre el caso (marco, TW
-        sobre la clave, conducto de mas de 1500 mm) NO se rellena: aviso.
-      * `tipo_terreno` y `regimen_flujo` (datos de SITIO del punto) -> la
-        velocidad de salida se compara con la admisible de la Tabla Nº 11.
-        `requerida` dice el resultado: False = no la supera, y entonces NO
-        se dimensiona la piedra (d50, espesor y longitud en None) y se AVISA
-        que esa inversa es lectura del proyecto, con lo que dice el HDS-5;
-        True = la supera, se avisa y se dimensiona. Si falta cualquiera de
-        los dos, `requerida` es None, se dimensiona como antes y se AVISA.
+      * regla «envolvente_hec14» (el archivo), con `resultado` y `seccion`:
+        piedra = el mayor de Laushey y de la Ec. (10.4); espesor y longitud =
+        el mayor de lo adoptado ('espesor_proteccion_salida',
+        'longitud_proteccion_salida') y de la Tabla 10.1 para esa piedra
+        (`_regla_de_la_proteccion`, paso 6.6c).
+      * regla «manual»: Laushey y lo adoptado, numero por numero como antes
+        de esa decision; HEC-14 se imprime al lado y se avisa donde pide mas.
+      * donde HEC-14 no es evaluable (marco, TW sobre la clave, conducto de
+        mas de 60 in, varios barriles, o una llamada solo con `V`): Laushey
+        y lo adoptado, con aviso.
+
+    LO QUE LOS DATOS DE SITIO AÑADEN:
+      * `tipo_terreno` y `regimen_flujo` -> la velocidad de salida se compara
+        con la admisible de la Tabla Nº 11. El contraste INFORMA en
+        `requerida`: True = la supera; False = no la supera, y se avisa que
+        el terreno la resistiria segun la tabla y que suprimir la proteccion
+        queda sujeto a inspeccion de campo (HDS-5 num. 5.3.2); None = falta
+        el dato, o la velocidad es una cota inferior y el contraste no
+        concluye. En ninguno de los tres casos se deja de dimensionar.
       * `pasa_200_pct`, `indice_plasticidad_lecho` (solo si el lecho es
         cohesivo) y `tipo_lecho` (datos del EMS) -> el geotextil de filtro
-        (Tabla 511-06 de EG-2013, nota (5) por fila) y el cruce del terreno
-        con el lecho.
+        (Tabla 511-06 de EG-2013) y el cruce del terreno con el lecho.
 
-    Devuelve las TRES advertencias de siempre cuando dimensiona y ninguna
-    cuando la Tabla Nº 11 no pide proteger.
+    Devuelve siempre TRES advertencias: las dos de siempre y la del alcance,
+    que dice cual de las dos reglas rigio.
     """
     _exigir_velocidad(V, "proteccion_salida")
     pasos: List[PasoDeMemoria] = []
     avisos: List[str] = []
 
     froude = None
+    al_critico = False
     if resultado is not None and seccion is not None:
         froude = froude_salida(V=V, Q_celda=resultado.Q_celda_m3s,
                                seccion=seccion, y_salida=resultado.y_salida_m,
                                y_critico=resultado.y_critico)
+        al_critico = _con_la_velocidad_al_critico(resultado)
         avisos.extend(_aviso_tirante_de_borde(resultado))
+        avisos.extend(_aviso_banda_de_regimen(resultado))
 
     admisible = None
     if tipo_terreno is not None and regimen_flujo is not None:
         admisible = velocidad_admisible_del_cauce(
             V=V, tipo_terreno=tipo_terreno, regimen_flujo=regimen_flujo,
-            donde=DONDE_SALIDA)
+            donde=DONDE_SALIDA, cota_inferior=al_critico)
         if admisible.supera:
             avisos.append("Proteccion de salida: "
                           + admisible.paso.veredicto.explicacion)
+        elif not admisible.concluyente:
+            avisos.append(_aviso_el_contraste_no_concluye(admisible))
+        else:
+            avisos.append(_aviso_el_terreno_resistiria(admisible))
     else:
         avisos.append(_aviso_sin_terreno(DONDE_SALIDA, tipo_terreno,
                                          regimen_flujo))
     avisos.extend(_aviso_terreno_contra_lecho(tipo_terreno, tipo_lecho))
-    requerida = None if admisible is None else admisible.supera
+    requerida = (None if admisible is None or not admisible.concluyente
+                 else admisible.supera)
 
-    if requerida is False:
-        # La Tabla Nº 11 no pide proteger: no hay piedra que dimensionar. Que
-        # baste es lectura del proyecto, y se avisa con lo que dice el HDS-5.
-        if froude is not None:
-            pasos.append(froude.paso)
-        pasos.append(admisible.paso)
-        avisos.append(_aviso_salida_sin_enrocado())
-        return ProteccionSalida(
-            d50=None, espesor=None, longitud=None, V=V.valor,
-            criterio_espesor=CRITERIO_ESPESOR,
-            criterio_longitud=CRITERIO_LONGITUD,
-            advertencias=(), numeral=NUMERAL_LAUSHEY, paso=None,
-            requerida=False, froude=froude, velocidad_admisible=admisible,
-            pasos=tuple(pasos), avisos=tuple(avisos))
-
-    d50 = laushey_d50(V=V.valor)
+    d50_laushey = laushey_d50(V=V.valor)
     mult_espesor = ca.valor(CRITERIO_ESPESOR)
-    espesor_adoptado = mult_espesor * d50
+    espesor_adoptado = mult_espesor * d50_laushey
     longitud_adoptada = ca.valor(CRITERIO_LONGITUD)   # [A] declarado
     regla = ca.valor(CRITERIO_REGLA)
-    paso_laushey = _paso_laushey(V, d50, espesor_adoptado, mult_espesor)
+    paso_laushey = _paso_laushey(V, d50_laushey, espesor_adoptado,
+                                 mult_espesor)
     pasos.append(paso_laushey)
-    pasos.append(_paso_geometria_adoptada(d50, mult_espesor, espesor_adoptado,
-                                          longitud_adoptada, regla))
+    pasos.append(_paso_geometria_adoptada(
+        d50_laushey, mult_espesor, espesor_adoptado, longitud_adoptada,
+        regla))
     if froude is not None:
         pasos.append(froude.paso)
     if admisible is not None:
         pasos.append(admisible.paso)
 
-    apron = clase = None
+    apron = None
     if resultado is not None and seccion is not None:
-        try:
-            apron = apron_hec14(
-                Q_celda=resultado.Q_celda_m3s, seccion=seccion,
-                TW=resultado.TW_m, y_salida=resultado.y_salida_m,
-                y_critico=resultado.y_critico,
-                numero_celdas=resultado.numero_celdas)
-        except MetodoNoEvaluableError as error:
-            avisos.append(f"Proteccion de salida: el apron de HEC-14 NO se "
-                          f"evaluo -- {error.motivo}. Hace falta: "
-                          f"{error.procedimiento}. Rige el d50 de Laushey")
+        faltan = [nombre for nombre, valor in (
+            ("el tirante del receptor (TW)", resultado.TW_m),
+            ("el tirante critico", resultado.y_critico)) if valor is None]
+        if faltan:
+            # H15: un resultado armado sin pasar por M4. La pieza de HEC-14
+            # no se puede evaluar; el d50 de Laushey, que solo pide V, si.
+            avisos.append("Proteccion de salida: el apron de HEC-14 NO se "
+                          "evaluo -- el resultado hidraulico no trae "
+                          + " ni ".join(faltan) + ". Rige el d50 de Laushey")
         else:
-            pasos.extend(apron.pasos)
-            clase = clase_hec14_de_la_piedra(d50=d50, D=apron.D)
-            pasos.append(clase.paso)
-    espesor, longitud, paso_regla, avisos_regla = _regla_espesor_longitud(
-        regla=regla, espesor=espesor_adoptado, longitud=longitud_adoptada,
-        apron=apron, clase=clase)
-    if paso_regla is not None:
-        pasos.append(paso_regla)
-    avisos.extend(avisos_regla)
-    if regla == REGLA_MANUAL and apron is not None:
+            try:
+                apron = apron_hec14(
+                    Q_celda=resultado.Q_celda_m3s, seccion=seccion,
+                    TW=resultado.TW_m, y_salida=resultado.y_salida_m,
+                    y_critico=resultado.y_critico,
+                    numero_celdas=resultado.numero_celdas)
+            except MetodoNoEvaluableError as error:
+                avisos.append(
+                    f"Proteccion de salida: el apron de HEC-14 NO se evaluo "
+                    f"-- {error.motivo}. Hace falta: {error.procedimiento}. "
+                    "Rige el d50 de Laushey")
+    if apron is not None and not apron.regimen_determinado:
+        avisos.append(
+            "Proteccion de salida: regimen no determinado para el apron de "
+            "HEC-14 -- el resultado hidraulico no trae el tirante de salida "
+            "y no se pudo decidir si aplica el ajuste de la Ec. (10.5): el "
+            "D50 se calculo SIN ajuste y, si el flujo fuera supercritico, "
+            "seria mayor")
+    rige = _regla_de_la_proteccion(
+        regla=regla, d50_laushey=d50_laushey, mult_espesor=mult_espesor,
+        longitud_adoptada=longitud_adoptada, apron=apron)
+    if apron is not None:
+        pasos.extend(apron.pasos)
+    if rige.clase is not None:
+        pasos.append(rige.clase.paso)
+    if rige.paso is not None:
+        pasos.append(rige.paso)
+    avisos.extend(rige.avisos)
+    # LOS AVISOS DEL CONTRASTE SALEN BAJO LAS DOS REGLAS (H1): hablan de lo
+    # que RIGE contra lo que HEC-14 daria. Con la envolvente lo que rige no
+    # queda por debajo y callan solos; el del disipador --el D50 de la Ec.
+    # (10.4) no cabe en la Tabla 10.1-- sale siempre.
+    if apron is not None:
         avisos.extend(_avisos_del_contraste(
-            apron, d50=d50, espesor=espesor, longitud=longitud))
-        if clase.clase != apron.clase:
+            apron, d50=rige.d50, espesor=rige.espesor,
+            longitud=rige.longitud))
+        if rige.clase is not None and rige.clase.clase != apron.clase \
+                and not rige.rige_la_envolvente:
             # Con la misma clase el aviso del apron ya lo dijo, con las
-            # mismas cifras: no se repite.
-            avisos.extend(_avisos_de_la_piedra(clase, espesor=espesor,
-                                               longitud=longitud))
-    avisos.extend(_aviso_espesor_bajo_el_piso(espesor, d50))
+            # mismas cifras: no se repite. Con la envolvente, la clase de la
+            # piedra que rige ya entro en el espesor y la longitud.
+            avisos.extend(_avisos_de_la_piedra(
+                rige.clase, espesor=rige.espesor, longitud=rige.longitud))
+    avisos.extend(_aviso_espesor_bajo_el_piso(rige.espesor, rige.d50))
     # El filtro SIN el pasante del tamiz N.º 200 no añade un aviso propio: lo
     # dice ya `ADVERTENCIA_FALTA_FILTRO`, que viaja con toda proteccion
     # dimensionada, y `filtro.texto` nombra el dato que falta.
@@ -1429,18 +1781,21 @@ def proteccion_salida(*, V: Magnitud,
 
     return ProteccionSalida(
         paso=paso_laushey,
-        d50=d50,
-        espesor=espesor,
-        longitud=longitud,
+        d50=rige.d50,
+        espesor=rige.espesor,
+        longitud=rige.longitud,
         V=V.valor,
         criterio_espesor=CRITERIO_ESPESOR,
         criterio_longitud=CRITERIO_LONGITUD,
-        advertencias=ADVERTENCIAS_PROTECCION_SALIDA,
+        advertencias=(ADVERTENCIAS_PROTECCION_SALIDA_ENVOLVENTE
+                      if rige.rige_la_envolvente
+                      else ADVERTENCIAS_PROTECCION_SALIDA),
         numeral=NUMERAL_LAUSHEY,
         requerida=requerida, froude=froude, velocidad_admisible=admisible,
         apron=apron, filtro=filtro, pasos=tuple(pasos), avisos=tuple(avisos),
-        clase_de_la_piedra=clase, regla_espesor_longitud=regla,
+        clase_de_la_piedra=rige.clase, regla_espesor_longitud=regla,
         espesor_adoptado=espesor_adoptado, longitud_adoptada=longitud_adoptada,
+        d50_laushey=d50_laushey, rige_la_envolvente=rige.rige_la_envolvente,
     )
 
 
@@ -1517,11 +1872,9 @@ def proteccion_entrada(*, resultado: ResultadoHidraulico,
     `tipo_embocadura` es una clave de `EMBOCADURAS`. Hoy el pipeline pasa la
     adoptada (cabezal recto); el cabezal por punto pasara la suya.
     """
-    if tipo_embocadura not in EMBOCADURAS:
-        raise DatoInvalidoError(
-            "tipo_embocadura", valor=tipo_embocadura,
-            motivo="no es un tipo de embocadura que la proteccion de entrada "
-                   "conozca: " + ", ".join(EMBOCADURAS))
+    _exigir_texto_de("tipo_embocadura", tipo_embocadura, EMBOCADURAS,
+                     "no es un tipo de embocadura que la proteccion de "
+                     "entrada conozca: " + ", ".join(EMBOCADURAS))
     revestimiento = ca.valor(CRITERIO_REVESTIMIENTO_ENTRADA)
     elementos = EMBOCADURAS[tipo_embocadura]
     avisos: List[str] = []
@@ -1700,8 +2053,11 @@ def hoya_de_socavacion_hec14(*, Q_celda: float, seccion: Seccion, S: float,
     ENTRADAS QUE NO SE INVENTAN: `material` es el suelo del lecho, del EMS
     (`DatoFaltanteError` si le falta lo que su ecuacion pide). La duracion
     del caudal pico es `duracion_pico_min` si el punto la declara; si no, el
-    criterio [C] 'duracion_caudal_pico_socavacion_min' (30 minutos: lo que
-    la fuente recomienda «lacking this knowledge»).
+    criterio [A] 'duracion_caudal_pico_socavacion_min': 360 minutos por
+    decision del dueño (2026-11-12), porque los 30 que la fuente recomienda
+    «lacking this knowledge» solo alcanzan, segun la misma fuente, de 2/3 a
+    3/4 de la hoya maxima. La hoya de la otra punta de la ventana, 30 min,
+    viaja al lado como sensibilidad.
 
     FUERA DE RANGO -> `MetodoNoEvaluableError`, nunca extrapolado: caida
     mayor de 4 alturas (fin de la Tabla 5.2), indice de plasticidad fuera de
@@ -1734,14 +2090,21 @@ def hoya_de_socavacion_hec14(*, Q_celda: float, seccion: Seccion, S: float,
                     + "': de eso depende la ecuacion de HEC-14 (dato del EMS)")
     por_criterio = duracion_pico_min is None
     acotada = False
-    t_techo = None
+    t_alternativa = None
     if por_criterio:
         t = ca.valor(CRITERIO_DURACION_PICO)
-        t_techo = ca.CRITERIOS[CRITERIO_DURACION_PICO].sensibilidad[-1]
-        origen_t = (f"criterio '{CRITERIO_DURACION_PICO}' [C], por falta del "
-                    "dato: lo que HEC-14 manda usar «lacking this knowledge» "
-                    "(num. 5.1.2), que es el extremo NO conservador de la "
-                    "ventana: la hoya crece con t")
+        # La sensibilidad se da contra la OTRA punta de la ventana del
+        # criterio: los 30 min que la fuente recomienda cuando rige el
+        # techo, y el techo si alguien declara un valor menor.
+        piso, techo = ca.CRITERIOS[CRITERIO_DURACION_PICO].sensibilidad
+        t_alternativa = (piso if not t < techo - TOL_UMBRAL_NORMATIVO
+                         else techo)
+        origen_t = (f"criterio '{CRITERIO_DURACION_PICO}' [A], por falta del "
+                    "dato: adopcion del proyecto dentro de la ventana "
+                    f"{piso:g}-{techo:g} min. HEC-14 recomienda "
+                    f"{HEC14_SOCAVACION_T_MINIMO_MIN:g} min «lacking this "
+                    "knowledge» (num. 5.1.2), que es el extremo NO "
+                    "conservador: la hoya crece con t")
     else:
         t = duracion_pico_min
         origen_t = f"dato externo del punto, `{DATO_DURACION_PICO}`"
@@ -1830,7 +2193,8 @@ def hoya_de_socavacion_hec14(*, Q_celda: float, seccion: Seccion, S: float,
                 formula_cita_id="HEC14.5.1#EC_5_1",
                 citas_textuales=("HEC14.5.1#EC_5_1", "HEC14.5#PEOR_CASO",
                                  "HEC14.5.1.1#T5_1", "HEC14.5.1.4#T5_2",
-                                 "HEC14.5.1.5#T5_3", "HEC14.5.1.2#T30"),
+                                 "HEC14.5.1.5#T5_3", "HEC14.5.1.2#T30",
+                                 "HEC14.5.1.2#DOS_TERCIOS"),
                 sustitucion=(
                     Magnitud("Q", Q_celda, "m3/s", "caudal del barril, "
                              "Q_celda", cifras=CIFRAS_FINA),
@@ -1856,7 +2220,7 @@ def hoya_de_socavacion_hec14(*, Q_celda: float, seccion: Seccion, S: float,
                                    cifras=CIFRAS_MAGNITUD),
                 veredicto=veredicto,
                 nota_del_proyecto=_nota_de_sensibilidad(
-                    d, dims[d], theta, t, t_techo)))
+                    d, dims[d], theta, t, t_alternativa)))
     else:
         if material.IP is None or material.Sv_Pa is None:
             raise DatoFaltanteError(
@@ -1915,7 +2279,8 @@ def hoya_de_socavacion_hec14(*, Q_celda: float, seccion: Seccion, S: float,
                 formula_cita_id="HEC14.5.2#EC_5_2",
                 citas_textuales=("HEC14.5.2#EC_5_2", "HEC14.5.2#RANGO_IP",
                                  "HEC14.5#PEOR_CASO", "HEC14.5.1.4#T5_2",
-                                 "HEC14.5.1.5#T5_3", "HEC14.5.1.2#T30"),
+                                 "HEC14.5.1.5#T5_3", "HEC14.5.1.2#T30",
+                                 "HEC14.5.1.2#DOS_TERCIOS"),
                 sustitucion=(
                     Magnitud("V", V.valor, "m/s", V.procedencia,
                              cifras=CIFRAS_MAGNITUD),
@@ -1939,14 +2304,25 @@ def hoya_de_socavacion_hec14(*, Q_celda: float, seccion: Seccion, S: float,
                                    cifras=CIFRAS_MAGNITUD),
                 veredicto=veredicto,
                 nota_del_proyecto=_nota_de_sensibilidad(
-                    d, dims[d], theta, t, t_techo)))
+                    d, dims[d], theta, t, t_alternativa)))
     for d, valor in dims.items():
         if not (math.isfinite(valor) and valor > 0):
-            # Forma MAT-D13: el par culpable, no un solo dato.
+            # Forma MAT-D13: el par culpable, no un solo dato. Cual es el par
+            # depende de la ecuacion (H10-b: nombraba siempre el caudal y la
+            # altura, tambien cuando lo que desbordaba era D84/D16).
+            if material.tipo == TIPO_LECHO_NO_COHESIVO:
+                culpables = (f"Q_celda = {Q_celda!r} m3/s, radio hidraulico "
+                             f"lleno = {seccion.radio_hidraulico_lleno!r} m, "
+                             f"y D84 = {material.D84_m!r} m con D16 = "
+                             f"{material.D16_m!r} m, que forman sigma = "
+                             "(D84/D16)^0.5")
+            else:
+                culpables = (f"V = {V.valor!r} m/s, Sv = {material.Sv_Pa!r} "
+                             f"N/m2 e indice de plasticidad = "
+                             f"{material.IP!r}, que forman rho·V²/tau_c")
             raise LimiteNumericoError(
                 _SIMBOLO[d], valor=valor,
-                motivo=f"la {d} de la hoya (Q_celda = {Q_celda!r} m3/s, "
-                       f"altura del conducto = {altura!r} m) no es un numero "
+                motivo=f"la {d} de la hoya ({culpables}) no es un numero "
                        "positivo y finito")
     tabla = (HEC14_SOCAVACION_NO_COHESIVO
              if material.tipo == TIPO_LECHO_NO_COHESIVO
@@ -1960,27 +2336,29 @@ def hoya_de_socavacion_hec14(*, Q_celda: float, seccion: Seccion, S: float,
         duracion_min=t, origen_duracion=origen_t,
         Cs=Cs["profundidad"], Ch=Ch["profundidad"], pasos=tuple(pasos),
         duracion_por_criterio=por_criterio, duracion_acotada=acotada,
-        profundidad_al_techo_de_la_ventana=(
-            None if t_techo is None
-            else dims["profundidad"] * (t_techo / t) ** theta_hs),
-        duracion_techo_min=t_techo)
+        profundidad_alternativa=(
+            None if t_alternativa is None
+            else dims["profundidad"] * (t_alternativa / t) ** theta_hs),
+        duracion_alternativa_min=t_alternativa)
 
 
 def _nota_de_sensibilidad(dimension: str, valor: float, theta: float, t: float,
-                          t_techo: Optional[float]) -> str:
+                          t_alternativa: Optional[float]) -> str:
     """
-    La sensibilidad de la hoya a la duracion cuando rige el [C] de 30 min
-    (hallazgo 1 de la auditoria de T-8): la dimension crece con (t/316)^θ, y
-    el paso imprime cuanto daria al techo de la ventana del criterio.
+    La sensibilidad de la hoya a la duracion cuando rige el criterio por
+    falta del dato (hallazgo 1 de la auditoria de T-8): la dimension crece
+    con (t/316)^θ, y el paso imprime cuanto daria la otra punta de la
+    ventana del criterio.
     """
-    if t_techo is None:
+    if t_alternativa is None:
         return ""
-    al_techo = valor * (t_techo / t) ** theta
+    factor = (t_alternativa / t) ** theta
     return (f"SENSIBILIDAD A LA DURACION: la {dimension} se calculo con t = "
             f"{t:g} min porque el punto no declara la duracion del caudal "
-            f"pico, y ese es el extremo NO conservador de la ventana del "
-            f"criterio '{CRITERIO_DURACION_PICO}': con t = {t_techo:g} min "
-            f"seria {al_techo:.3f} m (×{(t_techo / t) ** theta:.3f}).")
+            f"pico, y ese valor es adopcion del criterio "
+            f"'{CRITERIO_DURACION_PICO}' [A]: con t = {t_alternativa:g} min, "
+            f"la otra punta de su ventana, seria {valor * factor:.3f} m "
+            f"(×{factor:.3f}).")
 
 
 def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
@@ -2017,12 +2395,11 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
     local no incida.
 
     `proteccion_requerida` es `ProteccionSalida.requerida`. Cuando es False
-    --la Tabla Nº 11 dice que el terreno resiste la velocidad de salida y no
-    se reviste-- y aun asi hay hoya estimada, la corrida lo AVISA: las dos
-    fuentes miran cosas distintas (la velocidad media que el cauce admite y
-    la hoya local del chorro en los ensayos de HEC-14), y lo que las concilia
-    es que el cabezal de salida baje hasta la hoya (HEC-14 num. 5.1.3), que
-    es lo que esta funcion entrega.
+    --segun la Tabla Nº 11 el terreno resistiria la velocidad de salida-- y
+    aun asi hay hoya estimada, la corrida lo AVISA: las dos fuentes miran
+    cosas distintas (la velocidad media que el cauce admite y la hoya local
+    del chorro en los ensayos de HEC-14), y es un argumento mas para no
+    suprimir la proteccion sin la inspeccion de campo.
 
     DESDE QUE COTA SE MIDE (hallazgo 6 de la auditoria de T-8). HEC-14 Cap. 5
     no lo define: llama hs a la profundidad de socavacion sin figura que la
@@ -2034,11 +2411,19 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
     `cota_fondo_receptor` y `cota_solera_salida` la funcion entrega ademas la
     COTA del fondo de la hoya, que es lo que T-7a toma para el desplante.
 
-    LA DURACION (hallazgo 1). Si rige el [C] de 30 min por falta del dato se
-    AVISA: es lo que HEC-14 manda «lacking this knowledge» y el extremo no
-    conservador de la ventana, y el aviso da la profundidad a su techo. Si el
-    dato es menor de 30 min, la hoya se estima con 30 como cota superior y
-    tambien se avisa.
+    LA DURACION (hallazgo 1 de la primera auditoria; decision 3 del dueño,
+    2026-11-12). Si rige el criterio [A] por falta del dato se AVISA: son 360
+    minutos, adopcion del proyecto, y el aviso da al lado la profundidad con
+    los 30 que HEC-14 recomienda «lacking this knowledge» y lo que la misma
+    fuente dice de ellos (de 2/3 a 3/4 de la hoya maxima). Si el dato es
+    menor de 30 min, la hoya se estima con 30 como cota superior y tambien se
+    avisa.
+
+    LA VELOCIDAD AL CRITICO (H2 de la segunda auditoria). En suelo COHESIVO
+    la hoya va con (ρV²/τc)^β: si la velocidad de salida es una cota inferior
+    (control de salida con el TW bajo el critico) la hoya tambien lo es, y se
+    avisa con el orden de magnitud. En suelo no cohesivo la Ec. (5.1) no
+    lleva la velocidad.
     """
     if declarada_m is not None:
         _exigir_no_negativo(DATO_SOCAVACION_DECLARADA, declarada_m,
@@ -2081,12 +2466,14 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
         avisos.append(
             f"Socavacion a la salida: el punto no declara la duracion del "
             f"caudal pico (`{DATO_DURACION_PICO}`) y la hoya se estimo con "
-            f"t = {estimada.duracion_min:g} min, lo que HEC-14 num. 5.1.2 "
-            "manda usar a falta de ese dato y el extremo NO conservador de "
-            f"la ventana de '{CRITERIO_DURACION_PICO}': con t = "
-            f"{estimada.duracion_techo_min:g} min la profundidad seria "
-            f"{estimada.profundidad_al_techo_de_la_ventana:.2f} m y no "
-            f"{estimada.profundidad:.2f} m")
+            f"t = {estimada.duracion_min:g} min, adopcion del proyecto "
+            f"('{CRITERIO_DURACION_PICO}' [A]): la profundidad es "
+            f"{estimada.profundidad:.2f} m. Con t = "
+            f"{estimada.duracion_alternativa_min:g} min seria "
+            f"{estimada.profundidad_alternativa:.2f} m. HEC-14 num. 5.1.2 "
+            f"recomienda {HEC14_SOCAVACION_T_MINIMO_MIN:g} minutos a falta "
+            "de ese dato, y dice de ellos: «"
+            + _literal("HEC14.5.1.2#DOS_TERCIOS") + "»")
     if estimada is not None and estimada.duracion_acotada:
         avisos.append(
             f"Socavacion a la salida: la duracion declarada del caudal pico "
@@ -2110,11 +2497,25 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
                 "local); rige la declarada")
         if proteccion_requerida is False:
             avisos.append(
-                f"Socavacion a la salida: la Tabla Nº 11 no pide revestir la "
-                f"salida y HEC-14 Cap. 5 estima una hoya local de "
-                f"{estimada.profundidad:.2f} m (peor caso de sus ensayos): el "
-                "cabezal de salida baja hasta la profundidad de socavacion "
-                "(HEC-14 num. 5.1.3), que es la que se entrega al desplante")
+                f"Socavacion a la salida: segun la Tabla Nº 11 el terreno "
+                f"resistiria la velocidad de salida, y HEC-14 Cap. 5 estima "
+                f"aun asi una hoya local de {estimada.profundidad:.2f} m "
+                "(peor caso de sus ensayos, sin proteccion). Es un argumento "
+                "mas para no suprimir la proteccion sin inspeccion de campo; "
+                "el cabezal de salida baja hasta la profundidad de "
+                "socavacion (HEC-14 num. 5.1.3), que es la que se entrega al "
+                "desplante")
+        if material.tipo == TIPO_LECHO_COHESIVO \
+                and _con_la_velocidad_al_critico(resultado):
+            beta = HEC14_SOCAVACION_COHESIVO["profundidad"][1]
+            avisos.append(
+                f"Socavacion a la salida: la hoya en suelo cohesivo va con "
+                f"(rho·V²/tau_c)^{beta:g}, es decir con V^{2 * beta:g}, y la "
+                "velocidad de salida se tomo al tirante critico: es una cota "
+                "inferior (HEC-14 num. 3.1.3) y la hoya tambien. Con la "
+                "velocidad de borde de la Figura 3.4 de HEC-14 en descarga "
+                "libre (de 1.35 a 1.43 veces la critica) la profundidad "
+                "seria de 1.11 a 1.14 veces la impresa")
         if longitud_proteccion_m is not None and \
                 longitud_proteccion_m < estimada.longitud - TOL_UMBRAL_NORMATIVO:
             avisos.append(
@@ -2167,7 +2568,7 @@ def socavacion_salida(*, resultado: ResultadoHidraulico, seccion: Seccion,
             formula=("hs = declarada, si el punto la trae; si no, la "
                      "estimada.  cota del fondo de la hoya = cota de "
                      "referencia - hs"),
-            citas_textuales=("HEC14.5.1.3#CABEZAL", "HEC14.10.1#DOS_D50"),
+            citas_textuales=("HEC14.5.1.3#CABEZAL", "HEC14.10.1#HS"),
             sustitucion=tuple(sustitucion),
             resultado=resultado_paso,
             veredicto=Veredicto(

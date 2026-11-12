@@ -1060,23 +1060,33 @@ _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
 }
 
 
+# LA UNIDAD QUE EL MENSAJE DE `_numero_externo` NOMBRA, cuando no es una
+# longitud ni un caudal (H10-c de la segunda auditoria de T-8): a la duracion
+# del caudal pico se le decia «no es un numero (SI, metros o m3/s)».
+_UNIDAD_POR_OMISION = "SI, metros o m3/s"
+_UNIDAD_DE_CLAVE: Dict[str, str] = {
+    CLAVE_DURACION_PICO: "minutos",
+}
+
+
 def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     """Un dato externo numerico tiene que ser finito y positivo, en SI."""
+    unidad = _UNIDAD_DE_CLAVE.get(clave, _UNIDAD_POR_OMISION)
     if isinstance(bruto, bool):
         # `float(True)` es 1.0 y `"luz_m": true` entraba como 1.0 m (PC-33).
         # Un booleano no es una longitud ni un caudal, y el JSON los
         # distingue: quien escribio `true` no escribio un numero.
         raise DatoInvalidoError(
             clave, valor=bruto,
-            motivo=f"es un booleano ({bruto!r}), no un numero (SI, metros o "
-                   f"m3/s); origen: {origen}",
+            motivo=f"es un booleano ({bruto!r}), no un numero ({unidad}); "
+                   f"origen: {origen}",
         )
     try:
         valor = float(bruto)
     except (TypeError, ValueError):
         raise DatoInvalidoError(
             clave, valor=bruto,
-            motivo=f"no es un numero (SI, metros o m3/s); origen: {origen}",
+            motivo=f"no es un numero ({unidad}); origen: {origen}",
         ) from None
     if not math.isfinite(valor):
         raise DatoInvalidoError(

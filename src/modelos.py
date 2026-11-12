@@ -2698,22 +2698,29 @@ class ProteccionSalida:
     aviso para que ningun consumidor de este resultado lo omita.
     """
 
-    # --- T-8 --- LOS TRES SON `None` EN UN SOLO CASO: el punto declaro el
-    # terreno del receptor y la velocidad de salida NO supera la admisible
-    # de la Tabla Nº 11 (`requerida` es False). Entonces el Manual no pide
-    # proteger y no hay piedra que dimensionar; un d50 impreso ahi seria un
-    # enrocado que nadie pidio. Sin el dato del terreno (`requerida` None) y
-    # cuando la supera (True) los tres llevan numero, como antes de T-8.
-    d50: Optional[float]                  # m - num. 4.1.1.3.7 c)
-    espesor: Optional[float]              # m - multiplo de d50, criterio adoptado
-    longitud: Optional[float]             # m - criterio adoptado
-    V: float                              # m/s - la velocidad de salida con
-                                          # que se calculo el d50: siempre
-                                          # `ResultadoHidraulico.V_erosion`
-                                          # (rama de n minimo, estimacion
-                                          # ALTA), que es el lado conservador
-                                          # para una proteccion contra
-                                          # socavacion -- el d50 crece con V^2
+    # LOS TRES LLEVAN SIEMPRE NUMERO. T-8 los dejaba en `None` cuando la
+    # velocidad de salida no superaba la admisible de la Tabla Nº 11 («sin
+    # enrocado»); el dueño resolvio el 2026-11-12 que esa NUNCA es una
+    # conclusion del programa: la proteccion se calcula y se mantiene
+    # siempre, y la tabla informa (`requerida`). Siguen tipados `Optional`
+    # porque los constructores y los lectores anteriores lo esperan.
+    #
+    # `d50` ES EL QUE RIGE, y desde esa misma decision no es siempre el de
+    # Laushey: con la regla 'regla_espesor_longitud_proteccion_salida' en
+    # «envolvente_hec14» (el archivo) es el MAYOR de Laushey y de la Ec.
+    # (10.4) de HEC-14 cuando esta es evaluable; con «manual», el de Laushey.
+    # El de Laushey se publica siempre aparte, en `d50_laushey`.
+    d50: Optional[float]                  # m - el que rige (ver arriba)
+    espesor: Optional[float]              # m - el que rige, segun la regla
+    longitud: Optional[float]             # m - la que rige, segun la regla
+    V: float                              # m/s - la velocidad de SALIDA de
+                                          # HDS-5 3.1.6 con que se calculo
+                                          # (`ResultadoHidraulico.V_salida`):
+                                          # `V_erosion`, la rama de n minimo,
+                                          # bajo control de entrada, y Q
+                                          # entre el area al tirante de
+                                          # salida bajo control de salida o
+                                          # con el barril horizontal (EXT-3)
     criterio_espesor: str                 # clave en criterios_adoptados.py
     criterio_longitud: str                # clave en criterios_adoptados.py
     advertencias: Tuple[str, ...]
@@ -2721,10 +2728,14 @@ class ProteccionSalida:
     paso: Optional["PasoDeMemoria"] = None
     # --- T-8 --- Lo que la Fase 6 añade AL LADO de Laushey. Todos con
     # default, para que los constructores anteriores sigan armandose.
-    #   `requerida`   True / False segun la velocidad de salida supere o no
-    #                 la admisible del terreno (Tabla Nº 11); None si el punto
-    #                 no declaro el terreno, y entonces rige la conducta
-    #                 anterior a T-8 (se dimensiona siempre) y se avisa.
+    #   `requerida`   lo que INFORMA el contraste con la Tabla Nº 11: True
+    #                 si la velocidad de salida supera la admisible del
+    #                 terreno; False si no la supera (el terreno la
+    #                 resistiria segun la tabla: la proteccion se mantiene
+    #                 igual, y suprimirla queda sujeto a inspeccion de campo);
+    #                 None si el punto no declaro el terreno o si el
+    #                 contraste NO CONCLUYE porque la velocidad comparada es
+    #                 una cota inferior (`velocidad_admisible.concluyente`).
     #   `pasos`       TODOS los pasos de la proteccion de salida, en su orden
     #                 de lectura; `paso` sigue siendo el de Laushey.
     #   `avisos`      lo que la corrida dice en voz alta: suben a
@@ -2746,6 +2757,13 @@ class ProteccionSalida:
     regla_espesor_longitud: Optional[str] = None
     espesor_adoptado: Optional[float] = None
     longitud_adoptada: Optional[float] = None
+    # --- T-8, segunda auditoria --- El d50 de LAUSHEY (Manual, num.
+    # 4.1.1.3.7 c)), que se calcula y se imprime siempre, rija o no: con
+    # «manual» es igual a `d50`; con la envolvente puede quedar por debajo.
+    # `rige_la_envolvente` dice si la regla llego a formarla (False con
+    # «manual» y cuando HEC-14 no es evaluable en el punto).
+    d50_laushey: Optional[float] = None
+    rige_la_envolvente: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -2787,6 +2805,11 @@ class VelocidadAdmisible:
     V_admisible: float                    # m/s
     supera: bool
     paso: Optional["PasoDeMemoria"] = None
+    # --- T-8, segunda auditoria (H2) --- False cuando la velocidad NO
+    # supera la admisible pero es una COTA INFERIOR de la real (control de
+    # salida con el TW bajo el critico: el tirante de borde es menor, HEC-14
+    # num. 3.1.3): de esa comparacion no se concluye que el terreno resista.
+    concluyente: bool = True
 
 
 @dataclass(frozen=True)
@@ -2811,6 +2834,10 @@ class ApronHEC14:
     espesor: Optional[float] = None       # m
     ancho_final: Optional[float] = None   # m
     pasos: Tuple["PasoDeMemoria", ...] = ()
+    # --- T-8, segunda auditoria (H15) --- False si no se pudo decidir el
+    # regimen (falta el tirante de salida): la Ec. (10.5) no se aplico, y si
+    # el flujo fuera supercritico el D50 seria mayor. Se avisa.
+    regimen_determinado: bool = True
 
 
 @dataclass(frozen=True)
@@ -2914,13 +2941,15 @@ class HoyaDeSocavacion:
     Ch: float                             # el de la profundidad
     pasos: Tuple["PasoDeMemoria", ...] = ()
     # --- T-8, auditoria --- De donde salio t: `duracion_por_criterio` si
-    # rigio el [C] de 30 min por falta del dato (y entonces la profundidad al
-    # techo de su ventana, para la sensibilidad); `duracion_acotada` si el
-    # dato era menor de 30 min y se estimo con 30 como cota superior.
+    # rigio el criterio 'duracion_caudal_pico_socavacion_min' por falta del
+    # dato; `duracion_acotada` si el dato era menor de 30 min y se estimo con
+    # 30 como cota superior. Con el criterio, la SENSIBILIDAD: la profundidad
+    # que daria el otro extremo de su ventana (`duracion_alternativa_min`:
+    # los 30 minutos que la fuente recomienda cuando rige el techo, 360).
     duracion_por_criterio: bool = False
     duracion_acotada: bool = False
-    profundidad_al_techo_de_la_ventana: Optional[float] = None   # m
-    duracion_techo_min: Optional[float] = None
+    profundidad_alternativa: Optional[float] = None   # m
+    duracion_alternativa_min: Optional[float] = None
 
 
 ORIGEN_SOCAVACION_DECLARADA = "declarada (dato externo)"

@@ -7147,9 +7147,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "lo que el proyecto ya declaro--, pero la Fase 6 "
                       "imprime el apron de HEC-14 al lado, AVISA en todo "
                       "punto que dimensiona que el multiplo queda bajo 2.0 "
-                      "(cita HEC14.10.2#PROFUNDIDAD) y la regla "
-                      "'regla_espesor_longitud_proteccion_salida' deja "
-                      "tomar la envolvente con HEC-14",
+                      "(cita HEC14.10.2#PROFUNDIDAD). Desde la decision "
+                      "del dueño del 2026-11-12 la regla "
+                      "'regla_espesor_longitud_proteccion_salida' vale "
+                      "«envolvente_hec14»: donde HEC-14 es evaluable rige el "
+                      "mayor de este espesor y el de la Tabla 10.1, y este "
+                      "multiplo solo rige con la regla «manual» o donde "
+                      "HEC-14 no se puede evaluar",
         fuente="Practica corriente de diseno de enrocado. Contraste: HEC-14 "
                "3a ed. (FHWA-NHI-06-086), Sec. 10.2, Table 10.1, pag. "
                "impresa 10-18 (PDF 219), cita HEC14.10.2#T10_1, y Sec. 10.1, "
@@ -7191,7 +7195,11 @@ CRITERIOS: Dict[str, Criterio] = {
                       "HEC-14 (Tabla 10.1: de 4 a 8 veces la altura del "
                       "conducto segun la clase de piedra) y, si el lecho esta "
                       "declarado, con la longitud de la hoya de socavacion de "
-                      "su Cap. 5, y avisa cuando la adoptada es menor",
+                      "su Cap. 5, y avisa cuando la adoptada es menor. "
+                      "Desde la decision del dueño del 2026-11-12 la regla "
+                      "'regla_espesor_longitud_proteccion_salida' vale "
+                      "«envolvente_hec14»: donde HEC-14 es evaluable rige la "
+                      "mayor de esta longitud y la de la Tabla 10.1",
         fuente="PENDIENTE - Sec. 6 de la hoja de ruta la marca [A] sin valor. "
                "Practica corriente de diseno de enrocado o HEC-14. "
                "Contraste desde T-8: HEC-14 3a ed., Sec. 10.2, Table 10.1, "
@@ -7274,46 +7282,65 @@ CRITERIOS: Dict[str, Criterio] = {
         # su unico consumidor es M6, que el alcance de perfil ejecuta; y lo
         # mide `tests/test_t8_proteccion.py` con una corrida de perfil que si
         # declara el lecho.
-        valor=30.0,                 # minutos
+        #
+        # ERA [C] CON VALOR 30 HASTA LA DECISION DEL DUEÑO DEL 2026-11-12
+        # (segunda auditoria de T-8, D3). Pasa a [A] porque dejo de ser «el
+        # valor de la fuente»: la fuente recomienda 30 minutos y el proyecto
+        # ELIGE otro dentro de una ventana, con su sensibilidad. La etiqueta
+        # dice cuanto se eligio, y aqui se eligio.
+        valor=360.0,                # minutos
         nivel=NIVEL_PERFIL,
-        etiqueta="C",
+        etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Duracion del caudal pico, en minutos, con que se estima "
                  "la hoya de socavacion a la salida cuando el estudio "
                  "hidrologico no la entrega",
         justificacion="Decide el tiempo t de las ecuaciones de socavacion "
                       "de HEC-14 cuando el punto no declara la duracion del "
-                      "caudal pico. La fuente lo fija: a falta de ese "
-                      "conocimiento recomienda usar 30 minutos (num. 5.1.2, "
-                      "cita HEC14.5.1.2#T30; lo repite para suelos cohesivos "
-                      "en la pag. impresa 5-7). No es un minimo conservador: "
-                      "la hoya crece con el tiempo, y el propio numeral dice "
-                      "que en los primeros 30 minutos se alcanzan entre 2/3 "
-                      "y 3/4 de la profundidad maxima. Con el exponente de "
-                      "tiempo de la Tabla 5.1 para la hoya en suelo no "
-                      "cohesivo, θ = 0.06, pasar de 30 a 120 minutos sube su "
-                      "hondura un 9 %; a 360 minutos, un 16 %. El dato "
-                      "externo "
+                      "caudal pico. La fuente recomienda para ese caso 30 "
+                      "minutos (num. 5.1.2, cita HEC14.5.1.2#T30; lo repite "
+                      "para suelos cohesivos en la pag. impresa 5-7), y en "
+                      "la frase siguiente dice que en los primeros 30 "
+                      "minutos se alcanzan entre 2/3 y 3/4 de la profundidad "
+                      "maxima (cita HEC14.5.1.2#DOS_TERCIOS). La profundidad "
+                      "de la hoya es la que se entrega al DESPLANTE del "
+                      "cabezal de salida, y un cabezal cimentado a dos "
+                      "tercios de la hoya maxima queda descalzado: por eso "
+                      "el proyecto no adopta los 30 minutos sino el techo "
+                      "de la ventana, 360. La hoya crece con el tiempo: con "
+                      "el exponente de la Tabla 5.1 para la profundidad en "
+                      "suelo no cohesivo, θ = 0.06, de 30 a 360 minutos sube "
+                      "un 16 % (12^0.06 = 1.161); en suelo cohesivo, θ = "
+                      "0.10, un 28 %. El dato externo "
                       "`duracion_caudal_pico_min` gana cuando viene. "
-                      "Sensibilidad: de 30 minutos, por debajo de los cuales "
-                      "la fuente dice que sus exponentes no aplican (cita "
-                      "HEC14.5.1.2#NO_BAJO_30), a 360 minutos",
+                      "Sensibilidad: de 30 minutos, el valor que la fuente "
+                      "recomienda y por debajo del cual dice que sus "
+                      "exponentes no aplican (cita HEC14.5.1.2#NO_BAJO_30), "
+                      "a 360 minutos. LO QUE LA FUENTE NO DICE: el techo de "
+                      "360 minutos no sale de HEC-14, que no da duracion "
+                      "maxima; es adopcion del proyecto para acotar la "
+                      "ventana, del orden del tiempo de referencia de la "
+                      "propia ecuacion (t/316)",
         fuente="HEC-14 3a ed. (FHWA-NHI-06-086, julio de 2006), num. 5.1.2 "
                "'Time of Scour', pag. impresa 5-2 (PDF 55), citas "
                "HEC14.5.1.2#T30 (recomendacion: 30 minutos a falta de la "
-               "duracion) y HEC14.5.1.2#NO_BAJO_30 (los exponentes no "
-               "aplican a los primeros 30 minutos). El techo de la ventana, "
-               "360 minutos, no sale de la fuente: es adopcion del "
-               "proyectista para acotar la sensibilidad",
+               "duracion), HEC14.5.1.2#DOS_TERCIOS (a los 30 minutos, de 2/3 "
+               "a 3/4 de la profundidad maxima) y HEC14.5.1.2#NO_BAJO_30 "
+               "(los exponentes no aplican a los primeros 30 minutos). El "
+               "valor adoptado y el techo de la ventana, 360 minutos, no "
+               "salen de la fuente: son eleccion del proyecto (decision del "
+               "dueño del 2026-11-12)",
         reemplazado_por="La duracion del caudal pico del hidrograma de "
                         "diseño de cada cuenca, del estudio hidrologico "
                         "(dato externo `duracion_caudal_pico_min`)",
         sensibilidad=(30.0, 360.0),
         resolucion=Libre(
-            que_lo_fija="HEC-14 num. 5.1.2: 30 minutos cuando no se conoce "
-                        "la duracion del caudal pico",
-            dominio="minutos, de 30 (limite de validez de los exponentes) "
-                    "a 360",
+            que_lo_fija="el proyectista, dentro de la ventana: HEC-14 num. "
+                        "5.1.2 recomienda 30 minutos cuando no se conoce la "
+                        "duracion del caudal pico y dice que cubren de 2/3 a "
+                        "3/4 de la hoya maxima",
+            dominio="minutos, de 30 (limite de validez de los exponentes y "
+                    "valor que la fuente recomienda) a 360",
         ),
     ),
 
@@ -7367,43 +7394,73 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
-    # --- T-8, auditoria adversarial --- dos decisiones que el dueño todavia
-    # no tomo, PREPARADAS sin cambiar el resultado de hoy: con que regla se
-    # fijan el espesor y la longitud de la proteccion de salida, y desde
-    # que cota se mide la profundidad de socavacion.
+    # --- T-8, auditoria adversarial --- dos decisiones del dueño: con que
+    # regla se fijan la piedra, el espesor y la longitud de la proteccion de
+    # salida, y desde que cota se mide la profundidad de socavacion. La
+    # primera la TOMO el 2026-11-12, tras la segunda auditoria: rige la
+    # envolvente, y alcanza al tamaño de la piedra.
     "regla_espesor_longitud_proteccion_salida": Criterio(
         # NIVEL MEDIDO POR CORRIDA: lo invoca la Fase 6 en todo punto que
         # dimensiona (corrida ancha de perfil, A-01 y A-02).
-        valor="manual",
+        #
+        # EL NOMBRE DE LA CLAVE DICE «espesor_longitud» Y LA REGLA GOBIERNA
+        # TAMBIEN LA PIEDRA desde el 2026-11-12. No se renombra: la clave ya
+        # esta en sesiones guardadas, en barridos y en la linea base, y un
+        # alias seria una segunda puerta para la misma decision. El concepto
+        # y la justificacion dicen lo que cubre.
+        valor="envolvente_hec14",
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_CATEGORIA,
         sensibilidad=("manual", "envolvente_hec14"),
-        concepto="Regla con que se fijan el espesor y la longitud de la "
-                 "proteccion de salida",
-        justificacion="Decide si el espesor y la longitud de la proteccion "
-                      "de salida son los adoptados ('espesor_proteccion_salida', "
-                      "'longitud_proteccion_salida') o la envolvente de esos y "
-                      "de lo que HEC-14 daria. «manual», el valor del archivo, "
-                      "es la conducta anterior: lo adoptado rige y HEC-14 se "
-                      "imprime al lado con aviso. «envolvente_hec14» toma, "
-                      "cuando el apron de HEC-14 es evaluable, el mayor "
-                      "entre lo adoptado, la clase de la Tabla 10.1 que pide "
-                      "la Ec. (10.4) y la clase que corresponde a la piedra "
-                      "que el proyecto pone (cita HEC14.10.2#T10_1, y "
+        concepto="Regla con que se fijan el tamaño de la piedra, el espesor "
+                 "y la longitud de la proteccion de salida",
+        justificacion="Decide que rige en la proteccion de salida: lo que da "
+                      "el Manual con lo adoptado, o la envolvente de eso y "
+                      "de HEC-14. «envolvente_hec14», el valor del archivo "
+                      "por decision del dueño del 2026-11-12, toma en cada "
+                      "magnitud el MAYOR: la piedra es el mayor del d50 de "
+                      "Laushey (Manual, num. 4.1.1.3.7 c), que se sigue "
+                      "calculando e imprimiendo) y del D50 de la Ec. (10.4) "
+                      "de HEC-14 (cita HEC14.10.2#EC_10_4); el espesor y la "
+                      "longitud, el mayor de los adoptados "
+                      "('espesor_proteccion_salida', "
+                      "'longitud_proteccion_salida') y de los que la Tabla "
+                      "10.1 da a esa piedra (cita HEC14.10.2#T10_1, y "
                       "HEC14.10.2#PROFUNDIDAD para el piso del espesor, dos "
-                      "veces el D50). La eleccion es del dueño del proyecto y "
-                      "queda "
-                      "barrible: la auditoria de T-8 midio que el espesor "
-                      "adoptado queda siempre bajo ese piso",
-        fuente="HEC-14 3a ed., Sec. 10.2, Table 10.1, pag. impresa 10-18 "
+                      "veces el D50). Por que: ninguna de las dos fuentes "
+                      "queda por debajo de la otra en todos los casos. "
+                      "Laushey mira solo la velocidad y pide mas piedra en "
+                      "la descarga rapida; la Ec. (10.4) mira el caudal, el "
+                      "diametro y el tirante del receptor y pide mas en la "
+                      "descarga lenta y caudalosa (a seccion llena y con el "
+                      "tirante minimo de la ecuacion, siempre que Q/D^2.5 < "
+                      "2.9); y el espesor adoptado, 1.75 veces el d50, queda "
+                      "bajo el piso de HEC-14 en todo punto. «manual» es la "
+                      "regla anterior y reproduce sus numeros: rigen Laushey "
+                      "y lo adoptado, HEC-14 se imprime al lado y la corrida "
+                      "avisa donde pide mas. Donde HEC-14 no es evaluable "
+                      "(marco, tirante del receptor sobre la clave, conducto "
+                      "de mas de 60 pulgadas, varios barriles) rige Laushey "
+                      "con lo adoptado, con aviso, bajo las dos reglas. Si "
+                      "la piedra que rige no cabe en la Tabla 10.1, el "
+                      "espesor y la longitud son cotas inferiores (2.0 veces "
+                      "el d50 y la longitud de la ultima clase, lectura del "
+                      "proyecto) y la corrida avisa que la salida pide un "
+                      "disipador",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.1.3.7 c), ec. (49), cita MC_HHD.4.1.1.3.7c; HEC-14 3a "
+               "ed., Sec. 10.2, Ec. (10.4), pag. impresa 10-17 (PDF 218), "
+               "cita HEC14.10.2#EC_10_4, y Table 10.1, pag. impresa 10-18 "
                "(PDF 219), citas HEC14.10.2#T10_1 y HEC14.10.2#PROFUNDIDAD. "
-               "La eleccion entre las dos reglas es adopcion del proyectista",
+               "La eleccion entre las dos reglas es adopcion del proyecto: "
+               "ninguna fuente dice que hacer cuando las dos discrepan",
         reemplazado_por="El diseño de la proteccion de salida del "
                         "expediente, con la granulometria y el filtro",
         resolucion=Libre(
-            que_lo_fija="el dueño del proyecto: conservar lo adoptado o "
-                        "tomar la envolvente con HEC-14",
+            que_lo_fija="el dueño del proyecto: la envolvente con HEC-14 "
+                        "(decision del 2026-11-12) o lo que da el Manual "
+                        "con lo adoptado",
             dominio="declaracion de la regla; el conjunto cerrado de "
                     "valores admisibles viaja en `sensibilidad`",
         ),
@@ -7425,7 +7482,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "por encima del lecho (Tabla 5.2) las dos lecturas "
                       "difieren en la caida, unos 0.7 m en A-01. La Figura "
                       "10.1 de la poza de enrocado, otro metodo, mide hs "
-                      "desde la solera de salida (cita HEC14.10.1#DOS_D50). "
+                      "desde la solera de salida (cita HEC14.10.1#HS). "
                       "«fondo_del_cauce_receptor», el valor del archivo, es "
                       "la lectura conservadora para el desplante: la hoya "
                       "empieza en el lecho y queda a la caida mas abajo que "

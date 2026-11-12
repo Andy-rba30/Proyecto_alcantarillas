@@ -8077,6 +8077,77 @@ FECHA_TESIS_T8 = "2026-11-12"
 POR_TESIS_T8 = "tesis/T-8 · lectura directa de la pagina por la sesion"
 TESIS_T8 = (FECHA_TESIS_T8, POR_TESIS_T8)
 
+# ---- Segunda auditoria de T-8 (H6): TRES LECTURAS DEL PROYECTO con efecto
+# en lo que la Fase 6 calcula o declara, que viajaban como «procedencia» o
+# como `por_que` y se leian como texto de la fuente. Cada una cuelga de la
+# cita que interpreta, y el paso que la aplica la imprime en la cara del
+# proyecto (`nota_del_proyecto`), leida de aqui: no se transcribe dos veces.
+INTERPRETACION_VELOCIDAD_ALTA = Interpretacion(
+    texto=("El Manual recomienda proteger el cauce «si la velocidad del "
+           "flujo a la entrada y particularmente a la salida de la "
+           "alcantarilla es alta», sin decir cuanto es «alta». Este proyecto "
+           "lee «alta» como mayor que la maxima admisible del terreno de la "
+           "Tabla Nº 11, y usa ese contraste para INFORMAR: si la velocidad "
+           "la supera, el terreno necesita la proteccion; si no la supera, "
+           "el terreno la resistiria segun la tabla, y aun asi la proteccion "
+           "se calcula y se mantiene."),
+    en_contra=("el num. 4.1.1.3.7 c) no remite a la Tabla Nº 11 ni da un "
+               "umbral: «alta» queda sin definir en la fuente",
+               "la Tabla Nº 11 es de velocidades medias de canales sin "
+               "revestir, y el chorro de una alcantarilla socava localmente "
+               "aunque su velocidad media quede bajo ella (HEC-14 Cap. 5)"),
+    a_favor=("el num. 4.1.1.3.6 presenta la Tabla Nº 11 justo despues de "
+             "exigir que la velocidad de salida se limite «a fin de evitar "
+             "procesos de socavación del cauce aguas abajo»",),
+)
+
+INTERPRETACION_TW_CON_D_AJUSTADO = Interpretacion(
+    texto=("Cuando el flujo en el conducto es supercritico y la Ec. (10.5) "
+           "ajusta el diametro a D' = (D + yn)/2, este proyecto aplica los "
+           "limites del tirante de aguas abajo de la Ec. (10.4) --entre 0.4 "
+           "y 1.0 diametros-- al diametro AJUSTADO D', el mismo que entra en "
+           "la ecuacion, y no a la altura real D del conducto."),
+    en_contra=("la fuente escribe los limites con D («between 0.4D and "
+               "1.0D») ANTES de presentar el ajuste, y no dice que D' entre "
+               "tambien en ellos",
+               "con D' un tirante de aguas abajo entre D' y D queda fuera "
+               "del rango y el apron sale «no evaluable», cuando con D "
+               "estaria dentro"),
+    a_favor=("la Ec. (10.5) dice que «the culvert diameter is adjusted»: D' "
+             "ocupa el lugar de D en la Ec. (10.4), cuyo ultimo factor es "
+             "D/TW",
+             "por abajo es la lectura del lado alto: el piso 0.4·D' es menor "
+             "que 0.4·D, el tirante se acota menos y el D50, que va con "
+             "1/TW, sale mayor"),
+)
+
+INTERPRETACION_NOTA_5_T511_06 = Interpretacion(
+    texto=("La Tabla 511-06 lleva la llamada «(5)» en dos sitios --el rotulo "
+           "de la fila «Tamaño de Abertura Aparente (3) (4) (5)» y la celda "
+           "«0,22(5)» de la columna «>50»-- y dos notas, (5) a y (5) b. Este "
+           "proyecto lee que el rotulo llama a la nota (5) a (el diseño "
+           "especifico en suelos problematicos, que vale para la fila "
+           "entera) y la celda a la nota (5) b: la abertura de 0.30 mm para "
+           "suelos cohesivos con indice de plasticidad mayor que 7 se aplica "
+           "SOLO en la columna «>50». En las columnas «<15» y «15-50» rige "
+           "la celda."),
+    en_contra=("el rotulo de la fila lleva un «(5)» sin letra, que tambien "
+               "puede leerse como que las dos notas valen en las tres "
+               "columnas: con esa lectura la columna «<15» pasaria de 0.43 a "
+               "0.30 mm (mas cerrada) y la «15-50» de 0.25 a 0.30 mm (mas "
+               "abierta)",
+               "la tabla es la de AASHTO M 288, que no esta en el "
+               "repositorio de normas: con ella a la vista se decide"),
+    a_favor=("la Tabla 511-02 de la misma Seccion 511 (subdrenaje, pag. "
+             "impresa 1011) trae la misma fila y las mismas dos notas con "
+             "numeros distintos: el rotulo lleva «(3) (4)», donde la (4) es "
+             "el diseño especifico, y solo la celda «0,22 (5)» lleva la nota "
+             "de los suelos cohesivos",
+             "es la lectura que no relaja la columna «15-50», donde la otra "
+             "abriria la abertura de 0.25 a 0.30 mm para una arena "
+             "arcillosa"),
+)
+
 # ---- Manual de Hidrologia: la velocidad de salida y la Tabla N° 11 ---------
 MC_HHD_V_SALIDA_LIMITE = _cita(
     id="MC_HHD.4.1.1.3.6#V_SALIDA",
@@ -8146,6 +8217,7 @@ MC_HHD_PROTECCION_CAUCE = _cita(
                "recomienda la protección del cauce"),
         pagina_pdf=82),
     caracter=Caracter.RECOMENDACION,
+    interpretacion=INTERPRETACION_VELOCIDAD_ALTA,
     sesion=TESIS_T8,
     nota=("LA ORACION CRUZA DE PAGINA: sigue en la impresa 80 (PDF 83) con "
           "«natural mediante la construcción de emboquillados de piedra…» "
@@ -8273,6 +8345,7 @@ EG2013_T511_06 = _cita(
         pagina_pdf=1023),
     caracter=Caracter.EXIGENCIA,
     derivado_de="EG2013.511.08#EROSION",
+    interpretacion=INTERPRETACION_NOTA_5_T511_06,
     sesion=TESIS_T8,
     nota=("La Tabla 511-06 «Geotextiles para control permanente de "
           "erosión-requerimientos» entra por el «Porcentaje de Suelo in Situ "
@@ -8281,10 +8354,14 @@ EG2013_T511_06 = _cita(
           "tamaño de abertura aparente maximo (0,43 / 0,25 / 0,22 mm); la "
           "clase es la 1 de la Tabla 511-01 (la 2 para los tejidos de "
           "monofilamento) y la estabilidad ultravioleta, 50 % tras 500 "
-          "horas. Su nota (5) pide un diseño especifico en suelos "
-          "problematicos y da 0,30 mm para cohesivos con indice de "
-          "plasticidad mayor de 7. El dato que la tabla pide --el pasante "
-          "del tamiz N.º 200-- es del EMS."),
+          "horas. Su nota (5) a pide un diseño especifico en suelos "
+          "problematicos y su nota (5) b da 0,30 mm para cohesivos con "
+          "indice de plasticidad mayor de 7. LA LLAMADA (5) APARECE DOS "
+          "VECES, en el rotulo de la fila «Tamaño de Abertura Aparente (3) "
+          "(4) (5)» y en la celda «0,22(5)» de la columna «>50», y la tabla "
+          "no dice que nota llama cada una: la lectura del proyecto va en "
+          "`interpretacion`. El dato que la tabla pide --el pasante del "
+          "tamiz N.º 200-- es del EMS."),
 )
 
 # ---- HDS-5: socavacion en la entrada y en la salida ------------------------
@@ -8420,6 +8497,7 @@ HEC14_10_2_TW = _cita(
         pagina_pdf=218),
     caracter=Caracter.APROXIMACION,
     derivado_de="HEC14.10.2#EC_10_4",
+    interpretacion=INTERPRETACION_TW_CON_D_AJUSTADO,
     sesion=TESIS_T8,
     nota=("EL LIMITE DE VALIDEZ DE LA Ec. (10.4), con sus dos lados. Por "
           "abajo, el ejemplo resuelto de la pag. impresa 10-18 enseña que "
@@ -8555,8 +8633,13 @@ HEC14_T1_1_APRON = _cita(
           "cuya columna de Froude dice «na». La Sec. 10.2 lo dice como "
           "poblacion y no como prohibicion: «The most commonly used device "
           "for outlet protection, primarily for culverts 1500 mm (60 in) or "
-          "smaller, is a riprap apron» (pag. impresa 10-16). Por eso un "
-          "conducto mas alto sale con AVISO y no como metodo no evaluable. "
+          "smaller, is a riprap apron» (pag. impresa 10-16). La tabla se "
+          "titula «Limitations» y la nota es una de ellas: un conducto mas "
+          "alto sale como metodo no evaluable. LA FUENTE DA DOS CIFRAS QUE "
+          "NO COINCIDEN: 60 in son 1.524 m, no 1.500. Rige 1.524 m "
+          "(`constantes_normativas.HEC14_APRON_ALTURA_MAX_M`), lectura "
+          "declarada: es la que deja evaluar el ejemplo resuelto de la "
+          "propia fuente, que usa D = 5.0 ft = 60 in (pag. impresa 10-19). "
           "La misma tabla limita la POZA de enrocado (riprap basin) a Fr < "
           "3."),
 )
@@ -8906,30 +8989,37 @@ MC_HHD_LAMINA_04 = _cita(
 )
 
 # ---- Auditoria adversarial de T-8: lo que faltaba citar ---------------------
-# LA LECTURA «SIN ENROCADO», declarada como del proyecto (hallazgo 4 del
-# auditor): la Tabla Nº 11 dice que velocidad admite el terreno; que con una
-# velocidad menor no haya NADA que revestir no lo escribe el Manual, y el
-# HDS-5 dice que el apron es practica corriente salvo que el campo lo
-# desmienta. Viaja con la cita de esa pagina.
+# LA LECTURA «SIN ENROCADO», QUE EL PROYECTO YA NO ADOPTA. La primera
+# auditoria la mando declarar como lectura del proyecto; la segunda midio que
+# se decidia con una velocidad subestimada (H2), y el dueño resolvio el
+# 2026-11-12 que «sin enrocado» no es NUNCA una conclusion del programa: la
+# proteccion se calcula y se mantiene siempre, la Tabla Nº 11 informa, y
+# suprimirla queda sujeto a la inspeccion de campo que nombra el HDS-5. El
+# nombre del simbolo se conserva porque la suite y los avisos lo anclan.
 INTERPRETACION_SIN_ENROCADO = Interpretacion(
-    texto=("Que una velocidad de salida que no supera la maxima admisible "
-           "del terreno del receptor (Tabla Nº 11) baste para NO dimensionar "
-           "enrocado a la salida es la lectura que este proyecto adopta. El "
-           "Manual exige limitar la velocidad de salida y presenta la tabla; "
-           "no escribe que bajo ella no haya nada que proteger."),
-    en_contra=("el HDS-5 (num. 5.3.2, pag. impresa 5.11) describe el apron de "
-               "enrocado como practica corriente «unless field investigation "
-               "at similar culverts in the vicinity indicates that such "
-               "protection is not needed»: la excepcion la da el campo, no "
-               "una tabla de velocidades",
-               "la Tabla Nº 11 es de velocidades medias de canales sin "
-               "revestir, y el chorro de una alcantarilla socava localmente "
-               "aunque su velocidad media quede bajo ella (HEC-14 Cap. 5)"),
-    a_favor=("el Manual presenta la tabla justo despues de exigir que la "
-             "velocidad de salida se limite «a fin de evitar procesos de "
-             "socavación del cauce aguas abajo»",
-             "la cadena T lo pide asi (T-8 punto 1), y la hoya local se "
-             "estima y se entrega al desplante del cabezal aparte"),
+    texto=("Que la velocidad de salida no supere la maxima admisible del "
+           "terreno del receptor (Tabla Nº 11) NO basta, para este proyecto, "
+           "para dejar la salida sin proteccion: el enrocado se calcula y se "
+           "mantiene siempre, el contraste con la tabla informa de si el "
+           "terreno resistiria, y suprimir la proteccion queda sujeto a la "
+           "inspeccion de campo en alcantarillas semejantes de la zona."),
+    en_contra=("el Manual presenta la Tabla Nº 11 justo despues de exigir "
+               "que la velocidad de salida se limite «a fin de evitar "
+               "procesos de socavación del cauce aguas abajo», lo que admite "
+               "leer que bajo ella no hay nada que proteger",
+               "la cadena T lo pedia asi (T-8 punto 1: calcular el d50 solo "
+               "cuando la velocidad de salida supera la admisible)"),
+    a_favor=("el HDS-5 (num. 5.3.2, pag. impresa 5.11) describe el apron de "
+             "enrocado como practica corriente «unless field investigation "
+             "at similar culverts in the vicinity indicates that such "
+             "protection is not needed»: la excepcion la da el campo, no "
+             "una tabla de velocidades",
+             "la Tabla Nº 11 es de velocidades medias de canales sin "
+             "revestir, y el chorro de una alcantarilla socava localmente "
+             "aunque su velocidad media quede bajo ella (HEC-14 Cap. 5)",
+             "bajo control de salida con el tirante de aguas abajo bajo el "
+             "critico la velocidad que el programa compara es una cota "
+             "inferior de la real (HEC-14 num. 3.1.3)"),
 )
 
 HDS5_5_3_2_PRACTICA = _cita(
@@ -8951,9 +9041,9 @@ HDS5_5_3_2_PRACTICA = _cita(
     interpretacion=INTERPRETACION_SIN_ENROCADO,
     nota=("La frase que sigue a la de HDS5_3ED.5.3.2#APRON. Describe una "
           "practica: el apron se pone salvo que el campo diga que no hace "
-          "falta. Es lo que juega en contra de no revestir cuando la "
-          "velocidad no supera la Tabla Nº 11, y la salida sin enrocado lo "
-          "avisa citandola."),
+          "falta. Es lo que sostiene que el programa no concluya «sin "
+          "enrocado» cuando la velocidad no supera la Tabla Nº 11: la "
+          "proteccion se mantiene y el aviso cita esta frase."),
 )
 
 HEC14_10_1_DOS_D50 = _cita(
@@ -9043,7 +9133,86 @@ EG2013_T511_06_NOTA_5A = _cita(
           "de gradación abierta; suelos laminados alternando arenas y limos; "
           "arcillas dispersivas y/o polvo de roca.» La llamada (5) la llevan "
           "el rotulo de la FILA «Tamaño de Abertura Aparente (3) (4) (5)» y "
-          "la celda «0,22(5)»: la nota vale para la fila entera."),
+          "la celda «0,22(5)». El proyecto lee que el rotulo llama a ESTA "
+          "nota, que vale para la fila entera, y la celda a la (5) b "
+          "(`Interpretacion` de la cita EG2013.511.08#T511_06)."),
+)
+
+# ---- Segunda auditoria de T-8: tres citas que faltaban ----------------------
+HEC14_10_1_HS = _cita(
+    id="HEC14.10.1#HS",
+    fuente_id="HEC14",
+    numeral="10.1",
+    titulo_numeral="10.1 RIPRAP BASIN",
+    pagina_impresa="10-1",
+    pagina_pdf=202,
+    texto_literal=Verbatim(
+        texto=("The riprap floor is constructed at the approximate depth of "
+               "scour, hs, that would occur in a thick pad of riprap."),
+        pagina_pdf=202),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    nota=("Es de la POZA de enrocado (Sec. 10.1), otro metodo que la hoya "
+          "del Cap. 5. Se cita por lo unico que sostiene: en la poza, hs es "
+          "la profundidad del piso de enrocado, y la Figura 10.1 de la misma "
+          "pagina, leida por imagen, la acota DESDE la prolongacion de la "
+          "solera de salida del conducto hasta ese piso. Es la lectura "
+          "«solera_de_salida» del criterio "
+          "'referencia_profundidad_socavacion'. Hasta la segunda auditoria "
+          "de T-8 (H9) eso se apoyaba en HEC14.10.1#DOS_D50, cuyo literal "
+          "habla del espesor del revestimiento y no de la referencia de hs."),
+)
+
+EG2013_T511_02_NOTA_5 = _cita(
+    id="EG2013.511.05#T511_02_NOTA_5",
+    fuente_id="EG2013",
+    numeral="511.05, Tabla 511-02, nota (5)",
+    titulo_numeral="511.05 Geotextiles usados en subdrenaje",
+    pagina_impresa="1011",
+    pagina_pdf=1019,
+    texto_literal=Verbatim(
+        texto=("Para los suelos cohesivos con un índice de plasticidad mayor "
+               "a 7, el valor máximo promedio por rollo (VMPR)"),
+        pagina_pdf=1019),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    nota=("LA TABLA HERMANA de la 511-06, en la misma Seccion 511: misma "
+          "fila «Tamaño de Abertura Aparente», mismas tres columnas por el "
+          "pasante del tamiz N.º 200 y las mismas celdas 0,43 / 0,25 / 0,22. "
+          "Aqui las dos notas llevan numeros DISTINTOS: el rotulo de la fila "
+          "dice «Tamaño de Abertura Aparente (3) (4)», y la (4) es el diseño "
+          "para un sitio especifico en suelos problematicos; la nota de los "
+          "suelos cohesivos es la (5), que termina «es de 0.30 mm», y la "
+          "lleva SOLO la celda «0,22 (5)» de la columna «>50». Leida por "
+          "texto y por imagen. No se aplica al enrocado --es la tabla de "
+          "subdrenaje--: se cita como el hecho de la propia fuente que "
+          "sostiene la lectura de la nota (5) de la Tabla 511-06 "
+          "(`Interpretacion` de EG2013.511.08#T511_06)."),
+)
+
+HEC14_5_1_2_DOS_TERCIOS = _cita(
+    id="HEC14.5.1.2#DOS_TERCIOS",
+    fuente_id="HEC14",
+    numeral="5.1.2",
+    titulo_numeral="5.1.2 Time of Scour",
+    pagina_impresa="5-2",
+    pagina_pdf=55,
+    texto_literal=Verbatim(
+        texto=("The tests indicate that approximately 2/3 to 3/4 of the "
+               "maximum scour depth occurs in the first 30 minutes of the "
+               "flow duration."),
+        pagina_pdf=55),
+    caracter=Caracter.DEFINICION,
+    derivado_de="HEC14.5.1.2#T30",
+    sesion=TESIS_T8,
+    nota=("La frase que sigue a la recomendacion de los 30 minutos. Es lo "
+          "que dice cuanto de la hoya MAXIMA cubre esa duracion: entre dos "
+          "tercios y tres cuartos. Sostiene que el criterio "
+          "'duracion_caudal_pico_socavacion_min' no adopte los 30 minutos "
+          "para el desplante del cabezal cuando no hay hidrograma (decision "
+          "del dueño del 2026-11-12)."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
