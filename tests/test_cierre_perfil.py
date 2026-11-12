@@ -163,9 +163,10 @@ def test_las_nueve_verificaciones_de_perfil_llegan_a_la_memoria(informe_perfil):
     a01 = _punto(informe_perfil, "A-01")
     codigos = [v.codigo for _, v in a01.verificaciones() if v.codigo]
     # T-2 sumo V10 (la pendiente del conducto), que corre en los dos alcances
-    # y se evalua detras de V4b, antes del hueco de V5.
+    # y se evalua detras de V4b, antes del hueco de V5. G3 (T-6) es el aviso
+    # de esviaje de 7.B: cumple siempre, no bloquea.
     assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V10", "V6",
-                       "V7", "V9", "G1", "G2"]
+                       "V7", "V9", "G1", "G2", "G3"]
     assert all(v.cumple for _, v in a01.verificaciones())
 
 
@@ -222,6 +223,25 @@ A01 = dict(Q=1.167, S=0.006, D=0.90, n_min=0.010, n_max=0.013,
            receptor=dict(b=2.0, z=1.5, S=0.0008, n=0.030))
 
 
+def _longitud_a01():
+    """
+    7.B a mano, por extremo (T-6; HDS-5 num. 2.2.4 b.): cada talud baja hasta
+    el fondo del conducto en SU extremo y la salida queda S*L mas baja, de
+    modo que L aparece en los dos miembros y se despeja.
+
+        altura (borde - fondo de entrada) = 44.20 - 42.10 = 2.10 m, en los dos
+        L * cos(15) = 9.60 + 2.0*2.10 + 2.0*(2.10 + 0.006*L)
+        L = 18.00 / (cos(15 deg) - 2.0*0.006) = 18.00 / 0.953926 = 18.86939 m
+
+    Hasta T-6 era 18.00 / cos(15 deg) = 18.63497 m: la misma altura para los
+    dos taludes (el metodo `terraplen_simetrico`, que sigue declarable).
+    """
+    d = A01
+    altura = d["cota_rasante"] - d["cota_terreno"]
+    return ((d["ancho_plataforma"] + 2 * d["talud"] * altura)
+            / (math.cos(math.radians(d["esviaje"])) - d["talud"] * d["S"]))
+
+
 def _manning_circular(*, Q, S, D, n):
     def f(th):
         A = (D ** 2 / 8) * (th - math.sin(th))
@@ -242,17 +262,10 @@ def _manning_trapecial(*, Q, b, z, S, n):
 
 def test_la_longitud_de_A01_reproduce_el_calculo_a_mano(informe_perfil):
     """
-    7.B: L = (ancho de plataforma + 2*talud*altura de terraplen) / cos(esviaje)
-
-        altura     = 44.20 - 42.10        = 2.10 m
-        proyeccion = 2 * 2.0 * 2.10       = 8.40 m
-        L          = 18.00 / cos(15 deg)  = 18.63497 m
+    7.B por extremo (ver `_longitud_a01`): L = 18.00 / (cos 15 - 0.012).
     """
-    d = A01
-    altura = d["cota_rasante"] - d["cota_terreno"]
-    L = ((d["ancho_plataforma"] + 2 * d["talud"] * altura)
-         / math.cos(math.radians(d["esviaje"])))
-    assert L == pytest.approx(18.63497, abs=TOL_COTA)
+    L = _longitud_a01()
+    assert L == pytest.approx(18.86939, abs=TOL_COTA)
     assert _punto(informe_perfil, "A-01").longitud.valor == pytest.approx(
         L, abs=TOL_COTA)
 
@@ -264,8 +277,8 @@ def test_el_TW_de_A01_reproduce_el_paso_2_de_la_seccion_1_3(informe_perfil):
         Q del receptor = 2.00 m3/s (columna del CSV, ANA / Junta)
         Manning trapecial (b=2.0, z=1.5, S=0.0008, n=0.030) -> y_n = 0.908237 m
         cota de agua   = 41.30 + 0.908237            = 42.20824 msnm
-        cota de salida = 42.10 - 0.006 * 18.63497    = 41.98819 msnm
-        TW             = 42.20824 - 41.98819         = 0.220047 m
+        cota de salida = 42.10 - 0.006 * 18.86939    = 41.98678 msnm
+        TW             = 42.20824 - 41.98678         = 0.221453 m
 
     Y la VIA queda registrada: si algun dia el TW volviera a salir de un
     criterio declarado sin que nadie lo note, este assert lo dice.
@@ -274,12 +287,10 @@ def test_el_TW_de_A01_reproduce_el_paso_2_de_la_seccion_1_3(informe_perfil):
     y_r = _manning_trapecial(Q=d["Q_receptor"], **d["receptor"])
     assert y_r == pytest.approx(0.908237, abs=TOL_FINA)
 
-    altura = d["cota_rasante"] - d["cota_terreno"]
-    L = ((d["ancho_plataforma"] + 2 * d["talud"] * altura)
-         / math.cos(math.radians(d["esviaje"])))
+    L = _longitud_a01()
     cota_salida = d["cota_terreno"] - d["S"] * L
     TW = (d["cota_fondo_receptor"] + y_r) - cota_salida
-    assert TW == pytest.approx(0.220047, abs=TOL_FINA)
+    assert TW == pytest.approx(0.221453, abs=TOL_FINA)
 
     a01 = _punto(informe_perfil, "A-01")
     assert a01.tw.valor == pytest.approx(TW, abs=TOL_FINA)
@@ -325,19 +336,20 @@ def test_el_control_de_salida_de_A01_reproduce_el_calculo_a_mano(
     """
     Sec. 4.3 a mano, con el K de 19.63 (SI) y la seccion LLENA:
 
-        h_o = max(TW, (y_c + D)/2) = max(0.220047, 0.769985) = 0.769985 m
+        h_o = max(TW, (y_c + D)/2) = max(0.221453, 0.769985) = 0.769985 m
         V   = Q / (pi/4 * D^2)                              = 1.834408 m/s
-        H   = (1 + 0.5 + 19.63*0.013^2*18.63497/(0.225)^(4/3)) * V^2/(2g)
-            = 0.334746 m
-        HW  = H + h_o - S*L                                 = 0.992922 m
+        H   = (1 + 0.5 + 19.63*0.013^2*18.86939/(0.225)^(4/3)) * V^2/(2g)
+            = 0.335721 m
+        HW  = H + h_o - S*L                                 = 0.992490 m
+
+    (Con la L anterior a T-6, 18.63497 m, salia 0.992922 m: alargar el
+    conducto 0.234 m suma 0.0010 m de friccion y resta 0.0014 m de caida.)
 
     El h_o lo gobierna la aproximacion (y_c + D)/2 y no el TW: es el caso que
     el HDS-5 acota, y por eso la memoria imprime las tres condiciones de uso.
     """
     d = A01
-    altura = d["cota_rasante"] - d["cota_terreno"]
-    L = ((d["ancho_plataforma"] + 2 * d["talud"] * altura)
-         / math.cos(math.radians(d["esviaje"])))
+    L = _longitud_a01()
 
     def froude(th):
         A = (d["D"] ** 2 / 8) * (th - math.sin(th))
@@ -346,13 +358,13 @@ def test_el_control_de_salida_de_A01_reproduce_el_calculo_a_mano(
     y_c = (d["D"] / 2) * (1 - math.cos(
         brentq(froude, 1e-6, 2 * math.pi - 1e-6, xtol=1e-12) / 2))
 
-    h_o = max(0.220047, (y_c + d["D"]) / 2)
+    h_o = max(0.221453, (y_c + d["D"]) / 2)
     V_llena = d["Q"] / ((math.pi / 4) * d["D"] ** 2)
     H = ((1 + d["ke"]
           + d["K_friccion"] * d["n_max"] ** 2 * L / (d["D"] / 4) ** (4 / 3))
          * V_llena ** 2 / (2 * d["G"]))
     HW_salida = H + h_o - d["S"] * L
-    assert HW_salida == pytest.approx(0.992922, abs=TOL_FINA)
+    assert HW_salida == pytest.approx(0.992490, abs=TOL_FINA)
 
     h = _punto(informe_perfil, "A-01").resultado.resultado_hidraulico
     assert h.HW_salida == pytest.approx(HW_salida, abs=TOL_FINA)
@@ -367,8 +379,8 @@ def test_los_numeros_del_caso_a_mano_estan_en_la_memoria(memoria):
     # Desde el ancla del punto y no desde su rotulo: el indice (E-B) lo
     # repite antes, como texto de un enlace.
     a01 = memoria.split('id="punto-A-01"')[1].split('id="punto-A-02"')[0]
-    for numero in ("18.635",     # L de 7.B
-                   "0.220",      # TW de Sec. 1.3
+    for numero in ("18.869",     # L de 7.B, por extremo (T-6)
+                   "0.221",      # TW de Sec. 1.3
                    "0.627",      # y_n
                    "0.640",      # y_c
                    "2.466",      # V_sedimentacion (V2)

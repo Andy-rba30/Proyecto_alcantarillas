@@ -13,12 +13,12 @@ A-01  |  progresiva 0+380  |  Familia A
           suelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos
   Fase 4  Material : Concreto reforzado (AASHTO M 170M-04 / ASTM C 76M-02 (metrica))
           Seccion  : Ø 0.90 m (interior)
-          Control  : entrada (HW = 1.042 m; entrada 1.042 / salida 0.993)
+          Control  : entrada (HW = 1.042 m; entrada 1.042 / salida 0.992)
           Hidraulica: y_n = 0.627 m, y_c = 0.640 m, V_erosion = 3.206 m/s (n min), V_sedimentacion = 2.466 m/s (n max), Q = 1.167 m3/s, S = 0.0060 m/m
-          Longitud : L = 18.635 m (M7.longitud_conducto (Sec. 7.B)) | TW = 0.300 m (datos externos (globales))
+          Longitud : L = 18.869 m (M7.longitud_conducto (Sec. 7.B, metodo por_extremo)) | TW = 0.300 m (datos externos (globales))
           Regimen  : parcialmente lleno | V_llena = 1.834 m/s | V_salida = 3.206 m/s (HDS-5 3.1.6, y_salida = 0.627 m)
           h_o      : 0.770 m (manda (y_c + D)/2; TW = 0.300 m) | HW_aprox/D = 1.103 | usa la aproximacion fuera de rango (< 0.75): no | cautela: no
-          Perfil   : S1 | lleno en 0.000 m de 18.635 m (fraccion 0.000) | HW por remanso = no alcanza la entrada (comprueba la aproximacion, que sigue siendo la carga) | y_max = 0.640 m, V_min = 2.412 m/s
+          Perfil   : S1 | lleno en 0.000 m de 18.869 m (fraccion 0.000) | HW por remanso = no alcanza la entrada (comprueba la aproximacion, que sigue siendo la carga) | y_max = 0.640 m, V_min = 2.412 m/s
           S_cauce  : 0.0060 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
@@ -42,15 +42,22 @@ A-01  |  progresiva 0+380  |  Familia A
         umbral del criterio 'D_max_norma_producto' [C]
     [OK] G1   Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1) obtenido 44.200 | admisible 44.092
         umbral del criterio 'resguardo_HW_subrasante' [N->]
-    [OK] G2   Sec. 7.B (cotas amarradas al fondo del receptor) obtenido 41.988 | admisible 41.300
+    [OK] G2   Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A]) obtenido 41.987 | admisible 41.300
+        umbral del criterio 'desnivel_minimo_entrega_m' [A]
+    [OK] G3   Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 num. 5.4.2, por analogia; AVISO, el esviaje es dato de entrada) obtenido 15.000 | admisible 45.000
+        umbral del criterio 'esviaje_max_grados' [A]
   Fase 6  d50 = 0.338 m, espesor 0.592 m, longitud 5.000 m (num. 4.1.1.3.7 c))
         aviso: d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))
         aviso: Falta el filtro. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta)
         aviso: Alcance: d50 sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, dimensiona el apron de enrocado por HEC-14 Sec. 10.2, en funcion de Q, D y TW, y remite a HEC-14 entero la proteccion frente a avenidas grandes. Se aplica el Manual MTC por ser norma peruana vigente y porque HEC-14 no esta en el expediente; la geometria de la proteccion se cierra en el expediente tecnico
-  Fase 7  L = 18.635 m, cota entrada 42.100 (ADOPTADA) / salida 41.988 msnm
+  Fase 7  L = 18.869 m, cota entrada 42.100 (ADOPTADA) / salida 41.987 msnm
         cota de entrada: regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida
-        factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo)
+        longitud: metodo por_extremo; entre cabezales a la clave 14.676 m
+        pendiente: S = 0.0060 m/m (S_cauce); caida 0.113 m
+        factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
+  aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
+  aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
@@ -71,12 +78,12 @@ A-02  |  progresiva 1+920  |  Familia A
           suelo de fundacion SP-SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos
   Fase 4  Material : Concreto reforzado (AASHTO M 170M-04 / ASTM C 76M-02 (metrica))
           Seccion  : Ø 0.90 m (interior)
-          Control  : entrada (HW = 0.572 m; entrada 0.572 / salida 0.562)
+          Control  : entrada (HW = 0.572 m; entrada 0.572 / salida 0.560)
           Hidraulica: y_n = 0.336 m, y_c = 0.403 m, V_erosion = 2.883 m/s (n min), V_sedimentacion = 2.218 m/s (n max), Q = 0.480 m3/s, S = 0.0080 m/m
-          Longitud : L = 18.270 m (M7.longitud_conducto (Sec. 7.B)) | TW = 0.300 m (datos externos (globales))
+          Longitud : L = 18.568 m (M7.longitud_conducto (Sec. 7.B, metodo por_extremo)) | TW = 0.300 m (datos externos (globales))
           Regimen  : parcialmente lleno | V_llena = 0.755 m/s | V_salida = 2.883 m/s (HDS-5 3.1.6, y_salida = 0.336 m)
-          h_o      : 0.652 m (manda (y_c + D)/2; TW = 0.300 m) | HW_aprox/D = 0.624 | usa la aproximacion fuera de rango (< 0.75): no | cautela: no
-          Perfil   : S1 | lleno en 0.000 m de 18.270 m (fraccion 0.000) | HW por remanso = no alcanza la entrada (sustituye a la aproximacion (HW_aprox/D < 0.75)) | y_max = 0.403 m, V_min = 1.739 m/s
+          h_o      : 0.652 m (manda (y_c + D)/2; TW = 0.300 m) | HW_aprox/D = 0.622 | usa la aproximacion fuera de rango (< 0.75): no | cautela: no
+          Perfil   : S1 | lleno en 0.000 m de 18.568 m (fraccion 0.000) | HW por remanso = no alcanza la entrada (sustituye a la aproximacion (HW_aprox/D < 0.75)) | y_max = 0.403 m, V_min = 1.739 m/s
           S_cauce  : 0.0080 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
@@ -100,15 +107,22 @@ A-02  |  progresiva 1+920  |  Familia A
         umbral del criterio 'D_max_norma_producto' [C]
     [OK] G1   Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1) obtenido 42.000 | admisible 41.372
         umbral del criterio 'resguardo_HW_subrasante' [N->]
-    [OK] G2   Sec. 7.B (cotas amarradas al fondo del receptor) obtenido 39.704 | admisible 39.100
+    [OK] G2   Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A]) obtenido 39.701 | admisible 39.100
+        umbral del criterio 'desnivel_minimo_entrega_m' [A]
+    [OK] G3   Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 num. 5.4.2, por analogia; AVISO, el esviaje es dato de entrada) obtenido 5.000 | admisible 45.000
+        umbral del criterio 'esviaje_max_grados' [A]
   Fase 6  d50 = 0.274 m, espesor 0.479 m, longitud 5.000 m (num. 4.1.1.3.7 c))
         aviso: d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))
         aviso: Falta el filtro. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta)
         aviso: Alcance: d50 sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, dimensiona el apron de enrocado por HEC-14 Sec. 10.2, en funcion de Q, D y TW, y remite a HEC-14 entero la proteccion frente a avenidas grandes. Se aplica el Manual MTC por ser norma peruana vigente y porque HEC-14 no esta en el expediente; la geometria de la proteccion se cierra en el expediente tecnico
-  Fase 7  L = 18.270 m, cota entrada 39.850 (ADOPTADA) / salida 39.704 msnm
+  Fase 7  L = 18.568 m, cota entrada 39.850 (ADOPTADA) / salida 39.701 msnm
         cota de entrada: regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida
-        factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo)
+        longitud: metodo por_extremo; entre cabezales a la clave 14.487 m
+        pendiente: S = 0.0080 m/m (S_cauce); caida 0.149 m
+        factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
+  aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
+  aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
@@ -132,6 +146,8 @@ B-01  |  progresiva 2+450  |  Familia B
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
+  aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
+  aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
@@ -154,6 +170,8 @@ C-01  |  progresiva 3+100  |  Familia C
           S_cauce  : 0.0060 m/m (datos externos (punto C-01))
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
+  aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 22.4 cm en este punto
   Bloqueos:
     [DiferidoPorAlcance] Fase 5 - Verificaciones -> VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no)
         ALCANCE DEL REQUISITO DE LA SEC. 2.3 -- FAMILIA C (cruces de canal y dren). La Sec. 2.3 de la hoja de ruta enuncia, para la Familia C, un requisito que ninguna otra familia tiene: la obra NO PUEDE ALTERAR LA RASANTE HIDRAULICA NI EL BORDE LIBRE DEL CANAL. Son DOS exigencias en una frase, y esta corrida evalua UNA. LO QUE SI SE EVALUA -- el borde libre. La verificacion VC1 compara el nivel que el agua alcanza a la entrada (cota del fondo del canal en el cruce mas la carga HW que gobierna) contra la coronacion del canal menos su borde libre, y emite veredicto con margen en metros. La coronacion es columna del CSV -- `cota_coronacion_canal`, dato de sitio [S] del levantamiento de los cruces -- y el borde libre sale del criterio 'borde_libre_canal_m' [A]. Sin cualquiera de los dos VC1 SE DETIENE: no devuelve «no evaluable» ni da el requisito por cumplido. DE DONDE SALE EL BORDE LIBRE, QUE NO ES UN VALOR NORMATIVO DEL CANAL. El Manual de Hidrologia NO fija borde libre para un canal: barridas sus 225 paginas, «borde libre» aparece en dos apartados y ninguno tiene por objeto un canal -- el num. 4.1.1.3.7 b) es de ALCANTARILLAS y es relativo (>= 25 % de la altura del barril), y el num. 4.1.1.4.1 e) es de BADENES y mide contra la superficie de rodadura --. El proyecto adopta el par 0.30-0.50 m del segundo, en su extremo SUPERIOR, que aqui es el conservador porque el borde libre se resta de la coronacion. Son dos decisiones del proyectista y no una lectura de la fuente: la ANALOGIA (de la calzada de un baden a la coronacion de un canal) y la ELECCION dentro de una banda para la que el Manual no da regla. LO QUE NO SE EVALUA -- la rasante hidraulica. VC1 acota el NIVEL que el agua alcanza; no mide EN CUANTO la obra levanta el pelo de agua del canal respecto del que tendria sin ella. Un punto puede cumplir VC1 con holgura y haber elevado la rasante hidraulica del canal en una fraccion apreciable de su calado. Medirlo exige el tirante normal del canal en la seccion del cruce -- su geometria trapecial (ancho de solera y talud) y su n de Manning, ninguno de los dos columna de la Sec. 1.2 -- y la extension aguas arriba del remanso, que VC1 tampoco acota: mide EN LA SECCION DEL CRUCE, de modo que un tercero situado mas arriba, donde el canal tenga la coronacion mas baja, puede quedar afectado por un remanso que en el cruce cumple. V5 NO SE EVALUA EN ESTA FAMILIA, y no por falta de datos: por no aplicar. Su umbral es el ancho del derecho de via y presupone agua extendiendose lateralmente sobre la plataforma al remansarse contra el terraplen; en un paso de canal el agua sube confinada entre las dos coronaciones. VC1 ocupa su posicion en la tabla de la Fase 5 y mide contra la cota que si gobierna. La sustitucion no pierde alcance -- el umbral de V5 era un ancho, no una longitud aguas arriba -- pero tampoco cierra el hueco entero, y por eso el parrafo anterior existe. QUE SIGNIFICA UN «CUMPLE» EN UN PUNTO DE ESTA FAMILIA: que la obra es admisible como alcantarilla de paso Y que no invade el borde libre adoptado del canal en la seccion del cruce. NO significa que la alteracion de la rasante hidraulica del canal se haya medido. QUE CIERRA ESTA DECLARACION: la geometria de la seccion del canal (ancho de solera y talud) y su n de Manning en cada cruce, para calcular su tirante normal y con el la alteracion; y el borde libre que el propio canal adopto en SU proyecto (ANA o Junta de Usuarios del Bajo Piura), que sustituiria a la analogia con el baden.

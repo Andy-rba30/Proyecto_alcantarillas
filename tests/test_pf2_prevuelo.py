@@ -176,8 +176,15 @@ def _faltas_reales(externos, ruta=CSV_EJEMPLO):
 # midio al declarar los siete ---. Es la clase de falso positivo que una
 # estimacion honesta declara, no esconde: cada entrada de mas es una falta
 # REAL que la corrida sentiria despues.
+#
+# REMEDIDO EN T-6 (cadena T): la longitud por extremo de 7.B necesita la
+# pendiente -- la salida queda S*L mas baja -- y se resuelve ANTES que el TW
+# y que MD, de modo que con luz y TW la primera falta de C-01 ya no es Q_m3s
+# en el bucle de MD sino S_cauce en la etapa «longitud del conducto (7.B)».
+# Los dos datos siguen faltando de verdad y el pre-vuelo sigue nombrando los
+# dos: lo que cambia es cual de ellos alcanza a registrar la corrida.
 SOBRA_SIN_LUZ = {"C-01": {"Q_m3s", "S_cauce", "cota_coronacion_canal"}}
-SOBRA_CON_LUZ = {"C-01": {"S_cauce", "cota_coronacion_canal"}}
+SOBRA_CON_LUZ = {"C-01": {"Q_m3s", "cota_coronacion_canal"}}
 SOBRA_CON_TODO = {"C-01": {"cota_coronacion_canal"}}
 
 

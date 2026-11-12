@@ -1904,3 +1904,177 @@ DUR_SUELO_AGRESIVO = _fundamento(
         "--los suelos circundantes-- no se aplica nunca."),
 )
 
+# --- T-6 --- Fase 7.B: los pasos que iban como frase (INF-3.3.3)
+# ===========================================================================
+# Hasta T-6 la Fase 7 emitia UN paso (G1, F7.RELLENO) y todo lo demas de 7.B
+# --la longitud, el factor de esviaje, la caida S*L, la cota de salida y G2--
+# llegaba a la memoria como una frase de M11 con los numeros dentro: sin
+# formula, sin sustitucion y sin cita. Estos siete fundan los pasos que M7
+# emite ahora. Ninguno afirma un NUMERO de la fuente: lo que las fuentes dan
+# es el procedimiento (HDS-5) y dos exigencias sin cifra (MTC 4.1.1.3.3, HDS-5
+# 3.3.5); los valores -- talud, esviaje maximo, desnivel de entrega -- son
+# criterios [A] y el paso los imprime como tales.
+
+PENDIENTE_CONDUCTO = _fundamento(
+    id="F7.PENDIENTE",
+    fase=F7,
+    que_paso="Pendiente adoptada del conducto, con su origen",
+    por_que=(
+        "La pendiente del conducto no es un numero suelto del expediente: "
+        "fija la caida entre la entrada y la salida, entra en Manning y en "
+        "el control de salida, y es lo que el Manual manda cuidar para no "
+        "alterar la erosion y la sedimentacion del cauce. Por eso la memoria "
+        "tiene que decir DE DONDE sale la que se uso -- la del cauce, que es "
+        "la regla; una declarada para este punto; o un limite adoptado por "
+        "el proyecto que la gobierna --, porque las tres se defienden con "
+        "argumentos distintos y se corrigen en sitios distintos."),
+    verbo=Verbo.OBLIGA,
+    citas=("MC_HHD.4.1.1.3.3", "HDS5_3ED.5.3.3#ALINEADO"),
+    que_pasa_si_no_se_hace=(
+        "La memoria imprime una pendiente sin decir si es la del cauce o una "
+        "elegida, y el revisor no puede saber si el conducto sigue al cauce "
+        "-- la condicion que el HDS-5 asocia a la ausencia de problemas de "
+        "sedimentacion -- o se aparta de el."),
+)
+
+ESVIAJE = _fundamento(
+    id="F7.ESVIAJE",
+    fase=F7,
+    que_paso="Factor de esviaje, 1 / cos(esviaje)",
+    por_que=(
+        "El conducto se tiende sobre la direccion de la corriente, que es la "
+        "ubicacion en planta que el Manual llama ideal, y la corriente no "
+        "cruza la via a escuadra. El eje del conducto es entonces la "
+        "hipotenusa del ancho que atraviesa: la seccion del terraplen que el "
+        "conducto recorre es la del cruce esviado, no la normal al eje, y "
+        "todo lo que se mide a traves de la via se alarga con 1/cos del "
+        "angulo. No es un coeficiente adoptado: es la geometria del cruce "
+        "oblicuo, con el angulo medido como lo define el HDS-5, desde la "
+        "normal a la via."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.5.4.1#ESVIAJE", "MC_HHD.4.1.1.3.2"),
+    que_pasa_si_no_se_hace=(
+        "La longitud se calcularia sobre la seccion normal a la via y el "
+        "conducto saldria corto justo en los cruces mas esviados: a 30 "
+        "grados falta el 15 % y a 45 grados el 41 %."),
+)
+
+ESVIAJE_MAXIMO = _fundamento(
+    id="F7.ESVIAJE_MAX",
+    fase=F7,
+    que_paso="Esviaje del cruce frente al maximo que el proyecto adopta",
+    por_que=(
+        "Un cruce muy esviado alarga el conducto y complica la embocadura: "
+        "con el cabezal paralelo a la via, la CARA de la embocadura queda "
+        "esviada respecto del barril el mismo angulo del cruce -- el flujo, "
+        "alineado con el barril, no gira: lo esviado es la cara por la que "
+        "entra --, y el HDS-5 describe un maximo practico de unos 45 grados "
+        "para ese esviaje de embocadura. El esviaje es un DATO del cruce "
+        "-- lo mide la topografia -- y no una decision del calculo, de modo "
+        "que superarlo no invalida el punto: obliga a mirarlo en planta y a "
+        "decidir si se acondiciona el cauce, que es la salida que el Manual "
+        "nombra."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("HDS5_3ED.5.4.2#MAXIMO_PRACTICO", "MC_HHD.4.1.1.3.2"),
+    que_pasa_si_no_se_hace=(
+        "Un esviaje de 60 grados duplica la longitud del conducto y uno de "
+        "75 la multiplica por 3.9 sin que nada lo señale -- y es ademas la "
+        "firma de un esviaje copiado de un expediente que lo mide desde el "
+        "eje de la via y no desde su normal."),
+)
+
+LONGITUD_CONDUCTO = _fundamento(
+    id="F7.LONGITUD",
+    fase=F7,
+    que_paso="Longitud del conducto sobre la seccion transversal del cruce",
+    por_que=(
+        "La longitud sale de superponer el conducto a la seccion "
+        "transversal de la via en el cruce: no es un dato que se ponga a "
+        "mano. A cada lado el talud del terraplen baja desde el borde de la "
+        "plataforma hasta encontrar al conducto, y como la entrada y la "
+        "salida no estan a la misma cota -- la salida queda mas baja en "
+        "toda la caida --, los dos taludes no recorren la misma altura. La "
+        "longitud que entra al diseño hidraulico es una APROXIMACION, y la "
+        "fuente lo dice: se calcula antes de conocer la seccion, porque la "
+        "seccion depende de ella. Lo que la fuente no fija, y el proyecto "
+        "elige y declara, es el metodo: hasta que nivel baja cada talud "
+        "mientras la seccion no se conoce."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.2.2.4#LONGITUD", "HDS5_3ED.3.1.4#LONGITUD",
+           "DG2018.304.10#T304.11", "DG2018.304.05#BOMBEO",
+           "DG2018.304.06#PERALTE"),
+    que_pasa_si_no_se_hace=(
+        "La perdida por friccion del control de salida y la caida del "
+        "conducto se calculan con una longitud que nadie puede reconstruir, "
+        "y la cota de salida -- que es la que se amarra al receptor -- "
+        "hereda el error."),
+)
+
+COTA_SALIDA = _fundamento(
+    id="F7.COTA_SALIDA",
+    fase=F7,
+    que_paso="Caida del conducto y cota de fondo de la salida",
+    por_que=(
+        "La cota de salida no se mide: es la de entrada menos lo que el "
+        "conducto cae a lo largo de su longitud con la pendiente del diseño. "
+        "Es el numero con que la obra se amarra al cuerpo receptor y el que "
+        "decide en cual de las ubicaciones tipicas del Manual queda el "
+        "conducto -- siguiendo el cauce, con la entrada deprimida o con la "
+        "salida elevada --, de modo que tiene que poder rehacerse a mano."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.LAMINA_01", "HDS5_3ED.2.2.4#LONGITUD"),
+    que_pasa_si_no_se_hace=(
+        "La cota de salida aparece en la memoria como un dato, cuando es un "
+        "resultado que arrastra la pendiente, la longitud y la cota de "
+        "entrada: si una de las tres cambia, nadie ve que la salida se movio."),
+)
+
+ENTREGA = _fundamento(
+    id="F7.ENTREGA",
+    fase=F7,
+    que_paso="Entrega al cuerpo receptor: cota de salida frente a su fondo",
+    por_que=(
+        "El conducto entrega el agua a un cauce que tiene su propio fondo. "
+        "Una salida por DEBAJO de ese fondo queda enterrada: el receptor la "
+        "colmata y el conducto trabaja ahogado en sedimento. Una salida muy "
+        "por ENCIMA descarga en caida y socava. Son las dos formas en que la "
+        "obra altera la erosion y la sedimentacion del cauce, que es lo que "
+        "el Manual manda cuidar al fijar la pendiente -- y la cota de salida "
+        "es consecuencia directa de la pendiente --. El Manual tipifica las "
+        "ubicaciones de la salida respecto del cauce y NO dice cuanto "
+        "desnivel debe haber: contrastar la cota de salida con el fondo del "
+        "receptor es la lectura del proyecto, y el desnivel exigido una "
+        "adopcion suya."),
+    # DEFINE y no OBLIGA: la Lamina N 01 tipifica (DEFINICION) y el num.
+    # 4.1.1.3.3 obliga sobre la PENDIENTE, no sobre la entrega. Escribir «el
+    # Manual obliga a verificar la entrega» seria atribuirle lo que no dice.
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.LAMINA_01", "MC_HHD.4.1.1.3.3"),
+    que_pasa_si_no_se_hace=(
+        "La obra puede quedar proyectada con la salida bajo el fondo del "
+        "dren que la recibe, y eso no se corrige subiendo la rasante: se "
+        "corrige con la pendiente, con la longitud o con la cota del "
+        "receptor."),
+)
+
+ENCAJE = _fundamento(
+    id="F7.ENCAJE",
+    fase=F7,
+    que_paso=("Encaje de la seccion adoptada en la seccion transversal: "
+              "longitud entre cabezales a la clave"),
+    por_que=(
+        "El diseño hidraulico arranca con una longitud aproximada porque la "
+        "seccion todavia no se conoce. Elegida la seccion, la fuente manda "
+        "encajarla en la seccion transversal de la via: con muro de cabecera "
+        "el talud ya no baja hasta el fondo sino hasta la coronacion del "
+        "muro, que como minimo esta a la clave exterior del conducto, y el "
+        "barril entre cabezales es mas corto que el aproximado. La "
+        "diferencia tiene que quedar a la vista, porque es la que dice si la "
+        "longitud con que se calculo el control de salida sigue valiendo."),
+    verbo=Verbo.OBLIGA,
+    citas=("HDS5_3ED.3.3.5#ENCAJE", "HDS5_3ED.3.1.4#LONGITUD"),
+    que_pasa_si_no_se_hace=(
+        "El cabezal se dimensionaria sobre una longitud de barril que no es "
+        "la suya, y nadie sabria cuanto se aparta la longitud construida de "
+        "la que uso el calculo hidraulico."),
+)

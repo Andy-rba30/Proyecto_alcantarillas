@@ -3186,6 +3186,9 @@ símbolo.
   intersecciones entre carreteras. Elegirlo es del proyectista.
 - **Qué haría falta:** que el proyectista lo declare, o una guía técnica que
   lo acote, que lo pasaría a [C].
+- **Enmendada por T-6 (2026-11-11):** el criterio tiene valor (45°, ventana
+  45°–60°), ya no es opcional y superarlo es aviso (G3) y no
+  `DatoInvalidoError`. Ver la ficha T6-03.
 - **Dónde vive:** `src/criterios_adoptados.py::CRITERIOS`
 
 # Parte XXXVII — Lo que el cierre de C05 dejó escrito: la adopción de V1 y V2 tiene sitio propio, y la hoja de ruta ya nombra a WSDOT
@@ -4102,3 +4105,160 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   contraste va entero en el mensaje del bloqueo. El paso 1b.3b se imprime cuando la
   regla se cumple, o cuando no hay segundo ajuste con que comparar.
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::CODIGO_FEN`
+
+---
+
+# Parte XLIV — Lo que T-6 de la cadena T dejó escrito: la geometría de 7.B
+
+T-6 (2026-11-11, integrado el 12 detrás de T-2, T-4 y T-1) cerró la cota de
+fondo de entrada adoptada sin aviso (`INF-5.1.18`), la longitud con la altura
+del eje para los dos taludes y los pasos de 7.B que iban como frase
+(`INF-3.3.3`), y la mitad de M7 de la pendiente del conducto (`INF-3.2.7`,
+que T-2 había abierto con la banda y V10). Cinco cosas quedaron decididas de
+una manera que conviene poder discutir.
+
+## T6-01 · El diseño corre con la longitud aproximada al fondo; la longitud entre cabezales a la clave se imprime y no la sustituye
+
+- **Qué se difirió:** la longitud por extremo se mide hasta el **fondo** del
+  conducto en cada extremo y es la que usan el control de salida, el TW por
+  cota, la caída y la cota de salida. La longitud con el talud muriendo en la
+  **clave** de la sección adoptada —la de un conducto entre muros de
+  cabecera— se calcula después del diseño (`M7.longitud_a_la_clave`), se
+  imprime en el paso 7.B.5 con su diferencia y **no** vuelve a entrar al
+  cálculo hidráulico.
+- **Por qué:** la longitud a la clave depende de la sección, y la sección
+  depende de la longitud: `MD.disenar_punto` recibe `L` y `TW` como datos y
+  recorre el catálogo con ellos. Hacer `L` función de cada escalón exige que
+  el TW por cota también lo sea y cambia el contrato de MD; iterar el diseño
+  hasta el punto fijo puede no converger sobre un catálogo discreto. La
+  fuente resuelve el círculo de otra manera y es la que se sigue: el HDS-5
+  manda empezar con una longitud **aproximada** (núm. 3.1.4, pág. impresa
+  3.9; núm. 2.2.4 b., pág. impresa 2.8) y encajar después la sección elegida
+  (núm. 3.3.5, pág. impresa 3.25: «the length should be close to the
+  approximate length, and the headwalls and wingwalls must be dimensioned»),
+  sin dar tolerancia. Medido en A-01 del fixture: 18.869 m al fondo y 14.676 m
+  a la clave (22 % menos), con el control de entrada gobernando en los dos
+  casos.
+- **Qué haría falta:** que el cabezal por punto (T-7a) fije la cota de
+  coronación del muro de cabecera —la clave es su mínimo—; con ella queda
+  cerrada la **longitud entre cabezales, que es la de construcción y
+  metrado**, y la longitud a la clave deja de ser sólo su cota superior. Si
+  entonces se quiere que el control de salida use esa longitud, hace falta
+  `L` por sección en MD, o declarar `longitud_m` por punto, que ya gana. El
+  tamaño de la memoria que los pasos de 7.B añaden (70.3 KB por punto a
+  expediente donde `5bca7c6` medía 63.7, y 87.6 KB a perfil donde medía
+  76.8; el techo `KB_POR_PUNTO_MAX` sólo mide expediente y quedó pegado a la
+  medida) lo reconcilia T-10, que es quien rehace la memoria.
+- **Dónde vive:** `src/modulos/M7_geometria.py::longitud_a_la_clave`
+
+## T6-02 · M7 acota la pendiente del cauce a la banda de T-2 y V10 juzga la que quedó: V10 sólo se incumple con una pendiente declarada
+
+- **Qué se difirió:** nada queda diferido; es un reparto entre dos piezas que
+  leen la misma banda (`M5.limites_de_pendiente()`, lectura única de
+  `pendiente_minima_conducto` y `pendiente_maxima_conducto`) y que el auditor
+  de T-6 pidió dejar escrito. `M7.pendiente_adoptada` resuelve la pendiente
+  una vez, antes de la Fase 4, con tres orígenes: la **declarada**
+  (`S_conducto`), que no se recorta; el **extremo** de la banda cuando la
+  pendiente del **cauce** lo traspasa (origen «mínima» o «máxima»); y la del
+  cauce. V10 juzga la pendiente con que corrió el diseño: como la del cauce
+  ya llega dentro de la banda, en la corrida del servicio V10 sólo puede
+  incumplirse con una pendiente declarada.
+- **Por qué:** la cadena pide que 7.B deje la pendiente con su origen
+  («mín/máx si gobierna»), y un punto cuyo cauce se sale de la banda no tiene
+  remedio en el catálogo: V10 no depende del diámetro. Acotar no resuelve la
+  obra y por eso se **avisa** (`M7.aviso_de_pendiente`, por
+  `InformePunto.avisos()`, con el desnivel en metros en el paso 7.B.4). Con
+  la **máxima**, el conducto queda más tendido que su cauce: el desnivel
+  (S_cauce − S)·L pide una estructura de caída o de disipación que el
+  programa no dimensiona, y V2b lo juzga según `regimen_v2b` —con
+  `indicador_con_aviso`, el valor de archivo, el punto dimensiona con el
+  indicador disparado; con `umbral_duro` no dimensiona y el motivo nombra
+  V2b—. Con la **mínima**, la salida queda bajo el cauce natural y G2 la
+  juzga contra el fondo del receptor. Una pendiente de cauce no positiva o no
+  finita no se sustituye por un extremo: es `DatoInvalidoError`.
+- **Cierre de la integración:** las fichas de los dos criterios de la banda
+  dicen el reparto (decían «la aplica V10»), y la banda vacía, que se lee
+  ahora fuera de `_etapa`, es un bloqueo del punto
+  (`servicio.ETAPA_PENDIENTE`) y no tumba la corrida.
+- **Qué haría falta:** dimensionar la caída o el disipador cuando gobierna
+  la máxima (la protección de salida es de otro prompt de la cadena). Con
+  los valores de archivo (0.0 y 0.10) el fixture no se mueve: sus pendientes
+  de cauce van de 0.006 a 0.010 y la mínima, 0.0, no puede gobernar sobre un
+  cauce positivo. Los casos patrón con cauce fuera de la banda
+  (`test_pf1_hw_fuera_de_rango`) pasaron a declarar su pendiente.
+- **Dónde vive:** `src/modulos/M7_geometria.py::pendiente_adoptada`
+
+## T6-03 · El desnivel de entrega (0.0 m) y el esviaje máximo (45°) son adopciones: ninguna fuente da el número del primero, y el del segundo es una analogía
+
+- **Qué se difirió:** nada del prompt, pero los dos valores se eligieron y
+  hay que poder decir cómo. `desnivel_minimo_entrega_m` vale **0.0** —la
+  entrega a nivel del fondo del receptor, que es lo que G2 verificaba sin
+  ficha—, con ventana (0.0, 0.30). `esviaje_max_grados` vale **45°**, con
+  ventana (45, 60), deja de ser opcional y superarlo es **aviso** (G3,
+  veredicto INDICADOR, que sale por `InformePunto.con_aviso` como V2b) en
+  vez del `DatoInvalidoError` que dejó el cierre de C10 (ficha C10-03).
+- **Por qué:** el núm. 4.1.1.3.3 del Manual del MTC —al que la cadena remite
+  el desnivel— son dos oraciones sin cifra que no hablan de la entrega; su
+  Lámina Nº 01 tipifica las ubicaciones sin acotar ninguna y advierte que una
+  salida sobre el cauce exige terreno resistente o enrocado. Un desnivel
+  positivo no es, por tanto, conservador sin más, y el remanso del receptor
+  ya entra por el TW. Para el esviaje, la única cifra de fuente es el máximo
+  práctico de «about 45-degrees» del esviaje de **embocadura** (HDS-5 núm.
+  5.4.2, pág. impresa 5.13), que alcanza al barril sólo con el cabezal
+  paralelo a la vía: analogía, y por eso `[A]` y no `[C]`. Medido sobre el
+  fixture: ningún valor de ninguna de las dos ventanas cambia un veredicto
+  (el menor margen de G2 es 0.31 m; el mayor esviaje, 30°).
+- **Qué haría falta:** el levantamiento del receptor y su cota de limpieza
+  para el desnivel; la solución constructiva del cruce (cabezal esviado o
+  terraplén alabeado) para el esviaje.
+- **Dónde vive:** `src/modulos/M7_geometria.py::g3_esviaje`
+
+## T6-04 · `bombeo` y `peralte` entran sólo por el JSON de datos externos, y sólo los lee el método por extremo
+
+- **Qué se difirió:** las dos claves nuevas de `servicio.CLAVES_EXTERNAS` no
+  tienen bandera en la CLI ni campo en la pestaña 1 de la GUI, como
+  `S_conducto`. El método `terraplen_simetrico` no las lee aunque se
+  declaren, ni una longitud declarada (`longitud_m`): el paso lo dice y sale
+  un aviso. Son **excluyentes** en un mismo punto —una sección tiene bombeo
+  (tangente, DG-2018 304.05) o peralte (curva, 304.06)— y declararlas a la
+  vez es `DatoInvalidoError` sobre el par, también cuando una viene de
+  `globales`; un punto en curva anula el bombeo global con `bombeo` = 0. Y
+  su **ausencia** se avisa en cada punto, con lo que cada 1 % de bombeo
+  acortaría la longitud.
+- **Por qué:** son datos de la sección típica que afinan la longitud en
+  décimas de metro (un bombeo de 2 % sobre 9.60 m de plataforma acorta 0.40
+  m), no datos sin los que un punto no se dimensione; abrirles campo en la
+  ventana ensancha la interfaz por un refinamiento. El peralte, además, no
+  cambia la longitud —gira la plataforma alrededor del eje— y sólo mueve la
+  altura de terraplén de cada extremo, que es lo que el cabezal por punto
+  (T-7a) leerá de `LongitudConducto`.
+- **Qué haría falta:** una petición de uso. La bandera y el campo son
+  mecánicos: `CLAVE_EXTERNA_DE_CAMPO` de `src/sesion.py` y `CAMPOS_EXTERNOS`
+  de `gui/app.py`.
+- **Dónde vive:** `src/servicio.py::CLAVES_TRANSVERSALES`
+
+## T6-05 · La fuente sostiene la superposición aproximada del barril; medir al fondo es elección del proyecto, y no es el lado seguro por construcción
+
+- **Qué se difirió:** nada; es una atribución que el auditor adversarial de
+  T-6 corrigió y que conviene poder releer. La primera redacción decía que
+  bajar cada talud hasta el fondo del conducto era «lo que la fuente
+  describe».
+- **Por qué:** el HDS-5 2.2.4 b. sostiene la superposición **aproximada** del barril
+  estimado; su Figura 2.4 dibuja los taludes muriendo en la cara superior
+  del barril, y la Lámina Nº 01 a) del Manual, en la coronación de los
+  cabezales. Medir **al fondo** —un barril de altura cero— es elección del
+  proyecto y da la **cota superior** de la longitud; no es el lado seguro
+  por construcción: en A-01 el HW de salida es 0.9925 m con la longitud al
+  fondo y 1.0002 m con la longitud a la clave (alargar el conducto lo baja
+  7.7 mm), sin consecuencia allí porque gobierna la entrada (1.042 m). Y la
+  longitud a la clave es, a su vez, la cota **superior** de la longitud
+  entre cabezales: un cabezal 0.30 m sobre la clave da 13.42 m en A-01.
+  Con el fondo de entrada **adoptado** igual al terreno —la cota del
+  terreno en el eje— el método ancla ahí la entrada y carga toda la caída
+  aguas abajo: para un lecho que pasara por esa cota en el eje A-01 daría
+  18.638 m, no 18.869; el paso 7.B.3 lo dice junto al aviso «medir en el
+  cauce», y con el fondo medido es exacto.
+- **Qué haría falta:** la coronación del cabezal por punto (T-7a), que
+  convierte la cota superior en la longitud de construcción; o el fondo de
+  entrada medido en el cauce, que quita el sesgo del eje.
+- **Dónde vive:** `src/modulos/M7_geometria.py::longitud_del_conducto`

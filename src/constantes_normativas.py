@@ -1436,7 +1436,10 @@ UMBRALES_DE_VERIFICACION = (
                    "'pendiente_maxima_conducto' (0.10; ventana desde 0.02, "
                    "la pendiente de las curvas del HDS-5). No depende del "
                    "diametro: incumplirla se resuelve con otra pendiente, no "
-                   "con otro tubo. No sustituye a V2, V2b ni V3, que juzgan "
+                   "con otro tubo. La pendiente del cauce que traspasa la "
+                   "banda la sustituye el extremo antes del diseño (paso "
+                   "7.B.1), de modo que solo la incumple una pendiente "
+                   "declarada. No sustituye a V2, V2b ni V3, que juzgan "
                    "el efecto de la pendiente."},
 )
 

@@ -1959,3 +1959,85 @@ CP13_HIDROLOGIA = {
     "caudal_especifico": {"Q_m3s": 1.167, "area_km2": 8.5,
                           "q_m3s_km2": 0.137294, "lamina_mm_h": 0.49386},
 }
+
+
+# ---------------------------------------------------------------------------
+# CP-T6 · LONGITUD DEL CONDUCTO POR EXTREMO (T-6 de la cadena T) -- a mano
+# ---------------------------------------------------------------------------
+# El dorado del metodo `por_extremo` de `M7.longitud_del_conducto`, con la
+# ARITMETICA ESCRITA y sin la formula cerrada del codigo. (CP-9 sigue siendo
+# el dorado del terraplen simetrico, la formula anterior.) No lleva numero de
+# serie a proposito: T-6 corrio en paralelo con otros prompts de la cadena
+# que tambien añadieron casos (CP-13 es el de hidrologia de T-1).
+#
+# El punto es A-01 del fixture: ancho de plataforma 9.60 m, rasante 44.20,
+# terreno 42.10 (el fondo de entrada ADOPTADO), esviaje 15 grados, S = 0.006,
+# talud 2.0 H:V. La geometria, sobre la seccion transversal del cruce:
+#
+#   el talud de la entrada baja 44.20 - 42.10 = 2.10 m   -> 2.0 * 2.10 = 4.20 m
+#   el de la salida baja 2.10 m MAS la caida S*L          -> 2.0 * (2.10 + 0.006 L)
+#   medido normal a la via, el conducto ocupa             L * cos(15)
+#
+#       L * 0.9659258 = 9.60 + 4.20 + 4.20 + 0.012 L
+#       L * (0.9659258 - 0.012) = 18.00
+#       L = 18.00 / 0.9539258 = 18.869392 m
+#
+# Y SIN DESPEJAR, que es la comprobacion independiente: empezando en
+# L0 = 18.00 / 0.9659258 = 18.634971 (la formula anterior) e iterando
+# L <- (9.60 + 4.20 + 2.0*(2.10 + 0.006 L)) / 0.9659258 se obtiene
+# 18.866479, 18.869355, 18.869391, 18.869392, ... El test rehace esa
+# iteracion: no usa el cociente de arriba.
+#
+#   caida          = 0.006 * 18.869392           = 0.113216 m
+#   cota de salida = 42.10 - 0.113216            = 41.986784 msnm
+#   proyeccion de la salida = 2.0 * (2.10 + 0.113216) = 4.426433 m
+#   comprobacion: 9.60 + 4.20 + 4.426433 = 18.226433 = 18.869392 * 0.9659258
+#
+# CON PERALTE de +4 % (sube el borde de la ENTRADA): medio ancho 4.80 m,
+# 0.04 * 4.80 = 0.192 m. Bordes a 44.392 y 44.008; el talud de la entrada baja
+# 2.292 m y el de la salida 1.908 m mas la caida. La suma 2.292 + 1.908 = 4.20
+# es la misma, y por eso L NO CAMBIA: 18.869392 m. Lo que cambia es el reparto:
+#
+#   semilongitud de la entrada = (4.80 + 2.0 * 2.292) / 0.9659258 = 9.715032 m
+#   semilongitud de la salida  = 18.869392 - 9.715032            = 9.154360 m
+#
+# CON EL FONDO MEDIDO en el cauce a 41.50 msnm (0.60 m bajo el terreno): cada
+# talud baja 44.20 - 41.50 = 2.70 m.
+#
+#       L = (9.60 + 2.0 * (2.70 + 2.70)) / 0.9539258 = 20.40 / 0.9539258
+#         = 21.385311 m
+#   caida = 0.128312 m ; cota de salida = 41.50 - 0.128312 = 41.371688 msnm
+#
+# CON BOMBEO de 2 % (y sin peralte): los dos bordes bajan 0.02 * 4.80 = 0.096
+# m, cada talud baja 2.004 m:  L = (9.60 + 2.0 * 4.008) / 0.9539258
+#   = 17.616 / 0.9539258 = 18.466845 m. Bombeo y peralte son EXCLUYENTES: con
+# los dos a la vez no hay dorado, hay `DatoInvalidoError`.
+CP_T6_LONGITUD_POR_EXTREMO = {
+    "ancho_plataforma": 9.60, "cota_rasante": 44.20, "cota_terreno": 42.10,
+    "esviaje_grados": 15.0, "S": 0.006, "talud": 2.0,
+    "cos_esviaje": 0.9659258,
+    # --- fondo adoptado igual al terreno, plataforma horizontal -------------
+    "longitud_esperada": 18.869392,              # m
+    "longitud_formula_anterior": 18.634971,      # m   18.00 / cos(15)
+    "caida_esperada": 0.113216,                  # m
+    "cota_salida_esperada": 41.986784,           # msnm
+    "proyeccion_entrada_esperada": 4.20,         # m
+    "proyeccion_salida_esperada": 4.426433,      # m
+    # --- peralte +4 % --------------------------------------------------------
+    "peralte": 0.04,
+    "cota_borde_entrada_con_peralte": 44.392,    # msnm
+    "cota_borde_salida_con_peralte": 44.008,     # msnm
+    "longitud_con_peralte_esperada": 18.869392,  # m   la misma
+    "semilongitud_entrada_con_peralte": 9.715032,    # m
+    "semilongitud_salida_con_peralte": 9.154360,     # m
+    # --- fondo medido 0.60 m bajo el terreno ---------------------------------
+    "cota_fondo_entrada_medida": 41.50,          # msnm
+    "longitud_con_fondo_medido_esperada": 21.385311,     # m
+    "cota_salida_con_fondo_medido_esperada": 41.371688,  # msnm
+    # --- bombeo 2 % ----------------------------------------------------------
+    "bombeo": 0.02,
+    "longitud_con_bombeo_esperada": 18.466845,   # m
+    # Los dorados llevan seis decimales; el salto del error mas cercano (la
+    # formula anterior) es 0.234 m.
+    "tolerancia": 1e-5,                          # m
+}

@@ -26,8 +26,9 @@ Que reporta por punto
     B x H en un marco: lo nombra la propia seccion (`Seccion.etiqueta`)
     control gobernante (entrada / salida) y la hidraulica que lo sostiene
     verificaciones con su numeral: la luz de Sec. 2.1, V1-V9 de la Fase 5 y
-        G1/G2 de Sec. 7.B, cada una con valor obtenido, admisible y el
-        criterio adoptado del que sale el umbral
+        G1/G2 de Sec. 7.B (y G3, el aviso de esviaje, desde T-6), cada una
+        con valor obtenido, admisible y el criterio adoptado del que sale el
+        umbral
     los criterios pendientes que bloquearon una etapa, con el concepto y la
         fuente que los resolveria
 
@@ -52,6 +53,9 @@ diferencia importa porque se corrigen en sitios distintos:
       que gana sobre la adoptada del criterio 'seccion_receptor') y
       `acceso_mantenimiento_previsto` (booleano: si los planos preven el
       acceso de limpieza del num. 4.1.1.3.7 d)). Las dos son opcionales.
+      Desde T-6 tambien `bombeo` y `peralte`, la pendiente transversal de la
+      plataforma en el cruce: opcionales, excluyentes entre si, y sin ellas
+      la longitud por extremo toma la plataforma horizontal y lo avisa.
   (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
       La columna existe y para la Familia C va vacia a proposito
       (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el
@@ -94,6 +98,16 @@ MD recibe L y TW en vez de derivarlos:
     L_hidraulico_m  m     longitud a la que la cuneta agota su capacidad, para
                           la Fase 10 (Familia B). Sec. 10 describe el
                           procedimiento pero no fija la seccion de la cuneta.
+    bombeo, peralte m/m   pendiente transversal de la plataforma en el cruce,
+                          de la seccion tipica (DG-2018 num. 304.05 y 304.06;
+                          0.02 = 2 %). OPCIONALES y solo por el JSON: afinan
+                          la longitud por extremo de 7.B. `bombeo` >= 0 baja
+                          los dos bordes; `peralte` lleva signo, positivo
+                          sube el borde del lado de la entrada. SON
+                          EXCLUYENTES en un mismo punto (una seccion tiene
+                          bombeo o peralte): los dos distintos de cero son
+                          `DatoInvalidoError`. Sin ellos la plataforma se
+                          toma horizontal, y la memoria lo avisa.
     categoria_tr          fila de la Tabla N 02 del punto ('quebrada_importante'
                           o 'quebrada_menor'). Sec. 2.2 la declara cauce por
                           cauce y el Manual no da un umbral para deducirla; sin
@@ -518,6 +532,41 @@ def _proteccion_json(p: ProteccionSalida) -> Dict[str, Any]:
             "advertencias": list(p.advertencias)}
 
 
+def _geometria_t6_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
+    """
+    Lo que T-6 añade al bloque `geometria` del JSON: el metodo de la
+    longitud con las alturas de terraplen POR EXTREMO (lo que el cabezal por
+    punto leera), el origen de la pendiente, la longitud a la clave, el
+    desnivel de entrega y los avisos. Todo sale del objeto de 7.B.
+    """
+    lc, pend = g.longitud_calculada, g.pendiente
+    longitud = None if lc is None else {
+        "metodo": lc.metodo.value,
+        "talud_H_V": _num(lc.talud),
+        "bombeo_m_m": _num(lc.bombeo), "peralte_m_m": _num(lc.peralte),
+        "cota_borde_entrada_msnm": _num(lc.cota_borde_entrada),
+        "cota_borde_salida_msnm": _num(lc.cota_borde_salida),
+        "altura_terraplen_entrada_m": _num(lc.altura_entrada),
+        "altura_terraplen_salida_m": _num(lc.altura_salida),
+        "proyeccion_talud_entrada_m": _num(lc.proyeccion_entrada),
+        "proyeccion_talud_salida_m": _num(lc.proyeccion_salida),
+        "semilongitud_entrada_m": _num(lc.semilongitud_entrada),
+        "semilongitud_salida_m": _num(lc.semilongitud_salida),
+    }
+    pendiente = None if pend is None else {
+        "origen": pend.origen.value,
+        "S_cauce": _num(pend.S_cauce),
+        "S_declarada": _num(pend.S_declarada),
+        "S_minima": _num(pend.S_minima), "S_maxima": _num(pend.S_maxima),
+        "procedencia": pend.procedencia,
+    }
+    return {"longitud_calculo": longitud,
+            "S_conducto_origen": pendiente,
+            "longitud_a_la_clave_m": _num(g.longitud_a_la_clave),
+            "desnivel_entrega_m": _num(g.desnivel_entrega),
+            "avisos": list(g.avisos)}
+
+
 def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
     t = g.tamizado
     return {"numeral": g.numeral, "longitud_m": _num(g.longitud),
@@ -552,9 +601,13 @@ def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
                          "cota de invert de entrada por punto"),
             },
             "cota_salida_msnm": _num(g.cota_salida), "caida_m": _num(g.caida),
+            # --- T-6 --- como salio L, de donde sale la pendiente, el
+            # encaje a la clave, el desnivel de entrega y los avisos de 7.B.
+            **_geometria_t6_json(g),
             "factible": g.factible,
             "delta_rasante_cm": _num(g.delta_rasante_cm),
-            "tamizado": {"cota_rasante_min_msnm": _num(t.cota_rasante_min),
+            "tamizado": {"provisional": t.provisional,    # T-6
+                         "cota_rasante_min_msnm": _num(t.cota_rasante_min),
                          "cota_rasante_actual_msnm": _num(t.cota_rasante_actual),
                          "cota_por_recubrimiento_msnm": _num(t.cota_por_recubrimiento),
                          "cota_por_resguardo_msnm": _num(t.cota_por_resguardo),
@@ -1066,6 +1119,22 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"/ salida {_fmt(g.cota_salida)} msnm")
         out.append(f"{SANGRIA_DETALLE}cota de entrada: "
                    f"{g.cota_entrada.procedencia}")
+        # --- T-6 --- el metodo de L, la pendiente con su origen, el encaje
+        # a la clave, con las mismas palabras del objeto de 7.B.
+        if g.longitud_calculada is not None:
+            detalle = f"longitud: metodo {g.longitud_calculada.metodo.value}"
+            if g.longitud_a_la_clave is not None:
+                detalle += (f"; entre cabezales a la clave "
+                            f"{_fmt(g.longitud_a_la_clave)} m")
+            out.append(f"{SANGRIA_DETALLE}{detalle}")
+        if g.pendiente is not None:
+            out.append(f"{SANGRIA_DETALLE}pendiente: S = "
+                       f"{_fmt(g.S_conducto, DECIMALES_PENDIENTE)} m/m "
+                       f"({g.pendiente.origen.value}); caida "
+                       f"{_fmt(g.caida)} m")
+        # Los avisos de 7.B NO se imprimen aqui: salen con los demas del
+        # punto, por `InformePunto.avisos()`, una sola vez (y tambien cuando
+        # el punto no dimensiona).
         out.append(f"{SANGRIA_DETALLE}{g.tamizado.mensaje}")
     if informe.cama_apoyo is not None:
         out.append(f"{SANGRIA}Fase 8  cama: {informe.cama_apoyo.cama_apoyo} "

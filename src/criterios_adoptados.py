@@ -3395,65 +3395,97 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "esviaje_max_grados": Criterio(
-        valor=None,                 # OPCIONAL: sin valor, 7.B no acota el esviaje
-        # NIVEL MEDIDO por la TERCERA corrida de `tests/test_nivel_medido.py`
-        # (opcional=True se lee con `valor_si_declarado()`, que no registra
-        # el uso mientras el criterio siga vacio); declarado en caliente por
-        # encima de todo esviaje del CSV de referencia, la corrida de perfil
-        # lo invoca en M7 sin mover ningun resultado.
-        opcional=True,
+        # --- T-6 --- (punto 4 de su prompt). TRES COSAS CAMBIAN, y las tres
+        # sobre la ficha que dejo el cierre de C10 (PC-32, ficha C10-03):
+        #
+        #   1. TIENE VALOR, 45 grados, y deja de ser `opcional`. Hasta T-6
+        #      era un [A] sin valor que solo actuaba si el proyectista lo
+        #      declaraba; el cierre decia «ninguna fuente de normas/ fija un
+        #      esviaje maximo» y era cierto del esviaje DEL BARRIL. Lo que no
+        #      se habia leido es el num. 5.4.2 del HDS-5, que da un maximo
+        #      practico de unos 45 grados para el esviaje DE LA EMBOCADURA y
+        #      explica cuando los dos angulos coinciden (ver `justificacion`).
+        #   2. LA VENTANA ES (45, 60), no el dominio fisico entero (0, 90).
+        #   3. SUPERARLO ES AVISO, NO BLOQUEO. `M7.factor_esviaje` ya no lanza
+        #      `DatoInvalidoError`: el esviaje es un dato de entrada medido
+        #      (regla 2 de la cadena T), y un dato que supera una adopcion
+        #      del proyecto se SEÑALA, no se rechaza. Lo emite la
+        #      verificacion G3 de 7.B con veredicto INDICADOR.
+        #
+        # NIVEL MEDIDO: la corrida de perfil lo invoca en M7 (G3) para todo
+        # punto que llega a 7.B.
+        valor=45.0,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_FLOAT,
-        concepto="Esviaje maximo, en grados, que el proyecto acepta construir "
-                 "en un cruce",
-        justificacion="Decide la cota de cordura del esviaje del cruce que "
-                      "entra en 1/cos(esviaje) de la Sec. 7.B (PC-32). Es "
-                      "opcional y no un vacio: sin declarar, el calculo no se "
-                      "detiene y `M7.factor_esviaje` acepta todo esviaje que "
-                      "M0 admite, 0 <= esviaje < 90 grados, con la unica "
-                      "guardia NUMERICA de `tolerancias.COS_ESVIAJE_MIN`; "
-                      "medido en el dictamen, 89.9 grados dan un factor 573 y "
-                      "10 313 m de conducto sobre A-01 sin excepcion. Ninguna "
-                      "fuente de normas/ fija un esviaje maximo constructivo "
-                      "para una alcantarilla: la Sec. 7.B de la hoja de ruta "
-                      "solo escribe 'afectada por esviaje', EG-2013 no lo "
-                      "acota, y el DG-2018 trata el esviaje en las "
-                      "intersecciones entre carreteras (num. 502.03.03, sobre "
-                      "el triangulo de visibilidad: pide rectificar los "
-                      "angulos de cruzamiento cuando sea factible), que no "
-                      "es una obra de drenaje. Por eso la cota es una ADOPCION del "
-                      "proyectista, y escribirla en tolerancias.py con nombre "
-                      "de tolerancia seria la misma cota disfrazada "
-                      "(decisiones_diferidas.md, PC-32). Declarada, "
-                      "`factor_esviaje` detiene con DatoInvalidoError todo "
-                      "punto cuyo esviaje la supere: el dato ESTA y hay que "
-                      "corregirlo (o rediseñar el cruce), que es la regla que "
-                      "separa Invalido de Faltante. Sensibilidad (0.0, "
-                      "90.0): es el dominio fisico entero del esviaje "
-                      "(`dominios.ESVIAJE_MAX`), no una banda de practica, "
-                      "porque ninguna fuente escribe una; el valor lo pone "
-                      "quien firma, sobre las condiciones de esta obra",
-        fuente="Ninguna fuente de normas/ fija el valor (verificado "
-               "buscando 'esviaje' en DG-2018, EG-2013 y el Manual de "
-               "Hidrologia). DG-2018 num. 502.03.03, pag. impresa 220 (PDF "
-               "221), es de intersecciones entre carreteras -- considera "
-               "inconvenientes los angulos de cruzamiento inferiores a 60 "
-               "grados -- y no da un maximo para una obra de drenaje; se "
-               "cita como el unico pronunciamiento "
-               "sobre esviaje de un cruce, para que nadie lo lea como si "
-               "acotara alcantarillas",
+        concepto="Esviaje maximo, en grados, por encima del cual el cruce "
+                 "se señala para revision en planta (aviso, no bloqueo)",
+        justificacion="Decide a partir de que esviaje del cruce la memoria "
+                      "AVISA. No acota el calculo: 1/cos(esviaje) se aplica "
+                      "igual por encima del valor, y la unica guardia que "
+                      "detiene es la NUMERICA de `tolerancias."
+                      "COS_ESVIAJE_MIN` (PC-32). El esviaje es un dato de "
+                      "entrada -- lo mide la topografia -- y el Manual del "
+                      "MTC dice que la ubicacion en planta ideal es la que "
+                      "sigue la direccion de la corriente (num. 4.1.1.3.2, "
+                      "cita MC_HHD.4.1.1.3.2), de modo que un conducto "
+                      "esviado no es un defecto; el mismo numeral admite "
+                      "desplazar la ubicacion natural acondicionando el "
+                      "cauce a la entrada y a la salida, que es la salida "
+                      "cuando el esviaje resulta excesivo. Ninguna fuente "
+                      "fija un esviaje maximo del barril. La mas cercana es "
+                      "el HDS-5 num. 5.4.2 (pag. impresa 5.13, cita "
+                      "HDS5_3ED.5.4.2#MAXIMO_PRACTICO): el esviaje de la "
+                      "EMBOCADURA -- el angulo de la cara del conducto con "
+                      "la normal al barril -- va de cero a un maximo "
+                      "practico de unos 45 grados, limite que la fuente "
+                      "atribuye a la dificultad de la transicion del flujo "
+                      "del cauce al conducto; y añade que un barril esviado "
+                      "suele tener tambien la embocadura esviada porque los "
+                      "cabezales se construyen paralelos al eje de la via "
+                      "para no alabear el terraplen. Con esa disposicion "
+                      "-- la que este proyecto supone: la longitud de 7.B se "
+                      "mide con los taludes paralelos a la via -- el esviaje "
+                      "de la embocadura es el del barril, y el maximo "
+                      "practico de 45 grados le alcanza. Es una ANALOGIA "
+                      "que depende de una disposicion constructiva, y por "
+                      "eso el criterio es [A] y no [C]. El segundo "
+                      "argumento es la longitud resultante: el factor "
+                      "1/cos vale 1.41 a 45 grados y 2.00 a 60, o sea que "
+                      "entre los dos extremos de la ventana el conducto "
+                      "pasa de un 41 % a un 100 % mas largo que el cruce a "
+                      "escuadra. Sensibilidad (45, 60): 45 es el maximo "
+                      "practico de la fuente y el valor adoptado; 60 es el "
+                      "extremo en que el conducto duplica su longitud, "
+                      "donde el aviso llegaria ya tarde. El script de "
+                      "topografia del proyecto avisa con el mismo umbral "
+                      "(pide revisar en planta todo esviaje mayor de 45 "
+                      "grados). Un "
+                      "esviaje sobre el maximo es ademas la firma del error "
+                      "de convencion que docs/contrato_entradas.md §5 "
+                      "describe: un angulo copiado de un expediente que lo "
+                      "mide desde el eje de la via",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 5.4.2 'Skewed Inlets', "
+               "pag. impresa 5.13 (PDF 149), cita "
+               "HDS5_3ED.5.4.2#MAXIMO_PRACTICO, POR ANALOGIA del esviaje de "
+               "la embocadura al del barril bajo cabezal paralelo a la via; "
+               "num. 5.4.1 'Skewed Barrels', pag. impresa 5.12 (PDF 148), "
+               "para la definicion del angulo; Manual de Hidrologia, "
+               "Hidraulica y Drenaje (MTC), num. 4.1.1.3.2 'Ubicacion en "
+               "planta', pag. impresa 71 (PDF 74). El DG-2018 num. "
+               "502.03.03, pag. impresa 220 (PDF 221), es de intersecciones "
+               "entre carreteras y no acota una obra de drenaje",
         reemplazado_por="El esviaje maximo que la solucion constructiva del "
-                        "cruce admita (cabezales y aletas esviados, longitud "
-                        "de conducto), decidido en los planos; o una guia "
-                        "tecnica que lo acote, si aparece, que lo pasaria a "
-                        "[C]",
-        sensibilidad=(0.0, ESVIAJE_MAX),
+                        "cruce admita (cabezales y aletas esviados o "
+                        "terraplen alabeado, HDS-5 Figura 5.16), decidido "
+                        "en los planos",
+        sensibilidad=(45.0, 60.0),
         resolucion=Libre(
             que_lo_fija="el proyectista, sobre la solucion constructiva del "
-                        "cruce; ninguna tabla ni rango de fuente lo determina",
-            dominio="grados sexagesimales, 0 (cruce perpendicular) a 90 "
-                    "(conducto paralelo a la via, sin cruce que resolver)",
+                        "cruce; la fuente da un maximo practico de la "
+                        "embocadura, no del barril",
+            dominio="grados sexagesimales, entre el maximo practico del "
+                    "HDS-5 (45) y el esviaje que duplica la longitud (60)",
         ),
     ),
 
@@ -4383,8 +4415,8 @@ CRITERIOS: Dict[str, Criterio] = {
     # =======================================================================
     # La banda de pendiente del conducto (V10, INF-3.2.7) y la lectura del
     # borde libre cuando el barril va lleno por el nivel del receptor (V1,
-    # INF-3.2.6). Los consume M5 y M7 los leera en T-6 por
-    # `M5.limites_de_pendiente()`.
+    # INF-3.2.6). Los consume M5, y M7 lee la banda desde T-6 por
+    # `M5.limites_de_pendiente()` (`M7.pendiente_adoptada`).
     "pendiente_minima_conducto": Criterio(
         # EL VALOR ES 0.0 Y NO UNA CIFRA DE PRACTICA, y es deliberado: es lo
         # unico que una fuente de normas/ sostiene. El Manual no da numero;
@@ -4394,11 +4426,14 @@ CRITERIOS: Dict[str, Criterio] = {
         # VENTANA --hasta 0.005-- y no en el valor. Quien quiera exigir una
         # pendiente minima positiva la declara y la barre.
         valor=0.0,
-        nivel=NIVEL_PERFIL,         # lo consume V10 (Fase 5), que corre a perfil
+        # lo consumen V10 (Fase 5) y, desde T-6, M7.pendiente_adoptada (antes
+        # de la Fase 4): las dos corren a perfil
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Pendiente longitudinal MINIMA que el proyecto admite en el "
-                 "barril de una alcantarilla (m/m); la aplica V10",
+                 "barril de una alcantarilla (m/m); M7 eleva a ella la del "
+                 "cauce y V10 juzga con ella la declarada",
         justificacion="Decide por debajo de que pendiente el proyecto no "
                       "tiende un conducto. El Manual (num. 4.1.1.3.3) exige "
                       "que la pendiente no altere desmesuradamente la erosion "
@@ -4422,8 +4457,15 @@ CRITERIOS: Dict[str, Criterio] = {
                       "de practica mas extendida para autolimpieza. Subirla "
                       "rechaza los conductos mas tendidos: con 0.005 m/m el "
                       "punto C-01 de la corrida ancha (pendiente del conducto "
-                      "de 0.004 m/m) dejaria de cumplir V10, y ninguno de los "
-                      "otros",
+                      "declarada de 0.004 m/m) dejaria de cumplir V10, y "
+                      "ninguno de los otros. El reparto con M7 (T-6): una "
+                      "pendiente de cauce por debajo del minimo no se "
+                      "rechaza, se eleva a el antes del diseño "
+                      "(M7.pendiente_adoptada, origen «minima» del paso "
+                      "7.B.1, con aviso): el conducto cae mas que su cauce, "
+                      "la salida queda bajo el cauce natural y G2 la juzga "
+                      "contra el fondo del receptor. V10 solo rechaza una "
+                      "pendiente declarada (S_conducto), que M7 no toca",
         fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
                "20-2011-MTC/14), num. 4.1.1.3.3 'Pendiente longitudinal', "
                "pag. impresa 71 (PDF 74), cita MC_HHD.4.1.1.3.3: exigencia "
@@ -4447,11 +4489,14 @@ CRITERIOS: Dict[str, Criterio] = {
 
     "pendiente_maxima_conducto": Criterio(
         valor=0.10,
-        nivel=NIVEL_PERFIL,         # lo consume V10 (Fase 5), que corre a perfil
+        # lo consumen V10 (Fase 5) y, desde T-6, M7.pendiente_adoptada (antes
+        # de la Fase 4): las dos corren a perfil
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Pendiente longitudinal MAXIMA que el proyecto admite en el "
-                 "barril de una alcantarilla (m/m); la aplica V10",
+                 "barril de una alcantarilla (m/m); M7 limita a ella la del "
+                 "cauce y V10 juzga con ella la declarada",
         justificacion="Decide por encima de que pendiente el proyecto no "
                       "tiende un conducto sin un estudio aparte. El Manual "
                       "(num. 4.1.1.3.3) no fija cifra. El HDS-5 (num. 5.4.4 "
@@ -4476,9 +4521,19 @@ CRITERIOS: Dict[str, Criterio] = {
                       "maxima admisible del revestimiento se sigue "
                       "verificando con la velocidad calculada, y puede "
                       "rechazar un conducto bastante antes del 10 % (en "
-                      "concreto, 6.0 m/s). Sensibilidad: en el corredor del "
-                      "repositorio la pendiente va de 0.004 m/m a 0.010 m/m y "
-                      "ningun valor de la ventana rechaza un punto",
+                      "concreto, 6.0 m/s). El reparto con M7 (T-6): una "
+                      "pendiente de cauce por encima del maximo no se "
+                      "rechaza, se limita a el antes del diseño "
+                      "(M7.pendiente_adoptada, origen «maxima» del paso "
+                      "7.B.1, con aviso): el conducto queda mas tendido que "
+                      "su cauce, el desnivel (S_cauce - S_maxima) x L pide "
+                      "una estructura de caida o de disipacion que este "
+                      "calculo no dimensiona, y V2b lo juzga segun "
+                      "'regimen_v2b'. V10 solo rechaza una pendiente "
+                      "declarada (S_conducto), que M7 no toca. Sensibilidad: "
+                      "en el corredor del repositorio la pendiente va de "
+                      "0.004 m/m a 0.010 m/m y ningun valor de la ventana "
+                      "rechaza un punto ni acota la pendiente de su cauce",
         fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 5.4.4 'Barrels on Steep "
                "Slopes', pag. impresa 5.16 (PDF 152), citas "
                "HDS5_3ED.5.4.4#PENDIENTE_10 («Most culverts are constructed "
@@ -8467,6 +8522,178 @@ CRITERIOS: Dict[str, Criterio] = {
             dominio="diccionario con `opcion` (una de las dos de la "
                     "ventana), `fecha_inicio_expediente` y "
                     "`acto_regimen_transitorio`",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-6 --- Geometria de 7.B (INF-3.3.3, INF-5.1.18)
+    # =======================================================================
+
+    "metodo_longitud_conducto": Criterio(
+        # POR QUE ES UN CRITERIO Y NO UN CAMBIO DE FORMULA. El metodo por
+        # extremo es el que la fuente describe (HDS-5 2.2.4 b., Figura 2.4),
+        # pero mueve la L de todo punto y con ella el control de salida, la
+        # caida y la cota de salida: es una decision con consecuencias, y la
+        # formula anterior tiene que poder reproducirse para comparar. La
+        # ventana es el conjunto cerrado de los dos metodos implementados.
+        valor="por_extremo",
+        nivel=NIVEL_PERFIL,         # lo invoca `M7.longitud_del_conducto`,
+                                    # antes de la Fase 4, en toda corrida
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("terraplen_simetrico", "por_extremo"),
+        concepto="Metodo con que se calcula la longitud del conducto de la "
+                 "Sec. 7.B cuando no se declara: con la misma altura de "
+                 "terraplen en los dos taludes, o con la de cada extremo",
+        justificacion="Decide como se proyectan los taludes del terraplen "
+                      "para obtener la longitud del conducto que usan el "
+                      "control de salida (friccion y caida S*L), el TW por "
+                      "cota y la cota de salida de 7.B. «por_extremo», el "
+                      "valor del archivo, parte de la superposicion del "
+                      "barril estimado sobre la seccion transversal del "
+                      "cruce que el HDS-5 describe (num. 2.2.4 b. y Figura "
+                      "2.4, pag. impresa 2.8, cita HDS5_3ED.2.2.4#LONGITUD) "
+                      "-- un talud a cada lado y la salida mas baja que la "
+                      "entrada -- y le añade una eleccion que es del "
+                      "proyecto y no de la fuente: a cada lado el talud "
+                      "baja desde el borde de la plataforma hasta el fondo "
+                      "del conducto en ese extremo, como si el barril no "
+                      "tuviera altura. La figura de la fuente dibuja los "
+                      "taludes muriendo en la cara superior del barril, y "
+                      "la Lamina N 01 del Manual del MTC en la coronacion "
+                      "de los cabezales; medir al fondo da por eso la cota "
+                      "superior de la longitud. La salida queda S*L mas "
+                      "baja que la entrada, de modo que "
+                      "L = [ancho + talud*(H_entrada + H_salida0)] / "
+                      "[cos(esviaje) - talud*S], con H medida desde el "
+                      "borde de la plataforma hasta el fondo de la entrada "
+                      "(medido en la columna cota_fondo_entrada, o adoptado "
+                      "por 'origen_cota_fondo_entrada'), corregido el borde "
+                      "por bombeo o por peralte -- excluyentes en un mismo "
+                      "punto -- cuando la seccion tipica los declara. El "
+                      "proyecto mide al fondo y no a la clave porque la "
+                      "seccion aun no se conoce cuando la longitud se "
+                      "necesita: el HDS-5 dice que el diseño arranca con "
+                      "una longitud aproximada (num. 3.1.4, pag. impresa "
+                      "3.9, cita HDS5_3ED.3.1.4#LONGITUD) y manda encajar "
+                      "despues la seccion elegida (num. 3.3.5, pag. impresa "
+                      "3.25), que es lo que 7.B hace al imprimir la "
+                      "longitud entre cabezales a la clave. La cota "
+                      "superior no es el lado seguro por construccion: "
+                      "alargar el conducto suma friccion y resta caida, y "
+                      "con la pendiente de A-01 del corredor de referencia "
+                      "el HW de salida baja -- 0.9925 m con la longitud al "
+                      "fondo (18.869 m) contra 1.0002 m con la longitud a "
+                      "la clave (14.676 m), 7.7 mm --, sin consecuencia en "
+                      "ese punto porque gobierna el control de entrada "
+                      "(1.042 m). Con el fondo de entrada adoptado igual al "
+                      "terreno hay ademas un sesgo declarado: esa cota es "
+                      "la del terreno en el eje, y el metodo ancla ahi la "
+                      "entrada y carga toda la caida aguas abajo (para un "
+                      "lecho de pendiente S que pasara por ella en el eje, "
+                      "la longitud de A-01 seria 18.638 m y no 18.869); con "
+                      "el fondo medido en el cauce es exacto. "
+                      "«terraplen_simetrico» es la "
+                      "formula que el proyecto usaba hasta T-6, "
+                      "L = (ancho + 2*talud*H_eje)/cos(esviaje) con H_eje = "
+                      "cota de rasante - cota de TERRENO, y es el caso "
+                      "particular del anterior cuando el fondo de entrada "
+                      "es el terreno, no hay bombeo y se desprecia la caida "
+                      "en la proyeccion del talud de salida. Las dos "
+                      "difieren en el factor cos/(cos - talud*S) -- 1.3 % "
+                      "en A-01 del corredor de referencia, con talud 2.0 y "
+                      "S = 0.006 -- y, cuando el fondo de entrada se mide "
+                      "bajo el terreno, en talud*2*(terreno - fondo), que "
+                      "es la parte que el metodo anterior no veia. El signo "
+                      "sobre el HW de salida no es fijo: alargar el "
+                      "conducto suma friccion y resta caida (ver la nota de "
+                      "'talud_terraplen')",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 2.2.4 'Roadway Data', "
+               "inciso b. 'Culvert Length' y Figura 2.4, pag. impresa 2.8 "
+               "(PDF 70); num. 3.1.4, pag. impresa 3.9 (PDF 91); num. "
+               "3.3.5, pag. impresa 3.25 (PDF 107). La fuente describe el "
+               "procedimiento grafico con el barril estimado; la expresion "
+               "cerrada es su algebra, hecha por el proyecto, y medir al "
+               "fondo es eleccion del proyecto. Que metodo aplica es "
+               "adopcion: la "
+               "hoja de ruta (Sec. 7.B) solo escribe 'ancho de plataforma "
+               "+ proyeccion de taludes, afectada por esviaje'",
+        reemplazado_por="La longitud MEDIDA sobre la seccion transversal "
+                        "del cruce en los planos, declarada por punto como "
+                        "dato externo `longitud_m`: un dato medido no se "
+                        "sustituye por un metodo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: las dos formulas son geometria y "
+                        "ninguna norma manda una",
+            dominio="declaracion del metodo; el conjunto cerrado viaja en "
+                    "`sensibilidad`",
+        ),
+    ),
+
+    "desnivel_minimo_entrega_m": Criterio(
+        # CERO NO ES «SIN CRITERIO»: es la entrega A NIVEL del fondo del
+        # receptor, la ubicacion a) de la Lamina N 01 del Manual, y es lo que
+        # G2 verificaba hasta T-6 sin decirlo en ninguna ficha. Con cualquier
+        # valor de la ventana los puntos del corredor de referencia conservan
+        # su veredicto de G2 (medido: el menor margen es 0.31 m).
+        valor=0.0,
+        nivel=NIVEL_PERFIL,         # lo invoca G2 en 7.B (`M7.g2_cota_salida`)
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.0, 0.30),
+        concepto="Desnivel minimo, en metros, que la cota de fondo de la "
+                 "salida del conducto debe guardar SOBRE la cota de fondo "
+                 "del cuerpo receptor (verificacion G2 de la Sec. 7.B)",
+        justificacion="Decide cuanto por encima del fondo del receptor "
+                      "tiene que quedar la salida para que G2 cumpla: "
+                      "cota_salida >= cota_fondo_receptor + desnivel. La "
+                      "fuente no da numero. El Manual del MTC exige que la "
+                      "pendiente de la alcantarilla no altere "
+                      "desmesuradamente la erosion y la sedimentacion (num. "
+                      "4.1.1.3.3, pag. impresa 71, cita MC_HHD.4.1.1.3.3) "
+                      "-- dos oraciones, sin cifra y sin mencion de la "
+                      "entrega -- y su Lamina N 01 tipifica las ubicaciones "
+                      "sin acotar ninguna: a) siguiendo la pendiente del "
+                      "cauce, con la salida a nivel del fondo; c) y d) con "
+                      "la salida SOBRE el cauce, y la advertencia de que "
+                      "entonces el terreno a la salida debe ser roca u otro "
+                      "material resistente a la erosion, o enrocado. De ahi "
+                      "que el desnivel no sea conservador en un solo "
+                      "sentido: una salida bajo el fondo del receptor queda "
+                      "enterrada y se colmata (lo que G2 impide con "
+                      "cualquier valor de la ventana), y una salida elevada "
+                      "descarga en caida y socava, de modo que cada "
+                      "centimetro de desnivel exigido es proteccion de "
+                      "salida que hay que dimensionar. Se adopta 0.0, la "
+                      "entrega a nivel: es la ubicacion a) de la lamina, la "
+                      "que no introduce escalon, y la lectura minima del "
+                      "amarre que la Sec. 7.B pide. El REMANSO del receptor "
+                      "no se cubre con este desnivel sino con el TW de la "
+                      "Sec. 1.3, que entra al control de salida. El extremo "
+                      "alto de la ventana, 0.30 m, es la holgura que un "
+                      "proyecto puede querer contra el sedimento que el "
+                      "propio receptor deposita en su fondo entre "
+                      "limpiezas; no sale de una fuente y por eso es "
+                      "ventana de un [A] y no rango citado",
+        fuente="NINGUNA fuente fija el valor. Manual de Hidrologia, "
+               "Hidraulica y Drenaje (MTC), num. 4.1.1.3.3 'Pendiente "
+               "longitudinal', pag. impresa 71 (PDF 74), y Lamina N 01 "
+               "'Ubicacion tipica de alcantarillas respecto a la pendiente "
+               "del cauce', pag. impresa 206 (PDF 209). El numeral exige "
+               "cuidar la PENDIENTE y no habla de la entrega; la lamina "
+               "tipifica donde puede quedar la salida y no acota ningun "
+               "desnivel. Contrastar la cota de salida con el fondo del "
+               "receptor es lectura del proyecto. La hoja de ruta (Sec. 7.B) "
+               "pide las cotas 'amarradas al perfil del cauce y a la cota "
+               "de fondo del receptor', sin desnivel",
+        reemplazado_por="El desnivel de entrega que el levantamiento del "
+                        "receptor y el estudio de su sedimentacion "
+                        "justifiquen (seccion medida del dren, cota de "
+                        "limpieza de la Junta de Usuarios), por punto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ninguna norma ni fuente tecnica de "
+                        "normas/ da un desnivel de entrega",
+            dominio="m >= 0; 0 es la entrega a nivel del fondo del receptor",
         ),
     ),
 }

@@ -223,9 +223,15 @@ def test_pc27_la_estabilidad_del_cabezal_no_admite_el_conjunto_vacio():
 # PC-32
 # ===========================================================================
 
-def test_pc32_el_criterio_de_esviaje_maximo_existe_como_A_de_perfil_opcional():
+def test_pc32_el_criterio_de_esviaje_maximo_existe_como_A_de_perfil():
+    """
+    REESCRITO EN T-6 (cadena T, punto 4): el criterio que C10 dejo OPCIONAL y
+    sin valor TIENE valor desde T-6 (45 grados, ventana 45-60) y ya no es
+    opcional. Lo que C10 fijo y sigue: [A], de perfil, `float`, con ventana
+    y resolucion. El detalle de la ficha nueva esta en test_t6_geometria.
+    """
     c = ca.CRITERIOS[CLAVE_ESVIAJE]
-    assert c.valor is None and c.opcional and c.etiqueta == "A"
+    assert c.valor is not None and not c.opcional and c.etiqueta == "A"
     assert c.nivel == ca.NIVEL_PERFIL and c.sensibilidad and c.resolucion is not None
     assert c.forma == ca.FORMA_FLOAT
 
@@ -241,19 +247,32 @@ def test_pc32_sin_declarar_nada_cambia(limpio):
         1 / math.cos(math.radians(89.9)), rel=TOL_COMPARADOR_REL)
 
 
-def test_pc32_declarado_detiene_por_encima_y_deja_pasar_por_debajo(limpio):
+def test_pc32_declarado_avisa_por_encima_y_deja_pasar_por_debajo(limpio):
+    """
+    REESCRITO EN T-6: se llamaba `..._detiene_por_encima...` y esperaba
+    `DatoInvalidoError` de `factor_esviaje`. Desde T-6 el tope NO BLOQUEA
+    --el esviaje es un dato de entrada--: el factor se calcula para todo
+    esviaje del dominio y el exceso sale como AVISO de la verificacion G3
+    (`M7.g3_esviaje`, veredicto INDICADOR, `cumple=True`).
+    """
     ca.establecer_valor_dinamico(CLAVE_ESVIAJE, 45.0)
-    assert M7.factor_esviaje(_punto_con_esviaje(30.0)) == pytest.approx(
-        1 / math.cos(math.radians(30.0)), rel=TOL_COMPARADOR_REL)
-    with pytest.raises(DatoInvalidoError) as exc:
-        M7.factor_esviaje(_punto_con_esviaje(60.0))
-    assert CLAVE_ESVIAJE in exc.value.motivo and "45" in exc.value.motivo
-    assert exc.value.campo == "esviaje_grados"
-    # La frontera es INCLUSIVA (`not e <= max + TOL`): el esviaje igual al
-    # maximo declarado pasa. Sin este caso el mutante `not e < max`
+    for grados in (30.0, 45.0, 60.0):
+        assert M7.factor_esviaje(_punto_con_esviaje(grados)) == pytest.approx(
+            1 / math.cos(math.radians(grados)), rel=TOL_COMPARADOR_REL)
+    por_debajo = M7.g3_esviaje(_punto_con_esviaje(30.0))
+    assert por_debajo.cumple
+    assert por_debajo.paso.veredicto.tipo is TipoDeVeredicto.CUMPLE
+    por_encima = M7.g3_esviaje(_punto_con_esviaje(60.0))
+    assert por_encima.cumple                       # aviso, no bloqueo
+    assert por_encima.paso.veredicto.tipo is TipoDeVeredicto.INDICADOR
+    assert por_encima.criterio_aplicado == CLAVE_ESVIAJE
+    assert por_encima.valor_admisible == pytest.approx(
+        45.0, rel=TOL_COMPARADOR_REL)
+    # La frontera es INCLUSIVA (`e <= max + TOL`): el esviaje igual al
+    # maximo declarado no avisa. Sin este caso el mutante `e < max`
     # sobrevivia a 701 tests (auditor adversarial de C10).
-    assert M7.factor_esviaje(_punto_con_esviaje(45.0)) == pytest.approx(
-        1 / math.cos(math.radians(45.0)), rel=TOL_COMPARADOR_REL)
+    en_el_maximo = M7.g3_esviaje(_punto_con_esviaje(45.0))
+    assert en_el_maximo.paso.veredicto.tipo is TipoDeVeredicto.CUMPLE
 
 
 def test_pc27_la_fila_no_aplica_no_imprime_el_hueco_del_derecho_de_via():

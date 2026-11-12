@@ -513,8 +513,8 @@ CRITERIO_V_MIN = "velocidad_minima_autolimpieza_m_s"
 # (INF-3.2.6), y LA BANDA DE PENDIENTE DEL CONDUCTO (INF-3.2.7). Los tres son
 # criterios [A] de perfil con ventana; las fichas dicen que sostiene cada
 # valor. `limites_de_pendiente()` es la lectura UNICA de la banda: la usa V10
-# aqui y la usara M7 (T-6) para decir si la pendiente adoptada la gobierna la
-# minima o la maxima.
+# aqui y la usa M7 (`pendiente_adoptada`, desde T-6) para decir si la
+# pendiente adoptada la gobierna la minima o la maxima.
 CRITERIO_BORDE_LIBRE_BAJO_TW = "borde_libre_bajo_tw_ahogante"
 LECTURA_TW_NO_CUMPLE = "no_cumple"
 LECTURA_TW_AVISO = "aviso"
@@ -1457,8 +1457,9 @@ def v2b_sedimentacion(*, punto: PuntoCritico,
                              "MC_HHD.4.1.1.3.7d"),
             sustitucion=(
                 Magnitud("S_conducto", resultado.S, "m/m",
-                         "pendiente CON QUE CORRIO EL DISEÑO (la del cauce, "
-                         "salvo que el punto declare `S_conducto`)",
+                         "pendiente CON QUE CORRIO EL DISEÑO (paso 7.B.1: "
+                         "cauce, extremo de la banda o `S_conducto` "
+                         "declarada)",
                          cifras=CIFRAS_FINA),
                 Magnitud("S_cauce", S_cauce, "m/m",
                          "pendiente del CAUCE NATURAL, columna del CSV "
@@ -2851,13 +2852,26 @@ def v10_pendiente_conducto(*, resultado: ResultadoHidraulico) -> Verificacion:
     norma, lo rechaza la banda que el proyecto adopto.
 
     LA PENDIENTE QUE SE JUZGA es `resultado.S`, la pendiente CON QUE CORRIO
-    EL DISEÑO --la del cauce salvo que el punto declare `S_conducto`--, que
-    es la misma que usa la Fase 7 (MAT-D9). No se vuelve a elegir aqui.
+    EL DISEÑO, que es la misma que usa la Fase 7 (MAT-D9). No se vuelve a
+    elegir aqui: la resuelve `M7.pendiente_adoptada`, una vez y antes de la
+    Fase 4, con su origen.
+
+    EL REPARTO CON M7 (T-6), porque las dos piezas leen la misma banda con
+    `limites_de_pendiente()`. M7 ACOTA la pendiente del CAUCE: si `S_cauce`
+    cae fuera de la banda, el diseño corre con el extremo --origen «minima»
+    o «maxima» del paso 7.B.1--, la corrida lo avisa y dice que trae consigo
+    (una estructura de caida o disipacion, o una salida bajo el cauce
+    natural). Esta verificacion JUZGA la pendiente que quedo, y como la del
+    cauce ya llega dentro de la banda, en la corrida del servicio solo la
+    incumple una pendiente DECLARADA (`S_conducto`), que M7 no pisa. Llamada
+    directamente, o por `MD.disenar_punto` sin la pendiente resuelta, juzga
+    la que reciba.
 
     NO DEPENDE DEL DIAMETRO, y hay que decirlo: si la pendiente cae fuera de
     la banda, ningun escalon del catalogo la cumple y el punto sale «no
     factible» con V10 incumplida en toda su progresion. El remedio no es
-    otro tubo: es otra pendiente (`S_conducto`), o declarar otra banda con
+    otro tubo: es otra pendiente declarada (`S_conducto`) --o ninguna, y
+    entonces rige la del cauce acotada por M7--, o declarar otra banda con
     su razon.
 
     NO SUSTITUYE A LAS QUE MIDEN EL EFECTO. La sedimentacion la juzgan V2
@@ -2914,8 +2928,9 @@ def v10_pendiente_conducto(*, resultado: ResultadoHidraulico) -> Verificacion:
                              "HDS5_3ED.5.4.4#PENDIENTE_10"),
             sustitucion=(
                 Magnitud("S_conducto", S, "m/m",
-                         "pendiente CON QUE CORRIO EL DISEÑO (la del cauce, "
-                         "salvo que el punto declare `S_conducto`)",
+                         "pendiente CON QUE CORRIO EL DISEÑO (paso 7.B.1: "
+                         "cauce, extremo de la banda o `S_conducto` "
+                         "declarada)",
                          cifras=CIFRAS_FINA),
                 Magnitud("S_min", s_min, "m/m",
                          f"criterio '{CRITERIO_PENDIENTE_MINIMA}' [A]",
@@ -2958,9 +2973,11 @@ def v10_pendiente_conducto(*, resultado: ResultadoHidraulico) -> Verificacion:
                 "verificacion no depende del diametro -- la pendiente es la "
                 "misma en todo el catalogo --, de modo que incumplirla no se "
                 "resuelve con otro tubo sino con otra pendiente del conducto "
-                "(`S_conducto`) o con otra banda, declarada con su razon. Y "
-                "no sustituye a V2, V2b y V3, que juzgan lo que el agua hace "
-                "con esa pendiente."
+                "(`S_conducto`) o con otra banda, declarada con su razon. "
+                "La pendiente del CAUCE fuera de la banda la sustituye el "
+                "extremo antes del diseño (paso 7.B.1): aqui solo incumple "
+                "una declarada. Y no sustituye a V2, V2b y V3, que juzgan lo "
+                "que el agua hace con esa pendiente."
                 + (" EL BARRIL ES HORIZONTAL (S = 0): no hay tirante normal, "
                    "y el paso 4.1 dice de donde salen entonces el tirante y "
                    "la velocidad." if resultado.sin_tirante_normal else "")),

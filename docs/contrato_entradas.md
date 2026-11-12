@@ -68,7 +68,7 @@ la tabla familia por familia está en `docs/guia_perfil.md` §1.1.
 | `cota_TW` | msnm | **ANA / Junta** | Nivel de agua del receptor durante la avenida, ya calculado fuera. Es la vía 2 del TW | Puede ir vacía en las tres familias |
 | `sucs_fundacion` | texto | **EMS** | Clasificación SUCS del suelo de fundación, de la calicata más cercana | La carga se detiene. Desde T-4 la lee la matriz de durabilidad para el aviso «suelo de fundación deficiente → marco» (`INF-5.1.9`): compara el grupo con el conjunto del criterio `sucs_fundacion_deficiente` `[A]`; no cambia material ni sección |
 | `NF_profundidad_m` | m | **EMS** | Profundidad del nivel freático **en el cruce**, medida por punto. La lee V7 (flotación) | Puede ir vacía; V7 queda pendiente de ese dato |
-| `cota_fondo_entrada` | msnm | Topografía / QGIS | Invert de entrada **medido** en el cauce, aguas arriba | Puede ir vacía: rige el criterio `origen_cota_fondo_entrada` (hoy «igual al terreno»), que es una adopción y no una medición (`INF-5.1.18`) |
+| `cota_fondo_entrada` | msnm | Topografía / QGIS | Invert de entrada **medido** en el cauce, aguas arriba | Puede ir vacía: rige el criterio `origen_cota_fondo_entrada` (hoy «igual al terreno»), que es una adopción y no una medición (`INF-5.1.18`). Desde T-6 la memoria lo **avisa** («fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce») y marca como provisional el delta de rasante de 7.A; con la celda llena, el dato medido gana y el aviso desaparece |
 | `cota_coronacion_canal` | msnm | Topografía / QGIS | La más baja de las dos coronaciones del canal en el cruce. La compara VC1 | Puede ir vacía; en la Familia C, VC1 queda pendiente de ese dato |
 
 ---
@@ -132,18 +132,20 @@ viales (`coeficiente_escorrentia_superficie_vial`, [C]).
 ## 3. Datos externos — `--datos-externos` y sus banderas
 
 Lo que no es columna del CSV entra por un JSON aparte (`servicio.CLAVES_EXTERNAS`), por
-punto o global, o por su bandera de línea de comandos. Las diez claves (ocho hasta T-2,
-que sumó las dos últimas):
+punto o global, o por su bandera de línea de comandos. Las doce claves (ocho hasta T-2,
+que sumó las dos últimas de la tabla; diez hasta T-6, que sumó `bombeo` y `peralte`):
 
 | Clave | Unidad | Origen | Qué es | Si no se declara |
 |---|---|---|---|---|
 | `luz_m` | m | Topografía / QGIS | Abertura libre que el cruce exige de la estructura. Decide alcantarilla o puente (umbral 6.0 m) | El punto no se clasifica ni se dimensiona |
 | `TW_m` | m | **ANA / Junta** (o escenario declarado) | Tirante del receptor sobre el fondo de la salida, declarado a mano. Es la vía 1 del TW y manda sobre las demás | Se intenta `cota_TW`, luego `Q_receptor_m3s`, luego los dos escenarios acotados con `seccion_receptor`; por último, el criterio `TW_receptor` |
-| `longitud_m` | m | Trazo | Longitud del conducto, cuando se quiere declarar en vez de calcular | La calcula la Fase 7.B con las cotas, el ancho y el esviaje |
+| `longitud_m` | m | Trazo | Longitud del conducto, cuando se quiere declarar en vez de calcular (medida sobre la sección transversal del cruce) | La calcula la Fase 7.B con el método del criterio `metodo_longitud_conducto` (por extremo: cotas, ancho, talud, esviaje y pendiente) |
 | `Q_m3s` | m³/s | Estudio hidrológico · ANA / Junta | El mismo dato de la columna, para los puntos que la dejan vacía (Familia C) | Vale la celda del CSV |
-| `S_conducto` | m/m | Trazo | Pendiente del barril, cuando no es la del cauce. Admite **0** (barril horizontal, HDS-5 num. 3.3.4) desde T-2; negativa, no | Vale `S_cauce` |
+| `S_conducto` | m/m | Trazo | Pendiente del barril, cuando no es la del cauce. Admite **0** (barril horizontal, HDS-5 num. 3.3.4) desde T-2; negativa, no | Vale `S_cauce`, o el límite de pendiente adoptado (`pendiente_minima_conducto` / `pendiente_maxima_conducto`) cuando la del cauce lo traspasa; la memoria imprime cuál de los orígenes fue (T-6) |
 | `S_cauce` | m/m | Topografía / QGIS · ANA / Junta | La misma de la columna, para la Familia C (pendiente del canal) | Vale la celda del CSV |
 | `L_hidraulico_m` | m | Estudio hidrológico | Longitud de cuneta a la que se agota su capacidad (Familia B, Fase 10) | Se detiene la etapa de espaciamiento (Fase 10) del punto: el dato no se deduce |
+| `bombeo` | m/m | Trazo | Bombeo de la plataforma en el cruce, como pendiente transversal media de la semiplataforma (sección típica; DG-2018 núm. 304.05). `0.02` = 2 %. Solo por el JSON. **Excluyente con `peralte`** en un mismo punto | La plataforma se toma horizontal a la cota de rasante, y la memoria lo **avisa** con lo que cada 1 % acortaría la longitud |
+| `peralte` | m/m | Trazo | Peralte de la plataforma en el cruce, con signo (DG-2018 núm. 304.06): positivo sube el borde del lado de la **entrada** del conducto y baja el de la salida. Solo por el JSON. **Excluyente con `bombeo`**: una sección tiene uno u otro, y el punto en curva anula un bombeo global declarando `bombeo` = 0 | Vale cero: los dos bordes a la misma cota |
 | `categoria_tr` | texto | Estudio hidrológico | Fila de la Tabla N° 02 que corresponde al cauce (quebrada importante o menor) | Familia A: la decide `area_ha` contra el criterio `umbral_area_quebrada_importante_ha`. Familia B: fila fija |
 | `seccion_receptor_medida` | objeto: `b_m` (m), `z_HV` (H:V), `S` (m/m), `n` (—), `altura_total_m` (m) | Topografía / QGIS · **ANA / Junta** | Sección **medida** del cuerpo receptor (levantamiento): ancho de solera, talud, pendiente longitudinal, n de Manning y profundidad total. Gana sobre el criterio `seccion_receptor` en las vías 3 y 4 del TW (T-2, `INF-3.2.8`) | Rige la sección **adoptada** del criterio `seccion_receptor`, y la memoria lo dice con un aviso: «seccion adoptada [A] por falta de levantamiento». Si se declara incompleta, la carga se detiene: no se completa con la del criterio |
 | `acceso_mantenimiento_previsto` | booleano (`true` / `false`) | **Proyectista** (planos) | Si los planos del punto prevén el acceso de mantenimiento que declara el criterio `acceso_mantenimiento_v2b` (Manual, num. 4.1.1.3.7 d)) (T-2, `INF-0.5`) | No se afirma nada. Con `false`, la memoria y la CLI imprimen un aviso; no cambia ningún veredicto |
