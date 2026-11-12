@@ -63,3 +63,9 @@ con cinco agentes. Quedan 55 puntos de Fable y 47 del general: alcanza para ater
 NO para auditar, corregir e integrar T-3, T-7a y T-9 ni para T-7b…T-12. Reinicio que da el evento: mié 18-nov 19:00 UTC.
 | 2026-11-12 16:47 | s/d | 56 % | **51 %** (cruza la marca de 50 %) | T-3 FASE A terminada (`255c97a`) |
 | 2026-11-12 17:17 | s/d | **69 %** | **75 %** | T-7a FASE A terminada (`1b83d39`). Sólo quedan dos agentes Fable: T-5 (ya con CLAUDE.md y línea base; faltan generados sellados, suite final y push) y T-8 correcciones (FASE A casi cerrada). Fable sube ≈ 0.8 puntos/min: la marca de 96 % caería hacia las 17:45. MEDIDA: a T-8 correcciones se le ordena cerrar SÓLO la FASE A; su integración la hará un agente Opus (mecánica) cuando T-5 esté en main |
+| 2026-11-12 17:25 | s/d | — | — | T-8 correcciones: FASE A cerrada con Fable (`52f5747`) |
+| 2026-11-12 17:43 | s/d | **78 %** | **94 %** | **T-5 EN MAIN (`1522635`): 5161 / 16 / 5177.** Ya no corre ningún agente Fable; se lanza con OPUS la integración de las correcciones de T-8. MARCA 96–97 %: guardado completo y prompt de continuación entregado al dueño |
+
+**Costes observados en esta sesión (para planificar):** una auditoría adversarial Fable ≈ 0.5 M tokens de subagente ≈ 10–12 puntos
+de «Semanal · Fable»; correcciones + integración de un prompt de cálculo con Fable ≈ 0.7–0.8 M ≈ 20–25 puntos; una FASE A con Opus
+≈ 0.8–0.9 M ≈ 8–10 puntos de «Semanal · todos». Con el cupo actual, una semana de Fable da para ~4 piezas grandes.
