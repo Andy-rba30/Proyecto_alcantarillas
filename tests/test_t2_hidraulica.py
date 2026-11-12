@@ -197,6 +197,21 @@ def _punto_de(informe, id_punto):
     return next(p for p in informe.puntos if p.punto.id == id_punto)
 
 
+def _avisos_sin_geometria(punto):
+    """
+    Los avisos del punto sin los de la geometria de 7.B.
+
+    T-6 (integrado detras de T-1) los saca por `InformePunto.avisos()` como a
+    los demas: el fondo de entrada adoptado igual al terreno y la plataforma
+    tomada horizontal acompañan a todo punto del ejemplo. Los tests de abajo
+    que fijan la tupla ENTERA la fijan sin ellos --tienen su test en
+    `test_t6_geometria`--, para seguir diciendo lo que decian: que T-2 no
+    añade ningun aviso mas que los suyos.
+    """
+    geometria = punto.avisos_de_geometria()
+    return tuple(a for a in punto.avisos() if a not in geometria)
+
+
 def _verificacion(informe_punto, codigo):
     return next(v for _f, v in informe_punto.verificaciones()
                 if v.codigo == codigo)
@@ -1149,16 +1164,19 @@ def test_la_seccion_medida_por_punto_llega_a_la_corrida(tmp_path):
     a01, a02 = _punto_de(informe, "A-01"), _punto_de(informe, "A-02")
     assert a02.tw_sec13.origen_seccion == SECCION_RECEPTOR_MEDIDA
     assert a02.tw_sec13.seccion == MEDIDA
-    assert a02.avisos() == (AVISO_DEL_CAUDAL_DECLARADO,)
+    assert _avisos_sin_geometria(a02) == (AVISO_DEL_CAUDAL_DECLARADO,)
     assert a01.tw_sec13.origen_seccion == SECCION_RECEPTOR_ADOPTADA
-    assert len(a01.avisos()) == 2 and a01.avisos()[0] == AVISO_DEL_CAUDAL_DECLARADO
+    de_a01 = _avisos_sin_geometria(a01)
+    assert len(de_a01) == 2 and de_a01[0] == AVISO_DEL_CAUDAL_DECLARADO
     volcado = {p["id"]: p for p in cli.informe_json(informe)["puntos"]}
     assert volcado["A-02"]["tw_seccion_receptor"]["origen"] == SECCION_RECEPTOR_MEDIDA
     assert volcado["A-02"]["tw_seccion_receptor"]["altura_total_m"] == \
         pytest.approx(1.10, rel=REL_TRANSPORTE)
-    assert volcado["A-02"]["avisos"] == [AVISO_DEL_CAUDAL_DECLARADO]
+    assert volcado["A-02"]["avisos"] == list(a02.avisos())
+    assert volcado["A-02"]["avisos"][0] == AVISO_DEL_CAUDAL_DECLARADO
+    assert not set(a02.tw_sec13.avisos) & set(volcado["A-02"]["avisos"])
     assert volcado["A-01"]["avisos"] == list(a01.avisos())
-    assert f"aviso: {a01.avisos()[-1]}" in cli.volcar(informe)
+    assert f"aviso: {de_a01[-1]}" in cli.volcar(informe)
     from src.modulos import M11_reporte as M11
     html_a01 = M11.memoria_de_punto(a01)
     html_a02 = M11.memoria_de_punto(a02)
@@ -1706,9 +1724,9 @@ def test_el_acceso_de_mantenimiento_es_un_booleano_opcional_por_punto(tmp_path):
         "puntos": {"A-02": {"acceso_mantenimiento_previsto": False}}})
     a01, a02 = _punto_de(informe, "A-01"), _punto_de(informe, "A-02")
     assert a01.acceso_mantenimiento.valor is True
-    assert a01.avisos() == (AVISO_DEL_CAUDAL_DECLARADO,)
-    assert a02.avisos() == (AVISO_DEL_CAUDAL_DECLARADO,
-                            AVISO_SIN_ACCESO_DE_MANTENIMIENTO)
+    assert _avisos_sin_geometria(a01) == (AVISO_DEL_CAUDAL_DECLARADO,)
+    assert _avisos_sin_geometria(a02) == (AVISO_DEL_CAUDAL_DECLARADO,
+                                          AVISO_SIN_ACCESO_DE_MANTENIMIENTO)
     assert "4.1.1.3.7 d)" in AVISO_SIN_ACCESO_DE_MANTENIMIENTO
     texto = cli.volcar(informe)
     assert "Acceso de mantenimiento: previsto en los planos" in texto
@@ -1719,7 +1737,7 @@ def test_el_acceso_de_mantenimiento_es_un_booleano_opcional_por_punto(tmp_path):
     # No decide nada: el mismo punto sin la declaracion dimensiona igual.
     sin = _punto_de(_correr(tmp_path, {"globales": {"TW_m": 0.3}}), "A-02")
     assert sin.acceso_mantenimiento is None
-    assert sin.avisos() == (AVISO_DEL_CAUDAL_DECLARADO,)
+    assert _avisos_sin_geometria(sin) == (AVISO_DEL_CAUDAL_DECLARADO,)
     assert sin.resultado.seccion == a02.resultado.seccion
     for mala in (1, 0, "si", "true", None):
         with pytest.raises(DatoInvalidoError):

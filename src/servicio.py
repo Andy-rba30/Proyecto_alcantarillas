@@ -110,7 +110,8 @@ from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
 from src.modulos.M6_proteccion import proteccion_salida
 from src.modulos import M3_hidraulica as M3
-from src.modulos.M7_geometria import (compatibilidad_geometrica,
+from src.modulos.M7_geometria import (aviso_de_pendiente,
+                                      compatibilidad_geometrica,
                                       cota_salida,
                                       exigir_transversales_compatibles,
                                       longitud_conducto,
@@ -1236,6 +1237,35 @@ class InformePunto:
                      if p.veredicto is not None
                      and p.veredicto.tipo is TipoDeVeredicto.INDICADOR)
 
+    def avisos_de_geometria(self) -> Tuple[str, ...]:
+        """
+        --- T-6 --- Los avisos de la Sec. 7.B, en el orden del calculo: el
+        fondo de entrada adoptado igual al terreno («medir en el cauce»), la
+        pendiente que gobierna un extremo de la banda adoptada, la plataforma
+        tomada horizontal y la pendiente transversal declarada que no se
+        aplico. Si el punto llego a 7.B son los de
+        `CompatibilidadGeometrica.avisos`; si no llego, los de la pendiente
+        y la longitud que se resolvieron ANTES de la Fase 4 y entraron al
+        diseño de cada escalon: un punto que no dimensiona los lleva igual.
+
+        EL DE ESVIAJE NO ESTA AQUI: G3 es una verificacion con veredicto
+        INDICADOR y sale por `con_aviso`, como V2b. Asi cada aviso se imprime
+        una vez y el RESUMEN cuenta a G3 con las demas.
+        """
+        if self.geometria is not None:
+            return tuple(self.geometria.avisos)
+        avisos: List[str] = []
+        if self.pendiente is not None:
+            aviso = aviso_de_pendiente(
+                self.pendiente,
+                None if self.longitud is None else self.longitud.valor)
+            if aviso:
+                avisos.append(aviso)
+        if self.longitud_calculada is not None:
+            avisos.extend(a for a in self.longitud_calculada.avisos
+                          if a not in avisos)
+        return tuple(avisos)
+
     def avisos(self) -> Tuple[str, ...]:
         """
         --- T-2 --- Los AVISOS del punto: lo que la corrida tiene que decir
@@ -1259,6 +1289,10 @@ class InformePunto:
         acceso = self.acceso_mantenimiento
         if acceso is not None and acceso.valor is False:
             avisos.append(AVISO_SIN_ACCESO_DE_MANTENIMIENTO)
+        # --- T-6 --- Los de la geometria de 7.B, detras de los datos del
+        # punto y delante de los indicadores (G3, el de esviaje, es uno de
+        # ellos y sale en el bucle de abajo).
+        avisos.extend(self.avisos_de_geometria())
         for v in self.con_aviso():
             explicacion = (v.paso.veredicto.explicacion
                            if v.paso is not None and v.paso.veredicto is not None

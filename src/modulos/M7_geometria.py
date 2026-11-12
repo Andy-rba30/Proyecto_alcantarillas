@@ -300,8 +300,12 @@ from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
 from src.modulos.M2_material import espesor_pared
-from src.modulos.M5_verificaciones import (CRITERIO_RESGUARDO, cota_clave,
+from src.modulos.M5_verificaciones import (CRITERIO_PENDIENTE_MAXIMA,
+                                       CRITERIO_PENDIENTE_MINIMA,
+                                       CRITERIO_REGIMEN_V2B,
+                                       CRITERIO_RESGUARDO, cota_clave,
                                        cota_de_entrada,
+                                       limites_de_pendiente,
                                        resguardo_por_cbr)
 from src.tolerancias import COS_ESVIAJE_MIN, TOL_UMBRAL_NORMATIVO
 from src.normativa import registro as _registro
@@ -365,18 +369,18 @@ CRITERIO_COBERTURA_AASHTO = "cobertura_minima_aashto"
 CRITERIO_COBERTURA_CAJON = "cobertura_minima_cajon"
 CRITERIO_CONDICION_PAVIMENTO = "condicion_pavimento"
 
-# --- T-6 --- Las claves que 7.B lee desde T-6, y las dos que crea T-2.
+# --- T-6 --- Las claves que 7.B lee desde T-6.
 CRITERIO_METODO_LONGITUD = "metodo_longitud_conducto"
 CRITERIO_DESNIVEL_ENTREGA = "desnivel_minimo_entrega_m"
 CRITERIO_ESVIAJE_MAX = "esviaje_max_grados"
-# LAS DOS DE T-2 SE LEEN POR CLAVE Y PUEDEN NO EXISTIR. T-2 (hidraulica) crea
-# 'pendiente_minima_conducto' y 'pendiente_maxima_conducto' y la verificacion
-# que las aplica; T-6 solo dice cual de las tres pendientes se adopto. Mientras
-# la clave no este en `CRITERIOS`, o este sin valor, ese limite no gobierna
-# nada (`_limite_de_pendiente` devuelve None) y el origen de la pendiente es
-# el cauce o la declaracion, como antes de T-6.
-CRITERIO_PENDIENTE_MINIMA = "pendiente_minima_conducto"
-CRITERIO_PENDIENTE_MAXIMA = "pendiente_maxima_conducto"
+# LA BANDA DE PENDIENTE ES DE T-2 Y AQUI NO SE VUELVE A LEER. Los criterios
+# 'pendiente_minima_conducto' y 'pendiente_maxima_conducto' los creo T-2 con
+# su lectura unica, `M5.limites_de_pendiente()` -- que trae la guardia cruzada
+# de la banda vacia --, y con la verificacion que los aplica (V10). Este
+# modulo importa de M5 las dos claves y la funcion: `pendiente_adoptada` dice
+# cual de los origenes gobierna y no tiene una segunda lectura de la banda.
+# Hasta integrar T-6 despues de T-2 esto era una lectura por clave que podia
+# no encontrarla (FASE A en paralelo); ya no hace falta.
 
 NUMERAL_G3 = ("Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 "
               "num. 5.4.2, por analogia; AVISO, el esviaje es dato de "
@@ -1102,20 +1106,6 @@ def _caracter_de(cita_id: str) -> str:
     return _registro.construir().cita(cita_id).caracter.value.upper()
 
 
-def _limite_de_pendiente(clave: str) -> Optional[float]:
-    """
-    El limite de pendiente adoptado en `clave`, o None si no gobierna nada.
-
-    None en dos casos, y los dos son «el proyecto no declaro ese limite»: la
-    clave no existe en `CRITERIOS` (los dos criterios de pendiente los crea
-    T-2 de la cadena T; este modulo los lee por clave y no los define) o
-    existe sin valor. Nunca se sustituye por un numero.
-    """
-    if clave not in ca.CRITERIOS:
-        return None
-    return ca.valor_si_declarado(clave)
-
-
 def pendiente_adoptada(punto: PuntoCritico,
                        S_declarada: Optional[float] = None
                        ) -> PendienteAdoptada:
@@ -1126,52 +1116,79 @@ def pendiente_adoptada(punto: PuntoCritico,
 
       1. DECLARADA   el punto trae `S_conducto` (dato externo). Es una
                      decision del expediente para ese punto y el calculo no
-                     la pisa: si queda fuera de los limites adoptados, quien
-                     lo dice es la verificacion de pendiente de la Fase 5.
+                     la pisa: si queda fuera de la banda adoptada, quien lo
+                     dice es V10 (`M5.v10_pendiente_conducto`).
       2. MINIMA o    la pendiente del CAUCE queda bajo
          MAXIMA      'pendiente_minima_conducto' o sobre
-                     'pendiente_maxima_conducto' y gobierna el limite. Solo
-                     cuando ese criterio existe y tiene valor.
+                     'pendiente_maxima_conducto' y gobierna el extremo de la
+                     banda, leida de `M5.limites_de_pendiente()`.
       3. CAUCE       `S_cauce`, la regla de Sec. 7.B: el conducto sigue al
                      cauce. Es lo que el HDS-5 num. 5.3.3 asocia a la
                      ausencia de problemas de sedimentacion.
+
+    EL REPARTO CON V10, que hay que decir porque las dos piezas leen la misma
+    banda: ESTA funcion acota la pendiente del CAUCE --el dato que nadie
+    eligio-- y lo declara con su origen y un aviso (`aviso_de_pendiente`);
+    V10 JUZGA la pendiente con que corrio el diseño, y como aqui la del cauce
+    ya sale dentro de la banda, V10 solo puede incumplirse con una pendiente
+    DECLARADA. Las dos usan la misma tolerancia (`TOL_UMBRAL_NORMATIVO`), de
+    modo que el extremo adoptado aqui cumple alli. Lo que el extremo trae
+    consigo no lo resuelve este modulo, y por eso se avisa:
+
+      MAXIMA  el conducto queda MAS TENDIDO que su cauce. El desnivel que el
+              barril no baja, (S_cauce - S_conducto) * L, hay que resolverlo
+              con una estructura de caida o de disipacion en un extremo, que
+              este calculo no dimensiona; y V2b compara S_conducto con
+              S_cauce y lo juzga segun 'regimen_v2b' (indicador con aviso, o
+              umbral duro: entonces el punto no dimensiona).
+      MINIMA  el conducto CAE MAS que su cauce: la salida queda
+              (S_conducto - S_cauce) * L bajo el cauce natural, y G2 la juzga
+              contra el fondo del receptor.
 
     ES EL UNICO SITIO DONDE SE RESUELVE (MAT-D9: la pendiente no se elige dos
     veces). `servicio` la llama antes de la Fase 4 y pasa el MISMO valor a la
     longitud, al TW, a MD y a 7.B.
 
     El Manual del MTC exige cuidar la pendiente y no da ninguna cifra (num.
-    4.1.1.3.3, pag. impresa 71): los dos limites son criterios [A].
+    4.1.1.3.3, pag. impresa 71): los dos extremos son criterios [A].
 
     Excepciones: `DatoFaltanteError('S_cauce')` si no hay ni declaracion ni
-    pendiente de cauce; `DatoInvalidoError` si los dos limites adoptados se
-    cruzan (minimo sobre maximo).
+    pendiente de cauce; `DatoInvalidoError` si la pendiente no es un numero
+    finito y no negativo (segunda linea: M0 y la carga de datos externos ya
+    lo exigen) o si la banda adoptada queda vacia (de
+    `M5.limites_de_pendiente`).
     """
     if S_declarada is not None:
+        if not (S_declarada >= 0 and math.isfinite(S_declarada)):
+            raise DatoInvalidoError(
+                "S_conducto", valor=S_declarada, id_punto=punto.id,
+                motivo="la pendiente declarada del conducto tiene que ser un "
+                       "numero finito y no negativo (0 es el barril "
+                       "horizontal); la pendiente adversa no se admite")
         return PendienteAdoptada(
             valor=S_declarada, origen=OrigenPendiente.DECLARADA,
             S_cauce=punto.S_cauce, S_declarada=S_declarada,
             S_minima=None, S_maxima=None,
             procedencia="dato externo `S_conducto` declarado para este "
-                        "punto: no es la pendiente del cauce, y los limites "
-                        "de pendiente adoptados no la sustituyen")
+                        "punto: no es la pendiente del cauce, y la banda de "
+                        "pendiente adoptada no la sustituye (la juzga V10)")
     S_cauce = punto.exigir("S_cauce")
-    S_min = _limite_de_pendiente(CRITERIO_PENDIENTE_MINIMA)
-    S_max = _limite_de_pendiente(CRITERIO_PENDIENTE_MAXIMA)
-    if S_min is not None and S_max is not None and not S_min <= S_max:
+    if not (S_cauce > 0 and math.isfinite(S_cauce)):
         raise DatoInvalidoError(
-            CRITERIO_PENDIENTE_MINIMA, valor=S_min, id_punto=punto.id,
-            motivo=f"la pendiente minima adoptada ({S_min!r}) supera a la "
-                   f"maxima ('{CRITERIO_PENDIENTE_MAXIMA}' = {S_max!r}): "
-                   "ninguna pendiente cumple las dos")
-    if S_min is not None and not S_cauce >= S_min - TOL_UMBRAL_NORMATIVO:
+            "S_cauce", valor=S_cauce, id_punto=punto.id,
+            motivo="la pendiente del cauce tiene que ser un numero finito y "
+                   "positivo para adoptarla como pendiente del conducto; un "
+                   "barril horizontal se declara con `S_conducto` = 0, no "
+                   "con la pendiente del cauce")
+    S_min, S_max = limites_de_pendiente()
+    if not S_cauce >= S_min - TOL_UMBRAL_NORMATIVO:
         return PendienteAdoptada(
             valor=S_min, origen=OrigenPendiente.MINIMA, S_cauce=S_cauce,
             S_declarada=None, S_minima=S_min, S_maxima=S_max,
             procedencia=f"criterio '{CRITERIO_PENDIENTE_MINIMA}': la "
                         f"pendiente del cauce ({S_cauce!r}) queda por debajo "
                         "y gobierna el minimo adoptado")
-    if S_max is not None and not S_cauce <= S_max + TOL_UMBRAL_NORMATIVO:
+    if not S_cauce <= S_max + TOL_UMBRAL_NORMATIVO:
         return PendienteAdoptada(
             valor=S_max, origen=OrigenPendiente.MAXIMA, S_cauce=S_cauce,
             S_declarada=None, S_minima=S_min, S_maxima=S_max,
@@ -1183,6 +1200,59 @@ def pendiente_adoptada(punto: PuntoCritico,
         S_declarada=None, S_minima=S_min, S_maxima=S_max,
         procedencia="pendiente del cauce (`S_cauce`): el conducto sigue al "
                     "cauce, que es la regla de la Sec. 7.B")
+
+
+def desnivel_frente_al_cauce(pendiente: PendienteAdoptada,
+                             longitud: float) -> Optional[float]:
+    """
+    (S_cauce - S_conducto) * L, en metros: lo que el cauce baja a lo largo
+    del conducto y el barril no (positivo: conducto mas tendido que el
+    cauce), o lo que el barril baja de mas (negativo). None si el punto no
+    tiene pendiente de cauce con que comparar (Sec. 7.B).
+
+    Es la magnitud de obra que trae consigo una pendiente que no es la del
+    cauce, y la que imprimen el paso 7.B.4 y `aviso_de_pendiente`.
+    """
+    if pendiente.S_cauce is None:
+        return None
+    return (pendiente.S_cauce - pendiente.valor) * longitud
+
+
+def aviso_de_pendiente(pendiente: PendienteAdoptada,
+                       longitud: Optional[float] = None) -> str:
+    """
+    El AVISO de una pendiente que gobierna un extremo de la banda adoptada, o
+    "" si el origen es el cauce o la declaracion (Sec. 7.B; T-6).
+
+    Una pendiente declarada no avisa aqui: es una decision del expediente y
+    la juzgan V10 (banda) y V2b (frente al cauce), cada una en su fila. Con
+    `longitud` el aviso lleva el desnivel en metros; sin ella, la expresion.
+    """
+    if pendiente.origen not in (OrigenPendiente.MINIMA, OrigenPendiente.MAXIMA):
+        return ""
+    desnivel = (None if longitud is None
+                else desnivel_frente_al_cauce(pendiente, longitud))
+    if pendiente.origen is OrigenPendiente.MAXIMA:
+        cuanto = ("(S_cauce - S_conducto) x L" if desnivel is None
+                  else f"{desnivel:.2f} m en este punto")
+        return (
+            f"pendiente del conducto limitada al maximo adoptado "
+            f"({pendiente.valor:g} m/m, criterio "
+            f"'{CRITERIO_PENDIENTE_MAXIMA}'): la del cauce es "
+            f"{pendiente.S_cauce:g} m/m. El conducto queda mas tendido que "
+            f"su cauce y el desnivel que el barril no baja, {cuanto}, "
+            "requiere una estructura de caida o de disipacion en un extremo "
+            "que este calculo no dimensiona; V2b juzga la sedimentacion "
+            f"segun '{CRITERIO_REGIMEN_V2B}'")
+    cuanto = ("(S_conducto - S_cauce) x L" if desnivel is None
+              else f"{-desnivel:.2f} m en este punto")
+    return (
+        f"pendiente del conducto elevada al minimo adoptado "
+        f"({pendiente.valor:g} m/m, criterio "
+        f"'{CRITERIO_PENDIENTE_MINIMA}'): la del cauce es "
+        f"{pendiente.S_cauce:g} m/m. El conducto cae mas que su cauce y la "
+        f"salida queda {cuanto} por debajo del cauce natural; G2 la juzga "
+        "contra el fondo del receptor")
 
 
 def _pendiente_del_diseno(punto: PuntoCritico, S: float) -> PendienteAdoptada:
@@ -1226,6 +1296,7 @@ def paso_pendiente(pendiente: PendienteAdoptada):
         OrigenPendiente.MINIMA: "S_conducto = S_minima  (S_cauce < S_minima)",
         OrigenPendiente.MAXIMA: "S_conducto = S_maxima  (S_cauce > S_maxima)",
     }[pendiente.origen]
+    aviso = aviso_de_pendiente(pendiente)
     return paso(
         "F7.PENDIENTE",
         codigo="7.B.1",
@@ -1248,11 +1319,13 @@ def paso_pendiente(pendiente: PendienteAdoptada):
             "La fuente exige cuidar la pendiente y no da cifra: ni minima, "
             "ni maxima. Es la MISMA pendiente con que corre el diseño "
             "hidraulico (Fase 4), el TW por cota y la caida de 7.B."
-            + ("" if pendiente.S_minima is not None
-               or pendiente.S_maxima is not None
-               or pendiente.origen is OrigenPendiente.DECLARADA else
-               " En esta corrida el proyecto no tiene limites de pendiente "
-               "con valor: la pendiente es la del cauce sin contraste.")),
+            + (" La banda (S_minima, S_maxima) es la de V10, leida una "
+               "sola vez: aqui acota la pendiente del CAUCE, y V10 juzga la "
+               "pendiente con que corrio el diseño."
+               if pendiente.origen is not OrigenPendiente.DECLARADA else
+               " La pendiente DECLARADA no se acota aqui: V10 la juzga "
+               "contra la banda adoptada y V2b contra la del cauce.")
+            + (f" AVISO: {aviso}." if aviso else "")),
     )
 
 
@@ -1637,9 +1710,14 @@ def longitud_del_conducto(punto: PuntoCritico, *,
     # tiene (DG-2018 num. 304.05) acorta la longitud. La sensibilidad se da
     # por punto: talud * ancho / (cos - talud*S) metros por unidad de
     # pendiente transversal, que son los mismos centimetros por cada 1 %.
-    avisos: Tuple[str, ...] = ()
+    # EL AVISO DEL FONDO ADOPTADO VIAJA CON LA LONGITUD QUE LO CONSUMIO: este
+    # metodo ancla los dos taludes al fondo de la entrada, y si ese fondo es
+    # el terreno del eje la longitud lo hereda. Va aqui y no solo en 7.B para
+    # que lo lleve tambien el punto que no dimensiona, cuya longitud ya entro
+    # al control de salida de cada escalon (`InformePunto.avisos`).
+    avisos: Tuple[str, ...] = (entrada.aviso,) if entrada.aviso else ()
     if bombeo is None and peralte is None:
-        avisos = (
+        avisos += (
             "plataforma tomada horizontal: no se declaro `bombeo` ni "
             "`peralte`. Declarar el bombeo de la seccion tipica: cada 1 % "
             f"acorta la longitud {talud * ancho / denominador:.1f} cm en "
@@ -1928,6 +2006,18 @@ def _paso_cota_salida(*, punto: PuntoCritico, longitud: float, S: float,
                       pendiente: PendienteAdoptada):
     """El `PasoDeMemoria` 7.B.4: la caida y la cota de fondo de la salida."""
     entrada = cota_de_entrada(punto)
+    # Cuando gobierna un extremo de la banda, el conducto ya no sigue al
+    # cauce y la salida queda a otra cota que la del cauce natural: el
+    # desnivel se imprime con su numero, que es la magnitud de obra.
+    aviso = aviso_de_pendiente(pendiente, longitud)
+    desnivel = ()
+    if aviso:
+        desnivel = (Magnitud(
+            "(S_cauce - S) * L", desnivel_frente_al_cauce(pendiente, longitud),
+            "m", "desnivel entre la salida del conducto y el cauce natural "
+            "a esa distancia: positivo, la salida queda sobre el cauce "
+            "(conducto mas tendido); negativo, por debajo",
+            cifras=CIFRAS_MAGNITUD),)
     return paso(
         "F7.COTA_SALIDA",
         codigo="7.B.4",
@@ -1944,14 +2034,16 @@ def _paso_cota_salida(*, punto: PuntoCritico, longitud: float, S: float,
                      cifras=CIFRAS_FINA),
             Magnitud("L", longitud, "m", "paso 7.B.3",
                      cifras=CIFRAS_MAGNITUD),
-            Magnitud("caida", caida, "m", "S * L", cifras=CIFRAS_MAGNITUD)),
+            Magnitud("caida", caida, "m", "S * L", cifras=CIFRAS_MAGNITUD),
+            *desnivel),
         resultado=Magnitud("cota_salida", salida, "msnm",
                            "cota de fondo de la salida: la que se amarra al "
                            "receptor en G2", cifras=CIFRAS_MAGNITUD),
-        nota_del_proyecto=(
+        nota_del_proyecto=" ".join(nota for nota in (
             f"AVISO: {entrada.aviso}. La cota de salida hereda esa adopcion "
             "entera: si el fondo real de la entrada esta bajo el terreno, la "
-            "salida baja lo mismo." if entrada.aviso else ""),
+            "salida baja lo mismo." if entrada.aviso else "",
+            f"AVISO: {aviso}." if aviso else "") if nota),
     )
 
 
@@ -2228,21 +2320,22 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                                   longitud=longitud_calculada,
                                   L_clave=L_clave))
 
-    g3 = g3_esviaje(punto)
     verificaciones: Tuple[Verificacion, ...] = (
         g1_rasante_congelada(tamizado),
         g2_cota_salida(punto=punto, cota_salida_m=salida),
-        g3,
+        g3_esviaje(punto),
     )
+    # LOS AVISOS DE 7.B, en el orden del calculo: el fondo de entrada
+    # adoptado, la pendiente que gobierna un extremo de la banda y los de la
+    # longitud. EL DE ESVIAJE NO VA AQUI: G3 es una verificacion con veredicto
+    # INDICADOR y viaja por la via de todas las que lo llevan
+    # (`InformePunto.con_aviso`), que es la que cuentan el RESUMEN, la CLI y
+    # el JSON. Repetirlo en esta lista lo imprimia dos veces.
     avisos = []
-    if entrada.aviso:
-        avisos.append(entrada.aviso)
-    avisos.extend(longitud_calculada.avisos)
-    if g3.paso.veredicto.tipo is TipoDeVeredicto.INDICADOR:
-        avisos.append(
-            f"esviaje de {punto.esviaje_grados:g} grados sobre el maximo "
-            f"adoptado ({g3.valor_admisible:g} grados, criterio "
-            f"'{CRITERIO_ESVIAJE_MAX}'): revisar el cruce en planta")
+    for aviso in (entrada.aviso, aviso_de_pendiente(pendiente, longitud),
+                  *longitud_calculada.avisos):
+        if aviso and aviso not in avisos:
+            avisos.append(aviso)
 
     return CompatibilidadGeometrica(
         punto=punto,

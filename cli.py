@@ -1120,7 +1120,7 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         out.append(f"{SANGRIA_DETALLE}cota de entrada: "
                    f"{g.cota_entrada.procedencia}")
         # --- T-6 --- el metodo de L, la pendiente con su origen, el encaje
-        # a la clave y los avisos, con las mismas palabras del objeto de 7.B.
+        # a la clave, con las mismas palabras del objeto de 7.B.
         if g.longitud_calculada is not None:
             detalle = f"longitud: metodo {g.longitud_calculada.metodo.value}"
             if g.longitud_a_la_clave is not None:
@@ -1132,8 +1132,9 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                        f"{_fmt(g.S_conducto, DECIMALES_PENDIENTE)} m/m "
                        f"({g.pendiente.origen.value}); caida "
                        f"{_fmt(g.caida)} m")
-        for aviso in g.avisos:
-            out.append(f"{SANGRIA_DETALLE}aviso: {aviso}")
+        # Los avisos de 7.B NO se imprimen aqui: salen con los demas del
+        # punto, por `InformePunto.avisos()`, una sola vez (y tambien cuando
+        # el punto no dimensiona).
         out.append(f"{SANGRIA_DETALLE}{g.tamizado.mensaje}")
     if informe.cama_apoyo is not None:
         out.append(f"{SANGRIA}Fase 8  cama: {informe.cama_apoyo.cama_apoyo} "

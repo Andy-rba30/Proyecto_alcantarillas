@@ -335,11 +335,16 @@ def test_el_peralte_no_cambia_la_longitud_y_si_cada_extremo():
 def test_la_pendiente_que_alcanza_al_talud_no_tiene_longitud():
     """talud*S >= cos(esviaje): el talud de salida no alcanza al conducto."""
     ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
+    # La pendiente tiene que venir DECLARADA: la del cauce ya llega acotada a
+    # la banda adoptada (0.10 de archivo), y con ella 2.0*0.10 < cos 15.
+    punto = _punto()
     with pytest.raises(DatoInvalidoError) as exc:
-        M7.longitud_del_conducto(_punto(S_cauce=0.60))     # 2.0*0.60 > cos 15
+        M7.longitud_del_conducto(                          # 2.0*0.60 > cos 15
+            punto, pendiente=M7.pendiente_adoptada(punto, S_declarada=0.60))
     assert "talud" in exc.value.motivo and "0.6" in exc.value.motivo
     # justo por debajo sigue habiendo longitud, enorme y finita: se VE
-    assert M7.longitud_conducto(_punto(S_cauce=0.45)) > 100
+    assert M7.longitud_conducto(
+        punto, pendiente=M7.pendiente_adoptada(punto, S_declarada=0.45)) > 100
 
 
 def test_un_borde_de_plataforma_bajo_el_fondo_es_dato_invalido():
@@ -488,17 +493,23 @@ def test_la_plataforma_horizontal_se_avisa_con_su_sensibilidad():
     """
     ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
     lc = M7.longitud_del_conducto(_punto())
-    assert len(lc.avisos) == 1
-    assert "plataforma tomada horizontal" in lc.avisos[0]
-    assert "20.1 cm" in lc.avisos[0]
+    # dos avisos: el fondo ADOPTADO, que la longitud por extremo consume, y
+    # la plataforma horizontal
+    assert lc.avisos[0] == AVISO and len(lc.avisos) == 2
+    assert "plataforma tomada horizontal" in lc.avisos[1]
+    assert "20.1 cm" in lc.avisos[1]
     con_2 = M7.longitud_del_conducto(_punto(), bombeo=0.02)
     assert lc.longitud - con_2.longitud == pytest.approx(
         2 * 20.1 / 100, abs=TOL_ROTULO)
-    assert con_2.avisos == ()
-    assert M7.longitud_del_conducto(_punto(), peralte=0.04).avisos == ()
-    # llega a 7.B, a la nota del paso, al JSON y a la memoria
+    assert con_2.avisos == (AVISO,)
+    assert M7.longitud_del_conducto(_punto(), peralte=0.04).avisos == (AVISO,)
+    # con el fondo MEDIDO y el bombeo declarado no queda nada que avisar
+    medido = _punto(cota_fondo_entrada=TERRENO - 0.50)
+    assert M7.longitud_del_conducto(medido, bombeo=0.02).avisos == ()
+    # llega a 7.B (una sola vez cada uno), a la nota del paso, al JSON y a
+    # la memoria
     geo = _geometria()
-    assert lc.avisos[0] in geo.avisos
+    assert geo.avisos == lc.avisos
     assert "plataforma tomada horizontal" in geo.pasos[2].nota_del_proyecto
     informe = _correr()
     volcado = cli.informe_json(informe)
@@ -574,13 +585,15 @@ def test_un_esviaje_negativo_llamado_directo_es_dato_invalido(grados):
 def test_el_error_del_denominador_nombra_el_par_esviaje_pendiente():
     """cos(60) = 0.5 = 2.0 * 0.25: el mismo S tiene longitud con menos esviaje."""
     ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
-    punto = _punto(esviaje_grados=60.0, S_cauce=0.26)
+    punto = _punto(esviaje_grados=60.0)
+    declarada = M7.pendiente_adoptada(punto, S_declarada=0.26)
     with pytest.raises(DatoInvalidoError) as exc:
-        M7.longitud_del_conducto(punto)
+        M7.longitud_del_conducto(punto, pendiente=declarada)
     assert "esviaje_grados" in exc.value.campo
     assert "S_conducto" in exc.value.campo
     assert "esviaje" in exc.value.motivo and "pendiente" in exc.value.motivo
-    assert M7.longitud_conducto(replace(punto, esviaje_grados=15.0)) > 0
+    assert M7.longitud_conducto(replace(punto, esviaje_grados=15.0),
+                                pendiente=declarada) > 0
 
 
 def test_la_longitud_a_la_clave_es_cota_superior_de_la_de_entre_cabezales():
@@ -953,7 +966,11 @@ def test_el_esviaje_sobre_el_maximo_es_aviso_y_el_punto_sigue():
     assert g3.criterio_aplicado == CLAVE_ESVIAJE
     assert g3.valor_admisible == _igual(maximo)
     assert geo.factible                       # G3 no cuenta como incumplida
-    assert any("esviaje" in a and "revisar" in a for a in geo.avisos)
+    # El aviso NO se repite en la lista de 7.B: G3 es una verificacion con
+    # veredicto INDICADOR y sale por `InformePunto.con_aviso` (ver abajo,
+    # `test_el_esviaje_sobre_el_maximo_sale_una_vez_por_la_via_de_los_indicadores`)
+    assert not any("esviaje" in a for a in geo.avisos)
+    assert "SUPERA el maximo adoptado" in g3.paso.veredicto.explicacion
     assert g3.paso.umbral.cita_id == "HDS5_3ED.5.4.2#MAXIMO_PRACTICO"
     assert g3.paso.umbral.caracter == "RECOMENDACION"
 
@@ -1018,25 +1035,64 @@ def test_sin_cauce_ni_declaracion_falta_el_dato():
     (0.001, 0.002, 0.05, 0.002, "MINIMA"),
     (0.080, 0.002, 0.05, 0.050, "MAXIMA"),
     (0.002, 0.002, 0.05, 0.002, "CAUCE"),       # la frontera es del cauce
-    (0.006, None, None, 0.006, "CAUCE"),
-    (0.001, None, 0.05, 0.001, "CAUCE"),
+    (0.050, 0.002, 0.05, 0.050, "CAUCE"),
 ])
 def test_los_limites_gobiernan_solo_sobre_la_pendiente_del_cauce(
         monkeypatch, S_cauce, minimo, maximo, esperado, origen):
-    limites = {M7.CRITERIO_PENDIENTE_MINIMA: minimo,
-               M7.CRITERIO_PENDIENTE_MAXIMA: maximo}
-    monkeypatch.setattr(M7, "_limite_de_pendiente", limites.get)
+    # La banda entra por la lectura UNICA de T-2: si M7 leyera los criterios
+    # por su cuenta, sustituir `limites_de_pendiente` no cambiaria nada.
+    monkeypatch.setattr(M7, "limites_de_pendiente", lambda: (minimo, maximo))
     p = M7.pendiente_adoptada(_punto(S_cauce=S_cauce))
     assert p.valor == _igual(esperado)
     assert p.origen is modelos.OrigenPendiente[origen]
     assert (p.S_minima, p.S_maxima) == (minimo, maximo)
-    # una pendiente DECLARADA no se recorta: la juzga la Fase 5
+    assert bool(M7.aviso_de_pendiente(p)) == (origen != "CAUCE")
+    # una pendiente DECLARADA no se recorta: la juzga la Fase 5 (V10)
     declarada = M7.pendiente_adoptada(_punto(S_cauce=S_cauce), S_declarada=0.0005)
     assert declarada.valor == _igual(0.0005)
     assert declarada.origen is modelos.OrigenPendiente.DECLARADA
+    assert M7.aviso_de_pendiente(declarada) == ""
 
 
-def test_el_limite_que_gobierna_llega_al_diseno_al_TW_y_a_7B(monkeypatch):
+def test_M7_lee_la_banda_de_la_lectura_unica_de_T2():
+    """
+    `M7.limites_de_pendiente` ES `M5.limites_de_pendiente`, y las dos claves
+    son las de M5: no hay segunda lectura de la banda (ni segunda guardia).
+    """
+    from src.modulos import M5_verificaciones as M5
+    assert M7.limites_de_pendiente is M5.limites_de_pendiente
+    assert M7.CRITERIO_PENDIENTE_MINIMA is M5.CRITERIO_PENDIENTE_MINIMA
+    assert M7.CRITERIO_PENDIENTE_MAXIMA is M5.CRITERIO_PENDIENTE_MAXIMA
+    assert (M7.CRITERIO_PENDIENTE_MINIMA,
+            M7.CRITERIO_PENDIENTE_MAXIMA) == CLAVES_DE_T2
+    assert not hasattr(M7, "_limite_de_pendiente")
+    # con los valores de archivo (0.0 y 0.10) la banda llega al objeto
+    p = M7.pendiente_adoptada(_punto())
+    assert (p.S_minima, p.S_maxima) == M5.limites_de_pendiente()
+
+
+@pytest.mark.parametrize("S_cauce", [float("nan"), float("inf"), 0.0, -0.01])
+def test_una_pendiente_de_cauce_que_no_es_un_positivo_finito_no_se_adopta(S_cauce):
+    """
+    Segunda linea (M0 ya lo exige): un NaN es falso frente a `>=` y frente a
+    `<=`, y sin esta guardia `S_cauce = nan` salia con origen «minima» y
+    valor 0.0, que es rellenar un dato roto con un extremo de la banda.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        M7.pendiente_adoptada(_punto(S_cauce=S_cauce))
+    assert exc.value.campo == "S_cauce"
+
+
+@pytest.mark.parametrize("S", [float("nan"), float("inf"), -0.001])
+def test_una_pendiente_declarada_negativa_o_no_finita_no_se_adopta(S):
+    with pytest.raises(DatoInvalidoError) as exc:
+        M7.pendiente_adoptada(_punto(), S_declarada=S)
+    assert exc.value.campo == "S_conducto"
+    # el cero si: es el barril horizontal que T-2 admite
+    assert M7.pendiente_adoptada(_punto(), S_declarada=0.0).valor == _igual(0.0)
+
+
+def test_el_limite_que_gobierna_llega_al_diseno_al_TW_y_a_7B():
     """
     De punta a punta, con el minimo por ENCIMA de la pendiente del cauce de
     A-01 (0.006): la Fase 4 corre con 0.007, 7.B cae 0.007*L y la memoria
@@ -1044,10 +1100,10 @@ def test_el_limite_que_gobierna_llega_al_diseno_al_TW_y_a_7B(monkeypatch):
     si el limite se quedara en M7 y MD siguiera con la del cauce, el HW y la
     cota de salida saldrian de dos pendientes distintas.
     """
-    limites = {M7.CRITERIO_PENDIENTE_MINIMA: 0.007,
-               M7.CRITERIO_PENDIENTE_MAXIMA: None}
-    monkeypatch.setattr(M7, "_limite_de_pendiente", limites.get)
-    informe = _correr()
+    with con_valor(CLAVES_DE_T2[0], 0.007,
+                   motivo="T-6: un minimo sobre el cauce de A-01 y bajo el de "
+                          "A-02, fuera de la ventana (0, 0.005) a proposito"):
+        informe = _correr()
     a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
     assert a01.pendiente.origen is modelos.OrigenPendiente.MINIMA
     assert a01.resultado.resultado_hidraulico.S == _igual(0.007)
@@ -1068,29 +1124,19 @@ def test_el_limite_que_gobierna_llega_al_diseno_al_TW_y_a_7B(monkeypatch):
     assert c01.pendiente.valor == _igual(0.004)
 
 
-def test_dos_limites_cruzados_son_dato_invalido(monkeypatch):
-    limites = {M7.CRITERIO_PENDIENTE_MINIMA: 0.05,
-               M7.CRITERIO_PENDIENTE_MAXIMA: 0.002}
-    monkeypatch.setattr(M7, "_limite_de_pendiente", limites.get)
-    with pytest.raises(DatoInvalidoError):
-        M7.pendiente_adoptada(_punto())
+def test_dos_limites_cruzados_son_dato_invalido():
+    """La banda vacia la rechaza la lectura unica de T-2, tambien desde M7."""
+    with con_valor(CLAVES_DE_T2[0], 0.05, motivo="T-6: minimo sobre el maximo"), \
+            con_valor(CLAVES_DE_T2[1], 0.002, motivo="T-6: maximo bajo el minimo"):
+        with pytest.raises(DatoInvalidoError):
+            M7.pendiente_adoptada(_punto())
 
 
-def test_un_limite_que_no_existe_o_no_tiene_valor_no_gobierna_nada():
-    """Mientras T-2 no cree las dos claves, el origen minima/maxima no existe."""
-    assert M7._limite_de_pendiente("criterio_que_no_existe") is None
-    for clave in CLAVES_DE_T2:
-        if clave not in ca.CRITERIOS:
-            assert M7._limite_de_pendiente(clave) is None
-
-
-@pytest.mark.skipif(
-    any(clave not in ca.CRITERIOS for clave in CLAVES_DE_T2),
-    reason="los criterios 'pendiente_minima_conducto' y "
-           "'pendiente_maxima_conducto' los crea T-2 de la cadena T: este "
-           "test se libera solo al integrar T-6 despues de T-2")
 def test_con_los_criterios_de_T2_la_pendiente_del_cauce_se_acota_de_verdad():
-    """De punta a punta con las claves REALES: sin `monkeypatch`."""
+    """
+    Con las claves REALES, sin `monkeypatch`. Era un `skipif` mientras T-6
+    corrio en paralelo con T-2; se libero al integrar.
+    """
     with con_valor(CLAVES_DE_T2[0], 0.004, motivo="T-6: minimo sobre el cauce"), \
             con_valor(CLAVES_DE_T2[1], 0.05, motivo="T-6: maximo holgado"):
         bajo = M7.pendiente_adoptada(_punto(S_cauce=0.001))
@@ -1100,12 +1146,224 @@ def test_con_los_criterios_de_T2_la_pendiente_del_cauce_se_acota_de_verdad():
         assert dentro.origen is modelos.OrigenPendiente.CAUCE
         assert dentro.S_minima == _igual(0.004)
         assert dentro.S_maxima == _igual(0.05)
-    # Y EL FIXTURE NO SE MUEVE con los valores de archivo de T-2: ninguna
-    # pendiente de cauce de los cuatro puntos queda fuera de los limites.
+    # Y EL FIXTURE NO SE MUEVE con los valores de archivo de T-2 (0.0 y
+    # 0.10): ninguna pendiente de cauce de los cuatro puntos queda fuera.
     for punto in cargar_puntos(CSV):
         if punto.S_cauce is not None:
-            assert M7.pendiente_adoptada(punto).origen is \
-                modelos.OrigenPendiente.CAUCE, punto.id
+            adoptada = M7.pendiente_adoptada(punto)
+            assert adoptada.origen is modelos.OrigenPendiente.CAUCE, punto.id
+            assert M7.aviso_de_pendiente(adoptada) == ""
+
+
+# ---------------------------------------------------------------------------
+# El reparto con V10 (auditor de T-6, punto 2): M7 acota la pendiente del
+# CAUCE y lo avisa; V10 juzga la que quedo y solo falla con una DECLARADA.
+# ---------------------------------------------------------------------------
+
+def _csv_con(tmp_path, id_punto, **celdas):
+    """Una copia del CSV de ejemplo con las celdas de un punto cambiadas."""
+    lineas = CSV.read_text(encoding="utf-8").splitlines()
+    cabecera = lineas[0].split(",")
+    salida = [lineas[0]]
+    for linea in lineas[1:]:
+        fila = linea.split(",")
+        if fila[0] == id_punto:
+            for columna, valor in celdas.items():
+                fila[cabecera.index(columna)] = valor
+        salida.append(",".join(fila))
+    ruta = tmp_path / "puntos.csv"
+    ruta.write_text("\n".join(salida) + "\n", encoding="utf-8")
+    return ruta
+
+
+def _correr_csv(csv, tmp_path, por_punto=None):
+    ruta = tmp_path / "externos.json"
+    ruta.write_text(json.dumps({"globales": {"TW_m": 0.3},
+                                "puntos": por_punto or {}}))
+    ext = cli.cargar_datos_externos(
+        ruta, {"luz_m": 2.75, "TW_m": None, "longitud_m": None,
+               "L_hidraulico_m": None, "categoria_tr": None})
+    return servicio.correr(csv, ext, alcance=cli.ALCANCE_PERFIL)
+
+
+def _verificacion(informe_punto, codigo):
+    return next(v for _, v in informe_punto.verificaciones()
+                if v.codigo == codigo)
+
+
+@pytest.fixture
+def _banda_limpia():
+    yield
+    for clave in (*CLAVES_DE_T2, "regimen_v2b"):
+        ca.quitar_valor_dinamico(clave)
+
+
+def test_el_maximo_gobierna_y_el_punto_dimensiona_con_V2b_como_indicador(
+        tmp_path, _banda_limpia):
+    """
+    Un cauce al 3 % con el maximo declarado en 2 % (dentro de su ventana,
+    0.02 a 0.10, por la puerta): el diseño corre con 0.02, V10 CUMPLE --la
+    pendiente que juzga ya es el extremo--, y con el regimen de archivo
+    (`indicador_con_aviso`) V2b se dispara como indicador y el punto
+    dimensiona. El aviso de la pendiente dice que trae consigo y sale UNA vez
+    por `InformePunto.avisos()`, con el desnivel en metros.
+    """
+    ca.establecer_valor_dinamico(CLAVES_DE_T2[1], 0.02)
+    assert ca.valor("regimen_v2b") == "indicador_con_aviso"
+    informe = _correr_csv(_csv_con(tmp_path, "A-01", S_cauce="0.030"), tmp_path)
+    a01 = informe.puntos[0]
+    assert a01.dimensionado
+    assert a01.pendiente.origen is modelos.OrigenPendiente.MAXIMA
+    assert a01.resultado.resultado_hidraulico.S == _igual(0.02)
+    assert _verificacion(a01, "V10").cumple
+    v2b = _verificacion(a01, "V2b")
+    assert v2b.estado is modelos.EstadoDeVerificacion.INDICADOR
+    geo = a01.geometria
+    desnivel = (0.030 - 0.02) * geo.longitud
+    (aviso,) = [a for a in a01.avisos() if "maximo adoptado" in a]
+    assert "estructura de caida o de disipacion" in aviso
+    assert "regimen_v2b" in aviso and "0.03 m/m" in aviso
+    assert f"{desnivel:.2f} m en este punto" in aviso
+    assert aviso in geo.avisos
+    assert [a for a in a01.avisos() if a.startswith("V2b:")]
+    # el paso 7.B.1 dice el origen y el 7.B.4 lleva el desnivel con su numero
+    assert "S_maxima" in geo.pasos[0].formula
+    assert "AVISO" in geo.pasos[0].nota_del_proyecto
+    paso_salida = next(p for p in geo.pasos if p.codigo == "7.B.4")
+    assert _valor(paso_salida, "(S_cauce - S) * L") == pytest.approx(
+        desnivel, abs=ABS)
+    # una vez en el volcado de texto, y en el JSON del punto
+    texto = cli.volcar(informe)
+    assert texto.count("limitada al maximo adoptado") == 1
+    volcado = cli.informe_json(informe)["puntos"][0]
+    assert volcado["avisos"].count(aviso) == 1
+    assert volcado["geometria"]["S_conducto_origen"]["origen"] == \
+        modelos.OrigenPendiente.MAXIMA.value
+    assert "limitada al maximo adoptado" in M11.memoria_de_punto(a01)
+
+
+def test_el_maximo_gobierna_y_con_umbral_duro_el_punto_no_dimensiona_por_V2b(
+        tmp_path, _banda_limpia):
+    """
+    El mismo cauce con `regimen_v2b` = umbral_duro: V2b incumple en todos los
+    escalones --el conducto queda mas tendido que el cauce por decision de la
+    banda-- y el punto NO dimensiona, con V2b nombrada en el motivo. V10 no
+    es quien lo detiene. Y el aviso de la pendiente sale igual, aunque el
+    punto no llegue a 7.B.
+    """
+    ca.establecer_valor_dinamico(CLAVES_DE_T2[1], 0.02)
+    ca.establecer_valor_dinamico("regimen_v2b", "umbral_duro")
+    informe = _correr_csv(_csv_con(tmp_path, "A-01", S_cauce="0.030"), tmp_path)
+    a01 = informe.puntos[0]
+    assert not a01.dimensionado and a01.geometria is None
+    assert a01.pendiente.origen is modelos.OrigenPendiente.MAXIMA
+    assert a01.traza, "MD tuvo que probar escalones"
+    evaluados = [e for e in a01.traza if e.incumplidas]
+    assert evaluados and not any(e.aceptado for e in a01.traza)
+    for escalon in evaluados:      # los demas no transportan Q en flujo libre
+        codigos = [v.codigo for v in escalon.incumplidas]
+        assert "V2b" in codigos, escalon.motivo
+        assert "V10" not in codigos, escalon.motivo
+    motivos = " ".join(b.mensaje for b in a01.bloqueos)
+    assert "V2b" in motivos
+    (aviso,) = [a for a in a01.avisos() if "maximo adoptado" in a]
+    assert "estructura de caida o de disipacion" in aviso
+    assert f"{(0.030 - 0.02) * a01.longitud.valor:.2f} m en este punto" in aviso
+    assert cli.volcar(informe).count("limitada al maximo adoptado") == 1
+    assert "limitada al maximo adoptado" in M11.memoria_de_punto(a01)
+
+
+def test_el_minimo_gobierna_el_punto_dimensiona_y_G2_juzga_la_salida(
+        tmp_path, _banda_limpia):
+    """
+    Un cauce al 0.4 % con el minimo declarado en 0.5 % (el tope de su
+    ventana): el conducto cae mas que el cauce, la salida queda
+    (0.005 - 0.004)*L bajo el cauce natural y G2 se evalua con esa cota.
+    V2b no se dispara (el conducto no queda mas plano) y V10 cumple.
+    """
+    ca.establecer_valor_dinamico(CLAVES_DE_T2[0], 0.005)
+    informe = _correr_csv(_csv_con(tmp_path, "A-01", S_cauce="0.004"), tmp_path)
+    a01 = informe.puntos[0]
+    assert a01.dimensionado
+    assert a01.pendiente.origen is modelos.OrigenPendiente.MINIMA
+    geo = a01.geometria
+    assert geo.S_conducto == _igual(0.005)
+    assert _verificacion(a01, "V10").cumple
+    assert _verificacion(a01, "V2b").estado is modelos.EstadoDeVerificacion.CUMPLE
+    g2 = _verificacion(a01, "G2")
+    assert g2.cumple
+    assert g2.valor_obtenido == pytest.approx(TERRENO - 0.005 * geo.longitud,
+                                              abs=ABS)
+    bajo_el_cauce = (0.005 - 0.004) * geo.longitud
+    (aviso,) = [a for a in a01.avisos() if "minimo adoptado" in a]
+    assert "por debajo del cauce natural" in aviso and "G2" in aviso
+    assert f"{bajo_el_cauce:.2f} m en este punto" in aviso
+    paso_salida = next(p for p in geo.pasos if p.codigo == "7.B.4")
+    assert _valor(paso_salida, "(S_cauce - S) * L") == pytest.approx(
+        -bajo_el_cauce, abs=ABS)
+
+
+def test_V10_solo_se_incumple_con_una_pendiente_declarada(tmp_path):
+    """
+    El reparto, por el otro lado: la pendiente DECLARADA no la acota M7, y
+    fuera de la banda (0.15 > 0.10) es V10 quien la rechaza en todos los
+    escalones. No hay aviso de pendiente: el origen es la declaracion.
+    """
+    informe = _correr_csv(CSV, tmp_path, {"A-01": {"S_conducto": 0.15}})
+    a01 = informe.puntos[0]
+    assert a01.pendiente.origen is modelos.OrigenPendiente.DECLARADA
+    assert not a01.dimensionado
+    evaluados = [e for e in a01.traza if e.incumplidas]
+    assert evaluados and not any(e.aceptado for e in a01.traza)
+    for escalon in evaluados:
+        assert "V10" in [v.codigo for v in escalon.incumplidas], escalon.motivo
+    assert not [a for a in a01.avisos() if "adoptado (" in a]
+    # y los otros puntos, con la pendiente de su cauce dentro de la banda, no
+    assert _verificacion(informe.puntos[1], "V10").cumple
+
+
+def test_el_esviaje_sobre_el_maximo_sale_una_vez_por_la_via_de_los_indicadores(
+        tmp_path):
+    """
+    G3 disparada llega a `InformePunto.avisos()` como los demas indicadores
+    (`con_aviso`), cuenta en el RESUMEN y se imprime UNA vez; los avisos de
+    texto de 7.B (fondo adoptado, plataforma horizontal) tambien una vez.
+    """
+    informe = _correr_csv(_csv_con(tmp_path, "A-01", esviaje_grados="50"),
+                          tmp_path)
+    a01 = informe.puntos[0]
+    assert a01.dimensionado
+    assert [v.codigo for v in a01.con_aviso()] == ["G3"]
+    (de_g3,) = [a for a in a01.avisos() if a.startswith("G3:")]
+    assert "indicador disparado" in de_g3
+    assert "SUPERA el maximo adoptado" in de_g3
+    assert a01.avisos().count(AVISO) == 1
+    assert sum("plataforma tomada horizontal" in a for a in a01.avisos()) == 1
+    assert set(a01.avisos_de_geometria()) <= set(a01.avisos())
+    base = _correr_csv(CSV, tmp_path)
+    assert informe.resumen().con_aviso == base.resumen().con_aviso + 1
+    texto = cli.volcar(informe)
+    assert texto.count("G3: indicador disparado") == 1
+    assert texto.count(f"aviso: {AVISO}") == len(informe.puntos) - 1  # C-01 no
+    volcado = cli.informe_json(informe)["puntos"][0]
+    assert volcado["avisos"] == list(a01.avisos())
+
+
+def test_el_punto_que_no_dimensiona_lleva_los_avisos_de_su_longitud():
+    """
+    B-01 no dimensiona en la corrida ancha y su longitud SI se calculo, con
+    el fondo adoptado y la plataforma horizontal: los dos avisos salen por
+    `InformePunto.avisos()` aunque el punto no llegue a 7.B.
+    """
+    informe = _correr()
+    b01 = next(p for p in informe.puntos if p.punto.id == "B-01")
+    assert b01.geometria is None and b01.longitud_calculada is not None
+    assert b01.avisos_de_geometria() == b01.longitud_calculada.avisos
+    assert AVISO in b01.avisos()
+    assert any("plataforma tomada horizontal" in a for a in b01.avisos())
+    texto = "\n".join(cli._lineas_punto(b01)) if hasattr(cli, "_lineas_punto") \
+        else cli.volcar(informe)
+    assert f"aviso: {AVISO}" in texto
 
 
 def test_el_paso_de_la_pendiente_dice_el_origen():
@@ -1124,9 +1382,7 @@ def test_el_paso_de_la_pendiente_dice_el_origen():
 
 def test_paso_pendiente_imprime_los_limites_cuando_gobiernan(monkeypatch):
     """`M7.paso_pendiente` con el minimo gobernando: formula, limites y origen."""
-    limites = {M7.CRITERIO_PENDIENTE_MINIMA: 0.002,
-               M7.CRITERIO_PENDIENTE_MAXIMA: 0.05}
-    monkeypatch.setattr(M7, "_limite_de_pendiente", limites.get)
+    monkeypatch.setattr(M7, "limites_de_pendiente", lambda: (0.002, 0.05))
     p = M7.paso_pendiente(M7.pendiente_adoptada(_punto(S_cauce=0.001)))
     assert "S_minima" in p.formula
     assert _valor(p, "S_minima") == _igual(0.002)

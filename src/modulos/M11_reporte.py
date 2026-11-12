@@ -1990,8 +1990,10 @@ def _bloques_fases_finales(informe: Any) -> str:
         # FUE. Este parrafo escribia «adoptada ... no es cota medida» SIEMPRE,
         # tambien cuando la columna `cota_fondo_entrada` traia el fondo
         # medido: el texto y el volcado de la CLI ya lo distinguian y la
-        # memoria no. Los avisos (fondo adoptado, esviaje sobre el maximo)
-        # salen del objeto de 7.B, no se redactan aqui.
+        # memoria no. Los avisos (fondo adoptado, pendiente que gobierna un
+        # extremo de la banda, plataforma horizontal) salen del objeto de
+        # 7.B, no se redactan aqui; el de esviaje es la fila G3 de la tabla
+        # de verificaciones, con veredicto de indicador.
         if g.cota_entrada.medida:
             origen_entrada = ("<b>medida</b>: columna "
                               "<code>cota_fondo_entrada</code> del CSV")
@@ -2036,7 +2038,8 @@ def _bloques_fases_finales(informe: Any) -> str:
                 "diseño hidraulico de cada escalon.</p></div>"
                 + "".join(
                     f'<div class="aviso"><p><b>Aviso:</b> {_esc(a)}.</p></div>'
-                    for a in getattr(informe.longitud_calculada, "avisos", ()))
+                    for a in getattr(informe, "avisos_de_geometria",
+                                     lambda: ())())
                 + bloque_pasos(pasos_7b, TITULO_TRAZA_GEOMETRIA_PREVIA))
 
     if informe.cama_apoyo is not None:
