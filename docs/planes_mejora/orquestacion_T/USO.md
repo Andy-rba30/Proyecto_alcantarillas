@@ -50,3 +50,8 @@ OJO: `resetsAt` = 1795028400 = **mié 18-nov 19:00 UTC** para las dos ventanas s
 | 2026-11-12 15:33 | s/d (sin aviso) | 73 % | **95 %** | arranque: lectura del estado, suite de `df1b23c`, cuatro agentes Opus lanzados (auditoría T-5; FASE A de T-3, T-7a, T-9) |
 | 2026-11-12 15:44 | s/d | **26 %** (bajó de 73 %) | 96 % (último dato del evento) | par de `df1b23c` confirmado: 4960 / 16 / 4976 |
 | 2026-11-12 ~16:00 | s/d | 26 % | restablecido según el DUEÑO («ya puedes usar Fable de manera normal»); el evento aún no lo refleja | se lanzan con Fable las auditorías adversariales de T-8 (ya en main) y de T-5 (segunda pasada, en paralelo con la de Opus) |
+| 2026-11-12 16:00 | s/d | **34–35 %** | **15 %** (restablecido, confirmado por el evento) | 4 agentes Opus (auditoría T-5; FASE A T-3, T-7a, T-9) + 2 auditores Fable (T-8, T-5). El de todos los modelos subió 8–9 puntos en 16 min: vigilar |
+
+**Regla del dueño (2026-11-12 ~16:20 UTC): cuando «Semanal · Fable» llegue a 50 %, DOSIFICAR**: Fable sólo para lo importante
+(auditorías adversariales y sus correcciones en prompts de cálculo, T-7b, T-7c, T-11); todo lo demás —integraciones mecánicas,
+regeneración de documentos, T-10, T-12— con Opus. Siguen vigentes las marcas de 96–97 % (guardar + prompt) y 99 % (revisar avance).
