@@ -55,3 +55,4 @@ OJO: `resetsAt` = 1795028400 = **mié 18-nov 19:00 UTC** para las dos ventanas s
 **Regla del dueño (2026-11-12 ~16:20 UTC): cuando «Semanal · Fable» llegue a 50 %, DOSIFICAR**: Fable sólo para lo importante
 (auditorías adversariales y sus correcciones en prompts de cálculo, T-7b, T-7c, T-11); todo lo demás —integraciones mecánicas,
 regeneración de documentos, T-10, T-12— con Opus. Siguen vigentes las marcas de 96–97 % (guardar + prompt) y 99 % (revisar avance).
+| 2026-11-12 16:12 | s/d | **40 %** | s/d (15 % a las 16:00) | llegan las dos auditorías de T-5; se lanza con Fable el agente de correcciones + integración. Ritmo del semanal de todos los modelos: ≈ 0.5 puntos/min con 5–6 agentes (26 % → 40 % en 28 min) |
