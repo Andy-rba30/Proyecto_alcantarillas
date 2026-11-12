@@ -937,7 +937,9 @@ CENSO_DE_MARCAS = {
     # techo de una concentracion en ppm (el 100 % de la muestra).
     # 8 -> 10 en T-1: `MINUTOS_POR_HORA = 60` y `HECTAREAS_POR_KM2 = 100`, las
     # dos conversiones de unidad del capitulo III del Manual de Hidrologia.
-    "src/dominios.py": 10,
+    # 10 -> 11 en T-8: `PORCENTAJE_POR_UNIDAD`, la definicion del
+    # porcentaje (el auditor de T-8 lo saco de constantes_normativas).
+    "src/dominios.py": 11,
     # UNA sola: `CIFRAS_MAGNITUD = 3`, los decimales con que la traza de la
     # memoria imprime una magnitud (§4.4). Es de la misma naturaleza que los
     # `FMT_*` de M11 --- cuantos decimales se escriben, no cuanto vale nada ---

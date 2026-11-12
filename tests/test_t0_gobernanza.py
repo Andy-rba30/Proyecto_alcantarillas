@@ -164,6 +164,11 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # del tracker conserva el texto de T-2 detras de «Anterior:».
         ESTADO_CERRADO: {"INF-5.1.18", "INF-3.3.3", "INF-3.2.7"},
     },
+    "T-8": {
+        # La proteccion de entrada y salida (Fase 6). Con los numeros del
+        # INFORME: el prompt cita INF-5.1.13 como «INF-5.1.11».
+        ESTADO_CERRADO: {"INF-3.3.7", "INF-5.1.13"},
+    },
 }
 
 
@@ -604,20 +609,26 @@ def test_las_dos_fuentes_nuevas_viven_solo_en_el_repositorio_de_normas():
         assert Path(fu.FUENTES[id_].archivo_pdf).name not in en_la_app
 
 
-def test_hec14_sigue_sin_citas_y_wsdot_las_tiene_desde_t4():
+def test_hec14_la_cita_T8_y_wsdot_las_tiene_desde_t4():
     """
     T-0 dio de alta las dos fuentes sin citas; citarlas (con pagina y frase)
     era de T-4 y T-8. T-4 cito el WSDOT Hydraulics Manual --abrasion, pH,
     resistividad, velocidad--, cada cita verificada contra su pagina por
-    `test_normativa_pdf`; HEC-14 sigue sin citas hasta T-8. El test se
-    llamaba «…ninguna cita se apoya todavia en las dos fuentes nuevas».
+    `test_normativa_pdf`. El test se llamaba «…ninguna cita se apoya todavia
+    en las dos fuentes nuevas».
 
     T-1 (auditoria) sumo TRES del capitulo 2 del mismo manual (hidrologia):
     la duracion minima de la lluvia y la tabla de coeficientes de
     escorrentia con su incremento por frecuencia.
+
+    T-8 cita HEC-14 (apron, hoya de socavacion, velocidad de salida,
+    Apendice D), y TODAS sus citas las firma la sesion de T-8: ninguna entra
+    sin verificar contra el ejemplar.
     """
     reg = _registro.construir()
-    assert not reg.citas_de("HEC14")
+    hec14 = reg.citas_de("HEC14")
+    assert hec14
+    assert all(c.verificado and "T-8" in c.verificado.por for c in hec14)
     assert {"WSDOT_HM.2-6.3#TC_MINIMO", "WSDOT_HM.2-6.2#T2-2",
             "WSDOT_HM.2-6.2#FRECUENCIA"} <= {c.id for c in reg.citas_de("WSDOT_HM")}
 

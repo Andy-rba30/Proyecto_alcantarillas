@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "dba53bbee66d838e3c583cb8aa888452203b4def",
+    "criterios_sha1": "0592f597933796ae5fd92bdbfb5bd893ea7b6cde",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -193,7 +193,13 @@
       "avisos": [
         "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
-        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto"
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto",
+        "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
+        "Proteccion de salida: la longitud adoptada (5.00 m, 'longitud_proteccion_salida') es menor que la del apron de HEC-14 (5.40 m, Tabla 10.1, clase 4)",
+        "Proteccion de salida: el espesor adoptado (0.592 m, 'espesor_proteccion_salida') es menor que la profundidad del apron de HEC-14 (0.770 m, Tabla 10.1, clase 4)",
+        "Proteccion de salida: el espesor rige como 1.75 veces el d50 (0.592 m), bajo el piso de 2 veces de HEC-14: «Apron depth ranges from 3.5D50 for the smallest riprap to a limit of 2.0D50 for the larger riprap sizes.» (Sec. 10.2) y «The basin is pre-shaped and lined with riprap that is at least 2D50 thick.» (Sec. 10.1). Ver 'regla_espesor_longitud_proteccion_salida'",
+        "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
+        "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
       ],
       "clasificacion": {
         "luz_m": 2.75,
@@ -304,9 +310,79 @@
         "criterio_longitud": "longitud_proteccion_salida",
         "advertencias": [
           "d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))",
-          "Falta el filtro. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta)",
-          "Alcance: d50 sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, dimensiona el apron de enrocado por HEC-14 Sec. 10.2, en funcion de Q, D y TW, y remite a HEC-14 entero la proteccion frente a avenidas grandes. Se aplica el Manual MTC por ser norma peruana vigente y porque HEC-14 no esta en el expediente; la geometria de la proteccion se cierra en el expediente tecnico"
-        ]
+          "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
+          "Alcance: el d50 que rige sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW: se calcula AL LADO, como contraste, y la corrida avisa cuando pide mas que lo adoptado. La geometria de la proteccion se cierra en el expediente tecnico"
+        ],
+        "requerida": null,
+        "froude_salida": {
+          "Fr": 1.5668450524931907,
+          "y_equivalente_m": 0.4266503659114436,
+          "area_m2": 0.3640610694647375,
+          "supercritico": true,
+          "seccion_llena": false
+        },
+        "velocidad_admisible": null,
+        "apron_hec14": {
+          "D50_requerido_m": 0.2515643602129019,
+          "D_m": 0.9,
+          "D_de_calculo_m": 0.7635614811238969,
+          "ajustado_por_supercritico": true,
+          "TW_m": 0.3,
+          "TW_de_calculo_m": 0.3054245924495588,
+          "TW_acotado": true,
+          "clase": 4,
+          "D50_clase_m": 0.35,
+          "longitud_m": 5.4,
+          "espesor_m": 0.77,
+          "ancho_final_m": 6.300000000000001
+        },
+        "clase_hec14_de_la_piedra": {
+          "d50_m": 0.3382248100055038,
+          "clase": 4,
+          "D50_clase_m": 0.35,
+          "longitud_m": 5.4,
+          "espesor_m": 0.77,
+          "ancho_final_m": 6.300000000000001
+        },
+        "regla_espesor_longitud": "manual",
+        "espesor_adoptado_m": 0.5918934175096316,
+        "longitud_adoptada_m": 5.0,
+        "filtro": {
+          "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
+          "clase_geotextil": "Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento)",
+          "pasa_200_pct": null,
+          "columna_tabla_511_06": null,
+          "permitividad_min_s1": null,
+          "abertura_aparente_max_mm": null,
+          "citas": [
+            "MC_HHD.LAMINA_05",
+            "HEC14.10.2#FILTRO",
+            "EG2013.511.08#EROSION",
+            "EG2013.511.08#T511_06"
+          ]
+        }
+      },
+      "proteccion_entrada": {
+        "tipo_embocadura": "cabezal_recto",
+        "V_entrada_m_s": 2.4119750436244365,
+        "revestimiento": "emboquillado_de_piedra",
+        "criterio_revestimiento": "tipo_proteccion_entrada",
+        "elementos": [
+          "cauce de aproximacion, del pie del cabezal hacia aguas arriba, con su uña o dentellon al borde",
+          "talud del terraplen a los dos lados del cabezal, donde el muro recto no lo contiene"
+        ],
+        "requerida": null,
+        "velocidad_admisible": null
+      },
+      "socavacion_salida": {
+        "profundidad_para_desplante_m": null,
+        "origen": "sin dato",
+        "declarada_m": null,
+        "referencia": null,
+        "cota_referencia_msnm": null,
+        "cota_fondo_de_la_hoya_msnm": null,
+        "motivo_no_estimada": "falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es)",
+        "hoya_estimada": null
       },
       "geometria": {
         "numeral": "Sec. 7.B",
@@ -612,7 +688,12 @@
       "avisos": [
         "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
-        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto",
+        "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
+        "Proteccion de salida: con la piedra que el proyecto pone (d50 = 0.274 m, clase 4 de la Tabla 10.1 de HEC-14) lo adoptado queda corto en la longitud (5.00 m contra 5.40 m) y en el espesor (0.479 m contra 0.770 m)",
+        "Proteccion de salida: el espesor rige como 1.75 veces el d50 (0.479 m), bajo el piso de 2 veces de HEC-14: «Apron depth ranges from 3.5D50 for the smallest riprap to a limit of 2.0D50 for the larger riprap sizes.» (Sec. 10.2) y «The basin is pre-shaped and lined with riprap that is at least 2D50 thick.» (Sec. 10.1). Ver 'regla_espesor_longitud_proteccion_salida'",
+        "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
+        "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
       ],
       "clasificacion": {
         "luz_m": 2.75,
@@ -723,9 +804,79 @@
         "criterio_longitud": "longitud_proteccion_salida",
         "advertencias": [
           "d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))",
-          "Falta el filtro. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta)",
-          "Alcance: d50 sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, dimensiona el apron de enrocado por HEC-14 Sec. 10.2, en funcion de Q, D y TW, y remite a HEC-14 entero la proteccion frente a avenidas grandes. Se aplica el Manual MTC por ser norma peruana vigente y porque HEC-14 no esta en el expediente; la geometria de la proteccion se cierra en el expediente tecnico"
-        ]
+          "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
+          "Alcance: el d50 que rige sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW: se calcula AL LADO, como contraste, y la corrida avisa cuando pide mas que lo adoptado. La geometria de la proteccion se cierra en el expediente tecnico"
+        ],
+        "requerida": null,
+        "froude_salida": {
+          "Fr": 1.7135502688430395,
+          "y_equivalente_m": 0.28853065086596974,
+          "area_m2": 0.16649987297828026,
+          "supercritico": true,
+          "seccion_llena": false
+        },
+        "velocidad_admisible": null,
+        "apron_hec14": {
+          "D50_requerido_m": 0.10388295115696192,
+          "D_m": 0.9,
+          "D_de_calculo_m": 0.6179169099557014,
+          "ajustado_por_supercritico": true,
+          "TW_m": 0.3,
+          "TW_de_calculo_m": 0.3,
+          "TW_acotado": false,
+          "clase": 1,
+          "D50_clase_m": 0.125,
+          "longitud_m": 3.6,
+          "espesor_m": 0.4375,
+          "ancho_final_m": 5.1
+        },
+        "clase_hec14_de_la_piedra": {
+          "d50_m": 0.27356900583494154,
+          "clase": 4,
+          "D50_clase_m": 0.35,
+          "longitud_m": 5.4,
+          "espesor_m": 0.77,
+          "ancho_final_m": 6.300000000000001
+        },
+        "regla_espesor_longitud": "manual",
+        "espesor_adoptado_m": 0.4787457602111477,
+        "longitud_adoptada_m": 5.0,
+        "filtro": {
+          "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
+          "clase_geotextil": "Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento)",
+          "pasa_200_pct": null,
+          "columna_tabla_511_06": null,
+          "permitividad_min_s1": null,
+          "abertura_aparente_max_mm": null,
+          "citas": [
+            "MC_HHD.LAMINA_05",
+            "HEC14.10.2#FILTRO",
+            "EG2013.511.08#EROSION",
+            "EG2013.511.08#T511_06"
+          ]
+        }
+      },
+      "proteccion_entrada": {
+        "tipo_embocadura": "cabezal_recto",
+        "V_entrada_m_s": 1.7391817606771776,
+        "revestimiento": "emboquillado_de_piedra",
+        "criterio_revestimiento": "tipo_proteccion_entrada",
+        "elementos": [
+          "cauce de aproximacion, del pie del cabezal hacia aguas arriba, con su uña o dentellon al borde",
+          "talud del terraplen a los dos lados del cabezal, donde el muro recto no lo contiene"
+        ],
+        "requerida": null,
+        "velocidad_admisible": null
+      },
+      "socavacion_salida": {
+        "profundidad_para_desplante_m": null,
+        "origen": "sin dato",
+        "declarada_m": null,
+        "referencia": null,
+        "cota_referencia_msnm": null,
+        "cota_fondo_de_la_hoya_msnm": null,
+        "motivo_no_estimada": "falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es)",
+        "hoya_estimada": null
       },
       "geometria": {
         "numeral": "Sec. 7.B",
@@ -1084,6 +1235,8 @@
       },
       "diseno": null,
       "proteccion_salida": null,
+      "proteccion_entrada": null,
+      "socavacion_salida": null,
       "geometria": null,
       "estructural": null,
       "espaciamiento_alivio": null,
@@ -1432,6 +1585,8 @@
       },
       "diseno": null,
       "proteccion_salida": null,
+      "proteccion_entrada": null,
+      "socavacion_salida": null,
       "geometria": null,
       "estructural": null,
       "espaciamiento_alivio": null,
@@ -1837,6 +1992,13 @@
         "concepto": "Con que regimen se aplica el indicador de sedimentacion del HDS-5 num. 5.3.3 (pendiente del conducto frente a la del cauce natural) en la fila V2b: como umbral duro que detiene el punto, o como indicador que se imprime con aviso y no descarta el diametro"
       },
       {
+        "clave": "regla_espesor_longitud_proteccion_salida",
+        "etiqueta": "A",
+        "valor": "manual",
+        "declarado_en_caliente": false,
+        "concepto": "Regla con que se fijan el espesor y la longitud de la proteccion de salida"
+      },
+      {
         "clave": "remanso_derecho_via",
         "etiqueta": "A",
         "valor": null,
@@ -1867,6 +2029,13 @@
         "valor": 2.0,
         "declarado_en_caliente": false,
         "concepto": "Inclinacion del talud del terraplen en el punto de cruce, como proyeccion horizontal por unidad de altura (H:V), para la 'proyeccion de taludes' que Sec. 7.B suma al ancho de plataforma al calcular la longitud del conducto"
+      },
+      {
+        "clave": "tipo_proteccion_entrada",
+        "etiqueta": "A",
+        "valor": "emboquillado_de_piedra",
+        "declarado_en_caliente": false,
+        "concepto": "Revestimiento con que se protege el cauce y el talud en la ENTRADA de la alcantarilla"
       },
       {
         "clave": "umbral_area_quebrada_importante_ha",

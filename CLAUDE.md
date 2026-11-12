@@ -211,7 +211,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -303,7 +303,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -340,7 +340,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -464,7 +464,15 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   estimador impreso, un ajuste que no pasa K-S, `serie_sin_fen` con menos
   lluvia que la serie completa) y la encabeza con
   `MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA`, porque encabezarla con HDS-5 sería
-  una cita falsa (ficha T1-06). Y desde EXT-3 `Bloqueo` vive en `modelos.py`
+  una cita falsa (ficha T1-06). Desde T-8 la levanta también M6 por los
+  límites de HEC-14 —la Ec. (10.4) fuera de un conducto circular único, un
+  conducto de más de 1.50 m de alto (nota 8 de la Tabla 1.1), un TW sobre el
+  rango de la ecuación, un suelo cohesivo fuera del IP de las Ec. (5.2) y
+  (5.3), la Tabla 5.2 agotada, varios barriles—, encabezada con
+  `MOTIVO_METODO_NO_EVALUABLE_HEC14`; y dentro de la Fase 6 NO viaja como
+  `Bloqueo`: la Fase 6 corre después del dimensionado, la captura y la
+  convierte en el aviso del contraste que no se evaluó (rige el d50 de
+  Laushey, ficha T8-01). Y desde EXT-3 `Bloqueo` vive en `modelos.py`
   con `tipo: TipoDeBloqueo` (str Enum cuyos valores son los textos que la
   línea base ya imprimía): la vía `servicio._etapa` → `servicio._bloqueo` descrita
   arriba no cambia, `cli` lo reexporta.
@@ -710,7 +718,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4866**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **4976**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
@@ -776,7 +784,81 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-6 de la cadena T (2026-11-11, integrado el 12 detrás de
+independientes. **T-8 de la cadena T (2026-11-12, integrado detrás de T-6)
+sumó CIENTO DIEZ tests**, ninguno con la marca `pdf` ni dependiente de Tk ni
+del repositorio de normas: los 96 de `tests/test_t8_proteccion.py` —la Fase 6
+de entrada y salida, con el d50 de Laushey del Manual (núm. 4.1.1.3.7 c))
+**que sigue rigiendo y no se movió**: `M6.proteccion_salida` lo contrasta con
+la velocidad máxima admisible del terreno (Tabla Nº 11 del Manual, por
+`tipo_terreno_receptor` y `regimen_flujo_descarga`) y dice si la protección es
+requerida, y calcula AL LADO el apron de HEC-14 Cap. 10 (`M6.apron_hec14`: Ec.
+10.4 con el D' de la Ec. 10.5 y el TW acotado a 0.4D–1.0D, clase de la Tabla
+10.1, ancho 3D + (2/3)L) y la clase de la piedra adoptada (paso 6.6b), con
+aviso cuando lo adoptado queda corto y SIEMPRE que el espesor 1.75·d50 quede
+bajo el piso de 2.0·D50 de HEC-14 —la decisión queda preparada en
+`regla_espesor_longitud_proteccion_salida` [A], `manual` por defecto y
+`envolvente_hec14` barrible—; el Froude de HEC-14 (`Fr_e` con `ye =
+(A/2)^0.5`) es un parámetro de diseño y no un indicador de régimen, que sale
+del tirante contra el crítico por UNA regla (`M6.flujo_supercritico`); el
+filtro es un requisito declarado (Lámina Nº 05, HEC-14 núm. 10.2, EG-2013
+núm. 511.08 con la Tabla 511-06 leída por fila y sus notas (5)a y (5)b), no
+un dimensionado; la entrada (`M6.proteccion_entrada`, INF-5.1.13) publica la
+velocidad en la boca de lo que M4 ya resolvió, la contrasta con la Tabla Nº
+11 si se declara `tipo_terreno_entrada` y declara el revestimiento de
+`tipo_proteccion_entrada` [A] y lo que se protege según la embocadura, sin
+dimensiones porque ninguna fuente de `normas/` se las da (ficha T8-03); y la
+socavación a la salida para el desplante (`M6.socavacion_salida`) es HEC-14
+**Cap. 5** —no el 3, errata de la cadena—, Ec. 5.1 en no cohesivos y 5.2 a
+5.4 en cohesivos con sus Tablas 5.1 a 5.4, la duración del pico declarada o
+`duracion_caudal_pico_socavacion_min` [C] (30 min, el valor de la fuente; una
+duración menor se acota a 30 como cota superior, porque los exponentes no
+valen por debajo), la lectura entre filas por
+`lectura_coeficientes_socavacion_hec14` [A], la referencia de la profundidad
+por `referencia_profundidad_socavacion` [A] y la cota del fondo de la hoya;
+seis datos externos nuevos y opcionales entran por `--datos-externos`
+(`servicio.CLAVES_EXTERNAS` tiene dieciocho), y sin ellos la fase lo avisa.
+Los oráculos son los ejemplos resueltos de HEC-14 (el de las págs. 10-18 y
+10-19, y el CU escalado a λ = 0.9 para caber en el límite de 1.50 m) y la
+aritmética escrita—; los seis anclajes de `test_decisiones_diferidas` para
+las fichas de la Parte XLV (T8-01..06); los cinco que crecen solos en
+`test_ext5_forma_gui` con los cinco criterios nuevos (102 donde T-6 dejó 97;
+los sin valor siguen siendo 35); y los tres de `test_dimensional_piloto` con
+`HEC14_TAU_C_ALFA_U_SI` en su censo. **No se escribieron en rojo primero**:
+el prompt se retomó a medias con el código escrito, y el rojo se midió contra
+`ad5cb97` (ficha T8-06); la mutación de M6 con el arnés de EXT-11, sobre el
+módulo final, mata 472 de 514 mutantes (91.8 %) y los 42 vivos están
+clasificados en esa ficha. El auditor adversarial dejó diez correcciones, entre
+ellas el aviso de la duración adoptada por criterio con su sensibilidad, una
+sola regla de régimen, un IP fuera de 5–16 que avisa y no bloquea, la salida
+sin enrocado avisada con el literal de HDS-5 núm. 5.3.2 («…is typically a
+standard practice unless…») y
+su `Interpretacion` en vez de un verbo de obligación, el límite de 1.50 m de
+la nota 8 de la Tabla 1.1, el tirante de borde (HEC-14 núm. 3.1.3), el terreno
+declarado contra el lecho y el rótulo `MOTIVO_METODO_NO_EVALUABLE_HEC14`.
+Ningún archivo restó tests; se reescribieron `test_t0_gobernanza` (HEC-14
+pasa de «sin citas» a citada y firmada por T-8, y la fila de T-8 en
+`LO_QUE_ESCRIBIO_CADA_PROMPT`), `test_t2_hidraulica` (los avisos sin los de
+geometría ni los de la Fase 6), `test_ayuda_entrada` (catorce externos que no
+son columna), `test_memoria_sustentada` (las tres piezas de la Fase 6 y nueve
+fundamentos `F6.*` que la corrida por defecto no alcanza), `test_normativa`
+(el prefijo `HEC`) y `test_sin_literales` (`src/dominios.py`: 11, por
+`PORCENTAJE_POR_UNIDAD`). Cierra INF-3.3.7 e INF-5.1.13, y deja una nota en
+MAT-X6: su premisa, «HEC-14 no está en normas/», ya no se sostiene, y con
+HEC-14 la contradicción numérica sí se ve (en A-01, 0.592 m de espesor contra
+0.770 m de profundidad del apron de clase 4). **La línea base de la Familia C
+se regeneró por FORMATO** sobre el árbol fusionado y se midió contra
+`7e74065` con el comparador de E-B: los bloques nuevos de la Fase 6, los
+textos de dos advertencias, los avisos de la fase, los criterios usados, las
+huellas y el recuento «97 / 35» → «102 / 35»; el bloque `diseno` de los
+cuatro puntos es idéntico, los cuatro `cli_*.txt` salvo el ancho, los dos CSV
+de resumen y la memoria del cajón no cambian un byte, **ningún diámetro se
+movió** y los números de Laushey tampoco (d50 0.338 y 0.274 m, espesor 0.592
+y 0.479 m, longitud 5.00 m). De las cuatro configuraciones se MIDIÓ UNA,
+«sí · no», con el repositorio de normas enlazado: 4960 passed, 16 skipped,
+collected 4976 (y sin `NORMAS_DIR`, sobre el mismo árbol: 4942 passed, 34 skipped). **Las
+otras tres se dicen como derivadas, no como medidas**, por lo mismo que en
+T-0: la derivación suma 110 a las de T-6, y ninguno pasa a `skipped`.
+**T-6 de la cadena T (2026-11-11, integrado el 12 detrás de
 T-2, T-4 y T-1: el último del primer lote) sumó CIENTO TREINTA Y OCHO
 tests**, ninguno con la marca `pdf` ni dependiente de Tk: los 131 de
 `tests/test_t6_geometria.py` —la geometría de la Sec. 7.B, por los cinco
@@ -1828,7 +1910,7 @@ EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
 4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728; T-6:
-4866. La
+4866; T-8: 4976. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -1840,20 +1922,22 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 4863 (**derivado** en T-6, no medido: el contenedor no tiene tkinter) | 3 |
-| sí | no | 4850 (**MEDIDO** en T-6 sobre `origin/main`, con `NORMAS_DIR`) | 16 |
-| no | sí | 4788 (**derivado**, no medido) | 78 |
-| no | no | 4775 (**derivado**, no medido) | 91 |
+| sí | sí | 4973 (**derivado** en T-8, no medido: el contenedor no tiene tkinter) | 3 |
+| sí | no | 4960 (**MEDIDO** en T-8 sobre el árbol fusionado, con `NORMAS_DIR`) | 16 |
+| no | sí | 4898 (**derivado**, no medido) | 78 |
+| no | no | 4885 (**derivado**, no medido) | 91 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
-dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-6: 4832
-passed, 34 skipped; T-6 no sumó ninguno que abra el repositorio de normas; eran
+dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-8: 4942
+passed, 34 skipped;
+ni T-6 ni T-8 sumaron ninguno que abra el repositorio de normas; eran
 siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
 `tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
 Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
 2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
-iban saltados por la marca `pdf`. Tras T-1 la tabla decía 4725 / 4712 / 4650
+iban saltados por la marca `pdf`. Tras T-6 la tabla decía 4863 / 4850 / 4788
+/ 4775, medida sólo la segunda. Tras T-1 la tabla decía 4725 / 4712 / 4650
 / 4637, medida sólo la segunda. Tras T-4 la tabla decía 4534 / 4521 / 4479
 / 4466, medida sólo la segunda. Tras T-2 la
 tabla decía 4403 / 4390 / 4363 / 4350, medida sólo la segunda. Hasta T-0 la tabla decía 4172 / 4159 / 4137 / 4124, medidos

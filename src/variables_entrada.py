@@ -107,6 +107,11 @@ from src import datos_sitio as _ds
 from src import dominios as _dominios
 from src.criterios_adoptados import verificar_resolucion
 from src.modelos import CategoriaTR
+# --- T-8 --- las filas y las columnas de la Tabla N 11, para las `opciones`
+# de los tres datos de sitio que la nombran.
+from src.constantes_normativas import (
+    REGIMENES_DE_FLUJO_T11 as _REGIMENES_DE_FLUJO_T11,
+    V_MAX_NO_REVESTIDOS as _V_MAX_NO_REVESTIDOS)
 from src.modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango, Libre,
                      ModoDeResolucion, Poblacion, Resolucion,
                      VariableDeEntrada)
@@ -1023,6 +1028,136 @@ _EXTERNOS: Dict[str, _Externo] = {
         fase_declarada=_FASE_DE_MODULO["M7_geometria"],
         nota="Solo actua con 'metodo_longitud_conducto' = por_extremo",
     ),
+
+    # --- T-8 --- (cadena T) · los seis datos de sitio de la Fase 6 ----------
+    "tipo_terreno_receptor": _Externo(
+        concepto="Tipo de terreno del cauce RECEPTOR, sobre el que descarga "
+                 "la salida: la fila de la Tabla N 11 del Manual de "
+                 "Hidrologia (velocidades maximas admisibles en canales no "
+                 "revestidos). Con el, y con 'regimen_flujo_descarga', la "
+                 "velocidad de salida se compara con la admisible: si no la "
+                 "supera no se dimensiona enrocado; si la supera, se avisa y "
+                 "se dimensiona. Sin el, el enrocado se dimensiona igual y "
+                 "la corrida avisa que no se comparo",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="el reconocimiento del cauce y el EMS del punto: la "
+                        "clasificacion del material del lecho receptor; es "
+                        "dato de sitio por punto, opcional y sin valor por "
+                        "defecto",
+            opciones=tuple(_V_MAX_NO_REVESTIDOS),
+        ),
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6` y se la pasa a "
+             "`M6.proteccion_salida`; el modulo la recibe como argumento y "
+             "no por su nombre, y por eso la fase se declara",
+    ),
+
+    "tipo_terreno_entrada": _Externo(
+        concepto="Tipo de terreno del cauce de APROXIMACION, aguas arriba de "
+                 "la entrada: la misma fila de la Tabla N 11. Con el, la "
+                 "velocidad en la boca se compara con la admisible y la "
+                 "memoria dice si la entrada necesita revestimiento. Sin el, "
+                 "no se compara y la corrida lo avisa",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="el reconocimiento del cauce y el EMS del punto; es "
+                        "dato de sitio por punto, opcional y sin valor por "
+                        "defecto",
+            opciones=tuple(_V_MAX_NO_REVESTIDOS),
+        ),
+        criterio_destino="tipo_proteccion_entrada",
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6` y se la pasa a "
+             "`M6.proteccion_entrada`; el modulo la recibe como argumento, y "
+             "por eso la fase se declara",
+    ),
+
+    "regimen_flujo_descarga": _Externo(
+        concepto="Regimen del flujo que pasa por la obra: la COLUMNA de la "
+                 "Tabla N 11 del Manual, que da una velocidad admisible para "
+                 "flujo intermitente y otra, igual o menor, para flujo "
+                 "permanente. Vale para la entrada y para la salida",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="el estudio hidrologico o quien opera el cauce: si "
+                        "lleva agua solo en avenidas (intermitente) o todo "
+                        "el año (permanente); dato de sitio, opcional y sin "
+                        "valor por defecto",
+            opciones=tuple(_REGIMENES_DE_FLUJO_T11),
+        ),
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6`; M6 la recibe como argumento, y por "
+             "eso la fase se declara",
+    ),
+
+    "material_lecho_salida": _Externo(
+        concepto="Suelo del lecho a la salida, del EMS: un objeto con `tipo` "
+                 "('no_cohesivo' con los diametros `D84_m` y `D16_m` de su "
+                 "curva granulometrica, o 'cohesivo' con el indice de "
+                 "plasticidad `IP` y la resistencia al corte saturada "
+                 "`Sv_Pa`) para estimar la hoya de socavacion por HEC-14 "
+                 "Cap. 5, y `pasa_200_pct` (pasante del tamiz N. 200) para "
+                 "el geotextil de filtro de EG-2013. Sin el, la socavacion "
+                 "no se estima y el filtro no se dimensiona; la corrida lo "
+                 "avisa",
+        unidad="objeto (-, m, m, -, N/m2, %)",
+        resolucion=Libre(
+            que_lo_fija="el Estudio de Mecanica de Suelos: analisis "
+                        "granulometrico, limites de Atterberg y compresion "
+                        "no confinada de una muestra saturada del lecho; es "
+                        "entrada del proyecto, opcional y sin valor por "
+                        "defecto",
+            dominio="tres formas: solo `pasa_200_pct` (0 a 100); "
+                    "`tipo`='no_cohesivo' con D84_m >= D16_m > 0; "
+                    "`tipo`='cohesivo' con IP >= 0 y Sv_Pa > 0",
+        ),
+        criterio_destino="lectura_coeficientes_socavacion_hec14",
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La leen `servicio._fase_6` (el pasante, para el filtro) y "
+             "`servicio._fase_6_socavacion` (el suelo, para la hoya); M6 la "
+             "recibe como `modelos.MaterialLecho`, y por eso la fase se "
+             "declara",
+    ),
+
+    "duracion_caudal_pico_min": _Externo(
+        concepto="Duracion del caudal pico del hidrograma de diseño, en "
+                 "MINUTOS: el tiempo t de la hoya de socavacion de HEC-14. "
+                 "Sin ella rige el criterio "
+                 "'duracion_caudal_pico_socavacion_min' (30 minutos, lo que "
+                 "la fuente recomienda cuando no se conoce)",
+        unidad="min",
+        resolucion=Libre(
+            que_lo_fija="el estudio hidrologico de la cuenca del punto",
+            dominio="minutos > 0; por debajo de 30 la fuente dice que sus "
+                    "exponentes no aplican, y como la hoya crece con t se "
+                    "estima con 30 min como cota superior y se avisa",
+        ),
+        criterio_destino="duracion_caudal_pico_socavacion_min",
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6_socavacion`; M6 la recibe como "
+             "argumento, y por eso la fase se declara",
+    ),
+
+    "profundidad_socavacion_estimada_m": _Externo(
+        concepto="Profundidad de socavacion a la salida que da un estudio "
+                 "del cauce, MEDIDA DESDE LA COTA que fija el criterio "
+                 "'referencia_profundidad_socavacion' (por defecto, el fondo "
+                 "del cauce receptor al pie de la salida). GANA sobre la "
+                 "hoya estimada por el programa (HEC-14 Cap. 5) y es la que "
+                 "se entrega al desplante del cabezal de salida; si es menor "
+                 "que la estimada, la corrida lo avisa. Admite 0: el estudio "
+                 "dice que no hay socavacion (lecho de roca)",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el estudio de socavacion o de hidraulica fluvial "
+                        "del cauce receptor",
+            dominio="m >= 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6_socavacion`; M6 la recibe como "
+             "argumento, y por eso la fase se declara",
+    ),
 }
 
 
@@ -1281,6 +1416,29 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "mismo detalle de embocadura con que se lee la Tabla A.1."),
     "long_max_cuneta": _Meta(unidad="m"),
     "longitud_proteccion_salida": _Meta(unidad="m"),
+    # --- T-8 --- los tres criterios de la Fase 6; los consume M6.
+    "tipo_proteccion_entrada": _Meta(
+        unidad="-",
+        nota="Categoria: la clase de revestimiento de la ENTRADA, entre las "
+             "tres que el num. 4.1.1.3.7 c) del Manual enumera. No entra en "
+             "ninguna formula"),
+    "duracion_caudal_pico_socavacion_min": _Meta(
+        unidad="min",
+        nota="El tiempo t de la hoya de socavacion de HEC-14 cuando el punto "
+             "no declara `duracion_caudal_pico_min`: 30 minutos, lo que la "
+             "fuente recomienda (num. 5.1.2)"),
+    "lectura_coeficientes_socavacion_hec14": _Meta(
+        unidad="-",
+        nota="Categoria: como se leen las Tablas 5.2 y 5.3 de HEC-14 entre "
+             "dos filas (envolvente o interpolacion lineal)"),
+    "regla_espesor_longitud_proteccion_salida": _Meta(
+        unidad="-",
+        nota="Categoria: rige lo adoptado («manual») o la envolvente con "
+             "HEC-14 Tabla 10.1 («envolvente_hec14»)"),
+    "referencia_profundidad_socavacion": _Meta(
+        unidad="-",
+        nota="Categoria: cota desde la que se mide la profundidad de "
+             "socavacion (fondo del cauce receptor o solera de salida)"),
     "metodo_estabilidad_global": _Meta(unidad="-"),
     "metodo_transicion_hds5": _Meta(unidad="-"),
     # PF-1 (PC-03): categoria (energia_critica | descartar), la consume M4.

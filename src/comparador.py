@@ -250,6 +250,8 @@ def _comparar_punto(id_punto: str, pa: Dict[str, Any], pb: Dict[str, Any],
                     no_comparables: List[NoComparable]) -> None:
     for campo in ("familia", "progresiva", "dimensionado", "pendientes_externos",
                   "datos_declarados", "clasificacion", "proteccion_salida",
+                  # --- T-8 --- las otras dos piezas de la Fase 6
+                  "proteccion_entrada", "socavacion_salida",
                   "geometria", "estructural", "espaciamiento_alivio",
                   "verificaciones_no_evaluadas"):
         _comparar_valor(id_punto, campo, pa.get(campo), pb.get(campo), diferencias)

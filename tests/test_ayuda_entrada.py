@@ -278,14 +278,22 @@ def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
     # Eran seis hasta T-2, que sumo las dos que no son magnitudes: la seccion
     # MEDIDA del receptor (un objeto) y si el acceso de mantenimiento esta
     # previsto (un booleano). Las dos, opcionales y sin valor por defecto.
+    # T-8 sumo las seis de la Fase 6 (terreno del cauce en la salida y en la
+    # entrada, regimen del flujo, suelo del lecho, duracion del caudal pico y
+    # socavacion declarada): tambien opcionales y sin valor por defecto.
     seis = {f.clave for f in fichas if f.clave not in m0.COLUMNAS}
     # T-6 de la cadena T sumo dos, la pendiente transversal de la plataforma
-    # (`bombeo` y `peralte`): son ocho las que no son columna.
+    # (`bombeo` y `peralte`), y T-8 las seis de la Fase 6: son catorce las
+    # que no son columna.
     assert seis == {"luz_m", "TW_m", "longitud_m", "S_conducto",
                     "L_hidraulico_m", "categoria_tr",
                     "seccion_receptor_medida",
                     "acceso_mantenimiento_previsto",
-                    "bombeo", "peralte"}
+                    "bombeo", "peralte",
+                    "tipo_terreno_receptor", "tipo_terreno_entrada",
+                    "regimen_flujo_descarga", "material_lecho_salida",
+                    "duracion_caudal_pico_min",
+                    "profundidad_socavacion_estimada_m"}
     for clave in seis:
         assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
 

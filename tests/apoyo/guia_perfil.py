@@ -125,8 +125,12 @@ def tabla_externos() -> str:
         es_columna = clave in M0.COLUMNAS
         # T-2 sumo dos claves que no son una magnitud: un objeto (la seccion
         # medida del receptor) y un booleano (el acceso de mantenimiento).
+        # T-8 sumo tres textos de catalogo (fila y columna de la Tabla Nº 11)
+        # y un objeto (el suelo del lecho a la salida).
         tipo = ("texto" if clave in servicio.CLAVES_TEXTO
+                or clave in servicio.CLAVES_DE_CATALOGO
                 else "objeto" if clave in servicio.CLAVES_OBJETO
+                or clave == servicio.CLAVE_MATERIAL_LECHO
                 else "booleano" if clave in servicio.CLAVES_BOOLEANAS
                 else "número")
         familias = servicio.FAMILIAS_QUE_USAN.get(clave)
@@ -134,6 +138,8 @@ def tabla_externos() -> str:
                 else ", ".join(f.value for f in familias))
         if clave in servicio.CLAVES_BOOLEANAS:
             si_falta = "es opcional: sin ella no se afirma nada"
+        elif clave in servicio.CLAVES_T8:
+            si_falta = "es opcional: sin ella la Fase 6 lo avisa"
         elif clave in servicio.EXTERNOS_CON_VIA_ALTERNA:
             si_falta = "el programa la resuelve por otra vía"
         elif es_columna:

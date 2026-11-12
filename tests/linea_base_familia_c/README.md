@@ -812,3 +812,52 @@ longitud ya lo llevaba, y los cuatro `cli_*.txt` no cambian un byte—, y la
 banda vacía, que sólo se alcanza burlando la puerta de los dos criterios, se
 detiene como bloqueo del punto en la etapa «pendiente adoptada del conducto
 (7.B.1)» en vez de tumbar la corrida.
+
+## Regenerada en T-8 (2026-11-12): la Fase 6 de entrada y salida; ningún número de cálculo
+
+T-8 de la cadena T (protección de entrada y salida, `INF-3.3.7`, `INF-5.1.13`). Se regeneró
+sobre el árbol ya fusionado con T-6 y se midió contra la línea base de `7e74065`
+(`tesis(T-6)`), diferencia a diferencia con el comparador de E-B y con `diff`:
+
+- **Los tres JSON:** `criterios_sha1` (cinco criterios nuevos —`tipo_proteccion_entrada`,
+  `duracion_caudal_pico_socavacion_min`, `lectura_coeficientes_socavacion_hec14`,
+  `regla_espesor_longitud_proteccion_salida` y `referencia_profundidad_socavacion`— y los
+  textos de `espesor_proteccion_salida` y `longitud_proteccion_salida`, que dicen desde T-8
+  contra qué se contrastan, sin cambiar su valor). En `informe_perfil_ancho.json`, además,
+  por cada punto que llega a la Fase 6 (A-01 y A-02): las claves nuevas de
+  `proteccion_salida` (`requerida`, que va en `null` porque nadie declara el terreno;
+  `froude_salida`; `velocidad_admisible`, `null`; `apron_hec14`; `filtro`;
+  `clase_hec14_de_la_piedra`, clase 4 en los dos; `regla_espesor_longitud`, `manual`;
+  `espesor_adoptado_m` y `longitud_adoptada_m`), los bloques nuevos `proteccion_entrada` y
+  `socavacion_salida` (sin lecho declarado: «sin dato», con `referencia` y las dos cotas en
+  `null`), los textos de dos de las tres advertencias de siempre (`ADVERTENCIA_FALTA_FILTRO`
+  y `ADVERTENCIA_ALCANCE_HDS5`, que dejan de decir que HEC-14 no está) y los avisos nuevos
+  de la Fase 6 en `avisos` (seis en A-01, cinco en A-02); y `tipo_proteccion_entrada` y
+  `regla_espesor_longitud_proteccion_salida` entre los criterios usados.
+- **`cli_perfil_ancho.txt`:** en A-01 y A-02, las dos advertencias con su texto nuevo, cuatro
+  líneas de detalle de la Fase 6 (Froude «Fr_e … régimen por el tirante contra el crítico»,
+  apron de HEC-14 como contraste, entrada, socavación para el desplante) y los avisos de la
+  fase: tres por punto por falta de datos del sitio (terreno del receptor, terreno de la
+  entrada, lecho); el del espesor bajo el piso de 2.0·D₅₀ de HEC-14 en los dos; en A-01 los
+  dos del contraste con el apron —la longitud adoptada (5.00 m) es menor que la del apron de
+  clase 4 (6·0.90 = 5.40 m) y el espesor adoptado (1.75·d₅₀ = 0.592 m) menor que su
+  profundidad (2.2·0.35 = 0.770 m)—, y en A-02 el de la clase de la piedra adoptada (la Ec.
+  10.4 pide la clase 1; la piedra de 0.274 m es de la clase 4, y con ella lo adoptado queda
+  corto en longitud y espesor).
+- **Las tres memorias de la CLI:** las dos huellas —`criterios_sha1` y `hoja_ruta_sha1`,
+  esta por la nota «Ampliado (T-8)» de la Fase 6 de la v8— y el recuento «97 criterios
+  declarados, 35 todavia sin valor» → «102 … 35»; en la ancha, el título «Fase 6 —
+  Proteccion de entrada y salida», el filtro como requisito, la entrada, la socavación, los
+  avisos de la fase y el desarrollo de los pasos que el fixture alcanza (6.1, 6.2, 6.3,
+  6.5, 6.6, 6.6b y 6.9; los demás piden datos del sitio que no trae), las fichas de los criterios
+  usados y las citas nuevas del anexo.
+- **Sin cambio de un byte:** `cli_perfil.txt`, `cli_expediente.txt`, `cli_rama_error.txt`,
+  los dos CSV de resumen, `memoria_punto_cajon.html` y `entradas_ampliadas.json`.
+
+**Diámetros movidos: ninguno, y los mismos puntos dimensionan.** El bloque `diseno` de los
+cuatro puntos es idéntico al de `7e74065` en los tres JSON: A-01 y A-02 siguen en
+Ø 0.90 m de concreto reforzado en la corrida ancha de perfil; B-01 y C-01 se detienen donde
+se detenían, con los mismos bloqueos. **Los números de Laushey no se movieron**: d₅₀ = 0.338
+y 0.274 m, espesor 0.592 y 0.479 m, longitud 5.000 m. La Fase 6 corre después del
+dimensionado y no lo realimenta; «Verificaciones con aviso» del RESUMEN no cambia, porque
+ningún paso de la Fase 6 de este fixture tiene veredicto INDICADOR.

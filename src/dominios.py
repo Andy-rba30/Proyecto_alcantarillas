@@ -125,3 +125,9 @@ PPM_MAX_FISICO = 1000000    # literal-ok: definicion de la unidad (1e6 ppm = 100
 # a los minutos de la Tabla N 05.
 MINUTOS_POR_HORA = 60         # literal-ok: definicion de la unidad, no valor de proyecto
 HECTAREAS_POR_KM2 = 100       # literal-ok: definicion de la unidad, no valor de proyecto
+# --- T-8 --- El porcentaje: techo del dominio de un pasante (EG-2013, Tabla
+# 511-06 entra por el % que pasa el tamiz N.º 200) y la conversion de una
+# pendiente en m/m al % con que entra la Tabla 5.3 de HEC-14. Mismo caso que
+# los tres anteriores: definicion de la unidad, no valor de proyecto (el
+# auditor de T-8 lo saco de `constantes_normativas`, donde no era [N]).
+PORCENTAJE_POR_UNIDAD = 100.0   # literal-ok: definicion del porcentaje, no valor de proyecto

@@ -8058,4 +8058,992 @@ DG2018_304_06_PERALTE = _cita(
           "baja el otro."),
 )
 
+# ===========================================================================
+# --- T-8 --- (cadena T) · proteccion de entrada y salida, socavacion local
+# ===========================================================================
+# Mismo regimen que T-0 y T-2: la propia sesion abrio cada pagina por su capa
+# de texto, y las que llevan una ECUACION o una FIGURA ademas por imagen
+# (HEC-14 PDF 54, 60, 204 y 218; Manual MTC PDF 80 y Laminas 02 a 05), y la
+# firma lo dice. HEC-14 imprime sus ecuaciones partidas en renglones sueltos
+# (nota de `fuentes.HEC14`): la formula de cada una va en la `nota`, leida de
+# la pagina renderizada, y el `texto_literal` es la frase de prosa que la
+# introduce, que es lo que T2 puede buscar.
+#
+# LOS CAPITULOS REALES DE HEC-14, porque la cadena T los cita de memoria: la
+# socavacion a la salida es el Capitulo 5 (no el 3), y los aprons y pozas de
+# enrocado el 10. Verificado sobre el ejemplar; el indice completo esta en
+# la `nota` de `fuentes.HEC14`.
+FECHA_TESIS_T8 = "2026-11-12"
+POR_TESIS_T8 = "tesis/T-8 · lectura directa de la pagina por la sesion"
+TESIS_T8 = (FECHA_TESIS_T8, POR_TESIS_T8)
+
+# ---- Manual de Hidrologia: la velocidad de salida y la Tabla N° 11 ---------
+MC_HHD_V_SALIDA_LIMITE = _cita(
+    id="MC_HHD.4.1.1.3.6#V_SALIDA",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.6, párrafo anterior a la Tabla Nº 11",
+    titulo_numeral="Diseño hidráulico",
+    pagina_impresa="77",
+    pagina_pdf=80,
+    pagina_pdf_titulo=77,
+    texto_literal=Verbatim(
+        texto=("Asimismo, se debe tener muy en cuenta la velocidad de flujo a "
+               "la salida de la alcantarilla, generalmente esta velocidad es "
+               "mayor que la velocidad de escurrimiento en el cauce natural y "
+               "debe limitarse a fin de evitar procesos de socavación del "
+               "cauce aguas abajo de la estructura y no afecte su "
+               "estabilidad."),
+        pagina_pdf=80),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T8,
+    nota=("Es la frase que convierte la Tabla Nº 11 en un limite de la "
+          "velocidad de SALIDA: «debe limitarse». El parrafo siguiente "
+          "presenta la tabla «con valores máximos admisibles de velocidades "
+          "de flujo según el tipo de material donde se desplaza». El Manual "
+          "no dice que hacer cuando la velocidad los supera; lo dice el num. "
+          "4.1.1.3.7 c): proteger el cauce."),
+)
+
+MC_HHD_T11 = _cita(
+    id="MC_HHD.4.1.1.3.6#T11",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.6, Tabla Nº 11",
+    titulo_numeral="Diseño hidráulico",
+    pagina_impresa="77",
+    pagina_pdf=80,
+    pagina_pdf_titulo=77,
+    texto_literal=Verbatim(
+        texto=("TABLA  Nº  11:   Velocidades  máximas  admisibles (m/s) en "
+               "canales no"),
+        pagina_pdf=80),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    derivado_de="MC_HHD.4.1.1.3.6#V_SALIDA",
+    nota=("El titulo se imprime en DOS renglones y el segundo dice solo "
+          "«revestidos»: mismo caso que la Tabla Nº 10. Trece filas de "
+          "terreno y DOS columnas de valores, «FLUJO INTERMITENTE (M/S)» y "
+          "«FLUJO PERMANENTE (M/S)»; seis de las filas cuelgan del "
+          "encabezado «Material graduado (no coloidal)», que no lleva "
+          "valores. Al pie: «Fuente: Manual de Carreteras de California». "
+          "Leida por texto y por imagen; la transcripcion entera es "
+          "`TablaNormativa` MC_HHD.T11."),
+)
+
+MC_HHD_PROTECCION_CAUCE = _cita(
+    id="MC_HHD.4.1.1.3.7c#PROTECCION",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 c)",
+    titulo_numeral="c)  Socavación local a la salida de la alcantarilla",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="79",
+    pagina_pdf=82,
+    pagina_pdf_titulo=82,
+    texto_literal=Verbatim(
+        texto=("Si la velocidad del flujo a la entrada y particularmente a la "
+               "salida de la alcantarilla es alta, puede producir procesos de "
+               "socavación local que afecte su estabilidad, por ello, se "
+               "recomienda la protección del cauce"),
+        pagina_pdf=82),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T8,
+    nota=("LA ORACION CRUZA DE PAGINA: sigue en la impresa 80 (PDF 83) con "
+          "«natural mediante la construcción de emboquillados de piedra…» "
+          "(cita MC_HHD.4.1.1.3.7c#REVESTIMIENTOS). Nombra la ENTRADA junto a "
+          "la salida: es el unico texto del Manual que sostiene una "
+          "proteccion de entrada, y la sostiene como RECOMENDACION, sin "
+          "formula ni dimension."),
+)
+
+MC_HHD_REVESTIMIENTOS = _cita(
+    id="MC_HHD.4.1.1.3.7c#REVESTIMIENTOS",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 c)",
+    titulo_numeral="c)  Socavación local a la salida de la alcantarilla",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="80",
+    pagina_pdf=83,
+    pagina_pdf_titulo=82,
+    texto_literal=Verbatim(
+        texto=("natural mediante la construcción de emboquillados de piedra, "
+               "enchapado de rocas acomodadas u otros tipos de "
+               "revestimientos, los cuales deberán extenderse hasta zonas "
+               "donde la socavación local no tenga incidencia sobre la "
+               "protección"),
+        pagina_pdf=83),
+    caracter=Caracter.RECOMENDACION,
+    derivado_de="MC_HHD.4.1.1.3.7c#PROTECCION",
+    sesion=TESIS_T8,
+    nota=("Segunda mitad de la oracion. Enumera TRES clases de "
+          "revestimiento --emboquillados de piedra, enchapado de rocas "
+          "acomodadas, «otros tipos»-- sin preferir ninguna ni dar "
+          "dimensiones: de ahi el conjunto cerrado del criterio "
+          "'tipo_proteccion_entrada'. Y fija el alcance en planta por un "
+          "criterio fisico, no por una longitud: hasta donde la socavacion "
+          "local no incida."),
+)
+
+MC_HHD_LAMINA_05 = _cita(
+    id="MC_HHD.LAMINA_05",
+    fuente_id="MC_HHD",
+    numeral="Anexos, Lámina Nº 05",
+    titulo_numeral="ALCANTARILLA  CON  ENROCADO",
+    pagina_impresa="211",
+    pagina_pdf=214,
+    texto_literal=Verbatim(texto="FILTRO", pagina_pdf=214),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    nota=("ES UNA FIGURA, leida por imagen: «SECCIÓN TÍPICA DE CRUCE DE "
+          "ALCANTARILLA CON ENROCADO DE PROTECCION A LA SALIDA». Dibuja el "
+          "enrocado sobre el talud de salida hasta el fondo del cauce, y "
+          "bajo el dos capas ROTULADAS: «FILTRO» y «CAMA DE APOYO». NO TRAE "
+          "NINGUNA DIMENSION: los taludes van como «H:V» y las dos cotas "
+          "del pie como «VARIABLE». El num. 4.1.1.3.7 c) la presenta con «En "
+          "los Anexos: Lámina Nº 05, se aprecia una sección típica de "
+          "alcantarilla con enrocado de protección a la salida» (pag. "
+          "impresa 80). Lo unico que se le puede atribuir es que el "
+          "enrocado tipico del Manual LLEVA filtro y cama de apoyo."),
+)
+
+MC_HHD_LAMINA_02 = _cita(
+    id="MC_HHD.LAMINA_02",
+    fuente_id="MC_HHD",
+    numeral="Anexos, Lámina Nº 02",
+    titulo_numeral="TIPO  TMC CON PROTECCIÓN DE",
+    pagina_impresa="207",
+    pagina_pdf=210,
+    texto_literal=Verbatim(texto="REVESTIMIENTO  DE PIEDRA  EMBOQUILLADA",
+                           pagina_pdf=210),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    nota=("ES UNA FIGURA, leida por imagen: «SECCIÓN TÍPICA DE ALCANTARILLA "
+          "TIPO TMC CON PROTECCIÓN DE ENTRADA Y SALIDA». Rotula el "
+          "«REVESTIMIENTO DE PIEDRA EMBOQUILLADA» del cauce, la «UÑA» al pie "
+          "y la «PROTECCION DE DESCARGA» sobre «AFIRMADO COMPACTADO». Las "
+          "dimensiones van como LETRAS (g, i, j, m, n, p, q) y la lamina no "
+          "trae la tabla que les de valor: no fija ninguna medida. La "
+          "Lámina 02-A (pag. impresa 208, PDF 211) añade la «ENTRADA TIPO "
+          "CAJA RECEPTORA» y las salidas con y sin aleros, tambien con "
+          "letras; la Lámina 03 (pag. impresa 209, PDF 212) rotula "
+          "«CON PROTECCIÓN A LA ENTRADA Y SALIDA», con todas las cotas "
+          "«VARIABLE»."),
+)
+
+# ---- EG-2013: el geotextil entre el enrocado y el suelo --------------------
+EG2013_511_08 = _cita(
+    id="EG2013.511.08#EROSION",
+    fuente_id="EG2013",
+    numeral="511.08",
+    titulo_numeral="511.08 Geotextiles usados en control permanente de erosión",
+    pagina_impresa="1014",
+    pagina_pdf=1022,
+    texto_literal=Verbatim(
+        texto=("Esta especificación es aplicable al uso del geotextil entre "
+               "sistemas armados de absorción de energía (escolleras, "
+               "gaviones, enrocados, geoestructuras etc.) y el suelo in-situ "
+               "para prevenir las pérdidas de suelo resultantes de un "
+               "escurrimiento excesivo y para prevenir subpresiones "
+               "hidráulicas que causen una inestabilidad del sistema de "
+               "control permanente de erosión."),
+        pagina_pdf=1022),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("Define el AMBITO: el geotextil que va entre un enrocado y el "
+          "suelo. El parrafo siguiente dice «La función principal del "
+          "geotextil es la filtración». EL NUMERAL NO OBLIGA A PONER FILTRO: "
+          "especifica el geotextil cuando el proyecto lo pone. EG-2013 no "
+          "trae la palabra «emboquillado» en ninguna de sus 1282 paginas "
+          "(barrido por texto en T-8), y su Seccion 603 «Defensas ribereñas» "
+          "trata el enrocado de ribera, no el de salida de alcantarilla."),
+)
+
+EG2013_T511_06 = _cita(
+    id="EG2013.511.08#T511_06",
+    fuente_id="EG2013",
+    numeral="511.08, Tabla 511-06",
+    titulo_numeral="511.08 Geotextiles usados en control permanente de erosión",
+    pagina_impresa="1015",
+    pagina_pdf=1023,
+    pagina_pdf_titulo=1022,
+    texto_literal=Verbatim(
+        texto=("El Geotextil debe cumplir con los requerimientos de la Tabla "
+               "511-06 y lo indicado en el Proyecto."),
+        pagina_pdf=1023),
+    caracter=Caracter.EXIGENCIA,
+    derivado_de="EG2013.511.08#EROSION",
+    sesion=TESIS_T8,
+    nota=("La Tabla 511-06 «Geotextiles para control permanente de "
+          "erosión-requerimientos» entra por el «Porcentaje de Suelo in Situ "
+          "que pasa Tamiz N.º 200 (0,075 mm)» en tres columnas (< 15, 15-50, "
+          "> 50) y fija la permitividad minima (0,7 / 0,2 / 0,1 s-1) y el "
+          "tamaño de abertura aparente maximo (0,43 / 0,25 / 0,22 mm); la "
+          "clase es la 1 de la Tabla 511-01 (la 2 para los tejidos de "
+          "monofilamento) y la estabilidad ultravioleta, 50 % tras 500 "
+          "horas. Su nota (5) pide un diseño especifico en suelos "
+          "problematicos y da 0,30 mm para cohesivos con indice de "
+          "plasticidad mayor de 7. El dato que la tabla pide --el pasante "
+          "del tamiz N.º 200-- es del EMS."),
+)
+
+# ---- HDS-5: socavacion en la entrada y en la salida ------------------------
+HDS5_5_3_1_ENTRADA = _cita(
+    id="HDS5_3ED.5.3.1#ENTRADA",
+    fuente_id="HDS5_3ED",
+    numeral="5.3.1",
+    titulo_numeral="5.3.1  Scour at Inlets",
+    pagina_impresa="5.9",
+    pagina_pdf=145,
+    texto_literal=Verbatim(
+        texto=("Upstream slope paving, channel paving, headwalls, wingwalls, "
+               "and cutoff walls help to protect the slopes and channel bed "
+               "at the upstream end of the culvert."),
+        pagina_pdf=145),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("El parrafo anterior describe el mecanismo: al contraerse el flujo "
+          "hacia el barril, vortices y zonas de alta velocidad atacan los "
+          "taludes del terraplen junto a la boca, y a menudo se forma una "
+          "hoya aguas arriba del piso del conducto. La fuente ENUMERA las "
+          "medidas y no las dimensiona ni dice cual corresponde a que "
+          "embocadura: la asignacion por tipo de embocadura es lectura del "
+          "proyecto."),
+)
+
+HDS5_5_3_2_APRON = _cita(
+    id="HDS5_3ED.5.3.2#APRON",
+    fuente_id="HDS5_3ED",
+    numeral="5.3.2",
+    titulo_numeral="5.3.2  Scour at Outlets",
+    pagina_impresa="5.11",
+    pagina_pdf=147,
+    pagina_pdf_titulo=145,
+    texto_literal=Verbatim(
+        texto=("Since outlet protection is expensive, many state DOTs use "
+               "riprap aprons (HEC-14, Section 10.2) to provide a minimum "
+               "amount of protection for small culverts."),
+        pagina_pdf=147),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("Describe una practica y remite a HEC-14 Sec. 10.2. El parrafo "
+          "termina: «Providing scour protection for large floods or when "
+          "more serious erosion problems exist requires protection measures "
+          "designed based on HEC-14». En la pag. impresa 5.9 el mismo "
+          "numeral dice que los metodos para estimar la hoya de socavacion "
+          "local estan en HEC-14."),
+)
+
+HDS5_3_1_3_CRITICO_ENTRADA = _cita(
+    id="HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.3",
+    titulo_numeral="3.1.3  Inlet Control",
+    pagina_impresa="3.2",
+    pagina_pdf=84,
+    texto_literal=Verbatim(
+        texto=("The flow passes through critical depth just downstream of "
+               "the culvert entrance and the flow in the barrel is "
+               "supercritical."),
+        pagina_pdf=84),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("Lo dice de las Figuras 3.1A y 3.1C, el Tipo 1 del USGS, con la "
+          "entrada NO sumergida. Sostiene la velocidad que el proyecto lee "
+          "en la boca cuando gobierna el control de entrada: la critica. "
+          "Con la entrada sumergida (Figuras 3.1B y 3.1D) la boca trabaja "
+          "como orificio y la fuente no da la velocidad en ella."),
+)
+
+# ---- HEC-14, Capitulo 10: apron de enrocado y tirante equivalente ----------
+HEC14_10_1_1_YE = _cita(
+    id="HEC14.10.1.1#YE",
+    fuente_id="HEC14",
+    numeral="10.1.1",
+    titulo_numeral="10.1.1 Design Development",
+    pagina_impresa="10-2",
+    pagina_pdf=203,
+    texto_literal=Verbatim(
+        texto=("Equivalent brink depth, ye, is defined to permit use of the "
+               "same design relationships for rectangular and circular "
+               "culverts."),
+        pagina_pdf=203),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("Sigue: «For rectangular culverts, ye = yo (culvert brink depth). "
+          "For circular culverts, ye = (A/2)^1/2, where A is the brink "
+          "area». El paso 1 del procedimiento (num. 10.1.5, pag. impresa "
+          "10-5) forma con el el numero de Froude de la salida, Fr = Vo / "
+          "(g·ye)^1/2. Es el Froude que HEC-14 usa para sus disipadores; el "
+          "apron de la Ec. (10.4) no lo lleva."),
+)
+
+HEC14_10_2_EC_10_4 = _cita(
+    id="HEC14.10.2#EC_10_4",
+    fuente_id="HEC14",
+    numeral="10.2, Ec. (10.4)",
+    titulo_numeral="10.2 RIPRAP APRON",
+    pagina_impresa="10-17",
+    pagina_pdf=218,
+    pagina_pdf_titulo=217,
+    texto_literal=Verbatim(
+        texto=("The following equation (Fletcher and Grace, 1972) is "
+               "recommended for circular culverts:"),
+        pagina_pdf=218),
+    caracter=Caracter.RECOMENDACION,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    nota=("La Ec. (10.4), leida de la pagina renderizada: D50 = 0.2·D·"
+          "[Q / (g^0.5·D^2.5)]^(4/3)·(D / TW), con D50, D y TW en m (ft), Q "
+          "en m3/s (ft3/s) y g = 9.81 m/s2 (32.2 ft/s2). ES ADIMENSIONAL "
+          "--el grupo Q/(g^0.5·D^2.5) no tiene unidades--, de modo que el "
+          "0.2 vale igual en SI y en unidades inglesas y no hay coeficiente "
+          "que convertir. El Apendice D (Ec. D.5, pag. impresa D-2) da la "
+          "misma relacion SIN la gravedad, D50 = 0.020·D·[Q/(α·D^2.5)]^(4/3)·"
+          "(D/TW) con α = 0.55 (SI) y 1.0 (CU): esa forma SI depende de "
+          "unidades y no es la que se usa. «RECOMMENDED FOR CIRCULAR "
+          "CULVERTS»: no cubre el marco. La ecuacion supone una piedra de "
+          "gravedad especifica 2.65."),
+)
+
+HEC14_10_2_TW = _cita(
+    id="HEC14.10.2#TW",
+    fuente_id="HEC14",
+    numeral="10.2",
+    titulo_numeral="10.2 RIPRAP APRON",
+    pagina_impresa="10-17",
+    pagina_pdf=218,
+    pagina_pdf_titulo=217,
+    texto_literal=Verbatim(
+        texto=("Tailwater depth for Equation 10.4 should be limited to "
+               "between 0.4D and 1.0D.  If tailwater is unknown, use 0.4D."),
+        pagina_pdf=218),
+    caracter=Caracter.APROXIMACION,
+    derivado_de="HEC14.10.2#EC_10_4",
+    sesion=TESIS_T8,
+    nota=("EL LIMITE DE VALIDEZ DE LA Ec. (10.4), con sus dos lados. Por "
+          "abajo, el ejemplo resuelto de la pag. impresa 10-18 enseña que "
+          "hacer: con TW/D = 0.33 «This is less than 0.4D, therefore, use TW "
+          "= 0.4D». Por arriba, la pag. 10-18 remite a OTRO procedimiento "
+          "(cita HEC14.10.2#TW_ALTO)."),
+)
+
+HEC14_10_2_TW_ALTO = _cita(
+    id="HEC14.10.2#TW_ALTO",
+    fuente_id="HEC14",
+    numeral="10.2",
+    titulo_numeral="10.2 RIPRAP APRON",
+    pagina_impresa="10-18",
+    pagina_pdf=219,
+    pagina_pdf_titulo=217,
+    texto_literal=Verbatim(
+        texto=("For tailwater conditions above the acceptable range for "
+               "Equation 10.4 (TW > 1.0D), Figure 10.3 should be used to "
+               "determine the velocity downstream of the culvert."),
+        pagina_pdf=219),
+    caracter=Caracter.APROXIMACION,
+    derivado_de="HEC14.10.2#TW",
+    sesion=TESIS_T8,
+    nota=("Con el TW sobre la clave la Ec. (10.4) queda FUERA de su rango "
+          "aceptable y la fuente manda a la Figura 10.3 (atenuacion de la "
+          "velocidad aguas abajo) y a la Sec. 10.3 para dimensionar la "
+          "piedra. La Figura 10.3 es una familia de curvas que este "
+          "programa no tiene digitalizada: ese caso sale como metodo no "
+          "evaluable, no con la ecuacion extrapolada."),
+)
+
+HEC14_10_2_EC_10_5 = _cita(
+    id="HEC14.10.2#EC_10_5",
+    fuente_id="HEC14",
+    numeral="10.2, Ec. (10.5)",
+    titulo_numeral="10.2 RIPRAP APRON",
+    pagina_impresa="10-17",
+    pagina_pdf=218,
+    pagina_pdf_titulo=217,
+    texto_literal=Verbatim(
+        texto=("Whenever the flow is supercritical in the culvert, the "
+               "culvert diameter is adjusted as follows:"),
+        pagina_pdf=218),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    derivado_de="HEC14.10.2#EC_10_4",
+    sesion=TESIS_T8,
+    nota=("La Ec. (10.5), leida de la pagina renderizada: D' = (D + yn)/2, "
+          "con D' «adjusted culvert rise» e yn «normal (supercritical) depth "
+          "in the culvert». D' entra en la Ec. (10.4) en lugar de D."),
+)
+
+HEC14_T10_1 = _cita(
+    id="HEC14.10.2#T10_1",
+    fuente_id="HEC14",
+    numeral="10.2, Table 10.1",
+    titulo_numeral="10.2 RIPRAP APRON",
+    pagina_impresa="10-18",
+    pagina_pdf=219,
+    pagina_pdf_titulo=217,
+    texto_literal=Verbatim(
+        texto="Table 10.1. Example Riprap Classes and Apron Dimensions",
+        pagina_pdf=219),
+    caracter=Caracter.RECOMENDACION,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    nota=("ES UN EJEMPLO, y la fuente lo dice dos veces: en el titulo "
+          "(«Example») y en la pag. 10-17 («A project or design standard can "
+          "be developed such as the example from the Federal Highway "
+          "Administration Federal Lands Highway Division»). Seis clases: D50 "
+          "de 125, 150, 250, 350, 500 y 550 mm; longitud del apron 4D, 4D, "
+          "5D, 6D, 7D y 8D, con la nota «D is the culvert rise»; "
+          "profundidad 3.5, 3.3, 2.4, 2.2, 2.0 y 2.0 veces D50. Debajo: "
+          "«Table 10.1 provides guidance on the apron length and depth». La "
+          "clase es la de D50 mayor o igual que el requerido (pag. 10-17)."),
+)
+
+HEC14_10_2_ANCHO = _cita(
+    id="HEC14.10.2#ANCHO",
+    fuente_id="HEC14",
+    numeral="10.2",
+    titulo_numeral="10.2 RIPRAP APRON",
+    pagina_impresa="10-18",
+    pagina_pdf=219,
+    pagina_pdf_titulo=217,
+    texto_literal=Verbatim(
+        texto=("The final dimension, width, may be determined using the 1:3 "
+               "flare shown in Figure 10.4 and should conform to the "
+               "dimensions of the downstream channel."),
+        pagina_pdf=219),
+    caracter=Caracter.PERMISO,
+    sesion=TESIS_T8,
+    nota=("El ejemplo resuelto de la pag. impresa 10-19 (PDF 220) lo "
+          "escribe: «Width (at apron end) = 3D + (2/3)L». El 3D es el ancho "
+          "del apron en la boca de la Figura 10.4 y el (2/3)L el abocinado "
+          "de 1:3 por cada lado."),
+)
+
+HEC14_10_2_FILTRO = _cita(
+    id="HEC14.10.2#FILTRO",
+    fuente_id="HEC14",
+    numeral="10.2",
+    titulo_numeral="10.2 RIPRAP APRON",
+    pagina_impresa="10-18",
+    pagina_pdf=219,
+    pagina_pdf_titulo=217,
+    texto_literal=Verbatim(
+        texto=("A filter blanket should also be provided as described in HEC "
+               "11 (Brown and Clyde, 1989)."),
+        pagina_pdf=219),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T8,
+    nota=("HEC 11 no esta en el repositorio de normas: el diseño del filtro "
+          "no se transcribe. Lo que se cita es que el apron LLEVA filtro."),
+)
+
+HEC14_T1_1_APRON = _cita(
+    id="HEC14.1#T1_1_APRON",
+    fuente_id="HEC14",
+    numeral="1, Table 1.1, nota 8",
+    titulo_numeral="CHAPTER 1: ENERGY DISSIPATOR DESIGN",
+    pagina_impresa="1-2",
+    pagina_pdf=15,
+    pagina_pdf_titulo=14,
+    texto_literal=Verbatim(
+        texto="Culvert rise less than or equal to 1500 mm (60 in)",
+        pagina_pdf=15),
+    caracter=Caracter.APROXIMACION,
+    sesion=TESIS_T8,
+    nota=("Es la nota 8 de la Table 1.1 «Energy Dissipators and "
+          "Limitations», y cuelga de la fila «Riprap apron» (Chapter 10), "
+          "cuya columna de Froude dice «na». La Sec. 10.2 lo dice como "
+          "poblacion y no como prohibicion: «The most commonly used device "
+          "for outlet protection, primarily for culverts 1500 mm (60 in) or "
+          "smaller, is a riprap apron» (pag. impresa 10-16). Por eso un "
+          "conducto mas alto sale con AVISO y no como metodo no evaluable. "
+          "La misma tabla limita la POZA de enrocado (riprap basin) a Fr < "
+          "3."),
+)
+
+# ---- HEC-14, Capitulo 5: la hoya de socavacion a la salida -----------------
+HEC14_5_ALCANCE = _cita(
+    id="HEC14.5#PEOR_CASO",
+    fuente_id="HEC14",
+    numeral="5",
+    titulo_numeral="CHAPTER 5: ESTIMATING SCOUR AT CULVERT OUTLETS",
+    pagina_impresa="5-1",
+    pagina_pdf=54,
+    texto_literal=Verbatim(
+        texto=("The equations are based on tests that were conducted to "
+               "determine maximum scour for the given condition and "
+               "therefore represent what might be termed worst-case scour "
+               "geometries."),
+        pagina_pdf=54),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("Dos limites en el mismo parrafo: las ecuaciones dan la hoya "
+          "MAXIMA de los ensayos («worst-case») y «do not include long-term "
+          "channel degradation of the downstream channel». El capitulo abre "
+          "diciendo de que depende el metodo: caudal, forma del conducto, "
+          "tipo de suelo, duracion del flujo, pendiente, altura del "
+          "conducto sobre el lecho y tirante de aguas abajo; el tirante de "
+          "aguas abajo NO entra en la Ec. (5.1)."),
+)
+
+HEC14_5_1_EC_5_1 = _cita(
+    id="HEC14.5.1#EC_5_1",
+    fuente_id="HEC14",
+    numeral="5.1, Ec. (5.1)",
+    titulo_numeral="COHESIONLESS SOILS",
+    pagina_impresa="5-1",
+    pagina_pdf=54,
+    texto_literal=Verbatim(
+        texto=("The general expression for determining scour geometry in a "
+               "cohesionless soil at the culvert outlet is:"),
+        pagina_pdf=54),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    nota=("La Ec. (5.1), leida de la pagina renderizada: [hs/Rc, Ws/Rc, "
+          "Ls/Rc, Vs/Rc^3] = Cs·Ch·(α / σ^(1/3))·[Q / (g^0.5·Rc^2.5)]^β·"
+          "(t/316)^θ, con Rc «hydraulic radius at the end of the culvert "
+          "(assuming full flow)», t «time in minutes» y σ = (D84/D16)^0.5. "
+          "ES ADIMENSIONAL salvo por el tiempo: el 316 esta en minutos y "
+          "vale igual en SI y en unidades inglesas. ERRATA DE LA FUENTE: la "
+          "lista de variables de esta pagina remite «Cs … see Table 5.2» y "
+          "«Ch … see Table 5.3», y las tablas estan al reves --la 5.2 es de "
+          "Ch (altura sobre el lecho) y la 5.3 de Cs (pendiente)--, como "
+          "dicen sus titulos y el texto de los num. 5.1.4 y 5.1.5."),
+)
+
+HEC14_T5_1 = _cita(
+    id="HEC14.5.1.1#T5_1",
+    fuente_id="HEC14",
+    numeral="5.1.1, Table 5.1",
+    titulo_numeral="5.1.1 Scour Hole Geometry",
+    pagina_impresa="5-2",
+    pagina_pdf=55,
+    texto_literal=Verbatim(
+        texto=("Table 5.1. Coefficients for Culvert Outlet Scour in "
+               "Cohesionless Soils"),
+        pagina_pdf=55),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("α, β, θ: profundidad 2.27, 0.39, 0.06; ancho 6.94, 0.53, 0.08; "
+          "longitud 17.10, 0.47, 0.10; volumen 127.08, 1.24, 0.18. El "
+          "numeral dice ademas que la profundidad maxima se da a unos 0.4·Ls "
+          "aguas abajo de la salida (Fletcher y Grace, 1972) y que la hoya "
+          "maxima ocurre con tirantes de aguas abajo menores que la mitad "
+          "de la altura del conducto (Bohan, 1970)."),
+)
+
+HEC14_5_1_2_T30 = _cita(
+    id="HEC14.5.1.2#T30",
+    fuente_id="HEC14",
+    numeral="5.1.2",
+    titulo_numeral="5.1.2 Time of Scour",
+    pagina_impresa="5-2",
+    pagina_pdf=55,
+    texto_literal=Verbatim(
+        texto=("Lacking this knowledge, it is recommended that a time of 30 "
+               "minutes be used in Equation 5.1."),
+        pagina_pdf=55),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T8,
+    nota=("«This knowledge» es la duracion del caudal pico. Para suelos "
+          "cohesivos la pag. impresa 5-7 repite la regla: «Use 30 minutes "
+          "for t in Equation 5.2 and Equation 5.3 if it is not known»."),
+)
+
+HEC14_5_1_2_PISO = _cita(
+    id="HEC14.5.1.2#NO_BAJO_30",
+    fuente_id="HEC14",
+    numeral="5.1.2",
+    titulo_numeral="5.1.2 Time of Scour",
+    pagina_impresa="5-2",
+    pagina_pdf=55,
+    texto_literal=Verbatim(
+        texto=("The exponents for the time parameter in Table 5.1 reflect "
+               "the relatively flat part of the scour-time relationship (t > "
+               "30 minutes) and are not applicable for the first 30 minutes "
+               "of the scour process."),
+        pagina_pdf=55),
+    caracter=Caracter.APROXIMACION,
+    derivado_de="HEC14.5.1.2#T30",
+    sesion=TESIS_T8,
+    nota=("LIMITE DE VALIDEZ: con t < 30 min los exponentes no aplican. El "
+          "mismo numeral dice que entre 2/3 y 3/4 de la profundidad maxima "
+          "se alcanza en los primeros 30 minutos."),
+)
+
+HEC14_5_1_3_CABEZAL = _cita(
+    id="HEC14.5.1.3#CABEZAL",
+    fuente_id="HEC14",
+    numeral="5.1.3",
+    titulo_numeral="5.1.3 Headwalls",
+    pagina_impresa="5-2",
+    pagina_pdf=55,
+    texto_literal=Verbatim(
+        texto=("If the culvert is installed with a headwall, the headwall "
+               "should extend to a depth equal to the maximum depth of "
+               "scour."),
+        pagina_pdf=55),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T8,
+    nota=("Es la frase que liga la hoya de socavacion con el DESPLANTE del "
+          "cabezal de salida. Antes dice que el cabezal perpendicular "
+          "desplaza la hoya aguas abajo sin cambiar esencialmente su "
+          "magnitud (Ruff et al., 1982)."),
+)
+
+HEC14_T5_2 = _cita(
+    id="HEC14.5.1.4#T5_2",
+    fuente_id="HEC14",
+    numeral="5.1.4, Table 5.2",
+    titulo_numeral="5.1.4 Drop Height",
+    pagina_impresa="5-3",
+    pagina_pdf=56,
+    pagina_pdf_titulo=55,
+    texto_literal=Verbatim(
+        texto="Table 5.2. Coefficient Ch for Outlets above the Bed",
+        pagina_pdf=56),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("Hd = altura del fondo de la salida sobre el lecho, en DIAMETROS "
+          "(«Hd is the height above bed in pipe diameters»): filas 0, 1, 2 "
+          "y 4. Ch de profundidad 1.00, 1.22, 1.26, 1.34; de ancho 1.00, "
+          "1.51, 1.54, 1.66; de longitud 1.00, 0.73, 0.73, 0.73; de volumen "
+          "1.00, 1.28, 1.47, 1.55. La tabla no dice como leer entre filas "
+          "ni mas alla de Hd = 4."),
+)
+
+HEC14_T5_3 = _cita(
+    id="HEC14.5.1.5#T5_3",
+    fuente_id="HEC14",
+    numeral="5.1.5, Table 5.3",
+    titulo_numeral="5.1.5 Slope",
+    pagina_impresa="5-3",
+    pagina_pdf=56,
+    texto_literal=Verbatim(
+        texto="Table 5.3. Coefficient Cs for Culvert Slope",
+        pagina_pdf=56),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("Pendiente en %: filas 0, 2, 5 y «>7». Cs de profundidad 1.00, "
+          "1.03, 1.08, 1.12; de ancho 1.00, 1.28, 1.28, 1.28; de longitud "
+          "1.00, 1.17, 1.17, 1.17; de volumen 1.00, 1.30, 1.30, 1.30. La "
+          "tabla no dice como leer entre filas, ni entre el 5 % y el 7 %."),
+)
+
+HEC14_5_2_COHESIVO = _cita(
+    id="HEC14.5.2#EC_5_2",
+    fuente_id="HEC14",
+    numeral="5.2, Ec. (5.2) y (5.3)",
+    titulo_numeral="COHESIVE SOILS",
+    pagina_impresa="5-6",
+    pagina_pdf=59,
+    texto_literal=Verbatim(
+        texto=("If the soil is cohesive in nature, Equation 5.2 should be "
+               "used to determine the scour hole dimensions."),
+        pagina_pdf=59),
+    caracter=Caracter.APROXIMACION,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    nota=("Ec. (5.2), conducto circular: [hs/D, Ws/D, Ls/D, Vs/D^3] = Cs·Ch·"
+          "α·(ρV²/τc)^β·(t/316)^θ. Ec. (5.3), otras formas: lo mismo con ye "
+          "= (A/2)^1/2 en lugar de D y αe en lugar de α. V es la velocidad "
+          "media de salida, ρ = 1000 kg/m3 (1.94 slugs/ft3) y τc la tension "
+          "tractiva critica de la Ec. (5.4). El numero ρV²/τc es "
+          "adimensional; lo que depende de unidades es αu de la Ec. (5.4)."),
+)
+
+HEC14_5_2_RANGO = _cita(
+    id="HEC14.5.2#RANGO_IP",
+    fuente_id="HEC14",
+    numeral="5.2",
+    titulo_numeral="COHESIVE SOILS",
+    pagina_impresa="5-7",
+    pagina_pdf=60,
+    pagina_pdf_titulo=59,
+    texto_literal=Verbatim(
+        texto=("Equations 5.2 and 5.3 should be limited to sandy clay soils "
+               "with a plasticity index of 5 to 16."),
+        pagina_pdf=60),
+    caracter=Caracter.APROXIMACION,
+    derivado_de="HEC14.5.2#EC_5_2",
+    sesion=TESIS_T8,
+    nota=("LIMITE DE VALIDEZ. El suelo ensayado fue UNA arcilla arenosa (58 "
+          "% arena, 27 % arcilla, 15 % limo, indice de plasticidad 15; pag. "
+          "impresa 5-6)."),
+)
+
+HEC14_5_2_EC_5_4 = _cita(
+    id="HEC14.5.2#EC_5_4",
+    fuente_id="HEC14",
+    numeral="5.2, Ec. (5.4)",
+    titulo_numeral="COHESIVE SOILS",
+    pagina_impresa="5-7",
+    pagina_pdf=60,
+    pagina_pdf_titulo=59,
+    texto_literal=Verbatim(
+        texto=("The critical tractive shear stress is defined in Equation "
+               "5.4 (Dunn, 1959; Abt et al., 1996)."),
+        pagina_pdf=60),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    derivado_de="HEC14.5.2#EC_5_2",
+    sesion=TESIS_T8,
+    nota=("Ec. (5.4): τc = 0.001·(Sv + αu)·tan(30 + 1.73·PI), con el "
+          "argumento de la tangente en GRADOS (el ejemplo resuelve tan "
+          "(50.76) con PI = 12), Sv la resistencia al corte saturada y αu "
+          "«unit conversion constant, 8630 N/m2 (SI), 180 lb/ft2 (CU)». τc "
+          "sale en N/m2. La Tabla 5.4 (misma pagina) da α, β, θ y αe: "
+          "profundidad 0.86, 0.18, 0.10, 1.37; ancho 3.55, 0.17, 0.07, "
+          "5.63; longitud 2.82, 0.33, 0.09, 4.48; volumen 0.62, 0.93, 0.23, "
+          "2.48."),
+)
+
+# ---- HEC-14, Capitulo 3: el area de la velocidad de salida ----------------
+# La cadena T cita «cap. 4-5 (velocidad de salida…)»: la velocidad de salida
+# es el Capitulo 3 (verificado sobre el ejemplar, PDF 32). M4 ya la resuelve
+# por HDS-5 3.1.6 (EXT-3); lo que este capitulo sostiene aqui es que el AREA
+# que la acompaña sale de la continuidad, que es como M6 forma el Froude.
+HEC14_3_CONTINUIDAD = _cita(
+    id="HEC14.3#CONTINUIDAD",
+    fuente_id="HEC14",
+    numeral="3",
+    titulo_numeral=("CHAPTER 3: CULVERT OUTLET VELOCITY AND VELOCITY "
+                    "MODIFICATION"),
+    pagina_impresa="3-1",
+    pagina_pdf=32,
+    texto_literal=Verbatim(
+        texto=("The continuity equation, which states that discharge is equal "
+               "to flow area times average velocity (Q = AV), is used to "
+               "compute culvert velocities within the barrel and at the "
+               "outlet."),
+        pagina_pdf=32),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("Sigue: «The flow area, A, for determining outlet velocity is "
+          "calculated using the culvert outlet depth that is consistent with "
+          "the culvert flow type», y el num. 3.1.2 (pag. impresa 3-2, PDF 33) "
+          "da la regla de HDS-5 que M4 aplica: «the higher of the tailwater "
+          "or critical depth», o la seccion llena con la salida sumergida "
+          "(3.1.1). Es la relacion con que M6 asigna a la velocidad de salida "
+          "su area, A = Q/V, para el tirante equivalente del Froude; los "
+          "procedimientos de HEC-14 hacen lo mismo («A = Q/Vo», pag. impresa "
+          "9-40, PDF 197)."),
+)
+
+# ---- HEC-14, Apendice D: las ecuaciones de apron que solo miran V ----------
+HEC14_D_SOLO_VELOCIDAD = _cita(
+    id="HEC14.D#SOLO_VELOCIDAD",
+    fuente_id="HEC14",
+    numeral="D",
+    titulo_numeral="APPENDIX D: RIPRAP APRON SIZING EQUATIONS",
+    pagina_impresa="D-2",
+    pagina_pdf=281,
+    pagina_pdf_titulo=280,
+    texto_literal=Verbatim(
+        texto=("Equations D.2 and D.3 are not recommended because they do not "
+               "consider tailwater effects."),
+        pagina_pdf=281),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T8,
+    nota=("Las dos ecuaciones que HEC-14 descarta son las que dimensionan la "
+          "piedra SOLO con la velocidad de salida: D.2 (Berry, 1948; Peterka, "
+          "1978), D50 = α·V² con α = 0.0413 en SI, y D.3 (Searcy, 1967; la de "
+          "la edicion anterior de HEC-14 y de HEC 11), D50 = 0.692/(S − 1)·"
+          "V²/(2g). Ninguna de las dos es la de Laushey, que HEC-14 no "
+          "nombra. El apendice compara seis relaciones sobre diez casos de HY8 "
+          "y retiene la de Fletcher y Grace (Ec. D.5), que es la Ec. (10.4) "
+          "del Capitulo 10 escrita sin la gravedad. La lectura de que la ec. "
+          "(49) del Manual pertenece a la misma familia que D.2 y D.3 es del "
+          "proyecto y va en `M6_proteccion`, no aqui."),
+)
+
+# ---- Manual de Hidrologia: el aliviadero escalonado y su Lamina -----------
+MC_HHD_ALIVIADERO = _cita(
+    id="MC_HHD.4.1.1.3.7c#ALIVIADERO",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.7 c)",
+    titulo_numeral="c)  Socavación local a la salida de la alcantarilla",
+    jerarquia_numeral=("4.1.1.3.7  Consideraciones para el diseño",),
+    pagina_impresa="80",
+    pagina_pdf=83,
+    pagina_pdf_titulo=82,
+    texto_literal=Verbatim(
+        texto=("Una medida para reducir la velocidad del flujo, es la "
+               "construcción de aliviaderos de entrada y salida de la "
+               "alcantarilla en forma escalonada con el objetivo de disipar "
+               "la energía hidráulica."),
+        pagina_pdf=83),
+    caracter=Caracter.PERMISO,
+    sesion=TESIS_T8,
+    nota=("La frase siguiente remite a la Lámina Nº 04 (cita "
+          "MC_HHD.LAMINA_04). Es la alternativa que el Manual da cuando la "
+          "velocidad es alta: no reviste el cauce, reduce la velocidad. El "
+          "programa no la dimensiona."),
+)
+
+MC_HHD_LAMINA_04 = _cita(
+    id="MC_HHD.LAMINA_04",
+    fuente_id="MC_HHD",
+    numeral="Anexos, Lámina Nº 04",
+    titulo_numeral="PERFIL LONGITUDINAL Y SECCIÓN TÍPICAS",
+    pagina_impresa="210",
+    pagina_pdf=213,
+    texto_literal=Verbatim(texto="0.80 min.", pagina_pdf=213),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T8,
+    nota=("ES UNA FIGURA, leida por imagen: «PERFIL LONGITUDINAL Y SECCIÓN "
+          "TÍPICAS DE ALIVIADERO CON DISIPADOR DE ENERGÍA HIDRÁULICA, A LA "
+          "SALIDA DE ALCANTARILLAS». A diferencia de las Láminas 02, 03 y 05, "
+          "ESTA SI LLEVA COTAS: escalones de concreto ciclopeo de 1.00 m de "
+          "alto, losa de 0.15 m sobre 0.20 m de relleno granular, muros de "
+          "0.20 m en la corona y 0.30 m en la base (Sección B-B), tubos de "
+          "drenaje perforados Ø4\", y un dentellon final de «0.80 min.» de "
+          "profundidad y 0.40 m de ancho. Las longitudes de los tramos van "
+          "como «VARIABLE». Es el detalle tipico de una medida que el "
+          "programa no dimensiona."),
+)
+
+# ---- Auditoria adversarial de T-8: lo que faltaba citar ---------------------
+# LA LECTURA «SIN ENROCADO», declarada como del proyecto (hallazgo 4 del
+# auditor): la Tabla Nº 11 dice que velocidad admite el terreno; que con una
+# velocidad menor no haya NADA que revestir no lo escribe el Manual, y el
+# HDS-5 dice que el apron es practica corriente salvo que el campo lo
+# desmienta. Viaja con la cita de esa pagina.
+INTERPRETACION_SIN_ENROCADO = Interpretacion(
+    texto=("Que una velocidad de salida que no supera la maxima admisible "
+           "del terreno del receptor (Tabla Nº 11) baste para NO dimensionar "
+           "enrocado a la salida es la lectura que este proyecto adopta. El "
+           "Manual exige limitar la velocidad de salida y presenta la tabla; "
+           "no escribe que bajo ella no haya nada que proteger."),
+    en_contra=("el HDS-5 (num. 5.3.2, pag. impresa 5.11) describe el apron de "
+               "enrocado como practica corriente «unless field investigation "
+               "at similar culverts in the vicinity indicates that such "
+               "protection is not needed»: la excepcion la da el campo, no "
+               "una tabla de velocidades",
+               "la Tabla Nº 11 es de velocidades medias de canales sin "
+               "revestir, y el chorro de una alcantarilla socava localmente "
+               "aunque su velocidad media quede bajo ella (HEC-14 Cap. 5)"),
+    a_favor=("el Manual presenta la tabla justo despues de exigir que la "
+             "velocidad de salida se limite «a fin de evitar procesos de "
+             "socavación del cauce aguas abajo»",
+             "la cadena T lo pide asi (T-8 punto 1), y la hoya local se "
+             "estima y se entrega al desplante del cabezal aparte"),
+)
+
+HDS5_5_3_2_PRACTICA = _cita(
+    id="HDS5_3ED.5.3.2#PRACTICA",
+    fuente_id="HDS5_3ED",
+    numeral="5.3.2",
+    titulo_numeral="5.3.2  Scour at Outlets",
+    pagina_impresa="5.11",
+    pagina_pdf=147,
+    pagina_pdf_titulo=145,
+    texto_literal=Verbatim(
+        texto=("The riprap apron is intended to withstand damage from small "
+               "storm events and is typically a standard practice unless "
+               "field investigation at similar culverts in the vicinity "
+               "indicates that such protection is not needed."),
+        pagina_pdf=147),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    interpretacion=INTERPRETACION_SIN_ENROCADO,
+    nota=("La frase que sigue a la de HDS5_3ED.5.3.2#APRON. Describe una "
+          "practica: el apron se pone salvo que el campo diga que no hace "
+          "falta. Es lo que juega en contra de no revestir cuando la "
+          "velocidad no supera la Tabla Nº 11, y la salida sin enrocado lo "
+          "avisa citandola."),
+)
+
+HEC14_10_1_DOS_D50 = _cita(
+    id="HEC14.10.1#DOS_D50",
+    fuente_id="HEC14",
+    numeral="10.1",
+    titulo_numeral="10.1 RIPRAP BASIN",
+    pagina_impresa="10-1",
+    pagina_pdf=202,
+    texto_literal=Verbatim(
+        texto=("The basin is pre-shaped and lined with riprap that is at "
+               "least 2D50 thick."),
+        pagina_pdf=202),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T8,
+    nota=("Es de la POZA de enrocado, no del apron; se cita porque fija el "
+          "mismo piso que la Tabla 10.1 alcanza para las piedras grandes "
+          "(cita HEC14.10.2#PROFUNDIDAD). La Figura 10.1 de la misma pagina, "
+          "leida por imagen, mide hs DESDE la solera de salida del conducto "
+          "hasta el fondo de la poza."),
+)
+
+HEC14_10_2_PROFUNDIDAD = _cita(
+    id="HEC14.10.2#PROFUNDIDAD",
+    fuente_id="HEC14",
+    numeral="10.2",
+    titulo_numeral="10.2 RIPRAP APRON",
+    pagina_impresa="10-18",
+    pagina_pdf=219,
+    pagina_pdf_titulo=217,
+    texto_literal=Verbatim(
+        texto=("Apron depth ranges from 3.5D50 for the smallest riprap to a "
+               "limit of 2.0D50 for the larger riprap sizes."),
+        pagina_pdf=219),
+    caracter=Caracter.RECOMENDACION,
+    derivado_de="HEC14.10.2#T10_1",
+    sesion=TESIS_T8,
+    nota=("El piso del espesor del apron: 2.0·D50. El criterio "
+          "'espesor_proteccion_salida' adopta 1.75·d50 (ventana 1.5-2.0) y "
+          "queda siempre bajo ese piso salvo en el techo de su ventana, que "
+          "lo iguala: la Fase 6 lo avisa en todo punto que dimensiona."),
+)
+
+HEC14_3_1_3_BORDE = _cita(
+    id="HEC14.3.1.3#BORDE",
+    fuente_id="HEC14",
+    numeral="3.1.3",
+    titulo_numeral="3.1.3 Unsubmerged Outlets (Brink Depth)",
+    pagina_impresa="3-3",
+    pagina_pdf=34,
+    texto_literal=Verbatim(
+        texto=("The flow goes through critical depth upstream of the outlet "
+               "when the tailwater elevation is below the critical depth "
+               "elevation in the culvert."),
+        pagina_pdf=34),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T8,
+    nota=("Con el TW bajo el tirante critico, el tirante en el borde de la "
+          "salida (brink depth) es MENOR que el critico: la velocidad real a "
+          "la salida es MAYOR que Q/A(yc), que es la que M4 toma por HDS-5 "
+          "3.1.6. El mismo numeral lo dice al aproximar el borde con las "
+          "curvas criticas: «Since critical depth is larger than brink "
+          "depth, determining brink depth in this manner is not "
+          "conservative, but is acceptable». Las Figuras 3.3 y 3.4 dan el "
+          "borde y no estan digitalizadas."),
+)
+
+EG2013_T511_06_NOTA_5A = _cita(
+    id="EG2013.511.08#NOTA_5A",
+    fuente_id="EG2013",
+    numeral="511.08, Tabla 511-06, nota (5) a",
+    titulo_numeral="511.08 Geotextiles usados en control permanente de erosión",
+    pagina_impresa="1015",
+    pagina_pdf=1023,
+    pagina_pdf_titulo=1022,
+    texto_literal=Verbatim(
+        texto=("suelos inestables o altamente erosionables tales como los "
+               "limos no cohesivos"),
+        pagina_pdf=1023),
+    caracter=Caracter.RECOMENDACION,
+    derivado_de="EG2013.511.08#T511_06",
+    sesion=TESIS_T8,
+    nota=("Frase completa: «Debería efectuarse un diseño del geotextil para "
+          "un sitio específico especialmente si uno o más de los siguientes "
+          "suelos problemáticos son encontrados: suelos inestables o "
+          "altamente erosionables tales como los limos no cohesivos; suelos "
+          "de gradación abierta; suelos laminados alternando arenas y limos; "
+          "arcillas dispersivas y/o polvo de roca.» La llamada (5) la llevan "
+          "el rotulo de la FILA «Tamaño de Abertura Aparente (3) (4) (5)» y "
+          "la celda «0,22(5)»: la nota vale para la fila entera."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

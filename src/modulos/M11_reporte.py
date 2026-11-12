@@ -1948,6 +1948,86 @@ def _tabla_verificaciones(informe: Any) -> str:
            + diferidas + detalle
 
 
+def traza_proteccion(informe: Any) -> Tuple[Any, ...]:
+    """
+    --- T-8 --- Los `PasoDeMemoria` de la Fase 6 de un punto, en su orden de
+    lectura: la proteccion de salida (Laushey, lo adoptado, Froude,
+    velocidad admisible, apron de HEC-14, filtro), la de entrada y la
+    socavacion. M6 los emite; aqui solo se enumeran.
+    """
+    pasos: List[Any] = []
+    for pieza in (getattr(informe, "proteccion", None),
+                  getattr(informe, "proteccion_entrada", None),
+                  getattr(informe, "socavacion", None)):
+        if pieza is None:
+            continue
+        propios = tuple(getattr(pieza, "pasos", ()) or ())
+        if not propios and getattr(pieza, "paso", None) is not None:
+            # Una `ProteccionSalida` armada antes de T-8: solo trae Laushey.
+            propios = (pieza.paso,)
+        pasos.extend(propios)
+    return tuple(pasos)
+
+
+TITULO_TRAZA_PROTECCION = "Desarrollo de la Fase 6"
+
+
+def _fase_6_ampliada(informe: Any) -> str:
+    """
+    --- T-8 --- Lo que la Fase 6 añade al parrafo del d50: el filtro como
+    requisito declarado, la entrada, la socavacion para el desplante, los
+    avisos de la fase y el desarrollo de todos los pasos. No calcula nada:
+    todos los numeros vienen de M6.
+    """
+    partes: List[str] = []
+    p = informe.proteccion
+    filtro = getattr(p, "filtro", None)
+    if filtro is not None:
+        partes.append(f'<div class="nota"><p><b>Filtro.</b> '
+                      f"{_esc(filtro.texto)}</p></div>")
+    e = getattr(informe, "proteccion_entrada", None)
+    if e is not None:
+        velocidad = ("sin velocidad publicada por la hidraulica"
+                     if e.V_entrada is None else
+                     f"V = {_num(e.V_entrada, FMT_2)} m/s en la boca")
+        partes.append(
+            f"<p><b>Entrada.</b> {_esc(velocidad)}; revestimiento adoptado "
+            f"<b>{_esc(e.revestimiento)}</b> (criterio "
+            f"<code>{_esc(e.criterio_revestimiento)}</code>); embocadura "
+            f"{_esc(e.tipo_embocadura)}. Se protege: "
+            f"{_esc('; '.join(e.elementos))}.</p>")
+    soc = getattr(informe, "socavacion", None)
+    if soc is not None:
+        if soc.profundidad_para_desplante is None:
+            texto = ("<b>sin dato</b>: " + _esc(soc.motivo_no_estimada))
+        else:
+            texto = (f"<b>{_num(soc.profundidad_para_desplante)} m</b> "
+                     f"({_esc(soc.origen)}), medida desde "
+                     f"{_esc(soc.referencia or '')}")
+            if getattr(soc, "cota_fondo_de_la_hoya", None) is not None:
+                texto += (f"; fondo de la hoya a "
+                          f"<b>{_num(soc.cota_fondo_de_la_hoya)} msnm</b>")
+            if soc.estimada is not None:
+                h = soc.estimada
+                texto += (f". Hoya estimada por {_esc(h.metodo)}: "
+                          f"profundidad {_num(h.profundidad)} m, ancho "
+                          f"{_num(h.ancho)} m, longitud {_num(h.longitud)} m, "
+                          "con el maximo a "
+                          f"{_num(h.distancia_al_maximo)} m de la salida")
+        partes.append("<p><b>Socavacion a la salida, para el desplante del "
+                      f"cabezal.</b> {texto}.</p>")
+    # LOS AVISOS DE LA FASE, con el MISMO texto que la CLI y el JSON imprimen
+    # (`InformePunto.avisos`): lo que no se comparo o no se estimo por falta
+    # de un dato del sitio, y donde lo adoptado queda bajo lo que HEC-14 da.
+    for pieza in (p, e, soc):
+        for aviso in getattr(pieza, "avisos", ()) or ():
+            partes.append(f'<div class="aviso"><p><b>Aviso.</b> '
+                          f"{_esc(aviso)}</p></div>")
+    partes.append(bloque_pasos(traza_proteccion(informe),
+                               TITULO_TRAZA_PROTECCION))
+    return "".join(partes)
+
+
 def _bloques_fases_finales(informe: Any) -> str:
     """Fases 6, 7, 8 y 10 del punto, cada una con su numeral."""
     partes: List[str] = []
@@ -1956,15 +2036,27 @@ def _bloques_fases_finales(informe: Any) -> str:
         p = informe.proteccion
         avisos = "".join(f'<div class="aviso"><p>{_esc(a)}</p></div>'
                          for a in p.advertencias)
-        partes.append(
-            "<h4>Fase 6 &mdash; Proteccion de salida</h4>"
-            f"<p>d<sub>50</sub> = {_num(p.d50)} m (num. {_esc(p.numeral)}), "
-            f"espesor {_num(p.espesor)} m (criterio "
-            f"<code>{_esc(p.criterio_espesor)}</code>), longitud "
-            f"{_num(p.longitud)} m (criterio "
-            f"<code>{_esc(p.criterio_longitud)}</code>), con la velocidad "
-            f"de SALIDA de HDS-5 3.1.6 V = {_num(p.V, FMT_2)} m/s (su "
-            f"procedencia, en el paso 6.1).</p>" + avisos)
+        if p.d50 is None:
+            # --- T-8 --- la Tabla Nº 11 no pide proteger: no hay enrocado.
+            resumen = (
+                "<p>Salida <b>sin enrocado</b>: la velocidad de SALIDA de "
+                f"HDS-5 3.1.6, V = {_num(p.V, FMT_2)} m/s, no supera la "
+                "maxima admisible del terreno del receptor "
+                f"({_num(p.velocidad_admisible.V_admisible, FMT_2)} m/s, "
+                "Tabla N&ordm; 11 del Manual): el desarrollo, en el paso "
+                "6.4.</p>")
+        else:
+            resumen = (
+                f"<p>d<sub>50</sub> = {_num(p.d50)} m (num. "
+                f"{_esc(p.numeral)}), espesor {_num(p.espesor)} m (criterio "
+                f"<code>{_esc(p.criterio_espesor)}</code>), longitud "
+                f"{_num(p.longitud)} m (criterio "
+                f"<code>{_esc(p.criterio_longitud)}</code>), con la "
+                f"velocidad de SALIDA de HDS-5 3.1.6 V = "
+                f"{_num(p.V, FMT_2)} m/s (su procedencia, en el paso "
+                "6.1).</p>")
+        partes.append("<h4>Fase 6 &mdash; Proteccion de entrada y salida</h4>"
+                      + resumen + avisos + _fase_6_ampliada(informe))
 
     if informe.geometria is not None:
         g = informe.geometria
@@ -2350,8 +2442,13 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
         celdas.append(_td(VACIO))
     else:
         p = informe.proteccion
-        celdas.append(_td(f"d50 {_num(p.d50)} m<br>e {_num(p.espesor, FMT_2)} m "
-                          f"&middot; L {_num(p.longitud, FMT_2)} m"))
+        if p.d50 is None:
+            # --- T-8 --- la Tabla Nº 11 no pide proteger la salida.
+            celdas.append(_td("sin enrocado<br>(V &le; admisible)"))
+        else:
+            celdas.append(_td(f"d50 {_num(p.d50)} m<br>e "
+                              f"{_num(p.espesor, FMT_2)} m "
+                              f"&middot; L {_num(p.longitud, FMT_2)} m"))
 
     celdas.append(_td(tipo_cabezal))
     clase = "" if informe.dimensionado else "fila-incumple"
@@ -2411,7 +2508,15 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
         fila.extend(["", "", ""])
     else:
         p = informe.proteccion
-        fila.extend([_num(p.d50), _num(p.espesor, FMT_2), _num(p.longitud)])
+        if p.d50 is None:
+            # --- T-8 --- Sin enrocado (la velocidad de salida no supera la
+            # admisible del terreno): las tres celdas van VACIAS, como toda
+            # celda del CSV sin dato. `_num(None)` devuelve la marca de la
+            # memoria HTML, que en un CSV es basura.
+            fila.extend(["", "", ""])
+        else:
+            fila.extend([_num(p.d50), _num(p.espesor, FMT_2),
+                         _num(p.longitud)])
 
     fila.append(tipo_cabezal)
     return fila
@@ -2769,8 +2874,8 @@ def pasos_del_informe(informe: Any) -> Tuple[Any, ...]:
         if getattr(punto, "tw_sec13", None) is not None:
             _anota(getattr(punto.tw_sec13, "paso", None))
         vistos.extend(traza_durabilidad(punto))
-        if punto.proteccion is not None:
-            _anota(getattr(punto.proteccion, "paso", None))
+        # --- T-8 --- todos los pasos de la Fase 6, no solo el de Laushey.
+        vistos.extend(traza_proteccion(punto))
         if punto.espaciamiento is not None:
             _anota(getattr(punto.espaciamiento, "paso", None))
         vistos.extend(traza_geometria(punto)[0])          # --- T-6 ---
@@ -3473,6 +3578,8 @@ def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
         vistos.extend(p for _c, p in desarrollo_de_verificaciones(punto)
                       if p is not None and not isinstance(p, NoAplica))
         vistos.extend(traza_geometria(punto)[0])          # --- T-6 ---
+        # --- T-8 --- la Fase 6 imprime sus pasos como bloque desde T-8.
+        vistos.extend(traza_proteccion(punto))
     return tuple(vistos)
 
 

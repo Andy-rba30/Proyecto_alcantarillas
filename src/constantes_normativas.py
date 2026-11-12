@@ -4341,3 +4341,152 @@ NUMERAL_DIAMETRO_MAX_ESTANDAR_M170M = (
     "AASHTO M 170M-04, Tablas 1 y 3 (pags. PDF 3 y 7): ultima fila con pared "
     "y acero tabulados; por encima, diseño especial de la Seccion 7.2, num. "
     "7.2.1 y 7.2.2 (pag. impresa M 170M-13)")
+
+
+# ===========================================================================
+# --- T-8 --- (cadena T) · proteccion de entrada y salida (M6)
+# ===========================================================================
+# Lo que M6 lee desde T-8, ademas de LAUSHEY_K y G_LAUSHEY: la Tabla Nº 11 del
+# Manual (velocidades maximas admisibles en canales no revestidos), el apron
+# de enrocado de HEC-14 Sec. 10.2, la hoya de socavacion de HEC-14 Cap. 5 y
+# el geotextil de filtro de EG-2013 511.08. Cada bloque dice su pagina; las
+# transcripciones estan en el registro (`normativa/citas.py`, bloque T-8, y
+# `normativa/tablas.py`, MC_HHD.T11).
+#
+# NINGUN COEFICIENTE DE ESTE BLOQUE LLEVA SUFIJO `_SI` SALVO UNO, y no es un
+# olvido de la regla «Unidades» de CLAUDE.md: las Ec. (10.4), (5.1) y (5.2) de
+# HEC-14 son ADIMENSIONALES --sus grupos Q/(g^0.5·D^2.5), Q/(g^0.5·Rc^2.5) y
+# ρV²/τc no tienen unidades-- y la fuente las escribe con los MISMOS
+# coeficientes en SI y en unidades inglesas (sus ejemplos resueltos en los dos
+# sistemas usan 0.2, 2.27, 316…). El unico que depende de unidades es αu de la
+# Ec. (5.4), que la fuente tabula dos veces.
+
+# --- Tabla Nº 11 (num. 4.1.1.3.6, pag. impresa 77, PDF 80) ------------------
+# DERIVADA del registro, no copiada: una sola transcripcion (D2).
+_T11 = _reg.tabla("MC_HHD.T11")
+REGIMENES_DE_FLUJO_T11: Tuple[str, ...] = ("intermitente", "permanente")
+V_MAX_NO_REVESTIDOS = {
+    _T11.clave_corta(_f): {_r: _f.valores[_r] for _r in REGIMENES_DE_FLUJO_T11}
+    for _f in _T11.filas}                                   # m/s
+TERRENO_T11_ROTULO = {_T11.clave_corta(_f): _f.legible() for _f in _T11.filas}
+
+# --- HEC-14 Sec. 10.2, apron de enrocado (pags. impresas 10-17 a 10-19) -----
+# Ec. (10.4):  D50 = 0.2·D·[Q/(g^0.5·D^2.5)]^(4/3)·(D/TW)   (Fletcher y Grace)
+HEC14_APRON_COEFICIENTE = 0.2
+HEC14_APRON_EXPONENTE = 4.0 / 3.0
+# «Tailwater depth for Equation 10.4 should be limited to between 0.4D and
+# 1.0D. If tailwater is unknown, use 0.4D.»
+HEC14_APRON_TW_SOBRE_D_MIN = 0.4
+HEC14_APRON_TW_SOBRE_D_MAX = 1.0
+# «Equation 10.4 assumes that the rock specific gravity is 2.65.»
+HEC14_APRON_GRAVEDAD_ESPECIFICA_PIEDRA = 2.65
+# Table 10.1 «Example Riprap Classes and Apron Dimensions»: clase, D50 (m),
+# longitud del apron en multiplos de D («D is the culvert rise») y
+# profundidad en multiplos de D50. La fuente la imprime en mm y en pulgadas;
+# aqui va en metros.
+HEC14_TABLA_10_1: Tuple[Tuple[int, float, float, float], ...] = (
+    (1, 0.125, 4.0, 3.5),
+    (2, 0.150, 4.0, 3.3),
+    (3, 0.250, 5.0, 2.4),
+    (4, 0.350, 6.0, 2.2),
+    (5, 0.500, 7.0, 2.0),
+    (6, 0.550, 8.0, 2.0),
+)
+# «Width (at apron end) = 3D + (2/3)L» (ejemplo resuelto, pag. impresa 10-19):
+# el apron arranca con 3D de ancho en la boca y abre 1:3 por cada lado.
+HEC14_APRON_ANCHO_EN_LA_BOCA_EN_D = 3.0
+HEC14_APRON_ABOCINADO_POR_LONGITUD = 2.0 / 3.0
+
+# --- HEC-14 Cap. 5, hoya de socavacion a la salida (pags. 5-1 a 5-7) --------
+# Ec. (5.1), suelos NO cohesivos:
+#   [hs, Ws, Ls]/Rc = Cs·Ch·(α/σ^(1/3))·[Q/(g^0.5·Rc^2.5)]^β·(t/316)^θ
+# Table 5.1: (α, β, θ) por dimension de la hoya.
+HEC14_SOCAVACION_NO_COHESIVO = {
+    "profundidad": (2.27, 0.39, 0.06),
+    "ancho":       (6.94, 0.53, 0.08),
+    "longitud":    (17.10, 0.47, 0.10),
+    "volumen":     (127.08, 1.24, 0.18),
+}
+HEC14_SOCAVACION_EXPONENTE_SIGMA = 1.0 / 3.0
+# El tiempo de la ecuacion va en MINUTOS y se divide entre 316 (minutos).
+HEC14_SOCAVACION_T_REFERENCIA_MIN = 316.0
+# «…are not applicable for the first 30 minutes of the scour process» (5.1.2).
+HEC14_SOCAVACION_T_MINIMO_MIN = 30.0
+# «…occurs at a location approximately 0.4 Ls downstream of the culvert
+# outlet» (5.1.1).
+HEC14_SOCAVACION_FRACCION_LS_DEL_MAXIMO = 0.4
+# Table 5.2, Ch por altura del fondo de la salida sobre el lecho, en
+# diametros (Hd): filas 0, 1, 2 y 4.
+HEC14_SOCAVACION_CH: Tuple[Tuple[float, dict], ...] = (
+    (0.0, {"profundidad": 1.00, "ancho": 1.00, "longitud": 1.00, "volumen": 1.00}),
+    (1.0, {"profundidad": 1.22, "ancho": 1.51, "longitud": 0.73, "volumen": 1.28}),
+    (2.0, {"profundidad": 1.26, "ancho": 1.54, "longitud": 0.73, "volumen": 1.47}),
+    (4.0, {"profundidad": 1.34, "ancho": 1.66, "longitud": 0.73, "volumen": 1.55}),
+)
+# Table 5.3, Cs por pendiente del conducto EN PORCENTAJE: filas 0, 2, 5 y
+# «>7». La ultima fila se guarda con su borde, 7.0: vale para toda pendiente
+# MAYOR que el 7 %.
+HEC14_SOCAVACION_CS: Tuple[Tuple[float, dict], ...] = (
+    (0.0, {"profundidad": 1.00, "ancho": 1.00, "longitud": 1.00, "volumen": 1.00}),
+    (2.0, {"profundidad": 1.03, "ancho": 1.28, "longitud": 1.17, "volumen": 1.30}),
+    (5.0, {"profundidad": 1.08, "ancho": 1.28, "longitud": 1.17, "volumen": 1.30}),
+    (7.0, {"profundidad": 1.12, "ancho": 1.28, "longitud": 1.17, "volumen": 1.30}),
+)
+# Ec. (5.2) y (5.3), suelos COHESIVOS:
+#   [hs, Ws, Ls]/D  = Cs·Ch·α ·(ρV²/τc)^β·(t/316)^θ     (circular)
+#   [hs, Ws, Ls]/ye = Cs·Ch·αe·(ρV²/τc)^β·(t/316)^θ     (otras formas)
+# Table 5.4: (α, β, θ, αe) por dimension de la hoya.
+HEC14_SOCAVACION_COHESIVO = {
+    "profundidad": (0.86, 0.18, 0.10, 1.37),
+    "ancho":       (3.55, 0.17, 0.07, 5.63),
+    "longitud":    (2.82, 0.33, 0.09, 4.48),
+    "volumen":     (0.62, 0.93, 0.23, 2.48),
+}
+# «Equations 5.2 and 5.3 should be limited to sandy clay soils with a
+# plasticity index of 5 to 16.»
+HEC14_SOCAVACION_IP_MIN = 5.0
+HEC14_SOCAVACION_IP_MAX = 16.0
+# Ec. (5.4):  τc = 0.001·(Sv + αu)·tan(30 + 1.73·PI), angulo en GRADOS.
+HEC14_TAU_C_COEFICIENTE = 0.001
+HEC14_TAU_C_ANGULO_BASE_GRADOS = 30.0
+HEC14_TAU_C_GRADOS_POR_IP = 1.73
+# EL UNICO COEFICIENTE DEPENDIENTE DE UNIDADES DEL BLOQUE: «αu = unit
+# conversion constant, 8630 N/m2 (SI), 180 lb/ft2 (CU)». Se usa el de SI, con
+# Sv en N/m2 (Pa); el ingles NO se usa: el codigo opera en SI.
+HEC14_TAU_C_ALFA_U_SI = 8630.0      # N/m2
+# Imperial: 180 lb/ft2 (CU), el que la fuente escribe al lado y NO se usa.
+# Es la misma presion: 180 lbf/ft2 · 4.44822 N/lbf / 0.3048^2 m2/ft2 = 8618.4
+# N/m2, un 0.14 % bajo el 8630 impreso (la fuente redondea uno de los dos).
+# El ejemplo resuelto de la pag. impresa 5-8 usa 8630 y da tau_c = 39.9 N/m2.
+
+# --- EG-2013, Tabla 511-06 (num. 511.08, pag. impresa 1015, PDF 1023) -------
+# Geotextil para control permanente de erosion, por el porcentaje de suelo in
+# situ que pasa el tamiz N.º 200: (rotulo de la columna, techo del intervalo
+# en %, permitividad minima en s-1, tamaño de abertura aparente maximo en mm).
+# La ultima columna («> 50») no tiene techo: va con `None`.
+GEOTEXTIL_EROSION_T511_06: Tuple[tuple, ...] = (
+    ("< 15", 15.0, 0.7, 0.43),
+    ("15-50", 50.0, 0.2, 0.25),
+    ("> 50", None, 0.1, 0.22),
+)
+GEOTEXTIL_EROSION_CLASE = ("Clase 1 de la Tabla 511-01 (Clase 2 para "
+                           "geotextiles tejidos de monofilamento)")
+# Nota (5) b de la misma tabla: «Para los suelos cohesivos con un índice de
+# plasticidad mayor a 7, el valor máximo promedio por rollo (VMPR) es de 0.30
+# mm». La llamada (5) la lleva la celda «0,22(5)» de la columna «>50»: es en
+# esa columna donde el proyecto la aplica (lectura declarada en
+# `M6.requisito_de_filtro`).
+GEOTEXTIL_EROSION_IP_COHESIVO = 7.0
+GEOTEXTIL_EROSION_TAA_COHESIVO_MM = 0.30
+# El exponente del diametro (o del radio hidraulico) en el grupo de caudal
+# adimensional de las Ec. (10.4) y (5.1): Q / (g^0.5 · D^2.5).
+HEC14_EXPONENTE_LONGITUD_DEL_CAUDAL_ADIMENSIONAL = 2.5
+# Table 1.1 «Energy Dissipators and Limitations», nota 8 de la fila «Riprap
+# apron» (pag. impresa 1-2, PDF 15): «Culvert rise less than or equal to 1500
+# mm (60 in)». La Sec. 10.2 lo repite como poblacion: «primarily for culverts
+# 1500 mm (60 in) or smaller».
+HEC14_APRON_ALTURA_MAX_M = 1.5
+# El PISO del espesor de la capa de enrocado en HEC-14, en veces el D50:
+# «at least 2D50 thick» (poza, Sec. 10.1, pag. impresa 10-1) y «to a limit
+# of 2.0D50» (apron, Sec. 10.2, pag. impresa 10-18).
+HEC14_ESPESOR_MIN_EN_D50 = 2.0

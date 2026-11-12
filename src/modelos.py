@@ -279,6 +279,12 @@ MOTIVO_METODO_NO_EVALUABLE = "método no evaluable (HDS-5 3.24, Sección 3.5)"
 # cap. III del Manual de Hidrologia (ver `MetodoNoEvaluableError.rotulo`).
 MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA = (
     "método no evaluable (Manual de Hidrología, cap. III)")
+# --- T-8 --- El mismo estado cuando lo que no alcanza es un limite de HEC-14
+# (apron fuera de su poblacion, TW sobre la clave, hoya fuera de sus tablas):
+# encabezarlo con «HDS-5 3.24» seria una cita falsa (auditoria de T-8, ficha
+# T1-06 del mismo defecto en la hidrologia).
+MOTIVO_METODO_NO_EVALUABLE_HEC14 = (
+    "método no evaluable (HEC-14, FHWA-NHI-06-086)")
 
 
 class MetodoNoEvaluableError(ErrorProyecto):
@@ -2646,6 +2652,12 @@ class ResultadoHidraulico:
     # llena SIEMPRE; `None` solo en los constructores de la suite que no
     # pasan por M4, y ahi V1/V2 vuelven al fallback de EXT-3.
     perfil: Optional["PerfilLamina"] = None
+    # --- T-8 --- LA VELOCIDAD CRITICA, Q_celda / A_c, que M4 ya resolvio en
+    # el paso 4.2 y no salia del `TiranteCritico`. La lee la Fase 6 para la
+    # proteccion de la ENTRADA: bajo control de entrada el flujo pasa por el
+    # tirante critico justo aguas abajo de la boca (HDS-5 num. 3.1.3). `None`
+    # solo en los constructores de la suite que no pasan por M4.
+    V_critica_m_s: Optional[float] = None
 
     def __post_init__(self) -> None:
         if self.Q_celda_m3s is None:
@@ -2686,9 +2698,15 @@ class ProteccionSalida:
     aviso para que ningun consumidor de este resultado lo omita.
     """
 
-    d50: float                            # m - num. 4.1.1.3.7 c)
-    espesor: float                        # m - multiplo de d50, criterio adoptado
-    longitud: float                       # m - criterio adoptado
+    # --- T-8 --- LOS TRES SON `None` EN UN SOLO CASO: el punto declaro el
+    # terreno del receptor y la velocidad de salida NO supera la admisible
+    # de la Tabla Nº 11 (`requerida` es False). Entonces el Manual no pide
+    # proteger y no hay piedra que dimensionar; un d50 impreso ahi seria un
+    # enrocado que nadie pidio. Sin el dato del terreno (`requerida` None) y
+    # cuando la supera (True) los tres llevan numero, como antes de T-8.
+    d50: Optional[float]                  # m - num. 4.1.1.3.7 c)
+    espesor: Optional[float]              # m - multiplo de d50, criterio adoptado
+    longitud: Optional[float]             # m - criterio adoptado
     V: float                              # m/s - la velocidad de salida con
                                           # que se calculo el d50: siempre
                                           # `ResultadoHidraulico.V_erosion`
@@ -2701,6 +2719,238 @@ class ProteccionSalida:
     advertencias: Tuple[str, ...]
     numeral: str = "4.1.1.3.7 c)"
     paso: Optional["PasoDeMemoria"] = None
+    # --- T-8 --- Lo que la Fase 6 añade AL LADO de Laushey. Todos con
+    # default, para que los constructores anteriores sigan armandose.
+    #   `requerida`   True / False segun la velocidad de salida supere o no
+    #                 la admisible del terreno (Tabla Nº 11); None si el punto
+    #                 no declaro el terreno, y entonces rige la conducta
+    #                 anterior a T-8 (se dimensiona siempre) y se avisa.
+    #   `pasos`       TODOS los pasos de la proteccion de salida, en su orden
+    #                 de lectura; `paso` sigue siendo el de Laushey.
+    #   `avisos`      lo que la corrida dice en voz alta: suben a
+    #                 `InformePunto.avisos()` (CLI, JSON y memoria).
+    requerida: Optional[bool] = None
+    froude: Optional["FroudeSalida"] = None
+    velocidad_admisible: Optional["VelocidadAdmisible"] = None
+    apron: Optional["ApronHEC14"] = None
+    filtro: Optional["RequisitoDeFiltro"] = None
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    # --- T-8, auditoria --- La clase de la Tabla 10.1 de HEC-14 que toca a
+    # la piedra que el proyecto PONE (el d50 de Laushey), y la regla con que
+    # se fijaron espesor y longitud: con «manual» (el archivo) son los
+    # adoptados; con «envolvente_hec14», el mayor de lo adoptado y HEC-14.
+    # `espesor_adoptado` y `longitud_adoptada` son siempre los del criterio,
+    # antes de la regla.
+    clase_de_la_piedra: Optional["ClaseHEC14"] = None
+    regla_espesor_longitud: Optional[str] = None
+    espesor_adoptado: Optional[float] = None
+    longitud_adoptada: Optional[float] = None
+
+
+# ---------------------------------------------------------------------------
+# --- T-8 --- Proteccion de entrada y salida: las piezas nuevas de la Fase 6
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class FroudeSalida:
+    """
+    Numero de Froude a la salida, con el tirante equivalente de HEC-14 (num.
+    10.1.1): ye = yo en un marco, ye = (A/2)^0.5 en un tubo. `A` es el area
+    que la continuidad asigna a la velocidad de salida, Q_celda / V.
+    """
+
+    Fr: float                             # Fr_e, con ye: parametro de HEC-14
+    V: float                              # m/s - la V_salida de HDS-5 3.1.6
+    A: float                              # m2  - Q_celda / V
+    y_equivalente: float                  # m   - ye
+    # El REGIMEN, del tirante de salida contra el critico
+    # (`M6.flujo_supercritico`, la misma regla que el apron usa para la
+    # Ec. 10.5); None si falta uno de los dos. NO es Fr_e > 1: el ye de
+    # HEC-14 no clasifica el regimen (auditoria de T-8, hallazgo 2).
+    supercritico: Optional[bool]
+    seccion_llena: bool                   # la salida va a seccion llena
+    paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class VelocidadAdmisible:
+    """
+    La velocidad del flujo contra la maxima admisible del terreno (Tabla
+    Nº 11 del Manual). `supera` True es lo que dispara la proteccion.
+    """
+
+    donde: str                            # "salida" o "entrada"
+    tipo_terreno: str                     # clave de fila de la Tabla Nº 11
+    regimen_flujo: str                    # "intermitente" o "permanente"
+    V: float                              # m/s
+    V_admisible: float                    # m/s
+    supera: bool
+    paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class ApronHEC14:
+    """
+    Apron de enrocado de HEC-14 Sec. 10.2: el D50 de la Ec. (10.4) y, de la
+    Tabla 10.1 (un EJEMPLO de estandar de proyecto), la clase, la longitud,
+    la profundidad y el ancho. Los cuatro ultimos son `None` cuando el D50
+    requerido supera la mayor clase de la tabla.
+    """
+
+    D50_requerido: float                  # m - Ec. (10.4)
+    D: float                              # m - diametro del conducto
+    D_de_calculo: float                   # m - D, o D' = (D + yn)/2 (Ec. 10.5)
+    ajustado_por_supercritico: bool
+    TW: float                             # m - el del punto
+    TW_de_calculo: float                  # m - acotado a 0.4·D por abajo
+    TW_acotado: bool
+    clase: Optional[int] = None
+    D50_clase: Optional[float] = None     # m
+    longitud: Optional[float] = None      # m
+    espesor: Optional[float] = None       # m
+    ancho_final: Optional[float] = None   # m
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+
+
+@dataclass(frozen=True)
+class ClaseHEC14:
+    """
+    La clase de la Tabla 10.1 de HEC-14 que corresponde a una piedra dada
+    (la de D50 mayor o igual) y la geometria que la tabla le da: longitud
+    kL·D, profundidad ke·D50 de la clase, ancho final 3·D + (2/3)·L. Sin
+    clase (piedra mayor que la ultima) los cuatro ultimos van en None.
+    """
+
+    d50_de_partida: float                 # m
+    clase: Optional[int] = None
+    D50_clase: Optional[float] = None     # m
+    longitud: Optional[float] = None      # m
+    espesor: Optional[float] = None       # m
+    ancho_final: Optional[float] = None   # m
+    paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class RequisitoDeFiltro:
+    """
+    El filtro bajo el enrocado, como REQUISITO DECLARADO y no como diseño.
+    Con el pasante del tamiz N.º 200 del suelo (dato del EMS) elige la
+    columna de la Tabla 511-06 de EG-2013; sin el, los tres campos de la
+    columna quedan en `None` y `texto` dice que dato falta.
+    """
+
+    clase_geotextil: str
+    pasa_200_pct: Optional[float]
+    columna: Optional[str]                # rotulo de la columna de la tabla
+    permitividad_min_s1: Optional[float]
+    abertura_aparente_max_mm: Optional[float]
+    texto: str
+    citas: Tuple[str, ...] = ()
+    paso: Optional["PasoDeMemoria"] = None
+    avisos: Tuple[str, ...] = ()          # nota (5) a: suelo que pide diseño
+
+
+@dataclass(frozen=True)
+class ProteccionEntrada:
+    """
+    Proteccion de la ENTRADA (INF-5.1.13): la velocidad en la boca, el
+    revestimiento adoptado y lo que hay que proteger segun la embocadura.
+    Ninguna fuente de normas/ da dimensiones para la entrada: la geometria
+    del zampeado y del dentellon es del cabezal (T-7a).
+    """
+
+    tipo_embocadura: str
+    V_entrada: Optional[float]            # m/s; None si M4 no la publica
+    revestimiento: str                    # valor de 'tipo_proteccion_entrada'
+    criterio_revestimiento: str
+    elementos: Tuple[str, ...]            # lo que se protege, por embocadura
+    requerida: Optional[bool] = None      # como en `ProteccionSalida`
+    velocidad_admisible: Optional["VelocidadAdmisible"] = None
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+
+
+TIPO_LECHO_NO_COHESIVO = "no_cohesivo"
+TIPO_LECHO_COHESIVO = "cohesivo"
+TIPOS_DE_LECHO = (TIPO_LECHO_NO_COHESIVO, TIPO_LECHO_COHESIVO)
+
+
+@dataclass(frozen=True)
+class MaterialLecho:
+    """
+    El dato externo `material_lecho_salida`, ya validado: el suelo del lecho
+    a la salida, del EMS. Todos los campos son opcionales por separado
+    --cada calculo dice cual le falta-- y ninguno tiene valor por defecto.
+
+        tipo            "no_cohesivo" o "cohesivo": que ecuacion de HEC-14.
+        D84_m, D16_m    granulometria del lecho (no cohesivo): σ = (D84/D16)^0.5.
+        IP              indice de plasticidad (cohesivo).
+        Sv_Pa           resistencia al corte saturada, N/m2 (cohesivo).
+        pasa_200_pct    pasante del tamiz N.º 200, en %: elige la columna del
+                        geotextil de filtro (EG-2013, Tabla 511-06).
+    """
+
+    tipo: Optional[str] = None
+    D84_m: Optional[float] = None
+    D16_m: Optional[float] = None
+    IP: Optional[float] = None
+    Sv_Pa: Optional[float] = None
+    pasa_200_pct: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class HoyaDeSocavacion:
+    """La hoya de socavacion local estimada por HEC-14 Cap. 5."""
+
+    metodo: str                           # que ecuacion, con su numeral
+    profundidad: float                    # m - hs
+    ancho: float                          # m - Ws
+    longitud: float                       # m - Ls
+    distancia_al_maximo: float            # m - 0.4·Ls desde la salida
+    duracion_min: float                   # minutos
+    origen_duracion: str
+    Cs: float                             # el de la profundidad
+    Ch: float                             # el de la profundidad
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    # --- T-8, auditoria --- De donde salio t: `duracion_por_criterio` si
+    # rigio el [C] de 30 min por falta del dato (y entonces la profundidad al
+    # techo de su ventana, para la sensibilidad); `duracion_acotada` si el
+    # dato era menor de 30 min y se estimo con 30 como cota superior.
+    duracion_por_criterio: bool = False
+    duracion_acotada: bool = False
+    profundidad_al_techo_de_la_ventana: Optional[float] = None   # m
+    duracion_techo_min: Optional[float] = None
+
+
+ORIGEN_SOCAVACION_DECLARADA = "declarada (dato externo)"
+ORIGEN_SOCAVACION_ESTIMADA = "estimada (HEC-14, Cap. 5)"
+ORIGEN_SOCAVACION_SIN_DATO = "sin dato"
+
+
+@dataclass(frozen=True)
+class SocavacionSalida:
+    """
+    La profundidad de socavacion a la salida que la Fase 6 entrega al
+    desplante del cabezal (T-7a): la DECLARADA si el punto la trae, y si no
+    la ESTIMADA por HEC-14. `profundidad_para_desplante` es None cuando no
+    hay ninguna de las dos, y `motivo_no_estimada` dice que dato falta.
+    """
+
+    profundidad_para_desplante: Optional[float]   # m
+    origen: str
+    estimada: Optional[HoyaDeSocavacion] = None
+    declarada_m: Optional[float] = None
+    motivo_no_estimada: str = ""
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    # --- T-8, auditoria --- DESDE QUE COTA se mide la profundidad, que HEC-14
+    # Cap. 5 no define: el valor del criterio 'referencia_profundidad_
+    # socavacion', y la cota del fondo de la hoya que resulta (msnm) cuando
+    # el punto trae las cotas. Es lo que T-7a toma para el desplante.
+    referencia: Optional[str] = None
+    cota_referencia: Optional[float] = None       # msnm
+    cota_fondo_de_la_hoya: Optional[float] = None  # msnm
 
 
 @dataclass(frozen=True)
