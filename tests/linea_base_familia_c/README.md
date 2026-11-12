@@ -617,3 +617,5 @@ Lo que cambia, clasificado:
   criterios sin valor siguen siendo los que eran (35).
 - **V7 (corrida ancha).** El paso de flotación gana la elección
   `F3.D_EXTERIOR`, que dice de dónde salió el espesor; el número no cambia.
+
+@@T1@@

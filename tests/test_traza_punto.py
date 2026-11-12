@@ -111,6 +111,7 @@ def test_la_traza_cuenta_los_mismos_pasos_que_la_memoria_y_en_su_orden(
 def test_la_traza_tiene_pasos_y_titulos_de_seccion_de_M11(trazas):
     """El detalle no sale vacio, y sus secciones llevan los titulos de M11."""
     titulos_m11 = {M11.TITULO_TRAZA_CLASIFICACION, M11.TITULO_TRAZA_TW,
+                   M11.TITULO_TRAZA_HIDROLOGIA,      # Fase 1-bis (T-1)
                    M11.TITULO_TRAZA_HIDRAULICA,
                    M11.TITULO_TRAZA_HIDRAULICA_ULTIMO,
                    M11.TITULO_TRAZA_VERIFICACIONES}

@@ -16,6 +16,35 @@ La plantilla de la memoria vive en "plantilla_memoria.html", junto a este
 archivo, y se procesa con string.Template (delimitador "%%").
 
 
+SUPERSEDED — SUSTITUIDO POR `src/modulos/MH_hidrologia.py` (T-1, 2026-11-11)
+============================================================================
+Este archivo YA NO ES EL ORIGEN DECLARADO DEL CAUDAL DE DISEÑO (INF-5.2.5).
+Desde T-1 de la cadena T el caudal de las Familias A y B tiene dos orígenes,
+y ninguno es este programa:
+
+  * entra DECLARADO por el estudio hidrológico en la columna `Q_m3s` del CSV
+    de puntos (la vía de siempre, que sigue ganando cuando viene llena); o
+  * lo CALCULA el propio calculador, en la Fase 1-bis, con
+    `src/modulos/MH_hidrologia.py`: tiempo de concentración (Manual de
+    Hidrología, Tabla Nº 05 y ecuación 30), precipitación de diseño por
+    ajuste de frecuencia con prueba de bondad (núm. 3.7), intensidad (núm.
+    3.8.1), coeficiente C (Tabla Nº 08) y método racional (núm. 3.12.2), a
+    partir de `--cuencas` y `--estacion`, con memoria paso a paso y citas.
+
+`M1_clasificacion.PERFILES[Familia.A].origen_del_caudal` nombra a
+`MH_hidrologia` y un test lo fija. Lo que este archivo hacía y el módulo
+nuevo NO hace: la ventana propia, las gráficas de las curvas IDF
+(`matplotlib`) y el ajuste de la relación I = K·T^m/t^n. Lo que el módulo
+nuevo hace y este no: la guardia de rango de cada fórmula (aquí Kirpich solo
+AVISABA fuera de 3–10 % de pendiente; allí no se evalúa), el ajuste de
+frecuencia de la serie, la Tabla Nº 08 y el caudal.
+
+NO SE BORRA: se conserva como ANTECEDENTE, sin importadores, sin tests y
+fuera del barrido de literales, igual que antes. Todo lo que sigue es su
+estatus anterior a T-1 y se deja como estaba; donde dice que este programa
+«es la herramienta que produce» la columna del caudal, léase «era».
+
+
 ESTATUS EN ESTE REPOSITORIO — LÉASE ANTES QUE NADA (SIS-B-10)
 =============================================================
 Esto NO es un módulo del calculador de alcantarillas. Es OTRO PROGRAMA, el

@@ -82,8 +82,10 @@ from src.dominios import (ALTURA_RECEPTOR_MAX_FISICA_M, N_MANNING_MAX_FISICO,
                           PH_MAX_FISICO, PPM_MAX_FISICO, S_CAUCE_MAX)
 from src.modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE
 from src.modelos import ALCANCE_PERFIL as _ALCANCE_PERFIL
-from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
+from src.modelos import (Bloqueo, CaudalDeDiseno, Clasificacion,
+                         CompatibilidadGeometrica,
                          ContextoCorrida, CriterioPendienteError, DatoEfectivoDeSitio,
+                         EntradaHidrologica,
                          DatoFaltanteError, DatoInvalidoError,
                          DictamenDurabilidad,
                          DisenoNoFactibleError, ENSAYOS_DE_DURABILIDAD,
@@ -92,9 +94,16 @@ from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ProteccionSalida, PuntoCritico, ResultadoPunto,
                          AVISO_SIN_ACCESO_DE_MANTENIMIENTO, SeccionReceptor,
                          TipoDeBloqueo, TWDeterminado, Verificacion)
-from src.modelos import EstadoDeVerificacion
-from src.modulos.M0_carga import (cargar_puntos, cargar_puntos_de_bytes,
+from src.modelos import EstadoDeVerificacion, TipoDeVeredicto
+from src.modulos.M0_carga import (COLUMNA_CAUDAL,
+                                  FAMILIAS_CON_CAUDAL_HIDROLOGICO,
+                                  cargar_puntos, cargar_puntos_de_bytes,
                                   leer_bytes)
+# --- T-1 --- La Fase 1-bis. Este es el UNICO modulo que importa
+# `MH_hidrologia`: el caudal calculado entra al pipeline como `Q_m3s` del
+# punto de calculo, igual que el declarado, y ningun modulo de M1 a M11 sabe
+# de cual de los dos se trata salvo por `InformePunto.caudal`.
+from src.modulos import MH_hidrologia as MH
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
 from src.modulos.M6_proteccion import proteccion_salida
@@ -280,11 +289,14 @@ DETALLE_FALTA_L_HIDRAULICO = ("Sec. 10 describe el procedimiento de la cuneta "
                               "hidraulica se declara, no se deduce")
 FAMILIAS_QUE_EXIGEN_COLUMNA: Dict[str, Tuple[Familia, ...]] = {
     "cota_coronacion_canal": (Familia.C,),
-    # `area_ha` la lee UNICAMENTE `M1._categoria_por_area`, alcanzable solo en
-    # la Familia A sin `categoria_tr` declarada (Sec. 2.2): la B tiene la fila
-    # fija de Sec. 2.3 y la C no tiene TR (lo midio el auditor adversarial de
-    # PF-2 sobre `periodo_retorno_de`). M0 solo la admite vacia en C, y ahi
-    # vacia no detiene nada; en A y B es obligatoria y el gate no se consulta.
+    # `area_ha` la EXIGE unicamente `M1._categoria_por_area`, alcanzable solo
+    # en la Familia A sin `categoria_tr` declarada (Sec. 2.2): la B tiene la
+    # fila fija de Sec. 2.3 y la C no tiene TR (lo midio el auditor
+    # adversarial de PF-2 sobre `periodo_retorno_de`). M0 solo la admite vacia
+    # en C, y ahi vacia no detiene nada; en A y B es obligatoria y el gate no
+    # se consulta. Desde T-1 la LEE ademas `_fase_hidrologia`, en A y en B,
+    # para el contraste de caudal especifico Q/A del caudal declarado; no la
+    # exige: sin area ese paso no se emite y nada se detiene.
     "area_ha": (Familia.A,),
 }
 COLUMNAS_DEL_TW: Tuple[str, ...] = ("cota_TW", "Q_receptor_m3s")
@@ -366,6 +378,10 @@ def puntos_por_familia(ruta_csv: Path) -> Dict[Familia, int]:
 # nombra el modulo y la seccion de la hoja de ruta que ejecuta esa etapa.
 FASE_CARGA = "Fase 1 - Carga y validacion (M0)"
 FASE_CLASIFICACION = "Fase 2 - Clasificacion y TR (M1)"
+FASE_HIDROLOGIA = "Fase 1-bis - Hidrologia: caudal de diseno (MH)"
+ETAPA_CAUDAL_CALCULADO = "caudal de diseno por el metodo racional"
+ETAPA_AREA_DE_LA_CUENCA = "area de la cuenca (area_ha frente a area_km2)"
+ORIGEN_Q_DE_COLUMNA = "CSV Sec. 1.2, columna Q_m3s"
 FASE_DISENO = "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"
 FASE_PROTECCION = "Fase 6 - Proteccion de salida (M6)"
 FASE_GEOMETRIA = "Fase 7 - Compatibilidad geometrica (M7)"
@@ -1045,6 +1061,10 @@ class InformePunto:
     clasificacion: Optional[Clasificacion] = None
     resultado: Optional[ResultadoPunto] = None
     luz: Optional[DatoDeclarado] = None
+    # EL CAUDAL DE DISEÑO CON SU ORIGEN (T-1): declarado por el estudio
+    # hidrologico (columna `Q_m3s` o dato externo) o calculado por la Fase
+    # 1-bis. Solo Familias A y B; None en la C y cuando el calculo se detuvo.
+    caudal: Optional[CaudalDeDiseno] = None
     categoria_tr: Optional[DatoDeclarado] = None
     longitud: Optional[DatoDeclarado] = None
     tw: Optional[DatoDeclarado] = None
@@ -1126,6 +1146,23 @@ class InformePunto:
         return tuple(v for _, v in self.verificaciones()
                      if v.estado is EstadoDeVerificacion.INDICADOR)
 
+    def indicadores_de_hidrologia(self) -> Tuple[Any, ...]:
+        """
+        --- T-1 --- Los pasos de la Fase 1-bis que salieron como INDICADOR:
+        el caudal se calculo y el punto no se detiene, pero un contraste de
+        la memoria hidrologica se disparo (la lluvia de diseño por debajo de
+        un año ya registrado, la serie mas corta que lo recomendado, la
+        cuenca fuera de la poblacion de su formula, el tiempo de
+        concentracion por debajo de la duracion minima). Cuentan en el
+        RESUMEN junto a las verificaciones con aviso (`Informe.resumen`);
+        su texto esta en `avisos()`.
+        """
+        if self.caudal is None:
+            return ()
+        return tuple(p for p in self.caudal.pasos
+                     if p.veredicto is not None
+                     and p.veredicto.tipo is TipoDeVeredicto.INDICADOR)
+
     def avisos(self) -> Tuple[str, ...]:
         """
         --- T-2 --- Los AVISOS del punto: lo que la corrida tiene que decir
@@ -1137,6 +1174,13 @@ class InformePunto:
         MISMO texto, que sale de aqui.
         """
         avisos: List[str] = []
+        # --- T-1 --- Primero los de la Fase 1-bis, en el orden del calculo:
+        # el aviso permanente del caudal declarado (el criterio FEN no lo
+        # alcanza), y los del caudal calculado (lluvia de diseño por debajo
+        # de lo observado, serie corta o con huecos, tiempo de concentracion
+        # extrapolado, duracion minima adoptada).
+        if self.caudal is not None:
+            avisos.extend(self.caudal.avisos)
         if self.tw_sec13 is not None:
             avisos.extend(self.tw_sec13.avisos)
         acceso = self.acceso_mantenimiento
@@ -1195,7 +1239,8 @@ class ResumenDeCorrida:
     bloqueadas: int          # reales: NO cuentan las diferidas por alcance
     diferidas: int
     cerrado: bool
-    con_aviso: int = 0       # T-2: verificaciones con veredicto INDICADOR
+    con_aviso: int = 0       # T-2: verificaciones con veredicto INDICADOR;
+                             # T-1: y los pasos de la Fase 1-bis que lo llevan
 
 
 @dataclass
@@ -1205,6 +1250,8 @@ class Informe:
     csv: Path
     generado: str
     alcance: str = ALCANCE_EXPEDIENTE
+    # Las dos entradas de la Fase 1-bis con que corrio (T-1), o None.
+    hidrologia: Optional[EntradaHidrologica] = None
     puntos: List[InformePunto] = field(default_factory=list)
     cabezal: InformeCabezal = field(default_factory=InformeCabezal)
     # LA FOTO DEL ESTADO CON QUE CORRIO (EXT-4, EXT-A-01). La pone `correr`
@@ -1249,7 +1296,11 @@ class Informe:
             bloqueadas=len(self.bloqueos_reales()),
             diferidas=len(self.diferidos()),
             cerrado=self.cerrado,
-            con_aviso=sum(len(i.con_aviso()) for i in self.puntos))
+            # T-1: y los pasos de la Fase 1-bis con veredicto INDICADOR,
+            # que son lo mismo un escalon antes: un contraste que se disparo
+            # sin detener el punto.
+            con_aviso=sum(len(i.con_aviso()) + len(i.indicadores_de_hidrologia())
+                          for i in self.puntos))
 
     @property
     def cerrado(self) -> bool:
@@ -1642,6 +1693,120 @@ def _fase_2(informe: InformePunto, externos: DatosExternos) -> bool:
     return _etapa(informe.bloqueos, FASE_CLASIFICACION,
                   "alcance por luz (Sec. 2.1 / 3.1)",
                   lambda: exigir_alcance(informe.clasificacion)) is not None
+
+
+def cargar_hidrologia(ruta_cuencas: Optional[Path],
+                      ruta_estacion: Optional[Path],
+                      ) -> Optional[EntradaHidrologica]:
+    """
+    Las dos entradas de la Fase 1-bis (--cuencas y --estacion), o None si la
+    corrida no trae ninguna. Van JUNTAS: una cuenca sin serie de lluvia, o
+    una serie sin cuencas, no calculan nada, y traer una sola es
+    `DatoFaltanteError` con el nombre de la que falta. No hay valores por
+    defecto: sin las dos, el caudal entra declarado por `Q_m3s` como siempre.
+    """
+    if ruta_cuencas is None and ruta_estacion is None:
+        return None
+    if ruta_cuencas is None:
+        raise DatoFaltanteError(
+            "cuencas",
+            detalle="se declaro la serie de la estacion (--estacion) y no el "
+                    "CSV de cuencas (--cuencas): el calculo hidrologico "
+                    "necesita los dos")
+    if ruta_estacion is None:
+        raise DatoFaltanteError(
+            "estacion",
+            detalle="se declaro el CSV de cuencas (--cuencas) y no la serie "
+                    "de la estacion (--estacion): el calculo hidrologico "
+                    "necesita los dos")
+    return MH.cargar_entrada(Path(ruta_cuencas), Path(ruta_estacion))
+
+
+def _fase_hidrologia(informe: InformePunto, externos: DatosExternos,
+                     hidrologia: Optional[EntradaHidrologica]) -> bool:
+    """
+    Fase 1-bis: de donde sale el caudal de diseño de un punto de Familia A o
+    B (T-1). Devuelve False solo cuando el caudal habia que CALCULARLO y el
+    calculo se detuvo: entonces el diseño no se intenta, porque repetiria el
+    mismo bloqueo como «falta Q_m3s».
+
+    LA PRECEDENCIA, que es la de siempre con un escalon nuevo al final:
+
+      1. `Q_m3s` declarado en --datos-externos: gana, como ya ganaba
+         (`disenar_punto` lo recibe explicito).
+      2. La columna `Q_m3s` del CSV, llena: se usa tal cual. La memoria
+         imprime «Q declarado por el estudio hidrológico».
+      3. La columna vacia y la corrida trae la cuenca de la obra y la serie
+         de su estacion: lo calcula `MH.caudal_de_diseno` con el TR de la
+         Fase 2, y el punto de calculo lo lleva en `Q_m3s`.
+
+    Sin ninguna de las tres no se llega aqui: M0 no carga el punto
+    (`DatoFaltanteError('Q_m3s')`). En los escalones 1 y 2 NO se recalcula
+    nada aunque haya cuenca: un dato del expediente no se corrige. La
+    Familia C no pasa por esta fase: su caudal es el del canal.
+    """
+    punto = informe.punto
+    if punto.familia not in FAMILIAS_CON_CAUDAL_HIDROLOGICO:
+        return True
+    cuenca = None if hidrologia is None else hidrologia.cuenca_de(punto.id)
+    externo = externos.dato(punto.id, COLUMNA_CAUDAL)
+    # EL AREA ESCRITA DOS VECES (auditoria de T-1). Con --cuencas la cuenca
+    # de la obra esta en `area_ha` del CSV de puntos, que fijo su periodo de
+    # retorno en la Fase 2, y en `area_km2` del CSV de cuencas, que entra al
+    # caudal. Si no dicen lo mismo el programa no elige: la etapa se bloquea
+    # con `DatoInvalidoError`. Un caudal DECLARADO no depende de ninguna de
+    # las dos y el punto se dimensiona igual, sin el contraste Q/A; uno por
+    # CALCULAR no se calcula.
+    areas_coherentes = True
+    if cuenca is not None and punto.area_ha is not None:
+        areas_coherentes = _etapa(
+            informe.bloqueos, FASE_HIDROLOGIA, ETAPA_AREA_DE_LA_CUENCA,
+            lambda: MH.exigir_areas_coherentes(
+                area_ha=punto.area_ha, area_km2=cuenca.area_km2,
+                id_punto=punto.id, origen_cuenca=cuenca.origen) or True
+        ) is not None
+    if externo is not None or punto.Q_m3s is not None:
+        if not areas_coherentes:
+            area, origen_area = None, ""
+        elif cuenca is not None:
+            area, origen_area = cuenca.area_km2, f"columna area_km2 de {cuenca.origen}"
+        elif punto.area_ha is not None:
+            area = MH.area_de_columna_km2(punto.area_ha)
+            origen_area = "CSV Sec. 1.2, columna area_ha, de ha a km2"
+        else:
+            area, origen_area = None, ""
+        informe.caudal = MH.caudal_declarado(
+            Q_m3s=punto.Q_m3s if externo is None else externo.valor,
+            de_donde=ORIGEN_Q_DE_COLUMNA if externo is None else externo.origen,
+            area_km2=area, origen_area=origen_area,
+            cuenca_disponible=cuenca is not None)
+        return True
+    if not areas_coherentes:
+        return False
+    if cuenca is None:
+        # M0 solo admite la celda vacia con cuenca; llegar aqui es un punto
+        # armado a mano. Se dice como dato faltante, no se inventa.
+        _falta_dato(informe.bloqueos, FASE_HIDROLOGIA, ETAPA_CAUDAL_CALCULADO,
+                    COLUMNA_CAUDAL,
+                    "la columna va vacia y la corrida no trae la cuenca de "
+                    "esta obra (--cuencas) ni la serie de su estacion "
+                    "(--estacion)")
+        return False
+    clasificacion = informe.clasificacion
+    if clasificacion is None or clasificacion.periodo_retorno.anios is None:
+        # Sin TR no hay lluvia de diseño que calcular; la Fase 2 ya dejo su
+        # bloqueo y repetirlo aqui no añade nada.
+        return False
+    serie = hidrologia.estaciones[cuenca.estacion]
+    informe.caudal = _etapa(
+        informe.bloqueos, FASE_HIDROLOGIA, ETAPA_CAUDAL_CALCULADO,
+        lambda: MH.caudal_de_diseno(cuenca, serie,
+                                    clasificacion.periodo_retorno.anios))
+    if informe.caudal is None:
+        return False
+    informe.punto_completado = replace(informe.punto_de_calculo,
+                                       Q_m3s=informe.caudal.Q_m3s)
+    return True
 
 
 def _fase_durabilidad(informe: InformePunto,
@@ -2117,7 +2282,8 @@ def _compuerta_metodo_h_o(informe: InformePunto, alcance: str) -> None:
 
 
 def correr_punto(punto: PuntoCritico, externos: DatosExternos,
-                 alcance: str = ALCANCE_EXPEDIENTE) -> InformePunto:
+                 alcance: str = ALCANCE_EXPEDIENTE,
+                 hidrologia: Optional[EntradaHidrologica] = None) -> InformePunto:
     """
     El pipeline de un punto, de la Fase 2 a la Fase 10. Cada etapa corre si su
     insumo existe; si no, queda registrada como bloqueo y las que no dependen
@@ -2143,8 +2309,15 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
 
     _completar_s_cauce(informe, externos)
 
-    if _fase_2(informe, externos):
+    # La Fase 1-bis va DESPUES de la 2 porque el caudal calculado necesita su
+    # TR, y se llama aunque la 2 no cierre: el caudal declarado y su aviso se
+    # anotan igual (T-1). La durabilidad (T-4) corre para todo punto que pasa
+    # la Fase 2, tenga caudal o no: no lo necesita.
+    clasificado = _fase_2(informe, externos)
+    con_caudal = _fase_hidrologia(informe, externos, hidrologia)
+    if clasificado:
         _fase_durabilidad(informe, externos)
+    if clasificado and con_caudal:
         _fase_diseno(informe, externos, alcance)
         _compuerta_metodo_h_o(informe, alcance)
         if informe.dimensionado:
@@ -2228,7 +2401,8 @@ def _cabezal_diferido() -> InformeCabezal:
 
 
 def correr(ruta_csv: Path, externos: DatosExternos,
-           alcance: str = ALCANCE_EXPEDIENTE) -> Informe:
+           alcance: str = ALCANCE_EXPEDIENTE,
+           hidrologia: Optional[EntradaHidrologica] = None) -> Informe:
     """
     Corre el expediente completo: M0 carga el CSV y cada punto recorre el
     pipeline; la Fase 9 corre una vez para el proyecto.
@@ -2239,6 +2413,11 @@ def correr(ruta_csv: Path, externos: DatosExternos,
 
     M0 no se protege con `_etapa`: si el CSV no se puede cargar no hay
     expediente que informar, y la excepcion sale al `main`.
+
+    `hidrologia` (T-1) son las dos entradas de la Fase 1-bis, ya cargadas
+    por `cargar_hidrologia`, o None. Con ellas, un punto de Familia A o B
+    que tenga cuenca puede traer `Q_m3s` vacio y el programa lo calcula; sin
+    ellas todo corre exactamente como antes.
 
     EL REGISTRO DE USOS SE VACIA AL ENTRAR Y SE FOTOGRAFIA AL SALIR (EXT-4,
     EXT-A-01, PC-09). Es la correccion entera del cluster «estado»: los 79
@@ -2254,16 +2433,20 @@ def correr(ruta_csv: Path, externos: DatosExternos,
     ds.reiniciar_usos()
     ruta_csv = Path(ruta_csv)
     datos_csv = leer_bytes(ruta_csv)
-    puntos = cargar_puntos_de_bytes(datos_csv, ruta_csv.name)
+    puntos = cargar_puntos_de_bytes(
+        datos_csv, ruta_csv.name,
+        ids_con_caudal_calculable=(frozenset() if hidrologia is None
+                                   else hidrologia.ids_calculables()))
     informe = Informe(csv=ruta_csv,
                       generado=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                      alcance=alcance)
-    informe.puntos = [correr_punto(punto, externos, alcance)
+                      alcance=alcance, hidrologia=hidrologia)
+    informe.puntos = [correr_punto(punto, externos, alcance, hidrologia)
                       for punto in puntos]
     informe.cabezal = (_cabezal_diferido() if _difiere(alcance, "M9_cabezal")
                        else correr_cabezal())
 
     _avisar_ids_desconocidos(informe, externos)
+    _avisar_cuencas_sin_punto(informe)
     informe.contexto = capturar_contexto(csv_sha1=sha1_de_bytes(datos_csv))
     return informe
 
@@ -2327,3 +2510,22 @@ def _avisar_ids_desconocidos(informe: Informe, externos: DatosExternos) -> None:
             DatoInvalidoError("datos_externos", valor=id_punto,
                               motivo="el id no esta en el CSV: sus datos "
                                      "declarados no se aplicaron a ningun punto")))
+
+
+def _avisar_cuencas_sin_punto(informe: Informe) -> None:
+    """
+    Una fila del CSV de cuencas cuyo id no esta en el CSV de puntos es una
+    cuenca que no se aplico a nada (T-1): mismo defecto y mismo aviso que un
+    id desconocido de --datos-externos.
+    """
+    if informe.hidrologia is None:
+        return
+    del_csv = {i.punto.id for i in informe.puntos}
+    for id_cuenca in sorted(informe.hidrologia.cuencas):
+        if id_cuenca in del_csv:
+            continue
+        informe.cabezal.bloqueos.append(_bloqueo(
+            FASE_CARGA, "cuencas declaradas",
+            DatoInvalidoError("cuencas", valor=id_cuenca,
+                              motivo="el id no esta en el CSV de puntos: su "
+                                     "cuenca no se aplico a ninguna obra")))

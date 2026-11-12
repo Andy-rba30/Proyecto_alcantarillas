@@ -124,6 +124,10 @@ from src.normativa import registro as _registro_normativo
 _FASE_DE_MODULO: Dict[str, str] = {
     "M0_carga": "Fase 1 - Datos de entrada",
     "M1_clasificacion": "Fase 2 - Clasificacion y periodo de retorno",
+    # T-1: la Fase 1-bis, que calcula el caudal de diseño. Su numero va
+    # entre la 1 y la 2 en la hoja de ruta, pero CORRE despues de la 2
+    # porque el caudal calculado usa su periodo de retorno.
+    "MH_hidrologia": "Fase 1-bis - Hidrologia: caudal de diseño",
     "M2_material": "Fase 3 - Tipo, material y durabilidad",
     "M3_hidraulica": "Fase 4 - Dimensionamiento hidraulico",
     "M4_control": "Fase 4 - Dimensionamiento hidraulico",
@@ -1135,6 +1139,11 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "regimen_cortante_muro_e060_art_11_10_2": _Meta(unidad="-"),
     "demanda_sismica_licuefaccion": _Meta(
         unidad="años", fase_declarada="Fase 0-bis - licuefaccion"),
+    "distribucion_precipitacion_maxima": _Meta(unidad="-"),
+    "duracion_minima_lluvia_min": _Meta(unidad="min"),
+    "tc_fuera_de_la_poblacion_del_metodo": _Meta(unidad="-"),
+    "coeficiente_uniformidad_temez": _Meta(unidad="-"),
+    "coeficiente_escorrentia_superficie_vial": _Meta(unidad="-"),
     "diametros_normalizados": _Meta(unidad="m"),
     "edicion_que_rige_el_expediente": _Meta(
         unidad="-",
@@ -1166,10 +1175,9 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "h_eq_bajo_altura_tabulada": _Meta(unidad="-"),
     "h_eq_banda_intermedia_borde": _Meta(unidad="-"),
     "hds5_embocadura_hdpe": _Meta(unidad="-"),
-    "homogeneidad_serie_fen": _Meta(
-        unidad="-",
-        fase_declarada="Fase 1-bis - Hidrologia: poblacion mixta por FEN "
-                       "(ningun modulo lo invoca: la serie no ha llegado)"),
+    # T-1: desde que `MH_hidrologia` lo invoca, la fase se DEDUCE del
+    # consumidor y ya no se declara aqui (decia «ningun modulo lo invoca»).
+    "homogeneidad_serie_fen": _Meta(unidad="-"),
     "inclinacion_muro_beta": _Meta(unidad="grados"),
     "k_v": _Meta(unidad="-"),
     "ke_entrada": _Meta(unidad="-"),
@@ -1235,12 +1243,14 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "n_manning_hdpe": _Meta(unidad="-"),
     "origen_cota_fondo_entrada": _Meta(unidad="-"),
     "pendiente_relleno_trasdos_i": _Meta(unidad="grados"),
+    "nivel_significancia_ks": _Meta(unidad="- (probabilidad)"),
     "peso_especifico_concreto_kn_m3": _Meta(unidad="kN/m3"),
     "peso_especifico_relleno_kn_m3": _Meta(unidad="kN/m3"),
     "phi_relleno_trasdos": _Meta(unidad="grados"),
     "predimensionamiento_cabezal": _Meta(unidad="m"),
     "procedimiento_flexion_corte_aashto_sec5": _Meta(unidad="-"),
     "punto_aplicacion_incremento_sismico": _Meta(unidad="- (fraccion de H)"),
+    "relacion_intensidad_duracion": _Meta(unidad="-"),
     "remanso_derecho_via": _Meta(unidad="m"),
     "seccion_receptor": _Meta(
         unidad="m, H:V, m/m, -",

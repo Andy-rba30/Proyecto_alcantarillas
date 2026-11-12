@@ -935,7 +935,9 @@ CENSO_DE_MARCAS = {
     # ppm, entran a la Tabla 4.4 de E.060, que esta en % en peso).
     # 7 -> 8 en la auditoria de T-4 (H11): `PPM_MAX_FISICO = 1000000`, el
     # techo de una concentracion en ppm (el 100 % de la muestra).
-    "src/dominios.py": 8,
+    # 8 -> 10 en T-1: `MINUTOS_POR_HORA = 60` y `HECTAREAS_POR_KM2 = 100`, las
+    # dos conversiones de unidad del capitulo III del Manual de Hidrologia.
+    "src/dominios.py": 10,
     # UNA sola: `CIFRAS_MAGNITUD = 3`, los decimales con que la traza de la
     # memoria imprime una magnitud (§4.4). Es de la misma naturaleza que los
     # `FMT_*` de M11 --- cuantos decimales se escriben, no cuanto vale nada ---

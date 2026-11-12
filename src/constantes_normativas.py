@@ -1134,8 +1134,9 @@ H_O_CONDICION_APLICACION = (
 # que la palabra "recomend" aparecia CERO veces en la memoria generada mientras
 # el repositorio afirmaba que era "lo unico que la memoria imprime de V2".
 # (Este comentario atribuia la detencion a que «'homogeneidad_serie_fen'
-# bloquea el Q de toda la Familia A» hasta T-0, INF-5.1.1: ningun modulo lee
-# ese criterio y un Q vacio es `DatoFaltanteError`. La razon del bloque no
+# bloquea el Q de toda la Familia A» hasta T-0, INF-5.1.1: entonces ningun
+# modulo leia ese criterio, y un Q vacio es `DatoFaltanteError`. Desde T-1 lo
+# lee `MH_hidrologia`, y solo cuando el caudal se calcula. La razon del bloque no
 # cambia: una tabla que depende de un resultado no puede ser el unico sitio
 # donde viaje el caracter de un umbral.)
 #
@@ -3992,6 +3993,181 @@ def homonimia_como_texto(homonimia) -> str:
     """
     termino, sentidos, lectura = homonimia
     return f"{termino} en este expediente: " + " ".join(sentidos) + f" {lectura}"
+
+# ===========================================================================
+# --- T-1 --- Hidrologia (Manual de Hidrologia, cap. III): lo que consume
+# `modulos/MH_hidrologia.py`. Cadena T, 2026-11-11
+# ===========================================================================
+# Todo lo de este bloque lo leyo la sesion en el PDF (texto e imagen) y cada
+# valor lleva su cita en el registro. Las cuatro TABLAS no se transcriben
+# aqui: se DERIVAN de `normativa/tablas.py`, que es donde estan escritas una
+# sola vez (regla D2). Los coeficientes de las FORMULAS si se escriben aqui,
+# porque el registro guarda una formula como texto y no como numeros.
+#
+# UNIDADES. La hidrologia del Manual se escribe en mm, mm/h, km2, minutos y
+# horas, y este bloque las conserva porque los coeficientes empiricos SON de
+# esas unidades (0.278 solo vale con I en mm/h y A en km2). No son unidades
+# imperiales ni de presentacion: `MH_hidrologia` nombra cada argumento con su
+# unidad (`area_km2`, `tc_min`, `I_mm_h`) y entrega el caudal en m3/s.
+#
+# LAS CONSTANTES EMPIRICAS LLEVAN EL SUFIJO `_SI` (CLAUDE.md, «Unidades»): su
+# valor depende del sistema de unidades y el que se transcribe es el METRICO
+# que el Manual imprime. Cada una dice al lado su equivalente en unidades
+# inglesas, que es como aparece en la bibliografia de origen, y por que NO se
+# usa: el Manual ya las entrega convertidas, y mezclar una forma inglesa con
+# longitudes en metros es el error clasico de estas formulas.
+
+# --- num. 3.12.2, ecuacion (28): Q = 0,278 C I A -----------------------------
+# 0.278 = 1/3.6: de (mm/h)·km2 a m3/s. El num. 4.1.2.1 b) escribe la misma
+# expresion para la cuneta como C·I·A/3.6; el Manual redondea a tres cifras
+# en la (28) y el programa usa el numero que la (28) imprime.
+# Imperial equivalente, que NO se usa: Q[cfs] = C · I[in/h] · A[acres], con
+# coeficiente 1 (1.008 exacto): es la forma del WSDOT Hydraulics Manual, ec.
+# 2-3 (Kc = 1 «for English units»).
+RACIONAL_COEFICIENTE_SI = 0.278             # m3/s por (mm/h · km2)
+# Imperial: 1.008 en Q[cfs] = 1.008 · C · I[in/h] · A[acres], que la practica
+# redondea a 1. NO se convierte de uno a otro con el pie: ninguno de los dos
+# es una constante dimensional, los dos son un cambio de unidades DENTRO de su
+# sistema (mm/h y km2 a m3/s; in/h y acres a cfs), y por eso el censo de
+# `tests/test_dimensional_piloto.py` la lleva como «no cierra desde el
+# comentario, y dice por que».
+NUMERAL_RACIONAL = _reg.cita("MC_HHD.3.12.2").como_texto()
+# «Muy usado para cuencas, A<10 Km2.» Desigualdad ESTRICTA: 10 km2 queda
+# fuera. Caracter APROXIMACION (limite de validez), no prohibicion.
+RACIONAL_AREA_MAX_KM2 = 10.0                # km2, EXCLUSIVO
+NUMERAL_RACIONAL_AREA = _reg.cita("MC_HHD.3.12.2#AREA").como_texto()
+# El num. 4.1.2.1 b) escribe el caudal de aporte de una cuneta como
+# C·I·A/3.6. NO se transcribe ese 3.6 como constante: 1/3.6 = 0.2778 y la
+# (28) imprime 0.278, y con los dos en el codigo la misma area daria dos
+# caudales segun la puerta por la que entrase. La familia entera usa el de la
+# (28); la cita de la cuneta se imprime en el paso.
+NUMERAL_CUNETA_APORTE = _reg.cita("MC_HHD.4.1.2.1b").como_texto()
+# Metodo racional modificado (num. 3.12.2.1), coeficiente de uniformidad,
+# ecuacion (31): K = 1 + Tc^1.25 / (Tc^1.25 + 14), Tc en HORAS. Depende de la
+# unidad de Tc y por eso es `_SI`; la formula es española (Temez) y no tiene
+# forma inglesa en uso.
+UNIFORMIDAD_TEMEZ_SI = {"exponente": 1.25, "sumando": 14}
+NUMERAL_UNIFORMIDAD_TEMEZ = _reg.cita("MC_HHD.3.12.2.1#K").como_texto()
+
+# --- Tabla Nº 08: coeficiente de escorrentia C -------------------------------
+_T08 = _reg.tabla("MC_HHD.T08")
+# (cobertura, suelo) -> {clase de pendiente: C}. Las claves salen del id de
+# la fila («cobertura__suelo»); el numero, de su celda.
+TABLA_08_COEFICIENTE_DE_ESCORRENTIA = {
+    tuple(_T08.clave_corta(f).split("__")): dict(f.valores)
+    for f in _T08.filas
+}
+# Las cinco columnas, de mayor a menor pendiente, con el UMBRAL que su rotulo
+# imprime en tanto por uno y si la desigualdad impresa es «>» (True) o «<».
+# Los umbrales son los de los rotulos de la pagina («> 50%», «> 20%»,
+# «> 5%», «> 1%», «< 1%»): cuatro numeros para cinco columnas, porque la
+# ultima se define por debajo del mismo 1 % que cierra la penultima.
+TABLA_08_PENDIENTES = (
+    ("pronunciada", 0.50), ("alta", 0.20), ("media", 0.05), ("suave", 0.01),
+)
+TABLA_08_PENDIENTE_MENOR = "despreciable"   # «< 1%»
+NUMERAL_TABLA_08 = _reg.cita("MC_HHD.3.12.2#T08").como_texto()
+
+# --- Tabla Nº 05: tiempo de concentracion (tc en MINUTOS) --------------------
+# Kirpich (1940): tc = 0.01947 · L^0.77 · S^-0.385, L en m, S en m/m.
+# Imperial equivalente, que NO se usa: tc[min] = 0.0078 · L[ft]^0.77 · S^-0.385.
+TC_KIRPICH_SI = {"coeficiente": 0.01947, "exp_L": 0.77, "exp_S": -0.385}
+# «pendientes empinadas (3 a 10%)»: la POBLACION de la que salio la formula
+# (los dos extremos incluidos). La tabla la describe, no la impone: que se
+# hace fuera de ella lo decide el criterio
+# 'tc_fuera_de_la_poblacion_del_metodo'.
+TC_KIRPICH_RANGO_S = (0.03, 0.10)           # m/m
+# Los ajustes que la misma observacion manda: por 0.4 en flujo superficial
+# sobre concreto o asfalto, por 0.2 en canales de concreto, ninguno en suelo
+# descubierto ni en cunetas.
+TC_KIRPICH_AJUSTES = {
+    "ninguno": 1,
+    "superficie_de_concreto_o_asfalto": 0.4,
+    "canal_de_concreto": 0.2,
+}
+NUMERAL_TC_KIRPICH = _reg.cita("MC_HHD.3.9#T05_KIRPICH").como_texto()
+# California Culverts Practice (1942): tc = 0.0195 · (L^3 / H)^0.385, L y H
+# en m. La fila no escribe rango propio; se le aplica el de Kirpich (ver la
+# `Interpretacion` de su cita). Imperial equivalente, que NO se usa:
+# tc[min] = 60 · (11.9 · L[mi]^3 / H[ft])^0.385.
+TC_CALIFORNIA_SI = {"coeficiente": 0.0195, "exp_L": 3, "exp": 0.385}
+NUMERAL_TC_CALIFORNIA = _reg.cita("MC_HHD.3.9#T05_CALIFORNIA").como_texto()
+# Federal Aviation Administration (1970): tc = 0.7035 · (1.1 − C) · L^0.50 /
+# S^0.333, L en m, S en m/m, C el coeficiente del metodo racional. Imperial
+# equivalente, que NO se usa: tc[min] = 1.8 · (1.1 − C) · L[ft]^0.5 / S[%]^0.333.
+TC_FAA_SI = {"coeficiente": 0.7035, "resta_C": 1.1, "exp_L": 0.50,
+             "exp_S": 0.333}
+NUMERAL_TC_FAA = _reg.cita("MC_HHD.3.9#T05_FAA").como_texto()
+# Ecuacion de retardo SCS (1973): tc = 0.0136 · L^0.8 · (1000/CN − 9)^0.7 /
+# S^0.5, L en m, S en m/m. Imperial equivalente, que NO se usa:
+# tc[min] = 100 · L[ft]^0.8 · ((1000/CN) − 9)^0.7 / (1900 · S[%]^0.5).
+TC_RETARDO_SCS_SI = {"coeficiente": 0.0136, "exp_L": 0.8, "mil": 1000,
+                     "resta": 9, "exp_CN": 0.7, "exp_S": 0.5}
+# «pequeñas cuencas urbanas con áreas inferiores a 800 Ha»: poblacion a la
+# que se adapto, en km2 y EXCLUSIVA. Mismo trato que los 3 a 10 % de Kirpich.
+TC_RETARDO_SCS_AREA_MAX_KM2 = 8.0
+# El numero de curva es un indice entre 0 y 100; con CN = 100 el parentesis
+# vale 1 y por debajo crece. Dominio de la formula, no umbral.
+TC_RETARDO_SCS_CN_MAX = 100
+NUMERAL_TC_RETARDO_SCS = _reg.cita("MC_HHD.3.9#T05_SCS").como_texto()
+# Temez, ecuacion (30) del num. 3.12.2.1: Tc = 0.3 · (L / S^0.25)^0.76, con L
+# en KM y Tc en HORAS. NO esta en la Tabla Nº 05. Sin forma inglesa en uso.
+TC_TEMEZ_SI = {"coeficiente": 0.3, "exp_S": 0.25, "exp": 0.76}
+# El rango del metodo del que la formula es pieza: «áreas menores de 770 km2
+# y con tiempos de concentración (Tc) de entre 0.25 y 24 horas». Aqui la
+# fuente SI escribe un rango de aplicacion del metodo, y fuera no se evalua.
+TC_TEMEZ_RANGO_H = (0.25, 24.0)             # horas, los dos incluidos
+TC_TEMEZ_AREA_MAX_KM2 = 770.0               # km2, EXCLUSIVO («menores de»)
+NUMERAL_TC_TEMEZ = _reg.cita("MC_HHD.3.12.2.1#TC").como_texto()
+NUMERAL_TABLA_05 = _reg.cita("MC_HHD.3.9#T05").como_texto()
+
+# --- num. 3.8.1: de la precipitacion de 24 horas a la intensidad -------------
+# Dick y Peschke, ecuacion (16): Pd = P24h · (d / 1440)^0.25, d en minutos.
+DICK_PESCHKE = {"minutos_en_24_h": 1440, "exponente": 0.25}
+NUMERAL_DICK_PESCHKE = _reg.cita("MC_HHD.3.8.1#DICK_PESCHKE").como_texto()
+# Tabla Nº 04: horas -> coeficiente por el que se multiplica P24h.
+_T04 = _reg.tabla("MC_HHD.T04")
+TABLA_04_COEFICIENTES_DE_DURACION = {
+    f.valores["duracion_h"]: f.valores["coeficiente"] for f in _T04.filas
+}
+NUMERAL_TABLA_04 = _reg.cita("MC_HHD.3.8.1#T04").como_texto()
+
+# --- num. 3.7: ajuste de frecuencia y bondad de ajuste -----------------------
+# Gumbel por momentos, las dos relaciones que la pag. impresa 29 imprime:
+# alfa = 1.2825 / sigma ; beta = mu − 0.45 · sigma.
+GUMBEL_MOMENTOS = {"alfa_por_sigma": 1.2825, "beta_resta_sigmas": 0.45}
+NUMERAL_GUMBEL = _reg.cita("MC_HHD.3.7.1.7").como_texto()
+NUMERAL_DISTRIBUCIONES = _reg.cita("MC_HHD.3.7.1").como_texto()
+# Las ocho distribuciones que el num. 3.7.1 recomienda, con su rotulo
+# impreso, y cuales trae el Manual con el estimador de sus parametros.
+DISTRIBUCIONES_3_7_1 = {
+    "normal": "Distribución Normal",
+    "lognormal_2p": "Distribución Log Normal 2 parámetros",
+    "lognormal_3p": "Distribución Log Normal 3 parámetros",
+    "gamma_2p": "Distribución Gamma 2 parámetros",
+    "gamma_3p": "Distribución Gamma 3 parámetros",
+    "log_pearson_3": "Distribución Log Pearson tipo III",
+    "gumbel": "Distribución Gumbel",
+    "log_gumbel": "Distribución Log Gumbel",
+}
+DISTRIBUCIONES_CON_ESTIMADOR_IMPRESO = ("normal", "lognormal_2p", "gumbel")
+# Tabla Nº 03: n -> {alfa: d critico}.
+_T03 = _reg.tabla("MC_HHD.T03")
+TABLA_03_KS = {
+    f.valores["n"]: {0.10: f.valores["alfa_0_10"],
+                     0.05: f.valores["alfa_0_05"],
+                     0.01: f.valores["alfa_0_01"]}
+    for f in _T03.filas
+}
+NUMERAL_KS = _reg.cita("MC_HHD.3.7.2b").como_texto()
+# num. 3.4: «se recomienda contar con un mínimo de 25 años de registro».
+REGISTRO_MINIMO_RECOMENDADO_ANIOS = 25
+# El menor tamaño de muestra que la Tabla Nº 03 tabula. Por debajo no hay
+# valor critico impreso con que juzgar el ajuste, y el calculo no se evalua.
+KS_N_MINIMO_TABULADO = min(TABLA_03_KS)
+NUMERAL_SERIE_HIDROLOGICA = _reg.cita("MC_HHD.3.4#FEN").como_texto()
+NUMERAL_AVENIDA_DE_DISENO = _reg.cita("MC_HHD.3.13").como_texto()
+
 
 # ===========================================================================
 # Constantes de REFERENCIA: transcritas del Anexo B, sin consumidor de calculo

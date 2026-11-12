@@ -81,6 +81,10 @@ def _pasos_de(informe):
         if punto.clasificacion is not None:
             _anota(getattr(punto.clasificacion.verificacion_luz, "paso", None))
             _anota(getattr(punto.clasificacion.periodo_retorno, "paso", None))
+        # La Fase 1-bis (T-1): el caudal de diseño cuelga del punto, no de
+        # la clasificacion ni del resultado hidraulico.
+        if getattr(punto, "caudal", None) is not None:
+            vistos.extend(punto.caudal.pasos)
         for _fase, v in punto.verificaciones():
             _anota(getattr(v, "paso", None))
         for escalon in punto.traza:
@@ -429,6 +433,20 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F8.RECUBRIMIENTO",  # 9.4 se detiene en 'categoria_refuerzo_aashto'
         "F10.CUNETA",       # falta el dato 'L_hidraulico_m'
         "F6.LAUSHEY",       # Fase 6 cuelga de un punto dimensionado
+        # LOS SIETE DE LA FASE 1-bis QUE SOLO SE EMITEN CUANDO EL CAUDAL SE
+        # CALCULA (T-1). Esta corrida trae `Q_m3s` lleno en sus puntos de
+        # Familia A y B, de modo que el caudal entra declarado y de la
+        # hidrologia solo sale el octavo paso, `FH.Q_ESPECIFICO`, que no
+        # esta en esta lista. Que los siete se emiten con su fundamento y su
+        # cita lo mide `tests/test_t1_hidrologia.py::
+        # test_el_caudal_calculado_es_el_producto_de_sus_pasos`.
+        "FH.SERIE", "FH.AJUSTE", "FH.KS", "FH.TC", "FH.INTENSIDAD", "FH.C",
+        "FH.RACIONAL",
+        # El octavo de los que solo salen con el caudal calculado: el juicio
+        # del tratamiento FEN contra la regla de la hoja de ruta (paso 1b.3b,
+        # auditoria de T-1). Lo mide `test_t1_hidrologia.py::
+        # test_serie_sin_fen_con_menos_lluvia_que_la_completa_detiene_el_calculo`.
+        "FH.FEN",
         # F5.V7_FILA SIGUE AQUI DESPUES DE C7, Y SU RAZON NO ES LA QUE EL
         # PUNTO 0 ESCRIBIO. Aquel comentario decia que el fundamento existia
         # «declarado y sin consumidor» hasta que el punto 3 lo cableara. El

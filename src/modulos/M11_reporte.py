@@ -920,6 +920,13 @@ def _tabla_datos(informe: Any) -> str:
             fuente = (f'<span class="pendiente">columna '
                       f'<code>{_esc(campo)}</code> vacia</span> '
                       "&mdash; dato de un tablero externo")
+            caudal = getattr(informe, "caudal", None)
+            if campo == "Q_m3s" and caudal is not None and caudal.calculado:
+                # T-1: la celda va vacia porque el caudal lo CALCULA la Fase
+                # 1-bis; decir «tablero externo» seria falso.
+                fuente = (f"columna <code>{_esc(campo)}</code> vacia &mdash; "
+                          f"{_esc(caudal.leyenda)}: Q = {_num(caudal.Q_m3s)} "
+                          f"m³/s (ver «{_esc(TITULO_CAUDAL_DE_DISENO)}»)")
         filas.append(_fila([_td(_esc(rotulo)), _td(texto, "num"),
                             _td(_esc(unidad)), _td(fuente)]))
 
@@ -1254,6 +1261,8 @@ def sin_fundamento_por_codigo() -> Dict[str, Tuple[str, str]]:
 # ---------------------------------------------------------------------------
 
 TITULO_TRAZA_CLASIFICACION = "Desarrollo de la clasificacion (Fase 2)"
+TITULO_CAUDAL_DE_DISENO = "Caudal de diseño y su origen (Fase 1-bis)"
+TITULO_TRAZA_HIDROLOGIA = "Desarrollo del calculo hidrologico (Fase 1-bis)"
 TITULO_TRAZA_TW = "Obtencion del TW en el cuerpo receptor (Sec. 1.3)"
 TITULO_TRAZA_HIDRAULICA = "Desarrollo del calculo hidraulico (Fases 3 y 4)"
 TITULO_TRAZA_HIDRAULICA_ULTIMO = ("Desarrollo del calculo hidraulico del "
@@ -1282,6 +1291,17 @@ def traza_clasificacion(informe: Any) -> Tuple[Any, ...]:
     if tr is not None:
         pasos.append(tr)
     return tuple(pasos)
+
+
+def traza_hidrologia(informe: Any) -> Tuple[Any, ...]:
+    """
+    Los pasos de la Fase 1-bis que la memoria publica (T-1): los ocho de la
+    memoria hidrologica cuando el caudal se calculo, o solo el del caudal
+    especifico cuando entro declarado. Vacio en la Familia C y cuando el
+    calculo se detuvo antes de producir un caudal.
+    """
+    caudal = getattr(informe, "caudal", None)
+    return () if caudal is None else tuple(caudal.pasos)
 
 
 def traza_durabilidad(informe: Any) -> Tuple[Any, ...]:
@@ -2057,6 +2077,29 @@ def _pasos_de_clasificacion(informe: Any) -> str:
                         TITULO_TRAZA_CLASIFICACION)
 
 
+def _bloque_hidrologia(informe: Any) -> str:
+    """
+    El caudal de diseño del punto y DE DONDE SALE (T-1): la leyenda --«Q
+    declarado por el estudio hidrológico» o calculado por el programa--, los
+    avisos que no detienen nada, y los pasos de la Fase 1-bis. Va despues de
+    la clasificacion porque el caudal calculado usa su TR.
+
+    Todo llega hecho en `InformePunto.caudal`: este bloque no calcula.
+    """
+    caudal = getattr(informe, "caudal", None)
+    if caudal is None:
+        return ""
+    clase = "nota" if caudal.calculado else "aviso"
+    partes = [
+        f"<h4>{_esc(TITULO_CAUDAL_DE_DISENO)}</h4>",
+        f'<div class="{clase}"><p><b>{_esc(caudal.leyenda)}</b>: Q = '
+        f"{_num(caudal.Q_m3s)} m³/s &mdash; {_esc(caudal.de_donde)}.</p></div>"]
+    partes.extend(f'<div class="aviso"><p>{_esc(aviso)}</p></div>'
+                  for aviso in caudal.avisos)
+    partes.append(bloque_pasos(caudal.pasos, TITULO_TRAZA_HIDROLOGIA))
+    return "".join(partes)
+
+
 def _paso_del_tw(informe: Any) -> str:
     """
     El desarrollo de Sec. 1.3: por que via salio el TW de este punto.
@@ -2181,6 +2224,7 @@ def memoria_de_punto(informe: Any) -> str:
         _tabla_datos(informe),
         _tabla_clasificacion(informe),
         _pasos_de_clasificacion(informe),
+        _bloque_hidrologia(informe),
         _bloque_durabilidad(informe),
         _tabla_iteraciones(informe),
         _tabla_diseno(informe),
@@ -2644,6 +2688,7 @@ def pasos_del_informe(informe: Any) -> Tuple[Any, ...]:
         if punto.clasificacion is not None:
             _anota(getattr(punto.clasificacion.verificacion_luz, "paso", None))
             _anota(getattr(punto.clasificacion.periodo_retorno, "paso", None))
+        vistos.extend(traza_hidrologia(punto))      # Fase 1-bis (T-1)
         for _fase, v in punto.verificaciones():
             _anota(getattr(v, "paso", None))
         for escalon in punto.traza:
@@ -3351,6 +3396,7 @@ def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
     vistos: List[Any] = []
     for punto in informe.puntos:
         vistos.extend(traza_clasificacion(punto))
+        vistos.extend(traza_hidrologia(punto))
         vistos.extend(traza_durabilidad(punto))
         tw = traza_tw(punto)
         if tw is not None:

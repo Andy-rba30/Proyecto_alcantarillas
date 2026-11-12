@@ -1,0 +1,10 @@
+# DATOS DE PRUEBA, NO DEL PROYECTO. Cuencas SINTETICAS para los tests de
+# tests/test_t1_hidrologia.py: areas, longitudes, pendientes, coberturas y
+# metodos inventados para ejercitar el calculo, no medidos en ninguna cuenca
+# del corredor. Los ids son los de tests/ejemplo_puntos.csv, y las areas son
+# las de su columna area_ha (850, 210 y 18 ha). B-01 es el area tributaria de
+# una cuneta: superficie de la plataforma vial y formula de flujo superficial.
+id,area_km2,L_cauce_m,S_cauce_cuenca,S_terreno,cobertura,suelo,estacion,metodo_tc,H_desnivel_m,ajuste_kirpich,CN
+A-01,8.5,5200,0.012,0.03,pastos_vegetacion_ligera,semipermeable,PRUEBA-SINTETICA,temez,,,
+A-02,2.1,2400,0.045,0.045,cultivos,semipermeable,PRUEBA-SINTETICA,kirpich,,ninguno,
+B-01,0.18,900,0.008,0.02,talud_de_tierra,,PRUEBA-SINTETICA,federal_aviation_administration,,,

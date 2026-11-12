@@ -303,7 +303,7 @@ dentro de la que se elige. La tabla sale de esas fichas:
 | `cobertura_minima_cajon` | [A] | `float` | real >= 0, en metros |
 | `embocadura_cajon` | [A] | `str` | la clave de una fila de `HDS5_3ED.TA1`, `HDS5_3ED.TC2` |
 | `espesor_pared_cajon` | [A] | `float` | metros, > 0 |
-| `homogeneidad_serie_fen` | [A] | `str` | declaracion del tratamiento estadistico |
+| `homogeneidad_serie_fen` | [A] | `categoria` | una de: `serie_completa`, `serie_sin_fen`, `dos_poblaciones` |
 | `ke_entrada_cajon` | [C] | `str` | la clave de una fila de `HDS5_3ED.TC2` |
 | `n_celdas_cajon` | [A] | `int` | entero >= 1 |
 | `n_manning_cajon` | [N->] | `str` | la clave de una fila de `MC_HHD.T09` |
@@ -316,8 +316,11 @@ cualquier cruce de canal: `embocadura_cajon`, `ke_entrada_cajon`,
 `espesor_pared_cajon` y `cobertura_minima_cajon`. Los otros dos sólo se
 invocan en condiciones que este ejemplo no alcanza: `TW_receptor` es la última
 puerta del TW (Sec. 1.3) cuando no hay ni `TW_m`, ni `cota_TW`, ni caudal del
-receptor; y `homogeneidad_serie_fen` es un hecho sobre la serie de
-precipitación de la Fase 1-bis, que este software no procesa.
+receptor; y `homogeneidad_serie_fen` es la decisión de qué se hace con los
+años del fenómeno El Niño de la serie de precipitación (Fase 1-bis), y sólo
+la invoca una corrida que **calcula** el caudal con `--cuencas` y `--estacion`
+(`docs/contrato_entradas.md` §2-bis): este ejemplo trae el caudal declarado
+en `Q_m3s`, y entonces el criterio no detiene nada y la memoria sólo avisa.
 
 **Cómo se declara, no qué.** `--declarar CLAVE=VALOR` declara un criterio
 **sólo para esa corrida**: el archivo no se toca y la memoria imprime el valor
@@ -336,7 +339,7 @@ para elegir):
 --declarar cobertura_minima_cajon=0.3048
 --declarar embocadura_cajon=cajon_concreto_aletas_30_75
 --declarar espesor_pared_cajon=0.20
---declarar "homogeneidad_serie_fen=serie con 1983, 1998 y 2017: ajuste con y sin ellos, adoptado el conservador"
+--declarar homogeneidad_serie_fen=serie_completa
 --declarar ke_entrada_cajon=cajon_aletas_30_75_escuadra
 --declarar n_celdas_cajon=1
 --declarar n_manning_cajon=concreto_afinado
@@ -565,7 +568,9 @@ corrida usó, no el estado del proceso al exportar.
 
 ## Lo que esta guía no cubre, para que nadie lo lea como pendiente
 
-La hidrología (el caudal entra por el CSV), el nivel de **expediente** (Fases
+El cálculo del caudal por el programa (aquí el caudal entra declarado por el
+CSV; con `--cuencas` y `--estacion` lo calcula la Fase 1-bis, y sus dos
+archivos están en `docs/contrato_entradas.md` §2-bis), el nivel de **expediente** (Fases
 8 y 9, V5, V8: `--alcance expediente`), y la ventana (`python -m gui.app`),
 que hace lo mismo que estos comandos con la pestaña 1 para las entradas, la 2
 para declarar criterios por editores tipados, la 3 para los puntos y la 4

@@ -54,8 +54,8 @@ la tabla familia por familia está en `docs/guia_perfil.md` §1.1.
 | `id` | — | Trazo | Identificador de la obra en el inventario del proyecto | La carga se detiene |
 | `progresiva_km` | km (`0+380` o `0.380`) | Trazo | Cruce del eje con el cauce, la cuneta o el canal | La carga se detiene |
 | `familia` | A / B / C | Trazo | A: paso de quebrada. B: alivio de cuneta. C: cruce de canal o dren (hoja de ruta §2.3) | La carga se detiene |
-| `Q_m3s` | m³/s | **Estudio hidrológico** (A y B) · **ANA / Junta** (C) | A y B: caudal de la cuenca o de la cuneta con el TR de la Fase 2. C: el caudal de diseño **del canal**, no uno hidrológico | A y B: celda obligatoria. C: puede ir vacía y entra por `--datos-externos`; sin él el punto no se dimensiona |
-| `area_ha` | ha | Estudio hidrológico | Delimitación de la cuenca aportante. **Solo clasifica** la fila de la Tabla N° 02 en la Familia A; no entra en ninguna fórmula | A y B: obligatoria (en B hoy no la lee nadie: `INF-5.1.8`). C: puede ir vacía |
+| `Q_m3s` | m³/s | **Estudio hidrológico** (A y B) · **ANA / Junta** (C) | A y B: caudal de la cuenca o de la cuneta con el TR de la Fase 2. C: el caudal de diseño **del canal**, no uno hidrológico | A y B: celda obligatoria, **salvo** que la corrida traiga la cuenca de la obra y la serie de su estación (`--cuencas` y `--estacion`, §2-bis): entonces puede ir vacía y lo calcula el programa. Si viene llena, **gana la celda**. C: puede ir vacía y entra por `--datos-externos`; sin él el punto no se dimensiona |
+| `area_ha` | ha | Estudio hidrológico | Delimitación de la cuenca aportante. **Solo clasifica** la fila de la Tabla N° 02 en la Familia A; no entra en ninguna fórmula | A y B: obligatoria. Desde T-1 la lee además el contraste de caudal específico Q/A del caudal declarado, en A y en B (cuando la obra no tiene fila en el CSV de cuencas). C: puede ir vacía |
 | `S_cauce` | m/m | Topografía / QGIS | Pendiente del cauce en el cruce (recta ajustada sobre el MDT, 75 m aguas arriba y abajo). En C, la del canal | A y B: obligatoria. C: puede ir vacía y entra por `--datos-externos` |
 | `cota_terreno` | msnm | Topografía / QGIS | Cota del terreno natural en el eje, leída del MDT | La carga se detiene |
 | `cota_rasante` | msnm | Trazo | Perfil longitudinal del diseño (Civil 3D), tras fijar la rasante en 7.A | La carga se detiene |
@@ -70,6 +70,62 @@ la tabla familia por familia está en `docs/guia_perfil.md` §1.1.
 | `NF_profundidad_m` | m | **EMS** | Profundidad del nivel freático **en el cruce**, medida por punto. La lee V7 (flotación) | Puede ir vacía; V7 queda pendiente de ese dato |
 | `cota_fondo_entrada` | msnm | Topografía / QGIS | Invert de entrada **medido** en el cauce, aguas arriba | Puede ir vacía: rige el criterio `origen_cota_fondo_entrada` (hoy «igual al terreno»), que es una adopción y no una medición (`INF-5.1.18`) |
 | `cota_coronacion_canal` | msnm | Topografía / QGIS | La más baja de las dos coronaciones del canal en el cruce. La compara VC1 | Puede ir vacía; en la Familia C, VC1 queda pendiente de ese dato |
+
+---
+
+## 2-bis. Las dos entradas de la hidrología — `--cuencas` y `--estacion` (T-1)
+
+Son **opcionales y van juntas**. Sin ellas el caudal entra declarado por `Q_m3s`, como
+siempre. Con ellas, un punto de Familia A o B que tenga fila en el CSV de cuencas puede
+traer `Q_m3s` vacío y el programa lo calcula por el método racional
+(`src/modulos/MH_hidrologia.py`, Manual de Hidrología cap. III). **Ninguna columna tiene
+valor por defecto**: las obligatorias detienen la carga si faltan, y las opcionales
+vacías no se rellenan —lo que cada una habilita está en su fila—. Las líneas que
+empiezan por `#` son comentarios.
+
+**CSV de cuencas** — una fila por obra:
+
+| Columna | Unidad | Origen | Qué es | Si falta |
+|---|---|---|---|---|
+| `id` | — | Trazo | El `id` de la obra en el CSV de puntos | La carga se detiene |
+| `area_km2` | km² | **Estudio hidrológico** | Área de la cuenca aportante, delimitada sobre plano. En una alcantarilla de alivio, el área tributaria de la cuneta (plataforma y talud). Desde 10 km² el método racional no se evalúa. **Tiene que decir lo mismo que `area_ha` del CSV de puntos**, que es la que fija el periodo de retorno | La carga se detiene. Si las dos áreas difieren más de un 1 % (un redondeo), el punto se detiene nombrando el par |
+| `L_cauce_m` | m | Estudio hidrológico | Longitud del cauce principal, o del recorrido del flujo sobre la superficie cuando el método es de flujo superficial | La carga se detiene |
+| `S_cauce_cuenca` | m/m | Estudio hidrológico | Pendiente media del cauce principal, o de la superficie por la que corre el flujo: la que acompaña a `L_cauce_m`. Entra a la fórmula del tiempo de concentración (Kirpich, FAA, Témez) | La carga se detiene |
+| `S_terreno` | m/m | Estudio hidrológico | Pendiente media del **terreno** de la cuenca. Con ella la Tabla Nº 08 elige columna, y es la «pendiente promedio de la cuenca» de la ecuación de retardo. **No es** la del cauce y no se rellena con ella | La carga se detiene |
+| `cobertura` | clave | Estudio hidrológico | Fila de cobertura de la Tabla Nº 08 —`sin_vegetacion`, `cultivos`, `pastos_vegetacion_ligera`, `hierba_grama`, `bosques_densa_vegetacion`— **o** una superficie de la plataforma vial, que esa tabla no tiene: `pavimento`, `berma_de_tierra`, `talud_de_tierra`, `talud_con_cesped` (criterio [C] `coeficiente_escorrentia_superficie_vial`, WSDOT Table 2-2, con su incremento por periodo de retorno) | La carga se detiene |
+| `suelo` | clave | Estudio hidrológico · EMS | Tipo de suelo de la Tabla Nº 08: `impermeable`, `semipermeable`, `permeable`. **Vacía** cuando `cobertura` es una superficie vial | La carga se detiene (con cobertura de cuenca vacía; con superficie vial, llena) |
+| `estacion` | texto | Estudio hidrológico | Nombre de la estación cuya serie representa a la cuenca; tiene que estar en el CSV de la estación | La carga se detiene |
+| `metodo_tc` | clave | Estudio hidrológico | Método del tiempo de concentración, **por cuenca**: `kirpich` y `california_culverts_practice` (cauce; salieron de cuencas con pendientes de 3 a 10 %), `federal_aviation_administration` (flujo superficial: plataforma, talud, cuenca plana), `retardo_scs` (pide `CN`; cuencas de menos de 800 ha) o `temez` (0.25 a 24 h; trae consigo el coeficiente K). Fuera de la población de una fórmula decide el criterio `tc_fuera_de_la_poblacion_del_metodo` | La carga se detiene |
+| `H_desnivel_m` | m | Topografía / QGIS | **Opcional.** Desnivel entre la divisoria y la salida | Sólo lo exige el método de California: sin él, ese punto se detiene. No se deduce de S·L |
+| `ajuste_kirpich` | clave | Estudio hidrológico | **Obligatoria con `metodo_tc = kirpich`**, vacía con cualquier otro: `ninguno`, `superficie_de_concreto_o_asfalto` (×0.4) o `canal_de_concreto` (×0.2), de la observación de la Tabla Nº 05. «`ninguno`» es una clave y se escribe | La carga se detiene: una celda vacía no elige la fila sin factor |
+| `CN` | — | Estudio hidrológico | **Opcional.** Número de curva de la cuenca (mayor que 0, hasta 100). El programa no tiene tabla de la que leerlo | Sólo lo exige `retardo_scs`: sin él, ese punto se detiene |
+
+**CSV de la estación** — una fila por año; un archivo puede traer varias estaciones:
+
+| Columna | Unidad | Origen | Qué es | Si falta |
+|---|---|---|---|---|
+| `estacion` | texto | **SENAMHI** | Nombre de la estación | La carga se detiene |
+| `anio` | año | SENAMHI | Año del registro; uno por año y estación | La carga se detiene |
+| `p24_mm` | mm | SENAMHI | Precipitación máxima en 24 horas de ese año. Un **0** es un dato y se admite (excluye a la log normal, y la memoria lo dice) | La carga se detiene |
+| `fen` | `si` / `no` | **Estudio hidrológico** | Si ese año fue del fenómeno El Niño. Es un **hecho** que declara quien entrega la serie; el programa no lo deduce del valor | La carga se detiene: la serie tiene que declarar sus años FEN, **año por año**. Una celda vacía no se lee como «no» |
+
+Qué se hace con los años FEN **no** es una columna: es el criterio
+`homogeneidad_serie_fen` (`serie_completa`, `serie_sin_fen` o `dos_poblaciones`), sin
+valor de archivo, que se declara con `--declarar`. Rige sólo el caudal que el programa
+**calcula**: a un `Q_m3s` declarado no se le atribuye ningún tratamiento. Declarar
+`serie_sin_fen` cuando da **menos** lluvia que la serie completa incumple la regla de
+la hoja de ruta (adoptar el más conservador) y **detiene** el cálculo hidrológico del
+punto, con las dos lluvias en el mensaje: el remedio es declarar `serie_completa` o
+traer el caudal del estudio en `Q_m3s` (ficha `T1-09`). Si da igual o más, pasa. Los años faltantes de la serie no se rellenan: la serie entra
+como está, y la memoria imprime de qué periodo es, cuántos años tiene y cuáles le
+faltan. Con menos de 5 años no hay ajuste; con menos de 25, un aviso.
+
+Cuatro criterios más gobiernan el cálculo y tienen valor de archivo: la duración mínima
+de la lluvia de diseño (`duracion_minima_lluvia_min`, [C], 5 min), el trato de una
+cuenca fuera de la población de su fórmula (`tc_fuera_de_la_poblacion_del_metodo`, [A],
+«no evaluar»), el coeficiente de uniformidad con la fórmula de Témez
+(`coeficiente_uniformidad_temez`, [A], «aplicar») y el coeficiente de las superficies
+viales (`coeficiente_escorrentia_superficie_vial`, [C]).
 
 ---
 
@@ -206,8 +262,8 @@ nombre definitivo.
 
 | Qué | Origen | Prompt | Mientras no exista |
 |---|---|---|---|
-| Cuencas por obra (área, longitud y pendiente del cauce, cobertura, suelo) y serie de precipitación máxima de la estación | Estudio hidrológico · SENAMHI | T-1 | El caudal entra ya calculado por `Q_m3s`, que seguirá ganando cuando venga lleno |
-| Tratamiento de los años FEN de la serie (`homogeneidad_serie_fen`) | Estudio hidrológico | T-1 | El criterio está vacío y **no detiene nada**: ningún módulo lo lee (`INF-5.1.1`) |
+| Cuencas por obra (área, longitud y pendiente del cauce, cobertura, suelo) y serie de precipitación máxima de la estación | Estudio hidrológico · SENAMHI | T-1 | **Hecho en T-1: ver la §2-bis.** Sin ellas el caudal entra ya calculado por `Q_m3s`, que sigue ganando cuando viene lleno |
+| Tratamiento de los años FEN de la serie (`homogeneidad_serie_fen`) | Estudio hidrológico | T-1 | **Hecho en T-1.** El criterio sigue sin valor de archivo y ya tiene consumidor: detiene el cálculo hidrológico del punto cuando el caudal lo calcula el programa, y sólo avisa cuando el caudal entra declarado |
 | Sección medida del receptor (ancho de fondo, talud, profundidad, n, pendiente) | Topografía / QGIS · ANA / Junta | T-2 — **hecho**: es `seccion_receptor_medida` de la sección 3 | Rige la sección **adoptada** del criterio `seccion_receptor`, con aviso en la memoria |
 | Parámetros de resistencia del suelo: φ, c, γ, capacidad portante admisible | EMS | T-7b | Los criterios de la Fase 9 están vacíos y el cabezal no se verifica |
 | Profundidad de socavación estimada a la salida; tipo de terreno del cauce receptor | Estudio hidrológico · EMS | T-8 | La protección de salida se calcula solo con el d₅₀ de Laushey |

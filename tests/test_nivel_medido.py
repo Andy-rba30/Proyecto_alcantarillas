@@ -275,7 +275,12 @@ SIN_CONSUMIDOR_Y_SIN_MEDIDA = (
     # por RD), partida del criterio tecnico por EXT-N-01/PC-26. Tampoco es
     # una magnitud y ningun modulo la consume.
     "edicion_legal_que_rige_el_expediente",
-    "homogeneidad_serie_fen",
+    # 'homogeneidad_serie_fen' SALIO DE ESTE CENSO EN T-1: tiene consumidor
+    # (`MH_hidrologia.precipitacion_de_diseno`), y su nivel de perfil lo mide
+    # una corrida de perfil con cuencas y estacion en
+    # `tests/test_t1_hidrologia.py`, junto con los tres criterios nuevos de
+    # la hidrologia. Las tres corridas de este archivo traen `Q_m3s` lleno y
+    # no llegan a ellos.
 )
 
 
@@ -283,11 +288,12 @@ def test_el_censo_de_lo_que_no_se_puede_medir_no_crece_en_silencio():
     """
     El limite de este archivo, escrito como dato.
 
-    Los diez (nueve hasta EXT-6) no tienen consumidor: ninguna corrida los
+    Los nueve (diez entre EXT-6 y T-1, que le dio consumidor a
+    'homogeneidad_serie_fen') no tienen consumidor: ninguna corrida los
     invoca y el censo de `variables_entrada` no puede contradecir su nivel.
     Su clasificacion se defiende con el argumento que cada uno escribe junto
     a `nivel`, y esa es la unica defensa que tienen. Lo que se comprueba
-    aqui es que sean estos diez y no once.
+    aqui es que sean estos nueve y no diez.
     """
     sin_consumidor = tuple(sorted(c for c in ca.CRITERIOS
                                   if not ve.variable(c).consumido_por))

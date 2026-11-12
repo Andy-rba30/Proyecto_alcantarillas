@@ -117,3 +117,11 @@ PPM_POR_PORCIENTO = 10000     # literal-ok: definicion de la unidad, no valor de
 # la unidad, y existe para que la puerta rechace un ensayo mal tecleado.
 PPM_MAX_FISICO = 1000000    # literal-ok: definicion de la unidad (1e6 ppm = 100 %)
 
+# --- T-1 --- Conversiones de las unidades en que el Manual de Hidrologia
+# escribe su capitulo III (minutos y horas, hectareas y km2). Mismo caso que
+# METROS_POR_KM: definen la unidad, no un valor de proyecto. Las usa
+# `modulos/MH_hidrologia.py` para pasar de la columna `area_ha` del CSV de
+# puntos a los km2 de la ecuacion (28), y de las horas de la formula de Temez
+# a los minutos de la Tabla N 05.
+MINUTOS_POR_HORA = 60         # literal-ok: definicion de la unidad, no valor de proyecto
+HECTAREAS_POR_KM2 = 100       # literal-ok: definicion de la unidad, no valor de proyecto

@@ -3937,3 +3937,166 @@ lo que la cadena suponía y la fuente no sostiene.
   declarar el dato que falta, que es lo que el bloqueo pide.
 - **Dónde vive:** `src/modulos/MD.py::_exigir_datos_presentes`
 
+---
+
+# Parte XLIII — Lo que T-1 de la cadena T dejó escrito: la hidrología que el programa calcula y la que no
+
+T-1 (2026-11-11) crea `src/modulos/MH_hidrologia.py` (Fase 1-bis): el caudal de diseño de
+las Familias A y B por el método racional, a partir de `--cuencas` y `--estacion`, sin
+quitar la vía de siempre (`Q_m3s` lleno gana). Seis cosas quedan dichas y no hechas, y
+tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma sesión.
+
+## T1-01 · De las ocho distribuciones del núm. 3.7.1 el programa ajusta tres, y la prueba χ² no se implementa
+
+- **Qué se difirió:** el ajuste de Log Normal 3P, Gamma 2P, Gamma 3P, Log Pearson III y
+  Log Gumbel, y la prueba de bondad χ² del núm. 3.7.2 a).
+- **Por qué:** el Manual imprime la densidad de las ocho y sólo de tres dice cómo se
+  estiman los parámetros (Normal, Log Normal 2P y Gumbel por momentos). Elegir un
+  estimador para las otras cinco —momentos, máxima verosimilitud, factores de
+  frecuencia— es adoptar un procedimiento sin fuente en `normas/`. La χ² exige un número
+  de intervalos de clase que el Manual no fija, y el propio texto la limita a la normal
+  y la log normal; Kolmogorov–Smirnov cubre las tres y es la que «permite elegir».
+- **Qué haría falta:** una fuente que fije el estimador (el texto de Chow o de Aparicio
+  que el Manual cita, en `normas/`), su cita en el registro y el caso patrón.
+  Declarar hoy una de las cinco detiene el cálculo con «método no evaluable».
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::_modelo`
+
+## T1-02 · El tratamiento FEN `dos_poblaciones` se puede declarar y no se evalúa
+
+- **Qué se difirió:** el análisis de población mixta de la serie (una distribución para
+  los años FEN, otra para los neutros, combinadas por su probabilidad de ocurrencia).
+- **Por qué:** es el tratamiento que describe el fenómeno, y ni el Manual de Hidrología
+  ni ninguna fuente de `normas/` da el procedimiento. Con tres años FEN en una serie
+  tampoco hay con qué ajustar la segunda población. El criterio
+  `homogeneidad_serie_fen` lo lista en su ventana para que la opción exista y diga por
+  qué no corre, en vez de desaparecer.
+- **Qué haría falta:** una fuente técnica con el procedimiento, y una serie con años
+  FEN suficientes. Mientras tanto la memoria imprime la lluvia de diseño con la serie
+  completa y sin los años FEN, lado a lado.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::precipitacion_de_diseno`
+
+## T1-03 · V8 (evento extremo) todavía no pide su caudal a la hidrología
+
+- **Qué se difirió:** el enlace entre `TR_evento_extremo` y la Fase 1-bis: que V8, con
+  el TR declarado, obtenga `Q_evento_extremo_m3s` de la cuenca y la estación, o lo
+  reciba declarado (y entonces gane).
+- **Por qué:** la mitad hidrológica está lista —`caudal_de_diseno(cuenca, serie, TR)`
+  vale para cualquier TR, y un test fija que crece con él— pero V8 no tiene la otra
+  mitad: no hay clave por la que declarar ese caudal, V8 no recibe la cuenca ni la
+  serie (vive en M5, que no importa la hidrología), y la comparación contra la corona
+  del terraplén no está escrita. Cablear sólo el caudal dejaría a V8 con un número y
+  sin nada que hacer con él. El TR sigue siendo decisión del Propietario: no se adopta.
+- **Qué haría falta:** una clave externa `Q_evento_extremo_m3s`; que el servicio la
+  resuelva (declarada, o calculada por MH con el TR del criterio) y se la pase a V8; y
+  el umbral de colapso, que la hoja de ruta no fija.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::v8_evento_extremo`
+
+## T1-04 · La hidrología entra sólo por la CLI: la GUI y la sesión no la conocen, y el pre-vuelo la carga pero no la calcula
+
+- **Qué se difirió:** los campos de `--cuencas` y `--estacion` en la pestaña 1 de la
+  GUI, su sitio en la sesión serializada (`--sesion`), el SHA-1 de los dos archivos en
+  el contexto de la corrida, y la mitad del pre-vuelo (`--prevuelo`) que falta: estimar
+  si el cálculo hidrológico de un punto se va a detener.
+- **Por qué:** el prompt pide la entrada por las dos banderas y el servicio. La GUI
+  sigue calculando con el caudal declarado, que es su vía de siempre y no cambia. La
+  otra mitad del pre-vuelo sí se hizo, tras la auditoría: con las dos banderas carga y
+  valida los dos archivos, deja de decir «DETIENE» de un `Q_m3s` vacío que la corrida
+  va a calcular —lo dice «depende de la hidrología (no evaluada en pre-vuelo)»—, lo
+  avisa al pie, y ya no atribuye a `MH_hidrologia` el caudal del canal de la Familia C.
+- **Qué haría falta:** dos campos de archivo en la pestaña 1 que llamen a
+  `servicio.cargar_hidrologia`, dos claves en `sesion.py` (formato 4), dos huellas en
+  `ContextoCorrida`, y un estimador en `anticipo` de lo que detiene la Fase 1-bis
+  (criterio FEN sin declarar, cuenca fuera de la población de su método, dos áreas).
+- **Dónde vive:** `src/servicio.py::cargar_hidrologia`
+
+## T1-05 · Lo que el prompt de T-1 suponía y el Manual no trae
+
+- **Qué se difirió:** nada de cálculo; son cinco discrepancias entre el encargo y la
+  fuente, resueltas a favor de la fuente. (1) La Tabla Nº 05 no lista a Témez: su
+  fórmula es la ecuación (30) del núm. 3.12.2.1, con L en km y Tc en horas. (2) La
+  Tabla Nº 04 no es de «coeficientes regionales» sino de duración. (3) La Tabla Nº 08
+  no tiene fila de pavimento ni de talud: una superficie de la plataforma vial entra
+  por el criterio [C] `coeficiente_escorrentia_superficie_vial` (WSDOT, Table 2-2), y
+  nunca por una fila de la Tabla Nº 08 puesta por omisión. (4) El límite del método racional es «A<10 Km2», estricto, y no «≤ 10».
+  (5) El núm. 3.12.2 no trae ejemplo numérico: los dorados están calculados a mano.
+- **Por qué:** `CLAUDE.md`, «Fuente de verdad»: gana el PDF verificado.
+- **Qué haría falta:** nada. Lo que sí queda abierto: la ponderación de C por subáreas
+  (plataforma más talud) no está en el Manual y no se implementa —una fila por obra—,
+  y la relación regional I = K·T^m/t^n (ecuación 17) tampoco, porque sus tres factores
+  son datos de un estudio regional.
+- **Dónde vive:** `src/normativa/tablas.py::T05`
+
+## T1-06 · `MetodoNoEvaluableError` admite un rótulo propio para la hidrología
+
+- **Qué se difirió:** actualizar la frase de `CLAUDE.md` «Su `str()` empieza siempre
+  por `MOTIVO_METODO_NO_EVALUABLE`».
+- **Por qué:** ese rótulo nombra a HDS-5 («HDS-5 3.24, Sección 3.5») porque los dos
+  casos de EXT-3 son de HDS-5. La hidrología levanta la misma excepción por límites del
+  Manual de Hidrología, y encabezarla con HDS-5 sería una cita falsa: pasa `rotulo=`
+  con el suyo. El defecto no cambia y los tests de EXT-3 siguen valiendo.
+- **Qué haría falta:** una línea en la sección «Excepciones» de `CLAUDE.md` al integrar.
+- **Dónde vive:** `src/modelos.py::MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA`
+
+## T1-07 · De las seis filas de la Tabla Nº 05 se implementan cuatro: Izzard y onda cinemática quedan diferidas
+
+- **Qué se difirió:** las filas «Izzard (1946)» y «Ecuaciones de onda cinemática
+  Morgali y Linsley (1965), Aron y Erborge (1973)» de la tabla de fórmulas de tiempo
+  de concentración. Las seis filas están transcritas enteras en el registro
+  (`MC_HHD.T05`), con sus observaciones; cuatro tienen función y dos no.
+- **Por qué:** las dos llevan la **intensidad de la lluvia dentro de la fórmula**, y
+  la intensidad depende a su vez de la duración, que es el tiempo de concentración:
+  hay que iterar. Además piden datos que el CSV de cuencas no trae y que no se pueden
+  suponer: Izzard, un coeficiente de retardo de la superficie y una condición de
+  aplicación (el producto de intensidad por longitud); la onda cinemática, el n de
+  Manning del flujo superficial. Para que una cuenca plana y el área tributaria de
+  una cuneta tuvieran un tiempo de concentración evaluable y citado bastaban las dos
+  que se hicieron: la de la FAA (C, L y S, que ya están) y la de retardo SCS (con el
+  número de curva como columna opcional `CN`, sin valor por omisión).
+- **Qué haría falta:** dos columnas opcionales más en el CSV de cuencas (coeficiente
+  de retardo; n de Manning superficial), el punto fijo tc ↔ I con su guardia de
+  convergencia, y un caso patrón hecho a mano para cada una.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::METODOS_TC`
+
+## T1-08 · El método racional modificado no está implementado: de él se toman la fórmula de Témez y el coeficiente K
+
+- **Qué se difirió:** el método completo del núm. 3.12.2.1 del Manual de Hidrología
+  (págs. impresas 50 a 52): su intensidad con el factor de torrencialidad, su factor
+  reductor de la lluvia por área y su coeficiente de escorrentía por número de curva.
+- **Por qué:** el prompt pedía Témez como método de tiempo de concentración, y la
+  fórmula no es una fila de la Tabla Nº 05 sino la ecuación (30) de ese método. Usarla
+  con el racional simple es un **uso híbrido**, y la auditoría pidió que se declarara
+  en vez de callarse: el paso del tiempo de concentración y el del caudal lo dicen, y
+  el coeficiente de uniformidad K de la ecuación (31) —que es del mismo numeral y
+  sube el caudal— lo decide el criterio [A] `coeficiente_uniformidad_temez`, con
+  «aplicar» como valor de archivo. El resto del método pide el número de curva y un
+  mapa de isolíneas del factor de torrencialidad que el Manual da para España.
+- **Qué haría falta:** las ecuaciones restantes en el registro con su cita, el número
+  de curva como dato de la cuenca, una fuente para el factor de torrencialidad en el
+  Perú, y un método de caudal seleccionable por fila del CSV de cuencas.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::coeficiente_de_uniformidad`
+
+## T1-09 · CERRADA: declarar `serie_sin_fen` cuando da menos lluvia que la serie completa detiene el cálculo del punto
+
+- **Qué se difirió:** nada ya. La auditoría de T-1 dejó abierta una sola pregunta —si
+  el incumplimiento de la regla de la hoja de ruta (Fase 1-bis: «reportar el ajuste
+  con y sin ellos, adoptar el más conservador») debía **bloquear** el dimensionamiento
+  o sólo imprimirse— y la sesión la dejó en «se imprime NO CUMPLE y no detiene», a la
+  espera del dueño. **El dueño decidió (2026-11-11): detiene.**
+- **Por qué:** un punto no puede quedar dimensionado sobre un caudal que incumple la
+  exigencia del núm. 3.4 del Manual (la serie «deberá incluir» los años de El Niño) y
+  la regla de la hoja. El criterio `homogeneidad_serie_fen` sigue siendo [A] y su
+  ventana sigue listando `serie_sin_fen`: se puede declarar, y **pasa** cuando da
+  igual o más lluvia que la serie completa. Cuando da menos, el cálculo hidrológico
+  del punto se detiene por la vía que el módulo ya usa para un ajuste que no pasa la
+  prueba de bondad (`MetodoNoEvaluableError`: no falta un dato ni un criterio, hace
+  falta otro tratamiento), con las dos lluvias en el mensaje y el remedio: declarar
+  `serie_completa`, o traer el caudal del estudio hidrológico por la columna `Q_m3s`.
+  El caso inverso —la serie completa da menos que la serie sin los años marcados
+  FEN— **no** se detiene: la serie completa es la que el Manual manda usar, y el paso
+  lo imprime como indicador con aviso. Un caudal declarado por columna no cambia:
+  avisa y no bloquea.
+- **Qué haría falta:** nada. Lo que el bloqueo no hace: la memoria de un punto
+  detenido no trae los pasos de la Fase 1-bis (el cálculo no llegó a entregarlos); el
+  contraste va entero en el mensaje del bloqueo. El paso 1b.3b se imprime cuando la
+  regla se cumple, o cuando no hay segundo ajuste con que comparar.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::CODIGO_FEN`
