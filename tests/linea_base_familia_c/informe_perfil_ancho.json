@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "0592f597933796ae5fd92bdbfb5bd893ea7b6cde",
+    "criterios_sha1": "cc28795da6a4b7e9c06c591f21be0ee8efc0889b",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -195,9 +195,7 @@
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
         "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto",
         "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
-        "Proteccion de salida: la longitud adoptada (5.00 m, 'longitud_proteccion_salida') es menor que la del apron de HEC-14 (5.40 m, Tabla 10.1, clase 4)",
-        "Proteccion de salida: el espesor adoptado (0.592 m, 'espesor_proteccion_salida') es menor que la profundidad del apron de HEC-14 (0.770 m, Tabla 10.1, clase 4)",
-        "Proteccion de salida: el espesor rige como 1.75 veces el d50 (0.592 m), bajo el piso de 2 veces de HEC-14: «Apron depth ranges from 3.5D50 for the smallest riprap to a limit of 2.0D50 for the larger riprap sizes.» (Sec. 10.2) y «The basin is pre-shaped and lined with riprap that is at least 2D50 thick.» (Sec. 10.1). Ver 'regla_espesor_longitud_proteccion_salida'",
+        "Proteccion de salida: rige la envolvente con HEC-14 ('regla_espesor_longitud_proteccion_salida'): piedra d50 = 0.338 m (rige Laushey; la Ec. (10.4) de HEC-14 pide 0.252 m), espesor 0.592 -> 0.770 m, longitud 5.00 -> 5.40 m (clase 4 de la Tabla 10.1)",
         "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
         "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
       ],
@@ -304,15 +302,17 @@
         "numeral": "4.1.1.3.7 c)",
         "V_salida_m_s": 3.205506157842659,
         "d50_m": 0.3382248100055038,
-        "espesor_m": 0.5918934175096316,
-        "longitud_m": 5.0,
+        "espesor_m": 0.77,
+        "longitud_m": 5.4,
         "criterio_espesor": "espesor_proteccion_salida",
         "criterio_longitud": "longitud_proteccion_salida",
         "advertencias": [
           "d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))",
           "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
-          "Alcance: el d50 que rige sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW: se calcula AL LADO, como contraste, y la corrida avisa cuando pide mas que lo adoptado. La geometria de la proteccion se cierra en el expediente tecnico"
+          "Alcance: rige la ENVOLVENTE de las dos fuentes. El Manual MTC (num. 4.1.1.3.7 c)) da el d50 de Laushey, funcion solo de V; HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW. La piedra es la mayor de las dos, y el espesor y la longitud los mayores de lo adoptado y de la Tabla 10.1 de HEC-14. La geometria de la proteccion se cierra en el expediente tecnico"
         ],
+        "d50_laushey_m": 0.3382248100055038,
+        "rige_la_envolvente": true,
         "requerida": null,
         "froude_salida": {
           "Fr": 1.5668450524931907,
@@ -344,7 +344,7 @@
           "espesor_m": 0.77,
           "ancho_final_m": 6.300000000000001
         },
-        "regla_espesor_longitud": "manual",
+        "regla_espesor_longitud": "envolvente_hec14",
         "espesor_adoptado_m": 0.5918934175096316,
         "longitud_adoptada_m": 5.0,
         "filtro": {
@@ -690,8 +690,7 @@
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
         "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto",
         "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
-        "Proteccion de salida: con la piedra que el proyecto pone (d50 = 0.274 m, clase 4 de la Tabla 10.1 de HEC-14) lo adoptado queda corto en la longitud (5.00 m contra 5.40 m) y en el espesor (0.479 m contra 0.770 m)",
-        "Proteccion de salida: el espesor rige como 1.75 veces el d50 (0.479 m), bajo el piso de 2 veces de HEC-14: «Apron depth ranges from 3.5D50 for the smallest riprap to a limit of 2.0D50 for the larger riprap sizes.» (Sec. 10.2) y «The basin is pre-shaped and lined with riprap that is at least 2D50 thick.» (Sec. 10.1). Ver 'regla_espesor_longitud_proteccion_salida'",
+        "Proteccion de salida: rige la envolvente con HEC-14 ('regla_espesor_longitud_proteccion_salida'): piedra d50 = 0.274 m (rige Laushey; la Ec. (10.4) de HEC-14 pide 0.104 m), espesor 0.479 -> 0.770 m, longitud 5.00 -> 5.40 m (clase 4 de la Tabla 10.1)",
         "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
         "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
       ],
@@ -798,15 +797,17 @@
         "numeral": "4.1.1.3.7 c)",
         "V_salida_m_s": 2.882885082216342,
         "d50_m": 0.27356900583494154,
-        "espesor_m": 0.4787457602111477,
-        "longitud_m": 5.0,
+        "espesor_m": 0.77,
+        "longitud_m": 5.4,
         "criterio_espesor": "espesor_proteccion_salida",
         "criterio_longitud": "longitud_proteccion_salida",
         "advertencias": [
           "d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))",
           "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
-          "Alcance: el d50 que rige sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW: se calcula AL LADO, como contraste, y la corrida avisa cuando pide mas que lo adoptado. La geometria de la proteccion se cierra en el expediente tecnico"
+          "Alcance: rige la ENVOLVENTE de las dos fuentes. El Manual MTC (num. 4.1.1.3.7 c)) da el d50 de Laushey, funcion solo de V; HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW. La piedra es la mayor de las dos, y el espesor y la longitud los mayores de lo adoptado y de la Tabla 10.1 de HEC-14. La geometria de la proteccion se cierra en el expediente tecnico"
         ],
+        "d50_laushey_m": 0.27356900583494154,
+        "rige_la_envolvente": true,
         "requerida": null,
         "froude_salida": {
           "Fr": 1.7135502688430395,
@@ -838,7 +839,7 @@
           "espesor_m": 0.77,
           "ancho_final_m": 6.300000000000001
         },
-        "regla_espesor_longitud": "manual",
+        "regla_espesor_longitud": "envolvente_hec14",
         "espesor_adoptado_m": 0.4787457602111477,
         "longitud_adoptada_m": 5.0,
         "filtro": {
@@ -1994,9 +1995,9 @@
       {
         "clave": "regla_espesor_longitud_proteccion_salida",
         "etiqueta": "A",
-        "valor": "manual",
+        "valor": "envolvente_hec14",
         "declarado_en_caliente": false,
-        "concepto": "Regla con que se fijan el espesor y la longitud de la proteccion de salida"
+        "concepto": "Regla con que se fijan el tamaño de la piedra, el espesor y la longitud de la proteccion de salida"
       },
       {
         "clave": "remanso_derecho_via",

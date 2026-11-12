@@ -861,3 +861,74 @@ se detenían, con los mismos bloqueos. **Los números de Laushey no se movieron*
 y 0.274 m, espesor 0.592 y 0.479 m, longitud 5.000 m. La Fase 6 corre después del
 dimensionado y no lo realimenta; «Verificaciones con aviso» del RESUMEN no cambia, porque
 ningún paso de la Fase 6 de este fixture tiene veredicto INDICADOR.
+
+## Regenerada en la pasada de correcciones de T-8 (2026-11-12): SE MUEVEN el espesor y la longitud de la protección de salida; ningún diámetro
+
+Segunda auditoría adversarial de T-8 (independiente, sobre `df1b23c`) y las seis decisiones
+que el dueño tomó sobre ella el 2026-11-12. **Es la primera regeneración de la cadena T que
+mueve un número de la Fase 6, y el dueño lo aprobó**: la regla
+`regla_espesor_longitud_proteccion_salida` pasa de `manual` a `envolvente_hec14`, y la
+envolvente alcanza a la piedra, al espesor y a la longitud. Medido contra la línea base de
+`df1b23c` con el comparador de E-B (`cli.py --comparar`) en los tres JSON y con `diff` en el
+resto.
+
+**Los números que se mueven, uno a uno, y su causa.** Sólo en `informe_perfil_ancho.json`,
+`cli_perfil_ancho.txt`, `resumen_perfil_ancho.csv` y `memoria_perfil_ancha.html`, y sólo en
+los dos puntos que llegan a la Fase 6:
+
+| Punto | Magnitud | Antes (`df1b23c`) | Ahora | Causa |
+|---|---|---|---|---|
+| A-01 | `d50` que rige | 0.3382 m | **0.3382 m (no se mueve)** | Rige Laushey: la Ec. (10.4) de HEC-14 pide 0.2516 m, menos |
+| A-01 | espesor | 0.5919 m (1.75·d₅₀) | **0.770 m** | La piedra de 0.338 m es de la clase 4 (D₅₀ = 0.35 m) de la Tabla 10.1: `2.2·0.35` |
+| A-01 | longitud | 5.000 m | **5.400 m** | Clase 4: `6·D = 6·0.90` |
+| A-02 | `d50` que rige | 0.2736 m | **0.2736 m (no se mueve)** | Rige Laushey: la Ec. (10.4) pide 0.104 m |
+| A-02 | espesor | 0.4787 m (1.75·d₅₀) | **0.770 m** | La piedra de 0.274 m es también de la clase 4: `2.2·0.35` |
+| A-02 | longitud | 5.000 m | **5.400 m** | Clase 4: `6·0.90` |
+
+En el CSV de resumen son las celdas `proteccion_espesor_m` (0.59 → 0.77 y 0.48 → 0.77) y
+`proteccion_longitud_m` (5.000 → 5.400) de A-01 y A-02. La regla `manual`, declarada con
+`--declarar regla_espesor_longitud_proteccion_salida=manual`, **reproduce exactamente los
+números anteriores** (`tests/test_t8_correcciones.py::test_manual_sigue_dando_exactamente_los_numeros_de_antes`).
+
+**Lo que cambia sin ser un número de cálculo:**
+
+- **Los tres JSON:** `criterios_sha1` (dos valores de archivo —`regla_espesor_longitud_
+  proteccion_salida` = `envolvente_hec14` y `duracion_caudal_pico_socavacion_min` = 360 min,
+  que además pasa de [C] a [A]— y los textos de cinco fichas). En `informe_perfil_ancho.json`
+  son **15 diferencias y 0 no comparables**: la huella; por cada uno de A-01 y A-02, el
+  espesor, la longitud, las claves nuevas `d50_laushey_m` y `rige_la_envolvente`,
+  `regla_espesor_longitud` y el texto de la tercera advertencia (la del alcance, que dice
+  cuál de las dos reglas rigió); y el valor y el concepto del criterio de la regla entre los
+  usados. La lista de `avisos` de los dos puntos cambia de texto (ver abajo): el comparador
+  no la compara. `informe_expediente.json` e `informe_rama_error.json`: sólo la huella.
+- **`cli_perfil_ancho.txt`:** la línea `Fase 6` de A-01 y A-02 separa los orígenes («d50 =
+  0.338 m (num. 4.1.1.3.7 c)); rige la envolvente con HEC-14: d50 0.338 m, espesor 0.770 m,
+  longitud 5.400 m (Ec. 10.4 y Tabla 10.1)»; antes atribuía el espesor y la longitud al
+  numeral del Manual); la tercera advertencia; «apron de HEC-14» sin «(contraste)»; y los
+  avisos: **desaparecen** los del contraste —la longitud y el espesor adoptados menores que
+  los del apron (A-01), la piedra adoptada con lo adoptado corto (A-02) y el espesor bajo el
+  piso de 2.0·D₅₀ (los dos)—, porque lo que rige ya no queda por debajo de HEC-14, y
+  **entra** uno por punto: «rige la envolvente con HEC-14 (…): piedra d50 = … (rige Laushey;
+  la Ec. (10.4) de HEC-14 pide …), espesor … -> 0.770 m, longitud 5.00 -> 5.40 m (clase 4
+  de la Tabla 10.1)».
+- **Las tres memorias de la CLI:** las dos huellas —`criterios_sha1` y `hoja_ruta_sha1`,
+  ésta por el bloque «Enmendado» de la Fase 6 de la v8—; en la ancha, además, el párrafo de
+  la Fase 6 (rige la envolvente, con el d₅₀ de Laushey y lo adoptado al lado), el paso 6.6c,
+  los avisos, los fundamentos `F6.*` reescritos (el del Froude ya no dice que clasifica el
+  régimen) y las fichas de los criterios usados.
+- **Sin cambio de un byte:** `cli_perfil.txt`, `cli_expediente.txt`, `cli_rama_error.txt`,
+  `resumen_expediente.csv`, `memoria_punto_cajon.html` y `entradas_ampliadas.json`.
+
+**Diámetros y materiales movidos: ninguno, y los mismos puntos dimensionan.** El bloque
+`diseno` de los cuatro puntos es idéntico al de `df1b23c` en los tres JSON (el comparador no
+reporta ninguna diferencia en él): A-01 y A-02 siguen en Ø 0.90 m de concreto reforzado en la
+corrida ancha de perfil; B-01 y C-01 se detienen donde se detenían, con los mismos bloqueos.
+La Fase 6 corre después del dimensionado y no lo realimenta.
+
+**Lo que la pasada cambia y la línea base no ve**, porque el fixture no declara ni el terreno
+ni el lecho: «sin enrocado» deja de existir (la protección lleva siempre número); con la
+velocidad tomada al tirante crítico el contraste con la Tabla N° 11 no concluye; la hoya de
+socavación sin hidrograma se estima con 360 min y no con 30 (medido con un lecho declarado en
+los dos puntos: arena, 1.196 → 1.389 m en A-01 y 0.846 → 0.982 m en A-02); la nota (5) b de
+la Tabla 511-06 de EG-2013 vale sólo en la columna «>50»; y el límite del apron es 60 in =
+1.524 m.

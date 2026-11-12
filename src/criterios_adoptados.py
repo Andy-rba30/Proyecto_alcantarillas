@@ -7147,8 +7147,8 @@ CRITERIOS: Dict[str, Criterio] = {
                       "lo que el proyecto ya declaro--, pero la Fase 6 "
                       "imprime el apron de HEC-14 al lado, AVISA en todo "
                       "punto que dimensiona que el multiplo queda bajo 2.0 "
-                      "(cita HEC14.10.2#PROFUNDIDAD). Desde la decision "
-                      "del dueño del 2026-11-12 la regla "
+                      "(cita HEC14.10.2#PROFUNDIDAD). Por decision del "
+                      "dueño del proyecto la regla "
                       "'regla_espesor_longitud_proteccion_salida' vale "
                       "«envolvente_hec14»: donde HEC-14 es evaluable rige el "
                       "mayor de este espesor y el de la Tabla 10.1, y este "
@@ -7196,7 +7196,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "conducto segun la clase de piedra) y, si el lecho esta "
                       "declarado, con la longitud de la hoya de socavacion de "
                       "su Cap. 5, y avisa cuando la adoptada es menor. "
-                      "Desde la decision del dueño del 2026-11-12 la regla "
+                      "Por decision del dueño del proyecto la regla "
                       "'regla_espesor_longitud_proteccion_salida' vale "
                       "«envolvente_hec14»: donde HEC-14 es evaluable rige la "
                       "mayor de esta longitud y la de la Tabla 10.1",
@@ -7316,7 +7316,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "Sensibilidad: de 30 minutos, el valor que la fuente "
                       "recomienda y por debajo del cual dice que sus "
                       "exponentes no aplican (cita HEC14.5.1.2#NO_BAJO_30), "
-                      "a 360 minutos. LO QUE LA FUENTE NO DICE: el techo de "
+                      "a 360 minutos. Lo que la fuente no dice: el techo de "
                       "360 minutos no sale de HEC-14, que no da duracion "
                       "maxima; es adopcion del proyecto para acotar la "
                       "ventana, del orden del tiempo de referencia de la "
@@ -7328,8 +7328,8 @@ CRITERIOS: Dict[str, Criterio] = {
                "a 3/4 de la profundidad maxima) y HEC14.5.1.2#NO_BAJO_30 "
                "(los exponentes no aplican a los primeros 30 minutos). El "
                "valor adoptado y el techo de la ventana, 360 minutos, no "
-               "salen de la fuente: son eleccion del proyecto (decision del "
-               "dueño del 2026-11-12)",
+               "salen de la fuente: son eleccion del proyecto, por decision "
+               "de su dueño",
         reemplazado_por="La duracion del caudal pico del hidrograma de "
                         "diseño de cada cuenca, del estudio hidrologico "
                         "(dato externo `duracion_caudal_pico_min`)",
@@ -7418,8 +7418,8 @@ CRITERIOS: Dict[str, Criterio] = {
         justificacion="Decide que rige en la proteccion de salida: lo que da "
                       "el Manual con lo adoptado, o la envolvente de eso y "
                       "de HEC-14. «envolvente_hec14», el valor del archivo "
-                      "por decision del dueño del 2026-11-12, toma en cada "
-                      "magnitud el MAYOR: la piedra es el mayor del d50 de "
+                      "por decision del dueño del proyecto, toma en cada "
+                      "magnitud el mayor: la piedra es el mayor del d50 de "
                       "Laushey (Manual, num. 4.1.1.3.7 c), que se sigue "
                       "calculando e imprimiendo) y del D50 de la Ec. (10.4) "
                       "de HEC-14 (cita HEC14.10.2#EC_10_4); el espesor y la "
@@ -7435,8 +7435,9 @@ CRITERIOS: Dict[str, Criterio] = {
                       "diametro y el tirante del receptor y pide mas en la "
                       "descarga lenta y caudalosa (a seccion llena y con el "
                       "tirante minimo de la ecuacion, siempre que Q/D^2.5 < "
-                      "2.9); y el espesor adoptado, 1.75 veces el d50, queda "
-                      "bajo el piso de HEC-14 en todo punto. «manual» es la "
+                      "2.9); y el espesor adoptado, un multiplo del d50 menor "
+                      "que dos, queda bajo el piso de HEC-14 en todo punto. "
+                      "«manual» es la "
                       "regla anterior y reproduce sus numeros: rigen Laushey "
                       "y lo adoptado, HEC-14 se imprime al lado y la corrida "
                       "avisa donde pide mas. Donde HEC-14 no es evaluable "
@@ -7444,7 +7445,7 @@ CRITERIOS: Dict[str, Criterio] = {
                       "de mas de 60 pulgadas, varios barriles) rige Laushey "
                       "con lo adoptado, con aviso, bajo las dos reglas. Si "
                       "la piedra que rige no cabe en la Tabla 10.1, el "
-                      "espesor y la longitud son cotas inferiores (2.0 veces "
+                      "espesor y la longitud son cotas inferiores (dos veces "
                       "el d50 y la longitud de la ultima clase, lectura del "
                       "proyecto) y la corrida avisa que la salida pide un "
                       "disipador",
@@ -7459,8 +7460,7 @@ CRITERIOS: Dict[str, Criterio] = {
                         "expediente, con la granulometria y el filtro",
         resolucion=Libre(
             que_lo_fija="el dueño del proyecto: la envolvente con HEC-14 "
-                        "(decision del 2026-11-12) o lo que da el Manual "
-                        "con lo adoptado",
+                        "o lo que da el Manual con lo adoptado",
             dominio="declaracion de la regla; el conjunto cerrado de "
                     "valores admisibles viaja en `sensibilidad`",
         ),

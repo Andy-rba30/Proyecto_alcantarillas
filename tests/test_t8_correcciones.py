@@ -965,9 +965,11 @@ def test_h13_las_tablas_5_1_y_5_4_de_hec14_enteras():
         assert HEC14_SOCAVACION_COHESIVO[d] == pytest.approx(
             t54[d], rel=REL_FORMULA), d
     # «αe = α/0.63 for hs, Ws, and Ls» (pag. 5-7), con el redondeo impreso.
+    divisor_de_alfa_e = 0.63
     for d in ("profundidad", "ancho", "longitud"):
         alfa, _, _, alfa_e = t54[d]
-        assert alfa / 0.63 == pytest.approx(alfa_e, rel=REL_EJEMPLO_IMPRESO)
+        assert alfa / divisor_de_alfa_e == pytest.approx(
+            alfa_e, rel=REL_EJEMPLO_IMPRESO)
 
 
 # ===========================================================================

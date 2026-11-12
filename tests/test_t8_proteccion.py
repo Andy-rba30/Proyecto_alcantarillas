@@ -329,9 +329,14 @@ def test_apron_es_adimensional_el_ejemplo_ingles_da_lo_mismo_en_SI():
     Ejemplo CU (pag. 10-19): Q = 85 ft3/s, D = 5 ft, TW = 1.6 ft -> 0.43 ft.
     La Ec. (10.4) es adimensional: convertido a SI (0.3048 m/ft) y llevado a
     escala geometrica λ = 0.9 (longitudes por λ, caudal por λ^2.5) el D50
-    sale 0.43 ft · 0.3048 · λ. La escala hace falta porque D = 5 ft = 1.524 m
-    queda justo sobre el limite de 1500 mm de la Tabla 1.1 (la fuente lo
-    imprime «1500 mm (60 in)»: el SI es la conversion redondeada).
+    sale 0.43 ft · 0.3048 · λ.
+
+    PRUEBA DE LA FORMULA, que se conserva: la escala de Froude deja intactos
+    Q/(g^0.5·D^2.5) y D/TW, y el oraculo es el numero impreso. La escala se
+    introdujo porque D = 5 ft = 1.524 m quedaba sobre el limite de 1500 mm
+    que T-8 transcribio de la Tabla 1.1 («1500 mm (60 in)»); desde la segunda
+    auditoria (H5) el limite es 60 in y el ejemplo entra TAMBIEN a su escala
+    real, en `tests/test_t8_correcciones.py`.
     """
     lam = 0.9
     a = M6.apron_hec14(Q_celda=85 / FT3_POR_M3 * lam ** 2.5,

@@ -4270,6 +4270,12 @@ T-8 (2026-11-12) hace que la Fase 6 sea de verdad la protección de entrada y sa
 (`INF-3.3.7`, `INF-5.1.13`). Laushey sigue rigiendo; lo nuevo va al lado. Cinco decisiones
 no son un cierre limpio.
 
+**Enmendada el 2026-11-12 por la segunda auditoría adversarial de T-8** (independiente, sobre
+`df1b23c`: 0 bloqueantes, 2 altas, 4 medias, 8 bajas) **y por las seis decisiones que el dueño
+tomó sobre ella**. Las fichas T8-01, T8-02, T8-04 y T8-05 llevan al pie lo que cambió; las
+T8-07 a T8-12 son nuevas. Lo que ya no es cierto de la frase de arriba: desde esa fecha
+**rige la envolvente** de Laushey y de HEC-14, no Laushey a secas.
+
 ## T8-01 · El apron de HEC-14 es contraste y no regla; el espesor adoptado queda siempre bajo su piso, y la decisión queda preparada
 
 - **Cerrado (T-8):** `INF-3.3.7` en su parte de salida. Froude con el tirante equivalente
@@ -4285,6 +4291,15 @@ no son un cierre limpio.
   los disipadores (Caps. 7–9) y el aliviadero de la Lámina N° 04.
 - **Qué haría falta:** para (1), que el dueño elija la regla; para (2), publicar en M3 el
   tirante con n mínimo; para (3), el diseño del disipador en el expediente.
+- **Enmendado (2026-11-12):** (1) está **decidido** —rige la envolvente, y alcanza a la
+  piedra: ficha T8-07—. El límite de alto es **60 in = 1.524 m**, no 1500 mm: la nota 8
+  de la Tabla 1.1 imprime las dos cifras, que no coinciden, y con 1.500 m el ejemplo
+  resuelto de la propia fuente (D = 5.0 ft, pág. impresa 10-19) salía «no evaluable»
+  (H5; `constantes_normativas.HEC14_APRON_ALTURA_MAX_M`). Los límites del TW aplicados al
+  diámetro ajustado D′ son lectura del proyecto y están declarados como `Interpretacion`
+  de la cita `HEC14.10.2#TW` (H6). Sin tirante de salida el régimen no se decide: el apron
+  no ajusta y **lo avisa** (`ApronHEC14.regimen_determinado`; antes `bool(None)` lo resolvía
+  en silencio, H15).
 - **Dónde vive:** `src/modulos/M6_proteccion.py::apron_hec14`
 
 ## T8-02 · La Tabla N° 11 decide si se reviste la salida, y no revestir es lectura del proyecto
@@ -4301,6 +4316,16 @@ no son un cierre limpio.
   pide para no revestir no es un dato del programa.
 - **Qué haría falta:** para (1), la sección del cauce de aproximación; para (2), una
   decisión de producto sobre columnas opcionales con trazabilidad; para (3), el expediente.
+- **Enmendado (2026-11-12):** el título de esta ficha **ya no es cierto**. Decisión 6 del
+  dueño: «sin enrocado» no es nunca una conclusión del programa. La Tabla N° 11 **informa**
+  (`requerida` True / False) y la protección se calcula y se mantiene siempre; con `False`
+  la corrida avisa, con la frase del HDS-5, que suprimirla queda sujeto a inspección de
+  campo. La cadena T pedía lo contrario (T-8 punto 1: «cálculo del d50 solo entonces») y
+  se declara: lo sostienen la fuente (HDS-5 5.3.2) y el hallazgo H2, que midió que la
+  conclusión «sin enrocado» salía con una velocidad que el propio programa avisaba como
+  subestimada (ficha T8-08). Leer «alta» (núm. 4.1.1.3.7 c)) como «mayor que la Tabla N°
+  11» es `Interpretacion` de la cita `MC_HHD.4.1.1.3.7c#PROTECCION`. Las tres celdas del
+  CSV de resumen ya no quedan vacías en ese caso (H11).
 - **Dónde vive:** `src/modulos/M6_proteccion.py::velocidad_admisible_del_cauce`
 
 ## T8-03 · La protección de entrada declara la clase de revestimiento y lo que se protege; ninguna fuente de `normas/` le da dimensiones
@@ -4328,6 +4353,20 @@ no son un cierre limpio.
   entre filas es [A]. (4) La degradación general (Cap. 2) no está incluida.
 - **Qué haría falta:** el EMS del lecho por punto o un estudio del cauce declarado como
   `profundidad_socavacion_estimada_m` desde la misma referencia; T-7a para el desplante.
+- **Enmendado (2026-11-12):** decisión 3 del dueño: sin hidrograma la hoya se estima con
+  **360 min** y el criterio `duracion_caudal_pico_socavacion_min` pasa de [C] a **[A]**
+  (ventana 30–360; 30, lo que la fuente recomienda, queda barrible). La razón es el
+  literal de la frase siguiente a la recomendación, ahora citado
+  (`HEC14.5.1.2#DOS_TERCIOS`): a los 30 minutos se alcanza de 2/3 a 3/4 de la hoya máxima,
+  y esa profundidad fija el desplante de un cabezal. **Lo que la fuente no sostiene y se
+  dice:** el techo de 360 min no sale de HEC-14, que no da duración máxima; es adopción
+  del proyecto. Sensibilidad medida en los dos puntos del fixture que dimensionan, con un
+  lecho declarado (la línea base no lo trae, así que ninguno de sus números se mueve):
+  arena (D84 = 0.5 mm, D16 = 0.08 mm), A-01 1.196 → 1.389 m y A-02 0.846 → 0.982 m (×1.161);
+  grava (30 y 2 mm), 1.034 → 1.200 m y 0.731 → 0.849 m; cohesivo (IP 12, Sv 24 kPa),
+  2.087 → 2.676 m y 2.009 → 2.576 m (×1.282, θ = 0.10). La referencia de hs de la Figura
+  10.1 se apoya ahora en su propia cita, `HEC14.10.1#HS` (H9; antes en `#DOS_D50`, cuyo
+  literal habla del espesor). Y «manda» pasó a «recomienda» (H8).
 - **Dónde vive:** `src/modulos/M6_proteccion.py::socavacion_salida`
 
 ## T8-05 · El filtro es un requisito declarado; EG-2013 no lo obliga, y su nota (5) vale para la fila
@@ -4341,6 +4380,8 @@ no son un cierre limpio.
   de modo que el requisito no es [N]. El filtro granular no se diseña: HEC 11 no está en
   `normas/`. Y sin el pasante del EMS no se elige columna.
 - **Qué haría falta:** HEC 11 o una norma peruana de filtros; el pasante por punto.
+- **Enmendado (2026-11-12):** «su nota (5) vale para la fila» **se retira** (H4, decisión 4
+  del dueño): ver la ficha T8-10.
 - **Dónde vive:** `src/modulos/M6_proteccion.py::requisito_de_filtro`
 
 ## T8-06 · La aceptación de T-8 se escribió después del código; el rojo se midió contra la base y la mutación de M6 se midió con el arnés
@@ -4365,3 +4406,155 @@ no son un cierre limpio.
   ningún dato válido alcanza, y dos de presentación (las cifras de ρ en la sustitución y
   la nota vacía frente a `None`). No se censan uno a uno: ampliar el censo es de T-10.
 - **Dónde vive:** `tests/test_t8_proteccion.py::test_hec14_la_socavacion_es_el_capitulo_5_y_el_apron_el_10`
+
+## T8-07 · Rige la envolvente de Laushey y de HEC-14, y alcanza al tamaño de la piedra; fuera de la Tabla 10.1 son cotas inferiores
+
+- **Cerrado (pasada de correcciones):** `regla_espesor_longitud_proteccion_salida` vale `envolvente_hec14`
+  (decisión 1 del dueño, 2026-11-12). Piedra = el mayor del d₅₀ de Laushey y del D₅₀ de la
+  Ec. (10.4); espesor y longitud = los mayores de lo adoptado y de los que la Tabla 10.1 da
+  a esa piedra. `manual` reproduce los números anteriores y queda barrible; donde HEC-14 no
+  es evaluable rige Laushey con lo adoptado, con aviso.
+- **Por qué:** el hallazgo H1. Con la regla de T-8 la envolvente subía espesor y longitud y
+  dejaba la piedra de Laushey, y además **callaba** los dos avisos que hablaban del tamaño:
+  en una descarga llena de Ø 0.90 m con 1.15 m³/s salía una capa de 0.60 m hecha con piedra
+  de 0.108 m, rotulada «rige la envolvente con HEC-14» cuando HEC-14 pedía 0.168 m. Y no es
+  un caso raro: a sección llena y con TW = 0.4D, `D50(HEC-14)/d50(Laushey) =
+  2.04·(D^2.5/Q)^(2/3)`, mayor que 1 siempre que `Q/D^2.5 < 2.9`.
+- **Qué cubre y qué no:** la clave conserva su nombre («espesor_longitud») aunque gobierna
+  también la piedra —está en sesiones, barridos y la línea base—; el concepto de la ficha
+  lo dice. Los avisos del contraste salen bajo las dos reglas (con la envolvente callan
+  solos, porque lo que rige no queda por debajo). **No cubre** el caso en que la piedra que
+  rige no cabe en la Tabla 10.1 (más de 0.55 m): la tabla, que es un *ejemplo*, no da ni
+  profundidad ni longitud, y el programa imprime **cotas inferiores** —2.0 veces el d₅₀, el
+  límite que la fuente escribe para las piedras mayores, y 8D, la longitud de su última
+  clase—, que son **lectura del proyecto**, y avisa que la salida pide un disipador.
+- **Qué se movió en la línea base (aprobado):** el d₅₀ no (en A-01 y A-02 rige Laushey:
+  0.338 y 0.274 m, mayores que lo que pide la Ec. 10.4); el espesor, de 0.592 y 0.479 m a
+  **0.770 m**, y la longitud, de 5.00 a **5.40 m**: los de la clase 4 (D₅₀ = 0.35 m) de la
+  Tabla 10.1, `2.2·0.35` y `6·0.90`. Ningún diámetro ni material.
+- **Qué haría falta:** para el caso fuera de tabla, el diseño de un disipador por HEC-14
+  (Caps. 7 a 10), que el programa no implementa.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::_regla_de_la_proteccion`
+
+## T8-08 · El tirante de borde no está digitalizado: con la velocidad al crítico el contraste con la Tabla N° 11 no concluye
+
+- **Qué se difirió:** digitalizar las Figuras 3.3 (rectangular) y 3.4 (circular) de HEC-14
+  (págs. impresas 3-5 y 3-6, PDF 36 y 37), que dan el tirante de borde `yo/D` en función de
+  `TW/D` y de `KuQ/D^2.5` (o `KuQ/(B·D^1.5)`). Decisión 2 del dueño: en un prompt aparte.
+- **Por qué importa:** bajo control de salida con el TW bajo el crítico, M4 toma la
+  velocidad de salida al tirante crítico (HDS-5 3.1.6), y HEC-14 3.1.3 dice que el flujo
+  pasa por el crítico aguas arriba de la salida: en el borde el tirante es menor y la
+  velocidad mayor. El hallazgo H2 midió el efecto: A-02 con el barril horizontal sobre
+  grava con flujo permanente salía «sin enrocado» con 1.739 m/s contra 1.80 m/s admisibles,
+  y la Figura 3.4 da para ese caso un borde de ≈ 0.38D y ≈ 2.13 m/s.
+- **Qué se hizo ya:** (1) con esa velocidad el contraste con la Tabla N° 11 **no concluye**
+  (`VelocidadAdmisible.concluyente` False, veredicto INDICADOR, `requerida` None) y la
+  protección se mantiene; (2) el aviso da la magnitud, **leída de la fuente por la sesión y
+  no calculada por el programa**: en la Figura 3.4 con descarga libre (curvas `KuQ/D^2.5` =
+  1.0, 2.0 y 3.0: `yo/D` = 0.323, 0.467 y 0.572, contra `yc/D` = 0.420, 0.604 y 0.743) la
+  velocidad de borde es de 1.35 a 1.43 veces la crítica y el d₅₀ de Laushey, que va con V²,
+  de 1.8 a 2.0 veces; en el ejemplo resuelto impreso de la pág. 3-4 (TW/D de 0.41 a 0.58),
+  de 1.08 a 1.13 veces; (3) la hoya en suelo cohesivo, que va con `V^0.36`, lo avisa también.
+- **Qué NO se hizo, y es la pregunta para el dueño:** el d₅₀ de Laushey en esa condición
+  sigue calculándose con la velocidad crítica. Es una cota inferior declarada, no un número
+  corregido.
+- **Qué haría falta:** transcribir las dos familias de curvas (trece en la Figura 3.4, de
+  0.0 a 6.0) como tabla del registro, con su lectura por imagen declarada y una tolerancia
+  de lectura; un `tirante_de_borde(...)` en M4 que sustituya al crítico en la primera
+  viñeta de `velocidad_de_salida`; y remedir la línea base (los puntos de control de
+  entrada no cambian). Para formas que no son circular ni rectangular la fuente acepta el
+  crítico («not conservative, but is acceptable», pág. 3-3).
+- **Dónde vive:** `src/modulos/M6_proteccion.py::_aviso_tirante_de_borde`
+
+## T8-09 · La velocidad de salida salta en la banda en que n máximo da flujo subcrítico y n mínimo lo daría supercrítico: es de M4 y sólo se avisa
+
+- **Qué se difirió:** corregir `M4_control.velocidad_de_salida` (EXT-3). Está fuera del diff
+  de T-8; la segunda auditoría lo dejó como observación (H14).
+- **Por qué:** el control gobernante se decide con las cargas de la rama de n máximo. Si
+  ahí gobierna la salida con el TW bajo el crítico, la velocidad de salida es la crítica,
+  aunque con n mínimo el tirante normal sería supercrítico y la regla de doble n daría
+  `V_erosion`, mayor. Medido en A-01 bajando la pendiente declarada: con S = 0.0058
+  (control de entrada) 3.160 m/s y d₅₀ de Laushey 0.329 m; con S = 0.0056 (control de
+  salida) 2.412 m/s y 0.191 m, cuando `V_erosion` es 3.114 m/s y daría 0.319 m. Un 3 % de
+  pendiente mueve el d₅₀ un 42 %.
+- **Qué se hizo:** la Fase 6 lo **avisa** con las dos velocidades y el d₅₀ que daría la
+  alta. No se cambió el número: la regla del orquestador para esta pasada era corregir M4
+  sólo si no movía nada, y tomar `max(V_crítica, V_erosion)` mueve la velocidad de salida
+  de todo punto que caiga en la banda (ninguno de la línea base cae: A-01 y A-02 van por
+  control de entrada).
+- **Qué haría falta:** decidir en M4 qué es «la estimación alta» de la velocidad de salida
+  cuando las dos ramas de n no están de acuerdo en el régimen —el HDS-5 no lo trata,
+  porque no usa doble n—; con la regla del máximo, el antes/después del caso medido es
+  d₅₀ 0.191 → 0.319 m.
+- **Dónde vive:** `src/modulos/M6_proteccion.py::_aviso_banda_de_regimen`
+
+## T8-10 · La nota (5) b de la Tabla 511-06 se lee sólo para la columna «>50», y las filas «arcilla (no coloidal)» de la Tabla N° 11 se clasifican por su nombre: dos lecturas que esperan una fuente
+
+- **Cerrado (pasada de correcciones):** decisión 4 del dueño: la lectura que **no relaja**, declarada como
+  `Interpretacion`, hasta conseguir AASHTO M 288. La Tabla 511-06 lleva «(5)» en el rótulo
+  de la fila y en la celda «0,22(5)», y dos notas, (5) a y (5) b; la lectura de T-8 (la del
+  primer auditor) las aplicaba a las tres columnas, y en «15-50» eso **abría** la abertura
+  de 0.25 a 0.30 mm para una arena arcillosa (H4).
+- **Por qué:** lo sostiene la propia fuente. La **Tabla 511-02** de la misma Sección
+  (subdrenaje, pág. impresa 1011, PDF 1019) trae la misma fila, las mismas tres celdas y
+  las mismas dos notas **numeradas por separado**: el rótulo lleva «(3) (4)» —la (4) es el
+  diseño específico— y sólo la celda «0,22 (5)» lleva la de los suelos cohesivos (cita
+  `EG2013.511.05#T511_02_NOTA_5`, leída por texto y por imagen). De ahí: el rótulo llama a
+  la (5) a y la celda a la (5) b.
+- **Abierto:** (1) el «(5)» sin letra del rótulo de la 511-06 admite la otra
+  lectura; en la columna «<15» esa otra daría 0.30 mm en vez de 0.43 —más cerrada—, y la
+  corrida **lo avisa**. (2) Aparte, la Tabla N° 11 declara al pie «Manual de Carreteras de
+  California» y sus filas «Arcilla arenosa / limosa (no coloidal)» podrían ser francos
+  («loam») traducidos como arcilla: `TERRENOS_COHESIVOS_T11` las clasifica por el nombre
+  impreso y sólo alimentan el aviso de incoherencia entre terreno y lecho, que pide revisar
+  los dos datos sin afirmar cuál está mal.
+- **Qué haría falta:** AASHTO M 288 y el manual de California en el repositorio de normas
+  (`docs/contrato_entradas.md`, §6).
+- **Dónde vive:** `src/normativa/citas.py::INTERPRETACION_NOTA_5_T511_06`
+
+## T8-11 · Lo que la segunda auditoría pidió y no se hizo: techos físicos para los datos de la Fase 6, y la cadena numérica en el JSON
+
+- **Qué se difirió:** el hallazgo H12. Entran sin techo `duracion_caudal_pico_min` = 1e9,
+  `profundidad_socavacion_estimada_m` = 1e6, `Sv_Pa` = 1e300 y `D84_m` = 5.0; y las dos
+  claves numéricas admiten la cadena `"1.0"` por `_numero_externo`, mientras que dentro de
+  `material_lecho_salida` una cadena se rechaza.
+- **Por qué no se pusieron techos:** porque ninguna fuente de `normas/` los da, y este
+  proyecto no los inventa. Es la regla escrita en `CLAUDE.md` («No se corrige poniendo
+  techos en dominios.py») y aplicada en `servicio._DOMINIO_DE_CLAVE`, cuyo comentario
+  dice de `TW_m` y `L_hidraulico_m` lo mismo: «sin techo en `dominios.py` y sin ninguno
+  que derivar. Inventar uno está prohibido». HEC-14 Cap. 5 no limita `Sv`, ni la
+  duración, ni el tamaño del lecho (se releyeron las págs. 5-1 a 5-7). Los cuatro valores
+  son absurdos y **ninguno rompe**: dan un número finito, y la guardia de salida de la
+  hoya (`LimiteNumericoError`, que desde esta pasada nombra al par culpable de verdad,
+  H10-b) atrapa lo que desborda.
+- **Por qué no se tocó la cadena:** `_numero_externo` acepta `"1.0"` para **todas** las
+  claves numéricas desde EXT-1, no sólo para las dos de T-8; endurecerlo es de esa puerta
+  entera y de sus tests, no de la Fase 6.
+- **Qué haría falta:** una decisión de producto sobre «techos de transcripción» —como el
+  `S_CAUCE_MAX` que atrapa una pendiente escrita en porcentaje—: un `D84_m` de 5.0 huele a
+  milímetros escritos como metros. Sería un aviso, no un rechazo, y necesita un criterio
+  que diga dónde está el umbral.
+- **Dónde vive:** `src/servicio.py::_DOMINIO_DE_CLAVE`
+
+## T8-12 · La pasada de correcciones: el rojo se escribió primero y se remidió, y las decisiones del dueño llegaron por el orquestador
+
+- **Qué se difirió:** el orden estricto de la casa para una parte de la pasada. Los tests
+  de H1 a H15 se escribieron con `xfail(strict=True)` antes de tocar el código; con la
+  pasada a medias llegaron las seis decisiones del dueño (2026-11-12), que cambiaron lo que
+  debían afirmar los de H1, H2, H11 y D3, y ésos se reescribieron con el código en marcha.
+- **Por qué:** se dice en vez de reconstruirlo. El rojo que vale es el **medido**:
+  `tests/test_t8_correcciones.py` final contra un árbol exportado de `df1b23c` (el de
+  T-8): **43 rojos y 20 verdes** de 63. Los
+  verdes de esa medida son guardias que valen antes y después —los seis bordes inclusivos
+  de la fuente que la ficha T8-06 agrupaba como «banda de tolerancia» (IP = 5 y 16, Hd = 4,
+  TW = 1.0·D, espesor = 2.0·d₅₀, la clase «mayor o igual», V = V admisible), ahora con un
+  test cada uno, y la transcripción entera de las Tablas N° 11, 5.1, 5.2, 5.3 y 5.4 (H13)—.
+- **Lo que hay que saber de las decisiones:** las recibió el agente por la sesión
+  orquestadora (`DECISIONES_DUENO_2026-11-12.md`), no directamente del dueño. Una premisa
+  de la decisión 3 no la sostiene el literal y se dijo en vez de aplicarla a ciegas: «la
+  ventana 30–360 que la fuente sostiene» —la fuente sostiene el piso de 30 min y la razón
+  para no quedarse en él («2/3 to 3/4»), no el techo de 360, que es adopción del proyecto—.
+  La decisión se aplicó (360 min, [A]) y la ficha del criterio lo declara.
+- **Qué haría falta:** nada que se pueda rehacer. La mutación de M6 no se remidió en
+  esta pasada: la cifra de la ficha T8-06 (472 de 514) es del M6 de `df1b23c`, que cambió.
+- **Dónde vive:** `tests/test_t8_correcciones.py::test_manual_sigue_dando_exactamente_los_numeros_de_antes`

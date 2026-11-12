@@ -1043,6 +1043,10 @@ TEXTUAL_CON_RAZON = {
         "(e) afirma que test_sin_literales NOMBRA al modulo nuevo en su tupla "
         "de rutas; el nombre es un dato, no un uso (test_gui_contrato se "
         "consulta por su dato ARBOLES_DE_LA_GUI)",
+    ("test_t8_correcciones.py", "test_h10d_y_e_los_comentarios_ya_no_dicen_lo_contrario_que_el_codigo"):
+        "(a) afirma la AUSENCIA de dos frases de COMENTARIO que la segunda "
+        "auditoria de T-8 midio falsas (H10-d y H10-e), en "
+        "constantes_normativas.py y modelos.py: un comentario no esta en el AST",
     ("test_guardias_de_la_suite.py", "test_el_cupo_esta_escrito_con_su_razon_y_no_es_una_meta"):
         "(b) afirma la presencia de un COMENTARIO --- la razon del cupo ---, "
         "que por definicion no esta en el AST",

@@ -461,6 +461,7 @@ línea que se pueda romper.
 | `EG2013.507.10` | 507.10 | «Aguas y Suelos agresivos» | pág. impresa **974** · PDF 982 | exigencia | 2026-11-11 · texto |
 | `EG2013.508.02a` | 508.02 a | «Tubos de polietileno de alta densidad (PAD o HDPE)» | pág. impresa **981** · PDF 989 | definicion | 2026-11-11 · texto |
 | `EG2013.508.07#RELLENO_MIN` | 508.07 | «Colocación del relleno alrededor de la estructura» | pág. impresa **984** · PDF 992 | exigencia | 2026-08-28 · texto |
+| `EG2013.511.05#T511_02_NOTA_5` | 511.05, Tabla 511-02, nota (5) | «511.05 Geotextiles usados en subdrenaje» | pág. impresa **1011** · PDF 1019 | definicion | 2026-11-12 · ambos |
 | `EG2013.511.08#EROSION` | 511.08 | «511.08 Geotextiles usados en control permanente de erosión» | pág. impresa **1014** · PDF 1022 | definicion | 2026-11-12 · texto |
 | `EG2013.511.08#NOTA_5A` | 511.08, Tabla 511-06, nota (5) a | «511.08 Geotextiles usados en control permanente de erosión» | pág. impresa **1015** · PDF 1023 | recomendacion | 2026-11-12 · texto |
 | `EG2013.511.08#T511_06` | 511.08, Tabla 511-06 | «511.08 Geotextiles usados en control permanente de erosión» | pág. impresa **1015** · PDF 1023 | exigencia | 2026-11-12 · texto |
@@ -481,11 +482,13 @@ línea que se pueda romper.
 
 > **`EG2013.508.07#RELLENO_MIN`** — NOR-EG-01 / NOR-EG-02. La pagina impresa es la 984 (PDF 992). La 982 (PDF 990) trae 508.02 b), c) y d) -- calidad del tubo, muestreo y material para cama de asiento --, nada de altura de relleno. El desfase de este documento es +8, el mayor del corpus, y confundir impresa con PDF produce exactamente ese error. NO CONFUNDIR CON SU VECINA: el 508.08 (pag. impresa 985) tambien dice 0,30 m, pero es la exigencia de EJECUCION -- que el equipo pesado no circule antes de alcanzarla --, no la altura minima de diseño. Dos frases con el mismo numero en paginas contiguas.
 
+> **`EG2013.511.05#T511_02_NOTA_5`** — LA TABLA HERMANA de la 511-06, en la misma Seccion 511: misma fila «Tamaño de Abertura Aparente», mismas tres columnas por el pasante del tamiz N.º 200 y las mismas celdas 0,43 / 0,25 / 0,22. Aqui las dos notas llevan numeros DISTINTOS: el rotulo de la fila dice «Tamaño de Abertura Aparente (3) (4)», y la (4) es el diseño para un sitio especifico en suelos problematicos; la nota de los suelos cohesivos es la (5), que termina «es de 0.30 mm», y la lleva SOLO la celda «0,22 (5)» de la columna «>50». Leida por texto y por imagen. No se aplica al enrocado --es la tabla de subdrenaje--: se cita como el hecho de la propia fuente que sostiene la lectura de la nota (5) de la Tabla 511-06 (`Interpretacion` de EG2013.511.08#T511_06).
+
 > **`EG2013.511.08#EROSION`** — Define el AMBITO: el geotextil que va entre un enrocado y el suelo. El parrafo siguiente dice «La función principal del geotextil es la filtración». EL NUMERAL NO OBLIGA A PONER FILTRO: especifica el geotextil cuando el proyecto lo pone. EG-2013 no trae la palabra «emboquillado» en ninguna de sus 1282 paginas (barrido por texto en T-8), y su Seccion 603 «Defensas ribereñas» trata el enrocado de ribera, no el de salida de alcantarilla.
 
-> **`EG2013.511.08#NOTA_5A`** — Frase completa: «Debería efectuarse un diseño del geotextil para un sitio específico especialmente si uno o más de los siguientes suelos problemáticos son encontrados: suelos inestables o altamente erosionables tales como los limos no cohesivos; suelos de gradación abierta; suelos laminados alternando arenas y limos; arcillas dispersivas y/o polvo de roca.» La llamada (5) la llevan el rotulo de la FILA «Tamaño de Abertura Aparente (3) (4) (5)» y la celda «0,22(5)»: la nota vale para la fila entera.
+> **`EG2013.511.08#NOTA_5A`** — Frase completa: «Debería efectuarse un diseño del geotextil para un sitio específico especialmente si uno o más de los siguientes suelos problemáticos son encontrados: suelos inestables o altamente erosionables tales como los limos no cohesivos; suelos de gradación abierta; suelos laminados alternando arenas y limos; arcillas dispersivas y/o polvo de roca.» La llamada (5) la llevan el rotulo de la FILA «Tamaño de Abertura Aparente (3) (4) (5)» y la celda «0,22(5)». El proyecto lee que el rotulo llama a ESTA nota, que vale para la fila entera, y la celda a la (5) b (`Interpretacion` de la cita EG2013.511.08#T511_06).
 
-> **`EG2013.511.08#T511_06`** — La Tabla 511-06 «Geotextiles para control permanente de erosión-requerimientos» entra por el «Porcentaje de Suelo in Situ que pasa Tamiz N.º 200 (0,075 mm)» en tres columnas (< 15, 15-50, > 50) y fija la permitividad minima (0,7 / 0,2 / 0,1 s-1) y el tamaño de abertura aparente maximo (0,43 / 0,25 / 0,22 mm); la clase es la 1 de la Tabla 511-01 (la 2 para los tejidos de monofilamento) y la estabilidad ultravioleta, 50 % tras 500 horas. Su nota (5) pide un diseño especifico en suelos problematicos y da 0,30 mm para cohesivos con indice de plasticidad mayor de 7. El dato que la tabla pide --el pasante del tamiz N.º 200-- es del EMS.
+> **`EG2013.511.08#T511_06`** — La Tabla 511-06 «Geotextiles para control permanente de erosión-requerimientos» entra por el «Porcentaje de Suelo in Situ que pasa Tamiz N.º 200 (0,075 mm)» en tres columnas (< 15, 15-50, > 50) y fija la permitividad minima (0,7 / 0,2 / 0,1 s-1) y el tamaño de abertura aparente maximo (0,43 / 0,25 / 0,22 mm); la clase es la 1 de la Tabla 511-01 (la 2 para los tejidos de monofilamento) y la estabilidad ultravioleta, 50 % tras 500 horas. Su nota (5) a pide un diseño especifico en suelos problematicos y su nota (5) b da 0,30 mm para cohesivos con indice de plasticidad mayor de 7. LA LLAMADA (5) APARECE DOS VECES, en el rotulo de la fila «Tamaño de Abertura Aparente (3) (4) (5)» y en la celda «0,22(5)» de la columna «>50», y la tabla no dice que nota llama cada una: la lectura del proyecto va en `interpretacion`. El dato que la tabla pide --el pasante del tamiz N.º 200-- es del EMS.
 
 ### HDS-5 «Hydraulic Design of Highway Culverts» (FHWA-HIF-12-026)  (`HDS5_3ED`)
 
@@ -599,7 +602,7 @@ línea que se pueda romper.
 
 > **`HDS5_3ED.5.3.2#APRON`** — Describe una practica y remite a HEC-14 Sec. 10.2. El parrafo termina: «Providing scour protection for large floods or when more serious erosion problems exist requires protection measures designed based on HEC-14». En la pag. impresa 5.9 el mismo numeral dice que los metodos para estimar la hoya de socavacion local estan en HEC-14.
 
-> **`HDS5_3ED.5.3.2#PRACTICA`** — La frase que sigue a la de HDS5_3ED.5.3.2#APRON. Describe una practica: el apron se pone salvo que el campo diga que no hace falta. Es lo que juega en contra de no revestir cuando la velocidad no supera la Tabla Nº 11, y la salida sin enrocado lo avisa citandola.
+> **`HDS5_3ED.5.3.2#PRACTICA`** — La frase que sigue a la de HDS5_3ED.5.3.2#APRON. Describe una practica: el apron se pone salvo que el campo diga que no hace falta. Es lo que sostiene que el programa no concluya «sin enrocado» cuando la velocidad no supera la Tabla Nº 11: la proteccion se mantiene y el aviso cita esta frase.
 
 > **`HDS5_3ED.5.3.3#ALINEADO`** — Es la contracara del indicador y la que explica por que la verificacion pasa en la inmensa mayoria de los puntos de este corredor: Sec. 7.B fija que la alcantarilla sigue la pendiente del cauce, de modo que S_conducto = S_cauce salvo que el punto declare `S_conducto` aparte. El «generally» es de la fuente y se conserva: no dice «nunca».
 
@@ -647,6 +650,7 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `HEC14.1#T1_1_APRON` | 1, Table 1.1, nota 8 | «CHAPTER 1: ENERGY DISSIPATOR DESIGN» | pág. impresa **1-2** · PDF 15 | aproximacion | 2026-11-12 · texto |
 | `HEC14.10.1#DOS_D50` | 10.1 | «10.1 RIPRAP BASIN» | pág. impresa **10-1** · PDF 202 | recomendacion | 2026-11-12 · texto |
+| `HEC14.10.1#HS` | 10.1 | «10.1 RIPRAP BASIN» | pág. impresa **10-1** · PDF 202 | definicion | 2026-11-12 · ambos |
 | `HEC14.10.1.1#YE` | 10.1.1 | «10.1.1 Design Development» | pág. impresa **10-2** · PDF 203 | definicion | 2026-11-12 · texto |
 | `HEC14.10.2#ANCHO` | 10.2 | «10.2 RIPRAP APRON» | pág. impresa **10-18** · PDF 219 | permiso | 2026-11-12 · texto |
 | `HEC14.10.2#EC_10_4` | 10.2, Ec. (10.4) | «10.2 RIPRAP APRON» | pág. impresa **10-17** · PDF 218 | recomendacion | 2026-11-12 · ambos |
@@ -661,6 +665,7 @@ línea que se pueda romper.
 | `HEC14.5#PEOR_CASO` | 5 | «CHAPTER 5: ESTIMATING SCOUR AT CULVERT OUTLETS» | pág. impresa **5-1** · PDF 54 | definicion | 2026-11-12 · texto |
 | `HEC14.5.1#EC_5_1` | 5.1, Ec. (5.1) | «COHESIONLESS SOILS» | pág. impresa **5-1** · PDF 54 | aproximacion | 2026-11-12 · ambos |
 | `HEC14.5.1.1#T5_1` | 5.1.1, Table 5.1 | «5.1.1 Scour Hole Geometry» | pág. impresa **5-2** · PDF 55 | definicion | 2026-11-12 · texto |
+| `HEC14.5.1.2#DOS_TERCIOS` | 5.1.2 | «5.1.2 Time of Scour» | pág. impresa **5-2** · PDF 55 | definicion | 2026-11-12 · texto |
 | `HEC14.5.1.2#NO_BAJO_30` | 5.1.2 | «5.1.2 Time of Scour» | pág. impresa **5-2** · PDF 55 | aproximacion | 2026-11-12 · texto |
 | `HEC14.5.1.2#T30` | 5.1.2 | «5.1.2 Time of Scour» | pág. impresa **5-2** · PDF 55 | recomendacion | 2026-11-12 · texto |
 | `HEC14.5.1.3#CABEZAL` | 5.1.3 | «5.1.3 Headwalls» | pág. impresa **5-2** · PDF 55 | recomendacion | 2026-11-12 · texto |
@@ -671,9 +676,11 @@ línea que se pueda romper.
 | `HEC14.5.2#RANGO_IP` | 5.2 | «COHESIVE SOILS» | pág. impresa **5-7** · PDF 60 | aproximacion | 2026-11-12 · texto |
 | `HEC14.D#SOLO_VELOCIDAD` | D | «APPENDIX D: RIPRAP APRON SIZING EQUATIONS» | pág. impresa **D-2** · PDF 281 | recomendacion | 2026-11-12 · texto |
 
-> **`HEC14.1#T1_1_APRON`** — Es la nota 8 de la Table 1.1 «Energy Dissipators and Limitations», y cuelga de la fila «Riprap apron» (Chapter 10), cuya columna de Froude dice «na». La Sec. 10.2 lo dice como poblacion y no como prohibicion: «The most commonly used device for outlet protection, primarily for culverts 1500 mm (60 in) or smaller, is a riprap apron» (pag. impresa 10-16). Por eso un conducto mas alto sale con AVISO y no como metodo no evaluable. La misma tabla limita la POZA de enrocado (riprap basin) a Fr < 3.
+> **`HEC14.1#T1_1_APRON`** — Es la nota 8 de la Table 1.1 «Energy Dissipators and Limitations», y cuelga de la fila «Riprap apron» (Chapter 10), cuya columna de Froude dice «na». La Sec. 10.2 lo dice como poblacion y no como prohibicion: «The most commonly used device for outlet protection, primarily for culverts 1500 mm (60 in) or smaller, is a riprap apron» (pag. impresa 10-16). La tabla se titula «Limitations» y la nota es una de ellas: un conducto mas alto sale como metodo no evaluable. LA FUENTE DA DOS CIFRAS QUE NO COINCIDEN: 60 in son 1.524 m, no 1.500. Rige 1.524 m (`constantes_normativas.HEC14_APRON_ALTURA_MAX_M`), lectura declarada: es la que deja evaluar el ejemplo resuelto de la propia fuente, que usa D = 5.0 ft = 60 in (pag. impresa 10-19). La misma tabla limita la POZA de enrocado (riprap basin) a Fr < 3.
 
 > **`HEC14.10.1#DOS_D50`** — Es de la POZA de enrocado, no del apron; se cita porque fija el mismo piso que la Tabla 10.1 alcanza para las piedras grandes (cita HEC14.10.2#PROFUNDIDAD). La Figura 10.1 de la misma pagina, leida por imagen, mide hs DESDE la solera de salida del conducto hasta el fondo de la poza.
+
+> **`HEC14.10.1#HS`** — Es de la POZA de enrocado (Sec. 10.1), otro metodo que la hoya del Cap. 5. Se cita por lo unico que sostiene: en la poza, hs es la profundidad del piso de enrocado, y la Figura 10.1 de la misma pagina, leida por imagen, la acota DESDE la prolongacion de la solera de salida del conducto hasta ese piso. Es la lectura «solera_de_salida» del criterio 'referencia_profundidad_socavacion'. Hasta la segunda auditoria de T-8 (H9) eso se apoyaba en HEC14.10.1#DOS_D50, cuyo literal habla del espesor del revestimiento y no de la referencia de hs.
 
 > **`HEC14.10.1.1#YE`** — Sigue: «For rectangular culverts, ye = yo (culvert brink depth). For circular culverts, ye = (A/2)^1/2, where A is the brink area». El paso 1 del procedimiento (num. 10.1.5, pag. impresa 10-5) forma con el el numero de Froude de la salida, Fr = Vo / (g·ye)^1/2. Es el Froude que HEC-14 usa para sus disipadores; el apron de la Ec. (10.4) no lo lleva.
 
@@ -702,6 +709,8 @@ línea que se pueda romper.
 > **`HEC14.5.1#EC_5_1`** — La Ec. (5.1), leida de la pagina renderizada: [hs/Rc, Ws/Rc, Ls/Rc, Vs/Rc^3] = Cs·Ch·(α / σ^(1/3))·[Q / (g^0.5·Rc^2.5)]^β·(t/316)^θ, con Rc «hydraulic radius at the end of the culvert (assuming full flow)», t «time in minutes» y σ = (D84/D16)^0.5. ES ADIMENSIONAL salvo por el tiempo: el 316 esta en minutos y vale igual en SI y en unidades inglesas. ERRATA DE LA FUENTE: la lista de variables de esta pagina remite «Cs … see Table 5.2» y «Ch … see Table 5.3», y las tablas estan al reves --la 5.2 es de Ch (altura sobre el lecho) y la 5.3 de Cs (pendiente)--, como dicen sus titulos y el texto de los num. 5.1.4 y 5.1.5.
 
 > **`HEC14.5.1.1#T5_1`** — α, β, θ: profundidad 2.27, 0.39, 0.06; ancho 6.94, 0.53, 0.08; longitud 17.10, 0.47, 0.10; volumen 127.08, 1.24, 0.18. El numeral dice ademas que la profundidad maxima se da a unos 0.4·Ls aguas abajo de la salida (Fletcher y Grace, 1972) y que la hoya maxima ocurre con tirantes de aguas abajo menores que la mitad de la altura del conducto (Bohan, 1970).
+
+> **`HEC14.5.1.2#DOS_TERCIOS`** — La frase que sigue a la recomendacion de los 30 minutos. Es lo que dice cuanto de la hoya MAXIMA cubre esa duracion: entre dos tercios y tres cuartos. Sostiene que el criterio 'duracion_caudal_pico_socavacion_min' no adopte los 30 minutos para el desplante del cabezal cuando no hay hidrograma (decision del dueño del 2026-11-12).
 
 > **`HEC14.5.1.2#NO_BAJO_30`** — LIMITE DE VALIDEZ: con t < 30 min los exponentes no aplican. El mismo numeral dice que entre 2/3 y 3/4 de la profundidad maxima se alcanza en los primeros 30 minutos.
 
@@ -2387,14 +2396,14 @@ recomienda.
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | **define** | `MP.2.4.5.2#EV`, `MP.T2.4.5.3.1-2` |
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | **recomienda** | `MC_HHD.4.1.1.4.1e`, `MC_HHD.4.1.1.4.1e#RANGO` |
 | `F6.APRON` | Fase 6 - Proteccion de entrada y salida | Tamaño de piedra del apron de enrocado por HEC-14, Ec. (10.4): D50 en funcion de Q, D y TW | **recomienda** | `HEC14.10.2#EC_10_4`, `HEC14.10.2#TW`, `HEC14.10.2#TW_ALTO`, `HEC14.10.2#EC_10_5`, `HEC14.1#T1_1_APRON`, `HDS5_3ED.5.3.2#APRON`, `HEC14.D#SOLO_VELOCIDAD` |
-| `F6.APRON_GEOMETRIA` | Fase 6 - Proteccion de entrada y salida | Clase de enrocado, longitud, profundidad y ancho del apron por la Tabla 10.1 de HEC-14 | **recomienda** | `HEC14.10.2#T10_1`, `HEC14.10.2#ANCHO`, `MC_HHD.LAMINA_05`, `MC_HHD.4.1.1.3.7c#ALIVIADERO`, `MC_HHD.LAMINA_04` |
+| `F6.APRON_GEOMETRIA` | Fase 6 - Proteccion de entrada y salida | Clase de enrocado, longitud, profundidad y ancho del apron por la Tabla 10.1 de HEC-14 | **recomienda** | `HEC14.10.2#T10_1`, `HEC14.10.2#ANCHO`, `MC_HHD.LAMINA_05`, `MC_HHD.4.1.1.3.7c#ALIVIADERO`, `MC_HHD.LAMINA_04`, `HDS5_3ED.5.3.2#APRON` |
 | `F6.ENTRADA` | Fase 6 - Proteccion de entrada y salida | Proteccion de la entrada: velocidad en la boca y revestimiento del cauce y del talud | **recomienda** | `MC_HHD.4.1.1.3.7c#PROTECCION`, `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`, `HDS5_3ED.5.3.1#ENTRADA`, `HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA`, `MC_HHD.LAMINA_02` |
-| `F6.FILTRO` | Fase 6 - Proteccion de entrada y salida | Filtro entre el enrocado y el suelo: requisitos del geotextil de control permanente de erosion | **recomienda** | `MC_HHD.LAMINA_05`, `HEC14.10.2#FILTRO`, `EG2013.511.08#EROSION`, `EG2013.511.08#T511_06`, `EG2013.511.08#NOTA_5A` |
-| `F6.FROUDE` | Fase 6 - Proteccion de entrada y salida | Numero de Froude a la salida del conducto, Fr = V / (g·ye)^0.5, con el tirante equivalente de HEC-14 | **define** | `HEC14.10.1.1#YE`, `HDS5_3ED.3.1.6#V_SALIDA`, `HEC14.3#CONTINUIDAD` |
-| `F6.GEOMETRIA_ADOPTADA` | Fase 6 - Proteccion de entrada y salida | Espesor y longitud de la proteccion de salida que el proyecto adopta | **recomienda** | `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`, `MC_HHD.4.1.1.3.7c` |
+| `F6.FILTRO` | Fase 6 - Proteccion de entrada y salida | Filtro entre el enrocado y el suelo: requisitos del geotextil de control permanente de erosion | **recomienda** | `MC_HHD.LAMINA_05`, `HEC14.10.2#FILTRO`, `EG2013.511.08#EROSION`, `EG2013.511.08#T511_06`, `EG2013.511.08#NOTA_5A`, `EG2013.511.05#T511_02_NOTA_5` |
+| `F6.FROUDE` | Fase 6 - Proteccion de entrada y salida | Numero de Froude de HEC-14 a la salida del conducto, Fr_e = V / (g·ye)^0.5, con el tirante equivalente | **define** | `HEC14.10.1.1#YE`, `HDS5_3ED.3.1.6#V_SALIDA`, `HEC14.3#CONTINUIDAD`, `HEC14.1#T1_1_APRON` |
+| `F6.GEOMETRIA_ADOPTADA` | Fase 6 - Proteccion de entrada y salida | Espesor y longitud de la proteccion de salida que el proyecto adopta | **recomienda** | `MC_HHD.4.1.1.3.7c#REVESTIMIENTOS`, `MC_HHD.4.1.1.3.7c`, `HEC14.10.2#T10_1`, `HEC14.10.2#PROFUNDIDAD`, `HEC14.10.2#EC_10_4` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | **define** | `MC_HHD.4.1.1.3.7c` |
-| `F6.SOCAVACION` | Fase 6 - Proteccion de entrada y salida | Hoya de socavacion local a la salida por HEC-14, Cap. 5: profundidad, ancho y longitud | **recomienda** | `HEC14.5.1#EC_5_1`, `HEC14.5#PEOR_CASO`, `HEC14.5.1.1#T5_1`, `HEC14.5.1.4#T5_2`, `HEC14.5.1.5#T5_3`, `HEC14.5.1.2#T30`, `HEC14.5.1.2#NO_BAJO_30`, `HEC14.5.2#EC_5_2`, `HEC14.5.2#RANGO_IP`, `HEC14.5.2#EC_5_4` |
-| `F6.SOCAVACION_DESPLANTE` | Fase 6 - Proteccion de entrada y salida | Profundidad de socavacion que se entrega al desplante del cabezal de salida | **recomienda** | `HEC14.5.1.3#CABEZAL`, `HDS5_3ED.5.3.2#APRON` |
+| `F6.SOCAVACION` | Fase 6 - Proteccion de entrada y salida | Hoya de socavacion local a la salida por HEC-14, Cap. 5: profundidad, ancho y longitud | **recomienda** | `HEC14.5.1#EC_5_1`, `HEC14.5#PEOR_CASO`, `HEC14.5.1.1#T5_1`, `HEC14.5.1.4#T5_2`, `HEC14.5.1.5#T5_3`, `HEC14.5.1.2#T30`, `HEC14.5.1.2#NO_BAJO_30`, `HEC14.5.1.2#DOS_TERCIOS`, `HEC14.5.2#EC_5_2`, `HEC14.5.2#RANGO_IP`, `HEC14.5.2#EC_5_4` |
+| `F6.SOCAVACION_DESPLANTE` | Fase 6 - Proteccion de entrada y salida | Profundidad de socavacion que se entrega al desplante del cabezal de salida | **recomienda** | `HEC14.5.1.3#CABEZAL`, `HDS5_3ED.5.3.2#APRON`, `HEC14.10.1#HS` |
 | `F6.V_ADMISIBLE` | Fase 6 - Proteccion de entrada y salida | Velocidad del flujo contra la maxima admisible del terreno del cauce (Tabla Nº 11) | **recomienda** | `MC_HHD.4.1.1.3.6#V_SALIDA`, `MC_HHD.4.1.1.3.6#T11`, `MC_HHD.4.1.1.3.7c#PROTECCION`, `HDS5_3ED.5.3.2#PRACTICA` |
 | `F7.COTA_SALIDA` | Fase 7 - Compatibilidad geometrica | Caida del conducto y cota de fondo de la salida | **define** | `MC_HHD.LAMINA_01`, `HDS5_3ED.2.2.4#LONGITUD` |
 | `F7.ENCAJE` | Fase 7 - Compatibilidad geometrica | Encaje de la seccion adoptada en la seccion transversal: longitud entre cabezales a la clave | **obliga** | `HDS5_3ED.3.3.5#ENCAJE`, `HDS5_3ED.3.1.4#LONGITUD` |
@@ -2563,7 +2572,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **5** de 306.
+Citas sin firma de verificación: **5** de 309.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

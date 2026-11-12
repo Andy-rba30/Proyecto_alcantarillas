@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `7e74065+cambios-sin-commit` · Suite: 4960 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `fcdc006+cambios-sin-commit` · Suite: 5029 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -139,7 +139,7 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F6.APRON_GEOMETRIA` | Fase 6 - Proteccion de entrada y salida | Clase de enrocado, longitud, profundidad y ancho del apron por la Tabla 10.1 de HEC-14 | `M6_proteccion` |
 | `F6.ENTRADA` | Fase 6 - Proteccion de entrada y salida | Proteccion de la entrada: velocidad en la boca y revestimiento del cauce y del talud | `M6_proteccion` |
 | `F6.FILTRO` | Fase 6 - Proteccion de entrada y salida | Filtro entre el enrocado y el suelo: requisitos del geotextil de control permanente de erosion | `M6_proteccion` |
-| `F6.FROUDE` | Fase 6 - Proteccion de entrada y salida | Numero de Froude a la salida del conducto, Fr = V / (g·ye)^0.5, con el tirante equivalente de HEC-14 | `M6_proteccion` |
+| `F6.FROUDE` | Fase 6 - Proteccion de entrada y salida | Numero de Froude de HEC-14 a la salida del conducto, Fr_e = V / (g·ye)^0.5, con el tirante equivalente | `M6_proteccion` |
 | `F6.GEOMETRIA_ADOPTADA` | Fase 6 - Proteccion de entrada y salida | Espesor y longitud de la proteccion de salida que el proyecto adopta | `M6_proteccion` |
 | `F6.LAUSHEY` | Fase 6 - Proteccion de entrada y salida | Diametro medio del enrocado de proteccion a la salida, d50 = V^2 / (3.1 g) | `M6_proteccion` |
 | `F6.SOCAVACION` | Fase 6 - Proteccion de entrada y salida | Hoya de socavacion local a la salida por HEC-14, Cap. 5: profundidad, ancho y longitud | `M6_proteccion` |
