@@ -67,5 +67,13 @@ Se ACEPTAN, sujetas a lo que diga la auditoría adversarial (si el auditor las r
    (hallazgo T7A-01); sin el dato, V5 sigue bloqueando como hoy.
 5. Orden: no se lanza nada nuevo hasta que T-5 y las correcciones de T-8 entren en main y se mida la cuota.
 
-Pendientes de respuesta del dueño (T-9, recomendación del orquestador dada, NO aprobada todavía): valor de `seccion_cuneta`
-(0.40 × 1.20 m), borde libre de la cuneta, TR de 35 años (a verificar por el auditor), obras A como extremo de tramo.
+## T-9 (espaciamiento de alivios) — decidido por el dueño el 2026-11-12 ~17:15 UTC («sí»)
+1. **`seccion_cuneta`**: valor de archivo = el mínimo de la Tabla 34 del manual MTC para región «muy lluviosa» (0.40 m de
+   profundidad × 1.20 m de ancho según el informe de FASE A: el auditor verifica las celdas contra el PDF antes de escribirlo),
+   [A] con su ventana, coherente con los 200 m de longitud máxima por FEN.
+2. **Borde libre de la cuneta**: se RETIRA de la v8 la frase «con borde libre» sin cifra (el Manual calcula a cuneta llena; nota
+   de corrección en la hoja de ruta); queda el campo [A] de 0 a 0.10 m con valor 0.
+3. **Obras de Familia A como extremo de tramo**: SÍ cuentan por defecto (una alcantarilla de cauce también descarga la cuneta);
+   `inicio_tramo_cuneta_km` declarado sigue ganando.
+4. **TR de 35 años**: NO confirmado todavía; depende de que el auditor verifique la fila en el PDF (¿es la de cunetas?, ¿da TR o
+   riesgo y vida útil?). Si la fuente no lo sostiene, vuelve como pregunta.
