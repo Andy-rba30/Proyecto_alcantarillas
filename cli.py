@@ -268,6 +268,7 @@ from src import declaracion as _declaracion
 from src import comparador as _comparador
 from src import sesion as _sesion
 from src.constantes_normativas import H_O_HW_SOBRE_D_MIN
+from src.constantes_normativas import RECUBRIMIENTO_MP_PISO_MM   # --- T-10 ---
 from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ContextoCorrida, ErrorProyecto, Espaciamiento,
                          EstadoDeVerificacion,
@@ -275,6 +276,7 @@ from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ResultadoPunto, TipoDeVeredicto, Verificacion)
 from src.modelos import (ORIGEN_DIMENSION_DECLARADA,   # --- T-7a ---
                          ORIGEN_DIMENSION_DERIVADA)
+from src.modelos import ALCANCE_DECLARADO               # --- T-10 ---
 from src.modulos import M2_material as M2
 from src.modulos import M5_verificaciones as M5
 from src.modulos.M8_estructural import (CODIGO_PASO_HMAX_TIPO4,
@@ -815,12 +817,9 @@ def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
                 "criterio": M5.CRITERIO_ORIGEN_COTA_ENTRADA,
                 "regla": g.cota_entrada.regla,
                 "procedencia": g.cota_entrada.procedencia,
-                "nota": ("cota MEDIDA: columna cota_fondo_entrada del CSV; "
-                         "el criterio no se aplico en este punto"
-                         if g.cota_entrada.medida else
-                         "no es cota medida: sale de la regla declarada en "
-                         "ese criterio mientras el expediente no entregue la "
-                         "cota de invert de entrada por punto"),
+                # --- T-10 --- la nota sale del objeto (una fuente, tres
+                # vistas: la memoria la imprime igual).
+                "nota": g.cota_entrada.nota,
             },
             "cota_salida_msnm": _num(g.cota_salida), "caida_m": _num(g.caida),
             # --- T-6 --- como salio L, de donde sale la pendiente, el
@@ -1223,7 +1222,12 @@ def _informe_json_base(informe: Informe, bloqueantes: Any,
         "alcance": {
             "nivel": informe.alcance,
             "diferidos": [{"punto": id_punto, **_bloqueo_json(b)}
-                          for id_punto, b in informe.diferidos()]},
+                          for id_punto, b in informe.diferidos()],
+            # --- T-10 --- lo que el expediente no hace por decision del
+            # dueño (`modelos.ALCANCE_DECLARADO`), en las tres vistas.
+            "declarado": [{"clave": a.clave, "texto": a.texto,
+                           "ficha": a.ficha, "simbolo": a.simbolo}
+                          for a in ALCANCE_DECLARADO]},
         "puntos": [_punto_json(p) for p in informe.puntos],
         "cabezal": _cabezal_json(informe.cabezal),
         "datos_sitio": {
@@ -1789,7 +1793,7 @@ def _cabezal_del_punto_json(informe: InformePunto) -> Optional[Dict[str, Any]]:
             "N_kN_m": _num(k.N), "H_kN_m": _num(k.H),
             "M_estabilizante_kNm_m": _num(k.M_estabilizante),
             "M_volcante_kNm_m": _num(k.M_volcante),
-            "excentricidad_m": (_num(k.excentricidad) if k.N > 0 else None)}
+            "excentricidad_m": _num(k.excentricidad_publicable)}
             for k in e.combinaciones],
         "verificaciones": [v.codigo for v in e.verificaciones],
         "pendientes": [{"codigo": codigo, "motivo": motivo}
@@ -1905,7 +1909,10 @@ def _lineas_cabezal(informe: InformeCabezal) -> List[str]:
                    f"categoria de acero '{r.categoria}' -> "
                    f"{_fmt(r.tabulado_mm, 1)} mm de tabla x {r.factor_ac} "
                    f"por relacion a/c = {_fmt(r.aashto_mm, 1)} mm"
-                   + (" (piso de 1.0 in aplicado)" if r.piso_aplicado else "")
+                   # --- T-10 (correcciones, H7) --- la cifra sale de su
+                   # constante, no escrita en el texto
+                   + (f" (piso de {_fmt(RECUBRIMIENTO_MP_PISO_MM, 1)} mm "
+                      "aplicado)" if r.piso_aplicado else "")
                    + f"; {r.corpus_tabla}")
         # DE DONDE SALE EL FACTOR, no solo cuanto vale. Un 1.2 puede ser "la
         # a/c maxima es 0.50 o mas" o "no hay a/c contra la que evaluarlo y se
@@ -1959,6 +1966,11 @@ def _lineas_alcance(informe: Informe) -> List[str]:
     out = _titulo("ALCANCE DE LA CORRIDA")
     out.append(f"Alcance declarado: {informe.alcance} (bandera --alcance; "
                f"por defecto {ALCANCE_EXPEDIENTE})")
+    # --- T-10 --- lo que el expediente NO hace por decision del dueño, la
+    # misma lista que el JSON y la memoria (`modelos.ALCANCE_DECLARADO`).
+    out.append("Fuera del alcance del expediente, por decision declarada:")
+    for a in ALCANCE_DECLARADO:
+        out.append(f"{SANGRIA}- {a.texto} (ficha {a.ficha}; {a.simbolo})")
     diferidos = informe.diferidos()
     if not diferidos:
         out.append("Ninguna etapa diferida por alcance: la corrida ejecuto "

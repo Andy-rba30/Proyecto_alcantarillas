@@ -232,6 +232,16 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # docs/decisiones_diferidas.md.
         ESTADO_CERRADO: {"INF-4.6", "INF-3.4.5"},
     },
+    "T-10": {
+        # La memoria M11 completa: la Fase 9 en el HTML, del punto y del
+        # proyecto (INF-3.4.7), y la seccion del cabezal por punto con sus
+        # tablas, sus formulas sustituidas y sus FS (INF-4.7, con la salvedad
+        # escrita en su fila: el programa no produce planos a los que
+        # remitir). El prompt cita «INF-5.1.9» por INF-5.1.10, que cerro T-0
+        # y figura arriba con su prompt: T-10 le deja una NOTA (el indice
+        # regenerado con corridas que dimensionan) sin cambiarle el estado.
+        ESTADO_CERRADO: {"INF-3.4.7", "INF-4.7"},
+    },
 }
 
 

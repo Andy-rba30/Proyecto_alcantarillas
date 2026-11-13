@@ -718,7 +718,10 @@ ErrorProyecto.
   la suite: es parte del sello de la primera línea. El cuarto generado,
   `indice_formulas.md`, tiene su propio comando (`python3 -m src.indice_formulas`;
   hasta EXT-9 se lanzaba como script, y como script ya no encuentra el paquete)
-  porque necesita la corrida de referencia entera. El sello (fecha, commit
+  porque necesita las corridas de referencia enteras —desde T-10 son DOS, que
+  sí dimensionan, con sus datos de PRUEBA en
+  `tests/fixtures/corridas_de_referencia/` (`indice_formulas.CORRIDAS_DE_REFERENCIA`):
+  la de la guía de perfil y la de expediente con cabezal—. El sello (fecha, commit
   de origen, alcance, par de la suite con su entorno) lo pone quien regenera
   y el test lo LEE del documento para comparar el cuerpo y no la fecha.
 
@@ -802,7 +805,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6310**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6360**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
@@ -874,6 +877,10 @@ están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonce
   **doce** en `tests/test_t7b_cabezal_estabilidad.py` (las tablas de AASHTO
   LRFD que el ensamble transcribe, contra su página, y los literales de las
   ocho citas de sus correcciones, todas en `normas/` de la app): son **124**.
+  T-7c sumó **veintiuno** en `tests/test_t7c_cabezal_armado.py` (AASHTO LRFD
+  y E.060, en `normas/` de la app): son **145**, contados con
+  `--collect-only -m pdf` sobre el árbol de T-10, que no sumó ninguno, como
+  la verificación de fórmulas de T-7.
 
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
@@ -884,7 +891,92 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **La verificación de las fórmulas de los cierres de T-7b y
+independientes. **T-10 de la cadena T (2026-11-13, integrado detrás de la
+verificación de fórmulas de T-7, con las correcciones de su auditoría) sumó
+CINCUENTA tests netos**, ninguno con la marca `pdf` ni dependiente de Tk ni del
+repositorio de normas: los 43 de `tests/test_t10_memoria.py`, los ocho anclajes
+de `test_decisiones_diferidas` para las fichas de la Parte LIII (T10-01..08), y
+**menos uno** en `test_guardias_de_la_suite` (`M11_reporte.verificaciones_publicadas`
+sale del censo `PUBLICAS_SIN_REFERENCIA_EN_TESTS`, porque un test ya la nombra).
+**T-10 no calcula nada nuevo: la memoria imprime lo que la CLI y el JSON ya
+publicaban**, medido con un CENSO de las dos corridas de referencia nuevas
+—cada hoja numérica y de texto del JSON de cada punto dimensionado, buscada en
+su bloque HTML— y fijado POR CLAVE. Lo que faltaba y entra: de la Fase 9 del
+punto, la tabla de solicitaciones por elemento, la excentricidad de cada
+combinación (`CombinacionDeEstabilidad.excentricidad_publicable`: la regla de
+N > 0 vive en el dato, no en M11 ni en la CLI), el armado en tabla por sección
+crítica y por elemento y posición, y los avisos del punto que su fase no
+imprimía (`M11._avisos_que_faltan`, una vez: 40 de 47 en A-01 faltaban); la
+Fase 9 del PROYECTO entera (`M11.bloque_cabezal_proyecto`: la cadena sísmica
+eslabón por eslabón, K_AE y K_A, recubrimientos, cuantías, notas y bloqueos,
+en tablas con la clave en la primera columna), que sólo estaba en la CLI y el
+JSON; **V4b, V6 y V9 ganan `PasoDeMemoria`** con su fundamento (`F5.V4b` con
+la cita nueva `HDS5_3ED.2.2.5d#AGENCIAS`, de carácter DEFINICIÓN —la banda
+1.0–1.5 es práctica de agencias de EE. UU. y el tope sigue siendo el [A]
+`HW_D_max`—, `F5.V6` y `F5.V9`; V9 no juzga cuando el tope es de catálogo o de
+la progresión del marco) y `fundamentos.SIN_FUNDAMENTO` queda VACÍO; el paso
+7.B.3b del reparto por extremo (`LongitudConducto.paso_reparto`, sin cita de
+fórmula: HDS-5 2.2.4 b. es contexto y el álgebra es del proyecto,
+`M7.NOTA_ALGEBRA_DE_LA_LONGITUD`); la nota del origen de la cota de entrada en
+el dato (`CotaDeEntrada.nota`); **lo que el dueño decidió no hacer, como
+ALCANCE en las tres vistas** (`modelos.ALCANCE_DECLARADO`: el armado del
+marco, el cabezal paralelo, la zapata sin iterar, el DC del marco en V7 y las
+Figuras 3.3 y 3.4 de HEC-14, cada una con su ficha y su símbolo); y el anexo
+A.4 de sensibilidad, que imprime la ventana de cada [A] usado y NO recalcula
+(el barrido sigue siendo PF-3). Lo repetido se quitó: un paso, una elección o
+una nota IDÉNTICOS a uno ya impreso salen una vez y después como su línea y un
+enlace (`M11._YaImpreso`), y los 50 pasos del armado que A-01 imprimía dos
+veces salen una. **El índice de fórmulas se genera ahora con dos corridas que
+SÍ dimensionan** (`indice_formulas.CORRIDAS_DE_REFERENCIA`, datos de PRUEBA en
+`tests/fixtures/corridas_de_referencia/`): la fila 4.4 cita HDS-5 núm. 3.3.5 y
+`test_dimensional_piloto` conserva su propia corrida, la antigua. **La
+auditoría adversarial (AJUSTADO, 2 MEDIA y 5 BAJA) se aplicó entera**: (H1) el
+censo buscaba cada número en todo el bloque del punto —«0.40» sale 99 veces en
+A-01— y cuatro mutantes vivían: ahora cada entrada del armado, de sus
+secciones, de las combinaciones y de las solicitaciones se compara con SU
+fila; (H2) el 7.B.3b sin la cita de fórmula; (H3) los dos tests que el
+`SIN_FUNDAMENTO` vacío dejó vacuos se ejercitan con una entrada de prueba;
+(H4) los docstrings que seguían diciendo «V4b no emite paso»; (H5) V4b sin
+«que es más exigente», el rótulo de la frase del anexo según el CARÁCTER de la
+cita (`M11.ROTULO_DE_LA_FRASE_POR_CARACTER`: una DEFINICIÓN «describe») y la
+elección de V4b impresa como ventana; (H6) la V8 acotada de
+`test_t7_verificacion` con su aviso UNA vez en la memoria; (H7) el 0.8·f_r y
+el piso de 25.4 mm leídos de sus constantes. Los cinco mutantes de la
+auditoría mueren. **Tres decisiones del dueño (2026-11-13)**: los techos
+remedidos de `test_ext8` se ACEPTAN —`KB_POR_PUNTO_MAX` 114.5 → **107.5** y
+`PAGINAS_POR_PUNTO_MAX` 33 → **31.5**, pegados a 107.04 KB y 31.00 páginas por
+punto: BAJAN aunque la memoria imprime más, porque se quitó lo repetido; el
+objetivo de EXT-8 sigue sin alcanzarse (ficha T10-01)—; V9 sin veredicto con
+tope de catálogo o de marco, ACEPTADO (T10-03); y la tercera corrida de
+referencia, con la hidrología de prueba, la hace T-11 (T10-02). **No se
+escribió en rojo primero**: el rojo se midió con el archivo de la FASE A
+contra `2265d90` (31 de 33 rojos y 2 guardias), y los diez tests de las
+correcciones se comprobaron matando los mutantes de la auditoría sobre una
+copia del árbol (ficha T10-07). Se reescribieron, declarándolo,
+`test_M5_verificaciones` (V4b tiene paso), `test_memoria_sustentada` (el
+censo vacío), `test_traza_punto` y `test_indice_formulas` (el hueco por una
+entrada de prueba), `test_t6_geometria` (el 7.B.3b), `test_dimensional_piloto`
+(su corrida), `test_ext8_rendimiento_gui` (los techos) y `test_t0_gobernanza`
+(la fila de T-10). Censos: 141 criterios y 20 sin valor sin mover, citas del
+registro de 506 a **507**, tres fundamentos nuevos, ninguna marca
+`literal-ok` nueva. Cierra `INF-3.4.7` e `INF-4.7` (éste con la salvedad de su
+fila: el programa no produce planos a los que remitir), y deja una NOTA en
+`INF-5.1.10`, que cerró T-0 y que el prompt llama «INF-5.1.9» (el canónico
+`INF-5.1.9`, `sucs_fundacion`, no se tocó). **La línea base de la Familia C se
+regeneró y se midió contra `2265d90` con el comparador de E-B**: los cuatro
+JSON ganan `alcance.declarado`; `informe_expediente.json` e
+`informe_rama_error.json` IGUALES; `informe_familia_c.json` 8 diferencias e
+`informe_perfil_ancho.json` 6, todas el `veredicto` de V4b, V6 y V9 de `null`
+a `'cumple'`; 0 no comparables; los cinco `cli_*.txt` ganan las cinco líneas
+del alcance; las tres memorias cambian de formato; la memoria del cajón y los
+dos CSV de resumen no cambian un byte; **ningún diámetro, sección, material ni
+HW se movió**. De las cuatro configuraciones se MIDIÓ UNA, «sí · no», con el
+repositorio de normas enlazado: 6337 passed, 23 skipped, collected 6360 (y
+sin `NORMAS_DIR`, sobre el mismo árbol: 6319 passed, 41 skipped). **Las otras
+tres se dicen como derivadas, no como medidas**, por lo mismo que en T-0: la
+derivación suma 50 a las de la verificación de fórmulas de T-7, y ninguno pasa
+a `skipped`.
+**La verificación de las fórmulas de los cierres de T-7b y
 T-7c (2026-11-13, integrada detrás de T-7c) sumó TREINTA Y CUATRO tests**,
 ninguno con la marca `pdf` ni dependiente de Tk ni del repositorio de normas:
 los 28 de `tests/test_t7_verificacion.py`, los cuatro anclajes de
@@ -2754,7 +2846,8 @@ PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
 4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728; T-6:
 4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352; T-9: 5548;
-T-7a: 5709; T-7b: 6002; T-7c: 6276; verificación de fórmulas de T-7: 6310. La
+T-7a: 5709; T-7b: 6002; T-7c: 6276; verificación de fórmulas de T-7: 6310;
+T-10: 6360. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2766,24 +2859,26 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 6300 (**derivado** en la verificación de fórmulas de T-7, no medido: el contenedor no tiene tkinter) | 10 |
-| sí | no | 6287 (**MEDIDO** en la verificación de fórmulas de T-7 sobre su árbol, con `NORMAS_DIR`) | 23 |
-| no | sí | 6156 (**derivado**, no medido) | 154 |
-| no | no | 6143 (**derivado**, no medido) | 167 |
+| sí | sí | 6350 (**derivado** en T-10, no medido: el contenedor no tiene tkinter) | 10 |
+| sí | no | 6337 (**MEDIDO** en T-10 sobre el árbol integrado, con `NORMAS_DIR`) | 23 |
+| no | sí | 6206 (**derivado**, no medido) | 154 |
+| no | no | 6193 (**derivado**, no medido) | 167 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
-dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de la verificación de fórmulas de T-7: 6269 y 41;
+dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-10: 6319 y 41;
+sobre el de la verificación de fórmulas de T-7, 6269 y 41;
 sobre el de T-7c, 6235 y 41;
 sobre el de T-7b, 5961 y 41; sobre el de T-7a, 5672 y 37; sobre el de T-9, 5511 y 37; sobre el de T-3, 5318 y 34; sobre el de las correcciones de T-8, 5212 y 34; sobre el
 de T-5, 5143 y 34; sobre el de T-8, 4942 y 34; ni T-6, ni T-8, ni T-5, ni las
-correcciones de T-8, ni T-3, ni T-9, ni T-7a, ni T-7b, ni T-7c, ni la verificación de fórmulas de T-7 sumaron ninguno que abra el repositorio de
+correcciones de T-8, ni T-3, ni T-9, ni T-7a, ni T-7b, ni T-7c, ni la verificación de fórmulas de T-7, ni T-10 sumaron ninguno que abra el repositorio de
 normas; eran
 siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
 `tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
 Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
 2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
-iban saltados por la marca `pdf`. Tras T-7c la tabla decía 6266 / 6253 / 6122
+iban saltados por la marca `pdf`. Tras la verificación de fórmulas de T-7 la
+tabla decía 6300 / 6287 / 6156 / 6143, medida sólo la segunda. Tras T-7c la tabla decía 6266 / 6253 / 6122
 / 6109, medida sólo la segunda. Tras T-7b la tabla decía 5992 / 5979 / 5869
 / 5856, medida sólo la segunda. Tras T-7a la tabla decía 5703 / 5690 / 5592
 / 5579, medida sólo la segunda. Tras T-9 la tabla decía 5542 / 5529 / 5431

@@ -170,11 +170,31 @@ CORRIDAS_IMPORTTIME = 3
 # receptora de B-01 no mueve el segundo decimal. (En la FASE A, medida sobre
 # `df1b23c`, el techo de paginas habia subido a 22 por un cambio de cortes de
 # pagina de la memoria de 1 punto; sobre el arbol fusionado no se reproduce.)
-KB_POR_PUNTO_MAX = 114.5
+# T-10 (2026-11-13, sobre `2265d90`; la memoria M11 completa) LOS
+# RECONCILIA, que es lo que los cinco parrafos de arriba le dejaban: medidos
+# con este mismo metodo y con las declaraciones de la suite, 113.99 KB y
+# 32.33 paginas por punto en la base (104 y 201 paginas con 1 y 4 puntos) y
+# 107.04 KB y 31.00 paginas con T-10 (118 y 211 en su FASE A; 119 y 212
+# remedidos tras las correcciones de su auditoria, con el mismo marginal,
+# y el dueño acepto los techos). BAJAN aunque la memoria imprime MAS: lo repetido se quito
+# --- un paso, una eleccion o una nota del proyecto IDENTICOS a uno ya
+# impreso en el documento salen una vez y despues como su linea y un enlace
+# (`M11._YaImpreso`): el paso 2.1 con la luz global en los cuatro puntos, el
+# 4.2 de una misma carta, las elecciones de los criterios de corredor ---, y
+# lo que entra es contenido que la CLI y el JSON ya publicaban: los pasos de
+# V4b, V6 y V9, las columnas cota_fondo_entrada y cota_coronacion_canal, los
+# avisos del punto que no tenian fase en la memoria. Lo que T-10 suma al
+# documento es casi todo FIJO (la Fase 9 del proyecto con la cadena sismica
+# y sus notas, el alcance declarado, el anexo A.4 de sensibilidad, tres
+# umbrales mas en el bloque 0-ter): por eso las paginas de UN punto suben de
+# 104 a 119 y el coste MARGINAL baja. El objetivo del dictamen (< 15 KB y
+# < 10 paginas) sigue sin alcanzarse y la ficha T10-01 dice por que. Los
+# techos quedan PEGADOS a la medida nueva, como desde T-6.
+KB_POR_PUNTO_MAX = 107.5
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, 31.7 con
-# T-3 y 32.3 con T-9 (ver arriba).
-PAGINAS_POR_PUNTO_MAX = 33
+# T-3, 32.3 con T-9 y 31.0 con T-10 (ver arriba).
+PAGINAS_POR_PUNTO_MAX = 31.5
 
 
 def _arbol(ruta: Path) -> ast.Module:

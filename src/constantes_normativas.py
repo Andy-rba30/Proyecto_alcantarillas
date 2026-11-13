@@ -1445,6 +1445,57 @@ UMBRALES_DE_VERIFICACION = (
                    "7.B.1), de modo que solo la incumple una pendiente "
                    "declarada. No sustituye a V2, V2b ni V3, que juzgan "
                    "el efecto de la pendiente."},
+    # --- T-10 --- (cadena T, 2026-11-13; INF-3.4.7) ------------------------
+    # V4b, V6 y V9 ganan paso y salen del censo `SIN_FUNDAMENTO`. En V4b y
+    # V6 la cita NO fija el numero que el proyecto aplica (describe una
+    # banda ajena, recomienda sin cifra); en V9 del tubo SI lo fija la serie
+    # de su norma de producto, y en el marco o con disponibilidad de mercado
+    # no hay cita. El bloque 0-ter las imprime con su caracter.
+    {"codigo": "V4b",
+     "fundamento": "F5.V4b",
+     "que": "Carga relativa a la entrada: HW / D <= HW_D_max",
+     "citas": ("HDS5_3ED.2.2.5d#AGENCIAS",),
+     "literales_de_tabla": (),
+     "matiz": "La fuente DESCRIBE la banda 1.0-1.5 que suelen admitir las "
+              "agencias viales de EE. UU. y no pide ninguna; el MTC no fija "
+              "HW/D alguno (NOR-HDS-02). El numero es adopcion del "
+              "proyectista dentro de esa banda.",
+     "aplicacion": "Se aplica como umbral DURO sobre el HW del control que "
+                   "GOBIERNA, con el tope del criterio [A] 'HW_D_max' y su "
+                   "ventana. No sustituye a V5, que es la que juzga el "
+                   "embalse frente a terceros."},
+    {"codigo": "V6",
+     "fundamento": "F5.V6",
+     "que": "Seccion unica con arrastre: numero de celdas N = 1",
+     "citas": ("MC_HHD.4.1.1.3.4a#MULTIPLES",),
+     "literales_de_tabla": (),
+     "matiz": "La fuente RECOMIENDA la obra de mayor seccion libre, sin "
+              "subdivisiones, cuando el cauce arrastra palizada, troncos o "
+              "material del lecho; no da un numero de celdas.",
+     "aplicacion": "Se aplica como umbral DURO: mas de una celda no se acepta "
+                   "mientras no haya un dato de sitio sobre la capacidad de "
+                   "arrastre del cauce (ficha EXT-2-01). Un tubo es una "
+                   "celda por construccion; el marco, las de "
+                   "'n_celdas_cajon' [A]."},
+    {"codigo": "V9",
+     "fundamento": "F5.V9",
+     "que": "Seccion requerida <= tope de la serie del material",
+     "citas": ("AASHTO_M170M.7.2.1", "AASHTO_M36.T6",
+               "AASHTO_M294_TRAD.7.2.1"),
+     "literales_de_tabla": (),
+     "matiz": "Las tres tipifican la serie de diametros de su producto: el "
+              "concreto con diseño estandar hasta 2700 mm (por encima, "
+              "diseño especial del fabricante), el TMC por corrugacion y el "
+              "HDPE hasta 1500 mm (traduccion no oficial). El tope de "
+              "disponibilidad de mercado y el de la progresion del marco NO "
+              "salen de ninguna: son adopciones [A] sin numeral, y el paso "
+              "de V9 no les atribuye cita.",
+     "aplicacion": "Es el tope del catalogo que recorre el bucle de MD: una "
+                   "seccion que lo supera no se adopta. El valor lo resuelve "
+                   "M2 ('D_max_norma_producto' [C], la corrugacion del TMC "
+                   "o la disponibilidad de mercado que el proyectista "
+                   "declare, [A]) y, en el marco, la progresion "
+                   "'secciones_cajon_normalizadas' [A]."},
 )
 
 

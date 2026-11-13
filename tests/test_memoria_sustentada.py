@@ -639,27 +639,39 @@ def test_el_censo_de_lo_que_no_puede_tener_fundamento_esta_completo():
     Las verificaciones sin `PasoDeMemoria` no son un hueco: son un censo. Cada
     una dice por que no puede tener fundamento normativo hoy y que haria falta
     para traerlo.
+
+    REESCRITO EN T-10, declarandolo: fijaba que V4b, V6 y V9 seguian en el
+    censo. T-10 les da paso (F5.V4b DEFINE, F5.V6 RECOMIENDA, F5.V9 DEFINE;
+    V9 sin umbral cuando el tope es de catalogo o del marco) y el censo
+    queda VACIO. Lo que se conserva es la forma: toda entrada que vuelva a
+    entrar dice su razon y lo que haria falta.
     """
     codigos = {id_.split(".")[-1] for id_, _p, _q in F.SIN_FUNDAMENTO}
-    # V5 y V8 SALIERON del censo en T-7b: tienen `Fundamento` (F5.V5, F5.V8)
-    # y emiten paso cuando su metodo se declara.
-    assert {"V4b", "V6", "V9"} <= codigos
-    assert not {"V5", "V8", "CABEZAL"} & codigos
-    assert {"F5.V5", "F5.V8"} <= set(F.FUNDAMENTOS)
+    assert not {"V4b", "V5", "V6", "V8", "V9", "CABEZAL"} & codigos
+    assert {"F5.V4b", "F5.V5", "F5.V6", "F5.V8", "F5.V9"} <= set(F.FUNDAMENTOS)
     for id_, por_que, que_haria_falta in F.SIN_FUNDAMENTO:
         assert por_que.strip() and que_haria_falta.strip(), id_
 
 
-def test_una_verificacion_sin_paso_imprime_su_razon_en_vez_de_callarla():
+def test_una_verificacion_sin_paso_imprime_su_razon_en_vez_de_callarla(
+        monkeypatch):
     """
     Un hueco callado en una memoria se lee como un olvido. Con la razon
     delante se lee como lo que es.
+
+    REESCRITO EN T-10: el censo esta vacio (V4b, V6 y V9 tienen paso), de
+    modo que la maquinaria se prueba con una entrada de prueba en el censo:
+    el dia que una verificacion no pueda tener fundamento, sale con su razon.
     """
-    # Sin V5 ni V8 desde T-7b: ya no son verificaciones sin paso.
+    monkeypatch.setattr(
+        F, "SIN_FUNDAMENTO",
+        (("F5.VX", "razon de prueba", "lo que haria falta, de prueba"),))
+    bloque = M11._paso_ausente("VX")
+    assert "sin fundamento normativo declarado" in bloque
+    assert "Que haria falta para traerlo" in bloque
+    assert "razon de prueba" in bloque
     for codigo in ("V4b", "V6", "V9"):
-        bloque = M11._paso_ausente(codigo)
-        assert "sin fundamento normativo declarado" in bloque, codigo
-        assert "Que haria falta para traerlo" in bloque, codigo
+        assert M11._paso_ausente(codigo) == "", codigo
 
 
 # ===========================================================================

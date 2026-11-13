@@ -16,27 +16,46 @@ explica --formula, `formula_cita_id`, sustitucion con la procedencia de cada
 valor, umbral con su cita--, de modo que el indice es una VISTA de esos
 objetos y no una segunda transcripcion.
 
-Que es la corrida de referencia, y que alcanza
-----------------------------------------------
-`tests/ejemplo_puntos.csv` a `--alcance expediente`, con los datos externos
-de `tests/ejemplo_puntos.referencia.json` (los mismos con que
-`test_memoria_sustentada` y `test_traza_punto` miden la memoria) y SIN
-declaraciones en caliente: el expediente tal cual lo deja
-`criterios_adoptados.py` (ver `corrida_de_referencia`, que retira las de la
-suite mientras corre). Se declara aqui y no se elige por punto: es la
-corrida que la suite ya usa como patron de la memoria, y el indice tiene
-que hablar de los MISMOS pasos desde la CLI y desde pytest.
+Que son las corridas de referencia, y que alcanzan (T-10)
+--------------------------------------------------------
+HASTA T-10 ERA UNA SOLA CORRIDA, y no dimensionaba ningun punto:
+`tests/ejemplo_puntos.csv` a `--alcance expediente` con
+`tests/ejemplo_puntos.referencia.json`, donde las filas A y B se detenian en
+V5 (`remanso_derecho_via` sin valor) y C-01 no traia caudal. El indice
+listaba entonces las Fases 1, 2 y 4 y las verificaciones V1 a V4, y la
+Fase 6, la 7, la 8, la 9 y la 10 quedaban en el cuadro de «no ejercitados».
+INF-5.1.10 (que el prompt T-10 llama INF-5.1.9) pedia ver el paso del
+control gobernante con su cita correcta en una corrida que DIMENSIONE.
 
-Conviene decir hasta donde llega, porque acota lo que el indice puede
-contener: a alcance de expediente ningun punto de ese CSV cierra --las tres
-filas de las Familias A y B se detienen en V5 con un criterio [A] pendiente
-(`remanso_derecho_via`) y C-01 no trae Q_m3s--, y la Fase 9 se detiene en sus
-propios pendientes. Los pasos que SI se emiten son los de las Fases 1, 2 y 4
-y las verificaciones V1 a V4 de cada escalon que MD llego a resolver. Los
-fundamentos que la corrida no ejercita se listan al final del documento, con
-su modulo emisor, para que el hueco sea visible y no se lea como cobertura.
-Rellenar los pendientes para «llegar mas lejos» seria elegir valores por el
-proyectista, que es lo que la regla 8 de CLAUDE.md prohibe.
+DESDE T-10 SON DOS CORRIDAS, las dos con DATOS DE PRUEBA QUE YA EXISTIAN en
+el repositorio y que aqui se leen de `tests/fixtures/corridas_de_referencia/`
+(ver `CORRIDAS_DE_REFERENCIA`; ningun valor es del proyecto y ninguno es
+nuevo: `test_t10_memoria` comprueba que son los mismos que la guia y que los
+tests de T-7b/T-7c, de modo que no son una segunda copia que pueda divergir):
+
+  1. `perfil_guia`: la corrida de `docs/guia_perfil.md` (CSV con la
+     coronacion de C-01, externos y sitio de la guia, `--luz 2.75`) a
+     `--alcance perfil`. DIMENSIONA LOS CUATRO PUNTOS --- B-01 con el TW de
+     0.30 m de la guia, no con el de 1.00 m de la linea base, con el que el
+     perfil de la lamina lo deja sin dimension --- y alcanza las Fases 1-bis
+     (caudal declarado), 2, 3, 4, 5, 6, 7, 8 y 10.
+  2. `expediente_cabezal`: la corrida de punta a punta de T-7b/T-7c
+     (`_correr_de_prueba` de sus tests: freatico de A-01 a 2.0 m, V5 por la
+     cota de afectacion de prueba, evento extremo de prueba, relleno y
+     fundacion de prueba, muro paralelo al trafico a 1.60 m del borde) a
+     `--alcance expediente`, SIN las declaraciones del `conftest` de la
+     suite. A-01 dimensiona y llega a la Fase 9 entera: geometria, estabilidad
+     en los dos marcos y armado.
+
+Las dos corren con el estado de declaraciones VACIO y lo reponen al salir
+(`correr_referencia`). La razon es la de siempre: la suite declara criterios
+de prueba en `conftest.py`, y un indice que dijera una cosa generado desde la
+CLI y otra bajo pytest seria un documento sin referencia.
+
+Los fundamentos que ni asi se ejercitan --- los de la hidrologia CALCULADA,
+que necesitan `--cuencas` y `--estacion`, y los de las ramas que estos datos
+no recorren --- se listan al final del documento con su modulo emisor, para
+que el hueco sea visible y no se lea como cobertura.
 
 Que hace y que no hace este modulo
 ----------------------------------
@@ -55,11 +74,12 @@ Que hace y que no hace este modulo
   `paso("<id>", ...)` con ese literal (`emisores_por_fundamento`). Es el
   mismo recurso que `variables_entrada._consumo_por_modulo`, y con el mismo
   limite: un `paso()` cuyo primer argumento no sea un literal no se ve. Hoy
-  los diecinueve son literales, y un test lo exige.
+  todos son literales, y un test lo exige.
 - Las verificaciones SIN paso no se omiten: llegan como los
   `HuecoDeVerificacion` que `traza_punto` ya construye desde el censo
-  `SIN_FUNDAMENTO` (V4b en esta corrida), y las censadas que la corrida no
-  alcanza se listan aparte, con la misma ficha.
+  `SIN_FUNDAMENTO` (vacio desde T-10: ninguna en estas corridas), y las
+  censadas que las corridas no alcancen se listan aparte, con la misma
+  ficha.
 - NO HACE ARITMETICA SOBRE MAGNITUDES: los numeros no se imprimen. El indice
   es de formulas y procedencias; los valores son de la memoria.
 
@@ -87,7 +107,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
+import json
+
 from src import criterios_adoptados as _ca
+from src import datos_sitio as _ds
 from src import traza_punto as _tp
 from src import servicio
 from src.modelos import PasoDeMemoria
@@ -98,9 +121,67 @@ RAIZ = Path(__file__).resolve().parents[1]
 SRC = RAIZ / "src"
 MODULOS = SRC / "modulos"
 INDICE_FORMULAS = RAIZ / "docs" / "indice_formulas.md"
-CSV_REFERENCIA = RAIZ / "tests" / "ejemplo_puntos.csv"
-EXTERNOS_REFERENCIA = RAIZ / "tests" / "ejemplo_puntos.referencia.json"
-ALCANCE_REFERENCIA = "expediente"
+# Las rutas de las corridas se componen con `joinpath` y no con `/`: la
+# guardia de `test_indice_formulas` lee toda division de este modulo como
+# aritmetica sobre magnitudes salvo que la izquierda sea una de sus rutas.
+DIR_CORRIDAS_DE_REFERENCIA = RAIZ.joinpath("tests", "fixtures",
+                                           "corridas_de_referencia")
+
+
+@dataclass(frozen=True)
+class CorridaDeReferencia:
+    """
+    --- T-10 --- Una corrida con la que se genera el indice: su carpeta de
+    entradas (`puntos.csv`, `externos.json` y, si los hay, `sitio.json` y
+    `declaraciones.json`), el alcance y el ROTULO que dice de donde salen
+    los datos. Los datos son de PRUEBA y el rotulo lo dice en el documento.
+    """
+
+    nombre: str
+    alcance: str
+    rotulo: str
+
+    @property
+    def carpeta(self) -> Path:
+        return DIR_CORRIDAS_DE_REFERENCIA.joinpath(self.nombre)
+
+    @property
+    def csv(self) -> Path:
+        return self.carpeta.joinpath("puntos.csv")
+
+    @property
+    def externos(self) -> Path:
+        return self.carpeta.joinpath("externos.json")
+
+    @property
+    def sitio(self) -> Optional[Path]:
+        ruta = self.carpeta.joinpath("sitio.json")
+        return ruta if ruta.exists() else None
+
+    @property
+    def declaraciones(self) -> Dict[str, Any]:
+        ruta = self.carpeta.joinpath("declaraciones.json")
+        if not ruta.exists():
+            return {}
+        return json.loads(ruta.read_text(encoding="utf-8"))
+
+
+CORRIDAS_DE_REFERENCIA: Tuple[CorridaDeReferencia, ...] = (
+    CorridaDeReferencia(
+        nombre="perfil_guia", alcance="perfil",
+        rotulo=("DATOS DE PRUEBA, NO DEL PROYECTO: los de la corrida de "
+                "`docs/guia_perfil.md` (CSV de ejemplo con la coronacion de "
+                "C-01 que la guia rellena, externos y sitio de la guia; la "
+                "luz de 2.75 m que la guia pasa por `--luz` va aqui como "
+                "global del JSON). Dimensiona los cuatro puntos.")),
+    CorridaDeReferencia(
+        nombre="expediente_cabezal", alcance="expediente",
+        rotulo=("DATOS DE PRUEBA, NO DEL PROYECTO: los de la corrida de punta "
+                "a punta de los tests de T-7b y T-7c (`_correr_de_prueba`): "
+                "freatico, cota de afectacion, evento extremo, relleno, "
+                "fundacion y sobrecarga de prueba para A-01. A-01 llega a la "
+                "Fase 9 entera (geometria, estabilidad y armado).")),
+)
 
 # El sello, en una linea que `leer_sello` reconoce. Los tres campos van
 # separados por " · " y el commit entre backticks; cambiar el formato aqui
@@ -145,33 +226,48 @@ def leer_sello(texto: str) -> Optional[Sello]:
 # La corrida de referencia y sus pasos
 # ---------------------------------------------------------------------------
 
-def corrida_de_referencia() -> Any:
+def correr_referencia(corrida: CorridaDeReferencia) -> Any:
     """
-    `servicio.correr` sobre el CSV y los datos externos de referencia, a alcance
-    de expediente, SIN declaraciones en caliente. La corrida la hace el
-    servicio de calculo (`src/servicio.py`, EXT-9): hasta entonces se
-    importaba `cli` en diferido, porque era la capa de arriba.
+    `servicio.correr` sobre las entradas de `corrida`, con las declaraciones
+    en caliente y los datos de sitio por sesion VACIOS al entrar y REPUESTOS
+    al salir, clave a clave. La corrida la hace el servicio de calculo
+    (`src/servicio.py`, EXT-9).
 
-    LAS DECLARACIONES EN CALIENTE SE RETIRAN MIENTRAS DURA LA CORRIDA, y se
-    reponen despues, clave a clave. La razon es de reproducibilidad: la suite
-    corre con tres criterios declarados por `conftest.py` como VALORES DE LA
-    CORRIDA DE PRUEBAS (el espesor de pared del TMC y del HDPE, la categoria
-    de refuerzo y la exposicion quimica), y con ellos la misma corrida emite
-    pasos que el expediente, tal como esta en `criterios_adoptados.py`, no
-    emite --- el recubrimiento de la Fase 9, los escalones de TMC y HDPE ---.
-    Un indice que dijera una cosa generado desde la CLI y otra bajo pytest
-    seria un documento sin referencia. La referencia es el expediente tal
-    cual esta; lo que la suite declara para probar formulas no entra aqui.
+    LAS DECLARACIONES DE LA SUITE SE RETIRAN MIENTRAS DURA LA CORRIDA. La
+    suite corre con criterios declarados por `conftest.py` como VALORES DE
+    LA CORRIDA DE PRUEBAS (el espesor de pared del TMC y del HDPE, la
+    categoria de refuerzo y la exposicion quimica), y con ellos la misma
+    corrida emite pasos que el expediente, tal como esta en
+    `criterios_adoptados.py`, no emite. La referencia es el expediente tal
+    cual esta MAS lo que la corrida declara en su carpeta.
     """
     previas = _ca.valores_dinamicos()
+    sitio_previo = _ds.datos_dinamicos()
     for clave in previas:
         _ca.quitar_valor_dinamico(clave)
+    _ds.limpiar_datos_dinamicos()
     try:
-        externos = servicio.cargar_datos_externos(EXTERNOS_REFERENCIA, {})
-        return servicio.correr(CSV_REFERENCIA, externos, alcance=ALCANCE_REFERENCIA)
+        if corrida.sitio is not None:
+            servicio.cargar_datos_sitio(corrida.sitio)
+        for clave, valor in corrida.declaraciones.items():
+            _ca.establecer_valor_dinamico(clave, valor)
+        externos = servicio.cargar_datos_externos(corrida.externos, {})
+        return servicio.correr(corrida.csv, externos, alcance=corrida.alcance)
     finally:
+        for clave in _ca.valores_dinamicos():
+            _ca.quitar_valor_dinamico(clave)
         for clave, valor in previas.items():
             _ca.establecer_valor_dinamico(clave, valor)
+        _ds.limpiar_datos_dinamicos()
+        for clave, d in sitio_previo.items():
+            _ds.establecer_dato_dinamico(clave, d.dato.valor,
+                                         d.dato.trazabilidad, d.fecha,
+                                         origen=d.origen)
+
+
+def corridas_de_referencia() -> Tuple[Tuple[CorridaDeReferencia, Any], ...]:
+    """Las corridas de referencia con su informe, en su orden."""
+    return tuple((c, correr_referencia(c)) for c in CORRIDAS_DE_REFERENCIA)
 
 
 def pasos_de_la_corrida(informe: Any) -> Tuple[PasoDeMemoria, ...]:
@@ -212,6 +308,21 @@ def pasos_de_la_corrida(informe: Any) -> Tuple[PasoDeMemoria, ...]:
                 _visitar(valor)
 
     _visitar(informe)
+    return tuple(salida)
+
+
+def pasos_de_las_corridas(informes: Any) -> Tuple[PasoDeMemoria, ...]:
+    """
+    --- T-10 --- Los pasos de varias corridas, en su orden y cada objeto una
+    vez: `pasos_de_la_corrida` de cada informe, concatenados.
+    """
+    vistos: set = set()
+    salida: List[PasoDeMemoria] = []
+    for informe in informes:
+        for paso in pasos_de_la_corrida(informe):
+            if id(paso) not in vistos:
+                vistos.add(id(paso))
+                salida.append(paso)
     return tuple(salida)
 
 
@@ -325,6 +436,27 @@ def _clave_de_orden(fila: FilaDelIndice) -> tuple:
     return (_numero_de_fase(fila.fase), fila.fase, fila.orden)
 
 
+# --- T-10 --- Un modulo puede escribir VALORES dentro de una procedencia
+# («D' = (D + yn)/2, con D = 0.900 m e yn = 0.627 m...», paso 6.5). En la
+# memoria es correcto; en el indice no, que es de formulas y procedencias y
+# no de numeros (`test_el_indice_no_imprime_los_valores_de_la_corrida`).
+# Hasta T-10 la corrida de referencia no llegaba a ningun paso asi, porque no
+# dimensionaba. El indice ENMASCARA el valor de cada «simbolo = numero» de
+# una procedencia: no hace aritmetica, sustituye texto, y las procedencias
+# que solo diferian en el numero colapsan en una.
+_VALOR_EN_PROCEDENCIA = re.compile(r"(=\s*)[-+]?\d+(?:\.\d+)?(?:e[-+]?\d+)?")
+# Y todo numero seguido de una UNIDAD (un numeral --- «num. 2.2.4», «Tabla
+# 10.1 de» --- no lleva unidad detras y no se toca).
+_MAGNITUD_EN_PROCEDENCIA = re.compile(
+    r"(?<![\w.])[-+]?\d+(?:\.\d+)?(?=\s*(?:m3/s|m/s2|m/s|m/m|msnm|"
+    r"kN·m/m|kN/m|kN|kPa|MPa|mm2/m|mm|m|%)(?![\w/²³]))")
+
+
+def _sin_valores(texto: str) -> str:
+    texto = _VALOR_EN_PROCEDENCIA.sub(r"\1…", texto)
+    return _MAGNITUD_EN_PROCEDENCIA.sub("…", texto)
+
+
 def filas_del_indice(pasos: Tuple[PasoDeMemoria, ...],
                      emisores: Dict[str, Tuple[str, ...]]
                      ) -> List[FilaDelIndice]:
@@ -332,8 +464,11 @@ def filas_del_indice(pasos: Tuple[PasoDeMemoria, ...],
     por_firma: Dict[tuple, FilaDelIndice] = {}
     for orden, paso in enumerate(pasos):
         u = paso.umbral
+        # --- T-10 --- la descripcion del umbral sin los valores que un
+        # modulo escribe dentro (ver `_sin_valores`): agrupa por formula.
         umbral = (None if u is None else
-                  (u.descripcion, u.unidad, u.cita_id, u.criterio_aplicado or ""))
+                  (_sin_valores(u.descripcion), u.unidad, u.cita_id,
+                   u.criterio_aplicado or ""))
         fila = FilaDelIndice(
             fase=paso.fase, emisor=emisor_de(paso, emisores),
             codigo=paso.codigo, fundamento_id=paso.fundamento_id,
@@ -346,8 +481,9 @@ def filas_del_indice(pasos: Tuple[PasoDeMemoria, ...],
         fila.emisiones += 1
         for m in paso.sustitucion:
             textos = fila.procedencias.setdefault(m.simbolo, [])
-            if m.procedencia not in textos:
-                textos.append(m.procedencia)
+            procedencia = _sin_valores(m.procedencia)
+            if procedencia not in textos:
+                textos.append(procedencia)
     return sorted(por_firma.values(), key=_clave_de_orden)
 
 
@@ -393,23 +529,44 @@ def _umbral(reg: Any, fila: FilaDelIndice) -> str:
     return texto
 
 
-def _resumen_de_la_corrida(informe: Any) -> List[str]:
+def _resumen_de_la_corrida(corrida: CorridaDeReferencia,
+                           informe: Any) -> List[str]:
     L: List[str] = []
-    L.append(f"- CSV: `{CSV_REFERENCIA.relative_to(RAIZ)}` · datos externos: "
-             f"`{EXTERNOS_REFERENCIA.relative_to(RAIZ)}` · alcance: "
+    carpeta = corrida.carpeta.relative_to(RAIZ)
+    L.append(f"### Corrida `{corrida.nombre}`")
+    L.append("")
+    L.append(f"> {corrida.rotulo}")
+    L.append("")
+    entradas = [f"`{carpeta.joinpath('puntos.csv')}`",
+                f"datos externos `{carpeta.joinpath('externos.json')}`"]
+    if corrida.sitio is not None:
+        entradas.append(f"datos de sitio `{carpeta.joinpath('sitio.json')}`")
+    L.append(f"- Entradas: {' · '.join(entradas)} · alcance: "
              f"`{informe.alcance}`.")
+    if corrida.declaraciones:
+        L.append("- Criterios declarados SOLO para esta corrida: "
+                 + ", ".join(f"`{c}`" for c in corrida.declaraciones) + ".")
+    else:
+        L.append("- Criterios declarados para esta corrida: ninguno (los del "
+                 "archivo).")
     L.append(f"- Puntos: {len(informe.puntos)} · dimensionados: "
-             f"{informe.dimensionados}.")
+             f"{informe.dimensionados} ("
+             + ", ".join(p.punto.id for p in informe.puntos if p.dimensionado)
+             + ").")
     L.append("- Etapas que la corrida no completó (la razón está en el "
              "informe; aquí sólo se nombra la etapa):")
-    for id_punto, b in informe.bloqueos():
+    bloqueos = list(informe.bloqueos())
+    if not bloqueos:
+        L.append("  - *(ninguna)*")
+    for id_punto, b in bloqueos:
         quien = id_punto or "proyecto"
         L.append(f"  - {quien}: {_celda(b.fase)} → {_celda(b.etapa)} "
                  f"(`{b.tipo}`).")
+    L.append("")
     return L
 
 
-def _huecos(informe: Any) -> Tuple[List[Any], List[Any]]:
+def _huecos(informes: Any) -> Tuple[List[Any], List[Any]]:
     """
     (huecos que la corrida emitio, huecos censados que no alcanzo). Los
     primeros son los `HuecoDeVerificacion` de `traza_punto`, exactamente los
@@ -419,7 +576,7 @@ def _huecos(informe: Any) -> Tuple[List[Any], List[Any]]:
     """
     emitidos: Dict[str, Any] = {}
     con_paso: set = set()
-    for informe_punto in informe.puntos:
+    for informe_punto in (p for informe in informes for p in informe.puntos):
         for seccion in _tp.traza_del_punto(informe_punto).secciones:
             for entrada in seccion.entradas:
                 if isinstance(entrada, _tp.HuecoDeVerificacion):
@@ -454,9 +611,10 @@ def _fundamentos_no_ejercitados(reg: Any, pasos: Tuple[PasoDeMemoria, ...],
     return L
 
 
-def indice_de_formulas(informe: Any, sello: Sello) -> str:
+def indice_de_formulas(corridas: Any, sello: Sello) -> str:
     """
-    El indice, generado entero desde los pasos de `informe`.
+    El indice, generado entero desde los pasos de las `corridas` de
+    referencia: pares `(CorridaDeReferencia, Informe)`.
 
     Ninguna fila lleva un numero de linea ni un valor: se ancla a
     `fundamento_id` + `codigo` + formula, que solo cambian si alguien cambia
@@ -464,7 +622,8 @@ def indice_de_formulas(informe: Any, sello: Sello) -> str:
     """
     reg = _registro.construir()
     emisores = emisores_por_fundamento()
-    pasos = pasos_de_la_corrida(informe)
+    informes = [informe for _corrida, informe in corridas]
+    pasos = pasos_de_las_corridas(informes)
     filas = filas_del_indice(pasos, emisores)
 
     L: List[str] = []
@@ -491,10 +650,16 @@ def indice_de_formulas(informe: Any, sello: Sello) -> str:
     A("> variable llegó con más de una procedencia, se listan todas,")
     A("> separadas por «‖».")
     A("")
-    A("## 1. La corrida de referencia")
+    A("## 1. Las corridas de referencia")
     A("")
-    L.extend(_resumen_de_la_corrida(informe))
+    A("Dos corridas con DATOS DE PRUEBA que ya estaban en el repositorio")
+    A("(`tests/fixtures/corridas_de_referencia/`, ver `CORRIDAS_DE_REFERENCIA`")
+    A("en `src/indice_formulas.py`): la de la guía de perfil, que dimensiona")
+    A("los cuatro puntos, y la de punta a punta de T-7b/T-7c, que lleva a A-01")
+    A("hasta la Fase 9. Ningún valor de entrada es del proyecto.")
     A("")
+    for corrida, informe in corridas:
+        L.extend(_resumen_de_la_corrida(corrida, informe))
     A(f"Pasos emitidos: **{len(pasos)}** · fórmulas distintas: "
       f"**{len(filas)}** · fundamentos ejercitados: "
       f"**{len({p.fundamento_id for p in pasos})}** de "
@@ -529,7 +694,7 @@ def indice_de_formulas(informe: Any, sello: Sello) -> str:
     A("censo `normativa.fundamentos.SIN_FUNDAMENTO`, con la razón de por qué")
     A("no puede tener fundamento normativo hoy y qué haría falta para traerlo.")
     A("")
-    emitidos, no_alcanzados = _huecos(informe)
+    emitidos, no_alcanzados = _huecos(informes)
     A("### 3.1 Huecos que la corrida emitió")
     A("")
     if not emitidos:
@@ -541,7 +706,7 @@ def indice_de_formulas(informe: Any, sello: Sello) -> str:
     A("")
     A("### 3.2 Huecos censados que la corrida no alcanzó a evaluar")
     A("")
-    A("La corrida se detiene antes de llegar a ellos (ver §1). Se listan con")
+    A("Las corridas no llegan a ellos (ver §1). Se listan con")
     A("la misma ficha para que el censo entero sea visible desde aquí.")
     A("")
     if not no_alcanzados:
@@ -554,9 +719,10 @@ def indice_de_formulas(informe: Any, sello: Sello) -> str:
 
     A("## 4. Fundamentos que la corrida de referencia no ejercita")
     A("")
-    A("Declarados en `normativa/fundamentos.py` y sin paso en esta corrida,")
-    A("porque el pipeline se detiene antes (§1). Sus fórmulas no están en el")
-    A("§2 y este cuadro es lo que impide leer el índice como cobertura.")
+    A("Declarados en `normativa/fundamentos.py` y sin paso en las corridas")
+    A("de referencia, porque sus datos no recorren esa rama (§1). Sus")
+    A("fórmulas no están en el §2 y este cuadro es lo que impide leer el")
+    A("índice como cobertura.")
     A("")
     A("| Fundamento | Fase | Paso | Módulo emisor |")
     A("|---|---|---|---|")
@@ -608,11 +774,11 @@ def main(argv: List[str]) -> int:
         print("--escribir exige --suite \"N passed, M skipped (entorno)\": "
               "el par de la suite es parte del sello")
         return 2
-    informe = corrida_de_referencia()
+    corridas = corridas_de_referencia()
     if escribir:
         sello = Sello(fecha=_dt.date.today().isoformat(),
                       commit=_commit_de_origen(), suite=suite)
-        INDICE_FORMULAS.write_text(indice_de_formulas(informe, sello),
+        INDICE_FORMULAS.write_text(indice_de_formulas(corridas, sello),
                                    encoding="utf-8")
         print(f"{INDICE_FORMULAS.relative_to(RAIZ)}: escrito con sello "
               f"{sello.fecha} · {sello.commit} · {sello.suite}")
@@ -625,7 +791,7 @@ def main(argv: List[str]) -> int:
     if sello is None:
         print("el documento no lleva sello legible")
         return 1
-    en_sincronia = indice_de_formulas(informe, sello) == texto
+    en_sincronia = indice_de_formulas(corridas, sello) == texto
     print(f"{INDICE_FORMULAS.relative_to(RAIZ)}: "
           f"{'sincronizado' if en_sincronia else 'DESINCRONIZADO'} "
           f"(sello {sello.fecha} · {sello.commit})")

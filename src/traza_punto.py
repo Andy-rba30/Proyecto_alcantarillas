@@ -41,7 +41,8 @@ clases CSS `.fuente` / `.interpretacion` / texto normal:
 Pegados, los tres se leen como norma: es exactamente NOR-HID-04.
 
 Las verificaciones sin paso NO se saltan ni se inventan: las censadas en
-`normativa.fundamentos.SIN_FUNDAMENTO` (V4b, V5, V6, V8, V9) llegan como
+`normativa.fundamentos.SIN_FUNDAMENTO` (vacio desde T-10: V4b, V5, V6, V8 y
+V9 ya tienen paso) llegan como
 `HuecoDeVerificacion`, con la razon de por que no pueden tener fundamento
 normativo hoy y que haria falta para traerlo -- el mismo hueco declarado que
 M11 imprime con `_paso_ausente`, nunca una fila en blanco.

@@ -46,14 +46,25 @@ from src import traza_punto as tp
 from src.modulos import M11_reporte as M11
 
 
+# REESCRITO EN T-10, declarandolo: el indice se genera desde DOS corridas
+# de referencia (`ind.CORRIDAS_DE_REFERENCIA`: la de la guia de perfil, que
+# dimensiona los cuatro puntos, y la de punta a punta de T-7b/T-7c, que lleva
+# a A-01 hasta la Fase 9), no desde una sola que no dimensionaba ninguno.
+# `corridas` es la lista de pares (corrida, informe); `informes`, los
+# informes; `pasos`, los de las dos, cada objeto una vez.
 @pytest.fixture(scope="module")
-def informe():
-    return ind.corrida_de_referencia()
+def corridas():
+    return ind.corridas_de_referencia()
 
 
 @pytest.fixture(scope="module")
-def pasos(informe):
-    return ind.pasos_de_la_corrida(informe)
+def informes(corridas):
+    return [informe for _corrida, informe in corridas]
+
+
+@pytest.fixture(scope="module")
+def pasos(informes):
+    return ind.pasos_de_las_corridas(informes)
 
 
 @pytest.fixture(scope="module")
@@ -68,7 +79,7 @@ def texto_en_disco():
 # 1. Sincronia y sello
 # ===========================================================================
 
-def test_el_indice_de_formulas_esta_sincronizado(informe, texto_en_disco):
+def test_el_indice_de_formulas_esta_sincronizado(corridas, texto_en_disco):
     """
     Se regenera con el sello que el documento YA lleva: lo que se compara es
     el cuerpo --- filas, huecos, fundamentos sin ejercitar ---, no la fecha
@@ -76,7 +87,7 @@ def test_el_indice_de_formulas_esta_sincronizado(informe, texto_en_disco):
     """
     sello = ind.leer_sello(texto_en_disco)
     assert sello is not None, "el indice en disco no lleva un sello legible"
-    assert ind.indice_de_formulas(informe, sello) == texto_en_disco, (
+    assert ind.indice_de_formulas(corridas, sello) == texto_en_disco, (
         "el indice de formulas esta desincronizado. NO se edita a mano: "
         "python3 -m src.indice_formulas --escribir --suite \"<par de la suite>\"")
 
@@ -186,10 +197,10 @@ def test_las_menciones_encuentran_las_puertas_que_no_son_paso():
 # 3. El recorrido del grafo no se queda corto frente a la memoria
 # ===========================================================================
 
-def test_el_recorrido_recoge_todo_paso_que_la_memoria_publica(informe, pasos):
+def test_el_recorrido_recoge_todo_paso_que_la_memoria_publica(informes, pasos):
     recogidos = {id(p) for p in pasos}
     publicados = 0
-    for informe_punto in informe.puntos:
+    for informe_punto in (p for i in informes for p in i.puntos):
         for seccion in tp.traza_del_punto(informe_punto).secciones:
             for entrada in seccion.entradas:
                 if isinstance(entrada, tp.DetalleDePaso):
@@ -236,22 +247,33 @@ def test_los_huecos_del_indice_son_exactamente_los_del_censo(texto_en_disco):
     assert listados == censo, (listados ^ censo)
 
 
-def test_los_huecos_emitidos_son_los_que_traza_punto_construye(informe,
+def test_los_huecos_emitidos_son_los_que_traza_punto_construye(informes,
                                                               texto_en_disco):
     emitidos = set()
-    for informe_punto in informe.puntos:
+    for informe_punto in (p for i in informes for p in i.puntos):
         for seccion in tp.traza_del_punto(informe_punto).secciones:
             for entrada in seccion.entradas:
                 if isinstance(entrada, tp.HuecoDeVerificacion):
                     emitidos.add(entrada.codigo)
-    assert "V4b" in emitidos
+    # REESCRITO EN T-10, declarandolo: aqui se exigia que la corrida
+    # emitiera el hueco de V4b. Desde T-10 V4b, V6 y V9 tienen paso y el
+    # censo esta vacio: las corridas de referencia no emiten ningun hueco, y
+    # lo que se fija es que el indice liste exactamente los que emitan.
+    assert not emitidos
     parte_31 = texto_en_disco.split("### 3.1 ")[1].split("### 3.2 ")[0]
     assert set(re.findall(r"^- \*\*`([A-Za-z0-9]+)`\*\*", parte_31,
                           flags=re.M)) == emitidos
 
 
-def test_hueco_censado_construye_la_misma_ficha_que_la_traza():
+def test_hueco_censado_construye_la_misma_ficha_que_la_traza(monkeypatch):
+    # REESCRITO EN T-10 (correcciones, H3), declarandolo: el censo
+    # `SIN_FUNDAMENTO` esta vacio desde T-10 y este bucle recorria nada. Se
+    # ejercita con una entrada de PRUEBA, como `test_memoria_sustentada`.
+    from src.normativa import fundamentos as F
+    monkeypatch.setattr(F, "SIN_FUNDAMENTO", (
+        ("F5.VX", "razon de prueba", "lo que haria falta, de prueba"),))
     censo = M11.sin_fundamento_por_codigo()
+    assert set(censo) == {"VX"}
     for codigo, (por_que, que_haria_falta) in censo.items():
         hueco = tp.hueco_censado(codigo)
         assert hueco.codigo == codigo
@@ -312,6 +334,13 @@ def test_el_indice_no_imprime_los_valores_de_la_corrida(pasos, texto_en_disco):
     cuerpo = texto_en_disco.split("## 2. ")[1].split("## 3. ")[0]
     for paso in pasos:
         r = paso.resultado
-        if isinstance(r.valor, float) and r.cifras is not None:
+        # REESCRITO EN T-10, declarandolo: solo las MAGNITUDES (resultado
+        # con unidad). Desde que la corrida de referencia llega a la Fase 9,
+        # un resultado ADIMENSIONAL coincide con una constante normativa que
+        # otro paso escribe en su formula o su procedencia --- la cuantia
+        # minima 0.0015 de E.060 14.3.1 es el resultado del paso 9.4.p y el
+        # «0.0015·b·h» de la procedencia del minimo constructivo ---, y esa
+        # coincidencia no es un valor de la corrida impreso en el indice.
+        if isinstance(r.valor, float) and r.cifras is not None and r.unidad:
             assert f"{r.valor:.{r.cifras}f} {r.unidad}".strip() not in cuerpo, (
                 paso.codigo, r.simbolo)

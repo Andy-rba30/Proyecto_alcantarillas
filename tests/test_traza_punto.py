@@ -143,15 +143,40 @@ def test_el_desarrollo_no_adoptado_llega_con_su_aviso(informe, trazas):
 # Los huecos declarados: nunca una fila en blanco ni un texto inventado
 # ===========================================================================
 
-def test_las_verificaciones_sin_paso_llegan_como_hueco_censado(trazas):
-    huecos = [e for e in _entradas(trazas)
-              if isinstance(e, tp.HuecoDeVerificacion)]
-    assert huecos, "la corrida de ejemplo emite al menos un hueco (V4b)"
+def test_las_verificaciones_sin_paso_llegan_como_hueco_censado(
+        informe, trazas, monkeypatch):
+    # REESCRITO EN T-10, declarandolo (dos veces). La corrida de ejemplo
+    # emitia el hueco de V4b; desde T-10 V4b, V6 y V9 tienen paso y el censo
+    # `SIN_FUNDAMENTO` esta vacio, de modo que la corrida no emite ninguno y
+    # el bucle de abajo quedaba VACUO (correcciones de T-10, H3: el mutante
+    # que rompia `traza_punto._hueco` sobrevivia). Ahora: (1) la corrida real
+    # no emite huecos y V4b llega como paso; (2) con una entrada de PRUEBA en
+    # el censo y la V4b del punto sin paso, la traza construye el hueco con
+    # la razon del censo.
+    import dataclasses
+    from src.normativa import fundamentos as F
+    assert not [e for e in _entradas(trazas)
+                if isinstance(e, tp.HuecoDeVerificacion)]
+    assert any(isinstance(e, tp.DetalleDePaso) and e.codigo == "V4b"
+               for e in _entradas(trazas))
+    monkeypatch.setattr(F, "SIN_FUNDAMENTO", (
+        ("F5.V4b", "razon de prueba del hueco", "lo que haria falta, de prueba"),))
+    punto = next(p for p in informe.puntos
+                 if any(v.codigo == "V4b" for _f, v in
+                        M11.verificaciones_publicadas(p)))
+    sin_paso = tuple(
+        (f, dataclasses.replace(v, paso=None) if v.codigo == "V4b" else v)
+        for f, v in M11.verificaciones_publicadas(punto))
+    monkeypatch.setattr(M11, "verificaciones_publicadas",
+                        lambda informe_punto: sin_paso)
+    huecos = [e for s in tp.traza_del_punto(punto).secciones
+              for e in s.entradas if isinstance(e, tp.HuecoDeVerificacion)]
+    assert [h.codigo for h in huecos] == ["V4b"]
     censo = M11.sin_fundamento_por_codigo()
     for hueco in huecos:
         assert hueco.codigo in censo
         por_que, que_haria_falta = censo[hueco.codigo]
-        assert hueco.por_que == por_que
+        assert hueco.por_que == por_que == "razon de prueba del hueco"
         assert hueco.que_haria_falta == que_haria_falta
         assert hueco.titulo == tp.TITULO_HUECO
 

@@ -2265,8 +2265,10 @@ esperaría o porque dejan algo abierto.
   `tests/test_indice_formulas.py`, no en el documento generado.
 - **Qué haría falta:** nada para cerrarla; la próxima sesión que toque
   citas, criterios, memoria o pasos regenera los cuatro documentos con su
-  sello, como manda el ritual de cierre.
-- **Dónde vive:** `src/indice_formulas.py::corrida_de_referencia`
+  sello, como manda el ritual de cierre. (T-10: la función
+  `corrida_de_referencia` pasó a ser `correr_referencia`, una por cada corrida
+  de `CORRIDAS_DE_REFERENCIA`; ver la ficha T10-02.)
+- **Dónde vive:** `src/indice_formulas.py::correr_referencia`
 
 
 ---
@@ -6558,3 +6560,174 @@ del fixture se mueve.
   `v8_evento_extremo`, `modificador_de_carga`, `_resistencia_i_con_eta`,
   `peralte_minimo_zapata` y `_fila_de_peralte_de_zapata`.
 - **Dónde vive:** `tests/test_t7_verificacion.py::test_p9_resistencia_I_del_muro_de_tanteo_con_eta_a_mano`
+
+---
+
+# Parte LIII — Lo que T-10 de la cadena T dejó escrito: la memoria M11 completa
+
+T-10 (2026-11-13, FASE A sobre `2b13dc1`, rebasada e integrada sobre `2265d90` con las correcciones de su auditoría adversarial: AJUSTADO, 2 MEDIA y 5 BAJA, «ningún cálculo cambió») no calcula nada nuevo: hace que la memoria HTML
+imprima lo que la CLI y el JSON ya publicaban, sin repetir lo idéntico, y regenera el índice
+de fórmulas con corridas que sí dimensionan. Cierra `INF-3.4.7` («la Fase 9 no aparece en la
+memoria HTML») e `INF-4.7`, y lo que la cadena llama `INF-5.1.9` (canónico `INF-5.1.10`). El
+censo se midió con dos corridas de prueba —la de la guía de perfil y la de punta a punta de
+T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
+
+## T10-01 · El objetivo de EXT-8 (< 15 KB y < 10 páginas por punto) no se alcanza sin perder sustento: lo repetido se quitó y se midió
+
+- **Qué se difirió:** el objetivo del dictamen de EXT-8 para la memoria por punto. Medido con
+  el método de `tests/test_ext8_rendimiento_gui.py` (coste marginal, cuatro puntos contra uno,
+  a expediente con las entradas ampliadas y las declaraciones de la suite): **113.99 KB y
+  32.33 páginas por punto en la base `2265d90` (las mismas que en `2b13dc1`); 107.04 KB y 31.00 páginas con T-10** (los
+  techos de `KB_POR_PUNTO_MAX` y `PAGINAS_POR_PUNTO_MAX` quedan pegados a la medida). La de
+  perfil, sin techo: 149.96 → 141.16 KB por punto. Lo fijo sube (un punto: 104 → 119
+  páginas; 118 antes de las correcciones de la auditoría) porque entra la Fase 9 del proyecto, el alcance declarado, el anexo A.4 y tres
+  umbrales en 0-ter. Por fase, sobre las corridas del censo: en A-01 a expediente, con la
+  Fase 9 entera, el bloque del punto bajó de 721 a 612 KB; el peso está en el desarrollo de
+  las verificaciones (CB, E y A del cabezal: ~300 KB) y en la traza de la Fase 9 (~100 KB).
+- **Por qué:** lo que queda es contenido DEL PUNTO —fórmula, sustitución con procedencia,
+  umbral y veredicto de cada paso— y un cabezal armado son más de cien pasos. Lo que estaba
+  repetido se quitó: (1) los 50 pasos del armado que salían dos veces en A-01 (161 KB), una en
+  el desarrollo de las verificaciones y otra en la traza de la Fase 9, que ahora remite; (2)
+  todo paso IDÉNTICO a uno ya impreso en el documento (el 2.1 con la luz global en los cuatro
+  puntos, el 4.2 de una misma carta), toda elección de proyecto idéntica (las de los
+  criterios de corredor) y toda nota del proyecto idéntica, que se imprimen una vez con su
+  ancla y después como una línea con su enlace. Recortar sustituciones o pasos para llegar a
+  una cifra sería perder lo que la memoria tiene que sostener.
+- **Decisión del dueño (2026-11-13):** los techos remedidos se ACEPTAN; se remidieron otra
+  vez tras las correcciones de la auditoría (el mismo marginal: 107.04 KB y 31.00 páginas) y
+  quedan pegados a la medida.
+- **Qué haría falta:** una memoria por punto y un anexo común por obra (el formato de las
+  págs. 110–122 del PDF guía, que imprime UNA tabla de cargas por cabezal sin el desarrollo
+  paso a paso), si el dueño acepta que el desarrollo completo viva en un anexo digital.
+- **Dónde vive:** `src/modulos/M11_reporte.py::_YaImpreso`
+
+## T10-02 · El índice de fórmulas se genera con dos corridas de PRUEBA que sí dimensionan, y no imprime los valores que un módulo escribe en una procedencia
+
+- **Cerrado (T-10):** la corrida de referencia de I4 no dimensionaba ningún punto (V5 sin
+  método) y el índice no podía mostrar las Fases 6 a 10. Desde T-10 son dos
+  (`CORRIDAS_DE_REFERENCIA`, en `tests/fixtures/corridas_de_referencia/`): `perfil_guia`
+  —la de `docs/guia_perfil.md`, que dimensiona los cuatro puntos, B-01 con el TW de 0.30 m de
+  la guía y no con el de 1.00 m de la línea base— y `expediente_cabezal` —la de punta a punta
+  de T-7b/T-7c, con A-01 hasta el armado—. Ningún valor es nuevo: un test los compara con los
+  bloques de la guía y con el AST de los tests de T-7c. El índice pasa de 159 pasos, 28 fórmulas y
+  19 fundamentos a 476, 197 y 79 de 122, y la fila del paso «cuál control gobierna» cita el HDS-5
+  3.3.5 (INF-5.1.10).
+- **Abierto:** un módulo puede escribir VALORES dentro de una procedencia («D' = (D + yn)/2,
+  con D = 0.900 m e yn = 0.627 m…», paso 6.5); el índice los enmascara (`_sin_valores`:
+  «= número» y número con unidad) para seguir sin imprimir números. Los fundamentos de la
+  hidrología CALCULADA (`--cuencas`, `--estacion`) y de las ramas que estos datos no recorren
+  siguen en el cuadro de «no ejercitados» del propio índice.
+- **Qué haría falta:** una tercera corrida con la hidrología de prueba de
+  `tests/fixtures/hidrologia/`, para ver la Fase 1-bis calculada en el índice. **Decisión del
+  dueño (2026-11-13): la hace T-11**, como una entrada más de `CORRIDAS_DE_REFERENCIA`.
+- **Dónde vive:** `src/indice_formulas.py::CORRIDAS_DE_REFERENCIA`
+
+## T10-03 · V4b, V6 y V9 ganan paso, y el censo de lo que no puede tener fundamento queda vacío
+
+- **Cerrado (T-10):** las tres verificaciones salían como un hueco censado. V4b tiene
+  `F5.V4b` con el verbo DEFINE sobre la frase del HDS-5 que DESCRIBE la banda 1.0–1.5 de las
+  agencias de EE. UU. (cita nueva `HDS5_3ED.2.2.5d#AGENCIAS`, pág. impresa 2.10, PDF 72,
+  carácter DEFINICIÓN, verificada contra la página): el tope sigue siendo la adopción [A]
+  `HW_D_max` y el umbral lo dice; y lleva la nota de §15.6.3 en la Familia C, que el test de
+  M5 pedía «el día que V4b tenga fundamento». V6 tiene `F5.V6` con RECOMIENDA, sobre la
+  oración del núm. 4.1.1.3.4 a) que recomienda la sección sin subdivisiones con arrastre.
+  V9 tiene `F5.V9` con DEFINE, y juzga contra la cita de la serie de su norma de producto
+  (M 170M 7.2.1, M 36 Table 6, M 294 7.2.1) cuando el tope sale de ella.
+- **Abierto:** cuando el tope de V9 es de disponibilidad de mercado (`D_max_catalogo` [A]) o
+  la progresión del marco (`secciones_cajon_normalizadas` [A]) el paso SUSTITUYE y no juzga
+  —sin umbral ni veredicto; el veredicto está en la tabla del punto—, porque un catálogo no
+  tiene numeral (NOR-PRO-01, NOR-PRO-02). Las entradas de V4b, V6 y V9 en
+  `UMBRALES_DE_VERIFICACION` dicen, como la de V10, que ninguna cita fija el número.
+- **Decisión del dueño (2026-11-13):** V9 sin veredicto cuando el tope es de catálogo o de la
+  progresión del marco: ACEPTADO.
+- **Qué haría falta:** nada para cerrarlo; la tupla `SIN_FUNDAMENTO` se conserva vacía para la
+  verificación que mañana no pueda tener fundamento, y dos tests la ejercitan con una entrada
+  de prueba (`test_traza_punto`, `test_indice_formulas`: corrección H3).
+- **Dónde vive:** `src/normativa/fundamentos.py::SIN_FUNDAMENTO`
+
+## T10-04 · El censo JSON ↔ memoria se mide por clave, y tres claves de texto se imprimen de otra forma
+
+- **Cerrado (T-10):** todo número que el JSON publica de un punto dimensionado aparece en su
+  bloque de la memoria —o en el paso, la elección o la nota idénticos a los que enlaza—, y
+  todo aviso de `InformePunto.avisos()` sale en las tres vistas. Lo que faltaba y se cerró:
+  las tablas del armado (secciones críticas y tabla por elemento) y de las solicitaciones del
+  cabezal; la excentricidad de cada combinación; 40 de los 47 avisos de A-01 a expediente
+  (los indicadores E y A2 del cabezal, los del armado); el reparto por extremo de 7.B (paso
+  7.B.3b, emitido por M7); las columnas `cota_fondo_entrada` y `cota_coronacion_canal`; el
+  alcance de la norma de producto; la nota de la cota de entrada (`CotaDeEntrada.nota`, una
+  fuente para el JSON y la memoria); el origen del caudal de VB2; las citas del filtro; la
+  embocadura del punto que no llega a la Fase 9; y la Fase 9 del PROYECTO —la cadena sísmica
+  eslabón por eslabón, K_AE, recubrimientos, cuantías y notas—, que solo estaba en la CLI y
+  el JSON. Y 17 anclas rotas de T-5 y T-9 (pasos de la Fase 8 y de la 10 que el anexo no
+  escribía).
+- **Abierto:** tres claves de texto se imprimen de otra forma y están censadas con su razón
+  (`TEXTOS_CON_OTRA_VISTA`): el mensaje de un bloqueo por criterio pendiente (la memoria
+  imprime sus partes), el rótulo de fase de cada verificación y los ids de las citas del
+  filtro (la memoria imprime su numeral, y el test lo comprueba).
+- **Corregido tras la auditoría (H1):** el censo buscaba cada número en TODO el bloque del
+  punto («0.40» sale 99 veces en A-01) y cuatro mutantes vivían. Desde las correcciones cada
+  entrada de la tabla de armado, de sus secciones, de las combinaciones (con su excentricidad)
+  y de las solicitaciones se compara con SU fila, localizada por su clave; el bloque del
+  proyecto se imprime en tablas con la clave en la primera columna (cabezales, K_AE y K_A,
+  recubrimientos, cuantías, eslabones de la cadena) y se censa así; y el anexo A.4 exige la
+  ventana de cada clave en su fila. Los cinco mutantes de la auditoría (M-A, M-E, M-L, M-M y
+  el del hueco, M-N) mueren.
+- **Qué haría falta:** nada; un texto nuevo del JSON que la memoria no lleve rompe el test.
+- **Dónde vive:** `src/modulos/M11_reporte.py::bloque_cabezal_proyecto`
+
+## T10-05 · Lo que el dueño decidió no hacer se imprime como ALCANCE, en las tres vistas
+
+- **Cerrado (T-10):** `modelos.ALCANCE_DECLARADO` dice, con su ficha y su símbolo, cinco cosas
+  que el expediente NO hace por decisión declarada: el armado de la sección del marco
+  (T5-07), el cabezal paralelo a la vía (T7A-03), la iteración del ancho de la zapata del
+  cabezal (T7B-09), el peso propio del marco en V7 (T3-08) y las Figuras 3.3–3.4 de HEC-14
+  (T8-08). Lo imprimen la CLI (bloque ALCANCE DE LA CORRIDA), el JSON (`alcance.declarado`) y
+  la memoria (`bloque_alcance`). Las etapas que no se completaron dicen además qué SON
+  —«espera un dato», «método no evaluable»…— al lado del tipo técnico
+  (`ROTULO_TIPO_DE_BLOQUEO`).
+- **Por qué:** sin esta lista, la memoria callaba lo que no hace y un lector lo leía como
+  omisión.
+- **Qué haría falta:** retirar cada entrada cuando su ficha se cierre.
+- **Dónde vive:** `src/modelos.py::ALCANCE_DECLARADO`
+
+## T10-06 · El anexo de sensibilidad imprime la ventana y no recalcula: el barrido sigue siendo PF-3
+
+- **Cerrado (T-10):** el anexo A.4 de la memoria lista cada criterio [A] que la corrida usó
+  con su valor efectivo, su ventana, su modo de resolución y los puntos cuyo cálculo lo nombra
+  (`criterios_A_por_punto`, leído de lo que cada punto emitió). Todo [A] con valor tiene
+  ventana (los siete [A] sin ventana son de expediente y sin valor, que es lo que el
+  invariante de `CLAUDE.md` admite).
+- **Abierto:** el barrido que recorre la ventana es `cli.py --barrido` (PF-3) y no corre
+  dentro de la memoria: el anexo no dice cómo cambia el diseño dentro de la ventana, solo cuál
+  es.
+- **Qué haría falta:** si se quiere el efecto en la memoria, un anexo que lea los volcados de
+  un barrido ya corrido, nunca uno que corra dentro del exportador.
+- **Dónde vive:** `src/modulos/M11_reporte.py::anexo_sensibilidad`
+
+## T10-07 · La aceptación de T-10 se escribió después del código; el rojo se midió contra la base
+
+- **Cerrado (T-10):** `tests/test_t10_memoria.py` no se escribió en rojo con
+  `xfail(strict=True)`: el censo tenía que medirse antes de saber qué fijar. El rojo se
+  midió con el archivo final sobre un árbol de `2265d90` (el número, en el informe
+  de la FASE A).
+- **Por qué:** el censo es el entregable; los tests lo fijan.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M11_reporte.py::anexo_sensibilidad`
+
+## T10-08 · Las correcciones de la auditoría adversarial de T-10
+
+- **Cerrado (2026-11-13):** H1 (el censo por clave, T10-04); H2 (el paso 7.B.3b ya no atribuye
+  su fórmula a HDS-5 2.2.4 b., que no la escribe: la cita queda como contexto y lleva la misma
+  nota del proyecto que el 7.B.3, `M7.NOTA_ALGEBRA_DE_LA_LONGITUD`); H3 (los dos tests que
+  quedaron vacuos al vaciar `SIN_FUNDAMENTO` se ejercitan con una entrada de prueba); H4 (los
+  docstrings y comentarios de M5, `modelos`, `traza_punto`, `indice_formulas`, M11 y
+  `UMBRALES_DE_VERIFICACION` que todavía decían «V4b no emite paso» o «ninguna cita fija el
+  número»); H5 (V4b sin «que es más exigente»; el rótulo de la frase del anexo sigue al
+  CARÁCTER de la cita —una DEFINICIÓN «describe», no «fija»: `ROTULO_DE_LA_FRASE_POR_CARACTER`—;
+  la elección de V4b se imprime como ventana); H6 (un test con la V8 acotada de
+  `test_t7_verificacion` comprueba que su aviso sale UNA vez en la memoria); H7 (la regla de
+  la excentricidad vive en el dato, `CombinacionDeEstabilidad.excentricidad_publicable`, y el
+  0.8·f_r y el piso de 25.4 mm salen de sus constantes).
+- **Por qué:** la auditoría adversarial (AJUSTADO) y las resoluciones del orquestador.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/modulos/M11_reporte.py::ROTULO_DE_LA_FRASE_POR_CARACTER`

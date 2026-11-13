@@ -846,6 +846,21 @@ class CotaDeEntrada:
         """«MEDIDA» o «ADOPTADA», para los rotulos cortos del volcado."""
         return "MEDIDA" if self.medida else "ADOPTADA"
 
+    # --- T-10 ---
+    @property
+    def nota(self) -> str:
+        """
+        La nota que acompaña al rotulo: lo que la cota ES. Vivia escrita en
+        el adaptador del JSON (`cli._geometria_json`) y la memoria decia otra
+        frase; una sola fuente, tres vistas (el JSON, la CLI y la memoria).
+        """
+        if self.medida:
+            return ("cota MEDIDA: columna cota_fondo_entrada del CSV; el "
+                    "criterio no se aplico en este punto")
+        return ("no es cota medida: sale de la regla declarada en ese "
+                "criterio mientras el expediente no entregue la cota de "
+                "invert de entrada por punto")
+
     # --- T-6 ---
     @property
     def aviso(self) -> str:
@@ -2432,6 +2447,61 @@ AVISO_SIN_ACCESO_DE_MANTENIMIENTO = (
     "declarar la limitacion")
 
 
+
+# --- T-10 --- EL ALCANCE DECLARADO DEL EXPEDIENTE: lo que el programa NO hace
+# por DECISION DEL DUEÑO, dicho como alcance y no como omision (PRECISIONES
+# de T-10). Una fuente y tres vistas: la CLI (`cli._lineas_alcance`), el
+# JSON (`alcance.declarado`) y la memoria (`M11.bloque_alcance`). Vive aqui
+# por la misma razon que el aviso de arriba: M11 no importa del servicio.
+# Cada entrada nombra la ficha de `docs/decisiones_diferidas.md` donde esta
+# el argumento y el simbolo del codigo donde vive lo que si se hace.
+@dataclass(frozen=True)
+class AlcanceDeclarado:
+    clave: str
+    texto: str
+    ficha: str
+    simbolo: str
+
+
+ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
+    AlcanceDeclarado(
+        clave="armado_seccion_marco",
+        texto=("El armado de la SECCION del marco de concreto de la Familia C "
+               "no se diseña: el expediente llega al dimensionamiento y a la "
+               "demanda de la losa superior que entrega la Fase 8; el "
+               "analisis y el diseño del portico quedan para quien lo arme"),
+        ficha="T5-07", simbolo="M8_estructural.demanda_marco"),
+    AlcanceDeclarado(
+        clave="cabezal_paralelo_a_la_via",
+        texto=("El cabezal PARALELO a la via no se calcula: en las tres "
+               "familias el cabezal es normal al eje del conducto, que es lo "
+               "que supone la hidraulica (ke y cartas del HDS-5); el paralelo "
+               "queda como alternativa solo para el marco, diferida"),
+        ficha="T7A-03", simbolo="M9_cabezal.predimensionar_aleros"),
+    AlcanceDeclarado(
+        clave="iteracion_ancho_zapata_cabezal",
+        texto=("El ancho de la zapata del cabezal no se itera: la geometria "
+               "la propone la regla de predimensionamiento (o la declara "
+               "`cabezal_declarado`) y la estabilidad la juzga como llega; "
+               "la iteracion espera los parametros reales del EMS"),
+        ficha="T7B-09", simbolo="M9_cabezal.predimensionar_cabezal"),
+    AlcanceDeclarado(
+        clave="flotacion_marco_sin_peso_propio",
+        texto=("V7 del marco no pesa el concreto del marco (DC = 0, del lado "
+               "seguro): se revisara cuando llegue la seccion real del canal "
+               "de la ANA o de la Junta de usuarios"),
+        ficha="T3-08", simbolo="M5_verificaciones.v7_flotacion"),
+    AlcanceDeclarado(
+        clave="tirante_de_borde_hec14",
+        texto=("Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la "
+               "salida) no estan digitalizadas: con la velocidad tomada al "
+               "tirante critico el contraste con la Tabla N 11 es un "
+               "INDICADOR que no concluye; se digitalizaran en un trabajo "
+               "posterior a la cadena"),
+        ficha="T8-08", simbolo="M6_proteccion.proteccion_salida"),
+)
+
+
 class ViaDelTW(str, Enum):
     """
     Por cual de los cuatro caminos de Sec. 1.3 se obtuvo el TW de un punto.
@@ -3161,10 +3231,12 @@ class Verificacion:
     # (SIS-A-07).
     #
     # `None` NO significa "sin fundamentar": significa que esa verificacion
-    # todavia no puede tener `Fundamento`, y las razones estan censadas una a
-    # una en `normativa.fundamentos.SIN_FUNDAMENTO` -- V4b, V5, V6, V8 y V9,
-    # cada una con lo que habria que transcribir para traerla. M11 imprime esa
-    # razon en el sitio del paso ausente, en vez de dejar el hueco callado.
+    # todavia no puede tener `Fundamento`, y la razon se censa en
+    # `normativa.fundamentos.SIN_FUNDAMENTO` con lo que habria que transcribir
+    # para traerla; M11 la imprime en el sitio del paso ausente, en vez de
+    # dejar el hueco callado. El censo esta VACIO desde T-10: V5 y V8 salieron
+    # en T-7b y V4b, V6 y V9 en T-10 (cuando el tope de V9 es de catalogo o
+    # del marco su paso sustituye sin juzgar).
     paso: Optional["PasoDeMemoria"] = None
     estado: Optional[EstadoDeVerificacion] = None
     motivo_no_aplica: str = ""
@@ -6659,6 +6731,14 @@ class LongitudConducto:
     # por no declararse bombeo ni peralte, o una pendiente transversal
     # declarada que el metodo o una longitud declarada dejan sin aplicar.
     avisos: Tuple[str, ...] = ()
+    # --- T-10 --- El paso 7.B.3b del metodo por extremo: el reparto de la
+    # longitud (altura del terraplen en la salida, proyeccion de los taludes
+    # y semilongitudes) que el JSON publicaba y la memoria no. Va APARTE de
+    # `pasos` porque es de 7.B y no del calculo previo a la Fase 4: lo
+    # imprime la geometria del punto que dimensiona (`CompatibilidadGeometrica
+    # .pasos`), no la traza del que no llega a 7.B, cuyo JSON no publica esos
+    # numeros. None en los otros metodos.
+    paso_reparto: Optional["PasoDeMemoria"] = None
 
 
 # ===========================================================================
@@ -7101,6 +7181,16 @@ class CombinacionDeEstabilidad:
     def excentricidad(self) -> float:
         """e = B/2 - x_resultante, m (positiva hacia la punta)."""
         return self.B / 2 - self.x_resultante
+
+    # --- T-10 (correcciones, H7) ---
+    @property
+    def excentricidad_publicable(self) -> Optional[float]:
+        """
+        La excentricidad que las vistas imprimen, o None SIN carga vertical
+        hacia abajo (N <= 0: no hay resultante que excentrar). La regla vive
+        aqui, en el dato, y no repetida en el JSON y en la memoria.
+        """
+        return self.excentricidad if self.N > 0 else None
 
     def factor_de(self, codigo: str) -> float:
         return dict(self.factores).get(codigo, 0.0)

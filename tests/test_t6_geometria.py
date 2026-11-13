@@ -662,15 +662,29 @@ def test_un_metodo_que_burla_la_puerta_lo_rechaza_el_consumidor():
 def test_7B_emite_los_cinco_pasos_con_formula_cita_y_sustitucion():
     ca.establecer_valor_dinamico(CLAVE_METODO, "por_extremo")
     geo = _geometria()
+    # REESCRITO EN T-10, declarandolo: entre 7.B.3 y 7.B.4 va el 7.B.3b, el
+    # reparto por extremo (altura del terraplen en la salida, proyeccion de
+    # los taludes y semilongitudes) que el JSON publicaba y la memoria no.
+    # Los cinco de T-6 siguen, en su orden; la sustitucion del 7.B.3b se
+    # rehace a mano en tests/test_t10_memoria.py.
     assert [p.codigo for p in geo.pasos] == ["7.B.1", "7.B.2", "7.B.3",
-                                             "7.B.4", "7.B.5"]
+                                             "7.B.3b", "7.B.4", "7.B.5"]
     reg = registro.construir()
     for p in geo.pasos:
         assert p.formula.strip() and p.por_que.strip(), p.codigo
         assert p.sustitucion, p.codigo
         assert all(m.procedencia.strip() for m in p.sustitucion), p.codigo
-        assert reg.cita(p.formula_cita_id).pagina_pdf > 0, p.codigo
         assert p.fundamento_id.startswith("F7."), p.codigo
+        if p.codigo == "7.B.3b":
+            # REESCRITO EN T-10 (correcciones, H2): el reparto por extremo
+            # NO atribuye su formula a HDS-5 2.2.4 b., que no la escribe; la
+            # cita va como contexto y la nota dice que el algebra es del
+            # proyecto, la misma que lleva el 7.B.3.
+            assert p.formula_cita_id == "", p.codigo
+            assert "HDS5_3ED.2.2.4#LONGITUD" in p.citas_textuales
+            assert M7.NOTA_ALGEBRA_DE_LA_LONGITUD in p.nota_del_proyecto
+            continue
+        assert reg.cita(p.formula_cita_id).pagina_pdf > 0, p.codigo
 
 
 def test_el_paso_de_la_longitud_se_rehace_con_su_propia_sustitucion():
@@ -690,7 +704,9 @@ def test_el_paso_de_la_longitud_se_rehace_con_su_propia_sustitucion():
     factor = geo.pasos[1]
     assert factor.resultado.valor == pytest.approx(
         1 / math.cos(math.radians(_valor(factor, "esviaje"))), abs=ABS)
-    salida = geo.pasos[3]
+    # REESCRITO EN T-10 (por codigo y no por posicion: entre 7.B.3 y 7.B.4
+    # va ahora el 7.B.3b del reparto por extremo).
+    salida = next(x for x in geo.pasos if x.codigo == "7.B.4")
     assert _valor(salida, "caida") == pytest.approx(
         _valor(salida, "S") * _valor(salida, "L"), abs=ABS)
     assert salida.resultado.valor == pytest.approx(
@@ -754,7 +770,8 @@ def test_el_encaje_a_la_clave_contra_la_cuenta_a_mano():
     esperado = (ANCHO + TALUD * (2 * H_EJE - 2 * c)) / (COS15 - TALUD * S_A01)
     assert geo.longitud_a_la_clave == pytest.approx(esperado, abs=ABS)
     assert geo.longitud_a_la_clave < geo.longitud
-    encaje = geo.pasos[4]
+    # REESCRITO EN T-10: por codigo (el 7.B.3b corre las posiciones).
+    encaje = next(x for x in geo.pasos if x.codigo == "7.B.5")
     assert encaje.formula_cita_id == "HDS5_3ED.3.3.5#ENCAJE"
     assert _valor(encaje, "c") == pytest.approx(c, abs=ABS)
     assert encaje.umbral is None and encaje.veredicto is None   # sin tolerancia
