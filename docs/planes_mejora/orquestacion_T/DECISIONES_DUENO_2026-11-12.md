@@ -77,3 +77,20 @@ Se ACEPTAN, sujetas a lo que diga la auditoría adversarial (si el auditor las r
    `inicio_tramo_cuneta_km` declarado sigue ganando.
 4. **TR de 35 años**: NO confirmado todavía; depende de que el auditor verifique la fila en el PDF (¿es la de cunetas?, ¿da TR o
    riesgo y vida útil?). Si la fuente no lo sostiene, vuelve como pregunta.
+
+## Cuarta sesión — decisiones del dueño del 2026-11-13
+
+### T-7a punto 4 (sustituye a la decisión 4 de arriba, cuya premisa refutó la auditoría) — ~04:35 UTC: «estoy de acuerdo con tu plan»
+- NO se abre sola la puerta de `ancho_derecho_via_m` en T-7a: V5 se detiene antes en el criterio vacío `remanso_derecho_via`,
+  `M5.v5_remanso` no lee el dato (no hay método) y después V8 se detiene en `TR_evento_extremo`.
+- T-7a entra en main con `INF-4.2` e `INF-4.3` **«en parte»** (residual: Fase 9 alcanzable a expediente, ficha T7A-01).
+- **El método de V5 (embalse a nivel, como opción DECLARABLE sin valor por defecto) más la puerta del dato
+  `ancho_derecho_via_m` van como PRIMER PUNTO de T-7b, implementado y auditado con Fable.** Sin el criterio declarado o sin el
+  dato, V5 sigue bloqueando como hoy (ningún resultado del fixture cambia).
+
+### Resoluciones del orquestador comunicadas al dueño el 2026-11-13 04:27 UTC (sin objeción; quedan barribles)
+- T-3: `n_manning_cajon` → [C] fila `concrete_boxes` de HDS-5 Tabla B.1 (0.012, 0.015), con la del MTC como alternativa;
+  `cobertura_minima_cajon` avisa en vez de bloquear (G1 del marco).
+- T-9: `seccion_cuneta` = 0.40 × 1.20 m (Tabla 34 «muy lluviosa», verificada) con Z2 = 1.0 [A]; TR 35 años CONFIRMADO como
+  envolvente (Tabla 02: riesgo 35 %, n = 15 → T ≈ 35.3); obras A como extremo de tramo por DG-2018 304.11, criterio conmutable;
+  consecuencia declarada: VB1 de B-01 NO CUMPLE en el fixture (530 m desde A-02).
