@@ -118,6 +118,12 @@ Fase 9 - Cabezal y aletas (M9) - del proyecto, no del punto
 ALCANCE DE LA CORRIDA
 ==============================================================================
 Alcance declarado: perfil (bandera --alcance; por defecto expediente)
+Fuera del alcance del expediente, por decision declarada:
+  - El armado de la SECCION del marco de concreto de la Familia C no se diseña: el expediente llega al dimensionamiento y a la demanda de la losa superior que entrega la Fase 8; el analisis y el diseño del portico quedan para quien lo arme (ficha T5-07; M8_estructural.demanda_marco)
+  - El cabezal PARALELO a la via no se calcula: en las tres familias el cabezal es normal al eje del conducto, que es lo que supone la hidraulica (ke y cartas del HDS-5); el paralelo queda como alternativa solo para el marco, diferida (ficha T7A-03; M9_cabezal.predimensionar_aleros)
+  - El ancho de la zapata del cabezal no se itera: la geometria la propone la regla de predimensionamiento (o la declara `cabezal_declarado`) y la estabilidad la juzga como llega; la iteracion espera los parametros reales del EMS (ficha T7B-09; M9_cabezal.predimensionar_cabezal)
+  - V7 del marco no pesa el concreto del marco (DC = 0, del lado seguro): se revisara cuando llegue la seccion real del canal de la ANA o de la Junta de usuarios (ficha T3-08; M5_verificaciones.v7_flotacion)
+  - Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la salida) no estan digitalizadas: con la velocidad tomada al tirante critico el contraste con la Tabla N 11 es un INDICADOR que no concluye; se digitalizaran en un trabajo posterior a la cadena (ficha T8-08; M6_proteccion.proteccion_salida)
 Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como bloqueo para el cierre):
   [A-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V5 diferida al expediente (alcance perfil)

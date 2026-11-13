@@ -152,9 +152,9 @@ from src.modulos import M2_material as _M2
 # Los rotulos de alcance viven en modelos.py, no en cli.py: M11 los necesita y
 # no puede importar la CLI --- es la CLI quien importa M11 ---. Ver la nota de
 # su declaracion.
-from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
+from src.modelos import (ALCANCE_DECLARADO, ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
                      AVISO_SIN_ACCESO_DE_MANTENIMIENTO, ContextoCorrida,
-                     ControlGobernante, EstadoDeVerificacion,
+                     ControlGobernante, EstadoDeVerificacion, modo_de,
                      MOTIVO_METODO_NO_EVALUABLE, TipoDeVeredicto)
 
 _reg_M11 = _registro_M11.construir()
@@ -1036,7 +1036,8 @@ def _tabla_diseno(informe: Any) -> str:
     material, hidraulica = resultado.material, resultado.resultado_hidraulico
     filas = [
         _fila([_td("<b>Material</b>"),
-               _td(f"{_esc(material.nombre)} &mdash; "
+               _td(f"{_esc(material.nombre)} (<code>"
+                   f"{_esc(material.tipo.value)}</code>) &mdash; "
                    f"{_esc(rotulo_norma_producto(material))}, EG-2013 Seccion "
                    f"{_esc(material.seccion_eg2013)}")]),
         # --- T-10 --- Lo que la norma de producto dice cubrir (EXT-N-03): el
@@ -2437,8 +2438,16 @@ def _fase_6_ampliada(informe: Any) -> str:
     p = informe.proteccion
     filtro = getattr(p, "filtro", None)
     if filtro is not None:
+        # --- T-10 --- con las citas que lo sostienen, que el JSON publica
+        # (`filtro.citas`) y la memoria no nombraba: numeral y pagina, con
+        # el enlace a su texto en el anexo.
+        citas = "; ".join(
+            _enlace(ancla_de_cita(cita_id), _esc(_cita_como_texto(cita_id)))
+            for cita_id in getattr(filtro, "citas", ()))
         partes.append(f'<div class="nota"><p><b>Filtro.</b> '
-                      f"{_esc(filtro.texto)}</p></div>")
+                      f"{_esc(filtro.texto)}"
+                      + (f" Sostienen el requisito: {citas}." if citas else "")
+                      + "</p></div>")
     e = getattr(informe, "proteccion_entrada", None)
     if e is not None:
         velocidad = ("sin velocidad publicada por la hidraulica"
@@ -2725,6 +2734,21 @@ def _bloque_estructural(r: Any) -> str:
             + avisos + bloque_pasos(r.pasos, "Desarrollo de la Fase 8"))
 
 
+# --- T-10 --- Lo que una etapa sin completar ES, en palabras, al lado del
+# tipo tecnico: «espera un dato» y «metodo no evaluable» no son NO CUMPLE ni
+# CUMPLE, y la memoria tiene que distinguirlos a la vista (PRECISIONES de
+# T-10). Es presentacion: el tipo lo decide `modelos.TipoDeBloqueo`.
+ROTULO_TIPO_DE_BLOQUEO: Dict[str, str] = {
+    "CriterioPendienteError": "espera una declaracion (criterio pendiente)",
+    "DatoFaltanteError": "espera un dato que falta",
+    "DatoInvalidoError": "un dato no puede ser: hay que corregirlo",
+    "LimiteNumericoError": "la aritmetica no cabe con estos datos",
+    "MetodoNoEvaluableError": "metodo no evaluable: hace falta otro metodo",
+    "DisenoNoFactibleError": "ningun escalon cumple: diseño no factible",
+    "DiferidoPorAlcance": "diferido por el alcance de la corrida",
+}
+
+
 def _tabla_bloqueos(bloqueos: Sequence[Any]) -> str:
     """Etapas que no se pudieron completar, con la causa del expediente."""
     if not bloqueos:
@@ -2738,9 +2762,13 @@ def _tabla_bloqueos(bloqueos: Sequence[Any]) -> str:
                        f"{_esc(b.concepto)}<br>Fuente: {_esc(b.fuente)}")
         elif b.campo:
             detalle = f"campo <code>{_esc(b.campo)}</code>: {_esc(b.mensaje)}"
+        rotulo = ROTULO_TIPO_DE_BLOQUEO.get(b.tipo.value, "")
         partes.append(
             f'<div class="bloqueo"><p><b>{_esc(b.fase)}</b> &rarr; '
-            f"{_esc(b.etapa)} <i>({_esc(b.tipo.value)})</i><br>{detalle}</p></div>")
+            f"{_esc(b.etapa)} <i>({_esc(b.tipo.value)})</i>"
+            + (f' <span class="estado-etapa">{_esc(rotulo)}</span>'
+               if rotulo else "")
+            + f"<br>{detalle}</p></div>")
     return "".join(partes)
 
 
@@ -2958,6 +2986,105 @@ def memoria_de_punto(informe: Any) -> str:
     cuerpo = "".join(partes)
     return (cuerpo + _avisos_que_faltan(informe, cuerpo)
             + _tabla_bloqueos(informe.bloqueos) + "</div>")
+
+
+TITULO_CABEZAL_PROYECTO = ("Fase 9 del proyecto: cadena sismica, empuje "
+                           "sismico, recubrimientos y notas")
+ANCLA_CABEZAL_PROYECTO = "fase-9-proyecto"
+
+
+def bloque_cabezal_proyecto(informe: Any) -> str:
+    """
+    --- T-10 --- Lo que la Fase 9 deja en el PROYECTO (`InformeCabezal`) y
+    que la CLI (`cli._lineas_cabezal`) y el JSON (`cli._cabezal_json`)
+    imprimian desde hace tiempo y la memoria no: la cadena sismica eslabon
+    por eslabon --- con la etiqueta, el origen, el criterio y la CONDICION
+    de cada uno, que es lo que la hace revisable ---, el K_AE y el K_A de
+    Mononobe-Okabe, los cabezales por punto, los recubrimientos con la
+    cadena de su lado AASHTO y su paso, las cuantias minimas, las notas del
+    proyecto y sus bloqueos. Una fuente (el objeto), tres vistas. Formato:
+    los numeros vienen del objeto que M9 emitio.
+
+    Vacio si la corrida no llego a la Fase 9 del proyecto (perfil): lo dice
+    entonces el bloque de alcance.
+    """
+    c = getattr(informe, "cabezal", None)
+    if c is None or not (c.cadena is not None or c.mononobe_okabe is not None
+                         or c.por_punto or c.recubrimientos or c.cuantias
+                         or c.notas or c.bloqueos):
+        return ""
+    partes: List[str] = [
+        f'<h3 id="{ANCLA_CABEZAL_PROYECTO}">{_esc(TITULO_CABEZAL_PROYECTO)}'
+        "</h3>"]
+    if c.por_punto:
+        partes.append(
+            "<p>Cabezales por punto: "
+            + ", ".join(f"{_esc(x.id_punto)} ({_esc(x.entrada.tipo)} / "
+                        f"{_esc(x.salida.tipo)}; H_c "
+                        f"{_num(x.entrada.altura_total, FMT_2)} / "
+                        f"{_num(x.salida.altura_total, FMT_2)} m)"
+                        for x in c.por_punto)
+            + " &mdash; la geometria de cada uno va con su punto.</p>")
+    k = c.cadena
+    if k is not None:
+        filas = [_fila(["<th>Eslabon</th>", "<th>Valor</th>",
+                        "<th>Etiqueta</th>", "<th>Concepto</th>",
+                        "<th>Origen</th>", "<th>Condicion de su fuente</th>"])]
+        for e in k.pasos:
+            criterio = (f" (<code>{_esc(e.criterio)}</code>)"
+                        if getattr(e, "criterio", None) else "")
+            filas.append(_fila([
+                _td(f"<b>{_esc(e.simbolo)}</b>"),
+                _td(_num(e.valor), "num"),
+                _td(_etiqueta_html(e.etiqueta)),
+                _td(_esc(e.concepto)),
+                _td(_esc(e.origen) + criterio),
+                _td(_esc(e.condicion) if e.condicion else VACIO)]))
+        partes.append(
+            f"<p><b>Cadena sismica</b> (num. {_esc(k.numeral)}): PGA "
+            f"{_num(k.PGA, FMT_2)} g &rarr; F_pga {_num(k.F_pga, FMT_2)} "
+            f"&rarr; A_s {_num(k.A_s, FMT_2)} g &rarr; k_h0 "
+            f"{_num(k.k_h0, FMT_2)} &rarr; factor del muro "
+            f"{_num(k.factor_muro, FMT_2)} &rarr; k_h {_num(k.k_h, FMT_2)}; "
+            f"k_v {_num(k.k_v, FMT_2)}. Filas de sitio leidas: "
+            f"{_esc(', '.join(k.clases_de_sitio))}; cimentacion en roca: "
+            f"{'si' if k.cimentacion_en_roca else 'no'}.</p>"
+            '<table class="compacta">' + "".join(filas) + "</table>")
+    mo = c.mononobe_okabe
+    if mo is not None:
+        partes.append(f"<p>Mononobe-Okabe del proyecto: K_AE = "
+                      f"{_num(mo.K_AE)}, K_A = {_num(mo.K_A)}.</p>")
+    for r in c.recubrimientos:
+        durabilidad = ""
+        if r.requisitos is not None:
+            q = r.requisitos
+            durabilidad = (
+                f"<br>Durabilidad del concreto: a/c maxima {_esc(q.a_c_max)} "
+                f"(gobierna {_esc(q.gobierna_a_c)}), f'c minimo "
+                f"{_esc(q.fc_min_MPa)} MPa (gobierna {_esc(q.gobierna_fc)}); "
+                f"exposicion a sulfatos «{_esc(q.clase_sulfatos)}».")
+        partes.append(
+            f"<p><b>Recubrimiento «{_esc(r.condicion)}»</b>: "
+            f"{_num(r.adoptado_mm, FMT_2)} mm (gobierna {_esc(r.origen)}, "
+            f"{_esc(r.numeral)}); E.060 {_num(r.e060_mm, FMT_2)} mm, AASHTO "
+            f"{_num(r.aashto_mm, FMT_2)} mm: fila «{_esc(r.situacion)}», "
+            f"categoria de acero «{_esc(r.categoria)}», "
+            f"{_num(r.tabulado_mm, FMT_2)} mm de tabla &times; "
+            f"{_esc(r.factor_ac)} por relacion a/c"
+            + (" (piso de 1.0 in aplicado)" if r.piso_aplicado else "")
+            + f"; {_esc(r.corpus_tabla)}. Factor por a/c: "
+            f"{_esc(r.origen_factor)}.{durabilidad}</p>")
+        if getattr(r, "paso", None) is not None:
+            partes.append(bloque_paso(r.paso))
+    for direccion, cuantia in c.cuantias.items():
+        partes.append(f"<p>Cuantia minima {_esc(direccion)}: "
+                      f"{_num(cuantia, FMT_4)}.</p>")
+    if c.notas:
+        partes.append('<div class="nota">'
+                      + "".join(f"<p>{_esc(n)}</p>" for n in c.notas)
+                      + "</div>")
+    partes.append(_tabla_bloqueos(c.bloqueos))
+    return "".join(partes)
 
 
 TITULO_AVISOS_DEL_PUNTO = "Avisos del punto que no salieron junto a su fase"
@@ -3435,37 +3562,49 @@ def pasos_del_informe(informe: Any) -> Tuple[Any, ...]:
     que si uno se olvida de una rama nueva del informe, el otro lo dice.
     """
     vistos: List[Any] = []
+    for punto in informe.puntos:
+        vistos.extend(pasos_del_punto(punto))
+    for recubrimiento in informe.cabezal.recubrimientos:
+        if getattr(recubrimiento, "paso", None) is not None:
+            vistos.append(recubrimiento.paso)
+    return tuple(vistos)
+
+
+def pasos_del_punto(punto: Any) -> Tuple[Any, ...]:
+    """
+    Los pasos de UN punto, en el orden de `pasos_del_informe` (que desde
+    T-10 es esta travesia punto a punto, mas los recubrimientos del
+    proyecto). La usa tambien el anexo de sensibilidad por punto.
+    """
+    vistos: List[Any] = []
 
     def _anota(paso: Any) -> None:
         if paso is not None:
             vistos.append(paso)
 
-    for punto in informe.puntos:
-        if punto.clasificacion is not None:
-            _anota(getattr(punto.clasificacion.verificacion_luz, "paso", None))
-            _anota(getattr(punto.clasificacion.periodo_retorno, "paso", None))
-        vistos.extend(traza_hidrologia(punto))      # Fase 1-bis (T-1)
-        for _fase, v in punto.verificaciones():
+    if punto.clasificacion is not None:
+        _anota(getattr(punto.clasificacion.verificacion_luz, "paso", None))
+        _anota(getattr(punto.clasificacion.periodo_retorno, "paso", None))
+    vistos.extend(traza_hidrologia(punto))      # Fase 1-bis (T-1)
+    for _fase, v in punto.verificaciones():
+        _anota(getattr(v, "paso", None))
+    for escalon in punto.traza:
+        for v in escalon.verificaciones:
             _anota(getattr(v, "paso", None))
-        for escalon in punto.traza:
-            for v in escalon.verificaciones:
-                _anota(getattr(v, "paso", None))
-            hidraulico = getattr(escalon, "resultado_hidraulico", None)
-            if hidraulico is not None:
-                vistos.extend(hidraulico.pasos)
-        if punto.resultado is not None and \
-                punto.resultado.resultado_hidraulico is not None:
-            vistos.extend(punto.resultado.resultado_hidraulico.pasos)
-        if getattr(punto, "tw_sec13", None) is not None:
-            _anota(getattr(punto.tw_sec13, "paso", None))
-        vistos.extend(traza_durabilidad(punto))
-        # --- T-8 --- todos los pasos de la Fase 6, no solo el de Laushey.
-        vistos.extend(traza_proteccion(punto))
-        vistos.extend(traza_espaciamiento(punto))         # --- T-9 ---
-        vistos.extend(traza_geometria(punto)[0])          # --- T-6 ---
-        vistos.extend(traza_cabezal(punto))               # --- T-7a ---
-    for recubrimiento in informe.cabezal.recubrimientos:
-        _anota(getattr(recubrimiento, "paso", None))
+        hidraulico = getattr(escalon, "resultado_hidraulico", None)
+        if hidraulico is not None:
+            vistos.extend(hidraulico.pasos)
+    if punto.resultado is not None and \
+            punto.resultado.resultado_hidraulico is not None:
+        vistos.extend(punto.resultado.resultado_hidraulico.pasos)
+    if getattr(punto, "tw_sec13", None) is not None:
+        _anota(getattr(punto.tw_sec13, "paso", None))
+    vistos.extend(traza_durabilidad(punto))
+    # --- T-8 --- todos los pasos de la Fase 6, no solo el de Laushey.
+    vistos.extend(traza_proteccion(punto))
+    vistos.extend(traza_espaciamiento(punto))         # --- T-9 ---
+    vistos.extend(traza_geometria(punto)[0])          # --- T-6 ---
+    vistos.extend(traza_cabezal(punto))               # --- T-7a ---
     return tuple(vistos)
 
 
@@ -4166,6 +4305,18 @@ def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
         # --- T-8 --- la Fase 6 imprime sus pasos como bloque desde T-8.
         vistos.extend(traza_proteccion(punto))
         vistos.extend(traza_cabezal(punto))               # --- T-7a ---
+        # --- T-10 --- los de la Fase 8 (`_bloque_estructural`) y los de la
+        # Fase 10 tambien se imprimen como bloque, y faltaban aqui: sus
+        # enlaces a citas y fundamentos apuntaban a fichas que el anexo no
+        # escribia (medido en las corridas de referencia de T-10: 17 anclas
+        # rotas, de T-5 y de T-9).
+        estructural = getattr(punto, "estructural", None)
+        if estructural is not None:
+            vistos.extend(estructural.pasos)
+        vistos.extend(traza_espaciamiento(punto))
+    for recubrimiento in informe.cabezal.recubrimientos:     # --- T-10 ---
+        if getattr(recubrimiento, "paso", None) is not None:
+            vistos.append(recubrimiento.paso)
     return tuple(vistos)
 
 
@@ -4237,6 +4388,12 @@ def anexo_referencias(informe: Any) -> str:
     for fid in fundamentos:
         ids_de_citas.update(_reg_M11.fundamento(fid).citas)
     ids_de_citas.update(u.cita_id for u in umbrales)
+    # --- T-10 --- las citas del requisito de filtro de la Fase 6, que la
+    # memoria enlaza desde el parrafo del filtro (`_fase_6_ampliada`).
+    for punto in informe.puntos:
+        filtro = getattr(getattr(punto, "proteccion", None), "filtro", None)
+        if filtro is not None:
+            ids_de_citas.update(getattr(filtro, "citas", ()))
     citas = sorted(ids_de_citas)
     _exigir_anclas_inyectivas(fundamentos, ancla_de_fundamento)
     _exigir_anclas_inyectivas(citas, ancla_de_cita)
@@ -4295,7 +4452,88 @@ def anexo_referencias(informe: Any) -> str:
             "<dt>Frase que lo fija</dt><dd>"
             + _enlace(ancla_de_cita(u.cita_id), _esc(_cita_como_texto(u.cita_id)))
             + f"</dd>{criterio}</dl></div>")
+    partes.append(anexo_sensibilidad(informe))
     return "".join(partes)
+
+
+TITULO_ANEXO_SENSIBILIDAD = ("A.4 Criterios [A] adoptados y su sensibilidad, "
+                             "por punto")
+
+
+def criterios_A_por_punto(informe: Any) -> Dict[str, Tuple[str, ...]]:
+    """
+    --- T-10 --- {clave [A]: (puntos cuyo calculo la nombra, ...)}, leido de
+    lo que cada punto emitio: el `criterio_aplicado` de sus verificaciones y
+    de los umbrales de sus pasos, y la `clave_criterio` de sus elecciones.
+    Es una SELECCION de lo emitido, no una cuenta nueva: el contexto de la
+    corrida registra los usos del proceso entero, no por punto.
+    """
+    por_clave: Dict[str, List[str]] = {}
+
+    def _anota(clave: Optional[str], id_punto: str) -> None:
+        if not clave:
+            return
+        declarado = ca.CRITERIOS.get(clave)
+        if declarado is None or declarado.etiqueta != "A":
+            return
+        puntos = por_clave.setdefault(clave, [])
+        if id_punto not in puntos:
+            puntos.append(id_punto)
+
+    for p in informe.puntos:
+        id_punto = p.punto.id
+        for _fase, v in verificaciones_publicadas(p):
+            _anota(getattr(v, "criterio_aplicado", None), id_punto)
+    for p in informe.puntos:
+        id_punto = p.punto.id
+        for paso in pasos_del_punto(p):
+            umbral = getattr(paso, "umbral", None)
+            if umbral is not None:
+                _anota(umbral.criterio_aplicado, id_punto)
+            for e in getattr(paso, "elecciones", ()):
+                _anota(e.clave_criterio, id_punto)
+    return {k: tuple(v) for k, v in sorted(por_clave.items())}
+
+
+def anexo_sensibilidad(informe: Any) -> str:
+    """
+    --- T-10 --- El anexo de los criterios [A] que la corrida USO, con su
+    valor efectivo, su ventana (`sensibilidad`), su modo de resolucion y los
+    puntos que lo nombran (T-10 punto 4). NO RECALCULA NADA: la ventana es la
+    que la ficha declara, y el barrido que la recorre es PF-3
+    (`cli.py --barrido CLAVE=v1,v2`), que no corre dentro de la memoria. La
+    ficha entera de cada criterio esta en el bloque 3, enlazada.
+    """
+    contexto = ContextoCorrida.de(informe)
+    usados = [k for k in sorted(contexto.criterios_usados)
+              if ca.CRITERIOS.get(k) is not None
+              and ca.CRITERIOS[k].etiqueta == "A"]
+    if not usados:
+        return ""
+    por_punto = criterios_A_por_punto(informe)
+    recorribles = ca.parametros_sensibilizables(solo_numericos=True)
+    filas = [_fila(["<th>Criterio [A]</th>", "<th>Valor efectivo</th>",
+                    "<th>Ventana (sensibilidad)</th>", "<th>Resolucion</th>",
+                    "<th>Puntos que lo nombran</th>"])]
+    for clave in usados:
+        c = _criterio_efectivo(clave, contexto)
+        ventana = (_valor_legible(c.sensibilidad) if c.sensibilidad else
+                   '<span class="pendiente">sin ventana declarada</span>')
+        if clave in recorribles:
+            ventana += " <small>(barrible: <code>--barrido</code>)</small>"
+        filas.append(_fila([
+            _td(_enlace(ancla_de_criterio(clave), f"<code>{_esc(clave)}</code>")),
+            _td(_valor_legible(c.valor)),
+            _td(ventana),
+            _td(_esc(modo_de(c.resolucion).value) if c.resolucion is not None
+                else VACIO),
+            _td(", ".join(_esc(x) for x in por_punto.get(clave, ()))
+                or "<i>del proyecto</i>")]))
+    return (f"<h3>{_esc(TITULO_ANEXO_SENSIBILIDAD)}</h3>"
+            "<p>Las adopciones del proyectista que esta corrida invoco, con la "
+            "ventana dentro de la que se eligieron. Se imprime la ventana; el "
+            "barrido que la recorre es aparte (PF-3) y no se ejecuta aqui.</p>"
+            '<table class="compacta">' + "".join(filas) + "</table>")
 
 
 # ===========================================================================
@@ -4359,6 +4597,16 @@ def bloque_alcance(informe: Any) -> str:
     conteo = _fila([_td("<b>Etapas diferidas al expediente</b>"),
                     _td(str(len(diferidos)), "num")])
     tabla = ('<table class="compacta">' + encabezado + conteo + "</table>")
+    # --- T-10 --- lo que el EXPEDIENTE no hace por decision del dueño: la
+    # misma lista que la CLI y el JSON (`modelos.ALCANCE_DECLARADO`), dicha
+    # como alcance y no como omision, con su ficha y su simbolo.
+    tabla += ('<div class="nota"><p><b>Fuera del alcance del expediente, por '
+              "decision declarada:</b></p><ul>"
+              + "".join(f"<li>{_esc(a.texto)} (ficha <code>{_esc(a.ficha)}"
+                        f"</code> de <code>docs/decisiones_diferidas.md</code>;"
+                        f" <code>{_esc(a.simbolo)}</code>).</li>"
+                        for a in ALCANCE_DECLARADO)
+              + "</ul></div>")
 
     if not diferidos:
         return tabla + (
@@ -4559,6 +4807,10 @@ def memoria_html_por_partes(
             yield html_punto
             if progreso is not None:
                 progreso(ETAPA_PUNTO, i, n_puntos)
+        # --- T-10 --- la Fase 9 del PROYECTO, detras de los puntos y dentro
+        # de la seccion 1: la cadena sismica, K_AE y los recubrimientos que
+        # la CLI y el JSON imprimian y la memoria no.
+        yield bloque_cabezal_proyecto(informe)
 
     valores = {
         "proyecto": _esc(proyecto) or "(proyecto no declarado)",

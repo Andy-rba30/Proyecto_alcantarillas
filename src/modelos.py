@@ -2447,6 +2447,61 @@ AVISO_SIN_ACCESO_DE_MANTENIMIENTO = (
     "declarar la limitacion")
 
 
+
+# --- T-10 --- EL ALCANCE DECLARADO DEL EXPEDIENTE: lo que el programa NO hace
+# por DECISION DEL DUEÑO, dicho como alcance y no como omision (PRECISIONES
+# de T-10). Una fuente y tres vistas: la CLI (`cli._lineas_alcance`), el
+# JSON (`alcance.declarado`) y la memoria (`M11.bloque_alcance`). Vive aqui
+# por la misma razon que el aviso de arriba: M11 no importa del servicio.
+# Cada entrada nombra la ficha de `docs/decisiones_diferidas.md` donde esta
+# el argumento y el simbolo del codigo donde vive lo que si se hace.
+@dataclass(frozen=True)
+class AlcanceDeclarado:
+    clave: str
+    texto: str
+    ficha: str
+    simbolo: str
+
+
+ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
+    AlcanceDeclarado(
+        clave="armado_seccion_marco",
+        texto=("El armado de la SECCION del marco de concreto de la Familia C "
+               "no se diseña: el expediente llega al dimensionamiento y a la "
+               "demanda de la losa superior que entrega la Fase 8; el "
+               "analisis y el diseño del portico quedan para quien lo arme"),
+        ficha="T5-07", simbolo="M8_estructural.demanda_marco"),
+    AlcanceDeclarado(
+        clave="cabezal_paralelo_a_la_via",
+        texto=("El cabezal PARALELO a la via no se calcula: en las tres "
+               "familias el cabezal es normal al eje del conducto, que es lo "
+               "que supone la hidraulica (ke y cartas del HDS-5); el paralelo "
+               "queda como alternativa solo para el marco, diferida"),
+        ficha="T7A-03", simbolo="M9_cabezal.predimensionar_aleros"),
+    AlcanceDeclarado(
+        clave="iteracion_ancho_zapata_cabezal",
+        texto=("El ancho de la zapata del cabezal no se itera: la geometria "
+               "la propone la regla de predimensionamiento (o la declara "
+               "`cabezal_declarado`) y la estabilidad la juzga como llega; "
+               "la iteracion espera los parametros reales del EMS"),
+        ficha="T7B-09", simbolo="M9_cabezal.predimensionar_cabezal"),
+    AlcanceDeclarado(
+        clave="flotacion_marco_sin_peso_propio",
+        texto=("V7 del marco no pesa el concreto del marco (DC = 0, del lado "
+               "seguro): se revisara cuando llegue la seccion real del canal "
+               "de la ANA o de la Junta de usuarios"),
+        ficha="T3-08", simbolo="M5_verificaciones.v7_flotacion"),
+    AlcanceDeclarado(
+        clave="tirante_de_borde_hec14",
+        texto=("Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la "
+               "salida) no estan digitalizadas: con la velocidad tomada al "
+               "tirante critico el contraste con la Tabla N 11 es un "
+               "INDICADOR que no concluye; se digitalizaran en un trabajo "
+               "posterior a la cadena"),
+        ficha="T8-08", simbolo="M6_proteccion.proteccion_salida"),
+)
+
+
 class ViaDelTW(str, Enum):
     """
     Por cual de los cuatro caminos de Sec. 1.3 se obtuvo el TW de un punto.

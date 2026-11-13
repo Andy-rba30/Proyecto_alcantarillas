@@ -275,6 +275,7 @@ from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          ResultadoPunto, TipoDeVeredicto, Verificacion)
 from src.modelos import (ORIGEN_DIMENSION_DECLARADA,   # --- T-7a ---
                          ORIGEN_DIMENSION_DERIVADA)
+from src.modelos import ALCANCE_DECLARADO               # --- T-10 ---
 from src.modulos import M2_material as M2
 from src.modulos import M5_verificaciones as M5
 from src.modulos.M8_estructural import (CODIGO_PASO_HMAX_TIPO4,
@@ -1220,7 +1221,12 @@ def _informe_json_base(informe: Informe, bloqueantes: Any,
         "alcance": {
             "nivel": informe.alcance,
             "diferidos": [{"punto": id_punto, **_bloqueo_json(b)}
-                          for id_punto, b in informe.diferidos()]},
+                          for id_punto, b in informe.diferidos()],
+            # --- T-10 --- lo que el expediente no hace por decision del
+            # dueño (`modelos.ALCANCE_DECLARADO`), en las tres vistas.
+            "declarado": [{"clave": a.clave, "texto": a.texto,
+                           "ficha": a.ficha, "simbolo": a.simbolo}
+                          for a in ALCANCE_DECLARADO]},
         "puntos": [_punto_json(p) for p in informe.puntos],
         "cabezal": _cabezal_json(informe.cabezal),
         "datos_sitio": {
@@ -1956,6 +1962,11 @@ def _lineas_alcance(informe: Informe) -> List[str]:
     out = _titulo("ALCANCE DE LA CORRIDA")
     out.append(f"Alcance declarado: {informe.alcance} (bandera --alcance; "
                f"por defecto {ALCANCE_EXPEDIENTE})")
+    # --- T-10 --- lo que el expediente NO hace por decision del dueño, la
+    # misma lista que el JSON y la memoria (`modelos.ALCANCE_DECLARADO`).
+    out.append("Fuera del alcance del expediente, por decision declarada:")
+    for a in ALCANCE_DECLARADO:
+        out.append(f"{SANGRIA}- {a.texto} (ficha {a.ficha}; {a.simbolo})")
     diferidos = informe.diferidos()
     if not diferidos:
         out.append("Ninguna etapa diferida por alcance: la corrida ejecuto "
