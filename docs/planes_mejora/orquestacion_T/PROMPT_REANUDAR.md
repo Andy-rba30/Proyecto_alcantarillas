@@ -1,4 +1,4 @@
-# Prompt para reanudar la cadena T en una sesión NUEVA (copiar tal cual) — actualizado 2026-11-13 19:15 UTC
+# Prompt para reanudar la cadena T en una sesión NUEVA (copiar tal cual) — actualizado 2026-11-13 19:45 UTC
 
 ```text
 Eres la sesión orquestadora de la «Cadena de prompts T» (ábrela con el modelo Opus 5.5: orquestar no necesita Fable y cada ronda del orquestador lo gasta) sobre Andy-rba30/Proyecto_alcantarillas, que se interrumpió. Retómala donde quedó.
@@ -9,10 +9,11 @@ Eres la sesión orquestadora de la «Cadena de prompts T» (ábrela con el model
 
 3. Instala dependencias (requirements.txt, requirements-dev.txt, openpyxl), exporta NORMAS_DIR=/home/user/andy-rba30/normas. El par de origin/main (14f6138, T-0 a T-10) ya lo confirmó la quinta sesión: 6337 passed / 23 skipped / 6360 collected con NORMAS_DIR («PyMuPDF sí · Tk no»; no hay tkinter); no hace falta volver a medirlo salvo que origin/main haya cambiado.
 
-4. Estado al 13-nov 19:15 UTC (sexta sesión): la auditoría Fable de T-11 se LANZÓ a las 19:12 (si docs/planes_mejora/orquestacion_T/AUDITORIA_T-11.md existe en tesis/orquestacion-estado, ya llegó: no la repitas; si no existe, relánzala). T-11 FASE A TERMINADA con Opus en la rama tesis/T-11 (c774035; 6387 passed / 23 skipped / 1 xfailed, collected 6411; diámetros/secciones/materiales/HW movidos: ninguno). Falta, en serie:
-   a) Auditoría adversarial de T-11 con FABLE (sólo lectura), con ENCARGO_AUDITORIA_T-11_fable.md tal cual (rutas de la sesión nueva). Fable está disponible desde las 19:00 UTC del 13-nov (14:00 de Perú).
-   b) Correcciones: con FABLE los hallazgos marcados [FÓRMULA/CITA] y el defecto de diagnóstico T11-03 (DisenoNoFactibleError sin delta_rasante_m cuando el escalón no cabe bajo la subrasante; test xfail de tests/test_t11_validacion_integral.py), commits wip en tesis/T-11; después, con OPUS, los hallazgos [RESTO] y la integración en main (ENCARGO_COMUN_CORRECCIONES_E_INTEGRACION.md, PARTE 2; base 14f6138; un commit tesis(T-11); tracker: INF-0.5 cerrado si la auditoría no lo refuta, INF-3.4.3, INF-3.4.4 e INF-3.4.6 cerrados por T-7b si la auditoría lo confirma, notas en INF-3.2.2 e INF-5.1.8).
-   c) T-12 con OPUS (ENCARGO_T-12.md + PRECISIONES_T-12.md; worktree desde origin/main con T-11): FASE A → auditoría corta con Opus → correcciones e integración. Las dos vistas de la memoria ENTRAN en T-12 si el semanal de todos los modelos tiene ≥ 8 puntos libres al lanzarlo (si no, ficha y lote posterior).
+4. Estado al 13-nov 19:45 UTC (sexta sesión): T-11 FASE A en tesis/T-11 (c774035). La auditoría Fable de T-11 YA LLEGÓ (AUDITORIA_T-11.md: AJUSTADO, 1 ALTA, 6 MEDIA, 7 BAJA, todos [RESTO]; no la repitas). Falta, en serie:
+   a) Corrección de T11-03 (H4) con FABLE: lanzada a las 19:45 con ENCARGO_T-11_T11-03_fable.md (commits «wip(T-11): T11-03 …» en tesis/T-11). Si en origin/tesis/T-11 no hay un commit de T11-03 terminado (mira git log y si existe INFORME_T-11_T11-03.md en la carpeta de orquestación), relánzala con ese encargo («continúa desde lo que haya»).
+   b) Cierre de T-11 con OPUS: ENCARGO_T-11_cierre.md (hallazgos H1–H3, H5–H8, H10–H14 con las resoluciones del orquestador + integración en main; base 14f6138; un commit tesis(T-11)).
+   c) T-12 con OPUS (ENCARGO_T-12.md + PRECISIONES_T-12.md; worktree desde origin/main con T-11): FASE A → auditoría corta con Opus → correcciones e integración. Las dos vistas de la memoria ENTRAN en T-12 si el semanal de todos los modelos tiene ≥ 8 puntos libres al lanzarlo (a las 19:29 estaba en 3 %).
+   Preguntas mías pendientes de tu respuesta (no bloquean): H9 de la auditoría (poner HW_salida_m del JSON en null cuando el perfil sustituye la aproximación: mueve un HW publicado de la línea base; recomendación: sí, en T-12 o en el lote posterior) y un juego de cuencas coherente para validar «caudal calculado → diseño» (recomendación: lote posterior).
 
 5. Reparto de modelos: Opus 5.5 en esfuerzo extra para todo (implementación, correcciones medias y bajas, integraciones, T-12); Fable SÓLO para la auditoría adversarial de T-11 y para corregir lo que una auditoría encuentre fuera de lugar en fórmulas o citas (y T11-03). Úsalo sólo cuando sea necesario.
 
