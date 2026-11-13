@@ -127,3 +127,14 @@ esas correcciones de los dos cierres: T-7b — cota del nivel freático (H1), V5
 presión (H3) (la cuña ya la aprobó el auditor de T-7c); T-7c — momento de pantalla y alero (H1), k_h0 para el armado (H2),
 fisuración 5.6.7 (fórmula nueva), d_v acotado, modificador η en el cabezal. Si encuentra algo, lo corrige FABLE directamente
 (commit propio `tesis(T-7): …` sobre main, con el ritual). T-10 arranca en paralelo (no toca cálculo).
+
+### Decisiones del dueño del 2026-11-13 ~17:20 UTC — «está bien, sigamos con lo que recomiendas»
+- **T-10**: se ACEPTAN los techos de tamaño remedidos (107.5 KB y 31.5 páginas por punto); V9 NO emite veredicto cuando el tope es
+  de catálogo o de la progresión del marco (informativo, con su origen); la corrida con hidrología de prueba para que la Fase
+  1-bis entre en el índice de fórmulas se hace en T-11.
+- **T-12 (a replantear al llegar)**: recomendación aceptada en principio — dos vistas de la misma corrida: memoria RESUMIDA para
+  imprimir (resultados, veredictos, avisos y criterios adoptados por punto) y memoria COMPLETA como anexo digital. Sin cálculo.
+- **T-11**: esquema híbrido — implementa Opus, audita Fable (adversarial, centrado en los juicios de validación), y lo que toque
+  fórmulas o citas lo corrige Fable. (El dueño preguntó por hacerlo entero con Fable; se le explicó la diferencia y siguió la
+  recomendación.)
+- Confirmado también (15:15): el piso de la zapata armada por E.060 15.7 (0.37 → 0.404 m) aplicado en la verificación de T-7.
