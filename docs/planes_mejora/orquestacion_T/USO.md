@@ -109,3 +109,4 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795201200 = vie
 | 2026-11-13 21:16 | s/d | **10 %** | s/d (10 % a las 20:30) | cierre de T-11 con Opus en curso |
 | 2026-11-13 21:43 | s/d | s/d | s/d | T-11 en main (`f77c5d4`; cierre Opus ≈ 0.78 M tokens). T-12 FASE A lanzada con Opus a las 21:50 |
 | 2026-11-13 22:44 | s/d | s/d (10 % a las 21:16) | s/d | T-12 FASE A terminada (Opus ≈ 0.72 M tokens); auditoría corta de T-12 lanzada con Opus |
+| 2026-11-13 23:06 | s/d | s/d | s/d | auditoría corta de T-12 llegada (Opus ≈ 0.42 M tokens); cierre de T-12 lanzado con Opus (agente de FASE A reanudado) |
