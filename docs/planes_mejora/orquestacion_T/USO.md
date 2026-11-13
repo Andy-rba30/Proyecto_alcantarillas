@@ -83,3 +83,4 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795107600 = jue
 | 2026-11-13 05:19 | s/d | 42 % | s/d | T-3 en main (`6c25f1d`, cierre con Opus ≈ 0.75 M tokens); T-9 integrando (Opus); T-7a con correcciones hechas |
 | 2026-11-13 05:58 | s/d | s/d (42 % a las 05:19) | s/d | T-9 en main (`c654a16`); T-7a integrando (Opus) |
 | 2026-11-13 06:23 | s/d | s/d | s/d | T-7a en main (`250c972`): lote 2 completo. Se lanza T-7b FASE A con Fable |
+| 2026-11-13 06:27 | s/d | **46 %** | **21 %** | par de `250c972` confirmado por el orquestador: 5690 / 19 / 5709. Fable: 12 → 21 % en 2.5 h (auditoría de T-3 + orquestador); T-7b FASE A recién lanzada con Fable |
