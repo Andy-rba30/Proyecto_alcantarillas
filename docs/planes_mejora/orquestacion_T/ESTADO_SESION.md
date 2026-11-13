@@ -1,6 +1,6 @@
 # Estado de la cadena T — punto de reanudación (se reescribe en cada guardado)
 
-Para reanudar en una sesión NUEVA: abrir `Proyecto_alcantarillas` (escritura), `Normas` (lectura) y `Cotas-esviaje-alcantarillas`
+**Prompt de continuación al día: `PROMPT_REANUDAR.md` (misma carpeta).** Para reanudar en una sesión NUEVA: abrir `Proyecto_alcantarillas` (escritura), `Normas` (lectura) y `Cotas-esviaje-alcantarillas`
 (lectura; el INFORME está en su rama `claude/serene-mayer-88a2o0`). Leer, en la rama `tesis/orquestacion-estado`, carpeta
 `docs/planes_mejora/orquestacion_T/`: este archivo, `ORQUESTACION.md` (convenciones que recibe cada agente; sus rutas de
 scratchpad son de la sesión vieja: usar las de la nueva), `NOTAS_ORQUESTADOR.md`, `AUDITORIAS_PENDIENTES.md` y los dos dictámenes.
