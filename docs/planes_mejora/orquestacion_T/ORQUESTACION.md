@@ -171,3 +171,34 @@ incluido push a `origin/main` y medición del par sobre ese árbol.
   `/tmp/claude-0/-home-user-Proyecto-alcantarillas/003c3043-1fc3-5405-8650-52c813ca2100/scratchpad/INFORME_T-n_<fase>.md`
   y devuelve al orquestador un resumen de MENOS DE 400 PALABRAS con: IDs (entero / en parte / no), tests nuevos y par medido,
   números movidos («diámetros movidos: ninguno» o la lista), diferidos, SHA y rama, paradas para el dueño.
+
+## ENMIENDA DE LA CUARTA SESIÓN (2026-11-13) — gana sobre TODO lo de arriba donde discrepe
+
+- **Base**: `origin/main` = `e78a4e7` (T-0, T-2, T-4, T-1, T-6, T-8, T-5 y las correcciones de T-8 integrados). Par de referencia
+  con `NORMAS_DIR`: **5230 passed / 16 skipped / 5246 collected** (sin `NORMAS_DIR`: 5212 / 34). 109 criterios, 34 sin valor,
+  `CLAVES_EXTERNAS` 18. `docs/decisiones_diferidas.md` tiene ocupadas las Partes hasta la XLVI (T-5; la XLV es T-8 con T8-01..12).
+- **Rutas de ESTA sesión** (las de arriba, con `003c3043-…`, ya no existen):
+  - carpeta de orquestación (este archivo, PRECISIONES, INFORMES de FASE A, DECISIONES, auditorías): `ORQ` =
+    `/home/user/wt/estado/docs/planes_mejora/orquestacion_T/` (SÓLO LECTURA para los agentes: la escribe el orquestador);
+  - scratchpad: `SP` = `/tmp/claude-0/-home-user-Proyecto-alcantarillas/1cd08434-aed4-5109-98e7-ccedca5437f0/scratchpad/`
+    (temporales en `SP/T-n/` o `SP/T-n-aud/`; informes en `SP/INFORME_T-n_<fase>.md` / `SP/AUDITORIA_T-n.md`);
+  - INFORME y script QGIS: `/home/user/andy-rba30/cotas-esviaje-alcantarillas/`; PDF: `/home/user/andy-rba30/normas/normas/`
+    (`export NORMAS_DIR=/home/user/andy-rba30/normas`);
+  - worktrees: `/home/user/wt/T-3`, `/home/user/wt/T-9`, `/home/user/wt/T-7a` (ramas `tesis/T-n`, base `df1b23c`, FASE A hecha);
+    `/home/user/wt/main` = `origin/main` de consulta; `/home/user/Proyecto_alcantarillas` es del orquestador.
+- **Pie de TODOS los commits de esta sesión** (sustituye al de arriba):
+
+  ```
+  Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+  Claude-Session: https://claude.ai/code/session_01Jteyqg5CzW7hzPFvqiat9M
+  ```
+
+- **Decisiones del dueño del 2026-11-12** (`ORQ/DECISIONES_DUENO_2026-11-12.md`): son decisiones tomadas para T-3, T-9 y T-7a;
+  se aplican, no se vuelven a preguntar. Sigue ganando la fuente primaria y **ningún diámetro, sección ni material adoptado del
+  fixture se mueve** (A-01 y A-02 concreto Ø 0.90; B-01; C-01 marco 1.20 × 0.90 donde dimensiona).
+- **4 CPU compartidas**: la suite entera (~5 min sola) se corre lo imprescindible; los auditores NO la corren entera (el
+  implementador ya la midió y la integración la remide): tests afectados y mutación acotada.
+- **Lecciones de T-5 y de las correcciones de T-8** (además de las de arriba): un punto al que sólo le falta un DATO no es «no
+  factible» (se relanza el `DatoFaltanteError`); una decisión del dueño cuya premisa contradice el PDF NO se aplica tal cual: se
+  deja lo que la fuente sostiene y se reporta; los tests que cambian de verdad se reescriben DECLARÁNDOLO (qué pasaba, qué pasa,
+  por qué), nunca en silencio; el rojo se mide con el archivo final contra la base; `/dev/null` nunca como destino de `--json`.
