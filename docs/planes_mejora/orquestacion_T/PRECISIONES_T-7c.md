@@ -44,3 +44,18 @@ Reglas de siempre: PARADA (c) (ningún diámetro, sección, material ni HW del f
 `ErrorProyecto` y como `Bloqueo` del punto; nivel EXPEDIENTE; avisos por `InformePunto.avisos()`; M11 sin aritmética; dorados a
 mano; tests primero en rojo o rojo medido y declarado; mutación con el arnés sobre lo nuevo; ruta real de expediente con los
 datos de prueba rotulados de T-7b.
+
+## Añadido al lanzar (2026-11-13): base y régimen
+- **Base**: `origin/main` = `451a10a` (T-7b integrado; par con `NORMAS_DIR` 5979 passed / 23 skipped / 6002 collected; sin él
+  5961 / 41). Worktree `/home/user/wt/T-7c`, rama `tesis/T-7c`.
+- **Régimen para el DISEÑO DE RESISTENCIA de los elementos (decisión delegada por el dueño: «sigue con tus recomendaciones»)**:
+  se ARMA con **K0** (muro que no puede ceder: el cabezal es monolítico con el barril y con los aleros; AASHTO 11.6.5.4 y su
+  comentario: verifica el literal y su carácter) como valor de archivo de un criterio [A] PROPIO de la resistencia de los
+  elementos, con `cedente` (K_A / K_AE, lo que entrega hoy la interfaz) como alternativa barrible e IMPRESA al lado como
+  contraste. La estabilidad externa de T-7b NO cambia (sigue con K_A, hipótesis declarada en su criterio). La interfaz
+  `solicitaciones` ya trae `K0` y `K0_sobre_K_A` por sección: di exactamente cómo escalas (qué parte de V_u y M_u es empuje de
+  tierra y cuál no: el peso, la sobrecarga viva y el agua no se multiplican por el cociente a ciegas) y fíjalo con un dorado a
+  mano. En sismo no inventes un K0 sísmico: di qué sostiene la fuente y, si no da método, arma el Evento Extremo con lo que la
+  interfaz entrega y avísalo.
+- El dueño confirmó además: NO se itera el ancho de la zapata (se espera al EMS real); el cabezal de la regla puede no pasar
+  estabilidad y se arma igual, diciéndolo.
