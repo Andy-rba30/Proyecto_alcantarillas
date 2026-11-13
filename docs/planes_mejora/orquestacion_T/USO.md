@@ -93,3 +93,4 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795107600 = jue
 | 2026-11-13 15:15 | s/d | s/d | s/d (est. ~70 %) | verificador Fable terminado (≈ 0.37 M tokens); corrección de sus 3 defectos lanzada con Fable; T-10 FASE A (Opus) en curso |
 | 2026-11-13 15:55 | s/d | **76 %** (aviso de la plataforma al pasar 75 %) | **68 %** | T-7 verificación en main (`2265d90`; verificador ≈ 0.37 M + corrección ≈ 0.52 M tokens Fable). T-10 FASE A (Opus) en curso. Quedan T-10, T-11, T-12 con Opus: el límite que aprieta es el de todos los modelos |
 | 2026-11-13 16:22 | s/d | s/d (76 % a las 15:55) | s/d (68 %) | T-10: FASE A (Opus ≈ 0.85 M tokens) y auditoría corta (Opus ≈ 0.34 M) hechas; correcciones e integración en curso |
+| 2026-11-13 16:40 | s/d | **78 %** | s/d (68 % a las 15:55) | T-10 en main (`14f6138`); T-11 FASE A lanzada con Opus |
