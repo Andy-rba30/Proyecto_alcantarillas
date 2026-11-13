@@ -6565,7 +6565,7 @@ del fixture se mueve.
 
 # Parte LII (provisional: se renumera al integrar) — Lo que T-10 de la cadena T dejó escrito: la memoria M11 completa
 
-T-10 (2026-11-13, FASE A sobre `2b13dc1`) no calcula nada nuevo: hace que la memoria HTML
+T-10 (2026-11-13, FASE A sobre `2265d90`, rebasada desde `2b13dc1`) no calcula nada nuevo: hace que la memoria HTML
 imprima lo que la CLI y el JSON ya publicaban, sin repetir lo idéntico, y regenera el índice
 de fórmulas con corridas que sí dimensionan. Cierra `INF-3.4.7` («la Fase 9 no aparece en la
 memoria HTML») e `INF-4.7`, y lo que la cadena llama `INF-5.1.9` (canónico `INF-5.1.10`). El
@@ -6577,7 +6577,7 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
 - **Qué se difirió:** el objetivo del dictamen de EXT-8 para la memoria por punto. Medido con
   el método de `tests/test_ext8_rendimiento_gui.py` (coste marginal, cuatro puntos contra uno,
   a expediente con las entradas ampliadas y las declaraciones de la suite): **113.99 KB y
-  32.33 páginas por punto en la base `2b13dc1`; 107.04 KB y 31.00 páginas con T-10** (los
+  32.33 páginas por punto en la base `2265d90` (las mismas que en `2b13dc1`); 107.04 KB y 31.00 páginas con T-10** (los
   techos de `KB_POR_PUNTO_MAX` y `PAGINAS_POR_PUNTO_MAX` quedan pegados a la medida). La de
   perfil, sin techo: 149.96 → 141.04 KB por punto. Lo fijo sube (un punto: 104 → 118
   páginas) porque entra la Fase 9 del proyecto, el alcance declarado, el anexo A.4 y tres
@@ -6693,7 +6693,7 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
 
 - **Cerrado (T-10):** `tests/test_t10_memoria.py` no se escribió en rojo con
   `xfail(strict=True)`: el censo tenía que medirse antes de saber qué fijar. El rojo se
-  midió con el archivo final sobre un árbol exportado de `2b13dc1` (el número, en el informe
+  midió con el archivo final sobre un árbol de `2265d90` (el número, en el informe
   de la FASE A).
 - **Por qué:** el censo es el entregable; los tests lo fijan.
 - **Qué haría falta:** nada.

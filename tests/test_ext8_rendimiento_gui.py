@@ -170,7 +170,7 @@ CORRIDAS_IMPORTTIME = 3
 # receptora de B-01 no mueve el segundo decimal. (En la FASE A, medida sobre
 # `df1b23c`, el techo de paginas habia subido a 22 por un cambio de cortes de
 # pagina de la memoria de 1 punto; sobre el arbol fusionado no se reproduce.)
-# T-10 (2026-11-13, FASE A sobre `2b13dc1`; la memoria M11 completa) LOS
+# T-10 (2026-11-13, FASE A sobre `2265d90`; la memoria M11 completa) LOS
 # RECONCILIA, que es lo que los cinco parrafos de arriba le dejaban: medidos
 # con este mismo metodo y con las declaraciones de la suite, 113.99 KB y
 # 32.33 paginas por punto en la base (104 y 201 paginas con 1 y 4 puntos) y

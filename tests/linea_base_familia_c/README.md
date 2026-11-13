@@ -1392,7 +1392,7 @@ con los datos DE PRUEBA de T-7b (`tests/test_t7_verificacion.py`): la zapata de 
 cabezales pasa de 0.37 a 0.4041 m, las doce filas E1 a E3 del marco LRFD se mueven sin
 cambiar ningún veredicto, A8 pasa a cumplir y el talón de salida a Ø 1/2" @ 0.15.
 
-## T-10 en su rama (2026-11-13, FASE A sobre `2b13dc1`): la memoria completa; regenerada y medida contra la base
+## T-10 en su rama (2026-11-13, FASE A sobre `2265d90`): la memoria completa; regenerada y medida contra la base
 
 T-10 no calcula nada nuevo: hace que la memoria imprima lo que la CLI y el JSON ya
 publicaban, quita lo que salía repetido y declara el alcance. Lo que cambia en esta línea
@@ -1403,7 +1403,7 @@ base, clasificado:
   pasa de `null` a `"cumple"` en los puntos dimensionados, porque las tres ganan
   `PasoDeMemoria` (su `cumple` ya era `true`; en el marco de C-01, V9 sigue en `null`: su
   tope es la progresión [A] y el paso no juzga). **Con el comparador de E-B** contra los
-  cuatro JSON de `2b13dc1`: `informe_expediente.json` e `informe_rama_error.json` IGUALES;
+  cuatro JSON de `2265d90`: `informe_expediente.json` e `informe_rama_error.json` IGUALES;
   `informe_familia_c.json` 8 diferencias y `informe_perfil_ancho.json` 6, todas
   `V4b/V6/V9.veredicto` de `None` a `'cumple'`; **0 no comparables**; ningún bloque de
   diseño cambia.

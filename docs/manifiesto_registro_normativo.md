@@ -965,6 +965,7 @@ línea que se pueda romper.
 | `HDS5_3ED.2.2.5#NO_EXCEDER` | 2.2.5 | «Allowable Headwater» | pág. impresa **2.9** · PDF 71 | recomendacion | 2026-11-13 · texto |
 | `HDS5_3ED.2.2.5a#COTA_CRITICA` | 2.2.5 a. | «Allowable Headwater» | pág. impresa **2.10** · PDF 72 | permiso | 2026-11-13 · texto |
 | `HDS5_3ED.2.2.5a#COTA_DE_DANO` | 2.2.5 a. | «Allowable Headwater» | pág. impresa **2.10** · PDF 72 | permiso | 2026-11-13 · texto |
+| `HDS5_3ED.2.2.5d#AGENCIAS` | 2.2.5 d. | «Allowable Headwater» | pág. impresa **2.10** · PDF 72 | definicion | 2026-11-13 · texto |
 | `HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA` | 3.1.3 | «3.1.3  Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-11-12 · texto |
 | `HDS5_3ED.3.1.3#SUMERGENCIA` | 3.1.3 | «Inlet Control» | pág. impresa **3.2** · PDF 84 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.3#TRANSICION` | 3.1.3 | «Inlet Control» | pág. impresa **3.4** · PDF 86 | aproximacion | 2026-08-28 · texto |
@@ -1029,6 +1030,8 @@ línea que se pueda romper.
 > **`HDS5_3ED.2.2.5a#COTA_CRITICA`** — Del inciso a. «Economic Considerations»: las restricciones del sitio suelen fijar «some designated elevation that is not to be exceeded within a specified return period», y esta frase dice a que puede corresponder: el hombro de la plataforma o la cota de desborde de la via. La oracion siguiente da la otra: «Another criteria might be the flood damage elevation of an upstream building or another upstream road crossing». Es lo que sostiene que V8 compare el nivel del evento extremo con el borde de la plataforma; no fija el periodo de retorno ni dice que desbordar sea colapsar.
 
 > **`HDS5_3ED.2.2.5a#COTA_DE_DANO`** — Del inciso a. «Economic Considerations»: la cota admisible puede ser la de daño de una edificacion o de otro cruce aguas arriba. Es lo que sostiene el metodo «cota_de_afectacion» de V5: la cota del embalse de diseño (solera de entrada + HW de M4) contra la cota del terreno o del bien a proteger en el limite del derecho de via aguas arriba, dato externo por punto (`cota_afectacion_aguas_arriba_msnm`, de la topografia). La fuente no fija el periodo de retorno ni nombra el derecho de via: la eleccion de ESA cota como la admisible es del proyecto ('remanso_derecho_via' [A]). El inciso b. trae otro criterio de nivel, el AUMENTO admisible de la superficie del agua (de 0 a 1 ft en la llanura de inundacion de la FEMA), que exige el perfil del cauce sin la obra y no esta implementado.
+
+> **`HDS5_3ED.2.2.5d#AGENCIAS`** — Item d. «Agency Constraints» del num. 2.2.5, pag. impresa 2.10 (PDF 72; el titulo del numeral esta en la PDF 71). La frase anterior del mismo item: «For example, the headwater depth may not be allowed to exceed the barrel height or some multiple of the barrel height, expressed as HW/D.» Es lo que sostiene que HW/D sea la magnitud de V4b y que la banda 1.0-1.5 sea practica de AGENCIAS de EE. UU.; el MTC no fija ninguna (NOR-HDS-02), y el tope del proyecto es el criterio [A] 'HW_D_max'.
 
 > **`HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA`** — Lo dice de las Figuras 3.1A y 3.1C, el Tipo 1 del USGS, con la entrada NO sumergida. Sostiene la velocidad que el proyecto lee en la boca cuando gobierna el control de entrada: la critica. Con la entrada sumergida (Figuras 3.1B y 3.1D) la boca trabaja como orificio y la fuente no da la velocidad en ella.
 
@@ -2987,10 +2990,13 @@ recomienda.
 | `F5.V2b.REGIMEN` | Fase 5 - Verificaciones | V2b - El regimen con que se aplica el indicador de pendiente: umbral duro o indicador con aviso (`regimen_v2b`) | **define** | `HDS5_3ED.5.3.3#INDICADORES`, `HDS5_3ED.5.3.3#ALINEADO`, `HDS5_3ED.5.3.3#DEPRESION` |
 | `F5.V3` | Fase 5 - Verificaciones | V3 - Velocidad maxima admisible del revestimiento (Tabla N 10) | **obliga** | `MC_HHD.4.1.1.3.6#T10` |
 | `F5.V4` | Fase 5 - Verificaciones | V4 - Carga a la entrada bajo la subrasante, con el resguardo que fija el CBR | **obliga** | `MS.4.5.4`, `MS.9.1.3` |
+| `F5.V4b` | Fase 5 - Verificaciones | V4b - Carga relativa HW/D frente al tope adoptado por el proyectista | **define** | `HDS5_3ED.2.2.5d#AGENCIAS`, `HDS5_3ED.2.2.5#EMBALSE` |
 | `F5.V5` | Fase 5 - Verificaciones | V5: el embalse aguas arriba frente al derecho de via, por el metodo declarado (cota de afectacion o embalse a nivel) | **define** | `HDS5_3ED.2.2.5#EMBALSE`, `HDS5_3ED.2.2.5#NO_EXCEDER`, `HDS5_3ED.2.2.5a#COTA_DE_DANO`, `DG2018.304.07.01`, `DG2018.304.07.02`, `DG2018.304.07.02#INCREMENTO` |
+| `F5.V6` | Fase 5 - Verificaciones | V6 - Seccion unica cuando el cauce arrastra material solido: numero de celdas del conducto | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES` |
 | `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | **define** | `MP.2.4.5.2#EV`, `MP.T2.4.5.3.1-2` |
 | `F5.V8` | Fase 5 - Verificaciones | V8: nivel del embalse con el caudal del evento extremo frente a la cota de desborde de la plataforma | **permite** | `HDS5_3ED.2.2.5a#COTA_CRITICA` |
+| `F5.V9` | Fase 5 - Verificaciones | V9 - Seccion requerida frente al tope de la serie de su material | **define** | `AASHTO_M170M.T1_T5#DIAMETROS`, `AASHTO_M170M.7.2.1`, `AASHTO_M36.T6` |
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | **recomienda** | `MC_HHD.4.1.1.4.1e`, `MC_HHD.4.1.1.4.1e#RANGO` |
 | `F6.APRON` | Fase 6 - Proteccion de entrada y salida | Tamaño de piedra del apron de enrocado por HEC-14, Ec. (10.4): D50 en funcion de Q, D y TW | **recomienda** | `HEC14.10.2#EC_10_4`, `HEC14.10.2#TW`, `HEC14.10.2#TW_ALTO`, `HEC14.10.2#EC_10_5`, `HEC14.1#T1_1_APRON`, `HDS5_3ED.5.3.2#APRON`, `HEC14.D#SOLO_VELOCIDAD` |
 | `F6.APRON_GEOMETRIA` | Fase 6 - Proteccion de entrada y salida | Clase de enrocado, longitud, profundidad y ancho del apron por la Tabla 10.1 de HEC-14 | **recomienda** | `HEC14.10.2#T10_1`, `HEC14.10.2#ANCHO`, `MC_HHD.LAMINA_05`, `MC_HHD.4.1.1.3.7c#ALIVIADERO`, `MC_HHD.LAMINA_04`, `HDS5_3ED.5.3.2#APRON` |
@@ -3214,7 +3220,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 506.
+Citas sin firma de verificación: **6** de 507.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`
