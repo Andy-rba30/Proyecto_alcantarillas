@@ -202,3 +202,26 @@ incluido push a `origin/main` y medición del par sobre ese árbol.
   factible» (se relanza el `DatoFaltanteError`); una decisión del dueño cuya premisa contradice el PDF NO se aplica tal cual: se
   deja lo que la fuente sostiene y se reporta; los tests que cambian de verdad se reescriben DECLARÁNDOLO (qué pasaba, qué pasa,
   por qué), nunca en silencio; el rojo se mide con el archivo final contra la base; `/dev/null` nunca como destino de `--json`.
+
+## ENMIENDA DE LA QUINTA SESIÓN (2026-11-13 17:16 UTC) — gana sobre TODO lo de arriba donde discrepe
+
+- **Base**: `origin/main` = `14f6138` (T-0 a T-10 integrados, cabezal completo). Par con `NORMAS_DIR`: **6337 passed /
+  23 skipped / 6360 collected** (sin `NORMAS_DIR`: 6319 / 41). 141 criterios, 20 sin valor.
+- **Rutas de ESTA sesión**:
+  - `ORQ` = `/home/user/wt/estado/docs/planes_mejora/orquestacion_T/` (enlace simbólico a `/home/user/orq`, worktree de
+    `tesis/orquestacion-estado`; SÓLO LECTURA para los agentes);
+  - `SP` = `/tmp/claude-0/-home-user-Proyecto-alcantarillas/7cb96d40-c574-5ae4-841a-e8d6d2b9b04b/scratchpad/`
+    (temporales en `SP/T-n/`, informes en `SP/INFORME_T-n_<fase>.md`, auditorías en `SP/AUDITORIA_T-n.md`). Toda mención de
+    `1cd08434-…` o `003c3043-…` en los encargos se lee con ESTA ruta;
+  - INFORME y script QGIS: `/home/user/andy-rba30/cotas-esviaje-alcantarillas/`; PDF: `/home/user/andy-rba30/normas/normas/`
+    (`export NORMAS_DIR=/home/user/andy-rba30/normas`);
+  - worktrees: `/home/user/wt/main` (consulta, `origin/main`), `/home/user/wt/T-11` (rama `tesis/T-11`).
+- **Pie de los commits de esta sesión**: el del aviso de atribución que reciba cada agente; si no lo recibe:
+
+  ```
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  Claude-Session: https://claude.ai/code/session_01UcoTV8c2xW71eEw7p9oHgo
+  ```
+
+- Reparto: Opus 5.5 (esfuerzo extra) para implementación, correcciones medias/bajas e integraciones; Fable SÓLO para la
+  auditoría adversarial de T-11 y para corregir lo que una auditoría encuentre fuera de lugar en fórmulas o citas.
