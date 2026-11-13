@@ -592,6 +592,30 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                            "el TW cae en la ultima puerta de Sec. 1.3, el "
                            "criterio 'TW_receptor' (bloque 1)",
                            "tirante en el receptor (TW, Sec. 1.3)", False)
+            elif clave in servicio.CLAVES_DE_V5_Y_V8:
+                # --- T-7b --- (PUNTO 0) El ancho del derecho de via (V5) y
+                # el caudal y el tirante del evento extremo (V8) DETIENEN
+                # solo cuando su verificacion no esta diferida por el alcance
+                # Y el criterio que la habilita esta declarado: mientras ese
+                # criterio siga vacio, la verificacion se detiene antes, en
+                # el criterio (bloque 1), y el dato todavia no falta. La
+                # etapa es la del `Bloqueo` que la corrida llevara.
+                verificacion = servicio.VERIFICACION_QUE_EXIGE_LA_CLAVE[clave]
+                if verificacion in servicio.VERIFICACIONES_DIFERIDAS_POR_ALCANCE.get(alcance, ()):
+                    continue
+                criterio = servicio.CRITERIO_QUE_EXIGE_LA_CLAVE[clave]
+                declarado = ca.criterio_efectivo(criterio).valor
+                if declarado is None:
+                    continue
+                # Las dos de V5 las pide cada una SU metodo (H2).
+                metodo = servicio.METODO_QUE_EXIGE_LA_CLAVE.get(clave)
+                if metodo is not None and declarado != metodo:
+                    continue
+                anadir(clave, EXTERNO,
+                       f"{concepto}. El criterio '{criterio}' esta declarado "
+                       f"y {verificacion} lo necesita: sin el dato se "
+                       "detiene con DatoFaltanteError",
+                       servicio.ETAPA_BUCLE_DE_MD, True)
             elif clave in servicio.EXTERNOS_CON_VIA_ALTERNA:
                 # 7.B, la fila fija o el criterio de la Tabla N 02, y S_cauce:
                 # no son faltas. S_conducto se nombra en la entrada de S_cauce

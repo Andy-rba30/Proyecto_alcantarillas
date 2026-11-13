@@ -1699,57 +1699,64 @@ CRITERIOS: Dict[str, Criterio] = {
     # de la resultante en la base, que va de B/6 a 0.4*B segun su valor
     # (MAT-O16).
     "gamma_EQ": Criterio(
-        valor=None,                 # VACIO: bloquea el limite de excentricidad
+        # --- T-7b --- DEJA DE SER UN VACIO. Hasta T-7b valia None «porque
+        # adoptar cualquiera de las dos cifras del comentario en silencio
+        # seria rellenar el vacio». El encargo de T-7b lo cierra con un valor
+        # DECLARADO y su ventana entera: 0.50, que es la unica cifra que la
+        # fuente califica de razonable, con 0.0 a 1.0 barrible. No es [C]: el
+        # articulo manda determinarlo por proyecto.
+        valor=0.5,
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Factor de carga de la carga viva en la combinacion Evento "
                  "Extremo I, adimensional",
-        justificacion="Decide el factor de carga de la carga viva en la "
-                      "combinacion Evento Extremo I, y hoy es un vacio "
-                      "declarado. La fuente (AASHTO Art. 3.4.1; texto literal "
-                      "en constantes_normativas.GAMMA_EQ_TEXTO; via Manual de "
+        justificacion="Decide cuanta sobrecarga viva de trafico acompaña al "
+                      "sismo en la combinacion Evento Extremo I del cabezal, "
+                      "y con ella el limite de excentricidad sismico. La "
+                      "fuente (AASHTO Art. 3.4.1; texto literal en "
+                      "constantes_normativas.GAMMA_EQ_TEXTO; via Manual de "
                       "Puentes, Tabla 2.4.5.3.1-1) imprime el simbolo "
                       "gamma_EQ en la columna de LS, no un numero, y manda "
                       "determinarlo 'on a project-specific basis'. Su "
-                      "comentario C3.4.1 cuenta que las ediciones pasadas "
-                      "usaban 0.0 y que la regla de Turkstra hace razonable "
-                      "0.50 para un rango amplio de ADTT. Lo que la fuente no "
-                      "resuelve: eso no son dos opciones tabuladas -- es "
-                      "historia e indicacion de razonabilidad -- y adoptar "
-                      "cualquiera de las dos en silencio seria rellenar el "
-                      "vacio; por eso se deja vacio y lo fija el proyectista. "
-                      "Donde pesa, ademas de en la combinacion: el num. "
-                      "2.8.1.1.14.1 hace depender de gamma_EQ el limite de "
-                      "excentricidad de la resultante en la base bajo sismo "
-                      "-- dos tercios centrales (e <= B/3) con gamma_EQ = "
-                      "0.0, ocho decimas centrales (e <= 0.4*B) con gamma_EQ "
-                      "= 1.0, e interpolacion lineal en medio. El limite se "
-                      "mueve un 20 % entre los dos extremos, y sin este valor "
-                      "no hay chequeo de excentricidad sismica que hacer. "
-                      "Cuidado con la cifra del Manual: imprime 'tercio "
-                      "central' en vez de los dos tercios de AASHTO, y con "
-                      "esa lectura el rango pareceria un factor 2.4; es "
-                      "errata de traduccion, declarada en "
-                      "constantes_normativas.EXCENTRICIDAD_ERRATA_MANUAL. La "
-                      "sensibilidad (0.0, 0.5) recoge los dos extremos que el "
-                      "comentario menciona",
+                      "comentario C3.4.1 (pag. impresa 3-10) cuenta que las "
+                      "ediciones pasadas usaban 0.0, que el asunto no esta "
+                      "resuelto, y que la regla de Turkstra hace razonable "
+                      "0.50 para un rango amplio de trafico pesado. Lo que la "
+                      "fuente no resuelve es el numero; el proyecto adopta "
+                      "0.50, la unica cifra que el comentario califica de "
+                      "razonable, y deja la ventana completa del factor (de "
+                      "0.0 a 1.0) para el barrido. Donde pesa: en el empuje "
+                      "y el peso de la sobrecarga viva de la combinacion "
+                      "sismica, y en el limite de excentricidad de la "
+                      "resultante bajo sismo -- dos tercios centrales (e <= "
+                      "B/3) con gamma_EQ = 0.0, ocho decimas centrales (e <= "
+                      "0.4*B) con gamma_EQ = 1.0, e interpolacion lineal en "
+                      "medio (AASHTO 11.6.5.1; num. 2.8.1.1.14.1 del "
+                      "Manual): con 0.50 el limite es 0.367*B. Las dos "
+                      "direcciones se oponen -- mas carga viva es mas empuje "
+                      "y a la vez un limite mas holgado --, y por eso se "
+                      "barre y no se presume conservador. Cuidado con la "
+                      "cifra del Manual: imprime 'tercio central' en vez de "
+                      "los dos tercios de AASHTO; es errata de traduccion, "
+                      "declarada en "
+                      "constantes_normativas.EXCENTRICIDAD_ERRATA_MANUAL",
         fuente="AASHTO LRFD 9a ed. (2020), Art. 3.4.1, pag. impresa 3-19, y "
-               "su comentario C3.4.1, pag. impresa 3-10; texto literal en "
+               "su comentario C3.4.1, pag. impresa 3-10 (el 0.50 'is "
+               "reasonable'); texto literal en "
                "constantes_normativas.GAMMA_EQ_TEXTO. Via Manual de Puentes "
-               "num. 2.4.5.3.1, Tabla 2.4.5.3.1-1. Ninguno de los dos escribe "
-               "un numero",
+               "num. 2.4.5.3.1, Tabla 2.4.5.3.1-1. Ninguno de los dos fija "
+               "el numero: la adopcion es del proyecto",
         reemplazado_por="Determinacion especifica del proyecto, con el ADTT "
                         "de la via y el fundamento que la sostenga, "
                         "declarada en la memoria",
-        sensibilidad=(0.0, 0.5),   # el 0.0 historico y el 0.50 de Turkstra
+        sensibilidad=(0.0, 1.0),   # la ventana entera del factor
         resolucion=Libre(
             que_lo_fija="el proyectista, 'on a project-specific basis' "
                         "(AASHTO Art. 3.4.1). La Tabla 2.4.5.3.1-1 imprime "
                         "el SIMBOLO gamma_EQ en la columna de LS, no un "
-                        "numero, y el 0.0 y el 0.50 del comentario C3.4.1 "
-                        "son historia e indicacion de razonabilidad, no dos "
-                        "opciones tabuladas",
+                        "numero; el 0.50 del comentario C3.4.1 es indicacion "
+                        "de razonabilidad, no un valor tabulado",
             dominio="adimensional, 0 <= gamma_EQ <= 1",
         ),
     ),
@@ -1762,75 +1769,84 @@ CRITERIOS: Dict[str, Criterio] = {
     # estatico. Los otros tres viven aqui.
 
     "pendiente_relleno_trasdos_i": Criterio(
-        valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
+        # --- T-7b --- YA NO BLOQUEA: es OPCIONAL. La pendiente del relleno la
+        # deduce el ensamble de la GEOMETRIA de cada cabezal (el talud del
+        # terraplen, la coronacion del relleno retenido y el borde de la
+        # plataforma de 7.B), con la regla de 'regla_pendiente_relleno_
+        # trasdos'. Este criterio queda para quien tenga el angulo MEDIDO
+        # sobre la seccion transversal del cruce -- o el equivalente de un
+        # analisis de cuña -- y quiera imponerlo: declarado, gana para todos
+        # los cabezales de la corrida.
+        valor=None,
+        opcional=True,
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Inclinacion de la superficie del relleno del trasdos sobre "
-                 "la horizontal (i), en grados, para Mononobe-Okabe",
-        justificacion="Sec. 9.2 la exige por su nombre y no la entrega, y "
-                      "Sec. 1.2 no trae ninguna columna de geometria del "
-                      "cabezal ni del terraplen sobre el trasdos. No se "
-                      "puede deducir del CSV: la altura de terraplen del "
-                      "punto (cota_rasante - cota_terreno) es un desnivel, "
-                      "no la pendiente de la superficie contra el muro. "
-                      "Adoptar i = 0 en silencio parece inocuo y no lo es: "
-                      "en Mononobe-Okabe i entra en sen(phi - psi - i), y "
-                      "con psi = 26.6 grados (k_h = 0.50) el radicando se "
-                      "anula para phi - i cerca de psi -- es decir, unos "
-                      "pocos grados de relleno inclinado pueden llevar el "
-                      "empuje sismico al infinito. Es el parametro con la "
-                      "sensibilidad mas violenta de toda la Fase 9",
-        fuente="PENDIENTE - seccion tipica del expediente vial sobre el "
-               "cabezal (DG-2018) o el detalle de coronacion del terraplen",
+                 "la horizontal (i), en grados, DECLARADA: sustituye a la que "
+                 "el ensamble deduce de la geometria de cada cabezal",
+        justificacion="Decide, solo si se declara, la pendiente del relleno "
+                      "con que se calculan el empuje activo de Coulomb y el "
+                      "de Mononobe-Okabe de todos los cabezales. Sin "
+                      "declararlo, la pendiente sale de la geometria de cada "
+                      "cabezal por la regla de "
+                      "'regla_pendiente_relleno_trasdos' -- el relleno sube "
+                      "con el talud del terraplen desde la coronacion del "
+                      "relleno retenido y se quiebra en el borde de la "
+                      "plataforma --, que es lo que el encargo de T-7b pide: "
+                      "i de la geometria del terraplen. Es el parametro con "
+                      "la sensibilidad mas violenta de la Fase 9: en "
+                      "Mononobe-Okabe entra en sen(phi - psi - i), y con psi "
+                      "= 26.6 grados (k_h = 0.50) la ecuacion solo tiene "
+                      "solucion para i menor que phi - 26.6 grados; AASHTO "
+                      "11.6.5.3 escribe esa misma condicion como limite de "
+                      "validez del metodo. Por eso un angulo medido, cuando "
+                      "existe, debe poder imponerse",
+        fuente="Seccion transversal del cruce del expediente vial (dato de "
+               "geometria), o analisis de cuña del relleno quebrado (AASHTO "
+               "3.11.5.8.1). Sin declarar rige "
+               "'regla_pendiente_relleno_trasdos'",
         reemplazado_por="Geometria medida sobre la seccion transversal del "
                         "punto de cruce",
-        # LA VENTANA NO ES ALCANZABLE ENTERA EN CONDICION SISMICA: con el
-        # k_h = 0.50 de esta obra (psi = 26.6 grados) Mononobe-Okabe solo
-        # tiene solucion para i < phi - psi, o sea 3.4 grados con phi = 30 y
-        # 8.4 grados con phi = 35; el limite de 10 grados solo se alcanza con
-        # phi >= 36.6. Desde EXT-7 i entra tambien en el Ka de Coulomb del
-        # empuje ESTATICO, que si existe en toda la ventana.
-        sensibilidad=(0.0, 10.0),   # grados; horizontal frente a talud suave
-        verificacion_pendiente="Declarar si el relleno corona horizontal "
-                               "contra el muro (i = 0) o continua con el "
-                               "talud del terraplen: son dos detalles "
-                               "constructivos distintos, no un matiz. Y "
-                               "comprobar el dominio sismico antes de "
-                               "declarar: con k_h = 0.50 (psi = 26.6 "
-                               "grados) Mononobe-Okabe solo tiene solucion "
-                               "para i menor que phi - 26.6 grados, es "
-                               "decir 3.4 grados con phi = 30 grados y 8.4 "
-                               "grados con phi = 35 grados; la ventana de 0 "
-                               "a 10 grados no es alcanzable entera en "
-                               "condicion sismica, y el Ka de Coulomb del "
-                               "empuje estatico si existe en toda ella",
+        sensibilidad=(0.0, 33.7),   # grados; horizontal a un talud 1.5H:1V
         resolucion=Libre(
-            que_lo_fija="el proyectista, sobre la seccion tipica del "
-                        "expediente vial o el detalle de coronacion del "
-                        "terraplen",
-            dominio="grados sobre la horizontal",
+            que_lo_fija="el proyectista, con la seccion transversal del "
+                        "cruce medida; sin declararlo lo deduce el ensamble "
+                        "de la geometria de cada cabezal",
+            dominio="grados sobre la horizontal, 0 <= i < phi del relleno",
         ),
     ),
 
     "inclinacion_muro_beta": Criterio(
-        valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
+        # --- T-7b --- DEJA DE SER UN VACIO: 0.0, el trasdos vertical que
+        # `M9.predimensionar_cabezal` propone desde T-7a
+        # (`GeometriaCabezal.beta_grados`). El ensamble no lo lee de aqui
+        # sino de la geometria de cada cabezal; este criterio es la
+        # DECLARACION de esa regla y la fuente de `k_ae_del_proyecto`.
+        valor=0.0,
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Inclinacion del paramento interior (trasdos) del cabezal "
                  "respecto de la VERTICAL (beta), en grados, positiva cuando "
                  "el muro se aleja del relleno",
-        justificacion="Es geometria del cabezal, y Sec. 9 no lo dimensiona: "
-                      "la hoja de ruta fija el detalle de EMBOCADURA (tubo a "
-                      "ras del muro, square edge, Sec. 9.1 y Tablero 2.3) "
-                      "pero no el talud del paramento. Un cabezal de "
-                      "paramento vertical (beta = 0) y uno con talud de "
-                      "1:10 dan K_AE distintos, y el signo de beta se presta "
-                      "a error: se declara con la convencion de "
-                      "Mononobe-Okabe, no con la del plano",
-        fuente="PENDIENTE - predimensionamiento del cabezal; ver el criterio "
-               "'predimensionamiento_cabezal', del que este angulo es parte",
+        justificacion="Decide la inclinacion del trasdos que entra en el "
+                      "coeficiente de empuje. El predimensionamiento del "
+                      "cabezal (T-7a) propone la pantalla de trasdos "
+                      "vertical, y en un muro en voladizo con talon el "
+                      "empuje no actua sobre el paramento sino sobre el "
+                      "plano vertical que sube desde el extremo del talon "
+                      "(AASHTO C3.11.5.3, cita "
+                      "AASHTO_LRFD_9.C3.11.5.3#PLANO_DEL_TALON): en los dos "
+                      "casos beta = 0. Un cabezal de paramento inclinado y "
+                      "sin talon tendria otro beta y otra geometria de "
+                      "pantalla, que el predimensionamiento no propone; el "
+                      "signo se declara con la convencion de Mononobe-Okabe, "
+                      "no con la del plano",
+        fuente="Regla del predimensionamiento del cabezal "
+               "('predimensionamiento_cabezal', trasdos vertical) y AASHTO "
+               "LRFD C3.11.5.3 (plano de empuje del muro en voladizo), pag. "
+               "impresa 3-122 (PDF 176)",
         reemplazado_por="Plano de encofrado del cabezal del expediente",
         sensibilidad=(0.0, 10.0),   # grados
         resolucion=Libre(
@@ -1841,65 +1857,87 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "friccion_muro_suelo_delta": Criterio(
-        valor=None,                 # VACIO: bloquea K_AE y el Ka de Coulomb
+        # --- T-7b --- YA NO BLOQUEA: es OPCIONAL. El angulo de friccion sobre
+        # el plano de empuje sale de phi por la fraccion de
+        # 'fraccion_delta_sobre_phi_trasdos' [C] -- que es lo que su propia
+        # `verificacion_pendiente` pedia: declararlo como fraccion de phi y
+        # no como angulo suelto --. Este criterio queda para quien lo tenga
+        # MEDIDO: declarado, gana.
+        valor=None,
+        opcional=True,
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_FLOAT,
-        concepto="Angulo de friccion entre el paramento del muro y el relleno "
-                 "(delta), en grados, para Mononobe-Okabe",
-        justificacion="Sec. 9.2 lo exige por su nombre y no lo entrega. La "
-                      "practica corriente lo liga a phi del relleno (del "
-                      "orden de phi/2 a 2*phi/3 en concreto contra suelo "
-                      "granular), pero la hoja de ruta no fija esa fraccion "
-                      "y adoptarla en silencio moveria a la vez el empuje "
-                      "estatico y el sismico. Ademas no es conservador por "
-                      "un lado solo: un delta alto reduce K_AE (favorable "
-                      "para el empuje) y a la vez inclina la resultante, "
-                      "cambiando el reparto entre deslizamiento y volteo",
-        fuente="PENDIENTE - se declara como fraccion de 'phi_relleno_trasdos' "
-               "con la fuente tecnica que la sostenga, o se mide",
+        concepto="Angulo de friccion sobre el plano de empuje del trasdos "
+                 "(delta), en grados, DECLARADO: sustituye al que sale de "
+                 "'fraccion_delta_sobre_phi_trasdos' por phi del relleno",
+        justificacion="Decide, solo si se declara, el angulo con que el "
+                      "empuje se inclina sobre su plano, y con el su reparto "
+                      "entre la componente horizontal (deslizamiento y "
+                      "excentricidad) y la vertical (carga sobre la base). "
+                      "Sin declararlo rige la fraccion de phi de "
+                      "'fraccion_delta_sobre_phi_trasdos', de modo que al "
+                      "ajustar 'phi_relleno_trasdos' los dos angulos no "
+                      "quedan incoherentes. No es conservador por un lado "
+                      "solo: un delta alto reduce K_A y K_AE, inclina la "
+                      "resultante y traslada empuje de la horizontal a la "
+                      "vertical",
+        fuente="Ensayo de interfase o adopcion declarada con su fuente. Sin "
+               "declarar rige 'fraccion_delta_sobre_phi_trasdos' (AASHTO "
+               "LRFD C3.11.5.3)",
         reemplazado_por="Ensayo de interfase concreto-relleno, o adopcion "
                         "declarada como fraccion de phi con su fuente",
-        sensibilidad=(0.0, 22.7),   # grados; delta=0 (conservador) a 2*phi/3 con phi=34
-        verificacion_pendiente="Declararlo como FRACCION de phi y no como "
-                               "angulo suelto, para que al ajustar "
-                               "'phi_relleno_trasdos' no queden incoherentes",
+        sensibilidad=(0.0, 25.5),   # grados; 0 a 0.67*phi con phi = 38
         resolucion=Libre(
-            que_lo_fija="el proyectista, como fraccion de "
-                        "`phi_relleno_trasdos` con la fuente tecnica que la "
-                        "sostenga, o medido",
+            que_lo_fija="el proyectista, medido o adoptado con su fuente; "
+                        "sin declararlo sale de la fraccion de phi",
             dominio="grados, 0 <= delta <= phi_relleno_trasdos",
         ),
     ),
 
     "punto_aplicacion_incremento_sismico": Criterio(
-        valor=None,                 # VACIO: bloquea el momento de volteo sismico
+        # --- T-7b --- DEJA DE SER UN VACIO: 0.6, con la cita que la hoja de
+        # ruta no daba. Es [C]: la fuente (AASHTO, comentario C11.6.5.3) no
+        # prescribe el valor, DESCRIBE la practica de Seed y Whitman y da la
+        # ventana.
+        valor=0.6,
         nivel=NIVEL_EXPEDIENTE,
-        etiqueta="A",
+        etiqueta="C",
         forma=FORMA_FLOAT,
         concepto="Altura de aplicacion del incremento sismico de empuje "
-                 "(P_AE - P_A), como fraccion de la altura H del muro",
-        justificacion="Mononobe-Okabe entrega el empuje TOTAL, no su punto de "
-                      "aplicacion. El empuje estatico si lo tiene sin "
-                      "adoptar nada: su distribucion es triangular y la "
-                      "resultante cae en H/3, que es el centroide del "
-                      "triangulo, no un criterio. El INCREMENTO sismico no es "
-                      "triangular y su altura de aplicacion es una convencion "
-                      "de la literatura (Seed-Whitman la sitea del orden de "
-                      "0.6H); la hoja de ruta no la fija. Sin ella no hay "
-                      "brazo, y sin brazo no hay momento de volteo sismico: "
-                      "la fila 'volteo / sismico' de la tabla de Sec. 9.3 no "
-                      "se puede evaluar",
-        fuente="PENDIENTE - Sec. 9.2 entrega K_AE y se detiene ahi. "
-               "Seed-Whitman (0.6H) o AASHTO LRFD Sec. 11, declarado con su "
-               "fuente en la memoria",
-        reemplazado_por="Convencion adoptada y escrita en la memoria de calculo",
-        sensibilidad=(0.333, 0.6),   # H/3 (empuje total en el centroide) a 0.6H
+                 "(P_AE - P_A), como fraccion de la altura h del plano de "
+                 "empuje",
+        justificacion="Decide el brazo del incremento sismico del empuje, y "
+                      "con el el momento que gobierna la excentricidad y el "
+                      "volteo sismicos. Mononobe-Okabe entrega el empuje "
+                      "total, no su punto de aplicacion. La fuente (AASHTO "
+                      "LRFD 11.6.5.3 y su comentario, citas "
+                      "AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION y "
+                      "AASHTO_LRFD_9.C11.6.5.3#RESULTANTE) dice tres cosas: "
+                      "que la resultante del empuje TOTAL no baje de h/3; "
+                      "que la practica anterior, con el estatico y el sismico "
+                      "por separado, situaba la componente sismica a 0.6h "
+                      "(Seed y Whitman); y que la investigacion mas "
+                      "reciente pone la resultante total en h/3, aunque una "
+                      "ubicacion algo mas alta, de 0.4h a 0.5h, 'may be "
+                      "considered'. Lo que no resuelve es cual adoptar. El "
+                      "proyecto aplica la fraccion al INCREMENTO y adopta "
+                      "0.6: con el empuje estatico en su centroide, la "
+                      "resultante combinada cae entre 0.4h y 0.5h, dentro de "
+                      "lo que el comentario admite y del lado del mayor "
+                      "momento. El otro extremo de la ventana, 1/3, pone el "
+                      "empuje total en h/3",
+        fuente="AASHTO LRFD 9a ed., 11.6.5.3 y C11.6.5.3, pag. impresa 11-30 "
+               "(PDF 1499; citas AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION y "
+               "AASHTO_LRFD_9.C11.6.5.3#RESULTANTE)",
+        reemplazado_por="Analisis dinamico de interaccion suelo-estructura "
+                        "que de la distribucion del empuje sismico",
+        sensibilidad=(0.333, 0.6),   # h/3 (empuje total en el centroide) a 0.6h
         resolucion=Libre(
-            que_lo_fija="el proyectista: Sec. 9.2 entrega K_AE y se detiene "
-                        "ahi. Seed-Whitman (0.6H) o AASHTO LRFD Sec. 11, "
-                        "declarado con su fuente",
-            dominio="fraccion adimensional de la altura H del muro",
+            que_lo_fija="el proyectista, dentro de lo que el comentario "
+                        "C11.6.5.3 de AASHTO describe: de h/3 a 0.6h para el "
+                        "incremento",
+            dominio="fraccion adimensional de la altura h del plano de empuje",
         ),
     ),
 
@@ -4424,57 +4462,101 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "remanso_derecho_via": Criterio(
-        # `float` (metros): lo que este criterio guardaria es la EXTENSION
-        # del remanso aguas arriba; el ancho de derecho de via NO va aqui,
-        # es el dato `ancho_derecho_via_m` que V5 pide con
-        # DatoFaltanteError. Hoy ningun modulo lee el valor -- V5 se detiene
-        # en el vacio --, de modo que la forma es un argumento y no una
-        # medida (auditoria adversarial de EXT-5).
+        # --- T-7b --- (PUNTO 0, decision del dueño del 2026-11-13). ELIGE EL
+        # METODO con que V5 mide la extension del embalse aguas arriba, y
+        # SIGUE SIN VALOR DE ARCHIVO: sin declararlo, V5 se detiene como
+        # siempre y ningun resultado del fixture cambia. Hasta T-7b su forma
+        # era `float` («la extension del remanso») y ningun modulo leia el
+        # valor; el ancho del derecho de via NO va aqui: es el dato externo
+        # `ancho_derecho_via_m`, por punto.
         valor=None,                 # VACIO: bloquea V5 para todo punto
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
-        forma=FORMA_FLOAT,
-        concepto="Extension del remanso aguas arriba de la alcantarilla y "
-                 "ancho de derecho de via disponible en el punto, para V5 "
-                 "(embalse dentro del derecho de via, sin afectar terceros "
-                 "ni la faja marginal)",
-        justificacion="La fila V5 de la hoja de ruta exige que el embalse "
-                      "quede dentro del derecho de via, y lo que la fuente "
-                      "escribe es el requisito juridico, no el metodo: el "
-                      "DG-2018 num. 304.07 define la faja como bien de "
-                      "dominio publico y le fija un ancho minimo por clase de "
-                      "carretera mas 5.00 m del borde de las obras de "
-                      "drenaje (Tabla 304.09 y 304.07.02), y no enuncia "
-                      "condicion hidraulica alguna: no dice cuanto puede "
-                      "remansar la obra ni como se calcula la extension del "
-                      "embalse. La hoja de ruta tampoco entrega un "
-                      "procedimiento de perfil de remanso (curva de remanso "
-                      "aguas arriba del embalse) ni el dato de ancho de "
-                      "derecho de via por punto -- este ultimo tampoco es "
-                      "columna del CSV (Sec. 1.2). Sin el metodo Y el dato, "
-                      "V5 no tiene con que comparar el HW calculado por M4; "
-                      "el piso de ancho del DG-2018 es contra lo que se "
-                      "comprobara el dato cuando llegue, no un sustituto del "
-                      "metodo, y como se compone el incremento de 5.00 m "
-                      "con el ancho de la tabla es una lectura del proyecto "
-                      "registrada como interpretacion, no texto de la norma",
-        fuente="PENDIENTE - metodo de perfil de remanso (paso a paso o "
-               "HEC-RAS) y ancho de derecho de via del expediente vial "
-               "(Fase 5, V5). El requisito juridico esta citado: DG-2018 "
-               "num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. "
-               "impresas 198-199, registro DG2018.304.07.02) para el ancho, "
-               "y la Ley 29338 (ausente de normas/) para la faja marginal",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO.
+        #   embalse_a_nivel   plano horizontal a la cota de la carga de
+        #                     diseño de M4, cortando el fondo del cauce
+        #                     aguas arriba de la boca. IMPLEMENTADO, con su
+        #                     defecto dicho: la distancia incluye el tramo
+        #                     natural del cauce (correcciones de T-7b, H2).
+        #   cota_de_afectacion   la cota del embalse de diseño contra la cota
+        #                     de afectacion aguas arriba (dato externo
+        #                     `cota_afectacion_aguas_arriba_msnm`): el criterio
+        #                     de NIVEL que el HDS-5 num. 2.2.5 sostiene.
+        #                     IMPLEMENTADO (correcciones de T-7b, H2).
+        #   perfil_de_remanso_paso_a_paso   la curva de remanso aguas arriba
+        #                     (M1 en cauce suave). Se puede declarar y V5 se
+        #                     detiene con «metodo no evaluable»: no esta
+        #                     implementado (ficha T7B-01).
+        sensibilidad=("embalse_a_nivel", "cota_de_afectacion",
+                      "perfil_de_remanso_paso_a_paso"),
+        concepto="Metodo con que V5 mide la extension del embalse aguas "
+                 "arriba de la alcantarilla, para compararla con el derecho "
+                 "de via del punto (embalse dentro del derecho de via, sin "
+                 "afectar a terceros ni a la faja marginal)",
+        justificacion="Decide como se mide hasta donde llega, aguas arriba, "
+                      "el embalse que la obra forma con el caudal de diseño. "
+                      "La fila V5 de la hoja de ruta exige que quede dentro "
+                      "del derecho de via, y lo que las fuentes escriben es "
+                      "el requisito, no el metodo: el DG-2018 num. 304.07 "
+                      "define la faja como bien de dominio publico y le fija "
+                      "un ancho minimo por clase de carretera mas 5.00 m del "
+                      "borde de las obras de drenaje (Tabla 304.09 y "
+                      "304.07.02), sin enunciar condicion hidraulica alguna; "
+                      "y el HDS-5 identifica la carga a la entrada con la "
+                      "profundidad del embalse aguas arriba (num. 2.2.5, "
+                      "cita HDS5_3ED.2.2.5#EMBALSE) sin dar como medir su "
+                      "extension. Lo que ninguna resuelve es el metodo, y "
+                      "por eso este criterio no tiene valor de archivo: lo "
+                      "elige el proyectista. Con «cota_de_afectacion», "
+                      "el metodo que la fuente sostiene, se compara la cota "
+                      "del embalse de diseño (solera de entrada + HW de M4) "
+                      "con la cota del terreno o del bien a proteger en el "
+                      "limite del derecho de via aguas arriba, dato externo "
+                      "por punto de la topografia "
+                      "(`cota_afectacion_aguas_arriba_msnm`): el HDS-5 dice "
+                      "que la carga de diseño no deberia superar la "
+                      "admisible y que la admisible puede ser la cota de "
+                      "daño de un bien aguas arriba (citas "
+                      "HDS5_3ED.2.2.5#NO_EXCEDER y "
+                      "HDS5_3ED.2.2.5a#COTA_DE_DANO). Con «embalse_a_nivel» el "
+                      "embalse es un plano horizontal a la cota de la carga "
+                      "de diseño, que corta el fondo del cauce a una "
+                      "distancia HW / S_cauce aguas arriba de la boca; esa "
+                      "distancia, sumada a la de la boca al eje de la via y "
+                      "proyectada por el esviaje, se compara con la mitad "
+                      "del ancho declarado del derecho de via. Sus supuestos "
+                      "van en el paso de la memoria: el cauce sigue la "
+                      "direccion del eje del conducto con la pendiente del "
+                      "CSV, la faja es simetrica respecto del eje de la via, "
+                      "no hay topografia lateral (no se mide si el agua se "
+                      "extiende a lo ancho), y el plano horizontal no es la "
+                      "curva de remanso: en un cauce de pendiente suave el "
+                      "perfil real se prolonga mas alla, con tirantes "
+                      "mayores que el normal, de modo que la distancia es "
+                      "una cota inferior de la extension del remanso. Y "
+                      "tiene un defecto que se dice sin rodeos: el plano "
+                      "corta el FONDO, de modo que la distancia incluye el "
+                      "tramo en que el cauce ya llevaria agua sin la obra; "
+                      "como medida de lo que la obra añade es una cota "
+                      "SUPERIOR, y con los anchos de la Tabla 304.09 (16 a "
+                      "40 m) solo cumple en cauces de pendiente fuerte. "
+                      "Restar el tirante natural exige la seccion del cauce "
+                      "de aproximacion, que no es dato de entrada (ficha "
+                      "T7B-01)",
+        fuente="Fase 5, V5 de la hoja de ruta. El requisito juridico: "
+               "DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 "
+               "(pags. impresas 198-199, registro DG2018.304.07.02), y la "
+               "Ley 29338 (ausente de normas/) para la faja marginal. La "
+               "carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. "
+               "impresa 2.9 (PDF 71). El metodo es del proyecto",
         reemplazado_por="Perfil de remanso calculado aguas arriba del punto "
-                        "y ancho de derecho de via declarado por punto",
-        verificacion_pendiente="Definir si el ancho de derecho de via es un "
-                               "dato por punto (nueva columna del CSV) o un "
-                               "criterio unico del tramo",
-        resolucion=DeEnsayo(
-            ensayo="perfil de remanso aguas arriba (paso a paso o HEC-RAS) y "
-                   "ancho de derecho de via del expediente",
-            trazabilidad_exigida="el modelo hidraulico con sus secciones, y "
-                                 "la lamina del expediente vial de la que "
-                                 "sale el derecho de via",
+                        "(paso a paso o HEC-RAS) sobre la topografia del "
+                        "cauce",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ninguna fuente de normas/ da el "
+                        "metodo de la extension del embalse",
+            dominio="uno de los metodos de la ventana",
         ),
     ),
 
@@ -4990,25 +5072,51 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "c_phi_fundacion": Criterio(
-        valor=None,                 # completar
+        # --- T-7b --- TIENE CONSUMIDOR: `M9.ensamble_estabilidad` (portante
+        # y deslizamiento). Sigue VACIO: son datos del estudio de suelos y el
+        # programa no los supone. Es el valor de CORREDOR; un punto puede
+        # traer el suyo en `--datos-externos` (`suelo_fundacion`), que gana.
+        valor=None,                 # completar con el EMS
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_DICT_CON_CAMPOS,
-        concepto="Parametros de resistencia del suelo de fundacion",
-        justificacion="Correlacion desde clasificacion SUCS de calicatas. E.050 "
-                      "Art. 20 obliga a usar solo uno: phi=0 en cohesivos, "
-                      "c=0 en friccionantes",
-        fuente="PENDIENTE",
+        # Los cuatro campos obligatorios (cohesivo, c_kpa, phi_grados,
+        # gamma_kn_m3) NO van en `campos_obligatorios`, que exige TEXTO en
+        # cada uno (EXT-6): son un booleano y tres numeros, y los valida el
+        # consumidor, `M9.validar_suelo_fundacion`, con `DatoInvalidoError`.
+        concepto="Parametros del suelo de fundacion del cabezal: si se trata "
+                 "como cohesivo o friccionante, cohesion (kPa), angulo de "
+                 "friccion interna (grados) y peso especifico (kN/m3); y, si "
+                 "el estudio de suelos las entrega, la resistencia portante "
+                 "NOMINAL `q_n_kpa` y la presion ADMISIBLE `q_adm_kpa`",
+        justificacion="Deciden la resistencia al deslizamiento y la "
+                      "capacidad portante bajo la zapata del cabezal, en los "
+                      "dos marcos. Son datos del estudio de mecanica de "
+                      "suelos del expediente: el programa no los deduce de "
+                      "la clasificacion SUCS del CSV ni los supone, y sin "
+                      "ellos la estabilidad del cabezal se detiene. E.050 "
+                      "Art. 20 obliga a usar solo uno de los dos parametros: "
+                      "phi = 0 en los suelos cohesivos y c = 0 en los "
+                      "friccionantes; cual de los dos es el caso lo declara "
+                      "el campo `cohesivo`, porque los suelos de frontera "
+                      "(SC, SM, ML) los decide el geotecnista y no una "
+                      "regla. Dos campos opcionales, para lo que el "
+                      "estudio entregue directamente, y cada uno entra en UN "
+                      "marco: `q_n_kpa`, la resistencia portante nominal "
+                      "(ultima), gana sobre la calculada con la ecuacion de "
+                      "AASHTO 10.6.3.1.2a en el marco de estados limite; "
+                      "`q_adm_kpa`, la presion admisible, que ya lleva su "
+                      "factor de seguridad, gana en el marco de factores de "
+                      "seguridad y no entra en el otro: multiplicarla por un "
+                      "factor para volverla nominal seria cruzar los marcos",
+        fuente="Estudio de mecanica de suelos (EMS) del expediente: ensayo "
+               "de corte directo o triaxial, o correlacion con SPT, por "
+               "calicata. E.050 Art. 20 (cita E050.20) para la regla de c "
+               "y phi",
         reemplazado_por="Corte directo o SPT",
-        sin_consumidor="Su consumidor son las verificaciones de estabilidad "
-                       "del cabezal E1-E5 (Sec. 9.3), que esta CLI declara "
-                       "no ensamblar: ver la nota de alcance que la propia "
-                       "corrida imprime. Se declara igual, y vacio, para que "
-                       "el bloque de pendientes lo pida al expediente en vez "
-                       "de que aparezca el dia del ensamblaje",
         resolucion=DeEnsayo(
-            ensayo="parametros de resistencia del suelo de fundacion (c y "
-                   "phi), del EMS del expediente",
+            ensayo="parametros de resistencia y peso especifico del suelo de "
+                   "fundacion (c, phi, gamma), del EMS del expediente",
             trazabilidad_exigida="ensayo (corte directo o triaxial), "
                                  "calicata, profundidad y laboratorio; la "
                                  "columna `sucs_fundacion` del CSV es su "
@@ -5025,9 +5133,20 @@ CRITERIOS: Dict[str, Criterio] = {
         justificacion="Derivada de c_phi_fundacion, que es a su vez adoptado",
         fuente="PENDIENTE",
         reemplazado_por="EMS conforme a E.050",
-        sin_consumidor="Mismo motivo que 'c_phi_fundacion', del que deriva: "
-                       "lo consumen E1-E5 (Sec. 9.3), no ensambladas en esta "
-                       "CLI",
+        # --- T-7b --- SIGUE SIN CONSUMIDOR, y ahora con otra razon: la
+        # presion admisible que el EMS entregue entra al ensamble de
+        # estabilidad junto a los demas parametros del suelo, como el campo
+        # opcional `q_adm_kpa` de 'c_phi_fundacion' (corredor) o de
+        # `suelo_fundacion` (por punto). Un valor suelto de corredor para
+        # una magnitud que depende de la zapata de cada cabezal no se lee.
+        sin_consumidor="La presion admisible del EMS entra al ensamble de "
+                       "estabilidad del cabezal (T-7b) como el campo "
+                       "opcional `q_adm_kpa` de 'c_phi_fundacion' o del dato "
+                       "externo `suelo_fundacion` del punto, junto al resto "
+                       "de los parametros del suelo, y solo en el marco de "
+                       "factores de seguridad. Este criterio suelto no lo "
+                       "lee ningun modulo; se conserva vacio para que la "
+                       "decision de retirarlo sea del expediente",
         resolucion=DeEnsayo(
             ensayo="capacidad portante admisible del terreno de fundacion, "
                    "del EMS del expediente",
@@ -9943,6 +10062,570 @@ CRITERIOS: Dict[str, Criterio] = {
         resolucion=Libre(
             que_lo_fija="E.060 15.7, aplicado por analogia",
             dominio="m, positivo",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-7b --- (cadena T) · V8 con umbral declarable y la estabilidad del
+    # cabezal en un solo marco (Fase 9). Nueve criterios; ninguno adopta un
+    # numero que una fuente no escriba.
+    # =======================================================================
+
+    "umbral_no_colapso_evento_extremo": Criterio(
+        # SIN VALOR DE ARCHIVO, como el metodo de V5 y por la misma decision:
+        # sin declararlo V8 se detiene como siempre y ningun resultado del
+        # fixture cambia.
+        valor=None,                 # VACIO: bloquea V8 una vez declarado el TR
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO.
+        #   sin_desborde_de_la_plataforma   el nivel del embalse con el
+        #       caudal del evento extremo no alcanza el borde de la
+        #       plataforma del lado de la entrada. IMPLEMENTADO.
+        #   desborde_admitido_con_terraplen_protegido   se admite el flujo
+        #       sobre la plataforma con el talud protegido. Se puede declarar
+        #       y V8 se detiene con «metodo no evaluable»: el flujo sobre la
+        #       via (HDS-5 num. 3.1.5) no esta implementado (ficha T7B-02).
+        sensibilidad=("sin_desborde_de_la_plataforma",
+                      "desborde_admitido_con_terraplen_protegido"),
+        concepto="Como se juzga, en V8, que la via «no colapsa» con el "
+                 "caudal del evento extremo: el umbral de la verificacion",
+        justificacion="Decide contra que se compara el nivel del embalse "
+                      "que la obra forma con el caudal del evento extremo "
+                      "(el de 'TR_evento_extremo', declarado por punto como "
+                      "`Q_evento_extremo_m3s`). La fila V8 de la hoja de "
+                      "ruta pide que a un periodo de retorno mayor la via no "
+                      "colapse aunque desborde, y no fija el umbral. La "
+                      "fuente mas cercana (HDS-5 num. 2.2.5 a., pag. impresa "
+                      "2.10, cita HDS5_3ED.2.2.5a#COTA_CRITICA) admite que la "
+                      "cota que la carga no debe superar sea el hombro de la "
+                      "plataforma o la cota de desborde de la via, y no dice "
+                      "que desbordar sea colapsar. Lo que no resuelve: como "
+                      "se juzga el colapso cuando el agua pasa sobre la via. "
+                      "Por eso no tiene valor de archivo. Con "
+                      "«sin_desborde_de_la_plataforma» V8 cumple si el nivel "
+                      "del evento extremo queda por debajo del borde de la "
+                      "plataforma: si no hay desborde, no hay desborde que "
+                      "la haga colapsar; es la lectura mas exigente, porque "
+                      "la fila admite el desborde. La otra opcion exige "
+                      "calcular el flujo sobre la plataforma y la proteccion "
+                      "del talud de aguas abajo, que este programa no hace",
+        fuente="Fase 5, V8 de la hoja de ruta, sin numeral. HDS-5 num. 2.2.5 "
+               "a., pag. impresa 2.10 (PDF 72), para la cota de comparacion",
+        reemplazado_por="Analisis del flujo sobre la plataforma (HDS-5 num. "
+                        "3.1.5) y de la erosion del talud, con la definicion "
+                        "de colapso declarada en la memoria",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la hoja de ruta pide la "
+                        "verificacion y ninguna fuente de normas/ define el "
+                        "colapso de la via",
+            dominio="una de las opciones de la ventana",
+        ),
+    ),
+
+    "marco_estabilidad_cabezal": Criterio(
+        valor="lrfd_rige_asd_informa",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO, que es a la vez la regla de desempate.
+        #   lrfd_rige_asd_informa   deciden las verificaciones del marco de
+        #       estados limite (AASHTO LRFD 11.6); las de factores de
+        #       seguridad (E.050) se calculan e imprimen como INDICADOR: si
+        #       alguna no alcanza su factor, el punto lo avisa y no se
+        #       detiene.
+        #   asd_rige_lrfd_informa   al reves.
+        #   envolvente_de_los_dos   deciden las dos: el cabezal cumple solo
+        #       si cumple en los dos marcos.
+        sensibilidad=("lrfd_rige_asd_informa", "asd_rige_lrfd_informa",
+                      "envolvente_de_los_dos"),
+        concepto="Marco con que se verifica la estabilidad externa del "
+                 "cabezal (capacidad portante, excentricidad o volteo, y "
+                 "deslizamiento), y que se hace con el otro marco",
+        justificacion="Decide cual de los dos marcos de verificacion RIGE la "
+                      "estabilidad del cabezal y que papel tiene el otro; es "
+                      "decision del dueño del proyecto. Ninguna "
+                      "norma peruana, ni la Seccion 12 de AASHTO LRFD "
+                      "(estructuras enterradas), prescribe el marco de "
+                      "estabilidad del cabezal de una alcantarilla: el Art. "
+                      "11.6 de AASHTO esta escrito para estribos y muros de "
+                      "contencion, y la Seccion 12 no remite a el. El "
+                      "proyecto MODELA el cabezal como un muro de "
+                      "semigravedad en voladizo -- una pantalla sobre una "
+                      "zapata con talon que retiene el relleno del "
+                      "terraplen -- y le aplica ese articulo: es una "
+                      "hipotesis de modelacion, no un mandato de la fuente. "
+                      "Se adopta el marco de estados limite (cargas "
+                      "factoradas contra resistencias minoradas, y la "
+                      "excentricidad de la resultante en lugar del factor de "
+                      "seguridad al volteo) por coherencia con la Via 1 de "
+                      "la hoja de ruta -- AASHTO LRFD de extremo a extremo "
+                      "en lo estructural -- y con el formato del Manual de "
+                      "Puentes. La verificacion por factores de seguridad de "
+                      "la norma de suelos E.050 (Art. 21 y num. 39.13.6), "
+                      "que es de edificaciones y se aplica al cabezal por "
+                      "analogia, se calcula en paralelo sobre cargas de "
+                      "servicio y se imprime al lado. Los dos marcos no se "
+                      "cruzan nunca: ni un factor de seguridad se compara "
+                      "con una carga factorada, ni una resistencia minorada "
+                      "con una carga de servicio. Regla de desempate: con el "
+                      "valor de archivo, un factor de seguridad de E.050 que "
+                      "no se alcance sale como aviso y no detiene el punto "
+                      "-- con la aceleracion sismica de este sitio es lo "
+                      "esperable en el deslizamiento --; quien quiera que "
+                      "detenga declara la envolvente",
+        fuente="Decision del dueño del proyecto sobre el "
+               "dictamen del verificador normativo. AASHTO LRFD 9a ed., "
+               "11.6.3 (citas AASHTO_LRFD_9.11.6.3.2#PORTANTE, "
+               "AASHTO_LRFD_9.11.6.3.3#EXC, "
+               "AASHTO_LRFD_9.11.6.3.6#DESLIZAMIENTO); E.050 Art. 17.1, 21 y "
+               "num. 39.13.6 (citas E050.17.1#SERVICIO, E050.21, "
+               "E050.39.13.6). Ninguna de las dos fuentes prescribe el marco "
+               "para un cabezal de alcantarilla",
+        resolucion=Libre(
+            que_lo_fija="el dueño del proyecto: ninguna norma prescribe el "
+                        "marco de estabilidad de un cabezal de alcantarilla",
+            dominio="una de las tres reglas de la ventana",
+        ),
+    ),
+
+    "fila_phi_estabilidad_cabezal": Criterio(
+        valor="zapatas_seccion_10",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   zapatas_seccion_10   Tabla 10.5.5.2.2-1: portante 0.45 (metodo
+        #       teorico en arena con SPT) o 0.50 (en arcilla); deslizamiento
+        #       0.80 (vaciado in situ sobre arena) u 0.85 (sobre arcilla).
+        #   muros_tabla_11_5_7   Tabla 11.5.7-1, muros de gravedad y
+        #       semigravedad: portante 0.55; deslizamiento 1.0.
+        sensibilidad=("zapatas_seccion_10", "muros_tabla_11_5_7"),
+        concepto="De que tabla de AASHTO LRFD salen los factores de "
+                 "resistencia del estado limite de resistencia para la "
+                 "capacidad portante y el deslizamiento del cabezal",
+        justificacion="Decide los factores de resistencia de E1 y E3 en el "
+                      "estado limite de resistencia. Lo que dice la letra: "
+                      "el Art. 11.5.7 manda usar los factores de la Tabla "
+                      "11.5.7-1 en el diseño de muros, y esa tabla "
+                      "si identifica, para los muros de gravedad y "
+                      "semigravedad, 0.55 al portante y 1.0 al "
+                      "deslizamiento; a la Seccion 10 solo remite lo que la "
+                      "tabla no identifique (cita "
+                      "AASHTO_LRFD_9.11.5.7#MUROS). Leida al pie de la "
+                      "letra, la fila de un muro de semigravedad es la de "
+                      "muros. La tension es otra: el Art. 11.6.3.6 remite el "
+                      "deslizamiento del muro al 10.6.3.4, cuyas ecuaciones "
+                      "nombran los factores de la Tabla 10.5.5.2.2-1 de las "
+                      "zapatas (0.45 a 0.50 al portante y 0.80 a 0.85 al "
+                      "deslizamiento de una zapata vaciada in situ), y el "
+                      "cabezal no es ninguno de los muros que la Tabla "
+                      "11.5.7-1 nombra sino una estructura modelada como "
+                      "tal. El proyecto adopta la de las zapatas por dos "
+                      "razones, y no porque la tabla de muros remita a la "
+                      "Seccion 10 (no lo hace para estas filas): es la mas "
+                      "exigente de las dos en las dos verificaciones, y es "
+                      "la que el Manual de Puentes peruano transcribe (num. "
+                      "2.8.1.1.12.6; no transcribe la 11.5.7-1). Es una "
+                      "eleccion [A] a la que el veredicto es sensible: con "
+                      "los datos de prueba de A-01 el deslizamiento estatico "
+                      "pasa de no cumplir a cumplir con la fila de muros, y "
+                      "la memoria lo avisa cuando una fila cambia de "
+                      "veredicto entre las dos opciones. Dentro de "
+                      "ella toma, en suelo friccionante, la fila del metodo "
+                      "teorico en arena con SPT (0.45, la menor de las de "
+                      "suelo) y la del concreto vaciado in situ sobre arena "
+                      "(0.80); en suelo cohesivo, 0.50 y 0.85. En Evento "
+                      "Extremo I no hay eleccion: el Art. 11.5.8 fija 0.8 al "
+                      "portante de los muros de semigravedad y 1.0 a lo "
+                      "demas",
+        fuente="AASHTO LRFD 9a ed., Tabla 10.5.5.2.2-1, pag. impresa 10-42 "
+               "(PDF 1331; cita AASHTO_LRFD_9.10.5.5.2.2#T1) y 11.5.7 con su "
+               "Tabla 11.5.7-1, pags. impresas 11-15 y 11-17 (PDF 1484 y "
+               "1486; cita AASHTO_LRFD_9.11.5.7#MUROS). Los numeros, en "
+               "constantes_normativas.PHI_ZAPATAS_T10_5_5_2_2_1 y "
+               "PHI_MUROS_T11_5_7_1",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: las dos tablas son de la fuente y "
+                        "cual aplica a un cabezal modelado como muro no lo "
+                        "dice ninguna",
+            dominio="una de las dos filas de la ventana",
+        ),
+    ),
+
+    "drenaje_trasdos": Criterio(
+        valor="sin_drenaje",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   sin_drenaje   el agua puede llenar el relleno RETENIDO hasta su
+        #       superficie contra el trasdos, nunca por encima del muro:
+        #       hidrostatica en esa altura y suelo sumergido (AASHTO 11.6.6;
+        #       correcciones de T-7b, H6).
+        #   drenado       drenaje del trasdos declarado (filtro y
+        #       lloraderos, a mostrar en planos): el agua del relleno no
+        #       supera el nivel freatico natural del punto.
+        sensibilidad=("sin_drenaje", "drenado"),
+        concepto="Si el trasdos del cabezal tiene un sistema de drenaje "
+                 "declarado, y con ello hasta que nivel se cuenta el agua "
+                 "en el relleno",
+        justificacion="Decide el nivel del agua en el relleno del trasdos, "
+                      "y con el el empuje hidrostatico, el peso sumergido del "
+                      "suelo bajo ese nivel y la subpresion del lado del "
+                      "relleno. La fuente (AASHTO LRFD 11.6.6, cita "
+                      "AASHTO_LRFD_9.11.6.6#DRENAJE) exige drenar el relleno "
+                      "o, si no se puede, diseñar el muro con la hidrostatica "
+                      "completa del agua del relleno; y E.050 num. 39.13.8 "
+                      "(por analogia) exige que el muro de contencion tenga "
+                      "un sistema de drenaje. Lo que no resuelven: hasta que "
+                      "nivel sube el agua de un relleno sin drenar; el "
+                      "proyecto lee que hasta su superficie (la lectura esta "
+                      "en la `Interpretacion` de la cita). El valor de "
+                      "archivo es «sin_drenaje»: el drenaje reduce la "
+                      "hidrostatica SOLO si se declara, porque declararlo "
+                      "compromete un detalle -- filtro y lloraderos -- que "
+                      "tiene que estar en los planos, y el comentario de la "
+                      "fuente advierte que los lloraderos solos no aseguran "
+                      "el drenaje. Sin drenaje el agua llena el relleno "
+                      "RETENIDO hasta su superficie contra el trasdos "
+                      "(coronacion menos bordillo) y nunca sube por encima "
+                      "del muro. Con «drenado» el agua del relleno queda en "
+                      "el nivel freatico natural del punto (columna "
+                      "NF_profundidad_m, bajo el terreno del cruce), que el "
+                      "drenaje no baja; y el modelo NO contempla el "
+                      "desembalse rapido -- el relleno mojado por la avenida "
+                      "hasta la cota del agua de diseño con el cauce ya "
+                      "vacio --, que el comentario C11.6.6 hace plausible al "
+                      "advertir que los lloraderos no aseguran el drenaje: "
+                      "el ensamble lo avisa con su orden de magnitud. "
+                      "Declararlo es escribir 'drenaje_trasdos' = «drenado» "
+                      "en la sesion o con --declarar, y compromete el filtro "
+                      "y los lloraderos en los planos. En los dos casos el "
+                      "empuje del suelo bajo el agua va con su peso "
+                      "sumergido (AASHTO 3.11.3), y el agua no se cuenta dos "
+                      "veces",
+        fuente="AASHTO LRFD 9a ed., 11.6.6 'Drainage', pag. impresa 11-35 "
+               "(PDF 1504; cita AASHTO_LRFD_9.11.6.6#DRENAJE) y 3.11.3, pag. "
+               "impresa 3-118; E.050 num. 39.13.8, pag. 73 (cita "
+               "E050.39.13.8#DRENAJE), por analogia",
+        reemplazado_por="Detalle de drenaje del trasdos en los planos del "
+                        "cabezal (filtro, geotextil o geodren, y lloraderos)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: es un detalle constructivo del "
+                        "cabezal que se declara y se dibuja",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "peso_especifico_saturado_relleno_kn_m3": Criterio(
+        valor=None,                 # VACIO: solo detiene si hay agua en el relleno
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Peso especifico SATURADO del relleno del trasdos, kN/m3, "
+                 "para el empuje del suelo bajo el nivel del agua",
+        justificacion="Decide el peso sumergido del relleno (saturado menos "
+                      "el del agua) con que se calcula el empuje del suelo "
+                      "bajo el nivel del agua, que es como AASHTO 3.11.3 "
+                      "manda calcularlo, y el peso del suelo saturado sobre "
+                      "el talon. Solo se invoca cuando el agua llega al "
+                      "plano de empuje: con el relleno drenado y el freatico "
+                      "por debajo de la zapata no hace falta. Es un dato del "
+                      "material de relleno compactado y no se deduce del "
+                      "peso especifico humedo de "
+                      "'peso_especifico_relleno_kn_m3': usar ese mismo "
+                      "numero como saturado subestimaria el empuje del suelo "
+                      "sumergido. Por eso esta vacio: lo da el ensayo del "
+                      "material de cantera",
+        fuente="PENDIENTE - ensayo del material de relleno (peso especifico "
+               "y gravedad especifica de solidos, a la compactacion "
+               "especificada)",
+        reemplazado_por="Ensayo del material de cantera del relleno",
+        resolucion=DeEnsayo(
+            ensayo="peso especifico saturado del relleno compactado del "
+                   "trasdos",
+            trazabilidad_exigida="cantera, ensayo, grado de compactacion y "
+                                 "laboratorio",
+        ),
+    ),
+
+    "fraccion_delta_sobre_phi_trasdos": Criterio(
+        valor=0.67,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        # De un tercio a dos tercios de phi: los dos extremos que la Figura
+        # C3.11.5.3-1b de AASHTO acota sobre el plano vertical del talon.
+        sensibilidad=(0.33, 0.67),
+        concepto="Angulo de friccion sobre el plano de empuje del trasdos "
+                 "(delta) como fraccion del angulo de friccion interna del "
+                 "relleno (phi)",
+        justificacion="Decide cuanto se inclina el empuje sobre su plano, "
+                      "y con ello su reparto entre la componente horizontal "
+                      "y la vertical. La fuente (AASHTO LRFD, comentario "
+                      "C3.11.5.3, cita AASHTO_LRFD_9.C3.11.5.3#DELTA) dice "
+                      "que la practica de largo plazo ha sido usar 0.67 de "
+                      "phi en la interfaz entre el respaldo del muro y el "
+                      "suelo retenido, para suelo contra concreto y para "
+                      "suelo contra suelo, y que aun en los muros de "
+                      "semigravedad en voladizo la friccion se suele limitar "
+                      "a 0.67 de phi; su Figura C3.11.5.3-1b acota el angulo "
+                      "sobre el plano vertical del talon entre un tercio y "
+                      "dos tercios de phi. No lo prescribe: describe una "
+                      "practica, y por eso es [C] con esa ventana. Un delta "
+                      "mayor reduce el coeficiente de empuje y traslada "
+                      "empuje de la horizontal a la vertical: alivia el "
+                      "deslizamiento y la excentricidad y carga mas la base. "
+                      "Si se declara 'friccion_muro_suelo_delta', gana ese "
+                      "angulo",
+        fuente="AASHTO LRFD 9a ed., C3.11.5.3, pags. impresas 3-121 y 3-122 "
+               "(PDF 175 y 176; citas AASHTO_LRFD_9.C3.11.5.3#DELTA y "
+               "AASHTO_LRFD_9.C3.11.5.3#PLANO_DEL_TALON) y Figura "
+               "C3.11.5.3-1b, pag. impresa 3-123",
+        reemplazado_por="Ensayo de interfase, declarado en "
+                        "'friccion_muro_suelo_delta'",
+        resolucion=Libre(
+            que_lo_fija="la practica que el comentario C3.11.5.3 de AASHTO "
+                        "describe; la fraccion dentro de la ventana, el "
+                        "proyectista",
+            dominio="adimensional, entre 0.33 y 0.67",
+        ),
+    ),
+
+    "regla_pendiente_relleno_trasdos": Criterio(
+        # CORRECCIONES DE T-7b (H4): el valor de archivo paso de
+        # «talud_quebrado_2h» a «cuna_de_tanteo». La pendiente equivalente
+        # es una simplificacion de los muros de suelo reforzado y, medida
+        # en A-01, SUBESTIMA el empuje estatico un 7 a 11 % frente a la cuña
+        # que la fuente pide; bajo sismo, con el k_h de archivo, dejaba a
+        # Mononobe-Okabe fuera de su dominio y la condicion sin cifra.
+        valor="cuna_de_tanteo",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   cuna_de_tanteo       cuña de Coulomb por el metodo de Culmann
+        #       sobre el plano vertical del talon, con la superficie REAL del
+        #       relleno: sube con el talud del terraplen y se quiebra en la
+        #       plataforma (AASHTO 3.11.5.3 y 3.11.5.8.1; bajo sismo,
+        #       pseudoestatica con k_h y k_v, C11.6.5.3). Es la de archivo.
+        #   talud_quebrado_2h    pendiente equivalente: la de la recta que va
+        #       de la coronacion del relleno retenido al terreno a una
+        #       distancia horizontal de dos veces la altura del muro
+        #       (Figura C3.11.5.8.1-1 de AASHTO, por analogia), con la
+        #       formula cerrada de Coulomb y de Mononobe-Okabe. SESGO
+        #       DECLARADO: subestima el empuje estatico del 7 al 11 % en los
+        #       cabezales de A-01.
+        #   talud_del_terraplen  la del talud del terraplen, como si no se
+        #       quebrara nunca: cota superior del empuje estatico.
+        sensibilidad=("cuna_de_tanteo", "talud_quebrado_2h",
+                      "talud_del_terraplen"),
+        concepto="Como se calcula, con la geometria real del relleno del "
+                 "trasdos, el empuje activo estatico y sismico del cabezal: "
+                 "por la cuña de tanteo sobre la superficie real o por la "
+                 "formula cerrada con una pendiente equivalente",
+        justificacion="Decide el coeficiente de empuje del relleno, que "
+                      "entra en todas las filas de la estabilidad. Detras "
+                      "del cabezal el relleno no es horizontal ni un talud "
+                      "indefinido: sube con el talud del terraplen desde la "
+                      "coronacion del relleno retenido y se quiebra en el "
+                      "borde de la plataforma. La formula de Coulomb de la "
+                      "ec. 3.11.5.3-1 es la de un talud uniforme, y para lo "
+                      "que se aparta de ella la fuente permite calcular el "
+                      "empuje con cuñas de prueba por el metodo de Culmann "
+                      "(AASHTO LRFD 3.11.5.3, cita "
+                      "AASHTO_LRFD_9.3.11.5.3#CULMANN); para el relleno "
+                      "quebrado de los muros de suelo reforzado recomienda "
+                      "la cuña de tanteo de Coulomb (3.11.5.8.1, cita "
+                      "AASHTO_LRFD_9.3.11.5.8.1#CUNA); y bajo sismo, donde "
+                      "Mononobe-Okabe no es adecuado, permite la cuña de "
+                      "tanteo (C11.6.5.3, cita "
+                      "AASHTO_LRFD_9.C11.6.5.3#CUNA). El valor de archivo es "
+                      "esa cuña, sobre el plano vertical del talon y con la "
+                      "superficie real: es lo que la fuente pide, coincide "
+                      "con Coulomb en un talud uniforme y con "
+                      "Mononobe-Okabe en un relleno horizontal, y con el "
+                      "relleno que se quiebra en la plataforma tiene maximo "
+                      "aun donde Mononobe-Okabe con una pendiente "
+                      "equivalente queda fuera de su dominio. Su "
+                      "coeficiente es el equivalente, 2·P/(gamma·h²), y se "
+                      "reparte en el plano con el diagrama triangular de "
+                      "Coulomb. Sigue siendo [A] porque la cuña de la "
+                      "fuente es de muros y su uso en el cabezal, que se "
+                      "MODELA como muro, es eleccion del proyecto. Las otras "
+                      "dos opciones quedan barribles: la pendiente "
+                      "equivalente de la Figura C3.11.5.8.1-1 (la "
+                      "alternativa simplificada que el comentario PERMITE "
+                      "para los muros de suelo reforzado, cita "
+                      "AASHTO_LRFD_9.C3.11.5.8.1#TALUD_QUEBRADO), que en "
+                      "los cabezales de A-01 da un empuje estatico un 7 a "
+                      "11 % MENOR que la cuña; y el talud entero sin "
+                      "quiebre, cota superior del empuje estatico. Con "
+                      "cualquiera de las dos, y con la pendiente declarada "
+                      "en 'pendiente_relleno_trasdos_i', rige la formula "
+                      "cerrada",
+        fuente="AASHTO LRFD 9a ed., 3.11.5.3, pag. impresa 3-121 (PDF 175; "
+               "cita AASHTO_LRFD_9.3.11.5.3#CULMANN); 3.11.5.8.1 y "
+               "C3.11.5.8.1, pag. impresa 3-137 (PDF 191; citas "
+               "AASHTO_LRFD_9.3.11.5.8.1#CUNA y "
+               "AASHTO_LRFD_9.C3.11.5.8.1#TALUD_QUEBRADO) y Figura "
+               "C3.11.5.8.1-1, pag. impresa 3-138 (PDF 192); C11.6.5.3, pag. "
+               "impresa 11-30 (PDF 1499; cita AASHTO_LRFD_9.C11.6.5.3#CUNA)",
+        reemplazado_por="Analisis de equilibrio limite generalizado (GLE, "
+                        "AASHTO A11.3.3) del relleno con la estratigrafia "
+                        "del EMS",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la cuña es lo que la fuente pide "
+                        "para la geometria real, y su uso en el cabezal "
+                        "modelado como muro es eleccion del proyecto",
+            dominio="una de las tres reglas de la ventana",
+        ),
+    ),
+
+    "factores_inclinacion_carga_portante": Criterio(
+        valor="aplicar",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("aplicar", "omitir"),
+        concepto="Si la resistencia portante nominal bajo la zapata del "
+                 "cabezal se reduce por la inclinacion de la carga (factores "
+                 "i_c, i_q, i_gamma de AASHTO 10.6.3.1.2a)",
+        justificacion="Decide si la resistencia portante se reduce porque la "
+                      "resultante sobre la base esta inclinada, que en un "
+                      "muro lo esta siempre. La fuente (AASHTO LRFD "
+                      "10.6.3.1.2a, cita AASHTO_LRFD_9.10.6.3.1.2a#QN) "
+                      "escribe los factores de inclinacion dentro de la "
+                      "ecuacion de la resistencia nominal, y su comentario "
+                      "dice que la mayoria de los geotecnistas no los usa, "
+                      "que se dedujeron para zapatas sin empotramiento, que "
+                      "combinados con los factores de resistencia pueden ser "
+                      "demasiado conservadores, y que con empotramiento "
+                      "modesto cabe considerar omitirlos. Lo "
+                      "que no resuelve: si se omiten en un muro. El proyecto "
+                      "los APLICA -- el lado seguro, y el del texto del "
+                      "articulo -- y deja «omitir» barrible: la diferencia "
+                      "es grande (con la horizontal en el 40 % de la "
+                      "vertical, el termino del peso propio del suelo baja a "
+                      "la quinta parte)",
+        fuente="AASHTO LRFD 9a ed., 10.6.3.1.2a, ecs. 10.6.3.1.2a-5 a -9 y "
+               "su comentario, pags. impresas 10-70 y 10-71 (PDF 1359 y "
+               "1360; cita AASHTO_LRFD_9.10.6.3.1.2a#QN)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el permiso del comentario "
+                        "C10.6.3.1.2a",
+            dominio="aplicar u omitir",
+        ),
+    ),
+
+    "terreno_delante_del_cabezal": Criterio(
+        valor="horizontal",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   horizontal          el terreno delante de la zapata es el fondo
+        #       del cauce, del que la zapata queda D_f por debajo: capacidad
+        #       portante de terreno horizontal (AASHTO 10.6.3.1.2a).
+        #   talud_descendente   el terreno baja delante de la zapata: zapata
+        #       en talud (Manual de Puentes 2.8.1.3.1.2c), con los factores
+        #       de 'N_cq_N_gammaq_meyerhof'.
+        sensibilidad=("horizontal", "talud_descendente"),
+        concepto="Forma del terreno DELANTE de la zapata del cabezal (del "
+                 "lado del cauce), que decide si la capacidad portante es la "
+                 "de terreno horizontal o la de una zapata en talud",
+        justificacion="Decide que ecuacion de capacidad portante aplica. La "
+                      "hoja de ruta (Sec. 9.3) situaba el cabezal en el "
+                      "borde del terraplen, no en terreno horizontal, y "
+                      "exigia la zapata en talud. Con el "
+                      "cabezal que el predimensionamiento de T-7a propone "
+                      "eso no describe la geometria: la zapata se desplanta "
+                      "bajo el terreno del pie del muro, que es el fondo del "
+                      "cauce (en la salida, la mas baja entre la solera y el "
+                      "fondo del receptor), y el talud del terraplen SUBE "
+                      "detras del muro, no baja delante. La reduccion por "
+                      "talud de la fuente (AASHTO LRFD 10.6.3.1.2c, cita "
+                      "AASHTO_LRFD_9.10.6.3.1.2c#TALUD) se define con la "
+                      "altura del terreno inclinado que queda por debajo de "
+                      "la base de la zapata, que aqui es cero. El proyecto "
+                      "adopta por eso el terreno horizontal, y cuenta como "
+                      "sobrecarga solo el empotramiento que queda bajo la "
+                      "hoya de socavacion cuando la Fase 6 la entrega. La "
+                      "otra opcion es para el cabezal que si queda sobre un "
+                      "terreno que desciende -- una salida a media ladera "
+                      "--: pide los factores del Manual de Puentes, y sin "
+                      "ellos se detiene. El defecto se reporta contra la "
+                      "hoja de ruta, que esta sesion corrige",
+        fuente="Geometria del cabezal de 'predimensionamiento_cabezal' "
+               "(T-7a) y AASHTO LRFD 9a ed., 10.6.3.1.2c y Figura "
+               "10.6.3.1.2c-1, pags. impresas 10-74 y 10-75 (PDF 1363 y "
+               "1364; cita AASHTO_LRFD_9.10.6.3.1.2c#TALUD)",
+        reemplazado_por="Levantamiento del terreno delante de cada cabezal",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el perfil del cauce delante "
+                        "del cabezal",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    # --- correcciones de T-7b (H7) --- El regimen del cabezal frente al
+    # empuje: la HIPOTESIS de modelacion con que el ensamble calcula la
+    # estabilidad externa, dicha como criterio y no escondida en un K_A.
+    "regimen_cabezal": Criterio(
+        valor="cedente",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   cedente      el muro se desplaza lo bastante para movilizar la
+        #       resistencia del relleno: empuje ACTIVO (cuña o Coulomb) y,
+        #       bajo sismo, el de 11.6.5.3. Es lo que el ensamble calcula.
+        #   no_cedente   el muro no puede ceder (estribo con aleros
+        #       estructurales, 11.6.5.4): reposo K0 para la resistencia y
+        #       k_h = 1.0·k_h0 con resultante en h/2 bajo sismo. El
+        #       ensamble NO lo implementa: declararlo detiene la
+        #       estabilidad con «metodo no evaluable».
+        sensibilidad=("cedente", "no_cedente"),
+        concepto="Si el cabezal se modela como muro que cede (empuje "
+                 "activo) o como muro que no cede (empuje en reposo y "
+                 "presiones sismicas de muro rigido)",
+        justificacion="Decide con que empuje se calcula la estabilidad "
+                      "externa del cabezal y con que coeficiente salen las "
+                      "solicitaciones que T-7c armara. Los metodos de "
+                      "11.6.5.3 suponen que el muro puede ceder lo bastante "
+                      "para movilizar la resistencia del relleno (AASHTO "
+                      "C11.6.5.4, cita AASHTO_LRFD_9.C11.6.5.4#CEDENTE), y "
+                      "para los "
+                      "muros que no ceden la fuente manda k_h = 1.0·k_h0 "
+                      "(11.6.5.4, cita AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE) y "
+                      "su comentario pone entre ellos a los estribos con "
+                      "aleros estructurales, dice que las presiones pueden "
+                      "superar a las de Mononobe-Okabe, que la resultante "
+                      "puede subir a h/2, y que el muro que no cede se "
+                      "diseña en resistencia con K0 (cita "
+                      "AASHTO_LRFD_9.C11.6.5.4#K0). Un cabezal monolitico "
+                      "con el barril y los aleros se parece a ese caso, y "
+                      "ninguna fuente dice cual es. El proyecto adopta "
+                      "«cedente» para la estabilidad EXTERNA, que es lo que "
+                      "el ensamble calcula -- el vuelco y el deslizamiento "
+                      "del conjunto movilizan el empuje activo -- y lo "
+                      "declara como hipotesis de modelacion. Las "
+                      "solicitaciones por elemento salen con ese mismo "
+                      "coeficiente y lo llevan marcado, con el K0 de "
+                      "3.11.5.2 al lado: si T-7c o el proyectista juzgan "
+                      "que la pantalla no cede, su armado iria con K0 (en "
+                      "A-01, del orden de un tercio a la mitad mas de "
+                      "empuje). «no_cedente» esta en la ventana y detiene "
+                      "la estabilidad: el programa no implementa las "
+                      "presiones de muro rigido",
+        fuente="AASHTO LRFD 9a ed., 11.6.5.4 y C11.6.5.4, pag. impresa "
+               "11-32 (PDF 1501; citas AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE, "
+               "AASHTO_LRFD_9.C11.6.5.4#CEDENTE y "
+               "AASHTO_LRFD_9.C11.6.5.4#K0); 3.11.5.2, pag. impresa 3-120 "
+               "(PDF 174; cita AASHTO_LRFD_9.3.11.5.2#K0)",
+        reemplazado_por="Analisis numerico de la interaccion del cabezal con "
+                        "el relleno, aprobado por el Propietario (11.6.5.4)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: es la hipotesis con que se modela "
+                        "el cabezal, y ninguna fuente la fija",
+            dominio="una de las dos opciones de la ventana",
         ),
     ),
 

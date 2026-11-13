@@ -396,6 +396,7 @@ from src.modelos import (CriterioPendienteError, PisoDeCargaEntrada,
                      ControlEntrada, ControlGobernante,
                      ControlSalida, DatoInvalidoError, DisenoNoFactibleError,
                      LimiteNumericoError, Magnitud, Material,
+                     MetodoNoEvaluableError,
                      MOTIVO_METODO_NO_EVALUABLE, PerfilLamina, RegimenBarril,
                      RegimenEntrada,
                      ResultadoHidraulico, SinTiranteNormal, TiranteCritico,
@@ -3135,6 +3136,54 @@ def caudal_por_celda(Q: float, material: Material) -> Tuple[float, int]:
         return Q, 1
     celdas = numero_de_celdas(material)
     return Q / celdas, celdas
+
+
+def hidraulica_a_presion(seccion: Seccion, Q: float, S: float, L: float,
+                         TW: float, material: Material):
+    """
+    --- correcciones de T-7b (H3) --- La carga a la entrada con el barril
+    trabajando A PRESION, para el caudal del evento extremo de V8 cuando no
+    cabe en lamina libre (M3 no le encuentra tirante normal: `resolver_
+    control` devuelve None). No escribe ninguna ecuacion: junta las piezas
+    de M4 que NO necesitan el tirante normal --
+
+      * el control de entrada (`control_entrada`): con el caudal que no cabe
+        en lamina libre, q* cae de ordinario en la rama sumergida, la ec.
+        (A.3) de HDS-5, que «applies above about Q/AD^0.5 = 4.0» (num.
+        A.2.2) y no tiene tope escrito;
+      * el control de salida a barril LLENO (`control_salida`: HW = H + h_o
+        - S·L, con la friccion del barril lleno), que es la ecuacion del
+        HDS-5 para el barril que fluye lleno;
+
+    -- y gobierna la mayor (`hw_gobernante`, sin perfil de la lamina: lleno
+    no hay lamina que integrar). Lo que el resultado lleva dice cual
+    goberno. Si alguna de las piezas no puede evaluarse con ese caudal,
+    `MetodoNoEvaluableError` con el rotulo del HDS-5.
+    """
+    from src.modelos import (HidraulicaDelEventoExtremo,
+                             REGIMEN_EVENTO_A_PRESION)
+    Q_celda, _ = caudal_por_celda(Q, material)
+    try:
+        critico = tirante_critico(Q_celda, seccion)
+        entrada = control_entrada(Q=Q_celda, seccion=seccion, S=S,
+                                  hds5=material.hds5, critico=critico)
+        salida = control_salida(Q=Q_celda, seccion=seccion, S=S, L=L, TW=TW,
+                                n=material.n_para_capacidad, critico=critico,
+                                criterio_ke=criterio_ke_de(material))
+    except (LimiteNumericoError, DatoInvalidoError) as exc:
+        raise MetodoNoEvaluableError(
+            "carga del evento extremo", "otro metodo hidraulico para el "
+            "barril a presion", "con el barril a presion las ecuaciones de "
+            f"HDS-5 no se pueden evaluar para Q = {Q!r} m3/s: {exc}") from exc
+    HW, control = hw_gobernante(entrada, salida)
+    return HidraulicaDelEventoExtremo(
+        HW=HW, control_gobernante=control, regimen=REGIMEN_EVENTO_A_PRESION,
+        HW_entrada=entrada.HW, HW_salida=salida.HW,
+        nota=(f"barril a presion: control de entrada HW = {entrada.HW:.3f} m "
+              f"(q* = {entrada.q_estrella:.3f}, rama "
+              f"{entrada.regimen.value}); control de salida a barril lleno "
+              f"HW = {salida.HW:.3f} m; gobierna el de "
+              f"{control.value}"))
 
 
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,

@@ -32,13 +32,24 @@ hoy tambien estan cerrados: `condicion_pavimento`, `espesor_pared_conducto` y
 pisaria valores declarados con su ventana y su procedencia.
 
 Del resto de la lista, lo que sigue vacio hoy: `v_max_concreto_eleccion`,
-`pendiente_relleno_trasdos_i`, `inclinacion_muro_beta`,
-`friccion_muro_suelo_delta`, `punto_aplicacion_incremento_sismico`,
+`pendiente_relleno_trasdos_i`,
+`friccion_muro_suelo_delta`,
 `metodo_estabilidad_global`,
 `TR_evento_extremo`,
 `c_phi_fundacion`, `capacidad_portante_adm`, `phi_relleno_trasdos`,
 `TW_receptor` y `remanso_derecho_via`. Para
 esos, la frase original sigue valiendo y los tests de invariante lo exigen.
+
+(T-7b de la cadena T saco de esta lista dos, y cambio el caracter de otros
+cuatro. `inclinacion_muro_beta` vale 0.0 --el trasdos vertical del
+predimensionamiento de T-7a-- y `punto_aplicacion_incremento_sismico` vale
+0.6 [C] con AASHTO C11.6.5.3: los dos coinciden con el numero de aqui.
+`pendiente_relleno_trasdos_i` y `friccion_muro_suelo_delta` siguen sin valor
+pero son OPCIONALES: sin declararlos, la pendiente sale de la geometria de
+cada cabezal y delta de 0.67·phi; el `20.0` de aqui para delta coincide con
+0.67·30. `remanso_derecho_via` ya no es un numero sino el METODO de V5, y
+`c_phi_fundacion` pide ademas el peso especifico y si el suelo es cohesivo:
+ninguno de los dos se puede aplicar con la forma que este documento trae.)
 (T-7a de la cadena T saco de esta lista dos: el angulo de las aletas y el
 predimensionamiento del cabezal, que dejaron de ser vacios y son REGLAS [A]
 --45 grados, 30 si el esviaje supera 30; y las del predimensionamiento por
@@ -60,9 +71,9 @@ valores encima pisaría trabajo ya verificado con cita.
 *   **v_max_concreto_eleccion**: `3.0` (m/s)
 *   ~~**talud_terraplen**: `1.5` (H:V)~~ --- CERRADO en S20 con otro valor: `2.0` H:V, el extremo mas tendido de la ventana (1.5, 2.0), que es el conservador. No aplicar.
 *   **pendiente_relleno_trasdos_i**: `0.0` (°)
-*   **inclinacion_muro_beta**: `0.0` (°)
+*   ~~**inclinacion_muro_beta**: `0.0` (°)~~ --- CERRADO en T-7b con ESTE MISMO valor. Ya no hay nada que aplicar.
 *   **friccion_muro_suelo_delta**: `20.0` (°)
-*   **punto_aplicacion_incremento_sismico**: `0.6` (H)
+*   ~~**punto_aplicacion_incremento_sismico**: `0.6` (H)~~ --- CERRADO en T-7b con ESTE MISMO valor, [C], ventana (0.333, 0.6). Ya no hay nada que aplicar.
 *   **angulo_aletas**: `45.0` (°)
 *   **predimensionamiento_cabezal**: `{'espesor_pantalla': 0.30, 'espesor_zapata': 0.40, 'talon': 0.50, 'puntera': 0.50}` (m)
 *   **metodo_estabilidad_global**: `"Bishop_Simplificado"`

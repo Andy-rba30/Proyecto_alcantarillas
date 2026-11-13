@@ -390,13 +390,21 @@ def test_k_ae_del_proyecto_se_detiene_en_los_angulos_pendientes():
                                    "friccion_muro_suelo_delta"}
 
 
-@pytest.mark.parametrize("clave", ["phi_relleno_trasdos",
-                                   "pendiente_relleno_trasdos_i",
-                                   "inclinacion_muro_beta",
-                                   "friccion_muro_suelo_delta"])
-def test_los_cuatro_angulos_de_sec_9_2_estan_declarados_vacios(clave):
-    """Sec. 9.2 los exige por su nombre y no los entrega."""
-    assert clave in ca.criterios_sin_valor()
+# REESCRITO EN T-7b, y se declara: hasta T-7b este test fijaba los CUATRO
+# angulos de Sec. 9.2 como vacios («los exige por su nombre y no los
+# entrega»). El punto 5 del encargo de T-7b los resolvio de modo que el caso
+# estatico no se detenga: phi SIGUE vacio (es del ensayo del relleno); beta
+# vale 0 (trasdos vertical del predimensionamiento de T-7a); y delta e i son
+# OPCIONALES -- sin declarar, delta sale de phi por la fraccion [C] de
+# 'fraccion_delta_sobre_phi_trasdos' e i de la geometria de cada cabezal --.
+def test_de_los_cuatro_angulos_de_sec_9_2_solo_phi_sigue_vacio():
+    assert "phi_relleno_trasdos" in ca.criterios_sin_valor()
+    assert ca.criterio("inclinacion_muro_beta").valor == 0.0  # float-exacto: transcrito o declarado, no calculado
+    for clave in ("pendiente_relleno_trasdos_i", "friccion_muro_suelo_delta"):
+        c = ca.criterio(clave)
+        assert c.opcional and c.valor is None and c.sensibilidad, clave
+        assert clave not in ca.criterios_sin_valor()
+        assert clave in ca.criterios_opcionales_sin_declarar()
 
 
 # ===========================================================================
@@ -826,9 +834,21 @@ def test_la_altura_total_incluye_el_canto_de_la_zapata(geometria):
 
 
 def test_el_brazo_del_incremento_sismico_no_se_inventa():
-    """Mononobe-Okabe da el empuje, no su punto de aplicacion."""
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        brazo_incremento_sismico(H=2.4)
+    """
+    Mononobe-Okabe da el empuje, no su punto de aplicacion.
+
+    REESCRITO EN T-7b: el criterio dejo de estar vacio. Vale 0.6 [C], con la
+    fuente que lo sostiene (AASHTO C11.6.5.3: la resultante entre 0.4·h y
+    0.5·h, o el incremento a 0.6·h), y sin valor sigue deteniendo.
+    """
+    c = ca.criterio("punto_aplicacion_incremento_sismico")
+    assert (c.valor, c.etiqueta) == (0.6, "C")  # float-exacto: transcrito o declarado, no calculado
+    assert "C11.6.5.3" in c.fuente
+    assert brazo_incremento_sismico(H=2.4) == pytest.approx(
+        0.6 * 2.4, rel=REL_TRANSPORTE)
+    with sin_valor("punto_aplicacion_incremento_sismico"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            brazo_incremento_sismico(H=2.4)
     assert excinfo.value.clave == "punto_aplicacion_incremento_sismico"
 
 
@@ -1629,7 +1649,12 @@ def test_la_declaracion_de_sec_9_1_recoge_sus_cuatro_avisos():
     assert "503" in texto                       # concreto estructural
     assert "square edge" in texto               # embocadura a ras (Sec. 4.2)
     assert "subpresion" in texto or "Subpresion" in texto
-    assert "borde del" in texto                 # zapata en talud
+    # REESCRITO EN T-7b: el aviso decia «zapata a menos de B del borde del
+    # talud». Con la geometria de T-7a la zapata queda bajo el fondo del
+    # cauce y el talud SUBE detras: el aviso dice ahora que terreno hay
+    # delante y que criterio lo declara.
+    assert "Terreno delante de la zapata" in texto
+    assert "terreno_delante_del_cabezal" in texto
     assert "no gobierna el diseno estructural" in texto
 
 
@@ -1711,8 +1736,11 @@ def test_la_cadena_completa_corre_cuando_los_vacios_se_declaran(monkeypatch,
 
 
 @pytest.mark.parametrize("clave", [
-    "pendiente_relleno_trasdos_i", "inclinacion_muro_beta",
-    "friccion_muro_suelo_delta", "punto_aplicacion_incremento_sismico",
+    # CUATRO SALIERON de esta lista en T-7b ('pendiente_relleno_trasdos_i',
+    # 'inclinacion_muro_beta', 'friccion_muro_suelo_delta' y
+    # 'punto_aplicacion_incremento_sismico'): el punto 5 del encargo les dio
+    # origen, y los fija `test_de_los_cuatro_angulos_de_sec_9_2_solo_phi_
+    # sigue_vacio` y el del brazo, arriba.
     # 'predimensionamiento_cabezal' SALIO de esta lista en T-7a: tiene valor
     # (las reglas del predimensionamiento por punto, [A] con ventana).
     "N_cq_N_gammaq_meyerhof",

@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "3375d11162928ea763167fc51bc2f7044210bbf3",
+    "criterios_sha1": "69aba33abf782847cb9de4d6982b41e08b7a84d1",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -22,12 +22,12 @@
         "tipo": "CriterioPendienteError",
         "criterio": "remanso_derecho_via",
         "etiqueta": "A",
-        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-        "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+        "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
       },
       {
         "punto": "A-01",
@@ -64,12 +64,12 @@
         "tipo": "CriterioPendienteError",
         "criterio": "remanso_derecho_via",
         "etiqueta": "A",
-        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-        "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+        "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
       },
       {
         "punto": "A-02",
@@ -106,12 +106,12 @@
         "tipo": "CriterioPendienteError",
         "criterio": "remanso_derecho_via",
         "etiqueta": "A",
-        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-        "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+        "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
         "campo": null,
         "delta_rasante_m": null,
         "diferido_por_alcance": true,
-        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
       },
       {
         "punto": "B-01",
@@ -709,12 +709,12 @@
           "tipo": "CriterioPendienteError",
           "criterio": "remanso_derecho_via",
           "etiqueta": "A",
-          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-          "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
         },
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
@@ -1295,12 +1295,12 @@
           "tipo": "CriterioPendienteError",
           "criterio": "remanso_derecho_via",
           "etiqueta": "A",
-          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-          "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
         },
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
@@ -1701,12 +1701,12 @@
           "tipo": "CriterioPendienteError",
           "criterio": "remanso_derecho_via",
           "etiqueta": "A",
-          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-          "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": true,
-          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
         },
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
@@ -2341,7 +2341,7 @@
         "etiqueta": "A",
         "valor": null,
         "declarado_en_caliente": false,
-        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)"
+        "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)"
       },
       {
         "clave": "resguardo_HW_subrasante",
@@ -2438,18 +2438,15 @@
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "exposicion_quimica_ems",
-      "friccion_muro_suelo_delta",
-      "gamma_EQ",
       "h_eq_bajo_altura_tabulada",
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
-      "inclinacion_muro_beta",
       "metodo_estabilidad_global",
-      "pendiente_relleno_trasdos_i",
+      "peso_especifico_saturado_relleno_kn_m3",
       "phi_relleno_trasdos",
-      "punto_aplicacion_incremento_sismico",
       "regimen_cortante_muro_e060_art_11_10_2",
-      "remanso_derecho_via"
+      "remanso_derecho_via",
+      "umbral_no_colapso_evento_extremo"
     ],
     "declarados_en_caliente": [],
     "verificacion_pendiente": [
@@ -2487,7 +2484,6 @@
     "sin_consumidor": [
       "Mw_licuefaccion",
       "PERFIL_SUELO_PRESUNTO",
-      "c_phi_fundacion",
       "capacidad_portante_adm",
       "clase_sitio",
       "demanda_sismica_licuefaccion",
@@ -2519,9 +2515,9 @@
       {
         "clave": "remanso_derecho_via",
         "etiqueta": "A",
-        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-        "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
-        "reemplazado_por": "Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto",
+        "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
+        "reemplazado_por": "Perfil de remanso calculado aguas arriba del punto (paso a paso o HEC-RAS) sobre la topografia del cauce",
         "fases": [
           "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"
         ],
@@ -2534,8 +2530,8 @@
           "B-01"
         ],
         "diferido": true,
-        "responsable": "ensayo o medicion: perfil de remanso aguas arriba (paso a paso o HEC-RAS) y ancho de derecho de via del expediente",
-        "evidencia": "Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto"
+        "responsable": "el proyectista: ninguna fuente de normas/ da el metodo de la extension del embalse",
+        "evidencia": "Perfil de remanso calculado aguas arriba del punto (paso a paso o HEC-RAS) sobre la topografia del cauce"
       }
     ]
   }

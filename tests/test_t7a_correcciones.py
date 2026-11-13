@@ -299,19 +299,27 @@ def test_h1_la_ficha_T7A_03_difiere_el_cabezal_paralelo_a_la_via():
 # H2 - la decision 4 del dueño no se aplica: la premisa estaba refutada
 # ===========================================================================
 
-def test_h2_la_puerta_de_ancho_derecho_via_m_no_se_abre():
-    """Un dato sin lector no se abre: V5 no tiene metodo que lo use."""
-    assert "ancho_derecho_via_m" not in servicio.CLAVES_EXTERNAS
+# LOS TRES TESTS QUE SIGUEN SE REESCRIBIERON EN T-7b, y se declara. Fijaban
+# lo que T-7a dejo: la puerta de `ancho_derecho_via_m` cerrada porque V5 no
+# tenia metodo que leyera el dato, y V5 terminando siempre en el `raise`.
+# El PUNTO 0 de T-7b (decision del dueño del 2026-11-13) le dio a V5 un
+# metodo DECLARABLE -- el embalse a nivel -- y abrio la puerta del dato; las
+# tres capas siguen existiendo, y la segunda y la tercera ya no se simulan:
+# se atraviesan declarando.
+def test_h2_la_puerta_de_ancho_derecho_via_m_se_abrio_en_T7b():
+    """El dato tiene lector: `M5.v5_remanso`, con su metodo declarado."""
+    assert "ancho_derecho_via_m" in servicio.CLAVES_EXTERNAS
     assert "ancho_derecho_via_m" not in servicio.CLAVES_DE_CABEZAL
+    assert ca.CRITERIOS["remanso_derecho_via"].valor is None
 
 
 def test_h2_las_tres_capas_que_detienen_la_fase_9_a_expediente(monkeypatch):
     """
     Lo que la ficha T7A-01 dice, medido: (1) el criterio vacio
-    'remanso_derecho_via'; (2) declarado, `M5.v5_remanso` se detiene en
-    `ancho_derecho_via_m` SIN leerlo; (3) con V5 simulada en verde, V8 se
-    detiene en 'TR_evento_extremo'. Ningun punto del fixture llega al
-    cabezal a expediente.
+    'remanso_derecho_via'; (2) declarado el metodo, `M5.v5_remanso` se
+    detiene en `ancho_derecho_via_m`, que no vino; (3) con el dato, V5 se
+    evalua y V8 se detiene en 'TR_evento_extremo'. SIN DECLARAR NADA, ningun
+    punto del fixture llega al cabezal a expediente: T-7b no cambio eso.
     """
     externos = cli.cargar_datos_externos(None, {"luz_m": LUZ, "TW_m": 0.3})
 
@@ -324,25 +332,27 @@ def test_h2_las_tres_capas_que_detienen_la_fase_9_a_expediente(monkeypatch):
                                alcance=cli.ALCANCE_EXPEDIENTE))
     assert b1.tipo is TipoDeBloqueo.CRITERIO_PENDIENTE
     assert "remanso_derecho_via" in b1.mensaje
-    with declarados({"remanso_derecho_via": 100.0}):
+    with declarados({"remanso_derecho_via": "embalse_a_nivel"}):
         b2 = bloqueo_de(cli.correr(CSV_EJEMPLO, externos,
                                    alcance=cli.ALCANCE_EXPEDIENTE))
-    assert b2.tipo is TipoDeBloqueo.DATO_FALTANTE
-    assert "ancho_derecho_via_m" in b2.mensaje
-
-    def v5_simulada(*, punto, resultado):
-        return Verificacion(cumple=True, numeral="V5 simulada",
-                            valor_obtenido=0.0, valor_admisible=1.0,
-                            criterio_aplicado=None, codigo="V5")
-    monkeypatch.setattr(M5, "v5_remanso", v5_simulada)
-    b3 = bloqueo_de(cli.correr(CSV_EJEMPLO, externos,
-                               alcance=cli.ALCANCE_EXPEDIENTE))
+        assert b2.tipo is TipoDeBloqueo.DATO_FALTANTE
+        assert "ancho_derecho_via_m" in b2.mensaje
+        # Con el dato (400 m de faja, DE PRUEBA) V5 se evalua de verdad y
+        # la que detiene es V8, en su periodo de retorno.
+        con_ancho = cli.cargar_datos_externos(
+            None, {"luz_m": LUZ, "TW_m": 0.3, "ancho_derecho_via_m": 400.0})
+        b3 = bloqueo_de(cli.correr(CSV_EJEMPLO, con_ancho,
+                                   alcance=cli.ALCANCE_EXPEDIENTE))
     assert b3.tipo is TipoDeBloqueo.CRITERIO_PENDIENTE
     assert "TR_evento_extremo" in b3.mensaje
 
 
-def test_h2_v5_no_lee_el_dato_aunque_viniera():
-    """`M5.v5_remanso` termina SIEMPRE en el `raise` del dato: no lo lee."""
+def test_h2_v5_recibe_el_dato_por_argumento_y_no_lo_lee_de_los_externos():
+    """
+    `M5.v5_remanso` ya lee el ancho (T-7b), y lo recibe del servicio en
+    `derecho_de_via`: M5 sigue sin conocer los datos externos.
+    """
+    assert "derecho_de_via" in inspect.signature(M5.v5_remanso).parameters
     fuente = inspect.getsource(M5.v5_remanso)
     arbol = ast.parse(fuente.lstrip())
     llamadas = [n for n in ast.walk(arbol) if isinstance(n, ast.Call)

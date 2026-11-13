@@ -275,6 +275,10 @@ def test_pf2_toda_clave_externa_sin_columna_tiene_regla_o_via_alterna_declarada(
     # regla propia: un alivio sin extremo deja VB1 sin evaluar, y eso es un
     # bloqueo que espera ese dato.
     con_regla = {"luz_m", "TW_m", "L_hidraulico_m", "inicio_tramo_cuneta_km"}
+    # --- T-7b --- (PUNTO 0) y los tres de V5 y V8, con regla propia: detienen
+    # solo si su verificacion no esta diferida por el alcance y el criterio
+    # que la habilita esta declarado (`servicio.CLAVES_DE_V5_Y_V8`).
+    con_regla |= set(servicio.CLAVES_DE_V5_Y_V8)
     assert sin_columna == con_regla | set(servicio.EXTERNOS_CON_VIA_ALTERNA)
     assert not con_regla & set(servicio.EXTERNOS_CON_VIA_ALTERNA)
     assert all(c not in antc.m0.COLUMNAS for c in servicio.EXTERNOS_CON_VIA_ALTERNA)
@@ -327,11 +331,27 @@ def test_pf2_la_cli_imprime_el_prevuelo_y_sale_sin_correr(tmp_path):
         w = csv.DictWriter(f, fieldnames=list(fila))
         w.writeheader()
         w.writerow(fila)
+    # REESCRITO EN T-7b, y se declara: hasta T-7b esta corrida iba al alcance
+    # por defecto (expediente) y salia con 0. Desde T-7b el ensamble de
+    # estabilidad del cabezal LEE la columna `NF_profundidad_m` -- sin ella
+    # se detiene con DatoFaltanteError --, el censo le encuentra ese
+    # consumidor y el pre-vuelo de expediente la anuncia como falta que
+    # detiene (es cierta: A-02 la trae vacia). A perfil la Fase 9 esta
+    # diferida y nada detiene, que es lo que este test media.
+    hecho = subprocess.run(
+        [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--prevuelo",
+         "--alcance", "perfil",
+         "--luz", str(LUZ_DEL_CASO), "--tw", str(TW_DEL_CASO)],
+        capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 0, hecho.stdout + hecho.stderr
     hecho = subprocess.run(
         [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--prevuelo",
          "--luz", str(LUZ_DEL_CASO), "--tw", str(TW_DEL_CASO)],
         capture_output=True, text=True, cwd=RAIZ)
-    assert hecho.returncode == 0, hecho.stdout + hecho.stderr
+    assert hecho.returncode == 1, hecho.stdout + hecho.stderr
+    linea = next(l for l in hecho.stdout.splitlines()
+                 if "NF_profundidad_m" in l and "DETIENE" in l)
+    assert "M9_cabezal" in linea
 
 
 def test_pf2_las_lineas_del_bloque_4_las_produce_src_y_nombran_cada_dato():

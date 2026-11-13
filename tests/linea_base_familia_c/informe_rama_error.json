@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "3375d11162928ea763167fc51bc2f7044210bbf3",
+    "criterios_sha1": "69aba33abf782847cb9de4d6982b41e08b7a84d1",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -961,18 +961,15 @@
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "exposicion_quimica_ems",
-      "friccion_muro_suelo_delta",
-      "gamma_EQ",
       "h_eq_bajo_altura_tabulada",
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
-      "inclinacion_muro_beta",
       "metodo_estabilidad_global",
-      "pendiente_relleno_trasdos_i",
+      "peso_especifico_saturado_relleno_kn_m3",
       "phi_relleno_trasdos",
-      "punto_aplicacion_incremento_sismico",
       "regimen_cortante_muro_e060_art_11_10_2",
-      "remanso_derecho_via"
+      "remanso_derecho_via",
+      "umbral_no_colapso_evento_extremo"
     ],
     "declarados_en_caliente": [
       "diametros_normalizados"
@@ -1012,7 +1009,6 @@
     "sin_consumidor": [
       "Mw_licuefaccion",
       "PERFIL_SUELO_PRESUNTO",
-      "c_phi_fundacion",
       "capacidad_portante_adm",
       "clase_sitio",
       "demanda_sismica_licuefaccion",

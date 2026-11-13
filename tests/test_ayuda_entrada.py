@@ -297,7 +297,13 @@ def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
                     # --- T-9 --- las tres de la cuneta de la Fase 10: son
                     # diecisiete las que no son columna.
                     "ancho_tributario_m", "S_cuneta",
-                    "inicio_tramo_cuneta_km"}
+                    "inicio_tramo_cuneta_km",
+                    # --- T-7b --- las tres de V5 y V8 (PUNTO 0): veinte.
+                    "ancho_derecho_via_m", "Q_evento_extremo_m3s",
+                    "TW_evento_extremo_m",
+                    # --- cierre de T-7b (H2) --- la cota de afectacion del
+                    # metodo de cota de V5: veintiuna.
+                    "cota_afectacion_aguas_arriba_msnm"}
     for clave in seis:
         assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
 

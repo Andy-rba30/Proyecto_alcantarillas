@@ -72,8 +72,8 @@ A-01  |  progresiva 0+380  |  Familia A
   aviso: Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
-        falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
-        fuente: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal
+        falta declarar: remanso_derecho_via [A] - Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)
+        fuente: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
         falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
@@ -149,8 +149,8 @@ A-02  |  progresiva 1+920  |  Familia A
   aviso: Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
-        falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
-        fuente: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal
+        falta declarar: remanso_derecho_via [A] - Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)
+        fuente: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
         falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
@@ -181,8 +181,8 @@ B-01  |  progresiva 2+450  |  Familia B
   aviso: tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
-        falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
-        fuente: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal
+        falta declarar: remanso_derecho_via [A] - Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)
+        fuente: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)
         falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
         fuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral
@@ -224,8 +224,8 @@ Alcance declarado: perfil (bandera --alcance; por defecto expediente)
 Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como bloqueo para el cierre):
   [A-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V5 diferida al expediente (alcance perfil)
-    falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
-    fuente: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal
+    falta declarar: remanso_derecho_via [A] - Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)
+    fuente: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto
   [A-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V8 diferida al expediente (alcance perfil)
     falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
@@ -235,8 +235,8 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente
   [A-02] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V5 diferida al expediente (alcance perfil)
-    falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
-    fuente: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal
+    falta declarar: remanso_derecho_via [A] - Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)
+    fuente: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto
   [A-02] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V8 diferida al expediente (alcance perfil)
     falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
@@ -246,8 +246,8 @@ Diferido al expediente por alcance (registrado con su fundamento; NO cuenta como
     la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente
   [B-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V5 diferida al expediente (alcance perfil)
-    falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
-    fuente: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal
+    falta declarar: remanso_derecho_via [A] - Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)
+    fuente: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto
   [B-01] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)
     verificacion V8 diferida al expediente (alcance perfil)
     falta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde
@@ -271,9 +271,9 @@ CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA
   Diferido : por alcance; no cuenta para el cierre de esta corrida (ver ALCANCE DE LA CORRIDA)
 
 [A] remanso_derecho_via
-  Concepto : Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
-  Fuente   : PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal
-  Lo resuelve: Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto
+  Concepto : Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)
+  Fuente   : Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto
+  Lo resuelve: Perfil de remanso calculado aguas arriba del punto (paso a paso o HEC-RAS) sobre la topografia del cauce
   Bloqueo  : verificacion V5 diferida al expediente (alcance perfil)
   Puntos   : A-01, A-02, B-01
   Diferido : por alcance; no cuenta para el cierre de esta corrida (ver ALCANCE DE LA CORRIDA)

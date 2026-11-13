@@ -941,7 +941,9 @@ CENSO_DE_MARCAS = {
     # porcentaje (el auditor de T-8 lo saco de constantes_normativas).
     # 11 -> 12 en T-7a: `DIMENSION_CABEZAL_MAX_M`, el techo fisico de una
     # dimension declarada del cabezal (rechaza una cota tecleada por altura).
-    "src/dominios.py": 12,
+    # 12 -> 13 en T-7b: `ANCHO_DERECHO_VIA_MAX_M`, el techo fisico del ancho
+    # del derecho de via declarado (rechaza un ancho tecleado en otra unidad).
+    "src/dominios.py": 13,
     # UNA sola: `CIFRAS_MAGNITUD = 3`, los decimales con que la traza de la
     # memoria imprime una magnitud (§4.4). Es de la misma naturaleza que los
     # `FMT_*` de M11 --- cuantos decimales se escriben, no cuanto vale nada ---
@@ -1012,7 +1014,14 @@ CENSO_DE_MARCAS = {
     # 1 -> 0 en C7, y por eso desaparece del censo: el `pi/4` de la
     # subpresion se fue a `SeccionCircular.area_exterior`. M8 dejo de
     # saber que forma tiene el conducto, que es justo lo que se buscaba.
-    "src/modulos/M9_cabezal.py": 6,
+    # 6 -> 13 en T-7b: SIETE marcas del ensamble de estabilidad, todas
+    # geometria pura del centroide de una figura -- el tercio de la altura
+    # de un triangulo de presion (suelo seco, suelo sumergido y agua), el
+    # del triangulo de la pantalla trapecial (en x y en z), el de la cuña de
+    # relleno sobre el talon, y el del trapecio de la subpresion --. Ninguna
+    # es un valor de proyecto: los factores y las tablas estan en
+    # constantes_normativas (bloque T-7b) y en criterios_adoptados.
+    "src/modulos/M9_cabezal.py": 13,
     # --- T-9 --- los exponentes de Manning (ecuacion (117)) y el 3/2 de las
     # ecuaciones (4.2) y (4.5) del num. 4.1.2.1 a).
     "src/modulos/M10_espaciamiento.py": 2,

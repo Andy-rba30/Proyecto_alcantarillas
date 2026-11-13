@@ -27,13 +27,18 @@ que declara su Protocol `Verificador`.
                                   CERRADOS con valor 4.572 m/s     [C]
     V4  Carga a la entrada HW     cota entrada + HW <= cota subrasante
                                   - resguardo(CBR)                       [N->]
-    V5  Remanso aguas arriba      sin metodo declarado -> pendiente       [A]
+    V5  Remanso aguas arriba      metodo DECLARABLE ('remanso_derecho_via',
+                                  sin valor de archivo): embalse a nivel
+                                  contra el ancho del derecho de via (T-7b) [A]
     V6  Material solido de arrastre  seccion unica (cumple por construccion)
     V7  Flotacion del conducto    equilibrio LRFD de factores de carga
                                   (Fase 8, M8_estructural); pendiente en
                                   'factores_carga_aashto' o
                                   'peso_especifico_relleno_kn_m3'              [A]
-    V8  Evento extremo (FEN)      sin TR mayor ni umbral -> pendiente      [A]
+    V8  Evento extremo (FEN)      TR y umbral DECLARABLES, sin valor de
+                                  archivo: nivel del embalse con el caudal
+                                  del evento contra el borde de la
+                                  plataforma (T-7b)                       [A]
     V9  Disponibilidad de diametro  D <= tope de M2                        [C]
     V10 Pendiente del conducto    S_min <= S_conducto <= S_max              [A]
                                   ('pendiente_minima_conducto' y
@@ -249,6 +254,7 @@ auditoria adversarial de esa sesion.
 
 from __future__ import annotations
 
+import math
 from typing import Optional, Tuple
 
 from src import criterios_adoptados as ca
@@ -256,6 +262,14 @@ from src.constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
                                    RESGUARDO_NAPA_SUBRASANTE,
                                    UMBRALES_POR_CODIGO, V_MIN,
                                    Y_SOBRE_D_MAX, caracter_del_umbral)
+from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
+                     EventoExtremoDelPunto, LimiteNumericoError,
+                     METODO_REMANSO_COTA_AFECTACION,
+                     METODO_REMANSO_EMBALSE_A_NIVEL,
+                     METODO_REMANSO_PERFIL_PASO_A_PASO, METODOS_DE_REMANSO,
+                     MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO,
+                     MOTIVO_METODO_NO_EVALUABLE_REMANSO,
+                     UMBRAL_V8_SIN_DESBORDE, UMBRALES_V8)
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      CIFRAS_PORCENTAJE, ControlGobernante, CotaDeEntrada,
                      DatoFaltanteError, DatoInvalidoError, EleccionDeProyecto,
@@ -459,6 +473,8 @@ NUMERAL_V10 = ('MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 "Pendiente '
 CRITERIO_RESGUARDO = "resguardo_HW_subrasante"
 CRITERIO_REMANSO = "remanso_derecho_via"
 CRITERIO_EVENTO_EXTREMO = "TR_evento_extremo"
+# --- T-7b --- el umbral con que V8 juzga el «no colapso».
+CRITERIO_UMBRAL_V8 = "umbral_no_colapso_evento_extremo"
 # La mitad [A] de la fila V2b: el acceso de mantenimiento en planos.
 CRITERIO_ACCESO_MANTENIMIENTO = "acceso_mantenimiento_v2b"
 # El REGIMEN con que se aplica la mitad evaluable de V2b (PF-4): umbral duro
@@ -2211,66 +2227,361 @@ def v4b_relacion_hw_d(*, D: float,
 # ---------------------------------------------------------------------------
 
 def v5_remanso(*, punto: PuntoCritico,
-              resultado: ResultadoHidraulico) -> Verificacion:
+               resultado: ResultadoHidraulico,
+               derecho_de_via: Optional[DerechoDeViaDelPunto] = None
+               ) -> Verificacion:
     """
-    Embalse dentro del derecho de via, sin afectar terceros ni la faja
-    marginal. La hoja de ruta fija el REQUISITO pero no un metodo de perfil
-    de remanso ni el ancho de derecho de via por punto (no es columna del
-    CSV, Sec. 1.2): sin los dos, V5 no tiene con que comparar el HW de M4.
+    V5: el embalse que la obra forma aguas arriba queda dentro del derecho de
+    via, sin afectar a terceros ni a la faja marginal (Fase 5, fila V5).
 
-    LO QUE EL DG-2018 SI DA Y LO QUE NO (EXT-6, presente en normas/ y en el
-    registro): el requisito juridico [N] --- el derecho de via es bien de
-    dominio publico (304.07.01) y su ancho minimo es el de la Tabla 304.09
-    por clase de carretera, incrementado en 5.00 m en el caso del borde mas
-    alejado de las obras de drenaje (304.07.02;
-    `constantes_normativas.ANCHO_MIN_DERECHO_VIA_M` e
-    `INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M`; como se compone el incremento
-    con el ancho de la fila es la interpretacion registrada en la cita
-    DG2018.304.07.02#INCREMENTO) ---. NO da condicion
-    hidraulica alguna: el 304.07 acota la faja, no el agua. Por eso el piso
-    no cierra V5 ni cambia esta funcion: sigue faltando el metodo [A] y el
-    dato de sitio del corredor, y la clase de via que elige fila.
+    --- T-7b --- (PUNTO 0, decision del dueño del 2026-11-13). TIENE METODO,
+    y es DECLARABLE: el criterio 'remanso_derecho_via' [A] elige como se mide
+    la extension del embalse, y no tiene valor de archivo. Se detiene, por
+    separado y nunca con un fallo de programa:
 
-    YA NO SE INVOCA EN LA FAMILIA C, y no por falta de datos: por no aplicar.
-    Su umbral es un ANCHO --- presupone agua extendiendose lateralmente sobre
-    la plataforma al remansarse ---, y en un paso de canal el agua sube
-    confinada entre las dos coronaciones del canal. Ahi el ancho no acota
-    nada y lo que acota es la cota del labio, que es lo que compara
-    `vc1_borde_libre_canal`. La justificacion completa, con lo que la
-    sustitucion NO cubre, esta en `_remanso_o_cruce_de_canal`. Esta funcion
-    sigue sirviendo a las Familias A y B, donde su premisa si se sostiene.
+      * criterio SIN valor      -> `CriterioPendienteError` (como siempre: sin
+                                   declarar nada, ningun resultado cambia);
+      * sin `ancho_derecho_via_m` -> `DatoFaltanteError`: el ancho de la faja
+                                   de ESTE cruce es un dato externo por punto
+                                   (lo fija la resolucion que aprueba el
+                                   derecho de via del tramo) y no tiene valor
+                                   por defecto;
+      * metodo «perfil de remanso paso a paso» -> `MetodoNoEvaluableError`:
+                                   esta nombrado y no implementado.
 
-    Se detiene en el criterio 'remanso_derecho_via' -- vacio a proposito, ver
-    su justificacion en criterios_adoptados.py -- en vez de aproximar con el
-    ancho de plataforma (`punto.ancho_plataforma`), que es la seccion vial
-    construida y NO el derecho de via legal: usarlo seria inventar un dato
-    que el expediente no declaro.
+    DOS METODOS IMPLEMENTADOS (correcciones de T-7b, H2):
 
-    Los dos vacios se detienen por separado, y ninguno con un fallo de
-    programa:
+      * «cota_de_afectacion» (`_v5_cota_de_afectacion`), el que la FUENTE
+        sostiene: la cota del embalse de diseño (solera de entrada + HW de
+        M4) no supera la cota de afectacion aguas arriba, dato externo por
+        punto (`cota_afectacion_aguas_arriba_msnm`). HDS-5 num. 2.2.5: «The
+        design headwater should not exceed the allowable headwater», y la
+        cota admisible puede ser «the flood damage elevation of an upstream
+        building or another upstream road crossing». Sin el dato,
+        `DatoFaltanteError`. Puede fallar de verdad.
+      * «embalse_a_nivel», el de abajo, con un defecto que se DICE: el plano
+        horizontal corta el FONDO, de modo que la distancia incluye el tramo
+        natural del cauce y, como medida de lo que la obra añade, es una
+        cota superior; con los anchos normativos solo cumple en cauces de
+        pendiente fuerte.
 
-    - Criterio SIN valor -> `CriterioPendienteError` (la lanza `ca.valor`).
-    - Criterio CON valor -> `DatoFaltanteError`. Declarar el criterio no
-      cierra V5: sigue faltando el ancho de derecho de via del punto y el
-      perfil de remanso con que comparar el HW de M4. El revisor tiene que
-      ANADIR esos dos, y por eso es Faltante y no Invalido (CLAUDE.md).
+    EL METODO «embalse_a_nivel», con todos sus supuestos, que viajan en el
+    paso de la memoria:
 
-    Antes esta segunda rama era un `raise AssertionError` desnudo: no
-    descendia de `ErrorProyecto`, de modo que `servicio._etapa` no lo capturaba y
-    una corrida con el criterio declarado abortaba entera, con todos sus
-    puntos, en vez de anotar el bloqueo y seguir.
+        x_embalse = HW / S_cauce
+        d         = (semilongitud de entrada + x_embalse) · cos(esviaje)
+        cumple    si  d <= ancho_derecho_via / 2
+
+      1. El embalse es un PLANO HORIZONTAL a la cota de la carga de diseño
+         de M4 (la del control que gobierna). El HDS-5 identifica esa carga
+         con la profundidad del embalse aguas arriba (num. 2.2.5); no da el
+         metodo de su extension, que es del proyecto.
+      2. El fondo del cauce sube aguas arriba de la boca con la pendiente
+         `S_cauce` del CSV, en la direccion del eje del conducto: el plano lo
+         corta a HW / S_cauce de la boca. No hay topografia del cauce ni
+         lateral: NO se mide si el agua se extiende a lo ancho.
+      3. La boca queda a la semilongitud de entrada de 7.B del eje de la
+         via, medida sobre el eje del conducto; el esviaje proyecta la suma
+         sobre la normal a la via.
+      4. El dato es el ancho TOTAL de la faja, y se toma SIMETRICA respecto
+         del eje de la via: la mitad queda del lado de aguas arriba.
+      5. NO ES LA CURVA DE REMANSO. En un cauce de pendiente suave el perfil
+         real (M1) se prolonga mas alla de ese punto, con tirantes mayores
+         que el normal: la distancia es una cota INFERIOR de la extension
+         del remanso. En uno de pendiente fuerte el embalse termina en un
+         resalto y el plano es su cota superior. El programa no conoce la
+         seccion del cauce de aproximacion y NO clasifica su regimen: el
+         paso lo dice en vez de presumir el lado.
+
+    Con `S_cauce` nula el plano horizontal no corta el fondo y no hay
+    extension finita: `MetodoNoEvaluableError`, nunca una cifra.
+
+    LO QUE EL DG-2018 SI DA Y LO QUE NO: el requisito juridico --el derecho
+    de via es bien de dominio publico (304.07.01) y su ancho minimo es el de
+    la Tabla 304.09 por clase de carretera, incrementado en 5.00 m en el
+    caso del borde mas alejado de las obras de drenaje (304.07.02)--. NO da
+    condicion hidraulica alguna. El piso de la tabla es un CONTRASTE del
+    dato declarado, que el servicio imprime como aviso; no lo sustituye.
+
+    NO SE INVOCA EN LA FAMILIA C, y no por falta de datos: por no aplicar
+    (ver `_remanso_o_cruce_de_canal`); la sustituye VC1.
     """
-    ca.valor(CRITERIO_REMANSO)        # CriterioPendienteError: sin metodo ni dato
-    raise DatoFaltanteError(
-        "ancho_derecho_via_m",
-        id_punto=punto.id,
-        detalle=(
-            f"el criterio '{CRITERIO_REMANSO}' esta declarado, pero V5 sigue "
-            "sin poder resolverse: falta el ancho de derecho de via del punto "
-            "(no es columna de Sec. 1.2) y el perfil de remanso aguas arriba "
-            "con que comparar el HW de M4. La hoja de ruta fija el requisito "
-            "y no el metodo: mientras no exista, V5 no se declara cumplida"
-        ),
+    metodo = ca.valor(CRITERIO_REMANSO)     # CriterioPendienteError: sin metodo
+    if metodo not in METODOS_DE_REMANSO:
+        raise DatoInvalidoError(
+            CRITERIO_REMANSO, valor=metodo, id_punto=punto.id,
+            motivo="el criterio elige el METODO de V5; se espera uno de: "
+                   + ", ".join(METODOS_DE_REMANSO))
+    if metodo == METODO_REMANSO_PERFIL_PASO_A_PASO:
+        raise MetodoNoEvaluableError(
+            "V5", "perfil de remanso paso a paso aguas arriba del embalse",
+            "el metodo declarado en 'remanso_derecho_via' no esta "
+            "implementado: exige la seccion y la topografia del cauce de "
+            "aproximacion. Los metodos implementados son "
+            f"'{METODO_REMANSO_EMBALSE_A_NIVEL}' y "
+            f"'{METODO_REMANSO_COTA_AFECTACION}'",
+            id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_REMANSO)
+    if metodo == METODO_REMANSO_COTA_AFECTACION:
+        return _v5_cota_de_afectacion(punto=punto, resultado=resultado,
+                                      derecho_de_via=derecho_de_via)
+    if derecho_de_via is None or derecho_de_via.ancho_m is None:
+        raise DatoFaltanteError(
+            "ancho_derecho_via_m",
+            id_punto=punto.id,
+            detalle=(
+                f"el criterio '{CRITERIO_REMANSO}' esta declarado "
+                f"('{metodo}'), pero V5 no puede resolverse sin el ancho del "
+                "derecho de via de este cruce: no es columna de Sec. 1.2 y "
+                "no tiene valor por defecto. Declarar `ancho_derecho_via_m` "
+                "(m, ancho total de la faja) por --datos-externos, con la "
+                "resolucion que aprueba el derecho de via del tramo"
+            ),
+        )
+
+    ancho = derecho_de_via.ancho_m
+    semilongitud = derecho_de_via.semilongitud_entrada_m
+    S = punto.exigir("S_cauce")
+    HW = resultado.HW
+    for nombre, x in (("ancho_derecho_via_m", ancho), ("S_cauce", S),
+                      ("HW", HW), ("semilongitud de entrada", semilongitud)):
+        if isinstance(x, bool) or not isinstance(x, (int, float)) \
+                or not math.isfinite(x):
+            raise DatoInvalidoError(
+                nombre, valor=x, id_punto=punto.id,
+                motivo="V5 (embalse a nivel) necesita un numero finito")
+    if not ancho > 0:
+        raise DatoInvalidoError(
+            "ancho_derecho_via_m", valor=ancho, id_punto=punto.id,
+            motivo="el ancho del derecho de via tiene que ser positivo")
+    if not (HW >= 0 and semilongitud >= 0):
+        raise DatoInvalidoError(
+            "HW", valor=(HW, semilongitud), id_punto=punto.id,
+            motivo="la carga de diseño y la semilongitud de entrada no "
+                   "pueden ser negativas")
+    # Forma MAT-D13: la condicion en positivo y negada (un NaN es falso
+    # frente a `>` igual que frente a `<=`), y el mensaje nombra al par.
+    if not S > 0:
+        raise MetodoNoEvaluableError(
+            "V5", "perfil de remanso paso a paso",
+            f"con pendiente de cauce S_cauce = {S!r} el plano horizontal a "
+            f"la cota de la carga (HW = {HW:.3f} m) no corta el fondo del "
+            "cauce aguas arriba: el embalse a nivel no tiene extension "
+            "finita y el metodo no da cifra",
+            id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_REMANSO)
+    x_embalse = HW / S
+    coseno = math.cos(math.radians(punto.esviaje_grados))
+    d = (semilongitud + x_embalse) * coseno
+    if not math.isfinite(d):
+        raise LimiteNumericoError(
+            "extension del embalse", valor=d, id_punto=punto.id,
+            motivo=f"HW = {HW!r} m entre S_cauce = {S!r} no cabe en un "
+                   "numero finito")
+    medio = ancho / 2
+    cumple = d <= medio + TOL_UMBRAL_NORMATIVO
+    piso = derecho_de_via.piso_dg2018_m
+    return Verificacion(
+        cumple=cumple,
+        numeral=NUMERAL_V5,
+        valor_obtenido=d,
+        valor_admisible=medio,
+        criterio_aplicado=CRITERIO_REMANSO,
+        codigo="V5",
+        paso=paso(
+            "F5.V5", codigo="V5",
+            que="V5: extension del embalse aguas arriba frente al derecho "
+                "de via (metodo del embalse a nivel)",
+            formula=("x_embalse = HW / S_cauce;  d = (L_boca + x_embalse) · "
+                     "cos(esviaje)  <=  ancho_derecho_via / 2"),
+            sustitucion=(
+                Magnitud("HW", HW, "m",
+                         "carga de diseño de M4, la del control que "
+                         f"gobierna ({resultado.control_gobernante.value}): "
+                         "cota del embalse sobre la solera de entrada",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("S_cauce", S, "m/m",
+                         "pendiente del cauce (columna S_cauce o el dato "
+                         "que la completa): se supone la del fondo aguas "
+                         "arriba de la boca, en la direccion del eje",
+                         cifras=CIFRAS_FINA),
+                Magnitud("x_embalse", x_embalse, "m",
+                         "distancia, sobre el eje, de la boca al punto en "
+                         "que el plano horizontal corta el fondo",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("L_boca", semilongitud, "m",
+                         derecho_de_via.origen_semilongitud,
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("esviaje", punto.esviaje_grados, "grados",
+                         "columna esviaje_grados: proyecta la distancia "
+                         "sobre la normal a la via",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("ancho_derecho_via", ancho, "m",
+                         derecho_de_via.origen_ancho,
+                         cifras=CIFRAS_MAGNITUD)),
+            resultado=Magnitud(
+                "d", d, "m",
+                "distancia del extremo aguas arriba del embalse al eje de "
+                "la via, medida normal a ella", cifras=CIFRAS_MAGNITUD),
+            umbral=Umbral(
+                descripcion="mitad del ancho declarado del derecho de via "
+                            "(faja simetrica respecto del eje)",
+                valor=medio, unidad="m", cita_id="DG2018.304.07.01",
+                caracter="DEFINICION",
+                aplicacion="umbral del proyecto: la fuente define la faja "
+                           "y no enuncia condicion hidraulica; el metodo es "
+                           f"'{CRITERIO_REMANSO}' [A]",
+                criterio_aplicado=CRITERIO_REMANSO),
+            veredicto=_veredicto(
+                cumple, medio - d, "m",
+                ("el embalse a nivel queda dentro de la faja" if cumple else
+                 "el embalse a nivel sale de la faja del derecho de via: "
+                 "hace falta una seccion mayor (menos carga), o el perfil "
+                 "de remanso sobre la topografia del cauce")),
+            citas_textuales=("HDS5_3ED.2.2.5#EMBALSE", "DG2018.304.07.02"),
+            nota_del_proyecto=(
+                "SUPUESTOS DEL METODO (criterio 'remanso_derecho_via' = "
+                f"'{metodo}', [A]): (1) el embalse es un plano horizontal a "
+                "la cota de la carga de diseño; (2) el fondo del cauce sube "
+                "aguas arriba con la pendiente del CSV, en la direccion del "
+                "eje del conducto, sin topografia del cauce ni lateral: no "
+                "se mide si el agua se extiende a lo ancho; (3) el dato es "
+                "el ancho total de la faja y se toma simetrica respecto del "
+                "eje de la via; (4) NO es la curva de remanso: en un cauce "
+                "de pendiente suave el perfil real se prolonga mas alla, "
+                "con tirantes mayores que el normal, y esta distancia es "
+                "una cota INFERIOR de la extension del remanso; en uno de "
+                "pendiente fuerte el embalse termina en un resalto y el "
+                "plano es su cota superior. El programa no conoce la "
+                "seccion del cauce de aproximacion y no clasifica su "
+                "regimen. (5) EL PLANO CORTA EL FONDO, y por eso d INCLUYE "
+                "el tramo en que el cauce ya llevaria agua sin la obra (su "
+                "tirante natural): como medida de lo que la OBRA añade al "
+                "embalse es una cota SUPERIOR -- una obra que no eleva el "
+                "nivel tambien da d > 0 --, y con los anchos de la Tabla "
+                "304.09 del DG-2018 (16 a 40 m) solo cumple en cauces de "
+                "pendiente fuerte. Restar el tirante natural, (HW - y_n) / "
+                "S_cauce, exige la seccion del cauce de aproximacion, que no "
+                "es dato de entrada (diferido, ficha T7B-01). El metodo que "
+                "la fuente sostiene es el de COTA ('cota_de_afectacion'). "
+                + ("Piso del DG-2018 para el ancho: "
+                   f"{piso:.2f} m ({derecho_de_via.origen_piso})."
+                   if piso is not None else
+                   "Piso del DG-2018 para el ancho: no contrastado ("
+                   f"{derecho_de_via.origen_piso}).")
+                + " La faja marginal (Ley 29338) no se evalua: la ley no "
+                "esta en normas/.")),
+    )
+
+
+def _v5_cota_de_afectacion(*, punto: PuntoCritico,
+                           resultado: ResultadoHidraulico,
+                           derecho_de_via: Optional[DerechoDeViaDelPunto]
+                           ) -> Verificacion:
+    """
+    V5 con el metodo «cota_de_afectacion» (correcciones de T-7b, H2):
+
+        cota_embalse = cota de entrada + HW  <=  cota de afectacion aguas arriba
+
+    La fuente (HDS-5 num. 2.2.5, pags. impresas 2.9 y 2.10) plantea la
+    carga admisible como un NIVEL: «The design headwater should not exceed
+    the allowable headwater» (cita HDS5_3ED.2.2.5#NO_EXCEDER, RECOMENDACION)
+    y la cota admisible puede ser «the flood damage elevation of an upstream
+    building or another upstream road crossing» (cita
+    HDS5_3ED.2.2.5a#COTA_DE_DANO, PERMISO). Que ESA cota sea la del terreno
+    o del bien a proteger en el limite del derecho de via aguas arriba es
+    eleccion del proyecto ('remanso_derecho_via' [A]); el dato es de la
+    topografia del cruce (`cota_afectacion_aguas_arriba_msnm`, por punto,
+    sin valor por defecto: sin el, `DatoFaltanteError`).
+
+    LO QUE NO MIDE: si el embalse rebasa esa cota en otro punto del limite
+    (la topografia lateral) ni la curva de remanso; compara la carga de
+    diseño de M4 en la boca, que es el nivel MAS ALTO del embalse a nivel.
+    """
+    if derecho_de_via is None or derecho_de_via.cota_afectacion_msnm is None:
+        raise DatoFaltanteError(
+            "cota_afectacion_aguas_arriba_msnm",
+            id_punto=punto.id,
+            detalle=(
+                f"el criterio '{CRITERIO_REMANSO}' declara el metodo "
+                f"'{METODO_REMANSO_COTA_AFECTACION}', y V5 compara la cota "
+                "del embalse de diseño con la cota de afectacion aguas "
+                "arriba de este cruce: la del terreno o del bien a proteger "
+                "en el limite del derecho de via, de la topografia. No es "
+                "columna de Sec. 1.2 y no tiene valor por defecto: declarar "
+                "`cota_afectacion_aguas_arriba_msnm` (msnm) por "
+                "--datos-externos"),
+        )
+    cota_af = derecho_de_via.cota_afectacion_msnm
+    entrada = cota_de_entrada(punto)
+    HW = resultado.HW
+    for nombre, x in (("cota_afectacion_aguas_arriba_msnm", cota_af),
+                      ("HW", HW), ("cota de entrada", entrada.valor)):
+        if isinstance(x, bool) or not isinstance(x, (int, float)) \
+                or not math.isfinite(x):
+            raise DatoInvalidoError(
+                nombre, valor=x, id_punto=punto.id,
+                motivo="V5 (cota de afectacion) necesita un numero finito")
+    if not HW >= 0:
+        raise DatoInvalidoError("HW", valor=HW, id_punto=punto.id,
+                                motivo="la carga de diseño no puede ser "
+                                       "negativa")
+    cota_embalse = entrada.valor + HW
+    cumple = cota_embalse <= cota_af + TOL_UMBRAL_NORMATIVO
+    return Verificacion(
+        cumple=cumple,
+        numeral=NUMERAL_V5,
+        valor_obtenido=cota_embalse,
+        valor_admisible=cota_af,
+        criterio_aplicado=CRITERIO_REMANSO,
+        codigo="V5",
+        paso=paso(
+            "F5.V5", codigo="V5",
+            que="V5: cota del embalse de diseño frente a la cota de "
+                "afectacion aguas arriba (metodo de cota)",
+            formula="cota de entrada + HW  <=  cota de afectacion aguas arriba",
+            sustitucion=(
+                Magnitud("cota_entrada", entrada.valor, "msnm",
+                         entrada.procedencia, cifras=CIFRAS_MAGNITUD),
+                Magnitud("HW", HW, "m",
+                         "carga de diseño de M4, la del control que "
+                         f"gobierna ({resultado.control_gobernante.value})",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("cota_afectacion", cota_af, "msnm",
+                         derecho_de_via.origen_cota_afectacion,
+                         cifras=CIFRAS_MAGNITUD)),
+            resultado=Magnitud(
+                "cota_embalse", cota_embalse, "msnm",
+                "cota de entrada + HW: nivel del embalse de diseño en la "
+                "boca", cifras=CIFRAS_MAGNITUD),
+            umbral=Umbral(
+                descripcion="cota del terreno o del bien a proteger en el "
+                            "limite del derecho de via aguas arriba",
+                valor=cota_af, unidad="msnm",
+                cita_id="HDS5_3ED.2.2.5a#COTA_DE_DANO",
+                caracter="PERMISO",
+                aplicacion="umbral del proyecto: la fuente admite una cota "
+                           "de daño aguas arriba como cota admisible; que "
+                           "sea la del limite del derecho de via lo elige "
+                           f"'{CRITERIO_REMANSO}' [A]",
+                criterio_aplicado=CRITERIO_REMANSO),
+            veredicto=_veredicto(
+                cumple, cota_af - cota_embalse, "m",
+                ("el embalse de diseño no alcanza la cota de afectacion "
+                 "aguas arriba" if cumple else
+                 "el embalse de diseño supera la cota de afectacion aguas "
+                 "arriba: hace falta una seccion mayor (menos carga) o "
+                 "proteger lo que se afecta")),
+            citas_textuales=("HDS5_3ED.2.2.5#NO_EXCEDER",
+                             "HDS5_3ED.2.2.5#EMBALSE"),
+            nota_del_proyecto=(
+                f"Metodo '{METODO_REMANSO_COTA_AFECTACION}' "
+                f"('{CRITERIO_REMANSO}', [A]): es el criterio de NIVEL que "
+                "el HDS-5 num. 2.2.5 sostiene, sin ninguna longitud. Compara "
+                "el nivel mas alto del embalse (en la boca) con la cota del "
+                "dato; no mide la topografia lateral ni la curva de "
+                "remanso. El inciso b. del mismo numeral trae otro criterio "
+                "de nivel -- el AUMENTO admisible sobre el nivel sin la "
+                "obra -- que exige el perfil del cauce y no esta "
+                "implementado.")),
     )
 
 
@@ -2739,58 +3050,200 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
 # ---------------------------------------------------------------------------
 
 def v8_evento_extremo(*, punto: PuntoCritico,
-                      resultado: ResultadoHidraulico) -> Verificacion:
+                      resultado: ResultadoHidraulico,
+                      material: Optional[Material] = None,
+                      seccion: Optional[Seccion] = None,
+                      evento: Optional[EventoExtremoDelPunto] = None
+                      ) -> Verificacion:
     """
-    A un TR mayor que el de diseño, la via no colapsa aunque desborde. La
-    hoja de ruta no fija ese TR mayor ni un umbral cuantitativo de colapso
-    (p.ej. HW sobre la corona del terraplen): sin el TR no hay Q que correr
-    aparte del de diseño, y sin el umbral no hay con que comparar el HW
-    resultante.
+    V8: a un periodo de retorno mayor que el de diseño, la via no colapsa
+    aunque desborde (Fase 5, fila V8).
 
-    LOS DOS VACIOS SE DETIENEN POR SEPARADO, y ninguno con un fallo de
-    programa -- misma forma que `v5_remanso`, y por la misma razon:
+    --- T-7b --- TIENE METODO Y UMBRAL DECLARABLES, con la misma decision que
+    V5: nada tiene valor de archivo, y sin declarar V8 se detiene como
+    siempre. Se detiene, en este orden y nunca con un fallo de programa:
 
-    - Criterio SIN valor -> `CriterioPendienteError` (la lanza `ca.valor`).
-    - Criterio CON valor -> `DatoFaltanteError`. Declarar el TR del evento
-      extremo NO cierra V8: sigue faltando el CAUDAL que a ese TR le
-      corresponde. Hasta T-1 este renglon decia «Este software no hace
-      hidrologia»; desde T-1 la hace (`MH_hidrologia`, Fase 1-bis), y
-      `caudal_de_diseno(cuenca, serie, TR)` vale para cualquier TR, tambien
-      el del evento extremo. Lo que sigue sin existir es el ENLACE: V8 no
-      recibe la cuenca ni la serie, no hay clave por la que declarar
-      `Q_evento_extremo_m3s`, y la comparacion contra la corona del
-      terraplen no esta escrita (ficha T1-03 de
-      `docs/decisiones_diferidas.md`). Un TR de 500 años sin su Q es un
-      numero sin nada que correr por M3/M4. El revisor tiene que AÑADIR ese
-      caudal, y por eso es Faltante y no Invalido (CLAUDE.md).
+      * 'TR_evento_extremo' sin valor -> `CriterioPendienteError`;
+      * sin `Q_evento_extremo_m3s`     -> `DatoFaltanteError`: el caudal de
+        ese periodo de retorno es un dato externo por punto (lo da el
+        estudio hidrologico; la Fase 1-bis lo sabe calcular, y el enlace
+        sigue diferido, ficha T1-03). El programa no lo escala del de
+        diseño;
+      * sin `TW_evento_extremo_m`      -> `DatoFaltanteError`: el tirante
+        del receptor en ese evento. Usar el de diseño seria rellenar una
+        entrada del lado NO conservador (el receptor sube con la avenida);
+        admite 0, salida libre;
+      * 'umbral_no_colapso_evento_extremo' sin valor ->
+        `CriterioPendienteError`: la hoja de ruta no dice como se juzga el
+        colapso;
+      * el umbral declarado es el del desborde admitido, o la carga del
+        evento no se puede evaluar ni a presion -> `MetodoNoEvaluableError`.
 
-    Hasta S20 esta segunda rama era un `raise AssertionError` desnudo, y
-    estaba declarada como «mina deliberada» en `servicio._verificador_perfil`. La
-    mina avisaba de algo cierto -- la logica de V8 no esta escrita -- por el
-    medio equivocado: `AssertionError` no desciende de `ErrorProyecto`, de
-    modo que `servicio._etapa` no lo capturaba y una corrida con el criterio
-    declarado abortaba entera, con todos sus puntos, en vez de anotar el
-    bloqueo y seguir. Es palabra por palabra el defecto que V5 ya habia
-    tenido y que se corrigio antes; V8 se quedo con el.
+    EL METODO: el caudal del evento se corre por la MISMA seccion, material,
+    pendiente y longitud del CANDIDATO (M3 y M4, que resuelve el servicio:
+    `EventoExtremoDelPunto.resolver`) y da la carga HW_ext: en lamina libre
+    con la hidraulica entera de M4 o, si el caudal no cabe en lamina libre,
+    con el barril A PRESION (`M4.hidraulica_a_presion`: el control de
+    entrada sumergido y el de salida a barril lleno, gobernando el mayor;
+    correcciones de T-7b, H3). Y solo se evalua sobre el candidato que YA
+    cumple todo lo anterior de la tabla (`verificar`): un V8 que no se puede
+    evaluar no enmascara un V1 o un V5 incumplido. Con el umbral
+    «sin_desborde_de_la_plataforma» se compara la cota del embalse (solera
+    de entrada + HW_ext) con la cota a la que la plataforma desborda (su
+    borde del lado de la entrada). Si no la alcanza, la via no desborda. Es
+    la lectura MAS EXIGENTE de la fila, que admite el desborde: lo que el
+    HDS-5 sostiene (num. 2.2.5 a.) es la cota de comparacion, no el
+    periodo de retorno ni la definicion de colapso.
     """
-    ca.valor(CRITERIO_EVENTO_EXTREMO)   # CriterioPendienteError: sin TR ni umbral
-    raise DatoFaltanteError(
-        "Q_evento_extremo_m3s",
-        id_punto=punto.id,
-        detalle=(
-            f"el criterio '{CRITERIO_EVENTO_EXTREMO}' esta declarado, pero V8 "
-            "sigue sin poder resolverse: falta el CAUDAL correspondiente a "
-            "ese periodo de retorno mayor, y la comparacion que V8 haria "
-            "con el. Desde T-1 el programa SABE calcular ese caudal "
-            "(`MH_hidrologia.caudal_de_diseno` admite cualquier periodo de "
-            "retorno, con la cuenca y la estacion de --cuencas y "
-            "--estacion), pero V8 no lo pide todavia ni hay puerta por la "
-            "que declararlo: el enlace esta diferido (ficha T1-03 de "
-            "docs/decisiones_diferidas.md). Sin ese segundo caudal no hay "
-            "nada que correr por M3/M4 ni HW que comparar contra la corona "
-            "del terraplen. La hoja de ruta fija el requisito y no el "
-            "metodo: mientras no exista, V8 no se declara cumplida"
-        ),
+    TR = ca.valor(CRITERIO_EVENTO_EXTREMO)   # CriterioPendienteError: sin TR
+    if evento is None or evento.Q_m3s is None:
+        raise DatoFaltanteError(
+            "Q_evento_extremo_m3s",
+            id_punto=punto.id,
+            detalle=(
+                f"el criterio '{CRITERIO_EVENTO_EXTREMO}' esta declarado, "
+                "pero V8 no puede resolverse sin el CAUDAL que corresponde a "
+                "ese periodo de retorno mayor: declarar "
+                "`Q_evento_extremo_m3s` por --datos-externos, con el estudio "
+                "hidrologico que lo da. El programa SABE calcularlo "
+                "(`MH_hidrologia.caudal_de_diseno` admite cualquier periodo "
+                "de retorno), pero ese enlace esta diferido (ficha T1-03 de "
+                "docs/decisiones_diferidas.md), y no lo escala del de "
+                "diseño"
+            ),
+        )
+    if evento.TW_m is None:
+        raise DatoFaltanteError(
+            "TW_evento_extremo_m",
+            id_punto=punto.id,
+            detalle=(
+                "V8 corre el caudal del evento extremo por la seccion "
+                "adoptada y necesita el tirante del receptor EN ESE EVENTO "
+                "(m sobre el fondo de la salida; 0 = salida libre): "
+                "declarar `TW_evento_extremo_m` por --datos-externos. No se "
+                "toma el de diseño: el receptor sube con la avenida y "
+                "usarlo subestimaria la carga"
+            ),
+        )
+    umbral_v8 = ca.valor(CRITERIO_UMBRAL_V8)   # CriterioPendienteError
+    if umbral_v8 not in UMBRALES_V8:
+        raise DatoInvalidoError(
+            CRITERIO_UMBRAL_V8, valor=umbral_v8, id_punto=punto.id,
+            motivo="se espera uno de: " + ", ".join(UMBRALES_V8))
+    Q_ext = evento.Q_m3s
+    if isinstance(Q_ext, bool) or not isinstance(Q_ext, (int, float)) \
+            or not math.isfinite(Q_ext) or not Q_ext > 0:
+        raise DatoInvalidoError(
+            "Q_evento_extremo_m3s", valor=Q_ext, id_punto=punto.id,
+            motivo="el caudal del evento extremo tiene que ser finito y "
+                   "positivo")
+    if not Q_ext >= resultado.Q - TOL_UMBRAL_NORMATIVO:
+        raise DatoInvalidoError(
+            "Q_evento_extremo_m3s", valor=Q_ext, id_punto=punto.id,
+            motivo=f"el caudal del evento extremo ({Q_ext:.3f} m3/s) es "
+                   f"menor que el de diseño ({resultado.Q:.3f} m3/s): V8 "
+                   "verifica un periodo de retorno MAYOR")
+    if umbral_v8 != UMBRAL_V8_SIN_DESBORDE:
+        raise MetodoNoEvaluableError(
+            "V8", "flujo sobre la plataforma (HDS-5 num. 3.1.5) y erosion "
+            "del talud de aguas abajo",
+            "el umbral declarado en 'umbral_no_colapso_evento_extremo' "
+            "admite el desborde con el terraplen protegido, y juzgarlo "
+            "exige repartir el caudal entre el conducto y la plataforma: no "
+            "esta implementado",
+            id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+    if evento.resolver is None or material is None or seccion is None \
+            or evento.cota_desborde is None:
+        raise DatoFaltanteError(
+            "cota_desborde", id_punto=punto.id,
+            detalle="V8 necesita la seccion candidata, la hidraulica del "
+                    "evento y la cota de desborde de la plataforma, que el "
+                    "servicio le entrega; una llamada suelta a "
+                    "`v8_evento_extremo` tiene que traerlas en `evento`")
+    extremo = evento.resolver(seccion=seccion, material=material)
+    if extremo is None:
+        # El servicio resuelve SIEMPRE: en lamina libre o, si no cabe, con el
+        # barril a presion (correcciones de T-7b, H3). Un resolver que no
+        # devuelve nada es de una llamada suelta.
+        raise MetodoNoEvaluableError(
+            "V8", "carga del caudal del evento extremo",
+            f"la seccion candidata ({seccion.etiqueta()}) no tiene carga "
+            f"evaluada para el caudal del evento extremo ({Q_ext:.3f} m3/s)",
+            id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
+    entrada = cota_de_entrada(punto)
+    HW_ext = extremo.HW
+    cota_embalse = entrada.valor + HW_ext
+    cota_desborde = evento.cota_desborde
+    if not (math.isfinite(cota_embalse) and math.isfinite(cota_desborde)):
+        raise LimiteNumericoError(
+            "cota del embalse del evento extremo", valor=cota_embalse,
+            id_punto=punto.id,
+            motivo="la cota del embalse o la de desborde no es finita")
+    cumple = cota_embalse <= cota_desborde + TOL_UMBRAL_NORMATIVO
+    return Verificacion(
+        cumple=cumple,
+        numeral=NUMERAL_V8,
+        valor_obtenido=cota_embalse,
+        valor_admisible=cota_desborde,
+        criterio_aplicado=CRITERIO_UMBRAL_V8,
+        codigo="V8",
+        paso=paso(
+            "F5.V8", codigo="V8",
+            que="V8: nivel del embalse con el caudal del evento extremo "
+                "frente a la cota de desborde de la plataforma",
+            formula=("cota de entrada + HW(Q_ext)  <=  cota de desborde de "
+                     "la plataforma"),
+            sustitucion=(
+                Magnitud("TR_ext", TR, "años",
+                         f"criterio '{CRITERIO_EVENTO_EXTREMO}' [A], "
+                         "declarado", cifras=CIFRAS_MAGNITUD),
+                Magnitud("Q_ext", Q_ext, "m3/s", evento.origen,
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("Q_diseno", resultado.Q, "m3/s",
+                         "caudal de diseño del punto", cifras=CIFRAS_MAGNITUD),
+                Magnitud("TW_ext", evento.TW_m, "m",
+                         "tirante del receptor en el evento extremo "
+                         "(`TW_evento_extremo_m`, dato externo)",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("HW_ext", HW_ext, "m",
+                         "carga de M4 con Q_ext por la seccion candidata "
+                         f"({seccion.etiqueta()}), "
+                         f"{getattr(extremo, 'regimen', 'lamina libre')}, "
+                         "control que gobierna: "
+                         f"{extremo.control_gobernante.value}"
+                         + (f" ({extremo.nota})" if getattr(extremo, "nota",
+                                                            "") else ""),
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("cota_entrada", entrada.valor, "msnm",
+                         entrada.procedencia, cifras=CIFRAS_MAGNITUD)),
+            resultado=Magnitud(
+                "cota_embalse_ext", cota_embalse, "msnm",
+                "cota de entrada + HW_ext", cifras=CIFRAS_MAGNITUD),
+            umbral=Umbral(
+                descripcion="cota de desborde de la plataforma ("
+                            + evento.origen_cota_desborde + ")",
+                valor=cota_desborde, unidad="msnm",
+                cita_id="HDS5_3ED.2.2.5a#COTA_CRITICA",
+                caracter="PERMISO",
+                aplicacion="umbral del proyecto: la fuente admite esa cota "
+                           "de comparacion y no define el colapso; criterio "
+                           f"'{CRITERIO_UMBRAL_V8}' [A]",
+                criterio_aplicado=CRITERIO_UMBRAL_V8),
+            veredicto=_veredicto(
+                cumple, cota_desborde - cota_embalse, "m",
+                ("el evento extremo no desborda la plataforma" if cumple else
+                 "el evento extremo desborda la plataforma por esta seccion "
+                 "candidata: con el umbral declarado V8 no cumple; hace "
+                 "falta una seccion mayor, o el analisis del flujo sobre la "
+                 "via con el terraplen protegido")),
+            nota_del_proyecto=(
+                f"Umbral '{umbral_v8}' ('{CRITERIO_UMBRAL_V8}', [A]): es la "
+                "lectura mas exigente de la fila V8, que admite el "
+                "desborde. El periodo de retorno, el caudal y el tirante "
+                "del receptor del evento son entradas del proyecto. La "
+                "pendiente y la longitud son las del diseño. No se evalua "
+                "la erosion del terraplen ni el sifonamiento por la carga "
+                "sostenida.")),
     )
 
 
@@ -3125,18 +3578,32 @@ def v5_no_aplica_en_canal(*, punto: PuntoCritico) -> Verificacion:
 
 
 def pieza_del_hueco_de_V5(*, punto: PuntoCritico,
-                          resultado: ResultadoHidraulico):
-    """(codigo, pieza) que ocupa la posicion de V5: VC1 en Familia C, V5 si no."""
+                          resultado: ResultadoHidraulico,
+                          derecho_de_via: Optional[DerechoDeViaDelPunto] = None):
+    """
+    (codigo, pieza) que ocupa la posicion de V5: VC1 en Familia C, V5 si no.
+    `derecho_de_via` (T-7b) es lo que V5 necesita del punto y el servicio le
+    entrega; la Familia C no lo usa.
+    """
     if punto.familia is Familia.C:
         return "VC1", lambda: vc1_borde_libre_canal(punto=punto,
                                                     resultado=resultado)
-    return "V5", lambda: v5_remanso(punto=punto, resultado=resultado)
+    return "V5", lambda: v5_remanso(punto=punto, resultado=resultado,
+                                    derecho_de_via=derecho_de_via)
 
 
 def verificar(*, punto: PuntoCritico, material: Material,
              seccion: Seccion,
-             resultado: ResultadoHidraulico) -> Tuple[Verificacion, ...]:
+             resultado: ResultadoHidraulico,
+             expediente: Optional[DatosDeExpediente] = None
+             ) -> Tuple[Verificacion, ...]:
     """
+    --- T-7b --- `expediente` son los datos de expediente que V5 y V8
+    necesitan ademas del resultado (`DatosDeExpediente`: el derecho de via
+    del punto y el evento extremo); los arma el servicio. Sin el, V5 y V8 se
+    detienen donde siempre.
+
+
     Las doce verificaciones de la Fase 5, en el orden de la tabla salvo
     V10 (la pendiente del conducto, T-2), que la tabla lista al final y aqui
     se evalua detras de V4b para que V5 y V8 no la tapen. Y detras de V9,
@@ -3185,6 +3652,14 @@ def verificar(*, punto: PuntoCritico, material: Material,
     # ahi un prisma y un cilindro dejan de parecerse.
     D = seccion.altura
     hechas: list = []
+
+    def pieza_v8():
+        return v8_evento_extremo(
+            punto=punto, resultado=resultado, material=material,
+            seccion=seccion,
+            evento=(None if expediente is None
+                    else expediente.evento_extremo))
+
     piezas = (
         lambda: v1_borde_libre(D=D, material=material, punto=punto,
                                resultado=resultado),
@@ -3201,16 +3676,25 @@ def verificar(*, punto: PuntoCritico, material: Material,
         # tupla se corta en la primera que se detiene. Lo midio el auditor
         # adversarial de T-2.
         lambda: v10_pendiente_conducto(resultado=resultado),
-        pieza_del_hueco_de_V5(punto=punto, resultado=resultado)[1],
+        pieza_del_hueco_de_V5(
+            punto=punto, resultado=resultado,
+            derecho_de_via=(None if expediente is None
+                            else expediente.derecho_de_via))[1],
         lambda: v6_material_solido_arrastre(material=material,
                                             seccion=seccion,
                                             Q=resultado.Q),
         lambda: v7_flotacion(punto=punto, material=material,
                              seccion=seccion, resultado=resultado),
-        lambda: v8_evento_extremo(punto=punto, resultado=resultado),
+        pieza_v8,
         lambda: v9_disponibilidad_diametro(D=D, material=material),
     )
     for pieza in piezas:
+        # --- correcciones de T-7b (H3) --- V8 SOLO SOBRE EL CANDIDATO QUE YA
+        # CUMPLE LO ANTERIOR: corre un caudal mayor por la seccion candidata
+        # y, si no pudiera evaluarse, enmascaraba el V1 o el V5 que de verdad
+        # la descartan. Un candidato que ya incumple se rechaza igual, sin V8.
+        if pieza is pieza_v8 and not all(v.cumple for v in hechas):
+            continue
         try:
             hechas.append(pieza())
         except ErrorProyecto as exc:

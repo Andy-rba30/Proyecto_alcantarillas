@@ -60,6 +60,12 @@ VALOR_DE_PRUEBA = {
     "ancho_tributario_m": 12.0,
     "S_cuneta": 0.01,
     "inicio_tramo_cuneta_km": 2.2,
+    # --- T-7b --- el ancho del derecho de via de V5 (Familias A y B: en la
+    # C la sustituye VC1 y el dato no se lee).
+    "ancho_derecho_via_m": 400.0,
+    # --- cierre de T-7b (H2) --- la cota de afectacion aguas arriba del
+    # metodo de cota de V5 (Familias A y B, como el ancho).
+    "cota_afectacion_aguas_arriba_msnm": 44.0,
 }
 
 

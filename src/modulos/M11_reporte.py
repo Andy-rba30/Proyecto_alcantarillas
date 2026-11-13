@@ -2048,12 +2048,73 @@ def _bloque_cabezal(informe: Any) -> str:
         partes.append(
             '<div class="nota"><p>Longitud entre cabezales: no se calcula ('
             + _esc(c.motivo_sin_longitud) + ").</p></div>")
-    partes.append(
-        '<div class="nota"><p>La estabilidad del cabezal (E1-E6) y su armado '
-        "no se verifican en este bloque: la geometria es un "
-        "predimensionamiento, y las verificaciones CB de la tabla del punto "
-        "solo comprueban que remate al conducto y que lo declarado no quede "
-        "bajo los minimos con numero.</p></div>")
+    # --- T-7b --- La estabilidad de cada cabezal: la tabla de cargas SIN
+    # FACTORAR con sus brazos y la de combinaciones de los dos marcos. Solo
+    # formato: cargas, brazos, momentos y resultantes vienen del objeto que
+    # M9 emitio (`EstabilidadDelCabezal`). Las seis filas E1 a E3 de cada
+    # condicion estan en la tabla de verificaciones del punto y su
+    # desarrollo en los pasos de abajo.
+    for est in getattr(c, "estabilidad", ()):
+        filas = [_fila(["<th>Carga</th>", "<th>Que es</th>",
+                        "<th>V (kN/m)</th>", "<th>x (m)</th>",
+                        "<th>H (kN/m)</th>", "<th>z (m)</th>",
+                        "<th>M respecto de la punta (kN&middot;m/m)</th>"])]
+        for q in est.cargas:
+            filas.append(_fila([
+                _td(f"<code>{_esc(q.codigo)}</code>"), _td(_esc(q.descripcion)),
+                _td(_num(q.V, FMT_2), "num"), _td(_num(q.x, FMT_2), "num"),
+                _td(_num(q.H, FMT_2), "num"), _td(_num(q.z, FMT_2), "num"),
+                _td(_num(q.momento, FMT_2), "num")]))
+        combos = [_fila(["<th>Marco</th>", "<th>Combinacion</th>",
+                         "<th>Para</th>", "<th>N (kN/m)</th>",
+                         "<th>H (kN/m)</th>",
+                         "<th>M estabilizante</th>", "<th>M volcante</th>"])]
+        for k in est.combinaciones:
+            combos.append(_fila([
+                _td(_esc(k.marco)), _td(_esc(k.nombre)), _td(_esc(k.para)),
+                _td(_num(k.N, FMT_2), "num"), _td(_num(k.H, FMT_2), "num"),
+                _td(_num(k.M_estabilizante, FMT_2), "num"),
+                _td(_num(k.M_volcante, FMT_2), "num")]))
+        partes.append(
+            f"<p><b>Estabilidad del cabezal de {_esc(est.extremo)}, "
+            f"condicion {_esc(est.condicion.value)}</b> (regla de marco "
+            f"<code>{_esc(est.regla_de_marco)}</code> [A]; empuje: "
+            f"{_esc(getattr(est, 'metodo_empuje', ''))}; regimen "
+            f"<code>{_esc(getattr(est, 'regimen', ''))}</code> [A]). Cargas sin "
+            "factorar, por metro de muro; x desde la arista de la punta y z "
+            "desde la base de la zapata; momento positivo si estabiliza.</p>"
+            '<table class="compacta">' + "".join(filas) + "</table>"
+            '<table class="compacta">' + "".join(combos) + "</table>")
+        if est.pendientes and est.condicion.value == "estatico":
+            partes.append(
+                '<div class="nota"><p><b>Sin evaluar:</b> '
+                + " ".join(f"{_esc(cod)}: {_esc(motivo)}."
+                           for cod, motivo in est.pendientes)
+                + "</p></div>")
+    # (Correcciones de T-7b, H8.) Un cabezal con SOLO UNA condicion
+    # evaluada no se lee como completo: el aviso que M9 emite
+    # (`integrar_estabilidad`) se imprime tambien aqui, junto a su tabla.
+    for aviso in (a for a in getattr(c, "avisos", ())
+                  if "se evaluo SOLO en la condicion" in a):
+        partes.append('<div class="nota aviso"><p><b>Incompleta:</b> '
+                      + _esc(aviso) + "</p></div>")
+    if getattr(c, "estabilidad", ()):
+        partes.append(
+            '<div class="nota"><p>Las verificaciones E1 a E3 de cada '
+            "condicion estan en la tabla de verificaciones del punto, una "
+            "fila por marco: las del marco que rige deciden y las del otro "
+            "informan. Los dos marcos no se cruzan: el LRFD compara cargas "
+            "factoradas con resistencias minoradas y el ASD cargas de "
+            "servicio con factores de seguridad. El armado no se verifica "
+            "en este bloque.</p></div>")
+    else:
+        partes.append(
+            '<div class="nota"><p>La estabilidad del cabezal (E1 a E3) NO '
+            "se evaluo en esta corrida: el motivo esta en los bloqueos del "
+            "punto. La geometria es un predimensionamiento, y las "
+            "verificaciones CB de la tabla del punto solo comprueban que "
+            "remate al conducto y que lo declarado no quede bajo los minimos "
+            "con numero. El armado no se verifica en este bloque.</p></div>")
     return ("<h4>Fase 9 &mdash; Cabezal y aleros del punto</h4>"
             + "".join(partes)
             + bloque_pasos(traza_cabezal(informe), TITULO_TRAZA_CABEZAL))

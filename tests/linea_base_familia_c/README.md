@@ -1254,3 +1254,59 @@ proyecto:
 punto es idéntico al de `c654a16` en los cuatro JSON (comparado entero, no solo por el
 comparador): A-01 y A-02 en Ø 0.90 m de concreto, C-01 en marco 1.20 × 0.90 con el HW de
 T-3 en la corrida de la Familia C, B-01 y los bloqueos donde estaban.
+
+## Regenerada en T-7b (2026-11-13, FASE A, sobre `250c972`): la ficha del método de V5 y la Fase 9 del proyecto sin K_AE único; ningún número de cálculo
+
+T-7b ensambla la estabilidad del cabezal por punto y le da a V5 y a V8 método declarable.
+**Sin declarar nada, ninguna corrida de esta línea base llega a V5 evaluada, a V8 ni a la
+Fase 9**: los criterios `remanso_derecho_via`, `TR_evento_extremo` y
+`umbral_no_colapso_evento_extremo` no tienen valor de archivo. Medido contra `250c972`,
+con `diff` y con el comparador de E-B (`src/comparador.py`) en los cuatro JSON:
+
+- **Los cuatro JSON:** `criterios_sha1`; el recuento de criterios sin valor (25 → 22) y
+  sin consumidor (8 → 7: `c_phi_fundacion` tiene consumidor); y el **texto** de la ficha
+  de `remanso_derecho_via` (concepto, fuente, responsable y evidencia: ya no es «la
+  extensión del remanso y el ancho», sino el **método** de V5) donde esa ficha viaja
+  —los diferidos del alcance, el bloqueo de V5 de cada punto, el motivo de cada escalón
+  no evaluado a expediente y `criterios.bloquearon`—. 27 diferencias en el JSON de perfil
+  ancho, 27 en el de la Familia C, 31 en el de expediente (con las del punto siguiente)
+  y 3 en el de la rama de error; 0 no comparables.
+- **`informe_expediente.json` y `cli_expediente.txt`, además:** sale de la Fase 9 **del
+  proyecto** la etapa «K_AE de Mononobe-Okabe (9.2)», que se detenía en
+  `phi_relleno_trasdos`: el K_AE ya no es del proyecto sino de cada cabezal (depende de
+  la pendiente del relleno de ese cabezal) y lo calcula el ensamble del punto. «Etapas
+  bloqueadas» 10 → 9, `cabezal.bloqueos` 5 → 4, y `phi_relleno_trasdos` deja de figurar
+  entre los criterios que bloquearon **esta** corrida (sigue sin valor, y bloquea la
+  estabilidad del cabezal de cada punto en cuanto uno se dimensiona a expediente). Las
+  notas del cabezal pasan de 43 a 38: la del empuje bajo el freático, la del Ka, la de
+  la zapata («terreno delante de la zapata» donde decía «zapata próxima al talud») y el
+  censo de funciones sin llamador, reescritos.
+- **Los cuatro `cli_*.txt` restantes y las tres memorias de la CLI:** el texto de esa
+  ficha, las dos huellas (`criterios_sha1` y `hoja_ruta_sha1`, por las notas de T-7b en
+  la v8) y el recuento «119 criterios declarados, 25 todavía sin valor» → «128 … 22».
+- **Sin cambio de un byte:** `cli_rama_error.txt`, los dos CSV de resumen y
+  `memoria_punto_cajon.html`.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.** Los bloques `diseno`,
+`verificaciones`, `hidraulica`, `geometria`, `estructural`, `proteccion_*`, `socavacion`,
+`durabilidad` y `caudal` de cada punto son idénticos a los de `250c972` en los cuatro JSON
+(comparados enteros). A-01 y A-02 siguen en Ø 0.90 m de concreto, C-01 en su marco
+1.20 × 0.90 en la corrida de la Familia C, y B-01 y los bloqueos donde estaban.
+
+**Cierre de T-7b (2026-11-13, correcciones de la auditoría adversarial), regenerada otra
+vez y medida contra `250c972`.** Las correcciones (el freático como cota, V5 por cota de
+afectación, V8 a presión y solo sobre el candidato que cumple, la cuña de tanteo, el agua
+hasta el relleno retenido, el régimen del cabezal) **no alcanzan ninguna corrida de esta
+línea base**: sin declarar nada, V5 sigue detenida en `remanso_derecho_via` y ningún
+punto llega a V8 ni a la Fase 9 del punto. Respecto de la FASE A cambian solo textos y
+recuentos: las dos huellas, «128 criterios declarados, 22 todavía sin valor» → «129 … 22»
+(`regimen_cabezal` [A] = `cedente` tiene valor) en las tres memorias, la nota «Empuje bajo
+el nivel freático» del bloque `cabezal` del proyecto (el agua sin drenaje llena el relleno
+**retenido** y el freático se mide bajo el terreno del cruce) en `cli_expediente.txt` y en
+`informe_expediente.json`, y `criterios_sha1` en los cuatro JSON. **Contra `250c972`**, con
+el comparador de E-B en los cuatro JSON: 27, 27, 31 y 3 diferencias —las mismas clases
+que la FASE A declaró arriba—, 0 no comparables; los bloques `diseno`, `verificaciones`,
+`hidraulica`, `geometria`, `estructural`, `proteccion_*`, `socavacion`, `durabilidad` y
+`caudal` de cada punto, idénticos; los dos CSV de resumen, `cli_rama_error.txt` y
+`memoria_punto_cajon.html`, idénticos byte a byte. **Diámetros, secciones, materiales y
+HW movidos: ninguno.**

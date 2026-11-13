@@ -151,6 +151,10 @@ si no se declara:
 | `ancho_tributario_m` | no | número | — | B | el programa la resuelve por otra vía |
 | `S_cuneta` | no | número | — | B | el programa la resuelve por otra vía |
 | `inicio_tramo_cuneta_km` | no | número | — | B | el pre-vuelo la lista como falta |
+| `ancho_derecho_via_m` | no | número | — | A, B | nada a nivel de perfil; a expediente, con `remanso_derecho_via` declarado, V5 se detiene |
+| `Q_evento_extremo_m3s` | no | número | — | las tres | nada a nivel de perfil; a expediente, con `TR_evento_extremo` declarado, V8 se detiene |
+| `TW_evento_extremo_m` | no | número | — | las tres | nada a nivel de perfil; a expediente, con `TR_evento_extremo` declarado, V8 se detiene |
+| `cota_afectacion_aguas_arriba_msnm` | no | número | — | A, B | nada a nivel de perfil; a expediente, con `remanso_derecho_via` declarado, V5 se detiene |
 <!-- fin: externos -->
 
 «Por otra vía» quiere decir: `longitud_m` la calcula la Fase 7.B con las

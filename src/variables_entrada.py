@@ -1217,6 +1217,86 @@ _EXTERNOS: Dict[str, _Externo] = {
         nota="La lee `servicio._fase_6_socavacion`; M6 la recibe como "
              "argumento, y por eso la fase se declara",
     ),
+
+    # --- T-7b --- (cadena T) · los tres datos de expediente de V5 y V8 ------
+    "ancho_derecho_via_m": _Externo(
+        concepto="Ancho TOTAL de la faja del derecho de via en el cruce, m: "
+                 "lo fija la resolucion que aprueba el derecho de via del "
+                 "tramo, sobre el piso de la Tabla 304.09 del DG-2018. V5 "
+                 "compara con su mitad la extension del embalse aguas arriba "
+                 "(metodo de 'remanso_derecho_via'). Familias A y B: en la C "
+                 "V5 no aplica y la sustituye VC1",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="la autoridad competente, por resolucion (DG-2018 "
+                        "num. 304.07.02); es dato del trazo, por punto, "
+                        "opcional y sin valor por defecto",
+            dominio="m > 0, finito y menor que el techo fisico de dominios.py",
+        ),
+        dominio="ANCHO_DERECHO_VIA_MAX_M",
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con el metodo de V5 declarado y a nivel de "
+             "expediente; sin el dato, V5 se detiene con DatoFaltanteError. "
+             "La lee `servicio._datos_de_expediente` y se la pasa a "
+             "`M5.v5_remanso`",
+    ),
+
+    # --- correcciones de T-7b (H2) --- el dato del metodo de COTA de V5.
+    "cota_afectacion_aguas_arriba_msnm": _Externo(
+        concepto="Cota del terreno o del bien a proteger en el limite del "
+                 "derecho de via AGUAS ARRIBA del cruce, msnm, de la "
+                 "topografia: V5 con el metodo «cota_de_afectacion» de "
+                 "'remanso_derecho_via' la compara con la cota del embalse "
+                 "de diseño (solera de entrada + HW de M4), que es el "
+                 "criterio de nivel del HDS-5 num. 2.2.5. Familias A y B",
+        unidad="msnm",
+        resolucion=Libre(
+            que_lo_fija="la topografia del cruce (levantamiento del cauce y "
+                        "del limite del derecho de via aguas arriba); dato "
+                        "por punto, opcional y sin valor por defecto",
+            dominio="msnm, finito (admite cero y signo: es una cota)",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con 'remanso_derecho_via' = «cota_de_afectacion» "
+             "y a nivel de expediente; sin el dato, V5 se detiene con "
+             "DatoFaltanteError. La lee `servicio._datos_de_expediente` y se "
+             "la pasa a `M5.v5_remanso`",
+    ),
+
+    "Q_evento_extremo_m3s": _Externo(
+        concepto="Caudal del evento extremo de V8, m3/s: el que corresponde "
+                 "al periodo de retorno de 'TR_evento_extremo', del estudio "
+                 "hidrologico. V8 lo corre por la seccion adoptada. El "
+                 "programa no lo escala del caudal de diseño",
+        unidad="m3/s",
+        resolucion=Libre(
+            que_lo_fija="el estudio hidrologico del proyecto; es entrada "
+                        "por punto, opcional y sin valor por defecto",
+            dominio="m3/s > 0, finito y no menor que el caudal de diseño",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con 'TR_evento_extremo' declarado y a nivel de "
+             "expediente; sin el dato, V8 se detiene con DatoFaltanteError. "
+             "La lee `servicio._datos_de_expediente` y se la pasa a "
+             "`M5.v8_evento_extremo`",
+    ),
+
+    "TW_evento_extremo_m": _Externo(
+        concepto="Tirante del cuerpo receptor sobre el fondo de la salida "
+                 "durante el evento extremo de V8, m. No se toma el de "
+                 "diseño: el receptor sube con la avenida. Admite 0 (salida "
+                 "libre)",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el estudio hidrologico o hidraulico del receptor "
+                        "para el evento extremo; entrada por punto, opcional "
+                        "y sin valor por defecto",
+            dominio="m >= 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con 'TR_evento_extremo' y `Q_evento_extremo_m3s` "
+             "declarados; sin el, V8 se detiene con DatoFaltanteError",
+    ),
 }
 
 
@@ -1374,14 +1454,27 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     # --- T-7a, correcciones (H8 y dudoso 4) ---
     "profundidad_cimentacion_min_cabezal_m": _Meta(unidad="m"),
     "peralte_min_zapata_armada_m": _Meta(unidad="m"),
-    "c_phi_fundacion": _Meta(
-        unidad="kPa y grados",
-        fase_declarada="Fase 9 - Cabezal y aletas (E1-E5 de Sec. 9.3, fuera "
-                       "del alcance de esta CLI)"),
+    # --- T-7b --- 'c_phi_fundacion' TIENE consumidor (el ensamble de
+    # estabilidad de M9) y su fase se deduce de el; 'capacidad_portante_adm'
+    # sigue sin consumidor: la presion admisible del EMS entra como el campo
+    # `q_adm_kpa` del suelo de fundacion.
+    "c_phi_fundacion": _Meta(unidad="kPa, grados y kN/m3"),
     "capacidad_portante_adm": _Meta(
         unidad="kPa",
-        fase_declarada="Fase 9 - Cabezal y aletas (E1-E5 de Sec. 9.3, fuera "
-                       "del alcance de esta CLI)"),
+        fase_declarada="Fase 9 - Cabezal y aletas (E1 de Sec. 9.3: la "
+                       "presion admisible del EMS entra por el campo "
+                       "`q_adm_kpa` del suelo de fundacion)"),
+    # --- T-7b --- el ensamble de estabilidad y el evento extremo de V8.
+    "umbral_no_colapso_evento_extremo": _Meta(unidad="-"),
+    "marco_estabilidad_cabezal": _Meta(unidad="-"),
+    "fila_phi_estabilidad_cabezal": _Meta(unidad="-"),
+    "drenaje_trasdos": _Meta(unidad="-"),
+    "peso_especifico_saturado_relleno_kn_m3": _Meta(unidad="kN/m3"),
+    "fraccion_delta_sobre_phi_trasdos": _Meta(unidad="- (fraccion de phi)"),
+    "regla_pendiente_relleno_trasdos": _Meta(unidad="-"),
+    "factores_inclinacion_carga_portante": _Meta(unidad="-"),
+    "terreno_delante_del_cabezal": _Meta(unidad="-"),
+    "regimen_cabezal": _Meta(unidad="-"),
     "categoria_refuerzo_aashto": _Meta(unidad="-"),
     "clase_sitio": _Meta(
         unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
@@ -1555,7 +1648,7 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "procedimiento_flexion_corte_aashto_sec5": _Meta(unidad="-"),
     "punto_aplicacion_incremento_sismico": _Meta(unidad="- (fraccion de H)"),
     "relacion_intensidad_duracion": _Meta(unidad="-"),
-    "remanso_derecho_via": _Meta(unidad="m"),
+    "remanso_derecho_via": _Meta(unidad="- (metodo de V5)"),
     "seccion_receptor": _Meta(
         unidad="m, H:V, m/m, -",
         fase_declarada="Fase 1 - Datos de entrada (Sec. 1.3, paso 2: Manning "

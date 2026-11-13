@@ -693,12 +693,21 @@ def test_v5_con_el_criterio_declarado_no_revienta_con_assertionerror():
     `AssertionError` desnudo. Al no descender de ErrorProyecto, `cli._etapa`
     no lo capturaba y la corrida entera abortaba. Ahora sale DatoFaltanteError
     -- que si es ErrorProyecto -- y la CLI lo anota como bloqueo del punto.
+
+    REESCRITO EN T-7b: el criterio es desde T-7b el METODO de V5 (categoria
+    de dos textos), de modo que se declara por la puerta con el metodo
+    implementado; y un valor que burle la puerta ('cumple', lo que este test
+    imponia) lo rechaza el consumidor con DatoInvalidoError, que tambien es
+    ErrorProyecto. El metodo en si lo fija tests/test_t7b_cabezal_
+    estabilidad.py.
     """
     punto = _punto()
-    # `con_valor`: la puerta rechaza 'cumple' por su forma desde EXT-5; lo
-    # que aqui se prueba es que V5, con el criterio ocupado, pide su dato.
     with con_valor("remanso_derecho_via", "cumple",
-                   motivo="V5 con el criterio ocupado por algo que no es su forma"):
+                   motivo="segunda linea: un metodo que burla la puerta"):
+        with pytest.raises(DatoInvalidoError) as invalido:
+            v5_remanso(punto=punto, resultado=_resultado())
+    assert isinstance(invalido.value, ErrorProyecto)
+    with declarados({"remanso_derecho_via": "embalse_a_nivel"}):
         with pytest.raises(DatoFaltanteError) as excinfo:
             v5_remanso(punto=punto, resultado=_resultado())
 

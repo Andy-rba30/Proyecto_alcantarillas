@@ -506,9 +506,11 @@ def test_M06_el_punto_de_uso_declara_coulomb_y_la_memoria_lo_recibe():
     texto = "\n".join(M9.condicion_normativa_cabezal())
     assert "2.4.4.1.5.3" in texto and "Coulomb" in texto
     assert "tan" in texto          # dice que la forma reducida es la de la v8
-    # Y declara que la resultante inclinada se toma ENTERA como horizontal,
-    # con su direccion (auditoria adversarial de EXT-7; EXT-7-04).
-    assert "delta + beta" in texto and "ENTERA" in texto
+    # REESCRITO EN T-7b: EXT-7 declaraba aqui que la resultante inclinada se
+    # tomaba ENTERA como horizontal (ficha EXT-7-04). El ensamble de T-7b la
+    # DESCOMPONE, y la declaracion dice eso y que la ficha queda cerrada.
+    assert "delta + beta" in texto and "DESCOMPONE" in texto
+    assert "EXT-7-04" in texto and "ENTERA" not in texto
     assert "cos(delta + beta)" in M9.empujes_trasdos.__doc__
     registro = (RAIZ / "docs" / "decisiones_diferidas.md").read_text(
         encoding="utf-8")
@@ -532,7 +534,12 @@ def test_M06_la_sensibilidad_de_i_dice_donde_se_agota_mononobe_okabe():
     c = ca.criterio("pendiente_relleno_trasdos_i")
     texto = (c.justificacion + " " + (c.verificacion_pendiente or "")).lower()
     assert "26.6" in texto or "26,6" in texto
-    assert "3.4" in texto and "8.4" in texto
+    # REESCRITO EN T-7b: la ficha ya no escribe los dos limites (3.4 y 8.4
+    # grados) sino la CONDICION de la que salen, i < phi - psi, y que AASHTO
+    # 11.6.5.3 la escribe como limite de validez del metodo -- que es lo que
+    # el ensamble aplica, con `MetodoNoEvaluableError` fuera de ella --. Los
+    # dos numeros se siguen comprobando abajo, contra la cadena sismica.
+    assert "phi - 26.6" in texto and "11.6.5.3" in texto
     # y el numero es el que sale de la cadena sismica de la obra, no uno
     # escrito a mano: los dos limites de la ficha, redondeados a la decima
     # de grado con que la ficha los escribe, son phi - psi.
@@ -678,10 +685,17 @@ def test_EXT7_nada_se_cablea_a_la_cli():
     """
     `FUNCIONES_SIN_CONSUMIDOR` sigue nombrando a las tres familias tocadas,
     y ni cli.py ni M11 las llaman.
+
+    REESCRITO EN T-7b: la familia de `verificar_estabilidad` se censa con
+    las cuatro verificaciones sueltas a las que llama (una sola entrada), y
+    las tres siguen SIN llamador: el ensamble de T-7b no las usa, emite sus
+    propias filas por marco (`ensamble_estabilidad`), que SI estan cableadas.
     """
+    censo = " / ".join(M9.FUNCIONES_SIN_CONSUMIDOR)
     for nombre in ("empujes_trasdos", "verificar_estabilidad",
                    "armado del num. 9.4 (ocho funciones)"):
-        assert nombre in M9.FUNCIONES_SIN_CONSUMIDOR
+        assert nombre in censo
+    assert "ensamble_estabilidad" not in censo
     for archivo in ("cli.py", "src/servicio.py", "src/modulos/M11_reporte.py"):
         arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8"))
         llamadas = {n.func.attr for n in ast.walk(arbol)

@@ -508,6 +508,19 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # cinco del cajon: `test_M5_verificaciones::test_la_eleccion_de_fila_
         # de_V7_sale_de_su_fundamento_y_lista_las_siete` ejecuta V7 y lo mide.
         "F5.V7_FILA",
+        # --- T-7b --- V5, V8 Y EL ENSAMBLE DE ESTABILIDAD. F5.V5 y F5.V8
+        # dejaron de ser huecos (tienen metodo y paso), pero su metodo y su
+        # umbral son DECLARABLES y no tienen valor de archivo -- decision del
+        # dueño --: la corrida por defecto se detiene en el criterio, como
+        # antes, y no emite el paso. Los diez F9.* del ensamble cuelgan de un
+        # punto DIMENSIONADO a nivel de expediente con el EMS declarado, y
+        # esta corrida no dimensiona ninguno. Que los doce se emiten lo mide
+        # tests/test_t7b_cabezal_estabilidad.py, de punta a punta por
+        # `servicio.correr` y pieza a pieza.
+        "F5.V5", "F5.V8",
+        "F9.EMPUJES", "F9.SOBRECARGA", "F9.AGUA", "F9.SISMO",
+        "F9.COMBINACIONES", "F9.E1_LRFD", "F9.E2_LRFD", "F9.E3_LRFD",
+        "F9.E_ASD", "F9.GLOBAL",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve
@@ -611,7 +624,11 @@ def test_el_censo_de_lo_que_no_puede_tener_fundamento_esta_completo():
     para traerlo.
     """
     codigos = {id_.split(".")[-1] for id_, _p, _q in F.SIN_FUNDAMENTO}
-    assert {"V4b", "V5", "V6", "V8", "V9"} <= codigos
+    # V5 y V8 SALIERON del censo en T-7b: tienen `Fundamento` (F5.V5, F5.V8)
+    # y emiten paso cuando su metodo se declara.
+    assert {"V4b", "V6", "V9"} <= codigos
+    assert not {"V5", "V8", "CABEZAL"} & codigos
+    assert {"F5.V5", "F5.V8"} <= set(F.FUNDAMENTOS)
     for id_, por_que, que_haria_falta in F.SIN_FUNDAMENTO:
         assert por_que.strip() and que_haria_falta.strip(), id_
 
@@ -621,7 +638,8 @@ def test_una_verificacion_sin_paso_imprime_su_razon_en_vez_de_callarla():
     Un hueco callado en una memoria se lee como un olvido. Con la razon
     delante se lee como lo que es.
     """
-    for codigo in ("V4b", "V5", "V6", "V8", "V9"):
+    # Sin V5 ni V8 desde T-7b: ya no son verificaciones sin paso.
+    for codigo in ("V4b", "V6", "V9"):
         bloque = M11._paso_ausente(codigo)
         assert "sin fundamento normativo declarado" in bloque, codigo
         assert "Que haria falta para traerlo" in bloque, codigo

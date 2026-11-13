@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `3584cf0` · Suite: 5690 passed, 19 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `542370a` · Suite: 5979 passed, 23 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -31,13 +31,12 @@
   - B-01: Fase 10 - Espaciamiento de alivio (M10) → espaciamiento maximo entre alivios (`TipoDeBloqueo.DATO_FALTANTE`).
   - C-01: Fase 5 - Verificaciones → VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no) (`TipoDeBloqueo.DIFERIDO_POR_ALCANCE`).
   - C-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DATO_FALTANTE`).
-  - proyecto: Fase 9 - Cabezal y aletas (M9) → K_AE de Mononobe-Okabe (9.2) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'contra_suelo' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **159** · fórmulas distintas: **28** · fundamentos ejercitados: **19** de 94.
+Pasos emitidos: **159** · fórmulas distintas: **28** · fundamentos ejercitados: **19** de 106.
 
 ## 2. Índice
 
@@ -90,18 +89,9 @@ no puede tener fundamento normativo hoy y qué haría falta para traerlo.
 La corrida se detiene antes de llegar a ellos (ver §1). Se listan con
 la misma ficha para que el censo entero sea visible desde aquí.
 
-- **`CABEZAL`** — sin fundamento normativo declarado.
-  - Por que no lo tiene: La cadena sismica y la estabilidad del cabezal tienen sus citas en el registro (AASHTO 11.6.5.1, A11.3.1, 3.10.3.1), pero la Fase 9 esta DIFERIDA al expediente y no emite paso en la corrida de perfil: un fundamento sin paso que lo imprima no se puede comprobar contra la memoria generada, que es la unica prueba que este proyecto acepta (NOR-MEM-01 se cerro justo por no tenerla).
-  - Que haria falta para traerlo: Emitir `PasoDeMemoria` desde M9 en la corrida de expediente; las citas ya estan.
-- **`V5`** — sin fundamento normativo declarado.
-  - Por que no lo tiene: El remanso dentro del derecho de via tiene desde EXT-6 su requisito JURIDICO citado --- DG-2018 304.07.01 y 304.07.02 con la Tabla 304.09 y el incremento de 5.00 m del borde de las obras de drenaje, presentes y verificados --- y sigue sin tener paso que fundar, por dos razones que no son la misma: el 304.07 acota el ANCHO de la faja y no enuncia condicion hidraulica alguna (no dice cuanto puede remansar la obra ni como se calcula la extension del embalse: ese metodo es [A] del proyectista, 'remanso_derecho_via'), y la Ley 29338, que gobierna la faja marginal, sigue AUSENTE. Un `Fundamento` con las citas del DG-2018 convertiria un piso de ancho en una verificacion hidraulica que la fuente no escribe.
-  - Que haria falta para traerlo: El metodo de perfil de remanso declarado por el proyectista, el dato de sitio `ancho_derecho_via_m` (hoy no llega por ninguna via) y la clase de via del corredor para elegir fila en la Tabla 304.09; con los tres, el paso existe y su fundamento cuelga de DG2018.304.07.02. La faja marginal exige ademas la Ley 29338 en `normas/`.
 - **`V6`** — sin fundamento normativo declarado.
   - Por que no lo tiene: El material solido de arrastre lo trata el num. 4.1.1.3.7 a), que esta en el registro, pero lo que el proyecto ejecuta no es un calculo: es una constatacion declarativa sin magnitud ni umbral. No hay paso que fundar.
   - Que haria falta para traerlo: Cuando V6 pase a evaluar un diametro minimo por zona, su fundamento cuelga de `MC_HHD.4.1.1.3.7a`, que ya esta transcrita y verificada.
-- **`V8`** — sin fundamento normativo declarado.
-  - Por que no lo tiene: El evento extremo se verifica contra un TR adoptado por el proyecto ('TR_evento_extremo'), no contra un numeral: la Tabla N 02 no tabula evento extremo para alcantarillas.
-  - Que haria falta para traerlo: Nada que transcribir mientras el TR de evento extremo siga siendo una adopcion [A]; el fundamento seria del criterio, no de la norma.
 - **`V9`** — sin fundamento normativo declarado.
   - Por que no lo tiene: La disponibilidad de diametro sale de un CATALOGO de fabricacion, no de una norma. `NOR-PRO-01` y `NOR-PRO-02` retiraron precisamente la atribucion de los topes a AASHTO M170 y ASTM A760, que tabulan mas. El del HDPE si coincide con el techo de la serie de AASHTO M 294-11 (N2, cita AASHTO_M294_TRAD.7.2.1), pero sobre una traduccion no oficial sin firma, y el paso sigue descartando por catalogo para los tres materiales.
   - Que haria falta para traerlo: Nada: un catalogo no tiene numeral y no puede sostener un fundamento. Es lo que `DeCatalogo` existe para rotular. Un fundamento del HDPE sobre M 294-11 exigiria el original firmado y un paso que descartara por norma, que hoy no existe.
@@ -137,8 +127,10 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F4.N_CAJON_TB1` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por la fila del cajon de la Tabla B.1 del HDS-5 | `M2_material` |
 | `F4.PISO_HW` | Fase 4 - Dimensionamiento hidraulico | Carga de control de entrada cuando la correccion por pendiente Ks·S la deja nula o negativa: el piso adoptado (`hw_entrada_fuera_de_rango`) | sin `paso()`; entra por otra puerta desde `M4_control` |
 | `F5.V2b.REGIMEN` | Fase 5 - Verificaciones | V2b - El regimen con que se aplica el indicador de pendiente: umbral duro o indicador con aviso (`regimen_v2b`) | sin `paso()` y sin mención fuera del registro |
+| `F5.V5` | Fase 5 - Verificaciones | V5: el embalse aguas arriba frente al derecho de via, por el metodo declarado (cota de afectacion o embalse a nivel) | `M5_verificaciones` |
 | `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | `M5_verificaciones` |
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | sin `paso()`; entra por otra puerta desde `M5_verificaciones` |
+| `F5.V8` | Fase 5 - Verificaciones | V8: nivel del embalse con el caudal del evento extremo frente a la cota de desborde de la plataforma | `M5_verificaciones` |
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | `M5_verificaciones` |
 | `F6.APRON` | Fase 6 - Proteccion de entrada y salida | Tamaño de piedra del apron de enrocado por HEC-14, Ec. (10.4): D50 en funcion de Q, D y TW | `M6_proteccion` |
 | `F6.APRON_GEOMETRIA` | Fase 6 - Proteccion de entrada y salida | Clase de enrocado, longitud, profundidad y ancho del apron por la Tabla 10.1 de HEC-14 | `M6_proteccion` |
@@ -174,13 +166,23 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F8.TMC_ASD` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: contraste por tensiones admisibles (ASTM A796, num. 8), que no rige | `M8_estructural` |
 | `F8.TMC_COSTURA` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: resistencia de la costura longitudinal | `M8_estructural` |
 | `F8.TMC_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion | `M8_estructural` |
+| `F9.AGUA` | Fase 9 - Cabezal y aletas | Agua en el trasdos: nivel, empuje hidrostatico, suelo sumergido y subpresion | `M9_cabezal` |
 | `F9.ALEROS` | Fase 9 - Cabezal y aletas | Aleros: angulo, longitud, alturas inicial y final, espesor | `M9_cabezal` |
+| `F9.COMBINACIONES` | Fase 9 - Cabezal y aletas | Cargas del cabezal con sus brazos y combinaciones de cada marco: factoradas (LRFD) y de servicio (ASD) | `M9_cabezal` |
 | `F9.CORONACION` | Fase 9 - Cabezal y aletas | Coronacion y altura del cabezal: sobre la clave exterior y sobre el nivel de agua del extremo | `M9_cabezal` |
 | `F9.DESPLANTE` | Fase 9 - Cabezal y aletas | Profundidad de desplante del cabezal: minimo de E.050 y, a la salida, bajo la socavacion | `M9_cabezal` |
 | `F9.DIMENSIONES` | Fase 9 - Cabezal y aletas | Predimensionamiento del cabezal: tipo, espesores, zapata y longitud del muro | `M9_cabezal` |
+| `F9.E1_LRFD` | Fase 9 - Cabezal y aletas | E1 (LRFD): presion factorada sobre el ancho efectivo frente a la resistencia portante factorada | `M9_cabezal` |
+| `F9.E2_LRFD` | Fase 9 - Cabezal y aletas | E2 (LRFD): excentricidad de la resultante factorada frente al limite de la base | `M9_cabezal` |
+| `F9.E3_LRFD` | Fase 9 - Cabezal y aletas | E3 (LRFD): fuerza horizontal factorada frente a la resistencia factorada al deslizamiento | `M9_cabezal` |
 | `F9.EMBOCADURA` | Fase 9 - Cabezal y aletas | Embocadura del punto: cabezal con aleros o recto, angulo de los aleros y lo que la Tabla C.2 del HDS-5 hace con ellos | `M9_cabezal` |
+| `F9.EMPUJES` | Fase 9 - Cabezal y aletas | Empuje activo del relleno sobre el plano vertical del talon: coeficiente de la cuña de tanteo con la superficie real (o de Coulomb con una pendiente equivalente), altura y componentes horizontal y vertical | `M9_cabezal` |
+| `F9.E_ASD` | Fase 9 - Cabezal y aletas | E1 a E3 (ASD): factores de seguridad al portante, al volteo y al deslizamiento con cargas de servicio | `M9_cabezal` |
+| `F9.GLOBAL` | Fase 9 - Cabezal y aletas | E4 y E5: estabilidad global del muro y del talud, diferidas al expediente | `M9_cabezal` |
 | `F9.LONGITUD` | Fase 9 - Cabezal y aletas | Longitud entre cabezales con el talud muriendo en el relleno que retienen, y longitud de metrado del barril | `M9_cabezal` |
 | `F9.LOSA` | Fase 9 - Cabezal y aletas | Losa de entrega y dentellon delante del cabezal | `M9_cabezal` |
+| `F9.SISMO` | Fase 9 - Cabezal y aletas | Demanda sismica del cabezal: empuje sismico (cuña de tanteo pseudoestatica, o Mononobe-Okabe), su punto de aplicacion, la inercia del muro y los dos casos de combinacion | `M9_cabezal` |
+| `F9.SOBRECARGA` | Fase 9 - Cabezal y aletas | Sobrecarga viva de trafico sobre el relleno: altura equivalente, empuje y peso sobre el talon | `M9_cabezal` |
 | `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | `MH_hidrologia` |
 | `FH.C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura vegetal, tipo de suelo y pendiente del terreno | `MH_hidrologia` |
 | `FH.FEN` | Fase 1-bis - Hidrologia: caudal de diseño | Contraste del tratamiento de los años FEN: la lluvia de diseño adoptada frente a la de la serie completa y la de la serie sin los años FEN | `MH_hidrologia` |

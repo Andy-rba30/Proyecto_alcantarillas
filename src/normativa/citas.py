@@ -5423,6 +5423,29 @@ DG2018_304_07_01 = _cita(
           "transcriben: ninguno trae numero."),
 )
 
+# --- T-7b --- LA LECTURA CON QUE V5 USA EL ANCHO. La fuente da un ANCHO de
+# faja; V5 necesita una DISTANCIA del eje de la via al limite de la faja del
+# lado de aguas arriba. Que esa distancia sea la mitad del ancho es un
+# supuesto del proyecto, no de la norma, y se declara.
+INTERPRETACION_FAJA_SIMETRICA = Interpretacion(
+    texto=("V5 toma el dato `ancho_derecho_via_m` como el ancho TOTAL de la "
+           "faja y la supone simetrica respecto del eje de la via: del lado "
+           "de aguas arriba queda la mitad, y con ella se compara la "
+           "extension del embalse. La norma fija un ancho; no dice como se "
+           "reparte a cada lado del eje."),
+    en_contra=("la resolucion que aprueba el derecho de via puede fijar la "
+               "faja con anchos distintos a cada lado del eje, y entonces la "
+               "mitad no es el limite del lado de aguas arriba",
+               "en media ladera la faja se desplaza hacia el lado del corte o "
+               "del terraplen por los incrementos del 304.07.02"),
+    a_favor=("la Tabla 304.09 da UN ancho por clase de carretera, sin "
+             "distinguir lados",
+             "sin la resolucion del tramo no hay otro reparto que suponer, y "
+             "el dato es declarable por punto: quien tenga la faja "
+             "asimetrica declara el doble de la distancia del lado de aguas "
+             "arriba"),
+)
+
 DG2018_304_07_02 = _cita(
     id="DG2018.304.07.02",
     fuente_id="DG2018",
@@ -5448,6 +5471,7 @@ DG2018_304_07_02 = _cita(
           "requeridas para el funcionamiento de la vía». Es el requisito "
           "juridico [N] de V5 (v8 fila V5, enmendada en EXT-0); la condicion "
           "hidraulica no esta aqui ni en ninguna otra parte del 304.07."),
+    interpretacion=INTERPRETACION_FAJA_SIMETRICA,
 )
 
 INTERPRETACION_INCREMENTO_DERECHO_VIA = Interpretacion(
@@ -11785,6 +11809,1116 @@ E060_22_10_2_CICLOPEO = _cita(
           "'predimensionamiento_cabezal' no lo juzga (es geometria); lo "
           "juzga T-7c, y la memoria lo avisa cuando el tipo sale de "
           "gravedad."),
+)
+
+# ===========================================================================
+# --- T-7b --- (cadena T) · V5 con metodo y la estabilidad del cabezal
+# ===========================================================================
+# Mismo regimen que T-0, T-2, T-8 y T-7a: la propia sesion abrio cada pagina
+# por su capa de texto (y las figuras C11.5.6-1, -2 y -4, C3.11.5.3-1 y
+# C3.11.5.8.1-1 de AASHTO ademas por imagen). El dictamen del verificador
+# normativo del marco del cabezal dio numeral y pagina; cada cita se volvio
+# a leer antes de escribirla. Lo que estas citas NO dicen, y el registro no
+# les atribuye: que AASHTO mande verificar un cabezal de alcantarilla por su
+# Art. 11.6 (no hay remision de la Seccion 12 a la 11: el cabezal se MODELA
+# como muro de semigravedad, y eso lo declara 'marco_estabilidad_cabezal'),
+# ni que E.050 rija una obra vial (se aplica por analogia, [N→]).
+FECHA_TESIS_T7B = "2026-11-13"
+POR_TESIS_T7B = "tesis/T-7b · lectura directa de la pagina por la sesion"
+TESIS_T7B = (FECHA_TESIS_T7B, POR_TESIS_T7B)
+
+# ---- V5 y V8: lo que el HDS-5 dice del embalse aguas arriba ---------------
+
+HDS5_2_2_5_EMBALSE = _cita(
+    id="HDS5_3ED.2.2.5#EMBALSE",
+    fuente_id="HDS5_3ED",
+    numeral="2.2.5",
+    titulo_numeral="Allowable Headwater",
+    pagina_impresa="2.9",
+    pagina_pdf=71,
+    texto_literal=Verbatim(
+        texto=("The allowable headwater is the maximum possible headwater, "
+               "or ponding depth, at the upstream side of the culvert."),
+        pagina_pdf=71),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7B,
+    nota=("La fuente identifica la carga a la entrada con la PROFUNDIDAD DEL "
+          "EMBALSE aguas arriba («headwater, or ponding depth»). Es lo unico "
+          "que esta cita sostiene: que el HW de M4 es el nivel del embalse en "
+          "la boca. NO da un metodo para la extension del embalse aguas "
+          "arriba ni nombra el derecho de via: el plano horizontal a la cota "
+          "del HW cortando el fondo del cauce es el metodo [A] del proyecto "
+          "('remanso_derecho_via' = «embalse_a_nivel»), y el paso de V5 lo "
+          "dice con sus supuestos."),
+)
+
+HDS5_2_2_5_COTA_CRITICA = _cita(
+    id="HDS5_3ED.2.2.5a#COTA_CRITICA",
+    fuente_id="HDS5_3ED",
+    numeral="2.2.5 a.",
+    titulo_numeral="Allowable Headwater",
+    pagina_impresa="2.10",
+    pagina_pdf=72,
+    pagina_pdf_titulo=71,
+    texto_literal=Verbatim(
+        texto=("This elevation may correspond to some critical point on the "
+               "roadway such as the roadway shoulder or the roadway "
+               "overtopping elevation."),
+        pagina_pdf=72),
+    caracter=Caracter.PERMISO,
+    sesion=TESIS_T7B,
+    nota=("Del inciso a. «Economic Considerations»: las restricciones del "
+          "sitio suelen fijar «some designated elevation that is not to be "
+          "exceeded within a specified return period», y esta frase dice a "
+          "que puede corresponder: el hombro de la plataforma o la cota de "
+          "desborde de la via. La oracion siguiente da la otra: «Another "
+          "criteria might be the flood damage elevation of an upstream "
+          "building or another upstream road crossing». Es lo que sostiene "
+          "que V8 compare el nivel del evento extremo con el borde de la "
+          "plataforma; no fija el periodo de retorno ni dice que desbordar "
+          "sea colapsar."),
+)
+
+HDS5_5_4_2_PARALELO = _cita(
+    id="HDS5_3ED.5.4.2#PARALELO",
+    fuente_id="HDS5_3ED",
+    numeral="5.4.2",
+    titulo_numeral="Skewed Inlets",
+    pagina_impresa="5.13",
+    pagina_pdf=149,
+    texto_literal=Verbatim(
+        texto=("This is because headwalls are generally constructed parallel "
+               "to a roadway centerline to avoid warping of the embankment "
+               "fill"),
+        pagina_pdf=149),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7B,
+    nota=("DESCRIBE la practica («generally»): con el barril esviado, el "
+          "cabezal se suele construir PARALELO al eje de la via para no "
+          "alabear el terraplen, y entonces la embocadura queda esviada "
+          "respecto del barril. El parrafo siguiente mide el efecto: «Skewed "
+          "inlets slightly reduce the hydraulic performance of the culvert "
+          "under inlet control conditions. The differences are minor and are "
+          "incorporated into the inlet control nomographs for box culverts "
+          "(Charts 11 and 12)». El proyecto adopta lo CONTRARIO por decision "
+          "del dueño (2026-11-13): cabezal NORMAL al eje del conducto en las "
+          "tres familias, que es lo que suponen el ke y las cartas con que "
+          "se dimensiona; el paralelo a la via queda diferido solo para el "
+          "marco (ficha T7A-03)."),
+)
+
+HDS5_5_4_2_EVITAR = _cita(
+    id="HDS5_3ED.5.4.2#EVITAR",
+    fuente_id="HDS5_3ED",
+    numeral="5.4.2",
+    titulo_numeral="Skewed Inlets",
+    pagina_impresa="5.14",
+    pagina_pdf=150,
+    pagina_pdf_titulo=149,
+    texto_literal=Verbatim(
+        texto=("Inlet skew should be avoided for culverts with tapered "
+               "inlets and for multiple barrel culverts."),
+        pagina_pdf=150),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T7B,
+    nota=("Sigue: «Both tapered inlets and multiple barrel culverts perform "
+          "better with the inlet face oriented normal to the barrel», y cierra "
+          "con lo que el cabezal normal al eje exige del terraplen: «The "
+          "embankment fill should be warped to fit the culvert when avoiding "
+          "inlet skew (Figure 5.16)». Es la consecuencia constructiva de la "
+          "orientacion adoptada: con esviaje, el talud se alabea para "
+          "encontrar un muro normal al barril (el aviso de Δz de "
+          "`M9.cabezal_del_punto` es su medida)."),
+)
+
+# ---- Estabilidad en el marco LRFD: AASHTO 11.6.3 y 10.6.3 -----------------
+
+AASHTO_11_6_3_2_PORTANTE = _cita(
+    id="AASHTO_LRFD_9.11.6.3.2#PORTANTE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.3.2",
+    titulo_numeral="Bearing Resistance",
+    pagina_impresa="11-21",
+    pagina_pdf=1490,
+    texto_literal=Verbatim(
+        texto=("Bearing resistance shall be investigated at the strength "
+               "limit state using factored loads and resistances, assuming "
+               "the following soil pressure distributions:"),
+        pagina_pdf=1490),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("Cargas Y resistencias factoradas. En suelo: «the vertical stress "
+          "shall be calculated assuming a uniformly distributed pressure over "
+          "an effective base area», ec. 11.6.3.2-1, sigma_v = ΣV / (B - 2e). "
+          "En roca, lineal (ecs. -2 a -5, pag. impresa 11-22). El articulo "
+          "esta escrito para «Abutments and retaining walls» (11.6.3.1): "
+          "aplicarlo al cabezal es la hipotesis de modelacion del criterio "
+          "'marco_estabilidad_cabezal', no un mandato de la fuente."),
+)
+
+AASHTO_C11_6_3_3_REEMPLAZA = _cita(
+    id="AASHTO_LRFD_9.C11.6.3.3#REEMPLAZA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.3.3",
+    titulo_numeral="Eccentricity Limits",
+    pagina_impresa="11-24",
+    pagina_pdf=1493,
+    texto_literal=Verbatim(
+        texto=("The specified criteria for the location of the resultant, "
+               "coupled with investigation of the bearing pressure, replace "
+               "the investigation of the ratio of stabilizing moment to "
+               "overturning moment."),
+        pagina_pdf=1493),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7B,
+    nota=("Es el comentario que dice por que el marco LRFD NO TIENE factor "
+          "de seguridad al volteo: lo REEMPLAZAN el limite de excentricidad y "
+          "la presion de contacto. Por eso la fila E2 del marco LRFD es la "
+          "excentricidad (e <= B/3 en suelo, sobre cargas factoradas) y la "
+          "del marco ASD el cociente de momentos de E.050 39.13.6: son dos "
+          "verificaciones distintas con el mismo numero de fila, y no se "
+          "cruzan."),
+)
+
+AASHTO_C10_6_3_3_EQUIVALENCIA = _cita(
+    id="AASHTO_LRFD_9.C10.6.3.3#EQUIVALENCIA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C10.6.3.3",
+    titulo_numeral="Eccentric Load Limitations",
+    pagina_impresa="10-84",
+    pagina_pdf=1373,
+    pagina_pdf_titulo=1372,
+    texto_literal=Verbatim(
+        texto=("The base widths obtained using the LRFD load factors and "
+               "eccentricity of B/3 were comparable to those of ASD with an "
+               "eccentricity of B/6."),
+        pagina_pdf=1373),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7B,
+    nota=("El articulo (pag. impresa 10-83) fija el limite «evaluated based "
+          "on factored loads»: un tercio de la dimension de la zapata en "
+          "suelo, 0.45 en roca. Este comentario dice de donde sale: B/3 "
+          "sobre cargas FACTORADAS equivale a B/6 sobre cargas de SERVICIO. "
+          "Es la razon de la regla de no cruce: comparar e de servicio con "
+          "B/3, o e factorada con B/6, mezcla los dos marcos."),
+)
+
+AASHTO_11_6_3_5_PASIVA = _cita(
+    id="AASHTO_LRFD_9.11.6.3.5#PASIVA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.3.5",
+    titulo_numeral="Passive Resistance",
+    pagina_impresa="11-24",
+    pagina_pdf=1493,
+    texto_literal=Verbatim(
+        texto=("Passive resistance shall be neglected in stability "
+               "computations, unless the base of the wall extends below the "
+               "depth of maximum scour"),
+        pagina_pdf=1493),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("La frase completa: «…below the depth of maximum scour, "
+          "freeze-thaw, or other disturbances. In the latter case, only the "
+          "embedment below the greater of these depths shall be considered "
+          "effective». El ensamble NO cuenta empuje pasivo delante de la "
+          "zapata en ningun caso: es el lado seguro, y delante del cabezal "
+          "esta el cauce, que socava."),
+)
+
+AASHTO_11_6_3_6_DESLIZAMIENTO = _cita(
+    id="AASHTO_LRFD_9.11.6.3.6#DESLIZAMIENTO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.3.6",
+    titulo_numeral="Sliding",
+    pagina_impresa="11-24",
+    pagina_pdf=1493,
+    texto_literal=Verbatim(
+        texto="The provisions of Article 10.6.3.4 shall apply.",
+        pagina_pdf=1493),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("Remite el deslizamiento del muro al de las zapatas (10.6.3.4)."),
+)
+
+AASHTO_10_6_3_4_RESISTENCIA = _cita(
+    id="AASHTO_LRFD_9.10.6.3.4#RESISTENCIA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.6.3.4",
+    titulo_numeral="Failure by Sliding",
+    pagina_impresa="10-84",
+    pagina_pdf=1373,
+    texto_literal=Verbatim(
+        texto=("If the soil beneath the footing is cohesionless, the nominal "
+               "sliding resistance between soil and foundation shall be "
+               "taken as:"),
+        pagina_pdf=1373),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("Ec. 10.6.3.4-1: R_R = phi_tau·R_tau + phi_ep·R_ep (resistencia "
+          "factorada al deslizamiento; phi de la Tabla 10.5.5.2.2-1). Ec. "
+          "10.6.3.4-2: R_tau = C·V·tan(phi_f), con «C = 1.0 for concrete "
+          "cast against soil» y 0.8 para la zapata prefabricada; V es la "
+          "fuerza vertical total y phi_f el angulo de friccion interna del "
+          "suelo drenado. Sobre arcilla (pag. impresa 10-85), con al menos "
+          "6.0 in de material granular compactado bajo la zapata, la menor "
+          "de la cohesion y la mitad del esfuerzo normal: ese caso ESTA "
+          "implementado (`M9._resistencia_al_deslizamiento`), con la "
+          "condicion constructiva de las 6.0 in avisada; la nota de la FASE "
+          "A decia lo contrario (correcciones de T-7b, H8)."),
+)
+
+AASHTO_10_5_5_2_2_T1 = _cita(
+    id="AASHTO_LRFD_9.10.5.5.2.2#T1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.5.5.2.2, Tabla 10.5.5.2.2-1",
+    titulo_numeral="Spread Footings",
+    pagina_impresa="10-42",
+    pagina_pdf=1331,
+    texto_literal=Verbatim(
+        texto=("The resistance factors provided in Table 10.5.5.2.2-1 shall "
+               "be used for strength limit state design of spread footings"),
+        pagina_pdf=1331),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("La tabla, «Resistance Factors for Geotechnical Resistance of "
+          "Shallow Foundations at the Strength Limit State», esta transcrita "
+          "entera en `constantes_normativas.PHI_ZAPATAS_T10_5_5_2_2_1`: "
+          "portante 0.50 (teorico en arcilla), 0.50 (arena con CPT), 0.45 "
+          "(arena con SPT), 0.45 (semiempirico), 0.45 (roca), 0.55 (ensayo "
+          "de placa); deslizamiento 0.90 (prefabricado sobre arena), 0.80 "
+          "(vaciado in situ sobre arena), 0.85 (concreto sobre arcilla), "
+          "0.90 (suelo sobre suelo); pasivo 0.50. Es la tabla que el Manual "
+          "de Puentes transcribe (2.8.1.1.12.6)."),
+)
+
+AASHTO_C10_5_5_2_2_ASD = _cita(
+    id="AASHTO_LRFD_9.C10.5.5.2.2#ASD",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C10.5.5.2.2",
+    titulo_numeral="Spread Footings",
+    pagina_impresa="10-42",
+    pagina_pdf=1331,
+    texto_literal=Verbatim(
+        texto=("In general, ASD safety factors for footing bearing capacity "
+               "range from 2.5 to 3.0, corresponding to a resistance factor "
+               "of approximately 0.55 to 0.45, respectively, and for sliding, "
+               "an ASD safety factor of 1.5, corresponding to a resistance "
+               "factor of approximately 0.9."),
+        pagina_pdf=1331),
+    caracter=Caracter.DEFINICION,
+    derivado_de="AASHTO_LRFD_9.10.5.5.2.2#T1",
+    sesion=TESIS_T7B,
+    nota=("El comentario dice de donde salen los phi: de la calibracion "
+          "contra los FS de tensiones admisibles. Los FS de E.050 (3,0 y 2,5 "
+          "al portante; 1,5 al deslizamiento) son esos mismos, de modo que "
+          "los dos marcos son dos escrituras de un nivel de seguridad "
+          "parecido y por eso se pueden imprimir lado a lado SIN mezclar "
+          "sus numeros."),
+)
+
+AASHTO_11_5_7_MUROS = _cita(
+    id="AASHTO_LRFD_9.11.5.7#MUROS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.5.7",
+    titulo_numeral="Resistance Factors—Service and Strength",
+    pagina_impresa="11-15",
+    pagina_pdf=1484,
+    texto_literal=Verbatim(
+        texto=("Resistance factors for geotechnical design of foundations "
+               "that may be needed for wall support, unless specifically "
+               "identified in Table 11.5.7-1, are as specified in Tables "
+               "10.5.5.2.2-1, 10.5.5.2.3-1, and 10.5.5.2.4-1."),
+        pagina_pdf=1484),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("La oracion anterior manda usar la Tabla 11.5.7-1 «for wall "
+          "design, unless region-specific values or substantial successful "
+          "experience is available to justify higher values». La tabla (pag. "
+          "impresa 11-17, PDF 1486), bloque «Mechanically Stabilized Earth "
+          "Walls, Gravity Walls, and Semigravity Walls», SI identifica el "
+          "portante de los muros de gravedad y semigravedad (0.55) y el "
+          "deslizamiento (1.0): `constantes_normativas.PHI_MUROS_T11_5_7_1`. "
+          "TENSION que el proyecto declara: el 11.6.3.6 remite el "
+          "deslizamiento al 10.6.3.4, cuyas ecuaciones nombran los phi de la "
+          "Tabla 10.5.5.2.2-1 (0.80 vaciado in situ sobre arena). Cual de "
+          "las dos filas rige en el cabezal es el criterio [A] "
+          "'fila_phi_estabilidad_cabezal'; de archivo, la menor."),
+)
+
+AASHTO_11_5_8_EXTREMO = _cita(
+    id="AASHTO_LRFD_9.11.5.8#EXTREMO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.5.8",
+    titulo_numeral="Resistance Factors—Extreme Event Limit State",
+    pagina_impresa="11-18",
+    pagina_pdf=1487,
+    texto_literal=Verbatim(
+        texto=("Unless otherwise specified, all resistance factors shall be "
+               "taken as 1.0 when investigating the extreme event limit "
+               "state."),
+        pagina_pdf=1487),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("NO ES «phi = 1.0» A SECAS: la misma pagina especifica las "
+          "excepciones. «For overall stability of the retaining wall when "
+          "earthquake loading is included, a resistance factor, phi, of 0.9 "
+          "shall be used. For bearing resistance, a resistance factor of 0.8 "
+          "shall be used for gravity and semigravity walls and 0.9 for MSE "
+          "walls» (cita gemela #PORTANTE). El deslizamiento si va con 1.0."),
+)
+
+AASHTO_11_5_8_PORTANTE = _cita(
+    id="AASHTO_LRFD_9.11.5.8#PORTANTE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.5.8",
+    titulo_numeral="Resistance Factors—Extreme Event Limit State",
+    pagina_impresa="11-18",
+    pagina_pdf=1487,
+    texto_literal=Verbatim(
+        texto=("For bearing resistance, a resistance factor of 0.8 shall be "
+               "used for gravity and semigravity walls and 0.9 for MSE "
+               "walls."),
+        pagina_pdf=1487),
+    caracter=Caracter.EXIGENCIA,
+    derivado_de="AASHTO_LRFD_9.11.5.8#EXTREMO",
+    sesion=TESIS_T7B,
+    nota=("El comentario C11.5.8 da la razon: reducir la posibilidad de que "
+          "la falla por capacidad portante ocurra antes de que el muro "
+          "deslice. Vive en `constantes_normativas.PHI_EVENTO_EXTREMO_11_5_8`."),
+)
+
+AASHTO_C11_5_6_SOBRECARGA = _cita(
+    id="AASHTO_LRFD_9.C11.5.6#SOBRECARGA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.5.6",
+    titulo_numeral="Load Combinations and Load Factors",
+    pagina_impresa="11-12",
+    pagina_pdf=1481,
+    pagina_pdf_titulo=1480,
+    texto_literal=Verbatim(
+        texto=("evaluation of eccentricity, sliding or other failure "
+               "mechanisms for which such surcharge would represent added "
+               "resistance to failure."),
+        pagina_pdf=1481),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7B,
+    nota=("La oracion arranca en la pag. impresa 11-11: «Where live load "
+          "surcharge is applicable, the factored surcharge force is "
+          "generally included over the backfill immediately above the wall "
+          "only for evaluation of foundation bearing resistance and "
+          "structure design, as shown in Figure C11.5.6-3. The live load "
+          "surcharge is not included over the backfill for evaluation of "
+          "eccentricity, sliding…». Es decir: el PESO de la sobrecarga viva "
+          "sobre el talon entra solo en el portante; su EMPUJE entra "
+          "siempre. Y: «The load factor for live load surcharge is the same "
+          "for both vertical and horizontal load effects»; en Evento "
+          "Extremo I ese factor es gamma_EQ. El mismo comentario fija que el "
+          "factor de WA «is always 1.0»."),
+)
+
+AASHTO_C11_5_6_FIGURAS = _cita(
+    id="AASHTO_LRFD_9.C11.5.6#FIGURAS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.5.6, Figuras C11.5.6-1 y C11.5.6-2",
+    titulo_numeral="Load Combinations and Load Factors",
+    pagina_impresa="11-13",
+    pagina_pdf=1482,
+    pagina_pdf_titulo=1480,
+    texto_literal=Verbatim(
+        texto=("Typical Application of Load Factors for Sliding and "
+               "Eccentricity"),
+        pagina_pdf=1482),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    derivado_de="AASHTO_LRFD_9.C11.5.6#SOBRECARGA",
+    sesion=TESIS_T7B,
+    nota=("SON DOS FIGURAS, leidas por imagen (los factores estan dibujados, "
+          "no en la capa de texto). C11.5.6-1, «…for Bearing Resistance»: "
+          "1.25 DC en el muro, 1.35 sobre el relleno del talon, y el empuje "
+          "EH inclinado delta sobre el plano vertical que sube del talon, "
+          "con 1.50 EH cos(delta) horizontal y 1.50 EH sen(delta) vertical. "
+          "C11.5.6-2, «…for Sliding and Eccentricity»: 0.90 DC, 1.00 sobre "
+          "el relleno del talon y el mismo 1.50 en las dos componentes de "
+          "EH. EL RELLENO DEL TALON VA ROTULADO «EH» EN LAS DOS FIGURAS DE "
+          "ESTE EJEMPLAR («1.35 EH», «1.00 EH»): son los gamma_p maximo y "
+          "minimo de EV para muros de la Tabla 3.4.1-2, y la Figura "
+          "C11.5.6-4 de la pagina 11-15 rotula esa misma carga «1.00 EV». "
+          "Se lee como EV: es un rotulo errado de la figura, no un factor "
+          "distinto. La Figura C11.5.6-4 (Evento Extremo I, pag. impresa "
+          "11-15, PDF 1484): 1.00 DC, 1.00 EV, 1.00 P_AE cos(delta), 1.00 "
+          "P_AE sen(delta) y 1.00 P_IR sobre el muro y sobre el relleno del "
+          "talon."),
+)
+
+AASHTO_11_6_3_7_GLOBAL = _cita(
+    id="AASHTO_LRFD_9.11.6.3.7#GLOBAL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.3.7",
+    titulo_numeral="Overall Stability",
+    pagina_impresa="11-24",
+    pagina_pdf=1493,
+    texto_literal=Verbatim(
+        texto=("The overall stability of the retaining wall, retained slope "
+               "and foundation soil or rock shall be evaluated using limit "
+               "equilibrium methods of analysis."),
+        pagina_pdf=1493),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("Sigue en la pag. impresa 11-25: se investiga en Resistencia I "
+          "con phi = 0.75 (parametros y estratigrafia bien definidos) o 0.65 "
+          "(muy variables o con informacion limitada), y el comentario dice "
+          "que equivalen a FS = 1.3 y 1.5. Es E4/E5: el programa NO lo "
+          "evalua (hace falta un analisis de equilibrio limite con la "
+          "estratigrafia del EMS) y lo imprime como diferido."),
+)
+
+# ---- Sismo: AASHTO 11.6.5 --------------------------------------------------
+
+AASHTO_11_6_5_2_2_REDUCCION = _cita(
+    id="AASHTO_LRFD_9.11.6.5.2.2#REDUCCION",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.5.2.2",
+    titulo_numeral="Estimation of Acceleration Acting on Wall Mass",
+    pagina_impresa="11-28",
+    pagina_pdf=1497,
+    texto_literal=Verbatim(
+        texto=("Where the wall is capable of displacements of 1.0 to 2.0 in. "
+               "or more during the design seismic event, kh may be reduced "
+               "to 0.5kh0 without conducting a deformation analysis using "
+               "the Newmark method"),
+        pagina_pdf=1497),
+    caracter=Caracter.PERMISO,
+    sesion=TESIS_T7B,
+    nota=("Es un PERMISO con dos condiciones, escritas en la oracion "
+          "anterior: «If the wall is free to move laterally under the "
+          "influence of seismic loading and if lateral wall movement during "
+          "the design seismic event is acceptable to the Owner». La segunda "
+          "no es tecnica: la decide el Propietario. Es la fuente del "
+          "criterio 'factor_muro_eleccion' (de archivo, sin reduccion)."),
+)
+
+AASHTO_11_6_5_2_2_ALTURA = _cita(
+    id="AASHTO_LRFD_9.11.6.5.2.2#ALTURA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.5.2.2",
+    titulo_numeral="Estimation of Acceleration Acting on Wall Mass",
+    pagina_impresa="11-28",
+    pagina_pdf=1497,
+    texto_literal=Verbatim(
+        texto=("The height of the wall, h, shall be taken as the distance "
+               "from the bottom of the heel of the retaining structure to "
+               "the ground surface directly above the heel."),
+        pagina_pdf=1497),
+    caracter=Caracter.EXIGENCIA,
+    derivado_de="AASHTO_LRFD_9.11.6.5.2.2#REDUCCION",
+    sesion=TESIS_T7B,
+    nota=("La altura h del empuje: desde la base del talon hasta el terreno "
+          "que queda directamente encima del talon. Con el relleno subiendo "
+          "detras del muro, h es mayor que la altura del muro; el ensamble "
+          "la mide asi en las dos condiciones."),
+)
+
+AASHTO_11_6_5_3_VALIDEZ = _cita(
+    id="AASHTO_LRFD_9.11.6.5.3#VALIDEZ",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.5.3",
+    titulo_numeral="Calculation of Seismic Active Earth Pressures",
+    pagina_impresa="11-29",
+    pagina_pdf=1498,
+    texto_literal=Verbatim(
+        texto=("shall be considered acceptable for determination of seismic "
+               "active earth pressures only where:"),
+        pagina_pdf=1498),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("El sujeto es «The M-O Method». Tres condiciones: (1) el material "
+          "detras del muro se aproxima a un suelo uniforme y sin cohesion en "
+          "la cuña 3H:1V desde el talon; (2) «the backfill is not saturated "
+          "and in a loose enough condition such that it can liquefy during "
+          "shaking»; (3) «the combination of peak ground acceleration and "
+          "backslope angle do not exceed the friction angle of the soil "
+          "behind the wall», ec. 11.6.5.3-1: phi >= i + arctan[kh/(1 - kv)]. "
+          "Fuera de ellas: «For wall geometry or site conditions for which "
+          "the M-O Method is not suitable, the GLE Method should be used». "
+          "El programa no implementa el metodo GLE: fuera del dominio se "
+          "detiene con «metodo no evaluable», no fuerza la ecuacion (el "
+          "comentario desaconseja poner el radicando en cero)."),
+)
+
+AASHTO_11_6_5_3_DISTRIBUCION = _cita(
+    id="AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.5.3",
+    titulo_numeral="Calculation of Seismic Active Earth Pressures",
+    pagina_impresa="11-30",
+    pagina_pdf=1499,
+    pagina_pdf_titulo=1498,
+    texto_literal=Verbatim(
+        texto=("should be distributed using the same distribution as the "
+               "static earth pressure used to design the wall when used for "
+               "external stability evaluations, as illustrated in Figure "
+               "11.6.5.1-1, but no less than H/3."),
+        pagina_pdf=1499),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T7B,
+    nota=("El sujeto es la presion equivalente a la fuerza TOTAL estatica "
+          "mas sismica, P_AE: su resultante no baja de H/3. Con relleno "
+          "inclinado, «this force shall be distributed over the total "
+          "height, h»."),
+)
+
+AASHTO_C11_6_5_3_RESULTANTE = _cita(
+    id="AASHTO_LRFD_9.C11.6.5.3#RESULTANTE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.5.3",
+    titulo_numeral="Calculation of Seismic Active Earth Pressures",
+    pagina_impresa="11-30",
+    pagina_pdf=1499,
+    pagina_pdf_titulo=1498,
+    texto_literal=Verbatim(
+        texto=("using an inverted trapezoid for the seismic component, with "
+               "the seismic force located at 0.6h above the wall base"),
+        pagina_pdf=1499),
+    caracter=Caracter.DEFINICION,
+    derivado_de="AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION",
+    sesion=TESIS_T7B,
+    nota=("DESCRIBE la practica anterior (Seed y Whitman, 1970), no la "
+          "prescribe: «Past practice … has been to either assume a uniform "
+          "distribution … or, if the static and seismic components of earth "
+          "pressure are treated separately, using an inverted trapezoid for "
+          "the seismic component, with the seismic force located at 0.6h». "
+          "El mismo comentario añade que la investigacion mas reciente situa "
+          "la resultante del empuje TOTAL en h/3, que como minimo no debe "
+          "quedar por debajo de la estatica, y que «a slightly higher "
+          "combined static/seismic resultant location (e.g., 0.4h to 0.5h) "
+          "may be considered». La fraccion se aplica al INCREMENTO (P_AE - "
+          "P_A), no al total: con 0.6h en el incremento y h/3 en el "
+          "estatico, la resultante combinada cae entre 0.4h y 0.5h. Es la "
+          "fuente del criterio [C] 'punto_aplicacion_incremento_sismico'."),
+)
+
+AASHTO_11_6_5_4_NO_CEDENTE = _cita(
+    id="AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.5.4",
+    titulo_numeral=("Calculation of Seismic Earth Pressure for Nonyielding "
+                    "Abutments and Walls"),
+    pagina_impresa="11-32",
+    pagina_pdf=1501,
+    texto_literal=Verbatim(
+        texto=("For abutment walls and other walls that are considered "
+               "nonyielding, the value of kh used to calculate seismic earth "
+               "pressure shall be increased to 1.0kh0"),
+        pagina_pdf=1501),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("El comentario da los ejemplos: «integral abutments, abutment "
+          "walls with structural wing walls, tunnel portal walls, and tied "
+          "back cylinder pile walls», y añade que para ellos una resultante "
+          "en h/2 «may be warranted». Un cabezal monolitico con el barril y "
+          "con aleros estructurales se parece a ese caso: es coherente con "
+          "no reducir kh ('factor_muro_eleccion' = sin reduccion)."),
+)
+
+AASHTO_11_6_6_DRENAJE = _cita(
+    id="AASHTO_LRFD_9.11.6.6#DRENAJE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.6",
+    titulo_numeral="Drainage",
+    pagina_impresa="11-35",
+    pagina_pdf=1504,
+    texto_literal=Verbatim(
+        texto=("Backfills behind abutments and retaining walls shall be "
+               "drained or, if drainage cannot be provided, the abutment or "
+               "wall shall be designed for loads due to earth pressure, plus "
+               "full hydrostatic pressure due to water in the backfill."),
+        pagina_pdf=1504),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("La alternativa es de la fuente: o el relleno se drena, o el muro "
+          "se diseña con la hidrostatica completa del agua del relleno. El "
+          "comentario avisa que los lloraderos solos no bastan: «Weep holes "
+          "or geocomposite panel drains at the wall face do not assure fully "
+          "drained conditions. Drainage systems should be designed to "
+          "completely drain the entire retained soil volume». La fuente no "
+          "dice hasta que nivel sube el agua de un relleno sin drenar: el "
+          "proyecto LEE hasta la superficie del relleno retenido (criterio "
+          "'drenaje_trasdos')."),
+    interpretacion=Interpretacion(
+        texto=("«Full hydrostatic pressure due to water in the backfill» no "
+               "trae nivel. El proyecto lee que, sin un drenaje declarado, "
+               "el agua puede llenar el relleno RETENIDO hasta su superficie "
+               "contra el trasdos (coronacion menos bordillo), nunca por "
+               "encima del muro, y el empuje hidrostatico actua en esa "
+               "altura, con el suelo sumergido; con el drenaje declarado, el "
+               "agua del relleno no supera el nivel freatico natural del "
+               "punto."),
+        en_contra=(
+            "la frase no dice «hasta la coronacion»: un relleno granular "
+            "sobre un terreno permeable puede no saturarse nunca",
+            "es la lectura mas severa: con ella casi ningun muro "
+            "predimensionado pasa sin declarar el drenaje"),
+        a_favor=(
+            "es el lado seguro, y la propia frase lo plantea como la "
+            "consecuencia de no poder drenar",
+            "E.050 39.13.8 exige el drenaje del muro de contencion para que "
+            "las fuerzas de filtracion no bajen los factores de seguridad: "
+            "las dos fuentes tratan el relleno sin drenar como la condicion "
+            "a evitar")),
+)
+
+# ---- Empuje: AASHTO 3.11.5.3 y 3.11.5.8.1 ----------------------------------
+
+AASHTO_C3_11_5_3_DELTA = _cita(
+    id="AASHTO_LRFD_9.C3.11.5.3#DELTA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C3.11.5.3",
+    titulo_numeral="Active Lateral Earth Pressure Coefficient, ka",
+    pagina_impresa="3-121",
+    pagina_pdf=175,
+    texto_literal=Verbatim(
+        texto=("at the interface between the back of the wall and the "
+               "retained soil to calculate ka for soil against concrete as "
+               "well as soil against soil."),
+        pagina_pdf=175),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7B,
+    nota=("La oracion completa (la capa de texto pierde las letras griegas): "
+          "«Alternatively, long-term practice has been to use delta = "
+          "0.67·phi_f at the interface between the back of the wall and the "
+          "retained soil to calculate ka for soil against concrete as well "
+          "as soil against soil». DESCRIBE una practica («long-term "
+          "practice»), no fija el valor; antes ofrece la Tabla C3.11.5.3-1 "
+          "(pag. impresa 3-124) de valores «presumptive». En la pagina "
+          "siguiente: aun en los muros de semigravedad en voladizo, donde la "
+          "superficie de friccion es suelo contra suelo, «the wall friction "
+          "is usually limited to 0.67·phi_f». Es la fuente del criterio [C] "
+          "'fraccion_delta_sobre_phi_trasdos'."),
+)
+
+AASHTO_C3_11_5_3_PLANO = _cita(
+    id="AASHTO_LRFD_9.C3.11.5.3#PLANO_DEL_TALON",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C3.11.5.3",
+    titulo_numeral="Active Lateral Earth Pressure Coefficient, ka",
+    pagina_impresa="3-122",
+    pagina_pdf=176,
+    pagina_pdf_titulo=175,
+    texto_literal=Verbatim(
+        texto=("For the cantilever wall in Figure C3.11.5.3-1b, the earth "
+               "pressure is applied to a plane extending vertically up from "
+               "the heel of the wall base, and the weight of soil to the "
+               "left of the vertical plane is considered as part of the "
+               "wall weight."),
+        pagina_pdf=176),
+    caracter=Caracter.DEFINICION,
+    derivado_de="AASHTO_LRFD_9.C3.11.5.3#DELTA",
+    sesion=TESIS_T7B,
+    nota=("FIJA EL PLANO DE EMPUJE del muro en voladizo con talon: el "
+          "vertical que sube desde el extremo del talon, con el suelo que "
+          "queda entre ese plano y la pantalla contado como peso del muro "
+          "(es la carga EV del ensamble). Sobre ese plano la friccion es "
+          "suelo contra suelo, y la Figura C3.11.5.3-1b (leida por imagen, "
+          "pag. impresa 3-123) acota el angulo del empuje entre phi/3 y "
+          "2·phi/3. Es lo que cierra la eleccion que `M9.empujes_trasdos` "
+          "dejaba al llamador («el plano del trasdos o el del talon»)."),
+)
+
+AASHTO_C3_11_5_8_1_QUEBRADO = _cita(
+    id="AASHTO_LRFD_9.C3.11.5.8.1#TALUD_QUEBRADO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C3.11.5.8.1",
+    titulo_numeral="General",
+    pagina_impresa="3-137",
+    pagina_pdf=191,
+    texto_literal=Verbatim(
+        texto=("A simplified alternative for broken back surcharge "
+               "conditions is also provided in Figure C3.11.5.8.1-1 and may "
+               "be used, since long-term practice has been to use this "
+               "simplified approach."),
+        pagina_pdf=191),
+    caracter=Caracter.PERMISO,
+    metodo=AMBOS,
+    sesion=TESIS_T7B,
+    nota=("ES DE LOS MUROS DE SUELO REFORZADO (3.11.5.8, «Lateral Earth "
+          "Pressures for Mechanically Stabilized Earth Walls»), y el "
+          "articulo dice lo que la regla general pide: «For "
+          "“broken back” soil surcharge conditions, a generalized "
+          "limit equilibrium (GLE) analysis, as presented in Article "
+          "A11.3.3, or a Coulomb trial wedge analysis should be used». El "
+          "comentario PERMITE la alternativa simplificada de la Figura "
+          "C3.11.5.8.1-1 (pag. impresa 3-138, PDF 192, leida por imagen): la "
+          "pendiente equivalente del relleno es la de la recta que une la "
+          "coronacion del muro con el terreno a una distancia horizontal 2H "
+          "detras de el, y el empuje actua inclinado delta sobre la altura h "
+          "del plano vertical trasero. Aplicarla al cabezal -- cuyo relleno "
+          "sube con el talud del terraplen y se quiebra en el borde de la "
+          "plataforma -- es una ANALOGIA, que el criterio "
+          "'regla_pendiente_relleno_trasdos' declara."),
+)
+
+# ---- Capacidad portante: AASHTO 10.6.3.1 -----------------------------------
+
+AASHTO_10_6_3_1_1_NF = _cita(
+    id="AASHTO_LRFD_9.10.6.3.1.1#NIVEL_FREATICO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.6.3.1.1",
+    titulo_numeral="General",
+    pagina_impresa="10-69",
+    pagina_pdf=1358,
+    texto_literal=Verbatim(
+        texto=("Bearing resistance of spread footings shall be determined "
+               "based on the highest anticipated position of groundwater "
+               "level at the footing location."),
+        pagina_pdf=1358),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("La misma pagina fija q_R = phi_b·q_n (ec. 10.6.3.1.1-1) y manda "
+          "usar las dimensiones EFECTIVAS de la zapata cuando la carga es "
+          "excentrica («shall be used instead of the overall dimensions L "
+          "and B in all equations, tables, and figures pertaining to bearing "
+          "resistance»): el ensamble calcula q_n con B' = B - 2e de cada "
+          "combinacion."),
+)
+
+AASHTO_10_6_3_1_2A_QN = _cita(
+    id="AASHTO_LRFD_9.10.6.3.1.2a#QN",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.6.3.1.2a",
+    titulo_numeral="Basic Formulation",
+    pagina_impresa="10-70",
+    pagina_pdf=1359,
+    texto_literal=Verbatim(
+        texto=("Except as noted below, the nominal bearing resistance of a "
+               "soil layer, in ksf, should be taken as:"),
+        pagina_pdf=1359),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T7B,
+    nota=("Ec. 10.6.3.1.2a-1: q_n = c·N_cm + gamma_q·D_f·N_qm·C_wq + "
+          "0.5·gamma_f·B·N_gamma_m·C_wgamma, con N_cm = N_c·s_c·i_c, N_qm = "
+          "N_q·s_q·d_q·i_q y N_gamma_m = N_gamma·s_gamma·i_gamma (ecs. -2 a "
+          "-4). N_c, N_q y N_gamma, de la Tabla 10.6.3.1.2a-1 (pag. impresa "
+          "10-72; `constantes_normativas."
+          "FACTORES_CAPACIDAD_CARGA_T10_6_3_1_2A_1`); C_wq y C_wgamma, de la "
+          "Tabla -2. Los factores de inclinacion de la carga (ecs. -5 a -9, "
+          "pag. impresa 10-71) usan cargas SIN FACTORAR («H = unfactored "
+          "horizontal load», «V = unfactored vertical load»), y su "
+          "comentario PERMITE omitirlos: «In practice, therefore, for "
+          "footings with modest embedment, consideration may be given to "
+          "omission of the load inclination factors» (criterio "
+          "'factores_inclinacion_carga_portante'). El factor de profundidad "
+          "d_q «should be used only when the soils above the footing bearing "
+          "elevation are as competent as the soils beneath the footing "
+          "level; otherwise … 1.0», y su ecuacion esta verificada para "
+          "D_f/B de 1 a 8: el ensamble toma d_q = 1.0."),
+)
+
+AASHTO_10_6_3_1_2A_T1 = _cita(
+    id="AASHTO_LRFD_9.10.6.3.1.2a#T1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.6.3.1.2a, Tabla 10.6.3.1.2a-1",
+    titulo_numeral="Basic Formulation",
+    pagina_impresa="10-72",
+    pagina_pdf=1361,
+    pagina_pdf_titulo=1359,
+    texto_literal=Verbatim(
+        texto="Bearing Capacity Factors Nc (Prandtl, 1921), Nq (Reissner, 1924), and N",
+        pagina_pdf=1361),
+    caracter=Caracter.DEFINICION,
+    derivado_de="AASHTO_LRFD_9.10.6.3.1.2a#QN",
+    sesion=TESIS_T7B,
+    nota=("46 filas, phi_f de 0 a 45 grados enteros, transcritas celda a "
+          "celda y contrastadas con la capa de texto de la pagina por un "
+          "test. En la misma pagina, la Tabla 10.6.3.1.2a-2 de C_wq y "
+          "C_wgamma por profundidad del nivel freatico (tres filas: D_w = "
+          "0.0, D_w = D_f, D_w > 1.5B + D_f) y la frase «Where the position "
+          "of groundwater is at a depth less than 1.5 times the footing "
+          "width below the footing base, the bearing resistance is "
+          "affected». La tabla no dice que hacer entre filas: el ensamble "
+          "interpola linealmente y lo declara."),
+)
+
+AASHTO_10_6_3_1_2C_TALUD = _cita(
+    id="AASHTO_LRFD_9.10.6.3.1.2c#TALUD",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.6.3.1.2c",
+    titulo_numeral="Considerations for Footings on Slopes",
+    pagina_impresa="10-74",
+    pagina_pdf=1363,
+    texto_literal=Verbatim(
+        texto=("For footings constructed on or adjacent to slopes, the "
+               "nominal bearing resistance shall be determined using a "
+               "reduction coefficient (RCBC) as presented in Tables "
+               "10.6.3.1.2c-1 and 10.6.3.1.2c-2."),
+        pagina_pdf=1363),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("LA 9.ª EDICION YA NO USA N_cq NI N_gamma_q. La zapata en talud o "
+          "junto a el se resuelve con un coeficiente de reduccion RC_BC "
+          "(Leshchinsky, 2015) aplicado a la resistencia de terreno "
+          "horizontal, ec. 10.6.3.1.2c-1, tabulado en las Tablas "
+          "10.6.3.1.2c-1 y -2 (pags. impresas 10-76 y siguientes) por "
+          "angulo del talud, phi, B/H, retiro b/B y numero de estabilidad "
+          "N_s = gamma·H_s/c, donde H_s es «height of sloping ground surface "
+          "below bottom of footing». Los abacos de N_cq y N_gamma_q "
+          "(Meyerhof, 1957) son los del Manual de Puentes 2016 (Figuras "
+          "2.8.1.3.1.2c-1 y -2), que traduce la 7.ª edicion. Las dos tablas "
+          "de RC_BC NO estan transcritas: con terreno que DESCIENDE delante "
+          "de la zapata el programa pide los factores del Manual por el "
+          "criterio 'N_cq_N_gammaq_meyerhof' (ficha T7B-04). El comentario "
+          "advierte que los RC_BC valen para zapata SIN empotramiento."),
+)
+
+# ---- E.050: el marco ASD que se imprime en paralelo ------------------------
+
+E050_17_1_SERVICIO = _cita(
+    id="E050.17.1#SERVICIO",
+    fuente_id="E050",
+    numeral="Art. 17.1",
+    titulo_numeral="Cargas a utilizar",
+    pagina_impresa="32",
+    pagina_pdf=32,
+    texto_literal=Verbatim(
+        texto=("Para el cálculo del factor de seguridad de cimentaciones: se "
+               "utilizan como cargas aplicadas a la cimentación, las Cargas "
+               "de Servicio"),
+        pagina_pdf=32),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("Es lo que fija CON QUE CARGAS se comparan los factores de "
+          "seguridad de E.050: cargas de SERVICIO, sin factorar. La oracion "
+          "sigue «…que se utilizan para el diseño estructural de las "
+          "columnas del nivel más bajo de la edificación»: la norma es de "
+          "edificaciones, y su aplicacion al cabezal es por analogia [N→]."),
+)
+
+E050_39_13_8_DRENAJE = _cita(
+    id="E050.39.13.8#DRENAJE",
+    fuente_id="E050",
+    numeral="39.13.8",
+    titulo_numeral="Muros de contención",
+    pagina_impresa="73",
+    pagina_pdf=73,
+    pagina_pdf_titulo=72,
+    jerarquia_numeral=("Sostenimiento de excavaciones",),
+    texto_literal=Verbatim(
+        texto=("Los muros de contención deben tener un sistema de drenaje "
+               "que evacúe el agua que filtre hacia el para evitar que las "
+               "fuerzas de filtración reduzcan los factores de seguridad a "
+               "valores menores que los indicados en el numeral 39.14.6."),
+        pagina_pdf=73),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7B,
+    nota=("LA REMISION ESTA ERRADA EN EL EJEMPLAR: no existe un numeral "
+          "39.14.6; los factores de seguridad del muro de contencion estan "
+          "en el 39.13.6, una pagina antes. Se lee 39.13.6. Sigue: «El "
+          "sistema de drenaje estará formado por un filtro graduado de "
+          "material granular sin finos o por un geotextil o geodren», y la "
+          "Figura 23 lo dibuja. Aplicado al cabezal por analogia [N→]."),
+)
+
+
+# ---- Correcciones de T-7b (auditoria adversarial, 2026-11-13) ------------
+# Leidas otra vez en su pagina por la sesion que cierra T-7b: la cuña de
+# tanteo (H4), el regimen del cabezal (H7) y el criterio de cota de V5 (H2).
+CIERRE_T7B = ("2026-11-13", "tesis/T-7b, correcciones · lectura directa de la "
+                            "pagina por la sesion")
+
+AASHTO_3_11_5_3_CULMANN = _cita(
+    id="AASHTO_LRFD_9.3.11.5.3#CULMANN",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.11.5.3",
+    titulo_numeral="Active Lateral Earth Pressure Coefficient, ka",
+    pagina_impresa="3-121",
+    pagina_pdf=175,
+    texto_literal=Verbatim(
+        texto=("For conditions that deviate from those described in Figure "
+               "3.11.5.3-1, the active pressure may be calculated by using a "
+               "trial procedure based on wedge theory using the Culmann "
+               "method"),
+        pagina_pdf=175),
+    caracter=Caracter.PERMISO,
+    sesion=CIERRE_T7B,
+    nota=("La Figura 3.11.5.3-1 es la del muro con un relleno de talud "
+          "UNIFORME. El relleno detras del cabezal sube con el talud del "
+          "terraplen y se quiebra en la plataforma: se aparta de la figura, "
+          "y la fuente permite entonces la cuña de tanteo de Culmann. Es la "
+          "regla de archivo de 'regla_pendiente_relleno_trasdos' "
+          "(«cuna_de_tanteo», `M9.cuna_de_tanteo`). La frase sigue: «(e.g., "
+          "see Terzaghi et al., 1996)»."),
+)
+
+AASHTO_3_11_5_8_1_CUNA = _cita(
+    id="AASHTO_LRFD_9.3.11.5.8.1#CUNA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.11.5.8.1",
+    titulo_numeral="General",
+    pagina_impresa="3-137",
+    pagina_pdf=191,
+    jerarquia_numeral=("Lateral Earth Pressures for Mechanically Stabilized "
+                       "Earth Walls",),
+    texto_literal=Verbatim(
+        texto=("For “broken back” soil surcharge conditions, a generalized "
+               "limit equilibrium (GLE) analysis, as presented in Article "
+               "A11.3.3, or a Coulomb trial wedge analysis should be used."),
+        pagina_pdf=191),
+    caracter=Caracter.RECOMENDACION,
+    sesion=CIERRE_T7B,
+    nota=("ES DE LOS MUROS DE SUELO REFORZADO (3.11.5.8): para el relleno "
+          "quebrado («broken back») la fuente recomienda la cuña de tanteo o "
+          "el GLE, y su comentario permite la pendiente equivalente "
+          "simplificada (cita AASHTO_LRFD_9.C3.11.5.8.1#TALUD_QUEBRADO). "
+          "Aplicada al cabezal por ANALOGIA: el criterio "
+          "'regla_pendiente_relleno_trasdos' lo declara."),
+)
+
+AASHTO_C11_6_5_3_CUNA = _cita(
+    id="AASHTO_LRFD_9.C11.6.5.3#CUNA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.5.3",
+    titulo_numeral="Calculation of Seismic Active Earth Pressures",
+    pagina_impresa="11-30",
+    pagina_pdf=1499,
+    pagina_pdf_titulo=1498,
+    texto_literal=Verbatim(
+        texto=("The Coulomb Wedge Equilibrium Method, also referred to as the "
+               "trial wedge method, as described in Peck et al. (1974) and "
+               "Caltrans (2010), may also be used for situations when the "
+               "M–O Method is not suitable but a hand calculation method is "
+               "desired, provided that the soil conditions are not too "
+               "complex (e.g., layered soil conditions behind the wall)."),
+        pagina_pdf=1499),
+    caracter=Caracter.PERMISO,
+    sesion=CIERRE_T7B,
+    nota=("Es lo que sostiene la cuña pseudoestatica bajo sismo "
+          "(`M9.cuna_de_tanteo` con k_h y k_v): con el relleno que sube y se "
+          "quiebra en la plataforma, Mononobe-Okabe con una pendiente "
+          "equivalente queda fuera de su dominio con el k_h de archivo, y la "
+          "cuña da cifra. La condicion de la frase -- suelo no estratificado "
+          "detras del muro -- es la del relleno compactado del trasdos. El "
+          "mismo comentario añade que estos metodos de equilibrio limite "
+          "«may be overly conservative»."),
+)
+
+AASHTO_C11_6_5_4_CEDENTE = _cita(
+    id="AASHTO_LRFD_9.C11.6.5.4#CEDENTE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.5.4",
+    titulo_numeral=("Calculation of Seismic Earth Pressure for Nonyielding "
+                    "Abutments and Walls"),
+    pagina_impresa="11-32",
+    pagina_pdf=1501,
+    texto_literal=Verbatim(
+        texto=("The lateral earth pressure calculation methodologies "
+               "provided in Article 11.6.5.3 assume that the abutment or "
+               "wall is free to laterally yield a sufficient amount to "
+               "mobilize peak soil strengths in the backfill."),
+        pagina_pdf=1501),
+    caracter=Caracter.DEFINICION,
+    sesion=CIERRE_T7B,
+    nota=("Es la hipotesis del empuje activo y de Mononobe-Okabe: el muro "
+          "CEDE. El criterio 'regimen_cabezal' la declara para la "
+          "estabilidad externa del cabezal. Sigue: «Examples of walls that "
+          "may be nonyielding are integral abutments, abutment walls with "
+          "structural wing walls, tunnel portal walls, and tied back "
+          "cylinder pile walls», y para los suelos granulares la resistencia "
+          "se moviliza con un desplazamiento de la corona «about 0.5 percent "
+          "of the abutment or wall height»."),
+)
+
+AASHTO_C11_6_5_4_K0 = _cita(
+    id="AASHTO_LRFD_9.C11.6.5.4#K0",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.5.4",
+    titulo_numeral=("Calculation of Seismic Earth Pressure for Nonyielding "
+                    "Abutments and Walls"),
+    pagina_impresa="11-32",
+    pagina_pdf=1501,
+    texto_literal=Verbatim(
+        texto=("In general, if the lack of ability of the wall to yield "
+               "requires that the wall be designed for K0 conditions for the "
+               "strength limit state, then a kh of 1.0kh0 should be used for "
+               "seismic design."),
+        pagina_pdf=1501),
+    caracter=Caracter.RECOMENDACION,
+    derivado_de="AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE",
+    sesion=CIERRE_T7B,
+    nota=("Liga el muro que no cede con el empuje en REPOSO (K0) en el "
+          "estado limite de resistencia. Es lo que la interfaz de T-7c "
+          "marca: las solicitaciones salen con el coeficiente del muro que "
+          "cede y llevan al lado el K0 de 3.11.5.2 (cita "
+          "AASHTO_LRFD_9.3.11.5.2#K0)."),
+)
+
+AASHTO_3_11_5_2_K0 = _cita(
+    id="AASHTO_LRFD_9.3.11.5.2#K0",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.11.5.2",
+    titulo_numeral="At-Rest Lateral Earth Pressure Coefficient, ko",
+    pagina_impresa="3-120",
+    pagina_pdf=174,
+    texto_literal=Verbatim(
+        texto=("For normally consolidated soils, vertical wall, and level "
+               "ground, the coefficient of at-rest lateral earth pressure may "
+               "be taken as:"),
+        pagina_pdf=174),
+    caracter=Caracter.PERMISO,
+    sesion=CIERRE_T7B,
+    nota=("Ec. 3.11.5.2-1: k_o = 1 - sen(phi'_f). Vale para muro vertical y "
+          "TERRENO HORIZONTAL: detras del cabezal el relleno sube, y el K0 "
+          "que la interfaz de T-7c imprime es una referencia del orden de "
+          "magnitud del empuje de un muro que no cede, no el coeficiente de "
+          "ese relleno."),
+)
+
+HDS5_2_2_5_NO_EXCEDER = _cita(
+    id="HDS5_3ED.2.2.5#NO_EXCEDER",
+    fuente_id="HDS5_3ED",
+    numeral="2.2.5",
+    titulo_numeral="Allowable Headwater",
+    pagina_impresa="2.9",
+    pagina_pdf=71,
+    texto_literal=Verbatim(
+        texto=("The design headwater should not exceed the allowable "
+               "headwater."),
+        pagina_pdf=71),
+    caracter=Caracter.RECOMENDACION,
+    sesion=CIERRE_T7B,
+    nota=("La comparacion que la fuente plantea es de NIVELES: la carga de "
+          "diseño contra la admisible. Es la forma del metodo "
+          "«cota_de_afectacion» de V5 (correcciones de T-7b, H2): la cota "
+          "del embalse de diseño contra una cota admisible aguas arriba, sin "
+          "ninguna longitud."),
+)
+
+HDS5_2_2_5_COTA_DE_DANO = _cita(
+    id="HDS5_3ED.2.2.5a#COTA_DE_DANO",
+    fuente_id="HDS5_3ED",
+    numeral="2.2.5 a.",
+    titulo_numeral="Allowable Headwater",
+    pagina_impresa="2.10",
+    pagina_pdf=72,
+    pagina_pdf_titulo=71,
+    texto_literal=Verbatim(
+        texto=("Another criteria might be the flood damage elevation of an "
+               "upstream building or another upstream road crossing."),
+        pagina_pdf=72),
+    caracter=Caracter.PERMISO,
+    derivado_de="HDS5_3ED.2.2.5a#COTA_CRITICA",
+    sesion=CIERRE_T7B,
+    nota=("Del inciso a. «Economic Considerations»: la cota admisible puede "
+          "ser la de daño de una edificacion o de otro cruce aguas arriba. "
+          "Es lo que sostiene el metodo «cota_de_afectacion» de V5: la cota "
+          "del embalse de diseño (solera de entrada + HW de M4) contra la "
+          "cota del terreno o del bien a proteger en el limite del derecho "
+          "de via aguas arriba, dato externo por punto "
+          "(`cota_afectacion_aguas_arriba_msnm`, de la topografia). La "
+          "fuente no fija el periodo de retorno ni nombra el derecho de "
+          "via: la eleccion de ESA cota como la admisible es del proyecto "
+          "('remanso_derecho_via' [A]). El inciso b. trae otro criterio de "
+          "nivel, el AUMENTO admisible de la superficie del agua (de 0 a 1 "
+          "ft en la llanura de inundacion de la FEMA), que exige el perfil "
+          "del cauce sin la obra y no esta implementado."),
 )
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

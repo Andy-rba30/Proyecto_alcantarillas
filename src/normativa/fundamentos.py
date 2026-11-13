@@ -1371,23 +1371,6 @@ SIN_FUNDAMENTO: Tuple[Tuple[str, str, str], ...] = (
      "proyectista.",
      "Nada que transcribir: la decision pendiente es de que naturaleza es el "
      "umbral, y hasta que se resuelva V4b se imprime como adopcion [A]."),
-    ("F5.V5",
-     "El remanso dentro del derecho de via tiene desde EXT-6 su requisito "
-     "JURIDICO citado --- DG-2018 304.07.01 y 304.07.02 con la Tabla 304.09 y "
-     "el incremento de 5.00 m del borde de las obras de drenaje, presentes y "
-     "verificados --- y sigue sin tener paso que fundar, por dos razones que "
-     "no son la misma: el 304.07 acota el ANCHO de la faja y no enuncia "
-     "condicion hidraulica alguna (no dice cuanto puede remansar la obra ni "
-     "como se calcula la extension del embalse: ese metodo es [A] del "
-     "proyectista, 'remanso_derecho_via'), y la Ley 29338, que gobierna la "
-     "faja marginal, sigue AUSENTE. Un `Fundamento` con las citas del "
-     "DG-2018 convertiria un piso de ancho en una verificacion hidraulica "
-     "que la fuente no escribe.",
-     "El metodo de perfil de remanso declarado por el proyectista, el dato "
-     "de sitio `ancho_derecho_via_m` (hoy no llega por ninguna via) y la "
-     "clase de via del corredor para elegir fila en la Tabla 304.09; con los "
-     "tres, el paso existe y su fundamento cuelga de DG2018.304.07.02. La "
-     "faja marginal exige ademas la Ley 29338 en `normas/`."),
     ("F5.V6",
      "El material solido de arrastre lo trata el num. 4.1.1.3.7 a), que esta "
      "en el registro, pero lo que el proyecto ejecuta no es un calculo: es "
@@ -1395,12 +1378,6 @@ SIN_FUNDAMENTO: Tuple[Tuple[str, str, str], ...] = (
      "fundar.",
      "Cuando V6 pase a evaluar un diametro minimo por zona, su fundamento "
      "cuelga de `MC_HHD.4.1.1.3.7a`, que ya esta transcrita y verificada."),
-    ("F5.V8",
-     "El evento extremo se verifica contra un TR adoptado por el proyecto "
-     "('TR_evento_extremo'), no contra un numeral: la Tabla N 02 no tabula "
-     "evento extremo para alcantarillas.",
-     "Nada que transcribir mientras el TR de evento extremo siga siendo una "
-     "adopcion [A]; el fundamento seria del criterio, no de la norma."),
     ("F5.V9",
      "La disponibilidad de diametro sale de un CATALOGO de fabricacion, no de "
      "una norma. `NOR-PRO-01` y `NOR-PRO-02` retiraron precisamente la "
@@ -1413,15 +1390,6 @@ SIN_FUNDAMENTO: Tuple[Tuple[str, str, str], ...] = (
      "Es lo que `DeCatalogo` existe para rotular. Un fundamento del HDPE "
      "sobre M 294-11 exigiria el original firmado y un paso que descartara "
      "por norma, que hoy no existe."),
-    ("F9.CABEZAL",
-     "La cadena sismica y la estabilidad del cabezal tienen sus citas en el "
-     "registro (AASHTO 11.6.5.1, A11.3.1, 3.10.3.1), pero la Fase 9 esta "
-     "DIFERIDA al expediente y no emite paso en la corrida de perfil: un "
-     "fundamento sin paso que lo imprima no se puede comprobar contra la "
-     "memoria generada, que es la unica prueba que este proyecto acepta "
-     "(NOR-MEM-01 se cerro justo por no tenerla).",
-     "Emitir `PasoDeMemoria` desde M9 en la corrida de expediente; las citas "
-     "ya estan."),
 )
 
 
@@ -2956,9 +2924,15 @@ EMBOCADURA_CABEZAL = _fundamento(
         "angulo no mueve el calculo hidraulico. La Lamina 02-A del Manual "
         "dibuja las salidas con aleros y sin ellos, sin acotar el angulo: "
         "cual lleva esta obra y con que angulo es una eleccion del "
-        "proyecto, y se imprime junto con lo que la fuente hace con ella."),
+        "proyecto, y se imprime junto con lo que la fuente hace con ella. "
+        "Con el barril esviado la fuente describe que el cabezal se suele "
+        "construir paralelo a la via, y recomienda evitar la embocadura "
+        "esviada en ciertos conductos, alabeando el terraplen: el proyecto "
+        "adopta el muro normal al eje del conducto, que es lo que suponen "
+        "la perdida de entrada y la carta con que se dimensiona."),
     verbo=Verbo.DEFINE,
-    citas=("HDS5_3ED.TC.2", "MC_HHD.LAMINA_02A"),
+    citas=("HDS5_3ED.TC.2", "MC_HHD.LAMINA_02A", "HDS5_3ED.5.4.2#PARALELO",
+           "HDS5_3ED.5.4.2#EVITAR"),
     que_pasa_si_no_se_hace=(
         "El control de entrada y el de salida de un marco podrian hablar de "
         "una embocadura distinta de la que el cabezal dibuja, y nada lo "
@@ -3097,4 +3071,332 @@ LONGITUD_ENTRE_CABEZALES = _fundamento(
     que_pasa_si_no_se_hace=(
         "El barril se mediria y se pagaria con una longitud que no es la "
         "que los cabezales dejan."),
+)
+
+
+# ===========================================================================
+# --- T-7b --- V5 y V8 con metodo, y la estabilidad del cabezal (Fase 9)
+# ===========================================================================
+# V5 y V8 salen del censo `SIN_FUNDAMENTO`: desde T-7b tienen un metodo
+# DECLARABLE y, cuando el proyectista lo declara, emiten paso. Sus verbos son
+# los que sus citas sostienen -- DEFINE y PERMITE --, no una obligacion: el
+# HDS-5 identifica la carga con el embalse y dice a que cota puede
+# corresponder el limite; el METODO es del proyecto y lo dice el `por_que`.
+#
+# La estabilidad del cabezal: AASHTO escribe el Art. 11.6 para estribos y
+# muros de contencion, y ningun articulo lo remite al cabezal de una
+# alcantarilla. Ningun fundamento de abajo dice «la norma manda verificar el
+# cabezal asi»: dicen que la fuente manda X PARA LOS MUROS y que el proyecto
+# modela el cabezal como uno de ellos ('marco_estabilidad_cabezal').
+
+V5_REMANSO = _fundamento(
+    id="F5.V5",
+    fase=F5,
+    que_paso=("V5: el embalse aguas arriba frente al derecho de via, por "
+              "el metodo declarado (cota de afectacion o embalse a nivel)"),
+    por_que=(
+        "La fuente identifica la carga a la entrada con la profundidad del "
+        "embalse que la obra forma aguas arriba y plantea la comparacion "
+        "como de NIVELES: la carga de diseño no deberia superar la "
+        "admisible, y la cota admisible puede ser la de daño de un bien "
+        "aguas arriba. El derecho de via es la faja de dominio publico cuyo "
+        "ancho fija la autoridad. Ninguna de las dos fuentes dice como se "
+        "mide hasta donde llega ese embalse, y el proyecto declara cual "
+        "metodo usa: la cota del "
+        "embalse de diseño contra la cota del terreno o del bien a proteger "
+        "en el limite del derecho de via aguas arriba, que es la forma que "
+        "la fuente sostiene; o un plano horizontal a la cota de la carga que "
+        "corta el fondo del cauce, comparado con la mitad del ancho de la "
+        "faja, que incluye el tramo en que el cauce ya llevaria agua sin la "
+        "obra. Ninguno es la curva de remanso."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.2.2.5#EMBALSE", "HDS5_3ED.2.2.5#NO_EXCEDER",
+           "HDS5_3ED.2.2.5a#COTA_DE_DANO", "DG2018.304.07.01",
+           "DG2018.304.07.02", "DG2018.304.07.02#INCREMENTO"),
+    que_pasa_si_no_se_hace=(
+        "El embalse de diseño podria salir de la faja de dominio publico e "
+        "inundar el predio de un tercero sin que la memoria lo hubiera "
+        "medido."),
+)
+
+V8_EVENTO_EXTREMO = _fundamento(
+    id="F5.V8",
+    fase=F5,
+    que_paso=("V8: nivel del embalse con el caudal del evento extremo "
+              "frente a la cota de desborde de la plataforma"),
+    por_que=(
+        "La fuente admite que la cota que la carga no debe superar sea un "
+        "punto critico de la via, como el hombro de la plataforma o la cota "
+        "a la que la via desborda. El proyecto corre el caudal del evento "
+        "extremo declarado por la seccion ya adoptada y compara el nivel "
+        "del embalse con el borde de la plataforma: si no lo alcanza, la "
+        "via no desborda y no hay desborde que la haga colapsar. Si lo "
+        "alcanza, juzgar el colapso exige un analisis del flujo sobre la "
+        "plataforma que este programa no hace."),
+    verbo=Verbo.PERMITE,
+    citas=("HDS5_3ED.2.2.5a#COTA_CRITICA",),
+    que_pasa_si_no_se_hace=(
+        "No se sabria si el evento mayor que el de diseño pasa por la obra "
+        "o por encima de la via."),
+)
+
+EMPUJES_CABEZAL = _fundamento(
+    id="F9.EMPUJES",
+    fase=F9,
+    que_paso=("Empuje activo del relleno sobre el plano vertical del talon: "
+              "coeficiente de la cuña de tanteo con la superficie real (o de "
+              "Coulomb con una pendiente equivalente), altura y componentes "
+              "horizontal y vertical"),
+    por_que=(
+        "El cabezal se modela como un muro de semigravedad en voladizo. "
+        "Para ese muro la fuente aplica el empuje a un plano vertical que "
+        "sube desde el extremo del talon y cuenta como peso del muro el "
+        "suelo que queda entre ese plano y la pantalla; el empuje actua "
+        "inclinado el angulo de friccion sobre ese plano, que la practica "
+        "limita a dos tercios del angulo de friccion del relleno, y por eso "
+        "tiene una componente horizontal, que empuja y vuelca, y una "
+        "vertical, que carga la base. La altura del empuje llega hasta el "
+        "terreno que queda encima del talon. El relleno del cabezal sube "
+        "con el talud del terraplen y se quiebra en el borde de la "
+        "plataforma, que no es el talud uniforme de la ecuacion de Coulomb: "
+        "para eso la fuente permite calcular el empuje con cuñas de prueba "
+        "por el metodo de Culmann, y para el relleno quebrado de los muros "
+        "de suelo reforzado recomienda la cuña de tanteo; el proyecto la "
+        "usa con la superficie real, y la pendiente equivalente "
+        "simplificada que la fuente permite para esos muros queda como "
+        "contraste."),
+    verbo=Verbo.DEFINE,
+    citas=("MP.2.4.4.1.5.3", "AASHTO_LRFD_9.C3.11.5.3#PLANO_DEL_TALON",
+           "AASHTO_LRFD_9.C3.11.5.3#DELTA",
+           "AASHTO_LRFD_9.3.11.5.3#CULMANN",
+           "AASHTO_LRFD_9.3.11.5.8.1#CUNA",
+           "AASHTO_LRFD_9.C3.11.5.8.1#TALUD_QUEBRADO",
+           "AASHTO_LRFD_9.11.6.5.2.2#ALTURA"),
+    que_pasa_si_no_se_hace=(
+        "El empuje se tomaria entero como horizontal y sobre la altura del "
+        "muro: de mas en el deslizamiento y en la excentricidad, y de menos "
+        "en la presion sobre el terreno."),
+)
+
+SOBRECARGA_CABEZAL = _fundamento(
+    id="F9.SOBRECARGA",
+    fase=F9,
+    que_paso=("Sobrecarga viva de trafico sobre el relleno: altura "
+              "equivalente, empuje y peso sobre el talon"),
+    por_que=(
+        "Cuando hay trafico cerca de la coronacion del muro la fuente manda "
+        "incrementar el empuje con una sobrecarga equivalente a una altura "
+        "de relleno, que tabula por altura del muro y por su orientacion "
+        "frente al trafico; el Manual de Puentes le pone un piso. Su empuje "
+        "entra en todas las verificaciones; su peso sobre el talon, solo en "
+        "la presion sobre el terreno, porque en el deslizamiento y en la "
+        "excentricidad sumaria resistencia."),
+    verbo=Verbo.OBLIGA,
+    citas=("MP.2.4.2.2#SOBRECARGA", "AASHTO_LRFD_9.3.11.6.4",
+           "AASHTO_LRFD_9.3.11.6.4#ALTURA",
+           "AASHTO_LRFD_9.C11.5.6#SOBRECARGA"),
+    que_pasa_si_no_se_hace=(
+        "El cabezal de una via quedaria verificado sin la carga de la via."),
+)
+
+AGUA_CABEZAL = _fundamento(
+    id="F9.AGUA",
+    fase=F9,
+    que_paso=("Agua en el trasdos: nivel, empuje hidrostatico, suelo "
+              "sumergido y subpresion"),
+    por_que=(
+        "Bajo el nivel del agua el empuje del suelo se calcula con su peso "
+        "sumergido y el agua empuja aparte, con su presion hidrostatica "
+        "entera; contarlos con el peso total y ademas el agua es contar el "
+        "agua dos veces. La fuente exige drenar el relleno o, si no se "
+        "puede, diseñar el muro con la hidrostatica completa del agua del "
+        "relleno, y la norma de suelos exige el drenaje del muro de "
+        "contencion. El proyecto lee que, sin un drenaje declarado, el agua "
+        "puede llenar el relleno hasta su superficie; con el, queda en el "
+        "nivel freatico natural del punto. La subpresion actua bajo la "
+        "zapata en los dos casos."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.3.11.3", "AASHTO_LRFD_9.11.6.6#DRENAJE",
+           "E050.39.13.8#DRENAJE", "MP.2.4.3.8.2"),
+    que_pasa_si_no_se_hace=(
+        "Con el freatico alto del Bajo Piura, el empuje y la subpresion del "
+        "agua son del orden del empuje de tierras: omitirlos deja el muro "
+        "sin su carga mayor, y contarlos dos veces lo engorda sin razon."),
+)
+
+SISMO_CABEZAL = _fundamento(
+    id="F9.SISMO",
+    fase=F9,
+    que_paso=("Demanda sismica del cabezal: empuje sismico (cuña de tanteo "
+              "pseudoestatica, o Mononobe-Okabe), su punto de aplicacion, la "
+              "inercia del muro y los dos casos de combinacion"),
+    por_que=(
+        "La fuente manda diseñar los muros para el empuje sismico y la "
+        "inercia de su masa, y admite el metodo de Mononobe-Okabe solo "
+        "cuando el relleno es uniforme y sin cohesion, no esta saturado y "
+        "la aceleracion y la pendiente del relleno caben en su angulo de "
+        "friccion; fuera de eso pide otro metodo, y admite para ello la "
+        "cuña de tanteo, que el proyecto usa con la superficie real del "
+        "relleno. El empuje total y la inercia no son simultaneos y se "
+        "combinan en dos casos, de los que rige el mas desfavorable. El "
+        "empuje total no se aplica por debajo del tercio de la altura; el "
+        "proyecto aplica el incremento sismico mas arriba, donde lo situaba "
+        "la practica que la fuente describe. Un muro que no puede ceder se "
+        "calcula con la aceleracion entera, y el cabezal, unido al conducto "
+        "y a sus aleros, se parece a ese caso; el proyecto lo calcula como "
+        "muro que cede, y lo declara."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.11.6.5.3#VALIDEZ",
+           "AASHTO_LRFD_9.C11.6.5.3#CUNA",
+           "AASHTO_LRFD_9.C11.6.5.4#CEDENTE",
+           "AASHTO_LRFD_9.C11.6.5.4#K0", "AASHTO_LRFD_9.3.11.5.2#K0",
+           "AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION",
+           "AASHTO_LRFD_9.C11.6.5.3#RESULTANTE",
+           "AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE",
+           "AASHTO_LRFD_9.11.6.5.2.2#REDUCCION",
+           "AASHTO_LRFD_9.A11.3.1#KAE", "MP.2.8.1.1.14.1#EXC"),
+    que_pasa_si_no_se_hace=(
+        "Con la aceleracion de este sitio la demanda sismica es la que "
+        "gobierna el cabezal: sin ella, la estabilidad verificada es solo "
+        "la estatica."),
+)
+
+COMBINACIONES_CABEZAL = _fundamento(
+    id="F9.COMBINACIONES",
+    fase=F9,
+    que_paso=("Cargas del cabezal con sus brazos y combinaciones de cada "
+              "marco: factoradas (LRFD) y de servicio (ASD)"),
+    por_que=(
+        "Los dos marcos piden cargas distintas y no se cruzan. En el de "
+        "estados limite las cargas se factoran, con el factor maximo o el "
+        "minimo de cada una segun la verificacion: para la presion sobre el "
+        "terreno, los maximos; para el deslizamiento y la excentricidad, "
+        "los minimos de lo que estabiliza y el maximo del empuje. En el de "
+        "factores de seguridad todas las cargas van sin factorar, que es "
+        "como la norma de suelos manda calcular sus factores. Una carga "
+        "factorada comparada con un factor de seguridad, o una de servicio "
+        "comparada con una resistencia minorada, no pertenece a ninguno de "
+        "los dos."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.11.6.3.2#PORTANTE",
+           "AASHTO_LRFD_9.C11.5.6#FIGURAS",
+           "AASHTO_LRFD_9.C11.5.6#SOBRECARGA", "MP.T2.4.5.3.1-2",
+           "E050.17.1#SERVICIO"),
+    que_pasa_si_no_se_hace=(
+        "Es el defecto que este paso cierra: factores de carga de un marco "
+        "junto a factores de seguridad del otro, sin decir que cargas "
+        "recibia cada verificacion."),
+)
+
+E1_LRFD_CABEZAL = _fundamento(
+    id="F9.E1_LRFD",
+    fase=F9,
+    que_paso=("E1 (LRFD): presion factorada sobre el ancho efectivo frente "
+              "a la resistencia portante factorada"),
+    por_que=(
+        "Para los muros la fuente manda investigar la resistencia portante "
+        "con cargas y resistencias factoradas, y en suelo reparte la "
+        "resultante vertical de manera uniforme sobre el ancho efectivo de "
+        "la base. La resistencia nominal sale de la ecuacion general de "
+        "capacidad de carga con el ancho efectivo y el nivel freatico mas "
+        "alto previsto, o del valor que el estudio de suelos entregue, que "
+        "gana; el factor de resistencia es el de la fila declarada, y en "
+        "evento extremo el que la fuente fija para los muros de "
+        "semigravedad."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.11.6.3.2#PORTANTE",
+           "AASHTO_LRFD_9.10.6.3.1.1#NIVEL_FREATICO",
+           "AASHTO_LRFD_9.10.6.3.1.2a#QN", "AASHTO_LRFD_9.10.6.3.1.2a#T1",
+           "AASHTO_LRFD_9.10.6.3.1.2c#TALUD",
+           "AASHTO_LRFD_9.10.5.5.2.2#T1", "AASHTO_LRFD_9.11.5.7#MUROS",
+           "AASHTO_LRFD_9.11.5.8#PORTANTE"),
+    que_pasa_si_no_se_hace=(
+        "El terreno bajo la punta fallaria por corte antes de que el muro "
+        "deslice o gire."),
+)
+
+E2_LRFD_CABEZAL = _fundamento(
+    id="F9.E2_LRFD",
+    fase=F9,
+    que_paso=("E2 (LRFD): excentricidad de la resultante factorada frente "
+              "al limite de la base"),
+    por_que=(
+        "En el marco de estados limite no hay factor de seguridad al "
+        "volteo: la fuente lo reemplaza por la ubicacion de la resultante, "
+        "que en suelo debe caer dentro de los dos tercios centrales de la "
+        "base con las cargas factoradas. Bajo sismo el limite depende del "
+        "factor de la carga viva: los dos tercios centrales sin ella y las "
+        "ocho decimas con ella entera."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.11.6.3.3#EXC",
+           "AASHTO_LRFD_9.C11.6.3.3#REEMPLAZA",
+           "AASHTO_LRFD_9.C10.6.3.3#EQUIVALENCIA",
+           "AASHTO_LRFD_9.11.6.5.1#EXC"),
+    que_pasa_si_no_se_hace=(
+        "El muro giraria sobre su punta con la base despegada en mas de un "
+        "tercio de su ancho."),
+)
+
+E3_LRFD_CABEZAL = _fundamento(
+    id="F9.E3_LRFD",
+    fase=F9,
+    que_paso=("E3 (LRFD): fuerza horizontal factorada frente a la "
+              "resistencia factorada al deslizamiento"),
+    por_que=(
+        "La fuente remite el deslizamiento del muro al de las zapatas: la "
+        "resistencia nominal de una zapata vaciada contra un suelo sin "
+        "cohesion es la fuerza vertical por la tangente de su angulo de "
+        "friccion, y se minora con el factor de la fila declarada. La "
+        "resistencia pasiva delante del muro se desprecia: delante esta el "
+        "cauce."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.11.6.3.6#DESLIZAMIENTO",
+           "AASHTO_LRFD_9.10.6.3.4#RESISTENCIA",
+           "AASHTO_LRFD_9.11.6.3.5#PASIVA",
+           "AASHTO_LRFD_9.10.5.5.2.2#T1", "AASHTO_LRFD_9.11.5.7#MUROS",
+           "AASHTO_LRFD_9.11.5.8#EXTREMO"),
+    que_pasa_si_no_se_hace=(
+        "El empuje arrastraria el cabezal hacia el cauce."),
+)
+
+E_ASD_CABEZAL = _fundamento(
+    id="F9.E_ASD",
+    fase=F9,
+    que_paso=("E1 a E3 (ASD): factores de seguridad al portante, al volteo "
+              "y al deslizamiento con cargas de servicio"),
+    por_que=(
+        "La norma de suelos fija, para las cimentaciones y los muros de "
+        "contencion de las edificaciones, factores de seguridad minimos al "
+        "corte del terreno, al volteo y al deslizamiento, calculados con "
+        "cargas de servicio. El cabezal es una obra vial y esa norma no lo "
+        "nombra: el proyecto calcula esos mismos factores por analogia, "
+        "junto a la verificacion por estados limite, y declara cual de las "
+        "dos decide. La fuente de los estados limite explica por que se "
+        "pueden leer lado a lado: sus factores de resistencia se calibraron "
+        "contra esos factores de seguridad."),
+    verbo=Verbo.OBLIGA,
+    citas=("E050.21", "E050.39.13.6", "E050.20", "E050.17.1#SERVICIO",
+           "AASHTO_LRFD_9.C10.5.5.2.2#ASD"),
+    que_pasa_si_no_se_hace=(
+        "La memoria no tendria la verificacion en el formato de la norma "
+        "peruana de suelos, que es el que un revisor local espera leer."),
+)
+
+GLOBAL_CABEZAL = _fundamento(
+    id="F9.GLOBAL",
+    fase=F9,
+    que_paso=("E4 y E5: estabilidad global del muro y del talud, diferidas "
+              "al expediente"),
+    por_que=(
+        "La fuente manda evaluar la estabilidad global del muro, del talud "
+        "que retiene y del terreno de fundacion con metodos de equilibrio "
+        "limite, y la norma de suelos le pone factores de seguridad. Ese "
+        "analisis necesita la estratigrafia completa del estudio de suelos "
+        "y un programa de superficies de falla: este software no lo hace, y "
+        "lo dice en vez de darlo por cumplido."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.11.6.3.7#GLOBAL", "E050.39.13.6", "E050.30.3"),
+    que_pasa_si_no_se_hace=(
+        "Un cabezal estable por si mismo puede moverse entero con el talud "
+        "que lo soporta."),
 )

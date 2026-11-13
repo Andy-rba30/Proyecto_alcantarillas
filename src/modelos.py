@@ -4928,6 +4928,13 @@ class CabezalDelPunto:
     motivo_sin_longitud: str = ""
     pasos: Tuple["PasoDeMemoria", ...] = ()
     avisos: Tuple[str, ...] = ()
+    # --- T-7b --- El ensamble de estabilidad de cada cabezal, por condicion
+    # (`EstabilidadDelCabezal`): hasta cuatro, entrada y salida x estatica y
+    # sismica. Sus verificaciones E1 a E3 viajan TAMBIEN en `verificaciones`
+    # (la via por la que `InformePunto` cuenta incumplidas e indicadores), y
+    # sus avisos en `avisos`. Vacio = la estabilidad no se evaluo (su etapa
+    # se bloqueo y el punto lleva el `Bloqueo` con el motivo).
+    estabilidad: Tuple["EstabilidadDelCabezal", ...] = ()
 
     @property
     def geometrias(self) -> Tuple[GeometriaCabezal, GeometriaCabezal]:
@@ -6844,3 +6851,370 @@ class RemansoCanal:
     concluye: bool = False
     y_critico_canal_m: Optional[float] = None
     motivo_no_concluye: str = ""
+
+
+# ===========================================================================
+# --- T-7b --- (cadena T) · V5 y V8 con metodo, y el ensamble de estabilidad
+# ===========================================================================
+
+# Los rotulos de `MetodoNoEvaluableError` de T-7b: cada uno nombra SU fuente
+# (leccion de T-1 y T-8: encabezarlo con «HDS-5 3.24» seria una cita falsa).
+MOTIVO_METODO_NO_EVALUABLE_REMANSO = (
+    "método no evaluable (V5, embalse a nivel aguas arriba)")
+MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO = (
+    "método no evaluable (V8, evento extremo)")
+MOTIVO_METODO_NO_EVALUABLE_CABEZAL = (
+    "método no evaluable (AASHTO LRFD 11.6, estabilidad del cabezal)")
+
+# Las opciones del criterio 'remanso_derecho_via' (V5), que desde T-7b elige
+# el METODO. «embalse_a_nivel» es la unica implementada; el perfil de remanso
+# paso a paso queda nombrado y diferido (ficha T7B-01).
+METODO_REMANSO_EMBALSE_A_NIVEL = "embalse_a_nivel"
+# --- correcciones de T-7b (H2) --- el criterio de COTA que el HDS-5 num.
+# 2.2.5 si sostiene: la cota del embalse de diseño contra la cota de
+# afectacion aguas arriba (dato externo por punto).
+METODO_REMANSO_COTA_AFECTACION = "cota_de_afectacion"
+METODO_REMANSO_PERFIL_PASO_A_PASO = "perfil_de_remanso_paso_a_paso"
+METODOS_DE_REMANSO = (METODO_REMANSO_EMBALSE_A_NIVEL,
+                      METODO_REMANSO_COTA_AFECTACION,
+                      METODO_REMANSO_PERFIL_PASO_A_PASO)
+
+# Las opciones del criterio 'umbral_no_colapso_evento_extremo' (V8).
+UMBRAL_V8_SIN_DESBORDE = "sin_desborde_de_la_plataforma"
+UMBRAL_V8_DESBORDE_ADMITIDO = "desborde_admitido_con_terraplen_protegido"
+UMBRALES_V8 = (UMBRAL_V8_SIN_DESBORDE, UMBRAL_V8_DESBORDE_ADMITIDO)
+
+
+@dataclass(frozen=True)
+class DerechoDeViaDelPunto:
+    """
+    --- T-7b --- Lo que V5 necesita del punto ademas del resultado
+    hidraulico: el ancho del derecho de via declarado para ese cruce (dato
+    externo `ancho_derecho_via_m`, None si no se declaro) y donde queda la
+    boca de entrada respecto del eje de la via, medido a lo largo del eje
+    del conducto (la semilongitud de entrada de 7.B, o L/2 si la longitud se
+    declaro). Lo arma el servicio; V5 no lee el informe.
+    """
+
+    ancho_m: Optional[float]
+    origen_ancho: str
+    semilongitud_entrada_m: Optional[float]
+    origen_semilongitud: str
+    # El piso del DG-2018 (Tabla 304.09 por clase de via), si la clase de via
+    # esta declarada: es un CONTRASTE del dato, no lo sustituye.
+    piso_dg2018_m: Optional[float] = None
+    origen_piso: str = ""
+    # --- correcciones de T-7b (H2) --- la cota del terreno o del bien a
+    # proteger en el limite del derecho de via aguas arriba (dato externo
+    # `cota_afectacion_aguas_arriba_msnm`, None si no se declaro): la lee el
+    # metodo «cota_de_afectacion».
+    cota_afectacion_msnm: Optional[float] = None
+    origen_cota_afectacion: str = ""
+
+
+@dataclass(frozen=True)
+class EventoExtremoDelPunto:
+    """
+    --- T-7b --- Lo que V8 necesita ademas del resultado de diseño: el caudal
+    y el tirante del receptor del evento extremo (datos externos, None si no
+    se declararon), la cota a la que la plataforma desborda (el borde de la
+    plataforma del lado de la entrada, de 7.B, o la rasante) y la funcion con
+    que el servicio resuelve la hidraulica de la seccion adoptada para ese
+    caudal (M3 y M4, que M5 no importa).
+    """
+
+    Q_m3s: Optional[float]
+    TW_m: Optional[float]
+    origen: str
+    cota_desborde: Optional[float]
+    origen_cota_desborde: str
+    resolver: Optional[Any] = None      # (seccion, material) -> ResultadoHidraulico | None
+
+
+# Los dos regimenes con que V8 resuelve el caudal del evento extremo
+# (correcciones de T-7b, H3).
+REGIMEN_EVENTO_LAMINA_LIBRE = "lamina libre"
+REGIMEN_EVENTO_A_PRESION = "barril a presion"
+
+
+@dataclass(frozen=True)
+class HidraulicaDelEventoExtremo:
+    """
+    --- correcciones de T-7b (H3) --- La carga del caudal del evento extremo
+    por la seccion candidata, y COMO se obtuvo: en lamina libre, con la
+    hidraulica completa de M4 (`resolver_control`); o, cuando M3 no le
+    encuentra tirante normal porque el caudal no cabe en lamina libre, con
+    el barril trabajando A PRESION, con las MISMAS piezas de M4 que no
+    necesitan tirante normal: el control de entrada (la ec. A.3 sumergida,
+    o la que corresponda a su q*) y el de salida a barril lleno (HW = H +
+    h_o - S·L), gobernando la mayor (`M4.hw_gobernante` sin perfil). Ninguna
+    ecuacion nueva.
+    """
+
+    HW: float
+    control_gobernante: "ControlGobernante"
+    regimen: str
+    HW_entrada: float
+    HW_salida: float
+    nota: str = ""
+
+
+@dataclass(frozen=True)
+class DatosDeExpediente:
+    """--- T-7b --- Los datos de expediente que la Fase 5 recibe del servicio."""
+
+    derecho_de_via: Optional[DerechoDeViaDelPunto] = None
+    evento_extremo: Optional[EventoExtremoDelPunto] = None
+
+
+# ---------------------------------------------------------------------------
+# El ensamble de estabilidad del cabezal (Fase 9, Sec. 9.2 y 9.3)
+# ---------------------------------------------------------------------------
+
+MARCO_LRFD = "LRFD"
+MARCO_ASD = "ASD"
+MARCOS_DE_ESTABILIDAD = (MARCO_LRFD, MARCO_ASD)
+
+# Las tres opciones del criterio 'marco_estabilidad_cabezal': cual marco
+# RIGE (sus verificaciones deciden) y que se hace con el otro (informa).
+MARCO_RIGE_LRFD = "lrfd_rige_asd_informa"
+MARCO_RIGE_ASD = "asd_rige_lrfd_informa"
+MARCO_ENVOLVENTE = "envolvente_de_los_dos"
+REGLAS_DE_MARCO = (MARCO_RIGE_LRFD, MARCO_RIGE_ASD, MARCO_ENVOLVENTE)
+
+# Tipos de carga del ensamble, con la nomenclatura de AASHTO 3.3.2.
+CARGA_DC = "DC"
+CARGA_EV = "EV"
+CARGA_EH = "EH"
+CARGA_LS = "LS"
+CARGA_WA = "WA"
+CARGA_EQ = "EQ"
+TIPOS_DE_CARGA_DEL_CABEZAL = (CARGA_DC, CARGA_EV, CARGA_EH, CARGA_LS,
+                              CARGA_WA, CARGA_EQ)
+
+ELEMENTO_PANTALLA = "pantalla"
+ELEMENTO_ZAPATA = "zapata"
+ELEMENTO_ALEROS = "aleros"
+ELEMENTOS_DEL_CABEZAL = (ELEMENTO_PANTALLA, ELEMENTO_ZAPATA, ELEMENTO_ALEROS)
+
+
+@dataclass(frozen=True)
+class CargaDeCabezal:
+    """
+    --- T-7b --- UNA carga del ensamble, por metro de muro, SIN FACTORAR
+    (valor nominal de servicio), con su brazo.
+
+    Convencion de signos, una para todo el ensamble: el origen esta en la
+    arista inferior de la PUNTA (lado del cauce); `x` crece hacia el relleno
+    y `z` hacia arriba desde la base de la zapata. `V` es positiva hacia
+    abajo y `H` positiva hacia la punta (empuja el muro hacia el cauce). El
+    momento respecto de la punta es `V·x - H·z`, positivo si estabiliza: la
+    subpresion entra con `V` negativa.
+
+    `sobre` dice a que elemento le llega la carga (pantalla o zapata), que es
+    lo que T-7c necesita para sacar las solicitaciones de cada uno.
+    """
+
+    codigo: str             # 'DC.pantalla', 'EV.talon', 'EH.h', 'LS.v', ...
+    tipo: str               # uno de TIPOS_DE_CARGA_DEL_CABEZAL
+    descripcion: str
+    V: float = 0.0          # kN/m
+    H: float = 0.0          # kN/m
+    x: float = 0.0          # m, brazo de V desde la punta
+    z: float = 0.0          # m, brazo de H sobre la base de la zapata
+    sobre: str = ELEMENTO_ZAPATA
+    procedencia: str = ""
+
+    def __post_init__(self) -> None:
+        if self.tipo not in TIPOS_DE_CARGA_DEL_CABEZAL:
+            raise ValueError(f"CargaDeCabezal «{self.codigo}»: tipo "
+                             f"{self.tipo!r} desconocido")
+        for nombre in ("V", "H", "x", "z"):
+            valor = getattr(self, nombre)
+            if not (isinstance(valor, (int, float)) and math.isfinite(valor)):
+                raise LimiteNumericoError(
+                    f"CargaDeCabezal.{nombre}", valor=valor,
+                    motivo=f"la carga «{self.codigo}» del ensamble de "
+                           "estabilidad no es un numero finito")
+
+    @property
+    def momento(self) -> float:
+        """Momento respecto de la punta, kN·m/m, positivo si estabiliza."""
+        return self.V * self.x - self.H * self.z
+
+
+@dataclass(frozen=True)
+class CombinacionDeEstabilidad:
+    """
+    --- T-7b --- Las cargas del ensamble combinadas con SUS factores para
+    UNA verificacion: marco (LRFD o ASD), condicion (estatica o sismica),
+    nombre (Resistencia I con gamma maximos, Evento Extremo I caso 1...) y
+    las resultantes. `factores` es la tupla (codigo de la carga, factor): en
+    el marco ASD todos valen 1 (cargas de servicio, E.050 Art. 17.1) y los
+    de las cargas que la combinacion no incluye valen 0.
+    """
+
+    nombre: str
+    marco: str
+    condicion: CondicionAnalisis
+    factores: Tuple[Tuple[str, float], ...]
+    N: float                # kN/m, suma de verticales factoradas (hacia abajo)
+    H: float                # kN/m, suma de horizontales factoradas
+    M_estabilizante: float  # kN·m/m respecto de la punta
+    M_volcante: float       # kN·m/m respecto de la punta
+    B: float                # m
+    para: str = ""          # que verificacion la usa
+
+    @property
+    def momento_neto(self) -> float:
+        return self.M_estabilizante - self.M_volcante
+
+    @property
+    def x_resultante(self) -> float:
+        """Posicion de la resultante vertical desde la punta, m."""
+        return self.momento_neto / self.N
+
+    @property
+    def excentricidad(self) -> float:
+        """e = B/2 - x_resultante, m (positiva hacia la punta)."""
+        return self.B / 2 - self.x_resultante
+
+    def factor_de(self, codigo: str) -> float:
+        return dict(self.factores).get(codigo, 0.0)
+
+
+@dataclass(frozen=True)
+class SolicitacionDeElemento:
+    """
+    --- T-7b --- La solicitacion FACTORADA de un elemento del cabezal en su
+    seccion critica, por metro de muro, para una combinacion del marco LRFD:
+    lo que T-7c necesita para armar. `seccion` dice donde se mide (arranque
+    de la pantalla, cara de la pantalla en la punta o en el talon).
+    """
+
+    elemento: str           # uno de ELEMENTOS_DEL_CABEZAL
+    seccion: str
+    combinacion: str
+    V_u: float              # kN/m
+    M_u: float              # kN·m/m
+    nota: str = ""
+    # --- correcciones de T-7b (H7) --- CON QUE EMPUJE SALE, dicho en la
+    # interfaz para que T-7c no lo herede sin saberlo: el regimen del
+    # cabezal ('regimen_cabezal' [A]), el nombre y el valor del coeficiente
+    # con que se calcularon los empujes de esta solicitacion, y el K0 de
+    # AASHTO 3.11.5.2 con su cociente, que es el factor por el que crecerian
+    # los empujes de la pantalla si se juzgara que no cede (C11.6.5.4).
+    regimen: str = ""
+    coeficiente_de_empuje: str = ""     # 'K_A' (estatica) o 'K_AE' (sismica)
+    K_empuje: Optional[float] = None
+    K0: Optional[float] = None
+    K0_sobre_K_A: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class EntornoDelCabezal:
+    """
+    --- T-7b --- Lo que el ensamble de estabilidad necesita de UN cabezal
+    ademas de su geometria, ya resuelto por las fases anteriores: hasta
+    donde llega el relleno que retiene, como sube el terreno detras de el,
+    donde esta el agua y que suelo lo soporta. Lo arma
+    `M9.datos_del_cabezal_del_punto`; el ensamble no lee el informe.
+
+        cota_relleno           coronacion menos bordillo: la superficie del
+                               relleno retenido contra el trasdos
+        cota_borde_plataforma  borde de la plataforma del lado de ese
+                               extremo (7.B), donde el talud se quiebra
+        talud                  H:V del terraplen
+        cota_freatico          COTA del nivel freatico, msnm: la columna
+                               NF_profundidad_m medida desde el terreno
+                               natural del cruce (`cota_terreno`), que es la
+                               convencion de M8, del censo y del contrato de
+                               entradas; None si la columna va vacia
+        origen_freatico        de donde sale esa cota (texto del paso)
+        cota_pie               terreno delante del muro (el de T-7a)
+        cota_fondo_hoya        fondo de la hoya de socavacion, si la hay
+        suelo                  parametros del suelo de fundacion DEL PUNTO
+                               (dato externo validado), o None: rige el
+                               criterio de corredor
+        cota_agua_diseno       nivel del agua de diseño contra ese cabezal
+                               (en la entrada solera + HW de M4; en la
+                               salida solera + tirante de salida), si se
+                               conoce: solo informa el aviso del desembalse
+                               rapido con el relleno drenado
+
+    LA COTA Y NO LA PROFUNDIDAD (correcciones de T-7b, H1). Hasta la
+    auditoria el entorno llevaba la profundidad del freatico y el ensamble la
+    restaba de la profundidad de desplante de CADA cabezal, es decir, la leia
+    bajo el pie del muro; el resto del repositorio la lee bajo el terreno del
+    cruce. En la salida de A-01 eso dejaba el agua 0.80 m mas baja (bajo la
+    zapata en vez de 0.20 m sobre la base), del lado inseguro. Con la cota no
+    hay datum que elegir en el ensamble.
+    """
+
+    id_punto: str
+    extremo: str
+    geometria: GeometriaCabezal
+    cota_relleno: float
+    cota_borde_plataforma: float
+    origen_cota_borde: str
+    talud: float
+    esviaje_grados: float
+    cota_freatico: Optional[float]
+    cota_pie: float
+    cota_fondo_hoya: Optional[float] = None
+    suelo: Optional[dict] = None
+    origen_freatico: str = ""
+    cota_agua_diseno: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class EstabilidadDelCabezal:
+    """
+    --- T-7b --- El ensamble de estabilidad de UN cabezal (un extremo de un
+    punto) en UNA condicion: las cargas sin factorar con sus brazos, las
+    combinaciones de los dos marcos, las verificaciones E1 a E3 de cada
+    marco (las del marco que rige deciden; las del otro informan), las
+    solicitaciones factoradas por elemento y los pasos de memoria.
+
+    `pendientes` son las filas que NO se evaluaron con su motivo (E4 y E5,
+    la estabilidad global y la del talud, diferidas al expediente con el
+    EMS): se imprimen, no se callan y no cuentan como cumplidas.
+    """
+
+    id_punto: str
+    extremo: str
+    condicion: CondicionAnalisis
+    regla_de_marco: str
+    cargas: Tuple[CargaDeCabezal, ...]
+    combinaciones: Tuple[CombinacionDeEstabilidad, ...]
+    verificaciones: Tuple["Verificacion", ...]
+    solicitaciones: Tuple[SolicitacionDeElemento, ...] = ()
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    pendientes: Tuple[Tuple[str, str], ...] = ()
+    # Lo que identifica al calculo sin abrir los pasos.
+    K_A: Optional[float] = None
+    K_AE: Optional[float] = None
+    i_grados: Optional[float] = None
+    delta_grados: Optional[float] = None
+    altura_empuje: Optional[float] = None
+    h_eq: Optional[float] = None
+    k_h: Optional[float] = None
+    # --- correcciones de T-7b --- como se calculo el empuje (cuña de tanteo
+    # o formula cerrada), los coeficientes de la formula cerrada que quedan
+    # como CONTRASTE (None donde no es evaluable), el regimen del cabezal y
+    # el K0 de referencia.
+    metodo_empuje: str = ""
+    K_A_contraste: Optional[float] = None
+    K_AE_contraste: Optional[float] = None
+    regimen: str = ""
+    K0: Optional[float] = None
+
+    def del_marco(self, marco: str) -> Tuple["Verificacion", ...]:
+        return tuple(v for v in self.verificaciones
+                     if f"-{marco}." in (v.codigo or ""))
+
+    @property
+    def cumple(self) -> bool:
+        """Todas las verificaciones que DECIDEN cumplen (las que informan no)."""
+        return all(v.cumple for v in self.verificaciones)

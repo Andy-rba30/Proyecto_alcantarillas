@@ -204,12 +204,24 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
     },
     "T-7a": {
         # El cabezal por punto y sus aleros: el prompt cita «INF-5.1.12
-        # (cabezal "del proyecto")», que es INF-5.1.15. INF-4.2 e INF-4.3
-        # quedan EN PARTE porque ninguna corrida de expediente alcanza la
-        # Fase 9 (V5 y V8 se detienen antes: ficha T7A-01, la cierra T-7b), e
-        # INF-4.1 porque los datos geotecnicos y sismicos los ensambla T-7b.
+        # (cabezal "del proyecto")», que es INF-5.1.15. T-7a dejo INF-4.2,
+        # INF-4.3 e INF-4.1 EN PARTE (ninguna corrida de expediente alcanzaba
+        # la Fase 9, y los datos geotecnicos y sismicos eran de T-7b): las
+        # tres filas las reescribio T-7b, y figuran abajo con su estado de
+        # hoy (una fila no figura en dos prompts).
         ESTADO_CERRADO: {"INF-5.1.15", "INF-3.4.1", "INF-3.4.2"},
-        ESTADO_PARCIAL: {"INF-4.2", "INF-4.3", "INF-4.1"},
+    },
+    "T-7b": {
+        # La estabilidad del cabezal en dos marcos (INF-4.4, INF-4.5,
+        # INF-5.1.5), y el residual de T-7a: la Fase 9 alcanzable a
+        # expediente por la ruta real (INF-4.2, CON LA SALVEDAD escrita en
+        # su fila: exige declarar el metodo de V5 y sus datos, el TR y el Q
+        # del evento extremo y el EMS) y los datos geotecnicos y sismicos por
+        # punto (INF-4.1). INF-4.3 sigue EN PARTE: el cabezal paralelo a la
+        # via para el marco (ficha T7A-03).
+        ESTADO_CERRADO: {"INF-4.4", "INF-4.5", "INF-5.1.5", "INF-4.2",
+                         "INF-4.1"},
+        ESTADO_PARCIAL: {"INF-4.3"},
     },
 }
 

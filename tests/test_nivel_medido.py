@@ -220,6 +220,12 @@ def test_lo_que_ninguna_corrida_invoca_se_clasifica_por_su_consumidor(
     for clave in sin_medir:
         consumidores = set(ve.variable(clave).consumido_por)
         corren_a_perfil = consumidores - diferidos
+        if clave in DE_UNA_VERIFICACION_DIFERIDA:
+            # El modulo corre a perfil; la VERIFICACION que lo lee, no.
+            assert DE_UNA_VERIFICACION_DIFERIDA[clave] in \
+                cli.VERIFICACIONES_DIFERIDAS_POR_ALCANCE[cli.ALCANCE_PERFIL]
+            assert consumidores == {"M5_verificaciones"}, clave
+            continue
         if ca.CRITERIOS[clave].nivel == ca.NIVEL_EXPEDIENTE:
             assert not corren_a_perfil, (
                 f"'{clave}' esta clasificado como de EXPEDIENTE y el censo le "
@@ -244,6 +250,37 @@ def test_lo_que_ninguna_corrida_invoca_se_clasifica_por_su_consumidor(
                 "censo")
 
 
+# --- T-7b --- UN CRITERIO DE EXPEDIENTE CUYO MODULO CORRE A PERFIL. El censo
+# de `variables_entrada` es por MODULO, y M5 corre en los dos alcances; pero
+# a perfil se difieren dos de sus VERIFICACIONES, V5 y V8
+# (`VERIFICACIONES_DIFERIDAS_POR_ALCANCE`), y este criterio solo lo lee V8, y
+# solo despues de 'TR_evento_extremo' y de los dos datos del evento. Ninguna
+# corrida de este archivo llega a el (V8 se detiene antes, en el TR), de modo
+# que no se mide; lo mide `tests/test_t7b_cabezal_estabilidad.py`, que corre
+# V8 de punta a punta. Que solo lo lee V8 se comprueba abajo, por AST.
+DE_UNA_VERIFICACION_DIFERIDA = {
+    "umbral_no_colapso_evento_extremo": "V8",
+}
+
+
+def test_el_criterio_de_la_verificacion_diferida_solo_lo_lee_esa_verificacion():
+    import ast
+    from src.modulos import M5_verificaciones as M5
+
+    arbol = ast.parse(Path(M5.__file__).read_text(encoding="utf-8"))
+    for clave, codigo in DE_UNA_VERIFICACION_DIFERIDA.items():
+        constantes = [n.targets[0].id for n in arbol.body
+                      if isinstance(n, ast.Assign)
+                      and isinstance(n.value, ast.Constant)
+                      and n.value.value == clave]
+        assert len(constantes) == 1, clave
+        lectoras = {f.name for f in arbol.body
+                    if isinstance(f, ast.FunctionDef)
+                    and any(isinstance(n, ast.Name) and n.id == constantes[0]
+                            for n in ast.walk(f))}
+        assert lectoras == {"v8_evento_extremo"}, (clave, codigo, lectoras)
+
+
 # LOS OCHO QUE ESTE ARCHIVO NO PUEDE COMPROBAR, censados en vez de omitidos.
 #
 # Se llego a esta lista POR MUTACION, que es la unica forma de saber que
@@ -265,7 +302,9 @@ SIN_CONSUMIDOR_Y_SIN_MEDIDA = (
     # 'angulo_aletas' SALIO DE ESTE CENSO EN T-7a: tiene consumidor
     # (`M9.embocadura_del_punto`, que corre antes de la Fase 4) y su nivel de
     # perfil lo mide la corrida de perfil de este mismo archivo.
-    "c_phi_fundacion",
+    # 'c_phi_fundacion' SALIO DE ESTE CENSO EN T-7b: tiene consumidor (el
+    # ensamble de estabilidad de M9, `suelo_de_fundacion`), que la Fase 9
+    # ejecuta a nivel de expediente y el de perfil difiere.
     "capacidad_portante_adm",
     "clase_sitio",
     "demanda_sismica_licuefaccion",

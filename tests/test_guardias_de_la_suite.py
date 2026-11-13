@@ -496,10 +496,16 @@ def test_los_simbolos_que_el_fixture_nombra_existen_de_verdad():
     # S16 hizo con `v5_remanso`.
     # T-5 RETIRO OTRO: `seleccionar_clase_calibre` tiene cuerpo (INF-3.3.5)
     # y se vigila desde el otro lado, con los dos de S20.
-    esperados = {
-        "M9_cabezal.py::verificar_estabilidad_global":
-            ("src/modulos/M9_cabezal.py", "verificar_estabilidad_global"),
-    }
+    # T-7b RETIRO LOS TRES ULTIMOS (INF-4.5): `verificar_estabilidad_global`
+    # y `verificar_talud` levantan `MetodoNoEvaluableError`, y
+    # `capacidad_portante_zapata_en_talud` tiene cuerpo. La lista de sitios
+    # queda VACIA, y los tres se vigilan desde el otro lado: el .md los
+    # sigue nombrando para decir que salieron.
+    esperados = {}
+    for rotulo in ("M9_cabezal.py::verificar_estabilidad_global",
+                   "M9_cabezal.py::verificar_talud",
+                   "M9_cabezal.py::capacidad_portante_zapata_en_talud"):
+        assert rotulo in texto, f"el fixture dejo de nombrar {rotulo}"
     for rotulo, (archivo, funcion) in esperados.items():
         assert rotulo in texto, f"el fixture dejo de nombrar {rotulo}"
         arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8-sig"))
@@ -518,7 +524,11 @@ def test_los_simbolos_que_el_fixture_nombra_existen_de_verdad():
     for archivo, funcion in (
             ("src/modulos/M5_verificaciones.py", "v8_evento_extremo"),
             ("src/modulos/M2_material.py", "espesor_pared"),
-            ("src/modulos/M8_estructural.py", "seleccionar_clase_calibre")):
+            ("src/modulos/M8_estructural.py", "seleccionar_clase_calibre"),
+            ("src/modulos/M9_cabezal.py", "verificar_estabilidad_global"),
+            ("src/modulos/M9_cabezal.py", "verificar_talud"),
+            ("src/modulos/M9_cabezal.py",
+             "capacidad_portante_zapata_en_talud")):
         arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8-sig"))
         nodo = next((n for n in ast.walk(arbol)
                      if isinstance(n, ast.FunctionDef) and n.name == funcion), None)
@@ -1207,7 +1217,7 @@ PUBLICAS_SIN_REFERENCIA_EN_TESTS = {
     "M5_verificaciones.pieza_del_hueco_de_V5": "la llama `_verificador_perfil` (servicio) y `verificar` (M5); la ejercita test_cierre_perfil",
     "M8_estructural.filas_ev_de_la_tabla": "la llama `v7_flotacion` (M5); la ejercita test_M5 por V7",
     "M9_cabezal.peso_suelo_sobre_talon": "SIN consumidor de produccion; censada con su razon en M9_cabezal.FUNCIONES_SIN_CONSUMIDOR",
-    "M9_cabezal.gamma_eq": "SIN consumidor de produccion; censada con su razon en M9_cabezal.FUNCIONES_SIN_CONSUMIDOR",
+    "M9_cabezal.gamma_eq": "la llama `combinaciones_de_estabilidad` (M9, desde T-7b: hasta entonces no tenia consumidor); la ejercita test_t7b por la condicion sismica",
     "M9_cabezal.factor_recubrimiento_por_ac": "la llama `_recubrimiento_aashto_detallado` (C07); la ejercita test_M9_cabezal por el recubrimiento",
     "M9_cabezal.nota_excepcion_refuerzo_minimo": "la llama `correr_cabezal` (servicio); la ejercita test_cli por el cabezal",
     "M9_cabezal.requiere_refuerzo_dos_capas": "la llama `nota_temperatura_dos_caras` (M9); la ejercita test_ext7",

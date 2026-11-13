@@ -138,3 +138,10 @@ PORCENTAJE_POR_UNIDAD = 100.0   # literal-ok: definicion del porcentaje, no valo
 # (luz < 6 m) de mas de 30 m en cualquiera de sus dimensiones no es un
 # cabezal: es otra estructura. No entra en ninguna formula.
 DIMENSION_CABEZAL_MAX_M = 30.0   # literal-ok: rango fisico de un dato de entrada, no un umbral de proyecto
+# --- T-7b --- Techo FISICO del ancho declarado del derecho de via
+# (`ancho_derecho_via_m` de `--datos-externos`, V5): rechaza un dato mal
+# tecleado -- una progresiva, milimetros por metros -- y no acota ninguna
+# magnitud de proyecto. La mayor fila de la Tabla 304.09 del DG-2018 es de
+# 40 m; una faja de mas de un kilometro de ancho no es un derecho de via.
+# No entra en ninguna formula.
+ANCHO_DERECHO_VIA_MAX_M = 1000.0   # literal-ok: rango fisico de un dato de entrada, no un umbral de proyecto

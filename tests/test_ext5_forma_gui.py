@@ -91,7 +91,12 @@ SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
                  "duracion_caudal_pico_min",
                  "profundidad_socavacion_estimada_m",
                  # --- T-9 --- las tres de la cuneta de la Fase 10.
-                 "ancho_tributario_m", "S_cuneta", "inicio_tramo_cuneta_km")
+                 "ancho_tributario_m", "S_cuneta", "inicio_tramo_cuneta_km",
+                 # --- T-7b --- las tres de V5 y V8 (PUNTO 0).
+                 "ancho_derecho_via_m", "Q_evento_extremo_m3s",
+                 "TW_evento_extremo_m",
+                 # --- cierre de T-7b (H2) --- el dato del metodo de cota.
+                 "cota_afectacion_aguas_arriba_msnm")
 
 
 def _formas_de(clave):

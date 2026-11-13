@@ -2577,28 +2577,27 @@ AGUA_TRASDOS_TEXTO_AASHTO = (
     "Submerged unit weights of the soil shall be used to determine the "
     "lateral earth pressure below the groundwater table.")
 HIPOTESIS_EMPUJE_BAJO_NF = (
-    "El empuje activo de este proyecto se calcula con el peso especifico "
-    "TOTAL del relleno en toda la altura y se le suma la hidrostatica "
-    "completa bajo el NF. AASHTO 3.11.3 exige peso especifico SUMERGIDO bajo "
-    "el nivel freatico, de modo que el agua de poros se cuenta dos veces en "
-    "la zona sumergida. "
-    "CUANTO ES, exactamente: el exceso de presion horizontal es "
-    "Ka*(gamma - gamma')*h = Ka*gamma_agua*h, o sea CONSTANTE en toda la zona "
-    "sumergida y proporcional solo a la profundidad bajo el NF. Con "
-    "gamma_sat = 20 kN/m3 (gamma' = 10.19), Ka = 1/3 y h = 0.60 m son "
-    "1.96 kPa de mas, siempre. En porcentaje NO hay un solo numero, porque "
-    "depende de la altura del muro: sobre un muro de 0.60 m -- todo el sumergido, "
-    "que es el caso con que la ficha MAT-O3 lo calculo -- la presion en la "
-    "base es 9.9 kPa contra 7.9 kPa, +25 %; sobre uno de 2.00 m con el "
-    "freatico a 1.40 m es 19.2 contra 17.3 kPa, +11 %; y sigue bajando con la "
-    "altura, porque el exceso no crece y el empuje si. La desviacion es "
-    "CONSERVADORA en todos los casos (gamma > gamma' siempre). "
-    "Se mantiene, y se declara, porque corregirla exige un peso especifico "
-    "sumergido del relleno que este expediente todavia no tiene: aplicar "
-    "AASHTO con el unico gamma declarado seria ALIVIAR el empuje sin dato "
-    "que lo sostenga. La hoja de ruta no dice nada del NF en el empuje: solo "
-    "que 'empuje hidrostatico y subpresion, con NF a 1.4 m, no son "
-    "opcionales'")
+    # --- T-7b --- REESCRITA: hasta T-7b este texto declaraba una DESVIACION
+    # (peso total en toda la altura mas la hidrostatica completa: el agua
+    # contada dos veces, del lado conservador), que era lo que
+    # `M9.empujes_trasdos` hacia. El ensamble de estabilidad
+    # (`M9.cargas_del_cabezal`) ya no la comete, y la memoria no puede seguir
+    # declarandola.
+    "Bajo el nivel del agua el empuje del suelo se calcula con su peso "
+    "especifico SUMERGIDO (el saturado menos el del agua), y el agua empuja "
+    "aparte con su presion hidrostatica entera, como exige AASHTO 3.11.3: el "
+    "agua de poros no se cuenta dos veces. Hasta donde sube el agua del "
+    "relleno lo declara 'drenaje_trasdos': sin drenaje declarado, hasta la "
+    "superficie del relleno RETENIDO contra el trasdos (coronacion menos "
+    "bordillo), nunca por encima del muro (AASHTO 11.6.6); con el, el nivel "
+    "freatico natural del punto, medido bajo el terreno del cruce, que no "
+    "contempla el desembalse rapido tras la avenida. El peso saturado del relleno es un dato de "
+    "ensayo ('peso_especifico_saturado_relleno_kn_m3') que solo hace falta "
+    "cuando el agua alcanza el plano de empuje. La funcion suelta "
+    "`M9.empujes_trasdos`, anterior al ensamble y sin llamador, conserva la "
+    "forma antigua (peso total mas hidrostatica), que cuenta el agua dos "
+    "veces del lado conservador. La hoja de ruta decia solo que 'empuje "
+    "hidrostatico y subpresion, con NF a 1.4 m, no son opcionales'")
 
 # QUE DE ESTE BLOQUE TIENE CONSUMIDOR Y QUE NO, declarado en vez de deducirse,
 # como ya se hacia con el bloque de gamma_p. Lo consume el calculo (M9):
@@ -3203,11 +3202,12 @@ KA_COULOMB_DECLARACION = (
     "Sec. 9.2 y que EXT-0 corrigio (discrepancia DIS-HR-KA-COULOMB, "
     "resuelta); con i, beta o delta distintos de cero los dos coeficientes "
     "difieren y rige el de Coulomb. La resultante de Coulomb actua a delta "
-    "de la normal al trasdos (delta + beta respecto de la horizontal) y este "
-    "calculo la toma ENTERA como carga horizontal, sin descomponerla: es "
-    "conservador para el volteo y el deslizamiento y no lo es para la "
-    "capacidad portante en la parte de la componente vertical que deja de "
-    "cargar sobre la base; la descomposicion queda diferida (EXT-7-04)")
+    "de la normal al plano de empuje (delta + beta respecto de la "
+    "horizontal), y desde T-7b el ensamble de estabilidad la DESCOMPONE: la "
+    "componente horizontal entra en el deslizamiento y en el momento "
+    "volcante, y la vertical carga la base en el plano de empuje, que en un "
+    "muro con talon es el vertical de su extremo (AASHTO C3.11.5.3). La "
+    "ficha EXT-7-04, que la dejaba entera como horizontal, queda cerrada")
 NUMERAL_SOBRECARGA_TRASDOS_AASHTO = _reg.cita(
     "AASHTO_LRFD_9.3.11.6.4").como_texto()
 NUMERAL_SOBRECARGA_TRASDOS_ALTURA = _reg.cita(
@@ -5002,3 +5002,138 @@ BANDAS_ALETAS_CAJON_C2: "dict[str, Tuple[Tuple[float, float], ...]]" = {
 }
 CAJON_C2_SIN_ALETAS = frozenset({"cajon_sin_aletas_escuadra_3",
                                  "cajon_sin_aletas_redondeado_3"})
+
+
+# ===========================================================================
+# --- T-7b --- (cadena T) · estabilidad del cabezal en un solo marco
+# ===========================================================================
+# Las tablas y los numeros de AASHTO LRFD 9.a ed. (2020) con que el ensamble
+# de estabilidad del cabezal (`M9.ensamble_estabilidad`) verifica en el marco
+# LRFD de su Art. 11.6, transcritos celda a celda de su pagina (PDF de
+# normas/, capa de texto) y fijados por `tests/test_t7b_cabezal_estabilidad.py`.
+# AASHTO es fuente [C] en este expediente (hoja de ruta §0.1): viven aqui, con
+# las demas tablas transcritas de AASHTO (h_eq, recubrimientos), porque son
+# NUMEROS DE LA FUENTE y no elecciones; CUAL fila aplica al cabezal es [A] y
+# vive en criterios_adoptados ('fila_phi_estabilidad_cabezal',
+# 'marco_estabilidad_cabezal'). El cabezal no tiene en AASHTO un articulo
+# que mande verificarlo por 11.6: se MODELA como muro de semigravedad en
+# voladizo, y esa hipotesis de modelacion la declara el criterio del marco.
+
+# Tabla 10.5.5.2.2-1 «Resistance Factors for Geotechnical Resistance of
+# Shallow Foundations at the Strength Limit State», pag. impresa 10-42 (PDF
+# 1331). Once filas, todas transcritas; el Manual de Puentes (2.8.1.1.12.6)
+# transcribe esta misma tabla.
+PHI_ZAPATAS_T10_5_5_2_2_1 = {
+    "portante": {
+        "teorico_arcilla": 0.50,            # Theoretical method (Munfakh et al., 2001), in clay
+        "teorico_arena_cpt": 0.50,          # ..., in sand, using CPT
+        "teorico_arena_spt": 0.45,          # ..., in sand, using SPT
+        "semiempirico": 0.45,               # Semi-empirical methods (Meyerhof, 1957), all soils
+        "roca": 0.45,                       # Footings on rock
+        "ensayo_de_placa": 0.55,            # Plate Load Test
+    },
+    "deslizamiento": {
+        "prefabricado_sobre_arena": 0.90,   # Precast concrete placed on sand
+        "vaciado_in_situ_sobre_arena": 0.80,    # Cast-in-Place Concrete on sand
+        "concreto_sobre_arcilla": 0.85,     # Cast-in-Place or precast Concrete on Clay
+        "suelo_sobre_suelo": 0.90,          # Soil on soil
+    },
+    "pasivo": 0.50,                         # Passive earth pressure component of sliding resistance
+}
+NUMERAL_PHI_ZAPATAS = ("AASHTO LRFD 9a ed., Tabla 10.5.5.2.2-1, pag. impresa "
+                       "10-42 (PDF 1331)")
+
+# Tabla 11.5.7-1 «Strength Limit State Resistance Factors for Permanent
+# Retaining Walls», pag. impresa 11-17 (PDF 1486), bloque «Mechanically
+# Stabilized Earth Walls, Gravity Walls, and Semigravity Walls»: solo las
+# tres filas geotecnicas que un muro de semigravedad usa. El 11.5.7 remite a
+# la Seccion 10 «unless specifically identified in Table 11.5.7-1», y esta
+# tabla SI identifica el portante y el deslizamiento de estos muros.
+PHI_MUROS_T11_5_7_1 = {
+    "portante_gravedad_y_semigravedad": 0.55,
+    "portante_mse": 0.65,
+    "deslizamiento": 1.0,
+}
+NUMERAL_PHI_MUROS = ("AASHTO LRFD 9a ed., 11.5.7 y Tabla 11.5.7-1, pags. "
+                     "impresas 11-15 y 11-17 (PDF 1484 y 1486)")
+
+# 11.5.8 «Resistance Factors—Extreme Event Limit State», pag. impresa 11-18
+# (PDF 1487). NO es «phi = 1.0» a secas: el articulo fija 1.0 «unless
+# otherwise specified» y especifica en la misma pagina 0.9 para la
+# estabilidad global y 0.8 para el portante de los muros de gravedad y
+# semigravedad.
+PHI_EVENTO_EXTREMO_11_5_8 = {
+    "general": 1.0,
+    "estabilidad_global": 0.9,
+    "portante_gravedad_y_semigravedad": 0.8,
+    "portante_mse": 0.9,
+}
+NUMERAL_PHI_EVENTO_EXTREMO = ("AASHTO LRFD 9a ed., 11.5.8, pag. impresa "
+                              "11-18 (PDF 1487)")
+
+# 11.6.3.3 «Eccentricity Limits» (pag. impresa 11-24, PDF 1493) y 10.6.3.3
+# (pags. 10-83 y 10-84, PDF 1372 y 1373): la resultante dentro de los dos
+# tercios centrales en suelo (e <= B/3) y de los nueve decimos en roca
+# (e <= 0.45·B), SOBRE CARGAS FACTORADAS. Es el limite ESTATICO; el sismico
+# (`EXCENTRICIDAD_ADMISIBLE_FRACCION_B`, 11.6.5.1) depende de gamma_EQ. Las
+# dos fracciones ya estaban transcritas del Manual de Puentes, que traduce
+# este articulo (`EXCENTRICIDAD_ESTATICA_FRACCION_B`, mas arriba): aqui solo
+# se añade el numeral de la fuente original, que es el que el marco LRFD cita.
+NUMERAL_EXCENTRICIDAD_ESTATICA_AASHTO = (
+    "AASHTO LRFD 9a ed., 11.6.3.3 «Eccentricity Limits», pag. impresa 11-24 "
+    "(PDF 1493); 10.6.3.3, pags. impresas 10-83 y 10-84")
+
+# 10.6.3.4 «Failure by Sliding», pag. impresa 10-84 (PDF 1373), ec.
+# 10.6.3.4-2: R_tau = C·V·tan(phi_f), con C = 1.0 «for concrete cast against
+# soil» y 0.8 «for precast concrete footing».
+C_DESLIZAMIENTO_10_6_3_4 = {"vaciado_contra_el_suelo": 1.0,
+                            "zapata_prefabricada": 0.8}
+NUMERAL_DESLIZAMIENTO_AASHTO = (
+    "AASHTO LRFD 9a ed., 11.6.3.6 -> 10.6.3.4 «Failure by Sliding», pags. "
+    "impresas 11-24 y 10-84 (PDF 1493 y 1373)")
+
+# Tabla 10.6.3.1.2a-1 «Bearing Capacity Factors Nc (Prandtl, 1921), Nq
+# (Reissner, 1924), and N_gamma (Vesic, 1975)», pag. impresa 10-72 (PDF
+# 1361): phi_f en grados enteros de 0 a 45 -> (Nc, Nq, N_gamma). Las 46
+# filas, tal como la tabla las imprime (un decimal; Nc de la fila 0, dos).
+FACTORES_CAPACIDAD_CARGA_T10_6_3_1_2A_1 = {
+    0: (5.14, 1.0, 0.0), 1: (5.4, 1.1, 0.1), 2: (5.6, 1.2, 0.2),
+    3: (5.9, 1.3, 0.2), 4: (6.2, 1.4, 0.3), 5: (6.5, 1.6, 0.5),
+    6: (6.8, 1.7, 0.6), 7: (7.2, 1.9, 0.7), 8: (7.5, 2.1, 0.9),
+    9: (7.9, 2.3, 1.0), 10: (8.4, 2.5, 1.2), 11: (8.8, 2.7, 1.4),
+    12: (9.3, 3.0, 1.7), 13: (9.8, 3.3, 2.0), 14: (10.4, 3.6, 2.3),
+    15: (11.0, 3.9, 2.7), 16: (11.6, 4.3, 3.1), 17: (12.3, 4.8, 3.5),
+    18: (13.1, 5.3, 4.1), 19: (13.9, 5.8, 4.7), 20: (14.8, 6.4, 5.4),
+    21: (15.8, 7.1, 6.2), 22: (16.9, 7.8, 7.1), 23: (18.1, 8.7, 8.2),
+    24: (19.3, 9.6, 9.4), 25: (20.7, 10.7, 10.9), 26: (22.3, 11.9, 12.5),
+    27: (23.9, 13.2, 14.5), 28: (25.8, 14.7, 16.7), 29: (27.9, 16.4, 19.3),
+    30: (30.1, 18.4, 22.4), 31: (32.7, 20.6, 26.0), 32: (35.5, 23.2, 30.2),
+    33: (38.6, 26.1, 35.2), 34: (42.2, 29.4, 41.1), 35: (46.1, 33.3, 48.0),
+    36: (50.6, 37.8, 56.3), 37: (55.6, 42.9, 66.2), 38: (61.4, 48.9, 78.0),
+    39: (67.9, 56.0, 92.3), 40: (75.3, 64.2, 109.4), 41: (83.9, 73.9, 130.2),
+    42: (93.7, 85.4, 155.6), 43: (105.1, 99.0, 186.5),
+    44: (118.4, 115.3, 224.6), 45: (133.9, 134.9, 271.8),
+}
+NUMERAL_CAPACIDAD_PORTANTE_AASHTO = (
+    "AASHTO LRFD 9a ed., 10.6.3.1.2a «Basic Formulation», ec. 10.6.3.1.2a-1 "
+    "a -4 y Tablas 10.6.3.1.2a-1 y -2, pags. impresas 10-70 a 10-73 (PDF "
+    "1359 a 1362)")
+
+# Tabla 10.6.3.1.2a-2 «Coefficients Cwq and Cw_gamma for Various Groundwater
+# Depths», pag. impresa 10-72 (PDF 1361). Tres filas por la profundidad D_w
+# del nivel freatico bajo la superficie del terreno: 0.0 -> (0.5, 0.5);
+# D_f -> (1.0, 0.5); > 1.5·B + D_f -> (1.0, 1.0). La tabla NO dice que hacer
+# entre filas: la interpolacion lineal es lectura del proyecto y el paso
+# del calculo lo declara.
+CW_NIVEL_FREATICO_T10_6_3_1_2A_2 = {
+    "en_la_superficie": (0.5, 0.5),         # D_w = 0.0: (C_wq, C_wgamma)
+    "en_el_desplante": (1.0, 0.5),          # D_w = D_f
+    "bajo_la_zona_de_falla": (1.0, 1.0),    # D_w > 1.5·B + D_f
+}
+CW_PROFUNDIDAD_SIN_EFECTO_VECES_B = 1.5     # el «1.5B» de la tercera fila
+
+# Figura C3.11.5.8.1-1 «Earth Pressure Distribution for MSE Wall with Broken
+# Back Earth Surcharge», pag. impresa 3-138 (PDF 192), leida por imagen: la
+# pendiente equivalente del relleno quebrado es la de la recta que va de la
+# coronacion del muro al terreno a una distancia horizontal de 2·H.
+TALUD_QUEBRADO_DISTANCIA_VECES_H = 2.0

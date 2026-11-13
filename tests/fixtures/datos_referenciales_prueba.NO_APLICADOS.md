@@ -69,12 +69,19 @@ Sitios, ANCLADOS POR SIMBOLO y no por numero de linea (corregido en S16: las
 cinco referencias `archivo:linea` de esta lista estaban corridas, y una de las
 cinco ya no existe):
 
-    metodo_estabilidad_global    M9_cabezal.py::verificar_estabilidad_global
+    (ninguno desde T-7b)
 
-Y los `AssertionError` hermanos que NO cuelgan de este fixture, para que la
-lista este completa: `M9_cabezal.py::verificar_talud` y
-`M9_cabezal.py::capacidad_portante_zapata_en_talud` (el caso
-`N_cq_N_gammaq_meyerhof` que ya estaba excluido).
+> **T-7b RETIRO LOS TRES ULTIMOS.** `M9_cabezal.py::verificar_estabilidad_global`
+> y `M9_cabezal.py::verificar_talud` ya no terminan en `AssertionError`
+> cuando `metodo_estabilidad_global` tiene valor: levantan
+> `MetodoNoEvaluableError`, que SI es `ErrorProyecto` (el analisis de
+> superficies de falla no esta en el programa, y el ensamble de estabilidad
+> imprime E4 y E5 como diferidas al expediente con el EMS). Y
+> `M9_cabezal.py::capacidad_portante_zapata_en_talud` tiene cuerpo: aplica
+> la ecuacion del Manual de Puentes con los factores que se declaren en
+> `N_cq_N_gammaq_meyerhof`. Declarar `metodo_estabilidad_global` con el
+> `"Bishop_Simplificado"` del fixture sigue sin destrabar nada: cambia un
+> bloqueo por otro mejor explicado, y ya no por un crash.
 
 `TR_evento_extremo` sale de este grupo pero NO se puede aplicar igual, y por
 otra razon: declararlo deja a V8 pidiendo el caudal del evento extremo, que

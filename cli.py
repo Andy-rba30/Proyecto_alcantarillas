@@ -70,6 +70,17 @@ diferencia importa porque se corrigen en sitios distintos:
       cuneta), `S_cuneta` (pendiente longitudinal de la cuneta) y
       `inicio_tramo_cuneta_km` (progresiva donde empieza el tramo que
       descarga en el alivio, el extremo de VB1).
+      Y, desde T-7b, las de V5 y V8, por punto o globales y sin valor por
+      defecto: `ancho_derecho_via_m` (ancho total de la faja del derecho de
+      via en el cruce, de la resolucion que lo aprueba; Familias A y B),
+      `Q_evento_extremo_m3s` (caudal del periodo de retorno de V8, del
+      estudio hidrologico) y `TW_evento_extremo_m` (tirante del receptor en
+      ese evento; admite 0). Solo se leen con el criterio de su
+      verificacion declarado ('remanso_derecho_via', 'TR_evento_extremo').
+      Y, desde el cierre de T-7b, `cota_afectacion_aguas_arriba_msnm` (msnm;
+      la cota del terreno o del bien a proteger en el limite del derecho de
+      via aguas arriba, de la topografia), que lee V5 con el metodo
+      «cota_de_afectacion».
   (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
       La columna existe y para la Familia C va vacia a proposito
       (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el
@@ -1626,6 +1637,32 @@ def _lineas_cabezal_del_punto(informe: InformePunto) -> List[str]:
     else:
         out.append(f"{SANGRIA_DETALLE}longitud entre cabezales: no se "
                    f"calcula ({c.motivo_sin_longitud})")
+    # --- T-7b --- La estabilidad de cada cabezal, por condicion: lo que la
+    # identifica (coeficientes, altura de empuje) y las resultantes de cada
+    # combinacion. Las seis filas E1 a E3 de cada una salen, con su marca,
+    # en «Verificaciones»; lo que no se pudo evaluar, en «Bloqueos».
+    for e in c.estabilidad:
+        sismo = ("" if e.K_AE is None else
+                 f", K_AE = {_fmt(e.K_AE)} con k_h = {_fmt(e.k_h)}")
+        out.append(
+            f"{SANGRIA}Fase 9  estabilidad del cabezal de {e.extremo}, "
+            f"{e.condicion.value} (marco: {e.regla_de_marco}): K_A = "
+            f"{_fmt(e.K_A)}{sismo}, i = {_fmt(e.i_grados, 2)} grados, "
+            f"delta = {_fmt(e.delta_grados, 2)} grados, h = "
+            f"{_fmt(e.altura_empuje)} m, h_eq = {_fmt(e.h_eq)} m; empuje: "
+            f"{e.metodo_empuje}; regimen: {e.regimen}")
+        for combo in e.combinaciones:
+            out.append(
+                f"{SANGRIA_DETALLE}[{combo.marco}] {combo.nombre}: N = "
+                f"{_fmt(combo.N, 2)} kN/m, H = {_fmt(combo.H, 2)} kN/m, "
+                f"M_e = {_fmt(combo.M_estabilizante, 2)} / M_v = "
+                f"{_fmt(combo.M_volcante, 2)} kN.m/m")
+        for codigo, motivo in e.pendientes:
+            if e.condicion.value == "estatico":
+                out.append(f"{SANGRIA_DETALLE}{codigo} sin evaluar: {motivo}")
+    if not c.estabilidad:
+        out.append(f"{SANGRIA_DETALLE}estabilidad E1-E3: no evaluada (ver "
+                   "Bloqueos)")
     return out
 
 
@@ -1689,6 +1726,49 @@ def _cabezal_del_punto_json(informe: InformePunto) -> Optional[Dict[str, Any]]:
     salida["longitud_entre_cabezales_m"] = _num(c.longitud_entre_cabezales)
     salida["longitud_metrado_m"] = _num(c.longitud_metrado)
     salida["motivo_sin_longitud_entre_cabezales"] = c.motivo_sin_longitud
+    # --- T-7b --- el ensamble de estabilidad de cada cabezal y condicion:
+    # cargas sin factorar con su brazo, combinaciones de los dos marcos,
+    # codigos de sus verificaciones (que van enteras en `verificaciones`
+    # del punto) y solicitaciones factoradas por elemento (para T-7c).
+    salida["estabilidad"] = [{
+        "extremo": e.extremo, "condicion": e.condicion.value,
+        "regla_de_marco": e.regla_de_marco,
+        "K_A": _num(e.K_A), "K_AE": _num(e.K_AE), "k_h": _num(e.k_h),
+        "i_grados": _num(e.i_grados), "delta_grados": _num(e.delta_grados),
+        "altura_empuje_m": _num(e.altura_empuje), "h_eq_m": _num(e.h_eq),
+        # Correcciones de T-7b (H4, H7): como se calculo el empuje, los
+        # coeficientes de la formula cerrada que quedan de contraste (None
+        # donde no es evaluable o no hay cuña), el regimen y el K0.
+        "metodo_empuje": e.metodo_empuje,
+        "K_A_contraste": _num(e.K_A_contraste),
+        "K_AE_contraste": _num(e.K_AE_contraste),
+        "regimen": e.regimen, "K0": _num(e.K0),
+        "cargas": [{"codigo": q.codigo, "tipo": q.tipo,
+                    "descripcion": q.descripcion, "sobre": q.sobre,
+                    "V_kN_m": _num(q.V), "H_kN_m": _num(q.H),
+                    "x_m": _num(q.x), "z_m": _num(q.z),
+                    "momento_kNm_m": _num(q.momento)} for q in e.cargas],
+        "combinaciones": [{
+            "nombre": k.nombre, "marco": k.marco, "para": k.para,
+            "factores": {codigo: _num(f) for codigo, f in k.factores},
+            "N_kN_m": _num(k.N), "H_kN_m": _num(k.H),
+            "M_estabilizante_kNm_m": _num(k.M_estabilizante),
+            "M_volcante_kNm_m": _num(k.M_volcante),
+            "excentricidad_m": (_num(k.excentricidad) if k.N > 0 else None)}
+            for k in e.combinaciones],
+        "verificaciones": [v.codigo for v in e.verificaciones],
+        "pendientes": [{"codigo": codigo, "motivo": motivo}
+                       for codigo, motivo in e.pendientes],
+        "solicitaciones": [{
+            "elemento": s.elemento, "seccion": s.seccion,
+            "combinacion": s.combinacion, "V_u_kN_m": _num(s.V_u),
+            "M_u_kNm_m": _num(s.M_u), "nota": s.nota,
+            "regimen": s.regimen,
+            "coeficiente_de_empuje": s.coeficiente_de_empuje,
+            "K_empuje": _num(s.K_empuje), "K0": _num(s.K0),
+            "K0_sobre_K_A": _num(s.K0_sobre_K_A)}
+            for s in e.solicitaciones],
+    } for e in c.estabilidad]
     return salida
 
 

@@ -140,6 +140,14 @@ def tabla_externos() -> str:
             si_falta = "es opcional: sin ella no se afirma nada"
         elif clave in servicio.CLAVES_T8:
             si_falta = "es opcional: sin ella la Fase 6 lo avisa"
+        elif clave in servicio.CLAVES_DE_V5_Y_V8:
+            # --- T-7b --- solo se lee con el criterio de su verificacion
+            # declarado, y a perfil no se pide: la guia es de perfil.
+            si_falta = (f"nada a nivel de perfil; a expediente, con "
+                        f"`{servicio.CRITERIO_QUE_EXIGE_LA_CLAVE[clave]}` "
+                        f"declarado, "
+                        f"{servicio.VERIFICACION_QUE_EXIGE_LA_CLAVE[clave]} "
+                        "se detiene")
         elif clave in servicio.EXTERNOS_CON_VIA_ALTERNA:
             si_falta = "el programa la resuelve por otra vía"
         elif es_columna:

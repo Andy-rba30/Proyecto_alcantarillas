@@ -2374,3 +2374,421 @@ CP_T9_CUNETA = {
     "velocidad_Z2": {"v": 0.20, "n": 1 / 33, "S": 0.01, "Z1": 3.0, "Z2": 2.0,
                      "y_v": 0.0322177, "Q_v": 0.000518991},
 }
+
+
+# ===========================================================================
+# --- T-7b --- ESTABILIDAD DEL CABEZAL: dorados A MANO, con la aritmetica
+# ===========================================================================
+# Ninguna fuente de normas/ trae un ejemplo resuelto del cabezal (el «PDF de
+# VARIOS» que el encargo nombra no esta en la sesion: sus cifras van aparte,
+# en CP_T7B_ENCARGO, como contraste rotulado). Estos numeros se calcularon a
+# mano desde las ecuaciones de AASHTO, con la forma de la ECUACION 3.11.5.3-1
+# para K_A y la de A11.3.1-1 para K_AE -- que no son la funcion del modulo,
+# que deduce Coulomb de Mononobe-Okabe --, y la suma de momentos escrita.
+#
+# EL MURO DE TANTEO (por metro), sin agua y con relleno horizontal:
+#   pantalla 0.30 x 2.00 m, trasdos vertical; zapata B = 2.00 x 0.40 m;
+#   punta 0.60 m, talon 1.10 m; relleno retenido hasta la corona (h = 2.40 m
+#   sobre la base) y horizontal; D_f = 0.80 m; freatico a 5.00 m.
+#   gamma = 18 kN/m3 (relleno), gamma_c = 23.56 kN/m3; phi = 30 grados;
+#   delta = 0.67·30 = 20.1 grados; suelo de fundacion friccionante, phi_f =
+#   32 grados, gamma = 18 kN/m3.
+#
+# K_A (AASHTO ec. 3.11.5.3-1 y -2, theta = 90, beta = 0):
+#   Gamma = [1 + sqrt( sen(50.1)·sen(30) / (sen(69.9)·sen(90)) )]^2
+#         = [1 + sqrt( 0.767165·0.5 / 0.939094 )]^2
+#         = [1 + sqrt(0.408460)]^2 = (1.639109)^2 = 2.686679
+#   K_A   = sen^2(120) / (Gamma·sen^2(90)·sen(69.9))
+#         = 0.75 / (2.686679·0.939094) = 0.75 / 2.523044 = 0.297260
+#
+# CARGAS SIN FACTORAR (kN/m) y brazo (x desde la punta, z desde la base):
+#   DC pantalla  23.56·0.30·2.00          = 14.136    x = 0.60 + 0.15 = 0.75
+#   DC zapata    23.56·2.00·0.40          = 18.848    x = 1.00
+#   EV talon     18·1.10·2.00             = 39.600    x = 0.90 + 0.55 = 1.45
+#   P_A          0.5·0.297260·18·2.40^2   = 15.4100
+#   EH.h         15.4100·cos(20.1) = 15.4100·0.939094 = 14.4714   z = 0.80
+#   EH.v         15.4100·sen(20.1) = 15.4100·0.343660 =  5.2958   x = 2.00
+#   h_eq         muro paralelo, borde a mas de 1 ft: 2.0 ft = 0.6096 m (> 0.60)
+#   LS.h         0.297260·18·0.6096·2.40  =  7.8283   z = 1.20
+#   LS.v         18·0.6096·1.10           = 12.0701   x = 1.45
+#
+# RESISTENCIA I, MINIMOS (0.90 DC, 1.00 EV, 1.50 EH, 1.75 LS solo empuje):
+#   N   = 0.90·32.984 + 39.600 + 1.50·5.2958 = 29.6856 + 39.6 + 7.9437
+#       = 77.2293
+#   H   = 1.50·14.4714 + 1.75·7.8283 = 21.7071 + 13.6995 = 35.4066
+#   M_e = 0.90·(14.136·0.75 + 18.848·1.00) + 39.6·1.45 + 1.50·5.2958·2.00
+#       = 0.90·29.450 + 57.420 + 15.8874 = 26.505 + 57.42 + 15.8874 = 99.8124
+#   M_v = 1.50·14.4714·0.80 + 1.75·7.8283·1.20 = 17.3657 + 16.4394 = 33.8051
+#   e   = 2.00/2 - (99.8124 - 33.8051)/77.2293 = 1.00 - 0.85470 = 0.14530
+#   E2  : 0.14530 <= B/3 = 0.66667                                  CUMPLE
+#   E3  : R_tau = 77.2293·tan(32) = 77.2293·0.624869 = 48.2582;
+#         0.80·48.2582 = 38.6066 >= 35.4066                         CUMPLE
+#
+# RESISTENCIA I, MAXIMOS (1.25 DC, 1.35 EV, 1.50 EH, 1.75 LS con su peso):
+#   N   = 1.25·32.984 + 1.35·39.6 + 1.50·5.2958 + 1.75·12.0701
+#       = 41.230 + 53.460 + 7.9437 + 21.1227 = 123.7564
+#   M_e = 1.25·29.450 + 1.35·57.42 + 15.8874 + 1.75·12.0701·1.45
+#       = 36.8125 + 77.517 + 15.8874 + 30.6279 = 160.8448
+#   e   = 1.00 - (160.8448 - 33.8051)/123.7564 = 1.00 - 1.02653 = -0.02653
+#         (hacia el talon); B' = 2.00 - 2·0.02653 = 1.94694
+#   sigma_v = 123.7564 / 1.94694 = 63.5646 kPa
+#   Inclinacion, con las cargas SIN factorar de servicio (con el peso de LS):
+#     V = 32.984 + 39.6 + 5.2958 + 12.0701 = 89.9499; H = 14.4714 + 7.8283
+#       = 22.2997; 1 - H/V = 0.752088; i_q = 0.752088^2 = 0.565636;
+#     i_gamma = 0.752088^3 = 0.425408
+#   q_n = 18·0.80·23.2·0.565636 + 0.5·18·1.94694·30.2·0.425408
+#       = 188.9661 + 225.1182 = 414.0843 (C_wq = C_wgamma = 1: freatico a
+#         5.00 m > D_f + 1.5·B' = 3.72 m)
+#   E1  : 63.5646 <= 0.45·414.0843 = 186.3379                       CUMPLE
+#
+# SERVICIO (ASD, todos los factores 1; sin el peso de LS en volteo y desl.):
+#   N = 77.8798; H = 22.2997; M_e = 29.450 + 57.42 + 10.5916 = 97.4616;
+#   M_v = 14.4714·0.80 + 7.8283·1.20 = 11.5771 + 9.3940 = 20.9711
+#   FS volteo        = 97.4616 / 20.9711            = 4.6474  >= 1.5
+#   FS deslizamiento = 77.8798·0.624869 / 22.2997   = 2.1823  >= 1.5
+#   portante (con el peso de LS): N = 89.9499, e = -0.04494, B' = 1.91012,
+#     q = 47.0912 kPa; q_n = 188.9661 + 0.5·18·1.91012·30.2·0.425408
+#     = 188.9661 + 220.8612 = 409.8273; q_adm = 409.8273/3.0 = 136.6091
+#
+# SISMICA con k_h = 0.25, k_v = 0 (theta_MO = arctan 0.25 = 14.0362 grados):
+#   K_AE (AASHTO A11.3.1-1, i = beta = 0, delta = 20.1) = 0.508300
+#   P_AE = 0.5·18·2.40^2·0.508300 = 26.3503; dP = 26.3503 - 15.4100 = 10.9403
+#   dP.h = 10.9403·0.939094 = 10.2740 a z = 0.6·2.40 = 1.44
+#   dP.v = 10.9403·0.343660 =  3.7597 a x = 2.00
+#   P_IR muro  = 0.25·32.984 = 8.2460 a z = (14.136·1.40 + 18.848·0.20)/32.984
+#              = 23.5600/32.984 = 0.71429
+#   P_IR suelo = 0.25·39.6 = 9.9000 a z = 0.40 + 1.00 = 1.40
+#   Caso 1 (100 % P_AE + 50 % P_IR), sin el peso de LS, gamma_EQ = 0.5:
+#     N = 32.984 + 39.6 + 5.2958 + 3.7597 = 81.6395
+#     H = 14.4714 + 10.2740 + 0.5·18.146 + 0.5·7.8283 = 37.7325
+#     e = 0.21561 <= 0.36667·2.00 = 0.73333 ; R_tau = 51.0140 >= 37.7325
+#   Caso 2 (50 % P_AE + 100 % P_IR): 0.5·26.3503 = 13.1751 < P_A = 15.4100,
+#     de modo que RIGE EL PISO ESTATICO: EH entero, sin incremento.
+#     H = 14.4714 + 18.146 + 0.5·7.8283 = 36.5315
+CP_T7B_ESTABILIDAD = {
+    # Tolerancias de la ESCRITURA del dorado, no de la maquina.
+    "tolerancia": 2e-4, "tolerancia_rel": 2e-4, "tolerancia_K": 1e-6,
+    "tolerancia_fina": 1e-5, "tolerancia_mm": 2e-3, "tolerancia_cm": 1e-2,
+    "geometria": {"H": 2.0, "B": 2.0, "D_f": 0.80, "espesor_corona": 0.30,
+                  "espesor_base_muro": 0.30, "espesor_zapata": 0.40,
+                  "ancho_talon": 1.10, "ancho_punta": 0.60},
+    "gamma_relleno": 18.0, "phi_relleno": 30.0, "delta": 20.1,
+    "suelo": {"cohesivo": False, "c_kpa": 0.0, "phi_grados": 32.0,
+              "gamma_kn_m3": 18.0},
+    "NF": 5.0, "h": 2.40, "h_eq": 0.6096,
+    "K_A": 0.297260, "K_AE_kh_025": 0.508300,
+    "cargas": {   # codigo: (V, H, x, z)
+        "DC.pantalla": (14.136, 0.0, 0.75, None),
+        "DC.zapata": (18.848, 0.0, 1.00, None),
+        "EV.talon": (39.600, 0.0, 1.45, None),
+        "EH.h": (0.0, 14.4714, None, 0.80),
+        "EH.v": (5.2958, 0.0, 2.00, None),
+        "LS.h": (0.0, 7.8283, None, 1.20),
+        "LS.v": (12.0701, 0.0, 1.45, None),
+    },
+    "resistencia_min": {"N": 77.2293, "H": 35.4066, "M_e": 99.8124,
+                        "M_v": 33.8051, "e": 0.14530},
+    "resistencia_max": {"N": 123.7564, "M_e": 160.8448, "e": -0.02653},
+    "E1_LRFD": {"sigma_v": 63.5646, "q_n": 414.0843, "q_R": 186.3379},
+    "E2_LRFD": {"e": 0.14530, "e_max": 2.0 / 3.0},
+    "E3_LRFD": {"H": 35.4066, "R_tau": 48.2582, "R_R": 38.6066},
+    "ASD": {"FS_volteo": 4.6474, "FS_deslizamiento": 2.1823,
+            "q_servicio": 47.0912, "q_adm": 136.6091},
+    "sismico": {
+        "k_h": 0.25, "P_AE": 26.3503, "dP_h": 10.2740, "dP_v": 3.7597,
+        "z_dP": 1.44, "PIR_muro": 8.2460, "z_muro": 0.71429,
+        "PIR_suelo": 9.9000, "z_suelo": 1.40,
+        "caso_1": {"N": 81.6395, "H": 37.7325, "e": 0.21561,
+                   "R_tau": 51.0140},
+        "caso_2": {"H": 36.5315},
+        "e_max": 0.73333,
+    },
+}
+
+# El ejemplo numerico que el encargo de T-7b cita del «PDF de VARIOS» (pp.
+# 112-122). LA FUENTE NO ESTA EN LA SESION: estas son CIFRAS DEL ENCARGO, no
+# un dorado. Se usan como CONTRASTE rotulado, con tolerancia declarada. Lo
+# que se pudo reconstruir de ellas, hacia atras:
+#   Kp = 2.578 = tan^2(45 + phi/2)  ->  phi = 26.17 grados
+#   Ka = tan^2(45 - phi/2) = 0.3879 (0.388): es RANKINE, con delta = 0
+#   P_A = 2793 kg/m = 0.5·0.388·gamma·H^2 con gamma = 1600 kg/m3 y H = 3.00 m
+#   dP_AE = 0.5·1600·9·(0.498 - 0.388) = 792 kg/m (791)
+#   M sismico = 2793.6·(3.00/3) + 792·(0.6·3.00) = 4219 kg·m/m (4217.9): el
+#     incremento va a 0.6·H, que es lo que 'punto_aplicacion_incremento_
+#     sismico' adopta
+#   EQ = 1.58 t = k_h·(DC + EV) = k_h·(7.47 + 3.07)  ->  k_h = 0.150
+#   K_AE con phi = 26.17, delta = i = beta = 0 y k_h = 0.15: 0.4965 (0.498)
+#   h_eq = 0.90 m: la fila de 10 ft (3.05 m) de la Tabla 3.11.6.4-1, 3.0 ft
+# Lo que NO se pudo reconstruir: DC = 7.47 t y EV = 3.07 t, que dependen de
+# la seccion del muro del ejemplo (B = 1.50 m, h = 0.38 m), que el encargo
+# no da completa.
+CP_T7B_ENCARGO = {
+    "rotulo": "cifras del encargo; fuente no disponible en la sesion",
+    "Ka": 0.388, "Kp": 2.578, "K_AE": 0.498, "h_eq_m": 0.90,
+    "P_A_kg_m": 2793.0, "dP_AE_kg_m": 791.0, "M_sismico_kgm_m": 4217.9,
+    "DC_t": 7.47, "EV_t": 3.07, "EQ_t": 1.58,
+    "reconstruido": {"phi_grados": 26.17, "gamma_kg_m3": 1600.0, "H_m": 3.00,
+                     "k_h": 0.15, "fraccion_brazo": 0.6},
+    # Tolerancias del CONTRASTE: las cifras del encargo vienen redondeadas a
+    # tres o cuatro cifras y phi se reconstruyo de Kp.
+    "tolerancia_Ka": 0.002, "tolerancia_K_AE": 0.005, "tolerancia_Kp": 0.01,
+    "tolerancia_P_A": 0.002, "tolerancia_dP_AE": 0.02,
+    "tolerancia_M_sismico": 0.005, "tolerancia_EQ": 0.002,
+}
+
+# V5 por el metodo del embalse a nivel, A-01 del fixture (HW de la linea
+# base, 1.042 m con el tubo de 0.90 m): a mano.
+#   x_embalse = HW / S_cauce = 1.0420 / 0.006 = 173.667 m
+#   L_boca    = semilongitud de entrada de 7.B (9.317 m en la linea base)
+#   d = (9.317 + 173.667)·cos(15) = 182.984·0.965926 = 176.75 m
+#   con ancho_derecho_via = 400 m: 176.75 <= 200.0, margen 23.25 m
+#   con ancho_derecho_via = 300 m: 176.75 >  150.0  -> NO CUMPLE
+CP_T7B_V5 = {"S_cauce": 0.006, "esviaje": 15.0, "cos_15": 0.965926,
+             "ancho_que_cumple": 400.0, "ancho_que_no": 300.0}
+
+
+# EL SEGUNDO MURO DE TANTEO, con todo lo que el primero deja en cero: pantalla
+# TRAPECIAL, relleno que SUBE detras (cuña sobre el talon, parte triangulo y
+# parte rectangulo), pendiente equivalente no nula y AGUA PARCIAL en el plano
+# de empuje. Lo pidio la mutacion (arnes de EXT-11): con el primer muro solo,
+# 77 mutantes de `cargas_del_cabezal` quedaban vivos. A mano, como el primero.
+#
+#   pantalla 0.25 (corona) a 0.45 (base) x 2.00 m, trasdos vertical;
+#   zapata B = 2.40 x 0.40 m; punta 0.75, talon 1.20; D_f = 1.00 m.
+#   relleno retenido hasta z = 2.40 m sobre la base; detras sube 0.30 m con
+#   talud 2.0 H:V hasta el borde de la plataforma, y sigue horizontal.
+#   gamma = 18, gamma_sat = 20 (gamma' = 10.19), gamma_c = 23.56 kN/m3;
+#   phi = 30, delta = 20.1; freatico a 0.40 m bajo el pie, trasdos DRENADO:
+#   el agua queda 1.00 - 0.40 = 0.60 m sobre la base, delante y detras.
+#
+# Geometria del relleno:
+#   el talud alcanza el borde a 0.30·2.0 = 0.60 m del trasdos (< talon):
+#     cuña = triangulo 0.60·0.30/2 = 0.09 m2 + rectangulo 0.60·0.30 = 0.18 m2
+#   sobre el extremo del talon el terreno esta 0.30 m mas alto: h = 2.70 m
+#   pendiente equivalente (talud quebrado, 2·z_rel = 4.80 m): a 4.80 m el
+#     talud habria subido 2.40 m, pero se quiebra a 0.30:
+#     i = arctan(0.30 / 4.80) = 3.5763 grados
+#
+# K_A (AASHTO 3.11.5.3-1 y -2, theta = 90, beta = i):
+#   Gamma = [1 + sqrt( sen(50.1)·sen(30 - 3.5763) / (sen(69.9)·sen(93.5763)) )]^2
+#         = [1 + sqrt( 0.767165·0.445005 / (0.939094·0.998053) )]^2
+#         = [1 + sqrt(0.341393 / 0.937266)]^2 = (1.603526)^2 = 2.571294
+#   K_A   = 0.75 / (2.571294·0.939094) = 0.310599
+#
+# Cargas sin factorar:
+#   DC pantalla: rectangulo 23.56·0.25·2.00 = 11.780 en x = 1.20 - 0.125
+#                = 1.075, z = 1.40; triangulo 23.56·0.20·2.00/2 = 4.712 en
+#                x = 0.75 + 2·0.20/3 = 0.88333, z = 0.40 + 2.00/3 = 1.06667
+#                total 16.492; x = (12.6635 + 4.1623)/16.492 = 1.02024;
+#                z = (16.492 + 5.0261)/16.492 = 1.30476
+#   DC zapata:   23.56·2.40·0.40 = 22.6176 en x = 1.20, z = 0.20
+#   EV talon:    seco 18·1.20·1.80 = 38.88; mojado (0.60 - 0.40 = 0.20 m)
+#                20·1.20·0.20 = 4.80; cuña 18·0.27 = 4.86; total 48.54
+#                x = [43.68·1.80 + 18·(0.09·1.60 + 0.18·2.10)] / 48.54
+#                  = (78.624 + 9.396)/48.54 = 1.81335
+#   Empuje del suelo (diagrama en tres partes, h_seco = 2.10, h_w = 0.60):
+#                K·18·2.10^2/2 = K·39.69 a z = 0.60 + 0.70 = 1.30
+#                K·18·2.10·0.60 = K·22.68 a z = 0.30
+#                K·10.19·0.60^2/2 = K·1.8342 a z = 0.20
+#                P_A = 0.310599·64.2042 = 19.9418; z_A = 58.76784/64.2042
+#                = 0.91533
+#   EH.h = 19.9418·0.939094 = 18.7272 ; EH.v = 19.9418·0.343660 = 6.8532
+#   LS.h = 0.310599·18·0.6096·2.70 = 9.2020 a z = 1.35
+#   LS.v = 18·0.6096·1.20 = 13.1674 en x = 1.80
+#   WA.h = 9.81·0.60^2/2 = 1.7658 a z = 0.20
+#   WA.u = 9.81·0.60·2.40 = 14.1264 (uniforme) en x = 1.20
+#
+# Resistencia I, minimos (0.90 DC, 1.00 EV, 1.50 EH, 1.75 LS empuje, 1.00 WA):
+#   N   = 0.90·39.1096 + 48.54 + 1.50·6.8532 - 14.1264 = 79.8920
+#   H   = 1.50·18.7272 + 1.75·9.2020 + 1.7658 = 45.9601
+#   M_e = 0.90·(16.8258 + 27.1411) + 88.020 + 1.50·6.8532·2.40 = 152.2617
+#   M_v = 1.50·18.7272·0.91533 + 1.75·9.2020·1.35 + 1.7658·0.20
+#         + 14.1264·1.20 = 25.7123 + 21.7397 + 0.3532 + 16.9517 = 64.7569
+#   e   = 1.20 - (152.2617 - 64.7569)/79.8920 = 0.10471
+CP_T7B_MURO_2 = {
+    # Sumas de productos redondeados a cuatro decimales: tolerancia mayor.
+    "tolerancia": 3e-3, "tolerancia_K": 1e-6, "tolerancia_fina": 1e-5,
+    "tolerancia_e": 1e-4,           # cociente de sumas a cuatro decimales
+    "geometria": {"H": 2.0, "B": 2.4, "D_f": 1.0, "espesor_corona": 0.25,
+                  "espesor_base_muro": 0.45, "espesor_zapata": 0.40,
+                  "ancho_talon": 1.20, "ancho_punta": 0.75},
+    "z_rel": 2.40, "subida": 0.30, "talud": 2.0, "NF": 0.40,
+    "gamma_saturado": 20.0, "h": 2.70, "i_grados": 3.57633,
+    "area_tri": 0.09, "area_rec": 0.18, "K_A": 0.310599,
+    "P_A": 19.9418, "z_A": 0.91533,
+    "cargas": {   # codigo: (V, H, x, z)
+        "DC.pantalla": (16.492, 0.0, 1.02024, 1.30476),
+        "DC.zapata": (22.6176, 0.0, 1.20, 0.20),
+        "EV.talon": (48.54, 0.0, 1.81335, 1.40),
+        "EH.h": (0.0, 18.7272, None, 0.91533),
+        "EH.v": (6.8532, 0.0, 2.40, None),
+        "LS.h": (0.0, 9.2020, None, 1.35),
+        "LS.v": (13.1674, 0.0, 1.80, None),
+        "WA.h": (0.0, 1.7658, None, 0.20),
+        "WA.u": (-14.1264, 0.0, 1.20, None),
+    },
+    "resistencia_min": {"N": 79.8920, "H": 45.9601, "M_e": 152.2617,
+                        "M_v": 64.7569, "e": 0.10471},
+}
+
+# Suelo de fundacion COHESIVO sobre el primer muro (E.050 Art. 20: phi = 0).
+# Tabla 10.6.3.1.2a-1 en phi = 0: N_c = 5.14, N_q = 1.0, N_gamma = 0.
+#   Deslizamiento LRFD (AASHTO 10.6.3.4, sobre material granular compactado),
+#   combinacion de minimos: N = 77.2293, e = 0.14531, B' = 1.70938,
+#   sigma_v = 45.1795 kPa, sigma_v/2 = 22.5898 kPa.
+#     c = 60 kPa: q_s = min(60, 22.5898) = 22.5898; R_tau = 22.5898·1.70938
+#                 = 38.6146; phi_tau = 0.85 -> 32.8224 < 35.4066  NO CUMPLE
+#     c = 15 kPa: q_s = 15; R_tau = 15·1.70938 = 25.6407; -> 21.7946
+#   Deslizamiento ASD: FS = c·B / H = 15·2.00/22.2997 = 1.3453 (c = 15);
+#                      60·2.00/22.2997 = 5.3812 (c = 60)
+#   Portante LRFD, c = 60, combinacion de maximos (B' = 1.94694, H de
+#   servicio 22.2997): i_c = 1 - 2·22.2997/(60·1.94694·5.14)
+#                          = 1 - 44.5994/600.436 = 0.925722
+#     q_n = 60·5.14·0.925722 + 18·0.80·1.0 = 285.4927 + 14.4 = 299.8927
+#     phi_b = 0.50 -> q_R = 149.9463 kPa (sigma_v = 63.5646)
+CP_T7B_COHESIVO = {
+    "tolerancia": 3e-3,
+    "c_60": {"R_tau": 38.6146, "R_R": 32.8224, "FS_desliz_ASD": 5.3812,
+             "i_c": 0.925722, "q_n": 299.8927, "q_R": 149.9463},
+    "c_15": {"R_tau": 25.6407, "R_R": 21.7946, "FS_desliz_ASD": 1.3453},
+}
+
+# Las solicitaciones de la zapata del primer muro, Resistencia I (maximos):
+# N = 123.7564, B' = 1.94694, sigma = 63.5646 kPa; peso propio factorado de
+# la zapata 1.25·23.56·0.40 = 11.78 kPa.
+#   punta (0.60 m):  V_u = (63.5646 - 11.78)·0.60 = 31.0708
+#                    M_u = 63.5646·0.60·0.30 - 11.78·0.60^2/2 = 9.3212
+#   talon (1.10 m):  cargas hacia abajo 1.35·39.6 + 1.75·12.0701 + 1.50·5.2958
+#                    = 53.460 + 21.1227 + 7.9437 = 82.5264, mas el peso propio
+#                    11.78·1.10 = 12.958; la presion alcanza 1.94694 - 0.90
+#                    = 1.04694 m del talon: 63.5646·1.04694 = 66.5484
+#                    V_u = 82.5264 + 12.958 - 66.5484 = 28.9360
+#                    M_u = (53.460 + 21.1227)·0.55 + 7.9437·1.10
+#                          + 11.78·1.10^2/2 - 63.5646·1.04694^2/2
+#                        = 41.0205 + 8.7381 + 7.1269 - 34.8360 = 22.0495
+CP_T7B_SOLICITACIONES = {
+    "tolerancia": 3e-3,
+    "punta": {"V_u": 31.0708, "M_u": 9.3212},
+    "talon": {"V_u": 28.9360, "M_u": 22.0495},
+    "pantalla": {"V_u": 35.4066, "M_u": 19.6425},
+}
+
+# Las filas SISMICAS del primer muro que dependen de CUAL combinacion es la
+# peor (k_h = 0.25), a mano:
+#   E3-LRFD: caso 1  H = 37.7325, R_tau = 81.6395·0.624869 = 51.0140
+#                    (holgura 13.2815)
+#            caso 2  H = 36.5315, R_tau = 77.8798·0.624869 = 48.6647
+#                    (holgura 12.1332)  <- la peor: es la que se imprime
+#   E1-LRFD: la de mayor aprovechamiento es el caso 1 SIN el peso de la
+#            sobrecarga: N = 81.6395, e = 0.21561, B' = 2.00 - 0.43122
+#            = 1.56878; sigma_v = 81.6395/1.56878 = 52.0401 kPa.
+#            Inclinacion con su hermana de servicio (N = 93.7096,
+#            H = 41.6467): 1 - H/V = 0.555577; i_q = 0.308666;
+#            i_gamma = 0.171488
+#            q_n = 18·0.80·23.2·0.308666 + 0.5·18·1.56878·30.2·0.171488
+#                = 103.1191 + 73.1220 = 176.2411; phi_b = 0.8 -> 140.9929
+#   E2-ASD:  caso 1  M_e/M_v = 104.9811/45.6406 = 2.3002   <- el menor
+#            caso 2  97.4616/40.7210 = 2.3934
+#   E3-ASD:  caso 1  51.0140/41.6467 = 1.2249
+#            caso 2  48.6647/40.4457 = 1.2032              <- el menor
+#
+# Y el talon del SEGUNDO muro, Resistencia I (maximos), con subpresion:
+#   N   = 1.25·39.1096 + 1.35·48.54 + 1.50·6.8532 + 1.75·13.1674 - 14.1264
+#       = 48.8870 + 65.5290 + 10.2798 + 23.0430 - 14.1264 = 133.6124
+#   M_e = 1.25·43.9669 + 1.35·88.020 + 24.6715 + 1.75·13.1674·1.80
+#       = 54.9586 + 118.8270 + 24.6715 + 41.4773 = 239.9344
+#   M_v = 64.7569 (los mismos factores que en minimos)
+#   e   = 1.20 - 175.1775/133.6124 = -0.11109 (hacia el talon)
+#   B'  = 2.40 - 0.22218 = 2.17782; sigma = 133.6124/2.17782 = 61.3514
+#   talon: abajo = 65.5290 + 23.0430 + 10.2798 = 98.8518; peso propio
+#          11.78·1.20 = 14.136; presion sobre 2.17782 - 1.20 = 0.97782 m:
+#          61.3514·0.97782 = 59.9906; subpresion 14.1264·1.20/2.40 = 7.0632
+#          V_u = 98.8518 + 14.136 - 59.9906 - 7.0632 = 45.9340
+#          M_u = 65.5290·0.61335 + 23.0430·0.60 + 10.2798·1.20
+#                + 11.78·1.20^2/2 - 61.3514·0.97782^2/2 - 7.0632·0.60
+#              = 40.1922 + 13.8258 + 12.3358 + 8.4816 - 29.3300 - 4.2379
+#              = 41.2675
+CP_T7B_PEOR_COMBINACION = {
+    "tolerancia": 3e-3,
+    "E3_LRFD_sis": {"H": 36.5315, "R_R": 48.6647},
+    "E1_LRFD_sis": {"sigma_v": 52.0401, "q_R": 140.9929},
+    "E2_ASD_sis": 2.3002, "E3_ASD_sis": 1.2032,
+    "muro_2_talon_max": {"V_u": 45.9340, "M_u": 41.2675, "tolerancia": 6e-3},
+}
+
+
+# ---------------------------------------------------------------------------
+# --- correcciones de T-7b (H4) --- LA CUÑA DE TANTEO (Culmann), A MANO
+# ---------------------------------------------------------------------------
+# Plano vertical del talon de altura h; la superficie del relleno sube desde
+# su tope con 1 V : talud H y se quiebra, `subida` m mas arriba, en una
+# plataforma horizontal. La cuña de prueba con el plano de falla a rho sobre
+# la horizontal pesa W = gamma·A, y su empuje (k_h = k_v = 0) es
+#     P = W·sen(rho - phi) / cos(rho - phi - delta)
+# y con k_h (k_v = 0), psi = arctan(k_h):
+#     P = W·sen(rho - phi + psi) / [cos(psi)·cos(rho - phi - delta)]
+#
+# CASO QUEBRADO: h = 2.00, subida = 0.50, talud = 2 (quiebre a x = 1.00 m),
+# phi = 30, delta = 20, gamma = 18.
+#   rho = 50: tan = 1.191754; sobre el talud x = 2/(1.191754 - 0.5) = 2.891
+#             > 1.00 -> corta la plataforma, z = 2.50: x = 2.5/1.191754 =
+#             2.097749. A = 0.5·2.5·2.097749 - 0.5·0.5·1.00 = 2.622186 -
+#             0.25 = 2.372186 m2; W = 18·2.372186 = 42.69935 kN/m;
+#             P = 42.69935·sen 20 / cos 0 = 42.69935·0.342020 = 14.60404
+#   rho = 55: tan = 1.428148; x = 2.5/1.428148 = 1.750519; A = 2.188149 -
+#             0.25 = 1.938149; W = 34.88667; P = 34.88667·sen 25 / cos 5 =
+#             34.88667·0.422618/0.996195 = 14.80006
+#   rho = 60: tan = 1.732051; x = 1.443376; A = 1.804220 - 0.25 = 1.554220;
+#             W = 27.97595; P = 27.97595·0.5/cos 10 = 13.98798/0.984808 =
+#             14.20376
+#   rho = 80: tan = 5.671282; sobre el talud x = 2/(5.671282 - 0.5) =
+#             0.386751 <= 1.00 -> triangulo, A = 0.5·2·0.386751 = 0.386751;
+#             W = 6.96152; P = 6.96152·sen 50 / cos 30 = 6.96152·0.766044/
+#             0.866025 = 6.15783
+#   Sismo k_h = 0.20 (psi = 11.309932), rho = 50: W = 42.69935;
+#             P = 42.69935·sen 31.309932/(cos 11.309932·cos 0) =
+#             42.69935·0.519778/0.980581 = 22.62889
+#   La cuña critica queda entre 50 y 60 grados y su empuje no baja del de
+#   ninguna de las escritas.
+#
+# LIMITE DE COULOMB (talud sin quiebre, la ec. 3.11.5.3-1 con theta = 90):
+# h = 2.00, talud 2 (i = arctan 0.5 = 26.565051), phi = 34, delta = 22.78,
+# gamma = 17:
+#   sen(phi + delta) = sen 56.78 = 0.836573; sen(phi - i) = sen 7.434949 =
+#   0.129400; cos delta = 0.921998; cos i = 0.894427
+#   Gamma = [1 + raiz(0.836573·0.129400/(0.921998·0.894427))]² =
+#           [1 + raiz(0.131270)]² = 1.362314² = 1.855893
+#   K_A = cos² 34 / (Gamma·cos delta) = 0.687303/(1.855893·0.921998) =
+#         0.401666;  P_A = 0.5·0.401666·17·2² = 13.65665 kN/m
+#
+# LIMITE DE MONONOBE-OKABE (relleno horizontal, A11.3.1-1, beta = i = 0):
+# h = 2.00, phi = 34, delta = 22.78, gamma = 17, k_h = 0.25, k_v = 0
+# (psi = 14.036243):
+#   cos²(phi - psi) = cos² 19.963757 = 0.883429; sen(phi + delta) =
+#   0.836573; sen(phi - psi) = 0.341426; cos(delta + psi) = cos 36.816243 =
+#   0.800562
+#   Gamma = [1 + raiz(0.836573·0.341426/0.800562)]² = 2.551412
+#   K_AE = 0.883429 / (cos psi·cos(delta + psi)·Gamma) = 0.883429/
+#          (0.970143·0.800562·2.551412) = 0.445821
+#   P_AE = 0.5·0.445821·17·2² = 15.15792 kN/m
+CP_T7B_CUNA = {
+    "tolerancia": 1e-4,             # cifras escritas a cinco decimales
+    "quebrado": {"h": 2.0, "subida": 0.5, "talud": 2.0, "phi": 30.0,
+                 "delta": 20.0, "gamma": 18.0,
+                 "P_por_rho": {50.0: 14.60404, 55.0: 14.80006,
+                               60.0: 14.20376, 80.0: 6.15783},
+                 "k_h": 0.20, "P_sismico_rho_50": 22.62889},
+    "coulomb": {"h": 2.0, "talud": 2.0, "phi": 34.0, "delta": 22.78,
+                "gamma": 17.0, "K_A": 0.401666, "P_A": 13.65665},
+    "mononobe_okabe": {"h": 2.0, "phi": 34.0, "delta": 22.78, "gamma": 17.0,
+                       "k_h": 0.25, "K_AE": 0.445821, "P_AE": 15.15792},
+    # CONTRASTE: los oraculos del auditor adversarial (su cuña independiente,
+    # `aud_T-7b_scripts/cuna.py`) sobre la geometria de A-01 de la FASE A,
+    # phi 34, delta 22.78, gamma 17, talud 2. Dos decimales.
+    "auditor": {
+        "entrada": {"h": 2.477625, "subida": 0.80 - 0.75525 / 2,
+                    "P": {0.0: 16.95, 0.25: 30.58, 0.50: 59.73}},
+        "salida": {"h": 3.325459, "subida": 0.913216 - 1.077352 / 2,
+                   "P": {0.0: 28.61, 0.25: 50.85, 0.50: 98.19}},
+    },
+}

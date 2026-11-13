@@ -840,7 +840,14 @@ def test_los_opcionales_declarados_hoy():
     assert opcionales == {"v_max_concreto_eleccion",
                           "riesgo_admisible_propietario",
                           "D_max_catalogo",
-                          "perfil_hdpe_fabricante"}
+                          "perfil_hdpe_fabricante",
+                          # Y desde T-7b dos angulos del empuje del cabezal:
+                          # sin declarar, la friccion muro-relleno sale de
+                          # phi por la fraccion [C] y la pendiente del
+                          # relleno de la geometria de cada cabezal;
+                          # declarados, ganan.
+                          "friccion_muro_suelo_delta",
+                          "pendiente_relleno_trasdos_i"}
 
 
 def test_un_opcional_no_figura_entre_los_vacios_que_bloquean():

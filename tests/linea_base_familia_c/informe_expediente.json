@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "3375d11162928ea763167fc51bc2f7044210bbf3",
+    "criterios_sha1": "69aba33abf782847cb9de4d6982b41e08b7a84d1",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -145,7 +145,7 @@
           "material": "Concreto reforzado",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "incumplidas": []
         },
         {
@@ -166,14 +166,14 @@
           "material": "TMC galvanizada",
           "seccion": "Ø 1.20 m",
           "aceptado": false,
-          "motivo": "Ø 1.20 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "motivo": "Ø 1.20 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "incumplidas": []
         },
         {
           "material": "HDPE",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "incumplidas": [
             "V1"
           ]
@@ -200,12 +200,12 @@
           "tipo": "CriterioPendienteError",
           "criterio": "remanso_derecho_via",
           "etiqueta": "A",
-          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-          "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
         }
       ]
     },
@@ -322,21 +322,21 @@
           "material": "Concreto reforzado",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "incumplidas": []
         },
         {
           "material": "TMC galvanizada",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "incumplidas": []
         },
         {
           "material": "HDPE",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "incumplidas": []
         }
       ],
@@ -361,12 +361,12 @@
           "tipo": "CriterioPendienteError",
           "criterio": "remanso_derecho_via",
           "etiqueta": "A",
-          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-          "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
         }
       ]
     },
@@ -504,7 +504,7 @@
           "material": "Concreto reforzado",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "incumplidas": [
             "V1",
             "V2"
@@ -514,7 +514,7 @@
           "material": "TMC galvanizada",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "incumplidas": [
             "V1",
             "V2"
@@ -524,7 +524,7 @@
           "material": "HDPE",
           "seccion": "Ø 0.90 m",
           "aceptado": false,
-          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "motivo": "Ø 0.90 m: el escalon no se pudo evaluar -- CriterioPendienteError: 'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "incumplidas": [
             "V1",
             "V2"
@@ -563,12 +563,12 @@
           "tipo": "CriterioPendienteError",
           "criterio": "remanso_derecho_via",
           "etiqueta": "A",
-          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-          "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+          "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)). Debe resolverse antes de continuar: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto"
         },
         {
           "fase": "Fase 10 - Espaciamiento de alivio (M10)",
@@ -817,17 +817,17 @@
       "Cabezales y aletas: concreto estructural EG-2013 Seccion 503 (+504 para el acero). NO tienen partida con numeral propio: se pagan bajo el volumen de concreto y el acero. Que aparezcan nominados en 503.01 confirma que son elemento estandar de terminacion, pero el argumento es mas debil que 'existe una partida especifica' (EG-2013, Capitulo V, Seccion 503 (concreto estructural), num. 503.01, pag. 905 [hoja de ruta: Sec. 9.1])",
       "Embocadura: tubo a ras del muro (square edge), coherente con las constantes HDS-5 adoptadas en Sec. 4.2. Ambas decisiones se mueven juntas: cambiar el detalle obliga a cambiar las constantes (Sec. 9.1 y Tablero 2.3). Desde T-7a la embocadura es del PUNTO ('embocadura_cabezal' y 'angulo_aletas', [A]): con tubo la Tabla C.2 agrupa el cabezal con y sin aleros en una fila y nada se mueve; con marco, su carta y su fila de ke tienen que ser de la banda de angulo del cabezal",
       "Empuje hidrostatico y subpresion: con NF a 1.4 m NO son opcionales (Manual de Puentes num. 2.4.3.8.2)",
-      "Coeficiente de empuje activo estatico: el de Coulomb del num. 2.4.4.1.5.3 · 'Coeficiente de Empuje Lateral Activo, ka' · pag. impresa 135 · PDF 136 (3.11.5.3 AASHTO), calculado con la misma formulacion que Mononobe-Okabe haciendo k_h = k_v = 0, de modo que el incremento sismico K_AE - K_A resta dos coeficientes homogeneos. Con trasdos vertical, friccion muro-relleno nula y relleno horizontal se reduce a tan^2(45 - phi/2), la forma que la hoja de ruta escribia en su Sec. 9.2 y que EXT-0 corrigio (discrepancia DIS-HR-KA-COULOMB, resuelta); con i, beta o delta distintos de cero los dos coeficientes difieren y rige el de Coulomb. La resultante de Coulomb actua a delta de la normal al trasdos (delta + beta respecto de la horizontal) y este calculo la toma ENTERA como carga horizontal, sin descomponerla: es conservador para el volteo y el deslizamiento y no lo es para la capacidad portante en la parte de la componente vertical que deja de cargar sobre la base; la descomposicion queda diferida (EXT-7-04)",
-      "Zapata proxima al talud: doble verificacion, E.050 Art. 30.1-30.2 y 2.8.1.3.1.2c, pags. impresas 272-274 (PDF 273-275): texto en la 272, Figura -1 (cohesivos) en la 273, Figura -2 (no cohesivos) en la 274. El cabezal se apoya en el borde del terraplen, no en terreno horizontal",
+      "Coeficiente de empuje activo estatico: el de Coulomb del num. 2.4.4.1.5.3 · 'Coeficiente de Empuje Lateral Activo, ka' · pag. impresa 135 · PDF 136 (3.11.5.3 AASHTO), calculado con la misma formulacion que Mononobe-Okabe haciendo k_h = k_v = 0, de modo que el incremento sismico K_AE - K_A resta dos coeficientes homogeneos. Con trasdos vertical, friccion muro-relleno nula y relleno horizontal se reduce a tan^2(45 - phi/2), la forma que la hoja de ruta escribia en su Sec. 9.2 y que EXT-0 corrigio (discrepancia DIS-HR-KA-COULOMB, resuelta); con i, beta o delta distintos de cero los dos coeficientes difieren y rige el de Coulomb. La resultante de Coulomb actua a delta de la normal al plano de empuje (delta + beta respecto de la horizontal), y desde T-7b el ensamble de estabilidad la DESCOMPONE: la componente horizontal entra en el deslizamiento y en el momento volcante, y la vertical carga la base en el plano de empuje, que en un muro con talon es el vertical de su extremo (AASHTO C3.11.5.3). La ficha EXT-7-04, que la dejaba entera como horizontal, queda cerrada",
+      "Terreno delante de la zapata: el cabezal se desplanta bajo el terreno del pie del muro, que es el fondo del cauce, y el talud del terraplen SUBE detras de el. La capacidad portante es por eso la de terreno horizontal (AASHTO LRFD 10.6.3.1.2a), con el empotramiento que quede bajo la socavacion ('terreno_delante_del_cabezal' [A] = horizontal). La zapata en talud (E.050 Art. 30.1-30.2 y 2.8.1.3.1.2c, pags. impresas 272-274 (PDF 273-275): texto en la 272, Figura -1 (cohesivos) en la 273, Figura -2 (no cohesivos) en la 274) queda para el cabezal que si tenga un terreno que desciende delante; la hoja de ruta la exigia para todos y se corrigio",
       "Diseno por flexion y corte: Sec. 9.4 (AASHTO LRFD Seccion 5, via Seccion 2.9). E.060 no gobierna el diseno estructural (Sec. 0.2, Via 1); si gobierna la durabilidad y los recubrimientos, con la regla del mayor",
       "Mononobe-Okabe, signo del denominador: ERRATA DE IMPRENTA DEL MANUAL. El Apendice A11 imprime el denominador de K_AE con '[1 - raiz(...)]', signo MENOS, verificado renderizando la pag. impresa 586 (PDF 587) a 6x: el trazo es horizontal unico, sin trazo vertical. AASHTO, del que el propio Manual declara transcribirlo, imprime '[1 + raiz(...)]' (pag. impresa 11-145). GANA AASHTO, y no por preferencia de fuente: con el signo menos K_AE DIVERGE cuando el radicando tiende a 1, y el caso limite k_h = k_v = 0 deja de devolver el Ka de Coulomb -- la formula se rompe donde el propio Manual la manda coincidir. EL CODIGO SIGUE A AASHTO. Quien 'corrija' M9 contra la letra impresa del Manual rompe la formula (Manual de Puentes (MTC), Apendice A11 'Diseno Sismico de Estructuras de Contencion', num. A.11.3.1 'Metodo de Mononobe -Okabe', ec. A.11.3.1-2, pag. impresa 586 (PDF 587); num. A11.3.1, ec. A11.3.1-1 · 'Mononobe–Okabe Method' · pag. impresa 11-145 · PDF 1614)",
       "k_h0 en cimentacion sobre roca: ERRATA DE IMPRENTA DEL MANUAL, verificada como imagen en la pag. impresa 254 (PDF 255): el parentesis imprime '1.2 kh0=FpgaPGA', con el 1.2 del lado izquierdo. Leido al pie de la letra daria k_h0 = F_pga*PGA/1.2, una REDUCCION del 17 %, justo lo contrario de lo que la prosa de la misma frase acaba de decir. AASHTO LRFD 9a ed., Art. 11.6.5.2.1 'Characterization of Acceleration at Wall Base', pag. impresa 11-27 (PDF 1496), lo escribe sin ambiguedad: 'k_h0 shall be based on 1.2 times the site-adjusted peak ground acceleration coefficient (i.e., k_h0 = 1.2 F_pga PGA)'. GANA LA PROSA DEL MANUAL, coincidente con AASHTO. Es la segunda de las TRES erratas de imprenta de esta misma cadena sismica; las otras son K_AE_ERRATA_MANUAL y EXCENTRICIDAD_ERRATA_MANUAL (2.8.1.1.14.2.1 'Caracterizacion de la Aceleracion en la Base del Muro de Contencion' (11.6.5.2.1 AASHTO), pag. impresa 254 (PDF 255))",
       "Sobrecarga viva en el trasdos: h_eq = max(piso del Manual, tabla de AASHTO por altura y orientacion). num. 2.4.2.2 · 'Cargas de Suelo: EH, ES, y DD' · pag. impresa 102 · PDF 103 fija el piso -- «no menor que» -- y no tabula nada; el valor sale de num. 3.11.6.4 · 'Live Load Surcharge (LS)' · pag. impresa 3-151 · PDF 205. La altura de entrada es la del muro CON zapata: num. 3.11.6.4 · 'Live Load Surcharge (LS)' · pag. impresa 3-151 · PDF 205",
       "Cual de las dos tablas de AASHTO aplica: NO EXISTE en el articulado de AASHTO ninguna frase que reparta las dos tablas de h_eq: el cuerpo normativo las cita juntas y sin condicionante («may be taken from Tables 3.11.6.4-1 and 3.11.6.4-2»). Quien las reparte son los TITULOS de las tablas -- «on Abutments Perpendicular to Traffic» y «on Retaining Walls Parallel to Traffic» -- y el comentario C3.11.6.4, que no es articulado. Atribuir el reparto al articulo seria una cita falsa; se cita a los titulos y al comentario, que es de donde sale",
       "Cuando la sobrecarga se aplica: num. 3.11.6.4 · 'Live Load Surcharge (LS)' · pag. impresa 3-151 · PDF 205",
-      "Empuje bajo el nivel freatico: El empuje activo de este proyecto se calcula con el peso especifico TOTAL del relleno en toda la altura y se le suma la hidrostatica completa bajo el NF. AASHTO 3.11.3 exige peso especifico SUMERGIDO bajo el nivel freatico, de modo que el agua de poros se cuenta dos veces en la zona sumergida. CUANTO ES, exactamente: el exceso de presion horizontal es Ka*(gamma - gamma')*h = Ka*gamma_agua*h, o sea CONSTANTE en toda la zona sumergida y proporcional solo a la profundidad bajo el NF. Con gamma_sat = 20 kN/m3 (gamma' = 10.19), Ka = 1/3 y h = 0.60 m son 1.96 kPa de mas, siempre. En porcentaje NO hay un solo numero, porque depende de la altura del muro: sobre un muro de 0.60 m -- todo el sumergido, que es el caso con que la ficha MAT-O3 lo calculo -- la presion en la base es 9.9 kPa contra 7.9 kPa, +25 %; sobre uno de 2.00 m con el freatico a 1.40 m es 19.2 contra 17.3 kPa, +11 %; y sigue bajando con la altura, porque el exceso no crece y el empuje si. La desviacion es CONSERVADORA en todos los casos (gamma > gamma' siempre). Se mantiene, y se declara, porque corregirla exige un peso especifico sumergido del relleno que este expediente todavia no tiene: aplicar AASHTO con el unico gamma declarado seria ALIVIAR el empuje sin dato que lo sostenga. La hoja de ruta no dice nada del NF en el empuje: solo que 'empuje hidrostatico y subpresion, con NF a 1.4 m, no son opcionales' (num. 3.11.3 · 'Presence of Water' · pag. impresa 3-118 · PDF 172)",
-      "Demanda sismica del cabezal: no basta el empuje. El num. 2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254) exige combinar P_AE con la inercia de la masa del muro P_IR = k_h*(W_w + W_s), en dos casos que se investigan por separado porque sus efectos NO son simultaneos -- 100 % P_AE + 50 % P_IR, y 50 % P_AE (no menor que el empuje activo estatico) + 100 % P_IR --, rigiendo el mas desfavorable. La Sec. 9.2 de la hoja de ruta desagrega la cadena sismica y NO menciona P_IR: el defecto se reporta contra ella",
-      "Ubicacion de la resultante en la base bajo sismo: el num. 2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254) la acota a los dos tercios centrales (e <= B/3) con gamma_EQ = 0.0 y a las ocho decimas centrales (e <= 0.4*B) con gamma_EQ = 1.0, interpolando en medio. Es una verificacion que la tabla de FS de Sec. 9.3 no trae, porque E.050 no la escribe, y depende de 'gamma_EQ', que sigue vacio",
+      "Empuje bajo el nivel freatico: Bajo el nivel del agua el empuje del suelo se calcula con su peso especifico SUMERGIDO (el saturado menos el del agua), y el agua empuja aparte con su presion hidrostatica entera, como exige AASHTO 3.11.3: el agua de poros no se cuenta dos veces. Hasta donde sube el agua del relleno lo declara 'drenaje_trasdos': sin drenaje declarado, hasta la superficie del relleno RETENIDO contra el trasdos (coronacion menos bordillo), nunca por encima del muro (AASHTO 11.6.6); con el, el nivel freatico natural del punto, medido bajo el terreno del cruce, que no contempla el desembalse rapido tras la avenida. El peso saturado del relleno es un dato de ensayo ('peso_especifico_saturado_relleno_kn_m3') que solo hace falta cuando el agua alcanza el plano de empuje. La funcion suelta `M9.empujes_trasdos`, anterior al ensamble y sin llamador, conserva la forma antigua (peso total mas hidrostatica), que cuenta el agua dos veces del lado conservador. La hoja de ruta decia solo que 'empuje hidrostatico y subpresion, con NF a 1.4 m, no son opcionales' (num. 3.11.3 · 'Presence of Water' · pag. impresa 3-118 · PDF 172)",
+      "Demanda sismica del cabezal: no basta el empuje. El num. 2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254) exige combinar P_AE con la inercia de la masa del muro P_IR = k_h*(W_w + W_s), en dos casos que se investigan por separado porque sus efectos NO son simultaneos -- 100 % P_AE + 50 % P_IR, y 50 % P_AE (no menor que el empuje activo estatico) + 100 % P_IR --, rigiendo el mas desfavorable. La Sec. 9.2 de la hoja de ruta desagrega la cadena sismica y NO menciona P_IR: el defecto se reporta contra ella. Desde T-7b el ensamble de cada cabezal la arma entera, con sus dos casos",
+      "Ubicacion de la resultante en la base bajo sismo: el num. 2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254) la acota a los dos tercios centrales (e <= B/3) con gamma_EQ = 0.0 y a las ocho decimas centrales (e <= 0.4*B) con gamma_EQ = 1.0, interpolando en medio. Es una verificacion que la tabla de FS de Sec. 9.3 no trae, porque E.050 no la escribe: desde T-7b es la fila E2 del marco LRFD en condicion sismica, y depende de 'gamma_EQ' [A] (0.50 de archivo)",
       "Excentricidad sismica, 'tercio central': TERCERA ERRATA DE IMPRENTA DEL MANUAL en esta misma cadena sismica, y la unica que mueve un numero. El num. 2.8.1.1.14.1 traduce el 'middle two-thirds' de AASHTO como 'tercio central', que no es lo mismo: dos tercios centrales es e <= B/3 y el tercio central es e <= B/6, la mitad. Que es descuido de traduccion y no decision del MTC lo prueba el propio Manual, tres paginas antes: en su numeral ESTATICO traduce el MISMO giro correctamente -- 'dentro los dos tercios centrales del ancho de la base' -- y en el mismo parrafo sismico traduce bien 'eight-tenths' como 'ocho decimas centrales'. Solo degrada 'two-thirds', y solo ahi. Y LA LECTURA LITERAL ES NORMATIVAMENTE IMPOSIBLE: dejaria el limite bajo SISMO (e <= B/6) al doble de estricto que el mismo Manual exige bajo carga estatica permanente (e <= B/3, fundacion en suelo), lo que invierte la filosofia de estados limite -- Evento Extremo I es raro y mas tolerante que Resistencia I, no al reves. Con el texto de AASHTO el articulo es coherente: ANCLA en gamma_EQ = 0.0 sobre el mismo B/3 del limite estatico y desde ahi RELAJA a 0.4*B cuando gamma_EQ = 1.0. GANA AASHTO. Seguir la letra del Manual seria conservador -- por eso esto no cambia ningun resultado ya emitido -- pero rechazaria disenos que la norma acepta, y sobre todo dejaria la cita sin sostener (2.8.1.1.14.1 'Generalidades' (11.6.5.1 AASHTO, titulado 'General'), ec. 2.8.1.1.14.1-1, pag. impresa 253 (PDF 254); num. 11.6.5.1 · 'General' · pag. impresa 11-25 · PDF 1494; el limite estatico que sirve de ancla, en Manual de Puentes (MTC) num. 2.3.1.1.12.3 'Limites de Excentricidad' (11.6.3.3 AASHTO) -- el numeral se imprime asi, con 2.3 en vez de 2.8, errata del Manual que su propio indice repite --, pag. impresa 250 (PDF 251))",
       "Presion de contacto en la base: el num. Manual de Puentes (MTC) num. 2.8.1.1.12.2 'Capacidad de Carga' (11.6.3.2 AASHTO), pag. impresa 248 (PDF 249) la reparte por terreno de fundacion -- uniforme sobre el ancho efectivo B - 2e en SUELO, lineal sobre B en ROCA -- y no la escribe el numeral sismico. La rama que aplica a este cabezal es la de suelo, coherente con las filas de sitio declaradas en 'F_pga'",
       "E.030 no gobierna el diseno sismico de este cabezal, y el argumento es de AMBITO antes que de periodo de retorno: El Art. 4 acota el ambito de E.030 a las edificaciones nuevas y al reforzamiento o reparacion de edificaciones existentes, y un cabezal de alcantarilla de una carretera no es una edificacion. PERO ESO SOLO NO BASTA, y creer que basta es el error que este campo cometia: E.030 NO guarda silencio sobre las obras que no son edificaciones. Su Art. 7.3 las nombra -- puentes y estructuras hidraulicas entre ellas -- y se las ATRAE, con una condicion suspensiva: 'mientras no se cuente con normas nacionales especificas'. De modo que 'no es una edificacion' no es lo que saca al cabezal de E.030: es el disparador del articulo que lo mete. LO QUE LO SACA es que la condicion NO SE CUMPLE: el MTC si tiene norma nacional especifica -- el Manual de Puentes --, y por eso el mandato de usar Z y S de E.030 no llega a activarse. Es un fundamento POSITIVO, y mas fuerte que el silencio que este campo invocaba: la propia E.030 cede el paso ante la norma sectorial. Ver E030_ART_7_3_TEXTO (E.030 (RM 183-2026-VIVIENDA), Art. 4 'Ambito de aplicacion', pag. impresa 7 (PDF 7); E.030 (RM 183-2026-VIVIENDA), Art. 7.3, dentro del Art. 7 'Consideraciones para el diseno y comportamiento estructural', pag. impresa 8 (PDF 8))",
@@ -840,38 +840,20 @@
       "Lo que cierra este vacio, y son DOS ensayos de profundidades distintas que conviene pedir juntos: (1) la caracterizacion de los 100 ft (30.48 m) superiores -- Vs30 o N_barra --, que es la profundidad que el Art. 3.10.3.1 escribe y con la que se lee la clase; y (2) si esa caracterizacion diera Clase F, el analisis de respuesta dinamica de sitio, que el Art. 3.10.2 exige con 'shall' y el num. 2.4.3.11.2 del Manual con 'sera usado'. NO lo cierra el SPT de licuefaccion de 15 m de E.050 Art. 38: ese ensayo responde a otra pregunta y se detiene a mitad de la columna que esta clase necesita (num. 3.10.2 · 'Seismic Hazard' · pag. impresa 3-71 · PDF 125; num. 2.4.3.11.2 · 'Peligro Sísmico' · pag. impresa 121 · PDF 122)",
       "«Clase F» en este expediente: CLASE DE SITIO SISMICA: AASHTO LRFD Tabla 3.10.3.1-1 / Manual de Puentes Tabla 2.4.3.11.2.1.1-1, «suelos que requieren evaluaciones especificas de sitio». Es la del eje de la Sec. 0.5, y este expediente NO se la atribuye: ver 'clase_sitio'. CONCRETO CLASE F: resistencia, EG-2013 Tabla 503-07, pag. impresa 912 -- concreto simple, f'c = 14 MPa. Es la del relleno lateral y la cama de apoyo. ACERO ASTM A668 CLASE F: el propio Manual de Puentes lo tabula en su pag. impresa 289. No llega a esta memoria; se anota para que nadie lo cruce con los otros dos. Las dos primeras llegan a esta memoria, y por eso toda aparicion de «Clase F» lleva su calificador -- «Clase de Sitio F» o «Concreto Clase F» --, siempre, sin excepcion de contexto (NOR-VOC-04).",
       "Perfil de suelo S5 de E.030: aunque la norma no gobierne el diseno del cabezal, su clasificacion del sitio trae una consecuencia que el expediente tiene que atender. Texto literal: \"Estos casos no estan cubiertos en la clasificacion establecida en la Tabla N 2 de la presente Norma Tecnica. Se prohibe las construcciones apoyadas sobre estos perfiles, salvo que, se efectue un estudio especifico para el sitio, en el cual se debe considerar los mejoramientos en el estrato del perfil.\" (E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla N 2, fila S5, pag. impresa 11 (PDF 11)). Es una prohibicion CONDICIONADA, no absoluta: la misma oracion la levanta con estudio especifico de sitio y mejoramiento del estrato. Leerla como bloqueo duro va mas alla de la fuente; leerla como referencia muerta se queda muy por debajo. La fila S5 se llama 'Suelos excepcionales' y su primera vineta es 'Suelos potencialmente licuables', que es la razon por la que este expediente se atribuye esa letra. La Tabla N 3 del num. 14.7 -- la que el num. 14.8 obliga a usar para clasificar -- NO tiene fila S5, solo S0 a S4, coherente con que 'estos casos no estan cubiertos'",
-      "Sin llamador de produccion -- empujes_trasdos: Ensambla el plano de empuje del trasdos y ninguna corrida lo alcanza: la CLI no lo llama porque elegir el plano de empuje (`altura_empuje`) y los factores de combinacion seria decidir por el proyectista. Desde T-7a la geometria de cada cabezal existe -- la propone `predimensionar_cabezal` por punto --; el ensamble que la consume es T-7b. Se conserva porque es la formula, no el ensamble, lo que el expediente necesita: quien tantee un cabezal la llama con su geometria",
-      "Sin llamador de produccion -- peso_suelo_sobre_talon: Produce el W_s de P_IR. El ancho del talon lo trae la geometria que `predimensionar_cabezal` propone por punto (T-7a); la altura de suelo sobre el talon depende de donde se corte el plano de calculo y por eso entra por argumento. Su llamador es el ensamble de T-7b",
-      "Sin llamador de produccion -- fuerza_inercia_muro: Mismo caso que `empujes_trasdos`: la geometria por punto existe desde T-7a y el ensamble que la consume es T-7b. La formula si esta implementada, que es lo que faltaba (MAT-D6)",
-      "Sin llamador de produccion -- gamma_eq: Lee el criterio 'gamma_EQ', que es vacio: hoy detendria a quien la llamara, y quien la llamaria -- el chequeo de excentricidad -- ya esta detenido antes por la geometria",
-      "Sin llamador de produccion -- verificar_estabilidad: Agrega E1-E3 (y E4-E5 si se piden) a partir de demandas ya calculadas. La CLI no la llama porque ensamblar esas demandas exige elegir el plano de empuje y los factores de combinacion, que es decidir por el proyectista -- la misma razon de `empujes_trasdos`, y la que la nota de cli.py declara",
-      "Sin llamador de produccion -- peso_propio_cabezal: Formula de geometria exacta, utilizable con la geometria que `predimensionar_cabezal` propone por punto (T-7a) o con una de tanteo; quien la llamara es el ensamble de estabilidad de T-7b",
-      "Sin llamador de produccion -- parametros_resistencia_art20: Aplica la regla de E.050 Art. 20 (en cohesivos phi = 0, en friccionantes c = 0) sobre los parametros del terreno de fundacion. Quien la usaria es el calculo de la fuerza resistente al deslizamiento, que la CLI no ensambla por la misma razon que el resto de la estabilidad",
-      "Sin llamador de produccion -- aplica_sobrecarga_trasdos: Comprueba la regla de la distancia H/2 para el trafico. No la llama nadie a proposito: Sec. 9.2 cierra el punto diciendo que en un cabezal bajo terraplen vial la sobrecarga SIEMPRE aplica, de modo que el pipeline usa `sobrecarga_trasdos_siempre_aplica` y esta queda para quien tenga la distancia medida y quiera comprobarlo",
-      "Sin llamador de produccion -- sobrecarga_trasdos_siempre_aplica: Declaracion para la memoria. Hoy no la imprime nadie porque la seccion de la memoria que la llevaria es la de empujes, que esta detenida",
-      "Sin llamador de produccion -- demanda_sismica_cabezal: Combina P_AE con P_IR segun el num. 2.8.1.1.14.1. Sin geometria no hay ninguno de los dos, de modo que hereda el mismo vacio",
-      "Sin llamador de produccion -- presion_contacto_base: Produce el q_actuante que `verificar_capacidad_portante` exige ya resuelto, con la rama del numeral que corresponde al terreno de fundacion. Hereda el vacio de la geometria (MAT-O16)",
-      "Sin llamador de produccion -- verificar_excentricidad_sismica: Ademas de la geometria necesita 'gamma_EQ', que es vacio propio: el limite va de B/6 a 0.4*B segun su valor",
-      "Sin llamador de produccion -- armado del num. 9.4 (ocho funciones): `cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_caras`, `requiere_refuerzo_dos_capas`, `nota_temperatura_dos_caras`, `espaciamiento_maximo`, `verificar_espaciamiento` y `verificar_ciclopeo` no tienen llamador porque su insumo es el diseno por flexion y corte, que se detiene en `diseno_flexion_corte` con NotImplementedError, y el espesor del elemento, que desde T-7a propone `predimensionar_cabezal` por punto. La CLI registra ese bloqueo en cada corrida (SIS-B-20). Desde EXT-7 las dos primeras leen ademas, con cortante alto, el plano del cortante y el piso de la direccion ('regimen_cortante_muro_e060_art_11_10_2', 'cuantia_vertical_cortante_alto_e060_art_11_10_10_3'): siguen sin llamador, y por eso esos criterios no los invoca ninguna corrida",
+      "Sin llamador de produccion -- empujes_trasdos: El ensamble de EXT-7, que tomaba la resultante de Coulomb entera como horizontal y dejaba el plano de empuje al llamador. T-7b lo sustituye por `cargas_del_cabezal`, que la descompone sobre el plano vertical del talon (AASHTO C3.11.5.3) y usa el peso sumergido bajo el agua. Se conserva como la forma anterior, con sus tests, para quien tantee con un plano de empuje distinto; ninguna corrida la llama",
+      "Sin llamador de produccion -- peso_suelo_sobre_talon: El peso del relleno sobre el talon, de altura uniforme. `cargas_del_cabezal` lo calcula con la cuña que el talud deja sobre el talon y con el peso saturado bajo el agua, que esta no conoce. Se conserva como la pieza revisable del caso mas simple",
+      "Sin llamador de produccion -- fuerza_inercia_muro / peso_propio_cabezal / demanda_sismica_cabezal: Las formulas sueltas de la inercia del muro y de los dos casos del num. 2.8.1.1.14.1. `cargas_del_cabezal` calcula esas mismas cargas con su brazo (necesita el centro de gravedad de cada peso, que estas no dan) y `combinaciones_de_estabilidad` arma los dos casos con los mismos factores (`P_SEIS_COMBINACIONES`). Se conservan como piezas revisables una a una",
+      "Sin llamador de produccion -- verificar_estabilidad / verificar_capacidad_portante / verificar_volteo / verificar_deslizamiento / verificar_excentricidad_sismica: Las cinco verificaciones sueltas de antes de T-7b, que comparan con los factores de seguridad de E.050 lo que el llamador les pase. El ensamble no las usa: emite sus propias verificaciones, una por fila y por marco, con el paso de memoria que dice que cargas recibio cada una -- que es justo lo que a estas les faltaba (INF-5.1.5). Se conservan con sus tests; ninguna corrida las llama",
+      "Sin llamador de produccion -- aplica_sobrecarga_trasdos: Comprueba la regla de la distancia H/2 para el trafico. No la llama nadie a proposito: Sec. 9.2 cierra el punto diciendo que en un cabezal bajo terraplen vial la sobrecarga SIEMPRE aplica, y el ensamble la aplica siempre; esta queda para quien tenga la distancia medida y quiera comprobarlo",
+      "Sin llamador de produccion -- sobrecarga_trasdos_siempre_aplica: Declaracion para la memoria; el paso de la sobrecarga del ensamble (F9.SOBRECARGA) dice lo mismo en su nota",
+      "Sin llamador de produccion -- verificar_estabilidad_global / verificar_talud: E4 y E5. El ensamble NO las llama: las imprime como diferidas al expediente con el EMS (`PENDIENTES_E4_E5`). Llamadas a mano se detienen en 'metodo_estabilidad_global' y, declarado este, con «metodo no evaluable»: el analisis de superficies de falla no esta en este programa (hasta T-7b terminaban en un AssertionError)",
+      "Sin llamador de produccion -- armado del num. 9.4 (ocho funciones): `cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_caras`, `requiere_refuerzo_dos_capas`, `nota_temperatura_dos_caras`, `espaciamiento_maximo`, `verificar_espaciamiento` y `verificar_ciclopeo` no tienen llamador porque su insumo es el diseno por flexion y corte, que se detiene en `diseno_flexion_corte` con NotImplementedError (T-7c). Desde T-7b las solicitaciones factoradas de cada elemento existen (`solicitaciones_por_elemento`). La CLI registra ese bloqueo en cada corrida (SIS-B-20). Desde EXT-7 las dos primeras leen ademas, con cortante alto, el plano del cortante y el piso de la direccion ('regimen_cortante_muro_e060_art_11_10_2', 'cuantia_vertical_cortante_alto_e060_art_11_10_10_3'): siguen sin llamador, y por eso esos criterios no los invoca ninguna corrida",
       "Sin llamador de produccion -- clase_exposicion_sulfatos / factor_recubrimiento_por_ac: No tienen llamador de PRODUCCION directo y no son deuda: las llama `requisitos_durabilidad_concreto` y `_recubrimiento_aashto_detallado`, que si estan en el camino de la CLI. Se declaran aparte porque son las dos piezas que un revisor va a querer ejecutar sueltas para reproducir la clasificacion de la Tabla 4.4 y el factor por a/c sin montar el recubrimiento entero",
-      "Sin llamador de produccion -- n_q_zapata_en_talud / n_s_zapata_en_talud: No tienen llamador interno porque la funcion que las usaria, `capacidad_portante_zapata_en_talud`, se detiene antes en 'N_cq_N_gammaq_meyerhof': N_cq y N_gamma_q salen de FIGURAS y no de una formula transcribible. N_s se calcula aparte al leer los abacos, que es justo para lo que existe la funcion (SIS-B-21)",
-      "Las verificaciones de estabilidad de Fase 9 no las ensambla esta CLI: M9.verificar_estabilidad devuelve E1-E3 (y E4-E5 si se le piden) a partir de las demandas YA calculadas, y E6 -- la ubicacion de la resultante en la base bajo sismo, que el Manual de Puentes exige y E.050 no escribe -- es funcion suelta, M9.verificar_excentricidad_sismica, porque no es un factor de seguridad y no cabe en la tabla de Sec. 9.3. Elegir el plano de empuje o los factores de combinacion aqui seria decidir por el proyectista. La CLI corre las piezas de Fase 9 que se sostienen solas: cadena sismica (9.2), K_AE, recubrimientos (9.4) y cuantias minimas de referencia. Que funciones de M9 quedan sin llamador de produccion, y por que cada una, se declara en UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y esta CLI lo lee de alli en vez de repetirlo.",
+      "Sin llamador de produccion -- n_q_zapata_en_talud / n_s_zapata_en_talud: `capacidad_portante_zapata_en_talud` solo se alcanza con 'terreno_delante_del_cabezal' = 'talud_descendente', que no es el valor de archivo, y entonces pide 'N_cq_N_gammaq_meyerhof': N_cq y N_gamma_q salen de FIGURAS del Manual de Puentes y no de una formula transcribible. N_s se calcula aparte al leer los abacos, que es justo para lo que existe la funcion (SIS-B-21)",
+      "La estabilidad del cabezal (E1 a E3) se ensambla POR PUNTO y por cabezal, en la Fase 9 de cada punto dimensionado (T-7b, M9.ensamble_estabilidad), y en DOS MARCOS que no se cruzan: el de estados limite de AASHTO LRFD 11.6 -- cargas factoradas contra resistencias minoradas, y la excentricidad de la resultante en lugar del volteo -- y el de factores de seguridad de E.050, por analogia, sobre cargas de servicio. Cual rige lo declara 'marco_estabilidad_cabezal' [A]; las verificaciones del otro informan. La excentricidad bajo sismo, que antes era la fila suelta E6, es la fila E2 del marco LRFD en condicion sismica. E4 y E5 -- estabilidad global del muro y del talud -- NO se evaluan: quedan diferidas al expediente con el estudio de suelos, y cada punto lo dice. Aqui, del proyecto, van las piezas que no dependen del punto: la cadena sismica (9.2), los recubrimientos (9.4) y las cuantias minimas de referencia. Que funciones de M9 quedan sin llamador de produccion, y por que cada una, se declara en UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y esta CLI lo lee de alli en vez de repetirlo.",
       "Cuantia minima de refuerzo del muro: se aplica integra la de num. 14.3.1 · 'REFUERZO MÍNIMO' · pag. impresa 133 · PDF 133. El E.060 Art. 14.8.2, pag. 134 permite exceptuarla en muros de contencion -- \"El refuerzo mínimo será el indicado en 14.3. Este requisito podrá exceptuarse cuando el Ingeniero Proyectista disponga juntas de contracción y señale procedimientos constructivos que controlen los efectos de contracción y temperatura\" --, y este expediente NO ejerce esa excepcion: no declara juntas de contraccion ni procedimientos constructivos de control de contraccion y temperatura, que son las dos condiciones que el articulo exige a la vez. Ejercerla es una decision del proyectista y obliga a declarar las dos en el expediente"
     ],
     "bloqueos": [
-      {
-        "fase": "Fase 9 - Cabezal y aletas (M9)",
-        "etapa": "K_AE de Mononobe-Okabe (9.2)",
-        "tipo": "CriterioPendienteError",
-        "criterio": "phi_relleno_trasdos",
-        "etiqueta": "A",
-        "concepto": "Angulo de friccion interna del material de cantera del trasdos",
-        "fuente": "PENDIENTE",
-        "campo": null,
-        "delta_rasante_m": null,
-        "diferido_por_alcance": false,
-        "mensaje": "'phi_relleno_trasdos' es un VACIO sin valor asignado (Angulo de friccion interna del material de cantera del trasdos). Debe resolverse antes de continuar: PENDIENTE"
-      },
       {
         "fase": "Fase 9 - Cabezal y aletas (M9)",
         "etapa": "recubrimiento de diseno 'contra_suelo' (9.4)",
@@ -1239,13 +1221,6 @@
         "concepto": "Pendiente longitudinal MINIMA que el proyecto admite en el barril de una alcantarilla (m/m); M7 eleva a ella la del cauce y V10 juzga con ella la declarada"
       },
       {
-        "clave": "phi_relleno_trasdos",
-        "etiqueta": "A",
-        "valor": null,
-        "declarado_en_caliente": false,
-        "concepto": "Angulo de friccion interna del material de cantera del trasdos"
-      },
-      {
         "clave": "regimen_v2b",
         "etiqueta": "A",
         "valor": "indicador_con_aviso",
@@ -1257,7 +1232,7 @@
         "etiqueta": "A",
         "valor": null,
         "declarado_en_caliente": false,
-        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)"
+        "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)"
       },
       {
         "clave": "resguardo_HW_subrasante",
@@ -1471,18 +1446,15 @@
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "exposicion_quimica_ems",
-      "friccion_muro_suelo_delta",
-      "gamma_EQ",
       "h_eq_bajo_altura_tabulada",
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
-      "inclinacion_muro_beta",
       "metodo_estabilidad_global",
-      "pendiente_relleno_trasdos_i",
+      "peso_especifico_saturado_relleno_kn_m3",
       "phi_relleno_trasdos",
-      "punto_aplicacion_incremento_sismico",
       "regimen_cortante_muro_e060_art_11_10_2",
-      "remanso_derecho_via"
+      "remanso_derecho_via",
+      "umbral_no_colapso_evento_extremo"
     ],
     "declarados_en_caliente": [],
     "verificacion_pendiente": [
@@ -1520,7 +1492,6 @@
     "sin_consumidor": [
       "Mw_licuefaccion",
       "PERFIL_SUELO_PRESUNTO",
-      "c_phi_fundacion",
       "capacidad_portante_adm",
       "clase_sitio",
       "demanda_sismica_licuefaccion",
@@ -1565,28 +1536,11 @@
         "evidencia": "El analisis quimico del EMS. Mientras no exista, ningun recubrimiento de 9.4 se puede calcular"
       },
       {
-        "clave": "phi_relleno_trasdos",
-        "etiqueta": "A",
-        "concepto": "Angulo de friccion interna del material de cantera del trasdos",
-        "fuente": "PENDIENTE",
-        "reemplazado_por": "Ensayo de corte directo sobre el material de cantera",
-        "fases": [
-          "Fase 9 - Cabezal y aletas (M9)"
-        ],
-        "etapas": [
-          "K_AE de Mononobe-Okabe (9.2)"
-        ],
-        "puntos": [],
-        "diferido": false,
-        "responsable": "el proyectista, con el ensayo del material de cantera del trasdos o un valor de practica corriente declarado con su fuente",
-        "evidencia": "Ensayo de corte directo sobre el material de cantera"
-      },
-      {
         "clave": "remanso_derecho_via",
         "etiqueta": "A",
-        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
-        "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
-        "reemplazado_por": "Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto",
+        "concepto": "Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)",
+        "fuente": "Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto",
+        "reemplazado_por": "Perfil de remanso calculado aguas arriba del punto (paso a paso o HEC-RAS) sobre la topografia del cauce",
         "fases": [
           "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"
         ],
@@ -1599,8 +1553,8 @@
           "B-01"
         ],
         "diferido": false,
-        "responsable": "ensayo o medicion: perfil de remanso aguas arriba (paso a paso o HEC-RAS) y ancho de derecho de via del expediente",
-        "evidencia": "Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto"
+        "responsable": "el proyectista: ninguna fuente de normas/ da el metodo de la extension del embalse",
+        "evidencia": "Perfil de remanso calculado aguas arriba del punto (paso a paso o HEC-RAS) sobre la topografia del cauce"
       }
     ]
   }

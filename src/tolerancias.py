@@ -183,3 +183,19 @@ TOL_REL_AREA_ESCRITA_DOS_VECES = 1e-2
 # mas estrecho que un tramo --del orden de un centimetro en los rellenos de
 # esta obra-- podria escaparsele.
 TRAMOS_BUSQUEDA_RELLENO_MAXIMO = 400
+
+
+# ---------------------------------------------------------------------------
+# --- T-7b --- La busqueda de la cuña critica (Coulomb / Culmann)
+# ---------------------------------------------------------------------------
+# `M9.cuna_de_tanteo` busca el angulo del plano de falla que da el MAYOR
+# empuje sobre el plano vertical del talon, con la superficie real del
+# relleno (talud que sube y se quiebra en la plataforma). La funcion del
+# angulo es suave salvo en el quiebre, donde tiene un pico anguloso; un
+# metodo de una sola llamada podria quedarse en un maximo local. Se muestrea
+# el intervalo admisible en este numero de tramos y se afina el mejor con
+# una busqueda acotada a los dos tramos vecinos, hasta `TOL_ANGULO_CUNA`
+# radianes. Es resolucion numerica: medido sobre los dos cabezales de A-01,
+# 450, 1800 y 7200 tramos dan el mismo empuje a 1e-9 kN/m.
+TRAMOS_CUNA_DE_TANTEO = 1800
+TOL_ANGULO_CUNA = 1e-10

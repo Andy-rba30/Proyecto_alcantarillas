@@ -1982,6 +1982,13 @@ escritas porque se apartan de lo que un lector esperaría.
 
 ## EXT-7-02 · E6 (excentricidad sísmica) no entra en las `exigidas` por defecto
 
+- **Cerrada en T-7b (2026-11-13):** la excentricidad de la resultante bajo sismo se
+  **evalúa**, como la fila E2 del marco LRFD de la condición sísmica
+  (`M9.ensamble_estabilidad`, código `E2-LRFD.sis.*`), con el límite que interpola
+  `gamma_EQ` —que deja de estar vacío: 0.5 [A], ventana 0–1—. No entró en `exigidas`
+  de `verificar_estabilidad`, que sigue siendo la función suelta de antes y sin
+  llamador: el ensamble emite sus propias filas por marco y por condición, de modo que
+  la estática no arrastra una fila que solo existe bajo sismo, que era la objeción.
 - **Qué se difirió:** exigir la fila E6 —`verificar_excentricidad_sismica`,
   la ubicación de la resultante bajo sismo del Manual de Puentes— dentro de
   `EstabilidadCabezal.exigidas`, junto a E1..E5.
@@ -2023,6 +2030,11 @@ escritas porque se apartan de lo que un lector esperaría.
 
 ## EXT-7-04 · La resultante de Coulomb se toma entera como horizontal: la descomposición queda diferida
 
+- **Cerrada en T-7b (2026-11-13):** `M9.cargas_del_cabezal` descompone la resultante
+  sobre el plano vertical del extremo del talón (AASHTO C3.11.5.3): `EH.h` =
+  P·cos(δ + β) empuja y vuelca, `EH.v` = P·sen(δ + β) carga la base en ese plano; lo
+  mismo el incremento sísmico. `M9.empujes_trasdos` conserva la forma antigua y sigue
+  sin llamador (`FUNCIONES_SIN_CONSUMIDOR`).
 - **Qué se difirió:** descomponer el empuje activo de Coulomb (y la
   sobrecarga, que va con el mismo Ka, y el incremento sísmico, que ya estaba
   inclinado) en su componente horizontal P·cos(δ + β) y vertical
@@ -3986,6 +3998,11 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
 
 ## T1-03 · V8 (evento extremo) todavía no pide su caudal a la hidrología
 
+- **En parte en T-7b (2026-11-13):** la mitad que faltaba del lado de V8 existe. V8
+  tiene método y umbral declarables, y `Q_evento_extremo_m3s` y `TW_evento_extremo_m`
+  son claves de `--datos-externos` que V8 lee (ficha T7B-02). **Sigue diferido** el
+  enlace con la Fase 1-bis: el programa no calcula ese caudal aunque tenga la cuenca y
+  la estación; lo recibe declarado.
 - **Qué se difirió:** el enlace entre `TR_evento_extremo` y la Fase 1-bis: que V8, con
   el TR declarado, obtenga `Q_evento_extremo_m3s` de la cuenca y la estación, o lo
   reciba declarado (y entonces gane).
@@ -5440,6 +5457,10 @@ sobre el árbol corregido, y cada una dice qué cambió.
 
 ## T7A-01 · La Fase 9 por punto no se alcanza en una corrida de expediente: la detienen TRES capas, y abrir la puerta de `ancho_derecho_via_m` no quita ninguna
 
+- **Cerrada en T-7b (PUNTO 0):** las tres capas se atraviesan declarando, sin valor de
+  archivo: el método de V5, su dato `ancho_derecho_via_m` (con puerta) y los de V8. Lo
+  mide `test_A01_llega_a_la_Fase_9_con_E1_a_E3_evaluadas` de
+  `tests/test_t7b_cabezal_estabilidad.py`. Lo que sigue describe el estado de archivo.
 - **Qué se difirió:** que una corrida `--alcance expediente` real imprima el cabezal de un
   punto. La Fase 9 propone sobre la sección adoptada y las cotas de 7.B, y a expediente
   ningún punto del fixture se dimensiona. La FASE A lo atribuyó a que «V5 se detiene en
@@ -5498,6 +5519,10 @@ sobre el árbol corregido, y cada una dice qué cambió.
 
 ## T7A-03 · Los aleros llevan el coseno de su ángulo con la bajada del talud: con esviaje, los dos aleros de un cabezal miden distinto
 
+- **Verificado en T-7b:** el HDS-5 núm. 5.4.2, pág. impresa 5.13 (PDF 149), dice que
+  los cabezales se construyen generalmente paralelos al eje de la vía y que esa
+  embocadura esviada debe evitarse cuando se pueda (citas `HDS5_3ED.5.4.2#PARALELO` y
+  `#EVITAR`): sostiene el cabezal normal al eje y deja diferido el paralelo.
 - **Cerrado (T-7a, corregido en H1):** α se mide con la prolongación de la pared del barril
   (ΘW del HDS-5, List of Symbols, pág. impresa xix; cita `HDS5_3ED.SIMBOLOS#THETA_W`): por
   eso coseno y no seno. La FASE A daba la misma longitud a los dos aleros y decía «los
@@ -5644,3 +5669,372 @@ sobre el árbol corregido, y cada una dice qué cambió.
 - **Qué haría falta:** que T-7b corrija la §9.3 al ensamblar la estabilidad (el dictamen
   del verificador ya lo pide).
 - **Dónde vive:** `src/criterios_adoptados.py::profundidad_cimentacion_min_cabezal_m`
+
+# Parte L — Lo que T-7b de la cadena T dejó escrito: la estabilidad del cabezal en dos marcos, y V5 y V8 con método declarable
+
+T-7b (2026-11-13, FASE A) ensambla la estabilidad externa de cada cabezal —capacidad
+portante, excentricidad o volteo, y deslizamiento, estática y sísmica— en dos marcos que
+no se cruzan (`INF-4.4`, `INF-4.5`, `INF-5.1.5`), y abre lo que hacía inalcanzable la
+Fase 9 a nivel de expediente: V5 y V8 con método declarable y sus datos por punto (el
+PUNTO 0 de las precisiones; residual de `INF-4.2` e `INF-4.3`). No arma: eso es T-7c.
+Las fichas de abajo son lo que el ensamble **no** hace, lo que hace por hipótesis del
+proyecto, y lo que la corrida de punta a punta dejó medido. **El cierre de T-7b
+(2026-11-13) aplicó las diez correcciones de la auditoría adversarial (H1 a H10) y las
+resoluciones del orquestador**: cada ficha que cambió lo dice en un párrafo «Corrección
+del cierre», y las dos fichas nuevas (T7B-13, T7B-14) son la medida del cierre y la
+marca del régimen para T-7c.
+
+## T7B-01 · V5 mide el embalse con un plano horizontal: el perfil de remanso está nombrado y no implementado
+
+- **Qué se difirió:** el método `perfil_de_remanso_paso_a_paso` de `remanso_derecho_via`.
+  Declarado, V5 se detiene con `MetodoNoEvaluableError` (rótulo
+  `MOTIVO_METODO_NO_EVALUABLE_REMANSO`). El implementado, `embalse_a_nivel`, compara
+  d = (L_boca + HW / S_cauce)·cos(esviaje) con la mitad del ancho del derecho de vía.
+- **Por qué:** la curva de remanso exige la sección y la pendiente del cauce de
+  aproximación y su topografía, que no son entradas del programa. El plano horizontal
+  usa solo lo que ya hay (HW, `S_cauce`, la semilongitud de entrada de 7.B y el esviaje)
+  y dice sus cinco supuestos en el paso: fondo recto con `S_cauce` en la dirección del
+  eje, faja simétrica, sin topografía lateral, y que **no es** la curva de remanso —en
+  un cauce de pendiente suave el perfil real llega más lejos, y el programa no clasifica
+  el régimen del cauce de aproximación ni presume el lado—. (La corrección del cierre,
+  abajo, añade el sexto: el plano corta el **fondo**.) El HDS-5 núm. 2.2.5
+  identifica la carga con la profundidad del embalse; la extensión es método del
+  proyecto. No se le dio valor de archivo al criterio: decisión del dueño.
+- **Qué haría falta:** la sección del cauce aguas arriba (como `seccion_receptor_medida`
+  para el receptor) y un paso directo desde la boca; y decidir si el ancho se mide
+  simétrico o con el eje de la faja declarado.
+- **Corrección del cierre (H2, ALTA).** `embalse_a_nivel` mide hasta donde el plano
+  corta el **fondo**: incluye el tramo natural del cauce, es una **cota superior** de lo
+  que la obra añade y con los anchos de la Tabla 304.09 solo cumple en cauces de
+  pendiente fuerte (A-01: d = 176.75 m). Restar el tirante natural exige la sección del
+  cauce de aproximación: **diferido**. El método que la fuente sí sostiene (HDS-5 núm.
+  2.2.5, citas `HDS5_3ED.2.2.5#NO_EXCEDER` y `HDS5_3ED.2.2.5a#COTA_DE_DANO`) es de
+  **cota**: `cota_de_afectacion` (`M5._v5_cota_de_afectacion`, dato
+  `cota_afectacion_aguas_arriba_msnm`). El criterio sigue sin valor de archivo.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::v5_remanso`
+
+## T7B-02 · V8 juzga «no colapsa» por el desborde de la plataforma, que es la lectura más exigente; el desborde admitido no está implementado
+
+- **Qué se difirió:** el umbral `desborde_admitido_con_terraplen_protegido` —lo que la
+  fila V8 de la hoja de ruta literalmente admite— y el flujo a presión o sobre la vía
+  con el caudal del evento extremo. Con ese umbral, o cuando la sección adoptada no
+  conduce el caudal en lámina libre, V8 levanta `MetodoNoEvaluableError` (rótulo
+  `MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO`).
+- **Por qué:** el encargo decía «a V8 le faltan entradas». Le faltaban además el método
+  y el umbral: la hoja no dice cómo se juzga el colapso. Se escribió lo mínimo que no
+  inventa nada —cota de entrada + HW(Q_ext) ≤ cota del borde de la plataforma, con M3 y
+  M4 de siempre—, con el umbral como criterio **sin valor**, y el resto se nombró.
+  Consecuencia medida: como V8 corre dentro del bucle de MD, un candidato que no
+  conduce el caudal extremo en lámina libre deja el punto en «método no evaluable»
+  aunque otro anterior haya incumplido V5 (regla T4-10: no se acepta un candidato si uno
+  anterior quedó sin evaluar). Pasa en A-01 con una faja de 300 m: V5 no cumple con
+  Ø 0.90 m, la progresión sigue y el punto termina bloqueado por V8, no por V5; el
+  incumplimiento de V5 se lee en la traza.
+- **Qué haría falta:** el reparto del caudal entre el conducto y la plataforma (HDS-5
+  núm. 3.1.5), el flujo a presión de M4 con el barril lleno a ese caudal, y un criterio
+  de erosión del talud de aguas abajo. Y que el Propietario declare el periodo de
+  retorno y qué entiende por colapso.
+- **Corrección del cierre (H3, ALTA).** El flujo a presión está
+  (`M4.hidraulica_a_presion`: control de entrada sumergido y de salida a barril lleno,
+  gobierna la mayor, sin ecuaciones nuevas), y V8 se evalúa solo sobre el candidato que
+  ya cumple lo anterior (`M5.verificar`). Barrido del auditor en A-01: con ×1.11 y ×1.20
+  lámina libre y cumple en Ø 0.90 m; con ×1.29 y ×1.50 a presión y cumple; con ×1.97 el
+  Ø 0.90 m desborda y MD adopta Ø 1.05 m. El desborde admitido sigue diferido.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::v8_evento_extremo`
+
+## T7B-03 · El cabezal se calcula como muro de semigravedad en voladizo, por metro y en la sección llena: es hipótesis del proyecto
+
+- **Qué se difirió:** modelar el cabezal como lo que es —un muro corto, con el vano del
+  conducto, restringido por el barril y por los aleros—. El ensamble toma un metro de
+  muro en la sección llena junto al conducto: no descuenta el vano (menos peso y menos
+  empuje), no cuenta la restricción del barril ni la de los aleros, no cuenta empuje
+  pasivo delante de la zapata (AASHTO 11.6.3.5) ni el agua del cauce contra la cara
+  frontal. Con esviaje, el empuje se toma normal al muro.
+- **Por qué:** ninguna fuente de `normas/` prescribe el marco de estabilidad de un
+  cabezal: la Sección 12 de AASHTO trata la estructura enterrada, y la 11.6 los
+  estribos y muros convencionales. La decisión del dueño (rige el LRFD de 11.6, E.050
+  informa) fija el marco; aplicarlo a un cabezal es analogía, y `marco_estabilidad_cabezal`
+  lo dice. Las simplificaciones van del lado de más demanda, salvo el vano, que quita
+  peso estabilizante y empuje a la vez y cuyo signo no se midió.
+- **Qué haría falta:** un modelo de placa o de pórtico con el barril, o al menos la
+  franja del vano con su carga del conducto; y decidir si los aleros cuentan como
+  contrafuertes.
+- **Corrección del cierre (H6).** Con el drenaje declarado (`drenado`) el modelo toma el
+  agua del relleno en el freático natural y **no** el desembalse rápido —el relleno
+  mojado por la avenida hasta la cota del agua de diseño con el cauce ya vacío—, que
+  el comentario C11.6.6 hace plausible («Weep holes … do not assure fully drained
+  conditions»). El ensamble lo **avisa** con su orden de magnitud
+  (`M9._aviso_desembalse_rapido`: en la entrada de A-01, con el agua de diseño a 1.84 m
+  sobre la base, γ_w·h²/2 ≈ 16.6 kN/m frente a 15.6 kN/m de la componente horizontal
+  del empuje con la cuña). Modelarlo exige decidir el nivel residual del relleno tras la avenida.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::ensamble_estabilidad`
+
+## T7B-04 · La capacidad portante es la de terreno horizontal, zapata corrida y sin factor de profundidad; las tablas de talud de AASHTO no se transcribieron
+
+- **Qué se difirió:** tres cosas. (1) Los coeficientes de reducción por talud de AASHTO
+  LRFD 10.6.3.1.2c (9.ª ed.), que son **tablas** —no las figuras N_cq / N_γq de
+  Meyerhof, que son las de la edición que tradujo el Manual de Puentes 2016—: no se
+  transcribieron. (2) Los factores de forma (zapata corrida: 1) y de profundidad
+  (d_q = 1). (3) La lectura entre filas de las Tablas 10.6.3.1.2a-1 y -2, que se
+  interpola linealmente.
+- **Por qué:** la hoja de ruta (§9.3) afirmaba que el cabezal «se apoya en el borde del
+  terraplén». Con el cabezal que T-7a predimensiona eso no es así: la zapata queda bajo
+  el fondo del cauce y el talud **sube** detrás; delante el terreno no desciende, y la
+  reducción de la fuente se define con la altura del talud por debajo de la base, que es
+  cero. Es una **discrepancia con la hoja de ruta, declarada en ella** (nota de §9.3) y
+  en el punto de uso (`terreno_delante_del_cabezal` [A] = `horizontal`); quien tenga un
+  cabezal en media ladera declara `talud_descendente` y la ecuación del Manual de
+  Puentes pide `N_cq_N_gammaq_meyerhof`, que sigue sin valor. Los factores de
+  inclinación de la carga se **aplican** (`factores_inclinacion_carga_portante` [A]):
+  el comentario de la fuente admite omitirlos con empotramiento modesto y aplicarlos no
+  relaja. La hoya de socavación de la Fase 6 descuenta el empotramiento a la salida.
+- **Qué haría falta:** transcribir las tablas de 10.6.3.1.2c con su verificación contra
+  el PDF si aparece un cabezal en ladera; y el EMS, que con `q_n_kpa` o `q_adm_kpa`
+  gana sobre todo esto.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::resistencia_portante_nominal`
+
+## T7B-05 · Sin drenaje declarado el relleno se calcula lleno de agua: es el valor de archivo, y deja la condición sísmica sin evaluar
+
+- **Qué se difirió:** nada del cálculo; lo que queda abierto es **cuál debe ser el
+  valor de archivo** de `drenaje_trasdos`. Rige `sin_drenaje`: agua hasta la superficie
+  del relleno retenido (AASHTO 11.6.6: si no se provee drenaje el muro se diseña para
+  la presión del agua), que además exige el peso saturado del relleno (dato de ensayo,
+  sin valor) y deja Mononobe-Okabe fuera de su dominio (11.6.5.3: relleno no saturado).
+- **Por qué:** el encargo de T-7b dice que la presión solo se reduce si el drenaje se
+  **declara**, y así quedó. Pero las dos normas piden el drenaje (AASHTO 11.6.6 y E.050
+  39.13.8), los planos tipo lo llevan, y con el valor de archivo ningún cabezal puede
+  evaluarse sin dos declaraciones más. Es una pregunta para el dueño, no una decisión
+  tomada: la recomendación del ejecutor es `drenado` de archivo, con el aviso de que
+  compromete el filtro y los lloraderos en planos.
+- **Qué haría falta:** la decisión del dueño; y, si el relleno puede saturarse bajo
+  sismo, el tratamiento del agua de C11.6.5.3 (dos casos según la permeabilidad, uno
+  con presión hidrodinámica), que no está implementado.
+- **Corrección del cierre (H6 y pregunta 1).** Resuelta: `sin_drenaje` **se queda** de
+  archivo (AASHTO 11.6.6: «shall be drained or, if drainage cannot be provided … full
+  hydrostatic pressure»); `drenado` es una declaración que compromete el filtro y los
+  lloraderos en planos y se declara en la sesión o con `--declarar`. Y el **tope del
+  agua** sin drenaje se corrigió: llena el relleno **retenido** hasta su superficie
+  contra el trasdós (coronación menos bordillo, z_rel), **nunca por encima del muro**;
+  la FASE A la subía hasta el terreno sobre el extremo del talón (en la entrada de A-01,
+  43.78 msnm contra 43.55 de la coronación). `HIPOTESIS_EMPUJE_BAJO_NF` dice lo mismo.
+- **Dónde vive:** `src/criterios_adoptados.py::drenaje_trasdos`
+
+## T7B-06 · Mononobe-Okabe solo dentro de su dominio: con el k_h de archivo la condición sísmica no se evalúa
+
+- **Qué se difirió:** el método de equilibrio límite generalizado (GLE, AASHTO A11.3.3)
+  y el análisis de cuña, que la fuente pide cuando φ < i + arctan[k_h/(1 − k_v)] o el
+  relleno no es homogéneo, drenado y sin cohesión. Fuera del dominio el ensamble levanta
+  `MetodoNoEvaluableError` (rótulo `MOTIVO_METODO_NO_EVALUABLE_CABEZAL`) y no da cifra.
+- **Por qué:** con `factor_muro_eleccion` = `sin_reduccion` (archivo) k_h = k_h0 = 0.50
+  y ψ = 26.6°; el relleno detrás del cabezal sube con el talud (i ≈ 9 a 11° en A-01 con
+  la regla del talud quebrado), de modo que haría falta φ ≥ 36 a 38°. Con φ = 34° de
+  prueba la sísmica queda sin evaluar en los dos cabezales. La fuente desaconseja
+  forzar la ecuación. Lo que lo destraba es una decisión del Propietario —admitir el
+  desplazamiento del muro, que reduce k_h a la mitad— o un análisis externo.
+- **Qué haría falta:** GLE, o la declaración del Propietario; y un contraste externo
+  del K_AE con relleno en talud quebrado, que aquí entra con la pendiente equivalente.
+- **Corrección del cierre (H4 y pregunta 3).** La cuña de tanteo de Culmann con la
+  superficie real es la regla de archivo de `regla_pendiente_relleno_trasdos`
+  (`M9.cuna_de_tanteo`; citas `AASHTO_LRFD_9.3.11.5.3#CULMANN`,
+  `AASHTO_LRFD_9.3.11.5.8.1#CUNA`, `AASHTO_LRFD_9.C11.6.5.3#CUNA`), estática y
+  pseudoestática; la fórmula 2H queda de contraste y barrible (subestima del 7 al 11 % en
+  A-01). Dorados en `CP_T7B_CUNA`; los oráculos del auditor se reproducen (59.7 y 98.2
+  kN/m con k_h 0.50): **con el k_h de archivo la sísmica da cifra**. `factor_muro_eleccion`
+  no cambia. Sigue diferido el GLE.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::cargas_del_cabezal`
+
+## T7B-07 · E4 y E5 (estabilidad global del muro y del talud) se imprimen diferidas al expediente
+
+- **Qué se difirió:** el análisis de superficies de falla. El ensamble las lleva en
+  `EstabilidadDelCabezal.pendientes`, con un paso (`F9.GLOBAL`) y un aviso por cabezal;
+  no cuentan como cumplidas. `verificar_estabilidad_global` y `verificar_talud`,
+  llamadas a mano con `metodo_estabilidad_global` declarado, levantan
+  `MetodoNoEvaluableError` (hasta T-7b, `AssertionError`).
+- **Por qué:** necesitan la estratigrafía del EMS y un programa de equilibrio límite;
+  AASHTO 11.6.3.7 remite al Art. 11.6.2.3 y E.050 39.13.6 b) y 30.3 dan solo el factor
+  de seguridad. El punto 4 del encargo las deja «diferidas al expediente con el EMS».
+- **Qué haría falta:** el EMS y el análisis externo; el programa solo podría registrar
+  su resultado como dato declarado.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::PENDIENTES_E4_E5`
+
+## T7B-08 · Las solicitaciones por elemento para T-7c son las de la sección de arranque, con tres aproximaciones declaradas
+
+- **Qué se difirió:** el diagrama de cada elemento. `solicitaciones_por_elemento`
+  entrega V_u y M_u de la pantalla en su arranque, de la punta y del talón en la cara
+  de la pantalla, y de los aleros, por cada combinación del marco LRFD. Aproximaciones:
+  (1) la pantalla recibe la resultante entera de cada empuje, incluido el tramo del
+  canto de la zapata (más cortante del que le llega); (2) la presión de contacto se toma
+  uniforme sobre B − 2e **arrancando en la punta**, también cuando la resultante cae
+  hacia el talón (más carga en la punta y menos alivio en el talón que la real); (3)
+  los aleros llevan la solicitación de la pantalla en su arranque, sin su altura
+  variable. La subpresión se reparte uniforme en el talón.
+- **Por qué:** T-7b no arma; deja la interfaz (`EstabilidadDelCabezal.cargas`, con el
+  elemento al que llega cada carga y su brazo; `.combinaciones`, con sus factores) para
+  que T-7c calcule lo que necesite sin rehacer el ensamble. Las tres aproximaciones van
+  del lado de más solicitación.
+- **Qué haría falta:** que T-7c tome las cargas sin factorar y las integre sobre la
+  altura real de cada elemento; y el ensamble por secciones del alero.
+- **Corrección del cierre (H7).** Cada `SolicitacionDeElemento` lleva ahora con qué
+  empuje sale: `regimen` (el de `regimen_cabezal`), `coeficiente_de_empuje` ('K_A' en
+  la estática, 'K_AE' en la sísmica), `K_empuje`, y el `K0` de AASHTO 3.11.5.2 con
+  `K0_sobre_K_A`: el factor por el que crecerían los empujes de una pantalla que **no
+  cede** (C11.6.5.4: «… designed for K0 conditions for the strength limit state»). Ver
+  T7B-14.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::solicitaciones_por_elemento`
+
+## T7B-09 · Con la regla de predimensionamiento de T-7a el cabezal de A-01 no pasa el deslizamiento del marco que rige: medido, no corregido
+
+- **Qué se difirió:** la progresión de dimensiones del cabezal. La corrida de punta a
+  punta (A-01, expediente, con el suelo y el relleno **de prueba**: φ del relleno 34°,
+  fundación friccionante con φ_f = 32° y γ = 18 kN/m³, freático a 1.40 m, trasdós
+  drenado, k_h reducido a 0.25) deja medido que con la zapata de la regla (0.70 de la
+  altura total: 1.575 m a la entrada) **E3-LRFD estático no cumple en ninguno de los
+  dos cabezales** (33.95 > 28.86 kN/m a la entrada; 54.07 > 48.57 a la salida) **ni
+  E1-LRFD sísmico** (79.3 > 56.1 kPa; 100.2 > 57.9). Con la zapata declarada de 3.00 m
+  las doce filas LRFD cumplen; con 2.40 m el de salida todavía no.
+- **Por qué:** la ficha T7A-04 ya advertía que «más material» no es el lado seguro de
+  la estabilidad y dejaba la comprobación a T-7b. El encargo de T-7b no trae la regla
+  de iteración (qué dimensión crece, con qué paso y hasta dónde), y elegirla es
+  decisión de proyecto: no se inventó. Las filas salen como incumplidas del punto, con
+  «ampliar la zapata o añadir un dentellón de corte» en el veredicto, y el proyectista
+  las cierra con `cabezal_declarado`. Los números son de prueba: con el EMS real pueden
+  ser otros.
+- **Qué haría falta:** la decisión del dueño —subir `fraccion_ancho_zapata` de la
+  regla, añadir un dentellón de corte (y entonces contar el pasivo, AASHTO 11.6.3.5), o
+  iterar B hasta cumplir—, y entonces la progresión en `predimensionar_cabezal`.
+- **Corrección del cierre (H5 y pregunta 2).** El «no pasa» es **sensible** a dos
+  elecciones [A] en su extremo más exigente —la fila de φ (`zapatas_seccion_10`, la más
+  exigente y la que transcribe el Manual de Puentes; la letra de AASHTO 11.5.7 da 0.55 /
+  1.0 a los muros) y los factores de inclinación— y a datos de prueba: toda fila cuyo
+  veredicto cambia dentro de esas ventanas se avisa (`M9._avisos_de_sensibilidad`). La
+  iteración del ancho sigue diferida. Con el modelo corregido y los datos de prueba de la
+  FASE A (más γ_sat = 20), A-01 incumple E3 estático en los dos cabezales (38.05 > 29.39;
+  58.07 > 47.10, que cumpliría con la fila de muros) y E1 sísmico a la entrada (80.26 >
+  50.28, que cumpliría sin inclinación); la sísmica de salida no es evaluable (H1).
+- **Dónde vive:** `src/modulos/M9_cabezal.py::predimensionar_cabezal`
+
+## T7B-10 · La aceptación de T-7b se escribió después del código; el rojo y la mutación se midieron
+
+- **Qué se difirió:** escribir la aceptación en rojo con `xfail(strict=True)` antes del
+  código. `tests/test_t7b_cabezal_estabilidad.py` (207 tests) y los dorados a mano de
+  `tests/fixtures/casos_patron.py` (`CP_T7B_ESTABILIDAD`, `CP_T7B_MURO_2`,
+  `CP_T7B_COHESIVO`, `CP_T7B_SOLICITACIONES`, `CP_T7B_PEOR_COMBINACION`) se escribieron
+  en la misma sesión que el ensamble.
+- **Por qué:** el diseño del ensamble (qué cargas, sobre qué plano, qué combinaciones)
+  salió de leer la fuente, y la aceptación fija ese diseño. **Rojo medido** copiando el
+  archivo y el fixture a un árbol de `250c972`: de los 202 tests de entonces, 186 rojos y
+  16 verdes (cuatro literales del PDF, cuatro guardias de criterios sin valor, la
+  guardia «sin declarar nada» y siete rechazos de dato que allí pasan por la razón
+  equivocada: la clave no existía). **Mutación** con el arnés de EXT-11 sobre lo nuevo
+  de M9 (26 funciones) y de V5 y V8: la primera medida válida mató 525 de 833 mutantes
+  de M9 y 64 de 82 de M5; con tres tandas de tests escritas contra los vivos —el segundo
+  muro de tanteo, el suelo cohesivo, la roca, los márgenes, las solicitaciones, la peor
+  combinación bajo sismo— quedó en **715 de 833 (85.8 %) y 78 de 82 (95.1 %)**. Una
+  primera corrida dio 100 % y era falsa: un test localizaba el bloque de M9 por su
+  comentario de cabecera, que el arnés borra al reescribir el módulo; se ancló por
+  símbolo. Los 118 vivos de M9: 29 fronteras a tolerancia (`<=` por `<`, el signo de la
+  tolerancia), 32 comparaciones en valores degenerados (`> 0` por `>= 0` sobre pesos y
+  anchos que solo son cero con geometría nula) y 57 constantes de guardia, textos de
+  mensaje y el factor i_c con φ > 0, que E.050 Art. 20 deja sin efecto (c = 0).
+- **Qué haría falta:** casos de frontera exacta para las seis filas, que exigen un muro
+  construido para caer en el umbral; y un tercer conjunto de objetivos para la segunda
+  vuelta del arnés.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::combinaciones_de_estabilidad`
+
+## T7B-11 · La orientación del muro frente al tráfico sigue siendo un dato de corredor: no se deriva del esviaje de cada punto
+
+- **Qué se difirió:** deducir por punto qué tabla de la sobrecarga viva aplica. El
+  cabezal es normal al eje del conducto (decisión del dueño), de modo que con esviaje
+  θ forma θ con el eje de la vía: a 0° es paralelo al tráfico y a esviajes altos se
+  acerca a perpendicular. El ensamble lee `orientacion_muro_respecto_al_trafico` y
+  `distancia_borde_calzada_al_trasdos_m`, los dos [S] de corredor de siempre.
+- **Por qué:** AASHTO reparte las dos tablas de h_eq por el título de cada una
+  (estribos perpendiculares, muros paralelos) y no da regla para un muro oblicuo; una
+  derivación por el ángulo sería inventar un umbral. La distancia del borde de calzada
+  al trasdós sí varía por punto (depende de la longitud del conducto) y también entra
+  como dato de corredor.
+- **Qué haría falta:** una regla declarada para el muro oblicuo (un [A] con ventana), o
+  los dos datos por punto en `--datos-externos`.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::h_eq_sobrecarga_trasdos`
+
+## T7B-12 · Declarados, V5 y V8 se evalúan también a nivel de perfil; y el pre-vuelo de expediente anuncia el freático
+
+- **Qué se difirió:** nada; son dos consecuencias que conviene leer. (1)
+  `_verificador_perfil` decía desde antes de T-7b que V5 y V8 «se intentan igual» a
+  perfil y que, el día que su lógica existiera, entrarían a la tabla: existe, y con el
+  método y los datos declarados V5 y V8 deciden también a perfil (sin declarar se
+  difieren como siempre). Sus criterios son de nivel EXPEDIENTE, que es donde se
+  consumen sin declarar nada; `tests/test_nivel_medido.py` censa el caso
+  (`DE_UNA_VERIFICACION_DIFERIDA`). (2) El ensamble lee la columna `NF_profundidad_m`,
+  el censo le encuentra ese consumidor y el pre-vuelo **de expediente** la anuncia como
+  falta que detiene en los puntos que la traen vacía —los cuatro del fixture—: el
+  freático pasa de «espera» a «DETIENE». (Corrección del cierre, H8: la FASE A escribía
+  que el código de salida de `--prevuelo` a expediente pasaba de 0 a 1; con
+  `tests/ejemplo_puntos.csv` ya salía con 1 en `250c972`, y lo que cambia es la clase
+  de la falta.) Es cierto (la estabilidad de su cabezal se detendría), y es de
+  más mientras V5 y V8 sigan sin declarar: el pre-vuelo estima de más a propósito.
+  Desde el cierre, cada método de V5 anuncia **su** dato (`ancho_derecho_via_m` con
+  `embalse_a_nivel`, `cota_afectacion_aguas_arriba_msnm` con `cota_de_afectacion`).
+- **Por qué:** la primera es el diseño previo de la corrida de perfil; la segunda, el
+  del pre-vuelo (ficha PF-2-01).
+- **Qué haría falta:** si se quisiera que el nivel de perfil no evalúe nunca V5 ni V8,
+  diferirlas por alcance antes de intentarlas; y para el pre-vuelo, condicionar la
+  falta del freático a que la Fase 9 sea alcanzable.
+- **Dónde vive:** `src/servicio.py::_verificador_perfil`
+
+## T7B-13 · El cierre de T-7b aplicó las diez correcciones de la auditoría: el datum del freático, V5 por cota, V8 a presión, la cuña de tanteo, el agua y el régimen
+
+- **Qué se difirió:** nada nuevo; esta ficha es la medida del cierre. La auditoría
+  adversarial de la FASE A (AJUSTADO: 3 ALTA, 4 MEDIA, 3 BAJA; la aritmética del ensamble
+  coincidía con AASHTO) dejó: **H1** el freático medido desde el pie de cada cabezal y no
+  desde el terreno del cruce (en la salida de A-01, agua 0.80 m más baja: seca cuando
+  tiene 0.20 m sobre la base); **H2** V5 por embalse a nivel, que falla en falso; **H3**
+  V8 «no evaluable» desde 1.29·Q; **H4** la pendiente 2H que subestima la cuña; **H5** el
+  «no pasa» presentado como hecho; **H6** el agua por encima del muro y el desembalse
+  sin decir; **H7** el muro no cedente sin marcar para T-7c; **H8–H10**, textos,
+  aleros y una aserción tautológica. Cómo quedó cada uno: H1 —el entorno lleva la
+  **cota** del agua (`EntornoDelCabezal.cota_freatico` = `cota_terreno − NF`, la
+  convención de M8, del censo y del contrato) y de ella salen `h_w_natural` y `D_w`; el
+  test que congelaba el defecto se reescribió declarándolo y hay un dorado a mano con
+  pie ≠ terreno (la salida de A-01: agua a 40.70 msnm, 0.20 m sobre la base)—; H2 (T7B-01);
+  H3 (T7B-02); H4 (T7B-06); H5 (T7B-09); H6 (T7B-03 y T7B-05); H7 (T7B-08 y T7B-14);
+  H8 —la nota de `AASHTO_LRFD_9.10.6.3.4#RESISTENCIA` (el suelo cohesivo SÍ está
+  implementado), el docstring de `servicio._fase_9`, `gamma_saturado_kn_m3` del suelo de
+  fundación retirado (se validaba y nadie lo leía), y el aviso del cabezal con una sola
+  condición evaluada—; H9 —el alero largo que supera la longitud entre cabezales se
+  avisa, comparado con esa magnitud y sin umbral nuevo—; H10 —la última aserción del
+  contraste con VARIOS era tautológica (k_h se reconstruyó de EQ/(DC + EV)) y se
+  reescribió como lo que es—.
+- **Por qué:** las resoluciones del orquestador para H1–H10 y las seis preguntas
+  (`ENCARGO_T-7b_cierre.md`), vinculantes salvo que el PDF contradijera una premisa; no
+  la contradijo ninguna: las ocho citas nuevas se leyeron en su página.
+- **Rojo y mutación:** los tests del cierre (`H1` a `H10` en
+  `tests/test_t7b_cabezal_estabilidad.py`) no se escribieron en rojo con
+  `xfail(strict=True)`: se escribieron con el código, y el rojo se mide contra la FASE A
+  (`fc792d9`), donde los símbolos nuevos no existen y cada test falla por separado.
+- **Qué haría falta:** lo que cada ficha dice.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::cuna_de_tanteo`
+
+## T7B-14 · El cabezal se calcula como muro que CEDE; el que no cede está en la ventana y no implementado, y la interfaz de T-7c lo marca
+
+- **Qué se difirió:** las presiones de un muro que no cede: empuje en reposo K0 en el
+  estado límite de resistencia y, bajo sismo, k_h = 1.0·k_h0 con resultante en h/2
+  (AASHTO 11.6.5.4 y C11.6.5.4). `regimen_cabezal` [A] = `cedente` de archivo, con
+  `no_cedente` en la ventana: declararlo detiene la estabilidad con
+  `MetodoNoEvaluableError` (rótulo del cabezal).
+- **Por qué:** los métodos de 11.6.5.3 «assume that the abutment or wall is free to
+  laterally yield», y el comentario de 11.6.5.4 pone entre los muros que pueden no ceder
+  a los estribos con aleros estructurales, a los que un cabezal monolítico con el barril
+  se parece. Para la **estabilidad externa** —vuelco y deslizamiento del conjunto— el
+  muro cede por definición del mecanismo, y es lo que el ensamble calcula; para la
+  **resistencia** de la pantalla puede no ceder, y eso lo decide T-7c. Por eso la
+  interfaz lo marca en vez de resolverlo: cada solicitación lleva el coeficiente con que
+  salió y el `K0 / K_A` de referencia (en A-01, con φ = 34° y la cuña: K0 = 1 − sen 34°
+  = 0.441 frente a K_A = 0.325 a la entrada y 0.304 a la salida, un 36 % y un 45 % más;
+  contra el K_A de la fórmula 2H, 0.290, era el +52 % que midió el auditor). El K0 de 3.11.5.2-1 es de muro vertical y
+  terreno **horizontal**: es una referencia de orden de magnitud, no el coeficiente de
+  ese relleno.
+- **Qué haría falta:** que T-7c decida el régimen de la pantalla para su armado; y, si
+  el cabezal se declara no cedente, las presiones de muro rígido (Wood, 1973) o un
+  análisis numérico aprobado por el Propietario.
+- **Dónde vive:** `src/criterios_adoptados.py::regimen_cabezal`

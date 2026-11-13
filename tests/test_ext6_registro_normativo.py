@@ -131,10 +131,16 @@ def test_los_tres_textos_que_mentian_sobre_el_dg2018_ya_no_mienten():
     «Sec. 4.2 y el DG-2018 exigen la condicion» (remanso_derecho_via): el
     304.07 no enuncia condicion hidraulica alguna.
     """
-    v5 = {id_: (por_que, que) for id_, por_que, que in F.SIN_FUNDAMENTO}["F5.V5"]
-    assert "ninguna de las dos esta" not in v5[0]
-    assert "304.07" in v5[0]
-    assert "Ley 29338" in v5[0]
+    # REESCRITO EN T-7b: F5.V5 dejo de ser un hueco de `SIN_FUNDAMENTO` y es
+    # un `Fundamento` con citas (V5 tiene metodo declarable). Lo que EXT-N-02
+    # fijaba sigue fijado, ahora sobre el fundamento y la ficha del criterio:
+    # el DG-2018 se cita por su numeral, y ninguna fuente «exige» la
+    # condicion hidraulica. La Ley 29338 sigue nombrada, en la fuente.
+    assert "F5.V5" not in {id_ for id_, _p, _q in F.SIN_FUNDAMENTO}
+    v5 = F.FUNDAMENTOS["F5.V5"]
+    assert "ninguna de las dos esta" not in v5.por_que
+    assert any(c.startswith("DG2018.304.07") for c in v5.citas)
+    assert "Ninguna de las dos fuentes dice como se mide" in v5.por_que
 
     talud = ca.CRITERIOS["talud_terraplen"]
     assert "no esta en normas/" not in talud.justificacion
@@ -146,7 +152,12 @@ def test_los_tres_textos_que_mentian_sobre_el_dg2018_ya_no_mienten():
     remanso = ca.CRITERIOS["remanso_derecho_via"]
     assert "exigen la condicion" not in remanso.justificacion
     assert "304.07" in remanso.justificacion
-    assert "PENDIENTE" in remanso.fuente
+    assert "sin enunciar condicion hidraulica alguna" in remanso.justificacion
+    # Hasta T-7b la fuente decia PENDIENTE; ahora cita el requisito juridico
+    # y declara que el METODO es del proyecto. El criterio sigue SIN valor.
+    assert "Ley 29338" in remanso.fuente and "304.07" in remanso.fuente
+    assert "El metodo es del proyecto" in remanso.fuente
+    assert remanso.valor is None
 
     clase = __import__("src.datos_sitio", fromlist=["DATOS_SITIO"]).DATOS_SITIO["clase_de_via"]
     assert "AUSENTE" not in clase.fuente

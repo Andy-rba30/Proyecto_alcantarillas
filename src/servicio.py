@@ -85,6 +85,7 @@ from src.constantes_normativas import (REGIMENES_DE_FLUJO_T11,
                                        V_MAX_NO_REVESTIDOS)
 from src.dominios import (ALTURA_RECEPTOR_MAX_FISICA_M, N_MANNING_MAX_FISICO,
                           PH_MAX_FISICO, PPM_MAX_FISICO, S_CAUCE_MAX)
+from src.dominios import ANCHO_DERECHO_VIA_MAX_M                # --- T-7b ---
 from src.modelos import ALCANCE_EXPEDIENTE as _ALCANCE_EXPEDIENTE
 from src.modelos import ALCANCE_PERFIL as _ALCANCE_PERFIL
 from src.modelos import (Bloqueo, CaudalDeDiseno, Clasificacion,
@@ -124,6 +125,8 @@ from src.modulos.M2_material import matriz_durabilidad
 from src.modulos.M6_proteccion import (proteccion_entrada, proteccion_salida,
                                        socavacion_salida)
 from src.modulos import M3_hidraulica as M3
+from src.modulos import M4_control as M4                # --- T-7b --- (V8)
+from src.tolerancias import TOL_UMBRAL_NORMATIVO        # --- T-7b ---
 from src.modulos.M7_geometria import (aviso_de_pendiente,
                                       compatibilidad_geometrica,
                                       cota_salida,
@@ -147,7 +150,6 @@ from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
                                     cadena_sismica,
                                     condicion_normativa_cabezal,
                                     cuantia_minima,
-                                    k_ae_del_proyecto,
                                     recubrimiento_de_diseno)
 # --- T-7a --- el cabezal POR PUNTO: la embocadura (perfil) y la geometria
 # de la Fase 9 (expediente), con la puerta de su dato externo.
@@ -155,6 +157,17 @@ from src.modulos.M9_cabezal import (cabezal_del_punto,
                                     embocadura_del_punto,
                                     validar_cabezal_declarado,
                                     verificar_coherencia_embocadura_cajon)
+# --- T-7b --- el ensamble de estabilidad del cabezal y la puerta del suelo.
+from src.modulos.M9_cabezal import (CONDICIONES_DE_ESTABILIDAD,
+                                    datos_del_cabezal_del_punto,
+                                    ensamble_estabilidad,
+                                    integrar_estabilidad,
+                                    validar_suelo_fundacion)
+from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
+                         EventoExtremoDelPunto, HidraulicaDelEventoExtremo,
+                         REGIMEN_EVENTO_LAMINA_LIBRE)
+from src.constantes_normativas import (ANCHO_MIN_DERECHO_VIA_M,
+                                       INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M)
 from src.modulos.M10_espaciamiento import espaciamiento_alivio
 # --- T-9 --- la longitud por capacidad de la cuneta y VB1, por tramo.
 from src.modulos import M10_espaciamiento as M10
@@ -656,22 +669,95 @@ CLAVES_EXTERNAS += CLAVES_CUNETA
 CLAVES_QUE_ADMITEN_CERO += ("inicio_tramo_cuneta_km",)
 CLAVES_CON_SIGNO: Tuple[str, ...] = ("peralte",)
 
+# --- T-7b --- (cadena T; PUNTO 0, decision del dueño del 2026-11-13). LAS
+# TRES ENTRADAS DE EXPEDIENTE DE V5 Y V8, por punto o globales, opcionales y
+# SIN valor por defecto:
+#
+#   ancho_derecho_via_m    el ancho TOTAL de la faja del derecho de via en el
+#       cruce (lo fija la resolucion que aprueba el derecho de via del tramo).
+#       La lee V5 cuando el metodo de 'remanso_derecho_via' esta declarado.
+#       Familias A y B: en la C V5 no aplica (la sustituye VC1).
+#   Q_evento_extremo_m3s   el caudal del periodo de retorno de
+#       'TR_evento_extremo' (estudio hidrologico). La lee V8.
+#   TW_evento_extremo_m    el tirante del receptor en ese evento; admite 0
+#       (salida libre). La lee V8.
+#
+# Las tres SON de `CLAVES_EXTERNAS` -- a diferencia de los ensayos de
+# durabilidad y de las dimensiones del cabezal --: declarado el criterio de
+# su verificacion, su ausencia DETIENE a nivel de expediente, y el pre-vuelo
+# lo dice (`anticipo.datos_faltantes_por_punto`).
+#
+# Y desde las correcciones de T-7b (H2) una CUARTA, la del metodo de cota de
+# V5 que la fuente sostiene (HDS-5 num. 2.2.5):
+#
+#   cota_afectacion_aguas_arriba_msnm   la cota del terreno o del bien a
+#       proteger en el limite del derecho de via aguas arriba, de la
+#       topografia del cruce. La lee V5 con el metodo «cota_de_afectacion».
+#       Admite cero y signo: es una cota en msnm, no una longitud.
+CLAVE_ANCHO_DERECHO_VIA = "ancho_derecho_via_m"
+CLAVE_COTA_AFECTACION = "cota_afectacion_aguas_arriba_msnm"
+CLAVE_Q_EVENTO_EXTREMO = "Q_evento_extremo_m3s"
+CLAVE_TW_EVENTO_EXTREMO = "TW_evento_extremo_m"
+CLAVES_DE_V5_Y_V8: Tuple[str, ...] = (CLAVE_ANCHO_DERECHO_VIA,
+                                      CLAVE_Q_EVENTO_EXTREMO,
+                                      CLAVE_TW_EVENTO_EXTREMO,
+                                      CLAVE_COTA_AFECTACION)
+CLAVES_EXTERNAS += CLAVES_DE_V5_Y_V8
+CLAVES_QUE_ADMITEN_CERO += (CLAVE_TW_EVENTO_EXTREMO, CLAVE_COTA_AFECTACION)
+CLAVES_CON_SIGNO += (CLAVE_COTA_AFECTACION,)
+FAMILIAS_QUE_USAN[CLAVE_ANCHO_DERECHO_VIA] = (Familia.A, Familia.B)
+FAMILIAS_QUE_USAN[CLAVE_COTA_AFECTACION] = (Familia.A, Familia.B)
+# El criterio que hace EXIGIBLE cada una: mientras siga sin declarar, la
+# verificacion se detiene antes, en el criterio, y el dato todavia no falta.
+CRITERIO_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
+    CLAVE_ANCHO_DERECHO_VIA: "remanso_derecho_via",
+    CLAVE_COTA_AFECTACION: "remanso_derecho_via",
+    CLAVE_Q_EVENTO_EXTREMO: "TR_evento_extremo",
+    CLAVE_TW_EVENTO_EXTREMO: "TR_evento_extremo",
+}
+# Y, para las dos de V5, el METODO declarado que la pide: cada metodo lee
+# su dato y no el del otro (correcciones de T-7b, H2).
+METODO_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
+    CLAVE_ANCHO_DERECHO_VIA: "embalse_a_nivel",
+    CLAVE_COTA_AFECTACION: "cota_de_afectacion",
+}
+VERIFICACION_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
+    CLAVE_ANCHO_DERECHO_VIA: "V5",
+    CLAVE_COTA_AFECTACION: "V5",
+    CLAVE_Q_EVENTO_EXTREMO: "V8",
+    CLAVE_TW_EVENTO_EXTREMO: "V8",
+}
+ETAPA_BUCLE_DE_MD = "material y diametro (bucle de MD)"
+# --- T-7b --- EL SUELO DE FUNDACION DEL CABEZAL, POR PUNTO: los mismos
+# campos del criterio de corredor 'c_phi_fundacion' (cohesivo, c_kpa,
+# phi_grados, gamma_kn_m3, y los opcionales q_n_kpa y q_adm_kpa), para la
+# calicata de ESE cruce; gana sobre el
+# criterio. Va con `cabezal_declarado`, FUERA de `CLAVES_EXTERNAS`: sin el
+# rige el criterio de corredor, y si tampoco esta, la estabilidad se detiene
+# en el criterio. Lo valida `M9.validar_suelo_fundacion` al CARGAR.
+CLAVE_SUELO_FUNDACION = "suelo_fundacion"
+CLAVES_DE_CABEZAL += (CLAVE_SUELO_FUNDACION,)
+
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
 # dimensiona un cabezal por punto y el criterio que la declara es uno solo.
 NOTA_ESTABILIDAD_CABEZAL = (
-    "Las verificaciones de estabilidad de Fase 9 no las ensambla esta CLI: "
-    "M9.verificar_estabilidad devuelve E1-E3 (y E4-E5 si se le piden) a "
-    "partir de las demandas YA calculadas, y E6 -- la ubicacion de la "
-    "resultante en la base bajo sismo, que el Manual de Puentes exige y "
-    "E.050 no escribe -- es funcion suelta, "
-    "M9.verificar_excentricidad_sismica, porque no es un factor de seguridad "
-    "y no cabe en la tabla de Sec. 9.3. Elegir el plano de empuje o los factores "
-    "de combinacion aqui seria decidir por el proyectista. La CLI corre las "
-    "piezas de Fase 9 que se sostienen solas: cadena sismica (9.2), K_AE, "
-    "recubrimientos (9.4) y cuantias minimas de referencia. Que funciones de "
-    "M9 quedan sin llamador de produccion, y por que cada una, se declara en "
-    "UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y esta CLI lo lee de "
-    "alli en vez de repetirlo."
+    "La estabilidad del cabezal (E1 a E3) se ensambla POR PUNTO y por "
+    "cabezal, en la Fase 9 de cada punto dimensionado (T-7b, "
+    "M9.ensamble_estabilidad), y en DOS MARCOS que no se cruzan: el de "
+    "estados limite de AASHTO LRFD 11.6 -- cargas factoradas contra "
+    "resistencias minoradas, y la excentricidad de la resultante en lugar "
+    "del volteo -- y el de factores de seguridad de E.050, por analogia, "
+    "sobre cargas de servicio. Cual rige lo declara "
+    "'marco_estabilidad_cabezal' [A]; las verificaciones del otro informan. "
+    "La excentricidad bajo sismo, que antes era la fila suelta E6, es la "
+    "fila E2 del marco LRFD en condicion sismica. E4 y E5 -- estabilidad "
+    "global del muro y del talud -- NO se evaluan: quedan diferidas al "
+    "expediente con el estudio de suelos, y cada punto lo dice. Aqui, del "
+    "proyecto, van las piezas que no dependen del punto: la cadena sismica "
+    "(9.2), los recubrimientos (9.4) y las cuantias minimas de referencia. "
+    "Que funciones de M9 quedan sin llamador de produccion, y por que cada "
+    "una, se declara en UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y "
+    "esta CLI lo lee de alli en vez de repetirlo."
 )
 
 
@@ -757,6 +843,11 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
         # --- T-7a --- forma y dominio en la puerta; viaja normalizado.
         return DatoDeclarado(nombre=clave,
                              valor=validar_cabezal_declarado(bruto),
+                             origen=origen)
+    if clave == CLAVE_SUELO_FUNDACION:
+        # --- T-7b --- el suelo de fundacion del punto, validado en la puerta.
+        return DatoDeclarado(nombre=clave,
+                             valor=validar_suelo_fundacion(bruto),
                              origen=origen)
     if clave in CLAVES_TEXTO:
         if not isinstance(bruto, str) or not bruto.strip():
@@ -1125,6 +1216,12 @@ def ensayos_de_durabilidad(externos: "DatosExternos",
 # de decision y no en algo que se arregle de paso. Ficha, con lo que haria
 # falta para cerrarla, en `docs/decisiones_diferidas.md`.
 _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
+    # --- T-7b --- el ancho del derecho de via (V5): techo fisico del dato.
+    "ancho_derecho_via_m": (ANCHO_DERECHO_VIA_MAX_M,
+                            "un ancho de derecho de via en m: la mayor fila "
+                            "de la Tabla 304.09 del DG-2018 es de 40 m, y un "
+                            "valor de un kilometro o mas delata una "
+                            "progresiva o una unidad equivocada"),
     "S_cauce": (S_CAUCE_MAX,
                 "una pendiente de cauce en m/m: un valor >= 1 (100 %) delata "
                 "una celda cargada en PORCENTAJE, que es el error de "
@@ -1174,6 +1271,7 @@ _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
 _UNIDAD_POR_OMISION = "SI, metros o m3/s"
 _UNIDAD_DE_CLAVE: Dict[str, str] = {
     CLAVE_DURACION_PICO: "minutos",
+    CLAVE_COTA_AFECTACION: "msnm",
 }
 
 
@@ -1488,6 +1586,10 @@ class InformePunto:
     embocadura: Optional[Any] = None
     coherencia_embocadura: Optional[str] = None
     cabezal: Optional[Any] = None
+    # --- T-7b --- Lo que el servicio tiene que decir en voz alta al armar
+    # los datos de expediente de V5 y V8 (el ancho declarado por debajo del
+    # piso del DG-2018, la semilongitud tomada como L/2). Sale por `avisos()`.
+    avisos_de_expediente: List[str] = field(default_factory=list)
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
     # --- T-5 --- La Fase 8 del conducto de la seccion aceptada: la clase, la
@@ -1703,6 +1805,8 @@ class InformePunto:
             avisos.extend(self.embocadura.avisos)
         if self.cabezal is not None:
             avisos.extend(self.cabezal.avisos)
+        # --- T-7b --- los de los datos de expediente de V5 y V8.
+        avisos.extend(a for a in self.avisos_de_expediente if a not in avisos)
         # --- T-9 --- Los de la Fase 10: los de la longitud por capacidad
         # (pendiente de la cuneta fuera de la banda del Manual, capacidad
         # gobernada por la velocidad limite, los del caudal de aporte) y el
@@ -2060,6 +2164,149 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
     return DatoDeclarado("TW_m", resuelto.valor, origen)
 
 
+def _piso_del_derecho_de_via() -> Tuple[Optional[float], str]:
+    """
+    --- T-7b --- El ancho minimo del derecho de via de la Tabla 304.09 del
+    DG-2018 para la clase de via declarada ([S] 'clase_de_via'), o None con
+    el motivo. Es un CONTRASTE del ancho declarado: no lo sustituye.
+    """
+    clase = ds.dato_efectivo("clase_de_via").valor
+    if clase is None:
+        return None, ("la clase de la via ([S] 'clase_de_via') esta sin "
+                      "declarar y no se elige fila de la Tabla 304.09")
+    if clase not in ANCHO_MIN_DERECHO_VIA_M:
+        return None, (f"la clase de via declarada ('{clase}') no es una de "
+                      "las filas de la Tabla 304.09: "
+                      + ", ".join(ANCHO_MIN_DERECHO_VIA_M))
+    ds.valor("clase_de_via")                 # se uso: queda registrado
+    return (ANCHO_MIN_DERECHO_VIA_M[clase],
+            f"Tabla 304.09 del DG-2018, fila '{clase}', ancho minimo")
+
+
+def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
+                         S: Optional[float]) -> DatosDeExpediente:
+    """
+    --- T-7b --- Lo que V5 y V8 necesitan del punto ademas del resultado
+    hidraulico, armado UNA vez antes del bucle de MD (PUNTO 0):
+
+      * V5: el ancho declarado del derecho de via (`ancho_derecho_via_m`,
+        None si no se declaro) y la distancia del eje de la via a la boca de
+        entrada sobre el eje del conducto -- la semilongitud de entrada de
+        7.B, o la mitad de la longitud cuando esta se DECLARO, y entonces se
+        avisa --; y el piso de la Tabla 304.09 como contraste;
+      * V8: el caudal y el tirante del receptor del evento extremo (None si
+        no se declararon), la cota a la que la plataforma desborda (el borde
+        del lado de la entrada de 7.B, o la rasante) y la funcion que corre
+        ese caudal por la seccion que MD este probando, con la MISMA
+        pendiente y longitud del diseño (M3 y M4, que M5 no importa).
+
+    No decide nada: si falta el dato, quien se detiene -- con su nombre -- es
+    la verificacion, y solo cuando su criterio esta declarado.
+    """
+    punto = informe.punto_de_calculo
+    calculada = informe.longitud_calculada
+    L = informe.longitud.valor
+    if calculada is not None and calculada.semilongitud_entrada is not None:
+        semilongitud = calculada.semilongitud_entrada
+        origen_semi = ("semilongitud de entrada de 7.B: del eje de la via a "
+                       "la boca, sobre el eje del conducto")
+        aviso_semi = ""
+    else:
+        semilongitud = L / 2
+        origen_semi = ("mitad de la longitud DECLARADA del conducto "
+                       "(`longitud_m`): 7.B no calculo la semilongitud de "
+                       "entrada")
+        aviso_semi = (f"V5 de {punto.id}: la longitud del conducto se "
+                      "declaro y 7.B no situa la boca de entrada; la "
+                      "distancia del eje de la via a la boca se toma como "
+                      "la mitad de la longitud")
+    ancho = externos.dato(punto.id, CLAVE_ANCHO_DERECHO_VIA)
+    piso, origen_piso = (None, "")
+    if ancho is not None and punto.familia in familias_que_usan(
+            CLAVE_ANCHO_DERECHO_VIA):
+        piso, origen_piso = _piso_del_derecho_de_via()
+        if aviso_semi:
+            informe.avisos_de_expediente.append(aviso_semi)
+        if piso is not None and ancho.valor < piso - TOL_UMBRAL_NORMATIVO:
+            informe.avisos_de_expediente.append(
+                f"Derecho de via de {punto.id}: el ancho declarado "
+                f"({ancho.valor:.2f} m, {ancho.origen}) queda por debajo "
+                f"del minimo de la {origen_piso} ({piso:.2f} m; DG-2018 "
+                "num. 304.07.02). El dato no se sustituye: se avisa")
+        # El caso del 304.07.02: el limite de la faja, a 5.00 m del borde mas
+        # alejado de la obra de drenaje (lectura registrada en la cita).
+        borde_obra = semilongitud * math.cos(math.radians(punto.esviaje_grados))
+        holgura = ancho.valor / 2 - borde_obra
+        if holgura < INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M - TOL_UMBRAL_NORMATIVO:
+            informe.avisos_de_expediente.append(
+                f"Derecho de via de {punto.id}: con la faja simetrica, su "
+                f"limite queda a {holgura:.2f} m de la boca de entrada "
+                f"(mitad del ancho {ancho.valor / 2:.2f} m - {borde_obra:.2f} "
+                "m del eje a la boca), menos que los "
+                f"{INCREMENTO_DERECHO_VIA_OBRAS_DRENAJE_M:.2f} m que el "
+                "DG-2018 num. 304.07.02 pide del borde mas alejado de las "
+                "obras de drenaje (lectura del proyecto, registrada en la "
+                "cita)")
+    cota_af = externos.dato(punto.id, CLAVE_COTA_AFECTACION)
+    derecho = DerechoDeViaDelPunto(
+        ancho_m=None if ancho is None else ancho.valor,
+        origen_ancho=("" if ancho is None else
+                      f"`{CLAVE_ANCHO_DERECHO_VIA}`, dato externo: "
+                      f"{ancho.origen}"),
+        semilongitud_entrada_m=semilongitud,
+        origen_semilongitud=origen_semi,
+        piso_dg2018_m=piso, origen_piso=origen_piso,
+        cota_afectacion_msnm=None if cota_af is None else cota_af.valor,
+        origen_cota_afectacion=(
+            "" if cota_af is None else
+            f"`{CLAVE_COTA_AFECTACION}`, dato externo: {cota_af.origen}"))
+
+    Q_ext = externos.dato(punto.id, CLAVE_Q_EVENTO_EXTREMO)
+    TW_ext = externos.dato(punto.id, CLAVE_TW_EVENTO_EXTREMO)
+    if calculada is not None and calculada.cota_borde_entrada is not None:
+        cota_desborde = calculada.cota_borde_entrada
+        origen_cota = ("borde de la plataforma del lado de la entrada, de "
+                       "7.B")
+    else:
+        cota_desborde = punto.cota_rasante
+        origen_cota = ("rasante en el eje (columna cota_rasante): 7.B no "
+                       "calculo el borde de la plataforma")
+
+    def resolver(*, seccion, material):
+        # (Correcciones de T-7b, H3.) En lamina libre, la hidraulica entera
+        # de M4; si M3 no le encuentra tirante normal --el caudal del evento
+        # no cabe en lamina libre--, el barril A PRESION con las mismas
+        # piezas de M4 que no necesitan ese tirante. Antes devolvia None y
+        # V8 quedaba «no evaluable» desde 1.29·Q en A-01.
+        pendiente = S if S is not None else punto.exigir("S_cauce")
+        Q_celda, _ = M4.caudal_por_celda(Q_ext.valor, material)
+        normal = M3.resolver_manning(seccion=seccion, Q=Q_celda, S=pendiente,
+                                     material=material)
+        if normal is not None:
+            r = M4.resolver_control(seccion=seccion, Q=Q_ext.valor,
+                                    S=pendiente, L=L, TW=TW_ext.valor,
+                                    material=material, normal=normal)
+            if r is not None:
+                return HidraulicaDelEventoExtremo(
+                    HW=r.HW, control_gobernante=r.control_gobernante,
+                    regimen=REGIMEN_EVENTO_LAMINA_LIBRE,
+                    HW_entrada=r.HW_entrada, HW_salida=r.HW_salida,
+                    nota="lamina libre: hidraulica completa de M4")
+        return M4.hidraulica_a_presion(seccion=seccion, Q=Q_ext.valor,
+                                       S=pendiente, L=L, TW=TW_ext.valor,
+                                       material=material)
+
+    evento = EventoExtremoDelPunto(
+        Q_m3s=None if Q_ext is None else Q_ext.valor,
+        TW_m=None if TW_ext is None else TW_ext.valor,
+        origen=("" if Q_ext is None else
+                f"`{CLAVE_Q_EVENTO_EXTREMO}`, dato externo: {Q_ext.origen}"),
+        cota_desborde=cota_desborde, origen_cota_desborde=origen_cota,
+        resolver=resolver if (Q_ext is not None and TW_ext is not None)
+        else None)
+    return DatosDeExpediente(derecho_de_via=derecho, evento_extremo=evento)
+
+
 def _diferir_verificacion(informe: InformePunto, codigo: str,
                           exc: ErrorProyecto, ya_registrados: set) -> None:
     """
@@ -2078,8 +2325,15 @@ def _diferir_verificacion(informe: InformePunto, codigo: str,
     informe.bloqueos.append(bloqueo)
 
 
-def _verificador_perfil(informe: InformePunto):
+def _verificador_perfil(informe: InformePunto,
+                        expediente: Optional[DatosDeExpediente] = None):
     """
+    --- T-7b --- `expediente` son los datos que V5 y V8 necesitan del punto
+    (`_datos_de_expediente`): con el metodo y los datos declarados, V5 y V8
+    devuelven una `Verificacion` tambien a nivel de perfil y entran a la
+    tabla en su posicion; sin ellos se difieren como siempre.
+
+
     La Fase 5 al alcance de perfil: las ONCE verificaciones de M5, en el
     orden de la tabla, con V5 y V8 DIFERIDAS al expediente.
 
@@ -2221,7 +2475,9 @@ def _verificador_perfil(informe: InformePunto):
         # describiendo un diferimiento que este codigo ya no hace: VC1 no
         # esta en la tupla y por eso sube.
         codigo_hueco, pieza_hueco = M5.pieza_del_hueco_de_V5(
-            punto=punto, resultado=resultado)
+            punto=punto, resultado=resultado,
+            derecho_de_via=(None if expediente is None
+                            else expediente.derecho_de_via))
         try:
             filas.append(pieza_hueco())
             if codigo_hueco != "V5":
@@ -2248,7 +2504,11 @@ def _verificador_perfil(informe: InformePunto):
                 exc.verificaciones_completadas = tuple(filas)
                 raise
         try:
-            filas.append(M5.v8_evento_extremo(punto=punto, resultado=resultado))
+            filas.append(M5.v8_evento_extremo(
+                punto=punto, resultado=resultado, material=material,
+                seccion=seccion,
+                evento=(None if expediente is None
+                        else expediente.evento_extremo)))
         except ErrorProyecto as exc:
             # Misma consulta que el hueco de V5: si "V8" saliera de la tupla,
             # su fallo volveria a subir como una obligatoria, y el dato que el
@@ -2494,10 +2754,20 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
     if not _fase_embocadura(informe):
         return
 
-    verificar = (_verificador_perfil(informe)
-                 if alcance == ALCANCE_PERFIL else None)
     Q = externos.valor(punto.id, "Q_m3s")
     S = _S_del_diseno(informe, externos)      # T-6: la pendiente ADOPTADA
+    # --- T-7b --- Los datos de expediente de V5 y V8 (derecho de via y
+    # evento extremo), armados una vez. A nivel de expediente la Fase 5 es
+    # la de M5 completa, con ellos; a nivel de perfil, la del verificador
+    # que difiere V5 y V8 mientras sigan sin poder evaluarse.
+    expediente = _datos_de_expediente(informe, externos, S)
+    if alcance == ALCANCE_PERFIL:
+        verificar = _verificador_perfil(informe, expediente)
+    else:
+        def verificar(*, punto, material, seccion, resultado):
+            return M5.verificar(punto=punto, material=material,
+                                seccion=seccion, resultado=resultado,
+                                expediente=expediente)
     # `informe.traza.append` es el observador de MD: los escalones quedan
     # anotados aunque la etapa termine en DisenoNoFactibleError, que es cuando
     # la memoria mas necesita ver que se probo.
@@ -2544,6 +2814,12 @@ def _fase_embocadura(informe: InformePunto) -> bool:
     return len(informe.bloqueos) == antes
 
 
+def etapa_de_estabilidad(extremo: str, condicion: str) -> str:
+    """--- T-7b --- El rotulo de la etapa de estabilidad de un cabezal."""
+    return (f"estabilidad E1-E3 del cabezal de {extremo}, condicion "
+            f"{condicion} (T-7b)")
+
+
 def _fase_9(informe: InformePunto,
             externos: Optional[DatosExternos] = None) -> None:
     """
@@ -2551,8 +2827,12 @@ def _fase_9(informe: InformePunto,
     losa, las verificaciones de compatibilidad CB1-CB5 y la longitud entre
     cabezales (`M9.cabezal_del_punto`). Corre solo a expediente, solo si el
     punto se dimensiono y solo si 7.B dio sus cotas: sin seccion ni cotas no
-    hay cabezal que proponer. La estabilidad y el armado NO estan aqui
-    (T-7b, T-7c).
+    hay cabezal que proponer.
+
+    --- T-7b --- Y LA ESTABILIDAD SI ESTA AQUI: detras de la geometria, una
+    etapa por cabezal y por condicion (`M9.ensamble_estabilidad`, abajo). El
+    ARMADO no (T-7c): lo que T-7c recibe son las solicitaciones factoradas
+    por elemento de cada ensamble (`EstabilidadDelCabezal.solicitaciones`).
     """
     if informe.geometria is None or informe.embocadura is None:
         return
@@ -2576,6 +2856,35 @@ def _fase_9(informe: InformePunto,
             socavacion=informe.socavacion, declarados=declarados,
             coherencia_embocadura=informe.coherencia_embocadura,
             motivo_sin_socavacion=motivo))
+    if informe.cabezal is None:
+        return
+    # --- T-7b --- LA ESTABILIDAD DE CADA CABEZAL, en los dos marcos. Una
+    # etapa por cabezal y por condicion (hasta cuatro): lo que una no puede
+    # evaluar -- un criterio del EMS sin declarar, el freatico sin medir,
+    # Mononobe-Okabe fuera de su dominio -- queda como `Bloqueo` del punto
+    # con su motivo y las demas siguen. Ningun punto sale de la Fase 9 con
+    # E1 a E3 calladas: o estan evaluadas, o hay un bloqueo que lo dice.
+    suelo = (None if externos is None else
+             externos.valor(informe.punto.id, CLAVE_SUELO_FUNDACION))
+    entornos = _etapa(
+        informe.bloqueos, FASE_CABEZAL,
+        "datos de la estabilidad del cabezal (T-7b)",
+        lambda: datos_del_cabezal_del_punto(
+            punto=informe.punto_de_calculo, cabezal=informe.cabezal,
+            geometria=informe.geometria, socavacion=informe.socavacion,
+            suelo_del_punto=suelo, resultado=informe.resultado))
+    if entornos is None:
+        return
+    estabilidades = []
+    for entorno in entornos:
+        for condicion in CONDICIONES_DE_ESTABILIDAD:
+            resultado = _etapa(
+                informe.bloqueos, FASE_CABEZAL,
+                etapa_de_estabilidad(entorno.extremo, condicion.value),
+                lambda e=entorno, c=condicion: ensamble_estabilidad(e, c))
+            if resultado is not None:
+                estabilidades.append(resultado)
+    informe.cabezal = integrar_estabilidad(informe.cabezal, estabilidades)
 
 
 def _fase_6(informe: InformePunto,
@@ -3431,9 +3740,14 @@ def correr_cabezal() -> InformeCabezal:
     informe = InformeCabezal()
     informe.cadena = _etapa(informe.bloqueos, FASE_CABEZAL,
                             "cadena sismica (9.2)", cadena_sismica)
-    informe.mononobe_okabe = _etapa(informe.bloqueos, FASE_CABEZAL,
-                                    "K_AE de Mononobe-Okabe (9.2)",
-                                    k_ae_del_proyecto)
+    # --- T-7b --- EL K_AE YA NO ES «DEL PROYECTO». Depende de la pendiente
+    # del relleno, que sale de la geometria de CADA cabezal, y de su angulo
+    # de friccion sobre el plano de empuje: lo calcula el ensamble de cada
+    # punto (`M9.cargas_del_cabezal`) y lo imprime con su paso 9.2.4. La
+    # etapa «K_AE de Mononobe-Okabe (9.2)» que corria aqui con cuatro
+    # criterios de corredor se retira; `InformeCabezal.mononobe_okabe` queda
+    # en None y `M9.k_ae_del_proyecto` se conserva como formula con sus
+    # tests, sin llamador.
     for condicion in RECUBRIMIENTO:
         recubrimiento = _etapa(
             informe.bloqueos, FASE_CABEZAL,
