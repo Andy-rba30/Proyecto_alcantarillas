@@ -138,3 +138,12 @@ fisuración 5.6.7 (fórmula nueva), d_v acotado, modificador η en el cabezal. S
   fórmulas o citas lo corrige Fable. (El dueño preguntó por hacerlo entero con Fable; se le explicó la diferencia y siguió la
   recomendación.)
 - Confirmado también (15:15): el piso de la zapata armada por E.060 15.7 (0.37 → 0.404 m) aplicado en la verificación de T-7.
+
+### Decisiones del dueño para T-12 — 2026-11-13 ~17:05 UTC: «sigue con tus recomendaciones»
+1. **Licencia**: TODOS LOS DERECHOS RESERVADOS por ahora (archivo de licencia que lo diga, con la nota de que los PDF de normas
+   no son del autor ni se licencian); pasar a MIT es una decisión posterior a la sustentación. No se escribe MIT en T-12.
+2. **Autor**: el dueño no dio su nombre → se usa el usuario de GitHub del repositorio (`Andy-rba30`, ya público) en la licencia
+   y en `pyproject.toml`, con una línea que diga dónde cambiarlo por el nombre de la carátula. El correo NO se incluye.
+3. **Dos vistas de la memoria** (resumida para imprimir + completa como anexo digital): entra en T-12 SÓLO si al lanzarlo quedan
+   ≥ 8 puntos libres del límite semanal de todos los modelos; si no, va al lote posterior a la cadena (después del reinicio del
+   jueves 19-nov 17:00 UTC), junto con la digitalización de las Figuras 3.3–3.4 de HEC-14. T-12 lo deja en ficha con símbolo.

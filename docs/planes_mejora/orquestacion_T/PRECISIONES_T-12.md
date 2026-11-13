@@ -1,4 +1,4 @@
-# Precisiones del orquestador para T-12 (repositorio listo para sustentación) — cuarta sesión (BORRADOR: falta la respuesta del dueño a tres preguntas)
+# Precisiones del orquestador para T-12 (repositorio listo para sustentación) — cuarta sesión (decisiones del dueño del 13-nov incorporadas)
 
 Base: `origin/main` con T-11 integrado. SIN CAMBIOS DE CÁLCULO. Lee `ORQ/ORQUESTACION.md` (ENMIENDA DE LA CUARTA SESIÓN),
 `ORQ/INFORME_T-10_final.md` y `ORQ/INFORME_T-11_final.md` («lo que T-12 debe saber»), y la sección «Cuarta sesión» de
@@ -27,12 +27,15 @@ Base: `origin/main` con T-11 integrado. SIN CAMBIOS DE CÁLCULO. Lee `ORQ/ORQUES
 - **Punto 3 (fixtures)**: la cabecera de advertencia en las memorias HTML de la línea base NO puede romper `test_linea_base`
   (se regeneran por su script): la advertencia la pone el generador cuando el CSV/los datos son de fixture, o un envoltorio
   declarado; decide la vía que no falsee una memoria real y dila.
-- **Punto 4 (LICENSE, pyproject, README)**: [PENDIENTE DEL DUEÑO: licencia y nombre del autor]. `pyproject.toml` con las
+- **Punto 4 (LICENSE, pyproject, README)**: DECIDIDO POR EL DUEÑO: **todos los derechos reservados** (NO
+  MIT por ahora: el archivo `LICENSE` lo dice, con la nota de que los PDF de normas no son del autor ni se licencian, y que abrirlo
+  bajo MIT es una decisión posterior a la sustentación); autor = el usuario de GitHub del repositorio (`Andy-rba30`), con una
+  línea que diga dónde cambiarlo por el nombre de la carátula; el correo del autor NO se escribe en ningún archivo. `pyproject.toml` con las
   dependencias que `requirements*.txt` ya fijan (no añadas ninguna; weasyprint y ttkbootstrap opcionales como hoy). README de
   usuario: instalación, entradas (remite a `docs/contrato_entradas.md` y a la guía), corrida, salidas, alcance declarado (lo que
   el programa NO hace: armado de la sección del marco de la Familia C, cabezal paralelo a la vía, iteración de zapata, planos,
   hidrología más allá del racional…), y lo que queda para después de la cadena (Figuras 3.3–3.4 de HEC-14, `max(V_c, V_erosion)`).
-- **Memoria en dos vistas** [PENDIENTE DE CONFIRMAR CON EL DUEÑO]: memoria RESUMIDA para imprimir (por punto: resultados,
+- **Memoria en dos vistas** [CONDICIONAL: el orquestador te dirá al lanzarte si entra en T-12 o se difiere con ficha al lote posterior a la cadena, según la cuota]: memoria RESUMIDA para imprimir (por punto: resultados,
   veredictos, avisos, criterios adoptados y pendientes) y memoria COMPLETA como hoy (anexo digital), las dos de la MISMA corrida
   (`ContextoCorrida`), sin aritmética en M11, con test de que la resumida no publica ningún número que la completa no tenga.
 - **Punto 5**: `docs/manifiesto_registro_normativo.md` es GENERADO: el estado final de las fuentes sale del registro
