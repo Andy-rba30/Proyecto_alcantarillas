@@ -205,9 +205,9 @@ incluido push a `origin/main` y medición del par sobre ese árbol.
 
 ## ENMIENDA DE LA SEXTA SESIÓN (2026-11-13 19:00 UTC) — gana sobre TODO lo de arriba donde discrepe (sustituye a la de la quinta)
 
-- **Base**: `origin/main` = `14f6138` (T-0 a T-10 integrados, cabezal completo). Par con `NORMAS_DIR`: **6337 passed /
-  23 skipped / 6360 collected** (sin `NORMAS_DIR`: 6319 / 41). 141 criterios, 20 sin valor. Rama `tesis/T-11` en `c774035`
-  (FASE A de T-11: 6387 / 23 / 1 xfailed, collected 6411).
+- **Base (desde las 21:43 UTC)**: `origin/main` = `f77c5d4` (T-0 a T-11 integrados). Par con `NORMAS_DIR`: **6446 passed /
+  23 skipped / 6469 collected** (sin `NORMAS_DIR`: 6423 / 46). 141 criterios, 20 sin valor, 507 citas. (Antes: `14f6138`,
+  6337 / 23 / 6360.)
 - **Rutas de ESTA sesión**:
   - `ORQ` = `/home/user/wt/estado/docs/planes_mejora/orquestacion_T/` (`/home/user/wt/estado` es un enlace simbólico a
     `/home/user/wt/estado-real`, worktree de `tesis/orquestacion-estado`; SÓLO LECTURA para los agentes);
