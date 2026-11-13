@@ -53,6 +53,7 @@ Entorno: `pip install -r requirements.txt -r requirements-dev.txt openpyxl`; `ex
 ## QUINTA SESIÓN (abierta 2026-11-13 17:16 UTC; orquestador en Opus 5.5)
 - Entorno: Normas y Cotas clonados en `/home/user/andy-rba30/`; worktrees `/home/user/wt/{main,T-11}` y `/home/user/orq` (= `/home/user/wt/estado`); SP nuevo (ENMIENDA DE LA QUINTA SESIÓN en `ORQUESTACION.md`). Límites a las 17:16: «Semanal · todos» 59 % (reinicia HOY 19:00 UTC según el evento); el dueño avisa que Fable se restablece a las 14:00 de Perú (19:00 UTC): la auditoría Fable de T-11 se lanza al restablecerse.
 - 17:25 UTC — suite de `14f6138` en marcha para confirmar el par; **continuación de T-11 FASE A lanzada con OPUS** (worktree `/home/user/wt/T-11`; `ENCARGO_T-11.md` + `PRECISIONES_T-11.md` + «continúa desde `bc3531b`»; si se corta: retomar desde `origin/tesis/T-11`).
+- 17:22 UTC — comprobación previa para T-12: los 18 PDF de `normas/` de la app están IGUALES (sha1) en el repositorio Normas: se pueden retirar sin que el dueño suba nada. Encargo de la auditoría Fable de T-11 listo (`ENCARGO_AUDITORIA_T-11_fable.md`); recordatorio programado a las 19:03 UTC.
 - (histórico) auditoría de T-7b → correcciones (ALTA de fórmula/cita: Fable; resto Opus) → integración (Opus) → T-7c (Fable) (Opus; Fable sólo para correcciones ALTA de fórmulas/citas), después T-7b → T-7c (Fable), T-10 → T-11 → T-12.
 
 ## Estado de las ramas al cerrar la tercera sesión (tercera sesión, reanudada 2026-11-12 15:35 UTC) — ramas en el remoto; NADA de esto en main todavía
