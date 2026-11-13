@@ -1,4 +1,4 @@
-# Sello · fecha: 2026-11-13 · commit: ab36ef3+cambios-sin-commit · alcance: registro completo, una fila por Cita: 507 citas de 18 fuentes · suite: 0 passed, 0 skipped (PROVISIONAL: FASE A de T-10, se resella con el par medido)
+# Sello · fecha: 2026-11-13 · commit: 86c6240 · alcance: registro completo, una fila por Cita: 507 citas de 18 fuentes · suite: 6326 passed, 23 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 cita_id,fuente_id,norma,edicion,numeral,titulo_numeral,pagina_impresa,pagina_pdf,caracter,metodo_verificacion,fecha_verificacion,tiene_interpretacion,discrepancias_que_la_tocan,consumidores_declarados
 AASHTO_LRFD_9.1.2#BRIDGE,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",1.2,DEFINITIONS,1-2,17,definicion,ambos,2026-09-22,no,DIS-LUZ-DENOMINACION [abierta],fundamento F2.LUZ (Fase 2 - Clasificacion y periodo de retorno)
 AASHTO_LRFD_9.1.3.2.1#ETA,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",1.3.2.1,General,1-3,18,exigencia,texto,2026-11-13,sí,,
