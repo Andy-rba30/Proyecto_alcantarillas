@@ -188,3 +188,17 @@ abiertos 3 y 4); y, si no entraron en T-12, las dos vistas de la memoria.
 **Lote posterior, lista vigente:** Figuras 3.3–3.4 de HEC-14; `max(V_c, V_erosion)` en M4; juego de cuencas coherente (baja);
 las dos de MD de T11-03 (abiertos 3 y 4); la forma de `n_manning_cajon` (T11-10); las dos vistas de la memoria sólo si no
 entran en T-12 (entran: FASE A lanzada con ellas).
+
+### Decisiones del dueño sobre las preguntas de la FASE A de T-12 — 2026-11-13 ~22:55 UTC: «sí, sigue con tus recomendaciones»
+1. **PDF en la historia de git** (T12-01): NO se reescribe la historia. Recomendación aceptada: dejar privado también el
+   repositorio de la app hasta la sustentación (lo hace el DUEÑO en GitHub; el orquestador no cambia la visibilidad). Reescribir
+   sólo si se publica, y después. `INF-5.2.3` → Cerrado con esa salvedad.
+2. **Botón de la memoria resumida en la ventana** (T12-04): al LOTE POSTERIOR; hoy sale por `cli.py … --html-resumida`.
+3. **Nombre de la carátula y versión**: quedan `Andy-rba30` y `0.1.0` como marcadores; el dueño los da antes de la sustentación
+   (el README y la ficha T12-05 dicen dónde cambiarlos). PENDIENTE DEL DUEÑO.
+4. **Siete documentos técnicos de origen de proceso que quedan en `docs/`** (T12-02): se dejan.
+5. **Auditoría de T-12**: con Opus (no hace falta Fable: T-12 no toca cálculo). Fable sólo si la auditoría encontrara cálculo
+   cambiado o una fórmula/cita fuera de lugar.
+**Lote posterior, lista vigente:** Figuras 3.3–3.4 de HEC-14; `max(V_c, V_erosion)` en M4; juego de cuencas coherente (baja);
+las dos de MD de T11-03 (abiertos 3 y 4); la forma de `n_manning_cajon` (T11-10); el botón de la memoria resumida en la GUI
+(T12-04).
