@@ -128,7 +128,7 @@ presión (H3) (la cuña ya la aprobó el auditor de T-7c); T-7c — momento de p
 fisuración 5.6.7 (fórmula nueva), d_v acotado, modificador η en el cabezal. Si encuentra algo, lo corrige FABLE directamente
 (commit propio `tesis(T-7): …` sobre main, con el ritual). T-10 arranca en paralelo (no toca cálculo).
 
-### Decisiones del dueño del 2026-11-13 ~17:20 UTC — «está bien, sigamos con lo que recomiendas»
+### Decisiones del dueño del 2026-11-13 ~16:15 UTC — «está bien, sigamos con lo que recomiendas»
 - **T-10**: se ACEPTAN los techos de tamaño remedidos (107.5 KB y 31.5 páginas por punto); V9 NO emite veredicto cuando el tope es
   de catálogo o de la progresión del marco (informativo, con su origen); la corrida con hidrología de prueba para que la Fase
   1-bis entre en el índice de fórmulas se hace en T-11.
