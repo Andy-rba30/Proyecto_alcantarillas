@@ -1,4 +1,4 @@
-# Prompt para reanudar la cadena T en una sesión NUEVA (copiar tal cual) — actualizado 2026-11-13 23:10 UTC
+# Prompt para reanudar la cadena T en una sesión NUEVA (copiar tal cual) — actualizado 2026-11-13 23:38 UTC
 
 ```text
 Eres la sesión orquestadora de la «Cadena de prompts T» (ábrela con el modelo Opus 5.5: orquestar no necesita Fable y cada ronda del orquestador lo gasta) sobre Andy-rba30/Proyecto_alcantarillas, que se interrumpió. Retómala donde quedó.
@@ -9,8 +9,8 @@ Eres la sesión orquestadora de la «Cadena de prompts T» (ábrela con el model
 
 3. Instala dependencias (requirements.txt, requirements-dev.txt, openpyxl), exporta NORMAS_DIR=/home/user/andy-rba30/normas. El par de origin/main (f77c5d4, T-0 a T-11) lo midió el agente de integración sobre origin/main: 6446 passed / 23 skipped / 6469 collected con NORMAS_DIR («PyMuPDF sí · Tk no»; no hay tkinter); no hace falta volver a medirlo salvo que origin/main haya cambiado.
 
-4. Estado al 13-nov 23:10 UTC (sexta sesión): T-11 está en main (f77c5d4). T-12: FASE A hecha (tesis/T-12, 78a7780) y auditoría corta LLEGADA (AUDITORIA_T-12.md: AJUSTADO, 1 ALTA, 4 MEDIA, 3 BAJA; ningún cálculo cambió; no la repitas). Ya NO queda trabajo de Fable. Falta sólo, con OPUS:
-   a) Cierre de T-12 (correcciones + integración en main): lanzado a las 23:10 con ENCARGO_T-12_cierre.md. Si origin/main sigue en f77c5d4, relánzalo con ese encargo («continúa desde origin/tesis/T-12: mira git log»). Con tesis(T-12) en main la cadena queda cerrada.
+4. Estado al 13-nov 23:38 UTC (sexta sesión): T-11 está en main (f77c5d4). T-12: FASE A hecha (tesis/T-12, 78a7780) y auditoría corta LLEGADA (AUDITORIA_T-12.md: AJUSTADO, 1 ALTA, 4 MEDIA, 3 BAJA; ningún cálculo cambió; no la repitas). Ya NO queda trabajo de Fable. Falta sólo, con OPUS:
+   a) Cierre de T-12 (correcciones + integración en main): ENCARGO_T-12_cierre.md. Hubo un reinicio del contenedor a las 23:32; el trabajo quedó en el remoto: tesis/T-12 (f2b7880: FASE A + correcciones H1–H8, en commits wip) y tesis/T-12-cierre-wip (un commit tesis(T-12) aplastado sobre f77c5d4, con tracker y sellos, SIN empujar a main). Relanzado a las 23:38. Si origin/main sigue en f77c5d4, relánzalo: «comprueba qué está hecho contra ENCARGO_T-12_cierre.md desde origin/tesis/T-12-cierre-wip, completa, mide las cuatro suites (entregable con y sin NORMAS_DIR, proceso/tests, exportación con git archive) y empuja a main». Con tesis(T-12) en main la cadena queda cerrada.
    Mis decisiones del 13-nov 19:50 UTC (ya en DECISIONES_DUENO y en ENCARGO_T-11_cierre.md): H9 (HW_salida_m a null donde el perfil descartó la aproximación) se aplica en el cierre de T-11; el juego de cuencas coherente va al lote posterior.
 
 5. Reparto de modelos: Opus 5.5 en esfuerzo extra para todo (implementación, correcciones medias y bajas, integraciones, T-12); Fable SÓLO para la auditoría adversarial de T-11 y para corregir lo que una auditoría encuentre fuera de lugar en fórmulas o citas (y T11-03). Úsalo sólo cuando sea necesario.
