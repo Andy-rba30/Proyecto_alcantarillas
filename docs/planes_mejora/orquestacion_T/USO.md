@@ -69,3 +69,12 @@ NO para auditar, corregir e integrar T-3, T-7a y T-9 ni para T-7b…T-12. Reinic
 **Costes observados en esta sesión (para planificar):** una auditoría adversarial Fable ≈ 0.5 M tokens de subagente ≈ 10–12 puntos
 de «Semanal · Fable»; correcciones + integración de un prompt de cálculo con Fable ≈ 0.7–0.8 M ≈ 20–25 puntos; una FASE A con Opus
 ≈ 0.8–0.9 M ≈ 8–10 puntos de «Semanal · todos». Con el cupo actual, una semana de Fable da para ~4 piezas grandes.
+
+## Cuarta sesión (abierta 2026-11-13 03:56 UTC; orquestador en Fable por el selector, configurada para Opus 5.5)
+
+Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795107600 = jue 19-nov 17:00 UTC para las dos semanales.
+
+| Momento (UTC) | 5 horas | Semanal · todos | Semanal · Fable | Nota |
+|---|---|---|---|---|
+| 2026-11-13 03:56 | s/d (sin aviso) | 33 % | **12 %** | arranque: lectura del estado, clones, suite de `e78a4e7` |
+| 2026-11-13 04:10 | s/d | — | — | lanzadas tres auditorías: T-3 (Fable), T-9 y T-7a (Opus xhigh) |
