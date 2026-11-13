@@ -87,3 +87,4 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795107600 = jue
 | 2026-11-13 08:56 | s/d | **55 %** | **39 %** | T-7b FASE A terminada con Fable (≈ 0.73 M tokens ≈ 18 puntos de Fable); se lanza su auditoría con Fable |
 | 2026-11-13 10:20 | s/d | s/d (55 % a las 08:56) | s/d (39 % a las 08:56; + auditoría de T-7b ≈ 0.53 M tokens) | T-7b en main (`451a10a`; cierre con Opus ≈ 0.80 M tokens). T-7c FASE A lanzada con Fable. El conector que da los límites falló dos veces (credencial): reintentar |
 | 2026-11-13 12:16 | s/d | **65 %** | **55 %** | T-7c FASE A (Fable) avanzada: código, 183+21 tests, mutación; falta el cierre de la suite e informe (`f10b5a8` en `tesis/T-7c`) |
+| 2026-11-13 12:35 | s/d | s/d | s/d | T-7c FASE A terminada con Fable (≈ 0.35 M tokens de subagente); auditoría Fable de T-7c lanzada |
