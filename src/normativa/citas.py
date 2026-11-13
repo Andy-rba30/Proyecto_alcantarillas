@@ -11669,7 +11669,10 @@ E060_22_7_4_ZAPATA = _cita(
           "gravedad en concreto ciclopeo (Art. 22.10). La Via 1 de la §0.2 "
           "saca a E.060 del diseño estructural ARMADO; el ciclopeo no tiene "
           "otra norma en normas/, y por eso este minimo se aplica al cabezal "
-          "de gravedad y no al de voladizo armado."),
+          "de gravedad y no al de voladizo armado. Desde el cierre de T-7c "
+          "es el criterio [N→] 'espesor_min_zapata_concreto_simple_m' (por "
+          "analogia: la excepcion de la §0.2 cubre la durabilidad, no los "
+          "minimos estructurales del Cap. 22; ficha T7C-10)."),
 )
 
 MC_HHD_LAMINA_02A = _cita(
@@ -12920,5 +12923,1209 @@ HDS5_2_2_5_COTA_DE_DANO = _cita(
           "ft en la llanura de inundacion de la FEMA), que exige el perfil "
           "del cauce sin la obra y no esta implementado."),
 )
+
+# ===========================================================================
+# --- T-7c --- (cadena T) · el armado del cabezal y la alternativa ciclopea
+# ===========================================================================
+# Mismo regimen que T-7b: la sesion abrio cada pagina por su capa de texto
+# (y, por imagen, las ecuaciones 5.6.3.2.2-1, 5.7.3.3-3, 5.10.6-1 y 5.6.7-1
+# de AASHTO y la (11-32), (22-7) y (22-9) de E.060, que la capa de texto
+# rompe en glifos sueltos). Lo que estas citas NO dicen, y el registro no
+# les atribuye: que AASHTO tenga un articulo para el cabezal de una
+# alcantarilla (se MODELA como muro de semigravedad en voladizo, T-7b), que
+# E.060 rija una obra vial (se aplica por analogia, [N→], y solo como
+# contraste), ni que alguna de las dos diga si la pantalla de un cabezal
+# cede o no (lo declara 'regimen_resistencia_elementos_cabezal' [A]).
+FECHA_TESIS_T7C = "2026-11-13"
+POR_TESIS_T7C = "tesis/T-7c · lectura directa de la pagina por la sesion"
+TESIS_T7C = (FECHA_TESIS_T7C, POR_TESIS_T7C)
+# Las correcciones de la auditoria de T-7c: mismo regimen, la propia sesion
+# abrio cada pagina (por texto; las ecuaciones 5.6.7-1 y C5.4.2.4-1, ademas
+# por imagen).
+FECHA_CIERRE_T7C = "2026-11-13"
+POR_CIERRE_T7C = ("cierre de tesis/T-7c · lectura directa de la pagina por la "
+                  "sesion")
+CIERRE_T7C = (FECHA_CIERRE_T7C, POR_CIERRE_T7C)
+
+AASHTO_5_5_4_2_FLEXION = _cita(
+    id="AASHTO_LRFD_9.5.5.4.2#FLEXION",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.5.4.2",
+    titulo_numeral="Resistance Factors",
+    pagina_impresa="5-29",
+    pagina_pdf=388,
+    texto_literal=Verbatim(
+        texto=("For tension-controlled reinforced concrete sections as "
+               "specified in Article 5.6.2.1:"),
+        pagina_pdf=388),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("La lista abre con «Resistance factor φ shall be taken as:» y la "
+          "primera viñeta, la de esta cita, imprime «normal weight concrete "
+          "... 0.90». El 0.90 vale solo si la seccion esta controlada por "
+          "traccion (5.6.2.1: deformacion neta del acero >= 0.005); entre "
+          "ese limite y el de compresion la fuente interpola hacia 0.75, "
+          "cosa que el programa no hace: una seccion que no llega a 0.005 "
+          "sale como incumplida (verificacion A1; la FASE A decia A5, que "
+          "es el contraste con E.060)."),
+)
+
+AASHTO_5_5_4_2_CORTE = _cita(
+    id="AASHTO_LRFD_9.5.5.4.2#CORTE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.5.4.2",
+    titulo_numeral="Resistance Factors",
+    pagina_impresa="5-30",
+    pagina_pdf=389,
+    pagina_pdf_titulo=388,
+    texto_literal=Verbatim(
+        texto="For shear and torsion in reinforced concrete sections:",
+        pagina_pdf=389),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("La viñeta imprime «normal weight concrete ... 0.90». Es la misma "
+          "lista de «Resistance factor φ shall be taken as:» que empieza en "
+          "la pagina anterior."),
+)
+
+AASHTO_1_3_2_1_EXTREMO = _cita(
+    id="AASHTO_LRFD_9.1.3.2.1#EXTREMO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="1.3.2.1",
+    titulo_numeral="General",
+    pagina_impresa="1-3",
+    pagina_pdf=18,
+    texto_literal=Verbatim(
+        texto=("For service and extreme event limit states, resistance "
+               "factors shall be taken as 1.0, except for bolts, for which "
+               "the provisions of Article 6.5.5 shall apply, and for "
+               "concrete columns in Seismic Zones 2, 3, and 4, for which the "
+               "provisions of Articles 5.11.3 and 5.11.4.1.2 shall apply."),
+        pagina_pdf=18),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("Es el factor de resistencia ESTRUCTURAL del Evento Extremo I: 1.0 "
+          "en flexion y en cortante de la pantalla y de la zapata (no son "
+          "pernos ni columnas). No es el del terreno, que T-7b toma de "
+          "11.5.8. El comentario C1.3.2.1 lo llama «a default» que otras "
+          "secciones pueden pisar; la Seccion 5 solo lo pisa para columnas."),
+)
+
+AASHTO_5_6_2_1_TRACCION = _cita(
+    id="AASHTO_LRFD_9.5.6.2.1#TRACCION",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.6.2.1",
+    titulo_numeral="General",
+    pagina_impresa="5-35",
+    pagina_pdf=394,
+    pagina_pdf_titulo=392,
+    texto_literal=Verbatim(
+        texto=("shall be taken as 0.005 for nonprestressed reinforcement "
+               "with a specified minimum yield strength"),
+        pagina_pdf=394),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("La oracion completa: «The tension-controlled strain limit, εtl, "
+          "shall be taken as 0.005 for nonprestressed reinforcement with a "
+          "specified minimum yield strength, fy ≤ 75.0 ksi, and prestressed "
+          "reinforcement» (el verbatim se corta donde la capa de texto "
+          "rompe los simbolos). En la pagina anterior, las hipotesis: "
+          "deformacion ultima del concreto 0.003, la resistencia a traccion "
+          "del concreto se desprecia, y el bloque de compresion puede "
+          "suponerse rectangular."),
+)
+
+AASHTO_5_6_2_2_BLOQUE = _cita(
+    id="AASHTO_LRFD_9.5.6.2.2#BLOQUE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.6.2.2",
+    titulo_numeral="Rectangular Stress Distribution",
+    pagina_impresa="5-36",
+    pagina_pdf=395,
+    texto_literal=Verbatim(
+        texto=("shall be taken as 0.85 for design compressive strengths of "
+               "concrete not exceeding 10.0 ksi."),
+        pagina_pdf=395),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("Es el factor α1 del bloque rectangular («The stress block factor "
+          "α1 shall be taken as 0.85 ...»). El mismo parrafo fija β1 = 0.85 "
+          "hasta 4.0 ksi, con reduccion de 0.05 por cada 1.0 ksi de exceso "
+          "y piso de 0.65: a = β1·c."),
+)
+
+AASHTO_5_6_3_2_MR = _cita(
+    id="AASHTO_LRFD_9.5.6.3.2.1#MR",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.6.3.2.1",
+    titulo_numeral="Factored Flexural Resistance",
+    pagina_impresa="5-40",
+    pagina_pdf=399,
+    texto_literal=Verbatim(
+        texto="The factored flexural resistance, Mr, shall be taken as:",
+        pagina_pdf=399),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("Ec. 5.6.3.2.1-1: M_r = φ·M_n. La resistencia nominal de la "
+          "seccion rectangular sale de la ec. 5.6.3.2.2-1 con b_w = b "
+          "(5.6.3.2.3, pag. 5-41), que sin presfuerzo ni acero de compresion "
+          "se reduce a M_n = A_s·f_s·(d_s − a/2), con a = β1·c y c = "
+          "A_s·f_s / (α1·f'c·β1·b) (ec. 5.6.3.1.2-4 sin presfuerzo). La "
+          "ecuacion se leyo por imagen: la capa de texto la rompe. El "
+          "comentario C5.6.3.2.1 permite diseñar con el momento en la cara "
+          "del apoyo."),
+)
+
+AASHTO_5_6_3_3_MINIMO = _cita(
+    id="AASHTO_LRFD_9.5.6.3.3#MINIMO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.6.3.3",
+    titulo_numeral="Minimum Reinforcement",
+    pagina_impresa="5-42",
+    pagina_pdf=401,
+    texto_literal=Verbatim(
+        texto=("the amount of prestressed and nonprestressed tensile "
+               "reinforcement shall be adequate to develop a factored "
+               "flexural resistance, Mr, greater than or equal to the lesser "
+               "of the following:"),
+        pagina_pdf=401),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("Los dos terminos: «1.33 times the factored moment required by "
+          "the applicable strength load combination» y el momento de "
+          "agrietamiento de la ec. 5.6.3.3-1, que sin presfuerzo y en "
+          "seccion monolitica queda M_cr = γ3·γ1·f_r·S, con γ1 = 1.6 («for "
+          "all other concrete structures») y γ3 = 0.67 para el acero AASHTO "
+          "M 31 (ASTM A615) Grado 60 o 0.75 para el A706 Grado 60 (pag. "
+          "5-43). f_r es el modulo de rotura de 5.4.2.6."),
+)
+
+AASHTO_5_4_2_6_FR = _cita(
+    id="AASHTO_LRFD_9.5.4.2.6#FR",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.4.2.6",
+    titulo_numeral="Modulus of Rupture",
+    pagina_impresa="5-20",
+    pagina_pdf=379,
+    texto_literal=Verbatim(
+        texto=("Unless determined by physical tests, the modulus of "
+               "rupture, fr, for lightweight concrete with specified "
+               "compressive strengths up to 10.0 ksi and normal weight "
+               "concrete with specified compressive strengths up to 15.0 ksi "
+               "may be taken as"),
+        pagina_pdf=379),
+    caracter=Caracter.PERMISO,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("Sigue «0.24 λ √f'c» (ksi), leido por imagen. En MPa: "
+          "0.24·√6.894757 = 0.630·√f'c, que es "
+          "`constantes_normativas.MODULO_ROTURA_AASHTO_SI`."),
+)
+
+AASHTO_5_7_3_3_VN = _cita(
+    id="AASHTO_LRFD_9.5.7.3.3#VN",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.7.3.3",
+    titulo_numeral="Nominal Shear Resistance",
+    pagina_impresa="5-67",
+    pagina_pdf=426,
+    texto_literal=Verbatim(
+        texto=("The nominal shear resistance, Vn, shall be determined as "
+               "the lesser of both of the following:"),
+        pagina_pdf=426),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("Ec. 5.7.3.3-1: V_n = V_c + V_s + V_p; ec. 5.7.3.3-2: V_n = "
+          "0.25·f'c·b_v·d_v + V_p; ec. 5.7.3.3-3: V_c = 0.0316·β·λ·√f'c·"
+          "b_v·d_v (kip, ksi, in), leidas por imagen. El 0.0316 es "
+          "1/√1000, la conversion psi → ksi, no una constante fisica; en SI "
+          "es `constantes_normativas.VC_COEFICIENTE_AASHTO_SI` (0.0830 "
+          "MPa^0.5). El cabezal no lleva refuerzo transversal ni "
+          "presfuerzo: V_s = V_p = 0."),
+)
+
+AASHTO_5_7_3_4_1_SIMPLIFICADO = _cita(
+    id="AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.7.3.4.1",
+    titulo_numeral="Simplified Procedure for Nonprestressed Sections",
+    pagina_impresa="5-70",
+    pagina_pdf=429,
+    texto_literal=Verbatim(
+        texto=("For concrete footings in which the distance from point of "
+               "zero shear to the face of the column, pier, or wall is less "
+               "than 3dv with or without transverse reinforcement, and for "
+               "other nonprestressed concrete sections not subjected to "
+               "axial tension and containing at least the minimum amount of "
+               "transverse reinforcement specified in Article 5.7.2.5, or "
+               "having an overall depth of less than 16.0 in., the following "
+               "values may be used:"),
+        pagina_pdf=429),
+    caracter=Caracter.PERMISO,
+    sesion=TESIS_T7C,
+    nota=("Los valores: «β = 2.0» y «θ = 45 degrees». Es un PERMISO con "
+          "condiciones, y el programa las comprueba una a una antes de "
+          "usarlo: zapata con la distancia del cortante nulo a la cara del "
+          "muro menor que 3·d_v, o seccion de peralte total menor que 16.0 "
+          "in (0.4064 m) -- la pantalla y los aleros no llevan refuerzo "
+          "transversal --. Fuera de ellas la fuente manda el procedimiento "
+          "general de 5.7.3.4.2, que el programa no implementa: se detiene "
+          "con «metodo no evaluable»."),
+)
+
+AASHTO_C5_7_3_4_1_GRANDES = _cita(
+    id="AASHTO_LRFD_9.C5.7.3.4.1#GRANDES",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C5.7.3.4.1",
+    titulo_numeral="Simplified Procedure for Nonprestressed Sections",
+    pagina_impresa="5-70",
+    pagina_pdf=429,
+    texto_literal=Verbatim(
+        texto=("have demonstrated that these traditional expressions can be "
+               "seriously unconservative for large members not containing "
+               "transverse reinforcement."),
+        pagina_pdf=429),
+    caracter=Caracter.DEFINICION,
+    derivado_de="AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO",
+    sesion=TESIS_T7C,
+    nota=("Por que el permiso tiene limite de peralte: con β = 2.0 y θ = 45 "
+          "grados las expresiones son «essentially identical to those "
+          "traditionally used», y esas son inseguras en elementos grandes "
+          "sin estribos. Es la razon de no extender el simplificado a una "
+          "pantalla o una zapata mas gruesa que el limite."),
+)
+
+AASHTO_5_7_2_8_DV = _cita(
+    id="AASHTO_LRFD_9.5.7.2.8#DV",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.7.2.8",
+    titulo_numeral="Shear Stress on Concrete",
+    pagina_impresa="5-65",
+    pagina_pdf=424,
+    pagina_pdf_titulo=423,
+    texto_literal=Verbatim(
+        texto=("effective shear depth taken as the distance, measured "
+               "perpendicular to the neutral axis, between the resultants "
+               "of the tensile and compressive forces due to flexure; it "
+               "need not be taken to be less than the greater of 0.9de or "
+               "0.72h (in.)"),
+        pagina_pdf=424),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7C,
+    nota=("Definicion de d_v. En la seccion rectangular con una capa de "
+          "acero la distancia entre resultantes es d_e − a/2 (el comentario "
+          "la escribe como M_n / (A_s·f_y), ec. C5.7.2.8-1)."),
+    interpretacion=Interpretacion(
+        texto=("El proyecto toma d_v = min[max(d_e − a/2, 0.9·d_e, 0.72·h), "
+               "d_e]: el piso de la fuente, pero sin pasar del peralte "
+               "efectivo. Con el recubrimiento de cota de una pantalla de "
+               "0.30 m, 0.72·h = 0.216 m supera a d_e = 0.202 m, y el piso "
+               "daria un brazo de cortante mayor que la distancia del acero "
+               "a la cara comprimida. Se imprime el valor de la letra al "
+               "lado y se avisa cuando difieren (correcciones de T-7c, H8)."),
+        en_contra=(
+            "la letra solo dice que d_v «need not be taken to be less "
+            "than» el mayor de 0.9·d_e y 0.72·h: con 0.72·h > d_e permite "
+            "un d_v mayor que d_e, y el tope es una restriccion que la "
+            "fuente no escribe",
+        ),
+        a_favor=(
+            "la definicion de d_v es la distancia entre las resultantes de "
+            "traccion y compresion, que no puede exceder d_e; los pisos "
+            "estan pensados para d_e del orden de 0.8·h",
+            "el tope solo baja la resistencia del concreto: es el lado "
+            "seguro",
+        ),
+    ),
+)
+
+AASHTO_5_7_2_3_TRANSVERSAL = _cita(
+    id="AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.7.2.3",
+    titulo_numeral="Regions Requiring Transverse Reinforcement",
+    pagina_impresa="5-61",
+    pagina_pdf=420,
+    texto_literal=Verbatim(
+        texto=("Except for slabs, footings, and culverts, transverse "
+               "reinforcement shall be provided where:"),
+        pagina_pdf=420),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("La condicion, ec. 5.7.2.3-1, leida por imagen: V_u > "
+          "0.5·φ·(V_c + V_p). Las losas y las zapatas quedan exceptuadas; "
+          "un muro no se nombra."),
+    interpretacion=Interpretacion(
+        texto=("La pantalla del cabezal y sus aleros se calculan como una "
+               "losa en voladizo de un metro de ancho, sin refuerzo "
+               "transversal, y el proyecto les aplica la excepcion de las "
+               "losas: se exige V_u <= φ·V_c. Cuando V_u pasa de la mitad de "
+               "esa resistencia el programa lo AVISA, porque con la lectura "
+               "contraria ese muro pediria estribos."),
+        en_contra=(
+            "el articulo exceptua «slabs, footings, and culverts» y no "
+            "nombra los muros: leida a la letra, una pantalla con V_u > "
+            "0.5·φ·V_c pediria refuerzo transversal",
+            "el cabezal no es un «culvert» en el sentido de la excepcion, "
+            "que se refiere al conducto enterrado de la Seccion 12",
+        ),
+        a_favor=(
+            "la pantalla trabaja como losa en una direccion, en voladizo "
+            "desde la zapata, bajo carga repartida perpendicular a su "
+            "plano: es el comportamiento que la excepcion describe",
+            "E.060 11.10.1 manda diseñar el cortante perpendicular al plano "
+            "de un muro con las disposiciones para losas",
+        ),
+    ),
+)
+
+AASHTO_5_10_6_TEMPERATURA = _cita(
+    id="AASHTO_LRFD_9.5.10.6#TEMPERATURA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.10.6",
+    titulo_numeral="Shrinkage and Temperature Reinforcement",
+    pagina_impresa="5-174",
+    pagina_pdf=533,
+    texto_literal=Verbatim(
+        texto=("For bars or welded wire reinforcement, the area of "
+               "reinforcement per foot, on each face and in each direction, "
+               "shall satisfy the following:"),
+        pagina_pdf=533),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("Ec. 5.10.6-1, leida por imagen: A_s >= 1.30·b·h / [2·(b + h)·"
+          "f_y], con el tope 0.11 <= A_s <= 0.60 (ec. 5.10.6-2), en in2/ft "
+          "por cara y por direccion; b es el menor ancho de la seccion y h "
+          "su menor espesor (in), f_y en ksi. El comentario explica el "
+          "1.30: es 0.0018·60 ksi·12 in/ft, y la ecuacion reparte 0.0018·b·h "
+          "en el perimetro. En SI: "
+          "`constantes_normativas.TEMPERATURA_COEFICIENTE_AASHTO_SI`."),
+)
+
+AASHTO_5_10_6_ESPACIAMIENTO = _cita(
+    id="AASHTO_LRFD_9.5.10.6#ESPACIAMIENTO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.10.6",
+    titulo_numeral="Shrinkage and Temperature Reinforcement",
+    pagina_impresa="5-175",
+    pagina_pdf=534,
+    pagina_pdf_titulo=533,
+    texto_literal=Verbatim(
+        texto=("For all other situations, 3.0 times the component thickness "
+               "but not less than 18.0 in."),
+        pagina_pdf=534),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("Es la tercera viñeta de «Spacing shall not exceed the "
+          "following:»; la primera, «12.0 in. for walls and footings greater "
+          "than 18.0 in. thick». La tercera esta escrita «but not less than "
+          "18.0 in.»: leida a la letra, el tope es el MAYOR de tres veces el "
+          "espesor y 18.0 in, que casi nunca gobierna; el espaciamiento "
+          "maximo del armado lo fijan 5.10.3.2 y E.060 14.3.3."),
+)
+
+AASHTO_5_10_3_2_ESPACIAMIENTO = _cita(
+    id="AASHTO_LRFD_9.5.10.3.2#ESPACIAMIENTO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.10.3.2",
+    titulo_numeral="Maximum Spacing of Reinforcing Bars",
+    pagina_impresa="5-172",
+    pagina_pdf=531,
+    texto_literal=Verbatim(
+        texto=("Unless otherwise specified, the spacing of the "
+               "reinforcement in walls and slabs shall not be greater than "
+               "the lesser of the following:"),
+        pagina_pdf=531),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("Las dos viñetas: «1.5 times the thickness of the member; or» y "
+          "«18.0 in.» (0.4572 m)."),
+)
+
+AASHTO_5_12_8_4_CARA = _cita(
+    id="AASHTO_LRFD_9.5.12.8.4#CARA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.12.8.4",
+    titulo_numeral="Moment in Footings",
+    pagina_impresa="5-250",
+    pagina_pdf=609,
+    texto_literal=Verbatim(
+        texto=("The critical section for flexure shall be taken at the face "
+               "of the column, pier, or wall."),
+        pagina_pdf=609),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("Es la seccion en que T-7b entrega el momento de la punta y del "
+          "talon: la cara de la pantalla. El 5.12.8.2 manda que la zapata "
+          "que soporta un muro «shall be assumed to act as a cantilever»."),
+)
+
+AASHTO_C5_12_8_6_1_TALON = _cita(
+    id="AASHTO_LRFD_9.C5.12.8.6.1#TALON",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C5.12.8.6.1",
+    titulo_numeral="Critical Sections for Shear",
+    pagina_impresa="5-251",
+    pagina_pdf=610,
+    texto_literal=Verbatim(
+        texto=("In the general case of a cantilever retaining wall, where "
+               "the downward load on the heel is larger than the upward "
+               "reaction of the soil under the heel, the critical section "
+               "for shear is taken at the back face of the stem"),
+        pagina_pdf=610),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7C,
+    nota=("En el talon el cortante se toma en la cara trasera de la "
+          "pantalla, no a d_v de ella. En la punta la fuente (5.12.8.6.1 → "
+          "5.7.3.2) permite tomarlo a d_v de la cara cuando la reaccion "
+          "comprime el extremo: el programa lo toma en la cara tambien alli, "
+          "que es mas cortante (lado seguro, declarado)."),
+)
+
+AASHTO_11_6_1_2_TALON = _cita(
+    id="AASHTO_LRFD_9.11.6.1.2#TALON",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.1.2",
+    titulo_numeral="Loading",
+    pagina_impresa="11-20",
+    pagina_pdf=1489,
+    pagina_pdf_titulo=1488,
+    texto_literal=Verbatim(
+        texto=("Where spread footings are used, the rear projection shall "
+               "be designed as a cantilever supported at the abutment stem "
+               "and loaded with the full weight of the superimposed "
+               "material, unless a more exact method is used."),
+        pagina_pdf=1489),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("El talon se arma con el PESO ENTERO de lo que tiene encima "
+          "(relleno, sobrecarga, componente vertical del empuje y peso "
+          "propio), sin descontar la reaccion del terreno. La solicitacion "
+          "que T-7b entrega para el talon SI la descuenta (es el «more "
+          "exact method»): el armado toma la mayor de las dos y la otra se "
+          "imprime."),
+)
+
+AASHTO_11_6_1_5_1_TEMPERATURA = _cita(
+    id="AASHTO_LRFD_9.11.6.1.5.1#TEMPERATURA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="11.6.1.5.1",
+    titulo_numeral="Conventional Walls and Abutments",
+    pagina_impresa="11-20",
+    pagina_pdf=1489,
+    texto_literal=Verbatim(
+        texto=("Reinforcement to resist the formation of temperature and "
+               "shrinkage cracks shall be designed as specified in Article "
+               "5.10.6."),
+        pagina_pdf=1489),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("La remision del muro convencional de la Seccion 11 al acero de "
+          "temperatura de la Seccion 5."),
+)
+
+AASHTO_10_6_5_LINEAL = _cita(
+    id="AASHTO_LRFD_9.10.6.5#LINEAL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.6.5",
+    titulo_numeral="Structural Design",
+    pagina_impresa="10-86",
+    pagina_pdf=1375,
+    texto_literal=Verbatim(
+        texto=("For structural design of an eccentrically loaded "
+               "foundation, a triangular or trapezoidal contact stress "
+               "distribution based on factored loads shall be used for "
+               "footings bearing on all soil and rock conditions."),
+        pagina_pdf=1375),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("Es texto del ARTICULO (columna izquierda de la pagina, "
+          "comprobado por la posicion del bloque): el comentario C10.6.5, a "
+          "su derecha, dice que la distribucion lineal es «slightly "
+          "conservative». El articulo abre con «The structural design of "
+          "footings shall comply with the requirements given in Section 5». "
+          "La presion UNIFORME sobre el ancho efectivo B − 2e es la de la "
+          "capacidad portante (10.6.1.4) y la que el ensamble de T-7b usa "
+          "en E1 y en sus solicitaciones de la zapata: para ARMAR la zapata "
+          "la fuente pide la lineal, y es la que el armado calcula "
+          "(`M9.presion_de_contacto_lineal`)."),
+)
+
+AASHTO_C3_11_1_REPOSO = _cita(
+    id="AASHTO_LRFD_9.C3.11.1#REPOSO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C3.11.1",
+    titulo_numeral="General",
+    pagina_impresa="3-117",
+    pagina_pdf=171,
+    texto_literal=Verbatim(
+        texto=("Walls that can tolerate little or no movement should be "
+               "designed for at-rest earth pressure."),
+        pagina_pdf=171),
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T7C,
+    nota=("Sigue: «Walls which can move away from the soil mass should be "
+          "designed for pressures between active and at-rest conditions, "
+          "depending on the magnitude of the tolerable movements». La Tabla "
+          "C3.11.1-1 da el movimiento relativo que moviliza el empuje "
+          "activo: de 0.001·H (arena densa) a 0.010·H (arcilla compactada)."),
+    interpretacion=Interpretacion(
+        texto=("El cabezal es monolitico con el barril y con sus aleros, "
+               "que lo arriostran en sus dos extremos y a media longitud: "
+               "el proyecto lee que su pantalla tolera poco movimiento y "
+               "arma sus elementos con el empuje en REPOSO "
+               "('regimen_resistencia_elementos_cabezal' [A] = "
+               "'no_cedente_k0'), sin tocar la estabilidad externa, que es "
+               "la de un muro que cede (T-7b). La decision es del dueño del "
+               "proyecto (2026-11-13)."),
+        en_contra=(
+            "el comentario C3.11.5.2 de la misma fuente dice que un muro en "
+            "voladizo tipico de mas de 5.0 ft desarrolla la condicion "
+            "activa por la deformacion del tallo y el giro de la "
+            "cimentacion (cita AASHTO_LRFD_9.C3.11.5.2#ACTIVO): leido asi, "
+            "el reposo sobra en los cabezales altos",
+            "ninguna fuente dice que un cabezal de alcantarilla sea un muro "
+            "que no cede; los ejemplos de C11.6.5.4 son estribos integrales "
+            "y estribos con aleros estructurales",
+            "el K0 de 3.11.5.2-1 es de terreno HORIZONTAL y detras del "
+            "cabezal el relleno sube: el empuje en reposo real es mayor que "
+            "el calculado, y la fuente no da la formula",
+        ),
+        a_favor=(
+            "el empuje en reposo da mas acero que el activo: la eleccion va "
+            "del lado seguro de la resistencia",
+            "C11.6.5.4 liga el muro que no cede con «K0 conditions for the "
+            "strength limit state»",
+        ),
+    ),
+)
+
+AASHTO_C3_11_5_2_ACTIVO = _cita(
+    id="AASHTO_LRFD_9.C3.11.5.2#ACTIVO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C3.11.5.2",
+    titulo_numeral="At-Rest Lateral Earth Pressure Coefficient, ko",
+    pagina_impresa="3-120",
+    pagina_pdf=174,
+    texto_literal=Verbatim(
+        texto=("For typical cantilevered walls over 5.0 ft high with "
+               "structural grade backfill, calculations indicate that the "
+               "horizontal movement of the top of the wall due to a "
+               "combination of structural deformation of the stem and "
+               "rotation of the foundation is sufficient to develop active "
+               "conditions."),
+        pagina_pdf=174),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7C,
+    nota=("Es lo que sostiene la alternativa «cedente» del criterio "
+          "'regimen_resistencia_elementos_cabezal': un muro en voladizo "
+          "LIBRE de mas de 1.52 m. El cabezal no es libre en sus extremos "
+          "(el barril y los aleros lo arriostran), y por eso no es el valor "
+          "de archivo."),
+)
+
+AASHTO_C11_6_5_4_H_MEDIOS = _cita(
+    id="AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.5.4",
+    titulo_numeral=("Calculation of Seismic Earth Pressure for Nonyielding "
+                    "Abutments and Walls"),
+    pagina_impresa="11-32",
+    pagina_pdf=1501,
+    texto_literal=Verbatim(
+        texto=("These solutions also indicate that a higher resultant "
+               "location for the combined effect of static and seismic "
+               "earth pressure of h/2 may be warranted for nonyielding "
+               "abutments and walls and should be considered for design."),
+        pagina_pdf=1501),
+    caracter=Caracter.RECOMENDACION,
+    derivado_de="AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE",
+    sesion=TESIS_T7C,
+    nota=("«These solutions» son las elasticas de Wood (1973) para muros "
+          "rigidos. La fuente NO da un coeficiente sismico de reposo: manda "
+          "k_h = 1.0·k_h0 (11.6.5.4) con los mismos metodos de 11.6.5.3, y "
+          "pide considerar la resultante del empuje total a h/2. Es lo que "
+          "el armado hace bajo el regimen que no cede: toma el empuje "
+          "sismico que el ensamble entrega y, para el momento de la "
+          "pantalla, la mayor de su posicion y h/2."),
+)
+
+AASHTO_5_6_7_FISURACION = _cita(
+    id="AASHTO_LRFD_9.5.6.7#FISURACION",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.6.7",
+    titulo_numeral="Control of Cracking by Distribution of Reinforcement",
+    pagina_impresa="5-55",
+    pagina_pdf=414,
+    texto_literal=Verbatim(
+        texto=("the provisions specified herein shall apply to the "
+               "reinforcement of all concrete components in which tension "
+               "in the cross section exceeds 80 percent of the modulus of "
+               "rupture, specified in Article 5.4.2.6, at applicable service "
+               "limit state load combination specified in Table 3.4.1-1."),
+        pagina_pdf=414),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("El control de fisuracion por distribucion del refuerzo (ec. "
+          "5.6.7-1: s <= 700·γe / (βs·f_ss) − 2·d_c, en el estado limite de "
+          "SERVICIO I) lo evalua la fila A6 del armado desde las "
+          "correcciones de T-7c (H3; `M9.fisuracion_aashto`). La clase de "
+          "exposicion (γe = 1.00 o 0.75) la deja la fuente al Propietario: "
+          "'clase_exposicion_fisuracion_cabezal' [A], sin valor de archivo."),
+)
+
+AASHTO_5_6_7_ESPACIAMIENTO = _cita(
+    id="AASHTO_LRFD_9.5.6.7#ESPACIAMIENTO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.6.7",
+    titulo_numeral="Control of Cracking by Distribution of Reinforcement",
+    pagina_impresa="5-55",
+    pagina_pdf=414,
+    texto_literal=Verbatim(
+        texto=("The spacing, s, of nonprestressed reinforcement in the layer "
+               "closest to the tension face shall satisfy the following:"),
+        pagina_pdf=414),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=CIERRE_T7C,
+    nota=("Sigue la ec. 5.6.7-1, en la pag. impresa 5-56 (PDF 415), leida "
+          "por imagen: s <= 700·γe/(βs·f_ss) − 2·d_c (in, ksi), con βs = 1 "
+          "+ d_c/[0.7·(h − d_c)] (ec. 5.6.7-2). En SI, "
+          "`FISURACION_COEFICIENTE_AASHTO_SI` = 700 kip/in = 122.589 MPa·m."),
+)
+
+AASHTO_5_6_7_GAMMA_E = _cita(
+    id="AASHTO_LRFD_9.5.6.7#GAMMA_E",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.6.7",
+    titulo_numeral="Control of Cracking by Distribution of Reinforcement",
+    pagina_impresa="5-56",
+    pagina_pdf=415,
+    pagina_pdf_titulo=414,
+    texto_literal=Verbatim(
+        texto=("exposure factor = 1.00 for Class 1 exposure condition = 0.75 "
+               "for Class 2 exposure condition"),
+        pagina_pdf=415),
+    caracter=Caracter.DEFINICION,
+    sesion=CIERRE_T7C,
+    nota=("Cual de las dos clases aplica no lo dice la fuente: es del "
+          "Propietario (C5.6.7, «in order to provide flexibility in the "
+          "application of these provisions to meet the needs of the "
+          "Owner»). Vacio declarado: 'clase_exposicion_fisuracion_cabezal'."),
+)
+
+AASHTO_5_6_7_FSS = _cita(
+    id="AASHTO_LRFD_9.5.6.7#FSS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.6.7",
+    titulo_numeral="Control of Cracking by Distribution of Reinforcement",
+    pagina_impresa="5-56",
+    pagina_pdf=415,
+    pagina_pdf_titulo=414,
+    texto_literal=Verbatim(
+        texto=("calculated tensile stress in nonprestressed reinforcement at "
+               "the service limit state not to exceed 0.60 fy (ksi)"),
+        pagina_pdf=415),
+    caracter=Caracter.EXIGENCIA,
+    sesion=CIERRE_T7C,
+    nota=("La tension f_ss se calcula con la seccion FISURADA elastica "
+          "(relacion modular n = E_s/E_c); el tope de 0.60·f_y lo aplica la "
+          "fila A6 como condicion, no como recorte del valor."),
+)
+
+AASHTO_C5_6_7_CLASE_1 = _cita(
+    id="AASHTO_LRFD_9.C5.6.7#CLASE_1",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C5.6.7",
+    titulo_numeral="Control of Cracking by Distribution of Reinforcement",
+    pagina_impresa="5-56",
+    pagina_pdf=415,
+    pagina_pdf_titulo=414,
+    texto_literal=Verbatim(
+        texto=("Class 1 exposure condition could be thought of as an upper "
+               "bound in regards to crack width for appearance and "
+               "corrosion."),
+        pagina_pdf=415),
+    caracter=Caracter.DEFINICION,
+    sesion=CIERRE_T7C,
+    nota=("Es lo que sostiene que, SIN la clase declarada, la barra "
+          "propuesta respete al menos la Clase 1: cualquier clase que el "
+          "Propietario declare pide eso o mas. Sigue: «Areas that the Owner "
+          "may consider for Class 2 exposure condition would include decks "
+          "and substructures exposed to water»."),
+)
+
+AASHTO_5_4_3_2_ES = _cita(
+    id="AASHTO_LRFD_9.5.4.3.2#ES",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.4.3.2",
+    titulo_numeral="Modulus of Elasticity",
+    pagina_impresa="5-22",
+    pagina_pdf=381,
+    texto_literal=Verbatim(
+        texto=("The modulus of elasticity, Es, of steel reinforcement shall "
+               "be assumed as 29,000 ksi for specified minimum yield "
+               "strengths up to 100 ksi."),
+        pagina_pdf=381),
+    caracter=Caracter.EXIGENCIA,
+    sesion=CIERRE_T7C,
+    nota="`ES_REFUERZO_AASHTO_MPA` = 29 000 ksi = 199 948 MPa.",
+)
+
+AASHTO_C5_4_2_4_EC = _cita(
+    id="AASHTO_LRFD_9.C5.4.2.4#EC",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C5.4.2.4",
+    titulo_numeral="Modulus of Elasticity",
+    pagina_impresa="5-20",
+    pagina_pdf=379,
+    texto_literal=Verbatim(
+        texto=("For normal weight concrete with wc = 0.145 kcf, Ec may be "
+               "taken as:"),
+        pagina_pdf=379),
+    caracter=Caracter.PERMISO,
+    metodo=AMBOS,
+    sesion=CIERRE_T7C,
+    nota=("Sigue la ec. C5.4.2.4-1, leida por imagen: E_c = 2,500·(f'c)^0.33 "
+          "(ksi). Es la ec. 5.4.2.4-1 (E_c = 120,000·K1·w_c^2.0·f'c^0.33) "
+          "con K1 = 1.0 y w_c = 0.145 kcf, redondeada. En SI, "
+          "`EC_COEFICIENTE_AASHTO_SI`·f'c^0.33 = 9115·f'c^0.33 MPa. Solo "
+          "entra en la relacion modular de la fisuracion (5.6.7)."),
+)
+
+# ---- E.060, el contraste [N→] ---------------------------------------------
+
+E060_9_2_5_EMPUJE = _cita(
+    id="E060.9.2.5#EMPUJE",
+    fuente_id="E060",
+    numeral="9.2.5",
+    titulo_numeral="RESISTENCIA REQUERIDA",
+    pagina_impresa="65",
+    pagina_pdf=65,
+    texto_literal=Verbatim(
+        texto=("Si fuera necesario incluir en el diseño el efecto del peso "
+               "y empuje lateral de los suelos (CE), la presión ejercida por "
+               "el agua contenida en el suelo o la presión y peso ejercidos "
+               "por otros materiales, además de lo indicado en 9.2.1, la "
+               "resistencia requerida será como mínimo:"),
+        pagina_pdf=65),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("Ec. (9-6): U = 1,4 CM + 1,7 CV + 1,7 CE; y «en el caso en que la "
+          "carga muerta o la carga viva reduzcan el efecto del empuje "
+          "lateral», ec. (9-7): U = 0,9 CM + 1,7 CE. El 9.2.3 (sismo) "
+          "combina CM, CV y CS y no nombra el empuje de suelos: E.060 no "
+          "escribe una combinacion con sismo y empuje a la vez, y el "
+          "contraste se limita a la condicion estatica."),
+    interpretacion=Interpretacion(
+        texto=("E.060 es la norma de concreto armado del Reglamento "
+               "Nacional de Edificaciones. El cabezal de una alcantarilla "
+               "vial no es una edificacion: el proyecto calcula con ella, "
+               "POR ANALOGIA, un contraste de la resistencia de la pantalla "
+               "y de la zapata con SUS combinaciones y SUS factores de "
+               "reduccion, y lo imprime junto al calculo que rige, que es "
+               "el de AASHTO LRFD Seccion 5. El contraste informa; no "
+               "decide el armado."),
+        en_contra=(
+            "el articulo 1.1.1 de E.060 fija su alcance en «estructuras de "
+            "concreto armado, preesforzado y simple» sin excluir las obras "
+            "viales: leida sola, la norma no se declara de edificaciones; "
+            "lo es por el reglamento del que forma parte",
+            "un revisor local espera ver la resistencia en el formato de "
+            "E.060 y podria leer el contraste como la verificacion que rige",
+        ),
+        a_favor=(
+            "las solicitaciones del cabezal salen factoradas del marco de "
+            "AASHTO, que es el del Manual de Puentes: comparar esas cargas "
+            "con resistencias reducidas por E.060 cruzaria los dos marcos",
+        ),
+    ),
+)
+
+E060_9_3_1_PHI = _cita(
+    id="E060.9.3.1#PHI",
+    fuente_id="E060",
+    numeral="9.3.1",
+    titulo_numeral="RESISTENCIA DE DISEÑO",
+    pagina_impresa="66",
+    pagina_pdf=66,
+    texto_literal=Verbatim(
+        texto=("deben tomarse como la resistencia nominal calculada de "
+               "acuerdo con los requisitos y suposiciones de esta Norma"),
+        pagina_pdf=66),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("Sigue: «multiplicada por los factores φ de reducción de "
+          "resistencia especificados a continuación». 9.3.2.1: «Flexión sin "
+          "carga axial ... 0,90»; 9.3.2.3: «Cortante y torsión ... 0,85»; "
+          "9.3.2.8: en el Capitulo 22, concreto estructural simple, 0,65 "
+          "(el ciclopeo lleva 0,5 por 22.10.2.3)."),
+)
+
+E060_10_2_7_BLOQUE = _cita(
+    id="E060.10.2.7#BLOQUE",
+    fuente_id="E060",
+    numeral="10.2.7",
+    titulo_numeral="HIPÓTESIS DE DISEÑO",
+    pagina_impresa="76",
+    pagina_pdf=76,
+    texto_literal=Verbatim(
+        texto=("El requisito de 10.2.6 se satisface si se asume una "
+               "distribución rectangular equivalente de esfuerzos en el "
+               "concreto, definida como sigue:"),
+        pagina_pdf=76),
+    caracter=Caracter.PERMISO,
+    sesion=TESIS_T7C,
+    nota=("10.2.7.1: un esfuerzo de 0,85·f'c uniforme hasta a = β1·c; "
+          "10.2.7.3: β1 = 0,85 para f'c entre 17 y 28 MPa, 0,65 para f'c >= "
+          "56 MPa e interpolacion lineal entre ambos; 10.2.3: deformacion "
+          "ultima del concreto 0,003."),
+)
+
+E060_10_3_4_MAXIMO = _cita(
+    id="E060.10.3.4#MAXIMO",
+    fuente_id="E060",
+    numeral="10.3.4",
+    titulo_numeral="PRINCIPIOS Y REQUISITOS GENERALES",
+    pagina_impresa="77",
+    pagina_pdf=77,
+    pagina_pdf_titulo=76,
+    texto_literal=Verbatim(
+        texto=("el refuerzo de acero en tracción no deberá exceder de 0,75 "
+               "Asb"),
+        pagina_pdf=77),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("El 10.3.5 da la alternativa que el contraste usa: el requisito "
+          "se cumple cuando la deformacion unitaria neta del acero en "
+          "traccion mas alejado es mayor o igual a 0,004."),
+)
+
+E060_10_5_4_LOSAS = _cita(
+    id="E060.10.5.4#LOSAS",
+    fuente_id="E060",
+    numeral="10.5.4",
+    titulo_numeral="REFUERZO MÍNIMO EN ELEMENTOS SOMETIDOS A FLEXIÓN",
+    pagina_impresa="78",
+    pagina_pdf=78,
+    pagina_pdf_titulo=77,
+    texto_literal=Verbatim(
+        texto=("Para losas estructurales y zapatas de espesor uniforme, el "
+               "acero mínimo en la dirección de la luz debe ser el requerido "
+               "por 9.7."),
+        pagina_pdf=78),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("Sigue: «Cuando el acero mínimo se distribuya en las dos caras de "
+          "la losa, deberá cumplirse que la cuantía de refuerzo en la cara "
+          "en tracción por flexión no sea menor de 0,0012. El espaciamiento "
+          "máximo del refuerzo no debe exceder tres veces el espesor ni de "
+          "400 mm». El 9.7.2 (pag. 73) da 0,0018 del area bruta para barras "
+          "corrugadas con fy >= 420 MPa. Es el acero minimo de la ZAPATA en "
+          "el contraste; el de la pantalla es el de muros, 14.3.1."),
+)
+
+E060_9_7_2_TEMPERATURA = _cita(
+    id="E060.9.7.2#TEMPERATURA",
+    fuente_id="E060",
+    numeral="9.7.2",
+    titulo_numeral="REFUERZO POR CAMBIOS VOLUMÉTRICOS",
+    pagina_impresa="72",
+    pagina_pdf=72,
+    texto_literal=Verbatim(
+        texto=("La armadura por retracción y temperatura en losas, deberá "
+               "proporcionar las siguientes relaciones mínimas de área de la "
+               "armadura a área de la sección total de concreto, según el "
+               "tipo de acero de refuerzo que se use."),
+        pagina_pdf=72),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("La lista esta en la pagina siguiente (73): barras lisas 0,0025; "
+          "barras corrugadas con fy < 420 MPa, 0,0020; barras corrugadas o "
+          "malla con fy >= 420 MPa, 0,0018."),
+)
+
+E060_11_3_1_VC = _cita(
+    id="E060.11.3.1#VC",
+    fuente_id="E060",
+    numeral="11.3.1",
+    titulo_numeral=("RESISTENCIA AL CORTANTE PROPORCIONADA POR EL CONCRETO "
+                    "EN"),
+    pagina_impresa="88",
+    pagina_pdf=88,
+    texto_literal=Verbatim(
+        texto=("debe calcularse según las disposiciones de 11.3.1.1 a "
+               "11.3.1.3, a menos que se haga un cálculo más detallado de "
+               "acuerdo con 11.3.2."),
+        pagina_pdf=88),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("11.3.1.1, ec. (11-3), leida por imagen: «Para elementos "
+          "sometidos únicamente a cortante y flexión»: V_c = 0,17·√f'c·"
+          "b_w·d. El titulo del 11.3 sigue en la linea siguiente de la "
+          "pagina: «... ELEMENTOS NO PREESFORZADOS»."),
+)
+
+E060_11_12_1_1_VIGA = _cita(
+    id="E060.11.12.1.1#VIGA",
+    fuente_id="E060",
+    numeral="11.12.1.1",
+    titulo_numeral="DISPOSICIONES ESPECIALES PARA LOSAS Y ZAPATAS",
+    pagina_impresa="104",
+    pagina_pdf=104,
+    texto_literal=Verbatim(
+        texto=("Comportamiento como viga, en el cual la losa o zapata actúa "
+               "como una viga ancha"),
+        pagina_pdf=104),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7C,
+    nota=("Sigue en la pagina 105: «Para el comportamiento como viga, la "
+          "losa o la zapata deben diseñarse de acuerdo con 11.1 a 11.5». Es "
+          "a donde 11.10.1 manda el cortante perpendicular al plano de un "
+          "muro, y 15.5.1 el de las zapatas."),
+)
+
+E060_14_8_1_CONTENCION = _cita(
+    id="E060.14.8.1#CONTENCION",
+    fuente_id="E060",
+    numeral="14.8.1",
+    titulo_numeral="MUROS DE CONTENCIÓN",
+    pagina_impresa="134",
+    pagina_pdf=134,
+    texto_literal=Verbatim(
+        texto=("Los muros de contención con o sin carga axial significativa "
+               "se diseñarán de acuerdo a las disposiciones para diseño de "
+               "elementos en flexión y carga axial"),
+        pagina_pdf=134),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("«... del Capítulo 10». El 14.8.2 hace regir el refuerzo minimo "
+          "de 14.3 y el 14.2.4 remite el cortante a 11.10."),
+)
+
+E060_11_10_7_UMBRAL = _cita(
+    id="E060.11.10.7#UMBRAL",
+    fuente_id="E060",
+    numeral="11.10.7",
+    titulo_numeral="DISPOSICIONES ESPECIALES PARA MUROS",
+    pagina_impresa="103",
+    pagina_pdf=103,
+    texto_literal=Verbatim(
+        texto=("el refuerzo distribuido debe proporcionarse según lo "
+               "estipulado en 11.10.10 o de acuerdo con los siguientes "
+               "mínimos:"),
+        pagina_pdf=103),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("La condicion, leida por imagen: «Donde Vu sea menor que 0,085·"
+          "√f'c·Acw». Los minimos: horizontal 0,002 y vertical 0,0015, con "
+          "espaciamiento no mayor que tres veces el espesor ni que 400 mm. "
+          "El 11.10.8 (pag. 104) manda al 11.10.10 cuando V_u supera ese "
+          "umbral. Todo ello para el cortante EN EL PLANO del muro "
+          "(11.10.2)."),
+)
+
+E060_22_10_2_3_PHI = _cita(
+    id="E060.22.10.2.3#PHI",
+    fuente_id="E060",
+    numeral="22.10.2.3",
+    titulo_numeral="Limitaciones",
+    pagina_impresa="195",
+    pagina_pdf=195,
+    texto_literal=Verbatim(
+        texto=("En el calculo de las resistencias según 22.5 se utilizará "
+               "un factor"),
+        pagina_pdf=195),
+    caracter=Caracter.EXIGENCIA,
+    jerarquia_numeral=("22.10 CONCRETO CICLOPEO",),
+    sesion=TESIS_T7C,
+    nota=("«... φ = 0,5 y se utilizará, para el diseño, un valor de f'c no "
+          "mayor a 10 MPa» (el verbatim se corta en el simbolo). El "
+          "22.10.2.2 pide verificar flexion y corte en los voladizos mas "
+          "largos que la mitad de su peralte."),
+)
+
+E060_22_5_3_TRACCION = _cita(
+    id="E060.22.5.3#TRACCION",
+    fuente_id="E060",
+    numeral="22.5.3",
+    titulo_numeral="DISEÑO POR RESISTENCIA",
+    pagina_impresa="192",
+    pagina_pdf=192,
+    pagina_pdf_titulo=191,
+    texto_literal=Verbatim(
+        texto=("Los elementos sometidos a una combinación de flexión y "
+               "carga axial de compresión deben diseñarse de manera que en "
+               "la cara de compresión:"),
+        pagina_pdf=192),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("Las dos ecuaciones, leidas por imagen: en la cara de compresion "
+          "P_u/(φ·P_n) + M_u/(φ·M_n) <= 1 (22-6), y «en la cara de "
+          "tracción» M_u/S_m − P_u/A_g <= φ·0,42·√f'c (22-7). El contraste "
+          "del cabezal ciclopeo evalua la (22-7) con φ = 0,5 y f'c <= 10 "
+          "MPa (22.10.2.3) y el peralte reducido de 22.4.8."),
+)
+
+E060_22_5_4_CORTANTE = _cita(
+    id="E060.22.5.4#CORTANTE",
+    fuente_id="E060",
+    numeral="22.5.4",
+    titulo_numeral="DISEÑO POR RESISTENCIA",
+    pagina_impresa="192",
+    pagina_pdf=192,
+    pagina_pdf_titulo=191,
+    texto_literal=Verbatim(
+        texto=("El diseño de secciones transversales rectangulares "
+               "sometidas a cortante debe basarse en:"),
+        pagina_pdf=192),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T7C,
+    nota=("Ec. (22-8): φ·V_n >= V_u, con V_n = 0,11·√f'c·b_w·h (22-9) para "
+          "la accion como viga; leidas por imagen."),
+)
+
+E060_22_6_3_TERCIO = _cita(
+    id="E060.22.6.3#TERCIO",
+    fuente_id="E060",
+    numeral="22.6.3",
+    titulo_numeral="MUROS",
+    pagina_impresa="192",
+    pagina_pdf=192,
+    texto_literal=Verbatim(
+        texto=("Si la resultante de todas las cargas amplificadas se ubica "
+               "dentro del tercio central del espesor total del muro, el "
+               "diseño debe realizarse de acuerdo con 22.5.3 ó 22.6.5."),
+        pagina_pdf=192),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("«En caso contrario, los muros deben diseñarse de acuerdo con "
+          "22.5.3». E.060 NO exige tracciones nulas en el CUERPO de un muro "
+          "de concreto simple: admite la traccion de la ec. (22-7). Las "
+          "prohibe a traves de las juntas de construccion (22.4.7, cita "
+          "E060.22.4.7#JUNTAS), y el arranque del cuerpo sobre la zapata es "
+          "una."),
+    interpretacion=Interpretacion(
+        texto=("El proyecto usa el tercio central como UMBRAL de las filas "
+               "C1 a C3 del cabezal ciclopeo, con cargas de SERVICIO: e <= "
+               "B/6 en la base y e <= t/6 en el cuerpo, que es la condicion "
+               "de que no haya traccion en la seccion. Es el criterio de "
+               "'criterio_traccion_cabezal_ciclopeo' [A] (correcciones de "
+               "T-7c, H5)."),
+        en_contra=(
+            "esta frase habla de las cargas AMPLIFICADAS y del espesor del "
+            "muro, y solo elige el metodo de diseño (22.5.3 o el empirico "
+            "de 22.6.5); no exige e <= B/6 ni e <= t/6 con cargas de "
+            "servicio",
+            "fuera de las juntas, E.060 admite traccion en el concreto "
+            "simple (22.5.3, ec. 22-7)",
+        ),
+        a_favor=(
+            "en la junta de construccion del arranque la fuente prohibe "
+            "transmitir traccion (22.4.7): ahi la condicion de tracciones "
+            "nulas SI es de la fuente, y la fila C2 decide siempre salvo "
+            "vaciado monolitico declarado",
+            "la resultante dentro del tercio central es la condicion de "
+            "resistencia de materiales para que una seccion rectangular no "
+            "se traccione",
+        ),
+    ),
+)
+
+E060_22_4_7_JUNTAS = _cita(
+    id="E060.22.4.7#JUNTAS",
+    fuente_id="E060",
+    numeral="22.4.7",
+    titulo_numeral="MÉTODO DE DISEÑO",
+    pagina_impresa="191",
+    pagina_pdf=191,
+    texto_literal=Verbatim(
+        texto=("La tracción no debe transmitirse a través de los bordes "
+               "exteriores, juntas de construcción, juntas de contracción, o "
+               "juntas de aislamiento de un elemento individual de concreto "
+               "simple."),
+        pagina_pdf=191),
+    caracter=Caracter.EXIGENCIA,
+    sesion=CIERRE_T7C,
+    nota=("El encuentro del cuerpo del cabezal de gravedad con su zapata es "
+          "una junta de construccion: ahi E.060 PROHIBE la traccion. Por eso "
+          "la fila C2 (tracciones nulas en el arranque) decide siempre, "
+          "salvo que se declare el vaciado monolitico de cuerpo y zapata "
+          "('junta_arranque_cabezal_ciclopeo' = 'vaciado_monolitico'), y se "
+          "evalua con las cargas de servicio Y con las amplificadas de "
+          "E.060 (correcciones de T-7c, H5). Corrige lo que la FASE A "
+          "escribio: «ninguna fuente de normas/ exige tracciones nulas»."),
+)
+
+E060_22_6_3_EXCENTRICIDAD = _cita(
+    id="E060.22.6.3#EXCENTRICIDAD",
+    fuente_id="E060",
+    numeral="22.6.3",
+    titulo_numeral="MUROS",
+    pagina_impresa="192",
+    pagina_pdf=192,
+    texto_literal=Verbatim(
+        texto=("Los muros de concreto simple estructural deben diseñarse "
+               "para una excentricidad correspondiente al momento máximo que "
+               "puede acompañar a la carga axial, pero no menor de 0,10 h."),
+        pagina_pdf=192),
+    caracter=Caracter.EXIGENCIA,
+    sesion=CIERRE_T7C,
+    nota=("La fila C6 del cabezal ciclopeo toma el momento amplificado no "
+          "menor que P_u·0,10·t (`EXCENTRICIDAD_MIN_MURO_CONCRETO_SIMPLE_"
+          "E060`), por analogia."),
+)
+
+E060_22_6_6_5_ABERTURAS = _cita(
+    id="E060.22.6.6.5#ABERTURAS",
+    fuente_id="E060",
+    numeral="22.6.6.5",
+    titulo_numeral="Limitaciones",
+    pagina_impresa="193",
+    pagina_pdf=193,
+    texto_literal=Verbatim(
+        texto=("Se deben proporcionar no menos de dos barras de diámetro "
+               "5/8” alrededor de todas las aberturas de ventanas y "
+               "puertas."),
+        pagina_pdf=193),
+    caracter=Caracter.EXIGENCIA,
+    sesion=CIERRE_T7C,
+    nota=("Es de muros de concreto SIMPLE. El vano del conducto en la "
+          "pantalla del cabezal es una abertura: el aviso de lo que el "
+          "armado no cubre la nombra, por analogia, y no la dimensiona "
+          "(correcciones de T-7c, H6). Sigue: «Dichas barras deben "
+          "extenderse al menos 600 mm más allá de las esquinas de las "
+          "aberturas»."),
+)
+
+E060_22_4_8_PERALTE = _cita(
+    id="E060.22.4.8#PERALTE",
+    fuente_id="E060",
+    numeral="22.4.8",
+    titulo_numeral="MÉTODO DE DISEÑO",
+    pagina_impresa="191",
+    pagina_pdf=191,
+    texto_literal=Verbatim(
+        texto=("excepto para el concreto vaciado contra el suelo en donde "
+               "la altura o peralte del elemento deberá tomarse 50 mm menor "
+               "que la dimensión real."),
+        pagina_pdf=191),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7C,
+    nota=("El muro del cabezal de gravedad se encofra por sus dos caras; la "
+          "reduccion se aplica de todos modos (lado seguro) porque el "
+          "trasdos queda contra el relleno."),
+)
+
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

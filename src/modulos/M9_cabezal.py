@@ -24,6 +24,18 @@ opcionales (sin declarar salen de la geometria de cada cabezal y de phi).
 Las funciones sueltas `k_ae_del_proyecto` y `empujes_trasdos` siguen
 pidiendo los cuatro angulos por criterio y no tienen llamador.
 
+--- T-7c --- Y LO QUE DESCRIBE DE 9.4 TAMBIEN CAMBIO. El diseño por flexion
+y corte EXISTE (`diseno_flexion_corte`, bloque «9.4 · EL ARMADO DE CADA
+CABEZAL» del final del modulo): cada cabezal de voladizo armado sale con el
+armado de su pantalla, de la punta y del talon de su zapata y del arranque de
+sus aleros (`armar_elemento`, `ensamblar_armado`), con AASHTO LRFD Seccion 5
+y E.060 de contraste; y el de gravedad, con su verificacion como concreto
+ciclopeo (`verificar_cabezal_ciclopeo`). De los vacios de abajo, tres dejaron
+de serlo: los dos pisos de cuantia del cortante en el plano tienen el valor
+de su articulo y el regimen del cortante esta declarado. Los parrafos
+«cortante_alto_muro_...» y «procedimiento_flexion_...» de la lista de abajo
+describen el estado ANTERIOR.
+
 Por que la cadena sismica va desagregada
 ----------------------------------------
 Hoy los seis pasos horizontales de Sec. 9.2 dan todos 0.50, y es tentador
@@ -3511,57 +3523,12 @@ def verificar_ciclopeo(*, fc_matriz: float,
     )
 
 
-def diseno_flexion_corte(*, momento: Optional[float] = None,
-                         cortante: Optional[float] = None):
-    """
-    Diseno por flexion y corte del cabezal, AASHTO LRFD Seccion 5 (Sec. 9.4,
-    via Manual de Puentes Seccion 2.9, pag. 337).
-
-    El procedimiento (phi, MCFT beta-theta, Vc, Vs, dv) ya esta citado y
-    disponible en 'procedimiento_flexion_corte_aashto_sec5'. Lo que falta no
-    es el dato: es el ENSAMBLE. Este modulo todavia no implementa el calculo
-    iterativo de deformacion unitaria epsilon_s que alimenta beta y theta
-    (Art. 5.7.3.4.2), y sin epsilon_s no hay Vc ni Vs que resolver. Se
-    detiene a proposito con `NotImplementedError`, para no fingir un
-    resultado -- no es el mismo vacio que bloqueaba antes: ya no se puede
-    responder "falta declarar el criterio", porque el criterio esta
-    declarado.
-
-    DOS TRAMPAS QUE EL ENSAMBLE VA A ENCONTRAR, escritas aqui porque es donde
-    se van a pisar y no en la ficha de una auditoria:
-
-      LAS FORMULAS SON IMPERIALES (MAT-O9, MAT-X8). La 9a ed. no publica
-      edicion SI: su C5.1 declara "These specifications use kips and ksi
-      units", y el 0.0316 de la Ec. 5.7.3.3-3 no es una constante fisica sino
-      1/raiz(1000), el factor de conversion psi->ksi. El criterio guardaba
-      esas expresiones bajo claves "Vc_kN" y "dv_m" -- etiquetas SI sobre
-      formulas en kip y pulgada --, y hoy las claves llevan la unidad real en
-      el nombre ("Vc_kip", "dv_in"). Este modulo opera en SI: el ensamble
-      tendra que convertir en la frontera, y declarar la conversion, no
-      cambiarle el nombre a las variables.
-
-      BETA TIENE DOS EXPRESIONES (NOR-AAS-06). La Ec. 5.7.3.4.2-1 vale solo
-      "for sections containing at least the minimum amount of transverse
-      reinforcement specified in Article 5.7.2.5"; sin ese refuerzo minimo
-      rige la Ec. 5.7.3.4.2-2, que ademas depende del parametro de
-      espaciamiento de fisura sxe. Un muro de cabezal delgado sin estribos
-      cae normalmente en el segundo caso, de modo que el ensamble tiene que
-      contestar primero si el muro lleva el refuerzo transversal minimo: la
-      expresion no se elige por costumbre.
-
-    Lo que no se hara cuando se implemente, y es la tentacion evidente:
-    sustituir el procedimiento por las expresiones de E.060, que si estan a
-    mano. Romperia la consistencia carga-resistencia que Sec. 0.2 declara
-    RESUELTA -- no se combinan demandas mayoradas por AASHTO con
-    resistencias reducidas por E.060.
-    """
-    ca.valor(CRITERIO_FLEXION_CORTE)   # citado y disponible; ya no lanza CriterioPendienteError
-    raise NotImplementedError(
-        "'procedimiento_flexion_corte_aashto_sec5' esta citado y disponible "
-        "(phi, MCFT beta-theta, Vc, Vs, dv); el ensamble del diseno por "
-        "flexion y corte de este modulo (iterar epsilon_s, resolver Vs y "
-        "el espaciamiento) todavia no esta implementado"
-    )
+# --- T-7c --- `diseno_flexion_corte` YA NO ESTA AQUI. Hasta T-7c esta era la
+# funcion que se detenia con `NotImplementedError` («el ensamble del diseño
+# por flexion y corte todavia no esta implementado»). El diseño existe: esta
+# al final del modulo, en el bloque «9.4 · EL ARMADO DE CADA CABEZAL», con el
+# mismo nombre, y arma una seccion por AASHTO LRFD 5.6 y 5.7 con el
+# procedimiento simplificado de cortante.
 
 
 # ===========================================================================
@@ -3639,21 +3606,22 @@ FUNCIONES_SIN_CONSUMIDOR = {
         "detienen en 'metodo_estabilidad_global' y, declarado este, con "
         "«metodo no evaluable»: el analisis de superficies de falla no esta "
         "en este programa (hasta T-7b terminaban en un AssertionError)"),
-    "armado del num. 9.4 (ocho funciones)": (
-        "`cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_"
-        "caras`, `requiere_refuerzo_dos_capas`, `nota_temperatura_dos_caras`, "
-        "`espaciamiento_maximo`, `verificar_espaciamiento` y "
-        "`verificar_ciclopeo` no tienen llamador "
-        "porque su insumo es el diseno por flexion y corte, que se detiene en "
-        "`diseno_flexion_corte` con NotImplementedError (T-7c). Desde T-7b "
-        "las solicitaciones factoradas de cada elemento existen "
-        "(`solicitaciones_por_elemento`). "
-        "La CLI registra "
-        "ese bloqueo en cada corrida (SIS-B-20). Desde EXT-7 las dos primeras "
-        "leen ademas, con cortante alto, el plano del cortante y el piso de "
-        "la direccion ('regimen_cortante_muro_e060_art_11_10_2', "
-        "'cuantia_vertical_cortante_alto_e060_art_11_10_10_3'): siguen sin "
-        "llamador, y por eso esos criterios no los invoca ninguna corrida"),
+    # --- T-7c --- EL ARMADO TIENE LLAMADOR: `armar_elemento`,
+    # `ensamblar_armado` y `verificar_cabezal_ciclopeo` los llama el servicio
+    # por cabezal, y consumen `_minimo_de_cuantia_aplicable`,
+    # `requiere_refuerzo_dos_capas` y `espaciamiento_maximo`. Lo que queda
+    # aqui son las seis piezas sueltas que el armado NO usa.
+    "piezas sueltas del num. 9.4 (seis funciones)": (
+        "`cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_"
+        "dos_caras`, `nota_temperatura_dos_caras`, `verificar_espaciamiento` "
+        "y `verificar_ciclopeo` comparan con los minimos de E.060 lo que el "
+        "llamador les pase y devuelven una verificacion SIN paso de memoria. "
+        "El armado de T-7c no las usa: emite sus propias filas (A3 el acero "
+        "minimo, A4 el espaciamiento, C4 y C5 el material del ciclopeo) con "
+        "el paso que dice que minimo gobierna y de que norma sale, y en el "
+        "minimo junta a E.060 con AASHTO 5.10.6, que estas no conocen. Se "
+        "conservan con sus tests como piezas revisables una a una; ninguna "
+        "corrida las llama"),
     "clase_exposicion_sulfatos / factor_recubrimiento_por_ac": (
         "No tienen llamador de PRODUCCION directo y no son deuda: las llama "
         "`requisitos_durabilidad_concreto` y "
@@ -3877,7 +3845,6 @@ from src.constantes_normativas import (BANDAS_ALETAS_CAJON_A1,  # noqa: E402
                                        BANDAS_ALETAS_CAJON_C2,
                                        CAJON_A1_SIN_ALETAS,
                                        CAJON_C2_SIN_ALETAS,
-                                       ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M,
                                        NUMERAL_ZAPATA_CONCRETO_SIMPLE)
 from src.dominios import MILIMETROS_POR_METRO  # noqa: E402
 from src.modelos import (ORIGEN_DIMENSION_DECLARADA,  # noqa: E402
@@ -3902,6 +3869,7 @@ CRITERIO_KE_CAJON = "ke_entrada_cajon"
 # edificacion aplicados por analogia al cabezal vial: [N→], no [N].
 CRITERIO_DESPLANTE_MIN = "profundidad_cimentacion_min_cabezal_m"
 CRITERIO_PERALTE_ZAPATA_ARMADA = "peralte_min_zapata_armada_m"
+CRITERIO_ESPESOR_ZAPATA_SIMPLE = "espesor_min_zapata_concreto_simple_m"
 # El recubrimiento del refuerzo inferior de la zapata armada, contra el
 # suelo: E.060 7.7.1 a), la fila de `RECUBRIMIENTO` que la §0.2 de la hoja de
 # ruta admite por la excepcion de durabilidad.
@@ -4287,7 +4255,9 @@ def peralte_minimo_zapata(tipo: str) -> Tuple[float, str, str]:
     El espesor MINIMO de la zapata del cabezal segun su tipo, m, con el
     texto de su origen y la cita que lo fija:
 
-      * gravedad ciclopeo: 300 mm de E.060 22.7.4 (concreto simple, [N]);
+      * gravedad ciclopeo: 300 mm de E.060 22.7.4 (concreto simple), por
+        analogia ('espesor_min_zapata_concreto_simple_m' [N→]; hasta el
+        cierre de T-7c era una constante [N]);
       * voladizo armado: la altura minima sobre el refuerzo inferior de E.060
         15.7 ('peralte_min_zapata_armada_m', [N→]) mas el recubrimiento del
         refuerzo contra el suelo de E.060 7.7.1 a) (70 mm).
@@ -4303,9 +4273,14 @@ def peralte_minimo_zapata(tipo: str) -> Tuple[float, str, str]:
             motivo="el minimo de la zapata depende del tipo de cabezal; se "
                    "espera " + " o ".join(TIPOS_DE_CABEZAL))
     if tipo == TIPO_GRAVEDAD:
-        return (ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M,
-                f"minimo de 0.30 m de concreto simple "
-                f"({NUMERAL_ZAPATA_CONCRETO_SIMPLE})",
+        espesor = _exigir_positivo(
+            CRITERIO_ESPESOR_ZAPATA_SIMPLE,
+            ca.valor(CRITERIO_ESPESOR_ZAPATA_SIMPLE),
+            "espesor minimo de la zapata de concreto simple")
+        return (espesor,
+                f"minimo de {espesor:.2f} m de concreto simple "
+                f"({NUMERAL_ZAPATA_CONCRETO_SIMPLE}, por analogia, "
+                f"'{CRITERIO_ESPESOR_ZAPATA_SIMPLE}' [N→])",
                 CITA_ZAPATA_CONCRETO_SIMPLE)
     altura = _exigir_positivo(
         CRITERIO_PERALTE_ZAPATA_ARMADA,
@@ -5589,8 +5564,9 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
             + " sale de gravedad en concreto ciclopeo: E.060 22.10.2.1 limita "
             "ese concreto a los muros de contencion de GRAVEDAD y el "
             "22.10.2.2 exige verificar flexion y corte en voladizos mas "
-            "largos que la mitad de su peralte (pag. 195); la seccion "
-            "propuesta (pantalla, punta y talon) lo juzga T-7c")
+            "largos que la mitad de su peralte (pag. 195): el cabezal no "
+            "se arma, se verifica como concreto ciclopeo (filas C1 a C6 del "
+            "armado), y su zapata queda sin verificar como voladizo")
     # Las CB incumplidas NO son avisos: son verificaciones, y salen por
     # `InformePunto.incumplidas` (un aviso repetido se cuenta dos veces).
     return CabezalDelPunto(
@@ -6415,11 +6391,18 @@ def cuna_de_tanteo(*, h: float, subida: float, talud: float,
 # ---------------------------------------------------------------------------
 
 def cargas_del_cabezal(entorno: EntornoDelCabezal,
-                       condicion: CondicionAnalisis) -> Tuple[tuple, dict]:
+                       condicion: CondicionAnalisis, *,
+                       k_h: Optional[float] = None) -> Tuple[tuple, dict]:
     """
     Las cargas de UN cabezal en UNA condicion, por metro de muro y SIN
     FACTORAR, cada una con su brazo (`CargaDeCabezal`), y el diccionario de
     lo que las produjo (coeficientes, alturas, niveles de agua).
+
+    `k_h` (correcciones de T-7c, H2) SOBRESCRIBE el coeficiente sismico
+    horizontal de la cadena: es la puerta por la que el ARMADO del muro que
+    no cede pide k_h = 1.0·k_h0 (AASHTO 11.6.5.4, «shall be increased to
+    1.0kh0»). La estabilidad externa no la usa: sigue con el k_h de la
+    cadena, reducido o no segun 'factor_muro_eleccion'.
 
       DC  peso de la pantalla (trapecio de trasdos vertical) y de la zapata.
       EV  peso del relleno sobre el talon, hasta la superficie del relleno.
@@ -6673,7 +6656,13 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
     # --- EQ ----------------------------------------------------------------
     if condicion is CondicionAnalisis.SISMICO:
         cadena = cadena_sismica()
-        k_h, k_v = cadena.k_h, cadena.k_v
+        if k_h is None:
+            k_h = cadena.k_h
+        elif not (_finito(k_h) and k_h >= 0):
+            raise DatoInvalidoError("k_h", valor=k_h, id_punto=idp,
+                                    motivo="coeficiente sismico horizontal "
+                                           "no negativo y finito")
+        k_v = cadena.k_v
         psi = angulo_inercia_sismica(k_h=k_h, k_v=k_v)
         if h_w > TOL_UMBRAL_NORMATIVO:
             raise _no_evaluable(
@@ -7489,9 +7478,126 @@ def _verificaciones_asd(entorno, datos, suelo, combos, condicion, decide,
 # Las solicitaciones factoradas por elemento: la interfaz para T-7c
 # ---------------------------------------------------------------------------
 
+def diagrama_del_suelo_sobre(datos: dict, z: float) -> Tuple[float, float]:
+    """
+    --- correcciones de T-7c (H1) --- La parte del diagrama de presion del
+    SUELO que queda por encima de la cota `z` (m sobre la base de la
+    zapata), POR UNIDAD de coeficiente de empuje y sin la inclinacion: su
+    fuerza y su momento respecto de esa cota. Es el diagrama del ensamble
+    (`cargas_del_cabezal`): triangulo seco, rectangulo de su continuacion
+    bajo el agua y triangulo sumergido (AASHTO 3.11.3), truncado en `z`.
+    Con `z` = 0 da el diagrama entero.
+    """
+    gamma, h = datos["gamma"], datos["h"]
+    gamma_sum = ((datos["gamma_saturado"] - GAMMA_AGUA_KN_M3)
+                 if datos["gamma_saturado"] is not None else 0.0)
+    h_w = max(min(datos["h_w"], h) - z, 0.0)
+    altura = max(h - z, 0.0)
+    seco = altura - h_w
+    partes = (
+        (gamma * seco ** 2 / 2, h_w + seco / LADOS_DEL_TRIANGULO),
+        (gamma * seco * h_w, h_w / 2),
+        (gamma_sum * h_w ** 2 / 2, h_w / LADOS_DEL_TRIANGULO),
+    )
+    return sum(p for p, _ in partes), sum(p * b for p, b in partes)
+
+
+def _incremento_sobre_el_arranque(H: float, datos: dict, e_z: float,
+                                  id_punto: Optional[str]
+                                  ) -> Tuple[float, float]:
+    """
+    El incremento sismico del empuje (P_AE - P_A, componente horizontal `H`)
+    por encima del arranque. La fuente da el PUNTO de aplicacion de su
+    resultante ('punto_aplicacion_incremento_sismico', a fraccion·h) y no su
+    diagrama: el proyecto lo reparte con el UNICO diagrama lineal sobre h
+    que tiene la resultante en esa altura -- presion 2H/h·(2 - 3f) en la
+    base y 2H/h·(3f - 1) en la corona; con f = 0.6, un trapecio cuatro veces
+    mas cargado arriba que abajo -- y lo integra sobre el arranque. Por
+    debajo de h/3 (el 0.333 de la ventana del criterio) se toma el
+    triangulo de h/3: la resultante queda algo mas alta, del lado del mayor
+    momento. Por encima de 2h/3 -- fuera de la ventana del criterio --
+    ningun diagrama lineal sin traccion la tiene: se toma la resultante
+    ENTERA a su altura, cota superior del cortante y, con un diagrama
+    cargado hacia arriba, el momento casi entero.
+    """
+    h = datos["h"]
+    tercio = 1.0 / LADOS_DEL_TRIANGULO
+    f = datos["fraccion_brazo"]
+    if not _finito(f):
+        raise DatoInvalidoError(CRITERIO_BRAZO_SISMICO, valor=f,
+                                id_punto=id_punto,
+                                motivo="fraccion de h finita")
+    if f > 2 * tercio + TOL_UMBRAL_NORMATIVO:
+        return H, H * max(f * h - e_z, 0.0)
+    f = max(f, tercio)
+    escala = 2 * H / h
+    base = escala * (2 - LADOS_DEL_TRIANGULO * f)
+    corona = escala * (LADOS_DEL_TRIANGULO * f - 1)
+    return _carga_lineal_sobre_un_tramo(0.0, h, base, corona, e_z, h, e_z)
+
+
+def empujes_sobre_el_arranque(cargas: tuple, datos: dict, e_z: float, *,
+                              id_punto: Optional[str] = None) -> dict:
+    """
+    --- correcciones de T-7c (H1) --- Por cada carga horizontal de la
+    pantalla (sin factorar), la fuerza y el momento respecto del ARRANQUE
+    (cota `e_z`) de la parte de su diagrama que esta por encima de el:
+
+      EH.h          el diagrama del suelo (`diagrama_del_suelo_sobre`),
+                    escalado a la resultante de la carga -- asi vale igual
+                    para el empuje activo y para el de reposo, que conserva
+                    la forma (`cargas_en_reposo`) --; brazo desde el
+                    arranque.
+      LS.h          uniforme sobre h: K·gamma·h_eq·(h - e_z), a
+                    (h - e_z)/2.
+      WA.h          triangulo hidrostatico sobre el arranque:
+                    gamma_w·(h_w - e_z)²/2, a (h_w - e_z)/3.
+      EQ.dPAE.h     el incremento sismico, con el diagrama lineal de
+                    `_incremento_sobre_el_arranque`.
+      EQ.PIR.muro   la inercia de la PANTALLA sola, k_h·W_pantalla en su
+                    centro de gravedad: la de la zapata no carga la
+                    pantalla.
+
+    Devuelve {codigo: (H, M)}. Una carga de pantalla que no sea una de esas
+    cinco entra con su resultante entera y su brazo desde el arranque (la
+    aproximacion anterior: cota superior del cortante, NO del momento). Hoy
+    no hay ninguna.
+    """
+    h = datos["h"]
+    por_codigo = {c.codigo: c for c in cargas}
+    alto = max(h - e_z, 0.0)
+    salida = {}
+    for c in cargas:
+        if c.sobre != ELEMENTO_PANTALLA:
+            continue
+        if c.codigo == C_EH_H:
+            P_total, _ = diagrama_del_suelo_sobre(datos, 0.0)
+            P, M = diagrama_del_suelo_sobre(datos, e_z)
+            r = c.H / P_total if P_total > 0 else 0.0
+            salida[c.codigo] = (P * r, M * r)
+        elif c.codigo == C_LS_H:
+            H = c.H * alto / h
+            salida[c.codigo] = (H, H * alto / 2)
+        elif c.codigo == C_WA_H:
+            h_w = datos["h_w"]
+            mojado = max(h_w - e_z, 0.0)
+            H = c.H * (mojado / h_w) ** 2 if h_w > 0 else 0.0
+            salida[c.codigo] = (H, H * mojado / LADOS_DEL_TRIANGULO)
+        elif c.codigo == C_EQ_H:
+            salida[c.codigo] = _incremento_sobre_el_arranque(
+                c.H, datos, e_z, id_punto)
+        elif c.codigo == C_EQ_PIR_MURO:
+            pantalla = por_codigo[C_DC_PANTALLA]
+            H = datos["k_h"] * pantalla.V
+            salida[c.codigo] = (H, H * max(pantalla.z - e_z, 0.0))
+        else:
+            salida[c.codigo] = (c.H, c.H * max(c.z - e_z, 0.0))
+    return salida
+
+
 def solicitaciones_por_elemento(entorno: EntornoDelCabezal, cargas: tuple,
                                 combos: Tuple[CombinacionDeEstabilidad, ...],
-                                datos: dict
+                                datos: dict, *, marco: str = MARCO_LRFD
                                 ) -> Tuple[SolicitacionDeElemento, ...]:
     """
     El cortante y el momento FACTORADOS de cada elemento del cabezal en su
@@ -7500,11 +7606,18 @@ def solicitaciones_por_elemento(entorno: EntornoDelCabezal, cargas: tuple,
 
       pantalla  en su arranque (cara superior de la zapata): las cargas
                 horizontales que le llegan (`CargaDeCabezal.sobre` =
-                pantalla), tomadas de la altura sobre la zapata. Aproximacion
-                DECLARADA y del lado seguro: se toma la resultante entera de
-                cada empuje, que incluye el tramo del canto de la zapata, con
-                su brazo medido desde el arranque (z - e_zapata, no menor
-                que cero).
+                pantalla), con el diagrama de cada empuje INTEGRADO POR
+                ENCIMA DEL ARRANQUE (`empujes_sobre_el_arranque`): la
+                fuerza y el momento respecto de la seccion son los de la
+                parte del diagrama que esta sobre ella, como en una seccion
+                del cuerpo de gravedad (`acciones_sobre_una_seccion`). La
+                inercia es solo la de la pantalla. Hasta las correcciones de
+                T-7c se tomaba la resultante ENTERA de cada empuje con su
+                brazo desde el arranque, y el docstring la llamaba «del lado
+                seguro»: lo era para el cortante y NO para el momento (el
+                tramo del diagrama bajo el arranque entraba con brazo
+                negativo; -8.5 % en el muro de tanteo, auditoria de T-7c
+                H1).
       zapata    punta: la presion de contacto uniforme sobre el ancho
                 efectivo (que arranca en la punta) menos el peso propio, en
                 la cara delantera de la pantalla. Talon: el relleno, la
@@ -7523,6 +7636,11 @@ def solicitaciones_por_elemento(entorno: EntornoDelCabezal, cargas: tuple,
     cociente K0/K_A: si T-7c juzga que la pantalla no cede, la fuente pide
     para la resistencia el empuje en reposo (C11.6.5.4), y sus empujes
     crecerian en ese factor. Este prompt no lo aplica: lo marca.
+
+    --- T-7c --- `marco` elige de que marco son las combinaciones que se
+    recorren: el LRFD por defecto (lo de siempre) o `MARCO_E060`, el de las
+    combinaciones del contraste con E.060 que arma `solicitaciones_de_
+    resistencia`. Las formulas son las mismas; cambian los factores.
     """
     g = entorno.geometria
     e_z = g.espesor_zapata
@@ -7535,16 +7653,17 @@ def solicitaciones_por_elemento(entorno: EntornoDelCabezal, cargas: tuple,
                  coeficiente_de_empuje="K_AE" if sismica else "K_A",
                  K_empuje=datos["K_AE"] if sismica else datos["K_A"],
                  K0=datos["K0"], K0_sobre_K_A=datos["K0"] / datos["K_A"])
-    for combo in (c for c in combos if c.marco == MARCO_LRFD):
+    arranque = empujes_sobre_el_arranque(cargas, datos, e_z,
+                                         id_punto=entorno.id_punto)
+    for combo in (c for c in combos if c.marco == marco):
         f = dict(combo.factores)
-        V_p = sum(f[c.codigo] * c.H for c in cargas
-                  if c.sobre == ELEMENTO_PANTALLA)
-        M_p = sum(f[c.codigo] * c.H * max(c.z - e_z, 0.0) for c in cargas
-                  if c.sobre == ELEMENTO_PANTALLA)
-        salida.append(SolicitacionDeElemento(**marca, 
+        V_p = sum(f[k] * H for k, (H, _) in arranque.items())
+        M_p = sum(f[k] * M for k, (_, M) in arranque.items())
+        salida.append(SolicitacionDeElemento(**marca,
             elemento=ELEMENTO_PANTALLA, seccion="arranque de la pantalla",
             combinacion=combo.nombre, V_u=V_p, M_u=M_p,
-            nota="resultante entera de cada empuje; brazo desde el arranque"))
+            nota="diagrama de cada empuje integrado por encima del "
+                 "arranque; inercia de la pantalla sola"))
         salida.append(SolicitacionDeElemento(**marca, 
             elemento=ELEMENTO_ALEROS,
             seccion="arranque del alero (altura inicial, la del cabezal)",
@@ -8206,3 +8325,3091 @@ def integrar_estabilidad(cabezal: CabezalDelPunto,
         pasos=cabezal.pasos + tuple(p for e in estabilidades
                                     for p in e.pasos),
         avisos=tuple(avisos), estabilidad=estabilidades)
+
+
+# ===========================================================================
+# --- T-7c --- 9.4 · EL ARMADO DE CADA CABEZAL (o su alternativa ciclopea)
+# ===========================================================================
+# INF-4.6, la ficha EXT-7-01 y el `NotImplementedError` de
+# `diseno_flexion_corte`. T-7b dejo las solicitaciones factoradas de cada
+# elemento; este bloque las convierte en acero.
+#
+# QUE NORMA ARMA (resolucion del encargo, coherente con el marco que rige la
+# estabilidad): la RESISTENCIA se verifica con AASHTO LRFD Seccion 5 -- 5.6
+# flexion, 5.7 cortante con el procedimiento simplificado de 5.7.3.4.1 donde
+# la fuente lo permite, factores de 5.5.4.2 y de 1.3.2.1 -- sobre las cargas
+# factoradas de Resistencia I y de Evento Extremo I. E.060 se calcula EN
+# PARALELO como contraste [N→], con SUS combinaciones (9.2.5) y SUS factores
+# de reduccion (9.3.2): nunca cargas de un marco con phi del otro. En los
+# MINIMOS constructivos (acero minimo, espaciamiento maximo) se aplica el mas
+# exigente de los dos ('regla_minimos_constructivos_cabezal' [A]).
+#
+# CON QUE EMPUJE ('regimen_resistencia_elementos_cabezal' [A]): por archivo,
+# en REPOSO. La estabilidad externa de T-7b no cambia (muro que cede); lo que
+# cambia es el empuje con que se arma cada elemento:
+#
+#   estatica   el empuje del suelo pasa de P_A a (K0 / K_A)·P_A, HORIZONTAL
+#              (en reposo no hay friccion muro-relleno movilizada: la
+#              componente vertical del empuje desaparece), y el de la
+#              sobrecarga viva de K_A·gamma·h_eq·h a K0·gamma·h_eq·h. El
+#              peso propio, el peso del relleno, el peso de la sobrecarga y
+#              el agua NO se escalan. El factor de carga del empuje es el de
+#              la fila «En reposo» (1.35), no el de la activa (1.50). En cada
+#              seccion rige la MAYOR de esa solicitacion y la del muro que
+#              cede: el K0 de 3.11.5.2-1 es de terreno horizontal y detras
+#              del cabezal el relleno sube, de modo que el reposo calculado
+#              puede quedar por debajo del activo de la cuña.
+#   sismica    la fuente no da un coeficiente sismico de reposo. Se arma con
+#              el empuje que el ensamble entrega y, para el momento de la
+#              pantalla, con la mayor de su posicion y h/2 (C11.6.5.4). Si la
+#              cadena sismica redujo k_h por desplazamiento, se AVISA: para
+#              el muro que no cede 11.6.5.4 manda k_h = 1.0·k_h0.
+#
+# LO QUE NO HACE, y lo dice (fichas T7C-*): el control de fisuracion en
+# servicio de AASHTO 5.6.7; el procedimiento general de cortante de
+# 5.7.3.4.2; el refuerzo transversal; la zapata y las secciones intermedias
+# de los aleros; el desarrollo y los empalmes de las barras; y la iteracion
+# de dimensiones (arma la geometria que recibe, pase o no su estabilidad).
+#
+# UNIDADES: m, kN/m y kN·m/m por metro de muro; f'c y fy en MPa; areas de
+# acero en mm2/m; recubrimientos y diametros en mm (como el Art. 7.7.1).
+
+from dataclasses import replace as _reemplazar  # noqa: E402
+
+from src.constantes_fisicas import KPA_POR_MPA  # noqa: E402
+from src.constantes_normativas import (  # noqa: E402
+    ALFA_1_BLOQUE_AASHTO, ALFA_BLOQUE_E060, BETA_1_BLOQUE_AASHTO,
+    BETA_1_E060, BETA_1_E060_MINIMO, BETA_1_MINIMO,
+    BETA_1_REDUCCION_AASHTO_SI, CORTANTE_CONCRETO_SIMPLE_E060,
+    CUANTIA_MIN_CARA_TRACCION_E060, CUANTIA_MIN_LOSA_E060,
+    DV_PISO_SOBRE_DE, DV_PISO_SOBRE_H, E060_FACTOR_CE, E060_FACTOR_CM,
+    E060_FACTOR_CM_MINIMO, E060_FACTOR_CV, EC_11_32_ESBELTEZ,
+    EC_11_32_FACTOR, EPSILON_CU_CONCRETO, EPSILON_T_MIN_E060,
+    EPSILON_TL_AASHTO, ESPACIAMIENTO_MAX_ABSOLUTO_AASHTO_M,
+    ESPACIAMIENTO_MAX_VECES_ESPESOR_AASHTO,
+    FACTOR_MOMENTO_REFUERZO_MINIMO_AASHTO, FC_BETA_1_E060_MPA,
+    FC_DISENO_MAX_CICLOPEO_MPA, FC_MAX_ALFA_1_MPA, FC_MAX_BETA_1_MPA,
+    FY_ACERO_MPA, FY_MAX_EPSILON_TL_MPA, GAMMA_1_AGRIETAMIENTO_AASHTO,
+    GAMMA_3_AASHTO, MODULO_ROTURA_AASHTO_SI, NUCLEO_CENTRAL_DIVISOR,
+    PERALTE_MAX_SIMPLIFICADO_AASHTO_SI, PHI_CICLOPEO_E060, PHI_CORTE_E060,
+    PHI_FLEXION_E060, RECUBRIMIENTO_BARRA_GRUESA_DESDE,
+    REDUCCION_PERALTE_CONTRA_SUELO_M,
+    TEMPERATURA_AS_MAX_AASHTO_SI, TEMPERATURA_AS_MIN_AASHTO_SI,
+    TEMPERATURA_COEFICIENTE_AASHTO_SI, TEMPERATURA_ESPESOR_GRUESO_M,
+    TEMPERATURA_S_MAX_GRUESO_M, TEMPERATURA_S_PISO_M,
+    TEMPERATURA_S_VECES_ESPESOR, TRACCION_CONCRETO_SIMPLE_E060,
+    VC_COEFICIENTE_AASHTO_SI, VC_COEFICIENTE_E060,
+    VN_TOPE_SOBRE_FC_AASHTO, ZAPATA_SIMPLIFICADO_VECES_DV,
+    EC_COEFICIENTE_AASHTO_SI, EC_EXPONENTE_AASHTO, ES_REFUERZO_AASHTO_MPA,
+    EXCENTRICIDAD_MIN_MURO_CONCRETO_SIMPLE_E060, FISURACION_BETA_S_FACTOR,
+    FISURACION_COEFICIENTE_AASHTO_SI, FISURACION_FRACCION_FR,
+    FISURACION_FSS_MAX_SOBRE_FY, FISURACION_GAMMA_E)
+from src.modelos import (  # noqa: E402
+    CIFRAS_FINA, CLASE_EXPOSICION_1, CLASE_EXPOSICION_2,
+    CLASES_DE_EXPOSICION, CRITERIOS_DE_TRACCION_CICLOPEO,
+    EstadoDeVerificacion, ArmadoDeSeccion,
+    ArmadoDelCabezal, BarraPropuesta, FilaDeArmado, MARCO_E060,
+    MINIMOS_MAS_EXIGENTE, MOTIVO_METODO_NO_EVALUABLE_ARMADO,
+    REGIMEN_RESISTENCIA_CEDENTE, REGIMEN_RESISTENCIA_K0,
+    REGIMENES_DE_RESISTENCIA, REGLAS_DE_MINIMOS, SECCION_ALERO,
+    SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON, SolicitacionDeArmado,
+    TRACCION_NULA)
+
+CRITERIO_REGIMEN_RESISTENCIA = "regimen_resistencia_elementos_cabezal"
+CRITERIO_FC_CABEZAL = "fc_cabezal_mpa"
+CRITERIO_ACERO_CABEZAL = "acero_refuerzo_cabezal"
+CRITERIO_CATALOGO_BARRAS = "catalogo_barras_refuerzo_cabezal"
+CRITERIO_REGLA_MINIMOS = "regla_minimos_constructivos_cabezal"
+CRITERIO_TRACCION_CICLOPEO = "criterio_traccion_cabezal_ciclopeo"
+CRITERIO_CONCRETO_CICLOPEO = "concreto_ciclopeo_cabezal"
+CRITERIO_CLASE_EXPOSICION = "clase_exposicion_fisuracion_cabezal"
+CRITERIO_JUNTA_CICLOPEO = "junta_arranque_cabezal_ciclopeo"
+JUNTA_DE_CONSTRUCCION = "junta_de_construccion"
+JUNTA_MONOLITICA = "vaciado_monolitico"
+JUNTAS_DEL_ARRANQUE = (JUNTA_DE_CONSTRUCCION, JUNTA_MONOLITICA)
+
+NUMERAL_9_4_ARMADO = ("Sec. 9.4, armado (AASHTO LRFD Seccion 5; E.060 de "
+                      "contraste, por analogia)")
+NUMERAL_9_4_CICLOPEO = ("Sec. 9.4, alternativa ciclopea (E.060 Cap. 22 por "
+                        "analogia; EG-2013 Tabla 503-07)")
+FILA_EH_EN_REPOSO = "EH_en_reposo"
+MM2_POR_M2 = MILIMETROS_POR_METRO ** 2
+# Condiciones del Art. 7.7.1 de E.060 que el armado empareja con cada cara.
+CONDICION_RECUBRIMIENTO_BARRA_GRUESA = "suelo_intemperie_ge_3_4"
+CONDICION_RECUBRIMIENTO_BARRA_FINA = "suelo_intemperie_le_5_8"
+# El 3 del nucleo de una distribucion triangular (la resultante esta a un
+# tercio del lado cargado) y del centro de gravedad de un trapecio.
+LADOS_DEL_TRIANGULO = 3      # literal-ok: geometria del triangulo, no un valor de proyecto
+
+
+def _aviso_cabezal(entorno: EntornoDelCabezal) -> str:
+    return f"Cabezal de {entorno.extremo} de {entorno.id_punto}"
+
+
+# ---------------------------------------------------------------------------
+# Materiales, regimen y regla de minimos
+# ---------------------------------------------------------------------------
+
+def materiales_del_armado() -> dict:
+    """
+    El concreto y el acero con que se arma el cabezal: f'c ('fc_cabezal_mpa'
+    [A]) y la designacion del acero ('acero_refuerzo_cabezal' [A]), de la
+    que salen fy y el gamma_3 de AASHTO 5.6.3.3 (`FY_ACERO_MPA`,
+    `GAMMA_3_AASHTO`). Guardias de segunda linea con la forma MAT-D13: el
+    bloque rectangular de 5.6.2.2 con alfa_1 = 0.85 vale hasta 10.0 ksi y el
+    limite de traccion de 5.6.2.1 hasta 75.0 ksi.
+    """
+    fc = ca.valor(CRITERIO_FC_CABEZAL)
+    if not (_finito(fc) and 0 < fc <= FC_MAX_ALFA_1_MPA):
+        raise DatoInvalidoError(
+            CRITERIO_FC_CABEZAL, valor=fc,
+            motivo=f"f'c positivo y no mayor que {FC_MAX_ALFA_1_MPA:.1f} MPa "
+                   "(10.0 ksi): por encima el factor alfa_1 del bloque de "
+                   "AASHTO 5.6.2.2 deja de ser 0.85")
+    acero = ca.valor(CRITERIO_ACERO_CABEZAL)
+    if acero not in FY_ACERO_MPA or acero not in GAMMA_3_AASHTO:
+        raise DatoInvalidoError(
+            CRITERIO_ACERO_CABEZAL, valor=acero,
+            motivo="se espera una de: " + ", ".join(sorted(FY_ACERO_MPA)))
+    fy = FY_ACERO_MPA[acero]
+    if not 0 < fy <= FY_MAX_EPSILON_TL_MPA:
+        raise DatoInvalidoError(
+            CRITERIO_ACERO_CABEZAL, valor=fy,
+            motivo="fluencia fuera del dominio del limite de traccion de "
+                   "AASHTO 5.6.2.1 (hasta 75.0 ksi)")
+    return {"fc": float(fc), "fy": float(fy), "acero": acero,
+            "gamma_3": GAMMA_3_AASHTO[acero]}
+
+
+def regimen_de_resistencia() -> str:
+    regimen = ca.valor(CRITERIO_REGIMEN_RESISTENCIA)
+    if regimen not in REGIMENES_DE_RESISTENCIA:
+        raise DatoInvalidoError(
+            CRITERIO_REGIMEN_RESISTENCIA, valor=regimen,
+            motivo="se espera una de: " + ", ".join(REGIMENES_DE_RESISTENCIA))
+    return regimen
+
+
+def _regla_de_minimos() -> str:
+    regla = ca.valor(CRITERIO_REGLA_MINIMOS)
+    if regla not in REGLAS_DE_MINIMOS:
+        raise DatoInvalidoError(
+            CRITERIO_REGLA_MINIMOS, valor=regla,
+            motivo="se espera una de: " + ", ".join(REGLAS_DE_MINIMOS))
+    return regla
+
+
+def _procedimiento() -> dict:
+    """Los factores de resistencia y el beta del simplificado, del criterio."""
+    p = ca.valor(CRITERIO_FLEXION_CORTE)
+    for clave in ("phi_flexion", "phi_corte", "phi_evento_extremo",
+                  "beta_simplificado"):
+        x = p.get(clave) if hasattr(p, "get") else None
+        if not (_finito(x) and x > 0):
+            raise DatoInvalidoError(
+                CRITERIO_FLEXION_CORTE, valor=x,
+                motivo=f"falta el campo '{clave}', positivo, del "
+                       "procedimiento de flexion y corte")
+    return p
+
+
+def catalogo_de_barras() -> dict:
+    """
+    El catalogo [A] 'catalogo_barras_refuerzo_cabezal', validado: barras
+    (designacion -> diametro en mm y area en mm2) en orden creciente de
+    diametro, serie de espaciamientos en m, y las dos barras nombradas
+    (minima de la armadura principal y la de reparto) dentro del catalogo.
+    """
+    c = ca.valor(CRITERIO_CATALOGO_BARRAS)
+    barras = c.get("barras") if hasattr(c, "get") else None
+    series = c.get("espaciamientos_m") if hasattr(c, "get") else None
+    if not (isinstance(barras, dict) and barras
+            and isinstance(series, (tuple, list)) and series):
+        raise DatoInvalidoError(
+            CRITERIO_CATALOGO_BARRAS, valor=c,
+            motivo="se esperan los campos 'barras' (designacion -> "
+                   "(diametro mm, area mm2)) y 'espaciamientos_m'")
+    orden = []
+    for nombre, par in barras.items():
+        if not (isinstance(par, (tuple, list)) and len(par) == 2
+                and all(_finito(x) and x > 0 for x in par)):
+            raise DatoInvalidoError(
+                CRITERIO_CATALOGO_BARRAS, valor=par,
+                motivo=f"la barra «{nombre}» necesita (diametro mm, area "
+                       "mm2), los dos positivos")
+        orden.append((float(par[0]), float(par[1]), str(nombre)))
+    orden.sort()
+    if not all(_finito(s) and s > 0 for s in series):
+        raise DatoInvalidoError(
+            CRITERIO_CATALOGO_BARRAS, valor=series,
+            motivo="los espaciamientos son longitudes positivas, en m")
+    nombres = [n for _, _, n in orden]
+    for campo in ("barra_minima_principal", "barra_reparto"):
+        if c.get(campo) not in nombres:
+            raise DatoInvalidoError(
+                CRITERIO_CATALOGO_BARRAS, valor=c.get(campo),
+                motivo=f"'{campo}' tiene que ser una barra del catalogo: "
+                       + ", ".join(nombres))
+    return {"barras": tuple(orden),
+            "espaciamientos": tuple(sorted((float(s) for s in series),
+                                           reverse=True)),
+            "minima_principal": c["barra_minima_principal"],
+            "reparto": c["barra_reparto"],
+            "diametro_grueso": dict((n, d) for d, _, n in orden).get(
+                RECUBRIMIENTO_BARRA_GRUESA_DESDE)}
+
+
+# ---------------------------------------------------------------------------
+# Recubrimiento con que se arma
+# ---------------------------------------------------------------------------
+
+def recubrimiento_para_armar(*, condicion: str) -> Tuple[float, str,
+                                                         Optional[str]]:
+    """
+    El recubrimiento, en mm, con que se calcula el peralte efectivo de una
+    cara, su origen y, si hace falta, el aviso.
+
+    CON LOS DOS DATOS DECLARADOS ('categoria_refuerzo_aashto' [A] y
+    'exposicion_quimica_ems' [S]) es el de la regla del mayor de la Sec. 0.2
+    (`recubrimiento_de_diseno`).
+
+    SIN ALGUNO DE LOS DOS NO SE RELLENA EL DATO: el encargo de la cadena T
+    pedia tomar entonces los 70 mm de E.060 7.7.1, y eso seria suponer la
+    categoria del acero y la agresividad del sitio. Se arma con la COTA MAS
+    EXIGENTE que la regla puede dar para esa cara -- el mayor de E.060 y de
+    la fila de AASHTO en su columna de mas recubrimiento, con el factor por
+    relacion agua-cemento mas alto --, que es el lado seguro del peralte
+    efectivo (mas recubrimiento, menos brazo, mas acero), y se AVISA: el dato
+    sigue faltando y el recubrimiento del plano sale de la regla completa.
+
+    DONDE ESA COTA NO ES EL LADO SEGURO, dicho en el aviso (pregunta 2 del
+    cierre de T-7c): es la mas exigente de la regla ANTES del aumento por
+    ambiente corrosivo de E.060 7.7.5.1, que la regla no cuantifica; si el
+    EMS declara un ambiente corrosivo, el recubrimiento real puede pasarla y
+    entonces la flexion, la fisuracion de 5.6.7 (d_c) y la altura de la
+    zapata sobre su refuerzo (E.060 15.7) quedan del lado inseguro hasta
+    rearmar. Y en el cortante el piso 0.72·h de 5.7.2.8 no depende del
+    recubrimiento: por eso d_v se acota al peralte efectivo (H8).
+    """
+    try:
+        r = recubrimiento_de_diseno(condicion=condicion)
+        return (float(r.adoptado_mm),
+                f"regla del mayor ({r.origen}: E.060 {r.e060_mm:.1f} mm, "
+                f"AASHTO {r.aashto_mm:.1f} mm)", None)
+    except CriterioPendienteError as falta:
+        if falta.clave not in (CRITERIO_CATEGORIA_REFUERZO,
+                               CRITERIO_EXPOSICION_QUIMICA):
+            raise
+        clave = falta.clave
+    e060 = recubrimiento_e060_mm(condicion=condicion)
+    situaciones = ca.valor(CRITERIO_SITUACION_RECUBRIMIENTO)
+    tabla = ca.valor(CRITERIO_TABLA_RECUBRIMIENTO)
+    situacion = situaciones.get(condicion)
+    if situacion not in tabla:
+        raise DatoInvalidoError(
+            "situacion", valor=situacion,
+            motivo=f"la condicion '{condicion}' no tiene fila emparejada en "
+                   f"'{CRITERIO_SITUACION_RECUBRIMIENTO}'")
+    tabulado = max(float(x) for x in tabla[situacion].values())
+    factor = max(RECUBRIMIENTO_MP_FACTOR_AC.values())
+    cota = max(e060, tabulado * factor, RECUBRIMIENTO_MP_PISO_MM)
+    return (cota,
+            f"cota mas exigente por falta de dato: max(E.060 {e060:.1f} mm, "
+            f"AASHTO {tabulado:.1f} mm x {factor:g})",
+            f"el recubrimiento con que se arma ({cota:.1f} mm, condicion "
+            f"'{condicion}') es la COTA MAS EXIGENTE de la regla del mayor y "
+            f"no el recubrimiento del proyecto: falta declarar '{clave}' "
+            f"(tambien hacen falta '{CRITERIO_CATEGORIA_REFUERZO}' y "
+            f"'{CRITERIO_EXPOSICION_QUIMICA}', del expediente y del analisis "
+            "quimico del EMS). Sin ambiente corrosivo, con ellos el "
+            "recubrimiento baja, el peralte efectivo sube y el acero "
+            "requerido no aumenta; el espaciamiento de fisuracion de AASHTO "
+            "5.6.7 y la altura de la zapata sobre su refuerzo (E.060 15.7) "
+            "se relajan. NO es el lado seguro si el EMS declara un ambiente "
+            "corrosivo: E.060 7.7.5.1 manda entonces AUMENTAR el "
+            "recubrimiento sin decir cuanto, puede pasar esta cota y la "
+            "flexion, la fisuracion y la altura de 15.7 hay que rehacerlas. "
+            "En el cortante el piso 0.72·h de AASHTO 5.7.2.8 no depende del "
+            "recubrimiento: por eso d_v se acota al peralte efectivo")
+
+
+# ---------------------------------------------------------------------------
+# Las formulas de seccion: AASHTO LRFD 5.6 y 5.7, por metro de ancho
+# ---------------------------------------------------------------------------
+
+def beta_1_aashto(fc: float) -> float:
+    """beta_1 del bloque rectangular, AASHTO 5.6.2.2 (f'c en MPa)."""
+    exceso = max(fc - FC_MAX_BETA_1_MPA, 0.0)
+    return max(BETA_1_BLOQUE_AASHTO - BETA_1_REDUCCION_AASHTO_SI * exceso,
+               BETA_1_MINIMO)
+
+
+def beta_1_e060(fc: float) -> float:
+    """beta_1 de E.060 10.2.7.3 (f'c en MPa)."""
+    bajo, alto = FC_BETA_1_E060_MPA
+    if fc <= bajo:
+        return BETA_1_E060
+    if fc >= alto:
+        return BETA_1_E060_MINIMO
+    return BETA_1_E060 - (BETA_1_E060 - BETA_1_E060_MINIMO) * (
+        (fc - bajo) / (alto - bajo))
+
+
+def _exigir_seccion(d: float, fc: float, fy: float) -> None:
+    for nombre, x in (("d", d), ("f'c", fc), ("fy", fy)):
+        if not (_finito(x) and x > 0):
+            raise DatoInvalidoError(
+                nombre, valor=x,
+                motivo="la seccion de concreto armado necesita peralte "
+                       "efectivo, f'c y fy positivos y finitos")
+
+
+def acero_por_flexion(*, M_u: float, d: float, fc: float, fy: float,
+                      phi: float, alfa: float = ALFA_1_BLOQUE_AASHTO
+                      ) -> Optional[float]:
+    """
+    Area de acero en traccion, mm2 por metro de ancho, con que una seccion
+    rectangular de peralte efectivo `d` (m) desarrolla phi·M_n = M_u (kN·m/m)
+    con el bloque rectangular de compresiones (AASHTO 5.6.3.2 con 5.6.2.2;
+    con `alfa` = 0,85 y phi de 9.3.2.1 es la de E.060 10.2.7):
+
+        M_u = phi·A_s·f_y·(d - a/2),   a = A_s·f_y / (alfa·f'c·b)
+
+    de donde, con R = 2·M_u / (phi·alfa·f'c·b·d²):
+
+        A_s = (alfa·f'c / f_y)·[1 - sqrt(1 - R)]·b·d
+
+    Devuelve None cuando R >= 1: el momento supera lo que el bloque puede dar
+    con cualquier cantidad de acero, y la seccion no alcanza. Con M_u <= 0
+    no hay traccion que armar y devuelve 0.
+    """
+    _exigir_seccion(d, fc, fy)
+    if not _finito(M_u):
+        raise LimiteNumericoError("M_u", valor=M_u,
+                                  motivo="el momento factorado no es finito")
+    if not (_finito(phi) and phi > 0):
+        raise DatoInvalidoError("phi", valor=phi,
+                                motivo="factor de resistencia positivo")
+    if M_u <= 0:
+        return 0.0
+    R = 2 * M_u / (phi * alfa * fc * KPA_POR_MPA * d ** 2)
+    if not R < 1:
+        return None
+    return alfa * fc / fy * (1 - math.sqrt(1 - R)) * d * MM2_POR_M2
+
+
+def resistencia_a_flexion(*, As: float, d: float, fc: float, fy: float,
+                          alfa: float = ALFA_1_BLOQUE_AASHTO,
+                          beta_1: Optional[float] = None) -> dict:
+    """
+    La resistencia NOMINAL a flexion de la seccion rectangular con `As`
+    (mm2/m) a un peralte efectivo `d` (m), y la deformacion neta del acero
+    (AASHTO 5.6.3.2.2-1 sin presfuerzo ni acero de compresion; 5.6.2.1):
+
+        a = A_s·f_y / (alfa·f'c·b)      c = a / beta_1
+        M_n = A_s·f_y·(d - a/2)         epsilon_t = 0.003·(d - c) / c
+
+    Devuelve a y c en m, M_n en kN·m/m y epsilon_t (None sin acero).
+    """
+    _exigir_seccion(d, fc, fy)
+    if not (_finito(As) and As >= 0):
+        raise DatoInvalidoError("As", valor=As,
+                                motivo="area de acero no negativa y finita")
+    if beta_1 is None:
+        beta_1 = beta_1_aashto(fc)
+    a = As / MM2_POR_M2 * fy / (alfa * fc)
+    c = a / beta_1
+    M_n = As / MM2_POR_M2 * fy * KPA_POR_MPA * (d - a / 2)
+    epsilon_t = EPSILON_CU_CONCRETO * (d - c) / c if c > 0 else None
+    return {"a": a, "c": c, "M_n": M_n, "epsilon_t": epsilon_t,
+            "beta_1": beta_1}
+
+
+def momento_de_agrietamiento(*, espesor: float, fc: float,
+                             gamma_3: float) -> float:
+    """
+    M_cr de AASHTO 5.6.3.3, kN·m por metro, para la seccion rectangular
+    monolitica sin presfuerzo: la ec. 5.6.3.3-1 se reduce a
+
+        M_cr = gamma_3·gamma_1·f_r·S,   f_r = 0.24·sqrt(f'c [ksi]),
+        S = b·h²/6
+
+    con gamma_1 = 1.6 y f_r en MPa por `MODULO_ROTURA_AASHTO_SI`.
+    """
+    if not (_finito(espesor) and espesor > 0 and _finito(fc) and fc > 0):
+        raise DatoInvalidoError("espesor", valor=espesor,
+                                motivo="espesor y f'c positivos y finitos")
+    f_r = MODULO_ROTURA_AASHTO_SI * math.sqrt(fc)
+    S = espesor ** 2 / NUCLEO_CENTRAL_DIVISOR
+    return gamma_3 * GAMMA_1_AGRIETAMIENTO_AASHTO * f_r * KPA_POR_MPA * S
+
+
+def cortante_del_concreto(*, d: float, a: float, espesor: float, fc: float,
+                          beta: float) -> dict:
+    """
+    La resistencia NOMINAL a cortante del concreto sin refuerzo transversal,
+    kN por metro (AASHTO 5.7.3.3 y 5.7.2.8):
+
+        d_v = min[ max(d - a/2, 0.9·d, 0.72·h), d ]
+        V_c = 0.0316·beta·sqrt(f'c)·b_v·d_v        (ksi, in; en SI,
+              `VC_COEFICIENTE_AASHTO_SI`·beta·sqrt(f'c [MPa]), en MPa)
+        V_n = min(V_c, 0.25·f'c·b_v·d_v)
+
+    EL TOPE d_v <= d (correcciones de T-7c, H8) es una lectura del
+    proyecto, declarada como `Interpretacion` de la cita
+    AASHTO_LRFD_9.5.7.2.8#DV: la fuente define d_v como la distancia entre
+    las resultantes de traccion y compresion (d - a/2) y dice que «need not
+    be taken to be less than» el mayor de 0.9·d y 0.72·h. Con el
+    recubrimiento de cota de una seccion delgada, 0.72·h supera al propio
+    peralte efectivo (0.216 m frente a 0.202 m en una pantalla de 0.30 m) y
+    el piso daria un brazo de cortante mayor que la distancia del acero a
+    la cara comprimida; el proyecto no lo toma. `d_v_letra` es el de la
+    letra, que se imprime al lado.
+    """
+    _exigir_seccion(d, fc, fc)
+    d_v_letra = max(d - a / 2, DV_PISO_SOBRE_DE * d,
+                    DV_PISO_SOBRE_H * espesor)
+    d_v = min(d_v_letra, d)
+    V_c = (VC_COEFICIENTE_AASHTO_SI * beta * math.sqrt(fc) * KPA_POR_MPA
+           * d_v)
+    V_tope = VN_TOPE_SOBRE_FC_AASHTO * fc * KPA_POR_MPA * d_v
+    return {"d_v": d_v, "d_v_letra": d_v_letra, "V_c": V_c,
+            "V_n": min(V_c, V_tope)}
+
+
+def fisuracion_aashto(*, M_s: float, As: float, d: float, espesor: float,
+                      d_c: float, fc: float, fy: float) -> dict:
+    """
+    --- correcciones de T-7c (H3) --- El control de fisuracion por
+    distribucion del refuerzo de AASHTO 5.6.7 en UNA seccion rectangular de
+    1 m de ancho, con el momento de SERVICIO I `M_s` (kN·m/m), el acero
+    `As` (mm2/m) a un peralte efectivo `d` (m), el espesor y la distancia
+    `d_c` (m) de la fibra extrema traccionada al eje de la barra mas
+    proxima:
+
+      aplica    la traccion de la seccion BRUTA, M_s/S con S = b·h²/6,
+                supera 0.8·f_r (5.6.7; f_r de 5.4.2.6).
+      f_ss      tension del acero en servicio con la seccion FISURADA
+                elastica: n = E_s/E_c (5.4.3.2; C5.4.2.4-1), k =
+                sqrt(2·rho·n + (rho·n)²) - rho·n, j = 1 - k/3, f_ss =
+                M_s/(A_s·j·d). La fuente la limita a 0.60·f_y.
+      beta_s    1 + d_c/[0.7·(h - d_c)] (ec. 5.6.7-2).
+      s_max     700·gamma_e/(beta_s·f_ss) - 2·d_c (ec. 5.6.7-1), en SI por
+                `FISURACION_COEFICIENTE_AASHTO_SI`, para cada clase de
+                exposicion de `FISURACION_GAMMA_E`.
+
+    Devuelve todo en MPa y m. Sin traccion (M_s <= 0) no aplica.
+    """
+    for nombre, x in (("As", As), ("d", d), ("espesor", espesor),
+                      ("d_c", d_c), ("f'c", fc), ("fy", fy)):
+        if not (_finito(x) and x > 0):
+            raise DatoInvalidoError(
+                nombre, valor=x,
+                motivo="la fisuracion de AASHTO 5.6.7 necesita acero, "
+                       "peraltes, recubrimiento y materiales positivos y "
+                       "finitos")
+    if not _finito(M_s):
+        raise LimiteNumericoError("M_s", valor=M_s,
+                                  motivo="el momento de servicio no es finito")
+    if not d_c < espesor:
+        raise DatoInvalidoError("d_c", valor=d_c,
+                                motivo="el eje de la barra tiene que caer "
+                                       "dentro del espesor de la seccion")
+    f_r = MODULO_ROTURA_AASHTO_SI * math.sqrt(fc)
+    S = espesor ** 2 / NUCLEO_CENTRAL_DIVISOR
+    f_t = M_s / S / KPA_POR_MPA
+    umbral = FISURACION_FRACCION_FR * f_r
+    E_c = EC_COEFICIENTE_AASHTO_SI * fc ** EC_EXPONENTE_AASHTO
+    n = ES_REFUERZO_AASHTO_MPA / E_c
+    rho_n = As / MM2_POR_M2 / d * n
+    k = math.sqrt(rho_n ** 2 + 2 * rho_n) - rho_n
+    j = 1 - k / LADOS_DEL_TRIANGULO
+    f_ss = max(M_s, 0.0) / (As / MM2_POR_M2 * j * d) / KPA_POR_MPA
+    beta_s = 1 + d_c / (FISURACION_BETA_S_FACTOR * (espesor - d_c))
+    s_max = ({clase: FISURACION_COEFICIENTE_AASHTO_SI * g / (beta_s * f_ss)
+              - 2 * d_c for clase, g in FISURACION_GAMMA_E.items()}
+             if f_ss > 0 else {})
+    return {"aplica": f_t > umbral + TOL_UMBRAL_NORMATIVO, "f_t": f_t,
+            "umbral": umbral, "f_r": f_r, "E_c": E_c, "n": n, "k": k,
+            "j": j, "f_ss": f_ss,
+            "f_ss_max": FISURACION_FSS_MAX_SOBRE_FY * fy, "beta_s": beta_s,
+            "d_c": d_c, "s_max": s_max}
+
+
+def clase_de_exposicion() -> Optional[str]:
+    """
+    La clase de exposicion de AASHTO 5.6.7 que el Propietario declaro
+    ('clase_exposicion_fisuracion_cabezal' [A], SIN valor de archivo), o
+    None si no la declaro: la fila de fisuracion lo dice como «no
+    decidida». Un valor fuera de las dos clases se rechaza.
+    """
+    try:
+        clase = ca.valor(CRITERIO_CLASE_EXPOSICION)
+    except CriterioPendienteError:
+        return None
+    if clase not in CLASES_DE_EXPOSICION:
+        raise DatoInvalidoError(
+            CRITERIO_CLASE_EXPOSICION, valor=clase,
+            motivo="se espera una de: " + ", ".join(CLASES_DE_EXPOSICION))
+    return clase
+
+
+def _fila_de_fisuracion(*, fis: dict, s_prop: float, clase: Optional[str],
+                        codigo: str, donde: str, M_s: float, As: float,
+                        rec: float, barra) -> Verificacion:
+    """
+    --- correcciones de T-7c (H3) --- La fila A6: el control de fisuracion
+    de AASHTO 5.6.7 con el espaciamiento propuesto.
+
+      no aplica   la traccion bruta de servicio no pasa de 0.8·f_r: CUMPLE,
+                  diciendolo.
+      declarada   la clase del Propietario DECIDE: s <= s_max(clase) y
+                  f_ss <= 0.60·f_y.
+      sin clase   CUMPLE si cumple tambien la Clase 2 (la mas exigente);
+                  INDICADOR «no decidida» si solo cumple la Clase 1; NO
+                  CUMPLE si no cumple ni la 1, que es la que cualquier
+                  clase pide.
+    """
+    mag = lambda s, v, u, p, c=CIFRAS_MAGNITUD: Magnitud(s, v, u, p, cifras=c)  # noqa: E731
+    s1 = fis["s_max"].get(CLASE_EXPOSICION_1)
+    s2 = fis["s_max"].get(CLASE_EXPOSICION_2)
+    fss_ok = fis["f_ss"] <= fis["f_ss_max"] + TOL_UMBRAL_NORMATIVO
+    sustitucion = (
+        mag("M_s", M_s, "kN·m/m", "Servicio I (AASHTO Tabla 3.4.1-1, todas "
+            "las cargas con 1.00), con el mismo empuje con que se arma"),
+        mag("f_t bruta", fis["f_t"], "MPa", "M_s / (b·h²/6)", CIFRAS_FACTOR),
+        mag("0.8·f_r", fis["umbral"], "MPa", "f_r = 0.24·sqrt(f'c [ksi]) "
+            "(5.4.2.6)", CIFRAS_FACTOR),
+        mag("A_s", As, "mm2/m", barra.texto if barra is not None else
+            "acero adoptado (sin barra del catalogo)", 0),
+        mag("n", fis["n"], "", "E_s / E_c (5.4.3.2; C5.4.2.4-1)",
+            CIFRAS_FACTOR),
+        mag("f_ss", fis["f_ss"], "MPa", "M_s / (A_s·j·d), seccion fisurada "
+            f"elastica, j = {fis['j']:.4f}; tope 0.60·f_y = "
+            f"{fis['f_ss_max']:.1f} MPa", 1),
+        mag("d_c", fis["d_c"], "m", f"recubrimiento con que se arma "
+            f"({rec:.1f} mm) mas el radio de la barra"),
+        mag("beta_s", fis["beta_s"], "", "1 + d_c/[0.7·(h - d_c)] "
+            "(ec. 5.6.7-2)", CIFRAS_FACTOR),
+        mag("s_max Clase 1", s1 if s1 is not None else 0.0, "m",
+            "gamma_e = 1.00 (ec. 5.6.7-1)"),
+        mag("s_max Clase 2", s2 if s2 is not None else 0.0, "m",
+            "gamma_e = 0.75 (ec. 5.6.7-1)"),
+    )
+    comunes = dict(
+        fundamento="F9.ARM_FISURACION", codigo=codigo,
+        que=f"A6, control de fisuracion en servicio (AASHTO 5.6.7): {donde}",
+        formula="si M_s/S > 0.8·f_r: s <= 700·gamma_e/(beta_s·f_ss) - 2·d_c "
+                "(ksi, in; en SI 122.59·gamma_e/(beta_s·f_ss [MPa]) - 2·d_c "
+                "[m]) y f_ss <= 0.60·f_y",
+        sustitucion=sustitucion, criterio=CRITERIO_CLASE_EXPOSICION,
+        cita="AASHTO_LRFD_9.5.6.7#FISURACION",
+        citas=("AASHTO_LRFD_9.5.6.7#ESPACIAMIENTO",
+               "AASHTO_LRFD_9.5.6.7#GAMMA_E", "AASHTO_LRFD_9.5.6.7#FSS",
+               "AASHTO_LRFD_9.C5.6.7#CLASE_1", "AASHTO_LRFD_9.5.4.3.2#ES",
+               "AASHTO_LRFD_9.C5.4.2.4#EC", "AASHTO_LRFD_9.T3.4.1-1"))
+    if not fis["aplica"]:
+        return _verificacion_de_armado(
+            resultado=mag("f_t bruta", fis["f_t"], "MPa", "Servicio I",
+                          CIFRAS_FACTOR),
+            descripcion_umbral="traccion bruta en servicio <= 0.8·f_r: la "
+                               "seccion no queda sujeta a 5.6.7",
+            admisible=fis["umbral"], unidad="MPa",
+            aplicacion="condicion de aplicacion de la fuente",
+            cumple=True, margen=fis["umbral"] - fis["f_t"], decide=True,
+            obtenido=fis["f_t"],
+            nota=("La traccion de la seccion bruta no alcanza el 80 % del "
+                  "modulo de rotura: AASHTO 5.6.7 no aplica y el "
+                  "espaciamiento lo fijan los topes de A4."),
+            explicacion_falla="", explicacion_cumple=(
+                "5.6.7 no aplica: la traccion bruta de servicio no pasa de "
+                "0.8·f_r"), **comunes)
+    if clase is not None:
+        s_lim = fis["s_max"][clase]
+        cumple = fss_ok and s_prop <= s_lim + TOL_UMBRAL_NORMATIVO
+        return _verificacion_de_armado(
+            resultado=mag("s", s_prop, "m", "espaciamiento propuesto"),
+            descripcion_umbral=f"s <= s_max de la {clase.replace('_', ' ')} "
+                               "y f_ss <= 0.60·f_y",
+            admisible=s_lim, unidad="m",
+            aplicacion=(f"exigencia de la fuente con la clase de exposicion "
+                        f"que declaro el Propietario "
+                        f"('{CRITERIO_CLASE_EXPOSICION}' = '{clase}')"),
+            cumple=cumple, margen=s_lim - s_prop, decide=True,
+            obtenido=s_prop,
+            nota="La barra propuesta respeta este espaciamiento si alguna "
+                 "del catalogo lo consigue.",
+            explicacion_falla=(
+                "la tension del acero en servicio supera 0.60·f_y: aumentar "
+                "el acero" if not fss_ok else
+                "el espaciamiento propuesto supera el de 5.6.7: ninguna "
+                "barra del catalogo lo cumple; reducir el espaciamiento o "
+                "el recubrimiento"), **comunes)
+    cumple_2 = fss_ok and s2 is not None and s_prop <= s2 + TOL_UMBRAL_NORMATIVO
+    cumple_1 = fss_ok and s1 is not None and s_prop <= s1 + TOL_UMBRAL_NORMATIVO
+    return _verificacion_de_armado(
+        resultado=mag("s", s_prop, "m", "espaciamiento propuesto (respeta "
+                      "la Clase 1, la menos exigente)"),
+        descripcion_umbral="s <= s_max de la clase que declare el "
+                           "Propietario (se imprime la de la Clase 2, la "
+                           "mas exigente)",
+        admisible=s2 if s2 is not None else 0.0, unidad="m",
+        aplicacion=(f"clase de exposicion NO DECIDIDA "
+                    f"('{CRITERIO_CLASE_EXPOSICION}' sin valor: la declara "
+                    "el Propietario)"),
+        cumple=cumple_2, margen=(s2 if s2 is not None else 0.0) - s_prop,
+        decide=not cumple_1, obtenido=s_prop,
+        nota=(f"Clase 1: s <= {s1 if s1 is not None else 0.0:.3f} m "
+              f"({'cumple' if cumple_1 else 'NO cumple'}); Clase 2: s <= "
+              f"{s2 if s2 is not None else 0.0:.3f} m "
+              f"({'cumple' if cumple_2 else 'NO cumple'})."),
+        explicacion_falla=(
+            "no decidida: con la Clase 1 cumple y con la Clase 2 no; "
+            "declarar la clase de exposicion" if cumple_1 else
+            "no cumple ni con la Clase 1, que cualquier clase pide: "
+            + ("la tension del acero en servicio supera 0.60·f_y"
+               if not fss_ok else "reducir el espaciamiento o el "
+               "recubrimiento")), **comunes)
+
+
+def simplificado_permitido(*, es_zapata: bool, espesor: float,
+                           vuelo: Optional[float], d_v: float
+                           ) -> Tuple[bool, str]:
+    """
+    Si AASHTO 5.7.3.4.1 PERMITE el procedimiento simplificado (beta = 2.0,
+    theta = 45 grados) en una seccion sin refuerzo transversal, y por cual
+    de sus condiciones:
+
+      * zapata cuya distancia del punto de cortante nulo a la cara del muro
+        (el vuelo de la punta o del talon) es menor que 3·d_v; o
+      * seccion de peralte total menor que 16.0 in (0.4064 m).
+
+    La tercera condicion de la fuente -- llevar el refuerzo transversal
+    minimo de 5.7.2.5 -- no se da: el cabezal no lleva estribos.
+    """
+    if es_zapata and vuelo is not None and \
+            vuelo < ZAPATA_SIMPLIFICADO_VECES_DV * d_v - TOL_UMBRAL_NORMATIVO:
+        return True, (f"zapata con vuelo {vuelo:.3f} m < 3·d_v = "
+                      f"{ZAPATA_SIMPLIFICADO_VECES_DV * d_v:.3f} m")
+    if espesor < PERALTE_MAX_SIMPLIFICADO_AASHTO_SI - TOL_UMBRAL_NORMATIVO:
+        return True, (f"peralte total {espesor:.3f} m < 16.0 in = "
+                      f"{PERALTE_MAX_SIMPLIFICADO_AASHTO_SI:.4f} m")
+    return False, (f"peralte total {espesor:.3f} m >= 16.0 in = "
+                   f"{PERALTE_MAX_SIMPLIFICADO_AASHTO_SI:.4f} m"
+                   + ("" if not es_zapata else
+                      f" y vuelo {vuelo:.3f} m >= 3·d_v = "
+                      f"{ZAPATA_SIMPLIFICADO_VECES_DV * d_v:.3f} m"))
+
+
+def acero_de_temperatura_aashto(*, ancho: float, espesor: float,
+                                fy: float) -> float:
+    """
+    Acero de retraccion y temperatura de AASHTO 5.10.6, mm2 por metro, POR
+    CARA Y POR DIRECCION: A_s >= 1.30·b·h / [2·(b + h)·f_y], acotado a 0.11
+    <= A_s <= 0.60 in2/ft. `ancho` (b, el menor ancho de la seccion) y
+    `espesor` (h) en m; la conversion a SI esta en la constante.
+    """
+    for nombre, x in (("ancho", ancho), ("espesor", espesor), ("fy", fy)):
+        if not (_finito(x) and x > 0):
+            raise DatoInvalidoError(nombre, valor=x,
+                                    motivo="positivo y finito")
+    b, h = ancho * MILIMETROS_POR_METRO, espesor * MILIMETROS_POR_METRO
+    As = (TEMPERATURA_COEFICIENTE_AASHTO_SI * b * h / (2 * (b + h) * fy)
+          * MILIMETROS_POR_METRO)
+    return min(max(As, TEMPERATURA_AS_MIN_AASHTO_SI), TEMPERATURA_AS_MAX_AASHTO_SI)
+
+
+def espaciamiento_maximo_del_armado(*, espesor: float,
+                                    regla: Optional[str] = None
+                                    ) -> Tuple[float, str]:
+    """
+    El espaciamiento maximo del refuerzo de una cara, m, y de donde sale: el
+    menor de los topes de AASHTO 5.10.3.2 (1.5 veces el espesor y 18.0 in) y
+    de 5.10.6 (12.0 in en muros y zapatas de mas de 18.0 in; en lo demas,
+    tres veces el espesor «but not less than 18.0 in.») y, con la regla del
+    mas exigente, de E.060 14.3.3 (tres veces el espesor y 400 mm).
+    """
+    if not (_finito(espesor) and espesor > 0):
+        raise DatoInvalidoError("espesor", valor=espesor,
+                                motivo="espesor positivo y finito")
+    regla = _regla_de_minimos() if regla is None else regla
+    if espesor > TEMPERATURA_ESPESOR_GRUESO_M + TOL_UMBRAL_NORMATIVO:
+        temperatura = TEMPERATURA_S_MAX_GRUESO_M
+    else:
+        temperatura = max(TEMPERATURA_S_VECES_ESPESOR * espesor,
+                          TEMPERATURA_S_PISO_M)
+    candidatos = [
+        (ESPACIAMIENTO_MAX_VECES_ESPESOR_AASHTO * espesor,
+         "1.5 veces el espesor (AASHTO 5.10.3.2)"),
+        (ESPACIAMIENTO_MAX_ABSOLUTO_AASHTO_M, "18.0 in (AASHTO 5.10.3.2)"),
+        (temperatura, "acero de temperatura (AASHTO 5.10.6)"),
+    ]
+    if regla == MINIMOS_MAS_EXIGENTE:
+        candidatos.append((espaciamiento_maximo(espesor=espesor),
+                           "min(3h, 400 mm) (E.060 14.3.3, por analogia)"))
+    return min(candidatos)
+
+
+def cuantia_vertical_ec_11_32(*, hm: float, lm: float,
+                              rho_h: float) -> float:
+    """
+    La cuantia vertical minima de un muro bajo el regimen de cortante EN SU
+    PLANO, E.060 11.10.10.3, ec. (11-32), completa y con sus dos topes:
+
+        rho_v >= 0,0025 + 0,5·(2,5 - hm/lm)·(rho_h - 0,0025) >= 0,0025
+
+    «pero no necesita ser mayor que el valor de rho_h requerido por
+    11.10.10.1». `hm` es la altura total del muro y `lm` su longitud total
+    (m); `rho_h`, la cuantia horizontal requerida. El piso sale del criterio
+    [N→] 'cuantia_vertical_cortante_alto_e060_art_11_10_10_3'.
+    """
+    for nombre, x in (("hm", hm), ("lm", lm), ("rho_h", rho_h)):
+        if not (_finito(x) and x > 0):
+            raise DatoInvalidoError(
+                nombre, valor=x,
+                motivo="la ec. (11-32) de E.060 necesita altura, longitud y "
+                       "cuantia horizontal positivas y finitas")
+    piso = float(ca.valor(CRITERIO_CUANTIA_VERTICAL_CORTANTE_ALTO))
+    rho_v = piso + EC_11_32_FACTOR * (EC_11_32_ESBELTEZ - hm / lm) * (
+        rho_h - piso)
+    return min(max(rho_v, piso), max(rho_h, piso))
+
+
+def proponer_barra(*, As: float, s_max: float, catalogo: dict,
+                   desde: str, admite=None) -> Optional[BarraPropuesta]:
+    """
+    La barra y el espaciamiento PROPUESTOS para dar `As` (mm2/m) con un
+    espaciamiento no mayor que `s_max` (m): empezando por la barra `desde`
+    y subiendo de diametro, la primera que con el MAYOR espaciamiento de la
+    serie del catalogo lo consigue. None si ninguna barra del catalogo
+    alcanza. Es una regla de propuesta [A], no una exigencia.
+
+    `admite(diametro_mm, s, As_provisto)` (correcciones de T-7c, H3) es una
+    condicion mas que la propuesta tiene que cumplir -- la del control de
+    fisuracion de AASHTO 5.6.7 --: el espaciamiento que no la cumple se
+    salta.
+    """
+    if not (_finito(As) and As >= 0 and _finito(s_max) and s_max > 0):
+        raise DatoInvalidoError("As", valor=As,
+                                motivo="acero no negativo y espaciamiento "
+                                       "maximo positivo, finitos")
+    activo = False
+    for diametro, area, nombre in catalogo["barras"]:
+        activo = activo or nombre == desde
+        if not activo:
+            continue
+        for s in catalogo["espaciamientos"]:
+            if s <= s_max + TOL_UMBRAL_NORMATIVO and \
+                    area / s >= As - TOL_UMBRAL_NORMATIVO and \
+                    (admite is None or admite(diametro, s, area / s)):
+                return BarraPropuesta(designacion=nombre,
+                                      diametro_mm=diametro, area_mm2=area,
+                                      espaciamiento=s, As_provisto=area / s)
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Las solicitaciones con que se arma: reposo y activo, y el contraste E.060
+# ---------------------------------------------------------------------------
+
+def _factores_por_tipo(cargas: tuple, **por_tipo) -> dict:
+    """Factor de cada carga: el de su codigo (con «_» por «.») o el de su tipo."""
+    return {c.codigo: por_tipo.get(c.codigo.replace(".", "_"),
+                                   por_tipo.get(c.tipo, 0.0))
+            for c in cargas}
+
+
+def cargas_en_reposo(cargas: tuple, datos: dict) -> tuple:
+    """
+    Las cargas del ensamble de T-7b pasadas al empuje en REPOSO, para la
+    resistencia de los elementos (regimen 'no_cedente_k0'). SOLO cambian
+    las que son empuje de tierras:
+
+        EH.h   P_A·cos(delta + beta)  ->  (K0 / K_A)·P_A, todo horizontal
+        EH.v   P_A·sen(delta + beta)  ->  0 (sin friccion muro-relleno)
+        LS.h   K_A·gamma·h_eq·h       ->  K0·gamma·h_eq·h
+
+    con los mismos brazos (el diagrama conserva su forma). El peso de la
+    pantalla y de la zapata, el del relleno sobre el talon, el de la
+    sobrecarga, el agua y la subpresion NO se tocan. K0 es el de AASHTO
+    3.11.5.2-1 (1 - sen phi), de terreno horizontal.
+    """
+    K_A, K0, P_A = datos["K_A"], datos["K0"], datos["P_A"]
+    if not (_finito(K_A) and K_A > 0 and _finito(K0) and K0 > 0):
+        raise LimiteNumericoError(
+            "K0/K_A", valor=(K0, K_A),
+            motivo="el coeficiente de empuje activo o el de reposo no es "
+                   "positivo y finito: no hay cociente con que escalar")
+    escala = K0 / K_A
+    nuevas = []
+    for c in cargas:
+        if c.codigo == C_EH_H:
+            c = _reemplazar(c, H=P_A * escala,
+                            descripcion="empuje en reposo, horizontal",
+                            procedencia="(K0 / K_A)·P_A, sin friccion "
+                                        "muro-relleno")
+        elif c.codigo == C_EH_V:
+            c = _reemplazar(c, V=0.0,
+                            descripcion="empuje en reposo, sin componente "
+                                        "vertical",
+                            procedencia="en reposo no se moviliza friccion "
+                                        "muro-relleno")
+        elif c.codigo == C_LS_H:
+            c = _reemplazar(c, H=c.H * escala,
+                            descripcion="sobrecarga viva, empuje en reposo",
+                            procedencia="K0·gamma·h_eq·h")
+        nuevas.append(c)
+    return tuple(nuevas)
+
+
+def _combinaciones_en_reposo(cargas0: tuple, B: float) -> tuple:
+    """
+    Resistencia I con el factor de carga de la fila «En reposo» de la Tabla
+    2.4.5.3.1-2 (1.35 / 0.90) en vez del de la activa, en las dos variantes
+    del ensamble: maximos (con el peso de la sobrecarga) y minimos.
+    """
+    g = factores_de_carga("Resistencia I")
+    reposo = TABLA_GAMMA_P_FILAS[FILA_EH_EN_REPOSO]
+    return (
+        _combinar("Resistencia I (maximos), empuje en reposo", MARCO_LRFD,
+                  CondicionAnalisis.ESTATICO, cargas0,
+                  _factores_por_tipo(cargas0, DC=g["DC"]["max"],
+                                     EV=g["EV"]["max"], EH=reposo["max"],
+                                     LS=g["LS"], WA=g["WA"]["max"]),
+                  B, "portante"),
+        _combinar("Resistencia I (minimos), empuje en reposo", MARCO_LRFD,
+                  CondicionAnalisis.ESTATICO, cargas0,
+                  _factores_por_tipo(cargas0, DC=g["DC"]["min"],
+                                     EV=g["EV"]["min"], EH=reposo["max"],
+                                     LS=g["LS"], LS_v=0.0,
+                                     WA=g["WA"]["max"]),
+                  B, "excentricidad y deslizamiento"),
+    )
+
+
+def _combinaciones_e060(cargas: tuple, B: float) -> tuple:
+    """
+    Las dos combinaciones de E.060 9.2.5 para el CONTRASTE: (9-6) U = 1,4 CM
+    + 1,7 CV + 1,7 CE y (9-7) U = 0,9 CM + 1,7 CE. CM es el peso del
+    concreto; CE, el peso y el empuje del suelo y la presion del agua
+    contenida en el; CV, la sobrecarga viva.
+    """
+    est = CondicionAnalisis.ESTATICO
+    return (
+        _combinar("E.060 (9-6)", MARCO_E060, est, cargas,
+                  _factores_por_tipo(cargas, DC=E060_FACTOR_CM,
+                                     EV=E060_FACTOR_CE, EH=E060_FACTOR_CE,
+                                     WA=E060_FACTOR_CE, LS=E060_FACTOR_CV),
+                  B, "contraste"),
+        _combinar("E.060 (9-7)", MARCO_E060, est, cargas,
+                  _factores_por_tipo(cargas, DC=E060_FACTOR_CM_MINIMO,
+                                     EV=E060_FACTOR_CE, EH=E060_FACTOR_CE,
+                                     WA=E060_FACTOR_CE, LS=0.0),
+                  B, "contraste"),
+    )
+
+
+def _clave_de(s: SolicitacionDeElemento) -> str:
+    if s.elemento == ELEMENTO_PANTALLA:
+        return SECCION_PANTALLA
+    if s.elemento == ELEMENTO_ALEROS:
+        return SECCION_ALERO
+    return SECCION_PUNTA if s.seccion.startswith("punta") else SECCION_TALON
+
+
+def presion_de_contacto_lineal(combo: CombinacionDeEstabilidad
+                                ) -> Optional[dict]:
+    """
+    La presion de contacto del terreno bajo la zapata para el DISEÑO
+    ESTRUCTURAL, lineal: AASHTO 10.6.5 («a triangular or trapezoidal contact
+    stress distribution based on factored loads shall be used»). No es la
+    uniforme sobre B - 2e de la capacidad portante (10.6.1.4), que es la que
+    el ensamble de T-7b usa en E1 y en sus solicitaciones de la zapata.
+
+        |e| <= B/6   trapecio: sigma = (N/B)·(1 +- 6·e/B) en punta y talon
+        |e| >  B/6   triangulo desde el borde cargado, de largo 3·(B/2 - |e|)
+                     y maxima 2·N / largo
+
+    con e positiva hacia la punta. Devuelve el tramo cargado [x0, x1] (m
+    desde la punta) y la presion en sus extremos (kPa); None si la
+    resultante no comprime la base o cae fuera de ella.
+    """
+    N, B = combo.N, combo.B
+    if not (_finito(N) and N > 0 and _finito(B) and B > 0):
+        return None
+    e = combo.excentricidad
+    if not _finito(e):
+        return None
+    if abs(e) <= B / NUCLEO_CENTRAL_DIVISOR:
+        return {"x0": 0.0, "x1": B,
+                "s0": N / B * (1 + NUCLEO_CENTRAL_DIVISOR * e / B),
+                "s1": N / B * (1 - NUCLEO_CENTRAL_DIVISOR * e / B),
+                "forma": "trapecio"}
+    largo = LADOS_DEL_TRIANGULO * (B / 2 - abs(e))
+    if not largo > 0:
+        return None
+    if e > 0:
+        return {"x0": 0.0, "x1": largo, "s0": 2 * N / largo, "s1": 0.0,
+                "forma": "triangulo desde la punta"}
+    return {"x0": B - largo, "x1": B, "s0": 0.0, "s1": 2 * N / largo,
+            "forma": "triangulo desde el talon"}
+
+
+def _carga_lineal_sobre_un_tramo(x0: float, x1: float, s0: float, s1: float,
+                                 a: float, b: float, x_ref: float
+                                 ) -> Tuple[float, float]:
+    """
+    La resultante de una carga repartida LINEAL -- s0 en x0, s1 en x1 -- sobre
+    el tramo [a, b] (recortado a [x0, x1]), y su momento respecto de x_ref
+    (resultante por la distancia de su centro de gravedad a x_ref).
+    """
+    p, q = max(a, x0), min(b, x1)
+    if not q > p or not x1 > x0:
+        return 0.0, 0.0
+    k = (s1 - s0) / (x1 - x0)
+    sp, sq = s0 + k * (p - x0), s0 + k * (q - x0)
+    F = (sp + sq) / 2 * (q - p)
+    if not F > 0:
+        return 0.0, 0.0
+    x_c = p + (q - p) * (sp + 2 * sq) / (LADOS_DEL_TRIANGULO * (sp + sq))
+    return F, F * abs(x_c - x_ref)
+
+
+def solicitaciones_de_la_zapata(g: GeometriaCabezal, cargas: tuple,
+                                combo: CombinacionDeEstabilidad,
+                                datos: dict) -> Optional[dict]:
+    """
+    El cortante y el momento de la PUNTA y del TALON en la cara de la
+    pantalla para UNA combinacion, con la presion de contacto LINEAL del
+    diseño estructural (`presion_de_contacto_lineal`, AASHTO 10.6.5) y con
+    la subpresion del agua, que tambien empuja la zapata hacia arriba:
+
+      punta   presion del terreno + subpresion - peso propio; positivo =
+              tracciona la cara inferior.
+      talon   («metodo mas exacto» de 11.6.1.2) relleno, sobrecarga,
+              componente vertical del empuje y peso propio, menos la presion
+              del terreno y la subpresion que alcanzan al talon; positivo =
+              tracciona la cara superior.
+
+    None si la combinacion no deja presion de contacto evaluable.
+    """
+    presion = presion_de_contacto_lineal(combo)
+    if presion is None:
+        return None
+    f = dict(combo.factores)
+    por = {c.codigo: c for c in cargas}
+    punta, talon, x_t = datos["punta"], datos["talon"], datos["x_trasdos"]
+    B = g.B
+    w = f.get(C_DC_ZAPATA, 0.0) * datos["gamma_c"] * g.espesor_zapata
+    f_u = f.get(C_WA_U, 0.0) if C_WA_U in por else 0.0
+    u_p = GAMMA_AGUA_KN_M3 * datos["h_w_natural"]
+    u_t = GAMMA_AGUA_KN_M3 * datos["h_w"]
+    lineal = (presion["x0"], presion["x1"], presion["s0"], presion["s1"])
+    agua = (0.0, B, u_p, u_t)
+    F_p, M_p = _carga_lineal_sobre_un_tramo(*lineal, 0.0, punta, punta)
+    U_p, MU_p = _carga_lineal_sobre_un_tramo(*agua, 0.0, punta, punta)
+    F_t, M_t = _carga_lineal_sobre_un_tramo(*lineal, x_t, B, x_t)
+    U_t, MU_t = _carga_lineal_sobre_un_tramo(*agua, x_t, B, x_t)
+    V_peso, M_peso = _talon_con_el_peso_entero(g, cargas, combo, datos)
+    return {
+        "punta": (F_p + f_u * U_p - w * punta,
+                  M_p + f_u * MU_p - w * punta ** 2 / 2),
+        "talon": (V_peso - F_t - f_u * U_t, M_peso - M_t - f_u * MU_t),
+        "forma": presion["forma"], "sigma_punta": presion["s0"]
+        if presion["x0"] <= 0 else 0.0,
+    }
+
+
+def _talon_con_el_peso_entero(g: GeometriaCabezal, cargas: tuple,
+                              combo: CombinacionDeEstabilidad,
+                              datos: dict) -> Tuple[float, float]:
+    """
+    El cortante y el momento del talon en la cara de la pantalla cargado con
+    el PESO ENTERO de lo que tiene encima -- relleno, sobrecarga, componente
+    vertical del empuje y peso propio --, SIN descontar la reaccion del
+    terreno ni la subpresion: AASHTO 11.6.1.2 («loaded with the full weight
+    of the superimposed material, unless a more exact method is used»).
+    """
+    f = dict(combo.factores)
+    por = {c.codigo: c for c in cargas}
+    x_t, talon = datos["x_trasdos"], datos["talon"]
+    w = f.get(C_DC_ZAPATA, 0.0) * datos["gamma_c"] * g.espesor_zapata
+    encima = [por[k] for k in (C_EV_TALON, C_LS_V, C_EH_V, C_EQ_V)
+              if k in por]
+    V = sum(f.get(c.codigo, 0.0) * c.V for c in encima) + w * talon
+    M = (sum(f.get(c.codigo, 0.0) * c.V * (c.x - x_t) for c in encima)
+         + w * talon ** 2 / 2)
+    return V, M
+
+
+def _pantalla_con_resultante_a_media_altura(g: GeometriaCabezal,
+                                            cargas: tuple,
+                                            combo: CombinacionDeEstabilidad,
+                                            datos: dict, V_u: float,
+                                            M_u: float
+                                            ) -> Tuple[float, float]:
+    """
+    El cortante y el momento de la pantalla en su arranque con la resultante
+    del empuje TOTAL del suelo (estatico mas incremento sismico) a h/2, en
+    vez de donde el ensamble la pone: AASHTO C11.6.5.4, para el muro que no
+    cede. Una resultante a h/2 es un diagrama UNIFORME sobre h; integrado
+    sobre el arranque (correcciones de T-7c, H1) da H_total·(h - e_z)/h a
+    (h - e_z)/2, y sustituye a la parte que los dos empujes del suelo
+    ponian sobre el arranque con su propio diagrama.
+    """
+    f = dict(combo.factores)
+    e_z = g.espesor_zapata
+    h = datos["h"]
+    arranque = empujes_sobre_el_arranque(cargas, datos, e_z,
+                                         id_punto=g.id_punto)
+    tierra = [c for c in cargas if c.codigo in (C_EH_H, C_EQ_H)]
+    H_total = sum(f.get(c.codigo, 0.0) * c.H for c in tierra)
+    V_su_sitio = sum(f.get(c.codigo, 0.0) * arranque[c.codigo][0]
+                     for c in tierra)
+    M_su_sitio = sum(f.get(c.codigo, 0.0) * arranque[c.codigo][1]
+                     for c in tierra)
+    alto = max(h - e_z, 0.0)
+    H_uniforme = H_total * alto / h
+    return (V_u - V_su_sitio + H_uniforme,
+            M_u - M_su_sitio + H_uniforme * alto / 2)
+
+
+def _combinaciones_de_servicio(cargas: tuple, B: float) -> tuple:
+    """
+    --- correcciones de T-7c (H3) --- Servicio I de la Tabla 3.4.1-1 de
+    AASHTO (pag. impresa 3-17, PDF 71; cita AASHTO_LRFD_9.T3.4.1-1): todas
+    las cargas del cabezal con factor 1.00, en las dos variantes del ensamble
+    (con y sin el peso de la sobrecarga sobre el talon). Es el estado limite
+    en que AASHTO 5.6.7 controla la fisuracion. Se rotulan con el marco ASD
+    porque sus factores son los de servicio; no son las de la estabilidad.
+    """
+    est = CondicionAnalisis.ESTATICO
+    servicio = dict(DC=1.0, EV=1.0, EH=1.0, LS=1.0, WA=1.0)
+    return (
+        _combinar("Servicio I", MARCO_ASD, est, cargas,
+                  _factores_por_tipo(cargas, **servicio), B, "fisuracion"),
+        _combinar("Servicio I (sin el peso de la sobrecarga)", MARCO_ASD,
+                  est, cargas,
+                  _factores_por_tipo(cargas, LS_v=0.0, **servicio), B,
+                  "fisuracion"),
+    )
+
+
+def _momentos_de_servicio(entorno: EntornoDelCabezal, juego: tuple,
+                          datos: dict) -> dict:
+    """
+    --- correcciones de T-7c (H3) --- El MOMENTO de Servicio I de cada
+    seccion critica con un juego de cargas (el activo o el de reposo): la
+    pantalla y el alero con el diagrama integrado sobre el arranque, la punta
+    con la presion de contacto lineal y el talon con el peso entero, como en
+    Resistencia I. {clave: M} con el mayor de las dos variantes; la punta
+    falta si ninguna deja presion de contacto evaluable.
+    """
+    g = entorno.geometria
+    salida = {}
+    for combo in _combinaciones_de_servicio(juego, g.B):
+        f = dict(combo.factores)
+        arranque = empujes_sobre_el_arranque(juego, datos, g.espesor_zapata,
+                                             id_punto=entorno.id_punto)
+        M_p = sum(f[k] * M for k, (_, M) in arranque.items())
+        for clave in (SECCION_PANTALLA, SECCION_ALERO):
+            salida[clave] = max(salida.get(clave, M_p), M_p)
+        z = solicitaciones_de_la_zapata(g, juego, combo, datos)
+        if z is not None:
+            salida[SECCION_PUNTA] = max(salida.get(SECCION_PUNTA,
+                                                   z["punta"][1]),
+                                        z["punta"][1])
+        _, M_t = _talon_con_el_peso_entero(g, juego, combo, datos)
+        salida[SECCION_TALON] = max(salida.get(SECCION_TALON, M_t), M_t)
+    return salida
+
+
+def solicitaciones_de_resistencia(entorno: EntornoDelCabezal) -> dict:
+    """
+    Las solicitaciones factoradas con que se arma UN cabezal, seccion por
+    seccion (pantalla, punta, talon y alero) y combinacion por combinacion
+    del marco que rige, con los dos empujes lado a lado:
+
+      Resistencia I    `M_u_cedente` / `V_u_cedente` son los del ensamble de
+                       T-7b (empuje activo, factor 1.50); `M_u_reposo` /
+                       `V_u_reposo`, los de `cargas_en_reposo` con el factor
+                       de la fila «En reposo» (1.35). Con el regimen
+                       'no_cedente_k0' rige la MAYOR de las dos; con
+                       'cedente', la primera, y la otra se imprime.
+      Evento Extremo I el empuje sismico con el factor de resistencia 1.0
+                       (AASHTO 1.3.2.1). Con 'no_cedente_k0' las cargas
+                       sismicas DEL ARMADO se calculan con k_h = 1.0·k_h0
+                       (AASHTO 11.6.5.4: «the value of kh used to calculate
+                       seismic earth pressure shall be increased to 1.0kh0»;
+                       correcciones de T-7c, H2), por la puerta `k_h` de
+                       `cargas_del_cabezal`, que la estabilidad externa no
+                       usa: si 'factor_muro_eleccion' reduce k_h para el
+                       ensamble, el armado del muro que no cede no lo
+                       hereda. Con 'cedente', el k_h de la cadena. Y con
+                       'no_cedente_k0' el cortante y el momento de la
+                       pantalla y del alero son los mayores de los de esa
+                       posicion y los de la resultante total a h/2
+                       (C11.6.5.4). La fuente no da un coeficiente sismico
+                       de reposo: no se inventa.
+      talon            ademas, el del peso entero de AASHTO 11.6.1.2: rige
+                       el mayor de ese y el que descuenta la reaccion.
+
+    Y el CONTRASTE con E.060 (solo estatica: 9.2 no combina sismo con
+    empuje de suelos): el mayor momento y el mayor cortante de cada seccion
+    con las combinaciones (9-6) y (9-7), sobre las mismas cargas. Y el
+    MOMENTO DE SERVICIO I de cada seccion (`_momentos_de_servicio`), con el
+    mismo regimen, para la fisuracion de AASHTO 5.6.7.
+
+    SI LA CONDICION SISMICA NO ES EVALUABLE (agua en el plano de empuje,
+    cuña sin maximo...) el armado sale solo de Resistencia I y lo AVISA,
+    diciendo si la etapa de estabilidad sismica lleva el mismo bloqueo o si
+    es solo el k_h0 del armado el que no se puede evaluar.
+    """
+    g = entorno.geometria
+    regimen = regimen_de_resistencia()
+    proc = _procedimiento()
+    est, sis = CondicionAnalisis.ESTATICO, CondicionAnalisis.SISMICO
+    quien = _aviso_cabezal(entorno)
+    avisos: List[str] = []
+
+    cargas, datos = cargas_del_cabezal(entorno, est)
+    combos = combinaciones_de_estabilidad(cargas, datos, est, g.B)
+    lrfd = [c for c in combos if c.marco == MARCO_LRFD]
+    cargas0 = cargas_en_reposo(cargas, datos)
+    combos0 = _combinaciones_en_reposo(cargas0, g.B)
+    ced = solicitaciones_por_elemento(entorno, cargas, combos, datos)
+    rep = solicitaciones_por_elemento(entorno, cargas0, combos0, datos)
+    usa_reposo = regimen == REGIMEN_RESISTENCIA_K0
+
+    def de(lista, clave, nombre):
+        return next((s for s in lista if _clave_de(s) == clave
+                     and s.combinacion == nombre), None)
+
+    secciones = {clave: [] for clave in (SECCION_PANTALLA, SECCION_PUNTA,
+                                         SECCION_TALON, SECCION_ALERO)}
+    sin_presion = []
+    reposo_sin_presion = []
+
+    def zapata(clave, juego, combinacion, datos_x):
+        """(M, V, nota) de la punta o del talon, o (None, None, '')."""
+        z = solicitaciones_de_la_zapata(g, juego, combinacion, datos_x)
+        if clave == SECCION_TALON:
+            Vp, Mp = _talon_con_el_peso_entero(g, juego, combinacion,
+                                               datos_x)
+            exacto = ("no evaluable (resultante fuera de la base)"
+                      if z is None else
+                      f"M = {z['talon'][1]:.2f}, V = {z['talon'][0]:.2f} "
+                      f"({z['forma']})")
+            return Mp, Vp, (
+                f"peso entero (AASHTO 11.6.1.2): M = {Mp:.2f} kN·m/m, V = "
+                f"{Vp:.2f} kN/m; descontando la reaccion lineal del terreno "
+                f"y la subpresion: {exacto}")
+        if z is None:
+            return None, None, ""
+        V, M = z["punta"]
+        return M, V, (f"presion de contacto lineal (AASHTO 10.6.5): "
+                      f"{z['forma']}, {z['sigma_punta']:.1f} kPa en la punta")
+
+    # `strict`: las dos Resistencia I del ensamble (maximos y minimos) y las
+    # dos de reposo se corresponden una a una; si dejaran de hacerlo es un
+    # fallo de programa, y `zip` lo dice.
+    for combo, combo0 in zip(lrfd, combos0, strict=True):
+        for clave in secciones:
+            nota = ""
+            if clave in (SECCION_PUNTA, SECCION_TALON):
+                M_c, V_c, nota = zapata(clave, cargas, combo, datos)
+                M_r, V_r, _ = zapata(clave, cargas0, combo0, datos)
+                if usa_reposo and M_r is None and M_c is not None:
+                    reposo_sin_presion.append(combo0.nombre)
+            else:
+                a = de(ced, clave, combo.nombre)
+                b = de(rep, clave, combo0.nombre)
+                M_c = None if a is None else a.M_u
+                V_c = None if a is None else a.V_u
+                M_r = None if b is None else b.M_u
+                V_r = None if b is None else b.V_u
+            if M_c is None:
+                sin_presion.append(combo.nombre)
+                continue        # punta sin presion de contacto evaluable
+            candidatos_M = [M_c] + ([M_r] if usa_reposo and M_r is not None
+                                    else [])
+            candidatos_V = [abs(V_c)] + ([abs(V_r)] if usa_reposo
+                                         and V_r is not None else [])
+            secciones[clave].append(SolicitacionDeArmado(
+                combinacion=combo.nombre, condicion=est,
+                M_u=max(max(candidatos_M), 0.0), V_u=max(candidatos_V),
+                phi_flexion=proc["phi_flexion"], phi_corte=proc["phi_corte"],
+                M_u_cedente=M_c, V_u_cedente=abs(V_c),
+                M_u_reposo=M_r, V_u_reposo=None if V_r is None else abs(V_r),
+                nota=nota))
+
+    # --- contraste E.060 (estatica) ----------------------------------------
+    e060 = {}
+
+    def suma_e060(clave, M, V):
+        M0, V0 = e060.get(clave, (0.0, 0.0))
+        e060[clave] = (max(M0, M), max(V0, abs(V)))
+
+    for juego in ((cargas, cargas0) if usa_reposo else (cargas,)):
+        combos_e = _combinaciones_e060(juego, g.B)
+        for s in solicitaciones_por_elemento(entorno, juego, combos_e, datos,
+                                             marco=MARCO_E060):
+            if s.elemento != ELEMENTO_ZAPATA:
+                suma_e060(_clave_de(s), s.M_u, s.V_u)
+        for combo_e in combos_e:
+            # E.060 15.4.1: el momento de las fuerzas a un lado del plano,
+            # con la reaccion del terreno (aqui, la misma presion lineal).
+            z = solicitaciones_de_la_zapata(g, juego, combo_e, datos)
+            if z is not None:
+                suma_e060(SECCION_PUNTA, z["punta"][1], z["punta"][0])
+                suma_e060(SECCION_TALON, z["talon"][1], z["talon"][0])
+
+    # --- Servicio I, para la fisuracion de 5.6.7 (H3) ----------------------
+    servicio = _momentos_de_servicio(entorno, cargas, datos)
+    if usa_reposo:
+        for clave, M in _momentos_de_servicio(entorno, cargas0,
+                                              datos).items():
+            servicio[clave] = max(servicio.get(clave, M), M)
+
+    # --- Evento Extremo I ---------------------------------------------------
+    sismico, datos_s = False, None
+    cadena = cadena_sismica()
+    k_h_armado = cadena.k_h0 if usa_reposo else None
+    try:
+        cargas_s, datos_s = cargas_del_cabezal(entorno, sis, k_h=k_h_armado)
+        combos_s = combinaciones_de_estabilidad(cargas_s, datos_s, sis, g.B)
+        ced_s = solicitaciones_por_elemento(entorno, cargas_s, combos_s,
+                                            datos_s)
+        sismico = True
+    except ErrorProyecto as motivo:
+        solo_el_armado = False
+        if (usa_reposo and cadena.k_h < cadena.k_h0 - TOL_UMBRAL_NORMATIVO):
+            try:
+                cargas_del_cabezal(entorno, sis)
+                solo_el_armado = True
+            except ErrorProyecto:
+                pass
+        avisos.append(
+            f"{quien}: el armado sale SOLO de Resistencia I. El Evento "
+            "Extremo I no entro al armado porque sus cargas no son "
+            f"evaluables ({motivo}); "
+            + ("es el k_h = 1.0·k_h0 que AASHTO 11.6.5.4 exige al muro que "
+               f"no cede (k_h0 = {cadena.k_h0:.3f}) el que no se puede "
+               "evaluar: la estabilidad externa, con el k_h reducido "
+               f"({cadena.k_h:.3f}), si lo esta, y el armado de este "
+               "cabezal NO cubre el sismo. Reducir k_h no es remedio para "
+               "el muro que no cede"
+               if solo_el_armado else
+               "la etapa de estabilidad sismica de ese cabezal lleva el "
+               "bloqueo con la misma causa"))
+    if sismico:
+        phi_x = proc["phi_evento_extremo"]
+        for combo in (c for c in combos_s if c.marco == MARCO_LRFD):
+            for clave in secciones:
+                M_r, V_r, nota = None, None, ""
+                if clave in (SECCION_PUNTA, SECCION_TALON):
+                    M_c, V_c, nota = zapata(clave, cargas_s, combo, datos_s)
+                else:
+                    a = de(ced_s, clave, combo.nombre)
+                    M_c = None if a is None else a.M_u
+                    V_c = None if a is None else a.V_u
+                if M_c is None:
+                    sin_presion.append(combo.nombre)
+                    continue
+                if clave in (SECCION_PANTALLA, SECCION_ALERO):
+                    V_r, M_r = _pantalla_con_resultante_a_media_altura(
+                        g, cargas_s, combo, datos_s, V_c, M_c)
+                    nota = (f"resultante del empuje total a h/2 (AASHTO "
+                            f"C11.6.5.4): M = {M_r:.2f} kN·m/m, V = "
+                            f"{V_r:.2f} kN/m; en su posicion: M = "
+                            f"{M_c:.2f}, V = {V_c:.2f}")
+                if usa_reposo and M_r is not None:
+                    M_u, V_u = max(M_c, M_r), max(abs(V_c), abs(V_r))
+                else:
+                    M_u, V_u = M_c, abs(V_c)
+                secciones[clave].append(SolicitacionDeArmado(
+                    combinacion=combo.nombre, condicion=sis,
+                    M_u=max(M_u, 0.0), V_u=V_u, phi_flexion=phi_x,
+                    phi_corte=phi_x, M_u_cedente=M_c, V_u_cedente=abs(V_c),
+                    M_u_reposo=M_r,
+                    V_u_reposo=None if V_r is None else abs(V_r),
+                    nota=nota))
+        if usa_reposo and cadena.k_h < cadena.k_h0 - TOL_UMBRAL_NORMATIVO:
+            avisos.append(
+                f"{quien}: el regimen de resistencia es el del muro que NO "
+                f"cede ('{CRITERIO_REGIMEN_RESISTENCIA}' = '{regimen}'): el "
+                f"Evento Extremo I del ARMADO va con k_h = 1.0·k_h0 = "
+                f"{cadena.k_h0:.3f}, como manda AASHTO 11.6.5.4, aunque la "
+                f"cadena sismica reduzca el de la estabilidad externa (k_h = "
+                f"{cadena.k_h:.3f}, '{CRITERIO_FACTOR_MURO}'). La "
+                "estabilidad puede admitir la reduccion; la resistencia de "
+                "los elementos del muro que no cede, no")
+
+    # --- lo que falta o no rige, dicho -------------------------------------
+    if sin_presion and secciones[SECCION_PUNTA]:
+        avisos.append(
+            f"{quien}: en {len(sin_presion)} combinacion(es) la resultante "
+            "cae fuera de la base y no hay presion de contacto con que "
+            "armar la punta (" + "; ".join(sin_presion) + "): la punta se "
+            "arma con las demas, y esa geometria no pasa su estabilidad")
+    if reposo_sin_presion and secciones[SECCION_PUNTA]:
+        avisos.append(
+            f"{quien}: con el empuje en REPOSO factorado la resultante cae "
+            "fuera de la base en «" + "»; «".join(reposo_sin_presion)
+            + "»: esa combinacion no deja presion de contacto con que armar "
+            "la punta y se DESCARTA (la punta se arma con la del empuje "
+            "activo). Con K0 factorado ese cabezal vuelca: la geometria no "
+            "es estable con el empuje con que se arma")
+    for clave, nombre in ((SECCION_PUNTA, "la punta"),):
+        if datos["punta"] > TOL_UMBRAL_NORMATIVO and not secciones[clave]:
+            raise MetodoNoEvaluableError(
+                f"solicitaciones de {nombre} de la zapata del cabezal de "
+                f"{entorno.extremo}",
+                "una zapata mas ancha (la resultante tiene que caer dentro "
+                "de la base para que haya presion de contacto que integrar)",
+                "en todas las combinaciones del marco que rige la resultante "
+                "cae fuera de la base (B - 2e <= 0): el cabezal no pasa su "
+                "estabilidad y no hay presion de contacto con que armar la "
+                "punta",
+                entorno.id_punto, rotulo=MOTIVO_METODO_NO_EVALUABLE_CABEZAL)
+    return {"regimen": regimen, "datos": datos, "datos_sismicos": datos_s,
+            "sismico": sismico, "secciones": {k: tuple(v)
+                                               for k, v in secciones.items()},
+            "e060": e060, "servicio": servicio, "avisos": avisos,
+            "K0": datos["K0"], "K_A": datos["K_A"],
+            "k_h_armado": None if datos_s is None else datos_s["k_h"],
+            "k_h_estabilidad": cadena.k_h}
+
+
+# ---------------------------------------------------------------------------
+# El diseño de UNA seccion: flexion, minimos, barra propuesta y cortante
+# ---------------------------------------------------------------------------
+
+def _condicion_de_recubrimiento(clave: str, diametro_mm: float,
+                                catalogo: dict) -> str:
+    """
+    La fila del Art. 7.7.1 de E.060 de cada cara: la inferior de la zapata
+    se vacia contra el suelo; las demas (trasdos de la pantalla y del alero,
+    cara superior del talon) quedan en contacto permanente con el relleno,
+    y su fila depende del diametro de la barra (3/4" y mayores, o 5/8" y
+    menores).
+    """
+    if clave == SECCION_PUNTA:
+        return CONDICION_RECUBRIMIENTO_ZAPATA
+    grueso = catalogo["diametro_grueso"]
+    if grueso is not None and diametro_mm >= grueso - TOL_UMBRAL_NORMATIVO:
+        return CONDICION_RECUBRIMIENTO_BARRA_GRUESA
+    return CONDICION_RECUBRIMIENTO_BARRA_FINA
+
+
+def minimo_e060_por_cara(*, es_zapata: bool, direccion: str,
+                         espesor: float, hm: Optional[float] = None,
+                         lm: Optional[float] = None) -> Tuple[float, str]:
+    """
+    El acero minimo de E.060 para UNA cara, mm2 por metro, y su origen. Por
+    analogia ([N→]): es el lado peruano de 'regla_minimos_constructivos_
+    cabezal'.
+
+      muro    la cuantia de 14.3.1 (0,0020 horizontal, 0,0015 vertical; con
+              el regimen de cortante «en el plano» declarado, los pisos de
+              11.10.10.2 y de la ec. 11-32) sobre el area bruta, repartida
+              en las dos capas que 14.3.2 pide a partir de 200 mm.
+      zapata  10.5.4: 0,0012 en la cara en traccion (`direccion` =
+              'principal') y la mitad del 0,0018 de 9.7.2 en cada cara de la
+              otra direccion ('reparto').
+    """
+    if not (_finito(espesor) and espesor > 0):
+        raise DatoInvalidoError("espesor", valor=espesor,
+                                motivo="espesor positivo y finito")
+    bruta = espesor * MM2_POR_M2            # mm2 por metro de ancho
+    if es_zapata:
+        if direccion == "principal":
+            return (CUANTIA_MIN_CARA_TRACCION_E060 * bruta,
+                    "0,0012·b·h en la cara en traccion (E.060 10.5.4)")
+        return (CUANTIA_MIN_LOSA_E060 * bruta / 2,
+                "0,0018·b·h repartido en dos caras (E.060 9.7.2 y 10.5.4)")
+    en_el_plano = (ca.valor(CRITERIO_REGIMEN_CORTANTE)
+                   == REGIMEN_CORTANTE_EN_EL_PLANO)
+    rho, numeral, _, _ = _minimo_de_cuantia_aplicable(
+        direccion=direccion, cortante_alto=en_el_plano)
+    if en_el_plano and direccion == "vertical" and hm and lm:
+        rho_h, _, _, _ = _minimo_de_cuantia_aplicable(
+            direccion="horizontal", cortante_alto=True)
+        rho = cuantia_vertical_ec_11_32(hm=hm, lm=lm, rho_h=rho_h)
+        numeral += " (ec. 11-32 evaluada)"
+    capas = 2 if requiere_refuerzo_dos_capas(espesor=espesor) else 1
+    return (rho * bruta / capas,
+            f"{rho:g}·b·h en {capas} capa(s) ({numeral})")
+
+
+def _verificacion_de_armado(*, fundamento: str, codigo: str, que: str,
+                            formula: str, sustitucion: tuple,
+                            resultado: Magnitud, descripcion_umbral: str,
+                            admisible, unidad: str, cita: str,
+                            aplicacion: str, criterio: str, cumple: bool,
+                            margen: Optional[float], decide: bool,
+                            obtenido, nota: str, explicacion_falla: str,
+                            citas: Tuple[str, ...] = (),
+                            numeral: str = NUMERAL_9_4_ARMADO,
+                            indicador: str = "",
+                            explicacion_cumple: str = "cumple",
+                            caracter: Optional[str] = None
+                            ) -> Verificacion:
+    """
+    Arma la `Verificacion` de una fila del armado y su paso. Si la fila NO
+    decide (el contraste con E.060, o la que el criterio del ciclopeo deja
+    de informe), un incumplimiento sale como INDICADOR. Una fila que cumple
+    con un `indicador` disparado (correcciones de T-7c: el cortante de la
+    pantalla sobre 0.5·phi·V_c) sale tambien como INDICADOR, con ese texto.
+    """
+    if cumple and indicador:
+        tipo, texto = TipoDeVeredicto.INDICADOR, indicador
+    elif cumple:
+        tipo, texto = TipoDeVeredicto.CUMPLE, explicacion_cumple
+    elif decide:
+        tipo, texto = TipoDeVeredicto.NO_CUMPLE, explicacion_falla
+    else:
+        tipo, texto = TipoDeVeredicto.INDICADOR, (
+            explicacion_falla + ". Esta fila NO decide: informa y no "
+            "detiene el punto")
+    kw = dict(codigo=codigo, que=que, formula=formula,
+              sustitucion=sustitucion, resultado=resultado,
+              citas_textuales=(cita,) + tuple(citas),
+              umbral=Umbral(descripcion=descripcion_umbral, valor=admisible,
+                            unidad=unidad, cita_id=cita,
+                            caracter=caracter or _caracter_de(cita),
+                            aplicacion=aplicacion,
+                            criterio_aplicado=criterio),
+              veredicto=Veredicto(tipo=tipo, margen=margen, unidad=unidad,
+                                  explicacion=texto),
+              nota_del_proyecto=nota)
+    # El fundamento va LITERAL en cada rama (el indice de formulas localiza
+    # al emisor por el literal).
+    if fundamento == "F9.ARM_FLEXION":
+        p = paso("F9.ARM_FLEXION", **kw)
+    elif fundamento == "F9.ARM_CORTANTE":
+        p = paso("F9.ARM_CORTANTE", **kw)
+    elif fundamento == "F9.ARM_MINIMO":
+        p = paso("F9.ARM_MINIMO", **kw)
+    elif fundamento == "F9.ARM_ESPACIAMIENTO":
+        p = paso("F9.ARM_ESPACIAMIENTO", **kw)
+    elif fundamento == "F9.ARM_E060":
+        p = paso("F9.ARM_E060", **kw)
+    elif fundamento == "F9.ARM_FISURACION":
+        p = paso("F9.ARM_FISURACION", **kw)
+    elif fundamento == "F9.ARM_DURABILIDAD":
+        p = paso("F9.ARM_DURABILIDAD", **kw)
+    elif fundamento == "F9.ARM_PERALTE_ZAPATA":
+        p = paso("F9.ARM_PERALTE_ZAPATA", **kw)
+    else:
+        p = paso("F9.CICLOPEO", **kw)
+    return Verificacion(
+        cumple=tipo is not TipoDeVeredicto.NO_CUMPLE, numeral=numeral,
+        valor_obtenido=obtenido, valor_admisible=admisible,
+        criterio_aplicado=criterio, codigo=codigo, paso=p)
+
+
+def diseno_flexion_corte(*, momento: Optional[float] = None,
+                         cortante: Optional[float] = None,
+                         espesor: Optional[float] = None,
+                         solicitaciones: Sequence[SolicitacionDeArmado] = (),
+                         elemento: str = ELEMENTO_PANTALLA,
+                         clave: str = SECCION_PANTALLA,
+                         seccion: str = "arranque de la pantalla",
+                         cara: str = "trasdos",
+                         es_zapata: bool = False,
+                         vuelo: Optional[float] = None,
+                         ancho_seccion: Optional[float] = None,
+                         hm: Optional[float] = None,
+                         lm: Optional[float] = None,
+                         regimen: str = "",
+                         sufijo: str = "",
+                         id_punto: Optional[str] = None,
+                         contraste_e060: Optional[Tuple[float, float]] = None,
+                         momento_servicio: Optional[float] = None
+                         ) -> ArmadoDeSeccion:
+    """
+    Diseño por flexion y corte de UNA seccion del cabezal, por metro de
+    ancho, con AASHTO LRFD Seccion 5 (Sec. 9.4, via Manual de Puentes
+    Seccion 2.9). Es la funcion que hasta T-7c se detenia con
+    `NotImplementedError`.
+
+    QUE RECIBE. Las solicitaciones factoradas de la seccion -- una
+    `SolicitacionDeArmado` por combinacion, cada una con SU factor de
+    resistencia (0.90 en Resistencia I, 1.0 en Evento Extremo I) -- o, para
+    un tanteo, un solo par `momento` (kN·m/m) y `cortante` (kN/m) de
+    Resistencia I. Y el `espesor` de la seccion (m).
+
+    QUE HACE, en este orden:
+      1. minimos de la cara en traccion: el acero de retraccion y
+         temperatura de 5.10.6 y, con la regla del mas exigente, el de E.060
+         (`minimo_e060_por_cara`); y el espaciamiento maximo
+         (`espaciamiento_maximo_del_armado`);
+      2. por cada barra del catalogo, desde la minima: recubrimiento de esa
+         cara y esa barra (`recubrimiento_para_armar`), peralte efectivo d =
+         h - recubrimiento - diametro/2, acero por resistencia (el mayor de
+         los que pide cada combinacion con su phi), acero minimo de flexion
+         de 5.6.3.3 -- el que desarrolla el menor de 1.33·M_u y M_cr -- y
+         acero adoptado, el mayor de los tres; se queda con la primera barra
+         que lo da con un espaciamiento de la serie no mayor que el maximo;
+      3. con esa barra: resistencia nominal, deformacion neta del acero
+         (tiene que llegar a 0.005 para que el factor 0.90 valga) y A1;
+      4. cortante del concreto sin refuerzo transversal con el procedimiento
+         SIMPLIFICADO, previa comprobacion de sus condiciones
+         (`simplificado_permitido`), y A2;
+      5. A3 (acero provisto frente al minimo), A4 (espaciamiento) y, si se
+         le pasa `contraste_e060` = (M_u, V_u) de las combinaciones de E.060,
+         A5: el aprovechamiento de la seccion en ese marco, que INFORMA;
+      6. con `momento_servicio` (el de Servicio I), A6: la fisuracion de
+         AASHTO 5.6.7 (`fisuracion_aashto`; correcciones de T-7c, H3). La
+         clase de exposicion la declara el Propietario
+         ('clase_exposicion_fisuracion_cabezal' [A], sin valor): declarada,
+         A6 DECIDE y la barra propuesta la respeta; sin declarar, la
+         propuesta respeta la Clase 1 -- la menos exigente, que cualquier
+         clase pide («an upper bound in regards to crack width», C5.6.7) --
+         y A6 imprime las dos: CUMPLE si el espaciamiento cumple tambien la
+         Clase 2, INDICADOR «no decidida» si solo cumple la 1, NO CUMPLE si
+         no cumple ninguna. Sin momento de servicio (un tanteo con un par
+         M, V) A6 no se evalua y A4 lo dice.
+
+    SE DETIENE con `MetodoNoEvaluableError` (rotulo del armado) cuando la
+    seccion queda fuera de las condiciones del simplificado: el general de
+    5.7.3.4.2 no esta implementado, y aplicar beta = 2.0 a una seccion
+    gruesa sin estribos es lo que el comentario de la fuente llama
+    «seriously unconservative».
+
+    Lo que NO hace: no cruza marcos (las resistencias de E.060 solo se
+    comparan con cargas de E.060), no dimensiona estribos y no cambia el
+    espesor: si ninguna barra del catalogo alcanza, A1 no cumple y lo dice.
+    """
+    ca.valor(CRITERIO_FLEXION_CORTE)
+    if espesor is None:
+        raise DatoFaltanteError(
+            "espesor", id_punto=id_punto,
+            detalle="el diseño por flexion y corte necesita el espesor de "
+                    "la seccion, en m")
+    if not (_finito(espesor) and espesor > 0):
+        raise DatoInvalidoError("espesor", valor=espesor, id_punto=id_punto,
+                                motivo="espesor positivo y finito")
+    proc = _procedimiento()
+    sols = tuple(solicitaciones)
+    if not sols:
+        if momento is None or cortante is None:
+            raise DatoFaltanteError(
+                "momento" if momento is None else "cortante",
+                id_punto=id_punto,
+                detalle="el diseño por flexion y corte necesita el momento "
+                        "y el cortante factorados de la seccion, o la lista "
+                        "de solicitaciones por combinacion")
+        for nombre, x in (("momento", momento), ("cortante", cortante)):
+            if not (_finito(x) and x >= 0):
+                raise DatoInvalidoError(
+                    nombre, valor=x, id_punto=id_punto,
+                    motivo="solicitacion factorada no negativa y finita "
+                           "(el signo lo dice la cara en traccion)")
+        sols = (SolicitacionDeArmado(
+            combinacion="Resistencia I (declarada)",
+            condicion=CondicionAnalisis.ESTATICO, M_u=float(momento),
+            V_u=float(cortante), phi_flexion=proc["phi_flexion"],
+            phi_corte=proc["phi_corte"], M_u_cedente=float(momento),
+            V_u_cedente=float(cortante)),)
+    for s in sols:
+        for nombre, x in (("M_u", s.M_u), ("V_u", s.V_u)):
+            if not (_finito(x) and x >= 0):
+                raise LimiteNumericoError(
+                    nombre, valor=x,
+                    motivo=f"la solicitacion de «{s.combinacion}» en {seccion} "
+                           "no es un numero finito y no negativo")
+    mat = materiales_del_armado()
+    fc, fy = mat["fc"], mat["fy"]
+    regla = _regla_de_minimos()
+    catalogo = catalogo_de_barras()
+    ancho = espesor if ancho_seccion is None else ancho_seccion
+    codigo = lambda n: f"{n}.{clave}" + (f".{sufijo}" if sufijo else "")  # noqa: E731
+    clase = clase_de_exposicion() if momento_servicio is not None else None
+    clase_rige = clase or CLASE_EXPOSICION_1
+    if momento_servicio is not None and not _finito(momento_servicio):
+        raise LimiteNumericoError(
+            "M_s", valor=momento_servicio, id_punto=id_punto,
+            motivo=f"el momento de servicio de {seccion} no es finito")
+    donde = f"{seccion}" + (f" ({id_punto})" if id_punto else "")
+
+    # 1. minimos constructivos y espaciamiento maximo ------------------------
+    s_max, origen_s = espaciamiento_maximo_del_armado(espesor=espesor,
+                                                      regla=regla)
+    As_ts = acero_de_temperatura_aashto(ancho=max(ancho, espesor),
+                                        espesor=espesor, fy=fy)
+    As_min_c, origen_min = As_ts, "retraccion y temperatura (AASHTO 5.10.6)"
+    As_e060_min, origen_e060 = None, ""
+    if regla == MINIMOS_MAS_EXIGENTE:
+        As_e060_min, origen_e060 = minimo_e060_por_cara(
+            es_zapata=es_zapata,
+            direccion="principal" if es_zapata else "vertical",
+            espesor=espesor, hm=hm, lm=lm)
+        if As_e060_min > As_min_c:
+            As_min_c, origen_min = As_e060_min, origen_e060
+
+    # 2. barra por barra ------------------------------------------------------
+    estaticas = [s for s in sols if s.condicion is CondicionAnalisis.ESTATICO]
+    M_resistencia = max((s.M_u for s in estaticas), default=0.0)
+    M_cr = momento_de_agrietamiento(espesor=espesor, fc=fc,
+                                    gamma_3=mat["gamma_3"])
+    M_minimo = (min(FACTOR_MOMENTO_REFUERZO_MINIMO_AASHTO * M_resistencia,
+                    M_cr) if M_resistencia > 0 else 0.0)
+    def admite_fisuracion(d, rec):
+        """La condicion de 5.6.7 que la propuesta respeta, o None."""
+        def admite(diametro, s, As_p):
+            fis = fisuracion_aashto(
+                M_s=momento_servicio, As=As_p, d=d, espesor=espesor,
+                d_c=(rec + diametro / 2) / MILIMETROS_POR_METRO, fc=fc,
+                fy=fy)
+            return (not fis["aplica"]) or (
+                fis["f_ss"] <= fis["f_ss_max"] + TOL_UMBRAL_NORMATIVO
+                and s <= fis["s_max"][clase_rige] + TOL_UMBRAL_NORMATIVO)
+        return admite
+
+    def elegir(con_fisuracion: bool):
+        elegido = None
+        activo = False
+        for diametro, area, nombre in catalogo["barras"]:
+            activo = activo or nombre == catalogo["minima_principal"]
+            if not activo:
+                continue
+            condicion = _condicion_de_recubrimiento(clave, diametro, catalogo)
+            rec, origen_rec, aviso_rec = recubrimiento_para_armar(
+                condicion=condicion)
+            d = espesor - (rec + diametro / 2) / MILIMETROS_POR_METRO
+            if not d > 0:
+                continue
+            por_combo = [acero_por_flexion(M_u=s.M_u, d=d, fc=fc, fy=fy,
+                                           phi=s.phi_flexion) for s in sols]
+            alcanza = all(x is not None for x in por_combo)
+            As_res = max(por_combo) if alcanza else None
+            As_minf = acero_por_flexion(M_u=M_minimo, d=d, fc=fc, fy=fy,
+                                        phi=proc["phi_flexion"])
+            candidato = dict(nombre=nombre, diametro=diametro, area=area,
+                             d=d, rec=rec, origen_rec=origen_rec,
+                             aviso_rec=aviso_rec, condicion=condicion,
+                             As_res=As_res, As_minf=As_minf, barra=None)
+            if alcanza and As_minf is not None:
+                adoptado = max(As_res, As_minf, As_min_c)
+                candidato["As_adoptado"] = adoptado
+                unico = dict(catalogo, barras=((diametro, area, nombre),))
+                candidato["barra"] = proponer_barra(
+                    As=adoptado, s_max=s_max, catalogo=unico, desde=nombre,
+                    admite=(admite_fisuracion(d, rec) if con_fisuracion
+                            else None))
+            elegido = candidato
+            if candidato["barra"] is not None:
+                break
+        return elegido
+
+    con_fisuracion = momento_servicio is not None
+    elegido = elegir(con_fisuracion)
+    if con_fisuracion and (elegido is None or elegido["barra"] is None):
+        # Ninguna barra del catalogo cumple 5.6.7: se propone sin ella y A6
+        # lo dice; el acero y el espaciamiento de resistencia no esperan.
+        elegido = elegir(False)
+    if elegido is None:
+        raise DatoInvalidoError(
+            "espesor", valor=espesor, id_punto=id_punto,
+            motivo=f"con el recubrimiento de {seccion} ninguna barra del "
+                   "catalogo deja peralte efectivo positivo")
+    d, barra = elegido["d"], elegido["barra"]
+    As_res, As_minf = elegido["As_res"], elegido["As_minf"]
+    alcanza = As_res is not None and As_minf is not None
+    As_adoptado = elegido.get("As_adoptado")
+    if As_adoptado is None:
+        As_adoptado = max(x for x in (As_res, As_minf, As_min_c)
+                          if x is not None)
+    As_minimo = max(As_min_c, As_minf or 0.0)
+    if not alcanza:
+        gobierna = "la seccion no alcanza"
+    elif As_res >= As_minimo - TOL_UMBRAL_NORMATIVO:
+        gobierna = "resistencia"
+    elif (As_minf or 0.0) >= As_min_c:
+        gobierna = "minimo de flexion (AASHTO 5.6.3.3)"
+    else:
+        gobierna = "minimo constructivo: " + origen_min
+    As_provisto = barra.As_provisto if barra is not None else As_adoptado
+
+    # 3. flexion con la barra propuesta --------------------------------------
+    res = resistencia_a_flexion(As=As_provisto, d=d, fc=fc, fy=fy)
+    eps = res["epsilon_t"]
+    controlada = eps is None or eps >= EPSILON_TL_AASHTO - TOL_UMBRAL_NORMATIVO
+    rige_M = max(sols, key=lambda s: s.M_u / s.phi_flexion)
+    M_r = rige_M.phi_flexion * res["M_n"]
+    cumple_M = (barra is not None and alcanza and controlada
+                and all(s.phi_flexion * res["M_n"] >= s.M_u
+                        - TOL_UMBRAL_NORMATIVO for s in sols))
+    if barra is None:
+        falla_M = ("ninguna barra del catalogo da el acero adoptado "
+                   f"({As_adoptado:.0f} mm2/m) con un espaciamiento admisible"
+                   if alcanza else
+                   "el momento factorado supera lo que el bloque de "
+                   "compresiones puede equilibrar con cualquier acero")
+        falla_M += ": aumentar el espesor de la seccion"
+    elif not controlada:
+        falla_M = (f"la deformacion neta del acero ({eps:.4f}) no llega a "
+                   f"{EPSILON_TL_AASHTO}: la seccion no esta controlada por "
+                   "traccion y el factor 0.90 no vale; aumentar el espesor")
+    else:
+        falla_M = "M_u > M_r: aumentar el espesor o el acero"
+    mag = lambda s, v, u, p, c=CIFRAS_MAGNITUD: Magnitud(s, v, u, p, cifras=c)  # noqa: E731
+    v_flexion = _verificacion_de_armado(
+        fundamento="F9.ARM_FLEXION", codigo=codigo("A1"),
+        que=f"A1, flexion: {donde}, cara en traccion: {cara}",
+        formula="M_r = phi·A_s·f_y·(d - a/2) >= M_u;  a = A_s·f_y / "
+                "(0.85·f'c·b);  epsilon_t = 0.003·(d - c)/c >= 0.005",
+        sustitucion=(
+            mag("M_u", rige_M.M_u, "kN·m/m",
+                f"{rige_M.combinacion}"
+                + (f"; {rige_M.nota}" if rige_M.nota else "")),
+            mag("phi", rige_M.phi_flexion, "",
+                "AASHTO 5.5.4.2 (Resistencia I) o 1.3.2.1 (Evento Extremo "
+                f"I), '{CRITERIO_FLEXION_CORTE}'", CIFRAS_FACTOR),
+            mag("h", espesor, "m", "espesor de la seccion (geometria del "
+                "cabezal)"),
+            mag("recubrimiento", elegido["rec"], "mm", elegido["origen_rec"],
+                1),
+            mag("d", d, "m", "h - recubrimiento - diametro/2 de la barra "
+                "propuesta"),
+            mag("f'c", fc, "MPa", f"'{CRITERIO_FC_CABEZAL}' [A]", 1),
+            mag("f_y", fy, "MPa", f"'{CRITERIO_ACERO_CABEZAL}' [A]: "
+                f"{mat['acero']}", 0),
+            mag("A_s", As_provisto, "mm2/m",
+                barra.texto if barra is not None
+                else "acero adoptado (sin barra del catalogo que lo de)", 0),
+            mag("a", res["a"], "m", "A_s·f_y / (0.85·f'c·b)", CIFRAS_FINA),
+            mag("epsilon_t", eps if eps is not None else 0.0, "",
+                "0.003·(d - c)/c, c = a / beta_1" if eps is not None
+                else "sin acero en traccion", CIFRAS_FINA),
+        ),
+        resultado=mag("M_r", M_r, "kN·m/m", "phi·A_s·f_y·(d - a/2)"),
+        descripcion_umbral="M_u <= M_r, con la seccion controlada por "
+                           "traccion",
+        admisible=M_r, unidad="kN·m/m", cita="AASHTO_LRFD_9.5.6.3.2.1#MR",
+        aplicacion="exigencia de la fuente que rige la resistencia (AASHTO "
+                   "LRFD Seccion 5, [C])",
+        criterio=CRITERIO_FLEXION_CORTE, cumple=cumple_M,
+        margen=M_r - rige_M.M_u, decide=True, obtenido=rige_M.M_u,
+        nota=("Rige la combinacion que mas acero pide; las demas se "
+              "comprueban con su propio factor de resistencia. "
+              f"Solicitaciones de la seccion: " + "; ".join(
+                  f"{s.combinacion}: M_u = {s.M_u:.2f}, V_u = {s.V_u:.2f}"
+                  for s in sols)),
+        explicacion_falla=falla_M,
+        citas=("AASHTO_LRFD_9.5.5.4.2#FLEXION",
+               "AASHTO_LRFD_9.5.6.2.1#TRACCION"))
+
+    # 4. cortante -------------------------------------------------------------
+    cort = cortante_del_concreto(d=d, a=res["a"], espesor=espesor, fc=fc,
+                                 beta=proc["beta_simplificado"])
+    # Las condiciones de 5.7.3.4.1 se leen con el d_v de la LETRA de 5.7.2.8
+    # (la aplicabilidad del metodo es de la fuente); la resistencia, con el
+    # acotado al peralte efectivo (H8).
+    permitido, por_cual = simplificado_permitido(
+        es_zapata=es_zapata, espesor=espesor, vuelo=vuelo,
+        d_v=cort["d_v_letra"])
+    if not permitido:
+        raise MetodoNoEvaluableError(
+            f"cortante de {seccion}",
+            "procedimiento general de AASHTO LRFD 5.7.3.4.2 (o una seccion "
+            "con el refuerzo transversal minimo de 5.7.2.5)",
+            "la seccion queda fuera de las condiciones en que 5.7.3.4.1 "
+            f"permite el procedimiento simplificado ({por_cual}) y no lleva "
+            "refuerzo transversal; el comentario de la fuente advierte que "
+            "las expresiones tradicionales son inseguras en elementos "
+            "grandes sin estribos, y el programa no implementa el general",
+            id_punto, rotulo=MOTIVO_METODO_NO_EVALUABLE_ARMADO)
+    rige_V = max(sols, key=lambda s: s.V_u / s.phi_corte)
+    V_r = rige_V.phi_corte * cort["V_n"]
+    cumple_V = all(s.phi_corte * cort["V_n"] >= s.V_u - TOL_UMBRAL_NORMATIVO
+                   for s in sols)
+    mitad = rige_V.phi_corte * cort["V_c"] / 2
+    # Pregunta 4 del cierre de T-7c: la pantalla (y el alero) se tratan como
+    # LOSA frente a AASHTO 5.7.2.3 y no se les pide refuerzo transversal;
+    # cuando el cortante pasa de 0.5·phi·V_c, A2 sale como INDICADOR y no
+    # como CUMPLE a secas.
+    indicador_V = (
+        f"cumple V_u <= phi·V_n, pero V_u = {rige_V.V_u:.1f} kN/m supera "
+        f"0.5·phi·V_c = {mitad:.1f} kN/m: AASHTO 5.7.2.3, leido a la letra, "
+        "pediria refuerzo transversal fuera de losas, zapatas y "
+        "alcantarillas; el proyecto trata la pantalla como losa "
+        "(interpretacion de la cita AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL)"
+        if (not es_zapata and cumple_V
+            and rige_V.V_u > mitad + TOL_UMBRAL_NORMATIVO) else "")
+    v_cortante = _verificacion_de_armado(
+        fundamento="F9.ARM_CORTANTE", codigo=codigo("A2"),
+        que=f"A2, cortante sin refuerzo transversal: {donde}",
+        formula="V_r = phi·V_n >= V_u;  V_n = min(V_c, 0.25·f'c·b_v·d_v);  "
+                "V_c = 0.0316·beta·sqrt(f'c)·b_v·d_v (ksi, in), beta = 2.0",
+        sustitucion=(
+            mag("V_u", rige_V.V_u, "kN/m", rige_V.combinacion),
+            mag("phi", rige_V.phi_corte, "", "AASHTO 5.5.4.2 o 1.3.2.1",
+                CIFRAS_FACTOR),
+            mag("d_v", cort["d_v"], "m", "min[max(d - a/2, 0.9·d, 0.72·h), "
+                "d]: el de la letra de AASHTO 5.7.2.8 acotado al peralte "
+                "efectivo (interpretacion de la cita AASHTO_LRFD_9.5.7.2.8#DV)"
+                + ("" if abs(cort["d_v_letra"] - cort["d_v"])
+                   <= TOL_UMBRAL_NORMATIVO else
+                   f"; la letra daria {cort['d_v_letra']:.4f} m")),
+            mag("beta", proc["beta_simplificado"], "",
+                f"procedimiento simplificado de 5.7.3.4.1, permitido por: "
+                f"{por_cual}", CIFRAS_FACTOR),
+            mag("V_c", cort["V_c"], "kN/m",
+                f"{VC_COEFICIENTE_AASHTO_SI:.4f}·beta·sqrt(f'c [MPa])·d_v, "
+                "en SI"),
+        ),
+        resultado=mag("V_r", V_r, "kN/m", "phi·V_n"),
+        descripcion_umbral="V_u <= V_r", admisible=V_r, unidad="kN/m",
+        cita="AASHTO_LRFD_9.5.7.3.3#VN",
+        aplicacion="exigencia de la fuente que rige la resistencia (AASHTO "
+                   "LRFD Seccion 5, [C]); el cortante se toma en la cara "
+                   "del apoyo, sin reducirlo a d_v de ella",
+        criterio=CRITERIO_FLEXION_CORTE, cumple=cumple_V,
+        margen=V_r - rige_V.V_u, decide=True, obtenido=rige_V.V_u,
+        nota=("Sin refuerzo transversal: si no cumple, la salida es mas "
+              "espesor, no estribos (el programa no los dimensiona)."),
+        explicacion_falla="V_u > phi·V_n: aumentar el espesor de la seccion",
+        indicador=indicador_V,
+        citas=("AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO",
+               "AASHTO_LRFD_9.5.7.2.8#DV", "AASHTO_LRFD_9.5.5.4.2#CORTE"))
+    avisos = []
+    if elegido["aviso_rec"]:
+        avisos.append(elegido["aviso_rec"])
+    if not es_zapata and rige_V.V_u > mitad + TOL_UMBRAL_NORMATIVO:
+        avisos.append(
+            f"{donde}: el cortante factorado ({rige_V.V_u:.1f} kN/m) supera "
+            f"la mitad de la resistencia del concreto (0.5·phi·V_c = "
+            f"{mitad:.1f} kN/m). El proyecto trata la pantalla como una losa "
+            "y no le pide refuerzo transversal; leido a la letra, AASHTO "
+            "5.7.2.3 solo exceptua losas, zapatas y alcantarillas "
+            "(interpretacion de la cita AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL)")
+    if cort["d_v_letra"] > cort["d_v"] + TOL_UMBRAL_NORMATIVO:
+        avisos.append(
+            f"{donde}: el peralte de cortante de la letra de AASHTO 5.7.2.8 "
+            f"(0.72·h = {cort['d_v_letra']:.3f} m) supera el peralte "
+            f"efectivo (d = {d:.3f} m): el proyecto lo acota a d y la "
+            f"resistencia del concreto baja de "
+            f"{cort['V_c'] * cort['d_v_letra'] / cort['d_v']:.1f} a "
+            f"{cort['V_c']:.1f} kN/m (interpretacion de la cita "
+            "AASHTO_LRFD_9.5.7.2.8#DV)")
+
+    # 5. minimo, espaciamiento y contraste -----------------------------------
+    v_minimo = _verificacion_de_armado(
+        fundamento="F9.ARM_MINIMO", codigo=codigo("A3"),
+        que=f"A3, acero minimo de la cara en traccion: {donde}",
+        formula="A_s provisto >= max(A_s de min(1.33·M_u, M_cr), A_s de "
+                "retraccion y temperatura, A_s minimo de E.060)",
+        sustitucion=(
+            mag("M_cr", M_cr, "kN·m/m", "gamma_3·gamma_1·f_r·b·h²/6 "
+                f"(AASHTO 5.6.3.3; gamma_3 = {mat['gamma_3']:g})"),
+            mag("1.33·M_u", FACTOR_MOMENTO_REFUERZO_MINIMO_AASHTO
+                * M_resistencia, "kN·m/m", "con el M_u de Resistencia I"),
+            mag("A_s,min flexion", As_minf if As_minf is not None else 0.0,
+                "mm2/m", "el que desarrolla el menor de los dos momentos", 0),
+            mag("A_s,temperatura", As_ts, "mm2/m",
+                "AASHTO 5.10.6, por cara y direccion", 0),
+            mag("A_s,min E.060", As_e060_min if As_e060_min is not None
+                else 0.0, "mm2/m",
+                origen_e060 if As_e060_min is not None else
+                f"no se aplica ('{CRITERIO_REGLA_MINIMOS}' = '{regla}')", 0),
+            mag("A_s,resistencia", As_res if As_res is not None else 0.0,
+                "mm2/m", "el que pide el momento que rige", 0),
+        ),
+        resultado=mag("A_s provisto", As_provisto, "mm2/m",
+                      barra.texto if barra is not None else
+                      "sin barra del catalogo", 0),
+        descripcion_umbral="A_s provisto >= A_s minimo", admisible=As_minimo,
+        unidad="mm2/m", cita="AASHTO_LRFD_9.5.6.3.3#MINIMO",
+        aplicacion="el mas exigente de los minimos de AASHTO y de E.060 "
+                   f"('{CRITERIO_REGLA_MINIMOS}' [A]); el de E.060, por "
+                   "analogia",
+        criterio=CRITERIO_REGLA_MINIMOS,
+        cumple=barra is not None and As_provisto >= As_minimo
+        - TOL_UMBRAL_NORMATIVO,
+        margen=As_provisto - As_minimo, decide=True, obtenido=As_provisto,
+        nota=f"Gobierna el acero adoptado: {gobierna}.",
+        explicacion_falla="el acero provisto no alcanza el minimo",
+        citas=("AASHTO_LRFD_9.5.10.6#TEMPERATURA", "E060.14.3.1",
+               "E060.10.5.4#LOSAS"))
+    s_prop = barra.espaciamiento if barra is not None else s_max
+    v_espaciamiento = _verificacion_de_armado(
+        fundamento="F9.ARM_ESPACIAMIENTO", codigo=codigo("A4"),
+        que=f"A4, espaciamiento de la barra propuesta: {donde}",
+        formula="s <= min(1.5·h, 18.0 in, tope del acero de temperatura, "
+                "3·h, 400 mm)",
+        sustitucion=(
+            mag("h", espesor, "m", "espesor de la seccion"),
+            mag("barra", barra.designacion if barra is not None else "-",
+                "", f"catalogo '{CRITERIO_CATALOGO_BARRAS}' [A]: la "
+                "primera, desde la minima, que da el acero adoptado"),
+        ),
+        resultado=mag("s", s_prop, "m", "el mayor de la serie del catalogo "
+                      "que cumple"),
+        descripcion_umbral="s <= s maximo", admisible=s_max, unidad="m",
+        cita="AASHTO_LRFD_9.5.10.3.2#ESPACIAMIENTO",
+        aplicacion=f"gobierna: {origen_s}",
+        criterio=CRITERIO_REGLA_MINIMOS,
+        cumple=barra is not None and s_prop <= s_max + TOL_UMBRAL_NORMATIVO,
+        margen=s_max - s_prop, decide=True, obtenido=s_prop,
+        nota=("Los topes de espaciamiento de 5.10.3.2, 5.10.6 y E.060 "
+              "14.3.3. El control de fisuracion de AASHTO 5.6.7, que puede "
+              "pedir un espaciamiento menor, es la fila A6"
+              if momento_servicio is not None else
+              "Los topes de espaciamiento de 5.10.3.2, 5.10.6 y E.060 "
+              "14.3.3. El control de fisuracion de AASHTO 5.6.7 NO se evalua "
+              "en esta seccion: no se le paso el momento de servicio, y "
+              "puede pedir un espaciamiento menor"),
+        explicacion_falla="no hay barra del catalogo con espaciamiento "
+                          "admisible",
+        citas=("AASHTO_LRFD_9.5.10.6#ESPACIAMIENTO", "E060.14.3.3"))
+    verificaciones = [v_flexion, v_cortante, v_minimo, v_espaciamiento]
+
+    # 6. fisuracion de AASHTO 5.6.7 (H3) ------------------------------------
+    fis = None
+    if momento_servicio is not None:
+        diametro_fis = (barra.diametro_mm if barra is not None
+                        else elegido["diametro"])
+        fis = fisuracion_aashto(
+            M_s=momento_servicio, As=As_provisto, d=d, espesor=espesor,
+            d_c=(elegido["rec"] + diametro_fis / 2) / MILIMETROS_POR_METRO,
+            fc=fc, fy=fy)
+        verificaciones.append(_fila_de_fisuracion(
+            fis=fis, s_prop=s_prop, clase=clase, codigo=codigo("A6"),
+            donde=donde, M_s=momento_servicio, As=As_provisto,
+            rec=elegido["rec"], barra=barra))
+
+    M_e, V_e, As_e, V_r_e = None, None, None, None
+    if contraste_e060 is not None:
+        M_e, V_e = contraste_e060
+        As_e = acero_por_flexion(M_u=M_e, d=d, fc=fc, fy=fy,
+                                 phi=PHI_FLEXION_E060, alfa=ALFA_BLOQUE_E060)
+        V_r_e = (PHI_CORTE_E060 * VC_COEFICIENTE_E060 * math.sqrt(fc)
+                 * KPA_POR_MPA * d)
+        res_e = resistencia_a_flexion(As=As_provisto, d=d, fc=fc, fy=fy,
+                                      alfa=ALFA_BLOQUE_E060,
+                                      beta_1=beta_1_e060(fc))
+        eps_e = res_e["epsilon_t"]
+        uso_M = (As_e / As_provisto) if (As_e is not None
+                                         and As_provisto > 0) else None
+        uso_V = V_e / V_r_e
+        ductil = eps_e is None or eps_e >= EPSILON_T_MIN_E060 \
+            - TOL_UMBRAL_NORMATIVO
+        cumple_e = (uso_M is not None and uso_M <= 1 + TOL_UMBRAL_NORMATIVO
+                    and uso_V <= 1 + TOL_UMBRAL_NORMATIVO and ductil)
+        uso = max(uso_V, uso_M) if uso_M is not None else uso_V
+        verificaciones.append(_verificacion_de_armado(
+            fundamento="F9.ARM_E060", codigo=codigo("A5"),
+            que=f"A5, contraste con E.060 (por analogia): {donde}",
+            formula="A_s (E.060, phi = 0,90) / A_s provisto <= 1  y  V_u "
+                    "(E.060) / (0,85·0,17·sqrt(f'c)·b·d) <= 1",
+            sustitucion=(
+                mag("M_u (E.060)", M_e, "kN·m/m",
+                    "la mayor de 1,4 CM + 1,7 CV + 1,7 CE y 0,9 CM + 1,7 CE "
+                    "(9.2.5), sobre las mismas cargas sin factorar"),
+                mag("V_u (E.060)", V_e, "kN/m", "idem"),
+                mag("A_s (E.060)", As_e if As_e is not None else 0.0,
+                    "mm2/m", "flexion con phi = 0,90 y bloque de 0,85·f'c "
+                    "(10.2.7)" if As_e is not None else
+                    "la seccion no alcanza en el marco de E.060", 0),
+                mag("phi·V_c (E.060)", V_r_e, "kN/m",
+                    "0,85·0,17·sqrt(f'c)·b·d (9.3.2.3 y ec. 11-3)"),
+                mag("epsilon_t (E.060)", eps_e if eps_e is not None else 0.0,
+                    "", "con el acero provisto; 10.3.5 pide >= 0,004",
+                    CIFRAS_FINA),
+            ),
+            resultado=mag("aprovechamiento", uso, "",
+                          "el mayor de los dos cocientes", CIFRAS_FACTOR),
+            descripcion_umbral="aprovechamiento <= 1 en el marco de E.060",
+            admisible=1.0, unidad="", cita="E060.9.2.5#EMPUJE",
+            aplicacion="contraste por analogia ([N→]): E.060 es norma de "
+                       "edificaciones; informa y no decide el armado",
+            criterio=CRITERIO_REGLA_MINIMOS, cumple=cumple_e,
+            margen=1.0 - uso, decide=False, obtenido=uso,
+            nota=("Cargas de E.060 con resistencias de E.060: los dos "
+                  "marcos no se cruzan. Bajo sismo E.060 no escribe una "
+                  "combinacion con empuje de suelos, y el contraste es solo "
+                  "estatico."),
+            explicacion_falla=("con las combinaciones y los factores de "
+                               "E.060 la seccion queda por encima de su "
+                               "resistencia"),
+            citas=("E060.9.3.1#PHI", "E060.11.3.1#VC",
+                   "E060.10.3.4#MAXIMO")))
+        if not cumple_e:
+            avisos.append(
+                f"{donde}: el CONTRASTE con E.060 no cumple "
+                f"(aprovechamiento {uso:.2f}): con sus combinaciones (1,7 "
+                "sobre el empuje) y sus factores la seccion pide mas que el "
+                "armado que sale de AASHTO. No decide; se informa")
+    return ArmadoDeSeccion(
+        elemento=elemento, clave=clave, seccion=seccion, cara=cara,
+        espesor=espesor, recubrimiento_mm=elegido["rec"],
+        origen_recubrimiento=elegido["origen_rec"], d=d, regimen=regimen,
+        solicitaciones=sols, rige_flexion=rige_M, rige_cortante=rige_V,
+        As_resistencia=As_res if As_res is not None else 0.0,
+        As_minimo_flexion=As_minf if As_minf is not None else 0.0,
+        As_minimo_constructivo=As_min_c, origen_minimo=origen_min,
+        As_adoptado=As_adoptado, gobierna=gobierna, s_max=s_max,
+        origen_s_max=origen_s, barra=barra, M_r=M_r, epsilon_t=eps,
+        d_v=cort["d_v"], V_c=cort["V_c"], V_r=V_r, M_u_e060=M_e,
+        V_u_e060=V_e, As_e060=As_e, V_r_e060=V_r_e,
+        M_servicio=momento_servicio,
+        fisuracion_aplica=None if fis is None else fis["aplica"],
+        f_ss=None if fis is None else fis["f_ss"],
+        s_fisuracion=None if fis is None else dict(fis["s_max"]),
+        clase_exposicion=clase, d_v_letra=cort["d_v_letra"],
+        verificaciones=tuple(verificaciones),
+        pasos=tuple(v.paso for v in verificaciones), avisos=tuple(avisos))
+
+
+# ---------------------------------------------------------------------------
+# El armado de UN cabezal: elemento por elemento, y su tabla
+# ---------------------------------------------------------------------------
+
+ELEMENTOS_ARMADOS = (ELEMENTO_PANTALLA, ELEMENTO_ZAPATA, ELEMENTO_ALEROS)
+
+
+def _altura_y_longitud(entorno: EntornoDelCabezal) -> Tuple[float, float]:
+    g = entorno.geometria
+    hm = g.altura_total
+    return hm, (g.longitud if g.longitud else hm)
+
+
+def armar_elemento(entorno: EntornoDelCabezal, elemento: str,
+                   solicitaciones: Optional[dict] = None
+                   ) -> Tuple[ArmadoDeSeccion, ...]:
+    """
+    Las secciones criticas armadas de UN elemento de UN cabezal de voladizo
+    armado:
+
+      pantalla  su arranque sobre la zapata, con el espesor del arranque; la
+                cara en traccion es el trasdos.
+      zapata    la punta (traccion abajo) y el talon (traccion arriba), en
+                la cara de la pantalla (AASHTO 5.12.8.4); la que no tiene
+                vuelo no se arma.
+      aleros    el arranque del alero -- un muro en voladizo de altura
+                variable cuya seccion critica es la mas alta, la del
+                encuentro con el cabezal --, con el espesor del alero y la
+                solicitacion de la pantalla a esa altura. Su zapata y sus
+                secciones intermedias NO se arman (ficha T7C-04).
+
+    El servicio la llama una vez por elemento para que lo que un elemento
+    no pueda evaluar quede como `Bloqueo` del punto y los otros dos sigan.
+    """
+    if elemento not in ELEMENTOS_ARMADOS:
+        raise DatoInvalidoError("elemento", valor=elemento,
+                                motivo="se espera uno de: "
+                                       + ", ".join(ELEMENTOS_ARMADOS))
+    g = entorno.geometria
+    if g.tipo == TIPO_GRAVEDAD:
+        raise DatoInvalidoError(
+            "tipo", valor=g.tipo, id_punto=entorno.id_punto,
+            motivo="el cabezal de gravedad en ciclopeo no se arma: su "
+                   "verificacion es `verificar_cabezal_ciclopeo`")
+    sol = (solicitaciones_de_resistencia(entorno) if solicitaciones is None
+           else solicitaciones)
+    hm, lm = _altura_y_longitud(entorno)
+    comun = dict(regimen=sol["regimen"], sufijo=entorno.extremo[0],
+                 id_punto=entorno.id_punto, hm=hm, lm=lm)
+    servicio = sol.get("servicio", {})
+    lugar = f"cabezal de {entorno.extremo}"
+    piezas = []
+    if elemento == ELEMENTO_PANTALLA:
+        piezas.append(diseno_flexion_corte(
+            solicitaciones=sol["secciones"][SECCION_PANTALLA],
+            espesor=g.espesor_base_muro, elemento=ELEMENTO_PANTALLA,
+            clave=SECCION_PANTALLA,
+            seccion=f"arranque de la pantalla del {lugar}",
+            cara="trasdos (contra el relleno), armadura vertical",
+            ancho_seccion=min(g.H, lm),
+            contraste_e060=sol["e060"].get(SECCION_PANTALLA),
+            momento_servicio=servicio.get(SECCION_PANTALLA), **comun))
+    elif elemento == ELEMENTO_ZAPATA:
+        datos = sol["datos"]
+        for clave, vuelo, cara in (
+                (SECCION_PUNTA, datos["punta"],
+                 "inferior (contra el terreno), armadura transversal"),
+                (SECCION_TALON, datos["talon"],
+                 "superior (bajo el relleno), armadura transversal")):
+            if not vuelo > TOL_UMBRAL_NORMATIVO:
+                continue
+            if not sol["secciones"][clave]:
+                continue
+            piezas.append(diseno_flexion_corte(
+                solicitaciones=sol["secciones"][clave],
+                espesor=g.espesor_zapata, elemento=ELEMENTO_ZAPATA,
+                clave=clave,
+                seccion=f"{clave} de la zapata del {lugar}, en la cara de "
+                        "la pantalla",
+                cara=cara, es_zapata=True, vuelo=vuelo, ancho_seccion=g.B,
+                contraste_e060=sol["e060"].get(clave),
+                momento_servicio=servicio.get(clave), **comun))
+    else:
+        if g.aleros is None:
+            return ()
+        piezas.append(diseno_flexion_corte(
+            solicitaciones=sol["secciones"][SECCION_ALERO],
+            espesor=g.aleros.espesor, elemento=ELEMENTO_ALEROS,
+            clave=SECCION_ALERO,
+            seccion=f"arranque de los aleros del {lugar} (su seccion mas "
+                    "alta)",
+            cara="trasdos (contra el relleno), armadura vertical",
+            ancho_seccion=min(g.aleros.altura_inicial,
+                              max(g.aleros.longitudes)),
+            contraste_e060=sol["e060"].get(SECCION_ALERO),
+            momento_servicio=servicio.get(SECCION_ALERO), **comun))
+    return tuple(piezas)
+
+
+def _fila_de_reparto(*, elemento: str, posicion: str, es_zapata: bool,
+                     direccion: str, espesor: float, ancho: float,
+                     fy: float, regla: str, catalogo: dict,
+                     hm: float, lm: float) -> FilaDeArmado:
+    """Una fila de acero de REPARTO: solo minimo, por cara."""
+    As = acero_de_temperatura_aashto(ancho=max(ancho, espesor),
+                                     espesor=espesor, fy=fy)
+    origen = "retraccion y temperatura (AASHTO 5.10.6)"
+    if regla == MINIMOS_MAS_EXIGENTE:
+        As_e, origen_e = minimo_e060_por_cara(
+            es_zapata=es_zapata, direccion=direccion, espesor=espesor,
+            hm=hm, lm=lm)
+        if As_e > As:
+            As, origen = As_e, origen_e
+    s_max, _ = espaciamiento_maximo_del_armado(espesor=espesor, regla=regla)
+    return FilaDeArmado(
+        elemento=elemento, posicion=posicion, As_requerido=0.0,
+        As_minimo=As, origen_minimo=origen, As_adoptado=As,
+        gobierna="minimo constructivo: " + origen, s_max=s_max,
+        barra=proponer_barra(As=As, s_max=s_max, catalogo=catalogo,
+                             desde=catalogo["reparto"]))
+
+
+def _fila_de_peralte_de_zapata(entorno: EntornoDelCabezal,
+                               piezas: Sequence[ArmadoDeSeccion], *,
+                               catalogo: dict, regla: str) -> Verificacion:
+    """
+    --- correcciones de T-7c (H4) --- La fila A8: la altura de la zapata
+    medida sobre su refuerzo inferior frente a los 300 mm de E.060 15.7
+    ('peralte_min_zapata_armada_m' [N→]), con el recubrimiento con que SE
+    ARMA la cara inferior y la barra de la punta (o la minima principal si
+    la punta no se armo). La altura se mide hasta el EJE de la capa
+    inferior, que es el peralte efectivo; la lectura hasta la cara de la
+    barra daria medio diametro mas, y se imprime. T-7a fijo el espesor con
+    los 70 mm de E.060 7.7.1 a) y dejo este control a T-7c. No se itera:
+    si no cumple, la fila lo dice. Decide con la regla del minimo mas
+    exigente ('regla_minimos_constructivos_cabezal'); con «solo_aashto»
+    informa, porque AASHTO no fija esa altura.
+    """
+    g = entorno.geometria
+    ext = entorno.extremo[0]
+    punta = next((p for p in piezas if p.clave == SECCION_PUNTA), None)
+    rec, origen_rec, _ = recubrimiento_para_armar(
+        condicion=CONDICION_RECUBRIMIENTO_ZAPATA)
+    if punta is not None and punta.barra is not None:
+        diametro, barra = punta.barra.diametro_mm, punta.barra.texto
+    else:
+        diametro = dict((n, d) for d, _, n in catalogo["barras"])[
+            catalogo["minima_principal"]]
+        barra = (f"barra minima principal "
+                 f"Ø {catalogo['minima_principal']}\" del catalogo")
+    minimo = _exigir_positivo(
+        CRITERIO_PERALTE_ZAPATA_ARMADA,
+        ca.valor(CRITERIO_PERALTE_ZAPATA_ARMADA),
+        "altura minima de la zapata armada sobre su refuerzo")
+    altura = g.espesor_zapata - (rec + diametro / 2) / MILIMETROS_POR_METRO
+    a_la_cara = g.espesor_zapata - rec / MILIMETROS_POR_METRO
+    mag = lambda s, v, u, p, c=CIFRAS_MAGNITUD: Magnitud(s, v, u, p, cifras=c)  # noqa: E731
+    return _verificacion_de_armado(
+        fundamento="F9.ARM_PERALTE_ZAPATA", codigo=f"A8.zapata.{ext}",
+        que=("A8, altura de la zapata sobre su refuerzo inferior: cabezal "
+             f"de {entorno.extremo}"),
+        formula="h_z - (recubrimiento inferior + diametro/2) >= 300 mm",
+        sustitucion=(
+            mag("h_z", g.espesor_zapata, "m", "espesor de la zapata (T-7a)"),
+            mag("recubrimiento inferior", rec, "mm", origen_rec, 1),
+            mag("diametro", diametro, "mm", barra, 1),
+            mag("hasta la cara de la barra", a_la_cara, "m",
+                "la otra lectura de «medida sobre el refuerzo inferior»"),
+        ),
+        resultado=mag("altura sobre el refuerzo", altura, "m",
+                      "hasta el eje de la capa inferior"),
+        descripcion_umbral="altura sobre el refuerzo inferior >= 300 mm",
+        admisible=minimo, unidad="m", cita="E060.15.7#PERALTE",
+        aplicacion=("minimo constructivo de E.060, por analogia [N→]; "
+                    f"decide con '{CRITERIO_REGLA_MINIMOS}' = "
+                    f"'{MINIMOS_MAS_EXIGENTE}'"),
+        criterio=CRITERIO_PERALTE_ZAPATA_ARMADA,
+        cumple=altura >= minimo - TOL_UMBRAL_NORMATIVO,
+        margen=altura - minimo, decide=regla == MINIMOS_MAS_EXIGENTE,
+        obtenido=altura,
+        nota=("El espesor no se itera (T-7a lo propone y el armado lo "
+              "arma): si no cumple, la zapata hay que engrosarla o bajar el "
+              "recubrimiento con el dato de exposicion. Con el recubrimiento "
+              "de cota por falta de dato, la altura es la menor posible."),
+        explicacion_falla=("la zapata no da 300 mm sobre su refuerzo "
+                           "inferior con el recubrimiento con que se arma: "
+                           "engrosarla"))
+
+
+def _fila_de_durabilidad(entorno: EntornoDelCabezal, *, fc: float,
+                         requisitos) -> Verificacion:
+    """
+    --- correcciones de T-7c (H7) --- La fila A7: el f'c de calculo
+    ('fc_cabezal_mpa' [A]) frente al minimo por durabilidad de E.060
+    (Tablas 4.2 y 4.4, con su nota al pie), cuando el analisis quimico del
+    EMS esta declarado. DECIDE: la durabilidad es la excepcion de la §0.2
+    de la hoja de ruta, en que E.060 rige. Sin el dato no hay fila y el
+    ensamble lo avisa.
+    """
+    ext = entorno.extremo[0]
+    minimo = requisitos.fc_min_MPa
+    mag = lambda s, v, u, p, c=CIFRAS_MAGNITUD: Magnitud(s, v, u, p, cifras=c)  # noqa: E731
+    return _verificacion_de_armado(
+        fundamento="F9.ARM_DURABILIDAD", codigo=f"A7.concreto.{ext}",
+        que=("A7, f'c de calculo frente al minimo por durabilidad: cabezal "
+             f"de {entorno.extremo}"),
+        formula="f'c >= f'c minimo (E.060 Tablas 4.2 y 4.4: el MAYOR de los "
+                "aplicables)",
+        sustitucion=(mag("f'c", fc, "MPa", f"'{CRITERIO_FC_CABEZAL}' [A]",
+                         1),),
+        resultado=mag("f'c", fc, "MPa", "especificado", 1),
+        descripcion_umbral="f'c >= f'c minimo por durabilidad",
+        admisible=minimo, unidad="MPa", cita="E060.T4.4",
+        aplicacion=(f"exigencia de E.060 por la excepcion de durabilidad de "
+                    f"la Sec. 0.2; gobierna {requisitos.gobierna_fc}"),
+        criterio=CRITERIO_FC_CABEZAL,
+        cumple=fc >= minimo - TOL_UMBRAL_NORMATIVO, margen=fc - minimo,
+        decide=True, obtenido=fc,
+        nota=("El minimo sale del analisis quimico del EMS "
+              f"('{CRITERIO_EXPOSICION_QUIMICA}'); el f'c de calculo es un "
+              "[A] y hay que subirlo si no llega."),
+        explicacion_falla="el f'c de calculo es menor que el minimo por "
+                          "durabilidad: subir 'fc_cabezal_mpa'",
+        citas=("E060.T4.2", "E060.4.4.2"))
+
+
+def ensamblar_armado(entorno: EntornoDelCabezal,
+                     piezas: Sequence[ArmadoDeSeccion],
+                     solicitaciones: Optional[dict] = None
+                     ) -> ArmadoDelCabezal:
+    """
+    El `ArmadoDelCabezal` de UN cabezal de voladizo armado a partir de sus
+    secciones ya diseñadas: el paso del regimen (con que empuje se armo y
+    cuanto da el otro), las secciones, la TABLA de armado por elemento -- el
+    acero principal de cada seccion y el de reparto de cada elemento, con la
+    barra y el espaciamiento propuestos -- y los avisos.
+
+    Avisa, y no solo en una nota de paso: cuando el armado CAMBIA entre el
+    empuje en reposo y el activo; cuando falta el Evento Extremo; cuando el
+    recubrimiento es la cota por falta de dato; cuando el regimen de
+    cortante «en el plano» esta declarado; lo que el armado no cubre; y que
+    la geometria se arma tal como llega, pase o no su estabilidad.
+    """
+    g = entorno.geometria
+    piezas = tuple(piezas)
+    sol = (solicitaciones_de_resistencia(entorno) if solicitaciones is None
+           else solicitaciones)
+    mat = materiales_del_armado()
+    regla = _regla_de_minimos()
+    catalogo = catalogo_de_barras()
+    regimen = sol["regimen"]
+    quien = _aviso_cabezal(entorno)
+    ext = entorno.extremo[0]
+    hm, lm = _altura_y_longitud(entorno)
+    K0, K_A = sol["K0"], sol["K_A"]
+    avisos = list(sol["avisos"])
+    for p in piezas:
+        avisos.extend(a if a.startswith(quien) else f"{quien}: {a}"
+                      for a in p.avisos)
+
+    # --- el paso del regimen y el aviso de lo que cambia --------------------
+    pantalla = next((p for p in piezas if p.clave == SECCION_PANTALLA), None)
+    referencia = pantalla or (piezas[0] if piezas else None)
+    estaticas = [] if referencia is None else [
+        s for s in referencia.solicitaciones
+        if s.condicion is CondicionAnalisis.ESTATICO]
+    pasos: List[PasoDeMemoria] = []
+    datos_e = sol.get("datos") or {}
+    i_grados = (datos_e.get("angulos") or {}).get("i", 0.0)
+    K0_talud = K0 * (1 + math.sin(math.radians(i_grados)))
+    k_h_armado = sol.get("k_h_armado")
+    k_h_estab = sol.get("k_h_estabilidad")
+    if estaticas:
+        s0 = max(estaticas, key=lambda s: s.M_u)
+        M_rep = s0.M_u_reposo if s0.M_u_reposo is not None else 0.0
+        pasos.append(paso(
+            "F9.ARM_REGIMEN", codigo=f"9.4.r.{ext}",
+            que=f"Empuje con que se arma el cabezal de {entorno.extremo}: "
+                f"regimen «{regimen}»",
+            formula="reposo: EH = (K0 / K_A)·P_A, horizontal, con gamma = "
+                    "1.35; LS = K0·gamma·h_eq·h. Activo: el del ensamble de "
+                    "estabilidad, con gamma = 1.50",
+            sustitucion=(
+                Magnitud("K_A", K_A, "", "del ensamble de estabilidad (cuña "
+                         "de tanteo o Coulomb)", cifras=CIFRAS_FINA),
+                Magnitud("K0", K0, "", "1 - sen(phi) (AASHTO 3.11.5.2-1, "
+                         "terreno horizontal)", cifras=CIFRAS_FINA),
+                Magnitud("K0 / K_A", K0 / K_A, "", "cociente con que se "
+                         "escala el empuje del suelo", cifras=CIFRAS_FINA),
+                Magnitud(f"M_u activo, {referencia.clave}", s0.M_u_cedente,
+                         "kN·m/m", f"{s0.combinacion}, del ensamble de "
+                         "T-7b", cifras=CIFRAS_MAGNITUD),
+                Magnitud(f"M_u reposo, {referencia.clave}", M_rep, "kN·m/m",
+                         "las mismas cargas con el empuje en reposo",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("K0·(1 + sen i)", K0_talud, "",
+                         f"CONTRASTE de sensibilidad, no adoptado: el K0 "
+                         f"con el relleno en talud de la practica "
+                         f"geotecnica, con i = {i_grados:.2f} grados (la "
+                         "pendiente equivalente del ensamble); AASHTO "
+                         "3.11.5.2 da K0 solo con terreno horizontal y no "
+                         f"trae esta formula. Seria un {K0_talud / K0 - 1:.0%}"
+                         " mas de empuje en reposo", cifras=CIFRAS_FINA),
+                Magnitud("k_h del armado", k_h_armado if k_h_armado
+                         is not None else 0.0, "",
+                         ("1.0·k_h0 (AASHTO 11.6.5.4, muro que no cede)"
+                          if regimen == REGIMEN_RESISTENCIA_K0 else
+                          "el de la cadena sismica (muro que cede)")
+                         if k_h_armado is not None else
+                         "el Evento Extremo I no entro al armado",
+                         cifras=CIFRAS_FINA),
+                Magnitud("k_h de la estabilidad", k_h_estab if k_h_estab
+                         is not None else 0.0, "",
+                         f"el de la cadena sismica ('{CRITERIO_FACTOR_MURO}'"
+                         ")", cifras=CIFRAS_FINA),
+            ),
+            resultado=Magnitud(f"M_u que rige, {referencia.clave}", s0.M_u,
+                               "kN·m/m",
+                               "el mayor de los dos" if regimen
+                               == REGIMEN_RESISTENCIA_K0 else
+                               "el del muro que cede",
+                               cifras=CIFRAS_MAGNITUD),
+            citas_textuales=("AASHTO_LRFD_9.C3.11.1#REPOSO",
+                             "AASHTO_LRFD_9.C11.6.5.4#K0",
+                             "AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE",
+                             "AASHTO_LRFD_9.C3.11.5.2#ACTIVO"),
+            nota_del_proyecto=(
+                "QUE SE ESCALA Y QUE NO: solo el empuje del suelo (EH) y el "
+                "de la sobrecarga viva (LS) cambian de coeficiente; en "
+                "reposo el empuje es horizontal y su componente vertical "
+                "desaparece. El peso del concreto, el del relleno, el de la "
+                "sobrecarga, el agua y la subpresion son los mismos. La "
+                "estabilidad externa NO cambia: sigue con el muro que cede. "
+                "El K0 es de terreno horizontal y el relleno sube detras "
+                "del cabezal: por eso rige la mayor de las dos "
+                "solicitaciones y no la de reposo a secas; la sensibilidad "
+                "a un K0 con talud se imprime arriba y no se adopta. Bajo "
+                "sismo, con el muro que no cede, el armado va con k_h = "
+                "1.0·k_h0 (11.6.5.4) aunque la estabilidad lo reduzca. Es "
+                "una eleccion del proyecto "
+                f"('{CRITERIO_REGIMEN_RESISTENCIA}' [A]).")))
+    for p in piezas:
+        otra = _armado_con_el_otro_regimen(p, regimen)
+        if otra is not None:
+            avisos.append(
+                f"{quien}: el armado de {p.clave} CAMBIA con el regimen de "
+                f"resistencia ('{CRITERIO_REGIMEN_RESISTENCIA}' [A]): con "
+                f"«{regimen}» se adoptan {p.As_adoptado:.0f} mm2/m "
+                f"({p.barra.texto if p.barra else 'sin barra del catalogo'}"
+                f"); con «{otra[0]}» serian {otra[1]:.0f} mm2/m"
+                + (f" ({otra[2].texto})" if otra[2] else ""))
+    if not sol["sismico"]:
+        pass            # el aviso ya viene en sol["avisos"]
+    elif regimen == REGIMEN_RESISTENCIA_K0:
+        avisos.append(
+            f"{quien}: bajo sismo el armado usa el empuje del metodo del "
+            "ensamble (cuña o Mononobe-Okabe) con k_h = 1.0·k_h0 (AASHTO "
+            "11.6.5.4) y, en la pantalla y los aleros, la resultante del "
+            "empuje total a h/2 si da mas cortante o momento (AASHTO "
+            "C11.6.5.4). La fuente no da un coeficiente sismico de reposo y "
+            "no se inventa")
+
+    # --- la tabla de armado ---------------------------------------------------
+    tabla = [FilaDeArmado(
+        elemento=p.elemento,
+        posicion=f"{p.clave}: {p.cara}",
+        As_requerido=p.As_resistencia,
+        As_minimo=max(p.As_minimo_flexion, p.As_minimo_constructivo),
+        origen_minimo=p.origen_minimo, As_adoptado=p.As_adoptado,
+        gobierna=p.gobierna, s_max=p.s_max, barra=p.barra) for p in piezas]
+    comun = dict(fy=mat["fy"], regla=regla, catalogo=catalogo, hm=hm, lm=lm)
+    claves = {p.clave for p in piezas}
+    if SECCION_PANTALLA in claves:
+        tabla.append(_fila_de_reparto(
+            elemento=ELEMENTO_PANTALLA,
+            posicion="pantalla: cara expuesta, armadura vertical",
+            es_zapata=False, direccion="vertical",
+            espesor=g.espesor_base_muro, ancho=min(g.H, lm), **comun))
+        tabla.append(_fila_de_reparto(
+            elemento=ELEMENTO_PANTALLA,
+            posicion="pantalla: armadura horizontal, cada cara",
+            es_zapata=False, direccion="horizontal",
+            espesor=g.espesor_base_muro, ancho=min(g.H, lm), **comun))
+    if claves & {SECCION_PUNTA, SECCION_TALON}:
+        tabla.append(_fila_de_reparto(
+            elemento=ELEMENTO_ZAPATA,
+            posicion="zapata: armadura longitudinal (a lo largo del muro), "
+                     "cada cara",
+            es_zapata=True, direccion="reparto", espesor=g.espesor_zapata,
+            ancho=g.B, **comun))
+    if SECCION_ALERO in claves:
+        tabla.append(_fila_de_reparto(
+            elemento=ELEMENTO_ALEROS,
+            posicion="aleros: armadura horizontal, cada cara",
+            es_zapata=False, direccion="horizontal",
+            espesor=g.aleros.espesor,
+            ancho=min(g.aleros.altura_inicial, max(g.aleros.longitudes)),
+            **comun))
+    sin_barra = [f.posicion for f in tabla if f.barra is None]
+    if sin_barra:
+        avisos.append(
+            f"{quien}: ninguna barra del catalogo "
+            f"('{CRITERIO_CATALOGO_BARRAS}' [A]) da el acero adoptado con "
+            "un espaciamiento admisible en: " + "; ".join(sin_barra))
+    de_zapata = [p for p in piezas if p.elemento == ELEMENTO_ZAPATA]
+    if de_zapata:
+        pasos.append(paso(
+            "F9.ARM_ZAPATA", codigo=f"9.4.z.{ext}",
+            que="Solicitaciones de la zapata en la cara de la pantalla: "
+                f"cabezal de {entorno.extremo}",
+            formula="punta: integral de la presion de contacto LINEAL y de "
+                    "la subpresion, menos el peso propio. Talon: peso "
+                    "entero de lo que tiene encima (relleno, sobrecarga, "
+                    "componente vertical del empuje y peso propio)",
+            sustitucion=tuple(
+                Magnitud(f"M_u, {p.clave}", p.rige_flexion.M_u, "kN·m/m",
+                         f"{p.rige_flexion.combinacion}; "
+                         f"{p.rige_flexion.nota}", cifras=CIFRAS_MAGNITUD)
+                for p in de_zapata) + tuple(
+                Magnitud(f"V_u, {p.clave}", p.rige_cortante.V_u, "kN/m",
+                         f"{p.rige_cortante.combinacion}",
+                         cifras=CIFRAS_MAGNITUD) for p in de_zapata),
+            resultado=Magnitud("secciones de la zapata", len(de_zapata), "",
+                               "punta y talon, las que tienen vuelo"),
+            citas_textuales=("AASHTO_LRFD_9.10.6.5#LINEAL",
+                             "AASHTO_LRFD_9.11.6.1.2#TALON",
+                             "AASHTO_LRFD_9.5.12.8.4#CARA"),
+            nota_del_proyecto=(
+                "La presion de contacto del DISEÑO ESTRUCTURAL es lineal "
+                "(triangular o trapezoidal), no la uniforme sobre el ancho "
+                "efectivo que la capacidad portante usa en E1. El cortante "
+                "se toma en la cara de la pantalla tambien en la punta, "
+                "donde la fuente permite tomarlo a d_v de ella: lado "
+                "seguro. El talon con el metodo mas exacto se imprime en "
+                "la procedencia y no rige.")))
+    pasos_secciones = [x for p in piezas for x in p.pasos]
+    pasos.extend(pasos_secciones)
+    if tabla:
+        pasos.append(paso(
+            "F9.ARM_TABLA", codigo=f"9.4.t.{ext}",
+            que=f"Tabla de armado del cabezal de {entorno.extremo}",
+            formula="A_s adoptado = max(A_s requerido por resistencia, A_s "
+                    "minimo); barra y espaciamiento propuestos del catalogo",
+            sustitucion=tuple(
+                Magnitud(f.posicion,
+                         f"requerido {f.As_requerido:.0f}, minimo "
+                         f"{f.As_minimo:.0f}, adoptado {f.As_adoptado:.0f} "
+                         f"mm2/m -> " + (f"{f.barra.texto} "
+                                         f"({f.barra.As_provisto:.0f} mm2/m)"
+                                         if f.barra else
+                                         "SIN BARRA DEL CATALOGO"),
+                         "", f"gobierna: {f.gobierna}; s maximo "
+                         f"{f.s_max:.3f} m") for f in tabla),
+            resultado=Magnitud("filas de la tabla", len(tabla), "",
+                               "una por posicion (cara y direccion) de cada "
+                               "elemento"),
+            citas_textuales=("AASHTO_LRFD_9.5.6.3.2.1#MR",
+                             "AASHTO_LRFD_9.5.6.3.3#MINIMO",
+                             "AASHTO_LRFD_9.5.10.6#TEMPERATURA"),
+            nota_del_proyecto=(
+                "Las barras y los espaciamientos son una PROPUESTA del "
+                f"catalogo '{CRITERIO_CATALOGO_BARRAS}' [A]: lo que el "
+                "plano lleve tiene que dar al menos el acero adoptado con "
+                "un espaciamiento no mayor que el maximo. El acero de "
+                "reparto es el minimo de cada cara: el mas exigente de "
+                "AASHTO 5.10.6 y de E.060 "
+                f"('{CRITERIO_REGLA_MINIMOS}' [A]).")))
+
+    # --- el regimen de cortante de E.060 y lo que NO esta ---------------------
+    if regla == MINIMOS_MAS_EXIGENTE and SECCION_PANTALLA in claves:
+        en_el_plano = (ca.valor(CRITERIO_REGIMEN_CORTANTE)
+                       == REGIMEN_CORTANTE_EN_EL_PLANO)
+        rho_h, numeral_h, _, _ = _minimo_de_cuantia_aplicable(
+            direccion="horizontal", cortante_alto=en_el_plano)
+        rho_v, _, _, _ = _minimo_de_cuantia_aplicable(
+            direccion="vertical", cortante_alto=en_el_plano)
+        if en_el_plano:
+            rho_v = cuantia_vertical_ec_11_32(hm=hm, lm=lm, rho_h=rho_h)
+            avisos.append(
+                f"{quien}: el regimen de cortante declarado es «en el "
+                f"plano» ('{CRITERIO_REGIMEN_CORTANTE}'): se aplican los "
+                f"pisos de E.060 11.10.10 (horizontal {rho_h:g}, vertical "
+                f"{rho_v:g} por la ec. 11-32 con hm/lm = {hm / lm:.2f}). El "
+                "programa NO modela ninguna carga en el plano del muro: el "
+                "umbral de 11.10.7 no se evalua, y la cuantia horizontal "
+                "requerida por 11.10.10.1 se toma igual a su piso")
+        pasos.append(paso(
+            "F9.ARM_CORTANTE_PLANO", codigo=f"9.4.p.{ext}",
+            que="Cuantias minimas del muro segun el plano del cortante "
+                f"(E.060 11.10, por analogia): cabezal de {entorno.extremo}",
+            formula="perpendicular al plano: rho_h >= 0,0020 y rho_v >= "
+                    "0,0015 (14.3.1). En el plano: rho_h >= 0,0025 y rho_v "
+                    ">= 0,0025 + 0,5·(2,5 - hm/lm)·(rho_h - 0,0025) >= "
+                    "0,0025 (ec. 11-32)",
+            sustitucion=(
+                Magnitud("regimen", ca.valor(CRITERIO_REGIMEN_CORTANTE), "",
+                         f"'{CRITERIO_REGIMEN_CORTANTE}' [A]: el cortante "
+                         "que el ensamble entrega es el del empuje, "
+                         "perpendicular al plano"),
+                Magnitud("hm", hm, "m", "altura total del muro",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("lm", lm, "m", "longitud del cabezal",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("rho_h", rho_h, "", numeral_h, cifras=CIFRAS_FINA),
+            ),
+            resultado=Magnitud("rho_v", rho_v, "",
+                               "ec. (11-32) evaluada" if en_el_plano else
+                               "14.3.1 (el regimen de 11.10.10 no rige)",
+                               cifras=CIFRAS_FINA),
+            citas_textuales=("E060.11.10.1", "E060.11.10.2",
+                             "E060.11.10.10.2", "E060.11.10.10.3"),
+            nota_del_proyecto=(
+                "E.060 es norma de edificaciones y se aplica al cabezal por "
+                "analogia: estas cuantias entran como minimo constructivo, "
+                "junto al acero de temperatura de AASHTO 5.10.6, y rige el "
+                "mayor.")))
+    avisos.append(
+        f"{quien}: el armado NO cubre el VANO del conducto -- la pantalla "
+        f"de {g.longitud or lm:.2f} m es hueco en el ancho del barril, de "
+        "modo que la sección llena es la de los machones a cada lado: el "
+        "refuerzo de borde alrededor de la abertura (E.060 22.6.6.5 pide dos "
+        "barras de 5/8\" en las aberturas de los muros de concreto simple; "
+        "para el armado, por analogia) no se dimensiona --; ni la losa de "
+        "entrega ni el dentellon, que la geometria del cabezal trae y no se "
+        "arman; ni el desarrollo ni los empalmes de las barras; ni la "
+        "zapata y las secciones intermedias de los aleros. Arma la "
+        "geometria que recibe sin iterarla: si el cabezal no pasa su "
+        "estabilidad (filas E1 a E3), el armado es el de una geometria que "
+        "todavia hay que ampliar")
+    verificaciones_cabezal = [_fila_de_peralte_de_zapata(
+        entorno, piezas, catalogo=catalogo, regla=regla)]
+    try:
+        requisitos = requisitos_durabilidad_concreto()
+    except CriterioPendienteError:
+        avisos.append(
+            f"{quien}: el f'c de calculo ({mat['fc']:.1f} MPa, "
+            f"'{CRITERIO_FC_CABEZAL}' [A]) NO se contrasto con el minimo "
+            "por durabilidad de E.060 (Tablas 4.2 y 4.4): falta el analisis "
+            f"quimico del EMS ('{CRITERIO_EXPOSICION_QUIMICA}'); con el, la "
+            "fila A7 lo decide")
+    else:
+        if requisitos.fc_min_MPa is not None:
+            verificaciones_cabezal.append(_fila_de_durabilidad(
+                entorno, fc=mat["fc"], requisitos=requisitos))
+    verificaciones = (tuple(v for p in piezas for v in p.verificaciones)
+                      + tuple(verificaciones_cabezal))
+    pasos.extend(v.paso for v in verificaciones_cabezal)
+    for v in verificaciones_cabezal:
+        if v.estado is not EstadoDeVerificacion.CUMPLE:
+            avisos.append(f"{quien}: {v.paso.que} -- "
+                          f"{v.paso.veredicto.explicacion}")
+    unicos = []
+    for a in avisos:
+        if a not in unicos:
+            unicos.append(a)
+    return ArmadoDelCabezal(
+        id_punto=entorno.id_punto, extremo=entorno.extremo,
+        tipo=g.tipo or TIPO_VOLADIZO, regimen=regimen, fc_mpa=mat["fc"],
+        fy_mpa=mat["fy"], secciones=piezas, tabla=tuple(tabla),
+        verificaciones=verificaciones, pasos=tuple(pasos),
+        avisos=tuple(unicos), sismico=sol["sismico"], K0=K0, K_A=K_A)
+
+
+def _armado_con_el_otro_regimen(p: ArmadoDeSeccion, regimen: str
+                                ) -> Optional[tuple]:
+    """
+    Si la barra propuesta de la seccion cambia al armarla con el OTRO
+    regimen, (nombre del otro regimen, acero adoptado, barra). None si no
+    cambia o si no hay con que compararlo.
+    """
+    otro = (REGIMEN_RESISTENCIA_CEDENTE if regimen == REGIMEN_RESISTENCIA_K0
+            else REGIMEN_RESISTENCIA_K0)
+    if not any(s.M_u_reposo is not None for s in p.solicitaciones):
+        return None
+    mat = materiales_del_armado()
+    As_otro, M_estatico = [], 0.0
+    for s in p.solicitaciones:
+        M = s.M_u_cedente if otro == REGIMEN_RESISTENCIA_CEDENTE else max(
+            s.M_u_cedente, s.M_u_reposo if s.M_u_reposo is not None
+            else s.M_u_cedente)
+        M = max(M, 0.0)
+        As = acero_por_flexion(M_u=M, d=p.d, fc=mat["fc"], fy=mat["fy"],
+                               phi=s.phi_flexion)
+        if As is None:
+            return None
+        As_otro.append(As)
+        if s.condicion is CondicionAnalisis.ESTATICO:
+            M_estatico = max(M_estatico, M)
+    # El minimo de flexion de 5.6.3.3 tambien se mueve con el regimen: sale
+    # del menor de 1.33·M_u (de Resistencia I) y M_cr.
+    M_minimo = min(FACTOR_MOMENTO_REFUERZO_MINIMO_AASHTO * M_estatico,
+                   momento_de_agrietamiento(espesor=p.espesor, fc=mat["fc"],
+                                            gamma_3=mat["gamma_3"]))
+    As_minf = acero_por_flexion(M_u=M_minimo, d=p.d, fc=mat["fc"],
+                                fy=mat["fy"],
+                                phi=_procedimiento()["phi_flexion"])
+    if As_minf is None or p.barra is None:
+        return None
+    adoptado = max(max(As_otro), As_minf, p.As_minimo_constructivo)
+    barra = proponer_barra(As=adoptado, s_max=p.s_max,
+                           catalogo=catalogo_de_barras(),
+                           desde=p.barra.designacion if otro
+                           == REGIMEN_RESISTENCIA_K0
+                           else catalogo_de_barras()["minima_principal"])
+    if barra is not None and barra.designacion == p.barra.designacion \
+            and abs(barra.espaciamiento - p.barra.espaciamiento) \
+            <= TOL_UMBRAL_NORMATIVO:
+        return None
+    return otro, adoptado, barra
+
+
+def armado_del_cabezal(entorno: EntornoDelCabezal) -> ArmadoDelCabezal:
+    """
+    El armado completo de UN cabezal, de una sola llamada: sus tres
+    elementos y su tabla si es de voladizo armado, o la verificacion de la
+    alternativa ciclopea si es de gravedad (el tipo es el de T-7a). El
+    servicio no la usa -- llama a `armar_elemento` por elemento para que
+    cada fallo sea un `Bloqueo` aparte --; es la puerta de un tanteo y de
+    los tests.
+    """
+    if entorno.geometria.tipo == TIPO_GRAVEDAD:
+        return verificar_cabezal_ciclopeo(entorno)
+    sol = solicitaciones_de_resistencia(entorno)
+    piezas = []
+    for elemento in ELEMENTOS_ARMADOS:
+        piezas.extend(armar_elemento(entorno, elemento, sol))
+    return ensamblar_armado(entorno, piezas, sol)
+
+
+# ---------------------------------------------------------------------------
+# La alternativa ciclopea: el cabezal de gravedad
+# ---------------------------------------------------------------------------
+
+def acciones_sobre_una_seccion(entorno: EntornoDelCabezal, datos: dict, *,
+                               z_seccion: float, en_reposo: bool) -> dict:
+    """
+    Las acciones de SERVICIO (sin factorar) que el cuerpo de un cabezal de
+    gravedad transmite a una seccion horizontal a la altura `z_seccion` (m
+    sobre la base de la zapata), por metro de muro:
+
+      W     peso del concreto por encima de la seccion (trapecio de trasdos
+            vertical) y su distancia `x_W` al trasdos;
+      H_i   los empujes horizontales por encima de la seccion, con su brazo
+            sobre ella: el del suelo -- el mismo diagrama del ensamble
+            (triangular, con el peso sumergido bajo el agua), truncado a la
+            altura de la seccion --, el de la sobrecarga viva y el del agua
+            del relleno.
+
+    Con `en_reposo` el coeficiente del suelo y de la sobrecarga es K0 y el
+    empuje es horizontal; si no, es K_A y se toma su componente horizontal
+    (la vertical, que estabiliza, se desprecia: lado seguro). No hay
+    subpresion en una seccion interior del muro.
+    """
+    g = entorno.geometria
+    e_z, H = g.espesor_zapata, g.H
+    if not (_finito(z_seccion) and e_z - TOL_UMBRAL_NORMATIVO <= z_seccion
+            < e_z + H):
+        raise DatoInvalidoError(
+            "z_seccion", valor=z_seccion, id_punto=entorno.id_punto,
+            motivo="la seccion tiene que estar en el cuerpo del muro, entre "
+                   "su arranque y su corona")
+    y = z_seccion - e_z                      # altura sobre el arranque
+    e_c, e_b = g.espesor_corona, g.espesor_base_muro
+    t = e_b - (e_b - e_c) * y / H            # espesor en la seccion
+    alto = H - y
+    W = datos["gamma_c"] * (t + e_c) / 2 * alto
+    x_W = ((t ** 2 + t * e_c + e_c ** 2) / (3 * (t + e_c))   # literal-ok: centroide del trapecio
+           if t + e_c > 0 else 0.0)
+    K = datos["K0"] if en_reposo else datos["K_A"]
+    horizontal = 1.0 if en_reposo else math.cos(datos["inclinacion"])
+    gamma, h = datos["gamma"], datos["h"]
+    h_w = max(min(datos["h_w"], h) - z_seccion, 0.0)
+    altura = max(h - z_seccion, 0.0)         # del diagrama sobre la seccion
+    P_unitario, M_unitario = diagrama_del_suelo_sobre(datos, z_seccion)
+    H_suelo = K * P_unitario * horizontal
+    M_suelo = K * M_unitario * horizontal
+    H_ls = K * gamma * datos["h_eq"] * altura
+    M_ls = H_ls * altura / 2
+    H_w = GAMMA_AGUA_KN_M3 * h_w ** 2 / 2
+    M_w = H_w * h_w / 3                                       # literal-ok: centroide del triangulo
+    return {"t": t, "W": W, "x_W": x_W, "K": K,
+            "H_suelo": H_suelo, "M_suelo": M_suelo, "H_ls": H_ls,
+            "M_ls": M_ls, "H_agua": H_w, "M_agua": M_w, "altura": altura}
+
+
+def verificar_cabezal_ciclopeo(entorno: EntornoDelCabezal
+                               ) -> ArmadoDelCabezal:
+    """
+    La alternativa en concreto CICLOPEO del cabezal de gravedad (T-7c punto
+    3): no se arma; se comprueba que el muro trabaje sin traccion y que el
+    material sea el que las fuentes admiten.
+
+      C1  base: la resultante de las cargas de SERVICIO dentro del tercio
+          central de la zapata, e <= B/6.
+      C2  cuerpo, en su arranque sobre la zapata: e <= t/6. Con la junta de
+          construccion de archivo ('junta_arranque_cabezal_ciclopeo') es la
+          prohibicion de E.060 22.4.7 -- ninguna traccion a traves de la
+          junta --, y se evalua con las cargas de servicio Y con las
+          amplificadas de E.060 (la envolvente 0,9 CM + 1,7 CE + 1,7 CV);
+          DECIDE siempre (correcciones de T-7c, H5).
+      C3  cuerpo, a media altura: e <= t/6.
+      C4  f'c de la matriz >= el mayor de los minimos de E.060 22.10 (10
+          MPa) y de la Clase G del EG-2013 (14 MPa).
+      C5  piedra desplazadora <= 30 % del volumen.
+      C6  contraste con E.060 Cap. 22 (por analogia), en el arranque y a
+          media altura, con SUS cargas amplificadas (9.2.5) y SU resistencia
+          (phi = 0,5, f'c <= 10 MPa, peralte reducido en 50 mm): traccion
+          M_u/S - P_u/A <= phi·0,42·sqrt(f'c) y cortante V_u <=
+          phi·0,11·sqrt(f'c)·b·h.
+
+    CUAL DECIDE lo declara 'criterio_traccion_cabezal_ciclopeo' [A]: con
+    «tracciones_nulas» (archivo) deciden C1 y C3 y C6 informa; con
+    «traccion_admisible_e060», al reves. C2 decide siempre con la junta de
+    construccion; con el vaciado monolitico declarado, como C1 y C3. C4 y
+    C5 deciden siempre. El umbral e <= B/6 o t/6 de C1 a C3 es criterio del
+    proyecto (la `Interpretacion` de la cita E060.22.6.3#TERCIO dice por
+    que esa cita no lo exige con cargas de servicio), salvo en la junta,
+    donde lo sostiene 22.4.7.
+
+    El empuje es el del regimen de resistencia ('regimen_resistencia_
+    elementos_cabezal'): en reposo se toma, seccion por seccion, la
+    excentricidad mayor de las dos. Solo condicion ESTATICA: bajo sismo la
+    resultante en la base es la fila E2 de la estabilidad, y las secciones
+    del cuerpo no se evaluan (se avisa).
+    """
+    g = entorno.geometria
+    est = CondicionAnalisis.ESTATICO
+    quien = _aviso_cabezal(entorno)
+    ext = entorno.extremo[0]
+    regimen = regimen_de_resistencia()
+    criterio = ca.valor(CRITERIO_TRACCION_CICLOPEO)
+    if criterio not in CRITERIOS_DE_TRACCION_CICLOPEO:
+        raise DatoInvalidoError(
+            CRITERIO_TRACCION_CICLOPEO, valor=criterio,
+            motivo="se espera una de: "
+                   + ", ".join(CRITERIOS_DE_TRACCION_CICLOPEO))
+    nulas = criterio == TRACCION_NULA
+    junta = ca.valor(CRITERIO_JUNTA_CICLOPEO)
+    if junta not in JUNTAS_DEL_ARRANQUE:
+        raise DatoInvalidoError(
+            CRITERIO_JUNTA_CICLOPEO, valor=junta,
+            motivo="se espera una de: " + ", ".join(JUNTAS_DEL_ARRANQUE))
+    con_junta = junta == JUNTA_DE_CONSTRUCCION
+    caracter_proyecto = ("CRITERIO DEL PROYECTO (la cita no lo exige con "
+                         "cargas de servicio: ver su interpretacion)")
+    material = ca.valor(CRITERIO_CONCRETO_CICLOPEO)
+    fc_matriz = material.get("fc_matriz_mpa") if hasattr(material, "get") \
+        else None
+    piedra = material.get("fraccion_piedra") if hasattr(material, "get") \
+        else None
+    if not (_finito(fc_matriz) and fc_matriz > 0 and _finito(piedra)
+            and 0 <= piedra <= 1):
+        raise DatoInvalidoError(
+            CRITERIO_CONCRETO_CICLOPEO, valor=material,
+            motivo="se esperan 'fc_matriz_mpa' positivo y 'fraccion_piedra' "
+                   "entre 0 y 1")
+    cargas, datos = cargas_del_cabezal(entorno, est)
+    juegos = [("activo", cargas, False)]
+    if regimen == REGIMEN_RESISTENCIA_K0:
+        juegos.append(("reposo", cargas_en_reposo(cargas, datos), True))
+    mag = lambda s, v, u, p, c=CIFRAS_MAGNITUD: Magnitud(s, v, u, p, cifras=c)  # noqa: E731
+    verificaciones = []
+
+    # --- C1: la base, con las cargas de servicio ----------------------------
+    peor = None
+    for nombre, juego, _ in juegos:
+        for con_peso_ls in (True, False):
+            f = _factores_por_tipo(juego, DC=1.0, EV=1.0, EH=1.0, LS=1.0,
+                                   WA=1.0, **({} if con_peso_ls
+                                              else {"LS_v": 0.0}))
+            c = _combinar(f"Servicio ({nombre})", MARCO_ASD, est, juego, f,
+                          g.B, "tracciones nulas")
+            if not c.N > 0:
+                raise LimiteNumericoError(
+                    "N", valor=c.N,
+                    motivo="la resultante vertical de servicio del cabezal "
+                           "de gravedad no es de compresion")
+            if peor is None or abs(c.excentricidad) > abs(peor[1].excentricidad):
+                peor = (nombre, c)
+    nombre_b, combo_b = peor
+    e_b = abs(combo_b.excentricidad)
+    limite_b = g.B / NUCLEO_CENTRAL_DIVISOR
+    verificaciones.append(_verificacion_de_armado(
+        fundamento="F9.CICLOPEO", codigo=f"C1.base.{ext}",
+        que=f"C1, tracciones nulas en la base: cabezal de {entorno.extremo}",
+        formula="e = |B/2 - (M_e - M_v)/N| <= B/6, con cargas de servicio",
+        sustitucion=(
+            mag("N", combo_b.N, "kN/m", f"suma de verticales, empuje "
+                f"{nombre_b}"),
+            mag("M_e - M_v", combo_b.momento_neto, "kN·m/m",
+                "momento neto respecto de la punta"),
+            mag("B", g.B, "m", "ancho de la zapata"),
+        ),
+        resultado=mag("e", e_b, "m", "excentricidad de la resultante"),
+        descripcion_umbral="e <= B/6 (tercio central)", admisible=limite_b,
+        unidad="m", cita="E060.22.6.3#TERCIO", caracter=caracter_proyecto,
+        aplicacion="criterio del proyecto, mas exigente que la fuente: "
+                   "E.060 admite traccion en el concreto simple "
+                   f"('{CRITERIO_TRACCION_CICLOPEO}' [A])",
+        criterio=CRITERIO_TRACCION_CICLOPEO,
+        cumple=e_b <= limite_b + TOL_UMBRAL_NORMATIVO,
+        margen=limite_b - e_b, decide=nulas, obtenido=e_b,
+        nota=("La excentricidad de la estabilidad externa (fila E2) se mide "
+              "con cargas factoradas y contra B/3; esta, con cargas de "
+              "servicio y contra B/6, que es la condicion de que no haya "
+              "traccion en el contacto."),
+        explicacion_falla="la resultante cae fuera del tercio central de "
+                          "la base: ampliar la zapata",
+        numeral=NUMERAL_9_4_CICLOPEO))
+
+    # --- C2, C3 y el contraste, seccion por seccion del cuerpo ---------------
+    fc_dis = min(fc_matriz, FC_DISENO_MAX_CICLOPEO_MPA)
+    f_t = PHI_CICLOPEO_E060 * TRACCION_CONCRETO_SIMPLE_E060 * math.sqrt(
+        fc_dis) * KPA_POR_MPA                       # kPa
+    uso_e060, detalle_e060 = 0.0, []
+    for codigo, rotulo, z in (("C2", "arranque del cuerpo", g.espesor_zapata),
+                              ("C3", "media altura del cuerpo",
+                               g.espesor_zapata + g.H / 2)):
+        peor_s = None
+        peor_u = None           # la excentricidad amplificada de E.060
+        for nombre, _, reposo in juegos:
+            a = acciones_sobre_una_seccion(entorno, datos, z_seccion=z,
+                                           en_reposo=reposo)
+            M_h = a["M_suelo"] + a["M_ls"] + a["M_agua"]
+            if not a["W"] > 0:
+                raise LimiteNumericoError(
+                    "W", valor=a["W"],
+                    motivo="el peso del cuerpo sobre la seccion no es "
+                           "positivo")
+            # excentricidad hacia la cara expuesta, respecto del centro
+            e = (M_h - a["W"] * (a["t"] / 2 - a["x_W"])) / a["W"]
+            if peor_s is None or abs(e) > abs(peor_s[2]):
+                peor_s = (nombre, a, e, M_h)
+            # contraste E.060: la ENVOLVENTE de (9-6) y (9-7) que mas
+            # tracciona -- el peso con 0,9 (9-7) y los empujes del suelo, del
+            # agua y de la sobrecarga con 1,7 --, mas exigente que cada una.
+            P_u = E060_FACTOR_CM_MINIMO * a["W"]
+            M_u_centro = (E060_FACTOR_CE * (a["M_suelo"] + a["M_agua"])
+                          + E060_FACTOR_CV * a["M_ls"]
+                          - P_u * (a["t"] / 2 - a["x_W"]))
+            e_u = M_u_centro / P_u
+            if peor_u is None or abs(e_u) > abs(peor_u[1]):
+                peor_u = (nombre, e_u)
+            t_r = a["t"] - REDUCCION_PERALTE_CONTRA_SUELO_M
+            if t_r > 0:
+                # 22.6.3: excentricidad no menor de 0,10·h.
+                M_u = max(abs(M_u_centro),
+                          EXCENTRICIDAD_MIN_MURO_CONCRETO_SIMPLE_E060
+                          * a["t"] * P_u)
+                V_u = (E060_FACTOR_CE * (a["H_suelo"] + a["H_agua"])
+                       + E060_FACTOR_CV * a["H_ls"])
+                sigma_t = (M_u / (t_r ** 2 / NUCLEO_CENTRAL_DIVISOR)
+                           - P_u / t_r)
+                V_r = (PHI_CICLOPEO_E060 * CORTANTE_CONCRETO_SIMPLE_E060
+                       * math.sqrt(fc_dis) * KPA_POR_MPA * t_r)
+                uso = max(sigma_t / f_t, V_u / V_r)
+                detalle_e060.append((rotulo, nombre, sigma_t, V_u, V_r, uso))
+                uso_e060 = max(uso_e060, uso)
+        nombre_s, a, e, M_h = peor_s
+        limite = a["t"] / NUCLEO_CENTRAL_DIVISOR
+        en_la_junta = codigo == "C2" and con_junta
+        obtenido = (max(abs(e), abs(peor_u[1])) if en_la_junta else abs(e))
+        verificaciones.append(_verificacion_de_armado(
+            fundamento="F9.CICLOPEO", codigo=f"{codigo}.cuerpo.{ext}",
+            que=f"{codigo}, tracciones nulas en el {rotulo}: cabezal de "
+                f"{entorno.extremo}"
+                + (" (junta de construccion, E.060 22.4.7)" if en_la_junta
+                   else ""),
+            formula=("e = [M_H - W·(t/2 - x_W)] / W <= t/6, con cargas de "
+                     "servicio por encima de la seccion"
+                     + (" y con las amplificadas de E.060 (0,9 CM; 1,7 CE "
+                        "y CV): rige la mayor" if en_la_junta else "")),
+            sustitucion=(
+                mag("t", a["t"], "m", "espesor del cuerpo en la seccion"),
+                mag("W", a["W"], "kN/m", "peso del concreto por encima"),
+                mag("x_W", a["x_W"], "m", "de su centro de gravedad al "
+                    "trasdos"),
+                mag("M_H", M_h, "kN·m/m", f"empujes del suelo (K = "
+                    f"{a['K']:.3f}, {nombre_s}), de la sobrecarga y del "
+                    "agua, por encima de la seccion"),
+                mag("e (servicio)", abs(e), "m", "con cargas de servicio"),
+                mag("e_u (E.060)", abs(peor_u[1]), "m",
+                    f"con 0,9 CM y 1,7 CE y CV ({peor_u[0]})"
+                    + ("" if en_la_junta else ": informa")),
+            ),
+            resultado=mag("e", obtenido, "m", "excentricidad de la "
+                          "resultante en la seccion"
+                          + (": la mayor de las dos" if en_la_junta else "")),
+            descripcion_umbral="e <= t/6 (tercio central)", admisible=limite,
+            unidad="m",
+            cita="E060.22.4.7#JUNTAS" if en_la_junta else "E060.22.6.3#TERCIO",
+            caracter=None if en_la_junta else caracter_proyecto,
+            aplicacion=("exigencia de E.060 22.4.7, por analogia: el "
+                        "arranque es una junta de construccion "
+                        f"('{CRITERIO_JUNTA_CICLOPEO}' = '{junta}'); decide "
+                        "con cualquier criterio de traccion"
+                        if en_la_junta else
+                        "criterio del proyecto, mas exigente que la fuente "
+                        f"('{CRITERIO_TRACCION_CICLOPEO}' [A])"),
+            criterio=(CRITERIO_JUNTA_CICLOPEO if en_la_junta
+                      else CRITERIO_TRACCION_CICLOPEO),
+            cumple=obtenido <= limite + TOL_UMBRAL_NORMATIVO,
+            margen=limite - obtenido, decide=nulas or en_la_junta,
+            obtenido=obtenido,
+            nota=("La componente vertical del empuje activo, que "
+                  "estabiliza, no se cuenta."),
+            explicacion_falla=("la junta del arranque transmitiria traccion, "
+                               "que E.060 22.4.7 prohibe: aumentar el "
+                               "espesor del cuerpo" if en_la_junta else
+                               "hay traccion en el trasdos del cuerpo: "
+                               "aumentar su espesor"),
+            numeral=NUMERAL_9_4_CICLOPEO))
+
+    # --- C4 y C5: el material -------------------------------------------------
+    verificaciones.append(_verificacion_de_armado(
+        fundamento="F9.CICLOPEO", codigo=f"C4.material.{ext}",
+        que="C4, resistencia de la matriz del concreto ciclopeo: cabezal "
+            f"de {entorno.extremo}",
+        formula="f'c de la matriz >= max(10 MPa de E.060 22.10.1, 14 MPa de "
+                "la Clase G del EG-2013)",
+        sustitucion=(mag("f'c matriz", fc_matriz, "MPa",
+                         f"'{CRITERIO_CONCRETO_CICLOPEO}' [A]", 1),),
+        resultado=mag("f'c matriz", fc_matriz, "MPa", "especificado", 1),
+        descripcion_umbral="f'c >= el mayor de los dos minimos",
+        admisible=CICLOPEO_FC_MATRIZ_MIN_APLICABLE, unidad="MPa",
+        cita="EG2013.503.04#T503_07",
+        aplicacion="el mayor de los dos minimos que rigen sobre el mismo "
+                   "material; el de E.060, por analogia",
+        criterio=CRITERIO_CONCRETO_CICLOPEO,
+        cumple=fc_matriz >= CICLOPEO_FC_MATRIZ_MIN_APLICABLE
+        - TOL_UMBRAL_NORMATIVO,
+        margen=fc_matriz - CICLOPEO_FC_MATRIZ_MIN_APLICABLE, decide=True,
+        obtenido=fc_matriz, nota=CICLOPEO_DOS_MINIMOS,
+        explicacion_falla="la matriz no alcanza la resistencia minima",
+        numeral=NUMERAL_9_4_CICLOPEO))
+    verificaciones.append(_verificacion_de_armado(
+        fundamento="F9.CICLOPEO", codigo=f"C5.material.{ext}",
+        que="C5, volumen de piedra desplazadora: cabezal de "
+            f"{entorno.extremo}",
+        formula="piedra desplazadora <= 30 % del volumen total",
+        sustitucion=(mag("fraccion de piedra", piedra, "",
+                         f"'{CRITERIO_CONCRETO_CICLOPEO}' [A]",
+                         CIFRAS_FACTOR),),
+        resultado=mag("fraccion de piedra", piedra, "", "especificada",
+                      CIFRAS_FACTOR),
+        descripcion_umbral="fraccion <= 0,30",
+        admisible=CICLOPEO_FRACCION_PIEDRA_MAX, unidad="",
+        cita="EG2013.503.04#T503_07",
+        aplicacion="limite de la Clase G del EG-2013 y de E.060 22.10.1 b)",
+        criterio=CRITERIO_CONCRETO_CICLOPEO,
+        cumple=piedra <= CICLOPEO_FRACCION_PIEDRA_MAX + TOL_UMBRAL_NORMATIVO,
+        margen=CICLOPEO_FRACCION_PIEDRA_MAX - piedra, decide=True,
+        obtenido=piedra,
+        nota="La mayor dimension de la piedra no excede la mitad de la "
+             "menor dimension del elemento ni 250 mm (E.060 22.10.1 c): es "
+             "de la especificacion de obra.",
+        explicacion_falla="demasiada piedra desplazadora",
+        numeral=NUMERAL_9_4_CICLOPEO))
+
+    # --- C6: el contraste con E.060 -------------------------------------------
+    verificaciones.append(_verificacion_de_armado(
+        fundamento="F9.CICLOPEO", codigo=f"C6.cuerpo.{ext}",
+        que="C6, traccion y cortante del cuerpo con E.060 Cap. 22 (por "
+            f"analogia): cabezal de {entorno.extremo}",
+        formula="M_u/S - P_u/A <= phi·0,42·sqrt(f'c)  y  V_u <= "
+                "phi·0,11·sqrt(f'c)·b·h, con phi = 0,5, f'c <= 10 MPa y h "
+                "reducido en 50 mm",
+        sustitucion=tuple(
+            mag(f"{rotulo} ({nombre})", uso, "",
+                f"traccion {sigma:.1f} kPa frente a {f_t:.1f} kPa; cortante "
+                f"{V:.1f} frente a {Vr:.1f} kN/m; cargas 0,9 CM con 1,7 CE "
+                "y CV (envolvente de 9-6 y 9-7)", CIFRAS_FACTOR)
+            for rotulo, nombre, sigma, V, Vr, uso in detalle_e060) or (
+            mag("secciones", 0, "", "ninguna evaluable"),),
+        resultado=mag("aprovechamiento", uso_e060, "",
+                      "el mayor de las secciones y de los dos cocientes",
+                      CIFRAS_FACTOR),
+        descripcion_umbral="aprovechamiento <= 1 en el marco de E.060",
+        admisible=1.0, unidad="", cita="E060.22.5.3#TRACCION",
+        aplicacion="por analogia ([N→]): E.060 es norma de edificaciones",
+        criterio=CRITERIO_TRACCION_CICLOPEO,
+        cumple=uso_e060 <= 1 + TOL_UMBRAL_NORMATIVO,
+        margen=1.0 - uso_e060, decide=not nulas, obtenido=uso_e060,
+        nota=("Una traccion negativa significa que la seccion sigue "
+              "comprimida. Cargas y resistencias son las dos de E.060: los "
+              "marcos no se cruzan. El momento no baja de P_u·0,10·t "
+              "(22.6.3). El cuerpo no se vacia contra el suelo: la "
+              "reduccion de 50 mm de 22.4.8 se aplica del lado seguro. La "
+              "traccion que esta fila admite en el arranque la prohibe "
+              "22.4.7 en la junta: ahi decide C2."),
+        explicacion_falla="la traccion o el cortante superan la "
+                          "resistencia del concreto ciclopeo",
+        citas=("E060.22.10.2.3#PHI", "E060.22.5.4#CORTANTE",
+               "E060.22.4.8#PERALTE", "E060.9.2.5#EMPUJE",
+               "E060.22.6.3#EXCENTRICIDAD", "E060.22.4.7#JUNTAS"),
+        numeral=NUMERAL_9_4_CICLOPEO))
+
+    avisos = [
+        f"{quien}: es de GRAVEDAD en concreto ciclopeo y no se arma. Sus "
+        "secciones se verifican solo en la condicion ESTATICA (bajo sismo "
+        "la resultante en la base es la fila E2 de la estabilidad; las "
+        "secciones del cuerpo no se evaluan), y la zapata no se verifica "
+        "como voladizo de concreto simple (E.060 22.10.2.2 lo pide cuando "
+        "el vuelo supera la mitad del peralte): queda para el expediente",
+        f"{quien}: decide '{criterio}' ('{CRITERIO_TRACCION_CICLOPEO}' "
+        "[A]) en C1, C3 y C6; la otra verificacion de traccion informa"
+        + (". C2 decide siempre: el arranque es una junta de construccion y "
+           "E.060 22.4.7 prohibe transmitir traccion por ella"
+           if con_junta else
+           ". C2 tambien: se declaro el vaciado monolitico del arranque "
+           f"('{CRITERIO_JUNTA_CICLOPEO}')"),
+        f"{quien}: el vano del conducto atraviesa el cuerpo: E.060 22.6.6.5 "
+        "pide dos barras de 5/8\" alrededor de las aberturas de los muros "
+        "de concreto simple, que el programa no dimensiona; las secciones "
+        "C2 y C3 son las de un metro de muro lleno",
+    ]
+    vuelo = max(datos["punta"], datos["talon"])
+    if vuelo > g.espesor_zapata / 2 + TOL_UMBRAL_NORMATIVO:
+        avisos.append(
+            f"{quien}: la zapata vuela {vuelo:.2f} m, mas que la mitad de "
+            f"su peralte ({g.espesor_zapata / 2:.2f} m): E.060 22.10.2.2 "
+            "manda verificar su flexion y su corte, que este programa no "
+            "hace para el concreto ciclopeo")
+    return ArmadoDelCabezal(
+        id_punto=entorno.id_punto, extremo=entorno.extremo,
+        tipo=TIPO_GRAVEDAD, regimen=regimen, fc_mpa=float(fc_matriz),
+        fy_mpa=None, verificaciones=tuple(verificaciones),
+        pasos=tuple(v.paso for v in verificaciones), avisos=tuple(avisos),
+        sismico=False, K0=datos["K0"], K_A=datos["K_A"])
+
+
+def integrar_armado(cabezal: CabezalDelPunto,
+                    armados: Sequence[ArmadoDelCabezal]) -> CabezalDelPunto:
+    """
+    El `CabezalDelPunto` con el armado de sus cabezales incorporado: las
+    verificaciones A* / C* se suman a las CB y a las E (la via por la que
+    `InformePunto` cuenta incumplidas e indicadores), los pasos y los avisos
+    a los suyos, y los objetos enteros quedan en `armado`.
+    """
+    armados = tuple(armados)
+    avisos = list(cabezal.avisos)
+    for a in armados:
+        avisos.extend(x for x in a.avisos if x not in avisos)
+    return _reemplazar(
+        cabezal,
+        verificaciones=cabezal.verificaciones + tuple(
+            v for a in armados for v in a.verificaciones),
+        pasos=cabezal.pasos + tuple(p for a in armados for p in a.pasos),
+        avisos=tuple(avisos), armado=armados)

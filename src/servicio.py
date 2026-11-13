@@ -158,6 +158,11 @@ from src.modulos.M9_cabezal import (cabezal_del_punto,
                                     validar_cabezal_declarado,
                                     verificar_coherencia_embocadura_cajon)
 # --- T-7b --- el ensamble de estabilidad del cabezal y la puerta del suelo.
+from src.modulos.M9_cabezal import (ELEMENTOS_ARMADOS,  # --- T-7c ---
+                                    TIPO_GRAVEDAD, armar_elemento,
+                                    ensamblar_armado, integrar_armado,
+                                    solicitaciones_de_resistencia,
+                                    verificar_cabezal_ciclopeo)
 from src.modulos.M9_cabezal import (CONDICIONES_DE_ESTABILIDAD,
                                     datos_del_cabezal_del_punto,
                                     ensamble_estabilidad,
@@ -752,7 +757,12 @@ NOTA_ESTABILIDAD_CABEZAL = (
     "La excentricidad bajo sismo, que antes era la fila suelta E6, es la "
     "fila E2 del marco LRFD en condicion sismica. E4 y E5 -- estabilidad "
     "global del muro y del talud -- NO se evaluan: quedan diferidas al "
-    "expediente con el estudio de suelos, y cada punto lo dice. Aqui, del "
+    "expediente con el estudio de suelos, y cada punto lo dice. Detras de "
+    "la estabilidad, y con la misma geometria, cada cabezal se ARMA (T-7c, "
+    "M9.armar_elemento): la resistencia de la pantalla, de la zapata y de "
+    "los aleros se verifica con AASHTO LRFD Seccion 5 y E.060 se calcula al "
+    "lado como contraste, por analogia; el cabezal de gravedad se verifica "
+    "como concreto ciclopeo. Aqui, del "
     "proyecto, van las piezas que no dependen del punto: la cadena sismica "
     "(9.2), los recubrimientos (9.4) y las cuantias minimas de referencia. "
     "Que funciones de M9 quedan sin llamador de produccion, y por que cada "
@@ -2830,9 +2840,13 @@ def _fase_9(informe: InformePunto,
     hay cabezal que proponer.
 
     --- T-7b --- Y LA ESTABILIDAD SI ESTA AQUI: detras de la geometria, una
-    etapa por cabezal y por condicion (`M9.ensamble_estabilidad`, abajo). El
-    ARMADO no (T-7c): lo que T-7c recibe son las solicitaciones factoradas
-    por elemento de cada ensamble (`EstabilidadDelCabezal.solicitaciones`).
+    etapa por cabezal y por condicion (`M9.ensamble_estabilidad`, abajo).
+
+    --- T-7c --- Y EL ARMADO TAMBIEN, detras de la estabilidad
+    (`_fase_9_armado`): las secciones criticas de cada cabezal armadas con
+    AASHTO LRFD Seccion 5 sobre las solicitaciones factoradas del ensamble,
+    o la verificacion de la alternativa ciclopea si el cabezal es de
+    gravedad.
     """
     if informe.geometria is None or informe.embocadura is None:
         return
@@ -2885,6 +2899,67 @@ def _fase_9(informe: InformePunto,
             if resultado is not None:
                 estabilidades.append(resultado)
     informe.cabezal = integrar_estabilidad(informe.cabezal, estabilidades)
+    _fase_9_armado(informe, entornos)
+
+
+def etapa_de_armado(extremo: str, que: str) -> str:
+    """--- T-7c --- El rotulo de una etapa del armado de un cabezal."""
+    return f"armado del cabezal de {extremo}: {que} (T-7c)"
+
+
+def _fase_9_armado(informe: InformePunto, entornos) -> None:
+    """
+    --- T-7c --- EL ARMADO DE CADA CABEZAL (o la verificacion de su
+    alternativa ciclopea), detras de la estabilidad y con la MISMA
+    geometria: no se itera ninguna dimension, pase o no el cabezal sus
+    filas E1 a E3 (el aviso del armado lo dice). Por cabezal:
+
+      voladizo armado   una etapa por las solicitaciones de resistencia,
+                        una por elemento (pantalla, zapata, aleros) y una
+                        por la tabla: lo que un elemento no pueda evaluar
+                        -- el cortante fuera del procedimiento simplificado,
+                        el recubrimiento sin fila -- queda como `Bloqueo`
+                        del punto y los demas siguen.
+      gravedad ciclopeo una etapa: tracciones y material.
+
+    Ningun punto sale de la Fase 9 con el armado callado: o esta, o hay un
+    bloqueo que dice por que no.
+    """
+    armados = []
+    for entorno in entornos:
+        ext = entorno.extremo
+        if entorno.geometria.tipo == TIPO_GRAVEDAD:
+            ciclopeo = _etapa(
+                informe.bloqueos, FASE_CABEZAL,
+                etapa_de_armado(ext, "alternativa en concreto ciclopeo"),
+                lambda e=entorno: verificar_cabezal_ciclopeo(e))
+            if ciclopeo is not None:
+                armados.append(ciclopeo)
+            continue
+        solicitaciones = _etapa(
+            informe.bloqueos, FASE_CABEZAL,
+            etapa_de_armado(ext, "solicitaciones de resistencia"),
+            lambda e=entorno: solicitaciones_de_resistencia(e))
+        if solicitaciones is None:
+            continue
+        piezas = []
+        for elemento in ELEMENTOS_ARMADOS:
+            seccion = _etapa(
+                informe.bloqueos, FASE_CABEZAL,
+                etapa_de_armado(ext, elemento),
+                lambda e=entorno, x=elemento, s=solicitaciones:
+                armar_elemento(e, x, s))
+            piezas.extend(seccion or ())
+        if not piezas:
+            continue
+        armado = _etapa(
+            informe.bloqueos, FASE_CABEZAL,
+            etapa_de_armado(ext, "tabla de armado"),
+            lambda e=entorno, p=tuple(piezas), s=solicitaciones:
+            ensamblar_armado(e, p, s))
+        if armado is not None:
+            armados.append(armado)
+    informe.cabezal = integrar_armado(informe.cabezal, armados)
 
 
 def _fase_6(informe: InformePunto,

@@ -4935,6 +4935,12 @@ class CabezalDelPunto:
     # sus avisos en `avisos`. Vacio = la estabilidad no se evaluo (su etapa
     # se bloqueo y el punto lleva el `Bloqueo` con el motivo).
     estabilidad: Tuple["EstabilidadDelCabezal", ...] = ()
+    # --- T-7c --- El armado de cada cabezal (`ArmadoDelCabezal`), o las
+    # verificaciones de su alternativa ciclopea: hasta dos, entrada y
+    # salida. Sus verificaciones A* / C* viajan TAMBIEN en `verificaciones`
+    # y sus avisos en `avisos`. Vacio = el armado no se evaluo (su etapa se
+    # bloqueo y el punto lleva el `Bloqueo` con el motivo).
+    armado: Tuple["ArmadoDelCabezal", ...] = ()
 
     @property
     def geometrias(self) -> Tuple[GeometriaCabezal, GeometriaCabezal]:
@@ -7217,4 +7223,223 @@ class EstabilidadDelCabezal:
     @property
     def cumple(self) -> bool:
         """Todas las verificaciones que DECIDEN cumplen (las que informan no)."""
+        return all(v.cumple for v in self.verificaciones)
+
+
+# ===========================================================================
+# --- T-7c --- (cadena T) · el armado del cabezal y la alternativa ciclopea
+# ===========================================================================
+# Lo que `M9.armado_del_cabezal` entrega por cabezal: el armado de cada
+# seccion critica (pantalla en su arranque, punta y talon de la zapata en la
+# cara de la pantalla, alero en su arranque), el acero de reparto de cada
+# elemento, y la TABLA de armado que la memoria imprime -- emitida aqui como
+# datos y como `PasoDeMemoria`: M11 la formatea, no la calcula --. Para el
+# cabezal de gravedad en ciclopeo no hay armado: van sus verificaciones de
+# traccion y de material.
+
+# Las dos opciones de 'regimen_resistencia_elementos_cabezal' [A].
+REGIMEN_RESISTENCIA_K0 = "no_cedente_k0"
+REGIMEN_RESISTENCIA_CEDENTE = "cedente"
+REGIMENES_DE_RESISTENCIA = (REGIMEN_RESISTENCIA_K0,
+                            REGIMEN_RESISTENCIA_CEDENTE)
+
+# Las dos opciones de 'regla_minimos_constructivos_cabezal' [A].
+MINIMOS_MAS_EXIGENTE = "mas_exigente_aashto_e060"
+MINIMOS_SOLO_AASHTO = "solo_aashto"
+REGLAS_DE_MINIMOS = (MINIMOS_MAS_EXIGENTE, MINIMOS_SOLO_AASHTO)
+
+# Las dos opciones de 'criterio_traccion_cabezal_ciclopeo' [A].
+TRACCION_NULA = "tracciones_nulas"
+TRACCION_ADMISIBLE_E060 = "traccion_admisible_e060"
+CRITERIOS_DE_TRACCION_CICLOPEO = (TRACCION_NULA, TRACCION_ADMISIBLE_E060)
+
+# --- correcciones de T-7c (H3) --- Las dos clases de exposicion de AASHTO
+# 5.6.7 (gamma_e = 1.00 y 0.75), opciones de 'clase_exposicion_fisuracion_
+# cabezal' [A], que NO tiene valor de archivo: la declara el Propietario.
+CLASE_EXPOSICION_1 = "clase_1"
+CLASE_EXPOSICION_2 = "clase_2"
+CLASES_DE_EXPOSICION = (CLASE_EXPOSICION_1, CLASE_EXPOSICION_2)
+
+# El marco de las combinaciones del CONTRASTE con E.060 (9.2.5): un tercer
+# rotulo junto a MARCO_LRFD y MARCO_ASD, para que `M9.solicitaciones_por_
+# elemento` pueda entregar las solicitaciones de ESE marco sin que nadie las
+# confunda con las que rigen.
+MARCO_E060 = "E060"
+
+# El rotulo de `MetodoNoEvaluableError` cuando lo que no se puede evaluar es
+# el cortante de una seccion fuera de las condiciones del procedimiento
+# simplificado de AASHTO 5.7.3.4.1 (el general, 5.7.3.4.2, no se implementa).
+MOTIVO_METODO_NO_EVALUABLE_ARMADO = (
+    "método no evaluable (AASHTO LRFD 5.7.3.4, cortante del cabezal)")
+
+# Claves de las secciones criticas del cabezal armado.
+SECCION_PANTALLA = "pantalla"
+SECCION_PUNTA = "punta"
+SECCION_TALON = "talon"
+SECCION_ALERO = "alero"
+SECCIONES_DEL_ARMADO = (SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON,
+                        SECCION_ALERO)
+
+
+@dataclass(frozen=True)
+class BarraPropuesta:
+    """
+    --- T-7c --- La barra y el espaciamiento que el programa PROPONE para
+    una cara, tomados del catalogo [A] 'catalogo_barras_refuerzo_cabezal'.
+    Es una propuesta: lo que el plano lleve tiene que dar al menos el acero
+    adoptado con un espaciamiento no mayor que el maximo.
+    """
+
+    designacion: str        # '1/2', '5/8', ... (pulgadas, como en el catalogo)
+    diametro_mm: float
+    area_mm2: float
+    espaciamiento: float    # m, entre ejes
+    As_provisto: float      # mm2/m
+
+    @property
+    def texto(self) -> str:
+        return f"Ø {self.designacion}\" @ {self.espaciamiento:.3f} m"
+
+
+@dataclass(frozen=True)
+class SolicitacionDeArmado:
+    """
+    --- T-7c --- El momento y el cortante FACTORADOS de una seccion para UNA
+    combinacion, con el factor de resistencia que le corresponde y con que
+    empuje salieron. `M_u_reposo` / `M_u_cedente` (y los de cortante) son los
+    dos valores que el regimen compara: rige el de `M_u` / `V_u`.
+    """
+
+    combinacion: str
+    condicion: CondicionAnalisis
+    M_u: float                      # kN·m/m, el que rige (no negativo)
+    V_u: float                      # kN/m, el que rige (no negativo)
+    phi_flexion: float
+    phi_corte: float
+    M_u_cedente: float
+    V_u_cedente: float
+    M_u_reposo: Optional[float] = None
+    V_u_reposo: Optional[float] = None
+    nota: str = ""
+
+
+@dataclass(frozen=True)
+class ArmadoDeSeccion:
+    """
+    --- T-7c --- El armado de UNA seccion critica del cabezal, por metro de
+    muro: las solicitaciones que la gobiernan, el acero que la flexion pide,
+    los dos minimos, el adoptado, la barra propuesta y la resistencia que
+    resulta, con las verificaciones A1 a A5 (las del marco que rige, AASHTO
+    LRFD Seccion 5) y las de contraste con E.060, que informan.
+    """
+
+    elemento: str                   # uno de ELEMENTOS_DEL_CABEZAL
+    clave: str                      # una de SECCIONES_DEL_ARMADO
+    seccion: str                    # donde se mide
+    cara: str                       # la cara en traccion
+    espesor: float                  # m
+    recubrimiento_mm: float
+    origen_recubrimiento: str
+    d: float                        # m, con la barra propuesta
+    regimen: str
+    solicitaciones: Tuple[SolicitacionDeArmado, ...]
+    rige_flexion: SolicitacionDeArmado
+    rige_cortante: SolicitacionDeArmado
+    As_resistencia: float           # mm2/m, el que pide el momento que rige
+    As_minimo_flexion: float        # mm2/m, AASHTO 5.6.3.3
+    As_minimo_constructivo: float   # mm2/m, retraccion / cuantia minima
+    origen_minimo: str
+    As_adoptado: float              # mm2/m, el mayor de los tres
+    gobierna: str                   # 'resistencia' | 'minimo de flexion' | ...
+    s_max: float                    # m
+    origen_s_max: str
+    barra: Optional[BarraPropuesta]
+    M_r: Optional[float]            # kN·m/m con la barra propuesta
+    epsilon_t: Optional[float]
+    d_v: Optional[float]            # m
+    V_c: Optional[float]            # kN/m nominal
+    V_r: Optional[float]            # kN/m factorado
+    # Contraste con E.060 (solo condicion estatica), o None.
+    M_u_e060: Optional[float] = None
+    V_u_e060: Optional[float] = None
+    As_e060: Optional[float] = None
+    V_r_e060: Optional[float] = None
+    # --- correcciones de T-7c --- La fisuracion de AASHTO 5.6.7 en Servicio
+    # I (H3): el momento de servicio, si 5.6.7 aplica (traccion bruta sobre
+    # 0.8·f_r), la tension del acero y el espaciamiento maximo de cada clase
+    # de exposicion ({'clase_1': s, 'clase_2': s}, m); None sin momento de
+    # servicio. Y el peralte de cortante de la letra de 5.7.2.8 cuando el
+    # adoptado se acota al peralte efectivo (H8).
+    M_servicio: Optional[float] = None
+    fisuracion_aplica: Optional[bool] = None
+    f_ss: Optional[float] = None
+    s_fisuracion: Optional[dict] = None
+    clase_exposicion: Optional[str] = None
+    d_v_letra: Optional[float] = None
+    verificaciones: Tuple["Verificacion", ...] = ()
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class FilaDeArmado:
+    """
+    --- T-7c --- Una fila de la tabla de armado del cabezal (T-7c punto 4):
+    el acero requerido por resistencia, el minimo, el adoptado y la barra
+    propuesta, de UNA posicion (cara y direccion) de UN elemento. `gobierna`
+    dice cual de los dos mando.
+    """
+
+    elemento: str
+    posicion: str
+    As_requerido: float             # mm2/m (0 en el acero de reparto)
+    As_minimo: float                # mm2/m
+    origen_minimo: str
+    As_adoptado: float              # mm2/m
+    gobierna: str
+    s_max: float                    # m
+    barra: Optional[BarraPropuesta]
+
+    @property
+    def cumple(self) -> bool:
+        """Hay barra en el catalogo que da el acero adoptado."""
+        return self.barra is not None
+
+
+@dataclass(frozen=True)
+class ArmadoDelCabezal:
+    """
+    --- T-7c --- El armado de UN cabezal (un extremo de un punto), o las
+    verificaciones de su alternativa en concreto ciclopeo.
+
+        tipo        'voladizo_armado' o 'gravedad_ciclopeo' (el de T-7a)
+        regimen     el de 'regimen_resistencia_elementos_cabezal'
+        secciones   las secciones criticas armadas (vacio en el ciclopeo)
+        tabla       la tabla de armado por elemento, para la memoria
+        sismico     si el Evento Extremo I entro al armado; cuando no, el
+                    motivo esta en `avisos` y el armado sale solo de
+                    Resistencia I
+    """
+
+    id_punto: str
+    extremo: str
+    tipo: str
+    regimen: str
+    fc_mpa: float
+    fy_mpa: Optional[float]
+    secciones: Tuple[ArmadoDeSeccion, ...] = ()
+    tabla: Tuple[FilaDeArmado, ...] = ()
+    verificaciones: Tuple["Verificacion", ...] = ()
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    sismico: bool = False
+    K0: Optional[float] = None
+    K_A: Optional[float] = None
+
+    def seccion(self, clave: str) -> ArmadoDeSeccion:
+        return next(s for s in self.secciones if s.clave == clave)
+
+    @property
+    def cumple(self) -> bool:
+        """Todas las verificaciones que DECIDEN cumplen."""
         return all(v.cumple for v in self.verificaciones)

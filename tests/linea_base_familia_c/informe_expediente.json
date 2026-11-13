@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "69aba33abf782847cb9de4d6982b41e08b7a84d1",
+    "criterios_sha1": "dfa9eb4adcb19fbc6d4c642d9cd8aec9f76f8fc8",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -847,10 +847,10 @@
       "Sin llamador de produccion -- aplica_sobrecarga_trasdos: Comprueba la regla de la distancia H/2 para el trafico. No la llama nadie a proposito: Sec. 9.2 cierra el punto diciendo que en un cabezal bajo terraplen vial la sobrecarga SIEMPRE aplica, y el ensamble la aplica siempre; esta queda para quien tenga la distancia medida y quiera comprobarlo",
       "Sin llamador de produccion -- sobrecarga_trasdos_siempre_aplica: Declaracion para la memoria; el paso de la sobrecarga del ensamble (F9.SOBRECARGA) dice lo mismo en su nota",
       "Sin llamador de produccion -- verificar_estabilidad_global / verificar_talud: E4 y E5. El ensamble NO las llama: las imprime como diferidas al expediente con el EMS (`PENDIENTES_E4_E5`). Llamadas a mano se detienen en 'metodo_estabilidad_global' y, declarado este, con «metodo no evaluable»: el analisis de superficies de falla no esta en este programa (hasta T-7b terminaban en un AssertionError)",
-      "Sin llamador de produccion -- armado del num. 9.4 (ocho funciones): `cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_caras`, `requiere_refuerzo_dos_capas`, `nota_temperatura_dos_caras`, `espaciamiento_maximo`, `verificar_espaciamiento` y `verificar_ciclopeo` no tienen llamador porque su insumo es el diseno por flexion y corte, que se detiene en `diseno_flexion_corte` con NotImplementedError (T-7c). Desde T-7b las solicitaciones factoradas de cada elemento existen (`solicitaciones_por_elemento`). La CLI registra ese bloqueo en cada corrida (SIS-B-20). Desde EXT-7 las dos primeras leen ademas, con cortante alto, el plano del cortante y el piso de la direccion ('regimen_cortante_muro_e060_art_11_10_2', 'cuantia_vertical_cortante_alto_e060_art_11_10_10_3'): siguen sin llamador, y por eso esos criterios no los invoca ninguna corrida",
+      "Sin llamador de produccion -- piezas sueltas del num. 9.4 (seis funciones): `cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_caras`, `nota_temperatura_dos_caras`, `verificar_espaciamiento` y `verificar_ciclopeo` comparan con los minimos de E.060 lo que el llamador les pase y devuelven una verificacion SIN paso de memoria. El armado de T-7c no las usa: emite sus propias filas (A3 el acero minimo, A4 el espaciamiento, C4 y C5 el material del ciclopeo) con el paso que dice que minimo gobierna y de que norma sale, y en el minimo junta a E.060 con AASHTO 5.10.6, que estas no conocen. Se conservan con sus tests como piezas revisables una a una; ninguna corrida las llama",
       "Sin llamador de produccion -- clase_exposicion_sulfatos / factor_recubrimiento_por_ac: No tienen llamador de PRODUCCION directo y no son deuda: las llama `requisitos_durabilidad_concreto` y `_recubrimiento_aashto_detallado`, que si estan en el camino de la CLI. Se declaran aparte porque son las dos piezas que un revisor va a querer ejecutar sueltas para reproducir la clasificacion de la Tabla 4.4 y el factor por a/c sin montar el recubrimiento entero",
       "Sin llamador de produccion -- n_q_zapata_en_talud / n_s_zapata_en_talud: `capacidad_portante_zapata_en_talud` solo se alcanza con 'terreno_delante_del_cabezal' = 'talud_descendente', que no es el valor de archivo, y entonces pide 'N_cq_N_gammaq_meyerhof': N_cq y N_gamma_q salen de FIGURAS del Manual de Puentes y no de una formula transcribible. N_s se calcula aparte al leer los abacos, que es justo para lo que existe la funcion (SIS-B-21)",
-      "La estabilidad del cabezal (E1 a E3) se ensambla POR PUNTO y por cabezal, en la Fase 9 de cada punto dimensionado (T-7b, M9.ensamble_estabilidad), y en DOS MARCOS que no se cruzan: el de estados limite de AASHTO LRFD 11.6 -- cargas factoradas contra resistencias minoradas, y la excentricidad de la resultante en lugar del volteo -- y el de factores de seguridad de E.050, por analogia, sobre cargas de servicio. Cual rige lo declara 'marco_estabilidad_cabezal' [A]; las verificaciones del otro informan. La excentricidad bajo sismo, que antes era la fila suelta E6, es la fila E2 del marco LRFD en condicion sismica. E4 y E5 -- estabilidad global del muro y del talud -- NO se evaluan: quedan diferidas al expediente con el estudio de suelos, y cada punto lo dice. Aqui, del proyecto, van las piezas que no dependen del punto: la cadena sismica (9.2), los recubrimientos (9.4) y las cuantias minimas de referencia. Que funciones de M9 quedan sin llamador de produccion, y por que cada una, se declara en UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y esta CLI lo lee de alli en vez de repetirlo.",
+      "La estabilidad del cabezal (E1 a E3) se ensambla POR PUNTO y por cabezal, en la Fase 9 de cada punto dimensionado (T-7b, M9.ensamble_estabilidad), y en DOS MARCOS que no se cruzan: el de estados limite de AASHTO LRFD 11.6 -- cargas factoradas contra resistencias minoradas, y la excentricidad de la resultante en lugar del volteo -- y el de factores de seguridad de E.050, por analogia, sobre cargas de servicio. Cual rige lo declara 'marco_estabilidad_cabezal' [A]; las verificaciones del otro informan. La excentricidad bajo sismo, que antes era la fila suelta E6, es la fila E2 del marco LRFD en condicion sismica. E4 y E5 -- estabilidad global del muro y del talud -- NO se evaluan: quedan diferidas al expediente con el estudio de suelos, y cada punto lo dice. Detras de la estabilidad, y con la misma geometria, cada cabezal se ARMA (T-7c, M9.armar_elemento): la resistencia de la pantalla, de la zapata y de los aleros se verifica con AASHTO LRFD Seccion 5 y E.060 se calcula al lado como contraste, por analogia; el cabezal de gravedad se verifica como concreto ciclopeo. Aqui, del proyecto, van las piezas que no dependen del punto: la cadena sismica (9.2), los recubrimientos (9.4) y las cuantias minimas de referencia. Que funciones de M9 quedan sin llamador de produccion, y por que cada una, se declara en UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y esta CLI lo lee de alli en vez de repetirlo.",
       "Cuantia minima de refuerzo del muro: se aplica integra la de num. 14.3.1 · 'REFUERZO MÍNIMO' · pag. impresa 133 · PDF 133. El E.060 Art. 14.8.2, pag. 134 permite exceptuarla en muros de contencion -- \"El refuerzo mínimo será el indicado en 14.3. Este requisito podrá exceptuarse cuando el Ingeniero Proyectista disponga juntas de contracción y señale procedimientos constructivos que controlen los efectos de contracción y temperatura\" --, y este expediente NO ejerce esa excepcion: no declara juntas de contraccion ni procedimientos constructivos de control de contraccion y temperatura, que son las dos condiciones que el articulo exige a la vez. Ejercerla es una decision del proyectista y obliga a declarar las dos en el expediente"
     ],
     "bloqueos": [
@@ -1440,9 +1440,8 @@
       "c_phi_fundacion",
       "capacidad_portante_adm",
       "categoria_refuerzo_aashto",
+      "clase_exposicion_fisuracion_cabezal",
       "clase_sitio",
-      "cortante_alto_muro_e060_art_11_10_10_2",
-      "cuantia_vertical_cortante_alto_e060_art_11_10_10_3",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "exposicion_quimica_ems",
@@ -1452,7 +1451,6 @@
       "metodo_estabilidad_global",
       "peso_especifico_saturado_relleno_kn_m3",
       "phi_relleno_trasdos",
-      "regimen_cortante_muro_e060_art_11_10_2",
       "remanso_derecho_via",
       "umbral_no_colapso_evento_extremo"
     ],

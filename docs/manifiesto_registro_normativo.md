@@ -78,6 +78,7 @@ línea que se pueda romper.
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
 | `AASHTO_LRFD_9.1.2#BRIDGE` | 1.2 | «DEFINITIONS» | pág. impresa **1-2** · PDF 17 | definicion | 2026-09-22 · ambos |
+| `AASHTO_LRFD_9.1.3.2.1#EXTREMO` | 1.3.2.1 | «General» | pág. impresa **1-3** · PDF 18 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.1.3.5` | 1.3.5 | «1.3.5—Operational Importance» | pág. impresa **1-7** · PDF 22 | permiso | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.10.5.4.2` | 10.5.4.2 | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.10.5.4.2#ESPECTRO` | 10.5.4.2, configuracion licuada | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | recomendacion | 2026-08-29 · texto |
@@ -88,12 +89,15 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.10.6.3.1.2a#T1` | 10.6.3.1.2a, Tabla 10.6.3.1.2a-1 | «Basic Formulation» | pág. impresa **10-72** · PDF 1361 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.10.6.3.1.2c#TALUD` | 10.6.3.1.2c | «Considerations for Footings on Slopes» | pág. impresa **10-74** · PDF 1363 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.10.6.3.4#RESISTENCIA` | 10.6.3.4 | «Failure by Sliding» | pág. impresa **10-84** · PDF 1373 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.10.6.5#LINEAL` | 10.6.5 | «Structural Design» | pág. impresa **10-86** · PDF 1375 | exigencia | 2026-11-13 · ambos |
 | `AASHTO_LRFD_9.10.7.5#INDICATIVOS` | 10.7.5 | «Corrosion and Deterioration» | pág. impresa **10-125** · PDF 1414 | recomendacion | 2026-11-11 · texto |
 | `AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO` | 11.10.6.4.2a | «Steel Reinforcements» | pág. impresa **11-89** · PDF 1558 | definicion | 2026-11-11 · texto |
 | `AASHTO_LRFD_9.11.12.8#AGRESIVO` | 11.12.8 | «Corrosion Protection» | pág. impresa **11-134** · PDF 1603 | definicion | 2026-11-11 · texto |
 | `AASHTO_LRFD_9.11.5.7#MUROS` | 11.5.7 | «Resistance Factors—Service and Strength» | pág. impresa **11-15** · PDF 1484 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.11.5.8#EXTREMO` | 11.5.8 | «Resistance Factors—Extreme Event Limit State» | pág. impresa **11-18** · PDF 1487 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.11.5.8#PORTANTE` | 11.5.8 | «Resistance Factors—Extreme Event Limit State» | pág. impresa **11-18** · PDF 1487 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.11.6.1.2#TALON` | 11.6.1.2 | «Loading» | pág. impresa **11-20** · PDF 1489 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.11.6.1.5.1#TEMPERATURA` | 11.6.1.5.1 | «Conventional Walls and Abutments» | pág. impresa **11-20** · PDF 1489 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.11.6.3.2#PORTANTE` | 11.6.3.2 | «Bearing Resistance» | pág. impresa **11-21** · PDF 1490 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.11.6.3.3#EXC` | 11.6.3.3 | «Eccentricity Limits» | pág. impresa **11-24** · PDF 1493 | exigencia | 2026-09-12 · texto |
 | `AASHTO_LRFD_9.11.6.3.5#PASIVA` | 11.6.3.5 | «Passive Resistance» | pág. impresa **11-24** · PDF 1493 | exigencia | 2026-11-13 · texto |
@@ -168,6 +172,26 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.5.10.1` | 5.10.1 | «Concrete Cover» | pág. impresa **5-167** · PDF 526 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.1#ESTRIBOS` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | permiso | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.1#PISO` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | exigencia | 2026-08-28 · ambos |
+| `AASHTO_LRFD_9.5.10.3.2#ESPACIAMIENTO` | 5.10.3.2 | «Maximum Spacing of Reinforcing Bars» | pág. impresa **5-172** · PDF 531 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.10.6#ESPACIAMIENTO` | 5.10.6 | «Shrinkage and Temperature Reinforcement» | pág. impresa **5-175** · PDF 534 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.10.6#TEMPERATURA` | 5.10.6 | «Shrinkage and Temperature Reinforcement» | pág. impresa **5-174** · PDF 533 | exigencia | 2026-11-13 · ambos |
+| `AASHTO_LRFD_9.5.12.8.4#CARA` | 5.12.8.4 | «Moment in Footings» | pág. impresa **5-250** · PDF 609 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.4.2.6#FR` | 5.4.2.6 | «Modulus of Rupture» | pág. impresa **5-20** · PDF 379 | permiso | 2026-11-13 · ambos |
+| `AASHTO_LRFD_9.5.4.3.2#ES` | 5.4.3.2 | «Modulus of Elasticity» | pág. impresa **5-22** · PDF 381 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.5.4.2#CORTE` | 5.5.4.2 | «Resistance Factors» | pág. impresa **5-30** · PDF 389 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.5.4.2#FLEXION` | 5.5.4.2 | «Resistance Factors» | pág. impresa **5-29** · PDF 388 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.6.2.1#TRACCION` | 5.6.2.1 | «General» | pág. impresa **5-35** · PDF 394 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.6.2.2#BLOQUE` | 5.6.2.2 | «Rectangular Stress Distribution» | pág. impresa **5-36** · PDF 395 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.6.3.2.1#MR` | 5.6.3.2.1 | «Factored Flexural Resistance» | pág. impresa **5-40** · PDF 399 | exigencia | 2026-11-13 · ambos |
+| `AASHTO_LRFD_9.5.6.3.3#MINIMO` | 5.6.3.3 | «Minimum Reinforcement» | pág. impresa **5-42** · PDF 401 | exigencia | 2026-11-13 · ambos |
+| `AASHTO_LRFD_9.5.6.7#ESPACIAMIENTO` | 5.6.7 | «Control of Cracking by Distribution of Reinforcement» | pág. impresa **5-55** · PDF 414 | exigencia | 2026-11-13 · ambos |
+| `AASHTO_LRFD_9.5.6.7#FISURACION` | 5.6.7 | «Control of Cracking by Distribution of Reinforcement» | pág. impresa **5-55** · PDF 414 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.6.7#FSS` | 5.6.7 | «Control of Cracking by Distribution of Reinforcement» | pág. impresa **5-56** · PDF 415 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.6.7#GAMMA_E` | 5.6.7 | «Control of Cracking by Distribution of Reinforcement» | pág. impresa **5-56** · PDF 415 | definicion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL` | 5.7.2.3 | «Regions Requiring Transverse Reinforcement» | pág. impresa **5-61** · PDF 420 | exigencia | 2026-11-13 · ambos |
+| `AASHTO_LRFD_9.5.7.2.8#DV` | 5.7.2.8 | «Shear Stress on Concrete» | pág. impresa **5-65** · PDF 424 | definicion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.5.7.3.3#VN` | 5.7.3.3 | «Nominal Shear Resistance» | pág. impresa **5-67** · PDF 426 | exigencia | 2026-11-13 · ambos |
+| `AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO` | 5.7.3.4.1 | «Simplified Procedure for Nonprestressed Sections» | pág. impresa **5-70** · PDF 429 | permiso | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.A11.3.1#KAE` | A11.3.1, ec. A11.3.1-1 | «Mononobe–Okabe Method» | pág. impresa **11-145** · PDF 1614 | aproximacion | 2026-08-28 · imagen renderizada |
 | `AASHTO_LRFD_9.C10.5.5.2.2#ASD` | C10.5.5.2.2 | «Spread Footings» | pág. impresa **10-42** · PDF 1331 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C10.6.3.3#EQUIVALENCIA` | C10.6.3.3 | «Eccentric Load Limitations» | pág. impresa **10-84** · PDF 1373 | definicion | 2026-11-13 · texto |
@@ -177,6 +201,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.C11.6.5.3#CUNA` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-30** · PDF 1499 | permiso | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.5.3#RESULTANTE` | C11.6.5.3 | «Calculation of Seismic Active Earth Pressures» | pág. impresa **11-30** · PDF 1499 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.5.4#CEDENTE` | C11.6.5.4 | «Calculation of Seismic Earth Pressure for Nonyielding Abutments and Walls» | pág. impresa **11-32** · PDF 1501 | definicion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS` | C11.6.5.4 | «Calculation of Seismic Earth Pressure for Nonyielding Abutments and Walls» | pág. impresa **11-32** · PDF 1501 | recomendacion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C11.6.5.4#K0` | C11.6.5.4 | «Calculation of Seismic Earth Pressure for Nonyielding Abutments and Walls» | pág. impresa **11-32** · PDF 1501 | recomendacion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C12.12.2.2` | C12.12.2.2 | «C12.12.2.2» | pág. impresa **12-74** · PDF 1712 | recomendacion | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.C12.12.3.2` | C12.12.3.2 | «C12.12.3.2» | pág. impresa **12-76** · PDF 1714 | definicion | 2026-11-12 · texto |
@@ -184,12 +209,18 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.C12.6.9#NIVEL_4` | C12.6.9 | «Corrosive and Abrasive Conditions» | pág. impresa **12-24** · PDF 1662 | definicion | 2026-11-11 · texto |
 | `AASHTO_LRFD_9.C12.7.2.2` | C12.7.2.2 | «C12.7.2.2» | pág. impresa **12-25** · PDF 1663 | definicion | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.C3.10.3.1-1#PASO1` | Tabla C3.10.3.1-1, paso 1 | «Steps for Site Classification» | pág. impresa **3-103** · PDF 157 | recomendacion | 2026-08-29 · texto |
+| `AASHTO_LRFD_9.C3.11.1#REPOSO` | C3.11.1 | «General» | pág. impresa **3-117** · PDF 171 | recomendacion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.C3.11.5.2#ACTIVO` | C3.11.5.2 | «At-Rest Lateral Earth Pressure Coefficient, ko» | pág. impresa **3-120** · PDF 174 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C3.11.5.3#DELTA` | C3.11.5.3 | «Active Lateral Earth Pressure Coefficient, ka» | pág. impresa **3-121** · PDF 175 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C3.11.5.3#PLANO_DEL_TALON` | C3.11.5.3 | «Active Lateral Earth Pressure Coefficient, ka» | pág. impresa **3-122** · PDF 176 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.C3.11.5.8.1#TALUD_QUEBRADO` | C3.11.5.8.1 | «General» | pág. impresa **3-137** · PDF 191 | permiso | 2026-11-13 · ambos |
 | `AASHTO_LRFD_9.C3.11.6.4` | C3.11.6.4 | «Live Load Surcharge (LS)» | pág. impresa **3-151** · PDF 205 | definicion | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.C3.4.1#GAMMA_EQ` | C3.4.1 | «3.4.1-Load Factors and Load Combinations» | pág. impresa **3-10** · PDF 64 | recomendacion | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.C3.6.1.2.6b` | C3.6.1.2.6b | «C3.6.1.2.6b» | pág. impresa **3-27** · PDF 81 | definicion | 2026-11-12 · texto |
+| `AASHTO_LRFD_9.C5.12.8.6.1#TALON` | C5.12.8.6.1 | «Critical Sections for Shear» | pág. impresa **5-251** · PDF 610 | definicion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.C5.4.2.4#EC` | C5.4.2.4 | «Modulus of Elasticity» | pág. impresa **5-20** · PDF 379 | permiso | 2026-11-13 · ambos |
+| `AASHTO_LRFD_9.C5.6.7#CLASE_1` | C5.6.7 | «Control of Cracking by Distribution of Reinforcement» | pág. impresa **5-56** · PDF 415 | definicion | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.C5.7.3.4.1#GRANDES` | C5.7.3.4.1 | «Simplified Procedure for Nonprestressed Sections» | pág. impresa **5-70** · PDF 429 | definicion | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.T12.10.2.1-1` | Table 12.10.2.1-1 | «Table 12.10.2.1-1—Standard Embankment Installation Soils and Minimum Compaction Requirements» | pág. impresa **12-50** · PDF 1688 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR` | Table 12.10.2.1-1 | «Table 12.10.2.1-1—Standard Embankment Installation Soils and Minimum Compaction Requirements» | pág. impresa **12-51** · PDF 1689 | definicion | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.T12.12.3.3-1` | Table 12.12.3.3-1 | «Table 12.12.3.3-1—Mechanical Properties of Thermoplastic Pipe» | pág. impresa **12-77** · PDF 1715 | definicion | 2026-11-12 · texto |
@@ -207,6 +238,8 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.TA12-9` | Table A12-9 | «Table A12-9—Mechanical Properties for Spiral Rib and Corrugated Metal Pipe and Pipe Arch» | pág. impresa **12-107** · PDF 1745 | definicion | 2026-11-12 · texto |
 
 > **`AASHTO_LRFD_9.1.2#BRIDGE`** — Es la definicion a la que remite el num. 4.1.1.5.1 del Manual de Hidrologia («siguiendo lo establecido en las especificaciones AASHTO LRFD»). La magnitud es «an opening»: la ABERTURA de la estructura. 20.0 ft son 6.096 m y el Manual escribe 6.0 m sin decir como pasa de una cifra a la otra: la diferencia esta declarada en DIS-LUZ-DENOMINACION y el codigo compara los 6.0 m del Manual ([N], el mas exigente de los dos).
+
+> **`AASHTO_LRFD_9.1.3.2.1#EXTREMO`** — Es el factor de resistencia ESTRUCTURAL del Evento Extremo I: 1.0 en flexion y en cortante de la pantalla y de la zapata (no son pernos ni columnas). No es el del terreno, que T-7b toma de 11.5.8. El comentario C1.3.2.1 lo llama «a default» que otras secciones pueden pisar; la Seccion 5 solo lo pisa para columnas.
 
 > **`AASHTO_LRFD_9.1.3.5`** — Es quien fija eta_I: el Propietario. La misma pagina gradua eta_I >= 1.05 (critical or essential), 1.00 (typical) y >= 0.95 (relatively less important), que es la graduacion que el Manual de Puentes 2.3.2.5 traduce. NINGUNA de las dos prescribe 1.05 para una estructura enterrada: 12.5.4 solo fija la redundancia.
 
@@ -228,6 +261,8 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.10.6.3.4#RESISTENCIA`** — Ec. 10.6.3.4-1: R_R = phi_tau·R_tau + phi_ep·R_ep (resistencia factorada al deslizamiento; phi de la Tabla 10.5.5.2.2-1). Ec. 10.6.3.4-2: R_tau = C·V·tan(phi_f), con «C = 1.0 for concrete cast against soil» y 0.8 para la zapata prefabricada; V es la fuerza vertical total y phi_f el angulo de friccion interna del suelo drenado. Sobre arcilla (pag. impresa 10-85), con al menos 6.0 in de material granular compactado bajo la zapata, la menor de la cohesion y la mitad del esfuerzo normal: ese caso ESTA implementado (`M9._resistencia_al_deslizamiento`), con la condicion constructiva de las 6.0 in avisada; la nota de la FASE A decia lo contrario (correcciones de T-7b, H8).
 
+> **`AASHTO_LRFD_9.10.6.5#LINEAL`** — Es texto del ARTICULO (columna izquierda de la pagina, comprobado por la posicion del bloque): el comentario C10.6.5, a su derecha, dice que la distribucion lineal es «slightly conservative». El articulo abre con «The structural design of footings shall comply with the requirements given in Section 5». La presion UNIFORME sobre el ancho efectivo B − 2e es la de la capacidad portante (10.6.1.4) y la que el ensamble de T-7b usa en E1 y en sus solicitaciones de la zapata: para ARMAR la zapata la fuente pide la lineal, y es la que el armado calcula (`M9.presion_de_contacto_lineal`).
+
 > **`AASHTO_LRFD_9.10.7.5#INDICATIVOS`** — PILOTES. La lista de suelo: «resistivity less than 2,000 ohm-cm», «pH less than 5.5», «pH between 5.5 and 8.5 in soils with high organic content», «sulfate concentrations greater than 1,000 ppm», rellenos sanitarios y de escoria, drenaje minero o industrial. La de agua: «chloride content greater than 500 ppm». El comentario C10.7.5 dice que los valores se adaptaron de Fang (1991) y Tomlinson (1987). SON INDICATIVOS («should be considered as indicative») Y MENOS ESTRICTOS que los del 11.10.6.4.2a salvo en el pH: se citan como segunda fuente del mismo cuerpo; los numeros que la matriz compara son los del 11.10.6.4.2a.
 
 > **`AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO`** — El numeral abre en la pag. impresa 11-88 (PDF 1557) y la lista esta en la 11-89: pH = 5 to 10; Resistivity >= 3000 ohm-cm; Chlorides <= 100 ppm; Sulfates <= 200 ppm; Organic Content <= 1 percent. ES UN CRITERIO PARA EL RELLENO DE MUROS DE SUELO REFORZADO CON ACERO GALVANIZADO, no para alcantarillas: define en que suelo valen las tasas de perdida de galvanizado y de acero del propio articulo. El proyecto lo aplica al tubo de acero corrugado galvanizado POR ANALOGIA --mismo metal, mismo recubrimiento, mismo medio--, y por eso el efecto por defecto es un aviso y no una exclusion (criterio 'suelo_agresivo_lrfd_sobre_tmc').
@@ -239,6 +274,10 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.11.5.8#EXTREMO`** — NO ES «phi = 1.0» A SECAS: la misma pagina especifica las excepciones. «For overall stability of the retaining wall when earthquake loading is included, a resistance factor, phi, of 0.9 shall be used. For bearing resistance, a resistance factor of 0.8 shall be used for gravity and semigravity walls and 0.9 for MSE walls» (cita gemela #PORTANTE). El deslizamiento si va con 1.0.
 
 > **`AASHTO_LRFD_9.11.5.8#PORTANTE`** — El comentario C11.5.8 da la razon: reducir la posibilidad de que la falla por capacidad portante ocurra antes de que el muro deslice. Vive en `constantes_normativas.PHI_EVENTO_EXTREMO_11_5_8`.
+
+> **`AASHTO_LRFD_9.11.6.1.2#TALON`** — El talon se arma con el PESO ENTERO de lo que tiene encima (relleno, sobrecarga, componente vertical del empuje y peso propio), sin descontar la reaccion del terreno. La solicitacion que T-7b entrega para el talon SI la descuenta (es el «more exact method»): el armado toma la mayor de las dos y la otra se imprime.
+
+> **`AASHTO_LRFD_9.11.6.1.5.1#TEMPERATURA`** — La remision del muro convencional de la Seccion 11 al acero de temperatura de la Seccion 5.
 
 > **`AASHTO_LRFD_9.11.6.3.2#PORTANTE`** — Cargas Y resistencias factoradas. En suelo: «the vertical stress shall be calculated assuming a uniformly distributed pressure over an effective base area», ec. 11.6.3.2-1, sigma_v = ΣV / (B - 2e). En roca, lineal (ecs. -2 a -5, pag. impresa 11-22). El articulo esta escrito para «Abutments and retaining walls» (11.6.3.1): aplicarlo al cabezal es la hipotesis de modelacion del criterio 'marco_estabilidad_cabezal', no un mandato de la fuente.
 
@@ -366,6 +405,46 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.5.10.1#PISO`** — El piso absoluto sobre las barras principales, que es lo que impide que el factor de 0.8 del W/CM lleve el recubrimiento a cualquier cosa. El Manual de Puentes lo traduce como «1.0 in (25 mm)» y el proyecto aplica la PULGADA EXACTA (25.4 mm), que es la mayor de las dos cifras que la propia fuente peruana escribe.
 
+> **`AASHTO_LRFD_9.5.10.3.2#ESPACIAMIENTO`** — Las dos viñetas: «1.5 times the thickness of the member; or» y «18.0 in.» (0.4572 m).
+
+> **`AASHTO_LRFD_9.5.10.6#ESPACIAMIENTO`** — Es la tercera viñeta de «Spacing shall not exceed the following:»; la primera, «12.0 in. for walls and footings greater than 18.0 in. thick». La tercera esta escrita «but not less than 18.0 in.»: leida a la letra, el tope es el MAYOR de tres veces el espesor y 18.0 in, que casi nunca gobierna; el espaciamiento maximo del armado lo fijan 5.10.3.2 y E.060 14.3.3.
+
+> **`AASHTO_LRFD_9.5.10.6#TEMPERATURA`** — Ec. 5.10.6-1, leida por imagen: A_s >= 1.30·b·h / [2·(b + h)·f_y], con el tope 0.11 <= A_s <= 0.60 (ec. 5.10.6-2), en in2/ft por cara y por direccion; b es el menor ancho de la seccion y h su menor espesor (in), f_y en ksi. El comentario explica el 1.30: es 0.0018·60 ksi·12 in/ft, y la ecuacion reparte 0.0018·b·h en el perimetro. En SI: `constantes_normativas.TEMPERATURA_COEFICIENTE_AASHTO_SI`.
+
+> **`AASHTO_LRFD_9.5.12.8.4#CARA`** — Es la seccion en que T-7b entrega el momento de la punta y del talon: la cara de la pantalla. El 5.12.8.2 manda que la zapata que soporta un muro «shall be assumed to act as a cantilever».
+
+> **`AASHTO_LRFD_9.5.4.2.6#FR`** — Sigue «0.24 λ √f'c» (ksi), leido por imagen. En MPa: 0.24·√6.894757 = 0.630·√f'c, que es `constantes_normativas.MODULO_ROTURA_AASHTO_SI`.
+
+> **`AASHTO_LRFD_9.5.4.3.2#ES`** — `ES_REFUERZO_AASHTO_MPA` = 29 000 ksi = 199 948 MPa.
+
+> **`AASHTO_LRFD_9.5.5.4.2#CORTE`** — La viñeta imprime «normal weight concrete ... 0.90». Es la misma lista de «Resistance factor φ shall be taken as:» que empieza en la pagina anterior.
+
+> **`AASHTO_LRFD_9.5.5.4.2#FLEXION`** — La lista abre con «Resistance factor φ shall be taken as:» y la primera viñeta, la de esta cita, imprime «normal weight concrete ... 0.90». El 0.90 vale solo si la seccion esta controlada por traccion (5.6.2.1: deformacion neta del acero >= 0.005); entre ese limite y el de compresion la fuente interpola hacia 0.75, cosa que el programa no hace: una seccion que no llega a 0.005 sale como incumplida (verificacion A1; la FASE A decia A5, que es el contraste con E.060).
+
+> **`AASHTO_LRFD_9.5.6.2.1#TRACCION`** — La oracion completa: «The tension-controlled strain limit, εtl, shall be taken as 0.005 for nonprestressed reinforcement with a specified minimum yield strength, fy ≤ 75.0 ksi, and prestressed reinforcement» (el verbatim se corta donde la capa de texto rompe los simbolos). En la pagina anterior, las hipotesis: deformacion ultima del concreto 0.003, la resistencia a traccion del concreto se desprecia, y el bloque de compresion puede suponerse rectangular.
+
+> **`AASHTO_LRFD_9.5.6.2.2#BLOQUE`** — Es el factor α1 del bloque rectangular («The stress block factor α1 shall be taken as 0.85 ...»). El mismo parrafo fija β1 = 0.85 hasta 4.0 ksi, con reduccion de 0.05 por cada 1.0 ksi de exceso y piso de 0.65: a = β1·c.
+
+> **`AASHTO_LRFD_9.5.6.3.2.1#MR`** — Ec. 5.6.3.2.1-1: M_r = φ·M_n. La resistencia nominal de la seccion rectangular sale de la ec. 5.6.3.2.2-1 con b_w = b (5.6.3.2.3, pag. 5-41), que sin presfuerzo ni acero de compresion se reduce a M_n = A_s·f_s·(d_s − a/2), con a = β1·c y c = A_s·f_s / (α1·f'c·β1·b) (ec. 5.6.3.1.2-4 sin presfuerzo). La ecuacion se leyo por imagen: la capa de texto la rompe. El comentario C5.6.3.2.1 permite diseñar con el momento en la cara del apoyo.
+
+> **`AASHTO_LRFD_9.5.6.3.3#MINIMO`** — Los dos terminos: «1.33 times the factored moment required by the applicable strength load combination» y el momento de agrietamiento de la ec. 5.6.3.3-1, que sin presfuerzo y en seccion monolitica queda M_cr = γ3·γ1·f_r·S, con γ1 = 1.6 («for all other concrete structures») y γ3 = 0.67 para el acero AASHTO M 31 (ASTM A615) Grado 60 o 0.75 para el A706 Grado 60 (pag. 5-43). f_r es el modulo de rotura de 5.4.2.6.
+
+> **`AASHTO_LRFD_9.5.6.7#ESPACIAMIENTO`** — Sigue la ec. 5.6.7-1, en la pag. impresa 5-56 (PDF 415), leida por imagen: s <= 700·γe/(βs·f_ss) − 2·d_c (in, ksi), con βs = 1 + d_c/[0.7·(h − d_c)] (ec. 5.6.7-2). En SI, `FISURACION_COEFICIENTE_AASHTO_SI` = 700 kip/in = 122.589 MPa·m.
+
+> **`AASHTO_LRFD_9.5.6.7#FISURACION`** — El control de fisuracion por distribucion del refuerzo (ec. 5.6.7-1: s <= 700·γe / (βs·f_ss) − 2·d_c, en el estado limite de SERVICIO I) lo evalua la fila A6 del armado desde las correcciones de T-7c (H3; `M9.fisuracion_aashto`). La clase de exposicion (γe = 1.00 o 0.75) la deja la fuente al Propietario: 'clase_exposicion_fisuracion_cabezal' [A], sin valor de archivo.
+
+> **`AASHTO_LRFD_9.5.6.7#FSS`** — La tension f_ss se calcula con la seccion FISURADA elastica (relacion modular n = E_s/E_c); el tope de 0.60·f_y lo aplica la fila A6 como condicion, no como recorte del valor.
+
+> **`AASHTO_LRFD_9.5.6.7#GAMMA_E`** — Cual de las dos clases aplica no lo dice la fuente: es del Propietario (C5.6.7, «in order to provide flexibility in the application of these provisions to meet the needs of the Owner»). Vacio declarado: 'clase_exposicion_fisuracion_cabezal'.
+
+> **`AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL`** — La condicion, ec. 5.7.2.3-1, leida por imagen: V_u > 0.5·φ·(V_c + V_p). Las losas y las zapatas quedan exceptuadas; un muro no se nombra.
+
+> **`AASHTO_LRFD_9.5.7.2.8#DV`** — Definicion de d_v. En la seccion rectangular con una capa de acero la distancia entre resultantes es d_e − a/2 (el comentario la escribe como M_n / (A_s·f_y), ec. C5.7.2.8-1).
+
+> **`AASHTO_LRFD_9.5.7.3.3#VN`** — Ec. 5.7.3.3-1: V_n = V_c + V_s + V_p; ec. 5.7.3.3-2: V_n = 0.25·f'c·b_v·d_v + V_p; ec. 5.7.3.3-3: V_c = 0.0316·β·λ·√f'c·b_v·d_v (kip, ksi, in), leidas por imagen. El 0.0316 es 1/√1000, la conversion psi → ksi, no una constante fisica; en SI es `constantes_normativas.VC_COEFICIENTE_AASHTO_SI` (0.0830 MPa^0.5). El cabezal no lleva refuerzo transversal ni presfuerzo: V_s = V_p = 0.
+
+> **`AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO`** — Los valores: «β = 2.0» y «θ = 45 degrees». Es un PERMISO con condiciones, y el programa las comprueba una a una antes de usarlo: zapata con la distancia del cortante nulo a la cara del muro menor que 3·d_v, o seccion de peralte total menor que 16.0 in (0.4064 m) -- la pantalla y los aleros no llevan refuerzo transversal --. Fuera de ellas la fuente manda el procedimiento general de 5.7.3.4.2, que el programa no implementa: se detiene con «metodo no evaluable».
+
 > **`AASHTO_LRFD_9.A11.3.1#KAE`** — El ENCABEZADO del articulo se imprime en la pag. impresa 11-144 (PDF 1613) y la ECUACION en la 11-145 (PDF 1614). La forma exacta del corchete -- «[1 + raiz(...)]» -- NO ES VERIFICABLE por extraccion de texto: la capa devuelve la formula rota. Se decide sobre la imagen renderizada, y por eso el metodo es IMAGEN. Las unidades de la fuente son imperiales (kcf, ft).
 
 > **`AASHTO_LRFD_9.C10.5.5.2.2#ASD`** — El comentario dice de donde salen los phi: de la calibracion contra los FS de tensiones admisibles. Los FS de E.050 (3,0 y 2,5 al portante; 1,5 al deslizamiento) son esos mismos, de modo que los dos marcos son dos escrituras de un nivel de seguridad parecido y por eso se pueden imprimir lado a lado SIN mezclar sus numeros.
@@ -384,6 +463,8 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.C11.6.5.4#CEDENTE`** — Es la hipotesis del empuje activo y de Mononobe-Okabe: el muro CEDE. El criterio 'regimen_cabezal' la declara para la estabilidad externa del cabezal. Sigue: «Examples of walls that may be nonyielding are integral abutments, abutment walls with structural wing walls, tunnel portal walls, and tied back cylinder pile walls», y para los suelos granulares la resistencia se moviliza con un desplazamiento de la corona «about 0.5 percent of the abutment or wall height».
 
+> **`AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS`** — «These solutions» son las elasticas de Wood (1973) para muros rigidos. La fuente NO da un coeficiente sismico de reposo: manda k_h = 1.0·k_h0 (11.6.5.4) con los mismos metodos de 11.6.5.3, y pide considerar la resultante del empuje total a h/2. Es lo que el armado hace bajo el regimen que no cede: toma el empuje sismico que el ensamble entrega y, para el momento de la pantalla, la mayor de su posicion y h/2.
+
 > **`AASHTO_LRFD_9.C11.6.5.4#K0`** — Liga el muro que no cede con el empuje en REPOSO (K0) en el estado limite de resistencia. Es lo que la interfaz de T-7c marca: las solicitaciones salen con el coeficiente del muro que cede y llevan al lado el K0 de 3.11.5.2 (cita AASHTO_LRFD_9.3.11.5.2#K0).
 
 > **`AASHTO_LRFD_9.C12.12.3.2`** — Comentario. La frase empieza en la pag. 12-75: «Historically, AASHTO bridge specifications have contained minimum values for the moment of inertia and wall area of thermoplastic pipe; however, these values», y sigue en la 12-76: «... Thus, there is no way to provide meaningful generic information on section properties.» Son los minimos de la Tabla A12-11: con ellos el resultado es una COTA INFERIOR, no un veredicto sobre un producto (`M8.cota_inferior_hdpe`).
@@ -394,6 +475,10 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.C3.10.3.1-1#PASO1`** — ES COMENTARIO Y POR ESO NO ESTRECHA EL ARTICULADO -- lleva prefijo `C` y cuelga del epigrafe C3.10.3.1 --, pero importa por algo que el debate «lista abierta o cerrada» estaba tapando: el paso 1 no es retorico, es un PROCEDIMIENTO. Manda comprobar esas categorias y, si el sitio no cae en ninguna, seguir al paso 2 (capa blanda -> Clase E) y al paso 3 (calcular v_s, N o s_u sobre los 100 ft superiores -> Clase A a E). En ninguno de los tres pasos hay una ruta que lleve de «suelo licuable» a la Clase F. Refuta por su cuenta la version fuerte de NOR-AAS-02 que la refutacion adversarial R95-073 ya habia tumbado: el «the three categories» existe, pero esta aqui, no en el articulado.
 
+> **`AASHTO_LRFD_9.C3.11.1#REPOSO`** — Sigue: «Walls which can move away from the soil mass should be designed for pressures between active and at-rest conditions, depending on the magnitude of the tolerable movements». La Tabla C3.11.1-1 da el movimiento relativo que moviliza el empuje activo: de 0.001·H (arena densa) a 0.010·H (arcilla compactada).
+
+> **`AASHTO_LRFD_9.C3.11.5.2#ACTIVO`** — Es lo que sostiene la alternativa «cedente» del criterio 'regimen_resistencia_elementos_cabezal': un muro en voladizo LIBRE de mas de 1.52 m. El cabezal no es libre en sus extremos (el barril y los aleros lo arriostran), y por eso no es el valor de archivo.
+
 > **`AASHTO_LRFD_9.C3.11.5.3#DELTA`** — La oracion completa (la capa de texto pierde las letras griegas): «Alternatively, long-term practice has been to use delta = 0.67·phi_f at the interface between the back of the wall and the retained soil to calculate ka for soil against concrete as well as soil against soil». DESCRIBE una practica («long-term practice»), no fija el valor; antes ofrece la Tabla C3.11.5.3-1 (pag. impresa 3-124) de valores «presumptive». En la pagina siguiente: aun en los muros de semigravedad en voladizo, donde la superficie de friccion es suelo contra suelo, «the wall friction is usually limited to 0.67·phi_f». Es la fuente del criterio [C] 'fraccion_delta_sobre_phi_trasdos'.
 
 > **`AASHTO_LRFD_9.C3.11.5.3#PLANO_DEL_TALON`** — FIJA EL PLANO DE EMPUJE del muro en voladizo con talon: el vertical que sube desde el extremo del talon, con el suelo que queda entre ese plano y la pantalla contado como peso del muro (es la carga EV del ensamble). Sobre ese plano la friccion es suelo contra suelo, y la Figura C3.11.5.3-1b (leida por imagen, pag. impresa 3-123) acota el angulo del empuje entre phi/3 y 2·phi/3. Es lo que cierra la eleccion que `M9.empujes_trasdos` dejaba al llamador («el plano del trasdos o el del talon»).
@@ -403,6 +488,14 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.C3.11.6.4`** — HALLAZGO DE S12, y es el que obliga a matizar el conflicto #4: NO EXISTE en el articulado ninguna frase que reparta las dos tablas. El cuerpo normativo las cita JUNTAS Y SIN CONDICIONANTE («may be taken from Tables 3.11.6.4-1 and 3.11.6.4-2»). Lo que las reparte son (a) los TITULOS de las tablas y (b) este comentario, que no es articulado. Y no ofrecen un eje libre «orientacion»: ofrecen dos BINOMIOS ACOPLADOS -- estribo+perpendicular y muro de contencion+paralelo --. No hay tabla para «muro perpendicular» ni para «estribo paralelo».
 
 > **`AASHTO_LRFD_9.C3.4.1#GAMMA_EQ`** — EL 0.50 ESTA LITERAL EN LA FUENTE, pero como COMENTARIO y con el calificador «is reasonable»: no es una exigencia ni una de dos opciones tabuladas. Y el 0.0 aparece solo como referencia a ediciones pasadas del Standard Specifications, seguido de «This issue is not resolved». Quien lo determina es el PROYECTO («project-specific basis», Art. 3.4.1, pag. impresa 3-19), no «el propietario».
+
+> **`AASHTO_LRFD_9.C5.12.8.6.1#TALON`** — En el talon el cortante se toma en la cara trasera de la pantalla, no a d_v de ella. En la punta la fuente (5.12.8.6.1 → 5.7.3.2) permite tomarlo a d_v de la cara cuando la reaccion comprime el extremo: el programa lo toma en la cara tambien alli, que es mas cortante (lado seguro, declarado).
+
+> **`AASHTO_LRFD_9.C5.4.2.4#EC`** — Sigue la ec. C5.4.2.4-1, leida por imagen: E_c = 2,500·(f'c)^0.33 (ksi). Es la ec. 5.4.2.4-1 (E_c = 120,000·K1·w_c^2.0·f'c^0.33) con K1 = 1.0 y w_c = 0.145 kcf, redondeada. En SI, `EC_COEFICIENTE_AASHTO_SI`·f'c^0.33 = 9115·f'c^0.33 MPa. Solo entra en la relacion modular de la fisuracion (5.6.7).
+
+> **`AASHTO_LRFD_9.C5.6.7#CLASE_1`** — Es lo que sostiene que, SIN la clase declarada, la barra propuesta respete al menos la Clase 1: cualquier clase que el Propietario declare pide eso o mas. Sigue: «Areas that the Owner may consider for Class 2 exposure condition would include decks and substructures exposed to water».
+
+> **`AASHTO_LRFD_9.C5.7.3.4.1#GRANDES`** — Por que el permiso tiene limite de peralte: con β = 2.0 y θ = 45 grados las expresiones son «essentially identical to those traditionally used», y esas son inseguras en elementos grandes sin estribos. Es la razon de no extender el simplificado a una pantalla o una zapata mas gruesa que el limite.
 
 > **`AASHTO_LRFD_9.T12.10.2.1-1`** — La fila del Tipo 4, riñones y costado inferior. Las otras tres (misma pagina): Tipo 1, riñones 95 % Categoria I, costado 90 % I, 95 % II o 100 % III; Tipo 2, riñones 90 % I o 95 % II, costado 85 % I, 90 % II o 95 % III; Tipo 3, riñones y costado 85 % I, 90 % II o 95 % III. Cama: D_o/24, no menos de 3.0 in, en los Tipos 1 a 3 sobre suelo; ninguna en el Tipo 4.
 
@@ -671,23 +764,47 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `E060.10.2.7#BLOQUE` | 10.2.7 | «HIPÓTESIS DE DISEÑO» | pág. impresa **76** · PDF 76 | permiso | 2026-11-13 · texto |
+| `E060.10.3.4#MAXIMO` | 10.3.4 | «PRINCIPIOS Y REQUISITOS GENERALES» | pág. impresa **77** · PDF 77 | exigencia | 2026-11-13 · texto |
+| `E060.10.5.4#LOSAS` | 10.5.4 | «REFUERZO MÍNIMO EN ELEMENTOS SOMETIDOS A FLEXIÓN» | pág. impresa **78** · PDF 78 | exigencia | 2026-11-13 · texto |
 | `E060.11.10.1` | 11.10.1 | «DISPOSICIONES ESPECIALES PARA MUROS» | pág. impresa **103** · PDF 103 | exigencia | 2026-09-20 · texto |
 | `E060.11.10.10.2` | 11.10.10.2 | 11.10 DISPOSICIONES ESPECIALES PARA MUROS › «Diseño del refuerzo para cortante en muros» | pág. impresa **104** · PDF 104 | exigencia | 2026-09-20 · texto |
 | `E060.11.10.10.3` | 11.10.10.3 | 11.10 DISPOSICIONES ESPECIALES PARA MUROS › «Diseño del refuerzo para cortante en muros» | pág. impresa **104** · PDF 104 | exigencia | 2026-09-20 · ambos |
 | `E060.11.10.2` | 11.10.2 | «DISPOSICIONES ESPECIALES PARA MUROS» | pág. impresa **103** · PDF 103 | exigencia | 2026-09-20 · texto |
+| `E060.11.10.7#UMBRAL` | 11.10.7 | «DISPOSICIONES ESPECIALES PARA MUROS» | pág. impresa **103** · PDF 103 | exigencia | 2026-11-13 · ambos |
+| `E060.11.12.1.1#VIGA` | 11.12.1.1 | «DISPOSICIONES ESPECIALES PARA LOSAS Y ZAPATAS» | pág. impresa **104** · PDF 104 | definicion | 2026-11-13 · texto |
+| `E060.11.3.1#VC` | 11.3.1 | «RESISTENCIA AL CORTANTE PROPORCIONADA POR EL CONCRETO EN» | pág. impresa **88** · PDF 88 | exigencia | 2026-11-13 · ambos |
 | `E060.14.3.1` | 14.3.1 | «REFUERZO MÍNIMO» | pág. impresa **133** · PDF 133 | exigencia | 2026-08-28 · texto |
 | `E060.14.3.2` | 14.3.2 | «REFUERZO MÍNIMO» | pág. impresa **133** · PDF 133 | exigencia | 2026-08-28 · texto |
 | `E060.14.3.3` | 14.3.3 | «REFUERZO MÍNIMO» | pág. impresa **133** · PDF 133 | exigencia | 2026-08-28 · texto |
 | `E060.14.5.3.2` | 14.5.3.2 | 14.5 › MÉTODO EMPÍRICO DE DISEÑO PARA MUROS DE CARGA › «Espesor mínimo de muros diseñados por el método empírico de diseño» | pág. impresa **134** · PDF 134 | exigencia | 2026-11-12 · texto |
+| `E060.14.8.1#CONTENCION` | 14.8.1 | «MUROS DE CONTENCIÓN» | pág. impresa **134** · PDF 134 | exigencia | 2026-11-13 · texto |
 | `E060.14.8.4` | 14.8.4 | «Muros de contención» | pág. impresa **134** · PDF 134 | exigencia | 2026-08-28 · texto |
 | `E060.15.7#PERALTE` | 15.7 | «PERALTE MÍNIMO DE LAS ZAPATAS» | pág. impresa **138** · PDF 138 | exigencia | 2026-11-13 · texto |
 | `E060.22.10.2#CICLOPEO` | 22.10.2.1 | 22.10 CONCRETO CICLOPEO › «Limitaciones» | pág. impresa **195** · PDF 195 | exigencia | 2026-11-13 · texto |
+| `E060.22.10.2.3#PHI` | 22.10.2.3 | 22.10 CONCRETO CICLOPEO › «Limitaciones» | pág. impresa **195** · PDF 195 | exigencia | 2026-11-13 · texto |
+| `E060.22.4.7#JUNTAS` | 22.4.7 | «MÉTODO DE DISEÑO» | pág. impresa **191** · PDF 191 | exigencia | 2026-11-13 · texto |
+| `E060.22.4.8#PERALTE` | 22.4.8 | «MÉTODO DE DISEÑO» | pág. impresa **191** · PDF 191 | exigencia | 2026-11-13 · texto |
+| `E060.22.5.3#TRACCION` | 22.5.3 | «DISEÑO POR RESISTENCIA» | pág. impresa **192** · PDF 192 | exigencia | 2026-11-13 · ambos |
+| `E060.22.5.4#CORTANTE` | 22.5.4 | «DISEÑO POR RESISTENCIA» | pág. impresa **192** · PDF 192 | exigencia | 2026-11-13 · ambos |
+| `E060.22.6.3#EXCENTRICIDAD` | 22.6.3 | «MUROS» | pág. impresa **192** · PDF 192 | exigencia | 2026-11-13 · texto |
+| `E060.22.6.3#TERCIO` | 22.6.3 | «MUROS» | pág. impresa **192** · PDF 192 | exigencia | 2026-11-13 · texto |
+| `E060.22.6.6.5#ABERTURAS` | 22.6.6.5 | «Limitaciones» | pág. impresa **193** · PDF 193 | exigencia | 2026-11-13 · texto |
 | `E060.22.7.4#ZAPATA` | 22.7.4 | «ZAPATAS» | pág. impresa **193** · PDF 193 | exigencia | 2026-11-12 · texto |
 | `E060.4.4.2` | 4.4.2 | «PROTECCIÓN DEL REFUERZO CONTRA LA CORROSIÓN» | pág. impresa **39** · PDF 39 | exigencia | 2026-08-28 · texto |
 | `E060.7.7.1` | 7.7.1 | 7.7 RECUBRIMIENTO DE CONCRETO PARA EL REFUERZO › «Concreto construido en sitio (no preesforzado)» | pág. impresa **54** · PDF 54 | exigencia | 2026-08-28 · texto |
 | `E060.7.7.5.1` | 7.7.5.1 | «Ambientes corrosivos» | pág. impresa **55** · PDF 55 | exigencia | 2026-08-28 · texto |
+| `E060.9.2.5#EMPUJE` | 9.2.5 | «RESISTENCIA REQUERIDA» | pág. impresa **65** · PDF 65 | exigencia | 2026-11-13 · texto |
+| `E060.9.3.1#PHI` | 9.3.1 | «RESISTENCIA DE DISEÑO» | pág. impresa **66** · PDF 66 | exigencia | 2026-11-13 · texto |
+| `E060.9.7.2#TEMPERATURA` | 9.7.2 | «REFUERZO POR CAMBIOS VOLUMÉTRICOS» | pág. impresa **72** · PDF 72 | exigencia | 2026-11-13 · texto |
 | `E060.T4.2` | Tabla 4.2 | «REQUISITOS PARA CONDICIONES ESPECIALES DE EXPOSICIÓN» | pág. impresa **37** · PDF 37 | exigencia | 2026-08-28 · ambos |
 | `E060.T4.4` | Tabla 4.4 | «REQUISITOS PARA CONCRETO EXPUESTO A SOLUCIONES DE SULFATOS» | pág. impresa **38** · PDF 38 | exigencia | 2026-08-28 · ambos |
+
+> **`E060.10.2.7#BLOQUE`** — 10.2.7.1: un esfuerzo de 0,85·f'c uniforme hasta a = β1·c; 10.2.7.3: β1 = 0,85 para f'c entre 17 y 28 MPa, 0,65 para f'c >= 56 MPa e interpolacion lineal entre ambos; 10.2.3: deformacion ultima del concreto 0,003.
+
+> **`E060.10.3.4#MAXIMO`** — El 10.3.5 da la alternativa que el contraste usa: el requisito se cumple cuando la deformacion unitaria neta del acero en traccion mas alejado es mayor o igual a 0,004.
+
+> **`E060.10.5.4#LOSAS`** — Sigue: «Cuando el acero mínimo se distribuya en las dos caras de la losa, deberá cumplirse que la cuantía de refuerzo en la cara en tracción por flexión no sea menor de 0,0012. El espaciamiento máximo del refuerzo no debe exceder tres veces el espesor ni de 400 mm». El 9.7.2 (pag. 73) da 0,0018 del area bruta para barras corrugadas con fy >= 420 MPa. Es el acero minimo de la ZAPATA en el contraste; el de la pantalla es el de muros, 14.3.1.
 
 > **`E060.11.10.1`** — LA PREGUNTA DE APLICABILIDAD, dicha por la norma: el cortante PERPENDICULAR al plano --- que es el que el empuje de tierras produce en la pantalla de un cabezal --- se diseña por 11.12 (losas), no por 11.10. Antes de aplicar el 0.0025 de 11.10.10.2 hay que decir en que plano actua el cortante que lo dispara.
 
@@ -697,11 +814,19 @@ línea que se pueda romper.
 
 > **`E060.11.10.2`** — La segunda oracion del numeral --- «Para muros estructurales que resistan cargas en su plano originadas por la acción de los sismos, se aplicará adicionalmente lo dispuesto en 21.9» --- no se transcribe: el cabezal no es muro estructural de un edificio.
 
+> **`E060.11.10.7#UMBRAL`** — La condicion, leida por imagen: «Donde Vu sea menor que 0,085·√f'c·Acw». Los minimos: horizontal 0,002 y vertical 0,0015, con espaciamiento no mayor que tres veces el espesor ni que 400 mm. El 11.10.8 (pag. 104) manda al 11.10.10 cuando V_u supera ese umbral. Todo ello para el cortante EN EL PLANO del muro (11.10.2).
+
+> **`E060.11.12.1.1#VIGA`** — Sigue en la pagina 105: «Para el comportamiento como viga, la losa o la zapata deben diseñarse de acuerdo con 11.1 a 11.5». Es a donde 11.10.1 manda el cortante perpendicular al plano de un muro, y 15.5.1 el de las zapatas.
+
+> **`E060.11.3.1#VC`** — 11.3.1.1, ec. (11-3), leida por imagen: «Para elementos sometidos únicamente a cortante y flexión»: V_c = 0,17·√f'c·b_w·d. El titulo del 11.3 sigue en la linea siguiente de la pagina: «... ELEMENTOS NO PREESFORZADOS».
+
 > **`E060.14.3.1`** — EL ESCALONAMIENTO 0,002 -> 0,0025 LO ANUNCIA ESTE MISMO NUMERAL, no solo el 11.10.10.2: su primera oracion remite a 11.10 «a menos que se requiera una cantidad mayor por cortante». La norma imprime «0,002» y «0,0015».
 
 > **`E060.14.3.3`** — El repositorio no le asignaba pagina; es la impresa 133. Y hay un SEGUNDO numeral con el mismo contenido y otras palabras: el 14.8.4 (pag. impresa 134), que es el que rige DIRECTAMENTE un muro de contencion como el cabezal.
 
 > **`E060.14.5.3.2`** — EXIGENCIA DENTRO DE SU AMBITO, que no es el del marco: el 14.5.3 fija el espesor minimo de los muros diseñados por el METODO EMPIRICO de 14.5, y la pared de un marco enterrado se diseña por flexion y carga axial (14.8.1 remite al Capitulo 10). Lo que la hace la fuente mas cercana para el espesor de un marco a nivel de perfil es su OBJETO: un muro exterior ENTERRADO, con suelo contra una cara, que es lo que es la pared del cajon. El proyecto la aplica POR ANALOGIA como piso del criterio [A] 'espesor_pared_cajon'; no es [N] para el marco. Leida en la capa de texto de la pagina 134 (que imprime «los  muros  exteriores» con doble espacio).
+
+> **`E060.14.8.1#CONTENCION`** — «... del Capítulo 10». El 14.8.2 hace regir el refuerzo minimo de 14.3 y el 14.2.4 remite el cortante a 11.10.
 
 > **`E060.14.8.4`** — Hallado al verificar: es el gemelo del 14.3.3 para muros de contencion, y por tanto el aplicable directo a un cabezal. El expediente citaba solo el 14.3.3.
 
@@ -709,13 +834,35 @@ línea que se pueda romper.
 
 > **`E060.22.10.2#CICLOPEO`** — El 22.10.2.2, en la misma pagina, sigue: «En elementos en voladizo con una longitud mayor a la mitad de su peralte, será necesario verificar las resistencias en flexión y corte», y el 22.10.2.3 fija φ = 0,5 y f'c de diseño no mayor de 10 MPa. Es el limite del cabezal de GRAVEDAD en ciclopeo: un muro de gravedad, no un voladizo de concreto simple. La regla del tipo por altura de 'predimensionamiento_cabezal' no lo juzga (es geometria); lo juzga T-7c, y la memoria lo avisa cuando el tipo sale de gravedad.
 
-> **`E060.22.7.4#ZAPATA`** — Capitulo 22, «Concreto estructural simple», que es el que la hoja de ruta §9.4 y M9.verificar_ciclopeo aplican al cabezal de gravedad en concreto ciclopeo (Art. 22.10). La Via 1 de la §0.2 saca a E.060 del diseño estructural ARMADO; el ciclopeo no tiene otra norma en normas/, y por eso este minimo se aplica al cabezal de gravedad y no al de voladizo armado.
+> **`E060.22.10.2.3#PHI`** — «... φ = 0,5 y se utilizará, para el diseño, un valor de f'c no mayor a 10 MPa» (el verbatim se corta en el simbolo). El 22.10.2.2 pide verificar flexion y corte en los voladizos mas largos que la mitad de su peralte.
+
+> **`E060.22.4.7#JUNTAS`** — El encuentro del cuerpo del cabezal de gravedad con su zapata es una junta de construccion: ahi E.060 PROHIBE la traccion. Por eso la fila C2 (tracciones nulas en el arranque) decide siempre, salvo que se declare el vaciado monolitico de cuerpo y zapata ('junta_arranque_cabezal_ciclopeo' = 'vaciado_monolitico'), y se evalua con las cargas de servicio Y con las amplificadas de E.060 (correcciones de T-7c, H5). Corrige lo que la FASE A escribio: «ninguna fuente de normas/ exige tracciones nulas».
+
+> **`E060.22.4.8#PERALTE`** — El muro del cabezal de gravedad se encofra por sus dos caras; la reduccion se aplica de todos modos (lado seguro) porque el trasdos queda contra el relleno.
+
+> **`E060.22.5.3#TRACCION`** — Las dos ecuaciones, leidas por imagen: en la cara de compresion P_u/(φ·P_n) + M_u/(φ·M_n) <= 1 (22-6), y «en la cara de tracción» M_u/S_m − P_u/A_g <= φ·0,42·√f'c (22-7). El contraste del cabezal ciclopeo evalua la (22-7) con φ = 0,5 y f'c <= 10 MPa (22.10.2.3) y el peralte reducido de 22.4.8.
+
+> **`E060.22.5.4#CORTANTE`** — Ec. (22-8): φ·V_n >= V_u, con V_n = 0,11·√f'c·b_w·h (22-9) para la accion como viga; leidas por imagen.
+
+> **`E060.22.6.3#EXCENTRICIDAD`** — La fila C6 del cabezal ciclopeo toma el momento amplificado no menor que P_u·0,10·t (`EXCENTRICIDAD_MIN_MURO_CONCRETO_SIMPLE_E060`), por analogia.
+
+> **`E060.22.6.3#TERCIO`** — «En caso contrario, los muros deben diseñarse de acuerdo con 22.5.3». E.060 NO exige tracciones nulas en el CUERPO de un muro de concreto simple: admite la traccion de la ec. (22-7). Las prohibe a traves de las juntas de construccion (22.4.7, cita E060.22.4.7#JUNTAS), y el arranque del cuerpo sobre la zapata es una.
+
+> **`E060.22.6.6.5#ABERTURAS`** — Es de muros de concreto SIMPLE. El vano del conducto en la pantalla del cabezal es una abertura: el aviso de lo que el armado no cubre la nombra, por analogia, y no la dimensiona (correcciones de T-7c, H6). Sigue: «Dichas barras deben extenderse al menos 600 mm más allá de las esquinas de las aberturas».
+
+> **`E060.22.7.4#ZAPATA`** — Capitulo 22, «Concreto estructural simple», que es el que la hoja de ruta §9.4 y M9.verificar_ciclopeo aplican al cabezal de gravedad en concreto ciclopeo (Art. 22.10). La Via 1 de la §0.2 saca a E.060 del diseño estructural ARMADO; el ciclopeo no tiene otra norma en normas/, y por eso este minimo se aplica al cabezal de gravedad y no al de voladizo armado. Desde el cierre de T-7c es el criterio [N→] 'espesor_min_zapata_concreto_simple_m' (por analogia: la excepcion de la §0.2 cubre la durabilidad, no los minimos estructurales del Cap. 22; ficha T7C-10).
 
 > **`E060.4.4.2`** — ES EL ESLABON QUE ATA EL CLUSTER DE DURABILIDAD DE PUNTA A PUNTA: manda aplicar la Tabla 4.2 a los cloruros externos Y remite al recubrimiento del 7.7. Sin el, la cadena a/c -> recubrimiento queda sin numeral que la sostenga. El disparador es acotado -- cloruros «de quimicos descongelantes, sal, agua salobre, agua de mar o salpicaduras» --, no cloruros en el suelo en general.
 
 > **`E060.7.7.1`** — EL PROPIO ENCABEZADO REMITE AL 7.7.5.1: el aumento por ambiente corrosivo no es una nota externa que alguien decidio traer, es la excepcion que el articulo de los 70/50/40 mm declara.
 
 > **`E060.7.7.5.1`** — EXIGENCIA DE RESULTADO SIN CUANTIFICAR: manda aumentar y no dice cuanto. El cuanto es [A] del proyectista, y la ALTERNATIVA del final -- «o debe disponerse de otro tipo de proteccion» -- es un camino de cumplimiento distinto que este expediente no contempla y que hay que dejar visible.
+
+> **`E060.9.2.5#EMPUJE`** — Ec. (9-6): U = 1,4 CM + 1,7 CV + 1,7 CE; y «en el caso en que la carga muerta o la carga viva reduzcan el efecto del empuje lateral», ec. (9-7): U = 0,9 CM + 1,7 CE. El 9.2.3 (sismo) combina CM, CV y CS y no nombra el empuje de suelos: E.060 no escribe una combinacion con sismo y empuje a la vez, y el contraste se limita a la condicion estatica.
+
+> **`E060.9.3.1#PHI`** — Sigue: «multiplicada por los factores φ de reducción de resistencia especificados a continuación». 9.3.2.1: «Flexión sin carga axial ... 0,90»; 9.3.2.3: «Cortante y torsión ... 0,85»; 9.3.2.8: en el Capitulo 22, concreto estructural simple, 0,65 (el ciclopeo lleva 0,5 por 22.10.2.3).
+
+> **`E060.9.7.2#TEMPERATURA`** — La lista esta en la pagina siguiente (73): barras lisas 0,0025; barras corrugadas con fy < 420 MPa, 0,0020; barras corrugadas o malla con fy >= 420 MPa, 0,0018.
 
 > **`E060.T4.2`** — La invocan DOS numerales por vias distintas, y los dos hacen falta: el 4.2.2 (pag. impresa 37) por condiciones especiales de exposicion en general, y el 4.4.2 (pag. impresa 39) especificamente para los cloruros, que es el disparador de este expediente.
 
@@ -2872,6 +3019,19 @@ recomienda.
 | `F8.TMC_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion | **obliga** | `AASHTO_LRFD_9.12.5.6.1#FF`, `ASTM_A796.10.3` |
 | `F9.AGUA` | Fase 9 - Cabezal y aletas | Agua en el trasdos: nivel, empuje hidrostatico, suelo sumergido y subpresion | **obliga** | `AASHTO_LRFD_9.3.11.3`, `AASHTO_LRFD_9.11.6.6#DRENAJE`, `E050.39.13.8#DRENAJE`, `MP.2.4.3.8.2` |
 | `F9.ALEROS` | Fase 9 - Cabezal y aletas | Aleros: angulo, longitud, alturas inicial y final, espesor | **obliga** | `AASHTO_LRFD_9.12.6.5#ALEROS`, `MC_HHD.LAMINA_02A`, `HDS5_3ED.SIMBOLOS#THETA_W` |
+| `F9.ARM_CORTANTE` | Fase 9 - Cabezal y aletas | Resistencia a cortante del concreto, sin refuerzo transversal, frente al cortante factorado | **obliga** | `AASHTO_LRFD_9.5.7.3.3#VN`, `AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO`, `AASHTO_LRFD_9.C5.7.3.4.1#GRANDES`, `AASHTO_LRFD_9.5.7.2.8#DV`, `AASHTO_LRFD_9.5.5.4.2#CORTE`, `AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL`, `AASHTO_LRFD_9.1.3.2.1#EXTREMO` |
+| `F9.ARM_CORTANTE_PLANO` | Fase 9 - Cabezal y aletas | Cuantias minimas del muro bajo el regimen de cortante en su plano | **obliga** | `E060.11.10.1`, `E060.11.10.2`, `E060.11.10.7#UMBRAL`, `E060.11.10.10.2`, `E060.11.10.10.3`, `E060.14.3.1` |
+| `F9.ARM_DURABILIDAD` | Fase 9 - Cabezal y aletas | Resistencia del concreto del cabezal frente a la minima por durabilidad | **obliga** | `E060.T4.4`, `E060.T4.2`, `E060.4.4.2` |
+| `F9.ARM_E060` | Fase 9 - Cabezal y aletas | Contraste con la norma peruana de concreto: flexion y cortante con sus combinaciones y sus factores | **obliga** | `E060.9.2.5#EMPUJE`, `E060.9.3.1#PHI`, `E060.10.2.7#BLOQUE`, `E060.10.3.4#MAXIMO`, `E060.11.3.1#VC`, `E060.11.10.1`, `E060.11.12.1.1#VIGA`, `E060.14.8.1#CONTENCION` |
+| `F9.ARM_ESPACIAMIENTO` | Fase 9 - Cabezal y aletas | Barra y espaciamiento propuestos frente al acero adoptado y al espaciamiento maximo | **obliga** | `AASHTO_LRFD_9.5.10.3.2#ESPACIAMIENTO`, `AASHTO_LRFD_9.5.10.6#ESPACIAMIENTO`, `E060.14.3.3`, `E060.14.3.2`, `AASHTO_LRFD_9.5.6.7#FISURACION` |
+| `F9.ARM_FISURACION` | Fase 9 - Cabezal y aletas | Control de fisuracion en servicio: espaciamiento de la capa traccionada frente al de la ecuacion de la fuente | **obliga** | `AASHTO_LRFD_9.5.6.7#FISURACION`, `AASHTO_LRFD_9.5.6.7#ESPACIAMIENTO`, `AASHTO_LRFD_9.5.6.7#FSS`, `AASHTO_LRFD_9.5.6.7#GAMMA_E`, `AASHTO_LRFD_9.C5.6.7#CLASE_1`, `AASHTO_LRFD_9.5.4.3.2#ES`, `AASHTO_LRFD_9.C5.4.2.4#EC`, `AASHTO_LRFD_9.T3.4.1-1` |
+| `F9.ARM_FLEXION` | Fase 9 - Cabezal y aletas | Resistencia a flexion de la seccion con el acero propuesto frente al momento factorado | **obliga** | `AASHTO_LRFD_9.5.6.3.2.1#MR`, `AASHTO_LRFD_9.5.5.4.2#FLEXION`, `AASHTO_LRFD_9.5.6.2.2#BLOQUE`, `AASHTO_LRFD_9.5.6.2.1#TRACCION`, `AASHTO_LRFD_9.1.3.2.1#EXTREMO` |
+| `F9.ARM_MINIMO` | Fase 9 - Cabezal y aletas | Acero minimo de la cara en traccion y de reparto: el de la fuente que rige y el de la norma de contraste | **obliga** | `AASHTO_LRFD_9.5.6.3.3#MINIMO`, `AASHTO_LRFD_9.5.4.2.6#FR`, `AASHTO_LRFD_9.5.10.6#TEMPERATURA`, `AASHTO_LRFD_9.11.6.1.5.1#TEMPERATURA`, `E060.14.3.1`, `E060.10.5.4#LOSAS`, `E060.9.7.2#TEMPERATURA` |
+| `F9.ARM_PERALTE_ZAPATA` | Fase 9 - Cabezal y aletas | Altura de la zapata del cabezal medida sobre su refuerzo inferior | **obliga** | `E060.15.7#PERALTE` |
+| `F9.ARM_REGIMEN` | Fase 9 - Cabezal y aletas | Empuje con que se arma cada elemento: en reposo o activo, y las solicitaciones factoradas que resultan | **recomienda** | `AASHTO_LRFD_9.C3.11.1#REPOSO`, `AASHTO_LRFD_9.C11.6.5.4#K0`, `AASHTO_LRFD_9.3.11.5.2#K0`, `AASHTO_LRFD_9.C3.11.5.2#ACTIVO`, `AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE`, `AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS` |
+| `F9.ARM_TABLA` | Fase 9 - Cabezal y aletas | Tabla de armado del cabezal: acero requerido, minimo y propuesto por elemento | **obliga** | `AASHTO_LRFD_9.5.6.3.2.1#MR`, `AASHTO_LRFD_9.5.6.3.3#MINIMO`, `AASHTO_LRFD_9.5.10.6#TEMPERATURA` |
+| `F9.ARM_ZAPATA` | Fase 9 - Cabezal y aletas | Secciones criticas de la zapata: la punta y el talon en la cara de la pantalla | **obliga** | `AASHTO_LRFD_9.5.12.8.4#CARA`, `AASHTO_LRFD_9.10.6.5#LINEAL`, `AASHTO_LRFD_9.11.6.1.2#TALON`, `AASHTO_LRFD_9.C5.12.8.6.1#TALON` |
+| `F9.CICLOPEO` | Fase 9 - Cabezal y aletas | Cabezal de gravedad en concreto ciclopeo: posicion de la resultante en la base y en el cuerpo, y limites del material | **obliga** | `E060.22.10.2#CICLOPEO`, `E060.22.10.2.3#PHI`, `E060.22.5.3#TRACCION`, `E060.22.5.4#CORTANTE`, `E060.22.4.7#JUNTAS`, `E060.22.6.3#TERCIO`, `E060.22.6.3#EXCENTRICIDAD`, `E060.22.6.6.5#ABERTURAS`, `E060.22.4.8#PERALTE`, `EG2013.503.04#T503_07` |
 | `F9.COMBINACIONES` | Fase 9 - Cabezal y aletas | Cargas del cabezal con sus brazos y combinaciones de cada marco: factoradas (LRFD) y de servicio (ASD) | **obliga** | `AASHTO_LRFD_9.11.6.3.2#PORTANTE`, `AASHTO_LRFD_9.C11.5.6#FIGURAS`, `AASHTO_LRFD_9.C11.5.6#SOBRECARGA`, `MP.T2.4.5.3.1-2`, `E050.17.1#SERVICIO` |
 | `F9.CORONACION` | Fase 9 - Cabezal y aletas | Coronacion y altura del cabezal: sobre la clave exterior y sobre el nivel de agua del extremo | **obliga** | `HDS5_3ED.3.3.5#ENCAJE` |
 | `F9.DESPLANTE` | Fase 9 - Cabezal y aletas | Profundidad de desplante del cabezal: minimo de E.050 y, a la salida, bajo la socavacion | **obliga** | `E050.26.2#PROFUNDIDAD`, `AASHTO_LRFD_9.12.6.5#ZAPATAS`, `AASHTO_LRFD_9.10.6.1.2#DESPLANTE`, `HEC14.5.1.3#CABEZAL` |
@@ -3045,7 +3205,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 454.
+Citas sin firma de verificación: **6** de 503.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

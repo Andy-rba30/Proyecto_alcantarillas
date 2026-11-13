@@ -521,6 +521,23 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F9.EMPUJES", "F9.SOBRECARGA", "F9.AGUA", "F9.SISMO",
         "F9.COMBINACIONES", "F9.E1_LRFD", "F9.E2_LRFD", "F9.E3_LRFD",
         "F9.E_ASD", "F9.GLOBAL",
+        # --- T-7c --- EL ARMADO DEL CABEZAL Y SU ALTERNATIVA CICLOPEA. Los
+        # diez cuelgan de lo mismo que los del ensamble de estabilidad: un
+        # punto DIMENSIONADO a nivel de expediente con el angulo del relleno
+        # declarado, que la corrida por defecto no tiene. Que los nueve
+        # F9.ARM_* se emiten lo mide tests/test_t7c_cabezal_armado.py pieza a
+        # pieza (`test_el_armado_emite_un_paso_por_cada_cosa_que_un_revisor_
+        # pregunta`) y de punta a punta por `servicio.correr`; F9.CICLOPEO,
+        # por la puerta del tipo «gravedad» declarado.
+        "F9.ARM_REGIMEN", "F9.ARM_ZAPATA", "F9.ARM_FLEXION",
+        "F9.ARM_MINIMO", "F9.ARM_ESPACIAMIENTO", "F9.ARM_CORTANTE",
+        "F9.ARM_E060", "F9.ARM_CORTANTE_PLANO", "F9.ARM_TABLA",
+        "F9.CICLOPEO",
+        # --- correcciones de T-7c --- tres filas mas del armado, por la
+        # misma razon: la fisuracion de 5.6.7 (A6), el f'c por durabilidad
+        # (A7, solo con el analisis quimico del EMS declarado) y la altura de
+        # la zapata sobre su refuerzo (A8). Las mide test_t7c_cabezal_armado.
+        "F9.ARM_FISURACION", "F9.ARM_DURABILIDAD", "F9.ARM_PERALTE_ZAPATA",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve

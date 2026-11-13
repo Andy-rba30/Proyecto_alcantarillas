@@ -223,6 +223,15 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
                          "INF-4.1"},
         ESTADO_PARCIAL: {"INF-4.3"},
     },
+    "T-7c": {
+        # El armado del cabezal o su alternativa ciclopea (INF-4.6) y la fila
+        # «Armado» del §3.4 que lo nombra (INF-3.4.5), cerrados con los
+        # residuales nombrados en su fila (fichas T7C-03, -04, -06, -09 y
+        # -11). INF-0.5, EXT-M-05, R95-031 e INF-4.3 ganan una NOTA y no
+        # cambian de estado; la ficha EXT-7-01 se cierra en
+        # docs/decisiones_diferidas.md.
+        ESTADO_CERRADO: {"INF-4.6", "INF-3.4.5"},
+    },
 }
 
 

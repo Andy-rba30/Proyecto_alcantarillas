@@ -119,6 +119,8 @@ from tests.fixtures.casos_patron import (CP7_CADENA_SISMICA,
                                          CP9_RANKINE_LIMITE,
                                          CP9_TOLERANCIA_RELATIVA)
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
+from src.constantes_normativas import (  # --- T-7c ---
+    REGIMEN_CORTANTE_EN_EL_PLANO, REGIMEN_CORTANTE_PERPENDICULAR)
 from src.tolerancias import TOL_UMBRAL_NORMATIVO
 
 TOL = 1e-12
@@ -1546,17 +1548,37 @@ def test_la_cuantia_de_diseno_respeta_el_calculo_cuando_supera_el_minimo():
 def test_el_escalon_por_cortante_alto_detiene_el_calculo_y_no_se_rellena():
     """
     E.060 Art. 11.10.10.2 sube la cuantia horizontal minima bajo cortante
-    alto, y M9 no calcula cortante. Declarar la condicion tiene que DETENER
-    el calculo, no caer al 0.0020 del Art. 14.3.1, que es el menor de los dos
-    minimos que tiene E.060.
+    alto. Declarar la condicion SIN el criterio tiene que DETENER el calculo,
+    no caer al 0.0020 del Art. 14.3.1, que es el menor de los dos minimos que
+    tiene E.060.
+
+    REESCRITO DECLARANDOLO (T-7c). Hasta T-7c los dos criterios estaban
+    vacios en el archivo y el test lo afirmaba (`valor is None`): M9 no
+    calculaba cortante y no habia con que contestar. Desde T-7c el armado
+    tiene el cortante del ensamble, que es el del empuje y actua
+    PERPENDICULAR al plano del muro: el regimen de archivo es ese, y con el
+    el piso de 11.10.10.2 no rige (minimo de 14.3.1). La propiedad que este
+    test fija es permanente y se prueba con `sin_valor`: sin el criterio, el
+    calculo se detiene.
     """
-    with pytest.raises(CriterioPendienteError):
-        cuantia_de_diseno(cuantia_calculada=0.0031, direccion="horizontal",
+    regimen = "regimen_cortante_muro_e060_art_11_10_2"
+    assert ca.criterio(regimen).valor == REGIMEN_CORTANTE_PERPENDICULAR
+    assert ca.criterio(CRITERIO_CORTANTE_ALTO).valor == pytest.approx(
+        0.0025, rel=REL_TRANSPORTE)
+    with sin_valor(regimen):
+        with pytest.raises(CriterioPendienteError):
+            cuantia_de_diseno(cuantia_calculada=0.0031,
+                              direccion="horizontal", cortante_alto=True)
+    with con_valor(regimen, REGIMEN_CORTANTE_EN_EL_PLANO,
+                   motivo="el otro regimen de la ventana"), \
+            sin_valor(CRITERIO_CORTANTE_ALTO):
+        with pytest.raises(CriterioPendienteError):
+            cuantia_de_diseno(cuantia_calculada=0.0031,
+                              direccion="horizontal", cortante_alto=True)
+    # con el regimen de archivo, el minimo sigue siendo el de 14.3.1
+    r = cuantia_de_diseno(cuantia_calculada=0.0010, direccion="horizontal",
                           cortante_alto=True)
-    assert ca.criterio(CRITERIO_CORTANTE_ALTO).valor is None
-    # Desde EXT-7 lo primero que se pregunta es el PLANO del cortante
-    # (11.10.2 / 11.10.1); la aceptacion completa esta en test_ext7_cabezal.
-    assert ca.criterio("regimen_cortante_muro_e060_art_11_10_2").valor is None
+    assert r.cuantia_adoptada == pytest.approx(0.0020, rel=REL_TRANSPORTE)
 
 
 def test_cortante_alto_no_tiene_valor_por_defecto():
@@ -1626,18 +1648,25 @@ def test_alternativa_en_concreto_ciclopeo():
     assert flojo[1].valor_admisible == CICLOPEO_FRACCION_PIEDRA_MAX
 
 
-def test_el_diseno_por_flexion_y_corte_esta_citado_pero_no_ensamblado():
+def test_el_diseno_por_flexion_y_corte_esta_citado_y_ensamblado():
     """
-    'procedimiento_flexion_corte_aashto_sec5' es [C] (phi, MCFT beta-theta,
-    Vc, Vs, dv): ya no es CriterioPendienteError. Lo que sigue faltando es
-    el ENSAMBLE (iterar epsilon_s), y por eso se detiene con
-    NotImplementedError -- Sec. 0.2, Via 1: cuando se implemente, no se
-    combinaran demandas mayoradas por AASHTO con resistencias reducidas por
-    E.060.
+    REESCRITO DECLARANDOLO (T-7c). Este test se llamaba «...esta citado pero
+    no ensamblado» y afirmaba que `diseno_flexion_corte` se detenia con
+    `NotImplementedError`: era el hueco que T-7c cierra (INF-4.6). Hoy la
+    funcion ARMA la seccion con AASHTO LRFD Seccion 5 -- flexion de 5.6 y
+    cortante de 5.7 con el procedimiento simplificado -- y lo que se le pide
+    de mas es el espesor, que antes no hacia falta porque no calculaba. La
+    regla de la Sec. 0.2 que el test anunciaba se cumple: las demandas
+    mayoradas por AASHTO se comparan con resistencias de AASHTO, y E.060 solo
+    contrasta con sus propias cargas (tests/test_t7c_cabezal_armado.py).
     """
     assert "procedimiento_flexion_corte_aashto_sec5" not in ca.criterios_sin_valor()
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(DatoFaltanteError):
         diseno_flexion_corte(momento=45.0, cortante=30.0)
+    seccion = diseno_flexion_corte(momento=45.0, cortante=30.0, espesor=0.30)
+    assert seccion.barra is not None
+    assert seccion.M_r >= seccion.rige_flexion.M_u
+    assert all(v.cumple for v in seccion.verificaciones)
 
 
 # ===========================================================================

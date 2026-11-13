@@ -28,8 +28,9 @@ Lo que el archivo fija, por bloques:
   1. Las fichas: 'angulo_aletas' y 'predimensionamiento_cabezal' tienen
      valor (regla [A] con ventana por campo); 'embocadura_cabezal' [A] de
      perfil; el margen bajo la socavacion [C] es 2.0 ft exactos; el
-     dentellon [N->] es el de la Lamina Nº 04; los dos [N] (0.80 m de E.050
-     y 0.30 m de E.060) estan en `constantes_normativas` con su cita.
+     dentellon [N->] es el de la Lamina Nº 04; el 0.80 m de E.050 y el 0.30
+     m de E.060 son criterios [N->] con su cita (el segundo desde el cierre
+     de T-7c; antes, constante [N]).
   2. La embocadura del punto y la COHERENCIA con el marco: cambiar el angulo
      o el tipo de embocadura no deja intactos ke ni la carta donde la fuente
      distingue (el marco); donde no distingue (el tubo), nada se mueve.
@@ -49,13 +50,13 @@ import pytest
 import cli
 from src import criterios_adoptados as ca
 from src import servicio
+from src import constantes_normativas as cn_t7a
 from src.constantes_fisicas import PIE_EN_METROS
 from src.constantes_normativas import (BANDAS_ALETAS_CAJON_A1,
                                        BANDAS_ALETAS_CAJON_C2,
                                        CAJON_A1_SIN_ALETAS,
                                        CAJON_C2_SIN_ALETAS,
                                        CARTAS_CAJON_TA1,
-                                       ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M,
                                        KE_CAJON_C2, KE_HDS5_C2,
                                        NUMERAL_ZAPATA_CONCRETO_SIMPLE)
 from src.modelos import (ORIGEN_DIMENSION_DECLARADA, ORIGEN_DIMENSION_REGLA,
@@ -228,13 +229,22 @@ def test_los_minimos_con_numero_llevan_su_cita_y_su_etiqueta():
     """
     Correcciones de T-7a (H8): el 0.80 m de E.050 26.2 DEJA de ser [N] en
     `constantes_normativas` y pasa a criterio [N→] con la analogia declarada
-    (el ambito de E.050 son las edificaciones). El 0.30 m de E.060 22.7.4
-    sigue [N] (la §9.4 de la hoja hace regir E.060 22.10 sobre el ciclopeo).
+    (el ambito de E.050 son las edificaciones).
+
+    REESCRITO DECLARANDOLO (cierre de T-7c, pregunta 1 de su FASE A): el
+    0.30 m de E.060 22.7.4 seguia como constante [N]
+    (`ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M`), y este test lo fijaba asi.
+    Pasa al criterio [N→] 'espesor_min_zapata_concreto_simple_m', por la
+    misma razon que E.050 26.2 y E.060 15.7: la excepcion de la §0.2 que
+    hace regir E.060 en el cabezal cubre solo la durabilidad.
     """
     c = ca.CRITERIOS["profundidad_cimentacion_min_cabezal_m"]
     assert c.etiqueta == "N->" and c.valor == pytest.approx(0.80, rel=REL)
     assert "analogia" in c.justificacion.lower()
-    assert ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M == pytest.approx(0.30, rel=REL)
+    z = ca.CRITERIOS["espesor_min_zapata_concreto_simple_m"]
+    assert z.etiqueta == "N->" and z.valor == pytest.approx(0.30, rel=REL)
+    assert "22.7.4" in z.fuente and "analogia" in z.fuente.lower()
+    assert not hasattr(cn_t7a, "ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M")
     assert "22.7.4" in NUMERAL_ZAPATA_CONCRETO_SIMPLE
 
 

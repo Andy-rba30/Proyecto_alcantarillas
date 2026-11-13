@@ -2670,7 +2670,10 @@ CP_T7B_SOLICITACIONES = {
     "tolerancia": 3e-3,
     "punta": {"V_u": 31.0708, "M_u": 9.3212},
     "talon": {"V_u": 28.9360, "M_u": 22.0495},
-    "pantalla": {"V_u": 35.4066, "M_u": 19.6425},
+    # Correcciones de T-7c (H1): el diagrama de cada empuje integrado por
+    # encima del arranque (dorado a mano en CP_T7C_ARMADO, punto 2, activo).
+    # Hasta ahi 35.4066 / 19.6425, con la resultante entera de cada empuje.
+    "pantalla": {"V_u": 26.4906, "M_u": 21.4658},
 }
 
 # Las filas SISMICAS del primer muro que dependen de CUAL combinacion es la
@@ -2792,3 +2795,307 @@ CP_T7B_CUNA = {
                    "P": {0.0: 28.61, 0.25: 50.85, 0.50: 98.19}},
     },
 }
+
+
+# ===========================================================================
+# --- T-7c --- El armado del cabezal: dorados A MANO, con la aritmetica
+# ===========================================================================
+# EL MURO es el de tanteo de T-7b (`CP_T7B_ESTABILIDAD`): H = 2.00 m sobre
+# una zapata de 0.40 m (h = 2.40 m), pantalla de 0.30 m, punta 0.60 m, talon
+# 1.10 m, B = 2.00 m; relleno gamma = 18 kN/m3, phi = 30 grados, delta = 20.1
+# grados, horizontal y seco; h_eq = 0.6096 m (2.0 ft). Sus cargas SIN
+# FACTORAR son las de aquel dorado: EH.h = 14.4714 kN/m a z = 0.80 m (P_A =
+# 0.5·0.297260·18·2.40² = 15.40996, por cos 20.1° = 0.9390943), EH.v = 5.2958
+# a x = 2.00, LS.h = 7.8283 a z = 1.20, LS.v = 12.0701 a x = 1.45, EV.talon =
+# 39.600 a x = 1.45, DC.pantalla = 14.136 a x = 0.75, DC.zapata = 18.848 a x
+# = 1.00 (gamma_c = 23.56 kN/m3).
+#
+# MATERIALES Y DETALLE (los de archivo): f'c = 21 MPa, fy = 420 MPa (A615
+# Grado 60, gamma_3 = 0.67), barra minima principal 1/2" (12.7 mm, 129 mm2).
+# Recubrimiento SIN el analisis quimico ni la categoria del acero: la cota
+# mas exigente, max(E.060, 3.0 in x 1.2) = 76.2·1.2 = 91.44 mm.
+#
+# 1. EL EMPUJE EN REPOSO (lo que se escala y lo que no)
+#    K0 = 1 - sen 30° = 0.5
+#    P_0  = (K0/K_A)·P_A = 0.5·0.5·18·2.40² = 25.92 kN/m, HORIZONTAL, z = 0.80
+#    EH.v = 0 (sin friccion muro-relleno)
+#    LS_0 = K0·gamma·h_eq·h = 0.5·18·0.6096·2.40 = 13.16736 kN/m, z = 1.20
+#    lo demas (DC, EV, LS.v) igual
+#
+# 2. LA PANTALLA EN SU ARRANQUE, con el diagrama de cada empuje INTEGRADO
+#    POR ENCIMA DEL ARRANQUE (correcciones de T-7c, H1): de h = 2.40 m de
+#    plano quedan h - e_z = 2.00 m sobre la zapata.
+#    suelo, activo: 14.4714·(2.00/2.40)² = 14.4714·0.694444 = 10.04958, a
+#      2.00/3 = 0.666667 del arranque -> M 6.69972
+#    sobrecarga, activo: 7.8283·(2.00/2.40) = 6.52355, a 1.00 -> M 6.52355
+#    activo, Resistencia I (gamma_EH 1.50, gamma_LS 1.75):
+#      V_u = 1.50·10.04958 + 1.75·6.52355 = 15.07437 + 11.41621 = 26.49059
+#      M_u = 1.50·6.69972 + 1.75·6.52355 = 10.04958 + 11.41621 = 21.46580
+#    reposo (K0 = 0.5): 25.92·0.694444 = 18.0 a 0.666667 -> M 12.0;
+#      13.16736·(2.00/2.40) = 10.9728 a 1.00 -> M 10.9728
+#    reposo, Resistencia I (gamma_EH de la fila «En reposo» 1.35):
+#      V_u = 1.35·18.0 + 1.75·10.9728 = 24.3 + 19.2024 = 43.5024
+#      M_u = 1.35·12.0 + 1.75·10.9728 = 16.2 + 19.2024 = 35.4024
+#    rige (regimen no_cedente_k0): la mayor -> M_u = 35.4024, V_u = 43.5024
+#    ANTES de las correcciones (resultante entera de cada empuje con su
+#    brazo desde el arranque): activo 35.4066 / 19.6424, reposo 58.03488 /
+#    32.431104; el momento quedaba un 8.4 % por debajo (H1).
+#
+# 3. FLEXION DE LA PANTALLA (AASHTO 5.6.3.2, b = 1000 mm)
+#    d = 300 - 91.44 - 12.7/2 = 202.21 mm
+#    phi·0.85·f'c·b·d² = 0.9·0.85·21·1000·202.21² = 16065·40888.8841
+#                      = 656 879 923 N·mm
+#    R = 2·35.4024e6 / 656 879 923 = 0.1077896
+#    A_s = (0.85·21/420)·[1 - sqrt(1 - R)]·b·d
+#        = 0.0425·(1 - 0.9445689)·202 210 = 0.0425·0.0554311·202 210
+#        = 476.4 mm2/m
+#    minimo de flexion (5.6.3.3): M_cr = gamma_3·gamma_1·f_r·S
+#      f_r = 0.24·sqrt(21/6.894757) ksi = 0.6301889·sqrt(21) = 2.887888 MPa
+#      S = 1000·300²/6 = 15.0e6 mm3
+#      M_cr = 0.67·1.6·2.887888·15.0e6 = 46.4372e6 N·mm = 46.437 kN·m/m
+#      1.33·M_u = 1.33·35.4024 = 47.0852 kN·m/m: ahora M_cr es el menor
+#      R = 2·46.4372e6 / 656 879 923 = 0.1413873; sqrt(1 - R) = 0.9266136
+#      A_s = 0.0425·0.0733864·202 210 = 630.7 mm2/m
+#    retraccion y temperatura (5.10.6), b = 2000 mm (la altura de la
+#      pantalla, menor que la longitud de 3.00 m), h = 300 mm:
+#      A_s = 0.7469320·2000·300 / [2·(2000 + 300)·420] = 0.7469320·0.3105590
+#          = 0.23197 mm2/mm = 232.0 mm2/m, por debajo del piso de 0.11
+#          in2/ft = 232.83 mm2/m -> rige el piso: 232.8 mm2/m
+#    E.060 14.3.1 vertical: 0.0015·300·1000 / 2 capas = 225 mm2/m
+#    adoptado = max(476.4, 630.7, 232.8) = 630.7 mm2/m (minimo de flexion)
+#    s maximo = min(1.5·0.30, 0.4572, max(3·0.30, 0.4572), 3·0.30, 0.40)
+#             = 0.40 m (E.060 14.3.3)
+#    barra: 1/2" a 0.30 -> 430; a 0.25 -> 516; a 0.20 -> 645 >= 630.7
+#      -> Ø 1/2" @ 0.20 m, 645 mm2/m (la misma barra que antes de H1)
+#    a = 645·420 / (0.85·21·1000) = 270 900 / 17 850 = 15.1765 mm
+#    c = a / 0.85 = 17.8547 mm
+#    M_n = 645·420·(202.21 - 15.1765/2) = 270 900·194.62176
+#        = 52 723 035 N·mm = 52.7230 kN·m/m;  M_r = 0.9·M_n = 47.4507
+#    epsilon_t = 0.003·(202.21 - 17.8547)/17.8547 = 0.030976 (>= 0.005)
+#
+# 4. CORTANTE DE LA PANTALLA (AASHTO 5.7.3.3, simplificado: beta = 2.0;
+#    permitido porque h = 0.30 m < 16.0 in = 0.4064 m)
+#    letra de 5.7.2.8: max(202.21 - 7.588, 0.9·202.21, 0.72·300) =
+#      max(194.62, 181.99, 216.00) = 216.00 mm; ACOTADO al peralte efectivo
+#      (correcciones de T-7c, H8): d_v = min(216.00, 202.21) = 202.21 mm
+#    en unidades de la fuente: f'c = 21/6.894757 = 3.045793 ksi, sqrt =
+#      1.745220; b_v = 39.37008 in, d_v = 202.21/25.4 = 7.961024 in
+#      V_c = 0.0316·2.0·1.745220·39.37008·7.961024 = 0.1102979·313.4262
+#          = 34.5702 kip = 34.5702·4.4482216 = 153.776 kN/m
+#    tope 0.25·f'c·b·d_v = 0.25·21·202 210 = 1061.6 kN/m (no gobierna)
+#    V_r = 0.9·153.776 = 138.40 kN/m  >= V_u = 43.50; 0.5·phi·V_c = 69.20
+#      > 43.50: A2 CUMPLE sin indicador
+#    ANTES (d_v de la letra): V_c 164.264, V_r 147.84
+#
+# 5. CONTRASTE E.060 DE LA PANTALLA (sus cargas, sus factores; los empujes
+#    integrados sobre el arranque, como en el punto 2)
+#    (9-6) U = 1,4 CM + 1,7 CV + 1,7 CE, con el empuje en reposo:
+#      M_u = 1.7·12.0 + 1.7·10.9728 = 20.4 + 18.65376 = 39.05376 kN·m/m;
+#      V_u = 1.7·(18.0 + 10.9728) = 49.25376 kN/m
+#    flexion (phi = 0,90, bloque 0,85 f'c): R = 2·39.05376e6 / 656 879 923
+#      = 0.1189073; sqrt(1 - R) = 0.9386654
+#      A_s = 0.0425·0.0613346·202 210 = 527.1 mm2/m; / 645 = 0.8172
+#    cortante: phi·V_c = 0,85·0,17·sqrt(21)·1000·202.21
+#      = 0.1445·4.5825757·202 210 = 133.90 kN/m; 49.25376/133.90 = 0.3678
+#    aprovechamiento = max(0.8172, 0.3678) = 0.8172
+#
+# 5b. SERVICIO I DE LA PANTALLA (AASHTO 5.6.7; correcciones de T-7c, H3),
+#    todas las cargas con 1.00 y el mismo regimen: activo 6.69972 + 6.52355
+#    = 13.22327; reposo 12.0 + 10.9728 = 22.9728 -> M_s = 22.9728 kN·m/m
+#    traccion bruta = 22.9728 / (0.30²/6) = 1531.5 kPa = 1.5315 MPa
+#    0.8·f_r = 0.8·2.887888 = 2.3103 MPa > 1.5315: 5.6.7 NO aplica
+#
+# 6. LA ZAPATA (presion de contacto LINEAL, AASHTO 10.6.5)
+#    punta, Resistencia I (minimos) con el empuje en reposo (DC 0.90, EV
+#    1.00, EH 1.35, LS 1.75 sin su peso):
+#      N   = 0.90·(14.136 + 18.848) + 39.600 = 29.6856 + 39.6 = 69.2856
+#      M_e = 0.90·(14.136·0.75 + 18.848·1.00) + 39.600·1.45
+#          = 26.505 + 57.42 = 83.925
+#      M_v = 1.35·25.92·0.80 + 1.75·13.16736·1.20 = 27.9936 + 27.651456
+#          = 55.645056
+#      x   = (83.925 - 55.645056)/69.2856 = 0.408165 m; e = 0.591835 > B/6
+#      triangulo desde la punta: largo 3·0.408165 = 1.224496 m,
+#        sigma = 2·69.2856/1.224496 = 113.1659 kPa en la punta y
+#        113.1659·(1 - 0.60/1.224496) = 57.7149 kPa en la cara
+#      F = (113.1659 + 57.7149)/2·0.60 = 51.26424; su centro a
+#        0.60·(113.1659 + 2·57.7149)/(3·170.8808) = 0.267549 m de la punta,
+#        a 0.332451 m de la cara: M = 17.04285
+#      peso propio: 0.90·23.56·0.40 = 8.4816 kN/m2 -> V 5.08896, M 1.526688
+#      V_u = 51.26424 - 5.08896 = 46.1753;  M_u = 17.04285 - 1.52669 = 15.5162
+#    talon con el PESO ENTERO (AASHTO 11.6.1.2), Resistencia I (maximos),
+#    activo (brazos desde la cara de la pantalla, x = 0.90 m):
+#      V_u = 1.35·39.600 + 1.75·12.0701 + 1.50·5.2958 + 1.25·23.56·0.40·1.10
+#          = 53.46 + 21.122675 + 7.9437 + 12.958 = 95.4844
+#      M_u = 53.46·0.55 + 21.122675·0.55 + 7.9437·1.10 + 11.78·1.10²/2
+#          = 29.403 + 11.617471 + 8.73807 + 7.1269 = 56.8854
+#
+# 7. EVENTO EXTREMO I, caso 100 % P_AE + 50 % P_IR (k_h = k_h0 = 0.25):
+#    cargas del dorado sismico de T-7b (incremento 10.2740 a z = 1.44 =
+#    0.6·h), gamma_EQ = 0.5, phi = 1.0, integradas sobre el arranque (H1):
+#      suelo 10.04958 a 0.666667 -> 6.69972 (punto 2)
+#      incremento: el diagrama LINEAL con la resultante a 0.6·h tiene en la
+#        base 2·10.2740/2.40·(2 - 1.8) = 1.712333 kPa y en la corona
+#        2·10.2740/2.40·(1.8 - 1) = 6.849333 kPa; en el arranque (z = 0.40)
+#        1.712333 + 5.137·0.40/2.40 = 2.568500; sobre el arranque:
+#        F = (2.568500 + 6.849333)/2·2.00 = 9.417833, a
+#        2.00·(2.568500 + 2·6.849333)/[3·(2.568500 + 6.849333)] = 1.151515
+#        -> M 10.844778
+#      sobrecarga 0.5·6.52355 = 3.26177 a 1.00
+#      inercia de la PANTALLA sola: 0.5·0.25·14.136 = 1.767 a 1.00
+#      en su posicion: V = 10.04958 + 9.417833 + 3.26177 + 1.767 = 24.49619
+#                      M = 6.69972 + 10.844778 + 3.26177 + 1.767 = 22.57327
+#      con la resultante total a h/2 (C11.6.5.4: diagrama uniforme):
+#        (14.4714 + 10.2740)·2.00/2.40 = 20.62117 a 1.00
+#        V = M = 20.62117 + 3.26177 + 1.767 = 25.64994  <- rige
+#    caso 50 % P_AE + 100 % P_IR (rige el piso estatico: EH 1, incremento
+#    0, inercia 1): en su posicion V = 10.04958 + 3.26177 + 3.534 = 16.84536,
+#    M = 6.69972 + 3.26177 + 3.534 = 13.49550; a h/2: 14.4714·2.00/2.40 =
+#    12.05950 -> V = M = 12.05950 + 3.26177 + 3.534 = 18.85528
+#    ANTES (resultante entera, inercia del muro y de la zapata): 20.9007 en
+#    su posicion y 24.2235 a h/2
+CP_T7C_ARMADO = {
+    # Tolerancias de la ESCRITURA del dorado, no de la maquina.
+    "tolerancia": 2e-3,             # cifras escritas a tres o cuatro decimales
+    "tolerancia_As": 0.2,           # mm2/m: areas escritas a un decimal
+    "tolerancia_rel": 2e-4,
+    "tolerancia_cm": 1e-2,          # cifras escritas a dos decimales
+    "tolerancia_mm": 1e-3,          # cifras escritas a tres decimales
+    "tolerancia_fina": 1e-5,        # deformaciones y cocientes a cinco
+    "tolerancia_K": 1e-6,           # coeficientes y constantes a seis
+    # Lo que sale de una o dos operaciones sobre datos exactos (un espesor
+    # menos un recubrimiento, un area entre un espaciamiento): absoluta para
+    # longitudes y areas, relativa para lo que se reproduce con otra formula.
+    "tolerancia_exacta": 1e-9,
+    "tolerancia_calculo_rel": 1e-9,
+    "tolerancia_unidades_rel": 1e-5,    # ida y vuelta por unidades inglesas
+    "K0": 0.5,
+    "reposo": {"EH_h": 25.92, "EH_v": 0.0, "LS_h": 13.16736},
+    "pantalla": {
+        "activo": {"V_u": 26.49059, "M_u": 21.46580},
+        "reposo": {"V_u": 43.5024, "M_u": 35.4024},
+        "recubrimiento_mm": 91.44, "d_m": 0.20221,
+        "As_resistencia": 476.4, "M_cr": 46.437, "As_minimo_flexion": 630.7,
+        "As_temperatura": 232.8, "As_e060": 225.0, "s_max": 0.40,
+        "barra": ("1/2", 0.20, 645.0),
+        "a_mm": 15.1765, "M_n": 52.7230, "M_r": 47.4507,
+        "epsilon_t": 0.030976,
+        "d_v_m": 0.20221, "d_v_letra_m": 0.216, "V_c": 153.776,
+        "V_r": 138.40, "media_phi_Vc": 69.20,
+        "sismico": {"en_su_posicion": 22.57327, "a_media_altura": 25.64994,
+                    "V_en_su_posicion": 24.49619,
+                    "incremento_sobre_el_arranque": 9.417833,
+                    "brazo_del_incremento": 1.151515,
+                    "caso_2": {"en_su_posicion": 13.49550,
+                               "a_media_altura": 18.85528}},
+        "servicio": {"activo": 13.22327, "reposo": 22.9728,
+                     "f_t_MPa": 1.5315, "umbral_MPa": 2.3103},
+    },
+    "e060_pantalla": {"M_u": 39.05376, "V_u": 49.25376, "As": 527.1,
+                      "phi_Vc": 133.90, "aprovechamiento": 0.8172,
+                      "tolerancia_uso": 5e-4, "tolerancia_V": 0.02},
+    "punta": {"N": 69.2856, "e": 0.591835, "sigma": 113.1659,
+              "V_u": 46.1753, "M_u": 15.5162},
+    "talon": {"V_u": 95.4844, "M_u": 56.8854},
+}
+
+# LA ECUACION (11-32) DE E.060 11.10.10.3, a mano, con sus dos topes:
+#   rho_v = 0,0025 + 0,5·(2,5 - hm/lm)·(rho_h - 0,0025), >= 0,0025 y <= rho_h
+#   hm/lm = 2.4/3.0 = 0.8, rho_h = 0.0040: 0.0025 + 0.5·1.7·0.0015 = 0.003775
+#   hm/lm = 1.0/5.0 = 0.2, rho_h = 0.0040: 0.0025 + 0.5·2.3·0.0015 = 0.004225
+#       -> no necesita superar rho_h: 0.0040
+#   hm/lm = 6.0/2.0 = 3.0, rho_h = 0.0040: 0.0025 - 0.5·0.5·0.0015 = 0.002125
+#       -> piso: 0.0025
+#   con rho_h = 0.0025 (el piso horizontal) da 0.0025 para cualquier hm/lm
+CP_T7C_EC_11_32 = (
+    # (hm, lm, rho_h, rho_v)
+    (2.4, 3.0, 0.0040, 0.003775),
+    (1.0, 5.0, 0.0040, 0.0040),
+    (6.0, 2.0, 0.0040, 0.0025),
+    (2.4, 3.0, 0.0025, 0.0025),
+    (6.0, 2.0, 0.0025, 0.0025),
+)
+
+# EL ACERO DE RETRACCION Y TEMPERATURA DE AASHTO 5.10.6, contra los tres
+# ejemplos que su comentario C5.10.6 PUBLICA (pag. impresa 5-174, PDF 533),
+# con fy = 60 ksi = 413.685 MPa: «a 30.0 ft high × 1.0 ft thick wall section
+# requires 0.126 in.2/ft ...; a 4.0 ft × 4.0 ft component requires 0.260
+# in.2/ft ...; and a 5.0 ft × 20.0 ft footing requires 0.520 in.2/ft».
+# 1 in2/ft = 645.16 mm2 / 0.3048 m = 2116.667 mm2/m.
+CP_T7C_TEMPERATURA_PUBLICADA = {
+    "fy_mpa": 413.685438,
+    "tolerancia_in2_ft": 5e-4,      # el ejemplo se publica a tres decimales
+    "casos": (   # (ancho m, espesor m, in2/ft publicado)
+        (9.144, 0.3048, 0.126),
+        (1.2192, 1.2192, 0.260),
+        (6.096, 1.524, 0.520),
+    ),
+}
+
+# EL CABEZAL DE GRAVEDAD EN CICLOPEO, a mano. Cuerpo H = 1.30 m, de 0.30 m
+# en la corona a 0.50 m en el arranque (trasdos vertical), sobre una zapata
+# de 0.30 m; relleno horizontal y seco hasta la corona (h = 1.60 m: sobre el
+# 1.524 m de la primera fila de la tabla de h_eq), gamma = 18, phi = 30
+# grados (K0 = 0.5; K_A = 0.297260 con delta = 20.1 grados), h_eq = 0.6096
+# m, gamma_c = 23.56 kN/m3.
+#   ARRANQUE DEL CUERPO (z = 0.30 m; 1.30 m de muro y de diagrama encima)
+#     t = 0.50; W = 23.56·(0.50 + 0.30)/2·1.30 = 12.2512 kN/m
+#     x_W = (0.50² + 0.50·0.30 + 0.30²)/(3·0.80) = 0.49/2.40 = 0.2041667 m
+#     reposo: suelo 0.5·18·1.30²/2 = 7.605 a 0.433333 -> 3.2955; sobrecarga
+#       0.5·18·0.6096·1.30 = 7.13232 a 0.65 -> 4.636008; M_H = 7.931508
+#       e = [7.931508 - 12.2512·(0.25 - 0.2041667)]/12.2512
+#         = (7.931508 - 0.561513)/12.2512 = 0.601573 m   (t/6 = 0.08333)
+#     activo: suelo 0.297260·18·1.69/2·cos 20.1° = 4.521325·0.9390943 =
+#       4.245950 a 0.433333 -> 1.839912; sobrecarga 0.297260·18·0.6096·1.30
+#       = 4.240307 a 0.65 -> 2.756200; M_H = 4.596112
+#       e = (4.596112 - 0.561513)/12.2512 = 0.329323 m
+#     rige el reposo: e = 0.601573 > t/6 -> hay traccion
+#   MEDIA ALTURA (z = 0.95 m; 0.65 m encima): t = 0.40; W = 23.56·0.35·0.65
+#     = 5.3599; x_W = (0.16 + 0.12 + 0.09)/(3·0.70) = 0.1761905
+#     reposo: 0.5·18·0.65²/2 = 1.90125 a 0.216667 -> 0.411938;
+#       0.5·18·0.6096·0.65 = 3.56616 a 0.325 -> 1.159002; M_H = 1.570940
+#       e = [1.570940 - 5.3599·(0.20 - 0.1761905)]/5.3599 = 0.269282 m
+#   CONTRASTE E.060 (22.5.3 y 22.5.4; phi = 0,5; f'c = 10 MPa; h - 50 mm;
+#     cargas 0,9 CM + 1,7 CE), arranque en reposo: t = 0.45 m
+#     P_u = 0.9·12.2512 = 11.02608; M_u = 1.7·3.2955 + 1.7·4.636008
+#       - 11.02608·0.0458333 = 5.60235 + 7.881214 - 0.505362 = 12.978202
+#     traccion = 12.978202/(0.45²/6) - 11.02608/0.45 = 384.5393 - 24.5024
+#       = 360.0369 kPa; admisible 0.5·0.42·sqrt(10)·1000 = 664.078 kPa
+#       -> 0.54216
+#     cortante: 1.7·(7.605 + 7.13232) = 25.053444 kN/m; resistencia
+#       0.5·0.11·sqrt(10)·1000·0.45 = 78.2664 kN/m -> 0.32011
+#     media altura (t = 0.35): 0.16775 y 0.15269: rige el arranque, 0.54216
+#   22.6.3 (correcciones de T-7c, H5): el momento no baja de P_u·0,10·t =
+#     11.02608·0.10·0.50 = 0.5513 kN·m/m, muy por debajo de 12.978: no rige.
+#   C2 EN LA JUNTA DE CONSTRUCCION (E.060 22.4.7; correcciones de T-7c, H5):
+#     ademas de la de servicio, la excentricidad con las cargas amplificadas
+#     de E.060 respecto del centro de la seccion, e_u = M_u / P_u:
+#     reposo  e_u = 12.978202 / 11.02608 = 1.177046 m
+#     activo  M_u = 1.7·1.839912 + 1.7·2.756200 - 0.505362 = 7.308028;
+#             e_u = 7.308028 / 11.02608 = 0.662795 m
+#     C2 = max(0.601573, 1.177046) = 1.177046 m frente a t/6 = 0.08333
+CP_T7C_CICLOPEO = {
+    "geometria": {"H": 1.30, "B": 1.00, "D_f": 0.80, "espesor_corona": 0.30,
+                  "espesor_base_muro": 0.50, "espesor_zapata": 0.30,
+                  "ancho_talon": 0.20, "ancho_punta": 0.30},
+    "h": 1.60, "tolerancia": 2e-4,
+    "arranque": {"z": 0.30, "t": 0.50, "W": 12.2512, "x_W": 0.2041667,
+                 "M_H_reposo": 7.931508, "e_reposo": 0.601573,
+                 "M_H_activo": 4.596112, "e_activo": 0.329323},
+    "media": {"z": 0.95, "t": 0.40, "W": 5.3599, "x_W": 0.1761905,
+              "M_H_reposo": 1.570940, "e_reposo": 0.269282},
+    "e060": {"aprovechamiento": 0.54216, "tolerancia": 5e-4},
+    "junta": {"e_u_reposo": 1.177046, "e_u_activo": 0.662795},
+}
+
+# LA BASE del muro de tanteo de T-7b con cargas de SERVICIO (factor 1), para
+# la fila C1 (e <= B/6 = 0.33333 m), a mano:
+#   activo, sin el peso de la sobrecarga: N = 14.136 + 18.848 + 39.6 + 5.2958
+#     = 77.8798; M_e = 10.602 + 18.848 + 57.42 + 10.5916 = 97.4616; M_v =
+#     14.4714·0.80 + 7.8283·1.20 = 20.97108; e = 1 - 76.49052/77.8798 = 0.01784
+#   reposo, sin el peso de la sobrecarga: N = 72.584; M_e = 86.87; M_v =
+#     25.92·0.80 + 13.16736·1.20 = 36.536832; e = 1 - 50.333168/72.584
+#     = 0.306553   <- la mayor
+#   reposo, con el peso de la sobrecarga: N = 84.6541; M_e = 104.371645;
+#     e = 1 - 67.834813/84.6541 = 0.198682
+CP_T7C_BASE_SERVICIO = {"e": 0.306553, "limite": 2.0 / 6.0,
+                        "e_activo": 0.044939, "tolerancia": 2e-5}

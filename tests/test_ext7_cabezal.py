@@ -91,18 +91,31 @@ def geometria():
 #        que plano actua el cortante
 # ===========================================================================
 
-def test_M05_existen_los_dos_criterios_nuevos_vacios_A_y_de_expediente():
-    for clave in (CLAVE_REGIMEN, CLAVE_VERTICAL):
+def test_M05_existen_los_dos_criterios_nuevos_y_son_de_expediente():
+    """
+    REESCRITO DECLARANDOLO (T-7c). Se llamaba «...vacios, [A] y de
+    expediente» y exigia `valor is None`: en EXT-7 no habia ni longitud del
+    cabezal ni cortante con que contestar. T-7c los cierra (punto 2 de su
+    prompt): el regimen vale «perpendicular al plano» y sigue [A] -- el
+    cortante que el ensamble entrega es el del empuje --; el piso vertical
+    vale el 0,0025 de la ec. (11-32) y pasa a [N→], porque E.060 se aplica
+    al cabezal vial por analogia. La ecuacion entera la evalua
+    `M9.cuantia_vertical_ec_11_32`.
+    """
+    for clave, etiqueta in ((CLAVE_REGIMEN, "A"), (CLAVE_VERTICAL, "N->")):
         c = ca.criterio(clave)
-        assert c.valor is None, f"{clave} no puede nacer con valor"
-        assert c.etiqueta == "A"
+        assert c.valor is not None, f"{clave} sigue vacio"
+        assert c.etiqueta == etiqueta
         assert c.nivel == ca.NIVEL_EXPEDIENTE
         assert c.resolucion is not None
-    # El vertical dice de que depende la ec. (11-32): hm, lm y la rho_h que
-    # el 11.10.10.1 requiere. Es lo que `GeometriaCabezal` no tiene.
-    texto = ca.criterio(CLAVE_VERTICAL).resolucion.que_lo_fija.lower()
+    assert ca.criterio(CLAVE_REGIMEN).valor == CN.REGIMEN_CORTANTE_PERPENDICULAR
+    assert ca.criterio(CLAVE_VERTICAL).valor == pytest.approx(0.0025,
+                                                              rel=REL_CP9)
+    # El vertical sigue diciendo de que depende la ec. (11-32): hm, lm y la
+    # rho_h que el 11.10.10.1 requiere.
+    texto = ca.criterio(CLAVE_VERTICAL).justificacion.lower()
     for termino in ("hm", "lm", "11.10.10.1"):
-        assert termino in texto, f"la resolucion no nombra {termino}"
+        assert termino in texto, f"la justificacion no nombra {termino}"
     # El regimen es una categoria cerrada, con las dos lecturas de la norma.
     assert ca.criterio(CLAVE_REGIMEN).forma == ca.FORMA_CATEGORIA
     assert set(ca.criterio(CLAVE_REGIMEN).sensibilidad) == set(
@@ -127,6 +140,12 @@ def test_M05_en_vertical_con_cortante_en_el_plano_se_detiene_en_el_11_10_10_3():
     """
     EL HALLAZGO. Antes devolvia 0.0015 sin aviso; ahora lee el criterio del
     Art. 11.10.10.3 y se detiene mientras siga vacio. No hay rama al 14.3.1.
+
+    REESCRITO DECLARANDOLO (T-7c): la ultima linea afirmaba que el criterio
+    estaba vacio EN EL ARCHIVO. Ya tiene valor (el piso 0,0025); la
+    propiedad -- sin el, la rama vertical se detiene y no cae al 0,0015 --
+    se sigue probando con `sin_valor`, y con el valor de archivo el minimo
+    vertical en el plano es 0,0025, no 0,0015.
     """
     with con_valor(CLAVE_REGIMEN, CN.REGIMEN_CORTANTE_EN_EL_PLANO,
                    motivo=MOTIVO_PRUEBA), sin_valor(CLAVE_VERTICAL):
@@ -134,7 +153,11 @@ def test_M05_en_vertical_con_cortante_en_el_plano_se_detiene_en_el_11_10_10_3():
             M9.cuantia_de_diseno(cuantia_calculada=0.0031, direccion="vertical",
                                  cortante_alto=True)
     assert excinfo.value.clave == CLAVE_VERTICAL
-    assert ca.criterio(CLAVE_VERTICAL).valor is None
+    with con_valor(CLAVE_REGIMEN, CN.REGIMEN_CORTANTE_EN_EL_PLANO,
+                   motivo=MOTIVO_PRUEBA):
+        r = M9.cuantia_de_diseno(cuantia_calculada=0.0010,
+                                 direccion="vertical", cortante_alto=True)
+    assert r.cuantia_adoptada == pytest.approx(0.0025, rel=REL_CP9)
 
 
 def test_M05_en_horizontal_con_cortante_en_el_plano_sigue_leyendo_el_11_10_10_2():
@@ -280,25 +303,35 @@ def test_M05_el_regimen_fuera_de_las_dos_lecturas_se_rechaza_en_la_puerta():
         ca.quitar_valor_dinamico(CLAVE_REGIMEN)
 
 
-def test_M05_la_ec_11_32_no_se_implementa_y_queda_dicho_donde():
+def test_M05_la_ec_11_32_esta_implementada_en_una_sola_funcion():
     """
-    Faltan lm y Vu. La decision no es un olvido: esta en
-    docs/decisiones_diferidas.md anclada a `cuantia_de_diseno`, y el codigo
-    no contiene la formula.
+    REESCRITO DECLARANDOLO (T-7c). Se llamaba «...no se implementa y queda
+    dicho donde» y afirmaba por AST que M9 NO operaba con `hm`, `lm` ni
+    `rho_h`: en EXT-7 faltaban la longitud del cabezal y el cortante. T-7a
+    le dio longitud a la geometria y T-7c implementa la ecuacion
+    (`M9.cuantia_vertical_ec_11_32`, ficha EXT-7-01 cerrada). Lo que se fija
+    ahora es que la formula vive en UNA funcion, que `cuantia_de_diseno`
+    sigue sin evaluarla por su cuenta, y que el registro lo dice.
     """
     arbol = ast.parse((RAIZ / "src" / "modulos" / "M9_cabezal.py").read_text(
         encoding="utf-8"))
-    nombres = {n.id for n in ast.walk(arbol) if isinstance(n, ast.Name)}
-    argumentos = {a.arg for n in ast.walk(arbol)
-                  if isinstance(n, ast.FunctionDef) for a in n.args.kwonlyargs}
-    for simbolo in ("hm", "lm", "rho_h", "rho_h_requerida"):
-        assert simbolo not in nombres | argumentos, (
-            f"M9 opera con `{simbolo}`: la ec. (11-32) no se implementa en "
-            "EXT-7 (faltan lm y Vu)")
+    funciones = {n.name: n for n in ast.walk(arbol)
+                 if isinstance(n, ast.FunctionDef)}
+    con_la_ecuacion = [nombre for nombre, f in funciones.items()
+                       if any(isinstance(n, ast.Name)
+                              and n.id == "EC_11_32_ESBELTEZ"
+                              for n in ast.walk(f))]
+    assert con_la_ecuacion == ["cuantia_vertical_ec_11_32"]
+    en_diseno = {n.id for n in ast.walk(funciones["cuantia_de_diseno"])
+                 if isinstance(n, ast.Name)}
+    assert not en_diseno & {"hm", "lm", "rho_h"}
+    assert M9.cuantia_vertical_ec_11_32(hm=2.4, lm=3.0, rho_h=0.0040) == \
+        pytest.approx(0.003775, rel=REL_CP9)
     registro = (RAIZ / "docs" / "decisiones_diferidas.md").read_text(
         encoding="utf-8")
     assert "11-32" in registro
     assert "`src/modulos/M9_cabezal.py::cuantia_de_diseno`" in registro
+    assert "cuantia_vertical_ec_11_32" in registro
 
 
 def test_M05_las_citas_del_11_10_que_EXT6_dejo_tienen_ahora_consumidor(reg):
@@ -692,10 +725,17 @@ def test_EXT7_nada_se_cablea_a_la_cli():
     propias filas por marco (`ensamble_estabilidad`), que SI estan cableadas.
     """
     censo = " / ".join(M9.FUNCIONES_SIN_CONSUMIDOR)
+    # REESCRITO EN T-7c: la entrada «armado del num. 9.4 (ocho funciones)»
+    # se llama ahora «piezas sueltas del num. 9.4 (seis funciones)»: el
+    # armado tiene llamador (`armar_elemento`, que el servicio cablea) y
+    # consume dos de las ocho; las seis restantes -- entre ellas las dos que
+    # este test vigila, `cuantia_de_diseno` y `verificar_cuantia` -- siguen
+    # SIN llamador de produccion.
     for nombre in ("empujes_trasdos", "verificar_estabilidad",
-                   "armado del num. 9.4 (ocho funciones)"):
+                   "piezas sueltas del num. 9.4 (seis funciones)"):
         assert nombre in censo
     assert "ensamble_estabilidad" not in censo
+    assert "armar_elemento" not in censo
     for archivo in ("cli.py", "src/servicio.py", "src/modulos/M11_reporte.py"):
         arbol = ast.parse((RAIZ / archivo).read_text(encoding="utf-8"))
         llamadas = {n.func.attr for n in ast.walk(arbol)

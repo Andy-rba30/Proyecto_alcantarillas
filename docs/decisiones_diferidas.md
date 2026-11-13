@@ -1959,6 +1959,16 @@ escritas porque se apartan de lo que un lector esperaría.
 
 ## EXT-7-01 · La ec. (11-32) del Art. 11.10.10.3 no se implementa: se declara evaluada fuera
 
+- **Cerrada en T-7c (2026-11-13):** la ecuación **se evalúa**, completa y con sus dos
+  topes, en `M9.cuantia_vertical_ec_11_32` (piso 0,0025 y techo en la ρh requerida), con
+  la altura total y la longitud del cabezal del punto, que desde T-7a existen. Los tres
+  criterios que el cierre de C07 dejó vacíos tienen valor: el piso horizontal 0,0025 de
+  11.10.10.2 y el piso vertical 0,0025 de la ec. (11-32), **[N→] por analogía** (E.060 es
+  norma de edificaciones), y el régimen del cortante, [A] = «perpendicular al plano»,
+  porque el único cortante que el ensamble de T-7b entrega para la pantalla es el del
+  empuje de tierras. Lo que sigue sin existir es una carga **en el plano** del muro: con
+  «en el plano» declarado los pisos se aplican con aviso, la ρh requerida por 11.10.10.1
+  se toma igual a su piso y el umbral de 11.10.7 no se evalúa.
 - **Qué se difirió:** evaluar en M9 la cuantía vertical mínima bajo el
   régimen de cortante en el plano, ρv = 0.0025 + 0.5·(2.5 − hm/ℓm)·(ρh −
   0.0025) ≥ 0.0025, con tope en la ρh requerida por 11.10.10.1 (E.060
@@ -5880,6 +5890,12 @@ marca del régimen para T-7c.
   `K0_sobre_K_A`: el factor por el que crecerían los empujes de una pantalla que **no
   cede** (C11.6.5.4: «… designed for K0 conditions for the strength limit state»). Ver
   T7B-14.
+- **Lo que T-7c hizo con ella (2026-11-13).** (1) La de la pantalla **se corrigió** en el
+  cierre (H1): no era del lado seguro para el momento —el tramo bajo el arranque restaba—
+  y cada diagrama se integra ahora sobre el arranque, con la inercia de la pantalla sola
+  (ficha T7C-12); (2) la presión uniforme **no se usa para armar**: el armado calcula la
+  lineal de 10.6.5 (ficha T7C-07); (3) los aleros se arman en su arranque (ficha T7C-04).
+  `solicitaciones_por_elemento` ganó el parámetro `marco`.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::solicitaciones_por_elemento`
 
 ## T7B-09 · Con la regla de predimensionamiento de T-7a el cabezal de A-01 no pasa el deslizamiento del marco que rige: medido, no corregido
@@ -6037,4 +6053,387 @@ marca del régimen para T-7c.
 - **Qué haría falta:** que T-7c decida el régimen de la pantalla para su armado; y, si
   el cabezal se declara no cedente, las presiones de muro rígido (Wood, 1973) o un
   análisis numérico aprobado por el Propietario.
+- **Decidido en T-7c (2026-11-13).** El régimen del **armado** es un criterio aparte,
+  `regimen_resistencia_elementos_cabezal` [A] = `no_cedente_k0` (decisión del dueño), y
+  este criterio no se tocó: la estabilidad externa sigue con el muro que cede. Ver la
+  ficha T7C-02.
 - **Dónde vive:** `src/criterios_adoptados.py::regimen_cabezal`
+
+# Parte LI — Lo que T-7c de la cadena T dejó escrito: el armado del cabezal y su alternativa ciclópea
+
+T-7c (2026-11-13, FASE A y cierre, integrado detrás de T-7b) arma cada cabezal —pantalla, punta y talón de la zapata, y
+aleros en su arranque— o verifica su alternativa en concreto ciclópeo (`INF-4.6`, la
+ficha `EXT-7-01` y el `NotImplementedError` de `M9.diseno_flexion_corte`). No itera
+dimensiones: arma la geometría que T-7a propone y T-7b verifica, pase o no su
+estabilidad. Las fichas de abajo son lo que el armado hace por elección del proyecto, lo
+que no hace, y lo que el encargo pedía y la fuente no sostiene. El **cierre** (el mismo
+día, tras la auditoría adversarial: AJUSTADO, 2 ALTA, 5 MEDIA, 5 BAJA) corrigió las
+fichas en su sitio y añadió T7C-11 a T7C-13.
+
+## T7C-01 · Rige AASHTO LRFD Sección 5 y E.060 contrasta: dos marcos que no se cruzan, y en los mínimos, el más exigente
+
+- **Cerrado (T-7c):** la resistencia de cada sección se verifica con AASHTO LRFD 9.ª ed.
+  Sección 5 —flexión de 5.6.3.2 con el bloque rectangular de 5.6.2.2, cortante de 5.7.3.3,
+  factores de 5.5.4.2 (0.90 y 0.90) y 1.0 en el Evento Extremo I por 1.3.2.1— sobre las
+  solicitaciones factoradas de Resistencia I y Evento Extremo I (filas A1 y A2, que
+  deciden). E.060 se calcula **en paralelo**, con sus combinaciones (9.2.5: 1,4 CM + 1,7
+  CV + 1,7 CE y 0,9 CM + 1,7 CE) y sus factores (0,90 y 0,85), como fila A5, que **informa**
+  ([N→], por analogía). Las constantes de AASHTO se convierten a SI **en la constante**
+  (`VC_COEFICIENTE_AASHTO_SI`, `MODULO_ROTURA_AASHTO_SI`,
+  `TEMPERATURA_COEFICIENTE_AASHTO_SI`), no en la llamada, y el procedimiento general de
+  cortante transcrito en ksi y pulgadas queda bajo una clave rotulada «no ejecutable».
+- **Abierto:** (1) en los **mínimos** —acero mínimo de cada cara y espaciamiento máximo—
+  se aplica el más exigente de AASHTO (5.6.3.3, 5.10.6, 5.10.3.2) y de E.060 (14.3.1,
+  14.3.3, 9.7.2, 10.5.4): es `regla_minimos_constructivos_cabezal` [A], con «solo_aashto»
+  en la ventana, y ninguna fuente dice cuál prevalece sobre un cabezal vial. (2) El
+  reparto de la cuantía de muros de E.060 entre las dos capas (la mitad por cara) es del
+  proyecto: 14.8.3 deja disponer más en la cara expuesta. (3) E.060 no escribe una
+  combinación con sismo **y** empuje de suelos: el contraste es solo estático. (4) El
+  ensamble de T-7b no aplica el modificador de carga η de 1.3.2.1 (el conducto sí, η_I =
+  1.05, T-5): el armado hereda sus solicitaciones tal como salen. El cierre lo midió y
+  **no** lo aplicó: ficha T7C-11.
+- **Qué haría falta:** una especificación del Propietario que fije el juego de mínimos y
+  el modificador de carga del cabezal.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::diseno_flexion_corte`
+
+## T7C-02 · Los elementos se arman con el empuje en reposo, y lo que esa elección no resuelve
+
+- **Cerrado (T-7c, decisión del dueño del 2026-11-13):**
+  `regimen_resistencia_elementos_cabezal` [A] = `no_cedente_k0`, con `cedente` en la
+  ventana. La estabilidad externa de T-7b **no cambia** (`regimen_cabezal` sigue en
+  «cedente»). Lo que se escala y lo que no (`M9.cargas_en_reposo`): solo el empuje del
+  suelo —de P_A a (K0/K_A)·P_A, horizontal, sin su componente vertical— y el de la
+  sobrecarga viva; el peso del concreto, el del relleno, el de la sobrecarga, el agua y la
+  subpresión no. El factor de carga es el de la fila «En reposo» (1.35), no el de la
+  activa (1.50). En cada sección rige la **mayor** de la solicitación en reposo y la del
+  muro que cede, y las dos se imprimen. En el muro de tanteo, el momento de la pantalla
+  pasa de 21.47 a 35.40 kN·m/m (diagrama integrado sobre el arranque, ficha T7C-12).
+- **Abierto:** (1) el K0 de AASHTO 3.11.5.2-1 es de **terreno horizontal** y detrás del
+  cabezal el relleno sube: el reposo calculado es una cota inferior del real, la fuente no
+  da la fórmula y por eso se toma la envolvente con el activo de la cuña, que sí lleva la
+  pendiente. (2) Bajo **sismo** la fuente no da un coeficiente de reposo: manda k_h =
+  1.0·k_h0 (11.6.5.4) y pide considerar la resultante a h/2 (C11.6.5.4, «should be
+  considered»). El armado usa el método de empuje sísmico del ensamble y, en la pantalla
+  y los aleros, la mayor de su posición y h/2 (un diagrama uniforme, que mueve también el
+  cortante). **Cierre (H2):** el armado del muro que no cede va con k_h = 1.0·k_h0
+  (11.6.5.4, «shall»), por la puerta `k_h` de `M9.cargas_del_cabezal`; la estabilidad
+  conserva el reducido. **Cierre (H10):** K0·(1 + sen i) se imprime como contraste no
+  adoptado. (3) C3.11.5.2 dice que un muro en voladizo
+  típico de más de 5.0 ft desarrolla la condición activa: es lo que sostiene la
+  alternativa, y lo que juega en contra del valor de archivo (está en la
+  `Interpretacion` de la cita `AASHTO_LRFD_9.C3.11.1#REPOSO`).
+- **Qué haría falta:** un análisis de la interacción del cabezal con el relleno, el barril
+  y los aleros que diga cuánto se desplaza la pantalla; y, bajo sismo, las presiones de
+  muro rígido (Wood, 1973) o un análisis numérico aprobado por el Propietario.
+- **Dónde vive:** `src/criterios_adoptados.py::regimen_resistencia_elementos_cabezal`
+
+## T7C-03 · El cortante se verifica con el procedimiento simplificado donde la fuente lo permite; fuera de él no se evalúa, y la pantalla se trata como losa
+
+- **Qué se difirió:** el procedimiento **general** de cortante de AASHTO 5.7.3.4.2 (β y θ
+  en función de la deformación del acero) y el refuerzo transversal. El armado usa β =
+  2.0 y θ = 45° (5.7.3.4.1), que la fuente **permite** solo en zapatas con el vuelo menor
+  que 3·d_v y en secciones de menos de 16.0 in (0.4064 m) de peralte;
+  `M9.simplificado_permitido` lo comprueba sección por sección y, fuera de esas
+  condiciones, `diseno_flexion_corte` se detiene con `MetodoNoEvaluableError` (rótulo
+  `MOTIVO_METODO_NO_EVALUABLE_ARMADO`), que el servicio registra como bloqueo del
+  elemento.
+- **Por qué:** el encargo de T-7c excluye el MCFT general, y el comentario de la fuente
+  dice que las expresiones tradicionales son «seriously unconservative» en elementos
+  grandes sin estribos: aplicar β = 2.0 a una pantalla de 0.45 m sería justo eso. Con la
+  regla de T-7a (pantalla de 0.30 m, zapata de 0.37 m) todo cabezal propuesto cae dentro
+  del permiso. Y una lectura que se declara: AASHTO 5.7.2.3 exige refuerzo transversal
+  donde V_u > 0.5·φ·V_c «except for slabs, footings, and culverts»; la pantalla **no se
+  nombra**. El proyecto la trata como una losa en voladizo y exige V_u ≤ φ·V_c; cuando V_u
+  pasa de la mitad lo avisa (`Interpretacion` de la cita
+  `AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL`). El cortante se toma en la cara del apoyo, sin
+  reducirlo a d_v de ella. **Cierre (pregunta 4 y H8):** cuando V_u pasa de 0.5·φ·V_c en
+  la pantalla o el alero, A2 sale como **INDICADOR** y no como CUMPLE (en la salida de
+  A-01 ocurre); y d_v se acota al peralte efectivo (`Interpretacion` de la cita
+  `AASHTO_LRFD_9.5.7.2.8#DV`: con el recubrimiento de cota, 0.72·h supera a d_e), con el
+  de la letra impreso al lado y avisado; la aplicabilidad del simplificado se lee con el
+  de la letra.
+- **Qué haría falta:** implementar 5.7.3.4.2 (no es iterativo en la 9.ª ed., pero pide el
+  tamaño máximo del agregado y el parámetro de espaciamiento de fisuras) o dimensionar
+  estribos; y la decisión del proyectista sobre si la pantalla es o no una «losa» a
+  efectos de 5.7.2.3.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::simplificado_permitido`
+
+## T7C-04 · Los aleros se arman en su arranque; su zapata y sus secciones intermedias no
+
+- **Qué se difirió:** el ensamble por secciones del alero. `M9.armar_elemento` arma el
+  alero en su **arranque** —el encuentro con el cabezal, que es su sección más alta y la
+  crítica de un muro en voladizo de altura variable— con el espesor del alero y la
+  solicitación de la pantalla a esa altura. No arma la zapata del alero ni reduce el
+  armado hacia la punta, donde la altura baja hasta 0.40 m.
+- **Por qué:** la interfaz de T-7b entrega para los aleros la solicitación de la pantalla
+  en su arranque (ficha T7B-08); la zapata del alero tiene su propio ancho
+  (`Aleros.ancho_zapata`) y no tiene ensamble de estabilidad. Armar todo el alero con el
+  acero del arranque es el lado seguro; lo que falta es la zapata.
+- **Qué haría falta:** el ensamble de estabilidad del alero por secciones (altura
+  variable con el talud) y sus solicitaciones de zapata.
+- **Y lo que el armado tampoco cubre (cierre, H6):** el **vano del conducto** —la
+  pantalla de 1.70 m de A-01 es hueco en el ancho del barril, y la sección llena de la
+  hipótesis de T-7b son los machones a cada lado—: el refuerzo de borde alrededor de la
+  abertura no se dimensiona (E.060 22.6.6.5 pide dos barras de 5/8" en las aberturas de
+  los muros de concreto simple, cita `E060.22.6.6.5#ABERTURAS`; para el armado, por
+  analogía); ni la **losa de entrega** ni el **dentellón**, que `GeometriaCabezal.losa`
+  trae. El aviso de cada cabezal lo nombra; no se dimensiona.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::armar_elemento`
+
+## T7C-05 · Sin el análisis químico ni la categoría del acero, el recubrimiento con que se arma es la cota más exigente, no los 70 mm del encargo
+
+- **Qué se difirió:** el recubrimiento del proyecto. El prompt de T-7c pedía que
+  `categoria_refuerzo_aashto` y `exposicion_quimica_ems` pasaran a entradas [S] «con valor
+  por defecto NO» y que, sin dato, se tomaran los 70 mm de E.060 7.7.1. **No se aplicó
+  así**: tomar 70 mm es suponer la categoría del acero y la agresividad del sitio, que es
+  rellenar un dato. Los dos criterios siguen **sin valor**; el armado calcula el peralte
+  efectivo con la **cota más exigente** que la regla del mayor puede dar para esa cara
+  —max(E.060, la fila de AASHTO en su columna de más recubrimiento × el factor por a/c
+  más alto): 3.0 in × 1.2 = 91.44 mm— y lo **avisa** por `avisos()`
+  (`M9.recubrimiento_para_armar`). Con los dos datos declarados es el de
+  `recubrimiento_de_diseno`.
+- **Por qué:** más recubrimiento es menos brazo y más acero: la cota es el lado seguro de
+  la resistencia, y no impide armar. `categoria_refuerzo_aashto` sigue siendo [A] y no
+  [S]: qué acero se especifica es una decisión de proyecto, no una medición del sitio;
+  `exposicion_quimica_ems` ya era [S].
+- **Dónde NO es el lado seguro (cierre, pregunta 2).** La cota es la más exigente de la
+  regla ANTES del aumento por ambiente corrosivo de E.060 7.7.5.1, que la regla no
+  cuantifica: sin ambiente corrosivo es el lado exigente de la flexión, de la
+  fisuración de 5.6.7 (d_c) y de la altura de la zapata sobre su refuerzo (E.060 15.7);
+  si el EMS declara un ambiente corrosivo, el recubrimiento real puede pasarla y esas
+  tres hay que rehacerlas. En el cortante el piso 0.72·h de 5.7.2.8 no depende del
+  recubrimiento: por eso d_v se acota a d_e (H8). La auditoría lo había dicho al revés
+  para 5.6.7 («el lado inseguro de la fisuración»): con más d_c la ecuación da menos
+  espaciamiento, de modo que la cota es la comprobación más exigente; el aviso dice lo
+  que la aritmética sostiene.
+- **Qué haría falta:** el análisis químico del EMS y la especificación del acero.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::recubrimiento_para_armar`
+
+## T7C-06 · El desarrollo y los empalmes de las barras no se evalúan; la fisuración de 5.6.7 se evalúa con la clase de exposición que declare el Propietario
+
+- **Cerrado en el cierre de T-7c (H3 y pregunta 5):** AASHTO 5.6.7 «shall apply» en todo
+  componente cuya tracción de servicio pase de 0.8·f_r, y la FASE A la difería mientras
+  A4 decía CUMPLE. Ahora es la fila **A6** (`M9.fisuracion_aashto`): Servicio I de la
+  Tabla 3.4.1-1 con el mismo empuje con que se arma, la tracción bruta frente a 0.8·f_r,
+  f_ss de la sección fisurada elástica (n = E_s/E_c con 5.4.3.2 y C5.4.2.4-1), β_s de la
+  ec. 5.6.7-2 y s ≤ 700·γe/(βs·f_ss) − 2·d_c, con la constante en SI
+  (`FISURACION_COEFICIENTE_AASHTO_SI`) y el tope f_ss ≤ 0.60·f_y. La clase de exposición
+  es `clase_exposicion_fisuracion_cabezal` [A] **sin valor de archivo**: declarada,
+  decide y la barra propuesta la respeta; sin declarar, la propuesta respeta la Clase 1
+  —la menos exigente, «an upper bound in regards to crack width» (C5.6.7)— y A6 imprime
+  las dos y sale INDICADOR «no decidida» cuando el espaciamiento solo cumple la 1. d_c es
+  el recubrimiento real con que se arma (C5.6.7: «the actual concrete cover thickness
+  should be used»); la alternativa de «2.0 in plus the bar radius» de la práctica no se
+  toma. En A-01 con datos de prueba aplica solo en la pantalla de salida.
+- **Qué se difirió todavía:** las longitudes de desarrollo y de empalme de las barras
+  (5.10.8), y el refuerzo de piel de 5.6.7 (no aplica: d_l < 3.0 ft).
+- **Por qué:** el desarrollo y los empalmes dependen del despiece, que el armado por
+  metro no produce.
+- **Qué haría falta:** la clase de exposición declarada; y, para el desarrollo, el
+  despiece de las barras.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::fisuracion_aashto`
+
+## T7C-07 · La zapata se arma con presión de contacto lineal y el talón con el peso entero: no son las solicitaciones de zapata de la interfaz de T-7b
+
+- **Cerrado (T-7c):** AASHTO 10.6.5 exige para el **diseño estructural** de una zapata
+  cargada con excentricidad una presión de contacto «triangular or trapezoidal»; la
+  uniforme sobre B − 2e es la de la capacidad portante (10.6.1.4) y la que
+  `M9.solicitaciones_por_elemento` (T-7b) usaba para la punta y el talón. El armado
+  calcula la suya (`M9.presion_de_contacto_lineal`, `M9.solicitaciones_de_la_zapata`): en
+  la punta, la presión lineal más la subpresión del agua, que también empuja la zapata
+  hacia arriba y que la de T-7b no contaba, menos el peso propio; en el talón, el **peso
+  entero** de lo que tiene encima, sin descontar la reacción (11.6.1.2: «loaded with the
+  full weight of the superimposed material, unless a more exact method is used»), con el
+  método más exacto impreso al lado. En el muro de tanteo: punta 15.52 kN·m/m (con la
+  uniforme de T-7b y el empuje activo, 9.32); talón 56.89 kN·m/m (descontando la
+  reacción, 22.05).
+- **Abierto:** las solicitaciones de zapata de `EstabilidadDelCabezal.solicitaciones`
+  siguen siendo las de la presión uniforme: el armado no las usa, y la interfaz no se
+  tocó. Tomar el talón con el peso entero es la regla por defecto de la fuente y da del
+  orden del doble de momento que el método exacto.
+- **Qué haría falta:** nada para el armado; si se quiere una sola cifra, que la interfaz
+  de T-7b entregue las de la presión lineal.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::solicitaciones_de_la_zapata`
+
+## T7C-08 · La aceptación de T-7c se escribió después del código; el rojo y la mutación se midieron
+
+- **Qué se difirió:** escribir los tests en rojo con `xfail(strict=True)` antes del
+  código. El archivo `tests/test_t7c_cabezal_armado.py` y el bloque de M9 se escribieron
+  en la misma sesión.
+- **Por qué:** el rojo se **midió** copiando el archivo y el fixture a un árbol exportado
+  de `451a10a`, y la mutación de lo nuevo de M9 con el arnés de EXT-11
+  (`tests/apoyo/mutacion.py`); las dos medidas están en el informe de la FASE A. Los
+  dorados (`CP_T7C_ARMADO`, `CP_T7C_CICLOPEO`, `CP_T7C_EC_11_32`,
+  `CP_T7C_BASE_SERVICIO`) están calculados a mano, con la aritmética escrita, y el del
+  acero de temperatura reproduce los tres ejemplos que el comentario C5.10.6 publica.
+- **Lo que se midió.** El rojo es de **recolección**: sobre `451a10a` el archivo no se
+  importa (`ImportError: cannot import name 'MARCO_E060'`), de modo que no hay un rojo test
+  a test. La mutación, sobre las 34 funciones nuevas de M9 (1007 mutantes) y con los tests
+  rápidos de este archivo como único objetivo: 748 muertos en la primera medida (74.3 %);
+  con los 20 tests de la sección «lo que la mutación enseñó», 843 (83.7 %), sumando una
+  medida entera y una parcial de las cuatro funciones que cambiaron de tests. De los 164
+  vivos, 43 son la frontera de un umbral con tolerancia, 16 guardias de entrada que ningún
+  dato válido distingue, 37 valores por omisión o de relleno que no se alcanzan y 3 textos;
+  de los 65 restantes, la mayoría son cifras de presentación y fronteras donde las dos
+  ramas dan el mismo valor, y quedan **huecos reales** que el informe de la FASE A nombra:
+  el aviso de la punta sin presión de contacto, el umbral numérico del aviso de 0.5·φ·V_c,
+  el contraste C6 del ciclópeo cuando no cumple, el aviso del vuelo de su zapata, el
+  empuje inclinado en las secciones del cuerpo, y el aviso de «ninguna barra del catálogo».
+  No hay censo de vivos fijado en un test.
+- **Qué haría falta:** nada para el conteo; para la mutación, cerrar los huecos nombrados y
+  una segunda vuelta con la línea base y la CLI como objetivo.
+- **El cierre.** Sus tests tampoco se escribieron en rojo: el rojo se midió con el
+  archivo final contra la FASE A (`f50edbe`): 60 rojos y 189 verdes. La mutación se
+  rehízo sobre las 23 funciones tocadas: 810 de 1012 (80.0 %), con cuatro tests de lo
+  que enseñó; de los 202 vivos, 61 son fronteras con tolerancia y 84 constantes de
+  relleno o presentación. C6 incumpliendo y el reparto con el mayor ancho tienen test.
+- **Dónde vive:** `tests/test_t7c_cabezal_armado.py::test_diseno_flexion_corte_ya_no_lanza_NotImplementedError`
+
+## T7C-09 · El cabezal de gravedad en ciclópeo se juzga por tracciones nulas, solo en la condición estática, y su zapata no se verifica
+
+- **Cerrado (T-7c):** `M9.verificar_cabezal_ciclopeo` no arma: comprueba la resultante
+  de las cargas de **servicio** dentro del tercio central de la base (C1) y del cuerpo, en
+  su arranque y a media altura (C2, C3), la resistencia de la matriz y el volumen de
+  piedra (C4, C5: el mayor de los 10 MPa de E.060 22.10.1 y los 14 MPa de la Clase G del
+  EG-2013, y 30 %), y un contraste con E.060 Cap. 22 (C6: φ = 0,5, f'c ≤ 10 MPa, peralte
+  reducido en 50 mm, tracción ≤ φ·0,42·√f'c y cortante ≤ φ·0,11·√f'c·b·h, con cargas 0,9
+  CM + 1,7 CE). Cuál decide lo declara `criterio_traccion_cabezal_ciclopeo` [A]:
+  «tracciones_nulas» por archivo.
+- **Corregido en el cierre (H5).** «Ninguna fuente exige tracciones nulas» era falso en
+  el ARRANQUE: E.060 22.4.7 (cita `E060.22.4.7#JUNTAS`) prohíbe la tracción a través de
+  una junta de construcción. C2 **decide siempre**, con la mayor de la excentricidad de
+  servicio y la amplificada de E.060, salvo vaciado monolítico declarado
+  (`junta_arranque_cabezal_ciclopeo` [A]). El umbral de C1 y C3 es criterio del proyecto
+  (`Interpretacion` de `E060.22.6.3#TERCIO`); C6 aplica la excentricidad mínima de 0,10·h
+  de 22.6.3.
+- **Abierto:** (1) fuera de la junta, las tracciones nulas son criterio del proyecto: en
+  el dorado, e = 0.60 m (1.18 m amplificada) frente a t/6 = 0.083 m, y la tracción de
+  E.060 cumple (0.54). (2) Solo condición
+  estática: bajo sismo la base es la fila E2 de la estabilidad y las secciones del cuerpo
+  no se evalúan. (3) La zapata no se verifica como voladizo de concreto simple, que
+  22.10.2.2 pide cuando el vuelo supera la mitad del peralte: se avisa. (4) Con D ≥ 0.90 m
+  todo cabezal de la regla de T-7a sale voladizo armado: la rama solo se alcanza
+  declarando `altura_max_gravedad_m` o el tipo en `cabezal_declarado`, y por esa puerta
+  está probada.
+- **Qué haría falta:** una especificación del Propietario para muros de gravedad en
+  ciclópeo, y la verificación de la zapata por 22.7.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::verificar_cabezal_ciclopeo`
+
+## T7C-10 · El rótulo por ámbito de E.060: lo que T-7c usa es [N→]; el 0.30 m de 22.7.4 pasa a criterio [N→] en el cierre, y las cuantías de 14.3.1 siguen como constante
+
+- **Cerrado (T-7c):** todo artículo de E.060 que el armado usa entra **por analogía**:
+  los dos pisos de cortante en el plano son criterios [N→], el contraste A5 y el C6 dicen
+  «por analogía» en su umbral, y la `Interpretacion` de la cita `E060.9.2.5#EMPUJE` lo
+  declara con lo que juega en contra (el artículo 1.1.1 de E.060 no se limita a sí mismo
+  a las edificaciones: lo es por el reglamento del que forma parte).
+- **Cerrado en el cierre (pregunta 1, resuelta por el orquestador):** el mínimo de 300 mm
+  de la zapata de concreto simple (E.060 22.7.4), que T-7a dejó como constante [N]
+  (`ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M`), pasa al criterio [N→]
+  `espesor_min_zapata_concreto_simple_m`: la excepción de la §0.2 de la hoja de ruta que
+  hace regir E.060 en el cabezal cubre la **durabilidad** (Cap. 4 y Art. 7.7), y un mínimo
+  estructural de su Cap. 22 aplicado a una obra vial es una analogía, como E.050 26.2 y
+  E.060 15.7. `M9.peralte_minimo_zapata` lo lee del criterio y CB6 no cambia de valor.
+  El recubrimiento de 7.7.1 sigue [N] por esa excepción.
+- **Abierto:** las cuantías mínimas de muros de **14.3.1** (`CUANTIA_MIN_MURO`) tienen la
+  misma objeción y **no se movieron**: arrastran más de lo que parece —las lee
+  `servicio` en una comprobación de la corrida, `M9.cuantia_minima` y
+  `M9.verificar_cuantia` (código de antes de la cadena T, con sus tests de EXT-7), y el
+  manifiesto de citas las resincroniza **por símbolo**—, de modo que el traslado es una
+  sesión de registro aparte, no una línea de este cierre.
+- **Qué haría falta:** una sesión que pase `CUANTIA_MIN_MURO` a un criterio [N→] y
+  resincronice el manifiesto y los consumidores.
+- **Dónde vive:** `src/constantes_normativas.py::CUANTIA_MIN_MURO`
+
+## T7C-11 · El modificador de carga η no entra en el cabezal: la fuente lo sostiene, pero el cambio no es acotado
+
+- **Qué se difirió:** el modificador de carga η = η_D·η_R·η_I de AASHTO 1.3.2.1 en las
+  combinaciones de Resistencia I del cabezal —estabilidad externa **y** armado— con el
+  mismo η_I del conducto (`eta_importancia_operativa_conducto` [A] = 1.05, T-5). La
+  pregunta 6 del informe de la FASE A, que el orquestador resolvió aplicarlo «si la
+  fuente lo sostiene y el cambio es acotado».
+- **Lo que la fuente dice (verificado en el PDF):** 1.3.2.1 (pág. impresa 1-3, PDF 18):
+  Σ η_i·γ_i·Q_i ≤ φ·R_n, con η_i = η_D·η_R·η_I ≥ 0.95 para las cargas con γ máximo y η_i
+  = 1/(η_D·η_R·η_I) ≤ 1.0 para las de γ mínimo. 1.3.3 (PDF 20): η_D = 1.00 para «designs
+  and details complying with these Specifications», en resistencia. 1.3.4 (PDF 21): η_R =
+  1.00 para «conventional levels of redundancy, foundation elements where φ already
+  accounts for redundancy as specified in Article 10.5». 1.3.5 (PDF 22): η_I ≥ 1.05 para
+  puentes críticos o esenciales, y en los demás estados límite —Evento Extremo
+  incluido— η_D = η_R = η_I = 1.00. La fuente **lo sostiene** como lo planteó el
+  orquestador; la Sección 11 no lo exceptúa para los muros.
+- **Por qué no se aplicó:** el cambio no es acotado. Aplicado en
+  `M9.combinaciones_de_estabilidad` y `M9._combinaciones_en_reposo` (1.05 en las cargas
+  de γ máximo, 1/1.05 en las de γ mínimo), **22 tests rápidos** de T-7b y T-7c fallan:
+  los dorados a mano de la estabilidad de T-7b (`CP_T7B_ESTABILIDAD`,
+  `CP_T7B_SOLICITACIONES`, `CP_T7B_PEOR_COMBINACION`, `CP_T7B_MURO_2`,
+  `CP_T7B_COHESIVO`), ya integrados y auditados, habría que rehacerlos todos. Medido en
+  A-01 con los datos de prueba: E1-LRFD est. de entrada 67.52 ≤ 87.41 → 72.94 ≤ 85.69 kPa;
+  E3 de entrada 38.05 > 29.39 → 39.95 > 28.47 kN/m; E1 de salida 81.85 ≤ 100.81 →
+  77.68 ≤ 90.78; E3 de salida 57.93 > 49.13 → 60.83 > 47.60 (**ningún veredicto
+  cambia**); en el armado solo el talón de salida (71.72 → 75.31 kN·m/m: Ø 1/2" @ 0.175
+  → @ 0.15). Las filas sísmicas no se mueven (η = 1 en Evento Extremo).
+- **Qué haría falta:** una sesión dedicada que aplique η a la estabilidad y al armado a
+  la vez y rehaga los dorados de T-7b y de T-7c a mano; y la decisión del Propietario
+  sobre η_R del cabezal (1.3.4: una pantalla en voladizo es un elemento de un solo
+  camino de carga, y «nonredundant members» pide ≥ 1.05; el valor de T-5, 1.00, viene
+  de 12.5.4, que es de estructuras ENTERRADAS y no alcanza al cabezal).
+- **Dónde vive:** `src/criterios_adoptados.py::eta_importancia_operativa_conducto`
+
+## T7C-12 · La pantalla y el alero integran cada diagrama por encima del arranque; el incremento sísmico se reparte con el diagrama lineal de su resultante
+
+- **Cerrado en el cierre de T-7c (H1):** `M9.solicitaciones_por_elemento` (código de
+  T-7b) tomaba la resultante ENTERA de cada empuje con su brazo desde el arranque, y su
+  docstring lo llamaba «del lado seguro»: lo era para el cortante y no para el momento
+  (el tramo bajo el arranque restaba). Ahora `M9.empujes_sobre_el_arranque` integra cada
+  diagrama sobre el arranque: el suelo con el diagrama de tres partes del ensamble
+  truncado en e_z (`M9.diagrama_del_suelo_sobre`, el mismo que
+  `M9.acciones_sobre_una_seccion` usa en el cuerpo del ciclópeo), escalado a la
+  resultante de cada carga para que valga igual con el activo y con el reposo; la
+  sobrecarga uniforme; el agua del relleno con su triángulo; y la inercia de la
+  **pantalla sola** (la de la zapata no la carga). Dorado de control del auditor,
+  reproducido a mano: muro de tanteo, activo 26.491 / 21.466, reposo 43.502 / 35.402 kN/m
+  y kN·m/m; A_s de resistencia 476 mm²/m y mínimo con M_cr 630.7 mm²/m (la misma Ø 1/2"
+  @ 0.20). La estabilidad externa no usa esta solicitación y **no cambia** (las filas E1 a
+  E3 de A-01, idénticas: medido).
+- **Lo que es del proyecto y se declara:** (1) el cortante en la cara se integra **también**
+  sobre el arranque: es estática (la fuerza que cruza la sección es la que está por
+  encima de ella), y la fuente no pide otra cosa; se toma en la cara y no a d_v de ella
+  (lado seguro, 5.7.3.2). (2) El diagrama del suelo es el del **plano del talón** truncado
+  en el arranque; con el relleno que sube sobre el talón llega más arriba que la
+  pantalla, y es cota superior de la presión sobre su cara. (3) El incremento sísmico:
+  la fuente da el PUNTO de aplicación (`punto_aplicacion_incremento_sismico`, 0.6·h), no
+  el diagrama; el proyecto toma el **único diagrama lineal** con esa resultante
+  (2H/h·(2 − 3f) en la base, 2H/h·(3f − 1) en la corona: con 0.6, un trapecio cuatro
+  veces más cargado arriba); bajo h/3 el triángulo de h/3 y, sobre 2h/3 —fuera de la
+  ventana—, la resultante entera a su altura. (4) La resultante a h/2 de C11.6.5.4 es un
+  diagrama **uniforme**: integrado sobre el arranque mueve el momento y el cortante.
+- **Por qué:** es la estática de la sección del arranque, y la que el cuerpo del
+  ciclópeo ya usaba; el docstring de T-7b decía «del lado seguro» y para el momento no lo
+  era.
+- **Qué haría falta:** nada para la pantalla; el alero por secciones es T7C-04.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::empujes_sobre_el_arranque`
+
+## T7C-13 · El cierre de T-7c aplicó las doce correcciones de la auditoría
+
+- **Cerrado (2026-11-13):** H1 (T7C-12); H2 (el armado del muro que no cede con k_h0,
+  T7C-02); H3 y la pregunta 5 (la fisuración de 5.6.7, fila A6, T7C-06); H4 (la fila A8:
+  la altura de la zapata sobre su refuerzo inferior frente a los 300 mm de E.060 15.7,
+  con el recubrimiento con que se arma; la zapata de 0.37 m de A-01 da 0.272 m y **no
+  cumple**: no se itera, se dice); H5 (la junta del arranque del ciclópeo, T7C-09); H6
+  (el vano, la losa y el dentellón en el aviso, T7C-04); H7 (la fila A7 del f'c por
+  durabilidad, que decide cuando el análisis químico existe, y los textos que nombraban
+  A6, A5 y R4/R5 donde el código dice A7, A1 y C4/C5); H8 (d_v ≤ d_e, T7C-03); H9 (el
+  aviso cuando el reposo factorado de mínimos deja la resultante fuera de la base: en
+  los dos cabezales de A-01); H10 (la sensibilidad de K0 con talud, T7C-02); H11 (los dos
+  mutantes vivos, T7C-08); H12 (el sufijo `_SI` en las conversiones de AASHTO y
+  `RECUBRIMIENTO_BARRA_GRUESA_DESDE` en `constantes_normativas`, junto a la tabla de E.060
+  7.7.1 cuya fila parte). Y las preguntas 1 (T7C-10), 2 (T7C-05), 4 (T7C-03) y 6
+  (T7C-11, no aplicada).
+- **Lo que la auditoría pidió y no se hizo como lo pidió:** en H3/pregunta 2 la premisa
+  de que el recubrimiento de cota es «el lado inseguro de la fisuración» no la sostiene
+  la aritmética (con más d_c la ecuación da menos espaciamiento: es la comprobación más
+  exigente); el aviso dice dónde la cota deja de ser el lado seguro, que es con un
+  ambiente corrosivo (T7C-05).
+- **Por qué:** la auditoría adversarial (AJUSTADO) y las resoluciones del orquestador.
+- **Qué haría falta:** lo abierto de cada ficha que cita.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::ensamblar_armado`
+

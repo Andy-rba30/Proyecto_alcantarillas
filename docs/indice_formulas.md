@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `542370a` · Suite: 5979 passed, 23 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `1f23f20` · Suite: 6253 passed, 23 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -36,7 +36,7 @@
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **159** · fórmulas distintas: **28** · fundamentos ejercitados: **19** de 106.
+Pasos emitidos: **159** · fórmulas distintas: **28** · fundamentos ejercitados: **19** de 119.
 
 ## 2. Índice
 
@@ -168,6 +168,19 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F8.TMC_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion | `M8_estructural` |
 | `F9.AGUA` | Fase 9 - Cabezal y aletas | Agua en el trasdos: nivel, empuje hidrostatico, suelo sumergido y subpresion | `M9_cabezal` |
 | `F9.ALEROS` | Fase 9 - Cabezal y aletas | Aleros: angulo, longitud, alturas inicial y final, espesor | `M9_cabezal` |
+| `F9.ARM_CORTANTE` | Fase 9 - Cabezal y aletas | Resistencia a cortante del concreto, sin refuerzo transversal, frente al cortante factorado | `M9_cabezal` |
+| `F9.ARM_CORTANTE_PLANO` | Fase 9 - Cabezal y aletas | Cuantias minimas del muro bajo el regimen de cortante en su plano | `M9_cabezal` |
+| `F9.ARM_DURABILIDAD` | Fase 9 - Cabezal y aletas | Resistencia del concreto del cabezal frente a la minima por durabilidad | `M9_cabezal` |
+| `F9.ARM_E060` | Fase 9 - Cabezal y aletas | Contraste con la norma peruana de concreto: flexion y cortante con sus combinaciones y sus factores | `M9_cabezal` |
+| `F9.ARM_ESPACIAMIENTO` | Fase 9 - Cabezal y aletas | Barra y espaciamiento propuestos frente al acero adoptado y al espaciamiento maximo | `M9_cabezal` |
+| `F9.ARM_FISURACION` | Fase 9 - Cabezal y aletas | Control de fisuracion en servicio: espaciamiento de la capa traccionada frente al de la ecuacion de la fuente | `M9_cabezal` |
+| `F9.ARM_FLEXION` | Fase 9 - Cabezal y aletas | Resistencia a flexion de la seccion con el acero propuesto frente al momento factorado | `M9_cabezal` |
+| `F9.ARM_MINIMO` | Fase 9 - Cabezal y aletas | Acero minimo de la cara en traccion y de reparto: el de la fuente que rige y el de la norma de contraste | `M9_cabezal` |
+| `F9.ARM_PERALTE_ZAPATA` | Fase 9 - Cabezal y aletas | Altura de la zapata del cabezal medida sobre su refuerzo inferior | `M9_cabezal` |
+| `F9.ARM_REGIMEN` | Fase 9 - Cabezal y aletas | Empuje con que se arma cada elemento: en reposo o activo, y las solicitaciones factoradas que resultan | `M9_cabezal` |
+| `F9.ARM_TABLA` | Fase 9 - Cabezal y aletas | Tabla de armado del cabezal: acero requerido, minimo y propuesto por elemento | `M9_cabezal` |
+| `F9.ARM_ZAPATA` | Fase 9 - Cabezal y aletas | Secciones criticas de la zapata: la punta y el talon en la cara de la pantalla | `M9_cabezal` |
+| `F9.CICLOPEO` | Fase 9 - Cabezal y aletas | Cabezal de gravedad en concreto ciclopeo: posicion de la resultante en la base y en el cuerpo, y limites del material | `M9_cabezal` |
 | `F9.COMBINACIONES` | Fase 9 - Cabezal y aletas | Cargas del cabezal con sus brazos y combinaciones de cada marco: factoradas (LRFD) y de servicio (ASD) | `M9_cabezal` |
 | `F9.CORONACION` | Fase 9 - Cabezal y aletas | Coronacion y altura del cabezal: sobre la clave exterior y sobre el nivel de agua del extremo | `M9_cabezal` |
 | `F9.DESPLANTE` | Fase 9 - Cabezal y aletas | Profundidad de desplante del cabezal: minimo de E.050 y, a la salida, bajo la socavacion | `M9_cabezal` |

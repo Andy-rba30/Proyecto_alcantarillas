@@ -229,6 +229,23 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   tienen que ser de la banda de ángulo del cabezal. El cabezal es normal al
   eje del conducto y, con esviaje, sus dos aleros miden distinto. Fichas
   T7A-01 a T7A-08.
+- **Y desde T-7c cada cabezal se ARMA detrás de su estabilidad, con la misma
+  geometría y sin iterarla** (`servicio._fase_9_armado`: una etapa por las
+  solicitaciones, una por elemento y una por la tabla, para que lo que un
+  elemento no pueda evaluar quede como `Bloqueo` y los demás sigan). Rige
+  AASHTO LRFD Sección 5 sobre las solicitaciones FACTORADAS (filas A1 a A4,
+  A6 la fisuración de 5.6.7 en Servicio I, A7 el f'c por durabilidad, A8 la
+  altura de la zapata sobre su refuerzo de E.060 15.7); E.060 se calcula en
+  paralelo como contraste [N→] (A5) y **los dos marcos no se cruzan**: cargas
+  de un marco con φ del otro es un defecto. En los mínimos constructivos rige
+  el más exigente de los dos. Con el muro que no cede
+  (`regimen_resistencia_elementos_cabezal` = `no_cedente_k0`) los elementos
+  se arman con el empuje en reposo y el Evento Extremo I con k_h = 1.0·k_h0,
+  aunque la estabilidad externa —que sigue con el muro que cede— lo reduzca;
+  la pantalla y el alero integran cada diagrama de empuje por encima del
+  arranque (`M9.empujes_sobre_el_arranque`). El cabezal de gravedad no se
+  arma: se verifica como concreto ciclópeo (C1 a C6). Fichas T7C-01 a
+  T7C-13.
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None
@@ -246,7 +263,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -338,7 +355,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -376,7 +393,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -534,7 +551,12 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   el plano de empuje bajo sismo, con una cuña de tanteo sin máximo interior o
   con `regimen_cabezal` = `no_cedente`; la carga a presión del evento extremo
   fuera de las ecuaciones de M4 lleva la del HDS-5. Las del cabezal viajan como
-  `Bloqueo` del punto, una por cabezal y condición (`servicio._fase_9`). Y desde EXT-3 `Bloqueo` vive en `modelos.py`
+  `Bloqueo` del punto, una por cabezal y condición (`servicio._fase_9`). Y desde
+  T-7c la levanta `M9.diseno_flexion_corte` cuando una sección del cabezal queda
+  fuera de las condiciones en que AASHTO 5.7.3.4.1 permite el cortante
+  simplificado y no lleva estribos (el procedimiento general no se
+  implementa), encabezada con `MOTIVO_METODO_NO_EVALUABLE_ARMADO`: viaja como
+  `Bloqueo` de ESE elemento (`servicio._fase_9_armado`) y los demás se arman. Y desde EXT-3 `Bloqueo` vive en `modelos.py`
   con `tipo: TipoDeBloqueo` (str Enum cuyos valores son los textos que la
   línea base ya imprimía): la vía `servicio._etapa` → `servicio._bloqueo` descrita
   arriba no cambia, `cli` lo reexporta.
@@ -780,7 +802,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6002**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6276**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
@@ -862,7 +884,101 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-7b de la cadena T (2026-11-13, integrado detrás de T-7a, con las
+independientes. **T-7c de la cadena T (2026-11-13, integrado detrás de T-7b, con las
+correcciones de su auditoría) sumó DOSCIENTOS SETENTA Y CUATRO tests netos**, veintiuno
+con la marca `pdf` (los números y las frases de AASHTO LRFD y de E.060 que el
+armado toma, contra su página; los dos PDF en `normas/` de la app) y ninguno
+dependiente de Tk ni del repositorio de normas: los 253 de
+`tests/test_t7c_cabezal_armado.py` —la FASE A: **cada cabezal de voladizo
+armado se ARMA** (`INF-4.6`; `M9.armar_elemento`, `M9.ensamblar_armado`,
+`servicio._fase_9_armado`, detrás de la estabilidad y con la misma geometría,
+sin iterarla) con AASHTO LRFD Sección 5 sobre las solicitaciones factoradas
+del ensamble —flexión de 5.6.3.2 con el bloque de 5.6.2.2, cortante
+simplificado de 5.7.3.4.1 donde la fuente lo permite y «método no evaluable»
+fuera de él, φ de 5.5.4.2 y 1.0 en el Evento Extremo—, E.060 en paralelo como
+contraste [N→] sin cruzar marcos, el mínimo más exigente de los dos, el empuje
+en reposo de archivo (`regimen_resistencia_elementos_cabezal` [A] =
+`no_cedente_k0`, decisión del dueño; la estabilidad externa sigue con el muro
+que cede), la zapata con presión de contacto lineal (10.6.5) y el talón con el
+peso entero (11.6.1.2), la ec. (11-32) de E.060 evaluada (cierra la ficha
+`EXT-7-01`; los tres criterios de cortante en el plano dejan de estar vacíos),
+la tabla de armado con la barra propuesta de un catálogo [A], y el cabezal de
+gravedad verificado como concreto ciclópeo (C1 a C6)—, más la aceptación de
+las **correcciones de la auditoría adversarial** (AJUSTADO: 2 ALTA, 5 MEDIA, 5
+BAJA; la cuña de tanteo de T-7b, APROBADA) y de las resoluciones del
+orquestador: (H1) la pantalla y el alero integran **cada diagrama de empuje
+por encima del arranque** (`M9.empujes_sobre_el_arranque`, código de T-7b): la
+resultante entera con su brazo desde el arranque, que el docstring llamaba
+«del lado seguro», no lo era para el momento (−8.5 % en el muro de tanteo);
+la inercia es la de la pantalla sola y el incremento sísmico se reparte con
+el único diagrama lineal que tiene su resultante a 0.6·h; (H2) con el muro que
+no cede **el Evento Extremo I del armado va con k_h = 1.0·k_h0** (AASHTO
+11.6.5.4, «shall be increased to 1.0kh0») por una puerta de `k_h` en
+`M9.cargas_del_cabezal` que la estabilidad no usa —en A-01 con los datos de
+prueba la pantalla de salida pasa de Ø 1/2" @ 0.10 a Ø 5/8" @ 0.10—; (H3) **la
+fisuración de AASHTO 5.6.7** en Servicio I (fila A6, `M9.fisuracion_aashto`),
+con la clase de exposición como [A] **sin valor** del Propietario
+(`clase_exposicion_fisuracion_cabezal`): sin declararla, la barra propuesta
+respeta la Clase 1 y A6 sale «no decidida» cuando no cumple la 2; (H4) la
+altura de la zapata sobre su refuerzo inferior frente a los 300 mm de E.060
+15.7 con el recubrimiento con que se arma (fila A8: la zapata de 0.37 m de la
+regla de T-7a **no cumple** con la cota de 91.4 mm, y no se itera); (H5) el
+arranque del cuerpo ciclópeo es una **junta de construcción** y E.060 22.4.7
+prohíbe la tracción por ella: C2 decide siempre, con la mayor de la
+excentricidad de servicio y la amplificada, salvo vaciado monolítico
+declarado (`junta_arranque_cabezal_ciclopeo` [A]), y C6 aplica la
+excentricidad mínima de 22.6.3; (H6) el vano, la losa de entrega y el
+dentellón, nombrados en lo que el armado no cubre; (H7) la fila A7 del f'c por
+durabilidad y los textos que nombraban A6, A5 y R4/R5; (H8) d_v acotado al
+peralte efectivo (`Interpretacion` de 5.7.2.8) y A2 como INDICADOR cuando la
+pantalla pasa de 0.5·φ·V_c; (H9–H12) el aviso del reposo de mínimos que
+vuelca, el K0 con talud impreso sin adoptar, los dos mutantes vivos con test,
+el sufijo `_SI` y `RECUBRIMIENTO_BARRA_GRUESA_DESDE` en
+`constantes_normativas`; y la pregunta 1: el 0.30 m de E.060 22.7.4 pasa de
+constante [N] al criterio [N→] `espesor_min_zapata_concreto_simple_m` (las
+cuantías de 14.3.1 no se movieron: ficha T7C-10). **El modificador de carga η
+de AASHTO 1.3.2.1 no se aplicó al cabezal**: la fuente lo sostiene, pero
+reescribe más de veinte dorados de T-7b ya integrados (medido; ficha T7C-11).
+Los otros: los trece anclajes de `test_decisiones_diferidas` para las fichas
+de la Parte LI (T7C-01..13); diez que crecen solos en `test_ext5_forma_gui`
+con los diez criterios nuevos; y **menos dos** en `test_criterios_adoptados`
+(tres de cortante en el plano dejan el parametrizado de vacíos y entra la
+clase de exposición). **No se escribieron en rojo primero**: el rojo de la
+FASE A es de recolección contra `451a10a`, y el archivo final contra la FASE A
+(`f50edbe`) da 60 rojos y 189 verdes; la mutación de la FASE A dejó 843 de
+1007 muertos y la del cierre, sobre las 23 funciones que tocó, 810 de 1012
+(80.0 %: 777 en la primera vuelta con los tests rápidos, 19 con los dos
+archivos enteros y 14 en dos vueltas parciales con los cuatro tests de «lo
+que la mutación del cierre enseñó»: la fila A6 por dentro, la inercia de la
+pantalla con un brazo distinto de 1 m, el aviso del d_v acotado y los números
+de A8 y del paso del régimen); de los 202 vivos, 61 son fronteras de un umbral
+con tolerancia, 84 constantes de relleno o de presentación, 16 guardias y
+empates, 5 textos y 36 ramas que ningún dato válido alcanza o huecos que la
+FASE A ya había nombrado (ficha T7C-08). Los
+dorados están a mano en `CP_T7C_ARMADO` (rehecho con H1 y H8: activo 26.491 /
+21.466 y reposo 43.502 / 35.402 kN y kN·m por metro en el muro de tanteo),
+`CP_T7C_CICLOPEO` y el de la fisuración (el control del auditor: 0.147 y 0.061
+m). Censos: **139 criterios, 20 sin valor**, citas del registro de 454 a
+**503**, `M9` con 16 marcas `literal-ok`. Se reescribieron, declarándolo,
+`test_M9_cabezal`, `test_ext7_cabezal`, `test_t7b_cabezal_estabilidad` (la
+solicitación de la pantalla, H1), `test_t7a_cabezal_geometria` (el 0.30 m),
+`test_memoria_sustentada` (trece fundamentos `F9.ARM_*` y `F9.CICLOPEO` que la
+corrida por defecto no alcanza), `test_sin_literales` y `test_t0_gobernanza`
+(la fila de T-7c). Cierra `INF-4.6` e `INF-3.4.5` con residuales nombrados
+(fichas T7C-03, -04, -06, -09 y -11), y escribe una NOTA en `INF-0.5`,
+`EXT-M-05`, `R95-031` e `INF-4.3`. **La línea base de la Familia C se
+regeneró y se midió contra `451a10a` con el comparador de E-B**: 4, 2, 2 y 2
+diferencias en los cuatro JSON —huella, recuento de criterios sin valor y dos
+notas del cabezal del proyecto—, 0 no comparables; ninguna corrida de la línea
+base alcanza el armado; **ningún diámetro, sección, material ni HW se movió**,
+y las filas E1 a E3 de A-01 con los datos de prueba son idénticas a las de la
+FASE A. Los techos de `test_ext8` no se remidieron porque la memoria de
+referencia no cambia de tamaño. De las cuatro configuraciones se MIDIÓ UNA,
+«sí · no», con el repositorio de normas enlazado: 6253 passed, 23 skipped, collected
+6276 (y sin `NORMAS_DIR`, sobre el mismo árbol: 6235 passed, 41 skipped). **Las otras tres se dicen como
+derivadas, no como medidas**, por lo mismo que en T-0: la derivación suma 274
+a las de T-7b y pasa veintiuno a `skipped` en las dos columnas sin PyMuPDF.
+**T-7b de la cadena T (2026-11-13, integrado detrás de T-7a, con las
 correcciones de su auditoría) sumó DOSCIENTOS NOVENTA Y TRES tests netos**, doce con
 la marca `pdf` (las tablas y las citas de AASHTO LRFD, HDS-5 y E.050 que el
 ensamble toma, contra su página; todas en `normas/` de la app) y ninguno
@@ -2561,7 +2677,7 @@ PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
 4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728; T-6:
 4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352; T-9: 5548;
-T-7a: 5709; T-7b: 6002. La
+T-7a: 5709; T-7b: 6002; T-7c: 6276. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2573,23 +2689,24 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 5992 (**derivado** en T-7b, no medido: el contenedor no tiene tkinter) | 10 |
-| sí | no | 5979 (**MEDIDO** en T-7b sobre el árbol fusionado, con `NORMAS_DIR`) | 23 |
-| no | sí | 5869 (**derivado**, no medido) | 133 |
-| no | no | 5856 (**derivado**, no medido) | 146 |
+| sí | sí | 6266 (**derivado** en T-7c, no medido: el contenedor no tiene tkinter) | 10 |
+| sí | no | 6253 (**MEDIDO** en T-7c sobre el árbol fusionado, con `NORMAS_DIR`) | 23 |
+| no | sí | 6122 (**derivado**, no medido) | 154 |
+| no | no | 6109 (**derivado**, no medido) | 167 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
-dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-7b: 5961
-passed, 41 skipped; sobre el de T-7a, 5672 y 37; sobre el de T-9, 5511 y 37; sobre el de T-3, 5318 y 34; sobre el de las correcciones de T-8, 5212 y 34; sobre el
+dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-7c: 6235 y 41;
+sobre el de T-7b, 5961 y 41; sobre el de T-7a, 5672 y 37; sobre el de T-9, 5511 y 37; sobre el de T-3, 5318 y 34; sobre el de las correcciones de T-8, 5212 y 34; sobre el
 de T-5, 5143 y 34; sobre el de T-8, 4942 y 34; ni T-6, ni T-8, ni T-5, ni las
-correcciones de T-8, ni T-3, ni T-9, ni T-7a, ni T-7b sumaron ninguno que abra el repositorio de
+correcciones de T-8, ni T-3, ni T-9, ni T-7a, ni T-7b, ni T-7c sumaron ninguno que abra el repositorio de
 normas; eran
 siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
 `tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
 Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
 2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
-iban saltados por la marca `pdf`. Tras T-7a la tabla decía 5703 / 5690 / 5592
+iban saltados por la marca `pdf`. Tras T-7b la tabla decía 5992 / 5979 / 5869
+/ 5856, medida sólo la segunda. Tras T-7a la tabla decía 5703 / 5690 / 5592
 / 5579, medida sólo la segunda. Tras T-9 la tabla decía 5542 / 5529 / 5431
 / 5418, medida sólo la segunda. Tras T-3 la tabla decía 5349 / 5336 / 5245
 / 5232, medida sólo la segunda. Tras las correcciones de T-8 la tabla

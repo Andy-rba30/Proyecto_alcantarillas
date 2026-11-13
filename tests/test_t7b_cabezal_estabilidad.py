@@ -1491,16 +1491,26 @@ def test_las_solicitaciones_son_por_elemento_y_del_marco_LRFD(tanteo):
 
 def test_la_solicitacion_del_arranque_de_la_pantalla_a_mano(tanteo):
     """
-    Resistencia I: los empujes factorados son 1.50·14.4714 + 1.75·7.8283 =
-    35.4066 kN/m. Su momento respecto de la base es 33.8051; respecto del
-    arranque de la pantalla (0.40 m mas arriba):
-        M_u = 33.8051 - 35.4066·0.40 = 19.6425 kN·m/m
+    Resistencia I, con el diagrama de cada empuje INTEGRADO POR ENCIMA DEL
+    ARRANQUE (2.00 m de los 2.40 m del plano):
+        suelo       14.4714·(2.00/2.40)² = 10.04958, a 2.00/3 = 0.66667
+        sobrecarga  7.8283·(2.00/2.40) = 6.52355, a 1.00
+        V_u = 1.50·10.04958 + 1.75·6.52355 = 26.4906 kN/m
+        M_u = 1.50·6.69972 + 1.75·6.52355 = 21.4658 kN·m/m
+
+    REESCRITO DECLARANDOLO (correcciones de T-7c, H1). Fijaba V_u = 35.4066
+    y M_u = 33.8051 - 35.4066·0.40 = 19.6425: la resultante ENTERA de cada
+    empuje con su brazo desde el arranque, que el docstring llamaba «del
+    lado seguro» y para el momento no lo era (el tramo del diagrama bajo el
+    arranque entraba con brazo negativo: -8.5 %). La estabilidad externa no
+    usa esta solicitacion y no cambia.
     """
     e = M9.ensamble_estabilidad(tanteo, EST)
     s = next(x for x in e.solicitaciones if x.elemento == ELEMENTO_PANTALLA
              and "maximos" in x.combinacion)
-    assert s.V_u == pytest.approx(35.4066, abs=TOL)
-    assert s.M_u == pytest.approx(33.8051 - 35.4066 * 0.40, abs=TOL)
+    assert s.V_u == pytest.approx(1.50 * 10.04958 + 1.75 * 6.52355, abs=TOL)
+    assert s.M_u == pytest.approx(1.50 * 10.04958 * 2.00 / 3
+                                  + 1.75 * 6.52355 * 1.00, abs=TOL)
 
 
 def test_la_punta_de_la_zapata_a_mano(tanteo):
@@ -1866,6 +1876,12 @@ def test_los_margenes_de_las_seis_filas_son_los_del_dorado(tanteo):
 
 
 def test_las_solicitaciones_de_la_zapata_son_las_del_dorado(tanteo):
+    """
+    REESCRITO DECLARANDOLO (correcciones de T-7c, H1): la fila de la
+    pantalla de `CP_T7B_SOLICITACIONES` pasa de 35.4066 / 19.6425 (la
+    resultante entera de cada empuje) a 26.4906 / 21.4658 (el diagrama
+    integrado por encima del arranque); la punta y el talon no cambian.
+    """
     e = M9.ensamble_estabilidad(tanteo, EST)
     tol = CP_T7B_SOLICITACIONES["tolerancia"]
 

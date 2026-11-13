@@ -3466,6 +3466,12 @@ SULFATOS_BORDE_ABIERTO_TEXTO = (
 # ---- E.060 Art. 7.7.1: el lado peruano de la regla del recubrimiento mayor -
 RECUBRIMIENTO = {"contra_suelo": 70, "suelo_intemperie_ge_3_4": 50,
                  "suelo_intemperie_le_5_8": 40}           # Art. 7.7.1, mm
+# La designacion de barra que PARTE las dos filas de contacto con el suelo o
+# la intemperie del Art. 7.7.1 b) y c): «barras de 3/4" y mayores» y «barras
+# de 5/8" y menores» (pag. 54). Es el umbral de la fila, no una barra del
+# proyecto; el armado del cabezal lo lee para elegir la fila de cada cara
+# (correcciones de T-7c, H12: vivia como texto en M9).
+RECUBRIMIENTO_BARRA_GRUESA_DESDE = "3/4"
 # El texto LITERAL de cada inciso. Importa porque el rotulo corto que el
 # proyecto usa para el primero -- "vaciado contra el suelo" -- recoge solo la
 # mitad de la condicion: el articulo exige las dos cosas a la vez, colocado
@@ -4926,11 +4932,12 @@ CUNETA_Z1_MIN_T304_12 = {"casos_muy_especiales": 2.0,      # H por 1 de V
 # E.060 Art. 22.7.4, pag. 193: «El espesor de las zapatas de concreto simple
 # estructural no debe ser menor que 300 mm». Rige la zapata del cabezal de
 # GRAVEDAD en ciclopeo (Cap. 22, el mismo de `M9.verificar_ciclopeo`); no la
-# del voladizo armado, que la Via 1 (§0.2) deja a AASHTO. Se mantiene [N] por
-# la lectura de la §9.4 de la hoja de ruta, que hace regir E.060 22.10 sobre
-# el ciclopeo junto con el EG-2013 (ficha T7A-04: la objecion de ambito que
-# hace [N→] a E.050 26.2 alcanzaria tambien a E.060, y queda para el dueño).
-ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M = 0.30
+# del voladizo armado, que la Via 1 (§0.2) deja a AASHTO. Vivio aqui como [N]
+# (`ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M`) hasta el cierre de T-7c, que lo
+# paso al criterio [N→] 'espesor_min_zapata_concreto_simple_m' (pregunta 1
+# de su FASE A, ficha T7C-10): la excepcion de la §0.2 que hace regir E.060
+# en el cabezal cubre la durabilidad, y un minimo estructural de su Cap. 22
+# aplicado a una obra vial es una analogia, como E.050 26.2 y E.060 15.7.
 NUMERAL_ZAPATA_CONCRETO_SIMPLE = _reg.cita("E060.22.7.4#ZAPATA").como_texto()
 
 # LAS BANDAS DE ANGULO DE ALETAS QUE IMPRIMEN LAS FILAS DE CAJON de las Tablas
@@ -5137,3 +5144,237 @@ CW_PROFUNDIDAD_SIN_EFECTO_VECES_B = 1.5     # el «1.5B» de la tercera fila
 # pendiente equivalente del relleno quebrado es la de la recta que va de la
 # coronacion del muro al terreno a una distancia horizontal de 2·H.
 TALUD_QUEBRADO_DISTANCIA_VECES_H = 2.0
+
+
+# ===========================================================================
+# --- T-7c --- (cadena T) · el armado del cabezal y su alternativa ciclopea
+# ===========================================================================
+# Lo que `M9.armado_del_cabezal` necesita de sus dos fuentes, transcrito de
+# la pagina (capa de texto del PDF de normas/; las ecuaciones 5.6.3.2.2-1,
+# 5.7.3.3-3, 5.10.6-1 de AASHTO y la (11-32) de E.060, ademas por imagen) y
+# fijado por `tests/test_t7c_cabezal_armado.py`.
+#
+# DOS MARCOS QUE NO SE CRUZAN, como en la estabilidad de T-7b:
+#   - RIGE AASHTO LRFD 9.a ed. Seccion 5: resistencia a flexion (5.6) y a
+#     cortante (5.7) con los factores de resistencia de 5.5.4.2, sobre las
+#     solicitaciones FACTORADAS de Resistencia I y Evento Extremo I del
+#     ensamble de T-7b. Es la Via 1 de la §0.2 de la hoja de ruta y la
+#     decision del dueño sobre el marco (2026-11-11).
+#   - E.060 se calcula EN PARALELO como contraste [N→] (su ambito son las
+#     edificaciones del RNE), con SUS combinaciones (9.2) y SUS factores de
+#     reduccion (9.3): nunca cargas de un marco con phi del otro.
+# En los MINIMOS constructivos (acero minimo, espaciamiento maximo) el
+# proyecto aplica el mas exigente de los dos, y lo declara
+# ('regla_minimos_constructivos_cabezal' [A]).
+#
+# UNIDADES. La 9.a ed. de AASHTO no tiene edicion SI (C5.1: «These
+# specifications use kips and ksi units»). Toda constante dimensional de
+# abajo se CONVIERTE AQUI -- sufijo _SI, con el valor imperial y la
+# conversion en el comentario -- y nunca en la llamada: las funciones de M9
+# reciben MPa, m, kN/m y kN·m/m.
+
+# ---- AASHTO 5.5.4.2 «Resistance Factors», pags. impresas 5-29 y 5-30 (PDF
+# 388 y 389): «For tension-controlled reinforced concrete sections ... normal
+# weight concrete 0.90» y «For shear and torsion in reinforced concrete
+# sections: normal weight concrete 0.90». Adimensionales.
+PHI_FLEXION_AASHTO = 0.90
+PHI_CORTE_AASHTO = 0.90
+# 1.3.2.1 «General», pag. impresa 1-3 (PDF 18): «For service and extreme
+# event limit states, resistance factors shall be taken as 1.0» (las dos
+# excepciones, pernos y columnas en zonas sismicas 2 a 4, no son un muro ni
+# una zapata).
+PHI_EVENTO_EXTREMO_AASHTO = 1.0
+
+# ---- AASHTO 5.6.2.1 y 5.6.2.2, pags. impresas 5-34 a 5-36 (PDF 393 a 395).
+EPSILON_CU_CONCRETO = 0.003              # deformacion ultima del concreto
+# Limite de la seccion controlada por TRACCION: 0.005 para acero con fy <=
+# 75.0 ksi (517 MPa). Con fy mayor la fuente interpola hasta 0.008: no se
+# transcribe (el catalogo del proyecto no pasa del Grado 60).
+EPSILON_TL_AASHTO = 0.005
+FY_MAX_EPSILON_TL_MPA = 75.0 * KSI_EN_MPA          # 75.0 ksi = 517.1 MPa
+# Bloque rectangular: alfa_1 = 0.85 hasta 10.0 ksi; beta_1 = 0.85 hasta 4.0
+# ksi y baja 0.05 por cada 1.0 ksi de exceso, sin bajar de 0.65.
+ALFA_1_BLOQUE_AASHTO = 0.85
+FC_MAX_ALFA_1_MPA = 10.0 * KSI_EN_MPA              # 10.0 ksi = 68.9 MPa
+BETA_1_BLOQUE_AASHTO = 0.85
+FC_MAX_BETA_1_MPA = 4.0 * KSI_EN_MPA               # 4.0 ksi = 27.6 MPa
+# _SI (correcciones de T-7c, H12): la reduccion de 0.05 por cada ksi de
+# exceso, convertida aqui a «por MPa» (0.05/6.894757 = 0.00725 por MPa); en
+# la llamada no se convierte nada.
+BETA_1_REDUCCION_AASHTO_SI = 0.05 / KSI_EN_MPA     # 0.05 por ksi
+BETA_1_MINIMO = 0.65
+
+# ---- AASHTO 5.4.2.6 «Modulus of Rupture», pag. impresa 5-20 (PDF 379):
+# f_r = 0.24·lambda·sqrt(f'c) con f'c en ksi. En MPa: 0.24·sqrt(6.894757) =
+# 0.6302 (compárese con el 0,62 de E.060 10.5.1). Unidad: MPa^0.5.
+MODULO_ROTURA_AASHTO_SI = 0.24 * KSI_EN_MPA ** 0.5
+# ---- AASHTO 5.6.3.3 «Minimum Reinforcement», pags. impresas 5-42 y 5-43
+# (PDF 401 y 402): M_r >= el MENOR de 1.33·M_u y M_cr = gamma_3·gamma_1·f_r·S
+# (sin presfuerzo y con seccion monolitica, la ec. 5.6.3.3-1 se reduce a eso).
+FACTOR_MOMENTO_REFUERZO_MINIMO_AASHTO = 1.33
+GAMMA_1_AGRIETAMIENTO_AASHTO = 1.6       # «1.6 for all other concrete structures»
+# gamma_3, razon fluencia / rotura del acero, por designacion (pag. 5-43).
+GAMMA_3_AASHTO = {
+    "A615_grado_60": 0.67,               # AASHTO M 31 (ASTM A615), Grade 60
+    "A706_grado_60": 0.75,               # ASTM A706, Grade 60
+}
+# Fluencia especificada del Grado 60, en su designacion metrica (Grado 420):
+# 60 ksi = 413.7 MPa, que las normas en SI redondean a 420 MPa (E.060 la
+# nombra asi en 3.5.3.2 y 9.7.2: «fy >= 420 MPa»).
+FY_ACERO_MPA = {"A615_grado_60": 420.0, "A706_grado_60": 420.0}
+
+# ---- AASHTO 5.7.3.3 «Nominal Shear Resistance», pag. impresa 5-67 (PDF
+# 426): V_c = 0.0316·beta·lambda·sqrt(f'c)·b_v·d_v (kip, ksi, in). El 0.0316
+# es 1/sqrt(1000), la conversion psi -> ksi del 1.0·sqrt(f'c[psi]) clasico,
+# no una constante fisica. En SI, como TENSION: 0.0316·sqrt(6.894757) =
+# 0.08297 MPa^0.5, de modo que v_c [MPa] = 0.08297·beta·sqrt(f'c [MPa]); con
+# beta = 2.0 da 0.166·sqrt(f'c), frente al 0,17 de E.060 (11-3).
+VC_COEFICIENTE_AASHTO_SI = 0.0316 * KSI_EN_MPA ** 0.5
+# Tope de V_n: 0.25·f'c·b_v·d_v (ec. 5.7.3.3-2). Adimensional sobre f'c.
+VN_TOPE_SOBRE_FC_AASHTO = 0.25
+# ---- 5.7.3.4.1 «Simplified Procedure for Nonprestressed Sections», pag.
+# impresa 5-70 (PDF 429): beta = 2.0 y theta = 45 grados, PERMITIDOS en (a)
+# zapatas cuya distancia del punto de cortante nulo a la cara del muro sea
+# menor que 3·d_v, y (b) otras secciones no presforzadas sin traccion axial
+# que tengan el refuerzo transversal minimo de 5.7.2.5 «or having an overall
+# depth of less than 16.0 in.».
+BETA_SIMPLIFICADO_AASHTO = 2.0
+PERALTE_MAX_SIMPLIFICADO_AASHTO_SI = 16.0 * _M_POR_PULG    # 16.0 in = 0.4064 m (estricto)
+ZAPATA_SIMPLIFICADO_VECES_DV = 3.0
+# ---- 5.7.2.8, pag. impresa 5-65 (PDF 424): d_v = distancia entre las
+# resultantes de traccion y compresion (d_e - a/2), que «need not be taken
+# to be less than the greater of 0.9·d_e or 0.72·h».
+DV_PISO_SOBRE_DE = 0.9
+DV_PISO_SOBRE_H = 0.72
+
+# ---- AASHTO 5.10.6 «Shrinkage and Temperature Reinforcement», pags.
+# impresas 5-174 y 5-175 (PDF 533 y 534): A_s >= 1.30·b·h / [2·(b + h)·f_y]
+# por cara y por direccion, con 0.11 <= A_s <= 0.60 (in2/ft; b y h en in, fy
+# en ksi; el comentario dice que 1.30 = 0.0018·60 ksi·12 in/ft, en kip/in·ft).
+# En SI: 1.30 kip/(in·ft) = 1.30·4448.22 N/(25.4 mm·304.8 mm) = 0.7469
+# N/mm2, y A_s sale en mm2 por mm con b y h en mm y fy en MPa.
+from src.constantes_fisicas import N_POR_KN  # noqa: E402  (bloque T-7c)
+
+_MM_POR_PIE = PIE_EN_METROS * MILIMETROS_POR_METRO
+TEMPERATURA_COEFICIENTE_AASHTO_SI = (1.30 * KIP_EN_KN * N_POR_KN
+                                     / (PULGADA_EN_MM * _MM_POR_PIE))   # N/mm2
+_MM2_M_POR_PULG2_PIE = (PULGADA_EN_MM ** 2 / _MM_POR_PIE
+                        * MILIMETROS_POR_METRO)    # in2/ft -> mm2/m: 2116.7
+TEMPERATURA_AS_MIN_AASHTO_SI = 0.11 * _MM2_M_POR_PULG2_PIE   # 0.11 in2/ft = 232.8 mm2/m
+TEMPERATURA_AS_MAX_AASHTO_SI = 0.60 * _MM2_M_POR_PULG2_PIE   # 0.60 in2/ft = 1270 mm2/m
+# Espaciamiento del acero de temperatura (pag. 5-175): «12.0 in. for walls
+# and footings greater than 18.0 in. thick» y, «for all other situations,
+# 3.0 times the component thickness but not less than 18.0 in.».
+TEMPERATURA_ESPESOR_GRUESO_M = 18.0 * _M_POR_PULG           # 18.0 in = 0.4572 m
+TEMPERATURA_S_MAX_GRUESO_M = 12.0 * _M_POR_PULG             # 12.0 in = 0.3048 m
+TEMPERATURA_S_VECES_ESPESOR = 3.0
+TEMPERATURA_S_PISO_M = 18.0 * _M_POR_PULG                   # 18.0 in = 0.4572 m
+# ---- AASHTO 5.10.3.2 «Maximum Spacing of Reinforcing Bars», pag. impresa
+# 5-172 (PDF 531): en muros y losas, el menor de 1.5 veces el espesor y
+# 18.0 in.
+ESPACIAMIENTO_MAX_VECES_ESPESOR_AASHTO = 1.5
+ESPACIAMIENTO_MAX_ABSOLUTO_AASHTO_M = 18.0 * _M_POR_PULG    # 18.0 in = 0.4572 m
+
+# ---- E.060, el CONTRASTE [N→] --------------------------------------------
+# 9.2.5, pag. 65: U = 1,4 CM + 1,7 CV + 1,7 CE (9-6) y, cuando la carga
+# muerta o la viva reducen el efecto del empuje, U = 0,9 CM + 1,7 CE (9-7).
+# CE es «el peso y empuje lateral de los suelos» y «la presion ejercida por
+# el agua contenida en el suelo». E.060 NO escribe una combinacion con sismo
+# Y empuje de suelos a la vez (9.2.3 solo combina CM, CV y CS): el contraste
+# se limita a la condicion estatica y la memoria lo dice.
+E060_FACTOR_CM = 1.4
+E060_FACTOR_CV = 1.7
+E060_FACTOR_CE = 1.7
+E060_FACTOR_CM_MINIMO = 0.9
+# 9.3.2.1 y 9.3.2.3, pag. 66.
+PHI_FLEXION_E060 = 0.90
+PHI_CORTE_E060 = 0.85
+# 11.3.1.1, ec. (11-3), pag. 88: V_c = 0,17·sqrt(f'c)·b_w·d (MPa, mm, N).
+VC_COEFICIENTE_E060 = 0.17
+# 10.2.7.1 y 10.2.7.3, pag. 76: bloque de 0,85·f'c; beta_1 = 0,85 para f'c
+# entre 17 y 28 MPa, 0,65 para f'c >= 56 MPa, lineal entre ambos.
+ALFA_BLOQUE_E060 = 0.85
+BETA_1_E060 = 0.85
+BETA_1_E060_MINIMO = 0.65
+FC_BETA_1_E060_MPA = (28.0, 56.0)
+# 10.3.5, pag. 77: la cuantia maxima se cumple si la deformacion neta del
+# acero en traccion es mayor o igual que 0,004.
+EPSILON_T_MIN_E060 = 0.004
+# 9.7.2, pag. 73: retraccion y temperatura en losas, barras corrugadas con
+# fy >= 420 MPa: 0,0018 del area bruta. 10.5.4, pag. 78, lo hace el acero
+# minimo de «losas estructurales y zapatas de espesor uniforme» y pide,
+# repartido en dos caras, no menos de 0,0012 en la cara en traccion, con
+# espaciamiento maximo de tres veces el espesor y 400 mm.
+CUANTIA_MIN_LOSA_E060 = 0.0018
+CUANTIA_MIN_CARA_TRACCION_E060 = 0.0012
+# 11.10.10.2 y 11.10.10.3, pag. 104 (cortante EN EL PLANO del muro): la
+# cuantia horizontal no baja de 0,0025, y la vertical de la ec. (11-32),
+# rho_v >= 0,0025 + 0,5·(2,5 - hm/lm)·(rho_h - 0,0025) >= 0,0025, que «no
+# necesita ser mayor que el valor de rho_h requerido por 11.10.10.1».
+CUANTIA_MIN_CORTANTE_EN_EL_PLANO_E060 = 0.0025
+EC_11_32_FACTOR = 0.5
+EC_11_32_ESBELTEZ = 2.5
+# 11.10.7 y 11.10.8, pags. 103 y 104: el umbral que reparte el regimen del
+# cortante en el plano, V_u frente a 0,085·sqrt(f'c)·A_cw.
+UMBRAL_CORTANTE_EN_EL_PLANO_E060 = 0.085
+
+# ---- E.060 Capitulo 22, concreto simple y ciclopeo (pags. 191 a 195) ------
+# 22.10.2.3: «En el calculo de las resistencias segun 22.5 se utilizara un
+# factor phi = 0,5 y se utilizara, para el diseño, un valor de f'c no mayor
+# a 10 MPa». (El 0,65 de 9.3.2.8 es el del concreto simple sin piedra.)
+PHI_CICLOPEO_E060 = 0.5
+FC_DISENO_MAX_CICLOPEO_MPA = 10.0
+# 22.5.3, ec. (22-7), cara de traccion: M_u/S_m - P_u/A_g <= phi·0,42·
+# sqrt(f'c). 22.5.4, ec. (22-9): V_n = 0,11·sqrt(f'c)·b_w·h.
+TRACCION_CONCRETO_SIMPLE_E060 = 0.42
+CORTANTE_CONCRETO_SIMPLE_E060 = 0.11
+# 22.4.8: en concreto vaciado contra el suelo el peralte se toma 50 mm menor
+# que la dimension real.
+REDUCCION_PERALTE_CONTRA_SUELO_M = 0.050
+# Tracciones nulas en una seccion rectangular: la resultante dentro del
+# tercio central, e <= t/6 (resistencia de materiales, no una norma).
+NUCLEO_CENTRAL_DIVISOR = 6.0
+
+# ---- correcciones de T-7c (H3) · AASHTO 5.6.7, control de fisuracion -------
+# «The spacing, s, of nonprestressed reinforcement in the layer closest to the
+# tension face shall satisfy the following» (pag. impresa 5-55, PDF 414), en
+# todo componente cuya traccion en la seccion pase del 80 % del modulo de
+# rotura en el estado limite de servicio que corresponda. Ec. 5.6.7-1 y
+# 5.6.7-2 (pag. impresa 5-56, PDF 415, leidas por imagen):
+#
+#     s <= 700·gamma_e / (beta_s·f_ss) - 2·d_c      (s, d_c en in; f_ss en ksi)
+#     beta_s = 1 + d_c / [0.7·(h - d_c)]
+#
+# El 700 es kip/in (ksi·in). En SI: 700·6.894757 MPa·0.0254 m = 122.589 MPa·m,
+# de modo que s [m] <= 122.589·gamma_e / (beta_s·f_ss [MPa]) - 2·d_c [m]. Se
+# convierte AQUI; la llamada recibe MPa y m.
+FISURACION_COEFICIENTE_AASHTO_SI = 700.0 * KSI_EN_MPA * _M_POR_PULG   # 700 kip/in
+FISURACION_FRACCION_FR = 0.80            # «exceeds 80 percent of the modulus of rupture»
+FISURACION_BETA_S_FACTOR = 0.7           # el 0.7 de la ec. 5.6.7-2
+# gamma_e, «exposure factor» (pag. 5-56): «1.00 for Class 1 exposure
+# condition», «0.75 for Class 2 exposure condition». Cual aplica la declara
+# el Propietario ('clase_exposicion_fisuracion_cabezal' [A], sin valor).
+FISURACION_GAMMA_E = {"clase_1": 1.00, "clase_2": 0.75}
+# f_ss «not to exceed 0.60 fy» (pag. 5-56).
+FISURACION_FSS_MAX_SOBRE_FY = 0.60
+# ---- 5.4.3.2 «Modulus of Elasticity» (pag. impresa 5-22, PDF 381): «The
+# modulus of elasticity, Es, of steel reinforcement shall be assumed as 29,000
+# ksi». 200 GPa redondeados en SI; se conserva la cifra de la fuente.
+ES_REFUERZO_AASHTO_MPA = 29000.0 * KSI_EN_MPA                 # 29 000 ksi = 199 948 MPa
+# ---- C5.4.2.4 (pag. impresa 5-20, PDF 379): «For normal weight concrete
+# with wc = 0.145 kcf, Ec may be taken as: Ec = 2,500·(f'c)^0.33» (ksi). Es
+# la ec. 5.4.2.4-1 con K1 = 1.0 («to be taken as 1.0 unless determined by
+# physical test») y el peso de la Tabla 3.5.1-1 para f'c <= 5.0 ksi, y la
+# fuente la da redondeada. En SI: Ec [MPa] = 2500·6.894757^0.67·f'c^0.33 =
+# 9115·f'c^0.33. Solo entra en la relacion modular n = Es/Ec de la tension
+# del acero en servicio (5.6.7).
+EC_EXPONENTE_AASHTO = 0.33
+EC_COEFICIENTE_AASHTO_SI = 2500.0 * KSI_EN_MPA ** (1 - EC_EXPONENTE_AASHTO)   # 2 500 ksi^0.67
+
+# ---- correcciones de T-7c (H5) · E.060 22.6.3, excentricidad minima ------
+# «Los muros de concreto simple estructural deben diseñarse para una
+# excentricidad correspondiente al momento maximo que puede acompañar a la
+# carga axial, pero no menor de 0,10 h» (pag. 192). Por analogia [N→] en la
+# fila C6 del cabezal ciclopeo.
+EXCENTRICIDAD_MIN_MURO_CONCRETO_SIMPLE_E060 = 0.10
+

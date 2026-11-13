@@ -1310,3 +1310,53 @@ que la FASE A declaró arriba—, 0 no comparables; los bloques `diseno`, `verif
 `caudal` de cada punto, idénticos; los dos CSV de resumen, `cli_rama_error.txt` y
 `memoria_punto_cajon.html`, idénticos byte a byte. **Diámetros, secciones, materiales y
 HW movidos: ninguno.**
+
+## T-7c en su rama (2026-11-13, FASE A): regenerada y medida contra `451a10a`
+
+T-7c de la cadena T (el armado del cabezal o su alternativa ciclópea, `INF-4.6`,
+`EXT-7-01`). El armado corre detrás de la estabilidad de cada cabezal, en la Fase 9 del
+punto, y **ninguna corrida de esta línea base llega ahí**: sin declarar nada, V5 sigue
+detenida en `remanso_derecho_via` y ningún punto alcanza la Fase 9 a nivel de expediente
+(a perfil la Fase 9 se difiere entera). Lo que cambia es texto, huellas y recuentos:
+
+- las dos huellas (`criterios_sha1`, `hoja_ruta_sha1`) y «129 criterios declarados, 22
+  todavía sin valor» → «136 … 19» en las tres memorias: siete criterios nuevos con valor
+  (`regimen_resistencia_elementos_cabezal`, `fc_cabezal_mpa`, `acero_refuerzo_cabezal`,
+  `catalogo_barras_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`,
+  `criterio_traccion_cabezal_ciclopeo`, `concreto_ciclopeo_cabezal`) y tres que dejan de
+  estar vacíos (los de cortante en el plano de E.060 11.10);
+- dos notas del bloque `cabezal` del proyecto en `cli_expediente.txt` y en
+  `informe_expediente.json`: la de las funciones de M9 sin llamador («armado del núm. 9.4
+  (ocho funciones)» → «piezas sueltas del núm. 9.4 (seis funciones)») y la de la
+  estabilidad, que ahora dice que detrás de ella cada cabezal se arma;
+- en las tres memorias, además, el volcado de los tableros y de los criterios sin valor,
+  que pierde las tres claves de cortante.
+
+**Medido con el comparador de E-B** (`cli.py --comparar`) contra los cuatro JSON de
+`451a10a`: 4 diferencias en `informe_expediente.json` (huella, las dos notas y el recuento
+de criterios sin valor) y 2 en cada uno de los otros tres (huella y recuento), **0 no
+comparables**; ningún bloque de punto cambia. Con `cmp`: `cli_perfil.txt`,
+`cli_perfil_ancho.txt`, `cli_familia_c.txt`, `cli_rama_error.txt`,
+`memoria_punto_cajon.html` y los dos CSV de resumen, idénticos byte a byte.
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+**Cierre de T-7c (2026-11-13, correcciones de la auditoría adversarial), regenerada otra
+vez y medida contra `451a10a`.** Las correcciones (el diagrama de cada empuje integrado
+sobre el arranque de la pantalla, el k_h0 del armado del muro que no cede, la fisuración
+de AASHTO 5.6.7, la altura de la zapata sobre su refuerzo de E.060 15.7, la junta del
+arranque del ciclópeo, d_v acotado al peralte efectivo) **no alcanzan ninguna corrida de
+esta línea base**, por lo mismo que la FASE A: ningún punto llega a la Fase 9 a nivel de
+expediente sin declarar nada. Respecto de la FASE A cambian solo huellas y recuentos: las
+dos huellas, «136 criterios declarados, 19 todavía sin valor» → «139 … 20» en las tres
+memorias (tres criterios nuevos: `clase_exposicion_fisuracion_cabezal`, sin valor a
+propósito —la declara el Propietario—, `junta_arranque_cabezal_ciclopeo` y
+`espesor_min_zapata_concreto_simple_m`, el 0.30 m de E.060 22.7.4 que deja de ser
+constante), la clave nueva en las listas de criterios sin valor de los cuatro JSON y en
+el volcado de las memorias, y `criterios_sha1`. **Contra `451a10a`**, con el comparador
+de E-B en los cuatro JSON: 4, 2, 2 y 2 diferencias —las mismas clases que la FASE A
+declaró arriba: la huella, las dos notas del bloque `cabezal` del proyecto en
+`informe_expediente.json` y el recuento de criterios sin valor (22 → 20)—, 0 no
+comparables; ningún bloque de punto cambia. Con `cmp`: `cli_perfil.txt`,
+`cli_perfil_ancho.txt`, `cli_familia_c.txt`, `cli_rama_error.txt`,
+`memoria_punto_cajon.html` y los dos CSV de resumen, idénticos byte a byte.
+**Diámetros, secciones, materiales y HW movidos: ninguno.**

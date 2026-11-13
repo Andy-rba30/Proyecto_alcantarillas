@@ -1663,6 +1663,41 @@ def _lineas_cabezal_del_punto(informe: InformePunto) -> List[str]:
     if not c.estabilidad:
         out.append(f"{SANGRIA_DETALLE}estabilidad E1-E3: no evaluada (ver "
                    "Bloqueos)")
+    # --- T-7c --- El armado de cada cabezal: la tabla por elemento (acero
+    # requerido, minimo, adoptado y la barra propuesta) o, si es de gravedad,
+    # que se verifico como ciclopeo. Las filas A1 a A5 y C1 a C6 salen, con
+    # su marca, en «Verificaciones»; lo que no se pudo armar, en «Bloqueos».
+    for a in c.armado:
+        if not a.secciones:
+            out.append(
+                f"{SANGRIA}Fase 9  cabezal de {a.extremo}: de gravedad en "
+                f"concreto ciclopeo, no se arma (f'c de la matriz "
+                f"{_fmt(a.fc_mpa, 1)} MPa; empuje: {a.regimen}); ver las "
+                "filas C1 a C6")
+            continue
+        out.append(
+            f"{SANGRIA}Fase 9  armado del cabezal de {a.extremo} (AASHTO "
+            f"LRFD Seccion 5; f'c = {_fmt(a.fc_mpa, 1)} MPa, fy = "
+            f"{_fmt(a.fy_mpa, 0)} MPa; empuje: {a.regimen}, K0 = "
+            f"{_fmt(a.K0)} frente a K_A = {_fmt(a.K_A)}; Evento Extremo I: "
+            f"{'si' if a.sismico else 'NO evaluado'})")
+        for s in a.secciones:
+            out.append(
+                f"{SANGRIA_DETALLE}{s.clave}: M_u = "
+                f"{_fmt(s.rige_flexion.M_u, 2)} kN.m/m (activo "
+                f"{_fmt(s.rige_flexion.M_u_cedente, 2)}), V_u = "
+                f"{_fmt(s.rige_cortante.V_u, 2)} kN/m; d = {_fmt(s.d)} m; "
+                f"M_r = {_fmt(s.M_r, 2)}, V_r = {_fmt(s.V_r, 2)}")
+        for f in a.tabla:
+            barra = (f"{f.barra.texto} ({_fmt(f.barra.As_provisto, 0)} "
+                     "mm2/m)" if f.barra is not None
+                     else "SIN BARRA DEL CATALOGO")
+            out.append(
+                f"{SANGRIA_DETALLE}{f.posicion}: requerido "
+                f"{_fmt(f.As_requerido, 0)}, minimo {_fmt(f.As_minimo, 0)}, "
+                f"adoptado {_fmt(f.As_adoptado, 0)} mm2/m -> {barra}")
+    if not c.armado:
+        out.append(f"{SANGRIA_DETALLE}armado: no evaluado (ver Bloqueos)")
     return out
 
 
@@ -1769,6 +1804,73 @@ def _cabezal_del_punto_json(informe: InformePunto) -> Optional[Dict[str, Any]]:
             "K0_sobre_K_A": _num(s.K0_sobre_K_A)}
             for s in e.solicitaciones],
     } for e in c.estabilidad]
+    # --- T-7c --- el armado de cada cabezal: regimen y materiales, las
+    # secciones criticas con sus dos solicitaciones (la que rige y la del
+    # muro que cede) y la TABLA de armado por elemento; en el de gravedad,
+    # solo los codigos de sus verificaciones (C1 a C6).
+    salida["armado"] = [{
+        "extremo": a.extremo, "tipo": a.tipo, "regimen": a.regimen,
+        "fc_mpa": _num(a.fc_mpa), "fy_mpa": _num(a.fy_mpa),
+        "K0": _num(a.K0), "K_A": _num(a.K_A),
+        "evento_extremo_evaluado": a.sismico,
+        "secciones": [{
+            "elemento": s.elemento, "clave": s.clave, "seccion": s.seccion,
+            "cara_en_traccion": s.cara, "espesor_m": _num(s.espesor),
+            "recubrimiento_mm": _num(s.recubrimiento_mm),
+            "origen_recubrimiento": s.origen_recubrimiento,
+            "d_m": _num(s.d),
+            "combinacion_flexion": s.rige_flexion.combinacion,
+            "M_u_kn_m_m": _num(s.rige_flexion.M_u),
+            "M_u_cedente_kn_m_m": _num(s.rige_flexion.M_u_cedente),
+            "M_u_reposo_kn_m_m": _num(s.rige_flexion.M_u_reposo),
+            "phi_flexion": _num(s.rige_flexion.phi_flexion),
+            "combinacion_cortante": s.rige_cortante.combinacion,
+            "V_u_kn_m": _num(s.rige_cortante.V_u),
+            "V_u_cedente_kn_m": _num(s.rige_cortante.V_u_cedente),
+            "phi_corte": _num(s.rige_cortante.phi_corte),
+            "As_resistencia_mm2_m": _num(s.As_resistencia),
+            "As_minimo_flexion_mm2_m": _num(s.As_minimo_flexion),
+            "As_minimo_constructivo_mm2_m": _num(s.As_minimo_constructivo),
+            "origen_minimo": s.origen_minimo,
+            "As_adoptado_mm2_m": _num(s.As_adoptado),
+            "gobierna": s.gobierna, "s_max_m": _num(s.s_max),
+            "origen_s_max": s.origen_s_max,
+            "M_r_kn_m_m": _num(s.M_r), "epsilon_t": _num(s.epsilon_t),
+            "d_v_m": _num(s.d_v), "V_c_kn_m": _num(s.V_c),
+            "V_r_kn_m": _num(s.V_r),
+            # --- correcciones de T-7c --- el d_v de la letra de 5.7.2.8
+            # (H8) y la fisuracion de 5.6.7 en Servicio I (H3)
+            "d_v_letra_m": _num(s.d_v_letra),
+            "fisuracion_5_6_7": {
+                "M_servicio_kn_m_m": _num(s.M_servicio),
+                "aplica": s.fisuracion_aplica,
+                "f_ss_mpa": _num(s.f_ss),
+                "s_max_m": (None if s.s_fisuracion is None else
+                            {k: _num(v) for k, v in s.s_fisuracion.items()}),
+                "clase_exposicion": s.clase_exposicion},
+            "contraste_e060": {
+                "M_u_kn_m_m": _num(s.M_u_e060), "V_u_kn_m": _num(s.V_u_e060),
+                "As_mm2_m": _num(s.As_e060),
+                "phi_Vc_kn_m": _num(s.V_r_e060)},
+            "verificaciones": [v.codigo for v in s.verificaciones],
+        } for s in a.secciones],
+        "tabla": [{
+            "elemento": f.elemento, "posicion": f.posicion,
+            "As_requerido_mm2_m": _num(f.As_requerido),
+            "As_minimo_mm2_m": _num(f.As_minimo),
+            "origen_minimo": f.origen_minimo,
+            "As_adoptado_mm2_m": _num(f.As_adoptado),
+            "gobierna": f.gobierna, "s_max_m": _num(f.s_max),
+            "barra": None if f.barra is None else f.barra.designacion,
+            "diametro_mm": None if f.barra is None else _num(
+                f.barra.diametro_mm),
+            "espaciamiento_m": None if f.barra is None else _num(
+                f.barra.espaciamiento),
+            "As_provisto_mm2_m": None if f.barra is None else _num(
+                f.barra.As_provisto),
+        } for f in a.tabla],
+        "verificaciones": [v.codigo for v in a.verificaciones],
+    } for a in c.armado]
     return salida
 
 

@@ -3400,3 +3400,300 @@ GLOBAL_CABEZAL = _fundamento(
         "Un cabezal estable por si mismo puede moverse entero con el talud "
         "que lo soporta."),
 )
+
+
+# ===========================================================================
+# --- T-7c --- (cadena T) · el armado del cabezal y la alternativa ciclopea
+# ===========================================================================
+# Diez pasos. El verbo de cada uno lo sostiene el caracter de sus citas; lo
+# que es ELECCION del proyecto -- armar con el empuje en reposo, tratar la
+# pantalla como losa, aplicar el minimo mas exigente de dos normas, pedir
+# tracciones nulas en el ciclopeo -- no esta en el `por_que`: va en la nota
+# de cada paso y en la `Interpretacion` de la cita.
+
+REGIMEN_ARMADO_CABEZAL = _fundamento(
+    id="F9.ARM_REGIMEN",
+    fase=F9,
+    que_paso=("Empuje con que se arma cada elemento: en reposo o activo, y "
+              "las solicitaciones factoradas que resultan"),
+    por_que=(
+        "La fuente recomienda proyectar con el empuje en reposo los muros "
+        "que toleran poco o ningun movimiento, y liga el muro que no cede "
+        "con ese empuje en el estado limite de resistencia; del muro en "
+        "voladizo tipico de mas de metro y medio dice que su deformacion "
+        "basta para desarrollar el empuje activo. Bajo sismo no da un "
+        "coeficiente de reposo: para el muro que no cede manda calcular el "
+        "empuje sismico con el coeficiente de base sin reducir por "
+        "desplazamiento y pide considerar la resultante a media altura."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("AASHTO_LRFD_9.C3.11.1#REPOSO", "AASHTO_LRFD_9.C11.6.5.4#K0",
+           "AASHTO_LRFD_9.3.11.5.2#K0", "AASHTO_LRFD_9.C3.11.5.2#ACTIVO",
+           "AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE",
+           "AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS"),
+    que_pasa_si_no_se_hace=(
+        "La pantalla de un cabezal arriostrado por el barril y los aleros "
+        "se armaria con un empuje que solo existe si el muro se desplaza."),
+)
+
+SOLICITACIONES_ZAPATA_CABEZAL = _fundamento(
+    id="F9.ARM_ZAPATA",
+    fase=F9,
+    que_paso=("Secciones criticas de la zapata: la punta y el talon en la "
+              "cara de la pantalla"),
+    por_que=(
+        "La fuente manda calcular la zapata que soporta un muro como un "
+        "voladizo, tomar la seccion critica de flexion en la cara del muro, "
+        "usar para su diseño estructural una presion de contacto "
+        "triangular o trapezoidal con las cargas factoradas, y armar el "
+        "talon con el peso entero de lo que tiene encima, salvo que se use "
+        "un metodo mas exacto. En el talon de un muro en voladizo la "
+        "seccion critica de cortante es la cara trasera de la pantalla."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.5.12.8.4#CARA", "AASHTO_LRFD_9.10.6.5#LINEAL",
+           "AASHTO_LRFD_9.11.6.1.2#TALON",
+           "AASHTO_LRFD_9.C5.12.8.6.1#TALON"),
+    que_pasa_si_no_se_hace=(
+        "El talon se armaria descontando una reaccion del terreno que "
+        "puede no estar donde el calculo la supone."),
+)
+
+FLEXION_CABEZAL = _fundamento(
+    id="F9.ARM_FLEXION",
+    fase=F9,
+    que_paso=("Resistencia a flexion de la seccion con el acero propuesto "
+              "frente al momento factorado"),
+    por_que=(
+        "La fuente exige que la resistencia factorada a flexion, el "
+        "producto de la resistencia nominal por el factor de resistencia, "
+        "no sea menor que el momento factorado. La resistencia nominal se "
+        "calcula con el bloque rectangular de compresiones y despreciando "
+        "la traccion del concreto, y el factor de las secciones controladas "
+        "por traccion solo vale si el acero alcanza la deformacion limite; "
+        "en el evento extremo el factor es la unidad."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.5.6.3.2.1#MR", "AASHTO_LRFD_9.5.5.4.2#FLEXION",
+           "AASHTO_LRFD_9.5.6.2.2#BLOQUE", "AASHTO_LRFD_9.5.6.2.1#TRACCION",
+           "AASHTO_LRFD_9.1.3.2.1#EXTREMO"),
+    que_pasa_si_no_se_hace=(
+        "La pantalla o la zapata se agotarian por flexion en su arranque."),
+)
+
+ACERO_MINIMO_CABEZAL = _fundamento(
+    id="F9.ARM_MINIMO",
+    fase=F9,
+    que_paso=("Acero minimo de la cara en traccion y de reparto: el de la "
+              "fuente que rige y el de la norma de contraste"),
+    por_que=(
+        "La fuente exige que el acero de traccion desarrolle una "
+        "resistencia no menor que el menor de dos momentos, el de "
+        "agrietamiento y uno y un tercio del factorado, para que la seccion "
+        "no falle al fisurarse; y exige en cada cara y en cada direccion un "
+        "acero de retraccion y temperatura. La norma peruana de concreto "
+        "fija por su lado cuantias minimas para los muros y para las losas "
+        "y zapatas."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.5.6.3.3#MINIMO", "AASHTO_LRFD_9.5.4.2.6#FR",
+           "AASHTO_LRFD_9.5.10.6#TEMPERATURA",
+           "AASHTO_LRFD_9.11.6.1.5.1#TEMPERATURA", "E060.14.3.1",
+           "E060.10.5.4#LOSAS", "E060.9.7.2#TEMPERATURA"),
+    que_pasa_si_no_se_hace=(
+        "Una seccion poco armada fallaria de forma fragil al abrirse la "
+        "primera fisura, y las caras sin acero se fisurarian por "
+        "retraccion."),
+)
+
+ESPACIAMIENTO_CABEZAL = _fundamento(
+    id="F9.ARM_ESPACIAMIENTO",
+    fase=F9,
+    que_paso=("Barra y espaciamiento propuestos frente al acero adoptado y "
+              "al espaciamiento maximo"),
+    por_que=(
+        "La fuente limita el espaciamiento del refuerzo de muros y losas a "
+        "una vez y media el espesor y a un maximo absoluto, y el del acero "
+        "de temperatura a otro; la norma peruana de concreto lo limita a "
+        "tres veces el espesor y a 400 mm, y pide dos capas en los muros de "
+        "mas de 200 mm. El control de fisuracion en servicio que la fuente "
+        "exige ademas tiene su propia fila."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.5.10.3.2#ESPACIAMIENTO",
+           "AASHTO_LRFD_9.5.10.6#ESPACIAMIENTO", "E060.14.3.3",
+           "E060.14.3.2", "AASHTO_LRFD_9.5.6.7#FISURACION"),
+    que_pasa_si_no_se_hace=(
+        "Barras muy separadas dejan paños sin armar entre ellas."),
+)
+
+CORTANTE_CABEZAL = _fundamento(
+    id="F9.ARM_CORTANTE",
+    fase=F9,
+    que_paso=("Resistencia a cortante del concreto, sin refuerzo "
+              "transversal, frente al cortante factorado"),
+    por_que=(
+        "La fuente exige que la resistencia nominal a cortante sea la menor "
+        "de dos expresiones y que, minorada, no sea menor que el cortante "
+        "factorado. Para las zapatas cortas y para las secciones de poco "
+        "peralte permite el procedimiento simplificado, con el factor del "
+        "concreto fisurado igual a dos; fuera de esas condiciones manda el "
+        "procedimiento general, porque las expresiones tradicionales son "
+        "inseguras en elementos grandes sin refuerzo transversal. Fuera de "
+        "las losas, zapatas y alcantarillas exige refuerzo transversal "
+        "donde el cortante supera la mitad de la resistencia."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.5.7.3.3#VN",
+           "AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO",
+           "AASHTO_LRFD_9.C5.7.3.4.1#GRANDES", "AASHTO_LRFD_9.5.7.2.8#DV",
+           "AASHTO_LRFD_9.5.5.4.2#CORTE",
+           "AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL",
+           "AASHTO_LRFD_9.1.3.2.1#EXTREMO"),
+    que_pasa_si_no_se_hace=(
+        "La seccion fallaria por traccion diagonal, sin aviso, antes de "
+        "agotar su flexion."),
+)
+
+CONTRASTE_E060_CABEZAL = _fundamento(
+    id="F9.ARM_E060",
+    fase=F9,
+    que_paso=("Contraste con la norma peruana de concreto: flexion y "
+              "cortante con sus combinaciones y sus factores"),
+    por_que=(
+        "La norma peruana de concreto armado exige, para las estructuras a "
+        "las que se aplica, que la resistencia de diseño no sea menor que "
+        "la requerida por sus propias combinaciones, que amplifican el "
+        "empuje y el peso de los suelos; manda diseñar los muros de "
+        "contencion por flexion y el cortante perpendicular a su plano "
+        "como el de una losa. El cabezal es una obra vial y esa norma no lo "
+        "nombra: el proyecto calcula con ella un contraste, por analogia, "
+        "junto al calculo que rige."),
+    verbo=Verbo.OBLIGA,
+    citas=("E060.9.2.5#EMPUJE", "E060.9.3.1#PHI", "E060.10.2.7#BLOQUE",
+           "E060.10.3.4#MAXIMO", "E060.11.3.1#VC", "E060.11.10.1",
+           "E060.11.12.1.1#VIGA", "E060.14.8.1#CONTENCION"),
+    que_pasa_si_no_se_hace=(
+        "La memoria no tendria la resistencia en el formato de la norma "
+        "peruana de concreto, que es el que un revisor local espera leer."),
+)
+
+CORTANTE_EN_EL_PLANO_CABEZAL = _fundamento(
+    id="F9.ARM_CORTANTE_PLANO",
+    fase=F9,
+    que_paso=("Cuantias minimas del muro bajo el regimen de cortante en su "
+              "plano"),
+    por_que=(
+        "La norma peruana de concreto separa el cortante perpendicular al "
+        "plano de un muro, que manda a las disposiciones de las losas, del "
+        "cortante en su plano, para el que fija un umbral: por debajo de "
+        "el rigen los minimos generales, y por encima la cuantia horizontal "
+        "no baja de un piso mayor y la vertical sale de una ecuacion que "
+        "depende de la esbeltez del muro, sin necesidad de superar la "
+        "horizontal requerida."),
+    verbo=Verbo.OBLIGA,
+    citas=("E060.11.10.1", "E060.11.10.2", "E060.11.10.7#UMBRAL",
+           "E060.11.10.10.2", "E060.11.10.10.3", "E060.14.3.1"),
+    que_pasa_si_no_se_hace=(
+        "Un muro corto cargado en su plano quedaria con el minimo general, "
+        "menor que el que su regimen de cortante pide."),
+)
+
+CICLOPEO_CABEZAL = _fundamento(
+    id="F9.CICLOPEO",
+    fase=F9,
+    que_paso=("Cabezal de gravedad en concreto ciclopeo: posicion de la "
+              "resultante en la base y en el cuerpo, y limites del material"),
+    por_que=(
+        "La norma peruana de concreto limita el concreto ciclopeo a los "
+        "muros de gravedad y a los cimientos, le fija la resistencia minima "
+        "de la matriz y el volumen maximo de piedra, y manda calcular su "
+        "resistencia con un factor de reduccion y una resistencia de diseño "
+        "menores que los del concreto simple; la especificacion vial le "
+        "pide una resistencia mayor. En un muro de concreto simple la norma "
+        "admite una traccion limitada, pero prohibe transmitirla a traves "
+        "de las juntas de construccion, distingue el caso en que la "
+        "resultante cae en el tercio central del espesor, pide una "
+        "excentricidad minima y barras alrededor de las aberturas de sus "
+        "muros."),
+    verbo=Verbo.OBLIGA,
+    citas=("E060.22.10.2#CICLOPEO", "E060.22.10.2.3#PHI",
+           "E060.22.5.3#TRACCION", "E060.22.5.4#CORTANTE",
+           "E060.22.4.7#JUNTAS", "E060.22.6.3#TERCIO",
+           "E060.22.6.3#EXCENTRICIDAD", "E060.22.6.6.5#ABERTURAS",
+           "E060.22.4.8#PERALTE", "EG2013.503.04#T503_07"),
+    que_pasa_si_no_se_hace=(
+        "Un muro sin acero trabajaria a traccion en su trasdos, que es "
+        "donde el concreto ciclopeo no la resiste."),
+)
+
+TABLA_ARMADO_CABEZAL = _fundamento(
+    id="F9.ARM_TABLA",
+    fase=F9,
+    que_paso=("Tabla de armado del cabezal: acero requerido, minimo y "
+              "propuesto por elemento"),
+    por_que=(
+        "La fuente exige en cada seccion el acero que la flexion pide y, "
+        "ademas, el minimo; la tabla reune por elemento el requerido, el "
+        "minimo, el adoptado y la barra con su espaciamiento, que es lo que "
+        "pasa al plano."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.5.6.3.2.1#MR", "AASHTO_LRFD_9.5.6.3.3#MINIMO",
+           "AASHTO_LRFD_9.5.10.6#TEMPERATURA"),
+    que_pasa_si_no_se_hace=(
+        "El plano del cabezal no tendria de donde tomar sus barras."),
+)
+
+# --- correcciones de T-7c --- tres filas mas del armado: la fisuracion de
+# 5.6.7 (H3), el f'c por durabilidad (H7) y la altura de la zapata sobre su
+# refuerzo (H4).
+FISURACION_CABEZAL = _fundamento(
+    id="F9.ARM_FISURACION",
+    fase=F9,
+    que_paso=("Control de fisuracion en servicio: espaciamiento de la capa "
+              "traccionada frente al de la ecuacion de la fuente"),
+    por_que=(
+        "La fuente exige, en todo elemento cuya traccion en servicio pasa "
+        "del ochenta por ciento del modulo de rotura, que el espaciamiento "
+        "de la capa de refuerzo mas proxima a la cara traccionada no supere "
+        "el que da su ecuacion de control de fisuracion, y limita la "
+        "tension del acero en servicio. La ecuacion lleva un factor de "
+        "exposicion que la fuente deja al Propietario."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.5.6.7#FISURACION",
+           "AASHTO_LRFD_9.5.6.7#ESPACIAMIENTO", "AASHTO_LRFD_9.5.6.7#FSS",
+           "AASHTO_LRFD_9.5.6.7#GAMMA_E", "AASHTO_LRFD_9.C5.6.7#CLASE_1",
+           "AASHTO_LRFD_9.5.4.3.2#ES", "AASHTO_LRFD_9.C5.4.2.4#EC",
+           "AASHTO_LRFD_9.T3.4.1-1"),
+    que_pasa_si_no_se_hace=(
+        "Barras bien calculadas pero muy separadas abren fisuras anchas "
+        "por las que el agua del relleno llega al acero."),
+)
+
+DURABILIDAD_ARMADO_CABEZAL = _fundamento(
+    id="F9.ARM_DURABILIDAD",
+    fase=F9,
+    que_paso=("Resistencia del concreto del cabezal frente a la minima por "
+              "durabilidad"),
+    por_que=(
+        "La norma peruana de concreto fija, segun la exposicion del "
+        "concreto a los sulfatos y a los cloruros del suelo y del agua, una "
+        "resistencia minima a la compresion; con las dos tablas a la vez "
+        "manda tomar la mayor."),
+    verbo=Verbo.OBLIGA,
+    citas=("E060.T4.4", "E060.T4.2", "E060.4.4.2"),
+    que_pasa_si_no_se_hace=(
+        "Un concreto suficiente para la resistencia se degradaria en un "
+        "suelo agresivo antes de su vida util."),
+)
+
+PERALTE_ZAPATA_ARMADA_CABEZAL = _fundamento(
+    id="F9.ARM_PERALTE_ZAPATA",
+    fase=F9,
+    que_paso=("Altura de la zapata del cabezal medida sobre su refuerzo "
+              "inferior"),
+    por_que=(
+        "La norma peruana de concreto fija una altura minima de la zapata "
+        "apoyada sobre el suelo, medida sobre su refuerzo inferior. El "
+        "cabezal es una obra vial y esa norma no lo nombra: el proyecto la "
+        "aplica por analogia como minimo constructivo."),
+    verbo=Verbo.OBLIGA,
+    citas=("E060.15.7#PERALTE",),
+    que_pasa_si_no_se_hace=(
+        "Una zapata delgada con un recubrimiento grande deja poco peralte "
+        "sobre su acero para la flexion y el cortante de la punta."),
+)

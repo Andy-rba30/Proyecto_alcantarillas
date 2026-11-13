@@ -259,6 +259,31 @@ obligatorios, φ entre 0 y 45° (el rango de la Tabla 10.6.3.1.2a-1 de AASHTO), 
 ninguna clave desconocida. **La estabilidad global del muro y la del talud (E4, E5) no se
 evalúan**: quedan diferidas al expediente con el estudio de suelos, y el programa lo imprime.
 
+### 3.4 Lo que el armado del cabezal necesita (T-7c)
+
+Desde T-7c cada cabezal de voladizo armado sale con el armado de su pantalla, de su
+zapata y del arranque de sus aleros, y el de gravedad con su verificación como concreto
+ciclópeo. **Ninguna entrada nueva es obligatoria**: el armado corre con las mismas del
+§3.3. Lo que el programa no puede elegir, y qué hace mientras no lo tiene:
+
+| Entrada | Por dónde entra | Origen | Sin ella |
+|---|---|---|---|
+| Análisis químico del suelo y del agua (sulfatos, cloruros) y condición de exposición | dato de sitio `exposicion_quimica_ems` [S] (§4) | **EMS** | **No se rellena.** El recubrimiento con que se calcula el peralte efectivo es la **cota más exigente** de la regla del mayor (91.4 mm: 3.0 in × 1.2), con aviso; y el f'c de cálculo no se contrasta con el mínimo por durabilidad de E.060 (aviso) |
+| Categoría del acero de refuerzo (sin recubrir, epóxico o galvanizado, M 334M) | criterio `categoria_refuerzo_aashto` [A] | **Proyectista** · especificación de materiales | La misma cota de recubrimiento, con el mismo aviso |
+| Resistencia del concreto del cabezal armado | criterio `fc_cabezal_mpa` [A]: 21 MPa (Clase D del EG-2013), ventana 17.5–35 | **Proyectista** · especificación de materiales | Rige 21 MPa |
+| Designación del acero | criterio `acero_refuerzo_cabezal` [A]: `A615_grado_60` (archivo) o `A706_grado_60` | **Proyectista** | Rige A615 Grado 60 (fy 420 MPa) |
+| Si la pantalla del cabezal cede o no ante el empuje | criterio `regimen_resistencia_elementos_cabezal` [A]: `no_cedente_k0` (archivo) o `cedente` | **Propietario** (decidido el 2026-11-13) | Rige el empuje en reposo, tomando en cada sección la mayor de esa solicitación y la del muro que cede |
+| Barras y espaciamientos de donde se propone el armado | criterio `catalogo_barras_refuerzo_cabezal` [A] | **Proyectista** · ficha del proveedor de acero (las áreas nominales no se verificaron contra la norma de producto, que no está en `normas/`) | Rige el catálogo de archivo (3/8" a 1", de 0.30 a 0.10 m) |
+| Clase de exposición para el control de fisuración (AASHTO 5.6.7) | criterio `clase_exposicion_fisuracion_cabezal` [A], **sin valor de archivo**: `clase_1` (γe 1.00) o `clase_2` (γe 0.75) | **Propietario** | **No se rellena.** La fila A6 se evalúa igual: la barra propuesta respeta la Clase 1 (la menos exigente) y A6 imprime los dos espaciamientos máximos y sale INDICADOR «no decidida» cuando el propuesto solo cumple la Clase 1 (ficha T7C-06) |
+| Concreto ciclópeo del cabezal de gravedad: f'c de la matriz y fracción de piedra | criterio `concreto_ciclopeo_cabezal` [A]: 14 MPa y 30 % | **Proyectista** | Rigen los dos límites de la Clase G del EG-2013 |
+| Cómo se vacía el arranque del cuerpo ciclópeo sobre su zapata | criterio `junta_arranque_cabezal_ciclopeo` [A]: `junta_de_construccion` (archivo) o `vaciado_monolitico` | **Proyectista** · especificación de obra | Rige la junta de construcción: la fila C2 decide siempre (E.060 22.4.7) |
+
+Desde el cierre de T-7c el armado imprime además tres filas que dependen de estas
+entradas: **A6** (fisuración), **A7** (el f'c frente al mínimo por durabilidad, solo con
+`exposicion_quimica_ems` declarado: sin él, un aviso) y **A8** (la altura de la zapata
+sobre su refuerzo inferior frente a los 300 mm de E.060 15.7, con el recubrimiento con
+que se arma: con la cota de 91.4 mm la zapata de 0.37 m de la regla de T-7a no cumple).
+
 ---
 
 ## 4. Datos de sitio `[S]`

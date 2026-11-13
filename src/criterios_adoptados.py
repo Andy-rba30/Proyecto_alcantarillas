@@ -79,6 +79,9 @@ from src.constantes_normativas import (D_INICIO, SIMBOLOS_SUCS,
                                    TMC_PLANCHA_CORRUGADA,
                                    DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM)
 from src.constantes_fisicas import PULGADA_EN_MM
+from src.constantes_normativas import (  # --- T-7c ---
+    BETA_SIMPLIFICADO_AASHTO, PHI_CORTE_AASHTO, PHI_EVENTO_EXTREMO_AASHTO,
+    PHI_FLEXION_AASHTO)
 from src.dominios import MILIMETROS_POR_METRO
 from src.normativa import esquema as _esquema
 from src.normativa import registro as _registro_normativo
@@ -9068,8 +9071,8 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="Practica de predimensionamiento: INFORME §4.2 y §4.3 y el "
                "encargo de T-7a (PDF de VARIOS pp. 18 y 42, NO verificado: no "
                "esta en normas/). Las dimensiones con fuente numerica estan "
-               "en constantes_normativas (ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M, "
-               "E.060 22.7.4) y en los criterios "
+               "en los criterios 'espesor_min_zapata_concreto_simple_m' "
+               "(E.060 22.7.4, [N→] desde el cierre de T-7c), "
                "'profundidad_cimentacion_min_cabezal_m', "
                "'peralte_min_zapata_armada_m', "
                "'margen_zapata_bajo_socavacion_m' y 'dentellon_losa_entrega'",
@@ -9568,86 +9571,50 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "cortante_alto_muro_e060_art_11_10_10_2": Criterio(
-        valor=None,                 # VACIO: bloquea el escalon de rho a 0.0025
+        # --- T-7c --- DEJA DE ESTAR VACIO. Lo que faltaba no era el numero
+        # -- el 0,0025 esta literal en el articulo desde EXT-6 -- sino la
+        # demanda de cortante con que decidir si el muro esta bajo ese
+        # regimen. Desde T-7c el armado la tiene (`M9.armado_del_cabezal`)
+        # y sabe en que plano actua: ver el criterio del regimen, abajo.
+        valor=0.0025,
         nivel=NIVEL_EXPEDIENTE,
-        etiqueta="A",
-        # `float` y no un si/no (auditoria adversarial de EXT-5): lo que M9
-        # lee de aqui es la CUANTIA que rige bajo cortante alto -- hace
-        # `float()` sobre el valor --; que el muro ESTE en esa condicion lo
-        # afirma quien llama, como argumento. Con `str` la puerta rechazaba
-        # el 0.0025 y aceptaba 'si', que reventaba en M9 fuera de
-        # ErrorProyecto: justo el defecto PC-14.
+        etiqueta="N->",
+        # `float` (auditoria adversarial de EXT-5): lo que M9 lee de aqui es
+        # la CUANTIA que rige bajo el regimen de 11.10.10, con `float()`.
         forma=FORMA_FLOAT,
-        concepto="Si el muro del cabezal esta en la condicion de cortante "
-                 "alto de E.060 Art. 11.10.10.2, que escalona la cuantia "
-                 "horizontal minima de 0.0020 a 0.0025",
-        justificacion="Decide si el muro del cabezal esta en la condicion de "
-                      "cortante alto que escalona la cuantia horizontal "
-                      "minima, y hoy es un vacio declarado. La fuente dice "
-                      "dos minimos, no uno: E.060 fija 0.0020 en su Art. "
-                      "14.3.1 y lo sube a 0.0025 en su Art. 11.10.10.2, y "
-                      "aplicar solo el primero sin comprobar el otro es "
-                      "quedarse con el minimo mas bajo de los dos por "
-                      "omision. El Art. 11.10.10.2 entero es una sola frase, "
-                      "verificada contra el PDF (pag. impresa 104): fija ese "
-                      "minimo y el espaciamiento maximo (tres veces el "
-                      "espesor del muro, sin exceder 400 mm), y no define "
-                      "umbral de entrada alguno. Los umbrales que de verdad "
-                      "escalonan el regimen de un muro tienen otra forma: el "
-                      "Art. 11.10.10.1 abre la exigencia de refuerzo por "
-                      "corte donde Vu excede phi*Vc, y los Arts. 11.10.7 y "
-                      "11.10.8 (pags. 103-104) reparten el regimen segun Vu "
-                      "sea menor o mayor que 0.085*raiz(f_c_prima)*Acw; un "
-                      "umbral del orden de Vu > 0.5*phi*Vc no es de muros -- "
-                      "ese 0.5*phi*Vc existe en E.060, pero en el Art. "
-                      "11.5.6.1 (pag. 91) y para elementos sometidos a "
-                      "flexion. Lo que la fuente no resuelve aqui: el "
-                      "disparador es una demanda de cortante, y M9 no calcula "
-                      "cortante -- el diseno por flexion y corte esta "
-                      "bloqueado entero en "
-                      "'procedimiento_flexion_corte_aashto_sec5', que es de "
-                      "AASHTO LRFD Sec. 5 por la Via 1 de Sec. 0.2. Sin Vu no "
-                      "hay forma de contestar si el muro esta o no en esa "
-                      "condicion, y contestar que no por defecto seria elegir "
-                      "el minimo mas bajo en silencio, que es exactamente el "
-                      "error que este archivo existe para impedir. Se declara "
-                      "vacio y `M9.cuantia_de_diseno` lo exige a quien la "
-                      "llame: o se declara aqui, o el calculo se detiene. "
-                      "Nota de taxonomia: el 0.0025 en si es [N] -- articulo "
-                      "peruano vigente -- y su sitio natural seria "
-                      "constantes_normativas.py; no esta alli porque la hoja "
-                      "de ruta no transcribe el Art. 11.10.10.2, solo cita el "
-                      "14.3.1, y mientras no lo recoja el numero viaja en "
-                      "esta justificacion y no como constante [N], para no "
-                      "crear una cita normativa que la fuente de verdad del "
-                      "proyecto no respalda. Ademas, la Via 1 de Sec. 0.2 "
-                      "abre una pregunta previa que tambien hay que contestar "
-                      "en la memoria: si el diseno estructural es de AASHTO, "
-                      "cual de los dos minimos de E.060 se importa y con que "
-                      "argumento",
-        fuente="PENDIENTE - E.060 Art. 11.10.10.2 (cuantia horizontal "
-               "minima en muros con cortante alto), pag. impresa 104, "
-               "verificado contra el PDF: el 0.0025 esta literal ahi y el "
-               "umbral de entrada esta en los Arts. 11.10.7 / 11.10.8 "
-               "(0.085*raiz(f_c_prima)*Acw) y 11.10.10.1 (Vu > phi*Vc). Lo "
-               "que sigue pendiente NO es la cita, que ya esta verificada: es "
-               "la DEMANDA Vu con que contestar si este muro esta en esa "
-               "condicion, y que la hoja de ruta recoja el articulo",
-        reemplazado_por="Demanda de cortante Vu del cabezal, salida del "
-                        "diseno de 'procedimiento_flexion_corte_aashto_sec5', "
-                        "contrastada contra el umbral del Art. 11.10.10.2",
-        verificacion_pendiente="Al cerrarlo, declarar en la memoria las dos "
-                               "cosas por separado: el valor de Vu con que se "
-                               "decidio, y si el minimo aplicado es el 0.0020 "
-                               "del Art. 14.3.1 o el 0.0025 del "
-                               "Art. 11.10.10.2",
+        concepto="Cuantia horizontal minima del muro del cabezal bajo el "
+                 "regimen de cortante en el plano de E.060 11.10.10 (Art. "
+                 "11.10.10.2), que escalona la de 14.3.1 de 0,0020 a 0,0025",
+        justificacion="Es el piso horizontal del regimen de cortante en el "
+                      "plano del muro. La fuente (E.060 11.10.10.2, pag. "
+                      "104; cita E060.11.10.10.2) dice en una sola frase que "
+                      "la cuantia de refuerzo horizontal para cortante no "
+                      "debe ser menor que 0,0025, con espaciamiento no mayor "
+                      "que tres veces el espesor ni que 400 mm; el regimen "
+                      "lo abren 11.10.7 y 11.10.8 (pags. 103 y 104; cita "
+                      "E060.11.10.7#UMBRAL) segun V_u en el plano sea menor "
+                      "o mayor que 0,085·raiz(f'c)·Acw, y por debajo de ese "
+                      "umbral rigen 0,002 y 0,0015, los mismos de 14.3.1. "
+                      "Es [N→] y no [N]: E.060 es la norma de concreto de "
+                      "las edificaciones y se aplica al cabezal vial por "
+                      "analogia, como contraste y como minimo constructivo "
+                      "('regla_minimos_constructivos_cabezal'). Cuando se "
+                      "aplica lo decide el regimen declarado "
+                      "('regimen_cortante_muro_e060_art_11_10_2'): con el "
+                      "cortante perpendicular al plano, que es el del empuje "
+                      "de tierras y el de archivo, este piso no rige; con el "
+                      "cortante en el plano declarado, rige -- el programa "
+                      "no modela ninguna carga en el plano del muro con que "
+                      "evaluar el umbral de 11.10.7, de modo que quien lo "
+                      "declara afirma estar por encima de el, y el armado "
+                      "lo avisa",
+        fuente="E.060 Art. 11.10.10.2, pag. impresa 104 (cita "
+               "E060.11.10.10.2); umbral del regimen: 11.10.7 y 11.10.8, "
+               "pags. 103 y 104 (cita E060.11.10.7#UMBRAL). Por analogia",
+        reemplazado_por="El diseño por cortante en el plano del muro, si el "
+                        "proyectista modela una carga en ese plano",
         resolucion=Libre(
-            que_lo_fija="el proyectista, declarando la cuantia horizontal "
-                        "minima que rige en un muro en condicion de cortante "
-                        "alto; que el muro este en esa condicion lo afirma "
-                        "quien tiene el diseno estructural delante. El Art. "
-                        "11.10.10.2 es una sola frase y NO define umbral "
-                        "(NOR-E060-03)",
+            que_lo_fija="E.060 11.10.10.2, aplicado por analogia",
             dominio="cuantia adimensional > 0",
         ),
     ),
@@ -9665,221 +9632,190 @@ CRITERIOS: Dict[str, Criterio] = {
     # contesta aqui: se detienen.
 
     "regimen_cortante_muro_e060_art_11_10_2": Criterio(
-        valor=None,                 # VACIO: decide si el 11.10.10 rige
-        # NIVEL: lo consume `M9.cuantia_de_diseno`, que ninguna corrida
-        # invoca (armado del num. 9.4, sin consumidor de produccion); M9 es
-        # Fase 9 y la corrida de perfil la difiere entera.
+        # --- T-7c --- DEJA DE ESTAR VACIO: el diseño estructural que la
+        # ficha pedia «tener delante» existe, y su cortante es el del empuje
+        # de tierras sobre la pantalla, PERPENDICULAR al plano del muro.
+        valor=REGIMEN_CORTANTE_PERPENDICULAR,
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_CATEGORIA,
-        concepto="En que plano actua la fuerza cortante que pone al muro del "
-                 "cabezal bajo el regimen de E.060 11.10.10: en el plano del "
-                 "muro (11.10.2) o perpendicular a el (11.10.1, losas de "
-                 "11.12)",
+        concepto="En que plano actua la fuerza cortante del muro del "
+                 "cabezal para E.060: perpendicular a el (11.10.1, losas de "
+                 "11.12) o en su plano (11.10.2, regimen de 11.10.3 a "
+                 "11.10.10)",
         justificacion="Decide si los dos pisos de cuantia de 11.10.10.2 y "
                       "11.10.10.3 rigen o no. Lo que la fuente dice: el "
                       "11.10.2 aplica 11.10.3 a 11.10.10 a las fuerzas "
                       "cortantes horizontales en el plano del muro, y el "
                       "11.10.1 manda las perpendiculares al plano a las "
-                      "disposiciones para losas de 11.12. Lo que la fuente "
-                      "no resuelve: en que plano actua el cortante de ESTE "
-                      "muro. Un cabezal en voladizo bajo empuje de tierras "
-                      "trabaja perpendicular a su plano, y con esa lectura "
-                      "ninguno de los dos pisos escalona nada; pero un "
-                      "cabezal con aletas o un muro corto cargado en su "
-                      "plano puede caer en 11.10.2, y decidirlo exige el "
-                      "diseno estructural delante, que esta bloqueado en "
-                      "'procedimiento_flexion_corte_aashto_sec5'. Contestar "
-                      "'perpendicular' por defecto elegiria el minimo mas "
-                      "bajo en silencio; contestar 'en el plano' por defecto "
-                      "impondria 0.0025 a un muro que la norma manda diseñar "
-                      "por 11.12. Se declara vacio y `M9.cuantia_de_diseno` "
-                      "lo pregunta antes que nada cuando quien llama afirma "
-                      "cortante alto",
-        fuente="PENDIENTE - E.060 11.10.1 y 11.10.2, pag. impresa 103, "
-               "verificados contra el PDF (citas E060.11.10.1 y E060.11.10.2 "
-               "del registro): la norma reparte los dos planos, no dice en "
-               "cual esta este muro",
-        reemplazado_por="Diseno estructural del cabezal (AASHTO LRFD Sec. 5 "
-                        "por la Via 1 de Sec. 0.2) que diga en que plano "
-                        "actua la demanda Vu que dispara 11.10.10.1",
+                      "disposiciones para losas de 11.12 (pag. 103; citas "
+                      "E060.11.10.1 y E060.11.10.2). Lo que la fuente no "
+                      "resuelve es en cual esta este muro, y desde T-7c lo "
+                      "contesta el modelo de cargas: el unico cortante que "
+                      "el ensamble de T-7b entrega para la pantalla es el "
+                      "del empuje de tierras, de la sobrecarga y del agua, "
+                      "que actua perpendicular al plano del muro, y el "
+                      "programa no modela ninguna carga en el plano (el "
+                      "sismo a lo largo del muro, o el empuje de los aleros "
+                      "sobre la pantalla). Por eso el valor de archivo es "
+                      "«perpendicular»: el cortante se diseña como el de "
+                      "una losa y el minimo es el de 14.3.1 en las dos "
+                      "direcciones. Es una eleccion y no un hecho -- un "
+                      "cabezal corto con aleros que le transmiten carga en "
+                      "su plano caeria en 11.10.2 --, y «en el plano» queda "
+                      "en la ventana: declararlo aplica los pisos de "
+                      "11.10.10 (0,0025 horizontal y la ec. 11-32 vertical) "
+                      "con aviso, porque no hay V_u en el plano con que "
+                      "evaluar el umbral de 11.10.7",
+        fuente="E.060 11.10.1 y 11.10.2, pag. impresa 103 (citas "
+               "E060.11.10.1 y E060.11.10.2): la norma reparte los dos "
+               "planos; cual es el de este muro lo dice el modelo de "
+               "cargas del proyecto",
+        reemplazado_por="Un analisis del cabezal que incluya cargas en el "
+                        "plano del muro",
         sensibilidad=(REGIMEN_CORTANTE_EN_EL_PLANO,
                       REGIMEN_CORTANTE_PERPENDICULAR),
-        verificacion_pendiente="Al cerrarlo, declarar en la memoria en que "
-                               "plano actua el cortante y que articulo de "
-                               "E.060 gobierna por eso el diseno por corte "
-                               "del muro: 11.10.3 a 11.10.10, o 11.12",
         resolucion=Libre(
-            que_lo_fija="el proyectista, con el diseno estructural del "
-                        "cabezal delante: si la demanda de cortante actua "
-                        "en el plano del muro (11.10.2) o perpendicular a "
-                        "el (11.10.1, losas de 11.12)",
+            que_lo_fija="el proyectista: el modelo de cargas del programa "
+                        "solo tiene cortante perpendicular al plano",
             dominio="una de las dos lecturas del plano del cortante",
         ),
     ),
 
     "cuantia_vertical_cortante_alto_e060_art_11_10_10_3": Criterio(
-        valor=None,                 # VACIO: bloquea el piso VERTICAL bajo 11.10.10
-        # NIVEL: mismo consumidor y misma razon que el regimen de arriba.
+        # --- T-7c --- DEJA DE ESTAR VACIO: guarda el PISO de la ec. (11-32),
+        # y la ecuacion entera la evalua `M9.cuantia_vertical_ec_11_32` con
+        # la altura y la longitud del cabezal, que desde T-7a existen.
+        valor=0.0025,
         nivel=NIVEL_EXPEDIENTE,
-        etiqueta="A",
-        # `float`, como su hermano horizontal: lo que M9 lee es la CUANTIA
-        # vertical que rige bajo el regimen de 11.10.10, y hace `float()`
-        # sobre ella. La ec. (11-32) NO la evalua este software.
+        etiqueta="N->",
         forma=FORMA_FLOAT,
-        concepto="Cuantia vertical minima del muro del cabezal bajo el "
-                 "regimen de cortante en el plano de E.060 11.10.10, "
-                 "ec. (11-32) del 11.10.10.3",
-        justificacion="Es el piso vertical que faltaba: bajo el regimen de "
-                      "11.10.10 la cuantia vertical no es el 0.0015 del "
-                      "14.3.1 sino la de la ec. (11-32), que no baja de "
-                      "0.0025 y no necesita superar la rho_h requerida por "
-                      "11.10.10.1. La ecuacion depende de tres cosas que "
-                      "este software no tiene: la altura total del muro hm, "
-                      "su longitud total lm -- la geometria del cabezal "
-                      "('predimensionamiento_cabezal') no lleva longitud -- "
-                      "y la rho_h requerida por 11.10.10.1, que sale de una "
-                      "demanda Vu que el diseno por flexion y corte no "
-                      "produce ('procedimiento_flexion_corte_aashto_sec5'). "
-                      "Sin las tres la ecuacion no se puede evaluar, y "
-                      "evaluarla con hm/lm supuesto seria inventar una "
-                      "dimension del cabezal. Se declara vacio: quien tenga "
-                      "las tres la evalua fuera y declara aqui el resultado, "
-                      "y `M9.cuantia_de_diseno` lo aplica como minimo en la "
-                      "direccion vertical cuando el cortante es alto y actua "
-                      "en el plano",
-        fuente="PENDIENTE - E.060 11.10.10.3, ec. (11-32), pag. impresa "
-               "104, verificado sobre la pagina renderizada (cita "
-               "E060.11.10.10.3 del registro, con la ecuacion en su nota): "
-               "el piso y la ecuacion estan; hm, lm y rho_h requerida no",
-        reemplazado_por="Evaluacion de la ec. (11-32) con hm y lm del "
-                        "cabezal dimensionado y la rho_h requerida por "
-                        "11.10.10.1 del diseno por corte",
-        verificacion_pendiente="Al cerrarlo, declarar en la memoria hm, lm, "
-                               "la rho_h requerida por 11.10.10.1 y el "
-                               "resultado de la ec. (11-32) con su tope",
+        concepto="Piso de la cuantia vertical minima del muro del cabezal "
+                 "bajo el regimen de cortante en el plano de E.060 11.10.10: "
+                 "el 0,0025 de la ec. (11-32) del 11.10.10.3",
+        justificacion="Es el piso vertical del regimen de cortante en el "
+                      "plano. La fuente (E.060 11.10.10.3, pag. 104; cita "
+                      "E060.11.10.10.3, leida por imagen) da la ec. (11-32): "
+                      "rho_v >= 0,0025 + 0,5·(2,5 - hm/lm)·(rho_h - 0,0025) "
+                      ">= 0,0025, con techo en la rho_h que el 11.10.10.1 "
+                      "requiera, hm la altura total del muro y lm su "
+                      "longitud total. Este criterio "
+                      "guarda el piso; la ecuacion la evalua "
+                      "`M9.cuantia_vertical_ec_11_32` con hm y lm del "
+                      "cabezal del punto (T-7a le dio longitud a la "
+                      "geometria) y con la rho_h del muro. El programa no "
+                      "modela cortante en el plano, de modo que la rho_h "
+                      "requerida por 11.10.10.1 no existe y se toma el piso "
+                      "horizontal de 11.10.10.2: con rho_h = 0,0025 la "
+                      "ecuacion da 0,0025 para cualquier esbeltez, y el "
+                      "armado lo dice. Es [N→]: E.060 se aplica al cabezal "
+                      "vial por analogia. Solo rige si el regimen declarado "
+                      "es «en el plano» "
+                      "('regimen_cortante_muro_e060_art_11_10_2')",
+        fuente="E.060 11.10.10.3, ec. (11-32), pag. impresa 104 (cita "
+               "E060.11.10.10.3, con la ecuacion en su nota). Por analogia",
+        reemplazado_por="La rho_h requerida por 11.10.10.1 de un diseño "
+                        "por cortante en el plano del muro, con la que la "
+                        "ec. (11-32) da mas que su piso",
         resolucion=Libre(
-            que_lo_fija="el proyectista, evaluando la ec. (11-32) del "
-                        "11.10.10.3 con hm (altura total del muro), lm "
-                        "(longitud total del muro) y la rho_h requerida por "
-                        "11.10.10.1; el resultado no baja de 0.0025 ni "
-                        "necesita superar esa rho_h",
+            que_lo_fija="E.060 11.10.10.3, aplicado por analogia",
             dominio="cuantia adimensional, no menor que 0.0025",
         ),
     ),
 
     "procedimiento_flexion_corte_aashto_sec5": Criterio(
         valor={
-            "phi_flexion": 0.90,
-            "phi_corte": 0.90,
-            "modelo_corte": "MCFT_seccional_directo_no_iterativo "
-                            "(AASHTO LRFD 9a ed., 2020)",
-            # EL SISTEMA DE UNIDADES, PRIMERO Y COMO DATO (MAT-O9, MAT-X8).
-            # Las expresiones de abajo son de la 9a ed., que no tiene edicion
-            # SI: su C5.1 (pag. impresa 5-1) declara "These specifications use
-            # kips and ksi units" y tabula la conversion de las formas
-            # N*raiz(f_c_prima), donde N = 1 psi corresponde a 0.0316 ksi.
-            # Ese 0.0316 no es una constante fisica: es 1/raiz(1000), el
-            # factor psi->ksi. Las claves llevan la unidad en el nombre para
-            # que nadie alimente estas formulas con MPa y metros, que es lo
-            # que las claves anteriores -- "Vc_kN", "dv_m" -- invitaban a
-            # hacer sobre una formula imperial.
-            "sistema_de_unidades": "kip - ksi - pulgada (AASHTO LRFD 9a ed. "
-                                   "no publica edicion SI; C5.1, pag. "
-                                   "impresa 5-1)",
-            # BETA TIENE DOS EXPRESIONES, NO UNA (NOR-AAS-06). El Art.
-            # 5.7.3.4.2 condiciona la primera al refuerzo transversal minimo
-            # del Art. 5.7.2.5; un muro de cabezal delgado sin estribos cae
-            # normalmente en la segunda, que ademas depende del parametro de
-            # espaciamiento de fisura sxe.
-            "condicion_beta": "'For sections containing at least the minimum "
-                              "amount of transverse reinforcement specified "
-                              "in Article 5.7.2.5, the value of beta may be "
-                              "determined by Eq. 5.7.3.4.2-1'. Para el otro "
-                              "caso el articulo es igual de POTESTATIVO, y "
-                              "conviene no endurecerlo al traducir: 'When "
-                              "sections do not contain at least the minimum "
-                              "amount of shear reinforcement, the value of "
-                              "beta may be as specified in "
-                              "Eq. 5.7.3.4.2-2' -- 'may be', no 'rige'. Cual "
-                              "de las dos aplica lo decide el armado "
-                              "transversal del muro, que este proyecto "
-                              "todavia no dimensiona",
-            "beta_con_refuerzo_transversal_minimo":
-                "4.8 / (1 + 750*epsilon_s)                    [Ec. 5.7.3.4.2-1]",
-            "beta_sin_refuerzo_transversal_minimo":
-                "(4.8 / (1 + 750*epsilon_s)) * (51 / (39 + sxe_in))"
-                "   [Ec. 5.7.3.4.2-2]",
-            "sxe_in": "sx * 1.38 / (ag + 0.63), acotado a "
-                      "12.0 in <= sxe <= 80.0 in                [Ec. 5.7.3.4.2-7]",
-            "theta_grados": "29 + 3500*epsilon_s   [Ec. 5.7.3.4.2-3; a "
-                            "diferencia de beta, vale en los DOS casos]",
-            "limites_epsilon_s": "-0.40e-3 <= epsilon_s <= 6.0e-3",
-            "Vc_kip": "0.0316*beta*lambda*raiz(f_c_prima_ksi)*bv_in*dv_in"
-                      "   [Ec. 5.7.3.3-3]",
-            "Vs_kip": "(Vu/phi) - Vc - Vp",
-            "espaciamiento_s_in": "Av*fy*dv*cot(theta) / Vs",
-            "dv_in": "max(de - a/2, 0.9*de, 0.72*h)",
+            # --- T-7c --- LO QUE SE EJECUTA. Los tres factores de
+            # resistencia y el factor beta del procedimiento SIMPLIFICADO de
+            # cortante son los de `constantes_normativas` (bloque T-7c,
+            # transcritos de 5.5.4.2, 1.3.2.1 y 5.7.3.4.1): este criterio
+            # declara QUE subconjunto de la Seccion 5 arma el cabezal, y
+            # `M9.diseno_flexion_corte` lo lee de aqui.
+            "phi_flexion": PHI_FLEXION_AASHTO,
+            "phi_corte": PHI_CORTE_AASHTO,
+            "phi_evento_extremo": PHI_EVENTO_EXTREMO_AASHTO,
+            "modelo_corte": "simplificado_5_7_3_4_1",
+            "beta_simplificado": BETA_SIMPLIFICADO_AASHTO,
+            "theta_simplificado_grados": 45.0,
+            # --- T-7c --- LO QUE NO SE EJECUTA. El procedimiento GENERAL de
+            # 5.7.3.4.2 (MCFT, beta y theta en funcion de epsilon_s) quedo
+            # transcrito en C07 en las unidades de la fuente (kip, ksi,
+            # pulgada: la 9a ed. no publica edicion SI, C5.1). Se conserva
+            # como REFERENCIA, bajo una sola clave y rotulado: ninguna
+            # funcion lo lee ni lo evalua, y no se puede alimentar con MPa y
+            # metros. Donde el simplificado no esta permitido el armado se
+            # detiene con «metodo no evaluable», no cae aqui.
+            "referencia_no_ejecutable_5_7_3_4_2": {
+                "nota": "Procedimiento general de AASHTO LRFD 5.7.3.4.2, en "
+                        "kip - ksi - pulgada. REFERENCIA NO EJECUTABLE: el "
+                        "programa arma con el simplificado de 5.7.3.4.1 y "
+                        "no evalua estas expresiones",
+                "beta_con_refuerzo_transversal_minimo":
+                    "4.8 / (1 + 750*epsilon_s)   [Ec. 5.7.3.4.2-1]",
+                "beta_sin_refuerzo_transversal_minimo":
+                    "(4.8 / (1 + 750*epsilon_s)) * (51 / (39 + sxe_in))"
+                    "   [Ec. 5.7.3.4.2-2]",
+                "sxe_in": "sx * 1.38 / (ag + 0.63), acotado a 12.0 in <= "
+                          "sxe <= 80.0 in   [Ec. 5.7.3.4.2-7]",
+                "theta_grados": "29 + 3500*epsilon_s   [Ec. 5.7.3.4.2-3]",
+                "limites_epsilon_s": "-0.40e-3 <= epsilon_s <= 6.0e-3",
+            },
         },
-        # NIVEL DECLARADO Y NO MEDIDO, y conviene decir por que: NINGUNA de
-        # las dos corridas de `tests/test_nivel_medido.py` llega a invocarlo
-        # --- la cadena de la Fase 9 se detiene antes, en un criterio
-        # pendiente ---, de modo que no hay medicion que citar. Lo sostiene el
-        # censo: `variables_entrada` no le encuentra mas consumidor que
-        # `M9_cabezal`, y `--alcance perfil` no ejecuta ese modulo. El test lo
-        # comprueba por esa via, que es la unica que queda.
+        # NIVEL MEDIDO desde T-7c: lo invoca la corrida de expediente que
+        # llega al armado del cabezal (`M9.armado_del_cabezal`); la de
+        # perfil difiere la Fase 9 entera.
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="C",
         forma=FORMA_DICT_CON_CAMPOS,
-        concepto="Procedimiento de diseno por flexion y corte de AASHTO LRFD "
-                 "Seccion 5: factores de resistencia phi, limites de refuerzo "
-                 "y modelo de corte (MCFT / beta-theta) aplicables",
+        concepto="Procedimiento de diseño por flexion y corte de AASHTO LRFD "
+                 "Seccion 5 con que se arma el cabezal: factores de "
+                 "resistencia y modelo de cortante (el simplificado de "
+                 "5.7.3.4.1)",
         justificacion="Decide que subconjunto de la Seccion 5 de AASHTO LRFD "
-                      "rige el diseno por flexion y corte del muro del "
-                      "cabezal. La fuente proxima (Sec. 9.4 de la hoja de "
-                      "ruta) remite el diseno a la Seccion 5 de AASHTO y no "
-                      "transcribe nada de esa seccion, en coherencia con la "
-                      "Via 1 de Sec. 0.2 (AASHTO de extremo a extremo, E.060 "
-                      "solo para durabilidad y recubrimientos). Lo que la "
-                      "remision no resuelve por si sola: mezclarla con las "
-                      "expresiones de E.060 -- que si estan a mano y que "
-                      "muchos usarian por costumbre -- romperia justamente la "
-                      "consistencia carga-resistencia que Sec. 0.2 declara "
-                      "resuelta: no se pueden combinar demandas mayoradas por "
-                      "AASHTO con resistencias reducidas por E.060. Se "
-                      "adopta, cerrado por verificacion externa contra el "
-                      "PDF: Art. 5.5.4.2 da phi = 0.90 para flexion y para "
-                      "corte; Arts. 5.7.3.4.2, 5.7.3.3 y 5.7.2.8 dan el "
-                      "Modelo Seccional MCFT en su procedimiento directo no "
-                      "iterativo de la 9a ed., con beta, theta, Vc, Vs y dv "
-                      "en forma cerrada. Las cuantias minimas de E.060 Art. "
-                      "14.3.1 que M9 aplica son un piso obligatorio sobre el "
-                      "resultado de este procedimiento -- rho_diseno = "
-                      "max(rho_calculado, rho_minimo) --, no una nota de "
-                      "referencia: el rho que salga de AASHTO entra por "
-                      "`M9.cuantia_de_diseno` y el minimo lo levanta si hace "
-                      "falta. Cerrar este dato declara el procedimiento "
-                      "citado y disponible; el ensamble completo (iterar "
-                      "epsilon_s, resolver Vs y el espaciamiento para un "
-                      "momento y un cortante dados) sigue sin implementarse "
-                      "en `M9.diseno_flexion_corte` -- es una tarea de "
-                      "implementacion aparte, mas grande que transcribir un "
-                      "dato, y no se acomete aqui",
-        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., "
-               "Art. 5.5.4.2 (pag. impresa 5-32) para los phi; "
-               "Art. 5.7.2.8 'Shear Stress on Concrete' (pag. impresa 5-64, "
-               "PDF 423) para dv; Art. 5.7.3.3 'Nominal Shear Resistance' "
-               "(pag. impresa 5-67, PDF 426) para Vc y Vs; Art. 5.7.3.4.2 "
-               "'General Procedure' (pag. impresa 5-70, PDF 429) para beta, "
-               "theta y sus condiciones, con sxe y sus limites en las pags. "
-               "impresas 5-71 y 5-72; C5.1 (pag. impresa 5-1) para el sistema "
-               "de unidades. PAGINAS CORREGIDAS: la fuente declaraba el rango "
-               "'pags. 5-70 a 5-243', que NO contiene ni al 5.7.3.3 (5-67) ni "
-               "al 5.7.2.8 (5-64), los dos anteriores a su limite inferior",
+                      "rige el diseño por flexion y corte del cabezal. La "
+                      "hoja de ruta (Sec. 9.4) remite el diseño a esa "
+                      "seccion por la Via 1 de la Sec. 0.2, y mezclarla con "
+                      "las expresiones de E.060 romperia la consistencia "
+                      "carga-resistencia: no se combinan demandas mayoradas "
+                      "por AASHTO con resistencias reducidas por E.060. Se "
+                      "adopta, verificado contra el PDF: factores de "
+                      "resistencia de 5.5.4.2 (0.90 en flexion de secciones "
+                      "controladas por traccion y 0.90 en cortante; citas "
+                      "AASHTO_LRFD_9.5.5.4.2#FLEXION y #CORTE) y 1.0 en el "
+                      "evento extremo (1.3.2.1; cita "
+                      "AASHTO_LRFD_9.1.3.2.1#EXTREMO); flexion por 5.6.3.2 "
+                      "con el bloque rectangular de 5.6.2.2; y cortante por "
+                      "5.7.3.3 con el procedimiento SIMPLIFICADO de "
+                      "5.7.3.4.1 (beta = 2.0, theta = 45 grados; cita "
+                      "AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO), que la fuente "
+                      "PERMITE solo en zapatas con la distancia del cortante "
+                      "nulo a la cara del muro menor que 3·d_v y en "
+                      "secciones de menos de 16.0 in de peralte (o con el "
+                      "refuerzo transversal minimo, que el cabezal no "
+                      "lleva). `M9.diseno_flexion_corte` comprueba esas "
+                      "condiciones seccion por seccion y, donde no se "
+                      "cumplen, se detiene con «metodo no evaluable»: el "
+                      "procedimiento general de 5.7.3.4.2 no se implementa "
+                      "(decision del encargo de T-7c) y queda transcrito "
+                      "como referencia no ejecutable. Las cuantias minimas "
+                      "de E.060 son un piso sobre el resultado, por la "
+                      "regla de 'regla_minimos_constructivos_cabezal'",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed.: Art. "
+               "5.5.4.2 (pags. impresas 5-29 y 5-30, PDF 388 y 389) y "
+               "1.3.2.1 (pag. 1-3, PDF 18) para los phi; 5.6.2.2 y 5.6.3.2 "
+               "(pags. 5-36 y 5-40, PDF 395 y 399) para la flexion; 5.7.2.8 "
+               "(pag. 5-65, PDF 424) para d_v; 5.7.3.3 (pag. 5-67, PDF 426) "
+               "para V_c; 5.7.3.4.1 (pag. 5-70, PDF 429) para el "
+               "simplificado y sus condiciones; 5.7.3.4.2 (pags. 5-70 a "
+               "5-72) para el general, que no se ejecuta; C5.1 (pag. 5-1) "
+               "para el sistema de unidades. PAGINA CORREGIDA en T-7c: la "
+               "fuente declaraba 5-32 para el 5.5.4.2, que esta en la 5-29 "
+               "y la 5-30",
         resolucion=Libre(
             que_lo_fija="el proyectista, al declarar que subconjunto de la "
-                        "Seccion 5 de AASHTO aplica al muro del cabezal",
-            dominio="declaracion del procedimiento y de sus factores phi",
+                        "Seccion 5 de AASHTO arma el cabezal",
+            dominio="declaracion del procedimiento; los factores son los de "
+                    "la fuente",
         ),
     ),
 
@@ -10626,6 +10562,452 @@ CRITERIOS: Dict[str, Criterio] = {
             que_lo_fija="el proyectista: es la hipotesis con que se modela "
                         "el cabezal, y ninguna fuente la fija",
             dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    # --- T-7c --- (cadena T) El armado del cabezal: con que empuje se arma,
+    # con que materiales, de que catalogo salen las barras propuestas, que
+    # se hace con los minimos de las dos normas y con que criterio se juzga
+    # la traccion del cabezal de gravedad en ciclopeo. Seis criterios, todos
+    # de expediente: los consume `M9.armado_del_cabezal`, que solo corre a
+    # ese alcance (la Fase 9 se difiere entera a nivel de perfil).
+    "regimen_resistencia_elementos_cabezal": Criterio(
+        valor="no_cedente_k0",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   no_cedente_k0  la pantalla, la zapata y los aleros se arman con
+        #       el empuje en REPOSO (K0 de AASHTO 3.11.5.2, factor de carga
+        #       de la fila «En reposo», sin friccion muro-relleno), tomando
+        #       en cada seccion la MAYOR de esa solicitacion y la del muro
+        #       que cede; bajo sismo, el empuje que el ensamble entrega y la
+        #       resultante a h/2 si da mas momento.
+        #   cedente        se arman con las solicitaciones del ensamble de
+        #       T-7b tal como salen (empuje activo de la cuña o de Coulomb).
+        sensibilidad=("no_cedente_k0", "cedente"),
+        concepto="Empuje de tierras con que se calcula la RESISTENCIA de "
+                 "los elementos del cabezal (pantalla, zapata y aleros): en "
+                 "reposo, de muro que no cede, o activo, de muro que cede",
+        justificacion="Decide con que empuje se arma el cabezal, que no es "
+                      "la misma pregunta que la de su estabilidad externa "
+                      "('regimen_cabezal', que sigue en «cedente»: el vuelco "
+                      "y el deslizamiento del conjunto movilizan el empuje "
+                      "activo por definicion del mecanismo). La fuente "
+                      "recomienda proyectar con el empuje en reposo los "
+                      "muros que toleran poco o ningun movimiento (AASHTO "
+                      "C3.11.1, cita AASHTO_LRFD_9.C3.11.1#REPOSO) y liga el "
+                      "muro que no cede con el empuje en reposo en el estado "
+                      "limite de resistencia (C11.6.5.4, cita "
+                      "AASHTO_LRFD_9.C11.6.5.4#K0); del muro en voladizo "
+                      "tipico de mas de 5.0 ft dice que su deformacion basta "
+                      "para desarrollar el empuje activo (C3.11.5.2, cita "
+                      "AASHTO_LRFD_9.C3.11.5.2#ACTIVO). Ninguna dice cual de "
+                      "los dos es el cabezal de una alcantarilla. El "
+                      "proyecto adopta el reposo -- decision del dueño del "
+                      "proyecto, registrada en la ficha T7C-02 -- porque el "
+                      "cabezal es monolitico con el "
+                      "barril y con los aleros, que lo arriostran, y porque "
+                      "es el lado seguro de la resistencia: mas empuje, mas "
+                      "acero. Lo que la eleccion NO resuelve y la memoria "
+                      "dice: el K0 de la ec. 3.11.5.2-1 es de terreno "
+                      "horizontal y detras del cabezal el relleno sube, de "
+                      "modo que el reposo calculado es una cota inferior del "
+                      "real; por eso el armado toma en cada seccion la mayor "
+                      "de la solicitacion en reposo y la del muro que cede "
+                      "(que si lleva la pendiente, por la cuña de tanteo), y "
+                      "avisa cuando el armado cambia de una a otra. Bajo "
+                      "sismo la fuente no da un coeficiente de reposo: manda "
+                      "no reducir k_h (11.6.5.4) y pide considerar la "
+                      "resultante a h/2 (cita "
+                      "AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS)",
+        fuente="AASHTO LRFD 9a ed., C3.11.1, pag. impresa 3-117 (PDF 171); "
+               "3.11.5.2 y C3.11.5.2, pag. impresa 3-120 (PDF 174); 11.6.5.4 "
+               "y C11.6.5.4, pag. impresa 11-32 (PDF 1501). Factor de carga "
+               "del empuje en reposo: Manual de Puentes, Tabla 2.4.5.3.1-2, "
+               "fila «En reposo» (1.35 / 0.90), [N] en "
+               "constantes_normativas.TABLA_GAMMA_P_FILAS",
+        reemplazado_por="Analisis de la interaccion del cabezal con el "
+                        "relleno, el barril y los aleros que diga cuanto se "
+                        "desplaza la pantalla",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ninguna fuente dice si la pantalla "
+                        "de un cabezal cede",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "fc_cabezal_mpa": Criterio(
+        valor=21.0,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        # De la Clase E (17.5 MPa) a la Clase A (35 MPa) de la Tabla 503-07
+        # del EG-2013: las clases de concreto estructural con que se puede
+        # especificar un cabezal armado.
+        sensibilidad=(17.5, 35.0),
+        concepto="Resistencia especificada a la compresion del concreto del "
+                 "cabezal armado (pantalla, zapata y aleros), f'c, en MPa",
+        justificacion="Decide la resistencia del concreto con que se "
+                      "calculan la flexion y el cortante del cabezal. "
+                      "Ninguna fuente la fija: el EG-2013 (Tabla 503-07, "
+                      "cita EG2013.503.04#T503_07) da las CLASES de concreto "
+                      "estructural y sus resistencias minimas, no cual "
+                      "lleva un cabezal. El proyecto adopta la Clase D, 21 "
+                      "MPa, que es la menor de las de concreto reforzado de "
+                      "uso corriente en obras de drenaje; es el lado seguro "
+                      "del calculo de resistencia (con mas f'c la seccion "
+                      "resiste mas) y NO el de la durabilidad: si el "
+                      "analisis quimico del EMS ('exposicion_quimica_ems') "
+                      "pide un f'c minimo mayor por las Tablas 4.2 y 4.4 de "
+                      "E.060, el armado lo dice como incumplimiento "
+                      "(verificacion A7, que decide cuando el dato existe; "
+                      "sin el, un aviso) y hay que subir este valor. La "
+                      "ventana son las clases E a A de la misma tabla; por "
+                      "debajo de 17 MPa E.060 9.4.1 no admite concreto "
+                      "estructural",
+        fuente="EG-2013 Seccion 503, num. 503.04, Tabla 503-07 'Clases de "
+               "concreto estructural', pag. impresa 912 (PDF 920): clases y "
+               "resistencias minimas, no la clase del cabezal",
+        reemplazado_por="La especificacion de concreto del expediente, con "
+                        "el analisis quimico del EMS delante",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, eligiendo la clase de concreto de "
+                        "la Tabla 503-07 del EG-2013",
+            dominio="MPa, entre 17.5 (Clase E) y 35 (Clase A)",
+        ),
+    ),
+
+    "acero_refuerzo_cabezal": Criterio(
+        valor="A615_grado_60",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("A615_grado_60", "A706_grado_60"),
+        concepto="Designacion del acero de refuerzo del cabezal: fija la "
+                 "fluencia de calculo y la razon fluencia / rotura del "
+                 "acero minimo de AASHTO 5.6.3.3",
+        justificacion="Decide que acero arma el cabezal. La fluencia (420 "
+                      "MPa en las dos designaciones, el Grado 60) y el "
+                      "factor γ3 del momento de agrietamiento (0.67 para "
+                      "AASHTO M 31 / ASTM A615 Grado 60 y 0.75 para ASTM "
+                      "A706 Grado 60: AASHTO 5.6.3.3, cita "
+                      "AASHTO_LRFD_9.5.6.3.3#MINIMO) NO se eligen aqui: "
+                      "salen de la designacion y viven en "
+                      "constantes_normativas (FY_ACERO_MPA, GAMMA_3_AASHTO). "
+                      "Lo que se elige es la designacion, y ninguna fuente "
+                      "la fija: E.060 3.5.3.1 admite las barras de la NTP "
+                      "341.031, que es la equivalente de ASTM A615. El "
+                      "proyecto adopta A615 Grado 60 por ser el acero "
+                      "corrugado de suministro corriente; con A706 el acero "
+                      "minimo por agrietamiento sube un 12 %",
+        fuente="AASHTO LRFD 9a ed., 5.6.3.3, pag. impresa 5-43 (PDF 402): "
+               "tabla de γ3 por designacion; E.060 3.5.3.1, pag. 32 (NTP "
+               "341.031). Ninguna fija la designacion del proyecto",
+        reemplazado_por="La especificacion de acero del expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con la especificacion de "
+                        "materiales del expediente",
+            dominio="una de las dos designaciones de la ventana",
+        ),
+    ),
+
+    "catalogo_barras_refuerzo_cabezal": Criterio(
+        valor={
+            # designacion: (diametro nominal en mm, area nominal en mm2)
+            "barras": {"3/8": (9.5, 71.0), "1/2": (12.7, 129.0),
+                       "5/8": (15.9, 199.0), "3/4": (19.1, 284.0),
+                       "1": (25.4, 510.0)},
+            # de mayor a menor: se propone el mayor que cumple
+            "espaciamientos_m": (0.30, 0.25, 0.20, 0.175, 0.15, 0.125,
+                                 0.10),
+            "barra_minima_principal": "1/2",
+            "barra_reparto": "3/8",
+        },
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        sensibilidad=(
+            "El catalogo es una PROPUESTA y no una exigencia: con otra "
+            "barra minima principal ('3/8' en vez de '1/2') o con otra "
+            "serie de espaciamientos cambian la barra y el espaciamiento "
+            "propuestos, no el acero requerido ni el minimo, que salen del "
+            "calculo. Lo que el plano lleve tiene que cumplir el acero "
+            "adoptado y el espaciamiento maximo de la tabla de armado",),
+        concepto="Catalogo de barras corrugadas y de espaciamientos de "
+                 "donde el programa PROPONE el armado de cada cara del "
+                 "cabezal, y la regla de la propuesta",
+        justificacion="Decide que barra y que espaciamiento se proponen "
+                      "para cada cara: el programa calcula el acero "
+                      "adoptado (el mayor del requerido y del minimo) y el "
+                      "espaciamiento maximo, y de este catalogo toma, "
+                      "empezando por la barra minima y subiendo de "
+                      "diametro, la primera barra que con el MAYOR "
+                      "espaciamiento de la serie no superior al maximo da "
+                      "al menos ese acero. Ninguna fuente fija un catalogo: "
+                      "las designaciones, diametros y areas son las "
+                      "nominales de las barras de ASTM A615 / NTP 341.031 "
+                      "(3/8\" a 1\"), norma que NO esta en normas/ y que la "
+                      "sesion no pudo verificar contra su PDF -- el "
+                      "proyectista las confirma con la ficha del "
+                      "fabricante --; la serie de espaciamientos (de 0.30 a "
+                      "0.10 m) y la barra minima de 1/2\" en la armadura "
+                      "principal son practica de detalle del proyecto. El "
+                      "programa propone y no impone: el proyectista puede "
+                      "armar con otra barra siempre que cumpla la tabla",
+        fuente="Sin fuente unica. Designaciones y areas nominales: ASTM "
+               "A615 / NTP 341.031, no disponible en normas/ (no "
+               "verificado contra PDF). Serie de espaciamientos y barra "
+               "minima: practica de detalle, eleccion del proyecto",
+        reemplazado_por="La ficha tecnica del proveedor de acero y el "
+                        "criterio de detalle del proyectista",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: es una regla de propuesta, no un "
+                        "valor de norma",
+            dominio="barras: designacion -> (diametro mm, area mm2); "
+                    "espaciamientos en m, de mayor a menor; las dos barras "
+                    "nombradas tienen que estar en el catalogo",
+        ),
+    ),
+
+    "regla_minimos_constructivos_cabezal": Criterio(
+        valor="mas_exigente_aashto_e060",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("mas_exigente_aashto_e060", "solo_aashto"),
+        concepto="Que se hace con el acero minimo y el espaciamiento "
+                 "maximo del cabezal, que AASHTO LRFD y E.060 fijan cada "
+                 "una por su lado",
+        justificacion="Decide cual de los dos juegos de minimos "
+                      "constructivos se aplica. En RESISTENCIA rige AASHTO "
+                      "LRFD Seccion 5 y E.060 solo contrasta, porque cargas "
+                      "y resistencias no se cruzan entre marcos; los "
+                      "minimos constructivos -- acero minimo de cada cara, "
+                      "espaciamiento maximo, capas -- no dependen de las "
+                      "cargas y si se pueden comparar. AASHTO pide el acero "
+                      "de 5.6.3.3 en la cara en traccion y el de retraccion "
+                      "y temperatura de 5.10.6 en cada cara y direccion, "
+                      "con el espaciamiento de 5.10.3.2; E.060 pide las "
+                      "cuantias de muros de 14.3.1 (0,0020 horizontal y "
+                      "0,0015 vertical, sobre el area bruta), las de losas "
+                      "y zapatas de 9.7.2 y 10.5.4 (0,0018, y 0,0012 en la "
+                      "cara en traccion) y el espaciamiento de 14.3.3. "
+                      "Ninguna deroga a la otra sobre una obra vial "
+                      "peruana -- la primera es la fuente tecnica del "
+                      "diseño y la segunda la norma local de concreto, "
+                      "aplicada por analogia --, y el proyecto aplica la "
+                      "mas exigente de las dos en cada cara, que es la "
+                      "misma regla del mayor que la §0.2 de la hoja de ruta "
+                      "usa para el recubrimiento. «solo_aashto» queda en la "
+                      "ventana para quien lea la Via 1 a la letra",
+        fuente="AASHTO LRFD 9a ed., 5.6.3.3, 5.10.6 y 5.10.3.2 (citas "
+               "AASHTO_LRFD_9.5.6.3.3#MINIMO, "
+               "AASHTO_LRFD_9.5.10.6#TEMPERATURA, "
+               "AASHTO_LRFD_9.5.10.3.2#ESPACIAMIENTO); E.060 14.3.1, "
+               "14.3.3, 9.7.2 y 10.5.4 (citas E060.14.3.1, E060.14.3.3, "
+               "E060.9.7.2#TEMPERATURA, E060.10.5.4#LOSAS). Ninguna dice "
+               "cual prevalece sobre un cabezal vial",
+        reemplazado_por="Una especificacion del Propietario que fije el "
+                        "juego de minimos del expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: es la regla de conflicto entre "
+                        "dos fuentes, y ninguna la escribe",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "criterio_traccion_cabezal_ciclopeo": Criterio(
+        valor="tracciones_nulas",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("tracciones_nulas", "traccion_admisible_e060"),
+        concepto="Con que criterio se juzga la traccion del cabezal de "
+                 "gravedad en concreto ciclopeo: sin tracciones (resultante "
+                 "en el tercio central) o con la traccion que E.060 admite",
+        justificacion="Decide cual de dos verificaciones DETIENE el cabezal "
+                      "de gravedad en la base y a media altura del cuerpo. "
+                      "La clasica del muro de gravedad pide "
+                      "tracciones nulas con cargas de servicio: la "
+                      "resultante dentro del tercio central de la base (e "
+                      "<= B/6) y de la seccion del cuerpo (e <= t/6). E.060 "
+                      "no la exige en el CUERPO: para el concreto simple "
+                      "admite una traccion de φ·0,42·√f'c (22.5.3, ec. 22-7; "
+                      "cita E060.22.5.3#TRACCION), con φ = 0,5 y f'c no mayor "
+                      "de 10 MPa en el ciclopeo (22.10.2.3; cita "
+                      "E060.22.10.2.3#PHI), y solo distingue el caso del "
+                      "tercio central para permitir un metodo empirico "
+                      "(22.6.3; cita E060.22.6.3#TERCIO). En las juntas de "
+                      "construccion si la prohibe (22.4.7; cita "
+                      "E060.22.4.7#JUNTAS), y el arranque del cuerpo sobre "
+                      "la zapata es una: por eso la verificacion del "
+                      "arranque decide siempre, con las dos opciones, salvo "
+                      "que se declare el vaciado monolitico "
+                      "('junta_arranque_cabezal_ciclopeo'), y este criterio "
+                      "decide las otras dos. El proyecto adopta las "
+                      "tracciones nulas, que es lo mas exigente y lo que "
+                      "pide el encargo de la cadena T (INFORME §4.6), y "
+                      "calcula la de E.060 al lado, por analogia, con sus "
+                      "cargas amplificadas; con la otra opcion decide la "
+                      "traccion admisible de E.060 y las tracciones nulas "
+                      "de la base y de media altura informan. AASHTO LRFD "
+                      "no trae el concreto ciclopeo",
+        fuente="E.060 22.5.3, 22.6.3 y 22.10.2.3, pags. 192 y 195 (citas "
+               "E060.22.5.3#TRACCION, E060.22.6.3#TERCIO, "
+               "E060.22.10.2.3#PHI): la traccion admisible; 22.4.7, pag. "
+               "191 (cita E060.22.4.7#JUNTAS): ninguna traccion a traves de "
+               "las juntas de construccion. Fuera de las juntas, el "
+               "criterio de tracciones nulas no tiene numeral: es practica "
+               "del muro de gravedad y eleccion del proyecto",
+        reemplazado_por="Una especificacion del Propietario para muros de "
+                        "gravedad en concreto ciclopeo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: E.060 admite traccion y el "
+                        "proyecto elige no contar con ella",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "concreto_ciclopeo_cabezal": Criterio(
+        valor={"fc_matriz_mpa": 14.0, "fraccion_piedra": 0.30},
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        sensibilidad={"fc_matriz_mpa": (14.0, 21.0),
+                      "fraccion_piedra": (0.0, 0.30)},
+        concepto="Especificacion del concreto ciclopeo del cabezal de "
+                 "gravedad: resistencia de la matriz y fraccion de piedra "
+                 "desplazadora en volumen",
+        justificacion="Decide que concreto ciclopeo se especifica, que es "
+                      "lo que las dos verificaciones del material contrastan "
+                      "con sus "
+                      "dos limites: f'c de la matriz no menor que el mayor "
+                      "de los 10 MPa de E.060 22.10.1 y los 14 MPa de la "
+                      "Clase G del EG-2013 (Tabla 503-07), y piedra "
+                      "desplazadora no mayor del 30 % del volumen. Los "
+                      "limites son de las fuentes; el valor especificado "
+                      "es del proyecto, y se adopta en el limite de las dos "
+                      "(Clase G: concreto simple Clase F, 14 MPa, con 30 % "
+                      "de agregado ciclopeo), que es el menos resistente "
+                      "que las fuentes admiten y por eso el lado seguro del "
+                      "contraste de resistencia",
+        fuente="EG-2013 Seccion 503, Tabla 503-07, Clase G, pag. impresa "
+               "912 (PDF 920; cita EG2013.503.04#T503_07); E.060 22.10.1, "
+               "pag. 194. Fijan los limites, no la especificacion",
+        reemplazado_por="La especificacion de concreto ciclopeo del "
+                        "expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, dentro de los limites de E.060 "
+                        "22.10 y de la Clase G del EG-2013",
+            dominio="fc_matriz_mpa >= 14; 0 <= fraccion_piedra <= 0.30",
+        ),
+    ),
+
+    # --- correcciones de T-7c ------------------------------------------------
+    "clase_exposicion_fisuracion_cabezal": Criterio(
+        valor=None,                 # VACIO: la declara el Propietario
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("clase_1", "clase_2"),
+        concepto="Clase de exposicion del control de fisuracion de AASHTO "
+                 "5.6.7 en el cabezal armado: Clase 1 (gamma_e = 1.00) o "
+                 "Clase 2 (gamma_e = 0.75)",
+        justificacion="Decide el espaciamiento maximo del refuerzo de cada "
+                      "cara traccionada por fisuracion en servicio (fila A6 "
+                      "del armado; correcciones de T-7c, H3). La fuente da "
+                      "las dos clases y sus factores (cita "
+                      "AASHTO_LRFD_9.5.6.7#GAMMA_E) y deja la eleccion al "
+                      "Propietario: su comentario describe la Clase 1 como "
+                      "la cota superior del ancho de fisura y propone la "
+                      "Clase 2 para las subestructuras expuestas al agua "
+                      "(cita AASHTO_LRFD_9.C5.6.7#CLASE_1). Un cabezal de "
+                      "alcantarilla esta expuesto al agua del cauce, pero "
+                      "ninguna fuente lo clasifica, y por eso no tiene valor "
+                      "de archivo. Sin declarar, el armado no se detiene: "
+                      "la barra propuesta respeta la Clase 1, que "
+                      "es la menos exigente y la que cualquier clase pide, y "
+                      "la fila A6 imprime los dos espaciamientos maximos y "
+                      "sale como INDICADOR «no decidida» cuando el propuesto "
+                      "solo cumple la Clase 1. Declarada, A6 decide y la "
+                      "propuesta la respeta",
+        fuente="AASHTO LRFD 9a ed., 5.6.7 y C5.6.7, pags. impresas 5-55 y "
+               "5-56 (PDF 414 y 415; citas AASHTO_LRFD_9.5.6.7#FISURACION, "
+               "#GAMMA_E y AASHTO_LRFD_9.C5.6.7#CLASE_1): las dos clases, no "
+               "cual es la del cabezal",
+        reemplazado_por="La clase de exposicion que el Propietario declare "
+                        "para las subestructuras de la obra",
+        resolucion=Libre(
+            que_lo_fija="el Propietario, por la exposicion y la apariencia "
+                        "que admita para la obra",
+            dominio="una de las dos clases de la ventana",
+        ),
+    ),
+
+    "junta_arranque_cabezal_ciclopeo": Criterio(
+        valor="junta_de_construccion",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("junta_de_construccion", "vaciado_monolitico"),
+        concepto="Como se vacia el cabezal de gravedad en concreto ciclopeo "
+                 "en el encuentro de su cuerpo con la zapata: con junta de "
+                 "construccion (la zapata primero) o monolitico",
+        justificacion="Decide si la verificacion de tracciones nulas en el "
+                      "arranque del cuerpo detiene el cabezal siempre o solo "
+                      "con el criterio de tracciones nulas. E.060 22.4.7 "
+                      "(cita "
+                      "E060.22.4.7#JUNTAS) prohibe transmitir traccion a "
+                      "traves de las juntas de construccion de un elemento "
+                      "de concreto simple, y el encuentro del cuerpo con la "
+                      "zapata lo es cuando la zapata se vacia primero, que es "
+                      "la secuencia corriente. El proyecto adopta la junta "
+                      "-- el lado exigente: la fila decide, y con las cargas "
+                      "de servicio Y con las amplificadas de E.060 -- y deja "
+                      "el vaciado monolitico como alternativa barrible, que "
+                      "es una especificacion de obra que el plano tiene que "
+                      "pedir (correcciones de T-7c, H5)",
+        fuente="E.060 22.4.7, pag. 191 (cita E060.22.4.7#JUNTAS): la "
+               "prohibicion; la secuencia de vaciado es del proyecto",
+        reemplazado_por="La especificacion de vaciado del cabezal en el "
+                        "expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con la secuencia de vaciado que el "
+                        "plano especifique",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "espesor_min_zapata_concreto_simple_m": Criterio(
+        valor=0.30,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_FLOAT,
+        concepto="Espesor minimo de la zapata del cabezal de gravedad en "
+                 "concreto ciclopeo, m (E.060 22.7.4)",
+        justificacion="Decide el piso del espesor propuesto de la zapata del "
+                      "cabezal de gravedad y el umbral de CB6 cuando ese "
+                      "espesor se declara. La fuente (E.060 22.7.4, pag. 193; "
+                      "cita E060.22.7.4#ZAPATA) fija 300 mm para las zapatas "
+                      "de concreto simple estructural. Hasta el cierre de "
+                      "T-7c vivia como constante [N] "
+                      "(`ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M`); pasa a [N→] "
+                      "porque E.060 es una norma de edificaciones y la "
+                      "excepcion de la §0.2 de la hoja de ruta, que la hace "
+                      "regir en el cabezal, cubre solo la durabilidad "
+                      "(Cap. 4 y Art. 7.7): un minimo estructural de su "
+                      "Cap. 22 aplicado a una obra vial es una analogia, "
+                      "como el 15.7 de la zapata armada "
+                      "('peralte_min_zapata_armada_m'). Pregunta 1 del "
+                      "informe de la FASE A de T-7c, resuelta por el "
+                      "orquestador",
+        fuente="E.060, num. 22.7.4, pag. 193 (cita E060.22.7.4#ZAPATA), por "
+               "analogia",
+        reemplazado_por="Una norma vial que fije el espesor minimo de una "
+                        "zapata de concreto simple",
+        resolucion=Libre(
+            que_lo_fija="E.060 22.7.4, aplicado por analogia",
+            dominio="m, positivo",
         ),
     ),
 

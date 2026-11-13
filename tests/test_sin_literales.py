@@ -1021,7 +1021,20 @@ CENSO_DE_MARCAS = {
     # relleno sobre el talon, y el del trapecio de la subpresion --. Ninguna
     # es un valor de proyecto: los factores y las tablas estan en
     # constantes_normativas (bloque T-7b) y en criterios_adoptados.
-    "src/modulos/M9_cabezal.py": 13,
+    # 13 -> 18 en T-7c: CINCO marcas, todas geometria del centroide de una
+    # figura -- el 3 del triangulo y del trapecio (`LADOS_DEL_TRIANGULO`,
+    # que lo nombra una vez para la presion de contacto lineal), el del
+    # centro de gravedad del cuerpo trapecial del muro de gravedad, y el
+    # tercio de la altura de los tres triangulos de presion (suelo seco,
+    # suelo sumergido y agua) sobre una seccion del cuerpo --. Ninguna es
+    # un valor de proyecto: los factores de resistencia, los coeficientes
+    # de AASHTO y de E.060 y sus conversiones estan en
+    # constantes_normativas (bloque T-7c) y en criterios_adoptados.
+    # 18 -> 16 en el cierre de T-7c: las dos marcas del tercio de los
+    # triangulos de presion del suelo (seco y sumergido) sobre una seccion
+    # del cuerpo se fueron con el diagrama a `diagrama_del_suelo_sobre`,
+    # que lo nombra con `LADOS_DEL_TRIANGULO`, como lo nuevo de H1 y H3.
+    "src/modulos/M9_cabezal.py": 16,
     # --- T-9 --- los exponentes de Manning (ecuacion (117)) y el 3/2 de las
     # ecuaciones (4.2) y (4.5) del num. 4.1.2.1 a).
     "src/modulos/M10_espaciamiento.py": 2,

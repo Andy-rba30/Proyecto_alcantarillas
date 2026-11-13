@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "69aba33abf782847cb9de4d6982b41e08b7a84d1",
+    "criterios_sha1": "dfa9eb4adcb19fbc6d4c642d9cd8aec9f76f8fc8",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -2432,9 +2432,8 @@
       "c_phi_fundacion",
       "capacidad_portante_adm",
       "categoria_refuerzo_aashto",
+      "clase_exposicion_fisuracion_cabezal",
       "clase_sitio",
-      "cortante_alto_muro_e060_art_11_10_10_2",
-      "cuantia_vertical_cortante_alto_e060_art_11_10_10_3",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "exposicion_quimica_ems",
@@ -2444,7 +2443,6 @@
       "metodo_estabilidad_global",
       "peso_especifico_saturado_relleno_kn_m3",
       "phi_relleno_trasdos",
-      "regimen_cortante_muro_e060_art_11_10_2",
       "remanso_derecho_via",
       "umbral_no_colapso_evento_extremo"
     ],

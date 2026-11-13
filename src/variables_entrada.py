@@ -1475,6 +1475,18 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "factores_inclinacion_carga_portante": _Meta(unidad="-"),
     "terreno_delante_del_cabezal": _Meta(unidad="-"),
     "regimen_cabezal": _Meta(unidad="-"),
+    # --- T-7c --- el armado del cabezal (los consume M9, Fase 9).
+    "regimen_resistencia_elementos_cabezal": _Meta(unidad="-"),
+    "fc_cabezal_mpa": _Meta(unidad="MPa"),
+    "acero_refuerzo_cabezal": _Meta(unidad="-"),
+    "catalogo_barras_refuerzo_cabezal": _Meta(unidad="mm, mm2 y m"),
+    "regla_minimos_constructivos_cabezal": _Meta(unidad="-"),
+    "criterio_traccion_cabezal_ciclopeo": _Meta(unidad="-"),
+    "concreto_ciclopeo_cabezal": _Meta(unidad="MPa y - (fraccion)"),
+    # --- correcciones de T-7c ---
+    "clase_exposicion_fisuracion_cabezal": _Meta(unidad="-"),
+    "junta_arranque_cabezal_ciclopeo": _Meta(unidad="-"),
+    "espesor_min_zapata_concreto_simple_m": _Meta(unidad="m"),
     "categoria_refuerzo_aashto": _Meta(unidad="-"),
     "clase_sitio": _Meta(
         unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
