@@ -108,3 +108,4 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795201200 = vie
 | 2026-11-13 20:30 | s/d | **8 %** | **10 %** | T11-03 corregido con Fable (≈ 0.60 M tokens; `10fb84b`). Fable total de la sesión: auditoría + T11-03 + orquestador ≈ 10 puntos. Cierre de T-11 lanzado con Opus |
 | 2026-11-13 21:16 | s/d | **10 %** | s/d (10 % a las 20:30) | cierre de T-11 con Opus en curso |
 | 2026-11-13 21:43 | s/d | s/d | s/d | T-11 en main (`f77c5d4`; cierre Opus ≈ 0.78 M tokens). T-12 FASE A lanzada con Opus a las 21:50 |
+| 2026-11-13 22:44 | s/d | s/d (10 % a las 21:16) | s/d | T-12 FASE A terminada (Opus ≈ 0.72 M tokens); auditoría corta de T-12 lanzada con Opus |

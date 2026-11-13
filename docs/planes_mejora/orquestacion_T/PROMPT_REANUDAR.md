@@ -1,4 +1,4 @@
-# Prompt para reanudar la cadena T en una sesión NUEVA (copiar tal cual) — actualizado 2026-11-13 21:50 UTC
+# Prompt para reanudar la cadena T en una sesión NUEVA (copiar tal cual) — actualizado 2026-11-13 22:50 UTC
 
 ```text
 Eres la sesión orquestadora de la «Cadena de prompts T» (ábrela con el modelo Opus 5.5: orquestar no necesita Fable y cada ronda del orquestador lo gasta) sobre Andy-rba30/Proyecto_alcantarillas, que se interrumpió. Retómala donde quedó.
@@ -9,10 +9,9 @@ Eres la sesión orquestadora de la «Cadena de prompts T» (ábrela con el model
 
 3. Instala dependencias (requirements.txt, requirements-dev.txt, openpyxl), exporta NORMAS_DIR=/home/user/andy-rba30/normas. El par de origin/main (f77c5d4, T-0 a T-11) lo midió el agente de integración sobre origin/main: 6446 passed / 23 skipped / 6469 collected con NORMAS_DIR («PyMuPDF sí · Tk no»; no hay tkinter); no hace falta volver a medirlo salvo que origin/main haya cambiado.
 
-4. Estado al 13-nov 21:50 UTC (sexta sesión): **T-11 ESTÁ EN MAIN (f77c5d4; 6446 passed / 23 skipped / 6469 collected con NORMAS_DIR; sin él 6423 / 46)**. Ya NO queda trabajo de Fable. Falta sólo T-12, con OPUS:
-   a) FASE A lanzada a las 21:50 (ENCARGO_T-12.md + PRECISIONES_T-12.md; worktree /home/user/wt/T-12, rama tesis/T-12 desde f77c5d4; las dos vistas de la memoria ENTRAN; y T11-09 —«salida no se forma» también en la fila «Control gobernante» de la memoria— SE APLICA en T-12, decisión mía de las 21:55). Si origin/tesis/T-12 no existe o no tiene el commit «FASE A completa» ni INFORME_T-12_faseA.md en la carpeta de orquestación, relánzala con ese encargo («continúa desde origin/tesis/T-12: mira git log»).
-   b) Auditoría corta de T-12 con Opus (sólo lectura: que no cambie cálculo, que la línea base sólo cambie por la advertencia de fixture, que nada se haya borrado sino movido, que la resumida no publique nada que la completa no tenga, que el correo no esté en ningún archivo).
-   c) Correcciones e integración con Opus (ENCARGO_COMUN_CORRECCIONES_E_INTEGRACION.md, PARTE 2; base f77c5d4; un commit tesis(T-12)).
+4. Estado al 13-nov 22:50 UTC (sexta sesión): T-11 está en main (f77c5d4; 6446 / 23 / 6469 con NORMAS_DIR). **T-12 FASE A TERMINADA con Opus en tesis/T-12 (78a7780; entregable 6374 passed / 23 skipped / 6397 con NORMAS_DIR, 6222 / 175 sin él; proceso/tests 142; INFORME_T-12_faseA.md)**. Ya NO queda trabajo de Fable. Falta, con OPUS:
+   a) Auditoría corta de T-12 (sólo lectura): lanzada a las 22:50 con ENCARGO_AUDITORIA_T-12_opus.md. Si AUDITORIA_T-12.md no está en la carpeta de orquestación, relánzala.
+   b) Correcciones de esa auditoría e integración en main (ENCARGO_COMUN_CORRECCIONES_E_INTEGRACION.md, PARTE 2; base f77c5d4; un commit tesis(T-12); el tracker y la tabla de conteos viven ahora en proceso/; tracker: INF-5.2.2, INF-5.2.4, INF-5.2.7 cerrados, INF-5.2.3 cerrado con salvedad, INF-5.2.6 en parte, nota en INF-5.2.1, salvo que la auditoría lo refute).
    Mis decisiones del 13-nov 19:50 UTC (ya en DECISIONES_DUENO y en ENCARGO_T-11_cierre.md): H9 (HW_salida_m a null donde el perfil descartó la aproximación) se aplica en el cierre de T-11; el juego de cuencas coherente va al lote posterior.
 
 5. Reparto de modelos: Opus 5.5 en esfuerzo extra para todo (implementación, correcciones medias y bajas, integraciones, T-12); Fable SÓLO para la auditoría adversarial de T-11 y para corregir lo que una auditoría encuentre fuera de lugar en fórmulas o citas (y T11-03). Úsalo sólo cuando sea necesario.
