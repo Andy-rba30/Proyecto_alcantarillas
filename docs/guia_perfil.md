@@ -148,6 +148,9 @@ si no se declara:
 | `profundidad_socavacion_estimada_m` | no | número | — | las tres | es opcional: sin ella la Fase 6 lo avisa |
 | `bombeo` | no | número | — | las tres | el programa la resuelve por otra vía |
 | `peralte` | no | número | — | las tres | el programa la resuelve por otra vía |
+| `ancho_tributario_m` | no | número | — | B | el programa la resuelve por otra vía |
+| `S_cuneta` | no | número | — | B | el programa la resuelve por otra vía |
+| `inicio_tramo_cuneta_km` | no | número | — | B | el pre-vuelo la lista como falta |
 <!-- fin: externos -->
 
 «Por otra vía» quiere decir: `longitud_m` la calcula la Fase 7.B con las
@@ -167,6 +170,21 @@ carga. `TW_m` tiene además su propia cadena (Sec. 1.3: `cota_TW`, Manning en el
 receptor con `Q_receptor_m3s`, y por último el criterio `TW_receptor`).
 `acceso_mantenimiento_previsto` es un `true` / `false` por punto: dice si los
 planos prevén el acceso de limpieza, y con `false` la memoria lo avisa.
+
+Las tres de la cuneta de la Fase 10 (T-9) son sólo de la Familia B y van en el
+JSON: `ancho_tributario_m` (la faja que drena a la cuneta) y `S_cuneta` (su
+pendiente longitudinal) tienen como vía alterna `L_hidraulico_m` declarado,
+que gana; sin él, la etapa de espaciamiento del punto se detiene nombrando los
+que falten (con el tramo del alivio conocido y el caudal declarado basta
+`S_cuneta`). Con `S_cuneta` se verifica además **VB2**, el caudal del punto
+contra la capacidad de la cuneta; sin ella, y con la longitud declarada, VB2
+no se evalúa y la corrida lo avisa. `inicio_tramo_cuneta_km` es la progresiva
+donde empieza, del lado de progresivas menores, el tramo de cuneta que
+descarga en el alivio: sin ella, el tramo de la verificación VB1 empieza en la
+obra anterior en progresiva —de Familia B, o de Familia A por el criterio
+`obras_familia_a_extremo_de_cuneta`—, y si no hay ninguna VB1 no se evalúa y
+es un bloqueo que espera ese dato (por eso el pre-vuelo la lista entonces como
+falta).
 
 Las seis de la Fase 6 (T-8) son datos del sitio y del EMS, todas opcionales:
 `tipo_terreno_receptor` y `tipo_terreno_entrada` nombran la fila de la Tabla
@@ -300,11 +318,11 @@ Además de la advertencia, su RESUMEN dice esto:
 Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 4
-Verificaciones incumplidas: 0
+Verificaciones incumplidas: 1
 Verificaciones con aviso: 1
 Etapas bloqueadas       : 0
 Diferidas por alcance   : 13 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
-Expediente cerrado      : si
+Expediente cerrado      : no
 ```
 
 Los cuatro puntos dimensionan, también C-01, que es un cruce de canal y cuya
@@ -319,6 +337,25 @@ de la entrada de este ejemplo es la del terreno (adoptada, no medida) y queda
 0.571 m por encima. No detiene el punto —ninguna sección lo corrige—, y la
 línea `aviso:` del punto dice qué lo corrige. La sección 4 dice cómo se
 cambia cualquiera de esos criterios para una corrida.
+
+**Y una verificación incumplida, que esta guía no esconde**: la **VB1** de
+B-01, el espaciamiento entre alcantarillas de alivio de la Fase 10. B-01 está
+en la 2+450 y la obra anterior en progresiva es A-02, en la 1+920: por
+defecto una alcantarilla de paso de quebrada **cierra el tramo** de la cuneta
+(criterio `obras_familia_a_extremo_de_cuneta` = `si`, lectura del DG-2018
+núm. 304.11), de modo que el tramo de cuneta que VB1 mide es de **530 m**, y
+el espaciamiento máximo de B-01 es el menor de los 200 m de recorrido
+(`long_max_cuneta`) y de los 120 m de `L_hidraulico_m` que declara el JSON.
+530 m > 120 m: `[NO] VB1` en el bloque de B-01, y el expediente no cierra. No
+es un error del programa ni algo que se arregle declarando un criterio: se
+resuelve en el **proyecto de drenaje**, de una de dos maneras. O hace falta
+otra alcantarilla de alivio entre A-02 y B-01 (una fila más de Familia B en el
+CSV), o la cuneta que descarga en B-01 no empieza en A-02 —un punto alto de la
+rasante, el inicio del corte— y entonces se declara dónde empieza, con la
+procedencia que lo sostenga (el perfil longitudinal), en el JSON:
+`"puntos": {"B-01": {"inicio_tramo_cuneta_km": <progresiva en km>}}`. El
+programa no lo supone, y esta guía tampoco: no inventa una progresiva para
+cerrar su propio ejemplo.
 
 ---
 
@@ -417,12 +454,17 @@ imprime la advertencia de corredor, y el RESUMEN dice:
 Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 4
-Verificaciones incumplidas: 0
+Verificaciones incumplidas: 1
 Verificaciones con aviso: 1
 Etapas bloqueadas       : 0
 Diferidas por alcance   : 13 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
-Expediente cerrado      : si
+Expediente cerrado      : no
 ```
+
+Lo único que impide el cierre es la VB1 de B-01 que la sección 3 ya mostró
+(530 m de cuneta desde A-02 contra un máximo de 120 m), y la consola lo dice:
+«hay verificaciones incumplidas». Se cierra en el proyecto de drenaje, como
+allí se explica, y no desde esta guía.
 
 ---
 
@@ -438,7 +480,9 @@ pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
   razón: un criterio pendiente, un dato que falta o «no factible» con el
   delta de rasante que haría falta.
 - **Verificaciones incumplidas.** Las V1…V10, VC1, las `F8.*` de la Fase 8
-  (desde T-5), G1 y G2 que se evaluaron y no cumplen en la sección aceptada. Un **[AVISO]** (veredicto indicador, como
+  (desde T-5), G1, G2 y las VB1 y VB2 de la Fase 10 (desde T-9) que se
+  evaluaron y no cumplen. En las dos corridas de esta guía hay una: la VB1
+  de B-01. Un **[AVISO]** (veredicto indicador, como
   V2b bajo `regimen_v2b = indicador_con_aviso`) no cuenta aquí.
 - **Verificaciones con aviso.** Las que salieron como **[AVISO]** en la
   sección aceptada: el indicador se disparó y el diseño **no** se detuvo. No
@@ -467,12 +511,15 @@ pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
   todos los puntos dimensionados, ninguna etapa bloqueada y ninguna
   verificación incumplida. Mientras una etapa siga bloqueada dice `no`, y la
   consola añade por qué («Mientras un criterio siga sin valor, la etapa que lo
-  invoca se detiene: no se sustituye por un defecto (Sec. 0.7)»); el código
-  de salida de la CLI es 1 en ese caso y 0 cuando cierra. **Un `si` a perfil no
-  es un expediente completo**: es el perfil cerrado, con las trece etapas
-  diferidas impresas y esperando al expediente. Ése es el estado final de esta
-  guía, y las dos corridas lo alcanzan: la de la sección 3 dice `si` con la
-  advertencia de corredor delante, porque sus [S] son los del repositorio.
+  invoca se detiene: no se sustituye por un defecto (Sec. 0.7)»); si no hay
+  etapas bloqueadas y aun así no cierra, es por una verificación incumplida, y
+  la consola lo dice así. El código de salida de la CLI es 1 en ese caso y 0
+  cuando cierra. **Un `si` a perfil no es un expediente completo**: es el
+  perfil cerrado, con las trece etapas diferidas impresas y esperando al
+  expediente. En esta guía las dos corridas dicen `no` sólo por la VB1 de
+  B-01 (T-9): es el estado final honesto de este ejemplo, mientras el
+  proyecto de drenaje no diga dónde empieza la cuneta de B-01 o no añada un
+  alivio.
 
 ---
 

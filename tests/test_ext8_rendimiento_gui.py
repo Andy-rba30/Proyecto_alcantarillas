@@ -150,11 +150,21 @@ CORRIDAS_IMPORTTIME = 3
 # de la Tabla B.1 con sus tres lecturas, la cobertura con sus tres textos,
 # la progresion con la causa real de V7) y el bloque de C-01 con lo que
 # las correcciones añaden; las paginas no se mueven.
-KB_POR_PUNTO_MAX = 110.0
+# T-9 INTEGRADO (2026-11-13, detras de T-3, con las correcciones de su
+# auditoria) LOS SUBE, sin holgura: 113.96 KB y 32.3 paginas por punto,
+# medidos con este mismo metodo sobre el arbol fusionado (sobre `6c25f1d`,
+# 109.7 y 31.7). Es el bloque de B-01, que es de Familia B y ahora EVALUA
+# la Fase 10: el extremo de su tramo con su origen, el aporte por metro con
+# su metodo, la longitud por capacidad calculada, VB1 y VB2 con sus pasos y
+# citas, y las fichas de los criterios de la cuneta, que solo B-01 usa y por
+# eso cuentan en el coste marginal. Contenido, no repeticion; los techos
+# quedan pegados a la medida por la misma razon que en T-6 (los reconcilia
+# T-10).
+KB_POR_PUNTO_MAX = 114.5
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
-# del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, y 31.7 con
-# T-3 (ver arriba).
-PAGINAS_POR_PUNTO_MAX = 32
+# del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, 31.7 con
+# T-3 y 32.3 con T-9 (ver arriba).
+PAGINAS_POR_PUNTO_MAX = 33
 
 
 def _arbol(ruta: Path) -> ast.Module:

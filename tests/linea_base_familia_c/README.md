@@ -1060,3 +1060,99 @@ tres no cambian un número. Lo que se mueve es de C-01 y de formato:
   declara su fila de Manning («afinado»), de modo que ningún número se mueve.
 - **Sin cambio de un byte:** `cli_perfil.txt`, `cli_rama_error.txt`, los dos CSV de resumen
   y `entradas_ampliadas.json`.
+## Regenerada en T-9 (2026-11-12): un aviso y un texto en B-01; ningún número de cálculo
+
+T-9 de la cadena T (espaciamiento de alivios con la longitud por capacidad calculada y la
+verificación VB1 por tramo; `INF-5.1.12`, `INF-3.3.8`, `INF-5.1.8`). Se regeneró sobre el
+árbol de T-9 y se midió contra la línea base de `df1b23c` (`tesis(T-8)`), diferencia a
+diferencia con el comparador de E-B y con `diff`:
+
+- **Los tres JSON:** `criterios_sha1` (tres criterios nuevos —`seccion_cuneta`, sin valor
+  de archivo; `revestimiento_cuneta` y `lectura_velocidad_limite_cuneta`—, por eso
+  `seccion_cuneta` entra en `sin_valor_declarados` y el recuento pasa de 35 a 36); la clave
+  nueva `tramo_alivio` en cada punto (`null` fuera de la Familia B); en B-01, el texto del
+  bloqueo de la Fase 10 —la longitud por capacidad ya no «se declara, no se deduce»: se
+  calcula, y lo que falta son `ancho_tributario_m` y `S_cuneta`—, el aviso nuevo de VB1 sin
+  evaluar (B-01 es la única obra B del fixture y no hay `inicio_tramo_cuneta_km`: el tramo
+  no tiene extremo y no se supone) y su `tramo_alivio` con `evaluada: false`.
+- **Los cuatro `cli_*.txt`:** en B-01, el texto del bloqueo de la Fase 10 y la línea del
+  aviso de VB1.
+- **Las tres memorias de la CLI:** las dos huellas —`criterios_sha1` y `hoja_ruta_sha1`,
+  esta por las notas «Corregido (T-9)» de la §2.3 y de la Fase 10 de la v8—, el recuento
+  «102 criterios declarados, 35 todavia sin valor» → «105 … 36», la ficha de
+  `seccion_cuneta` en el bloque de los criterios sin valor y, en B-01, el texto del bloqueo
+  de la Fase 10 y un bloque «Fase 10» con el aviso de VB1.
+- **Sin cambio de un byte:** los dos CSV de resumen, `memoria_punto_cajon.html` y
+  `entradas_ampliadas.json`.
+
+**Diámetros movidos: ninguno, y los mismos puntos dimensionan.** El bloque `diseno` de los
+cuatro puntos es idéntico al de `df1b23c` en los tres JSON (A-01 y A-02 en Ø 0.90 m de
+concreto reforzado en la corrida ancha; B-01 y C-01 se detienen donde se detenían). Cablear
+la aceptación de la Familia B (`PERFILES[Familia.B].verificaciones_aceptacion`) no mueve
+nada porque ningún módulo despacha sobre ese campo y VB1 vive fuera del bucle de
+diámetros; en este fixture VB1 ni siquiera se evalúa. «Verificaciones incumplidas» y
+«con aviso» del RESUMEN no cambian.
+
+## Regenerada en las correcciones de T-9 (2026-11-13): VB1 de B-01 pasa de «no se evaluó» a NO CUMPLE
+
+Las correcciones de la auditoría adversarial de T-9 y las decisiones A–D del dueño del
+2026-11-12. Se regeneró sobre el árbol de las correcciones y se midió contra la línea base de
+la FASE A (`304cea6`), diferencia a diferencia con el comparador de E-B y con `diff`.
+
+**EL VEREDICTO QUE CAMBIA, con su antes y su después** (decisión C del dueño: las obras de
+Familia A cierran el tramo de cuneta por defecto, criterio `obras_familia_a_extremo_de_cuneta`
+= `si`, lectura del DG-2018 núm. 304.11 declarada como `Interpretacion`):
+
+| | FASE A (`304cea6`) | Correcciones |
+|---|---|---|
+| Extremo del tramo de B-01 | ninguno (B-01 es la única obra B) | A-02, en la 1+920 |
+| Tramo de cuneta | no se medía | **530 m** |
+| VB1 de B-01 | «NO SE EVALUO» (aviso) | **NO CUMPLE**: 530 m > 200 m (`long_max_cuneta`; el máximo de B-01 no se conoce porque su Fase 10 no cierra, y ningún máximo supera los 200 m) |
+| «Verificaciones incumplidas» del RESUMEN | 0 | **1**, en las cuatro corridas de la CLI |
+
+- **Los tres JSON:** `criterios_sha1`; en B-01, el bloque `tramo_alivio` (extremo A-02,
+  530 m, `evaluada: true`, y las claves nuevas `falta` —null— y `huecos` —el lado de
+  progresivas mayores de B-01, que ninguna obra cierra—), la verificación VB1 nueva en
+  `verificaciones`, el bloque nuevo `aporte_alivio` (VB2 sin evaluar: falta `S_cuneta`; no es
+  bloqueo porque la Fase 10 ya se detiene por esa falta), y el texto del bloqueo de la Fase
+  10, que ahora pide sólo `S_cuneta` —con el tramo conocido y el caudal declarado el aporte se
+  reparte como Q / s y el ancho tributario no hace falta (H1)—; en `criterios`,
+  `long_max_cuneta` y `obras_familia_a_extremo_de_cuneta` entre los usados, y
+  `sin_valor_declarados` de 36 a 35 (`seccion_cuneta` tiene valor de archivo desde la decisión
+  A).
+- **Los cuatro `cli_*.txt`:** en B-01, la fila `[NO] VB1`, la línea del tramo, el aviso de VB2
+  sin evaluar y el del hueco de cuneta que VB1 no mira, el texto del bloqueo; y
+  «Verificaciones incumplidas: 0» → «1».
+- **Las tres memorias de la CLI:** `criterios_sha1` y `hoja_ruta_sha1` (la v8 retira «con
+  borde libre» y reescribe la nota de la Fase 10), el recuento «105 criterios declarados, 36
+  todavia sin valor» → «106 … 35», el RESUMEN, la fila VB1 y los avisos de B-01, y las fichas
+  de los criterios usados.
+- **Sin cambio de un byte:** los dos CSV de resumen, `memoria_punto_cajon.html` y
+  `entradas_ampliadas.json`.
+
+**Diámetros movidos: ninguno, y los mismos puntos dimensionan.** El bloque `diseno` de los
+cuatro puntos es idéntico al de `304cea6` en los tres JSON (A-01 y A-02 en Ø 0.90 m de
+concreto reforzado en la corrida ancha; B-01 y C-01 se detienen donde se detenían). VB1 y VB2
+viven fuera del bucle de diámetros. Medido también sobre las dos corridas completas de
+`docs/guia_perfil.md`: A-01, A-02 y B-01 en Ø 0.90 m de concreto y C-01 en marco 1.20 × 0.90
+m, antes y después; la guía muestra ahora la VB1 de B-01 incumplida (530 m contra los 120 m de
+`L_hidraulico_m` que declara su JSON) y dice cómo se resuelve.
+
+## T-9 integrado (2026-11-13, detrás de T-3): regenerada sobre el árbol fusionado y medida contra `6c25f1d`
+
+Se regeneró sobre el árbol fusionado (T-9 con sus correcciones, aplastado sobre `6c25f1d`,
+`tesis(T-3)`) y se midió contra la línea base de `6c25f1d` con el comparador de E-B, en los
+**cuatro** JSON (los tres de siempre y `informe_familia_c.json`, la corrida 6 de T-3). En los
+cuatro, las mismas ocho diferencias y ninguna más: `criterios_sha1`; en B-01, `tramo_alivio`
+(extremo A-02, 530 m), `aporte_alivio` (VB2 sin evaluar), la verificación VB1 evaluada y el
+texto del bloqueo de la Fase 10 (que ahora pide sólo `S_cuneta`); en `criterios`,
+`long_max_cuneta` y `obras_familia_a_extremo_de_cuneta` entre los usados y
+`verificacion_pendiente` 28 → 29. Los cinco `cli_*.txt` (incluido `cli_familia_c.txt`) ganan en
+B-01 la fila `[NO] VB1`, la línea del tramo, los avisos de VB2 sin evaluar y del hueco de cuneta,
+y el texto del bloqueo; «Verificaciones incumplidas» pasa de **0 a 1** en las cinco corridas de
+la CLI. Las memorias: huellas, recuentos («114 criterios declarados», los sin valor no cambian:
+`seccion_cuneta` tiene valor de archivo), la fila VB1 y los avisos de B-01, las fichas de los
+criterios usados. **Diámetros, secciones y materiales movidos: ninguno** —el bloque `diseno` de
+los cuatro puntos es idéntico en los cuatro JSON: A-01 y A-02 en Ø 0.90 m de concreto donde
+dimensionan, C-01 en marco 1.20 × 0.90 m de concreto en la corrida 6, B-01 sin cambio— y el
+único veredicto que cambia es la **VB1 de B-01** (no se evaluaba en `6c25f1d`; ahora NO CUMPLE).

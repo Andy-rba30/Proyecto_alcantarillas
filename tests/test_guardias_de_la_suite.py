@@ -737,11 +737,13 @@ SIN_CASO_PATRON = {
     # que midio la auditoria de C5: prisma 40.61 kN/m contra cilindro 24.96.
     # Una exencion que sobrevive a su motivo es deuda inventada, y este test
     # es lo que lo hizo ruidoso en cuanto dejo de ser cierta.
-    "M10_espaciamiento":
-        "no lo cierra una norma sino el EXPEDIENTE VIAL: seccion de cuneta, su "
-        "n de Manning, la intensidad de TR = 35 y el metodo de area "
-        "tributaria. Su brazo normativo (`L_normativo`) ya es [N] y un caso "
-        "patron sobre el seria tautologico; falta `L_hidraulico` (§15)",
+    # M10_espaciamiento SALIO DE LA LISTA EN LAS CORRECCIONES DE T-9 (H8 de
+    # su auditoria adversarial). La exencion decia que faltaban la seccion de
+    # la cuneta, su n de Manning, la intensidad y `L_hidraulico`: T-9 los
+    # trajo (la seccion es un criterio con valor de archivo, el n sale de la
+    # Tabla Nº 32 y la longitud por capacidad se calcula), y la exencion
+    # habia sobrevivido a su motivo. El dorado es `CP_T9_CUNETA`, calculado
+    # a mano, y lo consume tests/test_M10_espaciamiento.py.
     "M11_reporte":
         "NO es deuda: es el modulo de reporte y no le corresponde dorado "
         "numerico. Lo que se le exige es que no calcule, y lo vigila "

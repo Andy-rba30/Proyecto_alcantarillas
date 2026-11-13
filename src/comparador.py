@@ -253,6 +253,12 @@ def _comparar_punto(id_punto: str, pa: Dict[str, Any], pb: Dict[str, Any],
                   # --- T-8 --- las otras dos piezas de la Fase 6
                   "proteccion_entrada", "socavacion_salida",
                   "geometria", "estructural", "espaciamiento_alivio",
+                  # --- T-9 --- el tramo de cuneta de VB1 (su verificacion
+                  # va con las demas en `verificaciones`)
+                  "tramo_alivio",
+                  # --- T-9 (correcciones) --- la capacidad de la cuneta y
+                  # el aporte de VB2
+                  "aporte_alivio",
                   "verificaciones_no_evaluadas"):
         _comparar_valor(id_punto, campo, pa.get(campo), pb.get(campo), diferencias)
 

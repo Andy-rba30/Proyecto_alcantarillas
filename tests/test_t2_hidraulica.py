@@ -1613,10 +1613,18 @@ def test_un_indicador_disparado_sube_a_los_avisos_y_al_resumen(tmp_path):
     assert explicacion and aviso.endswith(explicacion)
     assert not [a for a in a02.avisos() if a.startswith("V2b:")]
     resumen = informe.resumen()
-    assert resumen.incumplidas == 0 and resumen.con_aviso == 1
+    # REESCRITO EN LAS CORRECCIONES DE T-9 (decision C del dueño), y se dice:
+    # el resumen tiene UNA incumplida y no cero, que no es de esta prueba --la
+    # VB1 de B-01, cuyo tramo de cuneta desde A-02 mide 530 m--. Lo que esta
+    # prueba fija sigue igual: el indicador V2b no cuenta como incumplida, y
+    # cuenta como aviso.
+    incumplidas = [(p.punto.id, v.codigo) for p in informe.puntos
+                   for v in p.incumplidas()]
+    assert incumplidas == [("B-01", "VB1")] and resumen.con_aviso == 1
+    assert resumen.incumplidas == len(incumplidas)
     # Las tres salidas que lo dicen: el texto de la CLI, el JSON y la memoria.
     texto = cli.volcar(informe)
-    assert "Verificaciones incumplidas: 0" in texto
+    assert "Verificaciones incumplidas: 1" in texto
     assert "Verificaciones con aviso: 1" in texto
     assert "aviso: V2b: indicador disparado" in texto
     volcado = cli.informe_json(informe)

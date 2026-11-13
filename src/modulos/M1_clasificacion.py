@@ -111,6 +111,7 @@ from src.constantes_normativas import (LUZ_MAX_ALCANTARILLA, RIESGO_ADMISIBLE,
                                    TABLA_02_FILAS, UMBRALES_POR_CODIGO,
                                    caracter_del_umbral)
 from src.criterios_adoptados import valor, valor_si_declarado
+from src.modelos import CODIGO_VB1, CODIGO_VB2              # --- T-9 ---
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_MAGNITUD, CategoriaTR,
                      Clasificacion, DatoFaltanteError,
                      DatoInvalidoError, Denominacion, DisenoNoFactibleError,
@@ -799,10 +800,27 @@ PERFILES: Dict[Familia, PerfilFamilia] = {
                           "con el area tributaria de la cuneta",
         categoria_tr=CategoriaTR.QUEBRADA_MENOR,   # "descarga de cunetas" -> TR 35
         campos_requeridos=("Q_m3s",),
-        verificaciones_aceptacion=None,            # Sec. 2.3 no declara conjunto propio
+        # --- T-9 --- (cadena T). La v8 §2.3 lo declara desde T-0 --«V1 + V2
+        # + V4 + V5 + espaciamiento de la Fase 10»-- y el codigo lo dejaba en
+        # None porque el espaciamiento no tenia verificacion que pudiera
+        # fallar (INF-5.1.12, ficha T0-03). Desde T-9 la tiene: VB1, el
+        # espaciamiento ADOPTADO entre dos alivios contra el maximo de la Fase
+        # 10, por tramo. SIGUE SIENDO UNA HUELLA Y NO UN FILTRO (SIS-B-13):
+        # ningun modulo despacha sobre esta tupla, la Fase 5 se aplica entera
+        # al punto y VB1 vive fuera del bucle de diametros -- ningun diametro
+        # la cambia --, de modo que escribirla no mueve ningun numero.
+        # CORRECCIONES DE LA AUDITORIA DE T-9 (H1): y VB2, la condicion literal
+        # del Manual (num. 4.1.2.1 a): «Q manning > Q de aporte»), el caudal
+        # de aporte del alivio contra la capacidad de la cuneta. Las dos son
+        # «el espaciamiento de la Fase 10» que la v8 §2.3 nombra.
+        verificaciones_aceptacion=("V1", "V2", "V4", "V5", CODIGO_VB1,
+                                   CODIGO_VB2),
         notas=(
             "El espaciamiento lo fija la Fase 10 (M10) a partir de la longitud "
-            "maxima de cuneta, criterio 'long_max_cuneta'.",
+            "maxima de cuneta, criterio 'long_max_cuneta', y de la longitud "
+            "por capacidad de la cuneta; VB1 verifica el espaciamiento "
+            "adoptado por tramo y VB2 el caudal de aporte contra la "
+            "capacidad de la cuneta.",
             "Tratamiento del terraplen segun su altura -- sin bordillo con "
             "geomalla, o con bordillo y bajantes a ambos lados, a un solo lado "
             "en curvas peraltadas -- es regla de Sec. 2.3 que resuelve M10: "

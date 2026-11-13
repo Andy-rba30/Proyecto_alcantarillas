@@ -192,8 +192,31 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   módulo entrega una lluvia o un caudal de diseño sin pasar por el criterio
   `homogeneidad_serie_fen` (`precipitacion_de_diseno`, `caudal_de_diseno` y
   `caudal_de_aporte_cuneta` son las tres puertas; esta última es el enlace
-  para la longitud de cuneta de la Fase 10). La GUI y la sesión todavía no
-  conocen las dos entradas (ficha T1-04).
+  para la longitud de cuneta de la Fase 10, y desde T-9 la usa la Fase 1-bis
+  para el caudal de un punto de Familia B —que es, por contrato, el de la
+  cuneta que descarga en el alivio—, UNA vez: la Fase 10 lo reutiliza y no
+  repite sus pasos). La GUI y la sesión todavía no conocen las dos entradas
+  (ficha T1-04).
+- **La Fase 10 verifica, y puede fallar (T-9).** `src/modulos/M10_espaciamiento.py`
+  tiene dos verificaciones que entran a la aceptación de la Familia B
+  (`PERFILES[Familia.B].verificaciones_aceptacion` = V1 + V2 + V4 + V5 + VB1 +
+  VB2, que sigue siendo huella y no filtro): **VB2**, la condición literal del
+  Manual (núm. 4.1.2.1 a), «Q manning > Q de aporte»), el caudal del punto
+  contra la capacidad de la cuneta (`M10.verificar_aporte`), y **VB1**, el
+  tramo de cuneta entre el alivio y el extremo de su lado de progresivas
+  MENORES contra el espaciamiento máximo (`M10.verificar_tramo`). El extremo lo
+  resuelve `M10.extremo_del_tramo` —el inicio declarado, que gana y no puede
+  ser posterior a la obra, o la obra anterior en progresiva: de Familia B, o de
+  Familia A por el criterio `obras_familia_a_extremo_de_cuneta`— con TODAS las
+  obras a la vista, perezosamente y sólo para los alivios que pasan la Fase 2
+  (`servicio.correr`); VB1 vive fuera del bucle de diámetros y ningún diámetro
+  la cambia. Tres reglas: un VB1 que **no se evaluó** es un `Bloqueo` del punto
+  que espera el dato que lo destraba (`TramoDeAlivio.falta`), nunca un aviso
+  que deje el expediente cerrado; ningún texto de la Fase 10 supone el sentido
+  del flujo en la cuneta; y con el tramo conocido el aporte por metro es Q / s
+  (`M10.longitud_hidraulica_por_tramo`), sin mezclar el área tributaria con el
+  ancho tributario —sin tramo, q · b con aviso de la longitud que el par
+  implica—.
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None
@@ -211,7 +234,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -303,7 +326,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -340,7 +363,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -734,7 +757,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **5352**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **5548**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
@@ -769,10 +792,11 @@ están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonce
   que declara por el camino del botón en RANGO, CATALOGO y CAMPO—). Se saltan
   cuando ningún intérprete disponible puede levantar un `Tk`: falta `tkinter`,
   falta `ttkbootstrap` o falta entorno gráfico.
-- `tests/test_familias_del_csv.py` — **tres** saltos de DISEÑO, no de entorno,
+- `tests/test_familias_del_csv.py` — **seis** saltos de DISEÑO (tres hasta
+  T-9, que sumó las tres claves de la cuneta, de la Familia B), no de entorno,
   y por eso valen lo mismo en las cuatro configuraciones. El test está
   parametrizado por (dato declarado × familia) y mide sólo las familias que
-  NO usan el dato; las tres combinaciones que sí lo usan se saltan diciéndolo.
+  NO usan el dato; las seis combinaciones que sí lo usan se saltan diciéndolo.
   Es el primer salto del repositorio que no depende de qué haya instalado.
 - Y aparte, en bloque, los **33** de `tests/test_normativa_pdf.py` (32 hasta
   T1, que sumó el de la resolución impresa del Manual de Puentes), que se
@@ -798,7 +822,10 @@ están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonce
   correcciones de T-8 sumaron **uno** en `tests/test_t8_correcciones.py` (las
   llamadas de las Tablas 511-02 y 511-06 del EG-2013, que está en `normas/`
   de la app): son **105**, contados con `--collect-only -m pdf` sobre su
-  árbol.
+  árbol. T-9 sumó **siete** (cinco en `tests/test_t9_espaciamiento.py` y dos
+  en `tests/test_t9_correcciones.py`, que fijan en su página las citas y las
+  Tablas Nº 02, 32, 33, 34 y 304.12 del Manual de Hidrología y el núm. 304.11
+  del DG-2018, los dos en `normas/` de la app): son **112**.
 
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
@@ -809,7 +836,101 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-3 de la cadena T (2026-11-12, cerrado e integrado el
+independientes. **T-9 de la cadena T (2026-11-13, integrado detrás de T-3,
+con las correcciones de su auditoría) sumó CIENTO NOVENTA Y SEIS tests**,
+siete con la marca `pdf` (las citas y las Tablas Nº 02, 32, 33, 34 y 304.12
+del Manual de Hidrología y el núm. 304.11 del DG-2018, los dos en `normas/` de
+la app) y ninguno dependiente de Tk ni del repositorio de normas: los 82 de
+`tests/test_t9_espaciamiento.py` —la FASE A: **la Fase 10 deja de cumplir por
+construcción** (`INF-5.1.12`): el paso 10.1 es un límite sin veredicto, la
+longitud por capacidad se CALCULA cuando no se declara (`INF-3.3.8`; la
+declarada gana) con la capacidad de la cuneta triangular del Manual núm.
+4.1.2.1 a) —Manning ec. (117), n = 1/K de la Tabla Nº 32, velocidad límite de
+la Tabla Nº 33 por `revestimiento_cuneta` [A] = concreto y
+`lectura_velocidad_limite_cuneta` [A] = extremo inferior—, y **VB1** juzga el
+tramo de cuneta de cada alivio contra el espaciamiento máximo; tres datos
+externos nuevos y opcionales de la Familia B (`ancho_tributario_m`,
+`S_cuneta`, `inicio_tramo_cuneta_km`: `CLAVES_EXTERNAS` tiene veintiuna) y la
+aceptación de la Familia B cableada (ficha T0-03)—; los 87 de
+`tests/test_t9_correcciones.py`, la aceptación de las **correcciones de la
+auditoría adversarial** (AJUSTADO, H1 a H11) y de las decisiones A a D del
+dueño del 2026-11-12, más los 21 `test_mut_*` de la mutación de la
+integración: (H1, ALTA) **VB2**, la condición literal del Manual («Q manning >
+Q de aporte», pág. impresa 177, cita `MC_HHD.4.1.2.1a#CONDICION`), el caudal
+del punto contra la capacidad de la cuneta, que puede fallar y entra a la
+aceptación (V1 + V2 + V4 + V5 + VB1 + VB2); con el tramo conocido el aporte se
+reparte como Q / s (L = Q_adm · s / Q, el equivalente exacto de la condición),
+sin tramo se conserva q · b y se avisa la longitud que el área y el ancho
+implican —el CUMPLE falso del auditor (Q_adm 0.052 m³/s contra 0.095 de
+aporte, L = 8 244 m) da ahora VB2 y VB1 NO CUMPLE—; con `L_hidraulico_m`
+declarado y sin `S_cuneta`, VB2 sólo avisa (decisión del dueño); (H2) un VB1
+sin evaluar es un **bloqueo** del punto que espera el dato que lo destraba, y el
+pre-vuelo lo estima; (H3) los huecos de cuneta que VB1 no mira se avisan, un
+inicio de tramo posterior a la obra es `DatoInvalidoError` y ningún texto
+supone el sentido del flujo; (H4 + D) se imprime el TR del PUNTO, y la fila del
+alivio de la Tabla Nº 02 (R 35 %, n 15: T = 35.32 años) es una
+**envolvente** de la del drenaje de la plataforma (T = 29.87) declarada como
+`Interpretacion`; (H5 + A) `seccion_cuneta` tiene valor de archivo, el mínimo
+de la Tabla Nº 34 para región muy lluviosa (0.40 × 1.20 m) con el talud
+exterior 1:1 como elección [A] y borde libre 0, la ventana empieza ahí y el
+talud interior se contrasta con la Tabla 304.12 (más empinado que 1:2 es
+`DatoInvalidoError`; Z1 = 3 se avisa); (B) la v8 ya no pide «con borde libre»
+sin cifra; (C) las obras de Familia A **cierran el tramo** por defecto
+(`obras_familia_a_extremo_de_cuneta` [A] = `si`, `no` barrible; lectura del
+DG-2018 núm. 304.11, cita `DG2018.304.11#DESAGUE` con su `Interpretacion`);
+(H6 a H11) la ficha del revestimiento dice que el concreto es el extremo
+menos conservador para la longitud, cinco mutantes vivos de la FASE A
+muertos, M10 con su caso patrón (`CP_T9_CUNETA`, a mano; sale de
+`SIN_CASO_PATRON`), `area_ha` exigida por A y B, las lecturas como
+`Interpretacion` y el aporte calculado que la Fase 1-bis calcula UNA vez con
+`MH.caudal_de_aporte_cuneta`—; tres en `test_M10_espaciamiento` (el caso
+patrón); los once anclajes de `test_decisiones_diferidas` para las fichas de la
+Parte XLVIII (T9-01..11); cuatro que crecen solos en `test_ext5_forma_gui` con
+los cuatro criterios nuevos; y nueve en `test_familias_del_csv` (seis pasan y
+tres son saltos de DISEÑO: la Familia B usa las tres claves nuevas, y por eso
+esta columna salta ahora seis y no tres en las cuatro configuraciones). **No
+se escribieron en rojo primero**: la FASE A midió 81 rojos y 1 verde de sus
+82 contra `df1b23c`, y las correcciones, 62 rojos y 4 verdes de sus 66
+primeros contra la FASE A (`304cea6`); los `test_mut_*` se midieron contra
+sus mutantes. La mutación con el arnés de EXT-11 sobre una copia del árbol
+fusionado: **262 de 288 en M10 (91.0 %) y 78 de 78** en las seis funciones de
+la Fase 10 de `servicio`; los 26 vivos son banda de tolerancia, guardias
+inalcanzables, presentación o equivalentes (ficha T9-11). Censos: **114
+criterios** (cuatro nuevos, ninguno sin valor: siguen **27**), las citas del
+registro pasan de 384 a **401** (once de la FASE A y seis de las
+correcciones), `CLAVES_EXTERNAS` **veintiuna**, ninguna marca `literal-ok`
+nueva fuera de M10 (dos, los exponentes de Manning). Se reescribieron,
+declarándolo, `test_guia_perfil` (las dos corridas de la guía y la sesión
+salen con 1: la VB1 de B-01 no cumple), `test_cli` (el cierre de perfil
+declara el inicio del tramo de B-01), `test_t2_hidraulica` y
+`test_t6_geometria` (la VB1 de B-01 no es suya), `test_pf2_prevuelo` (la
+partición: `inicio_tramo_cuneta_km` tiene regla), `test_ext8` (techos
+remedidos y pegados a la medida: 114.0 KB y 32.3 páginas por punto a
+expediente, donde `6c25f1d` medía 109.7 y 31.7, por el bloque de B-01), `test_memoria_sustentada`, `test_M1_clasificacion`,
+`test_t0_gobernanza` (la fila de T-9) y `test_guardias_de_la_suite`. La CLI,
+sin etapas bloqueadas y con incumplidas, ya no dice «mientras un criterio
+siga sin valor». Cierra `INF-5.1.12` e `INF-3.3.8`, y `INF-5.1.8` **en parte**
+(`area_ha` en B tiene consumidores reales, pero nada comprueba que sea el área
+del tramo). **La línea base de la Familia C se regeneró sobre el árbol
+fusionado y se midió contra `6c25f1d` con el comparador de E-B**, en los cuatro
+JSON y con las mismas ocho diferencias en los cuatro (B-01: tramo, aporte, VB1
+evaluada y texto del bloqueo; dos criterios usados más; huellas):
+**ningún diámetro, sección ni material se movió**, y el ÚNICO veredicto que
+cambia es la **VB1 de B-01**, que no se evaluaba y ahora NO CUMPLE (A-02 cierra
+su tramo, 530 m > 200 m; en la guía, contra los 120 m de `L_hidraulico_m`):
+«Verificaciones incumplidas» pasa de 0 a 1 en las cinco corridas de la CLI y
+en las dos de la guía, que ya no cierran y dicen cómo se resuelve (un alivio
+intermedio o el inicio del tramo declarado con su procedencia). Las entradas
+que esto deja al proyecto —la región pluvial en año FEN, la velocidad de
+diseño y el IMDA de la vía, el talud de corte, el inicio de cada tramo— están
+en `docs/contrato_entradas.md` con quién las debe. De las cuatro
+configuraciones se MIDIÓ UNA, «sí · no», con el repositorio de normas
+enlazado: 5529 passed, 19 skipped, collected 5548 (y sin
+`NORMAS_DIR`, sobre el mismo árbol: 5511 passed, 37 skipped). **Las otras
+tres se dicen como derivadas, no como medidas**, por lo mismo que en T-0: la
+derivación suma 196 a las de T-3, pasa tres a `skipped` en las cuatro
+columnas (los de diseño) y siete más en las dos sin PyMuPDF.
+**T-3 de la cadena T (2026-11-12, cerrado e integrado el
 2026-11-13 detrás de las correcciones de T-8, con las de su auditoría) sumó
 CIENTO SEIS tests netos**, ninguno con la marca `pdf` ni dependiente de Tk
 ni del repositorio de normas: los 44 de `tests/test_t3_familia_c.py` —la
@@ -2227,7 +2348,7 @@ EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
 4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728; T-6:
-4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352. La
+4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352; T-9: 5548. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2239,23 +2360,24 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 5349 (**derivado** en T-3, no medido: el contenedor no tiene tkinter) | 3 |
-| sí | no | 5336 (**MEDIDO** en T-3 sobre el árbol fusionado, con `NORMAS_DIR`) | 16 |
-| no | sí | 5245 (**derivado**, no medido) | 107 |
-| no | no | 5232 (**derivado**, no medido) | 120 |
+| sí | sí | 5542 (**derivado** en T-9, no medido: el contenedor no tiene tkinter) | 6 |
+| sí | no | 5529 (**MEDIDO** en T-9 sobre el árbol fusionado, con `NORMAS_DIR`) | 19 |
+| no | sí | 5431 (**derivado**, no medido) | 117 |
+| no | no | 5418 (**derivado**, no medido) | 130 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
-dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-3: 5318
-passed, 34 skipped; sobre el de las correcciones de T-8, 5212 y 34; sobre el
+dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-9: 5511
+passed, 37 skipped; sobre el de T-3, 5318 y 34; sobre el de las correcciones de T-8, 5212 y 34; sobre el
 de T-5, 5143 y 34; sobre el de T-8, 4942 y 34; ni T-6, ni T-8, ni T-5, ni las
-correcciones de T-8, ni T-3 sumaron ninguno que abra el repositorio de
+correcciones de T-8, ni T-3, ni T-9 sumaron ninguno que abra el repositorio de
 normas; eran
 siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
 `tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
 Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
 2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
-iban saltados por la marca `pdf`. Tras las correcciones de T-8 la tabla
+iban saltados por la marca `pdf`. Tras T-3 la tabla decía 5349 / 5336 / 5245
+/ 5232, medida sólo la segunda. Tras las correcciones de T-8 la tabla
 decía 5243 / 5230 / 5139 / 5126, medida sólo la segunda. Tras T-5 la tabla
 decía 5174 / 5161 / 5071 / 5058, medida sólo la segunda. Tras T-8 la tabla decía 4973 / 4960 / 4898
 / 4885, medida sólo la segunda. Tras T-6 la tabla decía 4863 / 4850 / 4788

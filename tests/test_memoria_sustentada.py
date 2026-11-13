@@ -119,7 +119,14 @@ def _pasos_de(informe):
                 vistos.extend(pasos_de_la_pieza)
             else:
                 _anota(getattr(pieza, "paso", None))
+        # --- T-9 --- La Fase 10 emite desde T-9 los pasos de la longitud
+        # por capacidad (y los del caudal de aporte, si lo calculo la Fase
+        # 1-bis) antes del espaciamiento maximo; VB1 sale con las
+        # verificaciones del punto. Se recorren sin `M11.traza_espaciamiento`.
         if punto.espaciamiento is not None:
+            lh = getattr(punto.espaciamiento, "longitud_hidraulica", None)
+            if lh is not None:
+                vistos.extend(lh.pasos)
             _anota(getattr(punto.espaciamiento, "paso", None))
         # T-6: 7.B emite pasos propios (pendiente, esviaje, longitud, cota de
         # salida, encaje). Si el punto no llego a 7.B, la longitud que se
@@ -572,6 +579,16 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # fundamento lo mide `tests/test_t3_familia_c.py` sobre la corrida
         # de la guia de perfil.
         "F7.MARCO", "F7.EMPALME_CANAL", "F7.REMANSO_CANAL",
+        # LOS DE T-9, por la misma razon: esta corrida declara
+        # `L_hidraulico_m` = None y no trae los datos de la cuneta, de modo
+        # que la Fase 10 de B-01 se detiene antes de la capacidad, y VB2 (el
+        # aporte contra la capacidad, correcciones de T-9) no se evalua. Que
+        # los pasos existen y llevan su fundamento lo miden
+        # `tests/test_t9_espaciamiento.py` y `tests/test_t9_correcciones.py`.
+        # F10.TRAMO SALIO DE ESTA LISTA en las correcciones: con la decision
+        # C del dueño A-02 cierra el tramo de B-01 y VB1 se evalua (530 m).
+        "F10.CAPACIDAD", "F10.APORTE", "F10.L_HIDRAULICO",
+        "F10.APORTE_CAPACIDAD",
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar

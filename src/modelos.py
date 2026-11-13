@@ -39,6 +39,7 @@ from types import MappingProxyType
 from typing import Any, Dict, Mapping, Optional, Protocol, Tuple, Union
 
 from src.dominios import CENTIMETROS_POR_METRO
+from src.dominios import METROS_POR_KM                     # --- T-9 ---
 from src.tolerancias import TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
 
 
@@ -724,7 +725,7 @@ class PuntoCritico:
     """
 
     id: str                            # identificador del punto
-    progresiva_km: float               # km - localizador, no entra en calculo
+    progresiva_km: float               # km - localizador; desde T-9 mide el tramo de cuneta de VB1 (Familia B)
     progresiva_display: str            # '0+380' - notacion vial para el reporte
     familia: Familia                   # Sec. 2.3
     Q_m3s: Optional[float]             # m3/s - vacio en Familia C (Tablero 3.1)
@@ -4125,6 +4126,29 @@ class TamizadoRasante:
         )
 
 
+# --- T-9 --- Los dos limites de la capacidad de una cuneta (num. 4.1.2.1 a)
+# del Manual de Hidrologia: «Caudal que transita con la cuneta llena» y
+# «Caudal que produce la velocidad máxima admisible»). Rotulos, no valores.
+CAPACIDAD_CUNETA_LLENA = "cuneta llena"
+CAPACIDAD_VELOCIDAD_LIMITE = "velocidad limite admisible"
+ORIGEN_L_DECLARADO = "declarado"
+ORIGEN_L_CALCULADO = "calculado"
+# El codigo de la verificacion del espaciamiento por tramo (Familia B). Es la
+# hermana de VC1 (la verificacion propia de la Familia C): «VB1».
+CODIGO_VB1 = "VB1"
+# --- T-9 (correcciones de la auditoria, H1) --- La condicion LITERAL del
+# Manual (num. 4.1.2.1 a), pag. impresa 177): «Q manning > Q de aporte». Es
+# la segunda verificacion de la Fase 10 y no necesita el tramo: el caudal de
+# aporte del alivio contra la capacidad admisible de la cuneta.
+CODIGO_VB2 = "VB2"
+# Como se reparte el aporte por metro de cuneta para la longitud por
+# capacidad (H1): con el TRAMO conocido, el caudal del alivio entre su
+# longitud; sin el, la escorrentia especifica por el ancho tributario.
+METODO_APORTE_TRAMO = "caudal del alivio repartido en su tramo (q' = Q / s)"
+METODO_APORTE_AREA = ("escorrentia especifica por el ancho tributario "
+                      "(q' = q · b)")
+
+
 @dataclass(frozen=True)
 class Espaciamiento:
     """
@@ -4138,14 +4162,21 @@ class Espaciamiento:
     adoptado por el regimen FEN (Sec. 10, Anexo A).
 
     `L_hidraulico` es la longitud a la que la cuneta agota su capacidad
-    admisible frente al caudal aportante por metro lineal. Este modulo no la
-    calcula: Sec. 10 punto 2 describe el procedimiento (disenar la cuneta,
-    capacidad admisible con borde libre, caudal aportante por area tributaria
-    e intensidad de TR = 35 anios) pero no fija la seccion de la cuneta, su n
-    de Manning ni la formula de intensidad -- ningun numeral de la hoja de
-    ruta los trae. Rellenar esos vacios en silencio violaria la regla del
-    proyecto, asi que `M10_espaciamiento` la recibe como argumento ya
-    resuelto, igual que MD.py recibe L y TW en vez de derivarlos.
+    admisible frente al caudal aportante por metro lineal. Hasta T-9 llegaba
+    siempre declarada (`L_hidraulico_m`); desde T-9 la DECLARADA sigue
+    ganando y, si no viene, M10 la calcula (`LongitudHidraulica`): la
+    seccion y el revestimiento de la cuneta son criterios [A]
+    ('seccion_cuneta', con el minimo muy lluvioso de la Tabla Nº 34 desde
+    las correcciones; 'revestimiento_cuneta'), su pendiente y el ancho
+    tributario son datos del trazo, y el aporte es el caudal del punto,
+    repartido en su tramo (Q / s) o por el ancho tributario (q · b).
+    `origen_L_hidraulico` dice cual de las dos fue.
+
+    ESTE OBJETO NO VERIFICA NADA (INF-5.1.12): es el espaciamiento MAXIMO.
+    Lo que se verifica es el espaciamiento ADOPTADO entre dos alivios, por
+    tramo (`TramoDeAlivio`, verificacion VB1). Hasta T-9 su paso decia
+    «cumple» comparando el minimo de dos limites con uno de ellos, que no
+    podia fallar.
 
     Se guardan los DOS limites por separado, no solo el minimo, porque la
     memoria tiene que poder mostrar por cuanto quedo descartado el que no
@@ -4165,6 +4196,202 @@ class Espaciamiento:
                       "num. 4.1.2.1 d), pag. 179",
     )
     paso: Optional["PasoDeMemoria"] = None
+    # --- T-9 --- DE DONDE SALIO `L_hidraulico`: declarado (dato externo
+    # `L_hidraulico_m`, que sigue ganando) o calculado por M10 con la cuneta
+    # (`longitud_hidraulica`, con sus pasos y avisos). Con la longitud
+    # declarada `longitud_hidraulica` es None.
+    origen_L_hidraulico: str = ORIGEN_L_DECLARADO
+    longitud_hidraulica: Optional["LongitudHidraulica"] = None
+
+    @property
+    def pasos(self) -> Tuple["PasoDeMemoria", ...]:
+        """
+        --- T-9 --- Todos los pasos de la Fase 10 del punto, en el orden del
+        calculo: los de la longitud por capacidad (si se calculo) y el del
+        espaciamiento maximo.
+        """
+        previos = (() if self.longitud_hidraulica is None
+                   else self.longitud_hidraulica.pasos)
+        return tuple(previos) + (() if self.paso is None else (self.paso,))
+
+    @property
+    def avisos(self) -> Tuple[str, ...]:
+        """--- T-9 --- Los avisos de la longitud por capacidad, si la hubo."""
+        if self.longitud_hidraulica is None:
+            return ()
+        return tuple(self.longitud_hidraulica.avisos)
+
+
+@dataclass(frozen=True)
+class CapacidadCuneta:
+    """
+    --- T-9 --- La capacidad admisible de la cuneta triangular de la Fase 10
+    (Manual de Hidrologia, num. 4.1.2.1 a), pag. impresa 174): el MENOR de
+    dos caudales, el de la cuneta llena (hasta `tirante_util_m`, la
+    profundidad menos el borde libre) y el que produce la velocidad limite
+    admisible de la Tabla Nº 33. Los dos van por separado porque el remedio
+    no es el mismo: si gobierna la cuneta llena falta seccion; si gobierna la
+    velocidad, falta revestimiento.
+    """
+    profundidad_m: float
+    ancho_m: float
+    talud_interior_HV: float      # Z1 = ancho / profundidad (Figura Nº 27)
+    talud_exterior_HV: float      # Z2
+    borde_libre_m: float
+    tirante_util_m: float
+    revestimiento: str
+    n: float                      # 1/K de la Tabla Nº 32
+    v_limite_m_s: float           # extremo leido de la Tabla Nº 33
+    S: float                      # pendiente longitudinal de la cuneta, m/m
+    area_llena_m2: float
+    radio_llena_m: float
+    Q_llena_m3s: float
+    V_llena_m_s: float
+    Q_velocidad_m3s: float        # caudal a la velocidad limite
+    Q_admisible_m3s: float
+    gobierna: str                 # CAPACIDAD_CUNETA_LLENA | ..._VELOCIDAD_LIMITE
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class LongitudHidraulica:
+    """
+    --- T-9 --- La longitud por capacidad de la cuneta (Sec. 10 punto 2 de la
+    hoja de ruta): la capacidad admisible dividida por el caudal aportante
+    por metro de cuneta,
+
+        q' = q · b / 10^6        [m3/s por m; q en m3/s por km2, b en m]
+        L_hidraulico = Q_admisible / q'
+
+    DESDE LAS CORRECCIONES DE LA AUDITORIA DE T-9 (H1) el aporte por metro
+    se reparte de DOS maneras, y `metodo_aporte` dice cual:
+
+      * TRAMO conocido (`METODO_APORTE_TRAMO`): q' = Q / s, el caudal de
+        aporte del alivio repartido uniformemente en su tramo real de
+        longitud s, y L_hidraulico = Q_adm · s / Q. Es la condicion literal
+        del Manual escrita como longitud: L_hidraulico >= s si y solo si
+        Q_adm >= Q. `escorrentia_m3s_km2` y `ancho_tributario_m` son None.
+      * TRAMO desconocido (`METODO_APORTE_AREA`): q' = q · b / 10^6, con q la
+        escorrentia especifica del area tributaria (Q / A) y b el ancho
+        tributario. Se publica la longitud que ese par implica, s_impl =
+        A · 10^6 / b (`s_implicita_m`), y si supera la longitud maxima
+        normativa del tramo se avisa: el area declarada no es la faja b x
+        tramo, y la longitud calculada no es fiable.
+
+    `caudal_de_aporte` es el `CaudalDeDiseno` de la Fase 1-bis cuando el
+    caudal se calculo (el mismo objeto del punto: no se recalcula, H11), o
+    None.
+    """
+    capacidad: CapacidadCuneta
+    escorrentia_m3s_km2: Optional[float]
+    origen_escorrentia: str
+    ancho_tributario_m: Optional[float]
+    q_por_metro_m3s_m: float
+    L_hidraulico: float
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    caudal_de_aporte: Optional["CaudalDeDiseno"] = None
+    metodo_aporte: str = METODO_APORTE_AREA
+    Q_aporte_m3s: Optional[float] = None
+    longitud_tramo_m: Optional[float] = None
+    s_implicita_m: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class AporteDelAlivio:
+    """
+    --- T-9 (correcciones de la auditoria, H1) --- VB2: el caudal de aporte
+    del alivio contra la capacidad admisible de la cuneta (Manual de
+    Hidrologia, num. 4.1.2.1 a), pag. impresa 177: «Q manning > Q de aporte,
+    Entonces el diseño está terminado»). En la Familia B el caudal del punto
+    es, por contrato, el de la cuneta que descarga en el alivio.
+
+    `capacidad` es None cuando no se pudo calcular --falta la pendiente de la
+    cuneta-- y entonces `verificacion` tambien, y `aviso` dice que VB2 no se
+    evaluo y por que. Con `L_hidraulico_m` declarado no se exige el dato: el
+    aviso basta (quien declara la longitud declara que la cuneta conduce su
+    aporte hasta ella).
+    """
+    Q_aporte_m3s: float
+    origen_aporte: str
+    capacidad: Optional[CapacidadCuneta]
+    verificacion: Optional["Verificacion"] = None
+    aviso: str = ""
+
+    @property
+    def pasos(self) -> Tuple["PasoDeMemoria", ...]:
+        """Los pasos de la capacidad de la cuneta, si se calculo."""
+        return () if self.capacidad is None else tuple(self.capacidad.pasos)
+
+
+@dataclass(frozen=True)
+class ExtremoDeTramo:
+    """
+    --- T-9 (correcciones de la auditoria, H3 y decision C) --- Donde empieza
+    el tramo de cuneta que VB1 mide para una alcantarilla de alivio: el lado
+    de PROGRESIVAS MENORES del alivio (el sentido del flujo no es dato y el
+    texto no lo presupone).
+
+    El extremo es, por orden: el inicio declarado (`inicio_tramo_cuneta_km`,
+    que no puede ser posterior a la obra); si no, la obra anterior en
+    progresiva que cierre el tramo --de Familia B siempre, de Familia A si el
+    criterio 'obras_familia_a_extremo_de_cuneta' vale «si»--; si no hay
+    ninguna, None, y VB1 no se puede evaluar.
+
+    `avisos` son los HUECOS que VB1 no mira: la cuneta entre la obra anterior
+    y un inicio declarado posterior a ella, y la del lado de progresivas
+    mayores del alivio cuando la obra siguiente no es otro alivio que la
+    verifique.
+    """
+    id_punto: str
+    progresiva_km: float
+    extremo: Optional[str]
+    progresiva_extremo_km: Optional[float]
+    origen_extremo: str
+    familia_extremo: Optional["Familia"] = None
+    avisos: Tuple[str, ...] = ()
+
+    @property
+    def longitud_m(self) -> Optional[float]:
+        """|progresiva − progresiva_extremo| en metros, o None sin extremo."""
+        if self.progresiva_extremo_km is None:
+            return None
+        return abs(self.progresiva_km - self.progresiva_extremo_km) * METROS_POR_KM
+
+
+@dataclass(frozen=True)
+class TramoDeAlivio:
+    """
+    --- T-9 --- El tramo de cuneta que descarga en una alcantarilla de alivio
+    (Familia B), entre ella y su extremo aguas arriba, y la verificacion VB1
+    de su longitud contra el espaciamiento maximo de la Fase 10.
+
+    EL EXTREMO es la obra B anterior en progresiva, o el inicio del tramo que
+    el punto declara (`inicio_tramo_cuneta_km`: punto alto de la rasante,
+    inicio del corte, otra obra de drenaje transversal). Sin ninguno de los
+    dos no hay tramo que medir: `verificacion` es None, `longitud_m` tambien,
+    y `aviso` lo dice. Con el espaciamiento maximo de algun extremo sin
+    conocer, se verifica contra el limite normativo SOLO si el tramo ya lo
+    excede (el maximo nunca lo supera); si no, tampoco hay verificacion y el
+    aviso nombra lo que falta.
+    """
+    id_punto: str
+    progresiva_km: float
+    extremo: Optional[str]
+    progresiva_extremo_km: Optional[float]
+    origen_extremo: str
+    longitud_m: Optional[float]
+    verificacion: Optional["Verificacion"] = None
+    aviso: str = ""
+    # --- T-9 (correcciones de la auditoria, H2 y H3) --- `falta` es el dato
+    # que destraba VB1 cuando no se evaluo (`inicio_tramo_cuneta_km` sin
+    # extremo, `L_hidraulico_m` con el maximo de un extremo desconocido): el
+    # servicio lo registra como `Bloqueo` del punto, porque una verificacion
+    # de la aceptacion de la Familia B que no se evaluo no puede dejar el
+    # expediente cerrado. `avisos` son los huecos de cuneta que VB1 no mira.
+    falta: str = ""
+    avisos: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

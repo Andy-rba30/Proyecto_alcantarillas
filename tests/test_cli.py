@@ -969,14 +969,25 @@ def test_perfil_cerrado_devuelve_exit_cero(tmp_path, monkeypatch, capsys):
     y la Fase 7 no lo pide. Los dos criterios que hoy podrian bloquearla --
     'espesor_pared_conducto' y 'condicion_pavimento' -- los declara conftest
     para toda la corrida de pruebas.
+
+    REESCRITO EN LAS CORRECCIONES DE T-9 (H2), y se dice: con B-01 solo, el
+    tramo de cuneta de la verificacion VB1 no tiene extremo, y desde las
+    correcciones eso es un BLOQUEO que espera `inicio_tramo_cuneta_km` (antes
+    era un aviso y el expediente cerraba con VB1 sin evaluar). El caso
+    declara ese dato por el JSON --150 m de cuneta, dentro de los 180 m de
+    `--l-hidraulico`--, que es lo que pide el expediente para cerrar.
     """
     _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
     lineas = CSV.read_text(encoding="utf-8").strip().splitlines()
     solo_b01 = tmp_path / "solo_b01.csv"
     solo_b01.write_text("\n".join([lineas[0]] + [
         l for l in lineas if l.startswith("B-01")]) + "\n", encoding="utf-8")
+    externos = tmp_path / "tramo.json"
+    externos.write_text('{"puntos": {"B-01": {"inicio_tramo_cuneta_km": 2.30}}}',
+                        encoding="utf-8")
     argumentos = [str(solo_b01), "--luz", "2.0", "--tw", "0.0",
                   "--longitud", "12.0", "--l-hidraulico", "180.0",
+                  "--datos-externos", str(externos),
                   "--json", str(tmp_path / "b01.json")]
 
     assert cli.main(argumentos + ["--alcance", "perfil"]) == 0

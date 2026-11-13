@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "559872d4701e2012acfc09e8188f5cd58ea4228b",
+    "criterios_sha1": "45ba5f765689a32c30482dd84b264eb9ea19d3a2",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -148,6 +148,8 @@
       "geometria": null,
       "estructural": null,
       "espaciamiento_alivio": null,
+      "tramo_alivio": null,
+      "aporte_alivio": null,
       "iteraciones": [
         {
           "material": "Concreto reforzado",
@@ -303,6 +305,8 @@
       "geometria": null,
       "estructural": null,
       "espaciamiento_alivio": null,
+      "tramo_alivio": null,
+      "aporte_alivio": null,
       "iteraciones": [
         {
           "material": "Concreto reforzado",
@@ -400,7 +404,9 @@
         "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
         "TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)",
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
-        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto",
+        "VB2 (caudal de aporte frente a la capacidad de la cuneta) NO SE EVALUO: falta la pendiente de la cuneta (`S_cuneta`, por --datos-externos), sin la que la capacidad no se calcula; por la misma falta la Fase 10 del punto se detiene (ver su bloqueo)",
+        "tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica"
       ],
       "clasificacion": {
         "luz_m": 2.75,
@@ -458,6 +464,26 @@
       "geometria": null,
       "estructural": null,
       "espaciamiento_alivio": null,
+      "tramo_alivio": {
+        "extremo": "A-02",
+        "origen_extremo": "la obra de Familia A anterior en progresiva (CSV), que cierra el tramo por el criterio 'obras_familia_a_extremo_de_cuneta'",
+        "progresiva_km": 2.45,
+        "progresiva_extremo_km": 1.92,
+        "longitud_m": 530.0000000000002,
+        "evaluada": true,
+        "aviso": null,
+        "falta": null,
+        "huecos": [
+          "tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica"
+        ]
+      },
+      "aporte_alivio": {
+        "Q_aporte_m3s": 0.095,
+        "origen_aporte": "Q declarado por el estudio hidrológico (CSV Sec. 1.2, columna Q_m3s)",
+        "evaluada": false,
+        "aviso": "VB2 (caudal de aporte frente a la capacidad de la cuneta) NO SE EVALUO: falta la pendiente de la cuneta (`S_cuneta`, por --datos-externos), sin la que la capacidad no se calcula; por la misma falta la Fase 10 del punto se detiene (ver su bloqueo)",
+        "capacidad": null
+      },
       "iteraciones": [
         {
           "material": "Concreto reforzado",
@@ -492,6 +518,17 @@
           "valor_obtenido": 2.75,
           "valor_admisible": 6.0,
           "criterio_aplicado": null
+        },
+        {
+          "fase": "Fase 10 - Espaciamiento de alivio (M10)",
+          "codigo": "VB1",
+          "numeral": "Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 4.1.2.1 d), pag. 179 [hoja de ruta: Fase 10]",
+          "estado": "no cumple",
+          "cumple": false,
+          "veredicto": "no cumple",
+          "valor_obtenido": 530.0000000000002,
+          "valor_admisible": 200.0,
+          "criterio_aplicado": "long_max_cuneta"
         }
       ],
       "verificaciones_no_evaluadas": [],
@@ -520,7 +557,7 @@
           "campo": "L_hidraulico_m",
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "Falta el dato 'L_hidraulico_m'. Sec. 10 describe el procedimiento de la cuneta pero no fija su seccion, su n de Manning ni la formula de intensidad: la longitud por capacidad hidraulica se declara, no se deduce"
+          "mensaje": "Falta el dato 'L_hidraulico_m'. La longitud por capacidad de la cuneta no esta declarada (`L_hidraulico_m`) y no se puede calcular: faltan los datos del trazo con que la Fase 10 la calcula (S_cuneta, por --datos-externos). Declarar esos datos, o la longitud"
         }
       ]
     },
@@ -583,6 +620,8 @@
       "geometria": null,
       "estructural": null,
       "espaciamiento_alivio": null,
+      "tramo_alivio": null,
+      "aporte_alivio": null,
       "iteraciones": [],
       "verificaciones": [
         {
@@ -745,6 +784,13 @@
         "concepto": "Constantes de control de entrada HDS-5 para tuberia HDPE"
       },
       {
+        "clave": "long_max_cuneta",
+        "etiqueta": "A",
+        "valor": 200.0,
+        "declarado_en_caliente": false,
+        "concepto": "Longitud maxima de cuneta -> espaciamiento de alcantarillas de alivio"
+      },
+      {
         "clave": "metodo_longitud_conducto",
         "etiqueta": "A",
         "valor": "por_extremo",
@@ -760,6 +806,13 @@
         ],
         "declarado_en_caliente": false,
         "concepto": "Coeficiente de rugosidad de Manning para HDPE de interior liso"
+      },
+      {
+        "clave": "obras_familia_a_extremo_de_cuneta",
+        "etiqueta": "A",
+        "valor": "si",
+        "declarado_en_caliente": false,
+        "concepto": "Si la obra de Familia A anterior en progresiva cierra el tramo de cuneta que descarga en la alcantarilla de alivio siguiente (extremo de la verificacion VB1)"
       },
       {
         "clave": "origen_cota_fondo_entrada",
@@ -893,6 +946,7 @@
       "regimen_v2b",
       "relacion_intensidad_duracion",
       "resguardo_HW_subrasante",
+      "seccion_cuneta",
       "seccion_receptor",
       "talud_terraplen",
       "umbral_area_quebrada_importante_ha"

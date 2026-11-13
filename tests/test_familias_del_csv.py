@@ -56,6 +56,10 @@ EXTERNOS_POR_PUNTO = {"C-01": {"Q_m3s": 0.65, "S_conducto": 0.004}}
 VALOR_DE_PRUEBA = {
     "L_hidraulico_m": 120.0,
     "categoria_tr": "quebrada_menor",
+    # --- T-9 --- las tres entradas de la cuneta de la Fase 10 (Familia B).
+    "ancho_tributario_m": 12.0,
+    "S_cuneta": 0.01,
+    "inicio_tramo_cuneta_km": 2.2,
 }
 
 

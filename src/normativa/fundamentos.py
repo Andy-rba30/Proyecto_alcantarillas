@@ -2795,3 +2795,136 @@ REMANSO_CANAL = _fundamento(
         "arriba, donde la coronacion puede ser mas baja, sin que la memoria "
         "lo diga: es el hueco 2 de §13 de docs/ruta_familia_c.md."),
 )
+
+
+# ===========================================================================
+# --- T-9 --- Fase 10 - La longitud por capacidad de la cuneta y la
+# verificacion del espaciamiento por tramo (M10)
+# ===========================================================================
+# Hasta T-9 la Fase 10 tenia UN paso (F10.CUNETA) y una frase en la memoria:
+# el espaciamiento maximo como minimo de dos longitudes, una de ellas
+# declarada, y un veredicto «cumple» que no podia fallar (INF-5.1.12). Ahora
+# la longitud por capacidad se CALCULA en tres pasos y el espaciamiento
+# ADOPTADO -- la distancia entre dos alivios del CSV -- se verifica.
+
+CAPACIDAD_CUNETA = _fundamento(
+    id="F10.CAPACIDAD",
+    fase=F10,
+    que_paso=("Capacidad admisible de la cuneta: el menor del caudal con la "
+              "cuneta llena y del que produce la velocidad limite admisible"),
+    por_que=(
+        "La longitud de cuneta que se puede recorrer sin aliviar depende de "
+        "cuanta agua cabe en ella. El Manual define esa capacidad con DOS "
+        "caudales: el que pasa con la cuneta llena, que es un limite de "
+        "seccion, y el que alcanza la velocidad limite de su revestimiento, "
+        "que es un limite de erosion. Rige el menor: una cuneta que no se "
+        "desborda pero se erosiona tampoco conduce el agua."),
+    verbo=Verbo.DEFINE,
+    # Correcciones de T-9: el n sale de la Tabla Nº 32 con la Nº 09 como
+    # alternativa declarada (dudoso 2), y el talud interior se contrasta con
+    # la Tabla 304.12 (H5).
+    citas=("MC_HHD.4.1.2.1a", "MC_HHD.4.1.2.1a#MANNING",
+           "MC_HHD.4.1.2.1a#VELOCIDAD", "MC_HHD.4.1.2.1#T32",
+           "MC_HHD.4.1.2.1#T09", "MC_HHD.4.1.2.1#T304_12",
+           "MC_HHD.4.1.2.1e"),
+    que_pasa_si_no_se_hace=(
+        "La longitud por capacidad seguiria siendo un dato declarado sin "
+        "procedimiento, y la Fase 10 no podria decir si el limite de 200 m "
+        "lo alcanza la cuneta o la excede."),
+)
+
+APORTE_CUNETA = _fundamento(
+    id="F10.APORTE",
+    fase=F10,
+    que_paso=("Caudal aportante por metro de cuneta: escorrentia especifica "
+              "del area tributaria por su ancho"),
+    por_que=(
+        "El caudal de aporte de una cuneta es el del area aportante que "
+        "corresponde a su longitud (metodo racional). Con la misma "
+        "escorrentia por unidad de area, ese area crece con la longitud: el "
+        "caudal por metro de cuneta es la escorrentia especifica por el "
+        "ancho de la faja que drena a ella, y es lo que convierte una "
+        "capacidad en una longitud."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.4.1.2.1b", "MC_HHD.4.1.2a"),
+    que_pasa_si_no_se_hace=(
+        "No habria con que dividir la capacidad: la longitud por capacidad "
+        "no se podria calcular."),
+)
+
+LONGITUD_HIDRAULICA = _fundamento(
+    id="F10.L_HIDRAULICO",
+    fase=F10,
+    que_paso=("Longitud por capacidad de la cuneta: a partir de ella el "
+              "caudal aportante supera la capacidad admisible"),
+    por_que=(
+        "Es la condicion del Manual escrita al reves: la cuneta esta bien "
+        "dimensionada mientras su capacidad supere al caudal de aporte, y el "
+        "caudal de aporte crece con la longitud. La longitud a la que los "
+        "dos se igualan es la mas larga que la cuneta puede recorrer sin "
+        "alivio, y entra al espaciamiento junto al limite normativo."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.4.1.2.1a", "MC_HHD.4.1.2.1b", "DG2018.304.11"),
+    que_pasa_si_no_se_hace=(
+        "El espaciamiento entre alivios lo fijaria solo el limite normativo, "
+        "aunque la cuneta se desbordara o se erosionara antes."),
+)
+
+TRAMO_ALIVIO = _fundamento(
+    id="F10.TRAMO",
+    fase=F10,
+    que_paso=("Verificacion VB1: espaciamiento adoptado entre alcantarillas "
+              "de alivio contra el espaciamiento maximo"),
+    # CORREGIDO TRAS LA AUDITORIA DE T-9 (H10, dudoso 5). Decia que un tramo
+    # largo «recorre mas de lo que el Manual admite», con un umbral de 200 m
+    # que la fuente solo RECOMIENDA. El verbo sigue siendo OBLIGA porque la
+    # cifra de 250 m es exigencia («será de 250m como máximo»); lo que la 200
+    # tiene de duro lo pone el proyecto, y el `por_que` lo dice.
+    por_que=(
+        "El espaciamiento maximo no verifica nada por si solo: es un limite. "
+        "Lo que se verifica es la distancia que el proyecto DEJO entre la "
+        "alcantarilla de alivio y el extremo de su tramo de cuneta, y esa "
+        "distancia sale de las progresivas de las obras. El Manual EXIGE un "
+        "recorrido maximo de 250 m en region seca o poco lluviosa y "
+        "RECOMIENDA reducirlo a 200 m en region muy lluviosa; el proyecto "
+        "adopta los 200 m como umbral duro, y la longitud por capacidad de "
+        "la cuneta puede acortarlo. Si el tramo supera el menor de los dos, "
+        "el remedio es otro alivio o una cuneta de mas capacidad."),
+    verbo=Verbo.OBLIGA,
+    # Correcciones de T-9 (decision C): el extremo del tramo puede ser una
+    # obra de drenaje transversal, por el DG-2018, y el Manual nombra solo
+    # las alcantarillas de alivio como desague.
+    citas=("MC_HHD.4.1.2.1d", "DG2018.304.11#DESAGUE",
+           "MC_HHD.4.1.2.1d#ALIVIO"),
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta T-9 (INF-5.1.12): la Fase 10 devolvia "
+        "«cumple» por construccion, porque comparaba el minimo de dos "
+        "limites con uno de ellos, y ningun tramo de cuneta demasiado largo "
+        "podia salir en la memoria."),
+)
+
+# --- Correcciones de la auditoria de T-9 (H1). La condicion LITERAL del
+# Manual: la capacidad de la cuneta contra el caudal de aporte. Es VB2, y no
+# necesita el tramo: basta el caudal del punto y la capacidad.
+APORTE_FRENTE_A_CAPACIDAD = _fundamento(
+    id="F10.APORTE_CAPACIDAD",
+    fase=F10,
+    que_paso=("Verificacion VB2: el caudal de aporte del alivio contra la "
+              "capacidad admisible de la cuneta"),
+    por_que=(
+        "El Manual da la cuneta por bien dimensionada solo si su capacidad "
+        "supera al caudal de aporte, y si no manda volver atras y elegir "
+        "otra seccion. En la Familia B el caudal del punto es, por "
+        "contrato, el de la cuneta que descarga en el alivio: compararlo con "
+        "la capacidad es la condicion del Manual escrita sobre los datos del "
+        "punto. Una cuneta que no conduce su aporte desborda sobre la via "
+        "antes de llegar al alivio, cualquiera sea el espaciamiento."),
+    verbo=Verbo.OBLIGA,
+    citas=("MC_HHD.4.1.2.1a#CONDICION", "MC_HHD.4.1.2.1a",
+           "MC_HHD.4.1.2.1b"),
+    que_pasa_si_no_se_hace=(
+        "Es el hallazgo H1 de la auditoria de T-9: con un area tributaria "
+        "que no era la faja del tramo, la longitud por capacidad salia "
+        "cientos de veces mayor que el tramo y VB1 cumplia con un aporte un "
+        "82 % mayor que la capacidad de la cuneta."),
+)

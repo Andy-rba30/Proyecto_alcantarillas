@@ -46,6 +46,7 @@ from src import criterios_adoptados as ca
 from src import sesion
 from src.modulos import M11_reporte as M11
 from tests.apoyo import guia_perfil as gp
+from tests.apoyo.aproximacion import REL_TRANSPORTE
 
 RAIZ = Path(__file__).resolve().parents[1]
 GUIA = RAIZ / "docs" / "guia_perfil.md"
@@ -248,15 +249,24 @@ def test_sin_sitio_ni_declaraciones_la_corrida_advierte_del_corredor_y_dimension
     es lo que la guia promete: la advertencia de corredor sin `--datos-sitio`
     y su RESUMEN linea a linea; y lo que se mide ahora es que los siete del
     cajon salieron del ARCHIVO y no de una declaracion.
+
+    --- T-9 --- Y DESDE T-9 NO CIERRA, y se dice: la obra de Familia A
+    anterior cierra el tramo de cuneta de B-01 (decision C del dueño), que
+    queda a 530 m de A-02, y su VB1 NO CUMPLE contra los 120 m de
+    `L_hidraulico_m` del JSON de la guia. Sale con 1 y no con 0; los cuatro
+    puntos siguen dimensionando y es la unica incumplida.
     """
     hecho = taller.resultados["sin_cajon"]
-    assert hecho.returncode == 0, _diagnostico(hecho)
+    assert hecho.returncode == 1, _diagnostico(hecho)
     assert TEXTO_ADVERTENCIA in hecho.stdout
     for linea in POR_ID["resumen_sin_cajon"].cuerpo.splitlines():
         assert linea in hecho.stdout, f"la guia promete «{linea}»\n{_diagnostico(hecho)}"
     informe = taller.json("guia/salida/sin_cajon.informe.json")
     assert informe["expediente"]["dimensionados"] == PUNTOS_DEL_EJEMPLO
-    assert informe["expediente"]["cerrado"] is True
+    assert informe["expediente"]["cerrado"] is False
+    incumplidas = [(p["id"], v["codigo"]) for p in informe["puntos"]
+                   for v in p["verificaciones"] if v["cumple"] is False]
+    assert incumplidas == [("B-01", "VB1")]
     c01 = _punto(informe, ID_PUNTO_QUE_LA_GUIA_RELLENA)
     assert c01["dimensionado"]
     assert SECCION_C01 in hecho.stdout
@@ -273,15 +283,30 @@ def test_sin_sitio_ni_declaraciones_la_corrida_advierte_del_corredor_y_dimension
 
 
 def test_la_corrida_de_perfil_dimensiona_los_cuatro_y_dice_su_resumen(taller):
+    """
+    REESCRITO EN LAS CORRECCIONES DE T-9 (decision C del dueño), y se dice:
+    antes la corrida salia con 0 y el expediente CERRADO; desde que la obra
+    de Familia A anterior cierra el tramo de cuneta, B-01 queda a 530 m de
+    A-02 y su VB1 NO CUMPLE contra los 120 m de `L_hidraulico_m` del JSON de
+    la guia. Los cuatro puntos siguen dimensionando y ninguna etapa queda
+    bloqueada; la unica incumplida es esa VB1, y la guia lo muestra y explica
+    como se resuelve (en el proyecto de drenaje, no aqui).
+    """
     hecho = taller.resultados["perfil"]
-    assert hecho.returncode == 0, _diagnostico(hecho)
+    assert hecho.returncode == 1, _diagnostico(hecho)
     assert TEXTO_ADVERTENCIA not in hecho.stdout
     assert TEXTO_SITIO_DECLARADO in hecho.stdout
     for linea in POR_ID["resumen_perfil"].cuerpo.splitlines():
         assert linea in hecho.stdout, f"la guia promete «{linea}»\n{_diagnostico(hecho)}"
     informe = taller.json("guia/salida/perfil.informe.json")
     assert informe["expediente"]["dimensionados"] == PUNTOS_DEL_EJEMPLO
-    assert informe["expediente"]["cerrado"] is True
+    assert informe["expediente"]["cerrado"] is False
+    incumplidas = [(p["id"], v["codigo"]) for p in informe["puntos"]
+                   for v in p["verificaciones"] if v["cumple"] is False]
+    assert incumplidas == [("B-01", "VB1")]
+    b01 = _punto(informe, "B-01")
+    assert b01["tramo_alivio"]["extremo"] == "A-02"
+    assert b01["tramo_alivio"]["longitud_m"] == pytest.approx(530.0, rel=REL_TRANSPORTE)
     assert all(p["dimensionado"] for p in informe["puntos"])
     assert len(informe["puntos"]) == PUNTOS_DEL_EJEMPLO
     # Los [S] de esta corrida salieron del sitio.json de la guia, no del archivo.
@@ -309,11 +334,15 @@ def test_la_sesion_de_la_guia_es_valida_y_reproduce_la_corrida_de_perfil(taller)
     declarados = _declarados_en(POR_ID["perfil"])
     assert set(datos["criterios"]["valores"]) == set(declarados)
     hecho = taller.resultados["sesion"]
-    assert hecho.returncode == 0, _diagnostico(hecho)
+    # REESCRITO (correcciones de T-9, decision C): sale con 1 y no con 0,
+    # porque reproduce una corrida que no cierra (la VB1 de B-01).
+    assert hecho.returncode == 1, _diagnostico(hecho)
     assert TEXTO_SESION_RESTAURADA in hecho.stdout
     informe = taller.json("guia/salida/desde_sesion.informe.json")
     assert informe["expediente"]["dimensionados"] == PUNTOS_DEL_EJEMPLO
-    assert informe["expediente"]["cerrado"] is True
+    # REESCRITO (correcciones de T-9, decision C): la sesion reproduce la
+    # corrida de perfil, que ya no cierra por la VB1 de B-01.
+    assert informe["expediente"]["cerrado"] is False
 
 
 def test_comparar_las_dos_corridas_dice_que_difieren(taller):
@@ -344,7 +373,10 @@ def test_el_pdf_por_la_sesion_se_escribe_o_deja_el_html_con_su_mensaje(taller):
     --pdf tiene dos finales declarados, y la guia los dice los dos.
     """
     hecho = taller.correr("pdf")
-    assert hecho.returncode == 0, _diagnostico(hecho)
+    # REESCRITO (correcciones de T-9, decision C): la corrida de la sesion ya
+    # no cierra (la VB1 de B-01) y la CLI sale con 1; la memoria se escribe
+    # igual, por cualquiera de sus dos finales.
+    assert hecho.returncode == 1, _diagnostico(hecho)
     destino = taller.raiz / "guia" / "salida" / "memoria.pdf"
     if destino.is_file():
         assert destino.stat().st_size > 0

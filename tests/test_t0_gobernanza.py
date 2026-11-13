@@ -192,6 +192,16 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # del cajon salen de los vacios y quedan los de T-7a/b/c.
         ESTADO_CERRADO: {"INF-0.4", "INF-3.2.1"},
     },
+    "T-9": {
+        # El espaciamiento de alivios puede fallar (VB1 por tramo, VB2 la
+        # condicion literal del Manual) y la longitud por capacidad se
+        # calcula: el prompt cita «INF-5.1.11 (M10 no puede fallar)», que es
+        # INF-5.1.12, e «INF-3.3 "espaciamiento"», que es INF-3.3.8.
+        # INF-5.1.8 (`area_ha` en B) queda EN PARTE: tiene consumidores
+        # reales pero nada comprueba que sea el area del tramo.
+        ESTADO_CERRADO: {"INF-5.1.12", "INF-3.3.8"},
+        ESTADO_PARCIAL: {"INF-5.1.8"},
+    },
 }
 
 
@@ -326,7 +336,7 @@ def test_las_claves_de_Manning_y_la_gravedad_del_Anexo_B_son_las_del_codigo(hoja
 
 @pytest.mark.parametrize("donde,que", [
     ("### 1.1 Por punto crítico", "MH_hidrologia"),          # el caudal: T-1
-    ("### 2.3 Familias", "verificaciones_aceptacion"),       # familia B: hoy None
+    ("### 2.3 Familias", "verificaciones_aceptacion"),       # familia B: VB1 (T-9)
     ("### 7.B Verificación final por punto", "pendiente_minima_conducto"),
     ("### 7.B Verificación final por punto", "desnivel_minimo_entrega_m"),
     ("## Fase 9 — Cabezal y aletas", "POR PUNTO"),
@@ -344,13 +354,20 @@ def test_cada_enmienda_de_T0_esta_en_su_apartado_y_lleva_su_ID(hoja, donde, que)
     assert "T-0" in apartado and "INF-" in apartado, donde
 
 
-def test_la_familia_B_sigue_sin_conjunto_propio_y_la_hoja_lo_dice(hoja):
+def test_la_familia_B_lleva_el_conjunto_que_la_hoja_declara(hoja):
     """
-    T-0 no toca logica: `verificaciones_aceptacion` de la Familia B sigue en
-    None, y lo que cambia es que la hoja lo DECLARA en vez de callarlo.
+    T-0 no tocaba logica: `verificaciones_aceptacion` de la Familia B quedo en
+    None y la hoja lo DECLARO en vez de callarlo. T-9 lo cablea (ficha T0-03):
+    la Fase 10 tiene desde entonces una verificacion que puede fallar (VB1),
+    y la tupla es la frase de la v8 §2.3 --«V1 + V2 + V4 + V5 + espaciamiento
+    de la Fase 10»-- con el codigo de esa verificacion.
     """
-    from src.modelos import Familia
-    assert M1_clasificacion.PERFILES[Familia.B].verificaciones_aceptacion is None
+    # Desde las correcciones de T-9 (H1), con VB2: el aporte contra la
+    # capacidad de la cuneta, la otra verificacion de la Fase 10.
+    from src.modelos import CODIGO_VB1, CODIGO_VB2, Familia
+    assert M1_clasificacion.PERFILES[Familia.B].verificaciones_aceptacion == (
+        "V1", "V2", "V4", "V5", CODIGO_VB1, CODIGO_VB2)
+    assert "V1 + V2 + V4 + V5 + espaciamiento de la Fase 10" in hoja
 
 
 # ===========================================================================

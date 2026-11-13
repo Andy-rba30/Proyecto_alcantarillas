@@ -480,6 +480,8 @@ línea que se pueda romper.
 | `DG2018.304.07.02#INCREMENTO_DRENAJE` | 304.07.02 | 304.07 Derecho de Vía o faja de dominio › «Ancho y aprobación del Derecho de Vía» | pág. impresa **199** · PDF 200 | exigencia | 2026-09-20 · ambos |
 | `DG2018.304.07.02#T304.09` | Tabla 304.09 | 304.07 Derecho de Vía o faja de dominio › «Anchos mínimos de Derecho de Vía» | pág. impresa **199** · PDF 200 | definicion | 2026-09-20 · ambos |
 | `DG2018.304.10#T304.11` | 304.10, Tabla 304.11 | «Taludes» | pág. impresa **208** · PDF 209 | definicion | 2026-09-20 · ambos |
+| `DG2018.304.11` | 304.11 | «304.11 Cunetas» | pág. impresa **208** · PDF 209 | definicion | 2026-11-12 · texto |
+| `DG2018.304.11#DESAGUE` | 304.11 | «304.11 Cunetas» | pág. impresa **208** · PDF 209 | exigencia | 2026-11-13 · texto |
 
 > **`DG2018.304.05#BOMBEO`** — La Tabla 304.03 «Valores del bombeo de la calzada» (misma pagina) da 2.0 % y 2.5 % para pavimento asfaltico o de concreto Portland segun la precipitacion sea menor o mayor de 500 mm/año, 2.5 % y 2.5-3.0 % para tratamiento superficial y 3.0-3.5 % y 3.0-4.0 % para afirmado. NO SE TRANSCRIBE como tabla ni se adopta un valor: el bombeo de la seccion tipica es un dato del trazo (dato externo 'bombeo'), y sin el la plataforma se toma horizontal a la cota de rasante. La berma lleva su propia inclinacion (num. 304.04.02, Figura 304.03), de modo que el dato que entra es la pendiente transversal MEDIA de la semiplataforma.
 
@@ -496,6 +498,8 @@ línea que se pueda romper.
 > **`DG2018.304.07.02#T304.09`** — CINCO FILAS Y DOS COLUMNAS, transcritas enteras en `tablas.DG2018_T304_09`: Autopistas Primera Clase 40, Autopistas Segunda Clase 30, Carretera Primera Clase 25, Carretera Segunda Clase 20, Carretera Tercera Clase 16 (m). La clase de la via de ESTE corredor es el dato de sitio 'clase_de_via', vacio hasta que el estudio de demanda cierre el IMDA; sin el, ninguna fila se elige y el piso no se aplica.
 
 > **`DG2018.304.10#T304.11`** — El numeral 304.10 abre en la impresa 202 (PDF 203) y la Tabla 304.11 esta en la 208 (PDF 209). Transcrita entera en `tablas.DG2018_T304_11`: tres materiales por tres alturas, en V:H. La fila «Gravas, limo arenoso y arcilla» da 1:1.5, 1:1.75 y 1:2 para menos de 5 m, 5 a 10 m y mas de 10 m, que es exactamente la ventana (1.5, 2.0) H:V que 'talud_terraplen' declaraba como «practica corriente» sin poder citarla. Sigue siendo [A]: la tabla es referencial y la seccion tipica del expediente es la que cierra el valor.
+
+> **`DG2018.304.11`** — La misma pagina: «Las dimensiones de las cunetas se deducen a partir de cálculos hidráulicos, teniendo en cuenta su pendiente longitudinal, intensidad de precipitaciones pluviales, área de drenaje y naturaleza del terreno, entre otros», «Las pendientes longitudinales mínimas absolutas serán 0.2%, para cunetas revestidas y 0.5% para cunetas sin revestir» y «Se limitará la longitud de las cunetas, conduciéndolas hacia los cauces naturales del terreno, obras de drenaje transversal o proyectando desagües dónde no existan». El talud de corte de referencia es la Tabla 304.10 (pag. impresa 204, PDF 205): de 1:10 (H:V, roca fija) a 2:1 (arenas) para cortes menores de 5 m; es la ventana del talud exterior en 'seccion_cuneta'.
 
 ### Norma Tecnica E.030 «Diseño Sismorresistente»  (`E030`)
 
@@ -971,8 +975,23 @@ línea que se pueda romper.
 | `MC_HHD.4.1.1.4.1e#RANGO` | 4.1.1.4.1 e), segunda oracion | 4.1.1.4   BADENES › 4.1.1.4.1  Consideraciones para el diseño › «e)   Borde libre» | pág. impresa **85** · PDF 88 | recomendacion | 2026-09-08 · texto |
 | `MC_HHD.4.1.1.5.1` | 4.1.1.5.1 | 4.1.1.5  PUENTES › «Aspectos generales» | pág. impresa **87** · PDF 90 | definicion | 2026-08-28 · texto |
 | `MC_HHD.4.1.1.5.4b24#G` | 4.1.1.5.4 b.2.4), ec. (63) | b.2.) Socavación General › «Método de Laursen» | pág. impresa **111** · PDF 114 | definicion | 2026-08-28 · ambos |
+| `MC_HHD.4.1.2.1#SECCION` | 4.1.2.1 | «4.1.2.1 Cunetas» | pág. impresa **173** · PDF 176 | definicion | 2026-11-12 · ambos |
+| `MC_HHD.4.1.2.1#T09` | 4.1.2.1 a) | 4.1.2.1 Cunetas › «a) Capacidad de las cunetas» | pág. impresa **175** · PDF 178 | definicion | 2026-11-13 · ambos |
+| `MC_HHD.4.1.2.1#T304_12` | 4.1.2.1, Tabla 304.12 (del DG-2001) | «4.1.2.1 Cunetas» | pág. impresa **173** · PDF 176 | exigencia | 2026-11-13 · ambos |
+| `MC_HHD.4.1.2.1#T32` | 4.1.2.1 a), Tabla Nº 32 | 4.1.2.1 Cunetas › «a) Capacidad de las cunetas» | pág. impresa **175** · PDF 178 | definicion | 2026-11-12 · ambos |
+| `MC_HHD.4.1.2.1#T33` | 4.1.2.1 a), Tabla Nº 33 | 4.1.2.1 Cunetas › «a) Capacidad de las cunetas» | pág. impresa **175** · PDF 178 | exigencia | 2026-11-12 · ambos |
+| `MC_HHD.4.1.2.1#UBICACION` | 4.1.2.1 | «4.1.2.1 Cunetas» | pág. impresa **173** · PDF 176 | definicion | 2026-11-13 · ambos |
+| `MC_HHD.4.1.2.1a` | 4.1.2.1 a) | 4.1.2.1 Cunetas › «a) Capacidad de las cunetas» | pág. impresa **174** · PDF 177 | definicion | 2026-11-12 · ambos |
+| `MC_HHD.4.1.2.1a#CONDICION` | 4.1.2.1 a), procedimiento de calculo | 4.1.2.1 Cunetas › «a) Capacidad de las cunetas» | pág. impresa **177** · PDF 180 | exigencia | 2026-11-13 · ambos |
+| `MC_HHD.4.1.2.1a#MANNING` | 4.1.2.1 a), ecuación (117) | 4.1.2.1 Cunetas › «a) Capacidad de las cunetas» | pág. impresa **174** · PDF 177 | definicion | 2026-11-12 · ambos |
+| `MC_HHD.4.1.2.1a#VELOCIDAD` | 4.1.2.1 a), ecuaciones (4.2) y (4.5) | 4.1.2.1 Cunetas › «a) Capacidad de las cunetas» | pág. impresa **176** · PDF 179 | definicion | 2026-11-12 · ambos |
 | `MC_HHD.4.1.2.1b` | 4.1.2.1 b) | 4.1.2.1 Cunetas › «b) Caudal Q de aporte» | pág. impresa **177** · PDF 180 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.4.1.2.1c#T34` | 4.1.2.1 c), Tabla Nº 34 | 4.1.2.1 Cunetas › «c) Dimensiones mínimas» | pág. impresa **178** · PDF 181 | exigencia | 2026-11-12 · ambos |
 | `MC_HHD.4.1.2.1d` | 4.1.2.1 d) | 4.1.2.1 Cunetas › «d) Desagüe de las cunetas» | pág. impresa **179** · PDF 182 | exigencia | 2026-08-28 · ambos |
+| `MC_HHD.4.1.2.1d#ALIVIO` | 4.1.2.1 d) | 4.1.2.1 Cunetas › «d) Desagüe de las cunetas» | pág. impresa **179** · PDF 182 | exigencia | 2026-11-13 · ambos |
+| `MC_HHD.4.1.2.1e` | 4.1.2.1 e) | 4.1.2.1 Cunetas › «e) Revestimiento de las cunetas» | pág. impresa **180** · PDF 183 | exigencia | 2026-11-12 · ambos |
+| `MC_HHD.4.1.2a` | 4.1.2 a) | 4.1.2 DRENAJE LONGITUDINAL DE LA CARRETERA › «a) Período de retorno» | pág. impresa **171** · PDF 174 | definicion | 2026-11-12 · ambos |
+| `MC_HHD.4.1.2c` | 4.1.2 c) | 4.1.2 DRENAJE LONGITUDINAL DE LA CARRETERA › «c) Velocidad máxima del agua» | pág. impresa **172** · PDF 175 | exigencia | 2026-11-12 · ambos |
 | `MC_HHD.LAMINA_01` | Lámina Nº 01 | «UBICACIÓN TÍPICA DE ALCANTARILLAS» | pág. impresa **206** · PDF 209 | definicion | 2026-11-11 · imagen renderizada |
 | `MC_HHD.LAMINA_02` | Anexos, Lámina Nº 02 | «TIPO  TMC CON PROTECCIÓN DE» | pág. impresa **207** · PDF 210 | definicion | 2026-11-12 · ambos |
 | `MC_HHD.LAMINA_03` | Lámina Nº 03 | «SECCIONES TÍPICAS DE ALCANTARILLAS» | pág. impresa **209** · PDF 212 | definicion | 2026-09-07 · imagen renderizada |
@@ -1085,9 +1104,37 @@ línea que se pueda romper.
 
 > **`MC_HHD.4.1.1.5.4b24#G`** — Segunda y ultima pagina del Manual donde 9.8 figura como gravedad. Es socavacion general por contraccion en PUENTES, no la de salida de alcantarilla: sostiene el NUMERO, no el numeral de Laushey.
 
+> **`MC_HHD.4.1.2.1#SECCION`** — La misma pagina, dos renglones antes: las cunetas «serán de concreto vaciadas en el sitio, prefabricados o de otro material resistente a la erosión». Y despues: la inclinacion del talud interior (1:Z1) se rige por la Tabla 304.12 del DG-2001 (1:2 a 1:4 segun velocidad de diseño e IMDA) y la del exterior (1:Z2) «será de acuerdo al tipo de inclinación considerada en el talud de corte». La Figura Nº 27 (pag. impresa 174) dibuja el ancho «a» y la profundidad «d» de la seccion triangular: a = Z1·d.
+
+> **`MC_HHD.4.1.2.1#T09`** — La viñeta anterior a la del coeficiente de Strickler (MC_HHD.4.1.2.1#T32): el apartado ofrece las DOS tablas y no dice cual rige. El programa usa la Tabla Nº 32, que es la que el num. 4.1.2.1 escribe para cunetas, y lo declara en el paso de la capacidad con la Tabla Nº 09 como alternativa.
+
+> **`MC_HHD.4.1.2.1#T304_12`** — La tabla, leida en imagen: «Tabla 304.12 INCLINACIONES MÁXIMAS DEL TALUD (V:H) INTERIOR DE LA CUNETA», filas por V.D. (km/h) y columnas por I.M.D.A. (veh./dia): con V.D. < 70 e IMDA < 750, 1:2 —con la llamada «(*) Sólo en casos muy especiales»— o 1:3; con V.D. < 70 e IMDA > 750, 1:3; con V.D. > 70 e IMDA < 750, 1:3; con V.D. > 70 e IMDA > 750, 1:4. Son inclinaciones MAXIMAS: un talud mas tendido siempre cumple. Ni la velocidad de diseño ni el IMDA son datos del programa: la Fase 10 rechaza un talud mas empinado que 1:2, que ninguna fila admite, y avisa de la fila que el talud adoptado deja fuera. Vistas de calculo: `constantes_normativas.CUNETA_Z1_MIN_T304_12`.
+
+> **`MC_HHD.4.1.2.1#T32`** — TABLA Nº 32 «Valores de K más usados»: «Cunetas excavadas en el terreno K = 33», «Cunetas en roca K = 25», «Cunetas de concreto K = 67». Al pie: «Fuente: Ingeniería Vial I de Hugo Morales Sosa». Transcripcion entera: `TablaNormativa` MC_HHD.T32.
+
+> **`MC_HHD.4.1.2.1#T33`** — Ocho filas de superficie y UNA columna, «VELOCIDAD LÍMITE ADMISIBLE (M/S)», con un intervalo por fila (0.20 – 0.60 ... 4.50 – 6.00). Las dos ultimas llevan «*», cuya nota dice «Para flujos de muy corta duración». Al pie: «Fuente: Manual de Diseño de Carreteras Pavimentadas de Bajo Volumen de Tránsito-MTC». El num. 4.1.2 c), pag. impresa 172, repite los mismos valores como Tabla Nº 31. EL CARACTER es el del apartado e) (pag. impresa 180): las cunetas «deben ser revestidas» cuando la velocidad media supera estos limites. Cual de los dos extremos de la fila rige NO lo dice la fuente: es el criterio 'lectura_velocidad_limite_cuneta'.
+
+> **`MC_HHD.4.1.2.1a`** — Lo que la fuente llama capacidad son DOS caudales y rige el menor. No escribe borde libre: la primera es la cuneta LLENA. La hoja de ruta (Fase 10, punto 2) dice «capacidad admisible con borde libre» sin dar el borde libre; ver el campo `borde_libre_m` del criterio 'seccion_cuneta'.
+
+> **`MC_HHD.4.1.2.1a#CONDICION`** — Es el cierre del SEGUNDO procedimiento de la pagina (el de las ecuaciones (4.2) o (4.5)); el primero, en la impresa 176-177 (PDF 179-180), cierra con la misma condicion y «volver al paso 1». La condicion compara la CAPACIDAD de la cuneta con el caudal de APORTE del apartado b) —«el caudal calculado en el área de aporte correspondiente a la longitud de cuneta»—: es la verificacion VB2 de la Fase 10. La desigualdad es estricta; el programa la evalua con la tolerancia numerica del proyecto.
+
+> **`MC_HHD.4.1.2.1a#MANNING`** — La ecuacion, vista en imagen: «Q = A x V = (A x Rh^2/3 x S^1/2) / n   (117)», con Rh = A/P «(área de la sección entre el perímetro mojado)» y S la «Pendiente del fondo (m/m)».
+
+> **`MC_HHD.4.1.2.1a#VELOCIDAD`** — Vistas en imagen (PDF 178-179): (4.2) y (4.5) «Rh = (nv / √S)^3/2», el radio hidraulico con el que la velocidad de Manning es la admisible; es Manning despejado y vale para cualquier seccion. LAS OTRAS CUATRO NO SE USAN, y es deliberado: (4.1) «Rh = 5x√H / 6», (4.3) «A = 5H²/4», (4.4) «Rh = Hx√13 / 10» y (4.6) «A = 13H²/12», escritas para taludes «1:2 y 1:2» y «1:1.5 y 1:1.5», no reproducen la geometria que nombran: con los dos taludes 1:2 (V:H) el area de la seccion triangular de profundidad H es 2·H² y su radio hidraulico H/√5, y (4.1) no es siquiera dimensionalmente un radio. El programa calcula A, P y Rh de la geometria declarada. El procedimiento de la pagina --«Elijo una altura H, que sea menor a 0.60m»-- acota la profundidad de la ventana de 'seccion_cuneta'.
+
 > **`MC_HHD.4.1.2.1b`** — La expresion, vista en imagen: Q = C·I·A / 3.6, con Q en m3/s, «C : Coeficiente de escurrimiento de la cuenca», «A : Área aportante en Km2» e «I : Intensidad de la lluvia de diseño en mm/h». Es la ecuacion (28) del num. 3.12.2 con el 0,278 escrito como 1/3.6. La pagina le imprime DOS numeros de ecuacion, (118) y (147): no se cita por numero.
 
+> **`MC_HHD.4.1.2.1c#T34`** — El apartado c), en la pagina anterior: «Las dimensiones serán fijadas de acuerdo a las condiciones pluviales. De elegir la sección triangular, las dimensiones mínimas serán las indicadas en la Tabla Nº 34.» Cuatro regiones por precipitacion anual: seca (<400 mm/año) 0.20 x 0.50 m; lluviosa (400 a <1600) 0.30 x 0.75; muy lluviosa (1600 a <3000) 0.40 x 1.20; muy lluviosa (>3000) 0.30* x 1.20, «* Sección Trapezoidal con un ancho mínimo de fondo de 0.30». Son MINIMOS: la tabla no fija la seccion, fija su piso. La Figura Nº 28 (pag. impresa 179) repite la tabla. Transcripcion entera: `TablaNormativa` MC_HHD.T34.
+
 > **`MC_HHD.4.1.2.1d`** — NOR-HID-02, cerrado en sus DOS extremos. (1) LA PAGINA: el repositorio citaba la impresa 178, que trae la TABLA Nº 34 de dimensiones minimas del apartado c); el apartado d) esta en la 179. (2) EL CARACTER: las dos cifras NO tienen la misma fuerza. El 250 es «será ... como máximo», exigencia con valvula de escape expresa («deberán justificarse técnicamente»); el 200 es «se recomienda reducir», recomendacion pura. Tratarlas como un dict de topes duros equivalentes borra la diferencia. Ademas la fuente nombra solo DOS regimenes en este apartado y deja sin longitud el regimen «lluvioso» intermedio de su propia Tabla Nº 34.
+
+> **`MC_HHD.4.1.2.1d#ALIVIO`** — La primera frase del apartado d), antes de las dos longitudes maximas (MC_HHD.4.1.2.1d). El Manual nombra SOLO las alcantarillas de alivio como desagüe de la cuneta: que una obra de Familia A cierre el tramo lo sostiene el DG-2018 (DG2018.304.11#DESAGUE), no esta frase.
+
+> **`MC_HHD.4.1.2.1e`** — Sigue: «o cuando el terreno es muy permeable que permite la filtración hacia el pavimento ... Se recomienda un revestimiento de concreto f´c = 175 kg/cm2 y espesor de 0.075m.» Es lo que sostiene el valor «concreto» del criterio 'revestimiento_cuneta', junto al primer parrafo del num. 4.1.2.1 (las cunetas «serán de concreto vaciadas en el sitio, prefabricados o de otro material resistente a la erosión»).
+
+> **`MC_HHD.4.1.2a`** — Remite a la Tabla Nº 02 (num. 3.6, pag. impresa 25, PDF 28: «VALORES MAXIMOS RECOMENDADOS DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE»), que da RIESGO admisible en %, no periodo de retorno, y deja la vida util en su nota (**). Dos de sus filas tocan el agua de la cuneta: «Alcantarillas de paso quebradas menores y descarga de agua de cunetas», R 35 % con n = 15 años (T = 35.32 años por la ecuacion R = 1 − (1 − 1/T)^n), y «Drenaje de la plataforma (a nivel longitudinal)», R 40 % con n = 15 años (T = 29.87 años). La nota de la tabla: «El Propietario de una Obra es el que define el riesgo admisible de falla y la vida útil de las obras». Cual se usa para la cuneta es la `interpretacion` de esta cita.
+
+> **`MC_HHD.4.1.2c`** — Desigualdades ESTRICTAS. Es del drenaje longitudinal entero, no solo de la cuneta. EL DG-2018 DICE OTRA COSA DEL MINIMO: num. 304.11 (pag. impresa 208, PDF 209), «Las pendientes longitudinales mínimas absolutas serán 0.2%, para cunetas revestidas y 0.5% para cunetas sin revestir». El programa no elige entre las dos: la pendiente de la cuneta es un dato del trazo y la Fase 10 AVISA cuando cae fuera de la banda del Manual, nombrando la del DG-2018.
 
 > **`MC_HHD.LAMINA_01`** — Es un plano, leido sobre la pagina renderizada. Cinco esquemas: a) siguiendo la pendiente natural del cauce; b) entrada bajo la pendiente natural; c) salida sobre la pendiente natural; d) entrada bajo y salida sobre la pendiente natural; e) pendientes pronunciadas (con muro y anclaje). En a) el conducto va de cabezal a cabezal sobre el fondo del cauce y los taludes del terraplen mueren en la coronacion de los cabezales. En c) y d) la salida queda POR ENCIMA del cauce, con dos notas del propio plano: «la posibilidad de dejar el tubo en voladizo debe ser analizada estructuralmente. El terreno a la salida debe ser roca u otro material resistente a la erosión» y «alcantarillas pequeñas pueden descargar con seguridad sobre un talud de enrocado». NO ACOTA NINGUNA DIMENSION: ni el desnivel de la salida ni la longitud. Sostiene que una salida elevada sobre el fondo del receptor exige proteccion, y por eso el desnivel de entrega no es conservador en un solo sentido.
 
@@ -2301,6 +2348,55 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | Material graduado (no coloidal) -- Desde grava a piedras (< 15 cm) |  | 2.7 | 2.1 | usada |
 | Material graduado (no coloidal) -- Desde grava a piedras (> 20 cm) |  | 3.0 | 2.4 | usada |
 
+### `MC_HHD.T32` — TABLA  Nº  32:  Valores de K más usados
+
+- Cita: `MC_HHD.4.1.2.1#T32`
+- Tabla completa · el calculo usa 2 de 2 columnas y 3 de 3 filas
+- Fuente que la tabla se atribuye: *Ingeniería Vial I de Hugo Morales Sosa*
+- Vistas de cálculo derivadas: `CUNETA_STRICKLER_T32`
+
+| Fila | Cunetas | K | Uso |
+|---|---|---|---|
+| Cunetas excavadas en el terreno |  | 33 | usada |
+| Cunetas en roca |  | 25 | usada |
+| Cunetas de concreto |  | 67 | usada |
+
+### `MC_HHD.T33` — TABLA Nº  33: Velocidades límites admisibles
+
+- Cita: `MC_HHD.4.1.2.1#T33`
+- Tabla completa · el calculo usa 2 de 2 columnas y 8 de 8 filas
+- Fuente que la tabla se atribuye: *Manual de Diseño de Carreteras Pavimentadas de Bajo Volumen de Tránsito-MTC*
+- Vistas de cálculo derivadas: `CUNETA_VELOCIDAD_LIMITE_T33`
+
+| Fila | TIPO DE SUPERFICIE | VELOCIDAD LÍMITE ADMISIBLE (M/S) | Uso |
+|---|---|---|---|
+| Arena fina o limo (poca o ninguna arcilla) |  | 0.2 – 0.6 | usada |
+| Arena arcillosa dura, margas duras |  | 0.6 – 0.9 | usada |
+| Terreno parcialmente cubierto de vegetación |  | 0.6 – 1.2 | usada |
+| Arcilla grava, pizarras blandas con cubierta vegetal |  | 1.2 – 1.5 | usada |
+| Hierba |  | 1.2 – 1.8 | usada |
+| Conglomerado, pizarras duras, rocas blandas |  | 1.4 – 2.4 | usada |
+| Mampostería, rocas duras |  | 3.0 – 4.5 | usada |
+| Concreto |  | 4.5 – 6.0 | usada |
+
+> * * Para flujos de muy corta duración
+
+### `MC_HHD.T34` — TABLA  Nº  34:  Dimensiones  mínimas
+
+- Cita: `MC_HHD.4.1.2.1c#T34`
+- Tabla completa · el calculo usa 3 de 3 columnas y 3 de 4 filas
+- Fuente que la tabla se atribuye: *Manual de Diseño de Carreteras Pavimentadas de Bajo Volumen de Tránsito-MTC*
+- Vistas de cálculo derivadas: `CUNETA_DIMENSIONES_MINIMAS_T34`
+
+| Fila | REGIÓN | PROFUNDIDAD (D) (M) | ANCHO (A) (M) | Uso |
+|---|---|---|---|---|
+| Seca (<400 mm/año) |  | 0.2 | 0.5 | usada |
+| Lluviosa (De 400 a <1600 mm/año) |  | 0.3 | 0.75 | usada |
+| Muy lluviosa (De 1600 a <3000 mm/año) |  | 0.4 | 1.2 | usada |
+| Muy lluviosa (>3000 mm/año) |  | 0.3 | 1.2 | no usada |
+
+> * * Sección Trapezoidal con un ancho mínimo de fondo de 0.30
+
 ### `MP.TCOMB` — Tabla 2.4.5.3.1-1 Combinaciones de Carga y Factores de Carga
 
 - Cita: `MP.T2.4.5.3.1-1`
@@ -2536,7 +2632,12 @@ recomienda.
 | id | Fase | Paso | Verbo | Citas |
 |---|---|---|---|---|
 | `F1.TW` | Fase 1 - Datos de entrada | TW en el cuerpo receptor: nivel de agua durante la avenida, por Manning en la seccion del receptor (Sec. 1.3) | **define** | `MC_HHD.4.1.1.3.6` |
+| `F10.APORTE` | Fase 10 - Alcantarillas de alivio: espaciamiento | Caudal aportante por metro de cuneta: escorrentia especifica del area tributaria por su ancho | **define** | `MC_HHD.4.1.2.1b`, `MC_HHD.4.1.2a` |
+| `F10.APORTE_CAPACIDAD` | Fase 10 - Alcantarillas de alivio: espaciamiento | Verificacion VB2: el caudal de aporte del alivio contra la capacidad admisible de la cuneta | **obliga** | `MC_HHD.4.1.2.1a#CONDICION`, `MC_HHD.4.1.2.1a`, `MC_HHD.4.1.2.1b` |
+| `F10.CAPACIDAD` | Fase 10 - Alcantarillas de alivio: espaciamiento | Capacidad admisible de la cuneta: el menor del caudal con la cuneta llena y del que produce la velocidad limite admisible | **define** | `MC_HHD.4.1.2.1a`, `MC_HHD.4.1.2.1a#MANNING`, `MC_HHD.4.1.2.1a#VELOCIDAD`, `MC_HHD.4.1.2.1#T32`, `MC_HHD.4.1.2.1#T09`, `MC_HHD.4.1.2.1#T304_12`, `MC_HHD.4.1.2.1e` |
 | `F10.CUNETA` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud maxima de recorrido de la cuneta, que fija el espaciamiento de las alcantarillas de alivio | **obliga** | `MC_HHD.4.1.2.1d` |
+| `F10.L_HIDRAULICO` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud por capacidad de la cuneta: a partir de ella el caudal aportante supera la capacidad admisible | **define** | `MC_HHD.4.1.2.1a`, `MC_HHD.4.1.2.1b`, `DG2018.304.11` |
+| `F10.TRAMO` | Fase 10 - Alcantarillas de alivio: espaciamiento | Verificacion VB1: espaciamiento adoptado entre alcantarillas de alivio contra el espaciamiento maximo | **obliga** | `MC_HHD.4.1.2.1d`, `DG2018.304.11#DESAGUE`, `MC_HHD.4.1.2.1d#ALIVIO` |
 | `F2.LUZ` | Fase 2 - Clasificacion y periodo de retorno | Denominacion de la obra por su luz: alcantarilla o puente | **define** | `MC_HHD.4.1.1.3.1`, `MC_HHD.4.1.1.5.1`, `MP.GLOSARIO#OBRAS_DE_ARTE_MENORES`, `AASHTO_LRFD_9.1.2#BRIDGE`, `HDS5_3ED.1.2#NBIS` |
 | `F2.TR` | Fase 2 - Clasificacion y periodo de retorno | Periodo de retorno del caudal de diseno, obtenido del riesgo admisible y la vida util de la Tabla N 02 | **recomienda** | `MC_HHD.3.6` |
 | `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES`, `HDS5_3ED.5.4.3#REPARTO` |
@@ -2766,7 +2867,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 384.
+Citas sin firma de verificación: **6** de 401.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

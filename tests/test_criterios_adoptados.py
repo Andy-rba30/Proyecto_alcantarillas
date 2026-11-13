@@ -172,7 +172,9 @@ def test_todo_criterio_de_perfil_sin_valor_tiene_ficha_declarable():
     claves = ca.criterios_de_perfil_sin_valor()
     # 'hw_entrada_fuera_de_rango' (PF-1, PC-03) salio de esta lista en T-2:
     # el archivo trae «energia_critica» (INF-0.5). --- T-3 --- Los siete del
-    # cajon salieron en T-3: tienen valor de archivo (INF-0.4).
+    # cajon salieron en T-3: tienen valor de archivo (INF-0.4). --- T-9 ---
+    # 'seccion_cuneta' estuvo aqui en la FASE A de T-9; desde sus
+    # correcciones tiene el minimo muy lluvioso de la Tabla Nº 34.
     assert sorted(claves) == ["TW_receptor", "homogeneidad_serie_fen"]
     for clave in claves:
         c = CRITERIOS[clave]

@@ -89,7 +89,9 @@ SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
                  "tipo_terreno_receptor", "tipo_terreno_entrada",
                  "regimen_flujo_descarga", "material_lecho_salida",
                  "duracion_caudal_pico_min",
-                 "profundidad_socavacion_estimada_m")
+                 "profundidad_socavacion_estimada_m",
+                 # --- T-9 --- las tres de la cuneta de la Fase 10.
+                 "ancho_tributario_m", "S_cuneta", "inicio_tramo_cuneta_km")
 
 
 def _formas_de(clave):

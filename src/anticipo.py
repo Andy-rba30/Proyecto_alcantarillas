@@ -59,7 +59,7 @@ from src import criterios_adoptados as ca
 from src import responsable as _responsable
 from src import servicio
 from src import variables_entrada as _ve
-from src.modelos import Familia, VacioAdmitido
+from src.modelos import ErrorProyecto, Familia, VacioAdmitido
 # Por el modulo y no por el valor, por la razon escrita en `ayuda_entrada.py`:
 # un `from ... import COLUMNAS` copia la tupla y la deja leyendo una foto.
 from src.modulos import M0_carga as m0
@@ -386,6 +386,26 @@ def _filas_crudas(ruta: Any) -> List[Dict[str, str]]:
                 if any((v or "").strip() for v in fila.values())]
 
 
+def _obras_de(filas: List[Dict[str, str]]) -> List[Tuple[str, Familia, float]]:
+    """
+    --- T-9 (correcciones) --- (id, familia, progresiva_km) de las filas cuya
+    familia y progresiva se pueden leer, en el orden del CSV. Las que no, se
+    saltan: su falta ya la dice el bloque de la carga.
+    """
+    obras = []
+    for fila in filas:
+        familia = _familia_de(fila)
+        id_punto = fila.get("id", "")
+        if familia is None or not id_punto:
+            continue
+        try:
+            km = m0.km_de_progresiva(fila.get("progresiva_km", ""), id_punto)
+        except (ErrorProyecto, ValueError):
+            continue
+        obras.append((id_punto, familia, km))
+    return obras
+
+
 def _familia_de(fila: Dict[str, str]) -> Optional[Familia]:
     try:
         return Familia(fila.get("familia", ""))
@@ -438,7 +458,16 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
     salida: List[DatoFaltanteEstimado] = []
     externas_no_columna = tuple(c for c in servicio.CLAVES_EXTERNAS
                                 if c not in m0.COLUMNAS)
-    for fila in _filas_crudas(ruta_csv):
+    filas = _filas_crudas(ruta_csv)
+    # --- T-9 (correcciones, H2) --- El extremo del tramo de cuneta de cada
+    # alivio, con la MISMA funcion que la corrida (`servicio.extremos_de_los_
+    # tramos`): sin extremo, VB1 queda sin evaluar y la corrida lo registra
+    # como bloqueo que espera `inicio_tramo_cuneta_km`; y con el tramo
+    # conocido la longitud por capacidad no pide el ancho tributario.
+    extremos = servicio.extremos_de_los_tramos(
+        _obras_de(filas),
+        lambda id_punto: externos.valor(id_punto, "inicio_tramo_cuneta_km"))
+    for fila in filas:
         id_punto = fila.get("id", "") or "(fila sin id)"
         familia = _familia_de(fila)
         admiten = m0.columnas_que_admiten_vacio(familia)
@@ -521,9 +550,37 @@ def datos_faltantes_por_punto(ruta_csv: Any, externos: Any,
                 anadir(clave, EXTERNO, f"{concepto}. {servicio.DETALLE_FALTA_LUZ}",
                        servicio.ETAPA_FALTA_LUZ, True)
             elif clave == "L_hidraulico_m":
-                anadir(clave, EXTERNO,
-                       f"{concepto}. {servicio.DETALLE_FALTA_L_HIDRAULICO}",
-                       servicio.ETAPA_FALTA_L_HIDRAULICO, True)
+                # --- T-9 --- La longitud por capacidad ya no se declara por
+                # fuerza: sin ella, la Fase 10 la calcula con el ancho
+                # tributario y la pendiente de la cuneta. Detiene solo si
+                # falta alguno de los dos, y el texto los nombra: es el MISMO
+                # detalle que el `Bloqueo` de `servicio._fase_10` llevara.
+                extremo = extremos.get(id_punto)
+                tramo_conocido = bool(getattr(extremo, "longitud_m", None))
+                caudal_calculado = (not fila.get(m0.COLUMNA_CAUDAL, "")
+                                    and externos.dato(id_punto,
+                                                      m0.COLUMNA_CAUDAL) is None
+                                    and id_punto in ids_con_caudal_calculable)
+                faltan = tuple(c for c in servicio.claves_de_la_cuneta_necesarias(
+                                   tramo_conocido, caudal_calculado)
+                               if externos.dato(id_punto, c) is None)
+                if faltan:
+                    anadir(clave, EXTERNO,
+                           f"{concepto}. "
+                           f"{servicio.detalle_falta_l_hidraulico(faltan)}",
+                           servicio.ETAPA_FALTA_L_HIDRAULICO, True)
+            elif clave == "inicio_tramo_cuneta_km":
+                # --- T-9 (correcciones, H2) --- Sin extremo del tramo, VB1 no
+                # se evalua y la corrida registra un bloqueo que espera este
+                # dato; con un extremo, la obra anterior lo es y no falta.
+                extremo = extremos.get(id_punto)
+                if extremo is not None and not isinstance(
+                        extremo, servicio.ExtremoDeTramo):
+                    continue                  # el extremo levanto: no es falta
+                if extremo is not None and extremo.extremo is None:
+                    anadir(clave, EXTERNO,
+                           f"{concepto}. {servicio.DETALLE_FALTA_EXTREMO_TRAMO}",
+                           servicio.ETAPA_TRAMO_ALIVIO, True)
             elif clave == "TW_m":
                 sin_via = servicio.tw_sin_via_de_sec_1_3(
                     None, _numero_o_none(fila.get("cota_TW", "")),

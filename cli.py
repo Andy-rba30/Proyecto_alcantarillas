@@ -65,6 +65,11 @@ diferencia importa porque se corrigen en sitios distintos:
       `duracion_caudal_pico_min` (minutos, del estudio hidrologico) y
       `profundidad_socavacion_estimada_m` (de un estudio del cauce; gana
       sobre la hoya que estima el programa).
+      Y, desde T-9, las tres de la cuneta de la Fase 10 (Familia B), solo
+      por el JSON: `ancho_tributario_m` (ancho de la faja que drena a la
+      cuneta), `S_cuneta` (pendiente longitudinal de la cuneta) y
+      `inicio_tramo_cuneta_km` (progresiva donde empieza el tramo que
+      descarga en el alivio, el extremo de VB1).
   (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
       La columna existe y para la Familia C va vacia a proposito
       (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el
@@ -105,8 +110,25 @@ MD recibe L y TW en vez de derivarlos:
                           queda no evaluable; la Fase 4 no se detiene, porque
                           la pendiente del diseno la aporta `S_conducto`.
     L_hidraulico_m  m     longitud a la que la cuneta agota su capacidad, para
-                          la Fase 10 (Familia B). Sec. 10 describe el
-                          procedimiento pero no fija la seccion de la cuneta.
+                          la Fase 10 (Familia B). Declarada GANA; sin ella la
+                          calcula M10 (T-9) con los datos de abajo y los
+                          criterios de la cuneta ('seccion_cuneta', con el
+                          minimo muy lluvioso de la Tabla Nº 34, y
+                          'revestimiento_cuneta').
+    ancho_tributario_m, S_cuneta
+                    m, m/m ancho de la faja que drena a la cuneta y pendiente
+                          longitudinal de la cuneta (trazo). Con S_cuneta se
+                          verifica VB2 (aporte contra capacidad). Sin los que
+                          hagan falta y sin L_hidraulico_m, la Fase 10 del
+                          punto se detiene (con el tramo conocido y el caudal
+                          declarado basta S_cuneta).
+    inicio_tramo_cuneta_km
+                    km    progresiva donde empieza, del lado de progresivas
+                          menores, el tramo de cuneta que descarga en el
+                          alivio: extremo de VB1; gana sobre la obra anterior
+                          (B, o A por 'obras_familia_a_extremo_de_cuneta').
+                          Sin el y sin obra anterior, VB1 no se evalua y es
+                          un bloqueo del punto.
     bombeo, peralte m/m   pendiente transversal de la plataforma en el cruce,
                           de la seccion tipica (DG-2018 num. 304.05 y 304.06;
                           0.02 = 2 %). OPCIONALES y solo por el JSON: afinan
@@ -806,11 +828,85 @@ def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
 
 
 def _espaciamiento_json(e: Espaciamiento) -> Dict[str, Any]:
-    return {"numeral": e.numeral, "L_normativo_m": _num(e.L_normativo),
-            "L_hidraulico_m": _num(e.L_hidraulico),
-            "espaciamiento_max_m": _num(e.espaciamiento_max),
-            "gobierna": e.gobierna.value,
-            "criterio_normativo": e.criterio_normativo}
+    salida: Dict[str, Any] = {
+        "numeral": e.numeral, "L_normativo_m": _num(e.L_normativo),
+        "L_hidraulico_m": _num(e.L_hidraulico),
+        "espaciamiento_max_m": _num(e.espaciamiento_max),
+        "gobierna": e.gobierna.value,
+        "criterio_normativo": e.criterio_normativo,
+        # --- T-9 --- de donde salio L_hidraulico: declarado o calculado, y
+        # con que cuneta y que escorrentia cuando se calculo.
+        "origen_L_hidraulico": e.origen_L_hidraulico,
+        "longitud_hidraulica": None}
+    lh = e.longitud_hidraulica
+    if lh is not None:
+        c = lh.capacidad
+        salida["longitud_hidraulica"] = {
+            "profundidad_m": _num(c.profundidad_m),
+            "ancho_m": _num(c.ancho_m),
+            "talud_interior_HV": _num(c.talud_interior_HV),
+            "talud_exterior_HV": _num(c.talud_exterior_HV),
+            "borde_libre_m": _num(c.borde_libre_m),
+            "revestimiento": c.revestimiento, "n": _num(c.n),
+            "v_limite_m_s": _num(c.v_limite_m_s), "S_cuneta": _num(c.S),
+            "Q_llena_m3s": _num(c.Q_llena_m3s),
+            "V_llena_m_s": _num(c.V_llena_m_s),
+            "Q_velocidad_m3s": _num(c.Q_velocidad_m3s),
+            "Q_admisible_m3s": _num(c.Q_admisible_m3s),
+            "gobierna_capacidad": c.gobierna,
+            "escorrentia_m3s_km2": _num(lh.escorrentia_m3s_km2),
+            "origen_escorrentia": lh.origen_escorrentia,
+            "ancho_tributario_m": _num(lh.ancho_tributario_m),
+            "q_por_metro_m3s_m": _num(lh.q_por_metro_m3s_m),
+            "L_hidraulico_m": _num(lh.L_hidraulico),
+            # --- T-9 (correcciones, H1) --- como se repartio el aporte: con
+            # el tramo (Q / s) o con el area (q · b), y la longitud que el
+            # area implica.
+            "metodo_aporte": lh.metodo_aporte,
+            "Q_aporte_m3s": _num(lh.Q_aporte_m3s),
+            "longitud_tramo_m": _num(lh.longitud_tramo_m),
+            "s_implicita_m": _num(lh.s_implicita_m)}
+    return salida
+
+
+def _aporte_alivio_json(a: Any) -> Optional[Dict[str, Any]]:
+    """--- T-9 (correcciones, H1) --- VB2 (la verificacion va con las demas)."""
+    if a is None:
+        return None
+    c = a.capacidad
+    return {"Q_aporte_m3s": _num(a.Q_aporte_m3s),
+            "origen_aporte": a.origen_aporte,
+            "evaluada": a.verificacion is not None,
+            "aviso": a.aviso or None,
+            "capacidad": None if c is None else {
+                "profundidad_m": _num(c.profundidad_m),
+                "ancho_m": _num(c.ancho_m),
+                "talud_interior_HV": _num(c.talud_interior_HV),
+                "talud_exterior_HV": _num(c.talud_exterior_HV),
+                "borde_libre_m": _num(c.borde_libre_m),
+                "revestimiento": c.revestimiento, "n": _num(c.n),
+                "v_limite_m_s": _num(c.v_limite_m_s), "S_cuneta": _num(c.S),
+                "Q_llena_m3s": _num(c.Q_llena_m3s),
+                "Q_velocidad_m3s": _num(c.Q_velocidad_m3s),
+                "Q_admisible_m3s": _num(c.Q_admisible_m3s),
+                "gobierna_capacidad": c.gobierna}}
+
+
+def _tramo_alivio_json(t: Any) -> Optional[Dict[str, Any]]:
+    """--- T-9 --- El tramo de cuneta de VB1 (la verificacion va con las demas)."""
+    if t is None:
+        return None
+    return {"extremo": t.extremo, "origen_extremo": t.origen_extremo,
+            "progresiva_km": _num(t.progresiva_km),
+            "progresiva_extremo_km": _num(t.progresiva_extremo_km),
+            "longitud_m": _num(t.longitud_m),
+            "evaluada": t.verificacion is not None,
+            "aviso": t.aviso or None,
+            # --- T-9 (correcciones, H2 y H3) --- el dato que destraba VB1
+            # sin evaluar (es un bloqueo del punto) y los huecos de cuneta
+            # que VB1 no mira.
+            "falta": t.falta or None,
+            "huecos": list(t.avisos)}
 
 
 def _caudal_json(c: Any) -> Dict[str, Any]:
@@ -941,6 +1037,8 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
         "estructural": None,
         "espaciamiento_alivio": (None if informe.espaciamiento is None
                                  else _espaciamiento_json(informe.espaciamiento)),
+        "tramo_alivio": _tramo_alivio_json(informe.tramo_alivio),
+        "aporte_alivio": _aporte_alivio_json(informe.aporte_alivio),
         "iteraciones": [_paso_json(p) for p in informe.traza],
         "verificaciones": [_verificacion_json(fase, v)
                            for fase, v in informe.verificaciones()],
@@ -1421,7 +1519,31 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
         out.append(f"{SANGRIA}Fase 10 espaciamiento max = "
                    f"{_fmt(e.espaciamiento_max)} m (gobierna {e.gobierna.value}; "
                    f"normativo {_fmt(e.L_normativo)} / hidraulico "
-                   f"{_fmt(e.L_hidraulico)})")
+                   f"{_fmt(e.L_hidraulico)}, {e.origen_L_hidraulico})")
+        # --- T-9 --- con la longitud calculada, como se repartio el aporte.
+        lh = e.longitud_hidraulica
+        if lh is not None:
+            out.append(f"{SANGRIA_DETALLE}{lh.metodo_aporte}: q' = "
+                       f"{lh.q_por_metro_m3s_m:.3e} m3/s por m; "
+                       f"L_hidraulico = {_fmt(lh.L_hidraulico)} m")
+    # --- T-9 (correcciones, H1) --- la cuneta y su capacidad, de la que VB2
+    # juzga el aporte (la verificacion sale en la tabla de arriba).
+    aporte = informe.aporte_alivio
+    if aporte is not None and aporte.capacidad is not None:
+        c = aporte.capacidad
+        out.append(f"{SANGRIA}Fase 10 cuneta {_fmt(c.profundidad_m)} x "
+                   f"{_fmt(c.ancho_m)} m ({c.revestimiento}, S = "
+                   f"{_fmt(c.S, DECIMALES_PENDIENTE)} m/m): Q_adm = "
+                   f"{_fmt(c.Q_admisible_m3s, DECIMALES_PENDIENTE)} m3/s "
+                   f"({c.gobierna}); Q de aporte = "
+                   f"{_fmt(aporte.Q_aporte_m3s, DECIMALES_PENDIENTE)} m3/s")
+    # --- T-9 --- el tramo de VB1 (la verificacion sale en la tabla de arriba;
+    # el tramo sin evaluar sale en los avisos).
+    tramo = informe.tramo_alivio
+    if tramo is not None and tramo.longitud_m is not None:
+        out.append(f"{SANGRIA}Fase 10 tramo de cuneta (VB1): "
+                   f"{_fmt(tramo.longitud_m)} m desde {tramo.extremo} "
+                   f"({tramo.origen_extremo})")
 
     # --- T-2 --- Los avisos del punto (TW con la seccion adoptada del
     # receptor, acceso de mantenimiento declarado como no previsto) y la
@@ -1557,9 +1679,19 @@ def _lineas_resumen(informe: Informe) -> List[str]:
     out.append(f"Expediente cerrado      : {'si' if r.cerrado else 'no'}")
     if not informe.cerrado:
         out.append("")
-        out.append("El expediente NO cierra. Mientras un criterio siga sin "
-                   "valor, la etapa que lo invoca se detiene: no se sustituye "
-                   "por un defecto (Sec. 0.7).")
+        if r.bloqueadas or not r.incumplidas:
+            out.append("El expediente NO cierra. Mientras un criterio siga sin "
+                       "valor, la etapa que lo invoca se detiene: no se "
+                       "sustituye por un defecto (Sec. 0.7).")
+        else:
+            # --- T-9 (correcciones) --- Sin etapas bloqueadas, lo que impide
+            # el cierre son verificaciones que se evaluaron y no cumplen (VB1
+            # de B-01 en la guia, por ejemplo): la frase de los criterios sin
+            # valor no era la razon.
+            out.append("El expediente NO cierra: hay verificaciones "
+                       "incumplidas (marcadas [NO] en el bloque de su punto). "
+                       "Se resuelven en el diseño o con los datos del "
+                       "proyecto que las sostienen, no con un defecto.")
     return out
 
 

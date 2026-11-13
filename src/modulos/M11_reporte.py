@@ -1281,6 +1281,10 @@ TITULO_TRAZA_DURABILIDAD = "Desarrollo de la matriz de durabilidad (Sec. 3.3)"
 TITULO_TRAZA_GEOMETRIA = "Desarrollo de la geometria del conducto (Sec. 7.B)"
 TITULO_TRAZA_GEOMETRIA_PREVIA = ("Longitud del conducto calculada antes del "
                                  "diseño (Sec. 7.B)")
+# --- T-9 --- los pasos de la Fase 10: capacidad de la cuneta, caudal por
+# metro, longitud por capacidad y espaciamiento maximo.
+TITULO_TRAZA_ESPACIAMIENTO = ("Desarrollo del espaciamiento maximo entre "
+                              "alivios (Fase 10)")
 
 
 def traza_clasificacion(informe: Any) -> Tuple[Any, ...]:
@@ -1318,6 +1322,29 @@ def traza_durabilidad(informe: Any) -> Tuple[Any, ...]:
     """
     dictamen = getattr(informe, "durabilidad", None)
     return () if dictamen is None else tuple(dictamen.pasos)
+
+
+def traza_espaciamiento(informe: Any) -> Tuple[Any, ...]:
+    """
+    --- T-9 --- Los pasos de la Fase 10 que la memoria publica: la capacidad
+    de la cuneta, los de la longitud por capacidad --si se calculo-- y el del
+    espaciamiento maximo. Los de VB1 y VB2 van con las verificaciones del
+    punto, y los del caudal calculado, con la Fase 1-bis (no se repiten: H11
+    de la auditoria de T-9).
+    """
+    # --- T-9 (correcciones, H1) --- la capacidad de la cuneta tiene casa
+    # propia (`aporte_alivio`, VB2) y se calcula tambien con la longitud
+    # declarada: va primero, y una sola vez aunque la longitud calculada la
+    # lleve tambien (el MISMO objeto).
+    pasos: list = []
+    aporte = getattr(informe, "aporte_alivio", None)
+    if aporte is not None:
+        pasos.extend(aporte.pasos)
+    espaciamiento = getattr(informe, "espaciamiento", None)
+    if espaciamiento is not None:
+        pasos.extend(p for p in espaciamiento.pasos
+                     if not any(p is q for q in pasos))
+    return tuple(pasos)
 
 
 def traza_geometria(informe: Any) -> Tuple[Tuple[Any, ...], bool]:
@@ -2172,15 +2199,59 @@ def _bloques_fases_finales(informe: Any) -> str:
         partes.append("<h4>Fase 8 &mdash; Lo que no se verifica</h4>"
                       + diferidas)
 
+    # --- T-9 --- los avisos de la Fase 10 (pendiente de la cuneta fuera de
+    # la banda del Manual, capacidad gobernada por la velocidad limite, VB1
+    # sin evaluar): salen aqui y por `InformePunto.avisos()` en la CLI y el
+    # JSON, con el mismo texto. Tambien cuando la Fase 10 no cerro y el
+    # punto solo trae el aviso del tramo.
+    tramo = getattr(informe, "tramo_alivio", None)
+    aporte = getattr(informe, "aporte_alivio", None)
+    avisos_10: list = []
+    # --- T-9 (correcciones) --- los de la capacidad (VB2), los de la
+    # longitud, VB2 sin evaluar y los huecos de cuneta que VB1 no mira. VB1
+    # sin evaluar ya no es un aviso: es un bloqueo del punto (H2), y sale con
+    # los bloqueos.
+    if aporte is not None:
+        if aporte.capacidad is not None:
+            avisos_10.extend(aporte.capacidad.avisos)
+        if aporte.aviso:
+            avisos_10.append(aporte.aviso)
+    avisos_10.extend(a for a in (getattr(informe.espaciamiento, "avisos", ())
+                                 or ()) if a not in avisos_10)
+    if tramo is not None:
+        avisos_10.extend(a for a in tramo.avisos if a not in avisos_10)
+    html_avisos_10 = "".join(
+        f'<div class="aviso"><p><b>Aviso:</b> {_esc(a)}.</p></div>'
+        for a in avisos_10)
+    if informe.espaciamiento is None and (html_avisos_10
+                                          or traza_espaciamiento(informe)):
+        partes.append("<h4>Fase 10 &mdash; Espaciamiento de alcantarillas de "
+                      "alivio</h4>" + html_avisos_10
+                      + bloque_pasos(traza_espaciamiento(informe),
+                                     TITULO_TRAZA_ESPACIAMIENTO))
     if informe.espaciamiento is not None:
         e = informe.espaciamiento
+        # --- T-9 --- el origen de L_hidraulico, los pasos que la calculan y
+        # el tramo de VB1 (la verificacion sale en la tabla del punto; el
+        # tramo sin evaluar, en los avisos).
+        texto_tramo = ""
+        if tramo is not None and tramo.longitud_m is not None:
+            texto_tramo = (
+                f" Tramo de cuneta que descarga en esta obra (VB1): "
+                f"{_num(tramo.longitud_m, FMT_2)} m desde "
+                f"{_esc(tramo.extremo)} ({_esc(tramo.origen_extremo)}).")
         partes.append(
             "<h4>Fase 10 &mdash; Espaciamiento de alcantarillas de alivio</h4>"
             f"<p>Espaciamiento maximo {_num(e.espaciamiento_max, FMT_2)} m: "
             f"gobierna el limite <b>{_esc(e.gobierna.value)}</b> "
             f"(normativo {_num(e.L_normativo, FMT_2)} m por el criterio "
             f"<code>{_esc(e.criterio_normativo)}</code>, hidraulico "
-            f"{_num(e.L_hidraulico, FMT_2)} m), num. {_esc(e.numeral)}.</p>")
+            f"{_num(e.L_hidraulico, FMT_2)} m, "
+            f"<b>{_esc(e.origen_L_hidraulico)}</b>), num. "
+            f"{_esc(e.numeral)}.{texto_tramo}</p>"
+            + html_avisos_10
+            + bloque_pasos(traza_espaciamiento(informe),
+                           TITULO_TRAZA_ESPACIAMIENTO))
 
     return "".join(partes)
 
@@ -2922,8 +2993,7 @@ def pasos_del_informe(informe: Any) -> Tuple[Any, ...]:
         vistos.extend(traza_durabilidad(punto))
         # --- T-8 --- todos los pasos de la Fase 6, no solo el de Laushey.
         vistos.extend(traza_proteccion(punto))
-        if punto.espaciamiento is not None:
-            _anota(getattr(punto.espaciamiento, "paso", None))
+        vistos.extend(traza_espaciamiento(punto))         # --- T-9 ---
         vistos.extend(traza_geometria(punto)[0])          # --- T-6 ---
     for recubrimiento in informe.cabezal.recubrimientos:
         _anota(getattr(recubrimiento, "paso", None))

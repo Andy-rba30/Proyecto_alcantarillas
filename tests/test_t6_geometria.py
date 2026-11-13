@@ -789,8 +789,15 @@ def test_ningun_diametro_del_fixture_se_mueve_con_ningun_metodo():
                     for p in informe.puntos}
         assert adoptado == {"A-01": "Ø 0.90 m", "A-02": "Ø 0.90 m",
                             "B-01": None, "C-01": None}, metodo
+        # REESCRITO EN LAS CORRECCIONES DE T-9 (decision C del dueño): la VB1
+        # de B-01 --su tramo de cuneta desde A-02 mide 530 m-- no cumple, y
+        # no tiene que ver con la longitud del conducto ni con un diametro;
+        # lo que esta prueba fija es que ninguna verificacion de la seccion
+        # incumpla con ninguno de los dos metodos.
         for p in informe.puntos:
-            assert not p.incumplidas(), (metodo, p.punto.id)
+            del_conducto = [v for v in p.incumplidas()
+                            if v.codigo not in ("VB1", "VB2")]
+            assert not del_conducto, (metodo, p.punto.id)
 
 
 def test_declarar_el_metodo_anterior_reproduce_la_longitud_anterior():

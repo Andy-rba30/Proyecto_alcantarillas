@@ -3435,6 +3435,12 @@ sesiones que siguen.
   prompt de T-9 **no lo pide** y hay que decírselo. Para V5, nada de la cadena la
   implementa: sigue diferida, y T-11 la lista entre lo que requiere entrada del
   proyecto.
+- **CERRADA para la Familia B en T-9 (2026-11-12).** VB1 es la verificación de la Fase
+  10 que puede fallar y `PERFILES[Familia.B].verificaciones_aceptacion` vale
+  `("V1", "V2", "V4", "V5", "VB1")` —y desde las correcciones de su auditoría
+  `("V1", "V2", "V4", "V5", "VB1", "VB2")`: VB2 es la condición literal del Manual, el aporte
+  contra la capacidad de la cuneta (ficha T9-07)—; sigue siendo huella y no filtro (un test lo
+  fija por AST), y ningún diámetro se movió. La de V5 sigue abierta.
 - **Dónde vive:** `src/modulos/M1_clasificacion.py::PERFILES`
 
 ## T0-04 · Los `INF-` del tracker llevan el número del INFORME, no el de los prompts; cuatro no tienen prompt, y la severidad es una propuesta
@@ -5180,4 +5186,244 @@ Doce fichas; las cinco últimas son de la auditoría.
   semilla, la duplicación y el signo del corchete del tirante crítico (cuatro).
 - **Qué haría falta:** nada.
 - **Dónde vive:** `tests/test_t3_correcciones_auditoria.py::test_h4_G2_y_VC2_no_se_contradicen_en_la_familia_C`
+---
+
+# Parte XLVIII — Lo que T-9 de la cadena T dejó escrito: la longitud por capacidad de la cuneta y el espaciamiento que puede fallar
+
+## T9-01 · La sección de la cuneta: el mínimo de la región muy lluviosa de la Tabla Nº 34, con el talud exterior como elección declarada
+
+- **Qué se difirió:** la sección **del trazo**. En la FASE A `seccion_cuneta` [A] nació sin
+  valor de archivo; desde las correcciones de la auditoría de T-9 tiene uno, por la
+  **decisión A del dueño** (2026-11-12): {profundidad 0.40 m, ancho 1.20 m, talud exterior
+  1.0 H:V, borde libre 0}. Lo que sigue diferido es la sección típica real del proyecto vial
+  y el talud de corte del EMS, que la sustituyen cuando lleguen.
+- **Por qué:** 0.40 × 1.20 m es el **mínimo** de la Tabla Nº 34 (núm. 4.1.2.1 c), pág. impresa
+  178) para la región «muy lluviosa (1600 a <3000 mm/año)», que es la región que el proyecto
+  ya adopta con `long_max_cuneta` (200 m por el FEN), y la tabla lo **exige** («las
+  dimensiones mínimas serán»). Como el ancho se mide hasta la vertical del vértice (pág. 173),
+  0.40 × 1.20 fija el talud **interior** Z1 = 3; el **exterior** no lo fija la tabla —el
+  Manual lo hace depender del talud de corte y el DG-2018 (núm. 304.11) dice que «por lo
+  general coincide con el talud de corte»—, y Z2 = 1.0 es **elección [A] de este proyecto**:
+  el más empinado de las filas de suelo fino o arenoso de la Tabla 304.10 del DG-2018 para
+  cortes menores de 5 m (limo arcilloso 1:1, arenas 2:1; Relación H:V, pág. impresa 204), el
+  lado seguro para la capacidad (0.467 a 0.871 m³/s con Z2 de 0.10 a 2.0). La ventana (H5)
+  empieza en ese mínimo; sus techos de ancho (2.40 m) y de borde libre (0.10 m) son
+  **adopción**, no de la fuente (la FASE A atribuía el primero a la Tabla 304.12 leyéndola al
+  revés). El **borde libre** vale 0 porque el Manual calcula a cuneta llena, y «con borde
+  libre» se **retiró** de la v8 (decisión B). El talud interior se contrasta con la Tabla
+  304.12 (`M10.aviso_de_talud_interior`): más empinado que 1:2 es `DatoInvalidoError`; Z1 = 3
+  se **avisa** (con V.D. > 70 km/h e IMDA > 750 la tabla pide 1:4). El detalle, en la
+  justificación del criterio.
+- **Qué haría falta:** (i) la REGIÓN pluvial del corredor en año FEN medida por el estudio
+  hidrológico —es una elección ligada a un dato de sitio sin trazabilidad en el repositorio;
+  si supera 3000 mm/año el mínimo es una sección **trapezoidal** (nota * de la Tabla Nº 34),
+  que la Fase 10 no implementa—; (ii) el talud de corte del EMS por tramo; (iii) la velocidad
+  de diseño y el IMDA de la vía, para cerrar el aviso de la Tabla 304.12; (iv) si la sección
+  cambia entre tramos, el criterio pasa a dato externo por punto.
+- **Dónde vive:** `src/criterios_adoptados.py::seccion_cuneta`
+
+## T9-02 · El aporte por metro: con el tramo conocido, Q / s; sin él, q · b con la longitud implícita avisada
+
+- **Qué se difirió:** iterar el tiempo de concentración con la longitud de la cuneta (la
+  intensidad de una cuneta más larga es menor) y exigir que el área tributaria declarada sea la
+  faja del tramo.
+- **Por qué:** la FASE A repartía el caudal declarado con q = Q / `area_ha` por un ancho
+  tributario independiente, y con un área que no era la faja b × tramo la longitud por
+  capacidad salía cientos de veces el tramo (B-01: 42 282 m) y VB1 **cumplía** con un aporte
+  82 % mayor que la capacidad (H1 de la auditoría, ALTA). Desde las correcciones: (a) la
+  condición literal del Manual es su propia verificación, **VB2** (ficha T9-07); (b) con el
+  **tramo** conocido y el caudal declarado, el aporte se reparte uniformemente en el tramo real,
+  q' = Q / s, y L_hidraulico = Q_adm · s / Q —su equivalente exacto: L ≥ s si y sólo si
+  Q_adm ≥ Q—, sin mezclar el área con el ancho; (c) sin tramo, se conserva q' = (Q / A) · b,
+  pero el paso imprime la longitud que ese par implica, s_impl = A · 10⁶ / b, y **avisa** por
+  `avisos()` cuando supera el recorrido máximo (`long_max_cuneta`; B-01 con 18 ha y 12 m:
+  15 000 m), sin tolerancia inventada; (d) con el caudal CALCULADO por la Fase 1-bis sigue el
+  camino q · b, y no se recalcula (H11: la Fase 1-bis lo calcula para la Familia B con
+  `MH.caudal_de_aporte_cuneta`, una vez, y la Fase 10 lo reutiliza sin repetir sus pasos). La
+  lluvia es la del periodo de retorno del **punto** (ficha T9-08). Con el tramo conocido y el
+  caudal declarado, VB1 y VB2 miran la misma desigualdad desde dos lados (la capacidad contra
+  el aporte, y el tramo contra la longitud que la capacidad alcanza) y un mismo defecto puede
+  incumplir las dos: se dice, no se esconde.
+- **Qué haría falta:** que el estudio hidrológico declare, para cada alivio, el caudal y el
+  área de SU tramo de cuneta (no los de una cuenca mayor); si se quiere la longitud exacta lejos
+  del tramo, una iteración de tc con el recorrido en la cuneta, con su método declarado.
+- **Dónde vive:** `src/servicio.py::_aporte_del_punto`
+
+## T9-03 · VB1 por tramo: el extremo es el inicio declarado o la obra anterior (B, o A por la decisión C); sin extremo, es un bloqueo
+
+- **Cerrado (T-9):** `INF-5.1.12` — el paso 10.1 dejó de decir «cumple» por construcción (es un
+  límite, sin veredicto) y la verificación es **VB1**: el tramo de cuneta entre el alivio y el
+  extremo de su lado de progresivas **menores** no puede exceder el espaciamiento máximo; entre
+  dos alivios el sentido del flujo no es dato y se toma el menor de sus dos máximos.
+- **Por qué, y lo corregido tras la auditoría:** el extremo lo resuelve `M10.extremo_del_tramo`, antes de los
+  puntos: el inicio declarado (`inicio_tramo_cuneta_km`, que gana y no puede ser posterior a la
+  obra —`DatoInvalidoError` que nombra el par, H3—), o la obra anterior en progresiva que lo
+  cierre: de Familia B, y de Familia A por el criterio `obras_familia_a_extremo_de_cuneta` = `si`
+  (**decisión C del dueño**; la sostiene el DG-2018 núm. 304.11 y no el Manual, y va declarada
+  como `Interpretacion` de la cita `DG2018.304.11#DESAGUE`). Un VB1 que **no se evaluó** —sin
+  extremo, o con el máximo de un extremo desconocido— es un **bloqueo** del punto que espera el
+  dato que lo destraba (H2: `TramoDeAlivio.falta`, `DatoFaltanteError` en la etapa de VB1), y
+  el pre-vuelo lo estima. Los tramos de cuneta que VB1 no mira se **avisan** (H3): el que queda
+  entre la obra anterior y un inicio declarado posterior a ella, y el del lado de progresivas
+  mayores cuando la obra siguiente no es otro alivio. Ningún texto supone el sentido del flujo.
+- **Consecuencia que se declara:** en el fixture, B-01 (2+450) queda a **530 m** de A-02 (1+920)
+  y VB1 **no cumple** —contra los 200 m normativos en la línea base, donde su máximo no se
+  conoce; contra los 120 m de `L_hidraulico_m` en la guía—. No se mueve ningún diámetro.
+- **Qué haría falta:** las progresivas de inicio de los tramos de cuneta del proyecto de
+  drenaje longitudinal (con el perfil, que decide si la cuneta llega de verdad a una obra de
+  Familia A) y las obras B reales del corredor.
+- **Dónde vive:** `src/modulos/M10_espaciamiento.py::extremo_del_tramo`
+
+## T9-04 · Cuatro ecuaciones del ejemplo del Manual no reproducen la geometría que nombran, y no se usan
+
+- **Qué se difirió:** usar las ecuaciones (4.1), (4.3), (4.4) y (4.6) del num. 4.1.2.1 a)
+  (págs. impresas 175-176).
+- **Por qué:** escritas para taludes «1:2 y 1:2» y «1:1.5 y 1:1.5», dan A = 5H²/4 y
+  A = 13H²/12; con los dos taludes 1:2 (V:H) el área de la sección triangular de
+  profundidad H es 2·H², y (4.1) «Rh = 5x√H / 6» no es siquiera dimensionalmente un radio.
+  El programa calcula A, P y Rh de la geometría declarada y usa de esa página sólo (4.2) y
+  (4.5), Rh = (n·v/√S)^(3/2), que es Manning despejado. Es un defecto de la fuente
+  primaria, no de la hoja de ruta (que no las cita), y se declara en la nota de la cita
+  `MC_HHD.4.1.2.1a#VELOCIDAD` y en la memoria.
+- **Qué haría falta:** nada que el programa pueda hacer; para la tesis, citar el
+  procedimiento del Manual (los dos límites y la condición Q manning > Q de aporte) y no su
+  ejemplo.
+- **Dónde vive:** `src/modulos/M10_espaciamiento.py::geometria_triangular`
+
+## T9-05 · La pendiente de la cuneta es un dato del trazo: no se deriva del CSV, y fuera de la banda del Manual se avisa con el mínimo del DG-2018 al lado
+
+- **Qué se difirió:** derivar `S_cuneta` de las cotas de rasante del CSV, y elegir entre
+  el mínimo del Manual y el del DG-2018.
+- **Por qué:** el CSV trae `cota_rasante` sólo en cada cruce; la pendiente de la cuneta es
+  la local del tramo, con sus curvas verticales, y una media entre dos cruces la puede
+  esconder. Las dos fuentes no dicen lo mismo del mínimo: el Manual (núm. 4.1.2 c), pág.
+  impresa 172) pide 0.5 % < i < 2 % para el drenaje longitudinal; el DG-2018 (núm.
+  304.11) da 0.2 % como mínima absoluta de una cuneta revestida y 0.5 % sin revestir.
+  La pendiente no es una decisión de la Fase 10: la Fase 10 la usa y avisa.
+- **Qué haría falta:** el perfil longitudinal del trazo por tramo de cuneta.
+- **Dónde vive:** `src/modulos/M10_espaciamiento.py::aviso_de_pendiente`
+
+## T9-06 · La aceptación de T-9 se escribió después del código; el rojo se midió contra la base
+
+- **Qué se difirió:** el orden de la casa (rojo con `xfail(strict=True)` y liberar).
+- **Por qué:** se dice en vez de reconstruirlo. Medido corriendo
+  `tests/test_t9_espaciamiento.py` contra un árbol exportado de `df1b23c` con un
+  `xfail(strict=True)` de módulo y los nombres nuevos sustituidos por marcadores: de los
+  82 tests, 81 en rojo y 1 XPASS —la guardia de que M10 no importa la hidrología, que vale
+  antes y después—; además el teardown del fixture `_limpio` falla en la base en los 82,
+  porque los criterios de la cuneta no existen, y pytest los cuenta también como xfailed
+  (163 en el resumen). Los tests de la carga de los datos de la cuneta miden el MOTIVO: con sólo la
+  excepción pasaban vacuos en la base, que rechazaba las claves por desconocidas. Los
+  dorados son la aritmética escrita en el propio archivo (el Manual no trae un ejemplo
+  numérico que sirva: sus ecuaciones de ejemplo están mal, ficha T9-04).
+- **Qué haría falta:** nada que se pueda rehacer.
+- **Dónde vive:** `tests/test_t9_espaciamiento.py::test_M10_no_importa_la_hidrologia`
+
+## T9-07 · VB2: la condición literal del Manual, el caudal de aporte contra la capacidad de la cuneta
+
+- **Qué se difirió:** nada de la condición; queda diferido exigir la pendiente de la cuneta a
+  quien declara la longitud.
+- **Por qué:** el Manual de Hidrología (núm. 4.1.2.1 a), pág. impresa 177, PDF 180) cierra el
+  procedimiento con «Q manning > Q de aporte, Entonces el diseño está terminado. Si ocurre lo
+  contrario, debemos volver al paso 2 y elegir otra altura de cuneta (H).» (cita
+  `MC_HHD.4.1.2.1a#CONDICION`, EXIGENCIA). En la Familia B el caudal del punto es, por
+  contrato, el de la cuneta que descarga en el alivio: VB2 lo compara con la capacidad
+  admisible (`CapacidadCuneta.Q_admisible_m3s`), **puede fallar** y entra a la aceptación de la
+  Familia B (`PERFILES[Familia.B].verificaciones_aceptacion` = V1 + V2 + V4 + V5 + VB1 + VB2:
+  las dos son «el espaciamiento de la Fase 10» de la v8 §2.3). No necesita el tramo. Sin
+  `S_cuneta` no hay capacidad y VB2 no se evalúa: con `L_hidraulico_m` declarado sólo se
+  **avisa** (quien declara la longitud declara que la cuneta conduce su aporte hasta ella; no se
+  le exigen datos nuevos), y sin la longitud la Fase 10 ya se detiene por la misma falta. El
+  caso del auditor (0.20 × 0.50, Z2 0.5, concreto, S 0.005, Q 0.095) da Q_adm = 0.052215 m³/s y
+  VB2 NO CUMPLE, con la aritmética escrita en `CP_T9_CUNETA`. **`INF-5.1.8` queda CERRADO EN
+  PARTE**, dicho con honestidad: `area_ha` en la Familia B tiene dos consumidores reales —el
+  contraste Q/A de T-1 y el reparto q · b sin tramo, con la longitud implícita que avisa
+  cuando el área no es la faja del tramo—, pero con el tramo conocido ya no entra a la
+  longitud, y nada comprueba que el área declarada sea la de la cuneta del alivio: eso sigue
+  siendo del estudio hidrológico.
+- **Qué haría falta:** si el proyecto quiere exigir la capacidad también a quien declara la
+  longitud, convertir el aviso de VB2 sin evaluar en un bloqueo (decisión del dueño).
+- **Dónde vive:** `src/modulos/M10_espaciamiento.py::verificar_aporte`
+
+## T9-08 · El periodo de retorno del aporte es el del punto, y la fila del alivio es una envolvente declarada
+
+- **Qué se difirió:** que el programa conozca el periodo de retorno con que el estudio calculó
+  un caudal DECLARADO.
+- **Por qué:** la FASE A escribía «TR = 35 años» en los textos de M10 (H4): con el riesgo del
+  Propietario el TR del punto cambia (R 0.20, n 15: 67.7 años) y la nota seguía diciendo 35. La
+  Tabla Nº 02 (núm. 3.6, pág. impresa 25, PDF 28) da **riesgo**, no periodo de retorno, y deja
+  al Propietario la definición del riesgo y de la vida útil. Desde las correcciones el paso del
+  aporte imprime el TR del **punto** (Fase 2, con el riesgo del Propietario si lo declaró) y,
+  con el caudal declarado, dice que el programa no conoce el TR del estudio. Que se use la fila
+  del alivio (R 35 %, n 15: T = 35.32 años) y no la del drenaje de la plataforma (R 40 %, n 15:
+  T = 29.87 años) es una **envolvente conservadora** —más lluvia, menos longitud—, declarada como
+  `Interpretacion` de la cita `MC_HHD.4.1.2a` (decisión D; H10), con lo que juega en contra
+  (el núm. 4.1.2 a) remite al drenaje longitudinal, y ninguna fila es exigencia).
+- **Qué haría falta:** que el estudio hidrológico declare el periodo de retorno de cada caudal
+  que entrega; y que el Propietario fije el riesgo de la cuneta si quiere otro.
+- **Dónde vive:** `src/servicio.py::_texto_periodo_retorno`
+
+## T9-09 · Las lecturas del proyecto en la Fase 10 son `Interpretacion` del registro, y tres dudas del auditor quedan dichas
+
+- **Qué se difirió:** nada; se registra dónde quedó cada lectura.
+- **Por qué:** (H10) la unión de una fila de la Tabla Nº 32 con una de la Tabla Nº 33 es
+  `Interpretacion` de la cita `MC_HHD.4.1.2.1#T33`, y el paso la lee del registro cuando el
+  revestimiento no es concreto; el fundamento `F10.TRAMO` dejó de decir «más de lo que el Manual
+  admite» sobre un umbral que la fuente sólo recomienda: separa lo que el Manual EXIGE (250 m)
+  de lo que RECOMIENDA (200 m) y de lo que el proyecto adopta. (Dudoso 1) B-01 está en terraplén:
+  la sección del modelo es la de la cuneta en corte del **tramo** que descarga en el alivio, no
+  la del cruce (`Interpretacion` de `MC_HHD.4.1.2.1#UBICACION`, con lo que juega en contra: la
+  v8 §2.3 pide bordillo y bajantes en terraplén de más de 1.5 m). (Dudoso 2) el n sale de la
+  Tabla Nº 32 —la del numeral de cunetas— y el paso nombra la Tabla Nº 09 como la alternativa
+  que el mismo apartado ofrece (cita `MC_HHD.4.1.2.1#T09`). (Dudoso 3) la nota «* Para flujos de
+  muy corta duración» de las filas de concreto y mampostería se imprime **desde el registro**
+  cuando el revestimiento es una de ellas, con la lectura de que el extremo inferior es el
+  conservador: la fuente no da otro valor para un flujo prolongado. (H6) la ficha de
+  `revestimiento_cuneta` dice que el concreto es, para la longitud, el extremo **menos**
+  conservador de la ventana.
+- **Qué haría falta:** el modelo de la cuneta en terraplén (bordillo y bajantes) si el proyecto
+  tiene alivios cuyo tramo entero va en terraplén.
+- **Dónde vive:** `src/normativa/citas.py::INTERPRETACION_CUNETA_DEL_TRAMO`
+
+## T9-10 · Las correcciones de T-9 se escribieron después del código; el rojo se midió contra la FASE A
+
+- **Qué se difirió:** el orden de la casa (rojo con `xfail(strict=True)` y liberar).
+- **Por qué:** se dice en vez de reconstruirlo. `tests/test_t9_correcciones.py` se corrió
+  contra un árbol exportado de `304cea6` (la FASE A de T-9) con el caso patrón nuevo copiado:
+  de sus 66 tests de entonces, **62 en rojo y 4 verdes** (los 21 `test_mut_*` que sumó la
+  integración se midieron en rojo contra sus mutantes: ficha T9-11), que valen antes y después y son guardias —el dorado
+  de `caudal_a_velocidad` con Z2 ≠ 1 (la fórmula era correcta; el test mata el mutante que la
+  auditoría dejó vivo), la progresiva 0 aceptada por VB1, la sensibilidad de Z2 que la ficha
+  declara, y los riesgos de la Tabla Nº 02 y la Tabla 304.12 leídos de su página—. Los tests de
+  `tests/test_t9_espaciamiento.py`, `tests/test_guia_perfil.py` y los demás que cambian de
+  verdad se reescribieron **declarándolo** en su docstring (qué fijaban, por qué era el
+  síntoma o qué decisión lo cambia, qué fijan ahora). M10 sale de la exención de caso patrón
+  (H8): su dorado es `CP_T9_CUNETA`.
+- **Qué haría falta:** nada que se pueda rehacer.
+- **Dónde vive:** `tests/fixtures/casos_patron.py::CP_T9_CUNETA`
+
+## T9-11 · La mutación de la integración: 262 de 288 en M10 y 78 de 78 en la Fase 10 de `servicio`; los vivos, censados
+
+- **Qué se difirió:** cerrar con un test los mutantes vivos que son banda de tolerancia,
+  guardias inalcanzables, presentación o equivalentes.
+- **Por qué:** el arnés de EXT-11 (`tests/apoyo/mutacion.py`), sobre una copia del árbol
+  fusionado con `tests/test_t9_correcciones.py`, `tests/test_t9_espaciamiento.py` y
+  `tests/test_M10_espaciamiento.py` de objetivos: primera medida 240/288 en M10 (83.3 %) y
+  66/78 en `_fase_10`, `_aporte_del_punto`, `extremos_de_los_tramos`,
+  `_verificar_tramos_de_alivio`, `_texto_periodo_retorno` y `claves_de_la_cuneta_necesarias`
+  (84.6 %). Los vivos que cambiaban conducta o texto se cerraron con los tests `test_mut_*`
+  —entre ellos uno REAL: el extremo se resolvía también para las obras A y C, y eso
+  enmascaraba un `solo` invertido; desde aquí sólo se resuelve para los alivios—: remedido,
+  261/288 y 77/78, y los dos que quedaban con conducta murieron con dos tests más (medido
+  aplicando cada mutante a mano): **262/288 (91.0 %) y 78/78**. Los 26 vivos de M10: diez de
+  banda de tolerancia o igualdad (`>=` por `>` y `<=` por `<` frente a `TOL_UMBRAL_NORMATIVO`
+  en el talud interior, VB1, VB2, el inicio del tramo, su hueco y la longitud implícita;
+  `Q_v <= Q_llena`); diez de las guardias `LimiteNumericoError` de la capacidad y de las dos
+  longitudes, que ningún dato válido alcanza (cada dato es finito y positivo); tres de
+  presentación (`CIFRAS_FINA + CIFRAS_FACTOR`); y tres equivalentes (`return ''` por `None`
+  donde quien llama sólo mira la verdad del texto o la nota siempre existe, y `o[0]` por `o[1]`
+  en los nodos, porque el alivio es de Familia B y entra igual).
+- **Qué haría falta:** ampliar el censo de supervivientes con razón por función (es de T-10,
+  como en T8-06).
+- **Dónde vive:** `tests/test_t9_correcciones.py::test_mut_las_fronteras_de_la_tabla_304_12_son_las_de_la_tabla`
 

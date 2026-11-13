@@ -67,10 +67,15 @@ B-01  |  progresiva 2+450  |  Familia B
           S_cauce  : 0.0100 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+    [NO] VB1  Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 4.1.2.1 d), pag. 179 [hoja de ruta: Fase 10] obtenido 530.000 | admisible 200.000
+        umbral del criterio 'long_max_cuneta' [A]
+  Fase 10 tramo de cuneta (VB1): 530.000 m desde A-02 (la obra de Familia A anterior en progresiva (CSV), que cierra el tramo por el criterio 'obras_familia_a_extremo_de_cuneta')
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
   aviso: TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto
+  aviso: VB2 (caudal de aporte frente a la capacidad de la cuneta) NO SE EVALUO: falta la pendiente de la cuneta (`S_cuneta`, por --datos-externos), sin la que la capacidad no se calcula; por la misma falta la Fase 10 del punto se detiene (ver su bloqueo)
+  aviso: tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
@@ -81,7 +86,7 @@ B-01  |  progresiva 2+450  |  Familia B
     [DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
         Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.065 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | HDPE: 3 escalon(es) evaluado(s), de Ø 0.90 m a Ø 1.20 m, y ninguno cumple; NO SE EVALUO desde Ø 1.35 m hasta el tope del material (1.50 m) por falta del dato 'espesor_pared_conducto[hdpe][1350]'. DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe][1350]'. el criterio 'espesor_pared_conducto' declara «hdpe» pero no la fila de 1350 mm. Los diametros declarados son [900, 1050, 1200]. Falta esa fila en su fuente (columna 'Max. OD' de la Table A12-11 de AASHTO LRFD, que termina en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro exterior de la ficha del fabricante): no se interpola ni se toma la fila vecina, porque el espesor gobierna la clave fisica (7.A) y el volumen desplazado de V7 y los dos quedan del lado inseguro si se estima por lo bajo
     [DatoFaltanteError] Fase 10 - Espaciamiento de alivio (M10) -> espaciamiento maximo entre alivios
-        Falta el dato 'L_hidraulico_m'. Sec. 10 describe el procedimiento de la cuneta pero no fija su seccion, su n de Manning ni la formula de intensidad: la longitud por capacidad hidraulica se declara, no se deduce
+        Falta el dato 'L_hidraulico_m'. La longitud por capacidad de la cuneta no esta declarada (`L_hidraulico_m`) y no se puede calcular: faltan los datos del trazo con que la Fase 10 la calcula (S_cuneta, por --datos-externos). Declarar esos datos, o la longitud
 
 ------------------------------------------------------------------------------
 C-01  |  progresiva 3+100  |  Familia C
@@ -167,7 +172,7 @@ CSV                     : tests/ejemplo_puntos.csv
 Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 0
-Verificaciones incumplidas: 0
+Verificaciones incumplidas: 1
 Verificaciones con aviso: 0
 Etapas bloqueadas       : 5
 Diferidas por alcance   : 8 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)

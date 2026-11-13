@@ -5653,4 +5653,149 @@ T11 = _tabla(
 )
 
 
+# ===========================================================================
+# --- T-9 --- Manual de Hidrologia — Tablas Nº 32, 33 y 34 de las cunetas
+# (num. 4.1.2.1 a) y c), pags. impresas 175 y 178, PDF 178 y 181)
+# ===========================================================================
+# Las tres tablas con que la Fase 10 calcula la capacidad de la cuneta y la
+# ventana de su seccion. Leidas por texto y por imagen. CUAL FILA aplica a una
+# obra no lo decide la tabla: la de la 32 y la 33 la elige el criterio
+# 'revestimiento_cuneta' [A], el extremo de la 33 'lectura_velocidad_limite_
+# cuneta' [A], y la 34 da los MINIMOS dentro de los que el proyectista declara
+# 'seccion_cuneta' [A] (ninguna fila se adopta: la region pluvial y la
+# seccion son del trazo).
+_USO_T32 = Usada(por=("M10.capacidad_cuneta",))
+_USO_T33 = Usada(por=("M10.capacidad_cuneta",))
+
+T32 = _tabla(
+    id="MC_HHD.T32",
+    cita_id="MC_HHD.4.1.2.1#T32",
+    titulo_literal="TABLA  Nº  32:  Valores de K más usados",
+    texto_previo=Verbatim(
+        texto=("También se utiliza el Coeficiente de Strickler (K) cuya "
+               "expresión es (1/n) (Ver Tabla Nº 32)"),
+        pagina_pdf=178),
+    columnas=(
+        ColumnaDeTabla(id="cuneta", etiqueta_literal="Cunetas", unidad="",
+                       uso=_USO_T32),
+        ColumnaDeTabla(id="K", etiqueta_literal="K", unidad="m^(1/3)/s",
+                       uso=_USO_T32),
+    ),
+    filas=(
+        FilaDeTabla(id="MC_HHD.T32#excavada_en_terreno",
+                    etiqueta_literal="Cunetas excavadas en el terreno",
+                    valores={"K": 33}, uso=_USO_T32),
+        FilaDeTabla(id="MC_HHD.T32#en_roca",
+                    etiqueta_literal="Cunetas en roca",
+                    valores={"K": 25}, uso=_USO_T32),
+        FilaDeTabla(id="MC_HHD.T32#de_concreto",
+                    etiqueta_literal="Cunetas de concreto",
+                    valores={"K": 67}, uso=_USO_T32),
+    ),
+    fuente_declarada_por_la_tabla="Ingeniería Vial I de Hugo Morales Sosa",
+    alcance=Integra(),
+    vistas_de_calculo=("CUNETA_STRICKLER_T32",),
+)
+
+T33 = _tabla(
+    id="MC_HHD.T33",
+    cita_id="MC_HHD.4.1.2.1#T33",
+    titulo_literal="TABLA Nº  33: Velocidades límites admisibles",
+    columnas=(
+        ColumnaDeTabla(id="superficie", etiqueta_literal="TIPO DE SUPERFICIE",
+                       unidad="", uso=_USO_T33),
+        ColumnaDeTabla(id="velocidad",
+                       etiqueta_literal="VELOCIDAD LÍMITE ADMISIBLE (M/S)",
+                       unidad="m/s", uso=_USO_T33),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"MC_HHD.T33#{clave}", etiqueta_literal=rotulo,
+            valores={"velocidad": ConjuntoDeMaximos(
+                valores=valores, unidad="m/s",
+                cita_id="MC_HHD.4.1.2.1#T33",
+                que_pasa_fuera=QuePasaFuera.INCUMPLE_LA_NORMA)},
+            llamadas_a_nota=llamadas, uso=_USO_T33)
+        for clave, rotulo, valores, llamadas in (
+            ("arena_fina_o_limo",
+             "Arena fina o limo (poca o ninguna arcilla)", (0.20, 0.60), ()),
+            ("arena_arcillosa_dura_margas_duras",
+             "Arena arcillosa dura, margas duras", (0.60, 0.90), ()),
+            ("terreno_parcialmente_cubierto_de_vegetacion",
+             "Terreno parcialmente cubierto de vegetación", (0.60, 1.20), ()),
+            ("arcilla_grava_pizarras_blandas_con_cubierta_vegetal",
+             "Arcilla grava, pizarras blandas con cubierta vegetal",
+             (1.20, 1.50), ()),
+            ("hierba", "Hierba", (1.20, 1.80), ()),
+            ("conglomerado_pizarras_duras_rocas_blandas",
+             "Conglomerado, pizarras duras, rocas blandas", (1.40, 2.40), ()),
+            ("mamposteria_rocas_duras", "Mampostería, rocas duras",
+             (3.00, 4.50), ("*",)),
+            ("concreto", "Concreto", (4.50, 6.00), ("*",)),
+        )),
+    notas_al_pie=(
+        NotaAlPie(marca="*", texto=Verbatim(
+            texto="* Para flujos de muy corta duración", pagina_pdf=178)),
+    ),
+    fuente_declarada_por_la_tabla=("Manual de Diseño de Carreteras "
+                                   "Pavimentadas de Bajo Volumen de "
+                                   "Tránsito-MTC"),
+    alcance=Integra(),
+    vistas_de_calculo=("CUNETA_VELOCIDAD_LIMITE_T33",),
+)
+
+T34 = _tabla(
+    id="MC_HHD.T34",
+    cita_id="MC_HHD.4.1.2.1c#T34",
+    titulo_literal="TABLA  Nº  34:  Dimensiones  mínimas",
+    texto_previo=Verbatim(
+        texto=("Las dimensiones serán fijadas de acuerdo a las condiciones "
+               "pluviales. De elegir la sección triangular, las dimensiones "
+               "mínimas serán las indicadas en la Tabla Nº 34."),
+        pagina_pdf=180),
+    columnas=(
+        ColumnaDeTabla(id="region", etiqueta_literal="REGIÓN", unidad="",
+                       uso=Usada(por=("criterios_adoptados['seccion_cuneta']",))),
+        ColumnaDeTabla(id="profundidad_m",
+                       etiqueta_literal="PROFUNDIDAD (D) (M)", unidad="m",
+                       uso=Usada(por=("criterios_adoptados['seccion_cuneta']",))),
+        ColumnaDeTabla(id="ancho_m", etiqueta_literal="ANCHO (A) (M)",
+                       unidad="m",
+                       uso=Usada(por=("criterios_adoptados['seccion_cuneta']",))),
+    ),
+    filas=(
+        FilaDeTabla(id="MC_HHD.T34#seca", etiqueta_literal="Seca (<400 mm/año)",
+                    valores={"profundidad_m": 0.20, "ancho_m": 0.50},
+                    uso=Usada(por=("criterios_adoptados['seccion_cuneta']",))),
+        FilaDeTabla(id="MC_HHD.T34#lluviosa",
+                    etiqueta_literal="Lluviosa (De 400 a <1600 mm/año)",
+                    valores={"profundidad_m": 0.30, "ancho_m": 0.75},
+                    uso=Usada(por=("criterios_adoptados['seccion_cuneta']",))),
+        FilaDeTabla(id="MC_HHD.T34#muy_lluviosa_1600_3000",
+                    etiqueta_literal="Muy lluviosa (De 1600 a <3000 mm/año)",
+                    valores={"profundidad_m": 0.40, "ancho_m": 1.20},
+                    uso=Usada(por=("criterios_adoptados['seccion_cuneta']",))),
+        FilaDeTabla(id="MC_HHD.T34#muy_lluviosa_mas_de_3000",
+                    etiqueta_literal="Muy lluviosa (>3000 mm/año)",
+                    valores={"profundidad_m": 0.30, "ancho_m": 1.20},
+                    llamadas_a_nota=("*",),
+                    uso=NoUsada(por_que_no=(
+                        "seccion TRAPEZOIDAL (nota *): la Fase 10 calcula la "
+                        "seccion triangular que el num. 4.1.2.1 prefiere; la "
+                        "trapezoidal no esta implementada (ficha T9 de "
+                        "docs/decisiones_diferidas.md)"))),
+    ),
+    notas_al_pie=(
+        NotaAlPie(marca="*", texto=Verbatim(
+            texto="* Sección Trapezoidal con un ancho mínimo de fondo de 0.30",
+            pagina_pdf=181)),
+    ),
+    fuente_declarada_por_la_tabla=("Manual de Diseño de Carreteras "
+                                   "Pavimentadas de Bajo Volumen de "
+                                   "Tránsito-MTC"),
+    alcance=Integra(),
+    vistas_de_calculo=("CUNETA_DIMENSIONES_MINIMAS_T34",),
+)
+
+
 TABLAS: Dict[str, TablaNormativa] = {t.id: t for t in _TODAS}

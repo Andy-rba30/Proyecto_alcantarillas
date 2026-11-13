@@ -2308,3 +2308,69 @@ CP_FASE_8_CIERRE = {
     "nf": {"cota_terreno": 44.00, "NF": 0.30, "delta_T_tmc_kN_m": 3.1751,
            "delta_eps_d_hdpe": 0.0059019},
 }
+
+
+# ===========================================================================
+# --- T-9 (correcciones de la auditoria) --- CP_T9_CUNETA: la capacidad de la
+# cuneta triangular, VB2 y la longitud por capacidad (M10, Fase 10)
+# ===========================================================================
+# CALCULADO A MANO, con la aritmetica escrita, independiente de la formula
+# cerrada de M10. El Manual de Hidrologia no trae un ejemplo numerico que
+# sirva: sus ecuaciones de ejemplo (4.1), (4.3), (4.4) y (4.6) no reproducen
+# la geometria que nombran (ficha T9-04). Geometria del triangulo de taludes
+# 1:Z1 y 1:Z2 (V:H) y tirante y: A = (Z1 + Z2)·y²/2 ; P = y·(√(1+Z1²) +
+# √(1+Z2²)) ; Rh = A/P ; Manning (117) con n = 1/K de la Tabla Nº 32.
+#
+# «auditor» -- el caso de H1 de la auditoria adversarial de T-9: seccion
+# 0.20 x 0.50 m (minimo de la region SECA, que la ventana de archivo ya no
+# admite: se sustituye el valor efectivo), Z2 = 0.5, concreto (K = 67),
+# S = 0.005, Q de aporte 0.095 m3/s (el de B-01).
+#   Z1 = 0.50 / 0.20 = 2.5
+#   A  = (2.5 + 0.5) · 0.04 / 2 = 0.060 m2
+#   P  = 0.20 · (√7.25 + √1.25) = 0.20 · (2.692582 + 1.118034) = 0.762123 m
+#   Rh = 0.060 / 0.762123 = 0.078727 m ; Rh^(2/3) = 0.183689
+#   Q  = 67 · 0.060 · 0.183689 · √0.005 = 4.02 · 0.183689 · 0.0707107
+#      = 0.052215 m3/s   (V = 0.870 m/s < 4.50: gobierna la cuneta llena)
+#   VB2: 0.095 > 0.052215 -> NO CUMPLE, margen 0.052215 − 0.095 = −0.042785
+#   L con el tramo de 200 m: 0.052215 · 200 / 0.095 = 109.93 m
+#   L con el tramo de 530 m: 0.052215 · 530 / 0.095 = 291.30 m
+#
+# «archivo» -- la seccion de archivo (decision A): 0.40 x 1.20 m, Z2 = 1,
+# concreto, S = 0.01.
+#   Z1 = 3 ; A = 4 · 0.16 / 2 = 0.32 m2
+#   P  = 0.40 · (√10 + √2) = 0.40 · (3.162278 + 1.414214) = 1.830596 m
+#   Rh = 0.174806 m ; Rh^(2/3) = 0.312635
+#   Q  = 67 · 0.32 · 0.312635 · 0.1 = 0.670290 m3/s (V = 2.095 m/s)
+#
+# «arena_fina» -- la seccion de archivo con «Arena fina o limo» (Tabla Nº 33:
+# 0.20 – 0.60 m/s, extremo inferior; Tabla Nº 32: cuneta excavada, K = 33) y
+# S = 0.005: gobierna la velocidad limite.
+#   Rh_v = (n·v/√S)^(3/2) = (0.030303 · 0.20 / 0.0707107)^(3/2)
+#        = (0.0857099)^(3/2) = 0.0250927 m
+#   c    = Rh / y = (3 + 1) / (2 · (√10 + √2)) = 4 / 9.152982 = 0.437016
+#   y_v  = 0.0250927 / 0.437016 = 0.0574182 m
+#   A_v  = 4 · 0.0574182² / 2 = 0.00659369 m2 ; Q_v = A_v · 0.20 = 0.0013188
+#
+# «velocidad_Z2» -- `caudal_a_velocidad` con talud exterior distinto de 1
+# (H7: con Z2 = 1 en todos los tests, el mutante Z2**2 -> Z2**3 vivia):
+# v = 0.20 m/s, n = 1/33, S = 0.01, Z1 = 3, Z2 = 2.
+#   Rh_v = (0.030303 · 0.20 / 0.1)^(3/2) = (0.0606061)^(3/2) = 0.0149202 m
+#   c    = 5 / (2 · (√10 + √5)) = 5 / (2 · 5.398346) = 0.463105
+#   y_v  = 0.0149202 / 0.463105 = 0.0322177 m
+#   A_v  = 5 · 0.0322177² / 2 = 0.00259495 m2 ; Q_v = 0.000518991 m3/s
+#   (con Z2**3 seria y_v = 0.036777 y Q_v = 0.000676: el mutante muere)
+CP_T9_CUNETA = {
+    "auditor": {
+        "seccion": {"profundidad_m": 0.20, "ancho_m": 0.50,
+                    "talud_exterior_HV": 0.5, "borde_libre_m": 0.0},
+        "S": 0.005, "Q": 0.095,
+        "A": 0.060, "Rh": 0.078727, "Q_adm": 0.052215,
+        "margen_VB2": -0.042785,
+        "L_200": 109.93, "L_530": 291.30,
+    },
+    "archivo": {"S": 0.01, "A": 0.32, "Rh": 0.174806, "Q_adm": 0.670290},
+    "arena_fina": {"S": 0.005, "Rh_v": 0.0250927, "y_v": 0.0574182,
+                   "Q_v": 0.0013188},
+    "velocidad_Z2": {"v": 0.20, "n": 1 / 33, "S": 0.01, "Z1": 3.0, "Z2": 2.0,
+                     "y_v": 0.0322177, "Q_v": 0.000518991},
+}

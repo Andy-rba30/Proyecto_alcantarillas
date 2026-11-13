@@ -55,15 +55,20 @@ B-01  |  progresiva 2+450  |  Familia B
           S_cauce  : 0.0100 m/m (CSV Sec. 1.2, columna S_cauce)
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+    [NO] VB1  Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 4.1.2.1 d), pag. 179 [hoja de ruta: Fase 10] obtenido 530.000 | admisible 200.000
+        umbral del criterio 'long_max_cuneta' [A]
+  Fase 10 tramo de cuneta (VB1): 530.000 m desde A-02 (la obra de Familia A anterior en progresiva (CSV), que cierra el tramo por el criterio 'obras_familia_a_extremo_de_cuneta')
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto
+  aviso: VB2 (caudal de aporte frente a la capacidad de la cuneta) NO SE EVALUO: falta la pendiente de la cuneta (`S_cuneta`, por --datos-externos), sin la que la capacidad no se calcula; por la misma falta la Fase 10 del punto se detiene (ver su bloqueo)
+  aviso: tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica
   Bloqueos:
     [CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)
         falta declarar: remanso_derecho_via [A] - Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)
         fuente: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal
     [DatoFaltanteError] Fase 10 - Espaciamiento de alivio (M10) -> espaciamiento maximo entre alivios
-        Falta el dato 'L_hidraulico_m'. Sec. 10 describe el procedimiento de la cuneta pero no fija su seccion, su n de Manning ni la formula de intensidad: la longitud por capacidad hidraulica se declara, no se deduce
+        Falta el dato 'L_hidraulico_m'. La longitud por capacidad de la cuneta no esta declarada (`L_hidraulico_m`) y no se puede calcular: faltan los datos del trazo con que la Fase 10 la calcula (S_cuneta, por --datos-externos). Declarar esos datos, o la longitud
 
 ------------------------------------------------------------------------------
 C-01  |  progresiva 3+100  |  Familia C
@@ -211,7 +216,7 @@ CSV                     : tests/ejemplo_puntos.csv
 Alcance de la corrida   : expediente
 Puntos del expediente   : 4
 Puntos dimensionados    : 0
-Verificaciones incumplidas: 0
+Verificaciones incumplidas: 1
 Verificaciones con aviso: 0
 Etapas bloqueadas       : 11
 Diferidas por alcance   : 1 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)

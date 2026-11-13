@@ -462,6 +462,10 @@ def test_todo_criterio_que_la_corrida_de_perfil_invoca_esta_clasificado(
 # La lista se conserva con su porque: los siete siguen siendo adopciones.
 VACIOS_DE_PERFIL_NO_INVOCADOS = [
     "TW_receptor", "homogeneidad_serie_fen",
+    # 'seccion_cuneta' (T-9) estuvo aqui en la FASE A de T-9, sin valor de
+    # archivo; las correcciones de su auditoria le dieron el minimo de la
+    # Tabla Nº 34 para region muy lluviosa (decision A del dueño): ya no es
+    # un vacio.
     # 'hw_entrada_fuera_de_rango' (PF-1, PC-03) estuvo aqui hasta T-2, que le
     # dio valor de archivo («energia_critica», INF-0.5): ya no es un vacio.
     # Sigue sin invocarlo esta corrida --el corredor del repositorio (S_cauce

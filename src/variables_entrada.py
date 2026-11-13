@@ -912,16 +912,75 @@ _EXTERNOS: Dict[str, _Externo] = {
     "L_hidraulico_m": _Externo(
         concepto="Longitud a la que la cuneta agota su capacidad, para el "
                  "espaciamiento de las alcantarillas de alivio (Fase 10, "
-                 "Familia B)",
+                 "Familia B). Declarada GANA; sin declarar, la Fase 10 la "
+                 "calcula con 'ancho_tributario_m', 'S_cuneta' y los "
+                 "criterios de la cuneta (T-9)",
         unidad="m",
         resolucion=Libre(
-            que_lo_fija="el calculo hidraulico de la cuneta: la Sec. 10 "
-                        "describe el procedimiento y no fija su seccion",
+            que_lo_fija="el calculo hidraulico de la cuneta, cuando se hace "
+                        "fuera del programa; dentro lo hace M10",
             dominio="m > 0 y finito",
         ),
         fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
         nota="La Fase 10 la lee `servicio._fase_10` por punto, no un modulo de "
              "calculo por su nombre, y por eso la fase se declara",
+    ),
+
+    # --- T-9 --- Las tres entradas de la Fase 10 que el CSV no trae (trazo):
+    # las lee `servicio._fase_10` y `servicio._verificar_tramos_de_alivio`,
+    # y por eso la fase se declara.
+    "ancho_tributario_m": _Externo(
+        concepto="Ancho de la faja que drena a la cuneta por metro de cuneta "
+                 "(semiplataforma, berma y talud que vierten a ella), para el "
+                 "caudal aportante por metro de la Fase 10 (Familia B) cuando "
+                 "el tramo del alivio no se conoce o el caudal se calcula",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="la seccion tipica de la via (DG-2018) y el talud de "
+                        "corte que vierte a la cuneta",
+            dominio="m > 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
+        nota="Sin el --y sin tramo conocido con caudal declarado, en que el "
+             "aporte se reparte como Q / s--, la longitud por capacidad no se "
+             "calcula y, sin 'L_hidraulico_m' declarada, la Fase 10 se "
+             "detiene",
+    ),
+
+    "S_cuneta": _Externo(
+        concepto="Pendiente longitudinal de la cuneta que descarga en el "
+                 "alivio (la de la rasante en el tramo), para su capacidad "
+                 "por Manning en la Fase 10 (Familia B). No se deduce de "
+                 "las cotas de rasante del CSV, que son de los cruces",
+        unidad="m/m",
+        resolucion=Libre(
+            que_lo_fija="el perfil longitudinal del trazo en el tramo de "
+                        "cuneta",
+            dominio="m/m > 0; un valor >= 1 delata una pendiente en "
+                    "porcentaje",
+        ),
+        dominio="S_CAUCE_MAX",
+        fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
+        nota="Fuera de 0.5 % < i < 2 % (Manual de Hidrologia num. 4.1.2 c)) "
+             "la corrida avisa; no detiene nada",
+    ),
+
+    "inicio_tramo_cuneta_km": _Externo(
+        concepto="Progresiva donde empieza, del lado de progresivas menores, "
+                 "el tramo de cuneta que descarga en el alivio (punto alto de "
+                 "la rasante, inicio del corte, otra obra de drenaje "
+                 "transversal): extremo del tramo de VB1. Gana sobre la obra "
+                 "anterior del CSV; no puede ser posterior a la obra",
+        unidad="km",
+        resolucion=Libre(
+            que_lo_fija="el trazo (perfil longitudinal y planta de drenaje)",
+            dominio="km >= 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
+        nota="Opcional. Sin el y sin obra anterior en el CSV que cierre el "
+             "tramo (de Familia B, o de Familia A por el criterio "
+             "'obras_familia_a_extremo_de_cuneta'), VB1 no se evalua y la "
+             "corrida lo registra como bloqueo que espera este dato",
     ),
 
     "categoria_tr": _Externo(
@@ -1417,6 +1476,27 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "'embocadura_cajon': su fila de la Tabla C.2 es la del "
              "mismo detalle de embocadura con que se lee la Tabla A.1."),
     "long_max_cuneta": _Meta(unidad="m"),
+    # --- T-9 --- los tres criterios de la cuneta de la Fase 10; los consume
+    # M10 cuando la longitud por capacidad no se declara.
+    "seccion_cuneta": _Meta(
+        unidad="m",
+        nota="Dict: profundidad_m, ancho_m (m), talud_exterior_HV (H:V) y "
+             "borde_libre_m (m) de la cuneta triangular. Valor de archivo: "
+             "el minimo de la Tabla Nº 34 para region muy lluviosa, con el "
+             "talud exterior 1:1 adoptado"),
+    "revestimiento_cuneta": _Meta(
+        unidad="-",
+        nota="Categoria: une una fila de la Tabla Nº 32 (n) con una de la "
+             "Tabla Nº 33 (velocidad limite)"),
+    "lectura_velocidad_limite_cuneta": _Meta(
+        unidad="-",
+        nota="Categoria: el extremo de la fila de la Tabla Nº 33 que rige"),
+    # --- T-9 (correcciones; decision C) --- lo consume M10 al resolver el
+    # extremo del tramo de cuneta de cada alivio.
+    "obras_familia_a_extremo_de_cuneta": _Meta(
+        unidad="-",
+        nota="Categoria si/no: si la obra de Familia A anterior cierra el "
+             "tramo de cuneta del alivio siguiente (extremo de VB1)"),
     "longitud_proteccion_salida": _Meta(unidad="m"),
     # --- T-8 --- los tres criterios de la Fase 6; los consume M6.
     "tipo_proteccion_entrada": _Meta(

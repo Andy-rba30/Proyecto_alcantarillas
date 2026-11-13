@@ -70,7 +70,7 @@ import math
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from src import criterios_adoptados as ca
 from src import datos_sitio as ds
@@ -106,6 +106,10 @@ from src.modelos import (Bloqueo, CaudalDeDiseno, Clasificacion,
 from src.modelos import EstadoDeVerificacion, TipoDeVeredicto
 from src.modelos import (CotaDeEntrada, LongitudConducto,      # --- T-6 ---
                          OrigenPendiente, PendienteAdoptada)
+from src.modelos import (ORIGEN_CAUDAL_CALCULADO,               # --- T-9 ---
+                         TramoDeAlivio)
+from src.modelos import (AporteDelAlivio,             # --- T-9 (correcciones) ---
+                         ExtremoDeTramo)
 from src.modulos.M0_carga import (COLUMNA_CAUDAL,
                                   FAMILIAS_CON_CAUDAL_HIDROLOGICO,
                                   cargar_puntos, cargar_puntos_de_bytes,
@@ -147,6 +151,8 @@ from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
                                     k_ae_del_proyecto,
                                     recubrimiento_de_diseno)
 from src.modulos.M10_espaciamiento import espaciamiento_alivio
+# --- T-9 --- la longitud por capacidad de la cuneta y VB1, por tramo.
+from src.modulos import M10_espaciamiento as M10
 # De M11 solo las dos huellas y la ruta del archivo de criterios, para
 # `capturar_contexto`: la agregacion de bloqueantes y la memoria son de la
 # Fase 11 y las consumen los adaptadores, no el servicio.
@@ -261,6 +267,12 @@ FAMILIAS_QUE_USAN: Dict[str, Tuple[Familia, ...]] = {
     # La Fase 10 (espaciamiento de alivio, Sec. 10) es de la Familia B y de
     # ninguna otra: `_fase_10` lee esta fila.
     "L_hidraulico_m": (Familia.B,),
+    # --- T-9 --- Las tres entradas con que la Fase 10 calcula la longitud
+    # por capacidad y verifica el tramo (VB1): solo las lee `_fase_10` y
+    # `_verificar_tramos_de_alivio`, que son de la Familia B.
+    "ancho_tributario_m": (Familia.B,),
+    "S_cuneta": (Familia.B,),
+    "inicio_tramo_cuneta_km": (Familia.B,),
     # La fila de la Tabla N 02. AQUI HABIA UNA `(Familia.A,)` Y LA MEDIDA LA
     # CORRIGIO, que es justamente para lo que esta la medida:
     #
@@ -304,10 +316,48 @@ DETALLE_FALTA_LUZ = ("no es columna de Sec. 1.2: declararla con --luz o en "
                      "--datos-externos. Sin ella no se puede separar "
                      "alcantarilla de puente y el punto no se dimensiona")
 ETAPA_FALTA_L_HIDRAULICO = "espaciamiento maximo entre alivios"
-DETALLE_FALTA_L_HIDRAULICO = ("Sec. 10 describe el procedimiento de la cuneta "
-                              "pero no fija su seccion, su n de Manning ni la "
-                              "formula de intensidad: la longitud por capacidad "
-                              "hidraulica se declara, no se deduce")
+# --- T-9 --- La longitud por capacidad ya no se declara por fuerza: la
+# calcula M10 con la cuneta. Lo que falta, cuando falta, son las dos
+# entradas del TRAZO con que se calcula; el detalle las nombra.
+CLAVES_DE_LA_CUNETA: Tuple[str, ...] = ("ancho_tributario_m", "S_cuneta")
+DETALLE_FALTA_L_HIDRAULICO = (
+    "La longitud por capacidad de la cuneta no esta declarada "
+    "(`L_hidraulico_m`) y no se puede calcular: faltan los datos del trazo "
+    "con que la Fase 10 la calcula ({faltan}, por --datos-externos). Declarar "
+    "esos datos, o la longitud")
+ETAPA_L_HIDRAULICO_CALCULADA = ("longitud por capacidad de la cuneta y "
+                                "espaciamiento maximo (Sec. 10)")
+ETAPA_APORTE_CUNETA = "caudal de aporte de la cuneta (num. 4.1.2.1 b)"
+ETAPA_TRAMO_ALIVIO = "VB1: espaciamiento adoptado por tramo (Sec. 10)"
+# --- T-9 (correcciones, H1) ---
+ETAPA_CAPACIDAD_CUNETA = "capacidad de la cuneta (num. 4.1.2.1 a)"
+ETAPA_APORTE_CAPACIDAD = ("VB2: caudal de aporte frente a la capacidad de la "
+                          "cuneta (num. 4.1.2.1 a)")
+DETALLE_FALTA_EXTREMO_TRAMO = (
+    "el tramo de cuneta del lado de progresivas menores de esta alcantarilla "
+    "de alivio no tiene extremo (ninguna obra anterior en progresiva que lo "
+    "cierre) y VB1 no se puede evaluar: declarar `inicio_tramo_cuneta_km` "
+    "por --datos-externos, con la progresiva donde empieza la cuneta que "
+    "descarga en el alivio")
+
+
+def claves_de_la_cuneta_necesarias(tramo_conocido: bool,
+                                   caudal_calculado: bool) -> Tuple[str, ...]:
+    """
+    --- T-9 (correcciones, H1) --- Los datos del trazo que la Fase 10 necesita
+    para CALCULAR la longitud por capacidad: con el tramo del alivio conocido
+    y el caudal declarado, solo la pendiente de la cuneta (q' = Q / s); si no,
+    tambien el ancho tributario (q' = q · b). La misma regla la lee el
+    pre-vuelo, para que su texto sea el del bloqueo.
+    """
+    if tramo_conocido and not caudal_calculado:
+        return ("S_cuneta",)
+    return CLAVES_DE_LA_CUNETA
+
+
+def detalle_falta_l_hidraulico(faltan: Tuple[str, ...]) -> str:
+    """El detalle de la falta de la longitud por capacidad, con lo que falta."""
+    return DETALLE_FALTA_L_HIDRAULICO.format(faltan=", ".join(faltan))
 FAMILIAS_QUE_EXIGEN_COLUMNA: Dict[str, Tuple[Familia, ...]] = {
     "cota_coronacion_canal": (Familia.C,),
     # `area_ha` la EXIGE unicamente `M1._categoria_por_area`, alcanzable solo
@@ -318,7 +368,11 @@ FAMILIAS_QUE_EXIGEN_COLUMNA: Dict[str, Tuple[Familia, ...]] = {
     # se consulta. Desde T-1 la LEE ademas `_fase_hidrologia`, en A y en B,
     # para el contraste de caudal especifico Q/A del caudal declarado; no la
     # exige: sin area ese paso no se emite y nada se detiene.
-    "area_ha": (Familia.A,),
+    # --- T-9 (correcciones, H9) --- Y desde T-9 la EXIGE la Fase 10 en la B
+    # (`_aporte_del_punto`) cuando el tramo de cuneta del alivio no se conoce
+    # y la longitud por capacidad reparte el caudal con q = Q / A. La fila lo
+    # dice aunque el gate no se consulte para la B: M0 la exige al cargar.
+    "area_ha": (Familia.A, Familia.B),
 }
 COLUMNAS_DEL_TW: Tuple[str, ...] = ("cota_TW", "Q_receptor_m3s")
 # Las claves externas que NO son columna y que el codigo resuelve por otra
@@ -350,6 +404,15 @@ EXTERNOS_CON_VIA_ALTERNA: Tuple[str, ...] = (
 # de 7.B toma la plataforma horizontal a la cota de rasante, que es el caso
 # particular que `M7.longitud_del_conducto` declara en su paso.
 EXTERNOS_CON_VIA_ALTERNA += ("bombeo", "peralte")
+# --- T-9 --- El ancho tributario y la pendiente de la cuneta no son faltas
+# por si solos: tienen via alterna -- la longitud por capacidad DECLARADA
+# (`L_hidraulico_m`), que gana --, y el pre-vuelo las nombra dentro de la
+# entrada de `L_hidraulico_m` cuando faltan las dos vias.
+EXTERNOS_CON_VIA_ALTERNA += ("ancho_tributario_m", "S_cuneta")
+# --- T-9 (correcciones, H2) --- `inicio_tramo_cuneta_km` SALE de esta lista:
+# un alivio sin extremo deja VB1 sin evaluar y eso es un `Bloqueo` que espera
+# ese dato, de modo que el pre-vuelo tiene regla propia para el
+# (`anticipo.datos_faltantes_por_punto`, con `extremos_de_los_tramos`).
 
 
 def tw_sin_via_de_sec_1_3(tw_declarado: Optional[float], cota_TW: Optional[float],
@@ -564,6 +627,17 @@ CLAVES_EXTERNAS += CLAVES_TRANSVERSALES
 # y el signo. La tupla del cero es la de T-2, ampliada; la del signo es
 # nueva, porque hasta T-6 ninguna clave externa numerica lo llevaba.
 CLAVES_QUE_ADMITEN_CERO += CLAVES_TRANSVERSALES
+# --- T-9 --- Las tres entradas de la Fase 10 que el CSV no trae (Familia B,
+# trazo): el ancho de la faja que drena a la cuneta (m), la pendiente
+# longitudinal de la cuneta (m/m) y la progresiva donde empieza el tramo de
+# cuneta que descarga en el alivio (km). Opcionales y sin valor por defecto.
+# La pendiente de la cuneta NO se deriva del CSV: la columna `cota_rasante`
+# da la rasante solo en cada cruce, y la pendiente de la cuneta es la local
+# del tramo (con sus curvas verticales), que el CSV no sostiene. La
+# progresiva admite 0 (el 0+000 del eje).
+CLAVES_CUNETA: Tuple[str, ...] = CLAVES_DE_LA_CUNETA + ("inicio_tramo_cuneta_km",)
+CLAVES_EXTERNAS += CLAVES_CUNETA
+CLAVES_QUE_ADMITEN_CERO += ("inicio_tramo_cuneta_km",)
 CLAVES_CON_SIGNO: Tuple[str, ...] = ("peralte",)
 
 # La geometria del cabezal es del proyecto entero, no de un punto: Sec. 9 no
@@ -1065,6 +1139,11 @@ _DOMINIO_DE_CLAVE: Dict[str, Tuple[float, str]] = {
     "peralte": (S_CAUCE_MAX,
                 "una pendiente transversal en m/m (0.04 = 4 %): un valor "
                 "absoluto >= 1 delata un peralte escrito en PORCENTAJE"),
+    # --- T-9 --- La pendiente longitudinal de la cuneta: la misma magnitud
+    # (m/m) y el mismo error de transcripcion, y entra directa a Manning.
+    "S_cuneta": (S_CAUCE_MAX,
+                 "una pendiente de cuneta en m/m (0.01 = 1 %): un valor >= 1 "
+                 "delata una pendiente escrita en PORCENTAJE"),
 }
 
 
@@ -1387,6 +1466,18 @@ class InformePunto:
     # es un marco a nivel de perfil (su demanda es de expediente).
     estructural: Optional[ResultadoEstructural] = None
     espaciamiento: Optional[Espaciamiento] = None
+    # --- T-9 --- El tramo de cuneta que descarga en este alivio (Familia B)
+    # y su verificacion VB1. Lo llena `correr` DESPUES de todos los puntos,
+    # porque el tramo necesita la obra B anterior: None fuera de la Familia
+    # B y en `correr_punto` suelto.
+    tramo_alivio: Optional[TramoDeAlivio] = None
+    # --- T-9 (correcciones, H1) --- VB2: el caudal de aporte del alivio
+    # contra la capacidad de la cuneta, con la capacidad y sus pasos. None
+    # fuera de la Familia B o sin caudal del punto.
+    aporte_alivio: Optional[AporteDelAlivio] = None
+    # --- T-9 (correcciones) --- si la Fase 2 clasifico el punto como
+    # alcantarilla: VB1 solo se evalua para las que si (`correr_punto`).
+    fase_2_cerrada: bool = False
     # Escalones que MD probo, en orden. Es el entregable 1 de la Fase 11
     # ("iteraciones"): la memoria tiene que poder decir por que se descarto el
     # diametro anterior al adoptado. Se llena tambien cuando el punto no cierra.
@@ -1419,6 +1510,16 @@ class InformePunto:
             filas.extend((FASE_DISENO, v) for v in self.resultado.verificaciones)
         if self.geometria is not None:
             filas.extend((FASE_GEOMETRIA, v) for v in self.geometria.verificaciones)
+        # --- T-9 --- Las dos de la Fase 10, y las dos pueden fallar: VB2, el
+        # caudal de aporte contra la capacidad de la cuneta (la condicion
+        # literal del Manual, H1 de la auditoria), y VB1, el espaciamiento
+        # adoptado por tramo (INF-5.1.12).
+        if self.aporte_alivio is not None and \
+                self.aporte_alivio.verificacion is not None:
+            filas.append((FASE_ALIVIO, self.aporte_alivio.verificacion))
+        if self.tramo_alivio is not None and \
+                self.tramo_alivio.verificacion is not None:
+            filas.append((FASE_ALIVIO, self.tramo_alivio.verificacion))
         return tuple(filas)
 
     def incumplidas(self) -> Tuple[Verificacion, ...]:
@@ -1554,6 +1655,27 @@ class InformePunto:
         # despreciada por el permiso de 3.6.1.2.6a cuando el proyecto lo toma.
         if self.estructural is not None:
             avisos.extend(self.estructural.avisos)
+        # --- T-9 --- Los de la Fase 10: los de la longitud por capacidad
+        # (pendiente de la cuneta fuera de la banda del Manual, capacidad
+        # gobernada por la velocidad limite, los del caudal de aporte) y el
+        # del tramo que no se pudo verificar.
+        if self.aporte_alivio is not None:
+            avisos.extend(a for a in (self.aporte_alivio.capacidad.avisos
+                                      if self.aporte_alivio.capacidad
+                                      is not None else ())
+                          if a not in avisos)
+            if self.aporte_alivio.aviso:
+                avisos.append(self.aporte_alivio.aviso)
+        if self.espaciamiento is not None:
+            avisos.extend(a for a in self.espaciamiento.avisos
+                          if a not in avisos)
+        # --- T-9 (correcciones, H2 y H3) --- Los huecos de cuneta que VB1 no
+        # mira. El tramo SIN evaluar ya no es un aviso: es un `Bloqueo` del
+        # punto que espera el dato que lo destraba (`TramoDeAlivio.falta`),
+        # y cuenta para el cierre.
+        if self.tramo_alivio is not None:
+            avisos.extend(a for a in self.tramo_alivio.avisos
+                          if a not in avisos)
         return tuple(avisos)
 
     def bloqueos_reales(self) -> Tuple[Bloqueo, ...]:
@@ -2244,10 +2366,16 @@ def _fase_hidrologia(informe: InformePunto, externos: DatosExternos,
         # bloqueo y repetirlo aqui no añade nada.
         return False
     serie = hidrologia.estaciones[cuenca.estacion]
+    # --- T-9 (correcciones, H11) --- En la Familia B el caudal del punto ES,
+    # por contrato, el de la cuneta que descarga en el alivio: lo calcula la
+    # puerta de la cuneta (`MH.caudal_de_aporte_cuneta`, num. 4.1.2.1 b), la
+    # misma aritmetica con su rotulo y su cita), UNA vez. La Fase 10 lo
+    # reutiliza y no lo vuelve a calcular ni repite sus pasos.
+    calcular = (MH.caudal_de_aporte_cuneta if punto.familia is Familia.B
+                else MH.caudal_de_diseno)
     informe.caudal = _etapa(
         informe.bloqueos, FASE_HIDROLOGIA, ETAPA_CAUDAL_CALCULADO,
-        lambda: MH.caudal_de_diseno(cuenca, serie,
-                                    clasificacion.periodo_retorno.anios))
+        lambda: calcular(cuenca, serie, clasificacion.periodo_retorno.anios))
     if informe.caudal is None:
         return False
     informe.punto_completado = replace(informe.punto_de_calculo,
@@ -2522,24 +2650,263 @@ def _fase_8(informe: InformePunto) -> None:
                                 lambda: cama_apoyo_relleno_lateral(material))
 
 
-def _fase_10(informe: InformePunto, externos: DatosExternos) -> None:
+def _fase_10(informe: InformePunto, externos: DatosExternos,
+             hidrologia: Optional[EntradaHidrologica] = None,
+             tramo: Optional[Any] = None) -> None:
     """
     Espaciamiento de alivio: solo Familia B (Sec. 10).
 
     La condicion se lee de `FAMILIAS_QUE_USAN`, que es lo que hace de esa
     declaracion un dato del programa y no un comentario: la pestana 1 anota
     con la MISMA fila que decide aqui si la fase corre.
+
+    --- T-9 y sus correcciones --- TRES PIEZAS, EN ESTE ORDEN:
+
+      1. La CAPACIDAD de la cuneta (M10), si se conoce su pendiente
+         (`S_cuneta`); y con ella VB2, el caudal de aporte del punto contra
+         esa capacidad (la condicion literal del Manual; H1 de la auditoria).
+         Sin la pendiente VB2 no se evalua: con la longitud declarada, solo
+         se avisa; sin ella, la Fase 10 ya se detiene nombrando el dato.
+      2. La LONGITUD por capacidad: `L_hidraulico_m` declarada GANA, como
+         siempre. Si no, se calcula: con el TRAMO del alivio conocido
+         (`tramo`, el `ExtremoDeTramo` que `correr` resolvio antes de los
+         puntos) y el caudal declarado, q' = Q / s; si no, q' = q · b con la
+         escorrentia especifica del caudal del punto. Sin los datos del
+         trazo que hagan falta, la etapa se detiene nombrandolos.
+      3. El espaciamiento maximo; VB1 la verifica `_verificar_tramos_de_
+         alivio`, despues de todos los puntos.
+
+    `tramo` es None en `correr_punto` suelto (no hay otras obras), o la
+    excepcion que el extremo levanto (la registra VB1, no esta fase).
     """
     if informe.punto.familia not in familias_que_usan("L_hidraulico_m"):
         return
-    L_hidraulico = externos.valor(informe.punto.id, "L_hidraulico_m")
-    if L_hidraulico is None:
-        _falta_dato(informe.bloqueos, FASE_ALIVIO, ETAPA_FALTA_L_HIDRAULICO,
-                    "L_hidraulico_m", DETALLE_FALTA_L_HIDRAULICO)
+    id_punto = informe.punto.id
+    L_hidraulico = externos.valor(id_punto, "L_hidraulico_m")
+    S_cuneta = externos.valor(id_punto, "S_cuneta")
+    aporte = _aporte_del_punto(informe)
+    tramo_s = (tramo.longitud_m if isinstance(tramo, ExtremoDeTramo)
+               else None)
+    tramo_conocido = tramo_s is not None and tramo_s > 0
+
+    capacidad = None
+    if S_cuneta is not None:
+        capacidad = _etapa(informe.bloqueos, FASE_ALIVIO,
+                           ETAPA_CAPACIDAD_CUNETA,
+                           lambda: M10.capacidad_cuneta(S_cuneta=S_cuneta,
+                                                        id_punto=id_punto))
+    if aporte is not None and (capacidad is not None or S_cuneta is None):
+        Q, origen, _caudal_calc, _area = aporte
+        informe.aporte_alivio = _etapa(
+            informe.bloqueos, FASE_ALIVIO, ETAPA_APORTE_CAPACIDAD,
+            lambda: M10.verificar_aporte(
+                capacidad=capacidad, Q_aporte_m3s=Q, origen_aporte=origen,
+                id_punto=id_punto,
+                aviso_sin_capacidad=(
+                    M10.AVISO_VB2_SIN_PENDIENTE if L_hidraulico is not None
+                    else M10.AVISO_VB2_SIN_PENDIENTE_NI_LONGITUD)))
+
+    if L_hidraulico is not None:
+        informe.espaciamiento = _etapa(
+            informe.bloqueos, FASE_ALIVIO, "min(L_normativo, L_hidraulico)",
+            lambda: espaciamiento_alivio(L_hidraulico))
         return
-    informe.espaciamiento = _etapa(
-        informe.bloqueos, FASE_ALIVIO, "min(L_normativo, L_hidraulico)",
-        lambda: espaciamiento_alivio(L_hidraulico))
+    caudal_calculado = (aporte is not None and aporte[2] is not None)
+    faltan = tuple(c for c in claves_de_la_cuneta_necesarias(
+                       tramo_conocido, caudal_calculado)
+                   if externos.valor(id_punto, c) is None)
+    if faltan:
+        _falta_dato(informe.bloqueos, FASE_ALIVIO, ETAPA_FALTA_L_HIDRAULICO,
+                    "L_hidraulico_m", detalle_falta_l_hidraulico(faltan))
+        return
+    if aporte is None:
+        _falta_dato(informe.bloqueos, FASE_ALIVIO, ETAPA_FALTA_L_HIDRAULICO,
+                    "L_hidraulico_m",
+                    "el caudal de aporte del punto no se pudo establecer (ver "
+                    "la Fase 1-bis): sin el no hay aporte con que repartir "
+                    "la capacidad de la cuneta. Declarar la longitud, o "
+                    "resolver el caudal")
+        return
+    if capacidad is None:
+        return                       # la capacidad ya dejo su bloqueo
+    Q, origen, caudal_calc, area_km2 = aporte
+    texto_tr = _texto_periodo_retorno(informe, caudal_calc is not None)
+
+    if tramo_conocido and caudal_calc is None:
+        def _calcular() -> Espaciamiento:
+            longitud = M10.longitud_hidraulica_por_tramo(
+                capacidad=capacidad, Q_aporte_m3s=Q, origen_aporte=origen,
+                longitud_tramo_m=tramo_s, extremo=tramo.extremo,
+                periodo_retorno=texto_tr, id_punto=id_punto)
+            return espaciamiento_alivio(longitud.L_hidraulico,
+                                        longitud_hidraulica=longitud)
+    else:
+        caudal = informe.caudal
+        if caudal.q_especifico_m3s_km2 is None:
+            _falta_dato(informe.bloqueos, FASE_ALIVIO,
+                        ETAPA_FALTA_L_HIDRAULICO, "area_ha",
+                        "el tramo de cuneta del alivio no se conoce y el "
+                        "caudal del punto no tiene area con que repartirse "
+                        "(columna area_ha): sin ella no hay escorrentia "
+                        "especifica para la longitud por capacidad de la "
+                        "cuneta")
+            return
+        ancho = externos.valor(id_punto, "ancho_tributario_m")
+
+        def _calcular() -> Espaciamiento:
+            longitud = M10.longitud_hidraulica(
+                capacidad=capacidad,
+                escorrentia_m3s_km2=caudal.q_especifico_m3s_km2,
+                origen_escorrentia=f"{origen}, entre el area tributaria "
+                                   f"({area_km2:g} km2): q = Q / A",
+                ancho_tributario_m=ancho, caudal_de_aporte=caudal_calc,
+                area_km2=area_km2, periodo_retorno=texto_tr,
+                id_punto=id_punto)
+            return espaciamiento_alivio(longitud.L_hidraulico,
+                                        longitud_hidraulica=longitud)
+
+    informe.espaciamiento = _etapa(informe.bloqueos, FASE_ALIVIO,
+                                   ETAPA_L_HIDRAULICO_CALCULADA, _calcular)
+
+
+def _aporte_del_punto(informe: InformePunto
+                      ) -> Optional[Tuple[float, str, Optional[CaudalDeDiseno],
+                                          Optional[float]]]:
+    """
+    --- T-9 (correcciones, H1 y H11) --- El caudal de aporte del alivio: en
+    la Familia B es, por contrato, el caudal del punto --el de la cuneta que
+    descarga en el--. Devuelve (Q, origen, el `CaudalDeDiseno` si lo
+    CALCULO la Fase 1-bis o None si se declaro, area en km2 o None), o None
+    sin caudal (la Fase 1-bis dejo su bloqueo).
+
+    LA PRECEDENCIA ES LA DE LA FASE 1-bis (T-1), y no otra: un caudal
+    DECLARADO gana y no se recalcula aunque haya cuenca. Un caudal CALCULADO
+    no se vuelve a calcular aqui (H11: hasta las correcciones, la Fase 10
+    pedia a `MH.caudal_de_aporte_cuneta` el mismo caudal con otro rotulo y
+    la memoria repetia los pasos de la Fase 1-bis): la Fase 1-bis lo calcula
+    para la Familia B con esa misma puerta, una vez.
+    """
+    caudal = informe.caudal
+    if caudal is None:
+        return None
+    if caudal.origen == ORIGEN_CAUDAL_CALCULADO:
+        origen = (f"caudal de aporte de la cuneta calculado por la Fase "
+                  f"1-bis ({caudal.de_donde})")
+        return caudal.Q_m3s, origen, caudal, caudal.area_km2
+    return (caudal.Q_m3s, f"{caudal.leyenda} ({caudal.de_donde})", None,
+            caudal.area_km2)
+
+
+def _texto_periodo_retorno(informe: InformePunto, calculado: bool) -> str:
+    """
+    --- T-9 (correcciones, H4) --- De que periodo de retorno sale la lluvia
+    del aporte de la cuneta, con el TR del PUNTO (el que la Fase 2 calculo,
+    con el riesgo del Propietario si lo declaro) y no un «TR = 35» escrito
+    a mano. Con el caudal DECLARADO el programa no conoce el TR del estudio
+    hidrologico, y lo dice.
+    """
+    clasificacion = informe.clasificacion
+    tr = (None if clasificacion is None else clasificacion.periodo_retorno)
+    if tr is None or tr.exacto is None:
+        del_punto = "la Fase 2 no asigno periodo de retorno a este punto"
+    else:
+        del_punto = (f"la Fase 2 asigna a este punto TR = {tr.exacto:.1f} "
+                     f"años (R = {tr.R:.2f}, n = {tr.n} años, de la Tabla Nº "
+                     f"02 o del riesgo que declaro el Propietario)")
+    if calculado:
+        return (f"Periodo de retorno del aporte: el del punto; {del_punto}.")
+    return (f"Periodo de retorno del aporte: el caudal es DECLARADO y el "
+            f"programa no conoce el periodo de retorno con que el estudio "
+            f"hidrologico lo calculo; {del_punto}.")
+
+
+def extremos_de_los_tramos(obras: Sequence[Tuple[str, Familia, float]],
+                           inicio_de: Callable[[str], Optional[float]],
+                           solo: Optional[Sequence[str]] = None
+                           ) -> Dict[str, Any]:
+    """
+    --- T-9 (correcciones, H2, H3 y decision C) --- El extremo del tramo de
+    cuneta de cada alcantarilla de alivio (`M10.extremo_del_tramo`), por id:
+    un `ExtremoDeTramo`, o la `ErrorProyecto` que levanto (un inicio
+    posterior a la obra, el criterio de la decision C sin valor), que
+    `_verificar_tramos_de_alivio` registra como bloqueo de VB1.
+
+    `obras` son (id, familia, progresiva_km) en el orden del CSV;
+    `inicio_de(id)` el `inicio_tramo_cuneta_km` declarado o None; `solo`,
+    los ids que interesan (None: todos los alivios). Lo usan
+    `correr` --ANTES de los puntos, porque la Fase 10 necesita la longitud
+    del tramo-- y el pre-vuelo, para decir que alivio queda sin extremo.
+    """
+    extremos: Dict[str, Any] = {}
+    for id_punto, familia, progresiva in obras:
+        if familia not in familias_que_usan("inicio_tramo_cuneta_km"):
+            continue
+        if solo is not None and id_punto not in solo:
+            continue
+        try:
+            extremos[id_punto] = M10.extremo_del_tramo(
+                id_punto=id_punto, progresiva_km=progresiva,
+                inicio_declarado_km=inicio_de(id_punto), obras=obras)
+        except ErrorProyecto as exc:
+            extremos[id_punto] = exc
+    return extremos
+
+
+def _verificar_tramos_de_alivio(informe: "Informe",
+                                extremos: Dict[str, Any]) -> None:
+    """
+    --- T-9 --- VB1 por tramo, despues de todos los puntos: el tramo de
+    cuneta de cada alcantarilla de alivio va del extremo de su lado de
+    progresivas menores hasta ella (`M10.verificar_tramo`), con el extremo
+    que `extremos_de_los_tramos` resolvio.
+
+    Con la obra B anterior el sentido del flujo no es dato y el tramo se
+    juzga contra el menor de los dos espaciamientos maximos; con el inicio
+    declarado o una obra de Familia A, contra el del punto.
+
+    --- Correcciones (H2) --- Un VB1 que NO se evaluo (sin extremo, o con el
+    maximo de un extremo desconocido) se registra como `Bloqueo` del punto
+    con el dato que lo destraba: una verificacion de la aceptacion de la
+    Familia B sin evaluar no deja «Expediente cerrado: si». Un extremo que
+    levanto una excepcion (un inicio posterior a la obra) es el bloqueo de
+    la etapa, sin tumbar la corrida. Solo para los alivios que la Fase 2
+    clasifico como alcantarilla (`InformePunto.fase_2_cerrada`): los demas
+    ya tienen su bloqueo, y uno de luz >= 6 m es puente.
+    """
+    por_id = {i.punto.id: i for i in informe.puntos}
+    for i in informe.puntos:
+        if i.punto.familia not in familias_que_usan("inicio_tramo_cuneta_km"):
+            continue
+        if not i.fase_2_cerrada:
+            continue            # su Fase 2 ya dejo el bloqueo (`correr_punto`)
+        punto = i.punto
+        ext = extremos.get(punto.id)
+        if ext is None:
+            continue
+        if isinstance(ext, ErrorProyecto):
+            def _relanzar(exc=ext):
+                raise exc
+            _etapa(i.bloqueos, FASE_ALIVIO, ETAPA_TRAMO_ALIVIO, _relanzar)
+            continue
+        maximos: Tuple[Tuple[str, Optional[Espaciamiento]], ...] = (
+            (punto.id, i.espaciamiento),)
+        if ext.familia_extremo is Familia.B and ext.extremo in por_id:
+            maximos += ((ext.extremo, por_id[ext.extremo].espaciamiento),)
+        i.tramo_alivio = _etapa(
+            i.bloqueos, FASE_ALIVIO, ETAPA_TRAMO_ALIVIO,
+            lambda: M10.verificar_tramo(
+                id_punto=punto.id, progresiva_km=punto.progresiva_km,
+                extremo=ext.extremo,
+                progresiva_extremo_km=ext.progresiva_extremo_km,
+                origen_extremo=ext.origen_extremo, maximos=maximos,
+                obra_de_familia_a=ext.familia_extremo is Familia.A,
+                avisos=ext.avisos))
+        tramo = i.tramo_alivio
+        if tramo is not None and tramo.verificacion is None and tramo.falta:
+            _falta_dato(i.bloqueos, FASE_ALIVIO, ETAPA_TRAMO_ALIVIO,
+                        tramo.falta,
+                        DETALLE_FALTA_EXTREMO_TRAMO
+                        if tramo.falta == M10.FALTA_EXTREMO else tramo.aviso)
 
 
 def _diferir_fase_8(informe: InformePunto) -> None:
@@ -2847,7 +3214,8 @@ def _compuerta_metodo_h_o(informe: InformePunto, alcance: str) -> None:
 
 def correr_punto(punto: PuntoCritico, externos: DatosExternos,
                  alcance: str = ALCANCE_EXPEDIENTE,
-                 hidrologia: Optional[EntradaHidrologica] = None) -> InformePunto:
+                 hidrologia: Optional[EntradaHidrologica] = None,
+                 tramo: Optional[Any] = None) -> InformePunto:
     """
     El pipeline de un punto, de la Fase 2 a la Fase 10. Cada etapa corre si su
     insumo existe; si no, queda registrada como bloqueo y las que no dependen
@@ -2896,7 +3264,17 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
                 _diferir_fase_8(informe)
             else:
                 _fase_8(informe)
-    _fase_10(informe, externos)
+    # --- T-9 (correcciones) --- El tramo de cuneta (y con el VB1) es de la
+    # alcantarilla de alivio que la Fase 2 clasifico como alcantarilla: la
+    # que no paso la Fase 2 ya tiene su bloqueo, y una de luz >= 6 m es
+    # puente, fuera del alcance. `tramo` llega como funcion para que el
+    # extremo --que lee el criterio de la decision C-- solo se resuelva
+    # para esas.
+    informe.fase_2_cerrada = clasificado
+    es_alivio = punto.familia in familias_que_usan("inicio_tramo_cuneta_km")
+    _fase_10(informe, externos, hidrologia,
+             (tramo() if callable(tramo) else tramo)
+             if clasificado and es_alivio else None)
     return informe
 
 
@@ -3009,10 +3387,29 @@ def correr(ruta_csv: Path, externos: DatosExternos,
     informe = Informe(csv=ruta_csv,
                       generado=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                       alcance=alcance, hidrologia=hidrologia)
-    informe.puntos = [correr_punto(punto, externos, alcance, hidrologia)
+    # --- T-9 (correcciones) --- El extremo del tramo de cuneta de cada
+    # alivio se resuelve CON TODAS LAS OBRAS a la vista y una sola vez: la
+    # Fase 10 necesita la longitud del tramo para repartir el aporte (H1), y
+    # VB1 la vuelve a leer despues. Perezoso: solo para los alivios que pasan
+    # la Fase 2 (ver `correr_punto`).
+    obras = [(p.id, p.familia, p.progresiva_km) for p in puntos]
+    extremos: Dict[str, Any] = {}
+
+    def _extremo_de(id_punto: str) -> Any:
+        if id_punto not in extremos:
+            extremos.update(extremos_de_los_tramos(
+                obras, lambda i: externos.valor(i, "inicio_tramo_cuneta_km"),
+                solo=(id_punto,)))
+        return extremos.get(id_punto)
+
+    informe.puntos = [correr_punto(punto, externos, alcance, hidrologia,
+                                   (lambda i=punto.id: _extremo_de(i)))
                       for punto in puntos]
     informe.cabezal = (_cabezal_diferido() if _difiere(alcance, "M9_cabezal")
                        else correr_cabezal())
+    # --- T-9 --- VB1 necesita los maximos de los dos extremos: va despues de
+    # los puntos.
+    _verificar_tramos_de_alivio(informe, extremos)
 
     _avisar_ids_desconocidos(informe, externos)
     _avisar_cuencas_sin_punto(informe)

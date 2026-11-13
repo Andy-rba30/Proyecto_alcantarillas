@@ -271,7 +271,10 @@ def test_pf2_toda_clave_externa_sin_columna_tiene_regla_o_via_alterna_declarada(
     dos rompe este test en vez de caerse del bucle en silencio.
     """
     sin_columna = {c for c in servicio.CLAVES_EXTERNAS if c not in antc.m0.COLUMNAS}
-    con_regla = {"luz_m", "TW_m", "L_hidraulico_m"}
+    # Desde las correcciones de T-9 (H2), `inicio_tramo_cuneta_km` tiene
+    # regla propia: un alivio sin extremo deja VB1 sin evaluar, y eso es un
+    # bloqueo que espera ese dato.
+    con_regla = {"luz_m", "TW_m", "L_hidraulico_m", "inicio_tramo_cuneta_km"}
     assert sin_columna == con_regla | set(servicio.EXTERNOS_CON_VIA_ALTERNA)
     assert not con_regla & set(servicio.EXTERNOS_CON_VIA_ALTERNA)
     assert all(c not in antc.m0.COLUMNAS for c in servicio.EXTERNOS_CON_VIA_ALTERNA)

@@ -344,27 +344,40 @@ def test_la_familia_A_lleva_la_aceptacion_V1_V2_V4_V5():
     assert perfil_de(Familia.A).verificaciones_aceptacion == ("V1", "V2", "V4", "V5")
 
 
-def test_la_familia_B_sigue_sin_conjunto_declarado_y_no_lo_inventa():
+def test_la_familia_B_declara_su_conjunto_con_VB1_y_nadie_despacha_sobre_el():
     """
-    Sec. 2.3 no declara conjunto de aceptacion para la Familia B. None
-    significa 'no declarado', y no debe confundirse con una tupla vacia, que
-    se leeria como 'ninguna verificacion'.
+    --- T-9 --- La v8 §2.3 declara desde T-0 la aceptacion de la Familia B
+    --«V1 + V2 + V4 + V5 + espaciamiento de la Fase 10»-- y el campo quedo en
+    None mientras el espaciamiento no tuvo una verificacion que pudiera fallar
+    (INF-5.1.12, ficha T0-03). Desde T-9 la tiene, VB1, y la tupla lleva su
+    codigo.
 
-    ERA UN TEST DE DOS FAMILIAS Y HOY ES DE UNA. La C salio al implementarse
-    VC1, y el test lo AVISO --- que es para lo que estaba escrito ---: su
-    version anterior decia que si alguien le ponia una tupla a la Familia C,
-    la declaracion de alcance de `cli` pasaba a decir algo falso. Le pusimos
-    la tupla y la declaracion se reescribio en el mismo cambio; el enunciado
-    que la vigilaba se traslado a
-    `test_la_familia_C_declara_VC1_y_la_declaracion_de_alcance_lo_dice`.
+    ERA `test_la_familia_B_sigue_sin_conjunto_declarado_y_no_lo_inventa`, y
+    su razon --«para ella la Sec. 2.3 fija espaciamiento y bordillos, no
+    verificaciones»-- dejo de ser cierta en las dos mitades: la hoja nombra
+    el conjunto, y el espaciamiento es una verificacion.
 
-    La premisa nunca fue «la Sec. 2.3 no dice nada de la Familia C»: es que
-    lo que dice --- «no puede alterar la rasante hidraulica ni el borde libre
-    del canal» --- era un REQUISITO sin verificacion que lo implementara. Hoy
-    la tiene. La B sigue sin nada: para ella la Sec. 2.3 fija espaciamiento y
-    bordillos, no verificaciones.
+    SIGUE SIENDO UNA HUELLA Y NO UN FILTRO (SIS-B-13): ningun modulo de
+    produccion lee el campo. Lo comprueba el AST: el unico sitio de `src/`,
+    `cli.py` y `gui/` que nombra `verificaciones_aceptacion` como atributo es
+    la construccion de PERFILES (y los docstrings no son nodos).
     """
-    assert perfil_de(Familia.B).verificaciones_aceptacion is None
+    # CORRECCIONES DE T-9 (H1): y VB2, la condicion literal del Manual (el
+    # aporte contra la capacidad de la cuneta), que tambien es de la Fase 10.
+    from src.modelos import CODIGO_VB1, CODIGO_VB2
+    assert perfil_de(Familia.B).verificaciones_aceptacion == (
+        "V1", "V2", "V4", "V5", CODIGO_VB1, CODIGO_VB2)
+    import ast
+    from pathlib import Path
+    raiz = Path(__file__).resolve().parents[1]
+    lectores = []
+    for ruta in [raiz / "cli.py", *(raiz / "src").rglob("*.py"),
+                 *(raiz / "gui").rglob("*.py")]:
+        for nodo in ast.walk(ast.parse(ruta.read_text(encoding="utf-8"))):
+            if isinstance(nodo, ast.Attribute) and \
+                    nodo.attr == "verificaciones_aceptacion":
+                lectores.append(f"{ruta.name}:{nodo.lineno}")
+    assert not lectores, lectores
 
 
 def test_la_familia_C_declara_VC1_y_no_un_conjunto_exhaustivo():

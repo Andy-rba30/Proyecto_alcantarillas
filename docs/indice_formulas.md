@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `e78a4e7+cambios-sin-commit` · Suite: 5336 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `6c25f1d+cambios-sin-commit` · Suite: 5529 passed, 19 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -38,7 +38,7 @@
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **158** · fórmulas distintas: **27** · fundamentos ejercitados: **18** de 82.
+Pasos emitidos: **159** · fórmulas distintas: **28** · fundamentos ejercitados: **19** de 87.
 
 ## 2. Índice
 
@@ -71,6 +71,7 @@ Pasos emitidos: **158** · fórmulas distintas: **27** · fundamentos ejercitado
 | Fase 5 - Verificaciones | `M5_verificaciones` | `V2` | Velocidad minima: comprobacion de autolimpieza | `F5.V2` (recomienda) | `V >= 0.25 m/s, el piso adoptado en 'velocidad_minima_autolimpieza_m_s' (por defecto los 0.25 m/s que el numeral recomienda; solo se puede endurecer)` | num. 4.1.1.3.6, párrafo posterior a la Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 77 · PDF 80 | **V_min** [m/s] ← «M4 (paso 4.3c/4.3d): Q_celda / A(y_max), la velocidad MINIMA del perfil de la lamina de agua, con n_max. El barril va parcialmente lleno bajo control de SALIDA y el control esta aguas abajo: la velocidad uniforme de M3 no describe este flujo, y el piso de autolimpieza se juzga donde la velocidad es menor» | **V_min** [m/s] | velocidad minima de autolimpieza [m/s] · num. 4.1.1.3.6, párrafo posterior a la Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 77 · PDF 80 · criterio [A] `velocidad_minima_autolimpieza_m_s` | 4 |
 | Fase 5 - Verificaciones | `M5_verificaciones` | `V3` | Velocidad maxima: comprobacion contra el techo del revestimiento | `F5.V3` (obliga) | `V <= v_max del revestimiento` | num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 | **V_erosion** [m/s] ← «M3, velocidad de la rama de n MINIMO -- la estimacion ALTA de velocidad, que es el extremo conservador contra un TECHO. No es la de V2, que verifica un piso y usa la rama opuesta» | **V_erosion** [m/s] | velocidad maxima admisible de «TMC galvanizada» [m/s] · num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 · criterio [A] `v_max_tmc` | 3 |
 | Fase 5 - Verificaciones | `M5_verificaciones` | `V3` | Velocidad maxima: comprobacion contra el techo del revestimiento | `F5.V3` (obliga) | `V <= v_max del revestimiento` | num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 | **V_erosion** [m/s] ← «M3, velocidad de la rama de n MINIMO -- la estimacion ALTA de velocidad, que es el extremo conservador contra un TECHO. No es la de V2, que verifica un piso y usa la rama opuesta» | **V_erosion** [m/s] | velocidad maxima admisible de «HDPE» [m/s] · num. 4.1.1.3.6, Tabla Nº 10 · 'Diseño hidráulico' · pag. impresa 76 · PDF 79 · criterio [C] `v_max_hdpe` | 3 |
+| Fase 10 - Alcantarillas de alivio: espaciamiento | `M10_espaciamiento` | `10.5` | VB1 - Espaciamiento adoptado entre la alcantarilla de alivio y el extremo de su tramo de cuneta | `F10.TRAMO` (obliga) | `s = \|progresiva − progresiva_extremo\| · 1000 <= espaciamiento_max` | num. 4.1.2.1 d) · 4.1.2.1 Cunetas · 'd) Desagüe de las cunetas' · pag. impresa 179 · PDF 182 | **progresiva** [km] ← «columna progresiva_km de B-01»<br>**progresiva_extremo** [km] ← «A-02: la obra de Familia A anterior en progresiva (CSV), que cierra el tramo por el criterio 'obras_familia_a_extremo_de_cuneta'»<br>**s** [m] ← «longitud del tramo de cuneta»<br>**espaciamiento_max** [m] ← «de limite normativo (Fase 10)» | **s** [m] | espaciamiento maximo entre alcantarillas de alivio [m] · num. 4.1.2.1 d) · 4.1.2.1 Cunetas · 'd) Desagüe de las cunetas' · pag. impresa 179 · PDF 182 · criterio [A] `long_max_cuneta` | 1 |
 
 ## 3. Verificaciones sin paso: los huecos declarados
 
@@ -114,7 +115,11 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 
 | Fundamento | Fase | Paso | Módulo emisor |
 |---|---|---|---|
+| `F10.APORTE` | Fase 10 - Alcantarillas de alivio: espaciamiento | Caudal aportante por metro de cuneta: escorrentia especifica del area tributaria por su ancho | `M10_espaciamiento` |
+| `F10.APORTE_CAPACIDAD` | Fase 10 - Alcantarillas de alivio: espaciamiento | Verificacion VB2: el caudal de aporte del alivio contra la capacidad admisible de la cuneta | `M10_espaciamiento` |
+| `F10.CAPACIDAD` | Fase 10 - Alcantarillas de alivio: espaciamiento | Capacidad admisible de la cuneta: el menor del caudal con la cuneta llena y del que produce la velocidad limite admisible | `M10_espaciamiento` |
 | `F10.CUNETA` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud maxima de recorrido de la cuneta, que fija el espaciamiento de las alcantarillas de alivio | `M10_espaciamiento` |
+| `F10.L_HIDRAULICO` | Fase 10 - Alcantarillas de alivio: espaciamiento | Longitud por capacidad de la cuneta: a partir de ella el caudal aportante supera la capacidad admisible | `M10_espaciamiento` |
 | `F3.CELDAS` | Fase 3 - Tipo, material y durabilidad | Numero de celdas del cajon: una sola, o multicelda | `M2_material`, `M4_control` |
 | `F3.DUR.ABRASION` | Fase 3 - Tipo, material y durabilidad | Matriz de durabilidad: nivel de abrasion del sitio frente a lo que cada material admite | `M2_material` |
 | `F3.DUR.CLORUROS` | Fase 3 - Tipo, material y durabilidad | Matriz de durabilidad: cloruros del suelo o del agua y proteccion del refuerzo y del acero | `M2_material` |

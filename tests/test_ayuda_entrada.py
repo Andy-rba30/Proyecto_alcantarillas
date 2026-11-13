@@ -293,7 +293,11 @@ def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
                     "tipo_terreno_receptor", "tipo_terreno_entrada",
                     "regimen_flujo_descarga", "material_lecho_salida",
                     "duracion_caudal_pico_min",
-                    "profundidad_socavacion_estimada_m"}
+                    "profundidad_socavacion_estimada_m",
+                    # --- T-9 --- las tres de la cuneta de la Fase 10: son
+                    # diecisiete las que no son columna.
+                    "ancho_tributario_m", "S_cuneta",
+                    "inicio_tramo_cuneta_km"}
     for clave in seis:
         assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
 

@@ -10877,4 +10877,563 @@ AASHTO_12_6_6_3_SIN_COBERTURA = _cita(
           "cuando solo falta esa cobertura (auditoria de T-3, H5)."),
 )
 
+
+# ===========================================================================
+# --- T-9 --- (cadena T) · espaciamiento de alivios con la longitud por
+# capacidad de la cuneta calculada (M10, Fase 10)
+# ===========================================================================
+# Mismo regimen que T-0 a T-8: la propia sesion abrio cada pagina por su capa
+# de texto, y las de formula (PDF 177 a 179, ecuaciones (117) y (4.1) a (4.6))
+# ademas por imagen. Manual de Hidrologia, desfase +3: num. 4.1.2 en las
+# impresas 171-172 (PDF 174-175) y num. 4.1.2.1 de la impresa 172 a la 180
+# (PDF 175-183). DG-2018, desfase +1: num. 304.11 en la impresa 208 (PDF 209).
+FECHA_TESIS_T9 = "2026-11-12"
+POR_TESIS_T9 = "tesis/T-9 · lectura directa de la pagina por la sesion"
+TESIS_T9 = (FECHA_TESIS_T9, POR_TESIS_T9)
+
+MC_HHD_CUNETA_SECCION = _cita(
+    id="MC_HHD.4.1.2.1#SECCION",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1",
+    titulo_numeral="4.1.2.1 Cunetas",
+    pagina_impresa="173",
+    pagina_pdf=176,
+    pagina_pdf_titulo=175,
+    texto_literal=Verbatim(
+        texto=("Serán del tipo triangular, trapezoidal o rectangular, siendo "
+               "preferentemente de sección triangular, donde el ancho es "
+               "medido desde el borde de la rasante hasta la vertical que "
+               "pasa por el vértice inferior."),
+        pagina_pdf=176),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    nota=("La misma pagina, dos renglones antes: las cunetas «serán de "
+          "concreto vaciadas en el sitio, prefabricados o de otro material "
+          "resistente a la erosión». Y despues: la inclinacion del talud "
+          "interior (1:Z1) se rige por la Tabla 304.12 del DG-2001 (1:2 a "
+          "1:4 segun velocidad de diseño e IMDA) y la del exterior (1:Z2) "
+          "«será de acuerdo al tipo de inclinación considerada en el talud "
+          "de corte». La Figura Nº 27 (pag. impresa 174) dibuja el ancho «a» "
+          "y la profundidad «d» de la seccion triangular: a = Z1·d."),
+)
+
+MC_HHD_CUNETA_CAPACIDAD = _cita(
+    id="MC_HHD.4.1.2.1a",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 a)",
+    titulo_numeral="a) Capacidad de las cunetas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="174",
+    pagina_pdf=177,
+    texto_literal=Verbatim(
+        texto=("Se rige por dos límites: • Caudal que transita con la cuneta "
+               "llena • Caudal que produce la velocidad máxima admisible"),
+        pagina_pdf=177),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    nota=("Lo que la fuente llama capacidad son DOS caudales y rige el "
+          "menor. No escribe borde libre: la primera es la cuneta LLENA. La "
+          "hoja de ruta (Fase 10, punto 2) dice «capacidad admisible con "
+          "borde libre» sin dar el borde libre; ver el campo `borde_libre_m` "
+          "del criterio 'seccion_cuneta'."),
+)
+
+MC_HHD_CUNETA_MANNING = _cita(
+    id="MC_HHD.4.1.2.1a#MANNING",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 a), ecuación (117)",
+    titulo_numeral="a) Capacidad de las cunetas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="174",
+    pagina_pdf=177,
+    texto_literal=Verbatim(
+        texto=("Para el diseño hidráulico de las cunetas utilizaremos el "
+               "principio del flujo en canales abiertos, usando la ecuación "
+               "de Manning:"),
+        pagina_pdf=177),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    derivado_de="MC_HHD.4.1.2.1a",
+    nota=("La ecuacion, vista en imagen: «Q = A x V = (A x Rh^2/3 x "
+          "S^1/2) / n   (117)», con Rh = A/P «(área de la sección entre el "
+          "perímetro mojado)» y S la «Pendiente del fondo (m/m)»."),
+)
+
+MC_HHD_CUNETA_T32 = _cita(
+    id="MC_HHD.4.1.2.1#T32",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 a), Tabla Nº 32",
+    titulo_numeral="a) Capacidad de las cunetas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="175",
+    pagina_pdf=178,
+    pagina_pdf_titulo=177,
+    texto_literal=Verbatim(
+        texto=("También se utiliza el Coeficiente de Strickler (K) cuya "
+               "expresión es (1/n) (Ver Tabla Nº 32)"),
+        pagina_pdf=178),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    derivado_de="MC_HHD.4.1.2.1a#MANNING",
+    nota=("TABLA Nº 32 «Valores de K más usados»: «Cunetas excavadas en el "
+          "terreno K = 33», «Cunetas en roca K = 25», «Cunetas de concreto "
+          "K = 67». Al pie: «Fuente: Ingeniería Vial I de Hugo Morales "
+          "Sosa». Transcripcion entera: `TablaNormativa` MC_HHD.T32."),
+)
+
+# --- Correcciones de la auditoria de T-9 (H10): la UNION de una fila de la
+# Tabla Nº 32 con una de la Tabla Nº 33 es lectura del proyecto, y se declara
+# como `Interpretacion` colgada de la cita de la Tabla Nº 33 (la que el paso
+# de la capacidad cita), no como frase suelta en la nota del paso.
+INTERPRETACION_UNION_T32_T33 = Interpretacion(
+    texto=("Cada revestimiento del criterio 'revestimiento_cuneta' une una "
+           "fila de la Tabla Nº 32 (el coeficiente de Strickler, de donde "
+           "sale el n) con una fila de la Tabla Nº 33 (la velocidad limite). "
+           "Solo la union del concreto junta dos filas que nombran el mismo "
+           "material; las demas (la cuneta en roca con la mamposteria o con "
+           "el conglomerado, la cuneta excavada en el terreno con cada fila "
+           "de suelo) son lectura de este proyecto."),
+    en_contra=("la fuente no relaciona las dos tablas: la Tabla Nº 32 tiene "
+               "tres filas por tipo de cuneta y la Tabla Nº 33 ocho por tipo "
+               "de superficie, y declaran fuentes distintas (Ingenieria Vial "
+               "I y el Manual de Bajo Volumen de Transito)",
+               "la cuneta excavada en el terreno lleva un solo K = 33 para "
+               "cinco superficies de la Tabla Nº 33 de rugosidad muy "
+               "distinta (de la arena fina a la hierba)"),
+    a_favor=("el apartado a) usa las dos tablas para los dos limites de la "
+             "misma capacidad, y una cuneta tiene un solo revestimiento",
+             "la union del concreto, que es el valor de archivo, la escribe "
+             "la propia fuente: las dos filas nombran el concreto"),
+)
+
+MC_HHD_CUNETA_T33 = _cita(
+    interpretacion=INTERPRETACION_UNION_T32_T33,
+    id="MC_HHD.4.1.2.1#T33",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 a), Tabla Nº 33",
+    titulo_numeral="a) Capacidad de las cunetas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="175",
+    pagina_pdf=178,
+    pagina_pdf_titulo=177,
+    texto_literal=Verbatim(
+        texto="TABLA Nº 33: Velocidades límites admisibles",
+        pagina_pdf=178),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    derivado_de="MC_HHD.4.1.2.1a",
+    nota=("Ocho filas de superficie y UNA columna, «VELOCIDAD LÍMITE "
+          "ADMISIBLE (M/S)», con un intervalo por fila (0.20 – 0.60 ... "
+          "4.50 – 6.00). Las dos ultimas llevan «*», cuya nota dice «Para "
+          "flujos de muy corta duración». Al pie: «Fuente: Manual de Diseño "
+          "de Carreteras Pavimentadas de Bajo Volumen de Tránsito-MTC». El "
+          "num. 4.1.2 c), pag. impresa 172, repite los mismos valores como "
+          "Tabla Nº 31. EL CARACTER es el del apartado e) (pag. impresa "
+          "180): las cunetas «deben ser revestidas» cuando la velocidad "
+          "media supera estos limites. Cual de los dos extremos de la fila "
+          "rige NO lo dice la fuente: es el criterio "
+          "'lectura_velocidad_limite_cuneta'."),
+)
+
+MC_HHD_CUNETA_VELOCIDAD = _cita(
+    id="MC_HHD.4.1.2.1a#VELOCIDAD",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 a), ecuaciones (4.2) y (4.5)",
+    titulo_numeral="a) Capacidad de las cunetas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="176",
+    pagina_pdf=179,
+    pagina_pdf_titulo=177,
+    texto_literal=Verbatim(
+        texto=("Con estas ecuaciones calculamos la máxima capacidad de las "
+               "cunetas correspondiente a la velocidad admisible para "
+               "distintas pendientes."),
+        pagina_pdf=179),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    derivado_de="MC_HHD.4.1.2.1a",
+    nota=("Vistas en imagen (PDF 178-179): (4.2) y (4.5) «Rh = (nv / "
+          "√S)^3/2», el radio hidraulico con el que la velocidad de Manning "
+          "es la admisible; es Manning despejado y vale para cualquier "
+          "seccion. LAS OTRAS CUATRO NO SE USAN, y es deliberado: (4.1) "
+          "«Rh = 5x√H / 6», (4.3) «A = 5H²/4», (4.4) «Rh = Hx√13 / 10» y "
+          "(4.6) «A = 13H²/12», escritas para taludes «1:2 y 1:2» y «1:1.5 "
+          "y 1:1.5», no reproducen la geometria que nombran: con los dos "
+          "taludes 1:2 (V:H) el area de la seccion triangular de "
+          "profundidad H es 2·H² y su radio hidraulico H/√5, y (4.1) no es "
+          "siquiera dimensionalmente un radio. El programa calcula A, P y "
+          "Rh de la geometria declarada. El procedimiento de la pagina "
+          "--«Elijo una altura H, que sea menor a 0.60m»-- acota la "
+          "profundidad de la ventana de 'seccion_cuneta'."),
+)
+
+MC_HHD_CUNETA_T34 = _cita(
+    id="MC_HHD.4.1.2.1c#T34",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 c), Tabla Nº 34",
+    titulo_numeral="c) Dimensiones mínimas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="178",
+    pagina_pdf=181,
+    pagina_pdf_titulo=180,
+    texto_literal=Verbatim(
+        texto="TABLA Nº 34: Dimensiones mínimas",
+        pagina_pdf=181),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    nota=("El apartado c), en la pagina anterior: «Las dimensiones serán "
+          "fijadas de acuerdo a las condiciones pluviales. De elegir la "
+          "sección triangular, las dimensiones mínimas serán las indicadas "
+          "en la Tabla Nº 34.» Cuatro regiones por precipitacion anual: "
+          "seca (<400 mm/año) 0.20 x 0.50 m; lluviosa (400 a <1600) 0.30 x "
+          "0.75; muy lluviosa (1600 a <3000) 0.40 x 1.20; muy lluviosa "
+          "(>3000) 0.30* x 1.20, «* Sección Trapezoidal con un ancho mínimo "
+          "de fondo de 0.30». Son MINIMOS: la tabla no fija la seccion, fija "
+          "su piso. La Figura Nº 28 (pag. impresa 179) repite la tabla. "
+          "Transcripcion entera: `TablaNormativa` MC_HHD.T34."),
+)
+
+MC_HHD_CUNETA_PENDIENTE = _cita(
+    id="MC_HHD.4.1.2c",
+    fuente_id="MC_HHD",
+    numeral="4.1.2 c)",
+    titulo_numeral="c) Velocidad máxima del agua",
+    jerarquia_numeral=("4.1.2 DRENAJE LONGITUDINAL DE LA CARRETERA",),
+    pagina_impresa="172",
+    pagina_pdf=175,
+    texto_literal=Verbatim(
+        texto=("La pendiente longitudinal (i) debe estar comprendida entre "
+               "la condición de autolimpieza y la que produciría "
+               "velocidades erosivas, es decir: 0.5 % < i < 2 %"),
+        pagina_pdf=175),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    nota=("Desigualdades ESTRICTAS. Es del drenaje longitudinal entero, no "
+          "solo de la cuneta. EL DG-2018 DICE OTRA COSA DEL MINIMO: num. "
+          "304.11 (pag. impresa 208, PDF 209), «Las pendientes "
+          "longitudinales mínimas absolutas serán 0.2%, para cunetas "
+          "revestidas y 0.5% para cunetas sin revestir». El programa no "
+          "elige entre las dos: la pendiente de la cuneta es un dato del "
+          "trazo y la Fase 10 AVISA cuando cae fuera de la banda del "
+          "Manual, nombrando la del DG-2018."),
+)
+
+# --- Correcciones de la auditoria de T-9 (H4, H10 y la decision D del
+# dueño). La Tabla Nº 02 da RIESGO admisible y no periodo de retorno, y el
+# riesgo lo fija el Propietario: que la lluvia de la cuneta sea la del punto
+# de alivio es lectura del proyecto, declarada aqui y no en la nota de la cita.
+INTERPRETACION_TR_CUNETA_ENVOLVENTE = Interpretacion(
+    texto=("El caudal de aporte de la cuneta se toma con el periodo de "
+           "retorno del punto de alivio (Familia B), que la Fase 2 saca de "
+           "la fila de la Tabla Nº 02 de la alcantarilla de paso de "
+           "quebradas menores y descarga de agua de cunetas: R 35 % con n 15 "
+           "años, T de unos 35.3 años, o el riesgo que el Propietario "
+           "declare. Para la cuneta misma, que es drenaje longitudinal, la "
+           "fila seria la del drenaje de la plataforma: R 40 % con n 15 "
+           "años, T de unos 29.9 años. Se usa la del alivio como ENVOLVENTE "
+           "conservadora de la de la cuneta: mas lluvia, mas aporte, menos "
+           "longitud entre alivios."),
+    en_contra=("el num. 4.1.2 a) remite al 3.6 para el DRENAJE LONGITUDINAL, "
+               "y la fila de la Tabla Nº 02 que lo nombra es la del drenaje "
+               "de la plataforma, no la del alivio",
+               "la Tabla Nº 02 da maximos RECOMENDADOS de riesgo y su nota "
+               "deja al Propietario la definicion del riesgo y de la vida "
+               "util: ninguna de las dos filas es una exigencia",
+               "con el caudal DECLARADO el programa no conoce el periodo de "
+               "retorno con que el estudio hidrologico lo calculo"),
+    a_favor=("la fila del alivio nombra expresamente la descarga de agua de "
+             "cunetas, que es lo que la cuneta entrega al alivio",
+             "una sola lluvia de diseño para la obra y para la cuneta que "
+             "descarga en ella, y del lado seguro para la longitud"),
+)
+
+MC_HHD_CUNETA_TR = _cita(
+    interpretacion=INTERPRETACION_TR_CUNETA_ENVOLVENTE,
+    id="MC_HHD.4.1.2a",
+    fuente_id="MC_HHD",
+    numeral="4.1.2 a)",
+    titulo_numeral="a) Período de retorno",
+    jerarquia_numeral=("4.1.2 DRENAJE LONGITUDINAL DE LA CARRETERA",),
+    pagina_impresa="171",
+    pagina_pdf=174,
+    texto_literal=Verbatim(
+        texto=("El caudal de diseño ha considerarse será según lo indicado "
+               "en el ítem 3.6 del presente manual."),
+        pagina_pdf=174),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    nota=("Remite a la Tabla Nº 02 (num. 3.6, pag. impresa 25, PDF 28: "
+          "«VALORES MAXIMOS RECOMENDADOS DE RIESGO ADMISIBLE DE OBRAS DE "
+          "DRENAJE»), que da RIESGO admisible en %, no periodo de retorno, "
+          "y deja la vida util en su nota (**). Dos de sus filas tocan el "
+          "agua de la cuneta: «Alcantarillas de paso quebradas menores y "
+          "descarga de agua de cunetas», R 35 % con n = 15 años (T = 35.32 "
+          "años por la ecuacion R = 1 − (1 − 1/T)^n), y «Drenaje de la "
+          "plataforma (a nivel longitudinal)», R 40 % con n = 15 años "
+          "(T = 29.87 años). La nota de la tabla: «El Propietario de una "
+          "Obra es el que define el riesgo admisible de falla y la vida útil "
+          "de las obras». Cual se usa para la cuneta es la `interpretacion` "
+          "de esta cita."),
+)
+
+MC_HHD_CUNETA_REVESTIMIENTO = _cita(
+    id="MC_HHD.4.1.2.1e",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 e)",
+    titulo_numeral="e) Revestimiento de las cunetas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="180",
+    pagina_pdf=183,
+    texto_literal=Verbatim(
+        texto=("Las cunetas deben ser revestidas, para evitar la erosión de "
+               "la superficie del cauce o conducto, productos de corrientes "
+               "de agua que alcancen velocidades medias superiores a los "
+               "límites fijados en la Tabla Nº 33"),
+        pagina_pdf=183),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T9,
+    nota=("Sigue: «o cuando el terreno es muy permeable que permite la "
+          "filtración hacia el pavimento ... Se recomienda un revestimiento "
+          "de concreto f´c = 175 kg/cm2 y espesor de 0.075m.» Es lo que "
+          "sostiene el valor «concreto» del criterio 'revestimiento_cuneta', "
+          "junto al primer parrafo del num. 4.1.2.1 (las cunetas «serán de "
+          "concreto vaciadas en el sitio, prefabricados o de otro material "
+          "resistente a la erosión»)."),
+)
+
+DG2018_CUNETAS = _cita(
+    id="DG2018.304.11",
+    fuente_id="DG2018",
+    numeral="304.11",
+    titulo_numeral="304.11 Cunetas",
+    pagina_impresa="208",
+    pagina_pdf=209,
+    texto_literal=Verbatim(
+        texto=("Los elementos constitutivos de una cuneta son su talud "
+               "interior, su fondo y su talud exterior. Este último, por lo "
+               "general coincide con el talud de corte."),
+        pagina_pdf=209),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T9,
+    nota=("La misma pagina: «Las dimensiones de las cunetas se deducen a "
+          "partir de cálculos hidráulicos, teniendo en cuenta su pendiente "
+          "longitudinal, intensidad de precipitaciones pluviales, área de "
+          "drenaje y naturaleza del terreno, entre otros», «Las pendientes "
+          "longitudinales mínimas absolutas serán 0.2%, para cunetas "
+          "revestidas y 0.5% para cunetas sin revestir» y «Se limitará la "
+          "longitud de las cunetas, conduciéndolas hacia los cauces "
+          "naturales del terreno, obras de drenaje transversal o "
+          "proyectando desagües dónde no existan». El talud de corte de "
+          "referencia es la Tabla 304.10 (pag. impresa 204, PDF 205): de "
+          "1:10 (H:V, roca fija) a 2:1 (arenas) para cortes menores de "
+          "5 m; es la ventana del talud exterior en 'seccion_cuneta'."),
+)
+
+
+# ---- Correcciones de la auditoria adversarial de T-9 ------------------------
+# Lo que faltaba citar para que la Fase 10 compare el aporte con la capacidad
+# (H1), declare de que tabla sale el n (dudoso 2), contraste el talud interior
+# con la Tabla 304.12 (H5), diga que la cuneta del modelo es la del corte y no
+# la del cruce (dudoso 1) y tome una obra de Familia A como extremo del tramo
+# (decision C del dueño). Leidas por texto y por imagen el 2026-11-13.
+FECHA_TESIS_T9_CORRECCIONES = "2026-11-13"
+TESIS_T9_CORRECCIONES = (FECHA_TESIS_T9_CORRECCIONES,
+                         "tesis/T-9 (correcciones) · lectura directa de la "
+                         "pagina por la sesion")
+
+MC_HHD_CUNETA_CONDICION = _cita(
+    id="MC_HHD.4.1.2.1a#CONDICION",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 a), procedimiento de calculo",
+    titulo_numeral="a) Capacidad de las cunetas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="177",
+    pagina_pdf=180,
+    pagina_pdf_titulo=177,
+    texto_literal=Verbatim(
+        texto=("Q manning > Q de aporte, Entonces el diseño está terminado. "
+               "Si ocurre lo contrario, debemos volver al paso 2 y elegir "
+               "otra altura de cuneta (H)."),
+        pagina_pdf=180),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T9_CORRECCIONES,
+    derivado_de="MC_HHD.4.1.2.1a",
+    nota=("Es el cierre del SEGUNDO procedimiento de la pagina (el de las "
+          "ecuaciones (4.2) o (4.5)); el primero, en la impresa 176-177 (PDF "
+          "179-180), cierra con la misma condicion y «volver al paso 1». La "
+          "condicion compara la CAPACIDAD de la cuneta con el caudal de "
+          "APORTE del apartado b) —«el caudal calculado en el área de aporte "
+          "correspondiente a la longitud de cuneta»—: es la verificacion VB2 "
+          "de la Fase 10. La desigualdad es estricta; el programa la "
+          "evalua con la tolerancia numerica del proyecto."),
+)
+
+MC_HHD_CUNETA_T09 = _cita(
+    id="MC_HHD.4.1.2.1#T09",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 a)",
+    titulo_numeral="a) Capacidad de las cunetas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="175",
+    pagina_pdf=178,
+    pagina_pdf_titulo=177,
+    texto_literal=Verbatim(
+        texto=("Los valores de Manning (n) más usados, se presentan en la "
+               "Tabla Nº 09 del presente manual."),
+        pagina_pdf=178),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T9_CORRECCIONES,
+    derivado_de="MC_HHD.4.1.2.1a#MANNING",
+    nota=("La viñeta anterior a la del coeficiente de Strickler "
+          "(MC_HHD.4.1.2.1#T32): el apartado ofrece las DOS tablas y no dice "
+          "cual rige. El programa usa la Tabla Nº 32, que es la que el "
+          "num. 4.1.2.1 escribe para cunetas, y lo declara en el paso de la "
+          "capacidad con la Tabla Nº 09 como alternativa."),
+)
+
+MC_HHD_CUNETA_TALUD_INTERIOR = _cita(
+    id="MC_HHD.4.1.2.1#T304_12",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1, Tabla 304.12 (del DG-2001)",
+    titulo_numeral="4.1.2.1 Cunetas",
+    pagina_impresa="173",
+    pagina_pdf=176,
+    pagina_pdf_titulo=175,
+    texto_literal=Verbatim(
+        texto=("La inclinación del talud interior de la cuneta (V/H) (1:Z1) "
+               "dependerá, por condiciones de seguridad, de la velocidad y "
+               "volumen de diseño de la carretera, Índice Medio Diario Anual "
+               "IMDA (veh/día); según lo indicado en la Tabla Nº 304.12 del "
+               "Manual de Diseño geométrico DG-2001."),
+        pagina_pdf=176),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T9_CORRECCIONES,
+    nota=("La tabla, leida en imagen: «Tabla 304.12 INCLINACIONES MÁXIMAS "
+          "DEL TALUD (V:H) INTERIOR DE LA CUNETA», filas por V.D. (km/h) y "
+          "columnas por I.M.D.A. (veh./dia): con V.D. < 70 e IMDA < 750, "
+          "1:2 —con la llamada «(*) Sólo en casos muy especiales»— o 1:3; "
+          "con V.D. < 70 e IMDA > 750, 1:3; con V.D. > 70 e IMDA < 750, 1:3; "
+          "con V.D. > 70 e IMDA > 750, 1:4. Son inclinaciones MAXIMAS: un "
+          "talud mas tendido siempre cumple. Ni la velocidad de diseño ni el "
+          "IMDA son datos del programa: la Fase 10 rechaza un talud mas "
+          "empinado que 1:2, que ninguna fila admite, y avisa de la fila "
+          "que el talud adoptado deja fuera. Vistas de calculo: "
+          "`constantes_normativas.CUNETA_Z1_MIN_T304_12`."),
+)
+
+# DUDOSO 1 del auditor: B-01 esta en terraplen y el Manual proyecta las
+# cunetas al pie de los taludes de CORTE. La Fase 10 no modela la seccion del
+# cruce: modela la cuneta del tramo que descarga en el alivio.
+INTERPRETACION_CUNETA_DEL_TRAMO = Interpretacion(
+    texto=("La seccion triangular con que la Fase 10 calcula la capacidad es "
+           "la de la cuneta del TRAMO que descarga en la alcantarilla de "
+           "alivio, al pie del talud de corte, y no la seccion de la via en "
+           "el cruce: el alivio puede estar en terraplen."),
+    en_contra=("la hoja de ruta (Sec. 2.3) pide para la Familia B en "
+               "terraplen de mas de 1.5 m bordillo y bajantes: en esa zona "
+               "el agua no corre por la cuneta triangular al pie del corte, y "
+               "el modelo no describe ese tramo",
+               "si el tramo entero que descarga en el alivio va en terraplen, "
+               "la cuneta del modelo no existe y la longitud por capacidad no "
+               "describe nada"),
+    a_favor=("el Manual proyecta las cunetas al pie de los taludes de corte, "
+             "y el espaciamiento entre alivios lo limita la cuneta que "
+             "recorre el tramo, no el cruce",),
+)
+
+MC_HHD_CUNETA_UBICACION = _cita(
+    interpretacion=INTERPRETACION_CUNETA_DEL_TRAMO,
+    id="MC_HHD.4.1.2.1#UBICACION",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1",
+    titulo_numeral="4.1.2.1 Cunetas",
+    pagina_impresa="173",
+    pagina_pdf=176,
+    pagina_pdf_titulo=175,
+    texto_literal=Verbatim(
+        texto=("Se proyectarán para todos los tramos al pie de los taludes de "
+               "corte, longitudinalmente paralela y adyacente a la calzada "
+               "del camino"),
+        pagina_pdf=176),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T9_CORRECCIONES,
+)
+
+MC_HHD_CUNETA_ALIVIO = _cita(
+    id="MC_HHD.4.1.2.1d#ALIVIO",
+    fuente_id="MC_HHD",
+    numeral="4.1.2.1 d)",
+    titulo_numeral="d) Desagüe de las cunetas",
+    jerarquia_numeral=("4.1.2.1 Cunetas",),
+    pagina_impresa="179",
+    pagina_pdf=182,
+    texto_literal=Verbatim(
+        texto=("La descarga de agua de las cunetas se efectuará por medio de "
+               "alcantarillas de alivio."),
+        pagina_pdf=182),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T9_CORRECCIONES,
+    nota=("La primera frase del apartado d), antes de las dos longitudes "
+          "maximas (MC_HHD.4.1.2.1d). El Manual nombra SOLO las alcantarillas "
+          "de alivio como desagüe de la cuneta: que una obra de Familia A "
+          "cierre el tramo lo sostiene el DG-2018 (DG2018.304.11#DESAGUE), "
+          "no esta frase."),
+)
+
+# DECISION C del dueño (2026-11-12): las obras de Familia A cuentan por defecto
+# como extremo del tramo de cuneta. La sostiene el DG-2018 304.11 y no el
+# Manual; que la cuneta llegue a ESA obra lo decide el perfil.
+INTERPRETACION_OBRA_A_EXTREMO = Interpretacion(
+    texto=("Una alcantarilla de paso de quebrada (Familia A) es una obra de "
+           "drenaje transversal y la cuneta puede descargar en ella: por "
+           "defecto, la obra de Familia A anterior en progresiva cierra el "
+           "tramo de cuneta de la alcantarilla de alivio siguiente, igual "
+           "que una obra de Familia B (criterio "
+           "'obras_familia_a_extremo_de_cuneta'). Un inicio de tramo "
+           "declarado gana."),
+    en_contra=("el Manual de Hidrologia (num. 4.1.2.1 d)) nombra solo las "
+               "alcantarillas de alivio como desague de las cunetas",
+               "que la cuneta llegue de verdad a esa obra lo decide el perfil "
+               "longitudinal: una curva vertical o un tramo en terraplen "
+               "pueden separarla, y entonces el tramo real es otro"),
+    a_favor=("el DG-2018 limita la longitud de las cunetas conduciendolas a "
+             "los cauces naturales y a las obras de drenaje transversal",
+             "sin esta lectura el primer alivio de un corredor no tendria "
+             "tramo que verificar aunque una quebrada lo preceda"),
+)
+
+DG2018_CUNETAS_DESAGUE = _cita(
+    interpretacion=INTERPRETACION_OBRA_A_EXTREMO,
+    id="DG2018.304.11#DESAGUE",
+    fuente_id="DG2018",
+    numeral="304.11",
+    titulo_numeral="304.11 Cunetas",
+    pagina_impresa="208",
+    pagina_pdf=209,
+    texto_literal=Verbatim(
+        texto=("Se limitará la longitud de las cunetas, conduciéndolas hacia "
+               "los cauces naturales del terreno, obras de drenaje "
+               "transversal o proyectando desagües dónde no existan."),
+        pagina_pdf=209),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T9_CORRECCIONES,
+    derivado_de="DG2018.304.11",
+)
+
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

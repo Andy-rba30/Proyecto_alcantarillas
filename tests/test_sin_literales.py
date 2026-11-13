@@ -1011,6 +1011,9 @@ CENSO_DE_MARCAS = {
     # subpresion se fue a `SeccionCircular.area_exterior`. M8 dejo de
     # saber que forma tiene el conducto, que es justo lo que se buscaba.
     "src/modulos/M9_cabezal.py": 6,
+    # --- T-9 --- los exponentes de Manning (ecuacion (117)) y el 3/2 de las
+    # ecuaciones (4.2) y (4.5) del num. 4.1.2.1 a).
+    "src/modulos/M10_espaciamiento.py": 2,
     "src/normativa/extraccion/__main__.py": 5,
     "src/normativa/extraccion/pdf.py": 6,
     "src/normativa/manifiesto.py": 3,

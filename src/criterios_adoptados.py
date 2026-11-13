@@ -997,6 +997,28 @@ _COEFICIENTES_VIALES_WSDOT = _coeficientes_de_superficies_viales()
 _VENTANA_KE_C2 = (min(f["ke"] for f in KE_HDS5_C2.values()),
                   max(f["ke"] for f in KE_HDS5_C2.values()))
 
+# --- T-9 --- Los revestimientos de cuneta que el criterio
+# 'revestimiento_cuneta' admite: cada clave UNE una fila de la Tabla Nº 32
+# del Manual de Hidrologia (K de Strickler, el n de Manning) con una de su
+# Tabla Nº 33 (velocidad limite admisible). Solo «concreto» une dos filas
+# que nombran el mismo material; las demas uniones son LECTURA DEL PROYECTO
+# --la fuente no relaciona las dos tablas-- y la memoria lo imprime. Son
+# claves de fila, no numeros: los valores viven en el registro.
+REVESTIMIENTOS_CUNETA: Dict[str, Tuple[str, str]] = {
+    "concreto": ("de_concreto", "concreto"),
+    "roca_dura": ("en_roca", "mamposteria_rocas_duras"),
+    "roca_blanda": ("en_roca", "conglomerado_pizarras_duras_rocas_blandas"),
+    "terreno_hierba": ("excavada_en_terreno", "hierba"),
+    "terreno_arcilla_grava": (
+        "excavada_en_terreno",
+        "arcilla_grava_pizarras_blandas_con_cubierta_vegetal"),
+    "terreno_con_vegetacion": (
+        "excavada_en_terreno", "terreno_parcialmente_cubierto_de_vegetacion"),
+    "terreno_arena_arcillosa": (
+        "excavada_en_terreno", "arena_arcillosa_dura_margas_duras"),
+    "terreno_arena_fina_o_limo": ("excavada_en_terreno", "arena_fina_o_limo"),
+}
+
 
 CRITERIOS: Dict[str, Criterio] = {
 
@@ -4033,6 +4055,257 @@ CRITERIOS: Dict[str, Criterio] = {
             tabla_pendiente="Manual de Hidrologia num. 4.1.2.1 d): los dos "
                             "valores por region no estan transcritos como "
                             "`TablaNormativa` en el registro",
+        ),
+    ),
+
+    # ----------------------------------------------------------------------
+    # --- T-9 --- La cuneta con que la Fase 10 calcula su capacidad (VB2) y la
+    # longitud por capacidad (L_hidraulico) cuando no se declara. Cuatro
+    # criterios desde las correcciones de la auditoria de T-9.
+    #
+    # 'seccion_cuneta' NACIO SIN VALOR en la FASE A («es del trazo») y LO TIENE
+    # desde la decision A del dueño (2026-11-12): el MINIMO de la Tabla Nº 34
+    # para la region que el proyecto ya adopto con `long_max_cuneta` (muy
+    # lluviosa por el FEN), con el talud exterior como eleccion [A] declarada.
+    # ----------------------------------------------------------------------
+    "seccion_cuneta": Criterio(
+        valor={"profundidad_m": 0.40,       # m, Tabla Nº 34, muy lluviosa
+               "ancho_m": 1.20,             # m, Tabla Nº 34, muy lluviosa
+               "talud_exterior_HV": 1.0,    # H:V, eleccion [A] (justificacion)
+               "borde_libre_m": 0.0},       # m, la «cuneta llena» del Manual
+        # DE PERFIL: lo consume M10, y la Fase 10 corre a perfil (no esta en
+        # MODULOS_DIFERIDOS_POR_ALCANCE). Lo MIDE `tests/test_t9_espaciamiento.py`
+        # con una corrida de perfil que calcula la capacidad.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        # VENTANA POR CAMPO, y cada banda dice de donde sale (corregida tras la
+        # auditoria de T-9, H5: la de la FASE A tenia de piso el minimo de la
+        # region SECA, por debajo de la EXIGENCIA de la Tabla Nº 34 para la
+        # region que el propio proyecto adopta, y atribuia su techo de ancho a
+        # la Tabla 304.12 leyendola al reves):
+        #   profundidad_m       0.40 = la profundidad minima de la Tabla Nº 34
+        #                       para la region muy lluviosa (1600 a <3000
+        #                       mm/año) que `long_max_cuneta` adopta; 0.60 =
+        #                       «Elijo una altura H, que sea menor a 0.60m»
+        #                       (num. 4.1.2.1 a), pag. impresa 176).
+        #   ancho_m             1.20 = el ancho minimo de esa fila; 2.40 m es
+        #                       techo ADOPTADO, no de la fuente: la Tabla 304.12
+        #                       da inclinaciones MAXIMAS del talud interior (un
+        #                       talud mas tendido siempre cumple) y no pone techo
+        #                       al ancho; 4 x 0.60 es el talud 1:4 de su fila mas
+        #                       exigente a la profundidad maxima.
+        #   talud_exterior_HV   H:V del talud exterior, que «por lo general
+        #                       coincide con el talud de corte» (DG-2018 num.
+        #                       304.11): de 0.10 (1:10, roca fija) a 2.0 (2:1,
+        #                       arenas), la Tabla 304.10 para cortes menores de
+        #                       5 m (Relacion H:V).
+        #   borde_libre_m       0.0 = la «cuneta llena» del num. 4.1.2.1 a); el
+        #                       techo de 0.10 m es adopcion del proyecto (la
+        #                       fuente no da borde libre para cunetas).
+        sensibilidad={"profundidad_m": (0.40, 0.60),     # m
+                      "ancho_m": (1.20, 2.40),           # m
+                      "talud_exterior_HV": (0.10, 2.0),  # H:V
+                      "borde_libre_m": (0.0, 0.10)},     # m
+        concepto="Seccion TRIANGULAR de la cuneta del tramo que descarga en la "
+                 "alcantarilla de alivio: profundidad d y ancho a (Figura Nº "
+                 "27 del num. 4.1.2.1: el ancho se mide del borde de la "
+                 "rasante a la vertical del vertice, a = Z1·d), talud "
+                 "exterior (H:V) y borde libre bajo el que se calcula la "
+                 "capacidad",
+        justificacion="Decide la seccion con que la Fase 10 calcula la "
+                      "capacidad de la cuneta (VB2) y, con ella, la longitud "
+                      "a la que se agota (L_hidraulico) cuando no se declara. "
+                      "VALOR: 0.40 x 1.20 m es el minimo de la Tabla Nº 34 "
+                      "(num. 4.1.2.1 c), pag. impresa 178, cita "
+                      "MC_HHD.4.1.2.1c#T34) para la region muy lluviosa (de "
+                      "1600 a <3000 mm/año), que es la que el proyecto ya "
+                      "adopta con 'long_max_cuneta' (200 m por el regimen "
+                      "FEN); la fila EXIGE ese minimo («las dimensiones "
+                      "mínimas serán»). Como el ancho se mide hasta la "
+                      "vertical del vertice, 0.40 m x 1.20 m fija el talud "
+                      "INTERIOR Z1 = 3 (1:3); el EXTERIOR no lo fija la tabla: "
+                      "el Manual lo hace depender del talud de corte (pag. "
+                      "impresa 173) y el DG-2018 (num. "
+                      "304.11, cita DG2018.304.11) lo hace coincidir por lo "
+                      "general con el talud de corte. Z2 = 1.0 (1:1) es "
+                      "ELECCION [A] de este proyecto: el talud mas empinado "
+                      "de las filas de suelo fino o arenoso de la Tabla "
+                      "304.10 del DG-2018 para cortes menores de 5 m (limo "
+                      "arcilloso 1:1, arenas 2:1), que son los suelos del "
+                      "corredor, hasta que el EMS diga el talud de corte; un "
+                      "talud mas empinado da menos area y menos capacidad, y "
+                      "por eso es el lado seguro. Borde libre 0: el Manual "
+                      "calcula la capacidad con la cuneta llena (cita "
+                      "MC_HHD.4.1.2.1a); el techo de 0.10 m de la ventana es "
+                      "adopcion del proyecto. Lo que este valor supone y no "
+                      "tiene trazabilidad en el repositorio: (i) la REGION "
+                      "pluvial del corredor en año FEN (1600 a <3000 mm/año) "
+                      "es una eleccion ligada a un dato de sitio que nadie "
+                      "midio aqui, coherente con los 200 m; por encima de "
+                      "3000 mm/año el minimo de la Tabla Nº 34 es una seccion "
+                      "TRAPEZOIDAL, que la Fase 10 no implementa; (ii) Z1 = 3 "
+                      "vale con velocidad de diseño menor de 70 km/h o IMDA "
+                      "menor de 750 veh/dia: con las dos mayores la Tabla "
+                      "304.12 (cita MC_HHD.4.1.2.1#T304_12) exige 1:4, y la "
+                      "Fase 10 lo avisa porque ni la velocidad ni el IMDA son "
+                      "datos del programa. Sensibilidad (medida en la ficha): "
+                      "con S = 1 % y concreto la capacidad va de 0.467 a "
+                      "0.871 m3/s al mover Z2 de 0.10 a 2.0 (0.670 con Z2 = 1)",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.2.1 a) y c), pags. impresas 173-178 (Figura Nº 27, Tabla "
+               "304.12, Tabla Nº 34); DG-2018 num. 304.10 (Tabla 304.10, pag. "
+               "impresa 204) y 304.11 (pag. impresa 208)",
+        reemplazado_por="La seccion tipica de la cuneta del proyecto vial "
+                        "(DG-2018) por tramo, con el talud de corte del EMS; "
+                        "si cambia entre tramos, deja de ser un criterio de "
+                        "corredor y pasa a ser dato externo por punto",
+        verificacion_pendiente="Confirmar con el estudio hidrologico la "
+                               "region pluvial del corredor en año FEN (la "
+                               "fila de la Tabla Nº 34) y con el EMS el talud "
+                               "de corte del tramo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista de la seccion tipica de la via "
+                        "(DG-2018): la Tabla Nº 34 del Manual da los minimos "
+                        "por region pluvial y el talud exterior es el del "
+                        "corte",
+            dominio="profundidad_m > 0, ancho_m > 0, talud_exterior_HV > 0, "
+                    "0 <= borde_libre_m < profundidad_m",
+        ),
+    ),
+
+    "revestimiento_cuneta": Criterio(
+        valor="concreto",
+        nivel=NIVEL_PERFIL,          # lo consume M10, que corre a perfil
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # Las claves de `REVESTIMIENTOS_CUNETA`: cada una une una fila de la
+        # Tabla Nº 32 (el K de Strickler) con una de la Tabla Nº 33 (la
+        # velocidad limite). La UNION es lectura del proyecto y esta en la
+        # justificacion; las filas, en el registro.
+        sensibilidad=tuple(REVESTIMIENTOS_CUNETA),
+        concepto="Revestimiento de la cuneta: fija su n de Manning (1/K de "
+                 "la Tabla Nº 32) y su velocidad limite admisible (Tabla Nº "
+                 "33)",
+        justificacion="Decide la rugosidad y la velocidad limite con que se "
+                      "calcula la capacidad de la cuneta. Se adopta "
+                      "«concreto» porque es lo que la fuente pide y "
+                      "recomienda: el num. 4.1.2.1 (pag. impresa 173, cita "
+                      "MC_HHD.4.1.2.1#SECCION) quiere las cunetas de concreto "
+                      "o de otro material resistente a la erosion, y el "
+                      "apartado e) (pag. impresa 180, cita MC_HHD.4.1.2.1e) "
+                      "exige revestirlas si la velocidad supera la Tabla Nº "
+                      "33 y recomienda el concreto de 175 kg/cm2. Es tambien "
+                      "la unica opcion en que las dos tablas nombran el "
+                      "mismo material («Cunetas de concreto» K = 67, "
+                      "«Concreto» 4.50 – 6.00 m/s). Las "
+                      "demas opciones unen una fila de la Tabla Nº 32 con "
+                      "una de la Tabla Nº 33 que la fuente no relaciona "
+                      "(«Cunetas en roca» con «Mampostería, rocas duras» o "
+                      "con «Conglomerado, pizarras duras, rocas blandas»; "
+                      "«Cunetas excavadas en el terreno» con cada fila de "
+                      "suelo): esa union es lectura del proyecto, declarada "
+                      "como `Interpretacion` de la cita MC_HHD.4.1.2.1#T33, y "
+                      "la memoria la imprime. Lo que este valor cuesta, y se "
+                      "dice porque no es el extremo conservador (auditoria de "
+                      "T-9, H6): para la LONGITUD entre alivios, el concreto "
+                      "es la opcion MENOS conservadora de la ventana --K = 67 "
+                      "frente a 33 y 25, y una velocidad limite de 4.50 m/s "
+                      "frente a 3.00 o menos-- porque es la que mas caudal "
+                      "conduce. Se adopta igual porque la fuente lo pide y lo "
+                      "recomienda, no porque sea el lado seguro; una cuneta "
+                      "sin revestir del corredor se declara aqui y la "
+                      "capacidad baja. Y su fila de la Tabla Nº 33 lleva la "
+                      "llamada «*», la de los flujos de muy corta duracion, "
+                      "que el paso de la capacidad imprime desde el registro: "
+                      "la fuente no da otro "
+                      "valor para un flujo prolongado (el FEN), y el extremo "
+                      "inferior de 'lectura_velocidad_limite_cuneta' es la "
+                      "lectura conservadora de esa fila",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.2.1 (pag. impresa 173), a) Tablas Nº 32 y 33 (pag. "
+               "impresa 175) y e) (pag. impresa 180)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al especificar el revestimiento de "
+                        "la cuneta (el Manual lo recomienda de concreto)",
+            dominio="una de las claves de la ventana",
+        ),
+    ),
+
+    "lectura_velocidad_limite_cuneta": Criterio(
+        valor="extremo_inferior",
+        nivel=NIVEL_PERFIL,          # lo consume M10, que corre a perfil
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("extremo_inferior", "extremo_superior"),
+        concepto="Cual de los dos numeros de la fila de la Tabla Nº 33 rige "
+                 "como velocidad limite admisible de la cuneta",
+        justificacion="Decide la velocidad con que se calcula el segundo "
+                      "limite de capacidad del num. 4.1.2.1 a) (el caudal a "
+                      "la velocidad maxima admisible, cita "
+                      "MC_HHD.4.1.2.1a). La Tabla Nº "
+                      "33 (pag. impresa 175) da un INTERVALO por superficie "
+                      "(«0.20 – 0.60» ... «4.50 – 6.00 *») y no dice cual de "
+                      "los dos rige ni de que depende: la eleccion es del "
+                      "proyectista. Se adopta el extremo inferior, que es el "
+                      "conservador (menos velocidad admisible, menos "
+                      "capacidad, menos longitud entre alivios); el superior "
+                      "queda como alternativa barrible y la memoria imprime "
+                      "el caudal con los dos",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.2.1 a), Tabla Nº 33, pag. impresa 175",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente da el intervalo y no la "
+                        "regla para elegir dentro de el",
+            dominio="extremo_inferior | extremo_superior",
+        ),
+    ),
+
+    # --- T-9 (correcciones; decision C del dueño, 2026-11-12) --- Si una obra
+    # de Familia A cierra el tramo de cuneta de la alcantarilla de alivio
+    # siguiente. La FASE A solo tomaba como extremo la obra B anterior o un
+    # inicio declarado, de modo que el primer alivio de un corredor no tenia
+    # tramo que verificar aunque una quebrada lo precediera.
+    "obras_familia_a_extremo_de_cuneta": Criterio(
+        valor="si",
+        # DE PERFIL: lo consume M10 (`extremo_del_tramo`), que corre a perfil
+        # para todo punto de Familia B; lo mide la corrida de perfil del
+        # fixture en `tests/test_t9_correcciones.py`.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("si", "no"),
+        concepto="Si la obra de Familia A anterior en progresiva cierra el "
+                 "tramo de cuneta que descarga en la alcantarilla de alivio "
+                 "siguiente (extremo de la verificacion VB1)",
+        justificacion="Decide donde empieza el tramo de cuneta que VB1 mide "
+                      "cuando el alivio no lo declara. Se adopta «si», por "
+                      "decision del dueño del proyecto: una alcantarilla de "
+                      "paso de quebrada es una obra de drenaje transversal, "
+                      "y el DG-2018 (num. 304.11, pag. impresa 208, cita "
+                      "DG2018.304.11#DESAGUE) limita la longitud de las "
+                      "cunetas conduciendolas a los cauces naturales y a las "
+                      "obras de drenaje transversal. Es LECTURA del proyecto y "
+                      "va declarada como `Interpretacion` de esa cita: el "
+                      "Manual de Hidrologia (num. 4.1.2.1 d), pag. impresa "
+                      "179, cita MC_HHD.4.1.2.1d#ALIVIO) nombra solo las "
+                      "alcantarillas de alivio, y que la cuneta llegue de "
+                      "verdad a esa obra lo decide el perfil longitudinal "
+                      "(curvas verticales, tramos en terraplen). «no» deja "
+                      "como extremos solo las obras de Familia B y el inicio "
+                      "declarado, que es la conducta de la FASE A; un "
+                      "`inicio_tramo_cuneta_km` declarado gana en los dos "
+                      "casos. Consecuencia medida en el fixture: B-01 (2+450) "
+                      "queda a 530 m de A-02 (1+920) y VB1 no cumple; no se "
+                      "mueve ningun diametro",
+        fuente="DG-2018 num. 304.11 (pag. impresa 208); Manual de "
+               "Hidrologia, Hidraulica y Drenaje (MTC), num. 4.1.2.1 d) (pag. "
+               "impresa 179)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista del drenaje longitudinal, con el "
+                        "perfil de la rasante: si la cuneta descarga o no en "
+                        "la quebrada de la obra de Familia A",
+            dominio="si | no",
         ),
     ),
 

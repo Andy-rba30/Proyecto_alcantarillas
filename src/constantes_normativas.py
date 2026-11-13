@@ -4836,3 +4836,72 @@ MANNING_CAJON_HDS5 = {
     for fila in _TB1.filas
     if _TB1.clave_corta(fila) == "concrete_boxes"
 }
+
+
+# ===========================================================================
+# --- T-9 --- (cadena T) · espaciamiento de alivios: la cuneta (M10)
+# ===========================================================================
+# Lo que M10 lee desde T-9 para calcular la capacidad de la cuneta y avisar de
+# su pendiente. Las tres tablas son DERIVADAS del registro, no copiadas
+# (`normativa/tablas.py`, bloque T-9): una sola transcripcion (D2).
+
+# --- Tabla Nº 32 (num. 4.1.2.1 a), pag. impresa 175, PDF 178) --------------
+# Coeficiente de Strickler K = 1/n de la cuneta, por tipo de cuneta. En SI:
+# Q = K·A·Rh^(2/3)·S^(1/2) con Q en m3/s, A en m2 y Rh en m. No lleva sufijo
+# `_SI` porque no es un coeficiente empirico que cambie con el sistema: es
+# la tabla de rugosidad, y la Tabla Nº 32 la escribe para la ecuacion (117)
+# en metros.
+_T32 = _reg.tabla("MC_HHD.T32")
+CUNETA_STRICKLER_T32 = {_T32.clave_corta(_f): _f.valores["K"]
+                        for _f in _T32.filas}                 # m^(1/3)/s
+CUNETA_T32_ROTULO = {_T32.clave_corta(_f): _f.etiqueta_literal
+                     for _f in _T32.filas}
+
+# --- Tabla Nº 33 (num. 4.1.2.1 a), pag. impresa 175, PDF 178) --------------
+# Velocidad limite admisible por tipo de superficie: el INTERVALO que la
+# fuente imprime (minimo, maximo). Cual de los dos rige es el criterio
+# 'lectura_velocidad_limite_cuneta' [A]; la fila, 'revestimiento_cuneta' [A].
+_T33 = _reg.tabla("MC_HHD.T33")
+CUNETA_VELOCIDAD_LIMITE_T33 = {
+    _T33.clave_corta(_f): tuple(_f.valores["velocidad"].valores)
+    for _f in _T33.filas}                                     # m/s
+CUNETA_T33_ROTULO = {_T33.clave_corta(_f): _f.etiqueta_literal
+                     for _f in _T33.filas}
+CUNETA_T33_MUY_CORTA_DURACION = tuple(
+    _T33.clave_corta(_f) for _f in _T33.filas if "*" in _f.llamadas_a_nota)
+
+# --- Tabla Nº 34 (num. 4.1.2.1 c), pag. impresa 178, PDF 181) --------------
+# Dimensiones MINIMAS de la cuneta triangular por region pluvial:
+# (profundidad d, ancho a), en m. Es la ventana del criterio
+# 'seccion_cuneta'; ninguna fila se adopta.
+_T34 = _reg.tabla("MC_HHD.T34")
+CUNETA_DIMENSIONES_MINIMAS_T34 = {
+    _T34.clave_corta(_f): (_f.valores["profundidad_m"], _f.valores["ancho_m"])
+    for _f in _T34.filas}                                     # m
+
+# --- num. 4.1.2 c), pag. impresa 172, PDF 175 ------------------------------
+# «La pendiente longitudinal (i) debe estar comprendida entre la condición de
+# autolimpieza y la que produciría velocidades erosivas, es decir:
+# 0.5 % < i < 2 %». Desigualdades estrictas; m/m.
+PENDIENTE_DRENAJE_LONGITUDINAL = (0.005, 0.02)
+NUMERAL_PENDIENTE_DRENAJE_LONGITUDINAL = _reg.cita("MC_HHD.4.1.2c").como_texto()
+# DG-2018 num. 304.11 (pag. impresa 208, PDF 209): «Las pendientes
+# longitudinales mínimas absolutas serán 0.2%, para cunetas revestidas y 0.5%
+# para cunetas sin revestir». Discrepa del minimo del Manual para la cuneta
+# revestida; el programa no elige entre las dos: solo las imprime en el aviso.
+PENDIENTE_MIN_CUNETA_DG2018 = {"revestida": 0.002, "sin_revestir": 0.005}
+
+# --- T-9 (correcciones de la auditoria, H5) ---------------------------------
+# Tabla 304.12 del DG-2001 que el num. 4.1.2.1 del Manual de Hidrologia
+# reproduce (pag. impresa 173, PDF 176; cita MC_HHD.4.1.2.1#T304_12):
+# «INCLINACIONES MÁXIMAS DEL TALUD (V:H) INTERIOR DE LA CUNETA». Son TOPES de
+# inclinacion: el talud interior 1:Z1 cumple una fila si Z1 >= el de la fila.
+# La fila depende de la velocidad de diseño (V.D.) y del IMDA, que el programa
+# no conoce; por eso se guardan las tres cotas que la tabla imprime:
+#   1:2  V.D. < 70 km/h e IMDA < 750, «(*) Sólo en casos muy especiales»
+#   1:3  V.D. < 70 km/h (o IMDA < 750 con V.D. > 70 km/h)
+#   1:4  V.D. > 70 km/h e IMDA > 750
+# Un talud interior mas empinado que 1:2 no lo admite ninguna fila.
+CUNETA_Z1_MIN_T304_12 = {"casos_muy_especiales": 2.0,      # H por 1 de V
+                         "general": 3.0,
+                         "vd_mas_70_imda_mas_750": 4.0}

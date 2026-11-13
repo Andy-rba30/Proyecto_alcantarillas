@@ -566,6 +566,15 @@ def _familia(fila: Dict[str, Any], id_punto: str, numero: int) -> Familia:
         ) from None
 
 
+def km_de_progresiva(texto: str, id_punto: str) -> float:
+    """
+    --- T-9 (correcciones) --- La progresiva de una celda en km, con la MISMA
+    lectura que la carga ('0+380' o '0.380'): la usa el pre-vuelo para
+    ordenar las obras sin cargar el CSV. Lanza lo mismo que la carga.
+    """
+    return _progresiva({"progresiva_km": texto}, id_punto, 0)[0]
+
+
 def _progresiva(fila: Dict[str, Any], id_punto: str, numero: int) -> Tuple[float, str]:
     """
     Devuelve (km numericos, notacion vial). Ambos salen del mismo string: la
