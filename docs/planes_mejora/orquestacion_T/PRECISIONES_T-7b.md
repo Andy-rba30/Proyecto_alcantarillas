@@ -67,3 +67,9 @@ dimensionado sale de Fase 9 sin E1–E3 evaluadas» necesita esa ruta. Implement
 PARADA (c): ningún diámetro, sección ni material del fixture se mueve. Toda excepción nueva desciende de `ErrorProyecto` y se
 captura como `Bloqueo` del punto. La Fase 9 es de nivel EXPEDIENTE. Avisos por `InformePunto.avisos()`. M11 sin aritmética.
 Tests primero en rojo (`xfail(strict=True)`) o rojo medido y declarado. Mutación con el arnés sobre lo nuevo de M9 y de V5.
+
+## Añadido (decisión del dueño, 2026-11-13): orientación del cabezal
+El cabezal es NORMAL AL EJE del conducto en las tres familias (valor por defecto; decisión tomada). El cabezal paralelo a la vía
+queda diferido con ficha, sólo para el marco (Carta 11). Verifica en HDS-5 núm. 5.4.2 (y donde trate «inlet skew») lo que la
+fuente dice de las embocaduras esviadas y escríbelo, con página, en la ficha T7A-03; y toma la orientación del muro frente al
+tráfico coherente con esa elección al calcular la sobrecarga viva (heq).

@@ -94,3 +94,12 @@ Se ACEPTAN, sujetas a lo que diga la auditoría adversarial (si el auditor las r
 - T-9: `seccion_cuneta` = 0.40 × 1.20 m (Tabla 34 «muy lluviosa», verificada) con Z2 = 1.0 [A]; TR 35 años CONFIRMADO como
   envolvente (Tabla 02: riesgo 35 %, n = 15 → T ≈ 35.3); obras A como extremo de tramo por DG-2018 304.11, criterio conmutable;
   consecuencia declarada: VB1 de B-01 NO CUMPLE en el fixture (530 m desde A-02).
+
+### Orientación del cabezal en cruces esviados — 2026-11-13 ~05:35 UTC: «sí, estoy de acuerdo»
+- El cabezal queda **NORMAL AL EJE DEL CONDUCTO como valor por defecto en las tres familias** (es lo que supone toda la hidráulica:
+  ke y cartas de HDS-5; no mueve ningún HW ni diámetro). T-7b se hace con esa orientación.
+- El cabezal **paralelo a la vía** queda como alternativa declarable SÓLO para el marco de la Familia C (Carta 11 de HDS-5),
+  DIFERIDA con ficha a un paso posterior a T-7c: cambiaría la carta y el HW de C-01 y la orientación del muro frente al tráfico.
+- Mientras tanto, el alero largo de C-01 (8.1 m con 30° de esviaje) se puede resolver declarando un α menor de ese lado por
+  `cabezal_declarado` (aleros asimétricos): la memoria lo dice.
+- T-7b verifica contra el PDF lo que HDS-5 núm. 5.4.2 dice de las embocaduras esviadas antes de escribirlo en la ficha.
