@@ -4907,8 +4907,25 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     # =======================================================================
-    # LOS CUATRO DEL CAJON (C5). NINGUNO LLEVA VALOR, Y NO ES UN OLVIDO.
+    # LOS SIETE DEL CAJON (C5 y C7). DESDE T-3 TODOS LLEVAN VALOR DE ARCHIVO.
     # =======================================================================
+    # --- T-3 --- (cadena T, INF-0.4). Hasta T-3 este encabezado decia
+    # «NINGUNO LLEVA VALOR, Y NO ES UN OLVIDO», y era la regla del plan de la
+    # Familia C (§11 criterio 7 de docs/ruta_familia_c.md: «Ningun criterio
+    # nuevo tiene valor escrito en criterios_adoptados.py»). T-3 la levanta
+    # por mandato de la cadena T --que la Familia C se dimensione sin que el
+    # tesista tenga que declarar siete criterios en caliente-- y la levanta
+    # SIN MOVER NADA: cada valor de archivo es el que la guia de perfil, la
+    # suite y la corrida del entregable de C7 declaraban en caliente, y C-01
+    # sigue saliendo como marco 1.20 x 0.90 con HW 0.589 m. Lo que cambia es
+    # que cada valor queda en el archivo CON SU FILA NOMBRADA, su cita y su
+    # ventana, y que los que cubren un vacio verificado lo dicen en
+    # `vacio_verificado` (R-23 de §15.8 se cierra por esa via: con valor de
+    # archivo el campo ya se puede poner). La progresion de secciones es la
+    # excepcion declarada: la de la cadena T no se adopta porque deja a C-01
+    # sin dimensionar (PARADA (c), ver su ficha).
+    #
+    # Lo que sigue del encabezado de C5 vale igual:
     # La Familia C es el conjunto de cruces de canal de riego, y el propio
     # numeral que fija el piso de 0.90 m la EXCEPTUA de el: "salvo en cruces
     # de canales de riego donde se adoptaran secciones de acuerdo a cada
@@ -4928,7 +4945,11 @@ CRITERIOS: Dict[str, Criterio] = {
     # es el error simetrico del que estos cuatro evitan.
 
     "secciones_cajon_normalizadas": Criterio(
-        valor=None,
+        # --- T-3 --- LA DECISION DEL DUEÑO DEL PROYECTO (2026-11-12): se
+        # mantiene la progresion con que C-01 dimensiona desde C7; la de la
+        # cadena T no se activa. Ampliarla espera la seccion real del canal
+        # (ANA / Junta): ficha T3-01. Ver la justificacion.
+        valor=((1.20, 0.90), (1.50, 1.20), (2.00, 1.50)),
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_SERIE_DE_PARES,
@@ -4957,9 +4978,50 @@ CRITERIOS: Dict[str, Criterio] = {
                       "proyecto decir cual --, y la seccion del cruce de "
                       "canal se remite a cada diseno particular. Por eso el "
                       "criterio es [A] y no [N]: la norma pide el requisito y "
-                      "no da la cifra, y un valor escrito aqui por el "
-                      "programa seria inventarla; se adopta bloquear hasta "
-                      "que el proyectista declare la progresion entera. La "
+                      "no da la cifra. Se adopta la progresion ((1.20, "
+                      "0.90), (1.50, 1.20), (2.00, 1.50)): arranca en la "
+                      "altura interior de 0.90 m, que es la seccion minima "
+                      "de mantenimiento que el mismo num. 4.1.1.3.4 a) fija "
+                      "para las demas alcantarillas -- aqui por analogia, "
+                      "porque el numeral exceptua el cruce de canal --; "
+                      "lleva B >= H porque un cruce de canal es ancho y poco "
+                      "profundo; y crece en las dos dimensiones a la vez, en "
+                      "el orden en que se declara. Es la progresion con que "
+                      "C-01 dimensiona en la corrida del entregable de la "
+                      "Familia C y la que la guia de perfil y la suite "
+                      "declaraban en caliente, de modo que darle valor de "
+                      "archivo no mueve ninguna seccion, y es la decision "
+                      "del dueño del proyecto: [A] con su ventana, no "
+                      "provisional. No es la que propone la "
+                      "cadena T (anchos de 1.00 a 4.00 m con paso de 0.50 m "
+                      "por alturas de 1.00 a 3.00 m con paso de 0.25 m): esa "
+                      "no contiene el 1.20 x 0.90 y con ella C-01 no "
+                      "dimensiona -- V7 (flotacion) incumple en los siete "
+                      "primeros escalones y el octavo, 1.00 x 2.00 m, deja la "
+                      "clave por encima de la subrasante y detiene el "
+                      "material --; queda como alternativa declarable y "
+                      "barrible. La causa de que V7 incumpla no es que el "
+                      "marco no quepa: es que `M5.v7_flotacion` lleva DC = 0 "
+                      "-- no pesa el concreto del marco, del lado seguro --, "
+                      "y con un canto mayor el empuje crece mas que el "
+                      "relleno que queda encima. Medido sobre C-01: el marco "
+                      "de 1.00 x 1.00 m incumple con 18.21 kN/m de suelo "
+                      "contra 19.23 kN/m de empuje, y su concreto, 0.96 m2 a "
+                      "unos 23.5 kN/m3, pesaria por si solo unos 22.6 kN/m, "
+                      "mas que el empuje. Con el peso propio, la progresion "
+                      "de la cadena probablemente daria a C-01 un marco de "
+                      "1.00 x 1.00 m: moveria una seccion dimensionada, y eso "
+                      "lo decide el dueño (ficha T3-08, sobre "
+                      "`M5.v7_flotacion`). Por la misma causa, de esta "
+                      "progresion solo el primer escalon es alcanzable bajo "
+                      "la rasante de C-01: el de 1.50 x 1.20 m incumple V7 "
+                      "con 18.9 contra 29.8 kN/m. Ampliarla -- alturas de "
+                      "0.60 y 0.75 m, mas anchos -- queda diferido a cuando "
+                      "exista la seccion real del canal de ANA o de la Junta "
+                      "de Usuarios (ficha T3-01). Con tres escalones la "
+                      "serie se agota en 2.00 x 1.50 m: un canal mas grande "
+                      "se detiene con la progresion agotada y hay que "
+                      "declarar la suya. La "
                       "sensibilidad describe las dos cotas de la eleccion: "
                       "por abajo, la minima dimension interior que permita "
                       "entrar a limpiar el conducto -- el numeral la exige y "
@@ -4990,20 +5052,21 @@ CRITERIOS: Dict[str, Criterio] = {
             "arriba no manda la hidraulica sino la geometria del cruce -- "
             "recubrimiento sobre la clave y cota de subrasante --, que es lo "
             "que verifican V4 y la Fase 7",
+            "alternativa de la cadena T (no se activa: decision del dueño "
+            "del 2026-11-12): anchos 1.00 a 4.00 m con paso 0.50 por alturas "
+            "1.00 a 3.00 m con paso 0.25, por area creciente. Medida sobre "
+            "C-01: no dimensiona -- V7, que lleva DC = 0 (no pesa el marco), "
+            "incumple con H >= 1.00 m bajo la rasante del fixture; con el "
+            "peso propio daria probablemente 1.00 x 1.00 m, ficha T3-08 --",
         ),
-        # `vacio_verificado` NO SE PUEDE PONER TODAVIA, y no es un olvido:
-        # `_verificar_criterio` lo rechaza en un criterio sin valor -- «el
-        # campo es para el valor que CUBRE un vacio registrado; un criterio
-        # todavia vacio no cubre nada» --, y `M11.acotaciones_declaradas()`
-        # filtra ademas por `valor is not None`. Mientras este vacio, el hueco
-        # normativo que este criterio va a cubrir NO sale por
-        # `bloque_acotaciones` sino por `bloque_pendientes`, que es donde
-        # tiene que salir: todavia no hay adopcion que acotar, hay una deuda.
-        # QUIEN DECLARE EL VALOR TIENE QUE AÑADIRLO, con este texto: el num.
-        # 4.1.1.3.7 d) exige dimensiones que permitan el mantenimiento y la
-        # limpieza interior y NO da ninguna cifra (verificado contra el PDF en
-        # la fase CN; el literal esta en el registro como
-        # `MC_HHD.4.1.1.3.7d`).
+        # --- T-3 --- `vacio_verificado` YA SE PUEDE PONER, y se pone: el
+        # criterio tiene valor de archivo y cubre el vacio que el comentario
+        # de C5 dejo escrito -- el num. 4.1.1.3.7 d) exige dimensiones que
+        # permitan el mantenimiento y la limpieza interior y NO da ninguna
+        # cifra, y el 4.1.1.3.4 a) remite el cruce de canal a «cada diseño
+        # particular» --. El ancla es la lectura de §15.3.1 de la ruta de la
+        # Familia C. Con el, el criterio sale por `bloque_acotaciones` (R-23).
+        vacio_verificado="ruta_familia_c.md Sec. 15.3.1",
         resolucion=Libre(
             que_lo_fija="el proyectista, con el ancho y el tirante de diseno "
                         "del canal que se cruza y con la dimension interior "
@@ -5020,83 +5083,132 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "n_manning_cajon": Criterio(
-        valor=None,
+        # --- T-3 (auditoria adversarial, H1) --- PASA A [C] CON LA FILA
+        # PROPIA DEL MARCO. La FASE A de T-3 adopto la fila «afinado» de la
+        # Tabla N 09, (0.011, 0.014), por analogia [N->]; la auditoria
+        # encontro que la MISMA fuente de la que salen la carta (Tabla A.1) y
+        # el ke (Tabla C.2) del marco tabula el cajon de concreto en su
+        # propia fila -- HDS-5 Tabla B.1, «Concrete Boxes | Smooth |
+        # 0.012-0.015 | FHWA 1961», pag. impresa B.6 (PDF 208) -- y que la
+        # ficha no la nombraba. Es el mismo trato que T-4 dio al HDPE. La
+        # fila «afinado» queda como alternativa barrible.
+        valor="concrete_boxes",
         nivel=NIVEL_PERFIL,
-        etiqueta="N->",
+        etiqueta="C",
         forma=FORMA_STR,
         concepto="Coeficiente de rugosidad de Manning del marco de concreto: "
-                 "fila de la Tabla N 09 que se le aplica por analogia",
-        justificacion="Decide que fila de la Tabla N 09 se aplica por "
-                      "analogia al marco de concreto, tomando siempre el "
-                      "rango completo (minimo, maximo): la regla de doble n "
-                      "pide los dos extremos -- n_max es el conservador para "
-                      "capacidad y tirante, n_min para velocidad y socavacion "
-                      "-- y un valor puntual dejaria una de las dos "
-                      "verificaciones sin lado seguro. La fuente (Tabla N 09, "
-                      "num. 4.1.1.3.6, transcrita en "
-                      "constantes_normativas.TABLA_09_FILAS) trae un grupo "
-                      "cuyo rotulo -- conducto cerrado con escurrimiento "
-                      "parcialmente lleno, ver "
-                      "constantes_normativas.TABLA_09_GRUPO -- cubre al marco "
-                      "por su propio titulo: un cajon es un conducto cerrado, "
-                      "y ese es el unico grupo de la tabla que describe una "
-                      "alcantarilla. Lo que no resuelve es la fila: la tabla "
-                      "no trae fila de seccion rectangular (verificado contra "
-                      "el PDF), de modo que el vacio que este criterio "
-                      "declara es de fila y no de grupo. Eso hace la analogia "
-                      "mas estrecha que la del HDPE, y por eso este criterio "
-                      "no puede copiar el argumento de 'n_manning_hdpe': "
-                      "aquella cruza material -- el HDPE no esta en la tabla "
-                      "por ninguna parte -- y esta se queda dentro del grupo "
-                      "que ya cubre la estructura, cruzando un atributo que "
-                      "no es la forma. Se adopta que la fila la declare el "
-                      "proyectista, entre las dos defendibles que la "
-                      "sensibilidad describe: de las siete subfilas del "
-                      "concreto, seis dicen tubo en su rotulo y la septima -- "
-                      "afinado -- no dice nada de forma, la unica del item "
-                      "que no excluye al marco por su propia letra. El "
-                      "proyecto no la elige por el porque las dos son "
-                      "defendibles y dan rangos distintos, y la eleccion "
-                      "mueve el tirante y las dos velocidades",
-        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
-               "20-2011-MTC/14), num. 4.1.1.3.6 'Diseno hidraulico', Tabla N "
-               "09, pags. impresas 75-76. Transcrita completa en "
-               "constantes_normativas.TABLA_09_FILAS y leida por "
-               "constantes_normativas.MANNING. La tabla NO tiene fila de "
-               "seccion rectangular: verificado contra el PDF en la fase CN, "
-               "y es el hueco que este criterio declara",
-        reemplazado_por="Ficha tecnica del acabado interior que se "
-                        "especifique para el marco vaciado in situ",
+                 "fila de la que se toma la doble n (n_min, n_max)",
+        justificacion="Decide de que fila sale la doble n del marco de "
+                      "concreto, tomando siempre el rango completo (minimo, "
+                      "maximo): la regla de doble n pide los dos extremos -- "
+                      "n_max para capacidad y tirante, n_min para velocidad "
+                      "maxima y socavacion -- y un valor puntual dejaria una "
+                      "de las dos verificaciones sin lado seguro. La Tabla N "
+                      "09 del Manual (num. 4.1.1.3.6) cubre al marco por el "
+                      "titulo de su grupo A -- conducto cerrado con "
+                      "escurrimiento parcialmente lleno -- y NO tiene fila de "
+                      "seccion rectangular (verificado contra el PDF): el "
+                      "vacio es de fila. La fuente tecnica de la que el "
+                      "proyecto toma la carta de control de entrada y el ke "
+                      "del marco, el HDS-5 de la FHWA, si tabula el cajon de "
+                      "concreto en su propia fila: Tabla B.1, «Concrete Boxes "
+                      "/ Smooth», 0.012 a 0.015 (pag. impresa B.6). Se adopta "
+                      "esa fila, y por eso la etiqueta es "
+                      "[C]: cubre el vacio de la Tabla N 09 con una fuente "
+                      "reconocida, la misma de la carta y del ke, como T-4 "
+                      "hizo con el HDPE. Dos acotaciones de la propia fuente, "
+                      "que la ventana recoge: sus n son de laboratorio (nota "
+                      "1 de la tabla), y en un cajon vaciado in situ el n va "
+                      "de 0.012 a 0.022 segun la calidad del encofrado, las "
+                      "practicas constructivas y el envejecimiento (num. B.3, "
+                      "pag. impresa B.2, cita HDS5_3ED.B.3#CAJON_IN_SITU). "
+                      "Esa es la ventana hacia arriba del n de capacidad. La "
+                      "direccion de cada extremo, dicha: un n mas alto es el "
+                      "lado seguro para el tirante, V1 y el HW del control de "
+                      "salida, y un n mas bajo es el lado seguro para V3 y el "
+                      "d50 de la proteccion; la regla de doble n toma cada "
+                      "extremo para su verificacion, de modo que ensanchar el "
+                      "rango es conservador en las dos ramas a la vez. Frente "
+                      "a la alternativa de la Tabla N 09 (fila «afinado», "
+                      "0.011-0.014), esta fila sube el n de capacidad (0.015 "
+                      "> 0.014) y el de erosion (0.012 > 0.011): mas "
+                      "conservadora para tirante y HW, menos para V3 y el "
+                      "d50. Sobre C-01 no mueve la seccion (1.20 x 0.90 m) "
+                      "ni el HW de control de entrada, que no depende de n; "
+                      "mueve el tirante normal y el HW de control de salida",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), Apendice B, Table B.1 "
+               "'Manning's n Values for Culverts', pag. impresa B.6 (PDF "
+               "208): fila 'Concrete Boxes / Smooth', 0.012-0.015, referencia "
+               "FHWA 1961. Tabla HDS5_3ED.TB.1 del registro, fila "
+               "HDS5_3ED.TB.1#concrete_boxes, leida por "
+               "constantes_normativas.MANNING_CAJON_HDS5. Y el num. B.3 "
+               "'CONCRETE BOX CULVERT', pag. impresa B.2 (PDF 204): el n del "
+               "cajon vaciado in situ va de 0.012 a 0.022 segun el encofrado "
+               "(cita HDS5_3ED.B.3#CAJON_IN_SITU). LO QUE NO LO DA: la Tabla "
+               "N 09 del Manual de Hidrologia (num. 4.1.1.3.6, pags. impresas "
+               "75-76) no tiene fila de seccion rectangular, verificado contra "
+               "el PDF en la fase CN. La alternativa barrible, su fila "
+               "«afinado», se lee con el corrimiento de una fila que la "
+               "pagina trae en los bloques A.2, B.1, B.2 y C: errata de "
+               "imprenta DIS-MCHHD-T09-A2-DESPLAZADA del registro normativo, "
+               "sostenida en la evidencia interna de la pagina. Leida al pie "
+               "de la letra la fila «afinado» daria 0.013/0.015/0.017",
+        reemplazado_por="Ficha tecnica del acabado interior y del encofrado "
+                        "que se especifiquen para el marco vaciado in situ",
         sensibilidad=(
-            "'A.2 NO METALICOS - a. Concreto - afinado' (0.011 - 0.014): la "
-            "unica subfila del item cuyo rotulo NO dice 'tubo', y por eso la "
-            "unica que no excluye al marco por su propia letra. Da mas "
-            "tirante en la rama de capacidad",
-            "'A.2 NO METALICOS - a. Concreto - tubo recto y libre de basuras' "
-            "(0.010 - 0.013): la fila que 'n_manning_hdpe' ya usa por "
-            "analogia. Su rotulo dice 'tubo', o sea que la analogia tiene que "
-            "cruzar la forma explicitamente",
+            "'concrete_boxes' -- Tabla B.1 del HDS-5, «Concrete Boxes / "
+            "Smooth» (0.012 - 0.015) --: el valor de archivo, [C]. La fila "
+            "especifica del cajon de concreto, de la misma fuente que la "
+            "carta y el ke del marco",
+            "'concreto_afinado' -- Tabla N 09, «A.2 NO METALICOS - a. "
+            "Concreto - afinado» (0.011 - 0.014), lectura CORREGIDA del "
+            "corrimiento de una fila (DIS-MCHHD-T09-A2-DESPLAZADA) --: "
+            "ALTERNATIVA BARRIBLE, por analogia [N->] dentro del grupo A, que "
+            "cubre al marco por su titulo. Es la que adopto la FASE A de T-3. "
+            "Frente a la de archivo baja el n de capacidad (lado inseguro "
+            "para tirante y HW) y el de erosion (lado seguro para V3 y el "
+            "d50). Leida al pie de la letra, sin corregir la errata, daria "
+            "0.013 - 0.017, mas conservadora para capacidad",
+            "num. B.3 del HDS-5 (cita HDS5_3ED.B.3#CAJON_IN_SITU): 0.012 a "
+            "0.022 en un cajon VACIADO IN SITU, segun el encofrado -- remite "
+            "a la Tabla 1 del HDS 3, que no esta en normas/ --. Es la ventana "
+            "HACIA ARRIBA del n de capacidad: con un encofrado de calidad "
+            "inferior a la de laboratorio, un n_max mayor es el lado seguro "
+            "para el tirante y el HW. Se declara como el par de la "
+            "especificacion del encofrado, no como una fila",
         ),
-        # `vacio_verificado` pendiente por la misma razon que en
-        # 'secciones_cajon_normalizadas': el campo exige valor. Quien lo
-        # declare tiene que añadirlo con este texto: la Tabla N 09 del num.
-        # 4.1.1.3.6 cubre al marco por el TITULO de su grupo A y NINGUNA de
-        # sus filas nombra la seccion rectangular (verificado contra el PDF en
-        # la fase CN).
+        # `vacio_verificado` con el texto que C5 dejo escrito para quien le
+        # diera valor: la Tabla N 09 del num. 4.1.1.3.6 cubre al marco por el
+        # TITULO de su grupo A y NINGUNA de sus filas nombra la seccion
+        # rectangular (verificado contra el PDF en la fase CN). El ancla es
+        # §15.3.2 de la ruta de la Familia C, que lo documenta fila por fila.
+        # Desde la auditoria de T-3 lo cubre la fila de la Tabla B.1 [C].
+        vacio_verificado="ruta_familia_c.md Sec. 15.3.2",
         resolucion=DeTabla(
-            tablas=("MC_HHD.T09",),
-            que_elige="la fila del grupo A cuyo par (minimo, maximo) se "
-                      "aplica al marco POR ANALOGIA. La analogia es la "
-                      "etiqueta [N->]: la Tabla N 09 no tabula la seccion "
-                      "rectangular",
-            laguna="la tabla no trae fila de cajon. El vacio es de FILA y no "
-                   "de grupo: el rotulo del grupo A -- conducto cerrado con "
-                   "escurrimiento parcialmente lleno -- ya cubre al marco",
+            # LA PRIMERA TABLA ES LA DEL VALOR DE ARCHIVO (la que la ventana
+            # y los editores de la GUI muestran); la segunda, la de la
+            # alternativa por analogia. Con dos tablas la resolucion no fija
+            # `fila_id` (la guardia de `verificar_resolucion` lo prohibe: no
+            # se sabria de cual): el valor es la CLAVE de la fila, como en
+            # 'embocadura_cajon', y `M2._fila_manning_de_cajon` la acota.
+            # Declarar la fila de la segunda tabla desde un editor exige
+            # decir de cual se elige; el barrido la acepta con su
+            # `--barrido-nota`, y la CLI con `--declarar`.
+            tablas=("HDS5_3ED.TB.1", "MC_HHD.T09"),
+            que_elige="la fila cuyo par (minimo, maximo) es la doble n del "
+                      "marco: la del cajon de concreto de la Tabla B.1 del "
+                      "HDS-5 ([C]) o, por analogia, una del subgrupo «a. "
+                      "Concreto» de la Tabla N 09",
+            laguna="la Tabla N 09 no trae fila de cajon. El vacio es de FILA "
+                   "y no de grupo: el rotulo del grupo A -- conducto cerrado "
+                   "con escurrimiento parcialmente lleno -- ya cubre al marco",
         ),
     ),
 
     "embocadura_cajon": Criterio(
-        valor=None,
+        # --- T-3 --- Carta 8, escala 1: aletas de 30 a 75 grados (Forma 1).
+        # La de cabezal recto se midio y da OTRA carga (ver la justificacion).
+        valor="cajon_concreto_aletas_30_75",
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_STR,
@@ -5143,7 +5255,28 @@ CRITERIOS: Dict[str, Criterio] = {
                       "dos embocaduras distintas. La sensibilidad separa las "
                       "dos familias -- Carta 8 (Forma 1) frente a Cartas 9 a "
                       "13 (Forma 2) -- porque entre una y otra no cambia solo "
-                      "una constante: cambia la ecuacion",
+                      "una constante: cambia la ecuacion. Se adopta la "
+                      "Carta 8, escala 1, aletas de 30 a 75 grados (K "
+                      "0.026, M 1.0, c 0.0347, Y 0.81, Forma 1; Tabla A.1, "
+                      "PDF 197), emparejada en 'ke_entrada_cajon' con la "
+                      "fila de la Tabla C.2 de esa misma embocadura, borde "
+                      "recto en la clave bajo aletas de 30 a 75 grados (ke "
+                      "0.4): es la embocadura con aletas -- la transicion "
+                      "que un canal trapecial necesita para entrar a un "
+                      "marco -- y la que la guia de perfil, la suite y la "
+                      "corrida del entregable de la Familia C declaraban, "
+                      "de modo que no mueve ninguna carga. La de cabezal "
+                      "recto se midio y no se adopta: la cadena T la "
+                      "sugeria por ahora (Carta 8, escala 2, aletas de 90 y "
+                      "15 grados, con la fila de cabezal paralelo al "
+                      "terraplen sin aletas y borde recto en tres lados de "
+                      "la Tabla C.2, ke 0.5) y sobre C-01 da HW = 0.629 m "
+                      "contra 0.589 m con aletas; se deja la de hoy, y la "
+                      "coherencia entre la carta, el ke y la geometria de "
+                      "los aleros la cierra el dimensionamiento del cabezal "
+                      "por punto. La Lamina N 03 no decide entre las dos: "
+                      "es un corte longitudinal y no muestra el angulo de "
+                      "las aletas (`SIN_COTAS_LAMINA_03`)",
         fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, "
                "bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo "
                "sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. "
@@ -5163,7 +5296,11 @@ CRITERIOS: Dict[str, Criterio] = {
         sensibilidad=(
             "Carta 8 (Forma 1), aletas de 30 a 75 grados: K = 0.026, M = "
             "1.00. Es la unica familia de cajon que usa la ecuacion (A.1), la "
-            "que arranca de H_c/D",
+            "que arranca de H_c/D. La adoptada (T-3); sobre C-01, HW = 0.589 m",
+            "Carta 8 (Forma 1), escala 2, «90° and 15° wingwall flares» -- el "
+            "cabezal recto que la cadena T sugeria --: K = 0.061, M = 0.75. "
+            "Sobre C-01, HW = 0.629 m (+0.040 m); su ke es el de «Headwall "
+            "parallel to embankment (no wingwalls)», 0.5",
             "Cartas 9 a 13 (Forma 2) -- aletas, chaflan, bisel o esviaje; la "
             "12 es la familia 'Rect. Box 3/4\" chamf. Conc.' y la 13 la del "
             "bisel superior con aletas desplazadas --: K entre 0.486 "
@@ -5187,7 +5324,8 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "n_celdas_cajon": Criterio(
-        valor=None,
+        # --- T-3 --- Una celda: lo que el numeral recomienda ante arrastre.
+        valor=1,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_INT,
@@ -5204,7 +5342,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "no resuelve: no prohibe la multicelda -- invierte la "
                       "carga de la prueba, y quien la adopte tiene que decir "
                       "por que -- ni fija N para una obra concreta. Se adopta "
-                      "declarar N por punto, sin valor por defecto. En el "
+                      "N = 1, la seccion unica que el numeral recomienda, y "
+                      "la que la guia de perfil y la suite declaraban; la "
+                      "multicelda queda declarable y V6 la sigue rechazando "
+                      "mientras no haya dato de arrastre del cauce (ver "
+                      "docs/decisiones_diferidas.md): con N > 1 V6 publica "
+                      "el reparto Q/N, el tabique entre celdas y el ancho "
+                      "total, y dice por que no la acepta. En el "
                       "calculo, N no entra en la geometria: los coeficientes "
                       "de HDS-5, el radio hidraulico y el control de entrada "
                       "son por barril, de modo que con N celdas se dimensiona "
@@ -5256,7 +5400,8 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     "ke_entrada_cajon": Criterio(
-        valor=None,
+        # --- T-3 --- La fila de la MISMA embocadura que 'embocadura_cajon'.
+        valor="cajon_aletas_30_75_escuadra",
         nivel=NIVEL_PERFIL,
         etiqueta="C",
         forma=FORMA_STR,
@@ -5308,7 +5453,13 @@ CRITERIOS: Dict[str, Criterio] = {
                       "redondeado, biselado o abocinado, y ke = 0.7, borde "
                       "recto bajo aletas paralelas --: entre los dos hay "
                       "0.5*V^2/2g de carga, 0.229 m con V = 3 m/s, que se "
-                      "descuenta de V4 y del tamizado de la Fase 7",
+                      "descuenta de V4 y del tamizado de la Fase 7. Se "
+                      "adopta la fila de borde recto en la clave bajo "
+                      "aletas de 30 a 75 grados, ke 0.4: la de la misma "
+                      "embocadura que 'embocadura_cajon' declara (Carta 8, "
+                      "escala 1). Las dos se mueven juntas, y el "
+                      "dimensionamiento de los aleros por punto las vuelve a "
+                      "mirar",
         fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice C, Tabla C.2 "
                "'Entrance Loss Coefficients', pag. impresa C.6 (PDF 216), "
                "bloque 'Box, Reinforced Concrete': siete filas con "
@@ -5355,14 +5506,16 @@ CRITERIOS: Dict[str, Criterio] = {
     # HIDRAULICA del marco; este gobierna su GEOMETRIA EXTERIOR, que es lo que
     # V7 y la cota de clave necesitan y no tenian por donde entrar.
     "espesor_pared_cajon": Criterio(
-        valor=None,
+        # --- T-3 --- 0.20 m: el piso de la E.060 num. 14.5.3.2 para muros
+        # exteriores enterrados, POR ANALOGIA. Ver la justificacion.
+        valor=0.20,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Espesor de pared del marco de concreto vaciado in situ, m",
         justificacion="Decide el espesor de pared del marco de concreto "
-                      "vaciado in situ a nivel de perfil, y bloquea hasta que "
-                      "se declare. El vacio es del catalogo de productos, no "
+                      "vaciado in situ a nivel de perfil. El vacio es del "
+                      "catalogo de productos, no "
                       "del Manual: el Manual de Hidrologia no tabula "
                       "espesores de pared de nada -- no hay numeral que "
                       "callar --, y quien los tabula son las normas de "
@@ -5379,8 +5532,9 @@ CRITERIOS: Dict[str, Criterio] = {
                       "existe y este alcance difiere es el procedimiento de "
                       "calculo (AASHTO LRFD Sec. 5 y Art. 12.11), de modo que "
                       "a nivel de perfil el espesor es una adopcion del "
-                      "proyectista y por eso [A]. Se adopta bloquear en vez "
-                      "de tomar un valor plausible, y la razon esta medida: "
+                      "proyectista y por eso [A]. Hasta T-3 se adoptaba "
+                      "bloquear en vez de tomar un valor plausible, y la "
+                      "razon estaba medida: "
                       "las alturas de marco plausibles caen sobre la misma "
                       "serie de 900 + 150k mm que los diametros de tubo, de "
                       "modo que un marco de 2.00 x 1.50 m que leyera la tabla "
@@ -5394,8 +5548,32 @@ CRITERIOS: Dict[str, Criterio] = {
                       "que hacia abajo el limite no es la flotacion sino el "
                       "calculo estructural diferido: la ventana no se puede "
                       "cerrar a nivel de perfil y el criterio se adopta en "
-                      "vez de optimizarse",
-        fuente="NINGUNA, y esa es la afirmacion. Barrido declarado: el num. "
+                      "vez de optimizarse. Se adopta 0.20 m, el espesor "
+                      "minimo que la E.060 fija a los muros exteriores de "
+                      "sotanos y cimentaciones (num. 14.5.3.2, pag. 134, "
+                      "cita E060.14.5.3.2): es la fuente mas cercana porque "
+                      "su objeto es un muro exterior enterrado con suelo "
+                      "contra una cara, que es lo que es la pared del "
+                      "marco; no es [N] para el marco, porque el 14.5.3 "
+                      "rige los muros del metodo empirico de 14.5 y la "
+                      "pared del cajon se diseña por flexion (14.8.1 remite "
+                      "al Capitulo 10), y la ventana existe. 0.20 m es el "
+                      "extremo favorable a V7 de esa ventana: con DC = 0 en "
+                      "V7 un espesor mayor ensancha el empuje mas que el "
+                      "suelo que lo equilibra, y sobre C-01 el marco "
+                      "dimensiona con 0.20 y 0.25 m y deja de hacerlo con "
+                      "0.26 y 0.30 m (ficha T3-08). Es ademas el "
+                      "espesor que la guia de perfil y la suite declaraban, "
+                      "de modo que no mueve ni la clave ni V7. Vale para "
+                      "paredes, losa superior, losa de fondo y, con N > 1, "
+                      "el tabique: un solo espesor, adoptado, hasta que la "
+                      "Fase 8 del expediente lo calcule",
+        fuente="NINGUNA PARA EL MARCO, y esa es la afirmacion; el piso "
+               "adoptado sale POR ANALOGIA de la E.060, num. 14.5.3.2 "
+               "'Espesor minimo de muros diseñados por el metodo empirico de "
+               "diseño', pag. impresa 134 (PDF 134), que fija 200 mm a los "
+               "muros exteriores de sotanos y cimentaciones (cita "
+               "E060.14.5.3.2, leida en T-3). Barrido declarado: el num. "
                "4.1.1.3.4 a) del Manual de Hidrologia nombra el marco y "
                "remite su seccion a «cada diseno particular» sin dar "
                "espesores; AASHTO M 170M-04 tabula 'Wall Thickness' por "
@@ -5433,6 +5611,16 @@ CRITERIOS: Dict[str, Criterio] = {
             "se ADOPTA en vez de optimizarse: el optimo de V7 y el minimo "
             "estructural empujan en sentidos opuestos y solo la Fase 8 tiene "
             "los dos numeros",
+            "VENTANA DE LA ADOPCION (T-3): 0.20 m -- el piso de la E.060 num. "
+            "14.5.3.2 para muros exteriores enterrados, por analogia, y el "
+            "valor adoptado -- a 0.30 m, techo que elige el proyecto para "
+            "el predimensionamiento de perfil y que NO sale de ninguna "
+            "fuente. Por eso esta ventana es simbolica: un valor fuera de "
+            "ella se puede declarar para medir una formula, y la memoria "
+            "imprime el adoptado. El adoptado es el extremo favorable a V7: "
+            "sobre C-01, con 0.26 m o mas V7 incumple (con 0.26 m, 23.42 kN/m "
+            "de suelo contra 23.96 kN/m de empuje) y el marco no dimensiona "
+            "-- porque V7 lleva DC = 0, ficha T3-08 --",
         ),
         resolucion=Libre(
             que_lo_fija="el proyectista, por predimensionamiento, hasta que "
@@ -5448,6 +5636,10 @@ CRITERIOS: Dict[str, Criterio] = {
                             "misma altura, aunque exista: es la coincidencia "
                             "de series que midio la auditoria de C5",
         ),
+        # --- T-3 --- El vacio que cubre: no hay norma de producto de cajon
+        # ni espesor tabulado para un marco vaciado in situ (§14.1 de la ruta
+        # de la Familia C, que lo decidio por esa razon).
+        vacio_verificado="ruta_familia_c.md Sec. 14.1",
     ),
 
     # --- T-4 --- PASA A SER OPCIONAL Y SIN VALOR (INF-3.3.1). Hasta T-4
@@ -5894,68 +6086,90 @@ CRITERIOS: Dict[str, Criterio] = {
     # es de DOS piezas y no de una: este vacio declarado, y M7 llevando la
     # `Seccion` en vez del escalar (punto 5 de C7).
     "cobertura_minima_cajon": Criterio(
-        valor=None,                 # VACIO: bloquea 7.A para todo marco
+        # --- T-3 --- 0.3048 m (12.0 in): el piso de la fila del TUBO de
+        # concreto de la Tabla 12.6.6.3-1, POR ANALOGIA rotulada.
+        # --- T-3 (auditoria adversarial, H5) --- Y COMO AVISO: la fuente
+        # admite el marco sin relleno, y este valor es mas restrictivo que
+        # ella. G1 del marco avisa (INDICADOR) cuando solo falta esta
+        # cobertura; el resguardo sigue bloqueando. Ver `M7.g1_rasante_
+        # congelada` y `TamizadoRasante.cobertura_como_aviso`.
+        valor=0.3048,
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Cobertura minima de SUELO sobre la clave de un marco de "
                  "concreto vaciado in situ, m (Sec. 7.A). No es el "
                  "recubrimiento de concreto sobre la armadura",
-        justificacion="Decide la cobertura minima de suelo sobre la clave de "
-                      "un marco de concreto vaciado in situ, y bloquea hasta "
-                      "que el proyectista declare de cual lectura parte. Lo "
-                      "que las fuentes dicen, con el barrido fijado en la "
-                      "AfirmacionNegativa SIN_CAJON_DE_CONCRETO_T12663 del "
-                      "registro: la Sec. 12 de AASHTO LRFD obliga a verificar "
-                      "la flotacion de un cajon de concreto (Art. 12.6.1 con "
-                      "el alcance del Art. 12.1, que nombra las estructuras "
-                      "de cajon de concreto vaciadas in situ y prefabricadas) "
-                      "y no tabula su cobertura minima: las dos filas de "
-                      "concreto de la Tabla 12.6.6.3-1 son de tubo, la unica "
-                      "fila con cajon en el rotulo es la de placa estructural "
-                      "metalica -- que si da cobertura, 0.4267 m (1.4 ft), "
-                      "con remision al Art. 12.9.1 --, y B'c se define como "
-                      "alzada exterior de tubo; que una seccion obligue en un "
-                      "punto no la vuelve aplicable en otro. Lo unico que la "
-                      "Sec. 12 si fija para un cajon es la conducta sin "
-                      "cobertura: sin suelo encima, la losa superior se "
-                      "disena para aplicacion directa de la carga vehicular "
-                      "(pag. impresa 12-22). El corpus peruano tampoco la "
-                      "fija: EG-2013 trae altura minima de relleno solo para "
-                      "HDPE (Subseccion 508.07) y el Manual de Puentes no "
-                      "incorporo un capitulo equivalente a la Sec. 12 -- las "
-                      "dos busquedas estan agotadas y registradas en la "
-                      "justificacion de 'cobertura_minima_aashto', y ninguna "
-                      "de las dos cambia porque la seccion sea rectangular. "
-                      "Lo que no se resuelve solo: la analogia disponible es "
-                      "la fila del tubo, y adoptarla esta permitido; "
-                      "adoptarla sin decirlo es la regla 3 de la §15.1 del "
-                      "plan de la Familia C, y este criterio convierte esa "
-                      "decision en visible. Se adopta declarar la lectura de "
-                      "partida entre las tres de la sensibilidad: el piso de "
-                      "0.3048 m (12.0 in) de la fila del tubo, por analogia "
-                      "rotulada como tal; la misma fila aplicada entera, "
-                      "max(Bc/8, 0.3048 m), que solo se despega del piso "
-                      "cuando Bc > 2.4384 m -- para el marco de 2.00 x 1.50 m "
-                      "con t = 0.15 m da Bc/8 = 0.2875 m y gobierna el piso; "
-                      "para uno de 3.00 x 1.50 m da 0.4125 m, un 35 % sobre "
-                      "el piso --; o 0, sin cobertura, la unica rama que la "
-                      "fuente cubre expresamente para un cajon, que no es la "
-                      "opcion barata: traslada la exigencia de la rasante al "
-                      "refuerzo de la losa superior, y esa parte es de "
-                      "expediente. Consecuencia para leer la ventana: h_rec "
-                      "entra en el tamizado de Sec. 7.A como cota de rasante "
-                      "mayor o igual que cota de clave + h_rec + e_paquete, "
-                      "de modo que se traslada metro a metro a la rasante "
-                      "minima que el punto admite; en un cruce de canal, "
-                      "donde la rasante viene dada, es lo que decide si el "
-                      "marco cabe -- cada centimetro de cobertura es un "
-                      "centimetro menos de canto disponible",
-        fuente="NINGUNA. Es un vacio verificado, no una omision: ver la "
-               "`AfirmacionNegativa` SIN_CAJON_DE_CONCRETO_T12663 en el "
-               "registro, que fija el ambito barrido de la Sec. 12 completa. "
-               "Las fuentes que SI dicen algo se citan arriba por lo que "
-               "dicen, no por lo que se les quiera hacer decir",
+        justificacion="Decide la cobertura de suelo sobre la clave de un "
+                      "marco de concreto vaciado in situ que el proyecto "
+                      "pide, y con ella el AVISO de G1 en la Sec. 7.A. Lo que "
+                      "las fuentes dicen del marco -- tres textos, leidos en "
+                      "su pagina -- es que lo admiten sin relleno: el Manual "
+                      "de Hidrologia, num. 4.1.1.3.4 a), pag. impresa 72 "
+                      "(cita MC_HHD.4.1.1.3.4a#NIVELES), permite ubicar el "
+                      "marco con la rasante a nivel de su losa superior; "
+                      "su Lamina N 03, pag. impresa 209 (cita "
+                      "MC_HHD.LAMINA_03), dibuja el marco en cruce de canal "
+                      "de riego con la calzada sobre la losa, sin relleno "
+                      "acotado; y AASHTO LRFD 9a ed., Art. 12.6.6.3, pag. "
+                      "impresa 12-22 (cita "
+                      "AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA), dice que si no "
+                      "hay cobertura de suelo la losa superior del cajon de "
+                      "concreto se diseña para la aplicacion directa de la "
+                      "carga vehicular. Ninguna fija una cobertura minima "
+                      "para el marco: la Tabla 12.6.6.3-1 no tiene fila de "
+                      "cajon de concreto -- sus dos filas de concreto son de "
+                      "tubo y la unica con cajon en el rotulo es de placa "
+                      "estructural metalica --, el Art. 12.11 no la fija "
+                      "(barrido en la AfirmacionNegativa "
+                      "SIN_CAJON_DE_CONCRETO_T12663), EG-2013 trae altura "
+                      "minima de relleno solo para HDPE (Subseccion 508.07) "
+                      "y el Manual de Puentes no tiene un capitulo "
+                      "equivalente a la Sec. 12. Se adopta 0.3048 m, el piso "
+                      "de 12.0 in que la fila del TUBO de concreto bajo zonas "
+                      "sin pavimentar o bajo pavimento flexible pone a la "
+                      "cobertura (Tabla 12.6.6.3-1, pag. impresa 12-22), por "
+                      "analogia rotulada -- la tabla mide desde el fondo del "
+                      "pavimento flexible, que es lo que 7.A hace al sumar el "
+                      "paquete --: con relleno el marco trabaja enterrado, y "
+                      "la carga viva a traves del relleno solo es evaluable "
+                      "desde 2.0 ft (AASHTO LRFD 3.6.1.2.6a), de modo que un "
+                      "marco con menos queda fuera de lo que la Fase 8 sabe "
+                      "verificar. Es mas restrictivo que la fuente, y por eso "
+                      "avisa y no bloquea (criterio general del dueño del "
+                      "proyecto: las analogias avisan): con la rasante bajo "
+                      "la cota que pide, G1 cumple con veredicto INDICADOR "
+                      "si la clave queda bajo la subrasante y el resguardo "
+                      "se cumple, y dice que la fuente admite el marco sin "
+                      "cobertura a cambio de diseñar la losa para la carga "
+                      "directa. El resguardo bajo la subrasante, que no es "
+                      "analogia, sigue bloqueando. Es ademas el valor que el "
+                      "codigo entregaba al marco antes de abrirse este "
+                      "criterio y el que la guia de perfil y la suite "
+                      "declaraban. No se adopta la fila entera, max(Bc/8, "
+                      "0.3048), porque su Bc/8 solo se despega del piso con "
+                      "Bc > 2.4384 m, que ningun escalon de la progresion "
+                      "adoptada alcanza (el mayor, 2.00 x 1.50 con t = 0.20 "
+                      "y una celda, tiene Bc = 2.40 m); con un marco mas "
+                      "ancho o con varias celdas hay que revisarlo. Ni el "
+                      "cero de la fuente como valor, que traslada la "
+                      "exigencia a un diseño estructural de la losa para "
+                      "carga directa que este alcance difiere",
+        fuente="NINGUNA fija la cobertura minima de un marco, y las tres que "
+               "hablan de el lo ADMITEN SIN RELLENO: Manual de Hidrologia "
+               "(MTC), num. 4.1.1.3.4 a), pag. impresa 72, PDF 75 (cita "
+               "MC_HHD.4.1.1.3.4a#NIVELES, permiso: la rasante puede "
+               "coincidir con la losa); su Lamina N 03, pag. impresa 209, PDF "
+               "212 (cita MC_HHD.LAMINA_03, el marco en cruce de canal de "
+               "riego); y AASHTO LRFD 9a ed., Art. 12.6.6.3, pag. impresa "
+               "12-22, PDF 1660 (cita AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA: "
+               "sin cobertura, la losa superior se diseña para la carga "
+               "vehicular directa). El vacio esta verificado, no es una "
+               "omision: ver la `AfirmacionNegativa` "
+               "SIN_CAJON_DE_CONCRETO_T12663 en el registro, que fija el "
+               "ambito barrido de la Sec. 12 completa. El 0.3048 m es la "
+               "fila del TUBO de la Tabla 12.6.6.3-1 aplicada por analogia, "
+               "mas restrictivo que la fuente",
         reemplazado_por="Una fila de cajon de concreto en la Tabla 12.6.6.3-1 "
                         "de una edicion futura de AASHTO LRFD, o una "
                         "disposicion peruana -- EG-2013 o Manual de Puentes -- "
@@ -5991,11 +6205,11 @@ CRITERIOS: Dict[str, Criterio] = {
                         "un cajon, y arrastra una exigencia estructural",
             dominio="real >= 0, en metros",
         ),
-        # `vacio_verificado` NO SE DECLARA AQUI, y no es un olvido: ese campo
-        # es para el VALOR que cubre un vacio registrado, y este criterio
-        # todavia no tiene valor -- lo dice `_verificar_criterio`, que lo
-        # rechaza --. El ancla al vacio vive en `fuente`, que es donde
-        # corresponde mientras no haya nada que cubra nada.
+        # --- T-3 --- `vacio_verificado` YA SE DECLARA: con valor de
+        # archivo el criterio cubre el vacio que la AfirmacionNegativa
+        # SIN_CAJON_DE_CONCRETO_T12663 fija, y el ancla es §16.12 de la ruta
+        # de la Familia C, donde C7 lo verifico contra la pagina renderizada.
+        vacio_verificado="ruta_familia_c.md Sec. 16.12",
     ),
 
     # -----------------------------------------------------------------------
@@ -9459,6 +9673,71 @@ CRITERIOS: Dict[str, Criterio] = {
             que_lo_fija="el proyectista: ninguna norma ni fuente tecnica de "
                         "normas/ da un desnivel de entrega",
             dominio="m >= 0; 0 es la entrega a nivel del fondo del receptor",
+        ),
+    ),
+
+    # --- T-3 --- (cadena T, INF-0.4) VC2: el empalme de la salida de un
+    # paso de canal con el fondo del canal aguas abajo. Lo pidio la cadena T
+    # sobre lo que §16.17 de docs/ruta_familia_c.md dejo «evaluado, medido,
+    # no implementado», y con los dos avisos que aquel apartado puso: la
+    # tolerancia no la da ninguna norma de normas/ como TOLERANCIA DE UN
+    # EMPALME -- la mas cercana es la de aceptacion de la cota superior de
+    # una placa de concreto, EG-2013 503.11 g) --, y en un paso de canal
+    # `cota_fondo_receptor` es el MISMO canal aguas abajo (homonimia).
+    # La verificacion AVISA y no detiene: el desajuste no depende de la
+    # seccion -- subir de B x H no lo corrige --, sino de la cota de entrada
+    # y de la pendiente, que son datos (G3 y V10 tienen la misma forma).
+    "desajuste_empalme_canal_m": Criterio(
+        valor=0.010,
+        nivel=NIVEL_PERFIL,         # lo invoca VC2 en 7.B (`M7.vc2_empalme_canal`)
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.010, 0.020),
+        concepto="Desajuste maximo, en metros y en valor absoluto, entre la "
+                 "cota de fondo de la salida de un paso de canal (Familia C) "
+                 "y el fondo del canal aguas abajo (verificacion VC2)",
+        justificacion="Decide cuanto puede quedar la salida del marco por "
+                      "encima o por debajo del fondo del canal aguas abajo "
+                      "antes de que VC2 lo avise: |cota_salida - "
+                      "cota_fondo_receptor| <= desajuste. En un paso de "
+                      "canal el conducto CONTINUA el canal: un escalon hacia "
+                      "arriba descarga en caida sobre el lecho y uno hacia "
+                      "abajo deja la salida enterrada y se colmata, de modo "
+                      "que la banda es de dos lados (§16.17 de "
+                      "docs/ruta_familia_c.md). La fuente no da la cifra "
+                      "como tolerancia de un empalme. Se adopta 0.010 m "
+                      "por analogia con la tolerancia de aceptacion de la "
+                      "cota superior de una placa de concreto, -10 mm a +10 "
+                      "mm (EG-2013, num. 503.11 g) 2., pag. impresa 934, "
+                      "cita EG2013.503.11g#COTAS): la cota superior de la "
+                      "losa de fondo ES el invert del marco, y un empalme "
+                      "que el diseño deja fuera de la tolerancia con que "
+                      "se recibe esa losa no se puede construir como "
+                      "empalme. El extremo alto de la ventana, 0.020 m, es "
+                      "la tolerancia de cota de la excavacion que recibe la "
+                      "losa (EG-2013, num. 501.07, pag. impresa 889, cita "
+                      "EG2013.501.07). VC2 avisa y no detiene: el desajuste "
+                      "lo fijan la cota de entrada y la pendiente, que son "
+                      "datos, y ninguna seccion lo corrige",
+        fuente="NINGUNA fuente fija la tolerancia de un empalme con un "
+               "canal. Las dos que se usan por analogia: EG-2013, num. "
+               "503.11 g) 2. 'Otras tolerancias' ('Cotas superiores de "
+               "placas y veredas: -10 mm a +10 mm.'), pag. impresa 934 (PDF "
+               "942), y num. 501.07 'Tolerancias' de la excavacion para "
+               "estructuras ('2 cm en cota'), pag. impresa 889 (PDF 897). "
+               "El requisito que VC2 lee lo escribe la Sec. 2.3 de la hoja "
+               "de ruta («No puede alterar la rasante hidraulica ni el "
+               "borde libre del canal»), y la tipologia del cruce la "
+               "dibuja la Lamina N 03 del Manual (marco en cruce de canal "
+               "de riego), sin acotar nada",
+        reemplazado_por="La tolerancia de empalme que fije el proyecto del "
+                        "canal (ANA / Junta de Usuarios del Bajo Piura) o la "
+                        "especificacion tecnica de la obra",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por analogia con la tolerancia de "
+                        "aceptacion del EG-2013 para la cota superior de una "
+                        "placa de concreto",
+            dominio="m > 0, valor absoluto del desajuste admisible",
         ),
     ),
 }

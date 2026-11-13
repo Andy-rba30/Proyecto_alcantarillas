@@ -279,8 +279,32 @@ def test_la_ventana_cubre_los_ejes_que_dice_cubrir(recien_generada):
     # sobre el EXPEDIENTE. Se comprueban las dos mitades -- que aparece la
     # nueva y que NO queda la vieja -- porque dejar las dos seria no haber
     # cambiado nada.
-    assert "embocadura_cajon" in ancho
+    #
+    # --- T-3 --- Y lo cambio otra vez T-3: los siete criterios del cajon
+    # tienen valor de archivo, y C-01 avanza hasta el primer DATO que la
+    # fila del fixture le niega -- la coronacion del canal, que VC1 exige --.
+    # Sigue siendo una afirmacion sobre el expediente, y ya no hay criterio
+    # que declarar. Ninguno de los siete puede reaparecer como bloqueo.
+    assert "Falta el dato 'cota_coronacion_canal' en el punto C-01" in ancho
+    assert "falta declarar: embocadura_cajon" not in ancho
     assert "no ofrece material candidato" not in ancho
+
+    # (f) --- T-3 --- LA FAMILIA C DIMENSIONADA, el eje que T-3 añade: con la
+    # coronacion de la guia de perfil en una copia del CSV, C-01 sale
+    # dimensionado SIN DECLARAR NADA, con los valores de archivo del cajon, y
+    # publica VC1, G1, G2, VC2 y la geometria del marco.
+    familia_c = lee("cli_familia_c.txt")
+    bloque_c01 = familia_c.split("C-01  |")[1].split("Fase 9")[0]
+    assert "Seccion  : marco 1.20 \u00d7 0.90 m (interior)" in bloque_c01
+    for codigo in ("VC1", "G1", "G2", "VC2"):
+        assert f" {codigo} " in bloque_c01, codigo
+    assert "marco: 1 celda(s)" in bloque_c01
+    # Lo unico «por declarar» del punto es V8, diferida por el alcance de
+    # perfil como en los otros tres: ninguno del cajon.
+    for clave in ("embocadura_cajon", "ke_entrada_cajon", "n_manning_cajon",
+                  "n_celdas_cajon", "secciones_cajon_normalizadas",
+                  "espesor_pared_cajon", "cobertura_minima_cajon"):
+        assert f"falta declarar: {clave}" not in bloque_c01, clave
 
     # (d-bis) EL PUNTO DE CAJON, el eje que añadio C4: una seccion NO
     # circular resuelta por una carta de FORMA 2. Es lo que hace visible aqui

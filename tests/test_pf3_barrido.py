@@ -321,10 +321,17 @@ def test_pf3_la_puerta_aplica_las_declaraciones_base_como_la_pestana_2(_limpio):
     celda = next(o.valor_propuesto for o in sed.esquema_de(CLAVE).opciones_de_tabla
                  if o.fila == fila)
     antes = dec.estado_de_sesion()
-    with pytest.raises(ValueError, match="R4"):
-        barrido.verificar_valores(CLAVE, (celda,), fila=fila)
-    base = {"embocadura_cajon": ca.criterio("embocadura_cajon").sensibilidad[0]}
-    barrido.verificar_valores(CLAVE, (celda,), fila=fila, declaraciones_base=base)
+    # --- T-3 --- La fila solo es inelegible mientras 'embocadura_cajon' siga
+    # sin valor; desde T-3 tiene valor de archivo, y la premisa se recrea
+    # vaciandola durante el test.
+    from tests.apoyo.criterios import sin_valor
+    with sin_valor("embocadura_cajon"):
+        with pytest.raises(ValueError, match="R4"):
+            barrido.verificar_valores(CLAVE, (celda,), fila=fila)
+        base = {"embocadura_cajon":
+                ca.criterio("embocadura_cajon").sensibilidad[0]}
+        barrido.verificar_valores(CLAVE, (celda,), fila=fila,
+                                  declaraciones_base=base)
     # La puerta no deja nada: ni la base ni el valor.
     assert dec.estado_de_sesion() == antes
     assert not ca.declarado_en_caliente("embocadura_cajon") and dec.procedencia_de(CLAVE) is None

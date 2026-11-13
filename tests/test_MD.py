@@ -319,7 +319,11 @@ def test_familia_C_se_detiene_en_los_criterios_del_cajon_y_no_en_el_catalogo():
     distincion se fija: una decia que el programa no sabia hacer ese punto, y
     la otra dice que el expediente no ha declarado como se hace.
     """
-    with pytest.raises(CriterioPendienteError) as excinfo:
+    # --- T-3 --- Desde T-3 la embocadura tiene valor de archivo: la
+    # detencion se mide vaciandola durante el test.
+    from tests.apoyo.criterios import sin_valor
+    with sin_valor("embocadura_cajon"), \
+            pytest.raises(CriterioPendienteError) as excinfo:
         disenar_punto(_punto(familia=Familia.C), L=L_CONDUCTO, TW=TW_LIBRE,
                       verificar=_todo_cumple)
 

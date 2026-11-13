@@ -68,15 +68,23 @@ CSV_DE_TRABAJO = "guia/puntos.csv"
 ID_PUNTO_QUE_LA_GUIA_RELLENA = "C-01"
 COLUMNA_QUE_LA_GUIA_RELLENA = "cota_coronacion_canal"
 PUNTOS_DEL_EJEMPLO = 4
-# La clave del barrido de la guia y el resto de los siete del cajon, que el
-# comando del barrido declara aparte.
+# La clave del barrido de la guia. Desde T-3 los siete del cajon tienen valor
+# de archivo y el barrido no declara nada mas: los otros seis corren con el
+# valor del archivo.
 CLAVE_DEL_BARRIDO = "n_celdas_cajon"
 TEXTO_DEL_BARRIDO = "Barrido de"
 TEXTO_ADVERTENCIA = "Advertencia de corredor"
 TEXTO_SITIO_DECLARADO = "datos_sitio.py no se modifico"
 TEXTO_SESION_RESTAURADA = "Criterios restaurados de la sesion"
 TEXTO_COMPARAR = "DIFIEREN"
-PRIMER_CRITERIO_DEL_CAJON = "embocadura_cajon"
+# --- T-3 --- La seccion con que C-01 dimensiona con los valores de archivo
+# del cajon, sin declarar nada: la misma que daban las siete declaraciones en
+# caliente hasta T-3 (la parada (c) de la cadena T).
+SECCION_C01 = "marco 1.20 \u00d7 0.90 m"
+CRITERIOS_DEL_CAJON = ("embocadura_cajon", "ke_entrada_cajon",
+                       "n_manning_cajon", "n_celdas_cajon",
+                       "secciones_cajon_normalizadas", "espesor_pared_cajon",
+                       "cobertura_minima_cajon")
 
 
 def _comando(bloque: gp.BloqueDeLaGuia) -> list:
@@ -230,19 +238,38 @@ def test_el_prevuelo_con_el_csv_de_trabajo_y_el_json_sale_con_0(taller):
     assert hecho.returncode == 0, _diagnostico(hecho)
 
 
-def test_sin_sitio_ni_cajon_la_corrida_advierte_del_corredor_y_dice_su_resumen(taller):
+def test_sin_sitio_ni_declaraciones_la_corrida_advierte_del_corredor_y_dimensiona_el_marco(taller):
+    """
+    --- T-3 --- HASTA T-3 ESTA CORRIDA SE DETENIA EN EL CAJON: tres puntos
+    dimensionados y C-01 bloqueado en `embocadura_cajon`, el primer criterio
+    del cajon sin valor. Desde T-3 los siete tienen valor de archivo y la
+    misma corrida, sin declarar nada, dimensiona los cuatro y C-01 sale con
+    la seccion que las siete declaraciones le daban. Lo que se sigue midiendo
+    es lo que la guia promete: la advertencia de corredor sin `--datos-sitio`
+    y su RESUMEN linea a linea; y lo que se mide ahora es que los siete del
+    cajon salieron del ARCHIVO y no de una declaracion.
+    """
     hecho = taller.resultados["sin_cajon"]
-    assert hecho.returncode == 1, _diagnostico(hecho)
+    assert hecho.returncode == 0, _diagnostico(hecho)
     assert TEXTO_ADVERTENCIA in hecho.stdout
     for linea in POR_ID["resumen_sin_cajon"].cuerpo.splitlines():
         assert linea in hecho.stdout, f"la guia promete «{linea}»\n{_diagnostico(hecho)}"
     informe = taller.json("guia/salida/sin_cajon.informe.json")
-    assert informe["expediente"]["dimensionados"] == PUNTOS_DEL_EJEMPLO - 1
-    assert not _punto(informe, ID_PUNTO_QUE_LA_GUIA_RELLENA)["dimensionado"]
-    assert not informe["expediente"]["cerrado"]
-    # La cebolla: la corrida nombra el PRIMER criterio del cajon que encontro,
-    # que es el que la guia dice; los diez los listo el pre-vuelo.
-    assert PRIMER_CRITERIO_DEL_CAJON in hecho.stdout
+    assert informe["expediente"]["dimensionados"] == PUNTOS_DEL_EJEMPLO
+    assert informe["expediente"]["cerrado"] is True
+    c01 = _punto(informe, ID_PUNTO_QUE_LA_GUIA_RELLENA)
+    assert c01["dimensionado"]
+    assert SECCION_C01 in hecho.stdout
+    # Los «falta declarar» que quedan son los diferidos por alcance (V5, V8)
+    # de los cuatro puntos: ninguno es del cajon.
+    for clave in CRITERIOS_DEL_CAJON:
+        assert f"falta declarar: {clave}" not in hecho.stdout, clave
+    assert not _declarados_en(POR_ID["sin_cajon"])
+    usados = {c["clave"]: c for c in informe["criterios"]["usados"]}
+    for clave in CRITERIOS_DEL_CAJON:
+        assert clave in usados, clave
+        assert usados[clave]["declarado_en_caliente"] is False, clave
+    assert not informe["criterios"]["declarados_en_caliente"]
 
 
 def test_la_corrida_de_perfil_dimensiona_los_cuatro_y_dice_su_resumen(taller):
@@ -276,8 +303,9 @@ def test_la_sesion_de_la_guia_es_valida_y_reproduce_la_corrida_de_perfil(taller)
     datos = json.loads(ARCHIVOS["guia/sesion.json"].cuerpo)
     assert sesion.errores_de_sesion(datos) == []
     assert datos["formato_version"] == sesion.FORMATO_SESION
-    # Los criterios de la sesion son EXACTAMENTE los siete que el comando de
-    # perfil declara: la guia no puede decir una cosa en cada bloque.
+    # Los criterios de la sesion son EXACTAMENTE los que el comando de perfil
+    # declara (desde T-3, uno: el numero de celdas, con el valor del
+    # archivo): la guia no puede decir una cosa en cada bloque.
     declarados = _declarados_en(POR_ID["perfil"])
     assert set(datos["criterios"]["valores"]) == set(declarados)
     hecho = taller.resultados["sesion"]
@@ -294,14 +322,15 @@ def test_comparar_las_dos_corridas_dice_que_difieren(taller):
     assert TEXTO_COMPARAR in hecho.stdout
 
 
-def test_el_barrido_corre_una_vez_por_valor_y_declara_los_otros_seis(taller):
+def test_el_barrido_corre_una_vez_por_valor_y_declara_lo_mismo_que_perfil(taller):
     hecho = taller.resultados["barrido"]
     assert hecho.returncode == 0, _diagnostico(hecho)
     assert TEXTO_DEL_BARRIDO in hecho.stdout
     volcado = taller.json("guia/salida/barrido.json")
     assert [b["clave"] for b in volcado["barridos"]] == [CLAVE_DEL_BARRIDO]
     assert len(volcado["barridos"][0]["corridas"]) == 2
-    # Los seis declarados del barrido son los siete de perfil menos la clave barrida.
+    # Lo declarado en el barrido es lo de perfil menos la clave barrida (desde
+    # T-3, nada: los otros seis del cajon corren con su valor de archivo).
     del_perfil = _declarados_en(POR_ID["perfil"])
     del_barrido = _declarados_en(POR_ID["barrido"])
     assert set(del_barrido) == set(del_perfil) - {CLAVE_DEL_BARRIDO}

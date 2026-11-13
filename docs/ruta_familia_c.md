@@ -2198,7 +2198,11 @@ suyos**: los suyos, corrigiendo el corrimiento, son **0.011/0.012/0.014**. Esto 
 hallazgo nuevo**: el repositorio lo tiene declarado como `DIS-MCHHD-T09-A2-DESPLAZADA`
 (`ERRATA_DE_IMPRENTA`), con las cuatro pruebas y con la correspondencia fila a fila contra
 Ven Te Chow 1983 — donde `finished` es exactamente 0.011/0.012/0.014. C5 **cita esa
-discrepancia**; no la vuelve a demostrar.
+discrepancia**; no la vuelve a demostrar. *(Corregido por la auditoría de T-3, H10: Chow no
+está en `normas/` y la correspondencia no es verificable aquí; la errata se sostiene en la
+evidencia **interna** de la página —el bloque A.1 alineado, los rótulos de categoría del A.2
+con terna y sus últimas hojas en blanco— y el mismo corrimiento alcanza a los bloques B.1,
+B.2 y C. Ver §16.22.)*
 
 #### 15.3.3 · 4.1.1.3.7 b) «Borde libre» — impresa 79 / PDF 82
 
@@ -6000,3 +6004,124 @@ El acceso se restauró en la misma sesión y el push entró después por fast-fo
 `origin/main` pasó de `5a76dac` a `80f2bc9` (los dos commits de D9: el del trabajo,
 `749311c`, y el de sellos), y la suite remedida sobre ese árbol dio el mismo par,
 1971 passed, 4 skipped. La rama de trabajo ya no existe en el remoto.
+
+### 16.21 · T-3 de la cadena T — el marco se dimensiona sin declarar nada, y la progresión que no se adoptó
+
+*Fuera del plan C0–C8: lo pidió la cadena T (`docs/planes_mejora/09_CADENA_PROMPTS_TESIS.md`,
+bloque T-3; ID canónico `INF-0.4`). Se escribe aquí porque levanta un criterio de salida
+que esta ruta dejó escrito.*
+
+#### 1 · El criterio 7 de §11 se levanta, y por qué no mueve nada
+
+§11 decía «Ningún criterio nuevo tiene valor escrito en `criterios_adoptados.py`» y §11-bis
+lo dio por CERRADO: los siete del cajón sin valor, declarables. **T-3 lo levanta por mandato
+de la cadena T** —que la Familia C se dimensione sin que el tesista teclee siete
+declaraciones— y lo levanta sin mover nada: cada valor de archivo es el que la guía de
+perfil, la suite y la corrida del entregable de C7 declaraban en caliente, y C-01 sigue
+saliendo como **marco 1.20 × 0.90 m, control de entrada, HW 0.589 m** con los datos de la
+guía (coronación 38.30, Q = 0.85, S = 0.006). Cada valor lleva su fila nombrada por clave,
+su cita y su ventana:
+
+| Criterio | Valor | Etiqueta | De dónde |
+|---|---|---|---|
+| `n_manning_cajon` | `concreto_afinado` (0.011, 0.014) — **corregido en §16.22: `concrete_boxes` (0.012, 0.015) [C]** | [N→] | Tabla N° 09, fila «afinado» leída con el corrimiento corregido (§15.3.2, `DIS-MCHHD-T09-A2-DESPLAZADA`) |
+| `embocadura_cajon` | `cajon_concreto_aletas_30_75` | [A] | Tabla A.1, Carta 8 escala 1, Forma 1 (PDF 197) |
+| `ke_entrada_cajon` | `cajon_aletas_30_75_escuadra` (0.4) | [C] | Tabla C.2, la misma embocadura (pág. impresa C.6) |
+| `n_celdas_cajon` | 1 | [A] | num. 4.1.1.3.4 a), recomendación de sección única ante arrastre |
+| `secciones_cajon_normalizadas` | 1.20 × 0.90 · 1.50 × 1.20 · 2.00 × 1.50 | [A] | la de C7; **la de la cadena T no se adopta** (punto 2) |
+| `espesor_pared_cajon` | 0.20 m | [A] | E.060 num. 14.5.3.2 (200 mm, muros exteriores de sótanos y cimentaciones), por analogía |
+| `cobertura_minima_cajon` | 0.3048 m | [A] | piso de la fila del tubo de concreto de la Tabla 12.6.6.3-1, por analogía rotulada |
+
+Con valor de archivo, `vacio_verificado` ya se puede poner, y se pone en los cuatro que
+cubren un vacío verificado (`secciones`, `n_manning`, `espesor_pared` y `cobertura`): **R-23
+de §15.8 se cierra por esa vía**, y los cuatro salen por `bloque_acotaciones`.
+
+#### 2 · La progresión de la cadena T, medida, y la parada (c)
+
+La cadena T proponía anchos de 1.00 a 4.00 m con paso 0.50 por alturas de 1.00 a 3.00 m con
+paso 0.25. **No contiene el 1.20 × 0.90**, y medida sobre C-01 de la guía (por área
+creciente) **lo deja sin dimensionar**: V7 incumple en los siete primeros escalones —con
+H ≥ 1.00 m el relleno sobre la losa baja bajo la rasante del fixture— y el octavo
+(1.00 × 2.00 m) deja la clave 0.150 m por encima de la subrasante y detiene el material. Es la parada (c): queda como alternativa en la `sensibilidad` del
+criterio y la decide el dueño (ficha T3-01 de `docs/decisiones_diferidas.md`).
+
+#### 3 · La embocadura: aletas, la de hoy; el cabezal recto, medido
+
+La cadena T sugería «por ahora square edge headwall 90°». Medido sobre C-01: con la Carta 8
+escala 2 («90° and 15° wingwall flares») y el ke del cajón sin aletas (0.5), **HW = 0.629 m
+frente a 0.589 m**. Como la carga cambia, se dejó la de hoy; la coherencia entre aleros,
+carta y ke la cierra T-7a (ficha T3-02).
+
+#### 4 · VC2 y el remanso, por fin implementados — los dos como aviso
+
+**VC2** es lo que §16.17 dejó «evaluado, medido, no implementado»: banda de dos lados
+`|cota_salida − cota_fondo_receptor| ≤ desajuste_empalme_canal_m`, con la tolerancia
+**0.010 m** [A] por analogía con la de aceptación de la cota superior de una placa de
+concreto (EG-2013 503.11 g) 2., pág. impresa 934) y ventana hasta 0.020 m (501.07, la cota
+de la excavación). Los dos avisos de §16.17 se respetan: la tolerancia no es de una norma
+de empalmes, y la homonimia de `cota_fondo_receptor` se declara en el paso. VC2 **avisa y no
+detiene**: el desajuste lo fijan la cota de entrada y la pendiente, no la sección. En C-01
+del fixture sale **+0.571 m** —la cota de entrada adoptada del terreno (36.90) frente al
+fondo del canal (36.20)—, que es exactamente el defecto de datos que VC2 existe para decir.
+
+**El remanso** cierra a medias el hueco 2 de §13: con la sección medida del canal
+(`seccion_receptor_medida`, que en un paso de canal es la del mismo canal) se publica la
+sobreelevación en el cruce `dh = HW − y_n` y la longitud **mínima** `dh / S` —cota inferior:
+el perfil M1 real llega más lejos—. Sin la sección, «no se evaluó», con aviso. El hueco 1 de
+§13 (la magnitud vertical de la alteración) queda medido por `dh`; el 2 (la extensión),
+acotado sólo por abajo.
+
+#### 5 · La geometría del marco y V6
+
+`modelos.GeometriaMarco` (paso 7.B.M) publica B, H, N, el espesor —uno para paredes, losas
+y tabique—, el ancho y el canto exteriores, las cotas de fondo, clave interior, clave
+exterior (la misma de `M5.cota_clave`) y base, y el relleno sobre la losa, para la Fase 8
+del marco (T-5) y el cabezal por punto (T-7a). M8 no se toca. V6 con N > 1 publica el
+reparto Q/N, el tabique y el ancho total y **sigue sin aceptar** la multicelda (EXT-2-01);
+la regla de separación del num. 4.1.1.3.4 a) es de tuberías y la fila dice por qué no la
+aplica a un marco monolítico.
+
+#### 6 · Lo que T-3 deja abierto
+
+La parada (c) de la progresión; la embocadura por punto (T-7a); el perfil de remanso paso
+a paso; el dato de arrastre que destrabaría la multicelda; y la cota de fondo de la entrada
+medida en cada cruce, sin la cual VC2 seguirá avisando en el fixture.
+
+### 16.22 · Las correcciones de la auditoría adversarial de T-3 (2026-11-13)
+
+*Doce hallazgos (H1 a H12) sobre la FASE A de §16.21, con las resoluciones del orquestador y
+las decisiones del dueño del 2026-11-12. Aceptación: `tests/test_t3_correcciones_auditoria.py`.
+**Ninguna sección se mueve**: C-01 sigue en marco 1.20 × 0.90 m donde dimensiona.*
+
+- **El n del marco (H1).** `n_manning_cajon` pasa a **[C]** con la fila **propia** del cajón,
+  HDS-5 Tabla B.1 «Concrete Boxes | Smooth | 0.012–0.015 | FHWA 1961» (pág. impresa B.6),
+  la misma fuente de la carta (A.1) y del ke (C.2) del marco; el num. B.3 del HDS-5 (0.012 a
+  0.022 en un cajón vaciado in situ, según el encofrado, pág. impresa B.2) es la ventana
+  hacia arriba del n de capacidad, y la fila «afinado» de la Tabla N° 09 queda como
+  alternativa barrible. Se retiró la frase «describe el acabado que tiene un marco vaciado
+  in situ», que no tenía sustento. Sobre C-01: la sección y el HW de control de entrada no
+  se mueven; se mueven el tirante normal y el HW de control de salida.
+- **La errata de la Tabla N° 09 (H10).** Se sostiene en la evidencia interna de la página;
+  Chow no se invoca. Alcanza también a B.1, B.2 y C, y la lectura literal sería más
+  conservadora para capacidad. La v8 lo dice debajo de su tabla de Manning.
+- **El remanso (H2, H3).** `M7.remanso_canal` calcula el tirante crítico del canal; **no
+  concluye**, sin cifra, cuando el canal es de pendiente fuerte (S1 que termina en resalto:
+  el auditor midió 15.2 m reales donde dh/S decía «al menos 33.4 m») o cuando VC2 está
+  fuera de tolerancia (el HW sale de una descarga libre que el canal no tiene).
+- **G2 frente a VC2 (H4).** VC2 gobierna el empalme: en la Familia C G2 admite por debajo la
+  tolerancia de VC2 y la banda es de dos lados de verdad. A y B no cambian.
+- **La cobertura del marco (H5).** 0.3048 m se mantiene como umbral de **aviso**: G1 del
+  marco avisa (INDICADOR) cuando sólo falta esa cobertura, porque la fuente admite el marco
+  sin relleno (num. 4.1.1.3.4 a), Lámina N° 03, AASHTO LRFD 12.6.6.3); el resguardo sigue
+  bloqueando y G1 del tubo no cambia. Con la geometría de C-01 y sumersión completa el aviso
+  no se alcanza en una corrida: V7 exige sobre ese marco unos 0.83 m de relleno (0.9 · 17 ·
+  1.60 · h ≥ 9.81 · 1.60 · 1.30) y rechaza antes el escalón (siguiente punto).
+- **V7 sin peso propio (H6).** La causa de que la progresión de la cadena deje a C-01 sin
+  dimensionar no es que el marco «no quepa»: `M5.v7_flotacion` lleva DC = 0 (lado seguro).
+  V7 no se toca; las fichas dicen la causa real y la ficha T3-08 la difiere al dueño.
+- **Citas de fórmula (H7), mutantes (H8), pendiente de cierre de VC2 (H9).** Los pasos 7.B.R,
+  7.B.M y VC2 dejan vacía la cita de la fórmula; el test vacuo de la pendiente del canal mide
+  ahora su guardia; el aviso de VC2 imprime la S que cerraría el empalme.
+- **Textos (H11, H12).** La progresión es la decisión del dueño, no «provisional»;
+  `espesor_pared_cajon` queda [A] con la razón en la ficha.
+

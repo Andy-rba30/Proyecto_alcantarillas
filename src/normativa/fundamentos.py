@@ -1797,6 +1797,36 @@ N_CAJON = _fundamento(
 )
 
 
+# --- T-3 (auditoria adversarial, H1) --- El n del marco por la fila PROPIA
+# del cajon de la Tabla B.1 del HDS-5. Desde la auditoria es el valor de
+# archivo de 'n_manning_cajon' [C]; el fundamento de arriba (F4.N_CAJON)
+# queda para la alternativa barrible, la fila de la Tabla N 09 por analogia.
+N_CAJON_TB1 = _fundamento(
+    id="F4.N_CAJON_TB1",
+    fase=F4,
+    que_paso=("Coeficiente de rugosidad de Manning del cajon de concreto, "
+              "por la fila del cajon de la Tabla B.1 del HDS-5"),
+    por_que=(
+        "La Tabla N 09 del Manual cubre al cajon por el titulo de su grupo A "
+        "y no tiene fila de seccion rectangular: es un vacio de fila. La "
+        "fuente tecnica de la que el proyecto ya toma la carta de control "
+        "de entrada y el coeficiente de perdida a la entrada del marco "
+        "--el HDS-5-- si tabula el cajon de concreto, en su propia fila, y "
+        "con ella se cubre el vacio. El rango se toma completo: la regla de "
+        "doble n pide los dos extremos. La fuente advierte que sus valores "
+        "son de laboratorio y que en un cajon vaciado in situ el n depende "
+        "de la calidad del encofrado."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.TB.1",                  # DEFINICION -> sostiene DEFINE
+           "HDS5_3ED.B.3#CAJON_IN_SITU"),    # DEFINICION
+    que_pasa_si_no_se_hace=(
+        "El n del marco saldria de una fila de la Tabla N 09 cuyo rotulo no "
+        "describe un cajon, aplicada por analogia, mientras la fuente de la "
+        "carta y del ke del mismo marco trae una fila para el; y la memoria "
+        "no diria que el n de capacidad puede subir con un encofrado peor."),
+)
+
+
 # ===========================================================================
 # --- T-2 --- (cadena T, 2026-11-11) · Pendiente del conducto
 # ===========================================================================
@@ -2674,4 +2704,94 @@ MARCO_DEMANDA = _fundamento(
     que_pasa_si_no_se_hace=(
         "El marco llega al expediente sin la carga con que hay que "
         "diseñarlo, y la memoria dice «diferido» sin decir que se difiere."),
+)
+
+
+# --- T-3 --- (cadena T, INF-0.4) Los tres pasos que 7.B emite para un paso
+# de canal: la geometria del marco, el empalme de la salida con el fondo del
+# canal (VC2) y el remanso aguas arriba. Ninguno lleva verbo de obligacion:
+# ninguna fuente de normas/ manda verificar un empalme ni medir un remanso
+# en un cruce de canal; lo que la fuente hace es TIPIFICAR el cruce (Lamina
+# N 03) y DEFINIR la herramienta (Manning para canales abiertos). Lo que se
+# verifica y como es lectura del proyecto, y el umbral de VC2 lleva su
+# analogia en `aplicacion`.
+
+MARCO = _fundamento(
+    id="F7.MARCO",
+    fase=F7,
+    que_paso=("Geometria del marco adoptado: dimensiones exteriores, cotas "
+              "de fondo y de clave, relleno sobre la losa"),
+    por_que=(
+        "Un marco no se describe con su luz interior: la cota de la clave "
+        "exterior es la que gobierna la cobertura de 7.A y la subpresion de "
+        "V7, el ancho y el canto exteriores son los que desplazan agua y "
+        "cargan relleno, y el relleno sobre la losa es la altura que la "
+        "verificacion estructural del expediente va a cargar. La tipologia la "
+        "fija el Manual -- el marco de concreto en cruce de canal de riego "
+        "de la Lamina N 03, que el num. 4.1.1.3.4 a) permite ubicar al nivel "
+        "que el cruce requiera -- sin acotar ninguna dimension; las dimensiones salen de la seccion "
+        "adoptada y del espesor que el proyecto declara."),
+    # La E.060 entra por el espesor que la geometria usa (piso adoptado por
+    # analogia en 'espesor_pared_cajon'); el verbo lo sostiene la Lamina.
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.LAMINA_03", "MC_HHD.4.1.1.3.4a#NIVELES", "E060.14.5.3.2"),
+    que_pasa_si_no_se_hace=(
+        "La geometria exterior del marco quedaria repartida entre V7, 7.A y "
+        "la Fase 8, cada uno con su propia cuenta de la clave, y la "
+        "memoria no diria en ningun sitio cuanto mide la obra por fuera ni "
+        "cuanto relleno lleva encima."),
+)
+
+EMPALME_CANAL = _fundamento(
+    id="F7.EMPALME_CANAL",
+    fase=F7,
+    que_paso=("Empalme de la salida de un paso de canal con el fondo del "
+              "canal aguas abajo (VC2, aviso)"),
+    por_que=(
+        "En un paso de canal el conducto CONTINUA el canal: el Manual lo "
+        "tipifica con el marco entre los dos bordes del canal, y en ese caso "
+        "el fondo del receptor es el mismo canal aguas abajo. Si la cota "
+        "de salida que resulta de la entrada y la pendiente no cae sobre ese "
+        "fondo, la obra deja un escalon: hacia arriba, el agua cae sobre el "
+        "lecho del canal; hacia abajo, la salida queda enterrada y se "
+        "colmata. G2 solo mira que la salida no quede bajo el fondo; VC2 "
+        "mira las dos caras del empalme. No lo arregla ninguna seccion: lo "
+        "fijan la cota de entrada y la pendiente, y por eso avisa en vez de "
+        "detener."),
+    # Las dos del EG-2013 sostienen la TOLERANCIA por analogia (el umbral
+    # lo dice en `aplicacion`); el verbo lo sostiene la Lamina.
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.LAMINA_03", "EG2013.503.11g#COTAS", "EG2013.501.07"),
+    que_pasa_si_no_se_hace=(
+        "Un escalon de varios decimetros en el fondo de un canal pasaria por "
+        "bueno porque G2 lo acepta en un sentido -- §16.17 de "
+        "docs/ruta_familia_c.md midio uno de 7 cm hacia arriba que G2 no "
+        "veia --, y con la cota de entrada adoptada del terreno el escalon "
+        "puede ser de mas de medio metro sin que nada lo diga."),
+)
+
+REMANSO_CANAL = _fundamento(
+    id="F7.REMANSO_CANAL",
+    fase=F7,
+    que_paso=("Sobreelevacion de la lamina del canal en el cruce y longitud "
+              "minima del remanso aguas arriba (aviso)"),
+    por_que=(
+        "La Sec. 2.3 de la hoja de ruta prohibe que un cruce altere la "
+        "rasante hidraulica del canal, y VC1 solo mide el nivel contra la "
+        "coronacion EN EL CRUCE. Cuanto levanta la obra la lamina se mide "
+        "contra la que el canal tendria sin ella, su tirante normal, que "
+        "sale de Manning sobre la seccion medida del canal -- la formula que "
+        "el Manual da para canales abiertos y tuberias --. Desde el cruce, el "
+        "embalse se extiende aguas arriba: la lamina horizontal del embalse "
+        "corta la lamina normal a sobreelevacion / S, y el perfil real llega "
+        "mas lejos, de modo que esa distancia es una cota inferior. No hay "
+        "umbral en ninguna fuente: el numero se publica para que el "
+        "proyecto lo contraste con la coronacion del canal aguas arriba."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.4.1.1.3.6",),
+    que_pasa_si_no_se_hace=(
+        "Un cruce que cumple VC1 con holgura puede haber levantado la lamina "
+        "del canal varios decimetros y embalsado decenas de metros aguas "
+        "arriba, donde la coronacion puede ser mas baja, sin que la memoria "
+        "lo diga: es el hueco 2 de §13 de docs/ruta_familia_c.md."),
 )

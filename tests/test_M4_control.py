@@ -1422,7 +1422,9 @@ def test_sin_ke_declarado_el_marco_se_detiene_y_no_hereda_el_del_tubo():
     """
     from src.modelos import CriterioPendienteError
     sin_ke = {k: v for k, v in _CAJON.items() if k != "ke_entrada_cajon"}
-    with declarados(sin_ke):
+    # --- T-3 --- 'ke_entrada_cajon' tiene valor de archivo desde T-3: la
+    # detencion se mide vaciandolo durante el test.
+    with declarados(sin_ke), sin_valor("ke_entrada_cajon"):
         with pytest.raises(CriterioPendienteError) as exc:
             ke_declarado(CRITERIO_KE_CAJON)
     assert exc.value.clave == "ke_entrada_cajon"

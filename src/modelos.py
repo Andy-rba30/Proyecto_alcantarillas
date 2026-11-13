@@ -1613,6 +1613,21 @@ class SeccionRectangular:
         """Bc = B + 2t: el ancho exterior en planta."""
         return self.B + 2 * espesor
 
+    def ancho_exterior_de_celdas(self, espesor: float, celdas: int) -> float:
+        """
+        --- T-3 --- El ancho exterior del marco de N celdas MONOLITICO:
+
+            N*B + (N - 1)*t + 2*t
+
+        Las celdas comparten tabique, del mismo espesor que las paredes
+        (un solo criterio, 'espesor_pared_cajon'): es la geometria de un marco
+        vaciado in situ (§14.1 de docs/ruta_familia_c.md). Con N = 1 es
+        `ancho_exterior`. Vive aqui y no en M5 ni en M7 porque lo leen los
+        dos -- V6 con N > 1 y la geometria del marco de 7.B -- y dos copias de
+        la misma cuenta son como divergen los numeros.
+        """
+        return celdas * self.B + (celdas - 1) * espesor + 2 * espesor
+
     def canto_exterior(self, espesor: float) -> float:
         """
         B'c = H + 2t: el canto exterior.
@@ -4032,6 +4047,23 @@ class TamizadoRasante:
     # columna `cota_fondo_entrada` llena los dos quedan en False y "".
     provisional: bool = False
     aviso: str = ""
+    # --- T-3 (auditoria adversarial, H5) --- LA COBERTURA DEL MARCO AVISA Y
+    # NO BLOQUEA. Su valor, 0.3048 m, es [A] por analogia con la fila del
+    # TUBO de la Tabla 12.6.6.3-1, y es MAS RESTRICTIVO que la fuente: el
+    # Manual admite la rasante a nivel de la losa (num. 4.1.1.3.4 a)), la
+    # Lamina N 03 dibuja el marco en cruce de canal sin relleno acotado y
+    # AASHTO LRFD 12.6.6.3 admite el cajon sin cobertura con la losa
+    # diseñada para la carga vehicular directa. Con `cobertura_como_aviso`
+    # (solo un marco) la condicion de recubrimiento que BLOQUEA es la clave
+    # bajo la subrasante -- cobertura cero, `cota_por_cobertura_exigible` =
+    # clave + e_paq --, y `cota_rasante_min`, `factible` y el delta se
+    # calculan con ella y con el resguardo; la cobertura adoptada queda en
+    # `cota_por_recubrimiento` y `alcanza_cobertura_adoptada` dice si la
+    # rasante la alcanza: si no, G1 sale como INDICADOR. En un tubo los dos
+    # campos quedan en False/None y nada cambia.
+    cobertura_como_aviso: bool = False
+    cota_por_cobertura_exigible: Optional[float] = None
+    alcanza_cobertura_adoptada: bool = True
 
     @property
     def delta_rasante_cm(self) -> float:
@@ -4058,6 +4090,12 @@ class TamizadoRasante:
         # --- T-6 --- el delta (o su ausencia) es PROVISIONAL mientras el
         # fondo de entrada sea el terreno adoptado: se dice en la misma frase.
         cola = f" -- PROVISIONAL: {self.aviso}" if self.provisional else ""
+        # --- T-3 (auditoria, H5) --- la cobertura adoptada del marco, que
+        # avisa y no bloquea, se dice en la misma frase.
+        if self.cobertura_como_aviso and not self.alcanza_cobertura_adoptada:
+            cola = (f" -- AVISO: no alcanza la cobertura adoptada por "
+                    f"analogia ({self.h_recubrimiento:.4f} m sobre la clave, "
+                    f"rasante {self.cota_por_recubrimiento:.3f} msnm)" + cola)
         if self.factible:
             return (f"factible: la rasante {self.cota_rasante_actual:.3f} msnm "
                     f"alcanza la minima de 7.A ({self.cota_rasante_min:.3f} "
@@ -4211,6 +4249,19 @@ class CompatibilidadGeometrica:
     longitud_a_la_clave: Optional[float] = None
     desnivel_entrega: Optional[float] = None
     avisos: Tuple[str, ...] = ()
+    # --- T-3 --- Lo que 7.B publica de un MARCO y de un paso de canal, los
+    # dos con valor por defecto para los constructores anteriores:
+    #   geometria_marco   la geometria del marco adoptado (B, H, celdas,
+    #                     espesor, dimensiones exteriores y cotas de fondo y
+    #                     de clave). None si la seccion es circular. Queda
+    #                     para quien la necesite (la demanda de la losa del
+    #                     marco, el cabezal por punto) sin volver a
+    #                     calcularla; hoy M8 no la lee (ficha T3-06).
+    #   remanso_canal     la sobreelevacion de la lamina del canal en el
+    #                     cruce y la longitud minima del remanso aguas arriba
+    #                     (Familia C). Es un AVISO, no una verificacion.
+    geometria_marco: Optional["GeometriaMarco"] = None
+    remanso_canal: Optional["RemansoCanal"] = None
 
     @property
     def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
@@ -6214,3 +6265,99 @@ class ResultadoEstructural:
 # 3.24» seria una cita falsa (`MetodoNoEvaluableError.rotulo`).
 MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL = (
     "método no evaluable (AASHTO LRFD 3.6.1.2.6a)")
+
+
+# ===========================================================================
+# --- T-3 --- (cadena T, INF-0.4) La geometria del marco y el remanso del
+# canal. Viven aqui por la regla de la casa: fluyen de M7 al servicio, a la
+# CLI, al JSON y a M11. Integrado T-3 detras de T-5, `GeometriaMarco` no
+# tiene consumidor en M8 -- `M8.demanda_marco` lee la `Seccion`,
+# `espesor_pared` y la misma `M5.cota_clave`, con los mismos numeros -- y
+# queda para la demanda de la losa y el cabezal por punto (T-7a) cuando se
+# toquen (ficha T3-06).
+# ===========================================================================
+
+@dataclass(frozen=True)
+class GeometriaMarco:
+    """
+    La geometria del marco adoptado, en SI y en cotas msnm (Sec. 7.A/7.B).
+
+    UN SOLO ESPESOR para paredes, losas y tabique: el criterio
+    'espesor_pared_cajon' [A] es uno, y separarlo en tres seria inventar dos
+    adopciones que nadie declaro. Con N celdas el marco es MONOLITICO --
+    vaciado in situ, §14.1 de docs/ruta_familia_c.md --: las celdas
+    comparten tabique y entre ellas no hay relleno, de modo que el ancho
+    exterior es N*B + (N-1)*t + 2*t.
+
+    Las cotas se apilan sobre el fondo INTERIOR de la entrada (el invert, la
+    superficie por donde corre el agua): la clave interior a H, la exterior a
+    H + t -- que es la MISMA que `M5.cota_clave` le da a V7 y a 7.A --, y la
+    base exterior a t por debajo. `relleno_sobre_losa_m` es la subrasante
+    menos la clave exterior, la altura de relleno que la Fase 8 carga.
+    """
+    B_m: float
+    H_m: float
+    celdas: int
+    espesor_m: float
+    tabique_m: float                 # 0.0 con una sola celda
+    ancho_exterior_m: float
+    canto_exterior_m: float
+    cota_fondo_interior_msnm: float
+    cota_clave_interior_msnm: float
+    cota_clave_exterior_msnm: float
+    cota_base_exterior_msnm: float
+    cota_subrasante_msnm: float
+    relleno_sobre_losa_m: float
+    paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class RemansoCanal:
+    """
+    La sobreelevacion de la lamina del canal en el cruce y la longitud
+    MINIMA del remanso aguas arriba (Familia C). Es un AVISO: ninguna fuente
+    de normas/ fija un umbral, y no hay verificacion que lo juzgue.
+
+    `evaluado` es False cuando falta la seccion medida del canal: entonces
+    no hay numeros y `aviso` dice que falta. Con ella:
+
+      y_normal_canal_m    tirante normal del canal en el cruce (Manning en
+                          la seccion medida, con el caudal del canal)
+      y_critico_canal_m   --- T-3 (auditoria, H2) --- tirante critico del
+                          canal en la misma seccion (Q^2 T = g A^3)
+      sobreelevacion_m    HW - y_normal: cuanto levanta la obra la lamina
+                          sobre la que el canal tendria sin ella. Negativa o
+                          nula, la obra no la levanta.
+      longitud_minima_m   sobreelevacion / S_canal: la distancia aguas arriba
+                          a la que la lamina horizontal del embalse corta la
+                          lamina normal. Es una COTA INFERIOR solo en un
+                          canal SUAVE (y_normal > y_critico): el perfil M1
+                          real queda por encima de esa horizontal y se
+                          extiende mas alla, asintotico al normal.
+
+    --- T-3 (auditoria adversarial, H2 y H3) --- `concluye` es False, con la
+    razon en `motivo_no_concluye` y en `aviso`, en dos casos en que la cuenta
+    de arriba NO dice lo que parece, y entonces `longitud_minima_m` va en
+    None -- ninguna cifra se presenta como cota --:
+      - canal de pendiente FUERTE (y_normal <= y_critico): el remanso es una
+        S1 que termina en resalto aguas arriba, y la horizontal no lo acota
+        (puede ser mas corto que sobreelevacion / S). La sobreelevacion en
+        el cruce si se publica: es HW - y_normal, un hecho de la seccion.
+      - VC2 fuera de tolerancia: el HW de la obra sale de una descarga en
+        caida libre a la salida, que el canal no tiene porque el empalme no
+        cierra; ni la sobreelevacion ni la longitud se publican.
+    """
+    evaluado: bool
+    aviso: str
+    seccion_origen: str = ""
+    Q_canal_m3s: Optional[float] = None
+    S_canal: Optional[float] = None
+    y_normal_canal_m: Optional[float] = None
+    HW_m: Optional[float] = None
+    cota_lamina_entrada_msnm: Optional[float] = None
+    sobreelevacion_m: Optional[float] = None
+    longitud_minima_m: Optional[float] = None
+    paso: Optional["PasoDeMemoria"] = None
+    concluye: bool = False
+    y_critico_canal_m: Optional[float] = None
+    motivo_no_concluye: str = ""

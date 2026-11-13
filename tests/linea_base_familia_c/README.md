@@ -1000,3 +1000,63 @@ socavación sin hidrograma se estima con 360 min y no con 30 (medido con un lech
 los dos puntos: arena, 1.196 → 1.389 m en A-01 y 0.846 → 0.982 m en A-02); la nota (5) b de
 la Tabla 511-06 de EG-2013 vale sólo en la columna «>50»; y el límite del apron es 60 in =
 1.524 m.
+
+### T-3 de la cadena T (2026-11-12, cerrado e integrado el 2026-11-13 detrás de las correcciones de T-8) — el cajón con valor de archivo, las correcciones de su auditoría, y una corrida nueva
+
+Se regeneró sobre el árbol fusionado y se midió con el comparador de E-B (`cli.py
+--comparar`) contra la línea base de `e78a4e7`. **Diámetros, secciones y materiales movidos:
+ninguno.** El bloque `diseno` de A-01, A-02 y B-01 no tiene ninguna diferencia en los tres
+JSON comunes: A-01 y A-02 siguen en Ø 0.90 m de concreto reforzado, B-01 se detiene donde se
+detenía, y la Fase 6, la Fase 8 (fila `F8.CLASE`, bloque `estructural`) y la geometría de los
+tres no cambian un número. Lo que se mueve es de C-01 y de formato:
+
+- **Una corrida nueva, la 6 (`cli_familia_c.txt`, `informe_familia_c.json`):** el CSV del
+  fixture con la coronación del canal de C-01 que usa la guía de perfil (38.30, en una copia
+  hecha con `sed`) y las mismas entradas ampliadas. **C-01 sale dimensionado sin declarar
+  nada: marco 1.20 × 0.90 m**, control de salida (perfil M2), HW = 0.623 m, con VC1, G1, G2,
+  VC2 y la geometría del marco (exterior 1.60 × 1.30 m, clave exterior 38.000 msnm, 0.950 m
+  de relleno sobre la losa). Medida con el código de `e78a4e7` sobre el mismo CSV, C-01 se
+  detenía en `embocadura_cajon`: el comparador dice «no comparable» porque el punto no tenía
+  diseño. Es movimiento DECLARADO: el punto no estaba dimensionado. Avisos: V2b (S_conducto
+  0.004 contra S_cauce 0.006), VC2 (+0.614 m: la cota de entrada es la del terreno, adoptada,
+  y el fondo del canal aguas abajo está a 36.20; el aviso imprime la pendiente que cerraría el
+  empalme con las cotas dadas, 0.0326 m/m con la L de la corrida, rotulada como valor
+  calculado), el remanso «no se evaluó» (sin sección del canal), y los de la Fase 6. **La Fase
+  6 de C-01 sale bajo la envolvente de las correcciones de T-8**: para un marco la Ec. (10.4)
+  de HEC-14 no es evaluable («for circular culverts») y rige el d50 de Laushey con lo
+  adoptado (d50 0.120 m, espesor 0.210 m, longitud 5.000 m), con los dos avisos que lo dicen.
+  A perfil no hay fila `F8.*` del marco: la demanda de la losa queda diferida (T-5).
+- **Lo que las correcciones de la auditoría mueven DENTRO de la corrida 6** (medido contra la
+  corrida 6 de la FASE A rebasada, con el comparador; la sección no se mueve): el n del marco
+  pasa de la fila «afinado» de la Tabla N° 09 (0.011, 0.014) a la fila «Concrete Boxes» de la
+  Tabla B.1 del HDS-5 (0.012, 0.015) [C] (H1), y con él y_n 0.4043 → 0.4248 m, V de erosión
+  2.230 → 2.084 m/s, V de sedimentación 1.752 → 1.667 m/s, y del perfil M2 y_entrada 0.4034
+  → 0.4209 m y V_min 1.756 → 1.683 m/s; **el HW de control de salida baja 0.4 mm, 0.6234 →
+  0.6230 m**: la energía específica a la entrada sube 4.7 mm por la fricción, y la pérdida de
+  entrada (ke·V²/2g) baja 5.1 mm porque la lámina es más alta. V1 (y/H) 0.448 → 0.468, V4 y
+  VC1 −0.4 mm, la cota de rasante mínima de 7.A −0.4 mm; el admisible de G2 pasa de 36.200 a
+  36.190 (H4: en la Familia C G2 admite por debajo la tolerancia de VC2); la clave nueva
+  `concluye`, `y_critico_canal_m` y `motivo_no_concluye` del remanso; el numeral de G1 del
+  marco (H5: la cobertura adoptada avisa). El HW de control de entrada (0.590 m), que no
+  depende de n, no se mueve.
+- **`cli_perfil_ancho.txt`, `cli_expediente.txt` y sus JSON:** el bloqueo de C-01 pasa de
+  `CriterioPendienteError` (`embocadura_cajon`) a `DatoFaltanteError`
+  (`cota_coronacion_canal`, que VC1 exige y la fila deja vacía); `embocadura_cajon` sale del
+  bloque de pendientes que bloquearon, y C-01 gana la iteración de MD que llegó a VC1. En el
+  JSON, además, las claves nuevas `geometria_marco` y `remanso_canal` (en `null` para los
+  tubos), los siete del cajón y `borde_libre_canal_m` entre los criterios usados, y
+  `sin_valor_declarados` de 34 a 27 (comparador: 16 diferencias en el ancho, 12 en el de
+  expediente, 0 no comparables).
+- **Las tres memorias de la CLI e `informe_rama_error.json`:** las huellas —`criterios_sha1`,
+  y en las memorias `hoja_ruta_sha1`, por la nota de la Sec. 2.3 y la de la Tabla N° 09 de la
+  v8— y el recuento «109 criterios declarados, 34 todavía sin valor» → «110 … 27» (un
+  criterio nuevo, `desajuste_empalme_canal_m`, y siete que dejan de estar vacíos); en la
+  ancha y la de expediente, las fichas de los criterios usados, el bloque de acotaciones con
+  los cuatro del cajón que cubren un vacío verificado y el texto de la discrepancia
+  `DIS-MCHHD-T09-A2-DESPLAZADA` (H10: gana la evidencia interna de la página, no Chow).
+- **`memoria_punto_cajon.html`:** la elección de la progresión se imprime como tupla y no
+  como lista (`M2._pasos_del_marco` la guarda en una tupla para que la `EleccionDeProyecto`
+  congelada se pueda hashear), y el texto de la discrepancia de la Tabla N° 09. El driver
+  declara su fila de Manning («afinado»), de modo que ningún número se mueve.
+- **Sin cambio de un byte:** `cli_perfil.txt`, `cli_rama_error.txt`, los dos CSV de resumen
+  y `entradas_ampliadas.json`.

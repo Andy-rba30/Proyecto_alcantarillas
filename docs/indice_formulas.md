@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-12 · Commit del árbol de origen: `1522635+cambios-sin-commit` · Suite: 5230 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `e78a4e7+cambios-sin-commit` · Suite: 5336 passed, 16 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -38,7 +38,7 @@
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **158** · fórmulas distintas: **27** · fundamentos ejercitados: **18** de 78.
+Pasos emitidos: **158** · fórmulas distintas: **27** · fundamentos ejercitados: **18** de 82.
 
 ## 2. Índice
 
@@ -130,6 +130,7 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F3.TIPO_MARCO` | Fase 3 - Tipo, material y durabilidad | Tipo de estructura del cruce: alcantarilla tipo marco de concreto de seccion rectangular | `M2_material` |
 | `F4.HORIZONTAL` | Fase 4 - Dimensionamiento hidraulico | Barril horizontal (S = 0): no hay tirante normal, y el regimen del conducto lo fija el extremo de aguas abajo | `M4_control` |
 | `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | `M2_material` |
+| `F4.N_CAJON_TB1` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por la fila del cajon de la Tabla B.1 del HDS-5 | `M2_material` |
 | `F4.PISO_HW` | Fase 4 - Dimensionamiento hidraulico | Carga de control de entrada cuando la correccion por pendiente Ks·S la deja nula o negativa: el piso adoptado (`hw_entrada_fuera_de_rango`) | sin `paso()`; entra por otra puerta desde `M4_control` |
 | `F5.V2b.REGIMEN` | Fase 5 - Verificaciones | V2b - El regimen con que se aplica el indicador de pendiente: umbral duro o indicador con aviso (`regimen_v2b`) | sin `paso()` y sin mención fuera del registro |
 | `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | `M5_verificaciones` |
@@ -146,13 +147,16 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F6.SOCAVACION_DESPLANTE` | Fase 6 - Proteccion de entrada y salida | Profundidad de socavacion que se entrega al desplante del cabezal de salida | `M6_proteccion` |
 | `F6.V_ADMISIBLE` | Fase 6 - Proteccion de entrada y salida | Velocidad del flujo contra la maxima admisible del terreno del cauce (Tabla Nº 11) | `M6_proteccion` |
 | `F7.COTA_SALIDA` | Fase 7 - Compatibilidad geometrica | Caida del conducto y cota de fondo de la salida | `M7_geometria` |
+| `F7.EMPALME_CANAL` | Fase 7 - Compatibilidad geometrica | Empalme de la salida de un paso de canal con el fondo del canal aguas abajo (VC2, aviso) | `M7_geometria` |
 | `F7.ENCAJE` | Fase 7 - Compatibilidad geometrica | Encaje de la seccion adoptada en la seccion transversal: longitud entre cabezales a la clave | `M7_geometria` |
 | `F7.ENTREGA` | Fase 7 - Compatibilidad geometrica | Entrega al cuerpo receptor: cota de salida frente a su fondo | `M7_geometria` |
 | `F7.ESVIAJE` | Fase 7 - Compatibilidad geometrica | Factor de esviaje, 1 / cos(esviaje) | `M7_geometria` |
 | `F7.ESVIAJE_MAX` | Fase 7 - Compatibilidad geometrica | Esviaje del cruce frente al maximo que el proyecto adopta | `M7_geometria` |
 | `F7.LONGITUD` | Fase 7 - Compatibilidad geometrica | Longitud del conducto sobre la seccion transversal del cruce | `M7_geometria` |
+| `F7.MARCO` | Fase 7 - Compatibilidad geometrica | Geometria del marco adoptado: dimensiones exteriores, cotas de fondo y de clave, relleno sobre la losa | `M7_geometria` |
 | `F7.PENDIENTE` | Fase 7 - Compatibilidad geometrica | Pendiente adoptada del conducto, con su origen | `M7_geometria` |
 | `F7.RELLENO` | Fase 7 - Compatibilidad geometrica | Altura minima de relleno sobre la clave del conducto | `M7_geometria` |
+| `F7.REMANSO_CANAL` | Fase 7 - Compatibilidad geometrica | Sobreelevacion de la lamina del canal en el cruce y longitud minima del remanso aguas arriba (aviso) | `M7_geometria` |
 | `F8.CARGA_TIERRA` | Fase 8 - Verificacion estructural del conducto | Carga de tierra sobre el conducto: prisma de relleno y paquete estructural, con la interaccion suelo-estructura de su tipo | `M8_estructural` |
 | `F8.CARGA_VIVA` | Fase 8 - Verificacion estructural del conducto | Carga viva HL-93 a la profundidad de la clave: presion vertical por la rueda distribuida a traves del relleno | `M8_estructural` |
 | `F8.CLASE_CONCRETO` | Fase 8 - Verificacion estructural del conducto | Clase del tubo de concreto reforzado por el metodo indirecto: D-load requerida frente a la D-load de la clase | `M8_estructural` |

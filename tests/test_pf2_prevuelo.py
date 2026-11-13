@@ -183,9 +183,14 @@ def _faltas_reales(externos, ruta=CSV_EJEMPLO):
 # en el bucle de MD sino S_cauce en la etapa «longitud del conducto (7.B)».
 # Los dos datos siguen faltando de verdad y el pre-vuelo sigue nombrando los
 # dos: lo que cambia es cual de ellos alcanza a registrar la corrida.
+#
+# REMEDIDO EN T-3 (cadena T): con el JSON ampliado los siete criterios del
+# cajon ya tienen valor de archivo y MD no se detiene en ellos: llega a VC1,
+# que exige cota_coronacion_canal, y esa falta la registra la corrida. El
+# pre-vuelo ya no estima nada de mas en esa configuracion.
 SOBRA_SIN_LUZ = {"C-01": {"Q_m3s", "S_cauce", "cota_coronacion_canal"}}
 SOBRA_CON_LUZ = {"C-01": {"Q_m3s", "cota_coronacion_canal"}}
-SOBRA_CON_TODO = {"C-01": {"cota_coronacion_canal"}}
+SOBRA_CON_TODO = {}
 
 
 @pytest.mark.parametrize("externos, sobra", [

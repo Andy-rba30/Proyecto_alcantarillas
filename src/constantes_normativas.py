@@ -413,9 +413,13 @@ TABLA_09_GRUPO = ("A. CONDUCTO CERRADO CON ESCURRIMIENTO PARCIALMENTE LLENO "
 # pie de la letra en la pag. impresa 75 encuentra 0.011/0.013/0.014 y no los
 # 0.010/0.011/0.013 que estan aqui. La errata esta demostrada y declarada en
 # `normativa/discrepancias.py::DIS-MCHHD-T09-A2-DESPLAZADA` -- por coordenadas
-# de linea base, por contraprueba con el bloque A.1 de la misma pagina, que NO
-# esta desplazado, y por correspondencia una a una con Ven Te Chow 1983, que
-# la propia tabla declara como su fuente --.
+# de linea base y por contraprueba con el bloque A.1 de la misma pagina, que NO
+# esta desplazado --. La correspondencia con Ven Te Chow 1983, que la tabla
+# declara como su fuente, se invocaba tambien aqui y NO es verificable en
+# normas/: desde la auditoria de T-3 (H10) la errata se sostiene en la
+# evidencia interna de la pagina, y el corrimiento alcanza tambien a los
+# bloques B.1, B.2 y C, que este archivo no transcribe. Leida al pie de la
+# letra, la tabla seria MAS conservadora para capacidad (n_max mayor).
 #
 # LA REMISION LA AÑADE C2 y no es adorno: hasta ahora la errata vivia en
 # `normativa/` y este archivo transcribia la lectura corregida SIN DECIR QUE
@@ -4810,3 +4814,25 @@ FF_LIMITE_TERMOPLASTICO_MM_N = (FF_LIMITE_TERMOPLASTICO_IN_KIP * PULGADA_EN_MM
 # que un tubo de 0.90 m saliera «Clase I» (auditoria de T-5).
 DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM = {"I": 1500, "II": 300, "III": 300,
                                             "IV": 300, "V": 300}
+
+
+# ===========================================================================
+# --- T-3 --- (cadena T, auditoria adversarial, H1) La fila del MARCO de la
+# Tabla B.1 del HDS-5
+# ===========================================================================
+# «Concrete Boxes | Smooth | 0.012-0.015 | FHWA 1961», HDS-5 3a ed., Table B.1,
+# pag. impresa B.6 (PDF 208). Es el par (n_min, n_max) del valor de archivo de
+# 'n_manning_cajon' [C], y NO se escribe a mano: se LEE de la fila transcrita
+# del registro (`HDS5_3ED.TB.1#concrete_boxes`), por lo mismo que `MANNING` se
+# deriva de `TABLA_09_FILAS` y 'n_manning_hdpe' de su propia fila. Vive aqui,
+# junto a `KE_HDS5_C2` y `HDS5_INLET` -- las otras dos tablas del HDS-5 que el
+# marco consume --, porque los valores de una tabla son de la tabla; cual fila
+# aplica a esta obra es el criterio. La Tabla N 09 no tiene fila de seccion
+# rectangular, de modo que esta fila no compite con una [N]: cubre su vacio.
+_TB1 = _reg.tabla("HDS5_3ED.TB.1")
+MANNING_CAJON_HDS5 = {
+    _TB1.clave_corta(fila): (float(fila.valores["n_min"]),
+                             float(fila.valores["n_max"]))
+    for fila in _TB1.filas
+    if _TB1.clave_corta(fila) == "concrete_boxes"
+}

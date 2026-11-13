@@ -1379,9 +1379,11 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "y crecer en canto no son intercambiables."),
     "n_manning_cajon": _Meta(
         unidad="- (par n_min, n_max)",
-        nota="Se declara la FILA de la Tabla N 09, no el par: el rango se lee "
-             "de la fila para que la analogia y la tabla no puedan divergir, "
-             "que es como ya se resuelve 'n_manning_hdpe'."),
+        nota="Se declara la FILA, no el par: el rango se lee de la fila para "
+             "que el criterio y la tabla no puedan divergir. Desde la "
+             "auditoria de T-3 la de archivo es la del cajon de la Tabla B.1 "
+             "del HDS-5 ('concrete_boxes', [C]); la alternativa, una del "
+             "subgrupo «a. Concreto» de la Tabla N 09 por analogia."),
     "embocadura_cajon": _Meta(
         unidad="-",
         nota="El valor es una de las claves 'cajon_concreto_*' de "
@@ -1491,6 +1493,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     # --- T-5 (cierre) --- Los dos que salieron de las auditorias.
     "carga_viva_bajo_relleno_alto": _Meta(unidad="-"),
     "perfil_hdpe_fabricante": _Meta(unidad="mm2/mm, mm4/mm, m (por diametro en mm)"),
+    # --- T-3 --- la tolerancia de VC2 (M7, Familia C).
+    "desajuste_empalme_canal_m": _Meta(unidad="m"),
 }
 
 

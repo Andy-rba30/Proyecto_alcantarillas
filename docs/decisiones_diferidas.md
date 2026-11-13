@@ -4974,3 +4974,210 @@ se corrigieron donde las auditorías las desmintieron (cada una lo dice).
   código que ya era correcto).
 - **Qué haría falta:** nada.
 - **Dónde vive:** `tests/test_t5_correcciones_auditoria.py::test_cada_consumidor_pasa_su_medida_del_efecto`
+
+---
+
+# Parte XLVII — Lo que T-3 de la cadena T dejó escrito: el marco de la Familia C se dimensiona sin declarar nada
+
+T-3 (2026-11-12) da valor de archivo a los siete criterios del cajón (`INF-0.4`), añade
+VC2 y el remanso aguas arriba del canal, publica la geometría del marco y amplía V6 para
+la multicelda. Ningún valor de archivo mueve una sección ya fijada. La auditoría
+adversarial (AJUSTADO, doce hallazgos H1 a H12) se aplicó el 2026-11-13 con las
+resoluciones del orquestador y las decisiones del dueño del 2026-11-12: el n del marco
+pasa a la fila del cajón de la Tabla B.1 del HDS-5 [C] (mueve el tirante y el HW de
+salida de C-01, no su sección), el remanso dice cuándo no concluye, G2 y VC2 son una
+sola banda en la Familia C y G1 del marco avisa cuando sólo falta la cobertura adoptada.
+Doce fichas; las cinco últimas son de la auditoría.
+
+## T3-01 · La progresión de secciones es la decisión del dueño; la de la cadena T no se activa
+
+- **Cerrado (T-3, decisión del dueño del 2026-11-12):** `secciones_cajon_normalizadas`
+  = ((1.20, 0.90), (1.50, 1.20), (2.00, 1.50)), [A] con su ventana y `vacio_verificado`:
+  la progresión con que C-01 dimensiona desde C7. Deja de ser «provisional»: es la
+  decisión, y C-01 sigue en marco 1.20 × 0.90.
+- **Abierto:** la de la cadena T (anchos 1.00–4.00 paso 0.50 × alturas 1.00–3.00 paso
+  0.25) no contiene el 1.20 × 0.90 y deja a C-01 sin dimensionar —V7 incumple en los
+  siete primeros escalones y el octavo deja la clave sobre la subrasante—; queda en la
+  `sensibilidad`, barrible. La causa de V7 no es que el marco no quepa: es `DC = 0` en
+  `M5.v7_flotacion` (ficha T3-08). Con tres escalones la serie se agota en 2.00 × 1.50 m.
+- **Qué haría falta:** la sección real del canal (ancho de solera y tirante, de ANA o de
+  la Junta de Usuarios) para ampliar la progresión —alturas de 0.60 y 0.75 m, más
+  anchos— siguiendo al canal; y la ficha T3-08 si se quiere medir la de la cadena con el
+  peso propio del marco.
+- **Dónde vive:** `src/criterios_adoptados.py::secciones_cajon_normalizadas`
+
+## T3-02 · La embocadura del marco es la de aletas de 30° a 75°, la de hoy; la de cabezal recto se midió y da otra carga
+
+- **Cerrado (T-3):** `embocadura_cajon` = Carta 8 escala 1 (Forma 1, K 0.026, M 1.0,
+  c 0.0347, Y 0.81; Tabla A.1, PDF 197) y `ke_entrada_cajon` = la fila «Square-edged at
+  crown» bajo «Wingwalls at 30° to 75° to barrel» (0.4; Tabla C.2, pág. impresa C.6): la
+  misma embocadura en la carta y en el ke.
+- **Abierto:** la cadena T sugería «por ahora square edge headwall 90°». Medido sobre C-01:
+  con la Carta 8 escala 2 («90° and 15° wingwall flares») y el ke de «Headwall parallel to
+  embankment (no wingwalls)» (0.5), HW = 0.629 m frente a 0.589 m con aletas. Como la carga
+  cambia, se dejó la de hoy (precisión del orquestador). La Lámina N° 03 no decide: es un
+  corte longitudinal y no muestra el ángulo de las aletas.
+- **Qué haría falta:** T-7a, que dimensiona el cabezal y los aleros por punto, cierra la
+  coherencia entre la geometría de los aleros, la carta y el ke.
+- **Dónde vive:** `src/criterios_adoptados.py::embocadura_cajon`
+
+## T3-03 · VC2 avisa y no detiene, con la tolerancia de una placa de concreto del EG-2013 por analogía
+
+- **Cerrado (T-3):** `M7.vc2_empalme_canal`, sólo en la Familia C, banda de dos lados
+  |cota_salida − cota_fondo_receptor| ≤ `desajuste_empalme_canal_m` [A] = 0.010 m (ventana
+  0.010 a 0.020): la tolerancia de aceptación de la cota superior de una placa de concreto
+  (EG-2013 503.11 g) 2., pág. impresa 934) y la de cota de la excavación (501.07, pág.
+  impresa 889). Veredicto INDICADOR: cuenta en «Verificaciones con aviso» y sale en los
+  avisos del punto.
+- **Abierto:** (1) Ninguna fuente fija la tolerancia de un empalme con un canal: es
+  analogía declarada en el umbral. (2) VC2 no detiene porque el desajuste lo fijan la cota
+  de entrada y la pendiente, no la sección; en C-01 del fixture sale un desajuste de
+  +0.571 m, que es la firma de la cota de entrada ADOPTADA del terreno (36.90) frente al
+  fondo del canal (36.20). (3) La homonimia de `cota_fondo_receptor` (en un paso de canal
+  es el mismo canal aguas abajo) se declara en el paso, no se resuelve con una columna.
+- **Corregido por la auditoría (H4, H9):** VC2 **gobierna el empalme**: en la Familia C
+  `M7.g2_cota_salida` admite por debajo su tolerancia (a 36.195 m sobre 36.20 los dos
+  cumplían y no cumplía; hoy los dos cumplen); A y B no cambian. Y el aviso imprime la S
+  que cerraría el empalme con las cotas dadas, (entrada − fondo) / L, rotulada como valor
+  calculado de primer orden. Decisión del dueño: aviso, no bloqueo.
+- **Qué haría falta:** la cota de fondo de la entrada medida en el cauce
+  (`cota_fondo_entrada`) y la pendiente que une las dos cotas del canal; y, para que VC2
+  detenga, la tolerancia del proyecto del canal (ANA / Junta).
+- **Dónde vive:** `src/modulos/M7_geometria.py::vc2_empalme_canal`
+
+## T3-04 · El remanso aguas arriba del canal es una cota inferior, no un perfil, y sin la sección medida no se evalúa
+
+- **Cerrado (T-3):** `M7.remanso_canal`: con `seccion_receptor_medida` (que en un paso de
+  canal es la del mismo canal) calcula el tirante normal del canal, la sobreelevación en el
+  cruce dh = HW − y_n y la longitud dh / S, a la que la horizontal del embalse corta la
+  lámina normal; lo publica como aviso y paso 7.B.R. Sin la sección medida, aviso «no se
+  evaluó», sin supuesto.
+- **Abierto:** (1) dh / S es una COTA INFERIOR sólo en un canal suave: el perfil M1 real
+  queda por encima de la horizontal y llega más lejos. (2) Se toma el fondo del canal en
+  el cruce igual a la cota de fondo de la entrada, y el HW sin la carga de velocidad de
+  aproximación. (3) No hay umbral: ninguna fuente de `normas/` fija cuánto puede subir la
+  lámina de un canal. (4) Corregido por la auditoría (H2, H3): **no concluye**, sin
+  cifra, con el canal de pendiente fuerte (y_n ≤ y_c: S1 con resalto) o con VC2 fuera de
+  tolerancia (HW de una descarga libre que el canal no tiene).
+- **Qué haría falta:** un perfil de remanso paso a paso sobre la sección del canal y la
+  coronación del canal a lo largo del tramo (hueco 2 de §13 de `docs/ruta_familia_c.md`).
+- **Dónde vive:** `src/modulos/M7_geometria.py::remanso_canal`
+
+## T3-05 · V6 con N > 1 publica el reparto, el tabique y el ancho total, y sigue sin aceptar la multicelda
+
+- **Cerrado (T-3):** con N > 1 la fila de V6 dice Q/N por celda (el reparto de EXT-2), el
+  tabique entre celdas y el ancho exterior total N·B + (N − 1)·t + 2·t.
+- **Abierto:** (1) El veredicto no cambia: la multicelda sigue sin aceptarse mientras no
+  haya dato de arrastre del cauce (ficha EXT-2-01). (2) La separación entre celdas de un
+  marco vaciado in situ es el TABIQUE (monolítico, §14.1): la regla del num. 4.1.1.3.4 a)
+  —la mitad del diámetro, entre 0.40 y 1.00 m, medida entre superficies externas— es de
+  TUBERÍAS con relleno compactado entre ellas, y la fila la nombra para decir por qué no la
+  aplica (cita `MC_HHD.4.1.1.3.4a#SEPARACION`). La cadena T pedía usarla: la fuente no la
+  da para un marco. (3) V7 se evalúa por celda: con N > 1 no carga el marco entero.
+- **Qué haría falta:** un dato de sitio sobre la capacidad de arrastre del canal para
+  decidir la multicelda; y, si se adopta, V7 sobre la sección completa.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::v6_material_solido_arrastre`
+
+## T3-06 · La geometría del marco queda en `modelos.GeometriaMarco` para la Fase 8 y el cabezal; M8 no se toca
+
+- **Cerrado (T-3):** `M7.geometria_marco` publica B, H, N, el espesor, el tabique, el
+  ancho y el canto exteriores, las cotas de fondo, de clave interior y exterior (la misma
+  de `M5.cota_clave`) y de base, y el relleno sobre la losa; viaja en
+  `CompatibilidadGeometrica.geometria_marco`, en el JSON y en la memoria (paso 7.B.M).
+- **Abierto:** (1) Un solo espesor para paredes, losas y tabique (`espesor_pared_cajon`
+  = 0.20 m, piso de la E.060 14.5.3.2 por analogía): la cadena T hablaba de «espesor de
+  losa» y no se abre un criterio que nadie declaró. (2) Integrado detrás de T-5,
+  `GeometriaMarco` queda SIN consumidor en M8: `M8.demanda_marco` lee `Seccion`,
+  `espesor_pared` y la misma `M5.cota_clave`, de modo que los números coinciden; no se
+  fuerza el cambio.
+- **Qué haría falta:** que la demanda de la losa (y el cabezal por punto, T-7a) lean la
+  geometría de aquí cuando se toquen; el cálculo estructural del pórtico en el
+  expediente, que hará del espesor un resultado y no una adopción.
+- **Dónde vive:** `src/modelos.py::GeometriaMarco`
+
+## T3-07 · Con la embocadura del cajón declarada, R4 ya no frena una fila de cajón para el ke del TUBO; la frena el consumidor
+
+- **Cerrado (T-3):** nada se abre: la segunda capa de C5-02 sigue en pie —si una fila del
+  bloque «Box» de la Tabla C.2 llega a `ke_entrada` (el tubo) por cualquier vía,
+  `M4.ke_declarado` la rechaza con `DatoInvalidoError`— y se mide igual que antes.
+- **Abierto:** la PRIMERA capa era incidental. Toda fila de cajón de la Tabla C.2 lleva la
+  condición de `embocadura_cajon`, y mientras ese criterio estuvo sin valor R4 la hacía
+  inelegible para cualquier criterio que leyera la tabla, el del tubo incluido. Con valor
+  de archivo (T-3) la fila es elegible y `declaracion.declarar_desde_tabla` la acepta
+  para el tubo: el error ya no sale al declarar sino al correr, en el punto. La medida está
+  en `tests/test_cierre_c10.py` (la capa 1 se mide con el criterio vaciado).
+- **Qué haría falta:** que la puerta de declaración filtre las filas de la Tabla C.2 por el
+  BLOQUE que corresponde a la forma del criterio (tubo o cajón), en lugar de apoyarse en
+  la condición de la embocadura. Toca `declaracion.py` y la ventana normativa; no es de T-3.
+- **Dónde vive:** `src/modulos/M4_control.py::ke_declarado`
+
+## T3-08 · V7 del marco no pesa el concreto (DC = 0): de eso cuelgan la progresión corta y el espesor
+
+- **Qué se difirió:** pesar el marco en `M5.v7_flotacion` con
+  `peso_especifico_concreto_kn_m3` [C]. V7 lleva DC = 0 (lado seguro) desde C7, y es lo
+  que deja fuera la progresión de la cadena T (1.00 × 1.00: 18.21 contra 19.23 kN/m; su
+  concreto, 0.96 m² a ~23.5 kN/m³, pesa ~22.6 kN/m), lo que hace inalcanzable en C-01 el
+  segundo escalón adoptado (1.50 × 1.20: 18.9 contra 29.8) y lo que deja a C-01 sin
+  dimensionar con t ≥ 0.26 m.
+- **Por qué:** con DC, la progresión de la cadena daría probablemente 1.00 × 1.00 en C-01
+  y movería una sección del fixture (parada (c)); V7 es código de C7, no de T-3. La
+  auditoría lo pidió diferido y el orquestador lo resolvió así: no se toca V7 en T-3.
+- **Qué haría falta:** decisión del dueño sobre pesar el marco (y el tubo) en V7, con la
+  E.050 y la Sec. 12 de AASHTO para el factor; medir el fixture antes y después.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::v7_flotacion`
+
+## T3-09 · El n del marco es la fila del cajón de la Tabla B.1 del HDS-5 [C]; la errata de la Tabla N° 09 se sostiene en su página
+
+- **Cerrado (auditoría, H1 y H10):** `n_manning_cajon` = `concrete_boxes` (0.012, 0.015),
+  [C], HDS-5 Tabla B.1, pág. impresa B.6 —la misma fuente de la carta y del ke—; el num.
+  B.3 (0.012–0.022 en vaciado in situ, pág. impresa B.2) es la ventana hacia arriba, y la
+  fila «afinado» de la Tabla N° 09 (0.011, 0.014), la alternativa barrible. La errata
+  `DIS-MCHHD-T09-A2-DESPLAZADA` deja de apoyarse en Chow (no está en `normas/`).
+- **Abierto:** sobre C-01 el cambio mueve el tirante normal y el HW de control de salida,
+  no la sección ni el HW de entrada (README de la línea base). Con dos tablas la
+  resolución no fija `fila_id`; la alternativa se declara por la CLI o se barre con nota.
+- **Qué haría falta:** la ficha técnica del encofrado del marco, que diría el n real.
+- **Dónde vive:** `src/criterios_adoptados.py::n_manning_cajon`
+
+## T3-10 · G1 del marco avisa cuando sólo falta la cobertura adoptada por analogía
+
+- **Cerrado (auditoría, H5):** 0.3048 m se mantiene como umbral de aviso; la fuente
+  admite el marco sin relleno (MTC 4.1.1.3.4 a), Lámina N° 03, AASHTO LRFD 12.6.6.3,
+  pág. impresa 12-22). `TamizadoRasante.cobertura_como_aviso`: bloquea la clave bajo la
+  subrasante y el resguardo; la cobertura adoptada da INDICADOR. G1 del tubo no cambia.
+- **Abierto:** con relleno < 2 ft la Fase 8 del marco no es evaluable (AASHTO 3.6.1.2.6a)
+  y la losa para carga directa no se diseña. En C-01, con sumersión completa, V7 (DC = 0)
+  rechaza antes el escalón, y el caso de la auditoría (rasante 38.40 / subrasante 38.25)
+  termina con V4 y V7 en el primero y la clave sobre la subrasante en el segundo.
+- **Qué haría falta:** el diseño de la losa para carga vehicular directa (expediente) y
+  la ficha T3-08.
+- **Dónde vive:** `src/modulos/M7_geometria.py::g1_rasante_congelada`
+
+## T3-11 · `espesor_pared_cajon` queda [A] aunque su piso sea de una norma peruana
+
+- **Qué se difirió:** etiquetarlo [N→]. El 0.20 m es el piso de la E.060 num. 14.5.3.2,
+  pero ese numeral es del **método empírico** de diseño de muros (14.5) y la pared del
+  marco se diseña por flexión (14.8.1 → Cap. 10): la analogía es de objeto, no de método.
+- **Por qué:** además hay ventana (0.20–0.30 m) y elección: 0.20 es su extremo favorable a
+  V7 mientras V7 lleve DC = 0 (ficha T3-08). Un [A] con ventana dice eso; un [N→] lo
+  presentaría como lectura de la norma.
+- **Qué haría falta:** el cálculo estructural del pórtico, que haría del espesor un
+  resultado.
+- **Dónde vive:** `src/criterios_adoptados.py::espesor_pared_cajon`
+
+## T3-12 · Las correcciones de la auditoría se escribieron antes del código, y su rojo se midió
+
+- **Cerrado:** `tests/test_t3_correcciones_auditoria.py` se escribió antes del código y se
+  midió contra la FASE A rebasada sobre `e78a4e7` (`c6712d4`): 23 rojos y 29 verdes; con
+  el archivo final, 33 rojos y 30 verdes, que son guardias y matadores de mutantes que
+  valen antes y después (H8). El arnés de EXT-11 sobre `vc2_empalme_canal`,
+  `remanso_canal`, `geometria_marco`, `_desajuste_admisible`, `g2_cota_salida` y
+  `M3.tirante_critico_trapecial` mataba 104 de 120; con los nueve tests que eso sumó,
+  113 de 120 (94.2 %).
+- **Abierto:** no se escribió con `xfail(strict=True)`: el rojo se midió corriendo el
+  archivo sobre el árbol previo. Los siete vivos son equivalentes: la frontera y_n = y_c
+  con su tolerancia de 1e-9 (dos), desajuste = 0 (el brazo del aviso no lo alcanza) y la
+  semilla, la duplicación y el signo del corchete del tirante crítico (cuatro).
+- **Qué haría falta:** nada.
+- **Dónde vive:** `tests/test_t3_correcciones_auditoria.py::test_h4_G2_y_VC2_no_se_contradicen_en_la_familia_C`
+

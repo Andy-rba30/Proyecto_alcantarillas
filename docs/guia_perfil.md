@@ -299,23 +299,30 @@ Además de la advertencia, su RESUMEN dice esto:
 ```text id=resumen_sin_cajon
 Alcance de la corrida   : perfil
 Puntos del expediente   : 4
-Puntos dimensionados    : 3
+Puntos dimensionados    : 4
 Verificaciones incumplidas: 0
-Verificaciones con aviso: 0
-Etapas bloqueadas       : 1
-Diferidas por alcance   : 11 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
-Expediente cerrado      : no
+Verificaciones con aviso: 1
+Etapas bloqueadas       : 0
+Diferidas por alcance   : 13 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
+Expediente cerrado      : si
 ```
 
-Tres puntos y no cuatro: C-01 es un cruce de canal, su sección es un marco
-de concreto, y el marco tiene criterios sin valor que el programa **no rellena
-por su cuenta**. El bloque «CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA»
-nombra el primero que la corrida encontró (`embocadura_cajon`), y el
-pre-vuelo de la sección 1.2 ya había listado los nueve. Es la sección 4.
+Los cuatro puntos dimensionan, también C-01, que es un cruce de canal y cuya
+sección es un **marco de concreto**. El marco tiene siete criterios propios
+—la embocadura y su ke, el n de Manning, el número de celdas, la progresión
+de secciones, el espesor de pared y la cobertura sobre la clave— y los siete
+tienen **valor de archivo** en `criterios_adoptados.py`, cada uno con su fila,
+su cita y su ventana: C-01 sale como marco 1.20 × 0.90 m sin que esta
+corrida declare nada. El aviso que cuenta el RESUMEN es **VC2**: la salida del
+marco no empalma con el fondo del canal aguas abajo, porque la cota de fondo
+de la entrada de este ejemplo es la del terreno (adoptada, no medida) y queda
+0.571 m por encima. No detiene el punto —ninguna sección lo corrige—, y la
+línea `aviso:` del punto dice qué lo corrige. La sección 4 dice cómo se
+cambia cualquiera de esos criterios para una corrida.
 
 ---
 
-## 4. Los criterios [A] de perfil sin valor: cómo se declaran
+## 4. Los criterios [A] de perfil: cómo se declaran
 
 Un criterio **[A]** es una adopción del proyectista: ni la norma ni una fuente
 técnica lo fijan, y el programa no lo sustituye por un valor por defecto
@@ -328,50 +335,47 @@ dentro de la que se elige. La tabla sale de esas fichas:
 | Criterio | Etiqueta | Forma | Ventana |
 |---|---|---|---|
 | `TW_receptor` | [A] | `float` | m >= 0 sobre el fondo de la salida; 0 es salida libre |
-| `cobertura_minima_cajon` | [A] | `float` | real >= 0, en metros |
-| `embocadura_cajon` | [A] | `str` | la clave de una fila de `HDS5_3ED.TA1`, `HDS5_3ED.TC2` |
-| `espesor_pared_cajon` | [A] | `float` | metros, > 0 |
 | `homogeneidad_serie_fen` | [A] | `categoria` | una de: `serie_completa`, `serie_sin_fen`, `dos_poblaciones` |
-| `ke_entrada_cajon` | [C] | `str` | la clave de una fila de `HDS5_3ED.TC2` |
-| `n_celdas_cajon` | [A] | `int` | entero >= 1 |
-| `n_manning_cajon` | [N->] | `str` | la clave de una fila de `MC_HHD.T09` |
-| `secciones_cajon_normalizadas` | [A] | `serie_de_pares` | serie de pares (B, H) en metros, de menor a mayor, con B y H interiores de UNA celda |
 <!-- fin: criterios -->
 
-Siete son **del cajón** (la sección rectangular de la Familia C) y los invoca
-cualquier cruce de canal: `embocadura_cajon`, `ke_entrada_cajon`,
-`n_manning_cajon`, `n_celdas_cajon`, `secciones_cajon_normalizadas`,
-`espesor_pared_cajon` y `cobertura_minima_cajon`. Los otros dos sólo se
-invocan en condiciones que este ejemplo no alcanza: `TW_receptor` es la última
-puerta del TW (Sec. 1.3) cuando no hay ni `TW_m`, ni `cota_TW`, ni caudal del
-receptor; y `homogeneidad_serie_fen` es la decisión de qué se hace con los
-años del fenómeno El Niño de la serie de precipitación (Fase 1-bis), y sólo
-la invoca una corrida que **calcula** el caudal con `--cuencas` y `--estacion`
+Ninguno de los dos detiene este ejemplo, porque sólo se invocan en
+condiciones que el ejemplo no alcanza: `TW_receptor` es la última puerta del
+TW (Sec. 1.3) cuando no hay ni `TW_m`, ni `cota_TW`, ni caudal del receptor;
+y `homogeneidad_serie_fen` es la decisión de qué se hace con los años del
+fenómeno El Niño de la serie de precipitación (Fase 1-bis), y sólo la invoca
+una corrida que **calcula** el caudal con `--cuencas` y `--estacion`
 (`docs/contrato_entradas.md` §2-bis): este ejemplo trae el caudal declarado
 en `Q_m3s`, y entonces el criterio no detiene nada y la memoria sólo avisa.
 
+**Los siete del cajón no están en la tabla porque tienen valor de archivo**
+desde T-3 de la cadena T: `embocadura_cajon` = `cajon_concreto_aletas_30_75`
+(Carta 8 de la Tabla A.1 de HDS-5, aletas de 30° a 75°), `ke_entrada_cajon`
+= `cajon_aletas_30_75_escuadra` (la fila de la Tabla C.2 de la MISMA
+embocadura), `n_manning_cajon` = `concrete_boxes` (la fila del cajón de
+concreto de la Tabla B.1 de HDS-5, 0.012–0.015; la fila «afinado» de la
+Tabla N° 09 del Manual queda como alternativa), `n_celdas_cajon` = 1,
+`secciones_cajon_normalizadas` = 1.20 × 0.90,
+1.50 × 1.20 y 2.00 × 1.50 m, `espesor_pared_cajon` = 0.20 m y
+`cobertura_minima_cajon` = 0.3048 m. Tener valor de archivo no los vuelve
+normativos: siguen siendo adopciones con su ventana, y la ficha de cada uno
+dice de dónde sale el valor y qué hay que mirar para cambiarlo.
+
 **Cómo se declara, no qué.** `--declarar CLAVE=VALOR` declara un criterio
-**sólo para esa corrida**: el archivo no se toca y la memoria imprime el valor
-marcado como declarado. El texto se lee con `ast.literal_eval` —un número, una
-lista, un texto entre comillas— y lo que no sea un literal de Python se toma
-como texto, que es lo que declara la clave de una fila o una categoría. La
-puerta (`_verificar_criterio`) exige la forma y la ventana antes de correr:
-un texto no es un `int`, `0,5` con coma decimal no es un número, y una fila
-que la tabla no tiene no entra. Un ejemplo sintácticamente válido por criterio; los
-valores son los del fixture de la suite y **no son una recomendación** (la
-ficha de cada criterio, en `criterios_adoptados.py`, dice qué hay que mirar
-para elegir):
+**sólo para esa corrida**, tenga o no valor de archivo: el archivo no se toca,
+lo declarado gana para esa corrida y la memoria imprime el valor marcado como
+declarado. El texto se lee con `ast.literal_eval` —un número, una lista, un
+texto entre comillas— y lo que no sea un literal de Python se toma como
+texto, que es lo que declara la clave de una fila o una categoría. La puerta
+(`_verificar_criterio`) exige la forma y la ventana antes de correr: un texto
+no es un `int`, `0,5` con coma decimal no es un número, y una fila que la
+tabla no tiene no entra. Un ejemplo sintácticamente válido por cada criterio
+de perfil sin valor; los valores **no son una recomendación** (la ficha de
+cada criterio, en `criterios_adoptados.py`, dice qué hay que mirar para
+elegir):
 
 ```text id=ejemplos_declarar
 --declarar TW_receptor=0.0
---declarar cobertura_minima_cajon=0.3048
---declarar embocadura_cajon=cajon_concreto_aletas_30_75
---declarar espesor_pared_cajon=0.20
 --declarar homogeneidad_serie_fen=serie_completa
---declarar ke_entrada_cajon=cajon_aletas_30_75_escuadra
---declarar n_celdas_cajon=1
---declarar n_manning_cajon=concreto_afinado
---declarar "secciones_cajon_normalizadas=[[1.20,0.90],[1.50,1.20],[2.00,1.50]]"
 ```
 
 Por forma: un `float` se escribe con punto decimal; un `int` sin decimales;
@@ -380,24 +384,26 @@ comillas porque lleva corchetes; una **fila de tabla** por su clave, tal como
 la pestaña 2 de la ventana la lista (la fila trae consigo los números de la
 tabla, y por eso lo que se declara es la clave y no el coeficiente); una
 `categoria` por una de sus opciones cerradas; y un `str` libre entre comillas
-si lleva espacios. El signo de `espesor_pared_cajon` es contraintuitivo y su
+si lleva espacios. Los del cajón se declaran igual: por ejemplo,
+`--declarar embocadura_cajon=cajon_concreto_aletas_90_15` con
+`--declarar ke_entrada_cajon=cajon_sin_aletas_escuadra_3` prueba el cabezal
+recto en lugar de las aletas (la carga de C-01 sube de 0.589 a 0.629 m), y
+`"--declarar secciones_cajon_normalizadas=[[1.50,1.20],[2.00,1.50]]"` cambia
+la progresión. El signo de `espesor_pared_cajon` es contraintuitivo y su
 ficha lo dice primero: engrosar la pared **empeora** la flotación.
 
-Con los siete del cajón declarados, el `sitio.json` de la sección 3 y las
-salidas de la sección 6, la corrida completa de la guía es:
+La corrida completa de la guía añade el `sitio.json` de la sección 3 y las
+salidas de la sección 6, y declara un criterio con el MISMO valor que tiene
+en el archivo —el número de celdas del marco—, para que la memoria muestre
+cómo se marca una declaración y para que la sesión de la sección 6 tenga algo
+que restaurar (el barrido de la misma sección cambia ese valor):
 
 ```sh id=perfil
 python cli.py guia/puntos.csv --alcance perfil --luz 2.75 \
   --datos-externos guia/externos.json \
   --datos-sitio guia/sitio.json \
   --proyecto "Via de evitamiento" \
-  --declarar embocadura_cajon=cajon_concreto_aletas_30_75 \
-  --declarar ke_entrada_cajon=cajon_aletas_30_75_escuadra \
-  --declarar n_manning_cajon=concreto_afinado \
   --declarar n_celdas_cajon=1 \
-  --declarar "secciones_cajon_normalizadas=[[1.20,0.90],[1.50,1.20],[2.00,1.50]]" \
-  --declarar espesor_pared_cajon=0.20 \
-  --declarar cobertura_minima_cajon=0.3048 \
   --json guia/salida/perfil.informe.json \
   --html guia/salida/memoria.html \
   --csv-resumen guia/salida/resumen.csv
@@ -412,7 +418,7 @@ Alcance de la corrida   : perfil
 Puntos del expediente   : 4
 Puntos dimensionados    : 4
 Verificaciones incumplidas: 0
-Verificaciones con aviso: 0
+Verificaciones con aviso: 1
 Etapas bloqueadas       : 0
 Diferidas por alcance   : 13 (ver ALCANCE DE LA CORRIDA; no cuentan para el cierre)
 Expediente cerrado      : si
@@ -438,13 +444,15 @@ pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
   sección aceptada: el indicador se disparó y el diseño **no** se detuvo. No
   impiden cerrar, pero hay que leerlas: cada una sale además como una línea
   `aviso:` en el bloque de su punto, con su código. La consola y la memoria
-  la cuentan; la pestaña 4 la muestra fila a fila.
+  la cuentan; la pestaña 4 la muestra fila a fila. En las dos corridas de
+  esta guía hay una: VC2 de C-01, el empalme de la salida con el canal.
 - **Etapas bloqueadas.** Las etapas que se detuvieron y **cuentan para el
   cierre**: un `CriterioPendienteError` (falta declarar un criterio), un
   `DatoFaltanteError` (falta un dato), un `DatoInvalidoError`, un
   `DisenoNoFactibleError`. El bloque «CRITERIOS PENDIENTES QUE BLOQUEARON UNA
   ETAPA» dice de cada criterio su concepto, su fuente, qué lo resuelve y en
-  qué puntos. La corrida de la sección 3 tenía 1: el cajón de C-01.
+  qué puntos. Las corridas de esta guía no tienen ninguna; hasta T-3 la de
+  la sección 3 tenía una, el cajón de C-01 sin declarar.
 - **Diferidas por alcance.** Lo que **esta corrida declaró fuera de su
   alcance** y por eso no cuenta como bloqueo: con `--alcance perfil`, las
   verificaciones V5 (remanso en el derecho de vía) y V8 (evento extremo) se
@@ -463,8 +471,8 @@ pestaña 4 de la ventana y el encabezado de la memoria. Significan esto:
   de salida de la CLI es 1 en ese caso y 0 cuando cierra. **Un `si` a perfil no
   es un expediente completo**: es el perfil cerrado, con las trece etapas
   diferidas impresas y esperando al expediente. Ése es el estado final de esta
-  guía, y por eso la corrida de la sección 3 —que todavía tiene el cajón sin
-  declarar— dice `no` y la de la sección 4 dice `si`.
+  guía, y las dos corridas lo alcanzan: la de la sección 3 dice `si` con la
+  advertencia de corredor delante, porque sus [S] son los del repositorio.
 
 ---
 
@@ -509,8 +517,8 @@ corrida usó, no el estado del proceso al exportar.
   guardia que «Cargar sesion»; una bandera escrita gana a lo que la sesión
   trae, y `--declarar` compone encima. Es la vía por la que la ventana exporta
   el PDF en un proceso aparte. Una sesión mínima que reproduce la corrida de
-  la sección 4 (las procedencias van vacías porque `--declarar` no las
-  registra; la ventana sí):
+  la sección 4, con el criterio que esa corrida declara (las procedencias van
+  vacías porque `--declarar` no las registra; la ventana sí):
 
   ```json archivo=guia/sesion.json
   {
@@ -525,13 +533,7 @@ corrida usó, no el estado del proceso al exportar.
     "alcance": "perfil",
     "criterios": {
       "valores": {
-        "embocadura_cajon": "cajon_concreto_aletas_30_75",
-        "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
-        "n_manning_cajon": "concreto_afinado",
-        "n_celdas_cajon": 1,
-        "secciones_cajon_normalizadas": [[1.20, 0.90], [1.50, 1.20], [2.00, 1.50]],
-        "espesor_pared_cajon": 0.20,
-        "cobertura_minima_cajon": 0.3048
+        "n_celdas_cajon": 1
       },
       "procedencias": {}
     },
@@ -559,8 +561,9 @@ corrida usó, no el estado del proceso al exportar.
   expediente por identidad de punto (`src/comparador.py`), sin recalcular
   nada, y termina: 0 si son iguales, 1 si difieren, 2 si no se pudo leer. Es
   la misma comparación que hace la pestaña 4 de la ventana y la que la CLI
-  hace con la corrida embebida en una sesión. Entre la corrida sin el cajón y
-  la completa:
+  hace con la corrida embebida en una sesión. Entre la corrida de la sección
+  3 (sin sitio ni declaraciones) y la completa —difieren en el corredor y en
+  los [S] declarados, no en el diseño—:
 
   ```sh id=comparar
   python cli.py --comparar guia/salida/sin_cajon.informe.json guia/salida/perfil.informe.json
@@ -574,25 +577,21 @@ corrida usó, no el estado del proceso al exportar.
   criterio de tabla exige `--barrido-fila` o `--barrido-nota`). No arma
   memoria: el barrido es un anexo, no parte del expediente, y `--json` recibe
   el barrido. Sobre el número de celdas del marco, con los otros seis del
-  cajón declarados:
+  cajón en su valor de archivo:
 
   ```sh id=barrido
   python cli.py guia/puntos.csv --alcance perfil --luz 2.75 \
     --datos-externos guia/externos.json \
     --datos-sitio guia/sitio.json \
-    --declarar embocadura_cajon=cajon_concreto_aletas_30_75 \
-    --declarar ke_entrada_cajon=cajon_aletas_30_75_escuadra \
-    --declarar n_manning_cajon=concreto_afinado \
-    --declarar "secciones_cajon_normalizadas=[[1.20,0.90],[1.50,1.20],[2.00,1.50]]" \
-    --declarar espesor_pared_cajon=0.20 \
-    --declarar cobertura_minima_cajon=0.3048 \
     --barrido n_celdas_cajon=1,2 \
     --json guia/salida/barrido.json
   ```
 
   La tabla dice, por valor y por punto, si el punto dimensiona, qué
   verificaciones cambian de veredicto y qué incumplió en su progresión
-  cuando deja de dimensionar.
+  cuando deja de dimensionar. Con dos celdas C-01 deja de dimensionar: V6
+  no acepta la multicelda mientras no haya dato de arrastre del canal, y su
+  fila dice el caudal por celda, el tabique y el ancho total que tendría.
 
 ---
 

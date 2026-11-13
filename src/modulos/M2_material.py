@@ -260,6 +260,7 @@ from typing import Any, Optional, Tuple, Union
 from src import criterios_adoptados as ca
 from src.constantes_normativas import (ALCANCE_NORMA_PRODUCTO, CARTAS_CAJON_TA1,
                                    FILAS_MANNING_CONCRETO,HDS5_INLET, H_RELLENO_MIN, MANNING,
+                                   MANNING_CAJON_HDS5,
                                    SECCION_EG2013,
                                    SECCION_EG2013_CAJON,
                                    TABLA_09_FILAS, V_MAX)
@@ -1094,24 +1095,46 @@ def _carta_de_cajon() -> str:
 
 def _fila_manning_de_cajon() -> str:
     """
-    La fila de la Tabla N 09 de la que 'n_manning_cajon' toma su analogia.
+    La fila de la que 'n_manning_cajon' toma la doble n del marco.
 
-    ACOTADA AL SUBGRUPO «a. Concreto», que es lo que el criterio declara: un
-    marco de concreto no puede tomar prestada la n de un metal corrugado ni la
-    de unas duelas de madera, y sin esta guardia `MANNING[...]` las aceptaba
-    -- y una errata en la clave salia como `KeyError` desnudo --.
+    --- T-3 (auditoria, H1) --- DOS TABLAS Y NO UNA. El valor de archivo es
+    la fila PROPIA del marco, «Concrete Boxes / Smooth» de la Tabla B.1 del
+    HDS-5 (`MANNING_CAJON_HDS5`, [C]); la alternativa barrible es una fila del
+    subgrupo «a. Concreto» de la Tabla N 09 aplicada por analogia (la de
+    «afinado», con la lectura corregida del corrimiento). Hasta la auditoria
+    solo se admitia la segunda.
+
+    ACOTADA, en las dos tablas, a lo que describe al marco: de la Tabla B.1
+    solo la fila de cajon -- las demas son de tubo, metal o plastico --, y de
+    la Tabla N 09 solo el subgrupo «a. Concreto»: un marco de concreto no
+    puede tomar prestada la n de un metal corrugado ni la de unas duelas de
+    madera, y sin esta guardia `MANNING[...]` las aceptaba -- y una errata en
+    la clave salia como `KeyError` desnudo --.
     """
     clave = ca.valor(CRITERIO_N_MANNING_CAJON)
-    if not isinstance(clave, str) or clave not in FILAS_MANNING_CONCRETO:
+    admitidas = frozenset(MANNING_CAJON_HDS5) | FILAS_MANNING_CONCRETO
+    if not isinstance(clave, str) or clave not in admitidas:
         raise DatoInvalidoError(
             CRITERIO_N_MANNING_CAJON, valor=clave,
-            motivo="se espera la CLAVE de una fila del subgrupo «a. Concreto» "
-                   "del grupo A de la Tabla N 09: la analogia que este "
-                   "criterio declara es DENTRO del material del conducto, no "
-                   "entre materiales. Claves admitidas: "
-                   + ", ".join(sorted(FILAS_MANNING_CONCRETO)),
+            motivo="se espera la CLAVE de la fila del marco: la de la Tabla "
+                   "B.1 del HDS-5 («Concrete Boxes», el valor de archivo) o, "
+                   "por analogia, una del subgrupo «a. Concreto» del grupo A "
+                   "de la Tabla N 09. Ni una fila de tubo de la Tabla B.1 ni "
+                   "una de otro material de la Tabla N 09 describen el "
+                   "marco. Claves admitidas: " + ", ".join(sorted(admitidas)),
         )
     return clave
+
+
+def _par_manning_de_cajon(clave: str) -> Tuple[float, float]:
+    """
+    --- T-3 (auditoria, H1) --- El par (n_min, n_max) de la fila que
+    `_fila_manning_de_cajon` admitio, leido de SU tabla: la Tabla B.1 del
+    HDS-5 para la fila del marco y la Tabla N 09 para la alternativa.
+    """
+    if clave in MANNING_CAJON_HDS5:
+        return MANNING_CAJON_HDS5[clave]
+    return MANNING[clave]
 
 
 def numero_de_celdas(material: Material) -> int:
@@ -1312,7 +1335,7 @@ def catalogo(material: MaterialLike,
         # que es la que arrastra mas decisiones detras. Los otros tres
         # aparecen en cuanto este se declare.
         hds5 = ConstantesHDS5.desde_dict(HDS5_INLET[_carta_de_cajon()])
-        n_min, n_max = MANNING[_fila_manning_de_cajon()]
+        n_min, n_max = _par_manning_de_cajon(_fila_manning_de_cajon())
     elif tipo is TipoMaterial.HDPE:
         n_min, n_max = _par_de_manning(CRITERIO_N_MANNING_HDPE,
                                        _valor_si_declarado(CRITERIO_N_MANNING_HDPE))
@@ -1429,12 +1452,17 @@ def _pasos_del_marco() -> Tuple[PasoDeMemoria, ...]:
     que se mueve con ellos: una memoria que no los desarrolle no los puede
     defender.
     """
-    progresion = [(float(B), float(H))
-                  for B, H in ca.valor(CRITERIO_SECCIONES_CAJON)]
+    # TUPLA Y NO LISTA (T-3): la progresion viaja en una
+    # `EleccionDeProyecto`, que es un dataclass congelado y se hashea cuando
+    # la memoria junta los pasos de una corrida (`M11.pasos_del_informe`).
+    # Con una lista, el primer marco que dimensionaba sin declarar nada en
+    # caliente -- el de los valores de archivo de T-3 -- tumbaba ese hash.
+    progresion = tuple((float(B), float(H))
+                       for B, H in ca.valor(CRITERIO_SECCIONES_CAJON))
     celdas = ca.valor(CRITERIO_N_CELDAS_CAJON)
-    fila = ca.valor(CRITERIO_N_MANNING_CAJON)
+    fila = _fila_manning_de_cajon()
     carta = ca.valor(CRITERIO_EMBOCADURA_CAJON)
-    n_min, n_max = MANNING[fila]
+    n_min, n_max = _par_manning_de_cajon(fila)
     menor = min(progresion, key=lambda par: par[0] * par[1])
 
     tipo_marco = paso(
@@ -1573,6 +1601,69 @@ def _pasos_del_marco() -> Tuple[PasoDeMemoria, ...]:
             "supiera hacer multibarril."),
     )
 
+    # --- T-3 (auditoria, H1) --- DOS PASOS, UNO POR TABLA. El valor de
+    # archivo es la fila del marco de la Tabla B.1 del HDS-5 ([C], fundamento
+    # F4.N_CAJON_TB1); la alternativa barrible, una fila del subgrupo «a.
+    # Concreto» de la Tabla N 09 aplicada por analogia (F4.N_CAJON). Son dos
+    # situaciones normativas distintas y la memoria tiene que decir cual fue.
+    if fila in MANNING_CAJON_HDS5:
+        n_manning = paso(
+            "F4.N_CAJON_TB1",
+            codigo="4.1",
+            que="Coeficiente de rugosidad de Manning del marco",
+            formula="fila «Concrete Boxes / Smooth» de la Tabla B.1 del HDS-5, "
+                    "rango completo (n_min, n_max)",
+            formula_cita_id="HDS5_3ED.TB.1",
+            citas_textuales=("HDS5_3ED.TB.1", "HDS5_3ED.B.3#CAJON_IN_SITU"),
+            sustitucion=(
+                Magnitud("n_min", n_min, "",
+                         "extremo inferior de la fila: rama de EROSION (V3, "
+                         "d50): el lado seguro para la velocidad maxima",
+                         cifras=CIFRAS_FINA),
+                Magnitud("n_max", n_max, "",
+                         "extremo superior de la misma fila: rama de CAPACIDAD "
+                         "(tirante, V1, HW de salida): el lado seguro para la "
+                         "inundacion", cifras=CIFRAS_FINA)),
+            resultado=Magnitud("fila adoptada", "Concrete Boxes / Smooth", "",
+                               "la fila del CAJON de concreto de la Tabla B.1 "
+                               "(FHWA 1961): [C], cubre el vacio de la Tabla "
+                               "N 09, que no tiene fila de seccion "
+                               "rectangular", cifras=None),
+            veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                                explicacion="adopcion, no verificacion"),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="la fila de la que sale la doble n del marco",
+                valor=fila,
+                entre=("Tabla B.1 del HDS-5: Concrete Boxes / Smooth "
+                       "(0.012-0.015)",
+                       "Tabla N 09: A.2 NO METALICOS - a. Concreto - afinado "
+                       "(0.011-0.014, lectura corregida), por analogia",
+                       "num. B.3 del HDS-5: 0.012 a 0.022 en un cajon vaciado "
+                       "in situ, segun el encofrado"),
+                de_donde="HDS-5 3a ed., Apendice B, Table B.1 (pag. impresa "
+                         "B.6)",
+                por_que="es la fila ESPECIFICA del marco, de la misma fuente "
+                        "de la que salen su carta (Tabla A.1) y su ke (Tabla "
+                        "C.2); la Tabla N 09 cubre al marco por el titulo de "
+                        "su grupo A y no tiene fila de seccion rectangular",
+                cita_id="HDS5_3ED.TB.1",
+                clave_criterio=CRITERIO_N_MANNING_CAJON),),
+            nota_del_proyecto=(
+                f"El rango se toma COMPLETO -- {n_min} a {n_max} -- y no un "
+                f"valor corriente: la regla de doble n pide los dos extremos, "
+                f"porque n_max es conservador para capacidad y tirante y "
+                f"n_min para velocidad y socavacion. La fuente advierte que "
+                f"sus n son de LABORATORIO (nota 1 de la tabla) y que en un "
+                f"cajon vaciado in situ el n va de 0.012 a 0.022 segun el "
+                f"encofrado (num. B.3): un encofrado de calidad inferior a la "
+                f"de la fila sube el n de capacidad, y eso es lo que la "
+                f"ventana del criterio deja declarar. La carta de HDS-5 que "
+                f"acompana a esta decision es '{carta}', del bloque de CAJON "
+                f"de la Tabla A.1: el num. A.3 prohibe cruzar coeficientes "
+                f"entre geometrias."),
+        )
+        return (tipo_marco, seccion_canal, mantenimiento, n_celdas, n_manning)
+
     n_manning = paso(
         "F4.N_CAJON",
         codigo="4.1",
@@ -1632,7 +1723,15 @@ def _fila_manning(tipo: TipoMaterial, forma: FormaSeccion) -> str:
     -- analogia que se queda DENTRO del grupo, y por eso es mas estrecha --.
     """
     if forma is FormaSeccion.RECTANGULAR:
-        return (f"{TABLA_09_FILAS[ca.valor(CRITERIO_N_MANNING_CAJON)]['fila']} "
+        # --- T-3 (auditoria, H1) --- la fila del marco de la Tabla B.1 del
+        # HDS-5 es el valor de archivo; la de la Tabla N 09, la alternativa.
+        clave = ca.valor(CRITERIO_N_MANNING_CAJON)
+        if clave in MANNING_CAJON_HDS5:
+            return ("Concrete Boxes / Smooth -- fila del CAJON de concreto de "
+                    "la Tabla B.1 del HDS-5 [C], criterio "
+                    f"'{CRITERIO_N_MANNING_CAJON}': la Tabla N 09 no tiene "
+                    "fila de seccion rectangular")
+        return (f"{TABLA_09_FILAS[clave]['fila']} "
                 f"-- aplicada al MARCO por analogia declarada en el criterio "
                 f"'{CRITERIO_N_MANNING_CAJON}': el grupo A de la tabla cubre "
                 f"al cajon por su titulo y ninguna de sus filas nombra la "

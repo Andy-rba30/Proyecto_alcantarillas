@@ -616,9 +616,10 @@ DIS_EG_508_07 = _d(
 DIS_T09_A2_DESPLAZADA = _d(
     id="DIS-MCHHD-T09-A2-DESPLAZADA",
     objeto=("la alineacion de la columna de valores con sus rotulos en el "
-            "bloque A.2 NO METALICOS de la Tabla Nº 09"),
+            "bloque A.2 NO METALICOS de la Tabla Nº 09 (y, con el mismo "
+            "corrimiento, en los bloques B.1, B.2 y C de la misma pagina)"),
     partes=(
-        Parte(quien="MC_HHD",
+        Parte(quien="MC_HHD (lectura literal)",
               que_dice=("en la pag. impresa 75 los valores del bloque A.2 se "
                         "imprimen UN RENGLON MAS ARRIBA que sus rotulos: "
                         "«0.010 0.011 0.013» queda a la altura de "
@@ -630,30 +631,56 @@ DIS_T09_A2_DESPLAZADA = _d(
                         "moldaje madera en bruto» y a «c. Albañilería de "
                         "piedra.», que son hojas de la jerarquia"),
               cita_id="MC_HHD.4.1.1.3.6#T09"),
-        Parte(quien="Ven Te Chow 1983",
-              que_dice=("la fuente que la propia Tabla Nº 09 declara asigna "
-                        "0.010/0.011/0.013 a «culvert, straight and free of "
-                        "debris» y 0.010/0.012/0.014 a «wood stave», que son "
-                        "«tubo recto y libre de basuras» y «duelas». "
-                        "Corriendo un renglon, las diez ternas del bloque "
-                        "encajan una a una con las diez hojas, sin sobrar ni "
-                        "faltar")),
+        Parte(quien="MC_HHD (evidencia interna de la pagina)",
+              que_dice=("la MISMA pagina, renderizada (impresa 75, PDF 78), "
+                        "trae el bloque A.1 ALINEADO: sus rotulos de "
+                        "categoria «b. Acero» y «c. Metal corrugado» quedan "
+                        "en blanco y cada hoja lleva su terna. En el A.2 es "
+                        "al reves: los rotulos de categoria «a. Concreto» y "
+                        "«b. Madera» llevan terna y la ULTIMA hoja de cada "
+                        "categoria queda en blanco. Corriendo un renglon "
+                        "hacia abajo, las diez ternas del bloque encajan una "
+                        "a una con las diez hojas, sin sobrar ni faltar, y "
+                        "la composicion queda igual que la del A.1. El MISMO "
+                        "corrimiento se repite en los bloques B.1 («a. Acero "
+                        "liso» con terna y «b. Corrugado» en blanco), B.2 "
+                        "(«a. Madera», «b. Concreto» y «c. Albañilería» con "
+                        "terna; «Planchas», «excavado en roca descompuesta» "
+                        "y «piedra sola» en blanco) y C. («a. Tierra, recto y "
+                        "uniforme», «b. Tierra, sinuoso», «c. Roca» y «d. "
+                        "Canales sin mantención» con terna; «con algo de "
+                        "vegetación», «fondo pedregoso - malezas.», "
+                        "«irregular» y «Fondo limpio, bordes con vegetación» "
+                        "en blanco). El repositorio no transcribe ni usa "
+                        "ninguna fila de B ni de C (TABLA_09_GRUPO)"),
+              cita_id="MC_HHD.4.1.1.3.6#T09"),
     ),
-    gana="Ven Te Chow 1983",
-    por_que=("es un descuido de composicion del bloque A.2 -- el A.1 de la "
-             "MISMA tabla no lo tiene --, y la lectura corrida es la unica "
-             "que deja a cada hoja con su valor y coincide fila por fila con "
-             "la fuente que la tabla se atribuye. HALLAZGO DE S12: el "
-             "repositorio ya transcribia la lectura corregida y NO lo "
-             "declaraba, de modo que su valor de Manning mas usado "
-             "-- MANNING['concreto_tubo_recto'] -- se apoyaba en una lectura "
-             "corregida que ningun revisor podia reproducir abriendo la "
-             "pagina"),
+    gana="MC_HHD (evidencia interna de la pagina)",
+    por_que=("es un descuido de composicion: el bloque A.1 de la MISMA tabla "
+             "no lo tiene, y la lectura corrida es la unica que deja a cada "
+             "hoja con su valor y a cada rotulo de categoria sin el, como "
+             "en el A.1. Se sostiene en la pagina y no en otra fuente: la "
+             "tabla se atribuye a Ven Te Chow (1983), y esa correspondencia "
+             "-- que la redaccion de S12 invocaba como parte ganadora -- NO "
+             "es verificable con normas/, donde Chow no esta (auditoria de "
+             "T-3, H10). HALLAZGO DE S12: el repositorio ya transcribia la "
+             "lectura corregida y NO lo declaraba, de modo que su valor de "
+             "Manning mas usado -- MANNING['concreto_tubo_recto'] -- se "
+             "apoyaba en una lectura corregida que ningun revisor podia "
+             "reproducir abriendo la pagina"),
     efecto_si_se_sigue_la_otra=("MANNING['concreto_tubo_recto'] pasaria de "
                                 "(0.010, 0.013) a (0.011, 0.014): +10 % en el "
                                 "n minimo, que es el que gobierna V3 y la "
                                 "socavacion, y +7.7 % en el maximo, que "
-                                "gobierna capacidad y tirante"),
+                                "gobierna capacidad y tirante; y la fila "
+                                "«afinado» -- la alternativa barrible de "
+                                "'n_manning_cajon' -- de (0.011, 0.014) a "
+                                "(0.013, 0.017). La lectura literal es MAS "
+                                "conservadora para capacidad (n_max mayor) y "
+                                "menos para V3 y el d50 (n_min mayor): la "
+                                "correccion no es la opcion del lado seguro "
+                                "en las dos ramas, es la lectura que la "
+                                "pagina sostiene"),
     estado=EstadoDiscrepancia.ERRATA_DE_IMPRENTA,
 )
 

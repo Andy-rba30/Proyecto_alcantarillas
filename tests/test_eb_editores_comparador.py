@@ -466,12 +466,19 @@ def test_e10_una_fila_no_elegible_tecleada_la_rechaza_R4_tambien_con_nota(_limpi
     puerta, una respuesta.
     """
     ed = _mod("src.editores")
-    e = ed.esquema_de("ke_entrada_cajon")
-    fila = next(o.fila for o in e.opciones_de_tabla if not o.elegible)
-    assert ed.fila_implicita(e, fila) == fila
-    with pytest.raises(ValueError, match="R4"):
-        ed.declarar("ke_entrada_cajon", fila, nota="adopto la fila del cajon")
-    assert not ca.declarado_en_caliente("ke_entrada_cajon")
+    # --- T-3 --- La fila del cajon NO es elegible mientras 'embocadura_cajon'
+    # siga sin valor (la condicion de la Tabla C.2 se resuelve con el). Desde
+    # T-3 la embocadura tiene valor de archivo, y la premisa se recrea aqui
+    # vaciandola durante el test: lo que se mide sigue siendo R4.
+    from tests.apoyo.criterios import sin_valor
+    with sin_valor("embocadura_cajon"):
+        e = ed.esquema_de("ke_entrada_cajon")
+        fila = next(o.fila for o in e.opciones_de_tabla if not o.elegible)
+        assert ed.fila_implicita(e, fila) == fila
+        with pytest.raises(ValueError, match="R4"):
+            ed.declarar("ke_entrada_cajon", fila,
+                        nota="adopto la fila del cajon")
+        assert not ca.declarado_en_caliente("ke_entrada_cajon")
 
 
 def test_e10_un_dict_de_tabla_toma_de_la_fila_sus_campos_homonimos_o_exige_nota(_limpio):

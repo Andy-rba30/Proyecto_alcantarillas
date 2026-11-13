@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "dc795cac907dd5c1eacee99eda8ecc54dfb7c60c",
+    "criterios_sha1": "559872d4701e2012acfc09e8188f5cd58ea4228b",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -845,13 +845,10 @@
       "capacidad_portante_adm",
       "categoria_refuerzo_aashto",
       "clase_sitio",
-      "cobertura_minima_cajon",
       "cortante_alto_muro_e060_art_11_10_10_2",
       "cuantia_vertical_cortante_alto_e060_art_11_10_10_3",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
-      "embocadura_cajon",
-      "espesor_pared_cajon",
       "exposicion_quimica_ems",
       "friccion_muro_suelo_delta",
       "gamma_EQ",
@@ -859,17 +856,13 @@
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
       "inclinacion_muro_beta",
-      "ke_entrada_cajon",
       "metodo_estabilidad_global",
-      "n_celdas_cajon",
-      "n_manning_cajon",
       "pendiente_relleno_trasdos_i",
       "phi_relleno_trasdos",
       "predimensionamiento_cabezal",
       "punto_aplicacion_incremento_sismico",
       "regimen_cortante_muro_e060_art_11_10_2",
-      "remanso_derecho_via",
-      "secciones_cajon_normalizadas"
+      "remanso_derecho_via"
     ],
     "declarados_en_caliente": [
       "diametros_normalizados"

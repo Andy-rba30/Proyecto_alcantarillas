@@ -33,7 +33,7 @@ from src.modulos.M2_material import (CRITERIO_ESPESOR_PARED, catalogo,
                                  siguiente_diametro, siguiente_seccion,
                                  tope_de_diametro)
 from tests.apoyo.aproximacion import REL_TRANSPORTE
-from tests.apoyo.criterios import con_valor, declarados
+from tests.apoyo.criterios import con_valor, declarados, sin_valor
 from tests.fixtures.casos_patron import CP11_SERIES_NOMINALES
 
 CSV_VALIDO = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
@@ -315,9 +315,15 @@ def test_familia_c_ofrece_el_marco_y_se_detiene_en_sus_criterios(punto_c):
     una linea de la lista de trabajo del tesista.
     """
     assert punto_c.familia is Familia.C
-    with pytest.raises(CriterioPendienteError) as exc:
-        materiales_candidatos(punto_c)
+    # --- T-3 --- Desde T-3 la embocadura tiene valor de archivo: la
+    # detencion se mide vaciandola durante el test, y al lado se fija que
+    # con el archivo el candidato SI se construye.
+    with sin_valor("embocadura_cajon"):
+        with pytest.raises(CriterioPendienteError) as exc:
+            materiales_candidatos(punto_c)
     assert exc.value.clave == "embocadura_cajon"
+    (marco,) = materiales_candidatos(punto_c)
+    assert marco.forma is FormaSeccion.RECTANGULAR
 
 
 def test_con_los_criterios_del_cajon_declarados_la_familia_c_da_un_candidato(
@@ -618,7 +624,10 @@ def test_el_marco_no_toma_prestada_la_pared_del_tubo_de_su_misma_altura():
     """
     with declarados(DECLARACIONES_CAJON):
         marco = _marco()
-        with pytest.raises(CriterioPendienteError) as exc:
+        # --- T-3 --- el espesor tiene valor de archivo desde T-3 (0.20 m):
+        # la detencion se mide vaciandolo.
+        with sin_valor("espesor_pared_cajon"), \
+                pytest.raises(CriterioPendienteError) as exc:
             espesor_pared(marco, 1.50)
         assert exc.value.clave == "espesor_pared_cajon"
         # Y el tubo de la misma altura SI tiene fila: es lo que hace peligrosa

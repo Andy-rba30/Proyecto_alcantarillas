@@ -33,6 +33,8 @@ import json
 import re
 from pathlib import Path
 
+from contextlib import ExitStack
+
 import pytest
 
 import cli
@@ -274,10 +276,16 @@ def test_familia_c_con_caudal_declarado_se_detiene_en_los_criterios_del_cajon():
     ser del EXPEDIENTE. Antes era `DisenoNoFactibleError` ("no hay material
     candidato"); ahora es `CriterioPendienteError`, que es lo que el bloque de
     pendientes de la memoria sabe convertir en lista de trabajo.
+
+    --- T-3 --- Desde T-3 la embocadura tiene valor de archivo y el punto
+    pasa de largo hasta VC1 (la coronacion del canal). La propiedad que se
+    mide --que un criterio del cajon SIN valor detiene como pendiente del
+    expediente y no como no factible-- se mide vaciandolo durante el test.
     """
-    informe = _informe_por_punto(
-        {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 12.0},
-        {"C-01": {"Q_m3s": 0.9, "S_conducto": 0.004}})
+    with sin_valor("embocadura_cajon"):
+        informe = _informe_por_punto(
+            {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 12.0},
+            {"C-01": {"Q_m3s": 0.9, "S_conducto": 0.004}})
     c01 = _punto(informe, "C-01")
     pendientes = [b for b in c01.bloqueos if b.tipo == "CriterioPendienteError"]
     assert pendientes, [b.tipo for b in c01.bloqueos]
@@ -1497,9 +1505,19 @@ def test_la_declaracion_de_alcance_sale_antes_de_declarar_ningun_criterio(
     una acotacion NO se veria -- `M11.acotaciones_declaradas()` filtra por
     `valor is not None` --, y por eso el vehiculo es `bloque_alcance`.
     """
+    # --- T-3 --- Desde T-3 los cinco tienen valor de archivo: la premisa del
+    # expediente ABIERTO se recrea vaciandolos durante la corrida, que es lo
+    # que esta comprobacion mide (la declaracion sale aunque no haya nada).
     destino = tmp_path / "memoria.html"
-    cli.main([str(CSV), "--luz", "2.0",
-              "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+    claves = ("embocadura_cajon", "n_manning_cajon", "n_celdas_cajon",
+              "ke_entrada_cajon", "secciones_cajon_normalizadas")
+    with ExitStack() as pila:
+        for clave in claves:
+            pila.enter_context(sin_valor(clave))
+        cli.main([str(CSV), "--luz", "2.0",
+                  "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+        # La premisa: ninguno de los cinco criterios del cajon tiene valor.
+        assert all(ca.criterio_efectivo(c).valor is None for c in claves)
     html = destino.read_text(encoding="utf-8")
 
     # LA AFIRMACION QUE ESTE BLOQUE HACE CAMBIO AL IMPLEMENTARSE VC1. Decia
@@ -1513,10 +1531,6 @@ def test_la_declaracion_de_alcance_sale_antes_de_declarar_ningun_criterio(
     # Y el punto afectado va nombrado (NOR-HDS-05): un aviso sin punto es el
     # "nadie se entera".
     assert "C-01" in html
-    # La premisa: ninguno de los cinco criterios del cajon tiene valor aqui.
-    assert all(ca.criterio_efectivo(c).valor is None for c in (
-        "embocadura_cajon", "n_manning_cajon", "n_celdas_cajon",
-        "ke_entrada_cajon", "secciones_cajon_normalizadas"))
 
 
 def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
@@ -1647,7 +1661,9 @@ def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
         control_gobernante=ControlGobernante.ENTRADA)
     verificar = cli._verificador_perfil(InformePunto(punto=punto))
 
-    with declarados(declaraciones):
+    # --- T-3 --- 'espesor_pared_cajon' tiene valor de archivo desde T-3: el
+    # marco «al que solo le falta el espesor» se recrea vaciandolo aqui.
+    with declarados(declaraciones), sin_valor("espesor_pared_cajon"):
         marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,
                          forma=FormaSeccion.RECTANGULAR)
         with pytest.raises(ErrorProyecto) as exc:

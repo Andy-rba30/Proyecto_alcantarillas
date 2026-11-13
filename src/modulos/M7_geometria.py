@@ -303,14 +303,16 @@ from src.dominios import ESVIAJE_MAX, S_CAUCE_MAX
 from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD,
                      CompatibilidadGeometrica,
                      CondicionRasante,
-                     DatoInvalidoError, EleccionDeProyecto, FormaSeccion,
+                     DatoInvalidoError, EleccionDeProyecto,
+                     EstadoDeVerificacion, FormaSeccion,
+                     Familia, GeometriaMarco, RemansoCanal, SeccionReceptor,
                      LimiteNumericoError, LongitudConducto,
                      Magnitud, Material, MetodoLongitud, OrigenPendiente,
                      PendienteAdoptada, Seccion,
                      exigir_seccion_coherente,
                      PuntoCritico, ResultadoHidraulico, TamizadoRasante,
                      TipoDeVeredicto, Umbral, Veredicto, Verificacion, paso)
-from src.modulos.M2_material import espesor_pared
+from src.modulos.M2_material import espesor_pared, numero_de_celdas
 from src.modulos.M5_verificaciones import (CRITERIO_PENDIENTE_MAXIMA,
                                        CRITERIO_PENDIENTE_MINIMA,
                                        CRITERIO_REGIMEN_V2B,
@@ -343,8 +345,10 @@ NUMERAL_G1_CIRCULAR = ("Sec. 7.A (recubrimiento: el mayor entre EG-2013 "
 NUMERAL_G1_CAJON = ("Sec. 7.A (cobertura: SIN numeral -- la Tabla 12.6.6.3-1 "
                     "de AASHTO no tiene fila de cajon de concreto y el "
                     "EG-2013 solo fija altura de relleno para HDPE --, "
-                    "declarada en el criterio 'cobertura_minima_cajon' [A] / "
-                    "resguardo Sec. 5.1)")
+                    "declarada en el criterio 'cobertura_minima_cajon' [A] "
+                    "por analogia, y AVISA: la fuente admite el marco sin "
+                    "relleno, MTC 4.1.1.3.4 a) y AASHTO LRFD 12.6.6.3 / "
+                    "resguardo Sec. 5.1, bloquea)")
 
 
 def numeral_g1(material: Material) -> str:
@@ -760,14 +764,25 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
     por_recubrimiento = clave + h_rec + e_paq
     por_resguardo = entrada + HW + resguardo + e_paq
 
-    cota_min = max(por_recubrimiento, por_resguardo)
-    if por_resguardo > por_recubrimiento + TOL_UMBRAL_NORMATIVO:
+    # --- T-3 (auditoria adversarial, H5) --- EN UN MARCO LA COBERTURA
+    # ADOPTADA AVISA Y NO BLOQUEA: la fuente admite el marco sin relleno
+    # (MTC 4.1.1.3.4 a), Lamina N 03, AASHTO LRFD 12.6.6.3), y el 0.3048 m del
+    # criterio es una analogia con el tubo, mas restrictiva que ella. Lo que
+    # bloquea es la clave bajo la subrasante (cobertura cero) y el
+    # resguardo. Ver `TamizadoRasante.cobertura_como_aviso`.
+    cobertura_como_aviso = material.forma is FormaSeccion.RECTANGULAR
+    por_cobertura_exigible = (clave + e_paq if cobertura_como_aviso
+                              else por_recubrimiento)
+    cota_min = max(por_cobertura_exigible, por_resguardo)
+    if por_resguardo > por_cobertura_exigible + TOL_UMBRAL_NORMATIVO:
         condicion = CondicionRasante.RESGUARDO
     else:
         condicion = CondicionRasante.RECUBRIMIENTO
 
     faltante = cota_min - punto.cota_rasante
     factible = faltante <= TOL_UMBRAL_NORMATIVO
+    alcanza_cobertura = (por_recubrimiento - punto.cota_rasante
+                         <= TOL_UMBRAL_NORMATIVO)
 
     return TamizadoRasante(
         cota_rasante_min=cota_min,
@@ -797,6 +812,10 @@ def tamizado_rasante(*, punto: PuntoCritico, material: Material,
         # minima y su delta son PROVISIONALES y el objeto lo dice.
         provisional=bool(cota_entrada.aviso),
         aviso=cota_entrada.aviso,
+        cobertura_como_aviso=cobertura_como_aviso,
+        cota_por_cobertura_exigible=(por_cobertura_exigible
+                                     if cobertura_como_aviso else None),
+        alcanza_cobertura_adoptada=alcanza_cobertura,
     )
 
 
@@ -826,9 +845,85 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
     se detiene ahora en 'espesor_pared_conducto' y en 'condicion_pavimento'.
     Lo que cambio no es esta funcion sino lo que hay que declarar antes de
     llegar a ella.
+
+    --- T-3 (auditoria adversarial, H5) --- G1 DEL MARCO AVISA CUANDO SOLO
+    FALTA LA COBERTURA ADOPTADA. El 0.3048 m de 'cobertura_minima_cajon' es
+    [A] por analogia con la fila del TUBO y mas restrictivo que la fuente,
+    que admite el marco sin relleno: el Manual deja la rasante coincidir con
+    la losa (num. 4.1.1.3.4 a), cita MC_HHD.4.1.1.3.4a#NIVELES), la Lamina N
+    03 dibuja el marco en cruce de canal sin relleno acotado, y AASHTO LRFD
+    12.6.6.3 admite el cajon sin cobertura a cambio de diseñar la losa
+    superior para la carga vehicular directa (cita
+    AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA). Criterio general del dueño: las
+    analogias avisan. Con el tamizado factible -- clave bajo la subrasante y
+    resguardo cumplido -- y la cobertura adoptada no alcanzada, G1 cumple y
+    su veredicto es INDICADOR: llega a `InformePunto.avisos()` y cuenta en
+    «Verificaciones con aviso». El resguardo sigue bloqueando, y G1 del
+    TUBO no cambia en nada.
     """
     manda_recubrimiento = (tamizado.condicion_gobernante
                            is CondicionRasante.RECUBRIMIENTO)
+    es_marco = tamizado.cobertura_como_aviso
+    avisa = (es_marco and tamizado.factible
+             and not tamizado.alcanza_cobertura_adoptada)
+    if not tamizado.factible:
+        tipo = TipoDeVeredicto.NO_CUMPLE
+        explicacion = (f"no factible: hay que subir la rasante "
+                       f"{tamizado.delta_rasante_m:.3f} m")
+    elif avisa:
+        tipo = TipoDeVeredicto.INDICADOR
+        falta = tamizado.cota_por_recubrimiento - tamizado.cota_rasante_actual
+        explicacion = (
+            f"la rasante alcanza la minima exigible (clave bajo la "
+            f"subrasante y resguardo), pero NO la cobertura de "
+            f"{tamizado.h_recubrimiento:.4f} m que el proyecto adopta por "
+            f"analogia con la fila del tubo de la Tabla 12.6.6.3-1 (faltan "
+            f"{falta:.3f} m). La fuente admite el marco sin cobertura -- el "
+            f"Manual deja la rasante a nivel de la losa (num. 4.1.1.3.4 a)) y "
+            f"AASHTO LRFD 12.6.6.3 exige entonces diseñar la losa superior "
+            f"para la carga vehicular directa --, de modo que el punto NO se "
+            f"detiene; con menos de 2.0 ft de relleno la Fase 8 del marco no "
+            f"es evaluable por el metodo de la carga viva a traves del "
+            f"relleno (AASHTO LRFD 3.6.1.2.6a)")
+    else:
+        tipo = TipoDeVeredicto.CUMPLE
+        explicacion = "la rasante del expediente ya alcanza la minima"
+    if es_marco:
+        formula = ("cota_rasante_min = max(cota_clave + e_paquete, "
+                   "cota_entrada + HW + resguardo + e_paquete) ; AVISO si "
+                   "cota_rasante < cota_clave + h_rec + e_paquete")
+        cita_formula = ""
+        citas = ("AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA",
+                 "MC_HHD.4.1.1.3.4a#NIVELES", "MC_HHD.LAMINA_03")
+        cita_umbral = "AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA"
+        procedencia_h_rec = (
+            "cobertura ADOPTADA sobre la clave del marco, criterio "
+            "'cobertura_minima_cajon' [A], por analogia con la fila del tubo "
+            "de la Tabla 12.6.6.3-1: mas restrictiva que la fuente, AVISA y "
+            "no bloquea. AQUI GOBIERNA " + tamizado.minimo_que_gobierna)
+        aplicacion = (
+            "EN UN MARCO, LO QUE BLOQUEA es la clave bajo la subrasante -- "
+            "cobertura cero, la rama que AASHTO 12.6.6.3 admite para un "
+            "cajon con la losa diseñada para la carga vehicular directa -- y "
+            "el resguardo bajo la subrasante; la cobertura adoptada por "
+            "analogia con el tubo solo AVISA (criterio general del proyecto: "
+            "las analogias avisan).")
+    else:
+        formula = ("cota_rasante_min = max(cota_clave + h_rec + e_paquete, "
+                   "cota_entrada + HW + resguardo + e_paquete)")
+        cita_formula = "AASHTO_LRFD_9.12.6.6.3#COBERTURA"
+        citas = ("AASHTO_LRFD_9.12.6.6.3#COBERTURA",
+                 "EG2013.508.07#RELLENO_MIN")
+        cita_umbral = "AASHTO_LRFD_9.12.6.6.3#COBERTURA"
+        procedencia_h_rec = (
+            "relleno minimo sobre la clave: el MAYOR entre el minimo de la "
+            "EG-2013 y la cobertura minima de la Tabla 12.6.6.3-1 de "
+            f"AASHTO. AQUI GOBIERNA {tamizado.minimo_que_gobierna}")
+        aplicacion = (
+            "REGLA DEL MAYOR entre la EG-2013 y AASHTO, la misma que la Sec. "
+            "0.2 aplica al recubrimiento de concreto: los dos minimos "
+            "regulan lo mismo desde dos corpus y ninguno deroga al otro. "
+            "Cumplir el menor dejaria el otro incumplido.")
     return Verificacion(
         cumple=tamizado.factible,
         numeral=tamizado.numeral_g1,
@@ -840,11 +935,9 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
             "F7.RELLENO",
             codigo="G1",
             que="Rasante minima: la que el conducto exige bajo la via",
-            formula="cota_rasante_min = max(cota_clave + h_rec + e_paquete, "
-                    "cota_entrada + HW + resguardo + e_paquete)",
-            formula_cita_id="AASHTO_LRFD_9.12.6.6.3#COBERTURA",
-            citas_textuales=("AASHTO_LRFD_9.12.6.6.3#COBERTURA",
-                             "EG2013.508.07#RELLENO_MIN"),
+            formula=formula,
+            formula_cita_id=cita_formula,
+            citas_textuales=citas,
             sustitucion=(
                 Magnitud("cota_clave", tamizado.cota_clave, "msnm",
                          "cota de entrada + D + espesor de pared: es la clave "
@@ -852,11 +945,7 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
                          "interior dejaba la rasante minima corta en t "
                          "(MAT-D3, MAT-D4)", cifras=CIFRAS_MAGNITUD),
                 Magnitud("h_rec", tamizado.h_recubrimiento, "m",
-                         "relleno minimo sobre la clave: el MAYOR entre el "
-                         "minimo de la EG-2013 y la cobertura minima de la "
-                         "Tabla 12.6.6.3-1 de AASHTO. AQUI GOBIERNA "
-                         f"{tamizado.minimo_que_gobierna}",
-                         cifras=CIFRAS_MAGNITUD),
+                         procedencia_h_rec, cifras=CIFRAS_MAGNITUD),
                 Magnitud("e_paquete", tamizado.espesor_paquete, "m",
                          "cota de rasante menos cota de subrasante del CSV",
                          cifras=CIFRAS_MAGNITUD),
@@ -871,25 +960,16 @@ def g1_rasante_congelada(tamizado: TamizadoRasante) -> Verificacion:
             umbral=Umbral(
                 descripcion="cota de rasante minima que el conducto exige",
                 valor=tamizado.cota_rasante_min, unidad="msnm",
-                cita_id="AASHTO_LRFD_9.12.6.6.3#COBERTURA",
-                caracter="EXIGENCIA",
-                aplicacion="REGLA DEL MAYOR entre la EG-2013 y AASHTO, la "
-                           "misma que la Sec. 0.2 aplica al recubrimiento de "
-                           "concreto: los dos minimos regulan lo mismo desde "
-                           "dos corpus y ninguno deroga al otro. Cumplir el "
-                           "menor dejaria el otro incumplido.",
+                cita_id=cita_umbral,
+                caracter=_caracter_de(cita_umbral),
+                aplicacion=aplicacion,
                 criterio_aplicado=tamizado.criterio_gobernante),
             veredicto=Veredicto(
-                tipo=(TipoDeVeredicto.CUMPLE if tamizado.factible
-                      else TipoDeVeredicto.NO_CUMPLE),
+                tipo=tipo,
                 margen=(tamizado.cota_rasante_actual
                         - tamizado.cota_rasante_min),
                 unidad="m",
-                explicacion=(
-                    "la rasante del expediente ya alcanza la minima"
-                    if tamizado.factible else
-                    f"no factible: hay que subir la rasante "
-                    f"{tamizado.delta_rasante_m:.3f} m")),
+                explicacion=explicacion),
             elecciones=(EleccionDeProyecto(
                 que_se_adopto="condicion que gobierna la rasante minima",
                 valor=tamizado.condicion_gobernante.value,
@@ -2076,6 +2156,21 @@ def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion
     Si falla, subir la rasante NO lo arregla: se corrige con la pendiente, con
     la longitud o con la cota del receptor. Por eso
     `CompatibilidadGeometrica.exigir_factible()` no le adjunta delta.
+
+    --- T-3 (auditoria adversarial, H4) --- EN LA FAMILIA C GOBIERNA VC2 EL
+    EMPALME, y G2 admite por debajo SU tolerancia:
+
+        cota_salida >= cota_fondo_receptor + desnivel - desajuste_empalme
+
+    En un paso de canal `cota_fondo_receptor` es el mismo canal aguas abajo
+    y el conducto lo continua: VC2 acepta la salida dentro de una banda de
+    dos lados de +-desajuste, y la FASE A dejaba a G2 rechazar la mitad
+    negativa de esa banda -- la auditoria midio 36.195 m sobre un fondo de
+    36.20: G2 NO_CUMPLE y VC2 CUMPLE, dos veredictos contradictorios sobre
+    la misma cota --. Por debajo de la banda los dos dicen lo mismo: G2 no
+    cumple (la salida queda enterrada) y VC2 avisa. En las Familias A y B
+    G2 no cambia en nada: el receptor es otro cuerpo de agua y no hay
+    empalme que gobernar.
     """
     desnivel = ca.valor(CRITERIO_DESNIVEL_ENTREGA)
     if isinstance(desnivel, bool) or not isinstance(desnivel, (int, float)) \
@@ -2084,7 +2179,9 @@ def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion
             CRITERIO_DESNIVEL_ENTREGA, valor=desnivel, id_punto=punto.id,
             motivo="el desnivel minimo de entrega es una altura en metros, "
                    "no negativa (0 = entrega a nivel del fondo del receptor)")
-    cota_minima = punto.cota_fondo_receptor + desnivel
+    es_canal = punto.familia is Familia.C
+    banda_vc2 = _desajuste_admisible(punto) if es_canal else 0.0
+    cota_minima = punto.cota_fondo_receptor + desnivel - banda_vc2
     cumple = cota_salida_m >= cota_minima - TOL_UMBRAL_NORMATIVO
     margen = cota_salida_m - cota_minima
     # LA CITA DEL UMBRAL ES LA LAMINA, NO EL NUMERAL DE LA PENDIENTE (auditor
@@ -2106,7 +2203,9 @@ def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion
             "F7.ENTREGA",
             codigo="G2",
             que="Entrega al cuerpo receptor",
-            formula="cota_salida >= cota_fondo_receptor + desnivel_minimo",
+            formula=("cota_salida >= cota_fondo_receptor + desnivel_minimo"
+                     + (" - desajuste_empalme (Familia C: VC2 gobierna el "
+                        "empalme)" if es_canal else "")),
             formula_cita_id=cita,
             citas_textuales=(cita, "MC_HHD.4.1.1.3.3"),
             sustitucion=(
@@ -2117,7 +2216,12 @@ def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion
                          cifras=CIFRAS_MAGNITUD),
                 Magnitud("desnivel_minimo", desnivel, "m",
                          f"criterio '{CRITERIO_DESNIVEL_ENTREGA}' [A]",
-                         cifras=CIFRAS_MAGNITUD)),
+                         cifras=CIFRAS_MAGNITUD))
+            + ((Magnitud("desajuste_empalme", banda_vc2, "m",
+                         f"criterio '{CRITERIO_DESAJUSTE_EMPALME}' [A]: la "
+                         "tolerancia de VC2, que en un paso de canal gobierna "
+                         "el empalme y G2 admite por debajo",
+                         cifras=CIFRAS_MAGNITUD),) if es_canal else ()),
             resultado=Magnitud(
                 "cota_salida - cota_fondo_receptor",
                 cota_salida_m - punto.cota_fondo_receptor, "m",
@@ -2138,7 +2242,12 @@ def g2_cota_salida(*, punto: PuntoCritico, cota_salida_m: float) -> Verificacion
                            "fondo del receptor es lectura del proyecto, y el "
                            "numero tambien: el desnivel del criterio [A], "
                            "que en 0.0 exige solo que la salida no quede "
-                           "enterrada bajo el fondo del receptor.",
+                           "enterrada bajo el fondo del receptor."
+                           + (" EN UN PASO DE CANAL el receptor es el mismo "
+                              "canal y el empalme lo gobierna VC2: G2 admite "
+                              "por debajo su tolerancia, de modo que los dos "
+                              "veredictos no se contradicen."
+                              if es_canal else ""),
                 criterio_aplicado=CRITERIO_DESNIVEL_ENTREGA),
             veredicto=Veredicto(
                 tipo=(TipoDeVeredicto.CUMPLE if cumple
@@ -2244,6 +2353,448 @@ def g3_esviaje(punto: PuntoCritico) -> Verificacion:
 
 
 # ---------------------------------------------------------------------------
+# --- T-3 --- (cadena T, INF-0.4) Lo que 7.B publica de un MARCO y de un PASO
+# DE CANAL: la geometria del marco, VC2 y el remanso aguas arriba del canal.
+# ---------------------------------------------------------------------------
+#
+# LAS TRES PIEZAS NO DECIDEN NADA DEL DISEÑO. La geometria del marco se
+# deriva de la seccion adoptada y del espesor declarado, y la clave exterior
+# es LA MISMA que `M5.cota_clave` le da a V7 y a 7.A (se pide a M5, no se
+# recalcula). VC2 y el remanso son AVISOS: VC2 tiene umbral -- el criterio
+# [A] 'desajuste_empalme_canal_m' -- pero su desajuste lo fijan la cota de
+# entrada y la pendiente, que son datos, y ninguna seccion lo corrige; el
+# remanso no tiene umbral en ninguna fuente. Los dos se evaluan solo en la
+# Familia C, donde `cota_fondo_receptor` es el MISMO canal aguas abajo.
+
+CRITERIO_DESAJUSTE_EMPALME = "desajuste_empalme_canal_m"
+NUMERAL_VC2 = ("Sec. 7.B / Sec. 2.3 (paso de canal: la cota de salida frente "
+               "al fondo del canal aguas abajo; tolerancia del criterio "
+               "'desajuste_empalme_canal_m' [A], por analogia con EG-2013 "
+               "503.11 g); AVISO, el desajuste lo fijan la cota de entrada y "
+               "la pendiente)")
+AVISO_REMANSO_SIN_SECCION = (
+    "Remanso aguas arriba del canal: no se evaluo -- falta la seccion medida "
+    "del canal (`seccion_receptor_medida` en --datos-externos: ancho de "
+    "solera, talud, pendiente, n de Manning y profundidad), que en un paso de "
+    "canal es la del mismo canal. Sin ella no se sabe cuanto levanta la obra "
+    "la lamina del canal ni hasta donde llega el embalse; VC1 solo mide el "
+    "nivel contra la coronacion en el cruce")
+
+
+def geometria_marco(*, punto: PuntoCritico, material: Material,
+                    seccion: Seccion) -> GeometriaMarco:
+    """
+    La geometria del marco adoptado, con su `PasoDeMemoria` (Sec. 7.A/7.B).
+
+        ancho exterior   = N*B + (N - 1)*t + 2*t
+        canto exterior   = H + 2*t
+        clave interior   = cota de entrada + H
+        clave exterior   = cota de entrada + H + t      (= M5.cota_clave)
+        base exterior    = cota de entrada - t
+        relleno sobre la losa = cota de subrasante - clave exterior
+
+    `t` es el criterio 'espesor_pared_cajon' [A], UNO para paredes, losas y
+    tabique (con N > 1 el marco es monolitico: las celdas comparten
+    tabique). La cota de entrada es la de `M5.cota_de_entrada`, medida o
+    adoptada, y lleva su procedencia al paso.
+
+    Solo para una seccion rectangular con material de marco: un tubo no
+    tiene esta geometria y se rechaza con `DatoInvalidoError`
+    (`exigir_seccion_coherente`). Un espesor no positivo o no finito que
+    burlara la puerta del criterio tambien (segunda linea, forma MAT-D13).
+    """
+    exigir_seccion_coherente(material, seccion)
+    if material.forma is not FormaSeccion.RECTANGULAR:
+        raise DatoInvalidoError(
+            "seccion", valor=type(seccion).__name__, id_punto=punto.id,
+            motivo="la geometria de marco solo existe para una seccion "
+                   "rectangular; un tubo no tiene ancho ni canto propios")
+    celdas = numero_de_celdas(material)
+    t = espesor_pared(material, seccion.altura)
+    if not (t > 0 and math.isfinite(t)):
+        raise DatoInvalidoError(
+            "espesor_pared_cajon", valor=t, id_punto=punto.id,
+            motivo="el espesor de pared del marco tiene que ser un numero "
+                   "finito y positivo, en metros")
+    entrada = cota_de_entrada(punto)
+    tabique = t if celdas > 1 else 0.0
+    ancho = seccion.ancho_exterior_de_celdas(t, celdas)
+    canto = seccion.canto_exterior(t)
+    clave_interior = entrada.valor + seccion.H
+    clave_exterior = cota_clave(punto=punto, material=material,
+                                seccion=seccion)
+    base = entrada.valor - t
+    relleno = punto.cota_subrasante - clave_exterior
+    procedencia_t = "criterio 'espesor_pared_cajon' [A]"
+    paso_marco = paso(
+        "F7.MARCO",
+        codigo="7.B.M",
+        que="Geometria del marco adoptado",
+        formula=("ancho_ext = N*B + (N - 1)*t + 2*t ; canto_ext = H + 2*t ; "
+                 "clave_ext = cota_entrada + H + t ; base = cota_entrada - t "
+                 "; relleno = cota_subrasante - clave_ext"),
+        # SIN CITA DE LA FORMULA (auditoria de T-3, H7): la Lamina N 03
+        # dibuja el marco en cruce de canal y no acota nada; las cuentas de
+        # ancho, canto y cotas son geometria del proyecto. Las citas van a
+        # `citas_textuales`.
+        formula_cita_id="",
+        citas_textuales=("MC_HHD.LAMINA_03", "MC_HHD.4.1.1.3.4a#NIVELES",
+                         "E060.14.5.3.2"),
+        sustitucion=(
+            Magnitud("B", seccion.B, "m", "seccion adoptada en la Fase 4 "
+                     "(ancho interior de UNA celda)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("H", seccion.H, "m", "seccion adoptada en la Fase 4 "
+                     "(altura interior)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("N", celdas, "-", "criterio 'n_celdas_cajon' [A]"),
+            Magnitud("t", t, "m", procedencia_t + ": piso de la E.060 num. "
+                     "14.5.3.2 para muros exteriores enterrados, por "
+                     "analogia", cifras=CIFRAS_MAGNITUD),
+            Magnitud("cota_entrada", entrada.valor, "msnm",
+                     entrada.procedencia, cifras=CIFRAS_MAGNITUD),
+            Magnitud("cota_subrasante", punto.cota_subrasante, "msnm",
+                     "columna cota_subrasante del CSV",
+                     cifras=CIFRAS_MAGNITUD)),
+        resultado=Magnitud(
+            "clave_ext", clave_exterior, "msnm",
+            f"clave exterior (= M5.cota_clave, la de V7 y 7.A); ancho "
+            f"exterior {ancho:.3f} m, canto exterior {canto:.3f} m, base "
+            f"{base:.3f} msnm, relleno sobre la losa {relleno:.3f} m",
+            cifras=CIFRAS_MAGNITUD),
+        nota_del_proyecto=(
+            "Un solo espesor para paredes, losas y tabique: el del criterio "
+            "'espesor_pared_cajon' [A]. El espesor de un marco vaciado in "
+            "situ es salida del calculo estructural (AASHTO LRFD Sec. 5 y "
+            "Art. 12.11), que este alcance difiere; aqui es una adopcion de "
+            "predimensionamiento y la geometria vale con ella."),
+    )
+    return GeometriaMarco(
+        B_m=seccion.B, H_m=seccion.H, celdas=celdas, espesor_m=t,
+        tabique_m=tabique, ancho_exterior_m=ancho, canto_exterior_m=canto,
+        cota_fondo_interior_msnm=entrada.valor,
+        cota_clave_interior_msnm=clave_interior,
+        cota_clave_exterior_msnm=clave_exterior,
+        cota_base_exterior_msnm=base,
+        cota_subrasante_msnm=punto.cota_subrasante,
+        relleno_sobre_losa_m=relleno, paso=paso_marco)
+
+
+def _desajuste_admisible(punto: PuntoCritico) -> float:
+    """La tolerancia de VC2, con su segunda linea (forma MAT-D13)."""
+    tol = ca.valor(CRITERIO_DESAJUSTE_EMPALME)
+    if isinstance(tol, bool) or not isinstance(tol, (int, float)) \
+            or not (tol > 0 and math.isfinite(tol)):
+        raise DatoInvalidoError(
+            CRITERIO_DESAJUSTE_EMPALME, valor=tol, id_punto=punto.id,
+            motivo="el desajuste admisible del empalme con el canal es una "
+                   "altura en metros, finita y positiva (es el valor "
+                   "absoluto de una banda de dos lados)")
+    return float(tol)
+
+
+def vc2_empalme_canal(*, punto: PuntoCritico, cota_salida_m: float,
+                      cota_entrada_m: Optional[float] = None,
+                      longitud_m: Optional[float] = None) -> Verificacion:
+    """
+    VC2: la cota de salida de un paso de canal frente al fondo del canal
+    aguas abajo, como banda de DOS lados. ES UN AVISO Y NUNCA BLOQUEA.
+
+        | cota_salida - cota_fondo_receptor | <= desajuste_empalme_canal_m
+
+    En un paso de canal (Familia C) el conducto continua el canal y
+    `cota_fondo_receptor` es el MISMO canal aguas abajo (homonimia: ver
+    `constantes_normativas.HOMONIMIA_TW`, que existe por el mismo genero de
+    confusion). G2 solo exige que la salida no quede por debajo de ese
+    fondo; VC2 mira las dos caras: hacia arriba la obra deja un escalon de
+    caida sobre el lecho, hacia abajo la salida queda enterrada.
+
+    `cumple` es True siempre y el veredicto del paso es INDICADOR cuando el
+    desajuste supera la tolerancia -- igual que G3 --: el desajuste lo fijan
+    la cota de entrada y la pendiente, que son datos o adopciones de 7.B, y
+    ninguna seccion lo corrige; detener el bucle de MD por el no tiene
+    remedio dentro del bucle. Lo que lo corrige es medir la cota de fondo
+    de la entrada en el cauce, o declarar la pendiente que une las dos
+    cotas del canal. Lo dimensionado no se mueve por este aviso.
+
+    La tolerancia es el criterio [A] 'desajuste_empalme_canal_m' (0.010 m,
+    por analogia con la tolerancia de aceptacion de la cota superior de una
+    placa de concreto, EG-2013 503.11 g) 2.). Segunda linea sobre ella: un
+    valor no finito, nulo o negativo es `DatoInvalidoError`.
+
+    --- T-3 (auditoria adversarial) --- DOS COSAS MAS. (H4) VC2 GOBIERNA EL
+    EMPALME: en la Familia C `g2_cota_salida` admite por debajo esta misma
+    tolerancia, de modo que la banda es de dos lados de verdad y los dos
+    veredictos no se contradicen. (H9) Con `cota_entrada_m` y `longitud_m`
+    -- 7.B los pasa -- el aviso imprime la pendiente que cerraria el
+    empalme con esas cotas, S = (cota_entrada - cota_fondo_receptor) / L,
+    rotulada como valor CALCULADO: la tolerancia es de ejecucion y una S
+    declarada a tres decimales mueve S*L mas que ella, de modo que el aviso
+    tiene que decir que pendiente lo cierra. La L es la de esta corrida; la
+    longitud cambia con S, y la cifra es la de primer orden.
+    """
+    tol = _desajuste_admisible(punto)
+    fondo = punto.cota_fondo_receptor
+    desajuste = cota_salida_m - fondo
+    dentro = abs(desajuste) <= tol + TOL_UMBRAL_NORMATIVO
+    cita = "EG2013.503.11g#COTAS"
+    pendiente_de_cierre = ""
+    if (cota_entrada_m is not None and longitud_m is not None
+            and math.isfinite(cota_entrada_m) and longitud_m > 0
+            and math.isfinite(longitud_m)):
+        S_cierre = (cota_entrada_m - fondo) / longitud_m
+        pendiente_de_cierre = (
+            f". Con estas cotas, la pendiente que cerraria el empalme es S = "
+            f"(cota_entrada - cota_fondo_receptor) / L = ({cota_entrada_m:.3f}"
+            f" - {fondo:.3f}) / {longitud_m:.3f} = {S_cierre:.4f} m/m (valor "
+            f"calculado con la L de esta corrida, de primer orden: la "
+            f"longitud cambia con S)")
+    return Verificacion(
+        cumple=True,
+        numeral=NUMERAL_VC2,
+        valor_obtenido=desajuste,
+        valor_admisible=tol,
+        criterio_aplicado=CRITERIO_DESAJUSTE_EMPALME,
+        codigo="VC2",
+        paso=paso(
+            "F7.EMPALME_CANAL",
+            codigo="VC2",
+            que="Paso de canal: empalme de la salida con el fondo del canal "
+                "aguas abajo (aviso)",
+            formula="| cota_salida - cota_fondo_receptor | <= desajuste",
+            # SIN CITA DE LA FORMULA (auditoria de T-3, H7). La FASE A le
+            # ponia la de la tolerancia, y la memoria imprimia la desigualdad
+            # como si el EG-2013 503.11 g) la escribiera: no la escribe. El
+            # empalme de dos lados es del proyecto, sobre la tipologia del
+            # cruce que la Lamina N 03 dibuja; la cita va al UMBRAL, que es
+            # lo unico de la desigualdad que sale de una fuente.
+            formula_cita_id="",
+            citas_textuales=(cita, "EG2013.501.07", "MC_HHD.LAMINA_03"),
+            sustitucion=(
+                Magnitud("cota_salida", cota_salida_m, "msnm", "paso 7.B.4",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("cota_fondo_receptor", fondo, "msnm",
+                         "columna cota_fondo_receptor del CSV: en un paso "
+                         "de canal, el fondo del MISMO canal aguas abajo",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("desajuste", tol, "m",
+                         f"criterio '{CRITERIO_DESAJUSTE_EMPALME}' [A]",
+                         cifras=CIFRAS_MAGNITUD)),
+            resultado=Magnitud(
+                "cota_salida - cota_fondo_receptor", desajuste, "m",
+                "positivo: la salida queda SOBRE el fondo del canal (escalon "
+                "de caida); negativo: queda enterrada",
+                cifras=CIFRAS_MAGNITUD),
+            umbral=Umbral(
+                descripcion="desajuste admisible del empalme, en valor "
+                            "absoluto",
+                valor=tol, unidad="m", cita_id=cita,
+                caracter=_caracter_de(cita),
+                aplicacion="POR ANALOGIA y como AVISO: la fuente fija la "
+                           "tolerancia de aceptacion de la cota superior "
+                           "de una placa de concreto -- -10 mm a +10 mm -- "
+                           "y no habla de empalmes ni de canales. El "
+                           "proyecto la toma porque la cota superior de la "
+                           "losa de fondo es el invert del marco; superarla "
+                           "no detiene el punto, porque el remedio no es "
+                           "otra seccion sino la cota de entrada o la "
+                           "pendiente.",
+                criterio_aplicado=CRITERIO_DESAJUSTE_EMPALME),
+            veredicto=Veredicto(
+                tipo=(TipoDeVeredicto.CUMPLE if dentro
+                      else TipoDeVeredicto.INDICADOR),
+                margen=tol - abs(desajuste), unidad="m",
+                explicacion=(
+                    "la salida empalma con el fondo del canal dentro de la "
+                    "tolerancia adoptada" if dentro else
+                    f"la salida queda {abs(desajuste):.3f} m "
+                    + ("SOBRE" if desajuste > 0 else "BAJO")
+                    + " el fondo del canal aguas abajo: no empalma. Lo "
+                    "corrige medir la cota de fondo de la entrada en el "
+                    "cauce o declarar la pendiente que une las dos cotas "
+                    "del canal (S = (entrada - fondo aguas abajo) / L), no "
+                    "otra seccion" + pendiente_de_cierre
+                    + ". El punto NO se detiene por esto")),
+        ),
+    )
+
+
+# --- T-3 (auditoria adversarial, H2 y H3) --- Las dos razones por las que
+# la cuenta del remanso NO concluye. Son textos del proyecto, no de una
+# fuente: ninguna fuente de normas/ trata el remanso de un paso de canal.
+MOTIVO_REMANSO_VC2 = (
+    "el empalme de la salida con el fondo del canal no cierra (VC2 fuera de "
+    "tolerancia): la carga a la entrada sale de una descarga libre a la "
+    "salida -- en caida --, que el canal no tiene, y compararla con el tirante normal "
+    "del canal no dice cuanto levanta la obra la lamina. Cerrado el empalme, "
+    "el remanso se vuelve a evaluar")
+MOTIVO_REMANSO_PENDIENTE_FUERTE = (
+    "el canal es de pendiente FUERTE con la seccion medida (el tirante normal "
+    "no supera al critico): la lamina remansada es una S1 que termina en "
+    "resalto aguas arriba, de modo que la distancia a la que la horizontal "
+    "del embalse corta la lamina normal NO acota el remanso -- puede ser mas "
+    "corto --. Acotarlo exige el perfil paso a paso con el resalto")
+
+
+def remanso_canal(*, punto: PuntoCritico, cota_entrada_msnm: float,
+                  HW: float, Q: float,
+                  seccion_canal: Optional[SeccionReceptor],
+                  vc2: Optional[Verificacion] = None) -> RemansoCanal:
+    """
+    La sobreelevacion de la lamina del canal en el cruce y la longitud
+    MINIMA del remanso aguas arriba. ES UN AVISO, NO UNA VERIFICACION.
+
+        y_n   tirante normal del canal: Manning en la seccion medida del
+              canal con el caudal del canal (`M3.tirante_normal_trapecial`)
+        y_c   tirante critico del canal en la misma seccion, Q^2 T = g A^3
+              (`M3.tirante_critico_trapecial`)
+        dh    = HW - y_n                (sobreelevacion en el cruce, m)
+        L_min = dh / S_canal            (si dh > 0 y el canal es suave)
+
+    `L_min` es la distancia aguas arriba a la que la lamina HORIZONTAL del
+    embalse corta la lamina normal. EN UN CANAL SUAVE (y_n > y_c) es una COTA
+    INFERIOR: el perfil real (M1) queda por encima de esa horizontal -- en
+    remanso la lamina sube hacia aguas arriba menos que el fondo -- y por eso
+    llega mas lejos, asintotico al normal.
+
+    --- T-3 (auditoria adversarial, H2 y H3) --- DOS CASOS EN QUE NO
+    CONCLUYE, y lo dice sin presentar cifra alguna como cota
+    (`RemansoCanal.concluye` en False, `longitud_minima_m` en None):
+
+      - VC2 fuera de tolerancia (`vc2` con veredicto INDICADOR): el HW de la
+        obra sale de una descarga libre a la salida, que el canal no tiene
+        porque el empalme no cierra. La auditoria lo midio: el aviso decia
+        «la obra no levanta la lamina» con un HW que solo era menor que el
+        tirante normal por esa razon. Se comprueba PRIMERO.
+      - canal de pendiente FUERTE (y_n <= y_c): el remanso es una S1 que
+        termina en resalto; la auditoria midio 15.2 m reales donde dh/S
+        decia «al menos 33.4 m». La sobreelevacion en el cruce si se publica.
+
+    Dos lecturas declaradas: el fondo del canal en el cruce se toma igual a
+    la cota de fondo de la entrada del conducto, y el HW se compara con el
+    tirante sin la carga de velocidad de aproximacion (HDS-5 la desprecia
+    en el HW). Sin la seccion medida (`seccion_receptor_medida`, que en un
+    paso de canal es la del mismo canal) no se evalua y el aviso lo dice:
+    no se sustituye por la seccion adoptada del criterio 'seccion_receptor',
+    que es la de un DREN receptor y no la del canal que se cruza.
+    """
+    if seccion_canal is None:
+        return RemansoCanal(evaluado=False, aviso=AVISO_REMANSO_SIN_SECCION)
+    if not (Q >= 0 and math.isfinite(Q)) or not math.isfinite(HW):
+        raise DatoInvalidoError(
+            "Q_m3s", valor=(Q, HW), id_punto=punto.id,
+            motivo="el remanso del canal necesita el caudal del canal y la "
+                   "carga a la entrada como numeros finitos, el caudal no "
+                   "negativo")
+    S = seccion_canal.S
+    if not (S > 0 and math.isfinite(S)):
+        raise DatoInvalidoError(
+            "seccion_receptor_medida", valor=S, id_punto=punto.id,
+            motivo="la pendiente del canal de la seccion medida tiene que ser "
+                   "un numero finito y positivo: la longitud del remanso se "
+                   "divide por ella")
+    from src.modulos.M3_hidraulica import (tirante_critico_trapecial,
+                                           tirante_normal_trapecial)
+    y_n = tirante_normal_trapecial(Q=Q, seccion=seccion_canal)
+    y_c = tirante_critico_trapecial(Q=Q, seccion=seccion_canal)
+    dh = HW - y_n
+    lamina = cota_entrada_msnm + HW
+    empalme_abierto = (vc2 is not None
+                       and vc2.estado is EstadoDeVerificacion.INDICADOR)
+    suave = y_n > y_c + TOL_UMBRAL_NORMATIVO
+    origen = ("seccion MEDIDA del canal (--datos-externos, "
+              "`seccion_receptor_medida`)")
+    if empalme_abierto:
+        concluye, motivo = False, MOTIVO_REMANSO_VC2
+        sobreelevacion, L_min = None, None
+        aviso = f"Remanso aguas arriba del canal: no concluye -- {motivo}"
+    elif not dh > 0:
+        concluye, motivo = True, ""
+        sobreelevacion, L_min = dh, 0.0
+        aviso = (f"Remanso aguas arriba del canal: la carga a la entrada "
+                 f"(HW = {HW:.3f} m) no supera el tirante normal del canal "
+                 f"(y_n = {y_n:.3f} m con la seccion medida): la obra no "
+                 f"levanta la lamina del canal en el cruce")
+    elif not suave:
+        concluye, motivo = False, MOTIVO_REMANSO_PENDIENTE_FUERTE
+        sobreelevacion, L_min = dh, None
+        aviso = (f"Remanso aguas arriba del canal: no concluye -- {motivo} "
+                 f"(y_n = {y_n:.3f} m, y_c = {y_c:.3f} m). La obra levanta "
+                 f"la lamina en el cruce {dh:.3f} m sobre el tirante "
+                 f"normal; contrastar con la coronacion del canal aguas "
+                 f"arriba")
+    else:
+        concluye, motivo = True, ""
+        sobreelevacion, L_min = dh, dh / S
+        aviso = (f"Remanso aguas arriba del canal: la obra levanta la lamina "
+                 f"del canal {dh:.3f} m sobre su tirante normal (y_n = "
+                 f"{y_n:.3f} m con la seccion medida; canal suave, y_c = "
+                 f"{y_c:.3f} m) y el embalse se extiende AL MENOS "
+                 f"{L_min:.1f} m aguas arriba (dh/S, cota inferior: el perfil "
+                 f"real llega mas lejos). Contrastar con la coronacion del "
+                 f"canal en ese tramo; VC1 solo la mide en el cruce")
+    if concluye:
+        resultado = Magnitud(
+            "L_min", L_min, "m",
+            f"sobreelevacion en el cruce dh = {dh:.3f} m; en un canal suave "
+            "L_min es la distancia a la que la horizontal del embalse corta "
+            "la lamina normal: COTA INFERIOR del remanso",
+            cifras=CIFRAS_MAGNITUD)
+    else:
+        resultado = Magnitud("L_min", "no concluye", "", motivo, cifras=None)
+    paso_rem = paso(
+        "F7.REMANSO_CANAL",
+        codigo="7.B.R",
+        que="Remanso aguas arriba del canal (aviso)",
+        formula=("y_c: Q^2 T = g A^3 ; dh = HW - y_n ; L_min = dh / S_canal "
+                 "(solo si y_n > y_c y el empalme de VC2 cierra)"),
+        # SIN CITA DE LA FORMULA (auditoria de T-3, H7): el num. 4.1.1.3.6
+        # da Manning, que es con lo que se obtiene y_n, y no contiene dh ni
+        # L_min; la condicion critica es del HDS-5 (A.3.1). Las dos van a
+        # `citas_textuales`; la desigualdad y su lectura son del proyecto.
+        formula_cita_id="",
+        citas_textuales=("MC_HHD.4.1.1.3.6", "HDS5_3ED.A.3.1#CRITICO"),
+        sustitucion=(
+            Magnitud("HW", HW, "m", "M4, carga a la entrada del control que "
+                     "gobierna", cifras=CIFRAS_MAGNITUD),
+            Magnitud("Q_canal", Q, "m3/s", "caudal de diseño del canal "
+                     "(Sec. 2.3)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("b", seccion_canal.b_m, "m", origen,
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("z", seccion_canal.z_HV, "H:V", origen,
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("n", seccion_canal.n, "-", origen, cifras=CIFRAS_FINA),
+            Magnitud("S_canal", S, "m/m", origen, cifras=CIFRAS_FINA),
+            Magnitud("y_n", y_n, "m", "Manning en la seccion trapecial del "
+                     "canal (M3.tirante_normal_trapecial)",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("y_c", y_c, "m", "condicion critica en la seccion del "
+                     "canal (M3.tirante_critico_trapecial)",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("VC2", "fuera de tolerancia" if empalme_abierto
+                     else ("dentro de tolerancia" if vc2 is not None
+                           else "no evaluada"), "",
+                     "el empalme de la salida con el fondo del canal: con "
+                     "el empalme abierto el HW no es el de la obra en el "
+                     "canal", cifras=None)),
+        resultado=resultado,
+        nota_del_proyecto=(
+            "Sin umbral: ninguna fuente de normas/ fija cuanto puede subir la "
+            "lamina de un canal ni hasta donde puede llegar el remanso. Se "
+            "toma el fondo del canal en el cruce igual a la cota de fondo de "
+            "la entrada, y el HW sin la carga de velocidad de aproximacion. "
+            "dh/S solo es cota inferior en un canal SUAVE (y_n > y_c); en uno "
+            "de pendiente fuerte el remanso es una S1 que termina en resalto "
+            "y la cuenta no concluye. Acotar el remanso exige un perfil paso "
+            "a paso y la coronacion del canal a lo largo del tramo."),
+    )
+    return RemansoCanal(
+        evaluado=True, aviso=aviso, seccion_origen=origen, Q_canal_m3s=Q,
+        S_canal=S, y_normal_canal_m=y_n, HW_m=HW,
+        cota_lamina_entrada_msnm=lamina, sobreelevacion_m=sobreelevacion,
+        longitud_minima_m=L_min, paso=paso_rem, concluye=concluye,
+        y_critico_canal_m=y_c, motivo_no_concluye=motivo)
+
+
+# ---------------------------------------------------------------------------
 # 7.B - Verificacion final por punto
 # ---------------------------------------------------------------------------
 
@@ -2254,7 +2805,8 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                               longitud_calculada: Optional[LongitudConducto] = None,
                               pendiente: Optional[PendienteAdoptada] = None,
                               bombeo: Optional[float] = None,
-                              peralte: Optional[float] = None
+                              peralte: Optional[float] = None,
+                              seccion_canal: Optional[SeccionReceptor] = None
                               ) -> CompatibilidadGeometrica:
     """
     Verificacion final de Sec. 7.B para un punto, con el diametro que la
@@ -2294,6 +2846,15 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                       opcionales, excluyentes entre si); solo se usan si la
                       longitud se calcula aqui. Con una longitud declarada
                       se validan y se AVISA que no se aplican.
+    seccion_canal     --- T-3 --- la seccion MEDIDA del canal que un paso de
+                      canal cruza (`seccion_receptor_medida`), para el
+                      remanso aguas arriba. Solo la lee la Familia C; sin
+                      ella el remanso sale «no evaluado» con su aviso.
+
+    --- T-3 --- Un MARCO publica ademas su geometria (`geometria_marco`, con
+    el paso 7.B.M), y un paso de canal (Familia C) dos piezas mas: VC2 -- el
+    empalme de la salida con el fondo del canal, AVISO, detras de G2 -- y el
+    remanso aguas arriba (`remanso_canal`, aviso y paso 7.B.R).
 
     Devuelve el resultado tambien cuando NO cumple: `factible` es False y
     `delta_rasante_cm` trae el numero de Sec. 7.B. La excepcion, si se quiere,
@@ -2343,9 +2904,32 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
                                   longitud=longitud_calculada,
                                   L_clave=L_clave))
 
+    # --- T-3 --- la geometria del marco, el empalme y el remanso.
+    marco = None
+    if material.forma is FormaSeccion.RECTANGULAR:
+        marco = geometria_marco(punto=punto, material=material,
+                                seccion=seccion)
+        pasos.append(marco.paso)
+    es_canal = punto.familia is Familia.C
+    empalme: Tuple[Verificacion, ...] = (
+        (vc2_empalme_canal(punto=punto, cota_salida_m=salida,
+                           cota_entrada_m=entrada.valor,
+                           longitud_m=longitud),)
+        if es_canal else ())
+    remanso = None
+    if es_canal:
+        # --- T-3 (auditoria, H3) --- el remanso lee el veredicto de VC2: con
+        # el empalme abierto el HW no es el de la obra en el canal.
+        remanso = remanso_canal(punto=punto, cota_entrada_msnm=entrada.valor,
+                                HW=resultado.HW, Q=resultado.Q,
+                                seccion_canal=seccion_canal, vc2=empalme[0])
+        if remanso.paso is not None:
+            pasos.append(remanso.paso)
+
     verificaciones: Tuple[Verificacion, ...] = (
         g1_rasante_congelada(tamizado),
         g2_cota_salida(punto=punto, cota_salida_m=salida),
+        *empalme,
         g3_esviaje(punto),
     )
     # LOS AVISOS DE 7.B, en el orden del calculo: el fondo de entrada
@@ -2356,7 +2940,10 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
     # el JSON. Repetirlo en esta lista lo imprimia dos veces.
     avisos = []
     for aviso in (entrada.aviso, aviso_de_pendiente(pendiente, longitud),
-                  *longitud_calculada.avisos):
+                  *longitud_calculada.avisos,
+                  # --- T-3 --- el del remanso del canal (Familia C). VC2 no
+                  # va aqui: es INDICADOR y sale por `con_aviso`, como G3.
+                  None if remanso is None else remanso.aviso):
         if aviso and aviso not in avisos:
             avisos.append(aviso)
 
@@ -2384,4 +2971,6 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
         longitud_a_la_clave=L_clave,
         desnivel_entrega=salida - punto.cota_fondo_receptor,
         avisos=tuple(avisos),
+        geometria_marco=marco,
+        remanso_canal=remanso,
     )

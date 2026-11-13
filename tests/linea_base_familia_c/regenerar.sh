@@ -141,6 +141,22 @@ python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance expediente \
         --html "$TMP/memoria_exp.html" \
         --csv-resumen "$TMP/resumen_exp.csv" > "$TMP/cli_exp.txt" 2>&1 || true
 
+# --- 6 · T-3: la FAMILIA C DIMENSIONADA, con los valores de archivo ---------
+# Desde T-3 los siete criterios del cajon tienen valor de archivo, y C-01 ya
+# no se detiene en ellos: en las corridas 2 y 4 se detiene en VC1, porque la
+# fila C-01 del fixture deja vacia la coronacion del canal (la debe el
+# levantamiento del cruce). Esta corrida le pone en una COPIA del CSV la
+# coronacion que usa la guia de perfil (38.30: geometria del ejemplo, no un
+# dato de proyecto) y, con las mismas entradas ampliadas, C-01 sale
+# dimensionado SIN DECLARAR NADA: marco, control, VC1, G1, G2, VC2 y la
+# geometria del marco. Es el eje que la linea base no tenia: hasta T-3
+# ninguna corrida de la CLI llegaba a dimensionar un marco con lo que dice
+# el archivo.
+sed 's/^C-01,\(.*\),$/C-01,\1,38.30/' tests/ejemplo_puntos.csv > "$TMP/puntos_c.csv"
+python3 cli.py "$TMP/puntos_c.csv" --luz 2.75 --alcance perfil \
+        --datos-externos "$EXT" \
+        --json "$TMP/informe_c.json" > "$TMP/cli_c.txt" 2>&1 || true
+
 # --- 5 · el PUNTO DE CAJON, que no pasa por la CLI --------------------------
 # Ver el bloque "LO QUE ENSANCHA C4" de arriba y el docstring del driver. No
 # lleva `|| true`: si este falla, la linea base tiene que fallar con el, y no
@@ -174,4 +190,7 @@ norm "$TMP/informe_exp.json"  > "$DIR/informe_expediente.json"
 norm "$TMP/resumen_exp.csv"   > "$DIR/resumen_expediente.csv"
 
 norm "$TMP/cajon.html"        > "$DIR/memoria_punto_cajon.html"
-echo "linea base regenerada en $DIR (13 archivos: 2 de la ventana estrecha de C0, 10 de la ancha y 1 del punto de cajon)"
+
+norm "$TMP/cli_c.txt"         > "$DIR/cli_familia_c.txt"
+norm "$TMP/informe_c.json"    > "$DIR/informe_familia_c.json"
+echo "linea base regenerada en $DIR (15 archivos: 2 de la ventana estrecha de C0, 10 de la ancha, 1 del punto de cajon y 2 de la Familia C dimensionada)"

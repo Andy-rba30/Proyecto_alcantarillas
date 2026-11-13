@@ -211,7 +211,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -303,7 +303,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -340,7 +340,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -734,7 +734,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **5246**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **5352**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
@@ -809,7 +809,97 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **Las correcciones de T-8 (2026-11-12, integradas detrás de
+independientes. **T-3 de la cadena T (2026-11-12, cerrado e integrado el
+2026-11-13 detrás de las correcciones de T-8, con las de su auditoría) sumó
+CIENTO SEIS tests netos**, ninguno con la marca `pdf` ni dependiente de Tk
+ni del repositorio de normas: los 44 de `tests/test_t3_familia_c.py` —la
+aceptación de la FASE A: **la Familia C se dimensiona sin declarar nada**
+(`INF-0.4`). Los siete criterios del marco tienen valor de archivo con fila
+nombrada, cita y ventana —`embocadura_cajon` Carta 8 escala 1 (aletas de 30°
+a 75°, Forma 1) y su `ke_entrada_cajon` 0.4 de la Tabla C.2; `n_celdas_cajon`
+1; `secciones_cajon_normalizadas` (1.20, 0.90), (1.50, 1.20), (2.00, 1.50),
+la decisión del dueño del 2026-11-12 (la de la cadena T, anchos 1.00–4.00 ×
+alturas 1.00–3.00, no contiene el 1.20 × 0.90 y deja a C-01 sin dimensionar;
+queda barrible, ficha T3-01); `espesor_pared_cajon` 0.20 m [A], piso de la
+E.060 14.5.3.2 por analogía; `cobertura_minima_cajon` 0.3048 m [A]; y
+`n_manning_cajon`, ver abajo—; VC2 (`M7.vc2_empalme_canal`, el empalme de la
+salida con el fondo del canal, AVISO con `desajuste_empalme_canal_m` [A] =
+0.010 m por analogía con EG-2013 503.11 g)), el remanso aguas arriba del canal
+(`M7.remanso_canal`, aviso, con `seccion_receptor_medida`; sin ella «no se
+evaluó»), la geometría del marco (`modelos.GeometriaMarco`, paso 7.B.M, con
+el ancho de N celdas en `SeccionRectangular.ancho_exterior_de_celdas`) y V6
+con N > 1 publicando el reparto, el tabique y el ancho total sin aceptar la
+multicelda—; los 63 de `tests/test_t3_correcciones_auditoria.py`, la
+aceptación de las **correcciones de la auditoría adversarial** (AJUSTADO, H1 a
+H12), con las resoluciones del orquestador: (H1) `n_manning_cajon` pasa a
+**[C]** con la fila **propia** del cajón, HDS-5 Tabla B.1 «Concrete Boxes |
+Smooth | 0.012–0.015» (pág. impresa B.6), la misma fuente de la carta y del
+ke del marco, con el num. B.3 (0.012–0.022 en vaciado in situ, según el
+encofrado) como ventana hacia arriba y la fila «afinado» de la Tabla N° 09
+(0.011, 0.014) como alternativa barrible —con dos tablas, la resolución no
+fija `fila_id`, y el valor es la clave de la fila (`M2._fila_manning_de_cajon`
+la acota y `constantes_normativas.MANNING_CAJON_HDS5` lee el par del
+registro)—; (H10) la errata `DIS-MCHHD-T09-A2-DESPLAZADA` se sostiene en la
+evidencia **interna** de la página (Chow no está en `normas/`), alcanza también
+a los bloques B.1, B.2 y C, y la lectura literal sería más conservadora para
+capacidad: lo dicen la discrepancia, el criterio y una nota de la v8 bajo su
+tabla de Manning; (H2, H3) el remanso calcula el tirante crítico del canal
+(`M3.tirante_critico_trapecial`) y **no concluye**, sin cifra presentada como
+cota, en un canal de pendiente fuerte (S1 que termina en resalto) o con VC2
+fuera de tolerancia (HW de una descarga libre que el canal no tiene); (H4)
+VC2 **gobierna el empalme**: en la Familia C G2 admite por debajo su
+tolerancia y los dos veredictos no se contradicen —A y B no cambian—; (H5)
+G1 del **marco avisa** (INDICADOR) cuando sólo falta la cobertura adoptada,
+que es más restrictiva que la fuente (MTC 4.1.1.3.4 a), Lámina N° 03 y AASHTO
+LRFD 12.6.6.3, cita nueva `AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA`):
+`TamizadoRasante.cobertura_como_aviso`, el resguardo sigue bloqueando y G1 del
+tubo no cambia; (H6) V7 **no se toca**, y las fichas dicen la causa real de que
+la progresión de la cadena deje a C-01 sin dimensionar —`M5.v7_flotacion`
+lleva DC = 0—, diferida al dueño en la ficha T3-08; (H7) los pasos 7.B.R,
+7.B.M y VC2 dejan vacía la cita de la fórmula; (H8) el test vacuo de la
+pendiente del canal mide su guardia y mueren los mutantes vivos de VC2, del
+remanso, de G2 y de la geometría —el arnés de EXT-11 sobre las seis funciones
+tocadas mataba 104 de 120 antes de los nueve tests que eso sumó y 113 de 120
+(94.2 %) después; los siete vivos son equivalentes, censados en la ficha
+T3-12—; (H9) el aviso de VC2 imprime la S que cerraría el
+empalme; (H11, H12) la progresión es la decisión del dueño y el espesor queda
+[A] con su razón—; los doce anclajes de `test_decisiones_diferidas` para las
+fichas de la Parte XLVII (T3-01..12); y el que crece solo en
+`test_ext5_forma_gui` con el criterio nuevo; **menos catorce**: los siete del
+cajón que salen del parametrizado de vacíos de `test_criterios_adoptados` y
+los siete ejemplos de `--declarar` de `test_guia_perfil` (la guía ya no los
+declara). **No se escribieron en rojo primero con `xfail`**: la FASE A midió
+38 rojos y 3 verdes de sus 41 primeros contra `df1b23c`, y las correcciones se
+escribieron antes del código y se midieron contra la FASE A rebasada
+(`c6712d4`): con el archivo final, 33 rojos y 30 verdes, que son guardias y
+matadores de mutantes (ficha T3-12). Censos: **110 criterios, 27 sin valor** (34 − 7); las citas
+del registro pasan de 378 a 384, cuatro de la FASE A y dos de las
+correcciones (`HDS5_3ED.B.3#CAJON_IN_SITU` y
+`AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA`); `CLAVES_EXTERNAS` sigue en
+dieciocho; ninguna marca `literal-ok` nueva. Se reescribieron, declarándolo, `test_t3_familia_c` (la fila de Manning
+sale del parametrizado de «lo que la guía declaraba», el remanso con la sonda
+de la guía no concluye, el test vacuo mide su campo), `test_memoria_sustentada`
+(`F4.N_CAJON_TB1` y los tres `F7.*` de T-3 entre los que la corrida por
+defecto no alcanza), `test_ext8` (techos remedidos: 109.7 KB y 31.7 páginas
+por punto donde `e78a4e7` medía 70.3 y 20.3: C-01 llega a VC1 en vez de
+detenerse en el primer criterio del cajón) y `test_t0_gobernanza` (la fila de
+T-3; `INF-3.2.1` pasa de «Cerrado parcial» de T-4 a «Cerrado» de T-3). Cierra
+`INF-0.4` e `INF-3.2.1`, y deja una nota en `INF-0.5`. **La línea base de la
+Familia C se regeneró sobre el árbol fusionado y se midió contra `e78a4e7` con
+el comparador de E-B**, y **ningún diámetro, sección ni material se movió**:
+el bloque `diseno` de A-01, A-02 y B-01 es idéntico; C-01 pasa de bloqueado
+por `embocadura_cajon` a bloqueado por el dato `cota_coronacion_canal` en las
+corridas ancha y de expediente, y una **corrida 6 nueva** (la coronación de la
+guía en una copia del CSV) lo dimensiona como **marco 1.20 × 0.90 m**, control
+de salida, HW = 0.623 m (con la fila de la Tabla B.1 el HW de salida baja 0.4
+mm y el tirante normal sube de 0.404 a 0.425 m; la sección no se mueve), con
+la Fase 6 bajo la envolvente de las correcciones de T-8 —para un marco HEC-14
+no es evaluable y rige Laushey, con aviso—. De las cuatro configuraciones se
+MIDIÓ UNA, «sí · no», con el repositorio de normas enlazado: 5336 passed, 16
+skipped, collected 5352 (y sin `NORMAS_DIR`, sobre el mismo árbol: 5318
+passed, 34 skipped). **Las otras tres se dicen como derivadas, no como
+medidas**: la derivación suma 106 a las de las correcciones de T-8 en las
+cuatro columnas. **Las correcciones de T-8 (2026-11-12, integradas detrás de
 T-5) sumaron SESENTA Y NUEVE tests**, uno con la marca `pdf` (abre el EG-2013,
 que está en `normas/` de la app) y ninguno dependiente de Tk ni del
 repositorio de normas: los 63 de `tests/test_t8_correcciones.py` —la
@@ -2137,7 +2227,7 @@ EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
 4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728; T-6:
-4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246. La
+4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2149,23 +2239,25 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 5243 (**derivado** en las correcciones de T-8, no medido: el contenedor no tiene tkinter) | 3 |
-| sí | no | 5230 (**MEDIDO** en las correcciones de T-8 sobre el árbol fusionado, con `NORMAS_DIR`) | 16 |
-| no | sí | 5139 (**derivado**, no medido) | 107 |
-| no | no | 5126 (**derivado**, no medido) | 120 |
+| sí | sí | 5349 (**derivado** en T-3, no medido: el contenedor no tiene tkinter) | 3 |
+| sí | no | 5336 (**MEDIDO** en T-3 sobre el árbol fusionado, con `NORMAS_DIR`) | 16 |
+| no | sí | 5245 (**derivado**, no medido) | 107 |
+| no | no | 5232 (**derivado**, no medido) | 120 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
-dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de las
-correcciones de T-8: 5212 passed, 34 skipped; sobre el de T-5, 5143 y 34;
-sobre el de T-8, 4942 y 34; ni T-6, ni T-8, ni T-5, ni las correcciones de
-T-8 sumaron ninguno que abra el repositorio de normas; eran
+dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-3: 5318
+passed, 34 skipped; sobre el de las correcciones de T-8, 5212 y 34; sobre el
+de T-5, 5143 y 34; sobre el de T-8, 4942 y 34; ni T-6, ni T-8, ni T-5, ni las
+correcciones de T-8, ni T-3 sumaron ninguno que abra el repositorio de
+normas; eran
 siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
 `tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
 Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
 2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
-iban saltados por la marca `pdf`. Tras T-5 la tabla decía 5174 / 5161 / 5071
-/ 5058, medida sólo la segunda. Tras T-8 la tabla decía 4973 / 4960 / 4898
+iban saltados por la marca `pdf`. Tras las correcciones de T-8 la tabla
+decía 5243 / 5230 / 5139 / 5126, medida sólo la segunda. Tras T-5 la tabla
+decía 5174 / 5161 / 5071 / 5058, medida sólo la segunda. Tras T-8 la tabla decía 4973 / 4960 / 4898
 / 4885, medida sólo la segunda. Tras T-6 la tabla decía 4863 / 4850 / 4788
 / 4775, medida sólo la segunda. Tras T-1 la tabla decía 4725 / 4712 / 4650
 / 4637, medida sólo la segunda. Tras T-4 la tabla decía 4534 / 4521 / 4479

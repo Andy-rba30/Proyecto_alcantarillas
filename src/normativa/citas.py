@@ -6480,7 +6480,10 @@ HDS5_TB1 = _cita(
           "juntas. La fila «Corrugated Polyethylene / Smooth», 0.009-0.015 "
           "(Barfuss & Tullis 1988; Tullis et al. 1990), es la que cierra "
           "'n_manning_hdpe' como [C]: hasta T-4 era la fila del concreto de "
-          "la Tabla N 09 aplicada por analogia."),
+          "la Tabla N 09 aplicada por analogia. Y desde la auditoria de T-3 "
+          "(H1), la fila «Concrete Boxes / Smooth», 0.012-0.015 (FHWA 1961), "
+          "cierra 'n_manning_cajon' como [C] por la misma razon: la Tabla N 09 "
+          "no tiene fila de seccion rectangular."),
 )
 
 MC_HHD_4_1_1_3_4b = _cita(
@@ -10688,5 +10691,190 @@ AASHTO_M170M_T1_DIAMETROS = _cita(
           "DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM."),
 )
 
+
+# --- T-3 --- (cadena T) · Familia C: el marco de concreto se dimensiona
+# ===========================================================================
+# Mismo regimen que T-0, T-2 y T-8: la propia sesion abrio cada pagina por su
+# capa de texto y la firma lo dice. Cuatro citas de la FASE A, y ninguna presta
+# un NUMERO al marco por su cuenta: dos sostienen el valor de un criterio [A]
+# POR ANALOGIA (el espesor del marco y la tolerancia de VC2) y lo dicen en su
+# nota; una es la regla de separacion de las alcantarillas multiples, que el
+# Manual escribe para TUBERIAS; y la cuarta es la tolerancia de la
+# excavacion, el extremo alto de la ventana de VC2. Y DOS DE LAS CORRECCIONES
+# DE LA AUDITORIA (H1 y H5), que si son del marco: el n del cajon vaciado in
+# situ del HDS-5 (num. B.3) y la regla de AASHTO para el cajon SIN cobertura
+# (num. 12.6.6.3, tras la tabla).
+FECHA_TESIS_T3 = "2026-11-12"
+POR_TESIS_T3 = "tesis/T-3 · lectura directa de la pagina por la sesion"
+TESIS_T3 = (FECHA_TESIS_T3, POR_TESIS_T3)
+
+MC_HHD_SEPARACION_MULTIPLES = _cita(
+    id="MC_HHD.4.1.1.3.4a#SEPARACION",
+    fuente_id="MC_HHD",
+    numeral="4.1.1.3.4 a)",
+    titulo_numeral="a)  Tipo y sección",
+    jerarquia_numeral=("4.1.1.3.4  Elección del tipo de alcantarilla",),
+    pagina_impresa="72",
+    pagina_pdf=75,
+    pagina_pdf_titulo=74,
+    texto_literal=Verbatim(
+        texto=("En el caso del proceso constructivo de tuberías para "
+               "alcantarillas múltiples, se recomienda que la separación de "
+               "los tubos, medida entre las superficies externas, deberá ser "
+               "tal que facilite la compactación del material de relleno "
+               "igual a la mitad del diámetro de la tubería con un máximo de "
+               "1.0 m y 0.4 m como mínimo."),
+        pagina_pdf=75),
+    # RECOMENDACION: «se recomienda que». El «deberá ser tal que facilite la
+    # compactacion» de la misma oracion recae sobre la RAZON de la regla, no
+    # cambia su caracter.
+    caracter=Caracter.RECOMENDACION,
+    sesion=TESIS_T3,
+    nota=("LA REGLA ES DE TUBERIAS y su razon es la COMPACTACION DEL RELLENO "
+          "entre tubos: «medida entre las superficies externas», «que "
+          "facilite la compactación del material de relleno». Un marco "
+          "multicelda VACIADO IN SITU (§14.1 de docs/ruta_familia_c.md) es "
+          "monolitico: sus celdas comparten tabique y entre ellas no hay "
+          "relleno que compactar, de modo que la separacion entre celdas es "
+          "el espesor del tabique y esta regla no la fija. Se cita en V6 "
+          "(T-3) como la regla que aplicaria si las celdas fueran barriles "
+          "independientes con relleno entre ellos: D/2, con 0.40 m <= s <= "
+          "1.00 m."),
+)
+
+E060_14_5_3_2 = _cita(
+    id="E060.14.5.3.2",
+    fuente_id="E060",
+    numeral="14.5.3.2",
+    titulo_numeral=("Espesor mínimo de muros diseñados por el método "
+                    "empírico de diseño"),
+    jerarquia_numeral=("14.5", "MÉTODO EMPÍRICO DE DISEÑO PARA MUROS DE "
+                               "CARGA"),
+    pagina_impresa="134",
+    pagina_pdf=134,
+    texto_literal=Verbatim(
+        texto=("El espesor de los muros exteriores de sótanos y cimentaciones "
+               "no debe ser menor que 200 mm."),
+        pagina_pdf=134),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T3,
+    nota=("EXIGENCIA DENTRO DE SU AMBITO, que no es el del marco: el 14.5.3 "
+          "fija el espesor minimo de los muros diseñados por el METODO "
+          "EMPIRICO de 14.5, y la pared de un marco enterrado se diseña por "
+          "flexion y carga axial (14.8.1 remite al Capitulo 10). Lo que la "
+          "hace la fuente mas cercana para el espesor de un marco a nivel de "
+          "perfil es su OBJETO: un muro exterior ENTERRADO, con suelo contra "
+          "una cara, que es lo que es la pared del cajon. El proyecto la "
+          "aplica POR ANALOGIA como piso del criterio [A] "
+          "'espesor_pared_cajon'; no es [N] para el marco. Leida en la capa "
+          "de texto de la pagina 134 (que imprime «los  muros  exteriores» "
+          "con doble espacio)."),
+)
+
+EG2013_503_11_COTAS = _cita(
+    id="EG2013.503.11g#COTAS",
+    fuente_id="EG2013",
+    numeral="503.11 g) 2.",
+    titulo_numeral="Calidad del trabajo terminado",
+    jerarquia_numeral=("503.11 Criterios",),
+    pagina_impresa="934",
+    pagina_pdf=942,
+    pagina_pdf_titulo=942,
+    texto_literal=Verbatim(
+        texto="Cotas superiores de placas y veredas: -10 mm a +10 mm.",
+        pagina_pdf=942),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T3,
+    nota=("Es una tolerancia de ACEPTACION de la obra terminada (503.11, "
+          "«Aceptación de los trabajos»), bajo el rotulo «2. Otras "
+          "tolerancias» de g. «Calidad del trabajo terminado», junto a "
+          "«Espesores de placas: -10 mm a +20 mm». La cota superior de la "
+          "placa de FONDO de un marco es su invert: el proyecto la toma POR "
+          "ANALOGIA como el desajuste que admite el empalme de la salida "
+          "con el fondo del canal (VC2, criterio [A] "
+          "'desajuste_empalme_canal_m'). La fuente no habla de empalmes ni "
+          "de canales."),
+)
+
+EG2013_501_07 = _cita(
+    id="EG2013.501.07",
+    fuente_id="EG2013",
+    numeral="501.07",
+    titulo_numeral="Tolerancias",
+    pagina_impresa="889",
+    pagina_pdf=897,
+    pagina_pdf_titulo=897,
+    texto_literal=Verbatim(
+        texto=("En ningún punto la excavación realizada variará de la "
+               "proyectada más de 2 cm en cota, ni más de 5 cm en la "
+               "localización en planta."),
+        pagina_pdf=897),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T3,
+    nota=("Seccion 501, excavacion para estructuras. Es el extremo ALTO de la "
+          "ventana del criterio [A] 'desajuste_empalme_canal_m': la cota de "
+          "la excavacion que recibe la losa de fondo admite 2 cm. Tampoco "
+          "habla de empalmes: es analogia declarada."),
+)
+
+# --- T-3 (auditoria adversarial) --- Las dos citas que la auditoria pidio y
+# que la sesion de cierre leyo en su pagina, por texto y renderizada.
+HDS5_B3_CAJON_IN_SITU = _cita(
+    id="HDS5_3ED.B.3#CAJON_IN_SITU",
+    fuente_id="HDS5_3ED",
+    numeral="B.3",
+    titulo_numeral="CONCRETE BOX CULVERT",
+    pagina_impresa="B.2",
+    pagina_pdf=204,
+    pagina_pdf_titulo=204,
+    texto_literal=Verbatim(
+        texto=("For cast-in-place boxes, the quality of the formwork, "
+               "construction practices, and aging are factors. Manning's n "
+               "values for cast-in-place boxes range from 0.012 to 0.022 see "
+               "concrete lined open channels from HDS 3 Table 1 (FHWA 1961)."),
+        pagina_pdf=204),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T3,
+    nota=("La pagina imprime «0.022  see concrete lined open channels  from» "
+          "con DOS espacios a cada lado y sin parentesis (comprobado "
+          "renderizada); el texto va como la capa de texto lo entrega, con "
+          "los espacios normalizados. DESCRIBE el rango del cajon VACIADO IN "
+          "SITU y lo liga a la calidad del ENCOFRADO, no a un acabado: es la "
+          "ventana HACIA ARRIBA del n de capacidad del criterio "
+          "'n_manning_cajon' [C], cuyo valor de archivo es la fila «Concrete "
+          "Boxes / Smooth» de la Tabla B.1 (0.012-0.015, pag. impresa B.6). "
+          "Remite a la Tabla 1 del HDS 3 (FHWA 1961), que no esta en normas/."),
+)
+
+AASHTO_12_6_6_3_SIN_COBERTURA = _cita(
+    id="AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.6.3",
+    titulo_numeral="Minimum Cover",
+    pagina_impresa="12-22",
+    pagina_pdf=1660,
+    pagina_pdf_titulo=1659,
+    texto_literal=Verbatim(
+        texto=("If soil cover is not provided, the top of precast or "
+               "cast-in-place reinforced concrete box structures shall be "
+               "designed for direct application of vehicular loads."),
+        pagina_pdf=1660),
+    caracter=Caracter.EXIGENCIA,
+    metodo=AMBOS,
+    sesion=TESIS_T3,
+    nota=("Es la UNICA regla de la Sec. 12 sobre la cobertura de un CAJON de "
+          "concreto, y esta en el articulado 12.6.6.3, debajo de la Tabla "
+          "12.6.6.3-1 (que no tiene fila de cajon de concreto: "
+          "`AfirmacionNegativa` SIN_CAJON_DE_CONCRETO_T12663). No fija una "
+          "cobertura minima: ADMITE el cajon sin cobertura y a cambio exige "
+          "diseñar la losa superior para la carga vehicular directa. Junto con "
+          "el num. 4.1.1.3.4 a) del Manual (`MC_HHD.4.1.1.3.4a#NIVELES`: la "
+          "rasante puede coincidir con la losa) y la Lamina N 03 (que dibuja "
+          "el marco en cruce de canal sin relleno acotado), sostiene que el "
+          "piso de 0.3048 m del criterio 'cobertura_minima_cajon' [A] es MAS "
+          "RESTRICTIVO que la fuente: por eso G1 del marco AVISA y no bloquea "
+          "cuando solo falta esa cobertura (auditoria de T-3, H5)."),
+)
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

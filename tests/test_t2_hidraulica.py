@@ -1303,7 +1303,12 @@ def test_las_filas_que_el_catalogo_usa_no_se_movieron(concreto):
     tmc = catalogo(TipoMaterial.TMC)
     assert (tmc.hds5.K, tmc.hds5.c) == pytest.approx((0.0078, 0.0379),
                                                      rel=REL_TRANSPORTE)
-    assert ca.CRITERIOS["embocadura_cajon"].valor is None
+    # --- T-3 --- La embocadura del CAJON tiene valor de archivo desde T-3, y
+    # es una fila que ya estaba en la tabla antes de T-2 (Carta 8, escala 1):
+    # ninguna de las que T-2 dejo disponibles para T-7a.
+    assert ca.CRITERIOS["embocadura_cajon"].valor == \
+        "cajon_concreto_aletas_30_75"
+    assert ca.CRITERIOS["embocadura_cajon"].valor not in FILAS_NUEVAS_TA1
 
 
 def test_la_embocadura_puede_nombrar_una_fila_de_aleros():

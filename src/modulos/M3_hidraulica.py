@@ -140,6 +140,7 @@ from typing import Optional, Tuple, Union
 # busqueda en `sys.modules`.
 
 from src import criterios_adoptados as ca
+from src.constantes_fisicas import G
 from src.constantes_normativas import K_MANNING_SI
 from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
                      Seccion, SeccionCircular,
@@ -567,6 +568,52 @@ def tirante_normal_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:
                f"{seccion.b_m} m con talud {seccion.z_HV} H:V, n = "
                f"{seccion.n} y S = {seccion.S} m/m no transporta ese caudal "
                "en ninguna profundidad con sentido fisico")
+
+
+def tirante_critico_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:
+    """
+    --- T-3 (auditoria adversarial, H2) --- Tirante critico de una seccion
+    trapecial abierta, m: la condicion de flujo critico Q^2 * T = g * A^3
+    (HDS-5 num. A.3.1, pag. impresa A.3, cita HDS5_3ED.A.3.1#CRITICO: la
+    carga de velocidad critica es la mitad del tirante hidraulico, A/T, que
+    con V = Q/A es esta igualdad; la algebra es del proyecto).
+
+    Lo pide el remanso de un paso de canal (`M7.remanso_canal`): si el
+    tirante normal del canal no supera al critico, el canal es de pendiente
+    FUERTE y la lamina remansada es una S1 que termina en resalto, de modo
+    que la distancia a la que la horizontal del embalse corta la lamina
+    normal ya no es cota inferior del remanso.
+
+    En un trapecio abierto A^3/T crece con y sin limite, de modo que la raiz
+    es UNICA y el corchete se abre por duplicacion, igual que en
+    `tirante_normal_trapecial`. Con Q = 0 no hay lamina y el tirante es cero.
+    """
+    if not Q >= 0:
+        raise DatoInvalidoError(
+            "Q_m3s", valor=Q,
+            motivo="el caudal del canal no puede ser negativo")
+    if not Q > 0:
+        return TW_SALIDA_LIBRE
+
+    def f(y: float) -> float:
+        A = area_trapecial(b=seccion.b_m, z=seccion.z_HV, y=y)
+        T = seccion.b_m + 2 * seccion.z_HV * y      # ancho superficial
+        return G * A * A * A - Q * Q * T             # Q^2 T = g A^3
+
+    y_lo = TOL_THETA_BORDE
+    y_hi = max(seccion.altura_total_m, seccion.b_m, 1)    # semilla del corchete
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
+    for _ in range(DUPLICACIONES_MAX_CORCHETE):
+        if f(y_hi) > 0:
+            return brentq(f, y_lo, y_hi, xtol=TOL_BRENT)
+        y_hi *= 2                                         # duplicacion del corchete
+    raise LimiteNumericoError(
+        "tirante_critico_canal", valor=Q,
+        motivo=f"el caudal del canal ({Q} m3/s) no alcanza el regimen "
+               f"critico en la seccion declarada ni con un tirante de "
+               f"{y_hi:g} m: la combinacion de solera {seccion.b_m} m y "
+               f"talud {seccion.z_HV} H:V no tiene sentido fisico para ese "
+               "caudal")
 
 
 def seccion_del_receptor(seccion_medida: Optional[SeccionReceptor] = None

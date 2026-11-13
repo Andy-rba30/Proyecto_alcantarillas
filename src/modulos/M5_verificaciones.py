@@ -263,7 +263,7 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      Magnitud, Material, MetodoNoEvaluableError,
                      PuntoCritico, ReferenciaNormativa, RegimenBarril,
                      ResultadoHidraulico,
-                     Seccion,
+                     Seccion, SeccionRectangular,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
                      Verificacion, eleccion,
                      exigir_seccion_coherente, paso)
@@ -2434,9 +2434,26 @@ def vc1_borde_libre_canal(*, punto: PuntoCritico,
 # V6 - Material solido de arrastre (Sec. 3.1)
 # ---------------------------------------------------------------------------
 
-def v6_material_solido_arrastre(*, material: Material) -> Verificacion:
+def v6_material_solido_arrastre(*, material: Material,
+                                seccion: Optional[Seccion] = None,
+                                Q: Optional[float] = None) -> Verificacion:
     """
     Con palizada: seccion unica mayor, nunca multiple (Sec. 3.1).
+
+    --- T-3 --- (cadena T, INF-0.4) CON N > 1 LA FILA DICE QUE SE RECHAZA, y
+    no solo cuantas celdas: el reparto Q/N que MD ya hace (EXT-2), el tabique
+    entre celdas y el ancho exterior total del marco multicelda. El veredicto
+    NO cambia -- la multicelda sigue sin aceptarse mientras no haya un dato
+    de sitio sobre la capacidad de arrastre del cauce (ficha EXT-2-01) --:
+    lo que cambia es que el revisor ve que obra se rechazo. La SEPARACION
+    entre celdas de un marco VACIADO IN SITU (§14.1 de la ruta de la Familia
+    C) es el tabique, del espesor 'espesor_pared_cajon': el marco es
+    monolitico. La regla de separacion del num. 4.1.1.3.4 a) -- la mitad del
+    diametro, entre 0.40 y 1.00 m, medida entre superficies externas -- es
+    de TUBERIAS y su razon es compactar el relleno entre ellas, que en un
+    marco monolitico no existe; la fila la nombra para decir por que no la
+    aplica (cita `MC_HHD.4.1.1.3.4a#SEPARACION`). `seccion` y `Q` son
+    opcionales: sin ellos la fila es la de antes.
 
     LO QUE C5 CAMBIO, Y NO ES EL VEREDICTO SINO DE QUE DEPENDE. Este
     docstring decia que "el catalogo de M2 y el bucle de MD solo ofrecen
@@ -2481,10 +2498,23 @@ def v6_material_solido_arrastre(*, material: Material) -> Verificacion:
         procedencia = ("por construccion del catalogo circular de la Sec. "
                        "3.2: un tubo es un solo barril")
         criterio = None
+    obtenido = f"{celdas} celda(s) -- {procedencia}"
+    if celdas > 1 and isinstance(seccion, SeccionRectangular):
+        t = espesor_pared(material, seccion.altura)
+        ancho = seccion.ancho_exterior_de_celdas(t, celdas)
+        reparto = ("" if Q is None else
+                   f"; Q/N = {Q / celdas:.3f} m3/s por celda (EXT-2)")
+        obtenido += (
+            f"{reparto}; tabique entre celdas t = {t:.2f} m (marco "
+            f"monolitico vaciado in situ: la separacion de tubos del num. "
+            f"4.1.1.3.4 a) -- D/2 entre 0.40 y 1.00 m, entre superficies "
+            f"externas -- es de TUBERIAS con relleno entre ellas); ancho "
+            f"exterior total {ancho:.2f} m. No se acepta mientras no haya "
+            f"dato de arrastre del cauce (ficha EXT-2-01)")
     return Verificacion(
         cumple=celdas == 1,
         numeral=NUMERAL_V6,
-        valor_obtenido=f"{celdas} celda(s) -- {procedencia}",
+        valor_obtenido=obtenido,
         valor_admisible="sección única con palizada",
         criterio_aplicado=criterio,
         codigo="V6",
@@ -3172,7 +3202,9 @@ def verificar(*, punto: PuntoCritico, material: Material,
         # adversarial de T-2.
         lambda: v10_pendiente_conducto(resultado=resultado),
         pieza_del_hueco_de_V5(punto=punto, resultado=resultado)[1],
-        lambda: v6_material_solido_arrastre(material=material),
+        lambda: v6_material_solido_arrastre(material=material,
+                                            seccion=seccion,
+                                            Q=resultado.Q),
         lambda: v7_flotacion(punto=punto, material=material,
                              seccion=seccion, resultado=resultado),
         lambda: v8_evento_extremo(punto=punto, resultado=resultado),

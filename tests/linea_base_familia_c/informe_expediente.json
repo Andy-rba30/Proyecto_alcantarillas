@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "dc795cac907dd5c1eacee99eda8ecc54dfb7c60c",
+    "criterios_sha1": "559872d4701e2012acfc09e8188f5cd58ea4228b",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -579,7 +579,15 @@
       "geometria": null,
       "estructural": null,
       "espaciamiento_alivio": null,
-      "iteraciones": [],
+      "iteraciones": [
+        {
+          "material": "Concreto reforzado",
+          "seccion": "marco 1.20 × 0.90 m",
+          "aceptado": false,
+          "motivo": "marco 1.20 × 0.90 m: el escalon no se pudo evaluar -- DatoFaltanteError: Falta el dato 'cota_coronacion_canal' en el punto C-01. VC1 mide contra la coronacion del canal y esta fila la deja vacia. Sale del levantamiento topografico del cruce --- seccion transversal del canal con su fondo y sus dos coronaciones --- y NO hay regla declarada que la sustituya: ni el terreno natural ni la rasante son el labio del canal. Sin ella el requisito de la Sec. 2.3 no se puede evaluar, y el programa no lo da por cumplido",
+          "incumplidas": []
+        }
+      ],
       "verificaciones": [
         {
           "fase": "Fase 2 - Clasificacion y TR (M1)",
@@ -611,15 +619,15 @@
         {
           "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
           "etapa": "material y diametro (bucle de MD)",
-          "tipo": "CriterioPendienteError",
-          "criterio": "embocadura_cajon",
-          "etiqueta": "A",
-          "concepto": "Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)",
-          "fuente": "HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo contaba como tal --decia «y los tres que lo siguen (chaflan, bisel y esviaje)»--: es un valor de la columna 'Inlet Configuration' DENTRO de la Carta 11, bajo 'Rect. Box Concrete'. Y el del bisel superior es la Carta 13, 'Rect. Box Top Bev. Conc.', transcrita en T-2 (tres filas, aletas desplazadas de 45, 33.7 y 18.4 grados). Transcrita en normativa/tablas.py::T_HDS5_A1 y leida por constantes_normativas.HDS5_INLET, donde las dieciocho filas de cajon transcritas estan como claves 'cajon_concreto_*'",
-          "campo": null,
+          "tipo": "DatoFaltanteError",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": "cota_coronacion_canal",
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "'embocadura_cajon' es un VACIO sin valor asignado (Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)). Debe resolverse antes de continuar: HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo contaba como tal --decia «y los tres que lo siguen (chaflan, bisel y esviaje)»--: es un valor de la columna 'Inlet Configuration' DENTRO de la Carta 11, bajo 'Rect. Box Concrete'. Y el del bisel superior es la Carta 13, 'Rect. Box Top Bev. Conc.', transcrita en T-2 (tres filas, aletas desplazadas de 45, 33.7 y 18.4 grados). Transcrita en normativa/tablas.py::T_HDS5_A1 y leida por constantes_normativas.HDS5_INLET, donde las dieciocho filas de cajon transcritas estan como claves 'cajon_concreto_*'"
+          "mensaje": "Falta el dato 'cota_coronacion_canal' en el punto C-01. VC1 mide contra la coronacion del canal y esta fila la deja vacia. Sale del levantamiento topografico del cruce --- seccion transversal del canal con su fondo y sus dos coronaciones --- y NO hay regla declarada que la sustituya: ni el terreno natural ni la rasante son el labio del canal. Sin ella el requisito de la Sec. 2.3 no se puede evaluar, y el programa no lo da por cumplido"
         }
       ]
     }
@@ -925,6 +933,13 @@
         "concepto": "Que hace V1 (borde libre) cuando es el nivel del cuerpo receptor, y no el caudal de diseño, el que deja al barril sin el borde libre: el tirante del receptor por encima del llenado admisible, llegue o no a la clave"
       },
       {
+        "clave": "borde_libre_canal_m",
+        "etiqueta": "A",
+        "valor": 0.5,
+        "declarado_en_caliente": false,
+        "concepto": "Borde libre del canal: resguardo bajo su coronacion que el agua embalsada por la alcantarilla no puede invadir (VC1)"
+      },
+      {
         "clave": "borde_libre_y_sobre_d_max",
         "etiqueta": "A",
         "valor": 0.75,
@@ -958,7 +973,7 @@
       {
         "clave": "embocadura_cajon",
         "etiqueta": "A",
-        "valor": null,
+        "valor": "cajon_concreto_aletas_30_75",
         "declarado_en_caliente": false,
         "concepto": "Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)"
       },
@@ -1047,6 +1062,13 @@
         "concepto": "Coeficiente de perdida de carga en la embocadura (ke)"
       },
       {
+        "clave": "ke_entrada_cajon",
+        "etiqueta": "C",
+        "valor": "cajon_aletas_30_75_escuadra",
+        "declarado_en_caliente": false,
+        "concepto": "Coeficiente de perdida de carga en la embocadura (ke) del marco de concreto"
+      },
+      {
         "clave": "metodo_longitud_conducto",
         "etiqueta": "A",
         "valor": "por_extremo",
@@ -1059,6 +1081,20 @@
         "valor": "interpolacion_lineal_entre_extremos",
         "declarado_en_caliente": false,
         "concepto": "Metodo con que se cubre la zona de transicion del control de entrada de HDS-5, 3.5 < q* < 4.0"
+      },
+      {
+        "clave": "n_celdas_cajon",
+        "etiqueta": "A",
+        "valor": 1,
+        "declarado_en_caliente": false,
+        "concepto": "Numero de celdas del marco: una sola o multicelda"
+      },
+      {
+        "clave": "n_manning_cajon",
+        "etiqueta": "C",
+        "valor": "concrete_boxes",
+        "declarado_en_caliente": false,
+        "concepto": "Coeficiente de rugosidad de Manning del marco de concreto: fila de la que se toma la doble n (n_min, n_max)"
       },
       {
         "clave": "n_manning_hdpe",
@@ -1125,6 +1161,26 @@
         "valor": "segun_CBR",
         "declarado_en_caliente": false,
         "concepto": "Resguardo entre nivel de agua a la entrada y subrasante"
+      },
+      {
+        "clave": "secciones_cajon_normalizadas",
+        "etiqueta": "A",
+        "valor": [
+          [
+            1.2,
+            0.9
+          ],
+          [
+            1.5,
+            1.2
+          ],
+          [
+            2.0,
+            1.5
+          ]
+        ],
+        "declarado_en_caliente": false,
+        "concepto": "Progresion de secciones normalizadas del marco: ancho B y altura H interiores de UNA celda"
       },
       {
         "clave": "situacion_recubrimiento_aashto",
@@ -1307,13 +1363,10 @@
       "capacidad_portante_adm",
       "categoria_refuerzo_aashto",
       "clase_sitio",
-      "cobertura_minima_cajon",
       "cortante_alto_muro_e060_art_11_10_10_2",
       "cuantia_vertical_cortante_alto_e060_art_11_10_10_3",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
-      "embocadura_cajon",
-      "espesor_pared_cajon",
       "exposicion_quimica_ems",
       "friccion_muro_suelo_delta",
       "gamma_EQ",
@@ -1321,17 +1374,13 @@
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
       "inclinacion_muro_beta",
-      "ke_entrada_cajon",
       "metodo_estabilidad_global",
-      "n_celdas_cajon",
-      "n_manning_cajon",
       "pendiente_relleno_trasdos_i",
       "phi_relleno_trasdos",
       "predimensionamiento_cabezal",
       "punto_aplicacion_incremento_sismico",
       "regimen_cortante_muro_e060_art_11_10_2",
-      "remanso_derecho_via",
-      "secciones_cajon_normalizadas"
+      "remanso_derecho_via"
     ],
     "declarados_en_caliente": [],
     "verificacion_pendiente": [
@@ -1394,25 +1443,6 @@
         "diferido": false,
         "responsable": "el proyectista, eligiendo sobre AASHTO_LRFD_9.T5.10.1-1: la COLUMNA de categoria de material de refuerzo: A (acero sin recubrir), B (epoxico o galvanizado) o C (AASHTO M 334M)",
         "evidencia": "Especificacion del acero de refuerzo del expediente (norma de producto del acero que se compra), o la decision expresa del proyectista de proteger o no el refuerzo en ambiente salino"
-      },
-      {
-        "clave": "embocadura_cajon",
-        "etiqueta": "A",
-        "concepto": "Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)",
-        "fuente": "HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo contaba como tal --decia «y los tres que lo siguen (chaflan, bisel y esviaje)»--: es un valor de la columna 'Inlet Configuration' DENTRO de la Carta 11, bajo 'Rect. Box Concrete'. Y el del bisel superior es la Carta 13, 'Rect. Box Top Bev. Conc.', transcrita en T-2 (tres filas, aletas desplazadas de 45, 33.7 y 18.4 grados). Transcrita en normativa/tablas.py::T_HDS5_A1 y leida por constantes_normativas.HDS5_INLET, donde las dieciocho filas de cajon transcritas estan como claves 'cajon_concreto_*'",
-        "reemplazado_por": "El detalle de embocadura del cabezal que fije el expediente (Sec. 9.1), del que salen la carta y la fila de ke a la vez",
-        "fases": [
-          "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"
-        ],
-        "etapas": [
-          "material y diametro (bucle de MD)"
-        ],
-        "puntos": [
-          "C-01"
-        ],
-        "diferido": false,
-        "responsable": "el proyectista, eligiendo sobre HDS5_3ED.TA1, HDS5_3ED.TC2: la carta y escala de la Tabla A.1 de la que salen K, M, c, Y y la forma de ecuacion; y, emparejada con ella, la fila de la Tabla C.2 de la que sale ke",
-        "evidencia": "El detalle de embocadura del cabezal que fije el expediente (Sec. 9.1), del que salen la carta y la fila de ke a la vez"
       },
       {
         "clave": "exposicion_quimica_ems",

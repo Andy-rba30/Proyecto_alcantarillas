@@ -2060,7 +2060,9 @@ def _verificador_perfil(informe: InformePunto):
                 exc.verificaciones_completadas = tuple(filas)
                 raise
         for pieza in (
-            lambda: M5.v6_material_solido_arrastre(material=material),
+            lambda: M5.v6_material_solido_arrastre(material=material,
+                                                   seccion=seccion,
+                                                   Q=resultado.Q),
             lambda: M5.v7_flotacion(punto=punto, material=material,
                                     seccion=seccion, resultado=resultado),
         ):
@@ -2417,9 +2419,24 @@ def _fase_6_socavacion(informe: InformePunto,
                                 else geometria.cota_salida)))
 
 
-def _fase_7(informe: InformePunto) -> None:
-    """7.B con la SECCION adoptada y la MISMA longitud que uso la Fase 4."""
+def _fase_7(informe: InformePunto,
+            externos: Optional[DatosExternos] = None) -> None:
+    """
+    7.B con la SECCION adoptada y la MISMA longitud que uso la Fase 4.
+
+    --- T-3 --- En un paso de canal (Familia C) 7.B mide ademas el remanso
+    aguas arriba del canal, y para eso necesita la seccion MEDIDA del canal:
+    la de `seccion_receptor_medida`, que en un paso de canal es la del mismo
+    canal. Sin ella el remanso sale «no evaluado» con su aviso; NO se cae a
+    la seccion adoptada del criterio 'seccion_receptor', que describe un
+    dren receptor y no el canal que se cruza.
+    """
     resultado = informe.resultado
+    seccion_canal = None
+    if externos is not None and informe.punto.familia is Familia.C:
+        medida = externos.valor(informe.punto.id,
+                                CLAVE_SECCION_RECEPTOR_MEDIDA)
+        seccion_canal = None if medida is None else SeccionReceptor(**medida)
     # --- T-6 --- Si la longitud se CALCULO, viaja el objeto entero (metodo,
     # alturas por extremo, pasos); si se DECLARO, el escalar, y 7.B lo rotula
     # como declarado. En los dos casos es la misma L que uso la Fase 4.
@@ -2436,7 +2453,8 @@ def _fase_7(informe: InformePunto) -> None:
             # Solo cuentan con la longitud DECLARADA (7.B avisa que no se
             # aplican); con la calculada ya van dentro de `calculada`.
             bombeo=informe.transversales[0],
-            peralte=informe.transversales[1]))
+            peralte=informe.transversales[1],
+            seccion_canal=seccion_canal))
 
 
 def _fase_8_conducto(informe: InformePunto) -> None:
@@ -2871,7 +2889,7 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
         _compuerta_metodo_h_o(informe, alcance)
         if informe.dimensionado:
             _fase_6(informe, externos)
-            _fase_7(informe)
+            _fase_7(informe, externos)
             _fase_6_socavacion(informe, externos)
             _fase_8_conducto(informe)
             if _difiere(alcance, "M8_estructural"):

@@ -142,8 +142,10 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # y el orquestador los asigno a T-4.
         ESTADO_CERRADO: {"INF-5.1.17", "INF-3.3.4", "INF-3.3.1", "INF-3.2.4",
                          "INF-5.1.9", "INF-5.1.16"},
-        # Solo la mitad del HDPE: `n_manning_cajon` sigue vacio.
-        ESTADO_PARCIAL: {"INF-3.2.1"},
+        # INF-3.2.1 estuvo aqui como «Cerrado parcial» (solo la mitad del
+        # HDPE) hasta que T-3 dio valor a `n_manning_cajon` y lo cerro: figura
+        # en la fila de T-3, y su fila del tracker conserva el texto de T-4
+        # detras de «Anterior:».
     },
     "T-1": {
         # La hidrologia dentro del programa (Fase 1-bis). INF-5.1.3 no lo
@@ -181,6 +183,14 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # entradas: las clases de M 170M ilegibles, el perfil del fabricante
         # del HDPE y la costura empernada del TMC (fichas T5-02, T5-10, T5-03).
         ESTADO_CERRADO: {"INF-3.3.5"},
+    },
+    "T-3": {
+        # La Familia C se dimensiona: el prompt la cita como «INF-3.x "Familia
+        # C no se dimensiona"» y es INF-0.4 (§0 del INFORME, punto 4). Cierra
+        # ademas la mitad del cajon de INF-3.2.1 (la del HDPE la hizo T-4).
+        # INF-0.5 (criterios vacios) queda «Abierto» con una NOTA: los siete
+        # del cajon salen de los vacios y quedan los de T-7a/b/c.
+        ESTADO_CERRADO: {"INF-0.4", "INF-3.2.1"},
     },
 }
 

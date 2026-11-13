@@ -1,0 +1,2868 @@
+{
+  "expediente": {
+    "csv": "<SALIDA>/puntos_c.csv",
+    "generado_utc": "<UTC>",
+    "csv_sha1": "b715b1694f4a17566bcbb365c439af196c47e185",
+    "criterios_sha1": "559872d4701e2012acfc09e8188f5cd58ea4228b",
+    "corredor_del_proyecto": {
+      "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
+      "origen": "src/datos_sitio.py"
+    },
+    "puntos": 4,
+    "dimensionados": 3,
+    "cerrado": false
+  },
+  "alcance": {
+    "nivel": "perfil",
+    "diferidos": [
+      {
+        "punto": "A-01",
+        "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+        "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "remanso_derecho_via",
+        "etiqueta": "A",
+        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+        "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+      },
+      {
+        "punto": "A-01",
+        "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+        "etapa": "verificacion V8 diferida al expediente (alcance perfil)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "TR_evento_extremo",
+        "etiqueta": "A",
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
+        "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+      },
+      {
+        "punto": "A-01",
+        "fase": "Fase 8 - Estructural del conducto (M8)",
+        "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
+      },
+      {
+        "punto": "A-02",
+        "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+        "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "remanso_derecho_via",
+        "etiqueta": "A",
+        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+        "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+      },
+      {
+        "punto": "A-02",
+        "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+        "etapa": "verificacion V8 diferida al expediente (alcance perfil)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "TR_evento_extremo",
+        "etiqueta": "A",
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
+        "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+      },
+      {
+        "punto": "A-02",
+        "fase": "Fase 8 - Estructural del conducto (M8)",
+        "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
+      },
+      {
+        "punto": "B-01",
+        "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+        "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "remanso_derecho_via",
+        "etiqueta": "A",
+        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+        "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+      },
+      {
+        "punto": "B-01",
+        "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+        "etapa": "verificacion V8 diferida al expediente (alcance perfil)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "TR_evento_extremo",
+        "etiqueta": "A",
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
+        "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+      },
+      {
+        "punto": "C-01",
+        "fase": "Fase 5 - Verificaciones",
+        "etapa": "VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "ALCANCE DEL REQUISITO DE LA SEC. 2.3 -- FAMILIA C (cruces de canal y dren). La Sec. 2.3 de la hoja de ruta enuncia, para la Familia C, un requisito que ninguna otra familia tiene: la obra NO PUEDE ALTERAR LA RASANTE HIDRAULICA NI EL BORDE LIBRE DEL CANAL. Son DOS exigencias en una frase, y esta corrida evalua UNA. LO QUE SI SE EVALUA -- el borde libre. La verificacion VC1 compara el nivel que el agua alcanza a la entrada (cota del fondo del canal en el cruce mas la carga HW que gobierna) contra la coronacion del canal menos su borde libre, y emite veredicto con margen en metros. La coronacion es columna del CSV -- `cota_coronacion_canal`, dato de sitio [S] del levantamiento de los cruces -- y el borde libre sale del criterio 'borde_libre_canal_m' [A]. Sin cualquiera de los dos VC1 SE DETIENE: no devuelve «no evaluable» ni da el requisito por cumplido. DE DONDE SALE EL BORDE LIBRE, QUE NO ES UN VALOR NORMATIVO DEL CANAL. El Manual de Hidrologia NO fija borde libre para un canal: barridas sus 225 paginas, «borde libre» aparece en dos apartados y ninguno tiene por objeto un canal -- el num. 4.1.1.3.7 b) es de ALCANTARILLAS y es relativo (>= 25 % de la altura del barril), y el num. 4.1.1.4.1 e) es de BADENES y mide contra la superficie de rodadura --. El proyecto adopta el par 0.30-0.50 m del segundo, en su extremo SUPERIOR, que aqui es el conservador porque el borde libre se resta de la coronacion. Son dos decisiones del proyectista y no una lectura de la fuente: la ANALOGIA (de la calzada de un baden a la coronacion de un canal) y la ELECCION dentro de una banda para la que el Manual no da regla. LO QUE NO SE EVALUA -- la rasante hidraulica. VC1 acota el NIVEL que el agua alcanza; no mide EN CUANTO la obra levanta el pelo de agua del canal respecto del que tendria sin ella. Un punto puede cumplir VC1 con holgura y haber elevado la rasante hidraulica del canal en una fraccion apreciable de su calado. Medirlo exige el tirante normal del canal en la seccion del cruce -- su geometria trapecial (ancho de solera y talud) y su n de Manning, ninguno de los dos columna de la Sec. 1.2 -- y la extension aguas arriba del remanso, que VC1 tampoco acota: mide EN LA SECCION DEL CRUCE, de modo que un tercero situado mas arriba, donde el canal tenga la coronacion mas baja, puede quedar afectado por un remanso que en el cruce cumple. V5 NO SE EVALUA EN ESTA FAMILIA, y no por falta de datos: por no aplicar. Su umbral es el ancho del derecho de via y presupone agua extendiendose lateralmente sobre la plataforma al remansarse contra el terraplen; en un paso de canal el agua sube confinada entre las dos coronaciones. VC1 ocupa su posicion en la tabla de la Fase 5 y mide contra la cota que si gobierna. La sustitucion no pierde alcance -- el umbral de V5 era un ancho, no una longitud aguas arriba -- pero tampoco cierra el hueco entero, y por eso el parrafo anterior existe. QUE SIGNIFICA UN «CUMPLE» EN UN PUNTO DE ESTA FAMILIA: que la obra es admisible como alcantarilla de paso Y que no invade el borde libre adoptado del canal en la seccion del cruce. NO significa que la alteracion de la rasante hidraulica del canal se haya medido. QUE CIERRA ESTA DECLARACION: la geometria de la seccion del canal (ancho de solera y talud) y su n de Manning en cada cruce, para calcular su tirante normal y con el la alteracion; y el borde libre que el propio canal adopto en SU proyecto (ANA o Junta de Usuarios del Bajo Piura), que sustituiria a la analogia con el baden."
+      },
+      {
+        "punto": "C-01",
+        "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+        "etapa": "verificacion V8 diferida al expediente (alcance perfil)",
+        "tipo": "CriterioPendienteError",
+        "criterio": "TR_evento_extremo",
+        "etiqueta": "A",
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
+        "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+      },
+      {
+        "punto": "C-01",
+        "fase": "Fase 8 - Estructural del conducto (M8)",
+        "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
+      },
+      {
+        "punto": null,
+        "fase": "Fase 9 - Cabezal y aletas (M9)",
+        "etapa": "Fase 9 completa diferida al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "cadena sismica, Mononobe-Okabe, predimensionamiento, recubrimientos y cuantias del cabezal no se ejecutan en alcance de perfil: dependen de datos del expediente (ensayos de fundacion y relleno del Tablero 3 y criterios C.3) y de la estabilidad E1-E5 que la propia Fase 9 remite al expediente. Disponibles sin cambios con --alcance expediente"
+      }
+    ]
+  },
+  "puntos": [
+    {
+      "id": "A-01",
+      "progresiva": "0+380",
+      "familia": "A",
+      "pendientes_externos": [
+        "Q_receptor_m3s",
+        "cota_TW",
+        "NF_profundidad_m",
+        "cota_coronacion_canal"
+      ],
+      "dimensionado": true,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.75,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": null,
+        "longitud_m": {
+          "valor": 18.86939162767301,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
+        },
+        "TW_m": {
+          "valor": 0.3,
+          "origen": "datos externos (globales)"
+        },
+        "S_cauce": {
+          "valor": 0.006,
+          "origen": "CSV Sec. 1.2, columna S_cauce"
+        },
+        "acceso_mantenimiento_previsto": null
+      },
+      "tw_seccion_receptor": null,
+      "avisos": [
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto",
+        "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
+        "Proteccion de salida: rige la envolvente con HEC-14 ('regla_espesor_longitud_proteccion_salida'): piedra d50 = 0.338 m (rige Laushey; la Ec. (10.4) de HEC-14 pide 0.252 m), espesor 0.592 -> 0.770 m, longitud 5.00 -> 5.40 m (clase 4 de la Tabla 10.1)",
+        "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
+        "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
+      ],
+      "clasificacion": {
+        "luz_m": 2.75,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "A",
+        "origen_del_caudal": "Q hidrologico propio de la cuenca: declarado por el estudio hidrologico en la columna Q_m3s, o calculado por MH_hidrologia (metodo racional con el TR de la Fase 2)",
+        "TR_procede": true,
+        "TR_anios": 71,
+        "TR_categoria": "quebrada_importante",
+        "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
+        "TR_fundamento": "categoria derivada del area de cuenca (850.0 ha) con el criterio 'umbral_area_quebrada_importante_ha'",
+        "datos_pendientes": []
+      },
+      "caudal": {
+        "Q_m3s": 1.167,
+        "origen": "declarado",
+        "leyenda": "Q declarado por el estudio hidrológico",
+        "de_donde": "CSV Sec. 1.2, columna Q_m3s",
+        "area_km2": 8.5,
+        "q_especifico_m3s_km2": 0.13729411764705882,
+        "lamina_equivalente_mm_h": 0.493863732543377,
+        "tratamiento_fen": null,
+        "avisos": [
+          "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        ],
+        "pasos": [
+          "1b.8"
+        ]
+      },
+      "durabilidad": {
+        "aplicada": false,
+        "resumen": "durabilidad: sin ensayos, matriz no aplicada",
+        "ensayos": {},
+        "materiales_excluidos": [],
+        "suelo_fundacion": "suelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos",
+        "reglas": [
+          {
+            "ensayo": "condicion_del_sitio",
+            "material": "tmc",
+            "efecto": "avisa",
+            "texto": "aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio",
+            "citas": [
+              "MC_HHD.4.1.1.3.7f#COSTA",
+              "MC_HHD.4.1.1.3.7g#AGRESIVAS"
+            ],
+            "criterio": null
+          }
+        ]
+      },
+      "diseno": {
+        "material": "Concreto reforzado",
+        "tipo": "concreto_reforzado",
+        "norma_producto": "AASHTO M 170M-04 / ASTM C 76M-02 (metrica)",
+        "alcance_norma_producto": "M 170M-04: num. 1.1 · 'SCOPE' · pag. impresa M 170M-1 · PDF 1 · M 170M-04: num. 1.2, Note 1 · 'SCOPE' · pag. impresa M 170M-1 · PDF 1",
+        "seccion_eg2013": "506",
+        "n_min": 0.01,
+        "n_max": 0.013,
+        "seccion": "Ø 0.90 m",
+        "dimension_max_catalogo_m": 2.7,
+        "dimension_max_criterio": "D_max_norma_producto",
+        "control_gobernante": "entrada",
+        "Q_m3s": 1.167,
+        "S_m_m": 0.006,
+        "V_erosion_m_s": 3.205506157842659,
+        "V_sedimentacion_m_s": 2.4657739675712764,
+        "y_normal_m": 0.6271229622477936,
+        "y_critico_m": 0.6399701975127118,
+        "HW_entrada_m": 1.0420015370127218,
+        "HW_salida_m": 0.9924896843910613,
+        "HW_gobernante_m": 1.0420015370127218,
+        "Q_celda_m3s": 1.167,
+        "numero_celdas": 1,
+        "regimen_barril": "parcialmente lleno",
+        "V_llena_m_s": 1.8344080848221418,
+        "V_salida_m_s": 3.205506157842659,
+        "V_salida_procedencia": "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de ENTRADA la velocidad a la salida es la del tirante normal. De las dos ramas de n (Sec. 4.1) se toma la de n MINIMO, V_erosion, la estimacion ALTA: es el techo conservador para un d50 que crece con el cuadrado de V",
+        "y_salida_m": 0.6271229622477936,
+        "h_o_m": 0.7699850987563559,
+        "TW_m": 0.3,
+        "ahogado_por_TW": false,
+        "HW_sobre_D_salida": 1.102766315990068,
+        "h_o_fuera_de_rango": false,
+        "h_o_requiere_cautela": false,
+        "perfil_tipo": "S1",
+        "perfil_alcanza_entrada": false,
+        "perfil_HW_remanso_m": null,
+        "perfil_HW_aproximado_m": 0.9924896843910613,
+        "perfil_sustituye_aproximacion": false,
+        "perfil_y_entrada_m": null,
+        "perfil_y_max_m": 0.6399701975127118,
+        "perfil_V_min_m_s": 2.4119750436244365,
+        "perfil_fraccion_llena": 0.0,
+        "perfil_longitud_llena_m": 0.0,
+        "perfil_y_asintota_m": null,
+        "perfil_comprobacion_manda": false,
+        "hw_entrada_piso": null,
+        "hw_entrada_HW_sobre_D_formula": null,
+        "hw_entrada_S_limite_m_m": null
+      },
+      "proteccion_salida": {
+        "numeral": "4.1.1.3.7 c)",
+        "V_salida_m_s": 3.205506157842659,
+        "d50_m": 0.3382248100055038,
+        "espesor_m": 0.77,
+        "longitud_m": 5.4,
+        "criterio_espesor": "espesor_proteccion_salida",
+        "criterio_longitud": "longitud_proteccion_salida",
+        "advertencias": [
+          "d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))",
+          "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
+          "Alcance: rige la ENVOLVENTE de las dos fuentes. El Manual MTC (num. 4.1.1.3.7 c)) da el d50 de Laushey, funcion solo de V; HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW. La piedra es la mayor de las dos, y el espesor y la longitud los mayores de lo adoptado y de la Tabla 10.1 de HEC-14. La geometria de la proteccion se cierra en el expediente tecnico"
+        ],
+        "d50_laushey_m": 0.3382248100055038,
+        "rige_la_envolvente": true,
+        "requerida": null,
+        "froude_salida": {
+          "Fr": 1.5668450524931907,
+          "y_equivalente_m": 0.4266503659114436,
+          "area_m2": 0.3640610694647375,
+          "supercritico": true,
+          "seccion_llena": false
+        },
+        "velocidad_admisible": null,
+        "apron_hec14": {
+          "D50_requerido_m": 0.2515643602129019,
+          "D_m": 0.9,
+          "D_de_calculo_m": 0.7635614811238969,
+          "ajustado_por_supercritico": true,
+          "TW_m": 0.3,
+          "TW_de_calculo_m": 0.3054245924495588,
+          "TW_acotado": true,
+          "clase": 4,
+          "D50_clase_m": 0.35,
+          "longitud_m": 5.4,
+          "espesor_m": 0.77,
+          "ancho_final_m": 6.300000000000001
+        },
+        "clase_hec14_de_la_piedra": {
+          "d50_m": 0.3382248100055038,
+          "clase": 4,
+          "D50_clase_m": 0.35,
+          "longitud_m": 5.4,
+          "espesor_m": 0.77,
+          "ancho_final_m": 6.300000000000001
+        },
+        "regla_espesor_longitud": "envolvente_hec14",
+        "espesor_adoptado_m": 0.5918934175096316,
+        "longitud_adoptada_m": 5.0,
+        "filtro": {
+          "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
+          "clase_geotextil": "Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento)",
+          "pasa_200_pct": null,
+          "columna_tabla_511_06": null,
+          "permitividad_min_s1": null,
+          "abertura_aparente_max_mm": null,
+          "citas": [
+            "MC_HHD.LAMINA_05",
+            "HEC14.10.2#FILTRO",
+            "EG2013.511.08#EROSION",
+            "EG2013.511.08#T511_06"
+          ]
+        }
+      },
+      "proteccion_entrada": {
+        "tipo_embocadura": "cabezal_recto",
+        "V_entrada_m_s": 2.4119750436244365,
+        "revestimiento": "emboquillado_de_piedra",
+        "criterio_revestimiento": "tipo_proteccion_entrada",
+        "elementos": [
+          "cauce de aproximacion, del pie del cabezal hacia aguas arriba, con su uña o dentellon al borde",
+          "talud del terraplen a los dos lados del cabezal, donde el muro recto no lo contiene"
+        ],
+        "requerida": null,
+        "velocidad_admisible": null
+      },
+      "socavacion_salida": {
+        "profundidad_para_desplante_m": null,
+        "origen": "sin dato",
+        "declarada_m": null,
+        "referencia": null,
+        "cota_referencia_msnm": null,
+        "cota_fondo_de_la_hoya_msnm": null,
+        "motivo_no_estimada": "falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es)",
+        "hoya_estimada": null
+      },
+      "geometria": {
+        "numeral": "Sec. 7.B",
+        "longitud_m": 18.86939162767301,
+        "proyeccion_taludes_m": 8.626432699532081,
+        "factor_esviaje": 1.035276180410083,
+        "altura_terraplen_m": 2.1000000000000014,
+        "S_conducto": 0.006,
+        "cota_entrada_msnm": 42.1,
+        "cota_entrada_origen": {
+          "rotulo": "ADOPTADA",
+          "adoptada": true,
+          "criterio": "origen_cota_fondo_entrada",
+          "regla": "cota_terreno",
+          "procedencia": "regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida",
+          "nota": "no es cota medida: sale de la regla declarada en ese criterio mientras el expediente no entregue la cota de invert de entrada por punto"
+        },
+        "cota_salida_msnm": 41.98678365023396,
+        "caida_m": 0.11321634976603806,
+        "longitud_calculo": {
+          "metodo": "por_extremo",
+          "talud_H_V": 2.0,
+          "bombeo_m_m": null,
+          "peralte_m_m": null,
+          "cota_borde_entrada_msnm": 44.2,
+          "cota_borde_salida_msnm": 44.2,
+          "altura_terraplen_entrada_m": 2.1000000000000014,
+          "altura_terraplen_salida_m": 2.2132163497660393,
+          "proyeccion_talud_entrada_m": 4.200000000000003,
+          "proyeccion_talud_salida_m": 4.426432699532079,
+          "semilongitud_entrada_m": 9.31748562369075,
+          "semilongitud_salida_m": 9.55190600398226
+        },
+        "S_conducto_origen": {
+          "origen": "S_cauce",
+          "S_cauce": 0.006,
+          "S_declarada": null,
+          "S_minima": 0.0,
+          "S_maxima": 0.1,
+          "procedencia": "pendiente del cauce (`S_cauce`): el conducto sigue al cauce, que es la regla de la Sec. 7.B"
+        },
+        "longitud_a_la_clave_m": 14.676193488190119,
+        "desnivel_entrega_m": 0.6867836502339628,
+        "avisos": [
+          "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+          "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto"
+        ],
+        "geometria_marco": null,
+        "remanso_canal": null,
+        "factible": true,
+        "delta_rasante_cm": null,
+        "tamizado": {
+          "provisional": true,
+          "cota_rasante_min_msnm": 44.09200153701273,
+          "cota_rasante_actual_msnm": 44.2,
+          "cota_por_recubrimiento_msnm": 43.55480000000001,
+          "cota_por_resguardo_msnm": 44.09200153701273,
+          "condicion_gobernante": "resguardo",
+          "criterio_gobernante": "resguardo_HW_subrasante",
+          "mensaje": "factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
+        }
+      },
+      "estructural": {
+        "material": "concreto_reforzado",
+        "seleccion": "Clase II",
+        "H_relleno_m": 0.9499999999999957,
+        "e_paquete_m": 0.15000000000000568,
+        "H_total_m": 1.1000000000000014,
+        "relleno_maximo_m": 2.8507897689129,
+        "avisos": [],
+        "pasos": [
+          {
+            "codigo": "F8.LL",
+            "que": "Carga viva HL-93 sobre el conducto (gobierna el camion, por efecto)",
+            "resultado": {
+              "simbolo": "P_L",
+              "valor": 33.606708738549926,
+              "unidad": "kPa"
+            }
+          },
+          {
+            "codigo": "F8.EV",
+            "que": "Carga de tierra sobre el tubo de concreto (instalacion estandar)",
+            "resultado": {
+              "simbolo": "W_E",
+              "valor": 32.65848373363465,
+              "unidad": "kN/m"
+            }
+          },
+          {
+            "codigo": "F8.HMAX",
+            "que": "Relleno maximo sobre la clave con la Clase II",
+            "resultado": {
+              "simbolo": "H_max",
+              "valor": 2.8507897689129,
+              "unidad": "m"
+            }
+          },
+          {
+            "codigo": "F8.TIPO4",
+            "que": "Contraste con la instalacion Tipo 4 (sin compactacion exigida): D-load requerida -- NO RIGE",
+            "resultado": {
+              "simbolo": "D_T4",
+              "valor": 44.85713263178623,
+              "unidad": "N/m/mm"
+            }
+          },
+          {
+            "codigo": "F8.HMAX_TIPO4",
+            "que": "Contraste con la instalacion Tipo 4: relleno maximo con la Clase II -- NO RIGE",
+            "resultado": {
+              "simbolo": "H_max_T4",
+              "valor": 1.6905327891073711,
+              "unidad": "m"
+            }
+          }
+        ],
+        "demanda_marco": null,
+        "cama_apoyo": null,
+        "sujecion_relleno_lateral": null,
+        "numeral": null,
+        "verificacion_diferida": [
+          "Metodo directo del tubo de concreto (AASHTO LRFD 12.10.4.2): no se usa; la clase sale del metodo indirecto de 12.10.4.3, que la norma admite como alternativa",
+          "D-load de 0.3 mm de las Clases I, III, IV y V de AASHTO M 170M: ilegibles en el ejemplar de normas/ y no transcritas; un tubo que pida mas que la Clase II se detiene diciendo que clases faltan y que lo destraba un ejemplar legible de M 170M o de ASTM C76M ('clases_producto_por_relleno')"
+        ]
+      },
+      "espaciamiento_alivio": null,
+      "iteraciones": [
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 0.90 m",
+          "aceptado": true,
+          "motivo": "",
+          "incumplidas": []
+        }
+      ],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 2.75,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V1",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.6968032913864374,
+          "valor_admisible": 0.75,
+          "criterio_aplicado": "borde_libre_y_sobre_d_max"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V2",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 2.4657739675712764,
+          "valor_admisible": 0.25,
+          "criterio_aplicado": "velocidad_minima_autolimpieza_m_s"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V2b",
+          "numeral": "HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 \"Sedimentation\", pag. impresa 5.11. El numeral NO fija un umbral: nombra dos INDICADORES (\"barrel slope less than the natural channel and roughness greater than the channel are key indicators of potential problems\"). Aqui se evalua el PRIMERO, y como se aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro que detiene el punto, o indicador con aviso que no descarta el diametro); el segundo exige el n de Manning del cauce natural, que no es columna de Sec. 1.2, y queda declarado pendiente. La otra mitad de la fila V2b de la hoja de ruta -- el acceso de mantenimiento en planos -- entra por el criterio 'acceso_mantenimiento_v2b' [A]",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.006,
+          "valor_admisible": 0.006,
+          "criterio_aplicado": "acceso_mantenimiento_v2b"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V3",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 \"Velocidades maximas admisibles (m/s) en conductos revestidos\", num. 4.1.1.3.6, pag. impresa 76; fuente de la tabla: HCANALES, Maximo Villon B. Los DOS numeros de cada fila son MAXIMOS -- lo dice el titulo --, de modo que se verifica solo el superior y el piso lo pone V2. Que el rango recorra la calidad del revestimiento es INTERPRETACION DEL PROYECTISTA y no del Manual: se declara aparte, en el bloque \"Umbrales normativos y su caracter\" de esta memoria. Se evalua con la velocidad de la rama de n MINIMO -- la estimacion alta --, que es el extremo conservador para un techo",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 3.205506157842659,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V4",
+          "numeral": "Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), num. 4.5.4 y 9.1(3) [hoja de ruta: Sec. 5.1]",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 43.142001537012725,
+          "valor_admisible": 43.25,
+          "criterio_aplicado": "resguardo_HW_subrasante"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V4b",
+          "numeral": "Fase 5, V4b -- adopcion del proyectista ('HW_D_max' [A]). NO es exigencia: el HDS-5, num. 2.2.5 d) 'Agency Constraints', pag. impresa 2.10, DESCRIBE la banda 1.0-1.5 que imponen las agencias viales de EE. UU., y el MTC no fija HW/D alguno",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": 1.1577794855696908,
+          "valor_admisible": 1.5,
+          "criterio_aplicado": "HW_D_max"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V10",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.006,
+          "valor_admisible": 0.1,
+          "criterio_aplicado": "pendiente_maxima_conducto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V6",
+          "numeral": "3.1",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": "1 celda(s) -- por construccion del catalogo circular de la Sec. 3.2: un tubo es un solo barril",
+          "valor_admisible": "sección única con palizada",
+          "criterio_aplicado": null
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V7",
+          "numeral": "Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 15.98849999999993,
+          "valor_admisible": 9.322754739344052,
+          "criterio_aplicado": "factores_carga_aashto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V9",
+          "numeral": "Sec. 3.2 (V9, nuevo en v7)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": 0.9,
+          "valor_admisible": 2.7,
+          "criterio_aplicado": "D_max_norma_producto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "F8.CLASE",
+          "numeral": "AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 37.42382229063617,
+          "valor_admisible": 50.0,
+          "criterio_aplicado": "clases_producto_por_relleno"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G1",
+          "numeral": "Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 44.2,
+          "valor_admisible": 44.09200153701273,
+          "criterio_aplicado": "resguardo_HW_subrasante"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G2",
+          "numeral": "Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A])",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 41.98678365023396,
+          "valor_admisible": 41.3,
+          "criterio_aplicado": "desnivel_minimo_entrega_m"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G3",
+          "numeral": "Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 num. 5.4.2, por analogia; AVISO, el esviaje es dato de entrada)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 15.0,
+          "valor_admisible": 45.0,
+          "criterio_aplicado": "esviaje_max_grados"
+        }
+      ],
+      "verificaciones_no_evaluadas": [],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "remanso_derecho_via",
+          "etiqueta": "A",
+          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+          "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "verificacion V8 diferida al expediente (alcance perfil)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "TR_evento_extremo",
+          "etiqueta": "A",
+          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
+          "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+        },
+        {
+          "fase": "Fase 8 - Estructural del conducto (M8)",
+          "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
+          "tipo": "DiferidoPorAlcance",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
+        }
+      ]
+    },
+    {
+      "id": "A-02",
+      "progresiva": "1+920",
+      "familia": "A",
+      "pendientes_externos": [
+        "Q_receptor_m3s",
+        "cota_TW",
+        "NF_profundidad_m",
+        "cota_coronacion_canal"
+      ],
+      "dimensionado": true,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.75,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": null,
+        "longitud_m": {
+          "valor": 18.567739690320675,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
+        },
+        "TW_m": {
+          "valor": 0.3,
+          "origen": "datos externos (globales)"
+        },
+        "S_cauce": {
+          "valor": 0.008,
+          "origen": "CSV Sec. 1.2, columna S_cauce"
+        },
+        "acceso_mantenimiento_previsto": null
+      },
+      "tw_seccion_receptor": null,
+      "avisos": [
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto",
+        "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
+        "Proteccion de salida: rige la envolvente con HEC-14 ('regla_espesor_longitud_proteccion_salida'): piedra d50 = 0.274 m (rige Laushey; la Ec. (10.4) de HEC-14 pide 0.104 m), espesor 0.479 -> 0.770 m, longitud 5.00 -> 5.40 m (clase 4 de la Tabla 10.1)",
+        "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
+        "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
+      ],
+      "clasificacion": {
+        "luz_m": 2.75,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "A",
+        "origen_del_caudal": "Q hidrologico propio de la cuenca: declarado por el estudio hidrologico en la columna Q_m3s, o calculado por MH_hidrologia (metodo racional con el TR de la Fase 2)",
+        "TR_procede": true,
+        "TR_anios": 71,
+        "TR_categoria": "quebrada_importante",
+        "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
+        "TR_fundamento": "categoria derivada del area de cuenca (210.0 ha) con el criterio 'umbral_area_quebrada_importante_ha'",
+        "datos_pendientes": []
+      },
+      "caudal": {
+        "Q_m3s": 0.48,
+        "origen": "declarado",
+        "leyenda": "Q declarado por el estudio hidrológico",
+        "de_donde": "CSV Sec. 1.2, columna Q_m3s",
+        "area_km2": 2.1,
+        "q_especifico_m3s_km2": 0.22857142857142856,
+        "lamina_equivalente_mm_h": 0.8221993833504624,
+        "tratamiento_fen": null,
+        "avisos": [
+          "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        ],
+        "pasos": [
+          "1b.8"
+        ]
+      },
+      "durabilidad": {
+        "aplicada": false,
+        "resumen": "durabilidad: sin ensayos, matriz no aplicada",
+        "ensayos": {},
+        "materiales_excluidos": [],
+        "suelo_fundacion": "suelo de fundacion SP-SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos",
+        "reglas": [
+          {
+            "ensayo": "condicion_del_sitio",
+            "material": "tmc",
+            "efecto": "avisa",
+            "texto": "aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio",
+            "citas": [
+              "MC_HHD.4.1.1.3.7f#COSTA",
+              "MC_HHD.4.1.1.3.7g#AGRESIVAS"
+            ],
+            "criterio": null
+          }
+        ]
+      },
+      "diseno": {
+        "material": "Concreto reforzado",
+        "tipo": "concreto_reforzado",
+        "norma_producto": "AASHTO M 170M-04 / ASTM C 76M-02 (metrica)",
+        "alcance_norma_producto": "M 170M-04: num. 1.1 · 'SCOPE' · pag. impresa M 170M-1 · PDF 1 · M 170M-04: num. 1.2, Note 1 · 'SCOPE' · pag. impresa M 170M-1 · PDF 1",
+        "seccion_eg2013": "506",
+        "n_min": 0.01,
+        "n_max": 0.013,
+        "seccion": "Ø 0.90 m",
+        "dimension_max_catalogo_m": 2.7,
+        "dimension_max_criterio": "D_max_norma_producto",
+        "control_gobernante": "entrada",
+        "Q_m3s": 0.48,
+        "S_m_m": 0.008,
+        "V_erosion_m_s": 2.882885082216342,
+        "V_sedimentacion_m_s": 2.2176039093971864,
+        "y_normal_m": 0.3358338199114026,
+        "y_critico_m": 0.4031436347123781,
+        "HW_entrada_m": 0.5720081284009831,
+        "HW_salida_m": 0.55961390820666,
+        "HW_gobernante_m": 0.5720081284009831,
+        "Q_celda_m3s": 0.48,
+        "numero_celdas": 1,
+        "regimen_barril": "parcialmente lleno",
+        "V_llena_m_s": 0.7545123228060222,
+        "V_salida_m_s": 2.882885082216342,
+        "V_salida_procedencia": "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de ENTRADA la velocidad a la salida es la del tirante normal. De las dos ramas de n (Sec. 4.1) se toma la de n MINIMO, V_erosion, la estimacion ALTA: es el techo conservador para un d50 que crece con el cuadrado de V",
+        "y_salida_m": 0.3358338199114026,
+        "h_o_m": 0.6515718173561891,
+        "TW_m": 0.3,
+        "ahogado_por_TW": false,
+        "HW_sobre_D_salida": 0.6217932313407334,
+        "h_o_fuera_de_rango": false,
+        "h_o_requiere_cautela": false,
+        "perfil_tipo": "S1",
+        "perfil_alcanza_entrada": false,
+        "perfil_HW_remanso_m": null,
+        "perfil_HW_aproximado_m": 0.55961390820666,
+        "perfil_sustituye_aproximacion": true,
+        "perfil_y_entrada_m": null,
+        "perfil_y_max_m": 0.4031436347123781,
+        "perfil_V_min_m_s": 1.7391817606771776,
+        "perfil_fraccion_llena": 0.0,
+        "perfil_longitud_llena_m": 0.0,
+        "perfil_y_asintota_m": null,
+        "perfil_comprobacion_manda": false,
+        "hw_entrada_piso": null,
+        "hw_entrada_HW_sobre_D_formula": null,
+        "hw_entrada_S_limite_m_m": null
+      },
+      "proteccion_salida": {
+        "numeral": "4.1.1.3.7 c)",
+        "V_salida_m_s": 2.882885082216342,
+        "d50_m": 0.27356900583494154,
+        "espesor_m": 0.77,
+        "longitud_m": 5.4,
+        "criterio_espesor": "espesor_proteccion_salida",
+        "criterio_longitud": "longitud_proteccion_salida",
+        "advertencias": [
+          "d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))",
+          "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
+          "Alcance: rige la ENVOLVENTE de las dos fuentes. El Manual MTC (num. 4.1.1.3.7 c)) da el d50 de Laushey, funcion solo de V; HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW. La piedra es la mayor de las dos, y el espesor y la longitud los mayores de lo adoptado y de la Tabla 10.1 de HEC-14. La geometria de la proteccion se cierra en el expediente tecnico"
+        ],
+        "d50_laushey_m": 0.27356900583494154,
+        "rige_la_envolvente": true,
+        "requerida": null,
+        "froude_salida": {
+          "Fr": 1.7135502688430395,
+          "y_equivalente_m": 0.28853065086596974,
+          "area_m2": 0.16649987297828026,
+          "supercritico": true,
+          "seccion_llena": false
+        },
+        "velocidad_admisible": null,
+        "apron_hec14": {
+          "D50_requerido_m": 0.10388295115696192,
+          "D_m": 0.9,
+          "D_de_calculo_m": 0.6179169099557014,
+          "ajustado_por_supercritico": true,
+          "TW_m": 0.3,
+          "TW_de_calculo_m": 0.3,
+          "TW_acotado": false,
+          "clase": 1,
+          "D50_clase_m": 0.125,
+          "longitud_m": 3.6,
+          "espesor_m": 0.4375,
+          "ancho_final_m": 5.1
+        },
+        "clase_hec14_de_la_piedra": {
+          "d50_m": 0.27356900583494154,
+          "clase": 4,
+          "D50_clase_m": 0.35,
+          "longitud_m": 5.4,
+          "espesor_m": 0.77,
+          "ancho_final_m": 6.300000000000001
+        },
+        "regla_espesor_longitud": "envolvente_hec14",
+        "espesor_adoptado_m": 0.4787457602111477,
+        "longitud_adoptada_m": 5.0,
+        "filtro": {
+          "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
+          "clase_geotextil": "Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento)",
+          "pasa_200_pct": null,
+          "columna_tabla_511_06": null,
+          "permitividad_min_s1": null,
+          "abertura_aparente_max_mm": null,
+          "citas": [
+            "MC_HHD.LAMINA_05",
+            "HEC14.10.2#FILTRO",
+            "EG2013.511.08#EROSION",
+            "EG2013.511.08#T511_06"
+          ]
+        }
+      },
+      "proteccion_entrada": {
+        "tipo_embocadura": "cabezal_recto",
+        "V_entrada_m_s": 1.7391817606771776,
+        "revestimiento": "emboquillado_de_piedra",
+        "criterio_revestimiento": "tipo_proteccion_entrada",
+        "elementos": [
+          "cauce de aproximacion, del pie del cabezal hacia aguas arriba, con su uña o dentellon al borde",
+          "talud del terraplen a los dos lados del cabezal, donde el muro recto no lo contiene"
+        ],
+        "requerida": null,
+        "velocidad_admisible": null
+      },
+      "socavacion_salida": {
+        "profundidad_para_desplante_m": null,
+        "origen": "sin dato",
+        "declarada_m": null,
+        "referencia": null,
+        "cota_referencia_msnm": null,
+        "cota_fondo_de_la_hoya_msnm": null,
+        "motivo_no_estimada": "falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es)",
+        "hoya_estimada": null
+      },
+      "geometria": {
+        "numeral": "Sec. 7.B",
+        "longitud_m": 18.567739690320675,
+        "proyeccion_taludes_m": 8.897083835045125,
+        "factor_esviaje": 1.0038198375433474,
+        "altura_terraplen_m": 2.1499999999999986,
+        "S_conducto": 0.008,
+        "cota_entrada_msnm": 39.85,
+        "cota_entrada_origen": {
+          "rotulo": "ADOPTADA",
+          "adoptada": true,
+          "criterio": "origen_cota_fondo_entrada",
+          "regla": "cota_terreno",
+          "procedencia": "regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida",
+          "nota": "no es cota medida: sale de la regla declarada en ese criterio mientras el expediente no entregue la cota de invert de entrada por punto"
+        },
+        "cota_salida_msnm": 39.70145808247744,
+        "caida_m": 0.1485419175225654,
+        "longitud_calculo": {
+          "metodo": "por_extremo",
+          "talud_H_V": 2.0,
+          "bombeo_m_m": null,
+          "peralte_m_m": null,
+          "cota_borde_entrada_msnm": 42.0,
+          "cota_borde_salida_msnm": 42.0,
+          "altura_terraplen_entrada_m": 2.1499999999999986,
+          "altura_terraplen_salida_m": 2.298541917522564,
+          "proyeccion_talud_entrada_m": 4.299999999999997,
+          "proyeccion_talud_salida_m": 4.597083835045128,
+          "semilongitud_entrada_m": 9.13476052164446,
+          "semilongitud_salida_m": 9.432979168676216
+        },
+        "S_conducto_origen": {
+          "origen": "S_cauce",
+          "S_cauce": 0.008,
+          "S_declarada": null,
+          "S_minima": 0.0,
+          "S_maxima": 0.1,
+          "procedencia": "pendiente del cauce (`S_cauce`): el conducto sigue al cauce, que es la regla de la Sec. 7.B"
+        },
+        "longitud_a_la_clave_m": 14.486917780360086,
+        "desnivel_entrega_m": 0.6014580824774356,
+        "avisos": [
+          "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+          "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
+        ],
+        "geometria_marco": null,
+        "remanso_canal": null,
+        "factible": true,
+        "delta_rasante_cm": null,
+        "tamizado": {
+          "provisional": true,
+          "cota_rasante_min_msnm": 41.37200812840098,
+          "cota_rasante_actual_msnm": 42.0,
+          "cota_por_recubrimiento_msnm": 41.3048,
+          "cota_por_resguardo_msnm": 41.37200812840098,
+          "condicion_gobernante": "resguardo",
+          "criterio_gobernante": "resguardo_HW_subrasante",
+          "mensaje": "factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
+        }
+      },
+      "estructural": {
+        "material": "concreto_reforzado",
+        "seleccion": "Clase II",
+        "H_relleno_m": 1.0,
+        "e_paquete_m": 0.14999999999999858,
+        "H_total_m": 1.1499999999999986,
+        "relleno_maximo_m": 2.8507897689128248,
+        "avisos": [],
+        "pasos": [
+          {
+            "codigo": "F8.LL",
+            "que": "Carga viva HL-93 sobre el conducto (gobierna el camion, por efecto)",
+            "resultado": {
+              "simbolo": "P_L",
+              "valor": 31.659198709627155,
+              "unidad": "kPa"
+            }
+          },
+          {
+            "codigo": "F8.EV",
+            "que": "Carga de tierra sobre el tubo de concreto (instalacion estandar)",
+            "resultado": {
+              "simbolo": "W_E",
+              "valor": 34.10997189957385,
+              "unidad": "kN/m"
+            }
+          },
+          {
+            "codigo": "F8.HMAX",
+            "que": "Relleno maximo sobre la clave con la Clase II",
+            "resultado": {
+              "simbolo": "H_max",
+              "valor": 2.8507897689128248,
+              "unidad": "m"
+            }
+          },
+          {
+            "codigo": "F8.TIPO4",
+            "que": "Contraste con la instalacion Tipo 4 (sin compactacion exigida): D-load requerida -- NO RIGE",
+            "resultado": {
+              "simbolo": "D_T4",
+              "valor": 44.75774930134446,
+              "unidad": "N/m/mm"
+            }
+          },
+          {
+            "codigo": "F8.HMAX_TIPO4",
+            "que": "Contraste con la instalacion Tipo 4: relleno maximo con la Clase II -- NO RIGE",
+            "resultado": {
+              "simbolo": "H_max_T4",
+              "valor": 1.6905327891080435,
+              "unidad": "m"
+            }
+          }
+        ],
+        "demanda_marco": null,
+        "cama_apoyo": null,
+        "sujecion_relleno_lateral": null,
+        "numeral": null,
+        "verificacion_diferida": [
+          "Metodo directo del tubo de concreto (AASHTO LRFD 12.10.4.2): no se usa; la clase sale del metodo indirecto de 12.10.4.3, que la norma admite como alternativa",
+          "D-load de 0.3 mm de las Clases I, III, IV y V de AASHTO M 170M: ilegibles en el ejemplar de normas/ y no transcritas; un tubo que pida mas que la Clase II se detiene diciendo que clases faltan y que lo destraba un ejemplar legible de M 170M o de ASTM C76M ('clases_producto_por_relleno')"
+        ]
+      },
+      "espaciamiento_alivio": null,
+      "iteraciones": [
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 0.90 m",
+          "aceptado": true,
+          "motivo": "",
+          "incumplidas": []
+        }
+      ],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 2.75,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V1",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.3731486887904473,
+          "valor_admisible": 0.75,
+          "criterio_aplicado": "borde_libre_y_sobre_d_max"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V2",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 2.2176039093971864,
+          "valor_admisible": 0.25,
+          "criterio_aplicado": "velocidad_minima_autolimpieza_m_s"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V2b",
+          "numeral": "HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 \"Sedimentation\", pag. impresa 5.11. El numeral NO fija un umbral: nombra dos INDICADORES (\"barrel slope less than the natural channel and roughness greater than the channel are key indicators of potential problems\"). Aqui se evalua el PRIMERO, y como se aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro que detiene el punto, o indicador con aviso que no descarta el diametro); el segundo exige el n de Manning del cauce natural, que no es columna de Sec. 1.2, y queda declarado pendiente. La otra mitad de la fila V2b de la hoja de ruta -- el acceso de mantenimiento en planos -- entra por el criterio 'acceso_mantenimiento_v2b' [A]",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.008,
+          "valor_admisible": 0.008,
+          "criterio_aplicado": "acceso_mantenimiento_v2b"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V3",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 \"Velocidades maximas admisibles (m/s) en conductos revestidos\", num. 4.1.1.3.6, pag. impresa 76; fuente de la tabla: HCANALES, Maximo Villon B. Los DOS numeros de cada fila son MAXIMOS -- lo dice el titulo --, de modo que se verifica solo el superior y el piso lo pone V2. Que el rango recorra la calidad del revestimiento es INTERPRETACION DEL PROYECTISTA y no del Manual: se declara aparte, en el bloque \"Umbrales normativos y su caracter\" de esta memoria. Se evalua con la velocidad de la rama de n MINIMO -- la estimacion alta --, que es el extremo conservador para un techo",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 2.882885082216342,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V4",
+          "numeral": "Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), num. 4.5.4 y 9.1(3) [hoja de ruta: Sec. 5.1]",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 40.42200812840098,
+          "valor_admisible": 41.050000000000004,
+          "criterio_aplicado": "resguardo_HW_subrasante"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V4b",
+          "numeral": "Fase 5, V4b -- adopcion del proyectista ('HW_D_max' [A]). NO es exigencia: el HDS-5, num. 2.2.5 d) 'Agency Constraints', pag. impresa 2.10, DESCRIBE la banda 1.0-1.5 que imponen las agencias viales de EE. UU., y el MTC no fija HW/D alguno",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": 0.6355645871122034,
+          "valor_admisible": 1.5,
+          "criterio_aplicado": "HW_D_max"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V10",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.008,
+          "valor_admisible": 0.1,
+          "criterio_aplicado": "pendiente_maxima_conducto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V6",
+          "numeral": "3.1",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": "1 celda(s) -- por construccion del catalogo circular de la Sec. 3.2: un tubo es un solo barril",
+          "valor_admisible": "sección única con palizada",
+          "criterio_aplicado": null
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V7",
+          "numeral": "Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 16.830000000000002,
+          "valor_admisible": 9.322754739344052,
+          "criterio_aplicado": "factores_carga_aashto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V9",
+          "numeral": "Sec. 3.2 (V9, nuevo en v7)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": 0.9,
+          "valor_admisible": 2.7,
+          "criterio_aplicado": "D_max_norma_producto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "F8.CLASE",
+          "numeral": "AASHTO LRFD 12.10.4.3 (metodo indirecto, servicio) y AASHTO M 170M-04; clase indicada en el Proyecto (EG-2013 506.02)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 37.04163690682047,
+          "valor_admisible": 50.0,
+          "criterio_aplicado": "clases_producto_por_relleno"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G1",
+          "numeral": "Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 42.0,
+          "valor_admisible": 41.37200812840098,
+          "criterio_aplicado": "resguardo_HW_subrasante"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G2",
+          "numeral": "Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A])",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 39.70145808247744,
+          "valor_admisible": 39.1,
+          "criterio_aplicado": "desnivel_minimo_entrega_m"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G3",
+          "numeral": "Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 num. 5.4.2, por analogia; AVISO, el esviaje es dato de entrada)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 5.0,
+          "valor_admisible": 45.0,
+          "criterio_aplicado": "esviaje_max_grados"
+        }
+      ],
+      "verificaciones_no_evaluadas": [],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "remanso_derecho_via",
+          "etiqueta": "A",
+          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+          "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "verificacion V8 diferida al expediente (alcance perfil)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "TR_evento_extremo",
+          "etiqueta": "A",
+          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
+          "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+        },
+        {
+          "fase": "Fase 8 - Estructural del conducto (M8)",
+          "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
+          "tipo": "DiferidoPorAlcance",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
+        }
+      ]
+    },
+    {
+      "id": "B-01",
+      "progresiva": "2+450",
+      "familia": "B",
+      "pendientes_externos": [
+        "Q_receptor_m3s",
+        "cota_TW",
+        "NF_profundidad_m",
+        "cota_coronacion_canal"
+      ],
+      "dimensionado": false,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.75,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": null,
+        "longitud_m": {
+          "valor": 18.775510204081645,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
+        },
+        "TW_m": {
+          "valor": 1.0,
+          "origen": "datos externos (punto B-01)"
+        },
+        "S_cauce": {
+          "valor": 0.01,
+          "origen": "CSV Sec. 1.2, columna S_cauce"
+        },
+        "acceso_mantenimiento_previsto": null
+      },
+      "tw_seccion_receptor": null,
+      "avisos": [
+        "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto"
+      ],
+      "clasificacion": {
+        "luz_m": 2.75,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "B",
+        "origen_del_caudal": "Q del drenaje longitudinal (cuneta): declarado en la columna Q_m3s, o calculado por MH_hidrologia con el area tributaria de la cuneta",
+        "TR_procede": true,
+        "TR_anios": 35,
+        "TR_categoria": "quebrada_menor",
+        "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
+        "TR_fundamento": "Familia B (Alcantarillas de alivio): Q del drenaje longitudinal (cuneta): declarado en la columna Q_m3s, o calculado por MH_hidrologia con el area tributaria de la cuneta, que es la fila 'quebrada_menor' de la Tabla N 02 (Sec. 2.3)",
+        "datos_pendientes": []
+      },
+      "caudal": {
+        "Q_m3s": 0.095,
+        "origen": "declarado",
+        "leyenda": "Q declarado por el estudio hidrológico",
+        "de_donde": "CSV Sec. 1.2, columna Q_m3s",
+        "area_km2": 0.18,
+        "q_especifico_m3s_km2": 0.5277777777777778,
+        "lamina_equivalente_mm_h": 1.8984812150279775,
+        "tratamiento_fen": null,
+        "avisos": [
+          "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie."
+        ],
+        "pasos": [
+          "1b.8"
+        ]
+      },
+      "durabilidad": {
+        "aplicada": false,
+        "resumen": "durabilidad: sin ensayos, matriz no aplicada",
+        "ensayos": {},
+        "materiales_excluidos": [],
+        "suelo_fundacion": "suelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos",
+        "reglas": [
+          {
+            "ensayo": "condicion_del_sitio",
+            "material": "tmc",
+            "efecto": "avisa",
+            "texto": "aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio",
+            "citas": [
+              "MC_HHD.4.1.1.3.7f#COSTA",
+              "MC_HHD.4.1.1.3.7g#AGRESIVAS"
+            ],
+            "criterio": null
+          }
+        ]
+      },
+      "diseno": null,
+      "proteccion_salida": null,
+      "proteccion_entrada": null,
+      "socavacion_salida": null,
+      "geometria": null,
+      "estructural": null,
+      "espaciamiento_alivio": null,
+      "iteraciones": [
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 0.90 m",
+          "aceptado": false,
+          "motivo": "Ø 0.90 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 1.0 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.14933056388869193 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 1.05 m",
+          "aceptado": false,
+          "motivo": "Ø 1.05 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.9523809523809534 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.1116535342266947 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 1.20 m",
+          "aceptado": false,
+          "motivo": "Ø 1.20 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.8333333333333334 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.09433268379459729 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 16.084125000000032 frente a 16.199249454108156",
+          "incumplidas": [
+            "V1",
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 1.35 m",
+          "aceptado": false,
+          "motivo": "Ø 1.35 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.08356443571867275 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 13.98132360000012 frente a 20.37041942912231",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 1.50 m",
+          "aceptado": false,
+          "motivo": "Ø 1.50 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.07590843070742552 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 11.016000000000156 frente a 24.963409384689857",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 1.65 m",
+          "aceptado": false,
+          "motivo": "Ø 1.65 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.07007486255893863 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 7.165173600000271 frente a 30.08380529680086",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 1.80 m",
+          "aceptado": false,
+          "motivo": "Ø 1.80 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.06542817038220214 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 2.467125000000327 frente a 35.61523453108915",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "Concreto reforzado",
+          "seccion": "Ø 1.95 m",
+          "aceptado": false,
+          "motivo": "Ø 1.95 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45)",
+          "incumplidas": [
+            "V2"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 0.90 m",
+          "aceptado": false,
+          "motivo": "Ø 0.90 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 1.0 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.14933056388869193 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.05 m",
+          "aceptado": false,
+          "motivo": "Ø 1.05 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.9523809523809534 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.1116535342266947 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.20 m",
+          "aceptado": false,
+          "motivo": "Ø 1.20 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.8333333333333334 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.09433268379459729 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.35 m",
+          "aceptado": false,
+          "motivo": "Ø 1.35 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.08356443571867275 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 14.463088466940132 frente a 14.673362599502088",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.50 m",
+          "aceptado": false,
+          "motivo": "Ø 1.50 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.07590843070742552 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 12.523744616940178 frente a 18.036534814586478",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.65 m",
+          "aceptado": false,
+          "motivo": "Ø 1.65 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.07007486255893863 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 9.895900766940231 frente a 21.74642104890267",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.80 m",
+          "aceptado": false,
+          "motivo": "Ø 1.80 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.06542817038220214 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 6.579556916940294 frente a 25.803021302450677",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 1.95 m",
+          "aceptado": false,
+          "motivo": "Ø 1.95 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.06160898349101529 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 2.574713066940145 frente a 30.206335575230472",
+          "incumplidas": [
+            "V2",
+            "V7"
+          ]
+        },
+        {
+          "material": "TMC galvanizada",
+          "seccion": "Ø 2.10 m",
+          "aceptado": false,
+          "motivo": "Ø 2.10 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.065 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45)",
+          "incumplidas": [
+            "V2"
+          ]
+        },
+        {
+          "material": "HDPE",
+          "seccion": "Ø 0.90 m",
+          "aceptado": false,
+          "motivo": "Ø 0.90 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 1.0 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.14933056388869193 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "HDPE",
+          "seccion": "Ø 1.05 m",
+          "aceptado": false,
+          "motivo": "Ø 1.05 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.9523809523809534 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.1116535342266947 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "HDPE",
+          "seccion": "Ø 1.20 m",
+          "aceptado": false,
+          "motivo": "Ø 1.20 m: incumple V1 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2) obtenido 0.8333333333333334 frente a 0.75; V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.09433268379459729 frente a 0.25",
+          "incumplidas": [
+            "V1",
+            "V2"
+          ]
+        },
+        {
+          "material": "HDPE",
+          "seccion": "Ø 1.35 m",
+          "aceptado": false,
+          "motivo": "Ø 1.35 m: el escalon no se pudo evaluar -- DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe][1350]'. el criterio 'espesor_pared_conducto' declara «hdpe» pero no la fila de 1350 mm. Los diametros declarados son [900, 1050, 1200]. Falta esa fila en su fuente (columna 'Max. OD' de la Table A12-11 de AASHTO LRFD, que termina en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro exterior de la ficha del fabricante): no se interpola ni se toma la fila vecina, porque el espesor gobierna la clave fisica (7.A) y el volumen desplazado de V7 y los dos quedan del lado inseguro si se estima por lo bajo",
+          "incumplidas": [
+            "V2"
+          ]
+        }
+      ],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 2.75,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        }
+      ],
+      "verificaciones_no_evaluadas": [],
+      "bloqueos": [
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "verificacion V5 diferida al expediente (alcance perfil)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "remanso_derecho_via",
+          "etiqueta": "A",
+          "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+          "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "'remanso_derecho_via' es un VACIO sin valor asignado (Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)). Debe resolverse antes de continuar: PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "verificacion V8 diferida al expediente (alcance perfil)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "TR_evento_extremo",
+          "etiqueta": "A",
+          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
+          "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "material y diametro (bucle de MD)",
+          "tipo": "DisenoNoFactibleError",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": false,
+          "mensaje": "Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.065 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | HDPE: 3 escalon(es) evaluado(s), de Ø 0.90 m a Ø 1.20 m, y ninguno cumple; NO SE EVALUO desde Ø 1.35 m hasta el tope del material (1.50 m) por falta del dato 'espesor_pared_conducto[hdpe][1350]'. DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe][1350]'. el criterio 'espesor_pared_conducto' declara «hdpe» pero no la fila de 1350 mm. Los diametros declarados son [900, 1050, 1200]. Falta esa fila en su fuente (columna 'Max. OD' de la Table A12-11 de AASHTO LRFD, que termina en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro exterior de la ficha del fabricante): no se interpola ni se toma la fila vecina, porque el espesor gobierna la clave fisica (7.A) y el volumen desplazado de V7 y los dos quedan del lado inseguro si se estima por lo bajo"
+        },
+        {
+          "fase": "Fase 10 - Espaciamiento de alivio (M10)",
+          "etapa": "espaciamiento maximo entre alivios",
+          "tipo": "DatoFaltanteError",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": "L_hidraulico_m",
+          "delta_rasante_m": null,
+          "diferido_por_alcance": false,
+          "mensaje": "Falta el dato 'L_hidraulico_m'. Sec. 10 describe el procedimiento de la cuneta pero no fija su seccion, su n de Manning ni la formula de intensidad: la longitud por capacidad hidraulica se declara, no se deduce"
+        }
+      ]
+    },
+    {
+      "id": "C-01",
+      "progresiva": "3+100",
+      "familia": "C",
+      "pendientes_externos": [
+        "Q_m3s",
+        "area_ha",
+        "S_cauce",
+        "Q_receptor_m3s",
+        "cota_TW",
+        "NF_profundidad_m"
+      ],
+      "dimensionado": true,
+      "datos_declarados": {
+        "luz_m": {
+          "valor": 2.75,
+          "origen": "linea de comandos (--luz_m)"
+        },
+        "categoria_tr": null,
+        "longitud_m": {
+          "valor": 21.44458651089384,
+          "origen": "M7.longitud_conducto (Sec. 7.B, metodo por_extremo)"
+        },
+        "TW_m": {
+          "valor": 0.3,
+          "origen": "datos externos (globales)"
+        },
+        "S_cauce": {
+          "valor": 0.006,
+          "origen": "datos externos (punto C-01)"
+        },
+        "acceso_mantenimiento_previsto": null
+      },
+      "tw_seccion_receptor": null,
+      "avisos": [
+        "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+        "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 22.4 cm en este punto",
+        "Remanso aguas arriba del canal: no se evaluo -- falta la seccion medida del canal (`seccion_receptor_medida` en --datos-externos: ancho de solera, talud, pendiente, n de Manning y profundidad), que en un paso de canal es la del mismo canal. Sin ella no se sabe cuanto levanta la obra la lamina del canal ni hasta donde llega el embalse; VC1 solo mide el nivel contra la coronacion en el cruce",
+        "V2b: indicador disparado; el diseño no se detiene -- el conducto queda MAS PLANO que el cauce natural, que es el indicador de colmatacion del num. 5.3.3; el HDS-5 lo llama «built with an upstream depression» y dice que la sedimentacion es el resultado probable. Bajo regimen_v2b = indicador_con_aviso el punto NO se detiene: el indicador queda como aviso de mantenimiento junto al acceso de limpieza declarado, y la seccion no se descarta por el",
+        "VC2: indicador disparado; el diseño no se detiene -- la salida queda 0.614 m SOBRE el fondo del canal aguas abajo: no empalma. Lo corrige medir la cota de fondo de la entrada en el cauce o declarar la pendiente que une las dos cotas del canal (S = (entrada - fondo aguas abajo) / L), no otra seccion. Con estas cotas, la pendiente que cerraria el empalme es S = (cota_entrada - cota_fondo_receptor) / L = (36.900 - 36.200) / 21.445 = 0.0326 m/m (valor calculado con la L de esta corrida, de primer orden: la longitud cambia con S). El punto NO se detiene por esto",
+        "Proteccion de salida: la velocidad de salida se tomo con el tirante critico (HDS-5 num. 3.1.6) porque el TW queda bajo el. HEC-14 num. 3.1.3: «The flow goes through critical depth upstream of the outlet when the tailwater elevation is below the critical depth elevation in the culvert.»; en el borde el tirante es MENOR que el critico y la velocidad MAYOR, de modo que V, el Froude y el d50 de Laushey son una cota inferior (no conservador). Magnitud, leida de la fuente y no calculada: en la Figura 3.4 de HEC-14, con descarga libre, la velocidad de borde es de 1.35 a 1.43 veces la critica, y el d50 de Laushey, que va con V², de 1.8 a 2.0 veces el impreso; en su ejemplo resuelto (pag. impresa 3-4, TW de 0.41 a 0.58 diametros), de 1.08 a 1.13 veces. Las Figuras 3.3 y 3.4, que dan el tirante de borde, no estan digitalizadas",
+        "Proteccion de salida: gobierna el control de salida y la velocidad de salida es la critica (1.908 m/s), pero la rama de n minimo de la regla de doble n da una velocidad normal MAYOR (2.084 m/s): con n minimo el tirante normal seria supercritico y la estimacion alta de la velocidad de salida seria esa. Con ella el d50 de Laushey seria 0.143 m y no 0.120 m. La velocidad de salida la fija M4 (HDS-5 num. 3.1.6) y aqui no se cambia",
+        "Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita",
+        "Proteccion de salida: el apron de HEC-14 NO se evaluo -- la Ec. (10.4) es la que la fuente recomienda «for circular culverts» y el conducto es un marco. Hace falta: un disipador o una proteccion dimensionados para seccion rectangular (HEC-14, Sec. 10.1 o 10.3), que este programa no implementa. Rige el d50 de Laushey",
+        "Proteccion de salida: la regla 'regla_espesor_longitud_proteccion_salida' pide la envolvente con HEC-14 y HEC-14 no es evaluable en este punto: rige el d50 de Laushey con el espesor y la longitud adoptados",
+        "Proteccion de salida: el espesor rige como 1.75 veces el d50 (0.210 m), bajo el piso de 2 veces de HEC-14: «Apron depth ranges from 3.5D50 for the smallest riprap to a limit of 2.0D50 for the larger riprap sizes.» (Sec. 10.2) y «The basin is pre-shaped and lined with riprap that is at least 2D50 thick.» (Sec. 10.1). Ver 'regla_espesor_longitud_proteccion_salida'",
+        "Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento",
+        "Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)"
+      ],
+      "clasificacion": {
+        "luz_m": 2.75,
+        "denominacion": "alcantarilla",
+        "numeral_luz": "4.1.1.3.1 / 4.1.1.5.1",
+        "familia": "C",
+        "origen_del_caudal": "Q de diseno del canal (ANA / Junta de Usuarios del Bajo Piura)",
+        "TR_procede": false,
+        "TR_anios": null,
+        "TR_categoria": null,
+        "TR_numeral": "MC-HHD (RD 20-2011-MTC/14), num. 3.6, Tabla N 02 \"VALORES MAXIMOS RECOMENDADOS de riesgo admisible de obras de drenaje\", pag. impresa 25. La tabla RECOMIENDA estos valores \"como maximo\" y su nota al pie asigna la decision al Propietario de la obra; el proyecto adopta los maximos recomendados mientras el Propietario no declare otros",
+        "TR_fundamento": "Familia C: el caudal es el de diseno del canal o dren (ANA / Junta de Usuarios, Tablero 3.1), no un caudal hidrologico con periodo de retorno propio (Sec. 2.3)",
+        "datos_pendientes": [
+          "Q_m3s",
+          "S_cauce"
+        ]
+      },
+      "caudal": null,
+      "durabilidad": {
+        "aplicada": false,
+        "resumen": "durabilidad: sin ensayos, matriz no aplicada",
+        "ensayos": {},
+        "materiales_excluidos": [],
+        "suelo_fundacion": "suelo de fundacion ML: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos",
+        "reglas": []
+      },
+      "diseno": {
+        "material": "Concreto reforzado",
+        "tipo": "concreto_reforzado",
+        "norma_producto": "sin norma de producto: marco vaciado in situ (ruta_familia_c §14.1); diseño AASHTO LRFD Sec. 5 y Art. 12.11; construccion EG-2013 503+504; M 259/M 273 ausentes",
+        "alcance_norma_producto": "sin norma de producto: Ninth Edition, 2020: num. 12.4.2.4 · 'Precast Concrete Structures' · pag. impresa 12-8 · PDF 1646 nombra M 259 y M 273 para el cajon prefabricado, ausentes; Ninth Edition, 2020: num. 12.11.1 · 'General' · pag. impresa 12-68 · PDF 1706 rige el diseño del marco vaciado in situ",
+        "seccion_eg2013": "503 + 504",
+        "n_min": 0.012,
+        "n_max": 0.015,
+        "seccion": "marco 1.20 × 0.90 m",
+        "dimension_max_catalogo_m": 1.5,
+        "dimension_max_criterio": "secciones_cajon_normalizadas",
+        "control_gobernante": "salida",
+        "Q_m3s": 0.85,
+        "S_m_m": 0.004,
+        "V_erosion_m_s": 2.0843716954596654,
+        "V_sedimentacion_m_s": 1.6674973563677324,
+        "y_normal_m": 0.4247882796505761,
+        "y_critico_m": 0.37119499972834213,
+        "HW_entrada_m": 0.5901492093204811,
+        "HW_salida_m": 0.6229922386048082,
+        "HW_gobernante_m": 0.6229922386048082,
+        "Q_celda_m3s": 0.85,
+        "numero_celdas": 1,
+        "regimen_barril": "parcialmente lleno",
+        "V_llena_m_s": 0.787037037037037,
+        "V_salida_m_s": 1.9082512799249043,
+        "V_salida_procedencia": "HDS-5 num. 3.1.6 (pag. impresa 3.18): bajo control de SALIDA el area de la velocidad de salida la fija el TW; aqui el TW queda bajo el tirante critico, de modo que el agua pasa por y_c a la salida (primera vineta de la pag. 3.18): V = Q_celda / A(y_c), con el area critica que el paso 4.2 ya resolvio. No lleva n de Manning: es un caudal entre un area, y por eso no entra en la regla de doble n.",
+        "y_salida_m": 0.37119499972834213,
+        "h_o_m": 0.6355974998641711,
+        "TW_m": 0.3,
+        "ahogado_por_TW": false,
+        "HW_sobre_D_salida": 0.6803400031000242,
+        "h_o_fuera_de_rango": false,
+        "h_o_requiere_cautela": true,
+        "perfil_tipo": "M2",
+        "perfil_alcanza_entrada": true,
+        "perfil_HW_remanso_m": 0.6229922386048082,
+        "perfil_HW_aproximado_m": 0.6123060027900218,
+        "perfil_sustituye_aproximacion": true,
+        "perfil_y_entrada_m": 0.42093613643979233,
+        "perfil_y_max_m": 0.42093613643979233,
+        "perfil_V_min_m_s": 1.6827572451353277,
+        "perfil_fraccion_llena": 0.0,
+        "perfil_longitud_llena_m": 0.0,
+        "perfil_y_asintota_m": 0.4248661300981734,
+        "perfil_comprobacion_manda": false,
+        "hw_entrada_piso": null,
+        "hw_entrada_HW_sobre_D_formula": null,
+        "hw_entrada_S_limite_m_m": null
+      },
+      "proteccion_salida": {
+        "numeral": "4.1.1.3.7 c)",
+        "V_salida_m_s": 1.9082512799249043,
+        "d50_m": 0.11986250649555744,
+        "espesor_m": 0.20975938636722552,
+        "longitud_m": 5.0,
+        "criterio_espesor": "espesor_proteccion_salida",
+        "criterio_longitud": "longitud_proteccion_salida",
+        "advertencias": [
+          "d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))",
+          "El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)",
+          "Alcance: el d50 que rige sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW: se calcula AL LADO, como contraste, y la corrida avisa cuando pide mas que lo adoptado. La geometria de la proteccion se cierra en el expediente tecnico"
+        ],
+        "d50_laushey_m": 0.11986250649555744,
+        "rige_la_envolvente": false,
+        "requerida": null,
+        "froude_salida": {
+          "Fr": 0.9999999999999999,
+          "y_equivalente_m": 0.37119499972834213,
+          "area_m2": 0.44543399967401054,
+          "supercritico": false,
+          "seccion_llena": false
+        },
+        "velocidad_admisible": null,
+        "apron_hec14": null,
+        "clase_hec14_de_la_piedra": null,
+        "regla_espesor_longitud": "envolvente_hec14",
+        "espesor_adoptado_m": 0.20975938636722552,
+        "longitud_adoptada_m": 5.0,
+        "filtro": {
+          "requisito": "El enrocado lleva FILTRO entre la piedra y el suelo (Lámina Nº 05 del Manual; HEC-14 Sec. 10.2). Si es geotextil: Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento), con la permitividad y la abertura aparente de la Tabla 511-06 de EG-2013 (num. 511.08). NO SE DIMENSIONA: la tabla entra por el pasante del tamiz N.º 200 del suelo, que es dato del EMS (`material_lecho_salida.pasa_200_pct`)",
+          "clase_geotextil": "Clase 1 de la Tabla 511-01 (Clase 2 para geotextiles tejidos de monofilamento)",
+          "pasa_200_pct": null,
+          "columna_tabla_511_06": null,
+          "permitividad_min_s1": null,
+          "abertura_aparente_max_mm": null,
+          "citas": [
+            "MC_HHD.LAMINA_05",
+            "HEC14.10.2#FILTRO",
+            "EG2013.511.08#EROSION",
+            "EG2013.511.08#T511_06"
+          ]
+        }
+      },
+      "proteccion_entrada": {
+        "tipo_embocadura": "cabezal_recto",
+        "V_entrada_m_s": 1.6827572451353277,
+        "revestimiento": "emboquillado_de_piedra",
+        "criterio_revestimiento": "tipo_proteccion_entrada",
+        "elementos": [
+          "cauce de aproximacion, del pie del cabezal hacia aguas arriba, con su uña o dentellon al borde",
+          "talud del terraplen a los dos lados del cabezal, donde el muro recto no lo contiene"
+        ],
+        "requerida": null,
+        "velocidad_admisible": null
+      },
+      "socavacion_salida": {
+        "profundidad_para_desplante_m": null,
+        "origen": "sin dato",
+        "declarada_m": null,
+        "referencia": null,
+        "cota_referencia_msnm": null,
+        "cota_fondo_de_la_hoya_msnm": null,
+        "motivo_no_estimada": "falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es)",
+        "hoya_estimada": null
+      },
+      "geometria": {
+        "numeral": "Sec. 7.B",
+        "longitud_m": 21.44458651089384,
+        "proyeccion_taludes_m": 8.971556692087162,
+        "factor_esviaje": 1.1547005383792515,
+        "altura_terraplen_m": 2.200000000000003,
+        "S_conducto": 0.004,
+        "cota_entrada_msnm": 36.9,
+        "cota_entrada_origen": {
+          "rotulo": "ADOPTADA",
+          "adoptada": true,
+          "criterio": "origen_cota_fondo_entrada",
+          "regla": "cota_terreno",
+          "procedencia": "regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida",
+          "nota": "no es cota medida: sale de la regla declarada en ese criterio mientras el expediente no entregue la cota de invert de entrada por punto"
+        },
+        "cota_salida_msnm": 36.81422165395642,
+        "caida_m": 0.08577834604357536,
+        "longitud_calculo": {
+          "metodo": "por_extremo",
+          "talud_H_V": 2.0,
+          "bombeo_m_m": null,
+          "peralte_m_m": null,
+          "cota_borde_entrada_msnm": 39.1,
+          "cota_borde_salida_msnm": 39.1,
+          "altura_terraplen_entrada_m": 2.200000000000003,
+          "altura_terraplen_salida_m": 2.2857783460435783,
+          "proyeccion_talud_entrada_m": 4.400000000000006,
+          "proyeccion_talud_salida_m": 4.571556692087157,
+          "semilongitud_entrada_m": 10.62324495308912,
+          "semilongitud_salida_m": 10.821341557804718
+        },
+        "S_conducto_origen": {
+          "origen": "S_conducto declarada",
+          "S_cauce": 0.006,
+          "S_declarada": 0.004,
+          "S_minima": null,
+          "S_maxima": null,
+          "procedencia": "dato externo `S_conducto` declarado para este punto: no es la pendiente del cauce, y la banda de pendiente adoptada no la sustituye (la juzga V10)"
+        },
+        "longitud_a_la_clave_m": 16.316533214810523,
+        "desnivel_entrega_m": 0.6142216539564203,
+        "avisos": [
+          "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
+          "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 22.4 cm en este punto",
+          "Remanso aguas arriba del canal: no se evaluo -- falta la seccion medida del canal (`seccion_receptor_medida` en --datos-externos: ancho de solera, talud, pendiente, n de Manning y profundidad), que en un paso de canal es la del mismo canal. Sin ella no se sabe cuanto levanta la obra la lamina del canal ni hasta donde llega el embalse; VC1 solo mide el nivel contra la coronacion en el cruce"
+        ],
+        "geometria_marco": {
+          "B_m": 1.2,
+          "H_m": 0.9,
+          "celdas": 1,
+          "espesor_m": 0.2,
+          "tabique_m": 0.0,
+          "ancho_exterior_m": 1.6,
+          "canto_exterior_m": 1.3,
+          "cota_fondo_interior_msnm": 36.9,
+          "cota_clave_interior_msnm": 37.8,
+          "cota_clave_exterior_msnm": 38.0,
+          "cota_base_exterior_msnm": 36.699999999999996,
+          "relleno_sobre_losa_m": 0.9500000000000028
+        },
+        "remanso_canal": {
+          "evaluado": false,
+          "seccion_origen": "",
+          "Q_canal_m3s": null,
+          "S_canal": null,
+          "y_normal_canal_m": null,
+          "HW_m": null,
+          "cota_lamina_entrada_msnm": null,
+          "sobreelevacion_m": null,
+          "longitud_minima_m": null,
+          "concluye": false,
+          "y_critico_canal_m": null,
+          "motivo_no_concluye": "",
+          "aviso": "Remanso aguas arriba del canal: no se evaluo -- falta la seccion medida del canal (`seccion_receptor_medida` en --datos-externos: ancho de solera, talud, pendiente, n de Manning y profundidad), que en un paso de canal es la del mismo canal. Sin ella no se sabe cuanto levanta la obra la lamina del canal ni hasta donde llega el embalse; VC1 solo mide el nivel contra la coronacion en el cruce"
+        },
+        "factible": true,
+        "delta_rasante_cm": null,
+        "tamizado": {
+          "provisional": true,
+          "cota_rasante_min_msnm": 38.4729922386048,
+          "cota_rasante_actual_msnm": 39.1,
+          "cota_por_recubrimiento_msnm": 38.4548,
+          "cota_por_resguardo_msnm": 38.4729922386048,
+          "condicion_gobernante": "resguardo",
+          "criterio_gobernante": "resguardo_HW_subrasante",
+          "mensaje": "factible: la rasante 39.100 msnm alcanza la minima de 7.A (38.473 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
+        }
+      },
+      "estructural": null,
+      "espaciamiento_alivio": null,
+      "iteraciones": [
+        {
+          "material": "Concreto reforzado",
+          "seccion": "marco 1.20 × 0.90 m",
+          "aceptado": true,
+          "motivo": "",
+          "incumplidas": []
+        }
+      ],
+      "verificaciones": [
+        {
+          "fase": "Fase 2 - Clasificacion y TR (M1)",
+          "codigo": null,
+          "numeral": "4.1.1.3.1 / 4.1.1.5.1",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 2.75,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V1",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.4677068182664359,
+          "valor_admisible": 0.75,
+          "criterio_aplicado": "borde_libre_y_sobre_d_max"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V2",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 1.6827572451353277,
+          "valor_admisible": 0.25,
+          "criterio_aplicado": "velocidad_minima_autolimpieza_m_s"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V2b",
+          "numeral": "HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 \"Sedimentation\", pag. impresa 5.11. El numeral NO fija un umbral: nombra dos INDICADORES (\"barrel slope less than the natural channel and roughness greater than the channel are key indicators of potential problems\"). Aqui se evalua el PRIMERO, y como se aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro que detiene el punto, o indicador con aviso que no descarta el diametro); el segundo exige el n de Manning del cauce natural, que no es columna de Sec. 1.2, y queda declarado pendiente. La otra mitad de la fila V2b de la hoja de ruta -- el acceso de mantenimiento en planos -- entra por el criterio 'acceso_mantenimiento_v2b' [A]",
+          "estado": "indicador",
+          "cumple": true,
+          "veredicto": "indicador",
+          "valor_obtenido": 0.004,
+          "valor_admisible": 0.006,
+          "criterio_aplicado": "acceso_mantenimiento_v2b"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V3",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 \"Velocidades maximas admisibles (m/s) en conductos revestidos\", num. 4.1.1.3.6, pag. impresa 76; fuente de la tabla: HCANALES, Maximo Villon B. Los DOS numeros de cada fila son MAXIMOS -- lo dice el titulo --, de modo que se verifica solo el superior y el piso lo pone V2. Que el rango recorra la calidad del revestimiento es INTERPRETACION DEL PROYECTISTA y no del Manual: se declara aparte, en el bloque \"Umbrales normativos y su caracter\" de esta memoria. Se evalua con la velocidad de la rama de n MINIMO -- la estimacion alta --, que es el extremo conservador para un techo",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 2.0843716954596654,
+          "valor_admisible": 6.0,
+          "criterio_aplicado": null
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V4",
+          "numeral": "Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), num. 4.5.4 y 9.1(3) [hoja de ruta: Sec. 5.1]",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 37.52299223860481,
+          "valor_admisible": 38.150000000000006,
+          "criterio_aplicado": "resguardo_HW_subrasante"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V4b",
+          "numeral": "Fase 5, V4b -- adopcion del proyectista ('HW_D_max' [A]). NO es exigencia: el HDS-5, num. 2.2.5 d) 'Agency Constraints', pag. impresa 2.10, DESCRIBE la banda 1.0-1.5 que imponen las agencias viales de EE. UU., y el MTC no fija HW/D alguno",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": 0.6922135984497869,
+          "valor_admisible": 1.5,
+          "criterio_aplicado": "HW_D_max"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V10",
+          "numeral": "MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 0.004,
+          "valor_admisible": 0.1,
+          "criterio_aplicado": "pendiente_maxima_conducto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "VC1",
+          "numeral": "Sec. 2.3 (requisito de la Familia C: «No puede alterar la rasante hidraulica ni el borde libre del canal»). El Manual de Hidrologia NO fija borde libre para un canal: sus dos apartados de «Borde libre» son de alcantarillas (num. 4.1.1.3.7 b) y de badenes (num. 4.1.1.4.1 e). El resguardo de 0.30-0.50 m que este umbral usa sale del SEGUNDO, pag. impresa 85, donde el Manual lo RECOMIENDA para un baden y lo mide contra la superficie de rodadura; aplicarlo a la coronacion de un canal es analogia declarada del proyectista, y elegir el 0.50 dentro de la banda es una segunda decision suya. Las dos van en el criterio 'borde_libre_canal_m' [A]",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 37.52299223860481,
+          "valor_admisible": 37.8,
+          "criterio_aplicado": "borde_libre_canal_m"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V5",
+          "numeral": "Fase 5, V5 (DG-2018 + Ley 29338)",
+          "estado": "no aplica",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": null,
+          "valor_admisible": null,
+          "criterio_aplicado": null
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V6",
+          "numeral": "3.1",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": "1 celda(s) -- criterio 'n_celdas_cajon' [A]",
+          "valor_admisible": "sección única con palizada",
+          "criterio_aplicado": "n_celdas_cajon"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V7",
+          "numeral": "Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 23.256000000000075,
+          "valor_admisible": 20.4048,
+          "criterio_aplicado": "factores_carga_aashto"
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "codigo": "V9",
+          "numeral": "Sec. 3.2 (V9, nuevo en v7)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": null,
+          "valor_obtenido": 0.9,
+          "valor_admisible": 1.5,
+          "criterio_aplicado": "secciones_cajon_normalizadas"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G1",
+          "numeral": "Sec. 7.A (cobertura: SIN numeral -- la Tabla 12.6.6.3-1 de AASHTO no tiene fila de cajon de concreto y el EG-2013 solo fija altura de relleno para HDPE --, declarada en el criterio 'cobertura_minima_cajon' [A] por analogia, y AVISA: la fuente admite el marco sin relleno, MTC 4.1.1.3.4 a) y AASHTO LRFD 12.6.6.3 / resguardo Sec. 5.1, bloquea)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 39.1,
+          "valor_admisible": 38.4729922386048,
+          "criterio_aplicado": "resguardo_HW_subrasante"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G2",
+          "numeral": "Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A])",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 36.81422165395642,
+          "valor_admisible": 36.190000000000005,
+          "criterio_aplicado": "desnivel_minimo_entrega_m"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "VC2",
+          "numeral": "Sec. 7.B / Sec. 2.3 (paso de canal: la cota de salida frente al fondo del canal aguas abajo; tolerancia del criterio 'desajuste_empalme_canal_m' [A], por analogia con EG-2013 503.11 g); AVISO, el desajuste lo fijan la cota de entrada y la pendiente)",
+          "estado": "indicador",
+          "cumple": true,
+          "veredicto": "indicador",
+          "valor_obtenido": 0.6142216539564203,
+          "valor_admisible": 0.01,
+          "criterio_aplicado": "desajuste_empalme_canal_m"
+        },
+        {
+          "fase": "Fase 7 - Compatibilidad geometrica (M7)",
+          "codigo": "G3",
+          "numeral": "Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 num. 5.4.2, por analogia; AVISO, el esviaje es dato de entrada)",
+          "estado": "cumple",
+          "cumple": true,
+          "veredicto": "cumple",
+          "valor_obtenido": 30.0,
+          "valor_admisible": 45.0,
+          "criterio_aplicado": "esviaje_max_grados"
+        }
+      ],
+      "verificaciones_no_evaluadas": [],
+      "bloqueos": [
+        {
+          "fase": "Fase 5 - Verificaciones",
+          "etapa": "VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no)",
+          "tipo": "DiferidoPorAlcance",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "ALCANCE DEL REQUISITO DE LA SEC. 2.3 -- FAMILIA C (cruces de canal y dren). La Sec. 2.3 de la hoja de ruta enuncia, para la Familia C, un requisito que ninguna otra familia tiene: la obra NO PUEDE ALTERAR LA RASANTE HIDRAULICA NI EL BORDE LIBRE DEL CANAL. Son DOS exigencias en una frase, y esta corrida evalua UNA. LO QUE SI SE EVALUA -- el borde libre. La verificacion VC1 compara el nivel que el agua alcanza a la entrada (cota del fondo del canal en el cruce mas la carga HW que gobierna) contra la coronacion del canal menos su borde libre, y emite veredicto con margen en metros. La coronacion es columna del CSV -- `cota_coronacion_canal`, dato de sitio [S] del levantamiento de los cruces -- y el borde libre sale del criterio 'borde_libre_canal_m' [A]. Sin cualquiera de los dos VC1 SE DETIENE: no devuelve «no evaluable» ni da el requisito por cumplido. DE DONDE SALE EL BORDE LIBRE, QUE NO ES UN VALOR NORMATIVO DEL CANAL. El Manual de Hidrologia NO fija borde libre para un canal: barridas sus 225 paginas, «borde libre» aparece en dos apartados y ninguno tiene por objeto un canal -- el num. 4.1.1.3.7 b) es de ALCANTARILLAS y es relativo (>= 25 % de la altura del barril), y el num. 4.1.1.4.1 e) es de BADENES y mide contra la superficie de rodadura --. El proyecto adopta el par 0.30-0.50 m del segundo, en su extremo SUPERIOR, que aqui es el conservador porque el borde libre se resta de la coronacion. Son dos decisiones del proyectista y no una lectura de la fuente: la ANALOGIA (de la calzada de un baden a la coronacion de un canal) y la ELECCION dentro de una banda para la que el Manual no da regla. LO QUE NO SE EVALUA -- la rasante hidraulica. VC1 acota el NIVEL que el agua alcanza; no mide EN CUANTO la obra levanta el pelo de agua del canal respecto del que tendria sin ella. Un punto puede cumplir VC1 con holgura y haber elevado la rasante hidraulica del canal en una fraccion apreciable de su calado. Medirlo exige el tirante normal del canal en la seccion del cruce -- su geometria trapecial (ancho de solera y talud) y su n de Manning, ninguno de los dos columna de la Sec. 1.2 -- y la extension aguas arriba del remanso, que VC1 tampoco acota: mide EN LA SECCION DEL CRUCE, de modo que un tercero situado mas arriba, donde el canal tenga la coronacion mas baja, puede quedar afectado por un remanso que en el cruce cumple. V5 NO SE EVALUA EN ESTA FAMILIA, y no por falta de datos: por no aplicar. Su umbral es el ancho del derecho de via y presupone agua extendiendose lateralmente sobre la plataforma al remansarse contra el terraplen; en un paso de canal el agua sube confinada entre las dos coronaciones. VC1 ocupa su posicion en la tabla de la Fase 5 y mide contra la cota que si gobierna. La sustitucion no pierde alcance -- el umbral de V5 era un ancho, no una longitud aguas arriba -- pero tampoco cierra el hueco entero, y por eso el parrafo anterior existe. QUE SIGNIFICA UN «CUMPLE» EN UN PUNTO DE ESTA FAMILIA: que la obra es admisible como alcantarilla de paso Y que no invade el borde libre adoptado del canal en la seccion del cruce. NO significa que la alteracion de la rasante hidraulica del canal se haya medido. QUE CIERRA ESTA DECLARACION: la geometria de la seccion del canal (ancho de solera y talud) y su n de Manning en cada cruce, para calcular su tirante normal y con el la alteracion; y el borde libre que el propio canal adopto en SU proyecto (ANA o Junta de Usuarios del Bajo Piura), que sustituiria a la analogia con el baden."
+        },
+        {
+          "fase": "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)",
+          "etapa": "verificacion V8 diferida al expediente (alcance perfil)",
+          "tipo": "CriterioPendienteError",
+          "criterio": "TR_evento_extremo",
+          "etiqueta": "A",
+          "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
+          "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "'TR_evento_extremo' es un VACIO sin valor asignado (Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde). Debe resolverse antes de continuar: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral"
+        },
+        {
+          "fase": "Fase 8 - Estructural del conducto (M8)",
+          "etapa": "Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)",
+          "tipo": "DiferidoPorAlcance",
+          "criterio": null,
+          "etiqueta": null,
+          "concepto": null,
+          "fuente": null,
+          "campo": null,
+          "delta_rasante_m": null,
+          "diferido_por_alcance": true,
+          "mensaje": "la cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente"
+        }
+      ]
+    }
+  ],
+  "cabezal": {
+    "cadena_sismica": null,
+    "mononobe_okabe": null,
+    "geometria": null,
+    "recubrimientos": [],
+    "cuantias_minimas": {},
+    "notas": [],
+    "bloqueos": [
+      {
+        "fase": "Fase 9 - Cabezal y aletas (M9)",
+        "etapa": "Fase 9 completa diferida al expediente (alcance perfil)",
+        "tipo": "DiferidoPorAlcance",
+        "criterio": null,
+        "etiqueta": null,
+        "concepto": null,
+        "fuente": null,
+        "campo": null,
+        "delta_rasante_m": null,
+        "diferido_por_alcance": true,
+        "mensaje": "cadena sismica, Mononobe-Okabe, predimensionamiento, recubrimientos y cuantias del cabezal no se ejecutan en alcance de perfil: dependen de datos del expediente (ensayos de fundacion y relleno del Tablero 3 y criterios C.3) y de la estabilidad E1-E5 que la propia Fase 9 remite al expediente. Disponibles sin cambios con --alcance expediente"
+      }
+    ]
+  },
+  "datos_sitio": {
+    "usados": [],
+    "sin_valor_declarados": [
+      "carriles_por_sentido",
+      "clase_de_via",
+      "distancia_borde_calzada_al_trasdos_m",
+      "existe_informacion_secundaria_tramo",
+      "orientacion_muro_respecto_al_trafico"
+    ],
+    "declarados_en_caliente": [],
+    "trazabilidad_incompleta": [
+      "PGA_roca_B",
+      "ZONA_SISMICA_LA_UNION",
+      "Z_E030",
+      "carriles_por_sentido",
+      "clase_de_via",
+      "distancia_borde_calzada_al_trasdos_m",
+      "existe_informacion_secundaria_tramo",
+      "orientacion_muro_respecto_al_trafico"
+    ]
+  },
+  "criterios": {
+    "usados": [
+      {
+        "clave": "D_max_norma_producto",
+        "etiqueta": "C",
+        "valor": {
+          "concreto_reforzado": 2.7,
+          "tmc": 3.6,
+          "hdpe": 1.5
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Diametro maximo de la serie que tabula la norma de producto de cada material, en metros: el tope del catalogo de diametros cuando no se declara uno de disponibilidad de mercado"
+      },
+      {
+        "clave": "HW_D_max",
+        "etiqueta": "A",
+        "valor": 1.5,
+        "declarado_en_caliente": false,
+        "concepto": "Relacion maxima de carga a la entrada sobre diametro"
+      },
+      {
+        "clave": "TR_evento_extremo",
+        "etiqueta": "A",
+        "valor": null,
+        "declarado_en_caliente": false,
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde"
+      },
+      {
+        "clave": "acceso_mantenimiento_v2b",
+        "etiqueta": "A",
+        "valor": "camara_o_buzon_en_cabecera",
+        "declarado_en_caliente": false,
+        "concepto": "Como se resuelve el acceso de mantenimiento para limpieza del conducto en cada punto, que es la mitad [A] de la fila V2b de la Fase 5 y contenido de los PLANOS (Sec. 11, entregable 7)"
+      },
+      {
+        "clave": "borde_libre_bajo_tw_ahogante",
+        "etiqueta": "A",
+        "valor": "no_cumple",
+        "declarado_en_caliente": false,
+        "concepto": "Que hace V1 (borde libre) cuando es el nivel del cuerpo receptor, y no el caudal de diseño, el que deja al barril sin el borde libre: el tirante del receptor por encima del llenado admisible, llegue o no a la clave"
+      },
+      {
+        "clave": "borde_libre_canal_m",
+        "etiqueta": "A",
+        "valor": 0.5,
+        "declarado_en_caliente": false,
+        "concepto": "Borde libre del canal: resguardo bajo su coronacion que el agua embalsada por la alcantarilla no puede invadir (VC1)"
+      },
+      {
+        "clave": "borde_libre_y_sobre_d_max",
+        "etiqueta": "A",
+        "valor": 0.75,
+        "declarado_en_caliente": false,
+        "concepto": "Relacion de llenado maxima y/D (o y/H) que el proyecto aplica como umbral duro en V1: el complemento del borde libre minimo adoptado"
+      },
+      {
+        "clave": "carga_viva_bajo_relleno_alto",
+        "etiqueta": "A",
+        "valor": "conservar",
+        "declarado_en_caliente": false,
+        "concepto": "Que hace la Fase 8 con la carga viva cuando el relleno sobre el conducto supera 8.0 ft (2.44 m) y ademas la luz: conservarla, distribuida a traves del relleno como a cualquier otra profundidad, o despreciarla como la norma de diseño permite (AASHTO LRFD 3.6.1.2.6a)"
+      },
+      {
+        "clave": "clases_producto_por_relleno",
+        "etiqueta": "C",
+        "valor": {
+          "concreto_reforzado": {
+            "II": 50.0
+          }
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Resistencia de producto por clase del tubo de concreto reforzado (AASHTO M 170M-04: D-load para producir una grieta de 0.3 mm, en N/m/mm), contra la que la Fase 8 elige la clase minima del punto. Para el TMC y el HDPE no hay tabla de clase: el calibre y el perfil salen del procedimiento de AASHTO LRFD 12.7 y 12.12 que M8 implementa"
+      },
+      {
+        "clave": "cobertura_minima_aashto",
+        "etiqueta": "C",
+        "valor": {
+          "concreto_reforzado": {
+            "no_pavimentado": {
+              "divisor": 8.0,
+              "sobre": "exterior",
+              "piso_m": 0.3048
+            },
+            "flexible": {
+              "divisor": 8.0,
+              "sobre": "exterior",
+              "piso_m": 0.3048
+            },
+            "rigido": {
+              "divisor": null,
+              "sobre": "exterior",
+              "piso_m": 0.2286
+            }
+          },
+          "tmc": {
+            "no_pavimentado": {
+              "divisor": 8.0,
+              "sobre": "nominal",
+              "piso_m": 0.3048
+            },
+            "flexible": {
+              "divisor": 8.0,
+              "sobre": "nominal",
+              "piso_m": 0.3048
+            },
+            "rigido": {
+              "divisor": 8.0,
+              "sobre": "nominal",
+              "piso_m": 0.3048
+            }
+          },
+          "hdpe": {
+            "no_pavimentado": {
+              "divisor": 8.0,
+              "sobre": "interior",
+              "piso_m": 0.3048
+            },
+            "flexible": {
+              "divisor": 2.0,
+              "sobre": "interior",
+              "piso_m": 0.6096
+            },
+            "rigido": {
+              "divisor": 2.0,
+              "sobre": "interior",
+              "piso_m": 0.6096
+            }
+          }
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Cobertura minima sobre la clave del conducto, por material y condicion de pavimento (Tabla 12.6.6.3-1 de AASHTO LRFD)"
+      },
+      {
+        "clave": "cobertura_minima_cajon",
+        "etiqueta": "A",
+        "valor": 0.3048,
+        "declarado_en_caliente": false,
+        "concepto": "Cobertura minima de SUELO sobre la clave de un marco de concreto vaciado in situ, m (Sec. 7.A). No es el recubrimiento de concreto sobre la armadura"
+      },
+      {
+        "clave": "condicion_pavimento",
+        "etiqueta": "A",
+        "valor": "flexible",
+        "declarado_en_caliente": false,
+        "concepto": "Condicion de la superficie de rodadura sobre el cruce, para elegir la fila de la Tabla 12.6.6.3-1: 'no_pavimentado', 'flexible' o 'rigido'"
+      },
+      {
+        "clave": "corrugacion_y_espesor_tmc",
+        "etiqueta": "A",
+        "valor": "68x13/2.01",
+        "declarado_en_caliente": false,
+        "concepto": "Corrugacion y espesor de plancha de la tuberia metalica corrugada del catalogo: de ellos sale el diametro exterior D_ext = D + 2 x (profundidad de corrugacion + espesor de plancha), en que diametros es estandar el producto y, en la Fase 8, las propiedades de la seccion"
+      },
+      {
+        "clave": "desajuste_empalme_canal_m",
+        "etiqueta": "A",
+        "valor": 0.01,
+        "declarado_en_caliente": false,
+        "concepto": "Desajuste maximo, en metros y en valor absoluto, entre la cota de fondo de la salida de un paso de canal (Familia C) y el fondo del canal aguas abajo (verificacion VC2)"
+      },
+      {
+        "clave": "desnivel_minimo_entrega_m",
+        "etiqueta": "A",
+        "valor": 0.0,
+        "declarado_en_caliente": false,
+        "concepto": "Desnivel minimo, en metros, que la cota de fondo de la salida del conducto debe guardar SOBRE la cota de fondo del cuerpo receptor (verificacion G2 de la Sec. 7.B)"
+      },
+      {
+        "clave": "diametros_normalizados",
+        "etiqueta": "C",
+        "valor": {
+          "inicio": 0.9,
+          "paso": 0.15
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Progresion de diametros normalizados (inicio y paso)"
+      },
+      {
+        "clave": "embocadura_cajon",
+        "etiqueta": "A",
+        "valor": "cajon_concreto_aletas_30_75",
+        "declarado_en_caliente": false,
+        "concepto": "Detalle de embocadura del marco: carta y escala de la Tabla A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, esviaje)"
+      },
+      {
+        "clave": "espesor_pared_cajon",
+        "etiqueta": "A",
+        "valor": 0.2,
+        "declarado_en_caliente": false,
+        "concepto": "Espesor de pared del marco de concreto vaciado in situ, m"
+      },
+      {
+        "clave": "espesor_pared_conducto",
+        "etiqueta": "A",
+        "valor": {
+          "concreto_reforzado": {
+            "900": 0.1,
+            "1050": 0.113,
+            "1200": 0.125,
+            "1350": 0.138,
+            "1500": 0.15,
+            "1650": 0.163,
+            "1800": 0.175,
+            "1950": 0.188,
+            "2100": 0.2,
+            "2250": 0.213,
+            "2400": 0.225,
+            "2550": 0.238,
+            "2700": 0.25
+          },
+          "hdpe": {
+            "900": 0.08975,
+            "1050": 0.0846,
+            "1200": 0.0985
+          }
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Espesor de pared del conducto por material, en metros: la distancia entre la superficie interior y la exterior que separa el diametro hidraulico D del diametro exterior D_ext = D + 2*t"
+      },
+      {
+        "clave": "espesor_proteccion_salida",
+        "etiqueta": "A",
+        "valor": 1.75,
+        "declarado_en_caliente": false,
+        "concepto": "Espesor de la capa de proteccion, como multiplo de d50"
+      },
+      {
+        "clave": "esviaje_max_grados",
+        "etiqueta": "A",
+        "valor": 45.0,
+        "declarado_en_caliente": false,
+        "concepto": "Esviaje maximo, en grados, por encima del cual el cruce se señala para revision en planta (aviso, no bloqueo)"
+      },
+      {
+        "clave": "factores_carga_aashto",
+        "etiqueta": "A",
+        "valor": {
+          "concreto_reforzado": {
+            "EV": "EV_estructura_rigida_enterrada"
+          },
+          "cajon": {
+            "EV": "EV_porticos_rigidos"
+          },
+          "tmc": {
+            "EV": "EV_flexibles_entre_otros"
+          },
+          "hdpe": {
+            "EV": "EV_flexibles_alcantarillas_termoplasticas"
+          },
+          "cabezal": {
+            "EV": "EV_muros_y_estribos_de_retencion",
+            "EH": "EH_activa"
+          }
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Que fila de la Tabla 2.4.5.3.1-2 (factores gamma_p de cargas permanentes) describe a cada estructura de esta obra: los tres conductos del catalogo, por material, y el cabezal. La TABLA es [N] y vive en constantes_normativas; aqui solo esta la eleccion de fila"
+      },
+      {
+        "clave": "fraccion_llena_mayor_parte",
+        "etiqueta": "A",
+        "valor": 0.5,
+        "declarado_en_caliente": false,
+        "concepto": "Fraccion de la longitud del barril a seccion llena por encima de la cual se lee que fluye lleno «for most of its length» (primera condicion de uso de h_o, HDS-5 pag. 3.24)"
+      },
+      {
+        "clave": "geometria_control_salida",
+        "etiqueta": "C",
+        "valor": "seccion_llena",
+        "declarado_en_caliente": false,
+        "concepto": "Seccion de referencia de la que se toman V y R en la ecuacion de control de salida H = (1 + ke + 19.63*n^2*L/R^(4/3))*V^2/(2g)"
+      },
+      {
+        "clave": "hds5_embocadura_hdpe",
+        "etiqueta": "C",
+        "valor": {
+          "K": 0.0098,
+          "M": 2.0,
+          "c": 0.0398,
+          "Y": 0.67,
+          "Ks": -0.5,
+          "forma": 1
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Constantes de control de entrada HDS-5 para tuberia HDPE"
+      },
+      {
+        "clave": "instalacion_estandar_concreto",
+        "etiqueta": "A",
+        "valor": "tipo_3",
+        "declarado_en_caliente": false,
+        "concepto": "Tipo de instalacion estandar del tubo de concreto (AASHTO LRFD 12.10.2.1, Tablas 12.10.2.1-1 y -3): fija el factor de arqueo vertical de la carga de tierra y el factor de cama con que la Fase 8 elige la clase"
+      },
+      {
+        "clave": "ke_entrada",
+        "etiqueta": "C",
+        "valor": 0.5,
+        "declarado_en_caliente": false,
+        "concepto": "Coeficiente de perdida de carga en la embocadura (ke)"
+      },
+      {
+        "clave": "ke_entrada_cajon",
+        "etiqueta": "C",
+        "valor": "cajon_aletas_30_75_escuadra",
+        "declarado_en_caliente": false,
+        "concepto": "Coeficiente de perdida de carga en la embocadura (ke) del marco de concreto"
+      },
+      {
+        "clave": "longitud_proteccion_salida",
+        "etiqueta": "A",
+        "valor": 5.0,
+        "declarado_en_caliente": false,
+        "concepto": "Longitud de la proteccion aguas abajo de la salida"
+      },
+      {
+        "clave": "metodo_longitud_conducto",
+        "etiqueta": "A",
+        "valor": "por_extremo",
+        "declarado_en_caliente": false,
+        "concepto": "Metodo con que se calcula la longitud del conducto de la Sec. 7.B cuando no se declara: con la misma altura de terraplen en los dos taludes, o con la de cada extremo"
+      },
+      {
+        "clave": "metodo_transicion_hds5",
+        "etiqueta": "C",
+        "valor": "interpolacion_lineal_entre_extremos",
+        "declarado_en_caliente": false,
+        "concepto": "Metodo con que se cubre la zona de transicion del control de entrada de HDS-5, 3.5 < q* < 4.0"
+      },
+      {
+        "clave": "n_celdas_cajon",
+        "etiqueta": "A",
+        "valor": 1,
+        "declarado_en_caliente": false,
+        "concepto": "Numero de celdas del marco: una sola o multicelda"
+      },
+      {
+        "clave": "n_manning_cajon",
+        "etiqueta": "C",
+        "valor": "concrete_boxes",
+        "declarado_en_caliente": false,
+        "concepto": "Coeficiente de rugosidad de Manning del marco de concreto: fila de la que se toma la doble n (n_min, n_max)"
+      },
+      {
+        "clave": "n_manning_hdpe",
+        "etiqueta": "C",
+        "valor": [
+          0.009,
+          0.015
+        ],
+        "declarado_en_caliente": false,
+        "concepto": "Coeficiente de rugosidad de Manning para HDPE de interior liso"
+      },
+      {
+        "clave": "origen_cota_fondo_entrada",
+        "etiqueta": "A",
+        "valor": "cota_terreno",
+        "declarado_en_caliente": false,
+        "concepto": "Regla con la que se obtiene la cota del fondo de la entrada (invert) de cada punto, msnm, cuando la columna 'cota_fondo_entrada' del CSV no la trae medida"
+      },
+      {
+        "clave": "pendiente_maxima_conducto",
+        "etiqueta": "A",
+        "valor": 0.1,
+        "declarado_en_caliente": false,
+        "concepto": "Pendiente longitudinal MAXIMA que el proyecto admite en el barril de una alcantarilla (m/m); M7 limita a ella la del cauce y V10 juzga con ella la declarada"
+      },
+      {
+        "clave": "pendiente_minima_conducto",
+        "etiqueta": "A",
+        "valor": 0.0,
+        "declarado_en_caliente": false,
+        "concepto": "Pendiente longitudinal MINIMA que el proyecto admite en el barril de una alcantarilla (m/m); M7 eleva a ella la del cauce y V10 juzga con ella la declarada"
+      },
+      {
+        "clave": "peso_especifico_relleno_kn_m3",
+        "etiqueta": "A",
+        "valor": 17.0,
+        "declarado_en_caliente": false,
+        "concepto": "Peso especifico del material de relleno sobre la clave, para el termino ΣW de V7 (peso del prisma de relleno que se opone a la flotacion)"
+      },
+      {
+        "clave": "regimen_v2b",
+        "etiqueta": "A",
+        "valor": "indicador_con_aviso",
+        "declarado_en_caliente": false,
+        "concepto": "Con que regimen se aplica el indicador de sedimentacion del HDS-5 num. 5.3.3 (pendiente del conducto frente a la del cauce natural) en la fila V2b: como umbral duro que detiene el punto, o como indicador que se imprime con aviso y no descarta el diametro"
+      },
+      {
+        "clave": "regla_espesor_longitud_proteccion_salida",
+        "etiqueta": "A",
+        "valor": "envolvente_hec14",
+        "declarado_en_caliente": false,
+        "concepto": "Regla con que se fijan el tamaño de la piedra, el espesor y la longitud de la proteccion de salida"
+      },
+      {
+        "clave": "remanso_derecho_via",
+        "etiqueta": "A",
+        "valor": null,
+        "declarado_en_caliente": false,
+        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)"
+      },
+      {
+        "clave": "resguardo_HW_subrasante",
+        "etiqueta": "N->",
+        "valor": "segun_CBR",
+        "declarado_en_caliente": false,
+        "concepto": "Resguardo entre nivel de agua a la entrada y subrasante"
+      },
+      {
+        "clave": "secciones_cajon_normalizadas",
+        "etiqueta": "A",
+        "valor": [
+          [
+            1.2,
+            0.9
+          ],
+          [
+            1.5,
+            1.2
+          ],
+          [
+            2.0,
+            1.5
+          ]
+        ],
+        "declarado_en_caliente": false,
+        "concepto": "Progresion de secciones normalizadas del marco: ancho B y altura H interiores de UNA celda"
+      },
+      {
+        "clave": "sucs_fundacion_deficiente",
+        "etiqueta": "A",
+        "valor": [
+          "OL",
+          "OH",
+          "PT"
+        ],
+        "declarado_en_caliente": false,
+        "concepto": "Grupos de la clasificacion SUCS del suelo de fundacion que el proyecto cuenta como deficientes, para avisar de que el Manual recomienda en ese caso la alcantarilla tipo marco de concreto"
+      },
+      {
+        "clave": "talud_terraplen",
+        "etiqueta": "A",
+        "valor": 2.0,
+        "declarado_en_caliente": false,
+        "concepto": "Inclinacion del talud del terraplen en el punto de cruce, como proyeccion horizontal por unidad de altura (H:V), para la 'proyeccion de taludes' que Sec. 7.B suma al ancho de plataforma al calcular la longitud del conducto"
+      },
+      {
+        "clave": "tipo_proteccion_entrada",
+        "etiqueta": "A",
+        "valor": "emboquillado_de_piedra",
+        "declarado_en_caliente": false,
+        "concepto": "Revestimiento con que se protege el cauce y el talud en la ENTRADA de la alcantarilla"
+      },
+      {
+        "clave": "umbral_area_quebrada_importante_ha",
+        "etiqueta": "A",
+        "valor": 100.0,
+        "declarado_en_caliente": false,
+        "concepto": "Area de cuenca a partir de la cual el cauce de un punto de Familia A se clasifica como 'quebrada importante' (TR 71) en vez de 'quebrada menor' (TR 35) en la Tabla N 02"
+      },
+      {
+        "clave": "v_max_hdpe",
+        "etiqueta": "C",
+        "valor": 4.572,
+        "declarado_en_caliente": false,
+        "concepto": "Velocidad maxima admisible en HDPE"
+      },
+      {
+        "clave": "v_max_tmc",
+        "etiqueta": "A",
+        "valor": 4.572,
+        "declarado_en_caliente": false,
+        "concepto": "Velocidad maxima admisible en TMC"
+      },
+      {
+        "clave": "velocidad_minima_autolimpieza_m_s",
+        "etiqueta": "A",
+        "valor": 0.25,
+        "declarado_en_caliente": false,
+        "concepto": "Velocidad minima de autolimpieza, en m/s, que el proyecto aplica como umbral duro en V2"
+      }
+    ],
+    "sin_valor_declarados": [
+      "Mw_licuefaccion",
+      "N_cq_N_gammaq_meyerhof",
+      "TR_evento_extremo",
+      "TW_receptor",
+      "angulo_aletas",
+      "c_phi_fundacion",
+      "capacidad_portante_adm",
+      "categoria_refuerzo_aashto",
+      "clase_sitio",
+      "cortante_alto_muro_e060_art_11_10_10_2",
+      "cuantia_vertical_cortante_alto_e060_art_11_10_10_3",
+      "edicion_legal_que_rige_el_expediente",
+      "edicion_que_rige_el_expediente",
+      "exposicion_quimica_ems",
+      "friccion_muro_suelo_delta",
+      "gamma_EQ",
+      "h_eq_bajo_altura_tabulada",
+      "h_eq_banda_intermedia_borde",
+      "homogeneidad_serie_fen",
+      "inclinacion_muro_beta",
+      "metodo_estabilidad_global",
+      "pendiente_relleno_trasdos_i",
+      "phi_relleno_trasdos",
+      "predimensionamiento_cabezal",
+      "punto_aplicacion_incremento_sismico",
+      "regimen_cortante_muro_e060_art_11_10_2",
+      "remanso_derecho_via"
+    ],
+    "declarados_en_caliente": [],
+    "verificacion_pendiente": [
+      "D_max_norma_producto",
+      "F_pga_lectura_columna_extrema",
+      "PERFIL_SUELO_PRESUNTO",
+      "acceso_mantenimiento_v2b",
+      "borde_libre_canal_m",
+      "clases_producto_por_relleno",
+      "cobertura_minima_aashto",
+      "coeficiente_uniformidad_temez",
+      "condicion_pavimento",
+      "corrugacion_y_espesor_tmc",
+      "distribucion_precipitacion_maxima",
+      "espesor_pared_conducto",
+      "factor_muro_eleccion",
+      "factores_carga_aashto",
+      "geometria_control_salida",
+      "hds5_embocadura_hdpe",
+      "hw_entrada_fuera_de_rango",
+      "k_v",
+      "longitud_proteccion_salida",
+      "metodo_transicion_hds5",
+      "n_manning_hdpe",
+      "origen_cota_fondo_entrada",
+      "regimen_v2b",
+      "relacion_intensidad_duracion",
+      "resguardo_HW_subrasante",
+      "seccion_receptor",
+      "talud_terraplen",
+      "umbral_area_quebrada_importante_ha"
+    ],
+    "sin_consumidor": [
+      "Mw_licuefaccion",
+      "PERFIL_SUELO_PRESUNTO",
+      "angulo_aletas",
+      "c_phi_fundacion",
+      "capacidad_portante_adm",
+      "clase_sitio",
+      "demanda_sismica_licuefaccion",
+      "edicion_legal_que_rige_el_expediente",
+      "edicion_que_rige_el_expediente"
+    ],
+    "bloquearon": [
+      {
+        "clave": "TR_evento_extremo",
+        "etiqueta": "A",
+        "concepto": "Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde",
+        "fuente": "PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral",
+        "reemplazado_por": "TR del evento extremo (p.ej. el de la serie FEN de la Fase 1-bis) y definicion tecnica de colapso de la via, ambos declarados en la memoria",
+        "fases": [
+          "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"
+        ],
+        "etapas": [
+          "verificacion V8 diferida al expediente (alcance perfil)"
+        ],
+        "puntos": [
+          "A-01",
+          "A-02",
+          "B-01",
+          "C-01"
+        ],
+        "diferido": true,
+        "responsable": "el proyectista: V8 de la hoja de ruta pide la verificacion y no fija ni el TR ni el umbral de 'la via no colapsa aunque desborde'",
+        "evidencia": "TR del evento extremo (p.ej. el de la serie FEN de la Fase 1-bis) y definicion tecnica de colapso de la via, ambos declarados en la memoria"
+      },
+      {
+        "clave": "remanso_derecho_via",
+        "etiqueta": "A",
+        "concepto": "Extension del remanso aguas arriba de la alcantarilla y ancho de derecho de via disponible en el punto, para V5 (embalse dentro del derecho de via, sin afectar terceros ni la faja marginal)",
+        "fuente": "PENDIENTE - metodo de perfil de remanso (paso a paso o HEC-RAS) y ancho de derecho de via del expediente vial (Fase 5, V5). El requisito juridico esta citado: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02) para el ancho, y la Ley 29338 (ausente de normas/) para la faja marginal",
+        "reemplazado_por": "Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto",
+        "fases": [
+          "Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5)"
+        ],
+        "etapas": [
+          "verificacion V5 diferida al expediente (alcance perfil)"
+        ],
+        "puntos": [
+          "A-01",
+          "A-02",
+          "B-01"
+        ],
+        "diferido": true,
+        "responsable": "ensayo o medicion: perfil de remanso aguas arriba (paso a paso o HEC-RAS) y ancho de derecho de via del expediente",
+        "evidencia": "Perfil de remanso calculado aguas arriba del punto y ancho de derecho de via declarado por punto"
+      }
+    ]
+  }
+}

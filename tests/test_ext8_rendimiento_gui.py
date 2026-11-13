@@ -131,10 +131,30 @@ CORRIDAS_IMPORTTIME = 3
 # eso el coste MARGINAL no cambia. La de perfil, que no tiene techo, pasa de
 # 94.7 a 101.4 KB por punto: el bloque «Fase 8 — Estructural del conducto» de
 # cada punto dimensionado, con sus pasos y el contraste del Tipo 4.
-KB_POR_PUNTO_MAX = 71.0
+# T-3 (2026-11-12, fase A sobre `df1b23c`) LO SUBE, Y TAMPOCO DEJA HOLGURA.
+# Medido con este mismo metodo: 70.3 -> 108.7 KB y 20.7 -> 31.7 paginas por
+# punto. La razon es UN punto y no los cuatro: A-01, A-02 y B-01 pesan lo
+# mismo que antes (84.5, 83.0 y 85.7 KB su bloque), y C-01 pasa de 21.1 a
+# 96.1 KB porque deja de detenerse en el primer criterio del cajon --los
+# siete tienen valor de archivo desde T-3-- y llega hasta VC1: imprime los
+# pasos del marco de la Fase 3, la traza hidraulica de su escalon y las
+# verificaciones de la Fase 5 que alcanza. A eso se suman, en los bloques
+# globales, las fichas de los siete criterios del cajon, ahora usados, y los
+# cuatro que cubren un vacio verificado en el bloque de acotaciones. Es
+# contenido, no repeticion; los techos quedan pegados a la medida por la
+# misma razon que en T-6 (los reconcilia T-10).
+# T-3 INTEGRADO (2026-11-13, detras de las correcciones de T-8, con las de
+# su auditoria) LOS REMIDIO sobre el arbol fusionado, con este mismo metodo:
+# 109.7 KB y 31.7 paginas por punto (sobre `e78a4e7`: 70.3 y 20.3). El KB
+# sube 1.0 sobre la FASE A: las fichas reescritas del cajon (el n del marco
+# de la Tabla B.1 con sus tres lecturas, la cobertura con sus tres textos,
+# la progresion con la causa real de V7) y el bloque de C-01 con lo que
+# las correcciones añaden; las paginas no se mueven.
+KB_POR_PUNTO_MAX = 110.0
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
-# del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6 (ver arriba).
-PAGINAS_POR_PUNTO_MAX = 21
+# del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, y 31.7 con
+# T-3 (ver arriba).
+PAGINAS_POR_PUNTO_MAX = 32
 
 
 def _arbol(ruta: Path) -> ast.Module:

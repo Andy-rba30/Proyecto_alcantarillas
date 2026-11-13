@@ -111,11 +111,19 @@ def test_c502_una_fila_de_cajon_no_vale_para_el_tubo(limpio):
     """La simetrica de NOR-HID-01: el tubo no puede citar una fila de marco."""
     # Dos capas. La primera ya existia: toda fila de cajon de la Tabla C.2
     # depende de 'embocadura_cajon' y R4 la hace inelegible desde la ventana
-    # de declaracion. La segunda es la de C5-02: si una fila de cajon llega
-    # al consumidor del tubo por cualquier otra via, el CONSUMIDOR la rechaza.
-    with pytest.raises(ValueError, match="R4"):
-        dec.declarar_desde_tabla(M4.CRITERIO_KE, KE_HDS5_C2[FILA_CAJON]["ke"],
-                                 filas=(FILA_CAJON,))
+    # de declaracion MIENTRAS ESE CRITERIO NO TENGA VALOR. --- T-3 --- Desde
+    # T-3 lo tiene (aletas de 30 a 75 grados), y la primera capa ya no frena
+    # una fila de cajon declarada para el TUBO: se mide con el criterio
+    # vaciado, que es la condicion en que la capa actua, y la que queda en
+    # pie siempre es la segunda, la de C5-02: si una fila de cajon llega al
+    # consumidor del tubo por cualquier via, el CONSUMIDOR la rechaza (ficha
+    # T3-07 de docs/decisiones_diferidas.md).
+    from tests.apoyo.criterios import sin_valor
+    with sin_valor("embocadura_cajon"):
+        with pytest.raises(ValueError, match="R4"):
+            dec.declarar_desde_tabla(M4.CRITERIO_KE,
+                                     KE_HDS5_C2[FILA_CAJON]["ke"],
+                                     filas=(FILA_CAJON,))
     ca.establecer_valor_dinamico(M4.CRITERIO_KE, KE_HDS5_C2[FILA_CAJON]["ke"])
     original = M4._fila_del_ke_numerico
     M4._fila_del_ke_numerico = lambda clave: FILA_CAJON

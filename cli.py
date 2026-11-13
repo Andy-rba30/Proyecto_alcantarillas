@@ -717,6 +717,43 @@ def _geometria_t6_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
             "avisos": list(g.avisos)}
 
 
+def _geometria_t3_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
+    """
+    --- T-3 --- Lo que T-3 añade al bloque `geometria` del JSON: la geometria
+    del marco (None para un tubo) y el remanso aguas arriba del canal (None
+    fuera de la Familia C). Todo sale del objeto de 7.B; nada se recalcula.
+    """
+    m, r = g.geometria_marco, g.remanso_canal
+    marco = None if m is None else {
+        "B_m": _num(m.B_m), "H_m": _num(m.H_m), "celdas": m.celdas,
+        "espesor_m": _num(m.espesor_m), "tabique_m": _num(m.tabique_m),
+        "ancho_exterior_m": _num(m.ancho_exterior_m),
+        "canto_exterior_m": _num(m.canto_exterior_m),
+        "cota_fondo_interior_msnm": _num(m.cota_fondo_interior_msnm),
+        "cota_clave_interior_msnm": _num(m.cota_clave_interior_msnm),
+        "cota_clave_exterior_msnm": _num(m.cota_clave_exterior_msnm),
+        "cota_base_exterior_msnm": _num(m.cota_base_exterior_msnm),
+        "relleno_sobre_losa_m": _num(m.relleno_sobre_losa_m),
+    }
+    remanso = None if r is None else {
+        "evaluado": r.evaluado,
+        "seccion_origen": r.seccion_origen,
+        "Q_canal_m3s": _num(r.Q_canal_m3s), "S_canal": _num(r.S_canal),
+        "y_normal_canal_m": _num(r.y_normal_canal_m),
+        "HW_m": _num(r.HW_m),
+        "cota_lamina_entrada_msnm": _num(r.cota_lamina_entrada_msnm),
+        "sobreelevacion_m": _num(r.sobreelevacion_m),
+        "longitud_minima_m": _num(r.longitud_minima_m),
+        # --- T-3 (auditoria, H2 y H3) --- si la cuenta concluye, el tirante
+        # critico del canal y, si no concluye, por que.
+        "concluye": r.concluye,
+        "y_critico_canal_m": _num(r.y_critico_canal_m),
+        "motivo_no_concluye": r.motivo_no_concluye,
+        "aviso": r.aviso,
+    }
+    return {"geometria_marco": marco, "remanso_canal": remanso}
+
+
 def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
     t = g.tamizado
     return {"numeral": g.numeral, "longitud_m": _num(g.longitud),
@@ -754,6 +791,8 @@ def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
             # --- T-6 --- como salio L, de donde sale la pendiente, el
             # encaje a la clave, el desnivel de entrega y los avisos de 7.B.
             **_geometria_t6_json(g),
+            # --- T-3 --- la geometria del marco y el remanso del canal.
+            **_geometria_t3_json(g),
             "factible": g.factible,
             "delta_rasante_cm": _num(g.delta_rasante_cm),
             "tamizado": {"provisional": t.provisional,    # T-6
@@ -1341,6 +1380,15 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                        f"{_fmt(g.S_conducto, DECIMALES_PENDIENTE)} m/m "
                        f"({g.pendiente.origen.value}); caida "
                        f"{_fmt(g.caida)} m")
+        # --- T-3 --- la geometria del marco, con las palabras del objeto.
+        m = g.geometria_marco
+        if m is not None:
+            out.append(f"{SANGRIA_DETALLE}marco: {m.celdas} celda(s), "
+                       f"t = {_fmt(m.espesor_m)} m; exterior "
+                       f"{_fmt(m.ancho_exterior_m)} x "
+                       f"{_fmt(m.canto_exterior_m)} m; clave exterior "
+                       f"{_fmt(m.cota_clave_exterior_msnm)} msnm; relleno "
+                       f"sobre la losa {_fmt(m.relleno_sobre_losa_m)} m")
         # Los avisos de 7.B NO se imprimen aqui: salen con los demas del
         # punto, por `InformePunto.avisos()`, una sola vez (y tambien cuando
         # el punto no dimensiona).

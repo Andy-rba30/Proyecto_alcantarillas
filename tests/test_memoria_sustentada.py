@@ -507,13 +507,12 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # un candidato de marco, y viajan en `Material.pasos` hasta el bloque
         # que M11 titula «Fases 3 y 4».
         #
-        # SIGUEN AQUI POR LA MISMA RAZON QUE LOS CUATRO DE ARRIBA, y esa es la
-        # diferencia: por un VACIO DEL EXPEDIENTE. Los cinco criterios del
-        # cajon estan sin valor -- el num. 4.1.1.3.4 a) remite la seccion del
-        # cruce de canal a "cada diseno particular" y el proyecto no puede
-        # escribirla --, de modo que ningun punto de Familia C dimensiona y la
-        # corrida por defecto no llega a emitirlos. Es la categoria de
-        # F7.RELLENO, F8.RECUBRIMIENTO y F10.CUNETA, no la de antes.
+        # SIGUEN AQUI, Y SU RAZON CAMBIO OTRA VEZ EN T-3. Hasta T-3 era un
+        # VACIO DEL EXPEDIENTE: los cinco criterios del cajon estaban sin
+        # valor y ningun punto de Familia C llegaba a construir el catalogo.
+        # Desde T-3 tienen valor de archivo, y la razon es la de F6.LAUSHEY:
+        # el paso existe y esta corrida -- sin caudal declarado para C-01 --
+        # no llega a pedirle candidatos a M2.
         #
         # QUE LOS PASOS EXISTEN SE COMPRUEBA, no se afirma:
         # `test_M2_material::test_los_cinco_pasos_de_fase_3_del_marco_salen_
@@ -523,6 +522,13 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F3.MANTENIMIENTO",   # la cota inferior de esa progresion
         "F3.CELDAS",          # una celda o multicelda
         "F4.N_CAJON",         # la fila de la Tabla N 09 por analogia
+        # --- T-3 (auditoria, H1) --- el del valor de archivo del n del
+        # marco, la fila del cajon de la Tabla B.1 del HDS-5. Misma razon que
+        # los cinco: esta corrida no le pide candidatos a M2 para C-01. Que
+        # el paso existe y lleva su fundamento lo mide
+        # `tests/test_t3_correcciones_auditoria.py` (y la corrida 6 de la
+        # linea base, que lo imprime).
+        "F4.N_CAJON_TB1",
         # `F4.FORMA_HDS5` SALIO DE ESTA LISTA EN C3, que es lo que C2 dejo
         # dicho que tenia que pasar: «salen de esta lista en cuanto C4 y C5
         # escriban los pasos que los imprimen; si en esa sesion siguen aqui,
@@ -560,6 +566,12 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         "F8.TMC_AREA", "F8.TMC_COSTURA", "F8.TMC_FF", "F8.TMC_ASD",
         "F8.HDPE_EMPUJE", "F8.HDPE_PANDEO", "F8.HDPE_DEFLEXION",
         "F8.HDPE_FF", "F8.MARCO_DEMANDA",
+        # LOS TRES DE T-3, por la razon de F6.LAUSHEY: 7.B cuelga de un punto
+        # dimensionado, y el marco y el paso de canal ademas de un punto de
+        # Familia C que dimensione. Que los pasos existen y llevan su
+        # fundamento lo mide `tests/test_t3_familia_c.py` sobre la corrida
+        # de la guia de perfil.
+        "F7.MARCO", "F7.EMPALME_CANAL", "F7.REMANSO_CANAL",
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar

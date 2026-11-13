@@ -288,9 +288,12 @@ T09 = _tabla(
         # SUS VALORES SALEN DE LA LECTURA CORREGIDA, igual que los de sus
         # hermanas: la errata `DIS-MCHHD-T09-A2-DESPLAZADA` desplaza un
         # renglon hacia arriba las tres columnas del bloque A.2 entero.
-        # Verificado por coordenadas de linea base sobre la pagina, y por
-        # correspondencia con Ven Te Chow 1983, que asigna 0.011/0.012/0.014
-        # a «finished».
+        # Verificado por coordenadas de linea base sobre la pagina y por la
+        # evidencia INTERNA de la misma pagina (el bloque A.1 esta alineado;
+        # en el A.2 los rotulos de categoria llevan terna y las ultimas hojas
+        # quedan en blanco). La correspondencia con Ven Te Chow 1983 que este
+        # comentario invocaba NO es verificable en normas/ -- Chow no esta --
+        # y desde la auditoria de T-3 la errata no se apoya en ella (H10).
         #
         # LA LECTURA LITERAL DE ESTA FILA ES 0.013/0.015/0.017, y conviene
         # decirlo bien porque la primera redaccion de este comentario la
@@ -312,10 +315,13 @@ T09 = _tabla(
             # C5 ABRIO EL CRITERIO Y ESTA FILA DEJO DE ESTAR SIN USAR. Su
             # `NoUsada` decia «el catalogo de la Sec. 3.2 no ofrece cajon
             # todavia: ... el criterio que declara esta analogia lo abre C5»,
-            # y C5 lo abrio: 'n_manning_cajon' [N->] la nombra la primera en
-            # su ventana de sensibilidad y `M2._fila_manning_de_cajon` la
-            # admite. Sigue siendo la fila que sostiene que el vacio de la
-            # Tabla Nº 09 es DE FILA y no de grupo (regla vinculante #6).
+            # y C5 lo abrio: 'n_manning_cajon' la nombra en su ventana de
+            # sensibilidad y `M2._fila_manning_de_cajon` la admite. Desde la
+            # auditoria de T-3 (H1) es la ALTERNATIVA BARRIBLE de ese criterio,
+            # que pasa a [C] con la fila del marco de la Tabla B.1 del HDS-5
+            # («Concrete Boxes», 0.012-0.015). Sigue siendo la fila que
+            # sostiene que el vacio de la Tabla Nº 09 es DE FILA y no de grupo
+            # (regla vinculante #6).
             uso=PendienteDeCondicion(
                 condicion_id="COND-N-MANNING-CAJON"),),
         FilaDeTabla(
@@ -4834,10 +4840,19 @@ T_WSDOT_T8_4 = _tabla(
 _NO_USADA_TB1 = NoUsada(por_que_no=(
     "el n de este material sale de la Tabla N 09 del Manual de Hidrologia, "
     "que es norma peruana [N] y manda sobre una fuente [C]; la fila se "
-    "transcribe porque una tabla podada no deja ver de que se eligio la del "
-    "polietileno, y porque su rango sirve de contraste externo del n peruano"))
+    "transcribe porque una tabla podada no deja ver de que se eligieron la "
+    "del polietileno y la del marco, y porque su rango sirve de contraste "
+    "externo del n peruano"))
 
 _USADA_N_HDPE = Usada(por=("criterios_adoptados['n_manning_hdpe']",))
+# --- T-3 (auditoria, H1) --- La fila «Concrete Boxes / Smooth» es la del
+# MARCO: la Tabla N 09 no tiene fila de seccion rectangular (vacio verificado,
+# §15.3.2 de docs/ruta_familia_c.md), y esta es la fila especifica de la
+# MISMA fuente de la que salen la carta (Tabla A.1) y el ke (Tabla C.2) del
+# marco. Es el mismo trato que T-4 dio al HDPE.
+_USADA_N_CAJON = Usada(por=("criterios_adoptados['n_manning_cajon']",))
+_USADA_N_HDPE_Y_CAJON = Usada(por=("criterios_adoptados['n_manning_hdpe']",
+                                   "criterios_adoptados['n_manning_cajon']"))
 
 T_HDS5_B1 = _tabla(
     id="HDS5_3ED.TB.1",
@@ -4845,14 +4860,14 @@ T_HDS5_B1 = _tabla(
     titulo_literal="B.1.  Manning's n Values for Culverts.",
     columnas=(
         ColumnaDeTabla(id="tipo", etiqueta_literal="Type of Culvert",
-                       unidad="", uso=_USADA_N_HDPE),
+                       unidad="", uso=_USADA_N_HDPE_Y_CAJON),
         ColumnaDeTabla(id="rugosidad",
                        etiqueta_literal="Roughness or Corrugation",
-                       unidad="", uso=_USADA_N_HDPE),
+                       unidad="", uso=_USADA_N_HDPE_Y_CAJON),
         ColumnaDeTabla(id="n_min", etiqueta_literal="Manning's n", unidad="",
-                       uso=_USADA_N_HDPE),
+                       uso=_USADA_N_HDPE_Y_CAJON),
         ColumnaDeTabla(id="n_max", etiqueta_literal="Manning's n", unidad="",
-                       uso=_USADA_N_HDPE),
+                       uso=_USADA_N_HDPE_Y_CAJON),
         ColumnaDeTabla(id="referencia", etiqueta_literal="Reference",
                        unidad="",
                        uso=NoUsada(por_que_no=(
@@ -4867,6 +4882,7 @@ T_HDS5_B1 = _tabla(
                      "n_max": n_max, "referencia": referencia},
             llamadas_a_nota=(("2",) if nota_2 else ()),
             uso=(_USADA_N_HDPE if clave == "polietileno_corrugado_liso"
+                 else _USADA_N_CAJON if clave == "concrete_boxes"
                  else _NO_USADA_TB1))
         for clave, tipo, rugosidad, n_min, n_max, referencia, nota_2 in (
             ("concrete_pipe", "Concrete Pipe", "Smooth", 0.010, 0.011,
