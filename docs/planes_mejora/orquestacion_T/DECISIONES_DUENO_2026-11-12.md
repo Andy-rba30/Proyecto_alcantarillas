@@ -169,3 +169,13 @@ fisuración 5.6.7 (fórmula nueva), d_v acotado, modificador η en el cabezal. S
 3. Aceptadas sin objeción las resoluciones del orquestador comunicadas a las 19:50: titular de la validación = valores de archivo
    (el juego favorable como variante); tracker: `INF-0.5` cerrado con salvedad, `INF-3.4.3` cerrado, `INF-3.4.4` en parte,
    `INF-3.4.6` cerrado con nota.
+
+### Decisiones del dueño sobre las dos preguntas de T11-03 — 2026-11-13 ~20:45 UTC: «sí, sigue con tus recomendaciones»
+Las dos van al LOTE POSTERIOR, juntas (misma función de MD, mismos tests, una sola regeneración de la línea base); NO en T-11 ni en T-12:
+1. **Bloquear cuando un candidato cierra y uno ANTERIOR tenía un dato inválido** (coherente con la regla T4-10 del dato que
+   falta): SÍ, pero midiendo antes sobre el fixture y la línea base; si mueve algún material o diámetro, vuelve como pregunta.
+2. **Diámetro de arranque negativo de la «rama de error» → `DatoInvalidoError`** (el revisor tiene que CORREGIR un dato; hoy
+   sale «no factible»): SÍ; cambia el tipo de bloqueo de esa corrida de la línea base (texto y clasificación, sin números).
+**Lote posterior, lista vigente (aprobado; NO se lanza sin avisar al dueño):** Figuras 3.3–3.4 de HEC-14; `max(V_c, V_erosion)`
+en la banda de régimen de M4; juego de cuencas de prueba coherente (prioridad baja); las dos de MD de arriba (ficha T11-03,
+abiertos 3 y 4); y, si no entraron en T-12, las dos vistas de la memoria.
