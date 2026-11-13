@@ -104,4 +104,5 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795201200 = vie
 | 2026-11-13 19:01 | s/d (sin aviso) | **0 %** | **0 %** | las dos semanales se reiniciaron; arranque: lectura del estado, clones, worktrees |
 | 2026-11-13 19:12 | s/d | — | — | auditoría adversarial de T-11 lanzada con Fable |
 | 2026-11-13 19:29 | s/d | **3 %** | **3 %** | auditoría Fable de T-11 en curso (dato del evento a media auditoría) |
-| 2026-11-13 19:45 | s/d | s/d | s/d | auditoría de T-11 terminada (≈ 0.52 M tokens Fable); corrección de T11-03 lanzada con Fable |
+| 2026-11-13 19:31 | s/d | s/d | s/d | auditoría de T-11 terminada a las 19:29 (≈ 0.52 M tokens Fable); corrección de T11-03 lanzada con Fable |
+| 2026-11-13 20:30 | s/d | **8 %** | **10 %** | T11-03 corregido con Fable (≈ 0.60 M tokens; `10fb84b`). Fable total de la sesión: auditoría + T11-03 + orquestador ≈ 10 puntos. Cierre de T-11 lanzado con Opus |

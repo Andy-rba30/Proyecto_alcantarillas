@@ -57,7 +57,7 @@ Resoluciones del orquestador (se aplican; si la evidencia las contradice, deja l
 - **H8 (BAJA)** — `tipo_cabezal` del cuadro resumen de la Fase 11 leído DEL PUNTO (`informe.cabezal.embocadura` / el tipo del
   cabezal del punto), no de la decisión única de la hoja de ruta. Es reporte (M11), sin aritmética. Mueve por TEXTO los CSV de
   resumen de la línea base: decláralo. Si resulta más que plomería de reporte, NO lo fuerces: ficha con símbolo y a T-12.
-- **H9 (BAJA) — SE APLICA AHORA (decisión del dueño, 2026-11-13 ~20:05 UTC)**: en `cli.informe_json`, `HW_salida_m: null`
+- **H9 (BAJA) — SE APLICA AHORA (decisión del dueño, 2026-11-13 ~19:50 UTC)**: en `cli.informe_json`, `HW_salida_m: null`
   cuando `perfil_sustituye_aproximacion` y `perfil_HW_remanso_m is None` (la aproximación descartada sigue publicada en
   `perfil_HW_aproximado_m`), y «salida: no se forma» (o la redacción que el código ya use en la línea «Perfil») en la línea
   «Control» del texto de la CLI. Es FORMATO, no cálculo: revisa TODOS los lectores de esa clave (comparador de E-B, barrido de
@@ -76,6 +76,12 @@ Resoluciones del orquestador (se aplican; si la evidencia las contradice, deja l
   para el lote posterior).
 
 Para cada hallazgo: test que lo fija (rojo medido contra el árbol previo), corrección, y una línea «cerrado / en parte / refutado».
+
+- **De la corrección de T11-03** (`SP/INFORME_T-11_T11-03.md`, §7): la regla nueva de `MD._exigir_datos_validos` y el descarte «por
+  rasante» van a `CLAUDE.md` (Excepciones / Arquitectura) al integrar; la ficha T11-03 queda «cerrada en parte» con sus dos
+  preguntas al dueño (abiertos 3 y 4: NO se aplican); cualquier edición de la v8 mueve la huella de las memorias de la línea base;
+  una línea añadida a `MD.py` antes de `NUMERAL_BUCLE` desincroniza `manifiesto_citas.md` (`manifiesto.resincronizar`).
+  Par de partida de la rama (`10fb84b`, con `NORMAS_DIR`): 6417 passed / 23 skipped, collected 6440.
 
 ## PARTE 2 — integración
 La de `ENCARGO_COMUN_CORRECCIONES_E_INTEGRACION.md`, sobre `origin/main` = `14f6138`, UN commit `tesis(T-11): …`. Además:
