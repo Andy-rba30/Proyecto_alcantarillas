@@ -57,9 +57,14 @@ Resoluciones del orquestador (se aplican; si la evidencia las contradice, deja l
 - **H8 (BAJA)** — `tipo_cabezal` del cuadro resumen de la Fase 11 leído DEL PUNTO (`informe.cabezal.embocadura` / el tipo del
   cabezal del punto), no de la decisión única de la hoja de ruta. Es reporte (M11), sin aritmética. Mueve por TEXTO los CSV de
   resumen de la línea base: decláralo. Si resulta más que plomería de reporte, NO lo fuerces: ficha con símbolo y a T-12.
-- **H9 (BAJA) — NO SE APLICA AHORA**: `HW_salida_m` a `null` movería un HW publicado en la línea base (A-02, B-01) y eso lo decide
-  el dueño. Deja ficha con símbolo (hueco de transparencia del contrato del JSON) y la pregunta en tu informe; sí puedes añadir la
-  explicación en `docs/` (qué clave leer) sin cambiar el JSON.
+- **H9 (BAJA) — SE APLICA AHORA (decisión del dueño, 2026-11-13 ~20:05 UTC)**: en `cli.informe_json`, `HW_salida_m: null`
+  cuando `perfil_sustituye_aproximacion` y `perfil_HW_remanso_m is None` (la aproximación descartada sigue publicada en
+  `perfil_HW_aproximado_m`), y «salida: no se forma» (o la redacción que el código ya use en la línea «Perfil») en la línea
+  «Control» del texto de la CLI. Es FORMATO, no cálculo: revisa TODOS los lectores de esa clave (comparador de E-B, barrido de
+  PF-3, CSV de resumen, GUI, `tests/apoyo/*`, la validación de HY-8 de T-11, tests) para que un `null` no los rompa ni se lea
+  como «cambio de HW». Mueve la línea base sólo en esa clave (A-02 y B-01 donde aplique) y en esa línea de texto: decláralo.
+  **Condición**: el HW que gobierna, `HW_entrada_m`, diámetros, secciones y materiales no cambian; si el cambio mueve algo más
+  que esa clave y esa línea, NO lo apliques, deja ficha con símbolo y repórtalo.
 - **H10 (BAJA)** — fila A7 con `EstadoDeVerificacion.NO_APLICA` y su razón cuando E.060 no fija f'c mínimo. Es transparencia, no
   cálculo: ningún veredicto ni número cambia. Si rompe dorados de T-7c más allá de contar una fila, ficha y repórtalo.
 - **H11, H12, H13, H14 (BAJA)** — como los propone el auditor (columna «consumidor» en el censo del §6; `TW_receptor` descrito como

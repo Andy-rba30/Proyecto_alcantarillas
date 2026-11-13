@@ -158,3 +158,14 @@ fisuración 5.6.7 (fórmula nueva), d_v acotado, modificador η en el cabezal. S
    barrido (con 3.0 m/s A-01 pasa a TMC Ø 1.20) queda en el anexo de sensibilidad como resultado de la tesis, sin cambiar el fixture.
 3. **Lote POSTERIOR a la cadena (aprobado; NO se lanza sin avisar al dueño)**: digitalizar las Figuras 3.3–3.4 de HEC-14,
    `max(V_c, V_erosion)` en la banda de régimen de M4 y, si no entraron en T-12, las dos vistas de la memoria.
+
+### Decisiones del dueño sobre la auditoría de T-11 — 2026-11-13 ~20:05 UTC: «sí, sigue con tus recomendaciones»
+1. **H9 (`HW_salida_m` del JSON)**: se aplica AHORA, en el cierre de T-11: la clave pasa a `null` sólo donde el perfil descartó la
+   aproximación (A-02 y B-01); el número descartado sigue en `perfil_HW_aproximado_m`. Formato, no cálculo; el HW que gobierna,
+   diámetros y materiales no se tocan. Si mueve algo más que esa clave, no se aplica y se reporta.
+2. **Juego de cuencas coherente** (validar «caudal calculado → diseño» de punta a punta): al LOTE POSTERIOR, prioridad baja. El
+   documento de validación dice mientras tanto que esa cadena no está validada con datos coherentes. Lo que importa para la tesis:
+   contrastar los caudales del fixture con el estudio hidrológico real.
+3. Aceptadas sin objeción las resoluciones del orquestador comunicadas a las 19:50: titular de la validación = valores de archivo
+   (el juego favorable como variante); tracker: `INF-0.5` cerrado con salvedad, `INF-3.4.3` cerrado, `INF-3.4.4` en parte,
+   `INF-3.4.6` cerrado con nota.
