@@ -7,8 +7,8 @@ I4 del plan de cierre ingenieril).
 Que comprueba, y sobre que
 --------------------------
 Sobre cada `PasoDeMemoria` que esos tres modulos EMITEN en la corrida de
-referencia (`indice_formulas.corrida_de_referencia`, la misma del indice de
-formulas), que las unidades declaradas en la sustitucion sean consistentes
+referencia (`_corrida_del_piloto`: la que el indice de formulas usaba hasta
+T-10, cuando paso a dos corridas que dimensionan y alcanzan el marco), que las unidades declaradas en la sustitucion sean consistentes
 con la unidad del resultado. Lo hace con un algebra de dimensiones minima
 --- exponentes racionales de longitud, tiempo y masa --- y con un MAPA de
 unidad SI a dimension que vive AQUI y no en `src/`: es una guardia de la
@@ -294,6 +294,13 @@ RELACIONES: Dict[str, Tuple[Relacion, ...]] = {
         ("S_max-S_conducto", "r", "v['S_max'] - v['S_conducto']"),
         ("S_min~S_conducto", "v['S_min']", "v['S_conducto']"),
     ),
+    # --- T-10 --- V4b gana paso (F5.V4b) y la corrida del piloto lo alcanza
+    # en el ultimo escalon de cada punto. HW / D <= HW_D_max: un cociente de
+    # longitudes.
+    "F5.V4b@V4b": (
+        ("HW/D", "r", "v['HW'] / v['D']"),
+        ("HW_D_max adimensional", "v['HW_D_max']", "ADIM"),
+    ),
 }
 
 # Las relaciones que NO cierran, con la razon. El test exige igualdad exacta
@@ -492,10 +499,39 @@ def _nombres_SI_declarados() -> set:
 # Fixtures: los pasos de M3-M5 de la corrida de referencia
 # ===========================================================================
 
+def _corrida_del_piloto():
+    """
+    `tests/ejemplo_puntos.csv` a expediente con
+    `tests/ejemplo_puntos.referencia.json`, sin declaraciones en caliente:
+    la corrida de referencia del indice de formulas hasta T-10 (era
+    `indice_formulas.corrida_de_referencia`). Las declaraciones de la suite
+    se retiran mientras corre y se reponen despues.
+    """
+    from src import criterios_adoptados as ca
+    from src import servicio
+    previas = ca.valores_dinamicos()
+    for clave in previas:
+        ca.quitar_valor_dinamico(clave)
+    try:
+        externos = servicio.cargar_datos_externos(
+            RAIZ / "tests" / "ejemplo_puntos.referencia.json", {})
+        return servicio.correr(RAIZ / "tests" / "ejemplo_puntos.csv", externos,
+                               alcance="expediente")
+    finally:
+        for clave, valor in previas.items():
+            ca.establecer_valor_dinamico(clave, valor)
+
+
 @pytest.fixture(scope="module")
 def pasos_del_piloto():
     emisores = ind.emisores_por_fundamento()
-    informe = ind.corrida_de_referencia()
+    # REESCRITO EN T-10, declarandolo: el indice de formulas paso a DOS
+    # corridas de referencia que dimensionan (`ind.CORRIDAS_DE_REFERENCIA`) y
+    # que alcanzan el marco de C-01 --- cuyo paso 4.1 sustituye B y H, no D
+    # --- y los pasos de M5 de detras de V5. El piloto es de la cadena
+    # hidraulica del TUBO y conserva SU corrida, la que el indice usaba hasta
+    # T-10 (`_corrida_del_piloto`).
+    informe = _corrida_del_piloto()
     return tuple(p for p in ind.pasos_de_la_corrida(informe)
                  if any(m in MODULOS_DEL_PILOTO
                         for m in emisores.get(p.fundamento_id, ())))

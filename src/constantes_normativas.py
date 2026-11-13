@@ -1491,7 +1491,8 @@ UMBRALES_DE_VERIFICACION = (
      "aplicacion": "Es el tope del catalogo que recorre el bucle de MD: una "
                    "seccion que lo supera no se adopta. El valor lo resuelve "
                    "M2 ('D_max_norma_producto' [C], la corrugacion del TMC "
-                   "o 'D_max_catalogo' [A]) y, en el marco, la progresion "
+                   "o la disponibilidad de mercado que el proyectista "
+                   "declare, [A]) y, en el marco, la progresion "
                    "'secciones_cajon_normalizadas' [A]."},
 )
 

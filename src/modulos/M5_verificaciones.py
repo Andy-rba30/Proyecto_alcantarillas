@@ -2263,10 +2263,10 @@ def v4b_relacion_hw_d(*, D: float,
                 Magnitud("D", D, "m", "altura interior de la seccion "
                          "candidata (la dimension que el catalogo recorre)",
                          cifras=CIFRAS_MAGNITUD),
-                Magnitud("HW_D_max", admisible, "-",
+                Magnitud("HW_D_max", admisible, "",
                          f"criterio '{CLAVE_HW_D_MAX}' [A]",
                          cifras=CIFRAS_FACTOR)),
-            resultado=Magnitud("HW/D", HW_sobre_D, "-",
+            resultado=Magnitud("HW/D", HW_sobre_D, "",
                                "cociente del HW que gobierna entre D",
                                cifras=CIFRAS_FACTOR),
             umbral=_umbral_de(
@@ -2918,8 +2918,8 @@ def v6_material_solido_arrastre(*, material: Material,
             que="Seccion unica con arrastre: numero de celdas del conducto",
             formula="N_celdas = 1",
             sustitucion=(
-                Magnitud("N_celdas", celdas, "", procedencia),),
-            resultado=Magnitud("N_celdas", celdas, "", obtenido),
+                Magnitud("N_celdas", celdas, "celda", procedencia),),
+            resultado=Magnitud("N_celdas", celdas, "celda", obtenido),
             umbral=_umbral_de(
                 "V6", valor=1, unidad="celda",
                 descripcion="seccion unica, sin subdivisiones, en un cauce "

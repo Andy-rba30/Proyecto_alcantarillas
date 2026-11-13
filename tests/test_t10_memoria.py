@@ -253,6 +253,8 @@ def test_la_cadena_sismica_sale_en_las_tres_vistas(expediente):
     informe, js, texto_cli, html = expediente
     cadena = informe.cabezal.cadena
     assert cadena is not None
+    # el bloque que la memoria pone detras de los puntos es el de la funcion
+    assert M11.bloque_cabezal_proyecto(informe) in html
     i = html.index(f'id="{M11.ANCLA_CABEZAL_PROYECTO}"')
     bloque = _plano(html[i:html.index("<h2", i)])
     assert js["cabezal"]["cadena_sismica"]["k_h"] == cadena.k_h
@@ -431,9 +433,10 @@ def test_cada_alcance_declarado_nombra_una_ficha_que_existe():
     for a in ALCANCE_DECLARADO:
         assert f"## {a.ficha} · " in texto, a.ficha
         modulo, simbolo = a.simbolo.split(".")
-        fuente = (RAIZ / "src" / "modulos" / f"{modulo}.py").read_text(
-            encoding="utf-8")
-        assert f"def {simbolo}(" in fuente, a.simbolo
+        arbol = ast.parse((RAIZ / "src" / "modulos" / f"{modulo}.py")
+                          .read_text(encoding="utf-8"))
+        assert simbolo in {n.name for n in arbol.body
+                           if isinstance(n, ast.FunctionDef)}, a.simbolo
 
 
 # ===========================================================================
@@ -459,6 +462,18 @@ def test_todo_A_usado_sale_en_el_anexo_con_su_ventana(corrida):
         assert f'href="#{M11.ancla_de_criterio(clave)}"' in anexo, clave
     por_punto = M11.criterios_A_por_punto(informe)
     assert set(por_punto) <= set(ca.CRITERIOS)
+    assert M11.anexo_sensibilidad(informe) in html
+    # cada clave que un punto nombra sale de lo que ESE punto emitio
+    for clave, puntos in por_punto.items():
+        for pid in puntos:
+            p = next(x for x in informe.puntos if x.punto.id == pid)
+            nombradas = {getattr(v, "criterio_aplicado", None)
+                         for _f, v in M11.verificaciones_publicadas(p)}
+            for paso in M11.pasos_del_punto(p):
+                if paso.umbral is not None:
+                    nombradas.add(paso.umbral.criterio_aplicado)
+                nombradas.update(e.clave_criterio for e in paso.elecciones)
+            assert clave in nombradas, (clave, pid)
 
 
 def test_el_anexo_no_recalcula():
