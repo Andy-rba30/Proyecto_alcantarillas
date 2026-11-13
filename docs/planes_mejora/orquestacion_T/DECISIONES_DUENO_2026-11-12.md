@@ -103,3 +103,19 @@ Se ACEPTAN, sujetas a lo que diga la auditoría adversarial (si el auditor las r
 - Mientras tanto, el alero largo de C-01 (8.1 m con 30° de esviaje) se puede resolver declarando un α menor de ese lado por
   `cabezal_declarado` (aleros asimétricos): la memoria lo dice.
 - T-7b verifica contra el PDF lo que HDS-5 núm. 5.4.2 dice de las embocaduras esviadas antes de escribirlo en la ficha.
+
+### Decisiones del dueño del 2026-11-13 ~09:45 UTC — «sí, sigue con tus recomendaciones» (cierra todas las preguntas abiertas)
+Confirmadas las resoluciones que el orquestador aplicó sin respuesta (T-7b: `drenaje_trasdos` = `sin_drenaje`; no iterar la zapata
+del cabezal por ahora; sin reducción de k_h por desplazamiento + cuña de tanteo; V5 con `cota_de_afectacion`; T-3: n del marco de
+HDS-5 y cobertura que avisa; T-9: Z2 = 1.0) y además:
+1. **Flotación del marco (V7 sin peso propio, ficha T3-08)**: se deja como está; se revisa cuando llegue la sección real del canal
+   de ANA / la Junta. No se toca en la cadena.
+2. **VB1 de B-01 NO CUMPLE en el fixture (530 m)**: se deja; es el resultado honesto del ejemplo.
+3. **Figuras 3.3–3.4 de HEC-14**: SÍ se digitalizan, en un prompt APARTE y DESPUÉS de T-12 (no antes: no mueve diámetros ni la
+   protección adoptada). T-11/T-12 lo dejan dicho como trabajo posterior.
+4. **T-5, confirmadas las tres**: `DatoFaltanteError` cuando a un punto sólo le falta un dato de la Fase 8; pandeo del HDPE con el
+   mayor de las dos lecturas; la tubería empernada de EG-2013 507.02 a) detiene (la alternativa de diferirla a perfil con aviso
+   sólo si se consigue la tabla del fabricante).
+5. De T-8 quedan confirmadas por la misma respuesta las recomendaciones dadas en la sesión anterior: `max(V_c, V_erosion)` en la
+   banda de régimen de M4 → trabajo posterior junto con el punto 3 (no se toca M4 en la cadena); fuera de la Tabla 10.1, cotas
+   inferiores + aviso (como está); 360 min (como está).
