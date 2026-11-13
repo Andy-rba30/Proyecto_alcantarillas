@@ -1,0 +1,7 @@
+{
+  "globales": {"luz_m": 3.0, "TW_m": 0.3},
+  "puntos": {
+    "A-01": {"Q_evento_extremo_m3s": 1.3, "TW_evento_extremo_m": 0.5,
+             "cota_afectacion_aguas_arriba_msnm": 44.00}
+  }
+}

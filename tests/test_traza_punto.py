@@ -144,9 +144,16 @@ def test_el_desarrollo_no_adoptado_llega_con_su_aviso(informe, trazas):
 # ===========================================================================
 
 def test_las_verificaciones_sin_paso_llegan_como_hueco_censado(trazas):
+    # REESCRITO EN T-10, declarandolo: la corrida de ejemplo emitia el hueco
+    # de V4b; desde T-10 V4b, V6 y V9 tienen paso y el censo esta vacio, de
+    # modo que la corrida no emite ninguno. Lo que se fija es que los que
+    # emita --- hoy, ninguno --- sean exactamente los del censo, y que V4b
+    # llegue como paso y no como hueco.
     huecos = [e for e in _entradas(trazas)
               if isinstance(e, tp.HuecoDeVerificacion)]
-    assert huecos, "la corrida de ejemplo emite al menos un hueco (V4b)"
+    assert not huecos
+    assert any(isinstance(e, tp.DetalleDePaso) and e.codigo == "V4b"
+               for e in _entradas(trazas))
     censo = M11.sin_fundamento_por_codigo()
     for hueco in huecos:
         assert hueco.codigo in censo

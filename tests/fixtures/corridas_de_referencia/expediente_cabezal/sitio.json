@@ -1,0 +1,12 @@
+{
+  "orientacion_muro_respecto_al_trafico": {
+    "valor": "paralelo_al_trafico",
+    "trazabilidad": "de prueba (T-7c)",
+    "fecha": "2026-11-13"
+  },
+  "distancia_borde_calzada_al_trasdos_m": {
+    "valor": 1.6,
+    "trazabilidad": "de prueba (T-7c)",
+    "fecha": "2026-11-13"
+  }
+}

@@ -43,6 +43,38 @@
         "diferido_por_alcance": true,
         "mensaje": "cadena sismica, Mononobe-Okabe, predimensionamiento, recubrimientos y cuantias del cabezal no se ejecutan en alcance de perfil: dependen de datos del expediente (ensayos de fundacion y relleno del Tablero 3 y criterios C.3) y de la estabilidad E1-E5 que la propia Fase 9 remite al expediente. Disponibles sin cambios con --alcance expediente"
       }
+    ],
+    "declarado": [
+      {
+        "clave": "armado_seccion_marco",
+        "texto": "El armado de la SECCION del marco de concreto de la Familia C no se diseña: el expediente llega al dimensionamiento y a la demanda de la losa superior que entrega la Fase 8; el analisis y el diseño del portico quedan para quien lo arme",
+        "ficha": "T5-07",
+        "simbolo": "M8_estructural.demanda_marco"
+      },
+      {
+        "clave": "cabezal_paralelo_a_la_via",
+        "texto": "El cabezal PARALELO a la via no se calcula: en las tres familias el cabezal es normal al eje del conducto, que es lo que supone la hidraulica (ke y cartas del HDS-5); el paralelo queda como alternativa solo para el marco, diferida",
+        "ficha": "T7A-03",
+        "simbolo": "M9_cabezal.predimensionar_aleros"
+      },
+      {
+        "clave": "iteracion_ancho_zapata_cabezal",
+        "texto": "El ancho de la zapata del cabezal no se itera: la geometria la propone la regla de predimensionamiento (o la declara `cabezal_declarado`) y la estabilidad la juzga como llega; la iteracion espera los parametros reales del EMS",
+        "ficha": "T7B-09",
+        "simbolo": "M9_cabezal.predimensionar_cabezal"
+      },
+      {
+        "clave": "flotacion_marco_sin_peso_propio",
+        "texto": "V7 del marco no pesa el concreto del marco (DC = 0, del lado seguro): se revisara cuando llegue la seccion real del canal de la ANA o de la Junta de usuarios",
+        "ficha": "T3-08",
+        "simbolo": "M5_verificaciones.v7_flotacion"
+      },
+      {
+        "clave": "tirante_de_borde_hec14",
+        "texto": "Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la salida) no estan digitalizadas: con la velocidad tomada al tirante critico el contraste con la Tabla N 11 es un INDICADOR que no concluye; se digitalizaran en un trabajo posterior a la cadena",
+        "ficha": "T8-08",
+        "simbolo": "M6_proteccion.proteccion_salida"
+      }
     ]
   },
   "puntos": [

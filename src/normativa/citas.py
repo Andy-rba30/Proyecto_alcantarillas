@@ -14230,5 +14230,47 @@ AASHTO_1_3_4_REDUNDANCIA = _cita(
           "cabezal."),
 )
 
+# ===========================================================================
+# --- T-10 --- La banda de HW/D que el HDS-5 DESCRIBE (V4b gana paso)
+# ===========================================================================
+# V4b salia de la memoria como hueco censado (`SIN_FUNDAMENTO`): «un
+# Fundamento con cita convertiria en exigencia lo que es adopcion del
+# proyectista». La cita que sigue NO convierte nada: su caracter es
+# DEFINICION, porque la frase DESCRIBE lo que imponen algunas agencias de
+# EE. UU. y no lo pide, y el fundamento F5.V4b la usa con el verbo DEFINE.
+# El tope sigue siendo [A] ('HW_D_max') y el paso lo dice en su umbral.
+FECHA_TESIS_T10 = "2026-11-13"
+POR_TESIS_T10 = "tesis/T-10 · lectura directa de la pagina por la sesion"
+TESIS_T10 = (FECHA_TESIS_T10, POR_TESIS_T10)
+
+HDS5_2_2_5D_AGENCIAS = _cita(
+    id="HDS5_3ED.2.2.5d#AGENCIAS",
+    fuente_id="HDS5_3ED",
+    numeral="2.2.5 d.",
+    titulo_numeral="Allowable Headwater",
+    pagina_impresa="2.10",
+    pagina_pdf=72,
+    pagina_pdf_titulo=71,
+    texto_literal=Verbatim(
+        texto=("The allowable HW/D ratio varies throughout the country, but "
+               "commonly ranges from 1.0 to 1.5."),
+        pagina_pdf=72),
+    # DEFINICION y no RECOMENDACION ni EXIGENCIA: el apartado se titula
+    # «Agency Constraints» y empieza «Some state or local highway agencies
+    # place limits on the headwater produced by a culvert»; la frase dice
+    # entre que valores SUELE estar el cociente que esas agencias admiten.
+    # No pide ninguno.
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T10,
+    nota=("Item d. «Agency Constraints» del num. 2.2.5, pag. impresa 2.10 "
+          "(PDF 72; el titulo del numeral esta en la PDF 71). La frase "
+          "anterior del mismo item: «For example, the headwater depth may "
+          "not be allowed to exceed the barrel height or some multiple of "
+          "the barrel height, expressed as HW/D.» Es lo que sostiene que "
+          "HW/D sea la magnitud de V4b y que la banda 1.0-1.5 sea practica "
+          "de AGENCIAS de EE. UU.; el MTC no fija ninguna (NOR-HDS-02), y el "
+          "tope del proyecto es el criterio [A] 'HW_D_max'."),
+)
+
 
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

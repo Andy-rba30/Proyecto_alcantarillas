@@ -278,22 +278,33 @@ def test_un_punto_que_no_es_de_familia_c_no_lleva_advertencia_de_alcance(
                             resultado=_resultado()).paso.nota_del_proyecto == ""
 
 
-def test_v4b_no_puede_llevar_la_advertencia_y_su_razon_esta_censada():
+def test_v4b_lleva_paso_y_la_advertencia_de_la_familia_c():
     """
-    §15.6.3 nombra V1 y V4b como sitio de la advertencia, y V4b NO PUEDE
-    llevarla: no emite `PasoDeMemoria`. La razon esta censada en
-    `normativa.fundamentos.SIN_FUNDAMENTO` -- el rango HW/D 1.0-1.5 lo
-    DESCRIBE el HDS-5 y no lo prescribe, de modo que darle una cita para poder
-    colgarle la nota convertiria en exigencia una adopcion del proyectista --.
-    Se fija aqui para que el hueco sea una decision comprobada y no un olvido:
-    el dia que V4b tenga fundamento, este test cae y hay que ponerle la nota.
+    REESCRITO EN T-10, declarandolo. Fijaba que V4b NO emitia
+    `PasoDeMemoria` y que su razon estaba censada en `SIN_FUNDAMENTO`, y
+    dejaba escrito: «el dia que V4b tenga fundamento, este test cae y hay
+    que ponerle la nota». T-10 le da fundamento --- F5.V4b, con el verbo
+    DEFINE, sobre la frase del HDS-5 que DESCRIBE la banda 1.0-1.5 de las
+    agencias de EE. UU. (caracter DEFINICION), sin convertirla en exigencia
+    --- y la nota de §15.6.3 se le pone en la Familia C, como a V1 y V4.
     """
+    from src.normativa import registro
     from src.normativa.fundamentos import SIN_FUNDAMENTO
+    reg = registro.construir()
     v = v4b_relacion_hw_d(D=0.90, resultado=_resultado())
-    assert v.paso is None
-    censados = {id_: razon for id_, razon, _ in SIN_FUNDAMENTO}
-    assert "F5.V4b" in censados
-    assert "DESCRIBE" in censados["F5.V4b"]
+    assert v.paso is not None and v.paso.fundamento_id == "F5.V4b"
+    assert reg.fundamento("F5.V4b").verbo.value == "define"
+    assert v.paso.umbral.cita_id == "HDS5_3ED.2.2.5d#AGENCIAS"
+    assert reg.cita(v.paso.umbral.cita_id).caracter.value == "definicion"
+    assert v.paso.umbral.criterio_aplicado == "HW_D_max"
+    assert "F5.V4b" not in {id_ for id_, _p, _q in SIN_FUNDAMENTO}
+    assert v.paso.nota_del_proyecto == ""          # sin punto, sin nota
+    a = v4b_relacion_hw_d(D=0.90, resultado=_resultado(),
+                          punto=_punto(familia=Familia.A))
+    assert "ALCANCE (Familia C" not in a.paso.nota_del_proyecto
+    c = v4b_relacion_hw_d(D=0.90, resultado=_resultado(),
+                          punto=_punto(familia=Familia.C))
+    assert "ALCANCE (Familia C" in c.paso.nota_del_proyecto
 
 
 # ---------------------------------------------------------------------------

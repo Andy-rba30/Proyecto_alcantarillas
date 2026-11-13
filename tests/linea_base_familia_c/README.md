@@ -1391,3 +1391,30 @@ Lo que la pasada SÍ mueve está fuera de esta línea base y se declara en los t
 con los datos DE PRUEBA de T-7b (`tests/test_t7_verificacion.py`): la zapata de los dos
 cabezales pasa de 0.37 a 0.4041 m, las doce filas E1 a E3 del marco LRFD se mueven sin
 cambiar ningún veredicto, A8 pasa a cumplir y el talón de salida a Ø 1/2" @ 0.15.
+
+## T-10 en su rama (2026-11-13, FASE A sobre `2b13dc1`): la memoria completa; regenerada y medida contra la base
+
+T-10 no calcula nada nuevo: hace que la memoria imprima lo que la CLI y el JSON ya
+publicaban, quita lo que salía repetido y declara el alcance. Lo que cambia en esta línea
+base, clasificado:
+
+- **Los cuatro JSON**: la clave nueva `alcance.declarado` (las cinco decisiones del dueño
+  que el expediente no hace, `modelos.ALCANCE_DECLARADO`), y el `veredicto` de V4b, V6 y V9
+  pasa de `null` a `"cumple"` en los puntos dimensionados, porque las tres ganan
+  `PasoDeMemoria` (su `cumple` ya era `true`; en el marco de C-01, V9 sigue en `null`: su
+  tope es la progresión [A] y el paso no juzga). **Con el comparador de E-B** contra los
+  cuatro JSON de `2b13dc1`: `informe_expediente.json` e `informe_rama_error.json` IGUALES;
+  `informe_familia_c.json` 8 diferencias y `informe_perfil_ancho.json` 6, todas
+  `V4b/V6/V9.veredicto` de `None` a `'cumple'`; **0 no comparables**; ningún bloque de
+  diseño cambia.
+- **Los cinco `cli_*.txt`**: seis líneas más en el bloque ALCANCE DE LA CORRIDA (las cinco
+  decisiones con su ficha y su símbolo).
+- **Las tres memorias de la CLI**: formato. La Fase 9 del proyecto (cadena sísmica,
+  cuantías, notas), el alcance declarado, las columnas `cota_fondo_entrada` y
+  `cota_coronacion_canal`, los pasos de V4b, V6 y V9, el anexo A.4 de sensibilidad, los
+  rótulos de los bloqueos, las citas del filtro, y la deduplicación por primera aparición
+  (pasos, elecciones y notas idénticos remiten a la primera).
+- **Idénticos byte a byte (`cmp`)**: `memoria_punto_cajon.html`, `resumen_expediente.csv` y
+  `resumen_perfil_ancho.csv`.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
