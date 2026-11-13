@@ -5671,6 +5671,10 @@ sobre el árbol corregido, y cada una dice qué cambió.
   suelo»), entra como piso del espesor propuesto del voladizo armado, [N→]
   (`peralte_min_zapata_armada_m`), más los 70 mm de recubrimiento contra el suelo de 7.7.1
   a): `e_z = max(H/10, 0.37 m)`; en la entrada de A-01 la regla daba 0.225 m.
+  **Corregido en la verificación de fórmulas (punto 7):** ese 0.37 m no podía cumplir
+  nunca la norma que cita tal como la fila A8 del armado la mide; el piso suma ahora el
+  recubrimiento con que se arma y medio diámetro de la mayor barra del catálogo (0.4041 m
+  con la cota de recubrimiento, 0.3827 m con 70 mm; ficha T7V-03).
 - **Abierto:** la tabla de la §0.1 de la hoja de ruta rotula E.050 como [N] para
   «Capacidad portante, FS de muros…» sin la salvedad del ámbito: **es un defecto de la
   hoja**, declarado en ella con una nota, y la hoja sigue mal en su §9.3 («Estabilidad —
@@ -5750,6 +5754,12 @@ marca del régimen para T-7c.
   ya cumple lo anterior (`M5.verificar`). Barrido del auditor en A-01: con ×1.11 y ×1.20
   lámina libre y cumple en Ø 0.90 m; con ×1.29 y ×1.50 a presión y cumple; con ×1.97 el
   Ø 0.90 m desborda y MD adopta Ø 1.05 m. El desborde admitido sigue diferido.
+- **Corrección de la verificación de fórmulas (punto 3, MEDIA).** `M4.hidraulica_a_presion`
+  comparaba la aproximación de barril lleno **sin** las dos reglas de la pág. 3.24 del
+  HDS-5, y un caudal mayor podía dar menos carga que uno menor en lámina libre (0.957 m
+  con 1.021 m³/s frente a 0.965 m con 0.987 m³/s). Ahora compite con el perfil de la
+  lámina, como en lámina libre, y V8 lleva la guardia HW_ext ≥ HW de diseño con aviso
+  (ficha T7V-01).
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v8_evento_extremo`
 
 ## T7B-03 · El cabezal se calcula como muro de semigravedad en voladizo, por metro y en la sección llena: es hipótesis del proyecto
@@ -6346,6 +6356,7 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
 
 ## T7C-11 · El modificador de carga η no entra en el cabezal: la fuente lo sostiene, pero el cambio no es acotado
 
+- **Cerrado (verificación de T-7):** η entra con el η_I del cruce (T7V-02).
 - **Qué se difirió:** el modificador de carga η = η_D·η_R·η_I de AASHTO 1.3.2.1 en las
   combinaciones de Resistencia I del cabezal —estabilidad externa **y** armado— con el
   mismo η_I del conducto (`eta_importancia_operativa_conducto` [A] = 1.05, T-5). La
@@ -6418,7 +6429,9 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
   T7C-02); H3 y la pregunta 5 (la fisuración de 5.6.7, fila A6, T7C-06); H4 (la fila A8:
   la altura de la zapata sobre su refuerzo inferior frente a los 300 mm de E.060 15.7,
   con el recubrimiento con que se arma; la zapata de 0.37 m de A-01 da 0.272 m y **no
-  cumple**: no se itera, se dice); H5 (la junta del arranque del ciclópeo, T7C-09); H6
+  cumple**: no se itera, se dice —hasta la verificación de fórmulas, que corrigió la
+  regla del piso y con ella A8 cumple por construcción en el cabezal de regla, ficha
+  T7V-03—); H5 (la junta del arranque del ciclópeo, T7C-09); H6
   (el vano, la losa y el dentellón en el aviso, T7C-04); H7 (la fila A7 del f'c por
   durabilidad, que decide cuando el análisis químico existe, y los textos que nombraban
   A6, A5 y R4/R5 donde el código dice A7, A1 y C4/C5); H8 (d_v ≤ d_e, T7C-03); H9 (el
@@ -6437,3 +6450,111 @@ fichas en su sitio y añadió T7C-11 a T7C-13.
 - **Qué haría falta:** lo abierto de cada ficha que cita.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::ensamblar_armado`
 
+# Parte LII — Lo que la verificación de las fórmulas de los cierres de T-7b y T-7c dejó escrito
+
+Un verificador recalculó a mano y contra el PDF las fórmulas del cabezal (estabilidad y
+armado, M9) y de V5 y V8 (M4 y M5) ya integradas (`451a10a` y `2b13dc1`): **AJUSTADO**,
+seis puntos conformes y tres con defecto. Esta pasada (2026-11-13) corrige los tres y un
+matiz de texto; los seis conformes no se tocan. Ningún diámetro, sección, material ni HW
+del fixture se mueve.
+
+## T7V-01 · V8 con el caudal que no cabe en flujo uniforme compite con el perfil de la lámina; el escalón de la regla de E-A en 1.2 D sigue ahí y lo cubre la guardia
+
+- **Cerrado (punto 3, MEDIA, lado inseguro):** `M4.hidraulica_a_presion` llamaba a
+  `hw_gobernante` **sin** perfil («lleno no hay lámina que integrar»), de modo que la
+  aproximación h_o = (d_c + D)/2 competía sin las dos reglas del HDS-5 núm. 3.3.3 (pág.
+  impresa 3.24) que `resolver_control` aplica desde E-A. Que el caudal no quepa en flujo
+  **uniforme** no quiere decir que el barril vaya lleno. Ahora calcula el perfil
+  (`perfil_lamina` no necesita tirante normal) y gobierna con él: entre 0.75 y 1.2 D la
+  carga de salida es la mayor de la aproximación y del remanso, y se avisa; bajo 0.75 D
+  la aproximación no se usa y rige el remanso, con aviso. Control del verificador (tubo
+  de A-01, S 0.003, L 60 m, TW 0): HW(1.0213 m³/s) pasa de 0.9570 a **0.9890 m** ≥ 0.9654
+  m. A-01 no cambia (gobierna la entrada: 1.588 m, 43.69 msnm). Y `M5.v8_evento_extremo`
+  lleva la guardia HW_ext ≥ HW de diseño: si no se cumple, juzga con la de diseño y lo
+  avisa por `Verificacion.avisos`, que `InformePunto.avisos()` recoge.
+- **Por qué aviso y no «método no evaluable» bajo 0.75 D:** la fuente dice que la
+  aproximación «should not be used», y la misma fuente dice qué hacer (pág. 3.12: el
+  cálculo de remanso desde la salida, que M4 tiene). Es la misma decisión de E-A para
+  la lámina libre; levantar `MetodoNoEvaluableError` habría sido negar un método que
+  existe.
+- **Abierto, medido y no corregido:** la regla de E-A tiene un escalón **propio** donde
+  la aproximación cruza HW/D = 1.2: por debajo compite el remanso y por encima deja de
+  competir. En el tubo de A-01 con S 0.006, L 18.869 m y TW 0.5 m, los dos caudales en
+  lámina libre: 1.1507 m con 1.276 m³/s (rige el remanso) y 1.1394 m con 1.290 m³/s (rige
+  la entrada): un caudal mayor con 11 mm menos. Es de `M4.resolver_control` (E-A,
+  conforme en la verificación) y no se tocó. Para V8 lo cubre la guardia; para el caudal
+  de **diseño** queda como está: es el umbral que la fuente escribe.
+- **Qué haría falta:** decidir si sobre 1.2 D el remanso sigue compitiendo cuando alcanza
+  la entrada y pide más carga (sería ir más allá de la letra del HDS-5, que ahí da la
+  aproximación por buena); y el barrido en otras secciones y en el marco, que la
+  verificación no hizo.
+- **Dónde vive:** `src/modulos/M4_control.py::hidraulica_a_presion`
+
+## T7V-02 · El η de AASHTO 1.3.2.1 es del cruce: el cabezal lee el mismo η_I que el conducto, y η_D y η_R son suyos
+
+- **Cerrado (punto 9, MEDIA; cierra T7C-11):** `M9.modificador_de_carga` arma η = η_D·η_R·η_I
+  y `M9.combinaciones_de_estabilidad` y `M9._combinaciones_en_reposo` lo llevan dentro de
+  cada factor de Resistencia I: η_i = η ≥ 0.95 en las cargas de γ máximo y 1/η ≤ 1.0 en
+  las de γ mínimo (Ec. 1.3.2.1-2 y -3, pág. impresa 1-3); 1.00 en el Evento Extremo I y
+  en Servicio («For all other limit states», 1.3.3, 1.3.4 y 1.3.5). Rige en la
+  estabilidad LRFD y en el armado; el marco ASD de E.050 y el contraste de E.060 no lo
+  llevan. **η_I es uno**: la clave `eta_importancia_operativa_conducto` [A] (1.05), la
+  misma que lee la Fase 8 del conducto; no se duplicó el número y el concepto del
+  criterio dice ahora que rige el cruce (la clave conserva su nombre). **η_D y η_R** son
+  dos [A] nuevos del cabezal, `eta_ductilidad_cabezal` y `eta_redundancia_cabezal`, 1.00
+  convencional con ventana 0.95–1.05: la fuente obliga a separarlos del conducto, porque
+  el 1.00 de éste sale de 12.5.4 (estructuras enterradas) y no alcanza al cabezal.
+  El paso de combinaciones y el del régimen del armado lo imprimen con sus citas.
+- **Lo que es lectura del proyecto:** el agua (WA) y la sobrecarga viva (LS) tienen un
+  solo factor en la Tabla 3.4.1-1; se leen como cargas de γ máximo en las dos
+  combinaciones, y solo DC y EV llevan 1/η en la de mínimos (`Interpretacion` de la cita
+  `AASHTO_LRFD_9.1.3.2.1#ETA`, con lo que juega en contra).
+- **Por qué importa:** en el muro de tanteo el deslizamiento LRFD estático **cambia de
+  veredicto** con η (37.177 > 37.156 kN/m; con 1.00, 35.407 ≤ 38.607). En A-01 con los
+  datos de prueba ningún veredicto cambia y el talón de salida pasa a Ø 1/2" @ 0.15.
+- **Abierto:** los dorados del muro de tanteo de T-7b y T-7c (`CP_T7B_*`, `CP_T7C_*`) **no
+  se rehicieron uno a uno**: se calcularon con los factores de la tabla (η = 1.00) y el
+  fixture `tanteo` de los dos archivos declara ahora η_I = 1.00 para que sigan fijando
+  la aritmética del ensamble; lo que η hace con el 1.05 de archivo lo fija a mano
+  `CP_T7V_ETA` (las dos combinaciones, E1 a E3 y la pantalla en reposo). Y η_R = 1.00 es
+  una elección: la pantalla en voladizo tiene un solo camino de carga y clasificarla
+  como no redundante (≥ 1.05) es del Propietario.
+- **Qué haría falta:** la decisión del Propietario sobre η_R y η_D del cabezal.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::modificador_de_carga`
+
+## T7V-03 · El piso de la zapata armada se construye con la lectura de A8: 300 mm al eje de la capa inferior, con el recubrimiento con que se arma y la mayor barra del catálogo
+
+- **Cerrado (punto 7, BAJA):** `M9.peralte_minimo_zapata` daba 0.30 + 0.070 = 0.37 m, y la
+  fila A8 —que mide hasta el eje de la barra con el recubrimiento con que se arma, nunca
+  menor de 70 mm— no podía cumplir E.060 15.7 en ningún cabezal de regla (0.2722 m con la
+  cota de 91.44 mm; 0.2937 m aun con 70 mm y Ø 1/2"). Ahora el piso es 300 mm + el
+  recubrimiento de `recubrimiento_para_armar` + medio diámetro de la **mayor** barra del
+  catálogo de propuesta (Ø 1": 12.7 mm): **0.40414 m** con la cota y 0.3827 m con 70 mm,
+  sin redondeo. A8 cumple por construcción con cualquier barra del catálogo y sigue
+  pudiendo fallar con una zapata declarada más delgada (CB6 la detecta en la geometría).
+  La nota de A8 ya no ofrece «bajar el recubrimiento con el dato de exposición», que no
+  alcanzaba, y la fila imprime las tres lecturas de «medida sobre el refuerzo inferior»
+  diciendo cuál usa.
+- **Lo que es lectura del proyecto:** la altura se mide hasta el **eje** de la capa
+  inferior (el peralte efectivo). La lectura hasta la cara **superior** de la barra, la
+  más exigente, no la garantiza la regla: con Ø 1/2" da exactamente 0.3000 m y con una
+  barra más gruesa queda por debajo (0.2968 m con Ø 5/8"); se imprime y no decide.
+- **Abierto:** mueve la geometría de T-7a —la zapata de A-01 pasa de 0.37 a 0.40414 m— y
+  con ella los números de estabilidad y de armado de los datos de prueba (declarados en
+  los tests); el deslizamiento LRFD estático de A-01 sigue sin cumplir (ficha T7B-09).
+- **Qué haría falta:** que el EMS y el expediente declaren la exposición y la categoría
+  del acero (el piso baja entonces a 0.3827 m), y la decisión sobre la lectura de 15.7.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::peralte_minimo_zapata`
+
+## T7V-04 · La aceptación de la verificación se escribió con el código; el rojo se midió contra la base
+
+- **Qué se difirió:** escribir los tests en rojo con `xfail(strict=True)` antes del código,
+  y la mutación de lo tocado.
+- **Por qué:** una sola sesión para tres correcciones acotadas. El rojo se midió con el
+  archivo final (`tests/test_t7_verificacion.py`, 28 tests) y el fixture sobre un árbol
+  exportado de `2b13dc1`: **26 rojos y 2 verdes** (las dos guardias que valen antes y
+  después: los marcos que no llevan η y la vía del «método no evaluable»).
+- **Qué haría falta:** la mutación con el arnés de EXT-11 sobre `hidraulica_a_presion`,
+  `v8_evento_extremo`, `modificador_de_carga`, `_resistencia_i_con_eta`,
+  `peralte_minimo_zapata` y `_fila_de_peralte_de_zapata`.
+- **Dónde vive:** `tests/test_t7_verificacion.py::test_p9_resistencia_I_del_muro_de_tanteo_con_eta_a_mano`

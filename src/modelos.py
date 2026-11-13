@@ -3168,6 +3168,13 @@ class Verificacion:
     paso: Optional["PasoDeMemoria"] = None
     estado: Optional[EstadoDeVerificacion] = None
     motivo_no_aplica: str = ""
+    # --- verificacion de T-7 --- Lo que la verificacion tiene que decir en
+    # voz alta SIN cambiar su veredicto: una carga que se acoto, una
+    # aproximacion usada en su banda de cautela. No es un INDICADOR (el
+    # veredicto sigue siendo el de la comparacion): es texto que
+    # `InformePunto.avisos()` recoge de las verificaciones de la seccion
+    # aceptada. V8 es su primer productor.
+    avisos: Tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         veredicto = getattr(self.paso, "veredicto", None)
@@ -6953,8 +6960,17 @@ class HidraulicaDelEventoExtremo:
     el barril trabajando A PRESION, con las MISMAS piezas de M4 que no
     necesitan tirante normal: el control de entrada (la ec. A.3 sumergida,
     o la que corresponda a su q*) y el de salida a barril lleno (HW = H +
-    h_o - S·L), gobernando la mayor (`M4.hw_gobernante` sin perfil). Ninguna
-    ecuacion nueva.
+    h_o - S·L), gobernando la mayor (`M4.hw_gobernante`). Ninguna ecuacion
+    nueva.
+
+    --- verificacion de T-7 (punto 3) --- «sin perfil» ERA EL DEFECTO: la
+    aproximacion de barril lleno competia sin las dos reglas que el mismo M4
+    aplica en lamina libre (HDS-5 num. 3.3.3, pag. 3.24), y un caudal MAYOR
+    podia dar MENOS carga que el de diseño. Ahora compite con el perfil de
+    la lamina (`M4.perfil_lamina`, que no necesita tirante normal):
+    `HW_salida` es la carga EFECTIVA de salida y `avisos` dice cuando la
+    aproximacion estuvo en la banda de cautela o no se uso. Salen por
+    `Verificacion.avisos` de V8 y de ahi por `InformePunto.avisos()`.
     """
 
     HW: float
@@ -6963,6 +6979,7 @@ class HidraulicaDelEventoExtremo:
     HW_entrada: float
     HW_salida: float
     nota: str = ""
+    avisos: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

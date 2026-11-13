@@ -7770,11 +7770,21 @@ CRITERIOS: Dict[str, Criterio] = {
         forma=FORMA_FLOAT,
         sensibilidad=(0.95, 1.05),
         concepto="Modificador de las cargas por importancia operativa, eta_I, "
-                 "en las verificaciones de resistencia del TMC y del HDPE "
-                 "(AASHTO LRFD 12.5.4 y Manual de Puentes 2.3.2.5). Con "
-                 "eta_D = eta_R = 1.00 es el eta de la carga de tierra y de "
-                 "la carga viva",
-        justificacion="Decide cuanto se mayoran las cargas por la importancia "
+                 "del CRUCE: rige en las verificaciones de resistencia del "
+                 "conducto (TMC y HDPE; AASHTO LRFD 12.5.4 y Manual de "
+                 "Puentes 2.3.2.5) y en las combinaciones de Resistencia I "
+                 "de sus cabezales (AASHTO LRFD 1.3.2.1). En el conducto, "
+                 "con eta_D = eta_R = 1.00, es el eta de la carga de tierra "
+                 "y de la carga viva; en el cabezal se multiplica por "
+                 "'eta_ductilidad_cabezal' y 'eta_redundancia_cabezal'",
+        justificacion="La clasificacion de importancia operativa es de la "
+                      "VIA en ese cruce, no de una pieza: el conducto y sus "
+                      "cabezales son la misma obra y llevan el mismo eta_I "
+                      "(una decision, un valor; la clave conserva el nombre "
+                      "con que nacio en la Fase 8 del conducto, y desde la "
+                      "verificacion de las formulas del cabezal la lee "
+                      "tambien `M9.modificador_de_carga`). "
+                      "Decide cuanto se mayoran las cargas por la importancia "
                       "de la via. Ninguna fuente prescribe 1.05 para una "
                       "estructura enterrada: la norma de diseño manda aplicar "
                       "los modificadores generales, considera redundantes a "
@@ -7805,7 +7815,8 @@ CRITERIOS: Dict[str, Criterio] = {
                "structural component and connection thereof to be of "
                "operational priority»). La clasificacion de esta via la hace "
                "el Propietario: decidida por el dueño del proyecto el "
-               "2026-11-12",
+               "2026-11-12. Para el cabezal: AASHTO LRFD Art. 1.3.2.1, pag. "
+               "impresa 1-3 (cita AASHTO_LRFD_9.1.3.2.1#ETA)",
         reemplazado_por="La importancia operativa que el propietario declare "
                         "para la via",
         resolucion=Libre(
@@ -9998,6 +10009,95 @@ CRITERIOS: Dict[str, Criterio] = {
         resolucion=Libre(
             que_lo_fija="E.060 15.7, aplicado por analogia",
             dominio="m, positivo",
+        ),
+    ),
+
+    # =======================================================================
+    # --- verificacion de T-7 --- (cadena T) · El modificador de carga de
+    # AASHTO 1.3.2.1 en el cabezal: eta = eta_D·eta_R·eta_I. eta_I es el del
+    # cruce ('eta_importancia_operativa_conducto'); estos dos son los del
+    # cabezal, y ninguno adopta un numero que la fuente no escriba.
+    # Nivel: los invoca la Fase 9 (`M9.modificador_de_carga`), que solo corre
+    # a expediente; la corrida de referencia no la alcanza y los mide la de
+    # los datos de prueba de `tests/test_t7_verificacion.py`.
+    # =======================================================================
+
+    "eta_ductilidad_cabezal": Criterio(
+        valor=1.00,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.95, 1.05),
+        concepto="Modificador de las cargas por ductilidad, eta_D, en las "
+                 "combinaciones de Resistencia I del cabezal (AASHTO LRFD "
+                 "1.3.3): entra al producto eta = eta_D·eta_R·eta_I de la "
+                 "Ec. 1.3.2.1-1, en la estabilidad y en el armado",
+        justificacion="Decide cuanto se mayoran las cargas del cabezal por la "
+                      "ductilidad de sus componentes. La fuente lo gradua "
+                      "para el estado limite de resistencia: 1.05 o mas para "
+                      "componentes y conexiones no ductiles, 1.00 para los "
+                      "diseños y detalles convencionales que cumplen la "
+                      "norma, y 0.95 o mas cuando se especifican medidas "
+                      "adicionales de ductilidad; en los demas estados "
+                      "limite vale 1.00. Se adopta 1.00: el cabezal de "
+                      "voladizo se arma con la Seccion 5 de la misma norma "
+                      "--seccion controlada por traccion, refuerzo minimo "
+                      "que evita la falla fragil al agrietarse-- y no lleva "
+                      "medidas adicionales. Lo que no resuelve: el cabezal "
+                      "de gravedad en concreto ciclopeo no es ductil, pero "
+                      "se verifica con E.060 por analogia y no con estas "
+                      "combinaciones; si el Propietario clasifica el cabezal "
+                      "armado como no ductil, el valor sube a 1.05",
+        fuente="AASHTO LRFD 9a ed., Art. 1.3.3 «Ductility», pag. impresa 1-5 "
+               "(PDF 20; cita AASHTO_LRFD_9.1.3.3: «1.00 for conventional "
+               "designs and details complying with these Specifications»), "
+               "y Art. 1.3.2.1, pag. impresa 1-3 (cita "
+               "AASHTO_LRFD_9.1.3.2.1#ETA)",
+        reemplazado_por="La clasificacion de ductilidad que el proyectista "
+                        "estructural del expediente declare para el cabezal",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por el detallado del cabezal",
+            dominio="0.95 a 1.05 (AASHTO LRFD 1.3.3)",
+        ),
+    ),
+
+    "eta_redundancia_cabezal": Criterio(
+        valor=1.00,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.95, 1.05),
+        concepto="Modificador de las cargas por redundancia, eta_R, en las "
+                 "combinaciones de Resistencia I del cabezal (AASHTO LRFD "
+                 "1.3.4): entra al producto eta = eta_D·eta_R·eta_I de la "
+                 "Ec. 1.3.2.1-1, en la estabilidad y en el armado",
+        justificacion="Decide cuanto se mayoran las cargas del cabezal por su "
+                      "redundancia. La fuente lo gradua para el estado limite "
+                      "de resistencia: 1.05 o mas para miembros no "
+                      "redundantes, 1.00 para niveles convencionales de "
+                      "redundancia y para los elementos de cimentacion cuyo "
+                      "factor de resistencia ya la considera, y 0.95 o mas "
+                      "para niveles excepcionales; en los demas estados "
+                      "limite vale 1.00. Se adopta 1.00, el valor "
+                      "convencional: la estabilidad externa del cabezal se "
+                      "juzga con los factores de resistencia de cimentacion, "
+                      "que es el caso que la fuente nombra, y el muro es "
+                      "continuo a lo largo de su longitud y esta ligado a "
+                      "los aleros y al barril. Lo que juega en contra, y por "
+                      "eso 1.05 esta en la ventana: la pantalla trabaja como "
+                      "voladizo, con un solo camino de carga en su arranque, "
+                      "y la fuente deja al Propietario clasificar un miembro "
+                      "asi como no redundante. El 1.00 del conducto no sirve "
+                      "de precedente: sale de la regla de las estructuras "
+                      "enterradas, que no alcanza al cabezal",
+        fuente="AASHTO LRFD 9a ed., Art. 1.3.4 «Redundancy», pags. impresas "
+               "1-6 y 1-7 (PDF 21 y 22; cita AASHTO_LRFD_9.1.3.4), y Art. "
+               "1.3.2.1, pag. impresa 1-3 (cita AASHTO_LRFD_9.1.3.2.1#ETA)",
+        reemplazado_por="La clasificacion de redundancia que el Propietario "
+                        "declare para el cabezal",
+        resolucion=Libre(
+            que_lo_fija="el Propietario, por la redundancia del cabezal",
+            dominio="0.95 a 1.05 (AASHTO LRFD 1.3.4)",
         ),
     ),
 

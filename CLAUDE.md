@@ -263,7 +263,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -355,7 +355,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -393,7 +393,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -802,7 +802,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6276**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6310**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
@@ -884,7 +884,84 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-7c de la cadena T (2026-11-13, integrado detrás de T-7b, con las
+independientes. **La verificación de las fórmulas de los cierres de T-7b y
+T-7c (2026-11-13, integrada detrás de T-7c) sumó TREINTA Y CUATRO tests**,
+ninguno con la marca `pdf` ni dependiente de Tk ni del repositorio de normas:
+los 28 de `tests/test_t7_verificacion.py`, los cuatro anclajes de
+`test_decisiones_diferidas` para las fichas de la Parte LII (T7V-01..04) y los
+dos que crecen solos en `test_ext5_forma_gui` con los dos criterios nuevos. Un
+verificador recalculó a mano y contra el PDF las fórmulas del cabezal y de V5
+y V8: **AJUSTADO**, seis puntos conformes —que no se tocaron— y tres con
+defecto, que esta pasada corrige. **(Punto 3, MEDIA, lado inseguro) V8 con el
+caudal que no cabe en flujo uniforme**: `M4.hidraulica_a_presion` comparaba la
+aproximación de barril lleno **sin** las dos reglas del HDS-5 núm. 3.3.3 (pág.
+impresa 3.24) que `resolver_control` aplica desde E-A, y un caudal mayor podía
+dar menos carga que uno menor (tubo de A-01, S 0.003, L 60 m, TW 0: 0.957 m
+con 1.021 m³/s frente a 0.965 m con 0.987 m³/s). Ahora compite con el perfil
+de la lámina (`perfil_lamina` no necesita tirante normal): bajo 1.2 D la
+mayor de la aproximación y del remanso, bajo 0.75 D el remanso —**aviso
+expreso y no «método no evaluable»**: la fuente dice que la aproximación
+«should not be used» y dice también qué hacer, el cálculo de remanso que M4
+tiene—; el control da 0.989 m. Y `M5.v8_evento_extremo` lleva la guardia
+HW_ext ≥ HW de diseño: si no se cumple, juzga con la de diseño y lo avisa por
+`Verificacion.avisos`, campo nuevo que `InformePunto.avisos()` recoge. **Lo
+que quedó medido y sin corregir**: la regla de E-A tiene un escalón propio
+donde la aproximación cruza HW/D = 1.2 (11 mm entre dos caudales en lámina
+libre); es de `resolver_control`, conforme en la verificación, y para V8 lo
+cubre la guardia (ficha T7V-01). **(Punto 9, MEDIA) el η de AASHTO LRFD
+1.3.2.1 entra en el cabezal**, que usaba 1.00 implícito junto a un conducto
+con η_I = 1.05: `M9.modificador_de_carga` arma η = η_D·η_R·η_I y las
+combinaciones de Resistencia I lo llevan dentro de cada factor —η_i ≥ 0.95 en
+las cargas de γ máximo, 1/η ≤ 1.0 en las de γ mínimo (DC y EV de la
+combinación de mínimos), 1.00 en el Evento Extremo I y en Servicio—, en la
+estabilidad LRFD y en el armado; el marco ASD de E.050 y el contraste de E.060
+no lo llevan. **η_I es uno, el del cruce**: la misma clave
+`eta_importancia_operativa_conducto` [A] que lee la Fase 8 (su concepto dice
+ahora que rige el cruce; el nombre se conserva); η_D y η_R son dos [A] nuevos
+del cabezal (`eta_ductilidad_cabezal`, `eta_redundancia_cabezal`, 1.00
+convencional por 1.3.3 y 1.3.4, ventana 0.95–1.05), porque el 1.00 del
+conducto sale de 12.5.4 y no alcanza al cabezal. WA y LS, de factor único, se
+leen como cargas de γ máximo en las dos combinaciones (`Interpretacion` de la
+cita). En el muro de tanteo η **cambia el veredicto** del deslizamiento LRFD
+(37.177 > 37.156 kN/m; con 1.00 cumplía). Cierra la ficha T7C-11. **(Punto 7,
+BAJA) el piso de la zapata armada**: `M9.peralte_minimo_zapata` daba 0.30 +
+0.070 = 0.37 m, con el que la fila A8 —al eje de la barra, con el
+recubrimiento con que se arma— no podía cumplir E.060 15.7 en ningún cabezal
+de regla; ahora es 300 mm + ese recubrimiento + medio diámetro de la mayor
+barra del catálogo (**0.4041 m** con la cota de 91.44 mm, 0.3827 m con 70 mm),
+A8 cumple por construcción y sigue pudiendo fallar con una zapata declarada.
+Y el matiz del punto 2: la nota de V5 por cota ya no llama «el nivel más
+alto» al de la boca. **Dos cosas que conviene leer antes de tocar esos
+tests:** (a) los dorados del muro de tanteo de T-7b y T-7c **no se rehicieron
+uno a uno**: se calcularon con los factores de la tabla, y el fixture
+`tanteo` de los dos archivos declara ahora η_I = 1.00 para que sigan fijando
+la aritmética del ensamble; lo que η hace con el 1.05 de archivo lo fija a
+mano `CP_T7V_ETA` (ficha T7V-02); (b) A-01 con los datos DE PRUEBA sí cambia
+y se reescribió declarándolo: la zapata 0.37 → 0.4041 m, las doce filas E1 a
+E3 del marco LRFD sin ningún cambio de veredicto (E3 estática 38.05 > 29.39 →
+39.95 > 28.70 kN/m a la entrada y 57.93 > 49.13 → 60.83 > 47.90 a la salida),
+A8 0.2722 → 0.3064 m (cumple), el talón de salida 71.72 → 75.45 kN·m/m (Ø 1/2"
+@ 0.175 → @ 0.15) y la punta de salida @ 0.15 → @ 0.175. **No se escribió en
+rojo primero**: el rojo se midió con el archivo final contra `2b13dc1` (26
+rojos y 2 guardias); no se corrió mutación (ficha T7V-04). Se reescribieron,
+declarándolo, `test_t7a_cabezal_geometria` y `test_t7a_correcciones` (el
+piso), `test_t7b_cabezal_estabilidad` (el fixture, el apoyo de V8 que ahora
+trae la carga de diseño, y la zapata de 3.00 m, cuyas 24 filas cumplen) y
+`test_t7c_cabezal_armado` (el fixture, A8 y el armado de A-01). Censos: **141
+criterios, 20 sin valor**, citas del registro de 503 a **506** (AASHTO 1.3.2.1,
+1.3.3 y 1.3.4, leídas en sus páginas); ninguna marca `literal-ok` nueva. El
+tracker no cambia ningún estado: `INF-4.2`, `INF-4.5` e `INF-4.6` ganan una
+NOTA. **La línea base de la Familia C se regeneró y se midió contra `2b13dc1`
+con el comparador de E-B**: una diferencia en cada uno de los cuatro JSON (la
+huella `criterios_sha1`), 0 no comparables, y en las tres memorias las dos
+huellas y el recuento «139 … 20» → «141 … 20»; ninguna corrida de la línea
+base alcanza V8 ni la Fase 9; **ningún diámetro, sección, material ni HW se
+movió**. De las cuatro configuraciones se MIDIÓ UNA, «sí · no», con el
+repositorio de normas enlazado: 6287 passed, 23 skipped, collected 6310 (y
+sin `NORMAS_DIR`, sobre el mismo árbol: 6269 passed, 41 skipped). **Las otras
+tres se dicen como derivadas, no como medidas**, por lo mismo que en T-0: la
+derivación suma 34 a las de T-7c, y ninguno pasa a `skipped`.
+**T-7c de la cadena T (2026-11-13, integrado detrás de T-7b, con las
 correcciones de su auditoría) sumó DOSCIENTOS SETENTA Y CUATRO tests netos**, veintiuno
 con la marca `pdf` (los números y las frases de AASHTO LRFD y de E.060 que el
 armado toma, contra su página; los dos PDF en `normas/` de la app) y ninguno
@@ -2677,7 +2754,7 @@ PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
 4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728; T-6:
 4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352; T-9: 5548;
-T-7a: 5709; T-7b: 6002; T-7c: 6276. La
+T-7a: 5709; T-7b: 6002; T-7c: 6276; verificación de fórmulas de T-7: 6310. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2689,23 +2766,25 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 6266 (**derivado** en T-7c, no medido: el contenedor no tiene tkinter) | 10 |
-| sí | no | 6253 (**MEDIDO** en T-7c sobre el árbol fusionado, con `NORMAS_DIR`) | 23 |
-| no | sí | 6122 (**derivado**, no medido) | 154 |
-| no | no | 6109 (**derivado**, no medido) | 167 |
+| sí | sí | 6300 (**derivado** en la verificación de fórmulas de T-7, no medido: el contenedor no tiene tkinter) | 10 |
+| sí | no | 6287 (**MEDIDO** en la verificación de fórmulas de T-7 sobre su árbol, con `NORMAS_DIR`) | 23 |
+| no | sí | 6156 (**derivado**, no medido) | 154 |
+| no | no | 6143 (**derivado**, no medido) | 167 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
-dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-7c: 6235 y 41;
+dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de la verificación de fórmulas de T-7: 6269 y 41;
+sobre el de T-7c, 6235 y 41;
 sobre el de T-7b, 5961 y 41; sobre el de T-7a, 5672 y 37; sobre el de T-9, 5511 y 37; sobre el de T-3, 5318 y 34; sobre el de las correcciones de T-8, 5212 y 34; sobre el
 de T-5, 5143 y 34; sobre el de T-8, 4942 y 34; ni T-6, ni T-8, ni T-5, ni las
-correcciones de T-8, ni T-3, ni T-9, ni T-7a, ni T-7b, ni T-7c sumaron ninguno que abra el repositorio de
+correcciones de T-8, ni T-3, ni T-9, ni T-7a, ni T-7b, ni T-7c, ni la verificación de fórmulas de T-7 sumaron ninguno que abra el repositorio de
 normas; eran
 siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
 `tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
 Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
 2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
-iban saltados por la marca `pdf`. Tras T-7b la tabla decía 5992 / 5979 / 5869
+iban saltados por la marca `pdf`. Tras T-7c la tabla decía 6266 / 6253 / 6122
+/ 6109, medida sólo la segunda. Tras T-7b la tabla decía 5992 / 5979 / 5869
 / 5856, medida sólo la segunda. Tras T-7a la tabla decía 5703 / 5690 / 5592
 / 5579, medida sólo la segunda. Tras T-9 la tabla decía 5542 / 5529 / 5431
 / 5418, medida sólo la segunda. Tras T-3 la tabla decía 5349 / 5336 / 5245

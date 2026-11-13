@@ -78,7 +78,10 @@ línea que se pueda romper.
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
 | `AASHTO_LRFD_9.1.2#BRIDGE` | 1.2 | «DEFINITIONS» | pág. impresa **1-2** · PDF 17 | definicion | 2026-09-22 · ambos |
+| `AASHTO_LRFD_9.1.3.2.1#ETA` | 1.3.2.1 | «General» | pág. impresa **1-3** · PDF 18 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.1.3.2.1#EXTREMO` | 1.3.2.1 | «General» | pág. impresa **1-3** · PDF 18 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.1.3.3` | 1.3.3 | «1.3.3—Ductility» | pág. impresa **1-5** · PDF 20 | exigencia | 2026-11-13 · texto |
+| `AASHTO_LRFD_9.1.3.4` | 1.3.4 | «1.3.4—Redundancy» | pág. impresa **1-6** · PDF 21 | exigencia | 2026-11-13 · texto |
 | `AASHTO_LRFD_9.1.3.5` | 1.3.5 | «1.3.5—Operational Importance» | pág. impresa **1-7** · PDF 22 | permiso | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.10.5.4.2` | 10.5.4.2 | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | exigencia | 2026-08-29 · texto |
 | `AASHTO_LRFD_9.10.5.4.2#ESPECTRO` | 10.5.4.2, configuracion licuada | «Liquefaction Design Requirements» | pág. impresa **10-34** · PDF 1323 | recomendacion | 2026-08-29 · texto |
@@ -239,7 +242,13 @@ línea que se pueda romper.
 
 > **`AASHTO_LRFD_9.1.2#BRIDGE`** — Es la definicion a la que remite el num. 4.1.1.5.1 del Manual de Hidrologia («siguiendo lo establecido en las especificaciones AASHTO LRFD»). La magnitud es «an opening»: la ABERTURA de la estructura. 20.0 ft son 6.096 m y el Manual escribe 6.0 m sin decir como pasa de una cifra a la otra: la diferencia esta declarada en DIS-LUZ-DENOMINACION y el codigo compara los 6.0 m del Manual ([N], el mas exigente de los dos).
 
+> **`AASHTO_LRFD_9.1.3.2.1#ETA`** — La Ec. 1.3.2.1-1 es Σ eta_i·gamma_i·Q_i <= phi·R_n. La misma pagina da eta_i en dos renglones: «For loads for which a maximum value of γi is appropriate», eta_i = eta_D·eta_R·eta_I >= 0.95 (Ec. 1.3.2.1-2), y «For loads for which a minimum value of γi is appropriate», eta_i = 1/(eta_D·eta_R·eta_I) <= 1.0 (Ec. 1.3.2.1-3). La Seccion 11 no exceptua a los muros. El cabezal lo aplica en Resistencia I (`M9.modificador_de_carga`); en el Evento Extremo I y en Servicio los tres factores valen 1.00 (1.3.3, 1.3.4 y 1.3.5: «For all other limit states»).
+
 > **`AASHTO_LRFD_9.1.3.2.1#EXTREMO`** — Es el factor de resistencia ESTRUCTURAL del Evento Extremo I: 1.0 en flexion y en cortante de la pantalla y de la zapata (no son pernos ni columnas). No es el del terreno, que T-7b toma de 11.5.8. El comentario C1.3.2.1 lo llama «a default» que otras secciones pueden pisar; la Seccion 5 solo lo pisa para columnas.
+
+> **`AASHTO_LRFD_9.1.3.3`** — Es el renglon de eta_D que el cabezal adopta ('eta_ductilidad_cabezal' [A]). Los otros dos de la misma lista, «For the strength limit state»: >= 1.05 «for nonductile components and connections» y >= 0.95 con medidas adicionales de ductilidad. «For all other limit states: ηD = 1.00».
+
+> **`AASHTO_LRFD_9.1.3.4`** — La lista de eta_R «For the strength limit state»: >= 1.05 «for nonredundant members»; 1.00 «for conventional levels of redundancy, foundation elements where φ already accounts for redundancy as specified in Article 10.5»; >= 0.95 con niveles excepcionales. La pagina siguiente (1-7) cierra: «For all other limit states: ηR = 1.00». El cabezal adopta 1.00 ('eta_redundancia_cabezal' [A]), y lo que juega en contra esta en la justificacion del criterio: la pantalla en voladizo es un elemento de un solo camino de carga, y clasificarla como no redundante es del Propietario (C1.3.4: «may be considered nonredundant at the Owner’s discretion», dicho de cajones de una celda y pilas de una columna). El 1.00 del conducto viene de 12.5.4, que es de estructuras ENTERRADAS y no alcanza al cabezal.
 
 > **`AASHTO_LRFD_9.1.3.5`** — Es quien fija eta_I: el Propietario. La misma pagina gradua eta_I >= 1.05 (critical or essential), 1.00 (typical) y >= 0.95 (relatively less important), que es la graduacion que el Manual de Puentes 2.3.2.5 traduce. NINGUNA de las dos prescribe 1.05 para una estructura enterrada: 12.5.4 solo fija la redundancia.
 
@@ -3205,7 +3214,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 503.
+Citas sin firma de verificación: **6** de 506.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

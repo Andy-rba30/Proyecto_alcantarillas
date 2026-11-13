@@ -1360,3 +1360,34 @@ comparables; ningún bloque de punto cambia. Con `cmp`: `cli_perfil.txt`,
 `cli_perfil_ancho.txt`, `cli_familia_c.txt`, `cli_rama_error.txt`,
 `memoria_punto_cajon.html` y los dos CSV de resumen, idénticos byte a byte.
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## Verificación de las fórmulas de los cierres de T-7b y T-7c (2026-11-13): regenerada y medida contra `2b13dc1`
+
+La pasada corrige tres defectos que un verificador dejó sobre el cabezal y sobre V8: V8
+con el caudal que no cabe en flujo uniforme compite con el perfil de la lámina y no
+entrega menos carga que la de diseño; las combinaciones de Resistencia I del cabezal
+llevan el modificador de carga de AASHTO LRFD 1.3.2.1 con el η_I del cruce; y el piso del
+espesor de la zapata armada se construye con la lectura de la fila A8 (E.060 15.7).
+**Ninguna corrida de esta línea base alcanza nada de eso**: sin declarar nada, V5 sigue
+detenida en `remanso_derecho_via`, V8 en su periodo de retorno y ningún punto llega a la
+Fase 9 a nivel de expediente. Lo que cambia son huellas y recuentos:
+
+- `criterios_sha1` en los cuatro JSON (dos criterios nuevos con valor,
+  `eta_ductilidad_cabezal` y `eta_redundancia_cabezal`, y el concepto de
+  `eta_importancia_operativa_conducto`, que dice ahora que rige el cruce);
+- en las tres memorias, las dos huellas (`criterios_sha1`, `hoja_ruta_sha1`: la v8
+  lleva las dos notas «Corregido» de esta pasada) y «139 criterios declarados, 20 todavía
+  sin valor» → «141 … 20».
+
+**Medido con el comparador de E-B** (`cli.py --comparar`) contra los cuatro JSON de
+`2b13dc1`: **1 diferencia en cada uno** (la huella `criterios_sha1`), **0 no
+comparables**; ningún bloque de punto cambia. Con `git diff --stat`: los cuatro JSON con
+una línea y las tres memorias de la CLI con tres; `cli_perfil.txt`,
+`cli_perfil_ancho.txt`, `cli_expediente.txt`, `cli_familia_c.txt`, `cli_rama_error.txt`,
+`memoria_punto_cajon.html` y los dos CSV de resumen, idénticos byte a byte.
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+Lo que la pasada SÍ mueve está fuera de esta línea base y se declara en los tests: A-01
+con los datos DE PRUEBA de T-7b (`tests/test_t7_verificacion.py`): la zapata de los dos
+cabezales pasa de 0.37 a 0.4041 m, las doce filas E1 a E3 del marco LRFD se mueven sin
+cambiar ningún veredicto, A8 pasa a cumplir y el talón de salida a Ø 1/2" @ 0.15.

@@ -2576,9 +2576,14 @@ def _v5_cota_de_afectacion(*, punto: PuntoCritico,
                 f"Metodo '{METODO_REMANSO_COTA_AFECTACION}' "
                 f"('{CRITERIO_REMANSO}', [A]): es el criterio de NIVEL que "
                 "el HDS-5 num. 2.2.5 sostiene, sin ninguna longitud. Compara "
-                "el nivel mas alto del embalse (en la boca) con la cota del "
-                "dato; no mide la topografia lateral ni la curva de "
-                "remanso. El inciso b. del mismo numeral trae otro criterio "
+                "el nivel del agua EN LA BOCA (cota de entrada + HW) con la "
+                "cota del dato. Ese es el nivel mas alto solo si el embalse "
+                "esta a nivel: con una curva de remanso la superficie sigue "
+                "subiendo aguas arriba con la pendiente del cauce (del orden "
+                "de S·x a la distancia x), y este metodo no la mide, ni la "
+                "topografia lateral. Si lo que se afecta esta lejos de la "
+                "boca, la cota del dato tiene que llevar ese margen. El "
+                "inciso b. del mismo numeral trae otro criterio "
                 "de nivel -- el AUMENTO admisible sobre el nivel sin la "
                 "obra -- que exige el perfil del cauce y no esta "
                 "implementado.")),
@@ -3085,7 +3090,12 @@ def v8_evento_extremo(*, punto: PuntoCritico,
     con la hidraulica entera de M4 o, si el caudal no cabe en lamina libre,
     con el barril A PRESION (`M4.hidraulica_a_presion`: el control de
     entrada sumergido y el de salida a barril lleno, gobernando el mayor;
-    correcciones de T-7b, H3). Y solo se evalua sobre el candidato que YA
+    correcciones de T-7b, H3; y desde la verificacion de T-7, con las dos
+    reglas de la pag. 3.24 del HDS-5 sobre la aproximacion de barril lleno
+    -- el remanso la comprueba bajo 1.2 D y la sustituye bajo 0.75 D -- y
+    con la guardia HW_ext >= HW de diseño: un caudal mayor no da menos
+    carga; si la da, se acota y se avisa por `Verificacion.avisos`). Y
+    solo se evalua sobre el candidato que YA
     cumple todo lo anterior de la tabla (`verificar`): un V8 que no se puede
     evaluar no enmascara un V1 o un V5 incumplido. Con el umbral
     «sin_desborde_de_la_plataforma» se compara la cota del embalse (solera
@@ -3172,6 +3182,24 @@ def v8_evento_extremo(*, punto: PuntoCritico,
             id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO)
     entrada = cota_de_entrada(punto)
     HW_ext = extremo.HW
+    avisos_v8 = [f"V8: {a}" for a in getattr(extremo, "avisos", ())]
+    # --- verificacion de T-7 (punto 3) --- UN CAUDAL MAYOR NO PUEDE DAR
+    # MENOS CARGA por la misma seccion. Si la del evento extremo queda por
+    # debajo de la de diseño, no se juzga con ella: se acota a la de diseño
+    # y se avisa. Es la segunda linea de `M4.hidraulica_a_presion`; la
+    # alcanza un tirante del receptor declarado para el evento menor que el
+    # de diseño, o un cambio de metodo entre los dos caudales.
+    acotada = not HW_ext >= resultado.HW - TOL_UMBRAL_NORMATIVO
+    if acotada:
+        avisos_v8.append(
+            f"V8: la carga calculada para el caudal del evento extremo "
+            f"({HW_ext:.3f} m con {Q_ext:.3f} m3/s) es MENOR que la de "
+            f"diseño ({resultado.HW:.3f} m con {resultado.Q:.3f} m3/s) por "
+            "la misma seccion: un caudal mayor no puede dar menos carga, y "
+            "V8 se juzga con la de diseño como cota inferior. Revisar "
+            "`TW_evento_extremo_m` (el receptor sube con la avenida) y el "
+            "metodo con que se obtuvo cada carga")
+        HW_ext = resultado.HW
     cota_embalse = entrada.valor + HW_ext
     cota_desborde = evento.cota_desborde
     if not (math.isfinite(cota_embalse) and math.isfinite(cota_desborde)):
@@ -3187,6 +3215,7 @@ def v8_evento_extremo(*, punto: PuntoCritico,
         valor_admisible=cota_desborde,
         criterio_aplicado=CRITERIO_UMBRAL_V8,
         codigo="V8",
+        avisos=tuple(avisos_v8),
         paso=paso(
             "F5.V8", codigo="V8",
             que="V8: nivel del embalse con el caudal del evento extremo "
@@ -3212,7 +3241,9 @@ def v8_evento_extremo(*, punto: PuntoCritico,
                          "control que gobierna: "
                          f"{extremo.control_gobernante.value}"
                          + (f" ({extremo.nota})" if getattr(extremo, "nota",
-                                                            "") else ""),
+                                                            "") else "")
+                         + (f"; ACOTADA a la carga de diseño: la calculada "
+                            f"era {extremo.HW:.3f} m" if acotada else ""),
                          cifras=CIFRAS_MAGNITUD),
                 Magnitud("cota_entrada", entrada.valor, "msnm",
                          entrada.procedencia, cifras=CIFRAS_MAGNITUD)),
@@ -3243,7 +3274,8 @@ def v8_evento_extremo(*, punto: PuntoCritico,
                 "del receptor del evento son entradas del proyecto. La "
                 "pendiente y la longitud son las del diseño. No se evalua "
                 "la erosion del terraplen ni el sifonamiento por la carga "
-                "sostenida.")),
+                "sostenida."
+                + (" " + " ".join(avisos_v8) + "." if avisos_v8 else ""))),
     )
 
 

@@ -14128,4 +14128,107 @@ E060_22_4_8_PERALTE = _cita(
 )
 
 
+# ---- Verificacion de las formulas de los cierres de T-7b y T-7c ------------
+# El modificador de carga eta de AASHTO 1.3.2.1 en el cabezal (punto 9 de la
+# verificacion; cierra la ficha T7C-11). La sesion abrio las cuatro paginas
+# (PDF 18, 20, 21 y 22) por su capa de texto.
+FECHA_VERIFICACION_T7 = "2026-11-13"
+POR_VERIFICACION_T7 = ("verificacion de tesis/T-7 · lectura directa de la "
+                       "pagina por la sesion")
+VERIFICACION_T7 = (FECHA_VERIFICACION_T7, POR_VERIFICACION_T7)
+
+AASHTO_1_3_2_1_ETA = _cita(
+    id="AASHTO_LRFD_9.1.3.2.1#ETA",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="1.3.2.1",
+    titulo_numeral="General",
+    pagina_impresa="1-3",
+    pagina_pdf=18,
+    texto_literal=Verbatim(
+        texto=("Each component and connection shall satisfy Eq. 1.3.2.1-1 "
+               "for each limit state, unless otherwise specified."),
+        pagina_pdf=18),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VERIFICACION_T7,
+    nota=("La Ec. 1.3.2.1-1 es Σ eta_i·gamma_i·Q_i <= phi·R_n. La misma "
+          "pagina da eta_i en dos renglones: «For loads for which a maximum "
+          "value of γi is appropriate», eta_i = eta_D·eta_R·eta_I >= 0.95 "
+          "(Ec. 1.3.2.1-2), y «For loads for which a minimum value of γi is "
+          "appropriate», eta_i = 1/(eta_D·eta_R·eta_I) <= 1.0 (Ec. "
+          "1.3.2.1-3). La Seccion 11 no exceptua a los muros. El cabezal lo "
+          "aplica en Resistencia I (`M9.modificador_de_carga`); en el Evento "
+          "Extremo I y en Servicio los tres factores valen 1.00 (1.3.3, "
+          "1.3.4 y 1.3.5: «For all other limit states»)."),
+    interpretacion=Interpretacion(
+        texto=("El agua (WA) y la sobrecarga viva (LS) tienen UN solo factor "
+               "de carga en la Tabla 3.4.1-1: no hay un «minimo» que les "
+               "corresponda. El proyecto las lee como cargas de gamma MAXIMO "
+               "en las dos combinaciones de Resistencia I del cabezal, "
+               "tambien en la de minimos, y lo mismo el empuje de tierras "
+               "(EH), que entra con su maximo en las dos. Solo el peso "
+               "propio (DC) y el relleno sobre el talon (EV), que la Tabla "
+               "3.4.1-2 gradua con maximo y minimo, llevan 1/eta en la "
+               "combinacion de minimos."),
+        en_contra=("la fuente no dice a cual de los dos renglones va una "
+                   "carga de factor unico; la subpresion, en la combinacion "
+                   "de maximos, reduce la carga vertical y mayorarla baja la "
+                   "presion de contacto que el portante compara",),
+        a_favor=("en la combinacion de minimos el empuje del agua y la "
+                 "subpresion son desfavorables para el deslizamiento y la "
+                 "excentricidad, y dividirlos por eta seria relajarlos",
+                 "con eta sobre todas las cargas de la combinacion de "
+                 "maximos la resultante no cambia de posicion y la presion "
+                 "de contacto se mayora entera"),
+    ),
+)
+
+AASHTO_1_3_3_DUCTILIDAD = _cita(
+    id="AASHTO_LRFD_9.1.3.3",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="1.3.3",
+    titulo_numeral="1.3.3—Ductility",
+    pagina_impresa="1-5",
+    pagina_pdf=20,
+    texto_literal=Verbatim(
+        texto=("1.00 for conventional designs and details complying with "
+               "these Specifications"),
+        pagina_pdf=20),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VERIFICACION_T7,
+    nota=("Es el renglon de eta_D que el cabezal adopta "
+          "('eta_ductilidad_cabezal' [A]). Los otros dos de la misma lista, "
+          "«For the strength limit state»: >= 1.05 «for nonductile "
+          "components and connections» y >= 0.95 con medidas adicionales de "
+          "ductilidad. «For all other limit states: ηD = 1.00»."),
+)
+
+AASHTO_1_3_4_REDUNDANCIA = _cita(
+    id="AASHTO_LRFD_9.1.3.4",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="1.3.4",
+    titulo_numeral="1.3.4—Redundancy",
+    pagina_impresa="1-6",
+    pagina_pdf=21,
+    texto_literal=Verbatim(
+        texto="1.05 for nonredundant members",
+        pagina_pdf=21),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VERIFICACION_T7,
+    nota=("La lista de eta_R «For the strength limit state»: >= 1.05 «for "
+          "nonredundant members»; 1.00 «for conventional levels of "
+          "redundancy, foundation elements where φ already accounts for "
+          "redundancy as specified in Article 10.5»; >= 0.95 con niveles "
+          "excepcionales. La pagina siguiente (1-7) cierra: «For all other "
+          "limit states: ηR = 1.00». El cabezal adopta 1.00 "
+          "('eta_redundancia_cabezal' [A]), y lo que juega en contra esta "
+          "en la justificacion del criterio: la pantalla en voladizo es un "
+          "elemento de un solo camino de carga, y clasificarla como no "
+          "redundante es del Propietario (C1.3.4: «may be considered "
+          "nonredundant at the Owner’s discretion», dicho de cajones de una "
+          "celda y pilas de una columna). El 1.00 del conducto viene de "
+          "12.5.4, que es de estructuras ENTERRADAS y no alcanza al "
+          "cabezal."),
+)
+
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

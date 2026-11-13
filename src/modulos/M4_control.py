@@ -3154,11 +3154,40 @@ def hidraulica_a_presion(seccion: Seccion, Q: float, S: float, L: float,
       * el control de salida a barril LLENO (`control_salida`: HW = H + h_o
         - S·L, con la friccion del barril lleno), que es la ecuacion del
         HDS-5 para el barril que fluye lleno;
+      * y el perfil de la lamina (`perfil_lamina`), que tampoco necesita el
+        tirante normal: clasifica por el signo de Sf - S y, con el caudal
+        por encima del de seccion llena, sube hasta la clave y sigue la
+        linea de energia llena (HDS-5 pag. 3.12);
 
-    -- y gobierna la mayor (`hw_gobernante`, sin perfil de la lamina: lleno
-    no hay lamina que integrar). Lo que el resultado lleva dice cual
-    goberno. Si alguna de las piezas no puede evaluarse con ese caudal,
-    `MetodoNoEvaluableError` con el rotulo del HDS-5.
+    -- y gobierna la mayor (`hw_gobernante`, CON el perfil). Lo que el
+    resultado lleva dice cual goberno. Si alguna de las piezas no puede
+    evaluarse con ese caudal, `MetodoNoEvaluableError` con el rotulo del
+    HDS-5.
+
+    --- verificacion de T-7 (punto 3) --- HASTA AQUI SE COMPARABA SIN EL
+    PERFIL («lleno no hay lamina que integrar»), y era el lado inseguro: la
+    aproximacion h_o = (d_c + D)/2 competia sin las dos reglas que el HDS-5
+    le pone en el num. 3.3.3 (pag. impresa 3.24) y que `resolver_control`
+    aplica desde E-A. Medido en el tubo de Ø 0.90 m con S = 0.003, L = 60 m
+    y TW = 0: 0.9654 m con 0.9866 m3/s en lamina libre (rige el remanso) y
+    0.9570 m con 1.0213 m3/s «a presion» -- un caudal MAYOR con MENOS carga
+    --. Que el caudal no quepa en flujo UNIFORME no quiere decir que el
+    barril vaya lleno: con control de salida y HW < 1.2 D «it is possible
+    that the barrel flows partly full though its entire length». Las dos
+    reglas, las mismas de la lamina libre (`PerfilLamina.HW_efectivo_m`):
+
+      * 0.75 <= HW_aprox/D < 1.2: «caution should be used» y el remanso se
+        usa «to check the result from the approximate method»; la carga de
+        salida es la MAYOR de las dos, y se avisa;
+      * HW_aprox/D < 0.75: «the approximate method should not be used». No
+        se levanta `MetodoNoEvaluableError`: la misma fuente dice que hacer
+        (pag. 3.12, calculo de remanso desde la salida) y M4 lo tiene; la
+        carga de salida es la del remanso, o ninguna si no alcanza la
+        entrada, y se avisa.
+
+    Con eso la carga es continua y no decrece al cruzar el caudal de seccion
+    llena (mismo caso: 0.9677 m con 0.99, 0.9721 con 0.9965 y 0.9890 con
+    1.0213 m3/s). Donde gobierna la entrada nada cambia.
     """
     from src.modelos import (HidraulicaDelEventoExtremo,
                              REGIMEN_EVENTO_A_PRESION)
@@ -3170,20 +3199,56 @@ def hidraulica_a_presion(seccion: Seccion, Q: float, S: float, L: float,
         salida = control_salida(Q=Q_celda, seccion=seccion, S=S, L=L, TW=TW,
                                 n=material.n_para_capacidad, critico=critico,
                                 criterio_ke=criterio_ke_de(material))
+        perfil = perfil_lamina(Q_celda=Q_celda, seccion=seccion, S=S, L=L,
+                               TW=TW, n=material.n_para_capacidad,
+                               ke=salida.ke, critico=critico,
+                               HW_aproximado=salida.HW)
     except (LimiteNumericoError, DatoInvalidoError) as exc:
         raise MetodoNoEvaluableError(
             "carga del evento extremo", "otro metodo hidraulico para el "
             "barril a presion", "con el barril a presion las ecuaciones de "
             f"HDS-5 no se pueden evaluar para Q = {Q!r} m3/s: {exc}") from exc
-    HW, control = hw_gobernante(entrada, salida)
+    HW, control = hw_gobernante(entrada, salida, perfil)
+    HW_salida = (perfil.HW_efectivo_m if perfil.HW_efectivo_m is not None
+                 else salida.HW)
+    avisos = []
+    remanso = ("no alcanza la entrada" if perfil.HW_remanso_m is None
+               else f"HW = {perfil.HW_remanso_m:.3f} m")
+    # El HDS-5 condiciona las dos advertencias a que el control de salida
+    # GOBIERNE: se avisa cuando gobierna, o cuando la aproximacion retirada
+    # habria gobernado sin la regla.
+    aprox_gobernaria = salida.HW > entrada.HW + TOL_UMBRAL_NORMATIVO
+    gobierna_salida = control is ControlGobernante.SALIDA
+    if perfil.sustituye_aproximacion and (aprox_gobernaria or gobierna_salida):
+        avisos.append(
+            "evento extremo: la aproximacion de barril lleno (h_o = (d_c + "
+            f"D)/2) da HW/D = {salida.HW_sobre_D:.3f} < "
+            f"{H_O_HW_SOBRE_D_MIN:g} y NO se usa («the approximate method "
+            "should not be used», HDS-5 num. 3.3.3, pag. impresa 3.24): la "
+            f"carga de salida es la del remanso ({remanso}), como en lamina "
+            "libre. El barril no va lleno aunque el caudal no quepa en "
+            "flujo uniforme")
+    elif perfil.cautela_aproximacion and gobierna_salida:
+        avisos.append(
+            "evento extremo: gobierna la salida con HW/D = "
+            f"{salida.HW_sobre_D:.3f} < {H_O_HW_SOBRE_D_CAUTELA:g} en la "
+            "aproximacion de barril lleno: el barril puede fluir parcialmente "
+            "lleno en toda su longitud («caution should be used», HDS-5 num. "
+            "3.3.3, pag. impresa 3.24). La carga de salida es la MAYOR de la "
+            f"aproximacion (HW = {salida.HW:.3f} m) y la del remanso "
+            f"({remanso}): {HW_salida:.3f} m; no se entrega menos que la de "
+            "lamina libre")
     return HidraulicaDelEventoExtremo(
         HW=HW, control_gobernante=control, regimen=REGIMEN_EVENTO_A_PRESION,
-        HW_entrada=entrada.HW, HW_salida=salida.HW,
+        HW_entrada=entrada.HW, HW_salida=HW_salida,
         nota=(f"barril a presion: control de entrada HW = {entrada.HW:.3f} m "
               f"(q* = {entrada.q_estrella:.3f}, rama "
               f"{entrada.regimen.value}); control de salida a barril lleno "
-              f"HW = {salida.HW:.3f} m; gobierna el de "
-              f"{control.value}"))
+              f"HW = {salida.HW:.3f} m (HW/D = {salida.HW_sobre_D:.3f}); "
+              f"remanso por el perfil de la lamina: {remanso}; carga de "
+              f"salida efectiva {HW_salida:.3f} m; gobierna el de "
+              f"{control.value}"),
+        avisos=tuple(avisos))
 
 
 def resolver_control(seccion: Seccion, Q: float, S: float, L: float, TW: float,

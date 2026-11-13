@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "dfa9eb4adcb19fbc6d4c642d9cd8aec9f76f8fc8",
+    "criterios_sha1": "3ea7ae5f108273ef56b4ef10d5e815398fe18910",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"

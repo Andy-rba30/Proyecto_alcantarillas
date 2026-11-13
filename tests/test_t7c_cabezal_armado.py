@@ -145,7 +145,21 @@ def tanteo(monkeypatch):
     Las declaraciones DE PRUEBA del muro de tanteo de T-7b, por la puerta
     real, y el coeficiente sismico IMPUESTO (k_h = 0.25 sin reduccion: k_h0
     = k_h). El conftest repone el estado al salir.
+
+    REESCRITO DECLARANDOLO (verificacion de las formulas de T-7b y T-7c,
+    punto 9). Los dorados del muro de tanteo (`CP_T7C_ARMADO` y `CP_T7B_ESTABILIDAD`) se
+    calcularon A MANO con los factores de carga de la tabla, es decir con el
+    modificador de carga eta_i = 1.00 de AASHTO 1.3.2.1, que hasta esa
+    verificacion era IMPLICITO en el cabezal. Desde ella el cabezal aplica
+    el eta_I del cruce ('eta_importancia_operativa_conducto' [A], 1.05 de
+    archivo), y este fixture DECLARA en caliente eta_I = 1.00 --el valor
+    «typical» de 1.3.5, dentro de la ventana del criterio-- para que cada
+    dorado siga fijando lo que fijaba: la aritmetica del ensamble con los
+    factores de la tabla. Lo que el modificador hace sobre este mismo muro,
+    con el 1.05 de archivo, lo fija a mano `tests/test_t7_verificacion.py`
+    (`CP_T7V_ETA`).
     """
+    ca.establecer_valor_dinamico("eta_importancia_operativa_conducto", 1.0)
     ca.establecer_valor_dinamico("phi_relleno_trasdos", CPB["phi_relleno"])
     ca.establecer_valor_dinamico("peso_especifico_relleno_kn_m3",
                                  CPB["gamma_relleno"])
@@ -2061,8 +2075,24 @@ def test_el_armado_no_itera_la_geometria_aunque_el_cabezal_no_pase(tmp_path):
     # A7 (con el analisis quimico DE PRUEBA del conftest -- cloruros -- el
     # f'c de 21 MPa queda bajo el minimo por durabilidad). Ninguna fila de
     # resistencia (A1 a A6) incumple.
+    #
+    # REESCRITO DECLARANDOLO OTRA VEZ (verificacion de las formulas de T-7c,
+    # punto 7). A8 YA NO INCUMPLE: el piso de la zapata de regla se corrigio
+    # (`M9.peralte_minimo_zapata`: 300 mm sobre el refuerzo + el
+    # recubrimiento con que se arma + medio diametro de la mayor barra del
+    # catalogo) y la zapata de A-01 pasa de 0.37 m a 0.30 + 0.070 + 0.0127 =
+    # 0.3827 m (con el acero «A» y el analisis quimico de prueba del
+    # conftest, 70 mm de recubrimiento). Con la barra de la punta (Ø 1/2")
+    # A8 mide 0.3827 - 0.070 - 0.00635 = 0.30635 m >= 0.30. Queda A7.
     assert sorted(c for c in incumplidas if c.startswith("A")) == [
-        "A7.concreto.e", "A7.concreto.s", "A8.zapata.e", "A8.zapata.s"]
+        "A7.concreto.e", "A7.concreto.s"]
+    for g in a01.cabezal.geometrias:
+        assert g.espesor_zapata == pytest.approx(0.3827, abs=ABS_CERO)
+    for ext in ("e", "s"):
+        a8 = next(v for v in a01.cabezal.verificaciones
+                  if v.codigo == f"A8.zapata.{ext}")
+        assert a8.cumple
+        assert a8.valor_obtenido == pytest.approx(0.30635, abs=TOL_EXACTA)
 
 
 @pytest.mark.lento
@@ -3400,17 +3430,56 @@ def test_el_armado_final_de_A01_con_los_datos_de_prueba(tmp_path):
     0.175) y la de salida 138.08 (135.51: 1837 frente a 1798 mm2/m, la misma
     Ø 5/8" @ 0.10); la punta de salida, que H1 no toca, 755 mm2/m, Ø 1/2" @
     0.15, como el control. Ningun diametro del conducto se mueve.
+
+    REESCRITO DECLARANDOLO (verificacion de las formulas de T-7b y T-7c,
+    puntos 7 y 9). Los seis momentos de arriba son los de ANTES. Cambian
+    por dos causas, y las dos van a la vez:
+
+      (7) la zapata de regla pasa de 0.37 m a 0.30 + 0.09144 + 0.0127 =
+          0.40414 m (E.060 15.7 sobre el refuerzo + la cota de recubrimiento
+          con que se arma + medio diametro de la mayor barra del catalogo):
+          la pantalla es 0.034 m mas corta y la zapata tiene mas peralte;
+      (9) Resistencia I lleva el modificador de carga del cruce, eta_I =
+          1.05 (AASHTO 1.3.2.1): 1.05 en las cargas de gamma maximo, 1/1.05
+          en DC y EV de la combinacion de minimos. El Evento Extremo I, que
+          rige la pantalla y la punta, va con 1.00.
+
+                         antes                       ahora
+      entrada pantalla   59.34  Ø 1/2" @ 0.175   ->  57.49  Ø 1/2" @ 0.175
+      entrada punta      38.39  Ø 1/2" @ 0.25    ->  38.35  Ø 1/2" @ 0.25
+      entrada talon      28.69  Ø 1/2" @ 0.25    ->  30.19  Ø 1/2" @ 0.25
+      salida pantalla   138.08  Ø 5/8" @ 0.10    -> 134.99  Ø 5/8" @ 0.10
+      salida punta       83.51  Ø 1/2" @ 0.15    ->  83.41  Ø 1/2" @ 0.175
+      salida talon       71.72  Ø 1/2" @ 0.175   ->  75.45  Ø 1/2" @ 0.15
+
+    EL TALON DE SALIDA, A MANO (rige «Resistencia I (maximos)», con el peso
+    entero de 11.6.1.2), sobre las cargas SIN FACTORAR del ensamble (EV
+    48.5710 kN/m a x = 1.535309 m; LS.v 11.1648 a 1.517073; EH.v 11.0790 a
+    2.055749; cara de la pantalla en x_t = 0.67840 + 0.30 = 0.97840 m;
+    talon 1.07735 m; gamma_c = 23.56 kN/m3):
+        EV     1.35·1.05 = 1.4175;  1.4175·48.5710·(1.535309 - 0.97840)
+               = 68.8494·0.556909                              = 38.3428
+        LS.v   1.75·1.05 = 1.8375;  1.8375·11.1648·0.538673    = 11.0510
+        EH.v   1.50·1.05 = 1.5750;  1.5750·11.0790·1.077349    = 18.7991
+        zapata 1.25·1.05 = 1.3125;  1.3125·23.56·0.40414 = 12.4971 kN/m2;
+               12.4971·1.07735^2/2                             =  7.2526
+        M_u = 38.3428 + 11.0510 + 18.7991 + 7.2526             = 75.4455
+    Solo con eta (la zapata de 0.37 m) el control del verificador era
+    1.05·71.72 = 75.31 kN·m/m, que ya pasaba de phi·M_n = 73.43 con Ø 1/2" @
+    0.175 y pedia @ 0.15: se reprodujo antes de tocar la zapata.
     """
     _sin_datos_de_exposicion()
     _, a01 = _correr_de_prueba(tmp_path)
     assert a01.resultado.seccion.etiqueta() == "Ø 0.90 m"
+    for g in a01.cabezal.geometrias:
+        assert g.espesor_zapata == pytest.approx(0.40414, abs=ABS_CERO)
     esperado = {
-        ("entrada", SECCION_PANTALLA): (59.34, "1/2", 0.175),
-        ("entrada", SECCION_PUNTA): (38.39, "1/2", 0.25),
-        ("entrada", SECCION_TALON): (28.69, "1/2", 0.25),
-        ("salida", SECCION_PANTALLA): (138.08, "5/8", 0.10),
-        ("salida", SECCION_PUNTA): (83.51, "1/2", 0.15),
-        ("salida", SECCION_TALON): (71.72, "1/2", 0.175),
+        ("entrada", SECCION_PANTALLA): (57.49, "1/2", 0.175),
+        ("entrada", SECCION_PUNTA): (38.35, "1/2", 0.25),
+        ("entrada", SECCION_TALON): (30.19, "1/2", 0.25),
+        ("salida", SECCION_PANTALLA): (134.99, "5/8", 0.10),
+        ("salida", SECCION_PUNTA): (83.41, "1/2", 0.175),
+        ("salida", SECCION_TALON): (75.45, "1/2", 0.15),
     }
     for a in a01.cabezal.armado:
         for clave in (SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON):
@@ -3420,8 +3489,11 @@ def test_el_armado_final_de_A01_con_los_datos_de_prueba(tmp_path):
             assert p.barra.designacion == barra
             assert p.barra.espaciamiento == pytest.approx(s, abs=ABS_CERO)
     salida = next(a for a in a01.cabezal.armado if a.extremo == "salida")
-    # 755 mm2/m, el control del auditor escrito sin decimales
-    assert round(salida.seccion(SECCION_PUNTA).As_adoptado) == 755
+    # 665 mm2/m (eran 755, el control del auditor: con 0.034 m mas de
+    # peralte la misma solicitacion pide menos acero)
+    assert round(salida.seccion(SECCION_PUNTA).As_adoptado) == 665
+    assert salida.seccion(SECCION_TALON).rige_flexion.M_u == pytest.approx(
+        75.4455, abs=TOL_MM)
     # la fisuracion aplica en la pantalla de salida y su barra la cumple
     # con las dos clases
     a6 = next(v for v in salida.verificaciones
@@ -3541,8 +3613,12 @@ def test_mutacion_del_cierre_A8_y_el_paso_del_regimen_dicen_sus_numeros(
         tanteo, monkeypatch):
     """
     A8 en T-00: 0.40 - (91.44 + 12.7/2)/1000 = 0.30221 m, margen 0.00221 m
-    sobre los 0.30 m; la otra lectura (hasta la cara) 0.40 - 0.09144 =
-    0.30856 m. El paso del regimen, con la cadena de H2 (k_h = 0.25, k_h0 =
+    sobre los 0.30 m; las otras dos lecturas, que la fila imprime y no usa:
+    hasta la cara INFERIOR de la barra 0.40 - 0.09144 = 0.30856 m y hasta
+    la SUPERIOR 0.40 - (91.44 + 12.7)/1000 = 0.29586 m (REESCRITO
+    DECLARANDOLO, verificacion de T-7c, punto 7: la magnitud se llamaba
+    «hasta la cara de la barra» sin decir cual, y la superior --la lectura
+    mas exigente-- no se imprimia). El paso del regimen, con la cadena de H2 (k_h = 0.25, k_h0 =
     0.50): k_h del armado 0.50 (1.0·k_h0) y de la estabilidad 0.25; y el
     contraste K0·(1 + sen i) dice «sen i» mas de empuje: con el talud
     de 0.5 m sobre el relleno del dorado de H10 se lee i del propio paso.
@@ -3553,8 +3629,12 @@ def test_mutacion_del_cierre_A8_y_el_paso_del_regimen_dicen_sus_numeros(
     a8 = _v(a, "A8.zapata.e")
     assert a8.paso.veredicto.margen == pytest.approx(0.00221, abs=TOL_EXACTA)
     cara = next(m for m in a8.paso.sustitucion
-                if m.simbolo == "hasta la cara de la barra")
+                if m.simbolo == "hasta la cara inferior de la barra")
     assert cara.valor == pytest.approx(0.30856, abs=TOL_EXACTA)
+    encima = next(m for m in a8.paso.sustitucion
+                  if m.simbolo == "hasta la cara superior de la barra")
+    assert encima.valor == pytest.approx(0.29586, abs=TOL_EXACTA)
+    assert "EJE" in a8.paso.resultado.procedencia
     valores = {m.simbolo: m for m in a.pasos[0].sustitucion}
     assert valores["k_h del armado"].valor == pytest.approx(0.50,
                                                             abs=ABS_CERO)

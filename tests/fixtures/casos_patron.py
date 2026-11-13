@@ -3099,3 +3099,63 @@ CP_T7C_CICLOPEO = {
 #     e = 1 - 67.834813/84.6541 = 0.198682
 CP_T7C_BASE_SERVICIO = {"e": 0.306553, "limite": 2.0 / 6.0,
                         "e_activo": 0.044939, "tolerancia": 2e-5}
+
+
+# ===========================================================================
+# CP_T7V_ETA -- verificacion de las formulas de los cierres de T-7b y T-7c
+# (punto 9): el modificador de carga de AASHTO LRFD 1.3.2.1 sobre el MURO DE
+# TANTEO de `CP_T7B_ESTABILIDAD`, a mano.
+# ---------------------------------------------------------------------------
+# La Ec. 1.3.2.1-1 es  Σ eta_i·gamma_i·Q_i <= phi·R_n  (pag. impresa 1-3):
+#     cargas de gamma maximo:  eta_i = eta_D·eta_R·eta_I >= 0.95
+#     cargas de gamma minimo:  eta_i = 1/(eta_D·eta_R·eta_I) <= 1.0
+# Con eta_D = eta_R = 1.00 y eta_I = 1.05 (el del cruce): 1.05 y 1/1.05.
+#
+# Cargas SIN FACTORAR del dorado de T-7b (V o H en kN/m, brazo en m):
+#     DC.pantalla 14.136 @ x 0.75      DC.zapata 18.848 @ x 1.00
+#     EV.talon    39.600 @ x 1.45      EH.v       5.2958 @ x 2.00
+#     EH.h        14.4714 @ z 0.80     LS.h       7.8283 @ z 1.20
+#     LS.v        12.0701 @ x 1.45
+#
+# RESISTENCIA I (MINIMOS): DC 0.90/1.05, EV 1.00/1.05; EH 1.50·1.05 = 1.575;
+# LS 1.75·1.05 = 1.8375, sin su peso.
+#   N   = (0.90·32.984 + 1.00·39.600)/1.05 + 1.575·5.2958
+#       = 69.2856/1.05 + 8.340885 = 65.986286 + 8.340885       = 74.327171
+#   H   = 1.575·14.4714 + 1.8375·7.8283 = 22.792455 + 14.384501 = 37.176956
+#   M_e = [0.90·(14.136·0.75 + 18.848·1.00) + 39.600·1.45]/1.05
+#         + 1.575·5.2958·2.00
+#       = (26.505 + 57.42)/1.05 + 16.681770 = 79.928571 + 16.681770
+#                                                               = 96.610341
+#   M_v = 1.575·14.4714·0.80 + 1.8375·7.8283·1.20
+#       = 18.233964 + 17.261402                                 = 35.495366
+#   e   = B/2 - (M_e - M_v)/N = 1.0 - 61.114975/74.327171       =  0.177757
+#   (sin eta: N 77.2293, H 35.4066, M_e 99.8124, M_v 33.8051, e 0.14530)
+#
+# RESISTENCIA I (MAXIMOS): todas las cargas con 1.05 -> la resultante no se
+# mueve y todo se escala.
+#   N   = 1.05·123.7564 = 129.944220;   M_e = 1.05·160.8448 = 168.887040
+#   e   = -0.02653 (la misma);  B' = 2.0 - 2·0.02653 = 1.94694
+#   sigma_v = 129.944220/1.94694 = 66.7428 kPa   (sin eta 63.5646)
+#   q_R = 186.3379 kPa (la misma: B' y la inclinacion H/N no cambian)
+#
+# E3-LRFD: resistencia = 0.8·N_min·tan(32°) = 0.8·74.327171·0.62486935
+#        = 0.8·46.444770 = 37.155816 kN/m  <  H = 37.176956: NO CUMPLE por
+#        0.0211 kN/m. Con eta = 1.00 cumplia (35.4066 <= 38.6066): el
+#        modificador de carga CAMBIA el veredicto del deslizamiento de este
+#        muro, y por eso no podia quedar implicito.
+CP_T7V_ETA = {
+    "eta_I": 1.05, "eta_max": 1.05, "eta_min": 1.0 / 1.05,
+    "tolerancia": 2e-4, "tolerancia_rel": 2e-4,
+    "factores_max": {"DC": 1.3125, "EV": 1.4175, "EH": 1.575, "LS": 1.8375},
+    "factores_min": {"DC": 0.857143, "EV": 0.952381, "EH": 1.575,
+                     "LS": 1.8375},
+    "resistencia_min": {"N": 74.327171, "H": 37.176956, "M_e": 96.610341,
+                        "M_v": 35.495366, "e": 0.177757},
+    "resistencia_max": {"N": 129.944220, "M_e": 168.887040, "e": -0.02653},
+    "E1_LRFD": {"sigma_v": 66.7428, "q_R": 186.3379},
+    "E2_LRFD": {"e": 0.177757, "e_max": 2.0 / 3.0},
+    "E3_LRFD": {"H": 37.176956, "R_R": 37.155816, "margen": -0.021140},
+    # el armado: la pantalla en reposo de `CP_T7C_ARMADO` (maximos), 43.502
+    # kN/m y 35.402 kN·m/m con eta = 1.00, se escala entera con 1.05
+    "pantalla_reposo": {"V_u": 1.05 * 43.5024, "M_u": 1.05 * 35.4024},
+}

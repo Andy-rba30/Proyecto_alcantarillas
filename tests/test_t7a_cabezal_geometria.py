@@ -444,7 +444,15 @@ def test_predimensionamiento_de_un_cabezal_de_voladizo():
         coronacion = max(101.00 + 0.30 + 0.15, 101.10 + 0.00) = 101.45
         D_f = 0.80 (E.050)  ->  desplante 99.20  ->  H_c = 2.25 > 2.0: voladizo
         pantalla 0.30; B = 0.7*2.25 = 1.575
-        e_z = max(2.25/10 = 0.225, 0.30 + 0.070 de E.060 15.7 + 7.7.1) = 0.37
+        e_z = max(2.25/10 = 0.225, piso de la zapata armada) = 0.3827, con
+              piso = 0.30 (E.060 15.7, sobre el refuerzo inferior, al eje)
+                   + 0.0700 (recubrimiento con que se arma la cara contra el
+                     suelo; con las declaraciones DE PRUEBA del conftest
+                     --acero «A» y analisis quimico-- la regla del mayor da
+                     los 70 mm de E.060 7.7.1 a))
+                   + 0.0127 (medio diametro de la mayor barra del catalogo,
+                     Ø 1" = 25.4 mm)
+                   = 0.3827 m
         punta = 0.33*1.575 = 0.51975; talon = 1.575 - 0.51975 - 0.30 = 0.75525
         L_c = 1.10 + 2*0.30 = 1.70
         aleros, esviaje 15 y alfa 45: h0 = 1.45;
@@ -456,6 +464,14 @@ def test_predimensionamiento_de_un_cabezal_de_voladizo():
     REESCRITO en las correcciones de T-7a: el espesor de la zapata era 0.225
     (H/10 sin piso) y pasa a 0.37 por el piso [N→] de E.060 15.7 (dudoso 4);
     los aleros eran 2.9698 m los dos (sin esviaje en la formula, H1).
+
+    REESCRITO DECLARANDOLO otra vez (verificacion de las formulas de T-7c,
+    punto 7): el piso era 0.30 + 0.070 = 0.37 m, y con el la fila A8 del
+    armado --que mide hasta el eje de la barra-- no podia cumplir E.060
+    15.7 en ningun cabezal de regla (0.2937 m aun con 70 mm de
+    recubrimiento y Ø 1/2"). Ahora el piso suma el recubrimiento con que
+    se arma y medio diametro de la mayor barra: 0.3827 m aqui, 0.4041 m sin
+    los datos de exposicion (cota de 91.44 mm).
     """
     g = M9.predimensionar_cabezal(extremo=_extremo(), embocadura=_embocadura(),
                                   talud=2.0)
@@ -463,12 +479,12 @@ def test_predimensionamiento_de_un_cabezal_de_voladizo():
     assert g.D_f == pytest.approx(0.80, rel=REL)
     assert g.cota_desplante == pytest.approx(99.20, rel=REL)
     assert g.altura_total == pytest.approx(2.25, rel=REL)
-    assert g.H == pytest.approx(2.25 - 0.37, rel=REL)
+    assert g.H == pytest.approx(2.25 - 0.3827, rel=REL)
     assert g.tipo == M9.TIPO_VOLADIZO
     assert g.espesor_corona == pytest.approx(0.30, rel=REL)
     assert g.espesor_base_muro == pytest.approx(0.30, rel=REL)
     assert g.B == pytest.approx(1.575, rel=REL)
-    assert g.espesor_zapata == pytest.approx(0.37, rel=REL)
+    assert g.espesor_zapata == pytest.approx(0.3827, rel=REL)
     assert g.ancho_punta == pytest.approx(0.51975, rel=REL)
     assert g.ancho_talon == pytest.approx(0.75525, rel=REL)
     assert g.exigir_ancho_talon() == pytest.approx(0.75525, rel=REL)

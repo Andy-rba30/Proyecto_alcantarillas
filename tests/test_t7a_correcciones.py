@@ -66,7 +66,18 @@ CORONACION_CANAL_C01 = 38.30
 BORDILLO = 0.15
 MARGEN = 0.6096      # 2.0 ft
 DESPLANTE_MIN = 0.80
-PISO_ARMADA = 0.30 + 0.070     # E.060 15.7 + 7.7.1 a)
+# REESCRITO DECLARANDOLO (verificacion de las formulas de T-7c, punto 7). Era
+# 0.30 + 0.070 = 0.37 m: la altura de E.060 15.7 mas los 70 mm de 7.7.1 a).
+# Con ese piso la fila A8 del armado --hasta el EJE de la barra-- no cumplia
+# en ningun cabezal de regla. Ahora el piso es, a mano:
+#     0.30                 E.060 15.7, sobre el refuerzo inferior
+#   + 0.0700               recubrimiento con que se ARMA la cara contra el
+#                          suelo (con las declaraciones de prueba del conftest
+#                          --acero «A», analisis quimico-- la regla del mayor
+#                          da los 70 mm de E.060; sin ellas, la cota 91.44 mm)
+#   + 0.0254 / 2 = 0.0127  medio diametro de la mayor barra del catalogo
+#   = 0.3827 m
+PISO_ARMADA = 0.30 + 0.070 + 0.0254 / 2
 
 
 # ===========================================================================
@@ -424,7 +435,10 @@ def test_h4_cb6_una_zapata_de_gravedad_declarada_de_0_20_no_cumple():
 
 
 def test_h4_cb6_una_zapata_armada_declarada_bajo_el_piso_no_cumple():
-    """Voladizo armado: 0.30 sobre el refuerzo + 0.07 = 0.37 m."""
+    """
+    Voladizo armado: 0.30 sobre el refuerzo + 0.070 + 0.0127 = 0.3827 m
+    (`PISO_ARMADA`, reescrito y declarado arriba): 0.35 m sigue bajo el.
+    """
     ext = _extremo()
     g = M9.predimensionar_cabezal(
         extremo=ext, embocadura=_embocadura(), talud=2.0,
@@ -943,8 +957,11 @@ def test_dudoso_4_el_piso_de_la_zapata_armada(a01):
     """
     E.060 15.7, pag. 138: «La altura de las zapatas, medida sobre el refuerzo
     inferior no debe ser menor de 300 mm para zapatas apoyadas sobre el
-    suelo»; mas 70 mm de recubrimiento contra el suelo (7.7.1 a)): 0.37 m.
-    En la entrada de A-01 la regla H/10 daba 2.25/10 = 0.225 m.
+    suelo»; mas lo que queda debajo del eje de ese refuerzo: el
+    recubrimiento con que se arma (70 mm aqui) y medio diametro de la mayor
+    barra del catalogo (12.7 mm): 0.3827 m (`PISO_ARMADA`; era 0.37 m, y se
+    declara donde se define). En la entrada de A-01 la regla H/10 daba
+    2.25/10 = 0.225 m.
     """
     c = construir().cita("E060.15.7#PERALTE")
     assert "300 mm" in c.texto_literal.texto
@@ -953,7 +970,9 @@ def test_dudoso_4_el_piso_de_la_zapata_armada(a01):
     assert k.etiqueta == "N->" and k.valor == pytest.approx(0.30, rel=REL)
     piso, texto, cita = M9.peralte_minimo_zapata(M9.TIPO_VOLADIZO)
     assert piso == pytest.approx(PISO_ARMADA, rel=REL)
-    assert cita == "E060.15.7#PERALTE" and "7.7.1" in texto
+    assert cita == "E060.15.7#PERALTE"
+    assert "recubrimiento con que se arma" in texto and "70.00 mm" in texto
+    assert "12.70 mm" in texto and "eje de la capa inferior" in texto
     piso_g, _t, cita_g = M9.peralte_minimo_zapata(M9.TIPO_GRAVEDAD)
     assert piso_g == pytest.approx(0.30, rel=REL)
     assert cita_g == "E060.22.7.4#ZAPATA"

@@ -4259,13 +4259,27 @@ def peralte_minimo_zapata(tipo: str) -> Tuple[float, str, str]:
         analogia ('espesor_min_zapata_concreto_simple_m' [N→]; hasta el
         cierre de T-7c era una constante [N]);
       * voladizo armado: la altura minima sobre el refuerzo inferior de E.060
-        15.7 ('peralte_min_zapata_armada_m', [N→]) mas el recubrimiento del
-        refuerzo contra el suelo de E.060 7.7.1 a) (70 mm).
+        15.7 ('peralte_min_zapata_armada_m', [N→]) mas lo que queda DEBAJO
+        de ese refuerzo tal como la fila A8 del armado lo mide: el
+        recubrimiento con que la cara inferior SE ARMA
+        (`recubrimiento_para_armar`: la regla del mayor de la Sec. 0.2, o
+        su cota mas exigente mientras falte la categoria del acero o el
+        analisis quimico) y medio diametro de la MAYOR barra del catalogo
+        de propuesta ('catalogo_barras_refuerzo_cabezal').
+
+    --- verificacion de T-7 (punto 7) --- HASTA AQUI SUMABA SOLO LOS 70 mm
+    de E.060 7.7.1 a), y la regla no podia cumplir nunca la norma que cita:
+    0.30 + 0.070 = 0.37 m, y A8 mide hasta el EJE de la barra con un
+    recubrimiento que la regla del mayor nunca deja bajo 70 mm -- 0.2722 m
+    con la cota de 91.44 mm y 0.2937 m aun con las categorias B o C y una
+    barra de 1/2" --. Ahora el piso se construye con la MISMA lectura de
+    A8 (eje de la capa inferior) y con la barra mas gruesa que el armado
+    puede proponer: un cabezal de regla cumple A8 por construccion, y una
+    zapata DECLARADA mas delgada sigue pudiendo fallar (CB6 y A8). Sin
+    redondeo: el piso es la suma, y se imprime con sus tres sumandos.
 
     Es el piso del espesor PROPUESTO (la regla H/10 gobierna por encima) y el
-    umbral de CB6 cuando el espesor se DECLARA. El peralte de diseño -- con
-    el recubrimiento mayor entre AASHTO y E.060 y el diametro de la barra --
-    es de T-7c.
+    umbral de CB6 cuando el espesor se DECLARA.
     """
     if tipo not in TIPOS_DE_CABEZAL:
         raise DatoInvalidoError(
@@ -4286,13 +4300,17 @@ def peralte_minimo_zapata(tipo: str) -> Tuple[float, str, str]:
         CRITERIO_PERALTE_ZAPATA_ARMADA,
         ca.valor(CRITERIO_PERALTE_ZAPATA_ARMADA),
         "altura minima de la zapata armada sobre su refuerzo")
-    recubrimiento = (RECUBRIMIENTO[CONDICION_RECUBRIMIENTO_ZAPATA]
-                     / MILIMETROS_POR_METRO)
-    return (altura + recubrimiento,
+    rec_mm, origen_rec, _aviso = recubrimiento_para_armar(
+        condicion=CONDICION_RECUBRIMIENTO_ZAPATA)
+    diametro_mm, _area, barra = catalogo_de_barras()["barras"][-1]
+    debajo = (rec_mm + diametro_mm / 2) / MILIMETROS_POR_METRO
+    return (altura + debajo,
             f"minimo de la zapata armada: {altura:.2f} m sobre el refuerzo "
             f"inferior (E.060 15.7, por analogia, '{CRITERIO_PERALTE_ZAPATA_ARMADA}'"
-            f" [N→]) + {recubrimiento:.3f} m de recubrimiento contra el suelo "
-            f"({NUMERAL_RECUBRIMIENTO} a))",
+            f" [N→]), medidos hasta el eje de la capa inferior, + "
+            f"{rec_mm:.2f} mm del recubrimiento con que se arma la cara "
+            f"contra el suelo ({origen_rec}) + {diametro_mm / 2:.2f} mm de "
+            f"medio diametro de la mayor barra del catalogo (Ø {barra}\")",
             CITA_PERALTE_ZAPATA_ARMADA)
 
 
@@ -5013,8 +5031,9 @@ def verificar_compatibilidad_cabezal(*, geometria: GeometriaCabezal,
                     f"ANALOGIA [N→] ('{CRITERIO_PERALTE_ZAPATA_ARMADA}'): "
                     "E.060 15.7 es de edificaciones y la Via 1 de la §0.2 "
                     "saca a E.060 del diseño armado; se aplica como minimo "
-                    "del predimensionamiento, y el peralte de diseño es de "
-                    "T-7c"),
+                    "del predimensionamiento, con el recubrimiento con que "
+                    "se arma y la mayor barra del catalogo, de modo que la "
+                    "fila A8 del armado lo cumple por construccion"),
         criterio=(CRITERIO_GEOMETRIA if geometria.tipo == TIPO_GRAVEDAD
                   else CRITERIO_PERALTE_ZAPATA_ARMADA),
         citas=((CITA_CICLOPEO_LIMITES,) if geometria.tipo == TIPO_GRAVEDAD
@@ -5709,7 +5728,10 @@ def validar_cabezal_declarado(valor: Any, *,
 
 from src.constantes_normativas import (  # noqa: E402
     C_DESLIZAMIENTO_10_6_3_4, CW_NIVEL_FREATICO_T10_6_3_1_2A_2,
-    CW_PROFUNDIDAD_SIN_EFECTO_VECES_B, EXCENTRICIDAD_ESTATICA_FRACCION_B,
+    CW_PROFUNDIDAD_SIN_EFECTO_VECES_B, ETA_OTROS_ESTADOS_LIMITE_AASHTO,
+    ETA_PISO_GAMMA_MAXIMO_AASHTO, ETA_TECHO_GAMMA_MINIMO_AASHTO,
+    EXCENTRICIDAD_ESTATICA_FRACCION_B, NUMERAL_ETA_DUCTILIDAD_AASHTO,
+    NUMERAL_ETA_REDUNDANCIA_AASHTO, NUMERAL_MODIFICADOR_DE_CARGA_AASHTO,
     FACTORES_CAPACIDAD_CARGA_T10_6_3_1_2A_1,
     NUMERAL_CAPACIDAD_PORTANTE_AASHTO, NUMERAL_DESLIZAMIENTO_AASHTO,
     NUMERAL_EXCENTRICIDAD_ESTATICA_AASHTO, NUMERAL_PHI_EVENTO_EXTREMO,
@@ -5752,6 +5774,15 @@ METODO_EMPUJE_CUNA = "cuna de tanteo (Culmann) con la superficie real"
 METODO_EMPUJE_FORMULA = "formula cerrada con pendiente equivalente"
 # El regimen del cabezal frente al empuje (correcciones de T-7b, H7).
 CRITERIO_REGIMEN = "regimen_cabezal"
+# --- verificacion de T-7 (punto 9) --- los tres factores del modificador de
+# carga de AASHTO 1.3.2.1. eta_I es el del CRUCE: la misma clave que lee la
+# Fase 8 del conducto (`M8.CRITERIO_ETA_CONDUCTO`); no se duplica el numero.
+CRITERIO_ETA_IMPORTANCIA = "eta_importancia_operativa_conducto"
+CRITERIO_ETA_DUCTILIDAD = "eta_ductilidad_cabezal"
+CRITERIO_ETA_REDUNDANCIA = "eta_redundancia_cabezal"
+CITA_ETA = "AASHTO_LRFD_9.1.3.2.1#ETA"
+CITAS_DE_ETA = (CITA_ETA, "AASHTO_LRFD_9.1.3.3", "AASHTO_LRFD_9.1.3.4",
+                "AASHTO_LRFD_9.1.3.5")
 REGIMEN_CEDENTE = "cedente"
 REGIMEN_NO_CEDENTE = "no_cedente"
 REGIMENES_DEL_CABEZAL = (REGIMEN_CEDENTE, REGIMEN_NO_CEDENTE)
@@ -6780,6 +6811,70 @@ def _combinar(nombre: str, marco: str, condicion: CondicionAnalisis,
         N=N, H=H, M_estabilizante=M_e, M_volcante=M_v, B=B, para=para)
 
 
+def modificador_de_carga() -> dict:
+    """
+    --- verificacion de T-7 (punto 9; cierra la ficha T7C-11) --- El
+    modificador de carga eta de AASHTO LRFD 1.3.2.1 (pag. impresa 1-3, PDF
+    18; cita AASHTO_LRFD_9.1.3.2.1#ETA) para las combinaciones de
+    RESISTENCIA I del cabezal:
+
+        Σ eta_i·gamma_i·Q_i <= phi·R_n                        (1.3.2.1-1)
+        cargas de gamma maximo:  eta_i = eta_D·eta_R·eta_I >= 0.95   (-2)
+        cargas de gamma minimo:  eta_i = 1/(eta_D·eta_R·eta_I) <= 1.0 (-3)
+
+    eta_I es la importancia operativa del CRUCE, el MISMO criterio que lee
+    la Fase 8 del conducto ('eta_importancia_operativa_conducto' [A], 1.05
+    de archivo): hasta aqui el cabezal usaba 1.00 implicito, sin criterio ni
+    paso, junto a un conducto mayorado con 1.05. eta_D y eta_R son del
+    cabezal ('eta_ductilidad_cabezal' y 'eta_redundancia_cabezal' [A], 1.00
+    convencional por 1.3.3 y 1.3.4).
+
+    Devuelve los tres factores, su producto y los dos eta_i ya acotados:
+    `maximo` (el que multiplica a las cargas de gamma maximo) y `minimo` (a
+    las de gamma minimo). EN EL EVENTO EXTREMO I Y EN SERVICIO NO SE LLAMA:
+    «For all other limit states» los tres valen 1.00 (1.3.3, 1.3.4 y 1.3.5).
+    Y es del marco LRFD: el ASD de E.050 y el contraste de E.060 no llevan
+    eta (los marcos no se cruzan).
+    """
+    factores = {}
+    for nombre, clave in (("eta_D", CRITERIO_ETA_DUCTILIDAD),
+                          ("eta_R", CRITERIO_ETA_REDUNDANCIA),
+                          ("eta_I", CRITERIO_ETA_IMPORTANCIA)):
+        factores[nombre] = _exigir_positivo(
+            clave, ca.valor(clave), f"modificador de carga {nombre}")
+    producto = factores["eta_D"] * factores["eta_R"] * factores["eta_I"]
+    if not (math.isfinite(producto) and producto > 0):
+        raise LimiteNumericoError(
+            "eta", valor=producto,
+            motivo="el producto eta_D·eta_R·eta_I no es finito y positivo")
+    return dict(factores, producto=producto,
+                maximo=max(producto, ETA_PISO_GAMMA_MAXIMO_AASHTO),
+                minimo=min(1 / producto, ETA_TECHO_GAMMA_MINIMO_AASHTO))
+
+
+def _resistencia_i_con_eta(g: dict, EH_max: float) -> Tuple[dict, dict]:
+    """
+    Los factores de las dos variantes de Resistencia I del cabezal --
+    maximos y minimos -- con el modificador de carga DENTRO (gamma·eta_i):
+    en la de maximos todas las cargas llevan `maximo`; en la de minimos el
+    peso propio (DC) y el relleno sobre el talon (EV), que son las que la
+    Tabla 3.4.1-2 gradua con un minimo, llevan `minimo`, y el empuje (EH,
+    con su maximo), la sobrecarga viva y el agua --cargas de factor unico,
+    desfavorables alli-- siguen con `maximo` (la lectura, en la
+    `Interpretacion` de la cita). `EH_max` es el gamma_p maximo del empuje
+    que corresponda: el activo, o el de reposo en el armado.
+    """
+    eta = modificador_de_carga()
+    mas, menos = eta["maximo"], eta["minimo"]
+    maximos = dict(DC=mas * g["DC"]["max"], EV=mas * g["EV"]["max"],
+                   EH=mas * EH_max, LS=mas * g["LS"],
+                   WA=mas * g["WA"]["max"])
+    minimos = dict(DC=menos * g["DC"]["min"], EV=menos * g["EV"]["min"],
+                   EH=mas * EH_max, LS=mas * g["LS"], LS_v=0.0,
+                   WA=mas * g["WA"]["max"])
+    return maximos, minimos
+
+
 def _casos_sismicos(datos: dict) -> Tuple[Tuple[str, float, float, float], ...]:
     """
     Los dos casos del num. 11.6.5.1 (`P_SEIS_COMBINACIONES`), como factores
@@ -6819,8 +6914,16 @@ def combinaciones_de_estabilidad(cargas: tuple, datos: dict,
                  de la sobrecarga (portante) y otra sin el.
     WA va siempre con 1.00 (C11.5.6).
 
+    --- verificacion de T-7 (punto 9) --- Y EN RESISTENCIA I CADA FACTOR
+    LLEVA EL MODIFICADOR DE CARGA eta_i de AASHTO 1.3.2.1
+    (`modificador_de_carga`, `_resistencia_i_con_eta`): eta en las cargas
+    de gamma maximo y 1/eta en las de gamma minimo. En el Evento Extremo I
+    vale 1.00 y no se aplica. `CombinacionDeEstabilidad.factores` guarda el
+    producto gamma·eta_i, que es lo que multiplica a la carga.
+
     MARCO ASD (E.050 Art. 17.1): TODAS las cargas con factor 1, en las
-    mismas variantes (con y sin el peso de la sobrecarga viva).
+    mismas variantes (con y sin el peso de la sobrecarga viva). Sin eta: es
+    de otro marco.
     """
     codigos = [c.codigo for c in cargas]
     combos = []
@@ -6834,15 +6937,13 @@ def combinaciones_de_estabilidad(cargas: tuple, datos: dict,
 
     if condicion is CondicionAnalisis.ESTATICO:
         g = factores_de_carga("Resistencia I")
+        maximos, minimos = _resistencia_i_con_eta(g, g["EH"]["max"])
         combos.append(_combinar(
             "Resistencia I (maximos)", MARCO_LRFD, condicion, cargas,
-            factores(DC=g["DC"]["max"], EV=g["EV"]["max"], EH=g["EH"]["max"],
-                     LS=g["LS"], WA=g["WA"]["max"]), B, "portante"))
+            factores(**maximos), B, "portante"))
         combos.append(_combinar(
             "Resistencia I (minimos)", MARCO_LRFD, condicion, cargas,
-            factores(DC=g["DC"]["min"], EV=g["EV"]["min"], EH=g["EH"]["max"],
-                     LS=g["LS"], LS_v=0.0, WA=g["WA"]["max"]), B,
-            "excentricidad y deslizamiento"))
+            factores(**minimos), B, "excentricidad y deslizamiento"))
         combos.append(_combinar(
             "Servicio (portante)", MARCO_ASD, condicion, cargas,
             factores(DC=1.0, EV=1.0, EH=1.0, LS=1.0, WA=1.0), B, "portante"))
@@ -7952,27 +8053,72 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
         f"«{c.nombre}»: N = {c.N:.2f}, H = {c.H:.2f} kN/m, M_e = "
         f"{c.M_estabilizante:.2f}, M_v = {c.M_volcante:.2f} kN·m/m"
         for c in combos)
+    filas_eta, nota_eta = _eta_para_la_memoria(condicion)
     pasos.append(paso(
         "F9.COMBINACIONES", codigo=f"9.2.5.{sufijo}",
         que=f"Cargas con sus brazos y combinaciones: cabezal de {ext}, "
             f"condicion {condicion.value}",
-        formula=("N = Σ gamma·V;  H = Σ gamma·H;  M respecto de la punta = "
-                 "Σ gamma·(V·x - H·z)"),
-        sustitucion=filas,
+        formula=("N = Σ eta_i·gamma·V;  H = Σ eta_i·gamma·H;  M respecto de "
+                 "la punta = Σ eta_i·gamma·(V·x - H·z)"),
+        sustitucion=filas + filas_eta,
         resultado=Magnitud("combinaciones", len(combos), "",
                            "de los dos marcos, cada una con SUS factores"),
         citas_textuales=("AASHTO_LRFD_9.C11.5.6#FIGURAS",
-                         "E050.17.1#SERVICIO"),
+                         "E050.17.1#SERVICIO") + CITAS_DE_ETA,
         nota_del_proyecto=(
             "x se mide desde la arista de la punta hacia el relleno y z "
             "desde la base de la zapata hacia arriba; V positiva hacia "
-            "abajo y H positiva hacia el cauce. " + resumen + ". Factores "
-            "de cada combinacion: "
+            "abajo y H positiva hacia el cauce. " + nota_eta + " "
+            + resumen + ". Factores de cada combinacion (en Resistencia I, "
+            "gamma·eta_i): "
             + "; ".join(
                 f"«{c.nombre}»: " + ", ".join(
                     f"{k} {v:g}" for k, v in c.factores)
                 for c in combos) + ".")))
     return pasos
+
+
+def _eta_para_la_memoria(condicion: CondicionAnalisis
+                         ) -> Tuple[Tuple[Magnitud, ...], str]:
+    """
+    --- verificacion de T-7 (punto 9) --- Lo que la memoria dice del
+    modificador de carga de AASHTO 1.3.2.1: las magnitudes con su
+    procedencia (para la sustitucion del paso de combinaciones y del paso
+    del regimen del armado) y la frase de la nota. En la condicion sismica
+    no hay magnitudes: el Evento Extremo I va con eta = 1.00 y se dice.
+    """
+    if condicion is not CondicionAnalisis.ESTATICO:
+        return (), ("Modificador de carga (AASHTO 1.3.2.1): en el Evento "
+                    "Extremo I eta_D = eta_R = eta_I = "
+                    f"{ETA_OTROS_ESTADOS_LIMITE_AASHTO:.2f} («For all other "
+                    "limit states», 1.3.3, 1.3.4 y 1.3.5): los factores no "
+                    "se modifican. El marco ASD no lleva eta.")
+    eta = modificador_de_carga()
+    m = lambda s, v, p: Magnitud(s, v, "", p, cifras=CIFRAS_FINA)  # noqa: E731
+    filas = (
+        m("eta_D", eta["eta_D"], f"'{CRITERIO_ETA_DUCTILIDAD}' [A] "
+          f"({NUMERAL_ETA_DUCTILIDAD_AASHTO})"),
+        m("eta_R", eta["eta_R"], f"'{CRITERIO_ETA_REDUNDANCIA}' [A] "
+          f"({NUMERAL_ETA_REDUNDANCIA_AASHTO})"),
+        m("eta_I", eta["eta_I"], f"'{CRITERIO_ETA_IMPORTANCIA}' [A]: la "
+          "importancia operativa del cruce, la misma del conducto (AASHTO "
+          "1.3.5; Manual de Puentes 2.3.2.5)"),
+        m("eta_i, cargas de gamma maximo", eta["maximo"],
+          "eta_D·eta_R·eta_I >= "
+          f"{ETA_PISO_GAMMA_MAXIMO_AASHTO:g} (Ec. 1.3.2.1-2)"),
+        m("eta_i, cargas de gamma minimo", eta["minimo"],
+          "1/(eta_D·eta_R·eta_I) <= "
+          f"{ETA_TECHO_GAMMA_MINIMO_AASHTO:g} (Ec. 1.3.2.1-3)"),
+    )
+    return filas, (
+        f"Modificador de carga ({NUMERAL_MODIFICADOR_DE_CARGA_AASHTO}; Σ "
+        "eta_i·gamma_i·Q_i <= phi·R_n): en Resistencia I las cargas de "
+        "gamma maximo llevan "
+        f"eta_i = {eta['maximo']:.4f} y las de gamma minimo (DC y EV de la "
+        f"combinacion de minimos) eta_i = {eta['minimo']:.4f}; el empuje, la "
+        "sobrecarga viva y el agua van con el de maximo en las dos. Es el "
+        "mismo eta_I del conducto del cruce. El marco ASD (E.050) y el "
+        "contraste de E.060 no llevan eta.")
 
 
 def _carga(cargas: tuple, codigo: str) -> CargaDeCabezal:
@@ -9166,24 +9312,22 @@ def _combinaciones_en_reposo(cargas0: tuple, B: float) -> tuple:
     """
     Resistencia I con el factor de carga de la fila «En reposo» de la Tabla
     2.4.5.3.1-2 (1.35 / 0.90) en vez del de la activa, en las dos variantes
-    del ensamble: maximos (con el peso de la sobrecarga) y minimos.
+    del ensamble: maximos (con el peso de la sobrecarga) y minimos; y con el
+    modificador de carga de AASHTO 1.3.2.1 (`_resistencia_i_con_eta`).
     """
     g = factores_de_carga("Resistencia I")
     reposo = TABLA_GAMMA_P_FILAS[FILA_EH_EN_REPOSO]
+    # (verificacion de T-7, punto 9) con el modificador de carga de AASHTO
+    # 1.3.2.1 dentro de cada factor, como en la estabilidad.
+    maximos, minimos = _resistencia_i_con_eta(g, reposo["max"])
     return (
         _combinar("Resistencia I (maximos), empuje en reposo", MARCO_LRFD,
                   CondicionAnalisis.ESTATICO, cargas0,
-                  _factores_por_tipo(cargas0, DC=g["DC"]["max"],
-                                     EV=g["EV"]["max"], EH=reposo["max"],
-                                     LS=g["LS"], WA=g["WA"]["max"]),
-                  B, "portante"),
+                  _factores_por_tipo(cargas0, **maximos), B, "portante"),
         _combinar("Resistencia I (minimos), empuje en reposo", MARCO_LRFD,
                   CondicionAnalisis.ESTATICO, cargas0,
-                  _factores_por_tipo(cargas0, DC=g["DC"]["min"],
-                                     EV=g["EV"]["min"], EH=reposo["max"],
-                                     LS=g["LS"], LS_v=0.0,
-                                     WA=g["WA"]["max"]),
-                  B, "excentricidad y deslizamiento"),
+                  _factores_por_tipo(cargas0, **minimos), B,
+                  "excentricidad y deslizamiento"),
     )
 
 
@@ -10494,13 +10638,24 @@ def _fila_de_peralte_de_zapata(entorno: EntornoDelCabezal,
     medida sobre su refuerzo inferior frente a los 300 mm de E.060 15.7
     ('peralte_min_zapata_armada_m' [N→]), con el recubrimiento con que SE
     ARMA la cara inferior y la barra de la punta (o la minima principal si
-    la punta no se armo). La altura se mide hasta el EJE de la capa
-    inferior, que es el peralte efectivo; la lectura hasta la cara de la
-    barra daria medio diametro mas, y se imprime. T-7a fijo el espesor con
-    los 70 mm de E.060 7.7.1 a) y dejo este control a T-7c. No se itera:
-    si no cumple, la fila lo dice. Decide con la regla del minimo mas
-    exigente ('regla_minimos_constructivos_cabezal'); con «solo_aashto»
-    informa, porque AASHTO no fija esa altura.
+    la punta no se armo). LA LECTURA QUE LA FILA USA es hasta el EJE de la
+    capa inferior, que es el peralte efectivo; «medida sobre el refuerzo
+    inferior» admite otras dos, y las dos se imprimen: hasta la cara
+    INFERIOR de la barra (medio diametro mas: la menos exigente) y hasta
+    su cara SUPERIOR (medio diametro menos: la mas exigente, la de «above
+    bottom reinforcement»). No se itera: si no cumple, la fila lo dice.
+    Decide con la regla del minimo mas exigente
+    ('regla_minimos_constructivos_cabezal'); con «solo_aashto» informa,
+    porque AASHTO no fija esa altura.
+
+    --- verificacion de T-7 (punto 7) --- EL PISO DE T-7a SE CORRIGIO
+    (`peralte_minimo_zapata`): con la zapata de REGLA esta fila cumple por
+    construccion, porque el piso suma el mismo recubrimiento y medio
+    diametro de la mayor barra del catalogo. Sigue pudiendo FALLAR con una
+    zapata declarada mas delgada (`cabezal_declarado`). Y la nota decia que
+    bastaba «bajar el recubrimiento con el dato de exposicion»: era falso
+    --con la regla anterior, 0.37 m, ni las categorias B o C alcanzaban
+    (0.2937 m)--.
     """
     g = entorno.geometria
     ext = entorno.extremo[0]
@@ -10520,6 +10675,7 @@ def _fila_de_peralte_de_zapata(entorno: EntornoDelCabezal,
         "altura minima de la zapata armada sobre su refuerzo")
     altura = g.espesor_zapata - (rec + diametro / 2) / MILIMETROS_POR_METRO
     a_la_cara = g.espesor_zapata - rec / MILIMETROS_POR_METRO
+    sobre_la_barra = g.espesor_zapata - (rec + diametro) / MILIMETROS_POR_METRO
     mag = lambda s, v, u, p, c=CIFRAS_MAGNITUD: Magnitud(s, v, u, p, cifras=c)  # noqa: E731
     return _verificacion_de_armado(
         fundamento="F9.ARM_PERALTE_ZAPATA", codigo=f"A8.zapata.{ext}",
@@ -10530,11 +10686,18 @@ def _fila_de_peralte_de_zapata(entorno: EntornoDelCabezal,
             mag("h_z", g.espesor_zapata, "m", "espesor de la zapata (T-7a)"),
             mag("recubrimiento inferior", rec, "mm", origen_rec, 1),
             mag("diametro", diametro, "mm", barra, 1),
-            mag("hasta la cara de la barra", a_la_cara, "m",
-                "la otra lectura de «medida sobre el refuerzo inferior»"),
+            mag("hasta la cara inferior de la barra", a_la_cara, "m",
+                "otra lectura de «medida sobre el refuerzo inferior»: la "
+                "menos exigente; no es la que la fila usa"),
+            mag("hasta la cara superior de la barra", sobre_la_barra, "m",
+                "la lectura mas exigente (el concreto por encima de la "
+                "barra); no es la que la fila usa, y la zapata de regla no "
+                "la garantiza"),
         ),
         resultado=mag("altura sobre el refuerzo", altura, "m",
-                      "hasta el eje de la capa inferior"),
+                      "hasta el EJE de la capa inferior: la lectura que la "
+                      "fila usa, la misma con que se fija el piso del "
+                      "espesor de la zapata de regla"),
         descripcion_umbral="altura sobre el refuerzo inferior >= 300 mm",
         admisible=minimo, unidad="m", cita="E060.15.7#PERALTE",
         aplicacion=("minimo constructivo de E.060, por analogia [N→]; "
@@ -10544,10 +10707,16 @@ def _fila_de_peralte_de_zapata(entorno: EntornoDelCabezal,
         cumple=altura >= minimo - TOL_UMBRAL_NORMATIVO,
         margen=altura - minimo, decide=regla == MINIMOS_MAS_EXIGENTE,
         obtenido=altura,
-        nota=("El espesor no se itera (T-7a lo propone y el armado lo "
-              "arma): si no cumple, la zapata hay que engrosarla o bajar el "
-              "recubrimiento con el dato de exposicion. Con el recubrimiento "
-              "de cota por falta de dato, la altura es la menor posible."),
+        nota=("El espesor no se itera (la geometria lo propone y el "
+              "armado lo arma). La zapata de REGLA cumple por construccion: "
+              "su piso es 300 mm + el recubrimiento con que se arma + medio "
+              "diametro de la mayor barra del catalogo. Si esta fila no "
+              "cumple es porque el espesor se DECLARO por debajo de ese "
+              "piso, y el remedio es engrosar la zapata: bajar el "
+              "recubrimiento con el dato de exposicion no alcanza por si "
+              "solo. La altura se lee hasta el eje de la capa inferior; con "
+              "el recubrimiento de cota por falta de dato es la menor "
+              "posible."),
         explicacion_falla=("la zapata no da 300 mm sobre su refuerzo "
                            "inferior con el recubrimiento con que se arma: "
                            "engrosarla"))
@@ -10679,7 +10848,7 @@ def ensamblar_armado(entorno: EntornoDelCabezal,
                          is not None else 0.0, "",
                          f"el de la cadena sismica ('{CRITERIO_FACTOR_MURO}'"
                          ")", cifras=CIFRAS_FINA),
-            ),
+            ) + _eta_para_la_memoria(CondicionAnalisis.ESTATICO)[0],
             resultado=Magnitud(f"M_u que rige, {referencia.clave}", s0.M_u,
                                "kN·m/m",
                                "el mayor de los dos" if regimen
@@ -10689,8 +10858,11 @@ def ensamblar_armado(entorno: EntornoDelCabezal,
             citas_textuales=("AASHTO_LRFD_9.C3.11.1#REPOSO",
                              "AASHTO_LRFD_9.C11.6.5.4#K0",
                              "AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE",
-                             "AASHTO_LRFD_9.C3.11.5.2#ACTIVO"),
+                             "AASHTO_LRFD_9.C3.11.5.2#ACTIVO") + CITAS_DE_ETA,
             nota_del_proyecto=(
+                _eta_para_la_memoria(CondicionAnalisis.ESTATICO)[1] + " El "
+                "Evento Extremo I y el Servicio I del armado van con eta = "
+                "1.00. " +
                 "QUE SE ESCALA Y QUE NO: solo el empuje del suelo (EH) y el "
                 "de la sobrecarga viva (LS) cambian de coeficiente; en "
                 "reposo el empuje es horizontal y su componente vertical "

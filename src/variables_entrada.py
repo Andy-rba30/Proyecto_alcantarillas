@@ -1692,6 +1692,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "instalacion_estandar_concreto": _Meta(unidad="- (tipo de instalacion)"),
     "fabricacion_tmc": _Meta(unidad="-"),
     "eta_importancia_operativa_conducto": _Meta(unidad="-"),
+    "eta_ductilidad_cabezal": _Meta(unidad="-"),
+    "eta_redundancia_cabezal": _Meta(unidad="-"),
     "relleno_estructural_hdpe": _Meta(unidad="- (columna de la Tabla 12.12.3.5-1)"),
     "parametros_diseno_hdpe": _Meta(unidad="-, -, -, -, fraccion de D, años"),
     # --- T-5 (cierre) --- Los dos que salieron de las auditorias.

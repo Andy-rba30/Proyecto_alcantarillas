@@ -282,7 +282,19 @@ Desde el cierre de T-7c el armado imprime además tres filas que dependen de est
 entradas: **A6** (fisuración), **A7** (el f'c frente al mínimo por durabilidad, solo con
 `exposicion_quimica_ems` declarado: sin él, un aviso) y **A8** (la altura de la zapata
 sobre su refuerzo inferior frente a los 300 mm de E.060 15.7, con el recubrimiento con
-que se arma: con la cota de 91.4 mm la zapata de 0.37 m de la regla de T-7a no cumple).
+que se arma: desde la verificación de fórmulas de T-7 la zapata de REGLA la cumple por
+construcción —su piso es 300 mm + ese recubrimiento + medio diámetro de la mayor barra
+del catálogo: 0.4041 m con la cota de 91.44 mm, 0.3827 m con 70 mm— y solo una zapata
+declarada más delgada puede fallarla).
+
+Y las combinaciones de Resistencia I del cabezal llevan el modificador de carga de AASHTO
+LRFD 1.3.2.1, que depende de tres clasificaciones:
+
+| Dato | Clave | Quién lo debe | Mientras no llega |
+|---|---|---|---|
+| Importancia operativa del cruce (η_I), la misma del conducto | criterio `eta_importancia_operativa_conducto` [A]: 1.05 | **Propietario** | Rige 1.05, el extremo desfavorable de la graduación |
+| Ductilidad del cabezal (η_D) | criterio `eta_ductilidad_cabezal` [A]: 1.00, ventana 0.95–1.05 | **Proyectista** estructural | Rige 1.00 («conventional designs and details», AASHTO 1.3.3) |
+| Redundancia del cabezal (η_R) | criterio `eta_redundancia_cabezal` [A]: 1.00, ventana 0.95–1.05 | **Propietario** | Rige 1.00 («conventional levels of redundancy», AASHTO 1.3.4); 1.05 si clasifica la pantalla en voladizo como no redundante |
 
 ---
 

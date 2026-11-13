@@ -1817,6 +1817,13 @@ class InformePunto:
             avisos.extend(self.cabezal.avisos)
         # --- T-7b --- los de los datos de expediente de V5 y V8.
         avisos.extend(a for a in self.avisos_de_expediente if a not in avisos)
+        # --- verificacion de T-7 --- y los que una verificacion de la
+        # seccion aceptada lleva consigo sin cambiar su veredicto
+        # (`Verificacion.avisos`): la carga del evento extremo de V8 en la
+        # banda de cautela de la aproximacion de barril lleno, o acotada a
+        # la de diseño.
+        for _, v in self.verificaciones():
+            avisos.extend(a for a in v.avisos if a not in avisos)
         # --- T-9 --- Los de la Fase 10: los de la longitud por capacidad
         # (pendiente de la cuneta fuera de la banda del Manual, capacidad
         # gobernada por la velocidad limite, los del caudal de aporte) y el

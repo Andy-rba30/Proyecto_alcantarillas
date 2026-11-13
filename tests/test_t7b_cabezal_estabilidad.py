@@ -144,7 +144,21 @@ def tanteo(monkeypatch):
     conftest repone el estado al salir. El coeficiente sismico se IMPONE
     (k_h = 0.25, k_v = 0): la cadena sismica del expediente es de T-anteriores
     y aqui se prueba lo que el ensamble hace con el.
+
+    REESCRITO DECLARANDOLO (verificacion de las formulas de T-7b y T-7c,
+    punto 9). Los dorados del muro de tanteo (`CP_T7B_ESTABILIDAD` y los que cuelgan de el`) se
+    calcularon A MANO con los factores de carga de la tabla, es decir con el
+    modificador de carga eta_i = 1.00 de AASHTO 1.3.2.1, que hasta esa
+    verificacion era IMPLICITO en el cabezal. Desde ella el cabezal aplica
+    el eta_I del cruce ('eta_importancia_operativa_conducto' [A], 1.05 de
+    archivo), y este fixture DECLARA en caliente eta_I = 1.00 --el valor
+    «typical» de 1.3.5, dentro de la ventana del criterio-- para que cada
+    dorado siga fijando lo que fijaba: la aritmetica del ensamble con los
+    factores de la tabla. Lo que el modificador hace sobre este mismo muro,
+    con el 1.05 de archivo, lo fija a mano `tests/test_t7_verificacion.py`
+    (`CP_T7V_ETA`).
     """
+    ca.establecer_valor_dinamico("eta_importancia_operativa_conducto", 1.0)
     ca.establecer_valor_dinamico("phi_relleno_trasdos", CP["phi_relleno"])
     ca.establecer_valor_dinamico("peso_especifico_relleno_kn_m3",
                                  CP["gamma_relleno"])
@@ -575,11 +589,17 @@ def _evento(Q=1.3, TW=0.5, HW_ext=1.147, cota=44.2, resolver="si"):
         resolver=resolver)
 
 
-def _llamar_v8(evento, Q_diseno=1.167):
+def _llamar_v8(evento, Q_diseno=1.167, HW_diseno=1.042):
+    # REESCRITO DECLARANDOLO (verificacion de las formulas de T-7b, punto
+    # 3). El resultado de apoyo no traia la carga de diseño porque V8 no la
+    # leia. Ahora la lee: un caudal mayor no puede dar menos carga, y V8
+    # acota la del evento extremo a la de diseño (`resultado.HW`). 1.042 m
+    # es la de A-01 en la linea base.
     return M5.v8_evento_extremo(
         punto=_punto_real(),
         resultado=SimpleNamespace(
-            Q=Q_diseno, control_gobernante=ControlGobernante.ENTRADA),
+            Q=Q_diseno, HW=HW_diseno,
+            control_gobernante=ControlGobernante.ENTRADA),
         material=SimpleNamespace(nombre="concreto"),
         seccion=SimpleNamespace(etiqueta=lambda: "Ø 0.90 m"), evento=evento)
 
@@ -2875,8 +2895,20 @@ def test_con_una_zapata_declarada_mas_ancha_el_marco_que_rige_cumple(tmp_path):
     La puerta que T-7a dejo para eso: `cabezal_declarado.ancho_zapata_m` =
     3.00 m en los dos cabezales de A-01 (DE PRUEBA; con 2.40 m el de salida,
     de 3.3 m de altura de empuje, todavia no pasa el deslizamiento). Las
-    doce filas del marco LRFD cumplen, estaticas y sismicas; lo que queda
-    sin cumplir es del marco ASD bajo sismo, que informa y no detiene.
+    doce filas del marco LRFD cumplen, estaticas y sismicas.
+
+    REESCRITO DECLARANDOLO (verificacion de las formulas de T-7b y T-7c,
+    puntos 7 y 9). Fijaba ademas que «lo que queda sin cumplir es del marco
+    ASD bajo sismo, que informa y no detiene»: con la zapata de regla de
+    0.37 m el deslizamiento ASD sismico de la salida quedaba en FS = 1.2489
+    < 1.25 (INDICADOR). Con el piso corregido de la zapata armada (0.30 m
+    sobre el refuerzo + el recubrimiento con que se arma + medio diametro
+    de la mayor barra: 0.30 + 0.070 + 0.0127 = 0.3827 m con el acero «A» y
+    el analisis quimico de prueba del conftest) el cabezal pesa mas y ese
+    FS pasa a 1.2517:
+    las 24 filas cumplen. Y las doce LRFD estaticas cumplen ahora CON el
+    modificador de carga eta_I = 1.05 del cruce (AASHTO 1.3.2.1). Lo que se
+    sigue fijando: si alguna fila informa, es del marco ASD bajo sismo.
     """
     _, a01 = _correr_de_prueba(
         tmp_path, extra_a01={"cabezal_declarado": {"ancho_zapata_m": 3.00}})
@@ -2889,7 +2921,12 @@ def test_con_una_zapata_declarada_mas_ancha_el_marco_que_rige_cumple(tmp_path):
     assert not [v for v in a01.incumplidas() if v.codigo.startswith("E")]
     que_informan = [v for v in filas
                     if v.estado is EstadoDeVerificacion.INDICADOR]
-    assert que_informan and all("-ASD.sis." in v.codigo for v in que_informan)
+    assert all("-ASD.sis." in v.codigo for v in que_informan)
+    assert not que_informan
+    fs = next(v for v in filas if v.codigo == "E3-ASD.sis.s")
+    assert fs.valor_obtenido == pytest.approx(1.2517, abs=TOL)
+    assert a01.cabezal.salida.espesor_zapata == pytest.approx(0.3827,
+                                                              abs=ABS_CERO)
     assert all(e.cumple for e in a01.cabezal.estabilidad)
 
 

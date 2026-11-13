@@ -5185,6 +5185,30 @@ PHI_CORTE_AASHTO = 0.90
 # una zapata).
 PHI_EVENTO_EXTREMO_AASHTO = 1.0
 
+# ---- verificacion de T-7 (punto 9) · AASHTO 1.3.2.1, el modificador de carga
+# La Ec. 1.3.2.1-1 (pag. impresa 1-3, PDF 18; cita AASHTO_LRFD_9.1.3.2.1#ETA)
+# es Σ eta_i·gamma_i·Q_i <= phi·R_n, y la misma pagina acota eta_i:
+#
+#     cargas de gamma MAXIMO:  eta_i = eta_D·eta_R·eta_I  >= 0.95   (1.3.2.1-2)
+#     cargas de gamma MINIMO:  eta_i = 1/(eta_D·eta_R·eta_I) <= 1.0 (1.3.2.1-3)
+#
+# Los tres factores los gradua la fuente SOLO para el estado limite de
+# resistencia (1.3.3, 1.3.4 y 1.3.5, PDF 20 a 22); «For all other limit
+# states» --Evento Extremo y Servicio incluidos-- cada uno vale 1.00. Cuanto
+# vale cada uno en Resistencia NO vive aqui: eta_I es del cruce (criterio
+# 'eta_importancia_operativa_conducto' [A], el mismo del conducto) y eta_D y
+# eta_R del cabezal son 'eta_ductilidad_cabezal' y 'eta_redundancia_cabezal'
+# [A]. Aqui solo viven los numeros que la fuente escribe.
+ETA_PISO_GAMMA_MAXIMO_AASHTO = 0.95      # «>= 0.95», Ec. 1.3.2.1-2
+ETA_TECHO_GAMMA_MINIMO_AASHTO = 1.0      # «<= 1.0», Ec. 1.3.2.1-3
+ETA_OTROS_ESTADOS_LIMITE_AASHTO = 1.0    # «For all other limit states: ... = 1.00»
+NUMERAL_MODIFICADOR_DE_CARGA_AASHTO = (
+    "AASHTO LRFD " + _reg.cita("AASHTO_LRFD_9.1.3.2.1#ETA").como_texto())
+NUMERAL_ETA_DUCTILIDAD_AASHTO = (
+    "AASHTO LRFD " + _reg.cita("AASHTO_LRFD_9.1.3.3").como_texto())
+NUMERAL_ETA_REDUNDANCIA_AASHTO = (
+    "AASHTO LRFD " + _reg.cita("AASHTO_LRFD_9.1.3.4").como_texto())
+
 # ---- AASHTO 5.6.2.1 y 5.6.2.2, pags. impresas 5-34 a 5-36 (PDF 393 a 395).
 EPSILON_CU_CONCRETO = 0.003              # deformacion ultima del concreto
 # Limite de la seccion controlada por TRACCION: 0.005 para acero con fy <=
