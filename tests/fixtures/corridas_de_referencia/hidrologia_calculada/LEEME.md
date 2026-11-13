@@ -1,0 +1,3 @@
+# DATOS DE PRUEBA, NO DEL PROYECTO
+
+Esta carpeta es la tercera corrida de referencia del índice de fórmulas (`src/indice_formulas.py::CORRIDAS_DE_REFERENCIA`, ficha T10-02): el juego de la validación integral de T-11 (`tests/fixtures/juego_validacion_integral.py`) con la variante `caudal_calculado`, escrito por `tests/apoyo/validacion_integral.py::escribir_corrida_de_referencia`. **Ningún valor es del proyecto**: son valores de prueba, y las cuencas y la serie son las SINTÉTICAS de T-1. El CSV de puntos y los dos JSON no admiten esta cabecera; vale para los seis archivos. No se editan a mano: un test exige que sean, byte a byte, la materialización del juego.

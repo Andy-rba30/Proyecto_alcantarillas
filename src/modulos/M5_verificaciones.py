@@ -2001,12 +2001,12 @@ def altura_relleno_sobre_clave(*, punto: PuntoCritico, material: Material,
 
     LA GUARDA ES PARTE DE LA MAGNITUD, y por eso vive aqui y no en cada
     consumidor. Una altura nula o negativa significa que la clave queda a
-    nivel de la subrasante o por encima: no es un relleno pequeño sino un
-    punto cuyas cotas no se sostienen, y el numero que saldria de restarlas no
-    tiene sentido fisico en ninguna de las dos etapas. Sale como
-    `DatoInvalidoError` sobre 'cota_subrasante' -- el revisor tiene que
-    CORREGIR una cota, no añadir un dato (CLAUDE.md) --, que es la excepcion
-    que la Fase 5 ya lanzaba.
+    nivel de la subrasante o por encima: no es un relleno pequeño, y el
+    numero que saldria de restar no tiene sentido fisico en ninguna de las
+    dos etapas. Sale como `DatoInvalidoError` sobre 'cota_subrasante' --hay
+    que CORREGIR, no añadir un dato (CLAUDE.md)--, como la Fase 5 ya hacia.
+    Desde T11-03 el BUCLE de MD no la deja llegar asi al revisor: alli lo que
+    no cabe es la seccion probada (`MD._escalon_sin_cabida`); aqui no cambia.
 
     POR QUE SE EXTRAJO (SIS-A-21). La resta estaba escrita dos veces: dentro
     de `v7_flotacion`, con la guarda, y en `servicio._fase_8`, sin ella. La segunda

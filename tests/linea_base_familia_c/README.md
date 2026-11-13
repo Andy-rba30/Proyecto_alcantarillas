@@ -1424,3 +1424,117 @@ base, clasificado:
   `resumen_perfil_ancho.csv`.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## T-11 en su rama (2026-11-13, FASE A): dos entradas más del alcance declarado; regenerada y medida contra `14f6138`
+
+T-11 valida y no cambia cálculo. Lo único que mueve esta línea base es que
+`modelos.ALCANCE_DECLARADO` gana las dos decisiones del dueño que T-10 no tenía
+(PRECISIONES_T-11, punto 4 (ii)): la velocidad de salida en la banda de régimen de M4
+(ficha T8-09, trabajo posterior a la cadena) y el escalón de la regla de E-A en HW/D = 1.2
+(ficha T7V-01). Clasificado:
+
+- **Los cuatro JSON**: `alcance.declarado` pasa de cinco a siete entradas; las cinco
+  anteriores, idénticas y en el mismo orden. Medido sacando esa clave: el resto de cada JSON
+  es IGUAL al de `14f6138`. **Con el comparador de E-B** (`cli.py --comparar`) los cuatro
+  salen IGUALES contra los de la base (el comparador no mira el alcance): **0 diferencias, 0
+  no comparables**.
+- **Los cinco `cli_*.txt`**: dos líneas más en «Fuera del alcance del expediente, por
+  decisión declarada».
+- **Las tres memorias de la CLI**: dos `<li>` más en el bloque del alcance; nada más.
+- **Idénticos byte a byte (`cmp`)**: `memoria_punto_cajon.html`, `resumen_expediente.csv` y
+  `resumen_perfil_ancho.csv`.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## Corrección de T11-03 (2026-11-13, hallazgo H4 de la auditoría de T-11): el «no factible» por rasante; regenerada y medida contra `14f6138`
+
+No cambia ningún cálculo: cambia el DIAGNÓSTICO del punto al que ninguna sección le cierra y
+cuya progresión se detiene porque el escalón siguiente no cabe bajo la subrasante. Salía
+como «material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante'» —un
+dato que nadie tocó— y ahora sale «NO FACTIBLE POR RASANTE», con el escalón que no cabe
+(su cota de clave y la de subrasante), el motivo del escalón anterior y, **sólo si es
+geometría pura**, el delta del tamizado de 7.A de ese escalón (`MD._delta_de_7A`; ficha
+T11-03). Frente a la línea base de la FASE A de T-11 (`c774035`, que sólo difiere de la de
+`14f6138` en las dos entradas del alcance declarado) cambian **ocho archivos**, y en cada
+uno esto y nada más:
+
+- **`cli_perfil.txt`** (corrida estrecha, sin TW): los tres mensajes `[DisenoNoFactibleError]`
+  de A-01, A-02 y B-01. A-01 lleva delta —«Delta de rasante de 7.A: 0.320 m, el de TMC
+  galvanizada Ø 1.95 m» y, al final, «Subir la rasante 0.32 m»—, porque sus dos escalones
+  que no caben (concreto Ø 1.80 m, clave 44.075 msnm sobre 44.050; TMC Ø 1.95 m, 44.065)
+  cumplen lo evaluado. A-02 y B-01 no lo llevan: su escalón que no cabe incumple V2 (y V1 y
+  V4 en B-01), y el mensaje lo dice.
+- **`cli_perfil_ancho.txt` y `cli_familia_c.txt`**: el mensaje de B-01 (TW = 1.00 m). Sin
+  delta; nombra V2 en el escalón anterior (Ø 1.80 m) y en el que no cabe (Ø 1.95 m de
+  concreto, clave 40.538 msnm sobre 40.450; Ø 2.10 m de TMC, 40.515).
+- **`informe_perfil_ancho.json` e `informe_familia_c.json`**: en B-01, el `mensaje` de ese
+  bloqueo y el `motivo` de `iteraciones[7]` y de `iteraciones[16]` (los dos escalones que no
+  caben: de «el escalon no se pudo evaluar -- DatoInvalidoError…» a «Ø 1.95 m no cabe bajo
+  la subrasante (clave a 40.538 msnm, subrasante a 40.450 msnm: +0.088 m)…»).
+  `delta_rasante_m` sigue en `null` en los dos (B-01 no admite delta). **Con el comparador
+  de E-B** (`cli.py --comparar`) contra los JSON de `14f6138`: esas **3 diferencias** en cada
+  uno, **0 no comparables**; `informe_expediente.json` e `informe_rama_error.json`, IGUALES.
+- **`memoria_perfil.html`**: los mismos tres mensajes y los seis motivos de escalón de la
+  corrida estrecha; **dos criterios usados más** en su anexo y en el A.4,
+  `cobertura_minima_aashto` [C] y `condicion_pavimento` [A], que es con lo que el tamizado
+  de 7.A calcula el delta de A-01 (antes no se invocaban porque ningún punto llegaba a 7.B);
+  y la huella de la hoja de ruta.
+- **`memoria_perfil_ancha.html`**: el mensaje y los dos motivos de escalón de B-01, y la
+  huella de la hoja de ruta.
+- **`memoria_expediente.html`**: sólo la huella de la hoja de ruta (`4555b94e…` →
+  `fc97629b…`), por la nota «Corregido (T11-03)» de la v8 §7.B.
+- **Idénticos byte a byte (`cmp`, contra `c774035`)**: `cli_expediente.txt`, `cli_rama_error.txt`,
+  `informe_expediente.json`, `informe_rama_error.json`, `memoria_punto_cajon.html`,
+  `resumen_expediente.csv` y `resumen_perfil_ancho.csv`. La rama de error (diámetro de
+  arranque negativo) no cambia de tipo: su `DatoInvalidoError` lo levanta M3 antes de la
+  Fase 5 y la corrección no lo alcanza (ficha T11-03, abierto 4).
+
+La corrida estrecha no tiene JSON en esta carpeta; medida aparte con el comparador contra
+la de `14f6138`: 12 diferencias, 0 no comparables — los tres mensajes, los seis motivos de
+escalón, `delta_rasante_m` de A-01 de `None` a 0.31981 m, y los dos criterios que pasan a
+«usados». Los escalones recorridos y lo que cada uno incumple son los mismos en todas las
+corridas (`tests/test_t11_no_factible_por_rasante.py` lo fija para A-01).
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## Correcciones de la auditoría de T-11 (2026-11-13, cierre e integración): `HW_salida_m`, el tipo de cabezal del resumen; regenerada y medida contra `14f6138`
+
+Dos correcciones de FORMATO, ninguna de cálculo, mueven esta línea base (las demás de la
+auditoría son de los documentos de la validación). Frente a la de la corrección de T11-03
+(`10fb84b`) cambian **nueve archivos**, y en cada uno esto y nada más:
+
+- **H9, decisión del dueño del 2026-11-13**: `diseno.HW_salida_m` es `null` donde el
+  control de salida no se forma —el perfil de la lámina sustituye a la aproximación
+  (HW_aprox/D < 0.75, HDS-5 pág. impresa 3.24) y su remanso no alcanza la entrada—. Aquí
+  sólo A-02: en **`informe_perfil_ancho.json` e `informe_familia_c.json`**, `HW_salida_m`
+  0.55961 → `null` (la aproximación descartada sigue en `perfil_HW_aproximado_m`, que no
+  cambia); y en **`cli_perfil_ancho.txt` y `cli_familia_c.txt`** su línea «Control» dice
+  `salida no se forma: el perfil no alcanza la entrada` donde decía `salida 0.560`. El HW
+  que gobierna (0.572 m, de entrada), la entrada, el control y todo lo demás del punto, sin
+  cambio.
+- **H8**: la columna «Tipo de cabezal» del cuadro resumen sale del punto
+  (`M11.tipo_cabezal_del_punto`) y no de la decisión 2.3 de la hoja de ruta, que se
+  imprimía igual en los cuatro puntos, también en el marco. En **`resumen_expediente.csv` y
+  `resumen_perfil_ancho.csv`** la última celda de las cuatro filas pasa de «Cerrada: tubo a
+  ras del muro (square edge)» a «cabezal_con_aleros (aleros a 45.00 grados)» —la embocadura
+  que T-7a resuelve por punto antes de la Fase 4; ninguna corrida de esta carpeta llega a la
+  Fase 9 del punto, de modo que no se añade el tipo de cada cabezal—; en
+  **`memoria_expediente.html`, `memoria_perfil.html` y `memoria_perfil_ancha.html`**, la
+  misma celda del cuadro resumen, salvo C-01 de la corrida estrecha, cuya embocadura no se
+  resolvió (su etapa se detuvo antes) y que sale vacía declarada («–»).
+- **Idénticos byte a byte**: `cli_expediente.txt`, `cli_perfil.txt`, `cli_rama_error.txt`,
+  `informe_expediente.json`, `informe_rama_error.json` y `memoria_punto_cajon.html`.
+
+**Con el comparador de E-B contra los JSON de `14f6138`** (lo que T-11 entero deja en esta
+carpeta): `informe_expediente.json` e `informe_rama_error.json` IGUALES (el comparador no
+mira `alcance.declarado`, cuyas dos entradas nuevas son de la FASE A);
+`informe_perfil_ancho.json` e `informe_familia_c.json`, **4 diferencias** cada uno, **0 no
+comparables**: `[A-02] diseno.HW_salida_m` (H9) y las tres de B-01 de la corrección de
+T11-03 (el mensaje del bloqueo y los motivos de `iteraciones[7]` e `iteraciones[16]`).
+Medido además clave a clave sobre los cuatro JSON: material, sección, `HW_gobernante_m`,
+`HW_entrada_m`, control, Q, `V_erosion_m_s` e `y_normal_m` de cada punto dimensionado,
+idénticos; ningún punto dimensiona en una corrida y no en la otra.
+
+**Diámetros, secciones, materiales y HW que gobierna movidos: ninguno.** (Lo único que toca
+un HW publicado es H9, aprobado por el dueño: la clave `HW_salida_m` de A-02 pasa a `null`
+donde el perfil descartó la aproximación.)

@@ -27,11 +27,16 @@ Fase 6, la 7, la 8, la 9 y la 10 quedaban en el cuadro de «no ejercitados».
 INF-5.1.10 (que el prompt T-10 llama INF-5.1.9) pedia ver el paso del
 control gobernante con su cita correcta en una corrida que DIMENSIONE.
 
-DESDE T-10 SON DOS CORRIDAS, las dos con DATOS DE PRUEBA QUE YA EXISTIAN en
-el repositorio y que aqui se leen de `tests/fixtures/corridas_de_referencia/`
-(ver `CORRIDAS_DE_REFERENCIA`; ningun valor es del proyecto y ninguno es
-nuevo: `test_t10_memoria` comprueba que son los mismos que la guia y que los
-tests de T-7b/T-7c, de modo que no son una segunda copia que pueda divergir):
+DESDE T-10 SON DOS CORRIDAS (TRES DESDE T-11), con DATOS DE PRUEBA que se
+leen de `tests/fixtures/corridas_de_referencia/` (ver
+`CORRIDAS_DE_REFERENCIA`; ningun valor es del proyecto). Las dos de T-10 ya
+EXISTIAN en el repositorio: `test_t10_memoria` comprueba que son los mismos
+que la guia y que los tests de T-7b/T-7c. La tercera, de T-11, trae datos
+NUEVOS --los del juego de la validacion integral: el freatico a 3.0 m, los
+datos de A-02, B-01 y C-01, los [S] de sitio--, y la ata al juego un test de
+T-11 que exige que sus archivos sean, byte a byte, su materializacion
+(corregido en las correcciones de T-11, H12: decia que ninguno era nuevo).
+Ninguna de las tres es una segunda copia que pueda divergir:
 
   1. `perfil_guia`: la corrida de `docs/guia_perfil.md` (CSV con la
      coronacion de C-01, externos y sitio de la guia, `--luz 2.75`) a
@@ -47,15 +52,24 @@ tests de T-7b/T-7c, de modo que no son una segunda copia que pueda divergir):
      suite. A-01 dimensiona y llega a la Fase 9 entera: geometria, estabilidad
      en los dos marcos y armado.
 
-Las dos corren con el estado de declaraciones VACIO y lo reponen al salir
+  3. `hidrologia_calculada` (T-11, ficha T10-02): el juego de la validacion
+     integral de T-11 con la variante `caudal_calculado` --- A-01, A-02 y
+     B-01 sin `Q_m3s`, con las cuencas y la serie SINTETICAS de T-1 --- a
+     `--alcance expediente`. Lleva la Fase 1-bis CALCULADA al indice; con
+     los caudales de esas cuencas los tres puntos no caben bajo la
+     subrasante (resultado, `docs/validacion_integral.md` §5), y C-01
+     dimensiona y llega a la Fase 9. Un test de T-11 exige que sus archivos
+     sean la materializacion del juego, de modo que no son una copia que
+     pueda divergir.
+
+Las tres corren con el estado de declaraciones VACIO y lo reponen al salir
 (`correr_referencia`). La razon es la de siempre: la suite declara criterios
 de prueba en `conftest.py`, y un indice que dijera una cosa generado desde la
 CLI y otra bajo pytest seria un documento sin referencia.
 
-Los fundamentos que ni asi se ejercitan --- los de la hidrologia CALCULADA,
-que necesitan `--cuencas` y `--estacion`, y los de las ramas que estos datos
-no recorren --- se listan al final del documento con su modulo emisor, para
-que el hueco sea visible y no se lea como cobertura.
+Los fundamentos que ni asi se ejercitan --- los de las ramas que estos
+datos no recorren --- se listan al final del documento con su modulo
+emisor, para que el hueco sea visible y no se lea como cobertura.
 
 Que hace y que no hace este modulo
 ----------------------------------
@@ -165,6 +179,19 @@ class CorridaDeReferencia:
             return {}
         return json.loads(ruta.read_text(encoding="utf-8"))
 
+    # --- T-11 --- Las dos entradas de la Fase 1-bis (`--cuencas` y
+    # `--estacion`), si la carpeta las trae: con ellas un punto de Familia A
+    # o B con la celda `Q_m3s` vacia calcula su caudal (ficha T10-02).
+    @property
+    def cuencas(self) -> Optional[Path]:
+        ruta = self.carpeta.joinpath("cuencas.csv")
+        return ruta if ruta.exists() else None
+
+    @property
+    def estacion(self) -> Optional[Path]:
+        ruta = self.carpeta.joinpath("estacion.csv")
+        return ruta if ruta.exists() else None
+
 
 CORRIDAS_DE_REFERENCIA: Tuple[CorridaDeReferencia, ...] = (
     CorridaDeReferencia(
@@ -181,6 +208,18 @@ CORRIDAS_DE_REFERENCIA: Tuple[CorridaDeReferencia, ...] = (
                 "freatico, cota de afectacion, evento extremo, relleno, "
                 "fundacion y sobrecarga de prueba para A-01. A-01 llega a la "
                 "Fase 9 entera (geometria, estabilidad y armado).")),
+    # --- T-11 --- La TERCERA corrida (decision del dueño del 2026-11-13,
+    # ficha T10-02): la hidrologia CALCULADA entra al indice.
+    CorridaDeReferencia(
+        nombre="hidrologia_calculada", alcance="expediente",
+        rotulo=("DATOS DE PRUEBA, NO DEL PROYECTO: el juego de la validacion "
+                "integral de T-11 (`tests/fixtures/juego_validacion_integral.py`)"
+                " con la variante `caudal_calculado`: A-01, A-02 y B-01 traen "
+                "la celda `Q_m3s` vacia y la Fase 1-bis calcula su caudal con "
+                "las cuencas y la serie SINTETICAS de T-1 "
+                "(`tests/fixtures/hidrologia/`). Con esos caudales ninguno de "
+                "los tres cabe bajo la subrasante y no dimensiona; C-01 "
+                "dimensiona y llega a la Fase 9.")),
 )
 
 # El sello, en una linea que `leer_sello` reconoce. Los tres campos van
@@ -252,7 +291,10 @@ def correr_referencia(corrida: CorridaDeReferencia) -> Any:
         for clave, valor in corrida.declaraciones.items():
             _ca.establecer_valor_dinamico(clave, valor)
         externos = servicio.cargar_datos_externos(corrida.externos, {})
-        return servicio.correr(corrida.csv, externos, alcance=corrida.alcance)
+        hidrologia = servicio.cargar_hidrologia(corrida.cuencas,
+                                                corrida.estacion)
+        return servicio.correr(corrida.csv, externos, alcance=corrida.alcance,
+                               hidrologia=hidrologia)
     finally:
         for clave in _ca.valores_dinamicos():
             _ca.quitar_valor_dinamico(clave)
@@ -446,10 +488,13 @@ def _clave_de_orden(fila: FilaDelIndice) -> tuple:
 # que solo diferian en el numero colapsan en una.
 _VALOR_EN_PROCEDENCIA = re.compile(r"(=\s*)[-+]?\d+(?:\.\d+)?(?:e[-+]?\d+)?")
 # Y todo numero seguido de una UNIDAD (un numeral --- «num. 2.2.4», «Tabla
-# 10.1 de» --- no lleva unidad detras y no se toca).
+# 10.1 de» --- no lleva unidad detras y no se toca). --- T-11 --- `m2`: la
+# tercera corrida de referencia llega a la procedencia de la cuña sobre el
+# talon del cabezal del marco («(0.290 m2)»), y sin la unidad el «0.290 m»
+# del resultado de otro paso quedaba impreso dentro de «0.290 m2».
 _MAGNITUD_EN_PROCEDENCIA = re.compile(
     r"(?<![\w.])[-+]?\d+(?:\.\d+)?(?=\s*(?:m3/s|m/s2|m/s|m/m|msnm|"
-    r"kN·m/m|kN/m|kN|kPa|MPa|mm2/m|mm|m|%)(?![\w/²³]))")
+    r"kN·m/m|kN/m|kN|kPa|MPa|mm2/m|mm|m2|m|%)(?![\w/²³]))")
 
 
 def _sin_valores(texto: str) -> str:
@@ -652,11 +697,13 @@ def indice_de_formulas(corridas: Any, sello: Sello) -> str:
     A("")
     A("## 1. Las corridas de referencia")
     A("")
-    A("Dos corridas con DATOS DE PRUEBA que ya estaban en el repositorio")
+    A("Tres corridas con DATOS DE PRUEBA que ya estaban en el repositorio")
     A("(`tests/fixtures/corridas_de_referencia/`, ver `CORRIDAS_DE_REFERENCIA`")
     A("en `src/indice_formulas.py`): la de la guía de perfil, que dimensiona")
-    A("los cuatro puntos, y la de punta a punta de T-7b/T-7c, que lleva a A-01")
-    A("hasta la Fase 9. Ningún valor de entrada es del proyecto.")
+    A("los cuatro puntos; la de punta a punta de T-7b/T-7c, que lleva a A-01")
+    A("hasta la Fase 9; y la de la validación integral de T-11 con el caudal")
+    A("calculado, que lleva la Fase 1-bis al índice. Ningún valor de entrada")
+    A("es del proyecto.")
     A("")
     for corrida, informe in corridas:
         L.extend(_resumen_de_la_corrida(corrida, informe))

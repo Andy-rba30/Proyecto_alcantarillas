@@ -1,0 +1,27 @@
+{
+ "orientacion_muro_respecto_al_trafico": {
+  "valor": "paralelo_al_trafico",
+  "trazabilidad": "DATOS DE PRUEBA, NO DEL PROYECTO: valor de prueba de la validacion integral (T-11)",
+  "fecha": "2026-11-13"
+ },
+ "distancia_borde_calzada_al_trasdos_m": {
+  "valor": 1.6,
+  "trazabilidad": "DATOS DE PRUEBA, NO DEL PROYECTO: valor de prueba de la validacion integral (T-11)",
+  "fecha": "2026-11-13"
+ },
+ "carriles_por_sentido": {
+  "valor": 1,
+  "trazabilidad": "DATOS DE PRUEBA, NO DEL PROYECTO: valor de prueba de la validacion integral (T-11)",
+  "fecha": "2026-11-13"
+ },
+ "clase_de_via": {
+  "valor": "carretera_segunda_clase",
+  "trazabilidad": "DATOS DE PRUEBA, NO DEL PROYECTO: valor de prueba de la validacion integral (T-11)",
+  "fecha": "2026-11-13"
+ },
+ "existe_informacion_secundaria_tramo": {
+  "valor": "no",
+  "trazabilidad": "DATOS DE PRUEBA, NO DEL PROYECTO: valor de prueba de la validacion integral (T-11)",
+  "fecha": "2026-11-13"
+ }
+}

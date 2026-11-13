@@ -36,13 +36,29 @@ Lo que MD NO hace
   en el receptor. MD los EXIGE como argumentos en vez de derivarlos: la hoja
   de ruta no da la regla de taludes ni el TW, y rellenar ese vacio en silencio
   aqui contaminaria todo el bucle. Ambos llegan en metros, SI.
-- No calcula el delta de rasante. `DisenoNoFactibleError.delta_rasante_m` sale
-  vacio a proposito: "no factible -> subir rasante X cm" es el tamizado de
-  7.A, que fija la rasante ANTES del bucle y no desde dentro (el acoplamiento
-  circular rasante -> subrasante -> CBR -> resguardo -> V4 -> rasante se corta
-  ahi, Sec. 7.A). MD reporta el motivo; el delta lo pone
-  `modulos.M7_geometria.tamizado_rasante`, que lo devuelve en
-  `TamizadoRasante.delta_rasante_cm` sin necesidad de excepcion.
+- No calcula el delta de rasante, y NO MUEVE LA RASANTE. "No factible ->
+  subir rasante X cm" es el tamizado de 7.A, que fija la rasante ANTES del
+  bucle y no desde dentro (el acoplamiento circular rasante -> subrasante ->
+  CBR -> resguardo -> V4 -> rasante se corta ahi, Sec. 7.A). El numero lo
+  pone `modulos.M7_geometria.tamizado_rasante`; MD no tiene formula propia.
+  ESTE PARRAFO DECIA, HASTA T11-03, QUE `DisenoNoFactibleError.delta_rasante_m`
+  «sale vacio a proposito», y eso contradecia a CLAUDE.md («debe llevar el
+  motivo y, si aplica, el delta de rasante requerido») y dejaba sin numero
+  la salida que la Sec. 7.B pide («no factible -> subir rasante X cm, nunca
+  un resultado silencioso») justo en el caso mas comun: el punto cuya
+  progresion se detiene porque el escalon siguiente NO CABE bajo la
+  subrasante. Las dos cosas valen a la vez y se resolvieron asi
+  (`_delta_de_7A`, `_resumen_por_rasante`): MD le PIDE a M7 el tamizado del
+  escalon que no cabe, con la rasante, el paquete y el CBR del CSV
+  congelados --no itera, no rehace el acoplamiento--, y lo informa SOLO
+  cuando es geometria pura: el escalon cumple todo lo que se le evaluo (V4
+  incluida, que es la condicion de resguardo de 7.A escrita al reves) y
+  gobierna el recubrimiento, clave + h_rec + e_paq, que no lleva el HW
+  dentro. Se rotula como lo que es: COTA INFERIOR para ESE escalon, no el
+  remedio verificado del punto. En cualquier otro caso el delta SIGUE
+  vacio y el motivo dice por que: un «subir la rasante X» sobre un escalon
+  que ademas incumple V2 mandaria al revisor a una obra que no resuelve el
+  punto.
 - No fabrica la Verificacion V9 (disponibilidad de diametro). El descarte por
   tope de CATALOGO y V9 son el MISMO hecho, y quien lo declare como
   `Verificacion` con su criterio es M5, que ya recibe D y `material.D_max`.
@@ -124,14 +140,25 @@ Excepciones
 -----------
     DisenoNoFactibleError   ningun material candidato cumple, con el motivo
                             del ultimo fallo de CADA material; o M2 no ofrece
-                            candidatos. El ejemplo que esta linea daba -- «la
+                            candidatos. Desde T11-03, cuando la progresion
+                            de un material se detiene porque el escalon
+                            siguiente no cabe bajo la subrasante, el motivo
+                            lo encabeza «NO FACTIBLE POR RASANTE» y
+                            `delta_rasante_m` lleva el de 7.A si es
+                            geometria pura. El ejemplo que esta linea daba -- «la
                             Familia C» -- dejo de valer en C5, que le abrio
                             catalogo: hoy la rama de `_motivo_sin_candidatos`
                             no la alcanza ninguna familia y se conserva para
                             la que venga.
     DatoFaltanteError       el punto no trae Q ni S y no se pasaron como
                             argumento (llega desde `PuntoCritico.exigir`).
-    DatoInvalidoError       llega desde M3 / M4: un dato que no puede ser.
+    DatoInvalidoError       llega desde M3 / M4 / M5: un dato que no puede
+                            ser. Si un candidato cierra, el material que lo
+                            detecto se descarta; si ninguno cierra y lo
+                            levanto la Fase 5, sale esta excepcion con su
+                            `campo` cuando el dato detuvo un escalon que
+                            cumplia lo demas o a todos los candidatos
+                            (`_exigir_datos_validos`, T11-03).
     CriterioPendienteError  llega desde M2 o M4: un criterio [A] sin valor.
 
 Uso
@@ -149,12 +176,14 @@ from typing import (Callable, List, Optional, Protocol, Sequence, Tuple,
                     Iterable)
 
 from src import criterios_adoptados as ca
-from src.modelos import (CriterioPendienteError,
+from src.modelos import (CondicionRasante,
+                     CriterioPendienteError,
                      DatoFaltanteError,
                      DatoInvalidoError,
                      DictamenDurabilidad,
                      DisenoNoFactibleError,
                      ErrorProyecto,
+                     EscalonSinCabida,
                      Familia,
                      FormaSeccion,
                      Material,
@@ -194,6 +223,11 @@ MENSAJE_DIAMETRO_SUPERADO = "material descartado por diámetro requerido"
 # marcan la excepcion de un escalon que cumple TODA la tabla de la Fase 5 y
 # al que solo detiene lo que la Fase 8 no pudo evaluar (ver `disenar_punto`).
 ATRIBUTO_ESCALON_CUMPLE_LO_DEMAS = "escalon_cumple_lo_demas"
+# El atributo en que `M5.verificar` y el verificador de perfil del servicio
+# adjuntan a la excepcion de un escalon lo que la Fase 5 SI le evaluo antes
+# de detenerse (`ErrorProyecto.verificaciones_completadas`; la clase lo trae
+# vacio por defecto). Ver `_lo_levanto_la_fase_5`.
+ATRIBUTO_COMPLETADAS = "verificaciones_completadas"
 PREFIJO_CODIGO_FASE_8 = "F8."
 ACLARACION_DESCARTE_POR_FASE_8 = (
     "El catalogo NO se agoto por la hidraulica: el ultimo escalon pasa la "
@@ -203,6 +237,22 @@ ACLARACION_DESCARTE_POR_FASE_8 = (
 
 MODULO_VERIFICACIONES = "src.modulos.M5_verificaciones"
 FUNCION_VERIFICACIONES = "verificar"
+
+# --- T11-03 --- EL ESCALON QUE NO CABE BAJO LA SUBRASANTE. Cuando la clave
+# fisica de un escalon queda a nivel de la subrasante o por encima,
+# `M5.altura_relleno_sobre_clave` (la llama V7) levanta `DatoInvalidoError`
+# sobre este campo. Para V7 es correcto --no hay relleno que pesar-- y para
+# el BUCLE no es un dato invalido: nadie toco la cota, lo que cambio fue la
+# seccion que el bucle probaba. MD lo reconoce por GEOMETRIA (la clave contra
+# la subrasante, con la misma tolerancia de M5), no por el texto del mensaje,
+# y descarta el material POR RASANTE (ver `_escalon_sin_cabida`).
+CAMPO_SUBRASANTE = "cota_subrasante"
+MARCA_ESCALON_SIN_CABIDA = "no cabe bajo la subrasante"
+MENSAJE_SIN_CABIDA = "material descartado por rasante"
+ROTULO_NO_FACTIBLE_POR_RASANTE = "NO FACTIBLE POR RASANTE"
+# El tamizado de Sec. 7.A es de M7, y M7 importa M5: se resuelve en el punto
+# de uso, como el verificador, para que importar MD no arrastre la Fase 5.
+MODULO_GEOMETRIA = "src.modulos.M7_geometria"
 
 
 class Verificador(Protocol):
@@ -237,14 +287,16 @@ Registrador = Callable[[PasoDiseno], None]
 def _registrar(registrador: Optional[Registrador], material: Material,
                seccion: Seccion, *, aceptado: bool, motivo: str,
                verificaciones: Tuple[Verificacion, ...] = (),
-               resultado: Optional[ResultadoHidraulico] = None) -> None:
+               resultado: Optional[ResultadoHidraulico] = None,
+               sin_cabida: Optional[EscalonSinCabida] = None) -> None:
     """Anota un escalon del bucle si hay observador; si no, no hace nada."""
     if registrador is None:
         return
     registrador(PasoDiseno(material=material.nombre, seccion=seccion,
                            aceptado=aceptado, motivo=motivo,
                            verificaciones=verificaciones,
-                           resultado_hidraulico=resultado))
+                           resultado_hidraulico=resultado,
+                           sin_cabida=sin_cabida))
 
 
 # ---------------------------------------------------------------------------
@@ -317,13 +369,19 @@ def _motivo_escalon_fallido(seccion: Seccion, exc: ErrorProyecto) -> str:
     esta seccion del catalogo, de modo que "con Ø 2.10 m no se pudo evaluar"
     es un
     hecho del bucle, y el mensaje de la excepcion queda detras como la causa
-    que lo explica. Sin el prefijo, un DatoInvalidoError sobre 'cota_subrasante'
-    lanzado por V7 se lee como "el dato del expediente esta mal" cuando lo que
-    ocurrio es que la clave del conducto, EN ESTA SECCION, ya no cabe bajo la
-    subrasante -- el dato no cambio, cambio la seccion que el bucle probaba.
+    que lo explica.
 
     MD no reinterpreta la excepcion ni la reclasifica: la cita entera, con su
     tipo. Corregir el tipo o el campo de la excepcion es de M5, no de aqui.
+
+    EL EJEMPLO DE ESTE DOCSTRING YA NO PASA POR AQUI (T11-03). Decia que, sin
+    el prefijo, un DatoInvalidoError sobre 'cota_subrasante' lanzado por V7
+    se leia como «el dato del expediente esta mal» cuando lo que ocurrio es
+    que la clave, EN ESTA SECCION, ya no cabe bajo la subrasante. El prefijo
+    no bastaba --el material seguia saliendo «no evaluable» y el punto «no
+    factible» con un dato invalido por motivo--, y ese caso tiene ahora su
+    propio camino: `_escalon_sin_cabida` lo reconoce por geometria y
+    `_motivo_escalon_sin_cabida` lo redacta sin citar la excepcion.
     """
     return (f"{seccion.etiqueta()}: {MARCA_ESCALON_SIN_EVALUAR} -- "
             f"{type(exc).__name__}: {exc}")
@@ -423,6 +481,168 @@ def _motivo_descarte(material: Material, ultimo_motivo: str,
 
 
 # ---------------------------------------------------------------------------
+# El escalon que no cabe bajo la subrasante (T11-03)
+# ---------------------------------------------------------------------------
+
+def _codigos(verificaciones: Sequence[Verificacion]) -> str:
+    """Los codigos de las verificaciones que no cumplen, en su orden."""
+    return ", ".join(v.codigo or v.numeral
+                     for v in verificaciones if not v.cumple)
+
+
+def _delta_de_7A(punto: PuntoCritico, material: Material, seccion: Seccion,
+                 completadas: Sequence[Verificacion],
+                 resultado: ResultadoHidraulico
+                 ) -> Tuple[Optional[float], str]:
+    """
+    El delta de rasante de Sec. 7.A para el escalon que no cabe, y la nota
+    que lo explica: el par (delta, nota). El numero lo calcula
+    `M7.tamizado_rasante` --MD no tiene formula propia--, con la rasante, el
+    paquete y el CBR del CSV congelados, que es como la Sec. 7.A corta el
+    acoplamiento circular rasante -> subrasante -> CBR -> resguardo -> V4.
+
+    SOLO SE DA CUANDO ES GEOMETRIA PURA, y son dos condiciones:
+
+      * el escalon cumple TODO lo que la Fase 5 le evaluo antes de quedarse
+        sin relleno. Si ya incumple algo, darle cabida no lo hace aceptable y
+        un «subir la rasante X» mandaria al revisor a una obra que no
+        resuelve el punto (el alivio cuyo V2 no cierra en ningun diametro);
+      * gobierna la condicion de RECUBRIMIENTO: clave + h_rec + e_paq, una
+        cota y dos espesores. La de resguardo lleva el HW dentro, y el HW
+        cambia con la longitud en cuanto la rasante sube: ese es el eslabon
+        del acoplamiento que 7.A corta y que aqui no se rehace. Con V4
+        cumplida --que es la misma desigualdad escrita al reves-- el
+        resguardo ya esta satisfecho, de modo que en la corrida real las dos
+        condiciones van juntas.
+
+    Y SE ROTULA: es lo MINIMO para que ESE escalon tenga su recubrimiento
+    (cota inferior para el), no el remedio verificado del punto. Con la
+    rasante nueva la corrida se repite: a ese escalon le faltan la
+    verificacion que pesa el relleno (V7) y las que la siguen en la tabla
+    (V8, V9 y la Fase 8), la longitud y el HW cambian, y los escalones
+    menores se reevaluan con mas relleno encima.
+    """
+    if not all(v.cumple for v in completadas):
+        return None, ("No se da delta de rasante para ese escalon: de lo que "
+                      f"se le evaluo incumple {_codigos(completadas)}, y "
+                      "darle cabida bajo la subrasante no basta para "
+                      "aceptarlo")
+    tamizado_rasante = import_module(MODULO_GEOMETRIA).tamizado_rasante
+    try:
+        t = tamizado_rasante(punto=punto, material=material, seccion=seccion,
+                             HW=resultado.HW)
+    except ErrorProyecto as exc:
+        return None, ("No se da delta de rasante para ese escalon: el "
+                      "tamizado de 7.A no se pudo calcular -- "
+                      f"{type(exc).__name__}: {exc}")
+    geometria_pura = (not t.factible
+                      and t.condicion_gobernante is CondicionRasante.RECUBRIMIENTO)
+    if not geometria_pura:
+        return None, ("No se da delta de rasante para ese escalon: el "
+                      "tamizado de 7.A no lo deja como geometria pura -- "
+                      f"{t.mensaje}")
+    # Gobierna el recubrimiento: rasante minima = clave + exigible + paquete.
+    # En un tubo el exigible es h_rec; en un marco, cero (T-3, H5: su
+    # cobertura adoptada avisa y no bloquea).
+    exigible = t.cota_rasante_min - t.cota_clave - t.espesor_paquete
+    provisional = f". PROVISIONAL: {t.aviso}" if t.provisional else ""
+    return t.delta_rasante_m, (
+        f"Delta de rasante de 7.A para ese escalon: {t.delta_rasante_m:.3f} m "
+        f"(clave {t.cota_clave:.3f} msnm + recubrimiento exigible "
+        f"{exigible:.4f} m + paquete "
+        f"{t.espesor_paquete:.3f} m = rasante minima {t.cota_rasante_min:.3f} "
+        f"msnm; la actual es {t.cota_rasante_actual:.3f}). Es geometria -- no "
+        "depende del HW -- y es COTA INFERIOR para ese escalon, no el remedio "
+        "verificado del punto: con la rasante nueva la corrida se repite, "
+        "porque a ese escalon le faltan las verificaciones que no llegaron a "
+        "evaluarse, la longitud y el HW cambian y los escalones menores se "
+        f"reevaluan con mas relleno{provisional}")
+
+
+def _escalon_sin_cabida(punto: PuntoCritico, material: Material,
+                        seccion: Seccion, exc: ErrorProyecto,
+                        completadas: Sequence[Verificacion],
+                        resultado: Optional[ResultadoHidraulico]
+                        ) -> Optional[EscalonSinCabida]:
+    """
+    Si la excepcion que detuvo el escalon es la de la clave que NO CABE bajo
+    la subrasante, el `EscalonSinCabida` que lo describe; si no, None y el
+    escalon sigue el camino de cualquier otro `ErrorProyecto`.
+
+    SE RECONOCE POR GEOMETRIA, y son dos condiciones estructuradas, ninguna
+    sobre el texto del mensaje: la excepcion es un `DatoInvalidoError` sobre
+    `CAMPO_SUBRASANTE` levantado con la hidraulica del escalon ya resuelta
+    (`resultado`: es la Fase 5 la que pesa el relleno), y la cota de clave
+    del escalon (`M5.cota_clave`, la misma que uso V7) no deja relleno bajo
+    la subrasante. La comparacion va
+    en positivo y negada (forma MAT-D13) y con el umbral de M5,
+    `TOL_UMBRAL_NORMATIVO`: «cabe» es `relleno > tolerancia`, y todo lo
+    demas --tambien un NaN-- no cabe. Un `DatoInvalidoError` sobre la misma
+    cota en un escalon cuya clave SI cabe es otra queja y no se toca.
+    """
+    if not isinstance(exc, DatoInvalidoError) or exc.campo != CAMPO_SUBRASANTE:
+        return None
+    if resultado is None:
+        return None
+    try:
+        clave = import_module(MODULO_VERIFICACIONES).cota_clave(
+            punto=punto, material=material, seccion=seccion)
+    except ErrorProyecto:
+        return None
+    cabe = punto.cota_subrasante - clave > TOL_UMBRAL_NORMATIVO
+    if cabe:
+        return None
+    delta, nota = _delta_de_7A(punto, material, seccion, completadas,
+                               resultado)
+    return EscalonSinCabida(cota_clave=clave,
+                            cota_subrasante=punto.cota_subrasante,
+                            delta_rasante_m=delta, nota=nota)
+
+
+def _lugar_sin_cabida(seccion: Seccion, sin_cabida: EscalonSinCabida) -> str:
+    """El escalon y el par culpable: la clave y la subrasante, con el exceso."""
+    return (f"{seccion.etiqueta()} {MARCA_ESCALON_SIN_CABIDA} (clave a "
+            f"{sin_cabida.cota_clave:.3f} msnm, subrasante a "
+            f"{sin_cabida.cota_subrasante:.3f} msnm: "
+            f"{sin_cabida.exceso_m:+.3f} m)")
+
+
+def _motivo_escalon_sin_cabida(seccion: Seccion, sin_cabida: EscalonSinCabida,
+                               completadas: Sequence[Verificacion]) -> str:
+    """
+    El motivo, en la traza, del escalon que no cabe. El sujeto es el escalon
+    y el hecho es geometrico: no cita la excepcion de M5, que para el bucle
+    no es un dato invalido.
+    """
+    if not completadas:
+        evaluado = "no se le evaluo nada antes"
+    elif all(v.cumple for v in completadas):
+        evaluado = "lo que se le evaluo antes cumple"
+    else:
+        evaluado = f"de lo que se le evaluo antes incumple {_codigos(completadas)}"
+    return (f"{_lugar_sin_cabida(seccion, sin_cabida)}: no hay relleno sobre "
+            "la clave, y la verificacion que lo pesa y las que la siguen en "
+            f"la tabla no se evaluan; {evaluado}")
+
+
+def _motivo_descarte_por_rasante(seccion: Seccion,
+                                 sin_cabida: EscalonSinCabida,
+                                 escalon_anterior: Optional[str]) -> str:
+    """
+    El material se quedo sin sitio antes que sin catalogo: su progresion se
+    detiene en el primer escalon que no cabe bajo la subrasante. Lleva el
+    escalon que no cabe con sus dos cotas, la nota del delta de 7.A y el
+    motivo del escalon anterior --que es por lo que hacia falta uno mayor--.
+    No es «descartado por diametro requerido» (Anexo B): el tope que lo
+    detuvo no es el del catalogo sino la rasante.
+    """
+    previo = ("Es el primer escalon del catalogo" if escalon_anterior is None
+              else f"Escalon anterior: {escalon_anterior}")
+    return (f"{MENSAJE_SIN_CABIDA}: {_lugar_sin_cabida(seccion, sin_cabida)} "
+            f"y la progresion se detiene ahi. {sin_cabida.nota}. {previo}")
+
+
+# ---------------------------------------------------------------------------
 # Bucle interior: un material, el catalogo ascendente
 # ---------------------------------------------------------------------------
 
@@ -436,7 +656,10 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
     devuelve el par (resultado, motivo):
 
         (ResultadoPunto aceptado, "")   el primer diametro que pasa la Fase 5
-        (None, motivo de descarte)      se agoto el catalogo bajo el tope
+        (None, motivo de descarte)      se agoto el catalogo bajo el tope, o
+                                        el escalon siguiente no cabe bajo la
+                                        subrasante (T11-03: descarte POR
+                                        RASANTE, `_motivo_descarte_por_rasante`)
 
     En cada escalon llama a M3 (tirante normal, Sec. 4.1), a M4 (controles de
     entrada y salida, Sec. 4.2 y 4.3) y a M5 (Fase 5), en ese orden. El
@@ -566,10 +789,29 @@ def disenar_material(punto: PuntoCritico, material: Material, *,
             # --- que en este expediente son todos --- llegaba a la memoria
             # como un motivo de una linea, tirando el desarrollo de V1 a V4b
             # que si se calculo. Ver el docstring de `M5.verificar`.
+            completadas = getattr(exc, ATRIBUTO_COMPLETADAS, ())
+            # --- T11-03 --- EL ESCALON QUE NO CABE NO ES UN DATO INVALIDO.
+            # Si lo que detuvo al escalon es que su clave ya no cabe bajo la
+            # subrasante, el material no «revento»: se quedo sin sitio. Se
+            # anota con sus dos cotas y con lo que si se le evaluo, y el
+            # material se DESCARTA por rasante, con el motivo del escalon
+            # anterior. La progresion termina aqui, que es donde
+            # terminaba: los escalones recorridos son los mismos.
+            sin_cabida = _escalon_sin_cabida(punto, material, seccion, exc,
+                                             completadas, resultado)
+            if sin_cabida is not None:
+                _registrar(registrar, material, seccion, aceptado=False,
+                           motivo=_motivo_escalon_sin_cabida(
+                               seccion, sin_cabida, completadas),
+                           verificaciones=completadas, resultado=resultado,
+                           sin_cabida=sin_cabida)
+                es_el_primero = not visitadas[:-1]
+                return None, _motivo_descarte_por_rasante(
+                    seccion, sin_cabida,
+                    None if es_el_primero else ultimo_motivo)
             _registrar(registrar, material, seccion, aceptado=False,
                        motivo=_motivo_escalon_fallido(seccion, exc),
-                       verificaciones=getattr(
-                           exc, "verificaciones_completadas", ()),
+                       verificaciones=completadas,
                        resultado=resultado)
             raise
 
@@ -679,13 +921,24 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     Lanza DisenoNoFactibleError si todos los materiales candidatos SE
     EVALUARON y ninguno cumple, con el motivo del ultimo fallo de cada uno --
     nunca un resultado silencioso ni un diametro fuera de catalogo.
-    `delta_rasante_m` sale vacio: ese numero es del tamizado de 7.A, no de
-    este bucle.
+    `delta_rasante_m` sale vacio SALVO en el caso de T11-03: cuando la
+    progresion de algun material se detiene porque su escalon siguiente no
+    cabe bajo la subrasante, el motivo lo encabeza «NO FACTIBLE POR RASANTE»
+    y el delta es el del tamizado de 7.A de ese escalon, si es geometria pura
+    (`_resumen_por_rasante`; cota inferior para ese escalon, y lo dice).
 
     Un material que lanza ErrorProyecto a mitad del catalogo no mata el punto:
     se descarta como material, con su causa citada entera en el motivo, y el
     bucle sigue con el siguiente candidato. Los escalones que reventaron
-    quedan igualmente en la traza de `registrar`.
+    quedan igualmente en la traza de `registrar`. (El escalon que no cabe
+    bajo la subrasante no es uno de esos: `disenar_material` lo devuelve
+    como descarte por rasante, sin excepcion.)
+
+    Y UN DATO INVALIDO DEL PUNTO NO ES «NO FACTIBLE» (T11-03, el «hermano»):
+    si ningun candidato cierra y un `DatoInvalidoError` de un dato del punto,
+    levantado por la Fase 5, detuvo un escalon que cumplia lo demas --o a
+    todos los candidatos--, sale esa excepcion, con su `campo`. Ver
+    `_exigir_datos_validos`, que dice tambien lo que deja fuera.
 
     Distincion entre BLOQUEADO y NO FACTIBLE
     ----------------------------------------
@@ -731,6 +984,10 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     faltantes: List[DatoFaltanteError] = []
     no_evaluables: List[MetodoNoEvaluableError] = []
     invalidos_de_criterio: List[DatoInvalidoError] = []
+    invalidos_del_punto: List[DatoInvalidoError] = []      # T11-03 (C)
+    # T11-03 (A, B): el escalon que no cupo de cada material descartado por
+    # rasante, con su material -- de ahi salen el rotulo y el delta del punto.
+    por_rasante: List[Tuple[Material, PasoDiseno]] = []
 
     # Los escalones de CADA material, ademas de pasarlos al observador: es
     # lo que permite decir, cuando un material se detiene por un dato que
@@ -787,9 +1044,17 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
                 fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
                 invalidos_de_criterio.append(exc)
                 continue
-            # Un dato invalido DEL PUNTO (M3/M4) sigue siendo del material
-            # que lo detecto: cae en la rama de abajo.
+            # Un dato invalido DEL PUNTO sigue siendo del material que lo
+            # detecto mientras algun candidato cierre. Si ninguno cierra y
+            # lo levanto la FASE 5 --la excepcion trae lo que se le evaluo
+            # antes, `verificaciones_completadas`--, decide
+            # `_exigir_datos_validos` (T11-03, el «hermano»): no se declara
+            # «no factible» un punto al que hay que CORREGIRLE un dato. El
+            # escalon que no cabe bajo la subrasante ya no llega aqui:
+            # `disenar_material` lo devuelve como descarte por rasante.
             fallos.append(f"{material.nombre}: {_motivo_material_fallido(exc)}")
+            if _lo_levanto_la_fase_5(exc):
+                invalidos_del_punto.append(exc)
             continue
         except ErrorProyecto as exc:
             # Un material que revienta se descarta COMO MATERIAL y el bucle
@@ -814,12 +1079,15 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             return resultado
 
         fallos.append(f"{material.nombre}: {motivo}")
+        if escalones and escalones[-1].sin_cabida is not None:
+            por_rasante.append((material, escalones[-1]))
 
     # Ningun candidato cerro. Antes de declarar el punto NO FACTIBLE hay que
     # poder afirmar que todos se evaluaron de verdad: ver las tres funciones.
     _exigir_criterios_declarados(pendientes)
     _exigir_criterios_validos(invalidos_de_criterio)
     _exigir_metodo_evaluable(no_evaluables)
+    _exigir_datos_validos(invalidos_del_punto, len(candidatos))
 
     # --- T-5 (cierre) --- UN PUNTO AL QUE SOLO LE FALTA UN DATO NO ES «NO
     # FACTIBLE». Desde T-5 la Fase 8 puede detener con `DatoFaltanteError` un
@@ -846,10 +1114,59 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
         # traza de `registrar` y en `fallos`.
         raise faltantes[0]
 
+    delta, por_que = _resumen_por_rasante(por_rasante, len(candidatos))
     raise DisenoNoFactibleError(
-        motivo="ningun material candidato cumple la Fase 5. " + " | ".join(fallos),
+        motivo=("ningun material candidato cumple la Fase 5. " + por_que
+                + " | ".join(fallos)),
+        delta_rasante_m=delta,
         id_punto=punto.id,
     )
+
+
+def _resumen_por_rasante(por_rasante: Sequence[Tuple[Material, PasoDiseno]],
+                         n_candidatos: int) -> Tuple[Optional[float], str]:
+    """
+    --- T11-03 --- El delta de rasante del PUNTO y la frase que lo encabeza,
+    cuando la progresion de algun candidato se detuvo porque su escalon
+    siguiente no cabe bajo la subrasante: el par (delta, frase). Sin ninguno,
+    (None, "") y el motivo queda como siempre.
+
+    EL DELTA DEL PUNTO ES EL MENOR de los que `_delta_de_7A` dio para los
+    escalones que no caben, y la frase dice de cual: es lo minimo para que
+    ALGUNO de ellos tenga su recubrimiento. Hereda su rotulo --cota inferior
+    para ESE escalon, no el remedio verificado del punto-- y va DELANTE de
+    los motivos por material, que son largos: el revisor lee primero el
+    diagnostico.
+
+    Resuelve los dos textos que se contradecian para este caso. CLAUDE.md
+    pide que `DisenoNoFactibleError` lleve «si aplica, el delta de rasante
+    requerido», y la Sec. 7.B que el chequeo devuelva «no factible -> subir
+    rasante X cm, nunca un resultado silencioso»; este modulo decia que el
+    delta «sale vacio a proposito» porque la Sec. 7.A fija la rasante antes
+    del bucle. Las dos cosas valen a la vez: la rasante NO se mueve ni se
+    itera desde aqui (el acoplamiento sigue cortado en 7.A), y el numero que
+    7.A da para un escalon nombrado se informa cuando es geometria pura.
+    Cuando no lo es, el delta sigue vacio y el motivo dice por que.
+    """
+    if not por_rasante:
+        return None, ""
+    cabecera = (f"{ROTULO_NO_FACTIBLE_POR_RASANTE}: en {len(por_rasante)} de "
+                f"{n_candidatos} candidatos la progresion se detiene porque "
+                f"el escalon siguiente {MARCA_ESCALON_SIN_CABIDA}. ")
+    con_delta = [(paso.sin_cabida.delta_rasante_m, material, paso)
+                 for material, paso in por_rasante
+                 if paso.sin_cabida.delta_rasante_m is not None]
+    if not con_delta:
+        return None, (cabecera + "No se da delta de rasante: ningun escalon "
+                      "que no cabe lo admite como geometria pura (la razon, "
+                      "en el motivo de cada material). ")
+    delta, material, paso = min(con_delta, key=lambda terna: terna[0])
+    return delta, (
+        cabecera + f"Delta de rasante de 7.A: {delta:.3f} m, el de "
+        f"{material.nombre} {paso.seccion.etiqueta()}, el menor de los "
+        "escalones que no caben; es COTA INFERIOR para ese escalon, no el "
+        "remedio verificado del punto (su aritmetica y su alcance, en el "
+        "motivo de ese material). ")
 
 
 def _exigir_datos_presentes(faltantes: Sequence[DatoFaltanteError]) -> None:
@@ -924,6 +1241,57 @@ def _exigir_metodo_evaluable(
     """
     if no_evaluables:
         raise no_evaluables[0]
+
+
+def _lo_levanto_la_fase_5(exc: ErrorProyecto) -> bool:
+    """
+    True si a la excepcion le ADJUNTARON lo que la Fase 5 evaluo antes de
+    detenerse --aunque sea la tupla vacia, que es lo que lleva la que levanta
+    la primera fila--. Se mira la INSTANCIA y no `getattr`: la clase
+    `ErrorProyecto` trae el atributo vacio por defecto, de modo que
+    `getattr` no distingue la excepcion de la Fase 5 de la que M3 o M4
+    levantan antes de llegar a ella.
+    """
+    return ATRIBUTO_COMPLETADAS in vars(exc)
+
+
+def _exigir_datos_validos(invalidos: Sequence[DatoInvalidoError],
+                          n_candidatos: int) -> None:
+    """
+    --- T11-03 (el «hermano») --- Cuando NINGUN candidato cierra, un
+    `DatoInvalidoError` de un DATO DEL PUNTO que levanto la FASE 5 no se
+    degrada a «no factible» (el caudal del evento extremo menor que el de
+    diseño, que V8 rechaza): el revisor tiene que CORREGIR un dato y el
+    informe le decia que no existe diseño, con `campo: None`. Sale el
+    primero, con su campo -- el bloqueo DATO_INVALIDO --, por el MISMO
+    patron que el dato que falta (PC-28 y T-5), con sus dos mitades:
+
+      * DECISIVO: el dato invalido detuvo un escalon que cumplia todo lo que
+        la Fase 5 le habia evaluado. Ese escalon no fallo: a ese material
+        solo lo separa de un diseño un dato mal escrito;
+      * COMUN A TODOS: a todos los candidatos los detuvo en la Fase 5 un
+        dato invalido, cumplieran o no lo anterior.
+
+    Fuera de esas dos, vale lo de la ficha T4-10 para el dato que falta: el
+    material que se detuvo sobre un escalon que YA incumplia queda citado
+    como «no evaluable» y el punto es lo que son los que si se evaluaron.
+
+    `invalidos` trae SOLO los de la Fase 5 (`_lo_levanto_la_fase_5`). TRES
+    COSAS QUEDAN FUERA, a proposito y dichas
+    en la ficha T11-03: (1) el caso en que un candidato posterior cierra
+    --ese resultado no se toca--; (2) el `DatoInvalidoError` que M3 o M4
+    levantan ANTES de la Fase 5 (un diametro de arranque negativo declarado
+    en 'diametros_normalizados' llega como 'D', que no es un dato del
+    punto): sigue saliendo como hasta hoy, material «no evaluable»; y (3) el
+    valor invalido de un CRITERIO, que va por `_exigir_criterios_validos`.
+    El escalon que no cabe bajo la subrasante ya no es un dato invalido.
+    """
+    decisivos = [exc for exc in invalidos
+                 if all(v.cumple for v in getattr(exc, ATRIBUTO_COMPLETADAS))]
+    if decisivos:
+        raise decisivos[0]
+    if invalidos and len(invalidos) == n_candidatos:
+        raise invalidos[0]
 
 
 def _exigir_criterios_validos(

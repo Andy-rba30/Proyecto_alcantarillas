@@ -589,3 +589,31 @@ cambiado: **el permiso del token no alcanza para borrar ramas en el remoto, y
 la borra el propietario desde la web.** El `[FALLO]` de esta sesión es ese y
 solo ese; los cuatro chequeos que dependen de la sesión —suite, conteos, árbol
 limpio y tracker— están en `[OK]`.
+
+---
+
+## 7. T-11 de la cadena T: la validación integral sobre la línea base (2026-11-13)
+
+Este documento es la FOTO de la línea base de S1 y el estado de la suite vive en
+`CLAUDE.md` («Cierre de tarea»), que lleva la cadena de totales. Se deja aquí lo que la
+validación integral de T-11 —el último prompt de la cadena que toca la línea base antes
+de T-12— dice de ella, porque es el primer prompt que la recorre ENTERA de punta a punta:
+
+- **El fixture de siempre (`tests/ejemplo_puntos.csv`) sigue cargando y ningún número de
+  cálculo se movió.** T-11 no cambia cálculo. La línea base de la Familia C
+  (`tests/linea_base_familia_c/`) se regeneró y se midió contra `14f6138` con el
+  comparador de E-B: `informe_expediente.json` e `informe_rama_error.json` IGUALES;
+  `informe_perfil_ancho.json` e `informe_familia_c.json`, 4 diferencias y 0 no
+  comparables, todas de diagnóstico o de formato (el «no factible por rasante» de B-01 de
+  la corrección de T11-03 y `HW_salida_m` de A-02 a `null` por decisión del dueño); el
+  tipo de cabezal del cuadro resumen sale del punto. **Diámetros, secciones, materiales y
+  HW que gobierna movidos: ninguno.** El detalle, archivo por archivo, en el README de esa
+  carpeta.
+- **Con un juego de DATOS DE PRUEBA completo las tres familias llegan a la Fase 11 con
+  diseño** (A-01, A-02 y B-01 concreto Ø 0.90; C-01 marco 1.20 × 0.90): `docs/validacion_integral.md`,
+  generado. **Sin el juego, ningún punto pasa de la Fase 2** (la luz del cruce no es
+  columna del CSV), y la lista exacta de lo que el proyecto debe entregar está en la §7 de
+  `docs/contrato_entradas.md`.
+- **El par de la suite al cierre de T-11**, medido en «PyMuPDF sí · ventana Tk no» con el
+  repositorio de normas enlazado: **6446 passed, 23 skipped → 6469 `collected`** (sin
+  `NORMAS_DIR`, 6423 y 46). Lo invariante sigue siendo `collected = passed + skipped`.

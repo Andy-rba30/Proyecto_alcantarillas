@@ -2130,10 +2130,14 @@ def _resolver_tw(informe: InformePunto, externos: DatosExternos,
     darian dos cotas de salida distintas para el mismo punto, que es el
     defecto que MAT-D9 cerro en 7.B.
 
-    SI 'TW_receptor' TIENE VALOR, MANDA SOBRE LAS VIAS 3 Y 4 pero no sobre las
-    dos primeras. Es deliberado: el criterio es una declaracion del
-    proyectista sobre el nivel del receptor, del mismo rango que `--tw`, y no
-    tiene sentido calcular por Manning un numero que ya se declaro. Lo que si
+    'TW_receptor' ES LA ULTIMA PUERTA, Y SOLO ESO: se lee cuando NINGUNA via de
+    la Sec. 1.3 es recorrible (`tw_sin_via_de_sec_1_3`: sin TW declarado, sin
+    `cota_TW`, sin `Q_receptor_m3s`, sin seccion medida y con el criterio
+    'seccion_receptor' vacio), y entonces entra como un TW declarado. Con la
+    seccion de archivo de 'seccion_receptor' la via 4 siempre se recorre y el
+    criterio no se lee aunque tenga valor. (Corregido en las correcciones de
+    T-11, H11 de su auditoria: este docstring decia que el criterio, con
+    valor, MANDABA sobre las vias 3 y 4, y el codigo no lo hace.) Lo que si
     manda sobre el es un dato del expediente: una `cota_TW` en el CSV es una
     medicion o un calculo con procedencia, y no se pisa con una adopcion.
     """

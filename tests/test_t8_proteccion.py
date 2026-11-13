@@ -826,8 +826,8 @@ def test_bajo_la_admisible_el_resumen_lleva_la_proteccion(corrida_con_datos,
     llevan los numeros que rigen, y nada dice «sin enrocado».
     """
     a02 = _punto(corrida_con_datos, "A-02")
-    assert "sin enrocado" not in M11.fila_resumen(a02, "cabezal")
-    fila = M11._fila_resumen_csv(a02, "cabezal")
+    assert "sin enrocado" not in M11.fila_resumen(a02)
+    fila = M11._fila_resumen_csv(a02)
     for columna in ("proteccion_d50_m", "proteccion_espesor_m",
                     "proteccion_longitud_m"):
         assert fila[M11.COLUMNAS_RESUMEN_CSV.index(columna)] != ""

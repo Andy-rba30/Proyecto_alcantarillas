@@ -1805,29 +1805,33 @@ CP_HDS5_DG1 = {
     "q_estrella_transicion": (3.5, 4.0),
     # EL CENSO DE LO QUE QUEDA FUERA DEL 3 %, magnitud a magnitud, con la
     # diferencia MEDIDA (motor frente a publicado) y la causa. No se ajusta
-    # la tolerancia ni el motor para vaciarlo (ficha T2-05).
+    # la tolerancia ni el motor para vaciarlo (ficha T2-05). La diferencia
+    # va con DOS decimales desde las correcciones de T-11 (H12): con uno,
+    # tres de las cinco no eran las que el motor da redondeadas (-3.1 por
+    # -3.05, -3.9 por -3.97, -5.6 por -5.68), y
+    # `tests/test_t11_correcciones.py` exige que coincidan.
     "fuera_de_tolerancia": {
         ("cmp_60_bisel_45", "HW_sobre_D"): (
-            "-3.1 %: lectura de la Carta 3B. La ec. (A.3) con c = 0.0300 e "
+            "-3.05 %: lectura de la Carta 3B. La ec. (A.3) con c = 0.0300 e "
             "Y = 0.74 da 1.357 para q* = 4.555; el formulario lee 1.40"),
         ("cmp_60_bisel_45", "HW_entrada_ft"): (
-            "-4.4 %: ademas de la lectura anterior, la cifra impresa (7.10 "
+            "-4.42 %: ademas de la lectura anterior, la cifra impresa (7.10 "
             "ft) no es el producto de las dos que tiene al lado (1.40 x 5.0 "
             "ft = 7.00 ft)"),
         ("cajon_6x5_escuadra", "H_ft"): (
-            "-3.9 %: lectura del nomograma de control de salida (Carta 15B). "
+            "-3.97 %: lectura del nomograma de control de salida (Carta 15B). "
             "La formula (7) que el propio formulario imprime al pie da 3.41 "
             "ft con sus datos (A = 30 ft2, R = 30/22 ft, n = 0.012, L = 250 "
             "ft, ke = 0.5); el formulario anota 3.55"),
         ("cajon_5x5_bisel_45", "H_ft"): (
-            "-11.4 %: la cifra impresa (5.0 ft) NO se reproduce con la "
+            "-11.42 %: la cifra impresa (5.0 ft) NO se reproduce con la "
             "formula (7) del pie del formulario y el ke = 0.2 que la misma "
             "fila declara, que da 4.43 ft; con ke = 0.5 daria 5.10 ft, que es "
             "la fila de encima (5.2). Es una inconsistencia interna de la "
             "fuente: pasar de ke 0.5 a 0.2 tiene que bajar H en 0.3 x V^2/2g "
             "= 0.67 ft, y el formulario la baja 0.2 ft"),
         ("cajon_5x5_bisel_45", "EL_ho_ft"): (
-            "-5.6 % sobre H + h_o (la altura sobre el fondo de la salida): "
+            "-5.68 % sobre H + h_o (la altura sobre el fondo de la salida): "
             "arrastra el H de la linea anterior"),
     },
 }

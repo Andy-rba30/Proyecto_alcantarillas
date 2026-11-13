@@ -2499,6 +2499,33 @@ ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
                "INDICADOR que no concluye; se digitalizaran en un trabajo "
                "posterior a la cadena"),
         ficha="T8-08", simbolo="M6_proteccion.proteccion_salida"),
+    # --- T-11 --- Las dos que faltaban de lo que el dueño dejo fuera
+    # (PRECISIONES_T-11, punto 4 (ii)): la regla de la velocidad de salida en
+    # la banda de regimen de M4 (decision del 2026-11-13: trabajo posterior a
+    # la cadena, junto con las Figuras 3.3 y 3.4) y el escalon de la regla de
+    # E-A en HW/D = 1.2 (medido por la verificacion de T-7, no corregido).
+    AlcanceDeclarado(
+        clave="velocidad_salida_banda_de_regimen",
+        texto=("Cuando las dos ramas de n no coinciden en el regimen (con n "
+               "maximo gobierna la salida con el TW bajo el critico; con n "
+               "minimo el tirante normal seria supercritico), la velocidad "
+               "de salida que llega a la Fase 6 es la critica y no la mayor "
+               "de la critica y la de erosion: la Fase 6 lo avisa con las "
+               "dos velocidades y el d50 que daria la alta; la regla de M4 "
+               "queda para un trabajo posterior a la cadena, junto con las "
+               "Figuras 3.3 y 3.4 de HEC-14"),
+        ficha="T8-09", simbolo="M6_proteccion._aviso_banda_de_regimen"),
+    AlcanceDeclarado(
+        clave="escalon_regla_salida_hw_1_2_d",
+        texto=("La regla de la carga de control de salida del HDS-5 num. "
+               "3.3.3 (entre 0.75 D y 1.2 D compiten la aproximacion y el "
+               "remanso; sobre 1.2 D rige la aproximacion) tiene un escalon "
+               "donde la aproximacion cruza HW/D = 1.2: un caudal mayor "
+               "puede dar unos milimetros menos de carga (11 mm medidos con "
+               "el tubo de A-01 entre 1.276 y 1.290 m3/s). Es el umbral que "
+               "la fuente escribe y no se suaviza; en V8 lo cubre la guardia "
+               "de la carga del evento extremo"),
+        ficha="T7V-01", simbolo="M4_control.resolver_control"),
 )
 
 
@@ -5844,6 +5871,39 @@ class ResultadoPunto:
 # ===========================================================================
 
 @dataclass(frozen=True)
+class EscalonSinCabida:
+    """
+    --- T11-03 --- El escalon del catalogo cuya clave fisica NO CABE bajo la
+    subrasante: la cota de clave queda a nivel de la subrasante o por encima
+    y no hay relleno que pesar (V7) ni con que entrar a la norma de producto
+    (Fase 8). Lo arma `MD.disenar_material` y viaja en `PasoDiseno.sin_cabida`.
+
+    Existe porque ese hecho salia como `DatoInvalidoError` sobre
+    'cota_subrasante' --un dato que nadie toco: lo que cambio fue la seccion
+    que el bucle probaba-- y el punto como «no factible» sin su motivo
+    (hallazgo H4 de la auditoria de T-11). Es GEOMETRIA: las dos cotas son el
+    par culpable, y el motivo las nombra a las dos.
+
+    `delta_rasante_m` es el del tamizado de Sec. 7.A para ESTE escalon
+    (`M7.tamizado_rasante`), y solo se da cuando es geometria pura: el
+    escalon cumple todo lo que la Fase 5 le evaluo y gobierna la condicion de
+    recubrimiento, de modo que el numero no depende del HW. Es COTA INFERIOR
+    para este escalon, no el remedio verificado del punto. `nota` dice la
+    aritmetica cuando hay delta y por que no lo hay cuando es None.
+    """
+
+    cota_clave: float                     # msnm - cota entrada + altura + pared
+    cota_subrasante: float                # msnm - la del CSV (Sec. 1.2)
+    delta_rasante_m: Optional[float] = None
+    nota: str = ""
+
+    @property
+    def exceso_m(self) -> float:
+        """Cuanto queda la clave POR ENCIMA de la subrasante, m (>= -tol)."""
+        return self.cota_clave - self.cota_subrasante
+
+
+@dataclass(frozen=True)
 class PasoDiseno:
     """
     Un escalon del bucle de MD: el par (material, D) que se probo y como
@@ -5885,6 +5945,10 @@ class PasoDiseno:
     # None cuando el escalon ni siquiera transporto el caudal en flujo libre
     # (M3 no hallo tirante normal) o cuando revento antes de resolver M4.
     resultado_hidraulico: Optional["ResultadoHidraulico"] = None
+    # --- T11-03 --- Relleno solo en el escalon cuya clave no cabe bajo la
+    # subrasante (`EscalonSinCabida`): con el termina la progresion del
+    # material, descartado POR RASANTE. None en todos los demas.
+    sin_cabida: Optional[EscalonSinCabida] = None
 
     @property
     def incumplidas(self) -> Tuple[Verificacion, ...]:

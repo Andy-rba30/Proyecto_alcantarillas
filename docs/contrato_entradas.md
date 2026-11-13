@@ -244,14 +244,14 @@ programa **no** puede elegir, y de quién es:
 
 | Entrada | Por dónde entra | Origen | Sin ella |
 |---|---|---|---|
-| Nivel freático del cruce | columna `NF_profundidad_m` del CSV | **EMS** | Bloqueo «dato faltante» de la estabilidad de los dos cabezales del punto |
-| Ángulo de fricción del relleno del trasdós | criterio `phi_relleno_trasdos` (ensayo; ventana 30–38°) | **EMS** · especificación del relleno | `CriterioPendienteError`: es lo único de los cuatro ángulos del empuje que detiene |
+| Nivel freático del cruce | columna `NF_profundidad_m` del CSV | **EMS** | Bloqueo «dato faltante» de la estabilidad de los dos cabezales del punto y de su armado, que sale de las mismas solicitaciones (medido por T-11: `docs/validacion_integral.md` §4) |
+| Ángulo de fricción del relleno del trasdós | criterio `phi_relleno_trasdos` (ensayo; ventana 30–38°) | **EMS** · especificación del relleno | `CriterioPendienteError`: es lo único de los cuatro ángulos del empuje que detiene, y detiene la estabilidad y el armado de los dos cabezales de cada punto |
 | Suelo de fundación: `cohesivo` (sí/no), `c_kpa`, `phi_grados`, `gamma_kn_m3`; y, si el estudio las entrega, `q_n_kpa` (resistencia portante **nominal**, para el marco LRFD), `q_adm_kpa` (presión **admisible**, para el marco ASD) | clave `suelo_fundacion` de `--datos-externos` (objeto, por punto o global), o el criterio de corredor `c_phi_fundacion` | **EMS** (calicata del cruce) | `CriterioPendienteError` sobre `c_phi_fundacion`. El dato del punto **gana** sobre el de corredor. Un `q_n_kpa` o `q_adm_kpa` del estudio gana sobre el calculado, cada uno en **su** marco |
 | Peso específico saturado del relleno | criterio `peso_especifico_saturado_relleno_kn_m3` (ensayo) | **EMS** | Sólo hace falta si hay agua en el relleno (freático sobre la zapata, o `drenaje_trasdos` = `sin_drenaje`, que es el valor de archivo): entonces, `CriterioPendienteError` |
 | Si el trasdós tiene drenaje | criterio `drenaje_trasdos` [A]: `sin_drenaje` (archivo) o `drenado` | **Proyectista** (y los planos: filtro y lloraderos) | Rige `sin_drenaje`: el relleno retenido se calcula lleno de agua hasta su superficie contra el trasdós, nunca por encima del muro (AASHTO 11.6.6), y la condición sísmica no es evaluable (relleno saturado). Con `drenado`, la corrida avisa que no se modela el desembalse rápido tras la avenida |
 | Si el muro admite desplazamiento bajo sismo | criterio `factor_muro_eleccion` [A] | **Propietario** | Rige `sin_reduccion` (k_h = k_h0). Desde el cierre de T-7b el empuje sísmico sale de la cuña de tanteo con la superficie real del relleno (`regla_pendiente_relleno_trasdos` = `cuna_de_tanteo`), que da cifra también con k_h0; Mononobe-Okabe con la pendiente equivalente queda como contraste |
 | Si el cabezal se modela como muro que cede o que no cede | criterio `regimen_cabezal` [A]: `cedente` (archivo) o `no_cedente` | **Proyectista** (hipótesis de modelación) | Rige `cedente` (empuje activo, la hipótesis de 11.6.5.3). `no_cedente` detiene la estabilidad con «método no evaluable»: las presiones de muro rígido de 11.6.5.4 no están implementadas. Las solicitaciones para T-7c llevan el coeficiente con que salieron y el K0 de referencia |
-| Orientación del muro frente al tráfico y distancia del borde de calzada al trasdós | `[S]` de corredor (§4.1) | **Trazo** | La sobrecarga viva no se puede leer de su tabla: `CriterioPendienteError` del dato de sitio |
+| Orientación del muro frente al tráfico y distancia del borde de calzada al trasdós | `[S]` de corredor (§4.1) | **Trazo** | La sobrecarga viva no se puede leer de su tabla: `CriterioPendienteError` del dato de sitio, que detiene la estabilidad y el armado de los dos cabezales de cada punto |
 
 `suelo_fundacion`, como `cabezal_declarado`, está en `servicio.CLAVES_DE_CABEZAL` y no en
 `CLAVES_EXTERNAS`. Se valida en la puerta (`M9.validar_suelo_fundacion`): los cuatro campos
@@ -268,8 +268,8 @@ ciclópeo. **Ninguna entrada nueva es obligatoria**: el armado corre con las mis
 
 | Entrada | Por dónde entra | Origen | Sin ella |
 |---|---|---|---|
-| Análisis químico del suelo y del agua (sulfatos, cloruros) y condición de exposición | dato de sitio `exposicion_quimica_ems` [S] (§4) | **EMS** | **No se rellena.** El recubrimiento con que se calcula el peralte efectivo es la **cota más exigente** de la regla del mayor (91.4 mm: 3.0 in × 1.2), con aviso; y el f'c de cálculo no se contrasta con el mínimo por durabilidad de E.060 (aviso) |
-| Categoría del acero de refuerzo (sin recubrir, epóxico o galvanizado, M 334M) | criterio `categoria_refuerzo_aashto` [A] | **Proyectista** · especificación de materiales | La misma cota de recubrimiento, con el mismo aviso |
+| Análisis químico del suelo y del agua (sulfatos, cloruros) y condición de exposición | dato de sitio `exposicion_quimica_ems` [S] (§4) | **EMS** | **No se rellena.** La Fase 9 del **proyecto** queda **bloqueada** («criterio pendiente») en sus cuatro etapas de la 9.4 —los tres recubrimientos de diseño y el aviso de ambiente corrosivo—, que cuentan en «Etapas bloqueadas»; el armado de cada punto **sí** corre: el recubrimiento con que se calcula el peralte efectivo es la **cota más exigente** de la regla del mayor (91.4 mm: 3.0 in × 1.2), con aviso, y el f'c de cálculo no se contrasta con el mínimo por durabilidad de E.060 (aviso). Con el dato declarado, la fila A7 decide cuando la exposición impone un f'c mínimo (Tablas 4.2 y 4.4 de E.060); con exposición insignificante y ninguna fila de la Tabla 4.2, A7 sale «no aplica» con su razón (correcciones de T-11, H10: antes no aparecía). Corrección de T-11: decía «con aviso» y callaba el bloqueo del proyecto |
+| Categoría del acero de refuerzo (sin recubrir, epóxico o galvanizado, M 334M) | criterio `categoria_refuerzo_aashto` [A] | **Proyectista** · especificación de materiales | La Fase 9 del **proyecto** queda **bloqueada** («criterio pendiente») en sus tres recubrimientos de diseño de la 9.4, que cuentan en «Etapas bloqueadas»; el armado de cada punto corre con la misma cota de recubrimiento, con el mismo aviso (corrección de T-11: decía sólo «aviso») |
 | Resistencia del concreto del cabezal armado | criterio `fc_cabezal_mpa` [A]: 21 MPa (Clase D del EG-2013), ventana 17.5–35 | **Proyectista** · especificación de materiales | Rige 21 MPa |
 | Designación del acero | criterio `acero_refuerzo_cabezal` [A]: `A615_grado_60` (archivo) o `A706_grado_60` | **Proyectista** | Rige A615 Grado 60 (fy 420 MPa) |
 | Si la pantalla del cabezal cede o no ante el empuje | criterio `regimen_resistencia_elementos_cabezal` [A]: `no_cedente_k0` (archivo) o `cedente` | **Propietario** (decidido el 2026-11-13) | Rige el empuje en reposo, tomando en cada sección la mayor de esa solicitación y la del muro que cede |
@@ -280,7 +280,8 @@ ciclópeo. **Ninguna entrada nueva es obligatoria**: el armado corre con las mis
 
 Desde el cierre de T-7c el armado imprime además tres filas que dependen de estas
 entradas: **A6** (fisuración), **A7** (el f'c frente al mínimo por durabilidad, solo con
-`exposicion_quimica_ems` declarado: sin él, un aviso) y **A8** (la altura de la zapata
+`exposicion_quimica_ems` declarado: sin él, un aviso; con él y sin mínimo aplicable, «no
+aplica» con su razón) y **A8** (la altura de la zapata
 sobre su refuerzo inferior frente a los 300 mm de E.060 15.7, con el recubrimiento con
 que se arma: desde la verificación de fórmulas de T-7 la zapata de REGLA la cumple por
 construcción —su piso es 300 mm + ese recubrimiento + medio diámetro de la mayor barra
@@ -396,9 +397,10 @@ nombre definitivo.
 
 *(La fila de T-4 —ensayos de durabilidad por sitio o por punto— pasó al §3.1 al cerrar T-4.)*
 
-Al terminar la cadena, el programa deja de detenerse por criterios vacíos y se detiene
-solo por entradas de esta lista que falten. Es lo que un jurado acepta: «este dato lo da
-el estudio X».
+Al terminar la cadena, el programa deja de detenerse por criterios vacíos **que nadie
+debe**: lo que lo detiene es una entrada de un estudio, una declaración que es del
+Propietario o del proyectista, o un método diferido con su ficha. Es lo que un jurado
+acepta: «este dato lo da el estudio X». La lista **medida**, no supuesta, está en la §7.
 
 **Documentos que el repositorio de normas no tiene y que cerrarían una lectura de la
 Fase 6** (segunda auditoría de T-8, 2026-11-12). No son datos del sitio: son fuentes que
@@ -409,3 +411,86 @@ hoy se leen de segunda mano, y cada una tiene declarada la lectura que rige mien
 | **AASHTO M 288** (Geotextile Specification for Highway Applications) | A qué columnas se aplica la nota de los suelos cohesivos (abertura de 0.30 mm) de la Tabla 511-06 de EG-2013, que es su traducción | Rige la lectura que no relaja: sólo en la columna «>50» (`Interpretacion` de la cita `EG2013.511.08#T511_06`) |
 | **Manual de Carreteras de California** (la fuente que la Tabla N° 11 del Manual declara al pie) | Si las filas «Arcilla arenosa / limosa (no coloidal)» son suelos cohesivos o francos («loam») mal traducidos | Se clasifican por el nombre impreso; sólo alimentan el aviso de incoherencia entre el terreno y el lecho declarados |
 | **HEC 11** (Design of Riprap Revetment), al que HEC-14 remite el filtro | El diseño del filtro granular bajo el enrocado | El filtro es un requisito declarado, no un dimensionado (ficha T8-02) |
+
+---
+
+## 7. La lista exacta de lo que detiene una etapa si falta (T-11, medida)
+
+T-11 corrió el fixture de punta a punta a `--alcance expediente` **sin** datos y con un
+juego de **DATOS DE PRUEBA** completo, quitándole una entrada a la vez sobre **dos bases**:
+el juego, y el juego con las **decisiones de archivo** que el juego pisa
+(`drenaje_trasdos` = `sin_drenaje`, `factor_muro_eleccion` = `sin_reduccion`; corrección
+H1 de la auditoría de T-11: medida sólo sobre el juego, la lista no veía el peso
+específico saturado del relleno y contradecía a la §3.3)
+(`tests/apoyo/validacion_integral.py`, documento generado `docs/validacion_integral.md`).
+Esta es la lista de lo que, si falta, **detiene una etapa** (sale como `Bloqueo` y cuenta en
+«Etapas bloqueadas») **además de las columnas obligatorias de la §2** (sin ellas M0 no
+carga el CSV). `tests/test_t11_validacion_integral.py` la recalcula y exige que la
+tabla de abajo nombre **exactamente** las mismas entradas: ni una de más, ni una de menos.
+Lo que no está aquí no detuvo ninguna etapa al quitarlo de ninguna de las dos bases (el
+resultado deja de ser del sitio, y la corrida lo avisa o adopta la regla escrita en la
+ficha de su criterio), **salvo las condicionales no medidas** que se nombran debajo de la
+tabla: detienen sólo en una rama que ninguna de las dos bases recorre.
+
+| Entrada | Clase | Quién la debe | Qué detiene |
+|---|---|---|---|
+| `luz_m` | entrada del proyecto | Topografía / QGIS | La clasificación de la Fase 2: sin ella ningún punto pasa de ahí |
+| `L_hidraulico_m` | entrada del proyecto | Estudio hidrológico (o, en su lugar, `S_cuneta` del trazo) | VB1 del alivio (Familia B) cuando la Fase 10 no puede calcular la longitud por capacidad |
+| `S_cuneta` | entrada del proyecto | Trazo | Con el tramo del alivio conocido y sin `L_hidraulico_m`, VB1 (la Fase 10 la pide para calcular la longitud) |
+| `Q_m3s` | entrada del proyecto | ANA / Junta (Familia C) | El dimensionamiento del marco de C-01 (la celda del CSV está vacía y entra por `--datos-externos`) |
+| `S_cauce` | entrada del proyecto | Topografía / QGIS · ANA / Junta (Familia C) | Ídem |
+| `cota_coronacion_canal` | entrada del proyecto | Topografía / QGIS | VC1 de la Familia C, y con ella el punto |
+| `NF_profundidad_m` | entrada del proyecto | EMS | La estabilidad y el armado de los dos cabezales del punto |
+| `phi_relleno_trasdos` | entrada del proyecto (ensayo) | EMS | La estabilidad y el armado de los dos cabezales de cada punto |
+| `c_phi_fundacion` | entrada del proyecto (ensayo; o `suelo_fundacion` por punto) | EMS | La estabilidad de los dos cabezales de cada punto |
+| `orientacion_muro_respecto_al_trafico` | entrada del proyecto ([S] de corredor) | Trazo | La estabilidad y el armado de los dos cabezales de cada punto (sobrecarga viva) |
+| `distancia_borde_calzada_al_trasdos_m` | entrada del proyecto ([S] de corredor) | Trazo | Ídem |
+| `exposicion_quimica_ems` | entrada del proyecto ([S] pendiente de ensayo) | EMS | Las cuatro etapas de la 9.4 de la Fase 9 del proyecto (§3.4) |
+| `peso_especifico_saturado_relleno_kn_m3` | entrada del proyecto (ensayo) | EMS (material de cantera del relleno) | Con el `drenaje_trasdos` de archivo (`sin_drenaje`) o agua sobre la zapata: la estabilidad (estática y sísmica) y el armado de los dos cabezales de cada punto — seis etapas por punto (§3.3; lo destapa la segunda base) |
+| `Q_evento_extremo_m3s` | entrada del proyecto | Estudio hidrológico | V8, y con ella el punto (sólo con `TR_evento_extremo` declarado) |
+| `TW_evento_extremo_m` | entrada del proyecto | Estudio hidrológico · hidráulico del receptor | Ídem |
+| `cota_afectacion_aguas_arriba_msnm` | entrada del proyecto | Topografía | V5 con el método `cota_de_afectacion`, y con ella el punto (Familias A y B) |
+| `TR_evento_extremo` | criterio que se declara | Propietario (con el estudio hidrológico) | V8, y con ella el punto |
+| `umbral_no_colapso_evento_extremo` | criterio que se declara | Propietario | Ídem |
+| `remanso_derecho_via` | criterio que se declara | Proyectista | V5, y con ella el punto (Familias A y B) |
+| `categoria_refuerzo_aashto` | criterio que se declara | Proyectista · especificación de materiales | Los tres recubrimientos de diseño de la 9.4 de la Fase 9 del proyecto (§3.4) |
+| `drenaje_trasdos` | método diferido con ficha | Proyectista (y los planos) | Con el valor de archivo (`sin_drenaje`), la condición sísmica de la estabilidad de los dos cabezales de cada punto: ficha T7B-05 (equilibrio límite generalizado con el agua del relleno) |
+
+**Condicionales no medidas** — detienen una etapa si falta su dato, pero sólo en una rama
+que **ninguna de las dos bases** recorre, y por eso no salen de la medida; cada una la fija
+el test de su prompt (`tests/apoyo/validacion_integral.py::CONDICIONALES_NO_MEDIDAS`, y un
+test exige que esta lista las nombre):
+
+- `homogeneidad_serie_fen` — sólo con el caudal **calculado** (`--cuencas` y `--estacion`
+  con la celda `Q_m3s` vacía): sin declararlo, detiene el cálculo hidrológico del punto
+  (T-1). La validación lo mide con la variante `caudal_calculado_sin_fen`.
+- `perfil_hdpe_fabricante` — sólo si un punto no tiene otra solución que el HDPE (T-5).
+- La D-load de las Clases I, III, IV y V de AASHTO M 170M (`clases_producto_por_relleno`) —
+  sólo si un tubo de concreto pide más que la Clase II (T-5; ~2.85 m de relleno sobre un
+  tubo de 0.90 m con el Tipo 3).
+- La resistencia de la costura empernada del TMC (`resistencia_costura_empernada_tmc`) —
+  sólo si se adopta un TMC con `fabricacion_tmc` = `anular_empernada` (T-5).
+- `ancho_tributario_m` — sólo cuando el tramo del alivio no se conoce o el caudal se
+  calcula (T-9).
+- `ancho_derecho_via_m` — sólo con `remanso_derecho_via` = `embalse_a_nivel` (T-7b).
+- `TW_receptor` — sólo si **ninguna** vía de la Sec. 1.3 es recorrible: sin TW declarado,
+  sin `cota_TW`, sin `Q_receptor_m3s`, sin sección medida y con `seccion_receptor` vacío
+  (`servicio.tw_sin_via_de_sec_1_3`); con la sección de archivo de `seccion_receptor` nunca
+  se lee.
+- `h_eq_banda_intermedia_borde` [A] sin valor — sólo con el trasdós a menos de 1.0 ft
+  (0.3048 m) del borde de la calzada, la banda intermedia de AASHTO 3.11.6.4.
+- `h_eq_bajo_altura_tabulada` [A] sin valor — sólo con un muro de menos de 5.0 ft
+  (1.524 m), bajo la primera fila de la tabla de h_eq de AASHTO 3.11.6.4.
+- `N_cq_N_gammaq_meyerhof` [A] sin valor — sólo con `terreno_delante_del_cabezal` =
+  `talud_descendente` (la zapata en talud del Manual de Puentes 2.8.1.3.1.2c).
+- `q_n_kpa` del EMS (`suelo_fundacion`) — sólo con la cimentación en **roca** (filas A o B
+  declaradas en `F_pga`): la ecuación de AASHTO 10.6.3.1.2a es de suelo y, sin el dato,
+  la capacidad portante es «método no evaluable».
+
+**Una entrada que no detiene pero cambia el diseño:** sin `TW_m` (ni `cota_TW`, ni
+`Q_receptor_m3s`) el TW sale de los dos escenarios acotados con la sección **adoptada** de
+`seccion_receptor`, y con el fixture **ningún punto dimensiona**: el escenario de receptor
+lleno lleva el diámetro hasta donde la clave queda sobre la subrasante. Es un resultado del
+cálculo con la regla que rige sin el dato (`docs/validacion_integral.md` §4), y desde la
+corrección de T11-03 el punto sale **«no factible por rasante»**, con el delta de 7.A del
+escalón que no cabe cuando es geometría pura (ficha T11-03).

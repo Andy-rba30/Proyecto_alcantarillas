@@ -127,9 +127,17 @@ class _Registro:
 class _RevientaMaterial:
     """
     Verificador que lanza ErrorProyecto en los materiales indicados y deja
-    cumplir a los demas. Reproduce, sin depender de M5, lo que hace V7 cuando
-    la clave del conducto ya no cabe bajo la subrasante: un material se cae a
-    mitad del catalogo y los siguientes tienen que poder seguir intentandose.
+    cumplir a los demas: un material se cae a mitad del catalogo y los
+    siguientes tienen que poder seguir intentandose.
+
+    HASTA T11-03 DECIA QUE REPRODUCIA «lo que hace V7 cuando la clave del
+    conducto ya no cabe bajo la subrasante», y ya no lo reproduce: MD
+    reconoce ese caso por GEOMETRIA (la clave contra la subrasante) y lo
+    trata como descarte por rasante, no como excepcion. Este doble levanta el
+    mismo `DatoInvalidoError` sobre 'cota_subrasante' en Ø 0.90 m, donde la
+    clave SI cabe (43.10 msnm bajo 44.05), y sin `verificaciones_completadas`:
+    para el bucle es un dato invalido levantado fuera de la Fase 5, sin mas.
+    El caso geometrico real lo mide `tests/test_t11_no_factible_por_rasante.py`.
     """
 
     def __init__(self, *tipos_que_revientan, desde_D=0.0,
@@ -559,6 +567,13 @@ def test_si_todos_los_materiales_revientan_sigue_siendo_no_factible():
     Con los tres candidatos cayendo, el punto no tiene diseño y eso se dice
     con DisenoNoFactibleError, como cuando se agota el catalogo. El motivo
     lleva los tres materiales, cada uno con su causa citada entera.
+
+    SIGUE VALIENDO TRAS T11-03, y hay que decir por que: el doble levanta su
+    `DatoInvalidoError` SIN `verificaciones_completadas`, que es como llega
+    el que M3 o M4 rechazan antes de la Fase 5 (el diametro de arranque
+    negativo de la rama de error de la linea base). El dato invalido que
+    levanta la FASE 5 --el que si trae lo evaluado-- ya no termina asi:
+    `tests/test_t11_no_factible_por_rasante.py`.
     """
     verificar = _RevientaMaterial(TipoMaterial.CONCRETO_REFORZADO,
                                   TipoMaterial.TMC, TipoMaterial.HDPE)

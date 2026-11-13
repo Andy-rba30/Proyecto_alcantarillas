@@ -186,6 +186,18 @@
         "texto": "Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la salida) no estan digitalizadas: con la velocidad tomada al tirante critico el contraste con la Tabla N 11 es un INDICADOR que no concluye; se digitalizaran en un trabajo posterior a la cadena",
         "ficha": "T8-08",
         "simbolo": "M6_proteccion.proteccion_salida"
+      },
+      {
+        "clave": "velocidad_salida_banda_de_regimen",
+        "texto": "Cuando las dos ramas de n no coinciden en el regimen (con n maximo gobierna la salida con el TW bajo el critico; con n minimo el tirante normal seria supercritico), la velocidad de salida que llega a la Fase 6 es la critica y no la mayor de la critica y la de erosion: la Fase 6 lo avisa con las dos velocidades y el d50 que daria la alta; la regla de M4 queda para un trabajo posterior a la cadena, junto con las Figuras 3.3 y 3.4 de HEC-14",
+        "ficha": "T8-09",
+        "simbolo": "M6_proteccion._aviso_banda_de_regimen"
+      },
+      {
+        "clave": "escalon_regla_salida_hw_1_2_d",
+        "texto": "La regla de la carga de control de salida del HDS-5 num. 3.3.3 (entre 0.75 D y 1.2 D compiten la aproximacion y el remanso; sobre 1.2 D rige la aproximacion) tiene un escalon donde la aproximacion cruza HW/D = 1.2: un caudal mayor puede dar unos milimetros menos de carga (11 mm medidos con el tubo de A-01 entre 1.276 y 1.290 m3/s). Es el umbral que la fuente escribe y no se suaviza; en V8 lo cubre la guardia de la carga del evento extremo",
+        "ficha": "T7V-01",
+        "simbolo": "M4_control.resolver_control"
       }
     ]
   },
@@ -885,7 +897,7 @@
         "y_normal_m": 0.3358338199114026,
         "y_critico_m": 0.4031436347123781,
         "HW_entrada_m": 0.5720081284009831,
-        "HW_salida_m": 0.55961390820666,
+        "HW_salida_m": null,
         "HW_gobernante_m": 0.5720081284009831,
         "Q_celda_m3s": 0.48,
         "numero_celdas": 1,
@@ -1567,7 +1579,7 @@
           "material": "Concreto reforzado",
           "seccion": "Ø 1.95 m",
           "aceptado": false,
-          "motivo": "Ø 1.95 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45)",
+          "motivo": "Ø 1.95 m no cabe bajo la subrasante (clave a 40.538 msnm, subrasante a 40.450 msnm: +0.088 m): no hay relleno sobre la clave, y la verificacion que lo pesa y las que la siguen en la tabla no se evaluan; de lo que se le evaluo antes incumple V2",
           "incumplidas": [
             "V2"
           ]
@@ -1656,7 +1668,7 @@
           "material": "TMC galvanizada",
           "seccion": "Ø 2.10 m",
           "aceptado": false,
-          "motivo": "Ø 2.10 m: el escalon no se pudo evaluar -- DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.065 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45)",
+          "motivo": "Ø 2.10 m no cabe bajo la subrasante (clave a 40.515 msnm, subrasante a 40.450 msnm: +0.065 m): no hay relleno sobre la clave, y la verificacion que lo pesa y las que la siguen en la tabla no se evaluan; de lo que se le evaluo antes incumple V2",
           "incumplidas": [
             "V2"
           ]
@@ -1764,7 +1776,7 @@
           "campo": null,
           "delta_rasante_m": null,
           "diferido_por_alcance": false,
-          "mensaje": "Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. Concreto reforzado: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.088 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | TMC galvanizada: material no evaluable: DatoInvalidoError: Dato invalido en 'cota_subrasante' del punto B-01: la clave del conducto queda a nivel de la subrasante o por encima (-0.065 m de relleno): no hay relleno sobre la clave que pesar ni con que entrar a la tabla de la norma de producto (valor leido: 40.45) | HDPE: 3 escalon(es) evaluado(s), de Ø 0.90 m a Ø 1.20 m, y ninguno cumple; NO SE EVALUO desde Ø 1.35 m hasta el tope del material (1.50 m) por falta del dato 'espesor_pared_conducto[hdpe][1350]'. DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe][1350]'. el criterio 'espesor_pared_conducto' declara «hdpe» pero no la fila de 1350 mm. Los diametros declarados son [900, 1050, 1200]. Falta esa fila en su fuente (columna 'Max. OD' de la Table A12-11 de AASHTO LRFD, que termina en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro exterior de la ficha del fabricante): no se interpola ni se toma la fila vecina, porque el espesor gobierna la clave fisica (7.A) y el volumen desplazado de V7 y los dos quedan del lado inseguro si se estima por lo bajo"
+          "mensaje": "Diseno no factible en el punto B-01: ningun material candidato cumple la Fase 5. NO FACTIBLE POR RASANTE: en 2 de 3 candidatos la progresion se detiene porque el escalon siguiente no cabe bajo la subrasante. No se da delta de rasante: ningun escalon que no cabe lo admite como geometria pura (la razon, en el motivo de cada material). Concreto reforzado: material descartado por rasante: Ø 1.95 m no cabe bajo la subrasante (clave a 40.538 msnm, subrasante a 40.450 msnm: +0.088 m) y la progresion se detiene ahi. No se da delta de rasante para ese escalon: de lo que se le evaluo incumple V2, y darle cabida bajo la subrasante no basta para aceptarlo. Escalon anterior: Ø 1.80 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.06542817038220214 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 2.467125000000327 frente a 35.61523453108915 | TMC galvanizada: material descartado por rasante: Ø 2.10 m no cabe bajo la subrasante (clave a 40.515 msnm, subrasante a 40.450 msnm: +0.065 m) y la progresion se detiene ahi. No se da delta de rasante para ese escalon: de lo que se le evaluo incumple V2, y darle cabida bajo la subrasante no basta para aceptarlo. Escalon anterior: Ø 1.95 m: incumple V2 (MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso) obtenido 0.06160898349101529 frente a 0.25; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 2.574713066940145 frente a 30.206335575230472 | HDPE: 3 escalon(es) evaluado(s), de Ø 0.90 m a Ø 1.20 m, y ninguno cumple; NO SE EVALUO desde Ø 1.35 m hasta el tope del material (1.50 m) por falta del dato 'espesor_pared_conducto[hdpe][1350]'. DatoFaltanteError: Falta el dato 'espesor_pared_conducto[hdpe][1350]'. el criterio 'espesor_pared_conducto' declara «hdpe» pero no la fila de 1350 mm. Los diametros declarados son [900, 1050, 1200]. Falta esa fila en su fuente (columna 'Max. OD' de la Table A12-11 de AASHTO LRFD, que termina en 48 in (1200 mm); para 1350 y 1500 mm hace falta el diametro exterior de la ficha del fabricante): no se interpola ni se toma la fila vecina, porque el espesor gobierna la clave fisica (7.A) y el volumen desplazado de V7 y los dos quedan del lado inseguro si se estima por lo bajo"
         },
         {
           "fase": "Fase 10 - Espaciamiento de alivio (M10)",

@@ -329,12 +329,15 @@ def test_el_censo_de_lo_que_no_se_puede_medir_no_crece_en_silencio():
     """
     El limite de este archivo, escrito como dato.
 
-    Los nueve (diez entre EXT-6 y T-1, que le dio consumidor a
-    'homogeneidad_serie_fen') no tienen consumidor: ninguna corrida los
+    Los SIETE (diez entre EXT-6 y T-1, que le dio consumidor a
+    'homogeneidad_serie_fen'; nueve hasta T-7a y ocho hasta T-7b, que se lo
+    dieron a 'angulo_aletas' y a 'c_phi_fundacion': contado de nuevo en las
+    correcciones de T-11, H11, porque este docstring seguia diciendo
+    «nueve» y CLAUDE.md «ocho») no tienen consumidor: ninguna corrida los
     invoca y el censo de `variables_entrada` no puede contradecir su nivel.
     Su clasificacion se defiende con el argumento que cada uno escribe junto
     a `nivel`, y esa es la unica defensa que tienen. Lo que se comprueba
-    aqui es que sean estos nueve y no diez.
+    aqui es que sean estos siete y no ocho.
     """
     sin_consumidor = tuple(sorted(c for c in ca.CRITERIOS
                                   if not ve.variable(c).consumido_por))

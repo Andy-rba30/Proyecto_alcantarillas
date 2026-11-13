@@ -6731,3 +6731,216 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
 - **Por qué:** la auditoría adversarial (AJUSTADO) y las resoluciones del orquestador.
 - **Qué haría falta:** nada.
 - **Dónde vive:** `src/modulos/M11_reporte.py::ROTULO_DE_LA_FRASE_POR_CARACTER`
+
+# Parte LIV — Lo que T-11 de la cadena T dejó escrito: la validación integral de las tres familias
+
+T-11 (2026-11-13, sobre `14f6138`, integrado con las correcciones de su auditoría
+adversarial) valida y no cambia cálculo: corre el fixture de punta a punta a `--alcance
+expediente` con un juego de DATOS DE PRUEBA, lo contrasta con los ejemplos resueltos de
+HDS-5 y HEC-14, barre la sensibilidad de los [A] (la lista se deriva del censo de
+criterios), y deja la lista exacta de lo que sigue requiriendo entrada del proyecto. Lo
+que destapó de cálculo no lo corrigió la FASE A: lo dejó reproducido en
+`xfail(strict=True)`, y lo corrigió después la sesión de T11-03 (ficha T11-03, que quedó
+cerrada en parte). La auditoría adversarial (AJUSTADO: 1 ALTA, 6 MEDIA, 7 BAJA, ninguna de
+fórmula ni de cita) se aplicó entera en el cierre (fichas T11-09 y T11-10). Los cuatro
+documentos de la validación se GENERAN (`docs/validacion_integral.md`,
+`docs/validacion_hds5.md`, `docs/validacion_hy8.md`, `docs/validacion_sensibilidad.md`)
+y un test regenera cada uno.
+
+## T11-01 · El juego de prueba entra sólo por las puertas de la CLI y no rellena ningún vacío del archivo
+
+- **Cerrado (T-11):** el juego vive en un módulo con la cabecera «DATOS DE PRUEBA, NO DEL
+  PROYECTO» (un CSV de puntos y un JSON de datos externos no admiten cabecera) y se
+  materializa en los archivos que la CLI lee: copia del CSV, `--datos-externos`,
+  `--datos-sitio`, `--cuencas`/`--estacion` y `--declarar`. Reutiliza los datos de T-7b,
+  T-7c, T-8 y la guía. Decisiones del juego, dichas y con su otro lado medido como
+  variante: B-01 corre con el TW de 0.30 m de la guía (con el de 1.00 m de la línea base no
+  dimensiona por V2), con el tramo de cuneta empezando a 150 m (sin él, VB1 no cumple por
+  los 530 m desde A-02), el freático a 3.0 m (con 2.0 m la sísmica de salida de A-01 y A-02
+  es «método no evaluable», ficha T7B-06), y C-01 con su TW igual al tirante normal del
+  canal que el mismo juego declara (0.41 m; corrección H7). **El juego PISA dos criterios
+  con valor de archivo** (`drenaje_trasdos` y `factor_muro_eleccion`, decisiones que el
+  dueño confirmó; `PISA_EL_ARCHIVO_PORQUE`): por eso la corrida TITULAR del documento es la
+  variante `decisiones_de_archivo` y el juego es la variante que ejercita la cadena sísmica
+  y el caso drenado (corrección H2). Ningún valor se escribió en `criterios_adoptados.py`,
+  `datos_sitio.py` ni `constantes_normativas.py` (un test lo fija).
+- **Abierto:** son valores de prueba; los del sitio los dan los estudios del contrato. Dos
+  líneas de plausibilidad no sostienen su dato y lo dicen: el caudal del evento extremo
+  (1.11 veces el de diseño, de T-7b; medido: desde 1.8 veces A-01 pasa a Ø 1.05 m por V8) y
+  los sulfatos de 500 ppm (insignificantes para el concreto por la Tabla 4.4 de E.060,
+  agresivos para el acero galvanizado por el umbral de AASHTO LRFD 11.10.6.4.2a).
+- **Qué haría falta:** las entradas de la §7 de `docs/contrato_entradas.md`.
+- **Dónde vive:** `tests/fixtures/juego_validacion_integral.py::OMITIDAS_A_PROPOSITO`
+
+## T11-02 · La lista exacta de lo que detiene una etapa se MIDE sobre dos bases, y el contrato de entradas la repite en su §7
+
+- **Cerrado (T-11, con la corrección H1 de su auditoría, ALTA):** la lista es lo que la
+  corrida SIN juego bloquea más lo que, quitado de a uno, hace aparecer un bloqueo en
+  CUALQUIERA DE LAS DOS BASES: el juego y el juego con las decisiones de archivo
+  (`quitar_una_en_la_titular`). Medida sólo sobre el juego, no veía el peso específico
+  saturado del relleno, que con el `drenaje_trasdos` de archivo detiene 24 etapas, y la §7
+  contradecía a la §3.3 del contrato. Cada bloqueo cae en una de tres clases (entrada del
+  proyecto, criterio que se declara, método diferido con ficha) o el test falla. La §7 del
+  contrato nombra exactamente las mismas veintiuna entradas, con su clase, ADEMÁS de las
+  columnas obligatorias del CSV, y un test las compara en los dos sentidos. Corrección 3.4
+  del contrato: sin `exposicion_quimica_ems` o `categoria_refuerzo_aashto` la Fase 9 del
+  PROYECTO queda bloqueada en la 9.4 (decía sólo «aviso»).
+- **Abierto:** las condicionales que ninguna de las dos bases dispara no se miden: se
+  NOMBRAN (`CONDICIONALES_NO_MEDIDAS`: el tratamiento FEN, el perfil del HDPE, las clases de
+  M 170M, la costura empernada del TMC, el ancho tributario, el derecho de vía,
+  `TW_receptor`, las dos de h_eq de AASHTO 3.11.6.4, Meyerhof en talud y `q_n_kpa` en roca)
+  y la §7 las repite; las fija el test de su prompt.
+- **Qué haría falta:** nada en el programa; si se abre una entrada nueva, el test pide su
+  fila en la §7.
+- **Dónde vive:** `tests/apoyo/validacion_integral.py::lista_exacta`
+
+## T11-03 · El escalón que no cabe bajo la subrasante es «no factible por rasante», con el delta de 7.A sólo cuando es geometría pura
+
+- **Cerrado (corrección de T11-03, 2026-11-13; hallazgo H4 de la auditoría de T-11):**
+  **(A)** `MD.disenar_material` reconoce por geometría (`_escalon_sin_cabida`) el escalón
+  cuya clave no cabe, lo anota con sus dos cotas (`PasoDiseno.sin_cabida`) y descarta el
+  material POR RASANTE; el punto ya no nombra un dato inválido de `cota_subrasante`. Mismos
+  escalones y mismas verificaciones que antes. **(B)** CLAUDE.md («si aplica, el delta de
+  rasante») y el docstring de MD («sale vacío a propósito») se resolvieron con la v8 (§7.A,
+  §7.B y su nota): MD no mueve la rasante y pide a `M7.tamizado_rasante` el delta DEL
+  ESCALÓN QUE NO CABE, que informa sólo si ese escalón cumple lo evaluado y gobierna el
+  recubrimiento (`_delta_de_7A`); es cota inferior para ese escalón, y lo dice. A-01 sin
+  TW: 0.320 m; B-01 con TW = 1.00 m, sin delta y con V2 en el motivo. **(C)** el dato
+  inválido del punto que levanta la Fase 5 sale con su `campo` (`_exigir_datos_validos`).
+- **Abierto:** (1) el delta no es el remedio verificado del punto: con la rasante nueva la
+  corrida se repite, y un escalón menor que hoy sólo incumple V4 o V7 podría cerrar con
+  menos. (2) Si el escalón que no cabe incumple sólo V4, el tamizado daría un delta por
+  resguardo, que depende del HW: no se informa. (3) El resultado aceptado cuando un
+  candidato cierra no se tocó: un material anterior detenido por un dato INVÁLIDO se sigue
+  descartando (para el dato que FALTA, T4-10 bloquea). (4) El `DatoInvalidoError` que M3 o
+  M4 levantan antes de la Fase 5 sigue saliendo «no factible» (la rama de error de la línea
+  base: diámetro de arranque negativo). (5) Un marco con alturas declaradas no crecientes
+  se detiene en el primer escalón que no cabe, como antes.
+- **Qué haría falta:** para (1), el tamizado previo de 7.A corrido antes del bucle con la
+  sección máxima supuesta, que el servicio no corre; para (3) y (4), decisión del dueño:
+  mueven un resultado aceptado y la rama de error de la línea base.
+- **Dónde vive:** `src/modulos/MD.py::_resumen_por_rasante`
+
+## T11-04 · Validación externa: HDS-5 y HEC-14 contra sus ejemplos resueltos; HY-8 sólo como procedimiento, con la tolerancia que el dueño aceptó
+
+- **Cerrado (T-11):** `docs/validacion_hds5.md` se genera con los casos de `CP_HDS5_DG1` y la
+  cuenta del test de T-2 (importada): 38 de 43 cifras dentro del 3 % de lectura, las cinco
+  restantes censadas con su causa (la diferencia, desde las correcciones, con dos decimales
+  y la misma que el motor da: H12), los cinco controles iguales, y las dos filas de metal
+  corrugado dentro del intervalo del n de la Tabla B.1. Suma los cinco ejemplos de HEC-14
+  que T-8 usó como oráculo, cada cifra buscada en el texto de su página (marca `pdf`): 19
+  cifras, TODAS dentro del 1 % —la profundidad 3.3·D50 del apron SI cae sobre la frontera
+  (0.495 frente a «0.50 m», redondeo de la fuente), y la comparación sin tolerancia la
+  censaba fuera por 1e-17 (`TOL_FRONTERA_DE_BANDA`)—.
+- **Abierto:** HY-8 no está en el entorno: `docs/validacion_hy8.md` dice qué cargar por
+  punto (Roadway Data con la rasante de cada punto incluida), qué comparar y con qué
+  tolerancia, y no afirma ningún resultado. La tolerancia es la que el dueño ACEPTÓ el
+  2026-11-13 como **criterio del proyecto, NO normativo** (≤ 3 % coincide, 3–10 % se
+  explica, > 10 % discrepancia; sobre HW y HW/D; control distinto → explicar; velocidad sin
+  veredicto donde el programa no la saca del mismo modo; versión y fecha de HY-8
+  obligatorias), y un test fija las cinco reglas (corrección H5). Ningún ejemplo publicado
+  toca la transición 3.5 < q* < 4.0, el perfil de la lámina, V8 a presión, la Fase 8 ni el
+  cabezal.
+- **Qué haría falta:** que el autor corra HY-8 con ese procedimiento y deje sus tablas.
+- **Dónde vive:** `tests/apoyo/validacion_externa.py::juicio_hy8`
+
+## T11-05 · La sensibilidad se mide con el barrido de PF-3 sobre el juego, una clave a la vez, y la lista se deriva del censo
+
+- **Cerrado (T-11, con la corrección H3 de su auditoría):** 82 barridos sobre 80 criterios:
+  los escritos a mano (los de PRECISIONES y los que necesitan valores propios) más TODO
+  criterio con valor efectivo en el juego y ventana legible por máquina
+  (`barribles_del_censo`); los otros 61 están por nombre en `NO_BARRIBLES` con su razón, y
+  un test exige que las dos listas partan el archivo. La base es el juego (la variante que
+  deja evaluar la sísmica), no la titular, y el anexo lo dice. Mueven el diseño dentro de
+  su ventana diez criterios (once barridos): `v_max_concreto_eleccion` (3.0 m/s: A-01 a TMC
+  de 1.20 m; con el TMC excluido por los sulfatos, A-01 se detiene en el dato del
+  fabricante del HDPE), `regimen_v2b`, `borde_libre_y_sobre_d_max`, `embocadura_cabezal`,
+  `seccion_receptor` sin `TW_m`, `espesor_pared_cajon`, `pendiente_minima_conducto`,
+  `remanso_derecho_via`, `umbral_no_colapso_evento_extremo` y `origen_cota_fondo_entrada`.
+  «Leído, sin efecto medible» se definió (material, sección, veredictos y HW con
+  `TOL_HW_SENSIBILIDAD_M`; las demás magnitudes no se comparan).
+- **Abierto:** un solo juego, sin producto cartesiano; los no barribles (ventana en prosa,
+  por campo o de tabla) no se midieron, y lo dicen. El lado ALTO de la ventana de
+  `n_manning_cajon` (HDS-5 B.3, 0.012–0.022 en vaciado in situ) no se puede declarar
+  (ficha T11-10). El criterio `v_max_concreto_eleccion` se queda SIN valor por decisión del
+  dueño (rige 6.0 m/s de la Tabla Nº 10): su resultado es de la tesis y no cambia el
+  fixture.
+- **Qué haría falta:** repetir el anexo con los datos del sitio.
+- **Dónde vive:** `tests/apoyo/sensibilidad.py::BARRIDOS`
+
+## T11-06 · La hidrología calculada entra al índice de fórmulas con una tercera corrida de prueba
+
+- **Cerrado (T-11, decisión del dueño de T-10, ficha T10-02):** `hidrologia_calculada` es
+  el juego con la variante `caudal_calculado`, escrito en su carpeta por el apoyo de la
+  validación (un test exige que sea, byte a byte, esa materialización) con un `LEEME.md`
+  rotulado (tres de sus seis archivos no admiten la cabecera: corrección H12). Sus datos
+  son NUEVOS de T-11, y el docstring de `src/indice_formulas.py` ya no dice lo contrario.
+  Los ocho `FH.*` salen del cuadro de no ejercitados. La máscara de valores suma `m2`.
+- **Abierto:** con las cuencas SINTÉTICAS de T-1 el caudal de A-01, A-02 y B-01 es de 19 a
+  47 veces el declarado y los tres no caben bajo la subrasante (no factible POR RASANTE,
+  ficha T11-03): **la cadena «caudal calculado → diseño» NO está validada con datos
+  coherentes**. Veinte fundamentos siguen sin ejercitar (Fase 8 del TMC y del HDPE,
+  ciclópeo…).
+- **Qué haría falta:** un juego sintético de cuencas COHERENTE con el CSV (lote posterior a
+  la cadena, prioridad baja, decisión del dueño del 2026-11-13); para la tesis, contrastar
+  los caudales del fixture con el estudio hidrológico real.
+- **Dónde vive:** `src/indice_formulas.py::CORRIDAS_DE_REFERENCIA`
+
+## T11-07 · El alcance declarado completa lo que el dueño dejó fuera
+
+- **Cerrado (T-11):** `ALCANCE_DECLARADO` suma la velocidad de salida en la banda de régimen
+  de M4 (T8-09, trabajo posterior a la cadena con las Figuras 3.3 y 3.4 de HEC-14) y el
+  escalón de la regla de E-A en HW/D = 1.2 (T7V-01). Las otras cinco ya estaban (T-10).
+- **Abierto:** cada entrada sale cuando su ficha se cierre.
+- **Qué haría falta:** el prompt posterior a la cadena que digitalice las Figuras 3.3–3.4.
+- **Dónde vive:** `src/modelos.py::ALCANCE_DECLARADO`
+
+## T11-08 · La aceptación de T-11 no se escribió en rojo primero
+
+- **Qué se difirió:** escribir la aceptación en rojo antes del código, como pide la regla
+  común 4.
+- **Por qué:** T-11 mide comportamiento que ya existía; lo nuevo (el juego, los cuatro
+  documentos, la §7 del contrato, el alcance, la tercera corrida) se midió en rojo con los
+  archivos finales contra la base `14f6138`, y el número está en el informe de la FASE A.
+  Las correcciones de la auditoría tampoco: su rojo se midió con los cuatro archivos de
+  tests finales contra el árbol previo (`10fb84b`), y el número está en el informe final.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `tests/test_t11_validacion_integral.py::test_las_tres_familias_llegan_a_la_fase_11_con_diseno`
+
+## T11-09 · Tres correcciones de formato y transparencia que tocan el programa: `HW_salida_m`, la fila A7 y el tipo de cabezal del resumen
+
+- **Cerrado (correcciones de T-11, H9, H10 y H8 de su auditoría; ninguna es cálculo):**
+  **(H9, decisión del dueño del 2026-11-13)** `diseno.HW_salida_m` del JSON es `null` donde
+  el control de salida no se forma —el perfil sustituye a la aproximación (HW_aprox/D <
+  0.75, HDS-5 pág. impresa 3.24) y su remanso no alcanza la entrada—, con la aproximación
+  descartada en `perfil_HW_aproximado_m`, y la línea «Control» de la CLI dice «salida no se
+  forma»; el HW que gobierna, la entrada, los diámetros y los materiales no cambian (en la
+  línea base: A-02 de dos JSON y su línea de texto). **(H10)** con el análisis químico
+  declarado y sin f'c mínimo aplicable (exposición «insignificante» de la Tabla 4.4 de
+  E.060, pág. impresa 38, y ninguna fila de la Tabla 4.2), la fila A7 existe con
+  `EstadoDeVerificacion.NO_APLICA` y su razón; ningún veredicto ni número cambia.
+  **(H8)** la columna «Tipo de cabezal» del cuadro resumen sale del punto
+  (`M11.tipo_cabezal_del_punto`): la decisión única del Tablero 2.3 («tubo a ras del
+  muro») es el borde de entrada del TUBO y se imprimía también en el marco.
+- **Abierto:** la fila «Control gobernante» de la MEMORIA sigue imprimiendo «salida» con la
+  aproximación descartada (la decisión del dueño limitó H9 a la clave del JSON y la línea
+  de la CLI; la línea «Perfil» de la memoria dice que no se usa).
+- **Qué haría falta:** decisión del dueño para llevar «no se forma» también a la memoria
+  (mueve el texto de las memorias de la línea base).
+- **Dónde vive:** `cli.py::salida_no_se_forma`
+
+## T11-10 · El lado alto de la ventana de `n_manning_cajon` no se puede declarar
+
+- **Qué se difirió:** medir el n del marco con el num. B.3 del HDS-5 (0.012 a 0.022 en un
+  cajón vaciado in situ, según el encofrado), que la ficha del criterio da como la ventana
+  hacia arriba —el lado seguro para el tirante y el HW— y dice que «se declara como el par
+  de la especificación del encofrado».
+- **Por qué:** la forma del criterio es `str` (el nombre de una fila de tabla), y la
+  puerta de declaración rechaza el par con `ValueError` (medido en las correcciones de
+  T-11, H3). La ficha promete una declaración que la forma no admite. No se cambió la forma
+  porque mueve un criterio de archivo y su consumidor (`M2._fila_manning_de_cajon`), y T-11
+  no cambia cálculo. C-01 está gobernado por la salida, que es donde n pesa.
+- **Qué haría falta:** abrir la forma del criterio a la unión (fila o par) con la guardia
+  de la Tabla B.1 en el consumidor, o corregir la ficha para que no prometa el par;
+  decisión del dueño.
+- **Dónde vive:** `src/criterios_adoptados.py::n_manning_cajon`

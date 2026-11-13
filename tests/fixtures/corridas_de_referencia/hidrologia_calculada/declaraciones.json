@@ -1,0 +1,27 @@
+{
+ "remanso_derecho_via": "cota_de_afectacion",
+ "TR_evento_extremo": 500.0,
+ "umbral_no_colapso_evento_extremo": "sin_desborde_de_la_plataforma",
+ "phi_relleno_trasdos": 34.0,
+ "c_phi_fundacion": {
+  "cohesivo": false,
+  "c_kpa": 0.0,
+  "phi_grados": 32.0,
+  "gamma_kn_m3": 18.0
+ },
+ "peso_especifico_saturado_relleno_kn_m3": 20.0,
+ "drenaje_trasdos": "drenado",
+ "factor_muro_eleccion": "reduccion_por_desplazamiento",
+ "categoria_refuerzo_aashto": "A",
+ "clase_exposicion_fisuracion_cabezal": "clase_2",
+ "exposicion_quimica_ems": {
+  "so4_suelo_pct": 0.05,
+  "so4_agua_ppm": 100.0,
+  "tabla_4_2": {
+   "baja_permeabilidad": false,
+   "congelamiento_deshielo": false,
+   "cloruros": false
+  }
+ },
+ "homogeneidad_serie_fen": "serie_completa"
+}

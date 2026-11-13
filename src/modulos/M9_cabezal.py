@@ -10759,6 +10759,33 @@ def _fila_de_durabilidad(entorno: EntornoDelCabezal, *, fc: float,
         citas=("E060.T4.2", "E060.4.4.2"))
 
 
+def _fila_de_durabilidad_no_aplica(entorno: EntornoDelCabezal, *, fc: float,
+                                   requisitos) -> Verificacion:
+    """
+    --- T-11 (H10 de su auditoria) --- La fila A7 cuando el analisis quimico
+    del EMS esta declarado y E.060 no fija f'c minimo: exposicion a sulfatos
+    «insignificante» en la Tabla 4.4 (pag. impresa 38: «0,0 <= SO4 < 0,1» en
+    el suelo y «0 <= SO4 < 150» ppm en el agua, sin requisito de f'c) y
+    ninguna fila de la Tabla 4.2 aplicable. `EstadoDeVerificacion.NO_APLICA`
+    con su razon (el estado que C10 abrio para esto): no juzga, no rellena
+    un minimo y no cuenta como incumplida. Con un minimo aplicable la fila
+    es `_fila_de_durabilidad`, que decide.
+    """
+    ext = entorno.extremo[0]
+    return Verificacion(
+        cumple=True, numeral=NUMERAL_9_4_ARMADO, valor_obtenido=fc,
+        valor_admisible=None, criterio_aplicado=CRITERIO_FC_CABEZAL,
+        codigo=f"A7.concreto.{ext}", estado=EstadoDeVerificacion.NO_APLICA,
+        motivo_no_aplica=(
+            f"A7 del cabezal de {entorno.extremo}: con el analisis quimico "
+            f"declarado ('{CRITERIO_EXPOSICION_QUIMICA}') la exposicion a "
+            f"sulfatos es «{requisitos.clase_sulfatos}» en la Tabla 4.4 de "
+            "E.060, que en esa fila no fija f'c minimo, y ninguna fila de la "
+            "Tabla 4.2 aplica: E.060 no impone un f'c minimo por "
+            "durabilidad y no hay nada que juzgar. Rige el f'c de calculo "
+            f"({fc:.1f} MPa, '{CRITERIO_FC_CABEZAL}' [A])"))
+
+
 def ensamblar_armado(entorno: EntornoDelCabezal,
                      piezas: Sequence[ArmadoDeSeccion],
                      solicitaciones: Optional[dict] = None
@@ -11080,11 +11107,21 @@ def ensamblar_armado(entorno: EntornoDelCabezal,
         if requisitos.fc_min_MPa is not None:
             verificaciones_cabezal.append(_fila_de_durabilidad(
                 entorno, fc=mat["fc"], requisitos=requisitos))
+        else:
+            # --- T-11 (H10 de su auditoria) --- Con el analisis quimico
+            # declarado y ningun minimo aplicable, la fila A7 EXISTE y dice
+            # que no aplica, con la razon: hasta aqui no aparecia, y la
+            # tabla de A1 a A8 no distinguia «evaluada, sin minimo» de «no
+            # evaluada». No juzga nada ni rellena un minimo.
+            verificaciones_cabezal.append(_fila_de_durabilidad_no_aplica(
+                entorno, fc=mat["fc"], requisitos=requisitos))
     verificaciones = (tuple(v for p in piezas for v in p.verificaciones)
                       + tuple(verificaciones_cabezal))
-    pasos.extend(v.paso for v in verificaciones_cabezal)
+    # Una fila NO_APLICA no tiene paso (PC-27): no hay nada que sustituir.
+    pasos.extend(v.paso for v in verificaciones_cabezal if v.paso is not None)
     for v in verificaciones_cabezal:
-        if v.estado is not EstadoDeVerificacion.CUMPLE:
+        if v.estado not in (EstadoDeVerificacion.CUMPLE,
+                            EstadoDeVerificacion.NO_APLICA):
             avisos.append(f"{quien}: {v.paso.que} -- "
                           f"{v.paso.veredicto.explicacion}")
     unicos = []

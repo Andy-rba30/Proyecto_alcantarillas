@@ -505,7 +505,17 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
             "y_normal_m": _num(hidraulica.y_normal),
             "y_critico_m": _num(hidraulica.y_critico),
             "HW_entrada_m": _num(hidraulica.HW_entrada),
-            "HW_salida_m": _num(hidraulica.HW_salida),
+            # --- T-11 (H9 de su auditoria; decision del dueño del
+            # 2026-11-13) --- `null` cuando el control de salida NO SE FORMA:
+            # el perfil sustituye a la aproximacion (HW_aprox/D < 0.75, HDS-5
+            # pag. impresa 3.24) y el remanso no alcanza la entrada. Hasta
+            # aqui la clave llevaba la aproximacion DESCARTADA, que un lector
+            # con la regla «gobierna la mayor» leia como carga (B-01 del
+            # juego de T-11: 0.356 > 0.232 de entrada). El numero descartado
+            # sigue publicado en `perfil_HW_aproximado_m`. Formato, no
+            # calculo: `ResultadoHidraulico.HW_salida` no cambia.
+            "HW_salida_m": (None if salida_no_se_forma(hidraulica)
+                            else _num(hidraulica.HW_salida)),
             "HW_gobernante_m": _num(hidraulica.HW),
             # EL CAUDAL CON QUE M4 RESOLVIO DE VERDAD y cuantos barriles lo
             # reciben (EXT-2-02): Q_m3s sigue siendo el del punto.
@@ -568,6 +578,20 @@ def _diseno_json(resultado: ResultadoPunto) -> Dict[str, Any]:
                 or hidraulica.piso_hw_entrada.S_limite is None
                 else _num(hidraulica.piso_hw_entrada.S_limite)),
 }
+
+
+def salida_no_se_forma(hidraulica: Any) -> bool:
+    """
+    --- T-11 (H9) --- True cuando el control de SALIDA no impone carga: el
+    perfil de la lamina sustituye a la aproximacion h_o (HW_aprox/D < 0.75,
+    HDS-5 num. 3.3.3, pag. impresa 3.24: «should not be used») y su remanso
+    no alcanza la entrada (`PerfilLamina.HW_remanso_m` None; Section 3.5.1).
+    Es la misma condicion en que `PerfilLamina.HW_efectivo_m` devuelve None.
+    Lo leen el JSON (`HW_salida_m` = null) y la linea «Control» del texto.
+    """
+    perfil = getattr(hidraulica, "perfil", None)
+    return (perfil is not None and perfil.sustituye_aproximacion
+            and perfil.HW_remanso_m is None)
 
 
 def _campo_del_perfil(perfil: Optional[PerfilLamina], lector) -> Any:
@@ -1380,9 +1404,15 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
                    f"({r.material.norma_producto})")
         out.append(f"{SANGRIA}        Seccion  : "
                    f"{r.seccion.etiqueta()} (interior)")
+        # --- T-11 (H9) --- Donde el control de salida no se forma (el
+        # perfil sustituye a la aproximacion y no alcanza la entrada) no se
+        # imprime la aproximacion descartada como si fuera una carga: la
+        # linea «Perfil» de abajo dice por que, y el JSON lleva `null`.
+        salida = ("no se forma: el perfil no alcanza la entrada"
+                  if salida_no_se_forma(h) else _fmt(h.HW_salida))
         out.append(f"{SANGRIA}        Control  : {h.control_gobernante.value} "
                    f"(HW = {_fmt(h.HW)} m; entrada {_fmt(h.HW_entrada)} / "
-                   f"salida {_fmt(h.HW_salida)})")
+                   f"salida {salida})")
         if h.sin_tirante_normal:
             # --- T-2 --- Barril horizontal (S = 0): no hay tirante normal ni
             # velocidades de Manning que imprimir, y se dice (INF-5.1.6).

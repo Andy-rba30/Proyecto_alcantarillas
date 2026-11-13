@@ -60,6 +60,18 @@
         "texto": "Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la salida) no estan digitalizadas: con la velocidad tomada al tirante critico el contraste con la Tabla N 11 es un INDICADOR que no concluye; se digitalizaran en un trabajo posterior a la cadena",
         "ficha": "T8-08",
         "simbolo": "M6_proteccion.proteccion_salida"
+      },
+      {
+        "clave": "velocidad_salida_banda_de_regimen",
+        "texto": "Cuando las dos ramas de n no coinciden en el regimen (con n maximo gobierna la salida con el TW bajo el critico; con n minimo el tirante normal seria supercritico), la velocidad de salida que llega a la Fase 6 es la critica y no la mayor de la critica y la de erosion: la Fase 6 lo avisa con las dos velocidades y el d50 que daria la alta; la regla de M4 queda para un trabajo posterior a la cadena, junto con las Figuras 3.3 y 3.4 de HEC-14",
+        "ficha": "T8-09",
+        "simbolo": "M6_proteccion._aviso_banda_de_regimen"
+      },
+      {
+        "clave": "escalon_regla_salida_hw_1_2_d",
+        "texto": "La regla de la carga de control de salida del HDS-5 num. 3.3.3 (entre 0.75 D y 1.2 D compiten la aproximacion y el remanso; sobre 1.2 D rige la aproximacion) tiene un escalon donde la aproximacion cruza HW/D = 1.2: un caudal mayor puede dar unos milimetros menos de carga (11 mm medidos con el tubo de A-01 entre 1.276 y 1.290 m3/s). Es el umbral que la fuente escribe y no se suaviza; en V8 lo cubre la guardia de la carga del evento extremo",
+        "ficha": "T7V-01",
+        "simbolo": "M4_control.resolver_control"
       }
     ]
   },

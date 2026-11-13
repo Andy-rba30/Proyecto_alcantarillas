@@ -792,11 +792,13 @@ def decision_embocadura(tableros: Sequence[Tablero]) -> Optional[str]:
     """
     Estado de la decision de embocadura del cabezal (item 2.3 del Tablero 2).
 
-    Es la columna "Tipo de cabezal" del cuadro resumen. Sale del tablero y no
-    de una constante: mientras la decision siga cerrada la memoria imprime el
-    detalle adoptado, y si alguien la reabre el cuadro lo dice solo. Devuelve
-    None si el item no esta: entonces la celda se imprime como pendiente, no
-    se rellena.
+    Hasta T-11 era la columna "Tipo de cabezal" del cuadro resumen, la misma
+    en todos los puntos. Desde T-11 (H8 de su auditoria) esa columna sale
+    del PUNTO (`tipo_cabezal_del_punto`: la embocadura que T-7a resuelve por
+    punto y el tipo de sus cabezales), porque la decision 2.3 es el borde de
+    entrada del TUBO y no describe el marco de la Familia C (Carta 8). Esta
+    lectura del tablero se conserva: dice que dice la v8. Devuelve None si el
+    item no esta.
     """
     for tablero in tableros:
         encabezados = [_md_texto(c).lower() for c in tablero.encabezados]
@@ -3150,11 +3152,39 @@ def _avisos_que_faltan(informe: Any, cuerpo: str) -> str:
 # 2. Tabla resumen (entregable 3)
 # ===========================================================================
 
-def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
+def tipo_cabezal_del_punto(informe: Any) -> Optional[str]:
+    """
+    --- T-11 (H8 de su auditoria) --- La celda «Tipo de cabezal» del cuadro
+    resumen, leida DEL PUNTO: su embocadura (`InformePunto.embocadura`, que
+    T-7a resuelve antes de la Fase 4: con o sin aleros y su angulo) y, cuando
+    la Fase 9 del punto corrio, el tipo de cada uno de sus dos cabezales
+    (voladizo armado o gravedad ciclopeo). Hasta T-11 la celda era la UNICA
+    decision del Tablero 2.3 de la hoja de ruta («tubo a ras del muro»),
+    impresa igual en los cuatro puntos, tambien en el marco de la Familia C
+    (Carta 8, aletas de 30 a 75 grados). None si la embocadura no se resolvio
+    (su etapa se bloqueo): la celda sale vacia declarada, nunca rellena. No
+    hace aritmetica: formatea lo que el punto trae.
+    """
+    e = getattr(informe, "embocadura", None)
+    if e is None:
+        return None
+    aleros = ("sin aleros" if e.angulo_aletas is None else
+              f"aleros a {_num(e.angulo_aletas, FMT_2)} grados")
+    texto = f"{e.tipo} ({aleros})"
+    cabezal = getattr(informe, "cabezal", None)
+    if cabezal is not None:
+        tipos = [f"{g.extremo} {g.tipo}" for g in cabezal.geometrias if g.tipo]
+        if tipos:
+            texto += "; " + ", ".join(tipos)
+    return texto
+
+
+def fila_resumen(informe: Any) -> str:
     """
     Una fila del cuadro resumen: progresiva, familia, TR, tipo, material y
     norma de producto, diametro, V, y/D, HW, control gobernante, proteccion de
-    salida y tipo de cabezal (entregable 3).
+    salida y tipo de cabezal (entregable 3). El tipo de cabezal es el DEL
+    PUNTO (`tipo_cabezal_del_punto`, T-11).
 
     Toda celda que dependa de una etapa bloqueada sale vacia declarada, nunca
     con un valor plausible.
@@ -3195,7 +3225,8 @@ def fila_resumen(informe: Any, tipo_cabezal: str) -> str:
                           f"{_num(p.espesor, FMT_2)} m "
                           f"&middot; L {_num(p.longitud, FMT_2)} m"))
 
-    celdas.append(_td(tipo_cabezal))
+    tipo_cabezal = tipo_cabezal_del_punto(informe)
+    celdas.append(_td(VACIO) if tipo_cabezal is None else _td(_esc(tipo_cabezal)))
     clase = "" if informe.dimensionado else "fila-incumple"
     return _fila(celdas, clase)
 
@@ -3212,7 +3243,7 @@ COLUMNAS_RESUMEN_CSV = (
 )
 
 
-def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
+def _fila_resumen_csv(informe: Any) -> List[Any]:
     """
     Una fila del cuadro resumen (entregable 3) en valores planos, para CSV.
     Misma fuente de datos que `fila_resumen`: toda celda que dependa de una
@@ -3260,7 +3291,8 @@ def _fila_resumen_csv(informe: Any, tipo_cabezal: str) -> List[Any]:
         p = informe.proteccion
         fila.extend([_num(p.d50), _num(p.espesor, FMT_2), _num(p.longitud)])
 
-    fila.append(tipo_cabezal)
+    tipo_cabezal = tipo_cabezal_del_punto(informe)
+    fila.append("" if tipo_cabezal is None else tipo_cabezal)
     return fila
 
 
@@ -4822,11 +4854,6 @@ def memoria_html_por_partes(
     traza = trazabilidad(Path(informe.csv), contexto,
                          generado_utc=informe.generado)
 
-    embocadura = decision_embocadura(tableros)
-    tipo_cabezal = (_esc(embocadura) if embocadura else
-                    f'<span class="pendiente">sin declarar '
-                    f"(Tablero {ITEM_EMBOCADURA})</span>")
-
     if informe.cerrado:
         estado = ('<span class="cumple">cerrado</span> &mdash; todos los puntos '
                   "dimensionados, sin etapas bloqueadas y sin verificaciones "
@@ -4879,7 +4906,7 @@ def memoria_html_por_partes(
         # la plantilla) y el bloque real sale de `_memorias_punto`, por
         # trozos, cuando la plantilla llega a su marcador.
         "memorias_punto": "hay puntos" if n_puntos else "",
-        "filas_resumen": "".join(fila_resumen(p, tipo_cabezal)
+        "filas_resumen": "".join(fila_resumen(p)
                                  for p in informe.puntos),
         "bloque_datos_sitio": bloque_datos_sitio(contexto, solo_usados=True,
                                                  proyecto=proyecto),
@@ -4968,23 +4995,21 @@ def exportar_html(informe: Any, destino: Path, **kwargs: Any) -> Path:
     return destino
 
 
-def exportar_csv(informe: Any, destino: Path, *, ruta_hoja: Optional[Path] = None) -> Path:
+def exportar_csv(informe: Any, destino: Path) -> Path:
     """
     Escribe el cuadro resumen (entregable 3) como CSV, una fila por punto.
     Mismas columnas y misma fuente de datos que `fila_resumen` en la memoria
     HTML: es el mismo cuadro, en un formato que se abre en una hoja de calculo.
+    Desde T-11 (H8) no lee la hoja de ruta: el tipo de cabezal es el de cada
+    punto (`tipo_cabezal_del_punto`), y el parametro `ruta_hoja` se retiro.
     """
-    tableros = tableros_pendientes(ruta_hoja)
-    embocadura = decision_embocadura(tableros)
-    tipo_cabezal = embocadura or f"sin declarar (Tablero {ITEM_EMBOCADURA})"
-
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
     with destino.open("w", encoding="utf-8", newline="") as f:
         escritor = csv.writer(f)
         escritor.writerow(COLUMNAS_RESUMEN_CSV)
         for p in informe.puntos:
-            escritor.writerow(_fila_resumen_csv(p, tipo_cabezal))
+            escritor.writerow(_fila_resumen_csv(p))
     return destino
 
 

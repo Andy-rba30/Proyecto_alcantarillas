@@ -908,7 +908,7 @@ def test_h11_las_celdas_de_la_proteccion_solo_van_vacias_sin_fase_6(tmp_path):
                  "regimen_flujo_descarga": "intermitente"}})
     columnas = [M11.COLUMNAS_RESUMEN_CSV.index(c) for c in (
         "proteccion_d50_m", "proteccion_espesor_m", "proteccion_longitud_m")]
-    filas = {p.punto.id: M11._fila_resumen_csv(p, "cabezal")
+    filas = {p.punto.id: M11._fila_resumen_csv(p)
              for p in informe.puntos}
     assert _punto(informe, "A-01").proteccion.requerida is True
     assert _punto(informe, "A-02").proteccion.requerida is False

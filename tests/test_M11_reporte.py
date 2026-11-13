@@ -519,7 +519,7 @@ class TestPuntosBloqueados:
 
     def test_un_punto_bloqueado_no_inventa_celdas_en_el_resumen(self, informe):
         c01 = self._punto(informe, "C-01")
-        fila = M11.fila_resumen(c01, "square edge")
+        fila = M11.fila_resumen(c01)
         assert fila.count(M11.VACIO) >= len(("tipo", "material", "D", "V",
                                              "y/D", "HW", "control"))
         assert "fila-incumple" in fila
@@ -543,11 +543,19 @@ class TestTablaResumen:
             assert columna in memoria
 
     def test_una_fila_por_punto(self, informe, memoria):
-        filas = "".join(M11.fila_resumen(p, "x") for p in informe.puntos)
+        filas = "".join(M11.fila_resumen(p) for p in informe.puntos)
         assert filas.count("<tr") == len(informe.puntos)
 
-    def test_el_tipo_de_cabezal_sale_del_tablero_2(self):
-        """No es una constante de M11: es la decision 2.3 de la hoja de ruta."""
+    def test_el_tablero_2_sigue_leyendo_la_decision_2_3(self):
+        """
+        REESCRITO EN T-11 (H8 de su auditoria), declarandolo: hasta T-11 la
+        columna «Tipo de cabezal» del cuadro resumen ERA esta decision unica
+        del Tablero 2.3 de la hoja de ruta («tubo a ras del muro»), impresa
+        igual en los cuatro puntos y tambien en el marco. Desde T-11 la celda
+        sale del punto (`M11.tipo_cabezal_del_punto`, fijado en
+        `tests/test_t11_correcciones.py`); la lectura del tablero sigue
+        existiendo y dice lo mismo que antes.
+        """
         tableros = M11.tableros_pendientes()
         embocadura = M11.decision_embocadura(tableros)
         assert embocadura is not None

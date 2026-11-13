@@ -426,10 +426,15 @@ def test_el_alcance_declarado_sale_en_las_tres_vistas(corrida):
 
 def test_cada_alcance_declarado_nombra_una_ficha_que_existe():
     texto = DECISIONES.read_text(encoding="utf-8")
+    # REESCRITO EN T-11, declarandolo: T-11 suma las dos entradas que el
+    # dueño dejo fuera y que T-10 no tenia (PRECISIONES_T-11, punto 4 (ii)):
+    # la velocidad de salida en la banda de regimen de M4 (T8-09) y el
+    # escalon de la regla de E-A en HW/D = 1.2 (T7V-01). Antes eran cinco.
     assert {a.clave for a in ALCANCE_DECLARADO} == {
         "armado_seccion_marco", "cabezal_paralelo_a_la_via",
         "iteracion_ancho_zapata_cabezal", "flotacion_marco_sin_peso_propio",
-        "tirante_de_borde_hec14"}
+        "tirante_de_borde_hec14", "velocidad_salida_banda_de_regimen",
+        "escalon_regla_salida_hw_1_2_d"}
     for a in ALCANCE_DECLARADO:
         assert f"## {a.ficha} · " in texto, a.ficha
         modulo, simbolo = a.simbolo.split(".")

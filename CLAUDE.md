@@ -378,8 +378,11 @@ consecuencias que conviene leer antes de tocar el campo:
   con esas palabras, apoyados en `variables_entrada.consumido_por`.
 - **El límite se conoce por MUTACIÓN, no por lectura.** Cambiando el nivel de
   cinco de los trece murieron cuatro tests y sobrevivió uno:
-  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **ocho** sin
-  consumidor (nueve hasta T-7a, que le dio consumidor real a `angulo_aletas`
+  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **siete** sin
+  consumidor —contados de nuevo por las correcciones de T-11 (H11), porque
+  esta frase decía «ocho» desde T-7b, que le dio consumidor real a
+  `c_phi_fundacion` (el ensamble de estabilidad de M9)— (ocho hasta T-7b;
+  nueve hasta T-7a, que le dio consumidor real a `angulo_aletas`
   —`M9.embocadura_del_punto`, de perfil—; diez hasta T-1, que le dio consumidor real a
   `homogeneidad_serie_fen` —`MH_hidrologia.precipitacion_de_diseno`— y lo
   sacó del censo; ocho hasta T1; T1 sumó `edicion_que_rige_el_expediente`, la
@@ -433,6 +436,19 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   decisión entera está en `docs/decisiones_diferidas.md`.
 - DisenoNoFactibleError: ninguna combinación material/diámetro cumple.
   Debe llevar el motivo y, si aplica, el delta de rasante requerido.
+  **Desde la corrección de T11-03 (cierre de T-11) el escalón que no cabe
+  bajo la subrasante es un DESCARTE POR RASANTE, no un dato inválido**:
+  `MD.disenar_material` lo reconoce por geometría (`MD._escalon_sin_cabida`:
+  la excepción de `M5.altura_relleno_sobre_clave` sobre `cota_subrasante`
+  y la clave sobre la subrasante con `TOL_UMBRAL_NORMATIVO`), lo anota con
+  sus dos cotas (`PasoDiseno.sin_cabida`) y termina la progresión de ese
+  material; el punto sale «NO FACTIBLE POR RASANTE» con el motivo del
+  escalón anterior y `delta_rasante_m` = el delta de 7.A del escalón que no
+  cabe (`M7.tamizado_rasante`), **sólo** cuando es geometría pura —el
+  escalón cumple todo lo evaluado y gobierna el recubrimiento—, rotulado
+  COTA INFERIOR para ese escalón y no remedio verificado del punto (ficha
+  T11-03). Hasta T11-03 salía como dato inválido de una cota que nadie
+  había tocado, el material «no evaluable» y sin delta.
 - DatoFaltanteError: falta un dato de entrada. Falta la **columna** entera
   del CSV, o la celda obligatoria viene vacía. Lleva el nombre de la columna.
   **También cubre el dato que no es columna del CSV**: el que llega por
@@ -474,7 +490,16 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   "falta la columna cbr_subrasante" y "el CBR dice −3 %" son dos problemas
   distintos del expediente y se corrigen de forma distinta. La regla para
   elegir: si el revisor tiene que **añadir** algo es Faltante, si tiene que
-  **corregir** algo es Invalido.
+  **corregir** algo es Invalido. **Y desde la corrección de T11-03 MD no la
+  degrada a «no factible»** cuando la levanta la Fase 5 sobre un dato DEL
+  PUNTO (el caudal del evento extremo menor que el de diseño, que V8
+  rechaza): `MD._exigir_datos_validos` relanza la primera, con su `campo`
+  (bloqueo `DATO_INVALIDO`), si detuvo un escalón que cumplía todo lo que la
+  Fase 5 le había evaluado o si detuvo a todos los candidatos —el mismo
+  patrón que PC-28 y T-5 para el dato que falta—. Fuera, a propósito y en la
+  ficha T11-03: el resultado aceptado cuando un candidato posterior cierra,
+  y el `DatoInvalidoError` que M3 o M4 levantan antes de la Fase 5 (la rama
+  de error de la línea base), que siguen como estaban.
 - **LimiteNumericoError: cada dato cumple su rango y es la ARITMÉTICA la que
   no cabe.** Quinta de la taxonomía, añadida en S16.5. La regla que la separa
   de DatoInvalidoError: si el dato, por sí solo, viola un límite de
@@ -719,9 +744,17 @@ ErrorProyecto.
   `indice_formulas.md`, tiene su propio comando (`python3 -m src.indice_formulas`;
   hasta EXT-9 se lanzaba como script, y como script ya no encuentra el paquete)
   porque necesita las corridas de referencia enteras —desde T-10 son DOS, que
-  sí dimensionan, con sus datos de PRUEBA en
+  sí dimensionan, y desde T-11 TRES, con sus datos de PRUEBA en
   `tests/fixtures/corridas_de_referencia/` (`indice_formulas.CORRIDAS_DE_REFERENCIA`):
-  la de la guía de perfil y la de expediente con cabezal—. El sello (fecha, commit
+  la de la guía de perfil, la de expediente con cabezal y la de la
+  hidrología calculada (el juego de la validación integral de T-11 con la
+  variante `caudal_calculado`, que un test ata byte a byte al juego)—. Y
+  desde T-11 hay cuatro documentos GENERADOS más, los de la validación
+  integral (`docs/validacion_integral.md`, `validacion_hds5.md`,
+  `validacion_hy8.md` y `validacion_sensibilidad.md`), cada uno con su test
+  de sincronía y sin sello: los escribe `python -m
+  tests.apoyo.validacion_integral --escribir`,
+  `tests.apoyo.validacion_externa` y `tests.apoyo.sensibilidad`. El sello (fecha, commit
   de origen, alcance, par de la suite con su entorno) lo pone quien regenera
   y el test lo LEE del documento para comparar el cuerpo y no la fecha.
 
@@ -769,17 +802,19 @@ del nombre en las dos carpetas:
   viven **sólo** en el repositorio de normas y están censadas en
   `fuentes.SOLO_EN_EL_REPO_NORMAS`. Copiarlas a `normas/` pone en rojo la
   guardia de PC-23 (`tests/test_ext6_registro_normativo.py`).
-- **Sin `NORMAS_DIR` la suite queda verde y SALTA dieciocho tests** (siete
+- **Sin `NORMAS_DIR` la suite queda verde y SALTA veintitrés tests** (siete
   hasta T-2; T-4 sumó los cinco de `tests/test_t4_materiales_durabilidad.py`
-  que abren el WSDOT Hydraulics Manual, y T-1 los seis de
-  `tests/test_t1_hidrologia.py` que abren su capítulo 2), que es un
+  que abren el WSDOT Hydraulics Manual, T-1 los seis de
+  `tests/test_t1_hidrologia.py` que abren su capítulo 2, y T-11 los cinco de
+  `tests/test_t11_validacion_externa.py` que buscan las cifras de los
+  ejemplos de HEC-14 en su página), que es un
   tercer eje de entorno además de PyMuPDF y Tk: los dos T0 de
   `test_normativa_pdf` (verifican las dieciséis fuentes que sí están y
   después saltan nombrando las dos que faltan), los cuatro de
   `tests/test_t0_gobernanza.py` que abren los dos PDF nuevos, y la mitad de
   la guardia de PC-23 que mira el repositorio enlazado. `verificar_sesion.py`
   lo dice en su paso 5 como AVISO. **Una sesión de la cadena T no cierra con
-  esos dieciocho saltados**: enlaza el repositorio y los corre.
+  esos veintitrés saltados**: enlaza el repositorio y los corre.
 - **Un `NORMAS_DIR` que apunta a una carpeta que no existe no se calla**:
   `FileNotFoundError`. Quien definió la variable quiso enlazar el repositorio,
   y caer en silencio a `normas/` le daría una suite verde que no verificó lo
@@ -805,7 +840,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6360**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6469**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
@@ -878,9 +913,13 @@ están los PDF de normas».) Son de **dos** clases desde EXT-11, y hasta entonce
   LRFD que el ensamble transcribe, contra su página, y los literales de las
   ocho citas de sus correcciones, todas en `normas/` de la app): son **124**.
   T-7c sumó **veintiuno** en `tests/test_t7c_cabezal_armado.py` (AASHTO LRFD
-  y E.060, en `normas/` de la app): son **145**, contados con
-  `--collect-only -m pdf` sobre el árbol de T-10, que no sumó ninguno, como
-  la verificación de fórmulas de T-7.
+  y E.060, en `normas/` de la app): son **145** sobre el árbol de T-10, que
+  no sumó ninguno, como la verificación de fórmulas de T-7. T-11 sumó
+  **cinco** en `tests/test_t11_validacion_externa.py` (las cifras de los
+  ejemplos resueltos de HEC-14 que T-8 usó como oráculo, buscadas en su
+  página; HEC-14 vive SÓLO en el repositorio de normas, de modo que saltan
+  también sin `NORMAS_DIR`): son **150**, contados con `--collect-only -m pdf`
+  sobre el árbol de T-11.
 
 **No basta con que el intérprete de la suite tenga tkinter**, y conviene
 decirlo porque invita al error contrario: el test de ventana sondea primero
@@ -891,7 +930,105 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-10 de la cadena T (2026-11-13, integrado detrás de la
+independientes. **T-11 de la cadena T (2026-11-13, integrado detrás de T-10,
+con la corrección del defecto T11-03 y las de su auditoría) sumó CIENTO NUEVE
+tests netos**, cinco con la marca `pdf` (abren HEC-14, que vive sólo en el
+repositorio de normas) y ninguno dependiente de Tk. **T-11 VALIDA y no cambia
+cálculo**: corre el fixture de punta a punta a `--alcance expediente` con un
+juego de DATOS DE PRUEBA que entra SÓLO por las puertas de la CLI
+(`tests/fixtures/juego_validacion_integral.py`; ningún valor de prueba en los
+tres archivos de valores, y un test lo fija), y **genera cuatro documentos con
+su test de sincronía**: `docs/validacion_integral.md` (la corrida TITULAR con
+las decisiones de ARCHIVO —el juego pisa `drenaje_trasdos` y
+`factor_muro_eleccion`, que el dueño confirmó, y eso se presenta como
+variante—: los cuatro puntos llegan a la Fase 11 con diseño, A-01, A-02 y B-01
+concreto Ø 0.90 y C-01 marco 1.20 × 0.90; el cabezal de la regla no pasa las
+tres filas estáticas del marco LRFD en los ocho cabezales y la sísmica es
+«método no evaluable», T7B-05; la corrida sin juego, cada bloqueo en una de
+tres clases; quitar una entrada a la vez sobre DOS bases; trece variantes; y
+la lista exacta de lo que sigue requiriendo entrada, que la §7 de
+`docs/contrato_entradas.md` repite —veintiuna, ADEMÁS de las columnas
+obligatorias, y las condicionales que ninguna base dispara, nombradas—),
+`docs/validacion_hds5.md` (HDS-5 DG1 y cinco ejemplos de HEC-14 contra su
+página), `docs/validacion_hy8.md` (el procedimiento para que el autor corra
+HY-8, sin afirmar ningún resultado, con la tolerancia que el dueño ACEPTÓ el
+2026-11-13 como criterio del proyecto NO normativo: ≤ 3 % coincide, 3–10 % se
+explica, > 10 % discrepancia, sobre HW y HW/D, control distinto → explicar,
+velocidad sin veredicto donde no sale del mismo modo, versión y fecha de HY-8
+obligatorias) y `docs/validacion_sensibilidad.md` (82 barridos de PF-3 sobre
+80 criterios, la lista DERIVADA del censo —todo criterio con valor efectivo y
+ventana legible por máquina— y los otros 61 por nombre con su razón; diez
+criterios mueven el diseño dentro de su ventana). La tercera corrida de
+referencia del índice de fórmulas es la hidrología calculada (ficha T10-02).
+**Lo que T-11 corrigió del programa, todo de diagnóstico o de formato**: (T11-03)
+el escalón que no cabe bajo la subrasante es «no factible POR RASANTE» con el
+delta de 7.A cuando es geometría pura, y el dato inválido del punto que levanta
+la Fase 5 sale con su campo (las dos reglas, en «Excepciones»); (H9, decisión
+del dueño) `diseno.HW_salida_m` del JSON es `null` donde el control de salida
+no se forma y la línea «Control» de la CLI lo dice (`cli.salida_no_se_forma`);
+(H10) la fila A7 del armado sale «no aplica» con su razón cuando E.060 no fija
+f'c mínimo; (H8) la columna «Tipo de cabezal» del cuadro resumen sale del punto
+(`M11.tipo_cabezal_del_punto`) y no de la decisión 2.3 de la hoja de ruta.
+**La auditoría adversarial (AJUSTADO: 1 ALTA, 6 MEDIA, 7 BAJA, ninguna de
+fórmula ni de cita) se aplicó entera**: (H1, ALTA) la lista exacta medida sólo
+sobre el juego no veía el peso específico saturado del relleno, que con el
+`drenaje_trasdos` de archivo detiene 24 etapas, y la §7 contradecía a la §3.3;
+(H2) el titular es el de los valores de archivo; (H3) los barridos se derivan
+del censo y «leído, sin efecto medible» compara material, sección, veredictos y
+el HW con tolerancia nombrada, no las demás magnitudes; (H5) el procedimiento
+de HY-8, ejecutable y con las cinco reglas fijadas por test; (H6) el criterio
+`v_max_concreto_eleccion` se queda SIN valor por decisión del dueño y su
+resultado (3.0 m/s: A-01 a TMC Ø 1.20) depende de `suelo_agresivo_lrfd_sobre_tmc`
+—con 'excluye' A-01 se detiene en el dato del fabricante del HDPE—, y la línea
+de los sulfatos dice que son insignificantes para el concreto (E.060 Tabla 4.4,
+pág. impresa 38) y agresivos para el acero galvanizado (AASHTO LRFD
+11.10.6.4.2a, pág. impresa 11-89); (H7) el TW de C-01 es el tirante normal del
+canal del juego (0.41 m) y la variante con la entrada en el canal empalma sin
+mover el marco; (H11 a H14) el censo del §6 con su consumidor, `TW_receptor`
+descrito como el código lo hace (el docstring de `servicio._resolver_tw` decía
+que mandaba sobre las vías 3 y 4), `SIN_CONSUMIDOR_Y_SIN_MEDIDA` con siete y no
+ocho, textos falsos, porcentajes con dos decimales y tolerancia de frontera
+nombrada (el censo de HEC-14 queda vacío: el −1 % del apron caía fuera por
+1e-17), aserciones que dicen lo que su nombre dice, la marca `lento` sólo en el
+test que lanza un subproceso, y la cadena «caudal calculado → diseño» dicha
+como NO validada con datos coherentes (lote posterior). Los 109: 31 de
+`tests/test_t11_validacion_integral.py`, 20 de
+`tests/test_t11_validacion_externa.py` (cinco `pdf`), 9 de
+`tests/test_t11_sensibilidad.py`, 29 de `tests/test_t11_no_factible_por_rasante.py`,
+10 de `tests/test_t11_correcciones.py` y los diez anclajes de
+`test_decisiones_diferidas` para las fichas de la Parte LIV (T11-01..10). **No
+se escribieron en rojo primero**: el de la FASE A se midió contra `14f6138` (8
+rojos), el de T11-03 contra `c774035` (23 rojos de 29) y el de las correcciones,
+con los cuatro archivos finales, contra `10fb84b` (28 fallos y 4 errores de 70).
+Se reescribieron, declarándolo, `test_t10_memoria` (el alcance declarado pasa de
+cinco a siete entradas), `test_MD` (docstrings), `test_M11_reporte` (la columna
+del cabezal), `test_t8_correcciones` y `test_t8_proteccion` (la firma de
+`fila_resumen`), `test_nivel_medido` (el «nueve» de su docstring), las causas
+de `CP_HDS5_DG1` (dos decimales) y `test_t0_gobernanza` (la fila de T-11).
+Censos sin mover: 141 criterios y 20 sin valor, 507 citas, ningún fundamento
+ni marca `literal-ok` nueva; los techos de `test_ext8` se remidieron y no se
+mueven (107.05 KB y 30.3 páginas por punto). Cierra `INF-0.5` CON SALVEDAD
+escrita en su fila (a expediente siguen deteniendo, por decisión del dueño,
+`remanso_derecho_via`, `TR_evento_extremo`, `umbral_no_colapso_evento_extremo` y
+`categoria_refuerzo_aashto`), `INF-3.4.3` e `INF-3.4.6` (que T-7b construyó y
+T-11 verificó) e `INF-3.4.4` en parte (E4 y E5 sin evaluar, Meyerhof en talud
+vacío, la zapata sin iterar), y deja una NOTA en `INF-3.2.2` (falta la corrida
+de HY-8 del autor) y en `INF-5.1.8`. **La línea base de la Familia C se
+regeneró y se midió contra `14f6138` con el comparador de E-B**:
+`informe_expediente.json` e `informe_rama_error.json` IGUALES (el comparador no
+mira `alcance.declarado`, que gana dos entradas); `informe_perfil_ancho.json` e
+`informe_familia_c.json`, 4 diferencias y 0 no comparables —`HW_salida_m` de
+A-02 a `null` (H9) y el mensaje y dos motivos de escalón de B-01 (T11-03)—; los
+`cli_*.txt` con las dos líneas del alcance, los mensajes «no factible por
+rasante» y la línea «Control» de A-02; los dos CSV de resumen y las tres
+memorias con el tipo de cabezal del punto; **ningún diámetro, sección,
+material ni HW que gobierna se movió**. De las cuatro configuraciones se MIDIÓ
+UNA, «sí · no», con el repositorio de normas enlazado: 6446 passed, 23 skipped,
+collected 6469 (y sin `NORMAS_DIR`, sobre el mismo árbol: 6423 passed, 46
+skipped). **Las otras tres se dicen como derivadas, no como medidas**: la
+derivación suma 109 a las de T-10 y pasa cinco a `skipped` en las dos columnas
+sin PyMuPDF.
+**T-10 de la cadena T (2026-11-13, integrado detrás de la
 verificación de fórmulas de T-7, con las correcciones de su auditoría) sumó
 CINCUENTA tests netos**, ninguno con la marca `pdf` ni dependiente de Tk ni del
 repositorio de normas: los 43 de `tests/test_t10_memoria.py`, los ocho anclajes
@@ -2847,7 +2984,7 @@ PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728; T-6:
 4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352; T-9: 5548;
 T-7a: 5709; T-7b: 6002; T-7c: 6276; verificación de fórmulas de T-7: 6310;
-T-10: 6360. La
+T-10: 6360; T-11: 6469. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2859,14 +2996,15 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 6350 (**derivado** en T-10, no medido: el contenedor no tiene tkinter) | 10 |
-| sí | no | 6337 (**MEDIDO** en T-10 sobre el árbol integrado, con `NORMAS_DIR`) | 23 |
-| no | sí | 6206 (**derivado**, no medido) | 154 |
-| no | no | 6193 (**derivado**, no medido) | 167 |
+| sí | sí | 6459 (**derivado** en T-11, no medido: el contenedor no tiene tkinter) | 10 |
+| sí | no | 6446 (**MEDIDO** en T-11 sobre el árbol integrado, con `NORMAS_DIR`) | 23 |
+| no | sí | 6310 (**derivado**, no medido) | 159 |
+| no | no | 6297 (**derivado**, no medido) | 172 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
-(`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
-dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-10: 6319 y 41;
+(`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan VEINTITRÉS menos y saltan
+veintitrés más desde T-11 (dieciocho desde T-1 hasta T-10; medido en «sí · no»
+sobre el árbol de T-11: 6423 y 46; sobre el de T-10: 6319 y 41;
 sobre el de la verificación de fórmulas de T-7, 6269 y 41;
 sobre el de T-7c, 6235 y 41;
 sobre el de T-7b, 5961 y 41; sobre el de T-7a, 5672 y 37; sobre el de T-9, 5511 y 37; sobre el de T-3, 5318 y 34; sobre el de las correcciones de T-8, 5212 y 34; sobre el
@@ -2876,8 +3014,10 @@ normas; eran
 siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
 `tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
 Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
-2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
-iban saltados por la marca `pdf`. Tras la verificación de fórmulas de T-7 la
+2, y T-11 los cinco de `tests/test_t11_validacion_externa.py` que abren
+HEC-14); las dos sin PyMuPDF, uno menos y uno más, porque los otros
+veintidós ya iban saltados por la marca `pdf`. Tras T-10 la tabla decía 6350 /
+6337 / 6206 / 6193, medida sólo la segunda. Tras la verificación de fórmulas de T-7 la
 tabla decía 6300 / 6287 / 6156 / 6143, medida sólo la segunda. Tras T-7c la tabla decía 6266 / 6253 / 6122
 / 6109, medida sólo la segunda. Tras T-7b la tabla decía 5992 / 5979 / 5869
 / 5856, medida sólo la segunda. Tras T-7a la tabla decía 5703 / 5690 / 5592

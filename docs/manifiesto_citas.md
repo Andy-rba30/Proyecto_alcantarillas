@@ -284,7 +284,7 @@ recubrimientos** (Vía 1 de Sec. 0.2); el diseño estructural es de AASHTO.
 | ↻ `H_RELLENO_MIN["hdpe"] = 0.30` m (clave a subrasante). **Pág. corregida: 984, no 982** (verificada leyendo el PDF; ver `NOR-EG-01`). Ya **no** es el h_rec del tamizado: es uno de los dos mínimos que `M7.altura_recubrimiento` compara, y el otro —la cobertura mínima de AASHTO— lo supera en HDPE bajo pavimento | 508.07, pág. impresa 984 | EG-2013 | [CN:1873](src/constantes_normativas.py:1873), [M7:585](src/modulos/M7_geometria.py:585) | [N] |
 | ↻ `H_RELLENO_MIN["concreto"] = None` — **afirmación negativa**: EG-2013 no lo fija para concreto. **Qué significa ese `None`, corregido**: significa eso y solo eso. No significa «lo fija la norma de producto», que es lo que esta fila decía: M 170M no da alturas de relleno y clasifica por D-load. El valor sale hoy de `cobertura_minima_aashto` | Secciones 505/506 → 502 (lo que no fijan) | EG-2013 | [CN:1873](src/constantes_normativas.py:1873) | [N] |
 | ↻ `H_RELLENO_MIN["tmc"] = None` — ídem para TMC. La remisión del EG-2013 a A-807 (507.05/.06/.08) es de **materiales y fabricación**, no de altura de relleno | Sección 507 → 502 (lo que no fija) | EG-2013 | [CN:1873](src/constantes_normativas.py:1873) | [N] |
-| `SECCION_EG2013`: concreto simple 505, concreto reforzado 506, TMC 507, HDPE 508. La memoria la imprime desde el campo `seccion_eg2013` del material. **Renombrada desde `SUBSECCION`**: son Secciones completas del Capítulo V, no subsecciones de ninguna "Sección 500" | Secciones 505 / 506 / 507 / 508 | EG-2013 | [CN:1993](src/constantes_normativas.py:1993), [M11:1043](src/modulos/M11_reporte.py:1043) | [N] |
+| `SECCION_EG2013`: concreto simple 505, concreto reforzado 506, TMC 507, HDPE 508. La memoria la imprime desde el campo `seccion_eg2013` del material. **Renombrada desde `SUBSECCION`**: son Secciones completas del Capítulo V, no subsecciones de ninguna "Sección 500" | Secciones 505 / 506 / 507 / 508 | EG-2013 | [CN:1993](src/constantes_normativas.py:1993), [M11:1045](src/modulos/M11_reporte.py:1045) | [N] |
 | `SECCION_CABEZALES = "503"` (concreto estructural; + 504 acero) | 503 (+504) | EG-2013 | [CN:1997](src/constantes_normativas.py:1997) | [N] |
 | `CAMA_RELLENO_LATERAL["concreto_simple"]`: cama Clase F (f'c = 14 MPa) ≥ 15 cm; Clase F hasta ≥ 1/4 del D exterior; relleno Sec. 502 ≥ 95 % MDS | 505.03/.07/.10/.11, págs. 950-951 | EG-2013 | [CN:2067](src/constantes_normativas.py:2067) | [N] |
 | `CAMA_RELLENO_LATERAL["concreto_reforzado"]`: subbase granular (Sec. 402) ≥ 15 cm, ≥ 95 % MDS; subbase hasta ≥ 1/6 del D exterior; relleno Sec. 502 | 506.03/.07/.10/.11, págs. 959-960 | EG-2013 | [CN:2067](src/constantes_normativas.py:2067) | [N] |
@@ -477,7 +477,7 @@ hoja de ruta**, que es la fuente de verdad del proyecto.
 | `NUMERAL_8_1_2` / `NUMERAL_8_5` | `"Fase 8, items 1-2"` / `"Fase 8, item 5"` | [M8:218](src/modulos/M8_estructural.py:218), [M8:218](src/modulos/M8_estructural.py:218) |
 | `NUMERAL_9_2` / `NUMERAL_9_3` / `NUMERAL_MO` | `"Sec. 9.2"` / `"Sec. 9.3 (E.050)"` / `"Sec. 9.2 (Mononobe-Okabe)"` | [M9:330](src/modulos/M9_cabezal.py:330) |
 | `NUMERAL_REGLA_RECUBRIMIENTO` | `"Sec. 0.2 (rige el recubrimiento mayor)"` | [M9:337](src/modulos/M9_cabezal.py:337) |
-| `NUMERAL_BUCLE` | `"Sec. 2 de la guia de sesiones (Fases 4 y 5)"` | [MD:178](src/modulos/MD.py:178) |
+| `NUMERAL_BUCLE` | `"Sec. 2 de la guia de sesiones (Fases 4 y 5)"` | [MD:207](src/modulos/MD.py:207) |
 
 ### 11.b. Otras fuentes citadas por nombre
 

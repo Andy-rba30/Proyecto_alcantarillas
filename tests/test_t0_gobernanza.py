@@ -242,6 +242,20 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         # regenerado con corridas que dimensionan) sin cambiarle el estado.
         ESTADO_CERRADO: {"INF-3.4.7", "INF-4.7"},
     },
+    "T-11": {
+        # La validacion integral de las tres familias. INF-0.5 se cierra CON
+        # SALVEDAD escrita en la fila (precedente INF-4.2): a perfil el
+        # fixture dimensiona sin declarar nada; a expediente, con todos los
+        # datos puestos, siguen deteniendo por DECISION del dueño
+        # 'remanso_derecho_via', 'TR_evento_extremo',
+        # 'umbral_no_colapso_evento_extremo' y 'categoria_refuerzo_aashto'.
+        # INF-3.4.3 e INF-3.4.6 los cerro T-7b y T-11 los verifico (la fila
+        # lo dice); INF-3.4.4 queda en parte (E4/E5 sin evaluar, Meyerhof en
+        # talud vacio, zapata sin iterar). INF-3.2.2 e INF-5.1.8 ganan una
+        # NOTA sin cambiar de estado (siguen en las filas de T-2 y T-9).
+        ESTADO_CERRADO: {"INF-0.5", "INF-3.4.3", "INF-3.4.6"},
+        ESTADO_PARCIAL: {"INF-3.4.4"},
+    },
 }
 
 
