@@ -119,3 +119,11 @@ HDS-5 y cobertura que avisa; T-9: Z2 = 1.0) y además:
 5. De T-8 quedan confirmadas por la misma respuesta las recomendaciones dadas en la sesión anterior: `max(V_c, V_erosion)` en la
    banda de régimen de M4 → trabajo posterior junto con el punto 3 (no se toca M4 en la cadena); fuera de la Tabla 10.1, cotas
    inferiores + aviso (como está); 360 min (como está).
+
+### Verificación Fable de las correcciones de fórmula de T-7b y T-7c — 2026-11-13 ~13:10 UTC: «estoy de acuerdo»
+Las correcciones ALTA de fórmula de los cierres de T-7b y T-7c las implementó Opus (con especificación del orquestador y los
+valores de control del auditor Fable). Cuando `tesis(T-7c)` esté en main se pasa UN verificador Fable corto, sólo lectura, sobre
+esas correcciones de los dos cierres: T-7b — cota del nivel freático (H1), V5 `cota_de_afectacion` (H2), V8 con el barril a
+presión (H3) (la cuña ya la aprobó el auditor de T-7c); T-7c — momento de pantalla y alero (H1), k_h0 para el armado (H2),
+fisuración 5.6.7 (fórmula nueva), d_v acotado, modificador η en el cabezal. Si encuentra algo, lo corrige FABLE directamente
+(commit propio `tesis(T-7): …` sobre main, con el ritual). T-10 arranca en paralelo (no toca cálculo).
