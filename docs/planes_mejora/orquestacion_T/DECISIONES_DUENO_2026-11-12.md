@@ -179,3 +179,12 @@ Las dos van al LOTE POSTERIOR, juntas (misma función de MD, mismos tests, una s
 **Lote posterior, lista vigente (aprobado; NO se lanza sin avisar al dueño):** Figuras 3.3–3.4 de HEC-14; `max(V_c, V_erosion)`
 en la banda de régimen de M4; juego de cuencas de prueba coherente (prioridad baja); las dos de MD de arriba (ficha T11-03,
 abiertos 3 y 4); y, si no entraron en T-12, las dos vistas de la memoria.
+
+### Decisiones del dueño sobre las preguntas del cierre de T-11 — 2026-11-13 ~21:55 UTC: «sí, sigue con tus recomendaciones»
+1. **T11-09** («salida no se forma» también en la fila «Control gobernante» de la MEMORIA): SÍ, **en T-12**, con la condición de H9
+   (formato; sólo ese texto de las memorias de la línea base; si mueve algo más, no se aplica). Comunicado al agente de T-12.
+2. **T11-10** (abrir la forma de `n_manning_cajon` al par de HDS-5 B.3): al LOTE POSTERIOR.
+3. **HY-8**: la velocidad de C-01 (control de salida, Q/A(y_c)) se juzga con las mismas bandas que HW: CONFIRMADO.
+**Lote posterior, lista vigente:** Figuras 3.3–3.4 de HEC-14; `max(V_c, V_erosion)` en M4; juego de cuencas coherente (baja);
+las dos de MD de T11-03 (abiertos 3 y 4); la forma de `n_manning_cajon` (T11-10); las dos vistas de la memoria sólo si no
+entran en T-12 (entran: FASE A lanzada con ellas).
