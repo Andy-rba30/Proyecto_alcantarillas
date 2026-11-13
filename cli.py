@@ -815,12 +815,9 @@ def _geometria_json(g: CompatibilidadGeometrica) -> Dict[str, Any]:
                 "criterio": M5.CRITERIO_ORIGEN_COTA_ENTRADA,
                 "regla": g.cota_entrada.regla,
                 "procedencia": g.cota_entrada.procedencia,
-                "nota": ("cota MEDIDA: columna cota_fondo_entrada del CSV; "
-                         "el criterio no se aplico en este punto"
-                         if g.cota_entrada.medida else
-                         "no es cota medida: sale de la regla declarada en "
-                         "ese criterio mientras el expediente no entregue la "
-                         "cota de invert de entrada por punto"),
+                # --- T-10 --- la nota sale del objeto (una fuente, tres
+                # vistas: la memoria la imprime igual).
+                "nota": g.cota_entrada.nota,
             },
             "cota_salida_msnm": _num(g.cota_salida), "caida_m": _num(g.caida),
             # --- T-6 --- como salio L, de donde sale la pendiente, el

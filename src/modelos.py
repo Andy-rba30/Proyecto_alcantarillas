@@ -846,6 +846,21 @@ class CotaDeEntrada:
         """«MEDIDA» o «ADOPTADA», para los rotulos cortos del volcado."""
         return "MEDIDA" if self.medida else "ADOPTADA"
 
+    # --- T-10 ---
+    @property
+    def nota(self) -> str:
+        """
+        La nota que acompaña al rotulo: lo que la cota ES. Vivia escrita en
+        el adaptador del JSON (`cli._geometria_json`) y la memoria decia otra
+        frase; una sola fuente, tres vistas (el JSON, la CLI y la memoria).
+        """
+        if self.medida:
+            return ("cota MEDIDA: columna cota_fondo_entrada del CSV; el "
+                    "criterio no se aplico en este punto")
+        return ("no es cota medida: sale de la regla declarada en ese "
+                "criterio mientras el expediente no entregue la cota de "
+                "invert de entrada por punto")
+
     # --- T-6 ---
     @property
     def aviso(self) -> str:
@@ -6652,6 +6667,14 @@ class LongitudConducto:
     # por no declararse bombeo ni peralte, o una pendiente transversal
     # declarada que el metodo o una longitud declarada dejan sin aplicar.
     avisos: Tuple[str, ...] = ()
+    # --- T-10 --- El paso 7.B.3b del metodo por extremo: el reparto de la
+    # longitud (altura del terraplen en la salida, proyeccion de los taludes
+    # y semilongitudes) que el JSON publicaba y la memoria no. Va APARTE de
+    # `pasos` porque es de 7.B y no del calculo previo a la Fase 4: lo
+    # imprime la geometria del punto que dimensiona (`CompatibilidadGeometrica
+    # .pasos`), no la traza del que no llega a 7.B, cuyo JSON no publica esos
+    # numeros. None en los otros metodos.
+    paso_reparto: Optional["PasoDeMemoria"] = None
 
 
 # ===========================================================================

@@ -1362,35 +1362,30 @@ H_Q_ESPECIFICO = _fundamento(
 # Lo que NO tiene fundamento, y por que. Censo, no omision.
 # ===========================================================================
 # (id del paso, por que no puede tener `Fundamento` hoy, que haria falta)
-SIN_FUNDAMENTO: Tuple[Tuple[str, str, str], ...] = (
-    ("F5.V4b",
-     "El rango HW/D 1.0-1.5 no lo prescribe el HDS-5: DESCRIBE lo que imponen "
-     "las agencias viales de EE. UU., y el MTC no fija ninguno "
-     "(NOR-HDS-02, y el conflicto vinculante n.1 de la §6 del plan v12). Un "
-     "`Fundamento` con cita convertiria en exigencia lo que es adopcion del "
-     "proyectista.",
-     "Nada que transcribir: la decision pendiente es de que naturaleza es el "
-     "umbral, y hasta que se resuelva V4b se imprime como adopcion [A]."),
-    ("F5.V6",
-     "El material solido de arrastre lo trata el num. 4.1.1.3.7 a), que esta "
-     "en el registro, pero lo que el proyecto ejecuta no es un calculo: es "
-     "una constatacion declarativa sin magnitud ni umbral. No hay paso que "
-     "fundar.",
-     "Cuando V6 pase a evaluar un diametro minimo por zona, su fundamento "
-     "cuelga de `MC_HHD.4.1.1.3.7a`, que ya esta transcrita y verificada."),
-    ("F5.V9",
-     "La disponibilidad de diametro sale de un CATALOGO de fabricacion, no de "
-     "una norma. `NOR-PRO-01` y `NOR-PRO-02` retiraron precisamente la "
-     "atribucion de los topes a AASHTO M170 y ASTM A760, que tabulan mas. El "
-     "del HDPE si coincide con el techo de la serie de AASHTO M 294-11 "
-     "(N2, cita AASHTO_M294_TRAD.7.2.1), pero sobre una traduccion no "
-     "oficial sin firma, y el paso sigue descartando por catalogo para los "
-     "tres materiales.",
-     "Nada: un catalogo no tiene numeral y no puede sostener un fundamento. "
-     "Es lo que `DeCatalogo` existe para rotular. Un fundamento del HDPE "
-     "sobre M 294-11 exigiria el original firmado y un paso que descartara "
-     "por norma, que hoy no existe."),
-)
+# --- T-10 --- EL CENSO QUEDA VACIO, y no se borra. V4b, V6 y V9 eran las
+# tres ultimas verificaciones sin `PasoDeMemoria` (V5 y V8 salieron en T-7b)
+# y la memoria las imprimia como un hueco con su razon. T-10 les da paso,
+# cada una con el verbo que sus citas sostienen y sin convertir en exigencia
+# lo que no lo es (ver `V4B`, `V6` y `V9` al final de este archivo):
+#
+#   F5.V4b  DEFINE: el HDS-5 DESCRIBE la banda 1.0-1.5 de las agencias de
+#           EE. UU. (cita nueva HDS5_3ED.2.2.5d#AGENCIAS, caracter
+#           DEFINICION); el tope sigue siendo la adopcion [A] 'HW_D_max'.
+#   F5.V6   RECOMIENDA: la oracion del num. 4.1.1.3.4 a) que recomienda la
+#           seccion unica sin subdivisiones cuando el cauce arrastra; V6 ya
+#           contaba celdas, que es una magnitud (desde C5 y T-3).
+#   F5.V9   DEFINE: las tablas de la norma de producto que tipifican la
+#           serie de diametros; el tope del tubo sale de ellas desde T-4. El
+#           tope de CATALOGO ('D_max_catalogo' [A]) y el del marco (la
+#           progresion de 'secciones_cajon_normalizadas' [A]) siguen sin
+#           numeral: en esos casos el paso sustituye y no juzga --- sin
+#           umbral ni veredicto; el veredicto esta en la tabla del punto ---,
+#           que es lo que NOR-PRO-01 y NOR-PRO-02 piden.
+#
+# La tupla se conserva vacia: la maquinaria que imprime un hueco censado
+# (`M11._paso_ausente`, `traza_punto.HuecoDeVerificacion`) sigue viva para
+# la verificacion que mañana no pueda tener fundamento.
+SIN_FUNDAMENTO: Tuple[Tuple[str, str, str], ...] = ()
 
 
 # ===========================================================================
@@ -3696,4 +3691,75 @@ PERALTE_ZAPATA_ARMADA_CABEZAL = _fundamento(
     que_pasa_si_no_se_hace=(
         "Una zapata delgada con un recubrimiento grande deja poco peralte "
         "sobre su acero para la flexion y el cortante de la punta."),
+)
+
+
+# ===========================================================================
+# --- T-10 --- V4b, V6 y V9 ganan paso (salen del censo `SIN_FUNDAMENTO`)
+# ===========================================================================
+
+V4B = _fundamento(
+    id="F5.V4b",
+    fase=F5,
+    que_paso=("V4b - Carga relativa HW/D frente al tope adoptado por el "
+              "proyectista"),
+    por_que=(
+        "La carga relativa HW/D dice cuanto sube el agua frente a la boca "
+        "medida en alturas de la propia seccion: la carga a la entrada es "
+        "la profundidad del embalse que la obra forma aguas arriba. La "
+        "fuente cuenta que algunas agencias viales limitan ese cociente y "
+        "describe la banda en que suele estar lo que admiten; no la pide, "
+        "y la norma peruana no fija ninguna. Por eso el tope es una "
+        "adopcion del proyectista, con su ventana, y la verificacion no "
+        "sustituye a la del derecho de via (V5), que es la que protege a "
+        "terceros."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.2.2.5d#AGENCIAS", "HDS5_3ED.2.2.5#EMBALSE"),
+    que_pasa_si_no_se_hace=(
+        "Una seccion que cumple todo lo demas podria embalsar varias veces "
+        "su altura frente a la boca sin que la memoria lo dijera en las "
+        "unidades en que la practica lo mira."),
+)
+
+V6 = _fundamento(
+    id="F5.V6",
+    fase=F5,
+    que_paso=("V6 - Seccion unica cuando el cauce arrastra material "
+              "solido: numero de celdas del conducto"),
+    por_que=(
+        "En un cauce que arrastra palizada, troncos o material del lecho, "
+        "una alcantarilla subdividida se obstruye en sus tabiques; la "
+        "fuente recomienda en ese caso la obra de mayor seccion libre, sin "
+        "subdivisiones. El proyecto cuenta las celdas de la seccion "
+        "adoptada --- un tubo es una sola por construccion; un marco, las "
+        "que declare 'n_celdas_cajon' --- y no acepta mas de una mientras "
+        "no haya un dato de sitio sobre la capacidad de arrastre del "
+        "cauce."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.4a#MULTIPLES",),
+    que_pasa_si_no_se_hace=(
+        "Un marco multicelda en un cauce con arrastre se taparia en la "
+        "primera avenida, y la capacidad calculada no existiria."),
+)
+
+V9 = _fundamento(
+    id="F5.V9",
+    fase=F5,
+    que_paso=("V9 - Seccion requerida frente al tope de la serie de su "
+              "material"),
+    por_que=(
+        "El bucle de diseño recorre la serie de diametros de cada material "
+        "y la serie termina: la norma de producto tipifica que diametros "
+        "existen con diseño estandar, y por encima el tubo es un diseño "
+        "especial del fabricante. La comparacion dice si la seccion que la "
+        "hidraulica pidio esta dentro de esa serie. Cuando el tope no sale "
+        "de la norma --- la disponibilidad de mercado que el proyectista "
+        "declara, o la progresion de marcos que el proyecto escribio --- la "
+        "comparacion se imprime igual, sin atribuirle numeral."),
+    verbo=Verbo.DEFINE,
+    citas=("AASHTO_M170M.T1_T5#DIAMETROS", "AASHTO_M170M.7.2.1",
+           "AASHTO_M36.T6"),
+    que_pasa_si_no_se_hace=(
+        "El diseño podria adoptar un diametro que ninguna norma de producto "
+        "tipifica, como si fuera un tubo de catalogo."),
 )

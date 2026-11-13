@@ -281,7 +281,8 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                      TipoMaterial, TipoDeVeredicto, Umbral, Veredicto,
                      Verificacion, eleccion,
                      exigir_seccion_coherente, paso)
-from src.modulos.M2_material import (CRITERIO_D_MAX_NORMA,
+from src.modulos.M2_material import (CRITERIO_CALIBRE_TMC,
+                                 CRITERIO_D_MAX_NORMA,
                                  CRITERIO_N_CELDAS_CAJON,
                                  CRITERIO_SECCIONES_CAJON, CRITERIO_V_MAX,
                                  espesor_pared,
@@ -703,6 +704,26 @@ CITA_DEL_UMBRAL = {
     # --- T-2 --- V10: la cita que lleva el NUMERO de la banda (el 10 %). La
     # del Manual obliga a estudiar la pendiente y no dice cuanto.
     "V10": "HDS5_3ED.5.4.4#PENDIENTE_10",
+    # --- T-10 --- V4b: la frase que DESCRIBE la banda 1.0-1.5 (DEFINICION);
+    # V6: la que recomienda la seccion sin subdivisiones con arrastre. V9 no
+    # va aqui: su cita depende del material y de quien fijo el tope
+    # (`CITA_DEL_TOPE_V9`).
+    "V4b": "HDS5_3ED.2.2.5d#AGENCIAS",
+    "V6": "MC_HHD.4.1.1.3.4a#MULTIPLES",
+}
+
+# --- T-10 --- La cita que fija el tope de V9, por (material, criterio que
+# goberno el tope en `M2.tope_de_diametro`). Solo los topes que salen de una
+# norma de producto tienen una: el de disponibilidad de mercado
+# ('D_max_catalogo' [A]) y el del marco ('secciones_cajon_normalizadas' [A])
+# son adopciones sin numeral, y el paso de V9 no les inventa cita
+# (NOR-PRO-01, NOR-PRO-02): sustituye y no juzga.
+CITA_DEL_TOPE_V9 = {
+    (TipoMaterial.CONCRETO_REFORZADO, CRITERIO_D_MAX_NORMA):
+        "AASHTO_M170M.7.2.1",
+    (TipoMaterial.TMC, CRITERIO_D_MAX_NORMA): "AASHTO_M36.T6",
+    (TipoMaterial.TMC, CRITERIO_CALIBRE_TMC): "AASHTO_M36.T6",
+    (TipoMaterial.HDPE, CRITERIO_D_MAX_NORMA): "AASHTO_M294_TRAD.7.2.1",
 }
 
 
@@ -2169,7 +2190,8 @@ def v4_carga_entrada(*, punto: PuntoCritico,
 # ---------------------------------------------------------------------------
 
 def v4b_relacion_hw_d(*, D: float,
-                      resultado: ResultadoHidraulico) -> Verificacion:
+                      resultado: ResultadoHidraulico,
+                      punto: Optional[PuntoCritico] = None) -> Verificacion:
     """
     HW/D <= 'HW_D_max', Fase 5 fila V4b.
 
@@ -2212,13 +2234,69 @@ def v4b_relacion_hw_d(*, D: float,
     """
     HW_sobre_D = resultado.HW / D
     admisible = ca.valor(CLAVE_HW_D_MAX)
+    cumple = HW_sobre_D <= admisible + TOL_UMBRAL_NORMATIVO
+    margen = admisible - HW_sobre_D
+    # --- T-10 --- EL PASO, que V4b no tenia: estaba censada en
+    # `SIN_FUNDAMENTO` porque «un Fundamento con cita convertiria en
+    # exigencia lo que es adopcion». El de ahora no lo hace: F5.V4b DEFINE
+    # (la fuente DESCRIBE la banda de las agencias de EE. UU.) y el umbral
+    # lleva la clave [A] del proyecto y su aplicacion, con la eleccion.
+    criterio = ca.criterio(CLAVE_HW_D_MAX)
     return Verificacion(
-        cumple=HW_sobre_D <= admisible + TOL_UMBRAL_NORMATIVO,
+        cumple=cumple,
         numeral=NUMERAL_V4B,
         valor_obtenido=HW_sobre_D,
         valor_admisible=admisible,
         criterio_aplicado=CLAVE_HW_D_MAX,
         codigo="V4b",
+        paso=paso(
+            "F5.V4b",
+            codigo="V4b",
+            que="Carga relativa a la entrada: HW/D frente al tope adoptado",
+            formula="HW / D <= HW_D_max",
+            sustitucion=(
+                Magnitud("HW", resultado.HW, "m",
+                         "M4, carga a la entrada del control que GOBIERNA "
+                         f"({resultado.control_gobernante.value}): el "
+                         "embalse real frente a la boca",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("D", D, "m", "altura interior de la seccion "
+                         "candidata (la dimension que el catalogo recorre)",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("HW_D_max", admisible, "-",
+                         f"criterio '{CLAVE_HW_D_MAX}' [A]",
+                         cifras=CIFRAS_FACTOR)),
+            resultado=Magnitud("HW/D", HW_sobre_D, "-",
+                               "cociente del HW que gobierna entre D",
+                               cifras=CIFRAS_FACTOR),
+            umbral=_umbral_de(
+                "V4b", valor=admisible, unidad="",
+                descripcion="tope de la carga relativa adoptado por el "
+                            "proyectista dentro de la banda que la fuente "
+                            "describe",
+                criterio=CLAVE_HW_D_MAX),
+            veredicto=_veredicto(
+                cumple, margen, "",
+                "la carga relativa queda dentro del tope adoptado" if cumple
+                else "el agua sube frente a la boca mas alturas de seccion "
+                     "que las que el tope adoptado admite"),
+            elecciones=(EleccionDeProyecto(
+                que_se_adopto="tope de la carga relativa HW/D",
+                valor=f"{admisible:g}",
+                entre=tuple(f"{v:g}" for v in (criterio.sensibilidad or ())),
+                de_donde=f"el criterio '{CLAVE_HW_D_MAX}' [A]: la banda "
+                         "1.0-1.5 la describe el HDS-5 como practica de "
+                         "agencias de EE. UU. y el MTC no fija ninguna",
+                por_que="es una adopcion del proyectista y no una exigencia "
+                        "(NOR-HDS-02); la proteccion de terceros es V5",
+                cita_id="HDS5_3ED.2.2.5d#AGENCIAS",
+                clave_criterio=CLAVE_HW_D_MAX),),
+            # La advertencia de §15.6.3 que V4b no podia llevar sin paso (el
+            # test de M5 lo dejo escrito: «el dia que V4b tenga fundamento,
+            # este test cae y hay que ponerle la nota»).
+            nota_del_proyecto=("" if punto is None else _nota_de_alcance(
+                punto, "la altura de la PROPIA seccion (el cociente HW/D)")),
+        ),
     )
 
 
@@ -2822,13 +2900,39 @@ def v6_material_solido_arrastre(*, material: Material,
             f"externas -- es de TUBERIAS con relleno entre ellas); ancho "
             f"exterior total {ancho:.2f} m. No se acepta mientras no haya "
             f"dato de arrastre del cauce (ficha EXT-2-01)")
+    cumple = celdas == 1
+    # --- T-10 --- EL PASO, que V6 no tenia («constatacion declarativa sin
+    # magnitud ni umbral», censo `SIN_FUNDAMENTO`). Desde C5 y T-3 V6 cuenta
+    # celdas, que SI es una magnitud, y la fuente que la sostiene RECOMIENDA:
+    # el fundamento F5.V6 lo dice con ese verbo.
     return Verificacion(
-        cumple=celdas == 1,
+        cumple=cumple,
         numeral=NUMERAL_V6,
         valor_obtenido=obtenido,
         valor_admisible="sección única con palizada",
         criterio_aplicado=criterio,
         codigo="V6",
+        paso=paso(
+            "F5.V6",
+            codigo="V6",
+            que="Seccion unica con arrastre: numero de celdas del conducto",
+            formula="N_celdas = 1",
+            sustitucion=(
+                Magnitud("N_celdas", celdas, "", procedencia),),
+            resultado=Magnitud("N_celdas", celdas, "", obtenido),
+            umbral=_umbral_de(
+                "V6", valor=1, unidad="celda",
+                descripcion="seccion unica, sin subdivisiones, en un cauce "
+                            "con arrastre",
+                criterio=criterio),
+            veredicto=_veredicto(
+                cumple, 1 - celdas, "celda",
+                "una sola celda: la seccion libre no se subdivide"
+                if cumple else
+                "mas de una celda: no se acepta mientras no haya un dato "
+                "de sitio sobre la capacidad de arrastre del cauce (ficha "
+                "EXT-2-01)"),
+        ),
     )
 
 
@@ -3302,15 +3406,64 @@ def v9_disponibilidad_diametro(*, D: float, material: Material) -> Verificacion:
     un punto rechazado por V9 no lo rechaza la norma.
     """
     de_cajon = material.forma is FormaSeccion.RECTANGULAR
+    criterio = (CRITERIO_SECCIONES_CAJON if de_cajon
+                else material.D_max_criterio or CRITERIO_D_MAX_NORMA)
+    cumple = D <= material.D_max + TOL_UMBRAL_NORMATIVO
+    margen = material.D_max - D
+    # --- T-10 --- EL PASO, que V9 no tenia (censo `SIN_FUNDAMENTO`: «un
+    # catalogo no tiene numeral»). Desde T-4 el tope del TUBO sale de su
+    # norma de producto y tiene cita: entonces el paso juzga contra ella. Si
+    # el tope es de disponibilidad de mercado o el del marco, el paso
+    # SUSTITUYE y no juzga --- sin umbral ni veredicto, que estan en la
+    # tabla del punto --- porque esos topes no tienen numeral.
+    cita_tope = (None if de_cajon else
+                 CITA_DEL_TOPE_V9.get((material.tipo, criterio)))
+    rotulo = ("progresion de marcos del criterio "
+              f"'{CRITERIO_SECCIONES_CAJON}' [A]" if de_cajon
+              else (getattr(material, "D_max_de_catalogo", "") or
+                    f"criterio '{criterio}'"))
+    umbral = None if cita_tope is None else Umbral(
+        descripcion="tope de la serie del material (la seccion mayor con "
+                    "diseño estandar de su norma de producto)",
+        valor=material.D_max, unidad="m", cita_id=cita_tope,
+        caracter=caracter_del_umbral({"citas": (cita_tope,)}),
+        aplicacion=UMBRALES_POR_CODIGO["V9"]["aplicacion"],
+        criterio_aplicado=criterio)
     return Verificacion(
-        cumple=D <= material.D_max + TOL_UMBRAL_NORMATIVO,
+        cumple=cumple,
         numeral=NUMERAL_V9,
         valor_obtenido=D,
         valor_admisible=material.D_max,
-        criterio_aplicado=(CRITERIO_SECCIONES_CAJON if de_cajon
-                           else material.D_max_criterio
-                           or CRITERIO_D_MAX_NORMA),
+        criterio_aplicado=criterio,
         codigo="V9",
+        paso=paso(
+            "F5.V9",
+            codigo="V9",
+            que="Seccion requerida frente al tope de la serie de su material",
+            formula="D <= D_max",
+            sustitucion=(
+                Magnitud("D", D, "m",
+                         "altura interior de la seccion candidata",
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("D_max", material.D_max, "m", rotulo,
+                         cifras=CIFRAS_MAGNITUD)),
+            resultado=Magnitud("D_max - D", margen, "m",
+                               "holgura respecto del tope: negativa es fuera "
+                               "de la serie", cifras=CIFRAS_MAGNITUD),
+            umbral=umbral,
+            veredicto=None if umbral is None else _veredicto(
+                cumple, margen, "m",
+                "la seccion esta dentro de la serie de su norma de producto"
+                if cumple else
+                "la seccion supera el tope de la serie: por encima seria un "
+                "diseño especial del fabricante"),
+            nota_del_proyecto=(
+                "" if umbral is not None else
+                "EL TOPE NO TIENE NUMERAL: es una adopcion [A] del "
+                "proyecto (disponibilidad de mercado o progresion del "
+                "marco), y este paso no le atribuye cita. El veredicto "
+                "esta en la tabla de verificaciones del punto."),
+        ),
     )
 
 
@@ -3667,7 +3820,7 @@ def verificar(*, punto: PuntoCritico, material: Material,
         lambda: v2b_sedimentacion(punto=punto, resultado=resultado),
         lambda: v3_velocidad_maxima(material=material, resultado=resultado),
         lambda: v4_carga_entrada(punto=punto, resultado=resultado),
-        lambda: v4b_relacion_hw_d(D=D, resultado=resultado),
+        lambda: v4b_relacion_hw_d(D=D, resultado=resultado, punto=punto),
         # --- T-2 --- V10 VA ANTES DEL HUECO DE V5, y no al final de la
         # tabla. No depende del diametro, de la familia ni de ningun dato de
         # expediente --su banda son dos criterios con valor--, y detras de V5

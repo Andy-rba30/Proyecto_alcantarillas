@@ -2453,7 +2453,8 @@ def _verificador_perfil(informe: InformePunto,
             # difiera. Si alguien le quitara el valor a 'HW_D_max', la
             # `CriterioPendienteError` subiria y bloquearia el material, que
             # es lo que corresponde a un umbral sin declarar.
-            lambda: M5.v4b_relacion_hw_d(D=D, resultado=resultado),
+            lambda: M5.v4b_relacion_hw_d(D=D, resultado=resultado,
+                                         punto=punto),
             # --- T-2 --- V10 (pendiente del conducto dentro de la banda
             # adoptada) entra como OBLIGATORIA y EN EL MISMO SITIO que en
             # `M5.verificar`: detras de V4b y antes del hueco de V5. Sus dos

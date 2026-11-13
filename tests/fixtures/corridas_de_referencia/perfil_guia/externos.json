@@ -1,0 +1,6 @@
+{
+  "globales": {"TW_m": 0.3, "L_hidraulico_m": 120.0, "luz_m": 2.75},
+  "puntos": {
+    "C-01": {"Q_m3s": 0.85, "S_cauce": 0.006, "S_conducto": 0.006}
+  }
+}

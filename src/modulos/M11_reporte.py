@@ -106,6 +106,7 @@ Uso
 
 from __future__ import annotations
 
+import contextvars
 import csv
 import hashlib
 import html
@@ -147,6 +148,7 @@ from src.normativa import registro as _registro_M11
 from src.modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
                                        verificaciones_no_evaluadas)
 from src.modulos.M8_estructural import verificacion_diferida_estructural
+from src.modulos import M2_material as _M2
 # Los rotulos de alcance viven en modelos.py, no en cli.py: M11 los necesita y
 # no puede importar la CLI --- es la CLI quien importa M11 ---. Ver la nota de
 # su declaracion.
@@ -323,6 +325,12 @@ CAMPOS_CSV: Tuple[Tuple[str, str, str], ...] = (
     # muestra un dato del expediente que el CSV si trae, y el revisor no
     # puede ver si venia vacio (SIS-B-12).
     ("NF_profundidad_m", "Profundidad del nivel freatico", "m"),
+    # --- T-10 --- Las dos columnas que T-6 y T-3 sumaron al CSV y que esta
+    # tabla no imprimia (el JSON las nombraba entre los pendientes del punto
+    # y la memoria no decia si venian vacias): la cota de fondo de la entrada
+    # medida en el cauce y la coronacion del canal de la Familia C.
+    ("cota_fondo_entrada", "Cota de fondo de la entrada (medida)", "msnm"),
+    ("cota_coronacion_canal", "Cota de coronacion del canal", "msnm"),
 )
 
 # Datos que no son columna del CSV y llegan declarados (ver `DatoDeclarado` de
@@ -958,8 +966,10 @@ def _tabla_clasificacion(informe: Any) -> str:
         return ""
     tr = clasificacion.periodo_retorno
     if tr.anios is None:
+        # --- T-10 --- con su numeral, que el JSON publica (`TR_numeral`)
         texto_tr = (f'<span class="pendiente">no procede</span> &mdash; '
-                    f"{_esc(tr.fundamento)}")
+                    f"{_esc(tr.fundamento)}"
+                    + (f" ({_esc(tr.numeral)})" if tr.numeral else ""))
     else:
         categoria = "" if tr.categoria is None else f" ({_esc(tr.categoria.value)})"
         # Sin anteponer "num.": `NUMERAL_TR` dejo de ser un numeral desnudo
@@ -1029,6 +1039,11 @@ def _tabla_diseno(informe: Any) -> str:
                _td(f"{_esc(material.nombre)} &mdash; "
                    f"{_esc(rotulo_norma_producto(material))}, EG-2013 Seccion "
                    f"{_esc(material.seccion_eg2013)}")]),
+        # --- T-10 --- Lo que la norma de producto dice cubrir (EXT-N-03): el
+        # JSON lo publicaba desde EXT-6 y la memoria no. Sale de M2.
+        _fila([_td("<b>Alcance de la norma de producto</b>"),
+               _td(_esc(_M2.alcance_norma_producto_de(material.tipo,
+                                                      material.forma)))]),
         _fila([_td("<b>Rugosidad (regla de doble n)</b>"),
                _td(f"n para capacidad y tirante = {_num(material.n_max)}; "
                    f"n para velocidad maxima y socavacion = "
@@ -1520,6 +1535,48 @@ def _clave_de_umbral(u: Any) -> Tuple[Any, ...]:
             u.aplicacion, u.criterio_aplicado or "")
 
 
+class _YaImpreso:
+    """
+    --- T-10 --- Lo que la memoria de los PUNTOS ya imprimio entero en ESTE
+    documento, por huella de contenido: pasos completos, elecciones y notas
+    del proyecto. La primera aparicion se imprime entera y con un `id`; las
+    siguientes, IDENTICAS, se imprimen como una linea con su enlace a la
+    primera. Es la deduplicacion que EXT-8 hizo con las citas, los
+    fundamentos y los umbrales (al anexo), aplicada a lo que se repetia de
+    punto a punto: medido sobre la corrida de la linea base a expediente,
+    el paso 2.1 identico en los cuatro puntos, las elecciones de los
+    criterios de corredor (pendientes, regimen de V2b, metodo de longitud)
+    y las notas del proyecto que no dependen del punto.
+
+    Vive SOLO mientras `memoria_html_por_partes` arma los puntos
+    (`_IMPRESOS`, una `ContextVar`): un paso o un punto renderizados sueltos
+    --- la traza de la GUI, un test --- salen enteros, sin referencias que no
+    tendrian a donde apuntar. No es estado del calculo: es de presentacion,
+    y nace y muere con el documento.
+    """
+
+    def __init__(self) -> None:
+        self.anclas: Dict[str, str] = {}      # huella -> punto donde salio
+        self.punto = ""
+
+    def ver(self, prefijo: str, contenido: str) -> Tuple[str, Optional[str]]:
+        """(ancla, punto de la primera aparicion o None si es la primera)."""
+        huella = hashlib.sha1(contenido.encode("utf-8")).hexdigest()
+        ancla = f"{prefijo}-{huella[:12]}"  # literal-ok: largo de la huella corta del ancla
+        if ancla in self.anclas:
+            return ancla, self.anclas[ancla]
+        self.anclas[ancla] = self.punto
+        return ancla, None
+
+
+_IMPRESOS: "contextvars.ContextVar[Optional[_YaImpreso]]" = \
+    contextvars.ContextVar("M11_ya_impreso", default=None)
+
+
+def _donde(punto: str) -> str:
+    return f"en el punto {_esc(punto)}" if punto else "mas arriba"
+
+
 def _enlace(ancla: str, texto: str, clase: str = "remision") -> str:
     return f'<a href="#{_esc(ancla)}" class="{clase}">{texto}</a>'
 
@@ -1714,6 +1771,7 @@ def _elecciones_del_paso(paso: Any) -> str:
     """
     if not paso.elecciones:
         return ""
+    impresos = _IMPRESOS.get()
     filas = []
     for e in paso.elecciones:
         entre = ("<br>Elegido entre: "
@@ -1724,11 +1782,23 @@ def _elecciones_del_paso(paso: Any) -> str:
                 if e.cita_id else "")
         clave = (f"<br>Criterio adoptado: <code>{_esc(e.clave_criterio)}"
                  "</code>" if e.clave_criterio else "")
-        filas.append(
-            f"<li><b>{_esc(e.que_se_adopto)}: {_esc(e.valor)}</b>"
-            f"{entre}{de_donde}{cita}"
-            f'<br><span class="interpretacion">Por que: {_esc(e.por_que)}'
-            f"</span>{clave}</li>")
+        cabeza = f"<b>{_esc(e.que_se_adopto)}: {_esc(e.valor)}</b>"
+        cuerpo = (f"{entre}{de_donde}{cita}"
+                  f'<br><span class="interpretacion">Por que: '
+                  f"{_esc(e.por_que)}</span>{clave}")
+        if impresos is None:
+            filas.append(f"<li>{cabeza}{cuerpo}</li>")
+            continue
+        # --- T-10 --- la eleccion IDENTICA ya impresa en este documento va
+        # como su linea y un enlace: el valor adoptado se queda aqui.
+        ancla, previo = impresos.ver("eleccion", cabeza + cuerpo)
+        if previo is None:
+            filas.append(f'<li id="{ancla}">{cabeza}{cuerpo}</li>')
+        else:
+            filas.append(f"<li>{cabeza} &mdash; "
+                         + _enlace(ancla, "la misma eleccion, con sus "
+                                   "alternativas y su porque, "
+                                   f"{_donde(previo)}") + "</li>")
     return ("<dt>Que se eligio, entre que y por que</dt>"
             f"<dd><ul class=\"elecciones\">{''.join(filas)}</ul></dd>")
 
@@ -1755,6 +1825,35 @@ def _por_que_del_paso(paso: Any) -> str:
 
 
 def bloque_paso(paso: Any) -> str:
+    """
+    Un `PasoDeMemoria` completo (ver `_bloque_paso_entero`). --- T-10 ---
+    Dentro de la memoria de los puntos, un paso IDENTICO a uno ya impreso en
+    el documento --- mismos numeros, mismas citas, misma nota: el 2.1 de una
+    luz global, el 4.2 de una misma carta --- sale como su titulo y un
+    enlace a la primera aparicion (`_YaImpreso`). Fuera de ella, entero.
+    """
+    impresos = _IMPRESOS.get()
+    if impresos is None:
+        return _bloque_paso_entero(paso).replace("{ancla}", "")
+    # La huella del paso se toma SIN el registro activo: la version canonica,
+    # para que dos pasos iguales den la misma aunque sus partes ya se hayan
+    # impreso en otro sitio.
+    token = _IMPRESOS.set(None)
+    try:
+        canonico = _bloque_paso_entero(paso)
+    finally:
+        _IMPRESOS.reset(token)
+    ancla, previo = impresos.ver("paso", canonico)
+    codigo = f"<code>{_esc(paso.codigo)}</code> &mdash; " if paso.codigo else ""
+    if previo is not None:
+        return (f'<div class="paso repetido"><h5>{codigo}{_esc(paso.que)}'
+                "</h5><p>Identico, con los mismos valores, "
+                + _enlace(ancla, f"al desarrollado {_donde(previo)}")
+                + ".</p></div>")
+    return _bloque_paso_entero(paso).replace("{ancla}", f' id="{ancla}"', 1)
+
+
+def _bloque_paso_entero(paso: Any) -> str:
     """
     Un `PasoDeMemoria` completo, en el orden en que se lee de arriba abajo:
     que, por que, formula, con que valores, resultado, contra que, veredicto,
@@ -1784,11 +1883,26 @@ def bloque_paso(paso: Any) -> str:
     ]
     if paso.nota_del_proyecto:
         campos.append('<dt class="interpretacion">Lo que pone el proyecto'
-                      "</dt>"
-                      f'<dd class="interpretacion">'
-                      f"{_esc(paso.nota_del_proyecto)}</dd>")
-    return (f'<div class="paso"><h5>{codigo}{_esc(paso.que)}</h5>'
+                      "</dt>" + _nota_del_proyecto(paso.nota_del_proyecto))
+    return (f'<div class="paso"{{ancla}}><h5>{codigo}{_esc(paso.que)}</h5>'
             f'<dl class="acotacion">' + "".join(campos) + "</dl></div>")
+
+
+def _nota_del_proyecto(nota: str) -> str:
+    """
+    --- T-10 --- La nota del proyecto (lo que el proyecto LEE o HACE, en su
+    clase, separada de la fuente). La IDENTICA ya impresa en este documento
+    va como enlace a la primera (ver `_YaImpreso`).
+    """
+    impresos = _IMPRESOS.get()
+    if impresos is None:
+        return f'<dd class="interpretacion">{_esc(nota)}</dd>'
+    ancla, previo = impresos.ver("nota", nota)
+    if previo is None:
+        return f'<dd class="interpretacion" id="{ancla}">{_esc(nota)}</dd>'
+    return ('<dd class="interpretacion">'
+            + _enlace(ancla, f"la misma nota del proyecto, {_donde(previo)}")
+            + "</dd>")
 
 
 def bloque_pasos(pasos: Sequence[Any], titulo: str) -> str:
@@ -2009,16 +2123,16 @@ def _bloque_cabezal(informe: Any) -> str:
     # memoria de cada punto sin dimensionar solo engordaba el expediente
     # (techo de paginas por punto de `test_ext8`).
     if c is None:
-        return ""
+        # --- T-10 --- El punto DIMENSIONADO que no llega a la Fase 9 (una
+        # corrida de perfil) tiene embocadura resuelta antes de la Fase 4:
+        # la CLI y el JSON la publican con su regla y sus criterios, y la
+        # memoria solo la nombraba en el paso 6.9. Una linea, no un bloque.
+        if e is None or not getattr(informe, "dimensionado", False):
+            return ""
+        return ("<h4>Fase 9 &mdash; Embocadura del punto</h4>"
+                + _linea_embocadura(informe, e, con_coherencia=True))
     if e is not None:
-        angulo = ("sin aleros" if e.angulo_aletas is None else
-                  f"aleros a {_num(e.angulo_aletas, FMT_2)} grados con la "
-                  "pared del barril")
-        partes.append(
-            f"<p><b>Embocadura del punto:</b> {_esc(e.tipo)} ({angulo}; "
-            f"{_esc(e.regla)}), criterios <code>{_esc(e.criterio_tipo)}</code>"
-            + (f" y <code>{_esc(e.criterio_angulo)}</code>"
-               if e.criterio_angulo else "") + " [A].</p>")
+        partes.append(_linea_embocadura(informe, e))
         # La coherencia del marco con el cabezal va en el paso 9.0.0, que la
         # emite M9: no es una nota aparte ni un aviso (correcciones de T-7a).
     for g in c.geometrias:
@@ -2068,13 +2182,18 @@ def _bloque_cabezal(informe: Any) -> str:
         combos = [_fila(["<th>Marco</th>", "<th>Combinacion</th>",
                          "<th>Para</th>", "<th>N (kN/m)</th>",
                          "<th>H (kN/m)</th>",
-                         "<th>M estabilizante</th>", "<th>M volcante</th>"])]
+                         "<th>M estabilizante</th>", "<th>M volcante</th>",
+                         "<th>e (m)</th>"])]
         for k in est.combinaciones:
+            # --- T-10 --- la excentricidad de la resultante, que el JSON ya
+            # publicaba: la calcula `CombinacionDeEstabilidad.excentricidad`
+            # (modelos), no esta capa. Sin carga vertical no hay resultante.
             combos.append(_fila([
                 _td(_esc(k.marco)), _td(_esc(k.nombre)), _td(_esc(k.para)),
                 _td(_num(k.N, FMT_2), "num"), _td(_num(k.H, FMT_2), "num"),
                 _td(_num(k.M_estabilizante, FMT_2), "num"),
-                _td(_num(k.M_volcante, FMT_2), "num")]))
+                _td(_num(k.M_volcante, FMT_2), "num"),
+                _td(_num(k.excentricidad if k.N > 0 else None), "num")]))
         partes.append(
             f"<p><b>Estabilidad del cabezal de {_esc(est.extremo)}, "
             f"condicion {_esc(est.condicion.value)}</b> (regla de marco "
@@ -2084,7 +2203,8 @@ def _bloque_cabezal(informe: Any) -> str:
             "factorar, por metro de muro; x desde la arista de la punta y z "
             "desde la base de la zapata; momento positivo si estabiliza.</p>"
             '<table class="compacta">' + "".join(filas) + "</table>"
-            '<table class="compacta">' + "".join(combos) + "</table>")
+            '<table class="compacta">' + "".join(combos) + "</table>"
+            + _tabla_solicitaciones(est))
         if est.pendientes and est.condicion.value == "estatico":
             partes.append(
                 '<div class="nota"><p><b>Sin evaluar:</b> '
@@ -2115,9 +2235,171 @@ def _bloque_cabezal(informe: Any) -> str:
             "verificaciones CB de la tabla del punto solo comprueban que "
             "remate al conducto y que lo declarado no quede bajo los minimos "
             "con numero. El armado no se verifica en este bloque.</p></div>")
+    for armado in getattr(c, "armado", ()):
+        partes.append(_bloque_armado(armado))
     return ("<h4>Fase 9 &mdash; Cabezal y aleros del punto</h4>"
-            + "".join(partes)
-            + bloque_pasos(traza_cabezal(informe), TITULO_TRAZA_CABEZAL))
+            + "".join(partes) + _traza_cabezal_sin_repetir(informe))
+
+
+def _linea_embocadura(informe: Any, e: Any, *,
+                      con_coherencia: bool = False) -> str:
+    """
+    La embocadura del punto en una linea, con su regla y sus criterios. La
+    coherencia del marco con el cabezal la lleva el paso 9.0.0 cuando hay
+    cabezal (correcciones de T-7a); sin cabezal (perfil) va en la linea.
+    """
+    angulo = ("sin aleros" if e.angulo_aletas is None else
+              f"aleros a {_num(e.angulo_aletas, FMT_2)} grados con la "
+              "pared del barril")
+    coherencia = (getattr(informe, "coherencia_embocadura", None)
+                  if con_coherencia else None)
+    return (f"<p><b>Embocadura del punto:</b> {_esc(e.tipo)} ({angulo}; "
+            f"{_esc(e.regla)}), criterios <code>{_esc(e.criterio_tipo)}</code>"
+            + (f" y <code>{_esc(e.criterio_angulo)}</code>"
+               if e.criterio_angulo else "") + " [A]."
+            + (f" {_esc(coherencia)}." if coherencia else "") + "</p>")
+
+
+def _tabla_solicitaciones(est: Any) -> str:
+    """
+    --- T-10 --- Las solicitaciones FACTORADAS por elemento del ensamble de
+    estabilidad (`EstabilidadDelCabezal.solicitaciones`, marco LRFD): las
+    que el JSON publicaba y la memoria no. Son las que recibe el armado de
+    T-7c; aqui solo se ponen en tabla, con el coeficiente de empuje con que
+    salieron y la nota de M9.
+    """
+    if not getattr(est, "solicitaciones", ()):
+        return ""
+    filas = [_fila(["<th>Elemento</th>", "<th>Seccion</th>",
+                    "<th>Combinacion</th>", "<th>V_u (kN/m)</th>",
+                    "<th>M_u (kN&middot;m/m)</th>", "<th>Empuje</th>",
+                    "<th>Nota</th>"])]
+    for sol in est.solicitaciones:
+        empuje = (f"{_esc(sol.coeficiente_de_empuje)} = "
+                  f"{_num(sol.K_empuje)}" if sol.K_empuje is not None
+                  else _esc(sol.coeficiente_de_empuje))
+        filas.append(_fila([
+            _td(_esc(sol.elemento)), _td(_esc(sol.seccion)),
+            _td(_esc(sol.combinacion)), _td(_num(sol.V_u, FMT_2), "num"),
+            _td(_num(sol.M_u, FMT_2), "num"), _td(empuje),
+            _td(_esc(sol.nota))]))
+    return ("<p>Solicitaciones factoradas por elemento (marco LRFD), por "
+            "metro de muro: las que recibe el armado.</p>"
+            '<table class="compacta">' + "".join(filas) + "</table>")
+
+
+TITULO_ARMADO = "Armado del cabezal de {extremo} ({tipo})"
+
+
+def _bloque_armado(a: Any) -> str:
+    """
+    --- T-10 --- El armado de UN cabezal maquetado como TABLA (hasta T-10
+    salia solo como pasos: INFORME_T-7c §9). Dos tablas, las dos con los
+    numeros que M9 emitio en `ArmadoDelCabezal`: la de secciones criticas
+    (la solicitacion que rige, los tres aceros, el adoptado, la barra, la
+    resistencia, la fisuracion de 5.6.7 y el contraste de E.060, que
+    informa) y la tabla de armado por elemento y posicion (T-7c punto 4).
+    Las verificaciones A1 a A8 / C1 a C6 estan en la tabla del punto y su
+    desarrollo en sus pasos.
+    """
+    partes = [f"<p><b>{_esc(TITULO_ARMADO.format(extremo=a.extremo, tipo=a.tipo))}"
+              f"</b>: regimen <code>{_esc(a.regimen)}</code> [A]; f'c "
+              f"{_num(a.fc_mpa, FMT_2)} MPa; f_y {_num(a.fy_mpa, FMT_2)} MPa; "
+              "Evento Extremo I "
+              + ("evaluado" if a.sismico else "NO evaluado (ver avisos)")
+              + ".</p>"]
+    if a.secciones:
+        filas = [_fila(["<th>Seccion</th>", "<th>Cara</th>",
+                        "<th>Espesor / d (m)</th>",
+                        "<th>Recubrimiento (mm)</th>",
+                        "<th>Rige la flexion</th>",
+                        "<th>M_u (kN&middot;m/m) [cede / reposo]</th>",
+                        "<th>As resist. / min. flex. / min. constr. "
+                        "(mm&sup2;/m)</th>",
+                        "<th>As adoptado (mm&sup2;/m), gobierna</th>",
+                        "<th>Barra, s_max</th>",
+                        "<th>M_r, V_r (kN&middot;m/m, kN/m)</th>",
+                        "<th>5.6.7: f_ss (MPa), s clase 1 / 2 (m)</th>",
+                        "<th>E.060 (contraste): M_u, V_u, As</th>"])]
+        for sec in a.secciones:
+            rf = sec.rige_flexion
+            fis = sec.s_fisuracion or {}
+            filas.append(_fila([
+                _td(f"{_esc(sec.elemento)}: {_esc(sec.seccion)}"),
+                _td(_esc(sec.cara)),
+                _td(f"{_num(sec.espesor)} / {_num(sec.d)}", "num"),
+                _td(f"{_num(sec.recubrimiento_mm, FMT_2)}<br>"
+                    f"<small>{_esc(sec.origen_recubrimiento)}</small>"),
+                _td(_esc(rf.combinacion)),
+                _td(f"{_num(rf.M_u, FMT_2)} [{_num(rf.M_u_cedente, FMT_2)} / "
+                    f"{_num(rf.M_u_reposo, FMT_2)}]", "num"),
+                _td(f"{_num(sec.As_resistencia, FMT_2)} / "
+                    f"{_num(sec.As_minimo_flexion, FMT_2)} / "
+                    f"{_num(sec.As_minimo_constructivo, FMT_2)}", "num"),
+                _td(f"{_num(sec.As_adoptado, FMT_2)}, {_esc(sec.gobierna)}"),
+                _td((_esc(sec.barra.texto) if sec.barra is not None
+                     else "sin barra del catalogo")
+                    + f"; s_max {_num(sec.s_max)} m "
+                    f"<small>({_esc(sec.origen_s_max)})</small>"),
+                _td(f"{_num(sec.M_r, FMT_2)}, {_num(sec.V_r, FMT_2)}", "num"),
+                _td((f"{_num(sec.f_ss, FMT_2)}; "
+                     f"{_num(fis.get('clase_1'))} / {_num(fis.get('clase_2'))}")
+                    if sec.fisuracion_aplica else
+                    (f"no aplica (traccion bajo 0.8&middot;f_r; f_ss "
+                     f"{_num(sec.f_ss, FMT_2)})"
+                     if sec.fisuracion_aplica is False else VACIO)),
+                _td(f"{_num(sec.M_u_e060, FMT_2)}, {_num(sec.V_u_e060, FMT_2)}, "
+                    f"{_num(sec.As_e060, FMT_2)}", "num")]))
+        partes.append('<table class="compacta">' + "".join(filas) + "</table>")
+    if a.tabla:
+        filas = [_fila(["<th>Elemento</th>", "<th>Posicion</th>",
+                        "<th>As requerido</th>", "<th>As minimo</th>",
+                        "<th>As adoptado</th>", "<th>Gobierna</th>",
+                        "<th>Barra (&Oslash; mm)</th>",
+                        "<th>As provisto</th>", "<th>s_max (m)</th>"])]
+        for f in a.tabla:
+            barra = (f"{_esc(f.barra.texto)} ({_num(f.barra.diametro_mm, FMT_2)})"
+                     if f.barra is not None else "sin barra del catalogo")
+            filas.append(_fila([
+                _td(_esc(f.elemento)), _td(_esc(f.posicion)),
+                _td(_num(f.As_requerido, FMT_2), "num"),
+                _td(f"{_num(f.As_minimo, FMT_2)} "
+                    f"<small>({_esc(f.origen_minimo)})</small>", "num"),
+                _td(_num(f.As_adoptado, FMT_2), "num"),
+                _td(_esc(f.gobierna)), _td(barra),
+                _td(_num(f.barra.As_provisto if f.barra is not None else None,
+                         FMT_2), "num"),
+                _td(_num(f.s_max), "num")]))
+        partes.append("<p>Tabla de armado por elemento y posicion "
+                      "(mm&sup2;/m; T-7c punto 4):</p>"
+                      '<table class="compacta">' + "".join(filas) + "</table>")
+    return "".join(partes)
+
+
+def _traza_cabezal_sin_repetir(informe: Any) -> str:
+    """
+    --- T-10 --- El desarrollo de la Fase 9 SIN los pasos que ya salieron en
+    «Desarrollo de cada verificacion»: los de las verificaciones del armado
+    (A1 a A8, C1 a C6) cuelgan a la vez de su `Verificacion` y de
+    `ArmadoDelCabezal.pasos`, y hasta T-10 la memoria los imprimia DOS veces
+    (medido en A-01 a expediente: 50 pasos, 161 KB). Se excluyen por
+    IDENTIDAD del objeto --- el mismo `PasoDeMemoria`, no uno parecido ---,
+    como el paso 2.1 en EXT-8, y la remision dice donde estan.
+    """
+    ya_impresos = {id(paso) for _codigo, paso
+                   in desarrollo_de_verificaciones(informe)
+                   if paso is not None and not isinstance(paso, NoAplica)}
+    pasos = traza_cabezal(informe)
+    restantes = tuple(p for p in pasos if id(p) not in ya_impresos)
+    remitidos = [p.codigo for p in pasos if id(p) in ya_impresos]
+    remision = ""
+    if remitidos:
+        remision = ('<div class="nota"><p>Los pasos de '
+                    + ", ".join(f"<code>{_esc(c)}</code>" for c in remitidos)
+                    + f" se desarrollan una sola vez, en «"
+                    f"{_esc(TITULO_TRAZA_VERIFICACIONES)}» de este punto: son "
+                    "los de las verificaciones del armado.</p></div>")
+    return bloque_pasos(restantes, TITULO_TRAZA_CABEZAL) + remision
 
 
 def traza_proteccion(informe: Any) -> Tuple[Any, ...]:
@@ -2269,14 +2551,15 @@ def _bloques_fases_finales(informe: Any) -> str:
         # extremo de la banda, plataforma horizontal) salen del objeto de
         # 7.B, no se redactan aqui; el de esviaje es la fila G3 de la tabla
         # de verificaciones, con veredicto de indicador.
+        # --- T-10 --- la nota la escribe el objeto (`CotaDeEntrada.nota`),
+        # la misma que lleva el JSON.
         if g.cota_entrada.medida:
-            origen_entrada = ("<b>medida</b>: columna "
-                              "<code>cota_fondo_entrada</code> del CSV")
+            origen_entrada = f"<b>medida</b>: {_esc(g.cota_entrada.nota)}"
         else:
             origen_entrada = (
                 "<b>adoptada</b>, criterio "
-                f"<code>{_esc(CRITERIO_ORIGEN_COTA_ENTRADA)}</code>: no es "
-                "cota medida")
+                f"<code>{_esc(CRITERIO_ORIGEN_COTA_ENTRADA)}</code>: "
+                f"{_esc(g.cota_entrada.nota)}")
         avisos = "".join(f'<div class="aviso"><p><b>Aviso:</b> {_esc(a)}.'
                          "</p></div>" for a in getattr(g, "avisos", ()))
         calculada = getattr(g, "longitud_calculada", None)
@@ -2390,6 +2673,12 @@ def _bloques_fases_finales(informe: Any) -> str:
                 f" Tramo de cuneta que descarga en esta obra (VB1): "
                 f"{_num(tramo.longitud_m, FMT_2)} m desde "
                 f"{_esc(tramo.extremo)} ({_esc(tramo.origen_extremo)}).")
+        if aporte is not None:
+            # --- T-10 --- de donde sale el caudal que VB2 compara (el JSON
+            # lo publicaba como `origen_aporte`).
+            texto_tramo += (f" Caudal de aporte de VB2: "
+                            f"{_num(aporte.Q_aporte_m3s)} m3/s, "
+                            f"{_esc(aporte.origen_aporte)}.")
         partes.append(
             "<h4>Fase 10 &mdash; Espaciamiento de alcantarillas de alivio</h4>"
             f"<p>Espaciamiento maximo {_num(e.espaciamiento_max, FMT_2)} m: "
@@ -2665,10 +2954,39 @@ def memoria_de_punto(informe: Any) -> str:
         _tabla_verificaciones(informe),
         _acceso_de_mantenimiento(informe),
         _bloques_fases_finales(informe),
-        _tabla_bloqueos(informe.bloqueos),
-        "</div>",
     ]
-    return "".join(partes)
+    cuerpo = "".join(partes)
+    return (cuerpo + _avisos_que_faltan(informe, cuerpo)
+            + _tabla_bloqueos(informe.bloqueos) + "</div>")
+
+
+TITULO_AVISOS_DEL_PUNTO = "Avisos del punto que no salieron junto a su fase"
+
+
+def _avisos_que_faltan(informe: Any, cuerpo: str) -> str:
+    """
+    --- T-10 --- Los avisos de `InformePunto.avisos()` --- la MISMA lista,
+    con el mismo texto, que imprimen la CLI y el JSON --- que el bloque del
+    punto todavia no imprimio. Cada fase pinta los suyos junto a su tabla
+    (el TW, la Fase 6, la 7, la 8, la 10); los que no tienen fase en la
+    memoria --- los indicadores del cabezal (E*, A2), los del armado, los de
+    la embocadura --- quedaban fuera, y el censo de T-10 midio 40 de 47
+    avisos de A-01 a expediente que el HTML no llevaba. Aqui salen todos los
+    que falten, una vez: se comparan TEXTOS (el aviso escapado contra el
+    cuerpo ya armado), no magnitudes.
+    """
+    avisos = getattr(informe, "avisos", None)
+    if avisos is None:
+        return ""
+    faltan = []
+    for aviso in avisos():
+        texto = _esc(aviso)
+        if texto not in cuerpo and texto not in faltan:
+            faltan.append(texto)
+    if not faltan:
+        return ""
+    return (f"<h4>{_esc(TITULO_AVISOS_DEL_PUNTO)}</h4>"
+            + "".join(f'<div class="aviso"><p>{t}</p></div>' for t in faltan))
 
 
 # ===========================================================================
@@ -4228,8 +4546,17 @@ def memoria_html_por_partes(
     plantilla = cargar_plantilla(ruta_plantilla)
 
     def _memorias_punto() -> Iterator[str]:
+        # --- T-10 --- un registro de lo ya impreso para TODO el documento
+        # (`_YaImpreso`), activo solo mientras se arma cada punto.
+        impresos = _YaImpreso()
         for i, p in enumerate(informe.puntos, start=1):
-            yield memoria_de_punto(p)
+            impresos.punto = p.punto.id
+            token = _IMPRESOS.set(impresos)
+            try:
+                html_punto = memoria_de_punto(p)
+            finally:
+                _IMPRESOS.reset(token)
+            yield html_punto
             if progreso is not None:
                 progreso(ETAPA_PUNTO, i, n_puntos)
 

@@ -1890,6 +1890,51 @@ def longitud_del_conducto(punto: PuntoCritico, *,
             + "".join(f" AVISO: {a}." for a in avisos)),
     )
     semi_e = (semiancho + proy_e) * factor
+    # --- T-10 --- EL REPARTO POR EXTREMO, como paso y no solo en el JSON.
+    # `LongitudConducto` ya publicaba la altura del terraplen en la salida,
+    # la proyeccion de los taludes y las dos semilongitudes (las que la Fase
+    # 9 usa para situar los cabezales), y la memoria no las imprimia: el
+    # censo de T-10 las encontro. Mismos numeros, ya calculados arriba; este
+    # paso solo los sustituye a la vista. Mismo fundamento que 7.B.3.
+    paso_reparto = paso(
+        "F7.LONGITUD",
+        codigo="7.B.3b",
+        que="Reparto de la longitud por extremo: altura del terraplen en la "
+            "salida, proyeccion de los taludes y semilongitudes",
+        formula="H_salida = H_salida0 + S * L ; proyeccion = talud * "
+                "(H_entrada + H_salida) ; L_entrada = (ancho/2 + talud * "
+                "H_entrada) * k ; L_salida = L - L_entrada",
+        formula_cita_id="HDS5_3ED.2.2.4#LONGITUD",
+        sustitucion=(
+            Magnitud("L", longitud, "m", "paso 7.B.3",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("S", S, "m/m", "pendiente adoptada (paso 7.B.1)",
+                     cifras=CIFRAS_FINA),
+            Magnitud("H_entrada", H_e, "m", "paso 7.B.3",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("H_salida0", H_s0, "m", "paso 7.B.3",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("talud", talud, "H:V", f"criterio '{CRITERIO_TALUD}' [A]",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("ancho/2", semiancho, "m",
+                     "mitad de la columna ancho_plataforma del CSV",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("k", factor, "-", "factor de esviaje del paso 7.B.2",
+                     cifras=CIFRAS_FINA),
+            Magnitud("H_salida", H_s, "m", "H_salida0 + S * L: el talud de "
+                     "la salida baja hasta el fondo de la salida",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("proyeccion", proyeccion, "m",
+                     "talud * (H_entrada + H_salida): la de los dos taludes",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("L_entrada", semi_e, "m",
+                     "(ancho/2 + talud * H_entrada) * k: del eje de la via a "
+                     "la boca de entrada", cifras=CIFRAS_MAGNITUD),
+        ),
+        resultado=Magnitud("L_salida", longitud - semi_e, "m",
+                           "L - L_entrada: del eje de la via a la boca de "
+                           "salida", cifras=CIFRAS_MAGNITUD),
+    )
     return LongitudConducto(
         longitud=longitud, metodo=metodo, factor_esviaje=factor,
         talud=talud, S=S, bombeo=bombeo, peralte=peralte,
@@ -1902,7 +1947,7 @@ def longitud_del_conducto(punto: PuntoCritico, *,
         semilongitud_entrada=semi_e,
         semilongitud_salida=longitud - semi_e,
         pasos=(_paso_factor(punto, factor), paso_longitud),
-        avisos=avisos)
+        avisos=avisos, paso_reparto=paso_reparto)
 
 
 def longitud_declarada(punto: PuntoCritico, longitud: float,
@@ -2892,6 +2937,8 @@ def compatibilidad_geometrica(*, punto: PuntoCritico, material: Material,
     salida = cota_salida(punto=punto, longitud=longitud, S=S)
 
     pasos = [paso_pendiente(pendiente), *longitud_calculada.pasos,
+             *((longitud_calculada.paso_reparto,)
+               if longitud_calculada.paso_reparto is not None else ()),
              _paso_cota_salida(punto=punto, longitud=longitud, S=S,
                                caida=caida, salida=salida,
                                pendiente=pendiente)]
