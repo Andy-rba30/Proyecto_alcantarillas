@@ -19,10 +19,13 @@ Entorno: `pip install -r requirements.txt -r requirements-dev.txt openpyxl`; `ex
 
 - **T-8 correcciones: `e78a4e7`** (segunda auditoría + seis decisiones del dueño; FASE A Fable, integración Opus). Par con NORMAS_DIR (según CLAUDE.md de main): **5230 passed / 16 skipped / 5246** (sin NORMAS_DIR 5212/34). 109 criterios, 34 sin valor. Movido (APROBADO): espesor 0.592/0.479 → 0.770 m y longitud 5.00 → 5.40 m en A-01/A-02; d50 y diámetros sin mover.
 
+- **T-3: `6c25f1d`** (Familia C: el marco se dimensiona; FASE A Opus, auditoría Fable —AJUSTADO, 12 hallazgos, todos cerrados—, correcciones e integración Opus). Par con NORMAS_DIR: **5336 passed / 16 skipped / 5352** (sin NORMAS_DIR 5318/34). +106 tests. Diámetros/secciones/materiales movidos: ninguno; corrida 6 nueva (C-01 marco 1.20 × 0.90, HW 0.623 m); `n_manning_cajon` = fila `concrete_boxes` de HDS-5 (0.012, 0.015); G1 del marco avisa. INF-0.4 e INF-3.2.1 cerrados; INF-0.5 en parte. Informe: `INFORME_T-3_final.md`. Pendiente del dueño (no bloquea): pesar el marco en V7 (ficha T3-08).
+
 ## CUARTA SESIÓN (abierta 2026-11-13 03:56 UTC; el orquestador corre en Fable porque así quedó el selector — el dueño fue avisado; regla del dueño: «Fable sólo cuando sea necesario»)
 - Entorno: `/home/user/andy-rba30/normas` (NORMAS_DIR) y `/home/user/andy-rba30/cotas-esviaje-alcantarillas` (rama del INFORME) clonados; worktrees `/home/user/wt/{main,estado,T-3,T-9,T-7a}`; scratchpad nuevo (ver ENMIENDA DE LA CUARTA SESIÓN en `ORQUESTACION.md`).
 - 04:05 UTC — lanzadas en paralelo las tres auditorías adversariales de FASE A (sólo lectura): **T-3 con Fable** → `SP/AUDITORIA_T-3.md`; **T-9 con Opus** (`ENCARGO_AUDITORIA_T-9_fable.md` + añadidos A–D sobre las decisiones del dueño) → `SP/AUDITORIA_T-9.md`; **T-7a con Opus** → `SP/AUDITORIA_T-7a.md`. Los informes se copian a esta carpeta al llegar.
-- Siguiente: correcciones + integración en serie T-3 → T-9 → T-7a (Opus; Fable sólo para correcciones ALTA de fórmulas/citas), después T-7b → T-7c (Fable), T-10 → T-11 → T-12.
+- 05:20 UTC — T-3 EN MAIN (`6c25f1d`). T-9: correcciones hechas (`9880688` en `tesis/T-9`) e INTEGRANDO sobre `6c25f1d` (Opus; `ENCARGO_T-9_cierre.md`). T-7a: correcciones hechas en `tesis/T-7a` (`3df075d`; `INFORME_T-7a_correcciones.md` en SP), espera «integra» tras T-9 (`ENCARGO_T-7a_cierre.md`). T-7b: precisiones listas (`PRECISIONES_T-7b.md`, punto 0 = V5 declarable + puerta de `ancho_derecho_via_m`, decisión del dueño del 13-nov).
+- Siguiente: integración en serie T-9 → T-7a (Opus; Fable sólo para correcciones ALTA de fórmulas/citas), después T-7b → T-7c (Fable), T-10 → T-11 → T-12.
 
 ## Estado de las ramas al cerrar la tercera sesión (tercera sesión, reanudada 2026-11-12 15:35 UTC) — ramas en el remoto; NADA de esto en main todavía
 | Prompt | Rama | Estado |
