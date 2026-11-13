@@ -21,7 +21,7 @@ Entorno: `pip install -r requirements.txt -r requirements-dev.txt openpyxl`; `ex
 
 ## CUARTA SESIÓN (abierta 2026-11-13 03:56 UTC; el orquestador corre en Fable porque así quedó el selector — el dueño fue avisado; regla del dueño: «Fable sólo cuando sea necesario»)
 - Entorno: `/home/user/andy-rba30/normas` (NORMAS_DIR) y `/home/user/andy-rba30/cotas-esviaje-alcantarillas` (rama del INFORME) clonados; worktrees `/home/user/wt/{main,estado,T-3,T-9,T-7a}`; scratchpad nuevo (ver ENMIENDA DE LA CUARTA SESIÓN en `ORQUESTACION.md`).
-- 04:10 UTC — lanzadas en paralelo las tres auditorías adversariales de FASE A (sólo lectura): **T-3 con Fable** → `SP/AUDITORIA_T-3.md`; **T-9 con Opus** (`ENCARGO_AUDITORIA_T-9_fable.md` + añadidos A–D sobre las decisiones del dueño) → `SP/AUDITORIA_T-9.md`; **T-7a con Opus** → `SP/AUDITORIA_T-7a.md`. Los informes se copian a esta carpeta al llegar.
+- 04:05 UTC — lanzadas en paralelo las tres auditorías adversariales de FASE A (sólo lectura): **T-3 con Fable** → `SP/AUDITORIA_T-3.md`; **T-9 con Opus** (`ENCARGO_AUDITORIA_T-9_fable.md` + añadidos A–D sobre las decisiones del dueño) → `SP/AUDITORIA_T-9.md`; **T-7a con Opus** → `SP/AUDITORIA_T-7a.md`. Los informes se copian a esta carpeta al llegar.
 - Siguiente: correcciones + integración en serie T-3 → T-9 → T-7a (Opus; Fable sólo para correcciones ALTA de fórmulas/citas), después T-7b → T-7c (Fable), T-10 → T-11 → T-12.
 
 ## Estado de las ramas al cerrar la tercera sesión (tercera sesión, reanudada 2026-11-12 15:35 UTC) — ramas en el remoto; NADA de esto en main todavía
