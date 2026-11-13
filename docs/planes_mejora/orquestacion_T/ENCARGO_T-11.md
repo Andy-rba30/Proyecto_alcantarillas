@@ -3,7 +3,7 @@
 Eres el agente ejecutor del prompt T-11 de la cadena T. Worktree `/home/user/wt/T-11`, rama `tesis/T-11`, creada desde
 `origin/main` (el SHA y el par de referencia te los da el orquestador en el mensaje). No toques `/home/user/Proyecto_alcantarillas`,
 `/home/user/wt/main` (consulta) ni `/home/user/wt/estado` (sólo lectura). `ORQ` = `/home/user/wt/estado/docs/planes_mejora/orquestacion_T/`;
-`SP` = `/tmp/claude-0/-home-user-Proyecto-alcantarillas/1cd08434-aed4-5109-98e7-ccedca5437f0/scratchpad/` (temporales en `SP/T-11/`).
+`SP` = `/tmp/claude-0/-home-user-Proyecto-alcantarillas/0d09ea9c-a87f-5311-8eec-38e45d8c2a3d/scratchpad/` (temporales en `SP/T-11/`).
 
 1. Lee PRIMERO, enteros: `ORQ/ORQUESTACION.md` (convenciones, reglas no negociables, PARADAS, lecciones; la ENMIENDA DE LA CUARTA
    SESIÓN del final gana —salvo la base—), `CLAUDE.md` de tu worktree (constitución), la NOTA

@@ -203,25 +203,29 @@ incluido push a `origin/main` y medición del par sobre ese árbol.
   deja lo que la fuente sostiene y se reporta; los tests que cambian de verdad se reescriben DECLARÁNDOLO (qué pasaba, qué pasa,
   por qué), nunca en silencio; el rojo se mide con el archivo final contra la base; `/dev/null` nunca como destino de `--json`.
 
-## ENMIENDA DE LA QUINTA SESIÓN (2026-11-13 17:16 UTC) — gana sobre TODO lo de arriba donde discrepe
+## ENMIENDA DE LA SEXTA SESIÓN (2026-11-13 19:00 UTC) — gana sobre TODO lo de arriba donde discrepe (sustituye a la de la quinta)
 
 - **Base**: `origin/main` = `14f6138` (T-0 a T-10 integrados, cabezal completo). Par con `NORMAS_DIR`: **6337 passed /
-  23 skipped / 6360 collected** (sin `NORMAS_DIR`: 6319 / 41). 141 criterios, 20 sin valor.
+  23 skipped / 6360 collected** (sin `NORMAS_DIR`: 6319 / 41). 141 criterios, 20 sin valor. Rama `tesis/T-11` en `c774035`
+  (FASE A de T-11: 6387 / 23 / 1 xfailed, collected 6411).
 - **Rutas de ESTA sesión**:
-  - `ORQ` = `/home/user/wt/estado/docs/planes_mejora/orquestacion_T/` (enlace simbólico a `/home/user/orq`, worktree de
-    `tesis/orquestacion-estado`; SÓLO LECTURA para los agentes);
-  - `SP` = `/tmp/claude-0/-home-user-Proyecto-alcantarillas/7cb96d40-c574-5ae4-841a-e8d6d2b9b04b/scratchpad/`
-    (temporales en `SP/T-n/`, informes en `SP/INFORME_T-n_<fase>.md`, auditorías en `SP/AUDITORIA_T-n.md`). Toda mención de
-    `1cd08434-…` o `003c3043-…` en los encargos se lee con ESTA ruta;
+  - `ORQ` = `/home/user/wt/estado/docs/planes_mejora/orquestacion_T/` (`/home/user/wt/estado` es un enlace simbólico a
+    `/home/user/wt/estado-real`, worktree de `tesis/orquestacion-estado`; SÓLO LECTURA para los agentes);
+  - `SP` = `/tmp/claude-0/-home-user-Proyecto-alcantarillas/0d09ea9c-a87f-5311-8eec-38e45d8c2a3d/scratchpad/`
+    (temporales en `SP/T-n/` o `SP/T-n-aud/`, informes en `SP/INFORME_T-n_<fase>.md`, auditorías en `SP/AUDITORIA_T-n.md`). Toda
+    mención de `7cb96d40-…`, `1cd08434-…` o `003c3043-…` en los encargos se lee con ESTA ruta;
   - INFORME y script QGIS: `/home/user/andy-rba30/cotas-esviaje-alcantarillas/`; PDF: `/home/user/andy-rba30/normas/normas/`
     (`export NORMAS_DIR=/home/user/andy-rba30/normas`);
-  - worktrees: `/home/user/wt/main` (consulta, `origin/main`), `/home/user/wt/T-11` (rama `tesis/T-11`).
+  - worktrees: `/home/user/wt/main` (consulta, `origin/main`), `/home/user/wt/T-11` (rama `tesis/T-11`), `/home/user/wt/T-12`
+    (rama `tesis/T-12`, se crea al lanzar T-12).
 - **Pie de los commits de esta sesión**: el del aviso de atribución que reciba cada agente; si no lo recibe:
 
   ```
   Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-  Claude-Session: https://claude.ai/code/session_01UcoTV8c2xW71eEw7p9oHgo
+  Claude-Session: https://claude.ai/code/session_01UcoTV7zhStVgo8AwJ2pYZw
   ```
 
-- Reparto: Opus 5.5 (esfuerzo extra) para implementación, correcciones medias/bajas e integraciones; Fable SÓLO para la
-  auditoría adversarial de T-11 y para corregir lo que una auditoría encuentre fuera de lugar en fórmulas o citas.
+- Reparto: Opus 5.5 (esfuerzo extra) para implementación, correcciones medias/bajas, integraciones y T-12; Fable SÓLO para la
+  auditoría adversarial de T-11 y para corregir lo que una auditoría encuentre fuera de lugar en fórmulas o citas (y T11-03).
+- **Decisiones del dueño sobre T-11 (13-nov 18:25 UTC)**: están al final de `ORQ/DECISIONES_DUENO_2026-11-12.md` (tolerancia
+  de HY-8 aceptada como criterio del proyecto NO normativo; `v_max_concreto_eleccion` se queda SIN valor). No se reabren.

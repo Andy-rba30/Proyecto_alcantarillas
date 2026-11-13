@@ -59,6 +59,11 @@ Entorno: `pip install -r requirements.txt -r requirements-dev.txt openpyxl`; `ex
 - 18:25 UTC — el dueño pide el prompt para seguir en OTRA sesión. Recordatorio de las 19:03 BORRADO (para que esta sesión no lance la auditoría a la vez que la nueva). Recomendaciones dadas al dueño (incluidas en `PROMPT_REANUDAR.md` §7, que el dueño puede editar): tolerancia HY-8 de T-11 ACEPTADA como criterio del proyecto no normativo (3 % / 3–10 % / > 10 %, sobre HW y HW/D; control distinto → «explicar»); `v_max_concreto_eleccion` SIN VALOR (rige 6.0 m/s; el barrido a 3.0 m/s queda como resultado del anexo). **Siguiente: auditoría Fable de T-11 desde las 19:00 UTC** (nada lanzado todavía).
 - (histórico) auditoría de T-7b → correcciones (ALTA de fórmula/cita: Fable; resto Opus) → integración (Opus) → T-7c (Fable) (Opus; Fable sólo para correcciones ALTA de fórmulas/citas), después T-7b → T-7c (Fable), T-10 → T-11 → T-12.
 
+## SEXTA SESIÓN (abierta 2026-11-13 19:00 UTC; el selector quedó en Fable 5.2 —configurada para Opus 5.5—; el dueño fue avisado)
+- Entorno: Normas y Cotas clonados en `/home/user/andy-rba30/`; worktrees `/home/user/wt/{main,T-11}` y `/home/user/wt/estado` (enlace a `/home/user/wt/estado-real`); SP nuevo (ENMIENDA DE LA SEXTA SESIÓN en `ORQUESTACION.md`). `origin/main` sigue en `14f6138` (par ya confirmado: no se remide). Límites a las 19:01: «Semanal · todos» 0 % y «Semanal · Fable» 0 % (reiniciados; próximo reinicio vie 20-nov 19:00 UTC); 5 horas s/d. Decisiones del dueño sobre T-11 (HY-8 y `v_max_concreto_eleccion`) añadidas a `DECISIONES_DUENO_2026-11-12.md`.
+- 19:12 UTC — **auditoría adversarial de T-11 lanzada con FABLE** (sólo lectura; `ENCARGO_AUDITORIA_T-11_fable.md`; HEAD `c774035`) → `SP/AUDITORIA_T-11.md`. Después: correcciones [FÓRMULA/CITA] + T11-03 con Fable (wip en `tesis/T-11`) → [RESTO] + integración con Opus → T-12 (Opus; las dos vistas de la memoria ENTRAN: cuota de sobra).
+
+
 ## Estado de las ramas al cerrar la tercera sesión (tercera sesión, reanudada 2026-11-12 15:35 UTC) — ramas en el remoto; NADA de esto en main todavía
 | Prompt | Rama | Estado |
 |---|---|---|

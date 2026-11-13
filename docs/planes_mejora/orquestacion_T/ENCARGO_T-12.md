@@ -4,7 +4,7 @@ Eres el agente ejecutor del prompt T-12 de la cadena T, el ÚLTIMO. Worktree `/h
 `origin/main` con T-11 integrado (el SHA y el par de referencia te los da el orquestador en el mensaje). No toques
 `/home/user/Proyecto_alcantarillas`, `/home/user/wt/main` (consulta) ni `/home/user/wt/estado` (sólo lectura).
 `ORQ` = `/home/user/wt/estado/docs/planes_mejora/orquestacion_T/`; `SP` =
-`/tmp/claude-0/-home-user-Proyecto-alcantarillas/7cb96d40-c574-5ae4-841a-e8d6d2b9b04b/scratchpad/` (temporales en `SP/T-12/`).
+`/tmp/claude-0/-home-user-Proyecto-alcantarillas/0d09ea9c-a87f-5311-8eec-38e45d8c2a3d/scratchpad/` (temporales en `SP/T-12/`).
 
 1. Lee PRIMERO, enteros: `ORQ/ORQUESTACION.md` (la ENMIENDA DE LA QUINTA SESIÓN del final gana), `CLAUDE.md` de tu worktree, la
    NOTA DEL ORQUESTADOR y la §2 de `docs/planes_mejora/09_CADENA_PROMPTS_TESIS.md`, **tu bloque «T-12» de ese archivo (tu prompt)**,

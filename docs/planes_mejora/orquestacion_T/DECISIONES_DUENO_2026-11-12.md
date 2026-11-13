@@ -147,3 +147,14 @@ fisuración 5.6.7 (fórmula nueva), d_v acotado, modificador η en el cabezal. S
 3. **Dos vistas de la memoria** (resumida para imprimir + completa como anexo digital): entra en T-12 SÓLO si al lanzarlo quedan
    ≥ 8 puntos libres del límite semanal de todos los modelos; si no, va al lote posterior a la cadena (después del reinicio del
    jueves 19-nov 17:00 UTC), junto con la digitalización de las Figuras 3.3–3.4 de HEC-14. T-12 lo deja en ficha con símbolo.
+
+### Decisiones del dueño sobre las dos preguntas abiertas de T-11 — 2026-11-13 18:25 UTC (se aplican en las correcciones/integración de T-11)
+1. **Tolerancia de la comparación con HY-8** (`docs/validacion_hy8.md`): se ACEPTA la de T-11 (≤ 3 % coincide; 3–10 % se explica
+   con su causa; > 10 % discrepancia que se investiga), declarada como **criterio del proyecto y NO normativa**, coherente con la
+   tolerancia de lectura de 3 % de la validación HDS-5; se aplica a **HW y HW/D**; si el **tipo de control** (entrada/salida) no
+   coincide, el punto va a «explicar» sea cual sea el porcentaje; la **velocidad de salida** se informa **sin veredicto** cuando el
+   programa usa la aproximación h_o y HY-8 el perfil; el informe dice la **versión de HY-8** usada.
+2. **`v_max_concreto_eleccion`**: se QUEDA SIN VALOR (opcional; V3 aplica el máximo de 6.0 m/s de la Tabla Nº 10). El resultado del
+   barrido (con 3.0 m/s A-01 pasa a TMC Ø 1.20) queda en el anexo de sensibilidad como resultado de la tesis, sin cambiar el fixture.
+3. **Lote POSTERIOR a la cadena (aprobado; NO se lanza sin avisar al dueño)**: digitalizar las Figuras 3.3–3.4 de HEC-14,
+   `max(V_c, V_erosion)` en la banda de régimen de M4 y, si no entraron en T-12, las dos vistas de la memoria.

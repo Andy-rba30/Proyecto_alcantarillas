@@ -8,7 +8,7 @@ punto llega o no llega a la Fase 11, si la lista de entradas y el censo dicen la
 - Worktree a auditar: `/home/user/wt/T-11` (rama `tesis/T-11`, HEAD que te da el orquestador). Diff: `git diff 14f6138 HEAD`.
   Base = `origin/main` = `14f6138` (par con `NORMAS_DIR`: 6337 / 23 / 6360).
 - `ORQ` = `/home/user/wt/estado/docs/planes_mejora/orquestacion_T/`; `SP` =
-  `/tmp/claude-0/-home-user-Proyecto-alcantarillas/7cb96d40-c574-5ae4-841a-e8d6d2b9b04b/scratchpad/` (temporales sólo en
+  `/tmp/claude-0/-home-user-Proyecto-alcantarillas/0d09ea9c-a87f-5311-8eec-38e45d8c2a3d/scratchpad/` (temporales sólo en
   `SP/T-11-aud/`; para medir contra la base: `git -C /home/user/wt/T-11 worktree add --detach SP/T-11-aud/base 14f6138`, y quítalo al
   terminar).
 - Lee primero: `ORQ/ORQUESTACION.md` (con su ENMIENDA DE LA QUINTA SESIÓN), `ORQ/PRECISIONES_T-11.md` (lo que se pidió además del

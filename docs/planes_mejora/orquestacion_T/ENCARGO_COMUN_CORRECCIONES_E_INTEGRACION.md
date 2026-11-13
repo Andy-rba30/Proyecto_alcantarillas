@@ -3,7 +3,7 @@
 Eres el agente que CIERRA un prompt de la cadena T cuya FASE A hizo otro agente. El orquestador te dice cuál (T-n), tu worktree
 (`/home/user/wt/T-n`, rama `tesis/T-n`, base `df1b23c`) y qué hallazgos de la auditoría te tocan. Trabajas en español.
 `ORQ` = `/home/user/wt/estado/docs/planes_mejora/orquestacion_T/` (sólo lectura); `SP` =
-`/tmp/claude-0/-home-user-Proyecto-alcantarillas/1cd08434-aed4-5109-98e7-ccedca5437f0/scratchpad/`.
+`/tmp/claude-0/-home-user-Proyecto-alcantarillas/0d09ea9c-a87f-5311-8eec-38e45d8c2a3d/scratchpad/`.
 
 ## Lee primero (en este orden)
 1. `ORQ/ORQUESTACION.md` ENTERO (convenciones, reglas no negociables, PARADAS, lecciones; la ENMIENDA DE LA CUARTA SESIÓN del
