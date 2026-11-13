@@ -78,3 +78,5 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795107600 = jue
 |---|---|---|---|---|
 | 2026-11-13 03:56 | s/d (sin aviso) | 33 % | **12 %** | arranque: lectura del estado, clones, suite de `e78a4e7` |
 | 2026-11-13 04:10 | s/d | — | — | lanzadas tres auditorías: T-3 (Fable), T-9 y T-7a (Opus xhigh) |
+| 2026-11-13 04:24 | s/d | 37 % | s/d (12 % a las 03:56) | tres auditorías en curso |
+| 2026-11-13 04:50 | s/d | — | — | auditorías llegadas (T-3 Fable ≈ 0.39 M tokens; T-9 y T-7a Opus ≈ 0.42 y 0.47 M); lanzados con Opus: cierre de T-3 (correcciones + integración), correcciones de T-9 y de T-7a |
