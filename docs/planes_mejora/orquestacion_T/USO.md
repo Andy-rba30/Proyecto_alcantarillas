@@ -91,3 +91,4 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795107600 = jue
 | 2026-11-13 12:44 | s/d | **67 %** | **59 %** | auditoría Fable de T-7c (≈ 0.48 M tokens) terminada a las 12:55; cierre de T-7c lanzado con Opus. Ya no queda trabajo de Fable planificado salvo el orquestador |
 | 2026-11-13 14:55 | s/d | s/d (67 % a las 12:44) | s/d (59 % a las 12:44) | T-7c en main (`2b13dc1`; cierre Opus ≈ 0.31 M tokens). Verificador Fable de fórmulas y T-10 FASE A (Opus) lanzados en paralelo |
 | 2026-11-13 15:15 | s/d | s/d | s/d (est. ~70 %) | verificador Fable terminado (≈ 0.37 M tokens); corrección de sus 3 defectos lanzada con Fable; T-10 FASE A (Opus) en curso |
+| 2026-11-13 15:55 | s/d | **76 %** (aviso de la plataforma al pasar 75 %) | **68 %** | T-7 verificación en main (`2265d90`; verificador ≈ 0.37 M + corrección ≈ 0.52 M tokens Fable). T-10 FASE A (Opus) en curso. Quedan T-10, T-11, T-12 con Opus: el límite que aprieta es el de todos los modelos |
