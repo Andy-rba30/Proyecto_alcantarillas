@@ -82,3 +82,4 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795107600 = jue
 | 2026-11-13 04:27 | s/d | — | — | auditorías llegadas (T-3 Fable ≈ 0.39 M tokens; T-9 y T-7a Opus ≈ 0.42 y 0.47 M); lanzados con Opus: cierre de T-3 (correcciones + integración), correcciones de T-9 y de T-7a |
 | 2026-11-13 05:19 | s/d | 42 % | s/d | T-3 en main (`6c25f1d`, cierre con Opus ≈ 0.75 M tokens); T-9 integrando (Opus); T-7a con correcciones hechas |
 | 2026-11-13 05:58 | s/d | s/d (42 % a las 05:19) | s/d | T-9 en main (`c654a16`); T-7a integrando (Opus) |
+| 2026-11-13 06:23 | s/d | s/d | s/d | T-7a en main (`250c972`): lote 2 completo. Se lanza T-7b FASE A con Fable |
