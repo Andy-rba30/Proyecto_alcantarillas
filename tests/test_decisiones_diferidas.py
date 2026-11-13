@@ -34,7 +34,11 @@ import pytest
 
 RAIZ = Path(__file__).resolve().parents[1]
 REGISTRO = RAIZ / "docs" / "decisiones_diferidas.md"
-AUDITORIA = RAIZ / "docs" / "auditorias" / "auditoria_sistema.md"
+# --- T-12 --- La auditoria de sistema se movio a `proceso/auditorias/`
+# (INF-5.2.2), y con ella el unico test que la leia
+# (`test_estan_las_veintidos_fichas_que_la_auditoria_clasifico`, hoy en
+# `proceso/tests/test_decisiones_diferidas_auditoria.py`). El registro es del
+# entregable y sus guardias de forma siguen aqui.
 
 # Los cuatro campos, cada uno con las etiquetas que valen para el.
 #
@@ -52,25 +56,6 @@ CAMPOS = (
     ("**Qué haría falta",),
     ("**Dónde vive:**",),
 )
-
-
-def _ids_deliberados() -> list:
-    """
-    Los IDs que la auditoria de sistema clasifico «deliberado sin documentar»,
-    leidos del informe. La lista NO se escribe aqui a proposito: derivarla es
-    lo que hace que el registro no pueda quedarse corto en silencio.
-    """
-    lineas = AUDITORIA.read_text(encoding="utf-8").split("\n")
-    ids = []
-    for i, linea in enumerate(lineas):
-        if "**Clasificacion** deliberado sin documentar" not in linea:
-            continue
-        for j in range(i, max(-1, i - 12), -1):
-            m = re.match(r"^###\s+([A-G]-\d+)\s", lineas[j])
-            if m:
-                ids.append("SIS-" + m.group(1))
-                break
-    return ids
 
 
 def _fichas() -> dict:
@@ -203,22 +188,6 @@ def test_el_registro_existe():
         "pide desde S14 para las decisiones deliberadas")
 
 
-def test_estan_las_veintidos_fichas_que_la_auditoria_clasifico():
-    """
-    La lista se deriva del informe, no se copia. Es la diferencia entre un
-    registro que se queda corto en silencio y uno que lo dice.
-    """
-    esperados = _ids_deliberados()
-    assert len(esperados) == 22, (
-        f"la auditoria clasifica hoy {len(esperados)} hallazgos como "
-        "«deliberado sin documentar» y el registro se escribio para 22: "
-        "revisa el informe antes de tocar el registro")
-
-    faltan = [i for i in esperados if i not in _fichas()]
-    assert not faltan, (
-        f"sin ficha en docs/decisiones_diferidas.md: {faltan}")
-
-
 def test_cada_ficha_dice_las_cuatro_cosas():
     """
     Que se difirio, por que, que haria falta, y donde vive. Una ficha sin el
@@ -234,10 +203,25 @@ def test_cada_ficha_dice_las_cuatro_cosas():
     assert not incompletas, f"fichas incompletas: {incompletas}"
 
 
-@pytest.mark.parametrize("seccion,ruta,simbolo", _simbolos_declarados())
+# --- T-12 --- Las fichas que anclan su simbolo en `proceso/` (hoy dos:
+# EXT-11-03 y T0-04, sobre tests de proceso que T-12 movio alli) NO se
+# comprueban en la suite del entregable: una exportacion del entregable no
+# lleva `proceso/` (`.gitattributes`) y esos dos casos fallarian por un archivo
+# que no tiene por que estar. Las comprueba, con este mismo `_nombres_de`,
+# `proceso/tests/test_decisiones_diferidas_auditoria.py`.
+PREFIJO_PROCESO = "proceso/"
+
+
+def _simbolos_del_entregable() -> list:
+    return [s for s in _simbolos_declarados()
+            if not s[1].startswith(PREFIJO_PROCESO)]
+
+
+@pytest.mark.parametrize("seccion,ruta,simbolo", _simbolos_del_entregable())
 def test_el_simbolo_que_cada_ficha_ancla_sigue_existiendo(seccion, ruta, simbolo):
     """
-    Regla 4 de CLAUDE.md aplicada al documento que la invoca. Un registro que
+    Regla 4 de las reglas de correccion (en CLAUDE.md hasta T-12; hoy en el
+    material de proceso) aplicada al documento que la invoca. Un registro que
     apunta a un nombre que ya no existe es peor que no tener registro: manda al
     revisor a buscar algo que no esta y le hace dudar de todo lo demas.
     """

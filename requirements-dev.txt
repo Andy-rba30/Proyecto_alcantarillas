@@ -7,7 +7,8 @@
 #
 # PyMuPDF -- lectura de los PDF de normas/: texto por pagina y renderizado a
 #   imagen. Lo usan `src/normativa/extraccion/` y los tests marcados
-#   `@pytest.mark.pdf` (T0, T2, T3, T5, T6 del diseño del registro normativo).
+#   `@pytest.mark.pdf`, que ademas necesitan el repositorio de normas
+#   enlazado por NORMAS_DIR (desde T-12 los PDF no estan en este repositorio) (T0, T2, T3, T5, T6 del diseño del registro normativo).
 #   Se eligio sobre `pdfminer.six` porque cubre texto E IMAGEN: tres hallazgos
 #   ya cerrados del proyecto -- el `>` de la ultima columna de F_pga, el
 #   asterisco de la fila F y el `[1 -]` del denominador de K_AE -- se
@@ -19,6 +20,7 @@
 PyMuPDF>=1.24
 
 # openpyxl -- mantenimiento del tracker de auditorias
-#   (docs/auditorias/matriz_cruzada_auditorias.xlsx). Herramienta de
-#   mantenimiento, no dependencia del software calculado.
+#   (proceso/auditorias/matriz_cruzada_auditorias.xlsx desde T-12). Herramienta
+#   de mantenimiento del PROCESO, no dependencia del software calculado ni de
+#   la suite del entregable (la usa `python3 -m proceso.verificar_sesion`).
 openpyxl>=3.1

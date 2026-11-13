@@ -1,0 +1,42 @@
+# pyproject.toml — metadatos, dependencias y configuracion de pytest del
+# entregable (T-12, INF-5.2.7).
+#
+# EL PROGRAMA SE USA DESDE EL CLON, NO SE INSTALA COMO PAQUETE: la memoria lee
+# la hoja de ruta de `docs/` y las plantillas de `src/plantillas/` por su
+# posicion en el arbol, y por eso aqui no hay `[build-system]`. Las
+# dependencias se instalan con `pip install -r requirements.txt` (README); este
+# archivo las DECLARA con las MISMAS versiones fijadas que `requirements.txt` y
+# `requirements-dev.txt` --no añade ninguna--, separando lo que hace falta para
+# CALCULAR de lo que es opcional (la ventana, el PDF directo) y de lo que solo
+# sirve para VERIFICAR. `tests/test_t12_entregable.py` comprueba que las dos
+# listas no diverjan.
+
+[project]
+name = "proyecto-alcantarillas"
+version = "0.1.0"
+description = "Diseño hidraulico y estructural de alcantarillas de cruce de carretera (Peru) con memoria de calculo auditable."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+# Autor: el usuario de GitHub del repositorio. Para la sustentacion, cambiese
+# por el nombre que figura en la caratula de la tesis (aqui y en LICENSE).
+authors = [{ name = "Andy-rba30" }]
+dependencies = [
+    "numpy==2.2.3",
+    "scipy==1.15.2",
+]
+
+[project.optional-dependencies]
+# La ventana (python -m gui.app).
+gui = ["ttkbootstrap==2.2.1"]
+# El PDF directo de la memoria; sin el, la memoria sale en HTML para Ctrl+P.
+pdf = ["weasyprint==69.0"]
+# La suite del entregable; PyMuPDF para los tests que abren un PDF de normas.
+test = ["pytest==9.1.1", "PyMuPDF>=1.24"]
+# Mantenimiento del tracker de auditorias (material de proceso).
+proceso = ["openpyxl>=3.1"]
+
+[tool.pytest.ini_options]
+# La suite del ENTREGABLE es `tests/`. Los tests del material de proceso
+# viven en `proceso/tests/` y se corren aparte: python -m pytest proceso/tests
+testpaths = ["tests"]

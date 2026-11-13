@@ -1030,11 +1030,52 @@ def _tabla_iteraciones(informe: Any) -> str:
            '<table class="compacta">' + "".join(filas) + "</table>"
 
 
+AVISO_SIN_DIMENSIONAR = ('<div class="bloqueo"><p>El punto <b>no llego a '
+                         "dimensionarse</b>. El motivo esta en la tabla de "
+                         "bloqueos.</p></div>")
+
+# --- T-12 (ficha T11-09) --- Lo que la fila «Control gobernante» dice de la
+# salida cuando el perfil descarto la aproximacion y su remanso no alcanza la
+# entrada: la MISMA redaccion que la linea «Control» de la CLI
+# (`cli._lineas_punto`), sobre la MISMA condicion, leida del dato
+# (`ResultadoHidraulico.salida_no_se_forma`).
+SALIDA_NO_SE_FORMA = "salida no se forma: el perfil no alcanza la entrada"
+
+
+def _celda_control_gobernante(hidraulica: Any) -> str:
+    """
+    La celda de la fila «Control gobernante», compartida por las dos vistas
+    de la memoria. Formato, no calculo: el HW que gobierna y los dos
+    controles salen de M4; si la salida no se forma (T11-09) no se imprime
+    como «salida» la aproximacion descartada, que la fila del perfil sigue
+    publicando rotulada como HW<sub>aprox</sub>.
+    """
+    salida = (SALIDA_NO_SE_FORMA
+              if getattr(hidraulica, "salida_no_se_forma", False) is True
+              else f"salida {_num(hidraulica.HW_salida)}")
+    return (f"{_esc(hidraulica.control_gobernante.value)} &mdash; "
+            f"HW = {_num(hidraulica.HW)} m (entrada "
+            f"{_num(hidraulica.HW_entrada)} / {salida})")
+
+
 def _tabla_diseno(informe: Any) -> str:
     """La combinacion adoptada: material, diametro e hidraulica gobernante."""
     if not informe.dimensionado:
-        return ('<div class="bloqueo"><p>El punto <b>no llego a dimensionarse'
-                "</b>. El motivo esta en la tabla de bloqueos.</p></div>")
+        return AVISO_SIN_DIMENSIONAR
+    resultado = informe.resultado
+    hidraulica = resultado.resultado_hidraulico
+    filas = list(_filas_combinacion_adoptada(informe))
+    return _tabla_diseno_con_perfil(hidraulica, filas)
+
+
+def _filas_combinacion_adoptada(informe: Any) -> Tuple[str, ...]:
+    """
+    --- T-12 --- Las filas de la combinacion adoptada (material, norma de
+    producto, rugosidad, seccion, hidraulica y control gobernante), las
+    MISMAS para la memoria completa y para la resumida: un solo formateador,
+    para que la resumida no publique un numero que la completa no tenga.
+    Solo para un punto dimensionado.
+    """
     resultado = informe.resultado
     material, hidraulica = resultado.material, resultado.resultado_hidraulico
     filas = [
@@ -1109,11 +1150,21 @@ def _tabla_diseno(informe: Any) -> str:
                        f"{_num(hidraulica.V_sedimentacion, FMT_2)} m/s (con n "
                        f"maximo, contra el piso de V2)"))]),
         _fila([_td("<b>Control gobernante</b>"),
-               _td(f"{_esc(hidraulica.control_gobernante.value)} &mdash; "
-                   f"HW = {_num(hidraulica.HW)} m (entrada "
-                   f"{_num(hidraulica.HW_entrada)} / salida "
-                   f"{_num(hidraulica.HW_salida)})")]),
+               _td(_celda_control_gobernante(hidraulica))]),
     ]
+    filas.extend(_filas_h_o(hidraulica))
+    return tuple(filas)
+
+
+def _filas_h_o(hidraulica: Any) -> List[str]:
+    """
+    --- T-12 (H6 de su auditoria) --- La fila «h_o fuera de rango» del punto,
+    o ninguna. Vive aparte para que la lleven las DOS vistas de la memoria
+    (es una fila de `_filas_combinacion_adoptada`): NOR-HDS-05 pide decirlo
+    EN EL PUNTO, y la resumida es la vista que se imprime. Formato: todo sale
+    de `ResultadoHidraulico` y de su `PerfilLamina`.
+    """
+    filas: List[str] = []
     # La condicion de uso de h_o, dicha EN EL PUNTO donde se incumple y no
     # solo como advertencia general del bloque 0-ter (NOR-HDS-05): un aviso
     # que no señala el punto afectado deja al revisor sin saber cual de ellos
@@ -1179,6 +1230,18 @@ def _tabla_diseno(informe: Any) -> str:
                 f"{_num(limite, FMT_2)}: para ese HW/D, {_esc(H_O_NUMERAL)} dice "
                 f"que la aproximacion h<sub>o</sub> = (d<sub>c</sub> + D)/2 "
                 f"<b>{veredicto}</b>.{consecuencia}")]))
+    return filas
+
+
+def _tabla_diseno_con_perfil(hidraulica: Any, filas: List[str]) -> str:
+    """
+    La tabla de la combinacion adoptada de la memoria COMPLETA: las filas
+    comunes (`_filas_combinacion_adoptada`, con la de h_o) mas la del perfil
+    de la lamina, que la resumida no lleva (remite a la completa).
+    """
+    # La fila de h_o la lleva `_filas_combinacion_adoptada` (T-12, H6), que
+    # la pone detras del control gobernante, como siempre.
+    perfil = hidraulica.perfil
     if perfil is not None:
         gobierna_salida = (hidraulica.control_gobernante
                            is ControlGobernante.SALIDA)
@@ -1994,6 +2057,71 @@ def desarrollo_de_verificaciones(informe: Any) -> Tuple[Tuple[str, Optional[Any]
     return tuple(salida)
 
 
+SIN_VERIFICACIONES = ('<div class="nota"><p>Sin verificaciones registradas: el '
+                      "punto no alcanzo la Fase 5.</p></div>")
+# --- T-12 (H2 de su auditoria) --- La marca que la RESUMIDA pone, en texto,
+# donde la completa enlaza al bloque de acotaciones: la adopcion se apoya en
+# un vacio normativo verificado y no es una cita corriente (NOR-VAC-01).
+MARCA_VACIO_VERIFICADO = ("&#9755; adopcion sobre un vacio normativo "
+                          "verificado: ver el bloque de acotaciones de la "
+                          "memoria completa")
+
+
+def _filas_verificaciones(verificaciones: Sequence[Tuple[str, Any]], *,
+                          remision_acotacion: bool = True) -> List[str]:
+    """
+    --- T-12 --- Las filas de la tabla de verificaciones (codigo, numeral,
+    obtenido, admisible, umbral, resultado), las MISMAS en la memoria
+    completa y en la resumida. `remision_acotacion` = False quita el enlace
+    al bloque 0-bis, que la resumida no lleva (la completa lo conserva).
+    """
+    filas = [_fila(["<th>Codigo</th>", "<th>Numeral</th>", "<th>Obtenido</th>",
+                    "<th>Admisible</th>", "<th>Umbral</th>",
+                    "<th>Resultado</th>"])]
+    for fase, v in verificaciones:
+        if v.criterio_aplicado:
+            # Consulta tolerante: si la clave no esta en CRITERIOS se imprime
+            # sola, sin etiqueta. Inventarle una etiqueta seria peor que no
+            # ponerla, y caerse seria peor todavia: la memoria no se cae por un
+            # desajuste de nombre en la capa de reporte.
+            declarado = ca.CRITERIOS.get(v.criterio_aplicado)
+            umbral = f"<code>{_esc(v.criterio_aplicado)}</code>"
+            if declarado is not None:
+                umbral = f"{_etiqueta_html(declarado.etiqueta)} " + umbral
+                if declarado.vacio_verificado and remision_acotacion:
+                    # La fila sola engana: dice la etiqueta y la clave, y de
+                    # ahi se lee una cita normativa corriente. No lo es -- el
+                    # numeral que la sostiene habla de otro material o de otra
+                    # situacion -- y el revisor esta mirando ESTA fila, no el
+                    # bloque 0-bis. La remision es lo que conecta las dos.
+                    umbral += (' <a href="#acotaciones" class="remision" '
+                               'title="Adopcion sobre un vacio normativo '
+                               'verificado: ver el bloque de acotaciones">'
+                               "&#9755; acotacion</a>")
+                elif declarado.vacio_verificado:
+                    # --- T-12 (H2) --- La resumida no tiene bloque 0-bis al
+                    # que enlazar, y la fila sola se leeria como cita
+                    # corriente: la MARCA va en texto, sin enlace.
+                    umbral += (' <span class="remision">'
+                               f'{MARCA_VACIO_VERIFICADO}</span>')
+        elif v.estado is EstadoDeVerificacion.NO_APLICA:
+            # Una fila que no se evaluo no tiene umbral que etiquetar: decir
+            # «[N] constante normativa» aqui era mentir sobre una celda vacia.
+            umbral = "&ndash;"
+        else:
+            umbral = f"{_etiqueta_html('N')} constante normativa"
+        codigo = v.codigo or fase.split(" - ")[0]
+        if _es_indicador(v):
+            clase = "fila-indicador"
+        else:
+            clase = "" if v.cumple else "fila-incumple"
+        filas.append(_fila([_td(_esc(codigo)), _td(_esc(v.numeral)),
+                            _td(_num(v.valor_obtenido), "num"),
+                            _td(_num(v.valor_admisible), "num"),
+                            _td(umbral), _td(_marca_de_verificacion(v))], clase))
+    return filas
+
+
 def _tabla_verificaciones(informe: Any) -> str:
     """
     Cada verificacion como cumple / no cumple JUNTO A SU NUMERAL (entregable 1).
@@ -2012,47 +2140,8 @@ def _tabla_verificaciones(informe: Any) -> str:
     # hidraulica de ningun punto. Es la misma trampa de NOR-MEM-01.
     verificaciones = verificaciones_publicadas(informe)
     if not verificaciones:
-        return ('<div class="nota"><p>Sin verificaciones registradas: el '
-                "punto no alcanzo la Fase 5.</p></div>")
-
-    filas = [_fila(["<th>Codigo</th>", "<th>Numeral</th>", "<th>Obtenido</th>",
-                    "<th>Admisible</th>", "<th>Umbral</th>",
-                    "<th>Resultado</th>"])]
-    for fase, v in verificaciones:
-        if v.criterio_aplicado:
-            # Consulta tolerante: si la clave no esta en CRITERIOS se imprime
-            # sola, sin etiqueta. Inventarle una etiqueta seria peor que no
-            # ponerla, y caerse seria peor todavia: la memoria no se cae por un
-            # desajuste de nombre en la capa de reporte.
-            declarado = ca.CRITERIOS.get(v.criterio_aplicado)
-            umbral = f"<code>{_esc(v.criterio_aplicado)}</code>"
-            if declarado is not None:
-                umbral = f"{_etiqueta_html(declarado.etiqueta)} " + umbral
-                if declarado.vacio_verificado:
-                    # La fila sola engana: dice la etiqueta y la clave, y de
-                    # ahi se lee una cita normativa corriente. No lo es -- el
-                    # numeral que la sostiene habla de otro material o de otra
-                    # situacion -- y el revisor esta mirando ESTA fila, no el
-                    # bloque 0-bis. La remision es lo que conecta las dos.
-                    umbral += (' <a href="#acotaciones" class="remision" '
-                               'title="Adopcion sobre un vacio normativo '
-                               'verificado: ver el bloque de acotaciones">'
-                               "&#9755; acotacion</a>")
-        elif v.estado is EstadoDeVerificacion.NO_APLICA:
-            # Una fila que no se evaluo no tiene umbral que etiquetar: decir
-            # «[N] constante normativa» aqui era mentir sobre una celda vacia.
-            umbral = "&ndash;"
-        else:
-            umbral = f"{_etiqueta_html('N')} constante normativa"
-        codigo = v.codigo or fase.split(" - ")[0]
-        if _es_indicador(v):
-            clase = "fila-indicador"
-        else:
-            clase = "" if v.cumple else "fila-incumple"
-        filas.append(_fila([_td(_esc(codigo)), _td(_esc(v.numeral)),
-                            _td(_num(v.valor_obtenido), "num"),
-                            _td(_num(v.valor_admisible), "num"),
-                            _td(umbral), _td(_marca_de_verificacion(v))], clase))
+        return SIN_VERIFICACIONES
+    filas = _filas_verificaciones(verificaciones)
     # La tabla de Fase 5 de la hoja de ruta trae ONCE filas y este software
     # evalua las once desde S20. Se dice aqui, pegado a la tabla de
     # verificaciones, y no en una nota lejana: es donde el revisor cuenta.
@@ -3300,6 +3389,63 @@ def _fila_resumen_csv(informe: Any) -> List[Any]:
 # 3. Declaracion de criterios adoptados (entregable 2)
 # ===========================================================================
 
+def _cabecera_de_corredor(contexto: Any, proyecto: str) -> str:
+    """
+    La linea del corredor de los datos de sitio de ESTA corrida (con su
+    origen) y, si el proyecto no coincide con el, la advertencia de corredor
+    (`datos_sitio.advertencia_de_corredor`, EXT-V-01). La llevan las DOS
+    vistas de la memoria (T-12, H3 de su auditoria): la resumida es la que se
+    imprime, y es justo donde la advertencia no puede desaparecer.
+    """
+    corredor = contexto.dato_efectivo("corredor_del_proyecto")
+    partes = ['<p class="corredor">Corredor de los datos de sitio: '
+              f"<b>{_esc(str(corredor.valor))}</b> (origen: "
+              f"<code>{_esc(corredor.origen)}</code>)</p>"]
+    advertencia = ds.advertencia_de_corredor(proyecto, str(corredor.valor),
+                                             corredor.origen)
+    if advertencia:
+        partes.append(f'<div class="aviso"><p><b>{_esc(advertencia)}</b></p></div>')
+    return "".join(partes)
+
+
+def _declaracion_en_sesion(d: Any, efectivo: Any) -> str:
+    """Lo que dice un [S] declarado por sesion: fecha, origen y el archivo."""
+    del_archivo = ("el archivo no lo tenia leido" if d.valor is None
+                   else f"el archivo dice {_valor_legible(d.valor)}")
+    return (f"el {_esc(efectivo.fecha)}, desde "
+            f"<code>{_esc(efectivo.origen)}</code>; {del_archivo} "
+            f"(<code>{_esc(ds.ORIGEN_ARCHIVO)}</code>)")
+
+
+def datos_sitio_resumidos(contexto: Any, *, proyecto: str = "") -> str:
+    """
+    --- T-12 (H3 de su auditoria) --- Los [S] de la corrida en la memoria
+    RESUMIDA: el corredor y su advertencia (los mismos de la completa) y una
+    tabla con el valor efectivo y DE QUE ARCHIVO salio cada uno (regla (3) de
+    EXT-10). El procedimiento, la fuente y la trazabilidad completos estan en
+    la seccion 3.1 de la memoria completa.
+    """
+    partes = [_cabecera_de_corredor(contexto, proyecto)]
+    claves = sorted(contexto.datos_usados)
+    if not claves:
+        partes.append("<p>Esta corrida no invoco ningun dato de sitio.</p>")
+        return "".join(partes)
+    filas = [_fila(["<th>Dato de sitio</th>", "<th>Valor</th>",
+                    "<th>Origen</th>"])]
+    for clave in claves:
+        d = ds.dato(clave)
+        efectivo = contexto.dato_efectivo(clave)
+        origen = f"<code>{_esc(efectivo.origen)}</code>"
+        if efectivo.declarado_en_caliente:
+            origen += ("<br><b>declarado (sesion)</b> "
+                       + _declaracion_en_sesion(d, efectivo))
+        filas.append(_fila([
+            _td(f"{_etiqueta_html(d.etiqueta)} <code>{_esc(clave)}</code>"),
+            _td(_valor_legible(efectivo.valor)), _td(origen)]))
+    partes.append('<table class="compacta">' + "".join(filas) + "</table>")
+    return "".join(partes)
+
+
 def bloque_datos_sitio(contexto: Any, solo_usados: bool = True, *,
                        proyecto: str = "") -> str:
     """
@@ -3324,15 +3470,7 @@ def bloque_datos_sitio(contexto: Any, solo_usados: bool = True, *,
     eleccion de F_pga son la misma clase de afirmacion, y son lo contrario:
     uno es un hecho del sitio y el otro una decision del proyectista.
     """
-    corredor = contexto.dato_efectivo("corredor_del_proyecto")
-    partes: List[str] = [
-        '<p class="corredor">Corredor de los datos de sitio: '
-        f"<b>{_esc(str(corredor.valor))}</b> (origen: "
-        f"<code>{_esc(corredor.origen)}</code>)</p>"]
-    advertencia = ds.advertencia_de_corredor(proyecto, str(corredor.valor),
-                                             corredor.origen)
-    if advertencia:
-        partes.append(f'<div class="aviso"><p><b>{_esc(advertencia)}</b></p></div>')
+    partes: List[str] = [_cabecera_de_corredor(contexto, proyecto)]
 
     claves = sorted(contexto.datos_usados if solo_usados else ds.DATOS_SITIO)
     if not claves:
@@ -3353,13 +3491,10 @@ def bloque_datos_sitio(contexto: Any, solo_usados: bool = True, *,
             f"<dt>Origen</dt><dd><code>{_esc(efectivo.origen)}</code></dd>",
         ]
         if efectivo.declarado_en_caliente:
-            del_archivo = ("el archivo no lo tenia leido" if d.valor is None
-                           else f"el archivo dice {_valor_legible(d.valor)}")
             campos.append(
                 '<dt class="pendiente">declarado (sesion)</dt>'
-                f'<dd class="pendiente">el {_esc(efectivo.fecha)}, desde '
-                f"<code>{_esc(efectivo.origen)}</code>; {del_archivo} "
-                f"(<code>{_esc(ds.ORIGEN_ARCHIVO)}</code>)</dd>")
+                f'<dd class="pendiente">{_declaracion_en_sesion(d, efectivo)}'
+                "</dd>")
         if d.reemplazado_por:
             campos.append("<dt>Lo sustituye</dt>"
                           f"<dd>{_esc(d.reemplazado_por)}</dd>")
@@ -4792,6 +4927,21 @@ def _resumen_expediente(informe: Any) -> str:
     return '<table class="compacta">' + "".join(filas) + "</table>"
 
 
+def estado_del_expediente(informe: Any, donde_el_detalle: str) -> str:
+    """
+    --- T-12 (H7 de su auditoria) --- La celda «Estado del expediente», UNA
+    regla para las dos vistas de la memoria: «cerrado» o «NO cierra» sale de
+    `Informe.cerrado` y nada mas; cada vista dice donde esta el detalle.
+    """
+    if informe.cerrado:
+        return ('<span class="cumple">cerrado</span> &mdash; todos los puntos '
+                "dimensionados, sin etapas bloqueadas y sin verificaciones "
+                "incumplidas")
+    return ('<span class="incumple">NO cierra</span> &mdash; hay etapas '
+            "bloqueadas, puntos sin dimensionar o verificaciones "
+            f"incumplidas; el detalle esta en {donde_el_detalle}")
+
+
 def memoria_html(informe: Any, *, proyecto: str = "",
                  subtitulo: str = "", ruta_plantilla: Optional[Path] = None,
                  ruta_hoja: Optional[Path] = None,
@@ -4854,14 +5004,7 @@ def memoria_html_por_partes(
     traza = trazabilidad(Path(informe.csv), contexto,
                          generado_utc=informe.generado)
 
-    if informe.cerrado:
-        estado = ('<span class="cumple">cerrado</span> &mdash; todos los puntos '
-                  "dimensionados, sin etapas bloqueadas y sin verificaciones "
-                  "incumplidas")
-    else:
-        estado = ('<span class="incumple">NO cierra</span> &mdash; hay etapas '
-                  "bloqueadas, puntos sin dimensionar o verificaciones "
-                  "incumplidas; el detalle esta en los bloques 1 y 4")
+    estado = estado_del_expediente(informe, "los bloques 1 y 4")
 
     n_puntos = len(informe.puntos)
     # La plantilla se carga ANTES de los valores: el indice se deriva de su
@@ -4957,6 +5100,233 @@ def memoria_html_por_partes(
 
 
 # ===========================================================================
+# --- T-12 --- La memoria RESUMIDA: la vista para imprimir
+# ===========================================================================
+# DOS VISTAS DE LA MISMA CORRIDA (decision del dueño del 2026-11-13, ficha
+# T12-04 de docs/decisiones_diferidas.md). La memoria COMPLETA de arriba es el
+# anexo digital: cada paso con su formula, su sustitucion, su cita y su
+# veredicto, y por punto mas de cien KB (techos de `test_ext8`). La RESUMIDA
+# es lo que se imprime: por punto, el resultado, los veredictos, los avisos,
+# los criterios [A] que nombra y lo que lo detuvo; para el proyecto, el
+# encabezado de trazabilidad, el alcance, el cuadro resumen y los criterios
+# pendientes. Las dos reglas que la hacen defendible:
+#
+#   1. SALE DEL MISMO `Informe`, y por eso del mismo `ContextoCorrida`: las
+#      mismas huellas (CSV, criterios, hoja de ruta) y la misma hora de
+#      corrida que la completa, que la resumida imprime en su encabezado. La
+#      CLI escribe las dos en la MISMA invocacion (`--html` y
+#      `--html-resumida`).
+#   2. NO TIENE FORMATEADORES PROPIOS PARA LOS NUMEROS: cada fila numerica es
+#      la de la completa (`_filas_combinacion_adoptada`,
+#      `_filas_verificaciones`, `fila_resumen`, `_tabla_bloqueos`,
+#      `bloque_alcance`, `_resumen_expediente`, `_valor_legible` sobre el
+#      valor efectivo del contexto), de modo que no puede publicar un numero
+#      que la completa no tenga. `tests/test_t12_entregable.py` lo comprueba
+#      sobre el texto de las dos, por punto y en total. Sin aritmetica: es
+#      una SELECCION de lo que la completa ya imprime.
+NOMBRE_PLANTILLA_RESUMIDA = "memoria_resumida.html"
+MARCADORES_RESUMIDA: Tuple[str, ...] = (
+    "proyecto", "subtitulo",
+    "version_hoja_ruta", "hoja_ruta_archivo", "hoja_ruta_sha1",
+    "csv_ruta", "csv_sha1",
+    "criterios_version", "criterios_fecha", "criterios_sha1",
+    "generado_local", "generado_utc",
+    "estado_expediente", "resumen_expediente", "bloque_alcance",
+    "datos_sitio_resumidos",
+    "filas_resumen", "resumenes_punto", "pendientes_resumidos",
+    "memoria_completa",
+)
+PREFIJO_ANCLA_RESUMEN = "resumen-"
+TITULO_RESUMEN_RESULTADO = "Resultado: la combinacion adoptada"
+TITULO_RESUMEN_VERIFICACIONES = "Verificaciones y su veredicto"
+TITULO_RESUMEN_AVISOS = "Avisos del punto"
+TITULO_RESUMEN_CRITERIOS = "Criterios [A] que nombra este punto"
+SIN_AVISOS = "Sin avisos."
+
+
+def _criterios_A_del_punto(id_punto: str, por_punto: Dict[str, Tuple[str, ...]],
+                           contexto: Any) -> str:
+    """
+    Los criterios [A] que el calculo de ESTE punto nombra
+    (`criterios_A_por_punto`), con su valor efectivo y su ventana, leidos
+    del contexto de la corrida y formateados como en el anexo A.4 de la
+    completa. Un criterio que el punto nombra y la corrida no registro como
+    usado (y que por eso el anexo A.4 no imprime) sale sin valor y remite a
+    la completa: la resumida no publica lo que la completa no lleva.
+    """
+    claves = [k for k, puntos in por_punto.items() if id_punto in puntos]
+    if not claves:
+        return ("<p>Este punto no nombra ningun criterio [A] en sus "
+                "verificaciones ni en sus pasos.</p>")
+    usados = set(contexto.criterios_usados)
+    filas = [_fila(["<th>Criterio [A]</th>", "<th>Valor efectivo</th>",
+                    "<th>Ventana (sensibilidad)</th>"])]
+    for clave in claves:
+        if clave not in usados:
+            filas.append(_fila([_td(f"<code>{_esc(clave)}</code>"),
+                                _td("ver la memoria completa"), _td(VACIO)]))
+            continue
+        c = _criterio_efectivo(clave, contexto)
+        ventana = (_valor_legible(c.sensibilidad) if c.sensibilidad else
+                   '<span class="pendiente">sin ventana declarada</span>')
+        filas.append(_fila([_td(f"<code>{_esc(clave)}</code>"),
+                            _td(_valor_legible(c.valor)), _td(ventana)]))
+    return '<table class="compacta">' + "".join(filas) + "</table>"
+
+
+def resumen_de_punto(informe: Any, por_punto: Dict[str, Tuple[str, ...]],
+                     contexto: Any) -> str:
+    """
+    --- T-12 --- El bloque de UN punto en la memoria resumida: su encabezado
+    (el mismo de la completa), la combinacion adoptada, la tabla de
+    verificaciones con su veredicto, los avisos (`InformePunto.avisos()`, la
+    misma lista que la CLI y el JSON), las etapas bloqueadas y los criterios
+    [A] que nombra. El desarrollo (pasos, formulas, citas, tablas del
+    cabezal) esta en la memoria completa, bajo el mismo identificador del
+    punto. Ningun texto fijo de este bloque lleva un numero: los numeros son
+    los de la completa.
+    """
+    punto = informe.punto
+    clase = "punto" if informe.dimensionado else "punto sin-cerrar"
+    estado = "dimensionado" if informe.dimensionado else "sin dimensionar"
+    partes = [
+        f'<div class="{clase}" id="{PREFIJO_ANCLA_RESUMEN}'
+        f'{ancla_de_punto(punto.id)}">',
+        f"<h3>{_esc(punto.id)} &nbsp;|&nbsp; progresiva "
+        f"{_esc(punto.progresiva_display)} &nbsp;|&nbsp; Familia "
+        f"{_esc(punto.familia.value)} &nbsp;|&nbsp; {estado}</h3>",
+        f"<h4>{_esc(TITULO_RESUMEN_RESULTADO)}</h4>",
+    ]
+    if informe.dimensionado:
+        partes.append('<table class="compacta">'
+                      + "".join(_filas_combinacion_adoptada(informe))
+                      + "</table>")
+    else:
+        partes.append(AVISO_SIN_DIMENSIONAR)
+    partes.append(f"<h4>{_esc(TITULO_RESUMEN_VERIFICACIONES)}</h4>")
+    verificaciones = verificaciones_publicadas(informe)
+    if verificaciones:
+        partes.append('<table class="compacta">'
+                      + "".join(_filas_verificaciones(
+                          verificaciones, remision_acotacion=False))
+                      + "</table>")
+    else:
+        partes.append(SIN_VERIFICACIONES)
+    partes.append(f"<h4>{_esc(TITULO_RESUMEN_AVISOS)}</h4>")
+    avisos: List[str] = []
+    for aviso in informe.avisos():
+        texto = _esc(aviso)
+        if texto not in avisos:
+            avisos.append(texto)
+    partes.append("<ul>" + "".join(f"<li>{t}</li>" for t in avisos) + "</ul>"
+                  if avisos else f"<p>{_esc(SIN_AVISOS)}</p>")
+    partes.append(_tabla_bloqueos(informe.bloqueos))
+    partes.append(f"<h4>{_esc(TITULO_RESUMEN_CRITERIOS)}</h4>")
+    partes.append(_criterios_A_del_punto(punto.id, por_punto, contexto))
+    partes.append(
+        '<p class="lead">El desarrollo de este punto &mdash; pasos, formulas '
+        "sustituidas, citas, tablas del cabezal &mdash; esta en la memoria "
+        f"completa, bloque <code>{_esc(punto.id)}</code>.</p></div>")
+    return "".join(partes)
+
+
+def pendientes_resumidos(informe: Any) -> str:
+    """
+    --- T-12 --- Los criterios sin valor que detuvieron (o difirieron) una
+    etapa de esta corrida, en una tabla: los mismos `CriterioBloqueante` que
+    la seccion 4 de la completa imprime en fichas.
+    """
+    bloqueantes = criterios_bloqueantes(informe)
+    if not bloqueantes:
+        return ("<p>Ninguno: ningun criterio sin valor se invoco en esta "
+                "corrida.</p>")
+    filas = [_fila(["<th>Criterio</th>", "<th>Concepto</th>",
+                    "<th>Puntos afectados</th>", "<th>En esta corrida</th>"])]
+    for c in bloqueantes:
+        puntos = ", ".join(c.puntos) if c.puntos else "proyecto (Fase 9)"
+        filas.append(_fila([
+            _td(f"{_etiqueta_html(c.etiqueta)} <code>{_esc(c.clave)}</code>"),
+            _td(_esc(c.concepto)), _td(_esc(puntos)),
+            _td("diferido por alcance" if c.diferido else
+                '<span class="incumple">detiene</span>')]))
+    return '<table class="ancha">' + "".join(filas) + "</table>"
+
+
+def _remision_a_la_completa(nombre_completa: Optional[str]) -> str:
+    """La frase que ata la resumida a SU memoria completa (misma corrida)."""
+    if nombre_completa:
+        donde = (f"en <code>{_esc(nombre_completa)}</code>, escrita en la "
+                 "MISMA invocacion que esta")
+    else:
+        donde = ("con <code>--html</code> o <code>--pdf</code> en la MISMA "
+                 "invocacion que esta (esta corrida no la escribio)")
+    return (
+        '<div class="nota"><p><b>Esta es la memoria RESUMIDA, para imprimir.'
+        "</b> La memoria COMPLETA &mdash; el anexo digital, con el desarrollo "
+        "de cada paso, sus formulas sustituidas, sus citas literales, los "
+        "criterios declarados con su justificacion y su fuente, las "
+        "acotaciones, los umbrales y las discrepancias &mdash; se emite "
+        f"{donde}. Las dos salen del MISMO informe: el encabezado de "
+        "trazabilidad de arriba (huellas del CSV, de los criterios y de la "
+        "hoja de ruta, y hora de la corrida) es el mismo en las dos, y ningun "
+        "numero de esta vista falta en aquella.</p></div>")
+
+
+def memoria_resumida_html(informe: Any, *, proyecto: str = "",
+                          subtitulo: str = "",
+                          nombre_completa: Optional[str] = None,
+                          ruta_plantilla: Optional[Path] = None) -> str:
+    """
+    --- T-12 --- La memoria RESUMIDA de la corrida, como una cadena (ver el
+    bloque de arriba). `nombre_completa` es el archivo de la memoria
+    completa que la misma invocacion escribe, para que la resumida remita a
+    el; sin el, la resumida dice como obtenerla. Mismo contrato de
+    marcadores que la completa, en las dos direcciones: un marcador que la
+    plantilla pide y aqui no se entrega revienta (`substitute`), y uno que
+    aqui se entrega y la plantilla no imprime es `ValueError`.
+    """
+    contexto = ContextoCorrida.de(informe)
+    traza = trazabilidad(Path(informe.csv), contexto,
+                         generado_utc=informe.generado)
+    estado = estado_del_expediente(informe, "cada punto y en los pendientes")
+    por_punto = criterios_A_por_punto(informe)
+    destino = ((DIR_PLANTILLAS / NOMBRE_PLANTILLA_RESUMIDA)
+               if ruta_plantilla is None else ruta_plantilla)
+    plantilla = cargar_plantilla(destino)
+    valores = {
+        "proyecto": _esc(proyecto) or "(proyecto no declarado)",
+        "subtitulo": _esc(subtitulo),
+        "version_hoja_ruta": _esc(traza.version_hoja_ruta),
+        "hoja_ruta_archivo": _esc(traza.hoja_ruta.name),
+        "hoja_ruta_sha1": _esc(traza.hoja_ruta_sha1),
+        "csv_ruta": _esc(traza.csv),
+        "csv_sha1": _esc(traza.csv_sha1),
+        "criterios_version": _esc(traza.criterios_version),
+        "criterios_fecha": _esc(traza.criterios_fecha),
+        "criterios_sha1": _esc(traza.criterios_sha1),
+        "generado_local": _esc(traza.generado_local),
+        "generado_utc": _esc(traza.generado_utc),
+        "estado_expediente": estado,
+        "resumen_expediente": _resumen_expediente(informe),
+        "bloque_alcance": bloque_alcance(informe),
+        "datos_sitio_resumidos": datos_sitio_resumidos(contexto,
+                                                       proyecto=proyecto),
+        "filas_resumen": "".join(fila_resumen(p) for p in informe.puntos),
+        "resumenes_punto": "".join(resumen_de_punto(p, por_punto, contexto)
+                                   for p in informe.puntos),
+        "pendientes_resumidos": pendientes_resumidos(informe),
+        "memoria_completa": _remision_a_la_completa(nombre_completa),
+    }
+    if set(valores) != set(MARCADORES_RESUMIDA):
+        diferencia = set(valores).symmetric_difference(MARCADORES_RESUMIDA)
+        raise ValueError(
+            f"El contrato de marcadores de la resumida no cuadra: "
+            f"{sorted(diferencia)}")
+    _exigir_que_la_plantilla_no_pierda_contenido(plantilla, valores, destino)
+    return plantilla.substitute(valores)
+
+
+# ===========================================================================
 # Exportacion
 # ===========================================================================
 
@@ -5013,6 +5383,41 @@ def exportar_csv(informe: Any, destino: Path) -> Path:
     return destino
 
 
+def exportar_html_resumida(informe: Any, destino: Path, **kwargs: Any) -> Path:
+    """
+    --- T-12 --- Escribe la memoria RESUMIDA como HTML (los kwargs van a
+    `memoria_resumida_html`). Atomica como `exportar_html`: un fallo no deja
+    un archivo a medias con el nombre del bueno.
+    """
+    destino = Path(destino)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    contenido = memoria_resumida_html(informe, **kwargs)
+    temporal = destino.with_name(destino.name + ".parcial")
+    try:
+        temporal.write_text(contenido, encoding="utf-8")
+        os.replace(temporal, destino)
+    finally:
+        if temporal.exists():
+            temporal.unlink()
+    return destino
+
+
+def exportar_pdf_resumida(informe: Any, destino: Path, *,
+                          abrir_navegador: bool = True,
+                          forzar_navegador: bool = False,
+                          **kwargs: Any) -> ResultadoExportacion:
+    """
+    --- T-12 --- La memoria RESUMIDA en PDF, por las dos vias de
+    `exportar_pdf` (weasyprint, o el HTML para imprimir desde el navegador).
+    """
+    destino = Path(destino)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    contenido = memoria_resumida_html(informe, **kwargs)
+    return _escribir_pdf(contenido, destino, abrir_navegador=abrir_navegador,
+                         forzar_navegador=forzar_navegador, progreso=None,
+                         rotulo="Memoria resumida")
+
+
 def exportar_pdf(informe: Any, destino: Path, *, abrir_navegador: bool = True,
                  forzar_navegador: bool = False,
                  progreso: Optional[Callable[[str, int, int], None]] = None,
@@ -5038,7 +5443,20 @@ def exportar_pdf(informe: Any, destino: Path, *, abrir_navegador: bool = True,
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
     contenido = memoria_html(informe, progreso=progreso, **kwargs)
+    return _escribir_pdf(contenido, destino, abrir_navegador=abrir_navegador,
+                         forzar_navegador=forzar_navegador, progreso=progreso,
+                         rotulo="Memoria")
 
+
+def _escribir_pdf(contenido: str, destino: Path, *, abrir_navegador: bool,
+                  forzar_navegador: bool,
+                  progreso: Optional[Callable[[str, int, int], None]],
+                  rotulo: str) -> ResultadoExportacion:
+    """
+    Las dos vias de `exportar_pdf` (weasyprint o el HTML para el navegador)
+    sobre una memoria ya armada: la usan la completa y, desde T-12, la
+    resumida (`exportar_pdf_resumida`). `rotulo` encabeza el mensaje.
+    """
     weasyprint_disponible()
     if WeasyHTML is not None and not forzar_navegador:
         if progreso is not None:
@@ -5048,7 +5466,7 @@ def exportar_pdf(informe: Any, destino: Path, *, abrir_navegador: bool = True,
             progreso(ETAPA_PDF, 1, 1)
         return ResultadoExportacion(
             ruta=destino, via=VIA_WEASYPRINT,
-            mensaje=f"Memoria exportada a PDF con weasyprint: {destino}")
+            mensaje=f"{rotulo} exportada a PDF con weasyprint: {destino}")
 
     respaldo = destino.with_suffix(".html")
     respaldo.write_text(contenido, encoding="utf-8")

@@ -1538,3 +1538,53 @@ idénticos; ningún punto dimensiona en una corrida y no en la otra.
 **Diámetros, secciones, materiales y HW que gobierna movidos: ninguno.** (Lo único que toca
 un HW publicado es H9, aprobado por el dueño: la clave `HW_salida_m` de A-02 pasa a `null`
 donde el perfil descartó la aproximación.)
+
+## Regenerada en T-12 (2026-11-13, FASE A, sobre `f77c5d4`): la advertencia de fixture, T11-09 y la memoria resumida; ningún número de cálculo
+
+T-12 no cambia cálculo. Frente a `f77c5d4` cambian **seis archivos** y aparece **uno
+nuevo**, y hay que leer cada cambio en su apartado, porque son tres cosas distintas:
+
+**1. La advertencia de fixture (punto 3 de T-12, INF-5.2.4)** — en las **cuatro memorias
+HTML** (`memoria_expediente.html`, `memoria_perfil.html`, `memoria_perfil_ancha.html`,
+`memoria_punto_cajon.html`) y en la nueva: el `<title>` empieza por «FIXTURE DE PRUEBA, NO
+ES UN RESULTADO DEL PROYECTO - » y el cuerpo empieza por un bloque rojo visible con ese
+rótulo (en la memoria del cajón, que es un fragmento sin `<body>`, al principio del
+archivo). **La pone el generador y no el programa**: `regenerar.sh` pasa cada memoria por
+`tests/apoyo/rotulo_fixture.py` después de normalizarla; la CLI no la conoce, de modo que
+ninguna memoria de un proyecto real puede llevarla (el docstring del envoltorio dice por qué
+no se hizo con una bandera). Medido: quitado el rótulo, `memoria_expediente.html`,
+`memoria_perfil.html` y `memoria_punto_cajon.html` son **idénticas byte a byte** a las de
+`f77c5d4`. `entradas_ampliadas.json` (entrada, no salida) gana su cabecera como la clave
+`_advertencia`, la única de nivel superior que el cargador admite sin leerla
+(`servicio.CLAVE_ADVERTENCIA_EXTERNOS`): ninguna salida cambia por ella.
+
+**2. T11-09, aprobado por el dueño el 2026-11-13** — en **`memoria_perfil_ancha.html`**,
+una sola cadena, en la fila «Control gobernante» de A-02: `(entrada 0.572 / salida 0.560)`
+→ `(entrada 0.572 / salida no se forma: el perfil no alcanza la entrada)`. Es la misma
+redacción y la misma condición que la línea «Control» de la CLI y el `null` de
+`HW_salida_m` (H9 de T-11), leídas ahora del dato (`ResultadoHidraulico.salida_no_se_forma`).
+El 0.560 era la aproximación que el perfil DESCARTÓ: sigue impresa en la fila del perfil,
+rotulada HW<sub>aprox</sub>. Medido: es la ÚNICA diferencia de esa memoria además del rótulo
+del punto 1. El HW que gobierna (0.572 m, de entrada), el control, la sección y el material
+de A-02, sin cambio. En `memoria_expediente.html` no hay punto con la salida que no se forma.
+
+**3. La memoria resumida (decisión del dueño del 2026-11-13: dos vistas)** — la corrida 4
+(expediente) escribe además `--html-resumida`, y la línea base fija la vista nueva en
+**`memoria_resumida_expediente.html`** (nuevo, con el rótulo del punto 1). Por eso
+**`cli_expediente.txt`** gana UNA línea, `Memoria resumida (HTML)  : <SALIDA>/memoria_resumida_exp.html`;
+nada más cambia en él. La resumida sale del mismo informe que `memoria_expediente.html` (las
+dos huellas y la hora de la corrida son las mismas) y `tests/test_t12_entregable.py`
+comprueba sobre estos dos archivos comprometidos que la resumida no publica ningún número
+que la completa no tenga. En el cierre de T-12 (correcciones de su auditoría) la resumida
+ganó la línea del corredor, su advertencia y la tabla de los [S] con su origen (H3), la
+marca de adopción sobre vacío verificado (H2) y la fila de h_o del punto (H6); el rótulo
+de las memorias dice ahora «archivo de la línea base … con DATOS DE PRUEBA» sin nombrar
+entradas que alguna corrida no usa (H8). Medido otra vez contra `f77c5d4`, quitado el
+rótulo: las tres memorias completas de siempre IGUALES byte a byte salvo la cadena de A-02
+de T11-09; el cajón, IGUAL.
+
+**Idénticos byte a byte**: los cuatro JSON, los dos CSV de resumen y `cli_familia_c.txt`,
+`cli_perfil.txt`, `cli_perfil_ancho.txt`, `cli_rama_error.txt`. Con el comparador de E-B
+contra los JSON de `f77c5d4`: IGUALES los cuatro.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**

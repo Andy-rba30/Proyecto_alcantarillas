@@ -135,10 +135,13 @@ python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance perfil \
 # --- 4 · la corrida ANCHA, a nivel de EXPEDIENTE ----------------------------
 # Otra plantilla (memoria_alcantarillas.html) y otras fases: las 8 y 9 se
 # ejecutan en vez de diferirse.
+# T-12: la misma invocacion escribe tambien la memoria RESUMIDA, la vista
+# para imprimir de ESTA corrida (`--html-resumida`), y la linea base la fija.
 python3 cli.py tests/ejemplo_puntos.csv --luz 2.75 --alcance expediente \
         --datos-externos "$EXT" \
         --json "$TMP/informe_exp.json" \
         --html "$TMP/memoria_exp.html" \
+        --html-resumida "$TMP/memoria_resumida_exp.html" \
         --csv-resumen "$TMP/resumen_exp.csv" > "$TMP/cli_exp.txt" 2>&1 || true
 
 # --- 6 · T-3: la FAMILIA C DIMENSIONADA, con los valores de archivo ---------
@@ -173,11 +176,19 @@ norm () {
       -e 's#[0-9]\{2\}/[0-9]\{2\}/[0-9]\{4\} [0-9]\{2\}:[0-9]\{2\}#<FECHA>#g' \
       -e "s#$TMP#<SALIDA>#g" "$1"
 }
+# LAS MEMORIAS HTML LLEVAN LA ADVERTENCIA DE FIXTURE (T-12, INF-5.2.4): la
+# pone este generador, despues de normalizar y FUERA del programa, con un
+# envoltorio declarado (`tests/apoyo/rotulo_fixture.py`, cuyo docstring dice
+# por que no es una bandera de la CLI). Una memoria de un proyecto real no
+# puede llevarla, y la suite la compara igual que el resto del archivo.
+rotular () {
+  norm "$1" | python3 -m tests.apoyo.rotulo_fixture
+}
 norm "$TMP/cli.txt"           > "$DIR/cli_perfil.txt"
-norm "$TMP/memoria.html"      > "$DIR/memoria_perfil.html"
+rotular "$TMP/memoria.html"   > "$DIR/memoria_perfil.html"
 
 norm "$TMP/cli_ancho.txt"     > "$DIR/cli_perfil_ancho.txt"
-norm "$TMP/memoria_ancha.html" > "$DIR/memoria_perfil_ancha.html"
+rotular "$TMP/memoria_ancha.html" > "$DIR/memoria_perfil_ancha.html"
 norm "$TMP/informe_ancho.json" > "$DIR/informe_perfil_ancho.json"
 norm "$TMP/resumen_ancho.csv"  > "$DIR/resumen_perfil_ancho.csv"
 
@@ -185,12 +196,13 @@ norm "$TMP/cli_err.txt"       > "$DIR/cli_rama_error.txt"
 norm "$TMP/informe_err.json"  > "$DIR/informe_rama_error.json"
 
 norm "$TMP/cli_exp.txt"       > "$DIR/cli_expediente.txt"
-norm "$TMP/memoria_exp.html"  > "$DIR/memoria_expediente.html"
+rotular "$TMP/memoria_exp.html" > "$DIR/memoria_expediente.html"
+rotular "$TMP/memoria_resumida_exp.html" > "$DIR/memoria_resumida_expediente.html"
 norm "$TMP/informe_exp.json"  > "$DIR/informe_expediente.json"
 norm "$TMP/resumen_exp.csv"   > "$DIR/resumen_expediente.csv"
 
-norm "$TMP/cajon.html"        > "$DIR/memoria_punto_cajon.html"
+rotular "$TMP/cajon.html"     > "$DIR/memoria_punto_cajon.html"
 
 norm "$TMP/cli_c.txt"         > "$DIR/cli_familia_c.txt"
 norm "$TMP/informe_c.json"    > "$DIR/informe_familia_c.json"
-echo "linea base regenerada en $DIR (15 archivos: 2 de la ventana estrecha de C0, 10 de la ancha, 1 del punto de cajon y 2 de la Familia C dimensionada)"
+echo "linea base regenerada en $DIR (16 archivos: 2 de la ventana estrecha de C0, 11 de la ancha --con la memoria resumida de T-12--, 1 del punto de cajon y 2 de la Familia C dimensionada)"

@@ -1,12 +1,14 @@
 """
-tests/apoyo/tracker.py
-======================
+proceso/apoyo/tracker.py
+========================
 Lector de SOLO LECTURA del tracker de auditorias
-(`docs/auditorias/matriz_cruzada_auditorias.xlsx`) con la biblioteca
+(`proceso/auditorias/matriz_cruzada_auditorias.xlsx`; hasta T-12 en
+`docs/auditorias/`) con la biblioteca
 estandar: `zipfile` + `xml.etree`. Existe para que un TEST pueda leer la
 hoja `Hallazgos` sin sumar `openpyxl` a las dependencias de test: openpyxl
 esta preautorizado como herramienta de MANTENIMIENTO del tracker
-(CLAUDE.md, regla 9) --- lo usa `verificar_sesion.py`, que salta el paso si
+(regla 9 de las reglas de correccion, `proceso/reglas_de_correccion_de_auditorias.md`)
+--- lo usa `proceso/verificar_sesion.py`, que salta el paso si
 falta ---, y un test que dependiera de el abriria un TERCER eje en la tabla
 de cuatro entornos (PyMuPDF x Tk) de CLAUDE.md. Un .xlsx es un zip de XML,
 y lo que este lector necesita cabe en sesenta lineas.
@@ -27,7 +29,7 @@ from typing import Dict, List
 from xml.etree import ElementTree as ET
 
 RAIZ = Path(__file__).resolve().parents[2]
-TRACKER = RAIZ / "docs" / "auditorias" / "matriz_cruzada_auditorias.xlsx"
+TRACKER = RAIZ / "proceso" / "auditorias" / "matriz_cruzada_auditorias.xlsx"
 HOJA_HALLAZGOS = "Hallazgos"
 
 _NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",

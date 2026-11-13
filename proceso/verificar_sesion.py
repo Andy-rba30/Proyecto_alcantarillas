@@ -6,11 +6,16 @@ No lee reportes ni mensajes de commit: comprueba el arbol y el tracker.
 Correr desde la raiz del repo, sobre un checkout limpio de origin/main:
 
     git fetch origin && git checkout origin/main
-    python3 verificar_sesion.py
+    python3 -m proceso.verificar_sesion
+
+MATERIAL DE PROCESO DESDE T-12 (INF-5.2.2): vivia en la raiz y solo sirve al
+proceso de desarrollo (cierre de sesion, tracker de auditorias, ramas), de
+modo que se movio a `proceso/` con el resto. Se lanza con `-m` desde la raiz,
+como todo lo que importa del paquete `src` (EXT-9).
 
 Codigo de salida 0 si todo pasa, 1 si algo falla.
 
-Los tres docs/auditorias/auditoria_*.md son evidencia historica: los conteos
+Los tres proceso/auditorias/auditoria_*.md son evidencia historica: los conteos
 que citan son de cuando se hizo la auditoria y NO deben actualizarse. Por eso
 el chequeo 2 los excluye.
 """
@@ -61,9 +66,9 @@ ANCHO_CONSOLA = 66             # literal-ok: ancho de la caja del resumen
 
 # Evidencia historica: no deben reflejar el estado actual.
 DOCS_CONGELADOS = {
-    "docs/auditorias/auditoria_matematica.md",
-    "docs/auditorias/auditoria_sistema.md",
-    "docs/auditorias/auditoria_normativa.md",
+    "proceso/auditorias/auditoria_matematica.md",
+    "proceso/auditorias/auditoria_sistema.md",
+    "proceso/auditorias/auditoria_normativa.md",
 }
 
 
@@ -101,6 +106,22 @@ else:
     else:
         ok(f"{passed} passed, {skipped} skipped")
 
+# ------------------------------------------- 1-bis. la suite de PROCESO
+# Desde T-12 los tests del material de proceso viven en `proceso/tests` y
+# `python -m pytest` (paso 1) no los recoge (`testpaths`). Se corren aqui:
+# un cierre de sesion que actualiza el tracker o la bitacora tiene que
+# dejarlos verdes (H4 de la auditoria de T-12).
+print("\n1-bis. Suite de proceso (proceso/tests)")
+salida_proceso = subprocess.run(
+    [sys.executable, "-m", "pytest", "-q", "proceso/tests"],
+    capture_output=True, text=True).stdout
+m_proceso = re.search(r"(\d+) passed", salida_proceso)
+if not m_proceso or re.search(r"\d+ (failed|error)", salida_proceso):
+    fallo("la suite de proceso NO esta verde: "
+          + (salida_proceso.strip().splitlines() or ["sin salida"])[-1])
+else:
+    ok(f"{m_proceso.group(1)} passed (proceso/tests)")
+
 # --------------------------------------------- 2. docs coinciden con la suite
 # EL CONTEO ES UN PAR, NO UN NUMERO, desde S12. Los tests que abren los PDF de
 # normas/ llevan `@pytest.mark.pdf` y se saltan sin PyMuPDF, que es dependencia
@@ -116,6 +137,9 @@ passed_sin_pdf = int(m2.group(1)) if m2 else passed
 legitimos = {passed, passed_sin_pdf}
 print(f"          con PyMuPDF {passed}, sin PyMuPDF {passed_sin_pdf}")
 desfasados = 0
+# Los documentos VIVOS del entregable. La bitacora de `proceso/` lleva los
+# conteos de cada sesion a proposito (es historia, como las auditorias) y no
+# se barre, igual que antes de T-12 no se barria CLAUDE.md.
 for doc in Path("docs").rglob("*.md"):
     if doc.as_posix() in DOCS_CONGELADOS:
         continue
@@ -158,7 +182,7 @@ except ImportError:
 
 if openpyxl:
     wb = openpyxl.load_workbook(
-        "docs/auditorias/matriz_cruzada_auditorias.xlsx")
+        "proceso/auditorias/matriz_cruzada_auditorias.xlsx")
     ws = wb["Hallazgos"]
     cab = [c.value for c in ws[1]]
     i = {h: n for n, h in enumerate(cab)}
@@ -215,37 +239,35 @@ if openpyxl:
            f"{len(parciales) - len(huerfanos_fase)} esperan una fase futura")
 
 # ----------------------------------------------------------------- 5. normas
-# DONDE ESTAN LOS PDF (T-0). Se buscan por la misma puerta que usa la suite
-# --- `fuentes.directorios_de_normas()`: `$NORMAS_DIR`, el clon del
-# repositorio de normas, y despues `normas/` mientras exista --- y se dice
-# cuales faltan. Que falten las de `SOLO_EN_EL_REPO_NORMAS` sin la variable
-# definida es un AVISO y no un fallo: la suite del paso 1 quedo verde
-# SALTANDO los tests que las abren, y eso hay que leerlo aqui, no deducirlo
-# del numero de `skipped`. Cualquier otra falta si es un fallo: una fuente
+# DONDE ESTAN LOS PDF (T-0, T-12). Se buscan por la misma puerta que usa la
+# suite --- `fuentes.directorios_de_normas()`: desde T-12 SOLO `$NORMAS_DIR`,
+# el clon del repositorio de normas; los PDF de `normas/` de la app se
+# retiraron --- y se dice cuales faltan. Sin la variable no hay PDF en disco
+# y es un AVISO, no un fallo: la suite del paso 1 quedo verde SALTANDO todos
+# los tests `pdf`, y eso hay que leerlo aqui, no deducirlo del numero de
+# `skipped`. Con la variable, cualquier falta SI es un fallo: una fuente
 # presente sin PDF no se puede reverificar.
-print("\n5. PDF de normas (NORMAS_DIR y normas/)")
+print("\n5. PDF de normas (NORMAS_DIR)")
 from src.normativa import fuentes as _fuentes   # noqa: E402
 
 try:
     carpetas = _fuentes.directorios_de_normas()
 except FileNotFoundError as exc:
-    carpetas = ()
+    carpetas = None
     fallo(str(exc))
-for carpeta in carpetas:
-    print(f"          {carpeta}")
-if carpetas:
+if carpetas == ():
+    aviso(f"sin {_fuentes.VARIABLE_NORMAS_DIR}: ningun PDF de normas esta en "
+          "disco y los tests `pdf` se saltaron (ver CLAUDE.md, «Donde estan "
+          "los PDF de normas»)")
+elif carpetas:
+    for carpeta in carpetas:
+        print(f"          {carpeta}")
     sin_pdf = sorted(f.id for f in _fuentes.FUENTES.values()
                      if not _fuentes.ruta_pdf(f).exists())
-    solo_alli = set(_fuentes.SOLO_EN_EL_REPO_NORMAS)
-    enlazado = bool(os.environ.get(_fuentes.VARIABLE_NORMAS_DIR, "").strip())
     if not sin_pdf:
         ok(f"las {len(_fuentes.FUENTES)} fuentes presentes tienen su PDF en disco")
-    elif set(sin_pdf) <= solo_alli and not enlazado:
-        aviso(f"sin {_fuentes.VARIABLE_NORMAS_DIR}: {', '.join(sin_pdf)} viven "
-              "solo en el repositorio de normas y NO se abrieron; los tests "
-              "`pdf` que las verifican se saltaron (ver CLAUDE.md)")
     else:
-        fallo("fuentes presentes sin PDF en ninguna carpeta de normas: "
+        fallo("fuentes presentes sin PDF en el repositorio de normas: "
               + ", ".join(sin_pdf))
 
 # ----------------------------------------------------------------- resumen

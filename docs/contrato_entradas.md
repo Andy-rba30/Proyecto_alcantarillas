@@ -4,7 +4,8 @@
 estudio hidrológico, las cotas un levantamiento, el CBR una calicata, el nivel del dren la
 Junta de Usuarios. Este documento lista **todas** esas entradas, dice **quién las aporta y
 con qué procedimiento**, y deja escrita la regla que gobierna a la cadena T
-(`docs/planes_mejora/09_CADENA_PROMPTS_TESIS.md`) y a cualquier sesión posterior:
+(`proceso/planes_mejora/09_CADENA_PROMPTS_TESIS.md`, en `docs/planes_mejora/` hasta T-12) y a
+cualquier sesión posterior:
 
 > **Las entradas de diseño no se corrigen ni se rellenan.** La cadena T no las rellena:
 > valida su forma y su dominio, declara de dónde salen y, cuando una falta y hace falta,

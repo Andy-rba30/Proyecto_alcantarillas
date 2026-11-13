@@ -15,8 +15,14 @@
 
 ## 1. Fuentes
 
-Las que están en `normas/`, con el SHA-1 exacto contra el que se
-verificó cada cita y la regla de paginación MEDIDA, no supuesta.
+Las 18 presentes, con el SHA-1 exacto contra el que se
+verificó cada cita y la regla de paginación MEDIDA, no supuesta. **Desde
+T-12 su PDF vive SOLO en el repositorio de normas**, enlazado por
+`NORMAS_DIR` (`fuentes.directorios_de_normas`): los dieciséis que hasta
+entonces estaban también en `normas/` de este repositorio se retiraron
+después de comprobar su SHA-1 contra los del repositorio de normas, y
+HEC-14 y el WSDOT Hydraulics Manual nunca estuvieron aquí. Con los dos
+de la §1-bis, son los PDF de ese repositorio.
 
 | id | Documento | Edición | Paginación (pdf ← impresa) | Páginas | SHA-1 | Texto extraíble | Vigencia (T1) |
 |---|---|---|---|---|---|---|---|
@@ -39,7 +45,21 @@ verificó cada cita y la regla de paginación MEDIDA, no supuesta.
 | `MS` | Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos | Version abril 2014 | corrida, +1 | 281 | `21d19a71090c1e586cd31596db8a4d007dc7b96f` | sí | confirmada 2026-09-14; aprobada por RD 10-2014-MTC/14 |
 | `WSDOT_HM` | WSDOT Hydraulics Manual (M 23-03) | M 23-03.12, April 2026 | por capítulo: 1=14, 10=265, 10A=289, 2=36, 2A=63, 3=65, 4=86, 5=100, 6=120, 7=130, 7A=210, 7B=211, 8=215, 9=264, G=298 | 325 | `b34bb7bd448c249301e2a1a82234be70e8b6d916` | sí | confirmada 2026-11-11 |
 
-## 2. Fuentes que se citan y NO están en `normas/`
+## 1-bis. PDF del repositorio de normas que NO son fuente del registro
+
+Están en el repositorio de normas y ninguna verificación del proyecto
+cita un numeral suyo; se censan con su motivo y su SHA-1 medido
+(`fuentes.PRESENTES_SIN_REGISTRAR`, PC-23) para que la guardia note si
+el archivo cambia.
+
+| id | Documento | Páginas | SHA-1 | Por qué no se registra |
+|---|---|---|---|---|
+| `MDCTA_2016` | Manual de Dispositivos de Control del Transito Automotor para Calles y Carreteras | 532 | `58b948b70ca1fd28e133559471b2a4dba28afb1c` | es la norma de señalizacion vial (señales, marcas, semaforos); ninguna fase de la v8 ni ninguna verificacion de M1 a M10 cita un numeral suyo. La demarcacion del derecho de via que el DG-2018 §304.07.03 remite a la RM 404-2011-MTC/02 tampoco pasa por este manual |
+| `MSV_2017` | Manual de Seguridad Vial (2017) | 461 | `cc47c736c38503005a85966002a3ed267524b240` | ninguna fase de la hoja de ruta v8 cita un numeral suyo: trata la seguridad vial de la plataforma (barreras, zonas despejadas, señalizacion), no el drenaje transversal. Lo unico que roza al proyecto es la zona despejada junto a cabezales y aletas, y la v8 no la evalua |
+
+**Estado final (T-12):** 18 fuentes presentes y 2 PDF censados, todos en el repositorio de normas y ninguno en este; 12 fuentes citadas sin PDF (§2).
+
+## 2. Fuentes que se citan y NO están en el repositorio de normas
 
 Ordenadas por lo que cuesta traerlas, para que la deuda se vea sin
 leer la §15 del plan. **Ninguna puede sostener un `[N]`**: la etiqueta

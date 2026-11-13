@@ -290,7 +290,10 @@ from src.modulos.M11_reporte import (CriterioBloqueante,  # noqa: F401
                                      NOMBRE_PLANTILLA_PERFIL,
                                      cargar_plantilla, criterios_bloqueantes,
                                      exportar_csv, exportar_html, exportar_pdf,
-                                     marcadores_de_la_memoria, memoria_html)
+                                     exportar_html_resumida,
+                                     exportar_pdf_resumida,
+                                     marcadores_de_la_memoria, memoria_html,
+                                     memoria_resumida_html)
 
 # ===========================================================================
 # El servicio de calculo (EXT-9, E01): la orquestacion vive en src/servicio.py
@@ -588,10 +591,14 @@ def salida_no_se_forma(hidraulica: Any) -> bool:
     no alcanza la entrada (`PerfilLamina.HW_remanso_m` None; Section 3.5.1).
     Es la misma condicion en que `PerfilLamina.HW_efectivo_m` devuelve None.
     Lo leen el JSON (`HW_salida_m` = null) y la linea «Control» del texto.
+
+    --- T-12 (ficha T11-09) --- La REGLA vive desde T-12 en el dato
+    (`ResultadoHidraulico.salida_no_se_forma`, que lee
+    `PerfilLamina.salida_no_se_forma`), para que la memoria la lea del mismo
+    sitio que la CLI; esta puerta se conserva y la delega.
     """
     perfil = getattr(hidraulica, "perfil", None)
-    return (perfil is not None and perfil.sustituye_aproximacion
-            and perfil.HW_remanso_m is None)
+    return perfil is not None and perfil.salida_no_se_forma is True
 
 
 def _campo_del_perfil(perfil: Optional[PerfilLamina], lector) -> Any:
@@ -2389,6 +2396,17 @@ def _parser() -> argparse.ArgumentParser:
                    help="escribe la memoria en PDF con weasyprint; si no esta "
                         "instalado, deja el HTML y lo abre en el navegador "
                         "para Ctrl+P (misma via que legacy/Tc.py)")
+    # --- T-12 --- La memoria RESUMIDA, para imprimir: la MISMA corrida que
+    # la completa de --html / --pdf (mismo informe, mismas huellas), con el
+    # resultado, los veredictos, los avisos, los criterios [A] y los
+    # pendientes de cada punto. La completa queda como anexo digital.
+    p.add_argument("--html-resumida", type=Path, dest="html_resumida_salida",
+                   help="escribe la memoria RESUMIDA (para imprimir) en esa "
+                        "ruta, como HTML; sale del mismo informe que la "
+                        "memoria completa de --html/--pdf")
+    p.add_argument("--pdf-resumida", type=Path, dest="pdf_resumida_salida",
+                   help="escribe la memoria RESUMIDA en PDF con weasyprint; "
+                        "sin el, deja el HTML y lo abre en el navegador")
     p.add_argument("--csv-resumen", type=Path, dest="csv_resumen_salida",
                    help="escribe el cuadro resumen de la Fase 11 (entregable "
                         "3) en esa ruta, como CSV")
@@ -2833,6 +2851,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if args.html_salida is not None or args.pdf_salida is not None:
             memoria_html(informe, proyecto=args.proyecto,
                          ruta_plantilla=plantilla)
+        if (args.html_resumida_salida is not None
+                or args.pdf_resumida_salida is not None):
+            memoria_resumida_html(informe, proyecto=args.proyecto)
     except (FileNotFoundError, ValueError, ErrorProyecto) as exc:
         print(f"No se pudo armar la memoria con la plantilla "
               f"«{plantilla.name}»: {exc}", file=sys.stderr)
@@ -2843,10 +2864,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     _sesion.escribir_json_atomico(destino, informe_json(informe))
     print(f"\nJSON del expediente: {destino}")
 
+    # --- T-12 --- La resumida remite a la completa que ESTA invocacion
+    # escribio DE VERDAD (por su nombre): el HTML de --html, o lo que
+    # --pdf dejo en disco, que por la via del navegador es el `.html` y no
+    # el `.pdf` pedido (H8 de la auditoria de T-12).
+    escritas: List[Path] = []
     if args.html_salida is not None:
         ruta = exportar_html(informe, args.html_salida,
                              proyecto=args.proyecto,
                              ruta_plantilla=plantilla, progreso=progreso)
+        escritas.append(Path(ruta))
         print(f"Memoria de calculo (HTML): {ruta}")
         print(f"Plantilla usada          : {plantilla.name}")
 
@@ -2854,6 +2881,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         salida = exportar_pdf(informe, args.pdf_salida,
                               proyecto=args.proyecto,
                               ruta_plantilla=plantilla, progreso=progreso)
+        escritas.append(Path(salida.ruta))
+        print(salida.mensaje)
+
+    nombre_completa = escritas[0].name if escritas else None
+    if args.html_resumida_salida is not None:
+        ruta = exportar_html_resumida(informe, args.html_resumida_salida,
+                                      proyecto=args.proyecto,
+                                      nombre_completa=nombre_completa)
+        print(f"Memoria resumida (HTML)  : {ruta}")
+
+    if args.pdf_resumida_salida is not None:
+        salida = exportar_pdf_resumida(informe, args.pdf_resumida_salida,
+                                       proyecto=args.proyecto,
+                                       nombre_completa=nombre_completa)
         print(salida.mensaje)
 
     if args.csv_resumen_salida is not None:

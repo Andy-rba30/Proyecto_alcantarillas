@@ -416,8 +416,16 @@ def indice_del_registro(registro) -> str:
 
     A("## 1. Fuentes")
     A("")
-    A("Las que están en `normas/`, con el SHA-1 exacto contra el que se")
-    A("verificó cada cita y la regla de paginación MEDIDA, no supuesta.")
+    # --- T-12 --- El estado final: todas las presentes viven en el
+    # repositorio de normas, ninguna en este (INF-5.2.3, INF-5.2.6).
+    A(f"Las {len(registro.fuentes)} presentes, con el SHA-1 exacto contra el que se")
+    A("verificó cada cita y la regla de paginación MEDIDA, no supuesta. **Desde")
+    A("T-12 su PDF vive SOLO en el repositorio de normas**, enlazado por")
+    A("`NORMAS_DIR` (`fuentes.directorios_de_normas`): los dieciséis que hasta")
+    A("entonces estaban también en `normas/` de este repositorio se retiraron")
+    A("después de comprobar su SHA-1 contra los del repositorio de normas, y")
+    A("HEC-14 y el WSDOT Hydraulics Manual nunca estuvieron aquí. Con los dos")
+    A("de la §1-bis, son los PDF de ese repositorio.")
     A("")
     A("| id | Documento | Edición | Paginación (pdf ← impresa) | Páginas | SHA-1 | Texto extraíble | Vigencia (T1) |")
     A("|---|---|---|---|---|---|---|---|")
@@ -440,8 +448,29 @@ def indice_del_registro(registro) -> str:
           f"| {_vigencia(f)} |")
     A("")
 
+    # -- T-12: los PDF del repositorio de normas que no son fuente ----------
+    A("## 1-bis. PDF del repositorio de normas que NO son fuente del registro")
+    A("")
+    A("Están en el repositorio de normas y ninguna verificación del proyecto")
+    A("cita un numeral suyo; se censan con su motivo y su SHA-1 medido")
+    A("(`fuentes.PRESENTES_SIN_REGISTRAR`, PC-23) para que la guardia note si")
+    A("el archivo cambia.")
+    A("")
+    A("| id | Documento | Páginas | SHA-1 | Por qué no se registra |")
+    A("|---|---|---|---|---|")
+    for pres in sorted(_fuentes.PRESENTES_SIN_REGISTRAR.values(),
+                       key=lambda x: x.id):
+        A(f"| `{pres.id}` | {pres.titulo} | {pres.paginas_pdf} | "
+          f"`{pres.sha1}` | {pres.por_que_no_se_registra} |")
+    A("")
+    A(f"**Estado final (T-12):** {len(registro.fuentes)} fuentes presentes y "
+      f"{len(_fuentes.PRESENTES_SIN_REGISTRAR)} PDF censados, todos en el "
+      "repositorio de normas y ninguno en este; "
+      f"{len(registro.fuentes_ausentes)} fuentes citadas sin PDF (§2).")
+    A("")
+
     # -- Fuentes ausentes --------------------------------------------------
-    A("## 2. Fuentes que se citan y NO están en `normas/`")
+    A("## 2. Fuentes que se citan y NO están en el repositorio de normas")
     A("")
     A("Ordenadas por lo que cuesta traerlas, para que la deuda se vea sin")
     A("leer la §15 del plan. **Ninguna puede sostener un `[N]`**: la etiqueta")

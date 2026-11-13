@@ -617,3 +617,30 @@ de T-12— dice de ella, porque es el primer prompt que la recorre ENTERA de pun
 - **El par de la suite al cierre de T-11**, medido en «PyMuPDF sí · ventana Tk no» con el
   repositorio de normas enlazado: **6446 passed, 23 skipped → 6469 `collected`** (sin
   `NORMAS_DIR`, 6423 y 46). Lo invariante sigue siendo `collected = passed + skipped`.
+
+---
+
+## 8. T-12 de la cadena T: la línea base en la versión de sustentación (2026-11-13)
+
+T-12, el último prompt de la cadena, no cambia cálculo. Lo que dice de la línea base:
+
+- **La línea base de la Familia C se regeneró y se midió contra `f77c5d4` con el comparador
+  de E-B**: los cuatro JSON IGUALES; los dos CSV de resumen y cuatro de los cinco
+  `cli_*.txt`, idénticos byte a byte. Las cuatro memorias completas cambian sólo por el
+  rótulo «FIXTURE DE PRUEBA, NO ES UN RESULTADO DEL PROYECTO» que les pone el generador
+  (`regenerar.sh`, con `tests/apoyo/rotulo_fixture.py`, después de la CLI: el programa no
+  lo conoce) y, en `memoria_perfil_ancha.html`, por la cadena de T11-09 de A-02 («salida
+  no se forma: el perfil no alcanza la entrada»); `cli_expediente.txt` gana la línea de la
+  memoria resumida, y `memoria_resumida_expediente.html` es nuevo. **Diámetros, secciones,
+  materiales y HW movidos: ninguno.** El detalle, archivo por archivo, en el README de esa
+  carpeta.
+- **El estado de la suite ya no vive en `CLAUDE.md`**: la sección «Cierre de tarea» se
+  movió entera, con la tabla de las configuraciones y la cadena de totales, a
+  `proceso/bitacora_conteos_y_entorno.md`, que es material de proceso y no viaja en una
+  exportación del entregable. Desde T-12 hay dos suites: la del entregable (`python -m
+  pytest`, sólo `tests/`) y la de proceso (`python -m pytest proceso/tests`).
+- **El par al cierre de T-12**, en «PyMuPDF sí · ventana Tk no»: la suite del entregable
+  con el repositorio de normas enlazado, **6402 passed, 23 skipped → 6425 `collected`**
+  (sin `NORMAS_DIR`, 6250 y 175: sin él se salta todo lo que abre un PDF); sobre una
+  exportación (`git archive HEAD`) con `NORMAS_DIR`, 6398 y 27, sin ningún fallo;
+  la de proceso pasa entera (145 de 145). Lo invariante sigue siendo `collected = passed + skipped`.

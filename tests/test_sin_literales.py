@@ -261,8 +261,12 @@ CONSTRUCTORES_DE_TRANSCRIPCION = {
 # `src/editores.py`, que SI esta bajo el barrido estrecho de `src/`.
 CAPA_DE_PRESENTACION = ("cli.py", "gui/app.py", "gui/ayuda_entrada.py",
                         "gui/componentes.py", "gui/editores.py",
-                        "gui/exportacion_pdf.py", "gui/ventana_normativa.py",
-                        "verificar_sesion.py")
+                        "gui/exportacion_pdf.py", "gui/ventana_normativa.py")
+# --- T-12 --- `verificar_sesion.py` salio de esta lista (y su entrada del
+# censo de marcas de abajo, que era 2): T-12 lo movio a `proceso/` con el
+# resto del material de proceso (INF-5.2.2). No es capa de presentacion del
+# programa sino una herramienta del proceso de desarrollo, y la regla de
+# literales vigila el software calculado.
 
 # `conftest.py` queda fuera Y SE DECLARA POR QUE, que es la mitad que faltaba
 # en los hallazgos de esta familia. Sus numeros -- los espesores de pared de
@@ -294,7 +298,17 @@ DIRECTORIOS_FUERA_DEL_BARRIDO = {
     # vigila OTRA cosa, en tests/test_guardias_de_la_suite.py: que ningun
     # assert compare floats con igualdad exacta.
     "tests": "datos de prueba; su guardia es test_guardias_de_la_suite.py",
+    # --- T-12 --- El MATERIAL DE PROCESO (INF-5.2.2): `verificar_sesion.py`,
+    # el lector del tracker y los tests de proceso, movidos fuera del
+    # entregable. No calculan ninguna alcantarilla ni entran en ninguna
+    # corrida; la regla de literales vigila el software calculado.
+    "proceso": "material de proceso, fuera del entregable (T-12, INF-5.2.2)",
 }
+# --- T-12 (H1 de su auditoria) --- Los directorios exentos que una
+# EXPORTACION del entregable (`git archive`, la descarga ZIP) no lleva: su
+# ausencia no es una exencion caducada. Sin esto la suite exportada fallaba
+# aqui (medido por el auditor de T-12).
+AUSENTES_EN_UNA_EXPORTACION = frozenset({"proceso"})
 CONSTRUCTORES_DE_PRESENTACION = {
     # widgets de tk / ttk / ttkbootstrap
     "Frame", "LabelFrame", "Label", "Button", "Entry", "Text", "Treeview",
@@ -1042,7 +1056,6 @@ CENSO_DE_MARCAS = {
     "src/normativa/extraccion/pdf.py": 6,
     "src/normativa/manifiesto.py": 3,
     "src/variables_entrada.py": 1,
-    "verificar_sesion.py": 2,
 }
 
 
@@ -1199,6 +1212,11 @@ def test_ningun_py_fuera_de_src_se_queda_sin_declarar():
     assert not caducos, (
         f"declarados pero inexistentes: {sorted(caducos)}: la lista caduco")
     for directorio, razon in DIRECTORIOS_FUERA_DEL_BARRIDO.items():
+        if (directorio in AUSENTES_EN_UNA_EXPORTACION
+                and not (RAIZ / directorio).exists()):
+            # Una exportacion del entregable no lo lleva (`.gitattributes`:
+            # `proceso export-ignore`): ahi la exencion no caduca, no aplica.
+            continue
         assert (RAIZ / directorio).is_dir(), (
             f"'{directorio}' ya no existe: su exencion caduco")
         assert razon.strip(), f"'{directorio}' se exime sin razon escrita"

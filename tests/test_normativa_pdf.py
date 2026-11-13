@@ -9,12 +9,11 @@ CIERTA. Sin ellos, `Verificado` es una etiqueta que alguien escribio y nadie
 comprobo -- que es exactamente el estado del que sale este cluster.
 
 SE SALTAN, NO FALLAN, si PyMuPDF no esta instalado o si falta un PDF de
-`normas/`. Y DESDE T-0 «normas/» SON DOS CARPETAS, en este orden: la del
-repositorio de normas enlazado por `NORMAS_DIR` y la `normas/` de este
-repositorio mientras exista (`fuentes.ruta_pdf`). HEC-14 y el WSDOT
-Hydraulics Manual viven solo en la primera: sin `NORMAS_DIR` los dos T0 de
-abajo verifican las dieciseis fuentes que si estan y despues SALTAN nombrando
-las dos que faltan, en vez de dar por verificado lo que no abrieron. Es deliberado: `requirements.txt` es lo que hace falta para
+`normas/`. DESDE T-0 los PDF se buscan en el repositorio de normas enlazado
+por `NORMAS_DIR` (`fuentes.ruta_pdf`), y DESDE T-12 SOLO alli: T-12 retiro
+los de `normas/` de este repositorio. Sin `NORMAS_DIR` todo este archivo se
+salta con un solo motivo (`conftest.pytest_runtest_setup`), en vez de dar por
+verificado lo que no abrio. Es deliberado: `requirements.txt` es lo que hace falta para
 CALCULAR una alcantarilla y `requirements-dev.txt` lo que hace falta para
 COMPROBAR que lo calculado se apoya en lo que las normas dicen. Un despliegue
 que solo produzca memorias no necesita ni la libreria ni los 250 MB de PDF.

@@ -54,16 +54,19 @@ def pytest_configure(config):
 
       - los estructurales corren siempre, con `requirements.txt` a secas;
       - los de PDF necesitan `PyMuPDF` (que vive en `requirements-dev.txt`,
-        porque es dependencia de TEST y no del software calculado) y los
-        250 MB de `normas/`. Se SALTAN, no fallan, si falta cualquiera de las
-        dos cosas.
+        porque es dependencia de TEST y no del software calculado) y el
+        repositorio de normas enlazado por `NORMAS_DIR` (desde T-12 los PDF
+        ya no estan en `normas/` de este repositorio). Se SALTAN, no fallan,
+        si falta cualquiera de las dos cosas: la primera la dice el `skipif`
+        de cada archivo, la segunda `pytest_runtest_setup`, abajo.
 
     Para correr solo los de PDF:  pytest -m pdf
     Para excluirlos:              pytest -m "not pdf"
     """
     config.addinivalue_line(
         "markers",
-        "pdf: abre un PDF de normas/; exige PyMuPDF (requirements-dev.txt)")
+        "pdf: abre un PDF de normas; exige PyMuPDF (requirements-dev.txt) y "
+        "el repositorio de normas enlazado por NORMAS_DIR")
     # `lento`: un test que por si solo pesa mas de diez segundos porque lanza
     # un subproceso pesado (weasyprint, un PDF). NO se salta: se marca para
     # que una corrida de trabajo pueda dejarlo fuera (`-m "not lento"`) y
@@ -73,6 +76,31 @@ def pytest_configure(config):
         "markers",
         "lento: mas de diez segundos por un subproceso pesado; "
         "excluible con -m \"not lento\", nunca saltado por defecto")
+
+# --- T-12 --- SIN `NORMAS_DIR`, TODO TEST `pdf` SE SALTA, Y LO DICE. Hasta
+# T-12 dieciseis de las dieciocho fuentes estaban en `normas/` de este
+# repositorio y solo los tests de HEC-14 y del WSDOT se saltaban sin el
+# enlace; T-12 retiro esos PDF (INF-5.2.3) y desde entonces NINGUN PDF esta
+# en disco sin el repositorio de normas. Los tests `pdf` se saltaban uno a
+# uno con mensajes distintos --o pasaban vacios, los que recorren «las citas
+# cuyo PDF esta en disco»--: aqui hay UN punto de decision con UN motivo. Un
+# `NORMAS_DIR` que apunta a una carpeta que no existe NO se salta: la
+# `FileNotFoundError` de `directorios_de_normas` sale como error del test,
+# porque quien definio la variable quiso enlazar el repositorio.
+MOTIVO_SIN_NORMAS_DIR = (
+    "sin NORMAS_DIR: los PDF de normas viven solo en el repositorio de normas "
+    "(desde T-12 no estan en este repositorio); enlacelo con "
+    "`export NORMAS_DIR=/ruta/al/clon/de/Normas` (ver CLAUDE.md)")
+
+
+def pytest_runtest_setup(item):
+    """Salta un test `pdf` cuando el repositorio de normas no esta enlazado."""
+    if item.get_closest_marker("pdf") is None:
+        return
+    from src.normativa import fuentes as _fuentes
+    if not _fuentes.directorios_de_normas():
+        pytest.skip(MOTIVO_SIN_NORMAS_DIR)
+
 
 from src import criterios_adoptados as _ca
 from src import datos_sitio as _ds

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<!--
+  memoria_resumida.html
+  =====================
+  Plantilla de la memoria RESUMIDA (T-12): la vista para imprimir de la MISMA
+  corrida cuya memoria completa es el anexo digital. La procesa
+  src/modulos/M11_reporte.py (`memoria_resumida_html`) con string.Template y
+  el delimitador de doble porcentaje, con `substitute`: un marcador que la
+  plantilla pide y M11 no entrega revienta la generacion. Por eso esta
+  plantilla tampoco puede contener el delimitador fuera de un marcador.
+  El CSS es el de la memoria completa, para que las dos se lean igual.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Memoria resumida - Alcantarillas - %%proyecto</title>
+<style>
+  @page { size: A4; margin: 18mm 15mm 16mm 15mm; }
+
+  html { font-size: 11px; }
+  body {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: #1c1c1c; background: #ffffff;
+    line-height: 1.45; margin: 0 auto; max-width: 210mm; padding: 10mm;
+  }
+
+  h1, h2, h3, h4 { color: #16324f; margin: 0 0 .4em 0; line-height: 1.25; }
+  h1 { font-size: 1.9rem; border-bottom: 3px solid #16324f; padding-bottom: .3em; }
+  h2 {
+    font-size: 1.35rem; margin-top: 1.8em;
+    border-bottom: 1px solid #c3cede; padding-bottom: .2em;
+  }
+  h3 { font-size: 1.1rem; margin-top: 1.3em; }
+  h4 { font-size: 1rem; margin-top: 1em; color: #3a4a5c; }
+  p  { margin: .5em 0; text-align: justify; }
+
+  .subtitulo { color: #55616f; font-size: 1.05rem; margin-top: -.2em; }
+  .lead { color: #55616f; }
+
+  table { border-collapse: collapse; width: 100%; margin: .7em 0; font-size: .93rem; }
+  th, td { border: 1px solid #c9d3e0; padding: 4px 7px; vertical-align: top; }
+  th { background: #eaf0f7; text-align: left; font-weight: 600; color: #16324f; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tbody tr:nth-child(even) td { background: #f8fafc; }
+
+  .compacta td, .compacta th { padding: 3px 6px; font-size: .88rem; }
+  .ancha { font-size: .86rem; }
+  .ancha th, .ancha td { padding: 3px 5px; }
+
+  code, .mono {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .88em; word-break: break-all;
+  }
+
+  /* Trazabilidad -------------------------------------------------------- */
+  .trazabilidad { border: 2px solid #16324f; padding: .6em .9em; margin: 1em 0; }
+  .trazabilidad table { margin: 0; }
+  .trazabilidad th { width: 30%; background: #f2f6fa; }
+
+  /* Estados ------------------------------------------------------------- */
+  .cumple    { color: #14672f; font-weight: 700; }
+  .incumple  { color: #a4160f; font-weight: 700; }
+  .pendiente { color: #8a5a00; font-weight: 700; }
+  /* INDICADOR (PF-4): un aviso, ni incumple ni diferido. */
+  .indicador { color: #8a5a00; font-weight: 700; }
+  tr.fila-incumple td { background: #fdf0ef; }
+  tr.fila-indicador td { background: #fdf8ee; }
+  tr.fila-aceptada td { background: #eef8f0; }
+
+  .etiqueta {
+    display: inline-block; min-width: 2.4em; text-align: center;
+    border-radius: 3px; padding: 0 .35em; font-weight: 700; font-size: .85em;
+    border: 1px solid #99a7b8;
+  }
+  .et-N   { background: #e3f0e6; border-color: #7ba98a; color: #14672f; }
+  .et-Na  { background: #e6eef7; border-color: #7d9dc0; color: #1d4c7c; }
+  /* [S] lleva violeta a proposito: es una categoria propia, no una variante
+     del verde [N] ni del azul [N->]. Un revisor que hojea la memoria tiene que
+     ver de un vistazo que ese dato no es ni norma ni analogia ni adopcion,
+     sino una lectura hecha sobre las coordenadas de esta obra. */
+  .et-S   { background: #efe8f7; border-color: #9b83bf; color: #55317f; }
+  .et-C   { background: #fdf3e0; border-color: #d0a95f; color: #8a5a00; }
+  .et-A   { background: #fdeaea; border-color: #cf8b86; color: #a4160f; }
+
+  /* Bloques con aviso --------------------------------------------------- */
+  .nota, .aviso, .bloqueo {
+    border-left: 4px solid #16324f; background: #f4f7fb;
+    padding: .5em .8em; margin: .7em 0; font-size: .93rem;
+  }
+  .aviso   { border-left-color: #d0a95f; background: #fdf8ee; }
+  .bloqueo { border-left-color: #a4160f; background: #fdf1f0; }
+  .no-aplica { color: #55616f; font-style: italic; }
+  .remision { font-size: .85em; white-space: nowrap; text-decoration: none;
+              color: #8a5300; background: #fdf5e6; padding: 0 .3em;
+              border-radius: 3px; }
+  dl.acotacion dt { font-weight: bold; margin-top: .5em; }
+  dl.acotacion dd { margin: .1em 0 0 1.2em; }
+
+
+  /* ---------------------------------------------------------------------
+     LA REGLA TIPOGRAFICA DE LA §4.4, que no es estilo sino contenido.
+
+     Tres cosas distintas que en una memoria se leen igual si se imprimen
+     igual, y confundirlas es lo que convierte una recomendacion en una
+     exigencia inventada (NOR-HID-04, NOR-MEM-01):
+
+       .fuente          lo que el DOCUMENTO dice. Entre comillas, en
+                        cursiva, sobre fondo neutro y con barra al margen.
+       .interpretacion  lo que el PROYECTO lee en el documento. Fondo
+                        ambar y rotulo propio: nunca se pega a la cita.
+       (texto normal)   lo que el proyecto HACE con ello.
+
+     El caso testigo: «el rango recorre la calidad del revestimiento» no
+     esta en el Manual --- nada dice por que hay dos numeros --- y hasta
+     S18 se imprimia dentro del mismo parrafo que la cita.
+     ------------------------------------------------------------------ */
+  .fuente {
+    font-style: italic; background: #f7f7f4; border-left: 3px solid #8a8a7a;
+    padding: .35em .7em; margin: .35em 0; font-size: .95rem;
+  }
+  .interpretacion {
+    background: #fdf8ee; border-left: 3px solid #d0a95f;
+    padding: .1em .5em;
+  }
+  dl.acotacion dt.interpretacion, dl.acotacion dd.interpretacion {
+    display: block;
+  }
+  .procedencia-cita {
+    display: block; font-style: normal; font-size: .82rem; color: #55616f;
+    margin-top: .15em;
+  }
+
+  /* Un paso de la memoria (PasoDeMemoria, §4.4) -------------------------- */
+  .paso {
+    border: 1px solid #c9d3e0; border-left: 4px solid #16324f;
+    padding: .4em .9em .7em .9em; margin: .8em 0; background: #fcfdff;
+  }
+  .paso > h5 {
+    margin: .3em 0 .5em 0; font-size: 1rem; color: #16324f;
+  }
+  .paso ul.sustitucion, .paso ul.elecciones { margin: .2em 0 .2em 1.1em; }
+  .paso ul.sustitucion li, .paso ul.elecciones li { margin-bottom: .35em; }
+
+  /* Punto critico ------------------------------------------------------- */
+  .punto { border: 1px solid #c3cede; padding: .2em 1em 1em 1em; margin: 1.2em 0; }
+  .punto > h3 {
+    background: #16324f; color: #ffffff; margin: 0 -1em .8em -1em;
+    padding: .45em 1em; font-size: 1.05rem;
+  }
+  .punto.sin-cerrar > h3 { background: #7a2a24; }
+
+  .criterio { border: 1px solid #c9d3e0; padding: .5em .8em; margin: .6em 0; }
+  .criterio .clave { font-weight: 700; color: #16324f; }
+  .criterio dl { margin: .4em 0 0 0; }
+  .criterio dt {
+    float: left; clear: left; width: 11em; font-weight: 600; color: #55616f;
+  }
+  .criterio dd { margin: 0 0 .25em 11.5em; }
+
+  .tablero { margin: 1em 0 1.6em 0; }
+  .tablero .glosa { color: #55616f; font-style: italic; margin: .2em 0 .4em 0; }
+
+  footer {
+    margin-top: 2.5em; border-top: 1px solid #c3cede; padding-top: .6em;
+    color: #7b7b7b; font-size: .85rem;
+  }
+
+  .indice ol { padding-left: 1.4em; }
+  .indice li { margin: 2px 0; }
+  .indice a { text-decoration: none; }
+  @media print {
+    body { padding: 0; max-width: none; }
+    h2 { page-break-after: avoid; }
+    h3, h4 { page-break-after: avoid; }
+    table, .criterio, .nota, .aviso, .bloqueo { page-break-inside: avoid; }
+    .paso { page-break-inside: avoid; }
+    .punto { page-break-inside: avoid; }
+    .indice { page-break-after: always; }
+    .salto { page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+<h1>Memoria de calculo resumida &mdash; Alcantarillas y cabezales</h1>
+<p class="subtitulo">%%proyecto</p>
+<p class="lead">%%subtitulo</p>
+%%memoria_completa
+<!-- ==================================================================== -->
+<h2 id="trazabilidad">0. Encabezado de trazabilidad</h2>
+<p>Identifica <em>que</em> se calculo, <em>con que reglas</em> y <em>con que
+datos</em>. Es el MISMO encabezado que el de la memoria completa de esta
+corrida: si las huellas o la hora de la corrida no coinciden, las dos memorias
+no son de la misma corrida.</p>
+<div class="trazabilidad">
+<table>
+  <tbody>
+    <tr><th>Hoja de ruta (fuente normativa unica)</th>
+        <td><b>%%version_hoja_ruta</b> &mdash; <span class="mono">%%hoja_ruta_archivo</span></td></tr>
+    <tr><th>SHA-1 de la hoja de ruta</th>
+        <td class="mono">%%hoja_ruta_sha1</td></tr>
+    <tr><th>CSV de entrada</th>
+        <td><span class="mono">%%csv_ruta</span></td></tr>
+    <tr><th>SHA-1 del CSV de entrada</th>
+        <td class="mono">%%csv_sha1</td></tr>
+    <tr><th>Version de criterios_adoptados</th>
+        <td>%%criterios_version</td></tr>
+    <tr><th>Fecha de criterios_adoptados.py</th>
+        <td>%%criterios_fecha</td></tr>
+    <tr><th>SHA-1 de criterios_adoptados.py</th>
+        <td class="mono">%%criterios_sha1</td></tr>
+    <tr><th>Fecha de generacion</th>
+        <td>%%generado_local &nbsp;(corrida UTC: %%generado_utc)</td></tr>
+    <tr><th>Estado del expediente</th>
+        <td>%%estado_expediente</td></tr>
+  </tbody>
+</table>
+</div>
+%%resumen_expediente
+<h3>0.1 Alcance de la corrida</h3>
+%%bloque_alcance
+<h3>Datos de sitio [S] de esta corrida</h3>
+<p>El corredor para el que se leyeron, y de que archivo salio cada dato. Su
+procedimiento, su fuente y su trazabilidad completos estan en la memoria
+completa.</p>
+%%datos_sitio_resumidos
+<!-- ==================================================================== -->
+<h2 id="resumen">1. Cuadro resumen</h2>
+<p>Una fila por punto critico, en el orden del CSV. Una celda vacia
+(&ndash;) significa que la etapa que produce ese dato quedo bloqueada; el
+motivo esta en el bloque del punto.</p>
+<table class="ancha">
+  <thead>
+    <tr>
+      <th>Progresiva</th><th>Familia</th><th>TR<br>(años)</th><th>Tipo</th>
+      <th>Material y norma de producto</th><th>Seccion<br>(interior)</th><th>V erosion<br>(m/s)<br><span class="mono">n min</span></th><th>V sedimentacion<br>(m/s)<br><span class="mono">n max</span></th>
+      <th>y/D</th><th>HW<br>(m)</th><th>Control<br>gobernante</th>
+      <th>Proteccion de salida</th><th>Tipo de cabezal</th>
+    </tr>
+  </thead>
+  <tbody>
+%%filas_resumen
+  </tbody>
+</table>
+<!-- ==================================================================== -->
+<h2 id="puntos" class="salto">2. Resultados por punto critico</h2>
+<p>Por punto: la combinacion adoptada, cada verificacion con su veredicto
+junto a su numeral, los avisos, lo que detuvo una etapa y los criterios [A]
+que el calculo del punto nombra con su valor y su ventana. El desarrollo de
+cada paso esta en la memoria completa.</p>
+%%resumenes_punto
+<!-- ==================================================================== -->
+<h2 id="pendientes" class="salto">3. Criterios pendientes de esta corrida</h2>
+<p>Los criterios sin valor que detuvieron una etapa, o que la difirieron al
+expediente por el alcance de la corrida. Su ficha completa (fuente, etapas,
+quien lo resuelve) esta en la seccion 4 de la memoria completa.</p>
+%%pendientes_resumidos
+<footer>
+<p>Generado automaticamente por <code>M11_reporte.py</code> el
+%%generado_local. Toda cita de numeral proviene de %%hoja_ruta_archivo
+(%%version_hoja_ruta), fuente normativa unica del proyecto.</p>
+</footer>
+</body>
+</html>

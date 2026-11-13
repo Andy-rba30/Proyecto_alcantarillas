@@ -2445,7 +2445,7 @@ hacer a propósito, y cada una lleva su argumento y su símbolo.
 - **Qué haría falta:** una columna «ID auditor» en las filas NOR del
   tracker (o en las fichas de §11 del informe) que enlace `H-nn` ↔ `NOR-*`;
   con ella el censo se deriva y desaparece.
-- **Dónde vive:** `tests/test_ext11_cruce_temarios.py::CUBIERTOS_POR_FILA_NOR`
+- **Dónde vive:** `proceso/tests/test_ext11_cruce_temarios.py::CUBIERTOS_POR_FILA_NOR` (en `tests/` hasta T-12, que lo movió con el material de proceso)
 
 ## EXT-11-04 · La Fase 8 se prueba llamándola sobre el resultado real de perfil, porque el expediente no dimensiona
 
@@ -3407,6 +3407,7 @@ sesiones que siguen.
   velocidades máximas, y la prohibición del termoplástico está en el §8-3.3; en HEC-14
   la socavación es el capítulo 5 y no el 3). La vigencia de las dos se confirmó por
   búsqueda web, sin leer las páginas del emisor: queda para gabinete.
+- **Hecho por T-12:** ficha T12-01.
 - **Dónde vive:** `src/normativa/fuentes.py::directorios_de_normas`
 
 ## T0-02 · El código de paso del tirante crítico es `F4.YC`; `F4.YC_RECT` sigue resolviendo como alias, y el índice de fórmulas se regeneró con la corrida que hay
@@ -3491,7 +3492,7 @@ sesiones que siguen.
 - **Qué haría falta:** que el dueño confirme o corrija las severidades; que el
   orquestador asigne los seis sin prompt (T-11, en su censo final, es la última
   ocasión); y que cada prompt escriba el ID **canónico** al cerrar.
-- **Dónde vive:** `tests/test_t0_gobernanza.py::ALIAS_DE_LA_CADENA`
+- **Dónde vive:** `proceso/tests/test_t0_gobernanza_proceso.py::ALIAS_DE_LA_CADENA` (en `tests/test_t0_gobernanza.py` hasta T-12, que separó la mitad de proceso)
 
 ---
 
@@ -6922,11 +6923,19 @@ y un test regenera cada uno.
   **(H8)** la columna «Tipo de cabezal» del cuadro resumen sale del punto
   (`M11.tipo_cabezal_del_punto`): la decisión única del Tablero 2.3 («tubo a ras del
   muro») es el borde de entrada del TUBO y se imprimía también en el marco.
-- **Abierto:** la fila «Control gobernante» de la MEMORIA sigue imprimiendo «salida» con la
-  aproximación descartada (la decisión del dueño limitó H9 a la clave del JSON y la línea
-  de la CLI; la línea «Perfil» de la memoria dice que no se usa).
-- **Qué haría falta:** decisión del dueño para llevar «no se forma» también a la memoria
-  (mueve el texto de las memorias de la línea base).
+- **Abierto:** nada desde T-12 (decisión del dueño del 2026-11-13 ~21:55 UTC), que cerró
+  lo que quedaba: la fila «Control gobernante» de la MEMORIA —de las dos vistas, la completa y la
+  resumida— ya no imprime «salida» con la aproximación descartada: dice «salida no se
+  forma: el perfil no alcanza la entrada», la misma redacción y la MISMA condición que la
+  línea «Control» de la CLI y el `null` del JSON. La regla vive desde T-12 en el dato
+  (`PerfilLamina.salida_no_se_forma`, leída por `ResultadoHidraulico.salida_no_se_forma`);
+  `cli.salida_no_se_forma` la delega y M11 la lee sin aritmética
+  (`M11._celda_control_gobernante`, texto `M11.SALIDA_NO_SE_FORMA`). La aproximación
+  descartada sigue impresa en la fila del perfil, rotulada HW<sub>aprox</sub>. Formato, no
+  cálculo: en la línea base cambia sólo esa cadena de A-02 en `memoria_perfil_ancha.html`
+  (README de la línea base); el HW que gobierna, la entrada, diámetros, secciones y
+  materiales no se mueven (`tests/test_t12_entregable.py`).
+- **Qué haría falta:** nada.
 - **Dónde vive:** `cli.py::salida_no_se_forma`
 
 ## T11-10 · El lado alto de la ventana de `n_manning_cajon` no se puede declarar
@@ -6941,6 +6950,159 @@ y un test regenera cada uno.
   porque mueve un criterio de archivo y su consumidor (`M2._fila_manning_de_cajon`), y T-11
   no cambia cálculo. C-01 está gobernado por la salida, que es donde n pesa.
 - **Qué haría falta:** abrir la forma del criterio a la unión (fila o par) con la guardia
-  de la Tabla B.1 en el consumidor, o corregir la ficha para que no prometa el par;
-  decisión del dueño.
+  de la Tabla B.1 en el consumidor, o corregir la ficha para que no prometa el par.
+  **Decidido por el dueño el 2026-11-13: abrir la forma, en el lote POSTERIOR a la cadena**
+  (aprobado, no lanzado; el README de usuario lo nombra como trabajo posterior).
 - **Dónde vive:** `src/criterios_adoptados.py::n_manning_cajon`
+
+# Parte LV — Lo que T-12 de la cadena T dejó escrito: el repositorio listo para la sustentación
+
+T-12 (2026-11-13, sobre `f77c5d4`, integrado con las correcciones de su auditoría) es el
+último prompt de la cadena y no cambia cálculo: retira los PDF de normas
+del repositorio, separa el material de proceso, rotula los fixtures, añade la licencia, el
+`pyproject.toml` y el README de usuario, deja el manifiesto del registro en su estado
+final, y —por decisión del dueño del 2026-11-13— entrega la memoria en dos vistas y lleva
+T11-09 a la memoria.
+
+## T12-01 · Los PDF de normas viven sólo en el repositorio de normas; la historia de git los conserva
+
+- **Cerrado (T-12):** los dieciocho PDF de `normas/` se retiraron con `git rm` después de
+  comprobar, uno a uno, que su sha1 es el de los del repositorio de normas
+  (`INF-5.2.3`). `fuentes.directorios_de_normas()` devuelve sólo la carpeta de
+  `NORMAS_DIR`; sin la variable no hay carpeta, `ruta_pdf` devuelve la ruta bajo
+  `RUTA_SIN_ENLACE` (`$NORMAS_DIR/normas/<archivo>`, que no existe) y TODO test `pdf` se
+  salta con un solo motivo (`conftest.py::pytest_runtest_setup`). Se retiraron
+  `SOLO_EN_EL_REPO_NORMAS` (el censo transitorio de T-0) y
+  `DIRECTORIO_NORMAS_DEL_REPOSITORIO`; la guardia de PC-23 comprueba que la app no
+  versiona ningún PDF (`git ls-files`) y que el repositorio enlazado trae todo lo que el
+  registro declara. El README recomienda que el repositorio de normas sea privado.
+- **Abierto:** el `git rm` no reescribe la historia: los PDF siguen en los commits
+  anteriores a T-12, y un clon del repositorio los trae. Quitarlos también de ahí exige
+  reescribir la historia (`git filter-repo` y un empuje forzado sobre `main`), que rompe
+  los SHA que citan el tracker y los documentos.
+- **Decidido por el dueño (2026-11-13):** NO se reescribe la historia; el repositorio de la
+  app queda privado, como el de normas, hasta la sustentación (lo hace el dueño en GitHub).
+  Reescribirla sólo si se publica, y después.
+- **Qué haría falta:** nada antes de la sustentación.
+- **Dónde vive:** `src/normativa/fuentes.py::RUTA_SIN_ENLACE`
+
+## T12-02 · El material de proceso vive en `proceso/`, fuera del entregable, y sus tests con él
+
+- **Cerrado con salvedad (T-12, `INF-5.2.2`):** con `git mv` a `proceso/`:
+  `.claude/agents/`, `docs/planes_mejora/` (con la cadena T), `docs/auditorias/` (con el
+  tracker), `verificar_sesion.py`, `tests/apoyo/tracker.py` y, en el cierre (H5 de la
+  auditoría), `docs/hoja_de_ruta_correcciones_v12.md` y `docs/auditoria_y_ruta_despliegue_v9.md`
+  (prompts literales y asignación de modelos; nada los lee). La bitácora de conteos e
+  incidentes de `CLAUDE.md` y sus reglas de corrección salieron ENTERAS a
+  `proceso/bitacora_conteos_y_entorno.md` y `proceso/reglas_de_correccion_de_auditorias.md`.
+  Los tests que leen ese material salieron con él (138 de los 6469 de la base) a
+  `proceso/tests/`, que `proceso.verificar_sesion` corre; la suite del entregable es
+  `tests/` (`testpaths`), `git archive` excluye `proceso/` (`.gitattributes`) y la suite
+  pasa sobre esa exportación (H1).
+- **Abierto (la salvedad):** quedan en `docs/` cinco documentos técnicos de origen de
+  proceso —`ruta_familia_c.md`, que el código exige al importar (`vacio_verificado`), y
+  `diseno_registro_normativo.md`, `resolucion_clase_sitio.md`,
+  `manifiesto_datos_proyecto_vs_constantes.md` y `linea_base.md`— con menciones a las
+  sesiones y, `ruta_familia_c.md`, a los modelos de IA. Las rutas viejas citadas en prosa
+  no se reescribieron (la v8 entre ellas: su huella va en cada memoria); las traduce
+  `proceso/README.md`.
+- **Qué haría falta:** para quitar también esas menciones, depurar `ruta_familia_c.md`
+  conservando las secciones que el código valida; decisión del dueño (aceptó dejarlos).
+- **Dónde vive:** `proceso/tests/conftest.py::pytest_collection_modifyitems`
+
+## T12-03 · La advertencia de fixture la pone el generador de la línea base, no el programa
+
+- **Cerrado (T-12, `INF-5.2.4`):** las memorias HTML de `tests/linea_base_familia_c/`
+  llevan en el título y al principio del cuerpo «FIXTURE DE PRUEBA, NO ES UN RESULTADO DEL
+  PROYECTO», puesto por `regenerar.sh` con el envoltorio declarado
+  `tests/apoyo/rotulo_fixture.py` DESPUÉS de la CLI; los dos `datos_referenciales_prueba*.md`
+  empiezan por esa advertencia, y `entradas_ampliadas.json` la lleva en la clave
+  `_advertencia`, la única de nivel superior que `servicio.cargar_datos_externos` admite
+  sin leerla (`servicio.CLAVE_ADVERTENCIA_EXTERNOS`; tiene que ser texto).
+- **Por qué así:** una bandera del programa para rotular «fixture» pondría en el producto
+  un texto que una memoria real podría llevar por error, o que una de prueba podría
+  perder: falsea en las dos direcciones. El generador sólo se invoca sobre el ejemplo.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `tests/apoyo/rotulo_fixture.py::rotular`
+
+## T12-04 · La memoria en dos vistas de la misma corrida; la ventana exporta sólo la completa
+
+- **Cerrado (T-12, decisión del dueño del 2026-11-13):** `M11.memoria_resumida_html` (con
+  `exportar_html_resumida`, `exportar_pdf_resumida` y la plantilla
+  `src/plantillas/memoria_resumida.html`) arma la vista para imprimir —por punto: la
+  combinación adoptada, la tabla de verificaciones con su veredicto, los avisos, las etapas
+  bloqueadas y los criterios [A] que el punto nombra con su valor y su ventana; para el
+  proyecto: trazabilidad, alcance, cuadro resumen y pendientes— a partir del MISMO
+  `Informe` que la completa, con sus mismos formateadores (`_filas_combinacion_adoptada`,
+  `_filas_verificaciones`, `fila_resumen`, `_tabla_bloqueos`) y sin aritmética. La CLI
+  escribe las dos en una invocación (`--html` y `--html-resumida`, `--pdf-resumida`).
+  `tests/test_t12_entregable.py` mide que la resumida no publica ningún número que la
+  completa no tenga (en total y por punto, sobre las tres corridas de referencia, el juego
+  de T-11 y la línea base) y que las dos llevan el mismo encabezado de trazabilidad. La
+  completa no cambia de contenido por esto.
+- **Abierto:** la ventana no tiene botón para la resumida: añadir un quinto exportador
+  toca los contratos de los cuatro que hay (motivo compartido, apagado al invalidar el
+  informe, pruebas de ventana real que este contenedor no puede correr), y no es plomería
+  directa. Mientras tanto, la resumida sale de la sesión guardada desde la ventana con
+  `python cli.py --sesion sesion.json --html-resumida resumida.html`.
+- **Qué haría falta:** el botón «Exportar memoria resumida» en la pestaña 4, con sus
+  pruebas de ventana real. **Decidido por el dueño (2026-11-13): al lote posterior a la
+  cadena.**
+- **Dónde vive:** `src/modulos/M11_reporte.py::memoria_resumida_html`
+
+## T12-05 · Licencia «todos los derechos reservados», `pyproject.toml` sin empaquetado y el README de usuario
+
+- **Cerrado (T-12, `INF-5.2.7`; decisiones del dueño del 2026-11-13):** `LICENSE` reserva
+  todos los derechos, dice que los PDF de normas no son del autor ni se licencian y que
+  abrir el código bajo MIT es una decisión posterior a la sustentación; el autor es el
+  usuario de GitHub del repositorio, con la indicación de dónde cambiarlo por el nombre de
+  la carátula, y sin correo. `pyproject.toml` declara metadatos, las dependencias con las
+  MISMAS versiones que `requirements*.txt` (obligatorias numpy y scipy; opcionales `gui`,
+  `pdf`, `test` y `proceso`) y la configuración de pytest; no lleva `[build-system]`
+  porque el programa se usa desde el clon (la memoria lee `docs/` y `src/plantillas/` por
+  su posición). El README de la raíz es de usuario —instalación, entradas, corrida,
+  salidas, alcance declarado y trabajo posterior— y el de proceso es `proceso/README.md`.
+- **Por qué así:** el dueño decidió no licenciar todavía; un `pyproject.toml` con
+  `[build-system]` prometería un `pip install .` que no produce un programa que funcione,
+  y el README anterior mezclaba la instalación con notas de desarrollo (está en el
+  historial, `git show f77c5d4:README.md`).
+- **Qué haría falta:** el nombre de la carátula en `LICENSE` y `pyproject.toml`, y la
+  versión de `pyproject.toml` (hoy `Andy-rba30` y `0.1.0`, marcadores): **pendiente del
+  dueño** antes de la sustentación (decisión del 2026-11-13).
+- **Dónde vive:** `tests/test_t12_entregable.py::test_pyproject_fija_las_mismas_versiones_que_requirements`
+
+## T12-06 · La aceptación de T-12 no se escribió en rojo primero
+
+- **Cerrado (T-12):** `tests/test_t12_entregable.py` se escribió con el código; el rojo se
+  midió corriendo el archivo final contra el árbol base (`f77c5d4`, exportado con `git
+  archive`), y el número está en el informe de la FASE A. Los tests reescritos al contrato
+  nuevo lo dicen en su docstring (`test_t0_gobernanza`, `test_ext6_registro_normativo`,
+  `test_sin_literales`, `test_decisiones_diferidas`).
+- **Por qué:** la mayor parte de T-12 es mover y rotular, y su rojo es de existencia (lo
+  que no estaba no se puede probar antes de crearlo); se midió y se dice, como en T-10 y
+  T-11.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `tests/test_t12_entregable.py::test_la_resumida_no_publica_ningun_numero_que_la_completa_no_tenga`
+
+## T12-07 · Las correcciones de la auditoría de T-12: el entregable se sostiene solo y la resumida no pierde lo que la completa dice a propósito
+
+- **Cerrado (cierre de T-12; auditoría AJUSTADO: 1 ALTA, 4 MEDIA, 3 BAJA):** (H1, ALTA) la
+  suite del entregable pasa sobre una EXPORTACIÓN (`git archive HEAD`, sin `proceso/` ni
+  `.git`): la exención de `proceso` no caduca en una exportación
+  (`test_sin_literales.AUSENTES_EN_UNA_EXPORTACION`), el arnés de mutación se salta sin
+  `.git`, y se fija con un censo de lo que invoca git y con la corrida de esos tests sobre
+  una exportación emulada; el par medido sobre la exportación real está en la bitácora y en
+  el README. (H2) la resumida marca en texto la adopción sobre vacío verificado
+  (`M11.MARCA_VACIO_VERIFICADO`). (H3) lleva el corredor, su advertencia y los [S] con su
+  origen (`M11.datos_sitio_resumidos`, que comparte `_cabecera_de_corredor` con la
+  completa). (H4) la bitácora se puede actualizar (el test exige que su texto histórico
+  siga, en orden, con las cifras libres) y `proceso.verificar_sesion` corre
+  `proceso/tests`. (H5) dos documentos con prompts y modelos de IA, a `proceso/`
+  (ficha T12-02). (H6) la fila «h_o fuera de rango» es del formateador común
+  (`M11._filas_h_o`). (H7) identidad de filas entre las vistas y un solo formateador del
+  estado (`M11.estado_del_expediente`). (H8) textos que habían quedado falsos, y la
+  resumida nombra la completa que de verdad se escribió.
+- **Por qué:** sin H1, quien siguiera el README sobre la descarga ZIP veía la suite roja;
+  sin H2/H3/H6 la vista que se imprime callaba lo que la completa dice a propósito.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `tests/test_t12_entregable.py::test_la_suite_del_entregable_pasa_sobre_una_exportacion`

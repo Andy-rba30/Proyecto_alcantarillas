@@ -1,0 +1,32 @@
+Copyright (c) 2026 Andy-rba30. TODOS LOS DERECHOS RESERVADOS.
+
+(Autor: el usuario de GitHub de este repositorio. Para la sustentacion,
+sustituyase «Andy-rba30» por el nombre del autor tal como figura en la
+caratula de la tesis, aqui y en el campo `authors` de `pyproject.toml`.)
+
+Este repositorio contiene el software, la documentacion y los datos de
+prueba de un proyecto de tesis de ingenieria civil: el diseño hidraulico y
+estructural de alcantarillas de cruce de carretera con memoria de calculo
+auditable. Salvo autorizacion escrita del autor, NO se concede licencia
+alguna para usar, copiar, modificar, fusionar, publicar, distribuir,
+sublicenciar ni vender su contenido, total o parcialmente. Que el
+repositorio pueda consultarse para su revision academica no constituye una
+licencia.
+
+LAS NORMAS TECNICAS NO SON DEL AUTOR NI SE LICENCIAN. El programa cita y
+verifica numerales de documentos de terceros (AASHTO, ASTM, FHWA, WSDOT,
+MTC, normas tecnicas peruanas y otros), cada uno con los derechos de su
+titular. Desde la version que acompaña a la sustentacion, este repositorio
+no versiona los PDF de esas normas: se consultan desde un repositorio
+aparte, enlazado por la variable de entorno NORMAS_DIR (ver README.md). Las
+citas literales breves que la memoria de calculo transcribe lo hacen con su
+fuente, numeral y pagina, con fines de verificacion. Nada en este archivo
+otorga derecho alguno sobre esos documentos.
+
+Abrir el codigo bajo una licencia libre (por ejemplo, MIT) es una decision
+del autor posterior a la sustentacion; mientras no se tome, rige lo dicho
+arriba.
+
+EL SOFTWARE SE ENTREGA «TAL CUAL», SIN GARANTIA DE NINGUN TIPO. Un diseño
+que se apoye en el es responsabilidad del ingeniero que lo firma, con las
+entradas de su proyecto (ver docs/contrato_entradas.md).

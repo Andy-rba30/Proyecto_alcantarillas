@@ -1,0 +1,5 @@
+# El material de proceso (T-12, INF-5.2.2) no es parte del entregable: una
+# exportacion con `git archive` lo deja fuera. Vive en el repositorio, con su
+# historia, para quien quiera auditar como se hizo.
+proceso export-ignore
+proceso/** export-ignore

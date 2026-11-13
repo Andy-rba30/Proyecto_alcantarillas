@@ -329,12 +329,24 @@ def test_cada_fuente_mutada_es_python_valido_y_difiere_del_original(tmp_path):
         assert fuente != original, m.clave
 
 
+MOTIVO_SIN_GIT = ("sin .git (una exportacion del entregable): el arnes de "
+                  "mutacion copia el arbol con `git ls-files`")
+
+
 def test_el_arnes_mata_de_verdad_un_mutante_conocido(tmp_path):
     """
     De punta a punta y en subproceso: el par de n intercambiado en
     `resolver_manning` muere contra las propiedades. Es el unico test de
     aqui que corre pytest dentro de pytest; cuesta unos segundos.
+
+    --- T-12 (H1 de su auditoria) --- El arnes copia el arbol con `git
+    ls-files` (`mutacion._archivos_del_arbol`): fuera de un checkout --una
+    exportacion del entregable, la descarga ZIP-- no hay `.git` y el test se
+    salta diciendolo, como los de `test_ext6` y `test_t12_entregable` que leen
+    lo versionado.
     """
+    if not (mutacion.RAIZ / ".git").exists():
+        pytest.skip(MOTIVO_SIN_GIT)
     mutantes = [(m, f) for m, f in mutacion.generar(
         "src/modulos/M3_hidraulica.py", ("resolver_manning",), ("par_n",))]
     assert mutantes, "resolver_manning dejo de leer el par de n"

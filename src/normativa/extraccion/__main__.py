@@ -11,10 +11,10 @@ Existe para que verificar una cita no exija escribir un script cada vez:
 
 `<pdf>` admite un fragmento del nombre: "Puentes", "Hidro", "E.060".
 
-DONDE SE BUSCAN (T-0): en las carpetas de `fuentes.directorios_de_normas()`
---`$NORMAS_DIR`, el clon del repositorio de normas, y despues `normas/` de
-este repositorio mientras exista--, de modo que `hec14` y `HydraulicsManual`,
-que viven solo en el repositorio de normas, se resuelven igual que el resto:
+DONDE SE BUSCAN (T-0, T-12): en la carpeta de `fuentes.directorios_de_normas()`
+--`$NORMAS_DIR`, el clon del repositorio de normas; desde T-12 los PDF ya no
+estan en `normas/` de este repositorio--, de modo que todos se resuelven por
+el mismo enlace:
 
     NORMAS_DIR=/ruta/al/clon/de/Normas python3 -m src.normativa.extraccion sha1 hec14
 """
@@ -46,7 +46,8 @@ def _resolver(fragmento: str) -> Path:
     if not candidatos:
         raise SystemExit(
             f"ningun PDF de las carpetas de normas contiene «{fragmento}» "
-            f"(se busca en ${VARIABLE_NORMAS_DIR} y en normas/)")
+            f"(se busca en ${VARIABLE_NORMAS_DIR}, el clon del repositorio de "
+            "normas: desde T-12 los PDF no estan en este repositorio)")
     if len(candidatos) > 1:
         nombres = "\n  ".join(p.name for p in candidatos)
         raise SystemExit(f"«{fragmento}» es ambiguo:\n  {nombres}")

@@ -172,48 +172,48 @@ def _nombre_del_pdf(fuente) -> str:
     return Path(fuente.archivo_pdf).name
 
 
-def _solo_en_el_repo_de_normas() -> set:
-    return {_nombre_del_pdf(fu.FUENTES[i]) for i in fu.SOLO_EN_EL_REPO_NORMAS}
-
-
-def test_todo_pdf_de_normas_es_fuente_presente_o_esta_censado():
+def test_la_app_no_versiona_ningun_PDF_de_normas():
     """
-    T17 vigila que una fuente AUSENTE no tenga PDF. Esta vigila el sentido
-    inverso, que no tenia guardia: un PDF que llega a `normas/` y el registro
-    no conoce es invisible, y asi estuvieron cuatro dias DG-2018, el Manual
-    de Seguridad Vial y el de Dispositivos (EXT-N-02).
-
-    DESDE T-0 SE MIRA LA CARPETA DE LA APP Y NO «LAS CARPETAS DE NORMAS»: lo
-    que esta guardia protege es `normas/` de ESTE repositorio, que no gana
-    PDF (T-12 los retira). Las fuentes de `SOLO_EN_EL_REPO_NORMAS` son las
-    unicas presentes que NO tienen que estar aqui --ni pueden: si alguien
-    las copia, es un huerfano de esta carpeta aunque el registro las
-    conozca--. La otra mitad, el repositorio enlazado por `NORMAS_DIR`, la
-    mira el test de abajo.
+    PC-23 DESDE T-12, la mitad que mira ESTE repositorio. Hasta T-12 la
+    guardia listaba `normas/` de la app y exigia que cada PDF fuera Fuente
+    presente o estuviera censado, con dos excepciones que no podian estar
+    alli (HEC-14 y el WSDOT, el censo `SOLO_EN_EL_REPO_NORMAS`). T-12 retiro
+    los dieciocho PDF (INF-5.2.3, ficha T12-01: sha1 comprobado uno a uno
+    contra el repositorio de normas antes del `git rm`) y el censo con ellos:
+    lo que se protege ahora es que NINGUN PDF vuelva a versionarse aqui
+    --copyright de AASHTO y ASTM--, y que no reaparezca una carpeta
+    `normas/` con PDF que ninguna puerta consulta (`fuentes.ruta_pdf` solo
+    mira `NORMAS_DIR`). La primera mitad se mide con `git ls-files`, que es
+    lo que se versiona; sin git (un archivo exportado) esa mitad se salta.
     """
-    registrados = {_nombre_del_pdf(f) for f in fu.FUENTES.values()}
-    censados = {Path(p.archivo_pdf).name for p in fu.PRESENTES_SIN_REGISTRAR.values()}
-    solo_en_normas = _solo_en_el_repo_de_normas()
-    en_disco = {p.name for p in NORMAS.glob("*.pdf")}
-    assert not (registrados & censados), "un PDF no puede estar en los dos censos"
-    assert solo_en_normas <= registrados
-    huerfanos = en_disco - (registrados - solo_en_normas) - censados
-    assert not huerfanos, (
-        f"PDF en normas/ que el registro no conoce o que no deben estar en "
-        f"esta carpeta: {sorted(huerfanos)}. O entra como Fuente presente "
-        "(sha1, paginas y paginacion medidos, como N1 y N2), o se censa en "
-        "PRESENTES_SIN_REGISTRAR con el motivo, o --si es de "
-        "SOLO_EN_EL_REPO_NORMAS-- se retira: normas/ de la app no gana PDF")
-    fantasmas = (registrados | censados) - solo_en_normas - en_disco
-    assert not fantasmas, f"el registro declara PDF que no estan: {sorted(fantasmas)}"
+    assert not hasattr(fu, "SOLO_EN_EL_REPO_NORMAS"), (
+        "el censo transitorio de T-0 se retiro con los PDF (T-12)")
+    assert not hasattr(fu, "DIRECTORIO_NORMAS_DEL_REPOSITORIO"), (
+        "la caida a normas/ de la app se retiro con los PDF (T-12)")
+    en_la_carpeta = sorted(p.name for p in NORMAS.glob("*.pdf"))
+    assert not en_la_carpeta, (
+        f"normas/ de la app tiene PDF que ninguna puerta consulta: "
+        f"{en_la_carpeta}. Los PDF viven en el repositorio de normas, "
+        "enlazado por NORMAS_DIR (CLAUDE.md, «Donde estan los PDF de normas»)")
+    import shutil
+    import subprocess
+    git = shutil.which("git")
+    if git is None or not (RAIZ / ".git").exists():
+        pytest.skip("sin git o fuera de un checkout: no se puede leer lo versionado")
+    versionados = subprocess.run(
+        [git, "ls-files", "--", "*.pdf", "*.PDF"], cwd=RAIZ,
+        capture_output=True, text=True, check=True).stdout.split()
+    assert not versionados, (
+        f"PDF versionados en el repositorio de la app: {versionados}. Los "
+        "PDF de normas no se versionan aqui (copyright; INF-5.2.3)")
 
 
 def test_el_repositorio_de_normas_enlazado_trae_todo_lo_que_el_registro_declara(
         monkeypatch):
     """
-    La mitad de PC-23 que T-0 abre: con el repositorio de normas enlazado
-    por `NORMAS_DIR`, TODA fuente presente y todo censado tiene su PDF en
-    alguna de las carpetas, y todo PDF del repositorio enlazado es Fuente
+    La mitad de PC-23 que mira el repositorio de normas, que desde T-12 es
+    la UNICA carpeta de PDF: con el enlazado por `NORMAS_DIR`, TODA fuente
+    presente y todo censado tiene su PDF alli, y todo PDF de alli es Fuente
     presente o esta censado. Sin `NORMAS_DIR` no hay repositorio que mirar y
     el test se salta diciendolo: no es PyMuPDF lo que falta (esto solo lista
     archivos), es el enlace.
@@ -222,21 +222,21 @@ def test_el_repositorio_de_normas_enlazado_trae_todo_lo_que_el_registro_declara(
     if not os.environ.get(fu.VARIABLE_NORMAS_DIR, "").strip():
         pytest.skip(f"{fu.VARIABLE_NORMAS_DIR} sin definir: el repositorio de "
                     "normas no esta enlazado (ver CLAUDE.md)")
-    enlazado = fu.directorios_de_normas()[0]
-    assert enlazado != fu.DIRECTORIO_NORMAS_DEL_REPOSITORIO
+    (enlazado,) = fu.directorios_de_normas()
     registrados = {_nombre_del_pdf(f) for f in fu.FUENTES.values()}
     censados = {Path(p.archivo_pdf).name for p in fu.PRESENTES_SIN_REGISTRAR.values()}
+    assert not (registrados & censados), "un PDF no puede estar en los dos censos"
     del_enlazado = {p.name for p in enlazado.glob("*.pdf")}
     huerfanos = del_enlazado - registrados - censados
     assert not huerfanos, (
         f"PDF del repositorio de normas que el registro no conoce: "
-        f"{sorted(huerfanos)}")
+        f"{sorted(huerfanos)}. O entra como Fuente presente (sha1, paginas y "
+        "paginacion medidos, como N1 y N2), o se censa en "
+        "PRESENTES_SIN_REGISTRAR con el motivo")
     fantasmas = (registrados | censados) - set(fu.pdf_en_disco())
     assert not fantasmas, (
-        f"el registro declara PDF que no estan en ninguna carpeta de normas: "
+        f"el registro declara PDF que no estan en el repositorio de normas: "
         f"{sorted(fantasmas)}")
-    # Las dos que viven solo alli estan alli, que es para lo que se enlaza.
-    assert _solo_en_el_repo_de_normas() <= del_enlazado
 
 
 def test_el_censo_de_presentes_sin_registrar_tiene_motivo_y_sha1_medido():
@@ -244,6 +244,12 @@ def test_el_censo_de_presentes_sin_registrar_tiene_motivo_y_sha1_medido():
     for p in fu.PRESENTES_SIN_REGISTRAR.values():
         assert p.por_que_no_se_registra.strip()
         assert p.que_lo_registraria.strip()
+    # El sha1 se mide sobre el PDF, que desde T-12 solo esta en el repositorio
+    # de normas: sin el enlace, esa mitad se salta (los textos ya se miraron).
+    if not fu.directorios_de_normas():
+        pytest.skip("sin NORMAS_DIR: el sha1 de los dos PDF censados no se "
+                    "puede medir (ver CLAUDE.md)")
+    for p in fu.PRESENTES_SIN_REGISTRAR.values():
         assert p.sha1 == sha1_de(fu.ruta_pdf(p)), p.id
     assert fu.PRESENTES_SIN_REGISTRAR["MSV_2017"].paginas_pdf == 461
     assert fu.PRESENTES_SIN_REGISTRAR["MDCTA_2016"].paginas_pdf == 532

@@ -1,10 +1,11 @@
 """
-Las fuentes normativas del proyecto: las dieciocho presentes --dieciseis en
-`normas/` y, desde T-0, dos que viven SOLO en el repositorio de normas
-enlazado por `NORMAS_DIR` (`SOLO_EN_EL_REPO_NORMAS`: HEC-14 y el WSDOT
-Hydraulics Manual)--, las doce que se citan y NO estan (§8 del diseño, §15
-del plan) y los dos PDF que estan en `normas/` y no se registran, censados
-con su motivo (`PRESENTES_SIN_REGISTRAR`, PC-23). DONDE ESTAN LOS PDF EN
+Las fuentes normativas del proyecto: las dieciocho presentes --cuyo PDF vive,
+desde T-12, SOLO en el repositorio de normas enlazado por `NORMAS_DIR`: hasta
+T-12 dieciseis estaban ademas en `normas/` de este repositorio, y HEC-14 y el
+WSDOT Hydraulics Manual, que T-0 dio de alta, nunca estuvieron--, las doce
+que se citan y NO estan (§8 del diseño, §15 del plan) y los dos PDF que estan
+en el repositorio de normas y no se registran, censados con su motivo
+(`PRESENTES_SIN_REGISTRAR`, PC-23). DONDE ESTAN LOS PDF EN
 DISCO lo resuelve este modulo y nadie mas: `directorios_de_normas()` y
 `ruta_pdf()`, al final del archivo. Hasta N1 eran trece y trece -- este
 encabezado decia «once» y llevaba tiempo sin contar: el censo de ausentes
@@ -978,10 +979,11 @@ DG2018 = Fuente(
 #   1. NO ESTAN EN `normas/` DE LA APP, y es deliberado: esa carpeta no gana
 #      PDF (T-12 los retira; INF-5.2.3 es el problema de redistribuir normas
 #      con copyright en un repositorio publico). Viven en el repositorio de
-#      normas y se encuentran por `NORMAS_DIR` (`ruta_pdf`, abajo). Por eso
-#      estan en `SOLO_EN_EL_REPO_NORMAS`: la guardia de PC-23 las espera
-#      alli, y un checkout sin ese repositorio enlazado SALTA los tests que
-#      las abren en vez de fallar.
+#      normas y se encuentran por `NORMAS_DIR` (`ruta_pdf`, abajo). Hasta
+#      T-12 estaban por eso en el censo `SOLO_EN_EL_REPO_NORMAS`, que se
+#      retiro cuando T-12 saco de `normas/` las demas: hoy TODAS viven alli,
+#      y un checkout sin ese repositorio enlazado SALTA los tests que las
+#      abren en vez de fallar.
 #   2. T-0 NO TRANSCRIBE NINGUNA CITA SUYA. `citas.py` no tiene ninguna
 #      `Cita` con estos `fuente_id`: una cita es numeral, pagina impresa,
 #      pagina PDF y frase leida, y eso es de la sesion que la consume. Lo que
@@ -1158,16 +1160,15 @@ FUENTES: Dict[str, Fuente] = {
     )
 }
 
-# LAS FUENTES PRESENTES CUYO PDF NO ESTA EN `normas/` DE ESTE REPOSITORIO:
-# viven solo en el repositorio de normas y se encuentran por `NORMAS_DIR`
-# (ver `directorios_de_normas`). Es un censo y no una propiedad de `Fuente`
-# porque es un estado TRANSITORIO del repositorio, no del documento: T-12
-# retira los PDF de `normas/` y entonces TODAS las presentes vivirian alli,
-# y esta tupla deja de hacer falta. Mientras tanto la lee la guardia de
-# PC-23 (`tests/test_ext6_registro_normativo.py`), que exige que estos NO
-# aparezcan en `normas/` de la app y que, si el repositorio de normas esta
-# enlazado, SI aparezcan en el.
-SOLO_EN_EL_REPO_NORMAS: Tuple[str, ...] = ("HEC14", "WSDOT_HM")
+# --- T-12 --- `SOLO_EN_EL_REPO_NORMAS` SE RETIRO. Era el censo de las
+# fuentes presentes cuyo PDF no estaba en `normas/` de este repositorio
+# (HEC-14 y el WSDOT Hydraulics Manual, dados de alta por T-0), y su propio
+# comentario decia que era TRANSITORIO: T-12 retiro los dieciocho PDF de
+# `normas/` (comprobados antes, byte a byte por sha1, contra el repositorio
+# de normas; INF-5.2.3) y desde entonces TODAS las fuentes presentes y los
+# dos PDF censados viven solo en el repositorio de normas enlazado por
+# `NORMAS_DIR`. La guardia de PC-23 (`tests/test_ext6_registro_normativo.py`)
+# mira ahora una sola carpeta (ficha T0-01, que lo preveia, y T12-01).
 
 
 # ===========================================================================
@@ -1720,83 +1721,93 @@ def ausentes_por_esfuerzo() -> Tuple[Fuente, ...]:
 
 
 # ===========================================================================
-# T-0 - DONDE ESTAN LOS PDF EN DISCO: `NORMAS_DIR`, con caida a `normas/`
+# T-0 / T-12 - DONDE ESTAN LOS PDF EN DISCO: `NORMAS_DIR`, y solo alli
 # ===========================================================================
 # `Fuente.archivo_pdf` es un nombre LOGICO --«normas/hif12026.pdf»--, no una
 # ruta que se pueda abrir tal cual: dice como se llama el archivo dentro de
 # la carpeta de normas, este donde este esa carpeta. Hasta T-0 cada lector
 # componia `RAIZ / fuente.archivo_pdf` por su cuenta (cuatro sitios en la
 # suite y uno en `extraccion`), lo que cableaba la carpeta `normas/` de este
-# repositorio como unico lugar posible. Desde T-0 hay DOS lugares, en este
-# orden, y una sola puerta que los conoce:
+# repositorio como unico lugar posible. T-0 abrio una sola puerta, con DOS
+# lugares: `$NORMAS_DIR` y, despues, `normas/` de este repositorio «mientras
+# exista». T-12 RETIRO los dieciocho PDF de `normas/` (sha1 comprobado, uno a
+# uno, contra el repositorio de normas antes del `git rm`; el historial los
+# conserva: INF-5.2.3, ficha T12-01) y con ellos la caida: desde T-12 hay UN
+# lugar, y esta es su puerta:
 #
-#   1. `$NORMAS_DIR`, si la variable esta definida: el clon del repositorio
-#      de normas (`Andy-rba30/Normas`). Admite la raiz del clon o su
-#      subcarpeta `normas/`, que es donde ese repositorio guarda los PDF.
-#   2. `normas/` de este repositorio, MIENTRAS EXISTA (T-12 la retira).
+#   `$NORMAS_DIR`, si la variable esta definida: el clon del repositorio de
+#   normas (`Andy-rba30/Normas`). Admite la raiz del clon o su subcarpeta
+#   `normas/`, que es donde ese repositorio guarda los PDF.
+#
+# SIN LA VARIABLE NO HAY CARPETA DE NORMAS (`directorios_de_normas()` es la
+# tupla vacia), `ruta_pdf` devuelve la ruta donde el enlace que falta pondria
+# el archivo (`RUTA_SIN_ENLACE`, que no existe) y TODO lo que abre un PDF se
+# salta diciendolo: es el tercer eje de entorno de la suite, que desde T-12
+# abarca a todos los tests que abren un PDF y no solo a los de HEC-14 y WSDOT.
+# Calcular no cambia: ningun modulo de calculo abre un PDF.
 #
 # POR QUE UNA VARIABLE Y NO UN SUBMODULO NI UN ENLACE SIMBOLICO (decision de
 # T-0, ficha T0-01 de docs/decisiones_diferidas.md): el repositorio de normas
-# lleva documentos con copyright y T-12 recomendara hacerlo privado; un
-# submodulo ataria cada clon de la app a una credencial sobre ese
-# repositorio y dejaria su URL y su commit versionados aqui, y un enlace
-# simbolico `normas -> ...` no convive con la carpeta `normas/` real que
-# T-12 todavia no ha retirado. La variable no versiona nada, funciona con el
-# repositorio publico o privado, y deja que un despliegue que solo CALCULA
-# --que no necesita ni un PDF-- no tenga que clonar 330 MB.
+# lleva documentos con copyright (AASHTO, ASTM) y el README recomienda
+# hacerlo privado; un submodulo ataria cada clon de la app a una credencial
+# sobre ese repositorio y dejaria su URL y su commit versionados aqui. La
+# variable no versiona nada, funciona con el repositorio publico o privado, y
+# deja que un despliegue que solo CALCULA --que no necesita ni un PDF-- no
+# tenga que clonar 330 MB.
 #
 # NINGUN MODULO DE CALCULO LLAMA A ESTO, y tiene que seguir asi: abrir un PDF
 # es cosa de quien VERIFICA (la suite `-m pdf`, `python3 -m
-# src.normativa.extraccion`, `verificar_sesion.py`), no de quien calcula. El
-# registro se construye sin tocar el disco.
+# src.normativa.extraccion`, `proceso/verificar_sesion.py`), no de quien
+# calcula. El registro se construye sin tocar el disco.
 VARIABLE_NORMAS_DIR = "NORMAS_DIR"
-DIRECTORIO_NORMAS_DEL_REPOSITORIO = Path(__file__).resolve().parents[2] / "normas"   # literal-ok: profundidad del paquete en el arbol
 SUBCARPETA_DEL_REPO_NORMAS = "normas"
+# Donde se le esperaria a un PDF sin el enlace: una ruta RELATIVA con el
+# nombre de la variable que falta, para que el mensaje de quien llama diga que
+# hacer («$NORMAS_DIR/normas/hec14.pdf») y no apunte a una carpeta de este
+# repositorio que ya no existe. No se abre nunca: `ruta_pdf` la devuelve para
+# que quien llama decida con `.exists()` si salta.
+RUTA_SIN_ENLACE = Path("$" + VARIABLE_NORMAS_DIR) / SUBCARPETA_DEL_REPO_NORMAS
 
 
 def directorios_de_normas() -> Tuple[Path, ...]:
     """
-    Las carpetas donde se buscan los PDF, en orden de precedencia: la de
-    `$NORMAS_DIR` (si la variable esta definida y no vacia) y `normas/` de
-    este repositorio (si existe).
+    La carpeta donde se buscan los PDF: la de `$NORMAS_DIR` (si la variable
+    esta definida y no vacia), o ninguna. Desde T-12 no hay caida a
+    `normas/` de este repositorio: sus PDF se retiraron.
 
     Un `NORMAS_DIR` que apunta a una carpeta inexistente lanza
     `FileNotFoundError` y no se ignora: quien definio la variable quiso
-    enlazar el repositorio de normas, y caer en silencio a `normas/` le
-    daria una suite verde que no verifico lo que el creia. Es un fallo de
-    entorno, no del expediente, y por eso no es `ErrorProyecto` (CLAUDE.md,
-    «Excepciones»).
+    enlazar el repositorio de normas, y seguir sin el le daria una suite
+    verde que no verifico lo que el creia. Es un fallo de entorno, no del
+    expediente, y por eso no es `ErrorProyecto` (CLAUDE.md, «Excepciones»).
     """
-    carpetas = []
     declarado = os.environ.get(VARIABLE_NORMAS_DIR, "").strip()
-    if declarado:
-        enlazado = Path(declarado).expanduser()
-        if not enlazado.is_dir():
-            raise FileNotFoundError(
-                f"{VARIABLE_NORMAS_DIR}={declarado!r} no es una carpeta. "
-                "Tiene que apuntar al clon del repositorio de normas (su "
-                f"raiz o su subcarpeta «{SUBCARPETA_DEL_REPO_NORMAS}/»); "
-                "ver «Donde estan los PDF de normas» en CLAUDE.md")
-        subcarpeta = enlazado / SUBCARPETA_DEL_REPO_NORMAS
-        # La raiz del clon no tiene PDF sueltos: los guarda en su subcarpeta.
-        carpetas.append(subcarpeta if subcarpeta.is_dir()
-                        and not any(enlazado.glob("*.pdf")) else enlazado)
-    if DIRECTORIO_NORMAS_DEL_REPOSITORIO.is_dir():
-        carpetas.append(DIRECTORIO_NORMAS_DEL_REPOSITORIO)
-    return tuple(carpetas)
+    if not declarado:
+        return ()
+    enlazado = Path(declarado).expanduser()
+    if not enlazado.is_dir():
+        raise FileNotFoundError(
+            f"{VARIABLE_NORMAS_DIR}={declarado!r} no es una carpeta. "
+            "Tiene que apuntar al clon del repositorio de normas (su "
+            f"raiz o su subcarpeta «{SUBCARPETA_DEL_REPO_NORMAS}/»); "
+            "ver «Donde estan los PDF de normas» en CLAUDE.md")
+    subcarpeta = enlazado / SUBCARPETA_DEL_REPO_NORMAS
+    # La raiz del clon no tiene PDF sueltos: los guarda en su subcarpeta.
+    return (subcarpeta if subcarpeta.is_dir()
+            and not any(enlazado.glob("*.pdf")) else enlazado,)
 
 
 def ruta_pdf(fuente) -> Path:
     """
     La ruta en disco del PDF de una `Fuente` presente (o de un
-    `PdfPresenteSinRegistrar`): la primera carpeta de `directorios_de_normas`
-    que tenga un archivo con ese NOMBRE.
+    `PdfPresenteSinRegistrar`): el archivo con ese NOMBRE en la carpeta de
+    `directorios_de_normas`.
 
-    Si ninguna lo tiene NO lanza: devuelve la ruta donde se le esperaba --en
-    la primera carpeta de la lista-- para que quien llama decida con
-    `.exists()` si salta, falla o lo dice, y para que el mensaje nombre un
-    sitio concreto. Una fuente AUSENTE no tiene PDF que buscar y eso si es
-    un error de quien llama.
+    Si no esta NO lanza: devuelve la ruta donde se le esperaba --en la
+    carpeta enlazada, o bajo `RUTA_SIN_ENLACE` si no hay enlace-- para que
+    quien llama decida con `.exists()` si salta, falla o lo dice, y para que
+    el mensaje nombre un sitio concreto. Una fuente AUSENTE no tiene PDF que
+    buscar y eso si es un error de quien llama.
     """
     if not getattr(fuente, "archivo_pdf", None):
         raise ValueError(
@@ -1808,7 +1819,7 @@ def ruta_pdf(fuente) -> Path:
         candidata = carpeta / nombre
         if candidata.exists():
             return candidata
-    return (carpetas[0] if carpetas else DIRECTORIO_NORMAS_DEL_REPOSITORIO) / nombre
+    return (carpetas[0] if carpetas else RUTA_SIN_ENLACE) / nombre
 
 
 def pdf_en_disco() -> Dict[str, Path]:

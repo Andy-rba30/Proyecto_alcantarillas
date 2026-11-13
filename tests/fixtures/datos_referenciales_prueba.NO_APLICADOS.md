@@ -1,3 +1,9 @@
+> **FIXTURE DE PRUEBA, NO ES UN RESULTADO DEL PROYECTO.** Este archivo vive en
+> `tests/fixtures/` y sus valores sirven para ejercitar caminos de codigo en las
+> pruebas: ninguno es un dato, un criterio ni un resultado de la obra, y ninguno
+> puede citarse en una memoria de calculo (T-12, INF-5.2.4). Los datos de diseño
+> del proyecto y quien los aporta estan en `docs/contrato_entradas.md`.
+
 # Datos referenciales NO aplicados a criterios_adoptados.py
 
 > **REVISADO EN S16 --- SIS-F-15 (cluster C09).** Este documento afirmaba

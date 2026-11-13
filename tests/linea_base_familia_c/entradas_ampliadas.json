@@ -1,4 +1,5 @@
 {
+ "_advertencia": "FIXTURE DE PRUEBA, NO ES UN RESULTADO DEL PROYECTO. Datos para ejercitar caminos de codigo de la linea base de la Familia C (TW, caudal y pendientes de C-01, TW de B-01): no son una medicion de campo ni un dato del estudio hidrologico. Ver tests/linea_base_familia_c/README.md.",
  "globales": {
   "TW_m": 0.3
  },

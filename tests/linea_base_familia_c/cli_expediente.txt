@@ -217,4 +217,5 @@ Advertencia de corredor: el proyecto no tiene nombre y los [S] de esta corrida g
 JSON del expediente: <SALIDA>/informe_exp.json
 Memoria de calculo (HTML): <SALIDA>/memoria_exp.html
 Plantilla usada          : memoria_alcantarillas.html
+Memoria resumida (HTML)  : <SALIDA>/memoria_resumida_exp.html
 Cuadro resumen (CSV): <SALIDA>/resumen_exp.csv

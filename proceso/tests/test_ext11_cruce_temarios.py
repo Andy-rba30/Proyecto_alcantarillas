@@ -2,7 +2,7 @@
 tests/test_ext11_cruce_temarios.py
 ==================================
 PC-29, segunda mitad: el cruce de los temarios de refutacion
-(`docs/auditorias/temario_refutar_95.json` y `_48.json`) contra la hoja
+(`proceso/auditorias/temario_refutar_95.json` y `_48.json`) contra la hoja
 `Hallazgos` del tracker, COMO TEST. EXT-0 hizo el cruce a mano sobre los 71
 items ALTA/CRITICA --- siete recibieron fila propia y ocho grupos quedaron
 anotados en «Vinculos cruzados» de la fila NOR-* que los cubre --- y dejo
@@ -40,6 +40,11 @@ auditor alego.
 
 El tracker se lee con `tests/apoyo/tracker.py` (biblioteca estandar), no
 con openpyxl: ver alli por que.
+
+MOVIDO A `proceso/tests/` EN T-12 (INF-5.2.2): cruza los temarios de las
+auditorias con el tracker, que son material de PROCESO, y por eso salio de la
+suite del entregable con ellos. Se corre con
+`python -m pytest proceso/tests` desde la raiz.
 """
 
 import json
@@ -48,11 +53,11 @@ from pathlib import Path
 
 import pytest
 
-from tests.apoyo import tracker
+from proceso.apoyo import tracker
 
-RAIZ = Path(__file__).resolve().parents[1]
-TEMARIOS = (RAIZ / "docs" / "auditorias" / "temario_refutar_95.json",
-            RAIZ / "docs" / "auditorias" / "temario_refutar_48.json")
+RAIZ = Path(__file__).resolve().parents[2]
+TEMARIOS = (RAIZ / "proceso" / "auditorias" / "temario_refutar_95.json",
+            RAIZ / "proceso" / "auditorias" / "temario_refutar_48.json")
 SEVERIDADES_QUE_SE_CRUZAN = ("ALTA", "CRITICA", "CRÍTICA")
 PATRON_ID_TEMARIO = re.compile(r"R(?:95|48)-\d{3}")
 # El tamaño del tracker que `verificar_sesion.py` fija (303 desde EXT-0; 367

@@ -2387,6 +2387,21 @@ class PerfilLamina:
             return self.HW_remanso_m
         return self.HW_aproximado_m
 
+    @property
+    def salida_no_se_forma(self) -> bool:
+        """
+        --- T-12 (ficha T11-09) --- True cuando el control de SALIDA no
+        impone carga: la aproximacion h_o se descarta (HW_aprox/D < 0.75,
+        HDS-5 num. 3.3.3, pag. impresa 3.24: «should not be used») y el
+        remanso que la sustituye no alcanza la entrada (`HW_remanso_m` None;
+        Section 3.5.1). Es la condicion exacta en que `HW_efectivo_m` es
+        None. La regla vive AQUI, en el dato, para que la CLI (JSON y linea
+        «Control») y la memoria (fila «Control gobernante» de las dos vistas)
+        la lean de un solo sitio; hasta T-12 vivia en `cli.salida_no_se_forma`
+        y la memoria imprimia la aproximacion descartada como «salida».
+        """
+        return self.sustituye_aproximacion and self.HW_remanso_m is None
+
 
 # ===========================================================================
 # Sec. 1.3 - TW: se calcula, no se mide
@@ -2796,6 +2811,17 @@ class ResultadoHidraulico:
         if self.control_gobernante == ControlGobernante.ENTRADA:
             return self.HW_entrada
         return self.HW_salida
+
+    @property
+    def salida_no_se_forma(self) -> bool:
+        """
+        --- T-12 (ficha T11-09) --- True cuando el perfil de la lamina
+        descarto la aproximacion del control de salida y su remanso no
+        alcanza la entrada (`PerfilLamina.salida_no_se_forma`): entonces
+        `HW_salida` es la aproximacion DESCARTADA, no una carga de salida, y
+        ningun lector la publica como tal. False sin perfil.
+        """
+        return self.perfil is not None and self.perfil.salida_no_se_forma
 
 
 @dataclass(frozen=True)

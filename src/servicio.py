@@ -1351,6 +1351,12 @@ def _numero_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     return DatoDeclarado(nombre=clave, valor=valor, origen=origen)
 
 
+# --- T-12 --- La unica clave de nivel superior del JSON de datos externos
+# que el programa admite y NO lee: la advertencia de un archivo de prueba
+# (ver `cargar_datos_externos`).
+CLAVE_ADVERTENCIA_EXTERNOS = "_advertencia"
+
+
 def cargar_datos_externos(ruta: Optional[Path],
                           banderas: Dict[str, Any]) -> DatosExternos:
     """
@@ -1366,6 +1372,14 @@ def cargar_datos_externos(ruta: Optional[Path],
     Una clave desconocida es `DatoInvalidoError` y no un aviso: un 'luz'
     escrito 'luz_m2' pasaria inadvertido y el punto quedaria sin luz por un
     error de tipeo, no por un dato que falta de verdad.
+
+    --- T-12 --- Una tercera clave de nivel superior, `_advertencia`
+    (`CLAVE_ADVERTENCIA_EXTERNOS`), admite un TEXTO que el programa no lee:
+    es la cabecera de un archivo de datos que no es del proyecto --la de
+    `tests/linea_base_familia_c/entradas_ampliadas.json`, «FIXTURE DE
+    PRUEBA, NO ES UN RESULTADO DEL PROYECTO» (INF-5.2.4)--, que un JSON no
+    puede llevar como comentario. Tiene que ser una cadena; cualquier otra
+    cosa es `DatoInvalidoError`, como una seccion desconocida.
     """
     globales: Dict[str, DatoDeclarado] = {}
     por_punto: Dict[str, Dict[str, DatoDeclarado]] = {}
@@ -1378,7 +1392,16 @@ def cargar_datos_externos(ruta: Optional[Path],
                 motivo=f"'{ruta.name}' tiene que ser un objeto JSON con las "
                        "secciones 'globales' y/o 'puntos'",
             )
-        sobran = [k for k in crudo if k not in ("globales", "puntos")]
+        advertencia = crudo.get(CLAVE_ADVERTENCIA_EXTERNOS, "")
+        if not isinstance(advertencia, str):
+            raise DatoInvalidoError(
+                "datos_externos", valor=type(advertencia).__name__,
+                motivo=f"'{CLAVE_ADVERTENCIA_EXTERNOS}' de '{ruta.name}' es "
+                       "un texto que el programa no lee (la advertencia de un "
+                       "archivo de prueba)",
+            )
+        sobran = [k for k in crudo
+                  if k not in ("globales", "puntos", CLAVE_ADVERTENCIA_EXTERNOS)]
         if sobran:
             raise DatoInvalidoError(
                 "datos_externos", valor=", ".join(sobran),
