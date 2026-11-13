@@ -552,6 +552,11 @@ def test_T21_los_verbatim_del_registro_conservan_sus_diacriticos(reg):
         # materiales que cumplan lo indicado en el numeral 25.4.» Leida sobre
         # la pagina en T-4: ninguna vocal acentuada en la frase.
         "E050.24#REMOVER",
+        # E.060, num. 15.7, pag. 138: «La altura de las zapatas, medida sobre
+        # el refuerzo inferior no debe ser menor de 300 mm para zapatas
+        # apoyadas sobre el suelo». Leida sobre la pagina en las correcciones
+        # de T-7a: ninguna vocal acentuada en la frase.
+        "E060.15.7#PERALTE",
     }
     minimo_para_sospechar = 120   # literal-ok: longitud a partir de la cual un
                                   # texto en español sin tildes es sospechoso

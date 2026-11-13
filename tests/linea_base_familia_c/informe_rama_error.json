@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "45ba5f765689a32c30482dd84b264eb9ea19d3a2",
+    "criterios_sha1": "3375d11162928ea763167fc51bc2f7044210bbf3",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -146,6 +146,19 @@
       "proteccion_entrada": null,
       "socavacion_salida": null,
       "geometria": null,
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 15 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": null,
+        "cabezales": null
+      },
       "estructural": null,
       "espaciamiento_alivio": null,
       "tramo_alivio": null,
@@ -303,6 +316,19 @@
       "proteccion_entrada": null,
       "socavacion_salida": null,
       "geometria": null,
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 5 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": null,
+        "cabezales": null
+      },
       "estructural": null,
       "espaciamiento_alivio": null,
       "tramo_alivio": null,
@@ -405,6 +431,7 @@
         "TW del receptor: seccion adoptada [A] por falta de levantamiento -- el nivel de «receptor a seccion llena» es la profundidad adoptada en el criterio 'seccion_receptor', no una medicion, y ese TW entra al control de salida, al regimen del barril y a V1: puede decidir el diametro. Lo sustituye el levantamiento del receptor (claves `receptor_b_m`, `receptor_z_HV`, `receptor_altura_m`, `receptor_n` y `receptor_S` de --datos-externos), su nivel de agua (`cota_TW`) o un TW declarado (`TW_m`)",
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
         "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto",
+        "Embocadura de B-01: la entrada de un alivio de cuneta (Familia B) suele ser una CAJA RECEPTORA (Lamina Nº 02-A del Manual, sin aleros), que el programa NO modela: el punto recibe «cabezal_con_aleros» ('embocadura_cabezal'), y con esa embocadura se calculan su perdida de entrada, su proteccion de entrada y su cabezal de entrada. Una caja receptora no tiene fila en las Tablas A.1 y C.2 del HDS-5 (ficha T7A-02)",
         "VB2 (caudal de aporte frente a la capacidad de la cuneta) NO SE EVALUO: falta la pendiente de la cuneta (`S_cuneta`, por --datos-externos), sin la que la capacidad no se calcula; por la misma falta la Fase 10 del punto se detiene (ver su bloqueo)",
         "tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica"
       ],
@@ -462,6 +489,19 @@
       "proteccion_entrada": null,
       "socavacion_salida": null,
       "geometria": null,
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 0 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": null,
+        "cabezales": null
+      },
       "estructural": null,
       "espaciamiento_alivio": null,
       "tramo_alivio": {
@@ -618,6 +658,7 @@
       "proteccion_entrada": null,
       "socavacion_salida": null,
       "geometria": null,
+      "cabezal": null,
       "estructural": null,
       "espaciamiento_alivio": null,
       "tramo_alivio": null,
@@ -670,7 +711,7 @@
   "cabezal": {
     "cadena_sismica": null,
     "mononobe_okabe": null,
-    "geometria": null,
+    "por_punto": [],
     "recubrimientos": [],
     "cuantias_minimas": {},
     "notas": [],
@@ -725,6 +766,17 @@
         "concepto": "Diametro maximo de la serie que tabula la norma de producto de cada material, en metros: el tope del catalogo de diametros cuando no se declara uno de disponibilidad de mercado"
       },
       {
+        "clave": "angulo_aletas",
+        "etiqueta": "A",
+        "valor": {
+          "por_defecto_grados": 45.0,
+          "umbral_esviaje_grados": 30.0,
+          "con_esviaje_mayor_grados": 30.0
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Angulo de las aletas del cabezal con la prolongacion de la pared del barril (paralela al eje del conducto), como regla por punto: el de por defecto, y el que rige cuando el esviaje del cruce supera un umbral"
+      },
+      {
         "clave": "corrugacion_y_espesor_tmc",
         "etiqueta": "A",
         "valor": "68x13/2.01",
@@ -740,6 +792,13 @@
         },
         "declarado_en_caliente": true,
         "concepto": "Progresion de diametros normalizados (inicio y paso)"
+      },
+      {
+        "clave": "embocadura_cabezal",
+        "etiqueta": "A",
+        "valor": "cabezal_con_aleros",
+        "declarado_en_caliente": false,
+        "concepto": "Remate de los dos extremos del conducto: cabezal con aleros o cabezal recto (sin aleros)"
       },
       {
         "clave": "espesor_pared_conducto",
@@ -893,7 +952,6 @@
       "N_cq_N_gammaq_meyerhof",
       "TR_evento_extremo",
       "TW_receptor",
-      "angulo_aletas",
       "c_phi_fundacion",
       "capacidad_portante_adm",
       "categoria_refuerzo_aashto",
@@ -912,7 +970,6 @@
       "metodo_estabilidad_global",
       "pendiente_relleno_trasdos_i",
       "phi_relleno_trasdos",
-      "predimensionamiento_cabezal",
       "punto_aplicacion_incremento_sismico",
       "regimen_cortante_muro_e060_art_11_10_2",
       "remanso_derecho_via"
@@ -943,6 +1000,7 @@
       "metodo_transicion_hds5",
       "n_manning_hdpe",
       "origen_cota_fondo_entrada",
+      "predimensionamiento_cabezal",
       "regimen_v2b",
       "relacion_intensidad_duracion",
       "resguardo_HW_subrasante",
@@ -954,7 +1012,6 @@
     "sin_consumidor": [
       "Mw_licuefaccion",
       "PERFIL_SUELO_PRESUNTO",
-      "angulo_aletas",
       "c_phi_fundacion",
       "capacidad_portante_adm",
       "clase_sitio",

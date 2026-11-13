@@ -428,6 +428,9 @@ def indice_del_registro(registro) -> str:
         elif hasattr(p, "base"):
             regla = ("por capítulo: " +
                      ", ".join(f"{k}={v}" for k, v in sorted(p.base.items())))
+            # --- T-7a --- las preliminares en romanas, si la fuente las cita
+            if getattr(p, "romanas", None) is not None:
+                regla += f"; romanas: i={p.romanas + 1}"
         elif isinstance(p, SinDeterminar):
             regla = "**sin determinar**"
         else:

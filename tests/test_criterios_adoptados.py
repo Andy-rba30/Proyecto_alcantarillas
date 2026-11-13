@@ -652,31 +652,32 @@ def test_la_escritura_permanente_reescribe_el_valor_en_el_archivo(
     # EL CRITERIO DE LA PRUEBA CAMBIO EN S20: era 'talud_terraplen', que se
     # declaro al cerrarse el nivel de perfil. Este test necesita un criterio
     # que siga VACIO y cuyo `valor=` quepa en una linea, que es lo unico que
-    # el patron de `escribir_valor_en_archivo` alcanza; 'angulo_aletas' lo es
-    # y ademas es de nivel EXPEDIENTE, de modo que no lo va a cerrar la
-    # proxima sesion de perfil.
-    clave = "angulo_aletas"
+    # el patron de `escribir_valor_en_archivo` alcanza; 'angulo_aletas' lo
+    # era hasta T-7a, que le dio valor (la regla de los aleros). Desde T-7a
+    # es 'Mw_licuefaccion': vacio, `float` sin ventana, de una linea y de
+    # nivel EXPEDIENTE, de modo que no lo va a cerrar una sesion de perfil.
+    clave = "Mw_licuefaccion"
     copia = tmp_path / "criterios_copia.py"
     original = Path(ca.__file__).read_text(encoding="utf-8")
     copia.write_text(original, encoding="utf-8")
     assert ca.CRITERIOS[clave].valor is None, (
         f"'{clave}' dejo de estar vacio: este test necesita un criterio pendiente")
 
-    ca.establecer_valor_dinamico(clave, 45.0)
+    ca.establecer_valor_dinamico(clave, 7.5)
     assert ca.declarado_en_caliente(clave)
 
-    ca.escribir_valor_en_archivo(clave, 45.0, ruta=str(copia))
+    ca.escribir_valor_en_archivo(clave, 7.5, ruta=str(copia))
 
     escrito = copia.read_text(encoding="utf-8")
     assert escrito != original, "el archivo no se toco"
-    assert f'"{clave}": Criterio(\n        valor=45.0,' in escrito, (
+    assert f'"{clave}": Criterio(\n        valor=7.5,' in escrito, (
         "el valor no quedo escrito en el bloque del criterio")
     # ...y SOLO ese bloque: la escritura no puede arrastrar nada mas.
     assert len(escrito.splitlines()) == len(original.splitlines())
 
     # El estado en memoria: el valor pasa a ser el del archivo y el override
     # en caliente se retira, porque ya no hace falta.
-    assert ca.CRITERIOS[clave].valor == pytest.approx(45.0)
+    assert ca.CRITERIOS[clave].valor == pytest.approx(7.5)
     assert not ca.declarado_en_caliente(clave)
     # Los demas campos del Criterio no se tocan: describen POR QUE se adopto
     # el valor y se revisan a mano, como dice el docstring de la funcion.

@@ -202,6 +202,15 @@ LO_QUE_ESCRIBIO_CADA_PROMPT = {
         ESTADO_CERRADO: {"INF-5.1.12", "INF-3.3.8"},
         ESTADO_PARCIAL: {"INF-5.1.8"},
     },
+    "T-7a": {
+        # El cabezal por punto y sus aleros: el prompt cita «INF-5.1.12
+        # (cabezal "del proyecto")», que es INF-5.1.15. INF-4.2 e INF-4.3
+        # quedan EN PARTE porque ninguna corrida de expediente alcanza la
+        # Fase 9 (V5 y V8 se detienen antes: ficha T7A-01, la cierra T-7b), e
+        # INF-4.1 porque los datos geotecnicos y sismicos los ensambla T-7b.
+        ESTADO_CERRADO: {"INF-5.1.15", "INF-3.4.1", "INF-3.4.2"},
+        ESTADO_PARCIAL: {"INF-4.2", "INF-4.3", "INF-4.1"},
+    },
 }
 
 

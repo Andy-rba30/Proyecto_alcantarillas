@@ -121,8 +121,7 @@ from src.modulos.M0_carga import (COLUMNA_CAUDAL,
 from src.modulos import MH_hidrologia as MH
 from src.modulos.M1_clasificacion import clasificar, exigir_alcance
 from src.modulos.M2_material import matriz_durabilidad
-from src.modulos.M6_proteccion import (EMBOCADURA_CABEZAL_RECTO,
-                                       proteccion_entrada, proteccion_salida,
+from src.modulos.M6_proteccion import (proteccion_entrada, proteccion_salida,
                                        socavacion_salida)
 from src.modulos import M3_hidraulica as M3
 from src.modulos.M7_geometria import (aviso_de_pendiente,
@@ -147,9 +146,15 @@ from src.modulos.M9_cabezal import (aviso_ambiente_corrosivo,
                                     nota_excepcion_refuerzo_minimo,
                                     cadena_sismica,
                                     condicion_normativa_cabezal,
-                                    cuantia_minima, geometria_adoptada,
+                                    cuantia_minima,
                                     k_ae_del_proyecto,
                                     recubrimiento_de_diseno)
+# --- T-7a --- el cabezal POR PUNTO: la embocadura (perfil) y la geometria
+# de la Fase 9 (expediente), con la puerta de su dato externo.
+from src.modulos.M9_cabezal import (cabezal_del_punto,
+                                    embocadura_del_punto,
+                                    validar_cabezal_declarado,
+                                    verificar_coherencia_embocadura_cajon)
 from src.modulos.M10_espaciamiento import espaciamiento_alivio
 # --- T-9 --- la longitud por capacidad de la cuneta y VB1, por tramo.
 from src.modulos import M10_espaciamiento as M10
@@ -600,6 +605,17 @@ CLAVES_DE_DURABILIDAD_TEXTO: Tuple[str, ...] = ("abrasion",)
 # legitimo en una concentracion. El pH y la resistividad no lo admiten.
 CLAVES_DE_DURABILIDAD_CON_CERO: Tuple[str, ...] = (
     "sulfatos_suelo_ppm", "sulfatos_agua_ppm", "cloruros_ppm")
+
+# --- T-7a --- LAS DIMENSIONES DECLARADAS DEL CABEZAL (INF-4.2), por el mismo
+# archivo y por la misma razon que los ensayos de durabilidad: FUERA de
+# `CLAVES_EXTERNAS`. Ninguna etapa las exige -- sin ellas rige la regla de
+# 'predimensionamiento_cabezal' y la memoria dice «propuesta por regla» --,
+# de modo que el pre-vuelo no las tiene que anunciar como faltas. Un objeto
+# y no catorce claves: {"altura_total_m": 2.4, "salida": {...}}; la forma y
+# el dominio los valida `M9.validar_cabezal_declarado` al CARGAR, y lo que
+# viaja es su forma normalizada {"entrada": {...}, "salida": {...}}.
+CLAVE_CABEZAL_DECLARADO = "cabezal_declarado"
+CLAVES_DE_CABEZAL: Tuple[str, ...] = (CLAVE_CABEZAL_DECLARADO,)
 ETAPA_DURABILIDAD = "matriz de durabilidad (Sec. 3.3)"
 # --- T-5 --- Las dos etapas de la Fase 8 que la corrida registra aparte de
 # las verificaciones F8.* de la Fase 5 (ver `_fase_8_conducto`).
@@ -737,6 +753,11 @@ def _dato_externo(clave: str, bruto: Any, origen: str) -> DatoDeclarado:
     """
     if clave in CLAVES_DE_DURABILIDAD:
         return _dato_de_durabilidad(clave, bruto, origen)
+    if clave == CLAVE_CABEZAL_DECLARADO:
+        # --- T-7a --- forma y dominio en la puerta; viaja normalizado.
+        return DatoDeclarado(nombre=clave,
+                             valor=validar_cabezal_declarado(bruto),
+                             origen=origen)
     if clave in CLAVES_TEXTO:
         if not isinstance(bruto, str) or not bruto.strip():
             raise DatoInvalidoError(
@@ -1293,13 +1314,16 @@ def cargar_datos_externos(ruta: Optional[Path],
 
 
 def _exige_clave(clave: str, donde: str) -> None:
-    if clave not in CLAVES_EXTERNAS and clave not in CLAVES_DE_DURABILIDAD:
+    if (clave not in CLAVES_EXTERNAS and clave not in CLAVES_DE_DURABILIDAD
+            and clave not in CLAVES_DE_CABEZAL):
         raise DatoInvalidoError(
             "datos_externos", valor=clave,
             motivo=f"clave no reconocida en {donde}. Las admitidas son: "
                    + ", ".join(CLAVES_EXTERNAS)
                    + "; y los ensayos de durabilidad, opcionales: "
-                   + ", ".join(CLAVES_DE_DURABILIDAD),
+                   + ", ".join(CLAVES_DE_DURABILIDAD)
+                   + "; y las dimensiones del cabezal, opcionales: "
+                   + ", ".join(CLAVES_DE_CABEZAL),
         )
 
 
@@ -1455,6 +1479,15 @@ class InformePunto:
     # desplante del cabezal (la hoya de HEC-14 Cap. 5, o la declarada).
     proteccion_entrada: Optional[ProteccionEntrada] = None
     socavacion: Optional[SocavacionSalida] = None
+    # --- T-7a --- La EMBOCADURA del punto (cabezal con aleros o recto, y el
+    # angulo de los aleros), resuelta antes de la Fase 4 en los dos alcances
+    # -- entra a la coherencia de la embocadura del marco y a la proteccion
+    # de entrada --, y el CABEZAL del punto (Fase 9, solo a expediente y solo
+    # si el punto se dimensiono y paso por 7.B). `coherencia_embocadura` es
+    # la nota de la comprobacion del marco, o None si no habia que comprobar.
+    embocadura: Optional[Any] = None
+    coherencia_embocadura: Optional[str] = None
+    cabezal: Optional[Any] = None
     geometria: Optional[CompatibilidadGeometrica] = None
     cama_apoyo: Optional[Any] = None
     # --- T-5 --- La Fase 8 del conducto de la seccion aceptada: la clase, la
@@ -1510,6 +1543,11 @@ class InformePunto:
             filas.extend((FASE_DISENO, v) for v in self.resultado.verificaciones)
         if self.geometria is not None:
             filas.extend((FASE_GEOMETRIA, v) for v in self.geometria.verificaciones)
+        # --- T-7a --- la compatibilidad del cabezal con el conducto (CB1 a
+        # CB7, por extremo): con dimensiones propuestas por regla cumplen
+        # por construccion; con declaradas, una incumplida cuenta.
+        if self.cabezal is not None:
+            filas.extend((FASE_CABEZAL, v) for v in self.cabezal.verificaciones)
         # --- T-9 --- Las dos de la Fase 10, y las dos pueden fallar: VB2, el
         # caudal de aporte contra la capacidad de la cuneta (la condicion
         # literal del Manual, H1 de la auditoria), y VB1, el espaciamiento
@@ -1655,6 +1693,16 @@ class InformePunto:
         # despreciada por el permiso de 3.6.1.2.6a cuando el proyecto lo toma.
         if self.estructural is not None:
             avisos.extend(self.estructural.avisos)
+        # --- T-7a --- los de la embocadura (la caja receptora que un punto
+        # de la Familia B no puede declarar) y los del cabezal del punto (el
+        # desplante de salida sin socavacion entregada, con su motivo; el
+        # desnivel del talud a lo largo de un muro normal al eje con
+        # esviaje; la regla del tipo por altura total). Las CB incumplidas
+        # no van aqui: son verificaciones y salen por `incumplidas`.
+        if self.embocadura is not None:
+            avisos.extend(self.embocadura.avisos)
+        if self.cabezal is not None:
+            avisos.extend(self.cabezal.avisos)
         # --- T-9 --- Los de la Fase 10: los de la longitud por capacidad
         # (pendiente de la cuneta fuera de la banda del Manual, capacidad
         # gobernada por la velocidad limite, los del caudal de aporte) y el
@@ -1689,11 +1737,17 @@ class InformePunto:
 
 @dataclass
 class InformeCabezal:
-    """Fase 9: es del proyecto, no de un punto (Sec. 9 no lo dimensiona por punto)."""
+    """
+    Fase 9, lo que es del PROYECTO: la cadena sismica, K_AE, recubrimientos,
+    cuantias y notas. --- T-7a --- La geometria ya NO esta aqui: es de cada
+    punto (`InformePunto.cabezal`, INF-5.1.15), y el proyecto conserva solo
+    la SUMA para el reporte (`por_punto`, los cabezales de los puntos que
+    los tienen, en el orden del CSV).
+    """
 
     cadena: Optional[Any] = None
     mononobe_okabe: Optional[Any] = None
-    geometria: Optional[Any] = None
+    por_punto: List[Any] = field(default_factory=list)
     recubrimientos: List[Any] = field(default_factory=list)
     cuantias: Dict[str, float] = field(default_factory=dict)
     notas: Tuple[str, ...] = ()
@@ -2432,6 +2486,14 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
         # bloqueo ya esta registrado y el bucle no corre sin filtro.
         return
 
+    # --- T-7a --- LA EMBOCADURA DEL PUNTO, antes del bucle: es una entrada
+    # de la hidraulica (en un marco elige la banda de filas del HDS-5) y de
+    # la proteccion de entrada. Si la del marco declarada no es la del
+    # cabezal, el bucle NO corre: M4 calcularia con una embocadura que el
+    # cabezal no dibuja. Se resuelve en los dos alcances.
+    if not _fase_embocadura(informe):
+        return
+
     verificar = (_verificador_perfil(informe)
                  if alcance == ALCANCE_PERFIL else None)
     Q = externos.valor(punto.id, "Q_m3s")
@@ -2452,6 +2514,68 @@ def _fase_diseno(informe: InformePunto, externos: DatosExternos,
             fase=FASE_DISENO, etapa="material y diametro (bucle de MD)",
             tipo=TipoDeBloqueo.DISENO_NO_FACTIBLE,
             mensaje=informe.resultado.motivo_rechazo or "sin motivo declarado"))
+
+
+def _fase_embocadura(informe: InformePunto) -> bool:
+    """
+    --- T-7a --- La embocadura del punto (`M9.embocadura_del_punto`) y, en
+    un marco, la coherencia de su embocadura declarada con la del cabezal
+    (`M9.verificar_coherencia_embocadura_cajon`). Devuelve False si alguna
+    de las dos se bloqueo: el bucle de MD no corre sin embocadura.
+    """
+    punto = informe.punto_de_calculo
+    informe.embocadura = _etapa(
+        informe.bloqueos, FASE_DISENO, "embocadura del cabezal (T-7a)",
+        lambda: embocadura_del_punto(esviaje_grados=punto.esviaje_grados,
+                                     familia=punto.familia,
+                                     id_punto=punto.id))
+    if informe.embocadura is None:
+        return False
+    if punto.familia is not Familia.C:
+        return True
+    antes = len(informe.bloqueos)
+    informe.coherencia_embocadura = _etapa(
+        informe.bloqueos, FASE_DISENO,
+        "coherencia de la embocadura del marco con el cabezal (T-7a)",
+        lambda: verificar_coherencia_embocadura_cajon(
+            informe.embocadura, id_punto=punto.id))
+    # `_etapa` devuelve None TAMBIEN cuando no habia nada que comprobar; lo
+    # que separa el bloqueo es que haya dejado uno.
+    return len(informe.bloqueos) == antes
+
+
+def _fase_9(informe: InformePunto,
+            externos: Optional[DatosExternos] = None) -> None:
+    """
+    --- T-7a --- La Fase 9 del PUNTO: los dos cabezales con sus aleros y su
+    losa, las verificaciones de compatibilidad CB1-CB5 y la longitud entre
+    cabezales (`M9.cabezal_del_punto`). Corre solo a expediente, solo si el
+    punto se dimensiono y solo si 7.B dio sus cotas: sin seccion ni cotas no
+    hay cabezal que proponer. La estabilidad y el armado NO estan aqui
+    (T-7b, T-7c).
+    """
+    if informe.geometria is None or informe.embocadura is None:
+        return
+    declarados = (None if externos is None else
+                  externos.valor(informe.punto.id, CLAVE_CABEZAL_DECLARADO))
+    # Si la Fase 6 no entrego la socavacion porque su etapa se BLOQUEO, el
+    # aviso del desplante de salida lo dice con ese motivo y no con el de un
+    # lecho que falta (correcciones de T-7a, H9).
+    motivo = ""
+    if informe.socavacion is None:
+        bloqueo = next((b for b in informe.bloqueos
+                        if b.etapa == ETAPA_SOCAVACION_SALIDA), None)
+        motivo = ("la etapa de socavacion de la Fase 6 se detuvo: "
+                  + bloqueo.mensaje if bloqueo is not None else "")
+    informe.cabezal = _etapa(
+        informe.bloqueos, FASE_CABEZAL,
+        "geometria del cabezal por punto y aleros (T-7a)",
+        lambda: cabezal_del_punto(
+            punto=informe.punto_de_calculo, resultado=informe.resultado,
+            geometria=informe.geometria, embocadura=informe.embocadura,
+            socavacion=informe.socavacion, declarados=declarados,
+            coherencia_embocadura=informe.coherencia_embocadura,
+            motivo_sin_socavacion=motivo))
 
 
 def _fase_6(informe: InformePunto,
@@ -2505,13 +2629,19 @@ def _fase_6(informe: InformePunto,
                 lecho.IP if lecho is not None
                 and lecho.tipo == TIPO_LECHO_COHESIVO else None),
             tipo_lecho=None if lecho is None else lecho.tipo))
-    # La embocadura es hoy la ADOPTADA para todo el proyecto (HDS-5 «square
-    # edge w/ headwall»): el cabezal por punto (T-7a) pasara la suya aqui.
+    # --- T-7a --- LA EMBOCADURA DEL PUNTO, ya no la adoptada para todo el
+    # proyecto (ficha T8-03): la resolvio `_fase_embocadura` antes del bucle
+    # de MD, y un punto dimensionado la tiene siempre.
     informe.proteccion_entrada = _etapa(
         informe.bloqueos, FASE_PROTECCION, "proteccion de la entrada",
         lambda: proteccion_entrada(
-            resultado=resultado, tipo_embocadura=EMBOCADURA_CABEZAL_RECTO,
+            resultado=resultado, tipo_embocadura=informe.embocadura.tipo,
             tipo_terreno=dato(CLAVE_TERRENO_ENTRADA), regimen_flujo=regimen))
+
+
+# El nombre de la etapa de la socavacion a la salida: lo lee tambien
+# `_fase_9` para decir por que el cabezal de salida quedo sin hoya.
+ETAPA_SOCAVACION_SALIDA = "socavacion local a la salida"
 
 
 def _fase_6_socavacion(informe: InformePunto,
@@ -2532,7 +2662,7 @@ def _fase_6_socavacion(informe: InformePunto,
              geometria.cota_salida - informe.punto_de_calculo.cota_fondo_receptor)
     proteccion = informe.proteccion
     informe.socavacion = _etapa(
-        informe.bloqueos, FASE_PROTECCION, "socavacion local a la salida",
+        informe.bloqueos, FASE_PROTECCION, ETAPA_SOCAVACION_SALIDA,
         lambda: socavacion_salida(
             resultado=resultado, seccion=informe.resultado.seccion,
             altura_caida_m=caida, material=dato(CLAVE_MATERIAL_LECHO),
@@ -3264,6 +3394,10 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
                 _diferir_fase_8(informe)
             else:
                 _fase_8(informe)
+            # --- T-7a --- la Fase 9 del punto, solo a expediente (a perfil
+            # la difiere entera `_cabezal_diferido`, una vez por corrida).
+            if not _difiere(alcance, "M9_cabezal"):
+                _fase_9(informe, externos)
     # --- T-9 (correcciones) --- El tramo de cuneta (y con el VB1) es de la
     # alcantarilla de alivio que la Fase 2 clasifico como alcantarilla: la
     # que no paso la Fase 2 ya tiene su bloqueo, y una de luz >= 6 m es
@@ -3284,9 +3418,12 @@ def correr_punto(punto: PuntoCritico, externos: DatosExternos,
 
 def correr_cabezal() -> InformeCabezal:
     """
-    Las piezas de Fase 9 que se sostienen solas: la cadena sismica de 9.2, el
-    K_AE de Mononobe-Okabe, la geometria declarada, los recubrimientos de 9.4
-    y las cuantias minimas de referencia de E.060.
+    Las piezas de Fase 9 que se sostienen solas y son del PROYECTO: la
+    cadena sismica de 9.2, el K_AE de Mononobe-Okabe, los recubrimientos de
+    9.4 y las cuantias minimas de referencia de E.060. --- T-7a --- La
+    geometria del cabezal ya no esta aqui: es de cada punto
+    (`_fase_9`, `M9.cabezal_del_punto`), y `correr` deja en
+    `InformeCabezal.por_punto` solo la suma.
 
     La tabla de estabilidad E1-E5 no se ensambla aqui: ver
     NOTA_ESTABILIDAD_CABEZAL.
@@ -3297,9 +3434,6 @@ def correr_cabezal() -> InformeCabezal:
     informe.mononobe_okabe = _etapa(informe.bloqueos, FASE_CABEZAL,
                                     "K_AE de Mononobe-Okabe (9.2)",
                                     k_ae_del_proyecto)
-    informe.geometria = _etapa(informe.bloqueos, FASE_CABEZAL,
-                               "predimensionamiento del cabezal (9.3, E1-E5)",
-                               geometria_adoptada)
     for condicion in RECUBRIMIENTO:
         recubrimiento = _etapa(
             informe.bloqueos, FASE_CABEZAL,
@@ -3410,6 +3544,9 @@ def correr(ruta_csv: Path, externos: DatosExternos,
     # --- T-9 --- VB1 necesita los maximos de los dos extremos: va despues de
     # los puntos.
     _verificar_tramos_de_alivio(informe, extremos)
+    # --- T-7a --- la suma del proyecto: los cabezales de cada punto.
+    informe.cabezal.por_punto = [p.cabezal for p in informe.puntos
+                                 if p.cabezal is not None]
 
     _avisar_ids_desconocidos(informe, externos)
     _avisar_cuencas_sin_punto(informe)

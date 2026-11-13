@@ -94,7 +94,7 @@ from src.modulos.M9_cabezal import (CRITERIO_CORTANTE_ALTO,
                                 empuje_sobrecarga_trasdos, empujes_trasdos,
                                 espaciamiento_maximo, f_pga, factor_muro,
                                 factores_de_carga, fs_requerido,
-                                geometria_adoptada, incremento_sismico,
+                                incremento_sismico,
                                 k_a_coulomb, k_ae_del_proyecto,
                                 k_ae_mononobe_okabe, ka_rankine,
                                 n_q_zapata_en_talud, n_s_zapata_en_talud,
@@ -1259,12 +1259,19 @@ def test_la_capacidad_portante_en_talud_se_detiene_en_los_abacos():
     assert excinfo.value.clave == "N_cq_N_gammaq_meyerhof"
 
 
-def test_la_geometria_por_criterio_esta_vacia_pero_la_del_tanteo_no(geometria):
-    """Tantear no exige editar criterios_adoptados.py; dimensionar solo, si."""
+def test_la_geometria_por_criterio_ya_no_existe_y_la_del_tanteo_si(geometria):
+    """
+    --- T-7a --- Tantear no exige editar criterios_adoptados.py. Hasta T-7a
+    ademas habia UNA geometria por criterio para todo el corredor
+    (`geometria_adoptada`, que se detenia en 'predimensionamiento_cabezal'
+    vacio): era INF-5.1.15 y se retiro. El criterio guarda hoy las REGLAS
+    con que `predimensionar_cabezal` propone la geometria de cada extremo de
+    cada punto (tests/test_t7a_cabezal_geometria.py).
+    """
+    from src.modulos import M9_cabezal as M9
     assert geometria.B > 0
-    with pytest.raises(CriterioPendienteError) as excinfo:
-        geometria_adoptada()
-    assert excinfo.value.clave == "predimensionamiento_cabezal"
+    assert not hasattr(M9, "geometria_adoptada")
+    assert isinstance(ca.valor("predimensionamiento_cabezal"), dict)
 
 
 # ===========================================================================
@@ -1706,7 +1713,9 @@ def test_la_cadena_completa_corre_cuando_los_vacios_se_declaran(monkeypatch,
 @pytest.mark.parametrize("clave", [
     "pendiente_relleno_trasdos_i", "inclinacion_muro_beta",
     "friccion_muro_suelo_delta", "punto_aplicacion_incremento_sismico",
-    "predimensionamiento_cabezal", "N_cq_N_gammaq_meyerhof",
+    # 'predimensionamiento_cabezal' SALIO de esta lista en T-7a: tiene valor
+    # (las reglas del predimensionamiento por punto, [A] con ventana).
+    "N_cq_N_gammaq_meyerhof",
     "metodo_estabilidad_global",
 ])
 def test_cada_vacio_de_la_fase_9_esta_declarado_con_su_justificacion(clave):

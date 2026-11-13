@@ -119,6 +119,12 @@ class PorCapitulo:
     """
     base: Dict[str, int]
     separadores: Tuple[str, ...] = (".", "-")
+    # --- T-7a --- LAS PRELIMINARES FOLIADAS EN ROMANAS (indice, listas de
+    # figuras, de tablas y de simbolos). None = ninguna cita de la fuente cae
+    # en ellas y la regla no las traduce; un entero = la base de la serie
+    # romana, pdf = base + valor ("xix" -> base + 19). La abrio la «List of
+    # Symbols» del HDS-5 (pag. impresa xix, PDF 23).
+    romanas: Optional[int] = None
 
     def _partir(self, impresa: str) -> Optional[Tuple[str, int]]:
         for sep in self.separadores:
@@ -131,6 +137,8 @@ class PorCapitulo:
         return None
 
     def pagina_pdf(self, impresa: str) -> Optional[int]:
+        if self.romanas is not None and impresa in _FOLIOS_ROMANOS:
+            return self.romanas + _FOLIOS_ROMANOS.index(impresa) + 1
         partes = self._partir(impresa)
         if partes is None:
             return None
@@ -138,6 +146,16 @@ class PorCapitulo:
         if capitulo not in self.base:
             return None
         return self.base[capitulo] + numero
+
+
+# Los folios romanos en minusculas de "i" a "xcix", en su orden: el folio de
+# posicion k vale k + 1. Se componen de las dos series canonicas (decenas y
+# unidades) y no de una tabla de valores, de modo que un folio mal formado
+# ("iix", "vv") no esta en la serie y no se traduce.
+_UNIDADES_ROMANAS = ("", "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix")
+_DECENAS_ROMANAS = ("", "x", "xx", "xxx", "xl", "l", "lx", "lxx", "lxxx", "xc")
+_FOLIOS_ROMANOS = tuple(d + u for d in _DECENAS_ROMANAS
+                        for u in _UNIDADES_ROMANAS)[1:]
 
 
 @dataclass(frozen=True)

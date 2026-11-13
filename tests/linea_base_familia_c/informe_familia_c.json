@@ -3,7 +3,7 @@
     "csv": "<SALIDA>/puntos_c.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "b715b1694f4a17566bcbb365c439af196c47e185",
-    "criterios_sha1": "45ba5f765689a32c30482dd84b264eb9ea19d3a2",
+    "criterios_sha1": "3375d11162928ea763167fc51bc2f7044210bbf3",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -391,13 +391,13 @@
         }
       },
       "proteccion_entrada": {
-        "tipo_embocadura": "cabezal_recto",
+        "tipo_embocadura": "cabezal_con_aleros",
         "V_entrada_m_s": 2.4119750436244365,
         "revestimiento": "emboquillado_de_piedra",
         "criterio_revestimiento": "tipo_proteccion_entrada",
         "elementos": [
-          "cauce de aproximacion, del pie del cabezal hacia aguas arriba, con su uña o dentellon al borde",
-          "talud del terraplen a los dos lados del cabezal, donde el muro recto no lo contiene"
+          "piso entre los aleros (zampeado), con su uña o dentellon al borde",
+          "talud del terraplen detras de la punta de los aleros"
         ],
         "requerida": null,
         "velocidad_admisible": null
@@ -472,6 +472,19 @@
           "criterio_gobernante": "resguardo_HW_subrasante",
           "mensaje": "factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
         }
+      },
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 15 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": null,
+        "cabezales": null
       },
       "estructural": {
         "material": "concreto_reforzado",
@@ -964,13 +977,13 @@
         }
       },
       "proteccion_entrada": {
-        "tipo_embocadura": "cabezal_recto",
+        "tipo_embocadura": "cabezal_con_aleros",
         "V_entrada_m_s": 1.7391817606771776,
         "revestimiento": "emboquillado_de_piedra",
         "criterio_revestimiento": "tipo_proteccion_entrada",
         "elementos": [
-          "cauce de aproximacion, del pie del cabezal hacia aguas arriba, con su uña o dentellon al borde",
-          "talud del terraplen a los dos lados del cabezal, donde el muro recto no lo contiene"
+          "piso entre los aleros (zampeado), con su uña o dentellon al borde",
+          "talud del terraplen detras de la punta de los aleros"
         ],
         "requerida": null,
         "velocidad_admisible": null
@@ -1045,6 +1058,19 @@
           "criterio_gobernante": "resguardo_HW_subrasante",
           "mensaje": "factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
         }
+      },
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 5 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": null,
+        "cabezales": null
       },
       "estructural": {
         "material": "concreto_reforzado",
@@ -1368,6 +1394,7 @@
         "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
         "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto",
+        "Embocadura de B-01: la entrada de un alivio de cuneta (Familia B) suele ser una CAJA RECEPTORA (Lamina Nº 02-A del Manual, sin aleros), que el programa NO modela: el punto recibe «cabezal_con_aleros» ('embocadura_cabezal'), y con esa embocadura se calculan su perdida de entrada, su proteccion de entrada y su cabezal de entrada. Una caja receptora no tiene fila en las Tablas A.1 y C.2 del HDS-5 (ficha T7A-02)",
         "VB2 (caudal de aporte frente a la capacidad de la cuneta) NO SE EVALUO: falta la pendiente de la cuneta (`S_cuneta`, por --datos-externos), sin la que la capacidad no se calcula; por la misma falta la Fase 10 del punto se detiene (ver su bloqueo)",
         "tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica"
       ],
@@ -1425,6 +1452,19 @@
       "proteccion_entrada": null,
       "socavacion_salida": null,
       "geometria": null,
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 0 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": null,
+        "cabezales": null
+      },
       "estructural": null,
       "espaciamiento_alivio": null,
       "tramo_alivio": {
@@ -1906,13 +1946,13 @@
         }
       },
       "proteccion_entrada": {
-        "tipo_embocadura": "cabezal_recto",
+        "tipo_embocadura": "cabezal_con_aleros",
         "V_entrada_m_s": 1.6827572451353277,
         "revestimiento": "emboquillado_de_piedra",
         "criterio_revestimiento": "tipo_proteccion_entrada",
         "elementos": [
-          "cauce de aproximacion, del pie del cabezal hacia aguas arriba, con su uña o dentellon al borde",
-          "talud del terraplen a los dos lados del cabezal, donde el muro recto no lo contiene"
+          "piso entre los aleros (zampeado), con su uña o dentellon al borde",
+          "talud del terraplen detras de la punta de los aleros"
         ],
         "requerida": null,
         "velocidad_admisible": null
@@ -2015,6 +2055,19 @@
           "criterio_gobernante": "resguardo_HW_subrasante",
           "mensaje": "factible: la rasante 39.100 msnm alcanza la minima de 7.A (38.473 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce"
         }
+      },
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 30 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": "Embocadura del marco coherente con la del cabezal (cabezal con aleros a 45 grados con la pared del barril): 'embocadura_cajon' = cajon_concreto_aletas_30_75; 'ke_entrada_cajon' = cajon_aletas_30_75_escuadra",
+        "cabezales": null
       },
       "estructural": null,
       "espaciamiento_alivio": null,
@@ -2265,7 +2318,7 @@
   "cabezal": {
     "cadena_sismica": null,
     "mononobe_okabe": null,
-    "geometria": null,
+    "por_punto": [],
     "recubrimientos": [],
     "cuantias_minimas": {},
     "notas": [],
@@ -2339,6 +2392,17 @@
         "valor": "camara_o_buzon_en_cabecera",
         "declarado_en_caliente": false,
         "concepto": "Como se resuelve el acceso de mantenimiento para limpieza del conducto en cada punto, que es la mitad [A] de la fila V2b de la Fase 5 y contenido de los PLANOS (Sec. 11, entregable 7)"
+      },
+      {
+        "clave": "angulo_aletas",
+        "etiqueta": "A",
+        "valor": {
+          "por_defecto_grados": 45.0,
+          "umbral_esviaje_grados": 30.0,
+          "con_esviaje_mayor_grados": 30.0
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Angulo de las aletas del cabezal con la prolongacion de la pared del barril (paralela al eje del conducto), como regla por punto: el de por defecto, y el que rige cuando el esviaje del cruce supera un umbral"
       },
       {
         "clave": "borde_libre_bajo_tw_ahogante",
@@ -2482,6 +2546,13 @@
         },
         "declarado_en_caliente": false,
         "concepto": "Progresion de diametros normalizados (inicio y paso)"
+      },
+      {
+        "clave": "embocadura_cabezal",
+        "etiqueta": "A",
+        "valor": "cabezal_con_aleros",
+        "declarado_en_caliente": false,
+        "concepto": "Remate de los dos extremos del conducto: cabezal con aleros o cabezal recto (sin aleros)"
       },
       {
         "clave": "embocadura_cajon",
@@ -2806,7 +2877,6 @@
       "N_cq_N_gammaq_meyerhof",
       "TR_evento_extremo",
       "TW_receptor",
-      "angulo_aletas",
       "c_phi_fundacion",
       "capacidad_portante_adm",
       "categoria_refuerzo_aashto",
@@ -2825,7 +2895,6 @@
       "metodo_estabilidad_global",
       "pendiente_relleno_trasdos_i",
       "phi_relleno_trasdos",
-      "predimensionamiento_cabezal",
       "punto_aplicacion_incremento_sismico",
       "regimen_cortante_muro_e060_art_11_10_2",
       "remanso_derecho_via"
@@ -2854,6 +2923,7 @@
       "metodo_transicion_hds5",
       "n_manning_hdpe",
       "origen_cota_fondo_entrada",
+      "predimensionamiento_cabezal",
       "regimen_v2b",
       "relacion_intensidad_duracion",
       "resguardo_HW_subrasante",
@@ -2865,7 +2935,6 @@
     "sin_consumidor": [
       "Mw_licuefaccion",
       "PERFIL_SUELO_PRESUNTO",
-      "angulo_aletas",
       "c_phi_fundacion",
       "capacidad_portante_adm",
       "clase_sitio",

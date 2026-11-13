@@ -5427,3 +5427,220 @@ Doce fichas; las cinco últimas son de la auditoría.
   como en T8-06).
 - **Dónde vive:** `tests/test_t9_correcciones.py::test_mut_las_fronteras_de_la_tabla_304_12_son_las_de_la_tabla`
 
+# Parte XLIX — Lo que T-7a de la cadena T dejó escrito: el cabezal por punto y sus aleros
+
+T-7a (2026-11-12) hace que la Fase 9 deje de ser «del proyecto»: cada punto dimensionado
+tiene dos cabezales (entrada y salida) con su geometría propuesta por reglas declaradas,
+sus aleros, su losa de entrega con dentellón y la verificación de que rematan al conducto
+(`INF-4.1`, `INF-4.2`, `INF-4.3`, `INF-5.1.15`). No verifica estabilidad ni arma: eso es
+T-7b y T-7c. Una auditoría adversarial (2026-11-13, AJUSTADO: 2 ALTA, 6 MEDIA, 2 BAJA)
+refutó dos cosas de la FASE A —la fórmula de los aleros con esviaje y la premisa de la
+decisión 4 del dueño— y las correcciones las aplicaron; las fichas de abajo están escritas
+sobre el árbol corregido, y cada una dice qué cambió.
+
+## T7A-01 · La Fase 9 por punto no se alcanza en una corrida de expediente: la detienen TRES capas, y abrir la puerta de `ancho_derecho_via_m` no quita ninguna
+
+- **Qué se difirió:** que una corrida `--alcance expediente` real imprima el cabezal de un
+  punto. La Fase 9 propone sobre la sección adoptada y las cotas de 7.B, y a expediente
+  ningún punto del fixture se dimensiona. La FASE A lo atribuyó a que «V5 se detiene en
+  `ancho_derecho_via_m`, que no tiene puerta», y la decisión 4 del dueño (abrir esa puerta
+  como dato externo opcional) partía de esa premisa. **La auditoría la refutó y las
+  correcciones la midieron** (`tests/test_t7a_correcciones.py::test_h2_las_tres_capas_que_detienen_la_fase_9_a_expediente`):
+  (1) A-01, A-02 y B-01 se detienen ANTES, en el criterio `remanso_derecho_via` [A] sin
+  valor (`CriterioPendienteError` en el bucle de MD); (2) con ese criterio declarado,
+  `M5.v5_remanso` levanta `DatoFaltanteError('ancho_derecho_via_m')` SIN CONDICIÓN: no lee
+  el dato, porque no hay método de remanso con que compararlo; (3) aunque V5 cumpliera
+  (simulada), A-01 y A-02 se detienen en V8, en `TR_evento_extremo` sin valor, y detrás
+  falta el caudal del evento extremo (ficha T1-03); C-01, con los siete del cajón, también
+  se detiene en V8. **La decisión 4 NO se aplicó**: un dato sin lector no se abre, y abrir
+  la puerta no habría hecho alcanzable la Fase 9. Hoy ningún test recorre la Fase 9 por la
+  ruta real de expediente: todos la llaman por `servicio._fase_9` sobre un punto que la
+  corrida de PERFIL dimensiona (A-01, A-02 y el marco C-01).
+- **Por qué:** el encargo de T-7a es expreso en que la Fase 9 es de nivel EXPEDIENTE y no
+  se corre a perfil; la etapa existe y es la misma que usaría la corrida de expediente.
+  Lo que la cierra no es de T-7a.
+- **Qué haría falta:** las tres cosas, juntas, y el dueño las asignó a **T-7b** como su
+  primer punto (2026-11-13): el método de V5 como opción DECLARABLE sin valor por defecto
+  (que entonces sí lee `ancho_derecho_via_m`, y ahí se abre su puerta), el valor de
+  `remanso_derecho_via`, y el TR y el caudal del evento extremo de V8 declarados. Sin
+  ellos V5 sigue bloqueando como hoy. Mientras tanto `INF-4.2` e `INF-4.3` quedan «en
+  parte»: la función, la memoria y los tests existen sobre `servicio._fase_9`, y el
+  residual es que una corrida de expediente la alcance.
+- **Dónde vive:** `src/servicio.py::_fase_9`
+
+## T7A-02 · La embocadura es de perfil y gobierna la coherencia del marco; en el tubo la fuente no distingue y nada se mueve; la caja receptora no se modela y se avisa
+
+- **Cerrado (T-7a):** `embocadura_cabezal` [A] y `angulo_aletas` [A] (45° / 30° si el
+  esviaje supera 30°) se resuelven antes de la Fase 4 en los dos alcances
+  (`M9.embocadura_del_punto`). En un marco, la carta de la Tabla A.1 y la fila de la C.2
+  declaradas tienen que ser de la banda de ángulo del cabezal
+  (`BANDAS_ALETAS_CAJON_A1/_C2`, leídas del rótulo de cada fila); si no, el punto se
+  detiene y el bucle de MD no corre. Con las filas coherentes M4 calcula con ellas (C-01
+  recto: HW 0.6234 → 0.6391 m). En un TUBO la Tabla C.2 agrupa «Headwall or headwall and
+  wingwalls» y las Cartas 1 a 3 no separan aleros: nada se mueve (ficha T2-04). Con la
+  embocadura del marco de 30–75° que T-3 dejó de archivo (Carta 8 escala 1, ke 0.4) la
+  coherencia se cumple en toda la ventana de α y C-01 sigue en marco 1.20 × 0.90 con el
+  HW de T-3; su nota es un DATO del punto (JSON, paso 9.0.0), no un aviso.
+- **Abierto:** (1) en la ventana de α (30–60°) el ke del cajón no cambia; la carta sí,
+  en las Cartas 9, 12 y 13. (2) Las filas de cabezal esviado (Carta 11) o de barril
+  esviado (Carta 12, escala 3: su banda se quitó en las correcciones, H9) no casan con el
+  cabezal normal al eje. (3) **La CAJA RECEPTORA no está en el catálogo**: la Lámina Nº
+  02-A la dibuja sin aleros y es la entrada habitual de un alivio de cuneta; la rama «60°
+  en caja receptora» del encargo no se adoptó (decisión 3 del dueño) y desde las
+  correcciones **cada punto de la Familia B lo AVISA** (`EmbocaduraDelPunto.avisos`): su
+  pérdida de entrada, su protección y su cabezal de entrada salen de una embocadura que no
+  es la suya. (4) La coherencia se decide por la FAMILIA (corre antes de que exista la
+  sección); equivale a la forma mientras M2 solo dé el marco a la Familia C, y un test lo
+  fija.
+- **Qué haría falta:** para (3), una embocadura «caja receptora» con su hidráulica (un
+  drop inlet no está en las Tablas A.1 y C.2 del HDS-5) y su geometría.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::verificar_coherencia_embocadura_cajon`
+
+## T7A-03 · Los aleros llevan el coseno de su ángulo con la bajada del talud: con esviaje, los dos aleros de un cabezal miden distinto
+
+- **Cerrado (T-7a, corregido en H1):** α se mide con la prolongación de la pared del barril
+  (ΘW del HDS-5, List of Symbols, pág. impresa xix; cita `HDS5_3ED.SIMBOLOS#THETA_W`): por
+  eso coseno y no seno. La FASE A daba la misma longitud a los dos aleros y decía «los
+  aleros absorben el giro»; la auditoría lo refutó. El talud baja PERPENDICULAR A LA VÍA
+  (como en `M7.longitud_conducto`) y el eje forma θ con esa dirección: con el cabezal
+  normal al eje, un alero forma α − θ con la bajada del talud y el otro α + θ, y
+  `L = (h0 − H_f)·talud / cos(α ∓ θ)`. En la entrada de A-01 (θ 15°, α 45°): 2.425 y
+  4.200 m, donde la FASE A daba 2.970 m a los dos. El CSV da la magnitud del esviaje, no
+  su sentido: «corto» y «largo», y el lado lo fija la planta. Con α + θ ≥ 90°,
+  `LimiteNumericoError` con el par y su remedio. Un muro normal al eje deja el talud a
+  cotas distintas en sus extremos, Δz = L_c·sen θ/talud (0.22 m en A-01), y se AVISA.
+- **Abierto:** (1) **el cabezal PARALELO A LA VÍA**, que haría coincidir corona y talud:
+  el dueño (2026-11-13) dejó el NORMAL AL EJE como el de archivo en las tres familias —es
+  lo que supone la hidráulica del HDS-5— y el paralelo como alternativa SOLO para el marco
+  (filas de la **Carta 11**, hoy sin banda), diferida a un paso posterior a T-7c: cambiaría
+  la carta y el HW de C-01. Mientras tanto el alero largo (8.1 m en C-01) se acorta
+  declarando un α menor de ese lado (`cabezal_declarado.angulo_alero_largo_grados`,
+  aleros asimétricos; con un marco el ke y la carta siguen con el α de la regla, y se
+  avisa). (2) **Aviso para T-7b:** la orientación está acoplada con el [S]
+  `orientacion_muro_respecto_al_trafico` y con el conflicto #4, y T-7b verifica qué dice
+  el HDS-5 núm. 5.4.2 de las embocaduras esviadas. (3) «/ sen α» del encargo: solo
+  coincide a 45° sin esviaje.
+- **Qué haría falta:** la banda de la Carta 11 y el paso posterior a T-7c; corregir la
+  frase del INFORME, que no es de este repositorio.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::predimensionar_aleros`
+
+## T7A-04 · Las reglas del predimensionamiento son [A] en el extremo de más material, y eso NO es el lado seguro de la estabilidad
+
+- **Cerrado (T-7a):** `predimensionamiento_cabezal` guarda trece reglas con ventana por
+  campo (encargo e INFORME §4.2–§4.3), en el extremo de más material (pantalla 0.30 m,
+  H/6, B = 0.7·H, peralte H/10, losa 1.5·D y 0.30 m). Lo que tiene número va aparte: 0.30
+  m de E.060 22.7.4 ([N]), 0.80 m de E.050 26.2 y el piso de la zapata armada de E.060
+  15.7 ([N→], ficha T7A-08), 2.0 ft de AASHTO 12.6.5 ([C]) y el dentellón de la Lámina Nº
+  04 ([N→]). Lo que la regla calcula desde una dimensión declarada se imprime «derivada».
+- **Abierto:** (1) **«Más material» no es el lado seguro** (H10): con kh = 0.50 y μ = tan
+  20° = 0.364 < kh, cada kN de muro suma más fuerza que desliza que resistencia y la masa
+  **empeora** el deslizamiento sísmico; depende de φ, que el EMS no ha dado: lo evalúa
+  T-7b. (2) **El umbral «gravedad hasta 2.0 m» se mide sobre la altura TOTAL** (desplante
+  incluido) y con altura interior ≥ 0.90 m la mínima es 2.15 m más la pared: **todo
+  cabezal sale voladizo armado**; el umbral no se cambia (alternativa en su ventana,
+  hasta 2.5 m) y la corrida lo AVISA (H7). Si sale gravedad, E.060 22.10.2.1–22.10.2.2
+  (pág. 195) limitan el ciclópeo a muros de gravedad y piden flexión y corte en voladizos:
+  se avisa y lo juzga T-7c. (3) El PDF de VARIOS (pp. 18 y 42) no está en `normas/`: el
+  origen de «H/8–H/6» como pantalla de gravedad **no se pudo verificar**, y sigue [A]. (4)
+  E.060 14.5.3.2 (200 mm) es del método empírico de muros de carga: no se aplica. (5) Un
+  solo terreno por extremo para desplante, dentellón y aleros: la solera en la entrada y
+  la más baja entre solera y receptor en la salida (decisión 2 del dueño). (6) E.060
+  22.7.4 queda [N] por la §9.4 de la hoja; la objeción de ámbito que hace [N→] a E.050
+  alcanzaría a E.060, y el dueño la remitió a T-7c (2026-11-13).
+- **Qué haría falta:** el plano tipo de cabezal, el EMS (φ) para que T-7b diga si el
+  material de más ayuda, o el PDF de VARIOS en `normas/`.
+- **Dónde vive:** `src/criterios_adoptados.py::predimensionamiento_cabezal`
+
+## T7A-05 · El desplante de salida y el dentellón bajan hasta la socavación con el margen de AASHTO 12.6.5, leído como aplicable al cabezal
+
+- **Cerrado (T-7a, corregido en H3 y H4):** `D_f = max(0.80 m, pie − (fondo de la hoya −
+  margen))`, con la hoya que entrega la Fase 6 (T-8; la declarada gana). **El dentellón
+  se mide desde el TERRENO del pie**, no desde la cara superior de la losa: la cota «0.80
+  min.» de la Lámina Nº 04 (pág. impresa 210, PDF 213, releída por imagen) arranca en la
+  superficie del terreno natural junto al dentellón —allí la cara inferior del paquete
+  losa + relleno granular— y llega a su base. La FASE A la medía desde la losa, a la cota
+  de la solera, y en la salida de A-01 la base quedaba 0.11 m bajo el lecho receptor
+  (41.187); con una sola referencia por extremo queda en 40.50. A la salida con hoya, la
+  base del dentellón baja a min(pie − 0.80, hoya − margen): AASHTO 12.6.5 pide el
+  «cut-off wall … extending below the maximum anticipated depth of scour» sin cifra, y el
+  proyecto le aplica el margen de 2.0 ft que el mismo artículo da a las zapatas (antes
+  llegaba AL fondo de la hoya, con margen 0). Verificaciones CB4 (E.050, por analogía), CB5
+  (AASHTO, la zapata), CB6 (el espesor de la zapata contra el mínimo de su tipo) y CB7 (la
+  base del dentellón contra el terreno y la hoya): las dos últimas, nuevas en las
+  correcciones (H4), porque una dimensión DECLARADA podía violar un mínimo con número y
+  ninguna verificación lo decía.
+- **Abierto:** (1) que la zapata de un cabezal sea una de las «footings of structures» del
+  12.6.5, y que el margen valga también para el dentellón, es lectura del proyecto, del
+  lado seguro: está declarada como `Interpretacion` de la cita
+  `AASHTO_LRFD_9.12.6.5#ZAPATAS`, con lo que juega en contra, y por eso el margen es [C]
+  con ventana (0 de AASHTO 10.6.1.2 y HEC-14 5.1.3; 0.6096 m de 12.6.5). (2) Sin el lecho
+  ni una profundidad declarada no hay hoya: el desplante de salida queda con 0.80 m y la
+  corrida lo AVISA con el motivo que la Fase 6 dio (desde las correcciones, también cuando
+  la etapa de la Fase 6 se bloqueó). (3) En la entrada no se estima socavación (HEC-14 Cap.
+  5 es de la salida).
+- **Qué haría falta:** el EMS del lecho por punto (`material_lecho_salida`) o un estudio
+  de socavación (`profundidad_socavacion_estimada_m`).
+- **Dónde vive:** `src/modulos/M9_cabezal.py::predimensionar_cabezal`
+
+## T7A-06 · La longitud entre cabezales queda cerrada con el relleno retenido, da también la de metrado, y no sustituye a la del diseño
+
+- **Cerrado (T-7a, corregido en H6):** la ficha T6-01 pedía la coronación del cabezal para
+  cerrar la longitud entre cabezales. **El talud muere en el RELLENO que cada muro retiene
+  —la coronación menos el bordillo, que por definición sobresale—, contra la cara
+  interior (trasdós) del muro**: `L_cab = [ancho + talud·(borde_e − rel_e + borde_s −
+  rel_s)] / cos(esviaje)`, paso 9.0.5. La FASE A lo hacía morir en la corona del bordillo:
+  en A-01 daba 12.865 m y ahora 13.486 m (frente a 18.869 m al fondo y 14.676 m a la
+  clave). La longitud de METRADO del barril suma el espesor de los dos muros, normales al
+  eje: 14.086 m en A-01. Las alturas de los aleros se miden con el mismo criterio: h0 y
+  H_f son alturas del alero sobre el pie con su bordillo, de modo que h0 − H_f es la caída
+  del talud; si H_f se leyera sobre el talud los aleros saldrían más cortos, y la lectura
+  adoptada es la de más longitud.
+- **Abierto:** la coronación de salida se fija con la cota de salida de 7.B, que sale de la
+  longitud aproximada; con la longitud entre cabezales el muro de salida queda unos 2.7 m
+  más cerca de la vía y la solera bajo él sube S·ΔL: **centímetros**, no milímetros como
+  decía la FASE A (1.6 cm en A-01, con S = 0.006), y no se itera. El control de salida
+  sigue con la aproximada (T6-01 sigue abierta en esa mitad).
+- **Qué haría falta:** `L` por sección en MD, o declarar `longitud_m` por punto.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::longitud_entre_cabezales`
+
+## T7A-07 · La aceptación de T-7a se escribió después del código; el rojo se midió contra la base
+
+- **Qué se difirió:** el orden de la casa (rojo con `xfail(strict=True)` y liberar), en
+  la FASE A y en las correcciones.
+- **Por qué:** se dice en vez de reconstruirlo. El rojo de la FASE A se midió copiando
+  `tests/test_t7a_cabezal_geometria.py` a un checkout de `df1b23c`; el de las correcciones,
+  copiando `tests/test_t7a_correcciones.py` a un checkout de la FASE A (`1b83d39`). Los
+  oráculos son la aritmética escrita en cada test, no la fórmula cerrada del código. Once
+  tests de la FASE A se reescribieron a la verdad nueva DECLARÁNDOLO en su docstring (el
+  piso de la zapata armada, los dos aleros, el dentellón, CB6/CB7, el origen «derivada»,
+  la longitud al relleno, E.050 [N→]).
+  La mutación de las 17 funciones de la Fase 9 del punto con el arnés de EXT-11: 275/326
+  muertos con la primera tanda (la FASE A, 185/226); con la segunda tanda de
+  `test_t7a_correcciones.py`, escrita contra los supervivientes, 309/326, y uno más muerto
+  después a mano. Los 16 vivos son de frontera contra `TOL_UMBRAL_NORMATIVO`, de texto o
+  equivalentes en el dominio.
+- **Qué haría falta:** nada que se pueda rehacer.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::cabezal_del_punto`
+
+## T7A-08 · Los mínimos de E.050 y de E.060 15.7 son [N→] para un cabezal vial, y la hoja de ruta los rotula [N]
+
+- **Cerrado (correcciones de T-7a, H8 y dudoso 4):** el ámbito de E.050 son las
+  edificaciones del RNE (Art. 1 y 3, pág. 7) y la FASE A escribía su 0.80 m de profundidad
+  mínima (Art. 26.2, pág. 38) como [N] en `constantes_normativas` y CB4 como «EXIGENCIA de
+  E.050». Pasa a criterio [N→] `profundidad_cimentacion_min_cabezal_m` con la analogía
+  declarada —lo que la hace cercana es que la misma norma manda que el muro de contención
+  cumpla su Capítulo IV (39.13.7, pág. 73), donde está el Art. 26— y una `Interpretacion`
+  en la cita con lo que juega en contra; CB4 dice «por analogía». Y el peralte mínimo de la
+  zapata ARMADA, verificado en E.060 15.7 (pág. 138: «La altura de las zapatas, medida
+  sobre el refuerzo inferior no debe ser menor de 300 mm para zapatas apoyadas sobre el
+  suelo»), entra como piso del espesor propuesto del voladizo armado, [N→]
+  (`peralte_min_zapata_armada_m`), más los 70 mm de recubrimiento contra el suelo de 7.7.1
+  a): `e_z = max(H/10, 0.37 m)`; en la entrada de A-01 la regla daba 0.225 m.
+- **Abierto:** la tabla de la §0.1 de la hoja de ruta rotula E.050 como [N] para
+  «Capacidad portante, FS de muros…» sin la salvedad del ámbito: **es un defecto de la
+  hoja**, declarado en ella con una nota, y la hoja sigue mal en su §9.3 («Estabilidad —
+  E.050 [N]») mientras T-7b no la corrija al decidir el marco de estabilidad. Quien la lea
+  sin leer el código pensará que E.050 rige el cabezal vial como norma propia.
+- **Qué haría falta:** que T-7b corrija la §9.3 al ensamblar la estabilidad (el dictamen
+  del verificador ya lo pide).
+- **Dónde vive:** `src/criterios_adoptados.py::profundidad_cimentacion_min_cabezal_m`

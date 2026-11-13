@@ -262,7 +262,9 @@ def test_lo_que_ninguna_corrida_invoca_se_clasifica_por_su_consumidor(
 SIN_CONSUMIDOR_Y_SIN_MEDIDA = (
     "Mw_licuefaccion",
     "PERFIL_SUELO_PRESUNTO",
-    "angulo_aletas",
+    # 'angulo_aletas' SALIO DE ESTE CENSO EN T-7a: tiene consumidor
+    # (`M9.embocadura_del_punto`, que corre antes de la Fase 4) y su nivel de
+    # perfil lo mide la corrida de perfil de este mismo archivo.
     "c_phi_fundacion",
     "capacidad_portante_adm",
     "clase_sitio",

@@ -361,7 +361,11 @@ def test_el_consumidor_sale_del_codigo_y_no_de_los_comentarios():
     tres siguen en cero.
     """
     assert ve.variable("TW_receptor").consumido_por == ("M3_hidraulica",)
-    for clave in ("angulo_aletas", "capacidad_portante_adm", "clase_sitio"):
+    # 'angulo_aletas' estaba aqui hasta T-7a, que le dio consumidor real
+    # (`M9.embocadura_del_punto`): el censo lo recogio solo, igual que
+    # `TW_receptor`. Quedan los otros dos.
+    assert ve.variable("angulo_aletas").consumido_por == ("M9_cabezal",)
+    for clave in ("capacidad_portante_adm", "clase_sitio"):
         assert ve.variable(clave).consumido_por == (), clave
         assert clave in ve.variables_sin_consumidor()
     # `ke_entrada` LLEVA DOS DESDE S21 Y NO ES UNA REGRESION: es el segundo

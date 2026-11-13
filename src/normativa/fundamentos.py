@@ -94,6 +94,9 @@ F6 = "Fase 6 - Proteccion de entrada y salida"
 F7 = "Fase 7 - Compatibilidad geometrica"
 F8 = "Fase 8 - Verificacion estructural del conducto"
 F10 = "Fase 10 - Alcantarillas de alivio: espaciamiento"
+# --- T-7a --- la Fase 9 deja de ser solo una nota de proyecto: el cabezal
+# por punto emite pasos, y sus fundamentos viven aqui con los demas.
+F9 = "Fase 9 - Cabezal y aletas"
 
 
 # ===========================================================================
@@ -2927,4 +2930,171 @@ APORTE_FRENTE_A_CAPACIDAD = _fundamento(
         "que no era la faja del tramo, la longitud por capacidad salia "
         "cientos de veces mayor que el tramo y VB1 cumplia con un aporte un "
         "82 % mayor que la capacidad de la cuneta."),
+)
+
+
+# ===========================================================================
+# --- T-7a --- Fase 9: el cabezal POR PUNTO (geometria y aleros)
+# ===========================================================================
+# Siete fundamentos para los pasos de `M9.predimensionar_cabezal`,
+# `M9.cabezal_del_punto` y las verificaciones CB1 a CB7.
+# Ninguno afirma que una fuente fije una dimension que la fuente no fija: el
+# verbo lo sostiene la cita que SI la fija (E.050 26.2, AASHTO 12.6.5, E.060
+# 22.7.4, HDS-5 3.3.5), y lo que es regla de practica lo dice el `por_que`.
+
+EMBOCADURA_CABEZAL = _fundamento(
+    id="F9.EMBOCADURA",
+    fase=F9,
+    que_paso=("Embocadura del punto: cabezal con aleros o recto, angulo de "
+              "los aleros y lo que la Tabla C.2 del HDS-5 hace con ellos"),
+    por_que=(
+        "La embocadura no es un detalle de acabado: en un marco, la fila de "
+        "perdida de entrada y la carta de control de entrada cambian con el "
+        "angulo de los aleros, y la Tabla C.2 agrupa sus filas por bandas de "
+        "ese angulo medido con el barril. En un tubo la misma tabla pone el "
+        "cabezal y el cabezal con aleros en una sola fila, de modo que el "
+        "angulo no mueve el calculo hidraulico. La Lamina 02-A del Manual "
+        "dibuja las salidas con aleros y sin ellos, sin acotar el angulo: "
+        "cual lleva esta obra y con que angulo es una eleccion del "
+        "proyecto, y se imprime junto con lo que la fuente hace con ella."),
+    verbo=Verbo.DEFINE,
+    citas=("HDS5_3ED.TC.2", "MC_HHD.LAMINA_02A"),
+    que_pasa_si_no_se_hace=(
+        "El control de entrada y el de salida de un marco podrian hablar de "
+        "una embocadura distinta de la que el cabezal dibuja, y nada lo "
+        "diria."),
+)
+
+CORONACION_CABEZAL = _fundamento(
+    id="F9.CORONACION",
+    fase=F9,
+    que_paso=("Coronacion y altura del cabezal: sobre la clave exterior y "
+              "sobre el nivel de agua del extremo"),
+    por_que=(
+        "Elegida la seccion, la fuente manda encajarla en el terraplen y "
+        "dimensionar los cabezales y los aleros. El muro de cabecera retiene "
+        "el relleno que cubre la clave exterior del conducto y contiene el "
+        "agua que se levanta contra el en la entrada (la carga de diseño) y "
+        "en la salida (el tirante o el nivel del receptor): su coronacion es "
+        "la mayor de esas dos cotas, cada una con lo que el proyecto le "
+        "suma. Lo que se suma -- relleno sobre la clave, bordillo, "
+        "resguardo -- es regla de predimensionamiento del proyecto, no de "
+        "la fuente."),
+    verbo=Verbo.OBLIGA,
+    citas=("HDS5_3ED.3.3.5#ENCAJE",),
+    que_pasa_si_no_se_hace=(
+        "El relleno sobre el conducto se derramaria por encima del muro, o "
+        "el agua de la entrada lo rebasaria, sin que la memoria lo hubiera "
+        "comparado."),
+)
+
+DESPLANTE_CABEZAL = _fundamento(
+    id="F9.DESPLANTE",
+    fase=F9,
+    que_paso=("Profundidad de desplante del cabezal: minimo de E.050 y, a "
+              "la salida, bajo la socavacion"),
+    por_que=(
+        "La zapata del cabezal se apoya en el borde del cauce, donde el agua "
+        "socava. E.050 fija, para las cimentaciones de las edificaciones, una "
+        "profundidad minima medida desde la superficie del terreno, y el "
+        "proyecto la aplica al cabezal por analogia con el muro de "
+        "contencion que esa norma remite a su Capitulo IV; AASHTO exige, "
+        "para las estructuras enterradas, que sus zapatas queden bajo la "
+        "socavacion maxima prevista con un margen, y el proyecto lee que la "
+        "del cabezal es una de ellas; HEC-14 recomienda que el cabezal baje "
+        "hasta esa profundidad. El desplante es el mas profundo de los dos "
+        "limites, y el de la socavacion solo existe donde la Fase 6 entrega "
+        "una profundidad."),
+    verbo=Verbo.OBLIGA,
+    citas=("E050.26.2#PROFUNDIDAD", "AASHTO_LRFD_9.12.6.5#ZAPATAS",
+           "AASHTO_LRFD_9.10.6.1.2#DESPLANTE", "HEC14.5.1.3#CABEZAL"),
+    que_pasa_si_no_se_hace=(
+        "La socavacion a la salida descalzaria el cabezal, y con el el "
+        "extremo del conducto, en la primera avenida de diseño."),
+)
+
+DIMENSIONES_CABEZAL = _fundamento(
+    id="F9.DIMENSIONES",
+    fase=F9,
+    que_paso=("Predimensionamiento del cabezal: tipo, espesores, zapata y "
+              "longitud del muro"),
+    por_que=(
+        "Las laminas del Manual dibujan el cabezal y acotan sus dimensiones "
+        "con letras, sin tabla de valores: la geometria es del proyecto. Se "
+        "propone con reglas de practica declaradas, una por dimension, y "
+        "cada una se imprime con su origen -- propuesta por regla, "
+        "declarada por el proyectista o derivada de una declarada --. Donde "
+        "una norma fija un minimo con su numero, el minimo se aplica y una "
+        "dimension declarada se contrasta con el: el espesor de la zapata de "
+        "concreto simple del cabezal de gravedad, y, por analogia, la altura "
+        "de la zapata armada sobre su refuerzo. La estabilidad de lo "
+        "propuesto no se juzga aqui."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.LAMINA_02A", "E060.22.7.4#ZAPATA", "E060.15.7#PERALTE",
+           "E060.22.10.2#CICLOPEO"),
+    que_pasa_si_no_se_hace=(
+        "El cabezal saldria dimensionado sin que nadie supiera de donde "
+        "salio cada medida, que es lo que este expediente prohibe."),
+)
+
+ALEROS_CABEZAL = _fundamento(
+    id="F9.ALEROS",
+    fase=F9,
+    que_paso="Aleros: angulo, longitud, alturas inicial y final, espesor",
+    por_que=(
+        "Los aleros contienen el talud del terraplen a los lados de la boca "
+        "y lo alejan del relleno que rodea al conducto; AASHTO pide "
+        "extenderlos lo bastante para protegerlo, sin dar una longitud. La "
+        "longitud sale de la geometria: el alero arranca a la altura del "
+        "cabezal y sigue al talud hasta que este baja a la altura final "
+        "declarada. El talud baja perpendicular a la via; el angulo del "
+        "alero se mide con la prolongacion de la pared del barril, y con "
+        "esviaje los dos aleros de un mismo cabezal forman angulos distintos "
+        "con la bajada del talud y no miden lo mismo."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.6.5#ALEROS", "MC_HHD.LAMINA_02A",
+           "HDS5_3ED.SIMBOLOS#THETA_W"),
+    que_pasa_si_no_se_hace=(
+        "El talud a los lados de la boca quedaria sin contencion, y su "
+        "erosion es la que descalza el cabezal."),
+)
+
+LOSA_CABEZAL = _fundamento(
+    id="F9.LOSA",
+    fase=F9,
+    que_paso="Losa de entrega y dentellon delante del cabezal",
+    por_que=(
+        "Delante del cabezal las laminas del Manual dibujan una losa y, en "
+        "su borde, una uña; AASHTO exige, sobre depositos erosionables, una "
+        "pantalla que baje por debajo de la socavacion maxima prevista. La "
+        "unica lamina que acota un dentellon es la del aliviadero, que mide "
+        "su profundidad minima desde el terreno junto a el, y esa "
+        "profundidad se aplica aqui por analogia, desde el mismo terreno que "
+        "el desplante del cabezal; a la salida, si la socavacion es mayor, "
+        "el dentellon baja bajo ella."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.12.6.5#DENTELLON", "MC_HHD.LAMINA_04#DENTELLON",
+           "MC_HHD.LAMINA_02"),
+    que_pasa_si_no_se_hace=(
+        "El borde de la losa quedaria colgado sobre la hoya, y la erosion "
+        "avanzaria por debajo hacia el cabezal."),
+)
+
+LONGITUD_ENTRE_CABEZALES = _fundamento(
+    id="F9.LONGITUD",
+    fase=F9,
+    que_paso=("Longitud entre cabezales con el talud muriendo en el relleno "
+              "que retienen, y longitud de metrado del barril"),
+    por_que=(
+        "Con la coronacion de los dos cabezales fijada, el talud ya no muere "
+        "en el fondo ni en la clave sino en el relleno que cada muro "
+        "retiene, contra su cara interior, y la longitud del barril entre "
+        "cabezales queda cerrada; el barril atraviesa ademas los dos muros, "
+        "y su longitud de metrado los suma. La fuente pide que quede cerca "
+        "de la aproximada y no da tolerancia: las dos se imprimen."),
+    verbo=Verbo.OBLIGA,
+    citas=("HDS5_3ED.3.3.5#ENCAJE", "HDS5_3ED.3.1.4#LONGITUD"),
+    que_pasa_si_no_se_hace=(
+        "El barril se mediria y se pagaria con una longitud que no es la "
+        "que los cabezales dejan."),
 )

@@ -193,6 +193,41 @@ mismo ensayo** que el dato de sitio `exposicion_quimica_ems` (recubrimiento del 
 si los dos están declarados y dan exposiciones distintas, la matriz lo avisa. Cada
 concentración admite de 0 a 1 000 000 ppm.
 
+### 3.2 Dimensiones del cabezal — opcionales, por el mismo JSON (T-7a)
+
+Desde T-7a el cabezal es **por punto**: la Fase 9 propone la geometría de los dos cabezales
+(entrada y salida) de cada punto dimensionado con las reglas declaradas del criterio
+`predimensionamiento_cabezal` [A], y la memoria imprime cada dimensión como «propuesta por
+regla». El proyectista puede **pisar** cualquier dimensión con la clave `cabezal_declarado`
+(un objeto, en `globales` o en `puntos`), y entonces la memoria la imprime como «declarada»
+—y como «derivada de dimensiones declaradas» la que la regla calcula a partir de ella—
+y la verifica contra el conducto y contra los mínimos con número (CB1 a CB7). Como los ensayos de durabilidad, **no** está en
+`servicio.CLAVES_EXTERNAS` sino en `servicio.CLAVES_DE_CABEZAL`: ninguna etapa la exige y su
+ausencia no detiene nada.
+
+| Campo | Unidad | Origen | Qué es |
+|---|---|---|---|
+| `altura_total_m`, `profundidad_desplante_m`, `longitud_m` | m | **Proyectista** (plano de encofrado) | Altura total (base de zapata a corona), profundidad de desplante bajo el pie del muro, longitud del muro |
+| `espesor_corona_m`, `espesor_base_muro_m` | m | Proyectista | Espesores de la pantalla |
+| `ancho_zapata_m`, `espesor_zapata_m`, `ancho_punta_m` | m | Proyectista | Zapata (el talón es lo que queda) |
+| `longitud_aleros_m`, `altura_final_aleros_m`, `espesor_aleros_m` | m | Proyectista | Aleros (la longitud declarada vale para los dos) |
+| `angulo_alero_largo_grados` | grados con la pared del barril, en [0, 90) | Proyectista | El α del alero LARGO de un cruce esviado (el que forma α + θ con la bajada del talud): declararlo menor lo acorta (aleros asimétricos). Con un marco, el ke y la carta siguen con el α de la regla y la corrida lo avisa |
+| `longitud_losa_m`, `espesor_losa_m`, `profundidad_dentellon_m` | m | Proyectista | Losa de entrega y dentellón |
+| `tipo` | texto | **Propietario** · proyectista | `voladizo_armado` o `gravedad_ciclopeo` (sin él, la regla por altura) |
+
+Los campos del nivel superior valen para los dos extremos; dentro de `"entrada"` o
+`"salida"` valen para ese extremo y ganan. **Ninguno tiene valor por defecto**: cada
+dimensión tiene que ser un número finito, mayor que cero y no mayor que
+`dominios.DIMENSION_CABEZAL_MAX_M`; un texto, un booleano, un cero o una clave desconocida
+detienen la carga (`M9.validar_cabezal_declarado`). Sin el objeto, rige la regla.
+
+Lo que el cabezal **sí** necesita del sitio no es nuevo: la profundidad de socavación a la
+salida (`material_lecho_salida` o `profundidad_socavacion_estimada_m`, §3, de T-8) baja su
+desplante y el dentellón de su losa; sin ninguna de las dos, el desplante de salida queda
+con el mínimo de 0.80 m de E.050 (aplicado por analogía, [N→]) y la corrida lo **avisa**
+con el motivo que dio la Fase 6. Lo que el cabezal NO pide todavía es el ancho del derecho
+de vía (`ancho_derecho_via_m`): V5 no tiene método que lo lea (ficha T7A-01).
+
 ---
 
 ## 4. Datos de sitio `[S]`
@@ -289,7 +324,7 @@ nombre definitivo.
 | **Velocidad de diseño (V.D.) e IMDA de la vía**, para la fila de la Tabla 304.12 (talud interior de la cuneta) | **Trazo** (clasificación de la vía, DG-2018) · **estudio de tráfico** (lo debe el proyecto) | Correcciones de T-9 — **pendiente** | El talud interior 1:3 de la sección de archivo vale con V.D. < 70 km/h o IMDA < 750; con las dos mayores la tabla pide 1:4. La Fase 10 lo **avisa** en cada capacidad calculada |
 | Talud de corte del tramo de cuneta (talud exterior Z2) | **EMS** | Correcciones de T-9 — **pendiente** | Rige Z2 = 1 adoptado (el más empinado de las filas de suelo fino o arenoso de la Tabla 304.10 del DG-2018, lado seguro para la capacidad) |
 | Dónde empieza cada tramo de cuneta que descarga en un alivio (`inicio_tramo_cuneta_km`) | **Trazo** (perfil longitudinal y proyecto de drenaje longitudinal) | Correcciones de T-9 — **pendiente** | La obra anterior en progresiva cierra el tramo (B, o A por `obras_familia_a_extremo_de_cuneta`): en el fixture A-02 deja a B-01 con 530 m de cuneta y VB1 no cumple; sin ninguna obra, VB1 es un bloqueo que espera el dato |
-| Riesgo admisible y vida útil (`riesgo_admisible_propietario`), desplazamiento sísmico admisible del cabezal, tipo de cabezal | **Propietario** | T-7a, T-7b | Rigen los máximos recomendados de la Tabla N° 02; el resto está sin declarar |
+| Riesgo admisible y vida útil (`riesgo_admisible_propietario`), desplazamiento sísmico admisible del cabezal, tipo de cabezal | **Propietario** | T-7a, T-7b | Rigen los máximos recomendados de la Tabla N° 02; el resto está sin declarar. **El tipo de cabezal, hecho en T-7a:** lo propone la regla por altura de `predimensionamiento_cabezal` (gravedad ciclópeo hasta 2.0 m) y se declara por punto en `cabezal_declarado` (§3.2); el desplazamiento admisible sigue siendo de T-7b |
 
 *(La fila de T-4 —ensayos de durabilidad por sitio o por punto— pasó al §3.1 al cerrar T-4.)*
 

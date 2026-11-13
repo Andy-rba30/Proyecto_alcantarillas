@@ -252,9 +252,10 @@ ADVERTENCIAS_PROTECCION_SALIDA_ENVOLVENTE: Tuple[str, ...] = (
 # ---------------------------------------------------------------------------
 # La asignacion «que se protege segun la embocadura» es LECTURA DEL PROYECTO
 # sobre la enumeracion del HDS-5 num. 5.3.1 (revestimiento del talud y del
-# cauce, cabezal, aleros, dentellon), que la fuente da sin repartir. Hoy el
-# pipeline pasa `EMBOCADURA_CABEZAL_RECTO`, que es la adoptada (HDS-5 «square
-# edge w/ headwall»); T-7a pasara la de cada punto por el mismo argumento.
+# cauce, cabezal, aleros, dentellon), que la fuente da sin repartir. Desde
+# T-7a el pipeline pasa la de cada punto por el mismo argumento
+# (`M9.embocadura_del_punto`); las dos primeras claves son tambien el
+# conjunto cerrado del criterio 'embocadura_cabezal'.
 EMBOCADURA_CABEZAL_RECTO = "cabezal_recto"
 EMBOCADURA_CABEZAL_CON_ALEROS = "cabezal_con_aleros"
 EMBOCADURA_PROYECTANTE = "proyectante"
@@ -1869,8 +1870,10 @@ def proteccion_entrada(*, resultado: ResultadoHidraulico,
     terreno del cauce de aproximacion (`tipo_terreno`, `regimen_flujo`), y
     declara el revestimiento del criterio [A] 'tipo_proteccion_entrada'.
 
-    `tipo_embocadura` es una clave de `EMBOCADURAS`. Hoy el pipeline pasa la
-    adoptada (cabezal recto); el cabezal por punto pasara la suya.
+    `tipo_embocadura` es una clave de `EMBOCADURAS`. Desde T-7a el pipeline
+    pasa la del punto (`M9.embocadura_del_punto`, criterio
+    'embocadura_cabezal' [A]); el default de la firma sigue siendo el
+    cabezal recto para quien llame a esta funcion suelta.
     """
     _exigir_texto_de("tipo_embocadura", tipo_embocadura, EMBOCADURAS,
                      "no es un tipo de embocadura que la proteccion de "
@@ -1928,8 +1931,9 @@ def proteccion_entrada(*, resultado: ResultadoHidraulico,
                          "HDS5_3ED.3.1.3#CRITICO_EN_LA_ENTRADA"),
         sustitucion=(
             Magnitud("embocadura", tipo_embocadura, "",
-                     "tipo de embocadura del punto: hoy la adoptada para "
-                     "todo el proyecto; el cabezal por punto pasara la suya"),),
+                     "tipo de embocadura del punto, del criterio "
+                     "'embocadura_cabezal' [A] (T-7a: "
+                     "`M9.embocadura_del_punto`)"),),
         resultado=V,
         veredicto=Veredicto(
             tipo=TipoDeVeredicto.SIN_VEREDICTO,

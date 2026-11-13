@@ -536,7 +536,8 @@ def test_la_fase_6_tiene_proteccion_de_entrada(corrida_base):
     """
     A-01 corre bajo control de ENTRADA: la velocidad en la boca es la critica
     del paso 4.2 (HDS-5 num. 3.1.3), Q_celda / A_c. El revestimiento es el
-    del criterio [A] 'tipo_proteccion_entrada', y la embocadura, la adoptada.
+    del criterio [A] 'tipo_proteccion_entrada', y la embocadura, la del punto
+    (T-7a).
     """
     a01 = _punto(corrida_base, "A-01")
     r = a01.resultado.resultado_hidraulico
@@ -544,8 +545,12 @@ def test_la_fase_6_tiene_proteccion_de_entrada(corrida_base):
     e = a01.proteccion_entrada
     assert e.V_entrada == pytest.approx(r.V_critica_m_s, rel=REL_FORMULA)
     assert e.revestimiento == ca.valor("tipo_proteccion_entrada")
-    assert e.tipo_embocadura == M6.EMBOCADURA_CABEZAL_RECTO
-    assert e.elementos == M6.EMBOCADURAS[M6.EMBOCADURA_CABEZAL_RECTO]
+    # --- T-7a --- la embocadura ya no es la adoptada para todo el proyecto:
+    # es la del punto (`M9.embocadura_del_punto`), del criterio
+    # 'embocadura_cabezal' [A], que vale «cabezal_con_aleros».
+    assert e.tipo_embocadura == a01.embocadura.tipo
+    assert e.tipo_embocadura == ca.valor("embocadura_cabezal")
+    assert e.elementos == M6.EMBOCADURAS[M6.EMBOCADURA_CABEZAL_CON_ALEROS]
     assert servicio.FASE_PROTECCION == "Fase 6 - Proteccion de entrada y salida (M6)"
 
 

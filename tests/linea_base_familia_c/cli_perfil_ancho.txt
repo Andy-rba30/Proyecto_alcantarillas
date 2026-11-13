@@ -62,6 +62,7 @@ A-01  |  progresiva 0+380  |  Familia A
         pendiente: S = 0.0060 m/m (S_cauce); caida 0.113 m
         factible: la rasante 44.200 msnm alcanza la minima de 7.A (44.092 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   Fase 8  Clase II; relleno 0.950 m + paquete 0.150 m; relleno maximo 2.851 m (con instalacion Tipo 4: 1.691 m)
+  Embocadura: cabezal_con_aleros (aleros a 45.0 grados con la pared del barril; esviaje 15 grados <= umbral 30: 45 grados (por defecto))
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 20.1 cm en este punto
@@ -138,6 +139,7 @@ A-02  |  progresiva 1+920  |  Familia A
         pendiente: S = 0.0080 m/m (S_cauce); caida 0.149 m
         factible: la rasante 42.000 msnm alcanza la minima de 7.A (41.372 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   Fase 8  Clase II; relleno 1.000 m + paquete 0.150 m; relleno maximo 2.851 m (con instalacion Tipo 4: 1.691 m)
+  Embocadura: cabezal_con_aleros (aleros a 45.0 grados con la pared del barril; esviaje 5 grados <= umbral 30: 45 grados (por defecto))
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto
@@ -169,10 +171,12 @@ B-01  |  progresiva 2+450  |  Familia B
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
     [NO] VB1  Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 4.1.2.1 d), pag. 179 [hoja de ruta: Fase 10] obtenido 530.000 | admisible 200.000
         umbral del criterio 'long_max_cuneta' [A]
+  Embocadura: cabezal_con_aleros (aleros a 45.0 grados con la pared del barril; esviaje 0 grados <= umbral 30: 45 grados (por defecto))
   Fase 10 tramo de cuneta (VB1): 530.000 m desde A-02 (la obra de Familia A anterior en progresiva (CSV), que cierra el tramo por el criterio 'obras_familia_a_extremo_de_cuneta')
   aviso: El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto
+  aviso: Embocadura de B-01: la entrada de un alivio de cuneta (Familia B) suele ser una CAJA RECEPTORA (Lamina Nº 02-A del Manual, sin aleros), que el programa NO modela: el punto recibe «cabezal_con_aleros» ('embocadura_cabezal'), y con esa embocadura se calculan su perdida de entrada, su proteccion de entrada y su cabezal de entrada. Una caja receptora no tiene fila en las Tablas A.1 y C.2 del HDS-5 (ficha T7A-02)
   aviso: VB2 (caudal de aporte frente a la capacidad de la cuneta) NO SE EVALUO: falta la pendiente de la cuneta (`S_cuneta`, por --datos-externos), sin la que la capacidad no se calcula; por la misma falta la Fase 10 del punto se detiene (ver su bloqueo)
   aviso: tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica
   Bloqueos:
@@ -197,6 +201,7 @@ C-01  |  progresiva 3+100  |  Familia C
           S_cauce  : 0.0060 m/m (datos externos (punto C-01))
   Verificaciones:
     [OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1        obtenido 2.750 | admisible 6.000
+  Embocadura: cabezal_con_aleros (aleros a 45.0 grados con la pared del barril; esviaje 30 grados <= umbral 30: 45 grados (por defecto)); coherente con la embocadura del marco
   aviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce
   aviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 22.4 cm en este punto
   Bloqueos:

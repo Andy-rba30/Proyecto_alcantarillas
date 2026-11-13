@@ -34,11 +34,15 @@ pisaria valores declarados con su ventana y su procedencia.
 Del resto de la lista, lo que sigue vacio hoy: `v_max_concreto_eleccion`,
 `pendiente_relleno_trasdos_i`, `inclinacion_muro_beta`,
 `friccion_muro_suelo_delta`, `punto_aplicacion_incremento_sismico`,
-`angulo_aletas`, `predimensionamiento_cabezal`, `metodo_estabilidad_global`,
+`metodo_estabilidad_global`,
 `TR_evento_extremo`,
 `c_phi_fundacion`, `capacidad_portante_adm`, `phi_relleno_trasdos`,
 `TW_receptor` y `remanso_derecho_via`. Para
 esos, la frase original sigue valiendo y los tests de invariante lo exigen.
+(T-7a de la cadena T saco de esta lista dos: el angulo de las aletas y el
+predimensionamiento del cabezal, que dejaron de ser vacios y son REGLAS [A]
+--45 grados, 30 si el esviaje supera 30; y las del predimensionamiento por
+punto--, no la geometria unica que este documento traia.)
 Y no es una lista arbitraria: **todos son de nivel EXPEDIENTE** salvo
 `TW_receptor` y `v_max_concreto_eleccion` --- el primero porque la Sec. 1.3
 lo dejo como ultima puerta y ninguna corrida normal lo invoca, el segundo

@@ -131,3 +131,10 @@ HECTAREAS_POR_KM2 = 100       # literal-ok: definicion de la unidad, no valor de
 # los tres anteriores: definicion de la unidad, no valor de proyecto (el
 # auditor de T-8 lo saco de `constantes_normativas`, donde no era [N]).
 PORCENTAJE_POR_UNIDAD = 100.0   # literal-ok: definicion del porcentaje, no valor de proyecto
+# --- T-7a --- Techo FISICO de una dimension declarada del cabezal
+# (`cabezal_declarado` de `--datos-externos`): rechaza un dato mal tecleado
+# -- una cota en msnm puesta donde va una altura, un milimetro por un metro --
+# y no acota ninguna magnitud de proyecto. Un muro de cabecera de alcantarilla
+# (luz < 6 m) de mas de 30 m en cualquiera de sus dimensiones no es un
+# cabezal: es otra estructura. No entra en ninguna formula.
+DIMENSION_CABEZAL_MAX_M = 30.0   # literal-ok: rango fisico de un dato de entrada, no un umbral de proyecto

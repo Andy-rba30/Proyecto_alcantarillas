@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "45ba5f765689a32c30482dd84b264eb9ea19d3a2",
+    "criterios_sha1": "3375d11162928ea763167fc51bc2f7044210bbf3",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -123,6 +123,19 @@
       "proteccion_entrada": null,
       "socavacion_salida": null,
       "geometria": null,
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 15 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": null,
+        "cabezales": null
+      },
       "estructural": null,
       "espaciamiento_alivio": null,
       "tramo_alivio": null,
@@ -287,6 +300,19 @@
       "proteccion_entrada": null,
       "socavacion_salida": null,
       "geometria": null,
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 5 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": null,
+        "cabezales": null
+      },
       "estructural": null,
       "espaciamiento_alivio": null,
       "tramo_alivio": null,
@@ -380,6 +406,7 @@
         "El criterio 'homogeneidad_serie_fen' rige solo el caudal que el programa CALCULA. Este caudal entro declarado: el programa no sabe que serie lo respalda ni que se hizo con sus años del fenomeno El Niño, y no le atribuye ningun tratamiento. No detiene el calculo: un caudal declarado es responsabilidad del estudio hidrologico que lo entrego, y quien lo reciba tiene que exigir, aparte, el analisis de homogeneidad de la serie.",
         "fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce",
         "plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 19.6 cm en este punto",
+        "Embocadura de B-01: la entrada de un alivio de cuneta (Familia B) suele ser una CAJA RECEPTORA (Lamina Nº 02-A del Manual, sin aleros), que el programa NO modela: el punto recibe «cabezal_con_aleros» ('embocadura_cabezal'), y con esa embocadura se calculan su perdida de entrada, su proteccion de entrada y su cabezal de entrada. Una caja receptora no tiene fila en las Tablas A.1 y C.2 del HDS-5 (ficha T7A-02)",
         "VB2 (caudal de aporte frente a la capacidad de la cuneta) NO SE EVALUO: falta la pendiente de la cuneta (`S_cuneta`, por --datos-externos), sin la que la capacidad no se calcula; por la misma falta la Fase 10 del punto se detiene (ver su bloqueo)",
         "tramo de cuneta que VB1 no mira: del lado de progresivas mayores de B-01 (km 2.450) no hay obra que cierre el tramo; VB1 mide, de cada alivio, el tramo del lado de progresivas menores, y la longitud de esa cuneta no se verifica"
       ],
@@ -437,6 +464,19 @@
       "proteccion_entrada": null,
       "socavacion_salida": null,
       "geometria": null,
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 0 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": null,
+        "cabezales": null
+      },
       "estructural": null,
       "espaciamiento_alivio": null,
       "tramo_alivio": {
@@ -614,6 +654,19 @@
       "proteccion_entrada": null,
       "socavacion_salida": null,
       "geometria": null,
+      "cabezal": {
+        "embocadura": {
+          "tipo": "cabezal_con_aleros",
+          "angulo_aletas_grados": 45.0,
+          "regla": "esviaje 30 grados <= umbral 30: 45 grados (por defecto)",
+          "criterios": [
+            "embocadura_cabezal",
+            "angulo_aletas"
+          ]
+        },
+        "coherencia_embocadura_marco": "Embocadura del marco coherente con la del cabezal (cabezal con aleros a 45 grados con la pared del barril): 'embocadura_cajon' = cajon_concreto_aletas_30_75; 'ke_entrada_cajon' = cajon_aletas_30_75_escuadra",
+        "cabezales": null
+      },
       "estructural": null,
       "espaciamiento_alivio": null,
       "tramo_alivio": null,
@@ -754,7 +807,7 @@
       ]
     },
     "mononobe_okabe": null,
-    "geometria": null,
+    "por_punto": [],
     "recubrimientos": [],
     "cuantias_minimas": {
       "horizontal": 0.002,
@@ -762,7 +815,7 @@
     },
     "notas": [
       "Cabezales y aletas: concreto estructural EG-2013 Seccion 503 (+504 para el acero). NO tienen partida con numeral propio: se pagan bajo el volumen de concreto y el acero. Que aparezcan nominados en 503.01 confirma que son elemento estandar de terminacion, pero el argumento es mas debil que 'existe una partida especifica' (EG-2013, Capitulo V, Seccion 503 (concreto estructural), num. 503.01, pag. 905 [hoja de ruta: Sec. 9.1])",
-      "Embocadura: tubo a ras del muro (square edge), coherente con las constantes HDS-5 adoptadas en Sec. 4.2. Ambas decisiones se mueven juntas: cambiar el detalle obliga a cambiar las constantes (Sec. 9.1 y Tablero 2.3)",
+      "Embocadura: tubo a ras del muro (square edge), coherente con las constantes HDS-5 adoptadas en Sec. 4.2. Ambas decisiones se mueven juntas: cambiar el detalle obliga a cambiar las constantes (Sec. 9.1 y Tablero 2.3). Desde T-7a la embocadura es del PUNTO ('embocadura_cabezal' y 'angulo_aletas', [A]): con tubo la Tabla C.2 agrupa el cabezal con y sin aleros en una fila y nada se mueve; con marco, su carta y su fila de ke tienen que ser de la banda de angulo del cabezal",
       "Empuje hidrostatico y subpresion: con NF a 1.4 m NO son opcionales (Manual de Puentes num. 2.4.3.8.2)",
       "Coeficiente de empuje activo estatico: el de Coulomb del num. 2.4.4.1.5.3 · 'Coeficiente de Empuje Lateral Activo, ka' · pag. impresa 135 · PDF 136 (3.11.5.3 AASHTO), calculado con la misma formulacion que Mononobe-Okabe haciendo k_h = k_v = 0, de modo que el incremento sismico K_AE - K_A resta dos coeficientes homogeneos. Con trasdos vertical, friccion muro-relleno nula y relleno horizontal se reduce a tan^2(45 - phi/2), la forma que la hoja de ruta escribia en su Sec. 9.2 y que EXT-0 corrigio (discrepancia DIS-HR-KA-COULOMB, resuelta); con i, beta o delta distintos de cero los dos coeficientes difieren y rige el de Coulomb. La resultante de Coulomb actua a delta de la normal al trasdos (delta + beta respecto de la horizontal) y este calculo la toma ENTERA como carga horizontal, sin descomponerla: es conservador para el volteo y el deslizamiento y no lo es para la capacidad portante en la parte de la componente vertical que deja de cargar sobre la base; la descomposicion queda diferida (EXT-7-04)",
       "Zapata proxima al talud: doble verificacion, E.050 Art. 30.1-30.2 y 2.8.1.3.1.2c, pags. impresas 272-274 (PDF 273-275): texto en la 272, Figura -1 (cohesivos) en la 273, Figura -2 (no cohesivos) en la 274. El cabezal se apoya en el borde del terraplen, no en terreno horizontal",
@@ -787,19 +840,19 @@
       "Lo que cierra este vacio, y son DOS ensayos de profundidades distintas que conviene pedir juntos: (1) la caracterizacion de los 100 ft (30.48 m) superiores -- Vs30 o N_barra --, que es la profundidad que el Art. 3.10.3.1 escribe y con la que se lee la clase; y (2) si esa caracterizacion diera Clase F, el analisis de respuesta dinamica de sitio, que el Art. 3.10.2 exige con 'shall' y el num. 2.4.3.11.2 del Manual con 'sera usado'. NO lo cierra el SPT de licuefaccion de 15 m de E.050 Art. 38: ese ensayo responde a otra pregunta y se detiene a mitad de la columna que esta clase necesita (num. 3.10.2 · 'Seismic Hazard' · pag. impresa 3-71 · PDF 125; num. 2.4.3.11.2 · 'Peligro Sísmico' · pag. impresa 121 · PDF 122)",
       "«Clase F» en este expediente: CLASE DE SITIO SISMICA: AASHTO LRFD Tabla 3.10.3.1-1 / Manual de Puentes Tabla 2.4.3.11.2.1.1-1, «suelos que requieren evaluaciones especificas de sitio». Es la del eje de la Sec. 0.5, y este expediente NO se la atribuye: ver 'clase_sitio'. CONCRETO CLASE F: resistencia, EG-2013 Tabla 503-07, pag. impresa 912 -- concreto simple, f'c = 14 MPa. Es la del relleno lateral y la cama de apoyo. ACERO ASTM A668 CLASE F: el propio Manual de Puentes lo tabula en su pag. impresa 289. No llega a esta memoria; se anota para que nadie lo cruce con los otros dos. Las dos primeras llegan a esta memoria, y por eso toda aparicion de «Clase F» lleva su calificador -- «Clase de Sitio F» o «Concreto Clase F» --, siempre, sin excepcion de contexto (NOR-VOC-04).",
       "Perfil de suelo S5 de E.030: aunque la norma no gobierne el diseno del cabezal, su clasificacion del sitio trae una consecuencia que el expediente tiene que atender. Texto literal: \"Estos casos no estan cubiertos en la clasificacion establecida en la Tabla N 2 de la presente Norma Tecnica. Se prohibe las construcciones apoyadas sobre estos perfiles, salvo que, se efectue un estudio especifico para el sitio, en el cual se debe considerar los mejoramientos en el estrato del perfil.\" (E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla N 2, fila S5, pag. impresa 11 (PDF 11)). Es una prohibicion CONDICIONADA, no absoluta: la misma oracion la levanta con estudio especifico de sitio y mejoramiento del estrato. Leerla como bloqueo duro va mas alla de la fuente; leerla como referencia muerta se queda muy por debajo. La fila S5 se llama 'Suelos excepcionales' y su primera vineta es 'Suelos potencialmente licuables', que es la razon por la que este expediente se atribuye esa letra. La Tabla N 3 del num. 14.7 -- la que el num. 14.8 obliga a usar para clasificar -- NO tiene fila S5, solo S0 a S4, coherente con que 'estos casos no estan cubiertos'",
-      "Sin llamador de produccion -- empujes_trasdos: Ensambla el plano de empuje del trasdos y ninguna corrida lo alcanza: la CLI no lo llama porque elegir el plano de empuje (`altura_empuje`) y los factores de combinacion seria decidir por el proyectista, y el criterio 'predimensionamiento_cabezal' esta vacio. Se conserva porque es la formula, no el ensamble, lo que el expediente necesita: quien tantee un cabezal la llama con su geometria",
-      "Sin llamador de produccion -- peso_suelo_sobre_talon: Produce el W_s de P_IR. Necesita el ancho del talon, que es parte de 'predimensionamiento_cabezal', y la altura de suelo sobre el talon, que depende de donde se corte el plano de calculo y por eso entra por argumento",
-      "Sin llamador de produccion -- fuerza_inercia_muro: Mismo caso que `empujes_trasdos`, y por el mismo vacio: W_s necesita el ancho del talon, que es parte de 'predimensionamiento_cabezal'. La formula si esta implementada, que es lo que faltaba (MAT-D6)",
+      "Sin llamador de produccion -- empujes_trasdos: Ensambla el plano de empuje del trasdos y ninguna corrida lo alcanza: la CLI no lo llama porque elegir el plano de empuje (`altura_empuje`) y los factores de combinacion seria decidir por el proyectista. Desde T-7a la geometria de cada cabezal existe -- la propone `predimensionar_cabezal` por punto --; el ensamble que la consume es T-7b. Se conserva porque es la formula, no el ensamble, lo que el expediente necesita: quien tantee un cabezal la llama con su geometria",
+      "Sin llamador de produccion -- peso_suelo_sobre_talon: Produce el W_s de P_IR. El ancho del talon lo trae la geometria que `predimensionar_cabezal` propone por punto (T-7a); la altura de suelo sobre el talon depende de donde se corte el plano de calculo y por eso entra por argumento. Su llamador es el ensamble de T-7b",
+      "Sin llamador de produccion -- fuerza_inercia_muro: Mismo caso que `empujes_trasdos`: la geometria por punto existe desde T-7a y el ensamble que la consume es T-7b. La formula si esta implementada, que es lo que faltaba (MAT-D6)",
       "Sin llamador de produccion -- gamma_eq: Lee el criterio 'gamma_EQ', que es vacio: hoy detendria a quien la llamara, y quien la llamaria -- el chequeo de excentricidad -- ya esta detenido antes por la geometria",
       "Sin llamador de produccion -- verificar_estabilidad: Agrega E1-E3 (y E4-E5 si se piden) a partir de demandas ya calculadas. La CLI no la llama porque ensamblar esas demandas exige elegir el plano de empuje y los factores de combinacion, que es decidir por el proyectista -- la misma razon de `empujes_trasdos`, y la que la nota de cli.py declara",
-      "Sin llamador de produccion -- peso_propio_cabezal: Formula de geometria exacta, utilizable hoy con una geometria de tanteo; sin 'predimensionamiento_cabezal' no hay geometria de proyecto que pasarle",
+      "Sin llamador de produccion -- peso_propio_cabezal: Formula de geometria exacta, utilizable con la geometria que `predimensionar_cabezal` propone por punto (T-7a) o con una de tanteo; quien la llamara es el ensamble de estabilidad de T-7b",
       "Sin llamador de produccion -- parametros_resistencia_art20: Aplica la regla de E.050 Art. 20 (en cohesivos phi = 0, en friccionantes c = 0) sobre los parametros del terreno de fundacion. Quien la usaria es el calculo de la fuerza resistente al deslizamiento, que la CLI no ensambla por la misma razon que el resto de la estabilidad",
       "Sin llamador de produccion -- aplica_sobrecarga_trasdos: Comprueba la regla de la distancia H/2 para el trafico. No la llama nadie a proposito: Sec. 9.2 cierra el punto diciendo que en un cabezal bajo terraplen vial la sobrecarga SIEMPRE aplica, de modo que el pipeline usa `sobrecarga_trasdos_siempre_aplica` y esta queda para quien tenga la distancia medida y quiera comprobarlo",
       "Sin llamador de produccion -- sobrecarga_trasdos_siempre_aplica: Declaracion para la memoria. Hoy no la imprime nadie porque la seccion de la memoria que la llevaria es la de empujes, que esta detenida",
       "Sin llamador de produccion -- demanda_sismica_cabezal: Combina P_AE con P_IR segun el num. 2.8.1.1.14.1. Sin geometria no hay ninguno de los dos, de modo que hereda el mismo vacio",
       "Sin llamador de produccion -- presion_contacto_base: Produce el q_actuante que `verificar_capacidad_portante` exige ya resuelto, con la rama del numeral que corresponde al terreno de fundacion. Hereda el vacio de la geometria (MAT-O16)",
       "Sin llamador de produccion -- verificar_excentricidad_sismica: Ademas de la geometria necesita 'gamma_EQ', que es vacio propio: el limite va de B/6 a 0.4*B segun su valor",
-      "Sin llamador de produccion -- armado del num. 9.4 (ocho funciones): `cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_caras`, `requiere_refuerzo_dos_capas`, `nota_temperatura_dos_caras`, `espaciamiento_maximo`, `verificar_espaciamiento` y `verificar_ciclopeo` no tienen llamador porque su insumo es el diseno por flexion y corte, que se detiene en `diseno_flexion_corte` con NotImplementedError, y el espesor del elemento, que sale de 'predimensionamiento_cabezal'. La CLI registra ese bloqueo en cada corrida (SIS-B-20). Desde EXT-7 las dos primeras leen ademas, con cortante alto, el plano del cortante y el piso de la direccion ('regimen_cortante_muro_e060_art_11_10_2', 'cuantia_vertical_cortante_alto_e060_art_11_10_10_3'): siguen sin llamador, y por eso esos criterios no los invoca ninguna corrida",
+      "Sin llamador de produccion -- armado del num. 9.4 (ocho funciones): `cuantia_de_diseno`, `verificar_cuantia`, `requiere_temperatura_dos_caras`, `requiere_refuerzo_dos_capas`, `nota_temperatura_dos_caras`, `espaciamiento_maximo`, `verificar_espaciamiento` y `verificar_ciclopeo` no tienen llamador porque su insumo es el diseno por flexion y corte, que se detiene en `diseno_flexion_corte` con NotImplementedError, y el espesor del elemento, que desde T-7a propone `predimensionar_cabezal` por punto. La CLI registra ese bloqueo en cada corrida (SIS-B-20). Desde EXT-7 las dos primeras leen ademas, con cortante alto, el plano del cortante y el piso de la direccion ('regimen_cortante_muro_e060_art_11_10_2', 'cuantia_vertical_cortante_alto_e060_art_11_10_10_3'): siguen sin llamador, y por eso esos criterios no los invoca ninguna corrida",
       "Sin llamador de produccion -- clase_exposicion_sulfatos / factor_recubrimiento_por_ac: No tienen llamador de PRODUCCION directo y no son deuda: las llama `requisitos_durabilidad_concreto` y `_recubrimiento_aashto_detallado`, que si estan en el camino de la CLI. Se declaran aparte porque son las dos piezas que un revisor va a querer ejecutar sueltas para reproducir la clasificacion de la Tabla 4.4 y el factor por a/c sin montar el recubrimiento entero",
       "Sin llamador de produccion -- n_q_zapata_en_talud / n_s_zapata_en_talud: No tienen llamador interno porque la funcion que las usaria, `capacidad_portante_zapata_en_talud`, se detiene antes en 'N_cq_N_gammaq_meyerhof': N_cq y N_gamma_q salen de FIGURAS y no de una formula transcribible. N_s se calcula aparte al leer los abacos, que es justo para lo que existe la funcion (SIS-B-21)",
       "Las verificaciones de estabilidad de Fase 9 no las ensambla esta CLI: M9.verificar_estabilidad devuelve E1-E3 (y E4-E5 si se le piden) a partir de las demandas YA calculadas, y E6 -- la ubicacion de la resultante en la base bajo sismo, que el Manual de Puentes exige y E.050 no escribe -- es funcion suelta, M9.verificar_excentricidad_sismica, porque no es un factor de seguridad y no cabe en la tabla de Sec. 9.3. Elegir el plano de empuje o los factores de combinacion aqui seria decidir por el proyectista. La CLI corre las piezas de Fase 9 que se sostienen solas: cadena sismica (9.2), K_AE, recubrimientos (9.4) y cuantias minimas de referencia. Que funciones de M9 quedan sin llamador de produccion, y por que cada una, se declara en UN SOLO SITIO -- M9.FUNCIONES_SIN_CONSUMIDOR -- y esta CLI lo lee de alli en vez de repetirlo.",
@@ -818,19 +871,6 @@
         "delta_rasante_m": null,
         "diferido_por_alcance": false,
         "mensaje": "'phi_relleno_trasdos' es un VACIO sin valor asignado (Angulo de friccion interna del material de cantera del trasdos). Debe resolverse antes de continuar: PENDIENTE"
-      },
-      {
-        "fase": "Fase 9 - Cabezal y aletas (M9)",
-        "etapa": "predimensionamiento del cabezal (9.3, E1-E5)",
-        "tipo": "CriterioPendienteError",
-        "criterio": "predimensionamiento_cabezal",
-        "etiqueta": "A",
-        "concepto": "Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata, ancho del TALON e inclinacion beta del trasdos), en m",
-        "fuente": "PENDIENTE - predimensionamiento del proyectista, o plano tipo de cabezal del expediente vial",
-        "campo": null,
-        "delta_rasante_m": null,
-        "diferido_por_alcance": false,
-        "mensaje": "'predimensionamiento_cabezal' es un VACIO sin valor asignado (Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata, ancho del TALON e inclinacion beta del trasdos), en m). Debe resolverse antes de continuar: PENDIENTE - predimensionamiento del proyectista, o plano tipo de cabezal del expediente vial"
       },
       {
         "fase": "Fase 9 - Cabezal y aletas (M9)",
@@ -965,6 +1005,17 @@
         "concepto": "Como se resuelve el acceso de mantenimiento para limpieza del conducto en cada punto, que es la mitad [A] de la fila V2b de la Fase 5 y contenido de los PLANOS (Sec. 11, entregable 7)"
       },
       {
+        "clave": "angulo_aletas",
+        "etiqueta": "A",
+        "valor": {
+          "por_defecto_grados": 45.0,
+          "umbral_esviaje_grados": 30.0,
+          "con_esviaje_mayor_grados": 30.0
+        },
+        "declarado_en_caliente": false,
+        "concepto": "Angulo de las aletas del cabezal con la prolongacion de la pared del barril (paralela al eje del conducto), como regla por punto: el de por defecto, y el que rige cuando el esviaje del cruce supera un umbral"
+      },
+      {
         "clave": "borde_libre_bajo_tw_ahogante",
         "etiqueta": "A",
         "valor": "no_cumple",
@@ -1008,6 +1059,13 @@
         },
         "declarado_en_caliente": false,
         "concepto": "Progresion de diametros normalizados (inicio y paso)"
+      },
+      {
+        "clave": "embocadura_cabezal",
+        "etiqueta": "A",
+        "valor": "cabezal_con_aleros",
+        "declarado_en_caliente": false,
+        "concepto": "Remate de los dos extremos del conducto: cabezal con aleros o cabezal recto (sin aleros)"
       },
       {
         "clave": "embocadura_cajon",
@@ -1186,13 +1244,6 @@
         "valor": null,
         "declarado_en_caliente": false,
         "concepto": "Angulo de friccion interna del material de cantera del trasdos"
-      },
-      {
-        "clave": "predimensionamiento_cabezal",
-        "etiqueta": "A",
-        "valor": null,
-        "declarado_en_caliente": false,
-        "concepto": "Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata, ancho del TALON e inclinacion beta del trasdos), en m"
       },
       {
         "clave": "regimen_v2b",
@@ -1411,7 +1462,6 @@
       "N_cq_N_gammaq_meyerhof",
       "TR_evento_extremo",
       "TW_receptor",
-      "angulo_aletas",
       "c_phi_fundacion",
       "capacidad_portante_adm",
       "categoria_refuerzo_aashto",
@@ -1430,7 +1480,6 @@
       "metodo_estabilidad_global",
       "pendiente_relleno_trasdos_i",
       "phi_relleno_trasdos",
-      "predimensionamiento_cabezal",
       "punto_aplicacion_incremento_sismico",
       "regimen_cortante_muro_e060_art_11_10_2",
       "remanso_derecho_via"
@@ -1459,6 +1508,7 @@
       "metodo_transicion_hds5",
       "n_manning_hdpe",
       "origen_cota_fondo_entrada",
+      "predimensionamiento_cabezal",
       "regimen_v2b",
       "relacion_intensidad_duracion",
       "resguardo_HW_subrasante",
@@ -1470,7 +1520,6 @@
     "sin_consumidor": [
       "Mw_licuefaccion",
       "PERFIL_SUELO_PRESUNTO",
-      "angulo_aletas",
       "c_phi_fundacion",
       "capacidad_portante_adm",
       "clase_sitio",
@@ -1531,23 +1580,6 @@
         "diferido": false,
         "responsable": "el proyectista, con el ensayo del material de cantera del trasdos o un valor de practica corriente declarado con su fuente",
         "evidencia": "Ensayo de corte directo sobre el material de cantera"
-      },
-      {
-        "clave": "predimensionamiento_cabezal",
-        "etiqueta": "A",
-        "concepto": "Geometria del cabezal (altura H sobre zapata, ancho de zapata B, profundidad de desplante D_f, espesor de la pantalla en corona y en su arranque, espesor de zapata, ancho del TALON e inclinacion beta del trasdos), en m",
-        "fuente": "PENDIENTE - predimensionamiento del proyectista, o plano tipo de cabezal del expediente vial",
-        "reemplazado_por": "Plano de encofrado del cabezal, acotado",
-        "fases": [
-          "Fase 9 - Cabezal y aletas (M9)"
-        ],
-        "etapas": [
-          "predimensionamiento del cabezal (9.3, E1-E5)"
-        ],
-        "puntos": [],
-        "diferido": false,
-        "responsable": "el proyectista, o el plano tipo de cabezal del expediente vial",
-        "evidencia": "Plano de encofrado del cabezal, acotado"
       },
       {
         "clave": "remanso_derecho_via",

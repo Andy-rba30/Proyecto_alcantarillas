@@ -443,11 +443,14 @@ HDS5_3ED = Fuente(
     paginas_pdf=323,
     # Catorce bases medidas barriendo el documento entero. Las etiquetas
     # "3.24", "A.8" y "DG3.3" son ETIQUETAS, no numeros: "3.24" no es 3,24.
+    # --- T-7a --- Y las preliminares en romanas: i = PDF 5, medido pagina a
+    # pagina de la i (indice) a la xxii (agradecimientos); la «List of
+    # Symbols» va de la xv a la xix (PDF 19 a 23).
     paginacion=PorCapitulo(base={
         "1": 38, "2": 62, "3": 82, "4": 126, "5": 136, "6": 162, "7": 181,
         "A": 189, "B": 202, "C": 210,
         "DG1": 271, "DG2": 285, "DG3": 293, "DG4": 312,
-    }),
+    }, romanas=4),
     convive_con=("HDS5_SI_1985",),
     vigencia=_confirmada(),
     nota=("Es la edicion que gobierna: es la unica de las dos que imprime las "

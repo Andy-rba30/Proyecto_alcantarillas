@@ -8430,30 +8430,123 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- T-7a --- EL ANGULO DE LAS ALETAS DEJA DE SER UN VACIO Y PASA A SER
+    # UNA REGLA DECLARADA (INF-4.3). Y deja de ser de EXPEDIENTE: el angulo
+    # elige, en un marco, la banda de filas de las Tablas A.1 y C.2 del HDS-5
+    # que la embocadura declarada del cajon tiene que respetar
+    # (`M9.verificar_coherencia_embocadura_cajon`), y eso corre antes de la
+    # Fase 4, en los dos alcances. Lo mide la corrida de perfil: es de perfil.
     "angulo_aletas": Criterio(
-        valor=None,                 # completar segun esviaje
-        nivel=NIVEL_EXPEDIENTE,
+        valor={"por_defecto_grados": 45.0, "umbral_esviaje_grados": 30.0,
+               "con_esviaje_mayor_grados": 30.0},
+        nivel=NIVEL_PERFIL,
         etiqueta="A",
-        forma=FORMA_FLOAT,
-        concepto="Angulo de las aletas del cabezal",
-        justificacion="Ajustado al esviaje del cauce en cada punto",
-        fuente="PENDIENTE - Practica corriente de diseno de cabezales; ni el "
-               "Manual de Hidrologia ni el Manual de Puentes fijan el angulo "
-               "de las aletas. No hay numeral que extraer: hay una geometria "
-               "que el proyectista define punto por punto",
-        reemplazado_por="Geometria de aletas del expediente: angulo por punto, "
-                        "definido con el esviaje medido del cauce "
-                        "('esviaje_grados' de Sec. 1.2) y el plano tipo de "
-                        "cabezal adoptado",
-        sin_consumidor="Ningun modulo lo invoca porque el script no dibuja la "
-                       "geometria de las aletas: dimensiona el cabezal "
-                       "(Fase 9) y remite el despiece al plano del "
-                       "expediente. Se declara para que el vacio se pida, no "
-                       "para que se calcule aqui",
+        forma=FORMA_DICT_CON_CAMPOS,
+        # VENTANA POR CAMPO. Los dos angulos se mueven entre 30 y 60 grados:
+        # la «ventana completa» {30, 45, 60} del encargo, y la banda de la
+        # Tabla C.2 que la contiene entera -- «Wingwalls at 30⁰ to 75⁰ to
+        # barrel» --, de modo que dentro de la ventana el ke de un marco con
+        # borde a escuadra no cambia (0.4) y si cambia la fila de la Tabla A.1
+        # en las cartas que nombran un angulo exacto (Cartas 9, 12 y 13). El
+        # umbral de esviaje, entre 15 y 45 grados.
+        sensibilidad={"por_defecto_grados": (30.0, 60.0),
+                      "umbral_esviaje_grados": (15.0, 45.0),
+                      "con_esviaje_mayor_grados": (30.0, 60.0)},
+        concepto="Angulo de las aletas del cabezal con la prolongacion de la "
+                 "pared del barril (paralela al eje del conducto), "
+                 "como regla por punto: el de por defecto, y el que rige "
+                 "cuando el esviaje del cruce supera un umbral",
+        justificacion="Decide el angulo de los aleros de cada cabezal, que "
+                      "la memoria imprime y del que salen la longitud de los "
+                      "aleros y, en un marco, la banda de filas del HDS-5 "
+                      "que la embocadura del cajon tiene que respetar. La "
+                      "fuente (HDS-5, List of Symbols, pag. impresa xix; "
+                      "cita HDS5_3ED.SIMBOLOS#THETA_W) define el angulo de "
+                      "los aleros con la prolongacion de la pared del barril"
+                      ", que es tambien lo que dicen los rotulos de la Tabla "
+                      "C.2 (pag. impresa C.6; cita HDS5_3ED.TC.2), que "
+                      "agrupa sus filas de cajon por bandas de ese angulo; "
+                      "la Lamina Nº 02-A del Manual "
+                      "dibuja la salida con aleros y deja el angulo sin "
+                      "acotar. Lo que no resuelven: ninguna fuente de "
+                      "normas/ fija el angulo para una obra, y con un TUBO "
+                      "el angulo no mueve ni ke ni la carta: la Tabla C.2 "
+                      "pone el tubo con cabezal y con cabezal y aleros en "
+                      "la misma fila, y las Cartas 1 a 3 no separan aleros "
+                      "(ficha T2-04). Se "
+                      "adopta la regla de practica del INFORME §4.3 y del "
+                      "encargo de T-7a: 45 grados por defecto y 30 grados "
+                      "cuando el esviaje supera 30 grados, los dos dentro de "
+                      "la banda de 30 a 75 grados de la Tabla C.2. La tercera "
+                      "rama del encargo -- 60 grados en caja receptora -- "
+                      "no se adopta: la Lamina Nº 02-A dibuja la entrada tipo "
+                      "caja receptora SIN aleros, y ninguna fuente de normas/ "
+                      "da un angulo para ella; los 60 grados quedan dentro "
+                      "de la ventana como alternativa declarable",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, List of Symbols, ΘW, pag. "
+               "impresa xix (PDF 23; cita HDS5_3ED.SIMBOLOS#THETA_W); "
+               "Apendice C, Tabla C.2 "
+               "'Entrance Loss Coefficients', pag. impresa C.6 (PDF 216), "
+               "bloques 'Pipe, Concrete' y 'Box, Reinforced Concrete'; "
+               "Manual de Hidrologia, Lamina Nº 02-A, pag. impresa 208 (PDF "
+               "211; cita MC_HHD.LAMINA_02A). La regla (45 / 30 por esviaje) "
+               "es de practica de predimensionamiento (INFORME §4.3), no "
+               "verificada contra una fuente de normas/",
+        reemplazado_por="El plano de aleros del expediente, con el angulo "
+                        "de cada cabezal dibujado sobre el esviaje medido",
         resolucion=Libre(
-            que_lo_fija="el proyectista: ni el Manual de Hidrologia ni el "
-                        "Manual de Puentes fijan el angulo de las aletas",
-            dominio="grados, 0 < angulo < 90",
+            que_lo_fija="el proyectista: ninguna fuente de normas/ fija el "
+                        "angulo de las aletas de una obra",
+            dominio="grados con la pared del barril: los dos angulos entre "
+                    "30 y 60, el umbral de esviaje entre 15 y 45",
+        ),
+    ),
+
+    # --- T-7a --- LA EMBOCADURA DEL CABEZAL, la otra mitad de la decision:
+    # con aleros o sin ellos. Es de PERFIL por lo mismo que el angulo: entra
+    # a la proteccion de entrada (Fase 6) y a la coherencia de la embocadura
+    # del marco con el cabezal, que corren en los dos alcances.
+    "embocadura_cabezal": Criterio(
+        valor="cabezal_con_aleros",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("cabezal_con_aleros", "cabezal_recto"),
+        concepto="Remate de los dos extremos del conducto: cabezal con "
+                 "aleros o cabezal recto (sin aleros)",
+        justificacion="Decide si los cabezales llevan aleros, y con eso que "
+                      "se protege a la entrada (Fase 6), si se predimensionan "
+                      "aleros en la Fase 9 y, en un marco, que filas del "
+                      "HDS-5 puede declarar su embocadura. La fuente (Lamina "
+                      "Nº 02-A del Manual, pag. impresa 208) dibuja la salida "
+                      "con aleros y sin aleros, sin preferir ninguna; el "
+                      "HDS-5, Tabla C.2, agrupa el tubo con cabezal y con "
+                      "cabezal y aleros en la MISMA fila. Lo que no "
+                      "resuelve: cual lleva esta obra. Se adopta el cabezal "
+                      "con aleros, que es lo que el INFORME §4.3 pide "
+                      "dimensionar y lo que protege el talud a los lados de "
+                      "la boca (AASHTO LRFD 12.6.5 pide extender los aleros "
+                      "hasta proteger el relleno estructural del conducto; "
+                      "cita AASHTO_LRFD_9.12.6.5#ALEROS). Con tubo, "
+                      "las dos opciones dan el mismo ke (0.5) y la misma "
+                      "carta: ningun diametro se mueve; con marco, la opcion "
+                      "elige la banda de filas que la embocadura declarada "
+                      "del cajon tiene que respetar. Lo que el catalogo no "
+                      "tiene es la caja receptora de la Lamina Nº 02-A, que "
+                      "es la entrada habitual de un alivio de cuneta "
+                      "(Familia B): un punto B recibe un cabezal con aleros "
+                      "-- o recto -- y la corrida lo avisa (ficha T7A-02)",
+        fuente="Manual de Hidrologia, Lamina Nº 02-A, pag. impresa 208 (PDF "
+               "211; cita MC_HHD.LAMINA_02A); HDS-5 3a ed., Tabla C.2, pag. "
+               "impresa C.6 (PDF 216); AASHTO LRFD 9a ed., 12.6.5, pag. "
+               "impresa 12-20 (PDF 1658; cita AASHTO_LRFD_9.12.6.5#ALEROS). "
+               "La eleccion es del proyecto",
+        reemplazado_por="El plano de cabezales del expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre las dos salidas que dibuja la "
+                        "Lamina Nº 02-A",
+            dominio="una de las dos opciones; el conjunto cerrado viaja en "
+                    "`sensibilidad`",
         ),
     ),
 
@@ -8722,50 +8815,158 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- T-7a --- DEJA DE SER UN VACIO (INF-4.2): es la tabla de REGLAS con
+    # que `M9.predimensionar_cabezal` propone la geometria de cada cabezal de
+    # cada punto dimensionado. Hasta T-7a declaraba UNA geometria para todo el
+    # corredor -- H, B, D_f y espesores, vacia --, y esa geometria unica era
+    # INF-5.1.15. Las dimensiones ya no se declaran aqui sino POR PUNTO, en
+    # `--datos-externos` (`cabezal_declarado`), y ganan sobre la regla.
     "predimensionamiento_cabezal": Criterio(
-        valor=None,                 # VACIO: bloquea la estabilidad automatica
+        valor={"recubrimiento_clave_m": 0.30,
+               "bordillo_m": 0.15,
+               "resguardo_agua_m": 0.0,
+               "espesor_pantalla_voladizo_m": 0.30,
+               "divisor_espesor_gravedad": 6.0,
+               "fraccion_ancho_zapata": 0.70,
+               "divisor_peralte_zapata": 10.0,
+               "fraccion_punta": 0.33,
+               "altura_max_gravedad_m": 2.0,
+               "empotramiento_lateral_m": 0.30,
+               "altura_final_aleros_m": 0.40,
+               "fraccion_longitud_losa": 1.5,
+               "espesor_losa_m": 0.30},
         nivel=NIVEL_EXPEDIENTE,
         etiqueta="A",
         forma=FORMA_DICT_CON_CAMPOS,
-        concepto="Geometria del cabezal (altura H sobre zapata, ancho de "
-                 "zapata B, profundidad de desplante D_f, espesor de la "
-                 "pantalla en corona y en su arranque, espesor de zapata, "
-                 "ancho del TALON e inclinacion beta del trasdos), en m",
-        justificacion="Decide la geometria del cabezal, y hoy es un vacio "
-                      "declarado que impide que el cabezal se dimensione "
-                      "solo, sin que nadie declare de donde salieron las "
-                      "dimensiones. La fuente proxima (Sec. 9.1 de la hoja de "
-                      "ruta) fija que es el cabezal (Sec. 503, concreto "
-                      "estructural) y como es su embocadura (tubo a ras, "
-                      "square edge, amarrada a las constantes HDS-5 de Sec. "
-                      "4.2). Lo que no resuelve: no lo dimensiona, y Sec. 1.2 "
-                      "no trae ninguna columna con su geometria. Sin H no hay "
-                      "empuje, sin B no hay momento estabilizante ni presion "
-                      "de contacto, sin D_f no hay confinamiento. Las "
-                      "funciones de M9 aceptan la geometria como argumento "
-                      "explicito para poder tantear; lo que este vacio exige "
-                      "es que las dimensiones adoptadas queden declaradas "
-                      "aqui o en el plano tipo del expediente vial. El ancho "
-                      "del talon es parte de la lista porque el num. "
-                      "2.8.1.1.14.1 define W_s como el peso del suelo "
-                      "inmediatamente encima del muro, talon incluido: sin "
-                      "esa medida no hay W_s y sin W_s no hay P_IR. "
-                      "`GeometriaCabezal.exigir_ancho_talon` se detiene aqui "
-                      "si falta; poner 0 en su lugar anularia la mitad de "
-                      "P_IR, y del lado inseguro",
-        fuente="PENDIENTE - predimensionamiento del proyectista, o plano tipo "
-               "de cabezal del expediente vial",
-        reemplazado_por="Plano de encofrado del cabezal, acotado",
-        verificacion_pendiente="La geometria tiene que ser COMPATIBLE con la "
-                               "SECCION adoptada en la Fase 4 -- un diametro "
-                               "en un tubo, el par B x H en un marco -- y con "
-                               "la altura de terraplen de la Fase 7: un cabezal "
-                               "declarado aparte del conducto que remata es "
-                               "una incoherencia de expediente",
+        # VENTANA POR CAMPO, y casi todas son las del encargo de T-7a y del
+        # INFORME §4.2 / §4.3, que las dan como rangos de practica: espesor
+        # de pantalla en voladizo 0.20-0.30 m; en gravedad H/8-H/6 (divisor
+        # 6 a 8); zapata 0.4-0.7·H; peralte H/12-H/10 (divisor 10 a 12);
+        # altura final de aleros 0.30-0.50 m; losa 1.0-1.5·D y 0.20-0.30 m.
+        # Donde el encargo no da rango (recubrimiento, bordillo, resguardo,
+        # punta, altura maxima del ciclopeo, empotramiento) la ventana es la
+        # del proyecto y lo dice la justificacion.
+        sensibilidad={"recubrimiento_clave_m": (0.15, 0.60),
+                      "bordillo_m": (0.0, 0.30),
+                      "resguardo_agua_m": (0.0, 0.30),
+                      "espesor_pantalla_voladizo_m": (0.20, 0.30),
+                      "divisor_espesor_gravedad": (6.0, 8.0),
+                      "fraccion_ancho_zapata": (0.40, 0.70),
+                      "divisor_peralte_zapata": (10.0, 12.0),
+                      "fraccion_punta": (0.25, 0.40),
+                      "altura_max_gravedad_m": (1.5, 2.5),
+                      "empotramiento_lateral_m": (0.20, 0.50),
+                      "altura_final_aleros_m": (0.30, 0.50),
+                      "fraccion_longitud_losa": (1.0, 1.5),
+                      "espesor_losa_m": (0.20, 0.30)},
+        concepto="Reglas de predimensionamiento del cabezal por punto: "
+                 "recubrimiento y bordillo sobre la clave exterior, resguardo "
+                 "sobre el nivel de agua, espesor de pantalla (voladizo; "
+                 "gravedad como H/divisor), zapata (ancho como fraccion de H, "
+                 "peralte como H/divisor, punta como fraccion del ancho), "
+                 "altura maxima del cabezal de gravedad ciclopeo, empotramiento "
+                 "lateral de los aleros, altura final de los aleros y losa de "
+                 "entrega (longitud como fraccion de D, espesor)",
+        justificacion="Decide la geometria PROPUESTA de cada cabezal de "
+                      "cada punto, que la Fase 9 imprime dimension por "
+                      "dimension como «propuesta por regla» y que el "
+                      "proyectista puede pisar por punto en "
+                      "`--datos-externos` (`cabezal_declarado`, «declarada»; "
+                      "una dimension que la regla calcula A PARTIR de otra "
+                      "declarada se imprime «derivada»). Las fuentes con "
+                      "numero fijan lo que fijan y no estan aqui: la "
+                      "profundidad minima de desplante de E.050 Art. 26.2 "
+                      "(0,80 m, [N→] para un cabezal vial: "
+                      "'profundidad_cimentacion_min_cabezal_m'), el desplante "
+                      "de la salida bajo la socavacion de AASHTO 12.6.5 "
+                      "('margen_zapata_bajo_socavacion_m' [C]), el espesor "
+                      "minimo de la zapata de concreto simple de E.060 22.7.4 "
+                      "(300 mm, [N], solo el de gravedad), la altura minima "
+                      "de la zapata armada sobre su refuerzo de E.060 15.7 "
+                      "(300 mm, [N→], mas el recubrimiento de 7.7.1: "
+                      "'peralte_min_zapata_armada_m') y el dentellon de la "
+                      "Lamina Nº 04 ('dentellon_losa_entrega' [N→]). Lo que "
+                      "ninguna fuente de normas/ fija es el resto del "
+                      "predimensionamiento: las Laminas 02, 02-A y 03 del "
+                      "Manual acotan con letras o con «VARIABLE», E.060 no da "
+                      "espesor minimo para un muro de contencion (su "
+                      "14.5.3.2, 200 mm, es del metodo empirico de muros de "
+                      "carga y de cimentacion) y el PDF de VARIOS que el "
+                      "encargo cita (pp. 18 y 42) no esta en normas/: su "
+                      "origen no se pudo verificar, tampoco el de «H/8 a H/6» "
+                      "como espesor de la pantalla de gravedad (el "
+                      "predimensionamiento clasico lo da tambien para la "
+                      "zapata), que por eso sigue [A]. Se adoptan las reglas "
+                      "de practica del INFORME §4.2-§4.3, en el extremo de "
+                      "cada ventana que da MAS material (pantalla 0.30 m, "
+                      "H/6, B = 0.7·H, peralte H/10, losa 1.5·D y 0.30 m). "
+                      "Eso no es el lado seguro de la estabilidad, y no se "
+                      "afirma: con kh = 0.50 y un coeficiente de friccion en "
+                      "la base menor que kh, cada kN de muro suma mas fuerza "
+                      "sismica que desliza (kh·W) que resistencia (μ·W), y "
+                      "mas masa EMPEORA el deslizamiento sismico; que mas "
+                      "material ayude depende de φ, que el EMS no ha dado. La "
+                      "estabilidad de lo propuesto la verifica T-7b y el "
+                      "armado T-7c. La coronacion es la mayor de dos: la "
+                      "clave exterior mas el relleno que el muro retiene "
+                      "sobre ella (0.30 m, regla del proyecto, no un minimo "
+                      "de cobertura de ninguna fuente: la cobertura minima "
+                      "del conducto la juzga la Fase 7 por su cuenta) mas un "
+                      "bordillo de 0.15 m que sobresale del relleno, y el "
+                      "nivel de agua del extremo mas un resguardo; el "
+                      "resguardo es 0 porque es la condicion que el INFORME "
+                      "§4.2 escribe -- que el agua no desborde el muro -- y "
+                      "la ventana permite endurecerla. El talud del "
+                      "terraplen muere en el RELLENO retenido (coronacion "
+                      "menos bordillo), no en la corona del bordillo: es el "
+                      "nivel con que se cierra la longitud entre cabezales. "
+                      "El tipo es gravedad en concreto ciclopeo hasta 2.0 m "
+                      "de altura total -- base de zapata a corona, desplante "
+                      "incluido -- y voladizo armado por encima; con la "
+                      "altura interior minima de 0.90 m (4.1.1.3.4 a) la "
+                      "menor altura total de la obra suma 0.90 m de altura, "
+                      "0.30 m de relleno, 0.15 m de bordillo y 0.80 m de "
+                      "desplante: 2.15 m mas la pared del conducto (2.165 m "
+                      "en TMC, 2.25 m en concreto), de modo que "
+                      "con este umbral TODO cabezal sale voladizo armado y la "
+                      "rama de gravedad solo se alcanza moviendo el umbral en "
+                      "su ventana o declarando el tipo; el umbral no se "
+                      "cambia (ficha T7A-04) y la corrida lo avisa. Cuando "
+                      "sale gravedad, E.060 22.10.2.1 limita el ciclopeo a "
+                      "muros de contencion de GRAVEDAD y el 22.10.2.2 exige "
+                      "verificar flexion y corte en voladizos mas largos que "
+                      "medio peralte: lo juzga T-7c. La punta es un tercio "
+                      "del ancho de la zapata, y el empotramiento de 0.30 m "
+                      "por lado es lo que el muro sobresale del ancho "
+                      "exterior del conducto para recibir el arranque de los "
+                      "aleros. El terreno al pie del muro, desde el que se "
+                      "mide el desplante, el dentellon de la losa y las "
+                      "alturas de los aleros, es UNO por extremo: en la "
+                      "entrada la solera del conducto, y en la salida la mas "
+                      "baja entre la solera y el fondo del cauce receptor: "
+                      "con la salida en caida sobre el lecho, el terreno "
+                      "delante del muro baja hasta el receptor",
+        fuente="Practica de predimensionamiento: INFORME §4.2 y §4.3 y el "
+               "encargo de T-7a (PDF de VARIOS pp. 18 y 42, NO verificado: no "
+               "esta en normas/). Las dimensiones con fuente numerica estan "
+               "en constantes_normativas (ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M, "
+               "E.060 22.7.4) y en los criterios "
+               "'profundidad_cimentacion_min_cabezal_m', "
+               "'peralte_min_zapata_armada_m', "
+               "'margen_zapata_bajo_socavacion_m' y 'dentellon_losa_entrega'",
+        reemplazado_por="Plano de encofrado del cabezal de cada punto, "
+                        "acotado, o la dimension declarada por punto en "
+                        "`--datos-externos` (`cabezal_declarado`)",
+        verificacion_pendiente="La geometria propuesta es compatible con el "
+                               "conducto que remata por construccion; la que "
+                               "se DECLARA por punto se verifica (CB1 a CB7 "
+                               "de `M9.verificar_compatibilidad_cabezal`). "
+                               "La ESTABILIDAD de cualquiera de las dos no "
+                               "se verifica aqui: es T-7b",
         resolucion=Libre(
             que_lo_fija="el proyectista, o el plano tipo de cabezal del "
                         "expediente vial",
-            dominio="geometria en m, todas las dimensiones > 0",
+            dominio="reglas en m o adimensionales, cada una en su ventana",
         ),
     ),
 
@@ -9560,6 +9761,188 @@ CRITERIOS: Dict[str, Criterio] = {
             que_lo_fija="el proyectista, al declarar que subconjunto de la "
                         "Seccion 5 de AASHTO aplica al muro del cabezal",
             dominio="declaracion del procedimiento y de sus factores phi",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-7a --- (cadena T) · el cabezal por punto: dos criterios con fuente
+    # =======================================================================
+    "margen_zapata_bajo_socavacion_m": Criterio(
+        valor=0.6096,               # 2.0 ft exactos (1 ft = 0.3048 m)
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        # 0 es la lectura de AASHTO 10.6.1.2 («bear below the maximum
+        # anticipated depth of scour») y la de HEC-14 5.1.3 («extend to a
+        # depth equal to the maximum depth of scour»); 0.6096 m es la de
+        # 12.6.5 para las estructuras enterradas. El valor es el techo.
+        sensibilidad=(0.0, 0.6096),
+        concepto="Distancia minima de la base de la zapata del cabezal de "
+                 "salida, y de la base del dentellon de su losa, por debajo "
+                 "del fondo de la hoya de socavacion",
+        justificacion="Decide cuanto por debajo de la socavacion se "
+                      "desplanta el cabezal de salida. La fuente (AASHTO LRFD "
+                      "12.6.5, Seccion 12, estructuras enterradas; cita "
+                      "AASHTO_LRFD_9.12.6.5#ZAPATAS) exige que las zapatas "
+                      "de la estructura queden no menos de 2.0 ft bajo la "
+                      "socavacion maxima prevista. Lo que no resuelve: si la "
+                      "zapata de un cabezal es una de esas zapatas; el "
+                      "proyecto lo lee asi -- lado seguro --, porque el "
+                      "mismo articulo abre exigiendo que ninguna parte de la "
+                      "estructura se mueva por socavacion (la lectura, con "
+                      "lo que juega en contra, es la `Interpretacion` de la "
+                      "cita). Y aplica el MISMO margen a la base del "
+                      "dentellon de la losa de salida, cuya frase en el "
+                      "articulo dice solo «extending below» sin cifra. Es "
+                      "[C] y no [N] "
+                      "porque la hoja de ruta (§0.1) pone la Seccion 12 de "
+                      "AASHTO como fuente tecnica reconocida. La regla "
+                      "general de las zapatas (10.6.1.2) y HEC-14 (5.1.3, "
+                      "recomendacion) piden el desplante A la profundidad de "
+                      "la socavacion, sin margen: son el otro extremo de la "
+                      "ventana. La profundidad la entrega la Fase 6 (T-8): "
+                      "la declarada, o la hoya de HEC-14 Cap. 5; sin "
+                      "ninguna de las dos, el desplante de salida queda solo "
+                      "con el minimo de E.050 y la corrida lo avisa",
+        fuente="AASHTO LRFD 9a ed., 12.6.5 'Scour', pag. impresa 12-20 (PDF "
+               "1658; cita AASHTO_LRFD_9.12.6.5#ZAPATAS). Contraste: 10.6.1.2 "
+               "'Bearing Depth', pag. impresa 10-52 (PDF 1341) y HEC-14 "
+               "5.1.3, pag. impresa 5-2 (PDF 55)",
+        reemplazado_por="Un estudio de socavacion del cauce que fije el "
+                        "desplante",
+        resolucion=Libre(
+            que_lo_fija="AASHTO 12.6.5 da el numero; la lectura de que "
+                        "aplica a la zapata del cabezal es del proyecto",
+            dominio="m, entre 0 y 0.6096",
+        ),
+    ),
+
+    "dentellon_losa_entrega": Criterio(
+        valor={"profundidad_min_m": 0.80, "ancho_m": 0.40},
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Dentellon (uña) en el borde libre de la losa de entrega de "
+                 "cada cabezal: profundidad minima, medida desde el TERRENO "
+                 "al borde de la losa (el pie del muro de ese extremo) hasta "
+                 "la base del dentellon, y ancho",
+        justificacion="Decide la profundidad minima y el ancho del dentellon "
+                      "de la losa de entrega. La fuente (Lamina Nº 04 del "
+                      "Manual, pag. impresa 210) acota el dentellon de un "
+                      "ALIVIADERO a la salida de alcantarillas: «0.80 min.» "
+                      "de profundidad --medida desde la superficie del "
+                      "terreno natural al borde del dentellon, que alli es la "
+                      "cara inferior del paquete losa + relleno granular, "
+                      "hasta su base; no desde la cara superior de la losa "
+                      "(correcciones de T-7a, H3)-- y «0.40m» de ancho; es "
+                      "la unica lamina "
+                      "del Manual que acota un dentellon (la 02 y la 02-A lo "
+                      "rotulan «UÑA» y lo acotan con letras; la 03 no acota "
+                      "nada). Lo que no resuelve: el dentellon de la losa de "
+                      "un cabezal, que es otra estructura. Se aplica por "
+                      "ANALOGIA, y por eso es [N→] y no [A]: un valor "
+                      "justificado con la cota de una lamina normativa no "
+                      "puede ser adopcion libre (regla de coherencia de la "
+                      "§0.1). El terreno desde el que se mide es el mismo "
+                      "del desplante del cabezal de ese extremo "
+                      "(`ExtremoDelConducto.cota_pie`): en la salida, la mas "
+                      "baja entre la solera y el fondo del cauce receptor. Y "
+                      "en la salida, si la Fase 6 entrega la socavacion, la "
+                      "base del dentellon baja ademas bajo el fondo de la "
+                      "hoya con el margen de "
+                      "'margen_zapata_bajo_socavacion_m' (AASHTO 12.6.5 pide "
+                      "una pantalla «extending below» la socavacion maxima "
+                      "prevista sin cuantificar cuanto; cita "
+                      "AASHTO_LRFD_9.12.6.5#DENTELLON y su `Interpretacion` "
+                      "en la de las zapatas)",
+        fuente="Manual de Hidrologia, Lamina Nº 04, pag. impresa 210 (PDF "
+               "213; cita MC_HHD.LAMINA_04#DENTELLON), por analogia; AASHTO "
+               "LRFD 12.6.5, pag. impresa 12-20 (PDF 1658; cita "
+               "AASHTO_LRFD_9.12.6.5#DENTELLON) para la salida",
+        reemplazado_por="El plano de la losa de entrega de cada cabezal",
+        resolucion=Libre(
+            que_lo_fija="la Lamina Nº 04, aplicada por analogia",
+            dominio="m, profundidad y ancho positivos",
+        ),
+    ),
+
+    # --- T-7a, correcciones de la auditoria (H8 y dudoso 4) --- DOS MINIMOS
+    # DE NORMAS DE EDIFICACION APLICADOS POR ANALOGIA AL CABEZAL VIAL. Hasta
+    # las correcciones el primero era [N] en constantes_normativas
+    # (`PROFUNDIDAD_CIMENTACION_MIN_M`); el ambito de E.050 son las
+    # edificaciones del RNE, y para un cabezal vial es [N→] (dictamen del
+    # verificador normativo del marco del cabezal).
+    "profundidad_cimentacion_min_cabezal_m": Criterio(
+        valor=0.80,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_FLOAT,
+        concepto="Profundidad minima de desplante del cabezal (de entrada y "
+                 "de salida) bajo el terreno al pie del muro, m",
+        justificacion="Decide la profundidad minima de la base de la zapata "
+                      "del cabezal bajo el terreno al pie del muro (CB4 y el "
+                      "piso del desplante propuesto). La fuente (E.050 Art. "
+                      "26.2, pag. 38; cita E050.26.2#PROFUNDIDAD) fija 0.80 m "
+                      "como minimo para cualquier tipo de cimentacion y el "
+                      "26.1 la mide desde la superficie del "
+                      "terreno. Lo que no resuelve: E.050 es una norma de "
+                      "EDIFICACIONES (Art. 1 y 3, pag. 7) y no nombra las "
+                      "obras de drenaje vial. Se aplica por ANALOGIA, y por "
+                      "eso es [N→] y no [N]: lo que la hace cercana es que la "
+                      "misma norma manda que el muro de contencion cumpla su "
+                      "Capitulo IV (39.13.7, pag. 73), donde esta el Art. "
+                      "26, y el cabezal se predimensiona como un muro de "
+                      "contencion. La excepcion de roca del mismo 26.2 (el "
+                      "PR puede bajarla) no se supone: no hay dato de roca "
+                      "por punto. La tabla de la §0.1 de la hoja de ruta "
+                      "rotula E.050 como [N] sin esta salvedad: es un defecto "
+                      "de la hoja, declarado en ella",
+        fuente="E.050 (RM 406-2018-VIVIENDA), Art. 26.2, pag. 38 (cita "
+               "E050.26.2#PROFUNDIDAD, con su `Interpretacion`); ambito, "
+               "Art. 1 y 3, pag. 7; remision del muro de contencion, 39.13.7, "
+               "pag. 73. Por analogia",
+        reemplazado_por="La profundidad de cimentacion que el EMS del punto "
+                        "recomiende para el cabezal",
+        resolucion=Libre(
+            que_lo_fija="E.050 Art. 26.2, aplicado por analogia",
+            dominio="m, positivo",
+        ),
+    ),
+
+    "peralte_min_zapata_armada_m": Criterio(
+        valor=0.30,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_FLOAT,
+        concepto="Altura minima de la zapata del cabezal de voladizo armado "
+                 "medida sobre el refuerzo inferior, m (el espesor minimo de "
+                 "la zapata le suma el recubrimiento contra el suelo)",
+        justificacion="Decide el piso del espesor propuesto de la zapata del "
+                      "cabezal de voladizo armado, que la regla H/10 de "
+                      "'predimensionamiento_cabezal' dejaba en 0.225 m en la "
+                      "entrada de A-01. La fuente (E.060 15.7, pag. 138; "
+                      "cita E060.15.7#PERALTE) fija 300 mm como minimo de la "
+                      "altura de una zapata apoyada sobre el suelo, medida "
+                      "sobre su refuerzo inferior. Lo "
+                      "que no resuelve: E.060 es una norma de edificaciones y "
+                      "la Via 1 de la §0.2 de la hoja de ruta la saca del "
+                      "diseño estructural armado (rige AASHTO LRFD Seccion "
+                      "5). Se aplica por ANALOGIA como minimo del "
+                      "PREDIMENSIONAMIENTO, y por eso es [N→]: el espesor "
+                      "minimo de la zapata es esta altura mas el "
+                      "recubrimiento del refuerzo inferior contra el suelo de "
+                      "E.060 7.7.1 a) (70 mm, `RECUBRIMIENTO['contra_suelo']`"
+                      ", [N] por la excepcion de durabilidad de la §0.2). El "
+                      "peralte de diseño -- con el recubrimiento mayor entre "
+                      "AASHTO y E.060 y el diametro de la barra -- es de "
+                      "T-7c",
+        fuente="E.060, num. 15.7, pag. 138 (cita E060.15.7#PERALTE), por "
+               "analogia; recubrimiento: E.060 7.7.1 a), pag. 54",
+        reemplazado_por="El peralte de la zapata que resulte del diseño a "
+                        "flexion y corte de T-7c",
+        resolucion=Libre(
+            que_lo_fija="E.060 15.7, aplicado por analogia",
+            dominio="m, positivo",
         ),
     ),
 

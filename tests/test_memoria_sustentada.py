@@ -589,6 +589,13 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # C del dueño A-02 cierra el tramo de B-01 y VB1 se evalua (530 m).
         "F10.CAPACIDAD", "F10.APORTE", "F10.L_HIDRAULICO",
         "F10.APORTE_CAPACIDAD",
+        # LOS SIETE DE T-7a, por la misma razon y una mas: la Fase 9 del
+        # punto cuelga de un punto DIMENSIONADO y solo corre a expediente,
+        # donde ningun punto del fixture dimensiona (V5). Que los pasos
+        # existen y llevan su fundamento lo mide
+        # `tests/test_t7a_cabezal_geometria.py` sobre A-01 (ficha T7A-01).
+        "F9.EMBOCADURA", "F9.CORONACION", "F9.DESPLANTE", "F9.DIMENSIONES",
+        "F9.ALEROS", "F9.LOSA", "F9.LONGITUD",
     }
     declarados = set(F.FUNDAMENTOS)
     huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar

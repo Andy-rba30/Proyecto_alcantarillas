@@ -870,8 +870,8 @@ from tests.apoyo.aproximacion import REL_TRANSPORTE              # noqa: E402
 # rompia ninguna prueba y el calculo seguia, con un talon de cero.
 
 # Geometria de tanteo, en metros. NO es del expediente: la geometria del
-# cabezal la aporta el criterio 'predimensionamiento_cabezal', que sigue
-# vacio. Estos numeros solo tienen que ser coherentes entre si.
+# cabezal la propone `M9.predimensionar_cabezal` por punto desde T-7a. Estos
+# numeros solo tienen que ser coherentes entre si.
 ANCHO_TALON_DECLARADO = 1.10
 
 
@@ -890,22 +890,26 @@ def test_el_ancho_del_talon_sin_declarar_detiene_y_no_vale_cero():
     anula W_s y con el la mitad de P_IR, y lo hace en la direccion NO
     conservadora -- el numero que sale es menor que el real y nada avisa.
 
-    Se detiene con la excepcion del CRITERIO y no con una de dato, y eso
-    tambien se prueba: la geometria del cabezal no sale del CSV, sale de
-    'predimensionamiento_cabezal', y la GUI tiene que poder ofrecer
-    declararla en vez de mostrar un error de programa.
+    DESDE T-7a SE DETIENE CON `DatoFaltanteError` Y NO CON LA DEL CRITERIO:
+    'predimensionamiento_cabezal' TIENE valor (las reglas con que
+    `M9.predimensionar_cabezal` propone la geometria por punto, talon
+    incluido), de modo que un `CriterioPendienteError` sobre el diria «falta
+    declarar» de un criterio declarado. Una geometria sin talon solo puede
+    ser un TANTEO armado a mano, y lo que le falta es un dato que el que
+    tantea tiene que AÑADIR: es Faltante (regla de CLAUDE.md), sigue
+    descendiendo de ErrorProyecto y la GUI lo distingue de un fallo del
+    programa.
     """
     geometria = _geometria_cabezal()
     assert geometria.ancho_talon is None
 
-    with pytest.raises(CriterioPendienteError) as exc:
+    with pytest.raises(DatoFaltanteError) as exc:
         geometria.exigir_ancho_talon()
 
-    assert exc.value.clave == "predimensionamiento_cabezal"
-    assert "talon" in exc.value.concepto
-    assert "2.8.1.1.14.1" in exc.value.fuente
-    assert "W_s" in exc.value.fuente and "P_IR" in exc.value.fuente
-    assert exc.value.mensaje_gui == "falta declarar: predimensionamiento_cabezal"
+    assert exc.value.campo == "ancho_talon"
+    assert "2.8.1.1.14.1" in exc.value.detalle
+    assert "W_s" in exc.value.detalle and "P_IR" in exc.value.detalle
+    assert isinstance(exc.value, ErrorProyecto)
 
 
 def test_el_ancho_del_talon_declarado_se_devuelve_tal_cual():

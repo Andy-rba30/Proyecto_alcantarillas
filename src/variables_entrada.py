@@ -1353,8 +1353,27 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "para senalar, y la tenia el tablero que la senala. Confundirlas "
              "desplaza el control de salida en la magnitud entera de la cota "
              "de fondo: centenares de metros en este corredor."),
+    # --- T-7a --- el angulo dejo de ser un vacio sin consumidor: lo lee
+    # `M9.embocadura_del_punto` antes de la Fase 4 (y por eso es de perfil).
+    # LA FASE QUE ESTE CENSO LE ATRIBUYE ES LA DEL MODULO (M9, «Fase 9»), y
+    # se deduce del consumidor para que no pueda divergir; la nota dice lo
+    # que esa atribucion no ve (correcciones de T-7a, H9).
     "angulo_aletas": _Meta(
-        unidad="grados", fase_declarada="Fase 9 - Cabezal y aletas"),
+        unidad="grados con la prolongacion de la pared del barril",
+        nota="Lo consume M9 (Fase 9), pero se lee ANTES de la Fase 4, en los "
+             "dos alcances: `M9.embocadura_del_punto`, que el servicio llama "
+             "antes del bucle de diseño. Es un criterio de perfil."),
+    "embocadura_cabezal": _Meta(
+        unidad="-",
+        nota="Lo consume M9 (Fase 9), pero se lee ANTES de la Fase 4, en los "
+             "dos alcances (`M9.embocadura_del_punto`): entra a la proteccion "
+             "de entrada de la Fase 6 y, en un marco, a la coherencia de su "
+             "embocadura. Es un criterio de perfil."),
+    "margen_zapata_bajo_socavacion_m": _Meta(unidad="m"),
+    "dentellon_losa_entrega": _Meta(unidad="m"),
+    # --- T-7a, correcciones (H8 y dudoso 4) ---
+    "profundidad_cimentacion_min_cabezal_m": _Meta(unidad="m"),
+    "peralte_min_zapata_armada_m": _Meta(unidad="m"),
     "c_phi_fundacion": _Meta(
         unidad="kPa y grados",
         fase_declarada="Fase 9 - Cabezal y aletas (E1-E5 de Sec. 9.3, fuera "
@@ -1532,7 +1551,7 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "peso_especifico_concreto_kn_m3": _Meta(unidad="kN/m3"),
     "peso_especifico_relleno_kn_m3": _Meta(unidad="kN/m3"),
     "phi_relleno_trasdos": _Meta(unidad="grados"),
-    "predimensionamiento_cabezal": _Meta(unidad="m"),
+    "predimensionamiento_cabezal": _Meta(unidad="m y adimensional (reglas)"),
     "procedimiento_flexion_corte_aashto_sec5": _Meta(unidad="-"),
     "punto_aplicacion_incremento_sismico": _Meta(unidad="- (fraccion de H)"),
     "relacion_intensidad_duracion": _Meta(unidad="-"),

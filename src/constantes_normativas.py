@@ -4905,3 +4905,100 @@ PENDIENTE_MIN_CUNETA_DG2018 = {"revestida": 0.002, "sin_revestir": 0.005}
 CUNETA_Z1_MIN_T304_12 = {"casos_muy_especiales": 2.0,      # H por 1 de V
                          "general": 3.0,
                          "vd_mas_70_imda_mas_750": 4.0}
+
+# ===========================================================================
+# --- T-7a --- (cadena T) · el cabezal por punto: desplante y aleros
+# ===========================================================================
+# Solo [N] aqui, y solo los que la fuente escribe con su numero. Las reglas
+# del predimensionamiento (alturas, espesores, anchos, longitudes) son [A] y
+# viven en el criterio 'predimensionamiento_cabezal'; el margen bajo la
+# socavacion es [C] (AASHTO Sec. 12) y vive en 'margen_zapata_bajo_socavacion_m';
+# el dentellon de la Lamina Nº 04 es [N→] y vive en 'dentellon_losa_entrega'.
+#
+# LA PROFUNDIDAD MINIMA DE CIMENTACION DE E.050 Art. 26.2 (0,80 m) YA NO ESTA
+# AQUI (correcciones de T-7a, H8): el ambito de E.050 son las edificaciones
+# del RNE (Art. 1 y 3, pag. 7), y aplicada a un cabezal vial es [N→] por
+# analogia, no [N]. Vive en el criterio 'profundidad_cimentacion_min_cabezal_m'
+# con la analogia declarada (cita E050.26.2#PROFUNDIDAD y su `Interpretacion`).
+# Y el peralte minimo de la zapata ARMADA de E.060 15.7, por lo mismo, en
+# 'peralte_min_zapata_armada_m'.
+
+# E.060 Art. 22.7.4, pag. 193: «El espesor de las zapatas de concreto simple
+# estructural no debe ser menor que 300 mm». Rige la zapata del cabezal de
+# GRAVEDAD en ciclopeo (Cap. 22, el mismo de `M9.verificar_ciclopeo`); no la
+# del voladizo armado, que la Via 1 (§0.2) deja a AASHTO. Se mantiene [N] por
+# la lectura de la §9.4 de la hoja de ruta, que hace regir E.060 22.10 sobre
+# el ciclopeo junto con el EG-2013 (ficha T7A-04: la objecion de ambito que
+# hace [N→] a E.050 26.2 alcanzaria tambien a E.060, y queda para el dueño).
+ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M = 0.30
+NUMERAL_ZAPATA_CONCRETO_SIMPLE = _reg.cita("E060.22.7.4#ZAPATA").como_texto()
+
+# LAS BANDAS DE ANGULO DE ALETAS QUE IMPRIMEN LAS FILAS DE CAJON de las Tablas
+# A.1 y C.2 del HDS-5, leidas de su ROTULO literal (no de una prosa propia):
+# para cada clave de fila, los intervalos de angulo de aleros CON EL EJE DEL
+# CONDUCTO en que la fila vale, y si vale tambien SIN aleros (cabezal recto).
+# Es la vista que `M9.filas_hds5_del_cajon` lee para decir si la embocadura
+# declarada del marco ('embocadura_cajon', 'ke_entrada_cajon') es la del
+# cabezal del punto. Cuatro lecturas que conviene tener a la vista:
+#
+#   * «90° and 15° wingwall flares» (Carta 8, escala 2): 90° es el ala EN EL
+#     PLANO DEL MURO, o sea un cabezal recto; la fila vale sin aleros y con
+#     aleros a 15° exactos.
+#   * Las Cartas 10 («90° headwall») y 11 («skewed headwall») son CABEZAL
+#     SIN ALETAS. Las de la 11 son ademas de cabezal ESVIADO respecto del
+#     barril, y el cabezal que este programa propone es NORMAL al eje del
+#     conducto: no casan con ninguno de los dos tipos y quedan sin banda.
+#     Por la MISMA razon queda sin banda la escala 3 de la Carta 12 («18.4°
+#     non-offset wingwall flares 30° skewed barrel»): el barril esviado 30°
+#     respecto del cabezal tampoco es el cabezal normal al eje (correcciones
+#     de T-7a, H9; hasta entonces se le daba la banda de 18.4°).
+#   * Las Cartas 9, 12 y 13 nombran un angulo (o un intervalo) EXACTO.
+#   * La Tabla C.2 agrupa por «Wingwalls at 30⁰ to 75⁰ to barrel», «Wingwall
+#     at 10⁰ to 25⁰ to barrel», «Wingwalls parallel (extension of sides)» y
+#     «Headwall parallel to embankment (no wingwalls)». Entre 25° y 30°, y
+#     entre 75° y 90°, la tabla NO TIENE FILA.
+#
+# EL TUBO NO ESTA AQUI, y a proposito: la Tabla C.2 pone el ke del tubo bajo
+# «Headwall or headwall and wingwalls» (concreto y metal corrugado) y las
+# Cartas 1 a 3 no separan aleros (ficha T2-04). Con tubo el angulo de los
+# aleros NO mueve ke ni la carta; la fuente no distingue.
+SIN_ALETAS = "sin_aletas"
+BANDAS_ALETAS_CAJON_A1: "dict[str, Tuple[Tuple[float, float], ...]]" = {
+    "cajon_concreto_aletas_30_75": ((30.0, 75.0),),
+    "cajon_concreto_aletas_90_15": ((15.0, 15.0),),
+    "cajon_concreto_aletas_0": ((0.0, 0.0),),
+    "cajon_concreto_aleta_45_d043": ((45.0, 45.0),),
+    "cajon_concreto_aleta_18_337_d083": ((18.0, 33.7),),
+    "cajon_concreto_cabezal_90_chaflan": (),
+    "cajon_concreto_cabezal_90_bisel_45": (),
+    "cajon_concreto_cabezal_90_bisel_337": (),
+    "cajon_concreto_chaflan_esviaje_45": (),
+    "cajon_concreto_chaflan_esviaje_30": (),
+    "cajon_concreto_chaflan_esviaje_15": (),
+    "cajon_concreto_bisel_45_esviaje_10_45": (),
+    "cajon_concreto_chaflan_aletas_45": ((45.0, 45.0),),
+    "cajon_concreto_chaflan_aletas_184": ((18.4, 18.4),),
+    "cajon_concreto_chaflan_aletas_184_esviaje_30": (),
+    "cajon_concreto_bisel_superior_aletas_45_desplazadas": ((45.0, 45.0),),
+    "cajon_concreto_bisel_superior_aletas_337_desplazadas": ((33.7, 33.7),),
+    "cajon_concreto_bisel_superior_aletas_184_desplazadas": ((18.4, 18.4),),
+}
+# Las filas de la Tabla A.1 de cajon que valen SIN aleros (cabezal recto,
+# normal al barril): la escala 2 de la Carta 8 («90°») y la Carta 10.
+CAJON_A1_SIN_ALETAS = frozenset({
+    "cajon_concreto_aletas_90_15",
+    "cajon_concreto_cabezal_90_chaflan",
+    "cajon_concreto_cabezal_90_bisel_45",
+    "cajon_concreto_cabezal_90_bisel_337",
+})
+BANDAS_ALETAS_CAJON_C2: "dict[str, Tuple[Tuple[float, float], ...]]" = {
+    "cajon_sin_aletas_escuadra_3": (),
+    "cajon_sin_aletas_redondeado_3": (),
+    "cajon_aletas_30_75_escuadra": ((30.0, 75.0),),
+    "cajon_aletas_30_75_redondeado": ((30.0, 75.0),),
+    "cajon_aletas_10_25_escuadra": ((10.0, 25.0),),
+    "cajon_aletas_paralelas_escuadra": ((0.0, 0.0),),
+    "cajon_aletas_paralelas_tapered": ((0.0, 0.0),),
+}
+CAJON_C2_SIN_ALETAS = frozenset({"cajon_sin_aletas_escuadra_3",
+                                 "cajon_sin_aletas_redondeado_3"})

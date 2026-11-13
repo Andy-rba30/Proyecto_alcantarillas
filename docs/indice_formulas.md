@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `6c25f1d+cambios-sin-commit` · Suite: 5529 passed, 19 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `3584cf0` · Suite: 5690 passed, 19 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -32,13 +32,12 @@
   - C-01: Fase 5 - Verificaciones → VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no) (`TipoDeBloqueo.DIFERIDO_POR_ALCANCE`).
   - C-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DATO_FALTANTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → K_AE de Mononobe-Okabe (9.2) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
-  - proyecto: Fase 9 - Cabezal y aletas (M9) → predimensionamiento del cabezal (9.3, E1-E5) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'contra_suelo' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_ge_3_4' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → recubrimiento de diseno 'suelo_intemperie_le_5_8' (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
   - proyecto: Fase 9 - Cabezal y aletas (M9) → aviso de ambiente corrosivo (9.4) (`TipoDeBloqueo.CRITERIO_PENDIENTE`).
 
-Pasos emitidos: **159** · fórmulas distintas: **28** · fundamentos ejercitados: **19** de 87.
+Pasos emitidos: **159** · fórmulas distintas: **28** · fundamentos ejercitados: **19** de 94.
 
 ## 2. Índice
 
@@ -175,6 +174,13 @@ porque el pipeline se detiene antes (§1). Sus fórmulas no están en el
 | `F8.TMC_ASD` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: contraste por tensiones admisibles (ASTM A796, num. 8), que no rige | `M8_estructural` |
 | `F8.TMC_COSTURA` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: resistencia de la costura longitudinal | `M8_estructural` |
 | `F8.TMC_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion | `M8_estructural` |
+| `F9.ALEROS` | Fase 9 - Cabezal y aletas | Aleros: angulo, longitud, alturas inicial y final, espesor | `M9_cabezal` |
+| `F9.CORONACION` | Fase 9 - Cabezal y aletas | Coronacion y altura del cabezal: sobre la clave exterior y sobre el nivel de agua del extremo | `M9_cabezal` |
+| `F9.DESPLANTE` | Fase 9 - Cabezal y aletas | Profundidad de desplante del cabezal: minimo de E.050 y, a la salida, bajo la socavacion | `M9_cabezal` |
+| `F9.DIMENSIONES` | Fase 9 - Cabezal y aletas | Predimensionamiento del cabezal: tipo, espesores, zapata y longitud del muro | `M9_cabezal` |
+| `F9.EMBOCADURA` | Fase 9 - Cabezal y aletas | Embocadura del punto: cabezal con aleros o recto, angulo de los aleros y lo que la Tabla C.2 del HDS-5 hace con ellos | `M9_cabezal` |
+| `F9.LONGITUD` | Fase 9 - Cabezal y aletas | Longitud entre cabezales con el talud muriendo en el relleno que retienen, y longitud de metrado del barril | `M9_cabezal` |
+| `F9.LOSA` | Fase 9 - Cabezal y aletas | Losa de entrega y dentellon delante del cabezal | `M9_cabezal` |
 | `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | `MH_hidrologia` |
 | `FH.C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura vegetal, tipo de suelo y pendiente del terreno | `MH_hidrologia` |
 | `FH.FEN` | Fase 1-bis - Hidrologia: caudal de diseño | Contraste del tratamiento de los años FEN: la lluvia de diseño adoptada frente a la de la serie completa y la de la serie sin los años FEN | `MH_hidrologia` |

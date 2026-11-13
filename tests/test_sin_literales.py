@@ -939,7 +939,9 @@ CENSO_DE_MARCAS = {
     # dos conversiones de unidad del capitulo III del Manual de Hidrologia.
     # 10 -> 11 en T-8: `PORCENTAJE_POR_UNIDAD`, la definicion del
     # porcentaje (el auditor de T-8 lo saco de constantes_normativas).
-    "src/dominios.py": 11,
+    # 11 -> 12 en T-7a: `DIMENSION_CABEZAL_MAX_M`, el techo fisico de una
+    # dimension declarada del cabezal (rechaza una cota tecleada por altura).
+    "src/dominios.py": 12,
     # UNA sola: `CIFRAS_MAGNITUD = 3`, los decimales con que la traza de la
     # memoria imprime una magnitud (§4.4). Es de la misma naturaleza que los
     # `FMT_*` de M11 --- cuantos decimales se escriben, no cuanto vale nada ---

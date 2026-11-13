@@ -207,15 +207,19 @@ def test_un_entero_declarado_como_entero_llega_a_M2():
 
 @pytest.mark.parametrize("malo", ["cero", "0,30 m", True, [30.0], {"a": 1}])
 def test_un_float_sin_rango_rechaza_lo_que_no_es_un_numero(malo):
-    """`angulo_aletas` no tiene ventana: hasta EXT-5 aceptaba cualquier cosa."""
-    assert ca.CRITERIOS["angulo_aletas"].sensibilidad is None
+    """
+    Un `float` sin ventana: hasta EXT-5 aceptaba cualquier cosa. Era
+    `angulo_aletas` hasta T-7a, que lo hizo una regla con ventana por campo;
+    desde entonces es 'Mw_licuefaccion', `float` y sin ventana.
+    """
+    assert ca.CRITERIOS["Mw_licuefaccion"].sensibilidad is None
     with pytest.raises(ValueError, match="forma"):
-        ca.establecer_valor_dinamico("angulo_aletas", malo)
+        ca.establecer_valor_dinamico("Mw_licuefaccion", malo)
 
 
 def test_un_float_admite_un_entero_de_python():
-    ca.establecer_valor_dinamico("angulo_aletas", 30)
-    assert ca.valor("angulo_aletas") == 30
+    ca.establecer_valor_dinamico("Mw_licuefaccion", 7)
+    assert ca.valor("Mw_licuefaccion") == 7
 
 
 @pytest.mark.parametrize("malo", [(0.013,), "a", (0.01, 0.013, 0.02), (True, 0.013)])

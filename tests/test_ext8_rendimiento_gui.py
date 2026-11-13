@@ -160,6 +160,16 @@ CORRIDAS_IMPORTTIME = 3
 # eso cuentan en el coste marginal. Contenido, no repeticion; los techos
 # quedan pegados a la medida por la misma razon que en T-6 (los reconcilia
 # T-10).
+# T-7a INTEGRADO (2026-11-13, detras de T-9, con las correcciones de su
+# auditoria) LOS REMIDIO sobre el arbol fusionado y NO LOS MUEVE: 113.96 KB y
+# 32.3 paginas por punto (103 y 200 paginas con 1 y 4 puntos), los mismos de
+# T-9. A expediente ningun punto del fixture alcanza la Fase 9 del punto
+# (ficha T7A-01): lo que T-7a añade a esa memoria es fijo -- las fichas de
+# 'angulo_aletas' y 'embocadura_cabezal', ahora usadas, y sale la de
+# 'predimensionamiento_cabezal' con su bloqueo -- y el aviso de la caja
+# receptora de B-01 no mueve el segundo decimal. (En la FASE A, medida sobre
+# `df1b23c`, el techo de paginas habia subido a 22 por un cambio de cortes de
+# pagina de la memoria de 1 punto; sobre el arbol fusionado no se reproduce.)
 KB_POR_PUNTO_MAX = 114.5
 # Paginas por punto: 14.0 medidas en EXT-8; 16.0 en E-A con los dos pasos
 # del perfil por escalon; 18.7 sobre `5bca7c6` y 20.7 con T-6, 31.7 con

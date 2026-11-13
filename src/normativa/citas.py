@@ -11436,4 +11436,355 @@ DG2018_CUNETAS_DESAGUE = _cita(
 )
 
 
+
+# ===========================================================================
+# --- T-7a --- (cadena T) · el cabezal por punto: desplante, aleros, losa
+# ===========================================================================
+# Mismo regimen que T-0, T-2 y T-8: la propia sesion abrio cada pagina por su
+# capa de texto, y las dos Laminas del Manual ademas por imagen (PDF 211 y
+# 213), que es donde se ve que lo que el texto dice es el ROTULO de una
+# figura y no una frase. Ninguna de estas citas respalda una dimension del
+# predimensionamiento salvo las tres que lo dicen con su numero: la
+# profundidad minima de E.050 (0,80 m), el margen de AASHTO 12.6.5 bajo la
+# socavacion (2.0 ft) y el espesor minimo de una zapata de concreto simple
+# de E.060 (300 mm). Las demas reglas del predimensionamiento son [A] y lo
+# dicen en su criterio.
+FECHA_TESIS_T7A = "2026-11-12"
+POR_TESIS_T7A = "tesis/T-7a · lectura directa de la pagina por la sesion"
+TESIS_T7A = (FECHA_TESIS_T7A, POR_TESIS_T7A)
+
+E050_26_2_PROFUNDIDAD = _cita(
+    id="E050.26.2#PROFUNDIDAD",
+    fuente_id="E050",
+    numeral="Art. 26.2",
+    titulo_numeral="Profundidad de cimentación",
+    pagina_impresa="38",
+    pagina_pdf=38,
+    texto_literal=Verbatim(
+        texto=("no siendo menor de 0,80 metros en cualquier tipo de "
+               "cimentación de elementos portantes o no portantes no "
+               "arriostrados lateralmente."),
+        pagina_pdf=38),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7A,
+    nota=("La oracion completa: «La profundidad de cimentación es definida "
+          "por el PR y está condicionada por la estratigrafía del suelo, a "
+          "cambios de volumen por humedecimiento-secado, hielo-deshielo o "
+          "condiciones particulares de uso de la estructura, no siendo menor "
+          "de 0,80 metros…». Y sigue: «En el caso de cimentación sobre roca, "
+          "el PR define la profundidad de cimentación, pudiendo en este caso "
+          "ser menor a 0,80 metros». El 26.1, en la misma pagina, la MIDE "
+          "«desde el nivel de la superficie del terreno a la base de la "
+          "cimentación». Es el minimo de E.050, la norma con que la Sec. 9.3 "
+          "de la hoja de ruta verifica la estabilidad del cabezal; no es un "
+          "valor de proyecto. --- Correcciones de T-7a (H8) --- Para un "
+          "CABEZAL VIAL se aplica POR ANALOGIA ([N→], criterio "
+          "'profundidad_cimentacion_min_cabezal_m'), no como [N]: ver la "
+          "`Interpretacion`."),
+    interpretacion=Interpretacion(
+        texto=("El ambito de E.050 son las edificaciones del Reglamento "
+               "Nacional de Edificaciones, y un cabezal de alcantarilla es una "
+               "obra vial. El proyecto aplica el minimo de 0,80 m del Art. "
+               "26.2 al cabezal POR ANALOGIA: lo que hace cercana la analogia "
+               "es que la misma norma manda que el muro de contencion cumpla "
+               "su Capitulo IV, donde esta el Art. 26, y el cabezal se "
+               "predimensiona como un muro de contencion."),
+        en_contra=(
+            "Art. 1 (pag. 7): su objeto son los EMS «con fines de cimentación "
+            "de edificaciones y otras obras indicadas en esta Norma»; Art. 3 "
+            "(pag. 7): su ambito, «en concordancia a lo establecido en la "
+            "norma G.010 Consideraciones Básicas del Reglamento Nacional de "
+            "Edificaciones (RNE)». Ningun articulo indica las obras de drenaje "
+            "vial",
+            "el 39.13, donde esta la remision del muro de contencion, cuelga "
+            "de las excavaciones y su sostenimiento, no de las obras de "
+            "drenaje",
+            "la tabla de la §0.1 de la hoja de ruta rotula E.050 como [N] sin "
+            "esta salvedad: es un defecto de la hoja, que se reporta contra "
+            "ella"),
+        a_favor=(
+            "39.13.7 (pag. 73): «El muro de contención debe cumplir con todo "
+            "lo especificado en el Capítulo IV de la presente Norma», y el "
+            "Art. 26 esta en el Capitulo IV",
+            "la profundidad minima responde a la estratigrafia y a los cambios "
+            "de volumen del suelo (26.2), que no dependen de que la obra sea "
+            "una edificacion",
+            "el dictamen del verificador normativo del marco del cabezal "
+            "califica E.050 de [N→] para un cabezal vial")),
+)
+
+AASHTO_12_6_5_ZAPATAS = _cita(
+    id="AASHTO_LRFD_9.12.6.5#ZAPATAS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.5",
+    titulo_numeral="Scour",
+    pagina_impresa="12-20",
+    pagina_pdf=1658,
+    texto_literal=Verbatim(
+        texto=("The footings of structures shall be placed not less than "
+               "2.0 ft below the maximum anticipated depth of scour."),
+        pagina_pdf=1658),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7A,
+    nota=("Articulo de la Seccion 12 (estructuras enterradas: las "
+          "alcantarillas). Abre con «Buried structures shall be designed so "
+          "that no movement of any part of the structure will occur as a "
+          "result of scour». El proyecto LEE que el cabezal de salida es parte "
+          "de la estructura y que su zapata es una de esas «footings»: es una "
+          "lectura, y por eso la regla es [C] y no [N] (la hoja de ruta pone "
+          "la Seccion 12 de AASHTO como [C], tabla de la §0.1). 2.0 ft = "
+          "0.6096 m exactos (1 ft = 0.3048 m)."),
+    interpretacion=Interpretacion(
+        texto=("La frase habla de las zapatas de la estructura enterrada. El "
+               "proyecto LEE incluida la zapata del cabezal de salida, que es "
+               "la que la socavacion alcanza primero, y le aplica el margen "
+               "de 2.0 ft: es la lectura del lado seguro. El mismo margen se "
+               "aplica a la base del dentellon de la losa de salida, porque "
+               "la frase del «cut-off wall» pide que baje «below» la "
+               "socavacion maxima prevista sin cuantificar cuanto, y la unica "
+               "cifra del articulo es esta."),
+        en_contra=(
+            "el sujeto es «The footings of structures», y en la Seccion 12 "
+            "la estructura es el conducto enterrado: el cabezal no se nombra",
+            "la regla general de las zapatas (10.6.1.2, «bear below») y "
+            "HEC-14 5.1.3 («should extend to a depth equal to the maximum "
+            "depth of scour») no ponen margen: son el extremo bajo de la "
+            "ventana del criterio",
+            "el 2.0 ft es de las zapatas, no de la pantalla «cut-off wall», "
+            "cuya frase solo dice «extending below»"),
+        a_favor=(
+            "el articulo abre con «Buried structures shall be designed so "
+            "that no movement of any part of the structure will occur as a "
+            "result of scour»: el cabezal remata la estructura y su "
+            "descalce la mueve",
+            "la socavacion la entrega la Fase 6 en la salida, que es donde "
+            "esta el cabezal, no bajo el conducto")),
+)
+
+AASHTO_12_6_5_DENTELLON = _cita(
+    id="AASHTO_LRFD_9.12.6.5#DENTELLON",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.5",
+    titulo_numeral="Scour",
+    pagina_impresa="12-20",
+    pagina_pdf=1658,
+    texto_literal=Verbatim(
+        texto=("For structures placed over erodible deposits, a cut-off wall "
+               "or scour curtain, extending below the maximum anticipated "
+               "depth of scour or a paved invert, shall be used."),
+        pagina_pdf=1658),
+    caracter=Caracter.EXIGENCIA,
+    derivado_de="AASHTO_LRFD_9.12.6.5#ZAPATAS",
+    sesion=TESIS_T7A,
+    nota=("Es el dentellon (cut-off wall) del borde de la losa de entrega: "
+          "bajo la socavacion maxima prevista. La misma frase admite la "
+          "alternativa «or a paved invert»; el proyecto declara las dos "
+          "cosas -- losa Y dentellon --, que es lo que dibujan las Laminas "
+          "02 y 02-A del Manual («LOSA INFERIOR» y «UÑA»)."),
+)
+
+AASHTO_12_6_5_ALEROS = _cita(
+    id="AASHTO_LRFD_9.12.6.5#ALEROS",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="12.6.5",
+    titulo_numeral="Scour",
+    pagina_impresa="12-20",
+    pagina_pdf=1658,
+    texto_literal=Verbatim(
+        texto=("In areas where scour is a concern, the wingwalls shall be "
+               "extended far enough from the structure to protect the "
+               "structural portion of the soil envelope surrounding the "
+               "structure."),
+        pagina_pdf=1658),
+    caracter=Caracter.EXIGENCIA,
+    derivado_de="AASHTO_LRFD_9.12.6.5#ZAPATAS",
+    sesion=TESIS_T7A,
+    nota=("Pide alargar los aleros hasta proteger el relleno estructural "
+          "que rodea al conducto, sin dar una longitud. La longitud de los "
+          "aleros del programa sale de la geometria del talud (hasta que "
+          "baja a la altura final declarada), que es una regla del proyecto "
+          "[A] y no de esta frase."),
+)
+
+AASHTO_10_6_1_2_DESPLANTE = _cita(
+    id="AASHTO_LRFD_9.10.6.1.2#DESPLANTE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="10.6.1.2",
+    titulo_numeral="Bearing Depth",
+    pagina_impresa="10-52",
+    pagina_pdf=1341,
+    texto_literal=Verbatim(
+        texto=("Where the potential for scour, erosion or undermining "
+               "exists, spread footings shall be located to bear below the "
+               "maximum anticipated depth of scour, erosion, or undermining "
+               "as specified in Article 2.6.4.4."),
+        pagina_pdf=1341),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7A,
+    nota=("La regla general de las zapatas superficiales de la Seccion 10: "
+          "bajo la socavacion, sin margen. La de las estructuras enterradas "
+          "(12.6.5) le añade 2.0 ft, y es la que el proyecto aplica al "
+          "cabezal de salida."),
+)
+
+E060_22_7_4_ZAPATA = _cita(
+    id="E060.22.7.4#ZAPATA",
+    fuente_id="E060",
+    numeral="22.7.4",
+    titulo_numeral="ZAPATAS",
+    pagina_impresa="193",
+    pagina_pdf=193,
+    texto_literal=Verbatim(
+        texto=("El espesor de las zapatas de concreto simple estructural no "
+               "debe ser menor que 300 mm."),
+        pagina_pdf=193),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7A,
+    nota=("Capitulo 22, «Concreto estructural simple», que es el que la "
+          "hoja de ruta §9.4 y M9.verificar_ciclopeo aplican al cabezal de "
+          "gravedad en concreto ciclopeo (Art. 22.10). La Via 1 de la §0.2 "
+          "saca a E.060 del diseño estructural ARMADO; el ciclopeo no tiene "
+          "otra norma en normas/, y por eso este minimo se aplica al cabezal "
+          "de gravedad y no al de voladizo armado."),
+)
+
+MC_HHD_LAMINA_02A = _cita(
+    id="MC_HHD.LAMINA_02A",
+    fuente_id="MC_HHD",
+    numeral="Anexos, Lámina Nº 02-A",
+    titulo_numeral="TIPO  TMC CON PROTECCIÓN DE",
+    pagina_impresa="208",
+    pagina_pdf=211,
+    texto_literal=Verbatim(texto="SALIDA  TIPO  CABEZAL  SIN  ALEROS",
+                           pagina_pdf=211),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T7A,
+    nota=("ES UNA FIGURA, leida por imagen: «SECCION TÍPICA DE ALCANTARILLA "
+          "TIPO TMC CON PROTECCIÓN DE ENTRADA Y SALIDA», Lamina 02-A. Dibuja "
+          "TRES remates: «ENTRADA TIPO CAJA RECEPTORA» (planta), «SALIDA "
+          "TIPO CABEZAL CON ALEROS - PLANTA» -- el angulo de los aleros va "
+          "acotado como «VARIABLE» -- y «SALIDA TIPO CABEZAL SIN ALEROS». "
+          "Delante del cabezal, «LOSA INFERIOR» y, al borde de la "
+          "proteccion, «UÑA». Todas las dimensiones son LETRAS (a, b, c, d, "
+          "e, f, g, h, i, j, k, m, n, q, w) sin tabla de valores: la lamina "
+          "respalda los TIPOS de remate, no sus medidas ni el angulo."),
+)
+
+MC_HHD_LAMINA_04_DENTELLON = _cita(
+    id="MC_HHD.LAMINA_04#DENTELLON",
+    fuente_id="MC_HHD",
+    numeral="Anexos, Lámina Nº 04",
+    titulo_numeral="DE ALIVIADERO CON DISIPADOR DE ENERGÍA",
+    pagina_impresa="210",
+    pagina_pdf=213,
+    texto_literal=Verbatim(texto="0.80 min.", pagina_pdf=213),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=TESIS_T7A,
+    nota=("ES UNA FIGURA, leida por imagen: «PERFIL LONGITUDINAL Y SECCIÓN "
+          "TÍPICAS DE ALIVIADERO CON DISIPADOR DE ENERGÍA HIDRÁULICA, A LA "
+          "SALIDA DE ALCANTARILLAS». Al pie del ultimo escalon dibuja un "
+          "dentellon de concreto ciclopeo acotado «0.80 min.» de profundidad "
+          "y «0.40m» de ancho; las losas, «0.15m» de concreto sobre «0.20m» "
+          "de relleno granular. DESDE DONDE SE MIDE (correcciones de T-7a, "
+          "H3; releida a 250 y 400 ppp): la linea de cota superior del "
+          "«0.80 min.» arranca en la superficie del TERRENO NATURAL junto al "
+          "borde del dentellon, que alli coincide con la cara inferior del "
+          "paquete losa + relleno granular; la inferior, en la base del "
+          "dentellon. No se mide desde la cara superior de la losa: desde "
+          "ella la profundidad dibujada es del orden de 1.15 m (0.80 + 0.15 + "
+          "0.20). Es la UNICA lamina del Manual que acota un "
+          "dentellon (la 03 no acota nada: `SIN_COTAS_LAMINA_03`; la 02 y la "
+          "02-A, con letras). Es de un ALIVIADERO, no de una losa de "
+          "entrega: usarla para el dentellon del cabezal es una analogia, y "
+          "el criterio que la aplica es [N→] y lo declara."),
+)
+
+# ---- Correcciones de la auditoria de T-7a (2026-11-13) --------------------
+# Tres citas mas, leidas por la sesion de correcciones en su pagina: la
+# convencion del angulo de los aleros (H1), el peralte minimo de la zapata
+# ARMADA (dudoso 4) y el limite del concreto ciclopeo (H7).
+FECHA_TESIS_T7A_CORR = "2026-11-13"
+POR_TESIS_T7A_CORR = ("tesis/T-7a, correcciones de la auditoria · lectura "
+                      "directa de la pagina por la sesion")
+TESIS_T7A_CORR = (FECHA_TESIS_T7A_CORR, POR_TESIS_T7A_CORR)
+
+HDS5_SIMBOLOS_THETA_W = _cita(
+    id="HDS5_3ED.SIMBOLOS#THETA_W",
+    fuente_id="HDS5_3ED",
+    numeral="List of Symbols, ΘW",
+    titulo_numeral="LIST OF SYMBOLS (Cont.)",
+    pagina_impresa="xix",
+    pagina_pdf=23,
+    texto_literal=Verbatim(
+        texto=("Flare angle of wingwalls with respect to extension of culvert "
+               "side wall"),
+        pagina_pdf=23),
+    caracter=Caracter.DEFINICION,
+    sesion=TESIS_T7A_CORR,
+    nota=("La definicion completa es «ΘW Flare angle of wingwalls with "
+          "respect to extension of culvert side wall, degrees». Fija la "
+          "CONVENCION del angulo de los aleros: se mide con la PROLONGACION "
+          "DE LA PARED DEL BARRIL, de modo que 0 grados son aleros paralelos "
+          "al barril y 90 grados aleros en el plano del muro. Es la misma que "
+          "imprimen los rotulos de la Tabla C.2 («to barrel») y la que hace "
+          "que la longitud de un alero lleve el COSENO del angulo que forma "
+          "con la bajada del talud, no el seno. La geometria de la longitud "
+          "es del proyecto: esta cita solo fija desde donde se mide el "
+          "angulo."),
+)
+
+E060_15_7_PERALTE = _cita(
+    id="E060.15.7#PERALTE",
+    fuente_id="E060",
+    numeral="15.7",
+    titulo_numeral="PERALTE MÍNIMO DE LAS ZAPATAS",
+    pagina_impresa="138",
+    pagina_pdf=138,
+    texto_literal=Verbatim(
+        texto=("La altura de las zapatas, medida sobre el refuerzo inferior no "
+               "debe ser menor de 300 mm para zapatas apoyadas sobre el "
+               "suelo"),
+        pagina_pdf=138),
+    caracter=Caracter.EXIGENCIA,
+    sesion=TESIS_T7A_CORR,
+    nota=("La frase sigue: «ni menor de 400 mm en el caso de zapatas apoyadas "
+          "sobre pilotes». Es del Capitulo 15 (zapatas de concreto ARMADO), "
+          "que la Via 1 de la §0.2 de la hoja de ruta saca del diseño "
+          "estructural (rige AASHTO LRFD Seccion 5), y E.060 es una norma de "
+          "edificaciones: aplicada a la zapata del cabezal de voladizo "
+          "armado es una ANALOGIA, y el criterio que la usa es [N→] "
+          "('peralte_min_zapata_armada_m'). El espesor total suma ademas el "
+          "recubrimiento del refuerzo inferior contra el suelo (E.060 7.7.1 "
+          "a), 70 mm, que si rige por la excepcion de durabilidad de la "
+          "§0.2)."),
+)
+
+E060_22_10_2_CICLOPEO = _cita(
+    id="E060.22.10.2#CICLOPEO",
+    fuente_id="E060",
+    numeral="22.10.2.1",
+    titulo_numeral="Limitaciones",
+    pagina_impresa="195",
+    pagina_pdf=195,
+    texto_literal=Verbatim(
+        texto=("El uso de este concreto estará limitado a cimientos corridos, "
+               "sobrecimientos, muros de contención de gravedad y falsas "
+               "zapatas."),
+        pagina_pdf=195),
+    caracter=Caracter.EXIGENCIA,
+    jerarquia_numeral=("22.10 CONCRETO CICLOPEO",),
+    sesion=TESIS_T7A_CORR,
+    nota=("El 22.10.2.2, en la misma pagina, sigue: «En elementos en voladizo "
+          "con una longitud mayor a la mitad de su peralte, será necesario "
+          "verificar las resistencias en flexión y corte», y el 22.10.2.3 "
+          "fija φ = 0,5 y f'c de diseño no mayor de 10 MPa. Es el limite del "
+          "cabezal de GRAVEDAD en ciclopeo: un muro de gravedad, no un "
+          "voladizo de concreto simple. La regla del tipo por altura de "
+          "'predimensionamiento_cabezal' no lo juzga (es geometria); lo "
+          "juzga T-7c, y la memoria lo avisa cuando el tipo sale de "
+          "gravedad."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

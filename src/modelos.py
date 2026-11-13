@@ -4626,8 +4626,11 @@ class GeometriaCabezal:
     """
     Predimensionamiento del cabezal, en metros. NO sale del CSV: Sec. 1.2 no
     trae ninguna columna de geometria del cabezal y Sec. 9 no lo dimensiona.
-    Lo aporta el proyectista (criterio 'predimensionamiento_cabezal') o el
-    llamador de M9 en un tanteo.
+    Desde T-7a la PROPONE `M9.predimensionar_cabezal` para cada extremo de
+    cada punto dimensionado, con las reglas declaradas del criterio
+    'predimensionamiento_cabezal' [A], y el proyectista puede pisar cualquier
+    dimension por `--datos-externos` (clave `cabezal_declarado`); o la arma
+    el llamador de M9 en un tanteo, con los ocho campos de siempre.
 
     `beta_grados` es la inclinacion del PARAMENTO INTERIOR (trasdos) respecto
     de la vertical, con el signo de Mononobe-Okabe: positiva cuando el muro se
@@ -4650,24 +4653,46 @@ class GeometriaCabezal:
     # aceptando una geometria de tanteo sin el; quien lo necesita lo pide con
     # `exigir_ancho_talon`, que se detiene si falta.
     ancho_talon: Optional[float] = None   # m
+    # --- T-7a --- EL CABEZAL POR PUNTO (INF-4.2, INF-5.1.15). Todos con
+    # default None / vacio: una geometria de TANTEO -- la de los tests de M9
+    # y la que T-7b iterara -- sigue armandose con los ocho campos de arriba,
+    # y la que propone `M9.predimensionar_cabezal` lleva ademas DE QUE PUNTO
+    # y DE QUE EXTREMO es, su longitud, sus cotas, su tipo, sus aleros, la
+    # losa de entrega y, dimension por dimension, si salio de una regla o la
+    # declaro el proyectista (`dimensiones`). `H` sigue siendo la altura del
+    # muro SOBRE la zapata; `altura_total` (H + zapata) es la H_c del prompt.
+    longitud: Optional[float] = None      # m - L_c, normal al eje del conducto
+    tipo: Optional[str] = None            # 'voladizo_armado' | 'gravedad_ciclopeo'
+    id_punto: Optional[str] = None
+    extremo: Optional[str] = None         # 'entrada' | 'salida'
+    cota_coronacion: Optional[float] = None   # msnm
+    cota_desplante: Optional[float] = None    # msnm - base de la zapata
+    ancho_punta: Optional[float] = None   # m - zapata del lado libre (punta)
+    aleros: Optional["Aleros"] = None
+    losa: Optional["LosaDeEntrega"] = None
+    dimensiones: Tuple["DimensionDeCabezal", ...] = ()
 
     def exigir_ancho_talon(self) -> float:
         """
-        El ancho del talon, o `CriterioPendienteError` si no se declaro.
+        El ancho del talon, o `DatoFaltanteError` si la geometria no lo trae.
 
-        Se detiene con la misma excepcion que el criterio del que sale la
-        geometria ('predimensionamiento_cabezal'), porque es lo que es: una
-        dimension del cabezal que nadie ha declarado todavia. Devolver 0 en su
-        lugar anularia W_s y con el la mitad de P_IR, en la direccion no
-        conservadora.
+        Desde T-7a ya no es `CriterioPendienteError` sobre
+        'predimensionamiento_cabezal': ese criterio TIENE valor (las reglas
+        del predimensionamiento) y la geometria que propone
+        `M9.predimensionar_cabezal` lleva el talon siempre. Una geometria sin
+        el solo puede venir de un TANTEO armado a mano, y lo que le falta es
+        un dato que el que tantea tiene que AÑADIR (regla de CLAUDE.md:
+        Faltante). Devolver 0 en su lugar anularia W_s y con el la mitad de
+        P_IR, en la direccion no conservadora.
         """
         if self.ancho_talon is None:
-            raise CriterioPendienteError(
-                "predimensionamiento_cabezal",
-                concepto="ancho del talon de la zapata",
-                fuente="El num. 2.8.1.1.14.1 define W_s como el peso del "
-                       "suelo inmediatamente encima del muro, incluyendo el "
-                       "talon: sin el ancho del talon no hay W_s ni P_IR",
+            raise DatoFaltanteError(
+                "ancho_talon",
+                detalle="El num. 2.8.1.1.14.1 define W_s como el peso del suelo "
+                "inmediatamente encima del muro, incluyendo el talon: sin el "
+                "ancho del talon de la geometria del cabezal no hay W_s ni "
+                "P_IR. `M9.predimensionar_cabezal` lo propone; una geometria "
+                "de tanteo tiene que traerlo",
             )
         return self.ancho_talon
 
@@ -4680,6 +4705,237 @@ class GeometriaCabezal:
         la zapata entero.
         """
         return self.H + self.espesor_zapata
+
+
+# ===========================================================================
+# --- T-7a --- El cabezal POR PUNTO: aleros, losa de entrega, embocadura
+# ===========================================================================
+
+ORIGEN_DIMENSION_REGLA = "propuesta por regla"
+ORIGEN_DIMENSION_DECLARADA = "declarada"
+# --- T-7a, correcciones (H9) --- La dimension que la regla CALCULA a partir de
+# otra que el proyectista declaro (el talon con B declarado, la zapata con la
+# altura total declarada, los aleros con la altura...): no es «propuesta por
+# regla» -- su valor no lo eligio la regla -- ni «declarada» -- nadie la
+# tecleo --. Imprimirla con uno de los dos rotulos mentia sobre su origen.
+ORIGEN_DIMENSION_DERIVADA = "derivada de dimensiones declaradas"
+ORIGENES_DE_DIMENSION = (ORIGEN_DIMENSION_REGLA, ORIGEN_DIMENSION_DECLARADA,
+                         ORIGEN_DIMENSION_DERIVADA)
+
+
+@dataclass(frozen=True)
+class DimensionDeCabezal:
+    """
+    --- T-7a --- Una fila de la tabla de geometria del cabezal: la dimension,
+    su valor y DE DONDE SALIO --«propuesta por regla» (con la regla escrita y
+    el criterio que la declara) o «declarada» por el proyectista en
+    `--datos-externos`--. Es la tabla que el prompt pide imprimir en la
+    memoria de cada punto, y viaja con la geometria para que M11 la formatee
+    sin reconstruirla.
+    """
+
+    nombre: str
+    valor: Any
+    unidad: str
+    origen: str                     # uno de ORIGENES_DE_DIMENSION
+    regla: str                      # la regla, o «dato externo del punto»
+    criterio: str = ""              # clave del criterio que la gobierna
+
+    def __post_init__(self) -> None:
+        if self.origen not in ORIGENES_DE_DIMENSION:
+            raise ValueError(
+                f"DimensionDeCabezal «{self.nombre}»: origen {self.origen!r}; "
+                "se espera uno de " + ", ".join(
+                    f"«{o}»" for o in ORIGENES_DE_DIMENSION))
+        if not str(self.regla).strip():
+            raise ValueError(
+                f"DimensionDeCabezal «{self.nombre}» sin regla: una dimension "
+                "sin decir de donde salio es la que obliga a abrir el codigo")
+
+
+@dataclass(frozen=True)
+class Aleros:
+    """
+    --- T-7a --- Los dos aleros (aletas) de UN cabezal (INF-4.3).
+
+    `angulo_grados` es alfa, el angulo de cada alero CON LA PROLONGACION DE
+    LA PARED DEL BARRIL: la definicion de ΘW del HDS-5 («Flare angle of
+    wingwalls with respect to extension of culvert side wall», List of
+    Symbols, pag. impresa xix; cita HDS5_3ED.SIMBOLOS#THETA_W), la de los
+    rotulos de su Tabla C.2 («to barrel») y la del INFORME §4.3: 0 son aleros
+    paralelos al barril y 90 aleros en el plano del muro, que es un cabezal
+    recto.
+
+    CON ESVIAJE LOS DOS ALEROS NO SON IGUALES (correcciones de T-7a, H1). El
+    talud del terraplen baja PERPENDICULAR A LA VIA -- es como lo modela
+    `M7.longitud_conducto` --, y el eje del conducto forma con esa direccion
+    el esviaje theta. El cabezal es normal al eje, de modo que un alero forma
+    alfa - theta con la bajada del talud y el otro alfa + theta, y cada uno
+    tiene que recorrer, hasta que el talud baje de h0 a H_f, lo que el talud
+    avanza en planta ((h0 - H_f)·talud) dividido por el coseno de SU angulo:
+
+        L_corto = (h0 - H_f)·talud / cos(alfa - theta)
+        L_largo = (h0 - H_f)·talud / cos(alfa_largo + theta)
+
+    con theta en valor absoluto (con theta = 0 son la misma) y alfa_largo =
+    alfa salvo que el punto declare uno menor de ese lado. El CSV trae la
+    MAGNITUD del esviaje y no su sentido de giro, de modo que no se sabe cual
+    de los dos lados (izquierdo o derecho, aguas arriba o aguas abajo del
+    cruce) es el largo: lo fija la planta del cruce, y los dos se llaman
+    «corto» y «largo».
+
+    Las dos alturas son VISIBLES, sobre el terreno al pie
+    (`ExtremoDelConducto.cota_pie`): la inicial es la del cabezal en el
+    arranque (coronacion menos pie) y la final la de la punta. La zapata del
+    alero se desplanta a la misma cota que la del cabezal.
+    """
+
+    angulo_grados: float            # alfa, grados con la pared del barril
+    # --- T-7a, integracion --- el alfa del alero LARGO: el mismo alfa salvo
+    # que el punto declare uno menor de ese lado (`cabezal_declarado.
+    # angulo_alero_largo_grados`, aleros asimetricos), que es el remedio que
+    # el dueño aprobo para el alero largo de un cruce esviado.
+    angulo_largo_grados: float      # grados con la pared del barril
+    esviaje_grados: float           # theta, magnitud del esviaje del cruce
+    longitud_corto: float           # m - el alero que forma alfa - theta
+    longitud_largo: float           # m - el alero que forma alfa + theta
+    altura_inicial: float           # m - sobre el pie, en el arranque
+    altura_final: float             # m - sobre el pie, en la punta (H_f)
+    espesor: float                  # m
+    ancho_zapata: float             # m
+    espesor_zapata: float           # m
+
+    @property
+    def longitudes(self) -> Tuple[float, float]:
+        """(corto, largo), m."""
+        return (self.longitud_corto, self.longitud_largo)
+
+
+@dataclass(frozen=True)
+class LosaDeEntrega:
+    """
+    --- T-7a --- La losa (zampeado) delante del cabezal y el dentellon en su
+    borde libre: GEOMETRIA DECLARADA (T-7a punto 5, ficha T8-03). Su
+    verificacion hidraulica es de la Fase 6; aqui solo se dimensiona.
+
+    `profundidad_dentellon` SE MIDE DESDE EL TERRENO al borde de la losa
+    (`cota_terreno`) hasta la base del dentellon (`cota_base_dentellon`),
+    como la cota «0.80 min.» de la Lamina Nº 04, que arranca en la superficie
+    del terreno natural junto al dentellon -- alli, la cara inferior del
+    paquete losa + relleno granular -- y no en la cara superior de la losa
+    (correcciones de T-7a, H3). El terreno es el MISMO del desplante del
+    cabezal de ese extremo (`ExtremoDelConducto.cota_pie`): una referencia
+    por extremo para el desplante, la losa y el dentellon. La cota de la cara
+    superior de la losa no la fija este predimensionamiento.
+    """
+
+    longitud: float                 # m - normal al cabezal, hacia el cauce
+    espesor: float                  # m
+    profundidad_dentellon: float    # m - desde el terreno hasta su base
+    ancho_dentellon: float          # m
+    cota_terreno: float             # msnm - el pie del muro de ese extremo
+    cota_base_dentellon: float      # msnm - cota_terreno - profundidad
+
+
+@dataclass(frozen=True)
+class ExtremoDelConducto:
+    """
+    --- T-7a --- Lo que el cabezal de UN extremo necesita saber del conducto
+    y del cruce, ya resuelto por las fases anteriores (4, 6 y 7.B) y con su
+    procedencia. Es la entrada de `M9.predimensionar_cabezal`, que asi no
+    lee el `InformePunto` ni decide nada que ya se haya decidido.
+
+        cota_solera          fondo interior del conducto en ese extremo (la
+                             de entrada de 7.B, medida o adoptada; la de
+                             salida, entrada - S·L)
+        cota_pie             terreno AL PIE del muro: la referencia del
+                             desplante (E.050 Art. 26.1 lo mide desde la
+                             superficie del terreno) y de la altura de los
+                             aleros. Ver `origen_cota_pie`
+        cota_clave_exterior  la clave FISICA (M5.cota_clave: altura interior
+                             + pared), trasladada al extremo
+        cota_agua            el nivel de agua de diseño contra el muro: en la
+                             entrada, solera + HW de diseño (M4); en la
+                             salida, solera + max(TW, tirante de salida)
+        ancho_exterior       ancho exterior del conducto en planta, con
+                             todas sus celdas (N·B + (N+1)·t en un marco)
+        cota_fondo_hoya      fondo de la hoya de socavacion (Fase 6, T-8);
+                             solo en la salida y solo si se estimo o declaro
+    """
+
+    extremo: str
+    cota_solera: float
+    cota_pie: float
+    origen_cota_pie: str
+    cota_clave_exterior: float
+    cota_agua: float
+    origen_cota_agua: str
+    ancho_exterior: float
+    altura_interior: float
+    cota_fondo_hoya: Optional[float] = None
+    origen_socavacion: str = ""
+
+
+@dataclass(frozen=True)
+class EmbocaduraDelPunto:
+    """
+    --- T-7a --- La embocadura de un punto: si el cabezal lleva aleros y con
+    que angulo, resuelta ANTES de la Fase 4 porque es una entrada de la
+    hidraulica (fila de ke de la Tabla C.2 y carta de la Tabla A.1) y de la
+    proteccion de entrada (Fase 6), no solo de la geometria de la Fase 9.
+
+    `angulo_aletas` es None sin aleros. `regla` dice que rama de
+    'angulo_aletas' dio el angulo (por defecto, o por esviaje mayor que el
+    umbral). Que hace la fuente con esa embocadura lo dice
+    `M9.filas_hds5_del_cajon`: con tubo, nada (la Tabla C.2 agrupa «Headwall
+    or headwall and wingwalls» y las Cartas 1 a 3 no separan aleros); con
+    cajon, elige la banda de filas de las Tablas A.1 y C.2.
+    """
+
+    tipo: str                       # 'cabezal_con_aleros' | 'cabezal_recto'
+    angulo_aletas: Optional[float]  # grados con la pared del barril
+    regla: str
+    esviaje_grados: float
+    criterio_tipo: str
+    criterio_angulo: str
+    # --- T-7a, correcciones (decision 3 del dueño) --- lo que la embocadura
+    # del punto no puede representar y la corrida tiene que AVISAR (la caja
+    # receptora de un alivio de cuneta, Familia B). Sale por
+    # `InformePunto.avisos()`.
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class CabezalDelPunto:
+    """
+    --- T-7a --- La Fase 9 de UN punto: los dos cabezales (entrada y salida)
+    con su geometria completa, las verificaciones de compatibilidad con el
+    conducto y de los minimos con numero (CB1 a CB7), la longitud entre
+    cabezales que el relleno retenido cierra (ficha T6-01) y la de metrado,
+    los pasos de memoria y los avisos. La estabilidad (E1-E6) y el armado no
+    estan aqui: son T-7b y T-7c.
+    """
+
+    id_punto: str
+    embocadura: EmbocaduraDelPunto
+    entrada: GeometriaCabezal
+    salida: GeometriaCabezal
+    verificaciones: Tuple["Verificacion", ...]
+    longitud_entre_cabezales: Optional[float] = None   # m, entre trasdos
+    # --- T-7a, correcciones (H6) --- el barril completo, que atraviesa los
+    # dos muros normales al eje: L_cab + los dos espesores.
+    longitud_metrado: Optional[float] = None           # m
+    motivo_sin_longitud: str = ""
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+
+    @property
+    def geometrias(self) -> Tuple[GeometriaCabezal, GeometriaCabezal]:
+        return (self.entrada, self.salida)
+
+    @property
+    def verificaciones_incumplidas(self) -> Tuple["Verificacion", ...]:
+        return tuple(v for v in self.verificaciones if not v.cumple)
 
 
 @dataclass(frozen=True)

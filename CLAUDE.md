@@ -217,6 +217,18 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   (`M10.longitud_hidraulica_por_tramo`), sin mezclar el área tributaria con el
   ancho tributario —sin tramo, q · b con aviso de la longitud que el par
   implica—.
+- **El cabezal es POR PUNTO desde T-7a, y su geometría la PROPONE una regla
+  que el punto puede pisar.** `servicio._fase_9` (a expediente, detrás de la
+  socavación de la Fase 6 y de la Fase 8) arma los dos cabezales de cada punto
+  dimensionado con `M9.cabezal_del_punto`, y el proyecto solo guarda la suma
+  (`InformeCabezal.por_punto`). Cada dimensión lleva su ORIGEN —«propuesta por
+  regla», «declarada» (`cabezal_declarado` de `--datos-externos`) o «derivada
+  de dimensiones declaradas»—, y una declarada se contrasta con los mínimos
+  con número (CB1 a CB7). La embocadura es del punto y se resuelve ANTES de la
+  Fase 4 (`M9.embocadura_del_punto`): en un marco, la carta y el ke declarados
+  tienen que ser de la banda de ángulo del cabezal. El cabezal es normal al
+  eje del conducto y, con esviaje, sus dos aleros miden distinto. Fichas
+  T7A-01 a T7A-08.
 - Los tipos que fluyen entre módulos están en modelos.py. Ningún módulo define
   sus propios dicts ad-hoc para lo que ya existe ahí.
 - criterios_adoptados.valor(clave) y datos_sitio.valor(clave) con valor None
@@ -234,7 +246,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -326,7 +338,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -349,8 +361,9 @@ consecuencias que conviene leer antes de tocar el campo:
   con esas palabras, apoyados en `variables_entrada.consumido_por`.
 - **El límite se conoce por MUTACIÓN, no por lectura.** Cambiando el nivel de
   cinco de los trece murieron cuatro tests y sobrevivió uno:
-  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **nueve** sin
-  consumidor (diez hasta T-1, que le dio consumidor real a
+  `demanda_sismica_licuefaccion`, que no tiene consumidor. De los **ocho** sin
+  consumidor (nueve hasta T-7a, que le dio consumidor real a `angulo_aletas`
+  —`M9.embocadura_del_punto`, de perfil—; diez hasta T-1, que le dio consumidor real a
   `homogeneidad_serie_fen` —`MH_hidrologia.precipitacion_de_diseno`— y lo
   sacó del censo; ocho hasta T1; T1 sumó `edicion_que_rige_el_expediente`, la
   decisión de marco normativo del expediente, que ningún módulo consume, y
@@ -363,7 +376,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
@@ -757,7 +770,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **5548**; lo
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **5709**; lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
 regresión**. (Desde T-0 hay un TERCER eje, el repositorio de normas enlazado
 o no por `NORMAS_DIR`: son dieciocho saltos más sin él (siete hasta T-2, doce hasta T-4), descritos en «Dónde
@@ -836,7 +849,100 @@ desarrollo, donde el intérprete de la suite no tiene tkinter y el test corre
 igual, en un subproceso, sobre `python3.12`.
 
 Son **cuatro** configuraciones y no dos, porque PyMuPDF y tkinter son
-independientes. **T-9 de la cadena T (2026-11-13, integrado detrás de T-3,
+independientes. **T-7a de la cadena T (2026-11-13, integrado detrás de T-9,
+con las correcciones de su auditoría) sumó CIENTO SESENTA Y UN tests netos**,
+ninguno con la marca `pdf` ni dependiente de Tk ni del repositorio de normas:
+los 67 de `tests/test_t7a_cabezal_geometria.py` —la FASE A: **la Fase 9 es POR
+PUNTO** (`INF-5.1.15`): cada punto dimensionado tiene dos cabezales
+(`InformePunto.cabezal`, `servicio._fase_9` detrás de la socavación de la Fase
+6 y de la Fase 8, `M9.cabezal_del_punto`) con su sección, su HW, sus cotas de
+7.B y su socavación (`ExtremoDelConducto`), y el proyecto conserva solo la suma
+(`InformeCabezal.por_punto`; `geometria_adoptada` se retiró);
+`predimensionamiento_cabezal` deja de ser un vacío y guarda trece reglas [A]
+con ventana (`M9.predimensionar_cabezal`, cada dimensión con su origen:
+«propuesta por regla», «declarada» por `cabezal_declarado` —dato externo
+opcional fuera de `CLAVES_EXTERNAS`, en `servicio.CLAVES_DE_CABEZAL`, con forma
+y dominio en `M9.validar_cabezal_declarado`— o «derivada de dimensiones
+declaradas»); los aleros existen (`modelos.Aleros`,
+`M9.predimensionar_aleros`); la embocadura es del punto y de perfil
+(`embocadura_cabezal` y `angulo_aletas` [A], `M9.embocadura_del_punto`, antes
+de la Fase 4) y en un marco la carta y el ke declarados tienen que ser de la
+banda de ángulo del cabezal (`M9.verificar_coherencia_embocadura_cajon`; con
+los de T-3 la coherencia se cumple para α de 30 a 60° y su nota es un dato,
+no un aviso); y la compatibilidad con el conducto es una verificación—; los 84
+de `tests/test_t7a_correcciones.py`, la aceptación de las **correcciones de la
+auditoría adversarial** (AJUSTADO: 2 ALTA, 6 MEDIA, 2 BAJA) y de las
+decisiones del dueño: (H1) **con esviaje los dos aleros miden distinto**, `L =
+(h0 − H_f)·talud / cos(α ∓ θ)` —el talud baja perpendicular a la vía y α se
+mide con la prolongación de la pared del barril, ΘW del HDS-5, List of
+Symbols, pág. impresa xix (cita `HDS5_3ED.SIMBOLOS#THETA_W`; para que la regla
+de paginación la prediga, `esquema.PorCapitulo` ganó `romanas`)—, con
+`LimiteNumericoError` si α + θ ≥ 90° y un aviso del desnivel del talud a lo
+largo del muro, Δz = L_c·sen θ/talud (en A-01, 2.425 y 4.200 m en la entrada
+donde la FASE A daba 2.970 a los dos; el cabezal NORMAL AL EJE es el de
+archivo en las tres familias por decisión del dueño, el paralelo a la vía
+queda diferido solo para el marco, ficha T7A-03, y el alero largo se acorta
+declarando `cabezal_declarado.angulo_alero_largo_grados`); (H2) **la decisión
+4 del dueño no se aplicó**: abrir la puerta de `ancho_derecho_via_m` no hace
+alcanzable la Fase 9 a expediente, porque V5 se detiene antes en
+`remanso_derecho_via`, `M5.v5_remanso` no lee el dato y V8 se detiene en
+`TR_evento_extremo` —medido; lo cierra T-7b, ficha T7A-01—; (H3) el dentellón
+se mide desde el terreno del pie, la misma referencia del desplante, como la
+cota «0.80 min.» de la Lámina Nº 04 releída por imagen (en la salida de A-01,
+base a 40.50 y no a 41.187); (H4) CB6 (espesor de la zapata contra el mínimo
+de su tipo) y CB7 (base del dentellón contra el terreno y la hoya); (H6) el
+talud muere en el relleno retenido, coronación menos bordillo (13.486 m entre
+cabezales en A-01, 14.086 m de metrado); (H7) el umbral del ciclópeo se mide
+sobre la altura total y con D ≥ 0.90 m todo cabezal sale voladizo armado, y se
+avisa; (H8) el 0.80 m de E.050 26.2 sale de `constantes_normativas` y es [N→]
+(`profundidad_cimentacion_min_cabezal_m`: el ámbito de E.050 son las
+edificaciones), con el rótulo [N] de la §0.1 de la v8 declarado como defecto
+de la hoja; (dudoso 4) el piso de la zapata armada de E.060 15.7 (pág. 138),
+[N→] (`peralte_min_zapata_armada_m`), más 70 mm de 7.7.1 (0.225 → 0.37 m en la
+entrada de A-01); (H9, H10) el origen «derivada», los avisos con su causa, la
+fórmula del proyecto sin una cita que no la contiene, la escala 3 de la Carta
+12 sin banda, y ninguna frase que diga que «más material» es el lado seguro
+(con kh = 0.50 empeora el deslizamiento sísmico); (decisión 3) cada punto de
+la Familia B avisa que su entrada suele ser una caja receptora que el programa
+no modela—; los ocho anclajes de `test_decisiones_diferidas` para las fichas
+de la Parte XLIX (T7A-01..08) y cinco que crecen solos en
+`test_ext5_forma_gui` con los cinco criterios nuevos; **menos tres**: uno de
+`test_M9_cabezal` (la geometría única por criterio) y los dos de
+`test_criterios_adoptados` que salen del parametrizado de vacíos
+(`angulo_aletas` y `predimensionamiento_cabezal`). **No se escribieron en rojo
+primero**: la FASE A midió 63 fallos y 3 errores de sus 66 contra `df1b23c`, y
+la primera tanda de las correcciones, 47 rojos y 14 verdes —guardias— de 61
+contra la FASE A (`1b83d39`); la mutación con el arnés de EXT-11 sobre las 17
+funciones de la Fase 9 del punto pasó de 185/226 (FASE A) a 309/326 con la
+segunda tanda, y uno más a mano (ficha T7A-07). Censos: **119 criterios, 25 sin
+valor** (cinco nuevos, todos con valor; `angulo_aletas` y
+`predimensionamiento_cabezal` dejan de estar vacíos), las citas del registro
+pasan de 401 a **412**, `CLAVES_EXTERNAS` sigue en veintiuna, `dominios.py`
+gana una marca `literal-ok` (`DIMENSION_CABEZAL_MAX_M`, 12), y `angulo_aletas`
+sale de `SIN_CONSUMIDOR_Y_SIN_MEDIDA`. Se reescribieron, declarándolo,
+`test_M9_cabezal`, `test_modelos` (talón sin declarar → `DatoFaltanteError`),
+`test_cli`, `test_criterios_adoptados`, `test_ext5_forma_gui`,
+`test_nivel_medido`, `test_variables_entrada`, `test_t8_proteccion` (la
+embocadura de la entrada es la del punto), `test_memoria_sustentada` (siete
+`F9.*` que la corrida por defecto no alcanza), `test_sin_literales`,
+`test_normativa` (`E060.15.7#PERALTE` sin tildes en la fuente) y
+`test_t0_gobernanza` (la fila de T-7a). Los techos de `test_ext8` se
+remidieron sobre el árbol fusionado y no se mueven (113.96 KB y 32.3 páginas
+por punto). Cierra `INF-5.1.15`, `INF-3.4.1` e `INF-3.4.2`, y **en parte**
+`INF-4.2` e `INF-4.3` (ninguna corrida de expediente alcanza la Fase 9: T-7b)
+e `INF-4.1` (los datos geotécnicos y sísmicos: T-7b). **La línea base de la
+Familia C se regeneró sobre el árbol fusionado y se midió contra `c654a16` con
+el comparador de E-B** en los cuatro JSON: huellas, recuentos de criterios, el
+bloque `cabezal` del proyecto, la embocadura y la protección de entrada de los
+puntos dimensionados (`cabezal_recto` → `cabezal_con_aleros`), el aviso de B-01
+y «Etapas bloqueadas» 11 → 10; **ningún diámetro, sección, material ni HW se
+movió** (el bloque `diseno` de cada punto es idéntico). De las cuatro
+configuraciones se MIDIÓ UNA, «sí · no», con el repositorio de normas
+enlazado: 5690 passed, 19 skipped, collected 5709 (y sin `NORMAS_DIR`, sobre
+el mismo árbol: 5672 passed, 37 skipped). **Las otras tres se dicen como
+derivadas, no como medidas**, por lo mismo que en T-0: la derivación suma 161
+a las de T-9, y ninguno pasa a `skipped`.
+**T-9 de la cadena T (2026-11-13, integrado detrás de T-3,
 con las correcciones de su auditoría) sumó CIENTO NOVENTA Y SEIS tests**,
 siete con la marca `pdf` (las citas y las Tablas Nº 02, 32, 33, 34 y 304.12
 del Manual de Hidrología y el núm. 304.11 del DG-2018, los dos en `normas/` de
@@ -2348,7 +2454,8 @@ EXT-11: 3779; E-A: 3824; E-B: 3893; cierre de E-B: 3894; PF-1: 4006; PF-2: 4021;
 PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4175; rediseño visual de la GUI (cuatro bloques, sin fila en esta tabla):
 4178; T-0 de la cadena T: 4235; T-2: 4406; T-4: 4537; T-1: 4728; T-6:
-4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352; T-9: 5548. La
+4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352; T-9: 5548;
+T-7a: 5709. La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2360,23 +2467,24 @@ esas sesiones, desinstalándolo para la medida y reinstalándolo después:
 
 | PyMuPDF | Ventana Tk | `passed` | `skipped` |
 |---|---|---|---|
-| sí | sí | 5542 (**derivado** en T-9, no medido: el contenedor no tiene tkinter) | 6 |
-| sí | no | 5529 (**MEDIDO** en T-9 sobre el árbol fusionado, con `NORMAS_DIR`) | 19 |
-| no | sí | 5431 (**derivado**, no medido) | 117 |
-| no | no | 5418 (**derivado**, no medido) | 130 |
+| sí | sí | 5703 (**derivado** en T-7a, no medido: el contenedor no tiene tkinter) | 6 |
+| sí | no | 5690 (**MEDIDO** en T-7a sobre el árbol fusionado, con `NORMAS_DIR`) | 19 |
+| no | sí | 5592 (**derivado**, no medido) | 117 |
+| no | no | 5579 (**derivado**, no medido) | 130 |
 
 Las cuatro filas son **con el repositorio de normas enlazado**
 (`NORMAS_DIR`). Sin él, las dos con PyMuPDF pasan DIECIOCHO menos y saltan
-dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-9: 5511
-passed, 37 skipped; sobre el de T-3, 5318 y 34; sobre el de las correcciones de T-8, 5212 y 34; sobre el
+dieciocho más desde T-1 (medido en «sí · no» sobre el árbol de T-7a: 5672
+passed, 37 skipped; sobre el de T-9, 5511 y 37; sobre el de T-3, 5318 y 34; sobre el de las correcciones de T-8, 5212 y 34; sobre el
 de T-5, 5143 y 34; sobre el de T-8, 4942 y 34; ni T-6, ni T-8, ni T-5, ni las
-correcciones de T-8, ni T-3, ni T-9 sumaron ninguno que abra el repositorio de
+correcciones de T-8, ni T-3, ni T-9, ni T-7a sumaron ninguno que abra el repositorio de
 normas; eran
 siete hasta T-2 y doce hasta T-4: T-4 sumó los cinco de
 `tests/test_t4_materiales_durabilidad.py` que abren el WSDOT Hydraulics
 Manual y T-1 los seis de `tests/test_t1_hidrologia.py` que abren su capítulo
 2); las dos sin PyMuPDF, uno menos y uno más, porque los otros diecisiete ya
-iban saltados por la marca `pdf`. Tras T-3 la tabla decía 5349 / 5336 / 5245
+iban saltados por la marca `pdf`. Tras T-9 la tabla decía 5542 / 5529 / 5431
+/ 5418, medida sólo la segunda. Tras T-3 la tabla decía 5349 / 5336 / 5245
 / 5232, medida sólo la segunda. Tras las correcciones de T-8 la tabla
 decía 5243 / 5230 / 5139 / 5126, medida sólo la segunda. Tras T-5 la tabla
 decía 5174 / 5161 / 5071 / 5058, medida sólo la segunda. Tras T-8 la tabla decía 4973 / 4960 / 4898

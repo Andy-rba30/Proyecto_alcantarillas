@@ -1156,3 +1156,101 @@ criterios usados. **Diámetros, secciones y materiales movidos: ninguno** —el 
 los cuatro puntos es idéntico en los cuatro JSON: A-01 y A-02 en Ø 0.90 m de concreto donde
 dimensionan, C-01 en marco 1.20 × 0.90 m de concreto en la corrida 6, B-01 sin cambio— y el
 único veredicto que cambia es la **VB1 de B-01** (no se evaluaba en `6c25f1d`; ahora NO CUMPLE).
+
+## Regenerada en T-7a (2026-11-12, FASE A, sobre `df1b23c`): la embocadura del punto y la Fase 9 del proyecto sin geometría única; ningún número de cálculo
+
+Medido con el comparador de E-B (`cli.py --comparar`) en los tres JSON contra los de
+`df1b23c`, y con `diff` en el resto. Todo lo que cambia es de FORMATO o de la Fase 9 del
+proyecto:
+
+- **Los tres JSON:** la huella `criterios_sha1`; por punto, la clave nueva `cabezal` con la
+  `embocadura` del punto (`cabezal_con_aleros`, aleros a 45° con el eje: ningún esviaje del
+  fixture supera 30°), `coherencia_embocadura_marco` en `null` (el fixture no declara los
+  siete del cajón) y `cabezales` en `null` (la Fase 9 del punto solo corre a expediente sobre
+  un punto dimensionado, y a expediente no dimensiona ninguno: ficha T7A-01); en el bloque
+  `cabezal` del proyecto sale `geometria` y entra `por_punto` (vacío); en `criterios`,
+  `angulo_aletas` y `embocadura_cabezal` entre los usados, los recuentos 35 → 33 sin valor,
+  27 → 28 con verificación pendiente y 9 → 8 sin consumidor. En `informe_perfil_ancho.json`,
+  A-01 y A-02: la `proteccion_entrada` pasa de `cabezal_recto` a `cabezal_con_aleros`, con
+  los dos elementos que M6 protege con esa embocadura (el piso entre los aleros con su uña,
+  y el talud detrás de la punta de los aleros). En `informe_expediente.json`, además, el
+  bloque `cabezal` pierde el bloqueo de `predimensionamiento_cabezal` (6 → 5) y las notas
+  de embocadura y de las funciones sin consumidor cambian de texto.
+- **Los cuatro `cli_*.txt`:** una línea «Embocadura: …» por punto que llegó al bucle de MD;
+  en `cli_expediente.txt`, las mismas notas del cabezal y la desaparición del bloqueo y de la
+  ficha de `predimensionamiento_cabezal` en «criterios que bloquearon».
+- **Las tres memorias de la CLI:** las dos huellas (`criterios_sha1`; `hoja_ruta_sha1` por la
+  nota «Corregido (T-7a)» de la §9 de la v8), el recuento «102 criterios declarados, 35
+  todavía sin valor» → «105 … 33», las fichas de los criterios usados y, en la ancha, el
+  texto de la protección de entrada de A-01 y A-02. El bloque de la Fase 9 del punto NO
+  aparece: solo se imprime con cabezal.
+- **Sin cambio de un byte:** los dos CSV de resumen y `memoria_punto_cajon.html`.
+
+**Diámetros movidos: ninguno, y los mismos puntos dimensionan.** El comparador no ve
+ninguna diferencia en el bloque `diseno` de ningún punto: A-01 y A-02 siguen en Ø 0.90 m de
+concreto en la corrida ancha de perfil, con el mismo HW; B-01 y C-01 se detienen donde se
+detenían. Con TUBO la embocadura con aleros no mueve ke ni la carta (la Tabla C.2 agrupa
+«Headwall or headwall and wingwalls»), y lo mide además
+`tests/test_t7a_cabezal_geometria.py` con el cabezal recto y con aleros a 60°. Con el marco
+de C-01 y los siete del cajón (fuera de la línea base) sigue saliendo 1.20 × 0.90 m.
+
+## Regenerada en las correcciones de T-7a (2026-11-13, sobre la FASE A `1b83d39`): formato y avisos; ningún número de cálculo
+
+Medido con el comparador de E-B en los tres JSON contra la línea base de la FASE A, y con
+`diff` en el resto:
+
+- **Los tres JSON:** el comparador ve DOS diferencias, las dos de texto: la huella
+  `criterios_sha1` (dos criterios [N→] nuevos, `profundidad_cimentacion_min_cabezal_m` y
+  `peralte_min_zapata_armada_m`, y las fichas reescritas) y el `concepto` de `angulo_aletas`
+  («con la prolongación de la pared del barril», la convención de ΘW); además, por `diff`, B-01 gana un
+  aviso en su lista `avisos`: la caja receptora que un alivio de cuneta (Familia B) suele
+  tener y el programa no modela (decisión 3 del dueño, ficha T7A-02). Los recuentos de
+  criterios usados no cambian: los dos nuevos son de expediente y la Fase 9 del punto no
+  corre en ninguna corrida de la línea base (ficha T7A-01).
+- **Los cuatro `cli_*.txt`:** la línea «Embocadura: …» dice «con la pared del barril» y no
+  «con el eje» (la convención de ΘW del HDS-5, cita `HDS5_3ED.SIMBOLOS#THETA_W`), y B-01
+  imprime el aviso de la caja receptora.
+- **Las tres memorias de la CLI:** las dos huellas (`hoja_ruta_sha1` por las notas de la
+  v8: el defecto declarado de la §0.1 y la §9 corregida), el recuento «105 criterios
+  declarados, 33 todavía sin valor» → «107 … 33» y la ficha de los criterios usados que
+  cambiaron de texto.
+- **Sin cambio de un byte:** los dos CSV de resumen y `memoria_punto_cajon.html`.
+
+**Diámetros movidos: ninguno.** El comparador no ve ninguna diferencia en el bloque
+`diseno` de ningún punto. Las correcciones tocan solo la Fase 9 (que no corre en la línea
+base) y textos: la longitud de los aleros con esviaje, el dentellón, el piso de la zapata
+armada (0.225 → 0.37 m en la entrada de A-01), CB6/CB7 y la longitud entre cabezales
+(12.865 → 13.486 m en A-01) se miden en `tests/test_t7a_correcciones.py`, fuera de ella.
+
+## Regenerada al INTEGRAR T-7a (2026-11-13, sobre `c654a16`, detrás de T-3 y T-9): la única medida que vale
+
+Las dos secciones de arriba se midieron en la rama, sobre `df1b23c`; ésta es la del árbol
+fusionado, medida con el comparador de E-B en los CUATRO JSON contra los de `c654a16` y con
+`diff` en el resto. Lo que cambia es de FORMATO, de la Fase 6 de entrada y de la Fase 9 del
+proyecto:
+
+- **Los cuatro JSON:** la huella `criterios_sha1`; en `criterios`, `angulo_aletas` y
+  `embocadura_cabezal` entre los usados, `predimensionamiento_cabezal` fuera, y los
+  recuentos 27 → 25 sin valor, 29 → 30 con verificación pendiente y 9 → 8 sin consumidor;
+  en el bloque `cabezal` del proyecto sale `geometria` y entra `por_punto` (vacío); por
+  punto, la clave nueva `cabezal` con la embocadura; B-01 gana el aviso de la caja
+  receptora. En `informe_expediente.json`, además, el bloqueo de
+  `predimensionamiento_cabezal` desaparece (6 → 5 en el bloque `cabezal`) y cambian las
+  notas de las funciones sin llamador. En `informe_perfil_ancho.json` y en
+  `informe_familia_c.json` la `proteccion_entrada` de los puntos dimensionados (A-01, A-02
+  y, en la de la Familia C, el marco C-01) pasa de `cabezal_recto` a `cabezal_con_aleros`,
+  con los dos elementos que M6 protege con esa embocadura. En C-01 la coherencia de la
+  embocadura del marco con el cabezal —la Carta 8 escala 1 y el ke de 30–75° que T-3 dejó
+  de archivo, con aleros a 45°— se cumple, y su nota viaja en el JSON, no como aviso.
+- **Los cinco `cli_*.txt`:** una línea «Embocadura: …» por punto que llegó al bucle de MD
+  (la de C-01 termina en «coherente con la embocadura del marco»), el aviso de la caja
+  receptora de B-01 y, en `cli_expediente.txt`, «Etapas bloqueadas» 11 → 10 (sale el
+  bloqueo y la ficha de `predimensionamiento_cabezal`) y las notas del cabezal.
+- **Las tres memorias de la CLI:** las dos huellas, el recuento «114 criterios
+  declarados, 27 todavía sin valor» → «119 … 25» y las fichas de los criterios usados.
+- **Sin cambio de un byte:** los dos CSV de resumen y `memoria_punto_cajon.html`.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.** El bloque `diseno` de cada
+punto es idéntico al de `c654a16` en los cuatro JSON (comparado entero, no solo por el
+comparador): A-01 y A-02 en Ø 0.90 m de concreto, C-01 en marco 1.20 × 0.90 con el HW de
+T-3 en la corrida de la Familia C, B-01 y los bloqueos donde estaban.

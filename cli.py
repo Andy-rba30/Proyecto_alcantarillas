@@ -262,6 +262,8 @@ from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
                          EstadoDeVerificacion,
                          PasoDiseno, PerfilLamina, ProteccionSalida,
                          ResultadoPunto, TipoDeVeredicto, Verificacion)
+from src.modelos import (ORIGEN_DIMENSION_DECLARADA,   # --- T-7a ---
+                         ORIGEN_DIMENSION_DERIVADA)
 from src.modulos import M2_material as M2
 from src.modulos import M5_verificaciones as M5
 from src.modulos.M8_estructural import (CODIGO_PASO_HMAX_TIPO4,
@@ -1034,6 +1036,8 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
                               else _socavacion_json(informe.socavacion)),
         "geometria": (None if informe.geometria is None
                       else _geometria_json(informe.geometria)),
+        # --- T-7a --- la embocadura del punto y, a expediente, sus cabezales.
+        "cabezal": _cabezal_del_punto_json(informe),
         "estructural": None,
         "espaciamiento_alivio": (None if informe.espaciamiento is None
                                  else _espaciamiento_json(informe.espaciamiento)),
@@ -1125,9 +1129,12 @@ def _cabezal_json(informe: InformeCabezal) -> Dict[str, Any]:
         "mononobe_okabe": (None if informe.mononobe_okabe is None else {
             "K_AE": _num(informe.mononobe_okabe.K_AE),
             "K_A": _num(informe.mononobe_okabe.K_A)}),
-        "geometria": (None if informe.geometria is None else {
-            "H_m": _num(informe.geometria.H), "B_m": _num(informe.geometria.B),
-            "D_f_m": _num(informe.geometria.D_f)}),
+        # --- T-7a --- la geometria es POR PUNTO: aqui solo la suma.
+        "por_punto": [{"punto": c.id_punto, "entrada": c.entrada.tipo,
+                       "salida": c.salida.tipo,
+                       "H_c_entrada_m": _num(c.entrada.altura_total),
+                       "H_c_salida_m": _num(c.salida.altura_total)}
+                      for c in informe.por_punto],
         "recubrimientos": [{"condicion": r.condicion,
                             "e060_mm": _num(r.e060_mm),
                             "aashto_mm": _num(r.aashto_mm),
@@ -1514,6 +1521,7 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
     if informe.cama_apoyo is not None:
         out.append(f"{SANGRIA}Fase 8  cama: {informe.cama_apoyo.cama_apoyo} "
                    f"(num. {informe.cama_apoyo.numeral})")
+    out.extend(_lineas_cabezal_del_punto(informe))
     if informe.espaciamiento is not None:
         e = informe.espaciamiento
         out.append(f"{SANGRIA}Fase 10 espaciamiento max = "
@@ -1560,8 +1568,139 @@ def _lineas_punto(informe: InformePunto) -> List[str]:
     return out
 
 
+def _lineas_cabezal_del_punto(informe: InformePunto) -> List[str]:
+    """
+    --- T-7a --- La Fase 9 del punto: la embocadura (siempre que se
+    resolvio) y, a expediente, los dos cabezales con su geometria resumida.
+    La tabla completa, dimension por dimension con su origen, va en el JSON
+    y en la memoria; aqui, una linea por cabezal.
+    """
+    out: List[str] = []
+    e = informe.embocadura
+    if e is not None:
+        angulo = ("sin aleros" if e.angulo_aletas is None
+                  else f"aleros a {_fmt(e.angulo_aletas, 1)} grados con la "
+                       "pared del barril")
+        # La coherencia del marco con el cabezal, cuando la hubo, va en la
+        # MISMA linea y sin texto propio: es un dato del punto (el JSON lleva
+        # la nota entera), no un aviso, y con las filas de 30 a 75 grados
+        # se cumple siempre (correcciones de T-7a).
+        coherente = ("; coherente con la embocadura del marco"
+                     if informe.coherencia_embocadura else "")
+        out.append(f"{SANGRIA}Embocadura: {e.tipo} ({angulo}; {e.regla})"
+                   f"{coherente}")
+    c = informe.cabezal
+    if c is None:
+        return out
+    for g in c.geometrias:
+        aleros = ("sin aleros" if g.aleros is None else
+                  f"aleros {_fmt(g.aleros.angulo_grados, 1)} grados x "
+                  f"{_fmt(g.aleros.longitud_corto, 2)} / "
+                  f"{_fmt(g.aleros.longitud_largo, 2)} m (corto / largo)")
+        out.append(
+            f"{SANGRIA}Fase 9  cabezal de {g.extremo}: {g.tipo}, H_c = "
+            f"{_fmt(g.altura_total, 2)} m (corona {_fmt(g.cota_coronacion)} / "
+            f"desplante {_fmt(g.cota_desplante)} msnm, D_f = "
+            f"{_fmt(g.D_f, 2)} m), L_c = {_fmt(g.longitud, 2)} m, zapata "
+            f"B = {_fmt(g.B, 2)} x {_fmt(g.espesor_zapata, 2)} m, pantalla "
+            f"{_fmt(g.espesor_corona, 2)} m, {aleros}, losa "
+            f"{_fmt(g.losa.longitud, 2)} x {_fmt(g.losa.espesor, 2)} m con "
+            f"dentellon de {_fmt(g.losa.profundidad_dentellon, 2)} m")
+        declaradas = [d.nombre for d in g.dimensiones
+                      if d.origen == ORIGEN_DIMENSION_DECLARADA]
+        derivadas = [d.nombre for d in g.dimensiones
+                     if d.origen == ORIGEN_DIMENSION_DERIVADA]
+        out.append(f"{SANGRIA_DETALLE}dimensiones: "
+                   + ("todas propuestas por regla"
+                      if not declaradas and not derivadas else
+                      ("declaradas " + ", ".join(declaradas) + "; "
+                       if declaradas else "")
+                      + ("derivadas de las declaradas " + ", ".join(derivadas)
+                         + "; " if derivadas else "")
+                      + "el resto propuestas por regla"))
+    if c.longitud_entre_cabezales is not None:
+        out.append(f"{SANGRIA_DETALLE}longitud entre cabezales "
+                   f"{_fmt(c.longitud_entre_cabezales)} m entre trasdos, "
+                   f"{_fmt(c.longitud_metrado)} m de metrado (el diseño "
+                   "hidraulico sigue con la aproximada de 7.B)")
+    else:
+        out.append(f"{SANGRIA_DETALLE}longitud entre cabezales: no se "
+                   f"calcula ({c.motivo_sin_longitud})")
+    return out
+
+
+def _cabezal_del_punto_json(informe: InformePunto) -> Optional[Dict[str, Any]]:
+    """--- T-7a --- La embocadura y el cabezal del punto, para el JSON."""
+    e = informe.embocadura
+    if e is None and informe.cabezal is None:
+        return None
+    salida: Dict[str, Any] = {
+        # Los criterios que la decidieron, SIN el vacio del angulo cuando
+        # el cabezal es recto (correcciones de T-7a, H9).
+        "embocadura": (None if e is None else {
+            "tipo": e.tipo, "angulo_aletas_grados": _num(e.angulo_aletas),
+            "regla": e.regla,
+            "criterios": [x for x in (e.criterio_tipo, e.criterio_angulo)
+                          if x]}),
+        "coherencia_embocadura_marco": informe.coherencia_embocadura,
+        "cabezales": None,
+    }
+    c = informe.cabezal
+    if c is None:
+        return salida
+
+    def _geom(g) -> Dict[str, Any]:
+        return {
+            "extremo": g.extremo, "tipo": g.tipo,
+            "cota_coronacion_msnm": _num(g.cota_coronacion),
+            "cota_desplante_msnm": _num(g.cota_desplante),
+            "H_c_m": _num(g.altura_total), "H_sobre_zapata_m": _num(g.H),
+            "D_f_m": _num(g.D_f), "L_c_m": _num(g.longitud),
+            "B_m": _num(g.B), "espesor_zapata_m": _num(g.espesor_zapata),
+            "ancho_punta_m": _num(g.ancho_punta),
+            "ancho_talon_m": _num(g.ancho_talon),
+            "espesor_corona_m": _num(g.espesor_corona),
+            "espesor_base_muro_m": _num(g.espesor_base_muro),
+            "beta_grados": _num(g.beta_grados),
+            "aleros": (None if g.aleros is None else {
+                "angulo_grados": _num(g.aleros.angulo_grados),
+                "angulo_largo_grados": _num(g.aleros.angulo_largo_grados),
+                "esviaje_grados": _num(g.aleros.esviaje_grados),
+                "longitud_corto_m": _num(g.aleros.longitud_corto),
+                "longitud_largo_m": _num(g.aleros.longitud_largo),
+                "altura_inicial_m": _num(g.aleros.altura_inicial),
+                "altura_final_m": _num(g.aleros.altura_final),
+                "espesor_m": _num(g.aleros.espesor),
+                "ancho_zapata_m": _num(g.aleros.ancho_zapata),
+                "espesor_zapata_m": _num(g.aleros.espesor_zapata)}),
+            "losa": (None if g.losa is None else {
+                "longitud_m": _num(g.losa.longitud),
+                "espesor_m": _num(g.losa.espesor),
+                "profundidad_dentellon_m": _num(g.losa.profundidad_dentellon),
+                "ancho_dentellon_m": _num(g.losa.ancho_dentellon),
+                "cota_terreno_msnm": _num(g.losa.cota_terreno),
+                "cota_base_dentellon_msnm": _num(g.losa.cota_base_dentellon)}),
+            "dimensiones": [{"nombre": d.nombre, "valor": _num(d.valor),
+                             "unidad": d.unidad, "origen": d.origen,
+                             "regla": d.regla, "criterio": d.criterio}
+                            for d in g.dimensiones]}
+
+    salida["cabezales"] = [_geom(g) for g in c.geometrias]
+    salida["longitud_entre_cabezales_m"] = _num(c.longitud_entre_cabezales)
+    salida["longitud_metrado_m"] = _num(c.longitud_metrado)
+    salida["motivo_sin_longitud_entre_cabezales"] = c.motivo_sin_longitud
+    return salida
+
+
 def _lineas_cabezal(informe: InformeCabezal) -> List[str]:
     out = _titulo(f"{FASE_CABEZAL} - del proyecto, no del punto", "-")
+    # --- T-7a --- la geometria es POR PUNTO (va en cada punto); aqui, la
+    # suma: cuantos cabezales se propusieron.
+    if informe.por_punto:
+        out.append(f"{SANGRIA}Cabezales por punto: "
+                   + ", ".join(f"{c.id_punto} ({c.entrada.tipo} / "
+                               f"{c.salida.tipo})" for c in informe.por_punto)
+                   + " -- la geometria de cada uno va con su punto")
     if informe.cadena is not None:
         c = informe.cadena
         out.append(f"{SANGRIA}Cadena sismica (num. {c.numeral}): "

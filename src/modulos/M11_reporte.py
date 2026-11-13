@@ -1975,6 +1975,90 @@ def _tabla_verificaciones(informe: Any) -> str:
            + diferidas + detalle
 
 
+TITULO_TRAZA_CABEZAL = ("Desarrollo de la Fase 9 del punto: embocadura, "
+                        "geometria de los cabezales y aleros")
+
+
+def traza_cabezal(informe: Any) -> Tuple[Any, ...]:
+    """
+    --- T-7a --- Los `PasoDeMemoria` de la Fase 9 del punto (embocadura,
+    coronacion, desplante, aleros, losa, longitud entre cabezales), en su
+    orden. Los emite `M9.cabezal_del_punto`; aqui solo se enumeran. Los de
+    las verificaciones CB1-CB5 no estan aqui: cuelgan de su `Verificacion`
+    y salen con el desarrollo de las verificaciones.
+    """
+    cabezal = getattr(informe, "cabezal", None)
+    return () if cabezal is None else tuple(cabezal.pasos)
+
+
+def _bloque_cabezal(informe: Any) -> str:
+    """
+    --- T-7a --- La Fase 9 del PUNTO en la memoria (INF-4.2, INF-4.3): la
+    embocadura y, cuando la corrida la alcanzo, la tabla de geometria de los
+    dos cabezales -- dimension por dimension, con su valor, su ORIGEN
+    («propuesta por regla» o «declarada») y la regla --, la longitud entre
+    cabezales y el desarrollo de sus pasos. Formato, no calculo: todo viene
+    del objeto que M9 emitio.
+    """
+    partes: List[str] = []
+    e = getattr(informe, "embocadura", None)
+    c = getattr(informe, "cabezal", None)
+    # SIN CABEZAL NO HAY BLOQUE: la embocadura de un punto que no llego a la
+    # Fase 9 ya la imprime la proteccion de entrada (paso 6.9) cuando el
+    # punto dimensiona, y la llevan la CLI y el JSON siempre. Repetirla en la
+    # memoria de cada punto sin dimensionar solo engordaba el expediente
+    # (techo de paginas por punto de `test_ext8`).
+    if c is None:
+        return ""
+    if e is not None:
+        angulo = ("sin aleros" if e.angulo_aletas is None else
+                  f"aleros a {_num(e.angulo_aletas, FMT_2)} grados con la "
+                  "pared del barril")
+        partes.append(
+            f"<p><b>Embocadura del punto:</b> {_esc(e.tipo)} ({angulo}; "
+            f"{_esc(e.regla)}), criterios <code>{_esc(e.criterio_tipo)}</code>"
+            + (f" y <code>{_esc(e.criterio_angulo)}</code>"
+               if e.criterio_angulo else "") + " [A].</p>")
+        # La coherencia del marco con el cabezal va en el paso 9.0.0, que la
+        # emite M9: no es una nota aparte ni un aviso (correcciones de T-7a).
+    for g in c.geometrias:
+        filas = [_fila(["<th>Dimension</th>", "<th>Valor</th>",
+                        "<th>Origen</th>", "<th>Regla</th>"])]
+        for d in g.dimensiones:
+            filas.append(_fila([
+                _td(_esc(d.nombre)),
+                _td(f"{_num(d.valor)} {_esc(d.unidad)}", "num"),
+                _td(_esc(d.origen)),
+                _td(_esc(d.regla) + (f" (<code>{_esc(d.criterio)}</code>)"
+                                     if d.criterio else ""))]))
+        partes.append(
+            f"<p><b>Cabezal de {_esc(g.extremo)}:</b> {_esc(g.tipo)}; "
+            f"coronacion {_num(g.cota_coronacion)} msnm, desplante "
+            f"{_num(g.cota_desplante)} msnm.</p>"
+            '<table class="compacta">' + "".join(filas) + "</table>")
+    if c.longitud_entre_cabezales is not None:
+        partes.append(
+            f"<p>Longitud entre cabezales "
+            f"{_num(c.longitud_entre_cabezales, FMT_2)} m entre las caras "
+            "interiores de los muros, y "
+            f"{_num(c.longitud_metrado, FMT_2)} m de metrado del barril "
+            "(paso 9.0.5): el diseño hidraulico sigue con la longitud "
+            "aproximada de 7.B.</p>")
+    else:
+        partes.append(
+            '<div class="nota"><p>Longitud entre cabezales: no se calcula ('
+            + _esc(c.motivo_sin_longitud) + ").</p></div>")
+    partes.append(
+        '<div class="nota"><p>La estabilidad del cabezal (E1-E6) y su armado '
+        "no se verifican en este bloque: la geometria es un "
+        "predimensionamiento, y las verificaciones CB de la tabla del punto "
+        "solo comprueban que remate al conducto y que lo declarado no quede "
+        "bajo los minimos con numero.</p></div>")
+    return ("<h4>Fase 9 &mdash; Cabezal y aleros del punto</h4>"
+            + "".join(partes)
+            + bloque_pasos(traza_cabezal(informe), TITULO_TRAZA_CABEZAL))
+
+
 def traza_proteccion(informe: Any) -> Tuple[Any, ...]:
     """
     --- T-8 --- Los `PasoDeMemoria` de la Fase 6 de un punto, en su orden de
@@ -2198,6 +2282,11 @@ def _bloques_fases_finales(informe: Any) -> str:
     if estructural is not None or informe.cama_apoyo is not None:
         partes.append("<h4>Fase 8 &mdash; Lo que no se verifica</h4>"
                       + diferidas)
+
+    # --- T-7a --- la Fase 9 del punto: embocadura y, a expediente, cabezales.
+    cabezal = _bloque_cabezal(informe)
+    if cabezal:
+        partes.append(cabezal)
 
     # --- T-9 --- los avisos de la Fase 10 (pendiente de la cuneta fuera de
     # la banda del Manual, capacidad gobernada por la velocidad limite, VB1
@@ -2995,6 +3084,7 @@ def pasos_del_informe(informe: Any) -> Tuple[Any, ...]:
         vistos.extend(traza_proteccion(punto))
         vistos.extend(traza_espaciamiento(punto))         # --- T-9 ---
         vistos.extend(traza_geometria(punto)[0])          # --- T-6 ---
+        vistos.extend(traza_cabezal(punto))               # --- T-7a ---
     for recubrimiento in informe.cabezal.recubrimientos:
         _anota(getattr(recubrimiento, "paso", None))
     return tuple(vistos)
@@ -3696,6 +3786,7 @@ def pasos_impresos(informe: Any) -> Tuple[Any, ...]:
         vistos.extend(traza_geometria(punto)[0])          # --- T-6 ---
         # --- T-8 --- la Fase 6 imprime sus pasos como bloque desde T-8.
         vistos.extend(traza_proteccion(punto))
+        vistos.extend(traza_cabezal(punto))               # --- T-7a ---
     return tuple(vistos)
 
 

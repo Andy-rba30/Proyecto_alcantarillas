@@ -323,13 +323,22 @@ def test_la_fase_10_corre_aunque_el_punto_no_se_dimensione():
 # Fase 9: del proyecto, no del punto
 # ---------------------------------------------------------------------------
 
-def test_fase_9_corre_la_cadena_sismica_y_bloquea_la_geometria():
+def test_fase_9_corre_la_cadena_sismica_y_ya_no_bloquea_la_geometria():
+    """
+    --- T-7a --- La geometria del cabezal ya no es del proyecto: es de cada
+    punto dimensionado (`InformePunto.cabezal`), y la Fase 9 del proyecto no
+    se detiene en 'predimensionamiento_cabezal', que tiene valor (las
+    reglas). Lo que sigue bloqueando el proyecto (K_AE, recubrimientos) no
+    cambia.
+    """
     informe = _informe(luz_m=2.0)
     cabezal = informe.cabezal
     assert cabezal.cadena is not None and cabezal.cadena.k_h > 0
     assert cabezal.cuantias, "las cuantias minimas de E.060 son [N] y salen siempre"
     claves = {b.criterio for b in cabezal.bloqueos if b.criterio}
-    assert "predimensionamiento_cabezal" in claves
+    assert "predimensionamiento_cabezal" not in claves
+    assert cabezal.por_punto == [p.cabezal for p in informe.puntos
+                                 if p.cabezal is not None]
     assert cli.NOTA_ESTABILIDAD_CABEZAL in cabezal.notas
 
 
