@@ -12,8 +12,8 @@ con `NORMAS_DIR`: 5979 passed / 23 skipped / 6002 collected; sin él 5961 / 41).
    prompt, tal cual)**, `docs/contrato_entradas.md`, la sección §4 del INFORME
    (`/home/user/andy-rba30/cotas-esviaje-alcantarillas/INFORME_evaluacion_app_alcantarillas_vs_PDF.md`), y
    **`ORQ/PRECISIONES_T-7c.md`** (corrige y acota el prompt; donde discrepe, gana; trae qué norma arma, el régimen K0 para la
-   resistencia y las decisiones del dueño), con `ORQ/INFORME_T-7c_final.md` NO: el que debes leer es `ORQ/INFORME_T-7b_final.md`
-   (la interfaz `solicitaciones`). Antes de tocar un objeto: hoja `Conflictos` del tracker
+   resistencia y las decisiones del dueño), junto con `ORQ/INFORME_T-7b_final.md` (la interfaz
+   `solicitaciones` que consumes). Antes de tocar un objeto: hoja `Conflictos` del tracker
    (`tests/apoyo/tracker.py`, sólo lectura) y `docs/decisiones_diferidas.md` (fichas EXT-7-01, T7A-04, T7A-08, T7B-08, T7B-09, T7B-14).
 2. Ejecuta la FASE A del MODO PARALELO de ORQUESTACION.md: implementación entera con sus tests (primero en rojo con
    `xfail(strict=True)`; si no, mide el rojo contra `451a10a` y decláralo), dorados a mano con la aritmética escrita, toda cita
