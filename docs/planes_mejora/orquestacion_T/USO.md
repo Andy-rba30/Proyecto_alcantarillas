@@ -111,3 +111,4 @@ Fuente: `list_events(kinds=["rate_limit_event"])`. `resetsAt` = 1795201200 = vie
 | 2026-11-13 22:44 | s/d | s/d (10 % a las 21:16) | s/d | T-12 FASE A terminada (Opus ≈ 0.72 M tokens); auditoría corta de T-12 lanzada con Opus |
 | 2026-11-13 23:06 | s/d | s/d | s/d | auditoría corta de T-12 llegada (Opus ≈ 0.42 M tokens); cierre de T-12 lanzado con Opus (agente de FASE A reanudado) |
 | 2026-11-13 23:38 | s/d | s/d | s/d | reinicio del contenedor a las 23:32 (se perdió el agente del cierre de T-12; el trabajo estaba en disco y en el remoto); cierre relanzado con Opus |
+| 2026-11-14 00:22 | s/d | **15 %** | **12 %** | T-12 en main (`07ef296`): CADENA T CERRADA. Consumo de la sexta sesión: ≈ 15 puntos de «todos» y ≈ 12 de Fable (auditoría de T-11 ≈ 0.52 M, T11-03 ≈ 0.60 M, orquestador); Opus: cierre de T-11 ≈ 0.78 M, T-12 FASE A ≈ 0.72 M, auditoría ≈ 0.42 M, cierre ≈ 0.46 M (+ el agente perdido en el reinicio) |
