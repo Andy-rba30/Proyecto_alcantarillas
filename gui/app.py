@@ -677,6 +677,25 @@ class ExpedienteApp:
         # «DETIENE» a un `Q_m3s` vacio que la corrida va a calcular.
         self.cuencas_var.trace_add("write", lambda *_a: self._al_cambiar_la_hidrologia())
         self.estacion_var.trace_add("write", lambda *_a: self._al_cambiar_la_hidrologia())
+        # Cerrar la ventana con un PDF en marcha (UI-4, ficha UI4-01): el hijo
+        # se termina y su directorio de trabajo se retira, como el del barrido.
+        self.root.bind("<Destroy>", self._al_destruirse, add="+")
+
+    def _al_destruirse(self, evento):
+        """
+        La ventana principal se destruye (se cierra, o termina el programa).
+        El `<Destroy>` de la raiz llega tambien por cada widget suyo: solo
+        cuenta el de la propia raiz. Un PDF en marcha se termina con la espera
+        acotada de la ventana del barrido (`proceso_barrido.TOPE_AL_TERMINAR_S`)
+        y no toca el destino; uno que ya termino sin que el sondeo lo viera se
+        entrega como lo habria entregado el sondeo (`ProcesoPdf.terminar_y_limpiar`).
+        Hasta UI-4 el hijo seguia escribiendo para nadie y su carpeta de
+        trabajo quedaba en el temporal (ficha UI3-02, abierto (3)). La ventana
+        del barrido se cuida sola (su propio `<Destroy>`, H3 de UI-3).
+        """
+        if evento.widget is not self.root or self.proceso_pdf is None:
+            return
+        self.proceso_pdf.terminar_y_limpiar(pbarr.TOPE_AL_TERMINAR_S)
 
     def _excepcion_en_callback(self, tipo, valor, tb):
         traceback.print_exception(tipo, valor, tb)
@@ -2963,32 +2982,10 @@ class ExpedienteApp:
             ayuda=self._ayuda_del_pdf())
         self.btn_pdf.pack(side="left", padx=8, ipadx=8, ipady=4)
 
-        self.btn_csv = BotonAccion(
-            f_exp, "Exportar cuadro resumen (CSV)", fondo=comp.VERDE,
-            command=self.exportar_csv, motivo=MOTIVO_SIN_CORRIDA,
-            ayuda="El cuadro resumen (entregable 3 de M11), una fila\n"
-                  "por punto, en una hoja de calculo.")
-        self.btn_csv.pack(side="left", padx=8, ipadx=8, ipady=4)
-
-        # COMPARAR CON OTRO VOLCADO (E-B, E14): el `informe_json` de ESTA
-        # corrida --- el mismo que se embebe en la sesion, fotografiado al
-        # correr --- contra un JSON del disco, por `src/comparador.py`. Nunca
-        # recalcula: compara dos volcados.
-        self.btn_comparar = BotonAccion(
-            f_exp, "Comparar con otro JSON...", fondo=comp.TEXTO_SUAVE,
-            command=self.comparar_informe, motivo=MOTIVO_SIN_CORRIDA,
-            ayuda="Compara el volcado de esta corrida con otro informe_json\n"
-                  "(otra version del CSV, de los criterios o del codigo), por\n"
-                  "identidad de punto y con tolerancias nombradas. Dice que\n"
-                  "campo difiere en que punto, y que no se puede comparar y\n"
-                  "por que (metodos distintos). No corre nada.")
-        self.btn_comparar.pack(side="left", padx=8, ipadx=8, ipady=4)
-
         # LA MEMORIA RESUMIDA (UI-2, ficha T12-04): la vista para imprimir
         # del entregable (T-12), del MISMO informe que la completa --- mismas
         # huellas y misma hora de corrida en su encabezado de trazabilidad ---.
-        # Una segunda fila para que la primera siga cabiendo en el ancho por
-        # defecto de la ventana; el contrato es el de los demas exportadores
+        # Una segunda fila; el contrato es el de los demas exportadores
         # (`BOTONES_DE_EXPORTACION`).
         f_exp_resumida = ttk.Frame(p)
         f_exp_resumida.pack(fill="x", pady=(8, 0))
@@ -3004,6 +3001,35 @@ class ExpedienteApp:
             command=self.exportar_pdf_resumida, motivo=MOTIVO_SIN_CORRIDA,
             ayuda=self._ayuda_del_pdf(vista=expdf.VISTA_RESUMIDA))
         self.btn_pdf_resumida.pack(side="left", padx=8, ipadx=8, ipady=4)
+
+        # EL CUADRO RESUMEN Y LA COMPARACION, EN UNA TERCERA FILA (UI-4, ficha
+        # UI2-01 abierto (c)): en la primera, con los tres de la memoria
+        # completa, no cabian en el ancho por defecto de la ventana (a 1100
+        # px «Exportar cuadro resumen (CSV)» salia cortado y «Comparar con
+        # otro JSON...» fuera de la vista; medido en el recorrido de UI-4).
+        # Las filas son la memoria completa, la resumida y los datos.
+        f_exp_datos = ttk.Frame(p)
+        f_exp_datos.pack(fill="x", pady=(8, 0))
+        self.btn_csv = BotonAccion(
+            f_exp_datos, "Exportar cuadro resumen (CSV)", fondo=comp.VERDE,
+            command=self.exportar_csv, motivo=MOTIVO_SIN_CORRIDA,
+            ayuda="El cuadro resumen (entregable 3 de M11), una fila\n"
+                  "por punto, en una hoja de calculo.")
+        self.btn_csv.pack(side="left", padx=(0, 8), ipadx=8, ipady=4)
+
+        # COMPARAR CON OTRO VOLCADO (E-B, E14): el `informe_json` de ESTA
+        # corrida --- el mismo que se embebe en la sesion, fotografiado al
+        # correr --- contra un JSON del disco, por `src/comparador.py`. Nunca
+        # recalcula: compara dos volcados.
+        self.btn_comparar = BotonAccion(
+            f_exp_datos, "Comparar con otro JSON...", fondo=comp.TEXTO_SUAVE,
+            command=self.comparar_informe, motivo=MOTIVO_SIN_CORRIDA,
+            ayuda="Compara el volcado de esta corrida con otro informe_json\n"
+                  "(otra version del CSV, de los criterios o del codigo), por\n"
+                  "identidad de punto y con tolerancias nombradas. Dice que\n"
+                  "campo difiere en que punto, y que no se puede comparar y\n"
+                  "por que (metodos distintos). No corre nada.")
+        self.btn_comparar.pack(side="left", padx=8, ipadx=8, ipady=4)
 
         # EL MOTIVO DEL BLOQUEO, A LA VISTA (EXT-8, PC-17). Los exportadores
         # comparten motivo --- se apagan y encienden juntos ---, y un solo

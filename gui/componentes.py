@@ -522,13 +522,21 @@ def repartir_al_mostrar(paned):
     de la tabla se quedaba con lo que la otra no pedia (medido en el bloque
     2: la columna del filtro nacia en 540 px con el recuento fuera de la
     vista). A partir de la primera colocacion el divisor es del usuario.
+
+    El divisor se mide A LO LARGO de la orientacion: en un `PanedWindow`
+    vertical su posicion es una ordenada, y se reparte el ALTO. Hasta UI-4
+    se repartia siempre el ancho, y en la ventana del barrido (1016 x 526
+    px, la unica vertical) el divisor caia en 609 px, Tk lo pegaba al fondo
+    y la tabla nacia con alto cero: medido en el recorrido de UI-4, que la
+    mira en pantalla (ficha UI4-01).
     """
     def _colocar(evento):
         paned.unbind("<Configure>", identificador)
         pesos = [int(paned.pane(pane, "weight")) for pane in paned.panes()]
         if len(pesos) != 2 or sum(pesos) <= 0:
             return
-        paned.sashpos(0, evento.width * pesos[0] // sum(pesos))
+        largo = evento.height if str(paned.cget("orient")) == "vertical" else evento.width
+        paned.sashpos(0, largo * pesos[0] // sum(pesos))
     identificador = paned.bind("<Configure>", _colocar, add="+")
 
 

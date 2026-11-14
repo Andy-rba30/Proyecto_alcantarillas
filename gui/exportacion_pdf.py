@@ -338,6 +338,40 @@ class ProcesoPdf:
         self._cancelado = True
         self._proceso.terminate()
 
+    def terminar_y_limpiar(self, tope_s: float) -> None:
+        """
+        AL CERRAR LA VENTANA PRINCIPAL (UI-4, fichas UI4-01 y UI4-03). Al
+        final siempre retira el directorio de trabajo; antes, uno de dos
+        casos, que separa el `poll()` del cierre:
+
+        - El hijo SIGUE EN MARCHA: se termina, se ESPERA a que salga ---
+          acotado por `tope_s`; si no sale, se mata --- y el estado es
+          CANCELADO: el destino del usuario no se toca, como al pulsar
+          «Cancelar PDF».
+        - El hijo YA SALIO y la ventana no llego a sondearlo (el sondeo es
+          cada `CADENCIA_SONDEO_PDF_MS` de `gui/app.py`): se cierra como lo
+          habria cerrado ese sondeo (`sondear`). Un PDF entero se entrega al
+          destino (TERMINADO): el usuario lo pidio y ya esta escrito, y
+          tirarlo al cerrar perderia un trabajo terminado. Un hijo que fallo
+          no lo toca (FALLIDO).
+
+        Es el gesto de `proceso_barrido.ProcesoBarrido.terminar_y_limpiar`
+        (H3 de UI-3): sin el, cerrar la ventana con un PDF en marcha dejaba
+        el hijo escribiendo para nadie y su carpeta --- la sesion con sus
+        declaraciones --- en el temporal (ficha UI3-02, abierto (3)).
+        """
+        if self._proceso is not None and self._proceso.poll() is None:
+            self.cancelar()
+            try:
+                self._proceso.wait(timeout=tope_s)
+            except subprocess.TimeoutExpired:
+                self._proceso.kill()
+                self._proceso.wait(timeout=tope_s)
+        self.sondear()
+        if self.estado is EstadoPdf.SIN_INICIAR:
+            self.estado = EstadoPdf.CANCELADO
+        self.limpiar()
+
     def sondear(self) -> EstadoPdf:
         """
         Lee lo nuevo de la salida del hijo y devuelve el estado. No bloquea:

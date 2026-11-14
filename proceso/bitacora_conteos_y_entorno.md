@@ -47,7 +47,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6573** en
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6619** en
 la suite del ENTREGABLE (desde T-12 hay dos suites: la de proceso, aparte,
 recoge **145**, y su invariante es el mismo); lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
@@ -2280,7 +2280,7 @@ T-7a: 5709; T-7b: 6002; T-7c: 6276; verificación de fórmulas de T-7: 6310;
 T-10: 6360; T-11: 6469; T-12: 6425 en la suite del entregable, que entregó
 138 a la de proceso (145); UI-1 de la cadena de interfaz: 6469 (medido con
 ventana Tk, ver su sección al final); UI-2: 6524 (ídem); UI-3, rebasada sobre UI-2:
-6573 (ídem). La
+6573 (ídem); UI-4, cierre de la cadena de interfaz: 6619 (ídem). La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2488,3 +2488,41 @@ la verificación (el de la revisión medía 6513; el primer intento, 6505). El p
 intento dio, en su corrida final, un falso rojo de tiempo
 (`test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint`, 0.343 s contra 0.3 s con
 otras dos suites en la máquina), que pasó aislado; las medidas siguientes no lo repitieron.
+
+## UI-4 de la cadena de interfaz (2026-11-14): el par con ventana Tk, MEDIDO — cierre de la cadena UI
+
+UI-4 (el recorrido de la ventana de extremo a extremo, las capturas y el README; fichas
+UI4-01, UI4-02 y, de su revisión, UI4-03) se midió sobre su commit en la rama de su worktree, desde `3117b2c` (main
+con UI-1, UI-2 y UI-3), con `python` 3.12 con `tkinter`, `ttkbootstrap` y `weasyprint`,
+ImageMagick, `xvfb-run -a`, PyMuPDF y `NORMAS_DIR` enlazado: la fila «sí · sí». La partida
+se midió de nuevo al empezar y es la fila de UI-3 rebasada. Los saltos son los de UI-1: los
+diez estructurales de `test_familias_del_csv` y, en la exportación, los cuatro que leen lo
+versionado o necesitan `.git`; ninguno es de Tk ni de PDF.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, partida (`3117b2c`), checkout de git | sí | sí | 6563 | 10 | 6573 |
+| entregable, UI-4 primer intento (`c26b226`), checkout de git | sí | sí | 6606 | 10 | 6616 |
+| entregable, UI-4 primer intento, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 6602 | 14 | 6616 |
+| entregable, UI-4 con las correcciones de su revisión, checkout de git | sí | sí | 6609 | 10 | 6619 |
+| entregable, UI-4 con las correcciones, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 6605 | 14 | 6619 |
+| proceso, UI-4 con las correcciones, checkout | sí | sí | 145 | 0 | 145 |
+
+UI-4 suma 46 tests: 43 en `tests/test_ui4_recorrido_ventana.py` —14 sin ventana (el
+divisor del `PanedWindow`, el hijo del PDF al cerrar la ventana, en marcha o ya terminado,
+el README y las capturas) y 29 sobre UNA corrida del recorrido de la ventana de verdad
+(`tests/apoyo/gui_ui4_recorrido_real.py`)— y tres casos del parametrizado de
+`test_decisiones_diferidas` (los anclajes de las fichas UI4-01, UI4-02 y UI4-03). En el
+primer intento, los 13 de lo que no existía o estaba mal se escribieron en rojo (13
+`xfailed`, cada uno fallando por su motivo, medido con `--runxfail`) y se liberaron al
+corregir; los otros 28 verifican lo que UI-1 a UI-3 ya hacían, o son guardias, y pasaron
+desde el principio (ficha UI4-01). La revisión independiente (ficha UI4-03) sumó los dos
+del hijo que ya terminó al cerrar, sin rojo porque la conducta elegida es la que el código
+tenía (medidos por mutación: cancelar siempre los tumba), y rehízo el ciclo de sesión del
+recorrido a perfil y con una bandera tecleada: sin la línea que repone el alcance en
+`cargar_sesion`, o sin la que repone las banderas, cae el test del ciclo. Con Tk
+corren 50 tests de ventana real —los 21 de UI-1 a UI-3 más los 29 del recorrido—, ninguno
+saltado. El recorrido entero, con los dos PDF del hijo y las capturas, tarda unos 35 s; la
+suite del checkout, 15 a 16 min. Las cuatro corridas de la suite del entregable se
+lanzaron una detrás de otra, y el test de presupuesto de tiempo
+(`test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint`) pasó en las cuatro.

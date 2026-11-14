@@ -2920,7 +2920,7 @@ símbolo.
 
 # Parte XXXII — Lo que PF-3 dejó escrito al abrir el barrido de sensibilidad
 
-## PF-3-01 · El barrido vive en la CLI y en el servicio; el botón «Barrido…» de la pestaña 2 no entró — cerrado (UI-3)
+## PF-3-01 · El barrido vive en la CLI y en el servicio, y desde UI-3 también en el botón «Barrido…» de la pestaña 2 — cerrado (UI-3)
 
 - **Cerrado (UI-3):** PF-3 difirió el botón «Barrido…» de la pestaña 2 sobre el criterio
   seleccionado. UI-3 lo pone (`gui/app.py::_abrir_barrido`): activo sólo con un criterio
@@ -2934,7 +2934,9 @@ símbolo.
   (ficha UI3-01), pinta `barrido.lineas_de_la_tabla` sobre el JSON del hijo
   (`barrido.resultado_del_volcado`, el inverso de `volcado_del_barrido`) con la columna de
   las incumplidas y el «no comparable», guarda ese JSON, se cancela, y al cerrarse
-  refresca la pestaña 2. No arma memoria ni toca los exportadores.
+  refresca la pestaña 2. No arma memoria ni toca los exportadores. UI-4 lo recorrió en la
+  ventana de verdad sobre la corrida de la guía y encontró que la tabla del barrido nacía
+  en un panel de alto cero (corregido, ficha UI4-01): hoy se ve sin mover el divisor.
 - **Por qué así:** es lo que esta ficha pedía —el editor tipado, fuera del hilo de Tk, sin
   tocar el informe de la pestaña 3, la pestaña 2 refrescada al volver y su test de ventana
   real (`tests/test_ui3_barrido_ventana.py`)—. Lo único nuevo en `src/` es leer de vuelta
@@ -4023,7 +4025,7 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   el umbral de colapso, que la hoja de ruta no fija.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v8_evento_extremo`
 
-## T1-04 · La hidrología entra sólo por la CLI: la GUI y la sesión no la conocen, y el pre-vuelo la carga pero no la calcula — en parte cerrado (UI-1)
+## T1-04 · La hidrología entraba sólo por la CLI; desde UI-1 la ventana y la sesión la conocen, y el pre-vuelo la carga pero no la calcula — en parte cerrado (UI-1)
 
 - **Cerrado (UI-1, la interfaz y la sesión):** T-1 difirió los campos de `--cuencas` y
   `--estacion` en la pestaña 1, su sitio en la sesión, el SHA-1 de los dos archivos y la
@@ -4034,7 +4036,11 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   (`sesion.FORMATO_SESION`), el hijo del PDF y `cli.py --sesion` con ellas, el anticipo
   con el mismo conjunto de obras calculables que la CLI y M0
   (`servicio.ids_con_caudal_calculable`) y las dos huellas en `ContextoCorrida`, de los
-  bytes que se leyeron. Las decisiones, en la ficha UI1-01.
+  bytes que se leyeron. Las decisiones, en la ficha UI1-01. UI-4 lo recorrió de extremo a
+  extremo en la ventana de verdad sobre la corrida de referencia `hidrologia_calculada`:
+  los dos CSV por «Examinar...», el caudal «calculado» en el detalle de la pestaña 3, el
+  mismo JSON que la CLI con `--cuencas` y `--estacion`, los dos PDF del hijo con la
+  hidrología y la sesión que la guarda y la repone (ficha UI4-01).
 - **Abierto:** el estimador de lo que detiene la Fase 1-bis. Con los dos CSV el
   pre-vuelo —el de la CLI y el anticipo de la ventana— carga y valida los archivos y
   dice de un `Q_m3s` vacío con cuenca «depende de la hidrología (no evaluada en
@@ -6694,8 +6700,8 @@ T-7b/T-7c— y lo fija `tests/test_t10_memoria.py`, por clave del JSON.
   (`criterios_A_por_punto`, leído de lo que cada punto emitió). Todo [A] con valor tiene
   ventana (los siete [A] sin ventana son de expediente y sin valor, que es lo que el
   invariante de `CLAUDE.md` admite).
-- **Abierto:** el barrido que recorre la ventana es `cli.py --barrido` (PF-3) y no corre
-  dentro de la memoria: el anexo no dice cómo cambia el diseño dentro de la ventana, solo cuál
+- **Abierto:** el barrido que recorre la ventana es `cli.py --barrido` (PF-3; desde UI-3
+  también el botón «Barrido…» de la pestaña 2) y no corre dentro de la memoria: el anexo no dice cómo cambia el diseño dentro de la ventana, solo cuál
   es.
 - **Qué haría falta:** si se quiere el efecto en la memoria, un anexo que lea los volcados de
   un barrido ya corrido, nunca uno que corra dentro del exportador.
@@ -7048,7 +7054,7 @@ T11-09 a la memoria.
   del completo. `tests/test_ui2_pestana4.py` lo mide con dobles y con la ventana de verdad
   (las dos memorias en HTML llevan el mismo encabezado; el JSON del hijo es el de la
   ventana salvo la hora, porque el hijo recalcula). Las correcciones de su revisión, en la
-  ficha UI2-03.
+  ficha UI2-03. UI-4 las exportó en su recorrido de extremo a extremo (ficha UI4-01).
 - **Abierto:** lo que UI-2 dejó escrito en la ficha UI2-01: la remisión de la resumida a
   su completa habla de banderas de la CLI y promete un encabezado común que entre la
   completa de la ventana y la resumida del hijo no se cumple.
@@ -7199,12 +7205,13 @@ progreso de la resumida (ficha UI2-03), y la línea base no se mueve.
   que el encabezado de trazabilidad «es el mismo en las dos»: entre la completa de la
   ventana y la resumida en PDF del hijo NO lo es (el hijo recalcula: otra hora, y las
   huellas de los archivos al exportar, EXT-8-02). Es texto de la memoria y la línea base lo
-  fija. (c) A 1100 px la primera fila no cabe: «Exportar cuadro resumen (CSV)» se corta y
-  «Comparar con otro JSON...» queda fuera de la vista; es de antes de UI-2.
+  fija. (c) cerrado en UI-4 (ficha UI4-01): a 1100 px la primera fila no cabía —«Exportar
+  cuadro resumen (CSV)» salía cortado y «Comparar con otro JSON...» fuera de la vista—, y
+  pasar sólo «Comparar» a la segunda no bastaba (medido: el CSV seguía cortado); hoy son
+  tres filas, la memoria completa con el JSON, la resumida y los datos (CSV y comparar).
 - **Qué haría falta:** (b) una remisión que no nombre la puerta ni prometa el encabezado
   entre vistas de dos corridas, o que el hijo no recalcule (EXT-8-02): decisión del dueño,
-  porque mueve la línea base de la resumida; (c) repartir la primera fila (p. ej.
-  «Comparar» a la segunda) en UI-4.
+  porque mueve la línea base de la resumida.
 - **Dónde vive:** `gui/app.py::BOTONES_DE_EXPORTACION`
 
 ## UI2-02 · El cabezal del proyecto en la pestaña 4, con el texto de la CLI
@@ -7284,7 +7291,10 @@ línea base no se mueve y la CLI imprime lo mismo salvo con la entrada atípica 
   el segundo de cada declaración (`declarado el …`), que es de cada corrida. El panel de
   declaración de la pestaña 2 no tiene scroll: en la geometría por defecto, con el editor
   de un criterio de tabla, la fila de «Quitar» y «Barrido…» queda fuera de la vista, como
-  «Aplicar» antes de UI-3.
+  «Aplicar» antes de UI-3 (sigue así tras UI-4: las capturas del README se toman a 1280 ×
+  1000). Lo que UI-4 corrigió de esta ventana: la tabla se pintaba en un panel de alto cero
+  y no se veía sin arrastrar el divisor (ficha UI4-01); los tests de UI-3 leían el texto
+  del widget, no la pantalla.
 - **Qué haría falta:** un scroll en el panel de declaración de la pestaña 2 (rediseño,
   fuera de UI-3).
 - **Dónde vive:** `gui/proceso_barrido.py::ProcesoBarrido`
@@ -7309,11 +7319,12 @@ línea base no se mueve y la CLI imprime lo mismo salvo con la entrada atípica 
   (censados en `tests/test_ui3_barrido_ventana.py`); UI-3 no cambia lo que la CLI acepta.
   (2) Las tuplas vuelven de la sesión como listas: la guardia y los consumidores aceptan
   las dos y el volcado es el mismo, y normalizarlas cambiaría el estado vivo que el barrido
-  repone de una declaración `--declarar` con lista. (3) El hijo del PDF tiene el patrón de
-  H3 (`gui/app.py` no maneja `WM_DELETE_WINDOW`): es de UI-2, pendiente para UI-4.
+  repone de una declaración `--declarar` con lista. (3) cerrado en UI-4 (ficha UI4-01): el
+  hijo del PDF tenía el patrón de H3 —cerrar la ventana principal con un PDF en marcha lo
+  dejaba escribiendo para nadie y su carpeta en el temporal—, y hoy el `<Destroy>` de la
+  raíz lo termina y la retira (`ExpedienteApp._al_destruirse`).
 - **Qué haría falta:** para (1), la decisión del dueño —igualar la CLI a la ventana, o
-  ofrecer en la ventana lo que la CLI acepta—; para (3), terminar el hijo del PDF al
-  destruirse la ventana principal, como el del barrido.
+  ofrecer en la ventana lo que la CLI acepta—.
 - **Dónde vive:** `src/declaracion.py::valor_desde_json`
 
 ## UI3-03 · Una clave entera escrita como texto se rechaza en TODAS las puertas que declaran; sólo la frontera del JSON la lee como entero
@@ -7339,3 +7350,92 @@ línea base no se mueve y la CLI imprime lo mismo salvo con la entrada atípica 
 - **Qué haría falta:** que la guardia del archivo exija también la forma de las claves,
   cuando el dueño decida tocar `criterios_adoptados.py`.
 - **Dónde vive:** `src/declaracion.py::verificar_claves_de_la_ficha`
+
+
+# Parte LIX — Lo que UI-4 de la cadena de interfaz dejó escrito: la ventana verificada de extremo a extremo
+
+UI-4 (2026-11-14, sobre `3117b2c`, main con UI-1, UI-2 y UI-3) cierra la cadena de interfaz
+sin añadir funciones: recorre la ventana de verdad de extremo a extremo, toma sus capturas,
+escribe la sección de la ventana del README y corrige lo que el recorrido encontró y lo que
+UI-2 y UI-3 dejaron escrito para UI-4. Ningún cálculo, criterio, constante ni texto de
+memoria cambia, y la línea base no se mueve: el recorrido la reproduce por la ventana.
+
+## UI4-01 · El recorrido de extremo a extremo, y las tres cosas que encontró o heredó
+
+- **Cerrado (UI-4):** `tests/apoyo/gui_ui4_recorrido_real.py` recorre la ventana de verdad
+  bajo xvfb, por sus botones (los pasos, en su docstring), y
+  `tests/test_ui4_recorrido_ventana.py` lo juzga: el CSV de ejemplo reproduce la línea
+  base a perfil y a expediente; las tres corridas de referencia, con las entradas por
+  «Examinar...» y las declaraciones tecleadas en la pestaña 2, dan el MISMO JSON que
+  `cli.py`; el detalle de la pestaña 3 (caudal calculado, Fases 6, 8 y 9) y el panel
+  «Cabezal del proyecto» son las líneas de la CLI; los seis exportadores escriben (los dos
+  PDF por el hijo, con la hidrología); guardar, «Nuevo proyecto», cargar y ejecutar dan el
+  mismo JSON; la sesión v3 REPRODUCE su corrida y se reescribe en el formato 4; el barrido
+  pinta las líneas de la CLI y deja la ventana como estaba. Lo que encontró o heredó: (1)
+  la tabla del barrido nacía en un panel de alto cero: `componentes.repartir_al_mostrar`
+  colocaba el divisor de un `PanedWindow` VERTICAL con el ANCHO (609 px en 526 de alto);
+  los tests de UI-3 leían el widget y no la pantalla, y lo mostró la captura. Hoy reparte
+  a lo largo de su orientación. (2) Cerrar la ventana con un PDF en marcha dejaba el hijo y
+  su carpeta (ficha UI3-02, abierto (3)): el `<Destroy>` de la raíz los retira
+  (`ProcesoPdf.terminar_y_limpiar`; el hijo que ya terminó, ficha UI4-03). (3) A 1100 px la
+  fila de exportación no cabía (ficha UI2-01, abierto (c)): son tres filas.
+- **Por qué así:** el prompt pide no añadir funciones, y las tres son correcciones. Sus
+  tests, y los del README y las capturas, se escribieron en rojo (13 `xfailed`, cada uno
+  por su motivo) y se liberaron al corregir; los demás del recorrido verifican lo que UI-1
+  a UI-3 ya hacían y no tenían rojo que medir (28 pasaron desde el principio).
+- **Abierto:** el recorrido no mide un gestor de ventanas real ni otra escala de pantalla
+  (el ancho de los botones depende de la tipografía), y al ancho mínimo de la ventana (900
+  px) «Exportar memoria (PDF)» sale cortado 14 px.
+- **Qué haría falta:** una medida con la pantalla del autor; para el ancho mínimo, otra
+  fila o un `minsize` mayor, decisión de diseño.
+- **Dónde vive:** `tests/apoyo/gui_ui4_recorrido_real.py::main`
+
+## UI4-02 · Las capturas y el README salen del recorrido; lo que de `CLAUDE.md` queda para el dueño
+
+- **Cerrado (UI-4):** las cinco capturas de `docs/capturas_interfaz/` (las cuatro pestañas y
+  la ventana del barrido) las toma el mismo recorrido con `--capturas`, con ImageMagick
+  (`import -window root` sobre la región de la ventana) a `GEOMETRIA_DE_LAS_CAPTURAS` (1280
+  × 1000, que cabe en la pantalla por defecto de `xvfb-run`): son DATOS DE PRUEBA —la
+  corrida `hidrologia_calculada`; la de la guía en la pestaña 2 y en el barrido—, con las
+  rutas relativas a la raíz. La suite comprueba que el README las nombra todas en su
+  sección «La ventana» (§4), que existen y son PNG de esa geometría y que el recorrido las
+  regenera; que el README dice dónde está cada cosa —la hidrología en la pestaña 1, el
+  barrido en la 2, el cabezal del proyecto y la memoria resumida en la 4— con el rótulo que
+  la ventana le pone (comprobado contra las cadenas de `gui/app.py`), y qué hace sólo la
+  CLI (las dos memorias en una invocación y `--plantilla`). `docs/guia_perfil.md` no cambia:
+  ninguna instrucción suya dejó de ser cierta.
+- **Por qué así:** una captura hecha a mano envejece sin aviso; tomada por el recorrido que
+  la suite ejecuta se regenera con un comando y su forma queda fijada. No se comparan sus
+  bytes: la hora de la corrida está en la barra de estado.
+- **Abierto:** `CLAUDE.md` conserva TRES frases que la cadena UI dejó desfasadas, sin tocar
+  por decisión de la orquestadora (fichas UI1-01 y PF-3-01): «`FORMATO_SESION = 3`»
+  (sección «Taxonomía de etiquetas», la casa de los [S] de otra obra; es 4 desde UI-1),
+  «La GUI y la sesión todavía no conocen las dos entradas (ficha T1-04)» (sección
+  «Arquitectura», la hidrología) y «El botón «Barrido…» de la pestaña 2 se difirió con
+  símbolo (ficha PF-3-01)» (sección «GUI», PF-3). UI-4 no añade ninguna: `CLAUDE.md` no
+  nombra ni el reparto del divisor, ni el cierre de la ventana, ni las filas de exportación.
+- **Qué haría falta:** que el dueño corrija las tres frases.
+- **Dónde vive:** `tests/apoyo/gui_ui4_recorrido_real.py::GEOMETRIA_DE_LAS_CAPTURAS`
+
+## UI4-03 · Lo que la revisión independiente de UI-4 encontró: el hijo que ya terminó al cerrar y un ciclo de sesión que no distinguía «repuesto» de «por defecto»
+
+- **Cerrado (revisión de UI-4, sin hallazgos altos ni medios; dos bajos confirmados):** (H1)
+  el contrato de `ProcesoPdf.terminar_y_limpiar` prometía «el destino no se toca», y si el
+  hijo ya había salido con su PDF sin que la ventana lo sondeara (cada
+  `CADENCIA_SONDEO_PDF_MS`) el cierre lo entregaba: estado TERMINADO. Se decide ENTREGAR
+  —el usuario lo pidió y ya está escrito— y el docstring lo dice con los dos casos, que
+  separa el `poll()` del cierre: en marcha, CANCELADO sin tocar el destino; ya salido, lo que
+  habría hecho el sondeo (un PDF entero se entrega; un fallo no toca el destino). (H2) el
+  ciclo guardar / «Nuevo proyecto» / cargar del recorrido se hacía con una sesión de
+  expediente y sin banderas, que es lo que «Nuevo proyecto» deja: quitar de
+  `cargar_sesion` la línea que repone el alcance sobrevivía a toda la suite. Hoy el ciclo
+  corre a perfil y con la luz tecleada, compara el alcance y las banderas guardados con los
+  repuestos y el JSON con el de la corrida hecha antes de guardar. Y dos menores: el test
+  del grupo de exportación nombra los siete botones en vez de leerlos de la tupla que
+  vigila, y los diálogos de error se cuentan después del cierre.
+- **Por qué así:** la conducta de H1 es la que el código ya tenía, y por eso su test no
+  tuvo rojo; se midió por mutación (cancelar siempre: caen los dos casos del test). H2 se
+  midió con el mutante del revisor y con el de las banderas: sin la línea del alcance, o
+  sin el bucle que repone las banderas, cae el test del ciclo.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `tests/apoyo/gui_ui4_recorrido_real.py::ALCANCE_DEL_CICLO`

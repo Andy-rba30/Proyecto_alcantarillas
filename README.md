@@ -85,8 +85,10 @@ Qué recibe el programa, de qué estudio sale cada dato y quién lo aporta está
 | Datos de sitio de otra obra | `--datos-sitio sitio.json` | los `[S]` del corredor (PGA, corredor) con su trazabilidad y fecha |
 | Criterios declarados | `--declarar CLAVE=VALOR` | el valor de un criterio `[A]` para esta corrida, dentro de su ventana |
 
-De un CSV nuevo a las tres familias dimensionadas a nivel de perfil, paso a paso y con
-comandos que la suite ejecuta: **[`docs/guia_perfil.md`](docs/guia_perfil.md)**.
+En la ventana, cada una de estas entradas es un campo de la pestaña 1, y los criterios se
+declaran en la pestaña 2 (§4, «La ventana»). De un CSV nuevo a las tres familias
+dimensionadas a nivel de perfil, paso a paso y con comandos que la suite ejecuta:
+**[`docs/guia_perfil.md`](docs/guia_perfil.md)**.
 
 **Otra obra sobre el mismo despliegue.** Los datos de sitio `[S]` del corredor de la obra
 del repositorio viven en `src/datos_sitio.py` con su trazabilidad y **no se editan** para
@@ -125,22 +127,81 @@ python -m gui.app          # la ventana
   formato 4—, alcance y criterios declarados) y dice si la corrida reproduce la guardada;
   una bandera escrita, `--cuencas` o `--estacion` incluidas, gana a lo que la sesión trae.
 - **`--barrido CLAVE=v1,v2,v3`** recorre un criterio `[A]` dentro de su ventana y compara
-  cada corrida con la primera (no escribe memoria).
+  cada corrida con la primera (no escribe memoria); en la ventana, «Barrido…» de la
+  pestaña 2.
 - **`--comparar A.json B.json`** compara dos informes por identidad de punto.
 - **El caudal de diseño** de un punto de Familia A o B entra declarado en la columna
   `Q_m3s` o lo calcula el programa si la celda va vacía y la corrida trae
-  `--cuencas` y `--estacion`; un caudal declarado gana y no se recalcula.
-
-Desde la ventana, el PDF de la memoria se escribe en un proceso aparte (la ventana sigue
-viva, muestra el progreso y se puede cancelar); por encima de 40 puntos ofrece la vía del
-navegador. La pestaña 4 exporta también la **memoria resumida** («Memoria resumida (HTML)»
-y «Memoria resumida (PDF)», esta última por el mismo proceso aparte) y muestra el
-**cabezal del proyecto** (suma de los cabezales, cadena sísmica, recubrimientos, cuantías,
-notas y lo que detuvo la Fase 9) con el mismo texto que imprime la CLI.
+  `--cuencas` y `--estacion` (en la ventana, los dos CSV de la pestaña 1); un caudal
+  declarado gana y no se recalcula.
 
 Código de salida de la CLI: `0` si el expediente cierra, `1` si corre y no cierra (hay
 etapas bloqueadas, puntos sin dimensionar o verificaciones incumplidas), `2` si no se
 puede correr (una entrada que no se puede leer).
+
+### La ventana
+
+`python -m gui.app` abre la ventana, que hace lo mismo que las banderas de arriba en cuatro
+pasos numerados a la izquierda; arriba quedan «Nuevo proyecto», «Guardar sesion», «Cargar
+sesion», «Importar decisiones» y «EJECUTAR EL CÁLCULO». Con las mismas entradas, la ventana
+y la CLI escriben el mismo JSON, y el detalle de un punto y el cabezal del proyecto son,
+palabra por palabra, lo que la CLI imprime.
+
+**Pestaña 1 · Datos de entrada.** El nombre del proyecto, el CSV de puntos, el JSON de
+datos externos, el JSON de datos de sitio y —para que el programa calcule el caudal de los
+puntos con la celda `Q_m3s` vacía— el «CSV de cuencas» y el «CSV de la estación», que van
+juntos (cada campo con «Examinar...» y, los que la tienen, su ayuda «i»). Debajo, los datos
+declarados que no son columna del CSV, el alcance de la corrida (perfil o expediente) y el
+anticipo de lo que va a faltar punto a punto, que es lo que `--prevuelo` imprime. Cambiar
+uno de los dos CSV de la hidrología retira el informe de la corrida anterior.
+
+![Pestaña 1: las entradas de la corrida de referencia con la hidrología calculada](docs/capturas_interfaz/pestana_1_datos.png)
+
+**Pestaña 2 · Criterios.** Cada criterio con su etiqueta y su estado, filtrable. Al
+seleccionar uno se ve su ficha y se declara para la corrida con su editor y «Aplicar solo a
+esta corrida» (con la nota, cuando la declaración la exige: un dato de ensayo, una adopción
+que no sale de una fila de su tabla). «Barrido…» recorre el criterio seleccionado dentro de
+su ventana de sensibilidad: en una ventana aparte se compone la lista de valores, el barrido
+corre en un proceso aparte con lo que está en las pestañas 1 y 2, y su tabla —las mismas
+líneas que `--barrido`— se guarda con «Guardar JSON del barrido...». No toca el informe de
+las pestañas 3 y 4 ni lo declarado, y no escribe memoria.
+
+![Pestaña 2: un criterio seleccionado, con su editor y el botón «Barrido…»](docs/capturas_interfaz/pestana_2_criterios.png)
+
+![La ventana del barrido: los valores y la tabla, la misma que imprime la CLI](docs/capturas_interfaz/ventana_barrido.png)
+
+**Pestaña 3 · Resultados por punto.** Una fila por punto; al seleccionar una, sus
+verificaciones, sus bloqueos y el detalle: el caudal (declarado, o calculado por el
+programa con su lluvia, su tiempo de concentración y su área), la sección y el control,
+la protección de entrada y de salida (Fase 6), lo estructural del conducto (Fase 8) y los
+dos cabezales del punto (Fase 9).
+
+![Pestaña 3: el detalle de un punto con el caudal calculado por el programa](docs/capturas_interfaz/pestana_3_resultados.png)
+
+**Pestaña 4 · Resumen.** El estado del expediente, los criterios pendientes que detuvieron
+una etapa, el panel «Cabezal del proyecto» (la suma de los cabezales, la cadena sísmica,
+los recubrimientos, las cuantías, las notas y lo que detuvo la Fase 9) y la exportación:
+«Exportar JSON», la memoria completa («Exportar memoria (HTML)» y «Exportar memoria
+(PDF)»), la memoria resumida («Memoria resumida (HTML)» y «Memoria resumida (PDF)»),
+«Exportar cuadro resumen (CSV)» y «Comparar con otro JSON...». Los dos PDF se escriben en un
+proceso aparte: la ventana sigue viva, muestra el progreso y se puede cancelar («Cancelar
+PDF»), y por encima de 40 puntos la completa ofrece la vía del navegador.
+
+![Pestaña 4: el cabezal del proyecto y la exportación](docs/capturas_interfaz/pestana_4_resumen.png)
+
+**La sesión.** «Guardar sesion» escribe en un JSON lo de las pestañas 1 y 2 —las rutas, las
+de la hidrología incluidas, el alcance, los criterios declarados con su procedencia y los
+datos de sitio declarados— y las corridas con su informe; «Cargar sesion» la repone tal
+cual (una sesión guardada antes de que la ventana conociera la hidrología se abre igual y,
+al guardarla, se reescribe en el formato actual); «Nuevo proyecto» abre una obra vacía e
+«Importar decisiones» suma los criterios declarados de otra sesión. Lo que sólo hace la
+CLI es escribir las dos memorias en una sola invocación —la vía en que la resumida nombra
+el archivo de su completa (§5)— y forzar otra plantilla de memoria (`--plantilla`).
+
+Las capturas son de DATOS DE PRUEBA —la corrida de referencia `hidrologia_calculada` y, la
+del barrido, la de la guía de perfil— y las regenera el recorrido de la ventana que la suite
+ejecuta: `xvfb-run -a python -m tests.apoyo.gui_ui4_recorrido_real <salida> --capturas
+docs/capturas_interfaz` (hace falta ImageMagick).
 
 ## 5. Salidas
 
@@ -229,6 +290,13 @@ cuatro que leen lo versionado o necesitan `.git` —el arnés de mutación de
 y, en `test_t12_entregable`, el de `git check-attr` y el de la exportación emulada—, cada
 uno diciendo por qué. Con una ventana Tk disponible corren también los trece de ventana
 real.
+
+Medido otra vez al cerrar la cadena de interfaz (2026-11-14), esta vez **con** ventana Tk
+(`xvfb-run`), ImageMagick y `NORMAS_DIR`: 6609 `passed` y 10 `skipped` de 6619 en el
+checkout, y 6605 y 14 de 6619 en la exportación; los únicos saltos son los diez de diseño
+y, en la exportación, los cuatro de git. Los tests de ventana real son hoy cincuenta
+—veintinueve de ellos juzgan un recorrido de la ventana de extremo a extremo (§4, «La
+ventana»)— y, sin Tk, se saltan diciéndolo.
 
 ## 8. Trabajo posterior a la cadena de desarrollo
 
