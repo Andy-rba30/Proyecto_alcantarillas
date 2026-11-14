@@ -2916,9 +2916,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"Memoria resumida (HTML)  : {ruta}")
 
     if args.pdf_resumida_salida is not None:
+        # --- UI-2 --- con `--progreso`, la etapa del PDF tambien: es lo que
+        # la ventana lee del hijo que escribe la resumida (EXT-8).
         salida = exportar_pdf_resumida(informe, args.pdf_resumida_salida,
                                        proyecto=args.proyecto,
-                                       nombre_completa=nombre_completa)
+                                       nombre_completa=nombre_completa,
+                                       progreso=progreso)
         print(salida.mensaje)
 
     if args.csv_resumen_salida is not None:

@@ -54,11 +54,10 @@ def _sitio(pga, corredor):
 
 
 def _exportadores(ventana):
-    return {nombre: str(boton.cget("state")) == "normal"
-            for nombre, boton in (("json", ventana.btn_json),
-                                  ("html", ventana.btn_html),
-                                  ("pdf", ventana.btn_pdf),
-                                  ("csv", ventana.btn_csv))}
+    # El grupo entero, de la tupla de la ventana (UI-2).
+    import gui.app as gapp
+    return {nombre.removeprefix("btn_"): str(getattr(ventana, nombre).cget("state")) == "normal"
+            for nombre in gapp.BOTONES_DE_EXPORTACION}
 
 
 def _correr(ventana, raiz):

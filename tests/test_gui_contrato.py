@@ -263,8 +263,10 @@ def test_el_brazo_ancho_de_ejecutar_imprime_la_traza():
 # pestana con los otros y su cuerpo llama a `cli.informe_json` y a
 # `json.dumps(..., allow_nan=False)`: dejarlo fuera de la tupla congelaba la
 # omision, y con un ErrorProyecto o un NaN el usuario no veia NADA.
+# Y SEIS desde UI-2: las dos vistas de la memoria resumida (ficha T12-04).
 EXPORTADORES = ("exportar_html", "exportar_pdf", "exportar_csv",
-                "exportar_json")
+                "exportar_json", "exportar_html_resumida",
+                "exportar_pdf_resumida")
 
 
 @pytest.mark.parametrize("nombre", EXPORTADORES)
@@ -1313,11 +1315,13 @@ def test_el_encabezado_enumera_las_pestanas_y_exportaciones_que_la_ventana_crea(
         f"{numeradas}")
     assert "son CUATRO" in doc
 
-    exportadores = {n.name.removeprefix("exportar_").upper()
+    # Desde UI-2 son seis: la memoria resumida en HTML y en PDF (T12-04).
+    exportadores = {n.name.removeprefix("exportar_").upper().replace("_", " ")
                     for n in ast.walk(ARBOL_GUI)
                     if isinstance(n, ast.FunctionDef)
                     and n.name.startswith("exportar_")}
-    assert exportadores == {"JSON", "HTML", "PDF", "CSV"}
+    assert exportadores == {"JSON", "HTML", "PDF", "CSV", "HTML RESUMIDA",
+                            "PDF RESUMIDA"}
     linea_export = next(l for l in doc.splitlines() if "exportacion (" in l)
     assert all(f in linea_export for f in exportadores), (
         f"el encabezado no nombra todas las exportaciones: {linea_export}")

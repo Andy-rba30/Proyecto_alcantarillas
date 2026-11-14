@@ -45,12 +45,13 @@ CLAVE = "phi_relleno_trasdos"     # un vacio de Fase 9 que el perfil no invoca
 
 
 def _exportadores(ventana):
-    return {nombre: {"encendido": str(boton.cget("state")) == "normal",
-                     "motivo": boton.motivo}
-            for nombre, boton in (("json", ventana.btn_json),
-                                  ("html", ventana.btn_html),
-                                  ("pdf", ventana.btn_pdf),
-                                  ("csv", ventana.btn_csv))}
+    # El grupo entero, de la tupla de la ventana (UI-2): siete desde la
+    # memoria resumida, el comparador incluido.
+    import gui.app as gapp
+    return {nombre.removeprefix("btn_"): {
+        "encendido": str(getattr(ventana, nombre).cget("state")) == "normal",
+        "motivo": getattr(ventana, nombre).motivo}
+        for nombre in gapp.BOTONES_DE_EXPORTACION}
 
 
 def _correr(ventana, raiz):

@@ -208,7 +208,8 @@ class _Arbol:
         return iid
 
 
-EXPORTADORES = ("btn_json", "btn_html", "btn_pdf", "btn_csv", "btn_comparar")
+# El grupo de exportacion se lee de la ventana (`app.BOTONES_DE_EXPORTACION`):
+# desde UI-2 son siete, y una lista escrita aqui se quedaba corta.
 
 
 def _ventana(app, *, csv_=None, cuencas="", estacion="", externos=EXTERNOS):
@@ -231,7 +232,8 @@ def _ventana(app, *, csv_=None, cuencas="", estacion="", externos=EXTERNOS):
     v.corridas = []
     for nombre in ("lbl_error_datos", "btn_ejecutar", "nb", "root", "lbl_estado",
                    "lbl_anticipo_criterios", "lbl_anticipo_csv",
-                   "lbl_anticipo_diferido", "lbl_anticipo_prevuelo", *EXPORTADORES):
+                   "lbl_anticipo_diferido", "lbl_anticipo_prevuelo",
+                   *app.BOTONES_DE_EXPORTACION):
         setattr(v, nombre, _Widget())
     v.tab_datos = object()
     v.tree_anticipo = _Arbol()
@@ -446,7 +448,7 @@ def test_b_con_un_solo_campo_la_ventana_dice_el_mensaje_del_servicio(app, tmp_pa
         assert v.informe is None
         assert str(esperado.value) in v.lbl_error_datos.texto
         assert v.lbl_error_datos.texto.startswith("El expediente no se puede cargar")
-        for nombre in EXPORTADORES:
+        for nombre in app.BOTONES_DE_EXPORTACION:
             assert getattr(v, nombre).motivo == app.MOTIVO_CORRIDA_FALLIDA
 
 
@@ -493,7 +495,7 @@ def test_b_cambiar_un_campo_invalida_el_informe(app):
     v.informe = object()
     v._al_cambiar_la_hidrologia()
     assert v.informe is None and pintados
-    for nombre in EXPORTADORES:
+    for nombre in app.BOTONES_DE_EXPORTACION:
         boton = getattr(v, nombre)
         assert not boton.encendido
         assert boton.motivo == app.MOTIVO_HIDROLOGIA_CAMBIADA

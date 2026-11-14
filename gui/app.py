@@ -33,8 +33,9 @@ componente necesita se lo pide hoy `CampoValidable` a su llamador.
 
 No reimplementa el pipeline: llama a las mismas funciones que usa `cli.py`
 (`cargar_datos_externos`, `correr`, `informe_json`, `exportar_html`,
-`exportar_pdf`) para que la GUI y la linea de comandos vean siempre el mismo
-expediente.
+`exportar_pdf` y, desde UI-2, `exportar_html_resumida` y
+`exportar_pdf_resumida`) para que la GUI y la linea de comandos vean siempre
+el mismo expediente.
 
 El tema (rediseño visual, bloque 1)
 -----------------------------------
@@ -92,9 +93,14 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
     4. Resumen             Estado del expediente, criterios pendientes que
                             bloquearon una etapa --- con QUIEN los resuelve y
                             con que EVIDENCIA, derivados de la ficha (E-B,
-                            E13 reducido) ---, lo diferido por alcance,
-                            exportacion (JSON/HTML/PDF/CSV) y la comparacion
-                            de la corrida con otro `informe_json` (E14).
+                            E13 reducido) ---, lo diferido por alcance, el
+                            CABEZAL DEL PROYECTO con el texto de la CLI (UI-2),
+                            exportacion (JSON/HTML/PDF/CSV/HTML RESUMIDA/PDF RESUMIDA)
+                            y la comparacion de la corrida con otro
+                            `informe_json` (E14). La memoria RESUMIDA (UI-2,
+                            ficha T12-04) es la vista para imprimir, del mismo
+                            informe que la completa; su PDF sale por el mismo
+                            proceso hijo (EXT-8).
 
 El alcance de la corrida (SIS-A-17)
 -----------------------------------
@@ -255,12 +261,13 @@ El informe es de SU corrida (EXT-4, PC-15)
 `self.informe` describe la corrida que lo produjo, con su `ContextoCorrida`
 dentro; lo que se declare, se quite o se cargue DESPUES no lo cambia --- y por
 eso mismo el informe deja de describir el estado de la ventana ---.
-`_invalidar_informe` lo retira y apaga los cuatro exportadores diciendo por
-que, y lo llaman los cuatro gestos que cambian el estado (declarar, quitar,
-escribir en archivo, cargar sesion) y el propio EJECUTAR antes de correr: una
-corrida fallida no deja el informe anterior como vigente en las pestañas 3 y
-4 ni en la barra. El nombre del proyecto se lee AL CORRER, no al exportar, por
-la misma razon. Y `root.report_callback_exception` convierte en dialogo lo
+`_invalidar_informe` lo retira y apaga los exportadores diciendo por que ---
+el grupo entero, `BOTONES_DE_EXPORTACION`, siete desde UI-2 ---, y lo llaman
+los cuatro gestos que cambian el estado (declarar, quitar, escribir en
+archivo, cargar sesion) y el propio EJECUTAR antes de correr: una corrida
+fallida no deja el informe anterior como vigente en las pestañas 3 y 4 --- el
+panel del cabezal del proyecto incluido --- ni en la barra. El nombre del
+proyecto se lee AL CORRER, no al exportar, por la misma razon. Y `root.report_callback_exception` convierte en dialogo lo
 que Tk mandaba a stderr con la ventana como si nada.
 """
 
@@ -351,6 +358,35 @@ MOTIVO_NO_DECLARADO = "el criterio no esta declarado para esta corrida"
 # con `_motivo_derivado` para nombrar de que se deriva.
 MOTIVO_DERIVADO = "se deriva de {de}; edite sus entradas (regla: {regla})"
 MOTIVO_SIN_CORRIDA = "todavia no se ejecuto el pipeline: no hay informe que exportar"
+# EL GRUPO DE EXPORTACION DE LA PESTAÑA 4, UNA VEZ (UI-2, ficha T12-04). Son
+# los botones que leen el informe de la ultima corrida: nacen apagados con
+# `MOTIVO_SIN_CORRIDA`, se apagan JUNTOS con el motivo del gesto que retira el
+# informe (EXT-4, PC-15) y se encienden juntos al correr. Hasta UI-2 la lista
+# estaba escrita a mano en dos sitios ---apagar y encender---, y la tercera
+# vez que hiciera falta era la que se quedaria corta: el boton que no
+# figurara seguiria encendido sobre un informe que ya no describe la obra.
+# La memoria RESUMIDA, en HTML y en PDF, es la vista para imprimir del
+# entregable (T-12): sale del MISMO informe que la completa.
+BOTONES_DE_EXPORTACION = ("btn_json", "btn_html", "btn_pdf", "btn_csv",
+                          "btn_comparar", "btn_html_resumida", "btn_pdf_resumida")
+# Los dos que escriben PDF comparten el proceso hijo de EXT-8: hay uno en
+# marcha a la vez, y mientras corre los dos estan apagados diciendo por que.
+BOTONES_PDF = ("btn_pdf", "btn_pdf_resumida")
+# La ayuda del HTML resumido, en UN sitio (revision de UI-2). Lo que dice del
+# encabezado de trazabilidad vale entre las dos memorias en HTML: las dos se
+# escriben aqui, del mismo informe. Las de PDF las escribe un proceso que
+# vuelve a correr la obra, y su ayuda lo dice (`expdf.AVISO_EL_HIJO_RECALCULA`).
+AYUDA_HTML_RESUMIDA = (
+    "La memoria RESUMIDA, para imprimir: por punto el resultado,\n"
+    "los veredictos, los avisos, los criterios [A] y lo que detuvo\n"
+    "una etapa; para el proyecto, el cuadro resumen y los pendientes.\n"
+    "Se escribe aqui, del informe de la ultima corrida, como «Exportar\n"
+    "memoria (HTML)»: las dos en HTML llevan el mismo encabezado de\n"
+    "trazabilidad. La completa queda como anexo digital.")
+# El panel «Cabezal del proyecto» (UI-2, hueco 3 de la cadena de interfaz)
+# sin corrida: vacio, y diciendo por que.
+MOTIVO_SIN_CORRIDA_CABEZAL = (
+    "todavia no se ejecuto el pipeline: no hay cabezal del proyecto que mostrar")
 # El PDF sale en un proceso aparte (EXT-8, PC-11): mientras corre, el boton
 # esta apagado y lo dice --- y el progreso se ve en el rotulo de al lado ---.
 MOTIVO_EXPORTANDO_PDF = "el PDF se esta escribiendo en un proceso aparte"
@@ -496,8 +532,8 @@ VISTAS = (
      "Una fila por punto de la ultima corrida y, al seleccionarla, sus "
      "verificaciones y bloqueos."),
     ("Resumen",
-     "El estado del expediente, los criterios que bloquearon una etapa y la "
-     "exportacion de la memoria."),
+     "El estado del expediente, los criterios que bloquearon una etapa, el "
+     "cabezal del proyecto y la exportacion de la memoria."),
 )
 
 # LA TIRA DE RECUENTOS de la pestaña 3: (clave, rotulo). Las cuatro cifras
@@ -629,10 +665,35 @@ class ExpedienteApp:
     # ------------------------------------------------------------------
     # El informe vigente y su invalidacion (EXT-4, PC-15)
     # ------------------------------------------------------------------
+    def _botones_de_exportacion(self):
+        """Los botones de `BOTONES_DE_EXPORTACION`, en su orden."""
+        return tuple(getattr(self, nombre) for nombre in BOTONES_DE_EXPORTACION)
+
+    def _botones_pdf(self):
+        """Los dos que escriben PDF por el proceso hijo (`BOTONES_PDF`)."""
+        return tuple(getattr(self, nombre) for nombre in BOTONES_PDF)
+
     def _apagar_exportadores(self, motivo):
-        for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv,
-                    self.btn_comparar):
+        for btn in self._botones_de_exportacion():
             btn.deshabilitar(motivo)
+
+    def _encender_exportadores(self):
+        """
+        El grupo, encendido tras una corrida que produjo informe --- salvo
+        los dos de PDF si el proceso hijo sigue escribiendo uno: se quedan
+        apagados con `MOTIVO_EXPORTANDO_PDF`, y `_terminar_pdf` los enciende
+        (revision de UI-2: el encendido los dejaba encendidos y sin motivo
+        con el hijo en marcha) ---.
+        """
+        for btn in self._botones_de_exportacion():
+            btn.habilitar()
+        if self._pdf_en_marcha():
+            for btn in self._botones_pdf():
+                btn.deshabilitar(MOTIVO_EXPORTANDO_PDF)
+
+    def _pdf_en_marcha(self):
+        """True si el proceso hijo de EXT-8 esta escribiendo un PDF."""
+        return self.proceso_pdf is not None and not self.proceso_pdf.estado.terminal
 
     def _invalidar_informe(self, motivo):
         """
@@ -678,6 +739,9 @@ class ExpedienteApp:
             else:
                 lbl.config(text="-", foreground="")
         self.lbl_estado.config(text=f"Sin informe vigente: {motivo}.")
+        # El panel del cabezal del proyecto (UI-2) se vacia con el resto de
+        # la pestaña 4 y dice lo mismo que la barra.
+        self._pintar_cabezal_del_proyecto(f"Sin informe vigente: {motivo}.")
 
     # ------------------------------------------------------------------
     # Construccion de la interfaz
@@ -2750,13 +2814,35 @@ class ExpedienteApp:
         self.tree_criterios.configure(yscroll=scroll_c.set)
         scroll_c.pack(side="left", fill="y")
 
+        # EL CABEZAL DEL PROYECTO (UI-2, hueco 3 de la cadena de interfaz):
+        # la suma de los cabezales por punto, la cadena sismica, los
+        # recubrimientos, las cuantias, las notas y lo que detuvo la Fase 9
+        # del proyecto. Hasta UI-2 solo se veia exportando. El TEXTO es el
+        # que la CLI imprime (`cli._lineas_cabezal`), pintado con las
+        # etiquetas de prosa: ni una palabra distinta, solo tipografia.
+        panel_cabezal = Panel(p, "Cabezal del proyecto")
+        panel_cabezal.pack(fill="x", pady=(0, 10))
+        self.lbl_cabezal = ttk.Label(
+            panel_cabezal.interior, text=MOTIVO_SIN_CORRIDA_CABEZAL,
+            style="Ayuda.TLabel", wraplength=820, justify="left")
+        self.lbl_cabezal.pack(anchor="w", pady=(0, 6))
+        f_cab = ttk.Frame(panel_cabezal.interior)
+        f_cab.pack(fill="both", expand=False)
+        f_cab.columnconfigure(0, weight=1)
+        self.txt_cabezal = comp.texto_prosa(f_cab, height=10, wrap="word")
+        self.txt_cabezal.grid(row=0, column=0, sticky="nsew")
+        self.txt_cabezal.configure(state="disabled")
+        scroll_cab = ttk.Scrollbar(f_cab, orient="vertical", command=self.txt_cabezal.yview)
+        self.txt_cabezal.configure(yscroll=scroll_cab.set)
+        scroll_cab.grid(row=0, column=1, sticky="ns")
+
         panel_exportacion = Panel(p, "Exportacion")
         panel_exportacion.pack(fill="x", pady=(0, 10))
         p = panel_exportacion.interior
         f_exp = ttk.Frame(p)
         f_exp.pack(fill="x")
 
-        # LOS CUATRO NACEN APAGADOS Y DICIENDO POR QUE. El motivo es siempre
+        # LOS EXPORTADORES NACEN APAGADOS Y DICIENDO POR QUE. El motivo es siempre
         # el mismo --- no hay informe hasta que se ejecuta el pipeline --- y
         # hasta aqui no estaba escrito en ningun sitio: los botones salian
         # grises y el usuario tenia que deducirlo. Es el bloqueo mas frecuente
@@ -2802,10 +2888,31 @@ class ExpedienteApp:
                   "por que (metodos distintos). No corre nada.")
         self.btn_comparar.pack(side="left", padx=8, ipadx=8, ipady=4)
 
-        # EL MOTIVO DEL BLOQUEO, A LA VISTA (EXT-8, PC-17). Los cuatro
-        # exportadores comparten motivo --- se apagan y encienden juntos ---,
-        # y un solo rotulo debajo de la fila lo dice sin pasar el raton. El
-        # texto lo escribe `BotonAccion`, el mismo que va al tooltip.
+        # LA MEMORIA RESUMIDA (UI-2, ficha T12-04): la vista para imprimir
+        # del entregable (T-12), del MISMO informe que la completa --- mismas
+        # huellas y misma hora de corrida en su encabezado de trazabilidad ---.
+        # Una segunda fila para que la primera siga cabiendo en el ancho por
+        # defecto de la ventana; el contrato es el de los demas exportadores
+        # (`BOTONES_DE_EXPORTACION`).
+        f_exp_resumida = ttk.Frame(p)
+        f_exp_resumida.pack(fill="x", pady=(8, 0))
+        self.btn_html_resumida = BotonAccion(
+            f_exp_resumida, "Memoria resumida (HTML)", fondo=comp.AZUL,
+            activebackground=comp.AZUL_OSCURO, activeforeground="white",
+            command=self.exportar_html_resumida, motivo=MOTIVO_SIN_CORRIDA,
+            ayuda=AYUDA_HTML_RESUMIDA)
+        self.btn_html_resumida.pack(side="left", padx=(0, 8), ipadx=8, ipady=4)
+
+        self.btn_pdf_resumida = BotonAccion(
+            f_exp_resumida, "Memoria resumida (PDF)", fondo=comp.AZUL_OSCURO,
+            command=self.exportar_pdf_resumida, motivo=MOTIVO_SIN_CORRIDA,
+            ayuda=self._ayuda_del_pdf(vista=expdf.VISTA_RESUMIDA))
+        self.btn_pdf_resumida.pack(side="left", padx=8, ipadx=8, ipady=4)
+
+        # EL MOTIVO DEL BLOQUEO, A LA VISTA (EXT-8, PC-17). Los exportadores
+        # comparten motivo --- se apagan y encienden juntos ---, y un solo
+        # rotulo debajo de las filas lo dice sin pasar el raton. El texto lo
+        # escribe `BotonAccion`, el mismo que va al tooltip.
         self.btn_json.con_rotulo(p, style="Ayuda.TLabel", wraplength=820,  # literal-ok: ancho de ajuste del rotulo, px
                                  justify="left").pack(anchor="w", pady=(6, 0))
 
@@ -2824,7 +2931,7 @@ class ExpedienteApp:
         self.btn_cancelar_pdf.pack(side="right", padx=(8, 0), ipadx=6)
         self.proceso_pdf = None
 
-    def _ayuda_del_pdf(self):
+    def _ayuda_del_pdf(self, vista=expdf.VISTA_COMPLETA):
         """
         Por que via saldra el PDF, DICHO ANTES DE PULSAR y no despues.
 
@@ -2845,6 +2952,21 @@ class ExpedienteApp:
         # La sonda carga weasyprint UNA vez por proceso (perezoso desde
         # EXT-8); despues, `WeasyHTML` sigue siendo el simbolo que decide.
         M11.weasyprint_disponible()
+        if vista == expdf.VISTA_RESUMIDA:
+            # La RESUMIDA (UI-2): la misma via, sin la pregunta del tamaño
+            # --- el umbral se midio sobre la completa, y la resumida no
+            # imprime el desarrollo de cada punto ---.
+            if M11.WeasyHTML is not None:
+                return ("Escribe la memoria resumida en PDF con weasyprint EN\n"
+                        "UN PROCESO APARTE, como la completa: la ventana sigue\n"
+                        "viva, el progreso se ve abajo y se puede cancelar.\n"
+                        "La hoja ya esta en A4.\n"
+                        + expdf.AVISO_EL_HIJO_RECALCULA)
+            return ("weasyprint no esta operativo en esta maquina. NO es un\n"
+                    "bloqueo: al pulsar se escribe la memoria resumida en\n"
+                    "HTML junto al destino que elijas y se abre en el\n"
+                    "navegador para guardarla como PDF con Ctrl+P (la hoja\n"
+                    "ya esta en A4).")
         limite = (f"Limite {expdf.LIMITE_MEDIDO_PDF}.\n"
                   f"Por encima de {expdf.UMBRAL_PUNTOS_PDF} puntos se ofrece la\n"
                   "via del navegador (HTML + Ctrl+P), que pagina lo mismo\n"
@@ -2853,6 +2975,7 @@ class ExpedienteApp:
             return ("Escribe el PDF con weasyprint EN UN PROCESO APARTE:\n"
                     "la ventana sigue viva, el progreso se ve abajo y se\n"
                     "puede cancelar. La hoja ya esta configurada en A4.\n"
+                    + expdf.AVISO_EL_HIJO_RECALCULA + "\n"
                     + limite)
         return ("weasyprint no esta operativo en esta maquina: o no esta\n"
                 "instalado, o esta instalado y sus librerias nativas (GTK,\n"
@@ -2967,8 +3090,9 @@ class ExpedienteApp:
         except Exception as exc:  # fallo de programa: se muestra con traza
             traceback.print_exc()
             self._apagar_exportadores(MOTIVO_CORRIDA_FALLIDA)
-            self.lbl_estado.config(
-                text=f"Sin informe vigente: {MOTIVO_CORRIDA_FALLIDA}.")
+            # La barra y las pestañas 3 y 4 --- el panel del cabezal incluido
+            # (UI-2) --- dicen por que no hay informe, con el mismo motivo.
+            self._vaciar_tablas_del_informe(MOTIVO_CORRIDA_FALLIDA)
             messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
             return
         finally:
@@ -2990,14 +3114,14 @@ class ExpedienteApp:
         # el filtro exacto este disponible en el momento en que se vuelve
         # exacto.
         self._llenar_tabla_criterios()
-        for btn in (self.btn_json, self.btn_html, self.btn_pdf, self.btn_csv,
-                    self.btn_comparar):
-            btn.habilitar()
+        self._encender_exportadores()
         # La via del PDF se relee AQUI y no solo al construir la ventana: es
         # barato y evita que la ayuda hable de una maquina distinta de la que
-        # acaba de correr.
+        # acaba de correr. Las dos memorias, la completa y la resumida (UI-2).
         self.btn_pdf.ayuda = self._ayuda_del_pdf()
         self.btn_pdf.tooltip.texto = self.btn_pdf.ayuda
+        self.btn_pdf_resumida.ayuda = self._ayuda_del_pdf(vista=expdf.VISTA_RESUMIDA)
+        self.btn_pdf_resumida.tooltip.texto = self.btn_pdf_resumida.ayuda
         r = self.informe.resumen()
         self.lbl_estado.config(
             text=f"Ejecutado ({self.informe.generado}). "
@@ -3028,9 +3152,11 @@ class ExpedienteApp:
 
     def _mostrar_error_entrada(self, mensaje):
         self.lbl_error_datos.config(text=mensaje)
-        # Los exportadores dicen que esta corrida no dejo informe (PC-15).
+        # Los exportadores dicen que esta corrida no dejo informe (PC-15), y
+        # la barra y las pestañas 3 y 4 --- el panel del cabezal incluido
+        # (UI-2) --- lo dicen con el mismo motivo.
         self._apagar_exportadores(MOTIVO_CORRIDA_FALLIDA)
-        self.lbl_estado.config(text=f"Sin informe vigente: {MOTIVO_CORRIDA_FALLIDA}.")
+        self._vaciar_tablas_del_informe(MOTIVO_CORRIDA_FALLIDA)
         self.nb.select(self.tab_datos)
         self.btn_ejecutar.habilitar()
         self.btn_ejecutar.config(text=TEXTO_BOTON_EJECUTAR)
@@ -3149,6 +3275,30 @@ class ExpedienteApp:
             self.tree_criterios.insert("", "end", values=(
                 c.clave, c.etiqueta, c.concepto, c.fuente, fases, puntos,
                 c.responsable, c.evidencia))
+        self._pintar_cabezal_del_proyecto()
+
+    def _pintar_cabezal_del_proyecto(self, motivo=None):
+        """
+        El panel «Cabezal del proyecto» (UI-2, hueco 3 de la cadena de
+        interfaz): el MISMO texto que la CLI imprime del cabezal del
+        proyecto, `cli._lineas_cabezal(informe.cabezal)`, pintado con
+        `comp.escribir_lineas_de_cli` --- ni una palabra distinta ---. Con el
+        alcance de perfil, o con la Fase 9 detenida, es lo que la CLI imprime
+        en ese caso: el titulo y el bloqueo, diferido o real.
+
+        Sin informe, o con `motivo` (un gesto que lo retiro, una corrida que
+        no lo produjo), el panel queda VACIO y el rotulo de encima dice por
+        que: el panel no puede seguir mostrando el cabezal de una corrida que
+        ya no describe la obra.
+        """
+        if motivo is not None or self.informe is None:
+            comp.escribir_lineas_de_cli(self.txt_cabezal, ())
+            self.lbl_cabezal.config(text=MOTIVO_SIN_CORRIDA_CABEZAL if motivo is None
+                                    else motivo)
+            return
+        self.lbl_cabezal.config(text="")
+        comp.escribir_lineas_de_cli(self.txt_cabezal,
+                                    cli._lineas_cabezal(self.informe.cabezal))
 
     # ------------------------------------------------------------------
     # Exportacion
@@ -3236,10 +3386,7 @@ class ExpedienteApp:
         """
         if self.informe is None:
             return
-        if self.proceso_pdf is not None and not self.proceso_pdf.estado.terminal:
-            messagebox.showinfo("PDF en marcha",
-                                "Ya hay una exportacion en marcha; espere a "
-                                "que termine o cancelela.")
+        if self._hay_un_pdf_en_marcha():
             return
         ruta = filedialog.asksaveasfilename(
             title="Exportar memoria de calculo (PDF)", defaultextension=".pdf",
@@ -3256,6 +3403,90 @@ class ExpedienteApp:
                 self._exportar_pdf_por_navegador(Path(ruta), forzar=True)
                 return
             self._lanzar_pdf(Path(ruta))
+        except (OSError, ErrorProyecto) as exc:
+            messagebox.showerror("Error al exportar", f"{exc}")
+        except Exception as exc:  # fallo de programa: se muestra con traza
+            traceback.print_exc()
+            messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
+
+    def _hay_un_pdf_en_marcha(self):
+        """
+        True, diciendolo, si el proceso hijo ya esta escribiendo un PDF. Uno
+        a la vez, sea la memoria completa o la resumida (UI-2): comparten el
+        proceso, el sondeo, «Cancelar PDF» y el rotulo de estado.
+        """
+        if self._pdf_en_marcha():
+            messagebox.showinfo("PDF en marcha",
+                                "Ya hay una exportacion en marcha; espere a "
+                                "que termine o cancelela.")
+            return True
+        return False
+
+    def exportar_html_resumida(self):
+        """
+        La memoria RESUMIDA en HTML (UI-2, ficha T12-04), en ESTE proceso
+        --- como la completa en HTML: escribirla no congela nada ---, con
+        `M11.exportar_html_resumida`, la MISMA funcion que la CLI llama para
+        `--html-resumida` (`cli` la reexporta).
+
+        Lee del informe de la corrida y de su `ContextoCorrida` (EXT-4): las
+        mismas huellas y la misma hora de corrida que la memoria completa de
+        este informe, y el nombre del proyecto fotografiado al correr. Nunca
+        el estado vivo.
+        """
+        if self.informe is None:
+            return
+        ruta = filedialog.asksaveasfilename(
+            title="Exportar memoria resumida (HTML)", defaultextension=".html",
+            filetypes=[("Archivo HTML", "*.html")],
+        )
+        if not ruta:
+            return
+        try:
+            cli.exportar_html_resumida(self.informe, Path(ruta),
+                                       proyecto=self.proyecto_de_la_corrida)
+            messagebox.showinfo("Memoria resumida exportada", f"Archivo: {ruta}")
+        except (OSError, ErrorProyecto) as exc:
+            messagebox.showerror("Error al exportar", f"{exc}")
+        except Exception as exc:  # fallo de programa: se muestra con traza
+            traceback.print_exc()
+            messagebox.showerror("Error inesperado", f"{type(exc).__name__}: {exc}")
+
+    def exportar_pdf_resumida(self):
+        """
+        La memoria RESUMIDA en PDF (UI-2, ficha T12-04), por las vias del PDF
+        completo (EXT-8, PC-11):
+
+        1. Sin weasyprint operativo, la via del navegador en este proceso
+           (`cli.exportar_pdf_resumida`, que deja el HTML para Ctrl+P).
+        2. Con weasyprint, el PROCESO HIJO de la completa
+           (`cli.py --sesion ... --pdf-resumida ...`, `_lanzar_pdf` con la
+           vista resumida): la misma sesion de la corrida --- la de UI-1, con
+           la hidrologia si la corrida la tuvo ---, el mismo sondeo, el mismo
+           «Cancelar PDF» y el mismo estado terminal.
+
+        Sin la pregunta del tamaño de la completa: el umbral de
+        `UMBRAL_PUNTOS_PDF` se midio sobre la memoria completa, y la resumida
+        no imprime el desarrollo de cada punto (ficha UI2-01).
+        """
+        if self.informe is None:
+            return
+        if self._hay_un_pdf_en_marcha():
+            return
+        ruta = filedialog.asksaveasfilename(
+            title="Exportar memoria resumida (PDF)", defaultextension=".pdf",
+            filetypes=[("Archivo PDF", "*.pdf")],
+        )
+        if not ruta:
+            return
+        try:
+            if not M11.weasyprint_disponible():
+                resultado = cli.exportar_pdf_resumida(
+                    self.informe, Path(ruta), proyecto=self.proyecto_de_la_corrida)
+                self.lbl_estado_pdf.config(text=resultado.mensaje.splitlines()[0])
+                messagebox.showinfo("Memoria resumida exportada", resultado.mensaje)
+                return
+            self._lanzar_pdf(Path(ruta), vista=expdf.VISTA_RESUMIDA)
         except (OSError, ErrorProyecto) as exc:
             messagebox.showerror("Error al exportar", f"{exc}")
         except Exception as exc:  # fallo de programa: se muestra con traza
@@ -3281,16 +3512,19 @@ class ExpedienteApp:
         self.lbl_estado_pdf.config(text=resultado.mensaje.splitlines()[0])
         messagebox.showinfo("Memoria exportada", resultado.mensaje)
 
-    def _lanzar_pdf(self, ruta):
+    def _lanzar_pdf(self, ruta, vista=expdf.VISTA_COMPLETA):
         # El proceso hijo repone la sesion de ESTA ventana: la misma que
-        # «Guardar sesion» escribe, en un archivo de trabajo aparte.
+        # «Guardar sesion» escribe, en un archivo de trabajo aparte. La
+        # `vista` (UI-2) elige la memoria: la completa, con la plantilla del
+        # alcance de la corrida, o la resumida, que no la lleva.
         trabajo = Path(tempfile.mkdtemp(prefix="alcantarillas_pdf_"))
         sesion = expdf.sesion_de_la_corrida(
             self.informe, proyecto=self.proyecto_de_la_corrida,
             formato_version=FORMATO_SESION, app_version=APP_VERSION,
             id_sesion=self.sesion_id, **self.entradas_de_la_corrida)
+        plantilla = self._plantilla() if vista == expdf.VISTA_COMPLETA else None
         proceso = expdf.ProcesoPdf(sesion=sesion, destino=ruta,
-                                   plantilla=self._plantilla(),
+                                   plantilla=plantilla, vista=vista,
                                    directorio_trabajo=trabajo)
         proceso.iniciar()
         if proceso.estado.terminal:
@@ -3298,10 +3532,18 @@ class ExpedienteApp:
             proceso.limpiar()
             raise OSError(proceso.detalle)
         self.proceso_pdf = proceso
-        self.btn_pdf.deshabilitar(MOTIVO_EXPORTANDO_PDF)
+        # Un PDF a la vez: los dos botones que lo escriben se apagan.
+        for btn in self._botones_pdf():
+            btn.deshabilitar(MOTIVO_EXPORTANDO_PDF)
         self.btn_cancelar_pdf.habilitar()
-        self.lbl_estado_pdf.config(text=f"PDF en marcha: {self.proceso_pdf.progreso}")
+        self.lbl_estado_pdf.config(text=self._rotulo_pdf_en_marcha(proceso))
         self.root.after(CADENCIA_SONDEO_PDF_MS, self._sondear_pdf)
+
+    @staticmethod
+    def _rotulo_pdf_en_marcha(proceso):
+        """«PDF en marcha: …» o «PDF resumido en marcha: …», con su progreso."""
+        return (f"{expdf.ROTULO_DE_LA_VISTA[proceso.vista]} en marcha: "
+                f"{proceso.progreso}")
 
     def _sondear_pdf(self):
         """Un latido del `after`: lee el progreso del hijo y se reprograma."""
@@ -3310,7 +3552,7 @@ class ExpedienteApp:
             return
         estado = proceso.sondear()
         if not estado.terminal:
-            self.lbl_estado_pdf.config(text=f"PDF en marcha: {proceso.progreso}")
+            self.lbl_estado_pdf.config(text=self._rotulo_pdf_en_marcha(proceso))
             self.root.after(CADENCIA_SONDEO_PDF_MS, self._sondear_pdf)
             return
         self._terminar_pdf(proceso)
@@ -3319,7 +3561,8 @@ class ExpedienteApp:
         """El estado terminal, claro y visible: escrito, cancelado o fallido."""
         self.btn_cancelar_pdf.deshabilitar("no hay ninguna exportacion en marcha")
         if self.informe is not None:
-            self.btn_pdf.habilitar()
+            for btn in self._botones_pdf():
+                btn.habilitar()
         self.lbl_estado_pdf.config(text=f"{proceso.estado.value.capitalize()}: {proceso.detalle}")
         proceso.limpiar()
         if proceso.estado is expdf.EstadoPdf.TERMINADO:

@@ -5461,16 +5461,23 @@ def exportar_html_resumida(informe: Any, destino: Path, **kwargs: Any) -> Path:
 def exportar_pdf_resumida(informe: Any, destino: Path, *,
                           abrir_navegador: bool = True,
                           forzar_navegador: bool = False,
+                          progreso: Optional[Callable[[str, int, int], None]] = None,
                           **kwargs: Any) -> ResultadoExportacion:
     """
     --- T-12 --- La memoria RESUMIDA en PDF, por las dos vias de
     `exportar_pdf` (weasyprint, o el HTML para imprimir desde el navegador).
+
+    --- UI-2 --- `progreso(etapa, hecho, total)` recibe el avance del PDF
+    (`ETAPA_PDF`) o del HTML para el navegador (`ETAPA_NAVEGADOR`), como en
+    la completa: es lo que la CLI imprime con `--progreso` y la ventana lee
+    del proceso hijo (EXT-8). La resumida se arma de una vez y no informa
+    punto a punto. Plomeria: no cambia el contenido de la memoria.
     """
     destino = Path(destino)
     destino.parent.mkdir(parents=True, exist_ok=True)
     contenido = memoria_resumida_html(informe, **kwargs)
     return _escribir_pdf(contenido, destino, abrir_navegador=abrir_navegador,
-                         forzar_navegador=forzar_navegador, progreso=None,
+                         forzar_navegador=forzar_navegador, progreso=progreso,
                          rotulo="Memoria resumida")
 
 

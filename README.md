@@ -133,7 +133,10 @@ python -m gui.app          # la ventana
 
 Desde la ventana, el PDF de la memoria se escribe en un proceso aparte (la ventana sigue
 viva, muestra el progreso y se puede cancelar); por encima de 40 puntos ofrece la vía del
-navegador.
+navegador. La pestaña 4 exporta también la **memoria resumida** («Memoria resumida (HTML)»
+y «Memoria resumida (PDF)», esta última por el mismo proceso aparte) y muestra el
+**cabezal del proyecto** (suma de los cabezales, cadena sísmica, recubrimientos, cuantías,
+notas y lo que detuvo la Fase 9) con el mismo texto que imprime la CLI.
 
 Código de salida de la CLI: `0` si el expediente cierra, `1` si corre y no cierra (hay
 etapas bloqueadas, puntos sin dimensionar o verificaciones incumplidas), `2` si no se
@@ -152,9 +155,14 @@ puede correr (una entrada que no se puede leer).
 mismo encabezado de trazabilidad (huellas del CSV, de los criterios y de la hoja de ruta, y
 hora de la corrida) y la resumida no publica ningún número que la completa no tenga. Se
 escriben en la misma invocación (`--html completa.html --html-resumida resumida.html`) y la
-resumida nombra a su completa. Desde la ventana se exporta la completa; la resumida se
-obtiene con la CLI a partir de la sesión guardada (`python cli.py --sesion sesion.json
---html completa.html --html-resumida resumida.html`).
+resumida nombra a su completa. Desde la ventana (pestaña 4) se exportan las dos:
+«Exportar memoria (HTML/PDF)» y «Memoria resumida (HTML/PDF)». Las dos en HTML salen del
+informe de la última corrida y llevan el mismo encabezado; las dos en PDF las escribe el
+proceso aparte, que **vuelve a correr la obra** con la sesión de esa corrida, de modo que su
+encabezado lleva la hora de esa nueva corrida (y las huellas de los archivos tal como estén
+al exportar). Con la CLI, también a partir de la sesión guardada (`python cli.py --sesion
+sesion.json --html completa.html --html-resumida resumida.html`), que es la única vía en que
+la resumida nombra el archivo de su completa.
 
 ## 6. Alcance: lo que el programa NO hace
 
@@ -239,8 +247,6 @@ Aprobado por el autor y **no lanzado** todavía:
   como dato inválido el diámetro de arranque negativo de la rama de error.
 - **Abrir la forma de `n_manning_cajon`** al par del HDS-5 núm. B.3 (marco vaciado in situ),
   hoy no declarable (ficha T11-10).
-- El **botón «memoria resumida»** en la ventana (ficha T12-04); hoy la resumida sale de la
-  sesión guardada con `python cli.py --sesion sesion.json --html-resumida resumida.html`.
 
 **Pendiente del autor** (no lo resuelve el programa):
 

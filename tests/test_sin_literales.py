@@ -930,7 +930,7 @@ CENSO_DE_MARCAS = {
     # EXT-8 (PC-11): el umbral de puntos a partir del que se ofrece la via
     # del navegador --- una MEDIDA del dictamen, no un valor de proyecto ---
     # y las lineas de la cola del diagnostico del hijo.
-    "gui/exportacion_pdf.py": 2,
+    "gui/exportacion_pdf.py": 3,
     # `gui/ventana_normativa.py` llevaba 3: los tres cuerpos de letra de la
     # ventana, nombrados porque un tamano dentro de un condicional no es
     # argumento DIRECTO de un widget. El bloque 1 del rediseño visual los

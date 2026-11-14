@@ -17,8 +17,29 @@ dos cosas: el estado no se comparte y la RAM vuelve al sistema al terminar.
 
 El proceso hijo es la propia CLI:
 
-    python cli.py --sesion <sesion.json> --pdf <destino> --json <aparte>
-                  --plantilla <la del alcance> --progreso
+    python cli.py --sesion <sesion.json> --pdf <pdf de trabajo>
+                  --json <aparte> --plantilla <la del alcance> --progreso
+
+y desde UI-2 (ficha T12-04) escribe tambien la memoria RESUMIDA, la vista
+para imprimir, con la MISMA linea salvo la bandera de la vista:
+
+    python cli.py --sesion <sesion.json> --pdf-resumida <pdf de trabajo>
+                  --json <aparte> --progreso
+
+La resumida no lleva `--plantilla`: la suya es fija
+(`M11.NOMBRE_PLANTILLA_RESUMIDA`) y la CLI solo usa `--plantilla` para la
+completa. Las dos salen de `comando_exportar_pdf`, con la vista como
+parametro: una sola funcion arma el contrato con `cli.main`.
+
+El hijo NO escribe en el destino que eligio el usuario (revision de UI-2,
+ficha UI2-03): escribe en su directorio de trabajo, y el PDF se ENTREGA al
+destino solo si el hijo salio con un codigo que escribe la memoria
+(`CODIGOS_DE_SALIDA_CON_MEMORIA`) y dejo un PDF suyo y ENTERO, con su
+trailer (`_pdf_de_trabajo_entero`). Hasta UI-2 escribia en
+el destino y el exito se leia de «el destino existe y no esta vacio»: un
+hijo que fallaba sobre un destino con un PDF anterior se daba por terminado
+con el archivo VIEJO, y cancelar borraba un PDF bueno que ya estuviera ahi.
+Fallar o cancelar no tocan el destino.
 
 La sesion serializada es la MISMA que «Guardar sesion» escribe (formato de
 `src/sesion.py`): proyecto, CSV, datos externos, las dos entradas de la
@@ -48,6 +69,7 @@ Windows y en POSIX).
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -78,6 +100,45 @@ LIMITE_MEDIDO_PDF = ("medido: 11 s y 287 MB para 4 puntos, 69 s y 1.3 GB para 40
 PROGRESO_INICIAL = "lanzando el proceso de exportacion"
 
 
+# QUE CODIGOS DE SALIDA DEL HIJO DEJAN MEMORIA (revision de UI-2, ficha
+# UI2-03). Es el contrato de `cli.main` (README, §4): 0 si el expediente
+# cierra y 1 si corre y NO cierra --- en los dos escribe la memoria ---, 2 si
+# no se pudo correr. Exigir 0 daria por fallido el PDF de todo expediente que
+# todavia no cierra, que es el caso corriente mientras se diseña. Un 1 de
+# Python (una excepcion sin atrapar) no se confunde con el de «no cierra»
+# porque el exito exige ADEMAS un PDF de trabajo de este hijo y ENTERO
+# (`_pdf_de_trabajo_entero`): weasyprint escribe por partes, cabecera primero
+# y `%%EOF` al final, y un fallo a mitad (disco lleno, cuota, E/S) dejaba un
+# archivo que empieza por `%PDF`, sale con 1 y se entregaba truncado
+# (verificacion de la revision de UI-2).
+CODIGOS_DE_SALIDA_CON_MEMORIA = (0, 1)
+
+# Donde tiene que estar el marcador de fin de archivo de un PDF entero: en
+# sus ultimos 1024 bytes, que es lo que la referencia de PDF admite (y lo que
+# los lectores buscan). Es un limite del FORMATO, no un valor del expediente.
+COLA_DEL_PDF_BYTES = 1024   # literal-ok: ventana del trailer %%EOF de la referencia de PDF, bytes
+
+# LO QUE EL PDF DEL HIJO ES, dicho antes de pulsar (revision de UI-2). El
+# hijo VUELVE A CORRER la obra con la sesion de la corrida (ficha EXT-8-02):
+# su encabezado de trazabilidad lleva la hora de ESA corrida, no la de la
+# ventana, y las huellas de los archivos tal como esten al exportar. Un solo
+# texto para las ayudas de los dos botones de PDF.
+AVISO_EL_HIJO_RECALCULA = (
+    "El proceso aparte VUELVE A CORRER la obra con la sesion de esta\n"
+    "corrida: el encabezado de trazabilidad del PDF lleva la hora de\n"
+    "ESA corrida, no la de la ventana, y las huellas de los archivos\n"
+    "tal como esten en disco al exportar.")
+
+# LAS DOS VISTAS DE LA MEMORIA QUE EL HIJO SABE ESCRIBIR (T-12, UI-2): la
+# completa (el anexo digital) y la resumida (la que se imprime), las dos del
+# MISMO informe. Cada una con la bandera de `cli.py` que la pide y con el
+# rotulo con que la ventana la nombra mientras se escribe y al terminar.
+VISTA_COMPLETA = "completa"
+VISTA_RESUMIDA = "resumida"
+BANDERA_DE_LA_VISTA = {VISTA_COMPLETA: "--pdf", VISTA_RESUMIDA: "--pdf-resumida"}
+ROTULO_DE_LA_VISTA = {VISTA_COMPLETA: "PDF", VISTA_RESUMIDA: "PDF resumido"}
+
+
 class EstadoPdf(str, Enum):
     """El estado del proceso hijo. Tres terminales y dos no."""
     SIN_INICIAR = "sin iniciar"
@@ -93,11 +154,29 @@ class EstadoPdf(str, Enum):
 
 
 def comando_exportar_pdf(*, interprete: str, cli: Path, sesion: Path,
-                         destino: Path, plantilla: Path, json_aparte: Path) -> List[str]:
-    """La linea de comandos del hijo. Es el contrato con `cli.main`."""
-    return [str(interprete), str(cli), "--sesion", str(sesion),
-            "--pdf", str(destino), "--json", str(json_aparte),
-            "--plantilla", str(plantilla), "--progreso"]
+                         destino: Path, json_aparte: Path,
+                         plantilla: Optional[Path] = None,
+                         vista: str = VISTA_COMPLETA) -> List[str]:
+    """
+    La linea de comandos del hijo. Es el contrato con `cli.main`.
+
+    `vista` elige la bandera (`BANDERA_DE_LA_VISTA`); el resto de la linea
+    es el mismo para las dos. La completa exige su plantilla --- la del
+    alcance de la corrida, la que la ventana elige con
+    `cli.plantilla_por_alcance` ---; la resumida no la lleva, porque la CLI
+    solo la aplica a `--html` y `--pdf`.
+    """
+    if vista not in BANDERA_DE_LA_VISTA:
+        raise ValueError(f"vista de la memoria desconocida: {vista!r}; las que "
+                         f"el hijo escribe son {sorted(BANDERA_DE_LA_VISTA)}")
+    if vista == VISTA_COMPLETA and plantilla is None:
+        raise ValueError("la memoria completa necesita su plantilla (la del "
+                         "alcance de la corrida)")
+    comando = [str(interprete), str(cli), "--sesion", str(sesion),
+               BANDERA_DE_LA_VISTA[vista], str(destino), "--json", str(json_aparte)]
+    if vista == VISTA_COMPLETA:
+        comando += ["--plantilla", str(plantilla)]
+    return comando + ["--progreso"]
 
 
 def sesion_de_la_corrida(informe: Any, *, proyecto: str, csv: str,
@@ -180,20 +259,29 @@ class ProcesoPdf:
     `detalle` con el mensaje terminal. `cancelar()` termina el hijo; el
     estado pasa a CANCELADO en el siguiente `sondear()`. `progreso` es la
     ultima linea de avance que llego; `progreso_visto`, todas.
+
+    `vista` (UI-2) dice cual de las dos memorias escribe el hijo: la completa,
+    con su `plantilla`, o la resumida, que no la lleva. El ciclo, el
+    progreso, la cancelacion y el estado terminal son los mismos.
     """
 
-    def __init__(self, *, sesion: Dict[str, Any], destino: Path, plantilla: Path,
-                 directorio_trabajo: Path, interprete: Optional[str] = None,
+    def __init__(self, *, sesion: Dict[str, Any], destino: Path,
+                 directorio_trabajo: Path, plantilla: Optional[Path] = None,
+                 vista: str = VISTA_COMPLETA, interprete: Optional[str] = None,
                  raiz: Optional[Path] = None):
         self.sesion = sesion
         self.destino = Path(destino)
-        self.plantilla = Path(plantilla)
+        self.plantilla = None if plantilla is None else Path(plantilla)
+        self.vista = vista
         self.directorio_trabajo = Path(directorio_trabajo)
         self.interprete = interprete or sys.executable
         self.raiz = Path(raiz) if raiz is not None else Path(__file__).resolve().parents[1]
         self.ruta_sesion = self.directorio_trabajo / "sesion_para_pdf.json"
         self.ruta_json = self.directorio_trabajo / "informe_para_pdf.json"
         self.ruta_salida = self.directorio_trabajo / "salida_del_hijo.txt"
+        # Donde escribe el hijo: en el directorio de trabajo, nunca en el
+        # destino del usuario (ficha UI2-03). Se entrega al terminar bien.
+        self.ruta_pdf_de_trabajo = self.directorio_trabajo / "memoria_del_hijo.pdf"
         self.comando: List[str] = []
         self.estado = EstadoPdf.SIN_INICIAR
         self.detalle = ""
@@ -209,12 +297,17 @@ class ProcesoPdf:
         """Escribe la sesion de trabajo y lanza el hijo. No espera."""
         from cli import PREFIJO_PROGRESO  # noqa: F401  (el contrato existe)
         self.directorio_trabajo.mkdir(parents=True, exist_ok=True)
+        # Lo que un hijo ANTERIOR hubiera dejado en este directorio no es de
+        # este: si este falla sin escribir, no se entrega lo de aquel.
+        for anterior in (self.ruta_pdf_de_trabajo, self.ruta_json):
+            anterior.unlink(missing_ok=True)
         # Escritura atomica (E04): el hijo nunca lee una sesion a medias.
         _sesion.escribir_json_atomico(self.ruta_sesion, self.sesion)
         self.comando = comando_exportar_pdf(
             interprete=self.interprete, cli=self.raiz / "cli.py",
-            sesion=self.ruta_sesion, destino=self.destino,
-            plantilla=self.plantilla, json_aparte=self.ruta_json)
+            sesion=self.ruta_sesion, destino=self.ruta_pdf_de_trabajo,
+            plantilla=self.plantilla, json_aparte=self.ruta_json,
+            vista=self.vista)
         self._salida = self.ruta_salida.open("w+b")
         try:
             self._proceso = subprocess.Popen(
@@ -259,19 +352,29 @@ class ProcesoPdf:
         self._salida.flush()
         self._leer_salida()
         self._salida.close()
+        rotulo = ROTULO_DE_LA_VISTA[self.vista]
         if self._cancelado:
+            # Lo que el hijo dejara a medias esta en el directorio de
+            # trabajo, que `limpiar()` retira: el destino no se toca.
             self.estado = EstadoPdf.CANCELADO
             self.detalle = ("Exportacion cancelada: el proceso se termino y no "
-                            "se escribio el PDF.")
-            self._retirar_pdf_a_medias()
-        elif self.destino.is_file() and self.destino.stat().st_size > 0:
-            self.estado = EstadoPdf.TERMINADO
-            self.detalle = f"PDF escrito: {self.destino}"
+                            f"se escribio el {rotulo}; {self.destino} no se toco.")
+        elif codigo in CODIGOS_DE_SALIDA_CON_MEMORIA and self._pdf_de_trabajo_entero():
+            try:
+                self._entregar()
+            except OSError as exc:
+                self.estado = EstadoPdf.FALLIDO
+                self.detalle = (f"El proceso escribio el {rotulo} pero no se pudo "
+                                f"copiar a {self.destino}: {exc}")
+            else:
+                self.estado = EstadoPdf.TERMINADO
+                self.detalle = f"{rotulo} escrito: {self.destino}"
         else:
             self.estado = EstadoPdf.FALLIDO
             cola = self._cola_de_salida()
             self.detalle = (f"La exportacion fallo (codigo {codigo}) y no dejo "
-                            f"PDF. Lo que dijo el proceso:\n{cola}")
+                            f"PDF; {self.destino} no se toco. Lo que dijo el "
+                            f"proceso:\n{cola}")
         return self.estado
 
     # ------------------------------------------------------------------
@@ -302,12 +405,35 @@ class ProcesoPdf:
             return "(sin salida)"
         return "\n".join(texto.rstrip().splitlines()[-lineas:]) or "(sin salida)"
 
-    def _retirar_pdf_a_medias(self) -> None:
-        # weasyprint escribe el archivo al final, de una vez; si el `terminate`
-        # llego durante la escritura puede quedar un PDF truncado, que es
-        # peor que ninguno.
+    def _pdf_de_trabajo_entero(self) -> bool:
+        """
+        El hijo dejo SU PDF y ENTERO: el de trabajo (que `iniciar` vacio)
+        empieza por `%PDF` y termina con el trailer `%%EOF` en sus ultimos
+        `COLA_DEL_PDF_BYTES`. Un PDF cortado a mitad de la escritura empieza
+        bien y no termina: no se entrega.
+        """
         try:
-            if self.destino.exists():
-                self.destino.unlink()
+            with self.ruta_pdf_de_trabajo.open("rb") as f:
+                if f.read(len(b"%PDF")) != b"%PDF":
+                    return False
+                f.seek(0, os.SEEK_END)
+                f.seek(max(0, f.tell() - COLA_DEL_PDF_BYTES))
+                return b"%%EOF" in f.read()
         except OSError:
-            pass
+            return False
+
+    def _entregar(self) -> None:
+        """
+        Copia el PDF de trabajo al destino, de forma atomica: primero a un
+        `.parcial` junto al destino (el directorio de trabajo puede estar en
+        otro sistema de archivos, y `os.replace` no cruza de uno a otro) y
+        despues `os.replace`. Un fallo a mitad deja el destino como estaba.
+        """
+        self.destino.parent.mkdir(parents=True, exist_ok=True)
+        parcial = self.destino.with_name(self.destino.name + ".parcial")
+        try:
+            shutil.copyfile(self.ruta_pdf_de_trabajo, parcial)
+            os.replace(parcial, self.destino)
+        finally:
+            if parcial.exists():
+                parcial.unlink()

@@ -7028,7 +7028,7 @@ T11-09 a la memoria.
 - **Qué haría falta:** nada.
 - **Dónde vive:** `tests/apoyo/rotulo_fixture.py::rotular`
 
-## T12-04 · La memoria en dos vistas de la misma corrida; la ventana exporta sólo la completa
+## T12-04 · La memoria en dos vistas de la misma corrida; la ventana exporta las dos desde UI-2
 
 - **Cerrado (T-12, decisión del dueño del 2026-11-13):** `M11.memoria_resumida_html` (con
   `exportar_html_resumida`, `exportar_pdf_resumida` y la plantilla
@@ -7043,14 +7043,23 @@ T11-09 a la memoria.
   completa no tenga (en total y por punto, sobre las tres corridas de referencia, el juego
   de T-11 y la línea base) y que las dos llevan el mismo encabezado de trazabilidad. La
   completa no cambia de contenido por esto.
-- **Abierto:** la ventana no tiene botón para la resumida: añadir un quinto exportador
-  toca los contratos de los cuatro que hay (motivo compartido, apagado al invalidar el
-  informe, pruebas de ventana real que este contenedor no puede correr), y no es plomería
-  directa. Mientras tanto, la resumida sale de la sesión guardada desde la ventana con
-  `python cli.py --sesion sesion.json --html-resumida resumida.html`.
-- **Qué haría falta:** el botón «Exportar memoria resumida» en la pestaña 4, con sus
-  pruebas de ventana real. **Decidido por el dueño (2026-11-13): al lote posterior a la
-  cadena.**
+- **Cerrado en la ventana (UI-2 de la cadena de interfaz, 2026-11-14):** la pestaña 4 tiene
+  «Memoria resumida (HTML)» y «Memoria resumida (PDF)» en el grupo de exportación
+  (`gui/app.py::BOTONES_DE_EXPORTACION`), con el contrato de los demás: nacen apagados con
+  el motivo compartido sin corrida, se apagan con el motivo de cada gesto que retira el
+  informe y se encienden al correr; leen de `Informe.contexto` (EXT-4). El HTML se escribe
+  en el proceso de la ventana con `M11.exportar_html_resumida` (la que `cli` reexporta) y
+  el PDF sale por el proceso hijo de EXT-8 (`cli.py --sesion … --pdf-resumida …`, armado por
+  `gui/exportacion_pdf.py::comando_exportar_pdf` con la vista como parámetro) con la sesión
+  de la corrida de UI-1, «Cancelar PDF», el rótulo con su progreso y el manejo de errores
+  del completo. `tests/test_ui2_pestana4.py` lo mide con dobles y con la ventana de verdad
+  (las dos memorias en HTML llevan el mismo encabezado; el JSON del hijo es el de la
+  ventana salvo la hora, porque el hijo recalcula). Las correcciones de su revisión, en la
+  ficha UI2-03.
+- **Abierto:** lo que UI-2 dejó escrito en la ficha UI2-01: la remisión de la resumida a
+  su completa habla de banderas de la CLI y promete un encabezado común que entre la
+  completa de la ventana y la resumida del hijo no se cumple.
+- **Qué haría falta:** lo de la ficha UI2-01.
 - **Dónde vive:** `src/modulos/M11_reporte.py::memoria_resumida_html`
 
 ## T12-05 · Licencia «todos los derechos reservados», `pyproject.toml` sin empaquetado y el README de usuario
@@ -7168,3 +7177,86 @@ mueve, porque sin hidrología la memoria y el JSON no ganan ni un byte.
   que `declarar` declare cada una con su `tabla_id`. Es semántica de declaración, fuera
   del alcance de UI-1.
 - **Dónde vive:** `src/editores.py::_opciones_de_tabla`
+
+
+# Parte LVII — Lo que UI-2 de la cadena de interfaz dejó escrito: la pestaña 4 con la memoria resumida y el cabezal del proyecto
+
+UI-2 (2026-11-14, sobre `4066a24`) lleva a la pestaña 4 la memoria resumida de T-12 (ficha
+T12-04) y el bloque del cabezal del proyecto que la CLI imprime y la ventana no pintaba
+(hueco 3 del §0 de `proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md`). No cambia ningún
+cálculo, ni la plantilla ni el texto de la memoria: en `src/` sólo entra la plomería del
+progreso de la resumida (ficha UI2-03), y la línea base no se mueve.
+
+## UI2-01 · La memoria resumida en la ventana: cinco decisiones de UI-2
+
+- **Cerrado (UI-2):** (1) El grupo de exportación es UNA tupla (`BOTONES_DE_EXPORTACION`):
+  la leen `_apagar_exportadores` y el encendido de `ejecutar_pipeline`, que la escribían a
+  mano, y los demás sitios que el grep encontró —los dobles de `test_ext4_contexto_corrida`
+  y `test_ui1_hidrologia_ventana`, los métodos de SIS-E-03 en `test_gui_contrato` y los
+  conductores `gui_contexto_real`, `gui_ext10_real` y `gui_ui1_hidrologia_real`, que así
+  miden también «Comparar»—. (2) Los dos botones van en una SEGUNDA fila del panel
+  «Exportacion» (abierto (c)). (3) El PDF resumido no pregunta por el tamaño:
+  `UMBRAL_PUNTOS_PDF` se midió sobre la completa (en `expediente_cabezal`, 4 puntos: 5.1 s y
+  163 KB la resumida, 45.1 s y 1783 KB la completa). (4) Un PDF a la vez: las dos vistas
+  comparten el hijo, «Cancelar PDF» y el rótulo (`BOTONES_PDF`), que nombra la vista
+  (`exportacion_pdf.ROTULO_DE_LA_VISTA`). (5) La ventana escribe la resumida sin
+  `nombre_completa`: no escribe las dos en una invocación.
+- **Abierto:** (a) cerrado en la revisión (UI2-03). (b) La remisión a la completa
+  (`M11._remision_a_la_completa`) habla de `--html`/`--pdf` «en la MISMA invocación» y dice
+  que el encabezado de trazabilidad «es el mismo en las dos»: entre la completa de la
+  ventana y la resumida en PDF del hijo NO lo es (el hijo recalcula: otra hora, y las
+  huellas de los archivos al exportar, EXT-8-02). Es texto de la memoria y la línea base lo
+  fija. (c) A 1100 px la primera fila no cabe: «Exportar cuadro resumen (CSV)» se corta y
+  «Comparar con otro JSON...» queda fuera de la vista; es de antes de UI-2.
+- **Qué haría falta:** (b) una remisión que no nombre la puerta ni prometa el encabezado
+  entre vistas de dos corridas, o que el hijo no recalcule (EXT-8-02): decisión del dueño,
+  porque mueve la línea base de la resumida; (c) repartir la primera fila (p. ej.
+  «Comparar» a la segunda) en UI-4.
+- **Dónde vive:** `gui/app.py::BOTONES_DE_EXPORTACION`
+
+## UI2-02 · El cabezal del proyecto en la pestaña 4, con el texto de la CLI
+
+- **Cerrado (UI-2, hueco 3 de la cadena de interfaz):** el panel «Cabezal del proyecto»
+  pinta `cli._lineas_cabezal(informe.cabezal)` con `comp.escribir_lineas_de_cli`: la suma de
+  los cabezales por punto, la cadena sísmica con la condición de cada eslabón, los
+  recubrimientos, las cuantías, las notas y los bloqueos de la Fase 9 del proyecto. A
+  perfil, o con la Fase 9 detenida, es lo que la CLI imprime (el título y el bloqueo,
+  diferido o real). Sin corrida queda vacío con `MOTIVO_SIN_CORRIDA_CABEZAL`; con un gesto
+  que retira el informe, vacío con «Sin informe vigente: <motivo>», lo mismo que la barra.
+  Se llena con `_llenar_resumen` y se vacía con `_vaciar_tablas_del_informe`, que desde
+  UI-2 llaman también los dos brazos de fallo de `ejecutar_pipeline` (escribían la barra a
+  mano): así el panel no se queda diciendo «la corrida esta en marcha» tras una corrida
+  que no produjo informe.
+- **Por qué así:** la ventana sólo pinta (§1.2 de la cadena). El motivo va en un rótulo
+  aparte y no dentro del texto, para que el panel sea, palabra por palabra, el bloque de la
+  CLI: `tests/test_ui2_pestana4.py` lo compara con el que `cli.py` imprime para las mismas
+  entradas de la corrida de referencia `expediente_cabezal`, con la ventana de verdad.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `gui/app.py::_pintar_cabezal_del_proyecto`
+
+## UI2-03 · Las correcciones de la revisión independiente de UI-2: el hijo del PDF y lo que la ventana promete de él
+
+- **Cerrado (revisión de UI-2 sobre `6392c34`, cinco hallazgos confirmados):** (1) La ayuda
+  del PDF resumido prometía «el mismo encabezado de trazabilidad» que la completa, y el hijo
+  vuelve a correr la obra; las dos ayudas de PDF lo dicen con un texto
+  (`gui/exportacion_pdf.py::AVISO_EL_HIJO_RECALCULA`) y la del HTML resumido sólo promete el
+  encabezado entre los dos HTML (`gui/app.py::AYUDA_HTML_RESUMIDA`). (2) El éxito del hijo
+  era «el destino existe y no está vacío»: un hijo con código 2 daba por bueno un PDF
+  anterior, y cancelar lo borraba. El hijo escribe ahora en su directorio de trabajo (que
+  `iniciar` vacía de lo de un hijo anterior) y el PDF se entrega al destino (`.parcial` y
+  `os.replace`) sólo con un código de `CODIGOS_DE_SALIDA_CON_MEMORIA` y un PDF suyo ENTERO
+  (`%PDF` y el trailer `%%EOF` en sus últimos `COLA_DEL_PDF_BYTES`: weasyprint escribe por
+  partes, y un fallo a mitad salía con 1 y un PDF cortado, reproducido con `ulimit -f`);
+  fallar o cancelar no tocan el destino. Vale para los dos PDF. (3) Correr con un PDF en marcha encendía los dos botones de PDF
+  (`_encender_exportadores`). (4) Un test lleva la resumida de la ventana sobre
+  `hidrologia_calculada` y mira la sesión del hijo. (5) `M11.exportar_pdf_resumida` recibe
+  `progreso`, que `cli.main` pasa con `--pdf-resumida` (plomería autorizada por la
+  orquestadora). Cada corrección mata su mutante en `tests/test_ui2_pestana4.py`.
+- **Por qué (0, 1) y no sólo 0:** `cli.main` sale con 1 cuando corre y el expediente NO
+  cierra, y escribe la memoria igual; exigir 0 daba por fallido el PDF de todo expediente
+  que aún no cierra (las dos corridas de referencia lo son). Un 1 de Python (excepción sin
+  atrapar) no se confunde porque el éxito exige además el PDF de trabajo.
+- **Qué haría falta:** nada en la ventana. Que la CLI escriba el PDF de forma atómica
+  (`M11._escribir_pdf`) es decisión del dueño. Si el hijo cae a la vía del navegador, el
+  HTML se retira con el directorio de trabajo y la exportación sale FALLIDA, sin archivo.
+- **Dónde vive:** `gui/exportacion_pdf.py::CODIGOS_DE_SALIDA_CON_MEMORIA`

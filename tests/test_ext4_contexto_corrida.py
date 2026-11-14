@@ -347,9 +347,10 @@ class _BotonQueRecuerda:
 
 
 def _ventana_con_dobles(app):
-    """Una instancia sin widgets: los cuatro exportadores y nada mas."""
+    """Una instancia sin widgets: el grupo de exportadores y nada mas."""
     ventana = object.__new__(app.ExpedienteApp)
-    for nombre in ("btn_json", "btn_html", "btn_pdf", "btn_csv", "btn_comparar"):
+    # El grupo, de la tupla de la ventana (UI-2): siete desde la resumida.
+    for nombre in app.BOTONES_DE_EXPORTACION:
         setattr(ventana, nombre, _BotonQueRecuerda())
     # Las tablas de las pestañas 3 y 4 son pantalla: aqui no hay. Lo que se
     # prueba es la decision (informe fuera, botones apagados con motivo).
@@ -384,7 +385,10 @@ def test_e_invalidar_el_informe_apaga_los_cuatro_exportadores_con_motivo(app):
     ventana._invalidar_informe(app.MOTIVO_INFORME_DESACTUALIZADO)
     assert ventana.informe is None
     # Cinco desde E-B: el comparador de la pestaña 4 tambien lee la corrida.
-    for nombre in ("btn_json", "btn_html", "btn_pdf", "btn_csv", "btn_comparar"):
+    # Siete desde UI-2: la memoria resumida en HTML y en PDF.
+    assert {"btn_html_resumida", "btn_pdf_resumida", "btn_comparar"} <= set(
+        app.BOTONES_DE_EXPORTACION)
+    for nombre in app.BOTONES_DE_EXPORTACION:
         boton = getattr(ventana, nombre)
         assert not boton.encendido, nombre
         assert boton.motivo == app.MOTIVO_INFORME_DESACTUALIZADO

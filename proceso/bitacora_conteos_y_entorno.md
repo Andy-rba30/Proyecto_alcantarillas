@@ -47,7 +47,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6469** en
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6524** en
 la suite del ENTREGABLE (desde T-12 hay dos suites: la de proceso, aparte,
 recoge **145**, y su invariante es el mismo); lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
@@ -2279,7 +2279,7 @@ PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 T-7a: 5709; T-7b: 6002; T-7c: 6276; verificación de fórmulas de T-7: 6310;
 T-10: 6360; T-11: 6469; T-12: 6425 en la suite del entregable, que entregó
 138 a la de proceso (145); UI-1 de la cadena de interfaz: 6469 (medido con
-ventana Tk, ver su sección al final). La
+ventana Tk, ver su sección al final); UI-2: 6524 (ídem). La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2415,3 +2415,37 @@ UI1-02), y uno menos en el de `PUBLICAS_SIN_REFERENCIA_EN_TESTS` (`M0_carga.leer
 que la suite ya nombra). Con Tk corren 14 tests de ventana real, ninguno saltado. Los
 números son los del commit que sale de la revisión independiente de UI-1 (seis tests
 más que el primer intento, que medía 6463).
+
+## UI-2 de la cadena de interfaz (2026-11-14): el par con ventana Tk, MEDIDO
+
+UI-2 (la pestaña 4 con la memoria resumida y el panel «Cabezal del proyecto», ficha T12-04
+y hueco 3 de la cadena) se midió sobre su árbol en la rama de su worktree, con el mismo
+entorno que UI-1 (`python` 3.12 con `tkinter`, `ttkbootstrap` y `weasyprint`,
+`xvfb-run -a`, PyMuPDF y `NORMAS_DIR` enlazado). La partida es `4066a24` (main con UI-1),
+medida de nuevo al empezar: 6459 passed, 10 skipped, 6469, igual que la fila de UI-1.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, partida (`4066a24`) | sí | sí | 6459 | 10 | 6469 |
+| entregable, UI-2 primer intento (`6392c34`), checkout de git | sí | sí | 6492 | 10 | 6502 |
+| entregable, UI-2 primer intento, exportación | sí | sí | 6488 | 14 | 6502 |
+| entregable, UI-2 con las correcciones de su revisión (`3ba3266`), checkout de git | sí | sí | 6508 | 10 | 6518 |
+| entregable, UI-2 con las correcciones (`3ba3266`), exportación | sí | sí | 6504 | 14 | 6518 |
+| entregable, UI-2 con la verificación de `3ba3266`, checkout de git | sí | sí | 6514 | 10 | 6524 |
+| entregable, UI-2 con la verificación, exportación (`git archive` del árbol, fuera del repo) | sí | sí | 6510 | 14 | 6524 |
+| proceso, UI-2, checkout | sí | sí | 145 | 0 | 145 |
+
+Los saltos son los mismos que en UI-1: los diez estructurales de `test_familias_del_csv`
+y, en la exportación, los cuatro que leen lo versionado o necesitan `.git`; ninguno es de
+Tk ni de PDF. UI-2 suma 55 tests: 48 en `tests/test_ui2_pestana4.py` (seis de ventana
+real, sobre UNA corrida de la ventana bajo xvfb, `tests/apoyo/gui_ui2_pestana4_real.py`),
+cuatro casos más en los dos parametrizados de SIS-E-03 de `test_gui_contrato` (los dos
+exportadores nuevos) y tres del parametrizado de `test_decisiones_diferidas` (los anclajes
+de UI2-01, UI2-02 y UI2-03). La revisión independiente del primer intento sumó 16 de los
+48 y su verificación seis más (el PDF cortado a mitad, con el hijo real bajo `ulimit -f`,
+y el PDF de un hijo anterior en el directorio de trabajo; ficha UI2-03), y cada uno mata
+su mutante, medido. Con Tk corren 20 tests de ventana real, ninguno saltado. Una primera
+corrida del checkout de la verificación, lanzada EN PARALELO con la de la exportación,
+dio un rojo de presupuesto de tiempo (`test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint`:
+0.343 s contra 0.3 s, por la CPU compartida); el par de la tabla es el de la corrida sola.
+
