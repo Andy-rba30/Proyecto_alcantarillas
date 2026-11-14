@@ -41,10 +41,16 @@ Que es, y que no
 El volcado lo hace quien llama (`volcar`, que en produccion es
 `cli.informe_json`): `src/` no importa `cli` (EXT-9), y el barrido necesita
 el MISMO volcado que la sesion embebe y que el comparador entiende.
+
+Y desde UI-3 el JSON del barrido se LEE DE VUELTA (`resultado_del_volcado`,
+el inverso de `volcado_del_barrido`): la ventana corre el barrido en un
+proceso hijo por la CLI y pinta la tabla con `lineas_de_la_tabla` sobre lo
+que el hijo escribio, en vez de con una copia suya (ficha UI3-01).
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
@@ -54,7 +60,8 @@ from src import criterios_adoptados as _ca
 from src import declaracion as _dec
 from src import editores as _sed
 from src import servicio
-from src.modelos import CorridaDelBarrido, FilaDelBarrido, ResultadoDeBarrido
+from src.modelos import (CorridaDelBarrido, Derivada, FilaDelBarrido,
+                         ResultadoDeBarrido)
 
 # Los campos del volcado de una verificacion que llevan el veredicto
 # (`cli._verificacion_json`), como sufijo del rotulo del comparador:
@@ -67,6 +74,35 @@ from src.modelos import CorridaDelBarrido, FilaDelBarrido, ResultadoDeBarrido
 # conjunto de codigos deduplica, de modo que una verificacion que mueve los
 # dos campos sigue contando una vez.
 _CAMPOS_DE_VEREDICTO = (".cumple", ".veredicto")
+
+
+# LA REGLA DEL BOTON DE LA VENTANA (UI-3; revision de UI-3, H5): un barrido
+# recorre la VENTANA de sensibilidad que la ficha declara, y sin ventana no es
+# sensibilidad sino otra adopcion. Vive aqui y no en gui/ porque es una regla
+# sobre el criterio; la ventana solo la pinta.
+MOTIVO_SIN_VENTANA = ("el criterio no declara ventana de sensibilidad: un barrido "
+                      "fuera de una ventana no es sensibilidad, es otra adopcion")
+
+
+def motivo_para_no_barrer(clave: str) -> Optional[str]:
+    """
+    Por que la VENTANA no ofrece barrer `clave`, o None si lo ofrece: un
+    criterio que se deriva no se elige (el mismo motivo que «Aplicar»,
+    `editores.esquema_de(...).motivo_no_editable`), y uno sin `sensibilidad`
+    no tiene ventana que recorrer (`MOTIVO_SIN_VENTANA`).
+
+    LA PUERTA DE LA CLI NO LA APLICA, y se dice en vez de igualarlas:
+    `verificar_valores` --- la de `cli.py --barrido` --- declara cada valor
+    por la de «Aplicar», que acepta un criterio sin ventana, y UI-3 no cambia
+    lo que la CLI acepta. La divergencia, medida, esta en la ficha UI3-01
+    para el dueño.
+    """
+    criterio = _ca.criterio(clave)
+    if isinstance(criterio.resolucion, Derivada):
+        return _sed.esquema_de(clave).motivo_no_editable
+    if criterio.sensibilidad is None:
+        return MOTIVO_SIN_VENTANA
+    return None
 
 
 def verificar_valores(clave: str, valores: Sequence[Any], *, fila: str = "",
@@ -92,6 +128,7 @@ def verificar_valores(clave: str, valores: Sequence[Any], *, fila: str = "",
     try:
         for k, v in base.items():
             _ca.verificar_declaracion(k, v)
+            _dec.verificar_claves_de_la_ficha(k, v)
         for valor in valores:
             _dec.restaurar_sesion(entrada, sustituir=True)
             for k, v in base.items():
@@ -239,6 +276,77 @@ def volcado_del_barrido(resultado: ResultadoDeBarrido) -> Dict[str, Any]:
                       "comparable": c.comparable} for c in resultado.corridas],
         "filas": [asdict(f) for f in resultado.filas],
     }
+
+
+def _texto_json(valor: Any) -> str:
+    """
+    El valor tal como lo escribe el JSON, para compararlo como TEXTO y no
+    como numero. Pasa PRIMERO por el JSON y despues ordena: `sort_keys`
+    ordenaba las claves enteras de un valor pedido (900, 1050...) como
+    numeros y las del JSON del hijo, que ya son texto, alfabeticamente, y
+    el barrido de `espesor_pared_conducto` salia siempre «corrio otro
+    valor» (revision de UI-3, H1).
+    """
+    return json.dumps(json.loads(json.dumps(valor, ensure_ascii=False)),
+                      sort_keys=True, ensure_ascii=False)
+
+
+def resultado_del_volcado(volcado: Mapping[str, Any], *,
+                          valores: Optional[Sequence[Any]] = None) -> ResultadoDeBarrido:
+    """
+    El INVERSO de `volcado_del_barrido` (UI-3, ficha UI3-01): el
+    `ResultadoDeBarrido` que describe el JSON de un barrido, para que quien
+    no lo corrio en su proceso --- la ventana, que lo corre en un proceso
+    hijo por la CLI --- pinte la tabla con `lineas_de_la_tabla` y no con
+    una copia suya. No lee nada que el volcado no traiga y no recalcula.
+
+    `valores` son los valores PEDIDOS, en orden, cuando quien llama los
+    tiene: el JSON no tiene tuplas, y sin ellos un par `(0.009, 0.013)`
+    vuelve como la lista `[0.009, 0.013]` y la tabla lo imprimiria con
+    corchetes, distinto de la CLI. Cada uno tiene que escribirse en JSON
+    igual que el valor de su corrida, o es `ValueError`: unos valores que
+    no son los del barrido no se aceptan en silencio. Las filas se reparten
+    por corrida con el numero de puntos de cada volcado, que es como
+    `_filas_de` las produjo.
+    """
+    corridas_json = list(volcado.get("corridas") or [])
+    filas_json = list(volcado.get("filas") or [])
+    if valores is None:
+        pedidos: Tuple[Any, ...] = tuple(c.get("valor") for c in corridas_json)
+    else:
+        pedidos = tuple(valores)
+        if len(pedidos) != len(corridas_json):
+            raise ValueError(
+                f"el barrido de '{volcado.get('clave')}' trae {len(corridas_json)} "
+                f"corrida(s) y se pidieron {len(pedidos)} valor(es)")
+        for pedido, corrida in zip(pedidos, corridas_json):
+            if _texto_json(pedido) != _texto_json(corrida.get("valor")):
+                raise ValueError(
+                    f"el barrido de '{volcado.get('clave')}' corrio el valor "
+                    f"{corrida.get('valor')!r} donde se pidio {pedido!r}")
+    corridas: List[CorridaDelBarrido] = []
+    filas: List[FilaDelBarrido] = []
+    inicio = 0
+    for pedido, corrida in zip(pedidos, corridas_json):
+        corridas.append(CorridaDelBarrido(
+            valor=pedido, procedencia=corrida["procedencia"],
+            informe_json=corrida["informe_json"],
+            comparacion_con_la_primera=tuple(corrida["comparacion_con_la_primera"]),
+            comparable=bool(corrida["comparable"])))
+        fin = inicio + len(corrida["informe_json"].get("puntos") or [])
+        for fila in filas_json[inicio:fin]:
+            filas.append(FilaDelBarrido(**{
+                **fila, "valor": pedido,
+                "verificaciones_que_cambian": tuple(fila["verificaciones_que_cambian"]),
+                "incumplidas_en_la_progresion": tuple(
+                    fila.get("incumplidas_en_la_progresion") or ())}))
+        inicio = fin
+    if inicio != len(filas_json):
+        raise ValueError(
+            f"el barrido de '{volcado.get('clave')}' trae {len(filas_json)} fila(s) "
+            f"y sus corridas describen {inicio} punto(s)")
+    return ResultadoDeBarrido(clave=volcado["clave"], corridas=tuple(corridas),
+                              filas=tuple(filas))
 
 
 ENCABEZADO_DE_LA_TABLA = ("valor", "punto", "material", "seccion", "HW (m)",

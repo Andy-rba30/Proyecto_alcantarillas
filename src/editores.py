@@ -464,8 +464,13 @@ def descomponer_valor(esquema: EsquemaDeEditor, valor: Any) -> Any:
 # ===========================================================================
 
 def verificar(clave: str, valor: Any) -> None:
-    """La MISMA guardia que el archivo, sin escribir nada (`ValueError`/`KeyError`)."""
+    """
+    La MISMA guardia que el archivo, sin escribir nada (`ValueError`/`KeyError`),
+    y la forma de las CLAVES que la ficha tiene enteras
+    (`declaracion.verificar_claves_de_la_ficha`, revision de UI-3, N1).
+    """
     _ca.verificar_declaracion(clave, valor)
+    _dec.verificar_claves_de_la_ficha(clave, valor)
 
 
 def veredicto_al_escribir(clave: str, valor: Any) -> ResultadoValidacion:

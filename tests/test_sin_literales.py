@@ -261,7 +261,10 @@ CONSTRUCTORES_DE_TRANSCRIPCION = {
 # `src/editores.py`, que SI esta bajo el barrido estrecho de `src/`.
 CAPA_DE_PRESENTACION = ("cli.py", "gui/app.py", "gui/ayuda_entrada.py",
                         "gui/componentes.py", "gui/editores.py",
-                        "gui/exportacion_pdf.py", "gui/ventana_normativa.py")
+                        "gui/exportacion_pdf.py", "gui/ventana_normativa.py",
+                        # UI-3: la ventana del barrido de la pestaña 2 y su
+                        # proceso hijo; pintan y lanzan, no calculan.
+                        "gui/ventana_barrido.py", "gui/proceso_barrido.py")
 # --- T-12 --- `verificar_sesion.py` salio de esta lista (y su entrada del
 # censo de marcas de abajo, que era 2): T-12 lo movio a `proceso/` con el
 # resto del material de proceso (INF-5.2.2). No es capa de presentacion del
@@ -931,6 +934,13 @@ CENSO_DE_MARCAS = {
     # del navegador --- una MEDIDA del dictamen, no un valor de proyecto ---
     # y las lineas de la cola del diagnostico del hijo.
     "gui/exportacion_pdf.py": 3,
+    # UI-3: la cadencia del sondeo del hijo del barrido (ms) y las lineas de
+    # la cola de su diagnostico; las mismas dos naturalezas que las de
+    # `gui/exportacion_pdf.py`. Ninguna es magnitud del expediente.
+    "gui/ventana_barrido.py": 1,
+    # 1 -> 2 en la revision de UI-3 (H3): `TOPE_AL_TERMINAR_S`, la espera
+    # acotada, al cerrar, a que el hijo terminado salga (s).
+    "gui/proceso_barrido.py": 2,
     # `gui/ventana_normativa.py` llevaba 3: los tres cuerpos de letra de la
     # ventana, nombrados porque un tamano dentro de un condicional no es
     # argumento DIRECTO de un widget. El bloque 1 del rediseño visual los

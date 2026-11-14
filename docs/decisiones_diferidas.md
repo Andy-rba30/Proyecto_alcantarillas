@@ -2920,36 +2920,29 @@ símbolo.
 
 # Parte XXXII — Lo que PF-3 dejó escrito al abrir el barrido de sensibilidad
 
-## PF-3-01 · El barrido vive en la CLI y en el servicio; el botón «Barrido…» de la pestaña 2 no entró
+## PF-3-01 · El barrido vive en la CLI y en el servicio; el botón «Barrido…» de la pestaña 2 no entró — cerrado (UI-3)
 
-- **Qué se difirió:** el botón «Barrido…» de la pestaña 2 sobre el criterio
-  seleccionado, que pediría los valores por el parser único
-  (`interpretar_texto_declarado`) y pintaría la tabla en un Toplevel. El
-  prompt lo declaraba opcional «si no cabe en la sesión», y no cupo: la
-  sesión cerró el módulo, los tipos, la CLI y la aceptación.
-- **Por qué:** lo que una ventana pintaría ya existe como DATO y como texto
-  en `src/barrido.py` (`ResultadoDeBarrido`, `lineas_de_la_tabla`,
-  `volcado_del_barrido`), de modo que el botón sería sólo un Toplevel que
-  llama a `barrer` con el criterio seleccionado y pinta las líneas; ninguna
-  regla del barrido —la puerta antes de la primera corrida, el estado
-  repuesto al salir, la comparación por el comparador— vive en la GUI ni
-  podría vivir ahí. Dos cosas que un botón tendría que resolver y la CLI
-  no: que el barrido corre el pipeline tantas veces como valores, y la
-  pestaña 3 exporta desde `Informe.contexto` de la ÚLTIMA corrida (EXT-4),
-  así que el botón tendría que correr en el subproceso de EXT-8 o dejar
-  claro que no toca el informe de la ventana; y que `barrer` repone el
-  estado de entrada por `restaurar_sesion(sustituir=True)`, que vacía y
-  vuelve a volcar las declaraciones, con lo que la pestaña 2 tendría que
-  refrescarse al volver. El prompt pedía aislar cada corrida con
-  `declaracion.limpiar()` y `ca.quitar_valor_dinamico`; se hizo con la
-  fotografía de `estado_de_sesion` y `restaurar_sesion`, que es la vía que
-  «Cargar sesión» ya usa y repone también la procedencia (medido:
-  `estado_de_sesion()` igual al de entrada, con la nota original).
-- **Qué haría falta:** el Toplevel que lea `esquema_de(clave)` para pedir
-  los valores con el editor tipado de E-B, corra `barrer` fuera del hilo
-  de Tk (o en el subproceso de EXT-8) sin tocar el informe de la pestaña 3,
-  y refresque la pestaña 2 al terminar; con su test de ventana real.
-- **Dónde vive:** `src/barrido.py::barrer`
+- **Cerrado (UI-3):** PF-3 difirió el botón «Barrido…» de la pestaña 2 sobre el criterio
+  seleccionado. UI-3 lo pone (`gui/app.py::_abrir_barrido`): activo sólo con un criterio
+  que tenga ventana de sensibilidad y no se derive, apagado con su motivo en los demás
+  (`MOTIVO_SIN_VENTANA`, `MOTIVO_DERIVADO`) y mientras haya otra ventana de barrido
+  abierta (`MOTIVO_BARRIDO_ABIERTO`). Abre `gui/ventana_barrido.py::VentanaBarrido`: la
+  lista de valores compuesta con el editor tipado de E-B (`construir_editor` sin su nota),
+  un valor por fila, y una fila y una nota para todos —las de `--barrido-fila` y
+  `--barrido-nota`, con el rótulo de «Aplicar» (`gui/editores.py::rotulo_de_la_nota`)—. La
+  puerta es `barrido.verificar_valores`, antes de lanzar nada. Corre en un proceso hijo
+  (ficha UI3-01), pinta `barrido.lineas_de_la_tabla` sobre el JSON del hijo
+  (`barrido.resultado_del_volcado`, el inverso de `volcado_del_barrido`) con la columna de
+  las incumplidas y el «no comparable», guarda ese JSON, se cancela, y al cerrarse
+  refresca la pestaña 2. No arma memoria ni toca los exportadores.
+- **Por qué así:** es lo que esta ficha pedía —el editor tipado, fuera del hilo de Tk, sin
+  tocar el informe de la pestaña 3, la pestaña 2 refrescada al volver y su test de ventana
+  real (`tests/test_ui3_barrido_ventana.py`)—. Lo único nuevo en `src/` es leer de vuelta
+  el JSON del barrido: sin ello la ventana pintaría con una copia suya de la tabla.
+- **Qué haría falta:** nada para esta ficha. `CLAUDE.md` conserva la frase «El botón
+  «Barrido…» de la pestaña 2 se difirió con símbolo (ficha PF-3-01)», desfasada desde
+  UI-3, sin tocar por decisión de la orquestadora: queda para el dueño.
+- **Dónde vive:** `gui/ventana_barrido.py::VentanaBarrido`
 
 # Parte XXXIII — Lo que PF-4 dejó escrito al declarar el régimen de V2b
 
@@ -7260,3 +7253,89 @@ progreso de la resumida (ficha UI2-03), y la línea base no se mueve.
   (`M11._escribir_pdf`) es decisión del dueño. Si el hijo cae a la vía del navegador, el
   HTML se retira con el directorio de trabajo y la exportación sale FALLIDA, sin archivo.
 - **Dónde vive:** `gui/exportacion_pdf.py::CODIGOS_DE_SALIDA_CON_MEMORIA`
+
+
+# Parte LVIII — Lo que UI-3 de la cadena de interfaz dejó escrito: el botón «Barrido…» de la pestaña 2
+
+UI-3 (2026-11-14, escrita sobre `4066a24` en paralelo con UI-2 y rebasada sobre
+`4067b9a`, main con UI-1 y UI-2) lleva a la ventana el barrido de sensibilidad de PF-3
+(ficha PF-3-01, cerrada) y no cambia ningún cálculo, criterio ni texto de memoria: la
+línea base no se mueve y la CLI imprime lo mismo salvo con la entrada atípica de UI3-03.
+
+## UI3-01 · Dónde corre el barrido de la ventana: en un proceso hijo, la CLI con la sesión de la ventana
+
+- **Cerrado (UI-3):** (1) En un PROCESO HIJO y no en un hilo
+  (`gui/proceso_barrido.py`): `barrer` declara cada valor en el estado de módulo de
+  `criterios_adoptados` y `declaracion` y lo repone al salir, y en el proceso de la
+  ventana ese intervalo sería otro estado para la pestaña 2, un «Aplicar» o una
+  exportación. El hijo es `cli.py --sesion … --barrido … --json <temporal>`, sondeado con
+  `after`, cancelable; si falla o no arranca, termina con su motivo. (2) Su sesión es la
+  de «Guardar sesión» leída al pulsar «Correr» —con la hidrología de UI-1 y las
+  procedencias—, sin corridas y con los datos de sitio que EJECUTAR declararía
+  (`sesion_para_el_barrido`): el barrido describe el estado de la ventana y no el informe
+  vigente, que no toca ni invalida. (3) La única huella en el proceso de la ventana es la
+  puerta (`barrido.verificar_valores`), que declara y repone en el mismo gesto; medido en
+  la ventana real, el estado declarado, los [S], el informe (mismo objeto y volcado), los
+  exportadores y la pestaña 2 quedan iguales. El hijo vuelve a cerrarla. (4) Los valores
+  viajan por su `repr`, comprobado con `cli.valores_del_barrido` (`texto_del_barrido`), y
+  la tabla se lee con los valores pedidos porque el JSON no tiene tuplas. (5) Una fila y
+  una nota para todos, como la CLI: en el editor, elegir una fila sólo propone su valor.
+- **Abierto:** la tabla de la ventana y la de la CLI para la misma sesión difieren sólo en
+  el segundo de cada declaración (`declarado el …`), que es de cada corrida. El panel de
+  declaración de la pestaña 2 no tiene scroll: en la geometría por defecto, con el editor
+  de un criterio de tabla, la fila de «Quitar» y «Barrido…» queda fuera de la vista, como
+  «Aplicar» antes de UI-3.
+- **Qué haría falta:** un scroll en el panel de declaración de la pestaña 2 (rediseño,
+  fuera de UI-3).
+- **Dónde vive:** `gui/proceso_barrido.py::ProcesoBarrido`
+
+## UI3-02 · Lo que la revisión independiente de UI-3 encontró: una sesión que no reponía claves enteras, y la regla del botón fuera de src/
+
+- **Cerrado (revisión de UI-3):** (H2, causa anterior a UI-3) la sesión JSON escribe las
+  claves enteras como texto: `espesor_pared_conducto` pisado —aun con el valor del
+  archivo— volvía de «Guardar/Cargar», del hijo del PDF y del hijo del barrido con
+  `'900'`, la guardia lo aceptaba y tres puntos salían «no dimensionado» sin aviso. Se
+  corrige en la raíz: `restaurar_sesion` rearma cada valor con la forma de su ficha antes
+  de la guardia (`declaracion.valor_desde_json`); las sesiones v3 y v4 abren igual. (H1)
+  la tabla del barrido de ese criterio terminaba FALLIDO (`barrido._texto_json`). (H3) un
+  barrido en marcha al cerrar la ventana principal quedaba huérfano con su carpeta: el
+  `<Destroy>` del Toplevel lo termina y la retira (`ProcesoBarrido.terminar_y_limpiar`).
+  (H4) un segundo «Correr» que no arranca conserva el barrido anterior y lo dice. (H5) la
+  regla del botón vive en `barrido.motivo_para_no_barrer`. (H6) el hijo registra el origen
+  de los [S] que la ventana registra (`proceso_barrido.ORIGEN_SESION_ABIERTA`). (H7) los
+  tests prueban que la corrida del valor vigente ES la de la ventana.
+- **Abierto:** (1) la ventana no ofrece barrer los 26 criterios sin ventana, y la puerta
+  de la CLI (`verificar_valores`) sí deja barrer 16 de ellos con su valor de archivo
+  (censados en `tests/test_ui3_barrido_ventana.py`); UI-3 no cambia lo que la CLI acepta.
+  (2) Las tuplas vuelven de la sesión como listas: la guardia y los consumidores aceptan
+  las dos y el volcado es el mismo, y normalizarlas cambiaría el estado vivo que el barrido
+  repone de una declaración `--declarar` con lista. (3) El hijo del PDF tiene el patrón de
+  H3 (`gui/app.py` no maneja `WM_DELETE_WINDOW`): es de UI-2, pendiente para UI-4.
+- **Qué haría falta:** para (1), la decisión del dueño —igualar la CLI a la ventana, o
+  ofrecer en la ventana lo que la CLI acepta—; para (3), terminar el hijo del PDF al
+  destruirse la ventana principal, como el del barrido.
+- **Dónde vive:** `src/declaracion.py::valor_desde_json`
+
+## UI3-03 · Una clave entera escrita como texto se rechaza en TODAS las puertas que declaran; sólo la frontera del JSON la lee como entero
+
+- **Cerrado (verificación de la revisión de UI-3, N1):** la corrección de H2 rearmaba las
+  claves enteras sólo al reponer una sesión, y las puertas seguían aceptando
+  `espesor_pared_conducto` con `'900'` (copiado de un JSON): EJECUTAR dejaba tres puntos
+  «no dimensionado», la primera corrida del barrido con el mismo valor los dimensionaba y,
+  al cerrar el barrido, el estado de la ventana había cambiado. Ahora la forma de las
+  claves se exige en la puerta (`declaracion.verificar_claves_de_la_ficha`): donde las
+  claves del valor del archivo son enteras, otra clave es `ValueError` con su motivo
+  («Escriba 900 sin comillas»), el MISMO por la pestaña 2 y sus editores, la ventana
+  emergente, `--declarar`, el barrido y sus declaraciones de base. `restaurar_sesion` es la
+  frontera del JSON —allí `900` y `'900'` son la misma clave—: lee el entero escrito
+  (`valor_desde_json`) y rechaza lo demás con el mismo motivo. El estado vivo ya no puede
+  llevar una clave de texto, y el barrido lo repone sin cambiarlo.
+- **Abierto:** la salida de la CLI con esa entrada atípica CAMBIA respecto de `4066a24`:
+  `--declarar espesor_pared_conducto={…'900'…}` corría sin encontrar la fila (puntos «no
+  dimensionado», medido por la revisión) y hoy sale con 2 y el motivo, antes de correr
+  nada; con `--barrido` sale igual. Ninguna entrada bien escrita cambia de resultado. La guardia de
+  `criterios_adoptados.verificar_declaracion` sigue sin mirar las claves: es un archivo
+  protegido, y la puerta se puso en las capas que lo llaman.
+- **Qué haría falta:** que la guardia del archivo exija también la forma de las claves,
+  cuando el dueño decida tocar `criterios_adoptados.py`.
+- **Dónde vive:** `src/declaracion.py::verificar_claves_de_la_ficha`

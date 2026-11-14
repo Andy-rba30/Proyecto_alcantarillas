@@ -47,7 +47,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6524** en
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6573** en
 la suite del ENTREGABLE (desde T-12 hay dos suites: la de proceso, aparte,
 recoge **145**, y su invariante es el mismo); lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
@@ -2279,7 +2279,8 @@ PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 T-7a: 5709; T-7b: 6002; T-7c: 6276; verificación de fórmulas de T-7: 6310;
 T-10: 6360; T-11: 6469; T-12: 6425 en la suite del entregable, que entregó
 138 a la de proceso (145); UI-1 de la cadena de interfaz: 6469 (medido con
-ventana Tk, ver su sección al final); UI-2: 6524 (ídem). La
+ventana Tk, ver su sección al final); UI-2: 6524 (ídem); UI-3, rebasada sobre UI-2:
+6573 (ídem). La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2449,3 +2450,41 @@ corrida del checkout de la verificación, lanzada EN PARALELO con la de la expor
 dio un rojo de presupuesto de tiempo (`test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint`:
 0.343 s contra 0.3 s, por la CPU compartida); el par de la tabla es el de la corrida sola.
 
+## UI-3 de la cadena de interfaz (2026-11-14): el par con ventana Tk, MEDIDO
+
+UI-3 (el botón «Barrido…» de la pestaña 2, ficha PF-3-01 cerrada; la decisión de dónde
+corre, en la ficha UI3-01) se midió sobre su commit en la rama de su worktree, desde
+`4066a24` (main con UI-1), con `python3.12` con `tkinter`, `ttkbootstrap` y
+`weasyprint`, `xvfb-run -a`, PyMuPDF y `NORMAS_DIR` enlazado: la fila «sí · sí». Los
+saltos son los de UI-1: los diez estructurales de `test_familias_del_csv` y, en la
+exportación, los cuatro que leen lo versionado o necesitan `.git`; ninguno es de Tk ni de
+PDF. UI-2 corría a la vez en otro worktree; UI-3 se rebasó después sobre `4067b9a` (main
+con UI-1 y UI-2) y se midió otra vez en el árbol integrado, que es la fila que vale para
+`main`.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, partida (`4066a24`, medida por UI-1) | sí | sí | 6459 | 10 | 6469 |
+| entregable, UI-3 en su rama (desde `4066a24`), checkout de git | sí | sí | 6508 | 10 | 6518 |
+| entregable, UI-3 en su rama, exportación (`git archive HEAD`) | sí | sí | 6504 | 14 | 6518 |
+| entregable, UI-3 rebasada sobre `4067b9a` (UI-1 + UI-2 + UI-3), checkout de git | sí | sí | 6563 | 10 | 6573 |
+| entregable, UI-3 rebasada, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 6559 | 14 | 6573 |
+| proceso, UI-3 rebasada, checkout | sí | sí | 145 | 0 | 145 |
+
+UI-3 suma 49 tests: 46 en `tests/test_ui3_barrido_ventana.py` (uno de ellos, de ventana
+real: `tests/apoyo/gui_ui3_barrido_real.py`) y tres en el parametrizado de
+`test_decisiones_diferidas` (los anclajes de las fichas UI3-01, UI3-02 y UI3-03; PF-3-01
+cambió de anclaje y no de número). Los 32 primeros se escribieron en rojo: 31 xfailed y 1 XPASS
+(la guardia de que el volcado del barrido no cambia de claves, que vale antes y
+después); los tres siguientes (la hidrología que llega al hijo, «Añadir valor» y el
+editor sin campos), ya con el código escrito; y los de la revisión independiente (ficha
+UI3-02), sobre la corrección: los tres de H2 y el de ventana real se comprobaron por
+mutación —sin `declaracion.valor_desde_json`, los cuatro fallan—; y los cuatro de la
+verificación de esa corrección (N1, ficha UI3-03), también por mutación —sin
+`declaracion.verificar_claves_de_la_ficha` fallan tres de ellos y el de ventana real—. Con
+Tk corren 15 tests de ventana real en su rama, y 21 en el árbol integrado (los 20 de
+UI-1 y UI-2 más el de UI-3), ninguno saltado. Medido sobre el commit enmendado tras
+la verificación (el de la revisión medía 6513; el primer intento, 6505). El primer
+intento dio, en su corrida final, un falso rojo de tiempo
+(`test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint`, 0.343 s contra 0.3 s con
+otras dos suites en la máquina), que pasó aislado; las medidas siguientes no lo repitieron.

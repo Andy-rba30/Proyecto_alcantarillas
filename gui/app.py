@@ -86,7 +86,12 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
                             interfaz que REESCRIBE `criterios_adoptados.py`
                             --- accion permanente, aparte y con confirmacion
                             propia, que es justo la pestana que esta lista
-                            omitia.
+                            omitia. Desde UI-3, el boton «Barrido…» del
+                            criterio con ventana de sensibilidad: una ventana
+                            aparte (`gui/ventana_barrido.py`) que corre el
+                            barrido de PF-3 en un PROCESO HIJO
+                            (`gui/proceso_barrido.py`, ficha UI3-01) sin tocar
+                            lo declarado ni el informe vigente.
     3. Resultados por punto  Un Treeview con el resumen de cada punto y, al
                             seleccionar una fila, el detalle de verificaciones
                             y bloqueos de ese punto.
@@ -320,6 +325,11 @@ from src import ayuda_entrada as ay_contenido
 from gui import ayuda_entrada as ayuda_ent  # noqa: E402
 from gui import editores as ged  # noqa: E402
 from gui import exportacion_pdf as expdf  # noqa: E402
+# El barrido de la pestaña 2 (UI-3, ficha PF-3-01): la sesion del hijo y el
+# Toplevel. Ninguno corre el pipeline en este proceso (ficha UI3-01).
+from gui import proceso_barrido as pbarr  # noqa: E402
+from src import barrido as sbarr  # noqa: E402
+from gui import ventana_barrido as gvb  # noqa: E402
 from gui import ventana_normativa as ventana_norma  # noqa: E402
 from gui import componentes as comp  # noqa: E402
 from gui.componentes import (COLOR_AVISO, COLOR_ERROR,  # noqa: E402
@@ -387,6 +397,14 @@ AYUDA_HTML_RESUMIDA = (
 # sin corrida: vacio, y diciendo por que.
 MOTIVO_SIN_CORRIDA_CABEZAL = (
     "todavia no se ejecuto el pipeline: no hay cabezal del proyecto que mostrar")
+# El boton «Barrido…» de la pestaña 2 (UI-3, ficha PF-3-01). La regla de
+# cuando se puede barrer un criterio --- con ventana de sensibilidad y sin
+# derivarse --- es de `src/barrido.py::motivo_para_no_barrer`, y su motivo se
+# reexporta con el nombre de siempre; aqui solo vive el de la ventana: una
+# ventana de barrido a la vez.
+MOTIVO_SIN_VENTANA = sbarr.MOTIVO_SIN_VENTANA
+MOTIVO_BARRIDO_ABIERTO = ("ya hay una ventana de barrido abierta: cierrela para "
+                          "barrer otro criterio")
 # El PDF sale en un proceso aparte (EXT-8, PC-11): mientras corre, el boton
 # esta apagado y lo dice --- y el progreso se ve en el rotulo de al lado ---.
 MOTIVO_EXPORTANDO_PDF = "el PDF se esta escribiendo en un proceso aparte"
@@ -613,6 +631,8 @@ class ExpedienteApp:
 
         self.informe: Optional[cli.Informe] = None
         self.entradas_de_la_corrida = {}
+        # La ventana del barrido abierta (UI-3), o None: una a la vez.
+        self.ventana_barrido = None
         # El nombre del proyecto CON QUE SE CORRIO, leido al ejecutar y no al
         # exportar (PC-15): la memoria describe la corrida, no el campo.
         self.proyecto_de_la_corrida = ""
@@ -1776,14 +1796,34 @@ class ExpedienteApp:
                   "exige. Si un campo falla, no entra nada.")
         self.btn_aplicar_corrida.pack(anchor="w", ipadx=6, ipady=3)
 
+        # «Quitar» y «Barrido…» comparten fila (UI-3): los dos caben en la
+        # columna derecha, y en la geometria por defecto (1100x800) una fila
+        # mas abajo de «Ver la norma…» quedaba fuera de la vista.
+        f_quitar_y_barrer = ttk.Frame(f_botones)
+        f_quitar_y_barrer.pack(anchor="w", pady=(6, 0))
         self.btn_quitar_declarado = BotonAccion(
-            f_botones, "Quitar declaracion de la corrida",
+            f_quitar_y_barrer, "Quitar declaracion de la corrida",
             letra=BotonAccion.DISCRETA, command=self._quitar_valor_corrida, motivo=MOTIVO_SIN_CRITERIO,
             ayuda="Retira el valor declarado para esta corrida Y su\n"
                   "procedencia. Lo que queda debajo depende de lo que habia:\n"
                   "si el criterio estaba vacio vuelve a bloquear el calculo;\n"
                   "si estaba PISADO vuelve a gobernar el valor del archivo.")
-        self.btn_quitar_declarado.pack(anchor="w", pady=(6, 0), ipadx=6, ipady=3)
+        self.btn_quitar_declarado.pack(side="left", ipadx=6, ipady=3)
+
+        # EL BARRIDO DE SENSIBILIDAD DEL CRITERIO (UI-3, ficha PF-3-01). No
+        # declara nada en esta pestaña ni toca el informe: abre una ventana
+        # aparte que corre el barrido en un PROCESO HIJO
+        # (`gui/proceso_barrido.py`) con la sesion de esta ventana, y al
+        # cerrarla la pestaña se refresca. Apagado, su tooltip dice por que.
+        self.btn_barrido = BotonAccion(
+            f_quitar_y_barrer, "Barrido…", fondo=comp.TEXTO_SUAVE,
+            command=self._abrir_barrido, motivo=MOTIVO_SIN_CRITERIO,
+            ayuda="Barrido de sensibilidad del criterio sobre su ventana:\n"
+                  "corre el calculo una vez por valor en un proceso aparte\n"
+                  "y pinta la misma tabla que `cli.py --barrido`. No toca lo\n"
+                  "declarado ni el informe de las pestañas 3 y 4, y no arma\n"
+                  "memoria (es un anexo de la tesis).")
+        self.btn_barrido.pack(side="left", padx=(8, 0), ipadx=6, ipady=3)
 
         f_norma = ttk.Frame(f_declarar)
         f_norma.grid(row=4, column=0, columnspan=2, sticky="w", pady=(8, 0))
@@ -2117,6 +2157,7 @@ class ExpedienteApp:
             for boton in (self.btn_aplicar_corrida, self.btn_quitar_declarado,
                           self.btn_guardar_archivo, self.btn_ventana_norma):
                 boton.deshabilitar(MOTIVO_SIN_CRITERIO)
+            self._pintar_boton_barrido()
             comp.escribir_campos(self.txt_detalle_criterio, ())
             return
 
@@ -2188,11 +2229,66 @@ class ExpedienteApp:
             self.ent_valor_declarado.configure(state="normal")
         self.btn_quitar_declarado.estado(en_caliente, MOTIVO_NO_DECLARADO)
         self.btn_ventana_norma.habilitar()
+        self._pintar_boton_barrido()
 
     @staticmethod
     def _motivo_derivado(resolucion):
         return MOTIVO_DERIVADO.format(de=", ".join(resolucion.de),
                                       regla=resolucion.regla)
+
+    # ------------------------------------------------------------------
+    # El barrido de sensibilidad (UI-3, ficha PF-3-01; decision UI3-01)
+    # ------------------------------------------------------------------
+    def _motivo_para_no_barrer(self, clave):
+        """
+        Por que el boton «Barrido…» esta apagado para `clave`, o None si se
+        puede barrer. Lo que depende del CRITERIO lo dice
+        `barrido.motivo_para_no_barrer` (src/: con ventana de sensibilidad y
+        sin derivarse); aqui solo se añade lo que depende de la ventana: un
+        criterio seleccionado, y una ventana de barrido a la vez.
+        """
+        if not clave:
+            return MOTIVO_SIN_CRITERIO
+        motivo = sbarr.motivo_para_no_barrer(clave)
+        if motivo is not None:
+            return motivo
+        if self.ventana_barrido is not None:
+            return MOTIVO_BARRIDO_ABIERTO
+        return None
+
+    def _pintar_boton_barrido(self):
+        motivo = self._motivo_para_no_barrer(self._clave_criterio_seleccionado)
+        self.btn_barrido.estado(motivo is None, motivo)
+
+    def _sesion_para_el_barrido(self):
+        """
+        La sesion que el hijo del barrido repone, leida AL CORRER: la de
+        «Guardar sesion» (`_datos_de_sesion`), sin corridas y con los datos
+        de sitio que EJECUTAR declararia (`proceso_barrido.sesion_para_el_barrido`).
+        """
+        return pbarr.sesion_para_el_barrido(
+            self._datos_de_sesion(), sitio_de_la_sesion=self.sitio_de_la_sesion)
+
+    def _abrir_barrido(self):
+        """
+        Abre la ventana del barrido sobre el criterio seleccionado. No
+        invalida el informe ni declara nada: el barrido corre en un proceso
+        hijo y lo unico que este proceso hace es la puerta, que repone.
+        """
+        clave = self._clave_criterio_seleccionado
+        if self._motivo_para_no_barrer(clave) is not None:
+            return
+        self.ventana_barrido = gvb.VentanaBarrido(
+            self.root, clave, sesion_de_la_ventana=self._sesion_para_el_barrido,
+            al_cerrar=self._tras_cerrar_barrido,
+            color_neutro=self.color_neutro_editor)
+        self._pintar_boton_barrido()
+
+    def _tras_cerrar_barrido(self):
+        """Al volver del barrido, la pestaña 2 se refresca y el boton vuelve."""
+        self.ventana_barrido = None
+        self._llenar_tabla_criterios()
+        self._pintar_boton_barrido()
 
     def _abrir_ventana_normativa(self, _evt=None):
         """
@@ -3145,7 +3241,7 @@ class ExpedienteApp:
                 cli.cargar_datos_sitio(Path(texto_sitio))
             else:
                 dec.restaurar_datos_de_sitio(self.sitio_de_la_sesion, sustituir=True,
-                                             origen="sesion abierta")
+                                             origen=pbarr.ORIGEN_SESION_ABIERTA)
         except (ValueError, KeyError) as exc:
             return f"No se pudo declarar el dato de sitio:\n{exc}"
         return None

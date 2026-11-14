@@ -62,6 +62,21 @@ def rotulo_de_opcion(opcion) -> str:
     return texto
 
 
+def rotulo_de_la_nota(esquema) -> str:
+    """
+    El rotulo del campo de nota, segun lo que la ficha EXIGE de ella: la
+    trazabilidad de un ensayo, la procedencia de un valor de tabla que no
+    sale de una fila, o nada. Uno solo para el editor de la pestaña 2 y
+    para la ventana del barrido (UI-3), que pide la nota de todos sus
+    valores con las mismas reglas que «Aplicar».
+    """
+    if esquema.exige_nota:
+        return "Nota = TRAZABILIDAD del ensayo (obligatoria):"
+    if esquema.exige_fila:
+        return "Nota (procedencia; obligatoria si el valor no proviene de una fila):"
+    return "Nota (procedencia, opcional):"
+
+
 def opcion_del_rotulo(esquema, rotulo):
     """La opcion que produjo ese rotulo, o None."""
     for o in esquema.opciones_de_tabla:
@@ -88,10 +103,11 @@ class EditorTipado:
     sincronizacion con el literal de la pestaña (`al_cambiar`).
     """
 
-    def __init__(self, master, esquema, *, color_neutro, al_cambiar):
+    def __init__(self, master, esquema, *, color_neutro, al_cambiar, con_nota=True):
         self.esquema = esquema
         self.color_neutro = color_neutro
         self.al_cambiar = al_cambiar
+        self.con_nota = con_nota
         self.marco = ttk.Frame(master)
         self.fila_var = tk.StringVar()
         self.nota_var = tk.StringVar()
@@ -132,14 +148,14 @@ class EditorTipado:
         if e.dominio:
             ttk.Label(p, text=f"Dominio (ficha): {e.dominio}", wraplength=380,
                       justify="left", style="Ayuda.TLabel").pack(anchor="w", pady=(4, 0))
+        if not self.con_nota:
+            # La ventana del barrido (UI-3) pide la nota UNA vez para todos
+            # los valores, como `--barrido-nota`: el editor solo compone el
+            # valor, y una segunda nota que nadie lee seria un campo mudo.
+            return
         f_nota = ttk.Frame(p)
         f_nota.pack(fill="x", pady=(4, 0))
-        if e.exige_nota:
-            rotulo = "Nota = TRAZABILIDAD del ensayo (obligatoria):"
-        elif e.exige_fila:
-            rotulo = "Nota (procedencia; obligatoria si el valor no proviene de una fila):"
-        else:
-            rotulo = "Nota (procedencia, opcional):"
+        rotulo = rotulo_de_la_nota(e)
         # Rotulo ARRIBA del campo y no al lado: el editor vive en la columna
         # derecha de la pestaña 2 (bloque 2) y el rotulo mas largo empujaba el
         # campo fuera de la vista.
@@ -595,8 +611,13 @@ EDITOR_POR_TIPO = {
 }
 
 
-def construir_editor(master, clave, *, color_neutro, al_cambiar):
-    """El editor que corresponde a la forma del criterio, montado en `master`."""
+def construir_editor(master, clave, *, color_neutro, al_cambiar, con_nota=True):
+    """
+    El editor que corresponde a la forma del criterio, montado en `master`.
+    `con_nota=False` lo monta sin su campo de nota: la ventana del barrido
+    (UI-3) lo usa solo para COMPONER valores y pide la procedencia aparte.
+    """
     esquema = sed.esquema_de(clave)
     return EDITOR_POR_TIPO[esquema.tipo_de_editor](
-        master, esquema, color_neutro=color_neutro, al_cambiar=al_cambiar)
+        master, esquema, color_neutro=color_neutro, al_cambiar=al_cambiar,
+        con_nota=con_nota)
