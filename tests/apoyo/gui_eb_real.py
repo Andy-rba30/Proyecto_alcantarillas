@@ -89,6 +89,17 @@ def main(salida: Path) -> int:
 
         # 1. La serie de pares, par a par.
         editor = _seleccionar(ventana, raiz, SERIE)
+        # DESDE T-3 LA SERIE TIENE VALOR DE ARCHIVO y el editor se monta con
+        # el (sus tres pares): añadir los tres tecleados encima daba seis con
+        # repetidos, que la puerta de la forma rechaza con razon, y este
+        # conductor --- que nadie corria con Tk desde T-3 --- declaraba None
+        # (ficha UI1-02). Se vacia primero por el gesto del raton: la fila
+        # seleccionada y «Quitar par».
+        pares_al_montar = len(editor.piezas())
+        while editor.tree.get_children():
+            editor.tree.selection_set(editor.tree.get_children()[0])
+            editor._quitar_fila()
+            raiz.update()
         for a, b in PARES_TECLEADOS:
             editor.vars["primero"].set(a)
             editor.vars["segundo"].set(b)
@@ -103,6 +114,7 @@ def main(salida: Path) -> int:
         raiz.update()
         p = dec.procedencia_de(SERIE)
         resumen["serie"] = {
+            "pares_al_montar": pares_al_montar,
             "tipo_de_editor": tipo_de_editor,
             "literal": literal,
             "estado": ventana.lbl_estado_criterio.cget("text"),

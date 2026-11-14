@@ -877,7 +877,10 @@ CENSO_DE_MARCAS = {
     "src/servicio.py": 1,
     # EXT-10: `FORMATO_SESION = 3`. El 2 estaba exento por ser 2; el 3 no lo
     # esta y lleva marca: es la version del formato, no una magnitud.
-    "src/sesion.py": 1,
+    # 1 -> 2 en UI-1: `FORMATO_SESION = 4` y el escalon anterior con nombre,
+    # `FORMATO_V3 = 3`, que la migracion v2 -> v3 escribe y compara. Las dos
+    # son versiones del formato, no magnitudes.
+    "src/sesion.py": 2,
     # 28 -> 24 + 4: `Tooltip` y `MarcoScroll` se MOVIERON a
     # `gui/componentes.py` para que la ventana emergente los reutilice en vez
     # de copiarlos, y sus cuatro marcas viajaron con ellos (tres de offset de

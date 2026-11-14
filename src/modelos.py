@@ -3627,6 +3627,9 @@ class ContextoCorrida:
     - `datos_efectivos`, `datos_declarados_en_caliente`,
       `datos_pisados_en_caliente`, `datos_sin_valor` (EXT-10): los datos de
       sitio con que gobierno la corrida y de que archivo salio cada uno.
+    - `cuencas_sha1`, `estacion_sha1` (UI-1): las huellas de las dos
+      entradas de la hidrologia, de los bytes que se parsearon; None sin
+      hidrologia.
 
     Que NO lleva: nada que sea del ARCHIVO y no del estado --- concepto,
     fuente, justificacion, etiqueta, sensibilidad ---, que la capa de reporte
@@ -3664,6 +3667,14 @@ class ContextoCorrida:
     datos_declarados_en_caliente: Tuple[str, ...]
     datos_pisados_en_caliente: Tuple[str, ...]
     datos_sin_valor: Tuple[str, ...]
+    # LAS HUELLAS DE LAS DOS ENTRADAS DE LA HIDROLOGIA (UI-1, ficha T1-04),
+    # con la misma regla que `csv_sha1`: de los MISMOS bytes que el cargador
+    # parseo (`EntradaHidrologica.cuencas_sha1`), no del archivo que haya en
+    # disco al exportar. None cuando la corrida no trajo `--cuencas` ni
+    # `--estacion`: entonces la memoria y el JSON no imprimen nada de ellas y
+    # la linea base no cambia.
+    cuencas_sha1: Optional[str] = None
+    estacion_sha1: Optional[str] = None
 
     def __post_init__(self) -> None:
         # `frozen` solo impide REASIGNAR los campos; un dict dentro seguia
@@ -6616,12 +6627,23 @@ class SerieDeEstacion:
 
 @dataclass(frozen=True)
 class EntradaHidrologica:
-    """Las dos entradas de la Fase 1-bis, ya cargadas y validadas."""
+    """
+    Las dos entradas de la Fase 1-bis, ya cargadas y validadas.
+
+    `cuencas_sha1` y `estacion_sha1` (UI-1, ficha T1-04): el SHA-1 de los
+    MISMOS bytes que el cargador parseo, como `ContextoCorrida.csv_sha1` es
+    el de los bytes que M0 leyo (PC-09). Los pone `servicio.cargar_hidrologia`,
+    que lee cada archivo una sola vez y le pasa esos bytes al cargador; una
+    entrada armada por otra via los deja en None. `servicio.correr` los copia
+    al contexto de la corrida, que es de donde los leen la memoria y el JSON.
+    """
 
     cuencas: Dict[str, Cuenca]
     estaciones: Dict[str, SerieDeEstacion]
     origen_cuencas: str = ""
     origen_estacion: str = ""
+    cuencas_sha1: Optional[str] = None
+    estacion_sha1: Optional[str] = None
 
     def cuenca_de(self, id_punto: str) -> Optional[Cuenca]:
         return self.cuencas.get(id_punto)

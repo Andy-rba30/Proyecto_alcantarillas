@@ -19,8 +19,8 @@ entonces la ayuda cambia sola. Escribir la correccion en este archivo crearia
 la segunda version del dato, que es exactamente lo que la ayuda derivada
 existe para no tener.
 
-Las tres pestanas
------------------
+Las cuatro pestanas (tres hasta UI-1)
+-------------------------------------
 Las dos primeras son dos archivos distintos del expediente, y estan en la
 MISMA ventana porque se leen juntas: `Q_m3s` y `S_cauce` son columna del CSV y
 ademas clave del JSON --- van vacias en la fila de un cruce de canal y entran
@@ -28,7 +28,12 @@ por el JSON cuando el Tablero 3.1 las entrega ---, y esa vuelta es imposible
 de contar en dos ventanas que no se ven a la vez. El icono de cada campo abre
 la ventana en SU pestana; una vez abierta, el usuario cruza.
 
-La tercera (G5) no es un archivo: son los CONCEPTOS con que las otras
+La tercera (UI-1, ficha T1-04) son los dos CSV de la hidrologia, que los
+dos campos de `--cuencas` y `--estacion` de la pestaña 1 abren con su «i»:
+la cabecera exacta de cada uno y las claves que admite cada columna de
+clave, preguntadas al cargador por el servicio.
+
+La cuarta (G5) no es un archivo: son los CONCEPTOS con que las otras
 pantallas hablan --- familias, etiquetas, estados de un criterio y el glosario
 del censo ---, para el lector que llega sin conocer el proyecto. Sus listas
 son derivadas como las otras dos; sus parrafos son texto estable de
@@ -57,6 +62,10 @@ from gui.componentes import COLOR_AVISO, COLOR_OK, Tooltip
 # sale siempre de `src/ayuda_entrada.py`.
 PESTANA_CSV = "csv"
 PESTANA_JSON = "json"
+# UI-1 (ficha T1-04): los dos CSV de la hidrologia, que los dos campos
+# nuevos de la pestaña 1 abren con su «i». Van en UNA pestaña porque van
+# juntos: una sola entrada no calcula nada.
+PESTANA_HIDROLOGIA = "hidrologia"
 PESTANA_CONCEPTOS = "conceptos"
 
 TITULO = "Que tiene que traer el expediente"
@@ -127,16 +136,20 @@ class VentanaAyudaEntrada(tk.Toplevel):
 
         self.tab_csv = ttk.Frame(self.nb)
         self.tab_json = ttk.Frame(self.nb)
+        self.tab_hidrologia = ttk.Frame(self.nb)
         self.tab_conceptos = ttk.Frame(self.nb)
         self.nb.add(self.tab_csv, text="  CSV de puntos criticos (Sec. 1.2)  ")
         self.nb.add(self.tab_json, text="  JSON de datos externos  ")
+        self.nb.add(self.tab_hidrologia, text="  CSV de la hidrologia (cuencas y estacion)  ")
         self.nb.add(self.tab_conceptos, text="  Conceptos  ")
 
         self._construir_csv(self.tab_csv)
         self._construir_json(self.tab_json)
+        self._construir_hidrologia(self.tab_hidrologia)
         self._construir_conceptos(self.tab_conceptos)
 
         destinos = {PESTANA_JSON: self.tab_json,
+                    PESTANA_HIDROLOGIA: self.tab_hidrologia,
                     PESTANA_CONCEPTOS: self.tab_conceptos}
         self.nb.select(destinos.get(pestana, self.tab_csv))
 
@@ -367,7 +380,59 @@ class VentanaAyudaEntrada(tk.Toplevel):
 
 
     # ------------------------------------------------------------------
-    # Pestana 3: los conceptos
+    # Pestana 3 (UI-1): los dos CSV de la hidrologia
+    # ------------------------------------------------------------------
+    def _construir_hidrologia(self, p):
+        """
+        Las dos cabeceras copiables y, por archivo, que columnas son
+        obligatorias y que claves admite cada columna de clave. Todo le llega
+        de `src/ayuda_entrada.py`, que lo pregunta al cargador por el
+        servicio; el parrafo es el texto estable de alli.
+        """
+        p.columnconfigure(0, weight=1)
+        fichas = ay.fichas_de_hidrologia()
+
+        cab = ttk.Frame(p, padding=(8, 8, 8, 0))
+        cab.grid(row=0, column=0, sticky="ew")
+        ttk.Label(cab, text="Los dos CSV de la hidrologia: el de cuencas y el "
+                            "de la serie de la estacion.",
+                  font=comp.tipografia().ui(comp.CUERPO_PT, "bold")).pack(anchor="w")
+        ttk.Label(cab, text=ay.PARRAFO_HIDROLOGIA,
+                  font=comp.tipografia().ui(comp.PEQUENA_PT),
+                  foreground=comp.TEXTO_SUAVE, wraplength=980,
+                  justify="left").pack(anchor="w", pady=(2, 6))
+
+        self.trees_hidrologia = {}
+        for fila, (archivo, titulo, cabecera) in enumerate(
+                ay.secciones_de_hidrologia(), start=1):
+            p.rowconfigure(fila, weight=1)
+            marco = ttk.LabelFrame(p, text=titulo, padding=8)
+            marco.grid(row=fila, column=0, sticky="nsew", padx=8, pady=(0, 8))
+            marco.columnconfigure(0, weight=1)
+            marco.rowconfigure(1, weight=1)
+            caja = _texto_solo_lectura(marco, cabecera, 1)
+            caja.grid(row=0, column=0, sticky="ew", pady=(0, 6))
+            Tooltip(caja, "Seleccionable: Ctrl-A y Ctrl-C copian la linea entera.")
+            de_este = [f for f in fichas if f.archivo == archivo]
+            tree = ttk.Treeview(marco, columns=("clave", "obligatoria", "admite"),
+                                show="headings", height=len(de_este))
+            tree.heading("clave", text="Columna (encabezado exacto)")
+            tree.heading("obligatoria", text="Obligatoria")
+            tree.heading("admite", text="Que admite")
+            tree.column("clave", width=200, anchor="w")
+            tree.column("obligatoria", width=110, anchor="w")
+            tree.column("admite", width=650, anchor="w")
+            tree.tag_configure("obligatoria", foreground=COLOR_OK)
+            tree.tag_configure("opcional", foreground=COLOR_AVISO)
+            tree.grid(row=1, column=0, sticky="nsew")
+            for f in de_este:
+                tree.insert("", "end", iid=f.clave, values=(
+                    f.clave, f.resumen_de_obligatoriedad, f.que_admite),
+                    tags=(f.resumen_de_obligatoriedad,))
+            self.trees_hidrologia[archivo] = tree
+
+    # ------------------------------------------------------------------
+    # Pestana 4: los conceptos
     # ------------------------------------------------------------------
     def _construir_conceptos(self, p):
         """

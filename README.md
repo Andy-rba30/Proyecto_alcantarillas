@@ -121,8 +121,9 @@ python -m gui.app          # la ventana
 - **`--prevuelo`** dice, sin correr nada, qué datos faltan punto a punto y si detienen una
   etapa.
 - **`--sesion sesion.json`** repone una sesión guardada desde la ventana (CSV, datos
-  externos, datos de sitio, alcance y criterios declarados) y dice si la corrida reproduce
-  la guardada.
+  externos, datos de sitio, los dos CSV de la hidrología —cuencas y estación, desde el
+  formato 4—, alcance y criterios declarados) y dice si la corrida reproduce la guardada;
+  una bandera escrita, `--cuencas` o `--estacion` incluidas, gana a lo que la sesión trae.
 - **`--barrido CLAVE=v1,v2,v3`** recorre un criterio `[A]` dentro de su ventana y compara
   cada corrida con la primera (no escribe memoria).
 - **`--comparar A.json B.json`** compara dos informes por identidad de punto.

@@ -367,6 +367,11 @@ MARCADORES: Tuple[str, ...] = (
     "proyecto", "subtitulo",
     "version_hoja_ruta", "hoja_ruta_archivo", "hoja_ruta_sha1",
     "csv_ruta", "csv_sha1",
+    # UI-1 (ficha T1-04): las rutas y las huellas de las dos entradas de la
+    # hidrologia, como filas del encabezado de trazabilidad. Vacio sin
+    # hidrologia: la plantilla lo lleva en la MISMA linea que la huella del
+    # CSV, de modo que sin hidrologia el HTML no gana ni un byte.
+    "filas_hidrologia",
     "criterios_version", "criterios_fecha", "criterios_sha1",
     "generado_local", "generado_utc",
     "estado_expediente", "resumen_expediente",
@@ -525,6 +530,14 @@ class Trazabilidad:
     criterios_sha1: str
     generado_utc: str
     generado_local: str
+    # UI-1 (ficha T1-04): las dos entradas de la hidrologia, ruta y huella.
+    # La ruta es el origen que la corrida registro (`EntradaHidrologica`) y
+    # la huella la del CONTEXTO (de los bytes que se parsearon). None sin
+    # hidrologia, y entonces el encabezado no las nombra.
+    cuencas: Optional[str] = None
+    cuencas_sha1: Optional[str] = None
+    estacion: Optional[str] = None
+    estacion_sha1: Optional[str] = None
 
 
 def sha1_de_bytes(datos: bytes) -> str:
@@ -631,7 +644,8 @@ def fecha_archivo(ruta: Path) -> str:
 
 def trazabilidad(csv: Path, contexto: Any, *,
                  dir_docs: Optional[Path] = None,
-                 generado_utc: str = "") -> Trazabilidad:
+                 generado_utc: str = "",
+                 hidrologia: Any = None) -> Trazabilidad:
     """
     Arma el encabezado del entregable (bloque 0 de la Fase 11).
 
@@ -642,6 +656,9 @@ def trazabilidad(csv: Path, contexto: Any, *,
     editar el archivo entre correr y exportar ya no la mueve (PC-09). La de
     la hoja de ruta y la fecha del archivo de criterios se leen aqui, porque
     describen documentos y no estado.
+
+    `hidrologia` (UI-1) es la `EntradaHidrologica` con que corrio el informe,
+    o None: de ella sale la RUTA de cada entrada, y del contexto su huella.
     """
     hoja = ruta_hoja_de_ruta(dir_docs)
     return Trazabilidad(
@@ -655,7 +672,41 @@ def trazabilidad(csv: Path, contexto: Any, *,
         criterios_sha1=contexto.criterios_sha1,
         generado_utc=generado_utc,
         generado_local=datetime.now().strftime("%d/%m/%Y %H:%M"),
+        cuencas=None if hidrologia is None else hidrologia.origen_cuencas,
+        cuencas_sha1=contexto.cuencas_sha1,
+        estacion=None if hidrologia is None else hidrologia.origen_estacion,
+        estacion_sha1=contexto.estacion_sha1,
     )
+
+
+# Los rotulos de las cuatro filas que el encabezado gana con hidrologia
+# (UI-1). Con nombre, porque la suite los busca en las tres vistas.
+ROTULO_CSV_CUENCAS = "CSV de cuencas (hidrologia)"
+ROTULO_SHA1_CUENCAS = "SHA-1 del CSV de cuencas"
+ROTULO_CSV_ESTACION = "CSV de la estacion (hidrologia)"
+ROTULO_SHA1_ESTACION = "SHA-1 del CSV de la estacion"
+
+
+def filas_hidrologia(traza: Trazabilidad) -> str:
+    """
+    Las filas del encabezado de trazabilidad para las dos entradas de la
+    hidrologia (UI-1, ficha T1-04): ruta y SHA-1 de cada una, con la MISMA
+    forma que las del CSV de puntos. La cadena vacia cuando la corrida no
+    trajo hidrologia: ese es el contrato que deja la linea base intacta.
+    """
+    if traza.cuencas_sha1 is None and traza.estacion_sha1 is None:
+        return ""
+    filas = []
+    for rotulo_ruta, ruta, rotulo_sha1, sha1 in (
+            (ROTULO_CSV_CUENCAS, traza.cuencas, ROTULO_SHA1_CUENCAS,
+             traza.cuencas_sha1),
+            (ROTULO_CSV_ESTACION, traza.estacion, ROTULO_SHA1_ESTACION,
+             traza.estacion_sha1)):
+        filas.append(f'\n    <tr><th>{_esc(rotulo_ruta)}</th>\n'
+                     f'        <td><span class="mono">{_esc(ruta)}</span></td></tr>')
+        filas.append(f'\n    <tr><th>{_esc(rotulo_sha1)}</th>\n'
+                     f'        <td class="mono">{_esc(sha1)}</td></tr>')
+    return "".join(filas)
 
 
 # ===========================================================================
@@ -5002,7 +5053,8 @@ def memoria_html_por_partes(
     # imprime (EXT-4). Un informe sin ella no se puede renderizar.
     contexto = ContextoCorrida.de(informe)
     traza = trazabilidad(Path(informe.csv), contexto,
-                         generado_utc=informe.generado)
+                         generado_utc=informe.generado,
+                         hidrologia=getattr(informe, "hidrologia", None))
 
     estado = estado_del_expediente(informe, "los bloques 1 y 4")
 
@@ -5038,6 +5090,7 @@ def memoria_html_por_partes(
         "hoja_ruta_sha1": _esc(traza.hoja_ruta_sha1),
         "csv_ruta": _esc(traza.csv),
         "csv_sha1": _esc(traza.csv_sha1),
+        "filas_hidrologia": filas_hidrologia(traza),
         "criterios_version": _esc(traza.criterios_version),
         "criterios_fecha": _esc(traza.criterios_fecha),
         "criterios_sha1": _esc(traza.criterios_sha1),
@@ -5129,6 +5182,7 @@ MARCADORES_RESUMIDA: Tuple[str, ...] = (
     "proyecto", "subtitulo",
     "version_hoja_ruta", "hoja_ruta_archivo", "hoja_ruta_sha1",
     "csv_ruta", "csv_sha1",
+    "filas_hidrologia",
     "criterios_version", "criterios_fecha", "criterios_sha1",
     "generado_local", "generado_utc",
     "estado_expediente", "resumen_expediente", "bloque_alcance",
@@ -5287,7 +5341,8 @@ def memoria_resumida_html(informe: Any, *, proyecto: str = "",
     """
     contexto = ContextoCorrida.de(informe)
     traza = trazabilidad(Path(informe.csv), contexto,
-                         generado_utc=informe.generado)
+                         generado_utc=informe.generado,
+                         hidrologia=getattr(informe, "hidrologia", None))
     estado = estado_del_expediente(informe, "cada punto y en los pendientes")
     por_punto = criterios_A_por_punto(informe)
     destino = ((DIR_PLANTILLAS / NOMBRE_PLANTILLA_RESUMIDA)
@@ -5301,6 +5356,7 @@ def memoria_resumida_html(informe: Any, *, proyecto: str = "",
         "hoja_ruta_sha1": _esc(traza.hoja_ruta_sha1),
         "csv_ruta": _esc(traza.csv),
         "csv_sha1": _esc(traza.csv_sha1),
+        "filas_hidrologia": filas_hidrologia(traza),
         "criterios_version": _esc(traza.criterios_version),
         "criterios_fecha": _esc(traza.criterios_fecha),
         "criterios_sha1": _esc(traza.criterios_sha1),

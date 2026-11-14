@@ -89,13 +89,27 @@ DATOS_SITIO = "datos_sitio"
 # que dice algo del calculo). Las dos primeras son la marca de tiempo
 # (`sesion.sin_marca_de_tiempo`), las dos ultimas las rutas de origen de
 # los [S] (`sesion.sin_origen_de_los_datos_de_sitio`).
+#
+# UI-1: el bloque `expediente.hidrologia` (solo con `--cuencas` y
+# `--estacion`) SE COMPARA ENTERO --- sus dos huellas, las obras con cuenca y
+# las estaciones --- salvo sus dos RUTAS, por la misma razon que
+# `expediente.csv`: la ruta no dice nada del calculo y la huella si. Hasta
+# la correccion de UI-1 el comparador no miraba el bloque, y una sesion cuya
+# serie de cuencas habia cambiado decia «REPRODUCE» con huellas distintas.
 CAMPOS_OMITIDOS: Tuple[str, ...] = (
     "generado",
     "expediente.generado_utc",
     "expediente.csv",
     "expediente.corredor_del_proyecto.origen",
     "datos_sitio.usados[].origen",
+    "expediente.hidrologia.cuencas",
+    "expediente.hidrologia.estacion",
 )
+HIDROLOGIA = "hidrologia"
+# Las hojas de `expediente.hidrologia` que son RUTAS (las dos de arriba).
+RUTAS_DE_LA_HIDROLOGIA: Tuple[str, ...] = tuple(
+    r.rsplit(".", 1)[1] for r in CAMPOS_OMITIDOS
+    if r.startswith(f"{EXPEDIENTE}.{HIDROLOGIA}."))
 
 ROTULO_IGUALES = "IGUALES"
 ROTULO_DIFIEREN = "DIFIEREN"
@@ -324,6 +338,13 @@ def _clave_de_bloqueo(x: Dict[str, Any]) -> Tuple[Any, ...]:
 # La comparacion entera
 # ===========================================================================
 
+def _sin_rutas(bloque: Any) -> Any:
+    """El bloque de la hidrologia sin sus dos rutas (`RUTAS_DE_LA_HIDROLOGIA`)."""
+    if not isinstance(bloque, dict):
+        return bloque
+    return {k: v for k, v in bloque.items() if k not in RUTAS_DE_LA_HIDROLOGIA}
+
+
 def normalizar(volcado: Dict[str, Any]) -> Dict[str, Any]:
     """La MISMA normalizacion que la corrida embebida (EXT-10) y la linea base."""
     return _sesion.sin_origen_de_los_datos_de_sitio(_sesion.sin_marca_de_tiempo(volcado))
@@ -342,6 +363,11 @@ def comparar(a: Dict[str, Any], b: Dict[str, Any]) -> ComparacionDeInformes:
     for campo in ("csv_sha1", "criterios_sha1", "puntos", "dimensionados", "cerrado",
                   "corredor_del_proyecto"):
         _comparar_valor(EXPEDIENTE, campo, ea.get(campo), eb.get(campo), diferencias)
+    # UI-1: la hidrologia, sin sus rutas. Con un bloque y sin el otro, la
+    # diferencia es el bloque entero (una corrida calculo el caudal y la
+    # otra no).
+    _comparar_valor(EXPEDIENTE, HIDROLOGIA, _sin_rutas(ea.get(HIDROLOGIA)),
+                    _sin_rutas(eb.get(HIDROLOGIA)), diferencias)
 
     aa, ab = a.get(ALCANCE) or {}, b.get(ALCANCE) or {}
     if aa.get("nivel") != ab.get("nivel"):

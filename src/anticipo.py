@@ -347,6 +347,15 @@ ETAPA_CARGA = "carga del CSV (M0, Sec. 1.2)"
 # y que el caudal salga depende de un calculo que el pre-vuelo no hace.
 ETAPA_DEPENDE_DE_LA_HIDROLOGIA = ("depende de la hidrologia (Fase 1-bis, no "
                                   "evaluada en pre-vuelo)")
+# El aviso que acompaña al pre-vuelo cuando la corrida trae los dos CSV de
+# la hidrologia: lo imprime `cli._prevuelo` y lo pinta el anticipo de la
+# ventana, de aqui (revision de UI-1: hasta entonces vivia en cli.py y la
+# ventana no lo decia).
+AVISO_HIDROLOGIA_NO_CALCULADA = (
+    "Aviso: --cuencas y --estacion se cargaron y se validaron, pero el "
+    "pre-vuelo NO calcula la hidrologia. Un Q_m3s vacio con cuenca y estacion "
+    "figura como «" + ETAPA_DEPENDE_DE_LA_HIDROLOGIA + "»: la corrida puede "
+    "detenerlo por un criterio sin declarar o por un metodo no evaluable.")
 COLUMNA = "columna del CSV"
 EXTERNO = "dato externo"
 # Los modulos del censo que LEEN la columna sin consumirla en un calculo: la

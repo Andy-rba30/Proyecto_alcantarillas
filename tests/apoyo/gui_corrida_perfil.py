@@ -31,12 +31,14 @@ cuelga del boton.
 
 import json
 import sys
+from contextlib import ExitStack
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
 
 import cli                                             # noqa: E402
 from src import criterios_adoptados as ca
+from tests.apoyo.criterios import sin_valor            # noqa: E402
 
 CSV_PERFIL = RAIZ / "tests" / "ejemplo_puntos_perfil.csv"
 
@@ -56,9 +58,21 @@ EXTERNOS = {
 # no es cosmetica: hasta C8, `secciones_cajon_normalizadas` no cabia por ese
 # camino --- volvia como CADENA y el bucle de MD la rechazaba --- y la unica
 # forma de descubrirlo era teclearla.
+#
+# `n_manning_cajon` ES LA FILA DE ARCHIVO DESDE UI-1 (ficha UI1-02 de
+# docs/decisiones_diferidas.md). Hasta entonces se tecleaba 'concreto_afinado',
+# la fila de la Tabla N 09 que la guia declaraba; T-3 (correcciones H1) paso
+# el valor de archivo a 'concrete_boxes' --- la fila del cajon de la Tabla B.1
+# del HDS-5 --- y dejo la otra como alternativa barrible de la SEGUNDA tabla
+# del criterio. El editor de la pestaña 2 solo nombra filas de la primera
+# tabla, de modo que teclear la de la segunda sin nota se rechaza («una
+# adopcion distinta exige procedencia»), y este conductor, que nadie corria
+# con Tk desde T-3, llevaba ese rechazo. Se teclea la fila de archivo, como
+# hizo T-3 con su propio test (`test_t3_familia_c`, H1); la limitacion del
+# editor queda en la ficha.
 CAJON_TECLEADO = {
     "embocadura_cajon": "cajon_concreto_aletas_30_75",
-    "n_manning_cajon": "concreto_afinado",
+    "n_manning_cajon": "concrete_boxes",
     "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
     "espesor_pared_cajon": "0,20",          # con coma, como se teclea
     "cobertura_minima_cajon": "0.3048",
@@ -77,6 +91,16 @@ def main(salida: Path) -> int:
     externos.write_text(json.dumps(EXTERNOS, ensure_ascii=False, indent=2),
                         encoding="utf-8")
 
+    # LOS SIETE DEL CAJON, SIN VALOR MIENTRAS DURA LA CORRIDA (ficha UI1-02).
+    # Desde T-3 tienen valor de archivo, y entonces el tablero de antes de
+    # declarar ya no tenia criterio de la Familia C que mostrar: el aserto de
+    # C8 (punto 6) --- el pendiente de la Familia C se ve y se declara desde
+    # la ventana --- se quedaba sin objeto. `sin_valor` devuelve el vacio
+    # DURANTE la prueba, que es para lo que existe (tests/apoyo/criterios.py),
+    # y lo que se declara despues por el raton son los valores de archivo.
+    vacios = ExitStack()
+    for clave in CAJON_TECLEADO:
+        vacios.enter_context(sin_valor(clave))
     raiz = tb.Window(themename="litera")
     try:
         ventana = gapp.ExpedienteApp(raiz)
@@ -169,6 +193,7 @@ def main(salida: Path) -> int:
         ventana.exportar_json()
     finally:
         raiz.destroy()
+        vacios.close()
 
     (salida / "resumen_de_la_corrida.json").write_text(
         json.dumps(resumen, ensure_ascii=False, indent=2), encoding="utf-8")

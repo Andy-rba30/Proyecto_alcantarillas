@@ -82,7 +82,8 @@ traer `Q_m3s` vacío y el programa lo calcula por el método racional
 (`src/modulos/MH_hidrologia.py`, Manual de Hidrología cap. III). **Ninguna columna tiene
 valor por defecto**: las obligatorias detienen la carga si faltan, y las opcionales
 vacías no se rellenan —lo que cada una habilita está en su fila—. Las líneas que
-empiezan por `#` son comentarios.
+empiezan por `#` son comentarios. En la ventana son los campos «CSV de cuencas» y «CSV
+de la estación» de la pestaña 1, y la sesión los guarda desde el formato 4 (UI-1).
 
 **CSV de cuencas** — una fila por obra:
 

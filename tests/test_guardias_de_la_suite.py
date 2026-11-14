@@ -1195,7 +1195,9 @@ def test_el_detector_textual_ve_las_evasiones_que_el_auditor_probo(cuerpo, esper
 MODULOS_DE_CALCULO = sorted((RAIZ / "src" / "modulos").glob("*.py"))
 
 PUBLICAS_SIN_REFERENCIA_EN_TESTS = {
-    "M0_carga.leer_bytes": "la llama `correr` (servicio); la ejercita toda corrida de la CLI",
+    # `M0_carga.leer_bytes` salio en UI-1: la nombra
+    # `tests/test_ui1_hidrologia_ventana.py`, que la sustituye para probar que
+    # la huella de la hidrologia es de los bytes que se parsearon.
     "M0_carga.cargar_puntos_de_bytes": "la llama `correr` (servicio); la ejercita toda corrida de la CLI",
     "M11_reporte.sha1_de_bytes": "la llama `correr` (servicio, csv_sha1); la ejercita test_ext4",
     "M11_reporte.version_criterios": "la llama `trazabilidad` (M11); se ejercita con cada memoria",

@@ -450,9 +450,12 @@ def test_c_la_forma_del_sitio_json_se_exige_entera(tmp_path, defecto, texto):
 # ===========================================================================
 
 def test_d_la_sesion_vacia_es_una_sesion_v3_valida_con_identidad():
+    # Formato 4 desde UI-1 (las dos rutas de la hidrologia, vacias aqui): lo
+    # que EXT-10 fijo de la sesion vacia sigue igual.
     vacia = ses.sesion_vacia("1.0")
     assert ses.errores_de_sesion(vacia) == []
-    assert vacia["formato_version"] == ses.FORMATO_SESION == 3
+    assert vacia["formato_version"] == ses.FORMATO_SESION == 4
+    assert vacia["cuencas"] == vacia["estacion"] == ""
     assert vacia["id"] and vacia["id"] != ses.sesion_vacia("1.0")["id"]
     assert vacia["proyecto"] == vacia["csv"] == vacia["datos_externos"] == ""
     assert vacia["datos_sitio"] == ""
@@ -563,7 +566,9 @@ def test_f_el_esquema_v3_tiene_las_claves_de_E04():
 def test_f_la_migracion_es_explicita_y_completa_lo_que_falta(sesion_vieja, version):
     migrada, avisos = ses.migrar_a_actual(sesion_vieja)
     assert migrada is not sesion_vieja and "id" not in sesion_vieja
-    assert migrada["formato_version"] == 3
+    # La migracion sube hasta el formato ACTUAL (4 desde UI-1, que añade las
+    # dos rutas de la hidrologia vacias y sin aviso).
+    assert migrada["formato_version"] == ses.FORMATO_SESION == 4
     assert migrada["proyecto"] == sesion_vieja["proyecto"]
     assert migrada["id"] and migrada["sitio"] == {"valores": {}}
     assert migrada["datos_sitio"] == "" and migrada["corridas"] == []
@@ -584,7 +589,7 @@ def test_f_una_sesion_v3_completa_no_se_toca_y_una_incompleta_se_completa():
     assert migrada["id"] and migrada["sitio"] == {"valores": {}} and avisos
 
 
-@pytest.mark.parametrize("datos", [{"formato_version": "2"}, {"formato_version": 4},
+@pytest.mark.parametrize("datos", [{"formato_version": "2"}, {"formato_version": 5},
                                    {"formato_version": True}, [1, 2]])
 def test_f_una_version_que_no_se_puede_migrar_es_ValueError(datos):
     with pytest.raises(ValueError):
@@ -671,7 +676,7 @@ def test_f_la_sesion_de_la_gui_lleva_id_huella_sitio_y_corridas(tmp_path):
                 and nodo.targets[0].id == "data" and isinstance(nodo.value, ast.Dict)):
             claves_gui = {c.value for c in nodo.value.keys if isinstance(c, ast.Constant)}
     assert claves_gui == set(sesion) == set(ses.ESQUEMA_SESION)
-    assert app.FORMATO_SESION == 3
+    assert app.FORMATO_SESION == 4
 
 
 def test_f_la_cli_repone_el_sitio_de_la_sesion_y_la_bandera_escrita_gana(tmp_path):
@@ -733,7 +738,7 @@ def test_f_la_cli_avisa_de_la_migracion_y_conserva_el_id(tmp_path):
                  "criterios": {"valores": {}, "procedencias": {}}}
     ruta = _escribir(tmp_path, "v2.json", sesion_v2)
     cargada = cli.cargar_sesion_serializada(ruta)
-    assert cargada.formato_version == 3
+    assert cargada.formato_version == ses.FORMATO_SESION == 4
     assert cargada.id and cargada.avisos and any("v2" in a for a in cargada.avisos)
     assert cargada.sitio == {"valores": {}} and cargada.datos_sitio is None
     v3 = ses.sesion_vacia("1.0")

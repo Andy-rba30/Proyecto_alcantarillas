@@ -131,6 +131,15 @@ def test_pf6c_lo_que_campos_omitidos_nombra_es_lo_unico_que_no_cuenta():
     # este formato no lleva; se contrasta anadiendola.
     expediente = _volcado("informe_expediente.json")
     assert expediente["datos_sitio"]["usados"], "la linea base de expediente lee [S]"
+    # UI-1: el bloque `expediente.hidrologia` solo existe con --cuencas y
+    # --estacion, y la linea base no lo trae: se contrasta sobre una copia que
+    # lo lleva, con la forma que `cli.informe_json` le da (la corrida de
+    # verdad con hidrologia la mide tests/test_ui1_hidrologia_ventana.py).
+    a = _copia(a)
+    a["expediente"]["hidrologia"] = {
+        "cuencas": "cuencas.csv", "estacion": "estacion.csv",
+        "cuencas_sha1": "a" * 40, "estacion_sha1": "b" * 40,
+        "obras_con_cuenca": ["A-01"], "estaciones": ["E"]}
     for ruta in comp.CAMPOS_OMITIDOS:
         base = expediente if ruta.startswith("datos_sitio.usados[]") else a
         assert _mutando(base, _muta(ruta)).iguales, f"{ruta} esta en CAMPOS_OMITIDOS y cuenta"
@@ -141,6 +150,17 @@ def test_pf6c_lo_que_campos_omitidos_nombra_es_lo_unico_que_no_cuenta():
             continue
         assert not _mutando(a, _muta(f"expediente.{clave}")).iguales, (
             f"expediente.{clave} no esta en CAMPOS_OMITIDOS y no cuenta")
+    # Y cada hoja de la hidrologia que no es una ruta omitida cuenta.
+    for clave in a["expediente"]["hidrologia"]:
+        ruta = f"expediente.hidrologia.{clave}"
+        if ruta in comp.CAMPOS_OMITIDOS:
+            continue
+        assert not _mutando(a, _muta(ruta)).iguales, (
+            f"{ruta} no esta en CAMPOS_OMITIDOS y no cuenta")
+    # Con el bloque en una y sin el en la otra, tampoco son la misma corrida.
+    sin = _copia(a)
+    del sin["expediente"]["hidrologia"]
+    assert not comp.comparar(a, sin).iguales
 
 
 def test_pf6c_los_diferidos_se_comparan_por_contenido_y_no_solo_por_longitud():

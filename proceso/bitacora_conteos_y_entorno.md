@@ -47,7 +47,7 @@ los tuviera, y una auditoría posterior los dio por perdidos.
 Al reportar el conteo, distinguir **`passed` de `collected`** y saber que **el
 conteo es un PAR, no un número**. Es la misma lección que el paso 2 de
 `verificar_sesion.py` dejó escrita en S12 para PyMuPDF, aplicada ahora a un
-segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6425** en
+segundo eje. Lo invariante es `collected = passed + skipped`, hoy **6469** en
 la suite del ENTREGABLE (desde T-12 hay dos suites: la de proceso, aparte,
 recoge **145**, y su invariante es el mismo); lo
 que se mueve es el reparto, y **ningún salto de los de abajo es una
@@ -2278,7 +2278,8 @@ PF-3: 4034; PF-4: 4064; PF-5: 4098; PF-6: 4115; cierre C10/C05/C09/C11/C14:
 4866; T-8: 4976; T-5: 5177; correcciones de T-8: 5246; T-3: 5352; T-9: 5548;
 T-7a: 5709; T-7b: 6002; T-7c: 6276; verificación de fórmulas de T-7: 6310;
 T-10: 6360; T-11: 6469; T-12: 6425 en la suite del entregable, que entregó
-138 a la de proceso (145). La
+138 a la de proceso (145); UI-1 de la cadena de interfaz: 6469 (medido con
+ventana Tk, ver su sección al final). La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2386,3 +2387,31 @@ es una regresión.
 Si la fusión no se puede hacer (permisos, política de egress, conflicto), eso
 **no** convierte la tarea en terminada: se reporta explícitamente qué quedó sin
 fusionar, en qué rama y con qué SHA, para que nadie lo lea como entregado.
+
+## UI-1 de la cadena de interfaz (2026-11-14): el par con ventana Tk, MEDIDO
+
+UI-1 (la hidrología en la ventana y la sesión de formato 4, ficha T1-04 en parte) se
+midió sobre su commit en la rama de su worktree, con `python3.12` con `tkinter`,
+`ttkbootstrap` y `weasyprint`, `xvfb-run -a`, PyMuPDF y `NORMAS_DIR` enlazado: es la
+fila «sí · sí» de la tabla de arriba, que T-12 había dejado **derivada**. Los saltos son
+los diez estructurales de `test_familias_del_csv` (una familia que SÍ usa la clave) y,
+en la exportación, los cuatro que leen lo versionado o necesitan `.git`; ninguno es de
+Tk ni de PDF.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, partida (`bcd2d1a`) | sí | sí | 6412 (+3 failed) | 10 | 6425 |
+| entregable, partida, exportación (medida por la orquestadora) | sí | sí | 6408 (+3 failed) | 14 | 6425 |
+| entregable, UI-1, checkout de git | sí | sí | 6459 | 10 | 6469 |
+| entregable, UI-1, exportación (`git archive HEAD`) | sí | sí | 6455 | 14 | 6469 |
+| proceso, UI-1, checkout | sí | sí | 145 | 0 | 145 |
+
+Los tres rojos de la partida eran de ventana real y anteriores a UI-1: conductores de
+`tests/apoyo/` que nadie corría con Tk desde T-3 (ficha UI1-02 de
+`docs/decisiones_diferidas.md`). UI-1 los corrigió, y suma 44 tests: 43 en
+`tests/test_ui1_hidrologia_ventana.py` (uno de ellos, de ventana real), dos casos del
+parametrizado de `test_decisiones_diferidas` (los anclajes de las fichas UI1-01 y
+UI1-02), y uno menos en el de `PUBLICAS_SIN_REFERENCIA_EN_TESTS` (`M0_carga.leer_bytes`,
+que la suite ya nombra). Con Tk corren 14 tests de ventana real, ninguno saltado. Los
+números son los del commit que sale de la revisión independiente de UI-1 (seis tests
+más que el primer intento, que medía 6463).

@@ -2631,6 +2631,16 @@ def cargar_hidrologia(ruta_cuencas: Optional[Path],
     una serie sin cuencas, no calculan nada, y traer una sola es
     `DatoFaltanteError` con el nombre de la que falta. No hay valores por
     defecto: sin las dos, el caudal entra declarado por `Q_m3s` como siempre.
+
+    CADA ARCHIVO SE LEE UNA VEZ, Y LA HUELLA ES DE ESOS BYTES (UI-1, ficha
+    T1-04). Es la regla de `csv_sha1` (PC-09): `leer_bytes` --la misma puerta
+    de M0-- trae el contenido, el cargador de `MH_hidrologia` parsea esos
+    bytes y no vuelve al disco, y `cuencas_sha1` / `estacion_sha1` son su
+    SHA-1. Editar un archivo despues de cargarlo ya no puede poner en la
+    memoria la huella de un contenido que no se calculo. Y EN EL ORDEN DE
+    SIEMPRE (revision de UI-1): se lee y se parsea el de cuencas, despues el
+    de la estacion, y al final se cruzan, de modo que el primer error que
+    sale es el mismo que antes de UI-1.
     """
     if ruta_cuencas is None and ruta_estacion is None:
         return None
@@ -2646,7 +2656,88 @@ def cargar_hidrologia(ruta_cuencas: Optional[Path],
             detalle="se declaro el CSV de cuencas (--cuencas) y no la serie "
                     "de la estacion (--estacion): el calculo hidrologico "
                     "necesita los dos")
-    return MH.cargar_entrada(Path(ruta_cuencas), Path(ruta_estacion))
+    ruta_cuencas, ruta_estacion = Path(ruta_cuencas), Path(ruta_estacion)
+    datos_cuencas = leer_bytes(ruta_cuencas)
+    cuencas = MH.cargar_cuencas(ruta_cuencas, datos=datos_cuencas)
+    datos_estacion = leer_bytes(ruta_estacion)
+    estaciones = MH.cargar_estacion(ruta_estacion, datos=datos_estacion)
+    entrada = MH.cruzar_entradas(cuencas, estaciones, ruta_cuencas, ruta_estacion)
+    return replace(entrada, cuencas_sha1=sha1_de_bytes(datos_cuencas),
+                   estacion_sha1=sha1_de_bytes(datos_estacion))
+
+
+# --- UI-1 --- LO QUE LA AYUDA DE LA VENTANA TIENE QUE SABER DE LOS DOS CSV
+# DE LA HIDROLOGIA. Lo sabe el cargador (`MH_hidrologia`), y este es el unico
+# modulo que lo importa (T-1, fijado por AST): `src/ayuda_entrada.py` lo
+# pregunta aqui. Funciones y no copias de las tuplas, por la regla de aquel
+# archivo («por el modulo y no por el valor»): la ayuda lee la declaracion
+# del cargador en el momento de pintarse.
+ARCHIVO_CUENCAS = "cuencas"
+ARCHIVO_ESTACION = "estacion"
+
+
+def columnas_de_la_hidrologia() -> Dict[str, Tuple[Tuple[str, ...], Tuple[str, ...]]]:
+    """(obligatorias, opcionales) de cada uno de los dos CSV, en su orden."""
+    return {ARCHIVO_CUENCAS: (tuple(MH.COLUMNAS_CUENCAS),
+                              tuple(MH.COLUMNAS_CUENCAS_OPCIONALES)),
+            ARCHIVO_ESTACION: (tuple(MH.COLUMNAS_ESTACION), ())}
+
+
+def claves_admitidas_de_la_hidrologia() -> Dict[str, Tuple[str, ...]]:
+    """
+    Las claves que admite cada columna de CLAVE de los dos CSV: las tablas
+    contra las que el cargador las valida (`MH.cargar_cuencas`,
+    `MH.cargar_estacion`). La correspondencia columna -> tabla esta escrita
+    aqui una vez, y `tests/test_ui1_hidrologia_ventana.py` la ata al cargador
+    escribiendo un CSV con cada clave y con una que no existe.
+    """
+    tabla_08 = tuple(MH.TABLA_08_COEFICIENTE_DE_ESCORRENTIA)
+    return {
+        "cobertura": tuple(dict.fromkeys(c for c, _s in tabla_08))
+                     + tuple(MH.SUPERFICIES_VIALES),
+        "suelo": tuple(dict.fromkeys(s for _c, s in tabla_08)),
+        "metodo_tc": tuple(MH.METODOS_TC),
+        "ajuste_kirpich": tuple(MH.TC_KIRPICH_AJUSTES),
+        "fen": tuple(MH.FEN_SI) + tuple(MH.FEN_NO),
+    }
+
+
+def marca_de_comentario_de_la_hidrologia() -> str:
+    """Con que empieza una linea de comentario en los dos CSV."""
+    return MH.MARCA_COMENTARIO
+
+
+# LOS DOS ROTULOS CON QUE UNA PUERTA DICE QUE UNA ENTRADA NO SE PUDO CARGAR
+# (revision de UI-1). Los imprime `cli.main` --- para la corrida, el
+# pre-vuelo y el barrido, que comparten su `try` --- y los pinta la ventana,
+# al ejecutar y en el anticipo: escritos una vez, la misma falta se dice con
+# las mismas palabras por las dos puertas. La ventana pone un salto de linea
+# donde la consola pone «: ».
+ROTULO_ENTRADA_ILEGIBLE = "No se pudo leer la entrada"
+ROTULO_EXPEDIENTE_NO_CARGABLE = "El expediente no se puede cargar"
+
+
+def mensaje_de_carga_fallida(exc: BaseException, separador: str = ": ") -> str:
+    """
+    La frase de una entrada que no se pudo cargar: la de un expediente que
+    no se puede cargar si la falta es del expediente (`ErrorProyecto`), la
+    de una entrada ilegible si no (E/S, codificacion, JSON mal formado).
+    """
+    rotulo = (ROTULO_EXPEDIENTE_NO_CARGABLE if isinstance(exc, ErrorProyecto)
+              else ROTULO_ENTRADA_ILEGIBLE)
+    return f"{rotulo}{separador}{exc}"
+
+
+def ids_con_caudal_calculable(hidrologia: Optional[EntradaHidrologica]) -> frozenset:
+    """
+    Las obras cuyo caudal la corrida PUEDE calcular: las que tienen cuenca y
+    cuya estacion esta en el archivo (`EntradaHidrologica.ids_calculables`),
+    o ninguna sin hidrologia. Es UN conjunto y lo piden TRES puertas: M0 en
+    `correr` (para admitir `Q_m3s` vacio), el pre-vuelo de la CLI
+    (`cli._prevuelo`) y el anticipo de la pestaña 1 (UI-1). Escrito una vez,
+    las tres no pueden discrepar sobre que celda vacia «detiene».
+    """
+    return frozenset() if hidrologia is None else hidrologia.ids_calculables()
 
 
 def _fase_hidrologia(informe: InformePunto, externos: DatosExternos,
@@ -3940,8 +4031,7 @@ def correr(ruta_csv: Path, externos: DatosExternos,
     datos_csv = leer_bytes(ruta_csv)
     puntos = cargar_puntos_de_bytes(
         datos_csv, ruta_csv.name,
-        ids_con_caudal_calculable=(frozenset() if hidrologia is None
-                                   else hidrologia.ids_calculables()))
+        ids_con_caudal_calculable=ids_con_caudal_calculable(hidrologia))
     informe = Informe(csv=ruta_csv,
                       generado=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                       alcance=alcance, hidrologia=hidrologia)
@@ -3974,11 +4064,15 @@ def correr(ruta_csv: Path, externos: DatosExternos,
 
     _avisar_ids_desconocidos(informe, externos)
     _avisar_cuencas_sin_punto(informe)
-    informe.contexto = capturar_contexto(csv_sha1=sha1_de_bytes(datos_csv))
+    informe.contexto = capturar_contexto(
+        csv_sha1=sha1_de_bytes(datos_csv),
+        cuencas_sha1=None if hidrologia is None else hidrologia.cuencas_sha1,
+        estacion_sha1=None if hidrologia is None else hidrologia.estacion_sha1)
     return informe
 
 
-def capturar_contexto(*, csv_sha1: str) -> ContextoCorrida:
+def capturar_contexto(*, csv_sha1: str, cuencas_sha1: Optional[str] = None,
+                      estacion_sha1: Optional[str] = None) -> ContextoCorrida:
     """
     La foto del estado del proceso AHORA, como `ContextoCorrida`.
 
@@ -3990,6 +4084,10 @@ def capturar_contexto(*, csv_sha1: str) -> ContextoCorrida:
     Los valores efectivos se copian EN PROFUNDIDAD: un dict declarado en
     caliente --- el espesor de pared por material y diametro --- y mutado
     despues no puede mover la memoria de una corrida que ya paso.
+
+    `cuencas_sha1` y `estacion_sha1` (UI-1) son las huellas de las dos
+    entradas de la hidrologia que `cargar_hidrologia` saco de los bytes que
+    se parsearon; None sin hidrologia.
     """
     return ContextoCorrida(
         criterios_usados=tuple(ca.criterios_usados()),
@@ -4019,7 +4117,8 @@ def capturar_contexto(*, csv_sha1: str) -> ContextoCorrida:
             for clave in sorted(ds.DATOS_SITIO)},
         datos_declarados_en_caliente=tuple(ds.datos_declarados_en_caliente()),
         datos_pisados_en_caliente=tuple(ds.datos_pisados_en_caliente()),
-        datos_sin_valor=tuple(ds.datos_sin_valor()))
+        datos_sin_valor=tuple(ds.datos_sin_valor()),
+        cuencas_sha1=cuencas_sha1, estacion_sha1=estacion_sha1)
 
 
 def _avisar_ids_desconocidos(informe: Informe, externos: DatosExternos) -> None:

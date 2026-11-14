@@ -1941,15 +1941,20 @@ def test_la_traduccion_de_campo_a_clave_externa_es_una_sola():
 
 def test_los_dos_campos_de_archivo_llevan_su_icono_de_ayuda():
     """
-    Uno por campo, y cada uno abre SU pestana.
+    Uno por campo de ENTRADA DEL EXPEDIENTE, y cada uno abre SU pestana:
+    el CSV de puntos, el JSON de datos externos y, desde UI-1, los dos CSV de
+    la hidrologia, que abren la misma pestaña porque van juntos (el campo del
+    `sitio.json` no lleva icono: su forma la dice el tooltip).
 
     El icono va al lado del campo que explica y no en un menu de ayuda: la
     pregunta «que columnas lleva esto» se hace mirando el campo, y una ayuda
     que hay que ir a buscar es una ayuda que no se lee.
     """
     fuente = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_datos"))
-    assert fuente.count("BotonAyuda(") == 2, (
-        "la pestana 1 tiene dos campos de archivo y tiene que tener dos iconos")
+    assert fuente.count("BotonAyuda(") == 4, (
+        "la pestana 1 tiene cuatro campos de archivo con ayuda (CSV, JSON, "
+        "cuencas y estacion) y tiene que tener cuatro iconos")
+    assert fuente.count("ayuda_ent.PESTANA_HIDROLOGIA") == 2
     # `ayuda_ent` y no `ayuda`: el alias corto lo pisa la variable de bucle de
     # CAMPOS_EXTERNOS, en esta misma funcion, y la lambda del icono acabaria
     # pidiendole `.PESTANA_CSV` a una cadena de tooltip. Se renombro en S22 y
@@ -2060,6 +2065,20 @@ def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
     assert "CSV" in obs["pestana_activa_csv"]
     assert "JSON" in obs["pestana_activa_json"]
     assert "Conceptos" in obs["pestana_activa_conceptos"]
+    assert "hidrologia" in obs["pestana_activa_hidrologia"]
+
+    # 2a. UI-1: la pestaña de la hidrologia pinta las columnas de los dos CSV
+    #     tal como las da `src/ayuda_entrada.py` (que las pregunta al cargador),
+    #     y el «i» de los dos campos la abre sobre la ventana viva.
+    pintadas = obs["filas_hidrologia_hidrologia"]
+    for archivo in (ay.ARCHIVO_CUENCAS, ay.ARCHIVO_ESTACION):
+        fichas = [f for f in ay.fichas_de_hidrologia() if f.archivo == archivo]
+        assert [fila[0] for fila in pintadas[archivo]] == [f.clave for f in fichas]
+        for fila, f in zip(pintadas[archivo], fichas):
+            assert fila[1] == f.resumen_de_obligatoriedad
+            assert fila[2] == f.que_admite, f.clave
+    assert obs["misma_ventana_hidrologia"]
+    assert "hidrologia" in obs["pestana_tras_el_icono_de_hidrologia"]
 
     # 2b. La pestana de conceptos (G5) pinta lo que la capa de contenido le
     #     da: el glosario trae el censo ENTERO y en su orden, y la prosa trae
@@ -2631,7 +2650,8 @@ def test_ext10_la_ventana_real_calcula_dos_obras_una_vacia_y_abre_B_tras_A(tmp_p
 
     # 2. La sesion guardada es formato 3 y lleva lo que E04 pide.
     g = r["sesion_guardada"]
-    assert g["formato_version"] == 3 and g["id"] == r["id_inicial"]
+    # Formato 4 desde UI-1 (las dos rutas de la hidrologia): lo de E04 sigue.
+    assert g["formato_version"] == 4 and g["id"] == r["id_inicial"]
     assert g["datos_sitio"].endswith("sitio_A.json")
     assert g["claves_sitio"] == ["PGA_roca_B", "corredor_del_proyecto"]
     assert g["csv_sha1"] and g["corridas"] == 1 and g["corrida_tiene_informe"]

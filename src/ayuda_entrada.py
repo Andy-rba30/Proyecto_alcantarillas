@@ -659,3 +659,148 @@ def fichas_de_glosario() -> Tuple[FichaDeGlosario, ...]:
             clave=clave, concepto=v.concepto, unidad=v.unidad, fase=v.fase,
             poblacion=_ROTULOS_DE_POBLACION[poblacion]))
     return tuple(fichas)
+
+
+# ===========================================================================
+# La ayuda de los dos CSV de la hidrologia (UI-1, ficha T1-04)
+# ===========================================================================
+# El «i» de los dos campos nuevos de la pestaña 1 abre esta ayuda. Las LISTAS
+# salen del cargador, por el servicio (el unico modulo que importa
+# `MH_hidrologia`): la cabecera y su orden, que columnas son obligatorias, y
+# las claves que admite cada columna de clave. El PARRAFO es texto estable
+# escrito aqui --- la regla de arriba para los parrafos ---, y su guardia
+# comprueba que nombra la marca de comentario del cargador y la seccion del
+# contrato donde vive lo que esta ayuda NO deriva: el concepto, la unidad y
+# el origen de cada columna, que no estan declarados en el codigo como dato
+# (docs/contrato_entradas.md §2-bis). AYUDA A MEDIAS Y LO DICE, como la del
+# JSON lo dijo hasta EXT-5.
+
+ARCHIVO_CUENCAS = servicio.ARCHIVO_CUENCAS
+ARCHIVO_ESTACION = servicio.ARCHIVO_ESTACION
+
+PARRAFO_HIDROLOGIA = (
+    "Son opcionales y van JUNTAS: con las dos, una obra de Familia A o B que "
+    "tenga fila en el CSV de cuencas puede traer la celda Q_m3s vacia y el "
+    "programa calcula su caudal por el metodo racional; con una sola, la "
+    "corrida no se ejecuta y lo dice. Una celda Q_m3s llena GANA y no se "
+    "recalcula. Ninguna columna tiene valor por defecto: las obligatorias "
+    "detienen la carga si faltan. Las lineas que empiezan por «"
+    + servicio.marca_de_comentario_de_la_hidrologia()
+    + "» son comentarios. Que se hace con los años FEN no es una columna: es "
+    "el criterio homogeneidad_serie_fen, que se declara en la pestaña de "
+    "criterios. El concepto, la unidad y el origen de cada columna estan en "
+    "docs/contrato_entradas.md §2-bis.")
+
+
+# Los titulos de las dos secciones de la ayuda, y de que hablan los dos
+# campos de la pestaña 1. Texto estable, como el parrafo.
+TITULOS_DE_LA_HIDROLOGIA: Dict[str, str] = {
+    ARCHIVO_CUENCAS: "CSV de cuencas: una fila por obra, con el id del CSV de puntos",
+    ARCHIVO_ESTACION: ("CSV de la estacion: una fila por año (un archivo puede "
+                       "traer varias estaciones)"),
+}
+
+# LAS DOS COLUMNAS QUE NO SON LIBRES Y NO TIENEN LISTA CERRADA: remiten a otro
+# archivo. Su guardia es de COMPORTAMIENTO (tests/test_ui1_hidrologia_ventana.py):
+# una estacion que el CSV de la estacion no trae detiene la carga
+# (`DatoFaltanteError` de `MH.cruzar_entradas`), y una cuenca sin obra en el
+# CSV de puntos queda como BLOQUEO «cuencas declaradas» de la corrida
+# (`servicio._avisar_cuencas_sin_punto`): cuenta en `Informe.bloqueos_reales`
+# y el expediente no cierra. No es un aviso, y la ayuda no lo llama asi
+# (verificacion de la revision de UI-1).
+REMISIONES_DE_LA_HIDROLOGIA: Dict[Tuple[str, str], str] = {
+    (ARCHIVO_CUENCAS, "id"): ("el id de una obra del CSV de puntos; una cuenca "
+                              "sin obra no se aplica y queda como bloqueo de la "
+                              "corrida: el expediente no cierra"),
+    (ARCHIVO_CUENCAS, "estacion"): ("una de las estaciones que trae el CSV de la "
+                                    "estacion; otra detiene la carga"),
+}
+
+# Lo que se dice de una columna sin lista cerrada ni remision: no se afirma
+# que sea «libre», porque el cargador le exige forma y dominio.
+SIN_LISTA_CERRADA = ("sin lista cerrada: su forma y su dominio, en "
+                     "docs/contrato_entradas.md §2-bis")
+
+# El texto del «i» de los dos campos de la pestaña 1, ya partido en lineas
+# (el tooltip de Tk no parte el texto solo).
+AYUDA_DEL_ICONO_HIDROLOGIA = (
+    "Que columnas trae cada uno de los dos CSV de la hidrologia,\n"
+    "en que orden, y que claves admite cada columna de clave. La\n"
+    "lista sale del cargador del programa: no puede quedarse vieja.")
+
+
+def ayuda_del_campo_de_hidrologia(archivo: str) -> str:
+    """
+    El tooltip del campo de la pestaña 1: el titulo de su seccion, la bandera
+    de la CLI a la que equivale (G1: la equivalencia vive en el tooltip) y la
+    regla de las dos entradas, que el parrafo de la ayuda desarrolla. Nada de
+    esto se escribe en gui/.
+    """
+    return (f"{TITULOS_DE_LA_HIDROLOGIA[archivo]}.\n"
+            f"Equivale a '--{archivo}' de cli.py. Opcional, y JUNTO con el\n"
+            "otro CSV de la hidrologia: con los dos, el caudal de una obra con\n"
+            "cuenca y Q_m3s vacio lo calcula el programa. El «i» dice que trae\n"
+            "cada columna.")
+
+
+@dataclass(frozen=True)
+class FichaDeColumnaHidrologica:
+    """
+    Una columna de uno de los dos CSV de la hidrologia: de que archivo, su
+    encabezado exacto, si es obligatoria, las claves que admite cuando es
+    una columna de clave, y a que remite cuando su valor tiene que estar en
+    otro archivo.
+    """
+
+    archivo: str
+    clave: str
+    obligatoria: bool
+    claves_admitidas: Tuple[str, ...]
+    remite_a: str = ""
+
+    @property
+    def resumen_de_obligatoriedad(self) -> str:
+        return "obligatoria" if self.obligatoria else "opcional"
+
+    @property
+    def que_admite(self) -> str:
+        """Lo que la tabla de la ayuda dice en la columna «Que admite»."""
+        if self.claves_admitidas:
+            return ", ".join(self.claves_admitidas)
+        return self.remite_a or SIN_LISTA_CERRADA
+
+
+def fichas_de_hidrologia() -> Tuple[FichaDeColumnaHidrologica, ...]:
+    """Las columnas de los dos CSV, en el orden de su cabecera."""
+    admitidas = servicio.claves_admitidas_de_la_hidrologia()
+    fichas = []
+    for archivo, (obligatorias, opcionales) in \
+            servicio.columnas_de_la_hidrologia().items():
+        for clave in tuple(obligatorias) + tuple(opcionales):
+            fichas.append(FichaDeColumnaHidrologica(
+                archivo=archivo, clave=clave,
+                obligatoria=clave in obligatorias,
+                claves_admitidas=tuple(admitidas.get(clave, ())),
+                remite_a=REMISIONES_DE_LA_HIDROLOGIA.get((archivo, clave), "")))
+    return tuple(fichas)
+
+
+def secciones_de_hidrologia() -> Tuple[Tuple[str, str, str], ...]:
+    """(archivo, titulo, cabecera exacta) de las dos secciones de la ayuda."""
+    return tuple((archivo, TITULOS_DE_LA_HIDROLOGIA[archivo], _cabecera_de(archivo))
+                 for archivo in servicio.columnas_de_la_hidrologia())
+
+
+def _cabecera_de(archivo: str) -> str:
+    obligatorias, opcionales = servicio.columnas_de_la_hidrologia()[archivo]
+    return SEPARADOR_CSV.join(tuple(obligatorias) + tuple(opcionales))
+
+
+def cabecera_cuencas() -> str:
+    """El encabezado exacto del CSV de cuencas, copiable."""
+    return _cabecera_de(ARCHIVO_CUENCAS)
+
+
+def cabecera_estacion() -> str:
+    """El encabezado exacto del CSV de la estacion, copiable."""
+    return _cabecera_de(ARCHIVO_ESTACION)

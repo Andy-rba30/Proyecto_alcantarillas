@@ -320,7 +320,8 @@ from src.servicio import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL, DECIMALES_FACTOR,
                           FASE_CABEZAL, DatoDeclarado, Informe, InformeCabezal,
                           InformePunto, _fmt, advertencia_de_corredor_de,
                           cargar_datos_externos, cargar_datos_sitio,
-                          cargar_hidrologia, correr)
+                          cargar_hidrologia, correr, ids_con_caudal_calculable,
+                          mensaje_de_carga_fallida)
 from src.servicio import (  # noqa: F401  (reexportaciones: contrato GUI/suite)
     CLAVES_DE_DURABILIDAD, CLAVES_EXTERNAS, DatosExternos, FAMILIAS_QUE_USAN,
     FASE_ESTRUCTURAL,
@@ -1218,10 +1219,15 @@ def informe_json(informe: Informe) -> Dict[str, Any]:
     salida = _informe_json_base(informe, bloqueantes, contexto)
     if informe.hidrologia is not None:
         # Solo cuando la corrida trajo --cuencas y --estacion (T-1): de que
-        # archivos salieron las entradas de la Fase 1-bis.
+        # archivos salieron las entradas de la Fase 1-bis, y desde UI-1 sus
+        # dos huellas, las del CONTEXTO (de los bytes que se parsearon, como
+        # `csv_sha1`). Sin hidrologia el bloque no existe y la linea base no
+        # cambia.
         salida["expediente"]["hidrologia"] = {
             "cuencas": informe.hidrologia.origen_cuencas,
             "estacion": informe.hidrologia.origen_estacion,
+            "cuencas_sha1": contexto.cuencas_sha1,
+            "estacion_sha1": contexto.estacion_sha1,
             "obras_con_cuenca": sorted(informe.hidrologia.cuencas),
             "estaciones": sorted(informe.hidrologia.estaciones)}
     return salida
@@ -2161,6 +2167,12 @@ class SesionSerializada:
     csv_sha1: str = ""
     avisos: Tuple[str, ...] = ()
     nombre: str = ""
+    # Formato 4 (UI-1, ficha T1-04): las rutas del CSV de cuencas y del de
+    # la estacion, resueltas como el CSV (`sesion.ruta_de_campo`); None si
+    # la sesion no trae hidrologia. `main` las usa cuando la linea de
+    # comandos no trae --cuencas / --estacion.
+    cuencas: Optional[Path] = None
+    estacion: Optional[Path] = None
 
 
 def cargar_sesion_serializada(ruta: Path) -> SesionSerializada:
@@ -2193,22 +2205,26 @@ def cargar_sesion_serializada(ruta: Path) -> SesionSerializada:
         raise ValueError(
             f"la sesion «{Path(ruta).name}» trae un alcance desconocido: "
             f"{alcance!r} (admitidos: {ALCANCE_PERFIL}, {ALCANCE_EXPEDIENTE})")
+    # LAS RUTAS, con la convencion de la sesion (`sesion.ruta_de_campo`), la
+    # MISMA que la ventana aplica al ejecutar: sin espacios en los extremos
+    # (revision de UI-1).
     return SesionSerializada(
         proyecto=str(data.get("proyecto", "") or ""),
-        csv=Path(data["csv"]) if data.get("csv") else None,
-        datos_externos=(Path(data["datos_externos"])
-                        if data.get("datos_externos") else None),
+        csv=_sesion.ruta_de_campo(data.get("csv")),
+        datos_externos=_sesion.ruta_de_campo(data.get("datos_externos")),
         banderas=_sesion.banderas_de_externos(data.get("externos", {}) or {}),
         alcance=alcance,
         criterios=data.get("criterios"),
         formato_version=int(data.get("formato_version", 1)),
         id=str(data.get("id", "") or ""),
-        datos_sitio=Path(data["datos_sitio"]) if data.get("datos_sitio") else None,
+        datos_sitio=_sesion.ruta_de_campo(data.get("datos_sitio")),
         sitio=data.get("sitio"),
         corridas=tuple(data.get("corridas") or ()),
         csv_sha1=str(data.get("csv_sha1", "") or ""),
         avisos=tuple(avisos),
-        nombre=Path(ruta).name)
+        nombre=Path(ruta).name,
+        cuencas=_sesion.ruta_de_campo(data.get("cuencas")),
+        estacion=_sesion.ruta_de_campo(data.get("estacion")))
 
 
 def aplicar_sesion_serializada(sesion: SesionSerializada):
@@ -2308,7 +2324,9 @@ def _parser() -> argparse.ArgumentParser:
                         "estimacion: la lista definitiva la da la corrida")
     p.add_argument("--sesion", type=Path, dest="sesion",
                    help="sesion guardada por la ventana (JSON): repone el "
-                        "proyecto, el CSV, los datos externos, el alcance y "
+                        "proyecto, el CSV, los datos externos, las dos "
+                        "entradas de la hidrologia (--cuencas y --estacion, "
+                        "desde el formato 4), el alcance y "
                         "los criterios declarados con su procedencia, por "
                         "el mismo camino con guardia que «Cargar sesion». "
                         "Una bandera escrita aqui gana a lo que la sesion "
@@ -2675,18 +2693,15 @@ def _prevuelo(ruta_csv: Path, externos: DatosExternos, alcance: str,
     # --estacion el pre-vuelo las CARGA --un archivo mal escrito sale aqui--
     # y deja de llamar falta a un Q_m3s vacio que la corrida va a calcular;
     # lo que NO hace es calcularlo, y lo dice en vez de callarlo.
-    calculables = (frozenset() if hidrologia is None
-                   else hidrologia.ids_calculables())
+    calculables = ids_con_caudal_calculable(hidrologia)
     estimado = _antc.datos_faltantes_por_punto(
         ruta_csv, externos, alcance, ids_con_caudal_calculable=calculables)
     for linea in _antc.lineas_del_prevuelo(estimado):
         print(f"  {linea}")
     if hidrologia is not None:
-        print("\n  Aviso: --cuencas y --estacion se cargaron y se validaron, "
-              "pero el pre-vuelo NO calcula la hidrologia. Un Q_m3s vacio con "
-              "cuenca y estacion figura como «" + _antc.ETAPA_DEPENDE_DE_LA_HIDROLOGIA
-              + "»: la corrida puede detenerlo por un criterio sin declarar "
-              "o por un metodo no evaluable.")
+        # El MISMO aviso que el anticipo de la ventana pinta (revision de
+        # UI-1): vive en `src/anticipo.py`, donde lo leen las dos puertas.
+        print(f"\n  {_antc.AVISO_HIDROLOGIA_NO_CALCULADA}")
     # EL CODIGO DE SALIDA LEE LOS DOS BLOQUES QUE DETIENEN (auditor
     # adversarial de PF-2): una cabecera incompleta o una columna que no
     # admite vacio detienen la carga igual que una falta por punto, y salir
@@ -2735,6 +2750,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.csv = sesion.csv
         if args.datos_externos is None:
             args.datos_externos = sesion.datos_externos
+        # LAS DOS ENTRADAS DE LA HIDROLOGIA (UI-1, ficha T1-04): las de la
+        # sesion, campo a campo, si la linea de comandos no las trae --la
+        # bandera escrita gana, como las demas--. Sin esto el hijo del PDF
+        # de la ventana recalculaba SIN la hidrologia con que corrio el
+        # informe. Las leen tambien el pre-vuelo y el barrido.
+        if args.cuencas is None:
+            args.cuencas = sesion.cuencas
+        if args.estacion is None:
+            args.estacion = sesion.estacion
         if sesion.alcance is not None and not _bandera_explicita(argv, "--alcance"):
             args.alcance = sesion.alcance
     if args.csv is None:
@@ -2823,11 +2847,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         # con traza en vez de decir que el archivo no esta en UTF-8. Las dos
         # puertas del pipeline tienen que fallar igual (SIS-E-01), y el test
         # de simetria de tests/test_gui_contrato.py lo exige.
-        print(f"No se pudo leer la entrada: {exc}", file=sys.stderr)
+        print(mensaje_de_carga_fallida(exc), file=sys.stderr)
         return 2
     except ErrorProyecto as exc:
         # Un fallo de carga: sin puntos no hay expediente que informar.
-        print(f"El expediente no se puede cargar: {exc}", file=sys.stderr)
+        print(mensaje_de_carga_fallida(exc), file=sys.stderr)
         return 2
 
     print(volcar(informe, con_criterios=args.criterios))

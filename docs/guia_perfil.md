@@ -555,13 +555,14 @@ corrida usó, no el estado del proceso al exportar.
   <!-- fin: csv_resumen -->
 
 - **Sesión.** La escribe la ventana (`python -m gui.app`, botón «Guardar
-  sesion»): un JSON con el proyecto, las rutas del CSV, del JSON externo y del
-  `sitio.json`, las banderas, el alcance, los criterios declarados con su
+  sesion»): un JSON con el proyecto, las rutas del CSV, del JSON externo, del
+  `sitio.json` y de los dos CSV de la hidrología (vacías aquí: el caudal va
+  declarado), las banderas, el alcance, los criterios declarados con su
   procedencia, los [S] declarados y las corridas con su JSON embebido. Sus
   claves (`sesion.sesion_vacia`):
 
   <!-- generado: sesion -->
-  Formato 3: `formato_version`, `app_version`, `id`, `proyecto`, `csv`, `datos_externos`, `datos_sitio`, `externos`, `alcance`, `criterios`, `sitio`, `csv_sha1`, `corridas`.
+  Formato 4: `formato_version`, `app_version`, `id`, `proyecto`, `csv`, `datos_externos`, `datos_sitio`, `cuencas`, `estacion`, `externos`, `alcance`, `criterios`, `sitio`, `csv_sha1`, `corridas`.
   <!-- fin: sesion -->
 
   La CLI la **lee** con `--sesion` y repone todo por el mismo camino con
@@ -573,13 +574,15 @@ corrida usó, no el estado del proceso al exportar.
 
   ```json archivo=guia/sesion.json
   {
-    "formato_version": 3,
+    "formato_version": 4,
     "app_version": "guia_perfil",
     "id": "guia-perfil",
     "proyecto": "Via de evitamiento",
     "csv": "guia/puntos.csv",
     "datos_externos": "guia/externos.json",
     "datos_sitio": "guia/sitio.json",
+    "cuencas": "",
+    "estacion": "",
     "externos": {"luz_m": "2.75"},
     "alcance": "perfil",
     "criterios": {

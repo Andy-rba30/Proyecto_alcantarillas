@@ -1976,14 +1976,32 @@ def area_de_columna_km2(area_ha: float) -> float:
 # 6. Carga de las dos entradas (--cuencas y --estacion)
 # ===========================================================================
 
+def _texto_de(ruta: Path, datos: Optional[bytes]) -> str:
+    """
+    El texto del archivo: el de `datos` si ya se leyo, o el del disco.
+
+    Con `datos` se decodifica EXACTAMENTE como `Path.read_text` decodifica el
+    archivo (UTF-8 con BOM opcional y saltos de linea universales), de modo
+    que leer por la ruta o por los bytes da las mismas filas. Es lo que deja
+    a `servicio.cargar_hidrologia` leer cada archivo UNA vez y sacar la huella
+    de los mismos bytes que aqui se parsean (UI-1, como `csv_sha1`: PC-09).
+    """
+    if datos is None:
+        return Path(ruta).read_text(encoding="utf-8-sig")
+    return io.TextIOWrapper(io.BytesIO(datos), encoding="utf-8-sig").read()
+
+
 def _filas(ruta: Path, obligatorias: Sequence[str],
-           opcionales: Sequence[str] = ()) -> List[Tuple[int, Dict[str, str]]]:
+           opcionales: Sequence[str] = (), *,
+           datos: Optional[bytes] = None) -> List[Tuple[int, Dict[str, str]]]:
     """
     Las filas de datos de un CSV de entrada, con su numero de linea. Las
     lineas que empiezan por `#` son comentarios (asi un archivo de prueba
-    puede decir que lo es). Un fallo de E/S sale como tal.
+    puede decir que lo es). Un fallo de E/S sale como tal. `datos` son los
+    bytes del archivo ya leidos (`_texto_de`); `ruta` sigue nombrandolo en
+    los mensajes.
     """
-    texto = Path(ruta).read_text(encoding="utf-8-sig")
+    texto = _texto_de(ruta, datos)
     lineas = [(n, linea) for n, linea in enumerate(texto.splitlines(), start=1)
               if linea.strip() and not linea.lstrip().startswith(MARCA_COMENTARIO)]
     if not lineas:
@@ -2068,7 +2086,7 @@ def _numero(fila: Dict[str, str], columna: str, donde: str, *,
     return valor
 
 
-def cargar_cuencas(ruta: Any) -> Dict[str, Cuenca]:
+def cargar_cuencas(ruta: Any, *, datos: Optional[bytes] = None) -> Dict[str, Cuenca]:
     """
     Lee el CSV de cuencas (--cuencas): una fila por obra, con el `id` del CSV
     de puntos. Valida forma y dominio y NO corrige nada. Las claves de
@@ -2081,11 +2099,13 @@ def cargar_cuencas(ruta: Any) -> Dict[str, Cuenca]:
     vacia con cualquier otro (un factor escrito que no se aplica es un dato
     contradicho, no ignorado); y con una superficie de la plataforma vial en
     `cobertura` la celda `suelo` va vacia, porque esa tabla no tiene suelo.
+
+    `datos` (UI-1): los bytes del archivo ya leidos; sin ellos se lee `ruta`.
     """
     ruta = Path(ruta)
     cuencas: Dict[str, Cuenca] = {}
     for numero, fila in _filas(ruta, COLUMNAS_CUENCAS,
-                               COLUMNAS_CUENCAS_OPCIONALES):
+                               COLUMNAS_CUENCAS_OPCIONALES, datos=datos):
         donde = f"'{ruta.name}', linea {numero}"
         id_ = _texto(fila, "id", donde)
         if id_ in cuencas:
@@ -2160,7 +2180,8 @@ def cargar_cuencas(ruta: Any) -> Dict[str, Cuenca]:
     return cuencas
 
 
-def cargar_estacion(ruta: Any) -> Dict[str, SerieDeEstacion]:
+def cargar_estacion(ruta: Any, *,
+                    datos: Optional[bytes] = None) -> Dict[str, SerieDeEstacion]:
     """
     Lee el CSV de la estacion (--estacion): una fila por año, con las
     columnas `estacion`, `anio`, `p24_mm` y `fen`. Un archivo puede traer
@@ -2169,10 +2190,12 @@ def cargar_estacion(ruta: Any) -> Dict[str, SerieDeEstacion]:
     Fase 1-bis pide de la serie. Una celda VACIA no es un «no» --seria
     rellenar el hecho que el archivo tiene que declarar-- y detiene la carga.
     Un `p24_mm` de 0 es un dato y se admite.
+
+    `datos` (UI-1): los bytes del archivo ya leidos; sin ellos se lee `ruta`.
     """
     ruta = Path(ruta)
     por_estacion: Dict[str, List[RegistroDeLluvia]] = {}
-    for numero, fila in _filas(ruta, COLUMNAS_ESTACION):
+    for numero, fila in _filas(ruta, COLUMNAS_ESTACION, datos=datos):
         donde = f"'{ruta.name}', linea {numero}"
         estacion = _texto(fila, "estacion", donde)
         bruto_anio = _texto(fila, "anio", donde)
@@ -2215,8 +2238,22 @@ def cargar_estacion(ruta: Any) -> Dict[str, SerieDeEstacion]:
 
 def cargar_entrada(ruta_cuencas: Any, ruta_estacion: Any) -> EntradaHidrologica:
     """Las dos entradas de la Fase 1-bis, cargadas y cruzadas."""
-    cuencas = cargar_cuencas(ruta_cuencas)
-    estaciones = cargar_estacion(ruta_estacion)
+    return cruzar_entradas(cargar_cuencas(ruta_cuencas),
+                           cargar_estacion(ruta_estacion),
+                           ruta_cuencas, ruta_estacion)
+
+
+def cruzar_entradas(cuencas: Dict[str, Cuenca],
+                    estaciones: Dict[str, SerieDeEstacion],
+                    ruta_cuencas: Any, ruta_estacion: Any) -> EntradaHidrologica:
+    """
+    Las dos entradas ya cargadas, CRUZADAS: cada cuenca nombra una estacion
+    que el archivo de la estacion trae. Aparte de `cargar_entrada` desde UI-1
+    para que `servicio.cargar_hidrologia` lea y parsee cada archivo en el
+    MISMO orden de siempre --- cuencas y despues estacion --- con sus bytes
+    leidos una sola vez, que son de los que saca la huella. Las rutas son el
+    origen que la memoria imprime.
+    """
     for cuenca in cuencas.values():
         if cuenca.estacion not in estaciones:
             raise DatoFaltanteError(

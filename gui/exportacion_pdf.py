@@ -21,7 +21,8 @@ El proceso hijo es la propia CLI:
                   --plantilla <la del alcance> --progreso
 
 La sesion serializada es la MISMA que «Guardar sesion» escribe (formato de
-`src/sesion.py`): proyecto, CSV, datos externos, banderas, alcance y los
+`src/sesion.py`): proyecto, CSV, datos externos, las dos entradas de la
+hidrologia (desde el formato 4, UI-1), banderas, alcance y los
 criterios declarados CON su procedencia, que la CLI repone por
 `declaracion.restaurar_sesion` --- el mismo camino con guardia que la
 ventana ---. Por eso el PDF del hijo describe la corrida de la ventana y no
@@ -103,7 +104,8 @@ def sesion_de_la_corrida(informe: Any, *, proyecto: str, csv: str,
                          datos_externos: str, externos: Dict[str, str],
                          alcance: str, formato_version: int,
                          app_version: str, datos_sitio: str = "",
-                         id_sesion: str = "") -> Dict[str, Any]:
+                         id_sesion: str = "", cuencas: str = "",
+                         estacion: str = "") -> Dict[str, Any]:
     """
     La sesion que describe LA CORRIDA que produjo `informe`, no los campos
     vivos de la ventana.
@@ -117,6 +119,15 @@ def sesion_de_la_corrida(informe: Any, *, proyecto: str, csv: str,
     fotografio al correr, y los criterios salen del `ContextoCorrida`
     congelado (EXT-4): las claves declaradas o pisadas en caliente con el
     valor EFECTIVO con que gobernaron, y sus procedencias de entonces.
+
+    `cuencas` y `estacion` (UI-1, ficha T1-04, formato 4) son las rutas de
+    las dos entradas de la hidrologia CON QUE CORRIO el informe, tambien
+    fotografiadas por `ejecutar_pipeline`: sin ellas el hijo recalculaba sin
+    la hidrologia que la ventana uso, con el `Q_m3s` vacio de una obra con
+    cuenca convertido en «falta el dato». A diferencia del `sitio.json`
+    viajan como RUTAS --- no hay bloque que las sustituya ---, igual que el CSV
+    y el JSON de datos externos: el hijo relee los tres archivos (ficha
+    EXT-8-02), y la huella de cada uno queda en su JSON para compararla.
     """
     contexto = informe.contexto
     claves = tuple(contexto.declarados_en_caliente) + tuple(contexto.pisados_en_caliente)
@@ -143,6 +154,8 @@ def sesion_de_la_corrida(informe: Any, *, proyecto: str, csv: str,
         # releeria un archivo que pudo cambiar tras la corrida (PC-15). El
         # bloque lleva el origen real de cada dato, que es lo que imprime.
         "datos_sitio": "",
+        "cuencas": cuencas,
+        "estacion": estacion,
         "externos": dict(externos),
         "alcance": alcance,
         "criterios": {"valores": valores, "procedencias": procedencias},

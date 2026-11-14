@@ -45,7 +45,17 @@ from src.modelos import ALCANCE_EXPEDIENTE
 # La migracion es EXPLICITA (`migrar_a_actual`), no por defectos silenciosos:
 # una sesion v1 o v2 se completa y la puerta que la abre dice que se
 # completo.
-FORMATO_SESION = 3  # literal-ok: version del formato de sesion, no una magnitud
+# v4 (UI-1, ficha T1-04): `cuencas` y `estacion`, las rutas de las dos
+# entradas de la hidrologia (las de `--cuencas` y `--estacion`), guardadas y
+# resueltas con la MISMA convencion que el CSV: el texto tal como esta en el
+# campo al guardar, y `ruta_de_campo(texto)` al leerla, en las dos puertas. Una sesion v3 no conocia la hidrologia y
+# se completa con las dos vacias --que es exactamente lo que significaba: el
+# caudal entra por `Q_m3s`--; no hay nada que avisar, porque nada cambia, y
+# al guardarla se escribe en v4.
+FORMATO_SESION = 4  # literal-ok: version del formato de sesion, no una magnitud
+# El escalon anterior, con nombre: `migrar_a_actual` sube de v3 a v4 y una
+# sesion v3 incompleta se completa con el escalon de v2 -> v3.
+FORMATO_V3 = 3  # literal-ok: version del formato de sesion (EXT-10), no una magnitud
 
 # EL ESQUEMA DE LA SESION, como dato (PC-16): que tipo tiene que traer cada
 # clave. `errores_de_sesion` lo contrasta ENTERO antes de que nadie toque un
@@ -61,6 +71,8 @@ ESQUEMA_SESION = {
     "csv": str,
     "datos_externos": str,
     "datos_sitio": str,
+    "cuencas": str,
+    "estacion": str,
     "externos": dict,
     "alcance": str,
     "criterios": dict,
@@ -95,6 +107,20 @@ CLAVE_EXTERNA_DE_CAMPO = {
 # El unico campo que NO es numero: es una FILA de la Tabla N 02, y la coma
 # decimal no se le toca.
 CAMPO_CATEGORICO = "categoria_tr"
+
+
+def ruta_de_campo(texto: Any) -> Optional[Path]:
+    """
+    LA CONVENCION DE RUTAS DE LA SESION, una para las dos puertas (UI-1): el
+    texto de un campo de archivo sin los espacios de los extremos, y `None`
+    si queda vacio. La ventana ya lo leia asi al ejecutar (`.strip()`) y la
+    CLI hacia `Path(texto)` crudo al abrir la sesion, de modo que una ruta
+    tecleada con un espacio al final corria en la ventana y no existia para
+    `cli.py --sesion` (revision de UI-1). La relativa se resuelve contra el
+    directorio de trabajo, en las dos.
+    """
+    limpio = str(texto or "").strip()
+    return Path(limpio) if limpio else None
 
 
 def errores_de_sesion(data: Any) -> List[str]:
@@ -233,8 +259,30 @@ def _migrar_v2_a_v3(data: Dict[str, Any]) -> List[str]:
         data["csv_sha1"] = ""
     if not isinstance(data.get("corridas"), list):
         data["corridas"] = []
-    data["formato_version"] = FORMATO_SESION
+    data["formato_version"] = FORMATO_V3
     return avisos
+
+
+# Las claves que cada escalon de la migracion garantiza. Una sesion que dice
+# ser de una version y no las trae (las de `tests/apoyo/` que escriben
+# `FORMATO_SESION` sin traer todo) se completa con el mismo escalon.
+CLAVES_DE_V3 = ("id", "datos_sitio", "sitio", "csv_sha1", "corridas")
+CLAVES_DE_V4 = ("cuencas", "estacion")
+
+
+def _migrar_v3_a_v4(data: Dict[str, Any]) -> List[str]:
+    """
+    v3 no conocia la hidrologia (UI-1): se completa con las dos rutas
+    VACIAS, que es lo que una sesion v3 significaba --el caudal entra
+    declarado por `Q_m3s`--. No hay aviso: nada de lo que la sesion decia
+    cambia ni se supone (la diferencia con `_migrar_v2_a_v3`, que asigna
+    una identidad y deja gobernar a datos_sitio.py, y lo dice).
+    """
+    for clave in CLAVES_DE_V4:
+        if not isinstance(data.get(clave), str):
+            data[clave] = ""
+    data["formato_version"] = FORMATO_SESION
+    return []
 
 
 def migrar_a_actual(data: Any) -> Tuple[Dict[str, Any], List[str]]:
@@ -244,25 +292,33 @@ def migrar_a_actual(data: Any) -> Tuple[Dict[str, Any], List[str]]:
     la ventana leia una sesion v1 con defectos silenciosos y un texto cableado
     en `cargar_sesion`; la CLI ni miraba la version.
 
-    Sube de escalon en escalon (v1 -> v2 -> v3) para que cada version tenga
-    escrito, en un solo sitio, que le faltaba. Una sesion del formato actual
-    a la que le falten claves nuevas --- las de `tests/apoyo/` que escriben
-    `FORMATO_SESION` sin traer todo --- se completa igual, y lo dice. Una
-    version que no es entera, o mayor que la actual, es `ValueError` (nunca un
-    `TypeError` fuera del brazo de las puertas).
+    Sube de escalon en escalon (v1 -> v2 -> v3 -> v4) para que cada version
+    tenga escrito, en un solo sitio, que le faltaba. Una sesion de v3 o
+    posterior a la que le falten las claves de v3 --- las de `tests/apoyo/`
+    que escriben `FORMATO_SESION` sin traer todo --- se completa igual, y lo
+    dice; las dos de v4 se completan vacias y sin aviso (`_migrar_v3_a_v4`).
+    Una version que no es entera, o mayor que la actual, es `ValueError`
+    (nunca un `TypeError` fuera del brazo de las puertas).
     """
     version = _version_de(data)
     migrada = copy.deepcopy(data)
     avisos: List[str] = []
     if version < 2:
         avisos.extend(f"v1 -> v2: {a}" for a in _migrar_v1_a_v2(migrada))
-    if version < FORMATO_SESION:
+    if version < FORMATO_V3:
         avisos.extend(f"v2 -> v3: {a}" for a in _migrar_v2_a_v3(migrada))
-    elif not all(clave in migrada for clave in ("id", "datos_sitio", "sitio",
-                                                  "csv_sha1", "corridas")):
-        avisos.extend(f"v3 incompleta: {a}" for a in _migrar_v2_a_v3(migrada))
-        if not avisos:
-            avisos.append("v3 incompleta: se completaron las claves que faltaban")
+    elif not all(clave in migrada for clave in CLAVES_DE_V3):
+        incompleta = []
+        incompleta.extend(f"v{version} incompleta: {a}"
+                          for a in _migrar_v2_a_v3(migrada))
+        if not incompleta:
+            incompleta.append(f"v{version} incompleta: se completaron las "
+                              "claves que faltaban")
+        avisos.extend(incompleta)
+    if version < FORMATO_SESION or not all(isinstance(migrada.get(c), str)
+                                           for c in CLAVES_DE_V4):
+        avisos.extend(f"v3 -> v4: {a}" for a in _migrar_v3_a_v4(migrada))
+    migrada["formato_version"] = FORMATO_SESION
     return migrada, avisos
 
 
@@ -282,6 +338,8 @@ def sesion_vacia(app_version: str) -> Dict[str, Any]:
         "csv": "",
         "datos_externos": "",
         "datos_sitio": "",
+        "cuencas": "",
+        "estacion": "",
         "externos": {},
         "alcance": ALCANCE_EXPEDIENTE,
         "criterios": {"valores": {}, "procedencias": {}},

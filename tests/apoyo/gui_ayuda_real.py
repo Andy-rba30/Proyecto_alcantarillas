@@ -49,6 +49,7 @@ def main(destino: Path) -> int:
     obs = {}
     try:
         for pestana in (ayuda_gui.PESTANA_CSV, ayuda_gui.PESTANA_JSON,
+                        ayuda_gui.PESTANA_HIDROLOGIA,
                         ayuda_gui.PESTANA_CONCEPTOS):
             v = ayuda_gui.VentanaAyudaEntrada(raiz, pestana)
             v.update()
@@ -58,6 +59,12 @@ def main(destino: Path) -> int:
             obs[f"filas_json_{pestana}"] = list(v.tree_json.get_children())
             obs[f"filas_glosario_{pestana}"] = list(
                 v.tree_glosario.get_children())
+            # UI-1: las dos tablas de la pestaña de la hidrologia, fila a
+            # fila con lo que la ventana pinta.
+            obs[f"filas_hidrologia_{pestana}"] = {
+                archivo: [list(arbol.item(i, "values"))
+                          for i in arbol.get_children()]
+                for archivo, arbol in v.trees_hidrologia.items()}
             # El texto de conceptos se captura una vez: es el mismo en las
             # tres construcciones, y lo que el test compara es que la ventana
             # pinte LO QUE LE DAN, no tres copias de lo mismo.
@@ -81,6 +88,12 @@ def main(destino: Path) -> int:
         raiz.update()
         obs["misma_ventana"] = primera is segunda
         obs["pestana_tras_el_segundo_icono"] = primera.nb.tab(
+            primera.nb.select(), "text").strip()
+        # UI-1: el «i» de los dos campos de la hidrologia, sobre la viva.
+        tercero = app._abrir_ayuda(ayuda_gui.PESTANA_HIDROLOGIA)
+        raiz.update()
+        obs["misma_ventana_hidrologia"] = tercero is primera
+        obs["pestana_tras_el_icono_de_hidrologia"] = primera.nb.tab(
             primera.nb.select(), "text").strip()
         primera.destroy()
         raiz.update()

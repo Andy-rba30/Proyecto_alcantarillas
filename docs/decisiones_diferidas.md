@@ -4030,21 +4030,24 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   el umbral de colapso, que la hoja de ruta no fija.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v8_evento_extremo`
 
-## T1-04 · La hidrología entra sólo por la CLI: la GUI y la sesión no la conocen, y el pre-vuelo la carga pero no la calcula
+## T1-04 · La hidrología entra sólo por la CLI: la GUI y la sesión no la conocen, y el pre-vuelo la carga pero no la calcula — en parte cerrado (UI-1)
 
-- **Qué se difirió:** los campos de `--cuencas` y `--estacion` en la pestaña 1 de la
-  GUI, su sitio en la sesión serializada (`--sesion`), el SHA-1 de los dos archivos en
-  el contexto de la corrida, y la mitad del pre-vuelo (`--prevuelo`) que falta: estimar
-  si el cálculo hidrológico de un punto se va a detener.
-- **Por qué:** el prompt pide la entrada por las dos banderas y el servicio. La GUI
-  sigue calculando con el caudal declarado, que es su vía de siempre y no cambia. La
-  otra mitad del pre-vuelo sí se hizo, tras la auditoría: con las dos banderas carga y
-  valida los dos archivos, deja de decir «DETIENE» de un `Q_m3s` vacío que la corrida
-  va a calcular —lo dice «depende de la hidrología (no evaluada en pre-vuelo)»—, lo
-  avisa al pie, y ya no atribuye a `MH_hidrologia` el caudal del canal de la Familia C.
-- **Qué haría falta:** dos campos de archivo en la pestaña 1 que llamen a
-  `servicio.cargar_hidrologia`, dos claves en `sesion.py` (formato 4), dos huellas en
-  `ContextoCorrida`, y un estimador en `anticipo` de lo que detiene la Fase 1-bis
+- **Cerrado (UI-1, la interfaz y la sesión):** T-1 difirió los campos de `--cuencas` y
+  `--estacion` en la pestaña 1, su sitio en la sesión, el SHA-1 de los dos archivos y la
+  mitad del pre-vuelo que estima si el cálculo se detiene. UI-1 cierra las tres primeras:
+  dos campos de archivo con «Examinar…» y su «i» (la ayuda sale de
+  `src/ayuda_entrada.py::fichas_de_hidrologia`), `servicio.cargar_hidrologia` al
+  ejecutar y `hidrologia=` a `correr`, la sesión formato 4 con las dos rutas
+  (`sesion.FORMATO_SESION`), el hijo del PDF y `cli.py --sesion` con ellas, el anticipo
+  con el mismo conjunto de obras calculables que la CLI y M0
+  (`servicio.ids_con_caudal_calculable`) y las dos huellas en `ContextoCorrida`, de los
+  bytes que se leyeron. Las decisiones, en la ficha UI1-01.
+- **Abierto:** el estimador de lo que detiene la Fase 1-bis. Con los dos CSV el
+  pre-vuelo —el de la CLI y el anticipo de la ventana— carga y valida los archivos y
+  dice de un `Q_m3s` vacío con cuenca «depende de la hidrología (no evaluada en
+  pre-vuelo)»; no calcula si el punto se detendrá. Es una estimación que no gobierna
+  ningún botón (§0 de la cadena de interfaz).
+- **Qué haría falta:** un estimador en `anticipo` de lo que detiene la Fase 1-bis
   (criterio FEN sin declarar, cuenca fuera de la población de su método, dos áreas).
 - **Dónde vive:** `src/servicio.py::cargar_hidrologia`
 
@@ -7106,3 +7109,62 @@ T11-09 a la memoria.
   sin H2/H3/H6 la vista que se imprime callaba lo que la completa dice a propósito.
 - **Qué haría falta:** nada.
 - **Dónde vive:** `tests/test_t12_entregable.py::test_la_suite_del_entregable_pasa_sobre_una_exportacion`
+
+
+# Parte LVI — Lo que UI-1 de la cadena de interfaz dejó escrito: la hidrología en la ventana y la sesión de formato 4
+
+UI-1 (2026-11-14, sobre `bcd2d1a`) lleva a la ventana las dos entradas de la Fase 1-bis
+(ficha T1-04, en parte) y no cambia ningún cálculo: la línea base de la Familia C no se
+mueve, porque sin hidrología la memoria y el JSON no ganan ni un byte.
+
+## UI1-01 · Cómo entra la hidrología a la ventana: cinco decisiones de UI-1 y una premisa refutada
+
+- **Cerrado (UI-1):** (1) Cambiar el CSV de cuencas o el de la estación invalida el
+  informe vigente (`gui/app.py::MOTIVO_HIDROLOGIA_CAMBIADA`), como pedía el prompt. Su
+  premisa —«el mismo gesto que cambiar el CSV»— no se cumple: desde EXT-4 y EXT-8
+  cambiar el CSV NO invalida (el informe es de su corrida y el hijo del PDF usa las
+  entradas fotografiadas al correr), y UI-1 no lo tocó. (2) Una sesión v3 sube a v4 SIN
+  aviso: las dos rutas vacías son lo que v3 significaba (`sesion._migrar_v3_a_v4`); el
+  fixture `tests/fixtures/sesion_v3/` es una sesión de verdad guardada con el código de
+  partida. (3) Una convención de rutas para las dos puertas: el texto del campo sin
+  espacios en los extremos (`sesion.ruta_de_campo`; la CLI hacía `Path` crudo). (4) La
+  ayuda de los dos CSV sale de src/ y está a medias: cabecera, obligatoriedad, claves
+  admitidas (del cargador, por el servicio) y remisiones; concepto, unidad y origen, en
+  `docs/contrato_entradas.md` §2-bis. (5) El comparador mira la hidrología sin sus rutas
+  (`comparador.RUTAS_DE_LA_HIDROLOGIA`), y el anticipo dice lo mismo que `--prevuelo`
+  (`servicio.mensaje_de_carga_fallida`, `anticipo.AVISO_HIDROLOGIA_NO_CALCULADA`).
+- **Abierto:** si cambiar el CSV tendría que invalidar también, para que los gestos de
+  la pestaña 1 sean uno; y el hijo del PDF relee los dos archivos de la hidrología como
+  relee el CSV (ficha EXT-8-02): si cambian entre correr y exportar, su JSON lleva otras
+  huellas y nada lo detiene. `CLAUDE.md` conserva dos frases que UI-1 dejó desfasadas
+  —«`FORMATO_SESION = 3`» y «La GUI y la sesión todavía no conocen las dos entradas
+  (ficha T1-04)»—, sin tocar por decisión de la orquestadora: quedan para el dueño. Y un
+  resto anterior a UI-1, fuera de su alcance: si falla el JSON de datos externos, el
+  anticipo dice «El pre-vuelo no pudo armar los datos externos» y la CLI «No se pudo leer
+  la entrada».
+- **Qué haría falta:** la decisión del dueño sobre el gesto del CSV; para la relectura,
+  lo que se decida en EXT-8-02; las dos frases de `CLAUDE.md`, del dueño; el resto del
+  JSON, `servicio.mensaje_de_carga_fallida` también en ese brazo del anticipo.
+- **Dónde vive:** `gui/app.py::_al_cambiar_la_hidrologia`
+
+## UI1-02 · Tres conductores de ventana real se habían quedado atrás de T-3, y el editor de la pestaña 2 sólo nombra filas de la primera tabla
+
+- **Cerrado (UI-1):** la suite de partida (`bcd2d1a`, con Tk) daba tres rojos de ventana
+  real anteriores a UI-1, que nadie había corrido con Tk desde T-3. No eran defectos de
+  la ventana sino de los conductores: T-3 dio valor de archivo a los siete criterios del
+  cajón y pasó `n_manning_cajon` a la fila de la Tabla B.1 del HDS-5. Se corrigieron sin
+  tocar cálculo ni criterio: `tests/apoyo/gui_corrida_perfil.py` teclea la fila de
+  archivo (`concrete_boxes`, como hizo T-3 con su test, H1) y deja los siete sin valor
+  mientras corre (`tests/apoyo/criterios.py::sin_valor`), para que el aserto de C8
+  —el pendiente de la Familia C se ve y se declara desde la ventana— conserve su
+  objeto; `tests/apoyo/gui_eb_real.py` vacía con «Quitar par» la serie que el editor
+  monta con el valor de archivo antes de teclear la suya.
+- **Abierto:** el editor tipado de la pestaña 2 deriva sus filas de la PRIMERA tabla de un
+  criterio de varias (`src/editores.py::_opciones_de_tabla`): `concreto_afinado`, la
+  alternativa barrible de la Tabla N 09 que la ficha de `n_manning_cajon` nombra, sólo
+  entra con nota, como adopción, y no con la procedencia de su fila (el barrido de T-11
+  la pasa con nota por eso).
+- **Qué haría falta:** que `esquema_de` ofrezca las filas de todas las tablas de la ficha y
+  que `declarar` declare cada una con su `tabla_id`. Es semántica de declaración, fuera
+  del alcance de UI-1.
+- **Dónde vive:** `src/editores.py::_opciones_de_tabla`

@@ -72,9 +72,12 @@ Pestanas -- son CUATRO, y esta lista decia tres (SIS-A-10)
                             `cli.py`, AGRUPADOS por las familias que los usan
                             y anotados) + ALCANCE de la corrida + el panel
                             «Anticipo antes de correr» (G3, ver mas abajo) +
-                            boton de ejecucion. Los dos campos de archivo
-                            llevan su icono «i», que abre la AYUDA DERIVADA
-                            (ver mas abajo).
+                            boton de ejecucion. Desde UI-1, los dos CSV de la
+                            hidrologia (cuencas y estacion, opcionales y
+                            juntos), guardados en la sesion de formato 4.
+                            Los campos de archivo del expediente llevan su
+                            icono «i», que abre la AYUDA DERIVADA (ver mas
+                            abajo).
     2. Criterios           Los criterios adoptados y su estado, con FILTRO
                             (por estado, por AMBITO, por FASE y por texto) y RECUENTO de
                             pendientes; la ventana normativa de cada variable
@@ -304,6 +307,9 @@ from src import traza_punto as tp
 # `.PESTANA_CSV` a la ultima cadena de tooltip del bucle --- un
 # AttributeError al pulsar, no al arrancar. Lo encontro `pyflakes`.
 from src import sesion as ses
+# El CONTENIDO de la ayuda (UI-1: los tooltips de los dos campos de la
+# hidrologia); la ventana de ayuda es `ayuda_ent`.
+from src import ayuda_entrada as ay_contenido
 from gui import ayuda_entrada as ayuda_ent  # noqa: E402
 from gui import editores as ged  # noqa: E402
 from gui import exportacion_pdf as expdf  # noqa: E402
@@ -364,6 +370,12 @@ MOTIVO_INFORME_DESACTUALIZADO = (
 MOTIVO_CORRIDA_FALLIDA = (
     "la ultima corrida no produjo informe: corrija la entrada y vuelva a "
     "ejecutar el calculo")
+# UI-1 (ficha T1-04): el gesto de cambiar el CSV de cuencas o el de la
+# estacion, que cambia de donde sale el caudal de la proxima corrida.
+MOTIVO_HIDROLOGIA_CAMBIADA = (
+    "el informe de la ultima corrida ya no describe el estado actual: se "
+    "cambio el CSV de cuencas o el de la estacion despues de correr. Vuelva "
+    "a ejecutar el calculo")
 
 # Los filtros de estado de la tabla de criterios (pestana 2). Cada entrada es
 # (rotulo, tag), y el `tag` es el MISMO que devuelve `_estado_criterio`: filtrar
@@ -541,6 +553,11 @@ class ExpedienteApp:
         # El JSON de datos de sitio [S] de la obra (EXT-10, EXT-V-01): hermano
         # del de datos externos. Vacio, gobiernan los de datos_sitio.py.
         self.datos_sitio_var = tk.StringVar()
+        # LAS DOS ENTRADAS DE LA HIDROLOGIA (UI-1, ficha T1-04): las del CSV
+        # de cuencas y del de la estacion, opcionales y JUNTAS. Vacias, el
+        # caudal entra declarado por `Q_m3s` como siempre.
+        self.cuencas_var = tk.StringVar()
+        self.estacion_var = tk.StringVar()
         # LA IDENTIDAD DE LA SESION Y SUS CORRIDAS (E04): la sesion es el
         # unico lugar del «proyecto actual». El id nace con la ventana (una
         # sesion vacia) y se sustituye al cargar otra; cada corrida que
@@ -598,6 +615,12 @@ class ExpedienteApp:
         self.datos_externos_var.trace_add("write", lambda *_a: self._pintar_anticipo())
         for _var in self.externos_vars.values():
             _var.trace_add("write", lambda *_a: self._pintar_anticipo())
+        # Y los dos campos de la hidrologia (UI-1): cambiar cualquiera invalida
+        # el informe vigente --- la proxima corrida sacaria el caudal de otro
+        # sitio --- y repinta el anticipo, que con ellos deja de llamar
+        # «DETIENE» a un `Q_m3s` vacio que la corrida va a calcular.
+        self.cuencas_var.trace_add("write", lambda *_a: self._al_cambiar_la_hidrologia())
+        self.estacion_var.trace_add("write", lambda *_a: self._al_cambiar_la_hidrologia())
 
     def _excepcion_en_callback(self, tipo, valor, tb):
         traceback.print_exception(tipo, valor, tb)
@@ -621,6 +644,26 @@ class ExpedienteApp:
         self.informe = None
         self._apagar_exportadores(motivo)
         self._vaciar_tablas_del_informe(motivo)
+
+    def _al_cambiar_la_hidrologia(self):
+        """
+        El gesto de escribir en el campo del CSV de cuencas o en el de la
+        estacion (UI-1, ficha T1-04): el informe vigente deja de describir
+        lo que la proxima corrida calcularia, y el anticipo se repinta con
+        las obras cuyo caudal esa corrida puede calcular.
+        """
+        self._invalidar_informe(MOTIVO_HIDROLOGIA_CAMBIADA)
+        self._pintar_anticipo()
+
+    def _rutas_de_hidrologia(self):
+        """
+        Las dos rutas de la hidrologia como `servicio.cargar_hidrologia` las
+        recibe, por `sesion.ruta_de_campo`: la MISMA convencion con que la CLI
+        las lee de una sesion guardada (`cli.cargar_sesion_serializada`), de
+        modo que lo que corre en la ventana corre tambien en el hijo del PDF.
+        """
+        return (ses.ruta_de_campo(self.cuencas_var.get()),
+                ses.ruta_de_campo(self.estacion_var.get()))
 
     def _vaciar_tablas_del_informe(self, motivo):
         """Las pestañas 3 y 4 y la barra dejan de mostrar la corrida anterior."""
@@ -846,9 +889,44 @@ class ExpedienteApp:
                            "la memoria imprime de que archivo salio cada [S]. Vacio,\n"
                            "gobiernan los del archivo: la obra del repositorio.")
 
+        # LAS DOS ENTRADAS DE LA HIDROLOGIA (UI-1, ficha T1-04), clon de la
+        # fila del JSON de datos externos y con su «i»: el contenido de la
+        # ayuda sale de `src/ayuda_entrada.py`, que lo pregunta al cargador.
+        # Van JUNTAS; si solo hay una, EJECUTAR lo dice con el mensaje de
+        # `servicio.cargar_hidrologia`, y el anticipo tambien.
+        ttk.Label(f_proj, text="CSV de cuencas (opcional):").grid(
+            row=4, column=0, sticky="w", padx=5, pady=4)
+        ent_cuencas = ttk.Entry(f_proj, textvariable=self.cuencas_var)
+        ent_cuencas.grid(row=4, column=1, sticky="we", padx=5, pady=4)
+        f_cuencas = ttk.Frame(f_proj)
+        f_cuencas.grid(row=4, column=2, sticky="w", padx=5)
+        ttk.Button(f_cuencas, text="Examinar...",
+                   command=self._elegir_cuencas).pack(side="left")
+        BotonAyuda(
+            f_cuencas, lambda: self._abrir_ayuda(ayuda_ent.PESTANA_HIDROLOGIA),
+            ay_contenido.AYUDA_DEL_ICONO_HIDROLOGIA
+        ).pack(side="left", padx=(6, 0))
+        Tooltip(ent_cuencas, ay_contenido.ayuda_del_campo_de_hidrologia(
+            ay_contenido.ARCHIVO_CUENCAS))
+
+        ttk.Label(f_proj, text="CSV de la estación (opcional):").grid(
+            row=5, column=0, sticky="w", padx=5, pady=4)
+        ent_estacion = ttk.Entry(f_proj, textvariable=self.estacion_var)
+        ent_estacion.grid(row=5, column=1, sticky="we", padx=5, pady=4)
+        f_estacion = ttk.Frame(f_proj)
+        f_estacion.grid(row=5, column=2, sticky="w", padx=5)
+        ttk.Button(f_estacion, text="Examinar...",
+                   command=self._elegir_estacion).pack(side="left")
+        BotonAyuda(
+            f_estacion, lambda: self._abrir_ayuda(ayuda_ent.PESTANA_HIDROLOGIA),
+            ay_contenido.AYUDA_DEL_ICONO_HIDROLOGIA
+        ).pack(side="left", padx=(6, 0))
+        Tooltip(ent_estacion, ay_contenido.ayuda_del_campo_de_hidrologia(
+            ay_contenido.ARCHIVO_ESTACION))
+
         self.lbl_error_datos = ttk.Label(f_proj, text="", style="Error.TLabel",
                                          wraplength=820, justify="left")
-        self.lbl_error_datos.grid(row=4, column=0, columnspan=3, sticky="w",
+        self.lbl_error_datos.grid(row=6, column=0, columnspan=3, sticky="w",
                                   padx=5, pady=(6, 0))
 
         panel_datos = Panel(p, "Datos declarados (no son columna del CSV)")
@@ -1228,11 +1306,27 @@ class ExpedienteApp:
         if contraste is None:
             self.lbl_anticipo_prevuelo.config(text=antc.SIN_CSV, foreground=comp.TEXTO_SUAVE)
             return
+        # LA HIDROLOGIA DE LA PESTAÑA (UI-1, ficha T1-04), por la MISMA puerta
+        # que la corrida: con los dos CSV, las obras cuyo caudal la corrida
+        # puede calcular son las de `cli.ids_con_caudal_calculable`, el mismo
+        # conjunto que M0 recibe en `correr` y que la CLI pasa en `_prevuelo`;
+        # su `Q_m3s` vacio deja de pintarse «DETIENE». Una sola entrada, o un
+        # archivo ilegible, no rompen el anticipo: se dice, con el mensaje del
+        # servicio, y se sigue.
+        try:
+            hidrologia = cli.cargar_hidrologia(*self._rutas_de_hidrologia())
+        except (OSError, UnicodeDecodeError, ErrorProyecto) as exc:
+            # Lo MISMO que `cli.py --prevuelo` dice para la misma falta.
+            self.lbl_anticipo_prevuelo.config(
+                text=cli.mensaje_de_carga_fallida(exc), foreground=COLOR_AVISO)
+            return
         ruta_externos = self.datos_externos_var.get().strip() or None
         try:
             externos = cli.cargar_datos_externos(
                 Path(ruta_externos) if ruta_externos else None, self._leer_banderas())
-            estimado = antc.datos_faltantes_por_punto(Path(ruta), externos, alcance)
+            estimado = antc.datos_faltantes_por_punto(
+                Path(ruta), externos, alcance,
+                ids_con_caudal_calculable=cli.ids_con_caudal_calculable(hidrologia))
         except (OSError, UnicodeDecodeError, ValueError) as exc:
             self.lbl_anticipo_prevuelo.config(
                 text=f"El pre-vuelo no pudo armar los datos externos: {exc}",
@@ -1240,8 +1334,12 @@ class ExpedienteApp:
             return
         lineas = antc.lineas_del_prevuelo(estimado)
         detiene = any(e.detiene for e in estimado)
+        # Con los dos CSV, el aviso que la CLI imprime al pie del pre-vuelo,
+        # del mismo sitio (`antc.AVISO_HIDROLOGIA_NO_CALCULADA`).
+        cabecera = lineas[0] if hidrologia is None else (
+            f"{lineas[0]}\n{antc.AVISO_HIDROLOGIA_NO_CALCULADA}")
         self.lbl_anticipo_prevuelo.config(
-            text=lineas[0], foreground=COLOR_AVISO if detiene else comp.TEXTO_SUAVE)
+            text=cabecera, foreground=COLOR_AVISO if detiene else comp.TEXTO_SUAVE)
         for e in estimado:
             familia = "" if e.familia is None else f" ({e.familia.value})"
             self.tree_prevuelo.insert("", "end", values=(
@@ -1281,8 +1379,12 @@ class ExpedienteApp:
         """
         viva = getattr(self, "_ventana_ayuda", None)
         if viva is not None and viva.winfo_exists():
-            viva.nb.select(viva.tab_json if pestana == ayuda_ent.PESTANA_JSON
-                           else viva.tab_csv)
+            if pestana == ayuda_ent.PESTANA_JSON:
+                viva.nb.select(viva.tab_json)
+            elif pestana == ayuda_ent.PESTANA_HIDROLOGIA:
+                viva.nb.select(viva.tab_hidrologia)
+            else:
+                viva.nb.select(viva.tab_csv)
             viva.lift()
             viva.focus_set()
             return viva
@@ -1312,6 +1414,22 @@ class ExpedienteApp:
         )
         if ruta:
             self.datos_sitio_var.set(ruta)
+
+    def _elegir_cuencas(self):
+        ruta = filedialog.askopenfilename(
+            title="Seleccionar CSV de cuencas (una fila por obra)",
+            filetypes=[("Archivos CSV", "*.csv"), ("Todos los archivos", "*.*")],
+        )
+        if ruta:
+            self.cuencas_var.set(ruta)
+
+    def _elegir_estacion(self):
+        ruta = filedialog.askopenfilename(
+            title="Seleccionar CSV de la estacion (lluvia maxima en 24 h)",
+            filetypes=[("Archivos CSV", "*.csv"), ("Todos los archivos", "*.*")],
+        )
+        if ruta:
+            self.estacion_var.set(ruta)
 
     # -------------------------- Pestana 2 -----------------------------
     def _construir_tab_criterios(self, p):
@@ -2791,10 +2909,15 @@ class ExpedienteApp:
         # radio o la luz cambiados despues de correr --- mandaria al hijo a
         # calcular otra obra (auditoria adversarial de EXT-8).
         texto_sitio = self.datos_sitio_var.get().strip()
+        # Las dos rutas de la hidrologia tambien (UI-1): el hijo del PDF las
+        # necesita para calcular el caudal que la ventana calculo.
+        ruta_cuencas, ruta_estacion = self._rutas_de_hidrologia()
         self.entradas_de_la_corrida = {
             "csv": ruta_csv_texto,
             "datos_externos": texto_externos,
             "datos_sitio": texto_sitio,
+            "cuencas": "" if ruta_cuencas is None else str(ruta_cuencas),
+            "estacion": "" if ruta_estacion is None else str(ruta_estacion),
             "externos": {clave: var.get() for clave, var in self.externos_vars.items()},
             "alcance": self.alcance_var.get(),
         }
@@ -2813,8 +2936,15 @@ class ExpedienteApp:
             return
         try:
             externos = cli.cargar_datos_externos(ruta_externos, self._leer_banderas())
+            # LAS DOS ENTRADAS DE LA FASE 1-bis (UI-1, ficha T1-04), en el
+            # MISMO try que el JSON de datos externos: un CSV de cuencas mal
+            # escrito, o una sola de las dos, es un expediente que no se puede
+            # cargar (ErrorProyecto, con el mensaje del servicio), y un
+            # archivo que no existe es un aviso de archivo (OSError).
+            hidrologia = cli.cargar_hidrologia(ruta_cuencas, ruta_estacion)
             self.informe = cli.correr(ruta_csv, externos,
-                                      alcance=self.alcance_var.get())
+                                      alcance=self.alcance_var.get(),
+                                      hidrologia=hidrologia)
         # SIS-E-01. Este brazo capturaba (OSError, ValueError), y ValueError
         # es la excepcion mas comun de un fallo de PROGRAMA nacido dentro del
         # pipeline: cualquiera de ellos se mostraba al proyectista como "No se
@@ -2829,10 +2959,10 @@ class ExpedienteApp:
         # Windows -- con las eñes del castellano -- estrellaria la ventana con
         # una traza en vez de decir que el archivo no esta en UTF-8.
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-            self._mostrar_error_entrada(f"No se pudo leer la entrada:\n{exc}")
+            self._mostrar_error_entrada(cli.mensaje_de_carga_fallida(exc, ":\n"))
             return
         except ErrorProyecto as exc:
-            self._mostrar_error_entrada(f"El expediente no se puede cargar:\n{exc}")
+            self._mostrar_error_entrada(cli.mensaje_de_carga_fallida(exc, ":\n"))
             return
         except Exception as exc:  # fallo de programa: se muestra con traza
             traceback.print_exc()
@@ -3279,6 +3409,9 @@ class ExpedienteApp:
         declarados por sesion, con trazabilidad y fecha), `csv_sha1` de la
         ultima corrida y `corridas` con su `informe_json` embebido. La
         sesion es el unico lugar del «proyecto actual».
+
+        FORMATO 4 (UI-1, ficha T1-04): `cuencas` y `estacion`, las rutas de
+        las dos entradas de la hidrologia tal como estan en sus campos.
         """
         data = {
             "formato_version": FORMATO_SESION,
@@ -3288,6 +3421,10 @@ class ExpedienteApp:
             "csv": self.csv_var.get(),
             "datos_externos": self.datos_externos_var.get(),
             "datos_sitio": self.datos_sitio_var.get(),
+            # Formato 4 (UI-1): las dos rutas de la hidrologia, TAL COMO ESTAN
+            # EN EL CAMPO, igual que el CSV: la convencion de rutas es una.
+            "cuencas": self.cuencas_var.get(),
+            "estacion": self.estacion_var.get(),
             "externos": {clave: var.get() for clave, var in self.externos_vars.items()},
             "alcance": self.alcance_var.get(),
             "criterios": dec.estado_de_sesion(),
@@ -3379,6 +3516,12 @@ class ExpedienteApp:
         self.alcance_var.set(alcance)
 
         aviso = self._aplicar_bloques_de_sesion(data, origen=f"sesion {Path(ruta).name}")
+        # Las dos rutas de la hidrologia (formato 4; una sesion v3 las trae
+        # vacias tras migrar). DESPUES de los bloques, que ya retiraron el
+        # informe con el motivo de la sesion: el gesto de los dos campos no
+        # pisa ese motivo con el suyo.
+        self.cuencas_var.set(data.get("cuencas", ""))
+        self.estacion_var.set(data.get("estacion", ""))
 
         self.lbl_error_datos.config(text="")
         self._llenar_tabla_criterios()
@@ -3415,6 +3558,10 @@ class ExpedienteApp:
             var.set("")
         self.alcance_var.set(data["alcance"])
         aviso = self._aplicar_bloques_de_sesion(data, origen="proyecto nuevo")
+        # Vacios, como los demas campos (UI-1), y despues de los bloques por
+        # la misma razon que en «Cargar sesion».
+        self.cuencas_var.set(data["cuencas"])
+        self.estacion_var.set(data["estacion"])
         self.lbl_error_datos.config(text="")
         self._llenar_tabla_criterios()
         self.nb.select(self.tab_datos)
