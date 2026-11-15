@@ -59,7 +59,8 @@ un expediente: los [S] de corredor de La Unión están en datos_sitio.py y no es
 hardcoding sino diseño (EXT-V-01, decidido en EXT-0). Lo que faltaba era un
 requisito de producto —calcular un segundo corredor sin editar código—, y se
 resuelve así: un [S] declarado por sesión vive en el bloque `sitio` de la
-sesión JSON (`FORMATO_SESION = 3`, `src/sesion.py`) y entra al proceso por
+sesión JSON (`FORMATO_SESION = 4` desde UI-1, que sumó las rutas de cuencas
+y estación; una sesión de formato 3 se sigue abriendo, `src/sesion.py`) y entra al proceso por
 `--datos-sitio sitio.json` en la CLI —hermano de `--datos-externos`— o por el
 campo «JSON de datos de sitio» de la pestaña 1 de la GUI, SIEMPRE por
 `datos_sitio.establecer_dato_dinamico(clave, valor, trazabilidad, fecha,
@@ -195,8 +196,11 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   para la longitud de cuneta de la Fase 10, y desde T-9 la usa la Fase 1-bis
   para el caudal de un punto de Familia B —que es, por contrato, el de la
   cuneta que descarga en el alivio—, UNA vez: la Fase 10 lo reutiliza y no
-  repite sus pasos). La GUI y la sesión todavía no conocen las dos entradas
-  (ficha T1-04).
+  repite sus pasos). Desde UI-1 la ventana (pestaña 1: «CSV de cuencas» y
+  «CSV de la estación», que se cargan con `servicio.cargar_hidrologia`) y la
+  sesión de formato 4 conocen las dos entradas, y el hijo del PDF y
+  `cli.py --sesion` corren con las rutas con que corrió el informe; de T1-04
+  sigue diferido sólo el estimador del pre-vuelo para la Fase 1-bis.
 - **La Fase 10 verifica, y puede fallar (T-9).** `src/modulos/M10_espaciamiento.py`
   tiene dos verificaciones que entran a la aceptación de la Familia B
   (`PERFILES[Familia.B].verificaciones_aceptacion` = V1 + V2 + V4 + V5 + VB1 +
@@ -726,8 +730,12 @@ ErrorProyecto.
   que PC-34 no aplica y `3,5` son dos), imprime la tabla, avisa de las
   banderas que no aplica y escribe `{"barridos": [...]}` en `--json` o en
   `<csv>.barrido.json`; NO arma memoria, porque el barrido es un anexo
-  de la tesis y no parte del expediente. El botón «Barrido…» de la
-  pestaña 2 se difirió con símbolo (ficha PF-3-01).
+  de la tesis y no parte del expediente. Desde UI-3 el botón «Barrido…» de
+  la pestaña 2 lo corre en un proceso hijo (`cli.py --sesion` con la sesión
+  de la ventana, el patrón de EXT-8), pinta las mismas líneas que la CLI y
+  deja la ventana como estaba; qué criterio se puede barrer lo decide
+  `barrido.motivo_para_no_barrer`, en `src/` (fichas PF-3-01, UI3-01 a
+  UI3-03).
 
 ## Tests
 - pytest en tests/. Mínimo un test por módulo.

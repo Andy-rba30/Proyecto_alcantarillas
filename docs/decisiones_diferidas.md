@@ -2941,9 +2941,9 @@ símbolo.
   tocar el informe de la pestaña 3, la pestaña 2 refrescada al volver y su test de ventana
   real (`tests/test_ui3_barrido_ventana.py`)—. Lo único nuevo en `src/` es leer de vuelta
   el JSON del barrido: sin ello la ventana pintaría con una copia suya de la tabla.
-- **Qué haría falta:** nada para esta ficha. `CLAUDE.md` conserva la frase «El botón
-  «Barrido…» de la pestaña 2 se difirió con símbolo (ficha PF-3-01)», desfasada desde
-  UI-3, sin tocar por decisión de la orquestadora: queda para el dueño.
+- **Qué haría falta:** nada para esta ficha. La frase de `CLAUDE.md` «El botón «Barrido…»
+  de la pestaña 2 se difirió con símbolo», desfasada desde UI-3, la corrigió el dueño
+  tras la cadena UI (2026-11-15; ficha UI4-02).
 - **Dónde vive:** `gui/ventana_barrido.py::VentanaBarrido`
 
 # Parte XXXIII — Lo que PF-4 dejó escrito al declarar el régimen de V2b
@@ -7144,14 +7144,14 @@ mueve, porque sin hidrología la memoria y el JSON no ganan ni un byte.
 - **Abierto:** si cambiar el CSV tendría que invalidar también, para que los gestos de
   la pestaña 1 sean uno; y el hijo del PDF relee los dos archivos de la hidrología como
   relee el CSV (ficha EXT-8-02): si cambian entre correr y exportar, su JSON lleva otras
-  huellas y nada lo detiene. `CLAUDE.md` conserva dos frases que UI-1 dejó desfasadas
-  —«`FORMATO_SESION = 3`» y «La GUI y la sesión todavía no conocen las dos entradas
-  (ficha T1-04)»—, sin tocar por decisión de la orquestadora: quedan para el dueño. Y un
+  huellas y nada lo detiene. Las dos frases de `CLAUDE.md` que UI-1 dejó desfasadas
+  («`FORMATO_SESION = 3`» y «La GUI y la sesión todavía no conocen las dos entradas»)
+  las corrigió el dueño tras la cadena UI (2026-11-15; ficha UI4-02). Y un
   resto anterior a UI-1, fuera de su alcance: si falla el JSON de datos externos, el
   anticipo dice «El pre-vuelo no pudo armar los datos externos» y la CLI «No se pudo leer
   la entrada».
 - **Qué haría falta:** la decisión del dueño sobre el gesto del CSV; para la relectura,
-  lo que se decida en EXT-8-02; las dos frases de `CLAUDE.md`, del dueño; el resto del
+  lo que se decida en EXT-8-02; el resto del
   JSON, `servicio.mensaje_de_carga_fallida` también en ese brazo del anticipo.
 - **Dónde vive:** `gui/app.py::_al_cambiar_la_hidrologia`
 
@@ -7407,14 +7407,14 @@ memoria cambia, y la línea base no se mueve: el recorrido la reproduce por la v
 - **Por qué así:** una captura hecha a mano envejece sin aviso; tomada por el recorrido que
   la suite ejecuta se regenera con un comando y su forma queda fijada. No se comparan sus
   bytes: la hora de la corrida está en la barra de estado.
-- **Abierto:** `CLAUDE.md` conserva TRES frases que la cadena UI dejó desfasadas, sin tocar
-  por decisión de la orquestadora (fichas UI1-01 y PF-3-01): «`FORMATO_SESION = 3`»
-  (sección «Taxonomía de etiquetas», la casa de los [S] de otra obra; es 4 desde UI-1),
-  «La GUI y la sesión todavía no conocen las dos entradas (ficha T1-04)» (sección
-  «Arquitectura», la hidrología) y «El botón «Barrido…» de la pestaña 2 se difirió con
-  símbolo (ficha PF-3-01)» (sección «GUI», PF-3). UI-4 no añade ninguna: `CLAUDE.md` no
-  nombra ni el reparto del divisor, ni el cierre de la ventana, ni las filas de exportación.
-- **Qué haría falta:** que el dueño corrija las tres frases.
+- **Cerrado después (dueño, 2026-11-15):** las TRES frases de `CLAUDE.md` que la cadena UI
+  dejó desfasadas, sin tocar durante la cadena por decisión de la orquestadora, quedaron
+  corregidas por decisión del dueño: «`FORMATO_SESION = 3`» (sección «Taxonomía de
+  etiquetas»; es 4 desde UI-1), «La GUI y la sesión todavía no conocen las dos entradas»
+  (sección «Arquitectura», la hidrología) y «El botón «Barrido…» de la pestaña 2 se difirió
+  con símbolo» (sección «GUI», PF-3). UI-4 no añadió ninguna: `CLAUDE.md` no nombra ni el
+  reparto del divisor, ni el cierre de la ventana, ni las filas de exportación.
+- **Qué haría falta:** nada de `CLAUDE.md`.
 - **Dónde vive:** `tests/apoyo/gui_ui4_recorrido_real.py::GEOMETRIA_DE_LAS_CAPTURAS`
 
 ## UI4-03 · Lo que la revisión independiente de UI-4 encontró: el hijo que ya terminó al cerrar y un ciclo de sesión que no distinguía «repuesto» de «por defecto»
