@@ -91,6 +91,7 @@ UI-1 hidrología en la ventana + sesión formato 4      (primero, secuencial)
  └── UI-3 pestaña 2: botón «Barrido…»                         ─┘ (worktrees)
 UI-4 integración y verificación de la ventana         (último, secuencial)
 UI-5 cuatro decisiones del dueño tras la cadena        (añadido el 2026-11-15, después de UI-4)
+VE-1 defectos confirmados por la validación externa  (añadido el 2026-11-15, después de UI-5)
 ```
 
 **Por qué UI-1 va primero:** cambia el formato de la sesión y lo que viaja al proceso hijo;
@@ -194,6 +195,32 @@ Ejecuta únicamente UI-5 de proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md 
 Permisos de esta etapa (excepción a la puerta de la cadena, por decisión del dueño): src/modulos/M11_reporte.py SÓLO en _remision_a_la_completa y _escribir_pdf (y lo que esos dos necesiten), y src/criterios_adoptados.py SÓLO en la guardia (ningún valor, ninguna ficha de criterio). Nada de constantes_normativas.py ni de datos_sitio.py; ningún cálculo cambia.
 
 5. Tests primero, en rojo (§1 regla 4), y ventana real bajo xvfb. Fichas: cierra los puntos de UI1-01, UI2-01 (b), UI2-03 y UI3-03 que estas decisiones resuelven, y abre UI5-01 con lo que quede. Ritual de cierre. Commit: interfaz(UI-5): ... — UI1-01, UI2-01, UI2-03, UI3-03.
+```
+
+### VE-1 · Defectos confirmados por la validación externa de punta a punta (añadido el 2026-11-15, después de UI-5)
+
+Por pedido del dueño, la app se corrió ENTERA (CLI y ventana real) contra ejemplos
+publicados: manual de drenaje del TDOT (HDS-5 a mano y HY-8), tesis peruanas (UNC, UPAO,
+UNT) y obras reales (WisDOT STH 32, vía TU-107 de Tumbes). 371 magnitudes contrastadas:
+ningún resultado de cálculo resultó defecto; 3 diferencias son errores de la fuente
+(imprecisión de HY-8) y el resto, diferencias de método o de norma. Un revisor
+independiente de otro modelo repitió corridas, cotejó los datos con los PDF y rehízo los
+recálculos, y confirmó tres defectos: uno de código y dos de documentación. El material de
+la validación vive fuera del entregable, en la rama de respaldo de la orquestación
+(`proceso/orquestacion_UI/validacion_web/` y `revision_validacion/`).
+
+```text
+Ejecuta únicamente VE-1 de proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md y aplica sus reglas comunes (§1) y proceso/reglas_de_correccion_de_auditorias.md. Parte de main con UI-1 a UI-5 integrados. Lee antes: CLAUDE.md (en especial «Fuente de verdad»: la hoja de ruta, y qué se hace cuando discrepa), src/modulos/M2_material.py (la progresión de diámetros y su guardia de pertenencia), src/criterios_adoptados.py (la ficha de `diametros_normalizados`), src/modulos/M5_verificaciones.py (V7) y src/modulos/M8_estructural.py (docstrings de la subpresión), docs/contrato_entradas.md (fila de `NF_profundidad_m`), src/variables_entrada.py (columna `NF_profundidad_m`) y las líneas 223, 557 y 859 de docs/hoja_de_ruta_alcantarillas_v8.md.
+
+1. D1 · CÓDIGO (severidad media). src/modulos/M2_material.py, siguiente escalón de la progresión declarada: `siguiente = round(inicio + (n + 1) * paso, 2)`. Con `diametros_normalizados` = {"inicio": 0.9144, "paso": 0.1524} —la serie de 6 in que la propia ficha nombra como «la serie real», y que la puerta acepta— el segundo escalón se evalúa con 1.07 m (un diámetro que nadie declaró) en vez de 1.0668, y el tercero levanta DatoInvalidoError «no pertenece a la progresión» (culpando al dato D, que el usuario no escribió), y el punto termina como DisenoNoFactibleError en los tres materiales aunque un diámetro mayor cumpliría. Falla igual con 0.90 + 0.075 y 0.90 + 0.125. Corrige el CONSUMIDOR para que la serie declarada se recorra tal cual (la guardia de pertenencia ya absorbe el ruido flotante con TOL_UMBRAL_NORMATIVO), SIN que cambie ningún número impreso de la línea base con la progresión por defecto (0.90 / 0.15): si quitar el redondeo deja ruido flotante en lo que se imprime o se vuelca al JSON, la corrección no es ésa. Tests: la serie de 6 in de punta a punta (el punto dimensiona con 1.0668 y no con 1.07), pasos de 0.075 y 0.125, y la línea base intacta.
+
+2. D2 · DOCUMENTACIÓN (severidad baja). V7 (flotación) NO lee NF_profundidad_m —supone el conducto sumergido, lado seguro— y el código está sostenido por la fila V7 de la hoja de ruta (línea 859: «Tubería vacía, NF en su cota más alta»), por el Manual de Puentes núm. 2.4.3.8.2 («nivel de agua de diseño») y por los docstrings de M8 y M5.v7_flotacion; hacer que V7 lea el NF medido exigiría un criterio que ninguna fuente fija. Corrige la DOCUMENTACIÓN, no V7: docs/contrato_entradas.md (fila NF_profundidad_m: quitar «La lee V7» y lo de que V7 queda pendiente de ese dato, y decir lo que de verdad la lee) y el concepto de la columna en src/variables_entrada.py (que es el texto que imprime el pre-vuelo). Si ese texto aparece en un documento generado o en la línea base, regenéralo con su comando y declara la causa.
+
+3. D3 · HOJA DE RUTA (documental). La hoja de ruta dice en la línea 223 que V7 lee el NF (contradice su propia fila V7 de la línea 859) y en la línea 557 rotula «Regla [N]» la doble n del concreto (n mínimo y máximo de la Tabla N° 09) sin numeral que la sostenga: el Manual da la tabla, no la regla de cuál columna usar, que es adopción del proyecto. NO edites la hoja de ruta (es la fuente normativa del proyecto, su huella va en el encabezado de la memoria y en la línea base, y la corrige el dueño): aplica la regla de CLAUDE.md —declara la discrepancia en el punto de uso donde corresponda, repórtala contra la hoja de ruta en una ficha nueva y deja dicho que la hoja de ruta sigue mal mientras no se corrija—.
+
+4. Fichas en docs/decisiones_diferidas.md: VE1-01 con D1, D2 y D3 (qué se hizo y qué sigue mal en la hoja de ruta), y VE1-02 con las DECISIONES DEL DUEÑO que la validación dejó a la vista, sin tomarlas: (a) si el n del concreto, o la columna de la Tabla N° 09 que se usa, pasa a ser un criterio [A] declarable (hoy no lo es, a diferencia de n_manning_hdpe y n_manning_cajon); (b) la definición de la velocidad de erosión, hoy V(n máx) × 1.30 sobre la geometría de n máximo y no Manning resuelto con n mínimo (en el caso UPAO ALC46, Q = 0.317 m³/s y S = 0.10, eso sube el diámetro de 0.90 a 1.35 m); (c) las hipótesis de V7 (sumersión completa y DC = 0, justificadas en M8 con un argumento de sitio del Bajo Piura); (d) el factor 1.13 de intervalo fijo de las series de 24 h, que el Manual no trae y que las tesis aplican (−11.5 % en P24 y Q sin él): criterio o nota del contrato de entradas; (e) un aviso de plausibilidad de la serie de lluvias SIN umbral (el Manual núm. 3.4 manda evaluar la consistencia de los datos; patrón ya existente de FH.Q_ESPECIFICO), a la vista de una serie de 729 mm/24 h ajustada sin aviso; (f) el racional modificado hasta 770 km² (ficha T1-08); (g) en D1, si se prefiriera resolución de centímetro: rechazo en la puerta en vez de recorrer la serie. Cada una con el número medido que la motiva.
+
+Permisos de esta etapa: src/modulos/M2_material.py SÓLO en el cálculo del siguiente escalón de la progresión (y lo que necesite); src/variables_entrada.py SÓLO el concepto de NF_profundidad_m; docs/. Nada de criterios_adoptados.py, constantes_normativas.py, datos_sitio.py ni de la hoja de ruta; ningún resultado de la línea base cambia. Tests primero, en rojo. Ritual de cierre. Commit: validacion(VE-1): ... — D1, D2, D3.
 ```
 
 ---
