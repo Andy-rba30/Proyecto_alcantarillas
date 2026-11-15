@@ -90,6 +90,7 @@ UI-1 hidrología en la ventana + sesión formato 4      (primero, secuencial)
  ├── UI-2 pestaña 4: memoria resumida + cabezal del proyecto  ─┐ paralelo
  └── UI-3 pestaña 2: botón «Barrido…»                         ─┘ (worktrees)
 UI-4 integración y verificación de la ventana         (último, secuencial)
+UI-5 cuatro decisiones del dueño tras la cadena        (añadido el 2026-11-15, después de UI-4)
 ```
 
 **Por qué UI-1 va primero:** cambia el formato de la sesión y lo que viaja al proceso hijo;
@@ -169,6 +170,30 @@ Ejecuta únicamente UI-4 de proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md 
 5. Suite del entregable (también sobre git archive HEAD) y de proceso, con Tk; par en la bitácora.
 
 Ritual de cierre. Commit: interfaz(UI-4): ventana verificada de extremo a extremo — cierre de la cadena UI.
+```
+
+### UI-5 · Cuatro decisiones del dueño sobre lo que la cadena dejó abierto (añadido el 2026-11-15, después de UI-4)
+
+Lo pidió el dueño al cierre de la cadena, sobre la recomendación de la orquestadora: los
+puntos abiertos de las fichas UI1-01, UI2-01 (b), UI2-03 y UI3-03 que no esperan a otra
+decisión. Lo demás que quedó abierto (el barrido de la CLI fuera de la ventana, UI3-02; el
+editor de varias tablas, UI1-02; el ancho mínimo, UI4-01; el estimador del pre-vuelo,
+T1-04) sigue diferido.
+
+```text
+Ejecuta únicamente UI-5 de proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md y aplica sus reglas comunes (§1). Parte de main con UI-1 a UI-4 integrados y el commit que corrigió tres frases de CLAUDE.md. Son cuatro decisiones del dueño (2026-11-15); cada una cierra un punto abierto de una ficha. Lee antes: CLAUDE.md, proceso/reglas_de_correccion_de_auditorias.md, las fichas UI1-01, UI2-01, UI2-03, UI3-03 y EXT-8-02 de docs/decisiones_diferidas.md, el bloque de la pestaña 1 de gui/app.py (_al_cambiar_la_hidrologia, _invalidar_informe), src/modulos/M11_reporte.py (_remision_a_la_completa, memoria_resumida_html, _escribir_pdf), gui/exportacion_pdf.py, src/criterios_adoptados.py (verificar_declaracion, establecer_valor_dinamico, _verificar_criterio) y src/declaracion.py (verificar_claves_de_la_ficha, valor_desde_json).
+
+1. Cambiar el CSV de puntos invalida el informe (UI1-01, «Abierto»). Hoy los campos de cuencas y estación invalidan (MOTIVO_HIDROLOGIA_CAMBIADA) y el del CSV no, desde EXT-4. Decisión del dueño: un solo gesto en la pestaña 1 —cambiar el CSV invalida el informe vigente y apaga los siete exportadores con su motivo, como la hidrología—. Antes de cambiarlo, busca si alguna ficha o test fija hoy que el CSV NO invalida (EXT-4, EXT-8, UI-1): si lo hay, se cambia declarando la causa en la ficha, nunca se borra en silencio. Decide y documenta qué cuenta como «cambiar» (teclear la misma ruta; restaurar una sesión, que ya sustituye todo). Tests: contrato con el doble de tkinter y ventana real.
+
+2. La remisión de la memoria resumida a su completa dice la verdad (UI2-01 b). M11._remision_a_la_completa afirma que la completa se emite «con --html o --pdf en la MISMA invocación» y que el encabezado de trazabilidad «es el mismo en las dos»; entre la completa de la ventana y la resumida en PDF que escribe el proceso hijo NO lo es (el hijo recalcula: otra hora, y las huellas de los archivos al exportar, EXT-8-02). Decisión del dueño: corregir ese texto de la memoria para que sea cierto en los tres contextos —la CLI con las dos vistas en una invocación, la resumida HTML de la ventana (mismo informe que la completa de la ventana) y la resumida PDF del hijo— sin prometer lo que no se cumple (p. ej.: el encabezado coincide cuando las dos vistas salen de la misma corrida, y la hora y las huellas permiten comprobarlo). Es un cambio de TEXTO, no de cálculo: la línea base (tests/linea_base_familia_c/ y docs/linea_base.md) se regenera con su script declarando la causa, y los documentos generados que lo contengan se regeneran con su comando (CLAUDE.md, «Tests»). Ningún número cambia: compruébalo en el diff de la línea base. El texto no se transcribe dos veces: si la ventana o un test lo citan, lo leen de M11.
+
+3. El PDF se escribe de forma atómica (UI2-03). M11._escribir_pdf llama a weasyprint sobre el destino final: un fallo a mitad de escritura (disco lleno, cuota, E/S) deja el destino truncado y destruye el PDF que el usuario tuviera ahí. Decisión del dueño: escribir a un temporal en el MISMO directorio y reemplazar con os.replace sólo si la escritura terminó; si falla, el temporal se retira y un archivo previo queda intacto. Vale para la completa y la resumida y para la CLI directa, no sólo para el hijo de la ventana. Test que reproduzca un fallo a mitad de escritura (un doble de WeasyHTML que escribe a medias y lanza, o el `ulimit -f` que usó la revisión de UI-2) y muera con el código de partida. Revisa si la defensa de gui/exportacion_pdf.py (%%EOF, `.parcial`) sigue haciendo falta; si la mantienes como segunda línea, dilo en la ficha.
+
+4. La guardia del archivo de criterios exige la forma de las claves (UI3-03). Hoy criterios_adoptados.verificar_declaracion no mira las claves y la puerta está en las capas que la llaman (declaracion.verificar_claves_de_la_ficha): establecer_valor_dinamico a pelo acepta '900' donde la ficha tiene claves enteras. Decisión del dueño: la regla vive en la guardia del archivo (_verificar_criterio / verificar_declaracion), el cuello por donde pasan los tres caminos —archivo, declaración en caliente, escritura permanente— según CLAUDE.md («Todo criterio declara la FORMA de su valor»); las capas de arriba la llaman sin duplicar la lógica. El valor de ARCHIVO de los 141 criterios debe seguir pasando (barre los 141 con su valor de archivo, sus filas de tabla y los extremos de su ventana, por todos los caminos, también restaurar_sesion de una sesión JSON); la frontera del JSON (declaracion.valor_desde_json) se queda donde está. No cambia ningún valor ni ningún nivel. Actualiza la frase de CLAUDE.md de EXT-5 sólo si deja de describir lo que el código hace, y dilo.
+
+Permisos de esta etapa (excepción a la puerta de la cadena, por decisión del dueño): src/modulos/M11_reporte.py SÓLO en _remision_a_la_completa y _escribir_pdf (y lo que esos dos necesiten), y src/criterios_adoptados.py SÓLO en la guardia (ningún valor, ninguna ficha de criterio). Nada de constantes_normativas.py ni de datos_sitio.py; ningún cálculo cambia.
+
+5. Tests primero, en rojo (§1 regla 4), y ventana real bajo xvfb. Fichas: cierra los puntos de UI1-01, UI2-01 (b), UI2-03 y UI3-03 que estas decisiones resuelven, y abre UI5-01 con lo que quede. Ritual de cierre. Commit: interfaz(UI-5): ... — UI1-01, UI2-01, UI2-03, UI3-03.
 ```
 
 ---
