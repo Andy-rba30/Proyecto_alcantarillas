@@ -785,9 +785,14 @@ _COLUMNAS: Dict[str, _Columna] = {
     ),
 
     "NF_profundidad_m": _Columna(
+        # --- VE-1 (D2, D3) --- Decia «para la flotacion (V7)», y V7 no la
+        # lee (`M8.empuje_flotacion_kn_m`). Es el texto del pre-vuelo y de la
+        # ayuda: corto, con la discrepancia de la hoja de ruta en una frase y
+        # el detalle en la ficha VE1-01.
         concepto="Profundidad del nivel freatico bajo el terreno natural en "
-                 "el cruce, para la flotacion (V7) y la subpresion del "
-                 "cabezal",
+                 "el cruce. La leen la estabilidad del cabezal (Fase 9) y la "
+                 "presion del agua sobre un TMC o un HDPE (Fase 8). La hoja "
+                 "de ruta (§1.2) dice que la lee V7; no la lee: ficha VE1-01",
         unidad="m",
         resolucion=DeEnsayo(
             ensayo="medicion del nivel freatico en la calicata o el "

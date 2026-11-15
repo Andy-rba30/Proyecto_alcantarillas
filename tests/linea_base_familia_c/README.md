@@ -1620,3 +1620,21 @@ resumida). Ningún valor, ninguna ficha ni ningún nivel de criterio cambió.
 borrados) y línea a línea: fuera de esas dos clases no cambia nada.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## Regenerada en VE-1 (2026-11-15, sobre `0bf1cc2`): diff VACÍO; con su revisión, sólo la huella de `criterios_adoptados.py`
+
+VE-1 cambia el cálculo del escalón siguiente de la progresión de diámetros
+(`M2._escalon_de_la_serie`, ficha VE1-01, D1): la serie declarada se recorre tal cual en
+vez de redondearse a dos decimales. Con la progresión de archivo (0.90 / 0.15) los trece
+escalones son los mismos, y regenerada con `sh tests/linea_base_familia_c/regenerar.sh` la
+línea base no cambia en ningún byte de sus dieciséis archivos. El mutante que quita el
+redondeo sin más deja ruido flotante (1.7999999999999998 por 1.8) y esta línea base lo ve.
+
+Regenerada otra vez con las correcciones de la revisión de VE-1 (ficha VE1-01, H1 a H3):
+cambia **sólo la huella de `criterios_adoptados.py`** —H2 le añadió a su guardia la de
+los campos de la progresión—, `criterios_sha1` en los cuatro JSON y la fila del
+encabezado en las cuatro memorias de la CLI (8 archivos, 8 inserciones y 8 borrados,
+medido con `git diff -U0`). El rótulo de la sección (H1) da los mismos «Ø 0.90 m» y
+«marco 1.20 × 0.90 m».
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**

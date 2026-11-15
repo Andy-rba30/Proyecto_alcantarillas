@@ -176,6 +176,14 @@ la fila del polietileno de interior liso de la Table B.1 del HDS-5; hasta T-4
 era la subfila del concreto por analogia) y su velocidad maxima del criterio
 'v_max_hdpe' [C].
 
+LO QUE «SIN VACIO NORMATIVO PROPIO» NO CUBRE (VE-1, ficha VE1-01): los dos
+valores del concreto son [N], pero tomar el MINIMO y el MAXIMO de la fila es
+la doble n de la Sec. 4.1 de la hoja de ruta, que la rotula «Regla [N]» sin
+numeral. El Manual de Hidrologia, num. 4.1.1.3.6, pag. impresa 74, solo dice
+«n : Coeficiente de Manning (Ver Tabla Nº 09)», y la tabla da MINIMO, NORMAL
+y MAXIMO sin regla de columna: la eleccion es adopcion del proyecto, y la
+hoja de ruta sigue mal mientras el dueño no la corrija (decision VE1-02 (a)).
+
 LA MATRIZ DE DURABILIDAD ES UN FILTRO REAL DESDE T-4 (INF-3.3.1; v8 §3.3).
 `matriz_durabilidad(punto, ensayos)` recibe los ensayos del punto --pH,
 resistividad, sulfatos, cloruros y nivel de abrasion: datos del EMS y del
@@ -952,6 +960,16 @@ def siguiente_diametro(material: MaterialLike,
     D=None pide el primer escalon (el minimo normativo). Un D que no cae
     exacto sobre la progresion (no es inicio + n*paso) es DatoInvalidoError:
     este catalogo no reconoce diametros "de proveedor".
+
+    EL ESCALON ES EL DE LA SERIE DECLARADA, TAL CUAL (VE-1, D1). Hasta VE-1
+    se redondeaba a dos decimales, y con la serie de 6 in que la ficha de
+    'diametros_normalizados' nombra como «la serie real» ({"inicio": 0.9144,
+    "paso": 0.1524}, que la puerta acepta) el segundo escalon salia 1.07 m
+    --un diametro que nadie declaro, evaluado en silencio-- y el tercero se
+    rechazaba aqui mismo como «no pertenece a la progresion», culpando al
+    dato `D` que el usuario no escribio. Lo calcula `_escalon_de_la_serie`,
+    que ni redondea ni deja ruido flotante (ver su docstring); la guardia de
+    pertenencia de arriba no cambia.
     """
     tipo = _tipo_material(material)
     prog = _progresion()
@@ -970,10 +988,48 @@ def siguiente_diametro(material: MaterialLike,
                    f"de {NUMERAL_CATALOGO} para '{tipo.value}'",
         )
 
-    siguiente = round(inicio + (n + 1) * paso, 2)
+    siguiente = _escalon_de_la_serie(inicio, paso, n + 1)
     if siguiente > tope + TOL_UMBRAL_NORMATIVO:
         return None
     return siguiente
+
+
+def _escalon_de_la_serie(inicio, paso, k: int) -> float:
+    """
+    El escalon k de la progresion declarada, inicio + k * paso, en metros, con
+    la aritmetica DECIMAL de los dos numeros tal como se declararon (Sec. 3.2;
+    VE-1, D1).
+
+        escalon_k = Decimal(inicio) + k * Decimal(paso)  ->  float
+
+    POR QUE DECIMAL Y NO EL FLOAT A SECAS NI UN REDONDEO. Los dos numeros de
+    la serie son decimales escritos por alguien --0.90 y 0.15 en el archivo,
+    0.9144 y 0.1524 en la serie de 6 in-- y su suma decimal es exacta: k * paso
+    tiene los decimales del paso, y sumarle el inicio no añade mas que los
+    del inicio. La suma en binario no lo es: `0.9 + 6 * 0.15` da
+    1.7999999999999998 y `0.9 + 7 * 0.15` 1.9500000000000002, y esos floats
+    llegarian al JSON y a la memoria. Redondear a una resolucion fija (el
+    `round(..., 2)` de antes de VE-1) quita ese ruido solo si la serie no
+    tiene mas decimales que la resolucion, y con la de 6 in fabricaba 1.07.
+    Aqui cada numero entra por su forma decimal mas corta (`repr` del float,
+    la que lo reproduce exacto) y el resultado vuelve a float UNA vez: es el
+    float que se escribiria a mano para ese escalon --1.05, 1.8, 1.0668--.
+
+    Con la progresion de archivo da EXACTAMENTE los trece escalones de dos
+    decimales que daba el redondeo (0.90 a 2.70): la linea base no se mueve,
+    y `tests/test_ve1_validacion.py` lo fija escalon a escalon.
+
+    Esta funcion no valida la ficha, la recorre: que los dos campos esten,
+    sean reales y el paso positivo lo exige la puerta desde la revision de
+    VE-1 (`criterios_adoptados._verificar_campos_de_la_progresion`, H2), y
+    `float(...)` antes de `repr` solo normaliza un entero declarado.
+    """
+    # Import local, como el `_replace` de M9: la aritmetica decimal solo hace
+    # falta en este escalon, y VE-1 no toca nada fuera de el.
+    from decimal import Decimal
+
+    exacto = Decimal(repr(float(inicio))) + k * Decimal(repr(float(paso)))
+    return float(exacto)
 
 
 def siguiente_seccion(material: Material,

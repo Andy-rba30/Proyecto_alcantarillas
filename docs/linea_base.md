@@ -669,3 +669,26 @@ Ocho archivos (13 líneas nuevas por 12), y nada más: los cinco `cli_*.txt`, lo
 memoria del cajón, idénticos byte a byte. **Diámetros, secciones, materiales y HW movidos:
 ninguno.** El detalle, en el README de la carpeta; el par de la suite, en
 `proceso/bitacora_conteos_y_entorno.md`.
+
+---
+
+## 10. VE-1: la progresión declarada se recorre tal cual, y la línea base no mueve ningún número (2026-11-15)
+
+VE-1 cambia UNA línea de cálculo: el escalón siguiente de la progresión de diámetros
+(`M2.siguiente_diametro`), que se redondeaba a dos decimales y con la serie de 6 in de la
+ficha de `diametros_normalizados` (0.9144 + 0.1524) fabricaba 1.07 m (ficha VE1-01, D1).
+Hoy lo calcula `M2._escalon_de_la_serie` en aritmética decimal sobre los dos números
+declarados. Con la progresión de archivo (0.90 / 0.15) da los mismos trece escalones, y
+por eso la línea base **no se movió**: regenerada con su script sobre el árbol de VE-1, el
+`git diff` de los dieciséis archivos sale **vacío**. Quitar el redondeo a secas no habría
+pasado esta prueba: `0.9 + 6 · 0.15` es 1.7999999999999998 en binario, y con ese mutante
+caen los dos tests de `tests/test_linea_base.py` que comparan contra lo comprometido.
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+Las correcciones de la revisión independiente de VE-1 (ficha VE1-01: H1, H2 y H3)
+movieron **una cosa, y no es un número**: la huella de `criterios_adoptados.py`, porque
+H2 le añadió a su guardia la de los campos de la progresión
+(`_verificar_campos_de_la_progresion`): `criterios_sha1` en los cuatro JSON y la fila del
+encabezado en las cuatro memorias de la CLI, ocho líneas en ocho archivos. El rótulo
+nuevo de la sección (H1, `modelos.texto_de_dimension`) escribe los mismos «Ø 0.90 m» y
+«marco 1.20 × 0.90 m» de siempre: ningún otro byte cambió.

@@ -1449,11 +1449,14 @@ class SeccionCircular:
         El rotulo es el que fija la §4.1 del plan de la Familia C -- "Ø 0.90 m"
         frente al "marco 2.00 x 1.50 m" de la rectangular --. C1 lo escribio
         primero como "D 0.90 m", que no era el de la especificacion desde la
-        que se escribio la clase; corregido al cierre. Los dos decimales son
+        que se escribio la clase; corregido al cierre. Los decimales son
         PRESENTACION, de la misma naturaleza que los `FMT_*` de M11: no dicen
-        cuanto vale nada.
+        cuanto vale nada. Desde VE-1 (H1) los escribe `texto_de_dimension`:
+        dos como minimo («Ø 0.90 m», como siempre) y los que el diametro
+        declarado tenga («Ø 1.0668 m»). Con dos fijos, la serie de 6 in se
+        rotulaba «Ø 1.07 m», el diametro que nadie declaro.
         """
-        return f"Ø {self.D:.2f} m"
+        return f"Ø {texto_de_dimension(self.D)} m"
 
     def exigir_dimensiones_positivas(self) -> None:
         """
@@ -1682,8 +1685,12 @@ class SeccionRectangular:
         return self.B * self.H / (2 * (self.B + self.H))
 
     def etiqueta(self) -> str:
-        """El rotulo que fija la §4.1 del plan: "marco 2.00 × 1.50 m"."""
-        return f"marco {self.B:.2f} × {self.H:.2f} m"
+        """
+        El rotulo que fija la §4.1 del plan: "marco 2.00 × 1.50 m", con las
+        dimensiones declaradas sin redondear (`texto_de_dimension`, VE-1 H1).
+        """
+        return (f"marco {texto_de_dimension(self.B)} × "
+                f"{texto_de_dimension(self.H)} m")
 
     def exigir_dimensiones_positivas(self) -> None:
         """
@@ -3389,6 +3396,34 @@ CIFRAS_MAGNITUD = 3        # literal-ok: decimales de presentacion; no entra en 
 CIFRAS_FINA = 4            # literal-ok: decimales de presentacion; no entra en ningun calculo
 CIFRAS_FACTOR = 2          # el 2 y el 1 no necesitan marca: la regla los exime
 CIFRAS_PORCENTAJE = 1
+
+
+def texto_de_dimension(valor: float) -> str:
+    """
+    Una dimension de seccion, en metros, como la ROTULA la memoria: con
+    `CIFRAS_FACTOR` decimales como minimo y con TODOS los que el numero
+    declarado tenga (Sec. 3.2; VE-1, hallazgo H1 de su revision).
+
+        0.9 -> «0.90»     1.05 -> «1.05»     1.0668 -> «1.0668»
+
+    POR QUE NO DOS FIJOS. El rotulo nombra el PRODUCTO, y con dos decimales
+    la serie de 6 in de 'diametros_normalizados' se leia «Ø 1.07 m» y
+    «Ø 1.22 m» en el JSON, la memoria y el CSV de resumen mientras el calculo
+    corria con 1.0668 y 1.2192: el lector veia un diametro que nadie
+    declaro. Los decimales salen de la forma decimal mas corta del float
+    (`repr`, la que lo reproduce exacto), que para un escalon de la serie es
+    la que se declaro (`M2._escalon_de_la_serie`). Con la progresion de
+    archivo y el marco de la linea base el texto es el de siempre.
+
+    Un valor no finito se escribe como antes, con `CIFRAS_FACTOR` («nan»).
+    """
+    from decimal import Decimal
+
+    if not math.isfinite(valor):
+        return f"{valor:.{CIFRAS_FACTOR}f}"
+    decimales = max(CIFRAS_FACTOR,
+                    -Decimal(repr(float(valor))).as_tuple().exponent)
+    return f"{valor:.{decimales}f}"
 
 
 # Alcance de la corrida. Rotulos, no valores de proyecto: con "expediente"

@@ -7542,3 +7542,68 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   motivo; cuatro de N5) y una guardia; cada corrección, comprobada por mutación.
 - **Qué haría falta:** nada.
 - **Dónde vive:** `src/escritura_atomica.py::_nombrando_el_destino`
+
+
+
+## VE1-01 · La validación externa confirmó tres defectos: la progresión declarada se recorre tal cual (D1), V7 no lee el nivel freático (D2) y la hoja de ruta sigue mal en dos textos (D3)
+
+- **Cerrado (VE-1):** (D1) `M2.siguiente_diametro` redondeaba el escalón a dos decimales:
+  con la serie de 6 in que la ficha de `diametros_normalizados` llama «la serie real»
+  (0.9144 + 0.1524) evaluaba 1.07 m, que nadie declaró, y rechazaba el tercer escalón
+  culpando al dato `D`. Hoy la recorre tal cual, y la progresión de archivo da los mismos
+  trece escalones: línea base sin diff. (D2) V7 no lee `NF_profundidad_m`, y el contrato
+  y el concepto de la columna decían que sí; hoy nombran a la Fase 9 y a la Fase 8. De la
+  revisión independiente, con el permiso que la orquestadora amplió bajo la
+  autorización del dueño de corregir los defectos de la validación: (H1) el rótulo dice
+  el diámetro declarado, «Ø 1.0668 m», y «Ø 0.90 m» como siempre
+  (`modelos.texto_de_dimension`); (H2) la puerta rechaza con `ValueError` un `inicio` o un
+  `paso` ausente, de texto o booleano, un campo de más y un paso ≤ 0, que tumbaban la
+  corrida fuera de `ErrorProyecto` o recorrían otra serie
+  (`criterios_adoptados._verificar_campos_de_la_progresion`); (H3) la discrepancia de la
+  doble n está declarada en `M3_hidraulica` y en `M2_material`.
+- **Abierto (D3): la hoja de ruta sigue mal**, y la corrige el dueño. (1) Su §1.2, nota
+  `INF-5.1.11`, dice de la columna «la lee V7», contra su fila V7 («Tubería vacía, NF en
+  su cota más alta») y el Manual de Puentes núm. 2.4.3.8.2, pág. 113 («debajo del nivel
+  de agua de diseño»). (2) Su §4.1 rotula «Regla [N]» la doble n sin numeral: el Manual
+  de Hidrología, núm. 4.1.1.3.6, pág. impresa 74, sólo dice
+  «n : Coeficiente de Manning (Ver Tabla Nº 09)», y la Tabla Nº 09 (pág. impresa 75) da
+  MÍNIMO, NORMAL y MÁXIMO sin regla de columna. Las dos, declaradas donde se usan. Y las
+  magnitudes `D` de los pasos de la memoria siguen con dos decimales, fuera del permiso.
+- **Por qué así:** D1 en el consumidor porque la ficha y la puerta aceptan la serie (la
+  otra vía es VE1-02 (g)); quitar el redondeo a secas dejaba 1.7999999999999998 en el
+  JSON. D2 y D3 en la documentación: el código lo sostienen la fila V7 y el Manual de
+  Puentes. Tests en rojo, guardias y un centinela que cae cuando el dueño corrija la hoja
+  de ruta (`tests/test_ve1_validacion.py`).
+- **Qué haría falta:** que el dueño corrija la §1.2 y el rótulo de la §4.1, y retirar
+  entonces las declaraciones del punto de uso y el centinela.
+- **Dónde vive:** `src/modulos/M2_material.py::_escalon_de_la_serie`
+
+## VE1-02 · Las decisiones del dueño que la validación externa dejó a la vista, sin tomarlas
+
+- **Qué se difirió:** siete decisiones, cada una con el número que la motiva; ninguna es un
+  defecto de cálculo. (a) El n del concreto, o su columna de la Tabla Nº 09, como [A]
+  declarable, como `n_manning_hdpe` y `n_manning_cajon`: con 0.013 el tirante normal sale
+  de +5 a +8 % sobre el de HY-8 con 0.012 (13 filas del TDOT). (b) `V_erosion` es V(n
+  máx) × n_máx/n_mín (× 1.30) sobre la geometría de n máximo, no Manning con n mínimo
+  (+21.5 a +23 %): en UPAO ALC46 (Q = 0.317 m³/s, S = 0.10) sube el diámetro
+  de 0.90 a 1.35 m (a 0.90 m, 6.28 frente a 5.81 m/s; umbral 6.0). (c) Las hipótesis de V7,
+  sumersión completa y DC = 0, justificadas en `M8_estructural` con el NF somero del Bajo
+  Piura, un argumento de sitio: con el NF a 10 m V7 descarta igual (1.2745 frente a
+  9.6235 kN/m); equivalen a un relleno de unas 0.45 veces el diámetro exterior. (d) El
+  factor 1.13 de intervalo fijo de las series de 24 h, que el Manual no trae y aplican la
+  tesis UPAO y la vía TU-107: sin él P24 y Q quedan 11.5 % abajo. (e) Un aviso de
+  plausibilidad de la serie SIN umbral (patrón de `FH.Q_ESPECIFICO`): el Manual manda
+  evaluar «la consistencia de los datos registrados» (núm. 3.3, pág. impresa 21; el prompt
+  citaba el 3.4); la serie de TU-107 (mediana 140, máximo 729 mm) se ajusta sin aviso.
+  (f) El racional modificado hasta 770 km² (pág. impresa 51, ficha T1-08): la Fase 1-bis
+  se detiene desde 10 km², y Tinas (55.9 km²) y cinco cuencas de TU-107 no se calculan.
+  (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
+  redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
+- **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
+  el programa calcula; el permiso de VE-1 no las alcanza.
+- **Qué haría falta:** la decisión del dueño y, por cada una adoptada, un prompt con sus
+  tests en rojo: un criterio con nivel, sensibilidad y resolución en (a) a (d), un aviso
+  con su `Fundamento` en (e), el método con su cita en (f), la guardia en (g).
+- **Dónde vive:** `src/modulos/M3_hidraulica.py::resolver_manning` (a) y (b);
+  `M8_estructural.empuje_flotacion_kn_m` (c); `MH_hidrologia.precipitacion_de_diseno`
+  (d) y (e); `MH_hidrologia.caudal_de_diseno` (f); `criterios_adoptados._verificar_criterio` (g).

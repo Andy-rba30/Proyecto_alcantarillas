@@ -12353,6 +12353,55 @@ def _verificar_claves_de_la_ficha(clave: str, c: Criterio) -> None:
     _exigir_claves(clave, c.valor, plantilla, "")
 
 
+# --- VE-1 (hallazgo H2 de su revision) --- Los campos de la PROGRESION DE
+# DIAMETROS: los dos que la aritmetica de `M2.siguiente_diametro` usa, y cual
+# de ellos tiene que ser positivo. Es una tabla de la GUARDIA, no de la ficha:
+# no cambia el valor, la etiqueta ni la ventana del criterio.
+_CAMPOS_DE_LA_PROGRESION = {"diametros_normalizados": ("inicio", "paso")}
+_CAMPOS_POSITIVOS_DE_LA_PROGRESION = {"diametros_normalizados": ("paso",)}
+
+
+def _verificar_campos_de_la_progresion(clave: str, c: Criterio) -> None:
+    """
+    La progresion de diametros trae EXACTAMENTE sus dos campos, los dos
+    numeros reales (ni texto, ni bool) y el paso positivo (VE-1, H2).
+
+    La forma `dict_con_campos` mira la estructura y no los campos, y la
+    ficha no tiene ventana por campo que los defienda (`_verificar_dict`),
+    de modo que la puerta aceptaba lo que el consumidor no puede recorrer.
+    Medido por la CLI antes de esta guardia: un paso 0 caia con
+    `ZeroDivisionError`, un paso o un inicio de texto con `TypeError`, un
+    campo ausente con `KeyError` --los cuatro fuera de `ErrorProyecto`, con
+    traza y codigo 1--; un paso booleano recorria 0.90, 1.90…, uno negativo
+    bajaba de 0.90 a 0.75, y un campo de mas se ignoraba en silencio. Hoy
+    los tres caminos lo rechazan con `ValueError` y el motivo.
+
+    EL INICIO NO SE ACOTA, a proposito: un inicio negativo lo rechaza la
+    seccion (`DatoInvalidoError` sobre `D`, dentro de `ErrorProyecto`) y la
+    linea base lo fija como su rama de error
+    (`tests/linea_base_familia_c/regenerar.sh`, corrida 3).
+    """
+    campos = _CAMPOS_DE_LA_PROGRESION.get(clave)
+    if campos is None or not isinstance(c.valor, dict):
+        return
+    faltan = [k for k in campos if k not in c.valor]
+    sobran = sorted(k for k in c.valor if k not in campos)
+    no_reales = [k for k in campos if k in c.valor and not _es_real(c.valor[k])]
+    no_positivos = [k for k in _CAMPOS_POSITIVOS_DE_LA_PROGRESION.get(clave, ())
+                    if k in c.valor and _es_real(c.valor[k])
+                    and not c.valor[k] > 0]
+    if faltan or sobran or no_reales or no_positivos:
+        raise ValueError(
+            f"'{clave}' recibe {c.valor!r}, que no es una progresion que se "
+            f"pueda recorrer: lleva exactamente los campos {list(campos)}, "
+            f"numeros reales (ni texto ni bool), con el paso mayor que cero. "
+            f"Faltan {faltan}, sobran {sobran}, no son numeros {no_reales}, "
+            f"no son positivos {no_positivos}. Se rechaza en la puerta de "
+            "declaracion: aceptarlo dejaria que M2 lo reventara despues fuera "
+            "de ErrorProyecto, o que recorriera otra serie en silencio"
+        )
+
+
 def _verificar_discrepancias(clave: str, c: Criterio) -> None:
     """
     Que los ids de `Criterio.discrepancias` existan en el registro y sigan
@@ -12521,6 +12570,7 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
     # despues.
     _verificar_forma(clave, c)
     _verificar_claves_de_la_ficha(clave, c)
+    _verificar_campos_de_la_progresion(clave, c)
 
 
 def _verificar_nivel(clave: str, c: Criterio) -> None:

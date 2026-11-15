@@ -151,7 +151,7 @@ Es el documento con más citas del proyecto y el que gobierna las Fases 2 a 6.
 > leían la misma velocidad, la alta, y V2 declaraba «cumple» justo en el caso
 > en que el conducto sedimenta.
 
-> **Nota sobre `NUMERAL_MANNING = "4.1"`** ([M3:154](src/modulos/M3_hidraulica.py:154)):
+> **Nota sobre `NUMERAL_MANNING = "4.1"`** ([M3:164](src/modulos/M3_hidraulica.py:164)):
 > es la **Sec. 4.1 de la hoja de ruta**, no un numeral del Manual MTC. Lo mismo
 > vale para `NUMERAL_CRITICO` / `NUMERAL_ENTRADA` / `NUMERAL_SALIDA` = `"4.2.1"` / `"4.2"` / `"4.3"` ([M4:412](src/modulos/M4_control.py:412))
 > y para `NUMERAL_V6 = "3.1"`
@@ -378,7 +378,7 @@ verificación necesita otras fuentes.
 | `D_INICIO = 0.90` m | mínimo normativo MTC (ver §1) | Manual de Hidrología | [CN:1587](src/constantes_normativas.py:1587) | [N] |
 | ↻ `diametros_normalizados` = inicio 0.90, paso 0.15. **Los topes salieron de aquí** y viven en `D_max_catalogo`: el paso sí se verifica contra la serie de diámetros nominales de las normas de producto, y los topes no salen de ninguna | series de diámetro nominal: A760 Tabla 1 (150→3600 mm en escalones de 150 desde 900); M 170M Tablas 1-5 (300→3600 mm); M 294-11 num. 7.2.1 y tabla de 7.2.2 (300→1500 mm, escalones de 150 desde 900; **traducción no oficial** en `normas/` desde N2, `AASHTO_M294_TRAD.T7.2.2`, sin firma) | ASTM / AASHTO | [CA:5230](src/criterios_adoptados.py:5230) | [C] |
 | ↳ verificación pendiente declarada, **ahora en `D_max_catalogo`**: los topes de concreto y TMC siguen sin respaldo documental; el de HDPE se contrastó en N2 contra la serie de M 294-11 —**coincide con su techo, 1500 mm**— pero sobre la **traducción no oficial** de `normas/`, sin firma: lo pendiente es reverificarlo contra el original (`FUENTES_AUSENTES['AASHTO_M294']`). Sigue `[A]` de catálogo para los tres | M 294-11 num. 1.1.1 y 7.2.1 (`AASHTO_M294_TRAD.7.2.1`) | AASHTO (traducción no oficial) | [CA:6056](src/criterios_adoptados.py:6056) | [A] |
-| `_NORMA_PRODUCTO` por material (reporte) | ASTM C76/AASHTO M170; AASHTO M36/ASTM A760; AASHTO M 294-11 «(en normas/: traduccion no oficial)» — el rótulo del HDPE lleva la naturaleza del ejemplar porque llega a la memoria como cita (N2) | ASTM / AASHTO | [M2:359](src/modulos/M2_material.py:359) | [N] |
+| `_NORMA_PRODUCTO` por material (reporte) | ASTM C76/AASHTO M170; AASHTO M36/ASTM A760; AASHTO M 294-11 «(en normas/: traduccion no oficial)» — el rótulo del HDPE lleva la naturaleza del ejemplar porque llega a la memoria como cita (N2) | ASTM / AASHTO | [M2:367](src/modulos/M2_material.py:367) | [N] |
 | ↻ `clases_producto_por_relleno = None` — tabla clase/calibre × diámetro × rango de altura de relleno, **sin extraer**. **Norma corregida** (`NOR-PRO-04`): el calibre por altura de cobertura es de **ASTM A796/A796M**, no de A-807, que no aparece ni una vez en M 170M, M 36 ni A760. La relación luz/corrugación sí se puede cerrar hoy: está en la Tabla 1 de A760 y la Tabla 6 de M 36, ambas en `normas/`. En M8 la clave vive en `CRITERIO_CLASES_PRODUCTO` | AASHTO M 170M-04 Tablas 1-5 (clases I-V); ASTM A796/A796M (calibre por altura), **no en `normas/`** | ASTM / AASHTO | [CA:7456](src/criterios_adoptados.py:7456), [M8:238](src/modulos/M8_estructural.py:238) | [C] |
 | **Afirmación negativa, VERIFICADA en N2**: AASHTO M 294-11 (HDPE) no tiene tabla de clase por altura —su num. 1.4 excluye camas, relleno y carga de cubierta y remite el diseño estructural a AASHTO LRFD Sec. 12— y depende de un cálculo de rigidez de anillo diferido al expediente; lo declara `clases_producto_por_relleno` y lo sostiene `SIN_CLASE_POR_ALTURA_M294_TRAD` (17 hojas de la **traducción no oficial** como ámbito, cita `AASHTO_M294_TRAD.1.4`) | M 294-11 num. 1.4 (traducción no oficial) | AASHTO | [CA:7456](src/criterios_adoptados.py:7456) | [C] |
 | ↻ **Afirmación negativa, ATRIBUCIÓN CORREGIDA** (`NOR-PRO-03`): AASHTO M 170M, M 36 y ASTM A760 **no contienen alturas de relleno admisibles** —el fondo se confirma en las tres—, pero la fórmula «*manufacturing and purchase specification only*» es la **Nota 1 de M 170M** y solo de ella. En **M 36** la exclusión está en **§1.3** y en **A760** en **§1.4**, con otra redacción; la Nota 1 de esas dos habla de láminas con fibra de aramida y post-recubrimiento asfáltico — lo declara `cobertura_minima_aashto` | M 170M-04 **Nota 1**; M 36-03(2007) **§1.3**; A760/A760M-10 **§1.4** | ASTM / AASHTO | [CA:6159](src/criterios_adoptados.py:6159) | [C] |
@@ -465,9 +465,9 @@ hoja de ruta**, que es la fuente de verdad del proyecto.
 | Constante | Valor de la cita | Archivo:línea |
 |---|---|---|
 | `NUMERAL_FAMILIA` | `"Sec. 2.3"` — "la hoja de ruta, sin numeral MTC propio" | [M1:141](src/modulos/M1_clasificacion.py:141) |
-| `NUMERAL_CATALOGO` | `"Sec. 3.2"` — "nuevo en v7, sin numeral MTC propio" | [M2:288](src/modulos/M2_material.py:288) |
-| `NUMERAL_MATERIAL` | `"Sec. 3.4"` | [M2:289](src/modulos/M2_material.py:289) |
-| `NUMERAL_MANNING` | `"4.1"` (Sec. 4.1 de la hoja de ruta) | [M3:154](src/modulos/M3_hidraulica.py:154) |
+| `NUMERAL_CATALOGO` | `"Sec. 3.2"` — "nuevo en v7, sin numeral MTC propio" | [M2:296](src/modulos/M2_material.py:296) |
+| `NUMERAL_MATERIAL` | `"Sec. 3.4"` | [M2:297](src/modulos/M2_material.py:297) |
+| `NUMERAL_MANNING` | `"4.1"` (Sec. 4.1 de la hoja de ruta) | [M3:164](src/modulos/M3_hidraulica.py:164) |
 | `NUMERAL_CRITICO` / `NUMERAL_ENTRADA` / `NUMERAL_SALIDA` | `"4.2.1"` / `"4.2"` / `"4.3"` | [M4:412](src/modulos/M4_control.py:412) |
 | `NUMERAL_V6` | `"3.1"` | [M5:452](src/modulos/M5_verificaciones.py:452) |
 | `NUMERAL_V8` | `"Fase 5, V8"` — "[N] verificación, no diseño, sin numeral que fije el TR ni el umbral": el TR y el umbral que faltan son los del criterio `TR_evento_extremo`, que `M5.v8_evento_extremo` invoca y que sigue vacío | [M5:458](src/modulos/M5_verificaciones.py:458), [CA:5025](src/criterios_adoptados.py:5025) |

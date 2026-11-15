@@ -41,6 +41,16 @@ n MAXIMO para capacidad y tirante (V1, borde libre): conservador del lado de
 la inundacion. n MINIMO para velocidad MAXIMA y socavacion (V3, Laushey):
 conservador del lado de la erosion.
 
+DISCREPANCIA CON LA HOJA DE RUTA (VE-1, ficha VE1-01). Su Sec. 4.1 rotula
+esta regla «Regla [N]», y la fuente primaria no la sostiene: el Manual de
+Hidrologia, num. 4.1.1.3.6, pag. impresa 74, solo dice
+«n : Coeficiente de Manning (Ver Tabla Nº 09)», y la Tabla Nº 09 (pag.
+impresa 75) da las columnas MINIMO, NORMAL y MAXIMO sin decir cual se usa.
+Los valores de la tabla son [N]; que columna rige cada verificacion es
+ADOPCION del proyecto, la que la hoja de ruta escribe y este modulo aplica.
+La hoja de ruta sigue mal mientras el dueño no la corrija, y si la
+eleccion pasa a ser un criterio declarable es la decision VE1-02 (a).
+
 La UNICA resolucion de Brent usa n_max: es el n que, para el mismo Q y D,
 exige mas area y por lo tanto fija el theta real de diseño (mas resistencia
 -> mas tirante para el mismo caudal). Las velocidades NO salen de una segunda

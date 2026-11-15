@@ -2611,3 +2611,89 @@ Suma 4 tests en rojo (tres con el doble, uno de ventana real), liberados al corr
 la línea que olvida la firma caen los cuatro, y los dos de N2 siguen pasando. Con Tk corren
 57 tests de ventana real, ninguno saltado; las dos corridas del entregable, a la vez, y el
 test de presupuesto de tiempo pasó en las dos.
+
+## VE-1 de la cadena de interfaz (2026-11-15): el par con ventana Tk, MEDIDO
+
+VE-1 (tres defectos que confirmó la validación externa de punta a punta: la progresión de
+diámetros declarada que se redondeaba —D1, código—, la fila del contrato y el concepto de
+la columna que atribuían el nivel freático a V7 —D2— y dos textos de la hoja de ruta que
+siguen mal —D3—; fichas VE1-01 y VE1-02) se midió sobre su rama de worktree, desde
+`0bf1cc2` (main con UI-1 a UI-5 y el prompt VE-1), con `python` 3.12 con `tkinter`,
+`ttkbootstrap` y `weasyprint`, ImageMagick, `xvfb-run -a`, PyMuPDF y `NORMAS_DIR`
+enlazado: la fila «sí · sí». La partida no se volvió a correr entera: `0bf1cc2` difiere de
+`7d52ca1`, cuyo par midió UI-5 (6681 / 10 / 6691), sólo en el plan de la cadena bajo
+`proceso/`, que la suite del entregable no recoge; su `--collect-only` sobre una
+exportación da 6691. Los saltos son los de siempre: los diez estructurales de
+`test_familias_del_csv` y, en la exportación, los cuatro que leen lo versionado o necesitan
+`.git`; ninguno es de Tk ni de PDF.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, partida (`0bf1cc2`), exportación, sólo `--collect-only` | sí | sí | — | — | 6691 |
+| entregable, VE-1, checkout de git | sí | sí | 6701 | 10 | 6711 |
+| entregable, VE-1, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 6697 | 14 | 6711 |
+| proceso, VE-1, checkout | sí | sí | 145 | 0 | 145 |
+
+VE-1 suma 20 tests: 18 en `tests/test_ve1_validacion.py` —12 escritos en rojo
+(`xfail(strict=True)`, cada uno fallando por su motivo con `--runxfail`: los seis de la
+serie con «no pertenece a la progresión», los dos de punta a punta con 1.07 en V9 y con
+`DisenoNoFactibleError`, los dos de D2 con el texto que atribuía el NF a V7 y los dos de
+las fichas con `KeyError`) y liberados al corregir; uno más, el paso de cinco decimales,
+sumado después por mutación; cuatro guardias que valen antes y después y un centinela que
+cae el día que el dueño corrija la hoja de ruta— y los dos casos del parametrizado de
+`test_decisiones_diferidas` que anclan VE1-01 y VE1-02. Mutantes del escalón, medidos: el
+redondeo a dos decimales de partida tumba los ocho de la serie; la suma en float sin
+redondeo (la corrección que proponía la revisión), seis, entre ellos la guardia de la
+progresión por defecto y dos de `test_linea_base` (el ruido flotante llegaba a la línea
+base); el redondeo a cuatro decimales, el caso de cinco. La línea base se regeneró con su
+script y su diff es vacío. Ningún documento generado cambió: el `import` de `decimal` va
+dentro de `_escalon_de_la_serie`, de modo que las referencias de línea de
+`docs/manifiesto_citas.md` a `M2_material.py` no se movieron (con el `import` arriba,
+caían tres tests de `test_manifiesto_citas` por un desfase de +1). Con Tk corren 57 tests
+de ventana real, ninguno saltado; VE-1 no suma ninguno. Se contaron corriendo los once
+archivos con ventana con un `xvfb-run` que falla: se saltan exactamente 57 (29 del
+recorrido de UI-4, 8 de `test_gui_contrato`, 7 de UI-5, 6 de UI-2, 3 de
+`test_ext5_forma_gui` y uno de UI-1, UI-3, E-B y PF-6), y con el de verdad la suite no
+salta ninguno. Las dos corridas del entregable se lanzaron a la vez, de unos 17 min cada
+una, y el test de presupuesto de tiempo
+(`test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint`) pasó en las dos. Una
+primera pasada de las dos corridas dio un rojo propio, ya corregido:
+`test_ningun_assert_compara_floats_con_igualdad_exacta` (SIS-F-16) vio en el test nuevo la
+progresión de archivo comparada con floats escritos; se compara como texto, igual que los
+escalones.
+
+La revisión independiente de VE-1 confirmó D1 a D3 y dejó cuatro hallazgos que el dueño
+autorizó corregir, con el permiso que la orquestadora amplió sólo para ellos (ficha
+VE1-01): (H1) el rótulo de la sección imprimía dos decimales —«Ø 1.07 m» y «Ø 1.22 m» con
+D = 1.0668 y 1.2192, en el JSON, la memoria y el CSV de resumen— y hoy escribe el diámetro
+declarado (`modelos.texto_de_dimension`); (H2) la puerta de `diametros_normalizados`
+aceptaba un paso 0, negativo, de texto o booleano, un inicio de texto o booleano, un campo
+ausente o uno de más, que tumbaban la corrida fuera de `ErrorProyecto` o recorrían otra
+serie, y hoy los rechaza por los tres caminos (`_verificar_campos_de_la_progresion`); (H3)
+la discrepancia de la «Regla [N]» de la doble n quedó declarada en los docstrings de
+`M3_hidraulica` y `M2_material`; (H5) el concepto del NF, corto, y las fichas al día.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, VE-1 con la revisión, checkout de git | sí | sí | 6739 | 10 | 6749 |
+| entregable, VE-1 con la revisión, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 6735 | 14 | 6749 |
+| proceso, VE-1 con la revisión, checkout | sí | sí | 145 | 0 | 145 |
+
+La revisión suma 38 tests en `tests/test_ve1_validacion.py`: 27 escritos en rojo
+(`xfail(strict=True)`, cada uno fallando por su motivo con `--runxfail`: el rótulo de dos
+decimales, la CLI que corría o caía con `ZeroDivisionError`, `TypeError` o `KeyError` en
+vez de salir con 2, la guardia que no levantaba, y los docstrings y las fichas sin la
+declaración) y liberados al corregir, y 11 guardias (el rótulo de la progresión de archivo,
+del inicio negativo de la rama de error y del marco de la línea base; lo que la puerta
+sigue aceptando; el barrido de los 141 criterios con su valor de archivo). Un test de D2
+se reescribió para la redacción corta del concepto que pidió la revisión. Mutantes,
+medidos: sin la llamada a la guardia nueva caen 18; sin la condición de paso positivo, 4;
+con el rótulo de dos decimales, 3. La línea base se regeneró y cambió sólo la huella de
+`criterios_adoptados.py` (ocho líneas en ocho archivos; ningún número). Los docstrings de
+M2 y M3 movieron cinco referencias de línea de `docs/manifiesto_citas.md`, y los tres
+documentos del registro se regeneraron con su comando (`python3 -m src.normativa.manifiesto
+--escribir --suite …`, con el par de la fila del checkout): cambiaron esas cinco
+referencias y el sello de `docs/trazabilidad.csv`; `manifiesto_registro_normativo.md`, no.
+Con Tk corren los mismos 57 tests de ventana real, ninguno saltado. Las dos corridas del
+entregable se lanzaron a la vez, de unos 16 min cada una, con otra suite ajena corriendo
+en la máquina, y el test de presupuesto de tiempo pasó en las dos.
