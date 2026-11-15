@@ -1,0 +1,15 @@
+{
+ "globales": {
+  "luz_m": 3.0,
+  "longitud_m": 33.528,
+  "S_conducto": 0.005,
+  "seccion_receptor_medida": {
+   "b_m": 0.9144000000000001,
+   "z_HV": 3.0,
+   "S": 0.005,
+   "n": 0.065,
+   "altura_total_m": 3.0
+  },
+  "acceso_mantenimiento_previsto": true
+ }
+}

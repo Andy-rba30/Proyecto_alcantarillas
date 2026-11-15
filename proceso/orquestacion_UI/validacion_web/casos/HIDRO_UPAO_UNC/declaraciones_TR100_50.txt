@@ -1,0 +1,4 @@
+# TR = 100 (quebrada importante, n = 25) y TR = 50 (quebrada menor y cunetas, n = 15): R despejado de R = 1-(1-1/T)^n
+homogeneidad_serie_fen=serie_completa
+distribucion_precipitacion_maxima=gumbel
+riesgo_admisible_propietario={"quebrada_importante": {"R": 0.222178640, "n": 25}, "quebrada_menor": {"R": 0.261430897, "n": 15}}

@@ -1,0 +1,2184 @@
+"""
+variables_entrada.py
+====================
+El censo de TODO lo que el expediente tiene que traer, con el modo en que cada
+cosa se resuelve. Sec. 4.3 del plan `docs/hoja_de_ruta_correcciones_v12.md`.
+
+El problema que resuelve
+------------------------
+El repositorio mantiene CUATRO POBLACIONES separadas, y las separa bien
+(los conteos no se escriben aqui: `reporte_variables()` los imprime y
+`tests/test_variables_entrada.py` los contrasta con sus fuentes):
+
+    columnas del CSV        `modelos.PuntoCritico` / `M0_carga.COLUMNAS`
+    datos externos          `_EXTERNOS` (las claves de `servicio.CLAVES_EXTERNAS`
+                            que no son columna; desde EXT-5)
+    datos de sitio          `datos_sitio.DATOS_SITIO`
+    criterios adoptados     `criterios_adoptados.CRITERIOS`
+
+La frontera entre ellas es real y no se toca: una varia punto a punto, otra
+vale para todo el corredor, la tercera es lo que el proyectista decidio donde
+la norma calla, y la cuarta --- desde EXT-5 --- son los datos que entran por
+bandera o por el JSON de `--datos-externos` sin ser columna. Lo que faltaba
+era la VISTA UNICA, porque quien llena el expediente no ve cuatro
+poblaciones: ve "los datos que hay que llenar". Sin ella la GUI tiene
+pestañas que no se pueden comparar y la memoria bloques que no suman.
+
+Y faltaba, sobre todo, el MODO DE RESOLUCION: como se llega al numero. Es lo
+que le dice a la GUI QUE VENTANA ABRIR y a M11 QUE IMPRIMIR. Un campo
+numerico con su dominio, una tabla entera con su numeral para elegir fila, un
+rango con su semantica, un valor no editable con su derivacion, un campo con
+trazabilidad obligatoria, o un catalogo de proveedor con su advertencia: son
+seis ventanas distintas y hoy se pintaban todas igual.
+
+Donde vive cada cosa
+--------------------
+El modo NO se declara aqui para las dos poblaciones que ya tienen archivo
+propio: `Criterio.resolucion` y `DatoSitio.resolucion` lo llevan, junto al
+valor que explican, y sus guardias lo exigen al importar. Este modulo declara
+la resolucion SOLO de las 17 columnas del CSV, que no tienen otro sitio donde
+vivir, y de los datos externos del JSON (`_EXTERNOS`, desde EXT-5), y aporta
+lo que ninguna poblacion tenia: unidad, fase que la consume, dominio fisico y
+criterio que recibe la eleccion.
+
+    resolucion (criterios)   ->  criterios_adoptados.py
+    resolucion (sitio)       ->  datos_sitio.py
+    resolucion (CSV)         ->  aqui
+    resolucion (externos)    ->  aqui
+    unidad / fase / dominio  ->  aqui, para las cuatro
+
+Los seis modos y como se elige uno estan documentados en `modelos.py`, junto
+a los tipos. Aqui solo se aplica la escalera.
+
+El reparto que resulta
+----------------------
+    libre        48    de_ensayo    18    de_tabla     13
+    derivada      2    en_rango      1    de_catalogo   1
+
+TRES LECTURAS DE ESE REPARTO, y ninguna es cosmetica:
+
+1. `de_tabla` son 13 de 83 y podrian ser mas. Lo que lo impide no es el
+   criterio de nadie: es que la tabla de la fuente NO ESTA TRANSCRITA en
+   `src/normativa/`. El campo `Libre.tabla_pendiente` nombra, variable por
+   variable, cual falta -- `variables_con_tabla_pendiente()` las lista --, de
+   modo que el censo produce una lista de trabajo en vez de una excusa.
+
+2. `en_rango` es UNO SOLO, y es el caso testigo de la §4.2 del plan:
+   `v_max_concreto_eleccion`, cuya fila de la Tabla N 10 trae DOS MAXIMOS y
+   ningun piso (NOR-HID-04). Que sea el unico no es un descuido: es que el
+   registro tiene hoy rangos con semantica declarada en una sola tabla, y
+   inventar los demas seria fabricar la cita que este proyecto viene
+   retirando.
+
+3. `de_catalogo` es UNO SOLO -- `D_max_catalogo` -- y ese es el modo que la
+   §4.3 pedia crear (NOR-PRO-01, NOR-PRO-02).
+
+Donde este censo se aparta de los EJEMPLOS de la Sec. 4.3
+---------------------------------------------------------
+El plan ilustra cada modo con ejemplos. Cuatro de ellos no sobreviven al
+contraste con el repositorio y con las fuentes, y apartarse en silencio seria
+el error que este proyecto persigue. Estan declarados uno a uno, con su
+razon, en `DESVIACIONES_DEL_PLAN`, y ademas en el `que_lo_fija` de cada
+variable, que es su punto de uso. Los cuatro se apartan SIEMPRE hacia el modo
+que promete menos: ninguno inventa una tabla, un rango o una cita.
+
+Regla de uso
+------------
+    from src import variables_entrada as ve
+
+    v = ve.variable("cbr_subrasante")
+    v.modo                       # ModoDeResolucion.DE_ENSAYO
+    ve.por_modo()[ve.ModoDeResolucion.DE_TABLA]     # que ventana abrir
+    ve.tabla_de("F_pga")         # la TablaNormativa que la ventana muestra
+    ve.rango_de("v_max_concreto_eleccion")          # con su semantica
+    print(ve.reporte_variables())
+"""
+
+from __future__ import annotations
+
+import ast
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+from src import criterios_adoptados as _ca
+from src import datos_sitio as _ds
+from src import dominios as _dominios
+from src.criterios_adoptados import verificar_resolucion
+from src.modelos import CategoriaTR
+# --- T-8 --- las filas y las columnas de la Tabla N 11, para las `opciones`
+# de los tres datos de sitio que la nombran.
+from src.constantes_normativas import (
+    REGIMENES_DE_FLUJO_T11 as _REGIMENES_DE_FLUJO_T11,
+    V_MAX_NO_REVESTIDOS as _V_MAX_NO_REVESTIDOS)
+from src.modelos import (DeCatalogo, DeEnsayo, Derivada, DeTabla, EnRango, Libre,
+                     ModoDeResolucion, Poblacion, Resolucion,
+                     VariableDeEntrada)
+from src.modulos.M0_carga import COLUMNAS
+from src.normativa import registro as _registro_normativo
+
+
+# ---------------------------------------------------------------------------
+# La fase que consume cada modulo
+# ---------------------------------------------------------------------------
+# Los numeros salen de los titulos de `docs/hoja_de_ruta_alcantarillas_v8.md`,
+# no de la numeracion de los modulos: coinciden porque M0 implementa la Fase 1
+# y de ahi en adelante van corridos en uno, pero la fuente es la hoja de ruta.
+
+_FASE_DE_MODULO: Dict[str, str] = {
+    "M0_carga": "Fase 1 - Datos de entrada",
+    "M1_clasificacion": "Fase 2 - Clasificacion y periodo de retorno",
+    # T-1: la Fase 1-bis, que calcula el caudal de diseño. Su numero va
+    # entre la 1 y la 2 en la hoja de ruta, pero CORRE despues de la 2
+    # porque el caudal calculado usa su periodo de retorno.
+    "MH_hidrologia": "Fase 1-bis - Hidrologia: caudal de diseño",
+    "M2_material": "Fase 3 - Tipo, material y durabilidad",
+    "M3_hidraulica": "Fase 4 - Dimensionamiento hidraulico",
+    "M4_control": "Fase 4 - Dimensionamiento hidraulico",
+    "M5_verificaciones": "Fase 5 - Verificaciones",
+    "M6_proteccion": "Fase 6 - Proteccion de entrada y salida",
+    "M7_geometria": "Fase 7 - Compatibilidad geometrica",
+    "M8_estructural": "Fase 8 - Verificacion estructural del conducto",
+    "M9_cabezal": "Fase 9 - Cabezal y aletas",
+    "M10_espaciamiento": "Fase 10 - Alcantarillas de alivio",
+    "M11_reporte": "Fase 11 - Entregables",
+    "MD": "Bucle de diseño (Fases 3 a 8)",
+}
+
+_MODULOS = Path(__file__).resolve().parent / "modulos"
+
+
+# El ambito al que se atribuye una cadena dentro de un modulo: el nombre de la
+# funcion o de la clase de primer nivel que la contiene, y "" para el cuerpo
+# del modulo, que es donde viven las constantes CRITERIO_*. No es un detalle
+# de implementacion: sin ambitos no hay grafo de llamadas, y sin grafo de
+# llamadas el censo atribuye el consumo a quien ESCRIBE la cadena en vez de a
+# quien la EJECUTA -- que es el falso negativo que esta pieza vino a cerrar.
+_AMBITO_MODULO = ""
+
+
+@dataclass(frozen=True)
+class _Analisis:
+    """Lo que hace falta saber de un modulo para seguir una clave a traves de el."""
+
+    literales: Dict[str, Set[str]]                 # ambito -> cadenas escritas ahi
+    llamadas: Dict[str, Set[Tuple[str, str]]]      # ambito -> (modulo, ambito) llamados
+    constantes: Dict[str, str]                     # NOMBRE de nivel de modulo -> cadena
+    importado: Dict[str, Tuple[str, str]]          # nombre local -> (modulo, nombre)
+
+
+def _docstrings(arbol: ast.Module) -> Set[str]:
+    docs: Set[str] = set()
+    for n in ast.walk(arbol):
+        if isinstance(n, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef,
+                          ast.ClassDef)):
+            d = ast.get_docstring(n, clean=False)
+            if d is not None:
+                docs.add(d)
+    return docs
+
+
+def _analizar(ruta: Path) -> _Analisis:
+    """
+    Un modulo partido en ambitos, con sus cadenas y sus llamadas resueltas.
+
+    Resuelve TRES formas de llamada y ninguna mas, porque son las tres que
+    este repositorio usa: `f(...)` a una funcion del propio modulo, `f(...)` a
+    una traida con `from modulos.MX import f`, y `M8.f(...)` sobre el alias de
+    un modulo importado. Lo que no encaja en esas tres se ignora a proposito:
+    un grafo incompleto deja consumidores sin ver --- defecto conocido y
+    acotado, que se paga en falsos negativos --- mientras que uno que adivine
+    los atribuiria mal, que es el defecto que esta funcion existe para evitar.
+
+    Los metodos de una clase se agrupan bajo el nombre de la clase: una
+    llamada a un metodo llega por una instancia y no se puede resolver por
+    nombre, de modo que separarlos daria una precision que el grafo no puede
+    sostener.
+    """
+    arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+    docs = _docstrings(arbol)
+
+    alias_modulo: Dict[str, str] = {}
+    importado: Dict[str, Tuple[str, str]] = {}
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.ImportFrom) and nodo.module:
+            partes = nodo.module.split(".")
+            if partes[-1] == "modulos":
+                for a in nodo.names:                    # from modulos import M8 as X
+                    if a.name.startswith("M"):
+                        alias_modulo[a.asname or a.name] = a.name
+            elif "modulos" in partes and partes[-1].startswith("M"):
+                for a in nodo.names:                    # from modulos.M8 import f
+                    importado[a.asname or a.name] = (partes[-1], a.name)
+        elif isinstance(nodo, ast.Import):
+            for a in nodo.names:                        # import modulos.M8 as M8
+                partes = a.name.split(".")
+                if "modulos" in partes and partes[-1].startswith("M"):
+                    alias_modulo[a.asname or partes[-1]] = partes[-1]
+
+    cuerpos: Dict[str, List[ast.AST]] = {_AMBITO_MODULO: []}
+    for nodo in arbol.body:
+        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            cuerpos.setdefault(nodo.name, []).append(nodo)
+        else:
+            cuerpos[_AMBITO_MODULO].append(nodo)
+    propias = {n for n in cuerpos if n != _AMBITO_MODULO}
+
+    # Las constantes del cuerpo del modulo se resuelven ANTES de recorrer los
+    # ambitos: `ca.valor(CRITERIO_PESO_RELLENO)` no escribe ninguna cadena
+    # dentro de la funcion, escribe un nombre, y sin este paso la clave se
+    # queda en el ambito del modulo mientras el consumo esta en la funcion --
+    # que es donde el grafo de llamadas la tiene que encontrar.
+    constantes: Dict[str, str] = {
+        destino.id: nodo.value.value
+        for nodo in cuerpos[_AMBITO_MODULO]
+        if isinstance(nodo, ast.Assign) and isinstance(nodo.value, ast.Constant)
+        and isinstance(nodo.value.value, str)
+        for destino in nodo.targets if isinstance(destino, ast.Name)
+    }
+
+    literales: Dict[str, Set[str]] = {}
+    llamadas: Dict[str, Set[Tuple[str, str]]] = {}
+    for ambito, cuerpo in cuerpos.items():
+        cadenas: Set[str] = set()
+        llamados: Set[Tuple[str, str]] = set()
+        for raiz in cuerpo:
+            for n in ast.walk(raiz):
+                if isinstance(n, ast.Constant) and isinstance(n.value, str) \
+                        and n.value not in docs:
+                    cadenas.add(n.value)
+                elif isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) \
+                        and n.value.id in alias_modulo:
+                    llamados.add((alias_modulo[n.value.id], n.attr))
+                elif isinstance(n, ast.Name):
+                    if n.id in constantes:
+                        cadenas.add(constantes[n.id])
+                    if n.id in propias:
+                        llamados.add((ruta.stem, n.id))
+                    elif n.id in importado:
+                        llamados.add(importado[n.id])
+        literales[ambito] = cadenas
+        llamadas[ambito] = llamados
+
+    return _Analisis(literales=literales, llamadas=llamadas,
+                     constantes=constantes, importado=importado)
+
+
+@lru_cache(maxsize=1)
+def _analisis() -> Dict[str, _Analisis]:
+    return {ruta.stem: _analizar(ruta)
+            for ruta in sorted(_MODULOS.glob("M*.py"))}
+
+
+@lru_cache(maxsize=1)
+def _consumo_por_modulo() -> Dict[str, frozenset]:
+    """
+    Las cadenas que cada modulo de calculo EJECUTA, no solo las que escribe.
+
+    Es como se averigua quien consume una variable, y se AVERIGUA en vez de
+    declararse a mano por una razon medida: nueve criterios se nombran en
+    comentarios o docstrings de modulos que no los invocan (`TW_receptor` sale
+    en cuatro), de modo que un `grep` -- o una lista escrita a mano a partir
+    de un grep -- atribuye consumidores que no existen. Los docstrings se
+    descartan explicitamente; los comentarios no son nodos del arbol y ya
+    quedan fuera.
+
+    EL SEGUNDO PASO LLEGO EN S21, Y LLEGO POR UN FALSO NEGATIVO MEDIDO. Hasta
+    entonces esto era un solo paso --- las cadenas literales de cada modulo ---
+    y esa atribucion se equivoca justo cuando el modulo que ESCRIBE la cadena
+    no es el que la EJECUTA. Contrastado contra dos corridas reales del
+    pipeline:
+
+        'factores_carga_aashto'          decia   Fase 8 - Fase 9
+        'peso_especifico_relleno_kn_m3'  decia   Fase 8 - Fase 9
+
+    y a las dos las invoca V7 (flotacion), que es FASE 5 y corre en el alcance
+    de perfil: `M5_verificaciones` importa de `M8_estructural` la constante
+    `CRITERIO_FACTORES_CARGA` y la funcion `peso_relleno_kn_m`, y las dos
+    cadenas viven en M8. Un filtro de alcance montado sobre la derivacion
+    vieja habria ocultado dos criterios que la corrida de perfil SI invoca ---
+    el error en la direccion peligrosa, que es la de esconder.
+
+    Las dos vias por las que una clave cruza de modulo, y las dos se cierran
+    aqui:
+
+        CONSTANTE REEXPORTADA   `from modulos.M8_estructural import
+                                CRITERIO_FACTORES_CARGA` --- la cadena esta
+                                alli, el uso esta aqui.
+        FUNCION REEXPORTADA     `from modulos.M8_estructural import
+                                peso_relleno_kn_m`, que dentro llama a
+                                `ca.valor(CRITERIO_PESO_RELLENO)`.
+
+    La segunda se resuelve con un punto fijo sobre el grafo de llamadas: el
+    consumo de un ambito incluye el de todo lo que llama, transitivamente.
+
+    LO QUE ESTA DERIVACION NO ES: una prueba. Sigue siendo una ESTIMACION
+    estatica, y por eso NO es ella la que gobierna el filtro de alcance de la
+    GUI. Eso lo hace `Criterio.nivel`, que dos corridas reales comprueban en
+    `tests/test_nivel_medido.py`. El papel de esta derivacion es decir a que
+    FASE pertenece cada variable, y clasificar lo unico que ninguna corrida
+    puede medir: lo que ninguna de las dos llega a invocar.
+    """
+    analisis = _analisis()
+
+    consumo: Dict[Tuple[str, str], Set[str]] = {}
+    for modulo, a in analisis.items():
+        for ambito, cadenas in a.literales.items():
+            consumo[(modulo, ambito)] = set(cadenas)
+
+    # Una CONSTANTE reexportada no tiene cuerpo que recorrer: el nodo
+    # (modulo, nombre) al que apunta la arista no existe, y sin esta linea la
+    # clave se perderia. Se le da uno, con la cadena que su modulo de origen
+    # le asigno, y el punto fijo la propaga a quien la referencie.
+    for modulo, a in analisis.items():
+        for origen, real in a.importado.values():
+            if origen in analisis and real in analisis[origen].constantes:
+                consumo.setdefault((origen, real), set()).add(
+                    analisis[origen].constantes[real])
+
+    aristas = {(modulo, ambito): llamados
+               for modulo, a in analisis.items()
+               for ambito, llamados in a.llamadas.items()}
+
+    cambio = True
+    while cambio:
+        cambio = False
+        for nodo, llamados in aristas.items():
+            antes = len(consumo[nodo])
+            for destino in llamados:
+                consumo[nodo] |= consumo.get(destino, set())
+            if len(consumo[nodo]) != antes:
+                cambio = True
+
+    salida: Dict[str, Set[str]] = {m: set() for m in analisis}
+    for (modulo, _ambito), claves in consumo.items():
+        salida[modulo] |= claves
+    return {m: frozenset(claves) for m, claves in salida.items()}
+
+
+def _consumidores(clave: str) -> Tuple[str, ...]:
+    return tuple(sorted(m for m, claves in _consumo_por_modulo().items()
+                        if clave in claves))
+
+
+# ---------------------------------------------------------------------------
+# Lo que este modulo aporta a cada variable
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class _Meta:
+    """
+    Unidad, dominio y destino de una variable. Lo que NO esta ni en
+    `Criterio` ni en `DatoSitio` ni en `PuntoCritico`.
+
+    `fase_declarada` solo se llena cuando ningun modulo de calculo consume la
+    variable: entonces la fase no se puede deducir del consumidor y hay que
+    decir a que fase pertenece el hueco. Cuando hay consumidor, la fase se
+    DEDUCE de el y no se escribe, para que no puedan divergir.
+    """
+    unidad: str
+    dominio: Optional[str] = None
+    criterio_destino: Optional[str] = None
+    fase_declarada: str = ""
+    nota: str = ""
+
+
+@dataclass(frozen=True)
+class Desviacion:
+    """
+    Un ejemplo de la Sec. 4.3 del plan que este censo NO sigue, con la razon.
+
+    Existe como dato y no como prosa por la misma razon que
+    `normativa.Discrepancia`: una desviacion que solo vive en un comentario no
+    se puede enumerar, ni imprimir en la memoria, ni comprobar en un test.
+    """
+    variable: str
+    modo_del_plan: str
+    modo_adoptado: str
+    por_que: str
+
+
+DESVIACIONES_DEL_PLAN: Tuple[Desviacion, ...] = (
+    Desviacion(
+        variable="HW_D_max",
+        modo_del_plan="en_rango",
+        modo_adoptado="libre",
+        por_que="El num. 2.2.5 d) del HDS-5 DESCRIBE lo que imponen las "
+                "agencias viales de EE.UU. y no prescribe HW/D alguno "
+                "(NOR-HDS-02). El conflicto vinculante #1 del plan ordena "
+                "declarar de donde sale el 1.5 antes de cablearlo, y de ahi "
+                "salio la reetiqueta de [C] a [A]. Pintarlo como rango con "
+                "cita normativa devolveria la cita que ese hallazgo retiro.",
+    ),
+    Desviacion(
+        variable="factor_muro_eleccion",
+        modo_del_plan="de_tabla",
+        modo_adoptado="libre",
+        por_que="El num. 2.8.1.1.14.2.2 NO TABULA NADA: autoriza una "
+                "reduccion ('kh puede ser reducido a 0.5kh0'). El 1.0 "
+                "adoptado no es una fila, es la AUSENCIA de reduccion, que es "
+                "la definicion misma de k_h0. Una ventana que mostrara una "
+                "tabla inventaria filas que el numeral no tiene.",
+    ),
+    Desviacion(
+        variable="resguardo_HW_subrasante",
+        modo_del_plan="de_tabla (el plan lo escribe `resguardo(CBR)`)",
+        modo_adoptado="libre, con `tabla_pendiente`",
+        por_que="La tabla de resguardo por CBR del Manual de Suelos num. "
+                "4.5.4 existe y es [N], pero vive como escalares en "
+                "`constantes_normativas.py` y NO esta transcrita como "
+                "`TablaNormativa` en el registro. El criterio de salida de la "
+                "Sec. 4.3 prohibe un `de_tabla` sin tabla en el registro, asi "
+                "que la variable queda `libre` y la tabla queda nombrada como "
+                "pendiente: transcribirla la convierte en `de_tabla` sin "
+                "tocar nada mas.",
+    ),
+    Desviacion(
+        variable="diametros_normalizados",
+        modo_del_plan="de_catalogo",
+        modo_adoptado="libre, con `tabla_pendiente`",
+        por_que="El ejemplo del plan apunta al 'max' que este criterio TENIA "
+                "cuando el plan se escribio. La sesion S4 mudo esos topes a "
+                "`D_max_catalogo` al cerrar NOR-PRO-01 y NOR-PRO-02, y ese "
+                "criterio SI es `de_catalogo`. Lo que queda aqui es el inicio "
+                "y el paso de la serie, verificados contra la Tabla 1 de ASTM "
+                "A760: rotularlos 'catalogo de proveedor' contradiria la "
+                "neutralidad comercial que la propia justificacion del "
+                "criterio invoca.",
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
+# Poblacion 1 - las 17 columnas del CSV
+# ---------------------------------------------------------------------------
+# Es la unica poblacion cuya resolucion se declara aqui: `PuntoCritico` es un
+# tipo y no un catalogo de declaraciones, y una columna no tiene ficha propia
+# donde ponerla. El concepto se escribe aqui por lo mismo.
+
+@dataclass(frozen=True)
+class _Columna:
+    concepto: str
+    unidad: str
+    resolucion: Resolucion
+    dominio: Optional[str] = None
+    criterio_destino: Optional[str] = None
+    nota: str = ""
+
+
+_COLUMNAS: Dict[str, _Columna] = {
+
+    "id": _Columna(
+        concepto="Identificador del punto critico, con el que la memoria y "
+                 "los planos lo nombran",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="el expediente: es el nombre del cruce en planos y "
+                        "en la memoria",
+            dominio="texto no vacio, unico en el CSV",
+        ),
+    ),
+
+    "progresiva_km": _Columna(
+        concepto="Progresiva del cruce sobre el eje de la via. Localizador: "
+                 "no entra en ningun calculo. Se escribe en NOTACION VIAL "
+                 "('0+380') o en kilometros decimales ('0.380'): M0 acepta "
+                 "las dos y la memoria imprime siempre la notacion vial",
+        unidad="km",
+        resolucion=Libre(
+            que_lo_fija="el trazo del expediente vial",
+            # LAS DOS FORMAS, Y ESTABAN SIN DECLARAR (S23). El dominio decia
+            # solo «km >= 0», y `M0._progresiva` acepta ademas la notacion
+            # vial con '+' --- que es la que usan los DOS CSV del repositorio
+            # y la que la memoria y los planos imprimen ---. Quien leyera la
+            # ayuda derivada de este campo escribiria '0.380' creyendo que es
+            # la unica forma admitida: funciona, y aun asi la ayuda le estaba
+            # escondiendo la mitad del contrato.
+            #
+            # El tope de los metros no se escribe como numero: se NOMBRA
+            # (`METROS_POR_KM`), igual que `S_cauce` nombra `S_CAUCE_MAX`, de
+            # modo que la ayuda no pueda decir un limite distinto del que
+            # `_progresiva` aplica.
+            dominio="km >= 0, dentro del corredor del proyecto. DOS "
+                    "NOTACIONES ADMITIDAS: la vial '0+380' (kilometro, '+', "
+                    "metros de 0 a METROS_POR_KM sin alcanzarlo) y los "
+                    "kilometros decimales '0.380'. Un solo '+' por celda",
+        ),
+    ),
+
+    "familia": _Columna(
+        concepto="Familia del cruce (Sec. 2.3), que decide el periodo de "
+                 "retorno y que datos son exigibles en la fila",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="Sec. 2.3 de la hoja de ruta, aplicada al cruce por "
+                        "quien arma el CSV",
+            dominio="una de las familias declaradas",
+            opciones=("A", "B", "C"),
+        ),
+    ),
+
+    "Q_m3s": _Columna(
+        concepto="Caudal de diseño del cruce para el periodo de retorno de su "
+                 "familia",
+        unidad="m3/s",
+        resolucion=Libre(
+            que_lo_fija="el estudio hidrologico (Fase 1-bis); en Familia C lo "
+                        "fija el canal, via ANA / Junta de Usuarios",
+            dominio="m3/s > 0 y finito",
+        ),
+    ),
+
+    "area_ha": _Columna(
+        concepto="Area de la cuenca aportante. Solo clasificador (Sec. 1.1): "
+                 "no entra en el dimensionamiento",
+        unidad="ha",
+        resolucion=Libre(
+            que_lo_fija="la delimitacion de cuenca del estudio hidrologico",
+            dominio="ha > 0",
+        ),
+        criterio_destino="umbral_area_quebrada_importante_ha",
+    ),
+
+    "S_cauce": _Columna(
+        concepto="Pendiente del CAUCE en el cruce -- no la del conducto, que "
+                 "es otra cosa y se confunden (Sec. 1.5). En un cruce de "
+                 "canal el «cauce» es el canal",
+        unidad="m/m",
+        resolucion=Libre(
+            que_lo_fija="el perfil del cauce del levantamiento topografico. "
+                        "EN LA FAMILIA C NO, y es el matiz que C6 tuvo que "
+                        "escribir: en un cruce de canal el cauce es el canal, "
+                        "su perfil no lo levanta el proyectista vial y la "
+                        "columna va vacia por el Tablero 3.1 (ANA / Junta de "
+                        "Usuarios del Bajo Piura). Para esos puntos el valor "
+                        "entra por la clave `S_cauce` de "
+                        "`servicio.CLAVES_EXTERNAS`, y la memoria lo imprime con "
+                        "esa procedencia en vez de con la de la columna",
+            dominio="m/m, 0 < S < S_CAUCE_MAX; un valor >= 1 delata una celda "
+                    "cargada en porcentaje",
+        ),
+        dominio="S_CAUCE_MAX",
+    ),
+
+    "cota_terreno": _Columna(
+        concepto="Cota del terreno natural en el cruce",
+        unidad="msnm",
+        resolucion=Libre(
+            que_lo_fija="el levantamiento topografico del expediente",
+            dominio="msnm",
+        ),
+    ),
+
+    "cota_fondo_entrada": _Columna(
+        concepto="Cota del fondo de la ENTRADA (invert) medida en el cruce. "
+                 "Admite vacio: cuando falta, la pone la regla declarada en "
+                 "el criterio 'origen_cota_fondo_entrada'",
+        unidad="msnm",
+        resolucion=DeEnsayo(
+            ensayo="nivelacion del fondo del cauce -- del CANAL, en un paso "
+                   "de canal -- en la seccion del cruce",
+            trazabilidad_exigida="la libreta de nivelacion o el perfil "
+                                 "longitudinal del cauce, con la progresiva "
+                                 "de la seccion levantada y el BM de "
+                                 "referencia. Se MIDE en cada cruce: por eso "
+                                 "es columna y no dato de corredor",
+        ),
+        criterio_destino="origen_cota_fondo_entrada",
+    ),
+
+    # SIN `criterio_destino`, y no es un olvido: ese campo dice a que criterio
+    # va a parar la columna cuando el proyectista tiene que ELEGIR como
+    # obtenerla, y aqui no hay eleccion que hacer. La coronacion de un canal
+    # se mide o no se tiene: no hay regla declarada que la sustituya --- al
+    # reves que `cota_fondo_entrada`, que si la tiene ---. Vacia, lo que se
+    # detiene es VC1 con `DatoFaltanteError`, que es lo que corresponde cuando
+    # el revisor tiene que CONSEGUIR algo y no que decidirlo.
+    "cota_coronacion_canal": _Columna(
+        concepto="Cota de la coronacion (labio) del canal en el cruce, "
+                 "contra la que VC1 verifica el borde libre. Admite vacio: "
+                 "sin ella VC1 se detiene, y no hay regla que la sustituya",
+        unidad="msnm",
+        resolucion=DeEnsayo(
+            ensayo="levantamiento topografico del cruce: seccion transversal "
+                   "del canal con su fondo y sus dos coronaciones",
+            trazabilidad_exigida="la libreta o la seccion transversal "
+                                 "levantada, con la progresiva del cruce y el "
+                                 "BM de referencia, y cual de las dos "
+                                 "margenes se transcribio si no estan a la "
+                                 "misma cota --- que es la pregunta que un "
+                                 "solo numero por punto deja abierta: la "
+                                 "columna admite UNA cota y lo conservador es "
+                                 "la MENOR de las dos, porque es por ahi por "
+                                 "donde desborda primero",
+        ),
+    ),
+
+    "cota_rasante": _Columna(
+        concepto="Cota de la superficie de rodadura sobre el cruce",
+        unidad="msnm",
+        resolucion=Libre(
+            que_lo_fija="el diseño geometrico del expediente vial (DG-2018)",
+            dominio="msnm, por encima de la cota de subrasante",
+        ),
+    ),
+
+    "cota_subrasante": _Columna(
+        concepto="Cota de la subrasante sobre el cruce, contra la que se "
+                 "verifica el resguardo de V4",
+        unidad="msnm",
+        resolucion=Libre(
+            que_lo_fija="el diseño de pavimento del expediente vial",
+            dominio="msnm, por debajo de la cota de rasante",
+        ),
+    ),
+
+    "cbr_subrasante": _Columna(
+        concepto="CBR de la subrasante en el cruce, que decide el resguardo "
+                 "exigible entre el nivel de agua a la entrada y la "
+                 "subrasante",
+        unidad="%",
+        resolucion=DeEnsayo(
+            ensayo="ensayo CBR de laboratorio sobre la muestra de la calicata "
+                   "del cruce",
+            trazabilidad_exigida="calicata, profundidad de muestreo, "
+                                 "laboratorio, fecha e informe de ensayo. Se "
+                                 "MIDE en cada cruce: por eso es columna y no "
+                                 "dato de corredor",
+        ),
+        dominio="CBR_MIN_FISICO",
+        criterio_destino="resguardo_HW_subrasante",
+    ),
+
+    "esviaje_grados": _Columna(
+        concepto="Angulo entre el eje del conducto y la perpendicular al eje "
+                 "de la via. A 0 grados el cruce es perpendicular",
+        unidad="grados",
+        resolucion=Libre(
+            que_lo_fija="el plano de planta del expediente vial",
+            dominio="grados, 0 <= esviaje < ESVIAJE_MAX; a 90 el conducto "
+                    "seria paralelo a la via y no habria cruce",
+        ),
+        dominio="ESVIAJE_MAX",
+    ),
+
+    "ancho_plataforma": _Columna(
+        concepto="Ancho de la plataforma de la via sobre el cruce, que fija "
+                 "la longitud minima del conducto",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="la seccion transversal tipo del expediente vial",
+            dominio="m > 0",
+        ),
+    ),
+
+    "cota_fondo_receptor": _Columna(
+        concepto="Cota del fondo del cuerpo receptor en el punto de entrega",
+        unidad="msnm",
+        resolucion=Libre(
+            que_lo_fija="el levantamiento topografico del cuerpo receptor",
+            dominio="msnm",
+        ),
+    ),
+
+    "Q_receptor_m3s": _Columna(
+        concepto="Caudal del cuerpo receptor durante la avenida, para la "
+                 "verificacion de entrega",
+        unidad="m3/s",
+        resolucion=Libre(
+            que_lo_fija="la ANA / Junta de Usuarios del Bajo Piura "
+                        "(Tablero 3.1); mientras no llegue, la celda va "
+                        "vacia y la fila se carga marcada",
+            dominio="m3/s >= 0",
+        ),
+    ),
+
+    "cota_TW": _Columna(
+        concepto="Nivel de agua en el cuerpo receptor durante la avenida "
+                 "(tailwater), que decide si el control es de salida",
+        unidad="msnm",
+        resolucion=Libre(
+            que_lo_fija="Sec. 1.3, con el dato del receptor; mientras no "
+                        "llegue, la celda va vacia (Tablero 3.1)",
+            dominio="msnm, por encima de la cota de fondo del receptor",
+        ),
+        criterio_destino="TW_receptor",
+    ),
+
+    "sucs_fundacion": _Columna(
+        concepto="Clasificacion SUCS del suelo de fundacion en la calicata "
+                 "del cruce",
+        unidad="-",
+        resolucion=DeEnsayo(
+            ensayo="clasificacion SUCS de la muestra de la calicata del cruce "
+                   "(granulometria y limites de Atterberg)",
+            trazabilidad_exigida="calicata, profundidad de muestreo, "
+                                 "laboratorio y fecha. Es obligatoria en el "
+                                 "encabezado de Sec. 1.2. DESDE T-4 LA LEE "
+                                 "`M2.matriz_durabilidad` (INF-5.1.9), para "
+                                 "UN aviso: el num. 4.1.1.3.4 a) recomienda "
+                                 "el marco cuando el suelo de fundacion es "
+                                 "de mala calidad, y EL MANUAL NO DEFINE "
+                                 "«mala calidad» -- sin umbral, sin lista "
+                                 "de grupos, sin remision; medido en la "
+                                 "condicion `COND-MARCO-SUELO-MALA-CALIDAD` "
+                                 "de `normativa/citas.py` --. El mapeo no se "
+                                 "invento: que grupos SUCS cuentan lo "
+                                 "declara el criterio [A] "
+                                 "'sucs_fundacion_deficiente', elegido "
+                                 "dentro de la Figura 3 de la E.050 y, por "
+                                 "defecto, los tres suelos organicos sobre "
+                                 "los que su Art. 24 no deja cimentar. ES UN "
+                                 "AVISO Y NO UN FILTRO: no cambia el "
+                                 "material ni la seccion. El otro consumidor "
+                                 "plausible, `c_phi_fundacion` (el destino "
+                                 "declarado), sigue sin cablear: es de "
+                                 "EXPEDIENTE y lo consumen E1-E5 de la Sec. "
+                                 "9.3, que esta CLI no ensambla; el dia que "
+                                 "se ensamblen, el dato ya esta. Fichas "
+                                 "C6-01 y T4-05 de "
+                                 "`docs/decisiones_diferidas.md`",
+        ),
+        criterio_destino="c_phi_fundacion",
+        # QUE SE ESCRIBE EN LA CELDA. Faltaba, y era el segundo defecto que
+        # destapo la ayuda derivada de S22: la celda es texto libre, `M0._texto`
+        # acepta cualquier cadena no vacia, y la ficha no decia ni que forma
+        # tiene un grupo SUCS. Quien llena el CSV no tenia de donde saberlo.
+        #
+        # EL VOCABULARIO NO ESTA CERRADO POR NINGUNA FUENTE DE `normas/`, y esa
+        # es la razon de que esto sea una NOTA y no un `opciones`. Lo medido,
+        # leyendo los PDF y no de memoria:
+        #
+        #   - E.050, FIGURA 3, pagina impresa 31: enumera QUINCE simbolos
+        #     basicos (los de abajo) y la propia norma rotula la figura como
+        #     referencial. Ninguna dupla aparece ahi.
+        #   - Manual de Suelos (MTC), Cuadro 4.9, pagina impresa 35: correlaciona
+        #     AASHTO con SUCS y atribuye la clasificacion SUCS a ASTM D-2487.
+        #     Usa trece simbolos y ninguna dupla.
+        #   - Manual de Suelos (MTC), Cuadro 9.1, pagina impresa 92: USA nueve
+        #     duplas como claves de fila (SP-SM, SM-SC, GW-GC...), pero es una
+        #     guia de estabilizadores, no una enumeracion --- y trae ademas un
+        #     desliz de transcripcion en la fuente ('SP - PC').
+        #   - ASTM D-2487, que es quien define el sistema y sus duplas, NO esta
+        #     en `normas/`.
+        #
+        # De ahi la consecuencia que decide la forma de esta declaracion:
+        # `tests/ejemplo_puntos.csv` trae 'SP-SM', que NO esta entre los quince.
+        # Declarar los quince como conjunto cerrado dejaria fuera un valor del
+        # propio expediente, e inventar la regla de composicion de duplas seria
+        # inventar norma. Se declara lo que hay y se declara el hueco.
+        #
+        # NO RESTRINGE LA CARGA, y esta comprobado: nada valida una celda de
+        # texto contra una lista declarada --- `Libre.opciones` solo se IMPRIME
+        # (M11, la ventana normativa y la ayuda) --- y `test_ayuda_entrada.py`
+        # fija que M0 sigue aceptando 'SP-SM' y cualquier otra cadena. Esta nota
+        # informa; no cierra ninguna puerta.
+        nota="Grupo SUCS del suelo de fundacion. Los QUINCE simbolos basicos "
+             "son GW, GP, GM, GC, SW, SP, SM, SC, ML, CL, OL, MH, CH, OH y Pt "
+             "(E.050, FIGURA 3, pag. impresa 31; la norma rotula esa figura "
+             "como referencial). La celda admite ADEMAS la forma doble de un "
+             "suelo de frontera --- 'SP-SM', 'SM-SC' ---, que el expediente usa "
+             "y que NINGUNA fuente de normas/ enumera: quien las define es ASTM "
+             "D-2487, que no esta en el repositorio. M0 NO valida esta celda "
+             "contra ninguna lista: solo exige que no este vacia.",
+    ),
+
+    "NF_profundidad_m": _Columna(
+        # --- VE-1 (D2, D3) --- Decia «para la flotacion (V7) y la subpresion
+        # del cabezal», y V7 NO la lee: supone el conducto sumergido sea cual
+        # sea el NF (`M8.empuje_flotacion_kn_m`). Es el texto que imprime el
+        # pre-vuelo, y por eso dice quien la lee de verdad y lleva la
+        # discrepancia con la hoja de ruta, que sigue mal (ficha VE1-01).
+        concepto="Profundidad del nivel freatico bajo el terreno natural en "
+                 "el cruce. La leen la estabilidad del cabezal (Fase 9: "
+                 "empuje del agua, subpresion y capacidad portante) y la "
+                 "presion del agua sobre la pared de un TMC o un HDPE (Fase "
+                 "8, solo si el NF queda sobre la clave). V7 no la lee: "
+                 "supone el conducto sumergido sea cual sea el NF (fila V7 "
+                 "de la hoja de ruta; su §1.2 dice lo contrario y sigue sin "
+                 "corregir, ficha VE1-01)",
+        unidad="m",
+        resolucion=DeEnsayo(
+            ensayo="medicion del nivel freatico en la calicata o el "
+                   "piezometro del cruce",
+            trazabilidad_exigida="calicata o piezometro, FECHA Y EPOCA DEL "
+                                 "AÑO de la medicion -- un NF de estiaje y "
+                                 "uno de avenida no son el mismo dato -- y el "
+                                 "informe geotecnico",
+        ),
+        nota="Es la unica columna que no viene del encabezado de Sec. 1.2: se "
+             "agrego al reclasificar el nivel freatico, que era un criterio "
+             "unico de proyecto (1.4 m) y se MIDE en cada cruce.",
+    ),
+}
+
+
+# ---------------------------------------------------------------------------
+# Poblacion 2 - los datos de sitio de corredor
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Poblacion 4 - los datos externos que NO son columna del CSV
+# ---------------------------------------------------------------------------
+# Las claves de `servicio.CLAVES_EXTERNAS` que no son columna, ni dato de sitio,
+# ni criterio (EXT-G-03, decidido en EXT-0 y hecho en EXT-5). Hasta EXT-5 no
+# estaban en ningun censo y la ayuda del JSON las mostraba en ambar como «sin
+# ficha», prefiriendo un hueco declarado a una frase inventada. La objecion
+# valia contra la prosa a mano en la FICHA; no vale contra el censo, que es
+# donde este archivo declara tambien las columnas del CSV. Lo que se deriva se
+# deriva: la fase la miden los consumidores (`_consumidores`, como en las
+# otras poblaciones) y donde no hay consumidor el hueco dice a que fase
+# pertenece; el dominio se nombra POR NOMBRE contra `dominios.py`, el MISMO
+# que `servicio._DOMINIO_DE_CLAVE` aplica a la clave del JSON; y las opciones de
+# `categoria_tr` salen del enum que M1 valida, no de una lista escrita aqui.
+#
+# NO SE IMPORTA `cli`: `cli` importa los once modulos y este censo lo
+# importan la GUI y los tests de contenido. Que este censo y
+# `servicio.CLAVES_EXTERNAS` digan lo mismo lo comprueba
+# `tests/test_ext5_forma_gui.py`, en el mismo sitio donde se comprueba que
+# las fichas de la ayuda salen de aqui.
+
+@dataclass(frozen=True)
+class _Externo:
+    concepto: str
+    unidad: str
+    resolucion: Resolucion
+    dominio: Optional[str] = None
+    criterio_destino: Optional[str] = None
+    fase_declarada: str = ""
+    nota: str = ""
+
+
+_EXTERNOS: Dict[str, _Externo] = {
+
+    "luz_m": _Externo(
+        concepto="Luz del cruce: la abertura libre que la estructura tiene "
+                 "que dar (luz libre del glosario del Manual de Puentes, "
+                 "«opening» de AASHTO 1.2), de la topografia o del QGIS; NO "
+                 "es el ancho del cauce natural. Decide el umbral binario de "
+                 "la Sec. 2.1: un cruce de 6 m o mas es PUENTE y queda fuera "
+                 "de alcance (Sec. 3.1). En un marco multicelda es el ancho "
+                 "total del cruce (HDS-5 1.2), no la luz de una celda",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="la topografia o el QGIS del corredor; se declara "
+                        "por bandera o en --datos-externos, para toda la "
+                        "corrida o punto a punto",
+            dominio="m > 0 y finito",
+        ),
+    ),
+
+    "TW_m": _Externo(
+        concepto="Tirante en el cuerpo receptor sobre el fondo de la SALIDA "
+                 "durante la avenida. Si no se declara, el control de salida "
+                 "lo pide al criterio 'TW_receptor'",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el nivel del cuerpo receptor durante la avenida "
+                        "(ANA / Junta de Usuarios); 0 es salida libre",
+            dominio="m >= 0 y finito (0 = salida libre)",
+        ),
+        criterio_destino="TW_receptor",
+        fase_declarada=_FASE_DE_MODULO["M4_control"],
+        nota="No la consume ningun modulo por su nombre: entra a MD ya "
+             "resuelta como el TW del punto, y por eso la fase se declara",
+    ),
+
+    "longitud_m": _Externo(
+        concepto="Longitud del conducto entre cabezales. Si no se declara la "
+                 "calcula M7 (Sec. 7.B) desde la plataforma y el talud del "
+                 "terraplen",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="la geometria del cruce (topografia); si falta, M7 "
+                        "la deriva y exige 'talud_terraplen'",
+            dominio="m > 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M7_geometria"],
+        nota="No la consume ningun modulo por su nombre: entra a MD ya "
+             "resuelta como la L del punto, y por eso la fase se declara",
+    ),
+
+    "S_conducto": _Externo(
+        concepto="Pendiente del CONDUCTO cuando difiere de la del cauce: es "
+                 "la que entra en Manning y la que V2b compara contra "
+                 "'S_cauce' (indicador de sedimentacion). No sustituye a "
+                 "'S_cauce'",
+        unidad="m/m",
+        resolucion=Libre(
+            que_lo_fija="el perfil longitudinal con que se tiende el barril",
+            # --- T-2 --- (INF-5.1.6) El cero se admite: es un barril
+            # HORIZONTAL (HDS-5 num. 3.3.4). La banda que el proyecto adopta
+            # la verifica V10 ('pendiente_minima_conducto' y
+            # 'pendiente_maxima_conducto').
+            dominio="m/m >= 0 (0 = barril horizontal); un valor >= 1 delata "
+                    "una celda en porcentaje",
+        ),
+        dominio="S_CAUCE_MAX",
+    ),
+
+    "L_hidraulico_m": _Externo(
+        concepto="Longitud a la que la cuneta agota su capacidad, para el "
+                 "espaciamiento de las alcantarillas de alivio (Fase 10, "
+                 "Familia B). Declarada GANA; sin declarar, la Fase 10 la "
+                 "calcula con 'ancho_tributario_m', 'S_cuneta' y los "
+                 "criterios de la cuneta (T-9)",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el calculo hidraulico de la cuneta, cuando se hace "
+                        "fuera del programa; dentro lo hace M10",
+            dominio="m > 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
+        nota="La Fase 10 la lee `servicio._fase_10` por punto, no un modulo de "
+             "calculo por su nombre, y por eso la fase se declara",
+    ),
+
+    # --- T-9 --- Las tres entradas de la Fase 10 que el CSV no trae (trazo):
+    # las lee `servicio._fase_10` y `servicio._verificar_tramos_de_alivio`,
+    # y por eso la fase se declara.
+    "ancho_tributario_m": _Externo(
+        concepto="Ancho de la faja que drena a la cuneta por metro de cuneta "
+                 "(semiplataforma, berma y talud que vierten a ella), para el "
+                 "caudal aportante por metro de la Fase 10 (Familia B) cuando "
+                 "el tramo del alivio no se conoce o el caudal se calcula",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="la seccion tipica de la via (DG-2018) y el talud de "
+                        "corte que vierte a la cuneta",
+            dominio="m > 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
+        nota="Sin el --y sin tramo conocido con caudal declarado, en que el "
+             "aporte se reparte como Q / s--, la longitud por capacidad no se "
+             "calcula y, sin 'L_hidraulico_m' declarada, la Fase 10 se "
+             "detiene",
+    ),
+
+    "S_cuneta": _Externo(
+        concepto="Pendiente longitudinal de la cuneta que descarga en el "
+                 "alivio (la de la rasante en el tramo), para su capacidad "
+                 "por Manning en la Fase 10 (Familia B). No se deduce de "
+                 "las cotas de rasante del CSV, que son de los cruces",
+        unidad="m/m",
+        resolucion=Libre(
+            que_lo_fija="el perfil longitudinal del trazo en el tramo de "
+                        "cuneta",
+            dominio="m/m > 0; un valor >= 1 delata una pendiente en "
+                    "porcentaje",
+        ),
+        dominio="S_CAUCE_MAX",
+        fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
+        nota="Fuera de 0.5 % < i < 2 % (Manual de Hidrologia num. 4.1.2 c)) "
+             "la corrida avisa; no detiene nada",
+    ),
+
+    "inicio_tramo_cuneta_km": _Externo(
+        concepto="Progresiva donde empieza, del lado de progresivas menores, "
+                 "el tramo de cuneta que descarga en el alivio (punto alto de "
+                 "la rasante, inicio del corte, otra obra de drenaje "
+                 "transversal): extremo del tramo de VB1. Gana sobre la obra "
+                 "anterior del CSV; no puede ser posterior a la obra",
+        unidad="km",
+        resolucion=Libre(
+            que_lo_fija="el trazo (perfil longitudinal y planta de drenaje)",
+            dominio="km >= 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M10_espaciamiento"],
+        nota="Opcional. Sin el y sin obra anterior en el CSV que cierre el "
+             "tramo (de Familia B, o de Familia A por el criterio "
+             "'obras_familia_a_extremo_de_cuneta'), VB1 no se evalua y la "
+             "corrida lo registra como bloqueo que espera este dato",
+    ),
+
+    "categoria_tr": _Externo(
+        concepto="Fila de la Tabla N 02 del punto, declarada cauce por cauce "
+                 "(Sec. 2.2): el Manual no da un umbral para deducirla. Sin "
+                 "ella la Familia A cae en "
+                 "'umbral_area_quebrada_importante_ha'",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, cauce por cauce, sobre la Tabla N "
+                        "02; M1 la valida contra sus filas",
+            opciones=tuple(c.value for c in CategoriaTR),
+        ),
+    ),
+
+    # --- T-2 --- (cadena T, 2026-11-11) -------------------------------------
+    "seccion_receptor_medida": _Externo(
+        concepto="Seccion transversal MEDIDA del cuerpo receptor (dren, "
+                 "quebrada o canal) en la descarga: un objeto con el ancho de "
+                 "fondo `b_m`, el talud `z_HV` (H:V), la profundidad del "
+                 "fondo a la corona `altura_total_m`, el Manning `n` y la "
+                 "pendiente `S` del receptor. Cuando viene, GANA sobre la "
+                 "seccion adoptada del criterio 'seccion_receptor' en las "
+                 "vias 3 y 4 del TW (Sec. 1.3), y la memoria deja de avisar "
+                 "que el TW sale de una adopcion",
+        unidad="objeto (m, H:V, m, -, m/m)",
+        resolucion=Libre(
+            que_lo_fija="el levantamiento topografico del receptor (el script "
+                        "de QGIS del proyecto puede exportarlo) y, para n y "
+                        "S, quien opera el dren o canal (ANA / Junta de "
+                        "Usuarios); es entrada del proyecto, opcional y sin "
+                        "valor por defecto",
+            dominio="los cinco campos juntos: b_m >= 0 y z_HV >= 0 (no los "
+                    "dos nulos a la vez); altura_total_m, n y S > 0; S < 1",
+        ),
+        criterio_destino="seccion_receptor",
+        fase_declarada=_FASE_DE_MODULO["M3_hidraulica"],
+        nota="La lee `servicio._resolver_tw` y se la pasa a "
+             "`M3.tw_seccion_1_3`; ningun modulo de calculo la consume por "
+             "su nombre, y por eso la fase se declara",
+    ),
+
+    "acceso_mantenimiento_previsto": _Externo(
+        concepto="Si los planos preven el acceso de mantenimiento y limpieza "
+                 "del conducto en el punto: la exigencia del num. 4.1.1.3.7 "
+                 "d) del Manual de Hidrologia. Booleano, opcional. No decide "
+                 "ningun calculo: `true` se imprime en la memoria y `false` "
+                 "dispara un aviso. El DISPOSITIVO lo declara el criterio "
+                 "'acceso_mantenimiento_v2b'",
+        unidad="booleano",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, punto a punto, sobre los planos del "
+                        "cabezal",
+            opciones=("true", "false"),
+        ),
+        criterio_destino="acceso_mantenimiento_v2b",
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="La lee `servicio.correr_punto` y viaja en "
+             "`InformePunto.acceso_mantenimiento`; ningun modulo de calculo "
+             "la consume, y por eso la fase se declara",
+    ),
+
+    # --- T-6 --- La pendiente transversal de la plataforma en el cruce. Las
+    # dos entran a `M7.longitud_del_conducto` como argumento, resueltas por
+    # `servicio._resolver_longitud`, y por eso la fase se declara.
+    "bombeo": _Externo(
+        concepto="Bombeo de la plataforma en el cruce, como pendiente "
+                 "transversal MEDIA de la semiplataforma (calzada y berma): "
+                 "baja los dos bordes respecto de la rasante del eje y "
+                 "acorta la proyeccion de los taludes en la longitud del "
+                 "conducto por extremo (Sec. 7.B). Excluyente con "
+                 "'peralte' en un mismo punto. Sin declarar, la plataforma "
+                 "se toma horizontal y la memoria lo avisa",
+        unidad="m/m",
+        resolucion=Libre(
+            que_lo_fija="la seccion tipica del trazo (DG-2018 num. 304.05, "
+                        "Tabla 304.03)",
+            dominio="m/m >= 0 (0.02 = 2 %); un valor >= 1 delata un bombeo "
+                    "en porcentaje",
+        ),
+        dominio="S_CAUCE_MAX",
+        fase_declarada=_FASE_DE_MODULO["M7_geometria"],
+        nota="Solo actua con 'metodo_longitud_conducto' = por_extremo; el "
+             "metodo del terraplen simetrico no la lee",
+    ),
+
+    "peralte": _Externo(
+        concepto="Peralte de la plataforma en el cruce, como pendiente "
+                 "transversal con signo: positivo sube el borde del lado de "
+                 "la ENTRADA del conducto y baja el de la salida; negativo, "
+                 "al reves. Gira la plataforma alrededor del eje: no cambia "
+                 "la longitud del conducto y si la altura de terraplen de "
+                 "cada extremo (Sec. 7.B). Excluyente con 'bombeo' en un "
+                 "mismo punto (el punto en curva declara `bombeo` = 0). Sin "
+                 "declarar vale cero",
+        unidad="m/m",
+        resolucion=Libre(
+            que_lo_fija="la seccion tipica del trazo en curva (DG-2018 num. "
+                        "304.06)",
+            dominio="m/m con signo (0.04 = 4 %); un valor absoluto >= 1 "
+                    "delata un peralte en porcentaje",
+        ),
+        dominio="S_CAUCE_MAX",
+        fase_declarada=_FASE_DE_MODULO["M7_geometria"],
+        nota="Solo actua con 'metodo_longitud_conducto' = por_extremo",
+    ),
+
+    # --- T-8 --- (cadena T) · los seis datos de sitio de la Fase 6 ----------
+    "tipo_terreno_receptor": _Externo(
+        concepto="Tipo de terreno del cauce RECEPTOR, sobre el que descarga "
+                 "la salida: la fila de la Tabla N 11 del Manual de "
+                 "Hidrologia (velocidades maximas admisibles en canales no "
+                 "revestidos). Con el, y con 'regimen_flujo_descarga', la "
+                 "velocidad de salida se compara con la admisible: si no la "
+                 "supera no se dimensiona enrocado; si la supera, se avisa y "
+                 "se dimensiona. Sin el, el enrocado se dimensiona igual y "
+                 "la corrida avisa que no se comparo",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="el reconocimiento del cauce y el EMS del punto: la "
+                        "clasificacion del material del lecho receptor; es "
+                        "dato de sitio por punto, opcional y sin valor por "
+                        "defecto",
+            opciones=tuple(_V_MAX_NO_REVESTIDOS),
+        ),
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6` y se la pasa a "
+             "`M6.proteccion_salida`; el modulo la recibe como argumento y "
+             "no por su nombre, y por eso la fase se declara",
+    ),
+
+    "tipo_terreno_entrada": _Externo(
+        concepto="Tipo de terreno del cauce de APROXIMACION, aguas arriba de "
+                 "la entrada: la misma fila de la Tabla N 11. Con el, la "
+                 "velocidad en la boca se compara con la admisible y la "
+                 "memoria dice si la entrada necesita revestimiento. Sin el, "
+                 "no se compara y la corrida lo avisa",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="el reconocimiento del cauce y el EMS del punto; es "
+                        "dato de sitio por punto, opcional y sin valor por "
+                        "defecto",
+            opciones=tuple(_V_MAX_NO_REVESTIDOS),
+        ),
+        criterio_destino="tipo_proteccion_entrada",
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6` y se la pasa a "
+             "`M6.proteccion_entrada`; el modulo la recibe como argumento, y "
+             "por eso la fase se declara",
+    ),
+
+    "regimen_flujo_descarga": _Externo(
+        concepto="Regimen del flujo que pasa por la obra: la COLUMNA de la "
+                 "Tabla N 11 del Manual, que da una velocidad admisible para "
+                 "flujo intermitente y otra, igual o menor, para flujo "
+                 "permanente. Vale para la entrada y para la salida",
+        unidad="-",
+        resolucion=Libre(
+            que_lo_fija="el estudio hidrologico o quien opera el cauce: si "
+                        "lleva agua solo en avenidas (intermitente) o todo "
+                        "el año (permanente); dato de sitio, opcional y sin "
+                        "valor por defecto",
+            opciones=tuple(_REGIMENES_DE_FLUJO_T11),
+        ),
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6`; M6 la recibe como argumento, y por "
+             "eso la fase se declara",
+    ),
+
+    "material_lecho_salida": _Externo(
+        concepto="Suelo del lecho a la salida, del EMS: un objeto con `tipo` "
+                 "('no_cohesivo' con los diametros `D84_m` y `D16_m` de su "
+                 "curva granulometrica, o 'cohesivo' con el indice de "
+                 "plasticidad `IP` y la resistencia al corte saturada "
+                 "`Sv_Pa`) para estimar la hoya de socavacion por HEC-14 "
+                 "Cap. 5, y `pasa_200_pct` (pasante del tamiz N. 200) para "
+                 "el geotextil de filtro de EG-2013. Sin el, la socavacion "
+                 "no se estima y el filtro no se dimensiona; la corrida lo "
+                 "avisa",
+        unidad="objeto (-, m, m, -, N/m2, %)",
+        resolucion=Libre(
+            que_lo_fija="el Estudio de Mecanica de Suelos: analisis "
+                        "granulometrico, limites de Atterberg y compresion "
+                        "no confinada de una muestra saturada del lecho; es "
+                        "entrada del proyecto, opcional y sin valor por "
+                        "defecto",
+            dominio="tres formas: solo `pasa_200_pct` (0 a 100); "
+                    "`tipo`='no_cohesivo' con D84_m >= D16_m > 0; "
+                    "`tipo`='cohesivo' con IP >= 0 y Sv_Pa > 0",
+        ),
+        criterio_destino="lectura_coeficientes_socavacion_hec14",
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La leen `servicio._fase_6` (el pasante, para el filtro) y "
+             "`servicio._fase_6_socavacion` (el suelo, para la hoya); M6 la "
+             "recibe como `modelos.MaterialLecho`, y por eso la fase se "
+             "declara",
+    ),
+
+    "duracion_caudal_pico_min": _Externo(
+        concepto="Duracion del caudal pico del hidrograma de diseño, en "
+                 "MINUTOS: el tiempo t de la hoya de socavacion de HEC-14. "
+                 "Sin ella rige el criterio "
+                 "'duracion_caudal_pico_socavacion_min' (30 minutos, lo que "
+                 "la fuente recomienda cuando no se conoce)",
+        unidad="min",
+        resolucion=Libre(
+            que_lo_fija="el estudio hidrologico de la cuenca del punto",
+            dominio="minutos > 0; por debajo de 30 la fuente dice que sus "
+                    "exponentes no aplican, y como la hoya crece con t se "
+                    "estima con 30 min como cota superior y se avisa",
+        ),
+        criterio_destino="duracion_caudal_pico_socavacion_min",
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6_socavacion`; M6 la recibe como "
+             "argumento, y por eso la fase se declara",
+    ),
+
+    "profundidad_socavacion_estimada_m": _Externo(
+        concepto="Profundidad de socavacion a la salida que da un estudio "
+                 "del cauce, MEDIDA DESDE LA COTA que fija el criterio "
+                 "'referencia_profundidad_socavacion' (por defecto, el fondo "
+                 "del cauce receptor al pie de la salida). GANA sobre la "
+                 "hoya estimada por el programa (HEC-14 Cap. 5) y es la que "
+                 "se entrega al desplante del cabezal de salida; si es menor "
+                 "que la estimada, la corrida lo avisa. Admite 0: el estudio "
+                 "dice que no hay socavacion (lecho de roca)",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el estudio de socavacion o de hidraulica fluvial "
+                        "del cauce receptor",
+            dominio="m >= 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M6_proteccion"],
+        nota="La lee `servicio._fase_6_socavacion`; M6 la recibe como "
+             "argumento, y por eso la fase se declara",
+    ),
+
+    # --- T-7b --- (cadena T) · los tres datos de expediente de V5 y V8 ------
+    "ancho_derecho_via_m": _Externo(
+        concepto="Ancho TOTAL de la faja del derecho de via en el cruce, m: "
+                 "lo fija la resolucion que aprueba el derecho de via del "
+                 "tramo, sobre el piso de la Tabla 304.09 del DG-2018. V5 "
+                 "compara con su mitad la extension del embalse aguas arriba "
+                 "(metodo de 'remanso_derecho_via'). Familias A y B: en la C "
+                 "V5 no aplica y la sustituye VC1",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="la autoridad competente, por resolucion (DG-2018 "
+                        "num. 304.07.02); es dato del trazo, por punto, "
+                        "opcional y sin valor por defecto",
+            dominio="m > 0, finito y menor que el techo fisico de dominios.py",
+        ),
+        dominio="ANCHO_DERECHO_VIA_MAX_M",
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con el metodo de V5 declarado y a nivel de "
+             "expediente; sin el dato, V5 se detiene con DatoFaltanteError. "
+             "La lee `servicio._datos_de_expediente` y se la pasa a "
+             "`M5.v5_remanso`",
+    ),
+
+    # --- correcciones de T-7b (H2) --- el dato del metodo de COTA de V5.
+    "cota_afectacion_aguas_arriba_msnm": _Externo(
+        concepto="Cota del terreno o del bien a proteger en el limite del "
+                 "derecho de via AGUAS ARRIBA del cruce, msnm, de la "
+                 "topografia: V5 con el metodo «cota_de_afectacion» de "
+                 "'remanso_derecho_via' la compara con la cota del embalse "
+                 "de diseño (solera de entrada + HW de M4), que es el "
+                 "criterio de nivel del HDS-5 num. 2.2.5. Familias A y B",
+        unidad="msnm",
+        resolucion=Libre(
+            que_lo_fija="la topografia del cruce (levantamiento del cauce y "
+                        "del limite del derecho de via aguas arriba); dato "
+                        "por punto, opcional y sin valor por defecto",
+            dominio="msnm, finito (admite cero y signo: es una cota)",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con 'remanso_derecho_via' = «cota_de_afectacion» "
+             "y a nivel de expediente; sin el dato, V5 se detiene con "
+             "DatoFaltanteError. La lee `servicio._datos_de_expediente` y se "
+             "la pasa a `M5.v5_remanso`",
+    ),
+
+    "Q_evento_extremo_m3s": _Externo(
+        concepto="Caudal del evento extremo de V8, m3/s: el que corresponde "
+                 "al periodo de retorno de 'TR_evento_extremo', del estudio "
+                 "hidrologico. V8 lo corre por la seccion adoptada. El "
+                 "programa no lo escala del caudal de diseño",
+        unidad="m3/s",
+        resolucion=Libre(
+            que_lo_fija="el estudio hidrologico del proyecto; es entrada "
+                        "por punto, opcional y sin valor por defecto",
+            dominio="m3/s > 0, finito y no menor que el caudal de diseño",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con 'TR_evento_extremo' declarado y a nivel de "
+             "expediente; sin el dato, V8 se detiene con DatoFaltanteError. "
+             "La lee `servicio._datos_de_expediente` y se la pasa a "
+             "`M5.v8_evento_extremo`",
+    ),
+
+    "TW_evento_extremo_m": _Externo(
+        concepto="Tirante del cuerpo receptor sobre el fondo de la salida "
+                 "durante el evento extremo de V8, m. No se toma el de "
+                 "diseño: el receptor sube con la avenida. Admite 0 (salida "
+                 "libre)",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el estudio hidrologico o hidraulico del receptor "
+                        "para el evento extremo; entrada por punto, opcional "
+                        "y sin valor por defecto",
+            dominio="m >= 0 y finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="Solo se lee con 'TR_evento_extremo' y `Q_evento_extremo_m3s` "
+             "declarados; sin el, V8 se detiene con DatoFaltanteError",
+    ),
+}
+
+
+_META_SITIO: Dict[str, _Meta] = {
+    "PGA_roca_B": _Meta(unidad="g"),
+    "ZONA_SISMICA_LA_UNION": _Meta(
+        unidad="-",
+        fase_declarada="Fase 0-bis - marco sismico (referencia declarada; "
+                       "Sec. 0.4 la descarta del calculo)"),
+    "Z_E030": _Meta(
+        unidad="g",
+        fase_declarada="Fase 0-bis - marco sismico (referencia declarada; "
+                       "Sec. 0.4 la descarta del calculo)"),
+    "corredor_del_proyecto": _Meta(
+        unidad="-",
+        fase_declarada="Fase 0-bis - definicion del tramo (num. 150); no "
+                       "gobierna ningun calculo: es el ambito de los demas "
+                       "datos de sitio"),
+    "orientacion_muro_respecto_al_trafico": _Meta(
+        unidad="-",
+        nota="Es el dato que decide CUAL de las dos tablas de h_eq aplica, "
+             "y por eso no tiene un criterio destino sino dos: "
+             "`h_eq_bajo_altura_tabulada` y `h_eq_banda_intermedia_borde` "
+             "resuelven sendas lagunas de la tabla que este dato elige."),
+    "distancia_borde_calzada_al_trasdos_m": _Meta(
+        unidad="m", criterio_destino="h_eq_banda_intermedia_borde"),
+    "carriles_por_sentido": _Meta(
+        unidad="carriles",
+        fase_declarada="Fase 1 - Datos de entrada (Cuadro 4.1 del Manual de "
+                       "Suelos: numero minimo de calicatas)"),
+    "clase_de_via": _Meta(
+        unidad="-",
+        fase_declarada="Fase 1 - Datos de entrada (Cuadro 4.1 del Manual de "
+                       "Suelos, y piso de seccion del num. 4.1.1.3.4 a) del "
+                       "Manual de Hidrologia)",
+        nota="Declarada en el triage de T2: `COND-CLASE-DE-VIA` y "
+             "`COND-DMIN-ALTO-VOLUMEN` resolvian a esta clave y la clave no "
+             "existia en ningun archivo."),
+    "existe_informacion_secundaria_tramo": _Meta(
+        unidad="-",
+        fase_declarada="Fase 1 - Datos de entrada (num. 4.2 del Manual de "
+                       "Suelos: espaciamiento de calicatas a nivel de "
+                       "perfil)",
+        nota="Declarada en el triage de T2: `COND-PERFIL-SIN-INFO-SECUNDARIA` "
+             "resolvia a esta clave y la clave no existia en ningun archivo."),
+}
+
+
+# ---------------------------------------------------------------------------
+# Poblacion 3 - los criterios adoptados
+# ---------------------------------------------------------------------------
+
+_META_CRITERIOS: Dict[str, _Meta] = {
+    "D_max_catalogo": _Meta(unidad="m"),
+    "F_pga": _Meta(unidad="-"),
+    "F_pga_lectura_columna_extrema": _Meta(unidad="-"),
+    "HW_D_max": _Meta(unidad="-"),
+    # Cierre C10 (PC-32): el tope de esviaje que el proyecto acepta
+    # construir, opcional; sin declarar no existe para M7 (MAT-O18).
+    "esviaje_max_grados": _Meta(unidad="grados"),
+    # C05 (PC-24): las dos adopciones de V1 y V2, con el valor recomendado
+    # por defecto.
+    "borde_libre_y_sobre_d_max": _Meta(unidad="-"),
+    "velocidad_minima_autolimpieza_m_s": _Meta(unidad="m/s"),
+    # E-A: la lectura de «most of its length» con que el paso 4.3c juzga la
+    # primera condicion de uso de h_o sobre la fraccion llena que el perfil
+    # de la lamina mide. La consume M4 (`CRITERIO_FRACCION_LLENA`).
+    "fraccion_llena_mayor_parte": _Meta(unidad="-"),
+    "Mw_licuefaccion": _Meta(
+        unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
+    "N_cq_N_gammaq_meyerhof": _Meta(unidad="-"),
+    "PERFIL_SUELO_PRESUNTO": _Meta(
+        unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
+    "TR_evento_extremo": _Meta(unidad="años"),
+    "acceso_mantenimiento_v2b": _Meta(
+        unidad="-",
+        nota="Es la mitad [A] de la fila V2b de la Fase 5. La otra mitad -- "
+             "el indicador de sedimentacion del HDS-5 num. 5.3.3 -- no "
+             "necesita declaracion: se calcula comparando la pendiente del "
+             "diseño con la del cauce, y las dos son datos que la corrida ya "
+             "tiene. Lo que si se declara desde PF-4 es con que REGIMEN se "
+             "aplica esa comparacion: 'regimen_v2b'."),
+    "regimen_v2b": _Meta(
+        unidad="-",
+        nota="Como se aplica el indicador de pendiente de V2b (PF-4): como "
+             "umbral duro que detiene el punto, o como indicador con aviso "
+             "que se evalua igual, se imprime con veredicto INDICADOR y no "
+             "descarta el diametro. Lo consume V2b, que la corrida de perfil "
+             "invoca como obligatoria; el valor del archivo es, desde T-2, "
+             "el indicador con aviso (hasta entonces el umbral duro, la "
+             "conducta de S20)."),
+    # --- T-2 --- (cadena T, 2026-11-11): la banda de pendiente del conducto
+    # que aplica V10 y la lectura de V1 con el barril lleno por el receptor.
+    "pendiente_minima_conducto": _Meta(
+        unidad="m/m",
+        nota="Extremo inferior de la banda que V10 aplica a la pendiente con "
+             "que corrio el diseño. Vale 0.0 porque el HDS-5 admite el "
+             "barril horizontal (num. 3.3.4) y ninguna fuente fija un "
+             "minimo; la sedimentacion la juzgan V2 y V2b."),
+    "pendiente_maxima_conducto": _Meta(
+        unidad="m/m",
+        nota="Extremo superior de la banda de V10. Vale 0.10: el HDS-5 "
+             "(num. 5.4.4) describe que bajo el 10 % no se usan medidas "
+             "estructurales especiales, que este programa no dimensiona. No "
+             "sustituye a V3, que sigue juzgando la velocidad."),
+    "borde_libre_bajo_tw_ahogante": _Meta(
+        unidad="-",
+        nota="Que hace V1 cuando el barril va lleno por el NIVEL DEL "
+             "RECEPTOR (TW sobre la clave) y no por el caudal de diseño: "
+             "«no_cumple» (valor del archivo, la conducta desde EXT-3) o "
+             "«aviso», que juzga el borde libre con el tirante propio del "
+             "caudal y, si lo conserva, no descarta el diametro. Solo se "
+             "invoca en un punto con TW >= D."),
+    "borde_libre_canal_m": _Meta(
+        unidad="m",
+        fase_declarada="Fase 5 - Verificaciones (VC1, cruce de canal)",
+        nota="ES EL BORDE LIBRE DEL CANAL, NO EL DE V1. El de V1 es relativo "
+             "y se mide DENTRO del barril (>= 25 % de su altura, num. "
+             "4.1.1.3.7 b); este es absoluto y se mide bajo la CORONACION del "
+             "canal. Los dos apartados del Manual se titulan «Borde libre» y "
+             "no son intercambiables. Al moverse dentro de la ventana "
+             "0.30-0.50 m hay que saber el signo: el valor se RESTA de la "
+             "coronacion, de modo que subirlo endurece VC1."),
+    "TW_receptor": _Meta(
+        unidad="m sobre el fondo de la salida",
+        fase_declarada="Fase 1 - Datos de entrada (Sec. 1.3, ultima puerta "
+                       "del TW: `M3.tw_seccion_1_3` lo invoca solo cuando el "
+                       "expediente no trae ni `cota_TW`, ni el caudal del "
+                       "receptor, ni su seccion)",
+        nota="LA UNIDAD ESTABA MAL Y NO ERA INOCUO. Decia «msnm», que es la "
+             "unidad de `cota_TW` -- una COTA ABSOLUTA --, y este criterio "
+             "declara un TIRANTE sobre el fondo de la salida. Es exactamente "
+             "la homonimia que `constantes_normativas.HOMONIMIA_TW` existe "
+             "para senalar, y la tenia el tablero que la senala. Confundirlas "
+             "desplaza el control de salida en la magnitud entera de la cota "
+             "de fondo: centenares de metros en este corredor."),
+    # --- T-7a --- el angulo dejo de ser un vacio sin consumidor: lo lee
+    # `M9.embocadura_del_punto` antes de la Fase 4 (y por eso es de perfil).
+    # LA FASE QUE ESTE CENSO LE ATRIBUYE ES LA DEL MODULO (M9, «Fase 9»), y
+    # se deduce del consumidor para que no pueda divergir; la nota dice lo
+    # que esa atribucion no ve (correcciones de T-7a, H9).
+    "angulo_aletas": _Meta(
+        unidad="grados con la prolongacion de la pared del barril",
+        nota="Lo consume M9 (Fase 9), pero se lee ANTES de la Fase 4, en los "
+             "dos alcances: `M9.embocadura_del_punto`, que el servicio llama "
+             "antes del bucle de diseño. Es un criterio de perfil."),
+    "embocadura_cabezal": _Meta(
+        unidad="-",
+        nota="Lo consume M9 (Fase 9), pero se lee ANTES de la Fase 4, en los "
+             "dos alcances (`M9.embocadura_del_punto`): entra a la proteccion "
+             "de entrada de la Fase 6 y, en un marco, a la coherencia de su "
+             "embocadura. Es un criterio de perfil."),
+    "margen_zapata_bajo_socavacion_m": _Meta(unidad="m"),
+    "dentellon_losa_entrega": _Meta(unidad="m"),
+    # --- T-7a, correcciones (H8 y dudoso 4) ---
+    "profundidad_cimentacion_min_cabezal_m": _Meta(unidad="m"),
+    "peralte_min_zapata_armada_m": _Meta(unidad="m"),
+    # --- T-7b --- 'c_phi_fundacion' TIENE consumidor (el ensamble de
+    # estabilidad de M9) y su fase se deduce de el; 'capacidad_portante_adm'
+    # sigue sin consumidor: la presion admisible del EMS entra como el campo
+    # `q_adm_kpa` del suelo de fundacion.
+    "c_phi_fundacion": _Meta(unidad="kPa, grados y kN/m3"),
+    "capacidad_portante_adm": _Meta(
+        unidad="kPa",
+        fase_declarada="Fase 9 - Cabezal y aletas (E1 de Sec. 9.3: la "
+                       "presion admisible del EMS entra por el campo "
+                       "`q_adm_kpa` del suelo de fundacion)"),
+    # --- T-7b --- el ensamble de estabilidad y el evento extremo de V8.
+    "umbral_no_colapso_evento_extremo": _Meta(unidad="-"),
+    "marco_estabilidad_cabezal": _Meta(unidad="-"),
+    "fila_phi_estabilidad_cabezal": _Meta(unidad="-"),
+    "drenaje_trasdos": _Meta(unidad="-"),
+    "peso_especifico_saturado_relleno_kn_m3": _Meta(unidad="kN/m3"),
+    "fraccion_delta_sobre_phi_trasdos": _Meta(unidad="- (fraccion de phi)"),
+    "regla_pendiente_relleno_trasdos": _Meta(unidad="-"),
+    "factores_inclinacion_carga_portante": _Meta(unidad="-"),
+    "terreno_delante_del_cabezal": _Meta(unidad="-"),
+    "regimen_cabezal": _Meta(unidad="-"),
+    # --- T-7c --- el armado del cabezal (los consume M9, Fase 9).
+    "regimen_resistencia_elementos_cabezal": _Meta(unidad="-"),
+    "fc_cabezal_mpa": _Meta(unidad="MPa"),
+    "acero_refuerzo_cabezal": _Meta(unidad="-"),
+    "catalogo_barras_refuerzo_cabezal": _Meta(unidad="mm, mm2 y m"),
+    "regla_minimos_constructivos_cabezal": _Meta(unidad="-"),
+    "criterio_traccion_cabezal_ciclopeo": _Meta(unidad="-"),
+    "concreto_ciclopeo_cabezal": _Meta(unidad="MPa y - (fraccion)"),
+    # --- correcciones de T-7c ---
+    "clase_exposicion_fisuracion_cabezal": _Meta(unidad="-"),
+    "junta_arranque_cabezal_ciclopeo": _Meta(unidad="-"),
+    "espesor_min_zapata_concreto_simple_m": _Meta(unidad="m"),
+    "categoria_refuerzo_aashto": _Meta(unidad="-"),
+    "clase_sitio": _Meta(
+        unidad="-", fase_declarada="Fase 0-bis - licuefaccion"),
+    "clases_producto_por_relleno": _Meta(unidad="-"),
+    "cobertura_minima_aashto": _Meta(unidad="m"),
+    "cobertura_minima_cajon": _Meta(unidad="m"),
+    "condicion_pavimento": _Meta(unidad="-"),
+    "cortante_alto_muro_e060_art_11_10_10_2": _Meta(unidad="-"),
+    # EXT-7 (EXT-M-05): el plano del cortante y el piso vertical del regimen
+    # de 11.10.10. Los consume `M9.cuantia_de_diseno`, sin llamador de
+    # produccion (armado del num. 9.4).
+    "cuantia_vertical_cortante_alto_e060_art_11_10_10_3": _Meta(unidad="-"),
+    "regimen_cortante_muro_e060_art_11_10_2": _Meta(unidad="-"),
+    "demanda_sismica_licuefaccion": _Meta(
+        unidad="años", fase_declarada="Fase 0-bis - licuefaccion"),
+    "distribucion_precipitacion_maxima": _Meta(unidad="-"),
+    "duracion_minima_lluvia_min": _Meta(unidad="min"),
+    "tc_fuera_de_la_poblacion_del_metodo": _Meta(unidad="-"),
+    "coeficiente_uniformidad_temez": _Meta(unidad="-"),
+    "coeficiente_escorrentia_superficie_vial": _Meta(unidad="-"),
+    "diametros_normalizados": _Meta(unidad="m"),
+    "edicion_que_rige_el_expediente": _Meta(
+        unidad="-",
+        fase_declarada="Fase 0 - Marco normativo del expediente (vigencia de "
+                       "las ediciones citadas)",
+        nota="No es una magnitud: es la eleccion entre la edicion citada en "
+             "el registro y la vigente del emisor, para las fuentes con "
+             "edicion posterior detectada "
+             "tecnicas (`fuentes.fuentes_con_eleccion_de_edicion_pendiente_"
+             "tecnica`)."),
+    "edicion_legal_que_rige_el_expediente": _Meta(
+        unidad="-",
+        fase_declarada="Fase 0 - Marco normativo del expediente (vigencia de "
+                       "las ediciones citadas)",
+        nota="No es una magnitud: es la eleccion, para el Manual de Puentes "
+             "(edicion citada derogada por RD), entre la citada --- con la "
+             "fecha de inicio del expediente y el acto del regimen "
+             "transitorio --- y la vigente "
+             "(`fuentes.fuentes_con_eleccion_de_edicion_pendiente_legal`)."),
+    "espesor_pared_conducto": _Meta(unidad="m"),
+    "espesor_proteccion_salida": _Meta(unidad="- (multiplo de d50)"),
+    "exposicion_quimica_ems": _Meta(unidad="ppm"),
+    "factor_muro_eleccion": _Meta(unidad="-"),
+    "factor_recubrimiento_banda_intermedia_ac": _Meta(unidad="-"),
+    "factores_carga_aashto": _Meta(unidad="-"),
+    "friccion_muro_suelo_delta": _Meta(unidad="grados"),
+    "gamma_EQ": _Meta(unidad="-"),
+    "geometria_control_salida": _Meta(unidad="-"),
+    "h_eq_bajo_altura_tabulada": _Meta(unidad="-"),
+    "h_eq_banda_intermedia_borde": _Meta(unidad="-"),
+    "hds5_embocadura_hdpe": _Meta(unidad="-"),
+    # T-1: desde que `MH_hidrologia` lo invoca, la fase se DEDUCE del
+    # consumidor y ya no se declara aqui (decia «ningun modulo lo invoca»).
+    "homogeneidad_serie_fen": _Meta(unidad="-"),
+    "inclinacion_muro_beta": _Meta(unidad="grados"),
+    "k_v": _Meta(unidad="-"),
+    "ke_entrada": _Meta(unidad="-"),
+    # ---------------- los cinco del cajon (C5) --------------------------
+    # Los cinco entran SIN VALOR y con `fase_declarada` escrita donde hace
+    # falta: `_fase` la deduce del consumidor cuando lo hay, y estos se
+    # consumen desde M2 -- que es Fase 3 -- salvo el ke, que lo consume M4.
+    # SIN `dominio`, y no por descuido: ese campo nombra un simbolo de
+    # `dominios.py` -- se comprueba por nombre, justamente para que no pueda
+    # apuntar a nada -- y hoy ese archivo no tiene ningun limite fisico para
+    # la seccion de un marco. Ponerle uno es abrir un valor de proyecto en un
+    # archivo exento del barrido de literales, y ademas es del frente F5
+    # (entradas y dominios, sesion C6). Queda anotado ahi.
+    "secciones_cajon_normalizadas": _Meta(
+        unidad="m (pares B x H interiores de UNA celda)",
+        nota="La serie se declara en el orden en que el bucle de MD tiene que "
+             "recorrerla: en dos dimensiones «el siguiente escalon» no es una "
+             "relacion que el programa pueda deducir, porque crecer en ancho "
+             "y crecer en canto no son intercambiables."),
+    "n_manning_cajon": _Meta(
+        unidad="- (par n_min, n_max)",
+        nota="Se declara la FILA, no el par: el rango se lee de la fila para "
+             "que el criterio y la tabla no puedan divergir. Desde la "
+             "auditoria de T-3 la de archivo es la del cajon de la Tabla B.1 "
+             "del HDS-5 ('concrete_boxes', [C]); la alternativa, una del "
+             "subgrupo «a. Concreto» de la Tabla N 09 por analogia."),
+    "embocadura_cajon": _Meta(
+        unidad="-",
+        nota="El valor es una de las claves 'cajon_concreto_*' de "
+             "constantes_normativas.HDS5_INLET. Se mueve JUNTO con 'ke_entrada_cajon' y con el detalle de "
+             "embocadura del cabezal (Sec. 9.1): las tres son la misma "
+             "decision leida en tres sitios."),
+    "espesor_pared_cajon": _Meta(
+        unidad="m",
+        nota="UN ESCALAR, no una tabla por diametro: un marco vaciado in situ "
+             "no tiene serie de producto que indexar, y por eso este criterio "
+             "no es una entrada mas de 'espesor_pared_conducto'. "
+             "Y EL SIGNO DE SU SENSIBILIDAD ES CONTRAINTUITIVO: engrosar la "
+             "pared EMPEORA la flotacion. Con DC = 0 -- V7 omite el peso "
+             "propio, del lado conservador -- el espesor entra solo por la "
+             "geometria exterior, y ahi la subpresion crece en dos "
+             "dimensiones mientras el relleno que estabiliza crece en una. "
+             "Quien lo declare va a suponer lo contrario: leer la ventana."),
+    "n_celdas_cajon": _Meta(
+        unidad="celdas",
+        nota="Entero >= 1. El caudal de diseño se reparte entre las celdas "
+             "-- `M4.caudal_por_celda`, dentro de `resolver_control` desde EXT-2 --, "
+             "porque los coeficientes de HDS-5 "
+             "y el radio hidraulico son POR BARRIL."),
+    "ke_entrada_cajon": _Meta(
+        unidad="-",
+        nota="EL VALOR NO ES EL COEFICIENTE: es una de las claves "
+             "'cajon_*' de constantes_normativas.KE_HDS5_C2, o sea la FILA "
+             "del bloque «Box, Reinforced Concrete» de la Tabla C.2. Se "
+             "declara asi porque en ese bloque el numero no identifica la "
+             "fila -- el 0.2 esta en tres y el 0.5 en dos --. Lo elige "
+             "'embocadura_cajon': su fila de la Tabla C.2 es la del "
+             "mismo detalle de embocadura con que se lee la Tabla A.1."),
+    "long_max_cuneta": _Meta(unidad="m"),
+    # --- T-9 --- los tres criterios de la cuneta de la Fase 10; los consume
+    # M10 cuando la longitud por capacidad no se declara.
+    "seccion_cuneta": _Meta(
+        unidad="m",
+        nota="Dict: profundidad_m, ancho_m (m), talud_exterior_HV (H:V) y "
+             "borde_libre_m (m) de la cuneta triangular. Valor de archivo: "
+             "el minimo de la Tabla Nº 34 para region muy lluviosa, con el "
+             "talud exterior 1:1 adoptado"),
+    "revestimiento_cuneta": _Meta(
+        unidad="-",
+        nota="Categoria: une una fila de la Tabla Nº 32 (n) con una de la "
+             "Tabla Nº 33 (velocidad limite)"),
+    "lectura_velocidad_limite_cuneta": _Meta(
+        unidad="-",
+        nota="Categoria: el extremo de la fila de la Tabla Nº 33 que rige"),
+    # --- T-9 (correcciones; decision C) --- lo consume M10 al resolver el
+    # extremo del tramo de cuneta de cada alivio.
+    "obras_familia_a_extremo_de_cuneta": _Meta(
+        unidad="-",
+        nota="Categoria si/no: si la obra de Familia A anterior cierra el "
+             "tramo de cuneta del alivio siguiente (extremo de VB1)"),
+    "longitud_proteccion_salida": _Meta(unidad="m"),
+    # --- T-8 --- los tres criterios de la Fase 6; los consume M6.
+    "tipo_proteccion_entrada": _Meta(
+        unidad="-",
+        nota="Categoria: la clase de revestimiento de la ENTRADA, entre las "
+             "tres que el num. 4.1.1.3.7 c) del Manual enumera. No entra en "
+             "ninguna formula"),
+    "duracion_caudal_pico_socavacion_min": _Meta(
+        unidad="min",
+        nota="El tiempo t de la hoya de socavacion de HEC-14 cuando el punto "
+             "no declara `duracion_caudal_pico_min`: 30 minutos, lo que la "
+             "fuente recomienda (num. 5.1.2)"),
+    "lectura_coeficientes_socavacion_hec14": _Meta(
+        unidad="-",
+        nota="Categoria: como se leen las Tablas 5.2 y 5.3 de HEC-14 entre "
+             "dos filas (envolvente o interpolacion lineal)"),
+    "regla_espesor_longitud_proteccion_salida": _Meta(
+        unidad="-",
+        nota="Categoria: rige lo adoptado («manual») o la envolvente con "
+             "HEC-14 Tabla 10.1 («envolvente_hec14»)"),
+    "referencia_profundidad_socavacion": _Meta(
+        unidad="-",
+        nota="Categoria: cota desde la que se mide la profundidad de "
+             "socavacion (fondo del cauce receptor o solera de salida)"),
+    "metodo_estabilidad_global": _Meta(unidad="-"),
+    "metodo_transicion_hds5": _Meta(unidad="-"),
+    # PF-1 (PC-03): categoria (energia_critica | descartar), la consume M4.
+    "hw_entrada_fuera_de_rango": _Meta(unidad="-"),
+    "n_manning_hdpe": _Meta(unidad="-"),
+    "origen_cota_fondo_entrada": _Meta(unidad="-"),
+    "pendiente_relleno_trasdos_i": _Meta(unidad="grados"),
+    "nivel_significancia_ks": _Meta(unidad="- (probabilidad)"),
+    "peso_especifico_concreto_kn_m3": _Meta(unidad="kN/m3"),
+    "peso_especifico_relleno_kn_m3": _Meta(unidad="kN/m3"),
+    "phi_relleno_trasdos": _Meta(unidad="grados"),
+    "predimensionamiento_cabezal": _Meta(unidad="m y adimensional (reglas)"),
+    "procedimiento_flexion_corte_aashto_sec5": _Meta(unidad="-"),
+    "punto_aplicacion_incremento_sismico": _Meta(unidad="- (fraccion de H)"),
+    "relacion_intensidad_duracion": _Meta(unidad="-"),
+    "remanso_derecho_via": _Meta(unidad="- (metodo de V5)"),
+    "seccion_receptor": _Meta(
+        unidad="m, H:V, m/m, -",
+        fase_declarada="Fase 1 - Datos de entrada (Sec. 1.3, paso 2: Manning "
+                       "en la seccion del receptor)"),
+    "resguardo_HW_subrasante": _Meta(unidad="m"),
+    "riesgo_admisible_propietario": _Meta(unidad="% y años"),
+    "situacion_recubrimiento_aashto": _Meta(unidad="-"),
+    "tabla_recubrimiento_aashto_mm": _Meta(unidad="mm"),
+    "talud_terraplen": _Meta(unidad="H:V"),
+    "umbral_area_quebrada_importante_ha": _Meta(unidad="ha"),
+    "v_max_concreto_eleccion": _Meta(unidad="m/s"),
+    "v_max_hdpe": _Meta(unidad="m/s"),
+    "v_max_tmc": _Meta(unidad="m/s"),
+    # --- T-4 --- Materiales, topes y durabilidad (INF-5.1.17, INF-3.3.1,
+    # INF-5.1.9). Los cuatro los consume M2 y su fase se deduce de ahi.
+    "corrugacion_y_espesor_tmc": _Meta(unidad="- (corrugacion/espesor, mm)"),
+    "D_max_norma_producto": _Meta(unidad="m"),
+    "durabilidad_tmc_umbrales": _Meta(unidad="pH y ohm-cm"),
+    "sucs_fundacion_deficiente": _Meta(unidad="- (simbolos SUCS)"),
+    # Auditoria de T-4 (H3): los criterios de suelo agresivo para acero
+    # galvanizado enterrado, por analogia, y su efecto sobre el TMC.
+    "suelo_agresivo_acero_lrfd": _Meta(unidad="pH, ohm-cm y ppm"),
+    "suelo_agresivo_lrfd_sobre_tmc": _Meta(unidad="-"),
+    # --- T-6 ---
+    "metodo_longitud_conducto": _Meta(unidad="-"),
+    "desnivel_minimo_entrega_m": _Meta(unidad="m"),
+    # --- T-5 --- La Fase 8 del conducto (INF-3.3.5). Los siete los consume
+    # M8 y su fase se deduce de ahi.
+    "instalacion_estandar_concreto": _Meta(unidad="- (tipo de instalacion)"),
+    "fabricacion_tmc": _Meta(unidad="-"),
+    "eta_importancia_operativa_conducto": _Meta(unidad="-"),
+    "eta_ductilidad_cabezal": _Meta(unidad="-"),
+    "eta_redundancia_cabezal": _Meta(unidad="-"),
+    "relleno_estructural_hdpe": _Meta(unidad="- (columna de la Tabla 12.12.3.5-1)"),
+    "parametros_diseno_hdpe": _Meta(unidad="-, -, -, -, fraccion de D, años"),
+    # --- T-5 (cierre) --- Los dos que salieron de las auditorias.
+    "carga_viva_bajo_relleno_alto": _Meta(unidad="-"),
+    "perfil_hdpe_fabricante": _Meta(unidad="mm2/mm, mm4/mm, m (por diametro en mm)"),
+    # --- T-3 --- la tolerancia de VC2 (M7, Familia C).
+    "desajuste_empalme_canal_m": _Meta(unidad="m"),
+}
+
+
+# ---------------------------------------------------------------------------
+# El censo
+# ---------------------------------------------------------------------------
+
+def _fase(clave: str, meta_fase: str, consumidores: Tuple[str, ...]) -> str:
+    if consumidores:
+        fases = []
+        for m in consumidores:
+            f = _FASE_DE_MODULO[m]
+            if f not in fases:
+                fases.append(f)
+        return " · ".join(fases)
+    if not meta_fase:
+        raise ValueError(
+            f"'{clave}' no la consume ningun modulo y no declara "
+            "`fase_declarada`. Una variable sin consumidor y sin fase no se "
+            "puede colocar en la memoria: o se cablea, o se dice a que fase "
+            "pertenece el hueco"
+        )
+    return meta_fase
+
+
+def _construir() -> Dict[str, VariableDeEntrada]:
+    salida: Dict[str, VariableDeEntrada] = {}
+
+    for clave in COLUMNAS:
+        col = _COLUMNAS[clave]
+        cons = _consumidores(clave)
+        salida[clave] = VariableDeEntrada(
+            clave=clave,
+            concepto=col.concepto,
+            unidad=col.unidad,
+            poblacion=Poblacion.COLUMNA_CSV,
+            resolucion=col.resolucion,
+            fase=_fase(clave, "", cons),
+            consumido_por=cons,
+            criterio_destino=col.criterio_destino,
+            dominio=col.dominio,
+            nota=col.nota,
+        )
+
+    for clave, ext in _EXTERNOS.items():
+        cons = _consumidores(clave)
+        salida[clave] = VariableDeEntrada(
+            clave=clave,
+            concepto=ext.concepto,
+            unidad=ext.unidad,
+            poblacion=Poblacion.DATO_EXTERNO,
+            resolucion=ext.resolucion,
+            fase=_fase(clave, ext.fase_declarada, cons),
+            consumido_por=cons,
+            criterio_destino=ext.criterio_destino,
+            dominio=ext.dominio,
+            nota=ext.nota,
+        )
+
+    for clave, dato in _ds.DATOS_SITIO.items():
+        meta = _META_SITIO[clave]
+        cons = _consumidores(clave)
+        salida[clave] = VariableDeEntrada(
+            clave=clave,
+            concepto=dato.concepto,
+            unidad=meta.unidad,
+            poblacion=Poblacion.DATO_SITIO,
+            resolucion=dato.resolucion,
+            fase=_fase(clave, meta.fase_declarada, cons),
+            consumido_por=cons,
+            criterio_destino=meta.criterio_destino,
+            dominio=meta.dominio,
+            nota=meta.nota,
+        )
+
+    for clave, crit in _ca.CRITERIOS.items():
+        meta = _META_CRITERIOS[clave]
+        cons = _consumidores(clave)
+        salida[clave] = VariableDeEntrada(
+            clave=clave,
+            concepto=crit.concepto,
+            unidad=meta.unidad,
+            poblacion=Poblacion.CRITERIO,
+            resolucion=crit.resolucion,
+            # Un criterio recibe su propia eleccion: es el destino de si mismo.
+            fase=_fase(clave, meta.fase_declarada, cons),
+            consumido_por=cons,
+            criterio_destino=clave,
+            dominio=meta.dominio,
+            nota=meta.nota,
+        )
+
+    return salida
+
+
+# EL CENSO ES PEREZOSO (EXT-8, PC-10). Construirlo parsea el AST de los trece
+# modulos de calculo (`_consumo_por_modulo`) y costaba ~140 ms en CADA
+# `import cli`, tambien en una corrida que no lo consulta nunca --- el
+# calculo no lo lee: lo leen la GUI, la ayuda y los tests ---. Se construye
+# la primera vez que alguien pide `VARIABLES` (o `variable(...)`, `por_modo`,
+# etc.) y se somete ENTONCES a la misma guardia que antes corria al importar:
+# `_coherencia_del_censo` no se ha movido de sitio ni ha perdido una regla,
+# solo corre en el primer acceso. `__getattr__` de modulo (PEP 562) es lo que
+# mantiene `variables_entrada.VARIABLES` como nombre publico: quien lo lea
+# recibe el mismo diccionario, y `monkeypatch.setitem(ve.VARIABLES, ...)`
+# sigue tocando el objeto vivo, porque una vez construido queda cacheado en
+# el propio modulo.
+_CENSO: Optional[Dict[str, VariableDeEntrada]] = None
+
+
+def _variables() -> Dict[str, VariableDeEntrada]:
+    """El censo, construido y verificado UNA vez, la primera vez que se pide."""
+    global _CENSO
+    if _CENSO is None:
+        _CENSO = _construir()
+        try:
+            _coherencia_del_censo()
+        except Exception:
+            _CENSO = None
+            raise
+        globals()["VARIABLES"] = _CENSO
+    return _CENSO
+
+
+def __getattr__(nombre: str) -> Any:
+    if nombre == "VARIABLES":
+        return _variables()
+    raise AttributeError(f"module {__name__!r} has no attribute {nombre!r}")
+
+
+
+# ---------------------------------------------------------------------------
+# La guardia
+# ---------------------------------------------------------------------------
+# El criterio de salida de la Sec. 4.3, hecho comprobacion al importar:
+#
+#     ninguna variable de entrada sin modo
+#     ningun modo=de_tabla sin tabla existente en el registro
+#     ningun modo=en_rango sin rango con semantica declarada
+#
+# Los dos ultimos los comprueba `criterios_adoptados.verificar_resolucion`,
+# que es la MISMA funcion que corre al importar las otras dos poblaciones: se
+# reutiliza en vez de escribirse otra vez, para que las cuatro poblaciones no
+# puedan quedar sujetas a reglas distintas -- que es exactamente la asimetria
+# que esta sesion vino a cerrar.
+
+def _verificar_censo() -> None:
+    esperado = {
+        Poblacion.COLUMNA_CSV: set(COLUMNAS),
+        Poblacion.DATO_EXTERNO: set(_EXTERNOS),
+        Poblacion.DATO_SITIO: set(_ds.DATOS_SITIO),
+        Poblacion.CRITERIO: set(_ca.CRITERIOS),
+    }
+    for poblacion, claves in esperado.items():
+        censadas = {v.clave for v in _variables().values()
+                    if v.poblacion is poblacion}
+        faltan = claves - censadas
+        if faltan:
+            raise ValueError(
+                f"el censo no cubre {sorted(faltan)} de la poblacion "
+                f"'{poblacion.value}'. Ninguna variable de entrada puede "
+                "quedar sin modo de resolucion"
+            )
+        sobran = censadas - claves
+        if sobran:
+            raise ValueError(
+                f"el censo declara {sorted(sobran)} como '{poblacion.value}' "
+                "y esa poblacion no los tiene"
+            )
+
+    total = sum(len(c) for c in esperado.values())
+    if len(_variables()) != total:
+        # Solo puede pasar si una clave se repite entre poblaciones, en cuyo
+        # caso una tapa a la otra en el diccionario y desaparece del censo sin
+        # que ningun conteo por poblacion lo note.
+        raise ValueError(
+            f"el censo tiene {len(_variables())} entradas y las cuatro poblaciones "
+            f"suman {total}: hay una clave repetida entre poblaciones"
+        )
+
+
+def _verificar_variable(v: VariableDeEntrada) -> None:
+    verificar_resolucion(v.clave, v.resolucion)
+
+    if not v.concepto or not v.unidad:
+        raise ValueError(
+            f"'{v.clave}' no declara concepto o unidad. La ventana los "
+            "necesita para rotular el campo y la memoria para escribirlo"
+        )
+    if v.dominio is not None and not hasattr(_dominios, v.dominio):
+        raise ValueError(
+            f"'{v.clave}' dice que su dominio fisico es '{v.dominio}', que no "
+            "existe en dominios.py. El dominio se nombra POR NOMBRE y no por "
+            "valor, justamente para que no pueda apuntar a nada"
+        )
+    if (v.criterio_destino is not None
+            and v.criterio_destino not in _ca.CRITERIOS):
+        raise ValueError(
+            f"'{v.clave}' dice que su eleccion la recibe "
+            f"'{v.criterio_destino}', que no es un criterio declarado"
+        )
+    if isinstance(v.resolucion, Derivada):
+        for origen in v.resolucion.de:
+            if origen not in _variables() and origen not in _ids_del_registro():
+                raise ValueError(
+                    f"'{v.clave}' se deriva de '{origen}', que no es ni otra "
+                    "variable de entrada ni una tabla del registro"
+                )
+    if (isinstance(v.resolucion, Libre) and v.resolucion.opciones
+            and v.poblacion not in (Poblacion.COLUMNA_CSV,
+                                    Poblacion.DATO_EXTERNO)):
+        raise ValueError(
+            f"'{v.clave}' declara `Libre.opciones` fuera del CSV y de los "
+            "datos externos; el conjunto cerrado de un criterio vive en su "
+            "`sensibilidad`"
+        )
+
+
+@lru_cache(maxsize=1)
+def _ids_del_registro() -> frozenset:
+    reg = _registro_normativo.construir()
+    return frozenset(t.id for t in reg.tablas) | frozenset(reg.ids_de_fuente())
+
+
+def _verificar_desviaciones() -> None:
+    """
+    Una desviacion declarada tiene que ser una desviacion REAL: si alguien
+    corrige la variable y el censo pasa a seguir el ejemplo del plan, la
+    entrada de `DESVIACIONES_DEL_PLAN` deja de ser verdad y hay que retirarla.
+    """
+    for d in DESVIACIONES_DEL_PLAN:
+        if d.variable not in _variables():
+            raise ValueError(
+                f"`DESVIACIONES_DEL_PLAN` habla de '{d.variable}', que no es "
+                "una variable de entrada"
+            )
+        if _variables()[d.variable].modo.value == d.modo_del_plan.split()[0]:
+            raise ValueError(
+                f"'{d.variable}' se declara como desviacion del plan y hoy se "
+                f"resuelve como el plan dice ({d.modo_del_plan}). La "
+                "desviacion ya no existe: retirala"
+            )
+        if not d.por_que:
+            raise ValueError(
+                f"la desviacion de '{d.variable}' no dice por que")
+
+
+def _coherencia_del_censo() -> None:
+    """
+    Somete TODO el censo a la guardia. Hasta EXT-8 corria al importar el
+    modulo; desde entonces corre en el primer acceso a `VARIABLES` (ver
+    `_variables`), que es el mismo momento en que el censo existe.
+    """
+    _verificar_censo()
+    for v in _variables().values():
+        _verificar_variable(v)
+    _verificar_desviaciones()
+
+
+# ---------------------------------------------------------------------------
+# API
+# ---------------------------------------------------------------------------
+
+def variable(clave: str) -> VariableDeEntrada:
+    """La variable de entrada, sea de la poblacion que sea."""
+    try:
+        return _variables()[clave]
+    except KeyError:
+        raise KeyError(
+            f"'{clave}' no es una variable de entrada de este expediente. Las "
+            f"hay en cuatro poblaciones: {len(COLUMNAS)} columnas del CSV, "
+            f"{len(_EXTERNOS)} datos externos, "
+            f"{len(_ds.DATOS_SITIO)} datos de sitio y "
+            f"{len(_ca.CRITERIOS)} criterios adoptados"
+        ) from None
+
+
+def por_modo() -> Dict[ModoDeResolucion, Tuple[VariableDeEntrada, ...]]:
+    """
+    Las variables agrupadas por el modo con que se resuelven. Es la vista que
+    la GUI necesita: un grupo, una ventana.
+    """
+    salida: Dict[ModoDeResolucion, List[VariableDeEntrada]] = {
+        m: [] for m in ModoDeResolucion}
+    for v in sorted(_variables().values(), key=lambda v: v.clave):
+        salida[v.modo].append(v)
+    return {m: tuple(vs) for m, vs in salida.items()}
+
+
+def por_poblacion() -> Dict[Poblacion, Tuple[VariableDeEntrada, ...]]:
+    """Las variables agrupadas por la poblacion de la que vienen."""
+    salida: Dict[Poblacion, List[VariableDeEntrada]] = {
+        p: [] for p in Poblacion}
+    for v in sorted(_variables().values(), key=lambda v: v.clave):
+        salida[v.poblacion].append(v)
+    return {p: tuple(vs) for p, vs in salida.items()}
+
+
+def tabla_de(clave: str) -> Tuple:
+    """
+    Las tablas del registro que la ventana de una variable `de_tabla` tiene
+    que mostrar ENTERAS, con su numeral, su pagina y sus notas.
+    """
+    v = variable(clave)
+    if not isinstance(v.resolucion, DeTabla):
+        raise ValueError(
+            f"'{clave}' se resuelve `{v.modo.value}`, no `de_tabla`: no hay "
+            "tabla que mostrar"
+        )
+    reg = _registro_normativo.construir()
+    return tuple(reg.tabla(t) for t in v.resolucion.tablas)
+
+
+def rango_de(clave: str):
+    """
+    El rango normativo de una variable `en_rango`, tal como el registro lo
+    declara. LA SEMANTICA ES EL TIPO: quien lo pinte tiene que leer el tipo,
+    no suponer que un par de numeros es un minimo y un maximo.
+    """
+    v = variable(clave)
+    if not isinstance(v.resolucion, EnRango):
+        raise ValueError(
+            f"'{clave}' se resuelve `{v.modo.value}`, no `en_rango`: no hay "
+            "rango que mostrar"
+        )
+    r = v.resolucion
+    tabla = _registro_normativo.construir().tabla(r.tabla_id)
+    return tabla.fila(r.fila_id).valores[r.columna_id]
+
+
+def variables_con_tabla_pendiente() -> Tuple[Tuple[str, str], ...]:
+    """
+    Las variables que serian `de_tabla` el dia que su tabla se transcriba al
+    registro, con el nombre de la tabla que falta. Es la lista de trabajo que
+    este censo produce.
+    """
+    return tuple(
+        (v.clave, v.resolucion.tabla_pendiente)
+        for v in sorted(_variables().values(), key=lambda v: v.clave)
+        if isinstance(v.resolucion, Libre) and v.resolucion.tabla_pendiente
+    )
+
+
+def variables_sin_consumidor() -> Tuple[str, ...]:
+    """
+    Las que ningun modulo de calculo invoca. No es lo mismo que un vacio: una
+    variable puede estar bien declarada y esperando a que su fase se ensamble.
+    Lo que la lista permite es distinguir las dos cosas mirando la fase que
+    cada una declara.
+    """
+    return tuple(v.clave for v in sorted(_variables().values(),
+                                         key=lambda v: v.clave)
+                 if not v.consumido_por)
+
+
+# Ancho de la regla de los bloques de texto del reporte. Es formato de
+# salida, no un valor de proyecto: cambiarlo no mueve ninguna magnitud.
+_ANCHO = 78    # literal-ok: ancho de la regla del reporte, no es magnitud
+
+
+def reporte_variables(poblacion: Optional[Poblacion] = None) -> str:
+    """
+    Bloque de declaracion del censo, hermano de
+    `criterios_adoptados.reporte_criterios` y de
+    `datos_sitio.reporte_datos_sitio`.
+
+    A diferencia de esos dos, este NO imprime valores: imprime como se
+    resuelve cada variable. Es lo que M11 necesita para decir "el valor X vino
+    de la fila R de la tabla T" y lo que la GUI necesita para saber que
+    ventana abrir.
+    """
+    grupos = por_poblacion()
+    if poblacion is not None:
+        grupos = {poblacion: grupos[poblacion]}
+
+    out = ["=" * _ANCHO,
+           "MODO DE RESOLUCION DE LAS VARIABLES DE ENTRADA",
+           "=" * _ANCHO,
+           f"{len(_variables())} variables en cuatro poblaciones.", ""]
+
+    conteo = {m: len(vs) for m, vs in por_modo().items() if vs}
+    out.append("Por modo: " + ", ".join(
+        f"{m.value} {n}" for m, n in sorted(conteo.items(),
+                                            key=lambda kv: -kv[1])))
+    out.append("")
+
+    for pob, variables in grupos.items():
+        out.append("-" * _ANCHO)
+        out.append(f"{pob.value.upper()} ({len(variables)})")
+        out.append("-" * _ANCHO)
+        for v in variables:
+            out.append(f"[{v.modo.value}] {v.clave}  ({v.unidad})")
+            out.append(f"     Concepto : {v.concepto}")
+            out.append(f"     Fase     : {v.fase}")
+            out.append(f"     Se lee   : {como_se_lee(v)}")
+            if v.dominio:
+                out.append(f"     Dominio  : dominios.{v.dominio} "
+                           f"- no es normativo: fuera de el la celda esta mal "
+                           f"llenada")
+            if v.criterio_destino and v.criterio_destino != v.clave:
+                out.append(f"     Alimenta : criterio '{v.criterio_destino}'")
+            if v.nota:
+                out.append(f"     Nota     : {v.nota}")
+            out.append("")
+
+    if DESVIACIONES_DEL_PLAN:
+        out.append("-" * _ANCHO)
+        out.append("DONDE ESTE CENSO SE APARTA DE LOS EJEMPLOS DE LA Sec. 4.3")
+        out.append("-" * _ANCHO)
+        for d in DESVIACIONES_DEL_PLAN:
+            out.append(f"  - {d.variable}: el plan lo pone de ejemplo de "
+                       f"`{d.modo_del_plan}`; aqui es `{d.modo_adoptado}`.")
+            out.append(f"    {d.por_que}")
+        out.append("")
+
+    pendientes = variables_con_tabla_pendiente()
+    if pendientes:
+        out.append("-" * _ANCHO)
+        out.append("SERIAN `de_tabla` SI SU TABLA SE TRANSCRIBIERA AL REGISTRO")
+        out.append("-" * _ANCHO)
+        for clave, tabla in pendientes:
+            out.append(f"  - {clave}: {tabla}")
+        out.append("")
+
+    return "\n".join(out)
+
+
+def como_se_lee(v: VariableDeEntrada) -> str:
+    """
+    Una linea que dice de donde sale el valor, segun el modo.
+
+    ERA PRIVADA y la usaba solo `reporte_variables`. Se hizo publica en S22
+    para que la ayuda del CSV de la pestana 1 la reutilice en vez de volver a
+    recorrer los seis modos: dos lecturas del mismo `Resolucion` acabarian
+    diciendo cosas distintas del mismo dato, y una de las dos seria la que el
+    proyectista lee antes de llenar su archivo.
+    """
+    r = v.resolucion
+    if isinstance(r, Libre):
+        texto = r.que_lo_fija
+        if r.opciones:
+            texto += f" · opciones: {', '.join(r.opciones)}"
+        return texto
+    if isinstance(r, DeTabla):
+        donde = ", ".join(r.tablas)
+        detalle = r.que_elige
+        if r.fila_id:
+            detalle += f" (fila '{r.fila_id}')"
+        if r.columna_id:
+            detalle += f" (columna '{r.columna_id}')"
+        if r.laguna:
+            detalle += f" · LAGUNA DE LA FUENTE: {r.laguna}"
+        return f"de la tabla {donde}: {detalle}"
+    if isinstance(r, EnRango):
+        rango = rango_de(v.clave)
+        return (f"dentro del rango de {r.tabla_id} ({r.fila_id}, "
+                f"{r.columna_id}) · {rango.rotulo_obligatorio} · "
+                f"{r.que_acota}")
+    if isinstance(r, Derivada):
+        return f"se deriva de {', '.join(r.de)}: {r.regla}"
+    if isinstance(r, DeEnsayo):
+        return (f"{r.ensayo} · TRAZABILIDAD OBLIGATORIA: "
+                f"{r.trazabilidad_exigida}")
+    if isinstance(r, DeCatalogo):
+        return (f"del catalogo {r.catalogo_id}: {r.que_elige} · "
+                f"NO ES NORMA: {r.advertencia}")
+    raise TypeError(f"modo no contemplado en el reporte: {type(r).__name__}")
+
+
+if __name__ == "__main__":
+    print(reporte_variables())

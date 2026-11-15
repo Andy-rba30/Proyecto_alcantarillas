@@ -1,0 +1,2133 @@
+"""
+tests/test_cli.py
+=================
+Pruebas del orquestador de linea de comandos: que corra el pipeline completo,
+que registre cada bloqueo con su causa y que no rellene ningun vacio.
+
+Dos cosas que estas pruebas fijan a proposito:
+
+1. A NIVEL DE EXPEDIENTE ningun punto se dimensiona: V5 y V8 de la Fase 5
+   son vacios declarados y el bucle de MD se detiene en ellos. Hasta EXT-11
+   el informe de un punto dimensionado se probaba sustituyendo
+   `MD.disenar_punto` por un STUB de HDPE con numeros inventados -- un
+   resultado que el producto NUNCA puede producir (PC-20) --. Desde EXT-11
+   `informe_dimensionado` ES una corrida del producto, sin parche: la de
+   PERFIL con las entradas de la linea base de la Familia C, que dimensiona
+   A-01 y A-02 en CONCRETO con las Fases 6 y 7 reales, V5 y V8
+   diferidas con su fundamento y el contexto de corrida completo (hasta E-A
+   dimensionaba tambien B-01: ver `PUNTOS_QUE_DIMENSIONAN_EN_PERFIL`). La Fase 8,
+   que el perfil difiere por diseño, se prueba llamandola EXPLICITAMENTE
+   sobre una copia del punto real (`test_la_fase_8_corre_sobre_el_concreto_
+   real...`): una corrida de expediente con esos resultados inyectados
+   parecia mas «real» y no lo era --- perdia los usos de criterios de la
+   Fase 4 y presentaba tres puntos dimensionados con la Fase 5 incompleta
+   en silencio (auditoria de EXT-11; ficha EXT-11-04).
+
+2. Un criterio se declara con `monkeypatch.setitem` sobre `ca.CRITERIOS`, el
+   mismo patron de tests/test_M5_verificaciones.py: la prueba no toca el
+   archivo de criterios, solo simula que el Tablero 3 se cerro.
+"""
+
+import csv
+import json
+import re
+from pathlib import Path
+
+from contextlib import ExitStack
+
+import pytest
+
+import cli
+from src import criterios_adoptados as ca
+from src import servicio
+from tests.apoyo.criterios import sin_valor
+from src.modulos.M11_reporte import PlantillaHTML
+from src.modelos import (CriterioPendienteError, EstadoDeVerificacion,
+                     ControlGobernante, DatoInvalidoError,
+                     ResultadoHidraulico, ResultadoPunto,
+                     TipoMaterial, Verificacion)
+from src.modulos.M0_carga import cargar_puntos
+from src.modulos.M2_material import catalogo
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
+from src.dominios import S_CAUCE_MAX
+from src.modulos import M11_reporte as M11
+from src.modulos import M5_verificaciones as M5
+
+CSV = Path(__file__).resolve().parent / "ejemplo_puntos.csv"
+
+
+# ---------------------------------------------------------------------------
+# Utilidades
+# ---------------------------------------------------------------------------
+
+def _declarar(monkeypatch, **valores):
+    """Le da valor a criterios hoy vacios, sin tocar criterios_adoptados.py."""
+    for clave, valor in valores.items():
+        original = ca.CRITERIOS[clave]
+        monkeypatch.setitem(
+            ca.CRITERIOS, clave,
+            original.__class__(**{**original.__dict__, "valor": valor}),
+        )
+
+
+def _externos(**globales):
+    return cli.cargar_datos_externos(None, dict(globales))
+
+
+def _informe(**globales):
+    return cli.correr(CSV, _externos(**globales))
+
+
+def _informe_por_punto(globales, por_punto):
+    """Como `_informe`, con datos declarados punto por punto."""
+    externos = cli.DatosExternos(
+        {k: cli.DatoDeclarado(k, v, "prueba") for k, v in globales.items()},
+        {id_punto: {k: cli.DatoDeclarado(k, v, "prueba")
+                    for k, v in campos.items()}
+         for id_punto, campos in por_punto.items()})
+    return cli.correr(CSV, externos)
+
+
+def _punto(informe, id_punto):
+    return next(i for i in informe.puntos if i.punto.id == id_punto)
+
+
+def _claves_bloqueantes(informe_punto):
+    return {b.criterio for b in informe_punto.bloqueos if b.criterio}
+
+
+# ---------------------------------------------------------------------------
+# Datos externos: lo que no es columna de Sec. 1.2
+# ---------------------------------------------------------------------------
+
+def test_clave_desconocida_es_dato_invalido(tmp_path):
+    ruta = tmp_path / "datos.json"
+    ruta.write_text(json.dumps({"globales": {"luz": 2.0}}), encoding="utf-8")
+    with pytest.raises(DatoInvalidoError) as excinfo:
+        cli.cargar_datos_externos(ruta, {})
+    assert "luz" in str(excinfo.value)
+
+
+def test_seccion_desconocida_es_dato_invalido(tmp_path):
+    ruta = tmp_path / "datos.json"
+    ruta.write_text(json.dumps({"puntos_criticos": {}}), encoding="utf-8")
+    with pytest.raises(DatoInvalidoError):
+        cli.cargar_datos_externos(ruta, {})
+
+
+def test_tw_cero_se_admite_porque_es_salida_libre():
+    externos = _externos(TW_m=0.0)
+    assert externos.valor("A-01", "TW_m") == pytest.approx(0.0, abs=ABS_CERO)
+
+
+def test_longitud_cero_o_negativa_es_dato_invalido():
+    for valor in (0.0, -3.0):
+        with pytest.raises(DatoInvalidoError):
+            _externos(longitud_m=valor)
+
+
+def test_dato_por_punto_pisa_al_global(tmp_path):
+    ruta = tmp_path / "datos.json"
+    ruta.write_text(json.dumps({"globales": {"luz_m": 2.0},
+                                "puntos": {"A-01": {"luz_m": 4.0}}}),
+                    encoding="utf-8")
+    externos = cli.cargar_datos_externos(ruta, {})
+    assert externos.valor("A-01", "luz_m") == pytest.approx(4.0, rel=REL_TRANSPORTE)
+    assert externos.valor("A-02", "luz_m") == pytest.approx(2.0, rel=REL_TRANSPORTE)
+
+
+def test_bandera_pisa_al_global_del_archivo(tmp_path):
+    ruta = tmp_path / "datos.json"
+    ruta.write_text(json.dumps({"globales": {"luz_m": 2.0}}), encoding="utf-8")
+    externos = cli.cargar_datos_externos(ruta, {"luz_m": 5.0})
+    dato = externos.dato("A-01", "luz_m")
+    assert dato.valor == pytest.approx(5.0, rel=REL_TRANSPORTE)
+    assert "linea de comandos" in dato.origen
+
+
+def test_categoria_tr_viaja_como_texto():
+    externos = _externos(categoria_tr="quebrada_menor")
+    assert externos.valor("A-01", "categoria_tr") == "quebrada_menor"
+
+
+def test_categoria_tr_numerica_es_dato_invalido():
+    with pytest.raises(DatoInvalidoError):
+        _externos(categoria_tr=71)
+
+
+def test_origen_del_dato_queda_registrado():
+    dato = _externos(longitud_m=12.0).dato("A-01", "longitud_m")
+    assert dato.origen == "linea de comandos (--longitud_m)"
+
+
+# ---------------------------------------------------------------------------
+# Fase 2: sin luz no hay pipeline
+# ---------------------------------------------------------------------------
+
+def test_sin_luz_ningun_punto_se_dimensiona():
+    informe = _informe()
+    assert informe.dimensionados == 0
+    for punto in informe.puntos:
+        faltantes = [b for b in punto.bloqueos if b.campo == "luz_m"]
+        assert faltantes, f"{punto.punto.id} deberia reclamar la luz"
+        assert punto.clasificacion is None
+
+
+def test_luz_declarada_clasifica_y_trae_la_verificacion_de_la_luz():
+    informe = _informe(luz_m=2.0)
+    b01 = _punto(informe, "B-01")
+    assert b01.clasificacion.en_alcance
+    assert b01.clasificacion.periodo_retorno.anios == 35
+    numerales = [v.numeral for _, v in b01.verificaciones()]
+    assert numerales, "la luz tiene que aparecer como verificacion con numeral"
+
+
+def test_familia_a_se_detiene_en_el_umbral_de_quebrada_sin_categoria():
+    """
+    Sin umbral y sin categoria explicita, M1 no elige el TR por su cuenta.
+
+    El criterio quedo declarado en S20 (100 ha) al cerrarse el nivel de
+    perfil; el vacio se devuelve aqui dentro porque lo que este test fija es
+    la conducta ante un vacio, no el estado del expediente.
+    """
+    with sin_valor("umbral_area_quebrada_importante_ha"):
+        informe = _informe(luz_m=2.0)
+        assert "umbral_area_quebrada_importante_ha" in _claves_bloqueantes(
+            _punto(informe, "A-01"))
+
+
+def test_categoria_declarada_desbloquea_el_tr_de_la_familia_a():
+    informe = _informe(luz_m=2.0, categoria_tr="quebrada_importante")
+    a01 = _punto(informe, "A-01")
+    assert a01.clasificacion.periodo_retorno.anios == 71
+    assert "umbral_area_quebrada_importante_ha" not in _claves_bloqueantes(a01)
+
+
+def test_luz_de_puente_deja_el_punto_fuera_de_alcance():
+    informe = _informe(luz_m=6.0, categoria_tr="quebrada_menor")
+    a01 = _punto(informe, "A-01")
+    assert not a01.clasificacion.en_alcance
+    assert not a01.dimensionado
+    assert any(b.tipo == "DisenoNoFactibleError" for b in a01.bloqueos)
+
+
+# ---------------------------------------------------------------------------
+# Fases 3-5: los vacios que hoy detienen el dimensionamiento
+# ---------------------------------------------------------------------------
+
+def test_sin_tw_ni_longitud_se_bloquean_los_dos_insumos_de_md():
+    """
+    Los dos insumos que MD necesita y que no son columna del CSV: la longitud
+    del conducto (7.B, criterio 'talud_terraplen') y el TW (Sec. 1.3).
+
+    SE COMPRUEBAN POR SEPARADO, y el orden no es un detalle de la prueba: es
+    el procedimiento. Desde S20 el TW se OBTIENE, y todas las vias de
+    Sec. 1.3 que parten de una cota de agua tienen que restarle la cota de
+    fondo de la SALIDA para convertirla en tirante -- y esa cota sale de 7.B,
+    que necesita la longitud. Sin longitud no hay TW que calcular, de modo
+    que el punto se detiene en el primero de los dos y el segundo no llega a
+    intentarse. Antes de S20 los dos aparecian a la vez porque el TW no se
+    calculaba: se leia de un criterio, y un criterio no necesita geometria.
+
+    EL TW NECESITA VACIAR DOS CRITERIOS, y ahi esta lo otro que S20 cambio:
+    la ultima puerta sigue siendo 'TW_receptor', pero antes se intentan las
+    vias de Sec. 1.3, y la cuarta -- los dos escenarios acotados -- solo
+    necesita la seccion del receptor. Con 'seccion_receptor' declarado el TW
+    SE RESUELVE, que es justamente lo que la implementacion vino a conseguir.
+    """
+    with sin_valor("talud_terraplen"):
+        informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor")
+        assert "talud_terraplen" in _claves_bloqueantes(_punto(informe, "A-01"))
+
+    with sin_valor("seccion_receptor"):
+        informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
+                           longitud_m=12.0)
+        assert "TW_receptor" in _claves_bloqueantes(_punto(informe, "A-01"))
+
+
+def test_con_tw_y_longitud_el_bucle_de_md_llega_a_la_fase_5():
+    """El siguiente vacio es V5, no un insumo que falte: MD ya corrio."""
+    informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
+                       TW_m=0.0, longitud_m=12.0)
+    a01 = _punto(informe, "A-01")
+    assert "remanso_derecho_via" in _claves_bloqueantes(a01)
+    assert not a01.dimensionado
+
+
+def test_la_longitud_declarada_se_registra_con_su_origen():
+    informe = _informe(luz_m=2.0, TW_m=0.0, longitud_m=12.0)
+    b01 = _punto(informe, "B-01")
+    assert b01.longitud.valor == pytest.approx(12.0, rel=REL_TRANSPORTE)
+    assert "linea de comandos" in b01.longitud.origen
+    assert b01.tw.origen == "linea de comandos (--TW_m)"
+
+
+def test_familia_c_sin_caudal_reclama_la_columna():
+    """Sec. 2.3: el caudal de la Familia C es el del canal y la columna va vacia."""
+    informe = _informe(luz_m=2.0, TW_m=0.0, longitud_m=12.0)
+    c01 = _punto(informe, "C-01")
+    assert any(b.tipo == "DatoFaltanteError" and b.campo == "Q_m3s"
+               for b in c01.bloqueos)
+
+
+def test_familia_c_con_caudal_declarado_se_detiene_en_los_criterios_del_cajon():
+    """
+    C5: el bloqueo de un punto de Familia C dejo de ser del CATALOGO y paso a
+    ser del EXPEDIENTE. Antes era `DisenoNoFactibleError` ("no hay material
+    candidato"); ahora es `CriterioPendienteError`, que es lo que el bloque de
+    pendientes de la memoria sabe convertir en lista de trabajo.
+
+    --- T-3 --- Desde T-3 la embocadura tiene valor de archivo y el punto
+    pasa de largo hasta VC1 (la coronacion del canal). La propiedad que se
+    mide --que un criterio del cajon SIN valor detiene como pendiente del
+    expediente y no como no factible-- se mide vaciandolo durante el test.
+    """
+    with sin_valor("embocadura_cajon"):
+        informe = _informe_por_punto(
+            {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 12.0},
+            {"C-01": {"Q_m3s": 0.9, "S_conducto": 0.004}})
+    c01 = _punto(informe, "C-01")
+    pendientes = [b for b in c01.bloqueos if b.tipo == "CriterioPendienteError"]
+    assert pendientes, [b.tipo for b in c01.bloqueos]
+    assert pendientes[0].criterio == "embocadura_cajon"
+    assert not [b for b in c01.bloqueos if b.tipo == "DisenoNoFactibleError"]
+
+
+# ---------------------------------------------------------------------------
+# Fase 10
+# ---------------------------------------------------------------------------
+
+def test_espaciamiento_de_alivio_solo_en_familia_b():
+    informe = _informe(luz_m=2.0, L_hidraulico_m=180.0)
+    assert _punto(informe, "B-01").espaciamiento.espaciamiento_max == pytest.approx(180.0, rel=REL_TRANSPORTE)
+    for id_punto in ("A-01", "A-02", "C-01"):
+        assert _punto(informe, id_punto).espaciamiento is None
+
+
+def test_sin_l_hidraulico_la_fase_10_se_bloquea_por_dato_faltante():
+    informe = _informe(luz_m=2.0)
+    b01 = _punto(informe, "B-01")
+    assert any(b.campo == "L_hidraulico_m" for b in b01.bloqueos)
+    assert b01.espaciamiento is None
+
+
+def test_la_fase_10_corre_aunque_el_punto_no_se_dimensione():
+    """Sec. 10 no necesita el diametro: el espaciamiento no depende de la Fase 4."""
+    informe = _informe(luz_m=2.0, L_hidraulico_m=180.0)
+    b01 = _punto(informe, "B-01")
+    assert not b01.dimensionado
+    assert b01.espaciamiento is not None
+
+
+# ---------------------------------------------------------------------------
+# Fase 9: del proyecto, no del punto
+# ---------------------------------------------------------------------------
+
+def test_fase_9_corre_la_cadena_sismica_y_ya_no_bloquea_la_geometria():
+    """
+    --- T-7a --- La geometria del cabezal ya no es del proyecto: es de cada
+    punto dimensionado (`InformePunto.cabezal`), y la Fase 9 del proyecto no
+    se detiene en 'predimensionamiento_cabezal', que tiene valor (las
+    reglas). Lo que sigue bloqueando el proyecto (K_AE, recubrimientos) no
+    cambia.
+    """
+    informe = _informe(luz_m=2.0)
+    cabezal = informe.cabezal
+    assert cabezal.cadena is not None and cabezal.cadena.k_h > 0
+    assert cabezal.cuantias, "las cuantias minimas de E.060 son [N] y salen siempre"
+    claves = {b.criterio for b in cabezal.bloqueos if b.criterio}
+    assert "predimensionamiento_cabezal" not in claves
+    assert cabezal.por_punto == [p.cabezal for p in informe.puntos
+                                 if p.cabezal is not None]
+    assert cli.NOTA_ESTABILIDAD_CABEZAL in cabezal.notas
+
+
+# ---------------------------------------------------------------------------
+# Criterios pendientes que bloquearon algo
+# ---------------------------------------------------------------------------
+
+def test_los_criterios_bloqueantes_se_agrupan_con_sus_puntos():
+    """
+    LA LISTA DE PUNTOS CAMBIO EN EXT-3 Y VOLVIO EN E-A, y no porque V5
+    cambiara. Hasta EXT-3 los tres puntos circulares llegaban a V5 y se
+    detenian en 'remanso_derecho_via'. En EXT-3, A-02 y B-01 --que en esta
+    corrida caen bajo control de SALIDA con el barril parcialmente lleno--
+    se detenian ANTES, en V1, con `MetodoNoEvaluableError`: el tirante con
+    que V1 compara exigia el perfil de la lamina de agua. Desde E-A el perfil
+    existe, V1 y V2 se evaluan sobre el, y los tres vuelven a llegar al
+    criterio de V5. El agrupamiento por criterio, que es lo que este test
+    fija, no cambia.
+    """
+    informe = _informe(luz_m=2.0, categoria_tr="quebrada_menor",
+                       TW_m=0.0, longitud_m=12.0)
+    bloqueantes = {c.clave: c for c in cli.criterios_bloqueantes(informe)}
+    remanso = bloqueantes["remanso_derecho_via"]
+    assert set(remanso.puntos) == {"A-01", "A-02", "B-01"}
+    assert remanso.etiqueta == "A"
+    assert remanso.concepto and remanso.fuente
+    for id_punto in ("A-01", "A-02", "B-01"):
+        tipos = {b.tipo for b in _punto(informe, id_punto).bloqueos}
+        assert "MetodoNoEvaluableError" not in tipos, id_punto
+
+
+def test_un_criterio_con_valor_no_aparece_como_bloqueante(monkeypatch):
+    _declarar(monkeypatch, talud_terraplen=1.5)
+    informe = _informe(luz_m=2.0, TW_m=0.0)
+    claves = {c.clave for c in cli.criterios_bloqueantes(informe)}
+    assert "talud_terraplen" not in claves
+    # y la longitud ahora la calcula 7.B, no la declara el operador
+    assert "M7.longitud_conducto" in _punto(informe, "B-01").longitud.origen
+
+
+def test_el_expediente_no_cierra_mientras_haya_bloqueos():
+    informe = _informe(luz_m=2.0, TW_m=0.0, longitud_m=12.0,
+                       categoria_tr="quebrada_menor", L_hidraulico_m=180.0)
+    assert not informe.cerrado
+
+
+# ---------------------------------------------------------------------------
+# Reporte de un punto dimensionado
+# ---------------------------------------------------------------------------
+
+# LAS ENTRADAS DE LA LINEA BASE DE LA FAMILIA C (`entradas_ampliadas.json` +
+# luz 2.75 m): la misma corrida que `tests/linea_base_familia_c/regenerar.sh`
+# congela, para que lo que aqui se afirma del punto dimensionado sea lo que
+# el producto imprime en la linea base y no otro caso.
+ENTRADAS_LINEA_BASE = (Path(__file__).resolve().parent / "linea_base_familia_c"
+                       / "entradas_ampliadas.json")
+LUZ_LINEA_BASE_M = 2.75
+# B-01 SALIO DE ESTE CONJUNTO EN E-A, y es un resultado y no una perdida: su
+# TW ampliado de 1.00 m (fixture) ahoga un barril de 0.90 m --a D = 0.90 va
+# LLENO y V1 no cumple-- y en todo D mayor la curva S1 arranca en el TW y
+# llega a la entrada con y_max = TW y V_min = Q/A(TW) entre 0.06 y 0.11 m/s,
+# por debajo del piso de 0.25 m/s de V2: con esa descarga el barril
+# sedimenta en cualquier diametro, y el punto termina en
+# DisenoNoFactibleError (`test_b01_ahogado_no_cierra_por_V2_en_ningun_D`).
+# Hasta E-A el perfil no existia, V1/V2 quedaban DIFERIDAS y B-01 salia
+# «dimensionado» a D = 1.05 m con un bloqueo «metodo no evaluable».
+PUNTOS_QUE_DIMENSIONAN_EN_PERFIL = {"A-01", "A-02"}
+
+
+def _externos_linea_base():
+    return cli.cargar_datos_externos(ENTRADAS_LINEA_BASE,
+                                     {"luz_m": LUZ_LINEA_BASE_M})
+
+
+@pytest.fixture(scope="module")
+def informe_dimensionado():
+    """
+    La corrida REAL de perfil (PC-20): A-01 y A-02 en concreto reforzado
+    D = 0.90 m, dimensionados por el bucle de MD con la Fase 5 de perfil (V5
+    y V8 diferidas al expediente con fundamento); B-01 no cierra desde E-A
+    (ver `PUNTOS_QUE_DIMENSIONAN_EN_PERFIL`). Es la
+    salida del producto tal cual, con su `contexto` de corrida: no hay
+    parche, doble ni resultado inyectado. De modulo porque es cara y los
+    tests solo la leen; el que necesita cambiarla la copia.
+    """
+    informe = cli.correr(CSV, _externos_linea_base(), alcance=cli.ALCANCE_PERFIL)
+    dimensionados = {p.punto.id for p in informe.puntos if p.dimensionado}
+    assert dimensionados == PUNTOS_QUE_DIMENSIONAN_EN_PERFIL, sorted(dimensionados)
+    assert all(p.resultado.material.tipo is TipoMaterial.CONCRETO_REFORZADO
+               for p in informe.puntos if p.dimensionado)
+    return informe
+
+
+def _copia_ligera(informe):
+    """
+    Copia del informe con sus `InformePunto` copiados uno a uno (listas de
+    bloqueos incluidas), para que un test pueda alterar un punto sin tocar
+    la fixture de modulo. No es `deepcopy`: `ReferenciaNormativa` (un `str`
+    con `__new__` propio) no lo admite, y no hace falta copiar los
+    resultados congelados.
+    """
+    import copy
+    nuevo = copy.copy(informe)
+    nuevo.puntos = [_copia_ligera_del_punto(p) for p in informe.puntos]
+    return nuevo
+
+
+def _copia_ligera_del_punto(informe_punto):
+    import copy
+    nuevo = copy.copy(informe_punto)
+    nuevo.bloqueos = list(informe_punto.bloqueos)
+    nuevo.traza = list(informe_punto.traza)
+    return nuevo
+
+
+@pytest.fixture
+def informe_con_criterio_desconocido(informe_dimensionado):
+    """
+    El informe real con UNA verificacion añadida a A-01 cuyo
+    `criterio_aplicado` no es clave de CRITERIOS. Es el unico doble que queda
+    en este archivo, y es de la capa de REPORTE: prueba que el volcado tolera
+    un nombre desconocido, no que el producto lo produzca.
+    """
+    import dataclasses
+    informe = _copia_ligera(informe_dimensionado)   # la fixture de modulo no se toca
+    a01 = _punto(informe, "A-01")
+    extra = Verificacion(cumple=True, numeral="4.1.1.3.7 b)", valor_obtenido=0.50,
+                         valor_admisible=0.75, criterio_aplicado="Y_sobre_D_max",
+                         codigo="V1")
+    a01.resultado = dataclasses.replace(
+        a01.resultado, verificaciones=a01.resultado.verificaciones + (extra,))
+    return informe
+
+
+def test_el_cuadro_resumen_csv_lleva_el_contenido_del_punto_dimensionado(
+        informe_dimensionado, tmp_path):
+    """
+    SIS-F-09. La rama `if informe.dimensionado:` de `M11.exportar_csv` -- la
+    que ESCRIBE las celdas -- no se ejecutaba nunca: el unico test corria
+    sobre una corrida sin ningun punto dimensionado y comprobaba la cabecera y
+    el numero de filas, de modo que un cuadro entero de celdas vacias lo
+    pasaba igual. Aqui se asserta el CONTENIDO.
+    """
+    destino = tmp_path / "resumen.csv"
+    M11.exportar_csv(informe_dimensionado, destino)
+    filas = list(csv.DictReader(destino.read_text(encoding="utf-8").splitlines()))
+
+    por_id = {fila["id"]: fila for fila in filas}
+    assert set(por_id) == {"A-01", "A-02", "B-01", "C-01"}
+
+    a01 = por_id["A-01"]
+    assert a01["familia"] == "A"
+    assert a01["material"] == "Concreto reforzado", (
+        "el material del punto dimensionado tiene que ser el que el "
+        "producto eligio, no un doble")
+    assert a01["seccion"] == "Ø 0.90 m"
+    assert a01["control_gobernante"] == "entrada"
+    assert a01["V_erosion_ms"] and a01["V_sedimentacion_ms"]
+    assert a01["V_erosion_ms"] != a01["V_sedimentacion_ms"], (
+        "la doble n de Sec. 4.1.1 tiene que dar dos velocidades distintas")
+
+    # Y el contraste que hace util al cuadro: C-01 es Familia C, no se
+    # dimensiona, y sus celdas de diseño quedan vacias en vez de traer un
+    # numero inventado.
+    c01 = por_id["C-01"]
+    assert c01["familia"] == "C"
+    assert c01["material"] == ""
+    assert c01["seccion"] == ""
+
+
+def test_reporta_material_diametro_y_control_gobernante(informe_dimensionado):
+    a01 = _punto(informe_dimensionado, "A-01")
+    assert a01.dimensionado
+    assert a01.resultado.material.tipo is TipoMaterial.CONCRETO_REFORZADO
+    assert a01.resultado.seccion.altura == pytest.approx(0.90,
+                                                        rel=REL_TRANSPORTE)
+    assert (a01.resultado.resultado_hidraulico.control_gobernante
+            is ControlGobernante.ENTRADA)
+    # Los puntos circulares que dimensionan lo hacen en concreto.
+    for id_punto in PUNTOS_QUE_DIMENSIONAN_EN_PERFIL:
+        assert _punto(informe_dimensionado, id_punto).dimensionado
+
+
+def test_b01_ahogado_no_cierra_por_V2_en_ningun_D(informe_dimensionado):
+    """
+    E-A: B-01 con el TW ampliado de 1.00 m no se dimensiona, y el motivo es
+    MEDIDO y no un metodo que falta. A D = 0.90 el barril va LLENO y V1 no
+    cumple; en todo D mayor la S1 arranca en el TW, llega a la entrada y
+    deja V_min = Q/A(TW) < 0.25 m/s: V2 no cumple en ningun escalon. El
+    bucle termina en DisenoNoFactibleError, nunca en «metodo no evaluable».
+    """
+    from src.modelos import RegimenBarril, TipoDePerfil
+    b01 = _punto(informe_dimensionado, "B-01")
+    assert not b01.dimensionado
+    tipos = {b.tipo for b in b01.bloqueos}
+    assert "DisenoNoFactibleError" in tipos and "MetodoNoEvaluableError" not in tipos
+    parciales = [p for p in b01.traza
+                 if p.resultado_hidraulico is not None
+                 and p.resultado_hidraulico.regimen_barril
+                 is RegimenBarril.PARCIALMENTE_LLENO]
+    assert parciales
+    for p in parciales:
+        perfil = p.resultado_hidraulico.perfil
+        # S1 en el concreto (pendiente pronunciada) y M1 en el TMC, cuyo n
+        # mayor sube y_n por encima de y_c: las dos bajan desde el TW.
+        assert perfil.tipo in (TipoDePerfil.S1, TipoDePerfil.M1)
+        assert perfil.alcanza_entrada
+        assert perfil.y_max_m == pytest.approx(1.0, rel=REL_TRANSPORTE)
+        assert perfil.V_min_m_s < M5.V_MIN
+    assert any("V2" in (p.motivo or "") for p in parciales)
+
+
+def test_toda_verificacion_reportada_lleva_numeral(informe_dimensionado):
+    filas = _punto(informe_dimensionado, "A-01").verificaciones()
+    assert len(filas) >= 4          # luz + V1 + V2 + G1 + G2
+    assert all(v.numeral for _, v in filas)
+    codigos = {v.codigo for _, v in filas if v.codigo}
+    assert {"V1", "V2", "G1", "G2"} <= codigos
+
+
+def test_las_fases_6_y_7_corren_sobre_el_punto_dimensionado(informe_dimensionado):
+    """
+    PC-20: las Fases 6 y 7 sobre un concreto que el producto dimensiono. La
+    longitud ya no es un dato declarado (12.0 m) sino la que 7.B calcula
+    para cada punto desde la plataforma y los taludes. La Fase 8 queda
+    diferida en perfil, por diseño, y se prueba aparte.
+    """
+    for id_punto in PUNTOS_QUE_DIMENSIONAN_EN_PERFIL:
+        p = _punto(informe_dimensionado, id_punto)
+        assert p.proteccion.d50 > 0, id_punto
+        assert p.proteccion.advertencias, "Sec. 6 exige el aviso de filtro"
+        assert p.geometria is not None and p.geometria.longitud > 0, id_punto
+        assert "M7.longitud_conducto" in p.longitud.origen, id_punto
+        assert p.cama_apoyo is None, "en perfil la Fase 8 se difiere"
+        assert any(b.diferido_por_alcance and b.fase == cli.FASE_ESTRUCTURAL
+                   for b in p.bloqueos), id_punto
+    # V5 y V8 no desaparecen: quedan diferidas con su fundamento.
+    a01 = _punto(informe_dimensionado, "A-01")
+    assert {b.criterio for b in a01.bloqueos if b.criterio} >= {
+        "remanso_derecho_via", "TR_evento_extremo"}
+    # Y los criterios que gobernaron los numeros estan en el contexto.
+    assert {"HW_D_max", "ke_entrada", "diametros_normalizados"} <= set(
+        informe_dimensionado.contexto.criterios_usados)
+
+
+def test_la_fase_8_corre_sobre_el_concreto_real_que_el_producto_dimensiono(
+        informe_dimensionado):
+    """
+    PC-20, la Fase 8. DESDE T-5 LA MITAD QUE DECIDE SI EL TUBO EXISTE YA
+    CORRIO en la corrida de perfil --la clase del concreto, como F8.CLASE de
+    la Fase 5, y lo demas en `informe.estructural`--; la etapa `_fase_8`
+    (cama de apoyo y demanda del marco) la difiere el alcance, y la unica
+    forma de ejercitarla sobre un resultado del producto es LLAMARLA sobre
+    una copia del punto real. Llega a la cama de apoyo del concreto y ya NO
+    se detiene en la clase de producto (INF-3.3.5).
+    """
+    for id_punto in PUNTOS_QUE_DIMENSIONAN_EN_PERFIL:
+        original = _punto(informe_dimensionado, id_punto)
+        assert original.estructural is not None, id_punto
+        assert original.estructural.seleccion == "Clase II", id_punto
+        p = _copia_ligera_del_punto(original)
+        servicio._fase_8(p)
+        assert p.cama_apoyo is not None, id_punto
+        assert "clases_producto_por_relleno" not in _claves_bloqueantes(p), id_punto
+        assert not [b for b in p.bloqueos if b.fase == cli.FASE_ESTRUCTURAL
+                    and not b.diferido_por_alcance], id_punto
+    # La fixture de modulo no se toco.
+    assert _punto(informe_dimensionado, "A-01").cama_apoyo is None
+
+
+def test_la_fase_7_usa_la_misma_longitud_que_la_fase_4(informe_dimensionado):
+    a01 = _punto(informe_dimensionado, "A-01")
+    assert a01.geometria.longitud == a01.longitud.valor
+
+
+def test_la_clase_de_producto_se_elige_en_la_fase_5_y_no_bloquea(
+        informe_dimensionado):
+    """
+    Este test se llamaba `test_la_clase_de_producto_sigue_bloqueada` y fijaba
+    la MINA de M8: 'clases_producto_por_relleno' vacio y, detras,
+    `AssertionError`. T-5 la retiro (INF-3.3.5): la clase del tubo de A-01
+    se elige por el metodo indirecto de AASHTO LRFD 12.10.4.3 y viaja como
+    F8.CLASE en la tabla de la Fase 5, contra la D-load de la Clase II.
+    """
+    a01 = _punto(informe_dimensionado, "A-01")
+    (clase,) = [v for _, v in a01.verificaciones() if v.codigo == "F8.CLASE"]
+    assert clase.cumple and clase.valor_admisible == pytest.approx(50.0)
+    assert clase.criterio_aplicado == "clases_producto_por_relleno"
+    assert "clases_producto_por_relleno" not in _claves_bloqueantes(a01)
+
+
+# ---------------------------------------------------------------------------
+# Volcado
+# ---------------------------------------------------------------------------
+
+def test_el_json_es_serializable_y_lleva_las_tres_listas_de_criterios(
+        informe_dimensionado):
+    crudo = json.dumps(cli.informe_json(informe_dimensionado),
+                       ensure_ascii=False, allow_nan=False)
+    datos = json.loads(crudo)
+    assert datos["expediente"]["puntos"] == 4
+    assert datos["expediente"]["cerrado"] is False
+    # Seis listas desde la correccion de C08: a las tres originales se
+    # sumaron `declarados_en_caliente` (SIS-A-01: un valor que gobierna el
+    # calculo y no esta en el archivo), `verificacion_pendiente` (SIS-D-07:
+    # el hermano de `trazabilidad_incompleta` de los datos de sitio) y
+    # `sin_consumidor` (SIS-B-15/B-19).
+    assert set(datos["criterios"]) == {
+        "usados", "sin_valor_declarados", "bloquearon",
+        "declarados_en_caliente", "verificacion_pendiente", "sin_consumidor"}
+    # Cada criterio usado dice de donde salio su valor, no solo cual es.
+    assert all("declarado_en_caliente" in c for c in datos["criterios"]["usados"])
+    a01 = next(p for p in datos["puntos"] if p["id"] == "A-01")
+    assert a01["diseno"]["control_gobernante"] == "entrada"
+    assert a01["diseno"]["seccion"] == "Ø 0.90 m"
+    assert a01["diseno"]["material"] == "Concreto reforzado"
+    assert all(v["numeral"] for v in a01["verificaciones"])
+
+
+def test_el_volcado_no_revienta_con_un_criterio_aplicado_desconocido(
+        informe_con_criterio_desconocido):
+    """
+    Una verificacion con el umbral "Y_sobre_D_max", que NO es clave de
+    CRITERIOS (la añade `informe_con_criterio_desconocido` al resultado real
+    de A-01). El acceso directo `ca.criterio(...)` lanzaba KeyError y se caia
+    el volcado entero del expediente por un desajuste de nombre en la capa de
+    reporte. La consulta tolerante imprime la clave tal cual, sin etiqueta.
+    """
+    assert "Y_sobre_D_max" not in ca.CRITERIOS
+    texto = cli.volcar(informe_con_criterio_desconocido)
+    assert "umbral del criterio 'Y_sobre_D_max'" in texto
+    # Sin etiqueta inventada: la linea termina en la clave, no en "[algo]".
+    linea = next(l for l in texto.splitlines() if "Y_sobre_D_max" in l)
+    assert linea.rstrip().endswith("'Y_sobre_D_max'")
+
+
+def test_el_texto_nombra_el_material_el_control_y_los_bloqueos():
+    informe = _informe(luz_m=2.0, TW_m=0.0, longitud_m=12.0,
+                       categoria_tr="quebrada_menor")
+    texto = cli.volcar(informe)
+    assert "CRITERIOS PENDIENTES QUE BLOQUEARON UNA ETAPA" in texto
+    assert "remanso_derecho_via" in texto
+    assert "Expediente cerrado      : no" in texto
+
+
+def test_main_escribe_el_json_y_devuelve_uno(tmp_path, capsys):
+    destino = tmp_path / "informe.json"
+    codigo = cli.main([str(CSV), "--luz", "2.0", "--json", str(destino)])
+    capsys.readouterr()
+    assert codigo == 1
+    datos = json.loads(destino.read_text(encoding="utf-8"))
+    assert len(datos["puntos"]) == 4
+    assert datos["criterios"]["bloquearon"]
+
+
+def test_main_devuelve_dos_si_el_csv_no_existe(tmp_path, capsys):
+    codigo = cli.main([str(tmp_path / "no_existe.csv")])
+    assert codigo == 2
+    assert "No se pudo leer" in capsys.readouterr().err
+
+
+def test_main_devuelve_dos_si_el_csv_no_tiene_las_columnas(tmp_path, capsys):
+    ruta = tmp_path / "malo.csv"
+    ruta.write_text("id,progresiva_km\nA-01,0+380\n", encoding="utf-8")
+    codigo = cli.main([str(ruta)])
+    assert codigo == 2
+    assert "no se puede cargar" in capsys.readouterr().err
+
+
+def test_un_id_declarado_que_no_esta_en_el_csv_se_avisa(tmp_path):
+    ruta = tmp_path / "datos.json"
+    ruta.write_text(json.dumps({"globales": {"luz_m": 2.0},
+                                "puntos": {"Z-99": {"luz_m": 3.0}}}),
+                    encoding="utf-8")
+    informe = cli.correr(CSV, cli.cargar_datos_externos(ruta, {}))
+    avisos = [b for b in informe.cabezal.bloqueos if b.campo == "datos_externos"]
+    assert avisos and "Z-99" in avisos[0].mensaje
+
+
+def test_todos_los_puntos_del_csv_aparecen_en_el_informe():
+    informe = _informe(luz_m=2.0)
+    assert [i.punto.id for i in informe.puntos] == [
+        p.id for p in cargar_puntos(CSV)]
+
+
+# ---------------------------------------------------------------------------
+# Alcance de la corrida: bifurcacion perfil / expediente
+# ---------------------------------------------------------------------------
+#
+# La bandera --alcance separa dos corridas del MISMO pipeline: "expediente"
+# (defecto) lo corre entero, como siempre; "perfil" difiere V5, V8, la Fase 8
+# y la Fase 9 al expediente, dejando constancia con fundamento. Nada se borra:
+# lo diferido deja de contar solo para `Informe.cerrado`.
+#
+# Los criterios que aqui se declaran con `_declarar` son los que una corrida
+# de perfil real necesita cerrados (los detecto la propia corrida): el peso
+# especifico del relleno (V7 es obligatoria tambien en perfil), las
+# velocidades maximas de TMC/HDPE (V3) y la longitud de proteccion (Fase 6).
+# Son valores de PRUEBA via monkeypatch, el patron de todo este archivo: no
+# tocan criterios_adoptados.py.
+
+CRITERIOS_CORRIDA_PERFIL = dict(
+    peso_especifico_relleno_kn_m3=18.0,
+    v_max_tmc=4.5,
+    v_max_hdpe=6.0,
+    longitud_proteccion_salida=3.0,
+)
+
+EXTERNOS_PERFIL = dict(luz_m=2.0, categoria_tr="quebrada_menor", TW_m=0.0,
+                       longitud_m=12.0, L_hidraulico_m=180.0)
+
+
+def _informe_alcance(alcance, **globales):
+    return cli.correr(CSV, _externos(**globales), alcance=alcance)
+
+
+def test_el_alcance_por_defecto_es_expediente():
+    """
+    Quien no pasa la bandera corre exactamente lo de siempre.
+
+    LA ASERCION DE LOS DIFERIDOS CAMBIO EN C5, y VUELVE A CAMBIAR AQUI. En C5
+    paso de `diferidos() == ()` a UNA cosa diferida en los dos alcances: la
+    verificacion VC1 de la Familia C, que entonces NO EXISTIA. Hoy existe y se
+    evalua, de modo que lo diferido ya no es la verificacion sino la MITAD del
+    requisito de la Sec. 2.3 que VC1 no cierra --- la alteracion de la rasante
+    hidraulica del canal ---. El canal por el que viaja es el mismo a
+    proposito: `bloque_alcance` es el unico que imprime tambien con el
+    expediente abierto. Lo que este test sigue fijando, sin cambios, es que la
+    bandera de expediente no difiere NINGUNA etapa por si misma.
+    """
+    assert cli._parser().parse_args(["x.csv"]).alcance == cli.ALCANCE_EXPEDIENTE
+    informe = _informe(luz_m=2.0)
+    assert informe.alcance == cli.ALCANCE_EXPEDIENTE
+    etapas = {b.etapa for _, b in informe.diferidos()}
+    # LA ETAPA CAMBIO DE NOMBRE AL IMPLEMENTARSE VC1, y el nombre es la
+    # afirmacion: lo diferido ya no es la verificacion entera --- se evalua ---
+    # sino la MITAD del requisito de la Sec. 2.3 que VC1 no cierra, la de la
+    # rasante hidraulica. El bloque sigue emitiendose por eso.
+    assert etapas == {"VC1 - alcance del requisito de la Sec. 2.3 (borde "
+                      "libre verificado; rasante hidraulica, no)"}
+    assert {id_punto for id_punto, _ in informe.diferidos()} == {"C-01"}
+
+
+def test_alcance_expediente_es_identico_al_comportamiento_actual():
+    """El mismo CSV con y sin la bandera produce el mismo informe JSON."""
+    con = cli.informe_json(_informe_alcance(cli.ALCANCE_EXPEDIENTE,
+                                            **EXTERNOS_PERFIL))
+    sin = cli.informe_json(cli.correr(CSV, _externos(**EXTERNOS_PERFIL)))
+    for datos in (con, sin):
+        datos["expediente"].pop("generado_utc")
+    assert con == sin
+
+
+def test_perfil_dimensiona_puntos_que_expediente_bloquea(monkeypatch):
+    """
+    El corazon de la bifurcacion: con los mismos datos, V5 (remanso) detiene
+    el bucle de MD en alcance expediente, y en alcance perfil se difiere y el
+    punto se dimensiona. El diferido queda registrado con clave, concepto y
+    fuente -- la constancia, no un descarte silencioso.
+    """
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+
+    expediente = _informe_alcance(cli.ALCANCE_EXPEDIENTE, **EXTERNOS_PERFIL)
+    assert expediente.dimensionados == 0
+
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+    assert perfil.dimensionados == 3      # A-01, A-02, B-01; C-01 es Familia C
+    a01 = _punto(perfil, "A-01")
+    assert a01.resultado.material.tipo is TipoMaterial.CONCRETO_REFORZADO
+
+    diferidos = [b for b in a01.bloqueos if b.diferido_por_alcance]
+    v5 = next(b for b in diferidos if b.criterio == "remanso_derecho_via")
+    assert v5.tipo == "CriterioPendienteError"
+    assert v5.concepto and v5.fuente
+    assert "V5" in v5.etapa
+    v8 = next(b for b in diferidos if b.criterio == "TR_evento_extremo")
+    assert "V8" in v8.etapa
+
+    # EXT-3: B-01 caia bajo control de SALIDA con HW/D < 0.75 y salia
+    # «dimensionado con HW no evaluable / diferido». E-A: el perfil de la
+    # lamina decide la carga y V1/V2 se evaluan sobre el; ningun punto lleva
+    # ya el bloqueo «metodo no evaluable», y B-01 sigue dimensionado.
+    b01 = _punto(perfil, "B-01")
+    assert b01.dimensionado
+    assert b01.resultado.resultado_hidraulico.perfil is not None
+    for p in (a01, b01):
+        assert not [b for b in p.bloqueos if b.tipo == "MetodoNoEvaluableError"]
+
+
+def test_perfil_intenta_v5_y_v8_pero_no_las_exige(monkeypatch):
+    """
+    Las NUEVE obligatorias estan en la tabla del punto; V5 y V8 no.
+
+    Eran siete hasta S14, cuando V4b se cableo, y ocho hasta S20, cuando se
+    cableo V2b. Las dos entran como obligatorias por la misma razon: su
+    umbral es un criterio con valor y no depende de ningun dato de
+    expediente, de modo que al alcance de perfil corren como cualquier otra.
+    Lo que el alcance difiere son las verificaciones que necesitan el
+    EXPEDIENTE -- el perfil de remanso y el derecho de via en V5, el caudal
+    del evento extremo en V8 --, no las que solo necesitan una declaracion
+    del proyectista.
+    """
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+    codigos = [v.codigo for _, v in _punto(perfil, "A-01").verificaciones()
+               if v.codigo and v.codigo.startswith("V")]
+    # Diez desde T-2, que sumo V10 (la pendiente del conducto): su banda son
+    # dos criterios con valor y no depende de ningun dato de expediente.
+    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V10", "V6",
+                       "V7", "V9"]
+
+
+def test_perfil_no_ejecuta_fase_8_ni_cabezal(monkeypatch):
+    """
+    2.b: ni la ETAPA `_fase_8` ni `correr_cabezal` corren en perfil. Hasta
+    T-5 el espia sobre `seleccionar_clase_calibre` vigilaba la MINA de M8
+    (AssertionError en cuanto 'clases_producto_por_relleno' tuviera valor);
+    T-5 escribio su cuerpo, y lo que este test fija hoy es la frontera nueva:
+    la clase, el calibre o el perfil del conducto corren en perfil como F8.*
+    de la Fase 5 (por `M8.verificaciones_estructurales`), y la etapa que el
+    alcance difiere --la demanda del marco por `seleccionar_clase_calibre` y
+    la cama de apoyo-- no se llama.
+    """
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+    llamadas = []
+    # Se patchea donde el nombre se RESUELVE: el servicio (EXT-9).
+    monkeypatch.setattr(servicio, "seleccionar_clase_calibre",
+                        lambda **kw: llamadas.append(kw))
+    monkeypatch.setattr(servicio, "cama_apoyo_relleno_lateral",
+                        lambda material: llamadas.append("cama"))
+    monkeypatch.setattr(servicio, "cadena_sismica",
+                        lambda: llamadas.append("cabezal"))
+
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+    assert llamadas == []
+    # Lo que SI corre en perfil desde T-5: la Fase 8 del conducto, en la
+    # tabla de la Fase 5 y en `estructural`.
+    dimensionados = [i for i in perfil.puntos if i.dimensionado]
+    assert dimensionados
+    for i in dimensionados:
+        assert any((v.codigo or "").startswith("F8.")
+                   for _, v in i.verificaciones()), i.punto.id
+        assert i.estructural is not None and i.cama_apoyo is None, i.punto.id
+    assert perfil.cabezal.cadena is None
+    fases_8 = [b for i in perfil.puntos for b in i.bloqueos
+               if b.fase == cli.FASE_ESTRUCTURAL]
+    assert fases_8 and all(b.diferido_por_alcance for b in fases_8)
+    assert all(b.diferido_por_alcance for b in perfil.cabezal.bloqueos)
+
+    # En expediente, la Fase 8 y el cabezal SI corren.
+    llamadas.clear()
+    _informe_alcance(cli.ALCANCE_EXPEDIENTE, **EXTERNOS_PERFIL)
+    assert "cabezal" in llamadas
+
+
+def test_v8_con_el_TR_declarado_se_difiere_en_vez_de_tumbar_la_corrida(monkeypatch):
+    """
+    LA MINA DE V8, DESACTIVADA EN S20, y el test que la vigilaba invertido a
+    proposito.
+
+    `v8_evento_extremo` terminaba en `raise AssertionError` en cuanto
+    'TR_evento_extremo' tuviera valor. El aviso era cierto -- la logica de V8
+    no esta escrita -- y el medio, equivocado: `AssertionError` no desciende
+    de `ErrorProyecto`, de modo que `cli._etapa` no lo capturaba y declarar
+    ese criterio tumbaba la corrida ENTERA, con todos sus puntos, con una
+    traza de fallo de programa que la GUI no puede distinguir de un bug.
+
+    Hoy V8 lanza `DatoFaltanteError` sobre el dato que de verdad falta -- el
+    caudal del evento extremo, que este software no calcula porque no hace
+    hidrologia --, que es la MISMA solucion que V5 ya tenia desde antes y la
+    que CLAUDE.md contempla para el dato que un tablero externo tendria que
+    aportar. El aviso sigue siendo ruidoso; lo que cambio es que ahora es del
+    expediente y no del programa.
+    """
+    _declarar(monkeypatch, TR_evento_extremo=100.0, **CRITERIOS_CORRIDA_PERFIL)
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+
+    v8 = [b for i in perfil.puntos for b in i.bloqueos
+          if b.diferido_por_alcance and "V8" in b.etapa]
+    assert v8, "V8 tiene que quedar diferida, no desaparecer"
+    assert all(b.tipo == "DatoFaltanteError" for b in v8)
+    assert all(b.campo == "Q_evento_extremo_m3s" for b in v8)
+    # Y el punto sigue dimensionandose: el fallo de V8 no mata la corrida.
+    assert any(i.dimensionado for i in perfil.puntos)
+
+
+def test_perfil_deja_constancia_en_texto_y_json(monkeypatch):
+    """2.d: el alcance usado y lo diferido, con fundamento, en ambas salidas."""
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+    perfil = _informe_alcance(cli.ALCANCE_PERFIL, **EXTERNOS_PERFIL)
+
+    datos = json.loads(json.dumps(cli.informe_json(perfil),
+                                  ensure_ascii=False, allow_nan=False))
+    assert datos["alcance"]["nivel"] == "perfil"
+    claves = {d["criterio"] for d in datos["alcance"]["diferidos"]}
+    assert "remanso_derecho_via" in claves and "TR_evento_extremo" in claves
+    remanso = next(d for d in datos["alcance"]["diferidos"]
+                   if d["criterio"] == "remanso_derecho_via")
+    assert remanso["fuente"] and remanso["punto"] == "A-01"
+    fases = {d["fase"] for d in datos["alcance"]["diferidos"]}
+    assert cli.FASE_ESTRUCTURAL in fases and cli.FASE_CABEZAL in fases
+
+    texto = cli.volcar(perfil)
+    assert "ALCANCE DE LA CORRIDA" in texto
+    assert "Alcance declarado: perfil" in texto
+    assert "remanso_derecho_via" in texto
+    # Desde T-5 la Fase 8 NO se difiere entera: solo la cama y el marco.
+    assert "Fase 8: cama de apoyo y demanda del marco diferidas" in texto
+    assert "Fase 8 completa diferida" not in texto
+    assert "Fase 9 completa diferida" in texto
+
+
+def test_expediente_tambien_declara_su_alcance():
+    informe = _informe(luz_m=2.0)
+    alcance = cli.informe_json(informe)["alcance"]
+    assert alcance["nivel"] == "expediente"
+    # Lo unico diferido a nivel de expediente es VC1 (§15.6): ver
+    # `test_el_alcance_por_defecto_es_expediente`.
+    assert [d["etapa"] for d in alcance["diferidos"]] == [
+        "VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; "
+        "rasante hidraulica, no)"]
+    assert "Alcance declarado: expediente" in cli.volcar(informe)
+
+
+def test_perfil_cerrado_devuelve_exit_cero(tmp_path, monkeypatch, capsys):
+    """
+    2.c: un expediente de perfil con todos sus puntos dimensionados y sin
+    bloqueos REALES cierra y main devuelve 0; los diferidos por alcance no
+    cuentan. Se usa B-01 solo, que cierra en concreto a V = 1.96 m/s.
+
+    Esa velocidad es justamente la que la correccion de V3 legitimo: mientras
+    V3 leia el par de la Tabla N 10 como piso y techo, 1.96 m/s se rechazaba
+    por "bajo el minimo" y el concreto se descartaba en todo su catalogo. El
+    piso real lo pone V2 (0.25 m/s) y esta velocidad lo cumple de sobra.
+
+    Ya no declara 'h_relleno_min_concreto_tmc': ese criterio se retiro en C01
+    y la Fase 7 no lo pide. Los dos criterios que hoy podrian bloquearla --
+    'espesor_pared_conducto' y 'condicion_pavimento' -- los declara conftest
+    para toda la corrida de pruebas.
+
+    REESCRITO EN LAS CORRECCIONES DE T-9 (H2), y se dice: con B-01 solo, el
+    tramo de cuneta de la verificacion VB1 no tiene extremo, y desde las
+    correcciones eso es un BLOQUEO que espera `inicio_tramo_cuneta_km` (antes
+    era un aviso y el expediente cerraba con VB1 sin evaluar). El caso
+    declara ese dato por el JSON --150 m de cuneta, dentro de los 180 m de
+    `--l-hidraulico`--, que es lo que pide el expediente para cerrar.
+    """
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+    lineas = CSV.read_text(encoding="utf-8").strip().splitlines()
+    solo_b01 = tmp_path / "solo_b01.csv"
+    solo_b01.write_text("\n".join([lineas[0]] + [
+        l for l in lineas if l.startswith("B-01")]) + "\n", encoding="utf-8")
+    externos = tmp_path / "tramo.json"
+    externos.write_text('{"puntos": {"B-01": {"inicio_tramo_cuneta_km": 2.30}}}',
+                        encoding="utf-8")
+    argumentos = [str(solo_b01), "--luz", "2.0", "--tw", "0.0",
+                  "--longitud", "12.0", "--l-hidraulico", "180.0",
+                  "--datos-externos", str(externos),
+                  "--json", str(tmp_path / "b01.json")]
+
+    assert cli.main(argumentos + ["--alcance", "perfil"]) == 0
+    salida = capsys.readouterr().out
+    assert "Expediente cerrado      : si" in salida
+    assert "Alcance de la corrida   : perfil" in salida
+
+    # El MISMO expediente en alcance completo NO cierra: V5 sigue exigiendose.
+    assert cli.main(argumentos + ["--alcance", "expediente"]) == 1
+    capsys.readouterr()
+
+
+# ---------------------------------------------------------------------------
+# Seleccion de plantilla de la memoria (M11)
+# ---------------------------------------------------------------------------
+
+def test_el_alcance_elige_la_plantilla_por_defecto():
+    perfil = cli.plantilla_por_alcance(cli.ALCANCE_PERFIL)
+    expediente = cli.plantilla_por_alcance(cli.ALCANCE_EXPEDIENTE)
+    assert perfil.name == cli.NOMBRE_PLANTILLA_PERFIL
+    assert expediente.name == cli.NOMBRE_PLANTILLA
+    assert perfil.is_file() and expediente.is_file()
+
+
+def test_la_plantilla_forzada_gana_sobre_el_alcance(tmp_path):
+    """Las dos comparten contrato: cualquiera vale para cualquier corrida."""
+    forzada = tmp_path / "otra.html"
+    for alcance in (cli.ALCANCE_PERFIL, cli.ALCANCE_EXPEDIENTE):
+        assert cli.plantilla_por_alcance(alcance, forzada) == forzada
+    assert cli._parser().parse_args(["x.csv"]).plantilla is None
+
+
+def test_la_memoria_de_perfil_sale_con_la_plantilla_de_perfil(
+        tmp_path, monkeypatch):
+    """De punta a punta: --alcance perfil --html usa memoria_perfil.html."""
+    _declarar(monkeypatch, **CRITERIOS_CORRIDA_PERFIL)
+    destino = tmp_path / "memoria.html"
+    codigo = cli.main([str(CSV), "--alcance", "perfil",
+                       "--luz", "2.0", "--tw", "0.0", "--longitud", "12.0",
+                       "--categoria-tr", "quebrada_menor",
+                       "--l-hidraulico", "180.0",
+                       "--json", str(tmp_path / "i.json"),
+                       "--html", str(destino)])
+    assert codigo == 1          # C-01 sigue sin Q: el expediente no cierra
+    html = destino.read_text(encoding="utf-8")
+    assert "nivel de perfil" in html
+    assert "4. Alcance y diferimientos declarados" in html
+    assert "remanso_derecho_via" in html
+    # El volcado de Tableros 1-2-3 NO esta: es lo que la plantilla reemplaza.
+    assert "Pendientes &mdash; Tableros 1, 2 y 3" not in html
+    assert PlantillaHTML.delimiter not in html
+
+
+def test_la_memoria_de_expediente_conserva_el_volcado_de_tableros(tmp_path):
+    destino = tmp_path / "memoria.html"
+    cli.main([str(CSV), "--luz", "2.0",
+              "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+    html = destino.read_text(encoding="utf-8")
+    assert "Pendientes &mdash; Tableros 1, 2 y 3" in html
+    assert "0.1 Alcance de la corrida" in html
+    # LA FRASE QUE ESTE TEST FIJABA -- "Ninguna etapa quedo diferida por
+    # alcance" -- ya no sale con este CSV, y no porque el bloque haya
+    # cambiado: el fixture trae C-01, de Familia C, y desde C5 su VC1 se
+    # difiere en los dos alcances (§15.6). Lo que se comprueba aqui es que el
+    # bloque sigue imprimiendo con el expediente abierto, que es la premisa
+    # medida del vehiculo; la rama "ninguna etapa" la ejercita
+    # `test_el_bloque_de_alcance_declara_que_no_difirio_nada_sin_familia_c`.
+    assert "Alcance declarado de la corrida" in html
+    assert "Etapas diferidas al expediente" in html
+
+
+# ---------------------------------------------------------------------------
+# --declarar: la via de declaracion en caliente desde la linea de comandos
+# ---------------------------------------------------------------------------
+# Es el mismo camino que usa la GUI (`establecer_valor_dinamico`), no un
+# segundo mecanismo: pasa por la guardia del archivo y la memoria imprime el
+# valor con su procedencia (SIS-A-01).
+
+def test_declarar_pasa_por_la_guardia_del_archivo():
+    try:
+        with pytest.raises(ValueError, match="fuera del rango"):
+            cli.declarar_criterios(["v_max_concreto_eleccion=99.0"])
+        assert "v_max_concreto_eleccion" not in ca.valores_dinamicos()
+
+        cli.declarar_criterios(["v_max_concreto_eleccion=4.0"])
+        assert ca.valores_dinamicos()["v_max_concreto_eleccion"] == pytest.approx(4.0)
+    finally:
+        ca.quitar_valor_dinamico("v_max_concreto_eleccion")
+
+
+# ---------------------------------------------------------------------------
+# SIS-F-11 - las seis banderas del CLI que no ejercitaba nadie
+# ---------------------------------------------------------------------------
+# --criterios, --csv-resumen, --datos-externos, --pdf, --plantilla y --proyecto
+# estaban definidas en el parser y ningun test las pasaba por `main`: el
+# cableado bandera -> funcion no se ejercitaba, de modo que un `dest` mal
+# escrito o una llamada cambiada de sitio dejaban la suite en verde. Cada test
+# de aqui asserta el EFECTO de la bandera, no solo que no revienta.
+
+def test_bandera_criterios_anade_el_bloque_de_declaracion(tmp_path, capsys):
+    base = cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json")])
+    sin = capsys.readouterr().out
+    con_bandera = cli.main([str(CSV), "--luz", "2.0", "--criterios",
+                            "--json", str(tmp_path / "b.json")])
+    con = capsys.readouterr().out
+    assert base == con_bandera
+    assert len(con) > len(sin), "--criterios no anadio nada al volcado"
+    assert "DATOS DE SITIO" in con.upper()
+    assert "DATOS DE SITIO" not in sin.upper()
+
+
+def test_bandera_csv_resumen_escribe_el_entregable_3(tmp_path, capsys):
+    destino = tmp_path / "resumen.csv"
+    cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json"),
+              "--csv-resumen", str(destino)])
+    salida = capsys.readouterr().out
+    assert destino.is_file(), "--csv-resumen no escribio el archivo"
+    assert str(destino) in salida, "el volcado no dice donde quedo el CSV"
+    lineas = destino.read_text(encoding="utf-8").strip().splitlines()
+    assert lineas[0] == ",".join(M11.COLUMNAS_RESUMEN_CSV)
+    assert len(lineas) == 1 + 4, "una fila por punto critico del ejemplo"
+
+
+def test_bandera_datos_externos_entra_por_main(tmp_path, capsys):
+    """La bandera y el archivo son el mismo camino: `main` los combina."""
+    ruta = tmp_path / "externos.json"
+    ruta.write_text(json.dumps({"globales": {"luz_m": 2.0}}),
+                    encoding="utf-8")
+    codigo = cli.main([str(CSV), "--datos-externos", str(ruta),
+                       "--json", str(tmp_path / "a.json")])
+    capsys.readouterr()
+    assert codigo == 1, "sin luz no se clasifica ningun punto: la bandera no llego"
+
+
+def test_bandera_proyecto_encabeza_la_memoria(tmp_path, capsys):
+    destino = tmp_path / "memoria.html"
+    cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json"),
+              "--html", str(destino), "--proyecto", "Via de Evitamiento X"])
+    capsys.readouterr()
+    assert "Via de Evitamiento X" in destino.read_text(encoding="utf-8")
+
+
+def test_bandera_plantilla_fuerza_la_plantilla_de_la_memoria(tmp_path, capsys):
+    """
+    La plantilla forzada gana al defecto del alcance: es lo que declara
+    `plantilla_por_alcance`, y hasta ahora nadie lo ejercitaba por `main`.
+    """
+    forzada = cli.DIR_PLANTILLAS / cli.NOMBRE_PLANTILLA_PERFIL
+    destino = tmp_path / "memoria.html"
+    cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json"),
+              "--alcance", "expediente", "--plantilla", str(forzada),
+              "--html", str(destino)])
+    salida = capsys.readouterr().out
+    assert forzada.name in salida, (
+        "el volcado tiene que decir que plantilla se uso, y ser la forzada")
+    assert destino.is_file()
+
+
+@pytest.mark.lento
+def test_bandera_pdf_escribe_o_deja_el_html_con_su_mensaje(tmp_path, capsys):
+    """
+    --pdf tiene dos finales declarados: con weasyprint escribe el PDF; sin el,
+    deja el HTML y lo dice. El test acepta los dos y comprueba que el mensaje
+    corresponde al que ocurrio, que es lo que la bandera promete.
+
+    Marcado `lento` (PC-22): con weasyprint instalado es el test mas caro de
+    la suite (12.8 s medidos en 5196dd2 y en EXT-11), porque renderiza el
+    PDF entero de los cuatro puntos. No se salta: se puede dejar fuera de
+    una corrida de trabajo con `-m "not lento"`.
+    """
+    destino = tmp_path / "memoria.pdf"
+    cli.main([str(CSV), "--luz", "2.0", "--json", str(tmp_path / "a.json"),
+              "--pdf", str(destino)])
+    salida = capsys.readouterr().out
+    if destino.is_file():
+        assert destino.stat().st_size > 0
+        assert str(destino) in salida
+    else:
+        alternativo = destino.with_suffix(".html")
+        assert alternativo.is_file(), (
+            "sin weasyprint la bandera tiene que dejar el HTML en su lugar")
+        assert "html" in salida.lower()
+
+
+def test_declarar_no_deja_entrar_un_infinito_por_la_notacion_cientifica():
+    """
+    `ast.literal_eval("1e999")` devuelve inf sin error, de modo que --declarar
+    era una puerta abierta al pipeline para un numero que no existe. El
+    criterio elegido no declara rango de sensibilidad: es el que quedaba sin
+    defensa (MAT-D14 / criterio de salida de S16).
+    """
+    try:
+        with pytest.raises(ValueError, match="infinito, con NaN"):
+            cli.declarar_criterios(["talud_terraplen=1e999"])
+        assert "talud_terraplen" not in ca.valores_dinamicos()
+    finally:
+        ca.quitar_valor_dinamico("talud_terraplen")
+
+
+@pytest.mark.parametrize("texto", ["nan", "NaN", "inf", "-inf", "Infinity"])
+def test_declarar_no_deja_entrar_un_no_numero_disfrazado_de_texto(texto):
+    """
+    LA PUERTA QUE QUEDABA ABIERTA. 'nan' e 'inf' no son literales de Python:
+    son NOMBRES. `ast.literal_eval` los rechaza y caian al respaldo a CADENA,
+    por debajo de la guardia de finitud de criterios_adoptados -- que solo
+    recorre numeros. Y la cadena no se quedaba quieta: el primer consumidor
+    que hiciera `float()` sobre el criterio la devolvia al calculo convertida
+    en el mismo NaN que se acababa de rechazar, y la memoria salia con
+    `cuantia_adoptada = nan` y un gobernante declarado. Ese es exactamente el
+    "diagnostico falso" que el criterio de salida de esta sesion prohibe.
+
+    El respaldo a texto sigue existiendo, y debe: los criterios CATEGORICOS
+    ('cota_terreno', 'flexible', 'A') entran por ahi.
+    """
+    try:
+        with pytest.raises(ValueError, match="no es un numero declarable"):
+            cli.declarar_criterios([f"talud_terraplen={texto}"])
+        assert "talud_terraplen" not in ca.valores_dinamicos()
+    finally:
+        ca.quitar_valor_dinamico("talud_terraplen")
+
+
+def test_declarar_no_revienta_con_un_entero_que_no_cabe_en_un_double():
+    """
+    Un `int` de Python no tiene tope. Uno de 401 cifras no cabe en un double y
+    `float(x)` lanza OverflowError, que no es ValueError ni KeyError y que
+    `cli.main` no atrapa: la corrida moriria con traza en vez de con el
+    mensaje del expediente. Entra por la misma puerta que el infinito.
+    """
+    enorme = "1" + "0" * 400
+    try:
+        with pytest.raises(ValueError, match="doble precision"):
+            cli.declarar_criterios([f"talud_terraplen={enorme}"])
+        assert "talud_terraplen" not in ca.valores_dinamicos()
+    finally:
+        ca.quitar_valor_dinamico("talud_terraplen")
+
+
+def test_declarar_sigue_admitiendo_un_criterio_categorico():
+    """El otro lado: el respaldo a texto existe para estos y no puede caer."""
+    try:
+        cli.declarar_criterios(["origen_cota_fondo_entrada=cota_terreno"])
+        assert ca.valores_dinamicos()["origen_cota_fondo_entrada"] == "cota_terreno"
+    finally:
+        ca.establecer_valor_dinamico("origen_cota_fondo_entrada", "cota_terreno")
+
+
+def test_declarar_admite_texto_y_exige_la_forma_clave_igual_valor():
+    try:
+        cli.declarar_criterios(["origen_cota_fondo_entrada=cota_terreno"])
+        assert ca.valores_dinamicos()["origen_cota_fondo_entrada"] == "cota_terreno"
+
+        with pytest.raises(ValueError, match="CLAVE=VALOR"):
+            cli.declarar_criterios(["origen_cota_fondo_entrada"])
+        with pytest.raises(KeyError):
+            cli.declarar_criterios(["criterio_que_no_existe=1.0"])
+    finally:
+        ca.establecer_valor_dinamico("origen_cota_fondo_entrada", "cota_terreno")
+
+
+def test_la_memoria_declara_el_criterio_dado_en_caliente_con_su_procedencia(tmp_path):
+    """
+    El criterio de salida de esta correccion, extremo a extremo: se corre la
+    CLI declarando un criterio en caliente y el HTML tiene que traerlo con su
+    valor efectivo Y con la marca de que se declaro para la corrida.
+    """
+    destino = tmp_path / "memoria.html"
+    try:
+        cli.main([str(CSV), "--luz", "2.0", "--declarar", "talud_terraplen=1.8",
+                  "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+        html = destino.read_text(encoding="utf-8")
+
+        assert "talud_terraplen" in html
+        ficha = html.split("<code>talud_terraplen</code>")[1].split("</dl>")[0]
+        assert "1.8" in ficha
+        assert "sin valor declarado" not in ficha
+        assert "DECLARADO PARA ESTA CORRIDA" in ficha
+        assert "Criterios declarados solo para esta corrida" in html
+    finally:
+        ca.quitar_valor_dinamico("talud_terraplen")
+
+
+def test_el_json_lleva_el_valor_efectivo_y_la_procedencia(tmp_path):
+    """
+    EL CRITERIO DE LA PRUEBA CAMBIO EN S20, y por una razon que vale la pena
+    dejar escrita: era 'TW_receptor', y con la Sec. 1.3 implementada ese
+    criterio ya no lo invoca ninguna corrida normal -- es la ULTIMA puerta
+    del TW, la que se abre cuando no hay ni `cota_TW`, ni caudal del
+    receptor, ni seccion --, de modo que dejo de aparecer en
+    `criterios_usados()`. Un test sobre "el valor efectivo de un criterio
+    usado" tiene que pedirlo sobre uno que la corrida use de verdad, y
+    'talud_terraplen' lo es en todos los puntos: 7.B lo consume para la
+    longitud del conducto.
+    """
+    salida = tmp_path / "i.json"
+    try:
+        cli.main([str(CSV), "--luz", "2.0", "--declarar", "talud_terraplen=1.8",
+                  "--json", str(salida)])
+        datos = json.loads(salida.read_text(encoding="utf-8"))
+        usados = {c["clave"]: c for c in datos["criterios"]["usados"]}
+
+        assert usados["talud_terraplen"]["valor"] == pytest.approx(1.8)
+        assert usados["talud_terraplen"]["declarado_en_caliente"] is True
+        assert "talud_terraplen" in datos["criterios"]["declarados_en_caliente"]
+        assert datos["criterios"]["verificacion_pendiente"]
+    finally:
+        ca.quitar_valor_dinamico("talud_terraplen")
+
+
+def test_un_dato_de_sitio_pendiente_sale_como_bloqueo_y_no_como_KeyError(monkeypatch):
+    """
+    SIS-A-05. `cli._bloqueo` resolvia TODA clave con `ca.criterio()`, y
+    `CriterioPendienteError` no la levanta solo criterios_adoptados: la misma
+    excepcion sale de `datos_sitio.valor` cuando un [S] de corredor todavia no
+    se ha leido. Con un [S] pendiente la corrida moria con KeyError -- un
+    fallo de PROGRAMA dentro de la funcion que existe para convertir un
+    problema del expediente en una fila del informe.
+
+    Hoy los tres datos de corredor tienen valor, de modo que el camino es
+    inalcanzable desde el expediente; se provoca vaciando uno, que es el
+    estado que el proyecto admite y para el que existe el mecanismo.
+    """
+    from src import datos_sitio as ds
+    from dataclasses import replace
+
+    clave = "PGA_roca_B"
+    monkeypatch.setitem(ds.DATOS_SITIO, clave,
+                        replace(ds.DATOS_SITIO[clave], valor=None))
+
+    with pytest.raises(CriterioPendienteError) as exc:
+        ds.valor(clave)
+
+    bloqueo = cli._bloqueo("Fase 9", "cadena sismica", exc.value)
+
+    assert bloqueo.tipo == "CriterioPendienteError"
+    assert bloqueo.criterio == clave
+    assert bloqueo.etiqueta == "S", (
+        "la etiqueta tiene que ser la del dato de sitio, no la de un criterio")
+    assert bloqueo.concepto and bloqueo.fuente
+    assert bloqueo.fuente == ds.dato(clave).fuente, (
+        "el informe tiene que citar la fuente del DATO DE SITIO, que es el "
+        "mapa del que se lee, y no la de un criterio que no existe")
+
+
+def test_el_resolvedor_comun_encuentra_las_dos_familias_y_nombra_la_que_falta():
+    """La otra mitad del contrato de `ca.declaracion_de`."""
+    from src import datos_sitio as ds
+
+    assert ca.declaracion_de("talud_terraplen").etiqueta == "A"
+    assert ca.declaracion_de("PGA_roca_B").etiqueta == "S"
+    assert ca.declaracion_de("PGA_roca_B") is ds.dato("PGA_roca_B")
+    with pytest.raises(KeyError, match="ni en datos_sitio.py"):
+        ca.declaracion_de("clave_que_no_existe_en_ninguno")
+
+
+# ---------------------------------------------------------------------------
+# Las guardas de los datos externos que ninguna prueba alcanzaba (SIS-F-10)
+# ---------------------------------------------------------------------------
+# SIS-F-10 conto trece `raise` de la taxonomia sin cobertura; medida de nuevo
+# sobre el arbol de S16 la cuenta es 51, y cuatro de ellas son de este archivo:
+# los dos rechazos de `_numero_externo` y los dos de `cargar_datos_externos`.
+# Que no las alcanzara nadie es exactamente la forma del cluster C09: la suite
+# estaba verde y no habria detectado que cualquiera de las cuatro se borrara.
+#
+# Cada caso asserta las TRES cosas: la clase de la excepcion, el `campo` que
+# lleva -- que es lo que la GUI usa para senalar el dato -- y un trozo del
+# motivo que diga POR QUE, no solo que fallo. Un mensaje que dijera "dato
+# invalido" a secas pasaria la primera y la segunda y no la tercera.
+
+# (bruto, trozo del motivo). El motivo tiene que nombrar el sistema de
+# unidades: el dato entra en SI y el error no puede limitarse a "no es un
+# numero" sin decir en que se esperaba.
+NO_SON_NUMEROS = [
+    ("dos", "no es un numero"),
+    ("", "no es un numero"),
+    ([2.0], "no es un numero"),
+    ({"valor": 2.0}, "no es un numero"),
+]
+
+
+@pytest.mark.parametrize("bruto, motivo", NO_SON_NUMEROS)
+def test_un_dato_externo_que_no_es_numero_dice_que_se_esperaba(bruto, motivo):
+    """
+    Falla si `_numero_externo` deja de convertir el bruto -- o si atrapa el
+    fallo de `float()` con un default silencioso en vez de detenerse.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        _externos(luz_m=bruto)
+    assert exc.value.campo == "luz_m"
+    assert motivo in exc.value.motivo
+    assert "SI, metros o m3/s" in exc.value.motivo
+    assert "linea de comandos" in exc.value.motivo
+
+
+@pytest.mark.parametrize("bruto", [float("inf"), float("-inf"), float("nan")])
+def test_un_dato_externo_no_finito_no_entra_al_pipeline(bruto):
+    """
+    Falla si desaparece la comprobacion de finitud: un inf o un nan pasan
+    `float()` sin protestar y despues salen del pipeline como diagnostico
+    falso, que es lo que el criterio de salida de S16 cierra. Es el gemelo,
+    por la via de los datos externos, de lo que
+    `test_declarar_no_deja_entrar_un_infinito_por_la_notacion_cientifica`
+    cierra por la via de --declarar.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        _externos(longitud_m=bruto)
+    assert exc.value.campo == "longitud_m"
+    assert "no es finito" in exc.value.motivo
+
+
+@pytest.mark.parametrize("crudo", [
+    [{"globales": {"luz_m": 2.0}}],      # una lista de objetos
+    2.0,                                 # un numero suelto
+    "globales",                          # el nombre de la seccion, no la seccion
+])
+def test_el_json_de_datos_externos_tiene_que_ser_un_objeto(tmp_path, crudo):
+    """
+    Falla si `cargar_datos_externos` deja de comprobar la forma del JSON: un
+    archivo que no es un objeto se recorreria con `.get` y reventaria con un
+    AttributeError -- un fallo del programa -- en vez de con el error del
+    expediente que la GUI sabe mostrar.
+    """
+    ruta = tmp_path / "datos.json"
+    ruta.write_text(json.dumps(crudo), encoding="utf-8")
+    with pytest.raises(DatoInvalidoError) as exc:
+        cli.cargar_datos_externos(ruta, {})
+    assert exc.value.campo == "datos_externos"
+    assert "tiene que ser un objeto JSON" in exc.value.motivo
+    assert "datos.json" in exc.value.motivo
+    assert exc.value.valor == type(crudo).__name__
+
+
+def test_un_punto_que_no_lleva_su_objeto_de_datos_se_rechaza_con_su_id(tmp_path):
+    """
+    Falla si se acepta `{"puntos": {"A-01": 2.0}}` -- la forma en que alguien
+    escribe el dato de un punto olvidando la clave. Sin la guarda, el bucle
+    siguiente iteraria sobre el float y el punto se quedaria sin ningun dato
+    declarado en silencio. El id tiene que viajar en la excepcion: es lo unico
+    que dice CUAL de los puntos esta mal escrito.
+    """
+    ruta = tmp_path / "datos.json"
+    ruta.write_text(json.dumps({"puntos": {"A-01": 2.0}}), encoding="utf-8")
+    with pytest.raises(DatoInvalidoError) as exc:
+        cli.cargar_datos_externos(ruta, {})
+    assert exc.value.campo == "datos_externos"
+    assert exc.value.valor == "A-01"
+    assert "cada punto lleva un objeto" in exc.value.motivo
+
+
+# --- La otra guarda de --declarar, que tampoco alcanzaba nadie -------------
+
+def test_declarar_sin_valor_no_declara_la_cadena_vacia():
+    """
+    `ast.literal_eval("")` lanza SyntaxError, el texto cae al respaldo de
+    cadena y `--declarar clave=` declararia la CADENA VACIA: un valor que
+    nadie quiso declarar entrando por la puerta de una errata, y ademas por
+    el camino que CLAUDE.md senala como el peor error del proyecto -- un
+    vacio relleno en silencio.
+
+    Falla si se pierde la comprobacion del texto vacio. Es la hermana de
+    `test_declarar_no_deja_entrar_un_infinito_por_la_notacion_cientifica`:
+    las dos cierran la misma puerta, una por el valor imposible y la otra
+    por el valor ausente.
+    """
+    with pytest.raises(ValueError, match="no trae valor"):
+        cli.declarar_criterios(["origen_cota_fondo_entrada="])
+    # `.get`: la clave no tiene por que estar declarada en caliente --- hasta
+    # EXT-4 este test leia una declaracion que otro test habia dejado en el
+    # proceso, y la fixture autouse de conftest ya no deja nada ---. Lo que
+    # se fija es que la cadena vacia NO entro.
+    assert ca.valores_dinamicos().get("origen_cota_fondo_entrada") != ""
+
+
+def test_una_declaracion_mal_escrita_devuelve_dos_y_no_corre_el_pipeline(
+        tmp_path, capsys):
+    """
+    El error de una declaracion no puede salir como traza de Python: `main`
+    lo atrapa, lo escribe en stderr y devuelve 2, igual que hace con el CSV
+    que no existe. Falla si el except desaparece -- la CLI reventaria con la
+    excepcion cruda -- o si el codigo de salida pasa a ser 0, que un guion
+    que encadene corridas leeria como exito.
+    """
+    salida_json = tmp_path / "i.json"
+    assert cli.main([str(CSV), "--declarar", "origen_cota_fondo_entrada=",
+                     "--json", str(salida_json)]) == 2
+    err = capsys.readouterr().err
+    assert "No se pudo declarar el criterio" in err
+    assert "no trae valor" in err
+    assert not salida_json.exists(), "no debe correr el pipeline"
+
+
+# ===========================================================================
+# §15.6.3 - los DOS vehiculos de la declaracion de alcance de la Familia C
+# ===========================================================================
+# El apartado exige DOS comprobaciones y no una, "porque la auditoria mostro
+# que una sola verifica media declaracion". Van juntas aqui para que no se
+# pueda borrar una sin ver que falta la otra.
+
+FILA_C_QUE_DIMENSIONA = (
+    "C-02,3+200,C,0.85,,0.004,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,,")
+
+DECLARACIONES_CAJON = [
+    "embocadura_cajon=cajon_concreto_aleta_45_d043",
+    "n_manning_cajon=concreto_afinado",
+    "secciones_cajon_normalizadas=[[1.20,0.90],[1.50,1.20],[2.00,1.50]]",
+    "n_celdas_cajon=1",
+    "ke_entrada_cajon=cajon_aletas_30_75_escuadra",
+]
+
+
+def _csv_con(tmp_path, *filas) -> Path:
+    """Un CSV con el encabezado de Sec. 1.2 y las filas que se le pasen."""
+    destino = tmp_path / "puntos.csv"
+    encabezado = CSV.read_text(encoding="utf-8").splitlines()[0]
+    destino.write_text("\n".join((encabezado,) + filas) + "\n",
+                       encoding="utf-8")
+    return destino
+
+
+def test_la_declaracion_de_alcance_sale_antes_de_declarar_ningun_criterio(
+        tmp_path):
+    """
+    COMPROBACION 1 de §15.6.3, y la que decide el vehiculo: la declaracion
+    tiene que verse CON EL EXPEDIENTE ABIERTO, o sea antes de que ninguno de
+    los criterios del cajon tenga valor. Es exactamente la condicion en la que
+    una acotacion NO se veria -- `M11.acotaciones_declaradas()` filtra por
+    `valor is not None` --, y por eso el vehiculo es `bloque_alcance`.
+    """
+    # --- T-3 --- Desde T-3 los cinco tienen valor de archivo: la premisa del
+    # expediente ABIERTO se recrea vaciandolos durante la corrida, que es lo
+    # que esta comprobacion mide (la declaracion sale aunque no haya nada).
+    destino = tmp_path / "memoria.html"
+    claves = ("embocadura_cajon", "n_manning_cajon", "n_celdas_cajon",
+              "ke_entrada_cajon", "secciones_cajon_normalizadas")
+    with ExitStack() as pila:
+        for clave in claves:
+            pila.enter_context(sin_valor(clave))
+        cli.main([str(CSV), "--luz", "2.0",
+                  "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+        # La premisa: ninguno de los cinco criterios del cajon tiene valor.
+        assert all(ca.criterio_efectivo(c).valor is None for c in claves)
+    html = destino.read_text(encoding="utf-8")
+
+    # LA AFIRMACION QUE ESTE BLOQUE HACE CAMBIO AL IMPLEMENTARSE VC1. Decia
+    # «NO EVALUA ese requisito»; hoy evalua la mitad que habla del borde libre
+    # y declara la que habla de la rasante hidraulica. Las dos frases tienen
+    # que estar, porque son las dos mitades.
+    assert "LO QUE SI SE EVALUA -- el borde libre" in html
+    assert "LO QUE NO SE EVALUA -- la rasante hidraulica" in html
+    assert "NO significa que la alteracion de la rasante hidraulica del "\
+           "canal se haya medido" in html
+    # Y el punto afectado va nombrado (NOR-HDS-05): un aviso sin punto es el
+    # "nadie se entera".
+    assert "C-01" in html
+
+
+def test_la_advertencia_de_alcance_sale_junto_al_numero_de_V1_y_de_V4(
+        tmp_path):
+    """
+    COMPROBACION 2 de §15.6.3, la que el apartado declara imposible con el
+    fixture tal como esta: C-01 trae `Q_m3s` vacio a proposito y se detiene
+    antes de V1 y de V4. Hace falta un punto de Familia C que LLEGUE a las
+    verificaciones, y este test lo construye -- misma fila que C-01 con su
+    caudal, su area y su pendiente de canal declarados --.
+
+    Lo que fija es que la nota viaja hasta el HTML por el canal de
+    `PasoDeMemoria.nota_del_proyecto`, que M11 imprime bajo
+    "Lo que pone el proyecto". Sin esta mitad, §15.6.3 queda con la mitad de
+    su diseño sin prueba.
+
+    EL PUNTO NO DIMENSIONA, Y ESO ES LO CORRECTO. Este test asertaba
+    `cli.main(...) == 0` -- «el punto de cajon tiene que dimensionar» -- y la
+    auditoria adversarial de C5 mostro que ese cierre era el sintoma de un
+    numero inseguro: el marco recibia la pared del TUBO de su misma altura y
+    V7 se calculaba sobre un cilindro, sobreestimando la seguridad. Con la
+    guardia de `M2.espesor_pared` el marco se detiene en V7, y la nota llega
+    IGUAL: la trae `ErrorProyecto.verificaciones_completadas`, que
+    `cli._verificador_perfil` no adjuntaba y ahora si. Que la advertencia de
+    alcance sobreviva a un punto que no cierra es mas fuerte que lo anterior,
+    no menos: es justamente cuando el revisor solo veria «no dimensionado».
+    """
+    origen = _csv_con(tmp_path, FILA_C_QUE_DIMENSIONA)
+    destino = tmp_path / "memoria.html"
+    argumentos = [str(origen), "--luz", "2.75", "--tw", "0.30",
+                  "--alcance", "perfil",
+                  "--json", str(tmp_path / "i.json"), "--html", str(destino)]
+    for declaracion in DECLARACIONES_CAJON:
+        argumentos += ["--declarar", declaracion]
+    # `--declarar` entra por `establecer_valor_dinamico` y NO se deshace solo:
+    # sin este `finally` los cinco criterios quedan declarados para el resto
+    # de la suite, y los tests que comprueban que un criterio vacio DETIENE el
+    # calculo empiezan a fallar en otro archivo. Es el efecto de orden que
+    # `tests/apoyo/criterios.py` explica en su encabezado.
+    try:
+        cli.main(argumentos)
+    finally:
+        for declaracion in DECLARACIONES_CAJON:
+            ca.quitar_valor_dinamico(declaracion.split("=")[0])
+
+    html = destino.read_text(encoding="utf-8")
+    assert "ALCANCE (Familia C" in html
+    # Las dos cotas contra las que miden los dos umbrales, que es el argumento
+    # de por que la sustitucion NO es conservadora. LA MITAD DE V1 CAMBIO DE
+    # FORMA EN EXT-3 Y VOLVIO EN E-A: este marco cae bajo control de SALIDA
+    # con el barril parcialmente lleno; en EXT-3 V1 no publicaba numero --su
+    # tirante exigia el perfil de la lamina-- y quedaba DIFERIDA; desde E-A
+    # el perfil existe y V1 publica su tirante maximo con la advertencia de
+    # alcance pegada al numero, como V4.
+    assert "la subrasante de la VIA, con su resguardo por CBR" in html
+    assert "MetodoNoEvaluableError" not in html
+    assert "la altura interior del propio barril" in html, (
+        "V1 dejo de publicar un numero bajo control de salida con barril "
+        "parcialmente lleno: el perfil de la lamina no llego a V1")
+    # Y sale por el canal de interpretacion, no pegada a una cita (NOR-HID-04).
+    assert 'class="interpretacion"' in html
+    # La otra mitad, y la que fija que el marco NO se calcula con la pared del
+    # tubo: la Fase 5 se detiene y lo dice con el criterio que falta.
+    #
+    # ESTE ASSERT CAMBIO DE FORMA EN C7 Y NO DE SENTIDO. C5 lo detuvo con
+    # `DatoFaltanteError('espesor_pared_conducto[marco]')` porque el proyecto
+    # no tenia donde poner ese dato. C7 abre `espesor_pared_cajon`, [A] de
+    # perfil, de modo que el revisor ya no tiene que CONSEGUIR el espesor sino
+    # DECIDIRLO, y la detencion pasa a `CriterioPendienteError`. Lo que se
+    # sigue fijando aqui es lo unico que importaba: que el marco NO toma
+    # prestada la pared del tubo de su misma altura.
+    assert "espesor_pared_cajon" in html
+    assert "espesor_pared_conducto[marco]" not in html
+
+
+def test_el_marco_llega_a_V7_y_su_detencion_no_tira_lo_ya_verificado():
+    """
+    PUNTO 7 DEL BRIEF DE C7, comprobado en vez de leido. El plan decia que
+    `cli._verificador_perfil` «YA adjunta los pasos de V7 -- se comprueba, no
+    se rehace», y esto es la comprobacion: hasta ahora lo unico que lo medía
+    era un test de HTML de extremo a extremo, que pasa por veinte sitios y no
+    dice CUAL de ellos lo conserva.
+
+    Lo que fija, sobre un marco al que solo le falta 'espesor_pared_cajon':
+
+      1. QUE LLEGA A V7. Es lo primero y no es obvio: `espesor_pared` lo
+         invocan tambien `cota_clave` y la cobertura de M7, de modo que un
+         marco podria detenerse mucho antes y este test estaria midiendo otra
+         cosa. Se asserta la clave Y el juego de codigos que quedan detras.
+      2. QUE V7 ESTA DENTRO DEL BLOQUE QUE ADJUNTA. V7 va en el SEGUNDO `for`
+         de obligatorias, cuyo `except` hace
+         `exc.verificaciones_completadas = tuple(filas)` antes de relanzar.
+         Si alguien lo sacara de ahi -- o lo pusiera en el bloque de las
+         diferidas --, V1..V6 no llegarian a la memoria y el revisor de un
+         punto que no cierra veria solo «no dimensionado».
+      3. QUE LA ADVERTENCIA DE ALCANCE VIAJA CON ELLOS. Son los pasos de la
+         Familia C los que la llevan (§15.6.3), y se pierden con las filas.
+    """
+    from cli import InformePunto
+    from src.modelos import (ErrorProyecto, Familia, FormaSeccion, PuntoCritico,
+                         SeccionRectangular)
+    from tests.apoyo.criterios import declarados
+
+    declaraciones = dict(d.split("=", 1) for d in DECLARACIONES_CAJON)
+    declaraciones["secciones_cajon_normalizadas"] = ((1.50, 1.20), (2.00, 1.50))
+    declaraciones["n_celdas_cajon"] = 1
+
+    # Los mismos numeros que `FILA_C_QUE_DIMENSIONA`, construidos aqui para no
+    # pasar por el CSV: lo que se mide es el verificador, no la carga.
+    punto = PuntoCritico(
+        id="C-02", progresiva_km=3.2, progresiva_display="3+200",
+        familia=Familia.C, Q_m3s=0.85, area_ha=None, S_cauce=0.004,
+        cota_terreno=36.90, cota_rasante=39.10, cota_subrasante=38.95,
+        cbr_subrasante=6.5, esviaje_grados=30.0, ancho_plataforma=9.60,
+        cota_fondo_receptor=36.20, Q_receptor_m3s=None, cota_TW=None,
+        sucs_fundacion="ML", NF_profundidad_m=None,
+        # LA CORONACION HACE FALTA DESDE QUE VC1 EXISTE, y por eso se añade en
+        # vez de rebajar la asercion: en Familia C, VC1 ocupa el hueco de V5 y
+        # es OBLIGATORIA, de modo que sin coronacion el punto se detiene ahi
+        # --- antes de V6 y de V7 --- y este test dejaria de medir lo suyo. El
+        # valor deja VC1 CUMPLIENDO (36.90 + 0.50 = 37.40 frente a 38.00 -
+        # 0.50 = 37.50) para que el freno siga siendo V7, que es de lo que el
+        # test habla.
+        cota_coronacion_canal=38.00)
+    resultado = ResultadoHidraulico(
+        y_normal=0.60, y_critico=0.40, V_erosion=1.50, V_sedimentacion=1.20,
+        Q=0.85, S=0.004, HW_entrada=0.50, HW_salida=0.20,
+        control_gobernante=ControlGobernante.ENTRADA)
+    verificar = cli._verificador_perfil(InformePunto(punto=punto))
+
+    # --- T-3 --- 'espesor_pared_cajon' tiene valor de archivo desde T-3: el
+    # marco «al que solo le falta el espesor» se recrea vaciandolo aqui.
+    with declarados(declaraciones), sin_valor("espesor_pared_cajon"):
+        marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                         forma=FormaSeccion.RECTANGULAR)
+        with pytest.raises(ErrorProyecto) as exc:
+            verificar(punto=punto, material=marco,
+                      seccion=SeccionRectangular(B=2.00, H=1.50),
+                      resultado=resultado)
+
+    assert isinstance(exc.value, CriterioPendienteError)
+    assert exc.value.clave == "espesor_pared_cajon"
+
+    filas = exc.value.verificaciones_completadas
+    # V5 va detras de VC1 como fila «no aplica» (C10, PC-27).
+    # Y V10 (T-2) detras de V4b, antes del hueco de V5.
+    assert [v.codigo for v in filas] == ["V1", "V2", "V2b", "V3", "V4",
+                                         "V4b", "V10", "VC1", "V5", "V6"]
+    con_nota = [v.codigo for v in filas
+                if v.paso is not None and v.paso.nota_del_proyecto]
+    assert con_nota, ("ninguna de las verificaciones que sobrevivieron lleva "
+                      "la advertencia de alcance de la Familia C: los pasos "
+                      "llegan pero vacios de lo que §15.6.3 les encarga")
+
+
+def test_a_alcance_perfil_la_familia_C_corre_VC1_y_no_difiere_V5():
+    """
+    EL AGUJERO QUE ESTE TEST CIERRA, y que solo se ve a alcance de PERFIL.
+
+    `cli._verificador_perfil` mantiene su propia lista de piezas --- vive
+    aparte de `M5.verificar` a proposito, porque la decision de DIFERIR es de
+    la corrida ---, y esa lista llevaba `M5.v5_remanso` escrito literalmente.
+    Con la bifurcacion de familia puesta solo en M5, un cruce de canal corrido
+    a `--alcance perfil` --- que es el alcance del entregable --- seguia
+    saliendo con «V5 diferida» y sin VC1 por ninguna parte: la verificacion
+    existia y el producto no la tenia. Es la trampa de NOR-MEM-01 otra vez.
+
+    La regla de familia vive hoy en `M5.pieza_del_hueco_de_V5` y los dos
+    llamadores la consultan. Lo que este test fija es el efecto en el que
+    difieren: VC1 es OBLIGATORIA y V5 diferida.
+    """
+    from cli import InformePunto
+    from src.modelos import (Familia, FormaSeccion, PuntoCritico,
+                         SeccionRectangular)
+    from tests.apoyo.criterios import declarados
+
+    declaraciones = dict(d.split("=", 1) for d in DECLARACIONES_CAJON)
+    declaraciones["secciones_cajon_normalizadas"] = ((1.50, 1.20), (2.00, 1.50))
+    declaraciones["n_celdas_cajon"] = 1
+    declaraciones["espesor_pared_cajon"] = 0.20
+    declaraciones["peso_especifico_relleno_kn_m3"] = 18.0
+    declaraciones["cobertura_minima_cajon"] = 0.30
+
+    punto = PuntoCritico(
+        id="C-02", progresiva_km=3.2, progresiva_display="3+200",
+        familia=Familia.C, Q_m3s=0.85, area_ha=None, S_cauce=0.004,
+        cota_terreno=36.90, cota_rasante=39.10, cota_subrasante=38.95,
+        cbr_subrasante=6.5, esviaje_grados=30.0, ancho_plataforma=9.60,
+        cota_fondo_receptor=36.20, Q_receptor_m3s=None, cota_TW=None,
+        sucs_fundacion="ML", NF_profundidad_m=2.50,
+        cota_fondo_entrada=36.28, cota_coronacion_canal=37.48)
+    resultado = ResultadoHidraulico(
+        y_normal=0.60, y_critico=0.40, V_erosion=1.50, V_sedimentacion=1.20,
+        Q=0.85, S=0.004, HW_entrada=0.50, HW_salida=0.20,
+        control_gobernante=ControlGobernante.ENTRADA)
+    informe = InformePunto(punto=punto)
+    verificar = cli._verificador_perfil(informe)
+
+    with declarados(declaraciones):
+        marco = catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                         forma=FormaSeccion.RECTANGULAR)
+        filas = verificar(punto=punto, material=marco,
+                          seccion=SeccionRectangular(B=2.00, H=1.50),
+                          resultado=resultado)
+
+    codigos = [v.codigo for v in filas]
+    assert "VC1" in codigos, codigos
+    # Desde C10 (PC-27) V5 figura como fila «no aplica» detras de VC1: no se
+    # evalua, y lo dice. Antes no figuraba.
+    v5 = [v for v in filas if v.codigo == "V5"]
+    assert len(v5) == 1 and v5[0].estado is EstadoDeVerificacion.NO_APLICA
+    # Y no queda anotada como diferida: la que se difiere en esta familia no
+    # es VC1 --- se evalua --- sino la MITAD del requisito que VC1 no cierra,
+    # y esa va por `_declarar_alcance_familia_c`, no por aqui.
+    assert not [b for b in informe.bloqueos if "V5" in b.etapa]
+    vc1 = [v for v in filas if v.codigo == "VC1"][0]
+    assert vc1.cumple
+    assert vc1.valor_obtenido == pytest.approx(36.78, rel=REL_TRANSPORTE)
+    assert vc1.valor_admisible == pytest.approx(36.98, rel=REL_TRANSPORTE)
+
+
+def test_el_bloque_de_alcance_declara_que_no_difirio_nada_sin_familia_c(
+        tmp_path):
+    """
+    La rama contraria del bloque, que el CSV del fixture ya no ejercita porque
+    trae C-01: sin ningun punto de Familia C y a alcance de expediente, no hay
+    NADA diferido y el bloque lo dice. Que la memoria del expediente afirme
+    "corri el pipeline completo" vale tanto como que la de perfil afirme lo
+    contrario.
+    """
+    fila_a = [l for l in CSV.read_text(encoding="utf-8").splitlines()
+              if l.startswith("A-01")][0]
+    origen = _csv_con(tmp_path, fila_a)
+    destino = tmp_path / "memoria.html"
+    cli.main([str(origen), "--luz", "2.0",
+              "--json", str(tmp_path / "i.json"), "--html", str(destino)])
+    html = destino.read_text(encoding="utf-8")
+    assert "Ninguna etapa quedo diferida por alcance" in html
+    assert "NO EVALUA ese requisito" not in html
+
+
+# ===========================================================================
+# C6 - `S_cauce` por --datos-externos: el vehículo del Tablero 3.1
+# ===========================================================================
+
+def test_s_cauce_declarada_llega_a_V2b_y_sale_con_su_procedencia(tmp_path):
+    """
+    EL AGUJERO QUE C6 CIERRA, medido en C5: un punto de Familia C con `Q_m3s` y
+    `S_conducto` declarados llegaba hasta V2b y se detenía ahí con
+    `DatoFaltanteError('S_cauce')`, porque su columna va vacía por Tablero 3.1
+    y no había clave por la que entregarla.
+
+    NO SE SUSTITUYE POR `S_conducto`, y este test lo fija declarando las dos
+    con valores DISTINTOS: `S_conducto` es la pendiente con que se tiende el
+    barril y `S_cauce` la del cauce que lo alimenta, y V2b compara una contra
+    otra (indicador de sedimentación del num. 5.3.3 del HDS-5). Si alguien
+    igualara las dos, la verificación se volvería una tautología y este test
+    dejaría de distinguir nada.
+    """
+    origen = _csv_con(tmp_path, FILA_C_SIN_S_CAUCE)
+    destino = tmp_path / "memoria.html"
+    externos = tmp_path / "ext.json"
+    externos.write_text(json.dumps({"puntos": {"C-02": {
+        "Q_m3s": 0.85, "S_conducto": 0.004, "S_cauce": 0.006}}}),
+        encoding="utf-8")
+    argumentos = [str(origen), "--luz", "2.75", "--tw", "0.30",
+                  "--alcance", "perfil", "--datos-externos", str(externos),
+                  "--html", str(destino), "--json", str(tmp_path / "i.json")]
+    for declaracion in DECLARACIONES_CAJON:
+        argumentos += ["--declarar", declaracion]
+    try:
+        cli.main(argumentos)
+    finally:
+        for declaracion in DECLARACIONES_CAJON:
+            ca.quitar_valor_dinamico(declaracion.split("=")[0])
+
+    html = destino.read_text(encoding="utf-8")
+    # V2b se evaluó: sin la clave, el material entero quedaba no evaluable.
+    assert "DatoFaltanteError: Falta el dato &#x27;S_cauce&#x27;" not in html
+    assert "V2b" in html
+    # Y el dato sale CON SU PROCEDENCIA, no como un número suelto.
+    assert "Pendiente del cauce (efectiva)" in html
+    assert "datos externos (punto C-02)" in html
+
+    # EL NÚMERO, Y EL VEREDICTO QUE PRODUCE. Sin estos dos asserts el test
+    # NO MEDÍA LO QUE SU DOCSTRING DICE: declaraba las dos pendientes
+    # distintas y después no asertaba ninguna, de modo que sustituir
+    # `S_cauce` por `S_conducto` en `_completar_s_cauce` -- la tautología que
+    # esta sesión prohíbe -- dejaba la suite ENTERA en verde. Lo midió la
+    # auditoría adversarial de C6. Las tres cadenas que sí asertaba se
+    # cumplen bajo la tautología porque el `origen` de las dos claves es la
+    # misma cadena.
+    #
+    # Con 0.006 contra 0.004 el conducto va más TENDIDO que el cauce, que es
+    # el caso del num. 5.3.3 del HDS-5: V2b tiene que decir NO CUMPLE, con
+    # margen -0.002. Bajo la tautología diría «cumple» con margen 0.000, y es
+    # la inversión de un veredicto de verificación.
+    #
+    # DESDE T-2 EL VALOR DE ARCHIVO DE 'regimen_v2b' ES «indicador_con_aviso»
+    # y el indicador disparado se imprime como INDICADOR, no como «NO
+    # cumple». Lo que este test mide no cambia: bajo la tautologia el
+    # indicador NO se dispararia y la fila diria «cumple». El «NO cumple» de
+    # «umbral_duro» lo fija `tests/test_pf4_regimen_v2b.py`.
+    assert _celda_de(html, "Pendiente del cauce (efectiva)") == "0.006"
+    fila_v2b = _fila_de_verificacion(html, "V2b")
+    assert "INDICADOR (aviso)" in fila_v2b
+    assert 'class="fila-indicador"' in fila_v2b
+    assert "0.004" in fila_v2b        # obtenido: la pendiente del BARRIL
+    assert "0.006" in fila_v2b        # admisible: la del CAUCE
+
+
+def _celda_de(html: str, rotulo: str) -> str:
+    """El valor de la fila `rotulo` de la tabla de datos de partida."""
+    import re
+    m = re.search(re.escape(rotulo) + r"</td><td[^>]*>([^<]*)</td>", html)
+    assert m is not None, f"no se encontro la fila «{rotulo}»"
+    return m.group(1).strip()
+
+
+def _fila_de_verificacion(html: str, codigo: str) -> str:
+    """La fila entera de la tabla de verificaciones cuyo codigo es `codigo`."""
+    import re
+    # `<tr[^>]*>` y no `<tr>`: la fila que INCUMPLE lleva
+    # `class="fila-incumple"`, que es justamente la que este test busca.
+    m = re.search(r"<tr[^>]*><td>" + re.escape(codigo) + r"</td>.*?</tr>",
+                  html, re.S)
+    assert m is not None, f"no se encontro la verificacion {codigo}"
+    return m.group(0)
+
+
+def test_la_columna_del_csv_gana_sobre_el_dato_externo():
+    """
+    Una fila del CSV es un dato del expediente y un JSON de corrida no lo
+    corrige en silencio. Y aun así se REGISTRA, con la procedencia de la
+    columna: la fila de la memoria dice cuál es la pendiente efectiva, y
+    «no declarada» sobre un punto que la trae en su columna sería falso.
+    """
+    informe = _informe_por_punto(
+        dict(luz_m=2.0), {"A-01": {"S_cauce": 0.999}})
+    a01 = informe.puntos[0]
+    assert a01.punto.id == "A-01"
+    assert a01.punto_completado is None            # no se sustituyo el punto
+    assert a01.s_cauce.valor == pytest.approx(a01.punto.S_cauce,
+                                              rel=REL_TRANSPORTE)
+    assert "columna S_cauce" in a01.s_cauce.origen
+    # Y LA DECLARACION DESCARTADA SE NOMBRA. Descartarla en silencio deja a
+    # quien escribio el JSON mirando una V2b resuelta contra un numero que no
+    # es el suyo, sin nada que se lo explique.
+    #
+    # SE EXTRAE EL NUMERO Y SE COMPARA COMO NUMERO. La primera version de este
+    # assert decia `"0.999" in origen`, y la segunda auditoria lo objeto con
+    # razon: es un substring, y `0.9995` tambien lo contiene. Es el mismo
+    # genero que R1 condena.
+    assert "descarto" in a01.s_cauce.origen
+    m = re.search(r"declaracion externa \(([-\d.eE+]+) m/m", a01.s_cauce.origen)
+    assert m is not None, a01.s_cauce.origen
+    assert float(m.group(1)) == pytest.approx(0.999, rel=REL_TRANSPORTE)
+
+
+def test_sin_declaracion_externa_la_columna_no_arrastra_nota_de_descarte():
+    """
+    Contrapeso del anterior: la nota de descarte solo aparece cuando hubo algo
+    que descartar. Sin ella, un punto de columna llena arrastraria en cada
+    corrida un texto sobre una declaracion que nadie escribio.
+    """
+    informe = _informe(luz_m=2.0)
+    a01 = informe.puntos[0]
+    assert a01.punto.id == "A-01"
+    assert a01.s_cauce.origen == "CSV Sec. 1.2, columna S_cauce"
+
+
+def test_una_pendiente_externa_en_porcentaje_es_dato_invalido():
+    """
+    LA MISMA MAGNITUD POR DOS PUERTAS TIENE QUE ACOTARSE IGUAL. `M0` rechaza
+    un `S_cauce` de 6.0 en la columna contra `S_CAUCE_MAX` -- que existe para
+    atrapar «una celda cargada en porcentaje» --, y hasta C6 la puerta de
+    `--datos-externos` lo admitía tan campante. Medido antes de cerrarlo. La
+    puerta laxa era justamente la que usan los puntos de Familia C, que traen
+    la columna vacía.
+    """
+    with pytest.raises(DatoInvalidoError) as exc:
+        cli._numero_externo("S_cauce", 6.0, "prueba")
+    assert "PORCENTAJE" in exc.value.motivo
+    # Y el valor legítimo pasa.
+    assert cli._numero_externo("S_cauce", 0.004, "prueba").valor == \
+        pytest.approx(0.004, rel=REL_TRANSPORTE)
+
+
+FILA_C_SIN_S_CAUCE = (
+    "C-02,3+200,C,,,,36.90,39.10,38.95,6.5,30,9.60,36.20,,,ML,,,")
+
+
+# Cardinales en palabra y en cifra. Es la lista cerrada del castellano hasta
+# doce, que es de sobra: la coleccion que se cuenta tiene hoy ocho elementos y
+# el defecto aparece al escribir CUALQUIER numero, no uno grande.
+_CARDINALES = (r"un[oa]?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|"
+               r"once|doce|\d+")
+
+# Un conteo de las CLAVES, en las tres formas que caben en este parrafo.
+_CONTEO_DE_CLAVES = (
+    # (1) el cardinal pegado al sustantivo: «cinco magnitudes», «8 claves».
+    re.compile(r"\b(?:" + _CARDINALES + r")\s+(?:claves?|magnitudes?)\b",
+               re.IGNORECASE),
+    # (2) la forma ELIPTICA, que es la que el bloque escribio dos veces:
+    # «las cinco», «las siete» -- el sustantivo omitido son las claves --.
+    # Se reconoce por lo que NO lleva detras: un cardinal seguido de otra
+    # palabra cuenta esa palabra («las dos clases», «las dos pendientes») y no
+    # las claves. Sin IGNORECASE en el lookahead a proposito: bajo IGNORECASE
+    # `[a-z]` tambien casa mayusculas y la elipsis dejaria de distinguirse.
+    re.compile(r"\b(?:[Ll]as|[Ll]os|LAS|LOS)\s+(?:" + _CARDINALES +
+               r")\b(?!\s+\w)"),
+    # (3) el predicado: «las claves son ocho».
+    re.compile(r"\b(?:claves?|magnitudes?)\s+(?:son|hay)\s+(?:" +
+               _CARDINALES + r")\b", re.IGNORECASE),
+)
+
+
+def _bloque_de_claves() -> str:
+    bloque = cli.__doc__.split("Datos que NO estan en el CSV")[1]
+    return bloque.split("Que hace con un criterio pendiente")[0]
+
+
+def test_el_bloque_de_claves_del_docstring_no_lleva_un_conteo_a_mano():
+    """
+    EL CONTEO COLGADO, TRES VECES. El bloque «Datos que NO estan en el CSV»
+    decía «cinco magnitudes» cuando `CLAVES_EXTERNAS` tenía siete; C6 lo
+    corrigió a «siete» **y añadió la octava en la misma sesión**. Lo midió la
+    auditoría adversarial. La cuenta que no envejece es la que no se escribe.
+
+    ESTE TEST ERA UNA LISTA NEGRA DEL PASADO y lo refutó la segunda auditoría:
+    prohibía cinco **cadenas literales** —`"cinco magnitudes"`, `"las siete"`,
+    `"OCHO CLAVES"`…— mientras su docstring declaraba fijar «que el bloque
+    enumere las claves y no las cuente». Medido entonces: insertar «Son OCHO
+    MAGNITUDES en total» pasaba en verde. Es el patrón que este proyecto tiene
+    escrito —una declaración que ninguna guardia sostiene— cometido en la
+    guardia misma.
+
+    Ahora la prohibición es de FORMA, no de cadena: ningún cardinal puede
+    cuantificar las claves, ni pegado al sustantivo, ni en elipsis, ni como
+    predicado. Y sigue fijando la otra mitad: que **todas** estén enumeradas
+    en las dos clases que el párrafo define —C6 dejó `S_conducto` fuera,
+    diciendo a cuál no pertenece y sin decir a cuál sí—.
+    """
+    bloque = _bloque_de_claves()
+
+    for patron in _CONTEO_DE_CLAVES:
+        m = patron.search(bloque)
+        # El mensaje solo se evalua cuando el assert falla, es decir cuando
+        # `m` no es None: `m.group(0)` es seguro ahi y nombra al culpable.
+        assert m is None, (
+            f"el bloque escribe un conteo a mano: {m.group(0)!r}. Enumerá las "
+            "claves; contarlas envejece con la siguiente que se añada, y ya "
+            "envejeció tres veces")
+
+    # LA CUENTA QUE NO ENVEJECE, calculada aqui y no escrita alli. Hasta la
+    # segunda auditoria `len(CLAVES_EXTERNAS)` era una frase de la prosa que
+    # NADIE calculaba -- grep daba una sola aparicion en todo el repositorio,
+    # la propia frase --.
+    nombradas = {c for c in cli.CLAVES_EXTERNAS if c in bloque}
+    assert len(nombradas) == len(cli.CLAVES_EXTERNAS), (
+        "faltan en el bloque: "
+        f"{sorted(set(cli.CLAVES_EXTERNAS) - nombradas)}")
+
+
+def test_toda_clave_esta_en_una_de_las_dos_clases_que_el_bloque_define():
+    """
+    La otra mitad de R2, y la que de verdad se le escapó a C6: no basta con
+    que la clave aparezca en el bloque —`S_conducto` aparecía— sino que tiene
+    que estar CLASIFICADA. El párrafo define dos clases, (a) y (b), y una
+    clave que no está en ninguna es una clave que el lector no sabe dónde
+    corregir.
+    """
+    bloque = _bloque_de_claves()
+    clases = bloque.split("  (a)")[1].split("Entran declaradas")[0]
+    for clave in cli.CLAVES_EXTERNAS:
+        assert clave in clases, (
+            f"{clave!r} no está en ninguna de las dos clases (a)/(b) del "
+            "bloque: se dice que existe y no dónde vive")
+
+
+def test_las_dos_pendientes_se_acotan_igual_por_las_dos_puertas():
+    """
+    LA MISMA MAGNITUD POR DOS PUERTAS TIENE QUE ACOTARSE IGUAL. `S_cauce` es
+    columna y `S_conducto` no, pero son la MISMA magnitud física, con el mismo
+    error de transcripción, y `S_conducto` es además la que entra en Manning.
+    C6 cerró sólo la primera.
+
+    POR QUÉ LA TUPLA VA A MANO, que es lo que la segunda auditoría objetó al
+    nombre anterior de este test («toda clave que también es columna…», que
+    además era falso para `S_conducto`, que no lo es): **no existe un mapa
+    clave → símbolo de `dominios.py`** del que derivar el universo. Derivarlo
+    exigiría inventarlo, y ese mapa es una decisión de diseño, no un test. Lo
+    que este test fija es lo que sí se puede fijar sin inventar nada: las dos
+    pendientes, y que las dos puertas coincidan EN EL BORDE.
+    """
+    for clave in ("S_cauce", "S_conducto"):
+        assert clave in cli._DOMINIO_DE_CLAVE, (
+            f"{clave} es una pendiente en m/m y no pasa por el dominio: un "
+            "6.0 mal transcrito (6 %) entraría como 600 %")
+        with pytest.raises(DatoInvalidoError):
+            cli._numero_externo(clave, 6.0, "prueba")
+        assert cli._numero_externo(clave, 0.004, "prueba").valor == \
+            pytest.approx(0.004, rel=REL_TRANSPORTE)
+        # EL BORDE, que es donde dos guardias escritas por separado se
+        # despegan sin que nadie lo note: `M0` exige `S_cauce < S_CAUCE_MAX`
+        # (estricto) y esta puerta rechaza `>= techo`. El propio techo tiene
+        # que caer del mismo lado en las dos.
+        with pytest.raises(DatoInvalidoError):
+            cli._numero_externo(clave, S_CAUCE_MAX, "prueba")
+
+
+def test_la_trazabilidad_de_s_cauce_sale_en_los_TRES_formatos():
+    """
+    «Publicar la trazabilidad en un solo formato es publicarla a medias» — y
+    la corrección de C6c la publicó en **dos de tres**. La segunda auditoría
+    midió el tercero: el volcado de texto de la CLI, que también es línea
+    base, imprimía `longitud` y `tw` **con su origen** y `s_cauce` no
+    (`grep -c S_cauce` daba 0 sobre `cli_perfil_ancho.txt`).
+
+    Este test los mide juntos, y a propósito: el defecto no fue olvidar un
+    formato, fue no tener dónde ver que faltaba.
+    """
+    informe = _informe_por_punto(
+        dict(luz_m=2.0), {"C-01": {"S_cauce": 0.006}})
+
+    # (1) el JSON
+    c01 = [p for p in cli.informe_json(informe)["puntos"]
+           if p["id"] == "C-01"][0]
+    declarado = c01["datos_declarados"]["S_cauce"]
+    assert declarado["valor"] == pytest.approx(0.006, rel=REL_TRANSPORTE)
+    assert declarado["origen"]
+
+    # (2) el volcado de texto -- el que faltaba. Se acota al bloque de C-01:
+    # los puntos de Familia A y B traen la columna llena y publican la suya
+    # con el origen del CSV, de modo que buscar la primera aparicion en el
+    # volcado entero mide otro punto.
+    texto = cli.volcar(informe)
+    assert "C-01  |" in texto
+    # Del encabezado de C-01 al del punto siguiente, si lo hay. La linea de
+    # guiones separa DOS veces por punto (encima y debajo del encabezado), de
+    # modo que partir por ella deja el encabezado solo.
+    bloque = texto.split("C-01  |")[1].split("|  progresiva")[0]
+    fila = [l for l in bloque.split("\n") if "S_cauce  :" in l]
+    assert fila, (
+        "el volcado de texto no publica `S_cauce`, y sí publica `longitud` y "
+        "`tw` con su origen: dos formatos de tres")
+    assert declarado["origen"] in fila[0], fila[0]
+    assert float(fila[0].split(":")[1].split("m/m")[0]) == \
+        pytest.approx(0.006, rel=REL_TRANSPORTE)
+
+    # (3) el HTML lo cubre `test_s_cauce_declarada_llega_a_V2b_...`, que
+    # además asierta el veredicto de V2b. Aquí se comprueba que el rótulo con
+    # el que la memoria lo publica sigue existiendo, que es lo que enlaza los
+    # tres formatos.
+    assert any(clave == "s_cauce" for clave, _, _ in M11.DATOS_DECLARADOS)
+
+
+def test_la_trazabilidad_de_s_cauce_sale_en_el_JSON_y_no_solo_en_el_HTML():
+    """
+    Publicar la trazabilidad en un solo formato es publicarla a medias. C6
+    añadió la fila a la memoria HTML y no al JSON, de modo que el artefacto
+    legible por máquina —que es además el de la línea base— declaraba
+    `S_cauce` en `datos_pendientes` sobre una corrida que la había usado, y no
+    publicaba nada que lo contradijera.
+    """
+    informe = _informe_por_punto(
+        dict(luz_m=2.0), {"C-01": {"S_cauce": 0.004}})
+    c01 = [p for p in cli.informe_json(informe)["puntos"]
+           if p["id"] == "C-01"][0]
+    declarado = c01["datos_declarados"]["S_cauce"]
+    assert declarado is not None, (
+        "el JSON no publica `S_cauce` mientras el HTML sí: la trazabilidad "
+        "no puede depender del formato que se abra")
+    assert declarado["valor"] == pytest.approx(0.004, rel=REL_TRANSPORTE)
+    # La procedencia viaja TAL CUAL desde la declaracion -- aqui la del
+    # helper -- y no se reescribe con la del CSV. La distincion no es
+    # cosmetica: sobre un punto cuya columna va vacia, imprimir «columna
+    # S_cauce» seria atribuir al expediente un dato que no trae.
+    assert declarado["origen"] == "prueba"
+    assert "columna" not in declarado["origen"]

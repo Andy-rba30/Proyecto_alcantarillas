@@ -1,0 +1,318 @@
+"""
+tests/test_constantes_normativas.py
+===================================
+Contrasta el Anexo B contra los casos patron. No reescribe los valores: los
+compara con los del fixture, que fueron recalculados de forma independiente.
+
+El test que mas importa es el de la constante de friccion del control de
+salida: usar 29 (valor ingles) en vez de 19.63 no falla ruidosamente, devuelve
+numeros plausibles y equivocados (Sec. 4.3).
+"""
+
+import math
+
+import pytest
+
+from src import constantes_normativas as CN
+from src import datos_sitio as ds
+from src.constantes_fisicas import G
+from tests.fixtures.casos_patron import (CP1_PERIODO_RETORNO,
+                                         CP2_GEOMETRIA_MANNING,
+                                         CP3_VELOCIDAD_MINIMA, CP4_LAUSHEY,
+                                         CP5_TRANSICION_HDS5, CP5B_NO_SUMERGIDO,
+                                         CP5C_SUMERGIDO, CP7_CADENA_SISMICA,
+                                         CP8_CONTROL_SALIDA)
+
+
+# ---------------------------------------------------------------------------
+# CP-8 - la constante del control de salida es SI, no imperial
+# ---------------------------------------------------------------------------
+
+def test_la_constante_de_friccion_es_SI_y_no_imperial():
+    cp = CP8_CONTROL_SALIDA
+    assert CN.K_FRICCION_SI == pytest.approx(cp["K_friccion_SI_correcto"])
+    assert CN.K_FRICCION_SI != pytest.approx(cp["K_friccion_imperial_incorrecto"])
+
+
+def test_la_constante_SI_reproduce_la_H_del_caso_patron():
+    """
+    H = (1 + ke + K*n^2*L/R^(4/3)) * V^2/(2g). Con los datos de CP-8 la
+    diferencia entre 19.63 y 29 es de ~9.6%: plausible a ojo, detectable aqui.
+    """
+    cp = CP8_CONTROL_SALIDA
+
+    def perdida(k):
+        friccion = k * cp["n"] ** 2 * cp["L"] / cp["R"] ** (4 / 3)
+        return (1 + cp["ke"] + friccion) * cp["V"] ** 2 / (2 * G)
+
+    assert perdida(CN.K_FRICCION_SI) == pytest.approx(
+        cp["H_esperado_con_K_SI"], abs=1e-3)
+    assert perdida(cp["K_friccion_imperial_incorrecto"]) == pytest.approx(
+        cp["H_con_29_incorrecto"], abs=1e-3)
+    assert perdida(CN.K_FRICCION_SI) < perdida(cp["K_friccion_imperial_incorrecto"])
+
+
+# ---------------------------------------------------------------------------
+# CP-1 - periodo de retorno
+# ---------------------------------------------------------------------------
+
+def test_el_riesgo_admisible_reproduce_los_TR_de_CP1():
+    pares = [("quebrada_importante", CP1_PERIODO_RETORNO[0]),
+             ("quebrada_menor", CP1_PERIODO_RETORNO[1])]
+    for clave, caso in pares:
+        entrada = CN.RIESGO_ADMISIBLE[clave]
+        assert entrada["R"] == pytest.approx(caso["R"])
+        assert entrada["n"] == caso["n"]
+        TR = 1 / (1 - (1 - entrada["R"]) ** (1 / entrada["n"]))
+        assert TR == pytest.approx(caso["TR_esperado"], abs=caso["tolerancia"])
+
+
+def test_no_hay_piso_normativo_de_TR():
+    """No adoptar 50 anios 'por costumbre': el Anexo B no declara ningun piso."""
+    assert not [k for k in dir(CN) if k.upper().startswith("TR_MIN")]
+
+
+# ---------------------------------------------------------------------------
+# CP-2 y CP-3 - limites hidraulicos
+# ---------------------------------------------------------------------------
+
+def test_el_diametro_minimo_y_el_llenado_maximo_son_los_de_CP2():
+    assert CN.DIAMETRO_MIN == pytest.approx(CP2_GEOMETRIA_MANNING["D"])
+    assert CN.Y_SOBRE_D_MAX == pytest.approx(CP2_GEOMETRIA_MANNING["y_sobre_D"])
+
+
+def test_el_n_del_concreto_es_el_par_de_CP2():
+    n_min, n_max = CN.MANNING["concreto_tubo_recto"]
+    assert n_min == pytest.approx(CP2_GEOMETRIA_MANNING["n_min"])
+    assert n_max == pytest.approx(CP2_GEOMETRIA_MANNING["n_max"])
+
+
+def test_la_velocidad_minima_es_la_de_CP3():
+    assert CN.V_MIN == pytest.approx(CP3_VELOCIDAD_MINIMA["V_objetivo"])
+
+
+def test_V2_nunca_gobierna_con_pendientes_constructivas():
+    """
+    Sec. 5.2: con D=0.90, y/D=0.75 y n=0.013, V_MIN se alcanza con
+    S ~ 6e-5, muy por debajo de cualquier pendiente constructiva.
+    """
+    cp = CP3_VELOCIDAD_MINIMA
+    R = CP2_GEOMETRIA_MANNING["R_esperado"]
+    V = (1 / cp["n"]) * R ** (2 / 3) * cp["S_que_produce_V_objetivo"] ** 0.5
+    assert V == pytest.approx(CN.V_MIN, abs=1e-3)
+    assert cp["S_que_produce_V_objetivo"] < cp["S_constructiva_minima_referencia"]
+
+
+# ---------------------------------------------------------------------------
+# CP-4 - Laushey
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("caso", CP4_LAUSHEY)
+def test_laushey_reproduce_los_d50_de_CP4(caso):
+    d50 = caso["V"] ** 2 / (CN.LAUSHEY_K * CN.G_LAUSHEY)
+    assert d50 == pytest.approx(caso["d50_esperado"], abs=caso["tolerancia"])
+
+
+# ---------------------------------------------------------------------------
+# CP-5 - caudal adimensional y zonas de HDS-5
+# ---------------------------------------------------------------------------
+
+def test_el_caudal_adimensional_reproduce_CP5():
+    cp = CP5_TRANSICION_HDS5
+    assert CN.KU_SI == pytest.approx(cp["Ku"])
+    A_llena = math.pi * cp["D"] ** 2 / 4
+    assert A_llena == pytest.approx(cp["A_llena_esperada"], abs=cp["tolerancia"])
+    q = CN.KU_SI * cp["Q"] / (A_llena * cp["D"] ** 0.5)
+    assert q == pytest.approx(cp["q_estrella_esperado"], abs=cp["tolerancia"])
+    assert CN.Q_LIM_NO_SUMERGIDO < q < CN.Q_LIM_SUMERGIDO      # zona de transicion
+
+
+@pytest.mark.parametrize("cp, dentro", [(CP5B_NO_SUMERGIDO, "no_sumergido"),
+                                        (CP5C_SUMERGIDO, "sumergido")])
+def test_las_ramas_puras_caen_fuera_de_la_zona_de_transicion(cp, dentro):
+    A_llena = math.pi * cp["D"] ** 2 / 4
+    q = CN.KU_SI * cp["Q"] / (A_llena * cp["D"] ** 0.5)
+    assert q == pytest.approx(cp["q_estrella_aprox"], abs=CP5_TRANSICION_HDS5["tolerancia"])
+    if dentro == "no_sumergido":
+        assert q <= CN.Q_LIM_NO_SUMERGIDO
+    else:
+        assert q >= CN.Q_LIM_SUMERGIDO
+
+
+def test_las_cartas_hds5_distinguen_material_y_no_solo_borde():
+    """
+    Sec. 4.2.1: la misma configuracion 'square edge w/headwall' tiene K
+    distinto en concreto y en metal corrugado. Si algun dia coinciden, alguien
+    fusiono las cartas.
+    """
+    concreto = CN.HDS5_INLET["circular_concreto_square_edge_headwall"]
+    cmp_ = CN.HDS5_INLET["circular_cmp_headwall"]
+    assert concreto["K"] != pytest.approx(cmp_["K"])
+
+
+def test_ninguna_carta_omite_Ks():
+    """Ks no figura en la Tabla A.1 pero pertenece a la formulacion."""
+    for clave, fila in CN.HDS5_INLET.items():
+        assert "Ks" in fila, f"la carta '{clave}' omite Ks"
+    assert CN.HDS5_INLET["circular_cmp_mitered"]["Ks"] > 0      # inglete: +0.7
+    assert CN.HDS5_INLET["circular_concreto_square_edge_headwall"]["Ks"] < 0
+
+
+# ---------------------------------------------------------------------------
+# CP-7 - factores de sitio
+# ---------------------------------------------------------------------------
+
+def test_la_tabla_de_F_pga_contiene_la_eleccion_de_CP7():
+    # La tabla esta ahora COMPLETA: seis filas por cinco columnas de PGA. La
+    # columna del PGA de este proyecto es la ultima, rotulada "PGA > 0.50".
+    ultima = -1
+    assert CN.F_PGA_TABLA["C"][ultima] == pytest.approx(
+        CP7_CADENA_SISMICA["F_pga"])
+    assert CN.F_PGA_TABLA["D"][ultima] == pytest.approx(
+        CP7_CADENA_SISMICA["F_pga"])
+    assert CN.F_PGA_TABLA["E"][ultima] < CP7_CADENA_SISMICA["F_pga"]   # 0.9
+    # Las filas que faltaban: A y B (roca), sin las cuales la clausula de
+    # roca de k_h0 no era representable, y F, que no trae factor sino la
+    # exigencia de estudio de su Nota 2.
+    assert set(CN.F_PGA_CLASES_EN_ROCA) <= set(CN.F_PGA_TABLA)
+    assert set(CN.F_PGA_TABLA[CN.F_PGA_CLASE_SIN_FACTOR]) == {
+        CN.F_PGA_EXIGE_ESTUDIO_DE_SITIO}
+    assert all(len(fila) == len(CN.F_PGA_TABLA_PGA_COLUMNAS)
+               for fila in CN.F_PGA_TABLA.values())
+
+
+def test_el_Z_de_E030_ya_no_es_una_constante_normativa():
+    """
+    Sigue siendo referencia que no gobierna el cabezal (Tr = 475 anios,
+    Sec. 0.4), pero no es una constante [N]: "a este distrito le toca Zona 4,
+    y a la Zona 4 le toca Z = 0.45" es la lectura de un mapa sobre las
+    coordenadas de esta obra. Vive en datos_sitio.py como [S].
+    """
+    for nombre in ("Z_E030", "ZONA_SISMICA_LA_UNION", "PERFIL_SUELO_PRESUNTO"):
+        assert not hasattr(CN, nombre), (
+            f"'{nombre}' volvio al anexo de constantes normativas")
+
+    assert ds.dato("Z_E030").etiqueta == "S"
+    assert ds.dato("Z_E030").valor != pytest.approx(CP7_CADENA_SISMICA["PGA"])
+    assert ds.dato("ZONA_SISMICA_LA_UNION").trazabilidad
+
+
+def test_el_factor_de_muro_no_es_una_tabla_sino_una_reduccion_autorizada():
+    """
+    Aqui vivia `FACTOR_MURO_TABLA` con dos filas, afirmando que "las DOS filas
+    son [N]: el numeral las fija". El num. 2.8.1.1.14.2.2 no presenta ninguna
+    tabla y fija UN valor, 0.5, ademas de forma permisiva; el 1.0 es la
+    ausencia de reduccion, que es la definicion misma de k_h0 (NOR-PUE-07).
+
+    Y el numeral que se citaba, "2.8.1.1.14.2", es un encabezado sin cuerpo:
+    la reduccion esta un nivel mas abajo, en el .2.2.
+    """
+    assert not hasattr(CN, "FACTOR_MURO_TABLA")
+    assert CN.REDUCCION_KH_POR_DESPLAZAMIENTO == pytest.approx(
+        CP7_CADENA_SISMICA["factor_muro_desplazable"])
+    assert CN.NUMERAL_FACTOR_MURO.startswith("2.8.1.1.14.2.2")
+    assert "puede ser reducido a 0.5kh0" in CN.REDUCCION_KH_TEXTO
+    # Las tres condiciones que AASHTO acumula, una de ellas no tecnica.
+    assert any("propietario" in c for c in CN.REDUCCION_KH_CONDICIONES)
+
+
+# ---------------------------------------------------------------------------
+# Progresion de diametros y coherencia interna del anexo
+# ---------------------------------------------------------------------------
+# Los tres tests que miraban `CN.D_MAX` viven ahora en
+# tests/test_criterios_adoptados.py: los topes salieron de este archivo porque
+# no son [N] -- las normas de producto a las que se les atribuian tabulan
+# hasta 3600 mm (NOR-PRO-01, NOR-PRO-02, MAT-O8) -- y pasaron al criterio
+# 'D_max_catalogo'. Los tests se mudaron con ellos, sin cambiar lo que
+# comprueban.
+
+def test_la_progresion_de_diametros_arranca_en_el_minimo_normativo():
+    assert CN.D_INICIO == pytest.approx(CN.DIAMETRO_MIN)
+
+
+def test_el_paso_de_0_15_reproduce_la_serie_de_6_pulgadas():
+    """Sec. 3.2: el error contra 6" (0.1524 m) debe ser despreciable."""
+    paso_6_pulgadas = 6 * 0.0254
+    assert abs(CN.D_PASO - paso_6_pulgadas) / paso_6_pulgadas < 0.02
+
+
+def test_arrancar_en_0_90_en_vez_de_36_pulgadas_es_conservador():
+    """Sec. 3.2: subestima el area ~3%, del lado de la seguridad."""
+    D_36_pulgadas = 36 * 0.0254
+    assert CN.D_INICIO < D_36_pulgadas
+    subestimacion = 1 - CN.D_INICIO ** 2 / D_36_pulgadas ** 2
+    assert 0.02 < subestimacion < 0.04
+
+
+def test_el_resguardo_por_CBR_cubre_todo_el_rango_sin_huecos():
+    """num. 4.5.4: a peor CBR, mayor resguardo. Los tramos deben encadenar."""
+    tramos = CN.RESGUARDO_NAPA_SUBRASANTE
+    resguardos = [r for _, _, r in tramos]
+    assert all(anterior <= siguiente
+               for anterior, siguiente in zip(resguardos, resguardos[1:])), (
+        "el resguardo no crece al bajar el CBR")
+    for (cbr_min, _, _), (_, cbr_max_siguiente, _) in zip(tramos, tramos[1:]):
+        assert cbr_min == cbr_max_siguiente     # 20-6, 6-3, 3-...
+
+
+def test_los_factores_de_seguridad_sismicos_son_menores_que_los_estaticos():
+    for verificacion, valores in CN.FS.items():
+        assert valores["sismico"] < valores["estatico"], verificacion
+
+
+# ---------------------------------------------------------------------------
+# EG-2013: Secciones, no subsecciones, y no existe ninguna "Seccion 500"
+# ---------------------------------------------------------------------------
+
+def test_los_conductos_son_secciones_completas_del_capitulo_v():
+    """
+    505, 506, 507 y 508 son SECCIONES del EG-2013. La constante se llamaba
+    SUBSECCION por arrastre de una "Seccion 500" que no existe en la norma;
+    las subsecciones de verdad son las de dentro de cada una (505.03).
+    """
+    assert set(CN.SECCION_EG2013.values()) == {"505", "506", "507", "508"}
+    assert not hasattr(CN, "SUBSECCION"), (
+        "SUBSECCION volvio: el nombre afirma una jerarquia que el EG-2013 no tiene")
+
+    for material, seccion in CN.SECCION_EG2013.items():
+        fila = CN.CAMA_RELLENO_LATERAL.get(material)
+        if fila is None:               # concreto_simple/reforzado, tmc, hdpe
+            continue
+        assert fila["numeral"].startswith(seccion), (
+            f"{material}: el numeral {fila['numeral']!r} no cae dentro de su "
+            f"Seccion {seccion}")
+
+
+def test_las_calicatas_de_autopista_y_dual_se_cuentan_por_sentido():
+    """
+    Cuadro 4.1: en autopistas y duales la exigencia es "x km x SENTIDO". Sin
+    el multiplicador, una autopista de 5 km salia con la mitad de calicatas
+    que pide el Cuadro.
+    """
+    assert set(CN.CALICATAS_POR_SENTIDO) == set(CN.CALICATAS_POR_KM), (
+        "las dos tablas del Cuadro 4.1 tienen que cubrir las mismas clases")
+    assert CN.CALICATAS_POR_SENTIDO["autopista"]
+    assert CN.CALICATAS_POR_SENTIDO["dual"]
+    assert not any(CN.CALICATAS_POR_SENTIDO[clase]
+                   for clase in ("primera_clase", "segunda_clase",
+                                 "tercera_clase", "bajo_volumen"))
+
+
+def test_la_constante_de_friccion_no_se_deriva_de_la_gravedad_del_proyecto():
+    """
+    La guardia sigue siendo la misma -- que `K_FRICCION_SI` NO sea `2*G` -- y
+    lo que cambia es su motivo, porque el que tenia era falso (MAT-D12,
+    MAT-X5). Este docstring decia que el parecido con 2*g era "una
+    coincidencia numerica". No lo es: `K = 2*g/phi^2` exactamente, con phi el
+    factor de unidades de Manning (1.486 en el sistema ingles, 1 en SI), de
+    modo que en SI la constante ES dos veces la gravedad.
+
+    Lo que separa 19.63 de 19.62 es CUAL gravedad: HDS-5 trabaja con
+    32.2 ft/s^2 = 9.81456 m/s^2 y este proyecto usa `constantes_fisicas.G` =
+    9.81. Por eso la guardia vale igual: el valor es el TRANSCRITO de la
+    fuente primaria, no uno derivado de la G del proyecto, y si alguien lo
+    reemplazara por `2*G` estaria cambiando la fuente del numero -- de HDS-5 a
+    la aritmetica local -- sin decirlo. La diferencia es de +0.05 % sobre el
+    termino de friccion.
+    """
+    assert CN.K_FRICCION_SI != pytest.approx(2 * G, abs=1e-9)

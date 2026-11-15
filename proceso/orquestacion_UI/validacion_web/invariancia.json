@@ -1,0 +1,148 @@
+{
+ "TDOT_EX2": {
+  "max_dif_abs_hidraulica_m_o_m_s": 2.964384293591138e-11,
+  "mismo_diseno": true
+ },
+ "TDOT_EX1": {
+  "max_dif_abs_hidraulica_m_o_m_s": 0.0,
+  "mismo_diseno": true
+ },
+ "UNC_ALC36": {
+  "max_dif_abs_hidraulica_m_o_m_s": 0.0,
+  "mismo_diseno": true
+ },
+ "UPAO_MANNING": {
+  "max_dif_abs_hidraulica_m_o_m_s": 0.10000000000000003,
+  "mismo_diseno": true
+ },
+ "TDOT_EX4": {
+  "motivo_V4b_igual": true,
+  "max_dif_TW_m": 6.87805368215777e-12
+ },
+ "HIDRO_TR100_50": {
+  "TINAS": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": true,
+   "TR_anios": true
+  },
+  "TINAS-T-DIAG": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": false,
+   "TR_anios": true
+  },
+  "TINAS-K-DIAG": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": false,
+   "TR_anios": true
+  },
+  "CUNETA1": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": false,
+   "TR_anios": true
+  },
+  "UNC-CAJ": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": true,
+   "TR_anios": true
+  },
+  "UNC-A1": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": true,
+   "TR_anios": true
+  },
+  "UNC-A2": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": true,
+   "TR_anios": true
+  }
+ },
+ "HIDRO_TR500_100": {
+  "TINAS": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": true,
+   "TR_anios": true
+  },
+  "TINAS-T-DIAG": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": false,
+   "TR_anios": true
+  },
+  "TINAS-K-DIAG": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": false,
+   "TR_anios": true
+  },
+  "CUNETA1": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": false,
+   "TR_anios": true
+  },
+  "UNC-CAJ": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": true,
+   "TR_anios": true
+  },
+  "UNC-A1": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": true,
+   "TR_anios": true
+  },
+  "UNC-A2": {
+   "P24_TR_mm": true,
+   "tc_min": true,
+   "K_uniformidad": true,
+   "I_mm_h": true,
+   "C": true,
+   "TR_anios": true
+  }
+ },
+ "OBRA_WISDOT": {
+  "todas_las_magnitudes_de_la_memoria_iguales_base_vs_alt": true,
+  "que_se_movio": "area_ha, terreno, subrasante, CBR, SUCS, luz, ancho de plataforma, altura del canal, espesor de pared (x1.25)"
+ },
+ "OBRA_TU107": {
+  "P24_tc_I_C_Q_iguales_base_vs_alt": true,
+  "que_se_movio": "columna fen (1983, 1997, 1998 = si), cotas, CBR, luz, TW (datos de prueba)"
+ },
+ "HIDRO_UPAO_UNC_nota": "C cambia en TINAS-*-DIAG y CUNETA1 porque su cobertura es DATO DE PRUEBA y por eso no se compara; en UNC (cobertura publicada) C = 0.45 en las dos variantes",
+ "UPAO_MANNING_nota": "la diferencia 0.10 m es el TW de prueba (0.3 vs 0.4 m), que mueve h_o; el diametro (magnitud comparada) no cambia"
+}

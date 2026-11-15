@@ -1,0 +1,3 @@
+# 2026-11-15T04:16:50 [cli_desde_sesion] rc=1
+cd /home/user/val_web && NORMAS_DIR=/home/user/andy-rba30/normas python cli.py --sesion /tmp/validacion_web/gui/hidro/ventana.sesion.json --json /tmp/validacion_web/gui/hidro/cli_desde_sesion.informe.json
+

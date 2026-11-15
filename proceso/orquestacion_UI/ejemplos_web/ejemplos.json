@@ -1,0 +1,1150 @@
+[
+ {
+  "id": "TDOT-EX1-circ-mano",
+  "tipo": "hidraulica_circular",
+  "origen": "manual_oficial",
+  "fuente": {
+   "titulo": "TDOT Drainage Manual, Chapter 6 Culverts, Example Problem #1: Circular Culvert Solution by Hand Computations",
+   "autor": "Tennessee DOT, Design Division",
+   "año": "Manual del 31-ene-2025 (el ejemplo lleva pie 'September 15, 2020')",
+   "url": "https://www.tn.gov/content/dam/tn/tdot/engineering-production-support/documents/drainage_manual/DM-Chapter_06.pdf",
+   "pagina": "6-73 a 6-80 (sec. 6.07.2.1); Figuras 6A-11 a 6A-14; Tablas 6A-6, 6A-7, 6A-11"
+  },
+  "entradas": {
+   "Q50": "25 ft3/s",
+   "cota_invert_entrada": "341.25 ft",
+   "cota_invert_salida": "340.70 ft",
+   "pendiente_cauce_natural": "0.5 % (0.005 ft/ft)",
+   "longitud_aproximada": "110 ft (endwall a endwall)",
+   "TW_profundidad_50anios": "1.8 ft",
+   "cota_hombro_calzada": "345.32 ft",
+   "franco_requerido": "1 ft (HW admisible 344.32 ft, sin rebose)",
+   "diametro_minimo": "36 in (ensayado 36 in)",
+   "material_forma": "tubo circular de concreto, n de Manning = 0.013",
+   "entrada": "cuadrada con muro de cabecera (Type U endwall), ke = 0.5 (Tabla 6A-6)",
+   "n_barriles": 1,
+   "n_del_nomograma": "0.012 (por eso L se ajusta)"
+  },
+  "resultados_publicados": {
+   "metodo": "nomogramas HDS-5 (1985) leidos a mano; dc de Tabla 6A-7; profundidad normal de Tabla 6A-11",
+   "HW_D_control_entrada": "0.79 (lectura de nomograma)",
+   "HWi": "2.37 ft; elevacion 343.62 ft",
+   "dc": "1.61 ft",
+   "ho": "2.3 ft = (dc+D)/2 > TW 1.8 ft",
+   "L_ajustada": "129.09 ft = 110*(0.013/0.012)^2",
+   "H_perdidas": "aprox. 0.45 ft (nomograma)",
+   "HWo_elevacion": "343.45 ft",
+   "control": "entrada (343.62 > 343.45)",
+   "HW_admisible_cumple": "si (343.62 < 344.32)",
+   "profundidad_normal_salida": "d/D 0.518 -> do = 1.55 ft; Ao/A 0.522 -> A = 3.69 ft2",
+   "velocidad_salida": "6.78 ft/s",
+   "auxiliares": "Q*n/(1.486*S^0.5) = 3.093; A*R^(2/3) lleno = 5.835; razon 0.530"
+  },
+  "texto_literal": "'Referring to Figure 6A-13 ... projecting from the culvert diameter of 36 inches through a discharge of 25 cfs, yields an approximate value of 0.79 for HW/D' / 'Since the inlet control headwater elevation is greater, the culvert will operate in inlet control and the headwater elevation will be 343.62 feet.' / 'This yields a value of approximately 0.45 feet on the Head scale.' / 'yields an outlet velocity of 6.78 fps.'",
+  "notas": "Completo para recalcular (SI: 25 ft3/s=0.708 m3/s, D=0.9144 m, L=33.53 m, S=0.005). HW/D 0.79 y H 0.45 ft son lecturas de nomograma (aprox.); el programa usa ecuaciones, esperar diferencia de pocos cm. Pendiente de barril = (341.25-340.70)/110 = 0.005 ft/ft. El ejemplo ajusta L por n (Ec. 6-2), no usa n real en la perdida por friccion como HDS-5 3a ed. Verificado independientemente: dc circular D=3 ft, Q=25 cfs = 1.613 ft (publicado 1.61)."
+ },
+ {
+  "id": "TDOT-EX2-circ-HY8",
+  "tipo": "hidraulica_circular",
+  "origen": "manual_oficial",
+  "fuente": {
+   "titulo": "TDOT Drainage Manual, Chapter 6, Example Problem #2: Circular Culvert Using HY-8 (mismo sitio del Ejemplo 1)",
+   "autor": "Tennessee DOT",
+   "año": "2025",
+   "url": "https://www.tn.gov/content/dam/tn/tdot/engineering-production-support/documents/drainage_manual/DM-Chapter_06.pdf",
+   "pagina": "6-81 a 6-90; Figuras 6A-23a, 6A-23b, 6A-23c (salida .RTF de HY-8)"
+  },
+  "entradas": {
+   "sitio_culvert": "inlet 341.25 ft, outlet 340.70 ft, estacion 0 a 110 ft, 1 barril; longitud 110.00 ft; pendiente 0.0050",
+   "barril": "circular, D = 3.00 ft, concreto, n = 0.0130, entrada convencional 'Square Edge with Headwall', sin depresion",
+   "cauce_aguas_abajo": "trapezoidal, solera 3.00 ft, talud 3:1 (H:V), pendiente 0.0050, n = 0.0650, cota fondo 340.70 ft",
+   "caudales": "0 a 25 cfs en pasos de 2.5 cfs (diseno 25 cfs)",
+   "calzada": "cota constante 345.32 ft, cresta 50 ft, pavimentada, ancho de coronacion 30 ft"
+  },
+  "resultados_publicados": {
+   "metodo": "HY-8 (version no indicada en el informe)",
+   "tabla_por_caudal": [
+    {
+     "Q_cfs": 2.5,
+     "HW_elev_ft": 341.91,
+     "HW_inlet_ctrl_depth_ft": 0.659,
+     "normal_ft": 0.444,
+     "critico_ft": 0.47,
+     "profundidad_salida_ft": 0.46,
+     "TW_ft": 0.584,
+     "V_salida_fps": 3.534
+    },
+    {
+     "Q_cfs": 5.0,
+     "HW_elev_ft": 342.2,
+     "HW_inlet_ctrl_depth_ft": 0.952,
+     "normal_ft": 0.651,
+     "critico_ft": 0.688,
+     "profundidad_salida_ft": 0.657,
+     "TW_ft": 0.833,
+     "V_salida_fps": 4.335
+    },
+    {
+     "Q_cfs": 7.5,
+     "HW_elev_ft": 342.43,
+     "HW_inlet_ctrl_depth_ft": 1.18,
+     "normal_ft": 0.797,
+     "critico_ft": 0.856,
+     "profundidad_salida_ft": 0.805,
+     "TW_ft": 1.017,
+     "V_salida_fps": 4.877
+    },
+    {
+     "Q_cfs": 10.0,
+     "HW_elev_ft": 342.63,
+     "HW_inlet_ctrl_depth_ft": 1.376,
+     "normal_ft": 0.934,
+     "critico_ft": 0.992,
+     "profundidad_salida_ft": 0.941,
+     "TW_ft": 1.17,
+     "V_salida_fps": 5.294
+    },
+    {
+     "Q_cfs": 12.5,
+     "HW_elev_ft": 342.81,
+     "HW_inlet_ctrl_depth_ft": 1.561,
+     "normal_ft": 1.046,
+     "critico_ft": 1.116,
+     "profundidad_salida_ft": 1.055,
+     "TW_ft": 1.301,
+     "V_salida_fps": 5.617
+    },
+    {
+     "Q_cfs": 15.0,
+     "HW_elev_ft": 343.0,
+     "HW_inlet_ctrl_depth_ft": 1.753,
+     "normal_ft": 1.158,
+     "critico_ft": 1.232,
+     "profundidad_salida_ft": 1.161,
+     "TW_ft": 1.417,
+     "V_salida_fps": 5.933
+    },
+    {
+     "Q_cfs": 17.5,
+     "HW_elev_ft": 343.18,
+     "HW_inlet_ctrl_depth_ft": 1.93,
+     "normal_ft": 1.261,
+     "critico_ft": 1.331,
+     "profundidad_salida_ft": 1.27,
+     "TW_ft": 1.521,
+     "V_salida_fps": 6.144
+    },
+    {
+     "Q_cfs": 20.0,
+     "HW_elev_ft": 343.35,
+     "HW_inlet_ctrl_depth_ft": 2.095,
+     "normal_ft": 1.359,
+     "critico_ft": 1.43,
+     "profundidad_salida_ft": 1.36,
+     "TW_ft": 1.619,
+     "V_salida_fps": 6.417
+    },
+    {
+     "Q_cfs": 22.5,
+     "HW_elev_ft": 343.5,
+     "HW_inlet_ctrl_depth_ft": 2.252,
+     "normal_ft": 1.456,
+     "critico_ft": 1.524,
+     "profundidad_salida_ft": 1.463,
+     "TW_ft": 1.708,
+     "V_salida_fps": 6.57
+    },
+    {
+     "Q_cfs": 25.0,
+     "HW_elev_ft": 343.65,
+     "HW_inlet_ctrl_depth_ft": 2.402,
+     "normal_ft": 1.551,
+     "critico_ft": 1.607,
+     "profundidad_salida_ft": 1.556,
+     "TW_ft": 1.791,
+     "V_salida_fps": 6.755
+    }
+   ],
+   "tipo_flujo": "1-S2n en todas las filas",
+   "curva_TW_a_25cfs": "Tabla 3: TW 1.79 ft, cota 342.49 ft, V 1.67 ft/s",
+   "unidades": "cfs, ft, ft/s"
+  },
+  "texto_literal": "'Culvert Length: 110.00 ft, Culvert Slope: 0.0050' / '25.00 25.00 343.65 2.402 2.402 1-S2n 1.551 1.607 1.556 1.791 6.755 1.667'",
+  "notas": "Completo para recalcular. El TW de HY-8 sale de la curva de Manning del canal trapezoidal declarado (reproducible, 1.79 ft a 25 cfs). Las columnas 'Inlet Control Depth' y 'Outlet Control Depth' salen iguales (2.402) como se imprimen; no se asume su significado. Comparable con el Ejemplo 1 (mano 343.62 vs HY-8 343.65). HY-8 usa las ecuaciones de HDS-5 (coeficientes), no nomogramas: es la comparacion mas limpia. Conversion a SI a cargo de quien contraste."
+ },
+ {
+  "id": "TDOT-EX4-circ-S3pct-HY8",
+  "tipo": "hidraulica_circular",
+  "origen": "manual_oficial",
+  "fuente": {
+   "titulo": "TDOT Drainage Manual, Chapter 6, Example Problem #4: HY-8 Improved Inlet Design (solo lo util: entrada cuadrada en pendiente fuerte; profundidades y velocidad)",
+   "autor": "Tennessee DOT",
+   "año": "2025",
+   "url": "https://www.tn.gov/content/dam/tn/tdot/engineering-production-support/documents/drainage_manual/DM-Chapter_06.pdf",
+   "pagina": "6-94 a 6-100; Figura 6A-30a"
+  },
+  "entradas": {
+   "Q50": "90 ft3/s",
+   "invert_entrada": "341.25 ft",
+   "invert_salida": "337.95 ft",
+   "pendiente": "3.0 % (0.03 ft/ft); L = 110.05 ft (en la salida HY-8)",
+   "cauce_aguas_abajo": "trapezoidal solera 4 ft, taludes 3:1, n 0.065",
+   "cota_rebose_calzada": "347.00 ft",
+   "HW_admisible": "344.32 ft",
+   "barril": "RCP 36 in; n NO repetido en este ejemplo (null; se asume el 0.013 del Ejemplo 2 solo si se declara)",
+   "entrada": "se prueba 'square edge with headwall' (Type U) y luego entrada mejorada side- y slope-tapered"
+  },
+  "resultados_publicados": {
+   "metodo": "HY-8",
+   "entrada_cuadrada_con_cabezal": "HW = 347.25 ft (sobre la calzada); rebose desde ~69.2 cfs; control de entrada",
+   "slope_tapered_Q90": "HW 344.29 ft; critico 2.967 ft; normal 1.883 ft; profundidad salida 2.072 ft; TW 2.005 ft; velocidad salida 17.29 ft/s; tipo flujo 5-S2n",
+   "capacidad_lleno_citada": "~116 cfs a 3 %"
+  },
+  "texto_literal": "'HY-8 results yield a headwater elevation of 347.25 feet, which is above the top of the roadway. Overtopping would begin at a discharge of about 69.2 cfs.' / '90.00 90.00 344.29 3.041 3.041 5-S2n 1.883 2.967 2.072 2.005 17.290 4.482'",
+  "notas": "PARCIAL. Con entrada cuadrada solo se publica HW (347.25 ft) y el inicio de rebose (69.2 cfs): sirve para control de entrada con S=3 %. La tabla impresa es de la entrada mejorada (fuera del alcance del programa), pero profundidad normal y velocidad salida dependen del barril. OJO: dc publicado 2.967 ft a 90 cfs frente a 2.846 ft de la ecuacion exacta de seccion circular (D=3 ft): HY-8 se desvia cuando dc/D se acerca a 1; no tomarlo como verdad de dc."
+ },
+ {
+  "id": "UNC-COCAHUAYCO-racional",
+  "tipo": "hidrologia_racional",
+  "origen": "tesis",
+  "fuente": {
+   "titulo": "Evaluacion hidrologica e hidraulica de los drenajes transversales en la carretera Cocahuayco - Cocachimba - Bongara - Amazonas",
+   "autor": "Univ. Nacional de Cajamarca, tesis de Ingenieria Civil (autor no leido)",
+   "año": "no verificado",
+   "url": "https://repositorio.unc.edu.pe/server/api/core/bitstreams/f237e2eb-d11c-4ec9-8f44-ed0305a182df/content",
+   "pagina": "Tabla 15, p. 52 (impresa); cita Manual de Hidrologia MTC"
+  },
+  "entradas": {
+   "alcantarilla_A1": {
+    "progresiva": "0+855",
+    "area_km2": 1.191,
+    "t_min": 38,
+    "I_mm_h": 39.61,
+    "C": 0.45
+   },
+   "alcantarilla_A2": {
+    "progresiva": "3+870",
+    "area_km2": 0.736,
+    "t_min": 34,
+    "I_mm_h": 39.61,
+    "C": 0.45
+   },
+   "metodo": "racional",
+   "nota_I": "el texto da I(15 anios)=120.01 mm/h para tc=97 min (Tabla 21), pero la Tabla 15 usa 39.61 mm/h para t=38 y 34 min: inconsistencia interna"
+  },
+  "resultados_publicados": {
+   "Q_A1_m3s": 5.8969,
+   "Q_A2_m3s": 3.6441,
+   "formula": "Q = C*I*A/3.6"
+  },
+  "texto_literal": "Tabla 15: 'A1 0+855 1.191 38 39.61 0.45 5.8969' y 'A2 3+870 0.736 34 39.61 0.45 3.6441' (progresivas tal como las extrajo pdftotext; revisar en el PDF)",
+  "notas": "Recalculo con Q = C*I*A/3.6 reproduce 5.897 y 3.644 m3/s. Util solo como verificacion aritmetica con I, C, A publicados. La I no es reproducible desde su propia IDF. Completo para la formula, no para la cadena IDF."
+ },
+ {
+  "id": "UNC-COCAHUAYCO-Tc-Temez",
+  "tipo": "tiempo_concentracion",
+  "origen": "tesis",
+  "fuente": {
+   "titulo": "idem (Cocahuayco - Cocachimba)",
+   "autor": "UNC",
+   "año": "n/v",
+   "url": "https://repositorio.unc.edu.pe/server/api/core/bitstreams/f237e2eb-d11c-4ec9-8f44-ed0305a182df/content",
+   "pagina": "formula (2), cap. II; parametros geomorfologicos pp. 58-59, 63, 68 (impresas, aprox.)"
+  },
+  "entradas": {
+   "formula_publicada": "tc = 0.3*(L/S^(1/4))^0.76, tc en horas, L en km, S en m/m (la tesis la llama 'Direccion General de Carreteras'; es la forma de Temez)",
+   "casos": [
+    {
+     "cuenca": "Cajahuache (9.863 km2)",
+     "L_km": 5.76,
+     "S": 0.15,
+     "nota": "L = 'longitud de maximo recorrido'; Lcp = 5.20 km no se uso"
+    },
+    {
+     "cuenca": "microcuenca A1 (1.191 km2)",
+     "L_km": 1.94,
+     "S": 0.27
+    },
+    {
+     "cuenca": "microcuenca A2 (0.736 km2)",
+     "L_km": 1.58,
+     "S": 0.21
+    }
+   ]
+  },
+  "resultados_publicados": {
+   "tc_h": [
+    1.63,
+    0.64,
+    0.57
+   ],
+   "tc_min": [
+    97.75,
+    38.23,
+    34.35
+   ]
+  },
+  "texto_literal": "'Tc = 1.63 Horas ... 97.75 minutos' (L=5.76 Km, S=0.15)",
+  "notas": "Reproducido con la formula: 1.628, 0.636, 0.570 h. S rotulada 'S' sin explicar origen (pendiente de cuenca Alvord = 27 %): ambigua entre cauce y cuenca. La aritmetica Temez es verificable con L y S publicados."
+ },
+ {
+  "id": "UNC-COCAHUAYCO-alc36-French",
+  "tipo": "hidraulica_circular",
+  "origen": "tesis",
+  "fuente": {
+   "titulo": "idem (hoja 'Capacidad hidraulica de una alcantarilla de quebrada, D=36\"')",
+   "autor": "UNC",
+   "año": "n/v",
+   "url": "https://repositorio.unc.edu.pe/server/api/core/bitstreams/f237e2eb-d11c-4ec9-8f44-ed0305a182df/content",
+   "pagina": "pp. 90-91 (impresas)"
+  },
+  "entradas": {
+   "D": "0.9 m (36 in)",
+   "material": "TMC",
+   "n_alcantarilla": 0.024,
+   "n_cauce": 0.03,
+   "S0": "3.50 %",
+   "L": "5.00 m",
+   "ancho_cauce_a": "3.50 m",
+   "Y1": "0.80 m",
+   "Y4": "0.50 m",
+   "Lw": "2.50 m"
+  },
+  "resultados_publicados": {
+   "metodo": "French, Hidraulica de Canales Abiertos pp. 430-452 (NO es HDS-5)",
+   "Y1_D": 0.87,
+   "Y4_D": 0.5,
+   "Cd": 0.89,
+   "yc_D": 0.56,
+   "yc_m": 0.51,
+   "Sc_pct": 1.63,
+   "Qc_m3s": 0.79,
+   "tipo_flujo": "1",
+   "Q_definitivo_m3s": 0.8
+  },
+  "texto_literal": "'Yc = 0.56 D = 0.51 m ... Sc = 1.63% ... Q = 0.800 m3/s ... FLUJO TIPO 1'",
+  "notas": "PARCIAL / otro metodo. Solo para contraste de d_c (ecuacion circular exacta da 0.523 m para Q=0.79 m3/s; publicado 0.51 por lectura de grafico) y pendiente critica; no para HW de HDS-5. Hay una segunda hoja para D=24 in (Y1 0.50, Y4 0.38, Cd 0.88, yc/D 0.66)."
+ },
+ {
+  "id": "UPAO-JALCA-Gumbel-Pd",
+  "tipo": "frecuencias",
+  "origen": "tesis",
+  "fuente": {
+   "titulo": "Diseno hidraulico y estructural de las obras de arte de la carretera La Jalca - Nueva Esperanza km 41+00 al km 53+00, distrito La Jalca, provincia Chachapoyas",
+   "autor": "Br. Brayan Campos Munoz; Br. Roberth Alfredo Inga Yopan (asesor Ms. Ricardo Narvaez Aranda), Univ. Privada Antenor Orrego, Trujillo",
+   "año": "2016 (portada dic-2016; repositorio 2018)",
+   "url": "https://repositorio.upao.edu.pe/backend/api/core/bitstreams/09629608-3c34-4b42-b68f-f0ef931fd8d3/content",
+   "pagina": "Tabla Gumbel p. 94; anexo p. 302 (misma tabla)"
+  },
+  "entradas": {
+   "estacion": "Chachapoyas",
+   "serie_P24max_mm": {
+    "1965": 29.5,
+    "1966": 44.3,
+    "1967": 37.4,
+    "1968": 45.0,
+    "1969": 36.0,
+    "1970": 30.0,
+    "1971": 28.0,
+    "1972": 47.0,
+    "1973": 27.0,
+    "2004": 31.5,
+    "2005": 30.5,
+    "2006": 44.5,
+    "2007": 33.9,
+    "2008": 41.4,
+    "2009": 53.9,
+    "2010": 35.1,
+    "2011": 30.7
+   },
+   "n": 17,
+   "nota": "la serie omite 1974-2003 tal como esta publicada"
+  },
+  "resultados_publicados": {
+   "metodo": "Gumbel por momentos (alfa = sqrt(6)*s/pi; u = media - 0.5772*alfa)",
+   "media_mm": 36.81,
+   "s_mm": 7.87,
+   "alfa_mm": 6.14,
+   "u_mm": 33.26,
+   "XT_prima_mm": {
+    "2": 35.5133,
+    "5": 42.4672,
+    "10": 47.0712,
+    "25": 52.8885,
+    "50": 57.2041,
+    "100": 61.4878,
+    "500": 71.3868
+   },
+   "factor_intervalo_fijo": "x1.13 -> XT: 2:40.13, 5:47.99, 10:53.19, 25:59.76, 50:64.64, 100:69.48, 500:80.67 mm",
+   "YT": {
+    "2": 0.3665,
+    "5": 1.4999,
+    "10": 2.2504,
+    "25": 3.1985,
+    "50": 3.9019,
+    "100": 4.6001,
+    "500": 6.2136
+   }
+  },
+  "texto_literal": "'x = 36.81 mm ... S = 7.87 mm ... a = 6.14 mm ... u = 33.26 mm' / '100 4.6001 61.4878 0.9900 69.4812'",
+  "notas": "COMPLETO y reproducido (media 36.806, s 7.8688, alfa 6.1353, u 33.2646, XT' identicos). Atencion: el mismo documento trae un Cuadro 19 (Chachapoyas Gumbel: 10 anios 60.07 mm; 100 anios 88.15 mm) con otra serie, no consistente; usar solo esta de 17 anios. El factor 1.13 es de intervalo fijo (Manual); el programa decide si lo aplica."
+ },
+ {
+  "id": "UPAO-JALCA-Tinas-Temez",
+  "tipo": "hidrologia_racional",
+  "origen": "tesis",
+  "fuente": {
+   "titulo": "idem (Puente Tinas: racional modificado de Temez, Kirpich y otros Tc)",
+   "autor": "Campos Munoz & Inga Yopan, UPAO",
+   "año": "2016",
+   "url": "https://repositorio.upao.edu.pe/backend/api/core/bitstreams/09629608-3c34-4b42-b68f-f0ef931fd8d3/content",
+   "pagina": "formulas pp. 30-31; calculo Tinas p. 267; resumen de metodos p. 268 (impresas, aprox.)"
+  },
+  "entradas": {
+   "L_km": 14.73917,
+   "S_mm": 0.0602,
+   "A_km2": 55.911,
+   "desnivel_m": 888,
+   "cotas_m": "2711 a 1823",
+   "Pd_100anios_mm": 69.48,
+   "CN": 72,
+   "TR_anios": 100
+  },
+  "resultados_publicados": {
+   "metodo": "racional modificado (Temez 1987/1991) segun Manual MTC",
+   "Tc_Temez_h": 3.95,
+   "K_uniformidad": 1.28,
+   "KA": 0.88,
+   "P_corregida_mm": 61.39,
+   "I_mm_h": 11.51,
+   "Po_mm": 19.44,
+   "C": 0.32,
+   "Q_m3s": 74.03,
+   "Tc_Kirpich_min": 93.07,
+   "Tc_California_Culverts_min": 93.21,
+   "Tc_Chereque_min": 93.22,
+   "otros": "hidrograma triangular 113.30 m3/s; Creager 115.52 m3/s (adoptado)"
+  },
+  "texto_literal": "'Tc = 0.3(L/S^0.25)^0.76 ... K = 1 + Tc^1.25/(Tc^1.25+14) ... KA = 1 - log10(A)/15 ... Q = 0.278 C I A K'; 'Q = 74.03 m3/seg'",
+  "notas": "COMPLETO y reproducido: desde L, S, A, Pd, CN salen Tc 3.954 h, K 1.285, KA 0.8835, P 61.39, I 11.512, Po 19.44, C 0.3220, Q 74.02 m3/s (la tesis redondea C a 0.32). Kirpich: 92.9 min (publicado 93.07, 0.2 %). Cuenca de 56 km2 excede el limite del metodo racional del MTC (10 km2) pero sirve para verificar las formulas de Temez."
+ },
+ {
+  "id": "UPAO-JALCA-cuneta1-Kirpich",
+  "tipo": "tiempo_concentracion",
+  "origen": "tesis",
+  "fuente": {
+   "titulo": "idem (cuneta 1: Kirpich y racional)",
+   "autor": "Campos Munoz & Inga Yopan, UPAO",
+   "año": "2016",
+   "url": "https://repositorio.upao.edu.pe/backend/api/core/bitstreams/09629608-3c34-4b42-b68f-f0ef931fd8d3/content",
+   "pagina": "pp. 107-108 (impresas)"
+  },
+  "entradas": {
+   "L_m": 50,
+   "S_mm": 0.08,
+   "A_km2": 0.0015,
+   "C": 0.35,
+   "TR_anios": 10,
+   "IDF": "I = K T^m / t^n, K=84.618, m=0.124, n=0.540 (t en min)"
+  },
+  "resultados_publicados": {
+   "Tc_min": 1.05,
+   "I_mm_h": 109.84,
+   "Q_m3s": 0.02
+  },
+  "texto_literal": "'Tc = 0.01947 * 50^0.77 * 0.080^-0.385 ... Tc = 1.05 min' / 'Q = 0.278*0.35*109.84*0.00150 = 0.02 m3/s'",
+  "notas": "Reproducido: Tc 1.047 min, I 109.65 (publicado 109.84 con Tc redondeado), Q 0.0160 m3/s (la tesis redondea a 0.02). Caso trivial (0.0015 km2); sirve de prueba aritmetica de Kirpich e IDF K,m,n."
+ },
+ {
+  "id": "UPAO-JALCA-alcantarillas-Manning",
+  "tipo": "hidraulica_circular",
+  "origen": "tesis",
+  "fuente": {
+   "titulo": "idem (diseno hidraulico de 46 alcantarillas TMC, paso y alivio)",
+   "autor": "Campos Munoz & Inga Yopan, UPAO",
+   "año": "2016",
+   "url": "https://repositorio.upao.edu.pe/backend/api/core/bitstreams/09629608-3c34-4b42-b68f-f0ef931fd8d3/content",
+   "pagina": "pp. 121-123 (impresas): cuadro de caudales y tabla de resultados"
+  },
+  "entradas": {
+   "metodo": "Manning a seccion parcial; n=0.024 (TMC); se halla D con y/D ~ 0.75",
+   "tabla_46_alcantarillas": [
+    {
+     "alcantarilla": 1,
+     "Q_total_m3s": 0.236,
+     "S_publicada": 0.31,
+     "n": 0.024,
+     "D_m": 0.287,
+     "Y_m": 0.22,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.220",
+      "0.016",
+      "0.236"
+     ]
+    },
+    {
+     "alcantarilla": 2,
+     "Q_total_m3s": 0.681,
+     "S_publicada": 0.43,
+     "n": 0.024,
+     "D_m": 0.402,
+     "Y_m": 0.3,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.178",
+      "0.503",
+      "0.681"
+     ]
+    },
+    {
+     "alcantarilla": 3,
+     "Q_total_m3s": 1.114,
+     "S_publicada": 0.34,
+     "n": 0.024,
+     "D_m": 0.505,
+     "Y_m": 0.38,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.308",
+      "0.806",
+      "1.114"
+     ]
+    },
+    {
+     "alcantarilla": 4,
+     "Q_total_m3s": 1.717,
+     "S_publicada": 0.34,
+     "n": 0.024,
+     "D_m": 0.595,
+     "Y_m": 0.45,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "1.500",
+      "0.217",
+      "1.717"
+     ]
+    },
+    {
+     "alcantarilla": 5,
+     "Q_total_m3s": 0.37,
+     "S_publicada": 0.32,
+     "n": 0.024,
+     "D_m": 0.338,
+     "Y_m": 0.25,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.370",
+      "0.370"
+     ]
+    },
+    {
+     "alcantarilla": 6,
+     "Q_total_m3s": 0.206,
+     "S_publicada": 0.44,
+     "n": 0.024,
+     "D_m": 0.255,
+     "Y_m": 0.19,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.206",
+      "0.206"
+     ]
+    },
+    {
+     "alcantarilla": 7,
+     "Q_total_m3s": 1.545,
+     "S_publicada": 0.32,
+     "n": 0.024,
+     "D_m": 0.576,
+     "Y_m": 0.43,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "1.427",
+      "0.118",
+      "1.545"
+     ]
+    },
+    {
+     "alcantarilla": 8,
+     "Q_total_m3s": 1.699,
+     "S_publicada": 0.43,
+     "n": 0.024,
+     "D_m": 0.552,
+     "Y_m": 0.41,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "1.365",
+      "0.334",
+      "1.699"
+     ]
+    },
+    {
+     "alcantarilla": 9,
+     "Q_total_m3s": 0.338,
+     "S_publicada": 0.33,
+     "n": 0.024,
+     "D_m": 0.325,
+     "Y_m": 0.24,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.338",
+      "0.338"
+     ]
+    },
+    {
+     "alcantarilla": 10,
+     "Q_total_m3s": 0.309,
+     "S_publicada": 0.32,
+     "n": 0.024,
+     "D_m": 0.315,
+     "Y_m": 0.24,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.309",
+      "0.309"
+     ]
+    },
+    {
+     "alcantarilla": 11,
+     "Q_total_m3s": 0.528,
+     "S_publicada": 0.1,
+     "n": 0.024,
+     "D_m": 0.483,
+     "Y_m": 0.36,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.202",
+      "0.326",
+      "0.528"
+     ]
+    },
+    {
+     "alcantarilla": 12,
+     "Q_total_m3s": 0.674,
+     "S_publicada": 0.36,
+     "n": 0.024,
+     "D_m": 0.413,
+     "Y_m": 0.31,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.146",
+      "0.528",
+      "0.674"
+     ]
+    },
+    {
+     "alcantarilla": 13,
+     "Q_total_m3s": 1.076,
+     "S_publicada": 0.25,
+     "n": 0.024,
+     "D_m": 0.528,
+     "Y_m": 0.4,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.860",
+      "0.216",
+      "1.076"
+     ]
+    },
+    {
+     "alcantarilla": 14,
+     "Q_total_m3s": 0.345,
+     "S_publicada": 0.32,
+     "n": 0.024,
+     "D_m": 0.329,
+     "Y_m": 0.25,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.345",
+      "0.345"
+     ]
+    },
+    {
+     "alcantarilla": 15,
+     "Q_total_m3s": 0.274,
+     "S_publicada": 0.44,
+     "n": 0.024,
+     "D_m": 0.284,
+     "Y_m": 0.21,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.274",
+      "0.274"
+     ]
+    },
+    {
+     "alcantarilla": 16,
+     "Q_total_m3s": 0.351,
+     "S_publicada": 0.11,
+     "n": 0.024,
+     "D_m": 0.404,
+     "Y_m": 0.3,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.351",
+      "0.351"
+     ]
+    },
+    {
+     "alcantarilla": 17,
+     "Q_total_m3s": 0.292,
+     "S_publicada": 0.37,
+     "n": 0.024,
+     "D_m": 0.301,
+     "Y_m": 0.23,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.292",
+      "0.292"
+     ]
+    },
+    {
+     "alcantarilla": 18,
+     "Q_total_m3s": 0.341,
+     "S_publicada": 0.03,
+     "n": 0.024,
+     "D_m": 0.502,
+     "Y_m": 0.38,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.163",
+      "0.178",
+      "0.341"
+     ]
+    },
+    {
+     "alcantarilla": 19,
+     "Q_total_m3s": 0.224,
+     "S_publicada": 0.24,
+     "n": 0.024,
+     "D_m": 0.295,
+     "Y_m": 0.22,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.224",
+      "0.224"
+     ]
+    },
+    {
+     "alcantarilla": 20,
+     "Q_total_m3s": 0.188,
+     "S_publicada": 0.04,
+     "n": 0.024,
+     "D_m": 0.387,
+     "Y_m": 0.29,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.188",
+      "0.188"
+     ]
+    },
+    {
+     "alcantarilla": 21,
+     "Q_total_m3s": 0.116,
+     "S_publicada": 0.22,
+     "n": 0.024,
+     "D_m": 0.235,
+     "Y_m": 0.18,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.116",
+      "0.116"
+     ]
+    },
+    {
+     "alcantarilla": 22,
+     "Q_total_m3s": 1.082,
+     "S_publicada": 0.21,
+     "n": 0.024,
+     "D_m": 0.545,
+     "Y_m": 0.41,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.946",
+      "0.136",
+      "1.082"
+     ]
+    },
+    {
+     "alcantarilla": 23,
+     "Q_total_m3s": 0.143,
+     "S_publicada": 0.32,
+     "n": 0.024,
+     "D_m": 0.237,
+     "Y_m": 0.18,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.143",
+      "0.143"
+     ]
+    },
+    {
+     "alcantarilla": 24,
+     "Q_total_m3s": 0.148,
+     "S_publicada": 0.46,
+     "n": 0.024,
+     "D_m": 0.224,
+     "Y_m": 0.17,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.148",
+      "0.148"
+     ]
+    },
+    {
+     "alcantarilla": 25,
+     "Q_total_m3s": 0.256,
+     "S_publicada": 0.45,
+     "n": 0.024,
+     "D_m": 0.276,
+     "Y_m": 0.21,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.256",
+      "0.256"
+     ]
+    },
+    {
+     "alcantarilla": 26,
+     "Q_total_m3s": 0.187,
+     "S_publicada": 0.41,
+     "n": 0.024,
+     "D_m": 0.25,
+     "Y_m": 0.19,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.187",
+      "0.187"
+     ]
+    },
+    {
+     "alcantarilla": 27,
+     "Q_total_m3s": 0.174,
+     "S_publicada": 0.3,
+     "n": 0.024,
+     "D_m": 0.258,
+     "Y_m": 0.19,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.174",
+      "0.174"
+     ]
+    },
+    {
+     "alcantarilla": 28,
+     "Q_total_m3s": 0.752,
+     "S_publicada": 0.15,
+     "n": 0.024,
+     "D_m": 0.507,
+     "Y_m": 0.38,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.752",
+      "0.752"
+     ]
+    },
+    {
+     "alcantarilla": 29,
+     "Q_total_m3s": 0.623,
+     "S_publicada": 0.32,
+     "n": 0.024,
+     "D_m": 0.41,
+     "Y_m": 0.31,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.206",
+      "0.417",
+      "0.623"
+     ]
+    },
+    {
+     "alcantarilla": 30,
+     "Q_total_m3s": 0.43,
+     "S_publicada": 0.48,
+     "n": 0.024,
+     "D_m": 0.331,
+     "Y_m": 0.25,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.311",
+      "0.119",
+      "0.430"
+     ]
+    },
+    {
+     "alcantarilla": 31,
+     "Q_total_m3s": 0.309,
+     "S_publicada": 0.33,
+     "n": 0.024,
+     "D_m": 0.314,
+     "Y_m": 0.24,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.309",
+      "0.309"
+     ]
+    },
+    {
+     "alcantarilla": 32,
+     "Q_total_m3s": 0.231,
+     "S_publicada": 0.42,
+     "n": 0.024,
+     "D_m": 0.269,
+     "Y_m": 0.2,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.231",
+      "0.231"
+     ]
+    },
+    {
+     "alcantarilla": 33,
+     "Q_total_m3s": 0.914,
+     "S_publicada": 0.44,
+     "n": 0.024,
+     "D_m": 0.445,
+     "Y_m": 0.33,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.319",
+      "0.595",
+      "0.914"
+     ]
+    },
+    {
+     "alcantarilla": 34,
+     "Q_total_m3s": 0.514,
+     "S_publicada": 0.39,
+     "n": 0.024,
+     "D_m": 0.367,
+     "Y_m": 0.28,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.296",
+      "0.218",
+      "0.514"
+     ]
+    },
+    {
+     "alcantarilla": 35,
+     "Q_total_m3s": 0.684,
+     "S_publicada": 0.29,
+     "n": 0.024,
+     "D_m": 0.433,
+     "Y_m": 0.32,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.327",
+      "0.357",
+      "0.684"
+     ]
+    },
+    {
+     "alcantarilla": 36,
+     "Q_total_m3s": 0.552,
+     "S_publicada": 0.15,
+     "n": 0.024,
+     "D_m": 0.452,
+     "Y_m": 0.34,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.205",
+      "0.347",
+      "0.552"
+     ]
+    },
+    {
+     "alcantarilla": 37,
+     "Q_total_m3s": 0.105,
+     "S_publicada": 0.31,
+     "n": 0.024,
+     "D_m": 0.211,
+     "Y_m": 0.16,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.082",
+      "0.023",
+      "0.105"
+     ]
+    },
+    {
+     "alcantarilla": 38,
+     "Q_total_m3s": 0.407,
+     "S_publicada": 0.47,
+     "n": 0.024,
+     "D_m": 0.326,
+     "Y_m": 0.24,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.407",
+      "0.407"
+     ]
+    },
+    {
+     "alcantarilla": 39,
+     "Q_total_m3s": 0.24,
+     "S_publicada": 0.5,
+     "n": 0.024,
+     "D_m": 0.264,
+     "Y_m": 0.2,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.240",
+      "0.240"
+     ]
+    },
+    {
+     "alcantarilla": 40,
+     "Q_total_m3s": 4.042,
+     "S_publicada": 0.21,
+     "n": 0.024,
+     "D_m": 0.894,
+     "Y_m": 0.67,
+     "D_pulg": 36,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "3.988",
+      "0.053",
+      "4.042"
+     ]
+    },
+    {
+     "alcantarilla": 41,
+     "Q_total_m3s": 0.767,
+     "S_publicada": 0.42,
+     "n": 0.024,
+     "D_m": 0.422,
+     "Y_m": 0.32,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.471",
+      "0.296",
+      "0.767"
+     ]
+    },
+    {
+     "alcantarilla": 42,
+     "Q_total_m3s": 0.329,
+     "S_publicada": 0.46,
+     "n": 0.024,
+     "D_m": 0.302,
+     "Y_m": 0.23,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.289",
+      "0.040",
+      "0.329"
+     ]
+    },
+    {
+     "alcantarilla": 43,
+     "Q_total_m3s": 0.456,
+     "S_publicada": 0.49,
+     "n": 0.024,
+     "D_m": 0.337,
+     "Y_m": 0.25,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.295",
+      "0.161",
+      "0.456"
+     ]
+    },
+    {
+     "alcantarilla": 44,
+     "Q_total_m3s": 2.422,
+     "S_publicada": 0.38,
+     "n": 0.024,
+     "D_m": 0.662,
+     "Y_m": 0.5,
+     "D_pulg": 36,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "1.978",
+      "0.445",
+      "2.422"
+     ]
+    },
+    {
+     "alcantarilla": 45,
+     "Q_total_m3s": 1.346,
+     "S_publicada": 0.37,
+     "n": 0.024,
+     "D_m": 0.534,
+     "Y_m": 0.4,
+     "D_pulg": 24,
+     "tipo": "Paso",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.801",
+      "0.544",
+      "1.346"
+     ]
+    },
+    {
+     "alcantarilla": 46,
+     "Q_total_m3s": 0.317,
+     "S_publicada": 0.39,
+     "n": 0.024,
+     "D_m": 0.307,
+     "Y_m": 0.23,
+     "D_pulg": 24,
+     "tipo": "Alivio",
+     "cols_Q_quebrada_cuneta_total": [
+      "0.317",
+      "0.317"
+     ]
+    }
+   ],
+   "columnas": "Q_total (m3/s), S_publicada (sin unidad), n, D (m) requerido, Y (m) tirante, D comercial (pulg); cols_Q = Q quebrada, Q cuneta, total (alivio: cuneta, total)"
+  },
+  "resultados_publicados": {
+   "D_comercial": "24 in en la gran mayoria; 36 in en N.40 (Q 4.042) y N.44 (Q 2.422)",
+   "D_y_Y": "columnas D (m) y Y (m) de la tabla"
+  },
+  "texto_literal": "'ALCANT. N°40 4.042 0.21 0.024 0.894 0.67 36' (cols: Q TOTAL, S, n, D, Y, D (pulg))",
+  "notas": "NO hay HW, ke ni control de salida: solo Manning uniforme. Reproduccion: la tabla es consistente con S en m/m (N.40: D=0.894, y=0.67, n=0.024, S=0.21 m/m da Q=4.02 m3/s vs 4.042; N.1: S=0.31 da 0.242 vs 0.236). Pendientes de 0.1 a 0.5 m/m son irreales para un barril: la unidad de S NO esta publicada y puede ser un error de la tesis (lo que si reproduce es y/D=0.75). Util solo para Manning circular parcial."
+ }
+]

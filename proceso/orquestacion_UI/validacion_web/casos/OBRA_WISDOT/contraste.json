@@ -1,0 +1,686 @@
+[
+ {
+  "id": "WI-C1-Qd",
+  "Q_cfs": 14.0,
+  "D_ft": 2.0,
+  "S": 0.0029629629629623734,
+  "HY8": {
+   "HWi": 2.139,
+   "HWo": 2.221,
+   "control": "salida",
+   "tipo": "7-M2c",
+   "yn": 1.761,
+   "yc": 1.344,
+   "TW": 0.187,
+   "V": 6.235,
+   "HW_gob": 2.221
+  },
+  "app": {
+   "HWi": null,
+   "HWo_aprox": null,
+   "HWo_remanso": null,
+   "HW_gob": null,
+   "control": null,
+   "yn": null,
+   "yc": null,
+   "TW": 0.18700787401574803,
+   "V_salida": null
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 2.139996562422417,
+   "regimen": "no sumergido (Forma 1)",
+   "yc_ft": 1.3478138969325664,
+   "yn_n0012_ft": 1.746462290981256,
+   "yn_n0013_ft": null,
+   "HWo_aprox_n0012_ft": 2.1522013649030387,
+   "HWo_aprox_n0013_ft": 2.182647093160001
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C1-Qm",
+  "Q_cfs": 17.0,
+  "D_ft": 2.0,
+  "S": 0.0029629629629623734,
+  "HY8": {
+   "HWi": 2.508,
+   "HWo": 2.551,
+   "control": "salida",
+   "tipo": "7-M2c",
+   "yn": 2.0,
+   "yc": 1.484,
+   "TW": 0.211,
+   "V": 6.799,
+   "HW_gob": 2.551
+  },
+  "app": {
+   "HWi": null,
+   "HWo_aprox": null,
+   "HWo_remanso": null,
+   "HW_gob": null,
+   "control": null,
+   "yn": null,
+   "yc": null,
+   "TW": 0.2099737532808399,
+   "V_salida": null
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 2.508838880625963,
+   "regimen": "transicion (interpolacion lineal)",
+   "yc_ft": 1.4864270805574533,
+   "yn_n0012_ft": null,
+   "yn_n0013_ft": null,
+   "HWo_aprox_n0012_ft": 2.5243721441063762,
+   "HWo_aprox_n0013_ft": 2.5692640597505703
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C2-Qd",
+  "Q_cfs": 20.0,
+  "D_ft": 2.25,
+  "S": 0.017404184410293295,
+  "HY8": {
+   "HWi": 2.508,
+   "HWo": 1.401,
+   "control": "entrada",
+   "tipo": "5-S2n",
+   "yn": 1.059,
+   "yc": 1.56,
+   "TW": 0.233,
+   "V": 9.796,
+   "HW_gob": 2.508
+  },
+  "app": {
+   "HWi": 2.506561679790026,
+   "HWo_aprox": 1.781496062992126,
+   "HWo_remanso": null,
+   "HW_gob": 2.506561679790026,
+   "control": "entrada",
+   "yn": 1.1122047244094488,
+   "yc": 1.5649606299212597,
+   "TW": 0.6332020997375328,
+   "V_salida": 13.287401574803148
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 2.506620098717163,
+   "regimen": "no sumergido (Forma 1)",
+   "yc_ft": 1.565234611196108,
+   "yn_n0012_ft": 1.0606255851929072,
+   "yn_n0013_ft": 1.1110676812630182,
+   "HWo_aprox_n0012_ft": 1.7484134746747522,
+   "HWo_aprox_n0013_ft": 1.7815721560163285
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C2-Qm",
+  "Q_cfs": 26.0,
+  "D_ft": 2.25,
+  "S": 0.017404184410293295,
+  "HY8": {
+   "HWi": 3.183,
+   "HWo": 2.393,
+   "control": "entrada",
+   "tipo": "5-S2n",
+   "yn": 1.238,
+   "yc": 1.778,
+   "TW": 0.274,
+   "V": 10.448,
+   "HW_gob": 3.183
+  },
+  "app": {
+   "HWi": 3.1889763779527556,
+   "HWo_aprox": 2.454068241469816,
+   "HWo_remanso": null,
+   "HW_gob": 3.1889763779527556,
+   "control": "entrada",
+   "yn": 1.30249343832021,
+   "yc": 1.781496062992126,
+   "TW": 0.6725721784776902,
+   "V_salida": 14.153543307086613
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 3.1897650174402448,
+   "regimen": "sumergido",
+   "yc_ft": 1.7804022183966328,
+   "yn_n0012_ft": 1.2397123376785912,
+   "yn_n0013_ft": 1.3035588326077638,
+   "HWo_aprox_n0012_ft": 2.394746634937895,
+   "HWo_aprox_n0013_ft": 2.450784806405159
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C3-Qd",
+  "Q_cfs": 15.0,
+  "D_ft": 2.5,
+  "S": 0.003035714285713555,
+  "HY8": {
+   "HWi": 1.938,
+   "HWo": 2.055,
+   "control": "salida",
+   "tipo": "2-M2c",
+   "yn": 1.413,
+   "yc": 1.304,
+   "TW": 0.195,
+   "V": 5.79,
+   "HW_gob": 2.055
+  },
+  "app": {
+   "HWi": 1.9127296587926508,
+   "HWo_aprox": 2.024278215223097,
+   "HWo_remanso": 2.050524934383202,
+   "HW_gob": 2.050524934383202,
+   "control": "salida",
+   "yn": 1.489501312335958,
+   "yc": 1.305774278215223,
+   "TW": 0.19685039370078738,
+   "V_salida": 5.7808398950131235
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 1.9132321642907306,
+   "regimen": "no sumergido (Forma 1)",
+   "yc_ft": 1.3060861263350565,
+   "yn_n0012_ft": 1.41407478006081,
+   "yn_n0013_ft": 1.488188289872225,
+   "HWo_aprox_n0012_ft": 2.0142194433238245,
+   "HWo_aprox_n0013_ft": 2.0252448261477585
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C3-Qm",
+  "Q_cfs": 19.0,
+  "D_ft": 2.5,
+  "S": 0.003035714285713555,
+  "HY8": {
+   "HWi": 2.246,
+   "HWo": 2.363,
+   "control": "salida",
+   "tipo": "2-M2c",
+   "yn": 1.655,
+   "yc": 1.474,
+   "TW": 0.226,
+   "V": 6.311,
+   "HW_gob": 2.363
+  },
+  "app": {
+   "HWi": 2.234251968503937,
+   "HWo_aprox": 2.2867454068241466,
+   "HWo_remanso": 2.3622047244094486,
+   "HW_gob": 2.3622047244094486,
+   "control": "salida",
+   "yn": 1.755249343832021,
+   "yc": 1.4763779527559056,
+   "TW": 0.22637795275590553,
+   "V_salida": 6.289370078740157
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 2.2356603394688173,
+   "regimen": "no sumergido (Forma 1)",
+   "yc_ft": 1.4780528959667922,
+   "yn_n0012_ft": 1.6547338433226553,
+   "yn_n0013_ft": 1.755598233525848,
+   "HWo_aprox_n0012_ft": 2.27015832903414,
+   "HWo_aprox_n0013_ft": 2.287847943253874
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C4-Qd",
+  "Q_cfs": 21.0,
+  "D_ft": 2.5,
+  "S": 0.0030208333333329542,
+  "HY8": {
+   "HWi": 2.399,
+   "HWo": 2.513,
+   "control": "salida",
+   "tipo": "7-M2c",
+   "yn": 1.786,
+   "yc": 1.554,
+   "TW": 0.24,
+   "V": 6.546,
+   "HW_gob": 2.513
+  },
+  "app": {
+   "HWi": 2.39501312335958,
+   "HWo_aprox": 2.417979002624672,
+   "HWo_remanso": 2.522965879265092,
+   "HW_gob": 2.522965879265092,
+   "control": "salida",
+   "yn": 1.9094488188976375,
+   "yc": 1.5583989501312334,
+   "TW": 0.23950131233595798,
+   "V_salida": 6.532152230971128
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 2.396005234736703,
+   "regimen": "no sumergido (Forma 1)",
+   "yc_ft": 1.5571796643180307,
+   "yn_n0012_ft": 1.7866166681779625,
+   "yn_n0013_ft": 1.910413381116959,
+   "HWo_aprox_n0012_ft": 2.378604224357515,
+   "HWo_aprox_n0013_ft": 2.4156495106459333
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C4-Qm",
+  "Q_cfs": 26.0,
+  "D_ft": 2.5,
+  "S": 0.0030208333333329542,
+  "HY8": {
+   "HWi": 2.802,
+   "HWo": 2.894,
+   "control": "salida",
+   "tipo": "7-M2c",
+   "yn": 2.249,
+   "yc": 1.733,
+   "TW": 0.274,
+   "V": 7.161,
+   "HW_gob": 2.894
+  },
+  "app": {
+   "HWi": null,
+   "HWo_aprox": null,
+   "HWo_remanso": null,
+   "HW_gob": null,
+   "control": null,
+   "yn": null,
+   "yc": null,
+   "TW": 0.2723097112860892,
+   "V_salida": null
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 2.80089943356316,
+   "regimen": "no sumergido (Forma 1)",
+   "yc_ft": 1.7382332441760806,
+   "yn_n0012_ft": 2.2439134662493165,
+   "yn_n0013_ft": null,
+   "HWo_aprox_n0012_ft": 2.8101817674988734,
+   "HWo_aprox_n0013_ft": 2.86696773922443
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C5-Qd",
+  "Q_cfs": 42.0,
+  "D_ft": 3.0,
+  "S": 0.008064516129032258,
+  "HY8": {
+   "HWi": 3.42,
+   "HWo": 2.639,
+   "control": "entrada",
+   "tipo": "5-S2n",
+   "yn": 1.756,
+   "yc": 2.109,
+   "TW": 0.368,
+   "V": 9.346,
+   "HW_gob": 3.42
+  },
+  "app": {
+   "HWi": 3.415354330708661,
+   "HWo_aprox": 3.123359580052493,
+   "HWo_remanso": null,
+   "HW_gob": 3.415354330708661,
+   "control": "entrada",
+   "yn": 1.8503937007874014,
+   "yc": 2.1095800524934383,
+   "TW": 0.3674540682414698,
+   "V_salida": 11.92257217847769
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 3.415209168783808,
+   "regimen": "no sumergido (Forma 1)",
+   "yc_ft": 2.111178309083693,
+   "yn_n0012_ft": 1.7570810181482333,
+   "yn_n0013_ft": 1.8515848798267538,
+   "HWo_aprox_n0012_ft": 3.08703685010469,
+   "HWo_aprox_n0013_ft": 3.1232289201903307
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C5-Qm",
+  "Q_cfs": 52.0,
+  "D_ft": 3.0,
+  "S": 0.008064516129032258,
+  "HY8": {
+   "HWi": 4.146,
+   "HWo": 3.751,
+   "control": "entrada",
+   "tipo": "5-S2n",
+   "yn": 2.033,
+   "yc": 2.342,
+   "TW": 0.421,
+   "V": 9.894,
+   "HW_gob": 4.146
+  },
+  "app": {
+   "HWi": 4.150262467191601,
+   "HWo_aprox": 3.809055118110236,
+   "HWo_remanso": null,
+   "HW_gob": 4.150262467191601,
+   "control": "entrada",
+   "yn": 2.1620734908136483,
+   "yc": 2.345800524934383,
+   "TW": 0.4199475065616798,
+   "V_salida": 12.40485564304462
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 4.151800455760323,
+   "regimen": "sumergido",
+   "yc_ft": 2.345007027054129,
+   "yn_n0012_ft": 2.032314790404744,
+   "yn_n0013_ft": 2.160343400054862,
+   "HWo_aprox_n0012_ft": 3.7535888699907423,
+   "HWo_aprox_n0013_ft": 3.8090669638181653
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C6-Qd",
+  "Q_cfs": 25.0,
+  "D_ft": 2.0,
+  "S": 0.015094702432458898,
+  "HY8": {
+   "HWi": 3.823,
+   "HWo": 2.862,
+   "control": "entrada",
+   "tipo": "5-S2n",
+   "yn": 1.392,
+   "yc": 1.761,
+   "TW": 0.267,
+   "V": 10.477,
+   "HW_gob": 3.823
+  },
+  "app": {
+   "HWi": 3.8451443569553803,
+   "HWo_aprox": 3.057742782152231,
+   "HWo_remanso": null,
+   "HW_gob": 3.8451443569553803,
+   "control": "entrada",
+   "yn": 1.4829396325459316,
+   "yc": 1.7618110236220472,
+   "TW": 0.26574803149606296,
+   "V_salida": 13.01509186351706
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 3.8452697406706933,
+   "regimen": "sumergido",
+   "yc_ft": 1.7618580748976613,
+   "yn_n0012_ft": 1.3911358222667913,
+   "yn_n0013_ft": 1.4826297405337965,
+   "HWo_aprox_n0012_ft": 2.8641946919470636,
+   "HWo_aprox_n0013_ft": 3.05119040457973
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C6-Qm",
+  "Q_cfs": 31.0,
+  "D_ft": 2.0,
+  "S": 0.015094702432458898,
+  "HY8": {
+   "HWi": 5.187,
+   "HWo": 4.29,
+   "control": "entrada",
+   "tipo": "5-S2n",
+   "yn": 1.71,
+   "yc": 1.875,
+   "TW": 0.305,
+   "V": 10.841,
+   "HW_gob": 5.187
+  },
+  "app": {
+   "HWi": null,
+   "HWo_aprox": null,
+   "HWo_remanso": null,
+   "HW_gob": null,
+   "control": null,
+   "yn": null,
+   "yc": null,
+   "TW": 0.30511811023622043,
+   "V_salida": null
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 5.200217665282947,
+   "regimen": "sumergido",
+   "yc_ft": 1.877007665335682,
+   "yn_n0012_ft": 1.6980430708470728,
+   "yn_n0013_ft": null,
+   "HWo_aprox_n0012_ft": 4.294405103024351,
+   "HWo_aprox_n0013_ft": 4.581929710768339
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C7-Qd",
+  "Q_cfs": 25.0,
+  "D_ft": 2.0,
+  "S": 0.029783761729905742,
+  "HY8": {
+   "HWi": 3.808,
+   "HWo": 1.45,
+   "control": "entrada",
+   "tipo": "5-S2n",
+   "yn": 1.105,
+   "yc": 1.761,
+   "TW": 0.267,
+   "V": 13.213,
+   "HW_gob": 3.808
+  },
+  "app": {
+   "HWi": 3.828740157480315,
+   "HWo_aprox": 1.6338582677165354,
+   "HWo_remanso": null,
+   "HW_gob": 3.828740157480315,
+   "control": "entrada",
+   "yn": 1.1646981627296586,
+   "yc": 1.7618110236220472,
+   "TW": 0.26574803149606296,
+   "V_salida": 17.139107611548557
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 3.830580681373246,
+   "regimen": "sumergido",
+   "yc_ft": 1.7618580748976613,
+   "yn_n0012_ft": 1.106230195143618,
+   "yn_n0013_ft": 1.1633439225862505,
+   "HWo_aprox_n0012_ft": 1.4523712233437323,
+   "HWo_aprox_n0013_ft": 1.6286336948994142
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C7-Qm",
+  "Q_cfs": 31.0,
+  "D_ft": 2.0,
+  "S": 0.029783761729905742,
+  "HY8": {
+   "HWi": 5.173,
+   "HWo": 2.845,
+   "control": "entrada",
+   "tipo": "5-S2n",
+   "yn": 1.27,
+   "yc": 1.875,
+   "TW": 0.305,
+   "V": 13.818,
+   "HW_gob": 5.173
+  },
+  "app": {
+   "HWi": 5.183727034120735,
+   "HWo_aprox": 3.1299212598425195,
+   "HWo_remanso": null,
+   "HW_gob": 5.183727034120735,
+   "control": "entrada",
+   "yn": 1.3451443569553805,
+   "yc": 1.8766404199475064,
+   "TW": 0.30511811023622043,
+   "V_salida": 17.923228346456693
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 5.185528605985501,
+   "regimen": "sumergido",
+   "yc_ft": 1.877007665335682,
+   "yn_n0012_ft": 1.2719241968803234,
+   "yn_n0013_ft": 1.3457885482994199,
+   "HWo_aprox_n0012_ft": 2.8493453376998197,
+   "HWo_aprox_n0013_ft": 3.1203665139638375
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C8-Qd",
+  "Q_cfs": 25.0,
+  "D_ft": 2.0,
+  "S": 0.010000000000000073,
+  "HY8": {
+   "HWi": 3.828,
+   "HWo": 3.377,
+   "control": "entrada",
+   "tipo": "5-S2n",
+   "yn": 1.686,
+   "yc": 1.761,
+   "TW": 0.267,
+   "V": 8.866,
+   "HW_gob": 3.828
+  },
+  "app": {
+   "HWi": null,
+   "HWo_aprox": null,
+   "HWo_remanso": null,
+   "HW_gob": null,
+   "control": null,
+   "yn": null,
+   "yc": null,
+   "TW": 0.26574803149606296,
+   "V_salida": null
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 3.850364443103152,
+   "regimen": "sumergido",
+   "yc_ft": 1.7618580748976613,
+   "yn_n0012_ft": 1.6780040231324664,
+   "yn_n0013_ft": null,
+   "HWo_aprox_n0012_ft": 3.379152159948819,
+   "HWo_aprox_n0013_ft": 3.490619655220671
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C8-Qm",
+  "Q_cfs": 31.0,
+  "D_ft": 2.0,
+  "S": 0.010000000000000073,
+  "HY8": {
+   "HWi": 5.193,
+   "HWo": 4.578,
+   "control": "entrada",
+   "tipo": "7-M2c",
+   "yn": 2.0,
+   "yc": 1.875,
+   "TW": 0.305,
+   "V": 10.13,
+   "HW_gob": 5.193
+  },
+  "app": {
+   "HWi": null,
+   "HWo_aprox": null,
+   "HWo_remanso": null,
+   "HW_gob": null,
+   "control": null,
+   "yn": null,
+   "yc": null,
+   "TW": 0.30511811023622043,
+   "V_salida": null
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 5.205312367715407,
+   "regimen": "sumergido",
+   "yc_ft": 1.877007665335682,
+   "yn_n0012_ft": null,
+   "yn_n0013_ft": null,
+   "HWo_aprox_n0012_ft": 4.575483705823826,
+   "HWo_aprox_n0013_ft": 4.7468761265538255
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C9-Qd",
+  "Q_cfs": 17.0,
+  "D_ft": 2.5,
+  "S": 0.002878787878786983,
+  "HY8": {
+   "HWi": 2.093,
+   "HWo": 2.209,
+   "control": "salida",
+   "tipo": "2-M2c",
+   "yn": 1.559,
+   "yc": 1.389,
+   "TW": 0.211,
+   "V": 6.069,
+   "HW_gob": 2.209
+  },
+  "app": {
+   "HWi": 2.0734908136482937,
+   "HWo_aprox": 2.1489501312335957,
+   "HWo_remanso": 2.211286089238845,
+   "HW_gob": 2.211286089238845,
+   "control": "salida",
+   "yn": 1.650262467191601,
+   "yc": 1.3943569553805772,
+   "TW": 0.2099737532808399,
+   "V_salida": 6.04002624671916
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 2.075285247650525,
+   "regimen": "no sumergido (Forma 1)",
+   "yc_ft": 1.394552721981033,
+   "yn_n0012_ft": 1.5604248549280133,
+   "yn_n0013_ft": 1.6492673304584051,
+   "HWo_aprox_n0012_ft": 2.132997906156383,
+   "HWo_aprox_n0013_ft": 2.1496882356788998
+  },
+  "invariante_base_alt": true
+ },
+ {
+  "id": "WI-C9-Qm",
+  "Q_cfs": 22.0,
+  "D_ft": 2.5,
+  "S": 0.002878787878786983,
+  "HY8": {
+   "HWi": 2.477,
+   "HWo": 2.588,
+   "control": "salida",
+   "tipo": "7-M2c",
+   "yn": 1.898,
+   "yc": 1.592,
+   "TW": 0.247,
+   "V": 6.67,
+   "HW_gob": 2.588
+  },
+  "app": {
+   "HWi": 2.477034120734908,
+   "HWo_aprox": 2.5164041994750654,
+   "HWo_remanso": 2.5951443569553807,
+   "HW_gob": 2.5951443569553807,
+   "control": "salida",
+   "yn": 2.047244094488189,
+   "yc": 1.5944881889763778,
+   "TW": 0.24606299212598423,
+   "V_salida": 6.653543307086614
+  },
+  "mano": {
+   "HW_entrada_HDS5_ft": 2.476521106282121,
+   "regimen": "no sumergido (Forma 1)",
+   "yc_ft": 1.5952369980421555,
+   "yn_n0012_ft": 1.8944600963030709,
+   "yn_n0013_ft": 2.0482984978836454,
+   "HWo_aprox_n0012_ft": 2.486854581582558,
+   "HWo_aprox_n0013_ft": 2.514806552132379
+  },
+  "invariante_base_alt": true
+ }
+]

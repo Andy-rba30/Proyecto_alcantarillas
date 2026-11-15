@@ -1,0 +1,323 @@
+"""
+conftest.py
+===========
+Declara los criterios de la corrida de pruebas y aisla el estado de proceso
+entre tests.
+
+NO TOCA `sys.path` DESDE EXT-9 (PC-08). Hasta entonces insertaba la raiz y
+`src/` para que los tests importaran por nombre plano
+(`import criterios_adoptados`), y esa segunda via es la que creaba un modulo
+duplicado con su propio estado. Hoy `src/` es un paquete real y el unico
+anclaje es la raiz del repositorio, que pytest ya pone en el path por ser
+el directorio de este `conftest.py`: `from src import criterios_adoptados`,
+`from src.modulos import M4_control`,
+`from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING`.
+"""
+
+# ---------------------------------------------------------------------------
+# La corrida de pruebas declara el origen de la cota de fondo de entrada
+# ---------------------------------------------------------------------------
+# 'origen_cota_fondo_entrada' es un vacio real (SIS-A-04): la cota del fondo
+# de la entrada no es columna del CSV, no la fija ninguna norma, y hasta la
+# correccion de C08 M5 adoptaba `cota_terreno` por su cuenta. Ahora la elige
+# el proyectista, y sin declaracion V4, V7 y el tamizado 7.A se detienen.
+# Desde C01 no es el unico: ver el bloque siguiente.
+#
+# La suite tiene que correr con la eleccion hecha, igual que corre una obra:
+# se declara aqui por el MISMO camino que usan la GUI y la CLI
+# (`establecer_valor_dinamico`, que pasa por la guardia `_verificar_criterio`),
+# no parcheando `CRITERIOS` ni el modulo M5. Se hace al importar conftest --
+# antes que cualquier modulo de test -- para que las listas que los tests
+# calculan a nivel de modulo (`criterios_sin_valor()`) vean el mismo estado
+# que las pruebas.
+#
+# Los tests que verifican el BLOQUEO lo retiran DENTRO del test con
+# `quitar_valor_dinamico`: si alguna vez este bloque se borra, esos tests
+# siguen probando lo suyo y el resto de la suite falla en masa, que es la
+# señal correcta.
+#
+# Va en dos sitios y no en uno: al importar, para las listas que los modulos
+# de test calculan a nivel de modulo, y en la fixture autouse de abajo
+# (`_estado_de_proceso_aislado`), porque varios tests llaman
+# `limpiar_valores_dinamicos()` -- que borra TODAS las declaraciones de la
+# corrida, incluida esta -- y sin reponerla el resto de la suite caeria por un
+# efecto de orden de ejecucion.
+import pytest  # noqa: E402
+
+
+def pytest_configure(config):
+    """
+    Registra la marca `pdf`, que separa los tests que ABREN un PDF de
+    `normas/` del resto de la suite.
+
+    Existe porque las dos mitades tienen precondiciones distintas:
+
+      - los estructurales corren siempre, con `requirements.txt` a secas;
+      - los de PDF necesitan `PyMuPDF` (que vive en `requirements-dev.txt`,
+        porque es dependencia de TEST y no del software calculado) y el
+        repositorio de normas enlazado por `NORMAS_DIR` (desde T-12 los PDF
+        ya no estan en `normas/` de este repositorio). Se SALTAN, no fallan,
+        si falta cualquiera de las dos cosas: la primera la dice el `skipif`
+        de cada archivo, la segunda `pytest_runtest_setup`, abajo.
+
+    Para correr solo los de PDF:  pytest -m pdf
+    Para excluirlos:              pytest -m "not pdf"
+    """
+    config.addinivalue_line(
+        "markers",
+        "pdf: abre un PDF de normas; exige PyMuPDF (requirements-dev.txt) y "
+        "el repositorio de normas enlazado por NORMAS_DIR")
+    # `lento`: un test que por si solo pesa mas de diez segundos porque lanza
+    # un subproceso pesado (weasyprint, un PDF). NO se salta: se marca para
+    # que una corrida de trabajo pueda dejarlo fuera (`-m "not lento"`) y
+    # para que el reparto del tiempo de la suite se lea del codigo (PC-22:
+    # cuatro tests sumaban 27 de 80 s). El conteo de la suite no cambia.
+    config.addinivalue_line(
+        "markers",
+        "lento: mas de diez segundos por un subproceso pesado; "
+        "excluible con -m \"not lento\", nunca saltado por defecto")
+
+# --- T-12 --- SIN `NORMAS_DIR`, TODO TEST `pdf` SE SALTA, Y LO DICE. Hasta
+# T-12 dieciseis de las dieciocho fuentes estaban en `normas/` de este
+# repositorio y solo los tests de HEC-14 y del WSDOT se saltaban sin el
+# enlace; T-12 retiro esos PDF (INF-5.2.3) y desde entonces NINGUN PDF esta
+# en disco sin el repositorio de normas. Los tests `pdf` se saltaban uno a
+# uno con mensajes distintos --o pasaban vacios, los que recorren «las citas
+# cuyo PDF esta en disco»--: aqui hay UN punto de decision con UN motivo. Un
+# `NORMAS_DIR` que apunta a una carpeta que no existe NO se salta: la
+# `FileNotFoundError` de `directorios_de_normas` sale como error del test,
+# porque quien definio la variable quiso enlazar el repositorio.
+MOTIVO_SIN_NORMAS_DIR = (
+    "sin NORMAS_DIR: los PDF de normas viven solo en el repositorio de normas "
+    "(desde T-12 no estan en este repositorio); enlacelo con "
+    "`export NORMAS_DIR=/ruta/al/clon/de/Normas` (ver CLAUDE.md)")
+
+
+def pytest_runtest_setup(item):
+    """Salta un test `pdf` cuando el repositorio de normas no esta enlazado."""
+    if item.get_closest_marker("pdf") is None:
+        return
+    from src.normativa import fuentes as _fuentes
+    if not _fuentes.directorios_de_normas():
+        pytest.skip(MOTIVO_SIN_NORMAS_DIR)
+
+
+from src import criterios_adoptados as _ca
+from src import datos_sitio as _ds
+from src import declaracion as _dec
+
+CLAVE_ORIGEN_COTA = "origen_cota_fondo_entrada"
+ORIGEN_COTA_DE_PRUEBA = "cota_terreno"
+CLAVE_ESPESOR_PARED = "espesor_pared_conducto"
+CLAVE_CONDICION_PAVIMENTO = "condicion_pavimento"
+CONDICION_PAVIMENTO_DE_PRUEBA = "flexible"
+
+# ---------------------------------------------------------------------------
+# Los DOS materiales que el expediente no puede declarar, para la corrida de
+# pruebas
+# ---------------------------------------------------------------------------
+# HASTA T-4 'espesor_pared_conducto' estaba declarado en el expediente SOLO
+# para el concreto reforzado, y en una corrida real el TMC y el HDPE se
+# descartaban como candidatos por no tener espesor (INF-5.1.17). DESDE T-4 EL
+# EXPEDIENTE TIENE LOS TRES: el del TMC lo deriva `M2.espesor_pared_de_tmc`
+# de la corrugacion y el calibre adoptados ('corrugacion_y_espesor_tmc' [A]:
+# 13 mm + 2.01 mm = 0.01501 m), y el del HDPE sale del diametro exterior
+# maximo de la Table A12-11 de AASHTO LRFD (900, 1050 y 1200 mm; M 294 no
+# trae la altura del perfil).
+#
+# Y AUN ASI ESTA DECLARACION DE PRUEBA SE CONSERVA, por la razon de abajo y
+# solo por ella: una entrada «tmc» o «hdpe» DECLARADA gana a la derivada, de
+# modo que dentro de la suite los dos materiales corren con los espesores
+# sinteticos de aqui y no con los del expediente. Los tests que miden los
+# del expediente (`tests/test_t4_materiales_durabilidad.py`) RETIRAN esta
+# declaracion con `quitar_valor_dinamico` antes de medir. La linea base no
+# pasa por aqui: la genera la CLI en subproceso, con los valores del archivo.
+#
+# LOS DOS VALORES SINTETICOS QUEDAN POR DEBAJO DE LOS DEL ARCHIVO (0.013
+# frente a 0.01501 m en TMC; 0.050 frente a 0.0846-0.0985 m en HDPE), y eso
+# hay que saberlo: un test que mida la clave fisica o V7 con ellos mide la
+# FORMULA, no el expediente. Se intento retirarlos en la auditoria de T-4
+# (H11) y no se puede sin reescribir los tests de formula: medido, 22 tests
+# de M5 y M7 dejan de correr porque usan diametros que ninguna serie tabula
+# (0.60 m, 0.75 m) y el derivado no les da fila. Lo que compensa: los
+# espesores DERIVADOS se ejercitan en `tests/test_t4_materiales_durabilidad.py`
+# (clave fisica de 7.A y volumen de V7 recalculados a mano, sobre A-01 y
+# B-01, en TMC y en HDPE) y en la linea base.
+#
+# LOS TESTS UNITARIOS DE M7 Y M5 SI LOS NECESITAN, porque prueban FORMULAS --
+# la clave fisica, el volumen desplazado, el tamizado de 7.A -- sobre
+# materiales sinteticos, y una formula no se puede probar con un material que
+# se detiene antes de entrar en ella. Se declaran aqui, con el mismo rotulo
+# que siempre: valores DE LA CORRIDA DE PRUEBAS, que la memoria imprime en el
+# bloque "DECLARADOS SOLO PARA ESTA CORRIDA".
+#
+#   tmc   0.013 m  altura de la corrugacion 68 x 13 mm, tamaño estandar para
+#                  900 mm en la Tabla 1 de ASTM A760/A760M-10. Es el espesor
+#                  de perfil, sin el calibre de la plancha.
+#   hdpe  0.050 m  extremo BAJO del rango de altura de perfil corrugado que
+#                  cita la ficha MAT-D4 (0.05-0.08 m).
+#
+# La columna del concreto NO se copia: se LEE del criterio y se le añaden los
+# dos materiales que faltan. Copiarla aqui crearia una segunda transcripcion
+# de trece filas de una tabla normativa, que es exactamente lo que este
+# repositorio persigue.
+ESPESOR_TMC_DE_PRUEBA = 0.013      # m
+ESPESOR_HDPE_DE_PRUEBA = 0.050     # m
+
+# ---------------------------------------------------------------------------
+# TRES DECLARACIONES SE RETIRARON DE AQUI EN S20, y hay que decir por que
+# ---------------------------------------------------------------------------
+# 'origen_cota_fondo_entrada', 'espesor_pared_conducto' y
+# 'condicion_pavimento' se declaraban en este archivo, como valores DE LA
+# CORRIDA DE PRUEBAS, porque el expediente los tenia vacios y sin ellos la
+# suite entera se detenia. En S20 los tres se cerraron en
+# `criterios_adoptados.py` -- son criterios de NIVEL DE PERFIL y el cierre de
+# ese nivel era la tarea --, de modo que declararlos aqui ya no rellenaba un
+# vacio: TAPABA el valor del expediente con otro.
+#
+# El caso que lo hizo visible es 'espesor_pared_conducto'. Este archivo lo
+# declaraba como un espesor por material {concreto: 0.100, tmc: 0.013, hdpe:
+# 0.050}, que era la forma correcta cuando el espesor se creia unico por
+# material. Al pasar el criterio a la columna «Wall Thickness» completa por
+# DIAMETRO DESIGNADO, esa declaracion dejo de ser un valor de prueba
+# razonable y paso a ser un valor de la forma equivocada, con el que la suite
+# fallaba en veintitantos tests a la vez.
+#
+# Las claves y los rotulos se conservan porque varios tests los importan para
+# RETIRAR la declaracion y comprobar el bloqueo (`quitar_valor_dinamico`), y
+# esa es la prueba que no se puede perder: si mañana alguien vacia el
+# criterio en el archivo, esos tests siguen probando lo suyo.
+
+# Cluster C07. El lado AASHTO de la regla del recubrimiento mayor dejo de ser
+# un valor declarado (75 mm) y pasa a calcularse -- fila de la tabla, columna
+# por categoria de acero, modificador por relacion a/c, piso de 1.0 in --, de
+# modo que necesita dos cosas que el expediente no tiene:
+#
+#   'categoria_refuerzo_aashto'  la columna A/B/C de la Tabla 5.10.1-1. La fija
+#                                la especificacion del acero que se compra.
+#   'exposicion_quimica_ems'     el analisis quimico del EMS, del que sale la
+#                                relacion a/c maxima y con ella el modificador.
+#
+# LAS DOS SIGUEN SIENDO VALORES DE LA CORRIDA DE PRUEBAS, y siguen aqui
+# porque las dos son de NIVEL DE EXPEDIENTE: el cierre del nivel de perfil no
+# las alcanza, y la Fase 9 que las consume la difiere `--alcance perfil`.
+# Entran por el mismo camino que usan la GUI y la CLI --
+# `establecer_valor_dinamico`, que pasa por la guardia `_verificar_criterio`
+# -- y por eso la memoria las imprime en el bloque "DECLARADOS SOLO PARA ESTA
+# CORRIDA". Se eligieron para ser RASTREABLES, no por comodidad:
+#
+#   categoria "A"   acero sin recubrir. Es la columna que el expediente venia
+#                   usando sin decirlo (los 75 mm eran sus 3.0 in redondeados
+#                   a la baja), asi que la corrida queda comparable con el
+#                   estado anterior y ademas es la que MAS recubrimiento pide.
+#   exposicion      sulfatos "insignificante" (0.0 %) y cloruros SI. Es la
+#                   combinacion que deja ver cual fila gobierna: sin requisito
+#                   por sulfatos, la relacion a/c que sale es la 0.40 de la
+#                   fila de cloruros de la Tabla 4.2 -- la misma que el
+#                   expediente afirmaba en prosa -- y el factor resulta 0.8.
+#                   El 0.0 de sulfatos NO afecta al recubrimiento (cualquier
+#                   fila de la Tabla 4.4 da a/c >= 0.45, y la nota al pie
+#                   manda quedarse con la MENOR de las dos tablas); afecta al
+#                   f'c minimo y al tipo de cemento, que este calculo no usa.
+#
+# El proyectista que cierre el expediente no hereda ninguna de las dos.
+CLAVE_CATEGORIA_REFUERZO = "categoria_refuerzo_aashto"
+CATEGORIA_REFUERZO_DE_PRUEBA = "A"
+CLAVE_EXPOSICION_QUIMICA = "exposicion_quimica_ems"
+EXPOSICION_QUIMICA_DE_PRUEBA = {
+    "so4_suelo_pct": 0.0,
+    "so4_agua_ppm": None,
+    # LAS TRES FILAS DE LA TABLA 4.2, declaradas una por una. No estan las
+    # tres por prolijidad: "la MENOR relacion a/c aplicable" de la nota al pie
+    # es una comparacion, y con una fila sin declarar la comparacion se hacia
+    # sobre un conjunto incompleto sin que nada avisara. Una clave ausente es
+    # DatoInvalidoError, no un "no aplica".
+    "tabla_4_2": {
+        "baja_permeabilidad": False,
+        "congelamiento_deshielo": False,
+        "cloruros": True,
+    },
+}
+
+# El barrido de diametros de la corrida de pruebas. Va de 300 a 3600 mm en
+# pasos de 75 -- un superconjunto de las tres series de producto -- porque
+# varios tests unitarios usan diametros SINTETICOS que ninguna serie tiene
+# (0.60 m, por ejemplo, que esta por debajo del piso normativo de 0.90 m y se
+# usa a proposito para probar que la formula no depende del catalogo). Es un
+# rango de PRUEBA: el expediente declara solo los trece diametros que la
+# norma de producto imprime.
+_DIAMETROS_DE_PRUEBA_MM = tuple(range(300, 3601, 75))
+
+
+def _espesor_pared_de_prueba():
+    """La columna del expediente mas los dos materiales que no puede tener."""
+    del_expediente = _ca.CRITERIOS[CLAVE_ESPESOR_PARED].valor
+    return {
+        **del_expediente,
+        "tmc": {mm: ESPESOR_TMC_DE_PRUEBA for mm in _DIAMETROS_DE_PRUEBA_MM},
+        "hdpe": {mm: ESPESOR_HDPE_DE_PRUEBA for mm in _DIAMETROS_DE_PRUEBA_MM},
+    }
+
+
+ESPESOR_PARED_DE_PRUEBA = _espesor_pared_de_prueba()
+
+_DECLARACIONES_DE_PRUEBA = {
+    CLAVE_ESPESOR_PARED: ESPESOR_PARED_DE_PRUEBA,
+    CLAVE_CATEGORIA_REFUERZO: CATEGORIA_REFUERZO_DE_PRUEBA,
+    CLAVE_EXPOSICION_QUIMICA: EXPOSICION_QUIMICA_DE_PRUEBA,
+}
+
+
+def _declarar_criterios_de_prueba():
+    for clave, valor in _DECLARACIONES_DE_PRUEBA.items():
+        _ca.establecer_valor_dinamico(clave, valor)
+
+
+_declarar_criterios_de_prueba()
+
+
+# ---------------------------------------------------------------------------
+# EL ESTADO DE PROCESO SE FOTOGRAFIA Y SE REPONE EN CADA TEST (EXT-4)
+# ---------------------------------------------------------------------------
+# Cuatro registros de modulo describen «la corrida en curso»: las
+# declaraciones en caliente (`criterios_adoptados._OVERRIDES`), los dos
+# registros de usos (`criterios_adoptados._USADOS`, `datos_sitio._USADOS`) y
+# el libro de procedencias (`declaracion._PROCEDENCIAS`). Hasta EXT-4 nueve
+# archivos de la suite los vaciaban y reponian A MANO --- 27 accesos a
+# `_USADOS`, mas fixtures propias para los otros dos --- porque `cli.correr`
+# no vaciaba el registro de usos y cada test que media una corrida tenia que
+# hacerse su propia foto (PC-09).
+#
+# Desde EXT-4 `cli.correr` vacia al entrar y fotografia al salir en
+# `Informe.contexto`, y ESTA fixture es el UNICO sitio de la suite que toca
+# los cuatro registros: los fotografia antes de cada test y los repone
+# despues, tal cual, de modo que ningun test hereda ni lega estado. Los
+# tests que necesitan partir de un registro vacio llaman a las funciones
+# publicas (`ca.reiniciar_usos`, `ds.reiniciar_usos`, `dec.limpiar`); ninguno
+# nombra un privado, y `tests/test_ext4_contexto_corrida.py` lo comprueba
+# con un barrido sobre el texto de la suite.
+#
+# Se repone el contenido, no el objeto: los modulos guardan referencias a
+# estos dict/set y sustituirlos dejaria a `valor()` escribiendo en otro.
+@pytest.fixture(autouse=True)
+def _estado_de_proceso_aislado():
+    """Foto de los cinco registros antes de cada test, y reposicion despues."""
+    overrides = dict(_ca._OVERRIDES)
+    usados = set(_ca._USADOS)
+    usados_sitio = set(_ds._USADOS)
+    # Los [S] declarados por sesion (EXT-10): el quinto registro, con la
+    # misma foto y la misma reposicion que los criterios en caliente.
+    overrides_sitio = dict(_ds._OVERRIDES)
+    procedencias = dict(_dec._PROCEDENCIAS)
+    _declarar_criterios_de_prueba()
+    yield
+    _ca._OVERRIDES.clear()
+    _ca._OVERRIDES.update(overrides)
+    _ca._USADOS.clear()
+    _ca._USADOS.update(usados)
+    _ds._USADOS.clear()
+    _ds._USADOS.update(usados_sitio)
+    _ds._OVERRIDES.clear()
+    _ds._OVERRIDES.update(overrides_sitio)
+    _dec._PROCEDENCIAS.clear()
+    _dec._PROCEDENCIAS.update(procedencias)

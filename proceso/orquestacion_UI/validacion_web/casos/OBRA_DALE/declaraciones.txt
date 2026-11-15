@@ -1,0 +1,2 @@
+diametros_normalizados={"inicio": 2.8956, "paso": 0.3048}
+espesor_pared_conducto={"concreto_reforzado": {2896: 0.2667, 900: 0.1}, "hdpe": {900: 0.08975, 1050: 0.0846, 1200: 0.0985}}

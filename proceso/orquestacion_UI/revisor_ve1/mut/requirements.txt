@@ -1,0 +1,5 @@
+numpy==2.2.3
+scipy==1.15.2
+pytest==9.1.1
+ttkbootstrap==2.2.1
+weasyprint==69.0

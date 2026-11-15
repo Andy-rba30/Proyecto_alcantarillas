@@ -1,0 +1,364 @@
+# -*- coding: utf-8 -*-
+"""
+tests/test_pf2_prevuelo.py
+==========================
+La aceptacion de PF-2 (`docs/planes_mejora/08_CADENA_PROMPTS_PERFIL.md`): el
+cuarto bloque del anticipo, `anticipo.datos_faltantes_por_punto`, que dice
+ANTES de correr que datos le faltan a cada punto --- columnas obligatorias
+vacias, columnas admitidas vacias que una etapa de este alcance exige, y
+claves externas de `servicio.CLAVES_EXTERNAS` sin declarar ---, de donde
+tendria que venir cada uno, y si detiene una etapa o espera a un tablero.
+
+Evidencia que lo abrio: la corrida de perfil de la revision de E-B necesito
+cuatro corridas para dimensionar C-01 porque cada bloqueo aparecio despues
+del anterior (luz_m, los siete del cajon, cota_coronacion_canal, S_conducto).
+
+SIGUE SIENDO UNA ESTIMACION (`AVISO_DEL_ANTICIPO`): no gobierna ningun
+filtro ni el boton de ejecutar. Lo que la vuelve honesta es el test de la
+UNION de abajo: todo `DatoFaltanteError` que la corrida real produce sobre
+una columna o una clave externa esta en lo que el pre-vuelo estimo para ese
+punto, y lo que estima de mas queda censado con su razon.
+
+Escritos primero EN ROJO con `xfail(strict=True)` por test sobre el
+invariante, nunca sobre la salida actual; medidos antes de tocar codigo y
+liberados al corregir.
+"""
+
+from __future__ import annotations
+
+import ast
+import csv
+import inspect
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+import cli
+from src import anticipo as antc
+from src import servicio
+from src.modelos import DatoFaltanteError, DatoInvalidoError, Familia, TipoDeBloqueo
+
+RAIZ = Path(__file__).resolve().parents[1]
+CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
+AMPLIADAS = RAIZ / "tests" / "linea_base_familia_c" / "entradas_ampliadas.json"
+
+LUZ_DEL_CASO = 2.75          # m: la de la linea base, separa alcantarilla de puente
+TW_DEL_CASO = 0.30           # m: el TW global de entradas_ampliadas.json
+
+
+def _externos(ruta=None, **banderas):
+    base = dict(luz_m=None, TW_m=None, longitud_m=None, L_hidraulico_m=None,
+                categoria_tr=None)
+    base.update(banderas)
+    return cli.cargar_datos_externos(ruta, base)
+
+
+def _por_punto(estimado):
+    """{id_punto: {dato: entrada}} de lo que DETIENE, y aparte lo que espera."""
+    detiene, espera = {}, {}
+    for e in estimado:
+        (detiene if e.detiene else espera).setdefault(e.id_punto, {})[e.dato] = e
+    return detiene, espera
+
+
+# ===========================================================================
+# 1 - Lo que el CSV de ejemplo necesita, punto a punto
+# ===========================================================================
+
+def test_pf2_sin_json_el_prevuelo_nombra_la_luz_en_los_cuatro_y_lo_de_cada_familia():
+    estimado = antc.datos_faltantes_por_punto(CSV_EJEMPLO, _externos(), cli.ALCANCE_PERFIL)
+    detiene, espera = _por_punto(estimado)
+    assert set(detiene) == {"A-01", "A-02", "B-01", "C-01"}
+    for id_punto in detiene:
+        assert "luz_m" in detiene[id_punto], id_punto
+    # Lo que solo la Familia C exige (VC1), y lo que solo la B (Fase 10).
+    assert "cota_coronacion_canal" in detiene["C-01"]
+    assert all("cota_coronacion_canal" not in detiene[p] for p in ("A-01", "A-02", "B-01"))
+    assert "L_hidraulico_m" in detiene["B-01"]
+    assert all("L_hidraulico_m" not in detiene[p] for p in ("A-01", "A-02", "C-01"))
+    # El caudal y la pendiente del cruce de canal, que van vacios por tablero
+    # y que el diseño exige; la via alterna de la pendiente (S_conducto por
+    # --datos-externos) va dicha en la misma entrada, no como falta aparte,
+    # porque el codigo nunca la exige por su nombre (cae a S_cauce).
+    for dato in ("Q_m3s", "S_cauce"):
+        assert dato in detiene["C-01"], dato
+    assert "S_conducto" in detiene["C-01"]["S_cauce"].de_donde
+    # Cada entrada dice de donde viene el dato y en que etapa detiene.
+    luz = detiene["A-01"]["luz_m"]
+    assert luz.de_donde and luz.etapa
+    assert luz.familia is Familia.A
+
+
+def test_pf2_con_el_json_ampliado_y_la_luz_solo_queda_la_coronacion_del_canal():
+    estimado = antc.datos_faltantes_por_punto(
+        CSV_EJEMPLO, _externos(AMPLIADAS, luz_m=LUZ_DEL_CASO), cli.ALCANCE_PERFIL)
+    detiene, espera = _por_punto(estimado)
+    assert "C-01" in detiene and set(detiene["C-01"]) == {"cota_coronacion_canal"}
+    for p in ("A-01", "A-02"):
+        assert p not in detiene, detiene.get(p)
+    assert set(detiene.get("B-01", {})) == {"L_hidraulico_m"}
+
+
+def test_pf2_lo_que_espera_a_un_tablero_no_se_confunde_con_lo_que_detiene():
+    """
+    `NF_profundidad_m` va vacia en dos filas y la admite el estudio
+    geotecnico: a perfil ningun modulo de calculo la consume, de modo que
+    ESPERA y no detiene. `cota_fondo_entrada` tiene regla declarada y no
+    espera a nadie: no aparece.
+    """
+    estimado = antc.datos_faltantes_por_punto(
+        CSV_EJEMPLO, _externos(AMPLIADAS, luz_m=LUZ_DEL_CASO), cli.ALCANCE_PERFIL)
+    detiene, espera = _por_punto(estimado)
+    nf = [e for e in estimado if e.dato == "NF_profundidad_m"]
+    assert nf and all(not e.detiene for e in nf)
+    assert "geotecnico" in nf[0].de_donde
+    assert not [e for e in estimado if e.dato == "cota_fondo_entrada"]
+
+
+def test_pf2_el_tw_sin_ninguna_via_cae_en_el_criterio_y_el_prevuelo_lo_dice(monkeypatch):
+    """
+    A-01 no trae cota_TW ni Q_receptor y no hay TW declarado. Con
+    'seccion_receptor' declarado en el archivo, `_resolver_tw` recorre las
+    vias de Sec. 1.3 y NO cae en el criterio: el pre-vuelo tampoco lo dice
+    (es el MISMO predicado, `servicio.tw_sin_via_de_sec_1_3`). Sin la seccion
+    del receptor, el TW cae en la ultima puerta, 'TW_receptor', que es un
+    CriterioPendienteError y no un DatoFaltanteError: el pre-vuelo lo dice
+    sin detener.
+    """
+    estimado = antc.datos_faltantes_por_punto(
+        CSV_EJEMPLO, _externos(luz_m=LUZ_DEL_CASO), cli.ALCANCE_PERFIL)
+    assert not [e for e in estimado if e.id_punto == "A-01" and e.dato == "TW_m"]
+    monkeypatch.setattr(servicio.ca, "valor_si_declarado",
+                        lambda clave: None if clave == servicio.CRITERIO_SECCION_RECEPTOR
+                        else servicio.ca.CRITERIOS[clave].valor)
+    estimado = antc.datos_faltantes_por_punto(
+        CSV_EJEMPLO, _externos(luz_m=LUZ_DEL_CASO), cli.ALCANCE_PERFIL)
+    tw = [e for e in estimado if e.id_punto == "A-01" and e.dato == "TW_m"]
+    assert tw and not tw[0].detiene and "TW_receptor" in tw[0].de_donde
+    con_tw = antc.datos_faltantes_por_punto(
+        CSV_EJEMPLO, _externos(luz_m=LUZ_DEL_CASO, TW_m=TW_DEL_CASO), cli.ALCANCE_PERFIL)
+    assert not [e for e in con_tw if e.dato == "TW_m"]
+
+
+# ===========================================================================
+# 2 - La union: nada real escapa a la estimacion, y lo de mas queda censado
+# ===========================================================================
+
+def _faltas_reales(externos, ruta=CSV_EJEMPLO):
+    """
+    Las faltas de la corrida real: las que M0 lanza al CARGAR (revientan
+    `correr`, no son bloqueos; el auditor de PF-2 midio que la union era
+    ciega a ellas) y las que las etapas registran como Bloqueo.
+    """
+    try:
+        informe = cli.correr(ruta, externos, alcance=cli.ALCANCE_PERFIL)
+    except DatoFaltanteError as exc:
+        return {exc.id_punto: {exc.campo}}
+    reales = {}
+    for punto in informe.puntos:
+        for b in punto.bloqueos:
+            if b.tipo is TipoDeBloqueo.DATO_FALTANTE and b.campo in (
+                    tuple(servicio.CLAVES_EXTERNAS) + tuple(antc.m0.COLUMNAS)):
+                reales.setdefault(punto.punto.id, set()).add(b.campo)
+    return reales
+
+
+# Lo que el pre-vuelo estima de MAS respecto de cada corrida real, MEDIDO y
+# con la razon: la corrida se detiene en la primera falta de cada punto
+# (`servicio._etapa` registra UN bloqueo por etapa) y las siguientes no
+# llegan a producirse. Sin luz, C-01 no pasa de la Fase 2; con luz y TW, el
+# bucle de MD se detiene en Q_m3s (la etapa «material y diametro») antes de
+# pedir S_cauce y de que VC1 exija la coronacion; con el JSON ampliado, MD
+# se detiene en los criterios del cajon (bloque 1) antes de que VC1 llegue
+# a exigir cota_coronacion_canal --- que es la capa que la revision de E-B
+# midio al declarar los siete ---. Es la clase de falso positivo que una
+# estimacion honesta declara, no esconde: cada entrada de mas es una falta
+# REAL que la corrida sentiria despues.
+#
+# REMEDIDO EN T-6 (cadena T): la longitud por extremo de 7.B necesita la
+# pendiente -- la salida queda S*L mas baja -- y se resuelve ANTES que el TW
+# y que MD, de modo que con luz y TW la primera falta de C-01 ya no es Q_m3s
+# en el bucle de MD sino S_cauce en la etapa «longitud del conducto (7.B)».
+# Los dos datos siguen faltando de verdad y el pre-vuelo sigue nombrando los
+# dos: lo que cambia es cual de ellos alcanza a registrar la corrida.
+#
+# REMEDIDO EN T-3 (cadena T): con el JSON ampliado los siete criterios del
+# cajon ya tienen valor de archivo y MD no se detiene en ellos: llega a VC1,
+# que exige cota_coronacion_canal, y esa falta la registra la corrida. El
+# pre-vuelo ya no estima nada de mas en esa configuracion.
+SOBRA_SIN_LUZ = {"C-01": {"Q_m3s", "S_cauce", "cota_coronacion_canal"}}
+SOBRA_CON_LUZ = {"C-01": {"Q_m3s", "cota_coronacion_canal"}}
+SOBRA_CON_TODO = {}
+
+
+@pytest.mark.parametrize("externos, sobra", [
+    (_externos(), SOBRA_SIN_LUZ),
+    (_externos(luz_m=LUZ_DEL_CASO, TW_m=TW_DEL_CASO), SOBRA_CON_LUZ),
+    (_externos(AMPLIADAS, luz_m=LUZ_DEL_CASO), SOBRA_CON_TODO),
+], ids=["sin_luz", "con_luz_y_tw", "con_todo"])
+def test_pf2_todo_dato_faltante_real_estaba_en_el_prevuelo(externos, sobra):
+    estimado = antc.datos_faltantes_por_punto(CSV_EJEMPLO, externos, cli.ALCANCE_PERFIL)
+    detiene, _ = _por_punto(estimado)
+    reales = _faltas_reales(externos)
+    for id_punto, campos in reales.items():
+        assert campos <= set(detiene.get(id_punto, {})), (id_punto, campos, detiene.get(id_punto))
+    de_mas = {p: set(d) - reales.get(p, set()) for p, d in detiene.items()}
+    de_mas = {p: s for p, s in de_mas.items() if s}
+    assert de_mas == sobra
+
+
+# ===========================================================================
+# 3 - Guardias: no corre el pipeline, y la CLI lo expone
+# ===========================================================================
+
+def _csv_con(tmp_path, nombre, id_base="A-02", **celdas):
+    filas = list(csv.DictReader(CSV_EJEMPLO.open(encoding="utf-8")))
+    fila = dict(next(f for f in filas if f["id"] == id_base))
+    fila.update(celdas)
+    ruta = tmp_path / nombre
+    with ruta.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(fila))
+        w.writeheader()
+        w.writerow(fila)
+    return ruta
+
+
+def test_pf2_una_celda_obligatoria_vacia_detiene_la_carga_aunque_el_json_la_traiga(tmp_path):
+    """
+    La refutacion central del auditor de PF-2: A-02 con Q_m3s vacia y
+    Q_m3s en el JSON salia «0 que detienen» y la corrida real reventaba en
+    M0 con DatoFaltanteError. La carga va PRIMERO: en una familia que no
+    admite la celda vacia, el JSON no llega a actuar.
+    """
+    ruta = _csv_con(tmp_path, "a02_sin_q.csv", Q_m3s="")
+    json_q = tmp_path / "q.json"
+    json_q.write_text('{"puntos": {"A-02": {"Q_m3s": 0.48}}}', encoding="utf-8")
+    externos = _externos(json_q, luz_m=LUZ_DEL_CASO, TW_m=TW_DEL_CASO)
+    detiene, _ = _por_punto(antc.datos_faltantes_por_punto(ruta, externos, cli.ALCANCE_PERFIL))
+    assert "Q_m3s" in detiene["A-02"] and "M0" in detiene["A-02"]["Q_m3s"].etapa
+    assert "JSON" in detiene["A-02"]["Q_m3s"].de_donde
+    reales = _faltas_reales(externos, ruta)
+    assert reales == {"A-02": {"Q_m3s"}}
+    assert reales["A-02"] <= set(detiene["A-02"])
+
+
+def test_pf2_una_celda_no_numerica_y_una_familia_ilegible_detienen_la_carga(tmp_path):
+    """M0 las rechaza como DatoInvalidoError; el pre-vuelo lo dice antes."""
+    # El conjunto que M0 convierte a numero es dato publico (PF-2): es lo que
+    # el pre-vuelo consulta, y cota_TW esta en el.
+    assert "cota_TW" in antc.m0.columnas_numericas()
+    assert "sucs_fundacion" not in antc.m0.columnas_numericas()
+    ruta = _csv_con(tmp_path, "a02_tw_abc.csv", cota_TW="abc")
+    externos = _externos(luz_m=LUZ_DEL_CASO)
+    detiene, _ = _por_punto(antc.datos_faltantes_por_punto(ruta, externos, cli.ALCANCE_PERFIL))
+    assert "cota_TW" in detiene["A-02"] and "no es un numero" in detiene["A-02"]["cota_TW"].de_donde
+    with pytest.raises(DatoInvalidoError):
+        cli.correr(ruta, externos, alcance=cli.ALCANCE_PERFIL)
+    ruta = _csv_con(tmp_path, "x.csv", familia="X")
+    estimado = antc.datos_faltantes_por_punto(ruta, externos, cli.ALCANCE_PERFIL)
+    assert [e.dato for e in estimado] == ["familia"] and estimado[0].detiene
+    with pytest.raises(DatoInvalidoError):
+        cli.correr(ruta, externos, alcance=cli.ALCANCE_PERFIL)
+
+
+def test_pf2_toda_clave_externa_sin_columna_tiene_regla_o_via_alterna_declarada():
+    """
+    La particion es exacta: lo que no es columna tiene regla explicita en el
+    pre-vuelo (luz_m, TW_m, L_hidraulico_m) o via alterna declarada en
+    `servicio.EXTERNOS_CON_VIA_ALTERNA`. Una clave nueva sin ninguna de las
+    dos rompe este test en vez de caerse del bucle en silencio.
+    """
+    sin_columna = {c for c in servicio.CLAVES_EXTERNAS if c not in antc.m0.COLUMNAS}
+    # Desde las correcciones de T-9 (H2), `inicio_tramo_cuneta_km` tiene
+    # regla propia: un alivio sin extremo deja VB1 sin evaluar, y eso es un
+    # bloqueo que espera ese dato.
+    con_regla = {"luz_m", "TW_m", "L_hidraulico_m", "inicio_tramo_cuneta_km"}
+    # --- T-7b --- (PUNTO 0) y los tres de V5 y V8, con regla propia: detienen
+    # solo si su verificacion no esta diferida por el alcance y el criterio
+    # que la habilita esta declarado (`servicio.CLAVES_DE_V5_Y_V8`).
+    con_regla |= set(servicio.CLAVES_DE_V5_Y_V8)
+    assert sin_columna == con_regla | set(servicio.EXTERNOS_CON_VIA_ALTERNA)
+    assert not con_regla & set(servicio.EXTERNOS_CON_VIA_ALTERNA)
+    assert all(c not in antc.m0.COLUMNAS for c in servicio.EXTERNOS_CON_VIA_ALTERNA)
+
+
+def test_pf2_la_cli_sale_con_1_si_la_cabecera_detiene_la_carga(tmp_path):
+    """El codigo de salida lee tambien el bloque 2 (auditor de PF-2)."""
+    filas = list(csv.DictReader(CSV_EJEMPLO.open(encoding="utf-8")))
+    fila = dict(next(f for f in filas if f["id"] == "A-02"))
+    fila.pop("cbr_subrasante")
+    ruta = tmp_path / "sin_col.csv"
+    with ruta.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(fila))
+        w.writeheader()
+        w.writerow(fila)
+    hecho = subprocess.run(
+        [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--prevuelo",
+         "--luz", str(LUZ_DEL_CASO), "--tw", str(TW_DEL_CASO)],
+        capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 1 and "cbr_subrasante" in hecho.stdout
+
+
+def _llamadas(fn):
+    arbol = ast.parse(inspect.getsource(fn))
+    return {ast.unparse(n.func) for n in ast.walk(arbol) if isinstance(n, ast.Call)}
+
+
+def test_pf2_el_prevuelo_no_ejecuta_el_pipeline():
+    for fn in (antc.datos_faltantes_por_punto, cli._prevuelo):
+        llamadas = _llamadas(fn)
+        for prohibida in llamadas:
+            assert not prohibida.endswith(("correr", "correr_punto", "disenar_punto",
+                                           "cargar_puntos")), (fn.__name__, prohibida)
+
+
+def test_pf2_la_cli_imprime_el_prevuelo_y_sale_sin_correr(tmp_path):
+    hecho = subprocess.run(
+        [sys.executable, str(RAIZ / "cli.py"), str(CSV_EJEMPLO), "--prevuelo",
+         "--alcance", "perfil", "--json", str(tmp_path / "no.json")],
+        capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 1, hecho.stderr
+    assert "luz_m" in hecho.stdout and "cota_coronacion_canal" in hecho.stdout
+    assert antc.AVISO_DEL_ANTICIPO.split(".")[0] in hecho.stdout
+    assert not (tmp_path / "no.json").exists()
+    # Un punto de Familia A con luz y TW: nada detiene, y la CLI lo dice con 0.
+    filas = list(csv.DictReader(CSV_EJEMPLO.open(encoding="utf-8")))
+    fila = next(f for f in filas if f["id"] == "A-02")
+    ruta = tmp_path / "a02.csv"
+    with ruta.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(fila))
+        w.writeheader()
+        w.writerow(fila)
+    # REESCRITO EN T-7b, y se declara: hasta T-7b esta corrida iba al alcance
+    # por defecto (expediente) y salia con 0. Desde T-7b el ensamble de
+    # estabilidad del cabezal LEE la columna `NF_profundidad_m` -- sin ella
+    # se detiene con DatoFaltanteError --, el censo le encuentra ese
+    # consumidor y el pre-vuelo de expediente la anuncia como falta que
+    # detiene (es cierta: A-02 la trae vacia). A perfil la Fase 9 esta
+    # diferida y nada detiene, que es lo que este test media.
+    hecho = subprocess.run(
+        [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--prevuelo",
+         "--alcance", "perfil",
+         "--luz", str(LUZ_DEL_CASO), "--tw", str(TW_DEL_CASO)],
+        capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 0, hecho.stdout + hecho.stderr
+    hecho = subprocess.run(
+        [sys.executable, str(RAIZ / "cli.py"), str(ruta), "--prevuelo",
+         "--luz", str(LUZ_DEL_CASO), "--tw", str(TW_DEL_CASO)],
+        capture_output=True, text=True, cwd=RAIZ)
+    assert hecho.returncode == 1, hecho.stdout + hecho.stderr
+    linea = next(l for l in hecho.stdout.splitlines()
+                 if "NF_profundidad_m" in l and "DETIENE" in l)
+    assert "M9_cabezal" in linea
+
+
+def test_pf2_las_lineas_del_bloque_4_las_produce_src_y_nombran_cada_dato():
+    estimado = antc.datos_faltantes_por_punto(CSV_EJEMPLO, _externos(), cli.ALCANCE_PERFIL)
+    lineas = antc.lineas_del_prevuelo(estimado)
+    texto = "\n".join(lineas)
+    for dato in ("luz_m", "cota_coronacion_canal", "L_hidraulico_m", "S_conducto"):
+        assert dato in texto
+    assert "C-01" in texto and "A-01" in texto
+    assert antc.lineas_del_prevuelo(()) and "nada" in antc.lineas_del_prevuelo(())[0].lower()

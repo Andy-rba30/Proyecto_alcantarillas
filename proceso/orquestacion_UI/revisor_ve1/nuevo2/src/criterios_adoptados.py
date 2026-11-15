@@ -1,0 +1,12823 @@
+"""
+criterios_adoptados.py
+======================
+Fuente unica de verdad para todo parametro que NO sea una exigencia normativa
+verificada. Ningun otro modulo del script debe declarar estos valores.
+
+Regla de uso
+------------
+    from src.criterios_adoptados import valor, reporte_criterios
+
+    Fpga = valor("F_pga")          # registra el uso automaticamente
+    ...
+    print(reporte_criterios())     # M11 lo imprime al final del reporte
+
+Un criterio con valor None lanza CriterioPendienteError (modelos.py) y detiene
+el calculo. Nunca devuelve un default. Para saber que falta ANTES de correr,
+sin provocar la excepcion, se consulta criterios_sin_valor().
+
+La UNICA excepcion son los criterios marcados `opcional=True`: no cubren un
+vacio, refinan un valor que la norma ya fija. Sin declarar, el consumidor
+aplica el valor normativo por defecto y el calculo sigue. Se leen con
+valor_si_declarado(), nunca con valor(), y se listan con
+criterios_opcionales_sin_declarar(), no con criterios_sin_valor().
+
+Todo valor que entre por cualquiera de los tres caminos de declaracion -- el
+archivo al importarse, establecer_valor_dinamico() y escribir_valor_en_archivo()
+-- pasa por _verificar_criterio(). Si el criterio declara un rango de
+sensibilidad numerico, el valor tiene que caer dentro: el rango y el valor se
+defienden juntos en la memoria y no pueden contradecirse.
+
+Al cambiar un criterio (por ejemplo, cuando llegue el SPT), se modifica UNA
+linea de este archivo y todos los modulos se recalculan sin contradicciones.
+
+Etiquetas
+---------
+    N    Exigencia normativa peruana vigente, numeral verificado
+    N->  Valor normativo aplicado POR ANALOGIA. Requiere declaracion expresa
+    S    Dato de sitio. Obtenido mediante un procedimiento normativo real
+         (mapa, ensayo, medicion de campo) aplicado a las coordenadas o
+         condiciones de ESTE proyecto. No es eleccion del proyectista ni
+         analogia: es un hecho determinado, no portable a otro proyecto. En
+         vez de sensibilidad declara TRAZABILIDAD obligatoria: el
+         procedimiento exacto, la fuente, y si el dato aplica a todo el
+         corredor o varia punto a punto
+    C    Vacio normativo cubierto con fuente tecnica reconocida (FHWA, AASHTO)
+    A    Sin norma ni fuente unica. Adopcion declarada + sensibilidad obligatoria
+
+Las cinco se leen de mas determinado a mas elegido. [S] se lee entre [N->] y
+[C] por lo mismo: el procedimiento que lo produce es normativo y propio (no
+prestado, no ajeno), y lo unico local es la lectura.
+
+Donde vive cada [S]
+-------------------
+Un dato de sitio unico para todo el corredor vive en `datos_sitio.py`
+(PGA_roca_B, la zonificacion de E.030). Uno que varia punto a punto es una
+columna del CSV (NF_profundidad_m, cbr_subrasante). Aqui solo quedan los [S]
+que ademas siguen sujetos a un ensayo pendiente y por eso comparten tablero
+con los criterios adoptados.
+"""
+
+import ast
+import math
+import numbers
+import re
+from dataclasses import dataclass, replace
+from functools import lru_cache
+from pathlib import Path
+from typing import Any, Optional, Tuple, Dict, List, Set
+
+from src.dominios import ESVIAJE_MAX
+from src.constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
+                                   H_O_CONDICION_TEXTO, H_O_NUMERAL,
+                                   KE_HDS5_C2, V_MIN,
+                                   Y_SOBRE_D_MAX,
+                                   REGIMEN_CORTANTE_EN_EL_PLANO,
+                                   REGIMEN_CORTANTE_PERPENDICULAR)
+# --- T-4 --- las vistas y unidades que los criterios nuevos DERIVAN.
+from src.constantes_normativas import (D_INICIO, SIMBOLOS_SUCS,
+                                   TMC_PLANCHA_CORRUGADA,
+                                   DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM)
+from src.constantes_fisicas import PULGADA_EN_MM
+from src.constantes_normativas import (  # --- T-7c ---
+    BETA_SIMPLIFICADO_AASHTO, PHI_CORTE_AASHTO, PHI_EVENTO_EXTREMO_AASHTO,
+    PHI_FLEXION_AASHTO)
+from src.dominios import MILIMETROS_POR_METRO
+from src.normativa import esquema as _esquema
+from src.normativa import registro as _registro_normativo
+from src.modelos import (ALCANCE_EXPEDIENTE, ALCANCE_PERFIL,
+                     CriterioPendienteError, DeCatalogo, DeEnsayo, Derivada,
+                     DeTabla, EnRango, Libre, ModoDeResolucion, Resolucion,
+                     modo_de)
+from src.modelos import NIVEL_EXPEDIENTE as _NIVEL_EXPEDIENTE
+from src.modelos import NIVEL_PERFIL as _NIVEL_PERFIL
+from src.modelos import NIVELES as _NIVELES
+
+# Las importaciones de constantes normativas que hace este archivo
+# entran por la misma razon, y ninguna transcribe nada: referencian lo que ya
+# esta transcrito en su archivo.
+#
+# `BORDE_LIBRE_BADEN_RANGO_M`: la `sensibilidad` de 'borde_libre_canal_m' ES
+# la banda que el num. 4.1.1.4.1 e) imprime. Escribir `(0.30, 0.50)` a mano
+# aqui pondria los numeros de la norma en dos sitios y dejaria que la ventana
+# del criterio y la constante divergieran sin que nada avisara -- el mismo
+# argumento que el de `MANNING`, y el mismo que sostiene toda la regla de las
+# segundas transcripciones.
+#
+# `MANNING` SE IMPORTABA AQUI HASTA T-4 por 'n_manning_hdpe', que era un [N->]
+# -- la fila del concreto de esa tabla aplicada por analogia --. Desde T-4 el
+# n del HDPE es [C] y se lee de la fila del polietileno de la Table B.1 del
+# HDS-5 (`_N_MANNING_HDPE_HDS5`), con el mismo argumento: el valor tiene que
+# SER la fila transcrita, no una copia que puede quedar desincronizada.
+#
+# `H_O_NUMERAL` y `H_O_CONDICION_TEXTO`: la condicion de uso que HDS-5 impone
+# a h_o (num. 3.3.3) es lo que hace pendiente la verificacion de
+# 'geometria_control_salida' (NOR-HDS-05), y el texto de esa condicion tiene
+# que ser el MISMO que constantes_normativas transcribe. Copiado a mano seria
+# una segunda transcripcion que puede desviarse de la primera sin que nadie lo
+# note, que es exactamente lo que este proyecto persigue en las citas.
+
+
+# ---------------------------------------------------------------------------
+# Estructura
+# ---------------------------------------------------------------------------
+
+# LOS DOS NIVELES DE ENTREGA. No son etiquetas de la taxonomia de CLAUDE.md
+# (esas son [N], [N->], [S], [C], [A]) ni fases del calculo: dicen a que
+# ENTREGA pertenece el criterio. Un estudio de PERFIL cierra con los primeros
+# declarados; los segundos son del expediente tecnico, y `--alcance perfil`
+# difiere sus etapas con su fundamento en el bloque de alcance.
+#
+# Desde EXT-10 los tres nombres se DEFINEN en `modelos.py` --- los lleva
+# tambien `DatoSitio.nivel`, y `datos_sitio` no puede importar este modulo
+# --- y aqui se reexportan con los mismos nombres, que son los que leen la
+# GUI, `variables_entrada` y la suite (`ca.NIVEL_PERFIL`).
+NIVEL_PERFIL = _NIVEL_PERFIL
+NIVEL_EXPEDIENTE = _NIVEL_EXPEDIENTE
+NIVELES = _NIVELES
+
+# La etiqueta que exige ventana, y es UNA. CLAUDE.md lo escribe en la propia
+# definicion de la taxonomia: «[A] Sin norma ni fuente unica. Adopcion
+# declarada + sensibilidad». Las otras cuatro quedan fuera y cada una por su
+# razon: [N] y [N->] no se eligieron, se leyeron -- darles rango seria decir
+# que la norma admite otro numero --; [C] esta cubierto por una fuente tecnica
+# reconocida, que es su procedencia y su defensa; y [S] se defiende con
+# `trazabilidad`, no con rango, que es la regla que separa [S] de [A].
+ETIQUETAS_DE_ELECCION = ("A",)
+
+# LA FORMA DEL VALOR: la familia cerrada de estructuras que un criterio puede
+# declarar (EXT-5; cierra EXT-G-01, PC-13, PC-14 y la mitad de FORMA de
+# EXT-V-02, EXT-V-05 y EXT-V-06). Es lo que el CONSUMIDOR va a exigir, dicho
+# en la ficha para que la puerta de declaracion lo exija ANTES: hasta EXT-5
+# la guardia validaba etiqueta, nivel, finitud y la ventana de sensibilidad,
+# pero no la ESTRUCTURA del valor, de modo que 53 de las 70 claves aceptaban
+# la cadena 'cero' y la aritmetica reventaba despues con un `TypeError` fuera
+# de `ErrorProyecto` (PC-14), y la GUI no podia declarar un ENTERO para
+# `n_celdas_cajon` porque nada le decia que hacia falta uno (PC-13).
+#
+# Ocho formas, no siete: el prompt de EXT-5 enumera siete y `F_pga` no cabe
+# en ninguna --- declara la TUPLA de filas de la tabla sobre las que se lee
+# el factor ('C', 'D', 'E'), que no es un texto ni una serie de pares ---, y
+# meterla a la fuerza en `categoria` escondia la estructura que M9 exige.
+# `serie_de_claves` la nombra. Esta escrito en decisiones_diferidas.md.
+#
+# Un criterio puede llevar la UNION de dos formas, como tupla: `k_v` admite
+# la cadena del regimen prescrito O el numero del caso reservado (asi lo
+# consume `M9.k_v_declarado`), y una forma unica habria estrechado el
+# contrato que el consumidor ya tiene.
+FORMA_INT = "int"                       # entero de Python; `bool` queda fuera
+FORMA_FLOAT = "float"                   # real (un `int` vale); `bool` queda fuera
+FORMA_STR = "str"                       # texto no vacio: la CLAVE de una fila, un metodo
+FORMA_PAR_ORDENADO = "par_ordenado"     # (minimo, maximo) de reales, en orden
+FORMA_SERIE_DE_PARES = "serie_de_pares" # [(B, H), ...] de reales, sin repetidos
+FORMA_DICT_CON_CAMPOS = "dict_con_campos"  # dict no vacio con claves de texto
+FORMA_CATEGORIA = "categoria"           # texto de un conjunto cerrado: `sensibilidad`
+FORMA_SERIE_DE_CLAVES = "serie_de_claves"  # (clave, ...) de textos, sin repetidos
+FORMAS = (FORMA_INT, FORMA_FLOAT, FORMA_STR, FORMA_PAR_ORDENADO,
+          FORMA_SERIE_DE_PARES, FORMA_DICT_CON_CAMPOS, FORMA_CATEGORIA,
+          FORMA_SERIE_DE_CLAVES)
+
+
+@dataclass(frozen=True)
+class Criterio:
+    valor: Any
+    etiqueta: str                              # "N", "N->", "S", "C", "A"
+    concepto: str                              # que es
+    justificacion: str                         # por que este valor
+    fuente: str                                # de donde sale
+    forma: Any = ""                            # una de FORMAS, o una tupla de ellas; obligatoria
+    reemplazado_por: Optional[str] = None      # ensayo/dato que lo sustituye
+    sensibilidad: Optional[Tuple] = None       # rango declarado -- [A] y [C]; nunca [S]
+    trazabilidad: Optional[str] = None         # como reproducir la lectura -- SOLO [S]
+    verificacion_pendiente: Optional[str] = None   # lo que falta confirmar
+    provisional: bool = False                  # valor de PRUEBA, no verificado
+    opcional: bool = False                     # valor=None NO bloquea: hay defecto normativo
+    vacio_verificado: str = ""                 # ancla al vacio registrado que este valor cubre
+    sin_consumidor: str = ""                   # por que NINGUN modulo lo invoca
+    de_catalogo: str = ""                      # rotulo: el valor es de CATALOGO, no de norma
+    resolucion: Optional[Resolucion] = None    # COMO se resuelve (Sec. 4.3): tabla, rango, ensayo...
+    campos_obligatorios: Tuple[str, ...] = ()  # solo con `dict_con_campos`: los campos que la puerta exige (EXT-6)
+    nivel: str = ""
+    # LAS DISCREPANCIAS DECLARADAS QUE ESTE CRITERIO TOCA, por su id.
+    #
+    # Tercera via del canal de C8, y la que faltaba: hay discrepancias que no
+    # hablan de un TEXTO (esas llegan solas, cruzando las citas que los pasos
+    # imprimen) ni de un valor que un PASO sustituye (esas las declara el
+    # paso), sino del valor de un CRITERIO. `DIS-HR-D-MAX` es el caso vivo:
+    # dice que los topes de 2.70 / 2.10 / 1.50 m no son normativos sino de
+    # catalogo, y quien los lleva es este archivo. V9 los consulta y ni
+    # siquiera emite paso.
+    #
+    # VIAJA EL ID Y NUNCA EL TEXTO. Antes de C8 estos ids se escribian a mano
+    # DENTRO de la `justificacion` --- prosa, invisible al registro, imposible
+    # de enumerar y libre de divergir de la discrepancia que nombra. Aqui el
+    # registro comprueba que el id exista y que siga viva, y M11 imprime la
+    # discrepancia entera desde el registro.
+    discrepancias: Tuple[str, ...] = ()                            # NIVEL_PERFIL / NIVEL_EXPEDIENTE / "" sin clasificar
+
+    # `nivel` responde a UNA pregunta y no a dos: si este criterio hay que
+    # tenerlo declarado para cerrar el nivel de PERFIL, o si su etapa la
+    # difiere el alcance de perfil al expediente. No es la fase (eso es
+    # `variables_entrada`) ni la etiqueta (eso es la taxonomia de CLAUDE.md):
+    # es a que ENTREGA pertenece.
+    #
+    # La regla que lo decide, y es empirica, no de opinion: el nivel de un
+    # criterio es el nivel de la etapa que lo consume. Si una corrida
+    # `--alcance perfil` lo invoca sin que su etapa quede diferida, es de
+    # perfil. `tests/test_criterios_adoptados.py` lo comprueba corriendo el
+    # pipeline y contrastando `criterios_usados()` contra este campo, de modo
+    # que la clasificacion no puede quedar desincronizada del codigo -- que
+    # es exactamente como se desincronizan las clasificaciones escritas a
+    # mano en un documento.
+
+    # `resolucion` es el vinculo que faltaba: dice DE DONDE SALIO el valor --
+    # de que tabla y de que fila, de que rango, de que ensayo, de que catalogo
+    # -- y con el la memoria puede escribir "el valor X vino de la fila R de la
+    # tabla T" en vez de dejar al revisor cruzando a mano la prosa de `fuente`
+    # con el registro normativo (regla R1 del plan v12).
+    #
+    # No es un `str` con el nombre del modo: es un objeto de la familia cerrada
+    # de `modelos.py` (Libre / DeTabla / EnRango / Derivada / DeEnsayo /
+    # DeCatalogo) y EL MODO ES SU TIPO. Un criterio no puede quedarse sin modo
+    # ni declarar uno que no corresponda a como se resuelve, porque no hay dos
+    # campos que puedan contradecirse: hay uno.
+    #
+    # Es `Optional` solo por la firma; la guardia lo exige a toda entrada del
+    # archivo. El default existe para que `replace()` -- los dos caminos
+    # dinamicos -- no tenga que repetirlo.
+
+    # `de_catalogo` marca el valor que se PARECE a una exigencia normativa y
+    # no lo es: un tope de proveedor, una disponibilidad de mercado. Lleva el
+    # rotulo con que hay que imprimirlo -- de que catalogo sale y que norma de
+    # producto NO lo sostiene -- para que la memoria no le invente una cita.
+    #
+    # Nace de NOR-PRO-01 y NOR-PRO-02: los topes D_MAX (2.70 / 2.10 / 1.50 m)
+    # vivian en constantes_normativas.py atribuidos a AASHTO M170 y ASTM A760,
+    # y esas normas tabulan hasta 3600 mm. Un tope de catalogo impreso como
+    # tope normativo es una cita falsa que ademas descarta materiales en
+    # silencio. El campo existe para que la distincion viaje con el dato y no
+    # dependa de que alguien lea la justificacion entera.
+
+    # `sin_consumidor` es la razon escrita de que ninguna etapa de produccion
+    # llame a este criterio. Existe porque un criterio sin consumidor tiene
+    # dos lecturas opuestas -- se olvido cablearlo, o su consumidor esta
+    # declarado fuera de alcance -- y desde fuera del archivo no se
+    # distinguen: `criterios_usados()` devuelve lo mismo en los dos casos.
+    #
+    # Sin el campo, un criterio CON valor y sin invocacion no cae en ninguno
+    # de los tres bloques de M11 (no esta usado, no esta vacio, no es
+    # opcional) y desaparece de la memoria sin dejar rastro. Con el, M11 lo
+    # imprime en su propio bloque con la razon delante.
+
+    # `vacio_verificado` distingue dos cosas que se parecen y no son iguales:
+    # un valor que cubre un hueco que NADIE busco, y uno que cubre un hueco
+    # que alguien AGOTO -- fuente por fuente, con cita -- y dejo registrado.
+    # Solo lo segundo se puede defender en una memoria, y solo lo segundo
+    # entra en el bloque de acotaciones que M11 imprime.
+    #
+    # No es un booleano a proposito: lleva el ANCLA al registro
+    # ("manifiesto_citas.md Sec. 14.a"), de modo que la memoria puede decirle
+    # al revisor donde ir a leer la busqueda completa en vez de pedirle que
+    # confie. `_verificar_criterio` comprueba al importar que esa seccion
+    # existe de verdad: un ancla rota falla, no pasa en silencio.
+
+    # `opcional=True` cambia el significado de `valor=None`, que sin el
+    # significa una sola cosa: vacio que detiene el calculo. Un criterio
+    # opcional REFINA un valor que la norma ya fija, en vez de cubrir un
+    # vacio que la norma deje abierto; sin declarar, el consumidor aplica el
+    # valor normativo por defecto y el calculo sigue. Se lee con
+    # `valor_si_declarado()`, nunca con `valor()`.
+    #
+    # La distincion vivia solo en que funcion usaba el llamador, mas prosa en
+    # la justificacion. Eso dejaba a `criterios_sin_valor()` -- y con el, al
+    # bloque "VACIOS SIN VALOR" de la memoria y al aviso de la GUI --
+    # anunciando como vacio bloqueante lo que es un refinamiento que nadie
+    # tiene obligacion de declarar. Ahora la distincion esta en el dato.
+
+    # `provisional=True` marca un valor cargado para una corrida de prueba
+    # integral: destraba el pipeline para ver que puntos completan diseno,
+    # pero NO esta verificado contra norma ni ensayo y no puede ir a una
+    # memoria de calculo. Existe para que ese valor NUNCA pueda pasar
+    # inadvertido: reporte_criterios() y M11 lo imprimen con marca visible.
+    # Ningun criterio del expediente lo lleva puesto -- si alguno aparece
+    # con provisional=True en una revision, es que quedo residuo de una
+    # prueba sin limpiar.
+
+    # sensibilidad y trazabilidad no son dos nombres para lo mismo y no se
+    # mezclan: un [A] se defiende mostrando cuanto cambiaria el resultado con
+    # el otro extremo del rango, y un [S] no tiene rango que elegir -- se
+    # defiende diciendo donde se leyo, para que el revisor repita la lectura.
+    # `_verificar_criterio()` lo verifica al importar el modulo.
+
+
+_USADOS: Set[str] = set()
+
+# ---------------------------------------------------------------------------
+# Declaracion en caliente (solo para la corrida actual)
+# ---------------------------------------------------------------------------
+# La GUI (pestana "Criterios") permite declarar un valor para un criterio con
+# valor=None SIN tocar este archivo. El override vive solo en memoria de
+# proceso: se pierde al cerrar la GUI y nunca se confunde con un valor [N]/[C]
+# transcrito de una norma. Reescribir este archivo es una accion aparte,
+# explicita, ver `escribir_valor_en_archivo`.
+_OVERRIDES: Dict[str, Any] = {}
+
+
+def establecer_valor_dinamico(clave: str, valor_nuevo: Any) -> None:
+    """
+    Declara, solo para esta corrida, el valor de un criterio.
+
+    DE CUALQUIER CRITERIO QUE SE ELIJA, TAMBIEN DE UNO QUE YA TIENE VALOR EN
+    EL ARCHIVO. Esta funcion nunca lo impidio --- no hay ni hubo comprobacion
+    de `valor is None` aqui ---; quien lo impedia era la GUI, con un
+    `puede_declarar` en `_al_seleccionar_criterio`.
+
+    Esa asimetria dejaba al proyectista sin forma de TANTEAR: para probar un
+    espesor distinto en seis cruces habia que reescribir
+    `criterios_adoptados.py`, o sea cambiar el expediente para hacer un
+    ensayo. Reescribirlo permanentemente si estaba permitido, lo que dejaba
+    la puerta ancha abierta y la estrecha cerrada.
+
+    LA UNICA EXCEPCION ES EL CRITERIO QUE NO SE ELIGE: el de resolucion
+    `Derivada` (EXT-V-04). Su valor lo calcula el programa desde otras
+    variables ya declaradas -- la tabla de recubrimiento AASHTO sale del
+    registro normativo, no de quien corre el calculo -- y pisarlo por esta
+    via ponia en la memoria una tabla que la fuente no imprime: medido en el
+    dictamen de la auditoria externa, con la tabla pisada a 1.0 el
+    recubrimiento de M9 baja de 40.64 a 25.4 mm. La ventana emergente ya lo
+    protegia (`contenido_de_campo` devuelve `editable=False`); la pestaña 2
+    de la GUI, `--declarar` y `declaracion.declarar_valor` entran por aqui,
+    de modo que la guardia va aqui y cubre a los tres. Se rechaza con
+    `ValueError`, como todo rechazo en la puerta de declaracion (SIS-E-05),
+    y el mensaje dice de que se deriva y que hay que editar en su lugar.
+
+    Pisar un valor de archivo NO es lo mismo que rellenar un vacio, y el
+    proyecto lo distingue en los tres sitios donde se ve: `criterios_pisados_en_caliente`
+    los separa, la memoria les da su propio bloque con lo que el archivo dice
+    al lado, y la GUI los rotula «pisado (corrida)» y no «declarado (corrida)».
+    Sin esas tres, permitir el tanteo seria permitir falsearlo en silencio.
+
+    Pasa por la MISMA guardia que el archivo: se arma el Criterio que
+    resultaria de esta declaracion y se somete a `_verificar_criterio`. Un
+    valor fuera del rango de sensibilidad que el propio criterio declara se
+    rechaza aqui, en el momento de declararlo, y no mas tarde durante el
+    calculo.
+
+    `valor_nuevo=None` se rechaza. No es una forma de retirar la
+    declaracion -- para eso esta `quitar_valor_dinamico` -- y aceptarlo abria
+    un default silencioso: `valor()` consulta `_OVERRIDES` ANTES de mirar si
+    el valor es None, de modo que un override a None devolvia None en vez de
+    lanzar `CriterioPendienteError`, que es justo lo que este archivo existe
+    para impedir.
+
+    POR QUE EL RECHAZO SALE COMO `ValueError` Y NO COMO `DatoInvalidoError`
+    (SIS-E-05). La pregunta es legitima: CLAUDE.md define DatoInvalidoError
+    como "el dato esta pero no puede ser", y un valor fuera del rango de
+    sensibilidad encaja en esa frase. La respuesta es que lo que se rechaza
+    aqui NO es un dato del expediente: es una DECLARACION que el proyectista
+    acaba de teclear, y el rango contra el que se compara lo declara el
+    propio criterio, en este archivo. `_verificar_criterio` es la misma
+    guardia que corre AL IMPORTAR, donde un fallo significa que el archivo
+    fuente esta mal escrito y ninguna corrida deberia empezar -- ahi
+    `ValueError` es exactamente lo que corresponde --, y hacerla lanzar dos
+    excepciones distintas segun por cual de sus tres caminos entre convertiria
+    la guardia en dos guardias.
+    Lo que la taxonomia persigue -- que la GUI distinga un problema del
+    expediente de un fallo del programa -- se cumple igual y esta comprobado:
+    los tres llamadores (`cli.main`, `gui/app.py::_aplicar_valor_corrida` y
+    `::_guardar_valor_en_archivo`) capturan `(ValueError, KeyError)` a tres
+    lineas y muestran el mensaje; ninguno deja escapar una traza. El contrato
+    esta fijado por test en tests/test_criterios_adoptados.py.
+    """
+    verificar_declaracion(clave, valor_nuevo)
+    _OVERRIDES[clave] = valor_nuevo
+
+
+def verificar_declaracion(clave: str, valor_nuevo: Any) -> None:
+    """
+    La guardia de `establecer_valor_dinamico`, EN SECO: las mismas tres
+    comprobaciones --- clave declarada, valor no None, criterio no derivado
+    --- y la misma `_verificar_criterio`, sin escribir nada. Lanza
+    `KeyError` o `ValueError` exactamente como la declaracion.
+
+    Existe desde EXT-4 para `declaracion.restaurar_sesion(sustituir=True)`
+    (EXT-A-02): abrir una sesion tiene que validar TODO el candidato antes de
+    vaciar lo declarado, o un archivo con una clave mala dejaria el proceso
+    a medias --- ni la obra anterior ni la nueva ---. No es un segundo camino
+    de escritura: no toca `_OVERRIDES`, y `establecer_valor_dinamico` la
+    llama para que las dos no puedan divergir.
+    """
+    if clave not in CRITERIOS:
+        raise KeyError(
+            f"'{clave}' no esta declarado en criterios_adoptados.py. "
+            "Ningun parametro no normativo puede usarse sin declararse aqui."
+        )
+    if valor_nuevo is None:
+        raise ValueError(
+            f"No se puede declarar '{clave}' con valor None: una declaracion "
+            "en caliente aporta un valor, no lo retira. Para retirarla, usa "
+            "`quitar_valor_dinamico`; el criterio vuelve a bloquear el calculo"
+        )
+    resolucion = CRITERIOS[clave].resolucion
+    if isinstance(resolucion, Derivada):
+        raise ValueError(
+            f"'{clave}' no se declara: se deriva de "
+            f"{', '.join(resolucion.de)}; edite sus entradas. Un criterio de "
+            "resolucion `Derivada` lo calcula el programa desde otras "
+            "variables ya declaradas, y pisarlo en caliente pondria en la "
+            f"memoria un valor que ninguna fuente sostiene ({resolucion.regla})"
+        )
+    _verificar_criterio(clave, replace(CRITERIOS[clave], valor=valor_nuevo))
+
+
+def quitar_valor_dinamico(clave: str) -> None:
+    """Retira la declaracion en caliente de un criterio (vuelve a bloquear)."""
+    _OVERRIDES.pop(clave, None)
+
+
+def limpiar_valores_dinamicos() -> None:
+    """
+    Retira todas las declaraciones en caliente de la corrida.
+
+    TIENE UN LLAMADOR DE PRODUCCION DESDE EXT-4, y es abrir una sesion
+    (SIS-B-22, reabierta en EXT-0 y cerrada aqui). Este docstring decia lo
+    contrario --- «no tiene llamador de produccion, y es deliberado» --- con
+    una premisa de S16.5 que S17 dejo atras al crear la sesion JSON: que la
+    CLI es un proceso de un solo uso y que la GUI solo retira UNA clave. La
+    sesion JSON es justamente el caso en que la GUI necesita retirar TODAS:
+    abrir la sesion de la obra B tras declarar en la obra A dejaba las claves
+    de A vivas, `estado_de_sesion()` de B las persistia y una clave de B sin
+    procedencia heredaba la de A (EXT-A-02). El consumidor es
+    `declaracion.restaurar_sesion(sustituir=True)`, que valida el candidato en
+    seco, llama a esta funcion junto con el vaciado del libro de procedencias
+    y vuelca solo lo aceptado. `sustituir=False` --- «Importar decisiones» ---
+    no la llama, y esa es la diferencia entre abrir e importar.
+
+    Sigue siendo tambien utilidad de banco de pruebas: la fixture autouse de
+    `conftest.py` fotografia y repone el estado de cada test, y es el unico
+    sitio de la suite que toca los registros privados.
+    """
+    _OVERRIDES.clear()
+
+
+def valores_dinamicos() -> Dict[str, Any]:
+    """Claves declaradas en caliente en esta corrida, sin registrar uso."""
+    return dict(_OVERRIDES)
+
+
+def valor(clave: str) -> Any:
+    """Devuelve el valor del criterio y registra que fue usado."""
+    if clave not in CRITERIOS:
+        raise KeyError(
+            f"'{clave}' no esta declarado en criterios_adoptados.py. "
+            "Ningun parametro no normativo puede usarse sin declararse aqui."
+        )
+    _USADOS.add(clave)
+    if clave in _OVERRIDES:
+        return _OVERRIDES[clave]
+    c = CRITERIOS[clave]
+    if c.valor is None:
+        # Detiene el calculo. NUNCA se devuelve un default silencioso: la GUI
+        # muestra "falta declarar: <clave>" y el usuario resuelve el vacio.
+        raise CriterioPendienteError(clave, concepto=c.concepto, fuente=c.fuente)
+    return c.valor
+
+
+def valor_si_declarado(clave: str) -> Optional[Any]:
+    """
+    El valor del criterio, o None si sigue sin declarar. NO lanza
+    CriterioPendienteError.
+
+    Es la lectura para los criterios OPCIONALES: los que refinan un valor que
+    la norma ya fija, en vez de cubrir un vacio. Un criterio de vacio se lee
+    con `valor()` y detiene el calculo mientras este vacio; uno opcional se
+    lee con esta, y quien la llama aplica el valor normativo por defecto.
+    Confundirlas en cualquiera de los dos sentidos es grave: `valor()` sobre
+    un opcional bloquea un calculo que la norma sabe resolver, y esta sobre
+    uno de vacio rellena el vacio en silencio, que es el peor error del
+    proyecto.
+
+    Un criterio sin valor no se registra como usado: no se aplico a nada y no
+    hay uso que declarar en M11. En cuanto reciba valor -- en el archivo o en
+    caliente -- empieza a devolverlo Y a registrarse.
+    """
+    if clave not in CRITERIOS:
+        raise KeyError(
+            f"'{clave}' no esta declarado en criterios_adoptados.py. "
+            "Ningun parametro no normativo puede usarse sin declararse aqui."
+        )
+    if clave in _OVERRIDES:
+        _USADOS.add(clave)
+        return _OVERRIDES[clave]
+    if CRITERIOS[clave].valor is None:
+        return None
+    return valor(clave)
+
+
+def criterio(clave: str) -> Criterio:
+    """Devuelve el objeto completo, sin registrar uso (para reportes)."""
+    return CRITERIOS[clave]
+
+
+def criterios_sin_valor() -> List[str]:
+    """
+    Claves cuyo valor es None y sin declaracion en caliente: vacios que
+    detienen el calculo si se invocan. M11 los imprime en bloque aparte
+    (Sec. 0.7) y la GUI los usa para avisar antes de correr, no despues de
+    la excepcion.
+
+    Los criterios OPCIONALES quedan FUERA: su `valor=None` no detiene nada
+    -- el consumidor aplica el valor normativo por defecto -- y anunciarlos
+    como vacios bloqueantes le decia al revisor de la memoria que un
+    refinamiento que nadie tiene obligacion de declarar era un hueco del
+    expediente. Se listan aparte, en `criterios_opcionales_sin_declarar`.
+    """
+    return sorted(
+        k for k, c in CRITERIOS.items()
+        if c.valor is None and not c.opcional and k not in _OVERRIDES
+    )
+
+
+def criterios_opcionales_sin_declarar() -> List[str]:
+    """
+    Criterios opcionales que nadie declaro: el calculo corre con el valor
+    normativo por defecto. NO son vacios y no bloquean nada; se informan
+    para que la memoria diga que el refinamiento estaba disponible y no se
+    adopto, que es distinto de no haberlo mirado.
+    """
+    return sorted(
+        k for k, c in CRITERIOS.items()
+        if c.opcional and c.valor is None and k not in _OVERRIDES
+    )
+
+
+def escribir_valor_en_archivo(clave: str, valor_nuevo: Any,
+                              ruta: Optional[str] = None) -> None:
+    """
+    Reescribe, EN EL ARCHIVO FUENTE, el ``valor=`` del criterio `clave` por
+    `valor_nuevo`. Accion permanente y distinta de
+    `establecer_valor_dinamico`: se usa solo cuando el usuario confirma de
+    forma explicita que quiere dejar de tratar el criterio como pendiente
+    (la GUI pide confirmacion aparte antes de llamarla).
+
+    REESCRIBE CUALQUIER VALOR, NO SOLO `None` (SIS-A-14). El docstring decia
+    «el ``valor=None``» y el patron es `valor=)([^,\\n]*)(,)`, que casa con lo
+    que haya: un criterio YA declarado se puede volver a escribir por esta
+    misma via, y el boton de la GUI esta disponible para toda fila, no solo
+    para las pendientes. Es deliberado --- corregir un valor adoptado es tan
+    legitimo como declararlo por primera vez, y obligar a editar el archivo a
+    mano para eso empujaria a saltarse la guardia --- y lo que faltaba era
+    decirlo. Se declara aqui porque la frase anterior describia una funcion
+    mas estrecha que la que existe, y quien la leyera creeria tener una
+    proteccion contra la sobreescritura que el codigo no da.
+
+    PERO NO REESCRIBE CUALQUIER FORMA DE VALOR, y esto es un limite del
+    patron, no una decision: `valor=)([^,\n]*)(,)` se corta en la PRIMERA
+    coma. Un valor cuyo literal lleve comas --- la tupla de `F_pga`, el dict
+    de `hds5_embocadura_hdpe` --- no cabe en esa mordida, y hasta S19 el
+    intento DESTRUIA el archivo y volvia sin excepcion. Ahora se rechaza con
+    `ValueError` y el archivo no se toca: la comprobacion es `ast.parse` sobre
+    el texto resultante, ANTES de escribir. Esos criterios se editan a mano.
+
+    LO QUE NO TOCA, y ahi si es estrecha a proposito: ningun otro campo del
+    Criterio (etiqueta, justificacion, fuente, sensibilidad, resolucion). Esos
+    describen POR QUE se adopto el valor y se revisan a mano; reescribir el
+    numero y dejar la justificacion del anterior es la forma de que el archivo
+    afirme una cosa y valga otra. La GUI advierte de los TRES primeros en su
+    confirmacion (`gui/app.py::_guardar_valor_en_archivo`), y es advertencia,
+    no impedimento: el revisor decide.
+    """
+    import re
+
+    if clave not in CRITERIOS:
+        raise KeyError(f"'{clave}' no esta declarado en criterios_adoptados.py.")
+    if isinstance(CRITERIOS[clave].resolucion, Derivada):
+        # El mismo rasero que `establecer_valor_dinamico` (EXT-V-04): una
+        # tabla derivada del registro no se edita escribiendo un numero en
+        # su lugar, ni en caliente ni en el archivo.
+        raise ValueError(
+            f"'{clave}' no se escribe: se deriva de "
+            f"{', '.join(CRITERIOS[clave].resolucion.de)}; edite sus entradas")
+
+    # La misma guardia que el archivo y que la declaracion en caliente, y
+    # ANTES de tocar el disco: un valor que la guardia rechaza no llega a
+    # escribirse, para que el archivo fuente nunca quede en un estado que su
+    # propio import rechazaria.
+    _verificar_criterio(clave, replace(CRITERIOS[clave], valor=valor_nuevo))
+
+    ruta_archivo = ruta or __file__
+    texto = Path(ruta_archivo).read_text(encoding="utf-8")
+
+    patron = re.compile(
+        r'("' + re.escape(clave) + r'":\s*Criterio\(\s*\n\s*valor=)([^,\n]*)(,)'
+    )
+    texto_nuevo, n = patron.subn(
+        lambda m: m.group(1) + repr(valor_nuevo) + m.group(3), texto, count=1,
+    )
+    if n == 0:
+        raise ValueError(
+            f"No se encontro el bloque 'valor=' de '{clave}' en {ruta_archivo}. "
+            "No se modifico el archivo."
+        )
+
+    # EL ARCHIVO RESULTANTE TIENE QUE SEGUIR SIENDO PYTHON. Sin esta guardia
+    # la funcion DESTRUIA el archivo y volvia sin excepcion, que es la peor
+    # combinacion posible: el patron `valor=)([^,\n]*)(,)` se corta en la
+    # PRIMERA coma, de modo que un valor de UNA LINEA que lleve comas
+    # --- `("C", "D", "E")` de `F_pga`, o el dict de `hds5_embocadura_hdpe` ---
+    # quedaba partido, con el resto del literal colgando, y
+    # `criterios_adoptados.py` dejaba de importar. La GUI, que solo mira si
+    # hubo excepcion, pintaba «escrito» en verde; y como despues se refresca
+    # `CRITERIOS` en memoria, la sesion en curso seguia funcionando y la
+    # corrupcion no aparecia hasta el siguiente arranque.
+    #
+    # El proyecto YA conocia este modo de fallo: SIS-F-19 lo describe con
+    # estas palabras --- «lo dejaria a medias y con el resto del literal
+    # colgando» --- y su ValueError solo cubria los valores MULTILINEA. Los de
+    # una linea con comas caian justo en el hueco. Encontrado al refutar el
+    # cierre de SIS-A-14, que habia declarado «reescribe cualquier valor» sin
+    # comprobar este limite.
+    try:
+        ast.parse(texto_nuevo, filename=str(ruta_archivo))
+    except SyntaxError as exc:
+        raise ValueError(
+            f"Reescribir 'valor=' de '{clave}' dejaria {ruta_archivo} sin "
+            f"poder importarse ({exc.msg}, linea {exc.lineno}). El valor "
+            "actual ocupa mas de lo que el patron alcanza a ver --- una tupla "
+            "o un dict con comas --- y hay que editarlo a mano. NO se "
+            "modifico el archivo."
+        ) from exc
+
+    Path(ruta_archivo).write_text(texto_nuevo, encoding="utf-8")
+
+    # El archivo ya quedo escrito; se refleja tambien en memoria para que el
+    # resto de esta sesion (GUI o CLI en curso) vea el valor definitivo sin
+    # tener que reiniciar el proceso, y se retira el override en caliente:
+    # ya no hace falta, el valor "real" es ahora este.
+    CRITERIOS[clave] = replace(CRITERIOS[clave], valor=valor_nuevo)
+    _OVERRIDES.pop(clave, None)
+
+
+def declaracion_de(clave: str):
+    """
+    El objeto DECLARADO de `clave`, venga de este archivo o de datos_sitio.py.
+
+    SIS-A-05. `servicio._bloqueo` y `M11.criterios_bloqueantes` resolvian toda
+    clave con `criterio()`, y `CriterioPendienteError` no la levanta solo este
+    archivo: `datos_sitio.valor` levanta LA MISMA excepcion cuando un [S] de
+    corredor todavia no se ha leido -- deliberadamente, porque el error que se
+    evita es el mismo. Con un [S] pendiente, los dos consumidores salian por
+    `KeyError`: un fallo de PROGRAMA en el codigo que existe justamente para
+    convertir un problema del expediente en una fila del informe.
+
+    Hoy es inalcanzable porque los datos de sitio de corredor tienen valor,
+    pero eso es una propiedad del expediente de este mes, no del codigo: el
+    dia que se añada un [S] pendiente -- y el proyecto tiene el mecanismo para
+    ello -- la corrida moriria con traza en vez de listar el bloqueo.
+
+    Los dos tipos declaran los mismos campos que el informe necesita
+    (`etiqueta`, `concepto`, `fuente`, `reemplazado_por`), de modo que el
+    consumidor no tiene que saber de cual de los dos archivos vino.
+    """
+    if clave in CRITERIOS:
+        return criterio(clave)
+    from src import datos_sitio as ds
+
+    if clave in ds.DATOS_SITIO:
+        return ds.dato(clave)
+    raise KeyError(
+        f"'{clave}' no esta declarado ni en criterios_adoptados.py ni en "
+        "datos_sitio.py. Ningun valor no normativo puede usarse sin "
+        "declararse en uno de los dos."
+    )
+
+
+# QUE NIVELES NECESITA DECLARADOS CADA ALCANCE DE CORRIDA.
+#
+# La correspondencia es 1:1 con el nombre y aun asi se escribe, porque son dos
+# cosas distintas y el proyecto ya lo tiene dicho: el NIVEL es propiedad del
+# CRITERIO y el ALCANCE lo es de la CORRIDA. Escribir el diccionario deja el
+# puente a la vista en vez de esconderlo en una comparacion de cadenas que
+# parece una coincidencia de nombres.
+#
+# EL "" ESTA EN LAS DOS FILAS A PROPOSITO. Hoy no hay ningun criterio sin
+# nivel --- los trece que quedaban se midieron en S21 ---, pero uno nuevo
+# puede nacer sin clasificar, y entonces el filtro tiene que MOSTRARLO. Un
+# filtro que oculta lo que no sabe clasificar es la unica forma de fallo que
+# no se puede permitir: esconde un criterio sin que nadie se entere, que es
+# exactamente lo contrario de lo que hace el resto del programa.
+NIVELES_DEL_ALCANCE: Dict[str, Tuple[str, ...]] = {
+    ALCANCE_PERFIL: (NIVEL_PERFIL, ""),
+    ALCANCE_EXPEDIENTE: (NIVEL_PERFIL, NIVEL_EXPEDIENTE, ""),
+}
+
+
+def criterios_del_alcance(alcance: str) -> Tuple[str, ...]:
+    """
+    Los criterios que una corrida de ese alcance PUEDE necesitar declarados.
+
+    Es el filtro de alcance de la pestana de criterios, y no calcula nada: lee
+    `Criterio.nivel`, que es el campo que ya responde a esta pregunta y que
+    `tests/test_nivel_medido.py` contrasta contra corridas reales en las dos
+    direcciones. Deducirlo aqui de los consumidores --- la otra via
+    disponible --- seria una segunda clasificacion que puede contradecir a la
+    primera, y ademas la peor de las dos: la derivacion estatica de
+    `variables_entrada` es una ESTIMACION y tuvo dos falsos negativos medidos
+    (ver `_consumo_por_modulo`).
+
+    NO ES UN PERMISO NI UNA PODA. Lo que queda fuera sigue existiendo, sigue
+    contando en el recuento de la pestana y se puede declarar igual: el
+    alcance de perfil no prohibe declarar un criterio del expediente, solo
+    dice que esta corrida no lo va a invocar.
+    """
+    if alcance not in NIVELES_DEL_ALCANCE:
+        raise ValueError(
+            f"alcance desconocido: '{alcance}'. Los declarados son "
+            + ", ".join(sorted(NIVELES_DEL_ALCANCE))
+        )
+    niveles = NIVELES_DEL_ALCANCE[alcance]
+    return tuple(clave for clave in sorted(CRITERIOS)
+                 if CRITERIOS[clave].nivel in niveles)
+
+
+def criterios_usados() -> List[str]:
+    """
+    Claves que el calculo invoco, en orden alfabetico. Es la misma informacion
+    que `reporte_criterios(solo_usados=True)` imprime como texto, expuesta como
+    lista para el consumidor que arma su propio bloque (cli.py la vuelca al
+    JSON). Existe para que nadie tenga que leer `_USADOS` desde fuera.
+
+    DESDE EXT-4 ES EL REGISTRO DE LA CORRIDA EN CURSO, no del proceso:
+    `servicio.correr` lo vacia al entrar (`reiniciar_usos`) y lo fotografia al
+    salir en `Informe.contexto`. Los exportadores leen la foto, no esto.
+    """
+    return sorted(_USADOS)
+
+
+def reiniciar_usos() -> None:
+    """
+    Vacia el registro de usos. Lo llama `servicio.correr` AL ENTRAR, y es lo que
+    cierra PC-09: el registro era de proceso y nunca se vaciaba, de modo que
+    en la GUI --- o en cualquier consumidor que corra dos veces --- la
+    memoria de la segunda corrida imprimia como usados los criterios de la
+    primera (medido: una memoria de perfil tras una corrida de expediente
+    listaba seis criterios de Fase 9 como usados con la Fase 9 diferida).
+
+    Es publica para que la suite tampoco tenga que tocar `_USADOS`: hasta
+    EXT-4 nueve archivos de tests lo vaciaban y reponian a mano, 27 veces.
+    """
+    _USADOS.clear()
+
+
+def declarado_en_caliente(clave: str) -> bool:
+    """
+    True si el valor que GOBIERNA el calculo entro por
+    `establecer_valor_dinamico` y no esta en el archivo.
+
+    Es la mitad que faltaba de `criterio_efectivo`: el valor efectivo dice
+    QUE numero se uso y esta dice DE DONDE vino. Separadas porque la memoria
+    tiene que imprimir las dos cosas -- un override no es un valor
+    transcrito, y una memoria que no distinga las dos procedencias declara
+    como cerrado lo que solo vale para esa corrida.
+    """
+    if clave not in CRITERIOS:
+        raise KeyError(
+            f"'{clave}' no esta declarado en criterios_adoptados.py."
+        )
+    return clave in _OVERRIDES
+
+
+def criterios_declarados_en_caliente() -> List[str]:
+    """
+    Claves con valor declarado SOLO para esta corrida, en orden alfabetico.
+
+    No son vacios (`criterios_sin_valor` las excluye, y con razon: el calculo
+    tiene valor con que correr) y tampoco son valores del archivo. Sin esta
+    lista se caian entre las dos sillas: la memoria las imprimia como
+    pendientes y el bloque de pendientes no las mostraba.
+    """
+    return sorted(_OVERRIDES)
+
+
+def criterios_pisados_en_caliente() -> List[str]:
+    """
+    Los declarados en caliente que PISAN un valor del archivo, no un vacio.
+
+    Subconjunto de `criterios_declarados_en_caliente`, y la distincion no es
+    de matiz: rellenar un vacio deja el expediente donde estaba --- faltaba un
+    numero y se puso --- mientras que pisar sustituye una decision ya tomada y
+    transcrita, que sigue en el archivo diciendo otra cosa. Un lector de la
+    memoria tiene que poder ver esa segunda, con los DOS valores delante; si
+    no, tantear y falsear se imprimen igual.
+    """
+    return sorted(c for c in _OVERRIDES if CRITERIOS[c].valor is not None)
+
+
+def criterio_efectivo(clave: str) -> Criterio:
+    """
+    El Criterio TAL COMO GOBIERNA el calculo: con el valor declarado en
+    caliente si lo hay, y con el del archivo si no. No registra uso.
+
+    `criterio()` devuelve lo que dice el ARCHIVO y por eso no sirve para
+    declarar en la memoria lo que el calculo hizo: un criterio declarado en
+    caliente se imprimia como "sin valor declarado" mientras su override
+    gobernaba los numeros de esa misma pagina. Todo reporte lee de aqui;
+    `criterio()` queda para quien necesite exactamente el texto del archivo
+    (por ejemplo, para contrastarlo con el override).
+    """
+    c = criterio(clave)
+    if clave in _OVERRIDES:
+        return replace(c, valor=_OVERRIDES[clave])
+    return c
+
+
+def criterios_con_verificacion_pendiente() -> List[str]:
+    """
+    Los que tienen valor pero una verificacion documental abierta: hermano de
+    `datos_sitio.datos_con_verificacion_pendiente()`.
+
+    Las dos dataclases comparten el campo `verificacion_pendiente` y solo una
+    exponia la consulta, de modo que un consumidor del JSON veia que datos de
+    sitio quedaban sin cerrar documentalmente y no veia que criterios. El
+    valor efectivo cuenta: un criterio declarado en caliente sobre un
+    criterio con verificacion abierta sigue teniendola abierta.
+    """
+    return sorted(
+        k for k in CRITERIOS
+        if criterio_efectivo(k).valor is not None
+        and CRITERIOS[k].verificacion_pendiente
+    )
+
+
+def criterios_sin_consumidor() -> List[str]:
+    """
+    Los que declaran por que ningun modulo de produccion los invoca.
+
+    La razon se escribe UNA vez, en el campo `sin_consumidor` del propio
+    criterio, y de ahi la leen la memoria y quien audite el archivo. Antes
+    vivia repartida entre la auditoria v9, el manifiesto y los docstrings de
+    los modulos que NO los llaman, que es el peor sitio para buscarla.
+    """
+    return sorted(k for k, c in CRITERIOS.items() if c.sin_consumidor)
+
+
+# ---------------------------------------------------------------------------
+# CRITERIOS ADOPTADOS
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# La Tabla 5.10.1-1 de AASHTO, DERIVADA DEL REGISTRO y no copiada a mano
+# ---------------------------------------------------------------------------
+# Este dict era 63 numeros escritos aqui, y la transcripcion completa de la
+# misma tabla vive ahora en el registro normativo, con el rotulo literal en
+# ingles de cada fila, la pulgada IMPRESA al lado del milimetro convertido, la
+# nota de las tres categorias y la correspondencia declarada con la tabla del
+# Manual de Puentes. Mantener dos copias a mano de la misma tabla es
+# exactamente el defecto que este cluster existe para eliminar: la que el
+# revisor lee y la que el programa calcula tienen que ser LA MISMA.
+#
+# LA CONVERSION NO SE REHACE AQUI. La tabla del registro trae las columnas en
+# pulgadas -- lo impreso -- y en milimetros -- la conversion del proyecto,
+# exacta --, y esta funcion solo las reagrupa por (situacion, categoria), que
+# es la forma en que `M9._recubrimiento_aashto_detallado` las consulta.
+def _tabla_recubrimiento_aashto_mm() -> Dict[str, Dict[str, float]]:
+    from src.normativa import registro as _rn
+    tabla = _rn.construir().tabla("AASHTO_LRFD_9.T5.10.1-1")
+    return {
+        tabla.clave_corta(fila): {
+            "A": float(fila.valores["cat_a_mm"]),
+            "B": float(fila.valores["cat_b_mm"]),
+            "C": float(fila.valores["cat_c_mm"]),
+        }
+        for fila in tabla.filas
+    }
+
+
+_TABLA_RECUBRIMIENTO_AASHTO_MM = _tabla_recubrimiento_aashto_mm()
+
+
+# --- T-4 --- La doble n del HDPE, DERIVADA de la fila transcrita de la Table
+# B.1 del HDS-5 (`HDS5_3ED.TB.1`) y no escrita a mano: es el valor y la
+# ventana de 'n_manning_hdpe'. Mismo patron que la tabla de arriba.
+def _n_manning_hdpe_hds5() -> Tuple[float, float]:
+    from src.normativa import registro as _rn
+    fila = _rn.construir().tabla("HDS5_3ED.TB.1").fila(
+        "polietileno_corrugado_liso")
+    return (float(fila.valores["n_min"]), float(fila.valores["n_max"]))
+
+
+_N_MANNING_HDPE_HDS5 = _n_manning_hdpe_hds5()
+
+
+# --- T-4 --- El espesor del HDPE, DERIVADO de la Table A12-11 de AASHTO LRFD
+# (`AASHTO_LRFD_9.TA12-11`): el t que lleva el diametro DESIGNADO del catalogo
+# hasta el diametro exterior MAXIMO del producto, t = (Max. OD - D) / 2. El
+# designado en mm de cada tamaño en pulgadas se lee de la serie de la propia
+# norma de producto (`AASHTO_M294_TRAD.T7.2.2`: «900 (36)», «1050 (42)»,
+# «1200 (48)»), no se calcula. Solo los tamaños del catalogo (de 0.90 m en
+# adelante) y solo los que la tabla de AASHTO trae: tres filas.
+def _espesor_hdpe_de_aashto() -> Dict[int, float]:
+    from src.normativa import registro as _rn
+    reg = _rn.construir()
+    designado_mm = {f.valores["dn_in"]: f.valores["dn_mm"]
+                    for f in reg.tabla("AASHTO_M294_TRAD.T7.2.2").filas}
+    piso_mm = round(D_INICIO * MILIMETROS_POR_METRO)
+    espesores = {}
+    for fila in reg.tabla("AASHTO_LRFD_9.TA12-11").filas:
+        dn_mm = designado_mm[fila.valores["nominal_in"]]
+        if dn_mm < piso_mm:
+            continue
+        od_max_m = fila.valores["od_max_in"] * PULGADA_EN_MM / MILIMETROS_POR_METRO
+        espesores[dn_mm] = round((od_max_m - dn_mm / MILIMETROS_POR_METRO) / 2,
+                                 _DECIMALES_DE_ESPESOR)
+    return espesores
+
+
+# Diezmilesima de metro: la tabla da el diametro exterior a la decima de
+# pulgada (2.5 mm), de modo que mas cifras no son informacion.
+_DECIMALES_DE_ESPESOR = 5
+_ESPESOR_HDPE_AASHTO = _espesor_hdpe_de_aashto()
+
+
+# --- T-4 --- El tope de la SERIE de cada norma de producto, DERIVADO de la
+# ultima fila de las tres tablas del registro, en metros.
+def _topes_de_la_norma_de_producto() -> Dict[str, float]:
+    from src.normativa import registro as _rn
+    reg = _rn.construir()
+    topes = {
+        material: max(f.valores["dn_mm"] for f in reg.tabla(tabla).filas)
+        / MILIMETROS_POR_METRO
+        for material, tabla in (
+            ("tmc", "AASHTO_M36.T6"),
+            ("hdpe", "AASHTO_M294_TRAD.T7.2.2"))
+    }
+    # EL CONCRETO NO TOMA LA ULTIMA FILA DE SU SERIE (auditoria de T-4, H2):
+    # M 170M lista diametros hasta 3600 mm, pero por encima de 2700 mm no
+    # tabula pared ni acero -- son los diseños especiales de su Seccion 7.2 --.
+    # El tope es el mayor diametro con diseño estandar.
+    return {"concreto_reforzado":
+            DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM / MILIMETROS_POR_METRO,
+            **topes}
+
+
+_TOPES_DE_LA_NORMA_DE_PRODUCTO = _topes_de_la_norma_de_producto()
+
+# --- T-4 --- Los dos conjuntos cerrados que se derivan de una vista de
+# `constantes_normativas`: las planchas del TMC y los simbolos SUCS.
+_CLAVES_DE_PLANCHA_TMC = tuple(TMC_PLANCHA_CORRUGADA)
+_SIMBOLOS_SUCS_E050 = SIMBOLOS_SUCS
+# --- T-1 --- Las cuatro superficies de la plataforma vial que la Tabla N 08
+# del Manual de Hidrologia no tiene, leidas de la Table 2-2 del WSDOT
+# Hydraulics Manual tal como esta en el registro (no copiadas a mano). Las
+# cuatro filas valen lo mismo en las tres columnas de pendiente de esa tabla,
+# y el helper lo EXIGE: si una transcripcion futura las separase, habria que
+# elegir columna y esto dejaria de ser un numero por superficie.
+SUPERFICIES_VIALES_WSDOT = ("pavimento", "berma_de_tierra", "talud_de_tierra",
+                            "talud_con_cesped")
+
+
+def _coeficientes_de_superficies_viales() -> Dict[str, float]:
+    from src.normativa import registro as _rn
+    tabla = _rn.construir().tabla("WSDOT_HM.T2-2")
+    salida: Dict[str, float] = {}
+    for clave in SUPERFICIES_VIALES_WSDOT:
+        celdas = set(tabla.fila(clave).valores.values())
+        if len(celdas) != 1:
+            raise ValueError(
+                f"WSDOT_HM.T2-2#{clave}: la fila ya no vale lo mismo en sus "
+                f"tres columnas ({sorted(celdas)}); hay que elegir columna")
+        salida[clave] = float(celdas.pop())
+    return salida
+
+
+_COEFICIENTES_VIALES_WSDOT = _coeficientes_de_superficies_viales()
+
+
+# El recorrido de los coeficientes de la Tabla C.2 del HDS-5, DERIVADO de la
+# transcripcion del registro (`constantes_normativas.KE_HDS5_C2`) y no
+# escrito a mano: es la ventana de 'ke_entrada' (PC-02). Si la transcripcion
+# gana filas, la ventana las sigue.
+_VENTANA_KE_C2 = (min(f["ke"] for f in KE_HDS5_C2.values()),
+                  max(f["ke"] for f in KE_HDS5_C2.values()))
+
+# --- T-9 --- Los revestimientos de cuneta que el criterio
+# 'revestimiento_cuneta' admite: cada clave UNE una fila de la Tabla Nº 32
+# del Manual de Hidrologia (K de Strickler, el n de Manning) con una de su
+# Tabla Nº 33 (velocidad limite admisible). Solo «concreto» une dos filas
+# que nombran el mismo material; las demas uniones son LECTURA DEL PROYECTO
+# --la fuente no relaciona las dos tablas-- y la memoria lo imprime. Son
+# claves de fila, no numeros: los valores viven en el registro.
+REVESTIMIENTOS_CUNETA: Dict[str, Tuple[str, str]] = {
+    "concreto": ("de_concreto", "concreto"),
+    "roca_dura": ("en_roca", "mamposteria_rocas_duras"),
+    "roca_blanda": ("en_roca", "conglomerado_pizarras_duras_rocas_blandas"),
+    "terreno_hierba": ("excavada_en_terreno", "hierba"),
+    "terreno_arcilla_grava": (
+        "excavada_en_terreno",
+        "arcilla_grava_pizarras_blandas_con_cubierta_vegetal"),
+    "terreno_con_vegetacion": (
+        "excavada_en_terreno", "terreno_parcialmente_cubierto_de_vegetacion"),
+    "terreno_arena_arcillosa": (
+        "excavada_en_terreno", "arena_arcillosa_dura_margas_duras"),
+    "terreno_arena_fina_o_limo": ("excavada_en_terreno", "arena_fina_o_limo"),
+}
+
+
+CRITERIOS: Dict[str, Criterio] = {
+
+    # ----------------------- SISMO: cadena unica -------------------------
+    # Se define UNA vez y se propaga a toda verificacion de estabilidad.
+
+    # 'PGA_roca_B' ya no vive aqui: es un dato de sitio [S] -- la lectura de un
+    # mapa normativo sobre las coordenadas de esta obra, unica para todo el
+    # corredor -- y vive en `datos_sitio.py`. No se declara en dos sitios: la
+    # cadena sismica de M9 lo lee de alla.
+
+    "PERFIL_SUELO_PRESUNTO": Criterio(
+        valor="S5",
+        # NIVEL DECLARADO Y NO MEDIDO: no lo consume NINGUN modulo (ver
+        # `sin_consumidor`, aqui abajo), asi que no hay corrida que lo pueda
+        # invocar ni medicion que citar. Se clasifica con los otros criterios
+        # de la Fase 0-bis de licuefaccion --- 'clase_sitio' y
+        # 'Mw_licuefaccion', que ya la declaran de expediente ---: el
+        # procedimiento entero pertenece al expediente tecnico.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="S",
+        forma=FORMA_STR,
+        concepto="Perfil de suelo de E.030 presunto para el sitio (S0-S5)",
+        justificacion="Registra que perfil de suelo de E.030 se presume para "
+                      "este sitio mientras el ensayo no lo confirme o lo "
+                      "cambie. La fuente (E.030, Art. 14.6, Tabla N 2; el "
+                      "rotulo literal de su fila S5 viaja en "
+                      "constantes_normativas.E030_S5_LECTURA) define el "
+                      "esquema de perfiles S0-S5 y sus umbrales. Lo que la "
+                      "fuente no resuelve: que letra le toca a este sitio, "
+                      "porque eso no es una exigencia normativa con valor "
+                      "fijo sino el resultado de aplicar el esquema a las "
+                      "condiciones del lugar, y en otra via con otro suelo el "
+                      "mismo articulo da otra letra. Se declara S5 como "
+                      "presuncion de expediente -- eso dice la palabra del "
+                      "nombre --, leida de las condiciones de la llanura del "
+                      "Bajo Piura: arenas saturadas, nivel freatico somero, "
+                      "suelos potencialmente licuables. La trazabilidad, que "
+                      "en un [S] ocupa el lugar de la sensibilidad, esta en "
+                      "los campos `resolucion` y `trazabilidad`",
+        fuente="E.030 (RM 183-2026-VIVIENDA), Art. 14.6, Tabla N 2, fila S5 "
+               "(su rotulo literal viaja en "
+               "constantes_normativas.E030_S5_LECTURA), primera vineta "
+               "'Suelos potencialmente licuables', pag. impresa 11 (PDF 11). "
+               "La Tabla N 3 del num. "
+               "14.7 -- la que el num. 14.8 obliga a usar para clasificar -- "
+               "NO tiene fila S5, solo S0 a S4: coherente con que la propia "
+               "fila diga que 'estos casos no estan cubiertos'",
+        reemplazado_por="Ensayo SPT DE LICUEFACCION: perforaciones de al menos "
+                        "15 m de profundidad con ensayo cada 1.00 m (E.050 "
+                        "Art. 38). Es la profundidad que cierra ESTE criterio "
+                        "-- la presuncion de suelo licuable del Art. 14.6 -- y "
+                        "no la del criterio 'clase_sitio', que necesita los "
+                        "100 ft (30.48 m) del Art. 3.10.3.1 de AASHTO",
+        trazabilidad="Clasificacion del Art. 14.6 de E.030 aplicada a la "
+                     "caracterizacion geotecnica disponible del corredor "
+                     "(llanura del Bajo Piura, distrito de La Union), sin "
+                     "ensayo que la cierre. Ambito: todo el corredor mientras "
+                     "sea presuncion; con SPT pasa a ser dato por calicata y "
+                     "entonces le corresponde una columna del CSV, no esta "
+                     "entrada. NO LO INVOCA NINGUN MODULO DE src/modulos/ -- "
+                     "y la clase de sitio de AASHTO tampoco entra en el "
+                     "calculo: el criterio 'clase_sitio' es hoy un [S] SIN "
+                     "VALOR y lo que la cadena sismica consume es el factor "
+                     "'F_pga' --, pero LLAMARLO "
+                     "'REFERENCIA MUERTA', como decia este campo, se queda "
+                     "muy por debajo de lo que la fuente dice: la fila S5 de "
+                     "la Tabla N 2 trae en su ultima vineta la afirmacion "
+                     "normativa mas fuerte que el expediente hace sobre este "
+                     "sitio -- 'Se prohibe las construcciones apoyadas sobre "
+                     "estos perfiles, salvo que, se efectue un estudio "
+                     "especifico para el sitio, en el cual se debe considerar "
+                     "los mejoramientos en el estrato del perfil'. Es una "
+                     "prohibicion CONDICIONADA -- ni bloqueo duro ni "
+                     "referencia muerta --, y la memoria imprimia la letra "
+                     "sin la consecuencia (NOR-E030-02). Texto literal y "
+                     "lectura en constantes_normativas.E030_S5_TEXTO y "
+                     "E030_S5_LECTURA; la nota llega a la memoria por "
+                     "M9.condicion_normativa_cabezal. Se conserva declarado, "
+                     "y no borrado, porque es la presuncion geotecnica que "
+                     "sostiene la hipotesis de licuefaccion de Sec. 0.5. Lo "
+                     "que YA NO sostiene -- y es la correccion de S13/S14 --, "
+                     "es la clase de sitio de AASHTO: son dos taxonomias "
+                     "distintas, una por descripcion y otra por rigidez "
+                     "medida, y trasladar esta a aquella era justamente el "
+                     "salto no escrito (NOR-AAS-02)",
+        verificacion_pendiente="Al llegar el SPT, confirmar el perfil y "
+                               "decidir si es unico para el tramo o varia por "
+                               "calicata; si varia, no se corrige el valor: se "
+                               "convierte en columna del CSV",
+        sin_consumidor="Ningun modulo de calculo lo invoca: la clasificacion "
+                       "sismica que gobierna la cadena es la de AASHTO, y la "
+                       "evaluacion de licuefaccion que usaria este perfil "
+                       "esta declarada fuera del alcance del script "
+                       "(Sec. 0.5). NO INVOCARLO NO ES IGNORARLO: la "
+                       "prohibicion condicionada que trae la fila S5 es una "
+                       "obligacion del EXPEDIENTE, no un numero del calculo, "
+                       "y por eso viaja a la memoria como nota normativa "
+                       "(M9.condicion_normativa_cabezal) en vez de como "
+                       "criterio invocado. Se conserva declarado, y no "
+                       "borrado, para que el ensayo que lo cerraria siga "
+                       "pedido",
+        resolucion=DeEnsayo(
+            ensayo="clasificacion del perfil de suelo de E.030 (S0-S5) "
+                   "sobre la caracterizacion geotecnica del corredor",
+            trazabilidad_exigida="el EMS del que sale la caracterizacion y "
+                                 "la vineta de la Tabla N 2 de E.030 que se "
+                                 "leyo; hoy es PRESUNTO y el ensayo lo "
+                                 "confirma o lo cambia",
+        ),
+    ),
+
+    # `clase_sitio` NO es un criterio [A] con valor, y tampoco es un vacio
+    # normativo: es un DATO DE SITIO pendiente de ensayo, y por eso pasa a
+    # [S] SIN VALOR. La decision, su fundamento y las doce citas verificadas
+    # que la sostienen estan en docs/resolucion_clase_sitio.md (S13,
+    # conflicto #8); aqui se APLICA y no se reabre.
+    #
+    # El valor que se retira -- "F_con_factores_tabulados_por_adopcion" --
+    # pegaba DOS COSAS DISTINTAS en una sola cadena: una clasificacion que la
+    # fuente no sostiene (`F`) y una decision de procedimiento que si es del
+    # proyectista (con que filas se lee la tabla mientras el hecho falta). La
+    # segunda no desaparece: ya vive, bien etiquetada y con su rango, en
+    # 'F_pga'. Separarlas es toda la correccion (NOR-AAS-02, SIS-B-01,
+    # SIS-D-01).
+    "clase_sitio": Criterio(
+        valor=None,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="S",
+        forma=FORMA_STR,
+        # LAS DOS DISCREPANCIAS QUE ESTE CRITERIO TOCABA -- DIS-HR-CLASE-DE-
+        # SITIO-F y DIS-HR-30M-VS-100FT -- viajaron por este campo mientras
+        # estuvieron vivas. I2 corrigio la Sec. 0.5 y la Fase 0-bis de la v8
+        # y las paso a RESUELTA, y una resuelta no se declara (la guardia
+        # `_verificar_discrepancias` lo impide: lo resuelto es material del
+        # manifiesto, no de la memoria). El canal queda documentado aqui por
+        # si una discrepancia nueva de este criterio lo necesita.
+        concepto="Clase de sitio sismica (AASHTO LRFD Art. 3.10.3.1 / Manual "
+                 "de Puentes num. 2.4.3.11.2.1.1). Es la rigidez MEDIDA de "
+                 "los 100 ft (30.48 m) superiores leida en la tabla de "
+                 "definiciones: un hecho del sitio, no una eleccion del "
+                 "proyectista. Sin ella la cadena sismica no se detiene, "
+                 "porque lo que consume es el factor -- 'F_pga' -- y no la "
+                 "clase",
+        justificacion="Decide que este expediente no se atribuye ninguna "
+                      "clase de sitio, y en particular deja de atribuirse la "
+                      "Clase F. No porque la fuente diga que el sitio no lo "
+                      "es -- eso lo decide la campana geotecnica --, sino por "
+                      "algo mas fuerte: las dos fuentes prohiben suponer la "
+                      "clase E o F sin dato geotecnico ni determinacion de la "
+                      "autoridad competente, y este expediente no tiene "
+                      "ninguna de las dos. La prohibicion es textual en ambas "
+                      "y sus Verbatim viven verificados en el registro: la de "
+                      "AASHTO al pie de su tabla de definiciones, en la cita "
+                      "AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES, y la del Manual de "
+                      "Puentes -- que la endurece al traducirla -- en la cita "
+                      "MP.2.4.3.11.2.1.1#EXCEPCIONES. Suponer la clase no es "
+                      "una adopcion declarable del proyectista: es lo que la "
+                      "norma veda. De donde sale la letra que este criterio "
+                      "no adopta, y por que no se sostiene: el salto de suelo "
+                      "potencialmente licuable a Clase de Sitio F no lo "
+                      "escribe ninguno de los dos documentos que este "
+                      "criterio invoca -- en las 1905 paginas de AASHTO los "
+                      "conjuntos de paginas con `liquef` y con «Site Class F» "
+                      "son disjuntos, y en las 673 del Manual la licuefaccion "
+                      "vive en cimentaciones y en el Apendice A11, nunca en "
+                      "el numeral de clases de sitio. Quien si clasifica los "
+                      "suelos licuables en su categoria excepcional es E.030, "
+                      "en el perfil S5 de su Tabla N 2, y son dos esquemas "
+                      "distintos que discrepan justo en el rasgo que motivaba "
+                      "la clasificacion de este sitio -- la discrepancia que "
+                      "esto abrio contra la hoja de ruta quedo resuelta en I2 "
+                      "al corregirse la Sec. 0.5 de la v8 y vive en el "
+                      "manifiesto, y la lectura esta en "
+                      "constantes_normativas.E030_S5_VS_CLASE_F. Ademas el "
+                      "Art. 10.5.4.2 espera factor de sitio tabulado para un "
+                      "sitio licuable -- acota el espectro especifico a no "
+                      "menos de dos tercios del general modificado por los "
+                      "factores de sitio del Art. 3.10.3.2 (cita "
+                      "AASHTO_LRFD_9.10.5.4.2#ESPECTRO) --, cosa imposible si "
+                      "la licuefaccion lo hiciera Clase F, porque la fila F "
+                      "no da factor. Por que es [S] y no [A]: la regla que "
+                      "separa las dos etiquetas es que un [A] se defiende con "
+                      "un rango de sensibilidad porque hubo eleccion, y un "
+                      "[S] no tiene rango que elegir. La clase de sitio no se "
+                      "elige: el Art. 3.10.3.1 la determina por la rigidez "
+                      "medida de los 100 ft (30.48 m) superiores, con la "
+                      "velocidad de onda de corte como variable primera (cita "
+                      "AASHTO_LRFD_9.3.10.3.1), y el paso 3 de la Tabla "
+                      "C3.10.3.1-1 da el procedimiento de calculo. Es una "
+                      "medicion, y cambia al mover la obra de sitio y no al "
+                      "cambiar de proyectista; un valor que no puede declarar "
+                      "rango porque la pregunta no esta resuelta no es una "
+                      "eleccion: es un hecho que falta. Por que no es un "
+                      "vacio normativo: la regla de los vacios gobierna el "
+                      "caso en que la norma no fija el valor y hay que "
+                      "adoptarlo. Aqui la norma si dice como se determina la "
+                      "clase, con que variables y sobre que profundidad, e "
+                      "incluso que hacer mientras no se sepa: investigar, y "
+                      "no suponer E ni F. Lo que falta no es la regla, es la "
+                      "medicion -- y eso es un dato de sitio pendiente de "
+                      "ensayo. Lo que el proyecto si elige no desaparece y ya "
+                      "esta en su sitio: sobre que filas lee la tabla "
+                      "mientras el hecho falta, que es 'F_pga' = (C, D, E), "
+                      "[A], con su sensibilidad 0.9-1.0 declarada. Es el "
+                      "mismo reparto de siempre -- la tabla es [N], la fila "
+                      "es [A] -- y esta clasificacion no lo toca. Queda "
+                      "verificado, ademas, que la dispensa por periodo corto "
+                      "no existe: ninguna regla de AASHTO permite, por "
+                      "periodo fundamental T <= 0.5 s, clasificar como si el "
+                      "suelo no licuara -- el barrido sobre las 1905 paginas "
+                      "de AASHTO LRFD 9a ed. da cero coincidencias: "
+                      "no esta en el Art. 3.10.3.1, ni en su comentario "
+                      "C3.10.3.1, ni en ninguna tabla o nota de tabla de "
+                      "clases de sitio -- y la Sec. 0.5 de la hoja de ruta v8 "
+                      "deja escrita esa misma verificacion",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
+               "Art. 3.10.3.1 «Site Class Definitions» y su Tabla 3.10.3.1-1 "
+               "(pag. impresa 3-101 y 3-102); Manual de Puentes (MTC), num. "
+               "2.4.3.11.2.1.1 «Definiciones de Clases de Sitio» y su Tabla "
+               "2.4.3.11.2.1.1-1 (pag. impresa 122). Las dos definen la clase "
+               "y las dos prohiben suponer E o F sin dato. Citas verificadas "
+               "en el registro: AASHTO_LRFD_9.3.10.3.1, "
+               "AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES, "
+               "MP.2.4.3.11.2.1.1#EXCEPCIONES, AASHTO_LRFD_9.T3.10.3.1-1#F y "
+               "E030.T2#S5. La fuente NO da el valor: da el procedimiento "
+               "para medirlo",
+        trazabilidad="NO SE HA EJECUTADO NINGUNA LECTURA: este [S] esta "
+                     "vacio, y eso es lo que la memoria declara. "
+                     "COMO SE REPRODUCIRA cuando el ensayo exista, en el "
+                     "orden en que la fuente lo escribe: (1) caracterizar los "
+                     "100 ft (30.48 m) superiores del perfil bajo el nivel de "
+                     "cimentacion del cabezal, obteniendo v_s, N o s_u; "
+                     "(2) promediarlos por el procedimiento del paso 3 de la "
+                     "Tabla C3.10.3.1-1, que es media armonica ponderada por "
+                     "espesor y no media aritmetica; (3) entrar con ese "
+                     "promedio en la Tabla 3.10.3.1-1 (equivalente: Tabla "
+                     "2.4.3.11.2.1.1-1 del Manual, pag. impresa 122) y leer "
+                     "la letra; (4) antes de esos tres pasos, comprobar la "
+                     "fila F, que el paso 1 de la misma tabla manda mirar "
+                     "primero. "
+                     "ALCANCE: es un dato DE CORREDOR mientras el perfil "
+                     "geotecnico no muestre variacion, no un dato por punto; "
+                     "si la campana devuelve columnas distintas entre "
+                     "progresivas, deja de serlo y pasa a columna del CSV. "
+                     "QUIEN LO FIRMA: el estudio de mecanica de suelos del "
+                     "expediente. Este archivo no lo puede rellenar por "
+                     "analogia ni por presuncion, y esa es toda la diferencia "
+                     "con 'PERFIL_SUELO_PRESUNTO', que si conserva valor: "
+                     "aquel perfil se alcanza por DESCRIPCION -- la Tabla "
+                     "N 2 de E.030 tiene columna «Descripcion» y su fila S5 "
+                     "es una lista de condiciones cualitativas -- y este se "
+                     "alcanza por NUMEROS que nadie ha medido. Una se puede "
+                     "presumir declarandolo; la otra la norma prohibe "
+                     "presumirla",
+        reemplazado_por="DOS ENSAYOS DE PROFUNDIDADES DISTINTAS, que conviene "
+                        "pedir juntos al programar la campana geotecnica. "
+                        "(1) LA CARACTERIZACION DE LOS 100 ft (30.48 m) "
+                        "SUPERIORES -- Vs30 o N_barra --, que es la "
+                        "profundidad que el Art. 3.10.3.1 escribe («the upper "
+                        "100 ft») y con la que se lee la clase. La hoja de "
+                        "ruta pedia «30 m» y se lo atribuia al articulado -- "
+                        "el numeral no imprime esa cifra --; la discrepancia "
+                        "que eso abrio viajo por el campo `discrepancias` de "
+                        "este criterio mientras estuvo viva, y quedo resuelta "
+                        "en I2 al escribir la v8 la profundidad del "
+                        "articulado (Sec. 0.5 y Tablero 3.6). "
+                        "Los 30.48 m son "
+                        "parte de la DEFINICION de la clase: una clase leida "
+                        "sobre menos profundidad no es la misma variable. "
+                        "(2) SI ESA CARACTERIZACION DIERA CLASE F, el "
+                        "ANALISIS DE RESPUESTA DINAMICA DE SITIO, que el "
+                        "Art. 3.10.2 exige con «shall» -- «A Site-Specific "
+                        "Procedure shall be used if any one of the following "
+                        "conditions exist» -- y el num. 2.4.3.11.2 del Manual "
+                        "con «sera usado». La exigencia se ancla ahi, en el "
+                        "articulado, y no en la Nota 2 al pie de la tabla de "
+                        "factores, que es donde el repositorio la anclaba: la "
+                        "nota la repite, no la funda. "
+                        "NO LO CIERRA el SPT de 15 m de E.050 Art. 38: ese "
+                        "ensayo responde a la pregunta de licuefaccion "
+                        "(criterio 'PERFIL_SUELO_PRESUNTO') y se detiene a "
+                        "mitad de la columna que esta clase necesita",
+        sin_consumidor="NINGUN MODULO DE PRODUCCION LO INVOCA, Y ES "
+                       "DELIBERADO: el vacio se DECLARA, no se interpone. La "
+                       "cadena sismica no consume la clase de sitio, consume "
+                       "el FACTOR, y el factor esta declarado por 'F_pga' con "
+                       "su fundamento propio y su rango. Invocar este "
+                       "criterio desde `M9.cadena_sismica()` detendria el "
+                       "dimensionamiento entero del cabezal -- todo valor "
+                       "None invocado lanza CriterioPendienteError -- sin que "
+                       "ninguna norma lo exija, y contra el hecho de que el "
+                       "proyecto PUEDE dimensionar hoy bajo la eleccion de "
+                       "filas declarada. La memoria no lo pierde por no "
+                       "invocarlo: entra por `criterios_sin_valor()`, que es "
+                       "la puerta que le corresponde a un vacio declarado, y "
+                       "la nota normativa completa -- por que el expediente "
+                       "decia Clase F y por que deja de decirlo -- viaja a "
+                       "las dos plantillas por "
+                       "`M9.condicion_normativa_cabezal()`. Eso es lo que "
+                       "cierra SIS-B-01: el defecto era el valor, no la falta "
+                       "de cableado",
+        resolucion=DeEnsayo(
+            ensayo="medicion de la rigidez de los 30.48 m superiores (Vs30, "
+                   "N o su) segun AASHTO Art. 3.10.3.1",
+            trazabilidad_exigida="el ensayo geofisico o geotecnico, su "
+                                 "profundidad y el laboratorio; una clase de "
+                                 "sitio DECLARADA sin medicion no es una "
+                                 "clase de sitio",
+        ),
+    ),
+
+    # F_pga deja de guardar el RESULTADO y pasa a guardar la ELECCION, que es
+    # el reparto R1 del proyecto (la tabla es [N], la fila es [A]) y el mismo
+    # movimiento que ya se hizo con 'factores_carga_aashto' en C03. Un 1.0
+    # suelto no dice de que filas salio, no se recalcula cuando la campana
+    # geotecnica cierre la clase, y hacia invisibles tres cosas que la tabla
+    # si dice (NOR-PUE-09, NOR-PUE-11, NOR-MEM-03, MAT-O4, NOR-PUE-12).
+    "F_pga": Criterio(
+        valor=("C", "D", "E"),
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_SERIE_DE_CLAVES,
+        # DIS-HR-30M-VS-100FT viajo por este campo mientras estuvo viva --
+        # la profundidad sobre la que se lee la clase decide que fila de esta
+        # tabla aplica, y la hoja de ruta se la atribuia al articulado con una
+        # cifra que el articulado no imprime --. I2 corrigio la v8 y la paso a
+        # RESUELTA: lo resuelto es material del manifiesto, no de la memoria,
+        # y la guardia rechaza declararlo aqui.
+        concepto="Filas de la Tabla 2.4.3.11.2.1.2-1 sobre las que se lee el "
+                 "factor de sitio de la cadena sismica. El factor adoptado es "
+                 "la ENVOLVENTE (el mayor) de esas filas al PGA del proyecto; "
+                 "hoy vale 1.0",
+        justificacion="Decide sobre que filas de la tabla se lee el factor de "
+                      "sitio de la cadena sismica. La clase de sitio esta "
+                      "indeterminada -- ver 'clase_sitio', que es un [S] sin "
+                      "valor -- y por eso lo que se declara es el conjunto de "
+                      "filas plausibles y no una. La fuente (la tabla "
+                      "MP.TFPGA del registro, transcrita completa con sus dos "
+                      "notas al pie) da los factores por clase de sitio y por "
+                      "columna de PGA, y esos valores son [N]. Lo que la "
+                      "fuente no resuelve: que filas describen a este sitio, "
+                      "porque eso depende de la medicion que falta; esa "
+                      "eleccion de filas es [A] y es lo unico que este "
+                      "criterio decide. Se adopta el conjunto (C, D, E) y el "
+                      "factor es la envolvente (el mayor) de esas filas al "
+                      "PGA del proyecto: la tabla da 1.0 para C, 1.0 para D y "
+                      "0.9 para E, de modo que el factor adoptado es 1.0, "
+                      "conservador o exacto frente a las tres. Las filas que "
+                      "no se declaran, y por que. (a) A y B son las filas de "
+                      "roca (0.8 y 1.0): quedan fuera porque la cimentacion "
+                      "es la llanura arenosa del Bajo Piura, y esa exclusion "
+                      "no es cosmetica -- el num. 2.8.1.1.14.2.1 da a las "
+                      "cimentaciones en Clase A o B una expresion distinta de "
+                      "k_h0 (1.2*F_pga*PGA en vez de A_s), de modo que "
+                      "declarar C/D/E es lo que descarta esa rama de forma "
+                      "trazable. (b) La fila F no esta entre las leidas, "
+                      "dicho con precision para que no se lea al reves: no "
+                      "porque se haya descartado que el sitio sea Clase F -- "
+                      "eso lo decide la campana geotecnica --, sino por dos "
+                      "razones que valen hoy. La primera, que esa fila no da "
+                      "factor: la tabla le pone asterisco en las cinco "
+                      "columnas y su Nota 2 -- Verbatim de MP.TFPGA en el "
+                      "registro -- exige investigacion geotecnica especifica "
+                      "del sitio y analisis de respuesta dinamica de sitio; "
+                      "elegirla no seria leer un valor, seria leer una "
+                      "exigencia de estudio. La segunda, que suponerla esta "
+                      "expresamente vedado mientras no haya dato geotecnico "
+                      "ni determinacion de la Entidad (citas "
+                      "AASHTO_LRFD_9.3.10.3.1#EXCEPCIONES y "
+                      "MP.2.4.3.11.2.1.1#EXCEPCIONES del registro). Si la "
+                      "campana devolviera Clase F, no queda fila con factor: "
+                      "queda el estudio de respuesta dinamica que exige el "
+                      "Art. 3.10.2, y esta memoria no podria cerrarse sin el. "
+                      "Alcance de lo conservador, sin coartada: los factores "
+                      "tabulados permiten dimensionar el elemento estructural "
+                      "dentro del marco tabulado; no constituyen una "
+                      "evaluacion del riesgo de licuefaccion, que sigue "
+                      "siendo el condicionante tecnico no resuelto del "
+                      "proyecto, y los efectos de la licuefaccion -- perdida "
+                      "de resistencia, asentamiento, desplazamiento lateral "
+                      "-- quedan fuera del alcance de este calculo y "
+                      "remitidos al estudio geotecnico del expediente. Un "
+                      "analisis de respuesta especifica de sitio puede "
+                      "arrojar valores mayores que los tabulados: la adopcion "
+                      "no es conservadora por construccion, y por eso la "
+                      "eleccion de filas es [A] y no [N->]. La sensibilidad "
+                      "-- 0.9 a 1.0 al PGA de este proyecto, con la lectura "
+                      "declarada en 'F_pga_lectura_columna_extrema' -- va en "
+                      "su campo, que ademas explica por que ese es todo el "
+                      "rango alcanzable",
+        fuente="Manual de Puentes (MTC), Tabla 2.4.3.11.2.1.2-1 (Tabla "
+               "3.10.3.2-1 AASHTO), pag. impresa 123 (PDF 124), transcrita "
+               "COMPLETA -- seis filas y cinco columnas, con sus dos notas al "
+               "pie -- en constantes_normativas.F_PGA_TABLA. Los valores son "
+               "[N]; QUE FILAS describen a este sitio es [A] y es lo unico "
+               "que se declara aqui",
+        reemplazado_por="Caracterizacion de sitio sobre los 100 ft "
+                        "(30.48 m) superiores -- Vs30 o N_barra --, que "
+                        "cierra 'clase_sitio' y deja una sola fila. La "
+                        "profundidad es la que imprime el Art. 3.10.3.1 «the "
+                        "upper 100 ft»; la hoja de ruta decia «30 m» "
+                        "atribuyendoselo al articulado, y esa discrepancia "
+                        "quedo resuelta en I2 al corregirse la v8 (Sec. 0.5 "
+                        "y Tablero 3.6) -- la historia, en el manifiesto. Si "
+                        "esa "
+                        "caracterizacion diera Clase F, no queda fila con "
+                        "factor: queda el ANALISIS DE RESPUESTA DINAMICA DE "
+                        "SITIO que exige el Art. 3.10.2 con «shall» y el num. "
+                        "2.4.3.11.2 del Manual con «sera usado». La Nota 2 al "
+                        "pie de esta tabla lo repite; no lo funda, y anclarlo "
+                        "ahi dejaba la exigencia colgando de una nota",
+        sensibilidad="entre 0.9 (fila E) y 1.0 (filas C y D) al PGA de este "
+                     "proyecto, con la lectura declarada en "
+                     "'F_pga_lectura_columna_extrema'. Ese es TODO el rango "
+                     "alcanzable: la otra lectura declarable, "
+                     "'limite_estricto', no lee la columna anterior sino que "
+                     "DETIENE el calculo, porque con los rotulos leidos al "
+                     "pie de la letra en PGA = 0.50 no hay columna ni hay dos "
+                     "valores entre los que interpolar. El 1.1 de la fila D "
+                     "en la columna PGA = 0.40 existe en la tabla y NO es "
+                     "alcanzable por ninguna declaracion de este proyecto: "
+                     "llegar a el exigiria una tercera lectura -- extrapolar "
+                     "desde la columna anterior -- que no se declara porque "
+                     "no la sostiene la Nota 1, que habla de interpolar entre "
+                     "valores y no de extrapolar mas alla del ultimo",
+        resolucion=DeTabla(
+            tablas=("MP.TFPGA",),
+            que_elige="las filas de clase de sitio sobre las que se lee "
+                      "F_pga; el factor adoptado es la envolvente (el mayor) "
+                      "de las filas elegidas",
+        ),
+    ),
+
+    # La tabla se lee por columnas de PGA y sus dos rotulos extremos son
+    # DESIGUALDADES ESTRICTAS: "PGA < 0.10" y "PGA > 0.50". El PGA de este
+    # proyecto es exactamente 0.50 y no cae en ninguna columna tabulada
+    # (NOR-PUE-11). La tabla no resuelve ese borde; lo resuelve quien la lee, y
+    # por eso es criterio y no constante.
+    #
+    # R3 verifico la Nota 1 contra la pagina renderizada preguntandole si
+    # resuelve el borde -- lo que habria bajado la etiqueta a [N] o [N->] --
+    # y no lo resuelve: manda interpolar para valores intermedios sin nombrar
+    # los nodos, y sobre el PGA exactamente igual al rotulo extremo calla.
+    # El barrido esta fijado en citas.SIN_REGLA_DE_BORDE_EN_TFPGA, anclado a
+    # la tabla MP.TFPGA, y la etiqueta queda [A].
+    "F_pga_lectura_columna_extrema": Criterio(
+        valor="limite_inclusive",
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        concepto="Como se leen los dos rotulos extremos de la Tabla "
+                 "2.4.3.11.2.1.2-1 cuando el PGA cae justo sobre uno de ellos",
+        justificacion="Decide como se leen los dos rotulos extremos de "
+                      "columna de la tabla cuando el PGA cae exactamente "
+                      "sobre uno de ellos. Lo que la fuente dice (tabla "
+                      "MP.TFPGA del registro, verificada sobre la pagina "
+                      "renderizada): su Nota 1 manda interpolar en linea "
+                      "recta para valores intermedios de PGA, y sus dos "
+                      "rotulos extremos son desigualdades estrictas. Lo que "
+                      "no resuelve, con el barrido fijado en la "
+                      "AfirmacionNegativa SIN_REGLA_DE_BORDE_EN_TFPGA del "
+                      "registro: la nota no nombra los puntos entre los que "
+                      "se interpola -- leer los cinco numeros de los rotulos "
+                      "como esos nodos es ya lectura del proyecto, no texto "
+                      "de la fuente --, y ni ella, ni los rotulos, ni el "
+                      "articulado del numeral dicen como se lee un PGA "
+                      "exactamente igual al rotulo extremo, de modo que 0.50 "
+                      "no esta cubierto por ninguna columna ni queda entre "
+                      "dos. Ese silencio es el que mantiene la etiqueta en "
+                      "[A]: la eleccion no se apoya en una disposicion que "
+                      "tome la decision, sino en el criterio del proyectista "
+                      "sobre un vacio barrido. Se adopta 'limite_inclusive': "
+                      "la columna 'PGA > 0.50' aplica tambien en 0.50, por "
+                      "ser el valor a partir del cual la fuente deja de "
+                      "variar el factor -- las filas C, D y E repiten ahi el "
+                      "ultimo numero o lo bajan, ninguna lo sube -- y por "
+                      "continuidad con la interpolacion que la nota si "
+                      "manda, cuyo ultimo tramo solo puede rematar en el "
+                      "valor de esa columna. La lectura no es neutra y por "
+                      "eso se declara: con 'limite_estricto' el calculo se "
+                      "detiene en vez de elegir columna, y si en su lugar se "
+                      "leyera la columna anterior (PGA = 0.40) la fila D "
+                      "daria 1.1 en vez de 1.0 y la envolvente subiria un "
+                      "10 %, arrastrando toda la cadena sismica",
+        fuente="Manual de Puentes (MTC), Tabla 2.4.3.11.2.1.2-1, rotulos de "
+               "columna y Nota 1, pag. impresa 123 (PDF 124). La tabla NO "
+               "resuelve el borde -- el barrido que lo sostiene esta en la "
+               "AfirmacionNegativa SIN_REGLA_DE_BORDE_EN_TFPGA del registro, "
+               "anclada a la propia tabla --: la lectura es del proyectista",
+        reemplazado_por="Un PGA de proyecto que caiga dentro de una columna, "
+                        "o el estudio de respuesta de sitio, que sustituye la "
+                        "tabla entera",
+        sensibilidad=("limite_inclusive", "limite_estricto"),
+        verificacion_pendiente="Al registrar las coordenadas de la lectura "
+                               "del PGA (pendiente 1.4), comprobar si el "
+                               "valor sigue siendo exactamente 0.50: si "
+                               "cayera dentro de una columna, este criterio "
+                               "deja de gobernar nada y se retira",
+        resolucion=DeTabla(
+            tablas=("MP.TFPGA",),
+            que_elige="como se leen los dos rotulos extremos de columna "
+                      "cuando el PGA cae justo sobre uno de ellos",
+            laguna="los rotulos extremos se imprimen con < y >, de modo que "
+                   "la tabla no dice a que columna pertenece el PGA que cae "
+                   "exactamente en el limite. La eleccion es del proyectista",
+        ),
+    ),
+
+    # No es una fila de una tabla: el num. 2.8.1.1.14.2.2 no presenta ninguna
+    # tabla y fija UN valor, 0.5, de forma permisiva. Lo que se declara es si
+    # se aplica o no esa reduccion (NOR-PUE-07).
+    "factor_muro_eleccion": Criterio(
+        valor="sin_reduccion",
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        concepto="Si se aplica al cabezal la reduccion de k_h0 que el numeral "
+                 "autoriza para muros con desplazamiento lateral admitido",
+        justificacion="Decide si se aplica al cabezal la reduccion de k_h0 "
+                      "que el num. 2.8.1.1.14.2.2 autoriza para muros que "
+                      "admiten desplazamiento lateral. La fuente (texto "
+                      "literal en constantes_normativas.REDUCCION_KH_TEXTO; "
+                      "las tres condiciones que AASHTO acumula, en "
+                      "REDUCCION_KH_CONDICIONES) autoriza reducir k_h a la "
+                      "mitad de k_h0 -- autoriza, no manda: el verbo del "
+                      "numeral es potestativo -- y define k_h0 como la "
+                      "aceleracion con desplazamiento nulo del muro. Lo que "
+                      "la fuente no resuelve: si este cabezal admite ese "
+                      "desplazamiento; y la autorizacion no es solo tecnica "
+                      "-- AASHTO, del que el numeral es traduccion, la "
+                      "condiciona a que el movimiento lateral sea aceptable "
+                      "para el propietario, lo que la deja fuera del alcance "
+                      "de un calculo. Se adopta sin reduccion, k_h = k_h0: el "
+                      "cabezal va empotrado en el terraplen y no tiene "
+                      "desplazamiento lateral admisible garantizado -- es la "
+                      "advertencia expresa de la Sec. 9.2 de la hoja de ruta "
+                      "para el cabezal empotrado en terraplen -- y es el lado "
+                      "conservador. Por que esto es [A] y no la eleccion de "
+                      "una fila [N]: el numeral no tabula nada -- autoriza "
+                      "una reduccion, y el 1.0 no es un valor tabulado sino "
+                      "la ausencia de reduccion, que es la definicion misma "
+                      "de k_h0. Las dos declaraciones posibles estan en el "
+                      "campo `sensibilidad`",
+        fuente="Manual de Puentes (MTC) num. 2.8.1.1.14.2.2 'Estimacion de la "
+               "Aceleracion que Actua Sobre la Masa del Muro' (11.6.5.2.2 "
+               "AASHTO), pag. impresa 255 (PDF 256). Texto literal y las tres "
+               "condiciones que AASHTO acumula, en "
+               "constantes_normativas.REDUCCION_KH_TEXTO y "
+               "REDUCCION_KH_CONDICIONES. El unico numero [N] del numeral es "
+               "el 0.5",
+        reemplazado_por="Diseno de detalle del cabezal que garantice (o "
+                        "descarte) un desplazamiento lateral de 1.0 a 2.0 in "
+                        "o mas, mas la aceptacion del propietario",
+        sensibilidad=("sin_reduccion", "reduccion_por_desplazamiento"),
+        verificacion_pendiente="El repositorio convertia el rango del Manual "
+                               "('1.0 a 2.0 in o mas') en '25-50 mm', que "
+                               "redondea y ademas pierde el 'o mas': un muro "
+                               "con 60 mm de desplazamiento admisible quedaba "
+                               "fuera del rango escrito y si califica. Si "
+                               "alguna vez se declara la reduccion, "
+                               "contrastar contra "
+                               "DESPLAZAMIENTO_HABILITA_REDUCCION_M y no "
+                               "contra el rango redondeado",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando si el cabezal admite el "
+                        "desplazamiento lateral que la reduccion supone. NO "
+                        "es `DeTabla`, aunque la Sec. 4.3 del plan lo ponga "
+                        "de ejemplo: el num. 2.8.1.1.14.2.2 NO TABULA NADA "
+                        "-- autoriza una reduccion -- y el 1.0 no es una "
+                        "fila sino la ausencia de reduccion, que es la "
+                        "definicion misma de k_h0",
+            dominio="declaracion entre los dos regimenes del numeral",
+        ),
+    ),
+
+    # k_v no es una adopcion: lo fija el mismo numeral del que la cadena toma
+    # k_h0. Lo que se declara aqui es si se da alguno de los dos casos que ese
+    # numeral reserva -- y no es un matiz de redaccion: la fuente que este
+    # criterio citaba ('practica corriente; no fijado por el Manual de
+    # Puentes') afirmaba lo contrario de lo que dice el Manual (NOR-PUE-08,
+    # MAT-O11, MAT-X4).
+    "k_v": Criterio(
+        valor="prescrito_sin_caso_reservado",
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=(FORMA_STR, FORMA_FLOAT),
+        concepto="Cual de los dos regimenes de k_v del num. 2.8.1.1.14.2.1 "
+                 "rige en este cabezal. Con el declarado, k_v = 0.0 y ese "
+                 "cero es [N], no una adopcion",
+        justificacion="Decide cual de los dos regimenes de k_v del num. "
+                      "2.8.1.1.14.2.1 rige en este cabezal. La fuente (texto "
+                      "literal en constantes_normativas.K_V_TEXTO; el alcance "
+                      "de los casos reservados, en K_V_CASO_RESERVADO) fija "
+                      "k_v = 0 para el calculo de presiones laterales y "
+                      "reserva dos casos: muro significativamente afectado "
+                      "por efectos de alguna falla cercana, y aceleraciones "
+                      "verticales relativamente altas actuando "
+                      "simultaneamente con la horizontal. Lo que la fuente no "
+                      "resuelve: no cuantifica ninguno de los dos casos -- no "
+                      "da distancia a la falla, no define la cercania, no "
+                      "fija umbral de aceleracion vertical -- y para ellos "
+                      "tampoco escribe un k_v alternativo. Se declara que "
+                      "ninguno de los dos se da en este cabezal, con lo que "
+                      "rige el cero prescrito: con el regimen declarado, el "
+                      "k_v = 0 que resulta es [N] y no una adopcion. Si "
+                      "alguno de los casos se diera, este criterio admite "
+                      "entonces un numero en lugar de la declaracion, y ese "
+                      "numero seria del proyectista, porque el Manual no lo "
+                      "da: el valor por defecto es normativo y el del caso "
+                      "reservado no existe en la fuente. Por eso el campo "
+                      "`sensibilidad` declara los dos regimenes y no un rango "
+                      "numerico: un rango sugeriria una libertad que el "
+                      "numeral no concede -- el cero es prescrito, no elegido",
+        fuente="Manual de Puentes (MTC) num. 2.8.1.1.14.2.1 'Caracterizacion "
+               "de la Aceleracion en la Base del Muro de Contencion' "
+               "(11.6.5.2.1 AASHTO), pag. impresa 254 (PDF 255), reiterado en "
+               "el num. 2.8.1.1.14.3 (pag. impresa 255). Texto literal en "
+               "constantes_normativas.K_V_TEXTO; el alcance de los dos casos "
+               "reservados, en K_V_CASO_RESERVADO",
+        reemplazado_por="Evaluacion neotectonica del corredor que descarte o "
+                        "confirme falla activa proxima, dentro del estudio "
+                        "geotecnico del expediente",
+        sensibilidad=("prescrito_sin_caso_reservado",
+                      "un k_v declarado por el proyectista para el caso que "
+                      "el numeral reserva y no cuantifica"),
+        verificacion_pendiente="El Manual no cuantifica 'falla cercana'. "
+                               "AASHTO si, pero en otro articulo y sobre un "
+                               "mapa que no cubre el Peru: su Art. 3.10.2.2 "
+                               "(pag. impresa 3-100) habla de sitios a menos "
+                               "de 6 millas de una falla activa superficial o "
+                               "somera segun el USGS Active Fault Map. "
+                               "Mientras el expediente no traiga la "
+                               "evaluacion neotectonica equivalente, esta "
+                               "declaracion se apoya en la ausencia de "
+                               "hallazgo, no en un hallazgo de ausencia, y "
+                               "hay que decirlo asi en la memoria",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando cual de los dos "
+                        "regimenes del num. 2.8.1.1.14.2.1 rige. Con el "
+                        "regimen prescrito declarado, el k_v = 0 que resulta "
+                        "es [N] y no una adopcion; para el caso reservado el "
+                        "numeral no escribe ningun k_v alternativo",
+            dominio="declaracion de regimen, o k_v adimensional del "
+                    "proyectista en el caso reservado",
+        ),
+    ),
+
+    # gamma_EQ existia como PROSA dentro de la verificacion pendiente de
+    # 'factores_carga_aashto' -- "sigue sin valor y bloquea esa combinacion" --
+    # y no como vacio declarado, de modo que nada podia detenerse en el. Ahora
+    # es entrada propia porque la cadena sismica lo NECESITA en dos sitios: la
+    # combinacion Evento Extremo I y, sobre todo, el limite de excentricidad
+    # de la resultante en la base, que va de B/6 a 0.4*B segun su valor
+    # (MAT-O16).
+    "gamma_EQ": Criterio(
+        # --- T-7b --- DEJA DE SER UN VACIO. Hasta T-7b valia None «porque
+        # adoptar cualquiera de las dos cifras del comentario en silencio
+        # seria rellenar el vacio». El encargo de T-7b lo cierra con un valor
+        # DECLARADO y su ventana entera: 0.50, que es la unica cifra que la
+        # fuente califica de razonable, con 0.0 a 1.0 barrible. No es [C]: el
+        # articulo manda determinarlo por proyecto.
+        valor=0.5,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Factor de carga de la carga viva en la combinacion Evento "
+                 "Extremo I, adimensional",
+        justificacion="Decide cuanta sobrecarga viva de trafico acompaña al "
+                      "sismo en la combinacion Evento Extremo I del cabezal, "
+                      "y con ella el limite de excentricidad sismico. La "
+                      "fuente (AASHTO Art. 3.4.1; texto literal en "
+                      "constantes_normativas.GAMMA_EQ_TEXTO; via Manual de "
+                      "Puentes, Tabla 2.4.5.3.1-1) imprime el simbolo "
+                      "gamma_EQ en la columna de LS, no un numero, y manda "
+                      "determinarlo 'on a project-specific basis'. Su "
+                      "comentario C3.4.1 (pag. impresa 3-10) cuenta que las "
+                      "ediciones pasadas usaban 0.0, que el asunto no esta "
+                      "resuelto, y que la regla de Turkstra hace razonable "
+                      "0.50 para un rango amplio de trafico pesado. Lo que la "
+                      "fuente no resuelve es el numero; el proyecto adopta "
+                      "0.50, la unica cifra que el comentario califica de "
+                      "razonable, y deja la ventana completa del factor (de "
+                      "0.0 a 1.0) para el barrido. Donde pesa: en el empuje "
+                      "y el peso de la sobrecarga viva de la combinacion "
+                      "sismica, y en el limite de excentricidad de la "
+                      "resultante bajo sismo -- dos tercios centrales (e <= "
+                      "B/3) con gamma_EQ = 0.0, ocho decimas centrales (e <= "
+                      "0.4*B) con gamma_EQ = 1.0, e interpolacion lineal en "
+                      "medio (AASHTO 11.6.5.1; num. 2.8.1.1.14.1 del "
+                      "Manual): con 0.50 el limite es 0.367*B. Las dos "
+                      "direcciones se oponen -- mas carga viva es mas empuje "
+                      "y a la vez un limite mas holgado --, y por eso se "
+                      "barre y no se presume conservador. Cuidado con la "
+                      "cifra del Manual: imprime 'tercio central' en vez de "
+                      "los dos tercios de AASHTO; es errata de traduccion, "
+                      "declarada en "
+                      "constantes_normativas.EXCENTRICIDAD_ERRATA_MANUAL",
+        fuente="AASHTO LRFD 9a ed. (2020), Art. 3.4.1, pag. impresa 3-19, y "
+               "su comentario C3.4.1, pag. impresa 3-10 (el 0.50 'is "
+               "reasonable'); texto literal en "
+               "constantes_normativas.GAMMA_EQ_TEXTO. Via Manual de Puentes "
+               "num. 2.4.5.3.1, Tabla 2.4.5.3.1-1. Ninguno de los dos fija "
+               "el numero: la adopcion es del proyecto",
+        reemplazado_por="Determinacion especifica del proyecto, con el ADTT "
+                        "de la via y el fundamento que la sostenga, "
+                        "declarada en la memoria",
+        sensibilidad=(0.0, 1.0),   # la ventana entera del factor
+        resolucion=Libre(
+            que_lo_fija="el proyectista, 'on a project-specific basis' "
+                        "(AASHTO Art. 3.4.1). La Tabla 2.4.5.3.1-1 imprime "
+                        "el SIMBOLO gamma_EQ en la columna de LS, no un "
+                        "numero; el 0.50 del comentario C3.4.1 es indicacion "
+                        "de razonabilidad, no un valor tabulado",
+            dominio="adimensional, 0 <= gamma_EQ <= 1",
+        ),
+    ),
+
+    # Los cuatro angulos que Sec. 9.2 exige ADEMAS de la cadena sismica para
+    # cerrar Mononobe-Okabe: "se requieren ademas phi del relleno, pendiente
+    # del relleno (i), inclinacion del muro (beta) y friccion muro-suelo
+    # (delta)". El primero ya esta declarado abajo como 'phi_relleno_trasdos'
+    # (bloque GEOTECNIA), porque no es solo del sismo: gobierna tambien el Ka
+    # estatico. Los otros tres viven aqui.
+
+    "pendiente_relleno_trasdos_i": Criterio(
+        # --- T-7b --- YA NO BLOQUEA: es OPCIONAL. La pendiente del relleno la
+        # deduce el ensamble de la GEOMETRIA de cada cabezal (el talud del
+        # terraplen, la coronacion del relleno retenido y el borde de la
+        # plataforma de 7.B), con la regla de 'regla_pendiente_relleno_
+        # trasdos'. Este criterio queda para quien tenga el angulo MEDIDO
+        # sobre la seccion transversal del cruce -- o el equivalente de un
+        # analisis de cuña -- y quiera imponerlo: declarado, gana para todos
+        # los cabezales de la corrida.
+        valor=None,
+        opcional=True,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Inclinacion de la superficie del relleno del trasdos sobre "
+                 "la horizontal (i), en grados, DECLARADA: sustituye a la que "
+                 "el ensamble deduce de la geometria de cada cabezal",
+        justificacion="Decide, solo si se declara, la pendiente del relleno "
+                      "con que se calculan el empuje activo de Coulomb y el "
+                      "de Mononobe-Okabe de todos los cabezales. Sin "
+                      "declararlo, la pendiente sale de la geometria de cada "
+                      "cabezal por la regla de "
+                      "'regla_pendiente_relleno_trasdos' -- el relleno sube "
+                      "con el talud del terraplen desde la coronacion del "
+                      "relleno retenido y se quiebra en el borde de la "
+                      "plataforma --, que es lo que el encargo de T-7b pide: "
+                      "i de la geometria del terraplen. Es el parametro con "
+                      "la sensibilidad mas violenta de la Fase 9: en "
+                      "Mononobe-Okabe entra en sen(phi - psi - i), y con psi "
+                      "= 26.6 grados (k_h = 0.50) la ecuacion solo tiene "
+                      "solucion para i menor que phi - 26.6 grados; AASHTO "
+                      "11.6.5.3 escribe esa misma condicion como limite de "
+                      "validez del metodo. Por eso un angulo medido, cuando "
+                      "existe, debe poder imponerse",
+        fuente="Seccion transversal del cruce del expediente vial (dato de "
+               "geometria), o analisis de cuña del relleno quebrado (AASHTO "
+               "3.11.5.8.1). Sin declarar rige "
+               "'regla_pendiente_relleno_trasdos'",
+        reemplazado_por="Geometria medida sobre la seccion transversal del "
+                        "punto de cruce",
+        sensibilidad=(0.0, 33.7),   # grados; horizontal a un talud 1.5H:1V
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con la seccion transversal del "
+                        "cruce medida; sin declararlo lo deduce el ensamble "
+                        "de la geometria de cada cabezal",
+            dominio="grados sobre la horizontal, 0 <= i < phi del relleno",
+        ),
+    ),
+
+    "inclinacion_muro_beta": Criterio(
+        # --- T-7b --- DEJA DE SER UN VACIO: 0.0, el trasdos vertical que
+        # `M9.predimensionar_cabezal` propone desde T-7a
+        # (`GeometriaCabezal.beta_grados`). El ensamble no lo lee de aqui
+        # sino de la geometria de cada cabezal; este criterio es la
+        # DECLARACION de esa regla y la fuente de `k_ae_del_proyecto`.
+        valor=0.0,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Inclinacion del paramento interior (trasdos) del cabezal "
+                 "respecto de la VERTICAL (beta), en grados, positiva cuando "
+                 "el muro se aleja del relleno",
+        justificacion="Decide la inclinacion del trasdos que entra en el "
+                      "coeficiente de empuje. El predimensionamiento del "
+                      "cabezal (T-7a) propone la pantalla de trasdos "
+                      "vertical, y en un muro en voladizo con talon el "
+                      "empuje no actua sobre el paramento sino sobre el "
+                      "plano vertical que sube desde el extremo del talon "
+                      "(AASHTO C3.11.5.3, cita "
+                      "AASHTO_LRFD_9.C3.11.5.3#PLANO_DEL_TALON): en los dos "
+                      "casos beta = 0. Un cabezal de paramento inclinado y "
+                      "sin talon tendria otro beta y otra geometria de "
+                      "pantalla, que el predimensionamiento no propone; el "
+                      "signo se declara con la convencion de Mononobe-Okabe, "
+                      "no con la del plano",
+        fuente="Regla del predimensionamiento del cabezal "
+               "('predimensionamiento_cabezal', trasdos vertical) y AASHTO "
+               "LRFD C3.11.5.3 (plano de empuje del muro en voladizo), pag. "
+               "impresa 3-122 (PDF 176)",
+        reemplazado_por="Plano de encofrado del cabezal del expediente",
+        sensibilidad=(0.0, 10.0),   # grados
+        resolucion=Libre(
+            que_lo_fija="el predimensionamiento del cabezal, del que este "
+                        "angulo es parte (ver `predimensionamiento_cabezal`)",
+            dominio="grados respecto de la vertical",
+        ),
+    ),
+
+    "friccion_muro_suelo_delta": Criterio(
+        # --- T-7b --- YA NO BLOQUEA: es OPCIONAL. El angulo de friccion sobre
+        # el plano de empuje sale de phi por la fraccion de
+        # 'fraccion_delta_sobre_phi_trasdos' [C] -- que es lo que su propia
+        # `verificacion_pendiente` pedia: declararlo como fraccion de phi y
+        # no como angulo suelto --. Este criterio queda para quien lo tenga
+        # MEDIDO: declarado, gana.
+        valor=None,
+        opcional=True,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Angulo de friccion sobre el plano de empuje del trasdos "
+                 "(delta), en grados, DECLARADO: sustituye al que sale de "
+                 "'fraccion_delta_sobre_phi_trasdos' por phi del relleno",
+        justificacion="Decide, solo si se declara, el angulo con que el "
+                      "empuje se inclina sobre su plano, y con el su reparto "
+                      "entre la componente horizontal (deslizamiento y "
+                      "excentricidad) y la vertical (carga sobre la base). "
+                      "Sin declararlo rige la fraccion de phi de "
+                      "'fraccion_delta_sobre_phi_trasdos', de modo que al "
+                      "ajustar 'phi_relleno_trasdos' los dos angulos no "
+                      "quedan incoherentes. No es conservador por un lado "
+                      "solo: un delta alto reduce K_A y K_AE, inclina la "
+                      "resultante y traslada empuje de la horizontal a la "
+                      "vertical",
+        fuente="Ensayo de interfase o adopcion declarada con su fuente. Sin "
+               "declarar rige 'fraccion_delta_sobre_phi_trasdos' (AASHTO "
+               "LRFD C3.11.5.3)",
+        reemplazado_por="Ensayo de interfase concreto-relleno, o adopcion "
+                        "declarada como fraccion de phi con su fuente",
+        sensibilidad=(0.0, 25.5),   # grados; 0 a 0.67*phi con phi = 38
+        resolucion=Libre(
+            que_lo_fija="el proyectista, medido o adoptado con su fuente; "
+                        "sin declararlo sale de la fraccion de phi",
+            dominio="grados, 0 <= delta <= phi_relleno_trasdos",
+        ),
+    ),
+
+    "punto_aplicacion_incremento_sismico": Criterio(
+        # --- T-7b --- DEJA DE SER UN VACIO: 0.6, con la cita que la hoja de
+        # ruta no daba. Es [C]: la fuente (AASHTO, comentario C11.6.5.3) no
+        # prescribe el valor, DESCRIBE la practica de Seed y Whitman y da la
+        # ventana.
+        valor=0.6,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        concepto="Altura de aplicacion del incremento sismico de empuje "
+                 "(P_AE - P_A), como fraccion de la altura h del plano de "
+                 "empuje",
+        justificacion="Decide el brazo del incremento sismico del empuje, y "
+                      "con el el momento que gobierna la excentricidad y el "
+                      "volteo sismicos. Mononobe-Okabe entrega el empuje "
+                      "total, no su punto de aplicacion. La fuente (AASHTO "
+                      "LRFD 11.6.5.3 y su comentario, citas "
+                      "AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION y "
+                      "AASHTO_LRFD_9.C11.6.5.3#RESULTANTE) dice tres cosas: "
+                      "que la resultante del empuje TOTAL no baje de h/3; "
+                      "que la practica anterior, con el estatico y el sismico "
+                      "por separado, situaba la componente sismica a 0.6h "
+                      "(Seed y Whitman); y que la investigacion mas "
+                      "reciente pone la resultante total en h/3, aunque una "
+                      "ubicacion algo mas alta, de 0.4h a 0.5h, 'may be "
+                      "considered'. Lo que no resuelve es cual adoptar. El "
+                      "proyecto aplica la fraccion al INCREMENTO y adopta "
+                      "0.6: con el empuje estatico en su centroide, la "
+                      "resultante combinada cae entre 0.4h y 0.5h, dentro de "
+                      "lo que el comentario admite y del lado del mayor "
+                      "momento. El otro extremo de la ventana, 1/3, pone el "
+                      "empuje total en h/3",
+        fuente="AASHTO LRFD 9a ed., 11.6.5.3 y C11.6.5.3, pag. impresa 11-30 "
+               "(PDF 1499; citas AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION y "
+               "AASHTO_LRFD_9.C11.6.5.3#RESULTANTE)",
+        reemplazado_por="Analisis dinamico de interaccion suelo-estructura "
+                        "que de la distribucion del empuje sismico",
+        sensibilidad=(0.333, 0.6),   # h/3 (empuje total en el centroide) a 0.6h
+        resolucion=Libre(
+            que_lo_fija="el proyectista, dentro de lo que el comentario "
+                        "C11.6.5.3 de AASHTO describe: de h/3 a 0.6h para el "
+                        "incremento",
+            dominio="fraccion adimensional de la altura h del plano de empuje",
+        ),
+    ),
+
+    # ----------------------- HIDROLOGIA -----------------------------------
+
+    "homogeneidad_serie_fen": Criterio(
+        # VACIO, Y DESDE T-1 CON CONSUMIDOR REAL: `MH_hidrologia`.
+        #
+        # Hasta T-0 este renglon decia «bloquea el Q de diseno de TODOS los
+        # puntos», y no era lo que el programa hacia: ningun modulo leia el
+        # criterio (INF-5.1.1). T-0 corrigio la frase; T-1 corrige el hecho.
+        # Hoy pasa esto, y son dos conductas distintas a proposito:
+        #
+        #   * el caudal lo CALCULA el programa (--cuencas y --estacion, con
+        #     `Q_m3s` vacio): `MH_hidrologia.precipitacion_de_diseno` invoca
+        #     este criterio y, sin valor, el calculo hidrologico del punto se
+        #     detiene con `CriterioPendienteError`. No hay tratamiento por
+        #     defecto;
+        #   * el caudal entra DECLARADO por la columna `Q_m3s`: no se detiene
+        #     nada --ese caudal es responsabilidad del estudio hidrologico que
+        #     lo entrego-- y la memoria imprime SIEMPRE un aviso: este
+        #     criterio rige solo el caudal que el programa calcula, y del
+        #     declarado el programa no sabe que se hizo con los años FEN. No
+        #     se lee el criterio en esa rama: atribuir al estudio externo un
+        #     tratamiento declarado para otros puntos seria inventarle una
+        #     procedencia (auditor adversarial de T-1).
+        #
+        # EL HECHO Y LA DECISION VAN SEPARADOS. Que años de El Niño contiene
+        # la serie es un hecho, y lo declara el CSV de la estacion en su
+        # columna `fen`, año por año; este criterio es SOLO la decision de
+        # que se hace con ellos. Por eso sigue vacio en el archivo: se decide
+        # con la serie delante, y la serie es una entrada del proyecto
+        # (docs/contrato_entradas.md).
+        valor=None,
+        nivel=NIVEL_PERFIL,         # lo consume la Fase 1-bis, que produce el
+                                    # caudal con que se dimensiona a perfil
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO, que es la ventana entera (T-1). Hasta T-1 eran
+        # dos frases --la serie contiene esos años o no los contiene--, que
+        # describian un hecho y no una eleccion: el hecho paso al CSV de la
+        # estacion y aqui quedan los tres tratamientos.
+        #   serie_completa    el ajuste se hace con todos los años, FEN
+        #                     incluidos, que es lo que el num. 3.4 manda
+        #                     incluir.
+        #   serie_sin_fen     el ajuste se hace sin los años marcados FEN.
+        #                     Se puede declarar; cuando da MENOS lluvia que
+        #                     la serie completa incumple la regla de la hoja
+        #                     de ruta (adoptar el mas conservador) y el
+        #                     calculo hidrologico del punto SE DETIENE, con
+        #                     las dos lluvias en el mensaje. Si da igual o
+        #                     mas, pasa y el paso 1b.3b lo imprime. Decision
+        #                     del dueño de la hoja de ruta (ficha T1-09).
+        #   dos_poblaciones   analisis de poblacion mixta. Se puede declarar
+        #                     y el calculo se detiene con «metodo no
+        #                     evaluable»: ni el Manual ni ninguna fuente de
+        #                     normas/ da el procedimiento.
+        # Con cualquiera de los dos primeros la memoria imprime la
+        # precipitacion de diseño de las dos series, lado a lado.
+        sensibilidad=("serie_completa", "serie_sin_fen", "dos_poblaciones"),
+        concepto="Tratamiento de los anios del fenomeno El Nino en la serie "
+                 "de precipitacion maxima en 24 horas de la estacion, al "
+                 "ajustar la distribucion de la que sale la lluvia de diseno",
+        justificacion="Decide con que anios de la serie se ajusta la "
+                      "distribucion de probabilidad de la que sale la "
+                      "precipitacion de diseno. La fuente (num. 3.4 del "
+                      "Manual de Hidrologia, cita MC_HHD.3.4#FEN) manda dos "
+                      "cosas en la misma oracion: que la serie incluya los "
+                      "anios del fenomeno El Nino, y que esos anios se "
+                      "evaluen para no sobredimensionar las obras. Lo que no "
+                      "dice es como se evaluan, y la hoja de ruta (Fase "
+                      "1-bis) lo deja como decision a declarar: la serie de "
+                      "Piura es de poblacion mixta, porque los anios de El "
+                      "Nino extraordinario no pertenecen a la misma "
+                      "poblacion estadistica que los anios neutros. La hoja "
+                      "de ruta fija ademas la regla: reportar el ajuste con "
+                      "esos anios y sin ellos, y adoptar el mas conservador. "
+                      "Se ofrecen tres tratamientos. Con la serie completa "
+                      "las distribuciones de cola corta suelen fallar la "
+                      "prueba de bondad, y la que la pasa puede dejar la "
+                      "lluvia de diseno por debajo de los anios del fenomeno "
+                      "ya registrados: el paso del ajuste lo contrasta y lo "
+                      "avisa. Sin los anios del fenomeno el ajuste mejora y "
+                      "la lluvia de diseno baja, que es el lado no "
+                      "conservador: se puede declarar, y el programa lo "
+                      "juzga contra la regla de la hoja de ruta; cuando da "
+                      "menos que la serie completa el calculo del punto se "
+                      "detiene, y cuando da igual o mas, pasa. "
+                      "El analisis de dos poblaciones es el que describe el "
+                      "fenomeno, y no se evalua porque ninguna fuente del "
+                      "expediente entrega su procedimiento. No se adopta un "
+                      "valor de archivo: la eleccion depende de cuantos "
+                      "anios del fenomeno trae la serie y de que tan lejos "
+                      "quedan del resto, y eso solo se ve con la serie "
+                      "delante. Sensibilidad: la memoria imprime la "
+                      "precipitacion de diseno con la serie completa y sin "
+                      "los anios del fenomeno, de modo que la diferencia "
+                      "entre los dos tratamientos queda a la vista en cada "
+                      "punto",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.4 "
+               "'Evaluación de la Información Hidrológica', pag. impresa 22 "
+               "(PDF 25): cita MC_HHD.3.4#FEN, caracter EXIGENCIA sobre "
+               "incluir y evaluar los anios del fenomeno El Nino, sin "
+               "procedimiento. Hoja de ruta, Fase 1-bis. Requiere la serie "
+               "de la estacion con su columna `fen` (--estacion)",
+        reemplazado_por="Analisis de homogeneidad sobre la serie SENAMHI "
+                        "completa, firmado por el estudio hidrologico",
+        verificacion_pendiente="El tratamiento 'dos_poblaciones' no tiene "
+                               "procedimiento en ninguna fuente de normas/: "
+                               "declararlo detiene el calculo hidrologico "
+                               "con «metodo no evaluable». Y cuando el "
+                               "caudal entra por la columna 'Q_m3s' este "
+                               "criterio no detiene nada: quien reciba un "
+                               "CSV con el caudal ya calculado tiene que "
+                               "exigir, aparte, el analisis de homogeneidad "
+                               "que lo respalda (la memoria lo avisa)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con la serie de la estacion "
+                        "delante: el num. 3.4 del Manual manda incluir y "
+                        "evaluar los años del fenomeno El Niño y no dice "
+                        "como",
+            dominio="declaracion del tratamiento; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    "riesgo_admisible_propietario": Criterio(
+        valor=None,                 # OPCIONAL: sin valor rigen los maximos
+                                    # recomendados de la Tabla N 02
+        # NIVEL MEDIDO, y lo mide la TERCERA corrida de
+        # `tests/test_nivel_medido.py`, que existe por este caso: `opcional=True`
+        # se lee con `valor_si_declarado()`, que NO registra el uso mientras el
+        # criterio siga vacio, de modo que las dos corridas normales no lo pueden
+        # ver. Declarado en caliente con el valor que ya rige por defecto, la
+        # corrida `--alcance perfil` SI lo invoca. Medirlo asi no mueve ningun
+        # resultado: la declaracion repite lo que el consumidor ya aplicaba.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Riesgo admisible de falla R y vida util n que el Propietario "
+                 "de la obra adopta, si son distintos de los maximos "
+                 "recomendados de la Tabla N 02",
+        justificacion="Decide que R y que n adopta el Propietario para una "
+                      "fila ya elegida de la Tabla N 02, cuando difieren de "
+                      "los maximos recomendados. Es opcional y no un vacio: "
+                      "sin declarar, el calculo no se detiene y M1 aplica las "
+                      "dos filas por defecto (quebrada importante R = 0.30 / "
+                      "n = 25; quebrada menor y descarga de cunetas R = 0.35 "
+                      "/ n = 15). La fuente (Tabla N 02, num. 3.6, transcrita "
+                      "con sus dos notas en "
+                      "constantes_normativas.TABLA_02_FILAS) recomienda esos "
+                      "valores como maximos y su nota al pie asigna al "
+                      "Propietario la definicion del riesgo admisible de "
+                      "falla y de la vida util. Lo que la fuente no resuelve "
+                      "es el par de esta obra: adoptar los maximos "
+                      "recomendados es una decision del proyecto, no una "
+                      "lectura del numeral, y hace falta una via declarada "
+                      "por la que el Propietario ejerza la suya. Se adopta la "
+                      "regla de que este criterio solo puede endurecer lo que "
+                      "la tabla concede: M1 rechaza un R declarado por encima "
+                      "del maximo recomendado de su fila, porque aqui el "
+                      "extremo recomendado es el menos conservador -- mas "
+                      "riesgo admisible da menos periodo de retorno y menos "
+                      "caudal de diseno, al reves que en V1 y V2. "
+                      "Sensibilidad: un Propietario que adopte R = 0.20 con n "
+                      "= 25 pasa de TR = 71 a TR = 113 anios (+59 %), y con "
+                      "el sube el Q de diseno de todos los puntos de Familia "
+                      "A. No decide la eleccion de fila -- que cauce cae en "
+                      "quebrada importante y cual en quebrada menor --, que "
+                      "es otro eje y vive en "
+                      "'umbral_area_quebrada_importante_ha', declarado en "
+                      "100 ha con ventana: aqui se declara, para una fila ya "
+                      "elegida, que R y que n adopta el Propietario",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, "
+               "RD 20-2011-MTC/14), Tabla N 02 'VALORES MAXIMOS RECOMENDADOS "
+               "DE RIESGO ADMISIBLE DE OBRAS DE DRENAJE', num. 3.6, "
+               "pag. impresa 25, y su nota al pie. La tabla completa -- seis "
+               "filas, con las dos notas -- esta transcrita en "
+               "constantes_normativas.TABLA_02_FILAS; las dos filas que el "
+               "calculo consume salen de ella por "
+               "constantes_normativas.RIESGO_ADMISIBLE, que es el valor por "
+               "defecto que este criterio refina",
+        reemplazado_por="Declaracion escrita del Propietario de la obra sobre "
+                        "el riesgo admisible de falla y la vida util, que es "
+                        "a quien la nota al pie de la Tabla N 02 le asigna la "
+                        "decision",
+        sensibilidad=("los maximos recomendados de la Tabla N 02, que el "
+                      "proyecto adopta por defecto: R = 30 % con n = 25 anios "
+                      "(quebrada importante, TR 71) y R = 35 % con n = 15 "
+                      "anios (quebrada menor y descarga de cunetas, TR 35)",
+                      "cualquier R menor y/o cualquier n mayor que declare el "
+                      "Propietario: la tabla es un techo y solo se puede bajar "
+                      "de el. El TR crece al bajar R o al subir n -- p.ej. "
+                      "R = 20 % con n = 25 da TR = 113 anios --, y con el "
+                      "crece el caudal de diseno"),
+        opcional=True,      # sin declarar, rigen los maximos de la Tabla N 02
+        resolucion=DeTabla(
+            tablas=("MC_HHD.T02",),
+            que_elige="la fila de tipo de obra con su R y su n, cuando el "
+                      "Propietario adopta valores distintos de los maximos "
+                      "recomendados que el proyecto toma por defecto",
+        ),
+    ),
+
+    "umbral_area_quebrada_importante_ha": Criterio(
+        # ha. ADOPCION DEL PROYECTO, SIN FUENTE QUE LA FIJE, y la ficha lo dice
+        # asi desde T-1 (INF-5.1.3). Hasta entonces este comentario y la
+        # `justificacion` defendian el 100 con las areas de los dos puntos de
+        # Familia A de `tests/ejemplo_puntos.csv` --«por debajo de las areas
+        # de sus dos puntos»--, que es un argumento circular: el umbral se
+        # justificaba con los datos de prueba que el propio umbral clasifica,
+        # y M1 dice de esos puntos que no son del expediente. El VALOR no
+        # cambia (moverlo cambiaria el periodo de retorno de un punto real);
+        # cambia lo que lo sostiene, que ahora es lo que la fuente dice, lo
+        # que no dice, la direccion del conservadurismo y el barrido.
+        valor=100.0,
+        nivel=NIVEL_PERFIL,
+        sensibilidad=(50.0, 200.0),  # ha; la ventana se barre: `--barrido umbral_area_quebrada_importante_ha=50,100,200`
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Area de cuenca a partir de la cual el cauce de un punto de "
+                 "Familia A se clasifica como 'quebrada importante' (TR 71) en "
+                 "vez de 'quebrada menor' (TR 35) en la Tabla N 02",
+        justificacion="Decide a partir de que area de cuenca el cauce de un "
+                      "punto de Familia A se clasifica como quebrada "
+                      "importante (periodo de retorno de 71 anios) en vez de "
+                      "quebrada menor (35 anios). La fuente (Tabla N 02, "
+                      "num. 3.6 del Manual de Hidrologia, transcrita en "
+                      "constantes_normativas.TABLA_02_FILAS) nombra las dos "
+                      "categorias y les asigna riesgo admisible y vida util, "
+                      "de donde sale el periodo de retorno de cada una. Lo "
+                      "que no entrega -- ni esa tabla, ni sus notas al pie, "
+                      "ni ningun otro apartado del Manual, verificado contra "
+                      "el texto -- es una regla que diga cuando un cauce cae "
+                      "en una categoria o en la otra: no hay umbral de area, "
+                      "ni de caudal, ni de longitud, ni de orden de cauce. "
+                      "El Manual nombra las categorias y las tarifa, no las "
+                      "define, y la hoja de ruta (Sec. 2.3) hereda el hueco. "
+                      "Se adopta un umbral de area de cuenca, y es una "
+                      "adopcion del proyecto en sus dos mitades: el "
+                      "descriptor (el area, que es el dato que la Sec. 1.1 "
+                      "califica de solo clasificador) y el numero. Ninguna "
+                      "fuente tecnica reconocida fija el numero, y por eso "
+                      "la etiqueta no es la de un vacio cubierto con fuente "
+                      "ajena. Los 100 ha (1 km2) no se defienden por lo que "
+                      "clasifican en un conjunto de puntos dado, sino por "
+                      "tres cosas que no dependen de ningun punto. Primera, "
+                      "la direccion: bajar el umbral solo puede pasar cauces "
+                      "de quebrada menor a quebrada importante, que es mas "
+                      "periodo de retorno y mas caudal, de modo que el "
+                      "extremo bajo de la ventana es el conservador. "
+                      "Segunda, la sensibilidad: entre una fila y la otra el "
+                      "periodo de retorno se duplica, y la ventana de 50 a "
+                      "200 ha se barre para mostrar que puntos del "
+                      "expediente cambian de fila y cuanto cambia su "
+                      "diametro; un punto que cambia dentro de la ventana "
+                      "no esta decidido por la norma sino por esta adopcion, "
+                      "y la memoria lo tiene que decir. Tercera, la via "
+                      "alterna: la categoria se puede declarar cauce por "
+                      "cauce, y entonces este criterio no interviene y la "
+                      "eleccion se documenta punto por punto",
+        fuente="PENDIENTE - Manual de Hidrologia, Hidraulica y Drenaje (MTC), "
+               "Tabla N 02 (num. 3.6): da R y n por categoria de cauce y NO "
+               "define 'quebrada importante' ni 'quebrada menor' por umbral "
+               "de area, longitud ni caudal. Verificado contra el texto",
+        reemplazado_por="Clasificacion del cauce documentada punto por punto "
+                        "(categoria explicita a M1), o umbral tomado de un "
+                        "estudio hidrologico de la cuenca del Bajo Piura",
+        verificacion_pendiente="Si se adopta un umbral, declarar en la memoria "
+                               "que puntos quedan a cada lado y correr la "
+                               "sensibilidad del Q con TR 71 y TR 35: es la "
+                               "misma alcantarilla con dos caudales de diseno",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el Manual nombra las categorias de "
+                        "cauce y las tarifa, y NO da regla de asignacion "
+                        "fisica -- ni area, ni caudal, ni orden de cauce",
+            dominio="ha > 0",
+        ),
+    ),
+
+    # --- T-1 --- las tres decisiones del calculo hidrologico (MH) ----------
+    # Solo se invocan cuando el caudal lo CALCULA el programa (--cuencas y
+    # --estacion con `Q_m3s` vacio). Las tres llevan valor de archivo con su
+    # fuente y su ventana, y las tres se pueden barrer. Lo que NO es criterio
+    # y si entrada: el metodo del tiempo de concentracion va por cuenca, en
+    # la columna `metodo_tc` del CSV de cuencas, porque su validez depende
+    # de la pendiente de CADA cuenca y un valor unico para el corredor
+    # dejaria fuera de rango a las que no se le parecen.
+
+    "distribucion_precipitacion_maxima": Criterio(
+        valor="mejor_ajuste_ks",
+        # NIVEL POR LA REGLA, medido por `tests/test_t1_hidrologia.py`: lo
+        # invoca la Fase 1-bis en una corrida `--alcance perfil` con cuencas
+        # y estacion. Las corridas del fixture traen `Q_m3s` lleno y no
+        # llegan a el.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # La regla de eleccion mas las ocho distribuciones del num. 3.7.1.
+        # Cinco de las ocho se pueden declarar y NO se evaluan: ver
+        # `verificacion_pendiente`.
+        sensibilidad=("mejor_ajuste_ks", "normal", "lognormal_2p", "gumbel",
+                      "lognormal_3p", "gamma_2p", "gamma_3p",
+                      "log_pearson_3", "log_gumbel"),
+        concepto="Distribucion de probabilidad con que se ajusta la serie de "
+                 "precipitacion maxima en 24 horas para obtener la lluvia "
+                 "del periodo de retorno de diseno",
+        justificacion="Decide con que modelo de probabilidad se extrapola la "
+                      "serie de la estacion hasta el periodo de retorno de "
+                      "diseno. La fuente (num. 3.7.1 del Manual de "
+                      "Hidrologia, cita MC_HHD.3.7.1) recomienda ocho "
+                      "distribuciones sin preferir ninguna, y su num. 3.7.2 "
+                      "(cita MC_HHD.3.7.2b#ELIGE) dice que la prueba de "
+                      "Kolmogorov-Smirnov permite elegir la mas "
+                      "representativa, la de mejor ajuste. Se adopta esa "
+                      "regla como valor de archivo: se ajustan las "
+                      "distribuciones que el programa evalua y se toma la de "
+                      "menor diferencia maxima D, siempre que pase la "
+                      "prueba. La alternativa es declarar una distribucion "
+                      "concreta, que entonces se usa aunque otra ajuste "
+                      "mejor, y tambien tiene que pasar la prueba. "
+                      "La regla tiene un limite que hay que conocer: la "
+                      "prueba mide la mayor diferencia de probabilidad sobre "
+                      "toda la serie, y una serie de poblacion mixta -- anios "
+                      "corrientes y dos o tres anios del fenomeno El Nino -- "
+                      "puede ajustar muy bien en el cuerpo y dejar los "
+                      "extremos por encima de la lluvia de diseno. Pasar la "
+                      "prueba no garantiza que el periodo de retorno de "
+                      "diseno cubra lo ya observado; por eso el paso del "
+                      "ajuste contrasta la lluvia de diseno con el maximo de "
+                      "la serie y lo avisa cuando queda por debajo. "
+                      "Sensibilidad: la memoria imprime la precipitacion de "
+                      "diseno de cada distribucion evaluada, con su D, de "
+                      "modo que el efecto de elegir otra se lee en el mismo "
+                      "paso; entre las tres la lluvia de diseno puede diferir "
+                      "mas de un 20 %, y la de menor D no es por fuerza la "
+                      "mayor",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.7.1 "
+               "'Modelos de distribución', pag. impresa 25 (PDF 28), y num. "
+               "3.7.2 b) 'Prueba Kolmogorov – Smirnov', pag. impresa 32 "
+               "(PDF 35): citas MC_HHD.3.7.1 (RECOMENDACION) y "
+               "MC_HHD.3.7.2b#ELIGE (PERMISO)",
+        verificacion_pendiente="De las ocho distribuciones del num. 3.7.1 el "
+                               "programa evalua tres: normal, log normal de "
+                               "2 parametros y Gumbel, que son las unicas de "
+                               "las que el Manual imprime como se estiman "
+                               "los parametros (num. 3.7.1.1, 3.7.1.2 y "
+                               "3.7.1.7). Declarar cualquiera de las otras "
+                               "cinco detiene el calculo con «metodo no "
+                               "evaluable»: falta una fuente que fije su "
+                               "estimador. 'mejor_ajuste_ks' elige entre las "
+                               "tres evaluadas, no entre las ocho",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el Manual recomienda ocho "
+                        "distribuciones y permite elegir por la prueba de "
+                        "Kolmogorov-Smirnov; no manda ninguna",
+            dominio="declaracion de la distribucion o de la regla de "
+                    "eleccion; el conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    "nivel_significancia_ks": Criterio(
+        valor=0.05,                 # alfa, adimensional
+        nivel=NIVEL_PERFIL,         # mismo consumidor y misma medida que
+                                    # 'distribucion_precipitacion_maxima'
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.01, 0.10),  # las columnas extremas de la Tabla N 03
+        concepto="Nivel de significancia alfa con que se lee el valor "
+                 "critico de la prueba de Kolmogorov-Smirnov",
+        justificacion="Decide con que nivel de significancia se acepta o se "
+                      "rechaza el ajuste de la distribucion. La fuente "
+                      "(Tabla N 03 del Manual de Hidrologia, cita "
+                      "MC_HHD.3.7.2b#T03) tabula el valor critico para tres "
+                      "niveles, 0.10, 0.05 y 0.01, y el texto habla del "
+                      "nivel de significancia seleccionado sin seleccionar "
+                      "ninguno. Se adopta 0.05, la columna central de la "
+                      "tabla. La ventana son sus dos columnas extremas. La "
+                      "direccion importa y no es la intuitiva: con alfa = "
+                      "0.10 el valor critico es menor y la prueba rechaza "
+                      "mas ajustes, de modo que el extremo alto de la "
+                      "ventana es el exigente; con alfa = 0.01 casi "
+                      "cualquier distribucion pasa. Sensibilidad: para una "
+                      "serie de 25 anios el valor critico va de 0.24 a 0.32 "
+                      "entre los dos extremos; el nivel no mueve la lluvia "
+                      "de diseno, solo decide si el ajuste se acepta",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.7.2 "
+               "b) y Tabla N 03 'Valores críticos d para la prueba "
+               "Kolmogorov – Smirnov', pags. impresas 32 y 33 (PDF 35 y 36): "
+               "citas MC_HHD.3.7.2b y MC_HHD.3.7.2b#T03",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la Tabla N 03 ofrece tres niveles "
+                        "y el Manual no elige ninguno",
+            dominio="probabilidad adimensional, entre las columnas extremas "
+                    "de la Tabla N 03",
+        ),
+    ),
+
+    "relacion_intensidad_duracion": Criterio(
+        valor="dick_peschke",
+        nivel=NIVEL_PERFIL,         # mismo consumidor y misma medida que
+                                    # 'distribucion_precipitacion_maxima'
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("dick_peschke", "tabla_04_coeficientes_de_duracion"),
+        concepto="Relacion con que la precipitacion maxima en 24 horas se "
+                 "lleva a la intensidad de una lluvia de duracion igual al "
+                 "tiempo de concentracion",
+        justificacion="Decide como se obtiene la intensidad de diseno a "
+                      "partir de la lluvia de 24 horas cuando no hay "
+                      "registros pluviograficos. La fuente (num. 3.8.1 del "
+                      "Manual de Hidrologia) ofrece dos caminos y los dos "
+                      "son permisos: la relacion de Dick y Peschke (cita "
+                      "MC_HHD.3.8.1#DICK_PESCHKE), para duraciones menores "
+                      "de 1 hora o cuando no hay pluviografo, y los "
+                      "coeficientes de duracion de su Tabla N 04 (cita "
+                      "MC_HHD.3.8.1#T04), de 1 a 48 horas, que el propio "
+                      "texto pide usar con criterio y cautela. Se adopta "
+                      "Dick y Peschke por dos razones: es la unica de las "
+                      "dos que cubre las duraciones menores de 1 hora, que "
+                      "son las de una cuneta y de casi toda cuenca pequena, "
+                      "y da mas lluvia que la tabla en todo el tramo comun "
+                      "por debajo de 24 horas, que es el lado conservador. "
+                      "Sensibilidad: para una "
+                      "duracion de 1 hora Dick y Peschke asigna el 45 % de "
+                      "la lluvia de 24 horas y la Tabla N 04 el 25 %, de "
+                      "modo que la intensidad y el caudal son un 81 % "
+                      "mayores con el valor adoptado; a 6 horas, 71 % "
+                      "frente a 56 %",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.8.1 "
+               "'Curvas Intensidad – Duración – Frecuencia', ecuacion (16) "
+               "en la pag. impresa 37 (PDF 40) y Tabla N 04 en las pags. "
+               "impresas 36 y 37 (PDF 39 y 40): citas "
+               "MC_HHD.3.8.1#DICK_PESCHKE y MC_HHD.3.8.1#T04, las dos de "
+               "caracter PERMISO",
+        verificacion_pendiente="La Tabla N 04 no dice que se interpole "
+                               "entre sus filas ni cubre menos de 1 hora: "
+                               "con ella elegida, una duracion intermedia "
+                               "se interpola linealmente por lectura del "
+                               "proyecto y una menor de 1 hora detiene el "
+                               "calculo. La relacion regional I = K·T^m/t^n "
+                               "(ecuacion 17) no se evalua: sus tres "
+                               "factores son datos de un estudio regional "
+                               "que el expediente no trae",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el num. 3.8.1 permite las dos "
+                        "relaciones y no manda ninguna",
+            dominio="declaracion de la relacion; el conjunto cerrado viaja "
+                    "en `sensibilidad`",
+        ),
+    ),
+
+    # --- T-1, tras el auditor adversarial: cuatro decisiones mas -----------
+
+    "duracion_minima_lluvia_min": Criterio(
+        valor=5.0,                  # minutos
+        nivel=NIVEL_PERFIL,         # lo invoca la Fase 1-bis en cada caudal
+                                    # calculado (medido en test_t1_hidrologia)
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        # La ventana: desde el minimo que la fuente manda hasta el intervalo
+        # mas corto del que, segun la misma fuente, suele haber dato medido.
+        sensibilidad=(5.0, 15.0),
+        concepto="Duracion minima de la lluvia de diseno: el piso que se "
+                 "aplica cuando el tiempo de concentracion calculado queda "
+                 "por debajo",
+        justificacion="Fija la menor duracion de lluvia con que se calcula "
+                      "la intensidad de diseno. El vacio es de la norma "
+                      "peruana: el Manual de Hidrologia iguala la duracion "
+                      "al tiempo de concentracion (cita "
+                      "MC_HHD.3.8.1#DURACION) y no le pone piso, de modo que "
+                      "una cuneta corta o una plataforma dan tiempos de 1 a "
+                      "2 min y las relaciones de intensidad, extrapoladas "
+                      "hasta ahi, entregan intensidades de mas de 1000 mm/h. "
+                      "Lo cubre el Hydraulics Manual de WSDOT (cita "
+                      "WSDOT_HM.2-6.3#TC_MINIMO), que manda usar 5 min como "
+                      "duracion cuando el tiempo de concentracion es menor, "
+                      "y da dos razones: las curvas de intensidad por debajo "
+                      "de ese tiempo son extrapolacion, y la lluvia tarda en "
+                      "generar escorrentia. Se aplica asi: si el tiempo de "
+                      "concentracion es menor que el minimo, la lluvia de "
+                      "diseno dura el minimo y el paso lo dice. La direccion "
+                      "es la no conservadora -- un piso mas alto baja la "
+                      "intensidad -- y por eso se adopta el extremo bajo de "
+                      "la ventana, que es el que la fuente escribe. "
+                      "Sensibilidad: con la relacion de Dick y Peschke la "
+                      "intensidad varia con la duracion elevada a -0.75, de "
+                      "modo que pasar de 5 a 10 min la reduce un 41 % y a "
+                      "15 min un 56 %",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril de 2026), num. "
+               "2-6.3 'Time of Concentration', pag. impresa 2-10 (PDF 46): "
+               "cita WSDOT_HM.2-6.3#TC_MINIMO, caracter EXIGENCIA; repetido "
+               "en el num. 2-6.4 'Rainfall Intensity', pag. impresa 2-11 "
+               "(PDF 47). Fuente tecnica, no norma peruana",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre el minimo de la fuente "
+                        "tecnica: el Manual de Hidrologia no fija ninguno",
+            dominio="minutos > 0",
+        ),
+    ),
+
+    "tc_fuera_de_la_poblacion_del_metodo": Criterio(
+        valor="no_evaluable",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("no_evaluable", "indicador_con_aviso"),
+        concepto="Que se hace cuando la cuenca queda fuera de la poblacion "
+                 "de la que salio la formula de tiempo de concentracion "
+                 "declarada",
+        justificacion="Decide si una formula empirica de tiempo de "
+                      "concentracion se evalua en una cuenca que no se "
+                      "parece a las cuencas de las que salio. La fuente "
+                      "(Tabla N 05 del Manual de Hidrologia) describe esa "
+                      "poblacion en sus observaciones -- pendientes de 3 a "
+                      "10 % para Kirpich, cuencas de menos de 800 ha para la "
+                      "ecuacion de retardo -- y no dice que hacer fuera: "
+                      "describe, no prohibe. Se adopta no evaluar, que es "
+                      "mas estricto que la fuente: el calculo del punto se "
+                      "detiene y pide otro metodo. Se adopta asi porque "
+                      "extrapolar una formula empirica es justo el riesgo de "
+                      "un corredor de llanura, donde las pendientes no "
+                      "llegan al 1 %. El mismo trato se da a la formula de "
+                      "California, porque la tabla dice de ella que es "
+                      "esencialmente la de Kirpich: sin eso el limite se "
+                      "saltaria cambiando el nombre del metodo. La "
+                      "alternativa evalua la formula igual y lo imprime como "
+                      "indicador con aviso. No alcanza a la formula de "
+                      "Temez, cuya fuente si escribe un rango de aplicacion, "
+                      "ni a la de la Federal Aviation Administration, a la "
+                      "que la tabla no le describe poblacion numerica. "
+                      "Sensibilidad: el criterio no mueve el tiempo de "
+                      "concentracion, solo decide si el punto se calcula o "
+                      "se detiene",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), Tabla N 05 "
+               "'Fórmulas para el cálculo del tiempo de concentración', "
+               "pags. impresas 39 y 40 (PDF 42 y 43), columna de "
+               "observaciones: citas MC_HHD.3.9#T05_KIRPICH, "
+               "MC_HHD.3.9#T05_CALIFORNIA y MC_HHD.3.9#T05_SCS, de caracter "
+               "APROXIMACION. La tabla describe la poblacion; el trato "
+               "fuera de ella es adopcion del proyecto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la Tabla N 05 describe de que "
+                        "cuencas salio cada formula y no dice que hacer "
+                        "fuera de ellas",
+            dominio="declaracion del trato; el conjunto cerrado viaja en "
+                    "`sensibilidad`",
+        ),
+    ),
+
+    "coeficiente_uniformidad_temez": Criterio(
+        valor="aplicar",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("aplicar", "no_aplicar"),
+        concepto="Si el caudal lleva el coeficiente de uniformidad K del "
+                 "metodo racional modificado cuando el tiempo de "
+                 "concentracion sale de la formula de Temez",
+        justificacion="Decide que se hace con el resto del metodo cuando de "
+                      "el se toma una sola pieza. La formula de Temez (cita "
+                      "MC_HHD.3.12.2.1#TC) no es una fila de la Tabla N 05: "
+                      "es la ecuacion del tiempo de concentracion del metodo "
+                      "racional modificado, cuyo caudal lleva un coeficiente "
+                      "de uniformidad K mayor que 1 (cita "
+                      "MC_HHD.3.12.2.1#K) y ademas su propia intensidad y su "
+                      "propio coeficiente de escorrentia por numero de "
+                      "curva. El proyecto usa esa formula con el metodo "
+                      "racional simple, que es un uso hibrido y se declara "
+                      "como tal. Se adopta aplicar K: es del mismo numeral, "
+                      "crece con el tiempo de concentracion y corrige "
+                      "justamente lo que el racional simple supone y una "
+                      "cuenca de varias horas no cumple, la lluvia uniforme "
+                      "en el tiempo; y es el lado conservador, porque K "
+                      "sube el caudal. La alternativa calcula con la "
+                      "ecuacion del racional simple sin K. Sensibilidad: K "
+                      "vale 1.07 para un tiempo de concentracion de 1 h, "
+                      "1.15 para 2 h y 1.29 para 4 h, de modo que no "
+                      "aplicarlo baja el caudal entre un 6 y un 22 % en ese "
+                      "tramo",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "3.12.2.1 'Método Racional Modificado', ecuaciones (29), (30) "
+               "y (31), pag. impresa 51 (PDF 54): citas MC_HHD.3.12.2.1#K "
+               "(DEFINICION) y MC_HHD.3.12.2.1#TC (APROXIMACION)",
+        verificacion_pendiente="El metodo racional modificado completo no "
+                               "esta implementado: su intensidad, su factor "
+                               "reductor por area y su coeficiente de "
+                               "escorrentia por numero de curva no se usan "
+                               "(ficha T1-08 de docs/decisiones_diferidas.md). "
+                               "Lo que se calcula con la formula de Temez es "
+                               "un hibrido declarado, con o sin K",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el Manual da K dentro de un metodo "
+                        "del que el proyecto toma solo el tiempo de "
+                        "concentracion, y no dice si K acompaña a esa pieza "
+                        "fuera del metodo",
+            dominio="declaracion; el conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    "coeficiente_escorrentia_superficie_vial": Criterio(
+        valor={
+            # Coeficientes de 10 AÑOS de periodo de retorno, DERIVADOS de la
+            # Table 2-2 del registro por `_coeficientes_de_superficies_viales`.
+            "coeficientes_10_anios": _COEFICIENTES_VIALES_WSDOT,
+            # El incremento que el num. 2-6.2 manda al diseñar para una
+            # tormenta menos frecuente, por periodo de retorno en años.
+            "incremento_por_periodo_de_retorno": {"10": 0.0, "25": 0.10,
+                                                  "50": 0.20, "100": 0.25},
+            "tope": 0.95,
+        },
+        nivel=NIVEL_PERFIL,         # lo invoca la Fase 1-bis cuando la
+                                    # cobertura de la fila es una superficie
+                                    # vial (medido en test_t1_hidrologia)
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Coeficiente de escorrentia de las superficies de la "
+                 "plataforma vial que la Tabla N 08 no tiene: pavimento, "
+                 "berma de tierra y talud de tierra o con cesped, con su "
+                 "incremento por periodo de retorno",
+        justificacion="Da el coeficiente de escorrentia del area tributaria "
+                      "de una cuneta. El vacio es de la norma peruana: la "
+                      "Tabla N 08 del Manual de Hidrologia tabula cinco "
+                      "coberturas de cuenca natural y no tiene fila para una "
+                      "superficie pavimentada ni para un talud, y el num. "
+                      "4.1.2.1 b) pide el coeficiente de escurrimiento de la "
+                      "cuenca de la cuneta sin dar tabla. Lo cubre la Table "
+                      "2-2 del Hydraulics Manual de WSDOT (cita "
+                      "WSDOT_HM.2-6.2#T2-2), de la que se toman solo cuatro "
+                      "filas: pavimento 0.90, berma de tierra 0.50, talud de "
+                      "tierra 0.60 y talud con cesped 0.30, que valen lo "
+                      "mismo en las tres columnas de pendiente. Esos numeros "
+                      "son de una tormenta de 10 anios de periodo de "
+                      "retorno; la misma fuente (cita "
+                      "WSDOT_HM.2-6.2#FRECUENCIA) manda aumentarlos un 10 % "
+                      "para 25 anios, un 20 % para 50 y un 25 % para 100, "
+                      "sin pasar de 0.95. Entre esas frecuencias la fuente "
+                      "no dice nada: se toma el incremento de la frecuencia "
+                      "tabulada inmediatamente mayor, que es el lado "
+                      "conservador; por encima de 100 anios no hay "
+                      "frecuencia mayor que tomar y el calculo se detiene. "
+                      "Con el periodo de retorno de 35 anios de una "
+                      "alcantarilla de alivio el pavimento queda en el tope, "
+                      "0.95, y el talud de tierra en 0.72. No sustituye a la "
+                      "Tabla N 08 para una cuenca natural: una cobertura de "
+                      "cuenca se sigue leyendo de la tabla peruana",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril de 2026), Table "
+               "2-2 'Runoff Coefficients for the Rational Method: 10-Year "
+               "Return Frequency', pag. impresa 2-9 (PDF 45), y num. 2-6.2 "
+               "'Runoff Coefficients', pag. impresa 2-8 (PDF 44): citas "
+               "WSDOT_HM.2-6.2#T2-2 y WSDOT_HM.2-6.2#FRECUENCIA. Fuente "
+               "tecnica, no norma peruana",
+        resolucion=Derivada(
+            de=("WSDOT_HM.T2-2",),
+            regla="las cuatro filas viales de la tabla del registro, leidas "
+                  "por `_coeficientes_de_superficies_viales()`; los "
+                  "incrementos y el tope son los del num. 2-6.2 de la misma "
+                  "fuente (cita WSDOT_HM.2-6.2#FRECUENCIA)",
+        ),
+    ),
+
+    # ----------------------- HIDRAULICA: vacios ---------------------------
+
+    "hds5_embocadura_hdpe": Criterio(
+        valor={"K": 0.0098, "M": 2.00, "c": 0.0398, "Y": 0.67, "Ks": -0.5,
+               "forma": 1},
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Constantes de control de entrada HDS-5 para tuberia HDPE",
+        justificacion="Decide la fila de la Tabla A.1 de HDS-5 de la que se "
+                      "toman las constantes de control de entrada (K, M, c, Y "
+                      "y Ks) para la tuberia HDPE de interior liso. La fuente "
+                      "(Tabla A.1; fila adoptada y verificada, ver `fuente` y "
+                      "`resolucion`) se organiza en cartas por forma/material "
+                      "y, dentro de cada carta, por configuracion de borde: "
+                      "la misma configuracion de borde recto con muro de "
+                      "cabecera tiene K = 0.0098 en concreto y K = 0.0078 en "
+                      "metal corrugado, y esa diferencia responde al perfil "
+                      "de pared en la boca (lisa frente a corrugada), no a la "
+                      "friccion del barril. Lo que la tabla no resuelve es el "
+                      "HDPE: no lo lista. Se adopta por analogia la fila del "
+                      "concreto de borde recto con muro de cabecera, porque "
+                      "el HDPE de interior liso cortado a ras del muro "
+                      "presenta en la boca pared lisa y borde cuadrado: la "
+                      "misma condicion de entrada que el concreto. La "
+                      "sensibilidad declara la fila alternativa del metal "
+                      "corrugado con muro de cabecera, con sus constantes al "
+                      "lado de las adoptadas",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, "
+               "pag. A.8, fila 'Circular Concrete / Square edge w/headwall'. "
+               "Los cinco valores confirman contra esa fila y la pagina es la "
+               "correcta (verificado por la auditoria normativa, NOR-ANA-03)",
+        sensibilidad=("Tabla A.1, fila 'Circular Concrete / Square edge "
+                      "w/headwall' (la adoptada): K=0.0098, c=0.0398, Y=0.67",
+                      "Tabla A.1, fila 'Circular CM / Headwall' (la "
+                      "alternativa): K=0.0078, c=0.0379, Y=0.69"),
+        verificacion_pendiente="LA DIRECCION DE LA COMPARACION SE DECLARO AL "
+                               "REVES HASTA I1b, COPIADA DE LA FICHA "
+                               "NOR-ANA-03, Y SE CORRIGIO MIDIENDOLA con las "
+                               "constantes de este mismo criterio y los "
+                               "dominios de M4: en los TRES regimenes "
+                               "vigentes la fila del concreto adoptada da un "
+                               "HW MAYOR o igual que la del metal corrugado. "
+                               "No sumergida (q* <= 3.5), manda K: 0.0098 > "
+                               "0.0078. Sumergida (q* >= 4.0), HW_i/D = "
+                               "c*q*^2 + Y + Ks*S: la diferencia es "
+                               "0.0019*q*^2 - 0.02, positiva para q* > 3.245, "
+                               "y 3.245 queda FUERA del dominio de esta rama "
+                               "-- evaluar ahi la ecuacion sumergida es "
+                               "exactamente el error de la ficha, que "
+                               "ademas enumera 'c y Y ambos menores' cuando "
+                               "0.0398 > 0.0379 --. La transicion es una "
+                               "recta entre dos extremos donde el concreto "
+                               "ya es mayor. La adopcion es por tanto "
+                               "CONSERVADORA EN DIRECCION para V1, V4 y el "
+                               "resguardo de 7.A, pero se sostiene en el "
+                               "argumento fisico de arriba -- el perfil de "
+                               "pared EN LA BOCA, no la friccion del barril "
+                               "-- y no en ese margen: son dos cosas "
+                               "distintas. El defecto contra la ficha "
+                               "NOR-ANA-03 queda reportado en el tracker. Lo "
+                               "que sigue pendiente no cambia: el detalle "
+                               "constructivo -- confirmar que el tubo enrasa "
+                               "en la cara del cabezal con pared interior "
+                               "lisa. Si aloja campana, sobresale o el HDPE "
+                               "es de interior corrugado, corresponde otra "
+                               "fila y la alternativa de la sensibilidad "
+                               "pasa a ser la adoptada",
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TA1",),
+            fila_id="circular_concreto_square_edge_headwall",
+            que_elige="la fila de embocadura de la que se toman K, M, c, Y y "
+                      "Ks para el HDPE, por analogia con el concreto de "
+                      "borde recto con muro de cabecera",
+        ),
+    ),
+
+    "metodo_transicion_hds5": Criterio(
+        valor="interpolacion_lineal_entre_extremos",
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_STR,
+        concepto="Metodo con que se cubre la zona de transicion del control de "
+                 "entrada de HDS-5, 3.5 < q* < 4.0",
+        justificacion="Decide el metodo con que M4 cubre la zona de "
+                      "transicion del control de entrada, 3.5 < q* < 4.0. La "
+                      "fuente (HDS-5, num. 3.1.3 y num. A.2; citas literales "
+                      "en `fuente`) describe esa zona como mal definida y la "
+                      "resuelve trazando una curva empirica tangente a las "
+                      "ramas no sumergida y sumergida, sin publicar ecuacion "
+                      "cerrada. Lo que no resuelve es el procedimiento "
+                      "programable: el empalme de la fuente es grafico. Se "
+                      "adopta la recta que Sec. 4.2 de la hoja de ruta "
+                      "prescribe -- interpolar linealmente entre la rama no "
+                      "sumergida evaluada en q* = 3.5 y la sumergida evaluada "
+                      "en q* = 4.0 --. Y «evaluada en q* = 3.5» quiere decir "
+                      "evaluada para el CAUDAL que corresponde a q* = 3.5, "
+                      "Q_lo = 3.5*A_llena*sqrt(D)/Ku, con el H_c de ESE "
+                      "caudal cuando la carta es de Forma 1 (v8 §4.2, "
+                      "enmendada en EXT-0; EXT-M-04): con el H_c del caudal "
+                      "real el extremo inferior se mueve con q* y la recta "
+                      "deja de ser una recta. Los dos extremos son FIJOS "
+                      "para un D, una S y una carta dados, y por eso la "
+                      "recta lo es. Se declara que esa recta es una "
+                      "simplificacion adoptada del empalme de la fuente, no "
+                      "una transcripcion de la fuente primaria: por eso es "
+                      "[C] y no [N]. La recta empalma continua en los dos "
+                      "extremos (coincide con cada rama en su borde de "
+                      "validez), lo que deja el error acotado y del orden del "
+                      "espesor de la propia curva de la fuente, sin convertir "
+                      "la recta en el metodo de la fuente. Alcance: solo "
+                      "afecta a los puntos cuyo q* cae dentro de la ventana "
+                      "3.5-4.0; fuera de ella rigen las dos ecuaciones tal "
+                      "como las escribe la tabla",
+        fuente=(
+            "HDS-5 (FHWA) 3a ed., abril 2012: num. 3.1.3 'Inlet Control', "
+            "pag. impresa 3.4 (PDF 86) -- 'The flow transition zone between "
+            "the low headwater (weir control) and the high headwater (orifice "
+            "control) flow conditions is poorly defined. This zone is "
+            "approximated by plotting the unsubmerged and submerged flow "
+            "equations and connecting them with a line tangent to both "
+            "curves' -- y num. A.2 'INLET CONTROL EQUATIONS', pag. impresa "
+            "A.1 (PDF 190) -- 'The transition zone is defined empirically by "
+            "drawing a curve between and tangent to the curves defined by the "
+            "unsubmerged and submerged equations'. "
+            "NUMERAL CORREGIDO (NOR-HDS-06): esta fuente citaba 'Cap. IV', y "
+            "el Capitulo 4 de ESTA 3a edicion se titula 'CULVERT DESIGN FOR "
+            "AQUATIC ORGANISM PASSAGE (AOP)' -- paso de fauna acuatica, "
+            "biologia de peces y barreras de salto --, que no tiene nada que "
+            "ver con la zona de transicion. Es el mismo patron que "
+            "NOR-PUE-01: el numeral existe y su titulo no corresponde al "
+            "contenido que se le atribuye. Tampoco se salva leyendolo como la "
+            "edicion de 1985, cuyo Capitulo 4 es 'Tapered Inlets'. La mitad "
+            "'y Apendice A' de la cita vieja SI era correcta y se conserva. "
+            "La interpolacion lineal la prescribe Sec. 4.2 de la hoja de "
+            "ruta, no HDS-5"),
+        reemplazado_por="Lectura directa de la carta de HDS-5 en la zona de "
+                        "transicion, o el procedimiento tangente si el "
+                        "expediente exige reproducir la curva original",
+        verificacion_pendiente="Declarar en la memoria que puntos del corredor "
+                               "caen con q* entre 3.5 y 4.0: si ninguno lo hace, "
+                               "esta simplificacion no toca ningun resultado y "
+                               "basta con dejarla enunciada",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: HDS-5 traza a mano una curva "
+                        "tangente a las dos ramas y no publica ecuacion "
+                        "cerrada, de modo que el procedimiento programable "
+                        "no sale de la fuente",
+            dominio="declaracion del metodo de empalme",
+        ),
+    ),
+
+    "hw_entrada_fuera_de_rango": Criterio(
+        # EL VACIO QUE PC-03 PIDIO Y PF-1 ABRIO. La correccion por pendiente
+        # Ks*S de las ecs. (A.1) y (A.3) de HDS-5 es una recta sin tope: con
+        # Ks = -0.5, un caudal chico y una pendiente grande la carga a la
+        # entrada sale en cero o bajo cero (MAT-D10). HDS-5 no dice que hacer
+        # ahi y la hoja de ruta tampoco. Hasta PF-1 `M4.control_entrada`
+        # lanzaba DisenoNoFactibleError y el material se descartaba entero,
+        # con razon --- HWi/D DECRECE con D, y si la carta se cae en el D
+        # minimo ninguno mayor la levanta --- pero MUDO: el Bloqueo viajaba
+        # sin criterio y la pestaña 4 no lo mostraba. La regla de CLAUDE.md
+        # para un vacio es esta entrada: valor=None, [A], y detener el
+        # calculo con excepcion; la decision de clase (CriterioPendienteError
+        # y no MetodoNoEvaluableError) esta en la ficha PF-1-01 de
+        # docs/decisiones_diferidas.md.
+        # --- T-2 --- (cadena T, 2026-11-11; INF-0.5, punto 6 del encargo):
+        # DEJA DE ESTAR VACIO. Se adopta «energia_critica», con lo que el
+        # HDS-5 SI dice: que la Forma 1 es H_c «adjusted with correction
+        # factors» (num. A.2.1, pag. impresa A.1, cita
+        # `HDS5_3ED.A.2.1#FORMA_1`) y que el efecto de la pendiente es chico
+        # (num. A.3, `HDS5_3ED.A.3#PENDIENTE_2`). Cuando la correccion,
+        # extrapolada, anula la carga, el proyecto se queda con la base de la
+        # ecuacion. DOS COSAS QUE EL ENCARGO PEDIA Y NO SE HICIERON, porque
+        # la fuente no las sostiene: (1) la cita «HDS-5 Tabla A.1, nota de
+        # Ks·S» NO EXISTE --la Tabla A.1 (PDF 197) solo lleva al pie sus
+        # referencias bibliograficas--; (2) la etiqueta [C]: HDS-5 no
+        # prescribe este piso ni ningun otro, de modo que sigue siendo una
+        # adopcion con alternativa, [A]. Ningun punto de la linea base cae
+        # fuera de rango (S 0.004-0.010 frente a S* >= 0.27): el valor no
+        # toca ningun resultado del repositorio.
+        valor="energia_critica",
+        nivel=NIVEL_PERFIL,         # lo consume M4 (Fase 4), que corre a perfil;
+                                    # el corredor del repositorio nunca lo invoca
+                                    # (S_cauce 0.006-0.008 frente a S* ~ 0.38)
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO, que es la ventana entera. «energia_critica»:
+        # se adopta HW = H_c, la energia especifica critica que el paso 4.2.1
+        # ya resolvio --- la carga minima con que la entrada pasa Q en
+        # regimen critico ---, y se declara que la correccion por pendiente
+        # quedo saturada; la memoria imprime al lado el HWi/D que la ecuacion
+        # devolvio y el S* de la carta. Es una adopcion con un salto: justo
+        # por debajo de S* la ecuacion entrega una carga diminuta y positiva
+        # (con S = 0.37706 y D = 0.90, HW = +1e-6 m) y justo por encima el
+        # piso vale H_c; el salto es de la ecuacion extrapolada, no del
+        # piso, y queda dicho aqui porque quien declare esta opcion tiene
+        # que saber que la carga NO es continua en S*. «descartar»: la
+        # conducta de antes de PF-1, DisenoNoFactibleError con el par (Q, S)
+        # y S* en el motivo, y el material entero descartado.
+        sensibilidad=("energia_critica", "descartar"),
+        concepto="Que se adopta cuando la ecuacion de control de entrada de "
+                 "HDS-5 devuelve una carga nula o negativa por la correccion "
+                 "por pendiente Ks*S (caudal chico con pendiente grande)",
+        justificacion="La ec. (A.1) HWi/D = H_c/D + K*(q*)^M + Ks*S y la (A.3) "
+                      "HWi/D = c*(q*)^2 + Y + Ks*S llevan la correccion por "
+                      "pendiente como recta sin tope, con Ks = -0.5 en las "
+                      "embocaduras sin inglete. Para S > S* = -(H_c/D + "
+                      "K*(q*)^M)/Ks (Forma 1 no sumergida) la carga sale bajo "
+                      "cero: una lamina por debajo del fondo, que no existe. "
+                      "HDS-5 formula la correccion para pendientes corrientes "
+                      "de alcantarilla y no dice que hacer fuera de ese rango; "
+                      "la hoja de ruta (Sec. 4.2) tampoco. Adoptar un piso en "
+                      "el codigo seria rellenar el vacio en silencio; "
+                      "descartar sin decirlo era un no factible definitivo "
+                      "por una condicion que el proyectista podia resolver "
+                      "declarando. Se adopta «energia_critica» como valor de "
+                      "archivo por lo que la fuente si dice: define la Forma "
+                      "1 como la energia especifica en el tirante critico "
+                      "ajustada con factores de correccion (cita "
+                      "HDS5_3ED.A.2.1#FORMA_1) y dice del termino de "
+                      "pendiente que su efecto es chico (cita "
+                      "HDS5_3ED.A.3#PENDIENTE_2). H_c es por tanto la base de "
+                      "la que la ecuacion parte: un resultado que el paso 4.2 "
+                      "ya tiene, no un numero nuevo. Lo que el piso acota y "
+                      "lo que no: queda por encima de lo que la ecuacion "
+                      "entregaba (carga nula o negativa, con la que V4 y la "
+                      "rasante de 7.A se evaluaban sin carga), y solo en ese "
+                      "sentido es del lado seguro. No es una cota conservadora "
+                      "de la carga: omite el termino K*(q*)^M de la "
+                      "contraccion de la entrada y queda por debajo de la "
+                      "carga que la misma ecuacion da con el barril "
+                      "horizontal, de modo que el paso lo imprime como piso "
+                      "adoptado y no como resultado de la ecuacion. Y es un "
+                      "caso practicamente inalcanzable desde que la pendiente "
+                      "del conducto se limita a 0.10 m/m ('pendiente_maxima_"
+                      "conducto', V10): con el tubo de 0.90 m la ecuacion "
+                      "solo deja de entregar carga por debajo de 0.10 m/m "
+                      "con caudales menores de 0.005 m3/s. La fuente "
+                      "no prescribe este piso ni ningun otro, de modo que la "
+                      "etiqueta es [A] y «descartar» sigue en la ventana. "
+                      "Lo que el piso hace y lo que no: acota el "
+                      "signo. Solo gobierna cuando la ecuacion no entrega "
+                      "carga (S > S*); por debajo de S* la ecuacion puede dar "
+                      "una carga positiva menor que H_c y se acepta tal cual "
+                      "(con D = 0.90 y Q = 0.05: HW = 0.035 m a S = 0.30 "
+                      "frente a H_c = 0.169 m), de modo que «energia_critica» "
+                      "no impone H_c como minimo en todo el rango y la carga "
+                      "salta en S*: justo por debajo la ecuacion da +1e-6 m y "
+                      "justo por encima el piso vale H_c. El salto es de la "
+                      "ecuacion extrapolada, no del piso, y quien declare "
+                      "esta opcion tiene que saberlo. Con D = 0.90 m (el "
+                      "minimo del catalogo) S* vale 0.377 para Q = 0.05 m3/s "
+                      "y 0.54 para 0.10: en el corredor del repositorio "
+                      "(S_cauce 0.006-0.008) no se alcanza; en una via con "
+                      "alivios pequenos en tramos empinados si. Y descartar "
+                      "el material entero bajo «descartar» es correcto para "
+                      "las cartas de Forma 1 del catalogo circular, donde S* "
+                      "no crece con D; bajo Forma 2 un D mayor puede llevar "
+                      "la rama a la (A.2), sin Ks*S, y S* deja de existir",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. A.2 'INLET CONTROL "
+               "EQUATIONS', pag. impresa A.1-A.2 (PDF 190-191): las ecs. "
+               "(A.1) y (A.3) con su termino Ks*S, sin acotar su rango de "
+               "pendiente; num. A.2.1, pag. impresa A.1 (cita "
+               "HDS5_3ED.A.2.1#FORMA_1): «Form (1) is based on the specific "
+               "head at critical depth, adjusted with correction factors»; "
+               "num. A.3, pag. impresa A.2 (cita HDS5_3ED.A.3#PENDIENTE_2): "
+               "«the slope effect is small». La fuente define la base y el "
+               "termino y NO fija el piso: adoptarlo es decision del "
+               "proyectista (Fundamento F4.PISO_HW, verbo DEFINE). La Tabla "
+               "A.1 no lleva nota alguna sobre Ks*S",
+        reemplazado_por="Un procedimiento de control de entrada valido para "
+                        "pendientes de ese orden (curvas de HDS-5 para "
+                        "pendientes fuertes, o ensayo), que ninguna fuente de "
+                        "normas/ trae hoy",
+        verificacion_pendiente="Declarar en la memoria que puntos del corredor "
+                               "caen con S > S*(Q, D): si ninguno lo hace, "
+                               "este criterio no toca ningun resultado y no "
+                               "se invoca",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, cuando un punto cae fuera del rango "
+                        "de la correccion por pendiente: H_c como piso "
+                        "declarado, o el descarte",
+            dominio="declaracion del tratamiento del caso fuera de rango",
+        ),
+    ),
+
+    "n_manning_hdpe": Criterio(
+        # --- T-4 --- DEJA DE SER UNA ANALOGIA CON EL CONCRETO (INF-3.2.1).
+        # Hasta T-4 valia `MANNING["concreto_tubo_recto"]` = (0.010, 0.013),
+        # la fila del concreto de la Tabla N 09 peruana aplicada [N->] a un
+        # material que esa tabla no lista. La fuente tecnica que SI tabula el
+        # polietileno corrugado estaba en normas/ desde el principio: HDS-5
+        # 3a ed., Apendice B, Table B.1, fila «Corrugated Polyethylene /
+        # Smooth», 0.009-0.015 (pag. impresa B.6). Ni AASHTO M 294-11 (leida
+        # entera, traduccion no oficial) ni el WSDOT Hydraulics Manual (su
+        # Table 4-1 es una tabla de REFERENCIAS, sin valores) traen un n.
+        #
+        # El valor NO se escribe: se LEE de la fila transcrita en el registro
+        # (`_N_MANNING_HDPE_HDS5`), por lo mismo que antes se leia de MANNING.
+        valor=_N_MANNING_HDPE_HDS5,     # RANGO (n_min, n_max), no puntual
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",               # fuente tecnica reconocida (FHWA), ya no analogia
+        forma=FORMA_PAR_ORDENADO,
+        concepto="Coeficiente de rugosidad de Manning para HDPE de interior liso",
+        justificacion="Decide el coeficiente de rugosidad de Manning que se "
+                      "aplica al HDPE de interior liso. La Tabla N 09 del "
+                      "Manual de Hidrologia tabula materiales y no lista el "
+                      "polietileno, y la norma de producto del HDPE tampoco "
+                      "trae un coeficiente de rugosidad. El vacio se cubre "
+                      "con la fuente tecnica que el Manual ya toma para la "
+                      "hidraulica de alcantarillas: la tabla de valores de n "
+                      "para alcantarillas del manual HDS-5 de la FHWA, cuya "
+                      "fila del polietileno corrugado de interior liso da el "
+                      "rango 0.009 a 0.015. Se toma el rango completo y no "
+                      "un valor puntual: la regla de doble n pide los dos "
+                      "extremos -- el maximo para capacidad y tirante, el "
+                      "minimo para velocidad maxima y socavacion -- y con un "
+                      "solo numero una de las dos verificaciones deja de ser "
+                      "conservadora. Frente a la fila del concreto de tubo "
+                      "recto de la Tabla N 09, que es la que el proyecto "
+                      "aplicaba por analogia, el rango de la fuente es mas "
+                      "ancho en los dos sentidos: exige mas diametro por "
+                      "capacidad y da mas velocidad contra el techo. La "
+                      "fuente advierte que sus valores son de laboratorio y "
+                      "que los de campo pueden variar por abrasion, "
+                      "corrosion, deflexion y juntas",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), Apendice B, Table B.1 "
+               "'Manning's n Values for Culverts', pag. impresa B.6 (PDF "
+               "208): fila 'Corrugated Polyethylene / Smooth', 0.009-0.015, "
+               "con referencias Barfuss & Tullis 1988 y Tullis et al. 1990. "
+               "Tabla HDS5_3ED.TB.1 del registro, transcrita integra (trece "
+               "filas) y cita HDS5_3ED.TB.1 con su nota al pie 1. "
+               "LO QUE NO LO DA: la Tabla N 09 del Manual de Hidrologia "
+               "(num. 4.1.1.3.6, pag. impresa 75) no lista el HDPE "
+               "(afirmacion negativa SIN_HDPE_T09); AASHTO M 294-11, en "
+               "normas/ como traduccion no oficial, no trae coeficiente de "
+               "rugosidad en ninguna de sus 17 hojas (buscado 'Manning' y "
+               "'rugosidad': cero apariciones); y la Table 4-1 del WSDOT "
+               "Hydraulics Manual M 23-03.12 (pag. impresa 4-7) es una tabla "
+               "de referencias que remite a HEC-22, sin valores. "
+               "HASTA T-4 este criterio era [N->]: la fila del concreto de "
+               "tubo recto de la Tabla N 09, (0.010, 0.013), por analogia. QUE LA "
+               "FILA ES LA DE INTERIOR LISO lo respalda la norma peruana de "
+               "construccion: EG-2013, Subseccion 508.02 a), pag. impresa "
+               "981 (cita EG2013.508.02a), define el tubo de PAD/HDPE como "
+               "de superficie interior lisa y pared exterior corrugada, "
+               "clasificacion tipo S",
+        reemplazado_por="Ficha tecnica del producto seleccionado, con el n "
+                        "del fabricante y el ensayo que lo respalda",
+        # LA VENTANA ES EL RANGO DE LA PROPIA FILA: dentro de el se puede
+        # declarar un par mas estrecho (el del fabricante); fuera de el, el
+        # valor ya no lo sostiene esta fuente.
+        sensibilidad=_N_MANNING_HDPE_HDS5,
+        verificacion_pendiente="Confirmar que el HDPE especificado es de INTERIOR "
+                               "LISO (Tipo S o Tipo D de AASHTO M 294). El de "
+                               "interior corrugado (Tipo C) tiene en la misma "
+                               "tabla n = 0.018-0.025 y aplicarle esta fila "
+                               "seria gruesamente inseguro en capacidad",
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TB.1",),
+            fila_id="polietileno_corrugado_liso",
+            que_elige="la fila cuyo par (minimo, maximo) es la doble n del "
+                      "HDPE de interior liso. La Tabla N 09 peruana no "
+                      "tabula el polietileno: la fila es de la fuente "
+                      "tecnica, y por eso la etiqueta es [C]",
+        ),
+    ),
+
+    "v_max_hdpe": Criterio(
+        # 15 ft/s x 0.3048 m/ft = 4.572 m/s EXACTOS. Antes decia 4.6 (MAT-O14):
+        # un maximo redondeado HACIA ARRIBA queda 0.6 % por encima del corte
+        # que dice aplicar. Un minimo se redondea hacia arriba y un maximo
+        # hacia abajo; aqui no hace falta redondear porque la conversion es
+        # exacta.
+        #
+        # --- T-4 --- LA FICHA SE REESCRIBE CONTRA EL PDF (INF-3.2.4). Decia
+        # «Tabla 8-4 ... Techo duro: por encima de 15 ft/s el termoplastico
+        # ... su uso queda prohibido». Dos cosas eran falsas: la Tabla 8-4 no
+        # es de velocidades maximas sino de NIVELES DE ABRASION, y la
+        # prohibicion no esta en ella sino en el §8-3.3, atada al NIVEL y no
+        # a la velocidad sola. Las dos citas van separadas en el registro
+        # (WSDOT_HM.8-3.3#SEVERA y WSDOT_HM.T8-4) y la lectura que las une
+        # --la velocidad por si sola como criterio suficiente-- esta
+        # declarada como `Interpretacion` de la tabla. Sigue siendo [C]: la
+        # fuente asocia al termoplastico un «shall not be used».
+        valor=4.572,
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",               # fuente tecnica reconocida (WSDOT)
+        forma=FORMA_FLOAT,
+        concepto="Velocidad maxima admisible en HDPE",
+        justificacion="Decide el techo de velocidad de la verificacion V3 "
+                      "para el HDPE. La Tabla N 10 del Manual de Hidrologia "
+                      "no lista materiales flexibles y el inciso de abrasion "
+                      "del mismo Manual manda considerarla sin dar un "
+                      "numero. La fuente tecnica adoptada prohibe el "
+                      "termoplastico en sitios de abrasion severa, porque "
+                      "no se puede reforzar, y describe ese nivel por tres "
+                      "caracteristicas del sitio, una de las cuales es una "
+                      "velocidad mayor de 15 ft/s, que son 4.572 m/s. El "
+                      "proyecto toma esa velocidad por si sola como criterio "
+                      "suficiente para clasificar el sitio como severamente "
+                      "abrasivo: es una lectura conservadora que la fuente "
+                      "permite -- su nota dice que no hace falta que "
+                      "concurran las tres caracteristicas -- y que no "
+                      "impone, porque una velocidad mayor sin carga de fondo "
+                      "no es abrasion severa. El nivel de abrasion del "
+                      "sitio, cuando el estudio de campo lo declara, entra "
+                      "ademas por la matriz de durabilidad y descarta el "
+                      "HDPE aunque la velocidad sea menor",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026), fuente "
+               "WSDOT_HM del registro, con el PDF en el repositorio de "
+               "normas. LA PROHIBICION: num. 8-3.3 'Thermoplastic Pipe: "
+               "General', pag. impresa 8-13 (PDF 228), cita "
+               "WSDOT_HM.8-3.3#SEVERA: el termoplastico no se usa en "
+               "condiciones severamente abrasivas como las describe la "
+               "Tabla 8-4. EL UMBRAL: num. 8-6 'Abrasion', Table 8-4 'Pipe "
+               "Abrasion Levels', pags. impresas 8-27 y 8-28 (PDF 242 y "
+               "243), tabla y cita WSDOT_HM.T8-4: la fila 'Severely "
+               "abrasive' se describe, entre otras dos caracteristicas, por "
+               "velocidades mayores de 15 ft/s. EL VALOR ES LA CONVERSION "
+               "EXACTA: 15 x 0.3048 = 4.572 m/s. LA TABLA NO PROHIBE NADA AL "
+               "TERMOPLASTICO: la celda de proteccion de su fila severa, en "
+               "esta edicion, no lo nombra. SEGUNDA FUENTE DEL CORTE: AASHTO "
+               "LRFD 9a ed., C12.6.9, pag. impresa 12-24, nivel 4 de "
+               "abrasion de la FHWA (cita AASHTO_LRFD_9.C12.6.9#NIVEL_4). "
+               "La hoja de ruta v8 nombra esta fuente y este valor en la "
+               "fila V3 de la Fase 5, el Tablero 1.3 y el Anexo A",
+        reemplazado_por="Ficha tecnica del producto seleccionado o "
+                        "especificacion del fabricante con su propio techo "
+                        "de velocidad; o el nivel de abrasion del sitio "
+                        "declarado por el estudio de campo, que es el "
+                        "criterio que la fuente escribe",
+        # POR QUE NO LLEVA `vacio_verificado`, siendo una afirmacion negativa
+        # sobre la Tabla N 10 (SIS-D-12): el campo es para el valor que cubre
+        # un vacio AGOTADO sin encontrar nada. Aqui la busqueda ENCONTRO una
+        # fuente tecnica reconocida y el valor sale de ella: es [C].
+        #
+        # LA VENTANA (PC-02): el techo es el corte de 15 ft/s --por encima,
+        # bajo la lectura declarada, la fuente no admite el termoplastico-- y
+        # el piso es la velocidad minima de V2 (`V_MIN`, 0.25 m/s): un techo
+        # por debajo del piso no deja banda admisible. A diferencia de
+        # 'v_max_tmc', aqui el piso NO se sube a los 10 ft/s del §3-3.5: ese
+        # numeral habla de abrasion por arrastre y nombra al metal y al
+        # concreto como los que necesitan mas espesor, y del termoplastico
+        # dice que resiste mejor; no hay en la fuente una razon para que el
+        # proyectista no pueda adoptar un techo mas bajo para el HDPE.
+        sensibilidad=(V_MIN, 4.572),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, leyendo el corte de velocidad de "
+                        "la fila severa de la Tabla 8-4 del WSDOT "
+                        "Hydraulics Manual como criterio suficiente de la "
+                        "prohibicion del num. 8-3.3. Es fuente tecnica "
+                        "reconocida y no norma peruana",
+            dominio="m/s > 0",
+        ),
+    ),
+
+    "v_max_tmc": Criterio(
+        # 15 ft/s = 4.572 m/s exactos (MAT-O14); el numero no se mueve.
+        #
+        # --- T-4 --- PASA DE [C] A [A] (INF-3.2.4; opcion A, decidida por
+        # el dueño del proyecto el 2026-11-11 y verificada contra el PDF).
+        # NINGUNA fuente de normas/ fija una velocidad maxima para la
+        # tuberia metalica corrugada: la Tabla N 10 no la lista, el inciso
+        # de abrasion del Manual es cualitativo, la norma de producto
+        # (AASHTO M 36 num. 1.2) reconoce ambientes severos sin cuantificar,
+        # ASTM A796 remite a pavimentar la solera, y la Tabla 8-4 de WSDOT
+        # --la que esta ficha citaba como fuente de un «techo»-- clasifica
+        # SITIOS por abrasion y al metal le prescribe remedio, no
+        # prohibicion. Un numero que ninguna fuente escribe como limite es
+        # una adopcion: [A], con ventana.
+        #
+        # LO QUE LA FICHA DECIA Y SE RETIRA: «limite de diseño conservador»
+        # y «por encima de este valor exige mayor calibre o revestimiento».
+        # Lo segundo era falso tal como estaba: la fuente manda aumentar uno
+        # o dos calibres ya desde 6 ft/s, en el nivel moderado.
+        #
+        # LA ASIMETRIA CON 'v_max_hdpe', que lleva el MISMO numero y es [C]:
+        # al termoplastico la fuente le asocia una prohibicion («shall not
+        # be used», §8-3.3) en el nivel que ese corte describe; al metal, en
+        # el mismo nivel, un remedio. El numero es el mismo; lo que la
+        # fuente hace con el, no.
+        valor=4.572,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Velocidad maxima admisible en TMC",
+        justificacion="Decide el techo de velocidad de la verificacion V3 "
+                      "para la tuberia metalica corrugada. Ninguna fuente "
+                      "consultada fija una velocidad maxima para este "
+                      "material: la Tabla N 10 del Manual de Hidrologia no "
+                      "lo lista, el inciso de abrasion del mismo Manual "
+                      "manda considerarla al elegir el material y no da un "
+                      "numero, y la norma de producto reconoce ambientes "
+                      "severos sin cuantificarlos. El proyecto adopta como "
+                      "techo el corte entre los niveles de abrasion moderado "
+                      "y severo de la tabla de niveles de abrasion del "
+                      "manual de hidraulica adoptado, 15 ft/s, que son "
+                      "4.572 m/s. Ese corte es una clasificacion del sitio "
+                      "que depende tambien de la carga de fondo y de la "
+                      "pendiente, no un limite de velocidad, y para el metal "
+                      "la fuente no prohibe nada en ningun nivel: prescribe "
+                      "aumentar el espesor de la plancha o revestir la "
+                      "solera, y lo prescribe ya desde 6 ft/s, que son "
+                      "1.829 m/s. La verificacion V3 no sustituye esa "
+                      "proteccion de la solera, que se decide con el nivel "
+                      "de abrasion del sitio. Sensibilidad (3.048, 4.572) "
+                      "m/s: el piso son los 10 ft/s a partir de los cuales "
+                      "la misma fuente dice que la abrasion puede crecer de "
+                      "forma significativa y pide tratar el caso; el techo "
+                      "es el valor adoptado, y no se sube porque por encima "
+                      "de el la fuente clasifica el sitio como severamente "
+                      "abrasivo. Bajar el techo dentro de la ventana "
+                      "descarta antes el material o lleva a un diametro "
+                      "mayor; no mueve ninguna otra verificacion",
+        fuente="NINGUNA NORMA NI FUENTE TECNICA FIJA EL VALOR COMO LIMITE. "
+               "Lo que cada fuente dice, verificado sobre el PDF: (1) Manual "
+               "de Hidrologia, Hidraulica y Drenaje (MTC), num. 4.1.1.3.7 e) "
+               "'Abrasion', pag. impresa 81 (cita MC_HHD.4.1.1.3.7e): "
+               "cualitativo; su Tabla N 10 (num. 4.1.1.3.6, pag. impresa "
+               "76) no lista metal ni plastico (afirmacion negativa "
+               "SIN_TMC_NI_HDPE_T10). (2) WSDOT Hydraulics Manual M "
+               "23-03.12 (abril 2026), num. 8-6, Table 8-4 'Pipe Abrasion "
+               "Levels', pags. impresas 8-27 y 8-28 (PDF 242 y 243), tabla "
+               "y cita WSDOT_HM.T8-4: cuatro niveles de abrasion; el severo "
+               "se describe por velocidades mayores de 15 ft/s entre otras "
+               "dos caracteristicas, y para el metal pide al menos dos "
+               "calibres mas o solera de concreto; el moderado, de 6 a "
+               "15 ft/s, uno o dos calibres mas. EL VALOR ADOPTADO ES LA "
+               "CONVERSION EXACTA DE ESE CORTE: 15 x 0.3048 = 4.572 m/s. "
+               "(3) El mismo manual, num. 3-3.5 'Velocities in Culverts: "
+               "General', pag. impresa 3-11 (PDF 76), cita "
+               "WSDOT_HM.3-3.5#10FTS: por encima de unos 10 ft/s "
+               "(3.048 m/s) la abrasion puede crecer de forma "
+               "significativa; es el piso de la ventana. (4) AASHTO LRFD 9a "
+               "ed., C12.6.9, pag. impresa 12-24 (cita "
+               "AASHTO_LRFD_9.C12.6.9#NIVEL_4): los niveles de abrasion de "
+               "la FHWA ponen el mismo corte de 15.0 ft/s para el nivel 4, "
+               "tambien como clasificacion. (5) AASHTO M 36-03 (2007), num. "
+               "1.2, pag. impresa M 36-1 (cita AASHTO_M36.1.2): sin umbral. "
+               "(6) ASTM A796/A796M-13, num. 21.1 (PDF 6): donde haga falta "
+               "resistencia adicional a la abrasion remite a pavimentar la "
+               "solera, sin limite de velocidad. "
+               "HASTA T-4 este criterio era [C] y atribuia el valor a la "
+               "Tabla 8-4 como techo de la fuente",
+        reemplazado_por="El nivel de abrasion del sitio declarado por el "
+                        "estudio de campo (dato de entrada `abrasion` de la "
+                        "matriz de durabilidad) junto con el espesor de "
+                        "plancha y la proteccion de solera que la Tabla 8-4 "
+                        "pide para ese nivel, que es el criterio que la "
+                        "fuente escribe en lugar de un techo unico; o la "
+                        "ficha tecnica del producto seleccionado",
+        # LA VENTANA CAMBIA DE PISO EN T-4: era (V_MIN, 4.572), con el piso
+        # en la velocidad minima de V2 (PC-02), y pasa a (3.048, 4.572). El
+        # techo 4.6 que proponia la cadena T no tiene respaldo: son 15.09
+        # ft/s, reintroduce el redondeo que MAT-O14 corrigio y entra en la
+        # banda que la fuente clasifica como severa.
+        sensibilidad=(3.048, 4.572),
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ninguna fuente fija un techo de "
+                        "velocidad para el metal corrugado. Adopta el corte "
+                        "entre los niveles moderado y severo de la Tabla "
+                        "8-4 del WSDOT Hydraulics Manual, que es una "
+                        "clasificacion de abrasion y no un limite",
+            dominio="m/s, entre los 10 ft/s del num. 3-3.5 y los 15 ft/s "
+                    "de la Tabla 8-4 del WSDOT Hydraulics Manual",
+        ),
+    ),
+
+    "v_max_concreto_eleccion": Criterio(
+        valor=None,                 # OPCIONAL: sin valor, V3 usa el techo [N]
+        # NIVEL MEDIDO, y lo mide la TERCERA corrida de
+        # `tests/test_nivel_medido.py`, que existe por este caso: `opcional=True`
+        # se lee con `valor_si_declarado()`, que NO registra el uso mientras el
+        # criterio siga vacio, de modo que las dos corridas normales no lo pueden
+        # ver. Declarado en caliente con el valor que ya rige por defecto, la
+        # corrida `--alcance perfil` SI lo invoca. Medirlo asi no mueve ningun
+        # resultado: la declaracion repite lo que el consumidor ya aplicaba.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Techo de velocidad adoptado para el concreto, mas "
+                 "conservador que el maximo normativo de 6.0 m/s",
+        justificacion="Decide el techo de velocidad que el proyecto aplica al "
+                      "concreto cuando adopta uno mas conservador que el "
+                      "maximo normativo. Es opcional y no un vacio: sin "
+                      "declarar, el calculo no se detiene, V3 aplica el techo "
+                      "normativo de 6.0 m/s y la memoria no declara este "
+                      "criterio. Es uno de los tres `opcional=True` del archivo, "
+                      "con 'riesgo_admisible_propietario' y "
+                      "'esviaje_max_grados', y los tres comparten la "
+                      "mecanica: sin declarar, nada se detiene. M2 lee ademas "
+                      "con `valor_si_declarado()` otras cuatro "
+                      "claves no opcionales ('n_manning_hdpe', "
+                      "'espesor_pared_conducto', 'v_max_tmc' y 'v_max_hdpe') "
+                      "para armar el catalogo con campos vacios, pero "
+                      "aquellas si detienen el calculo mas tarde, en el punto "
+                      "de uso, y esta no detiene nada nunca. La fuente (Tabla "
+                      "N 10 del Manual de Hidrologia, num. 4.1.1.3.6) trae "
+                      "para el concreto dos valores, 3.0 y 6.0 m/s, y su "
+                      "titulo y el rotulo de su unica columna de valores los "
+                      "declaran maximos; el piso de velocidad no sale de esa "
+                      "tabla sino de V2 (0.25 m/s, misma pagina) y vale para "
+                      "todos los materiales. Lo que la fuente no resuelve es "
+                      "por que la fila trae dos maximos: el Manual no lo "
+                      "explica en ninguna parte, y que el superior "
+                      "corresponda al acabado de mejor calidad es "
+                      "interpretacion del proyecto, declarada aparte en "
+                      "constantes_normativas.TABLA_10_INTERPRETACION_PROYECTO "
+                      "-- de donde la lee la memoria --, no adosada a la "
+                      "cita. Se adopta que el proyectista pueda bajar el "
+                      "techo dentro de la fila -- un concreto de acabado "
+                      "corriente admite menos --, decision defendible sobre "
+                      "las condiciones de esta obra y no exigencia del "
+                      "numeral: por eso [A]. Sensibilidad (3.0, 6.0): los dos "
+                      "valores que la fila del concreto escribe, en m/s; "
+                      "adoptar 3.0 m/s es el techo mas conservador que se "
+                      "puede tomar sin salirse de la tabla, y 3.0 no es un "
+                      "piso a decidir -- el piso es V2, y leer el 3.0 como "
+                      "piso llevaria a rechazar conductos de concreto "
+                      "admisibles",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, "
+               "RD 20-2011-MTC/14), Tabla N 10 'Velocidades maximas "
+               "admisibles (m/s) en conductos revestidos', num. 4.1.1.3.6, "
+               "pag. impresa 76. Fuente de la propia tabla: HCANALES, Maximo "
+               "Villon B. -- no es una tabla de elaboracion del MTC. "
+               "TITULO CORREGIDO (NOR-HID-06): este campo entrecomillaba el "
+               "titulo sin '(m/s)'. En una cita entre comillas que la memoria "
+               "reproduce, la unidad omitida es lo primero que un revisor "
+               "comprueba. "
+               "LO QUE LA FUENTE SOSTIENE: que los dos numeros de la fila del "
+               "concreto, 3.0 y 6.0 m/s, son ambos MAXIMOS. Lo dice el titulo "
+               "de la tabla y lo confirma el rotulo de su unica columna de "
+               "valores, 'VELOCIDAD (M/S)'. 6.0 m/s es el mayor de los dos y "
+               "es el valor [N] que V3 aplica cuando este criterio no se "
+               "declara. El piso de velocidad NO sale de esta tabla: es V2, "
+               "0.25 m/s del parrafo siguiente, y vale para todos los "
+               "materiales. "
+               "LO QUE NO SOSTIENE, Y ESTE CAMPO AFIRMABA (NOR-HID-04): que "
+               "el rango 'recorra la calidad del revestimiento' y que 3.0 sea "
+               "'el maximo del acabado mas pobre'. El Manual no explica en "
+               "ninguna parte por que hay dos numeros. La frase con que "
+               "introduce la tabla apunta incluso en otra direccion ('se "
+               "encuentre dentro de un rango, cuyos limites se describen a "
+               "continuacion') y la fila de mamposteria trae UN SOLO valor "
+               "(2.0), que no encaja con una lectura de acabados. Es "
+               "INTERPRETACION DEL PROYECTISTA -- razonable, y la que sostiene "
+               "que este criterio pueda bajar el techo dentro de la fila -- y "
+               "se declara como tal, no adosada a la cita: "
+               "constantes_normativas.TABLA_10_INTERPRETACION_PROYECTO la "
+               "imprime separada, y la memoria la lee de ahi. "
+               "QUE SIGNIFICA ENTONCES EL RANGO DE SENSIBILIDAD (3.0, 6.0): "
+               "los dos valores que la fila del concreto escribe. Adoptar el "
+               "menor es el techo mas conservador que se puede tomar sin "
+               "salirse de la tabla; no lo normaliza ningun numeral, y por eso "
+               "[A] y no [N]",
+        sensibilidad=(3.0, 6.0),
+        opcional=True,      # sin declarar, V3 aplica el techo [N] de 6.0 m/s
+        resolucion=EnRango(
+            tabla_id="MC_HHD.T10",
+            fila_id="MC_HHD.T10#concreto",
+            columna_id="velocidad",
+            que_acota="el techo de velocidad adoptado para el concreto. LA "
+                      "FILA TRAE DOS MAXIMOS Y NINGUN PISO (NOR-HID-04): la "
+                      "celda es un `ConjuntoDeMaximos` y la ventana no puede "
+                      "pintar el 3.0 como minimo",
+        ),
+    ),
+
+    "ke_entrada": Criterio(
+        valor=0.5,
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        concepto="Coeficiente de perdida de carga en la embocadura (ke)",
+        justificacion="La ecuacion de control de salida de la hoja de ruta, "
+                      "H = (1 + ke + 19.63*n^2*L/R^(4/3))*V^2/(2g), contiene ke "
+                      "pero ningun apartado de la hoja le asigna valor. El "
+                      "Manual MTC no desarrolla el control de salida, de modo "
+                      "que el dato sale de HDS-5, en la fila que corresponde a "
+                      "la embocadura ya adoptada por diseno: tubo a ras del "
+                      "muro (square edge with headwall). "
+                      "TRAZABILIDAD: este 0.5 ya estaba en uso como dato fijo "
+                      "en el caso patron CP-8 de tests/fixtures/casos_patron.py "
+                      "('ke': 0.5), donde entra en el calculo de H sin declarar "
+                      "de donde salia. Queda trazado aqui: el fixture y el "
+                      "calculo leen ahora el mismo origen, y si el valor cambia, "
+                      "cambia en un solo sitio",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice C, Tabla C.2 "
+               "'Entrance Loss Coefficients', pag. impresa C.6 (PDF 216). "
+               "En el bloque 'Pipe, Concrete', la fila se imprime "
+               "'Square-edge  0.5' SANGRADA bajo el rotulo de agrupacion "
+               "'Headwall or headwall and wingwalls': el 0.5 lo fija esa "
+               "pertenencia, y la fila suelta sin su encabezado pierde la "
+               "condicion. NINGUNA fila de la tabla se imprime literalmente "
+               "'square edge with headwall', que es como el proyecto nombra a "
+               "la embocadura adoptada: ese nombre es la suma de la fila y de "
+               "su rotulo de agrupacion, y por eso se citan los dos. "
+               "LA PAGINA ESTABA MAL Y SE CORRIGE: este campo "
+               "decia 'pag. C.2', que es el numero de la TABLA leido como "
+               "numero de pagina. La pag. impresa C.2 (PDF 212) es la "
+               "continuacion del indice de cartas del Apendice C y no "
+               "contiene ningun coeficiente. Verificado contra el PDF en la "
+               "sesion de C06; el valor 0.5 confirma, el localizador no. "
+               "OJO AL 0.7 (NOR-HDS-04): esta misma tabla da ke = 0.7 para "
+               "'Mitered to conform to fill slope', que es el MISMO numero "
+               "que el Ks = +0.7 de inglete del control de ENTRADA "
+               "(constantes_normativas.HDS5_INLET) y una magnitud sin "
+               "ninguna relacion con el. Con embocadura a ras del muro, que "
+               "es la adoptada, no coinciden; con inglete si, y no hay que "
+               "deducir uno del otro",
+        reemplazado_por="Fila de HDS-5 que corresponda si cambia el detalle de "
+                        "embocadura del cabezal (Tablero 2.3). La Tabla C.2 "
+                        "trae las demas configuraciones de borde",
+        # LA VENTANA ES LA DE LA TABLA DE LA QUE SALE (PC-02, EXT-V-02): el
+        # recorrido de los coeficientes que la Tabla C.2 imprime, 0.2 a 0.9,
+        # DERIVADO de la transcripcion (`KE_HDS5_C2`) y no copiado. Sin ella
+        # `--declarar ke_entrada=-0.5` pasaba la CLI entera, bajaba el HW de
+        # salida y podia cambiar el control gobernante, y `ke_entrada=0,5`
+        # declaraba la tupla (0, 5) por una coma. El consumidor
+        # (`M4.perdida_carga`) valida ademas el signo y el tipo, porque la
+        # ventana solo defiende lo que entra por la puerta de declaracion.
+        sensibilidad=_VENTANA_KE_C2,
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TC2",),
+            fila_id="concreto_headwall_square_edge",
+            que_elige="la fila de embocadura de la que sale ke; el 0.5 lo "
+                      "fija la pertenencia de la fila al rotulo de "
+                      "agrupacion 'Headwall or headwall and wingwalls'",
+        ),
+    ),
+
+    "geometria_control_salida": Criterio(
+        valor="seccion_llena",
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_STR,
+        concepto="Seccion de referencia de la que se toman V y R en la ecuacion "
+                 "de control de salida H = (1 + ke + 19.63*n^2*L/R^(4/3))*V^2/(2g)",
+        justificacion="Decide de que seccion se toman V y R en la ecuacion de "
+                      "control de salida H = (1 + ke + "
+                      "19.63*n^2*L/R^(4/3))*V^2/(2g). La fuente proxima (Sec. "
+                      "4.3 de la hoja de ruta) escribe la ecuacion y no dice "
+                      "a que seccion pertenecen V y R, y la eleccion no es "
+                      "cosmetica: con la seccion llena de un tubo de 0.90 m, "
+                      "R = D/4 = 0.225 m; con el tirante normal de y/D = "
+                      "0.75, R = 0.2715 m -- la misma formula da dos H "
+                      "distintas. Lo que se elige es la seccion, no una "
+                      "formula: como se calculan A y R a partir de ella es "
+                      "asunto de la geometria de cada forma "
+                      "(`Seccion.area_llena` y "
+                      "`Seccion.radio_hidraulico_lleno`), y M4 no los "
+                      "escribe: los pide. Se adopta la seccion llena porque "
+                      "es la seccion para la que HDS-5 (Cap. III) deriva esa "
+                      "expresion: los tres sumandos (1 = carga de velocidad, "
+                      "ke = perdida de entrada, 19.63*n^2*L/R^(4/3) = perdida "
+                      "por friccion) son las perdidas de un barril trabajando "
+                      "lleno, que es el caso de control de salida por "
+                      "definicion; aplicarla sobre la geometria del tirante "
+                      "normal mezcla dos regimenes. Sensibilidad, medida "
+                      "sobre las dos formas de esta obra: en el marco de 2.00 "
+                      "x 1.50 m, el R de la seccion llena es B*H/(2*(B+H)) = "
+                      "0.4286 m -- que no es H/4 = 0.375 m -- y el del "
+                      "tirante de y/H = 0.75 es 0.5294 m, un +23.5 % frente "
+                      "al +20.7 % del tubo; la eleccion pesa lo mismo en las "
+                      "dos formas y por eso el criterio vale para las dos, "
+                      "aunque la aritmetica de una no sirva para la otra. "
+                      "Trazabilidad del caso patron: CP-8 alimenta la formula "
+                      "con R = 0.27152 m y V = 2.2807 m/s, los de la seccion "
+                      "parcialmente llena de CP-2, y no contradice esta "
+                      "adopcion: es un caso patron de la constante en SI "
+                      "(19.63) frente al 29 imperial, y para eso da V y R "
+                      "como datos sueltos, no como la geometria de un control "
+                      "de salida real",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Cap. III - control de salida a "
+               "seccion llena. Sec. 4.3 de la hoja de ruta cita la ecuacion sin "
+               "definir la seccion",
+        reemplazado_por="Procedimiento de barril parcialmente lleno de HDS-5 "
+                        "(Cap. III), que desde E-A el proyecto SI calcula "
+                        "(`M4.perfil_lamina`, paso 4.3c/4.3d): mide la "
+                        "longitud a seccion llena y da la carga por remanso "
+                        "bajo HW/D < 0.75. Lo que este criterio sigue "
+                        "decidiendo es de que seccion salen V y R del termino "
+                        "de friccion de H; una seccion de referencia distinta "
+                        "exigiria ademas cambiar ese termino, no el perfil",
+        verificacion_pendiente=(
+            "Con TW bajo y pendiente pronunciada el barril puede no llegar a "
+            "llenarse y el control de salida no gobierna igualmente; "
+            "verificar que el punto donde el control de salida GOBIERNE sea "
+            "uno donde la hipotesis de seccion llena tenga sentido fisico. "
+            "ESTA VERIFICACION NO ES SOLO DE ESTE CRITERIO: es tambien la "
+            "condicion de uso que HDS-5 impone a h_o = (dc + D)/2, el otro "
+            "termino de la misma ecuacion, y el proyecto la aplicaba sin "
+            "recogerla (NOR-HDS-05). " + H_O_NUMERAL + " la escribe asi: "
+            + "; ".join(f"<<{cita}>>" for cita in H_O_CONDICION_TEXTO)
+            + ". La premisa entraba dos veces por dos puertas -- este criterio "
+            "la ADOPTA y h_o la SUPONE -- y hasta E-A no se comprobaba por "
+            "ninguna. Desde E-A (2026-09-21) SE COMPRUEBA: el perfil de la "
+            "lamina de agua por paso directo (`M4.perfil_lamina`) mide la "
+            "longitud a seccion llena en cada punto y el paso 4.3c juzga con "
+            "ella la primera condicion (lleno en mas de la mitad de la "
+            "longitud, el criterio 'fraccion_llena_mayor_parte' [A]); bajo HW/D < 0.75 la "
+            "aproximacion se sustituye por el remanso (paso 4.3d). Lo que "
+            "queda declarado, y no verificado, es lo PROPIO de este criterio: "
+            "que el termino de friccion de H se forme con V y R de la seccion "
+            "llena aunque el perfil mida que el barril no llena. La pag. 3.12 "
+            "del HDS-5 lo avala hasta HW = 0.75D («adequate results»), y por "
+            "debajo el remanso ya no usa H"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista: Sec. 4.3 escribe la ecuacion y no "
+                        "dice a que seccion pertenecen V y R",
+            dominio="declaracion entre seccion llena y tirante normal",
+        ),
+    ),
+
+    "fraccion_llena_mayor_parte": Criterio(
+        valor=0.5,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Fraccion de la longitud del barril a seccion llena por "
+                 "encima de la cual se lee que fluye lleno «for most of its "
+                 "length» (primera condicion de uso de h_o, HDS-5 pag. 3.24)",
+        justificacion="Desde E-A el perfil de la lamina (M4, paso 4.3c) MIDE "
+                      "la longitud a seccion llena, y juzgar la primera "
+                      "condicion de uso de h_o exige decir cuanto es «la mayor "
+                      "parte». La fuente escribe la palabra y no el numero: "
+                      "«most» es la mayoria --mas de la mitad-- y esa es la "
+                      "lectura adoptada, declarada en el registro con lo que "
+                      "juega en contra (citas.INTERPRETACION_MAYOR_PARTE). Es "
+                      "[A] y no [N] porque la palabra admite lecturas mas "
+                      "exigentes («casi toda»), y una lectura con alternativas "
+                      "es una eleccion con ventana. Sensibilidad: de 0.5 (la "
+                      "mitad) a 0.9 («casi toda»); solo mueve el ROTULO del "
+                      "veredicto del paso 4.3c, nunca una magnitud: la "
+                      "consecuencia de fallar la condicion la fija la pag. "
+                      "3.12 (la aproximacion vale hasta HW/D = 0.75, y bajo "
+                      "0.75 el remanso), no esta fraccion. Se compara en "
+                      "estricto: la fraccion llena tiene que SUPERAR el valor",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, num. 3.3.3, pag. impresa "
+               "3.24 (cita HDS5_3ED.3.3.3#HO): «can only be used if the "
+               "barrel flows full for most of its length». La pag. impresa "
+               "3.12 relaja la condicion («works best when the barrel flows "
+               "full over at least part of its length»; «adequate results "
+               "... down to a headwater of 0.75D»)",
+        sensibilidad=(0.5, 0.9),
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente escribe «most» y no un "
+                        "numero, y la pag. 3.12 de la misma fuente relaja la "
+                        "condicion a «at least part»",
+            dominio="fraccion en (0, 1]",
+        ),
+    ),
+
+    "esviaje_max_grados": Criterio(
+        # --- T-6 --- (punto 4 de su prompt). TRES COSAS CAMBIAN, y las tres
+        # sobre la ficha que dejo el cierre de C10 (PC-32, ficha C10-03):
+        #
+        #   1. TIENE VALOR, 45 grados, y deja de ser `opcional`. Hasta T-6
+        #      era un [A] sin valor que solo actuaba si el proyectista lo
+        #      declaraba; el cierre decia «ninguna fuente de normas/ fija un
+        #      esviaje maximo» y era cierto del esviaje DEL BARRIL. Lo que no
+        #      se habia leido es el num. 5.4.2 del HDS-5, que da un maximo
+        #      practico de unos 45 grados para el esviaje DE LA EMBOCADURA y
+        #      explica cuando los dos angulos coinciden (ver `justificacion`).
+        #   2. LA VENTANA ES (45, 60), no el dominio fisico entero (0, 90).
+        #   3. SUPERARLO ES AVISO, NO BLOQUEO. `M7.factor_esviaje` ya no lanza
+        #      `DatoInvalidoError`: el esviaje es un dato de entrada medido
+        #      (regla 2 de la cadena T), y un dato que supera una adopcion
+        #      del proyecto se SEÑALA, no se rechaza. Lo emite la
+        #      verificacion G3 de 7.B con veredicto INDICADOR.
+        #
+        # NIVEL MEDIDO: la corrida de perfil lo invoca en M7 (G3) para todo
+        # punto que llega a 7.B.
+        valor=45.0,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Esviaje maximo, en grados, por encima del cual el cruce "
+                 "se señala para revision en planta (aviso, no bloqueo)",
+        justificacion="Decide a partir de que esviaje del cruce la memoria "
+                      "AVISA. No acota el calculo: 1/cos(esviaje) se aplica "
+                      "igual por encima del valor, y la unica guardia que "
+                      "detiene es la NUMERICA de `tolerancias."
+                      "COS_ESVIAJE_MIN` (PC-32). El esviaje es un dato de "
+                      "entrada -- lo mide la topografia -- y el Manual del "
+                      "MTC dice que la ubicacion en planta ideal es la que "
+                      "sigue la direccion de la corriente (num. 4.1.1.3.2, "
+                      "cita MC_HHD.4.1.1.3.2), de modo que un conducto "
+                      "esviado no es un defecto; el mismo numeral admite "
+                      "desplazar la ubicacion natural acondicionando el "
+                      "cauce a la entrada y a la salida, que es la salida "
+                      "cuando el esviaje resulta excesivo. Ninguna fuente "
+                      "fija un esviaje maximo del barril. La mas cercana es "
+                      "el HDS-5 num. 5.4.2 (pag. impresa 5.13, cita "
+                      "HDS5_3ED.5.4.2#MAXIMO_PRACTICO): el esviaje de la "
+                      "EMBOCADURA -- el angulo de la cara del conducto con "
+                      "la normal al barril -- va de cero a un maximo "
+                      "practico de unos 45 grados, limite que la fuente "
+                      "atribuye a la dificultad de la transicion del flujo "
+                      "del cauce al conducto; y añade que un barril esviado "
+                      "suele tener tambien la embocadura esviada porque los "
+                      "cabezales se construyen paralelos al eje de la via "
+                      "para no alabear el terraplen. Con esa disposicion "
+                      "-- la que este proyecto supone: la longitud de 7.B se "
+                      "mide con los taludes paralelos a la via -- el esviaje "
+                      "de la embocadura es el del barril, y el maximo "
+                      "practico de 45 grados le alcanza. Es una ANALOGIA "
+                      "que depende de una disposicion constructiva, y por "
+                      "eso el criterio es [A] y no [C]. El segundo "
+                      "argumento es la longitud resultante: el factor "
+                      "1/cos vale 1.41 a 45 grados y 2.00 a 60, o sea que "
+                      "entre los dos extremos de la ventana el conducto "
+                      "pasa de un 41 % a un 100 % mas largo que el cruce a "
+                      "escuadra. Sensibilidad (45, 60): 45 es el maximo "
+                      "practico de la fuente y el valor adoptado; 60 es el "
+                      "extremo en que el conducto duplica su longitud, "
+                      "donde el aviso llegaria ya tarde. El script de "
+                      "topografia del proyecto avisa con el mismo umbral "
+                      "(pide revisar en planta todo esviaje mayor de 45 "
+                      "grados). Un "
+                      "esviaje sobre el maximo es ademas la firma del error "
+                      "de convencion que docs/contrato_entradas.md §5 "
+                      "describe: un angulo copiado de un expediente que lo "
+                      "mide desde el eje de la via",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 5.4.2 'Skewed Inlets', "
+               "pag. impresa 5.13 (PDF 149), cita "
+               "HDS5_3ED.5.4.2#MAXIMO_PRACTICO, POR ANALOGIA del esviaje de "
+               "la embocadura al del barril bajo cabezal paralelo a la via; "
+               "num. 5.4.1 'Skewed Barrels', pag. impresa 5.12 (PDF 148), "
+               "para la definicion del angulo; Manual de Hidrologia, "
+               "Hidraulica y Drenaje (MTC), num. 4.1.1.3.2 'Ubicacion en "
+               "planta', pag. impresa 71 (PDF 74). El DG-2018 num. "
+               "502.03.03, pag. impresa 220 (PDF 221), es de intersecciones "
+               "entre carreteras y no acota una obra de drenaje",
+        reemplazado_por="El esviaje maximo que la solucion constructiva del "
+                        "cruce admita (cabezales y aletas esviados o "
+                        "terraplen alabeado, HDS-5 Figura 5.16), decidido "
+                        "en los planos",
+        sensibilidad=(45.0, 60.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre la solucion constructiva del "
+                        "cruce; la fuente da un maximo practico de la "
+                        "embocadura, no del barril",
+            dominio="grados sexagesimales, entre el maximo practico del "
+                    "HDS-5 (45) y el esviaje que duplica la longitud (60)",
+        ),
+    ),
+
+    "borde_libre_y_sobre_d_max": Criterio(
+        valor=Y_SOBRE_D_MAX,        # el 0.75 que resulta del 25 % recomendado
+        # NIVEL MEDIDO por las dos corridas de `tests/test_nivel_medido.py`:
+        # V1 corre en el alcance de perfil y lee este criterio.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Relacion de llenado maxima y/D (o y/H) que el proyecto "
+                 "aplica como umbral duro en V1: el complemento del borde "
+                 "libre minimo adoptado",
+        justificacion="Decide el borde libre que el proyecto exige de verdad. "
+                      "El Manual escribe el borde libre como recomendacion: "
+                      "un minimo del 25 % de la altura, diametro o flecha de "
+                      "la estructura, del que el 0.75 es el complemento "
+                      "aritmetico. Verificar el borde libre es una exigencia "
+                      "del numeral; aplicar la cifra recomendada como rechazo "
+                      "de un escalon de diametro es una adopcion del "
+                      "proyectista, y por eso lleva etiqueta propia y ventana. "
+                      "El valor por defecto es el recomendado, de modo que sin "
+                      "tocar este criterio el calculo hace lo que hacia. Solo "
+                      "se puede endurecer: V1 rechaza con DatoInvalidoError "
+                      "una relacion de llenado mayor que 0.75, porque relajar "
+                      "una recomendacion de la fuente no es ejercer una "
+                      "adopcion sino salirse de lo que la fuente concede. "
+                      "Sensibilidad: con y/D = 0.70 un tubo de 0.90 m que "
+                      "cumple con 0.75 deja de cumplir con 0.65 y el diseno "
+                      "sube de escalon; la direccion de endurecer es siempre "
+                      "la segura (mas diametro, mas borde libre). A seccion "
+                      "llena no hay borde libre que medir y el veredicto se "
+                      "apoya en la exigencia del mismo parrafo, no en esta "
+                      "cifra",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.7 b) 'Borde libre', pag. "
+               "impresa 79 (PDF 82): recomienda como minimo el 25 % de la "
+               "altura, diametro o flecha de la estructura. La cifra vive "
+               "como [N] en constantes_normativas.Y_SOBRE_D_MAX; aqui vive "
+               "la adopcion de aplicarla como umbral duro",
+        reemplazado_por="Un borde libre distinto que el proyectista fije con "
+                        "razon escrita, siempre mayor o igual que el 25 % "
+                        "recomendado; o una exigencia normativa que lo "
+                        "convierta en [N] sin recomendacion de por medio",
+        # Ventana NUMERICA porque sus dos extremos existen sin inventar
+        # nada: el techo es el 0.75 que la fuente recomienda (solo se puede
+        # endurecer) y el piso es el dominio fisico de una relacion de
+        # llenado. Asi la PUERTA rechaza 0.9 antes de correr, y no solo el
+        # consumidor (auditor de C05).
+        sensibilidad=(0.0, Y_SOBRE_D_MAX),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, a partir de la recomendacion del "
+                        "num. 4.1.1.3.7 b); el 0.75 es el valor por defecto",
+            dominio="0 < y/D <= 0.75",
+        ),
+    ),
+    "velocidad_minima_autolimpieza_m_s": Criterio(
+        valor=V_MIN,                # el 0.25 m/s que la fuente recomienda
+        # NIVEL MEDIDO por las dos corridas de `tests/test_nivel_medido.py`:
+        # V2 corre en el alcance de perfil y lee este criterio.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Velocidad minima de autolimpieza, en m/s, que el proyecto "
+                 "aplica como umbral duro en V2",
+        justificacion="Decide el piso de velocidad que el proyecto exige de "
+                      "verdad. El Manual manda verificar que la velocidad "
+                      "minima no produzca sedimentacion, y la cifra del piso "
+                      "la escribe como recomendacion (0.25 m/s). Verificar es "
+                      "exigencia del numeral; aplicar la cifra recomendada "
+                      "como rechazo de un escalon es una adopcion del "
+                      "proyectista, con etiqueta propia y ventana. El valor "
+                      "por defecto es el recomendado, de modo que sin tocar "
+                      "este criterio el calculo hace lo que hacia. Solo se "
+                      "puede endurecer: V2 rechaza con DatoInvalidoError un "
+                      "piso menor que 0.25 m/s, porque relajar una "
+                      "recomendacion no es ejercer una adopcion. "
+                      "Sensibilidad: el piso casi nunca gobierna (haria falta "
+                      "una pendiente del orden de 0.00006 para violarlo con "
+                      "0.25 m/s); subirlo a 0.35 m/s empieza a rechazar "
+                      "tramos de pendiente muy baja, y la direccion de "
+                      "endurecer es la segura frente a la sedimentacion",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.6, parrafo posterior a la "
+               "Tabla N 10, pags. impresas 76-77 (PDF 79-80): manda "
+               "verificar la velocidad minima y recomienda que sea igual a "
+               "0.25 m/s. La cifra vive como [N] en "
+               "constantes_normativas.V_MIN; aqui vive la adopcion de "
+               "aplicarla como umbral duro",
+        reemplazado_por="Un piso distinto que el proyectista fije con razon "
+                        "escrita, siempre mayor o igual que el recomendado; "
+                        "o una exigencia normativa que lo convierta en [N]",
+        sensibilidad=("0.25 m/s, la velocidad minima que la fuente recomienda "
+                      "y que el proyecto adopta por defecto",
+                      "cualquier piso mayor que declare el proyectista: la "
+                      "recomendacion es un minimo y solo se puede endurecer. "
+                      "Un valor menor se rechaza en V2"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, a partir de la recomendacion del "
+                        "num. 4.1.1.3.6; 0.25 m/s es el valor por defecto",
+            dominio="V >= 0.25 m/s",
+        ),
+    ),
+    "HW_D_max": Criterio(
+        valor=1.5,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Relacion maxima de carga a la entrada sobre diametro",
+        justificacion="Decide la relacion maxima de carga a la entrada sobre "
+                      "diametro, HW/D, y es adopcion del proyectista sobre "
+                      "una banda de practica ajena, no un valor que alguna "
+                      "fuente fije. La fuente (HDS-5, num. 2.2.5 d; texto "
+                      "literal en `fuente`) describe lo que imponen las "
+                      "agencias viales de los Estados Unidos -- limites HW/D "
+                      "que varian por el pais, comunmente entre 1.0 y 1.5 -- "
+                      "y su unico imperativo tiene por sujeto la restriccion "
+                      "que cada agencia impone, no el rango. Lo que no "
+                      "resuelve: no prescribe HW/D alguno, y en el Peru la "
+                      "agencia es el MTC, cuyo Manual tampoco lo fija -- no "
+                      "hay restriccion de agencia que seguir. Por eso elegir "
+                      "un numero dentro de la banda es decision del "
+                      "proyectista, [A] con su sensibilidad, y no la lectura "
+                      "de una tabla ni un [C]: la fuente no cubre este vacio, "
+                      "lo describe. Se adopta 1.5, el extremo superior de la "
+                      "banda descrita -- el menos restrictivo de los dos: "
+                      "admite mas embalse a la entrada, no menos --, porque "
+                      "el control gobernante del embalse en este proyecto no "
+                      "es este umbral sino V5 (remanso dentro del derecho de "
+                      "via), que es el que de verdad protege a terceros. "
+                      "Sensibilidad (1.2, 1.5): es un subrango deliberado, la "
+                      "mitad alta de la banda descrita (1.0, 1.5), y se deja "
+                      "dicho para que nadie la confunda con lo que la fuente "
+                      "describe. Reglas de aplicacion: lo consume "
+                      "`M5.v4b_relacion_hw_d`, y el HW que se divide entre D "
+                      "es el del control gobernante, no el del control de "
+                      "entrada -- lo que la fuente acota es el embalse real "
+                      "aguas arriba, y tomar el HWi/D de la Tabla A.1 cuando "
+                      "gobierna el control de salida daria un numero menor "
+                      "que el embalse que la obra produce",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, num. 2.2.5 'Allowable "
+               "Headwater' (arranca en la pag. impresa 2.9), apartado "
+               "d. 'Agency Constraints', pag. impresa 2.10 (PDF 72). Texto "
+               "literal: <<Some state or local highway agencies place limits "
+               "on the headwater produced by a culvert. For example, the "
+               "headwater depth may not be allowed to exceed the barrel "
+               "height or some multiple of the barrel height, expressed as "
+               "HW/D. The allowable HW/D ratio varies throughout the "
+               "country, but commonly ranges from 1.0 to 1.5. Although very "
+               "low HW/D constraints will severely limit the flexibility "
+               "inherent in culvert design, they must be followed unless a "
+               "design exemption is granted.>> "
+               "LA PAGINA ANTERIOR ERA FALSA y la cita se daba por CERRADA: "
+               "este campo decia 'Sec. 2.2.5, pag. 2.14', y la pag. impresa "
+               "2.14 (PDF 76) trata de espolones de escombros (Figura 2.8) y "
+               "de seguridad vial (num. 2.3.3). Verificado contra el PDF en "
+               "la sesion de C06. El pasaje ademas NO EXISTE en la otra copia "
+               "de HDS-5 que hay en normas/ (la edicion de 1985): el rango es "
+               "exclusivo de la 3a ed.",
+        sensibilidad=(1.2, 1.5),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre una BANDA DE PRACTICA AJENA. "
+                        "NO es `EnRango`, aunque la Sec. 4.3 del plan lo "
+                        "ponga de ejemplo: el num. 2.2.5 d) del HDS-5 "
+                        "DESCRIBE lo que imponen las agencias viales de "
+                        "EE.UU. y no prescribe HW/D alguno (NOR-HDS-02, "
+                        "conflicto vinculante #1 del plan). Un rango con "
+                        "cita normativa aqui seria la cita falsa que ese "
+                        "hallazgo vino a retirar",
+            dominio="adimensional > 0",
+        ),
+    ),
+
+    "resguardo_HW_subrasante": Criterio(
+        valor="segun_CBR",          # 0.60 / 0.80 / 1.00 / 1.20 m
+        nivel=NIVEL_PERFIL,
+        etiqueta="N->",
+        forma=FORMA_STR,
+        concepto="Resguardo entre nivel de agua a la entrada y subrasante",
+        justificacion="Decide con que resguardo se separa el nivel de agua a "
+                      "la entrada (HW) de la subrasante. La fuente (Manual de "
+                      "Suelos MTC, num. 4.5.4, con la tabla repetida en "
+                      "9.1(3)) da una tabla de resguardo por CBR cuyo objeto "
+                      "es la separacion frente al nivel freatico. Lo que no "
+                      "resuelve es el caso de esta verificacion: un nivel "
+                      "transitorio de avenida no es un freatico permanente. "
+                      "Se aplica la tabla por analogia -- por eso [N->] -- "
+                      "por ser el unico parametro normativo nacional que "
+                      "protege la subrasante de la saturacion, y la analogia "
+                      "se declara en la memoria. Que la analogia quede del "
+                      "lado seguro es plausible, no demostrado: el resguardo "
+                      "del num. 4.5.4 protege del ascenso capilar continuo de "
+                      "un freatico permanente, mientras que un HW de avenida "
+                      "moja el terreno durante horas, por un mecanismo "
+                      "distinto, y puede subir por encima del freatico; que "
+                      "el resguardo dimensionado para el primer mecanismo "
+                      "baste para el segundo no se deduce del numeral ni de "
+                      "ningun otro del Manual de Suelos. La adopcion se "
+                      "sostiene entonces en la ausencia de alternativa "
+                      "nacional, no en un conservadurismo demostrado, y asi "
+                      "se imprime. Cuando gobierna: la verificacion compara "
+                      "niveles (la cota de fondo de la entrada mas la carga, "
+                      "contra la cota de subrasante menos el resguardo de la "
+                      "fila de CBR del punto), de modo que decide la "
+                      "aceptacion de un diametro cuando el relleno sobre la "
+                      "entrada es bajo o cuando el CBR de la subrasante cae "
+                      "en una fila de resguardo mayor (de 0.60 m con CBR de "
+                      "20 % o mas, hasta 1.20 m con CBR menor de 3 %). En "
+                      "ese caso el remedio no es solo otro diametro: el "
+                      "mismo parrafo de la fuente ofrece subdrenes, capas "
+                      "drenantes o elevar la rasante (cita MS.4.5.4), y la "
+                      "elevacion necesaria la calcula el tamizado de la Fase "
+                      "7. En el corredor del repositorio no descarta ningun "
+                      "diametro: el punto mas ajustado de la corrida de "
+                      "perfil con los datos externos completos, A-01, cumple "
+                      "con 0.108 m de margen",
+        fuente="Manual de Suelos MTC, numeral 4.5.4 (pags. 41-42) y 9.1(3) "
+               "(pags. 89-90), que repite la tabla en el capitulo de "
+               "estabilizacion",
+        verificacion_pendiente="La equivalencia entre saturacion permanente "
+                               "(el mecanismo del 4.5.4) y mojado transitorio "
+                               "por avenida (el de V4) queda sin demostrar. "
+                               "Cerrarla exige una fuente que trate el "
+                               "remanso de avenida sobre la subrasante, no una "
+                               "lectura mas del mismo numeral",
+        resolucion=Libre(
+            que_lo_fija="la tabla de resguardo por CBR del Manual de Suelos, "
+                        "aplicada POR ANALOGIA (el num. 4.5.4 regula la "
+                        "separacion frente al freatico, no frente a un nivel "
+                        "de avenida). NO es `DeTabla` todavia, aunque la "
+                        "Sec. 4.3 del plan ponga `resguardo(CBR)` de "
+                        "ejemplo: esa tabla vive como escalares [N] en "
+                        "`constantes_normativas.py` y no esta transcrita "
+                        "como `TablaNormativa` en el registro, de modo que "
+                        "no hay tabla que la ventana pueda mostrar entera",
+            tabla_pendiente="Manual de Suelos MTC num. 4.5.4 (pags. 41-42) "
+                            "y 9.1(3) (pags. 89-90), tabla de resguardo por "
+                            "CBR",
+        ),
+    ),
+
+    # -----------------------------------------------------------------------
+    # VC1 -- el borde libre del CANAL, que no es el borde libre de V1
+    # -----------------------------------------------------------------------
+    # POR QUE ES CRITERIO DE CORREDOR Y NO COLUMNA [S] POR PUNTO. La pregunta
+    # se decide con la regla de CLAUDE.md que separa [S] de [A]: «un [A] se
+    # defiende con un rango de sensibilidad porque hubo eleccion; un [S] no
+    # tiene rango que elegir y se defiende con la trazabilidad de la lectura».
+    # Aqui hay banda y no hay lectura: el levantamiento de los seis cruces
+    # midio cota de fondo, seccion trapecial y CORONACION --- y la coronacion
+    # SI es [S] y SI es columna, `cota_coronacion_canal` ---, pero no midio
+    # ningun borde libre, porque un borde libre no se mide: se adopta. Es el
+    # resguardo que el proyecto decide dejar sin usar bajo la coronacion, y esa
+    # decision es la misma en los seis cruces porque sale de una sola
+    # adopcion, no de seis mediciones. Ponerlo por punto invitaria ademas a
+    # aflojarlo justo donde aprieta, que es la direccion insegura.
+    #
+    # POR QUE [A] Y NO [N->], que es el vecino con el que se confunde. El
+    # precedente de [N->] en este archivo es 'resguardo_HW_subrasante': un
+    # numeral que regula el freatico, aplicado por analogia a un nivel de
+    # avenida. Alli, CONCEDIDA la analogia, la fuente determina el numero ---
+    # la tabla del 4.5.4 entra con el CBR y da 0.60 / 0.80 / 1.00 / 1.20 ---.
+    # Aqui no: concedida la analogia, la fuente sigue dando una BANDA y
+    # ninguna regla para elegir dentro de ella. Quedan dos saltos y no uno, y
+    # el de afuera es una eleccion. [N->] la esconderia; [A] la publica con su
+    # ventana, que es para lo que existe la ventana.
+    #
+    # EL SIGNO DE LA VENTANA, escrito porque la intuicion apunta al reves. El
+    # borde libre se RESTA de la coronacion: moverlo hacia 0.50 BAJA la cota
+    # admisible y ACERCA el punto al incumplimiento. Quien lo declare esta
+    # eligiendo cuanta exigencia se pone a si mismo, no cuanta holgura se
+    # concede. Por eso el valor adoptado es el extremo superior.
+    "borde_libre_canal_m": Criterio(
+        valor=0.50,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Borde libre del canal: resguardo bajo su coronacion que el "
+                 "agua embalsada por la alcantarilla no puede invadir (VC1)",
+        justificacion=(
+            "Decide el borde libre del canal que VC1 protege: el resguardo "
+            "bajo su coronacion que el agua embalsada por la alcantarilla no "
+            "puede invadir. El requisito de verificarlo es de la Sec. 2.3 de "
+            "la hoja de ruta (ver `fuente`), no de un numeral del MTC. Lo que "
+            "el corpus nacional no resuelve, verificado por ausencia sobre "
+            "sus 225 paginas (`citas.SIN_BORDE_LIBRE_DE_CANAL`): el Manual no "
+            "fija borde libre para un canal -- «borde libre» aparece en dos "
+            "apartados y ninguno tiene por objeto un canal: el 4.1.1.3.7 b) "
+            "es de alcantarillas y es relativo (>= 25 % de la altura del "
+            "barril), y el 4.1.1.4.1 e) es de badenes y mide contra la "
+            "superficie de rodadura --; tampoco aparecen «faja marginal» ni "
+            "«terceros». Se adopta el par 0.30-0.50 m del num. 4.1.1.4.1 e) "
+            "por ser el unico resguardo absoluto que el corpus nacional "
+            "escribe para el mismo concepto, y la analogia se declara: alli "
+            "el datum superior es la calzada -- desbordar afecta la propia "
+            "plataforma -- y aqui es la coronacion -- desbordar inunda "
+            "parcela de terceros. Dentro de la banda se adopta 0.50 m, el "
+            "extremo superior, porque el borde libre se resta de la "
+            "coronacion y el extremo superior es el conservador: baja la cota "
+            "admisible y endurece VC1 -- direccion contraria a la de la "
+            "adopcion de riesgo de la Tabla N 02, donde adoptar el maximo "
+            "recomendado afloja. Sensibilidad: la fuente no da regla para "
+            "elegir dentro de la banda -- va en texto corrido, sin tabla, y "
+            "no es funcion del caudal, de la luz ni de la velocidad --, por "
+            "eso la eleccion es del proyectista y el criterio es [A]; la "
+            "banda misma es [N] y vive en "
+            "`constantes_normativas.BORDE_LIBRE_BADEN_RANGO_M`"),
+        fuente="MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.4.1 e) «Borde libre», "
+               "pag. impresa 85 (PDF 88), bajo «4.1.1.4  BADENES». El "
+               "REQUISITO que obliga a verificarlo es de la Sec. 2.3 de la "
+               "hoja de ruta («No puede alterar la rasante hidraulica ni el "
+               "borde libre del canal»), no de un numeral del MTC",
+        sensibilidad=BORDE_LIBRE_BADEN_RANGO_M,
+        verificacion_pendiente=(
+            "El borde libre que el propio canal adopto en SU proyecto. Lo "
+            "fija la entidad que lo opera (ANA / Junta de Usuarios del Bajo "
+            "Piura) y seria el valor exacto en vez de uno analogo: si el "
+            "canal se diseño con 0.30 m, exigirle 0.50 a la alcantarilla es "
+            "mas duro que su propio proyecto; si se diseño con mas de 0.50, "
+            "esta adopcion se queda corta y la analogia deja de ser "
+            "conservadora. Es la unica de las dos direcciones que importa, y "
+            "no se puede resolver leyendo otra vez el mismo numeral"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, dentro de la banda 0.30-0.50 m que "
+                        "el num. 4.1.1.4.1 e) recomienda PARA UN BADEN. NO es "
+                        "`EnRango`: aquel tipo referencia (tabla, fila, "
+                        "columna) del registro, y este par no es una tabla "
+                        "--- va en texto corrido --- de modo que no hay tabla "
+                        "que la ventana pueda pintar. Lo que la ventana "
+                        "muestra es la banda por `sensibilidad`, y lo que el "
+                        "proyectista tiene que saber al moverse dentro de "
+                        "ella es el SIGNO: hacia 0.50 la verificacion se "
+                        "endurece",
+            dominio="0.30 <= borde libre <= 0.50 m",
+        ),
+    ),
+
+    "TW_receptor": Criterio(
+        # SIGUE VACIO A PROPOSITO, Y DESDE S20 POR OTRA RAZON. Hasta S20 era
+        # la UNICA puerta del TW y por eso detenia toda corrida: el
+        # procedimiento de Sec. 1.3 no existia en src/ (SIS-B-04). Hoy existe
+        # -- `M3.tw_seccion_1_3` -- y este criterio quedo donde le corresponde:
+        # la ULTIMA puerta, la que se abre cuando el expediente no aporta ni
+        # `cota_TW`, ni `Q_receptor_m3s`, ni la seccion del receptor. Con
+        # 'seccion_receptor' declarado, ninguna corrida lo invoca, y por eso
+        # no aparece en la memoria: `reporte_criterios(solo_usados=True)`
+        # imprime lo que el calculo consumio.
+        #
+        # NO SE DECLARA, y es deliberado: declararlo seria volver a poner un
+        # TW a mano donde Sec. 1.3 dice «se calcula, no se mide». Su ficha
+        # sigue aqui porque el dia que un punto descargue a un receptor del
+        # que no se sepa ni el caudal ni la seccion, esta es la puerta que
+        # tiene que detener la corrida en vez de inventar un nivel.
+        valor=None,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        # LA VENTANA DE ESTE CRITERIO SON LOS DOS ESCENARIOS DEL PASO 3 de
+        # Sec. 1.3, y no es una analogia: son literalmente las dos opciones
+        # que la hoja de ruta ofrece cuando no hay caudal documentado del
+        # receptor, que es exactamente la situacion en la que esta puerta se
+        # abre. Es simbolica y no numerica porque un TW no tiene banda de
+        # practica: tiene dos escenarios acotados, y lo que se declara es en
+        # cual se esta. Se escribe aunque el criterio siga vacio: la ventana
+        # es parte de la ficha, no del valor, y sin ella ni la GUI ni la CLI
+        # podrian declararlo en caliente.
+        sensibilidad=("salida libre (TW = 0): el receptor no aporta lamina "
+                      "sobre el fondo de la salida",
+                      "receptor a seccion llena: el agua llega a la corona "
+                      "del bordo del dren",
+                      "nivel documentado por la ANA / Junta de Usuarios para "
+                      "el periodo de retorno de diseño"),
+        concepto="Nivel de agua en el cuerpo receptor durante la avenida",
+        justificacion="No se mide: se calcula con Manning en el receptor usando "
+                      "su propio caudal de diseno. Sin ese dato se adoptan dos "
+                      "escenarios acotados (salida libre / seccion llena)",
+        fuente="PENDIENTE: ANA / Junta de Usuarios del Bajo Piura",
+        reemplazado_por="Caudal de diseno documentado del dren o canal receptor",
+        # `Libre` Y NO `DeEnsayo`, y el cambio lo trajo la propia Sec. 1.3.
+        # Mientras este criterio fue la UNICA puerta del TW, su resolucion
+        # decia la verdad: el numero saldria de un dato de la ANA. Hoy ese
+        # dato entra por otro sitio -- la columna `cota_TW`, o el caudal del
+        # receptor con su seccion -- y lo que queda aqui es la ultima puerta,
+        # la que se abre cuando no hay ninguno de los tres: entonces lo que
+        # se declara no es una lectura, es EN CUAL DE LOS DOS ESCENARIOS
+        # ACOTADOS del paso 3 se esta. Eso es una eleccion, y la invariante de
+        # este archivo lo exige: un `de_ensayo` con ventana es una
+        # contradiccion. La lectura de la ANA no se pierde: es el
+        # `reemplazado_por`, y sigue siendo lo que cierra esto de verdad.
+        resolucion=Libre(
+            que_lo_fija="el proyectista, eligiendo escenario, cuando el "
+                        "expediente no aporta ni el nivel del receptor "
+                        "(`cota_TW`) ni su caudal de diseño con la seccion "
+                        "para correr Manning (Sec. 1.3, pasos 1 y 2)",
+            dominio="m >= 0 sobre el fondo de la salida; 0 es salida libre",
+        ),
+    ),
+
+    # El DATO que el paso 2 de Sec. 1.3 necesita, y que la hoja de ruta no
+    # entrega: la seccion del receptor. Sin ella el paso 2 no es una formula
+    # que falte, es una geometria que nadie declaro.
+    "seccion_receptor": Criterio(
+        # SECCION ADOPTADA A NIVEL DE PERFIL, con la ventana de cada campo
+        # en `sensibilidad`. Es la unica de las declaraciones de esta sesion
+        # que describe una obra de TERCEROS -- el dren colector de la Junta
+        # de Usuarios --, y por eso su `verificacion_pendiente` es la mas
+        # exigente: mientras no exista el levantamiento, la memoria tiene que
+        # decir que el nivel del receptor es una adopcion.
+        #
+        # QUE NO GOBIERNA ESTA ADOPCION, que es lo primero que hay que mirar
+        # antes de leerla como un numero peligroso: en los puntos cuyo CSV
+        # trae `cota_TW`, la via 2 de Sec. 1.3 gana y este criterio ni se
+        # invoca. Solo entra donde el expediente aporta el CAUDAL del
+        # receptor y no su nivel, que es la situacion que Sec. 1.3 describe.
+        valor={"b_m": 2.0, "z_HV": 1.5, "S": 0.0008, "n": 0.030,
+               "altura_total_m": 1.80},
+        nivel=NIVEL_PERFIL,
+        # VENTANA POR CAMPO, ESTRUCTURADA Y EVALUADA (EXT-V-05). Hasta EXT-1
+        # estaba escrita en prosa -- «n: 0.025 a 0.035 (canal en tierra con
+        # vegetacion estacional)» -- y por eso caia en la forma SIMBOLICA de
+        # `_verificar_sensibilidad`: se imprimia y no se evaluaba. La
+        # auditoria externa midio lo que eso dejaba pasar: `n='0.03'` llegaba
+        # a M3 como texto y salia TypeError, `n=True` valia 1, un tirante x5
+        # se aceptaba y una clave con errata se ignoraba. Un solo par
+        # (min, max) no puede acotar cinco magnitudes distintas, y la
+        # respuesta no es renunciar a la ventana sino darle la forma del
+        # valor: un par POR CAMPO, que `_verificar_dict` evalua clave a clave.
+        #
+        # LO QUE LA PROSA DECIA Y SIGUE VALIENDO, ahora fuera del dato: b_m y
+        # z_HV son los del dren colector de la red del Bajo Piura (talud de
+        # dren en suelo fino); S, la de una llanura de riego; n, el de un canal
+        # en tierra con vegetacion estacional. El campo que mas mueve el
+        # resultado es `altura_total_m`, y solo en la via 4 (escenarios
+        # acotados): es el que fija el TW del escenario "receptor a seccion
+        # llena". En la via 3 lo que gobierna es la terna b/z/n/S a traves de
+        # Manning, y el mas sensible de los cuatro es el n: MEDIDO sobre esta
+        # seccion con el caudal de A-01 (2.00 m3/s), pasar de n = 0.025 a
+        # n = 0.030 sube el tirante normal de 0.8258 a 0.9082 m, un +10.0 %,
+        # y esos 82 mm se trasladan al TW milimetro a milimetro.
+        sensibilidad={"b_m": (1.5, 3.0),             # m
+                      "z_HV": (1.0, 2.0),            # H:V
+                      "S": (0.0005, 0.0015),         # m/m
+                      "n": (0.025, 0.035),
+                      "altura_total_m": (1.2, 2.5)}, # m
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Seccion transversal del cuerpo receptor (dren o canal) en "
+                 "el punto de descarga, con su pendiente y su n de Manning: "
+                 "b_m (solera), z_HV (talud), S, n y altura_total_m "
+                 "(profundidad de la seccion, del fondo a la corona del "
+                 "bordo)",
+        justificacion="Decide la seccion transversal con que se resuelve el "
+                      "paso 2 de la Sec. 1.3 de la hoja de ruta mientras no "
+                      "exista el levantamiento del receptor. La fuente (Sec. "
+                      "1.3) establece que TW se calcula y no se mide, y da "
+                      "tres pasos; el segundo aplica Manning en la seccion "
+                      "del receptor con el caudal de la columna "
+                      "`Q_receptor_m3s` (Sec. 1.2) y su pendiente -- la "
+                      "formula es la misma de Manning que ya usa M3 y el "
+                      "caudal esta. Lo que no resuelve: la seccion misma. Ni "
+                      "Sec. 1.1 ni Sec. 1.2 la traen, la hoja de ruta no la "
+                      "describe y no hay norma que la fije, porque es la "
+                      "geometria de una obra de terceros -- el dren de la "
+                      "Junta de Usuarios -- que hay que ir a levantar. Se "
+                      "adopta declarar aqui la seccion completa (b_m, z_HV, "
+                      "S, n y altura_total_m) y bloquear mientras falte, en "
+                      "vez de aproximarla: el TW entra en el control de "
+                      "salida y de ahi al HW, y el HW decide V4 (carga bajo "
+                      "la subrasante) y V4b; una seccion inventada mueve la "
+                      "cota de agua del receptor y con ella el diametro de la "
+                      "alcantarilla, sin que nada en la memoria diga de donde "
+                      "salio. altura_total_m no es decorativa: acota el "
+                      "segundo escenario del paso 3 -- receptor a seccion "
+                      "llena --, que sin ella no se puede escribir, y la hoja "
+                      "de ruta pide cumplir en los dos escenarios. Cuando el "
+                      "CSV ya trae `cota_TW`, este criterio no hace nada: esa "
+                      "columna es el resultado del paso 2 resuelto fuera (el "
+                      "Tablero 3.1 la rotula como calculada por la Sec. 1.3) "
+                      "y un dato entregado no se recalcula -- "
+                      "`M3.tw_seccion_1_3` la usa y ni siquiera invoca este "
+                      "criterio. La sensibilidad declara, campo por campo, "
+                      "los rangos plausibles dentro de los que se movera el "
+                      "levantamiento, y de donde sale cada banda: b_m 1.5 a "
+                      "3.0 m y z_HV 1.0 a 2.0 son los del dren colector de "
+                      "la red del Bajo Piura (talud de dren en suelo fino); "
+                      "S 0.0005 a 0.0015 m/m, la pendiente de una llanura de "
+                      "riego; n 0.025 a 0.035, el de un canal en tierra con "
+                      "vegetacion estacional; altura_total_m 1.2 a 2.5 m, la "
+                      "profundidad del dren a la corona del bordo",
+        fuente="PENDIENTE - levantamiento de la seccion del dren o canal "
+               "receptor en el punto de descarga (ANA / Junta de Usuarios "
+               "del Bajo Piura). Sec. 1.3 de la hoja de ruta describe el "
+               "procedimiento y NO entrega la seccion; Sec. 1.2 no la trae "
+               "como columna",
+        reemplazado_por="Seccion levantada por punto (si los puntos "
+                        "descargan a drenes distintos, deja de ser un "
+                        "criterio de corredor y pasa a ser columna del CSV), "
+                        "o directamente la `cota_TW` medida, que la hace "
+                        "innecesaria",
+        verificacion_pendiente="Declarar si los cuatro puntos del corredor "
+                               "descargan al MISMO receptor. Un criterio "
+                               "unico afirma que si, y esa afirmacion es "
+                               "parte de la adopcion: si descargan a drenes "
+                               "distintos, un solo juego de b/z/S/n asigna a "
+                               "todos la seccion de uno",
+        # `Libre`, POR LO MISMO QUE 'talud_terraplen': mientras el criterio
+        # estaba vacio su resolucion era `DeEnsayo`, porque el numero iba a
+        # salir de un levantamiento. Declarado a nivel de perfil sale de una
+        # ELECCION dentro de una banda, y la invariante de este archivo no
+        # admite un `de_ensayo` con ventana -- con razon: un dato levantado no
+        # tiene rango que elegir. El levantamiento no desaparece: es el
+        # `reemplazado_por`, y es lo unico que cierra este criterio de verdad.
+        resolucion=Libre(
+            que_lo_fija="el proyectista, mientras no exista el levantamiento "
+                        "topografico de la seccion del receptor en el punto "
+                        "de descarga. La seccion es de una obra de TERCEROS "
+                        "-- el dren de la Junta de Usuarios --: ninguna norma "
+                        "la fija y este proyecto no la diseña",
+            dominio="b_m >= 0, z_HV >= 0, S > 0, n > 0, altura_total_m > 0; "
+                    "b_m y z_HV no pueden ser cero a la vez",
+        ),
+    ),
+
+    "long_max_cuneta": Criterio(
+        valor=200.0,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Longitud maxima de cuneta -> espaciamiento de alcantarillas de alivio",
+        justificacion="El Manual fija 250 m para region seca y 200 m para region "
+                      "muy lluviosa. El regimen normal de Piura es arido, pero el "
+                      "evento de diseno relevante es el FEN, durante el cual la "
+                      "zona se comporta como region muy lluviosa. Se adopta 200 m",
+        # La pagina es la de la cita del registro (MC_HHD_CUNETA, 179); un
+        # test la compara con `pagina_impresa` para que no vuelva a quedarse
+        # en 178, que era la Tabla Nº 34 del apartado c) (PC-30).
+        fuente="Manual MTC, numeral 4.1.2.1 d), pag. 179",
+        sensibilidad=(200.0, 250.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al declarar el regimen de la zona: "
+                        "el num. 4.1.2.1 d) da 250 m para region seca y "
+                        "200 m para region muy lluviosa, y el evento de "
+                        "diseño relevante en Piura es el FEN",
+            dominio="m > 0",
+            tabla_pendiente="Manual de Hidrologia num. 4.1.2.1 d): los dos "
+                            "valores por region no estan transcritos como "
+                            "`TablaNormativa` en el registro",
+        ),
+    ),
+
+    # ----------------------------------------------------------------------
+    # --- T-9 --- La cuneta con que la Fase 10 calcula su capacidad (VB2) y la
+    # longitud por capacidad (L_hidraulico) cuando no se declara. Cuatro
+    # criterios desde las correcciones de la auditoria de T-9.
+    #
+    # 'seccion_cuneta' NACIO SIN VALOR en la FASE A («es del trazo») y LO TIENE
+    # desde la decision A del dueño (2026-11-12): el MINIMO de la Tabla Nº 34
+    # para la region que el proyecto ya adopto con `long_max_cuneta` (muy
+    # lluviosa por el FEN), con el talud exterior como eleccion [A] declarada.
+    # ----------------------------------------------------------------------
+    "seccion_cuneta": Criterio(
+        valor={"profundidad_m": 0.40,       # m, Tabla Nº 34, muy lluviosa
+               "ancho_m": 1.20,             # m, Tabla Nº 34, muy lluviosa
+               "talud_exterior_HV": 1.0,    # H:V, eleccion [A] (justificacion)
+               "borde_libre_m": 0.0},       # m, la «cuneta llena» del Manual
+        # DE PERFIL: lo consume M10, y la Fase 10 corre a perfil (no esta en
+        # MODULOS_DIFERIDOS_POR_ALCANCE). Lo MIDE `tests/test_t9_espaciamiento.py`
+        # con una corrida de perfil que calcula la capacidad.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        # VENTANA POR CAMPO, y cada banda dice de donde sale (corregida tras la
+        # auditoria de T-9, H5: la de la FASE A tenia de piso el minimo de la
+        # region SECA, por debajo de la EXIGENCIA de la Tabla Nº 34 para la
+        # region que el propio proyecto adopta, y atribuia su techo de ancho a
+        # la Tabla 304.12 leyendola al reves):
+        #   profundidad_m       0.40 = la profundidad minima de la Tabla Nº 34
+        #                       para la region muy lluviosa (1600 a <3000
+        #                       mm/año) que `long_max_cuneta` adopta; 0.60 =
+        #                       «Elijo una altura H, que sea menor a 0.60m»
+        #                       (num. 4.1.2.1 a), pag. impresa 176).
+        #   ancho_m             1.20 = el ancho minimo de esa fila; 2.40 m es
+        #                       techo ADOPTADO, no de la fuente: la Tabla 304.12
+        #                       da inclinaciones MAXIMAS del talud interior (un
+        #                       talud mas tendido siempre cumple) y no pone techo
+        #                       al ancho; 4 x 0.60 es el talud 1:4 de su fila mas
+        #                       exigente a la profundidad maxima.
+        #   talud_exterior_HV   H:V del talud exterior, que «por lo general
+        #                       coincide con el talud de corte» (DG-2018 num.
+        #                       304.11): de 0.10 (1:10, roca fija) a 2.0 (2:1,
+        #                       arenas), la Tabla 304.10 para cortes menores de
+        #                       5 m (Relacion H:V).
+        #   borde_libre_m       0.0 = la «cuneta llena» del num. 4.1.2.1 a); el
+        #                       techo de 0.10 m es adopcion del proyecto (la
+        #                       fuente no da borde libre para cunetas).
+        sensibilidad={"profundidad_m": (0.40, 0.60),     # m
+                      "ancho_m": (1.20, 2.40),           # m
+                      "talud_exterior_HV": (0.10, 2.0),  # H:V
+                      "borde_libre_m": (0.0, 0.10)},     # m
+        concepto="Seccion TRIANGULAR de la cuneta del tramo que descarga en la "
+                 "alcantarilla de alivio: profundidad d y ancho a (Figura Nº "
+                 "27 del num. 4.1.2.1: el ancho se mide del borde de la "
+                 "rasante a la vertical del vertice, a = Z1·d), talud "
+                 "exterior (H:V) y borde libre bajo el que se calcula la "
+                 "capacidad",
+        justificacion="Decide la seccion con que la Fase 10 calcula la "
+                      "capacidad de la cuneta (VB2) y, con ella, la longitud "
+                      "a la que se agota (L_hidraulico) cuando no se declara. "
+                      "VALOR: 0.40 x 1.20 m es el minimo de la Tabla Nº 34 "
+                      "(num. 4.1.2.1 c), pag. impresa 178, cita "
+                      "MC_HHD.4.1.2.1c#T34) para la region muy lluviosa (de "
+                      "1600 a <3000 mm/año), que es la que el proyecto ya "
+                      "adopta con 'long_max_cuneta' (200 m por el regimen "
+                      "FEN); la fila EXIGE ese minimo («las dimensiones "
+                      "mínimas serán»). Como el ancho se mide hasta la "
+                      "vertical del vertice, 0.40 m x 1.20 m fija el talud "
+                      "INTERIOR Z1 = 3 (1:3); el EXTERIOR no lo fija la tabla: "
+                      "el Manual lo hace depender del talud de corte (pag. "
+                      "impresa 173) y el DG-2018 (num. "
+                      "304.11, cita DG2018.304.11) lo hace coincidir por lo "
+                      "general con el talud de corte. Z2 = 1.0 (1:1) es "
+                      "ELECCION [A] de este proyecto: el talud mas empinado "
+                      "de las filas de suelo fino o arenoso de la Tabla "
+                      "304.10 del DG-2018 para cortes menores de 5 m (limo "
+                      "arcilloso 1:1, arenas 2:1), que son los suelos del "
+                      "corredor, hasta que el EMS diga el talud de corte; un "
+                      "talud mas empinado da menos area y menos capacidad, y "
+                      "por eso es el lado seguro. Borde libre 0: el Manual "
+                      "calcula la capacidad con la cuneta llena (cita "
+                      "MC_HHD.4.1.2.1a); el techo de 0.10 m de la ventana es "
+                      "adopcion del proyecto. Lo que este valor supone y no "
+                      "tiene trazabilidad en el repositorio: (i) la REGION "
+                      "pluvial del corredor en año FEN (1600 a <3000 mm/año) "
+                      "es una eleccion ligada a un dato de sitio que nadie "
+                      "midio aqui, coherente con los 200 m; por encima de "
+                      "3000 mm/año el minimo de la Tabla Nº 34 es una seccion "
+                      "TRAPEZOIDAL, que la Fase 10 no implementa; (ii) Z1 = 3 "
+                      "vale con velocidad de diseño menor de 70 km/h o IMDA "
+                      "menor de 750 veh/dia: con las dos mayores la Tabla "
+                      "304.12 (cita MC_HHD.4.1.2.1#T304_12) exige 1:4, y la "
+                      "Fase 10 lo avisa porque ni la velocidad ni el IMDA son "
+                      "datos del programa. Sensibilidad (medida en la ficha): "
+                      "con S = 1 % y concreto la capacidad va de 0.467 a "
+                      "0.871 m3/s al mover Z2 de 0.10 a 2.0 (0.670 con Z2 = 1)",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.2.1 a) y c), pags. impresas 173-178 (Figura Nº 27, Tabla "
+               "304.12, Tabla Nº 34); DG-2018 num. 304.10 (Tabla 304.10, pag. "
+               "impresa 204) y 304.11 (pag. impresa 208)",
+        reemplazado_por="La seccion tipica de la cuneta del proyecto vial "
+                        "(DG-2018) por tramo, con el talud de corte del EMS; "
+                        "si cambia entre tramos, deja de ser un criterio de "
+                        "corredor y pasa a ser dato externo por punto",
+        verificacion_pendiente="Confirmar con el estudio hidrologico la "
+                               "region pluvial del corredor en año FEN (la "
+                               "fila de la Tabla Nº 34) y con el EMS el talud "
+                               "de corte del tramo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista de la seccion tipica de la via "
+                        "(DG-2018): la Tabla Nº 34 del Manual da los minimos "
+                        "por region pluvial y el talud exterior es el del "
+                        "corte",
+            dominio="profundidad_m > 0, ancho_m > 0, talud_exterior_HV > 0, "
+                    "0 <= borde_libre_m < profundidad_m",
+        ),
+    ),
+
+    "revestimiento_cuneta": Criterio(
+        valor="concreto",
+        nivel=NIVEL_PERFIL,          # lo consume M10, que corre a perfil
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # Las claves de `REVESTIMIENTOS_CUNETA`: cada una une una fila de la
+        # Tabla Nº 32 (el K de Strickler) con una de la Tabla Nº 33 (la
+        # velocidad limite). La UNION es lectura del proyecto y esta en la
+        # justificacion; las filas, en el registro.
+        sensibilidad=tuple(REVESTIMIENTOS_CUNETA),
+        concepto="Revestimiento de la cuneta: fija su n de Manning (1/K de "
+                 "la Tabla Nº 32) y su velocidad limite admisible (Tabla Nº "
+                 "33)",
+        justificacion="Decide la rugosidad y la velocidad limite con que se "
+                      "calcula la capacidad de la cuneta. Se adopta "
+                      "«concreto» porque es lo que la fuente pide y "
+                      "recomienda: el num. 4.1.2.1 (pag. impresa 173, cita "
+                      "MC_HHD.4.1.2.1#SECCION) quiere las cunetas de concreto "
+                      "o de otro material resistente a la erosion, y el "
+                      "apartado e) (pag. impresa 180, cita MC_HHD.4.1.2.1e) "
+                      "exige revestirlas si la velocidad supera la Tabla Nº "
+                      "33 y recomienda el concreto de 175 kg/cm2. Es tambien "
+                      "la unica opcion en que las dos tablas nombran el "
+                      "mismo material («Cunetas de concreto» K = 67, "
+                      "«Concreto» 4.50 – 6.00 m/s). Las "
+                      "demas opciones unen una fila de la Tabla Nº 32 con "
+                      "una de la Tabla Nº 33 que la fuente no relaciona "
+                      "(«Cunetas en roca» con «Mampostería, rocas duras» o "
+                      "con «Conglomerado, pizarras duras, rocas blandas»; "
+                      "«Cunetas excavadas en el terreno» con cada fila de "
+                      "suelo): esa union es lectura del proyecto, declarada "
+                      "como `Interpretacion` de la cita MC_HHD.4.1.2.1#T33, y "
+                      "la memoria la imprime. Lo que este valor cuesta, y se "
+                      "dice porque no es el extremo conservador (auditoria de "
+                      "T-9, H6): para la LONGITUD entre alivios, el concreto "
+                      "es la opcion MENOS conservadora de la ventana --K = 67 "
+                      "frente a 33 y 25, y una velocidad limite de 4.50 m/s "
+                      "frente a 3.00 o menos-- porque es la que mas caudal "
+                      "conduce. Se adopta igual porque la fuente lo pide y lo "
+                      "recomienda, no porque sea el lado seguro; una cuneta "
+                      "sin revestir del corredor se declara aqui y la "
+                      "capacidad baja. Y su fila de la Tabla Nº 33 lleva la "
+                      "llamada «*», la de los flujos de muy corta duracion, "
+                      "que el paso de la capacidad imprime desde el registro: "
+                      "la fuente no da otro "
+                      "valor para un flujo prolongado (el FEN), y el extremo "
+                      "inferior de 'lectura_velocidad_limite_cuneta' es la "
+                      "lectura conservadora de esa fila",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.2.1 (pag. impresa 173), a) Tablas Nº 32 y 33 (pag. "
+               "impresa 175) y e) (pag. impresa 180)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al especificar el revestimiento de "
+                        "la cuneta (el Manual lo recomienda de concreto)",
+            dominio="una de las claves de la ventana",
+        ),
+    ),
+
+    "lectura_velocidad_limite_cuneta": Criterio(
+        valor="extremo_inferior",
+        nivel=NIVEL_PERFIL,          # lo consume M10, que corre a perfil
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("extremo_inferior", "extremo_superior"),
+        concepto="Cual de los dos numeros de la fila de la Tabla Nº 33 rige "
+                 "como velocidad limite admisible de la cuneta",
+        justificacion="Decide la velocidad con que se calcula el segundo "
+                      "limite de capacidad del num. 4.1.2.1 a) (el caudal a "
+                      "la velocidad maxima admisible, cita "
+                      "MC_HHD.4.1.2.1a). La Tabla Nº "
+                      "33 (pag. impresa 175) da un INTERVALO por superficie "
+                      "(«0.20 – 0.60» ... «4.50 – 6.00 *») y no dice cual de "
+                      "los dos rige ni de que depende: la eleccion es del "
+                      "proyectista. Se adopta el extremo inferior, que es el "
+                      "conservador (menos velocidad admisible, menos "
+                      "capacidad, menos longitud entre alivios); el superior "
+                      "queda como alternativa barrible y la memoria imprime "
+                      "el caudal con los dos",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.2.1 a), Tabla Nº 33, pag. impresa 175",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente da el intervalo y no la "
+                        "regla para elegir dentro de el",
+            dominio="extremo_inferior | extremo_superior",
+        ),
+    ),
+
+    # --- T-9 (correcciones; decision C del dueño, 2026-11-12) --- Si una obra
+    # de Familia A cierra el tramo de cuneta de la alcantarilla de alivio
+    # siguiente. La FASE A solo tomaba como extremo la obra B anterior o un
+    # inicio declarado, de modo que el primer alivio de un corredor no tenia
+    # tramo que verificar aunque una quebrada lo precediera.
+    "obras_familia_a_extremo_de_cuneta": Criterio(
+        valor="si",
+        # DE PERFIL: lo consume M10 (`extremo_del_tramo`), que corre a perfil
+        # para todo punto de Familia B; lo mide la corrida de perfil del
+        # fixture en `tests/test_t9_correcciones.py`.
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("si", "no"),
+        concepto="Si la obra de Familia A anterior en progresiva cierra el "
+                 "tramo de cuneta que descarga en la alcantarilla de alivio "
+                 "siguiente (extremo de la verificacion VB1)",
+        justificacion="Decide donde empieza el tramo de cuneta que VB1 mide "
+                      "cuando el alivio no lo declara. Se adopta «si», por "
+                      "decision del dueño del proyecto: una alcantarilla de "
+                      "paso de quebrada es una obra de drenaje transversal, "
+                      "y el DG-2018 (num. 304.11, pag. impresa 208, cita "
+                      "DG2018.304.11#DESAGUE) limita la longitud de las "
+                      "cunetas conduciendolas a los cauces naturales y a las "
+                      "obras de drenaje transversal. Es LECTURA del proyecto y "
+                      "va declarada como `Interpretacion` de esa cita: el "
+                      "Manual de Hidrologia (num. 4.1.2.1 d), pag. impresa "
+                      "179, cita MC_HHD.4.1.2.1d#ALIVIO) nombra solo las "
+                      "alcantarillas de alivio, y que la cuneta llegue de "
+                      "verdad a esa obra lo decide el perfil longitudinal "
+                      "(curvas verticales, tramos en terraplen). «no» deja "
+                      "como extremos solo las obras de Familia B y el inicio "
+                      "declarado, que es la conducta de la FASE A; un "
+                      "`inicio_tramo_cuneta_km` declarado gana en los dos "
+                      "casos. Consecuencia medida en el fixture: B-01 (2+450) "
+                      "queda a 530 m de A-02 (1+920) y VB1 no cumple; no se "
+                      "mueve ningun diametro",
+        fuente="DG-2018 num. 304.11 (pag. impresa 208); Manual de "
+               "Hidrologia, Hidraulica y Drenaje (MTC), num. 4.1.2.1 d) (pag. "
+               "impresa 179)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista del drenaje longitudinal, con el "
+                        "perfil de la rasante: si la cuneta descarga o no en "
+                        "la quebrada de la obra de Familia A",
+            dominio="si | no",
+        ),
+    ),
+
+    # ----------------------- FASE 5: VACIOS DE VERIFICACION ---------------
+    # Tres filas de la tabla de Fase 5 (V5, V7, V8) enuncian el REQUISITO
+    # pero no entregan la formula ni el dato con que M5 pueda evaluarlo.
+    # Cada uno se detiene aqui, no en M5, para que quede escrito por que
+    # falta y que lo resolveria -- nunca un valor supuesto en silencio.
+    #
+    # V7 ya NO es de esta clase: Fase 8 (M8_estructural.py) implementa el
+    # procedimiento completo, y desde la correccion del marco LRFD es un
+    # equilibrio de factores de carga, no un FS global. Lo que sigue faltando
+    # son dos datos puntuales del procedimiento -- 'peso_especifico_relleno_kn_m3'
+    # (mas abajo, seccion de Fase 8) y 'factores_carga_aashto' (seccion de
+    # Fase 9, compartido con M9) -- no la formula ni el metodo, que ya estan
+    # escritos.
+
+    "origen_cota_fondo_entrada": Criterio(
+        # DOS REGLAS IMPLEMENTADAS (`M5.ORIGENES_COTA_ENTRADA`), y la ventana
+        # dejo de ser de un solo elemento. Hasta que el CSV trajo la columna
+        # `cota_fondo_entrada` habia una sola, y este comentario decia --- con
+        # razon entonces --- que declararla con una ventana de un elemento no
+        # era una formalidad sino la diferencia entre "se eligio esta" y "esta
+        # es la unica que el programa sabe calcular". Hoy SI hay entre que
+        # elegir, y las dos opciones no son del mismo genero:
+        #
+        #   'cota_terreno'        adopta el terreno natural del cruce. Es la
+        #                         lectura de PERFIL con las columnas que el
+        #                         CSV siempre trae.
+        #   'cota_fondo_entrada'  EXIGE la cota medida de la columna
+        #                         homonima, y se detiene con
+        #                         `DatoFaltanteError` si la fila la deja
+        #                         vacia. No es "otra regla": es pedir el dato.
+        #
+        # Y HAY UNA TERCERA VIA QUE NO SE DECLARA AQUI, que es la que gobierna
+        # de verdad: si la columna trae valor, MANDA, y este criterio ni
+        # siquiera se invoca. Eso no es una opcion de la ventana --- es la
+        # precedencia que el `reemplazado_por` de abajo lleva escrita desde
+        # que este criterio existe.
+        valor="cota_terreno",
+        nivel=NIVEL_PERFIL,
+        sensibilidad=("cota_terreno", "cota_fondo_entrada"),
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        concepto="Regla con la que se obtiene la cota del fondo de la entrada "
+                 "(invert) de cada punto, msnm, cuando la columna "
+                 "'cota_fondo_entrada' del CSV no la trae medida",
+        justificacion="Decide la regla con que se obtiene la cota del fondo "
+                      "de la entrada (invert) cuando la fila del CSV deja "
+                      "vacia la columna 'cota_fondo_entrada'; cuando esa "
+                      "columna trae valor, este criterio no se aplica -- un "
+                      "dato medido no se sustituye por una regla adoptada, "
+                      "que es lo que su `reemplazado_por` lleva escrito -- y "
+                      "ni siquiera entra en `criterios_usados()`. HW es una "
+                      "carga en metros sobre el fondo de la entrada (Sec. "
+                      "4.2/4.3, `modelos.ResultadoHidraulico`), y convertirla "
+                      "a cota -- lo que hacen V4, V7 y las dos condiciones "
+                      "del tamizado 7.A -- exige esa cota. Lo que las fuentes "
+                      "no resuelven: el CSV de Sec. 1.2 trae 'cota_terreno', "
+                      "'cota_rasante', 'cota_subrasante' y "
+                      "'cota_fondo_receptor' (la del receptor, o sea la "
+                      "salida); la Sec. 7.B pide las cotas de entrada y "
+                      "salida amarradas al perfil del cauce y a la cota de "
+                      "fondo del receptor, sin decir cual de las dos lecturas "
+                      "gobierna; y ninguna norma fija la regla. Se adopta que "
+                      "la eleccion se declare aqui y no la tome el programa, "
+                      "con dos valores admisibles implementados: "
+                      "'cota_fondo_entrada', que exige la cota medida de la "
+                      "columna homonima y se detiene con DatoFaltanteError si "
+                      "la fila la deja vacia -- la declara quien quiere el "
+                      "dato y no una regla --, y 'cota_terreno', adoptar el "
+                      "terreno natural del cruce como fondo de la entrada, "
+                      "que es la lectura mas defendible a nivel de perfil con "
+                      "las columnas que el CSV si trae y la que hace "
+                      "coincidir V4 con la segunda condicion de 7.A. La "
+                      "columna medida existe porque los puntos de Familia C "
+                      "de este expediente son pasos de canal -- el canal "
+                      "atraviesa la via y continua, no hay cuerpo receptor "
+                      "distinto -- y ahi el invert no se adopta: se hereda "
+                      "del fondo del canal medido en el cruce; con "
+                      "'cota_terreno' el invert queda a la cota del terreno "
+                      "natural, por encima del fondo del canal en toda la "
+                      "profundidad de la seccion (entre 0.30 y 0.95 m en los "
+                      "cinco cruces de este corredor), y como HW se mide "
+                      "sobre el invert, ese desfase se propaga entero a V4, a "
+                      "V7 y al tamizado de 7.A. Sensibilidad de la regla "
+                      "adoptada: 'cota_terreno' no es conservadora por "
+                      "construccion -- si el invert real queda por debajo del "
+                      "terreno (entrada excavada), la cota de HW calculada es "
+                      "mayor que la real y V4 se vuelve exigente de mas; si "
+                      "queda por encima (entrada elevada sobre relleno), V4 "
+                      "se vuelve permisiva --, y por eso es adopcion "
+                      "declarada [A] y no analogia normativa",
+        fuente="PENDIENTE - NINGUNA norma fija esta regla: no la da el Manual "
+               "de Hidrologia (Sec. 4.2/4.3 define HW sobre el fondo, no como "
+               "obtener el fondo), no la da la hoja de ruta (Sec. 7.B enuncia "
+               "el amarre sin regla de calculo) y no es columna de Sec. 1.2. "
+               "Es una decision del proyectista sobre ESTE expediente",
+        reemplazado_por="Cota de fondo de entrada MEDIDA por punto "
+                        "(nivelacion del perfil longitudinal del cauce en el "
+                        "cruce), como columna propia del CSV. El dia que el "
+                        "expediente la entregue, este criterio deja de "
+                        "aplicarse: un dato medido no se sustituye por una "
+                        "regla adoptada",
+        verificacion_pendiente="Declarar en la memoria, punto por punto, si "
+                               "la entrada proyectada queda excavada o "
+                               "elevada respecto del terreno natural: es la "
+                               "diferencia entre esta adopcion y el invert "
+                               "real, y es la que decide si V4 y 7.A quedaron "
+                               "del lado seguro en ese punto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: NINGUNA norma fija esta regla "
+                        "mientras el expediente no entregue la cota medida",
+            dominio="declaracion de la regla de obtencion",
+        ),
+    ),
+
+    "remanso_derecho_via": Criterio(
+        # --- T-7b --- (PUNTO 0, decision del dueño del 2026-11-13). ELIGE EL
+        # METODO con que V5 mide la extension del embalse aguas arriba, y
+        # SIGUE SIN VALOR DE ARCHIVO: sin declararlo, V5 se detiene como
+        # siempre y ningun resultado del fixture cambia. Hasta T-7b su forma
+        # era `float` («la extension del remanso») y ningun modulo leia el
+        # valor; el ancho del derecho de via NO va aqui: es el dato externo
+        # `ancho_derecho_via_m`, por punto.
+        valor=None,                 # VACIO: bloquea V5 para todo punto
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO.
+        #   embalse_a_nivel   plano horizontal a la cota de la carga de
+        #                     diseño de M4, cortando el fondo del cauce
+        #                     aguas arriba de la boca. IMPLEMENTADO, con su
+        #                     defecto dicho: la distancia incluye el tramo
+        #                     natural del cauce (correcciones de T-7b, H2).
+        #   cota_de_afectacion   la cota del embalse de diseño contra la cota
+        #                     de afectacion aguas arriba (dato externo
+        #                     `cota_afectacion_aguas_arriba_msnm`): el criterio
+        #                     de NIVEL que el HDS-5 num. 2.2.5 sostiene.
+        #                     IMPLEMENTADO (correcciones de T-7b, H2).
+        #   perfil_de_remanso_paso_a_paso   la curva de remanso aguas arriba
+        #                     (M1 en cauce suave). Se puede declarar y V5 se
+        #                     detiene con «metodo no evaluable»: no esta
+        #                     implementado (ficha T7B-01).
+        sensibilidad=("embalse_a_nivel", "cota_de_afectacion",
+                      "perfil_de_remanso_paso_a_paso"),
+        concepto="Metodo con que V5 mide la extension del embalse aguas "
+                 "arriba de la alcantarilla, para compararla con el derecho "
+                 "de via del punto (embalse dentro del derecho de via, sin "
+                 "afectar a terceros ni a la faja marginal)",
+        justificacion="Decide como se mide hasta donde llega, aguas arriba, "
+                      "el embalse que la obra forma con el caudal de diseño. "
+                      "La fila V5 de la hoja de ruta exige que quede dentro "
+                      "del derecho de via, y lo que las fuentes escriben es "
+                      "el requisito, no el metodo: el DG-2018 num. 304.07 "
+                      "define la faja como bien de dominio publico y le fija "
+                      "un ancho minimo por clase de carretera mas 5.00 m del "
+                      "borde de las obras de drenaje (Tabla 304.09 y "
+                      "304.07.02), sin enunciar condicion hidraulica alguna; "
+                      "y el HDS-5 identifica la carga a la entrada con la "
+                      "profundidad del embalse aguas arriba (num. 2.2.5, "
+                      "cita HDS5_3ED.2.2.5#EMBALSE) sin dar como medir su "
+                      "extension. Lo que ninguna resuelve es el metodo, y "
+                      "por eso este criterio no tiene valor de archivo: lo "
+                      "elige el proyectista. Con «cota_de_afectacion», "
+                      "el metodo que la fuente sostiene, se compara la cota "
+                      "del embalse de diseño (solera de entrada + HW de M4) "
+                      "con la cota del terreno o del bien a proteger en el "
+                      "limite del derecho de via aguas arriba, dato externo "
+                      "por punto de la topografia "
+                      "(`cota_afectacion_aguas_arriba_msnm`): el HDS-5 dice "
+                      "que la carga de diseño no deberia superar la "
+                      "admisible y que la admisible puede ser la cota de "
+                      "daño de un bien aguas arriba (citas "
+                      "HDS5_3ED.2.2.5#NO_EXCEDER y "
+                      "HDS5_3ED.2.2.5a#COTA_DE_DANO). Con «embalse_a_nivel» el "
+                      "embalse es un plano horizontal a la cota de la carga "
+                      "de diseño, que corta el fondo del cauce a una "
+                      "distancia HW / S_cauce aguas arriba de la boca; esa "
+                      "distancia, sumada a la de la boca al eje de la via y "
+                      "proyectada por el esviaje, se compara con la mitad "
+                      "del ancho declarado del derecho de via. Sus supuestos "
+                      "van en el paso de la memoria: el cauce sigue la "
+                      "direccion del eje del conducto con la pendiente del "
+                      "CSV, la faja es simetrica respecto del eje de la via, "
+                      "no hay topografia lateral (no se mide si el agua se "
+                      "extiende a lo ancho), y el plano horizontal no es la "
+                      "curva de remanso: en un cauce de pendiente suave el "
+                      "perfil real se prolonga mas alla, con tirantes "
+                      "mayores que el normal, de modo que la distancia es "
+                      "una cota inferior de la extension del remanso. Y "
+                      "tiene un defecto que se dice sin rodeos: el plano "
+                      "corta el FONDO, de modo que la distancia incluye el "
+                      "tramo en que el cauce ya llevaria agua sin la obra; "
+                      "como medida de lo que la obra añade es una cota "
+                      "SUPERIOR, y con los anchos de la Tabla 304.09 (16 a "
+                      "40 m) solo cumple en cauces de pendiente fuerte. "
+                      "Restar el tirante natural exige la seccion del cauce "
+                      "de aproximacion, que no es dato de entrada (ficha "
+                      "T7B-01)",
+        fuente="Fase 5, V5 de la hoja de ruta. El requisito juridico: "
+               "DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 "
+               "(pags. impresas 198-199, registro DG2018.304.07.02), y la "
+               "Ley 29338 (ausente de normas/) para la faja marginal. La "
+               "carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. "
+               "impresa 2.9 (PDF 71). El metodo es del proyecto",
+        reemplazado_por="Perfil de remanso calculado aguas arriba del punto "
+                        "(paso a paso o HEC-RAS) sobre la topografia del "
+                        "cauce",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ninguna fuente de normas/ da el "
+                        "metodo de la extension del embalse",
+            dominio="uno de los metodos de la ventana",
+        ),
+    ),
+
+    # V2b, la mitad [A] de la fila: el acceso de mantenimiento. La mitad
+    # evaluable de V2b -- el indicador de pendiente del HDS-5 num. 5.3.3 -- la
+    # calcula `M5.v2b_sedimentacion` y NO pasa por aqui: es una comparacion
+    # entre dos numeros de la fuente y del CSV, no una adopcion. Lo que SI
+    # pasa por aqui desde PF-4 es el REGIMEN con que se aplica esa
+    # comparacion (`regimen_v2b`, la entrada siguiente).
+    "acceso_mantenimiento_v2b": Criterio(
+        # LA OPCION QUE RESUELVE EL PROBLEMA, no la que sale gratis. Las
+        # tres de la ventana son declaraciones legitimas y solo una prevé la
+        # obra: un buzon o camara de limpieza en cabecera deja entrar al
+        # personal de mantenimiento sin desmontar nada. La segunda supone que
+        # el cabezal alcanza y no anade obra; la tercera es la declaracion
+        # honesta de que el punto NO se va a poder limpiar, y existe para que
+        # esa decision se tenga que escribir en vez de ocurrir por omision --
+        # que es lo que pasaba antes de S20, cuando V2b no existia.
+        valor="camara_o_buzon_en_cabecera",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        concepto="Como se resuelve el acceso de mantenimiento para limpieza "
+                 "del conducto en cada punto, que es la mitad [A] de la fila "
+                 "V2b de la Fase 5 y contenido de los PLANOS (Sec. 11, "
+                 "entregable 7)",
+        justificacion="Decide como se resuelve el acceso de mantenimiento "
+                      "para limpieza del conducto en cada punto: la mitad "
+                      "adoptada de la fila V2b de la Fase 5, que se "
+                      "materializa en un plano que este software no dibuja "
+                      "(Sec. 11, entregable 7). La fila V2b tiene dos mitades "
+                      "y este criterio es la segunda: la primera -- el "
+                      "indicador de sedimentacion -- si se evalua, porque el "
+                      "num. 5.3.3 de HDS-5 nombra dos indicadores y uno de "
+                      "ellos, la pendiente del conducto menor que la del "
+                      "cauce natural, son dos numeros que este calculo ya "
+                      "tiene. Lo que las fuentes no resuelven: ninguna norma "
+                      "de normas/ prescribe el dispositivo de acceso -- el "
+                      "HDS-5 num. 5.3.3 describe el fenomeno, y el diametro "
+                      "minimo de 0.90 m (num. 4.1.1.3.4 a) garantiza que una "
+                      "persona quepa en el conducto, no que pueda entrar en "
+                      "el: lo segundo depende del cabezal, de las aletas y de "
+                      "si hay una camara o buzon en cabecera, que es justo lo "
+                      "que aqui se declara. Se adopta declarar el dispositivo "
+                      "por punto y no elegir una opcion por defecto: cada una "
+                      "de las tres opciones de la sensibilidad tiene "
+                      "consecuencia de obra y de costo, ninguna norma peruana "
+                      "la impone, y sin esta declaracion un expediente podria "
+                      "cerrar con los planos sin acceso de limpieza y nada lo "
+                      "recordaria",
+        # --- T-2 --- (cadena T; INF-0.5, punto 6): la `fuente` dejo de
+        # decir «PENDIENTE». La mitad [N] de la fila es el num. 4.1.1.3.7 d)
+        # «Mantenimiento y limpieza» (cita MC_HHD.4.1.1.3.7d, EXIGENCIA sin
+        # numero), que el paso de V2b imprime; lo que sigue siendo [A] es el
+        # DISPOSITIVO, que el numeral no prescribe. Y el dato de si el
+        # acceso esta PREVISTO en cada punto entra, opcional, por
+        # `acceso_mantenimiento_previsto` de --datos-externos.
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.7 d) 'Mantenimiento y "
+               "limpieza', pag. impresa 80 (PDF 83), cita MC_HHD.4.1.1.3.7d: "
+               "las dimensiones de la alcantarilla deben permitir el "
+               "mantenimiento y la limpieza en su interior, y hace falta un "
+               "programa de mantenimiento con inspecciones. Es la EXIGENCIA "
+               "[N] de la fila V2b de la hoja de ruta ('[N] + [A]'); el "
+               "DISPOSITIVO de acceso no lo prescribe ese numeral ni ninguna "
+               "otra norma de normas/ (el HDS-5 num. 5.3.3 describe el "
+               "fenomeno), y es lo que este criterio adopta. Sec. 11, "
+               "entregable 7 (planos)",
+        sensibilidad=("camara_o_buzon_en_cabecera",
+                      "acceso_por_cabezal_sin_obra_adicional",
+                      "sin_acceso_declarado_como_limitacion"),
+        reemplazado_por="La lamina de planos del expediente que dibuje el "
+                        "dispositivo de acceso de cada punto. El dia que "
+                        "exista, este criterio deja de ser una declaracion y "
+                        "pasa a ser la referencia a esa lamina",
+        verificacion_pendiente="El SEGUNDO indicador del num. 5.3.3 -- "
+                               "'roughness greater than the channel' -- NO se "
+                               "evalua: exige el n de Manning del CAUCE "
+                               "NATURAL, que no es columna de Sec. 1.2 ni la "
+                               "fija la hoja de ruta. Mientras no exista, V2b "
+                               "verifica un indicador de los dos, y la "
+                               "memoria lo dice en la propia fila",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, en los planos: ninguna norma de "
+                        "normas/ prescribe el dispositivo de acceso para "
+                        "limpieza de una alcantarilla",
+            dominio="declaracion del dispositivo de acceso; el conjunto "
+                    "cerrado de valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    # V2b, el REGIMEN con que se aplica la mitad evaluable (PF-4). Hasta PF-4
+    # `M5.v2b_sedimentacion` aplicaba el indicador de pendiente como umbral
+    # duro «por decision conservadora del proyecto»: un [A] cableado y sin
+    # ficha, que es lo que la constitucion prohibe. Aqui vive la eleccion; la
+    # COMPARACION (S_conducto >= S_cauce) sigue en M5 y no pasa por aqui.
+    "regimen_v2b": Criterio(
+        # NO VACIO, y es deliberado: dejarlo vacio detendria los cuatro
+        # puntos de toda corrida de perfil. PF-4 lo dejo en `umbral_duro`,
+        # la conducta que el proyecto tenia desde S20.
+        #
+        # --- T-2 --- (cadena T, 2026-11-11; INF-0.5, punto 6 del encargo):
+        # EL VALOR DE ARCHIVO PASA A `indicador_con_aviso`, que es aplicar la
+        # fuente como la fuente esta escrita --«are key indicators of
+        # potential problems», sin umbral-- y la unica lectura coherente con
+        # admitir el barril horizontal (INF-5.1.6): con el umbral duro un
+        # conducto con S = 0 quedaba descartado SIEMPRE frente a un cauce de
+        # pendiente positiva, y lo que T-2 abria por M3 y M4 se cerraba aqui.
+        # `umbral_duro` sigue en la ventana y se barre (`--barrido
+        # regimen_v2b=indicador_con_aviso,umbral_duro`). MEDIDO antes de
+        # cambiarlo: ningun punto de la linea base tiene S_conducto <
+        # S_cauce salvo C-01 en la corrida ancha, que se detiene antes, en
+        # los criterios del cajon; ningun diametro se mueve y ninguna corrida
+        # de la linea base cambia que puntos dimensiona. LA ETIQUETA SIGUE
+        # SIENDO [A] y no [C], que es lo que el encargo pedia: la fuente
+        # define el indicador y NO prescribe el regimen, y una eleccion con
+        # dos opciones defendibles es [A] con ventana (ficha T2-04).
+        valor="indicador_con_aviso",
+        nivel=NIVEL_PERFIL,         # lo consume V2b, que la corrida de perfil
+                                    # invoca como obligatoria (servicio y M5)
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO, que es la ventana entera. «umbral_duro»: el
+        # indicador disparado -- S_conducto < S_cauce -- deja la Verificacion
+        # con cumple=False, MD descarta la seccion y prueba la siguiente, y
+        # si ninguna cumple el punto no dimensiona. «indicador_con_aviso»: V2b
+        # se evalua IGUAL (mismos numeros, mismo margen), la Verificacion sale
+        # con cumple=True, el paso lleva veredicto INDICADOR (TipoDeVeredicto,
+        # modelos.py) que la memoria pinta como AVISO con el texto literal de
+        # la fuente, y el diametro NO se descarta. El segundo indicador del
+        # numeral no entra en ninguna de las dos: ver `verificacion_pendiente`.
+        sensibilidad=("umbral_duro", "indicador_con_aviso"),
+        concepto="Con que regimen se aplica el indicador de sedimentacion del "
+                 "HDS-5 num. 5.3.3 (pendiente del conducto frente a la del "
+                 "cauce natural) en la fila V2b: como umbral duro que detiene "
+                 "el punto, o como indicador que se imprime con aviso y no "
+                 "descarta el diametro",
+        justificacion="Decide que hace el pipeline cuando el indicador de "
+                      "pendiente de V2b se dispara. La fuente (HDS-5 3.a ed., "
+                      "num. 5.3.3, pag. impresa 5.11, cita "
+                      "HDS5_3ED.5.3.3#INDICADORES) DEFINE dos indicadores de "
+                      "posibles problemas de sedimentacion -- la pendiente "
+                      "del barril menor que la del cauce y la rugosidad "
+                      "mayor que la del cauce -- y no fija umbral, cifra ni "
+                      "consecuencia: en toda la pagina no hay una exigencia "
+                      "ni una recomendacion sobre que hacer con ellos. "
+                      "Convertir un indicador en condicion de aceptacion es "
+                      "por tanto una eleccion del proyectista, y una "
+                      "eleccion se declara con ficha, ventana y procedencia "
+                      "en vez de vivir cableada en la verificacion. Las dos "
+                      "opciones son defendibles y no valen lo mismo en toda "
+                      "obra. «indicador_con_aviso», el valor del archivo, "
+                      "aplica la fuente como esta escrita: un indicador se "
+                      "reconoce y se declara, no rechaza una seccion. El "
+                      "indicador se evalua igual (mismos numeros, mismo "
+                      "margen), se imprime con el texto literal de la fuente "
+                      "y el veredicto de indicador, y queda como constancia "
+                      "de mantenimiento junto al acceso de limpieza declarado "
+                      "en 'acceso_mantenimiento_v2b'. Tres razones lo "
+                      "sostienen como valor de archivo. Primera: la fuente no "
+                      "fija umbral ni consecuencia, y de la entrada deprimida "
+                      "dice que la sedimentacion ocurre sobre todo con "
+                      "caudales bajos y que el conducto suele limpiarse solo "
+                      "con los altos (cita HDS5_3ED.5.3.3#DEPRESION). "
+                      "Segunda: la misma fuente admite el barril horizontal "
+                      "(cita HDS5_3ED.3.3.4#HORIZONTAL), que con el umbral "
+                      "duro quedaria descartado siempre frente a un cauce de "
+                      "pendiente positiva. Tercera: en un cruce de canal "
+                      "(Familia C) la pendiente del conducto suele venir "
+                      "fijada por el canal, y con el umbral duro una "
+                      "pendiente menor que la del cauce (0.004 m/m frente a "
+                      "0.006 m/m en el punto C-01 del corredor) descarta la "
+                      "progresion entera de marcos aunque cumplan todo lo "
+                      "demas. «umbral_duro» es la lectura mas conservadora: "
+                      "obliga a reconsiderar la rasante en una entrada "
+                      "deprimida, y queda en la ventana para barrerla. "
+                      "Ninguna de las dos opciones mueve un numero de "
+                      "calculo: solo cambia si el punto se detiene",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 5.3.3 'Sedimentation', "
+               "pag. impresa 5.11 (PDF 147): cita HDS5_3ED.5.3.3#INDICADORES "
+               "(caracter DEFINICION) y su contracara HDS5_3ED.5.3.3#ALINEADO. "
+               "La fuente define el indicador; el regimen con que se aplica "
+               "no sale de ella ni de la hoja de ruta: es adopcion del "
+               "proyectista (Fundamento F5.V2b.REGIMEN, verbo DEFINE)",
+        verificacion_pendiente="El SEGUNDO indicador del num. 5.3.3 -- "
+                               "'roughness greater than the channel' -- "
+                               "sigue sin evaluarse bajo los dos regimenes: "
+                               "exige el n de Manning del CAUCE NATURAL, que "
+                               "no es columna de Sec. 1.2 ni la fija la hoja "
+                               "de ruta, y PF-4 no lo inventa. Este criterio "
+                               "gobierna solo lo que se hace con el primero. "
+                               "T-2 (INF-3.2.9) leyo el numeral entero: ademas "
+                               "de los dos indicadores nombra como factores la "
+                               "magnitud del caudal, el material del cauce, "
+                               "los cauces en agradacion, las instalaciones "
+                               "multibarril y las entradas deprimidas, ninguno "
+                               "con cifra; el n del cauce no se supone ni se "
+                               "le pone valor por defecto (ficha T2-06 de "
+                               "docs/decisiones_diferidas.md)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente define un indicador y no "
+                        "prescribe que hacer cuando se dispara; ninguna "
+                        "norma de normas/ ni la hoja de ruta lo fija",
+            dominio="declaracion del regimen; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-2 --- (cadena T, 2026-11-11) · tres criterios [A] de perfil
+    # =======================================================================
+    # La banda de pendiente del conducto (V10, INF-3.2.7) y la lectura del
+    # borde libre cuando el barril va lleno por el nivel del receptor (V1,
+    # INF-3.2.6). Los consume M5, y M7 lee la banda desde T-6 por
+    # `M5.limites_de_pendiente()` (`M7.pendiente_adoptada`).
+    "pendiente_minima_conducto": Criterio(
+        # EL VALOR ES 0.0 Y NO UNA CIFRA DE PRACTICA, y es deliberado: es lo
+        # unico que una fuente de normas/ sostiene. El Manual no da numero;
+        # el HDS-5 admite expresamente el barril horizontal. Las cifras que
+        # circulan (0.5 % «para autolimpieza», 1 % en marcos, 2 % en TMC) son
+        # practica de expediente y ninguna esta en normas/: por eso van en la
+        # VENTANA --hasta 0.005-- y no en el valor. Quien quiera exigir una
+        # pendiente minima positiva la declara y la barre.
+        valor=0.0,
+        # lo consumen V10 (Fase 5) y, desde T-6, M7.pendiente_adoptada (antes
+        # de la Fase 4): las dos corren a perfil
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Pendiente longitudinal MINIMA que el proyecto admite en el "
+                 "barril de una alcantarilla (m/m); M7 eleva a ella la del "
+                 "cauce y V10 juzga con ella la declarada",
+        justificacion="Decide por debajo de que pendiente el proyecto no "
+                      "tiende un conducto. El Manual (num. 4.1.1.3.3) exige "
+                      "que la pendiente no altere desmesuradamente la erosion "
+                      "y la sedimentacion y que sus cambios se estudien con "
+                      "cuidado, sin fijar cifra; el HDS-5 (num. 3.3.4) admite "
+                      "el barril horizontal: dice que sus procedimientos de "
+                      "control de entrada y de salida se pueden aplicar "
+                      "razonablemente a un conducto sin pendiente (cita "
+                      "HDS5_3ED.3.3.4#HORIZONTAL). Ninguna fuente de normas/ "
+                      "fija una pendiente minima en numeros, y el valor "
+                      "adoptado es el que la fuente sostiene: 0.0 m/m, el "
+                      "barril horizontal admitido. La pendiente minima no es "
+                      "lo que protege de la sedimentacion en este calculo: "
+                      "eso lo hacen V2, que exige la velocidad minima con el "
+                      "caudal de diseño, y V2b, que avisa cuando el conducto "
+                      "queda mas plano que su cauce. Con 0.0 m/m la "
+                      "verificacion V10 no rechaza ningun conducto por abajo "
+                      "y no mueve ningun diseño; lo que hace es dejar escrito "
+                      "que no se exige pendiente minima y por que. "
+                      "Sensibilidad: de 0.0 m/m a 0.005 m/m (0.5 %), la cifra "
+                      "de practica mas extendida para autolimpieza. Subirla "
+                      "rechaza los conductos mas tendidos: con 0.005 m/m el "
+                      "punto C-01 de la corrida ancha (pendiente del conducto "
+                      "declarada de 0.004 m/m) dejaria de cumplir V10, y "
+                      "ninguno de los otros. El reparto con M7 (T-6): una "
+                      "pendiente de cauce por debajo del minimo no se "
+                      "rechaza, se eleva a el antes del diseño "
+                      "(M7.pendiente_adoptada, origen «minima» del paso "
+                      "7.B.1, con aviso): el conducto cae mas que su cauce, "
+                      "la salida queda bajo el cauce natural y G2 la juzga "
+                      "contra el fondo del receptor. V10 solo rechaza una "
+                      "pendiente declarada (S_conducto), que M7 no toca",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.3 'Pendiente longitudinal', "
+               "pag. impresa 71 (PDF 74), cita MC_HHD.4.1.1.3.3: exigencia "
+               "cualitativa, sin cifra. HDS-5 3a ed. (FHWA-HIF-12-026), num. "
+               "3.3.4 'Culverts with Horizontal or Adverse Slopes', pag. "
+               "impresa 3.25 (PDF 107), cita HDS5_3ED.3.3.4#HORIZONTAL: "
+               "admite S = 0. Ninguna de las dos fija un minimo; el valor es "
+               "adopcion del proyectista (Fundamento F5.V10, verbo DEFINE)",
+        reemplazado_por="Una pendiente minima que fije el expediente por "
+                        "material y por tipo de cauce, con su fuente, o la "
+                        "que resulte de un estudio de transporte de "
+                        "sedimentos del cauce",
+        sensibilidad=(0.0, 0.005),
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ni el Manual ni el HDS-5 fijan una "
+                        "pendiente minima en cifras; el HDS-5 admite el "
+                        "barril horizontal",
+            dominio="m/m, de 0.0 (barril horizontal) a 0.005",
+        ),
+    ),
+
+    "pendiente_maxima_conducto": Criterio(
+        valor=0.10,
+        # lo consumen V10 (Fase 5) y, desde T-6, M7.pendiente_adoptada (antes
+        # de la Fase 4): las dos corren a perfil
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Pendiente longitudinal MAXIMA que el proyecto admite en el "
+                 "barril de una alcantarilla (m/m); M7 limita a ella la del "
+                 "cauce y V10 juzga con ella la declarada",
+        justificacion="Decide por encima de que pendiente el proyecto no "
+                      "tiende un conducto sin un estudio aparte. El Manual "
+                      "(num. 4.1.1.3.3) no fija cifra. El HDS-5 (num. 5.4.4 "
+                      "'Barrels on Steep Slopes') DESCRIBE que la mayoria de "
+                      "las alcantarillas se construyen con pendientes "
+                      "menores del 10 % y que para ellas no se usan medidas "
+                      "estructurales especiales; entre el 10 % y el 20 % "
+                      "pide atar las ultimas secciones del tubo, y por "
+                      "encima del 20 % medidas estructurales adicionales y "
+                      "la cautela hidraulica del USBR. El alcance del "
+                      "proyecto no incluye el dimensionamiento de anclajes, "
+                      "ataduras ni bloques de empuje: 0.10 m/m es el limite "
+                      "hasta el que la fuente dice que no hacen falta, y por "
+                      "eso es el valor adoptado y el techo de la ventana. El "
+                      "piso de la ventana, 0.02 m/m, es la pendiente con que "
+                      "el HDS-5 traza sus curvas de control de entrada (num. "
+                      "A.3), porque el efecto de la pendiente es chico y "
+                      "fijarla ahi deja la carga del lado conservador en "
+                      "pendientes mayores: un proyecto que no quiera salir de "
+                      "la pendiente de las cartas declara 0.02 m/m. La "
+                      "pendiente maxima no sustituye a V3: la velocidad "
+                      "maxima admisible del revestimiento se sigue "
+                      "verificando con la velocidad calculada, y puede "
+                      "rechazar un conducto bastante antes del 10 % (en "
+                      "concreto, 6.0 m/s). El reparto con M7 (T-6): una "
+                      "pendiente de cauce por encima del maximo no se "
+                      "rechaza, se limita a el antes del diseño "
+                      "(M7.pendiente_adoptada, origen «maxima» del paso "
+                      "7.B.1, con aviso): el conducto queda mas tendido que "
+                      "su cauce, el desnivel (S_cauce - S_maxima) x L pide "
+                      "una estructura de caida o de disipacion que este "
+                      "calculo no dimensiona, y V2b lo juzga segun "
+                      "'regimen_v2b'. V10 solo rechaza una pendiente "
+                      "declarada (S_conducto), que M7 no toca. Sensibilidad: "
+                      "en el corredor del repositorio la pendiente va de "
+                      "0.004 m/m a 0.010 m/m y ningun valor de la ventana "
+                      "rechaza un punto ni acota la pendiente de su cauce",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 5.4.4 'Barrels on Steep "
+               "Slopes', pag. impresa 5.16 (PDF 152), citas "
+               "HDS5_3ED.5.4.4#PENDIENTE_10 («Most culverts are constructed "
+               "on slopes that are less than 10% ... no special structural "
+               "measures are used», caracter DEFINICION) y "
+               "HDS5_3ED.5.4.4#PENDIENTE_20; num. A.3, pag. impresa A.2 (PDF "
+               "191), cita HDS5_3ED.A.3#PENDIENTE_2 (curvas al 2 %). El "
+               "Manual de Hidrologia, num. 4.1.1.3.3, pag. impresa 71, no "
+               "fija cifra. La fuente describe una practica; el limite es "
+               "adopcion del proyectista (Fundamento F5.V10, verbo DEFINE)",
+        reemplazado_por="El diseño estructural del conducto en pendiente "
+                        "(anclajes, ataduras entre tubos, bloques de empuje) "
+                        "que el expediente desarrolle para un punto "
+                        "concreto, que permitiria admitir pendientes mayores "
+                        "en ese punto",
+        sensibilidad=(0.02, 0.10),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre lo que el HDS-5 num. 5.4.4 "
+                        "describe: bajo el 10 % no se usan medidas "
+                        "estructurales especiales",
+            dominio="m/m, de 0.02 (pendiente de las curvas del HDS-5) a 0.10",
+        ),
+    ),
+
+    "borde_libre_bajo_tw_ahogante": Criterio(
+        # EL VALOR DE ARCHIVO ES LA CONDUCTA QUE EL PROYECTO YA TENIA (EXT-3):
+        # con el TW sobre la clave V1 NO cumple. No se cambia: «aviso» puede
+        # hacer dimensionar puntos que hoy no dimensionan --la corrida
+        # estrecha de la linea base, que toma el TW de la via 4-- y mover un
+        # diametro es decision del dueño (parada (c) de la cadena T). La
+        # alternativa queda en la ventana y se barre.
+        valor="no_cumple",
+        nivel=NIVEL_PERFIL,         # lo consume V1 (Fase 5), que corre a perfil
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO. «no_cumple»: cuando el nivel del receptor
+        # toma el borde libre del barril V1 queda con cumple=False, como
+        # desde EXT-3. «aviso»: V1 juzga el borde libre con el tirante PROPIO
+        # del caudal de diseño (el normal de Manning), que es lo que el
+        # diametro puede resolver; si ese cumple, el remanso del receptor se
+        # imprime con veredicto INDICADOR (aviso) y no descarta el diametro;
+        # si no cumple, V1 NO cumple igual. Con S = 0 no hay tirante normal
+        # con que separar los dos casos y V1 no cumple bajo las dos opciones.
+        #
+        # EL CASO ES UNO A LO LARGO DE TODO EL TW: el TW por encima del
+        # llenado admisible (TW/D > 0.75 con el umbral por defecto), llegue o
+        # no a la clave. La primera redaccion de T-2 lo reconocia solo con el
+        # barril LLENO (TW >= D) y el auditor adversarial midio que «aviso»
+        # quedaba discontinua: mas ahogamiento era mas permisivo, y el tubo
+        # chico pasaba donde el grande no. El nombre de la clave conserva
+        # «ahogante» y cubre los dos tramos.
+        sensibilidad=("no_cumple", "aviso"),
+        concepto="Que hace V1 (borde libre) cuando es el nivel del cuerpo "
+                 "receptor, y no el caudal de diseño, el que deja al barril "
+                 "sin el borde libre: el tirante del receptor por encima del "
+                 "llenado admisible, llegue o no a la clave",
+        justificacion="Decide como se lee el borde libre cuando el nivel del "
+                      "receptor remansa o ahoga el barril. El Manual (num. "
+                      "4.1.1.3.7 b), pag. impresa 79) prohibe diseñar la "
+                      "alcantarilla para trabajar a seccion llena, por el "
+                      "riesgo de obstruccion (cita MC_HHD.4.1.1.3.7b#LLENA), "
+                      "y recomienda un borde libre minimo del 25 % (cita "
+                      "MC_HHD.4.1.1.3.7b). Hay dos maneras de llegar a la "
+                      "seccion llena y no son la misma. Por el caudal de "
+                      "diseño: el conducto es chico para su caudal; subir de "
+                      "diametro lo resuelve, y ahi V1 no cumple siempre, sin "
+                      "que este criterio intervenga. Por el nivel del "
+                      "receptor: el dren o el canal de aguas abajo esta mas "
+                      "alto que la clave durante la avenida; ningun diametro "
+                      "menor que el tirante del receptor lo resuelve, y lo "
+                      "que lo resuelve es la cota de la salida o la rasante. "
+                      "El caso del receptor no empieza en la clave: empieza "
+                      "donde el tirante del receptor supera el llenado "
+                      "admisible (0.75 de la altura con el umbral por "
+                      "defecto) y es el quien fija el tirante maximo dentro "
+                      "del barril, y la lectura es la misma desde ahi hasta "
+                      "el barril lleno, para que no cambie al cruzar la "
+                      "clave. "
+                      "El numeral no distingue los dos casos. «no_cumple», "
+                      "el valor del archivo, es la lectura literal y la "
+                      "conservadora: el riesgo de obstruccion que el Manual "
+                      "invoca existe igual con el barril ahogado por el "
+                      "receptor, porque el material flotante no tiene por "
+                      "donde pasar, y por eso el diseño no se acepta mientras "
+                      "el tirante del receptor alcance la clave. Su "
+                      "consecuencia: el diametro lo decide el tirante del "
+                      "receptor, y cuando ese tirante sale del escenario de "
+                      "receptor a seccion llena con la seccion adoptada "
+                      "(Sec. 1.3, paso 3) lo decide una adopcion. «aviso» "
+                      "lee que la prohibicion es sobre el diseño del "
+                      "conducto: si con su propio caudal el barril conserva "
+                      "el borde libre, el ahogamiento por el receptor se "
+                      "declara como aviso, con el tirante del receptor, su "
+                      "via y la velocidad a seccion llena, que V2 sigue "
+                      "juzgando, y no descarta el diametro. Con el barril "
+                      "horizontal no hay tirante normal con que separar los "
+                      "dos casos y V1 no cumple bajo las dos lecturas. Es la "
+                      "lectura "
+                      "que conviene cuando el nivel del receptor esta medido "
+                      "y es un hecho del sitio que la obra no puede cambiar; "
+                      "con un tirante adoptado, aceptar el ahogamiento es "
+                      "aceptar la adopcion. Sensibilidad en esta obra: en la "
+                      "corrida sin tirante declarado ni caudal del receptor, "
+                      "con «no_cumple» ninguno de los cuatro puntos "
+                      "dimensiona y con «aviso» el punto A-02 dimensiona con "
+                      "un tubo de 0.90 m de diametro, ahogado por un tirante "
+                      "del receptor de 1.196 m",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.7 b) 'Borde libre', pag. "
+               "impresa 79 (PDF 82), citas MC_HHD.4.1.1.3.7b#LLENA "
+               "(exigencia: no diseñar para seccion llena) y "
+               "MC_HHD.4.1.1.3.7b (recomendacion del 25 %). El numeral no "
+               "distingue la seccion llena por el caudal de la seccion "
+               "llena por el nivel del receptor: la lectura es adopcion del "
+               "proyectista. HDS-5 3a ed., num. 3.1.6, pag. impresa 3.18 "
+               "(cita HDS5_3ED.3.1.6#V_SALIDA_TW), para el regimen: con el "
+               "TW sobre la clave la seccion de salida es la entera",
+        reemplazado_por="El nivel de agua del receptor MEDIDO o calculado "
+                        "por quien lo opera (ANA / Junta de Usuarios), con el "
+                        "que la cota de la salida se fija por encima de el, "
+                        "o se acepta el ahogamiento como condicion del sitio",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el numeral prohibe diseñar para "
+                        "seccion llena y no dice que hacer cuando la llena "
+                        "el nivel del receptor",
+            dominio="declaracion de la lectura; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    "TR_evento_extremo": Criterio(
+        valor=None,                 # VACIO: bloquea V8 para todo punto
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Periodo de retorno del evento extremo de V8 y el umbral de "
+                 "no colapso de la via ante desborde",
+        justificacion="Decide el periodo de retorno del evento extremo de V8 "
+                      "y el umbral con que se evalua el no colapso de la via, "
+                      "y hoy es un vacio declarado. La fuente (Sec. 5 de la "
+                      "hoja de ruta, V8) exige verificar el punto a un TR "
+                      "mayor que el de diseno y confirmar que la via resiste "
+                      "el desborde sin colapsar. Lo que no resuelve: no fija "
+                      "ese TR mayor ni un umbral cuantitativo de colapso (p. "
+                      "ej. HW sobre la corona del terraplen). Sin el TR no "
+                      "hay Q que correr por M3/M4 aparte del Q de diseno, y "
+                      "sin el umbral no hay con que comparar el HW "
+                      "resultante; por eso se deja vacio y no se rellena",
+        fuente="PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, "
+               "no diseño', sin numeral que fije el TR ni el umbral",
+        reemplazado_por="TR del evento extremo (p.ej. el de la serie FEN de "
+                        "la Fase 1-bis) y definicion tecnica de colapso de "
+                        "la via, ambos declarados en la memoria",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: V8 de la hoja de ruta pide la "
+                        "verificacion y no fija ni el TR ni el umbral de "
+                        "'la via no colapsa aunque desborde'",
+            dominio="años > 0",
+        ),
+    ),
+
+    # ----------------------- GEOTECNIA -----------------------------------
+
+    "phi_relleno_trasdos": Criterio(
+        valor=None,                 # completar
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Angulo de friccion interna del material de cantera del trasdos",
+        justificacion="Estimado por correlacion desde granulometria y grado de "
+                      "compactacion especificado",
+        fuente="PENDIENTE",
+        reemplazado_por="Ensayo de corte directo sobre el material de cantera",
+        sensibilidad=(30.0, 38.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el ensayo del material de "
+                        "cantera del trasdos o un valor de practica "
+                        "corriente declarado con su fuente",
+            dominio="grados, 0 < phi < 90",
+        ),
+    ),
+
+    "c_phi_fundacion": Criterio(
+        # --- T-7b --- TIENE CONSUMIDOR: `M9.ensamble_estabilidad` (portante
+        # y deslizamiento). Sigue VACIO: son datos del estudio de suelos y el
+        # programa no los supone. Es el valor de CORREDOR; un punto puede
+        # traer el suyo en `--datos-externos` (`suelo_fundacion`), que gana.
+        valor=None,                 # completar con el EMS
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        # Los cuatro campos obligatorios (cohesivo, c_kpa, phi_grados,
+        # gamma_kn_m3) NO van en `campos_obligatorios`, que exige TEXTO en
+        # cada uno (EXT-6): son un booleano y tres numeros, y los valida el
+        # consumidor, `M9.validar_suelo_fundacion`, con `DatoInvalidoError`.
+        concepto="Parametros del suelo de fundacion del cabezal: si se trata "
+                 "como cohesivo o friccionante, cohesion (kPa), angulo de "
+                 "friccion interna (grados) y peso especifico (kN/m3); y, si "
+                 "el estudio de suelos las entrega, la resistencia portante "
+                 "NOMINAL `q_n_kpa` y la presion ADMISIBLE `q_adm_kpa`",
+        justificacion="Deciden la resistencia al deslizamiento y la "
+                      "capacidad portante bajo la zapata del cabezal, en los "
+                      "dos marcos. Son datos del estudio de mecanica de "
+                      "suelos del expediente: el programa no los deduce de "
+                      "la clasificacion SUCS del CSV ni los supone, y sin "
+                      "ellos la estabilidad del cabezal se detiene. E.050 "
+                      "Art. 20 obliga a usar solo uno de los dos parametros: "
+                      "phi = 0 en los suelos cohesivos y c = 0 en los "
+                      "friccionantes; cual de los dos es el caso lo declara "
+                      "el campo `cohesivo`, porque los suelos de frontera "
+                      "(SC, SM, ML) los decide el geotecnista y no una "
+                      "regla. Dos campos opcionales, para lo que el "
+                      "estudio entregue directamente, y cada uno entra en UN "
+                      "marco: `q_n_kpa`, la resistencia portante nominal "
+                      "(ultima), gana sobre la calculada con la ecuacion de "
+                      "AASHTO 10.6.3.1.2a en el marco de estados limite; "
+                      "`q_adm_kpa`, la presion admisible, que ya lleva su "
+                      "factor de seguridad, gana en el marco de factores de "
+                      "seguridad y no entra en el otro: multiplicarla por un "
+                      "factor para volverla nominal seria cruzar los marcos",
+        fuente="Estudio de mecanica de suelos (EMS) del expediente: ensayo "
+               "de corte directo o triaxial, o correlacion con SPT, por "
+               "calicata. E.050 Art. 20 (cita E050.20) para la regla de c "
+               "y phi",
+        reemplazado_por="Corte directo o SPT",
+        resolucion=DeEnsayo(
+            ensayo="parametros de resistencia y peso especifico del suelo de "
+                   "fundacion (c, phi, gamma), del EMS del expediente",
+            trazabilidad_exigida="ensayo (corte directo o triaxial), "
+                                 "calicata, profundidad y laboratorio; la "
+                                 "columna `sucs_fundacion` del CSV es su "
+                                 "entrada por correlacion",
+        ),
+    ),
+
+    "capacidad_portante_adm": Criterio(
+        valor=None,                 # completar
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Capacidad portante admisible del terreno de fundacion",
+        justificacion="Derivada de c_phi_fundacion, que es a su vez adoptado",
+        fuente="PENDIENTE",
+        reemplazado_por="EMS conforme a E.050",
+        # --- T-7b --- SIGUE SIN CONSUMIDOR, y ahora con otra razon: la
+        # presion admisible que el EMS entregue entra al ensamble de
+        # estabilidad junto a los demas parametros del suelo, como el campo
+        # opcional `q_adm_kpa` de 'c_phi_fundacion' (corredor) o de
+        # `suelo_fundacion` (por punto). Un valor suelto de corredor para
+        # una magnitud que depende de la zapata de cada cabezal no se lee.
+        sin_consumidor="La presion admisible del EMS entra al ensamble de "
+                       "estabilidad del cabezal (T-7b) como el campo "
+                       "opcional `q_adm_kpa` de 'c_phi_fundacion' o del dato "
+                       "externo `suelo_fundacion` del punto, junto al resto "
+                       "de los parametros del suelo, y solo en el marco de "
+                       "factores de seguridad. Este criterio suelto no lo "
+                       "lee ningun modulo; se conserva vacio para que la "
+                       "decision de retirarlo sea del expediente",
+        resolucion=DeEnsayo(
+            ensayo="capacidad portante admisible del terreno de fundacion, "
+                   "del EMS del expediente",
+            trazabilidad_exigida="calicata, profundidad de desplante, metodo "
+                                 "de calculo y factor de seguridad "
+                                 "adoptados por el EMS",
+        ),
+    ),
+
+    "Mw_licuefaccion": Criterio(
+        valor=None,                 # VACIO: bloquea la evaluacion de licuefaccion
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Magnitud sismica para el factor de escala de magnitud (MSF)",
+        justificacion="El procedimiento simplificado de evaluacion de licuefaccion "
+                      "no se alimenta solo de a_max: requiere Mw para el MSF. El "
+                      "mapa de PGA no la entrega",
+        fuente="PENDIENTE: desagregacion del peligro sismico o adopcion justificada "
+               "del sismo de diseno de la subduccion del norte peruano",
+        reemplazado_por="Estudio de peligro sismico especifico",
+        sin_consumidor="La evaluacion de licuefaccion esta declarada FUERA "
+                       "del alcance del script (Sec. 0.5): el script no "
+                       "calcula el factor de seguridad a licuefaccion, de "
+                       "modo que nada invoca el MSF ni su Mw. Se declara "
+                       "vacio para que el expediente lo programe, no porque "
+                       "falte cablearlo",
+        resolucion=DeEnsayo(
+            ensayo="desagregacion del peligro sismico del sitio, o adopcion "
+                   "justificada del sismo de diseño de la subduccion del "
+                   "norte peruano",
+            trazabilidad_exigida="el estudio de peligro y el periodo de "
+                                 "retorno sobre el que se desagrego; si en "
+                                 "vez del estudio se adopta el sismo de "
+                                 "subduccion, la fuente que lo caracteriza",
+        ),
+    ),
+
+    "demanda_sismica_licuefaccion": Criterio(
+        valor=1000,                 # anios
+        # NIVEL DECLARADO Y NO MEDIDO: no lo consume NINGUN modulo (ver
+        # `sin_consumidor`, aqui abajo), asi que no hay corrida que lo pueda
+        # invocar ni medicion que citar. Se clasifica con los otros criterios
+        # de la Fase 0-bis de licuefaccion --- 'clase_sitio' y
+        # 'Mw_licuefaccion', que ya la declaran de expediente ---: el
+        # procedimiento entero pertenece al expediente tecnico.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_INT,
+        concepto="Periodo de retorno para la evaluacion de licuefaccion",
+        justificacion="Se descarta el sismo de 475 anios de E.030. Al tratarse de "
+                      "infraestructura vial regida por el Manual de Puentes, se "
+                      "exige al suelo la misma demanda que a la estructura que "
+                      "soporta. Un terreno evaluado a 475 anios bajo una estructura "
+                      "disenada a 1000 es incoherencia de niveles de seguridad",
+        fuente="Coherencia con el marco del Manual de Puentes",
+        sensibilidad=(475, 1000),
+        sin_consumidor="Igual que 'Mw_licuefaccion': la evaluacion de "
+                       "licuefaccion esta fuera del alcance del script "
+                       "(Sec. 0.5) y nada la invoca. Es uno de los dos "
+                       "criterios CON valor y sin invocacion -- el otro es "
+                       "'PERFIL_SUELO_PRESUNTO', en esta misma tabla -- y por "
+                       "eso no caia en ninguno de los "
+                       "bloques de la memoria: ni usado, ni vacio, ni "
+                       "opcional. Desaparecia del HTML. La adopcion "
+                       "(Tr = 1000 anios, §0.6 de la hoja de ruta, "
+                       "descartando el sismo de 475 anios de E.030) tiene que "
+                       "estar en la memoria aunque este calculo no corra: es "
+                       "la que fija la demanda que el estudio geotecnico del "
+                       "expediente debe exigirle al suelo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por coherencia de niveles de "
+                        "seguridad con el marco del Manual de Puentes",
+            dominio="años > 0",
+        ),
+    ),
+
+    "diametros_normalizados": Criterio(
+        valor={"inicio": 0.90, "paso": 0.15},
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Progresion de diametros normalizados (inicio y paso)",
+        justificacion="Decide la progresion de diametros normalizados con que "
+                      "el solver recorre el catalogo: inicio en 0.90 m y paso "
+                      "de 0.15 m. Las fuentes (series de diametro nominal de "
+                      "las normas de producto y minimo normativo peruano del "
+                      "num. 4.1.1.3.4 a, con su ambito condicional; ver "
+                      "`fuente` y constantes_normativas.DIAMETRO_MIN_AMBITO) "
+                      "dan la serie y el piso. Lo que no resuelven: ninguna "
+                      "norma fija la progresion de busqueda, y la neutralidad "
+                      "comercial exigible en obra publica impide resolverla "
+                      "por catalogo de proveedor. Se adopta el paso de 0.15 m "
+                      "porque reproduce las series de 6 in (ASTM/AASHTO: 6 in "
+                      "= 0.1524 m) y de 150 mm (AASHTO M 294-11, verificado en "
+                      "N2 sobre su traduccion no oficial: de 900 a 1500 mm la "
+                      "serie es exactamente 900, 1050, 1200, 1350 y 1500) con "
+                      "error despreciable, "
+                      "y el inicio en 0.90 m en vez de 0.9144 m (36 in) "
+                      "porque subestima el area en torno al 3 %, del lado de "
+                      "la seguridad. Este criterio no declara topes: los "
+                      "topes por material no salen de ninguna norma y viven "
+                      "en 'D_max_catalogo', rotulados como topes de catalogo "
+                      "-- una clase de dato distinta del paso, que si se "
+                      "verifica contra la serie de la norma de producto",
+        fuente="Series de diametro nominal de las normas de producto: ASTM "
+               "A760/A760M-10, Tabla 1 'Tamaños de tuberia' (100 a 3600 mm, en "
+               "escalones de 150 mm a partir de 900 mm); AASHTO M 170M-04, "
+               "Tablas 1 a 5 (300 a 3600 mm); AASHTO M 294-11, num. 7.2.1 y "
+               "tabla de 7.2.2 (300 a 1500 mm, escalones de 150 mm a partir "
+               "de 900 mm; en normas/ desde N2 como TRADUCCION NO OFICIAL, "
+               "citas AASHTO_M294_TRAD.7.2.1 y tabla AASHTO_M294_TRAD.T7.2.2, "
+               "sin firma porque el ejemplar no imprime folio, T6; la v8 §3.2 "
+               "decia «pasos de 150 mm por encima de 600 mm» y la serie tiene "
+               "el 675: discrepancia registrada contra la hoja de ruta y "
+               "corregida en N2, ver el manifiesto). El "
+               "piso de 0.90 m no sale de ellas sino del minimo normativo "
+               "peruano: Manual de Hidrologia num. 4.1.1.3.4 a), pag. impresa "
+               "72 (constantes_normativas.DIAMETRO_MIN). "
+               "EL PISO ES CONDICIONAL Y ESTE CAMPO LO OMITIA (NOR-HID-03, "
+               "MAT-O19). El numeral lo escribe asi: 'En carreteras de alto "
+               "volumen de transito y por necesidad de limpieza y "
+               "mantenimiento de las alcantarillas, se adoptara una seccion "
+               "minima circular de 0.90 m (36\") de diametro o su equivalente "
+               "de otra seccion, salvo en cruces de canales de riego donde se "
+               "adoptaran secciones de acuerdo a cada diseno particular'. Las "
+               "dos condiciones tocan a este proyecto: la clase de via NO esta "
+               "cerrada, de modo que 'alto volumen de transito' no se puede "
+               "afirmar -- el piso se aplica igual a las Familias A y B y eso "
+               "es una adopcion conservadora declarada, no una lectura "
+               "automatica --, y la Familia C ES un conjunto de cruces de "
+               "canal, o sea el caso que el numeral EXCEPTUA. El detalle esta "
+               "en constantes_normativas.DIAMETRO_MIN_AMBITO, que la memoria "
+               "imprime",
+        resolucion=Libre(
+            que_lo_fija="la serie de diametro nominal de la norma de "
+                        "producto para el paso, y el proyecto para el "
+                        "inicio (0.90 m frente a los 0.9144 m = 36 in de la "
+                        "serie real, ~3 % del lado seguro). NO es "
+                        "`DeCatalogo`, aunque la Sec. 4.3 del plan lo ponga "
+                        "de ejemplo: el ejemplo apunta al 'max' que este "
+                        "criterio ya no tiene -- S4 mudo los topes a "
+                        "`D_max_catalogo`, que si es de catalogo -- y la "
+                        "neutralidad comercial en obra publica prohibe "
+                        "justamente resolver la serie por catalogo",
+            tabla_pendiente="ASTM A760/A760M-10, Tabla 1 'Tamaños de "
+                            "tuberia' (100 a 3600 mm). Su PDF no entrega "
+                            "texto utilizable y por eso no esta transcrita",
+        ),
+    ),
+
+    # =======================================================================
+    # LOS SIETE DEL CAJON (C5 y C7). DESDE T-3 TODOS LLEVAN VALOR DE ARCHIVO.
+    # =======================================================================
+    # --- T-3 --- (cadena T, INF-0.4). Hasta T-3 este encabezado decia
+    # «NINGUNO LLEVA VALOR, Y NO ES UN OLVIDO», y era la regla del plan de la
+    # Familia C (§11 criterio 7 de docs/ruta_familia_c.md: «Ningun criterio
+    # nuevo tiene valor escrito en criterios_adoptados.py»). T-3 la levanta
+    # por mandato de la cadena T --que la Familia C se dimensione sin que el
+    # tesista tenga que declarar siete criterios en caliente-- y la levanta
+    # SIN MOVER NADA: cada valor de archivo es el que la guia de perfil, la
+    # suite y la corrida del entregable de C7 declaraban en caliente, y C-01
+    # sigue saliendo como marco 1.20 x 0.90 con HW 0.589 m. Lo que cambia es
+    # que cada valor queda en el archivo CON SU FILA NOMBRADA, su cita y su
+    # ventana, y que los que cubren un vacio verificado lo dicen en
+    # `vacio_verificado` (R-23 de §15.8 se cierra por esa via: con valor de
+    # archivo el campo ya se puede poner). La progresion de secciones es la
+    # excepcion declarada: la de la cadena T no se adopta porque deja a C-01
+    # sin dimensionar (PARADA (c), ver su ficha).
+    #
+    # Lo que sigue del encabezado de C5 vale igual:
+    # La Familia C es el conjunto de cruces de canal de riego, y el propio
+    # numeral que fija el piso de 0.90 m la EXCEPTUA de el: "salvo en cruces
+    # de canales de riego donde se adoptaran secciones de acuerdo a cada
+    # diseno particular". Lo que el numeral hace no es liberar la seccion --
+    # la traslada del catalogo al DISENO --, y por eso estos cuatro son
+    # adopciones declaradas y no lecturas de la norma.
+    #
+    # LOS CUATRO SE MUEVEN JUNTOS EN DOS PARES, y quien declare uno tiene que
+    # mirar su pareja:
+    #   'embocadura_cajon'  <->  'ke_entrada_cajon'   (Tabla A.1 y Tabla C.2)
+    #   'secciones_cajon_normalizadas'  <->  'n_celdas_cajon'  (B*H por celda)
+    #
+    # NO SE ABRE 'v_max_cajon', y conviene decir por que se decidio NO abrirlo:
+    # la Tabla N 10 clasifica por TIPO DE REVESTIMIENTO --"Concreto 3.0 - 6.0
+    # m/s"-- y no por forma de seccion, de modo que su fila sirve al marco tal
+    # cual. Abrir un criterio ahi seria inventar un vacio que no existe, que
+    # es el error simetrico del que estos cuatro evitan.
+
+    "secciones_cajon_normalizadas": Criterio(
+        # --- T-3 --- LA DECISION DEL DUEÑO DEL PROYECTO (2026-11-12): se
+        # mantiene la progresion con que C-01 dimensiona desde C7; la de la
+        # cadena T no se activa. Ampliarla espera la seccion real del canal
+        # (ANA / Junta): ficha T3-01. Ver la justificacion.
+        valor=((1.20, 0.90), (1.50, 1.20), (2.00, 1.50)),
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_SERIE_DE_PARES,
+        concepto="Progresion de secciones normalizadas del marco: ancho B y "
+                 "altura H interiores de UNA celda",
+        justificacion="Decide la progresion de secciones normalizadas del "
+                      "marco -- la serie de pares (B, H) interiores de una "
+                      "celda, de menor a mayor -- que el bucle de MD recorre "
+                      "igual que recorre los diametros: hace falta la serie y "
+                      "su orden, no un solo par. Las fuentes (num. 4.1.1.3.4 "
+                      "a) y num. 4.1.1.3.7 d) del Manual de Hidrologia; citas "
+                      "MC_HHD.4.1.1.3.4a y MC_HHD.4.1.1.3.7d del registro, "
+                      "traidas por los Fundamento F3.SECCION_CANAL y "
+                      "F3.MANTENIMIENTO) dicen dos cosas: el mismo numeral "
+                      "que fija el piso de 0.90 m lo exceptua, en la misma "
+                      "oracion, para los cruces de canales de riego -- que es "
+                      "lo que la Familia C es, de modo que el marco no hereda "
+                      "ese piso; el texto literal y su ambito estan en "
+                      "constantes_normativas.DIAMETRO_MIN_TEXTO y "
+                      "DIAMETRO_MIN_AMBITO y no se repiten aqui --, y el num. "
+                      "4.1.1.3.7 d) exige, sin distinguir forma alguna, que "
+                      "las dimensiones permitan el mantenimiento y la "
+                      "limpieza en el interior del conducto. Lo que no "
+                      "resuelven: la exigencia de mantenimiento no trae "
+                      "numero -- obliga a que exista un minimo y deja al "
+                      "proyecto decir cual --, y la seccion del cruce de "
+                      "canal se remite a cada diseno particular. Por eso el "
+                      "criterio es [A] y no [N]: la norma pide el requisito y "
+                      "no da la cifra. Se adopta la progresion ((1.20, "
+                      "0.90), (1.50, 1.20), (2.00, 1.50)): arranca en la "
+                      "altura interior de 0.90 m, que es la seccion minima "
+                      "de mantenimiento que el mismo num. 4.1.1.3.4 a) fija "
+                      "para las demas alcantarillas -- aqui por analogia, "
+                      "porque el numeral exceptua el cruce de canal --; "
+                      "lleva B >= H porque un cruce de canal es ancho y poco "
+                      "profundo; y crece en las dos dimensiones a la vez, en "
+                      "el orden en que se declara. Es la progresion con que "
+                      "C-01 dimensiona en la corrida del entregable de la "
+                      "Familia C y la que la guia de perfil y la suite "
+                      "declaraban en caliente, de modo que darle valor de "
+                      "archivo no mueve ninguna seccion, y es la decision "
+                      "del dueño del proyecto: [A] con su ventana, no "
+                      "provisional. No es la que propone la "
+                      "cadena T (anchos de 1.00 a 4.00 m con paso de 0.50 m "
+                      "por alturas de 1.00 a 3.00 m con paso de 0.25 m): esa "
+                      "no contiene el 1.20 x 0.90 y con ella C-01 no "
+                      "dimensiona -- V7 (flotacion) incumple en los siete "
+                      "primeros escalones y el octavo, 1.00 x 2.00 m, deja la "
+                      "clave por encima de la subrasante y detiene el "
+                      "material --; queda como alternativa declarable y "
+                      "barrible. La causa de que V7 incumpla no es que el "
+                      "marco no quepa: es que `M5.v7_flotacion` lleva DC = 0 "
+                      "-- no pesa el concreto del marco, del lado seguro --, "
+                      "y con un canto mayor el empuje crece mas que el "
+                      "relleno que queda encima. Medido sobre C-01: el marco "
+                      "de 1.00 x 1.00 m incumple con 18.21 kN/m de suelo "
+                      "contra 19.23 kN/m de empuje, y su concreto, 0.96 m2 a "
+                      "unos 23.5 kN/m3, pesaria por si solo unos 22.6 kN/m, "
+                      "mas que el empuje. Con el peso propio, la progresion "
+                      "de la cadena probablemente daria a C-01 un marco de "
+                      "1.00 x 1.00 m: moveria una seccion dimensionada, y eso "
+                      "lo decide el dueño (ficha T3-08, sobre "
+                      "`M5.v7_flotacion`). Por la misma causa, de esta "
+                      "progresion solo el primer escalon es alcanzable bajo "
+                      "la rasante de C-01: el de 1.50 x 1.20 m incumple V7 "
+                      "con 18.9 contra 29.8 kN/m. Ampliarla -- alturas de "
+                      "0.60 y 0.75 m, mas anchos -- queda diferido a cuando "
+                      "exista la seccion real del canal de ANA o de la Junta "
+                      "de Usuarios (ficha T3-01). Con tres escalones la "
+                      "serie se agota en 2.00 x 1.50 m: un canal mas grande "
+                      "se detiene con la progresion agotada y hay que "
+                      "declarar la suya. La "
+                      "sensibilidad describe las dos cotas de la eleccion: "
+                      "por abajo, la minima dimension interior que permita "
+                      "entrar a limpiar el conducto -- el numeral la exige y "
+                      "no la cifra, y bajarla convierte la obra en no "
+                      "mantenible sin que ningun numero lo senale --; por "
+                      "arriba no manda la hidraulica sino la geometria del "
+                      "cruce -- recubrimiento sobre la clave y cota de "
+                      "subrasante --, que es lo que verifican V4 y la Fase 7",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.4 a) 'Tipo y seccion', pag. "
+               "impresa 72 -- la excepcion de los cruces de canal --, y num. "
+               "4.1.1.3.7 d) 'Mantenimiento y limpieza', pag. impresa 80 "
+               "(PDF 83) -- la exigencia de "
+               "mantenimiento que pone la cota inferior sin darle numero --. "
+               "Los dos literales estan en el registro normativo "
+               "(`MC_HHD.4.1.1.3.4a` y `MC_HHD.4.1.1.3.7d`) y se citan desde "
+               "los `Fundamento` F3.SECCION_CANAL y F3.MANTENIMIENTO",
+        reemplazado_por="La seccion que el proyectista adopte para el cruce, "
+                        "con el ancho de solera y el tirante de diseno del "
+                        "canal (ANA / Junta de Usuarios del Bajo Piura) y con "
+                        "la dimension interior que permita mantenerlo",
+        sensibilidad=(
+            "cota inferior: la MINIMA dimension interior que permita entrar a "
+            "limpiar el conducto (num. 4.1.1.3.7 d). El numeral la exige y no "
+            "la cifra; bajarla convierte la obra en no mantenible y el "
+            "requisito se incumple sin que ningun numero lo señale",
+            "cota superior: la seccion que el canal y la rasante admitan. Por "
+            "arriba no manda la hidraulica sino la geometria del cruce -- "
+            "recubrimiento sobre la clave y cota de subrasante --, que es lo "
+            "que verifican V4 y la Fase 7",
+            "alternativa de la cadena T (no se activa: decision del dueño "
+            "del 2026-11-12): anchos 1.00 a 4.00 m con paso 0.50 por alturas "
+            "1.00 a 3.00 m con paso 0.25, por area creciente. Medida sobre "
+            "C-01: no dimensiona -- V7, que lleva DC = 0 (no pesa el marco), "
+            "incumple con H >= 1.00 m bajo la rasante del fixture; con el "
+            "peso propio daria probablemente 1.00 x 1.00 m, ficha T3-08 --",
+        ),
+        # --- T-3 --- `vacio_verificado` YA SE PUEDE PONER, y se pone: el
+        # criterio tiene valor de archivo y cubre el vacio que el comentario
+        # de C5 dejo escrito -- el num. 4.1.1.3.7 d) exige dimensiones que
+        # permitan el mantenimiento y la limpieza interior y NO da ninguna
+        # cifra, y el 4.1.1.3.4 a) remite el cruce de canal a «cada diseño
+        # particular» --. El ancla es la lectura de §15.3.1 de la ruta de la
+        # Familia C. Con el, el criterio sale por `bloque_acotaciones` (R-23).
+        vacio_verificado="ruta_familia_c.md Sec. 15.3.1",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el ancho y el tirante de diseno "
+                        "del canal que se cruza y con la dimension interior "
+                        "que el num. 4.1.1.3.7 d) exige para poder mantener "
+                        "el conducto",
+            dominio="serie de pares (B, H) en metros, de menor a mayor, con "
+                    "B y H interiores de UNA celda",
+            tabla_pendiente="ninguna: el num. 4.1.1.3.4 a) remite "
+                            "expresamente a 'cada diseno particular', de modo "
+                            "que aqui NO hay tabla que transcribir. Esa "
+                            "ausencia es la lectura correcta del numeral, no "
+                            "una laguna del registro",
+        ),
+    ),
+
+    "n_manning_cajon": Criterio(
+        # --- T-3 (auditoria adversarial, H1) --- PASA A [C] CON LA FILA
+        # PROPIA DEL MARCO. La FASE A de T-3 adopto la fila «afinado» de la
+        # Tabla N 09, (0.011, 0.014), por analogia [N->]; la auditoria
+        # encontro que la MISMA fuente de la que salen la carta (Tabla A.1) y
+        # el ke (Tabla C.2) del marco tabula el cajon de concreto en su
+        # propia fila -- HDS-5 Tabla B.1, «Concrete Boxes | Smooth |
+        # 0.012-0.015 | FHWA 1961», pag. impresa B.6 (PDF 208) -- y que la
+        # ficha no la nombraba. Es el mismo trato que T-4 dio al HDPE. La
+        # fila «afinado» queda como alternativa barrible.
+        valor="concrete_boxes",
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_STR,
+        concepto="Coeficiente de rugosidad de Manning del marco de concreto: "
+                 "fila de la que se toma la doble n (n_min, n_max)",
+        justificacion="Decide de que fila sale la doble n del marco de "
+                      "concreto, tomando siempre el rango completo (minimo, "
+                      "maximo): la regla de doble n pide los dos extremos -- "
+                      "n_max para capacidad y tirante, n_min para velocidad "
+                      "maxima y socavacion -- y un valor puntual dejaria una "
+                      "de las dos verificaciones sin lado seguro. La Tabla N "
+                      "09 del Manual (num. 4.1.1.3.6) cubre al marco por el "
+                      "titulo de su grupo A -- conducto cerrado con "
+                      "escurrimiento parcialmente lleno -- y NO tiene fila de "
+                      "seccion rectangular (verificado contra el PDF): el "
+                      "vacio es de fila. La fuente tecnica de la que el "
+                      "proyecto toma la carta de control de entrada y el ke "
+                      "del marco, el HDS-5 de la FHWA, si tabula el cajon de "
+                      "concreto en su propia fila: Tabla B.1, «Concrete Boxes "
+                      "/ Smooth», 0.012 a 0.015 (pag. impresa B.6). Se adopta "
+                      "esa fila, y por eso la etiqueta es "
+                      "[C]: cubre el vacio de la Tabla N 09 con una fuente "
+                      "reconocida, la misma de la carta y del ke, como T-4 "
+                      "hizo con el HDPE. Dos acotaciones de la propia fuente, "
+                      "que la ventana recoge: sus n son de laboratorio (nota "
+                      "1 de la tabla), y en un cajon vaciado in situ el n va "
+                      "de 0.012 a 0.022 segun la calidad del encofrado, las "
+                      "practicas constructivas y el envejecimiento (num. B.3, "
+                      "pag. impresa B.2, cita HDS5_3ED.B.3#CAJON_IN_SITU). "
+                      "Esa es la ventana hacia arriba del n de capacidad. La "
+                      "direccion de cada extremo, dicha: un n mas alto es el "
+                      "lado seguro para el tirante, V1 y el HW del control de "
+                      "salida, y un n mas bajo es el lado seguro para V3 y el "
+                      "d50 de la proteccion; la regla de doble n toma cada "
+                      "extremo para su verificacion, de modo que ensanchar el "
+                      "rango es conservador en las dos ramas a la vez. Frente "
+                      "a la alternativa de la Tabla N 09 (fila «afinado», "
+                      "0.011-0.014), esta fila sube el n de capacidad (0.015 "
+                      "> 0.014) y el de erosion (0.012 > 0.011): mas "
+                      "conservadora para tirante y HW, menos para V3 y el "
+                      "d50. Sobre C-01 no mueve la seccion (1.20 x 0.90 m) "
+                      "ni el HW de control de entrada, que no depende de n; "
+                      "mueve el tirante normal y el HW de control de salida",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), Apendice B, Table B.1 "
+               "'Manning's n Values for Culverts', pag. impresa B.6 (PDF "
+               "208): fila 'Concrete Boxes / Smooth', 0.012-0.015, referencia "
+               "FHWA 1961. Tabla HDS5_3ED.TB.1 del registro, fila "
+               "HDS5_3ED.TB.1#concrete_boxes, leida por "
+               "constantes_normativas.MANNING_CAJON_HDS5. Y el num. B.3 "
+               "'CONCRETE BOX CULVERT', pag. impresa B.2 (PDF 204): el n del "
+               "cajon vaciado in situ va de 0.012 a 0.022 segun el encofrado "
+               "(cita HDS5_3ED.B.3#CAJON_IN_SITU). LO QUE NO LO DA: la Tabla "
+               "N 09 del Manual de Hidrologia (num. 4.1.1.3.6, pags. impresas "
+               "75-76) no tiene fila de seccion rectangular, verificado contra "
+               "el PDF en la fase CN. La alternativa barrible, su fila "
+               "«afinado», se lee con el corrimiento de una fila que la "
+               "pagina trae en los bloques A.2, B.1, B.2 y C: errata de "
+               "imprenta DIS-MCHHD-T09-A2-DESPLAZADA del registro normativo, "
+               "sostenida en la evidencia interna de la pagina. Leida al pie "
+               "de la letra la fila «afinado» daria 0.013/0.015/0.017",
+        reemplazado_por="Ficha tecnica del acabado interior y del encofrado "
+                        "que se especifiquen para el marco vaciado in situ",
+        sensibilidad=(
+            "'concrete_boxes' -- Tabla B.1 del HDS-5, «Concrete Boxes / "
+            "Smooth» (0.012 - 0.015) --: el valor de archivo, [C]. La fila "
+            "especifica del cajon de concreto, de la misma fuente que la "
+            "carta y el ke del marco",
+            "'concreto_afinado' -- Tabla N 09, «A.2 NO METALICOS - a. "
+            "Concreto - afinado» (0.011 - 0.014), lectura CORREGIDA del "
+            "corrimiento de una fila (DIS-MCHHD-T09-A2-DESPLAZADA) --: "
+            "ALTERNATIVA BARRIBLE, por analogia [N->] dentro del grupo A, que "
+            "cubre al marco por su titulo. Es la que adopto la FASE A de T-3. "
+            "Frente a la de archivo baja el n de capacidad (lado inseguro "
+            "para tirante y HW) y el de erosion (lado seguro para V3 y el "
+            "d50). Leida al pie de la letra, sin corregir la errata, daria "
+            "0.013 - 0.017, mas conservadora para capacidad",
+            "num. B.3 del HDS-5 (cita HDS5_3ED.B.3#CAJON_IN_SITU): 0.012 a "
+            "0.022 en un cajon VACIADO IN SITU, segun el encofrado -- remite "
+            "a la Tabla 1 del HDS 3, que no esta en normas/ --. Es la ventana "
+            "HACIA ARRIBA del n de capacidad: con un encofrado de calidad "
+            "inferior a la de laboratorio, un n_max mayor es el lado seguro "
+            "para el tirante y el HW. Se declara como el par de la "
+            "especificacion del encofrado, no como una fila",
+        ),
+        # `vacio_verificado` con el texto que C5 dejo escrito para quien le
+        # diera valor: la Tabla N 09 del num. 4.1.1.3.6 cubre al marco por el
+        # TITULO de su grupo A y NINGUNA de sus filas nombra la seccion
+        # rectangular (verificado contra el PDF en la fase CN). El ancla es
+        # §15.3.2 de la ruta de la Familia C, que lo documenta fila por fila.
+        # Desde la auditoria de T-3 lo cubre la fila de la Tabla B.1 [C].
+        vacio_verificado="ruta_familia_c.md Sec. 15.3.2",
+        resolucion=DeTabla(
+            # LA PRIMERA TABLA ES LA DEL VALOR DE ARCHIVO (la que la ventana
+            # y los editores de la GUI muestran); la segunda, la de la
+            # alternativa por analogia. Con dos tablas la resolucion no fija
+            # `fila_id` (la guardia de `verificar_resolucion` lo prohibe: no
+            # se sabria de cual): el valor es la CLAVE de la fila, como en
+            # 'embocadura_cajon', y `M2._fila_manning_de_cajon` la acota.
+            # Declarar la fila de la segunda tabla desde un editor exige
+            # decir de cual se elige; el barrido la acepta con su
+            # `--barrido-nota`, y la CLI con `--declarar`.
+            tablas=("HDS5_3ED.TB.1", "MC_HHD.T09"),
+            que_elige="la fila cuyo par (minimo, maximo) es la doble n del "
+                      "marco: la del cajon de concreto de la Tabla B.1 del "
+                      "HDS-5 ([C]) o, por analogia, una del subgrupo «a. "
+                      "Concreto» de la Tabla N 09",
+            laguna="la Tabla N 09 no trae fila de cajon. El vacio es de FILA "
+                   "y no de grupo: el rotulo del grupo A -- conducto cerrado "
+                   "con escurrimiento parcialmente lleno -- ya cubre al marco",
+        ),
+    ),
+
+    "embocadura_cajon": Criterio(
+        # --- T-3 --- Carta 8, escala 1: aletas de 30 a 75 grados (Forma 1).
+        # La de cabezal recto se midio y da OTRA carga (ver la justificacion).
+        valor="cajon_concreto_aletas_30_75",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_STR,
+        concepto="Detalle de embocadura del marco: carta y escala de la Tabla "
+                 "A.1 de HDS-5 que le corresponde (aletas, chaflan, bisel, "
+                 "esviaje)",
+        justificacion="Decide la carta y escala de la Tabla A.1 de HDS-5 que "
+                      "corresponde a la embocadura del marco, y con ella las "
+                      "constantes K, M, c e Y del control de entrada y la "
+                      "forma de ecuacion (1 o 2) con que se aplican: la "
+                      "embocadura no es un detalle de acabado. La fuente "
+                      "(Tabla A.1; los bloques de cajon estan transcritos en "
+                      "normativa/tablas.py::T_HDS5_A1 y los lee "
+                      "constantes_normativas.HDS5_INLET) trae, en la "
+                      "transcripcion de este repositorio, dieciocho filas de "
+                      "cajon -- Cartas 8 a 13 --: tres de Forma 1 (Carta 8) y "
+                      "quince de Forma 2 (Cartas 9 a 13; medido: Carta 9 con "
+                      "2 filas, la 10 con 3, la 11 con 4, la 12 con 3 y la 13 "
+                      "con 3), y las "
+                      "dos ecuaciones no se parecen -- la Forma 1 arranca de "
+                      "H_c/D y corrige por pendiente, la Forma 2 no lleva "
+                      "ninguno de los dos terminos. Ese censo es de la "
+                      "transcripcion y no de la tabla: la Tabla A.1 trae mas "
+                      "cajon del que este proyecto alcanza, y lo que queda "
+                      "fuera esta censado fila por fila en el `Acotada` de "
+                      "`normativa/tablas.py::T_HDS5_A1` -- las cinco de las "
+                      "Cartas 57 a 59, que son gargantas de tapered inlet --; "
+                      "quien declare una embocadura que caiga en esas cinco "
+                      "tiene que transcribirlas primero. El esviaje no es un "
+                      "bloque de la tabla: es un valor de la columna de "
+                      "configuracion de entrada dentro de la Carta 11. Lo que "
+                      "la tabla no resuelve: cual fila le toca a esta obra. "
+                      "Eso lo decide el detalle que el proyectista dibuje, "
+                      "que es la separacion que CLAUDE.md fija entre la tabla "
+                      "([N], sus constantes) y la eleccion ([A], este "
+                      "criterio). Se adopta que la eleccion se declare junto "
+                      "con dos cosas mas, porque se mueven a la vez: el "
+                      "detalle del cabezal de la Sec. 9.1 -- donde el "
+                      "proyecto dibuja la embocadura, y cambiar el detalle "
+                      "obliga a cambiar la carta, igual que en la circular -- "
+                      "y 'ke_entrada_cajon', que sale de la fila de la Tabla "
+                      "C.2 de esa misma embocadura; declarar una sin la otra "
+                      "deja el control de entrada y el de salida hablando de "
+                      "dos embocaduras distintas. La sensibilidad separa las "
+                      "dos familias -- Carta 8 (Forma 1) frente a Cartas 9 a "
+                      "13 (Forma 2) -- porque entre una y otra no cambia solo "
+                      "una constante: cambia la ecuacion. Se adopta la "
+                      "Carta 8, escala 1, aletas de 30 a 75 grados (K "
+                      "0.026, M 1.0, c 0.0347, Y 0.81, Forma 1; Tabla A.1, "
+                      "PDF 197), emparejada en 'ke_entrada_cajon' con la "
+                      "fila de la Tabla C.2 de esa misma embocadura, borde "
+                      "recto en la clave bajo aletas de 30 a 75 grados (ke "
+                      "0.4): es la embocadura con aletas -- la transicion "
+                      "que un canal trapecial necesita para entrar a un "
+                      "marco -- y la que la guia de perfil, la suite y la "
+                      "corrida del entregable de la Familia C declaraban, "
+                      "de modo que no mueve ninguna carga. La de cabezal "
+                      "recto se midio y no se adopta: la cadena T la "
+                      "sugeria por ahora (Carta 8, escala 2, aletas de 90 y "
+                      "15 grados, con la fila de cabezal paralelo al "
+                      "terraplen sin aletas y borde recto en tres lados de "
+                      "la Tabla C.2, ke 0.5) y sobre C-01 da HW = 0.629 m "
+                      "contra 0.589 m con aletas; se deja la de hoy, y la "
+                      "coherencia entre la carta, el ke y la geometria de "
+                      "los aleros la cierra el dimensionamiento del cabezal "
+                      "por punto. La Lamina N 03 no decide entre las dos: "
+                      "es un corte longitudinal y no muestra el angulo de "
+                      "las aletas (`SIN_COTAS_LAMINA_03`)",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice A, Tabla A.1, "
+               "bloque 'Rect. Box Concrete' (Cartas 8 a 11) y el que lo "
+               "sigue, 'Rect. Box 3/4\" chamf. Conc.' (Carta 12), PDF 197. "
+               "EL ESVIAJE NO ES UN BLOQUE, y la redaccion anterior lo "
+               "contaba como tal --decia «y los tres que lo siguen (chaflan, "
+               "bisel y esviaje)»--: es un valor de la columna 'Inlet "
+               "Configuration' DENTRO de la Carta 11, bajo 'Rect. Box "
+               "Concrete'. Y el del bisel superior es la Carta 13, 'Rect. "
+               "Box Top Bev. Conc.', transcrita en T-2 (tres filas, aletas "
+               "desplazadas de 45, 33.7 y 18.4 grados). Transcrita en "
+               "normativa/tablas.py::T_HDS5_A1 y leida por "
+               "constantes_normativas.HDS5_INLET, donde las dieciocho filas "
+               "de cajon transcritas estan como claves 'cajon_concreto_*'",
+        reemplazado_por="El detalle de embocadura del cabezal que fije el "
+                        "expediente (Sec. 9.1), del que salen la carta y la "
+                        "fila de ke a la vez",
+        sensibilidad=(
+            "Carta 8 (Forma 1), aletas de 30 a 75 grados: K = 0.026, M = "
+            "1.00. Es la unica familia de cajon que usa la ecuacion (A.1), la "
+            "que arranca de H_c/D. La adoptada (T-3); sobre C-01, HW = 0.589 m",
+            "Carta 8 (Forma 1), escala 2, «90° and 15° wingwall flares» -- el "
+            "cabezal recto que la cadena T sugeria --: K = 0.061, M = 0.75. "
+            "Sobre C-01, HW = 0.629 m (+0.040 m); su ke es el de «Headwall "
+            "parallel to embankment (no wingwalls)», 0.5",
+            "Cartas 9 a 13 (Forma 2) -- aletas, chaflan, bisel o esviaje; la "
+            "12 es la familia 'Rect. Box 3/4\" chamf. Conc.' y la 13 la del "
+            "bisel superior con aletas desplazadas --: K entre 0.486 "
+            "y 0.545 con M = 0.667. La ecuacion (A.2) no lleva H_c/D ni Ks*S, "
+            "de modo que entre una carta de Forma 1 y una de Forma 2 no "
+            "cambia solo una constante: cambia la ecuacion",
+        ),
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TA1", "HDS5_3ED.TC2"),
+            que_elige="la carta y escala de la Tabla A.1 de la que salen K, "
+                      "M, c, Y y la forma de ecuacion; y, emparejada con "
+                      "ella, la fila de la Tabla C.2 de la que sale ke",
+            # SIN `elegido_por`, y a proposito: ese campo tiene que nombrar
+            # un CRITERIO declarado --`verificar_resolucion` lo comprueba-- y
+            # aqui no hay ninguno detras. Quien elige la fila es el detalle de
+            # embocadura del cabezal (Sec. 9.1), que es un DIBUJO del
+            # expediente y no un criterio. El acoplamiento en el otro sentido
+            # si es de criterio a criterio, y esta escrito donde corresponde:
+            # `ke_entrada_cajon` lleva `elegido_por="embocadura_cajon"`.
+        ),
+    ),
+
+    "n_celdas_cajon": Criterio(
+        # --- T-3 --- Una celda: lo que el numeral recomienda ante arrastre.
+        valor=1,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_INT,
+        concepto="Numero de celdas del marco: una sola o multicelda",
+        justificacion="Decide el numero de celdas del marco: una sola o "
+                      "multicelda. La fuente (num. 4.1.1.3.4 a) del Manual de "
+                      "Hidrologia; cita MC_HHD.4.1.1.3.4a#MULTIPLES del "
+                      "registro, traida a la memoria por el Fundamento "
+                      "F3.CELDAS con verbo RECOMIENDA) toma partido: ante "
+                      "capacidad de arrastre del curso -- palizada, troncos, "
+                      "material de cauce -- recomienda obras de mayor seccion "
+                      "transversal libre, sin subdivisiones, porque cada "
+                      "tabique es un punto donde la palizada se traba. Lo que "
+                      "no resuelve: no prohibe la multicelda -- invierte la "
+                      "carga de la prueba, y quien la adopte tiene que decir "
+                      "por que -- ni fija N para una obra concreta. Se adopta "
+                      "N = 1, la seccion unica que el numeral recomienda, y "
+                      "la que la guia de perfil y la suite declaraban; la "
+                      "multicelda queda declarable y V6 la sigue rechazando "
+                      "mientras no haya dato de arrastre del cauce (ver "
+                      "docs/decisiones_diferidas.md): con N > 1 V6 publica "
+                      "el reparto Q/N, el tabique entre celdas y el ancho "
+                      "total, y dice por que no la acepta. En el "
+                      "calculo, N no entra en la geometria: los coeficientes "
+                      "de HDS-5, el radio hidraulico y el control de entrada "
+                      "son por barril, de modo que con N celdas se dimensiona "
+                      "una con Q/N y se declara N -- es la razon por la que "
+                      "`modelos.SeccionRectangular` modela una celda y no el "
+                      "conjunto. En V6 (material solido de arrastre), la "
+                      "verificacion pasa a depender de una decision escrita "
+                      "en vez de cumplirse trivialmente por una propiedad del "
+                      "programa -- MD no sabe hacer multibarril, y el dia que "
+                      "supiera, una V6 sin este criterio se habria vuelto "
+                      "falsa en silencio. La sensibilidad describe los dos "
+                      "extremos: N = 1, lo que el numeral recomienda ante "
+                      "arrastre -- V6 se cumple sin tabiques que trabar y el "
+                      "ancho necesario lo da una sola celda --, y N > 1, "
+                      "admisible y no recomendado por defecto -- baja el "
+                      "canto necesario cuando la rasante no da altura, a "
+                      "cambio de meter tabiques en el paso del arrastre y de "
+                      "dimensionar cada celda con Q/N",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC, RD "
+               "20-2011-MTC/14), num. 4.1.1.3.4 a) 'Tipo y seccion', pag. "
+               "impresa 72. RECOMENDACION, no exigencia. "
+               "EL LITERAL NO SE REPITE AQUI, y este campo lo repetia: "
+               "traia a mano un FRAGMENTO de la oracion del numeral, sin "
+               "acentos y por tanto ya divergente de su `Verbatim`, y "
+               "ademas recortado -- que es la elision sin marcar que "
+               "`MC_HHD.4.1.1.3.4a#MULTIPLES` documenta y rechaza en su "
+               "propio comentario, y que CLAUDE.md nombra --. El texto vive "
+               "en el registro, en esa "
+               "cita, con la ORACION ENTERA, y lo trae a la memoria el "
+               "`Fundamento` F3.CELDAS con verbo RECOMIENDA",
+        reemplazado_por="La decision de tipologia del cruce, con el ancho "
+                        "disponible en la rasante y la capacidad de arrastre "
+                        "observada en el canal",
+        sensibilidad=(
+            "N = 1 (celda unica): lo que el numeral recomienda ante arrastre "
+            "de solidos. V6 se cumple sin tabiques que trabar, y el ancho "
+            "necesario lo da una sola celda",
+            "N > 1 (multicelda): admisible y no recomendado por defecto. "
+            "Baja el canto necesario cuando la rasante no da altura, y a "
+            "cambio mete tabiques en el paso del arrastre; ademas obliga a "
+            "dimensionar cada celda con Q/N",
+        ),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con la capacidad de arrastre del "
+                        "curso y el ancho disponible bajo la rasante. El "
+                        "numeral recomienda una sola celda y no lo impone",
+            dominio="entero >= 1",
+        ),
+    ),
+
+    "ke_entrada_cajon": Criterio(
+        # --- T-3 --- La fila de la MISMA embocadura que 'embocadura_cajon'.
+        valor="cajon_aletas_30_75_escuadra",
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_STR,
+        concepto="Coeficiente de perdida de carga en la embocadura (ke) del "
+                 "marco de concreto",
+        justificacion="Decide de que fila del bloque de cajon de la Tabla C.2 "
+                      "sale el coeficiente de perdida de entrada ke del "
+                      "marco, y lo que se declara es la clave de la fila, no "
+                      "el coeficiente. La fuente (Tabla C.2 de HDS-5, bloque "
+                      "'Box, Reinforced Concrete', transcrita en "
+                      "normativa/tablas.py::T_HDS5_C2) trae siete filas con "
+                      "coeficiente bajo cuatro rotulos de agrupacion, con ke "
+                      "entre 0.2 y 0.7; tres de esas filas se imprimen con el "
+                      "mismo texto -- 'Square-edged at crown', con ke 0.4, "
+                      "0.5 y 0.7 -- y sin su rotulo de agrupacion son "
+                      "indistinguibles: la fila suelta pierde la condicion, y "
+                      "por eso la memoria tiene que imprimir las dos cosas. "
+                      "Lo que no se resuelve copiando el tubo: el ke del tubo "
+                      "no sirve para el marco aunque el numero coincida -- "
+                      "para la embocadura a ras sin aletas que la Sec. 9.1 "
+                      "adopta hoy, la fila del cajon vale 0.5 tambien --, y "
+                      "un valor que acierta por casualidad deja una cita "
+                      "falsa que no falla nunca de forma ruidosa, de modo que "
+                      "nadie la comprueba; y deja de coincidir en cuanto haya "
+                      "aletas, que es lo que la Lamina N 03 dibuja: 0.4 con "
+                      "aletas a 30-75 grados, 0.5 a 10-25 grados y 0.7 con "
+                      "aletas paralelas -- con 0.5 -> 0.7 y V = 3 m/s son "
+                      "0.2*V^2/2g = 0.092 m de carga que el calculo no veria, "
+                      "contra V4 y contra el tamizado de la Fase 7. Se adopta "
+                      "abrirlo sin valor: el ke del marco sale de la fila que "
+                      "'embocadura_cajon' declare, y las dos decisiones se "
+                      "mueven juntas; escribir aqui un 0.5 repetiria, con "
+                      "otra etiqueta, el defecto de la cita que acierta por "
+                      "casualidad. Se declara la clave y no el numero porque "
+                      "en el bloque del cajon el 0.2 esta en tres filas y el "
+                      "0.5 en dos: un numero declarado no permite decir de "
+                      "donde salio, y la memoria imprimiria el coeficiente "
+                      "perdiendo la condicion que lo justifica, que es "
+                      "exactamente el defecto que este criterio existe para "
+                      "impedir. Las claves admitidas son las de "
+                      "`constantes_normativas.KE_HDS5_C2`, derivadas de la "
+                      "transcripcion y no copiadas de ella. El criterio "
+                      "hermano 'ke_entrada' (tubo) sigue declarando un "
+                      "numero: tiene valor y consumidor, y cambiarle la forma "
+                      "por simetria seria mover un dato de proyecto que nadie "
+                      "pidio mover; la asimetria esta escrita en KE_HDS5_C2. "
+                      "La sensibilidad da los dos extremos del bloque -- ke = "
+                      "0.2, solo alcanzable construyendo el detalle de borde "
+                      "redondeado, biselado o abocinado, y ke = 0.7, borde "
+                      "recto bajo aletas paralelas --: entre los dos hay "
+                      "0.5*V^2/2g de carga, 0.229 m con V = 3 m/s, que se "
+                      "descuenta de V4 y del tamizado de la Fase 7. Se "
+                      "adopta la fila de borde recto en la clave bajo "
+                      "aletas de 30 a 75 grados, ke 0.4: la de la misma "
+                      "embocadura que 'embocadura_cajon' declara (Carta 8, "
+                      "escala 1). Las dos se mueven juntas, y el "
+                      "dimensionamiento de los aleros por punto las vuelve a "
+                      "mirar",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, Apendice C, Tabla C.2 "
+               "'Entrance Loss Coefficients', pag. impresa C.6 (PDF 216), "
+               "bloque 'Box, Reinforced Concrete': siete filas con "
+               "coeficiente repartidas bajo cuatro rotulos de agrupacion -- "
+               "'Headwall parallel to embankment (no wingwalls)', 'Wingwalls "
+               "at 30 to 75 degrees to barrel', 'Wingwall at 10 to 25 degrees "
+               "to barrel' y 'Wingwalls parallel (extension of sides)' --, "
+               "con ke entre 0.2 y 0.7. Transcritas en "
+               "normativa/tablas.py::T_HDS5_C2",
+        reemplazado_por="La fila de la Tabla C.2 que corresponda a la "
+                        "embocadura que declare 'embocadura_cajon'",
+        # LA SENSIBILIDAD ES SIMBOLICA Y NO UN PAR DE NUMEROS, y el motivo es
+        # el mismo que hace que este criterio declare una clave: lo que se
+        # elige es una FILA, no un punto de un intervalo. Un rango (0.2, 0.7)
+        # aqui seria ademas rechazado por `_verificar_sensibilidad` -- un
+        # rango numerico no puede defender un valor que no es numero --, y esa
+        # guardia tiene razon: el recorrido del coeficiente es la CONSECUENCIA
+        # de la eleccion, no su dominio.
+        sensibilidad=(
+            "extremo bajo: ke = 0.2, en las tres filas de borde redondeado, "
+            "biselado o de entrada abocinada del bloque. Es el minimo del "
+            "bloque y solo se alcanza construyendo ese detalle: declararlo "
+            "sin dibujarlo en la Lamina de embocadura es cobrar una perdida "
+            "que la obra no tendra",
+            "extremo alto: ke = 0.7, fila «Square-edged at crown» bajo "
+            "«Wingwalls parallel (extension of sides)». Entre los dos "
+            "extremos hay 0.5*V^2/2g de carga -- 0.229 m con V = 3 m/s --, "
+            "que se descuenta de V4 y del tamizado de la Fase 7",
+        ),
+        resolucion=DeTabla(
+            tablas=("HDS5_3ED.TC2",),
+            que_elige="la fila del bloque 'Box, Reinforced Concrete' de la "
+                      "que sale ke. Lo que se declara es la CLAVE de la fila "
+                      "y no el coeficiente: el valor lo fija la fila JUNTO "
+                      "CON su rotulo de agrupacion, porque tres filas del "
+                      "bloque se imprimen con el mismo texto y distinto "
+                      "coeficiente. Claves en "
+                      "`constantes_normativas.KE_HDS5_C2`",
+            elegido_por="embocadura_cajon",
+        ),
+    ),
+
+    # EL SEXTO DEL CAJON, y el que abre C7. Los cinco de C5 gobiernan la
+    # HIDRAULICA del marco; este gobierna su GEOMETRIA EXTERIOR, que es lo que
+    # V7 y la cota de clave necesitan y no tenian por donde entrar.
+    "espesor_pared_cajon": Criterio(
+        # --- T-3 --- 0.20 m: el piso de la E.060 num. 14.5.3.2 para muros
+        # exteriores enterrados, POR ANALOGIA. Ver la justificacion.
+        valor=0.20,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Espesor de pared del marco de concreto vaciado in situ, m",
+        justificacion="Decide el espesor de pared del marco de concreto "
+                      "vaciado in situ a nivel de perfil. El vacio es del "
+                      "catalogo de productos, no "
+                      "del Manual: el Manual de Hidrologia no tabula "
+                      "espesores de pared de nada -- no hay numeral que "
+                      "callar --, y quien los tabula son las normas de "
+                      "producto; la que este proyecto usa, AASHTO M 170M-04 "
+                      "(columna de espesor de pared), es de tuberia: sus "
+                      "filas se enumeran por diametro designado y un marco no "
+                      "es una de ellas. Es el cuarto caso de la regla 3 de la "
+                      "§15.1 de docs/ruta_familia_c.md, ya clasificado ahi: "
+                      "las normas de producto quedan fuera de su alcance "
+                      "declarado para el marco, no en analogia. Tampoco es un "
+                      "vacio que una tabla vaya a llenar: la §14.1 adopto el "
+                      "vaciado in situ precisamente porque en normas/ no hay "
+                      "norma de producto de cajon prefabricado. Lo que si "
+                      "existe y este alcance difiere es el procedimiento de "
+                      "calculo (AASHTO LRFD Sec. 5 y Art. 12.11), de modo que "
+                      "a nivel de perfil el espesor es una adopcion del "
+                      "proyectista y por eso [A]. Hasta T-3 se adoptaba "
+                      "bloquear en vez de tomar un valor plausible, y la "
+                      "razon estaba medida: "
+                      "las alturas de marco plausibles caen sobre la misma "
+                      "serie de 900 + 150k mm que los diametros de tubo, de "
+                      "modo que un marco de 2.00 x 1.50 m que leyera la tabla "
+                      "del tubo no se detendria -- recibiria la pared del "
+                      "tubo de 1500 mm y V7 lo evaluaria como un cilindro, "
+                      "sobreestimando la seguridad en torno a un 27 % --, y "
+                      "un valor que acierta de forma silenciosa es peor que "
+                      "un bloqueo, porque el bloqueo se ve. La sensibilidad "
+                      "de la ficha explica el signo, que es contraintuitivo "
+                      "-- engrosar la pared empeora la flotacion --, y por "
+                      "que hacia abajo el limite no es la flotacion sino el "
+                      "calculo estructural diferido: la ventana no se puede "
+                      "cerrar a nivel de perfil y el criterio se adopta en "
+                      "vez de optimizarse. Se adopta 0.20 m, el espesor "
+                      "minimo que la E.060 fija a los muros exteriores de "
+                      "sotanos y cimentaciones (num. 14.5.3.2, pag. 134, "
+                      "cita E060.14.5.3.2): es la fuente mas cercana porque "
+                      "su objeto es un muro exterior enterrado con suelo "
+                      "contra una cara, que es lo que es la pared del "
+                      "marco; no es [N] para el marco, porque el 14.5.3 "
+                      "rige los muros del metodo empirico de 14.5 y la "
+                      "pared del cajon se diseña por flexion (14.8.1 remite "
+                      "al Capitulo 10), y la ventana existe. 0.20 m es el "
+                      "extremo favorable a V7 de esa ventana: con DC = 0 en "
+                      "V7 un espesor mayor ensancha el empuje mas que el "
+                      "suelo que lo equilibra, y sobre C-01 el marco "
+                      "dimensiona con 0.20 y 0.25 m y deja de hacerlo con "
+                      "0.26 y 0.30 m (ficha T3-08). Es ademas el "
+                      "espesor que la guia de perfil y la suite declaraban, "
+                      "de modo que no mueve ni la clave ni V7. Vale para "
+                      "paredes, losa superior, losa de fondo y, con N > 1, "
+                      "el tabique: un solo espesor, adoptado, hasta que la "
+                      "Fase 8 del expediente lo calcule",
+        fuente="NINGUNA PARA EL MARCO, y esa es la afirmacion; el piso "
+               "adoptado sale POR ANALOGIA de la E.060, num. 14.5.3.2 "
+               "'Espesor minimo de muros diseñados por el metodo empirico de "
+               "diseño', pag. impresa 134 (PDF 134), que fija 200 mm a los "
+               "muros exteriores de sotanos y cimentaciones (cita "
+               "E060.14.5.3.2, leida en T-3). Barrido declarado: el num. "
+               "4.1.1.3.4 a) del Manual de Hidrologia nombra el marco y "
+               "remite su seccion a «cada diseno particular» sin dar "
+               "espesores; AASHTO M 170M-04 tabula 'Wall Thickness' por "
+               "diametro designado de TUBERIA (Tablas 1 a 5) y su Nota 1 la "
+               "declara especificacion de fabricacion y compra; y en normas/ "
+               "no hay norma de producto de cajon prefabricado -- que es la "
+               "razon por la que §14.1 adopto el vaciado in situ --. Lo que "
+               "SI existe y este alcance difiere es el procedimiento de "
+               "calculo: AASHTO LRFD Sec. 5 y Art. 12.11 «Reinforced Concrete "
+               "Cast-in-Place and Precast Box Culverts», pag. impresa 12-68",
+        reemplazado_por="El calculo estructural del portico (AASHTO LRFD "
+                        "Sec. 5 y 12.11), que es lo que fija el espesor de un "
+                        "marco vaciado in situ. A nivel de EXPEDIENTE deja de "
+                        "ser una adopcion y pasa a ser un resultado; a nivel "
+                        "de perfil se adopta y se declara",
+        sensibilidad=(
+            "EL SIGNO ES CONTRAINTUITIVO Y VA PRIMERO, porque quien declare "
+            "este criterio va a suponer lo contrario: ENGROSAR LA PARED "
+            "EMPEORA LA FLOTACION. Una pared mas gruesa parece mas estructura "
+            "y por tanto mas seguridad, y con `DC = 0` -- V7 omite el peso "
+            "propio a proposito, del lado conservador -- ese peso que "
+            "justificaria la intuicion NO ENTRA EN EL CALCULO. Lo que si "
+            "entra es la geometria exterior, por los DOS lados de la "
+            "desigualdad: la subpresion crece con (B+2t)(H+2t), en dos "
+            "dimensiones, y la columna de suelo que estabiliza solo con "
+            "(B+2t), en una. Medido sobre un marco de 2.00 x 1.50 m con 0.95 "
+            "m de relleno y gamma_r = 18 kN/m3: t = 0.15 da margen -5.21 "
+            "kN/m, t = 0.20 da -7.79 y t = 0.25 da -10.58. La derivada del "
+            "empuje es 2*gamma_w*(Bc + B'c) ~ 80 kN/m por metro de t, contra "
+            "~31 del termino estabilizante",
+            "HACIA ABAJO el limite no es la flotacion sino el propio calculo "
+            "estructural, que este alcance difiere: una pared que flota mejor "
+            "puede no resistir el empuje de tierras ni la carga viva. Por eso "
+            "la ventana no se puede cerrar a nivel de perfil y el criterio "
+            "se ADOPTA en vez de optimizarse: el optimo de V7 y el minimo "
+            "estructural empujan en sentidos opuestos y solo la Fase 8 tiene "
+            "los dos numeros",
+            "VENTANA DE LA ADOPCION (T-3): 0.20 m -- el piso de la E.060 num. "
+            "14.5.3.2 para muros exteriores enterrados, por analogia, y el "
+            "valor adoptado -- a 0.30 m, techo que elige el proyecto para "
+            "el predimensionamiento de perfil y que NO sale de ninguna "
+            "fuente. Por eso esta ventana es simbolica: un valor fuera de "
+            "ella se puede declarar para medir una formula, y la memoria "
+            "imprime el adoptado. El adoptado es el extremo favorable a V7: "
+            "sobre C-01, con 0.26 m o mas V7 incumple (con 0.26 m, 23.42 kN/m "
+            "de suelo contra 23.96 kN/m de empuje) y el marco no dimensiona "
+            "-- porque V7 lleva DC = 0, ficha T3-08 --",
+        ),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por predimensionamiento, hasta que "
+                        "el calculo estructural del portico lo determine "
+                        "(AASHTO LRFD Sec. 5 y 12.11, diferidos por "
+                        "`--alcance perfil`)",
+            dominio="metros, > 0",
+            tabla_pendiente="ninguna, y es deliberado: no hay norma de "
+                            "producto de cajon prefabricado en normas/, y "
+                            "§14.1 adopto el vaciado in situ por esa razon. "
+                            "La tabla que existe -- AASHTO M 170M-04 -- es de "
+                            "tuberia y NO se le puede leer la fila de la "
+                            "misma altura, aunque exista: es la coincidencia "
+                            "de series que midio la auditoria de C5",
+        ),
+        # --- T-3 --- El vacio que cubre: no hay norma de producto de cajon
+        # ni espesor tabulado para un marco vaciado in situ (§14.1 de la ruta
+        # de la Familia C, que lo decidio por esa razon).
+        vacio_verificado="ruta_familia_c.md Sec. 14.1",
+    ),
+
+    # --- T-4 --- PASA A SER OPCIONAL Y SIN VALOR (INF-3.3.1). Hasta T-4
+    # valia {concreto 2.70, TMC 2.10, HDPE 1.50} m: tres topes [A] de los
+    # que dos no tenian respaldo documental (la propia ficha lo decia en
+    # `verificacion_pendiente`). El tope que rige por defecto es ahora el
+    # de la SERIE de la norma de producto, 'D_max_norma_producto' [C], y
+    # este criterio queda como lo que su nombre dice: la disponibilidad
+    # de mercado, que el proyectista declara SI la conoce y que solo
+    # puede BAJAR el tope de la serie (`M2.tope_de_diametro` rechaza con
+    # DatoInvalidoError un valor por encima). Sin declarar no hay tope de
+    # catalogo y no se imprime ninguno.
+    #
+    # NIVEL MEDIDO por la TERCERA corrida de `tests/test_nivel_medido.py`
+    # (opcional=True se lee con `valor_si_declarado()`, que no registra el
+    # uso mientras el criterio siga vacio): declarado en caliente con los
+    # topes de la serie, la corrida de perfil lo invoca en M2 sin mover
+    # ningun resultado.
+    "D_max_catalogo": Criterio(
+        valor=None,                 # OPCIONAL: sin valor, rige la serie de la norma
+        opcional=True,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Diametro maximo que el mercado local entrega por material, "
+                 "en metros: tope de disponibilidad (catalogo) que solo puede "
+                 "bajar el tope de la serie de la norma de producto",
+        de_catalogo="TOPE DE CATALOGO, NO DE NORMA. Imprimir siempre asi: "
+                    "'diametro maximo adoptado por disponibilidad de mercado'. "
+                    "Es un tope que el proyectista declara por debajo del de "
+                    "la serie de la norma de producto ('D_max_norma_producto') "
+                    "porque el mercado local no entrega el producto mas alla. "
+                    "Superarlo NO significa 'material inexistente': significa "
+                    "'fuera del catalogo declarado', y se levanta declarando "
+                    "otro tope o retirando la declaracion",
+        justificacion="Decide, cuando se declara, el diametro maximo que el "
+                      "mercado local entrega de cada material. Es opcional y "
+                      "no un vacio: sin declarar, el catalogo llega hasta el "
+                      "mayor diametro de la serie que tabula la norma de "
+                      "producto de cada material, y el calculo no se detiene. "
+                      "Ninguna norma dice que diametros se consiguen en una "
+                      "obra concreta: eso es disponibilidad del mercado, no "
+                      "norma, y por eso la eleccion es del proyectista. La "
+                      "declaracion solo puede bajar el tope de la serie, "
+                      "nunca subirlo: un diametro que la norma de producto "
+                      "no tabula no es un producto que un catalogo pueda "
+                      "ofrecer bajo esa norma. El tope no entra en ninguna "
+                      "formula de dimensionamiento; lo unico que cambia al "
+                      "declararlo es cuantos puntos quedan sin solucion por "
+                      "diametro en ese material, y ese descarte se imprime "
+                      "como adoptado por disponibilidad y no como exigencia",
+        fuente="NINGUNA NORMA fija la disponibilidad de mercado. El tope que "
+               "rige cuando este criterio no se declara es el de la serie de "
+               "la norma de producto de cada material, en "
+               "'D_max_norma_producto': AASHTO M 170M-04 Tablas 1 a 5 "
+               "(concreto, 300 a 3600 mm), AASHTO M 36-03 (2007) Table 6 "
+               "(TMC, 100 a 3600 mm; cada corrugacion es estandar en una "
+               "parte de la serie) y AASHTO M 294-11 num. 7.2.1 (HDPE, 300 a "
+               "1500 mm, traduccion no oficial). HASTA T-4 este criterio "
+               "valia 2.70 m (concreto), 2.10 m (TMC) y 1.50 m (HDPE) como "
+               "adopcion sin respaldo documental en los dos primeros",
+        sensibilidad=("sin declarar: rige el tope de la serie de la norma de "
+                      "producto ('D_max_norma_producto')",
+                      "declarado: un diametro por material, en metros, menor "
+                      "o igual que el tope de la serie de ese material; lo "
+                      "unico que cambia es cuantos puntos salen 'no factible "
+                      "por diametro'"),
+        reemplazado_por="Disponibilidad real de mercado para el corredor, "
+                        "declarada en el expediente con su respaldo "
+                        "(consulta a fabricantes y proveedores)",
+        resolucion=DeCatalogo(
+            catalogo_id="CAT_TUBERIA_LOCAL",
+            que_elige="el tope de diametro por material que el mercado "
+                      "local entrega, cuando es menor que el de la serie de "
+                      "la norma de producto",
+            advertencia="NINGUNA norma sostiene un tope de disponibilidad: "
+                        "es un dato de mercado. Las series de las normas de "
+                        "producto llegan a 3600 mm en concreto (AASHTO "
+                        "M 170M-04) y en TMC (AASHTO M 36 / ASTM A760) y a "
+                        "1500 mm en HDPE (AASHTO M 294-11, traduccion no "
+                        "oficial). Declarado, el descarte por diametro se "
+                        "imprime como de catalogo, no de norma",
+        ),
+    ),
+
+    # 'h_relleno_min_concreto_tmc' SE RETIRO. Declaraba 0.30 m [N->] para
+    # concreto y TMC "por analogia sobre un vacio verificado": el HDPE es el
+    # material menos tolerante a cobertura reducida, luego exigirle a los
+    # otros dos su mismo recubrimiento no podia quedar del lado inseguro.
+    #
+    # Las dos mitades del argumento cayeron a la vez.
+    #
+    # (1) EL VACIO NO ERA UN VACIO (NOR-VAC-01). La busqueda se declaro
+    #     cerrada tras agotar tres fuentes -- normas de producto, Manual de
+    #     Puentes y EG-2013 -- y falto la cuarta, que ademas esta en el propio
+    #     repositorio y es la que Sec. 0.2 adopta de extremo a extremo: AASHTO
+    #     LRFD 9a ed. (2020), Art. 12.6.6.3 "Minimum Cover" y su
+    #     Tabla 12.6.6.3-1, pag. 12-22, tabulan la cobertura minima por tipo
+    #     de conducto. Vive ahora en 'cobertura_minima_aashto'.
+    # (2) EL NUMERO ERA CORTO. Esa tabla pone un PISO de 12.0 in = 0.3048 m
+    #     para concreto y metal, de modo que 0.30 m quedaba 5 mm por debajo;
+    #     y lo que gobierna en diametros grandes no es el piso sino Bc/8, que
+    #     para un tubo de 2.40 m de concreto (Bc ~ 2.9 m) da ~0.36 m, un 20 %
+    #     mas que lo adoptado.
+    #
+    # Se retira en vez de corregirle el numero porque ya no queda vacio que
+    # cubrir: el recubrimiento minimo pasa a CALCULARSE
+    # (`M7_geometria.altura_recubrimiento`) como el mayor entre el minimo de
+    # EG-2013 -- que solo existe para HDPE -- y la cobertura minima de AASHTO,
+    # que depende del diametro EXTERIOR y de la condicion de pavimento. Un
+    # escalar unico para dos materiales no puede expresar eso.
+    #
+    # Cae con el la referencia a WSDOT M 23-03.12 Tabla 8-6 (NOR-ANA-01): era
+    # la unica cita que la memoria ofrecia para sostener "el concreto tolera
+    # mas", y no esta en el repositorio. La Tabla 12.6.6.3-1 confirma la
+    # DIRECCION de aquel argumento -- bajo pavimento el termoplastico pide
+    # ID/2 >= 24 in, el valor mas alto de la tabla -- y desmiente su MAGNITUD:
+    # la analogia era conservadora en el orden de los materiales y no en el
+    # numero. Con la tabla cableada, ni la direccion ni la magnitud dependen
+    # ya de una fuente ausente.
+
+    "cobertura_minima_aashto": Criterio(
+        valor={
+            # Tabla 12.6.6.3-1, transcrita a SI. Por material del catalogo y
+            # por condicion de pavimento. Cada fila:
+            #   divisor   el D se divide por el (None: la fila es un valor
+            #             fijo, sin termino proporcional al diametro)
+            #   sobre     que diametro entra en el divisor, con la nomenclatura
+            #             del propio Art. 12.6.6.3: "exterior" para Bc
+            #             ("outside diameter or width of the structure"),
+            #             "interior" para ID ("inside diameter"), "nominal"
+            #             para S ("diameter of pipe")
+            #   piso_m    el ">=" de la tabla: minimo absoluto, en metros
+            #
+            # Los tres divisores son adimensionales y las tres filas son
+            # homogeneas: la cobertura sale en la misma unidad que el diametro
+            # con que se entra. No hay conversion de unidades que hacer.
+            "concreto_reforzado": {
+                # "Reinforced Concrete Pipe / Under unpaved areas or top of
+                # flexible pavement -- Bc/8 or B'c/8, whichever is greater,
+                # >= 12.0 in."
+                #
+                # POR QUE EL "whichever is greater" NO APARECE EN EL DATO. El
+                # segundo termino es B'c, que el Art. 12.6.6.3 define como
+                # "out-to-out vertical rise of pipe (ft)". En un conducto
+                # CIRCULAR la altura exterior de punta a punta ES el diametro
+                # exterior, de modo que B'c = Bc por geometria y el maximo de
+                # los dos terminos se reduce a Bc/8.
+                #
+                # ESTA REDUCCION ES CORRECTA PARA EL CIRCULAR Y LA PREGUNTA
+                # DEL CAJON NO SE CONTESTA AQUI. Dos versiones anteriores de
+                # este comentario se equivocaron, cada una por su lado, y
+                # conviene separar que parte de cada una se sostiene.
+                #
+                # LO QUE SE SOSTIENE, y es de C5: la lectura de B'c como
+                # «out-to-out vertical rise», verificada contra la pag.
+                # impresa 12-21. Es ademas la que corrigio el «sqrt(Bc)/8» que
+                # la ficha NOR-VAC-01 habia inventado leyendo la prima como un
+                # radical.
+                #
+                # LO QUE NO SE SOSTIENE, tambien de C5: que «en un marco B'c y
+                # Bc son DISTINTOS, de modo que esta reduccion pide DE MENOS»,
+                # con la medicion «un marco de 3.00 x 1.50 m: el codigo
+                # exigiria 0.3048 m y la tabla exige 0.4125 m, un 26 % mas».
+                # Esa medicion APLICA AL CAJON UNA FILA ROTULADA «Reinforced
+                # Concrete PIPE», y la tabla no le exige nada a un marco:
+                # verificado en C7 contra AASHTO LRFD 9a ed., leida
+                # renderizada. No hay fila de cajon de concreto; `B'c` se
+                # define «of pipe» y no esta definido para seccion rectangular
+                # en las 110 paginas de la Sec. 12; y el «whichever is
+                # greater» aparece UNA vez en toda la seccion, dentro de esa
+                # celda, sin articulado que lo extienda.
+                #
+                # DONDE VA EL CAJON: a `cobertura_minima_cajon`, vacio
+                # declarado [A], con su AfirmacionNegativa. La regla
+                # vinculante #9 pedia lo contrario y SE RETIRO en C7 -- no
+                # estaba pendiente, estaba mal enunciada --. Ver §6 y §16.12.
+                "no_pavimentado": {"divisor": 8.0, "sobre": "exterior",
+                                   "piso_m": 0.3048},
+                "flexible": {"divisor": 8.0, "sobre": "exterior",
+                             "piso_m": 0.3048},
+                # "Under bottom of rigid pavement -- 9.0 in."
+                "rigido": {"divisor": None, "sobre": "exterior",
+                           "piso_m": 0.2286},
+            },
+            "tmc": {
+                # "Corrugated Metal Pipe / -- / S/8 >= 12.0 in." Fila unica:
+                # la tabla no distingue condicion de pavimento para el metal
+                # corrugado, y por eso las tres condiciones repiten la misma
+                # fila en vez de inventarle dos que la tabla no trae.
+                "no_pavimentado": {"divisor": 8.0, "sobre": "nominal",
+                                   "piso_m": 0.3048},
+                "flexible": {"divisor": 8.0, "sobre": "nominal",
+                             "piso_m": 0.3048},
+                "rigido": {"divisor": 8.0, "sobre": "nominal",
+                           "piso_m": 0.3048},
+            },
+            "hdpe": {
+                # "Thermoplastic Pipe / Under unpaved areas -- ID/8 >= 12.0 in.
+                #                     / Under paved roads  -- ID/2 >= 24.0 in."
+                # Las dos condiciones pavimentadas caen en la MISMA fila: la
+                # tabla dice "paved roads" sin separar flexible de rigido.
+                "no_pavimentado": {"divisor": 8.0, "sobre": "interior",
+                                   "piso_m": 0.3048},
+                "flexible": {"divisor": 2.0, "sobre": "interior",
+                             "piso_m": 0.6096},
+                "rigido": {"divisor": 2.0, "sobre": "interior",
+                           "piso_m": 0.6096},
+            },
+        },
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Cobertura minima sobre la clave del conducto, por material y "
+                 "condicion de pavimento (Tabla 12.6.6.3-1 de AASHTO LRFD)",
+        justificacion="Decide con que tabla se cubre la cobertura minima "
+                      "sobre la clave del conducto para concreto y TMC, donde "
+                      "el corpus peruano no da numero. La fuente adoptada "
+                      "(AASHTO LRFD, Art. 12.6.6.3 y Tabla 12.6.6.3-1; filas, "
+                      "definiciones y nota al pie transcritas literales en "
+                      "`fuente` y en el registro, tabla "
+                      "AASHTO_LRFD_9.T12.6.6.3-1) fija minimos por material y "
+                      "condicion de pavimento. Lo que el corpus peruano no "
+                      "resuelve, con la busqueda agotada fuente por fuente y "
+                      "registrada en docs/manifiesto_citas.md Sec. 14.a: "
+                      "EG-2013 fija la altura minima de relleno solo para "
+                      "HDPE (Subseccion 508.07) y el Manual de Puentes no "
+                      "incorporo la Sec. 12 de AASHTO LRFD. Se adopta esta "
+                      "tabla porque Sec. 0.2 de la hoja de ruta toma la Via 1 "
+                      "-- AASHTO LRFD de extremo a extremo --, lo que la hace "
+                      "la fuente natural y no una analogia; es [C] y no [N] "
+                      "porque AASHTO no es norma peruana vigente: es la "
+                      "fuente tecnica reconocida con que se cubre el vacio. "
+                      "Regla de conflicto, la misma que Sec. 0.2 aplica al "
+                      "recubrimiento de concreto frente a E.060: rige el "
+                      "mayor de los dos minimos -- para HDPE conviven el 0.30 "
+                      "m de EG-2013 [N] y esta tabla, y se aplica el mayor; "
+                      "para concreto y TMC solo existe esta. Simplificacion "
+                      "conservadora declarada, el datum: la nota al pie de la "
+                      "tabla mide la cobertura desde el pavimento (cara "
+                      "superior del rigido, cara inferior del flexible), "
+                      "mientras 7.A mide h_rec de la clave a la subrasante; "
+                      "la cobertura de la tabla es entonces h_rec mas el "
+                      "paquete que quede por encima de la subrasante, siempre "
+                      "mayor o igual que h_rec, de modo que exigir el minimo "
+                      "de la tabla a h_rec solo pide de mas, nunca de menos. "
+                      "Se declara porque es una eleccion de encuadre, aunque "
+                      "su direccion sea segura: cerrarla exige el desglose "
+                      "del paquete estructural, que Sec. 1.2 no trae como "
+                      "columna. La propia tabla trae una tension interna, "
+                      "anotada para que nadie la lea como un descuido: la "
+                      "fila del concreto describe su condicion contra la cara "
+                      "superior del pavimento flexible y la nota al pie mide "
+                      "desde la inferior; no se resuelve aqui porque "
+                      "cualquiera de las dos lecturas situa el datum a nivel "
+                      "de subrasante o mas arriba -- conservador con las dos "
+                      "-- y resolverla sin el desglose del paquete seria "
+                      "elegir una lectura sin dato que la sostenga. En la "
+                      "fila del metal, S es el diametro nominal -- el Art. "
+                      "12.6.6.3 define S como diametro del tubo y define Bc e "
+                      "ID aparte -- y en la serie del producto ese nominal es "
+                      "el interior: la Tabla 1 de ASTM A760/A760M-10 titula "
+                      "su primera columna como diametro interior nominal; en "
+                      "TMC la distincion es ademas de milimetros -- la pared "
+                      "es una plancha mas la corrugacion -- mientras que la "
+                      "cota de clave si la necesita entera. Que fila aplica "
+                      "lo decide 'condicion_pavimento', que es un vacio "
+                      "aparte y bloquea: la tabla es [C] y elegir su fila es "
+                      "[A], el mismo reparto que F_PGA_TABLA / 'F_pga' y "
+                      "REDUCCION_KH_POR_DESPLAZAMIENTO / "
+                      "'factor_muro_eleccion' -- este ultimo con la salvedad "
+                      "de que ahi la parte [N] no es una tabla sino un solo "
+                      "valor autorizado",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
+               "Seccion 12 'Buried Structures and Tunnel Liners', "
+               "Art. 12.6.6.3 'Minimum Cover' y Tabla 12.6.6.3-1, pag. "
+               "impresa 12-22 (indice de pagina 1659 del PDF, 0-based, en "
+               "normas/AASHTO.LRFD.Bridge.Design.Specifications_9th.Edition."
+               "2020.pdf). Nomenclatura del propio articulo, las CUATRO "
+               "definiciones: 'S = diameter of pipe (in.)', 'Bc = outside "
+               "diameter or width of the structure (ft)', \"Bc' = out-to-out "
+               "vertical rise of pipe (ft)\", 'ID = inside diameter (in.)'. "
+               "Filas transcritas, literales, leidas sobre la celda RENDERIZADA "
+               "y no sobre la extraccion de texto: Corrugated Metal Pipe "
+               "'S/8 >= 12.0 in.'; Thermoplastic Pipe 'Under unpaved areas "
+               "ID/8 >= 12.0 in.' y 'Under paved roads ID/2 >= 24.0 in.'; "
+               "Reinforced Concrete Pipe 'Under unpaved areas or top of "
+               "flexible pavement: Bc/8 or B'c/8, whichever is greater, "
+               ">= 12.0 in.' y 'Under bottom of rigid pavement: 9.0 in.'. Nota "
+               "al pie: 'Minimum cover taken from top of rigid pavement or "
+               "bottom of flexible pavement'. Cuerpo del articulo: 'The "
+               "minimum cover, including a well-compacted granular subbase and "
+               "base course, shall not be less than that specified in Table "
+               "12.6.6.3-1'. "
+               "POR QUE SE INSISTE EN 'RENDERIZADA': el segundo termino de la "
+               "fila del concreto se extrae como 'Bc\\uf0a2' -- la prima de "
+               "B'c es un glifo de SymbolMT -- y la ficha NOR-VAC-01 de la "
+               "auditoria normativa lo leyo como una RAIZ, 'sqrt(Bc)/8'. Esta "
+               "transcripcion lo copio de la ficha en su primera version, sin "
+               "abrir el PDF, y de ahi salio una formula que no existe, un "
+               "argumento de homogeneidad inventado y un factor de conversion "
+               "pie-metro que no hacia falta. No hay radical en la tabla: la "
+               "celda dice 'Bc/8 or B'c/8'. Es exactamente el defecto que este "
+               "cluster existe para eliminar, cometido dentro de el. "
+               "Conversiones a SI: 12.0 in = 0.3048 m, 9.0 in = 0.2286 m, "
+               "24.0 in = 0.6096 m (1 in = 0.0254 m exacto). "
+               "BUSQUEDA EN EL CORPUS PERUANO, agotada fuente por fuente y "
+               "registrada en docs/manifiesto_citas.md Sec. 14.a: EG-2013 "
+               "Cap. V fija la altura minima de relleno SOLO para HDPE "
+               "(Subseccion 508.07, pag. impresa 984, verificada leyendo el "
+               "PDF); las Secciones 505, 506 y 507 regulan colocacion y "
+               "compactacion y remiten a la Seccion 502, que tampoco fija "
+               "altura minima de diseño. El Manual de Puentes (RD "
+               "041-2016-MTC/14) no incorporo un capitulo equivalente a la "
+               "Seccion 12 de AASHTO LRFD y no fija altura minima de relleno "
+               "para ningun material: trata estructuras enterradas en al "
+               "menos cinco numerales (2.4.3.3.2 pag. 109; Tabla 2.4.5.3.1-2 "
+               "pag. 143; 2.8.1.3A.6.2 pag. 280; 2.9.1.4.6.4.6 pag. 362; "
+               "2.4.3.11.1 pag. 121) y los cinco SUPONEN conocida la "
+               "cobertura. Las normas de producto tampoco: AASHTO M 170M-04 "
+               "lo excluye en su Nota 1 ('manufacturing and purchase "
+               "specification only'), AASHTO M 36 en su §1.3 y ASTM "
+               "A760/A760M-10 en su §1.4 -- la atribucion anterior ponia la "
+               "misma 'Nota 1' en las tres y era falsa en dos (NOR-PRO-03). "
+               "TRAMPA DE VOCABULARIO, anotada para que nadie la vuelva a "
+               "pisar: el Manual de Puentes SI usa la palabra 'recubrimiento' "
+               "para alcantarillas en la Tabla 2.9.1.5.5.3-1 (pag. impresa "
+               "378), pero ahi significa el recubrimiento de CONCRETO "
+               "SOBRE EL ACERO DE REFUERZO, no la altura de relleno de "
+               "tierra. Son dos conceptos que comparten palabra en espaniol y "
+               "no tienen ninguna relacion; el numero de esa tabla NO sirve "
+               "aqui. "
+               "LA FILA DE ESA TABLA, COMPLETA (NOR-PUE-14): esta nota citaba "
+               "'2.0 in / 50 mm' a secas, como si fuera el recubrimiento de "
+               "una alcantarilla cualquiera, y son dos imprecisiones en seis "
+               "caracteres. Primera, la fila es 'Alcantarillas de cajon de "
+               "concreto PREFABRICADOS' y tiene tres subfilas, cada una con "
+               "su condicion: 'forjados para ser utilizados como superficie "
+               "de conduccion' 2.5 in; 'forjados con inferior a 2 pies de "
+               "relleno que no se utilicen como una superficie de conduccion' "
+               "2.0 in; 'todos los demas miembros' 1.0 in. Los 2.0 in son de "
+               "la losa superior de una alcantarilla CAJON PREFABRICADA con "
+               "menos de 2 pies de relleno que ademas no sea superficie de "
+               "rodadura: dos condiciones que no cumple ningun conducto del "
+               "catalogo circular de Sec. 3.2. Segunda, 2.0 in son 50.8 mm, "
+               "no 50. Las tres subfilas estan transcritas, con sus tres "
+               "categorias de acero, en 'tabla_recubrimiento_aashto_mm'. "
+               "LA EVIDENCIA DE INDICE QUE SE RETIRO, por falsa (NOR-PUE-06): "
+               "se sostenia que 'el indice del Manual salta de 2.11 (Muros de "
+               "Contencion y Estribos) a 2.12'. El 2.11 del Manual es 'DISEÑO "
+               "DE BARRERAS DE SONIDO' (15 AASHTO), pag. 505, y el 2.12 "
+               "'Disposiciones Constructivas', pag. 513; los muros y estribos "
+               "viven dentro de 2.8 Cimentaciones, de donde este mismo "
+               "expediente saca 2.8.1.1.14.2. Ademas la numeracion del Manual "
+               "no sigue la de AASHTO (2.8 <-> 10, 2.10 <-> 14.6, 2.11 <-> "
+               "15), de modo que 'entre 2.11 y 2.12 deberia estar la Sec. 12' "
+               "no era una inferencia valida. La conclusion -- que el Manual "
+               "no incorporo la Sec. 12 -- no cambia; el argumento con que se "
+               "sostenia, si",
+        reemplazado_por="Una disposicion PERUANA que fije la cobertura minima "
+                        "para concreto y TMC: hoy no existe, y por eso se "
+                        "aplica AASHTO LRFD. La cerraria que el MTC "
+                        "incorporase la Sec. 12 de AASHTO LRFD al Manual de "
+                        "Puentes, o una version del EG-2013 que extendiese el "
+                        "508.07 a los otros dos materiales. Queda ademas "
+                        "abierto el DATUM: la tabla mide la cobertura desde "
+                        "el fondo del pavimento flexible o el techo del "
+                        "rigido, y 7.A la exige sobre la subrasante -- la "
+                        "simplificacion es conservadora y se cierra con el "
+                        "desglose del paquete estructural, que Sec. 1.2 no "
+                        "trae como columna",
+        vacio_verificado="manifiesto_citas.md Sec. 14.a",
+        verificacion_pendiente="EL SEGUNDO TERMINO DE LA FILA DEL CONCRETO "
+                               "(B'c/8) no esta en el dato, y se reduce a "
+                               "Bc/8 porque en un CIRCULO B'c = Bc. "
+                               "ESTE CAMPO SE CONTRADECIA CON EL COMENTARIO "
+                               "DE ARRIBA Y HAY QUE DECIR EN QUE, porque es "
+                               "un dato sobre como se escribio el criterio y "
+                               "no solo un error a pisar: decia que la "
+                               "reduccion vale «porque el catalogo es "
+                               "circular» y que el termino haria falta «si "
+                               "algun dia entra una seccion no circular», "
+                               "mientras el comentario del `valor`, reescrito "
+                               "en C5, ya afirmaba que ese dia habia llegado. "
+                               "C5 reescribio el comentario que leyo y no el "
+                               "campo que no leyo, de modo que el criterio "
+                               "afirmaba a la vez que el caso ya llego y que "
+                               "todavia no. Las DOS versiones eran "
+                               "incorrectas, por motivos distintos: la vieja "
+                               "por obsoleta, la nueva por extender una fila "
+                               "fuera de su rotulo. "
+                               "LO QUE QUEDA PENDIENTE DE VERDAD es otra "
+                               "cosa: si algun dia entra un TUBO-ARCO -- que "
+                               "sigue siendo `pipe` y por tanto sigue dentro "
+                               "de esta fila --, ahi B'c y Bc si difieren y "
+                               "el termino hace falta. Un CAJON no es ese "
+                               "caso: no tiene fila aqui (C7, regla #9 "
+                               "retirada). "
+                               "Las filas que el catalogo de este proyecto NO "
+                               "usa quedaron fuera de la transcripcion "
+                               "(Spiral Rib, Structural Plate, Fiberglass, "
+                               "Steel-Reinforced Thermoplastic, Long-Span, "
+                               "Box y Deep Corrugated). Si algun dia el "
+                               "catalogo de Sec. 3.2 admite otra forma, hay "
+                               "que traerlas: hoy no estan porque no aplican, "
+                               "no porque no existan. Falta ademas cerrar el "
+                               "datum -- ver la SIMPLIFICACION CONSERVADORA de "
+                               "la justificacion --, que necesita el desglose "
+                               "del paquete estructural",
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T12.6.6.3-1",),
+            que_elige="nada por si mismo: el valor es la tabla por material. "
+                      "La fila la elige `condicion_pavimento`",
+            elegido_por="condicion_pavimento",
+        ),
+    ),
+
+    # -----------------------------------------------------------------------
+    # LA COBERTURA DEL MARCO, que no sale de la tabla de al lado
+    # -----------------------------------------------------------------------
+    # LA REGLA VINCULANTE #9 PEDIA LO CONTRARIO Y ERA FALSA, no pendiente.
+    # Decia que «para un cajon vuelve el segundo termino B'c/8», y la
+    # verificacion contra la fuente primaria (AASHTO LRFD 9a ed., Sec. 12
+    # leida RENDERIZADA, folio 12-N = PDF - 1638 medido) refuta su premisa: la
+    # Tabla 12.6.6.3-1 no tiene fila de cajon de concreto, de modo que no hay
+    # segundo termino que devolver porque no hay fila de la que devolverlo.
+    # Traerlo seria aplicar una fila rotulada «Reinforced Concrete PIPE» a algo
+    # que no lo es, que es el defecto que este proyecto declara no cometer.
+    # Se retiro en C7 -- §6 y §16 de docs/ruta_familia_c.md --.
+    #
+    # Y HAY UN TERCER ERROR EN AQUELLA MEDICION, medido aqui, que no es el de
+    # la regla ni el de C5 y que conviene dejar escrito porque cambia cual es
+    # el arreglo. La medicion de C5 -- «un marco de 3.00 x 1.50 m: el codigo
+    # exigiria 0.3048 m y la tabla exige 0.4125 m» -- llama a su 0.4125 «el
+    # segundo termino B'c/8», y no lo es: con t = 0.15 ese marco tiene
+    # Bc = 3.30 y B'c = 1.80, de modo que 3.30/8 = 0.4125 es el PRIMER termino,
+    # Bc/8, mientras B'c/8 = 0.225 es el MENOR de los tres numeros en juego.
+    # Lo que le falta al codigo no es el termino que se dejo fuera: es que al
+    # UNICO termino que conserva le entra la dimension equivocada. `M7` recibe
+    # un escalar `D` que en un marco vale la ALTURA, y el `D + 2t` de entonces lo
+    # convierte en H + 2t = B'c, que se mete en la ranura de Bc. Medido: para
+    # ese marco la cobertura de hoy sale 0.3048 m Y NO DEPENDE DE B EN
+    # ABSOLUTO -- el ancho no es argumento de la funcion --. Por eso el arreglo
+    # es de DOS piezas y no de una: este vacio declarado, y M7 llevando la
+    # `Seccion` en vez del escalar (punto 5 de C7).
+    "cobertura_minima_cajon": Criterio(
+        # --- T-3 --- 0.3048 m (12.0 in): el piso de la fila del TUBO de
+        # concreto de la Tabla 12.6.6.3-1, POR ANALOGIA rotulada.
+        # --- T-3 (auditoria adversarial, H5) --- Y COMO AVISO: la fuente
+        # admite el marco sin relleno, y este valor es mas restrictivo que
+        # ella. G1 del marco avisa (INDICADOR) cuando solo falta esta
+        # cobertura; el resguardo sigue bloqueando. Ver `M7.g1_rasante_
+        # congelada` y `TamizadoRasante.cobertura_como_aviso`.
+        valor=0.3048,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Cobertura minima de SUELO sobre la clave de un marco de "
+                 "concreto vaciado in situ, m (Sec. 7.A). No es el "
+                 "recubrimiento de concreto sobre la armadura",
+        justificacion="Decide la cobertura de suelo sobre la clave de un "
+                      "marco de concreto vaciado in situ que el proyecto "
+                      "pide, y con ella el AVISO de G1 en la Sec. 7.A. Lo que "
+                      "las fuentes dicen del marco -- tres textos, leidos en "
+                      "su pagina -- es que lo admiten sin relleno: el Manual "
+                      "de Hidrologia, num. 4.1.1.3.4 a), pag. impresa 72 "
+                      "(cita MC_HHD.4.1.1.3.4a#NIVELES), permite ubicar el "
+                      "marco con la rasante a nivel de su losa superior; "
+                      "su Lamina N 03, pag. impresa 209 (cita "
+                      "MC_HHD.LAMINA_03), dibuja el marco en cruce de canal "
+                      "de riego con la calzada sobre la losa, sin relleno "
+                      "acotado; y AASHTO LRFD 9a ed., Art. 12.6.6.3, pag. "
+                      "impresa 12-22 (cita "
+                      "AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA), dice que si no "
+                      "hay cobertura de suelo la losa superior del cajon de "
+                      "concreto se diseña para la aplicacion directa de la "
+                      "carga vehicular. Ninguna fija una cobertura minima "
+                      "para el marco: la Tabla 12.6.6.3-1 no tiene fila de "
+                      "cajon de concreto -- sus dos filas de concreto son de "
+                      "tubo y la unica con cajon en el rotulo es de placa "
+                      "estructural metalica --, el Art. 12.11 no la fija "
+                      "(barrido en la AfirmacionNegativa "
+                      "SIN_CAJON_DE_CONCRETO_T12663), EG-2013 trae altura "
+                      "minima de relleno solo para HDPE (Subseccion 508.07) "
+                      "y el Manual de Puentes no tiene un capitulo "
+                      "equivalente a la Sec. 12. Se adopta 0.3048 m, el piso "
+                      "de 12.0 in que la fila del TUBO de concreto bajo zonas "
+                      "sin pavimentar o bajo pavimento flexible pone a la "
+                      "cobertura (Tabla 12.6.6.3-1, pag. impresa 12-22), por "
+                      "analogia rotulada -- la tabla mide desde el fondo del "
+                      "pavimento flexible, que es lo que 7.A hace al sumar el "
+                      "paquete --: con relleno el marco trabaja enterrado, y "
+                      "la carga viva a traves del relleno solo es evaluable "
+                      "desde 2.0 ft (AASHTO LRFD 3.6.1.2.6a), de modo que un "
+                      "marco con menos queda fuera de lo que la Fase 8 sabe "
+                      "verificar. Es mas restrictivo que la fuente, y por eso "
+                      "avisa y no bloquea (criterio general del dueño del "
+                      "proyecto: las analogias avisan): con la rasante bajo "
+                      "la cota que pide, G1 cumple con veredicto INDICADOR "
+                      "si la clave queda bajo la subrasante y el resguardo "
+                      "se cumple, y dice que la fuente admite el marco sin "
+                      "cobertura a cambio de diseñar la losa para la carga "
+                      "directa. El resguardo bajo la subrasante, que no es "
+                      "analogia, sigue bloqueando. Es ademas el valor que el "
+                      "codigo entregaba al marco antes de abrirse este "
+                      "criterio y el que la guia de perfil y la suite "
+                      "declaraban. No se adopta la fila entera, max(Bc/8, "
+                      "0.3048), porque su Bc/8 solo se despega del piso con "
+                      "Bc > 2.4384 m, que ningun escalon de la progresion "
+                      "adoptada alcanza (el mayor, 2.00 x 1.50 con t = 0.20 "
+                      "y una celda, tiene Bc = 2.40 m); con un marco mas "
+                      "ancho o con varias celdas hay que revisarlo. Ni el "
+                      "cero de la fuente como valor, que traslada la "
+                      "exigencia a un diseño estructural de la losa para "
+                      "carga directa que este alcance difiere",
+        fuente="NINGUNA fija la cobertura minima de un marco, y las tres que "
+               "hablan de el lo ADMITEN SIN RELLENO: Manual de Hidrologia "
+               "(MTC), num. 4.1.1.3.4 a), pag. impresa 72, PDF 75 (cita "
+               "MC_HHD.4.1.1.3.4a#NIVELES, permiso: la rasante puede "
+               "coincidir con la losa); su Lamina N 03, pag. impresa 209, PDF "
+               "212 (cita MC_HHD.LAMINA_03, el marco en cruce de canal de "
+               "riego); y AASHTO LRFD 9a ed., Art. 12.6.6.3, pag. impresa "
+               "12-22, PDF 1660 (cita AASHTO_LRFD_9.12.6.6.3#SIN_COBERTURA: "
+               "sin cobertura, la losa superior se diseña para la carga "
+               "vehicular directa). El vacio esta verificado, no es una "
+               "omision: ver la `AfirmacionNegativa` "
+               "SIN_CAJON_DE_CONCRETO_T12663 en el registro, que fija el "
+               "ambito barrido de la Sec. 12 completa. El 0.3048 m es la "
+               "fila del TUBO de la Tabla 12.6.6.3-1 aplicada por analogia, "
+               "mas restrictivo que la fuente",
+        reemplazado_por="Una fila de cajon de concreto en la Tabla 12.6.6.3-1 "
+                        "de una edicion futura de AASHTO LRFD, o una "
+                        "disposicion peruana -- EG-2013 o Manual de Puentes -- "
+                        "que fije altura minima de relleno para marco. "
+                        "Tambien lo cerraria, por otra via, declarar el "
+                        "diseno de la losa superior para carga vehicular "
+                        "directa: entonces el numero deja de hacer falta "
+                        "porque la fuente cubre ese caso expresamente",
+        sensibilidad=(
+            "0.3048 m (12.0 in): el PISO que la Tabla 12.6.6.3-1 pone a la "
+            "fila del TUBO de concreto, adoptado por analogia. Es el valor "
+            "que el codigo entregaba de hecho antes de C7, de modo que "
+            "declararlo no mueve ninguna rasante: lo que cambia es que pasa a "
+            "estar dicho. Quien lo adopte tiene que declarar la analogia -- "
+            "la fila es de `pipe` -- y no presentarla como exigencia",
+            "max(Bc/8, 0.3048): la misma fila del tubo aplicada ENTERA, con "
+            "el ancho exterior del marco en la ranura de Bc. Solo se despega "
+            "del piso cuando Bc > 2.4384 m: para el marco de 2.00 x 1.50 con "
+            "t = 0.15 da Bc/8 = 0.2875 m y gobierna el piso; para uno de "
+            "3.00 x 1.50 da 0.4125 m, un 35 % sobre el piso. Es la lectura "
+            "mas exigente de las tres y sigue siendo analogia",
+            "0 (sin cobertura): la unica rama que la fuente cubre "
+            "EXPRESAMENTE para un cajon, y a cambio obliga a disenar la losa "
+            "superior para carga vehicular directa (pag. impresa 12-22). No "
+            "es la opcion barata: traslada la exigencia de la rasante al "
+            "refuerzo, y esa parte es de expediente",
+        ),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, declarando de cual de las tres "
+                        "lecturas parte y por que. Las dos primeras son "
+                        "ANALOGIA con la fila del tubo y hay que rotularlas "
+                        "asi; la tercera es la unica que la fuente cubre para "
+                        "un cajon, y arrastra una exigencia estructural",
+            dominio="real >= 0, en metros",
+        ),
+        # --- T-3 --- `vacio_verificado` YA SE DECLARA: con valor de
+        # archivo el criterio cubre el vacio que la AfirmacionNegativa
+        # SIN_CAJON_DE_CONCRETO_T12663 fija, y el ancla es §16.12 de la ruta
+        # de la Familia C, donde C7 lo verifico contra la pagina renderizada.
+        vacio_verificado="ruta_familia_c.md Sec. 16.12",
+    ),
+
+    # -----------------------------------------------------------------------
+    # LAS DOS LAGUNAS DE LAS TABLAS DE h_eq, que estaban resueltas en duro
+    # -----------------------------------------------------------------------
+    # Las declaraba el registro (`Laguna(..., si_nadie_lo_cierra=BLOQUEA)`) y
+    # apuntaban a estas dos claves, que NO EXISTIAN: el codigo resolvia las
+    # dos a mano -- el clamp de `_interpolar_h_eq` y el `lejos = borde >= ...`
+    # de `h_eq_sobrecarga_trasdos` -- sin etiqueta, sin sensibilidad y sin
+    # excepcion. Es el «rellenar un vacio en silencio» que CLAUDE.md llama el
+    # peor error posible, cometido DENTRO del cluster que existe para
+    # eliminarlo, y lo encontro la auditoria adversarial de la propia sesion.
+    #
+    # Y NO ERA INOCUO. Con muro paralelo, borde 0.20 m y altura total 1.20 m
+    # las dos lagunas se apilan y la funcion devolvia 1.524 m -- 2.54 veces el
+    # piso del Manual -- sin decir de donde salia. Ahora se detiene.
+    "h_eq_bajo_altura_tabulada": Criterio(
+        valor=None,                 # VACIO: bloquea h_eq bajo 5.0 ft
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_STR,
+        concepto="Que hacer con un muro de menos de 5.0 ft (1.524 m), altura "
+                 "por debajo de la primera fila de las Tablas 3.11.6.4-1 y "
+                 "-2 de AASHTO: 'primera_fila' o 'extrapolar_lineal'",
+        justificacion="Decide que hacer con un muro por debajo de la primera "
+                      "fila tabulada de altura equivalente de suelo, y hoy es "
+                      "un vacio declarado. La fuente (Tablas 3.11.6.4-1 y -2 "
+                      "de AASHTO, transcritas como AASHTO_LRFD_9.T3.11.6.4-1 "
+                      "y -2 en el registro con su regla de interpolacion) "
+                      "arranca en 5.0 ft (1.524 m) y manda interpolar solo "
+                      "para alturas intermedias -- entre filas. Lo que no "
+                      "resuelve: por debajo de la primera fila no hay dos "
+                      "filas entre las que interpolar; extrapolar el primer "
+                      "tramo no lo autoriza la fuente, y tomar la primera "
+                      "fila tampoco lo dice, aunque va del lado conservador "
+                      "porque h_eq decrece con la altura. Las dos lecturas "
+                      "son elecciones del proyectista y por eso esto es [A] y "
+                      "no [N]; se deja vacio hasta que se declare una, y sus "
+                      "numeros estan en el campo `sensibilidad`. El caso es "
+                      "alcanzable en este expediente: un cabezal de "
+                      "alcantarilla pequeña con H mas espesor de zapata menor "
+                      "de 1.524 m cae aqui, y el corredor tiene puntos de "
+                      "diametro pequeño",
+        fuente="AASHTO LRFD 9a ed. (2020), Art. 3.11.6.4, Tablas 3.11.6.4-1 y "
+               "3.11.6.4-2, pag. impresa 3-151 (PDF 205). Las dos arrancan en "
+               "'5.0' y su regla de interpolacion es literal: 'Linear "
+               "interpolation shall be used for intermediate wall heights'. "
+               "Laguna registrada en normativa/tablas.py, tablas "
+               "AASHTO_LRFD_9.T3.11.6.4-1 y -2",
+        sensibilidad=("primera_fila (h_eq = 5.0 ft = 1.524 m para muro "
+                      "paralelo con borde 0.0, o 4.0 ft = 1.219 m para "
+                      "estribo perpendicular) frente a extrapolar_lineal "
+                      "(para 3.94 ft: 5.318 ft = 1.621 m en el caso paralelo, "
+                      "un +6.4 %). La extrapolacion es la MAS conservadora de "
+                      "las dos, de modo que ni siquiera 'el lado seguro' "
+                      "decide sola: hay que elegir",),
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T3.11.6.4-1",
+                    "AASHTO_LRFD_9.T3.11.6.4-2"),
+            que_elige="que hacer con un muro por debajo de la primera fila "
+                      "tabulada (5.0 ft): tomar esa primera fila o "
+                      "extrapolar linealmente",
+            laguna="las dos tablas arrancan en 5.0 ft y su regla de "
+                   "interpolacion habla de alturas INTERMEDIAS; por debajo "
+                   "de la primera fila la fuente no se pronuncia",
+        ),
+    ),
+
+    "h_eq_banda_intermedia_borde": Criterio(
+        valor=None,                 # VACIO: bloquea h_eq en 0 < d < 1.0 ft
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_STR,
+        concepto="Que columna de la Tabla 3.11.6.4-2 leer cuando la distancia "
+                 "del trasdos al borde de calzada cae ESTRICTAMENTE entre "
+                 "0.0 ft y 1.0 ft: 'columna_cero' o "
+                 "'interpolar_entre_columnas'",
+        justificacion="Decide que columna de la Tabla 3.11.6.4-2 se lee "
+                      "cuando la distancia del trasdos al borde de calzada "
+                      "cae estrictamente entre sus dos rotulos, y hoy es un "
+                      "vacio declarado. La fuente (tabla "
+                      "AASHTO_LRFD_9.T3.11.6.4-2 del registro, con su laguna "
+                      "declarada) tiene dos columnas -- '0.0 ft' y '1.0 ft or "
+                      "Further' -- y la unica interpolacion que autoriza es "
+                      "entre filas, para alturas intermedias de muro, no "
+                      "entre columnas. Lo que no resuelve: ninguna regla para "
+                      "la banda 0.0 < d < 1.0 ft. Leer la columna de 0.0 ft "
+                      "para toda distancia menor que 1.0 ft es el lado "
+                      "conservador y no es lo que la tabla dice; interpolar "
+                      "entre columnas es inventarse una regla que la fuente "
+                      "no da. Los dos son elecciones del proyectista y por "
+                      "eso esto es [A]; se deja vacio hasta que se declare "
+                      "una, y los numeros de las dos lecturas estan en el "
+                      "campo `sensibilidad`. El efecto no es marginal: para "
+                      "un muro de 5.0 ft las dos columnas valen 5.0 ft y 2.0 "
+                      "ft, un factor 2.5",
+        fuente="AASHTO LRFD 9a ed. (2020), Tabla 3.11.6.4-2 'Equivalent "
+               "Height of Soil for Vehicular Loading on Retaining Walls "
+               "Parallel to Traffic', pag. impresa 3-151 (PDF 205), "
+               "encabezado superior 'heq (ft) Distance from wall backface to "
+               "edge of traffic'. Laguna registrada en normativa/tablas.py, "
+               "tabla AASHTO_LRFD_9.T3.11.6.4-2",
+        sensibilidad=("para un muro de 5.0 ft y borde 0.5 ft: columna_cero da "
+                      "5.0 ft (1.524 m) e interpolar_entre_columnas da 3.5 ft "
+                      "(1.067 m), un -30 %. Para un muro de 10.0 ft: 3.5 ft "
+                      "frente a 2.75 ft, un -21 %. La eleccion mueve el "
+                      "empuje LS en la misma proporcion",),
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T3.11.6.4-2",),
+            columna_id="borde_0_0_ft",
+            que_elige="que columna leer cuando la distancia del trasdos al "
+                      "borde de calzada cae estrictamente entre 0.0 ft y "
+                      "1.0 ft",
+            laguna="la tabla manda interpolar entre FILAS (alturas) y no "
+                   "autoriza interpolar entre estas dos columnas: la banda "
+                   "0.0 < d < 1.0 ft es una laguna de la fuente",
+        ),
+    ),
+
+    "condicion_pavimento": Criterio(
+        # LA MAS EXIGENTE DE LAS TRES, y ademas la realista para una via de
+        # evitamiento pavimentada. Medido sobre `cobertura_minima_aashto`
+        # para D = 0.90 m: concreto 0.305 m con 'flexible' y con
+        # 'no_pavimentado' frente a 0.229 m con 'rigido'; HDPE 0.610 m con
+        # 'flexible' y con 'rigido' frente a 0.305 m con 'no_pavimentado'.
+        # 'flexible' es el maximo en las tres columnas de material a la vez:
+        # no hay eleccion mas conservadora dentro de la ventana.
+        valor="flexible",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        concepto="Condicion de la superficie de rodadura sobre el cruce, para "
+                 "elegir la fila de la Tabla 12.6.6.3-1: 'no_pavimentado', "
+                 "'flexible' o 'rigido'",
+        justificacion="Decide que fila de condicion de superficie de rodadura "
+                      "de la Tabla 12.6.6.3-1 aplica a este corredor: no "
+                      "pavimentado, flexible o rigido. La tabla es [C] y "
+                      "elegir su fila es [A], el mismo reparto que "
+                      "F_PGA_TABLA / 'F_pga' y "
+                      "REDUCCION_KH_POR_DESPLAZAMIENTO / "
+                      "'factor_muro_eleccion'. La fuente (transcripcion "
+                      "completa de las catorce filas en el registro, tabla "
+                      "AASHTO_LRFD_9.T12.6.6.3-1; pag. impresa 12-22, leida "
+                      "sobre el PDF renderizado) tiene tres columnas -- tipo, "
+                      "condicion y cobertura minima -- y las condiciones de "
+                      "pavimento son valores de la segunda columna que solo "
+                      "aparecen en 2 de los 13 tipos; los otros once llevan "
+                      "un guion impreso, de modo que no hay matriz material "
+                      "por condicion que buscar. La agrupacion cambia ademas "
+                      "con el material: en concreto, no pavimentado y "
+                      "pavimento flexible caen en la misma fila; en HDPE la "
+                      "fuente agrupa al reves -- vias pavimentadas, sin "
+                      "separar flexible de rigido --; en metal corrugado no "
+                      "hay condicion de pavimento en absoluto. Por eso el "
+                      "criterio conserva las tres opciones y es "
+                      "'cobertura_minima_aashto' quien las mapea material por "
+                      "material. Lo que las fuentes no resuelven: cual de las "
+                      "tres es esta via no lo dice ninguna norma -- lo dice "
+                      "la seccion tipica del expediente vial --, y no se "
+                      "deduce de lo que ya hay: el CSV (Sec. 1.2) trae cota "
+                      "de rasante y cota de subrasante, y su diferencia -- el "
+                      "paquete estructural e_paq -- es positiva tambien en un "
+                      "afirmado; un paquete no dice si hay carpeta asfaltica "
+                      "ni si es losa de concreto. Se adopta declarar la "
+                      "condicion en vez de tomar un extremo conservador en "
+                      "silencio, porque no hay extremo seguro unico y el "
+                      "efecto es grande: en HDPE la fila pavimentada pide "
+                      "ID/2 >= 24 in -- 0.75 m para un tubo de 1.50 m -- "
+                      "frente a 0.30 m de la no pavimentada, 2.5 veces, y "
+                      "elegir la mas exigente por si acaso subiria la rasante "
+                      "de todos los puntos sin que nadie pueda rastrear de "
+                      "donde salio, que es exactamente lo que CLAUDE.md "
+                      "prohibe; en concreto el efecto es el contrario: la "
+                      "fila de pavimento rigido pide 9.0 in fijos (0.2286 m), "
+                      "menos que las otras dos",
+        fuente="PENDIENTE - seccion tipica del expediente vial (Manual de "
+               "Diseño Geometrico DG-2018 y el estudio de pavimentos), que fija "
+               "el tipo de superficie de rodadura del corredor. Misma "
+               "procedencia que 'talud_terraplen'",
+        reemplazado_por="Tipo de pavimento de la seccion tipica del proyecto "
+                        "vial, o una columna por punto si el corredor cambia de "
+                        "superficie a lo largo de sus 5 km",
+        sensibilidad=("no_pavimentado", "flexible", "rigido"),
+        verificacion_pendiente="Declarar si la condicion es unica para el "
+                               "corredor o varia por punto. Se declara como "
+                               "criterio de corredor porque la seccion tipica "
+                               "lo es; si el expediente trae tramos con "
+                               "superficie distinta, pasa a ser columna del CSV",
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T12.6.6.3-1",),
+            que_elige="la fila de condicion de la superficie de rodadura "
+                      "sobre el cruce: no pavimentado, flexible o rigido",
+        ),
+    ),
+
+    "espesor_pared_conducto": Criterio(
+        # LA COLUMNA «WALL B» ENTERA DE AASHTO M 170M-04, en metros, por
+        # DIAMETRO DESIGNADO en mm -- no un espesor unico por material, que
+        # era el modelo equivocado: el espesor de pared depende del diametro,
+        # y el bucle de MD recorre el catalogo entero. Con un escalar, un
+        # punto que cerrara en 1.20 m se habria calculado con el espesor del
+        # de 0.90 m sin que nada avisara; con la columna, un diametro que no
+        # este declarado DETIENE el material con su causa.
+        #
+        # DE DONDE SALEN LOS TRECE NUMEROS DEL CONCRETO. AASHTO M 170M-04,
+        # columna «Wall Thickness» de la PARED B, Tabla 2 (Clase II) y Tabla
+        # 3 (Clase III), que imprimen los MISMOS espesores para el mismo
+        # diametro designado: el espesor lo fija la pared, no la clase, y eso
+        # es lo que independiza este criterio de
+        # 'clases_producto_por_relleno' (Fase 8), que sigue abierto. Leidos
+        # sobre la IMAGEN renderizada del PDF, no sobre su texto: el archivo
+        # de normas/ es un escaneo con OCR inservible para tablas. La lectura
+        # se cruzo ademas contra la regularidad que las trece filas cumplen
+        # sin excepcion, t = D/12 + 25 mm, que reproduce cada valor con el
+        # mismo redondeo que imprime la tabla (1050 -> 112.5 -> 113;
+        # 1350 -> 137.5 -> 138; 2250 -> 212.5 -> 213).
+        #
+        # --- T-4 --- EL HDPE Y EL TMC DEJAN DE DESCARTARSE (INF-5.1.17,
+        # INF-3.3.4). Hasta T-4 este criterio declaraba SOLO el concreto: el
+        # TMC y el HDPE se detenian con `DatoFaltanteError` antes de llegar a
+        # 7.A y a V7, y la matriz de materiales degeneraba a concreto.
+        #
+        #   HDPE  TRES FILAS (900, 1050 y 1200 mm), DERIVADAS de la Table
+        #         A12-11 de AASHTO LRFD 9a ed. (`_ESPESOR_HDPE_AASHTO`): el t
+        #         que hace D + 2t = «Max. OD» de la fila de 36, 42 y 48 in.
+        #         La norma de producto no fija el diametro exterior
+        #         (SIN_DIAMETRO_EXTERIOR_M294_TRAD) y esa tabla si. Las filas
+        #         de 1350 y 1500 mm NO se declaran: la tabla termina en
+        #         48 in y no se extrapola; el material se detiene en ese
+        #         escalon nombrando la fila que falta.
+        #   TMC   NO SE DECLARA AQUI: su «espesor» es la profundidad de la
+        #         corrugacion mas el espesor de la plancha, y cual corrugacion
+        #         y cual plancha lo elige 'corrugacion_y_espesor_tmc' [A].
+        #         `M2.espesor_pared_de_tmc` lo deriva de ese criterio para
+        #         los diametros en que la corrugacion es estandar. Una
+        #         entrada «tmc» declarada AQUI manda sobre la derivada (es el
+        #         espesor del producto ya especificado, y un dato del
+        #         producto no se sustituye por una regla): es por donde la
+        #         corrida de pruebas declara su TMC sintetico.
+        valor={"concreto_reforzado": {900: 0.100, 1050: 0.113, 1200: 0.125,
+                                      1350: 0.138, 1500: 0.150, 1650: 0.163,
+                                      1800: 0.175, 1950: 0.188, 2100: 0.200,
+                                      2250: 0.213, 2400: 0.225, 2550: 0.238,
+                                      2700: 0.250},
+               "hdpe": _ESPESOR_HDPE_AASHTO},
+        nivel=NIVEL_PERFIL,
+        # LA VENTANA ES SIMBOLICA PORQUE LA ELECCION LO ES: M 170M-04 tabula
+        # TRES paredes por diametro (A, B y C) y no dice cual usar. La B es la
+        # intermedia y la que las tablas imprimen como referencia de diseño;
+        # la A daria una clave mas baja y un volumen desplazado menor -- las
+        # dos cosas del lado inseguro, que es lo que MAT-D3 y MAT-D4 miden --
+        # y la C, mas espesor, seria conservadora en los dos frentes a costa
+        # de una rasante mas alta. Un rango numerico no puede defender un
+        # valor que es una tabla: lo que se defiende es la COLUMNA elegida.
+        sensibilidad=("Concreto: Pared A (AASHTO M 170M-04, Tablas 1 a 5)",
+                      "Concreto: Pared B (AASHTO M 170M-04, Tablas 1 a 5) -- "
+                      "adoptada",
+                      "Concreto: Pared C (AASHTO M 170M-04, Tablas 1 a 5)",
+                      "HDPE: el t que da el diametro exterior maximo de la "
+                      "Table A12-11 de AASHTO LRFD -- adoptado; o el del "
+                      "perfil del fabricante, que no puede ser mayor",
+                      "TMC: se elige en 'corrugacion_y_espesor_tmc'"),
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Espesor de pared del conducto por material, en metros: la "
+                 "distancia entre la superficie interior y la exterior que "
+                 "separa el diametro hidraulico D del diametro exterior "
+                 "D_ext = D + 2*t",
+        justificacion="Decide el espesor de pared t por material y por "
+                      "diametro designado -- la distancia que separa el "
+                      "diametro hidraulico D del exterior D_ext = D + 2*t --. "
+                      "El catalogo de Sec. 3.2 modela el tubo con un solo "
+                      "diametro, el interior, y hay dos sitios donde el que "
+                      "hace falta es el exterior. Primero, la clave fisica: "
+                      "EG-2013 Subseccion 508.07 mide el relleno minimo "
+                      "desde la clave de la tuberia, que es la superficie "
+                      "exterior, de modo que calcular la clave como cota de "
+                      "entrada + D la deja corta en t. Segundo, el empuje de "
+                      "flotacion: el num. 2.4.3.8.2 del Manual de Puentes "
+                      "define la subpresion sobre el volumen desplazado, que "
+                      "es el exterior; con t = 0.100 m en un tubo de "
+                      "concreto de D = 0.90 m, D_ext = 1.10 m y el empuje "
+                      "calculado con el diametro interior queda un 33.1 % "
+                      "por debajo. Lo que las fuentes no resuelven con un "
+                      "numero unico es distinto en cada material. En "
+                      "concreto, la norma de producto tabula tres espesores "
+                      "por diametro (paredes A, B y C) y no dice cual usar: "
+                      "se adopta la pared B, la intermedia. En polietileno "
+                      "corrugado, la norma de producto no fija el diametro "
+                      "exterior ni la altura del perfil; la tabla de "
+                      "propiedades de tuberia corrugada de polietileno del "
+                      "apendice de la Seccion 12 de las especificaciones "
+                      "LRFD da el diametro exterior maximo del producto para "
+                      "cada tamaño nominal hasta 48 in, y se adopta el t que "
+                      "lleva el diametro designado hasta ese maximo: "
+                      "0.090 m, 0.085 m y 0.099 m para 0.90 m, 1.05 m y "
+                      "1.20 m. En metal corrugado el espesor no se declara "
+                      "aqui: es la profundidad de la corrugacion mas el "
+                      "espesor de la plancha, y los elige otro criterio. En "
+                      "los tres materiales un t mayor es el lado conservador "
+                      "en los dos sitios: sube la clave y exige mas rasante, "
+                      "y sube el empuje de flotacion mas que el peso del "
+                      "relleno. Por eso se adopta la pared intermedia del "
+                      "concreto y no la mas delgada, y el diametro exterior "
+                      "maximo del polietileno y no uno tipico",
+        fuente="CONCRETO: AASHTO M 170M-04, Tablas 2 y 3, columna 'Wall "
+               "Thickness' de la pared B, leida por imagen (trece filas, 900 "
+               "a 2700 mm); la Tabla 5 (Clase V), transcrita en "
+               "AASHTO_M170M.T5, coincide en las tres filas que comparte "
+               "(900, 1050 y 1200 mm). Las filas de 2850 a 3600 mm de la "
+               "serie no se declaran: no se leyeron. HDPE: AASHTO LRFD 9a "
+               "ed. (2020), Apendice A12, Table A12-11 'PE Corrugated Pipes "
+               "(AASHTO M 294)', pag. impresa 12-108 (PDF 1746), columna "
+               "'Max. OD', filas de 36, 42 y 48 in: 42.5, 48.0 y 55.0 in "
+               "(tabla y cita AASHTO_LRFD_9.TA12-11). t = (Max. OD x 0.0254 "
+               "- D designado) / 2: (1.0795 - 0.900)/2 = 0.08975 m; (1.2192 "
+               "- 1.050)/2 = 0.0846 m; (1.3970 - 1.200)/2 = 0.0985 m. La "
+               "norma de producto, AASHTO M 294-11 (traduccion no oficial), "
+               "NO fija el diametro exterior (afirmacion negativa "
+               "SIN_DIAMETRO_EXTERIOR_M294_TRAD) y la tabla de AASHTO LRFD "
+               "no trae 54 ni 60 in: las filas de 1350 y 1500 mm siguen sin "
+               "fuente. TMC: se deriva de 'corrugacion_y_espesor_tmc' "
+               "(AASHTO M 36 Table 1 y num. 8.1.1; ASTM A796 Tables 5, 7 y "
+               "9)",
+        reemplazado_por="El espesor de pared de la clase, el calibre o el "
+                        "perfil efectivamente especificado en el expediente: "
+                        "la pared de la clase que resulte de la Fase 8 "
+                        "(concreto), y el diametro exterior de la ficha del "
+                        "fabricante del perfil (HDPE), que ademas cerraria "
+                        "las filas de 1350 y 1500 mm",
+        verificacion_pendiente="(1) Las filas de 1350 y 1500 mm del HDPE no "
+                               "tienen fuente en normas/: AASHTO LRFD Table "
+                               "A12-11 termina en 48 in. El HDPE se detiene "
+                               "en esos dos escalones con el dato que falta. "
+                               "(2) El t del HDPE sale del diametro exterior "
+                               "MAXIMO de una tabla de propiedades de diseño, "
+                               "no de un producto: confirmar con la ficha "
+                               "del fabricante, que solo puede dar un valor "
+                               "menor o igual. (3) La pared del concreto "
+                               "depende de la clase que fije la Fase 8 solo "
+                               "si esa clase se fabrica con otra pared: "
+                               "confirmar al especificar",
+        resolucion=Libre(
+            que_lo_fija="la clase o el perfil del producto especificado; "
+                        "mientras no se especifique, el proyectista adopta "
+                        "la pared B de AASHTO M 170M-04 para el concreto y "
+                        "el diametro exterior maximo de AASHTO LRFD Table "
+                        "A12-11 para el HDPE",
+            dominio="m > 0, y menor que el radio interior; una tabla por "
+                    "material con el diametro designado en mm como clave",
+        ),
+    ),
+
+    # ----------------------------------------------------------------------
+    # --- T-4 --- (cadena T, 2026-11-11) CUATRO CRITERIOS NUEVOS, al final de
+    # la seccion del catalogo: la corrugacion y la plancha del TMC, el tope
+    # de la serie de la norma de producto, los umbrales de durabilidad del
+    # acero corrugado y el conjunto de suelos de fundacion deficientes.
+    # ----------------------------------------------------------------------
+
+    # LA CLAVE ES «corrugacion/espesor» COMO SE IMPRIMEN: «68x13/2.01» es
+    # la corrugacion de 68 por 13 mm con plancha de 2.01 mm. Las claves
+    # admisibles son las filas de `constantes_normativas.
+    # TMC_PLANCHA_CORRUGADA`, que se DERIVA de las Tablas 5, 7 y 9 de
+    # ASTM A796 y de la Table 1 de AASHTO M 36: el conjunto cerrado no se
+    # escribe a mano.
+    #
+    # ES BARRIBLE (PF-3): `--barrido corrugacion_y_espesor_tmc=68x13/1.63,
+    # 68x13/2.01,68x13/2.77` corre una vez por plancha. Lo que la Fase 8
+    # (T-5) consume de la MISMA fila --area, inercia y radio de giro de la
+    # seccion-- viaja en la vista de `constantes_normativas`.
+    "corrugacion_y_espesor_tmc": Criterio(
+        valor="68x13/2.01",
+        nivel=NIVEL_PERFIL,         # lo consume M2 al armar el catalogo del
+                                    # TMC, que la corrida de perfil recorre
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=_CLAVES_DE_PLANCHA_TMC,
+        concepto="Corrugacion y espesor de plancha de la tuberia metalica "
+                 "corrugada del catalogo: de ellos sale el diametro "
+                 "exterior D_ext = D + 2 x (profundidad de corrugacion + "
+                 "espesor de plancha), en que diametros es estandar el "
+                 "producto y, en la Fase 8, las propiedades de la seccion",
+        justificacion="Decide que producto de tuberia metalica corrugada "
+                      "modela el catalogo: la corrugacion y el espesor de la "
+                      "plancha. La norma de producto lista siete espesores "
+                      "de plancha y cuatro corrugaciones y deja la eleccion "
+                      "al comprador, que la hace con el diseño estructural; "
+                      "ese diseño es de la Fase 8, que desde T-5 lo hace "
+                      "tambien a nivel de perfil. Se adopta la corrugacion de 68 por "
+                      "13 mm, que la norma de producto marca como estandar "
+                      "de 300 mm a 2100 mm de diametro, con plancha de "
+                      "2.01 mm, que es el cuarto de los siete espesores de "
+                      "la norma. El unico respaldo de practica disponible es "
+                      "de segunda mano y esta declarado como tal en la "
+                      "fuente: el expediente de referencia de la tesis, "
+                      "segun el informe que lo resume, adopta 2.0 mm con "
+                      "esa corrugacion en tuberia de 0.90 m y de 1.20 m. "
+                      "Con esa eleccion el diametro exterior es el interior "
+                      "mas dos veces 0.015 m. La "
+                      "eleccion mueve tres cosas y ninguna es hidraulica: "
+                      "el diametro exterior, y con el la clave fisica y el "
+                      "empuje de flotacion, en milimetros; el diametro "
+                      "maximo del catalogo, porque la corrugacion de 68 por "
+                      "13 mm no es estandar por encima de 2100 mm y las de "
+                      "25 mm de profundidad lo son hasta 3600 mm; y, en la "
+                      "Fase 8, la resistencia de la pared. El coeficiente de "
+                      "rugosidad no cambia con esta eleccion: sale de la "
+                      "fila de metal corrugado de la Tabla N 09, que no "
+                      "distingue corrugaciones. El tope de 2100 mm es el de "
+                      "la corrugacion y no el de la plancha: con 2.01 mm de "
+                      "espesor el factor de flexibilidad de instalacion en "
+                      "terraplen de la norma de diseño estructural, que para "
+                      "13 mm de profundidad no puede pasar de 0.245 mm/N, se "
+                      "supera desde un diametro de unos 1.39 m, de modo que "
+                      "los escalones mayores del catalogo necesitan mas "
+                      "espesor u otra corrugacion. Esa comprobacion y la "
+                      "eleccion del calibre son de la Fase 8, tambien a "
+                      "nivel de perfil; aqui el espesor solo fija la "
+                      "envolvente geometrica del tubo",
+        fuente="AASHTO M 36-03 (2007): num. 8.1.2 y Table 7 'Thicknesses of "
+               "Metallic-Coated Steel Sheet', pags. impresas M 36-10 y "
+               "M 36-12 (el comprador elige el espesor de entre 1.02, 1.32, "
+               "1.63, 2.01, 2.77, 3.51 y 4.27 mm; cita AASHTO_M36.T7); "
+               "Table 1 'Corrugation Requirements', pag. impresa M 36-6 "
+               "(las cuatro corrugaciones y la definicion de profundidad; "
+               "cita AASHTO_M36.T1); num. 8.1.1, pag. impresa M 36-10 (el "
+               "diametro nominal se mide en la cresta interior; cita "
+               "AASHTO_M36.8.1.1); Table 6 'Pipe Sizes', pag. impresa "
+               "M 36-11 (en que diametros es estandar cada corrugacion; "
+               "tabla AASHTO_M36.T6). ASTM A796/A796M-13, Tables 5, 7 y 9 "
+               "(propiedades de la seccion por espesor; tablas "
+               "ASTM_A796.T5, .T7 y .T9). LA ELECCION NO ESTA EN NINGUNA "
+               "NORMA: la Nota 9 de la Table 7 de M 36 remite el espesor al "
+               "diseño estructural. RESPALDO DE PRACTICA, de segunda mano: "
+               "segun el INFORME de evaluacion de la app (seccion 1.1), que "
+               "resume el expediente de referencia de la tesis ('2.7 "
+               "Estudio de Estructuras de Obras de Arte y Drenaje', "
+               "repositorio VARIOS), su memoria de TMC de 36 y 48 pulgadas "
+               "calcula un area requerida que 'espesor 1,6 mm pasa' y "
+               "adopta 2,0 mm con corrugacion 68 x 13; la pagina del PDF "
+               "original no se verifico en esta sesion: el PDF no esta en "
+               "normas/",
+        reemplazado_por="La corrugacion y el espesor que resulten del "
+                        "diseño estructural de la Fase 8 (ASTM A796 num. 7 a "
+                        "11, o AASHTO LRFD Art. 12.7) para la altura de "
+                        "relleno real de cada punto, y la disponibilidad "
+                        "del producto en el mercado",
+        verificacion_pendiente="FACTOR DE FLEXIBILIDAD: ASTM A796/A796M-13, "
+                               "num. 10.3 (PDF 4), limita FF = s2/(E I) a "
+                               "0.245 mm/N con corrugacion de 13 mm en "
+                               "terraplen; con I = 39.20 mm4/mm (Tabla 5, "
+                               "2.01 mm) y E = 200 000 MPa el diametro "
+                               "limite es raiz(0.245 x 200000 x 39.20) = "
+                               "1386 mm. El catalogo ofrece esta plancha "
+                               "hasta 2100 mm porque el tope es el de la "
+                               "corrugacion; lo cierra la Fase 8. "
+                               "Desde T-5 la Fase 8 verifica la plancha punto "
+                               "a punto (F8.AREA, F8.COSTURA y F8.FF, por "
+                               "AASHTO LRFD 12.7.2) y, si la adoptada no "
+                               "alcanza, prueba las mas gruesas de la misma "
+                               "corrugacion y AVISA: la envolvente geometrica "
+                               "de 7.A y V7 sigue armada con la adoptada, "
+                               "donde 1 mm de plancha mueve 2 mm del "
+                               "diametro exterior (ficha T5-03)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, de entre las corrugaciones y los "
+                        "espesores que AASHTO M 36 lista; la norma remite "
+                        "la eleccion al diseño estructural",
+            dominio="una clave 'corrugacion/espesor' de las tablas de "
+                    "propiedades de ASTM A796 (Tables 5, 7 y 9); el "
+                    "conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    # EL TOPE QUE RIGE POR DEFECTO DESDE T-4 (INF-3.3.1): el mayor
+    # diametro designado de la SERIE que tabula la norma de producto de
+    # cada material. No se escribe: se DERIVA de las tres tablas del
+    # registro (`_TOPES_DE_LA_NORMA_DE_PRODUCTO`).
+    #
+    # PARA EL TMC NO ES EL TOPE EFECTIVO: la serie de AASHTO M 36 llega a
+    # 3600 mm, pero cada corrugacion es estandar solo en una parte de
+    # ella. `M2.tope_de_diametro` toma el menor entre este tope y el
+    # mayor diametro en que la corrugacion adoptada
+    # ('corrugacion_y_espesor_tmc') lleva «X» en la Table 6: 2100 mm con
+    # 68 por 13 mm.
+    "D_max_norma_producto": Criterio(
+        valor=_TOPES_DE_LA_NORMA_DE_PRODUCTO,
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Diametro maximo de la serie que tabula la norma de "
+                 "producto de cada material, en metros: el tope del "
+                 "catalogo de diametros cuando no se declara uno de "
+                 "disponibilidad de mercado",
+        justificacion="Decide hasta que diametro recorre el catalogo cada "
+                      "material: hasta el mayor diametro que su norma de "
+                      "producto cubre con un producto definido. En tuberia "
+                      "de concreto reforzado son 2.70 m: la serie de "
+                      "diametros designados de la norma sigue hasta 3.60 m, "
+                      "pero por encima de 2.70 m sus tablas no dan espesor "
+                      "de pared ni area de acero y remiten a un diseño "
+                      "especial que propone el fabricante y aprueba el "
+                      "propietario. En tuberia metalica corrugada y en "
+                      "polietileno corrugado es el mayor diametro designado "
+                      "de la serie, 3.60 m y 1.50 m. El tope existe por una "
+                      "razon de calculo: sin el, la progresion de diametros "
+                      "no termina. En tuberia metalica la serie completa no "
+                      "esta disponible en cada corrugacion: la norma marca "
+                      "en que diametros es estandar cada una, y el tope "
+                      "efectivo es el de la corrugacion adoptada, 2.10 m "
+                      "con la de 68 por 13 mm. Que el tope sea el de la "
+                      "norma no garantiza que el producto se consiga: la "
+                      "disponibilidad de mercado se declara aparte y solo "
+                      "puede bajarlo",
+        fuente="CONCRETO: AASHTO M 170M-04. Mayor diametro con diseño "
+               "estandar, 2700 mm: Tabla 1 (Clase I, pag. PDF 3), filas de "
+               "1500 a 2700 mm con pared y acero y filas de 2850 a 3450 mm "
+               "con llamada a nota y rayas; Tabla 3 (Clase III, pags. PDF 6 "
+               "y 7), ultima fila con acero la de 2700 mm. Por encima, num. "
+               "7.2.1 y 7.2.2 'Modified and Special Designs', pag. impresa "
+               "M 170M-13 (citas AASHTO_M170M.7.2.1 y AASHTO_M170M.7.2.2, "
+               "leidas por imagen; el cuerpo de la Tabla 2 y el final de la "
+               "Tabla 4 no se leen en el ejemplar). TMC: AASHTO M 36-03 "
+               "(2007), Table 6 'Pipe Sizes', pag. impresa M 36-11, de 100 a "
+               "3600 mm (tabla AASHTO_M36.T6; coincide con la Tabla 1 de "
+               "ASTM A760/A760M-10, ASTM_A760.T1). HDPE: AASHTO M 294-11, "
+               "num. 1.1.1 y 7.2.1, tamaños nominales de 300 a 1500 mm "
+               "(tabla AASHTO_M294_TRAD.T7.2.2; TRADUCCION NO OFICIAL, sin "
+               "firma porque el ejemplar no imprime folio)",
+        reemplazado_por="La edicion vigente de cada norma de producto, si "
+                        "cambia la serie; para bajar el tope, la "
+                        "disponibilidad de mercado declarada en "
+                        "'D_max_catalogo'; y, para un tubo de concreto de "
+                        "2850 a 3600 mm, el diseño especial aprobado del "
+                        "fabricante, con su espesor de pared",
+        verificacion_pendiente="El tope del HDPE (1.50 m) se lee de una "
+                               "traduccion no oficial de AASHTO M 294-11: "
+                               "falta reverificarlo contra el original en "
+                               "ingles (FUENTES_AUSENTES['AASHTO_M294']). "
+                               "El del concreto se leyo por imagen de las "
+                               "Tablas 1 y 3 de AASHTO M 170M-04; el cuerpo "
+                               "de la Tabla 2 y el final de la Tabla 4 no "
+                               "se leen en el ejemplar",
+        resolucion=DeTabla(
+            tablas=("AASHTO_M170M.T5", "AASHTO_M36.T6",
+                    "AASHTO_M294_TRAD.T7.2.2"),
+            que_elige="el mayor diametro que cada norma de producto cubre. "
+                      "No hay eleccion del proyectista: en TMC y HDPE es la "
+                      "ultima fila de la tabla; en concreto, la ultima fila "
+                      "con diseño estandar (2700 mm), que no es la ultima "
+                      "de la serie",
+        ),
+    ),
+
+    # LOS TRES UMBRALES CON QUE LA MATRIZ DE DURABILIDAD DESCARTA EL TMC
+    # (`M2.matriz_durabilidad`). Son [C]: la norma peruana solo escribe
+    # el umbral de PROTECCION (pH < 5.8, EG-2013 507.10, [N] en
+    # `constantes_normativas.PH_MIN_AGUA_TMC_SIN_PROTECCION`), no el de
+    # inadmisibilidad. Sin ensayo declarado ninguno de los tres actua.
+    "durabilidad_tmc_umbrales": Criterio(
+        valor={"pH_min": 5.0, "pH_max": 8.5,
+               "resistividad_min_ohm_cm": 1000.0},
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Umbrales de pH y de resistividad del suelo o del agua "
+                 "fuera de los cuales la tuberia de acero corrugado deja de "
+                 "ser material candidato",
+        justificacion="Decide a partir de que pH y de que resistividad la "
+                      "matriz de durabilidad retira la tuberia metalica "
+                      "corrugada de los materiales candidatos de un punto. "
+                      "El Manual de Hidrologia nombra las condiciones que "
+                      "corroen una alcantarilla -- suelos y aguas acidos o "
+                      "alcalinos, y la conductividad electrica del suelo -- "
+                      "y no les pone umbral; las especificaciones generales "
+                      "de construccion exigen proteger la tuberia metalica "
+                      "cuando el agua tiene pH menor de 5.8, sin prohibir "
+                      "el material; y la norma de producto reconoce que hay "
+                      "ambientes en que ningun recubrimiento metalico "
+                      "basta, sin decir cuales. El vacio se cubre con el "
+                      "manual de hidraulica de una agencia vial que si los "
+                      "cuantifica: con pH menor de 5.0 o mayor de 8.5, o "
+                      "con resistividad menor de 1000 ohm-cm, solo admite "
+                      "los materiales de su zona de corrosion severa, que "
+                      "son concreto, termoplastico y aluminio. Los umbrales "
+                      "son de una agencia de otro pais y de otro clima: se "
+                      "adoptan como criterio de descarte porque son los "
+                      "unicos escritos, y el proyectista puede "
+                      "endurecerlos dentro de la ventana, nunca relajarlos. "
+                      "Entre pH 5.0 y 5.8 la tuberia metalica sigue "
+                      "candidata con el requisito peruano de proteccion",
+        fuente="WSDOT Hydraulics Manual M 23-03.12 (abril 2026): num. 8-5.1 "
+               "'pH', pag. impresa 8-25 (PDF 240), cita WSDOT_HM.8-5.1#PH "
+               "(pH menor de 5.0 o mayor de 8.5: sitio no apto, solo tubos "
+               "de la Zona de Corrosion III); num. 8-5.2 'Resistivity', pag. "
+               "impresa 8-26 (PDF 241), cita WSDOT_HM.8-5.2#RESISTIVIDAD "
+               "(menos de 1,000 ohm-cm: solo materiales de la Zona III); "
+               "num. 8-4.3 'Corrosion Zone III', pag. impresa 8-17 (PDF "
+               "232), cita WSDOT_HM.8-4.3#ZONA_III, y su Table 8-3 (pag. "
+               "impresa 8-25): concreto, termoplastico y aluminio, ningun "
+               "tubo de acero. NORMA PERUANA, que no da estos umbrales: "
+               "EG-2013 Subseccion 507.10 (pH < 5.8: proteger; cita "
+               "EG2013.507.10) y Manual de Hidrologia num. 4.1.1.3.7 f) y "
+               "g) (citas MC_HHD.4.1.1.3.7f#TMC y .7g#AGRESIVAS), "
+               "cualitativos. NORMA DE PRODUCTO: AASHTO M 36 num. 1.2 (cita "
+               "AASHTO_M36.1.2), sin umbral",
+        reemplazado_por="Un estudio de durabilidad del corredor que estime "
+                        "la vida util de la tuberia metalica con el pH y la "
+                        "resistividad medidos (el propio manual remite al "
+                        "metodo del departamento de transporte de "
+                        "California), o la especificacion de un "
+                        "recubrimiento con vida util garantizada",
+        # VENTANA POR CAMPO. pH_min entre el umbral de la fuente tecnica y el
+        # de PROTECCION de la norma peruana (5.8): declarar 5.8 es tratar el
+        # «será necesario proteger» de EG-2013 como descarte, la lectura mas
+        # exigente que una fuente respalda. pH_max y la resistividad no
+        # tienen una segunda fuente verificada: su ventana es el dominio en
+        # que el umbral conserva sentido (de neutro a la escala entera; de
+        # cero a diez veces el valor de la fuente), no una banda de practica.
+        #
+        # H4 DE LA AUDITORIA DE T-4: LAS TRES VENTANAS SOLO ENDURECEN. La
+        # primera version dejaba pH_max hasta 14 y la resistividad minima
+        # desde 0, que APAGAN el filtro declarando un valor: la ficha decia
+        # «solo se puede endurecer» y la puerta no lo cumplia. Ahora cada
+        # ventana va del valor de la fuente hacia el lado exigente: pH_max
+        # de neutro al 8.5 de la fuente; resistividad minima del 1000 de la
+        # fuente al 3000 ohm-cm con que AASHTO LRFD define el suelo no
+        # agresivo para acero galvanizado ('suelo_agresivo_acero_lrfd').
+        sensibilidad={"pH_min": (5.0, 5.8), "pH_max": (7.0, 8.5),
+                      "resistividad_min_ohm_cm": (1000.0, 3000.0)},
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando los umbrales del WSDOT "
+                        "Hydraulics Manual, que es fuente tecnica reconocida "
+                        "y no norma peruana",
+            dominio="pH adimensional, de 0 a 14; resistividad en ohm-cm, "
+                    "positiva",
+        ),
+    ),
+
+    # EL CONSUMIDOR QUE `sucs_fundacion` NO TENIA (INF-5.1.9). La columna
+    # es obligatoria en el CSV y hasta T-4 no la leia ningun modulo
+    # (ficha C6-01 de decisiones_diferidas.md, que dejo dicho por que no
+    # se cableaba: el Manual no define «mala calidad»). Lo que T-4 abre
+    # NO es un mapeo inventado: es un conjunto DECLARADO, [A], apoyado en
+    # la unica lista peruana de suelos que no sirven de apoyo, y produce
+    # un AVISO en la memoria -- no cambia material ni seccion --.
+    "sucs_fundacion_deficiente": Criterio(
+        valor=("OL", "OH", "PT"),
+        nivel=NIVEL_PERFIL,         # lo lee `M2.matriz_durabilidad`, que la
+                                    # corrida de perfil ejecuta por punto
+        etiqueta="A",
+        forma=FORMA_SERIE_DE_CLAVES,
+        concepto="Grupos de la clasificacion SUCS del suelo de fundacion "
+                 "que el proyecto cuenta como deficientes, para avisar de "
+                 "que el Manual recomienda en ese caso la alcantarilla tipo "
+                 "marco de concreto",
+        justificacion="Decide que grupos SUCS del suelo de fundacion "
+                      "disparan el aviso de suelo deficiente. El Manual de "
+                      "Hidrologia recomienda la alcantarilla tipo marco de "
+                      "concreto cuando el suelo de fundacion es de mala "
+                      "calidad y no dice que suelo lo es: no da umbral, ni "
+                      "clasificacion, ni remision a otra norma. La fuente "
+                      "peruana mas cercana es la norma de suelos y "
+                      "cimentaciones, que prohibe cimentar sobre turba y "
+                      "sobre suelo organico; en su figura de simbolos SUCS "
+                      "esos materiales son la turba y los limos y arcillas "
+                      "organicos de baja y de alta plasticidad. Se adoptan "
+                      "esos tres grupos, que son el conjunto minimo: los "
+                      "que una norma peruana excluye como apoyo. Esa norma "
+                      "es de edificaciones y no de obras viales, y por eso "
+                      "el conjunto es una adopcion y no una exigencia. No "
+                      "se añaden las arcillas de alta plasticidad ni los "
+                      "limos, que un estudio de suelos puede calificar de "
+                      "deficientes por su capacidad portante o su "
+                      "asentamiento: ninguna fuente consultada lo dice por "
+                      "el solo simbolo, y el proyectista puede declararlos. "
+                      "El aviso no cambia el material ni la seccion que el "
+                      "calculo adopta",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.1.3.4 a), pag. impresa 72 (cita "
+               "MC_HHD.4.1.1.3.4a#MARCO, condicion "
+               "COND-MARCO-SUELO-MALA-CALIDAD): recomienda el marco con "
+               "suelos de fundacion de mala calidad, sin definirlos. NTE "
+               "E.050 Suelos y Cimentaciones, Art. 24 'Suelos no permitidos "
+               "para apoyar las cimentaciones', pag. impresa 37 (cita "
+               "E050.24): turba, suelo organico, tierra vegetal y rellenos; "
+               "y su Figura 3 'Simbologia de Suelos (Referencial)', pag. "
+               "impresa 31 (tabla y cita E050.FIG3): OL, OH y Pt son los "
+               "simbolos del suelo organico y de la turba",
+        reemplazado_por="El estudio de mecanica de suelos del expediente, "
+                        "que califica el suelo de fundacion de cada cruce "
+                        "por su capacidad portante y su asentamiento, no "
+                        "por su simbolo",
+        # LA VENTANA ES EL CONJUNTO DE LOS QUINCE SIMBOLOS de la Figura 3 de
+        # la E.050, DERIVADO de la tabla transcrita. Un simbolo doble de
+        # frontera («SP-SM», «CL-ML») se compara por sus dos mitades.
+        sensibilidad=_SIMBOLOS_SUCS_E050,
+        resolucion=DeTabla(
+            tablas=("E050.FIG3",),
+            que_elige="los simbolos SUCS que cuentan como suelo de "
+                      "fundacion deficiente; los tres adoptados son los que "
+                      "el Art. 24 de la misma norma no permite como apoyo",
+        ),
+    ),
+
+    # --- T-4 (auditoria adversarial, H3) --- LOS CRITERIOS ELECTROQUIMICOS
+    # DE AASHTO LRFD PARA ACERO GALVANIZADO ENTERRADO, y que hace la matriz
+    # de durabilidad con ellos. Son DOS criterios porque son dos preguntas:
+    # los NUMEROS son de la fuente ([C]); aplicarlos a una alcantarilla es
+    # una analogia, y QUE EFECTO tiene esa analogia sobre el TMC es una
+    # eleccion del proyecto ([A]).
+    "suelo_agresivo_acero_lrfd": Criterio(
+        valor={"pH_min": 5.0, "pH_max": 10.0,
+               "resistividad_min_ohm_cm": 3000.0,
+               "cloruros_max_ppm": 100.0, "sulfatos_max_ppm": 200.0},
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Criterios electroquimicos del suelo no agresivo para "
+                 "acero galvanizado enterrado: intervalo de pH, resistividad "
+                 "minima y contenidos maximos de cloruros y de sulfatos",
+        justificacion="Decide cuando la matriz de durabilidad considera "
+                      "agresivo para la tuberia metalica el suelo de un "
+                      "punto con ensayos declarados. La norma peruana de "
+                      "construccion exige proteger la tuberia metalica "
+                      "cuando los suelos circundantes presentan sustancias "
+                      "agresivas y no las cuantifica; la norma de diseño "
+                      "adoptada si cuantifica el suelo no agresivo para "
+                      "acero galvanizado, aunque lo hace para refuerzos de "
+                      "muros y anclajes y no para alcantarillas. El proyecto "
+                      "toma esos numeros como la lectura cuantitativa de la "
+                      "clausula peruana, por analogia de metal, "
+                      "recubrimiento y medio. Basta incumplir uno para que "
+                      "el suelo cuente como agresivo. El contenido de "
+                      "materia organica, que la fuente limita al 1 por "
+                      "ciento, no entra porque no hay dato de entrada que lo "
+                      "traiga, y la dispensa que la fuente permite con "
+                      "resistividad de 5000 ohm-cm o mas no se aplica, del "
+                      "lado seguro. Sin ensayos declarados ninguno actua",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed.: Art. "
+               "11.10.6.4.2a 'Steel Reinforcements', pag. impresa 11-89 (PDF "
+               "1558), cita AASHTO_LRFD_9.11.10.6.4.2a#NO_AGRESIVO: pH de 5 "
+               "a 10, resistividad de al menos 3000 ohm-cm, cloruros hasta "
+               "100 ppm, sulfatos hasta 200 ppm, materia organica hasta 1 "
+               "por ciento; Art. 11.12.8 'Corrosion Protection', pag. "
+               "impresa 11-134 (PDF 1603), cita "
+               "AASHTO_LRFD_9.11.12.8#AGRESIVO: la misma lista, y que basta "
+               "incumplir un criterio. Segunda fuente, menos estricta salvo "
+               "en el pH: Art. 10.7.5, pag. impresa 10-125 (PDF 1414), cita "
+               "AASHTO_LRFD_9.10.7.5#INDICATIVOS, indicativos para pilotes. "
+               "NINGUNO DE LOS TRES ARTICULOS ES DE ALCANTARILLAS: la "
+               "aplicacion es por analogia",
+        reemplazado_por="Un criterio de agresividad del suelo escrito para "
+                        "tuberia de acero corrugado por una norma o un "
+                        "manual de drenaje, o el estudio de durabilidad del "
+                        "corredor",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando por analogia los "
+                        "criterios que AASHTO LRFD escribe para refuerzos "
+                        "de acero galvanizado enterrados",
+            dominio="pH adimensional, de 0 a 14; resistividad en ohm-cm, "
+                    "positiva; concentraciones en ppm, no negativas",
+        ),
+    ),
+
+    "suelo_agresivo_lrfd_sobre_tmc": Criterio(
+        valor="aviso",
+        nivel=NIVEL_PERFIL,         # lo lee `M2.matriz_durabilidad` cuando
+                                    # el punto trae ensayos
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("aviso", "excluye"),
+        concepto="Que hace la matriz de durabilidad con la tuberia metalica "
+                 "cuando el suelo resulta agresivo segun los criterios de "
+                 "acero galvanizado enterrado aplicados por analogia: avisar "
+                 "y exigir proteccion, o excluir el material",
+        justificacion="Decide si un suelo agresivo segun los criterios "
+                      "electroquimicos adoptados por analogia saca a la "
+                      "tuberia metalica de los materiales candidatos o solo "
+                      "lo advierte. Los criterios son de la norma de diseño "
+                      "adoptada, pero estan escritos para refuerzos de muros "
+                      "de suelo reforzado y para anclajes, piezas delgadas "
+                      "cuya seccion resistente se pierde con la corrosion, "
+                      "y no para un tubo que admite proteccion de solera, "
+                      "mas espesor o recubrimiento. Por eso el valor del "
+                      "archivo es aviso: la exclusion del material se "
+                      "reserva a la fuente tecnica que habla de tuberia, por "
+                      "pH y por resistividad, y la analogia deja la tuberia "
+                      "metalica como candidata con el aviso impreso y con "
+                      "la exigencia de proteccion de la norma peruana de "
+                      "construccion. La opcion excluye es la lectura "
+                      "estricta de la misma analogia y existe para medir "
+                      "cuanto cambia el expediente si se adopta: con ella un "
+                      "suelo con cloruros o sulfatos sobre el criterio, o "
+                      "con resistividad entre 1000 y 3000 ohm-cm, descarta "
+                      "el material. Ninguna de las dos mueve un numero de "
+                      "calculo: cambia que materiales se evaluan. Sin "
+                      "ensayos declarados ninguna actua",
+        fuente="NINGUNA FUENTE FIJA ESTE EFECTO. Los criterios son de AASHTO "
+               "LRFD 9a ed., Art. 11.10.6.4.2a (pag. impresa 11-89) y Art. "
+               "11.12.8 (pag. impresa 11-134), escritos para refuerzos de "
+               "acero enterrados; el efecto sobre una alcantarilla metalica "
+               "es adopcion del proyecto. La exclusion por pH y por "
+               "resistividad con fuente especifica de tuberia esta en "
+               "'durabilidad_tmc_umbrales' (WSDOT Hydraulics Manual, num. "
+               "8-5.1 y 8-5.2) y la exigencia de proteccion en EG-2013 "
+               "507.10",
+        reemplazado_por="Un criterio de agresividad escrito para tuberia de "
+                        "acero corrugado, que diga que hacer con el material "
+                        "y no solo cuando el suelo es agresivo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente define cuando el suelo "
+                        "es agresivo para acero galvanizado enterrado y no "
+                        "dice que hacer con una alcantarilla",
+            dominio="una de las dos opciones: aviso o excluye",
+        ),
+    ),
+
+    # ----------------------- FASE 8: ESTRUCTURAL DEL CONDUCTO -------------
+    # Seleccion de clase/calibre por norma de producto (items 1-2) y V7 -
+    # flotacion (item 3). El resto de Fase 8 (item 5: rigidez de anillo,
+    # pandeo, costura) NO se calcula por decision expresa de la hoja de
+    # ruta -- se difiere al expediente tecnico, ver
+    # M8_estructural.verificacion_diferida_estructural().
+
+    # 'NF_profundidad_m' ya no vive aqui: es un dato de sitio [S] que se mide
+    # en cada cruce, no una exigencia normativa, y por eso es COLUMNA DEL CSV
+    # (ver modelos.PuntoCritico y M0_carga.COLUMNAS). El 1.4 m que este
+    # criterio declaraba era la caracterizacion general de la llanura del Bajo
+    # Piura, y su propia `verificacion_pendiente` ya avisaba de que podia no
+    # ser uniforme dentro del tramo; repetirlo en las cuatro filas del CSV
+    # habria fingido cuatro mediciones donde hubo una descripcion de zona.
+
+    # --- T-5 --- (cadena T; INF-3.3.5) DEJA DE SER UN VACIO, y lo que pasa a
+    # tener valor es SOLO lo que el ejemplar de M 170M deja leer. La version
+    # anterior lo declaraba [C] sin valor, de nivel expediente, porque «falta
+    # TRANSCRIBIR» las Tablas 1 a 5 (concreto) e «IMPLEMENTAR» el
+    # procedimiento de A796 (TMC). T-5 implementa los procedimientos (M8,
+    # concreto por el metodo indirecto de AASHTO LRFD 12.10.4.3, TMC por
+    # 12.7.2, HDPE por 12.12) y transcribe la tabla HASTA DONDE SE LEE: de
+    # las cinco D-load de 0.3 mm solo la de la Clase II es legible (cita
+    # AASHTO_M170M.T2#DLOAD); las otras cuatro NO se completan de memoria.
+    # Lo que el valor dice es eso, y el consumidor (`M8.verificar_concreto`)
+    # se detiene con DatoFaltanteError, nombrando la clase, cuando la D-load
+    # requerida supera la ultima clase transcrita. Pasa a nivel de PERFIL:
+    # lo invoca la verificacion F8.CLASE de la Fase 5, que la corrida de
+    # perfil evalua (medido en tests/test_nivel_medido.py).
+    "clases_producto_por_relleno": Criterio(
+        valor={
+            # {material: {clase: D-load de 0.3 mm en N/m/mm}}. Una clase que
+            # no esta es una clase cuya D-load no se pudo leer: la norma la
+            # tiene; este ejemplar no la deja ver.
+            "concreto_reforzado": {"II": 50.0},
+        },
+        nivel=NIVEL_PERFIL,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Resistencia de producto por clase del tubo de concreto "
+                 "reforzado (AASHTO M 170M-04: D-load para producir una "
+                 "grieta de 0.3 mm, en N/m/mm), contra la que la Fase 8 "
+                 "elige la clase minima del punto. Para el TMC y el HDPE no "
+                 "hay tabla de clase: el calibre y el perfil salen del "
+                 "procedimiento de AASHTO LRFD 12.7 y 12.12 que M8 implementa",
+        justificacion="La norma peruana de construccion manda que el "
+                      "proyecto indique la clase del tubo conforme a AASHTO "
+                      "M 170M, y la norma de diseño la elige comparando la "
+                      "D-load requerida con la de la clase. Lo que este "
+                      "criterio declara es la columna de la norma de "
+                      "producto que esa comparacion necesita, transcrita "
+                      "hasta donde el ejemplar la deja leer: la D-load de "
+                      "0.3 mm de la Clase II, 50.0 N/m/mm, impresa al pie de "
+                      "su tabla, que tiene filas con pared B y acero de 300 "
+                      "a 2700 mm. Las de las Clases I, III, IV y V no se leen "
+                      "en el ejemplar --sus tablas son recomposiciones OCR "
+                      "con digitos equivocados-- y no se escriben de memoria: "
+                      "si un punto pide mas que la Clase II, la Fase 8 se "
+                      "detiene diciendo que clase falta transcribir. La Clase "
+                      "I, ademas, solo se tabula de 1500 mm en adelante. Para "
+                      "el TMC (ASTM A796, AASHTO LRFD 12.7) y el HDPE (AASHTO "
+                      "LRFD 12.12) no hay clase por altura: el espesor de la "
+                      "plancha y la verificacion del perfil son la salida de "
+                      "su procedimiento, que M8 corre con la altura real de "
+                      "cada punto",
+        fuente="AASHTO M 170M-04, Tabla 2 'Design Requirements for Class II "
+               "Reinforced Concrete Pipe' (continuacion), pag. impresa M 170M-5, "
+               "leida por imagen: «D-load to produce a 0.3-mm crack 50.0» "
+               "(cita AASHTO_M170M.T2#DLOAD). AASHTO LRFD 9a ed., Art. "
+               "12.10.4.3.1, pag. impresa 12-64: «The D-load for a particular "
+               "class and size of pipe shall be determined in accordance with "
+               "AASHTO M 170M» (cita AASHTO_LRFD_9.12.10.4.3.1#DLOAD). EG-2013 "
+               "506.02, pag. impresa 959: la clase se indica en el Proyecto "
+               "(cita EG2013.506.02#CLASE). ASTM A796/A796M-13 y AASHTO LRFD "
+               "12.7 y 12.12 para el TMC y el HDPE, sin tabla de clase "
+               "(afirmaciones negativas SIN_TABLA_CALIBRE_POR_COBERTURA_A796 "
+               "y SIN_CLASE_POR_ALTURA_M294_TRAD)",
+        reemplazado_por="Las D-load de 0.3 mm de las Clases I, III, IV y V, "
+                        "leidas en un ejemplar legible de AASHTO M 170M "
+                        "(la M 170M-23 vigente, o ASTM C76M): se añaden aqui "
+                        "como filas del dict. El codigo ya sabe desde que "
+                        "diametro tabula la norma cada clase "
+                        "(DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM: la Clase "
+                        "I desde 1500 mm, las demas desde 300 mm) y no "
+                        "ofrece una clase por debajo; y con las cinco "
+                        "declaradas, un tubo que pida mas que la Clase V "
+                        "deja de detenerse por dato que falta y pasa a NO "
+                        "CUMPLIR. Es una entrada que debe conseguir el dueño "
+                        "del proyecto (docs/contrato_entradas.md)",
+        verificacion_pendiente="LEGIBILIDAD DEL EJEMPLAR (medida en T-5, "
+                               "pagina por pagina y por imagen): Clase II "
+                               "0.3 mm = 50.0 (PDF 5, legible); Clase III, "
+                               "ultima = 100.0 (PDF 7), 0.3 mm no se ve; "
+                               "Clase V, «\\ 40.0» y «1 ISD» (PDF 11, el "
+                               "primer digito ilegible); Clases I y IV, "
+                               "ilegibles. Con solo la Clase II un tubo que "
+                               "pida mas se detiene en vez de recibir una "
+                               "clase que el ejemplar no deja verificar: es "
+                               "decision del dueño del proyecto (2026-11-12) "
+                               "BLOQUEAR, no subir de diametro para esquivar "
+                               "una clase. Los diametros desde los que cada "
+                               "clase se tabula SI se leen (PDF 3, 4, 6, 8 y "
+                               "10): 1500 mm la Clase I y 300 mm las otras "
+                               "cuatro",
+        resolucion=Libre(
+            que_lo_fija="la norma de producto, por clase; el proyecto solo "
+                        "transcribe lo que el ejemplar deja leer",
+            tabla_pendiente="AASHTO M 170M-04 Tablas 1, 3, 4 y 5: D-load de "
+                            "0.3 mm ilegible en el ejemplar de normas/",
+        ),
+    ),
+
+    # 'FS_flotacion' SE RETIRO. Declaraba el factor de seguridad global de
+    # ΣW >= FS*U, que es lenguaje de TENSION ADMISIBLE, y V7 se reescribio
+    # como el equilibrio de factores de carga que corresponde al marco LRFD
+    # que adopta Sec. 0.2:
+    #
+    #     gamma_DC_min * DC + gamma_EV_min * EV  >=  gamma_WA * U
+    #
+    # No se le redefinio el contenido porque en LRFD no queda nada que
+    # represente: el margen entre estabilizante y desestabilizante lo hacen
+    # ahora los propios gamma, y conservar ademas un FS seria contar dos veces
+    # el mismo margen. Los gamma NO son un criterio: son [N] y viven en
+    # constantes_normativas (las dos tablas del num. 2.4.5.3.1); lo que
+    # 'factores_carga_aashto' declara, mas abajo, es de que FILA de gamma_p
+    # cuelga cada estructura, y es el mismo criterio del que come M9
+    # (Sec. 9.2). Que Fase 8 y Fase 9 lean las mismas tablas y la misma
+    # declaracion es lo que impide que el expediente termine con dos juegos
+    # de factores de carga distintos.
+
+    "peso_especifico_relleno_kn_m3": Criterio(
+        # kN/m3. EXTREMO INFERIOR del rango declarado, y es la eleccion
+        # conservadora sin discusion posible: en V7 el peso del relleno esta
+        # del lado ESTABILIZANTE (EV, minorado por gamma_EV_min), de modo que
+        # cuanto menos pese, mas cerca de flotar queda el conducto. Adoptar
+        # 20.0 haria pasar V7 en puntos donde 17.0 la reprueba.
+        valor=17.0,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Peso especifico del material de relleno sobre la clave, "
+                 "para el termino ΣW de V7 (peso del prisma de relleno que "
+                 "se opone a la flotacion)",
+        justificacion="Ni la hoja de ruta ni el CSV (Sec. 1.2) traen el "
+                      "peso especifico del material de relleno: depende de "
+                      "la cantera que finalmente se especifique. V7 lo "
+                      "necesita para pesar el prisma de relleno sobre la "
+                      "clave (ancho D, altura la del punto -- ver "
+                      "M8_estructural.peso_relleno_kn_m). El peso propio del "
+                      "conducto NO se suma: omitirlo es conservador (reduce "
+                      "ΣW) y evita depender del espesor de pared que "
+                      "'clases_producto_por_relleno' todavia no resuelve",
+        fuente="PENDIENTE - ensayo de peso especifico del material de "
+              "cantera propuesto, o valor de practica corriente declarado "
+              "con su fuente en la memoria",
+        reemplazado_por="Peso especifico medido del material de relleno "
+                        "efectivamente especificado en el proyecto",
+        sensibilidad=(17.0, 20.0),   # kN/m3, rango corriente de rellenos compactados
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el ensayo de peso especifico "
+                        "del material de cantera propuesto o un valor de "
+                        "practica corriente declarado con su fuente",
+            dominio="kN/m3 > 0",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-5 --- (cadena T, 2026-11-12) SIETE CRITERIOS NUEVOS de la Fase 8,
+    # al final de su seccion: cinco de la FASE A y dos del cierre
+    # ('carga_viva_bajo_relleno_alto' y 'perfil_hdpe_fabricante', que
+    # salieron de las dos auditorias adversariales). Los siete son [A] de
+    # PERFIL: los invocan las verificaciones F8.* de la Fase 5, que deciden si
+    # la combinacion material / diametro / plancha / clase EXISTE.
+    #
+    # QUE CORRIDA MIDIO EL NIVEL DE CADA UNO (CLAUDE.md, «Nivel de entrega»),
+    # porque la version anterior de esta nota decia «medido en
+    # tests/test_nivel_medido.py» de los cinco y solo era cierto de uno:
+    #   * 'instalacion_estandar_concreto' y 'carga_viva_bajo_relleno_alto'
+    #     los invoca la corrida de PERFIL de referencia (A-01 y A-02 se
+    #     dimensionan en tubo de concreto): medidos por
+    #     `tests/test_nivel_medido.py`.
+    #   * 'fabricacion_tmc', 'eta_importancia_operativa_conducto',
+    #     'relleno_estructural_hdpe', 'parametros_diseno_hdpe' y
+    #     'perfil_hdpe_fabricante' NO los alcanza la corrida de referencia
+    #     (ningun punto del fixture llega al TMC ni al HDPE): los mide la
+    #     corrida de perfil de `tests/test_t5_correcciones_auditoria.py::
+    #     test_la_corrida_de_perfil_que_llega_al_tmc_y_al_hdpe_invoca_sus_
+    #     criterios`, que excluye el concreto por diametro de catalogo.
+    #
+    # LOS VALORES DE ARCHIVO NO SON TODOS «EL MAS DESFAVORABLE», y la nota
+    # anterior lo decia de los cinco. Lo que cada uno es:
+    #   * 'instalacion_estandar_concreto' = tipo_3: la instalacion que la
+    #     compactacion exigida por el EG-2013 corresponde, leida contra la
+    #     Tabla 12.10.2.1-1 (decision del dueño, 2026-11-12); el Tipo 4, cota
+    #     conservadora, esta en la ventana y se imprime al lado.
+    #   * 'fabricacion_tmc' = anular_remachada_simple: la costura mas debil
+    #     TABULADA (decision del dueño); el EG-2013 describe tuberia
+    #     empernada, que no tiene tabla, y el resultado lo avisa.
+    #   * 'eta_importancia_operativa_conducto' = 1.05: extremo desfavorable
+    #     de la graduacion del Manual de Puentes; la fija el Propietario.
+    #   * 'relleno_estructural_hdpe' = Si-95: la columna menos favorable de
+    #     las que corresponden al material GRANULAR que el EG-2013 508.02 d)
+    #     exige para la cama y la sujecion lateral.
+    #   * 'parametros_diseno_hdpe': K_gammaE, D_L, K_B y la deflexion, el
+    #     valor que la norma llama TIPICO (no el extremo: K_B desfavorable
+    #     seria 0.110 y D_L 6.0); los años, la columna desfavorable (75);
+    #     nu = 0.40 es un valor corriente SIN FUENTE (0.45 seria el
+    #     desfavorable de su ventana).
+    #   * 'carga_viva_bajo_relleno_alto' = conservar: el lado seguro del
+    #     permiso de 3.6.1.2.6a.
+    #   * 'perfil_hdpe_fabricante': SIN VALOR y sin valor por defecto; es un
+    #     dato del fabricante.
+    # Los numeros de las tablas sobre las que eligen viven en
+    # constantes_normativas, bloque «--- T-5 ---».
+    # =======================================================================
+
+    "instalacion_estandar_concreto": Criterio(
+        valor="tipo_3",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("tipo_1", "tipo_2", "tipo_3", "tipo_4"),
+        concepto="Tipo de instalacion estandar del tubo de concreto (AASHTO "
+                 "LRFD 12.10.2.1, Tablas 12.10.2.1-1 y -3): fija el factor de "
+                 "arqueo vertical de la carga de tierra y el factor de cama "
+                 "con que la Fase 8 elige la clase",
+        justificacion="Decide con que instalacion se verifica el tubo de "
+                      "concreto. La hipotesis de calculo tiene que coincidir "
+                      "con lo que la especificacion de construccion "
+                      "garantiza. La norma de diseño define cuatro tipos por "
+                      "el suelo y la compactacion de la cama, los riñones y "
+                      "los costados, con porcentajes del Proctor Estandar. La "
+                      "norma peruana de construccion pide un solado de "
+                      "material de subbase granular de 15 cm y la sujecion "
+                      "con ese mismo material hasta un sexto del diametro "
+                      "exterior, los dos compactados como la corona del "
+                      "terraplen (95 % del Proctor Modificado), y por encima "
+                      "el relleno para estructuras, con los materiales de "
+                      "terraplen compactados al 90 % del Proctor Modificado. "
+                      "Se adopta el Tipo 3, que es la instalacion que esa "
+                      "exigencia corresponde: pide en riñones y costados 85 % "
+                      "de un suelo granular limpio, 90 % de uno limoso o 95 % "
+                      "de uno arcilloso. La correspondencia es lectura del "
+                      "proyecto y tiene una condicion: la densidad maxima del "
+                      "Proctor Modificado no es menor que la del Estandar, de "
+                      "modo que el 90 % del Modificado garantiza el Tipo 3 "
+                      "con suelo granular o limoso; con el material mas "
+                      "plastico que la norma peruana admite en un terraplen "
+                      "haria falta la tabla de equivalencias entre los dos "
+                      "ensayos, que la norma de diseño remite a su "
+                      "especificacion de construccion y no esta entre las "
+                      "fuentes del repositorio. Por eso el Tipo 4 --que no "
+                      "exige compactar y que cualquier relleno compactado "
+                      "cumple-- esta dentro de la ventana como cota "
+                      "conservadora, y la Fase 8 imprime al lado la D-load, "
+                      "la clase y el relleno maximo que saldrian con el. No "
+                      "alcanza el Tipo 1 ni el 2, que piden suelo granular "
+                      "al 95 o al 90 % en toda la zona de riñones: declararlos "
+                      "exige que las especificaciones del proyecto pidan esa "
+                      "cama y ese relleno, y con el 1 la D-load se multiplica "
+                      "por 1.10",
+        fuente="AASHTO LRFD 9a ed., Art. 12.10.2.1 y Tablas 12.10.2.1-1 (pags. "
+               "impresas 12-50 y 12-51, cita AASHTO_LRFD_9.T12.10.2.1-1) y "
+               "12.10.2.1-3 (pag. 12-53); Art. 12.10.4.3.1 y Tabla "
+               "12.10.4.3.2a-1 (pags. 12-64 y 12-65). EG-2013 506.07, 506.10 y "
+               "506.11 (pags. impresas 960 y 961; citas EG2013.506.07 y "
+               "EG2013.506.10), Seccion 502 (502.02 y 502.09(c)(1), pags. 895 "
+               "y 899) y 205.12(c)(1) (pag. 193, cita "
+               "EG2013.205.12#COMPACTACION) para lo que la norma peruana "
+               "exige; Tabla 205-01 (pag. 186, cita EG2013.T205-01) para los "
+               "materiales. El 508.07 (mas del 95 % del Proctor Modificado) "
+               "es de la tuberia de polietileno, no de la de concreto. EL "
+               "VALOR DE ARCHIVO LO DECIDIO EL DUEÑO DEL PROYECTO "
+               "(2026-11-12), con el Tipo 4 impreso como contraste; LA "
+               "ELECCION DEL TIPO NO ESTA EN NINGUNA NORMA",
+        reemplazado_por="El tipo de instalacion que las especificaciones "
+                        "tecnicas del expediente fijen para la cama y el "
+                        "relleno del tubo de concreto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con las especificaciones de cama y "
+                        "relleno del expediente",
+            dominio="uno de los cuatro tipos de la Tabla 12.10.2.1-1; el "
+                    "conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    "fabricacion_tmc": Criterio(
+        valor="anular_remachada_simple",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("helicoidal", "anular_remachada_simple",
+                      "anular_remachada_doble", "anular_empernada"),
+        concepto="Fabricacion de la tuberia metalica corrugada: helicoidal "
+                 "(costura engargolada o soldada, sin costura longitudinal) o "
+                 "anular con costura longitudinal remachada (simple o doble) "
+                 "o empernada. Decide si la Fase 8 verifica la costura y con "
+                 "que resistencia",
+        justificacion="Decide si la verificacion estructural del TMC incluye "
+                      "la costura longitudinal y con que resistencia. La "
+                      "norma de diseño la exige solo a la tuberia con costura "
+                      "longitudinal; la helicoidal no la tiene. La norma "
+                      "peruana de construccion describe, para la corrugacion "
+                      "de 68 por 13 mm de 900 a 2100 mm, tubos conformados de "
+                      "planchas corrugadas y perforadas con sus pernos y "
+                      "tuercas: es tuberia armada con costura EMPERNADA. Esa "
+                      "costura no tiene resistencia tabulada para esta "
+                      "corrugacion en ninguna fuente del repositorio, y "
+                      "declararla detiene la Fase 8 pidiendo la que garantice "
+                      "el fabricante. El valor de archivo es la anular "
+                      "remachada simple, la costura mas debil de las que SI "
+                      "tienen resistencia tabulada (Tabla 5 de ASTM A796, "
+                      "remaches de 8 mm hasta 2.01 mm de plancha y de 10 mm "
+                      "desde 2.77): con ella la verificacion de la costura es "
+                      "una cota con la resistencia de OTRA fabricacion, no la "
+                      "del producto que la norma peruana describe, y el "
+                      "resultado lo avisa en cada punto mientras rija el valor "
+                      "de archivo. Que la remachada simple sea mas debil que "
+                      "la empernada del producto no lo demuestra ninguna "
+                      "fuente del repositorio. La helicoidal no verifica "
+                      "costura",
+        fuente="AASHTO LRFD 9a ed., Art. 12.7.2.5 (pag. impresa 12-27) y "
+               "Tabla 12.5.5-1 (pag. 12-12); ASTM A796/A796M-13 num. 8.1.3.1 y "
+               "Tabla 5 (PDF 4 y 8, por imagen; releida valor a valor en el "
+               "cierre de T-5: 244/315, 266/435, 341/683, 357/715 y 374/748 "
+               "kN/m); AASHTO LRFD Tabla A12-7 (pag. 12-106); EG-2013 507.02 "
+               "a) (pag. impresa 969, cita EG2013.507.02#EMPERNADA). EL VALOR "
+               "DE ARCHIVO LO DECIDIO EL DUEÑO DEL PROYECTO (2026-11-12). LA "
+               "ELECCION NO ESTA EN NINGUNA NORMA",
+        reemplazado_por="La fabricacion del producto que el expediente "
+                        "especifique y, si es empernada, la resistencia de "
+                        "costura que el fabricante garantice",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el producto que especifique",
+            dominio="una de las cuatro fabricaciones; el conjunto cerrado "
+                    "viaja en `sensibilidad`",
+        ),
+    ),
+
+    "eta_importancia_operativa_conducto": Criterio(
+        valor=1.05,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.95, 1.05),
+        concepto="Modificador de las cargas por importancia operativa, eta_I, "
+                 "del CRUCE: rige en las verificaciones de resistencia del "
+                 "conducto (TMC y HDPE; AASHTO LRFD 12.5.4 y Manual de "
+                 "Puentes 2.3.2.5) y en las combinaciones de Resistencia I "
+                 "de sus cabezales (AASHTO LRFD 1.3.2.1). En el conducto, "
+                 "con eta_D = eta_R = 1.00, es el eta de la carga de tierra "
+                 "y de la carga viva; en el cabezal se multiplica por "
+                 "'eta_ductilidad_cabezal' y 'eta_redundancia_cabezal'",
+        justificacion="La clasificacion de importancia operativa es de la "
+                      "VIA en ese cruce, no de una pieza: el conducto y sus "
+                      "cabezales son la misma obra y llevan el mismo eta_I "
+                      "(una decision, un valor; la clave conserva el nombre "
+                      "con que nacio en la Fase 8 del conducto, y desde la "
+                      "verificacion de las formulas del cabezal la lee "
+                      "tambien `M9.modificador_de_carga`). "
+                      "Decide cuanto se mayoran las cargas por la importancia "
+                      "de la via. Ninguna fuente prescribe 1.05 para una "
+                      "estructura enterrada: la norma de diseño manda aplicar "
+                      "los modificadores generales, considera redundantes a "
+                      "las estructuras enterradas en los estados limite de "
+                      "resistencia (de ahi el factor de redundancia 1.00) y "
+                      "dice que la clasificacion operativa se determina por "
+                      "la continuidad de funcion o la seguridad de la via; y "
+                      "tanto ella como el Manual de Puentes dejan esa "
+                      "clasificacion al Propietario, que puede declararla. El "
+                      "Manual la gradua en 1.05 o mas para puentes criticos o "
+                      "esenciales, 1.00 para los tipicos y 0.95 o mas para "
+                      "los de relativa menor importancia. Se adopta 1.05 como "
+                      "clasificacion de importancia de esta via --acceso en "
+                      "emergencia durante el Fenomeno El Niño-- por decision "
+                      "del dueño del proyecto, que es quien hace de "
+                      "Propietario en la tesis; es el extremo mas desfavorable "
+                      "de la graduacion. No afecta al tubo de concreto, que "
+                      "se verifica por el metodo indirecto en servicio, sin "
+                      "factores",
+        fuente="Manual de Puentes, num. 2.3.2.5 «Importancia Operativa», pag. "
+               "impresa 99 (cita MP.2.3.2.5); AASHTO LRFD 9a ed., Art. 12.5.4, "
+               "pag. impresa 12-11 (cita AASHTO_LRFD_9.12.5.4: «For strength "
+               "limit states, "
+               "buried structures shall be considered redundant. Operational "
+               "classification shall be determined on the basis of continued "
+               "function and/or safety of the roadway»), y Art. 1.3.5, pag. "
+               "impresa 1-7 («The Owner may declare a bridge or any "
+               "structural component and connection thereof to be of "
+               "operational priority»). La clasificacion de esta via la hace "
+               "el Propietario: decidida por el dueño del proyecto el "
+               "2026-11-12. Para el cabezal: AASHTO LRFD Art. 1.3.2.1, pag. "
+               "impresa 1-3 (cita AASHTO_LRFD_9.1.3.2.1#ETA)",
+        reemplazado_por="La importancia operativa que el propietario declare "
+                        "para la via",
+        resolucion=Libre(
+            que_lo_fija="el propietario, por la importancia operativa de la "
+                        "via",
+            dominio="0.95 a 1.05 (Manual de Puentes 2.3.2.5)",
+        ),
+    ),
+
+    "relleno_estructural_hdpe": Criterio(
+        valor="Si-95",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("Sn-100", "Sn-95", "Si-95", "Cl-95"),
+        concepto="Suelo y compactacion del relleno estructural del HDPE, como "
+                 "columna de la Tabla 12.12.3.5-1 de AASHTO LRFD (Sn, Si o Cl; "
+                 "% del Proctor Estandar): de ella sale el modulo "
+                 "restringido del suelo M_s del arqueo, el pandeo y la "
+                 "deflexion",
+        justificacion="Decide con que rigidez de suelo se verifica el tubo de "
+                      "polietileno. La norma peruana de construccion manda "
+                      "construir la cama de asiento y la sujecion lateral del "
+                      "tubo con material GRANULAR de las caracteristicas de "
+                      "un afirmado --finos entre el 5 y el 25 % e indice de "
+                      "plasticidad de 4 a 9--, y compactar el relleno a mas "
+                      "del 95 % de la maxima densidad seca del Proctor "
+                      "Modificado. Un material asi es, en la clasificacion "
+                      "con que la norma de diseño agrupa los suelos de su "
+                      "tabla, una grava o arena limpia (columna Sn) o una "
+                      "grava o arena con finos de baja plasticidad (columna "
+                      "Si); la columna de las arcillas (Cl) reune suelos con "
+                      "indice de plasticidad que el afirmado no admite. Y el "
+                      "95 % del Proctor Modificado es por lo menos el 95 % "
+                      "del Estandar con que la tabla gradua la compactacion, "
+                      "porque la densidad maxima del ensayo modificado no es "
+                      "menor. Se adopta la columna Si al 95 %, la menos "
+                      "favorable de las que corresponden a lo que la norma "
+                      "peruana exige. La columna Cl al 95 % queda en la "
+                      "ventana como cota conservadora --es lo que resultaria "
+                      "si la sujecion lateral se hiciera con el relleno "
+                      "general del terraplen en vez del material granular "
+                      "exigido--: con ella, y con el perfil minimo de la "
+                      "norma, el tubo de 900 a 1200 mm no cumple a ninguna "
+                      "altura de relleno. Declarar una arena (Sn) exige que "
+                      "las especificaciones pidan un material limpio",
+        fuente="AASHTO LRFD 9a ed., Tabla 12.12.3.5-1 (pag. impresa 12-81, "
+               "cita AASHTO_LRFD_9.T12.12.3.5-1) y Tabla 12.12.3.5-2 (pag. "
+               "12-82, cita AASHTO_LRFD_9.T12.12.3.5-2: Sn = A-1, A-3; Si = "
+               "A-2-4, A-2-5, A-4; Cl = A-2-6, A-2-7, A-5, A-6); EG-2013 "
+               "508.02 d) (pag. impresa 982, cita EG2013.508.02#GRANULAR), "
+               "Tabla 301-01 y requisitos de la Seccion 301 (pag. 238) y "
+               "508.07 (pag. 984, cita EG2013.508.07#COMPACTACION). La "
+               "correspondencia entre el afirmado de la Seccion 301 y las "
+               "columnas Sn y Si es LECTURA DEL PROYECTO: la Tabla "
+               "12.12.3.5-2 dice que sus correlaciones son aproximadas. LA "
+               "ELECCION NO ESTA EN NINGUNA NORMA",
+        reemplazado_por="El suelo y la compactacion que las especificaciones "
+                        "del expediente fijen para el relleno del HDPE, con "
+                        "su ensayo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el material de relleno que "
+                        "especifique",
+            dominio="una columna de la Tabla 12.12.3.5-1 de 95 % o mas; el "
+                    "conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    "parametros_diseno_hdpe": Criterio(
+        valor={"K_gamma_E": 1.5, "D_L": 1.5, "K_B": 0.10,
+               "nu_suelo": 0.40, "deflexion_admisible": 0.05,
+               "anios_largo_plazo": 75.0},
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        sensibilidad={"K_gamma_E": (1.0, 1.5), "D_L": (1.0, 6.0),
+                      "K_B": (0.083, 0.110), "nu_suelo": (0.25, 0.45),
+                      "deflexion_admisible": (0.02, 0.05),
+                      "anios_largo_plazo": (50.0, 75.0)},
+        concepto="Parametros del procedimiento de AASHTO LRFD 12.12 para el "
+                 "HDPE que la norma deja al diseñador: factor de instalacion "
+                 "K_gammaE, factor de retardo de la deflexion D_L, "
+                 "coeficiente de cama K_B, coeficiente de Poisson del suelo, "
+                 "deflexion admisible (fraccion del diametro) y duracion de "
+                 "las propiedades de largo plazo del PE (50 o 75 años)",
+        justificacion="Decide los seis numeros del procedimiento del "
+                      "termoplastico que la norma de diseño no fija. Cada "
+                      "uno toma el valor que la propia norma llama tipico o "
+                      "el extremo desfavorable de su rango: el factor de "
+                      "instalacion 1.5, el que la norma da como tipico para "
+                      "la seguridad tradicional (menos exige control de "
+                      "obra); el retardo de la deflexion 1.5, tipico segun "
+                      "la norma, cuyo comentario recoge valores de 1.0 a "
+                      "6.0; el coeficiente de cama 0.10, tipico, entre 0.083 "
+                      "y 0.110; la deflexion admisible del cinco por ciento, "
+                      "el limite que el comentario considera en general "
+                      "apropiado; y las propiedades a 75 años, la columna "
+                      "mas desfavorable de la tabla. No son todos el extremo "
+                      "desfavorable de su ventana: el del coeficiente de cama "
+                      "seria 0.110 y el del retardo 6.0, y la norma llama "
+                      "tipicos a 0.10 y 1.5. El coeficiente de Poisson del "
+                      "suelo no lo da ninguna fuente del repositorio --la "
+                      "norma remite a la literatura geotecnica--: 0.40 es un "
+                      "valor corriente para un relleno granular con finos, y "
+                      "dentro de su ventana el desfavorable para el pandeo "
+                      "general es 0.45",
+        fuente="AASHTO LRFD 9a ed.: 12.12.3.5 (pag. impresa 12-78, K_gammaE; "
+               "cita AASHTO_LRFD_9.12.12.3.5), 12.12.2.2 y C12.12.2.2 (pags. "
+               "12-74 y 12-75, D_L, K_B y el 5 %; citas "
+               "AASHTO_LRFD_9.12.12.2.2 y .C12.12.2.2), Tabla 12.12.3.3-1 "
+               "(pag. 12-77, propiedades a 50 y 75 años) y 12.12.3.10.1e (pag. "
+               "12-87, nu: la norma remite el coeficiente de Poisson del "
+               "suelo a las referencias geotecnicas). El valor de nu NO TIENE "
+               "FUENTE en el repositorio",
+        reemplazado_por="Los parametros que fije el expediente con su "
+                        "control de obra y, para nu, el del ensayo del "
+                        "relleno",
+        resolucion=Libre(
+            que_lo_fija="el proyectista; la norma da el valor tipico o el "
+                        "rango de cada uno, salvo nu",
+            dominio="las ventanas por campo de `sensibilidad`; "
+                    "anios_largo_plazo es 50 o 75",
+        ),
+    ),
+
+    # --- T-5 (cierre) --- EL PERMISO DE 3.6.1.2.6a NO SE TOMA EN SILENCIO.
+    # La FASE A despreciaba la carga viva pasados 8.0 ft de relleno que ademas
+    # superan la luz, siempre, porque la fuente lo PERMITE («may be
+    # neglected»). Un permiso del lado no conservador es una eleccion: medido
+    # por el auditor en A-01 (tubo de concreto de 0.90 m, Clase II), entre
+    # ~2.85 y 3.18 m de relleno el programa aceptaba un tubo que con la carga
+    # viva no alcanza la clase. Valor de archivo: conservarla (decision del
+    # dueño del proyecto, 2026-11-12).
+    "carga_viva_bajo_relleno_alto": Criterio(
+        valor="conservar",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("conservar", "despreciar_3_6_1_2_6a"),
+        concepto="Que hace la Fase 8 con la carga viva cuando el relleno "
+                 "sobre el conducto supera 8.0 ft (2.44 m) y ademas la luz: "
+                 "conservarla, distribuida a traves del relleno como a "
+                 "cualquier otra profundidad, o despreciarla como la norma "
+                 "de diseño permite (AASHTO LRFD 3.6.1.2.6a)",
+        justificacion="Decide si la carga viva sigue contando bajo un relleno "
+                      "alto. La norma de diseño dice que en una alcantarilla "
+                      "de un vano sus efectos se pueden despreciar cuando el "
+                      "relleno supera 8.0 ft y la luz, y en una de varios "
+                      "vanos cuando supera la distancia entre las caras "
+                      "interiores de los muros extremos: es un permiso, no "
+                      "una exigencia. A esa profundidad la carga viva es "
+                      "pequeña pero no nula --en el tubo de concreto de "
+                      "0.90 m con 2.9 m de relleno todavia aporta unos 8 kPa, "
+                      "y decide si la Clase II alcanza--, el metodo de la "
+                      "rueda distribuida sigue valiendo, y despreciarla hace "
+                      "saltar la demanda un 14 % hacia abajo justo al cruzar "
+                      "el umbral. Se adopta conservarla, que es el lado "
+                      "seguro; tomar el permiso queda como alternativa "
+                      "declarada",
+        fuente="AASHTO LRFD 9a ed., Art. 3.6.1.2.6a, pag. impresa 3-26: «For "
+               "single-span culverts, the effects of live load may be "
+               "neglected where the depth of fill is more than 8.0 ft and "
+               "exceeds the span length; for multiple span culverts, the "
+               "effects may be neglected where the depth of fill exceeds the "
+               "distance between inside faces of end walls» (citas "
+               "AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE y #VARIOS_VANOS, las "
+               "dos PERMISO). EL VALOR DE ARCHIVO LO DECIDIO EL DUEÑO DEL "
+               "PROYECTO (2026-11-12). LA ELECCION NO ESTA EN NINGUNA NORMA",
+        reemplazado_por="La decision del expediente sobre el permiso de "
+                        "3.6.1.2.6a",
+        resolucion=Libre(
+            que_lo_fija="el proyectista",
+            dominio="conservar o despreciar segun 3.6.1.2.6a; el conjunto "
+                    "cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    # --- T-5 (cierre) --- EL PERFIL DEL HDPE ES UN DATO DEL FABRICANTE, y sin
+    # el no hay veredicto sobre un producto real. La FASE A verificaba el
+    # HDPE con el perfil MINIMO de la Tabla A12-11 y daba «cumple» o «no
+    # cumple»; la propia norma dice que esos minimos «are not meaningful for
+    # design» y manda tomar las propiedades de secciones cortadas del tubo o
+    # del fabricante (12.12.3.2 y C12.12.3.2). Decision del dueño del proyecto
+    # (2026-11-12): entrada OPCIONAL sin valor por defecto; sin ella el HDPE
+    # queda «no verificado con un producto real» --con el perfil minimo como
+    # cota inferior impresa-- y NO se puede adoptar.
+    "perfil_hdpe_fabricante": Criterio(
+        valor=None,                 # OPCIONAL: sin valor, el HDPE no se adopta
+        opcional=True,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Propiedades de seccion del perfil del tubo de polietileno "
+                 "corrugado que el proyecto especifique, por diametro "
+                 "nominal en mm: area de pared (mm2/mm), momento de inercia "
+                 "(mm4/mm) y diametro exterior (m), del catalogo o de la "
+                 "certificacion del fabricante",
+        justificacion="Decide con que perfil se verifica el tubo de "
+                      "polietileno. Es opcional y no tiene valor por defecto: "
+                      "la norma de diseño manda determinar el area, la "
+                      "inercia y la geometria del perfil de secciones "
+                      "cortadas del tubo u obtenerlas del fabricante, y su "
+                      "comentario dice que los minimos que las "
+                      "especificaciones traian no son significativos para el "
+                      "diseño, porque la geometria del perfil varia con el "
+                      "fabricante. Sin esta declaracion el programa calcula "
+                      "con esos minimos solo para dar una cota inferior, la "
+                      "imprime, y no adopta el HDPE: lo que falta es un dato "
+                      "del producto, no una eleccion que el programa pueda "
+                      "hacer. Declarado, cada diametro se verifica con sus "
+                      "propiedades; un diametro que la declaracion no traiga "
+                      "sigue sin dato. El area efectiva de la pared sigue "
+                      "saliendo del minimo que la norma de producto exige al "
+                      "ensayo de compresion, mientras no se implemente el "
+                      "pandeo local por elementos del perfil, que necesita "
+                      "su geometria idealizada",
+        fuente="AASHTO LRFD 9a ed., Art. 12.12.3.2, pags. impresas 12-75 y "
+               "12-76: «Section properties for thermoplastic pipe, including "
+               "wall area, moment of inertia, and profile geometry should be "
+               "determined from cut sections of pipe or obtained from the "
+               "pipe manufacturer» (cita AASHTO_LRFD_9.12.12.3.2); "
+               "C12.12.3.2: «these values have been minimum values and are "
+               "not meaningful for design» (cita AASHTO_LRFD_9.C12.12.3.2). "
+               "Tabla A12-11 (pag. 12-108) para los minimos de la cota "
+               "inferior. EG-2013 508.02 b) (pag. impresa 982): el "
+               "contratista entrega el certificado del fabricante. NINGUNA "
+               "NORMA fija el perfil de un producto",
+        sensibilidad=("sin declarar: el HDPE queda «no verificado con un "
+                      "producto real» y no se adopta; la memoria imprime la "
+                      "cota inferior con el perfil minimo de la Tabla A12-11",
+                      "declarado: {'900': {'A_mm2_mm', 'I_mm4_mm', 'od_m'}, "
+                      "...}, una clave de texto por diametro nominal en mm, "
+                      "con las propiedades del "
+                      "fabricante; ninguna puede ser menor que el minimo de "
+                      "la Tabla A12-11 ni el diametro exterior mayor que su "
+                      "maximo"),
+        reemplazado_por="El catalogo o la certificacion del fabricante del "
+                        "tubo que el expediente especifique (EG-2013 508.02 "
+                        "b)",
+        resolucion=Libre(
+            que_lo_fija="el fabricante del tubo que el expediente "
+                        "especifique: es un dato de producto, no una "
+                        "eleccion del proyectista",
+            dominio="{'<diametro nominal en mm>': {'A_mm2_mm' > 0, "
+                    "'I_mm4_mm' > 0, 'od_m' > diametro}}; cada propiedad, no "
+                    "menor que "
+                    "el minimo de la Tabla A12-11 de AASHTO LRFD",
+        ),
+    ),
+
+    # ----------------------- FASE 7: COMPATIBILIDAD GEOMETRICA ------------
+    # 7.A ya NO queda resuelto con lo declarado: pide tres cosas que estan
+    # mas arriba en este archivo -- 'cobertura_minima_aashto' (la tabla),
+    # 'condicion_pavimento' (que fila) y 'espesor_pared_conducto' (donde esta
+    # la clave fisica) --, y las dos ultimas bloquean. 'resguardo_HW_subrasante'
+    # sigue cubriendo la otra condicion del maximo, la de la carga a la
+    # entrada. Lo que 7.B abre aparte es la LONGITUD del conducto.
+
+    "talud_terraplen": Criterio(
+        # H:V. EXTREMO MAS TENDIDO del rango declarado. Es la eleccion
+        # conservadora PARA LA VERIFICACION QUE LA LONGITUD GOBIERNA, que es
+        # G2 --el amarre de la cota de salida al fondo del receptor, Sec. 7.B--:
+        # un talud mas tendido alarga el conducto y con el la caida S*L, de
+        # modo que la salida queda mas baja. Medido en A-01 al pasar de 1.5 a
+        # 2.0 H:V: L de 16.461 a 18.635 m y cota de salida de 42.001 a 41.988
+        # msnm, 13 mm mas cerca del fondo del receptor.
+        #
+        # Y HAY QUE DECIR DONDE EL SIGNO ES EL CONTRARIO, porque la version
+        # anterior de esta nota afirmaba lo que no es. Sobre el CONTROL DE
+        # SALIDA la longitud entra dos veces y con signos opuestos:
+        #
+        #     dHW/dL = K*n^2*V_llena^2 / (2*g*R_llena^(4/3))  -  S
+        #
+        # El primer termino es la friccion y el segundo la caida. Con los
+        # numeros de A-01 --V_llena = 1.8344 m/s, R_llena = D/4 = 0.225 m,
+        # n = 0.013, K = 19.63-- la friccion aporta 0.004158 m/m y la
+        # pendiente resta 0.006, de modo que dHW/dL = -0.00184 m/m: alargar el
+        # conducto BAJA el HW de salida. Medido: 0.997 -> 0.993 m entre los
+        # mismos dos taludes, que es exactamente lo que predice la formula.
+        # El signo se invierte cuando S cae por debajo de 0.004158 m/m con
+        # esta geometria, y por eso no es una propiedad general del talud sino
+        # de la pendiente de cada punto.
+        #
+        # Adoptar 2.0 es entonces conservador donde la longitud manda (G2) y
+        # no lo es donde manda la pendiente (el control de salida). La memoria
+        # imprime la ventana entera para que eso se pueda ver.
+        valor=2.0,
+        nivel=NIVEL_PERFIL,
+        sensibilidad=(1.5, 2.0),     # H:V, banda de practica corriente en terraplenes viales
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Inclinacion del talud del terraplen en el punto de cruce, "
+                 "como proyeccion horizontal por unidad de altura (H:V), para "
+                 "la 'proyeccion de taludes' que Sec. 7.B suma al ancho de "
+                 "plataforma al calcular la longitud del conducto",
+        justificacion="Decide la inclinacion del talud del terraplen (H:V) "
+                      "con que se calcula la proyeccion de taludes que Sec. "
+                      "7.B suma al ancho de plataforma para la longitud del "
+                      "conducto. La fuente proxima (Sec. 7.B de la hoja de "
+                      "ruta) define la longitud como el ancho de plataforma "
+                      "mas la proyeccion de taludes, afectada por el esviaje. "
+                      "Lo que no resuelve: no entrega la inclinacion del "
+                      "talud ni una regla para deducirla, y Sec. 1.2 no la "
+                      "trae como columna -- el unico dato de seccion "
+                      "transversal que llega por punto es el ancho de "
+                      "plataforma. Tampoco se puede tapar con lo que ya esta "
+                      "en el CSV: la altura de terraplen del punto "
+                      "(cota_rasante - cota_terreno) da el brazo vertical del "
+                      "talud, no su inclinacion. Se adopta declararla como "
+                      "criterio, dentro de la banda de taludes "
+                      "referenciales que el DG-2018 num. 304.10 da para "
+                      "terraplenes de gravas, limo arenoso y arcilla (Tabla "
+                      "304.11: 1.5, 1.75 y 2.0 H:V segun la altura sea menor "
+                      "de 5 m, de 5 a 10 m o mayor de 10 m), mientras el "
+                      "expediente vial no entregue la seccion tipica del "
+                      "cruce -- la tabla es referencial y el material del "
+                      "cuerpo del terraplen no es dato del expediente, de "
+                      "modo que no fija el valor, lo acota --: sin longitud "
+                      "no hay "
+                      "caida S*L ni cota de salida que amarrar al fondo del "
+                      "receptor, que es la otra mitad de 7.B, y adoptar en "
+                      "silencio un talud de practica corriente moveria la "
+                      "longitud, la caida y la cota de salida de todos los "
+                      "puntos sin que nadie pueda rastrear de donde salio. "
+                      "Sensibilidad (1.5, 2.0): los extremos de la fila de "
+                      "gravas, limo arenoso y arcilla de la Tabla 304.11, "
+                      "dentro de la que se movera la seccion tipica "
+                      "pendiente; entre sus extremos cambia la proyeccion "
+                      "horizontal por unidad de altura y, con ella, la "
+                      "longitud, la caida S*L y la cota de salida de cada "
+                      "punto",
+        fuente="DG-2018 num. 304.10 'Taludes', Tabla 304.11 'Taludes "
+               "referenciales en zonas de relleno (terraplenes)' (pag. "
+               "impresa 208, PDF 209; registro DG2018.304.10#T304.11), que "
+               "da la banda por material y altura y la llama referencial. "
+               "PENDIENTE la seccion tipica del proyecto, que es la que fija "
+               "el talud del cruce",
+        reemplazado_por="Talud de la seccion tipica del expediente vial, o la "
+                        "longitud medida directamente sobre la seccion "
+                        "transversal de cada punto",
+        verificacion_pendiente="Declarar si el talud es unico para el tramo o "
+                               "varia por punto con la altura de terraplen. M7 "
+                               "lo aplica hoy a los DOS taludes con la misma "
+                               "altura (terraplen simetrico sobre el terreno "
+                               "natural del cruce), que es lo unico que el CSV "
+                               "permite calcular: si la seccion es asimetrica, "
+                               "la longitud se mide y no se deduce",
+        # `Libre` Y NO `DeEnsayo`, y el cambio no es cosmetico. Mientras el
+        # criterio estuvo VACIO su resolucion decia la verdad: el numero
+        # saldria de LEER la seccion tipica del expediente vial. Al declararlo
+        # a nivel de perfil deja de salir de una lectura y pasa a salir de una
+        # ELECCION dentro de una banda de practica, que es lo que `Libre`
+        # nombra -- y la invariante de este archivo lo exige: un `de_ensayo`
+        # con `sensibilidad` es una contradiccion, porque un dato leido no
+        # tiene rango que elegir. La lectura no se pierde: sigue entera en
+        # `reemplazado_por`, que es lo que cierra el criterio de verdad.
+        resolucion=Libre(
+            que_lo_fija="el proyectista, dentro de la banda referencial "
+                        "de la Tabla 304.11 del DG-2018 para terraplenes de "
+                        "gravas, limo arenoso y arcilla, mientras el "
+                        "expediente vial no entregue la seccion tipica del "
+                        "cruce",
+            dominio="H:V > 0",
+        ),
+    ),
+
+    # ----------------------- PROTECCION Y DETALLE -------------------------
+
+    "espesor_proteccion_salida": Criterio(
+        valor=1.75,                 # multiplicador de d50
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Espesor de la capa de proteccion, como multiplo de d50",
+        # --- T-8 --- La justificacion y la fuente dicen desde T-8 contra que
+        # se contrasta el valor, sin cambiarlo (los mismos numeros en el
+        # fixture): HEC-14 ya esta en el repositorio de normas.
+        justificacion="El Manual solo entrega d50 (Laushey). El espesor, la "
+                      "longitud y la granulometria completa no estan normados. "
+                      "Se adopta el rango corriente 1.5-2.0 d50. Desde T-8 "
+                      "se contrasta con HEC-14, y el contraste no lo "
+                      "respalda: la Tabla 10.1 de HEC-14 (un ejemplo de "
+                      "estandar de proyecto) pide al apron entre 3.5 y 2.0 "
+                      "veces el D50 de su clase, y su Sec. 10.1 pide a la "
+                      "poza de enrocado al menos 2 D50: el valor adoptado "
+                      "queda SIEMPRE bajo ese piso, y toda la ventana salvo "
+                      "su techo, que lo iguala. El valor no se cambia --es "
+                      "una adopcion sobre otra practica, y moverlo cambiaria "
+                      "lo que el proyecto ya declaro--, pero la Fase 6 "
+                      "imprime el apron de HEC-14 al lado, AVISA en todo "
+                      "punto que dimensiona que el multiplo queda bajo 2.0 "
+                      "(cita HEC14.10.2#PROFUNDIDAD). Por decision del "
+                      "dueño del proyecto la regla "
+                      "'regla_espesor_longitud_proteccion_salida' vale "
+                      "«envolvente_hec14»: donde HEC-14 es evaluable rige el "
+                      "mayor de este espesor y el de la Tabla 10.1, y este "
+                      "multiplo solo rige con la regla «manual» o donde "
+                      "HEC-14 no se puede evaluar",
+        fuente="Practica corriente de diseno de enrocado. Contraste: HEC-14 "
+               "3a ed. (FHWA-NHI-06-086), Sec. 10.2, Table 10.1, pag. "
+               "impresa 10-18 (PDF 219), cita HEC14.10.2#T10_1, y Sec. 10.1, "
+               "pag. impresa 10-1 (PDF 202)",
+        sensibilidad=(1.5, 2.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre la practica corriente de "
+                        "diseño de enrocado, como multiplo de d50",
+            dominio="multiplo adimensional de d50 > 0",
+        ),
+    ),
+
+    "longitud_proteccion_salida": Criterio(
+        # m. NO SALE DE NINGUNA NORMA PERUANA y hay que decirlo asi: el
+        # Manual MTC (num. 4.1.1.3.7 c) entrega d50 y nada mas, y el HDS-5
+        # 3.a ed. remite el dimensionamiento del apron a HEC-14 Sec. 10.2.
+        # HEC-14 ESTA en el repositorio de normas desde T-0 (este comentario
+        # decia lo contrario hasta T-8): su Tabla 10.1 da la longitud del
+        # apron, de 4 a 8 veces la altura del conducto segun la clase de
+        # piedra, y la Fase 6 contrasta con ella este valor y avisa cuando es
+        # menor (y con la regla 'regla_espesor_longitud_proteccion_salida' en
+        # «envolvente_hec14» toma la mayor). Es una adopcion del proyectista
+        # sobre practica corriente de enrocado a la salida, con su ventana
+        # declarada, y NO gobierna ninguna verificacion: la longitud de la
+        # proteccion no entra en V1-V9 ni en 7.A/7.B.
+        valor=5.0,
+        nivel=NIVEL_PERFIL,
+        sensibilidad=(3.0, 8.0),     # m; banda de practica de aprons de enrocado en conductos de 0.9-1.2 m
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Longitud de la proteccion aguas abajo de la salida",
+        justificacion="Laushey (num. 4.1.1.3.7 c) entrega d50 y nada mas. La "
+                      "hoja de ruta declara expresamente que el espesor, la "
+                      "LONGITUD aguas abajo, la granulometria completa y el "
+                      "filtro quedan fuera de la norma. Sin filtro el enrocado "
+                      "se socava por debajo y falla: la longitud sola no basta, "
+                      "pero sin ella no hay pieza que dimensionar. Desde T-8 "
+                      "la Fase 6 la contrasta con la longitud del apron de "
+                      "HEC-14 (Tabla 10.1: de 4 a 8 veces la altura del "
+                      "conducto segun la clase de piedra) y, si el lecho esta "
+                      "declarado, con la longitud de la hoya de socavacion de "
+                      "su Cap. 5, y avisa cuando la adoptada es menor. "
+                      "Por decision del dueño del proyecto la regla "
+                      "'regla_espesor_longitud_proteccion_salida' vale "
+                      "«envolvente_hec14»: donde HEC-14 es evaluable rige la "
+                      "mayor de esta longitud y la de la Tabla 10.1",
+        fuente="PENDIENTE - Sec. 6 de la hoja de ruta la marca [A] sin valor. "
+               "Practica corriente de diseno de enrocado o HEC-14. "
+               "Contraste desde T-8: HEC-14 3a ed., Sec. 10.2, Table 10.1, "
+               "pag. impresa 10-18 (PDF 219), cita HEC14.10.2#T10_1",
+        reemplazado_por="Diseno de disipador o transicion del expediente",
+        verificacion_pendiente="Con pendientes bajas los d50 son de 3-13 cm y lo "
+                               "probable es que gobierne el emboquillado de piedra "
+                               "por razones constructivas, no el enrocado",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre practica corriente de "
+                        "enrocado o HEC-14; Sec. 6 la marca [A] sin valor",
+            dominio="m > 0",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-8 --- (cadena T) · tres criterios de la Fase 6
+    # =======================================================================
+    # La proteccion de la ENTRADA (INF-5.1.13) y las dos lecturas que la hoya
+    # de socavacion de HEC-14 Cap. 5 deja abiertas. Los consume M6.
+    "tipo_proteccion_entrada": Criterio(
+        valor="emboquillado_de_piedra",
+        nivel=NIVEL_PERFIL,         # lo invoca la Fase 6 en toda corrida que dimensiona
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO son las tres clases que el Manual enumera, con
+        # sus palabras: no se añade ninguna.
+        sensibilidad=("emboquillado_de_piedra", "enchapado_de_roca_acomodada",
+                      "otro_revestimiento"),
+        concepto="Revestimiento con que se protege el cauce y el talud en la "
+                 "ENTRADA de la alcantarilla",
+        justificacion="Decide que revestimiento declara la memoria para la "
+                      "entrada. El Manual (num. 4.1.1.3.7 c)) recomienda "
+                      "proteger el cauce cuando la velocidad en la entrada, y "
+                      "particularmente en la salida, es alta, y enumera tres "
+                      "clases de revestimiento sin preferir ninguna ni dar "
+                      "dimensiones: emboquillados de piedra, enchapado de "
+                      "rocas acomodadas u otros tipos (citas "
+                      "MC_HHD.4.1.1.3.7c#PROTECCION y "
+                      "MC_HHD.4.1.1.3.7c#REVESTIMIENTOS). Las Láminas 02, "
+                      "02-A y 03 de sus Anexos dibujan la entrada de las "
+                      "alcantarillas tipicas con «revestimiento de piedra "
+                      "emboquillada» y su uña (cita MC_HHD.LAMINA_02), y ese "
+                      "es el motivo del valor adoptado: es el unico "
+                      "revestimiento de entrada que el Manual dibuja. Las "
+                      "laminas llevan las dimensiones como letras o como "
+                      "«variable», de modo que el criterio declara la CLASE "
+                      "de revestimiento y no una medida: la longitud y el "
+                      "espesor del zampeado y el dentellon son geometria del "
+                      "cabezal. No entra en ninguna formula ni mueve ningun "
+                      "resultado; cambia lo que la memoria declara para la "
+                      "entrada. Sensibilidad: las tres clases del numeral",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.1.3.7 c) 'Socavación local a la salida de la "
+               "alcantarilla', pags. impresas 79-80 (PDF 82-83), citas "
+               "MC_HHD.4.1.1.3.7c#PROTECCION y "
+               "MC_HHD.4.1.1.3.7c#REVESTIMIENTOS (recomendacion); Anexos, "
+               "Lámina Nº 02, pag. impresa 207 (PDF 210), cita "
+               "MC_HHD.LAMINA_02 (figura, sin dimensiones). HDS-5 3a ed., "
+               "num. 5.3.1 'Scour at Inlets', pag. impresa 5.9 (PDF 145), "
+               "cita HDS5_3ED.5.3.1#ENTRADA: enumera las medidas, sin "
+               "dimensionarlas. La eleccion entre las tres clases es "
+               "adopcion del proyectista",
+        reemplazado_por="El detalle de la entrada que fijen los planos del "
+                        "cabezal (zampeado, dentellon y revestimiento del "
+                        "talud), con sus dimensiones",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, entre las tres clases de "
+                        "revestimiento que el num. 4.1.1.3.7 c) enumera",
+            dominio="declaracion de la clase de revestimiento; el conjunto "
+                    "cerrado de valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    "duracion_caudal_pico_socavacion_min": Criterio(
+        # NIVEL NO MEDIDO POR CORRIDA, y se dice: solo se invoca cuando el
+        # punto declara `material_lecho_salida` SIN declarar
+        # `duracion_caudal_pico_min`, y ninguna de las tres corridas de
+        # `tests/test_nivel_medido.py` trae ese dato. Lo sostiene el censo:
+        # su unico consumidor es M6, que el alcance de perfil ejecuta; y lo
+        # mide `tests/test_t8_proteccion.py` con una corrida de perfil que si
+        # declara el lecho.
+        #
+        # ERA [C] CON VALOR 30 HASTA LA DECISION DEL DUEÑO DEL 2026-11-12
+        # (segunda auditoria de T-8, D3). Pasa a [A] porque dejo de ser «el
+        # valor de la fuente»: la fuente recomienda 30 minutos y el proyecto
+        # ELIGE otro dentro de una ventana, con su sensibilidad. La etiqueta
+        # dice cuanto se eligio, y aqui se eligio.
+        valor=360.0,                # minutos
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Duracion del caudal pico, en minutos, con que se estima "
+                 "la hoya de socavacion a la salida cuando el estudio "
+                 "hidrologico no la entrega",
+        justificacion="Decide el tiempo t de las ecuaciones de socavacion "
+                      "de HEC-14 cuando el punto no declara la duracion del "
+                      "caudal pico. La fuente recomienda para ese caso 30 "
+                      "minutos (num. 5.1.2, cita HEC14.5.1.2#T30; lo repite "
+                      "para suelos cohesivos en la pag. impresa 5-7), y en "
+                      "la frase siguiente dice que en los primeros 30 "
+                      "minutos se alcanzan entre 2/3 y 3/4 de la profundidad "
+                      "maxima (cita HEC14.5.1.2#DOS_TERCIOS). La profundidad "
+                      "de la hoya es la que se entrega al DESPLANTE del "
+                      "cabezal de salida, y un cabezal cimentado a dos "
+                      "tercios de la hoya maxima queda descalzado: por eso "
+                      "el proyecto no adopta los 30 minutos sino el techo "
+                      "de la ventana, 360. La hoya crece con el tiempo: con "
+                      "el exponente de la Tabla 5.1 para la profundidad en "
+                      "suelo no cohesivo, θ = 0.06, de 30 a 360 minutos sube "
+                      "un 16 % (12^0.06 = 1.161); en suelo cohesivo, θ = "
+                      "0.10, un 28 %. El dato externo "
+                      "`duracion_caudal_pico_min` gana cuando viene. "
+                      "Sensibilidad: de 30 minutos, el valor que la fuente "
+                      "recomienda y por debajo del cual dice que sus "
+                      "exponentes no aplican (cita HEC14.5.1.2#NO_BAJO_30), "
+                      "a 360 minutos. Lo que la fuente no dice: el techo de "
+                      "360 minutos no sale de HEC-14, que no da duracion "
+                      "maxima; es adopcion del proyecto para acotar la "
+                      "ventana, del orden del tiempo de referencia de la "
+                      "propia ecuacion (t/316)",
+        fuente="HEC-14 3a ed. (FHWA-NHI-06-086, julio de 2006), num. 5.1.2 "
+               "'Time of Scour', pag. impresa 5-2 (PDF 55), citas "
+               "HEC14.5.1.2#T30 (recomendacion: 30 minutos a falta de la "
+               "duracion), HEC14.5.1.2#DOS_TERCIOS (a los 30 minutos, de 2/3 "
+               "a 3/4 de la profundidad maxima) y HEC14.5.1.2#NO_BAJO_30 "
+               "(los exponentes no aplican a los primeros 30 minutos). El "
+               "valor adoptado y el techo de la ventana, 360 minutos, no "
+               "salen de la fuente: son eleccion del proyecto, por decision "
+               "de su dueño",
+        reemplazado_por="La duracion del caudal pico del hidrograma de "
+                        "diseño de cada cuenca, del estudio hidrologico "
+                        "(dato externo `duracion_caudal_pico_min`)",
+        sensibilidad=(30.0, 360.0),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, dentro de la ventana: HEC-14 num. "
+                        "5.1.2 recomienda 30 minutos cuando no se conoce la "
+                        "duracion del caudal pico y dice que cubren de 2/3 a "
+                        "3/4 de la hoya maxima",
+            dominio="minutos, de 30 (limite de validez de los exponentes y "
+                    "valor que la fuente recomienda) a 360",
+        ),
+    ),
+
+    "lectura_coeficientes_socavacion_hec14": Criterio(
+        # NIVEL NO MEDIDO POR CORRIDA: como el anterior, solo se invoca con
+        # el lecho declarado. Mismo sosten y misma medida.
+        valor="envolvente_de_filas_vecinas",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("envolvente_de_filas_vecinas", "interpolacion_lineal"),
+        concepto="Como se leen la Tabla 5.2 (altura de la salida sobre el "
+                 "lecho) y la Tabla 5.3 (pendiente) de HEC-14 cuando el dato "
+                 "cae ENTRE dos filas",
+        justificacion="Decide el valor de los coeficientes Ch y Cs de la "
+                      "hoya de socavacion cuando la altura de caida o la "
+                      "pendiente del conducto no coinciden con una fila "
+                      "tabulada. Las dos tablas dan cuatro filas cada una "
+                      "(alturas de 0, 1, 2 y 4 diametros; pendientes de 0, "
+                      "2, 5 y mas de 7 %) y la fuente no dice como leer "
+                      "entre ellas: sus ejemplos caen justo en una fila "
+                      "(citas HEC14.5.1.4#T5_2 y HEC14.5.1.5#T5_3). "
+                      "«envolvente_de_filas_vecinas», el valor adoptado, "
+                      "toma para cada dimension de la hoya el MAYOR de los "
+                      "dos coeficientes vecinos: es la lectura que nunca "
+                      "queda por debajo de la tabla, tambien en la longitud, "
+                      "cuyo coeficiente BAJA con la altura de caida, de Ch = "
+                      "1.00 a Ch = 0.73. "
+                      "«interpolacion_lineal» interpola entre las dos filas, "
+                      "y entre el 5 % y el 7 % hacia la fila «>7». En la "
+                      "profundidad, que es la que fija el desplante del "
+                      "cabezal, la diferencia entre las dos lecturas es como "
+                      "mucho del 22 % (entre las filas de altura 0 y 1 "
+                      "diametro) y del 3 % en la pendiente por debajo del 2 "
+                      "%. Fuera de la tabla (mas de 4 diametros de caida) "
+                      "ninguna de las dos lecturas extrapola: el calculo se "
+                      "declara no evaluable",
+        fuente="HEC-14 3a ed. (FHWA-NHI-06-086), num. 5.1.4 'Drop Height', "
+               "Table 5.2, y num. 5.1.5 'Slope', Table 5.3, pag. impresa 5-3 "
+               "(PDF 56), citas HEC14.5.1.4#T5_2 y HEC14.5.1.5#T5_3. La "
+               "fuente tabula y no dice como leer entre filas: la lectura "
+               "es adopcion del proyectista",
+        reemplazado_por="Una estimacion de socavacion del estudio del cauce "
+                        "(dato externo `profundidad_socavacion_estimada_m`), "
+                        "que gana sobre la de este programa",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: las Tablas 5.2 y 5.3 de HEC-14 no "
+                        "dicen como leer entre filas",
+            dominio="declaracion de la lectura; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    # --- T-8, auditoria adversarial --- dos decisiones del dueño: con que
+    # regla se fijan la piedra, el espesor y la longitud de la proteccion de
+    # salida, y desde que cota se mide la profundidad de socavacion. La
+    # primera la TOMO el 2026-11-12, tras la segunda auditoria: rige la
+    # envolvente, y alcanza al tamaño de la piedra.
+    "regla_espesor_longitud_proteccion_salida": Criterio(
+        # NIVEL MEDIDO POR CORRIDA: lo invoca la Fase 6 en todo punto que
+        # dimensiona (corrida ancha de perfil, A-01 y A-02).
+        #
+        # EL NOMBRE DE LA CLAVE DICE «espesor_longitud» Y LA REGLA GOBIERNA
+        # TAMBIEN LA PIEDRA desde el 2026-11-12. No se renombra: la clave ya
+        # esta en sesiones guardadas, en barridos y en la linea base, y un
+        # alias seria una segunda puerta para la misma decision. El concepto
+        # y la justificacion dicen lo que cubre.
+        valor="envolvente_hec14",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("manual", "envolvente_hec14"),
+        concepto="Regla con que se fijan el tamaño de la piedra, el espesor "
+                 "y la longitud de la proteccion de salida",
+        justificacion="Decide que rige en la proteccion de salida: lo que da "
+                      "el Manual con lo adoptado, o la envolvente de eso y "
+                      "de HEC-14. «envolvente_hec14», el valor del archivo "
+                      "por decision del dueño del proyecto, toma en cada "
+                      "magnitud el mayor: la piedra es el mayor del d50 de "
+                      "Laushey (Manual, num. 4.1.1.3.7 c), que se sigue "
+                      "calculando e imprimiendo) y del D50 de la Ec. (10.4) "
+                      "de HEC-14 (cita HEC14.10.2#EC_10_4); el espesor y la "
+                      "longitud, el mayor de los adoptados "
+                      "('espesor_proteccion_salida', "
+                      "'longitud_proteccion_salida') y de los que la Tabla "
+                      "10.1 da a esa piedra (cita HEC14.10.2#T10_1, y "
+                      "HEC14.10.2#PROFUNDIDAD para el piso del espesor, dos "
+                      "veces el D50). Por que: ninguna de las dos fuentes "
+                      "queda por debajo de la otra en todos los casos. "
+                      "Laushey mira solo la velocidad y pide mas piedra en "
+                      "la descarga rapida; la Ec. (10.4) mira el caudal, el "
+                      "diametro y el tirante del receptor y pide mas en la "
+                      "descarga lenta y caudalosa (a seccion llena y con el "
+                      "tirante minimo de la ecuacion, siempre que Q/D^2.5 < "
+                      "2.9); y el espesor adoptado, un multiplo del d50 menor "
+                      "que dos, queda bajo el piso de HEC-14 en todo punto. "
+                      "«manual» es la "
+                      "regla anterior y reproduce sus numeros: rigen Laushey "
+                      "y lo adoptado, HEC-14 se imprime al lado y la corrida "
+                      "avisa donde pide mas. Donde HEC-14 no es evaluable "
+                      "(marco, tirante del receptor sobre la clave, conducto "
+                      "de mas de 60 pulgadas, varios barriles) rige Laushey "
+                      "con lo adoptado, con aviso, bajo las dos reglas. Si "
+                      "la piedra que rige no cabe en la Tabla 10.1, el "
+                      "espesor y la longitud son cotas inferiores (dos veces "
+                      "el d50 y la longitud de la ultima clase, lectura del "
+                      "proyecto) y la corrida avisa que la salida pide un "
+                      "disipador",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.1.3.7 c), ec. (49), cita MC_HHD.4.1.1.3.7c; HEC-14 3a "
+               "ed., Sec. 10.2, Ec. (10.4), pag. impresa 10-17 (PDF 218), "
+               "cita HEC14.10.2#EC_10_4, y Table 10.1, pag. impresa 10-18 "
+               "(PDF 219), citas HEC14.10.2#T10_1 y HEC14.10.2#PROFUNDIDAD. "
+               "La eleccion entre las dos reglas es adopcion del proyecto: "
+               "ninguna fuente dice que hacer cuando las dos discrepan",
+        reemplazado_por="El diseño de la proteccion de salida del "
+                        "expediente, con la granulometria y el filtro",
+        resolucion=Libre(
+            que_lo_fija="el dueño del proyecto: la envolvente con HEC-14 "
+                        "o lo que da el Manual con lo adoptado",
+            dominio="declaracion de la regla; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    "referencia_profundidad_socavacion": Criterio(
+        # NIVEL NO MEDIDO POR CORRIDA: solo se invoca con el lecho declarado
+        # o la socavacion declarada; lo mide `tests/test_t8_proteccion.py`.
+        valor="fondo_del_cauce_receptor",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("fondo_del_cauce_receptor", "solera_de_salida"),
+        concepto="Cota desde la que se mide la profundidad de socavacion "
+                 "a la salida que se entrega al desplante del cabezal",
+        justificacion="Decide la cota del fondo de la hoya de socavacion. "
+                      "HEC-14 Cap. 5 no la define: llama hs a la profundidad "
+                      "de socavacion sin figura que la acote, y con la salida "
+                      "por encima del lecho (Tabla 5.2) las dos lecturas "
+                      "difieren en la caida, unos 0.7 m en A-01. La Figura "
+                      "10.1 de la poza de enrocado, otro metodo, mide hs "
+                      "desde la solera de salida (cita HEC14.10.1#HS). "
+                      "«fondo_del_cauce_receptor», el valor del archivo, es "
+                      "la lectura conservadora para el desplante: la hoya "
+                      "empieza en el lecho y queda a la caida mas abajo que "
+                      "con la otra. «solera_de_salida» es la de la Figura "
+                      "10.1. Una profundidad declarada por un estudio del "
+                      "cauce se mide desde la misma referencia",
+        fuente="HEC-14 3a ed., Cap. 5, pags. impresas 5-1 a 5-3 (PDF 54 a "
+               "56), sin figura que defina hs; Sec. 10.1, Figura 10.1, pag. "
+               "impresa 10-1 (PDF 202). La eleccion es adopcion del "
+               "proyectista",
+        reemplazado_por="El estudio de socavacion del cauce receptor, que "
+                        "dice su propia referencia",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la fuente no fija la referencia",
+            dominio="declaracion de la referencia; el conjunto cerrado de "
+                    "valores admisibles viaja en `sensibilidad`",
+        ),
+    ),
+
+    # --- T-7a --- EL ANGULO DE LAS ALETAS DEJA DE SER UN VACIO Y PASA A SER
+    # UNA REGLA DECLARADA (INF-4.3). Y deja de ser de EXPEDIENTE: el angulo
+    # elige, en un marco, la banda de filas de las Tablas A.1 y C.2 del HDS-5
+    # que la embocadura declarada del cajon tiene que respetar
+    # (`M9.verificar_coherencia_embocadura_cajon`), y eso corre antes de la
+    # Fase 4, en los dos alcances. Lo mide la corrida de perfil: es de perfil.
+    "angulo_aletas": Criterio(
+        valor={"por_defecto_grados": 45.0, "umbral_esviaje_grados": 30.0,
+               "con_esviaje_mayor_grados": 30.0},
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        # VENTANA POR CAMPO. Los dos angulos se mueven entre 30 y 60 grados:
+        # la «ventana completa» {30, 45, 60} del encargo, y la banda de la
+        # Tabla C.2 que la contiene entera -- «Wingwalls at 30⁰ to 75⁰ to
+        # barrel» --, de modo que dentro de la ventana el ke de un marco con
+        # borde a escuadra no cambia (0.4) y si cambia la fila de la Tabla A.1
+        # en las cartas que nombran un angulo exacto (Cartas 9, 12 y 13). El
+        # umbral de esviaje, entre 15 y 45 grados.
+        sensibilidad={"por_defecto_grados": (30.0, 60.0),
+                      "umbral_esviaje_grados": (15.0, 45.0),
+                      "con_esviaje_mayor_grados": (30.0, 60.0)},
+        concepto="Angulo de las aletas del cabezal con la prolongacion de la "
+                 "pared del barril (paralela al eje del conducto), "
+                 "como regla por punto: el de por defecto, y el que rige "
+                 "cuando el esviaje del cruce supera un umbral",
+        justificacion="Decide el angulo de los aleros de cada cabezal, que "
+                      "la memoria imprime y del que salen la longitud de los "
+                      "aleros y, en un marco, la banda de filas del HDS-5 "
+                      "que la embocadura del cajon tiene que respetar. La "
+                      "fuente (HDS-5, List of Symbols, pag. impresa xix; "
+                      "cita HDS5_3ED.SIMBOLOS#THETA_W) define el angulo de "
+                      "los aleros con la prolongacion de la pared del barril"
+                      ", que es tambien lo que dicen los rotulos de la Tabla "
+                      "C.2 (pag. impresa C.6; cita HDS5_3ED.TC.2), que "
+                      "agrupa sus filas de cajon por bandas de ese angulo; "
+                      "la Lamina Nº 02-A del Manual "
+                      "dibuja la salida con aleros y deja el angulo sin "
+                      "acotar. Lo que no resuelven: ninguna fuente de "
+                      "normas/ fija el angulo para una obra, y con un TUBO "
+                      "el angulo no mueve ni ke ni la carta: la Tabla C.2 "
+                      "pone el tubo con cabezal y con cabezal y aleros en "
+                      "la misma fila, y las Cartas 1 a 3 no separan aleros "
+                      "(ficha T2-04). Se "
+                      "adopta la regla de practica del INFORME §4.3 y del "
+                      "encargo de T-7a: 45 grados por defecto y 30 grados "
+                      "cuando el esviaje supera 30 grados, los dos dentro de "
+                      "la banda de 30 a 75 grados de la Tabla C.2. La tercera "
+                      "rama del encargo -- 60 grados en caja receptora -- "
+                      "no se adopta: la Lamina Nº 02-A dibuja la entrada tipo "
+                      "caja receptora SIN aleros, y ninguna fuente de normas/ "
+                      "da un angulo para ella; los 60 grados quedan dentro "
+                      "de la ventana como alternativa declarable",
+        fuente="HDS-5 (FHWA) 3a ed., abril 2012, List of Symbols, ΘW, pag. "
+               "impresa xix (PDF 23; cita HDS5_3ED.SIMBOLOS#THETA_W); "
+               "Apendice C, Tabla C.2 "
+               "'Entrance Loss Coefficients', pag. impresa C.6 (PDF 216), "
+               "bloques 'Pipe, Concrete' y 'Box, Reinforced Concrete'; "
+               "Manual de Hidrologia, Lamina Nº 02-A, pag. impresa 208 (PDF "
+               "211; cita MC_HHD.LAMINA_02A). La regla (45 / 30 por esviaje) "
+               "es de practica de predimensionamiento (INFORME §4.3), no "
+               "verificada contra una fuente de normas/",
+        reemplazado_por="El plano de aleros del expediente, con el angulo "
+                        "de cada cabezal dibujado sobre el esviaje medido",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ninguna fuente de normas/ fija el "
+                        "angulo de las aletas de una obra",
+            dominio="grados con la pared del barril: los dos angulos entre "
+                    "30 y 60, el umbral de esviaje entre 15 y 45",
+        ),
+    ),
+
+    # --- T-7a --- LA EMBOCADURA DEL CABEZAL, la otra mitad de la decision:
+    # con aleros o sin ellos. Es de PERFIL por lo mismo que el angulo: entra
+    # a la proteccion de entrada (Fase 6) y a la coherencia de la embocadura
+    # del marco con el cabezal, que corren en los dos alcances.
+    "embocadura_cabezal": Criterio(
+        valor="cabezal_con_aleros",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("cabezal_con_aleros", "cabezal_recto"),
+        concepto="Remate de los dos extremos del conducto: cabezal con "
+                 "aleros o cabezal recto (sin aleros)",
+        justificacion="Decide si los cabezales llevan aleros, y con eso que "
+                      "se protege a la entrada (Fase 6), si se predimensionan "
+                      "aleros en la Fase 9 y, en un marco, que filas del "
+                      "HDS-5 puede declarar su embocadura. La fuente (Lamina "
+                      "Nº 02-A del Manual, pag. impresa 208) dibuja la salida "
+                      "con aleros y sin aleros, sin preferir ninguna; el "
+                      "HDS-5, Tabla C.2, agrupa el tubo con cabezal y con "
+                      "cabezal y aleros en la MISMA fila. Lo que no "
+                      "resuelve: cual lleva esta obra. Se adopta el cabezal "
+                      "con aleros, que es lo que el INFORME §4.3 pide "
+                      "dimensionar y lo que protege el talud a los lados de "
+                      "la boca (AASHTO LRFD 12.6.5 pide extender los aleros "
+                      "hasta proteger el relleno estructural del conducto; "
+                      "cita AASHTO_LRFD_9.12.6.5#ALEROS). Con tubo, "
+                      "las dos opciones dan el mismo ke (0.5) y la misma "
+                      "carta: ningun diametro se mueve; con marco, la opcion "
+                      "elige la banda de filas que la embocadura declarada "
+                      "del cajon tiene que respetar. Lo que el catalogo no "
+                      "tiene es la caja receptora de la Lamina Nº 02-A, que "
+                      "es la entrada habitual de un alivio de cuneta "
+                      "(Familia B): un punto B recibe un cabezal con aleros "
+                      "-- o recto -- y la corrida lo avisa (ficha T7A-02)",
+        fuente="Manual de Hidrologia, Lamina Nº 02-A, pag. impresa 208 (PDF "
+               "211; cita MC_HHD.LAMINA_02A); HDS-5 3a ed., Tabla C.2, pag. "
+               "impresa C.6 (PDF 216); AASHTO LRFD 9a ed., 12.6.5, pag. "
+               "impresa 12-20 (PDF 1658; cita AASHTO_LRFD_9.12.6.5#ALEROS). "
+               "La eleccion es del proyecto",
+        reemplazado_por="El plano de cabezales del expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, sobre las dos salidas que dibuja la "
+                        "Lamina Nº 02-A",
+            dominio="una de las dos opciones; el conjunto cerrado viaja en "
+                    "`sensibilidad`",
+        ),
+    ),
+
+    # ----------------------- FASE 9: CABEZAL Y ALETAS ---------------------
+    # Sec. 9.2 nombra las combinaciones y la cadena sismica; Sec. 9.3 da los
+    # FS; Sec. 9.4 remite el diseno a AASHTO LRFD Sec. 5. De las tablas
+    # numericas de esas tres remisiones, la hoja de ruta no transcribe
+    # ninguna; el corpus normativo peruano, en cambio, SI trae las dos de los
+    # factores de carga, y desde NOR-PUE-04 estan transcritas donde les
+    # corresponde -- `constantes_normativas.TABLA_GAMMA_P_FILAS` y
+    # `TABLA_COMBINACIONES_FILAS`, [N] -- y aqui queda solo la ELECCION de
+    # fila. Lo que sigue siendo vacio de tabla se declara aqui, cada uno con
+    # su razon, en vez de rellenarse con el valor "de siempre".
+
+    "factores_carga_aashto": Criterio(
+        valor={
+            # LA ELECCION, y nada mas que la eleccion: que FILA de la Tabla
+            # 2.4.5.3.1-2 [N] describe a cada estructura de esta obra. Los
+            # numeros no estan aqui ni pueden estarlo -- son las claves de
+            # `constantes_normativas.TABLA_GAMMA_P_FILAS`, que es donde vive
+            # la tabla completa. Ese reparto es el de F_PGA_TABLA / 'F_pga' y
+            # REDUCCION_KH_POR_DESPLAZAMIENTO / 'factor_muro_eleccion'.
+            #
+            # Las tres primeras claves son los valores de `TipoMaterial`, el
+            # mismo indexado por material que ya usan 'D_max_catalogo',
+            # 'espesor_pared_conducto' y 'cobertura_minima_aashto'.
+
+            # Tubo de concreto reforzado enterrado bajo el terraplen. No es
+            # "Porticos rigidos" (1.35/0.90): un portico es un marco con
+            # patas, y ESTA clave es la del TUBO.
+            #
+            # LA RAZON QUE ESTE COMENTARIO DABA YA NO VALE, y por eso se
+            # reescribio en C5. Decia: «el catalogo de Sec. 3.2 es circular
+            # -- la Familia C, de marco o multicelda, sale sin candidatos».
+            # Esa premisa la destruyo esta misma sesion: `materiales_candidatos`
+            # devuelve hoy un marco de concreto para la Familia C. Lo que
+            # separa las dos filas no era nunca el catalogo, era la ESTRUCTURA:
+            # un tubo enterrado y un marco son dos tipos distintos en la Tabla
+            # 2.4.5.3.1-2, y ahora las dos claves existen.
+            "concreto_reforzado": {"EV": "EV_estructura_rigida_enterrada"},
+
+            # EL MARCO DE LA FAMILIA C. La fila la fija la regla vinculante #8
+            # de docs/ruta_familia_c.md §6 -- «Porticos rigidos» (1.35/0.90)
+            # y no «Estructura rigida enterrada» --, que no es eleccion de esta
+            # sesion sino una decision ya tomada y verificada contra el Manual
+            # de Puentes, Tabla 2.4.5.3.1-2, pag. impresa 143.
+            #
+            # LA CLAVE ES 'cajon' Y NO UN TipoMaterial, y tiene que serlo: un
+            # marco de concreto y un tubo de concreto son el MISMO
+            # `TipoMaterial`, de modo que indexar por material no puede
+            # distinguirlos. Es la misma razon por la que 'cabezal' tampoco es
+            # un material.
+            #
+            # HOY NO TIENE CONSUMIDOR, y hay que decirlo entero porque es un
+            # numero que se lee mal en silencio: `M8.factores_carga_flotacion`
+            # indexa por `material.tipo.value`, de modo que un marco recibe
+            # HOY la fila del TUBO. El minimo de las dos filas es 0.90, o sea
+            # que el NUMERO que V7 usa es el mismo y lo que sale mal es la
+            # FILA QUE LA MEMORIA IMPRIME -- el precedente NOR-HID-01, valor
+            # que acierta por casualidad y cita falsa --. Cablearlo es de C7
+            # (punto 2 de su brief), que generaliza M8 a la seccion; C5 deja
+            # la clave puesta y el defecto declarado en §15.8 y en el
+            # docstring de `M5.v7_flotacion`, que es su consumidor.
+            "cajon": {"EV": "EV_porticos_rigidos"},
+
+            # TMC. Es estructura flexible enterrada, y de las tres subfilas
+            # flexibles le toca la de "Entre otros" (1.95/0.90): no es
+            # alcantarilla cajon metalica, no es de fibra de vidrio, y no es
+            # una plancha estructural. AQUI HAY QUE DECLARAR UNA DIVERGENCIA
+            # DE LA FUENTE PERUANA: AASHTO 9a ed. restringe esa fila a
+            # "Structural Plate Culverts with DEEP Corrugations" y el Manual
+            # traduce "plancas estructurales con corrugaciones", sin
+            # "profundas". Leido al pie de la letra, el Manual dejaria caer
+            # ahi cualquier tubo corrugado y le daria 1.50 en vez de 1.95. Se
+            # elige "Entre otros" por dos razones que apuntan al mismo lado:
+            # es lo que sostiene la fuente primaria (un tubo corrugado no es
+            # una plancha estructural) y es el maximo mas alto de las tres,
+            # o sea el extremo conservador cuando EV desestabiliza.
+            "tmc": {"EV": "EV_flexibles_entre_otros"},
+
+            # HDPE: la subfila flexible es literal, "Alcantarillas
+            # termoplasticas" (1.30/0.90). No hay eleccion que discutir.
+            "hdpe": {"EV": "EV_flexibles_alcantarillas_termoplasticas"},
+
+            # El cabezal. M9 lo modela como muro de contencion con zapata, y
+            # esa es la fila "Muros y estribos de retencion" (1.35/1.00). Su
+            # MINIMO es 1.00, no 0.90 (NOR-PUE-03). Y "EH_activa" porque el
+            # proyecto disena con empuje ACTIVO -- Mononobe-Okabe / Coulomb,
+            # ver 'inclinacion_muro_beta' y companeros --, no en reposo.
+            "cabezal": {"EV": "EV_muros_y_estribos_de_retencion",
+                        "EH": "EH_activa"},
+        },
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Que fila de la Tabla 2.4.5.3.1-2 (factores gamma_p de "
+                 "cargas permanentes) describe a cada estructura de esta "
+                 "obra: los tres conductos del catalogo, por material, y el "
+                 "cabezal. La TABLA es [N] y vive en constantes_normativas; "
+                 "aqui solo esta la eleccion de fila",
+        justificacion="Decide que fila de la Tabla 2.4.5.3.1-2 (factores "
+                      "gamma_p de cargas permanentes) describe a cada "
+                      "estructura de esta obra: los tres conductos por "
+                      "material y el cabezal como muro de retencion. La "
+                      "fuente (las dos tablas del Manual de Puentes, "
+                      "transcritas en "
+                      "constantes_normativas.TABLA_GAMMA_P_FILAS y "
+                      "TABLA_COMBINACIONES_FILAS con su correspondencia y sus "
+                      "divergencias frente a AASHTO LRFD) desglosa gamma_p "
+                      "por tipo de estructura, y un par unico de EV no puede "
+                      "expresar ese desglose: para una estructura rigida "
+                      "enterrada el minimo de EV es 0.90 y para un muro o "
+                      "estribo de retencion es 1.00, de modo que cualquier "
+                      "par unico da mal uno de los dos consumidores -- V7 lee "
+                      "el minimo del conducto, y la estabilidad del cabezal "
+                      "leera el del muro. Por eso el valor es un mapa "
+                      "estructura -> clave de fila, no un numero. Lo que la "
+                      "fuente no resuelve: de que fila cuelga cada estructura "
+                      "de esta obra. Eso lo decide el proyectista, sostenido "
+                      "en la descripcion literal de cada fila, y es la parte "
+                      "[A]; los numeros son [N] y viven en "
+                      "constantes_normativas -- el mismo reparto que "
+                      "F_PGA_TABLA / 'F_pga' y "
+                      "REDUCCION_KH_POR_DESPLAZAMIENTO / "
+                      "'factor_muro_eleccion': la tabla es [N] y elegir una "
+                      "fila no convierte la eleccion en norma. Sobre la "
+                      "direccion de los minimos, dicho con cuidado porque "
+                      "invita al error contrario: rebajar lo que estabiliza "
+                      "es la direccion conservadora -- es lo que el marco "
+                      "LRFD hace a proposito, y la razon por la que V7 minora "
+                      "DC y EV --, de modo que el 1.00 del muro frente al "
+                      "0.90 del conducto relaja volteo y deslizamiento en "
+                      "torno a un 8 %, no los endurece: el desglose es una "
+                      "exigencia de conformidad con la fila que corresponde, "
+                      "no una correccion de seguridad. AASHTO LRFD lo "
+                      "prescribe expresamente en su comentario C3.4.1 al "
+                      "aplicar los criterios al deslizamiento de muros -- el "
+                      "empuje vertical de tierra tras un muro en voladizo se "
+                      "multiplica por su minimo (1.00) y el peso de la "
+                      "estructura por el suyo (0.90), porque ambos aumentan "
+                      "la tension de contacto y la resistencia al corte en la "
+                      "base --, y el mismo comentario da el otro extremo para "
+                      "la capacidad portante, donde gobiernan los maximos: "
+                      "peso propio 1.25, empuje vertical 1.35, empuje activo "
+                      "1.50. Las tres filas de EH estan en "
+                      "TABLA_GAMMA_P_FILAS con sus pares completos -- la de "
+                      "reposo lleva 1.35 / 0.90, y el N/A pertenece a la fila "
+                      "de paredes ancladas, que comparte el maximo 1.35 --, y "
+                      "el N/A de la fila que si lo tiene viaja como "
+                      "GAMMA_P_NO_APLICA, para que pedirlo sea un error del "
+                      "expediente y no un silencio. Alcance hoy: ningun "
+                      "modulo de produccion consume los factores del cabezal "
+                      "-- la estabilidad de Sec. 9.3 sigue bloqueada por "
+                      "'predimensionamiento_cabezal', y E2 y E3 se evaluan "
+                      "como FS globales de E.050 sobre demandas sin factorar "
+                      "--, de modo que este mapa fija el numero que se "
+                      "consumira cuando se desbloqueen; gamma_EQ (carga viva "
+                      "de Evento Extremo I) sigue sin valor y sigue "
+                      "bloqueando esa combinacion (ver "
+                      "`verificacion_pendiente`). La sensibilidad enumera las "
+                      "claves de fila admisibles: declarar una estructura "
+                      "contra una fila cuya descripcion literal no la cubre "
+                      "es exactamente el defecto que este desglose existe "
+                      "para impedir",
+        fuente="LA TABLA (valores [N], no estan aqui): Manual de Puentes "
+               "(MTC) num. 2.4.5.3.1, Tabla 2.4.5.3.1-2 'Factores de carga "
+               "para cargas permanentes, gamma_p' y Tabla 2.4.5.3.1-1 "
+               "'Combinaciones de Carga y Factores de Carga', las DOS en la "
+               "pag. impresa 143 (PDF 144) de normas/'Puentes (Version "
+               "Libro).pdf'; transcritas en "
+               "constantes_normativas.TABLA_GAMMA_P_FILAS y "
+               "TABLA_COMBINACIONES_FILAS, con su correspondencia y sus "
+               "divergencias frente a AASHTO LRFD 9a ed. (2020), Tablas "
+               "3.4.1-2 (pag. impresa 3-18) y 3.4.1-1 (pag. impresa 3-17). "
+               "LA ELECCION (esto, [A]): de que fila cuelga cada estructura "
+               "del proyecto, decidido por el proyectista y sostenido en la "
+               "descripcion literal de cada fila. "
+               "TRES PAGINAS QUE ESTE CAMPO CITABA MAL, verificadas una a una "
+               "leyendo el encabezado impreso del PDF y corregidas aqui: la "
+               "Tabla 3.4.1-1 NO esta en la pag. 3-14 de AASHTO (esa pagina "
+               "es texto corrido sobre gamma_TU, sin tabla) sino en la 3-17; "
+               "y las dos tablas del Manual no estan en las pags. 143 y 146 "
+               "sino las dos en la 143 -- la 146 es una lamina fotografica "
+               "sin numerar, 'PUENTE. CARACHA'. La Tabla 2.4.5.3.1-3, que "
+               "este proyecto no usa, esta en la 144. "
+               "ERRATA DE LA PROPIA FUENTE, anotada para no citarla mal: el "
+               "cuerpo del Manual en la pag. impresa 142 llama a estas tablas "
+               "'2.4.5.3-1' y '2.4.5.3-2', sin el '.1', mientras el rotulo "
+               "impreso sobre cada una dice '2.4.5.3.1-1' y '2.4.5.3.1-2'. Se "
+               "cita la forma del rotulo",
+        sensibilidad=("EV_estructura_rigida_enterrada", "EV_porticos_rigidos",
+                      "EV_muros_y_estribos_de_retencion",
+                      "EV_flexibles_entre_otros",
+                      "EV_flexibles_cajon_metalico_plancha_fibra_vidrio",
+                      "EV_flexibles_alcantarillas_termoplasticas"),
+        reemplazado_por="Nada normativo: la tabla no elige por el proyecto. "
+                        "Lo que cerraria la eleccion del TMC es que el MTC "
+                        "corrija la traduccion de la fila flexible de 1.50 "
+                        "('plancas estructurales con corrugaciones') "
+                        "reponiendo el 'profundas' que AASHTO exige; hasta "
+                        "entonces la frontera entre esa fila y 'Entre otros' "
+                        "la sostiene la fuente primaria y no la peruana",
+        verificacion_pendiente="gamma_EQ, el factor de la carga viva en "
+                               "Evento Extremo I, SIGUE SIN VALOR y bloquea "
+                               "esa combinacion: la Tabla 2.4.5.3.1-1 imprime "
+                               "el simbolo, no un numero. Y la atribucion con "
+                               "que este campo lo declaraba era falsa: decia "
+                               "'a criterio del propietario del proyecto "
+                               "(0.50 o 0.00, AASHTO LRFD C3.4.1)', y esa "
+                               "frase no existe en la 9a ed. -- 'discretion' "
+                               "no aparece ni una vez en el Art. 3.4.1 ni en "
+                               "su comentario. Lo que la fuente dice, literal, "
+                               "esta en constantes_normativas.GAMMA_EQ_TEXTO: "
+                               "el factor 'shall be determined on a "
+                               "project-specific basis' (Art. 3.4.1, pag. "
+                               "impresa 3-19); el 0.0 es practica de "
+                               "ediciones pasadas y el 0.50 una indicacion de "
+                               "razonabilidad del comentario C3.4.1, no dos "
+                               "opciones tabuladas a elegir. Declarar en la "
+                               "memoria el valor adoptado y su fundamento, "
+                               "antes de evaluar Evento Extremo I. TRAMPA "
+                               "CERCANA: el par '0.0 / 0.50' SI aparece "
+                               "tabulado en la pag. impresa 3-16, pero es de "
+                               "gamma_TG (gradiente de temperatura), otra "
+                               "carga",
+        resolucion=DeTabla(
+            tablas=("MP.TGAMMA_P", "MP.TCOMB"),
+            que_elige="que fila de gamma_p describe a cada estructura de "
+                      "esta obra: los tres conductos por material y el "
+                      "cabezal como muro de retencion",
+        ),
+    ),
+
+    "peso_especifico_concreto_kn_m3": Criterio(
+        valor=23.56,                # kN/m3, concreto armado (0.150 kcf)
+        # NIVEL DECLARADO Y NO MEDIDO, y conviene decir por que: NINGUNA de
+        # las dos corridas de `tests/test_nivel_medido.py` llega a invocarlo
+        # --- la cadena de la Fase 9 se detiene antes, en un criterio
+        # pendiente ---, de modo que no hay medicion que citar. Lo sostiene el
+        # censo: `variables_entrada` no le encuentra mas consumidor que
+        # `M9_cabezal`, y `--alcance perfil` no ejecuta ese modulo. El test lo
+        # comprueba por esa via, que es la unica que queda.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        concepto="Peso especifico del concreto armado del cabezal, kN/m3",
+        justificacion="Es el peso propio (carga DC) que resiste el volteo y "
+                      "el deslizamiento de Sec. 9.3: sin el no hay momento "
+                      "estabilizante ni fuerza normal en la base. CERRADO "
+                      "por verificacion externa: AASHTO LRFD Tabla 3.5.1-1 "
+                      "+ Comentario C3.5.1 dan 0.150 kcf (concreto normal "
+                      "armado) = 23.56 kN/m3. El valor cae dentro del rango "
+                      "de practica corriente (23.5-24.5 kN/m3) que este "
+                      "criterio manejaba antes de tener cita directa, pero "
+                      "no se adopta el redondeo regional de 24.0: ese numero "
+                      "no tiene fuente propia y 23.56 si la tiene",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed., Tabla "
+               "3.5.1-1 + Comentario C3.5.1, pag. 3-21 (0.150 kcf, concreto "
+               "normal armado)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, adoptando el concreto normal armado "
+                        "de la Tabla 3.5.1-1 de AASHTO",
+            dominio="kN/m3 > 0",
+            tabla_pendiente="AASHTO LRFD 9a ed., Tabla 3.5.1-1 'Unit "
+                            "Weights', no transcrita al registro",
+        ),
+    ),
+
+    # --- T-7a --- DEJA DE SER UN VACIO (INF-4.2): es la tabla de REGLAS con
+    # que `M9.predimensionar_cabezal` propone la geometria de cada cabezal de
+    # cada punto dimensionado. Hasta T-7a declaraba UNA geometria para todo el
+    # corredor -- H, B, D_f y espesores, vacia --, y esa geometria unica era
+    # INF-5.1.15. Las dimensiones ya no se declaran aqui sino POR PUNTO, en
+    # `--datos-externos` (`cabezal_declarado`), y ganan sobre la regla.
+    "predimensionamiento_cabezal": Criterio(
+        valor={"recubrimiento_clave_m": 0.30,
+               "bordillo_m": 0.15,
+               "resguardo_agua_m": 0.0,
+               "espesor_pantalla_voladizo_m": 0.30,
+               "divisor_espesor_gravedad": 6.0,
+               "fraccion_ancho_zapata": 0.70,
+               "divisor_peralte_zapata": 10.0,
+               "fraccion_punta": 0.33,
+               "altura_max_gravedad_m": 2.0,
+               "empotramiento_lateral_m": 0.30,
+               "altura_final_aleros_m": 0.40,
+               "fraccion_longitud_losa": 1.5,
+               "espesor_losa_m": 0.30},
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        # VENTANA POR CAMPO, y casi todas son las del encargo de T-7a y del
+        # INFORME §4.2 / §4.3, que las dan como rangos de practica: espesor
+        # de pantalla en voladizo 0.20-0.30 m; en gravedad H/8-H/6 (divisor
+        # 6 a 8); zapata 0.4-0.7·H; peralte H/12-H/10 (divisor 10 a 12);
+        # altura final de aleros 0.30-0.50 m; losa 1.0-1.5·D y 0.20-0.30 m.
+        # Donde el encargo no da rango (recubrimiento, bordillo, resguardo,
+        # punta, altura maxima del ciclopeo, empotramiento) la ventana es la
+        # del proyecto y lo dice la justificacion.
+        sensibilidad={"recubrimiento_clave_m": (0.15, 0.60),
+                      "bordillo_m": (0.0, 0.30),
+                      "resguardo_agua_m": (0.0, 0.30),
+                      "espesor_pantalla_voladizo_m": (0.20, 0.30),
+                      "divisor_espesor_gravedad": (6.0, 8.0),
+                      "fraccion_ancho_zapata": (0.40, 0.70),
+                      "divisor_peralte_zapata": (10.0, 12.0),
+                      "fraccion_punta": (0.25, 0.40),
+                      "altura_max_gravedad_m": (1.5, 2.5),
+                      "empotramiento_lateral_m": (0.20, 0.50),
+                      "altura_final_aleros_m": (0.30, 0.50),
+                      "fraccion_longitud_losa": (1.0, 1.5),
+                      "espesor_losa_m": (0.20, 0.30)},
+        concepto="Reglas de predimensionamiento del cabezal por punto: "
+                 "recubrimiento y bordillo sobre la clave exterior, resguardo "
+                 "sobre el nivel de agua, espesor de pantalla (voladizo; "
+                 "gravedad como H/divisor), zapata (ancho como fraccion de H, "
+                 "peralte como H/divisor, punta como fraccion del ancho), "
+                 "altura maxima del cabezal de gravedad ciclopeo, empotramiento "
+                 "lateral de los aleros, altura final de los aleros y losa de "
+                 "entrega (longitud como fraccion de D, espesor)",
+        justificacion="Decide la geometria PROPUESTA de cada cabezal de "
+                      "cada punto, que la Fase 9 imprime dimension por "
+                      "dimension como «propuesta por regla» y que el "
+                      "proyectista puede pisar por punto en "
+                      "`--datos-externos` (`cabezal_declarado`, «declarada»; "
+                      "una dimension que la regla calcula A PARTIR de otra "
+                      "declarada se imprime «derivada»). Las fuentes con "
+                      "numero fijan lo que fijan y no estan aqui: la "
+                      "profundidad minima de desplante de E.050 Art. 26.2 "
+                      "(0,80 m, [N→] para un cabezal vial: "
+                      "'profundidad_cimentacion_min_cabezal_m'), el desplante "
+                      "de la salida bajo la socavacion de AASHTO 12.6.5 "
+                      "('margen_zapata_bajo_socavacion_m' [C]), el espesor "
+                      "minimo de la zapata de concreto simple de E.060 22.7.4 "
+                      "(300 mm, [N], solo el de gravedad), la altura minima "
+                      "de la zapata armada sobre su refuerzo de E.060 15.7 "
+                      "(300 mm, [N→], mas el recubrimiento de 7.7.1: "
+                      "'peralte_min_zapata_armada_m') y el dentellon de la "
+                      "Lamina Nº 04 ('dentellon_losa_entrega' [N→]). Lo que "
+                      "ninguna fuente de normas/ fija es el resto del "
+                      "predimensionamiento: las Laminas 02, 02-A y 03 del "
+                      "Manual acotan con letras o con «VARIABLE», E.060 no da "
+                      "espesor minimo para un muro de contencion (su "
+                      "14.5.3.2, 200 mm, es del metodo empirico de muros de "
+                      "carga y de cimentacion) y el PDF de VARIOS que el "
+                      "encargo cita (pp. 18 y 42) no esta en normas/: su "
+                      "origen no se pudo verificar, tampoco el de «H/8 a H/6» "
+                      "como espesor de la pantalla de gravedad (el "
+                      "predimensionamiento clasico lo da tambien para la "
+                      "zapata), que por eso sigue [A]. Se adoptan las reglas "
+                      "de practica del INFORME §4.2-§4.3, en el extremo de "
+                      "cada ventana que da MAS material (pantalla 0.30 m, "
+                      "H/6, B = 0.7·H, peralte H/10, losa 1.5·D y 0.30 m). "
+                      "Eso no es el lado seguro de la estabilidad, y no se "
+                      "afirma: con kh = 0.50 y un coeficiente de friccion en "
+                      "la base menor que kh, cada kN de muro suma mas fuerza "
+                      "sismica que desliza (kh·W) que resistencia (μ·W), y "
+                      "mas masa EMPEORA el deslizamiento sismico; que mas "
+                      "material ayude depende de φ, que el EMS no ha dado. La "
+                      "estabilidad de lo propuesto la verifica T-7b y el "
+                      "armado T-7c. La coronacion es la mayor de dos: la "
+                      "clave exterior mas el relleno que el muro retiene "
+                      "sobre ella (0.30 m, regla del proyecto, no un minimo "
+                      "de cobertura de ninguna fuente: la cobertura minima "
+                      "del conducto la juzga la Fase 7 por su cuenta) mas un "
+                      "bordillo de 0.15 m que sobresale del relleno, y el "
+                      "nivel de agua del extremo mas un resguardo; el "
+                      "resguardo es 0 porque es la condicion que el INFORME "
+                      "§4.2 escribe -- que el agua no desborde el muro -- y "
+                      "la ventana permite endurecerla. El talud del "
+                      "terraplen muere en el RELLENO retenido (coronacion "
+                      "menos bordillo), no en la corona del bordillo: es el "
+                      "nivel con que se cierra la longitud entre cabezales. "
+                      "El tipo es gravedad en concreto ciclopeo hasta 2.0 m "
+                      "de altura total -- base de zapata a corona, desplante "
+                      "incluido -- y voladizo armado por encima; con la "
+                      "altura interior minima de 0.90 m (4.1.1.3.4 a) la "
+                      "menor altura total de la obra suma 0.90 m de altura, "
+                      "0.30 m de relleno, 0.15 m de bordillo y 0.80 m de "
+                      "desplante: 2.15 m mas la pared del conducto (2.165 m "
+                      "en TMC, 2.25 m en concreto), de modo que "
+                      "con este umbral TODO cabezal sale voladizo armado y la "
+                      "rama de gravedad solo se alcanza moviendo el umbral en "
+                      "su ventana o declarando el tipo; el umbral no se "
+                      "cambia (ficha T7A-04) y la corrida lo avisa. Cuando "
+                      "sale gravedad, E.060 22.10.2.1 limita el ciclopeo a "
+                      "muros de contencion de GRAVEDAD y el 22.10.2.2 exige "
+                      "verificar flexion y corte en voladizos mas largos que "
+                      "medio peralte: lo juzga T-7c. La punta es un tercio "
+                      "del ancho de la zapata, y el empotramiento de 0.30 m "
+                      "por lado es lo que el muro sobresale del ancho "
+                      "exterior del conducto para recibir el arranque de los "
+                      "aleros. El terreno al pie del muro, desde el que se "
+                      "mide el desplante, el dentellon de la losa y las "
+                      "alturas de los aleros, es UNO por extremo: en la "
+                      "entrada la solera del conducto, y en la salida la mas "
+                      "baja entre la solera y el fondo del cauce receptor: "
+                      "con la salida en caida sobre el lecho, el terreno "
+                      "delante del muro baja hasta el receptor",
+        fuente="Practica de predimensionamiento: INFORME §4.2 y §4.3 y el "
+               "encargo de T-7a (PDF de VARIOS pp. 18 y 42, NO verificado: no "
+               "esta en normas/). Las dimensiones con fuente numerica estan "
+               "en los criterios 'espesor_min_zapata_concreto_simple_m' "
+               "(E.060 22.7.4, [N→] desde el cierre de T-7c), "
+               "'profundidad_cimentacion_min_cabezal_m', "
+               "'peralte_min_zapata_armada_m', "
+               "'margen_zapata_bajo_socavacion_m' y 'dentellon_losa_entrega'",
+        reemplazado_por="Plano de encofrado del cabezal de cada punto, "
+                        "acotado, o la dimension declarada por punto en "
+                        "`--datos-externos` (`cabezal_declarado`)",
+        verificacion_pendiente="La geometria propuesta es compatible con el "
+                               "conducto que remata por construccion; la que "
+                               "se DECLARA por punto se verifica (CB1 a CB7 "
+                               "de `M9.verificar_compatibilidad_cabezal`). "
+                               "La ESTABILIDAD de cualquiera de las dos no "
+                               "se verifica aqui: es T-7b",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, o el plano tipo de cabezal del "
+                        "expediente vial",
+            dominio="reglas en m o adimensionales, cada una en su ventana",
+        ),
+    ),
+
+    "N_cq_N_gammaq_meyerhof": Criterio(
+        valor=None,                 # VACIO: bloquea la capacidad portante en talud
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Factores de capacidad de carga N_cq y N_gamma_q para zapata "
+                 "proxima a talud (Meyerhof 1957), leidos de las figuras "
+                 "2.8.1.3.1.2c-1 y -2 del Manual de Puentes",
+        justificacion="Decide los factores de capacidad de carga N_cq y "
+                      "N_gamma_q de la zapata del cabezal, y hoy es un vacio "
+                      "declarado. La fuente proxima (Sec. 9.3 de la hoja de "
+                      "ruta) es taxativa en que el cabezal se apoya en el "
+                      "borde del terraplen y no en terreno horizontal, y en "
+                      "que la penalizacion es severa por perdida de "
+                      "confinamiento: N_q = 0.0 -- eso si es un numero y esta "
+                      "en constantes_normativas -- y N_c y N_gamma se "
+                      "reemplazan por N_cq y N_gamma_q, leidos de las figuras "
+                      "del num. 2.8.1.3.1.2c del Manual de Puentes "
+                      "(Meyerhof). Lo que la fuente no resuelve: esos dos "
+                      "factores salen de figuras, no de una formula ni de una "
+                      "tabla -- dependen de la distancia de la zapata al "
+                      "borde, de la altura del talud y de su inclinacion -- y "
+                      "no hay forma de transcribirlos sin leer los abacos "
+                      "para la geometria concreta de cada punto; cual de las "
+                      "dos figuras aplica lo decide el tipo de suelo de "
+                      "fundacion, que es el dato de 'c_phi_fundacion'. Se "
+                      "deja vacio para que lo lea el proyectista: usar N_c y "
+                      "N_gamma de terreno horizontal aqui seria exactamente "
+                      "la sobrestimacion que la hoja de ruta advierte",
+        fuente="PENDIENTE - Manual de Puentes num. 2.8.1.3.1.2c (Meyerhof "
+               "1957). CADA FIGURA EN SU PAGINA, verificado contra el PDF: "
+               "el texto del numeral en la pag. impresa 272 (PDF 273); la "
+               "Figura 2.8.1.3.1.2c-1, suelos COHESIVOS, en la pag. impresa "
+               "273 (PDF 274); la Figura 2.8.1.3.1.2c-2, suelos NO "
+               "COHESIVOS, en la pag. impresa 274 (PDF 275). El rango que "
+               "este campo declaraba -- 'pags. 272-273' -- dejaba fuera la "
+               "segunda figura (NOR-PUE-13), y son las dos las que hay que "
+               "leer: cual aplica lo decide el tipo de suelo de fundacion, "
+               "que es el dato de 'c_phi_fundacion'",
+        reemplazado_por="Lectura de los abacos para la geometria real de cada "
+                        "cabezal, adjuntada a la memoria",
+        verificacion_pendiente="E.050 Art. 30.1-30.2 exige ADEMAS la "
+                               "verificacion por inclinacion de la superficie "
+                               "y de la base, y el analisis de estabilidad "
+                               "global del talud con la estructura "
+                               "cargandolo: son dos comprobaciones, no una "
+                               "(Sec. 9.3, 'doble verificacion')",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, leyendo las figuras 2.8.1.3.1.2c-1 "
+                        "y -2 del Manual de Puentes (Meyerhof 1957)",
+            dominio="factores adimensionales > 0",
+            tabla_pendiente="Manual de Puentes num. 2.8.1.3.1.2c: son "
+                            "FIGURAS (abacos), no tablas, y el registro no "
+                            "tiene hoy tipo para un abaco",
+        ),
+    ),
+
+    "metodo_estabilidad_global": Criterio(
+        valor=None,                 # VACIO: bloquea las filas E4 y E5 de Sec. 9.3
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_STR,
+        concepto="Metodo de analisis de estabilidad global del muro y del "
+                 "talud que lo soporta (equilibrio limite: Bishop "
+                 "simplificado, Spencer, Morgenstern-Price...)",
+        justificacion="La tabla de Sec. 9.3 exige FS = 1.50 estatico y 1.25 "
+                      "sismico para la estabilidad global del muro "
+                      "(39.13.6 b) y para la del talud (Art. 30.3), pero un "
+                      "FS de estabilidad global no se calcula con una "
+                      "formula cerrada: sale de un analisis de superficies "
+                      "de falla que exige el perfil estratigrafico completo, "
+                      "la geometria del terraplen y un metodo declarado. "
+                      "Ninguna de las tres cosas esta en el alcance del CSV "
+                      "de Sec. 1.2. El FS existe y esta transcrito; lo que "
+                      "falta es con que producir el valor a comparar",
+        fuente="PENDIENTE - E.050 Art. 30.3 y num. 39.13.6 b) fijan el "
+               "umbral, no el metodo. El analisis es del EMS del expediente",
+        reemplazado_por="Analisis de estabilidad de taludes del estudio "
+                        "geotecnico, con su metodo y sus superficies criticas",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: E.050 Art. 30.3 y num. 39.13.6 b) "
+                        "fijan el umbral, no el metodo. Es una ELECCION de "
+                        "metodo y por eso no es `DeEnsayo`, aunque el "
+                        "analisis lo corra el mismo EMS",
+            dominio="declaracion del metodo de equilibrio limite",
+        ),
+    ),
+
+    # ---- El recubrimiento del refuerzo: la CADENA, no un numero -----------
+    # Estos cuatro criterios sustituyen al antiguo 'recubrimiento_aashto_mm',
+    # que era un solo dict con 75.0 mm en las tres condiciones y la conclusion
+    # ya escrita ("AASHTO gobierna en los tres casos por la regla del mayor").
+    # Ese numero no se podia defender por tres razones que se acumulaban:
+    #
+    #   (1) 75 mm no esta en ninguna tabla. La Tabla 5.10.1-1 esta en
+    #       PULGADAS y da 3.0 in = 76.2 mm; redondear un MINIMO hacia abajo va
+    #       del lado no conservador (MAT-D16).
+    #   (2) Los 3.0 in son UNA COLUMNA de tres. La tabla se organiza por
+    #       "Reinforcing Material Category" -- A acero sin recubrir, B epoxico
+    #       o galvanizado, C acero AASHTO M 334M -- y con acero protegido da
+    #       2.0 in = 50.8 mm (NOR-AAS-01). La categoria no se declaraba en
+    #       ninguna parte del expediente.
+    #   (3) Falta el modificador por relacion agua-cemento, que el Art. 5.10.1
+    #       impone sobre la tabla y el criterio ignoraba entero: con
+    #       W/CM <= 0.40 el factor es 0.8 (NOR-AAS-05).
+    #
+    # Y las tres juntas INVIERTEN la conclusion, que es lo que hace que este
+    # cluster no se pueda corregir hallazgo por hallazgo: 3.0 in x 0.8 = 61.0
+    # mm queda POR DEBAJO de los 70 mm que E.060 pide para concreto contra el
+    # suelo, de modo que la regla del mayor la gana E.060 y no AASHTO. Con
+    # acero protegido, 2.0 in x 0.8 = 40.6 mm, y E.060 gana en dos de las tres
+    # condiciones y pierde por medio milimetro en la tercera. Corregir solo el
+    # 75 -> 76.2 habria dejado en pie una conclusion falsa con un numero mas
+    # exacto: es el conflicto #3 de docs/hoja_de_ruta_correcciones_v12.md.
+    #
+    # De ahi el reparto: la TABLA es dato (transcrita entera, aqui abajo y en
+    # constantes_normativas), la CATEGORIA y la EXPOSICION son declaraciones
+    # que el expediente tiene que hacer, y el VALOR se calcula en
+    # `M9.recubrimiento_de_diseno`. Mientras falte una de las dos
+    # declaraciones, el calculo se detiene. No hay numero por defecto.
+
+    "categoria_refuerzo_aashto": Criterio(
+        valor=None,                 # VACIO: bloquea la regla del mayor de 9.4
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_STR,
+        concepto="Categoria de material de refuerzo de la Tabla 5.10.1-1 de "
+                 "AASHTO LRFD ('A' acero sin recubrir, 'B' epoxico o "
+                 "galvanizado, 'C' acero AASHTO M 334M), que decide que "
+                 "columna de la tabla de recubrimientos aplica a este cabezal",
+        justificacion="Decide que columna de categoria de material de "
+                      "refuerzo de la tabla de recubrimientos aplica a este "
+                      "cabezal, y hoy es un vacio declarado: es la condicion "
+                      "de aplicacion de la tabla, no un refinamiento. La "
+                      "fuente (AASHTO LRFD, Tabla 5.10.1-1, transcrita como "
+                      "AASHTO_LRFD_9.T5.10.1-1 en el registro con su nota al "
+                      "pie) no tiene un recubrimiento por situacion sino "
+                      "tres, uno por categoria de acero, y su nota al pie "
+                      "define las tres categorias: A, acero sin recubrir "
+                      "(AASHTO M 31M/M 31); B, con recubrimiento epoxico o "
+                      "galvanizado (ASTM A775/A775M); C, materiales AASHTO M "
+                      "334M/M 334. Leer la tabla sin declarar columna es "
+                      "elegir la A por omision. Lo que la fuente no resuelve: "
+                      "la categoria la fija la especificacion del acero del "
+                      "expediente, que es una decision de proyecto con "
+                      "consecuencia de costo y de suministro, no una lectura "
+                      "de norma; en un corredor salino con freatico somero el "
+                      "acero galvanizado o epoxico es una opcion natural, y "
+                      "justamente por eso no se puede suponer la A -- "
+                      "suponerla es suponer el caso que mas recubrimiento "
+                      "pide, que parece conservador y no lo es, porque con "
+                      "acero protegido el proyectista podria creer que le "
+                      "sobra recubrimiento cuando lo que cambio fue la "
+                      "columna. Donde queda el corpus peruano: el Manual de "
+                      "Puentes transcribe esta misma tabla (num. 2.9.1.5.5.3, "
+                      "cita MP.T2.9.1.5.5.3-1 del registro) pero solo la "
+                      "columna A -- su propio titulo la acota a los aceros no "
+                      "protegidos -- y trata la proteccion epoxica o "
+                      "galvanizada en el numeral aparte 2.9.1.5.5.4, donde "
+                      "solo autoriza usar la tabla con acero protegido en "
+                      "exposicion interior. De modo que con categoria A el "
+                      "valor es [N] peruano, y con B o C el corpus peruano no "
+                      "tabula nada para exposicion exterior y el hueco lo "
+                      "cubre AASHTO LRFD por la Via 1 de Sec. 0.2, como [C]: "
+                      "la etiqueta de la fuente del recubrimiento adoptado "
+                      "depende de este mismo criterio. Se deja vacio para que "
+                      "lo fije la especificacion del acero del expediente. "
+                      "Sensibilidad, con el factor 0.8 por a/c <= 0.40 ya "
+                      "aplicado y para la fila costera: A da 76.2 x 0.8 = "
+                      "61.0 mm, y E.060 gobierna el caso 'contra_suelo' con "
+                      "sus 70 mm; B o C dan 50.8 x 0.8 = 40.6 mm, y E.060 "
+                      "gobierna tambien 'suelo_intemperie_ge_3_4' (50 mm). La "
+                      "eleccion mueve el recubrimiento adoptado y mueve quien "
+                      "lo impone, que es lo que la memoria tiene que declarar",
+        fuente="PENDIENTE - AASHTO LRFD 9a ed., Tabla 5.10.1-1 y su nota al "
+               "pie, pag. impresa 5-169 (PDF 528); Manual de Puentes "
+               "num. 2.9.1.5.5.3 y 2.9.1.5.5.4, pags. impresas 377-378. La "
+               "tabla y sus categorias estan verificadas; lo que falta es "
+               "CUAL de las tres se especifica en esta obra",
+        sensibilidad=("A: acero sin recubrir (AASHTO M 31M/M 31)",
+                      "B: epoxico o galvanizado (ASTM A775/A775M)",
+                      "C: acero AASHTO M 334M/M 334",
+                      "LECTURA ALTERNATIVA, declarada porque bajar de columna "
+                      "con B o C NO es una lectura neutra: el num. "
+                      "2.9.1.5.5.4 del Manual autoriza usar la tabla con "
+                      "acero protegido 'Para exposicion interior', y de ahi "
+                      "caben dos lecturas. La adoptada: fuera de la "
+                      "exposicion interior el corpus peruano calla y el hueco "
+                      "lo cubren las columnas B y C de AASHTO, como [C]. La "
+                      "contraria: si el Manual solo autoriza la reduccion en "
+                      "interior, en exposicion exterior sigue rigiendo su "
+                      "unica columna -- la de aceros no protegidos -- y el "
+                      "acero protegido no baja de 3.0 in. En la fila costera "
+                      "con el factor 0.8 la diferencia es 40.6 mm frente a "
+                      "61.0 mm, y en 'suelo_intemperie_le_5_8' decide ademas "
+                      "quien gobierna: E.060 con 40 mm en la lectura "
+                      "adoptada, AASHTO en la contraria"),
+        reemplazado_por="Especificacion del acero de refuerzo del expediente "
+                        "(norma de producto del acero que se compra), o la "
+                        "decision expresa del proyectista de proteger o no el "
+                        "refuerzo en ambiente salino",
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T5.10.1-1",),
+            que_elige="la COLUMNA de categoria de material de refuerzo: A "
+                      "(acero sin recubrir), B (epoxico o galvanizado) o C "
+                      "(AASHTO M 334M)",
+        ),
+    ),
+
+    "factor_recubrimiento_banda_intermedia_ac": Criterio(
+        valor=1.0,
+        # NIVEL DECLARADO Y NO MEDIDO, y conviene decir por que: NINGUNA de
+        # las dos corridas de `tests/test_nivel_medido.py` llega a invocarlo
+        # --- la cadena de la Fase 9 se detiene antes, en un criterio
+        # pendiente ---, de modo que no hay medicion que citar. Lo sostiene el
+        # censo: `variables_entrada` no le encuentra mas consumidor que
+        # `M9_cabezal`, y `--alcance perfil` no ejecuta ese modulo. El test lo
+        # comprueba por esa via, que es la unica que queda.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        concepto="Factor de modificacion del recubrimiento para la banda "
+                 "intermedia de relacion agua-cemento, 0.40 < a/c < 0.50, que "
+                 "el Manual de Puentes no imprime",
+        justificacion="Decide el factor de modificacion del recubrimiento en "
+                      "la banda de relacion agua-cemento que el corpus "
+                      "peruano no imprime, 0.40 < a/c < 0.50. La fuente "
+                      "peruana (Manual de Puentes, num. 2.9.1.5.5.3) escribe "
+                      "dos factores -- 0.8 para a/c <= 0.40 y 1.2 para a/c >= "
+                      "0.50 -- y deja la banda de en medio sin factor; AASHTO "
+                      "LRFD Art. 5.10.1, de donde el Manual toma la tabla, si "
+                      "la cubre con 1.0 (el pasaje esta citado en `fuente`; "
+                      "la laguna, declarada en "
+                      "constantes_normativas.RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA). "
+                      "Lo que el corpus peruano no resuelve es exactamente "
+                      "esa banda, y no es un caso teorico: con sulfatos "
+                      "severos y sin cloruros la a/c maxima resulta 0.45, "
+                      "dentro de ella. Se adopta el 1.0 de AASHTO por la Via "
+                      "1 de Sec. 0.2, que es exactamente lo que una etiqueta "
+                      "[C] declara. Por que el numero vive aqui y no en el "
+                      "modulo: multiplicar por uno es neutro en aritmetica y "
+                      "no en normativa -- aqui significa que en esta banda el "
+                      "recubrimiento no se modifica, que es una afirmacion "
+                      "que el corpus peruano no hace y que hay que sostener "
+                      "con una fuente. La unica alternativa defendible esta "
+                      "en el campo `sensibilidad`: extender el 1.2 de la "
+                      "banda alta daria mas recubrimiento pero contradiria la "
+                      "fuente de la que sale la propia tabla",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
+               "Art. 5.10.1 'Concrete Cover', pag. impresa 5-167 (PDF 526): "
+               "'For W/CM ratio between 0.40 and 0.50 ... 1.0'. El Manual de "
+               "Puentes num. 2.9.1.5.5.3 (pag. impresa 377) imprime solo los "
+               "otros dos factores. Ver RECUBRIMIENTO_MP_FACTOR_AC_LAGUNA",
+        sensibilidad=("El unico valor alternativo defendible seria extender "
+                      "el 1.2 de la banda alta a la intermedia, por no dejar "
+                      "sin modificar un concreto que el corpus peruano no "
+                      "clasifica. Daria mas recubrimiento (76.2 -> 91.4 mm en "
+                      "la fila costera con categoria A) y seria mas "
+                      "conservador, pero contradice la fuente de la que sale "
+                      "la propia tabla, que si escribe el 1.0",),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, cubriendo la banda 0.40 < a/c < "
+                        "0.50 que el Art. 5.10.1 no imprime",
+            dominio="factor adimensional > 0",
+        ),
+    ),
+
+    "exposicion_quimica_ems": Criterio(
+        valor=None,                 # VACIO: bloquea el factor por a/c de 9.4
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="S",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Agresividad quimica del suelo y del agua freatica en el "
+                 "corredor, y condiciones de exposicion del concreto, en las "
+                 "magnitudes con que E.060 clasifica: sulfato soluble en el "
+                 "suelo (% en peso) y en el agua (ppm) para la Tabla 4.4, y "
+                 "cual de las TRES filas de la Tabla 4.2 aplica",
+        justificacion="Registra el dato del que cuelga el recubrimiento, por "
+                      "una cadena que conviene dejar escrita: la agresividad "
+                      "quimica fija la relacion a/c maxima (E.060, Tablas 4.2 "
+                      "y 4.4, transcritas como E060.T4.2 y E060.T4.4 en el "
+                      "registro y combinadas por su nota al pie), la a/c "
+                      "maxima fija el factor de modificacion del "
+                      "recubrimiento (AASHTO Art. 5.10.1 y Manual de Puentes "
+                      "num. 2.9.1.5.5.3: 0.8 / 1.0 / 1.2), y el factor "
+                      "multiplica al valor tabulado. Sin este dato no hay "
+                      "factor, y sin factor el recubrimiento de AASHTO seria "
+                      "el valor bruto de la tabla, un 20 % por encima del que "
+                      "la norma exige. Lo que ninguna fuente resuelve sin "
+                      "ensayo: la fila de cloruros de la Tabla 4.2 no se "
+                      "dispara con suelos salinos en general, sino con los "
+                      "origenes concretos que su texto enumera -- "
+                      "descongelantes, sal, agua salobre, agua de mar o "
+                      "salpicaduras de ese origen; el texto exacto vive en "
+                      "E060.T4.2 --, de modo que afirmar que el corredor "
+                      "tiene suelos salinos y freatico somero no basta: quien "
+                      "sostenga que la fila aplica tiene que poder mostrar el "
+                      "analisis, y mientras no este, el calculo se detiene "
+                      "aqui y no aguas abajo con un numero que nadie puede "
+                      "reproducir. Es [S] y no [A]: no hay nada que elegir -- "
+                      "es una medicion de laboratorio sobre muestras de este "
+                      "corredor, y cambia al mover la obra, no al cambiar de "
+                      "proyectista. Vive aqui, y no en datos_sitio.py, porque "
+                      "sigue pendiente del ensayo, que es la condicion que "
+                      "este archivo admite para un [S]; la estructura exigida "
+                      "del dato y sus reglas de lectura estan en el campo "
+                      "`trazabilidad`",
+        fuente="PENDIENTE - Analisis quimico del EMS (contenido de sulfatos y "
+               "cloruros en suelo y en agua freatica). Las tablas contra las "
+               "que se clasifica ya estan transcritas: E.060 Tabla 4.2 "
+               "(pag. impresa 37), Tabla 4.4 (pag. impresa 38) y la nota al "
+               "pie comun a las dos",
+        trazabilidad="Ensayo quimico de suelos y de agua del EMS del "
+                     "expediente, sobre muestras del corredor, MAS la "
+                     "condicion de exposicion del elemento. La estructura del "
+                     "dato es un diccionario con estas claves, TODAS "
+                     "obligatorias: 'so4_suelo_pct', sulfato soluble en agua "
+                     "presente en el suelo, en porcentaje en peso; "
+                     "'so4_agua_ppm', sulfato en el agua, en ppm; y "
+                     "'tabla_4_2', a su vez un diccionario con las TRES filas "
+                     "de esa tabla como si/no -- 'baja_permeabilidad', "
+                     "'congelamiento_deshielo' y 'cloruros'. "
+                     "POR QUE LAS TRES FILAS Y NO SOLO LA DE CLORUROS: la "
+                     "nota al pie comun a las Tablas 4.2 y 4.4 manda aplicar "
+                     "'la MENOR relacion maxima agua-material cementante "
+                     "APLICABLE', y aplicable no se puede evaluar sobre un "
+                     "conjunto que el dato deja a medias. Con solo la fila de "
+                     "cloruros declarada, un concreto que ademas deba ser de "
+                     "baja permeabilidad se evaluaba contra un candidato "
+                     "menos que el que la norma manda mirar. "
+                     "UNA CLAVE AUSENTE NO ES UN 'NO': es DatoInvalidoError. "
+                     "La version anterior leia la de cloruros con `.get()`, y "
+                     "un EMS que no la trajera se leia como 'no hay "
+                     "cloruros', que es rellenar un vacio en silencio. "
+                     "El dato vale para todo el corredor si el EMS lo "
+                     "muestrea por tramos homogeneos; si la agresividad varia "
+                     "de un punto a otro, deja de ser un dato de corredor y "
+                     "tiene que pasar a ser columna del CSV. Las dos escalas "
+                     "de sulfato son alternativas -- el suelo O el agua --: "
+                     "las dos claves tienen que estar, pero una de ellas "
+                     "puede venir en None; con las dos medidas, gobierna la "
+                     "mas exigente",
+        reemplazado_por="El analisis quimico del EMS. Mientras no exista, "
+                        "ningun recubrimiento de 9.4 se puede calcular",
+        resolucion=DeEnsayo(
+            ensayo="analisis quimico del EMS: sulfato soluble en suelo y en "
+                   "agua freatica, y cloruros",
+            trazabilidad_exigida="calicata, profundidad, laboratorio, fecha "
+                                 "e informe de ensayo; las tablas contra las "
+                                 "que se clasifica (E060.T4.2 y E060.T4.4) "
+                                 "ya estan en el registro",
+        ),
+    ),
+
+    "situacion_recubrimiento_aashto": Criterio(
+        valor={"contra_suelo": "vaciado_contra_suelo",
+               "suelo_intemperie_ge_3_4": "costera",
+               "suelo_intemperie_le_5_8": "costera"},
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Fila de la tabla de recubrimientos de AASHTO / Manual de "
+                 "Puentes que se contrasta con cada condicion de E.060 "
+                 "Art. 7.7.1, para poder evaluar la regla del mayor",
+        justificacion="Decide que fila de la tabla de recubrimientos de "
+                      "AASHTO / Manual de Puentes se contrasta con cada "
+                      "condicion de E.060 Art. 7.7.1, para poder evaluar la "
+                      "regla del mayor entre las dos normas. Las fuentes "
+                      "(E060.7.7.1 y AASHTO_LRFD_9.T5.10.1-1 en el registro) "
+                      "no se indexan igual: E.060 organiza el recubrimiento "
+                      "por diametro de barra (3/4 de pulgada o mas gruesa / "
+                      "5/8 o mas delgada) y por contacto con el suelo; AASHTO "
+                      "y el Manual lo organizan por severidad de exposicion, "
+                      "sin mirar el diametro. Lo que ninguna de las dos "
+                      "resuelve: que fila de la segunda se pone enfrente de "
+                      "cada condicion de la primera. Se adopta: la cara del "
+                      "cabezal que se vacia contra el terreno se contrasta "
+                      "con la fila del vaciado contra el suelo "
+                      "('vaciado_contra_suelo' en "
+                      "'tabla_recubrimiento_aashto_mm'), que es literalmente "
+                      "la misma situacion fisica; las dos condiciones de "
+                      "intemperie de E.060 se contrastan con la fila de "
+                      "ubicaciones costeras ('costera'), porque La Union "
+                      "(Piura) esta en el corredor costero y esa es la "
+                      "exposicion de las caras vistas. La eleccion es "
+                      "defendible ademas porque no mueve el numero: las dos "
+                      "filas elegidas tienen valores identicos en las tres "
+                      "categorias de acero (3.0 / 2.0 / 2.0 in). Se declara "
+                      "igual, porque en una obra no costera la fila 'costera' "
+                      "deja de valer y la sustituye la fila exterior no "
+                      "superior ('exterior_no_superior', 2.0 in en la columna "
+                      "A), que si cambia el resultado; ese caso, y el de "
+                      "exposicion directa a agua salada, estan en el campo "
+                      "`sensibilidad`",
+        fuente="AASHTO LRFD 9a ed., Tabla 5.10.1-1, pag. impresa 5-169 "
+               "(PDF 528); Manual de Puentes, Tabla 2.9.1.5.5.3-1, pag. "
+               "impresa 378 (PDF 379). Las filas existen y estan transcritas "
+               "enteras; lo que se elige es el emparejamiento con E.060",
+        sensibilidad=("costera y vaciado_contra_suelo: 3.0/2.0/2.0 in, "
+                      "identicas",
+                      "agua_salada, si el cabezal quedara con exposicion "
+                      "directa a agua salada: 4.0/2.5/2.5 in",
+                      "exterior_no_superior, en una obra no costera: "
+                      "2.0/2.0/1.5 in"),
+        resolucion=DeTabla(
+            tablas=("AASHTO_LRFD_9.T5.10.1-1",),
+            que_elige="que FILA de la tabla se contrasta con cada condicion "
+                      "de E.060 Art. 7.7.1, para poder evaluar la regla del "
+                      "mayor entre las dos normas",
+        ),
+    ),
+
+    "tabla_recubrimiento_aashto_mm": Criterio(
+        valor=_TABLA_RECUBRIMIENTO_AASHTO_MM,
+        # NIVEL MEDIDO, no opinado: lo invoca la corrida `--alcance expediente`
+        # de `tests/test_nivel_medido.py` y NO la de `--alcance perfil`, que
+        # difiere la Fase 9 entera. Ese test contrasta las dos corridas en LAS
+        # DOS DIRECCIONES, de modo que este campo no puede quedar
+        # desincronizado del codigo: si algun dia la corrida de perfil lo
+        # invocara sin diferirlo, la suite se pone roja aqui.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Tabla 5.10.1-1 de AASHTO LRFD (recubrimiento minimo del "
+                 "acero principal de refuerzo), completa: las 21 situaciones "
+                 "por las tres categorias de material de refuerzo, "
+                 "convertidas a mm",
+        justificacion="Registra la Tabla 5.10.1-1 de AASHTO LRFD entera "
+                      "aunque el calculo use dos filas. La fuente es la tabla "
+                      "AASHTO_LRFD_9.T5.10.1-1 del registro, con su titulo y "
+                      "su nota al pie de categorias verificados contra el "
+                      "PDF; este dict no es una copia a mano -- lo arma "
+                      "`_tabla_recubrimiento_aashto_mm()` leyendo "
+                      "`normativa.registro`, con la conversion exacta de "
+                      "pulgadas a mm (1 in = 25.4 mm). Un solo numero ya "
+                      "digerido no se puede comprobar contra el PDF sin "
+                      "rehacer la lectura, no deja ver que hay tres columnas "
+                      "y no permite contestar que pasaria con otra categoria "
+                      "de acero; con la tabla completa las tres preguntas se "
+                      "contestan leyendo. Es [C] y no [N]: AASHTO LRFD no es "
+                      "norma peruana, y esta transcripcion cubre lo que el "
+                      "corpus peruano no tabula -- las columnas B y C, de "
+                      "acero protegido. La columna A si la tiene el Manual de "
+                      "Puentes, y por eso vive ademas en "
+                      "constantes_normativas.RECUBRIMIENTO_MP_MM con etiqueta "
+                      "[N]: no son dos transcripciones rivales, son la misma "
+                      "tabla en los dos corpus, y "
+                      "`M9.recubrimiento_de_diseno` declara de cual sale el "
+                      "valor que aplica segun la categoria elegida. Lo que no "
+                      "esta en este dict y hay que aplicarle encima, en este "
+                      "orden: el modificador por relacion agua-cemento del "
+                      "Art. 5.10.1 (0.8 / 1.0 / 1.2) y el piso absoluto de "
+                      "1.0 in = 25.4 mm sobre las barras principales, que "
+                      "impide que el modificador de 0.8 baje el recubrimiento "
+                      "por debajo de la pulgada. Los dos los aplica "
+                      "`M9.recubrimiento_de_diseno`, no este criterio: aqui "
+                      "vive la tabla, no la regla",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed. (2020), "
+               "Tabla 5.10.1-1 'Minimum Cover for Main Reinforcing Steel "
+               "(in.)', pag. impresa 5-169 (PDF 528), con su nota al pie de "
+               "categorias; Art. 5.10.1 'Concrete Cover', pag. impresa 5-167 "
+               "(PDF 526), para el modificador por W/CM; pag. impresa 5-168 "
+               "(PDF 527) para el piso de 1.0 in sobre barras principales",
+        resolucion=Derivada(
+            de=("AASHTO_LRFD_9.T5.10.1-1",),
+            regla="transcripcion de la tabla del registro con las columnas "
+                  "en mm; la arma `_tabla_recubrimiento_aashto_mm()` leyendo "
+                  "`normativa.registro`, no una copia a mano. La conversion "
+                  "in -> mm es exacta (1 in = 25.4 mm)",
+        ),
+    ),
+
+    "cortante_alto_muro_e060_art_11_10_10_2": Criterio(
+        # --- T-7c --- DEJA DE ESTAR VACIO. Lo que faltaba no era el numero
+        # -- el 0,0025 esta literal en el articulo desde EXT-6 -- sino la
+        # demanda de cortante con que decidir si el muro esta bajo ese
+        # regimen. Desde T-7c el armado la tiene (`M9.armado_del_cabezal`)
+        # y sabe en que plano actua: ver el criterio del regimen, abajo.
+        valor=0.0025,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        # `float` (auditoria adversarial de EXT-5): lo que M9 lee de aqui es
+        # la CUANTIA que rige bajo el regimen de 11.10.10, con `float()`.
+        forma=FORMA_FLOAT,
+        concepto="Cuantia horizontal minima del muro del cabezal bajo el "
+                 "regimen de cortante en el plano de E.060 11.10.10 (Art. "
+                 "11.10.10.2), que escalona la de 14.3.1 de 0,0020 a 0,0025",
+        justificacion="Es el piso horizontal del regimen de cortante en el "
+                      "plano del muro. La fuente (E.060 11.10.10.2, pag. "
+                      "104; cita E060.11.10.10.2) dice en una sola frase que "
+                      "la cuantia de refuerzo horizontal para cortante no "
+                      "debe ser menor que 0,0025, con espaciamiento no mayor "
+                      "que tres veces el espesor ni que 400 mm; el regimen "
+                      "lo abren 11.10.7 y 11.10.8 (pags. 103 y 104; cita "
+                      "E060.11.10.7#UMBRAL) segun V_u en el plano sea menor "
+                      "o mayor que 0,085·raiz(f'c)·Acw, y por debajo de ese "
+                      "umbral rigen 0,002 y 0,0015, los mismos de 14.3.1. "
+                      "Es [N→] y no [N]: E.060 es la norma de concreto de "
+                      "las edificaciones y se aplica al cabezal vial por "
+                      "analogia, como contraste y como minimo constructivo "
+                      "('regla_minimos_constructivos_cabezal'). Cuando se "
+                      "aplica lo decide el regimen declarado "
+                      "('regimen_cortante_muro_e060_art_11_10_2'): con el "
+                      "cortante perpendicular al plano, que es el del empuje "
+                      "de tierras y el de archivo, este piso no rige; con el "
+                      "cortante en el plano declarado, rige -- el programa "
+                      "no modela ninguna carga en el plano del muro con que "
+                      "evaluar el umbral de 11.10.7, de modo que quien lo "
+                      "declara afirma estar por encima de el, y el armado "
+                      "lo avisa",
+        fuente="E.060 Art. 11.10.10.2, pag. impresa 104 (cita "
+               "E060.11.10.10.2); umbral del regimen: 11.10.7 y 11.10.8, "
+               "pags. 103 y 104 (cita E060.11.10.7#UMBRAL). Por analogia",
+        reemplazado_por="El diseño por cortante en el plano del muro, si el "
+                        "proyectista modela una carga en ese plano",
+        resolucion=Libre(
+            que_lo_fija="E.060 11.10.10.2, aplicado por analogia",
+            dominio="cuantia adimensional > 0",
+        ),
+    ),
+
+    # ---- EXT-M-05 / R95-031: el regimen del cortante y el piso VERTICAL ---
+    # Dos preguntas que la ficha anterior no hacia y que deciden si el 0.0025
+    # rige. La PRIMERA es de aplicabilidad: E.060 11.10.2 restringe 11.10.3 a
+    # 11.10.10 al cortante EN EL PLANO del muro, y 11.10.1 manda el cortante
+    # perpendicular al plano a las losas de 11.12. Un cabezal en voladizo
+    # bajo empuje de tierras trabaja perpendicular a su plano; si ese es el
+    # cortante que dispara la pregunta, ni el 11.10.10.2 ni el .3 rigen y el
+    # minimo es el del 14.3.1. La SEGUNDA es el piso vertical: bajo el regimen
+    # de 11.10.10 la cuantia vertical tambien tiene piso 0.0025 (ec. 11-32),
+    # y M9 devolvia 0.0015 afirmando lo contrario. Ninguna de las dos se
+    # contesta aqui: se detienen.
+
+    "regimen_cortante_muro_e060_art_11_10_2": Criterio(
+        # --- T-7c --- DEJA DE ESTAR VACIO: el diseño estructural que la
+        # ficha pedia «tener delante» existe, y su cortante es el del empuje
+        # de tierras sobre la pantalla, PERPENDICULAR al plano del muro.
+        valor=REGIMEN_CORTANTE_PERPENDICULAR,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        concepto="En que plano actua la fuerza cortante del muro del "
+                 "cabezal para E.060: perpendicular a el (11.10.1, losas de "
+                 "11.12) o en su plano (11.10.2, regimen de 11.10.3 a "
+                 "11.10.10)",
+        justificacion="Decide si los dos pisos de cuantia de 11.10.10.2 y "
+                      "11.10.10.3 rigen o no. Lo que la fuente dice: el "
+                      "11.10.2 aplica 11.10.3 a 11.10.10 a las fuerzas "
+                      "cortantes horizontales en el plano del muro, y el "
+                      "11.10.1 manda las perpendiculares al plano a las "
+                      "disposiciones para losas de 11.12 (pag. 103; citas "
+                      "E060.11.10.1 y E060.11.10.2). Lo que la fuente no "
+                      "resuelve es en cual esta este muro, y desde T-7c lo "
+                      "contesta el modelo de cargas: el unico cortante que "
+                      "el ensamble de T-7b entrega para la pantalla es el "
+                      "del empuje de tierras, de la sobrecarga y del agua, "
+                      "que actua perpendicular al plano del muro, y el "
+                      "programa no modela ninguna carga en el plano (el "
+                      "sismo a lo largo del muro, o el empuje de los aleros "
+                      "sobre la pantalla). Por eso el valor de archivo es "
+                      "«perpendicular»: el cortante se diseña como el de "
+                      "una losa y el minimo es el de 14.3.1 en las dos "
+                      "direcciones. Es una eleccion y no un hecho -- un "
+                      "cabezal corto con aleros que le transmiten carga en "
+                      "su plano caeria en 11.10.2 --, y «en el plano» queda "
+                      "en la ventana: declararlo aplica los pisos de "
+                      "11.10.10 (0,0025 horizontal y la ec. 11-32 vertical) "
+                      "con aviso, porque no hay V_u en el plano con que "
+                      "evaluar el umbral de 11.10.7",
+        fuente="E.060 11.10.1 y 11.10.2, pag. impresa 103 (citas "
+               "E060.11.10.1 y E060.11.10.2): la norma reparte los dos "
+               "planos; cual es el de este muro lo dice el modelo de "
+               "cargas del proyecto",
+        reemplazado_por="Un analisis del cabezal que incluya cargas en el "
+                        "plano del muro",
+        sensibilidad=(REGIMEN_CORTANTE_EN_EL_PLANO,
+                      REGIMEN_CORTANTE_PERPENDICULAR),
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el modelo de cargas del programa "
+                        "solo tiene cortante perpendicular al plano",
+            dominio="una de las dos lecturas del plano del cortante",
+        ),
+    ),
+
+    "cuantia_vertical_cortante_alto_e060_art_11_10_10_3": Criterio(
+        # --- T-7c --- DEJA DE ESTAR VACIO: guarda el PISO de la ec. (11-32),
+        # y la ecuacion entera la evalua `M9.cuantia_vertical_ec_11_32` con
+        # la altura y la longitud del cabezal, que desde T-7a existen.
+        valor=0.0025,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_FLOAT,
+        concepto="Piso de la cuantia vertical minima del muro del cabezal "
+                 "bajo el regimen de cortante en el plano de E.060 11.10.10: "
+                 "el 0,0025 de la ec. (11-32) del 11.10.10.3",
+        justificacion="Es el piso vertical del regimen de cortante en el "
+                      "plano. La fuente (E.060 11.10.10.3, pag. 104; cita "
+                      "E060.11.10.10.3, leida por imagen) da la ec. (11-32): "
+                      "rho_v >= 0,0025 + 0,5·(2,5 - hm/lm)·(rho_h - 0,0025) "
+                      ">= 0,0025, con techo en la rho_h que el 11.10.10.1 "
+                      "requiera, hm la altura total del muro y lm su "
+                      "longitud total. Este criterio "
+                      "guarda el piso; la ecuacion la evalua "
+                      "`M9.cuantia_vertical_ec_11_32` con hm y lm del "
+                      "cabezal del punto (T-7a le dio longitud a la "
+                      "geometria) y con la rho_h del muro. El programa no "
+                      "modela cortante en el plano, de modo que la rho_h "
+                      "requerida por 11.10.10.1 no existe y se toma el piso "
+                      "horizontal de 11.10.10.2: con rho_h = 0,0025 la "
+                      "ecuacion da 0,0025 para cualquier esbeltez, y el "
+                      "armado lo dice. Es [N→]: E.060 se aplica al cabezal "
+                      "vial por analogia. Solo rige si el regimen declarado "
+                      "es «en el plano» "
+                      "('regimen_cortante_muro_e060_art_11_10_2')",
+        fuente="E.060 11.10.10.3, ec. (11-32), pag. impresa 104 (cita "
+               "E060.11.10.10.3, con la ecuacion en su nota). Por analogia",
+        reemplazado_por="La rho_h requerida por 11.10.10.1 de un diseño "
+                        "por cortante en el plano del muro, con la que la "
+                        "ec. (11-32) da mas que su piso",
+        resolucion=Libre(
+            que_lo_fija="E.060 11.10.10.3, aplicado por analogia",
+            dominio="cuantia adimensional, no menor que 0.0025",
+        ),
+    ),
+
+    "procedimiento_flexion_corte_aashto_sec5": Criterio(
+        valor={
+            # --- T-7c --- LO QUE SE EJECUTA. Los tres factores de
+            # resistencia y el factor beta del procedimiento SIMPLIFICADO de
+            # cortante son los de `constantes_normativas` (bloque T-7c,
+            # transcritos de 5.5.4.2, 1.3.2.1 y 5.7.3.4.1): este criterio
+            # declara QUE subconjunto de la Seccion 5 arma el cabezal, y
+            # `M9.diseno_flexion_corte` lo lee de aqui.
+            "phi_flexion": PHI_FLEXION_AASHTO,
+            "phi_corte": PHI_CORTE_AASHTO,
+            "phi_evento_extremo": PHI_EVENTO_EXTREMO_AASHTO,
+            "modelo_corte": "simplificado_5_7_3_4_1",
+            "beta_simplificado": BETA_SIMPLIFICADO_AASHTO,
+            "theta_simplificado_grados": 45.0,
+            # --- T-7c --- LO QUE NO SE EJECUTA. El procedimiento GENERAL de
+            # 5.7.3.4.2 (MCFT, beta y theta en funcion de epsilon_s) quedo
+            # transcrito en C07 en las unidades de la fuente (kip, ksi,
+            # pulgada: la 9a ed. no publica edicion SI, C5.1). Se conserva
+            # como REFERENCIA, bajo una sola clave y rotulado: ninguna
+            # funcion lo lee ni lo evalua, y no se puede alimentar con MPa y
+            # metros. Donde el simplificado no esta permitido el armado se
+            # detiene con «metodo no evaluable», no cae aqui.
+            "referencia_no_ejecutable_5_7_3_4_2": {
+                "nota": "Procedimiento general de AASHTO LRFD 5.7.3.4.2, en "
+                        "kip - ksi - pulgada. REFERENCIA NO EJECUTABLE: el "
+                        "programa arma con el simplificado de 5.7.3.4.1 y "
+                        "no evalua estas expresiones",
+                "beta_con_refuerzo_transversal_minimo":
+                    "4.8 / (1 + 750*epsilon_s)   [Ec. 5.7.3.4.2-1]",
+                "beta_sin_refuerzo_transversal_minimo":
+                    "(4.8 / (1 + 750*epsilon_s)) * (51 / (39 + sxe_in))"
+                    "   [Ec. 5.7.3.4.2-2]",
+                "sxe_in": "sx * 1.38 / (ag + 0.63), acotado a 12.0 in <= "
+                          "sxe <= 80.0 in   [Ec. 5.7.3.4.2-7]",
+                "theta_grados": "29 + 3500*epsilon_s   [Ec. 5.7.3.4.2-3]",
+                "limites_epsilon_s": "-0.40e-3 <= epsilon_s <= 6.0e-3",
+            },
+        },
+        # NIVEL MEDIDO desde T-7c: lo invoca la corrida de expediente que
+        # llega al armado del cabezal (`M9.armado_del_cabezal`); la de
+        # perfil difiere la Fase 9 entera.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Procedimiento de diseño por flexion y corte de AASHTO LRFD "
+                 "Seccion 5 con que se arma el cabezal: factores de "
+                 "resistencia y modelo de cortante (el simplificado de "
+                 "5.7.3.4.1)",
+        justificacion="Decide que subconjunto de la Seccion 5 de AASHTO LRFD "
+                      "rige el diseño por flexion y corte del cabezal. La "
+                      "hoja de ruta (Sec. 9.4) remite el diseño a esa "
+                      "seccion por la Via 1 de la Sec. 0.2, y mezclarla con "
+                      "las expresiones de E.060 romperia la consistencia "
+                      "carga-resistencia: no se combinan demandas mayoradas "
+                      "por AASHTO con resistencias reducidas por E.060. Se "
+                      "adopta, verificado contra el PDF: factores de "
+                      "resistencia de 5.5.4.2 (0.90 en flexion de secciones "
+                      "controladas por traccion y 0.90 en cortante; citas "
+                      "AASHTO_LRFD_9.5.5.4.2#FLEXION y #CORTE) y 1.0 en el "
+                      "evento extremo (1.3.2.1; cita "
+                      "AASHTO_LRFD_9.1.3.2.1#EXTREMO); flexion por 5.6.3.2 "
+                      "con el bloque rectangular de 5.6.2.2; y cortante por "
+                      "5.7.3.3 con el procedimiento SIMPLIFICADO de "
+                      "5.7.3.4.1 (beta = 2.0, theta = 45 grados; cita "
+                      "AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO), que la fuente "
+                      "PERMITE solo en zapatas con la distancia del cortante "
+                      "nulo a la cara del muro menor que 3·d_v y en "
+                      "secciones de menos de 16.0 in de peralte (o con el "
+                      "refuerzo transversal minimo, que el cabezal no "
+                      "lleva). `M9.diseno_flexion_corte` comprueba esas "
+                      "condiciones seccion por seccion y, donde no se "
+                      "cumplen, se detiene con «metodo no evaluable»: el "
+                      "procedimiento general de 5.7.3.4.2 no se implementa "
+                      "(decision del encargo de T-7c) y queda transcrito "
+                      "como referencia no ejecutable. Las cuantias minimas "
+                      "de E.060 son un piso sobre el resultado, por la "
+                      "regla de 'regla_minimos_constructivos_cabezal'",
+        fuente="AASHTO LRFD Bridge Design Specifications, 9a ed.: Art. "
+               "5.5.4.2 (pags. impresas 5-29 y 5-30, PDF 388 y 389) y "
+               "1.3.2.1 (pag. 1-3, PDF 18) para los phi; 5.6.2.2 y 5.6.3.2 "
+               "(pags. 5-36 y 5-40, PDF 395 y 399) para la flexion; 5.7.2.8 "
+               "(pag. 5-65, PDF 424) para d_v; 5.7.3.3 (pag. 5-67, PDF 426) "
+               "para V_c; 5.7.3.4.1 (pag. 5-70, PDF 429) para el "
+               "simplificado y sus condiciones; 5.7.3.4.2 (pags. 5-70 a "
+               "5-72) para el general, que no se ejecuta; C5.1 (pag. 5-1) "
+               "para el sistema de unidades. PAGINA CORREGIDA en T-7c: la "
+               "fuente declaraba 5-32 para el 5.5.4.2, que esta en la 5-29 "
+               "y la 5-30",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al declarar que subconjunto de la "
+                        "Seccion 5 de AASHTO arma el cabezal",
+            dominio="declaracion del procedimiento; los factores son los de "
+                    "la fuente",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-7a --- (cadena T) · el cabezal por punto: dos criterios con fuente
+    # =======================================================================
+    "margen_zapata_bajo_socavacion_m": Criterio(
+        valor=0.6096,               # 2.0 ft exactos (1 ft = 0.3048 m)
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        # 0 es la lectura de AASHTO 10.6.1.2 («bear below the maximum
+        # anticipated depth of scour») y la de HEC-14 5.1.3 («extend to a
+        # depth equal to the maximum depth of scour»); 0.6096 m es la de
+        # 12.6.5 para las estructuras enterradas. El valor es el techo.
+        sensibilidad=(0.0, 0.6096),
+        concepto="Distancia minima de la base de la zapata del cabezal de "
+                 "salida, y de la base del dentellon de su losa, por debajo "
+                 "del fondo de la hoya de socavacion",
+        justificacion="Decide cuanto por debajo de la socavacion se "
+                      "desplanta el cabezal de salida. La fuente (AASHTO LRFD "
+                      "12.6.5, Seccion 12, estructuras enterradas; cita "
+                      "AASHTO_LRFD_9.12.6.5#ZAPATAS) exige que las zapatas "
+                      "de la estructura queden no menos de 2.0 ft bajo la "
+                      "socavacion maxima prevista. Lo que no resuelve: si la "
+                      "zapata de un cabezal es una de esas zapatas; el "
+                      "proyecto lo lee asi -- lado seguro --, porque el "
+                      "mismo articulo abre exigiendo que ninguna parte de la "
+                      "estructura se mueva por socavacion (la lectura, con "
+                      "lo que juega en contra, es la `Interpretacion` de la "
+                      "cita). Y aplica el MISMO margen a la base del "
+                      "dentellon de la losa de salida, cuya frase en el "
+                      "articulo dice solo «extending below» sin cifra. Es "
+                      "[C] y no [N] "
+                      "porque la hoja de ruta (§0.1) pone la Seccion 12 de "
+                      "AASHTO como fuente tecnica reconocida. La regla "
+                      "general de las zapatas (10.6.1.2) y HEC-14 (5.1.3, "
+                      "recomendacion) piden el desplante A la profundidad de "
+                      "la socavacion, sin margen: son el otro extremo de la "
+                      "ventana. La profundidad la entrega la Fase 6 (T-8): "
+                      "la declarada, o la hoya de HEC-14 Cap. 5; sin "
+                      "ninguna de las dos, el desplante de salida queda solo "
+                      "con el minimo de E.050 y la corrida lo avisa",
+        fuente="AASHTO LRFD 9a ed., 12.6.5 'Scour', pag. impresa 12-20 (PDF "
+               "1658; cita AASHTO_LRFD_9.12.6.5#ZAPATAS). Contraste: 10.6.1.2 "
+               "'Bearing Depth', pag. impresa 10-52 (PDF 1341) y HEC-14 "
+               "5.1.3, pag. impresa 5-2 (PDF 55)",
+        reemplazado_por="Un estudio de socavacion del cauce que fije el "
+                        "desplante",
+        resolucion=Libre(
+            que_lo_fija="AASHTO 12.6.5 da el numero; la lectura de que "
+                        "aplica a la zapata del cabezal es del proyecto",
+            dominio="m, entre 0 y 0.6096",
+        ),
+    ),
+
+    "dentellon_losa_entrega": Criterio(
+        valor={"profundidad_min_m": 0.80, "ancho_m": 0.40},
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Dentellon (uña) en el borde libre de la losa de entrega de "
+                 "cada cabezal: profundidad minima, medida desde el TERRENO "
+                 "al borde de la losa (el pie del muro de ese extremo) hasta "
+                 "la base del dentellon, y ancho",
+        justificacion="Decide la profundidad minima y el ancho del dentellon "
+                      "de la losa de entrega. La fuente (Lamina Nº 04 del "
+                      "Manual, pag. impresa 210) acota el dentellon de un "
+                      "ALIVIADERO a la salida de alcantarillas: «0.80 min.» "
+                      "de profundidad --medida desde la superficie del "
+                      "terreno natural al borde del dentellon, que alli es la "
+                      "cara inferior del paquete losa + relleno granular, "
+                      "hasta su base; no desde la cara superior de la losa "
+                      "(correcciones de T-7a, H3)-- y «0.40m» de ancho; es "
+                      "la unica lamina "
+                      "del Manual que acota un dentellon (la 02 y la 02-A lo "
+                      "rotulan «UÑA» y lo acotan con letras; la 03 no acota "
+                      "nada). Lo que no resuelve: el dentellon de la losa de "
+                      "un cabezal, que es otra estructura. Se aplica por "
+                      "ANALOGIA, y por eso es [N→] y no [A]: un valor "
+                      "justificado con la cota de una lamina normativa no "
+                      "puede ser adopcion libre (regla de coherencia de la "
+                      "§0.1). El terreno desde el que se mide es el mismo "
+                      "del desplante del cabezal de ese extremo "
+                      "(`ExtremoDelConducto.cota_pie`): en la salida, la mas "
+                      "baja entre la solera y el fondo del cauce receptor. Y "
+                      "en la salida, si la Fase 6 entrega la socavacion, la "
+                      "base del dentellon baja ademas bajo el fondo de la "
+                      "hoya con el margen de "
+                      "'margen_zapata_bajo_socavacion_m' (AASHTO 12.6.5 pide "
+                      "una pantalla «extending below» la socavacion maxima "
+                      "prevista sin cuantificar cuanto; cita "
+                      "AASHTO_LRFD_9.12.6.5#DENTELLON y su `Interpretacion` "
+                      "en la de las zapatas)",
+        fuente="Manual de Hidrologia, Lamina Nº 04, pag. impresa 210 (PDF "
+               "213; cita MC_HHD.LAMINA_04#DENTELLON), por analogia; AASHTO "
+               "LRFD 12.6.5, pag. impresa 12-20 (PDF 1658; cita "
+               "AASHTO_LRFD_9.12.6.5#DENTELLON) para la salida",
+        reemplazado_por="El plano de la losa de entrega de cada cabezal",
+        resolucion=Libre(
+            que_lo_fija="la Lamina Nº 04, aplicada por analogia",
+            dominio="m, profundidad y ancho positivos",
+        ),
+    ),
+
+    # --- T-7a, correcciones de la auditoria (H8 y dudoso 4) --- DOS MINIMOS
+    # DE NORMAS DE EDIFICACION APLICADOS POR ANALOGIA AL CABEZAL VIAL. Hasta
+    # las correcciones el primero era [N] en constantes_normativas
+    # (`PROFUNDIDAD_CIMENTACION_MIN_M`); el ambito de E.050 son las
+    # edificaciones del RNE, y para un cabezal vial es [N→] (dictamen del
+    # verificador normativo del marco del cabezal).
+    "profundidad_cimentacion_min_cabezal_m": Criterio(
+        valor=0.80,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_FLOAT,
+        concepto="Profundidad minima de desplante del cabezal (de entrada y "
+                 "de salida) bajo el terreno al pie del muro, m",
+        justificacion="Decide la profundidad minima de la base de la zapata "
+                      "del cabezal bajo el terreno al pie del muro (CB4 y el "
+                      "piso del desplante propuesto). La fuente (E.050 Art. "
+                      "26.2, pag. 38; cita E050.26.2#PROFUNDIDAD) fija 0.80 m "
+                      "como minimo para cualquier tipo de cimentacion y el "
+                      "26.1 la mide desde la superficie del "
+                      "terreno. Lo que no resuelve: E.050 es una norma de "
+                      "EDIFICACIONES (Art. 1 y 3, pag. 7) y no nombra las "
+                      "obras de drenaje vial. Se aplica por ANALOGIA, y por "
+                      "eso es [N→] y no [N]: lo que la hace cercana es que la "
+                      "misma norma manda que el muro de contencion cumpla su "
+                      "Capitulo IV (39.13.7, pag. 73), donde esta el Art. "
+                      "26, y el cabezal se predimensiona como un muro de "
+                      "contencion. La excepcion de roca del mismo 26.2 (el "
+                      "PR puede bajarla) no se supone: no hay dato de roca "
+                      "por punto. La tabla de la §0.1 de la hoja de ruta "
+                      "rotula E.050 como [N] sin esta salvedad: es un defecto "
+                      "de la hoja, declarado en ella",
+        fuente="E.050 (RM 406-2018-VIVIENDA), Art. 26.2, pag. 38 (cita "
+               "E050.26.2#PROFUNDIDAD, con su `Interpretacion`); ambito, "
+               "Art. 1 y 3, pag. 7; remision del muro de contencion, 39.13.7, "
+               "pag. 73. Por analogia",
+        reemplazado_por="La profundidad de cimentacion que el EMS del punto "
+                        "recomiende para el cabezal",
+        resolucion=Libre(
+            que_lo_fija="E.050 Art. 26.2, aplicado por analogia",
+            dominio="m, positivo",
+        ),
+    ),
+
+    "peralte_min_zapata_armada_m": Criterio(
+        valor=0.30,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_FLOAT,
+        concepto="Altura minima de la zapata del cabezal de voladizo armado "
+                 "medida sobre el refuerzo inferior, m (el espesor minimo de "
+                 "la zapata le suma el recubrimiento contra el suelo)",
+        justificacion="Decide el piso del espesor propuesto de la zapata del "
+                      "cabezal de voladizo armado, que la regla H/10 de "
+                      "'predimensionamiento_cabezal' dejaba en 0.225 m en la "
+                      "entrada de A-01. La fuente (E.060 15.7, pag. 138; "
+                      "cita E060.15.7#PERALTE) fija 300 mm como minimo de la "
+                      "altura de una zapata apoyada sobre el suelo, medida "
+                      "sobre su refuerzo inferior. Lo "
+                      "que no resuelve: E.060 es una norma de edificaciones y "
+                      "la Via 1 de la §0.2 de la hoja de ruta la saca del "
+                      "diseño estructural armado (rige AASHTO LRFD Seccion "
+                      "5). Se aplica por ANALOGIA como minimo del "
+                      "PREDIMENSIONAMIENTO, y por eso es [N→]: el espesor "
+                      "minimo de la zapata es esta altura mas el "
+                      "recubrimiento del refuerzo inferior contra el suelo de "
+                      "E.060 7.7.1 a) (70 mm, `RECUBRIMIENTO['contra_suelo']`"
+                      ", [N] por la excepcion de durabilidad de la §0.2). El "
+                      "peralte de diseño -- con el recubrimiento mayor entre "
+                      "AASHTO y E.060 y el diametro de la barra -- es de "
+                      "T-7c",
+        fuente="E.060, num. 15.7, pag. 138 (cita E060.15.7#PERALTE), por "
+               "analogia; recubrimiento: E.060 7.7.1 a), pag. 54",
+        reemplazado_por="El peralte de la zapata que resulte del diseño a "
+                        "flexion y corte de T-7c",
+        resolucion=Libre(
+            que_lo_fija="E.060 15.7, aplicado por analogia",
+            dominio="m, positivo",
+        ),
+    ),
+
+    # =======================================================================
+    # --- verificacion de T-7 --- (cadena T) · El modificador de carga de
+    # AASHTO 1.3.2.1 en el cabezal: eta = eta_D·eta_R·eta_I. eta_I es el del
+    # cruce ('eta_importancia_operativa_conducto'); estos dos son los del
+    # cabezal, y ninguno adopta un numero que la fuente no escriba.
+    # Nivel: los invoca la Fase 9 (`M9.modificador_de_carga`), que solo corre
+    # a expediente; la corrida de referencia no la alcanza y los mide la de
+    # los datos de prueba de `tests/test_t7_verificacion.py`.
+    # =======================================================================
+
+    "eta_ductilidad_cabezal": Criterio(
+        valor=1.00,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.95, 1.05),
+        concepto="Modificador de las cargas por ductilidad, eta_D, en las "
+                 "combinaciones de Resistencia I del cabezal (AASHTO LRFD "
+                 "1.3.3): entra al producto eta = eta_D·eta_R·eta_I de la "
+                 "Ec. 1.3.2.1-1, en la estabilidad y en el armado",
+        justificacion="Decide cuanto se mayoran las cargas del cabezal por la "
+                      "ductilidad de sus componentes. La fuente lo gradua "
+                      "para el estado limite de resistencia: 1.05 o mas para "
+                      "componentes y conexiones no ductiles, 1.00 para los "
+                      "diseños y detalles convencionales que cumplen la "
+                      "norma, y 0.95 o mas cuando se especifican medidas "
+                      "adicionales de ductilidad; en los demas estados "
+                      "limite vale 1.00. Se adopta 1.00: el cabezal de "
+                      "voladizo se arma con la Seccion 5 de la misma norma "
+                      "--seccion controlada por traccion, refuerzo minimo "
+                      "que evita la falla fragil al agrietarse-- y no lleva "
+                      "medidas adicionales. Lo que no resuelve: el cabezal "
+                      "de gravedad en concreto ciclopeo no es ductil, pero "
+                      "se verifica con E.060 por analogia y no con estas "
+                      "combinaciones; si el Propietario clasifica el cabezal "
+                      "armado como no ductil, el valor sube a 1.05",
+        fuente="AASHTO LRFD 9a ed., Art. 1.3.3 «Ductility», pag. impresa 1-5 "
+               "(PDF 20; cita AASHTO_LRFD_9.1.3.3: «1.00 for conventional "
+               "designs and details complying with these Specifications»), "
+               "y Art. 1.3.2.1, pag. impresa 1-3 (cita "
+               "AASHTO_LRFD_9.1.3.2.1#ETA)",
+        reemplazado_por="La clasificacion de ductilidad que el proyectista "
+                        "estructural del expediente declare para el cabezal",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por el detallado del cabezal",
+            dominio="0.95 a 1.05 (AASHTO LRFD 1.3.3)",
+        ),
+    ),
+
+    "eta_redundancia_cabezal": Criterio(
+        valor=1.00,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.95, 1.05),
+        concepto="Modificador de las cargas por redundancia, eta_R, en las "
+                 "combinaciones de Resistencia I del cabezal (AASHTO LRFD "
+                 "1.3.4): entra al producto eta = eta_D·eta_R·eta_I de la "
+                 "Ec. 1.3.2.1-1, en la estabilidad y en el armado",
+        justificacion="Decide cuanto se mayoran las cargas del cabezal por su "
+                      "redundancia. La fuente lo gradua para el estado limite "
+                      "de resistencia: 1.05 o mas para miembros no "
+                      "redundantes, 1.00 para niveles convencionales de "
+                      "redundancia y para los elementos de cimentacion cuyo "
+                      "factor de resistencia ya la considera, y 0.95 o mas "
+                      "para niveles excepcionales; en los demas estados "
+                      "limite vale 1.00. Se adopta 1.00, el valor "
+                      "convencional: la estabilidad externa del cabezal se "
+                      "juzga con los factores de resistencia de cimentacion, "
+                      "que es el caso que la fuente nombra, y el muro es "
+                      "continuo a lo largo de su longitud y esta ligado a "
+                      "los aleros y al barril. Lo que juega en contra, y por "
+                      "eso 1.05 esta en la ventana: la pantalla trabaja como "
+                      "voladizo, con un solo camino de carga en su arranque, "
+                      "y la fuente deja al Propietario clasificar un miembro "
+                      "asi como no redundante. El 1.00 del conducto no sirve "
+                      "de precedente: sale de la regla de las estructuras "
+                      "enterradas, que no alcanza al cabezal",
+        fuente="AASHTO LRFD 9a ed., Art. 1.3.4 «Redundancy», pags. impresas "
+               "1-6 y 1-7 (PDF 21 y 22; cita AASHTO_LRFD_9.1.3.4), y Art. "
+               "1.3.2.1, pag. impresa 1-3 (cita AASHTO_LRFD_9.1.3.2.1#ETA)",
+        reemplazado_por="La clasificacion de redundancia que el Propietario "
+                        "declare para el cabezal",
+        resolucion=Libre(
+            que_lo_fija="el Propietario, por la redundancia del cabezal",
+            dominio="0.95 a 1.05 (AASHTO LRFD 1.3.4)",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-7b --- (cadena T) · V8 con umbral declarable y la estabilidad del
+    # cabezal en un solo marco (Fase 9). Nueve criterios; ninguno adopta un
+    # numero que una fuente no escriba.
+    # =======================================================================
+
+    "umbral_no_colapso_evento_extremo": Criterio(
+        # SIN VALOR DE ARCHIVO, como el metodo de V5 y por la misma decision:
+        # sin declararlo V8 se detiene como siempre y ningun resultado del
+        # fixture cambia.
+        valor=None,                 # VACIO: bloquea V8 una vez declarado el TR
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO.
+        #   sin_desborde_de_la_plataforma   el nivel del embalse con el
+        #       caudal del evento extremo no alcanza el borde de la
+        #       plataforma del lado de la entrada. IMPLEMENTADO.
+        #   desborde_admitido_con_terraplen_protegido   se admite el flujo
+        #       sobre la plataforma con el talud protegido. Se puede declarar
+        #       y V8 se detiene con «metodo no evaluable»: el flujo sobre la
+        #       via (HDS-5 num. 3.1.5) no esta implementado (ficha T7B-02).
+        sensibilidad=("sin_desborde_de_la_plataforma",
+                      "desborde_admitido_con_terraplen_protegido"),
+        concepto="Como se juzga, en V8, que la via «no colapsa» con el "
+                 "caudal del evento extremo: el umbral de la verificacion",
+        justificacion="Decide contra que se compara el nivel del embalse "
+                      "que la obra forma con el caudal del evento extremo "
+                      "(el de 'TR_evento_extremo', declarado por punto como "
+                      "`Q_evento_extremo_m3s`). La fila V8 de la hoja de "
+                      "ruta pide que a un periodo de retorno mayor la via no "
+                      "colapse aunque desborde, y no fija el umbral. La "
+                      "fuente mas cercana (HDS-5 num. 2.2.5 a., pag. impresa "
+                      "2.10, cita HDS5_3ED.2.2.5a#COTA_CRITICA) admite que la "
+                      "cota que la carga no debe superar sea el hombro de la "
+                      "plataforma o la cota de desborde de la via, y no dice "
+                      "que desbordar sea colapsar. Lo que no resuelve: como "
+                      "se juzga el colapso cuando el agua pasa sobre la via. "
+                      "Por eso no tiene valor de archivo. Con "
+                      "«sin_desborde_de_la_plataforma» V8 cumple si el nivel "
+                      "del evento extremo queda por debajo del borde de la "
+                      "plataforma: si no hay desborde, no hay desborde que "
+                      "la haga colapsar; es la lectura mas exigente, porque "
+                      "la fila admite el desborde. La otra opcion exige "
+                      "calcular el flujo sobre la plataforma y la proteccion "
+                      "del talud de aguas abajo, que este programa no hace",
+        fuente="Fase 5, V8 de la hoja de ruta, sin numeral. HDS-5 num. 2.2.5 "
+               "a., pag. impresa 2.10 (PDF 72), para la cota de comparacion",
+        reemplazado_por="Analisis del flujo sobre la plataforma (HDS-5 num. "
+                        "3.1.5) y de la erosion del talud, con la definicion "
+                        "de colapso declarada en la memoria",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la hoja de ruta pide la "
+                        "verificacion y ninguna fuente de normas/ define el "
+                        "colapso de la via",
+            dominio="una de las opciones de la ventana",
+        ),
+    ),
+
+    "marco_estabilidad_cabezal": Criterio(
+        valor="lrfd_rige_asd_informa",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        # EL CONJUNTO CERRADO, que es a la vez la regla de desempate.
+        #   lrfd_rige_asd_informa   deciden las verificaciones del marco de
+        #       estados limite (AASHTO LRFD 11.6); las de factores de
+        #       seguridad (E.050) se calculan e imprimen como INDICADOR: si
+        #       alguna no alcanza su factor, el punto lo avisa y no se
+        #       detiene.
+        #   asd_rige_lrfd_informa   al reves.
+        #   envolvente_de_los_dos   deciden las dos: el cabezal cumple solo
+        #       si cumple en los dos marcos.
+        sensibilidad=("lrfd_rige_asd_informa", "asd_rige_lrfd_informa",
+                      "envolvente_de_los_dos"),
+        concepto="Marco con que se verifica la estabilidad externa del "
+                 "cabezal (capacidad portante, excentricidad o volteo, y "
+                 "deslizamiento), y que se hace con el otro marco",
+        justificacion="Decide cual de los dos marcos de verificacion RIGE la "
+                      "estabilidad del cabezal y que papel tiene el otro; es "
+                      "decision del dueño del proyecto. Ninguna "
+                      "norma peruana, ni la Seccion 12 de AASHTO LRFD "
+                      "(estructuras enterradas), prescribe el marco de "
+                      "estabilidad del cabezal de una alcantarilla: el Art. "
+                      "11.6 de AASHTO esta escrito para estribos y muros de "
+                      "contencion, y la Seccion 12 no remite a el. El "
+                      "proyecto MODELA el cabezal como un muro de "
+                      "semigravedad en voladizo -- una pantalla sobre una "
+                      "zapata con talon que retiene el relleno del "
+                      "terraplen -- y le aplica ese articulo: es una "
+                      "hipotesis de modelacion, no un mandato de la fuente. "
+                      "Se adopta el marco de estados limite (cargas "
+                      "factoradas contra resistencias minoradas, y la "
+                      "excentricidad de la resultante en lugar del factor de "
+                      "seguridad al volteo) por coherencia con la Via 1 de "
+                      "la hoja de ruta -- AASHTO LRFD de extremo a extremo "
+                      "en lo estructural -- y con el formato del Manual de "
+                      "Puentes. La verificacion por factores de seguridad de "
+                      "la norma de suelos E.050 (Art. 21 y num. 39.13.6), "
+                      "que es de edificaciones y se aplica al cabezal por "
+                      "analogia, se calcula en paralelo sobre cargas de "
+                      "servicio y se imprime al lado. Los dos marcos no se "
+                      "cruzan nunca: ni un factor de seguridad se compara "
+                      "con una carga factorada, ni una resistencia minorada "
+                      "con una carga de servicio. Regla de desempate: con el "
+                      "valor de archivo, un factor de seguridad de E.050 que "
+                      "no se alcance sale como aviso y no detiene el punto "
+                      "-- con la aceleracion sismica de este sitio es lo "
+                      "esperable en el deslizamiento --; quien quiera que "
+                      "detenga declara la envolvente",
+        fuente="Decision del dueño del proyecto sobre el "
+               "dictamen del verificador normativo. AASHTO LRFD 9a ed., "
+               "11.6.3 (citas AASHTO_LRFD_9.11.6.3.2#PORTANTE, "
+               "AASHTO_LRFD_9.11.6.3.3#EXC, "
+               "AASHTO_LRFD_9.11.6.3.6#DESLIZAMIENTO); E.050 Art. 17.1, 21 y "
+               "num. 39.13.6 (citas E050.17.1#SERVICIO, E050.21, "
+               "E050.39.13.6). Ninguna de las dos fuentes prescribe el marco "
+               "para un cabezal de alcantarilla",
+        resolucion=Libre(
+            que_lo_fija="el dueño del proyecto: ninguna norma prescribe el "
+                        "marco de estabilidad de un cabezal de alcantarilla",
+            dominio="una de las tres reglas de la ventana",
+        ),
+    ),
+
+    "fila_phi_estabilidad_cabezal": Criterio(
+        valor="zapatas_seccion_10",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   zapatas_seccion_10   Tabla 10.5.5.2.2-1: portante 0.45 (metodo
+        #       teorico en arena con SPT) o 0.50 (en arcilla); deslizamiento
+        #       0.80 (vaciado in situ sobre arena) u 0.85 (sobre arcilla).
+        #   muros_tabla_11_5_7   Tabla 11.5.7-1, muros de gravedad y
+        #       semigravedad: portante 0.55; deslizamiento 1.0.
+        sensibilidad=("zapatas_seccion_10", "muros_tabla_11_5_7"),
+        concepto="De que tabla de AASHTO LRFD salen los factores de "
+                 "resistencia del estado limite de resistencia para la "
+                 "capacidad portante y el deslizamiento del cabezal",
+        justificacion="Decide los factores de resistencia de E1 y E3 en el "
+                      "estado limite de resistencia. Lo que dice la letra: "
+                      "el Art. 11.5.7 manda usar los factores de la Tabla "
+                      "11.5.7-1 en el diseño de muros, y esa tabla "
+                      "si identifica, para los muros de gravedad y "
+                      "semigravedad, 0.55 al portante y 1.0 al "
+                      "deslizamiento; a la Seccion 10 solo remite lo que la "
+                      "tabla no identifique (cita "
+                      "AASHTO_LRFD_9.11.5.7#MUROS). Leida al pie de la "
+                      "letra, la fila de un muro de semigravedad es la de "
+                      "muros. La tension es otra: el Art. 11.6.3.6 remite el "
+                      "deslizamiento del muro al 10.6.3.4, cuyas ecuaciones "
+                      "nombran los factores de la Tabla 10.5.5.2.2-1 de las "
+                      "zapatas (0.45 a 0.50 al portante y 0.80 a 0.85 al "
+                      "deslizamiento de una zapata vaciada in situ), y el "
+                      "cabezal no es ninguno de los muros que la Tabla "
+                      "11.5.7-1 nombra sino una estructura modelada como "
+                      "tal. El proyecto adopta la de las zapatas por dos "
+                      "razones, y no porque la tabla de muros remita a la "
+                      "Seccion 10 (no lo hace para estas filas): es la mas "
+                      "exigente de las dos en las dos verificaciones, y es "
+                      "la que el Manual de Puentes peruano transcribe (num. "
+                      "2.8.1.1.12.6; no transcribe la 11.5.7-1). Es una "
+                      "eleccion [A] a la que el veredicto es sensible: con "
+                      "los datos de prueba de A-01 el deslizamiento estatico "
+                      "pasa de no cumplir a cumplir con la fila de muros, y "
+                      "la memoria lo avisa cuando una fila cambia de "
+                      "veredicto entre las dos opciones. Dentro de "
+                      "ella toma, en suelo friccionante, la fila del metodo "
+                      "teorico en arena con SPT (0.45, la menor de las de "
+                      "suelo) y la del concreto vaciado in situ sobre arena "
+                      "(0.80); en suelo cohesivo, 0.50 y 0.85. En Evento "
+                      "Extremo I no hay eleccion: el Art. 11.5.8 fija 0.8 al "
+                      "portante de los muros de semigravedad y 1.0 a lo "
+                      "demas",
+        fuente="AASHTO LRFD 9a ed., Tabla 10.5.5.2.2-1, pag. impresa 10-42 "
+               "(PDF 1331; cita AASHTO_LRFD_9.10.5.5.2.2#T1) y 11.5.7 con su "
+               "Tabla 11.5.7-1, pags. impresas 11-15 y 11-17 (PDF 1484 y "
+               "1486; cita AASHTO_LRFD_9.11.5.7#MUROS). Los numeros, en "
+               "constantes_normativas.PHI_ZAPATAS_T10_5_5_2_2_1 y "
+               "PHI_MUROS_T11_5_7_1",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: las dos tablas son de la fuente y "
+                        "cual aplica a un cabezal modelado como muro no lo "
+                        "dice ninguna",
+            dominio="una de las dos filas de la ventana",
+        ),
+    ),
+
+    "drenaje_trasdos": Criterio(
+        valor="sin_drenaje",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   sin_drenaje   el agua puede llenar el relleno RETENIDO hasta su
+        #       superficie contra el trasdos, nunca por encima del muro:
+        #       hidrostatica en esa altura y suelo sumergido (AASHTO 11.6.6;
+        #       correcciones de T-7b, H6).
+        #   drenado       drenaje del trasdos declarado (filtro y
+        #       lloraderos, a mostrar en planos): el agua del relleno no
+        #       supera el nivel freatico natural del punto.
+        sensibilidad=("sin_drenaje", "drenado"),
+        concepto="Si el trasdos del cabezal tiene un sistema de drenaje "
+                 "declarado, y con ello hasta que nivel se cuenta el agua "
+                 "en el relleno",
+        justificacion="Decide el nivel del agua en el relleno del trasdos, "
+                      "y con el el empuje hidrostatico, el peso sumergido del "
+                      "suelo bajo ese nivel y la subpresion del lado del "
+                      "relleno. La fuente (AASHTO LRFD 11.6.6, cita "
+                      "AASHTO_LRFD_9.11.6.6#DRENAJE) exige drenar el relleno "
+                      "o, si no se puede, diseñar el muro con la hidrostatica "
+                      "completa del agua del relleno; y E.050 num. 39.13.8 "
+                      "(por analogia) exige que el muro de contencion tenga "
+                      "un sistema de drenaje. Lo que no resuelven: hasta que "
+                      "nivel sube el agua de un relleno sin drenar; el "
+                      "proyecto lee que hasta su superficie (la lectura esta "
+                      "en la `Interpretacion` de la cita). El valor de "
+                      "archivo es «sin_drenaje»: el drenaje reduce la "
+                      "hidrostatica SOLO si se declara, porque declararlo "
+                      "compromete un detalle -- filtro y lloraderos -- que "
+                      "tiene que estar en los planos, y el comentario de la "
+                      "fuente advierte que los lloraderos solos no aseguran "
+                      "el drenaje. Sin drenaje el agua llena el relleno "
+                      "RETENIDO hasta su superficie contra el trasdos "
+                      "(coronacion menos bordillo) y nunca sube por encima "
+                      "del muro. Con «drenado» el agua del relleno queda en "
+                      "el nivel freatico natural del punto (columna "
+                      "NF_profundidad_m, bajo el terreno del cruce), que el "
+                      "drenaje no baja; y el modelo NO contempla el "
+                      "desembalse rapido -- el relleno mojado por la avenida "
+                      "hasta la cota del agua de diseño con el cauce ya "
+                      "vacio --, que el comentario C11.6.6 hace plausible al "
+                      "advertir que los lloraderos no aseguran el drenaje: "
+                      "el ensamble lo avisa con su orden de magnitud. "
+                      "Declararlo es escribir 'drenaje_trasdos' = «drenado» "
+                      "en la sesion o con --declarar, y compromete el filtro "
+                      "y los lloraderos en los planos. En los dos casos el "
+                      "empuje del suelo bajo el agua va con su peso "
+                      "sumergido (AASHTO 3.11.3), y el agua no se cuenta dos "
+                      "veces",
+        fuente="AASHTO LRFD 9a ed., 11.6.6 'Drainage', pag. impresa 11-35 "
+               "(PDF 1504; cita AASHTO_LRFD_9.11.6.6#DRENAJE) y 3.11.3, pag. "
+               "impresa 3-118; E.050 num. 39.13.8, pag. 73 (cita "
+               "E050.39.13.8#DRENAJE), por analogia",
+        reemplazado_por="Detalle de drenaje del trasdos en los planos del "
+                        "cabezal (filtro, geotextil o geodren, y lloraderos)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: es un detalle constructivo del "
+                        "cabezal que se declara y se dibuja",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "peso_especifico_saturado_relleno_kn_m3": Criterio(
+        valor=None,                 # VACIO: solo detiene si hay agua en el relleno
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Peso especifico SATURADO del relleno del trasdos, kN/m3, "
+                 "para el empuje del suelo bajo el nivel del agua",
+        justificacion="Decide el peso sumergido del relleno (saturado menos "
+                      "el del agua) con que se calcula el empuje del suelo "
+                      "bajo el nivel del agua, que es como AASHTO 3.11.3 "
+                      "manda calcularlo, y el peso del suelo saturado sobre "
+                      "el talon. Solo se invoca cuando el agua llega al "
+                      "plano de empuje: con el relleno drenado y el freatico "
+                      "por debajo de la zapata no hace falta. Es un dato del "
+                      "material de relleno compactado y no se deduce del "
+                      "peso especifico humedo de "
+                      "'peso_especifico_relleno_kn_m3': usar ese mismo "
+                      "numero como saturado subestimaria el empuje del suelo "
+                      "sumergido. Por eso esta vacio: lo da el ensayo del "
+                      "material de cantera",
+        fuente="PENDIENTE - ensayo del material de relleno (peso especifico "
+               "y gravedad especifica de solidos, a la compactacion "
+               "especificada)",
+        reemplazado_por="Ensayo del material de cantera del relleno",
+        resolucion=DeEnsayo(
+            ensayo="peso especifico saturado del relleno compactado del "
+                   "trasdos",
+            trazabilidad_exigida="cantera, ensayo, grado de compactacion y "
+                                 "laboratorio",
+        ),
+    ),
+
+    "fraccion_delta_sobre_phi_trasdos": Criterio(
+        valor=0.67,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_FLOAT,
+        # De un tercio a dos tercios de phi: los dos extremos que la Figura
+        # C3.11.5.3-1b de AASHTO acota sobre el plano vertical del talon.
+        sensibilidad=(0.33, 0.67),
+        concepto="Angulo de friccion sobre el plano de empuje del trasdos "
+                 "(delta) como fraccion del angulo de friccion interna del "
+                 "relleno (phi)",
+        justificacion="Decide cuanto se inclina el empuje sobre su plano, "
+                      "y con ello su reparto entre la componente horizontal "
+                      "y la vertical. La fuente (AASHTO LRFD, comentario "
+                      "C3.11.5.3, cita AASHTO_LRFD_9.C3.11.5.3#DELTA) dice "
+                      "que la practica de largo plazo ha sido usar 0.67 de "
+                      "phi en la interfaz entre el respaldo del muro y el "
+                      "suelo retenido, para suelo contra concreto y para "
+                      "suelo contra suelo, y que aun en los muros de "
+                      "semigravedad en voladizo la friccion se suele limitar "
+                      "a 0.67 de phi; su Figura C3.11.5.3-1b acota el angulo "
+                      "sobre el plano vertical del talon entre un tercio y "
+                      "dos tercios de phi. No lo prescribe: describe una "
+                      "practica, y por eso es [C] con esa ventana. Un delta "
+                      "mayor reduce el coeficiente de empuje y traslada "
+                      "empuje de la horizontal a la vertical: alivia el "
+                      "deslizamiento y la excentricidad y carga mas la base. "
+                      "Si se declara 'friccion_muro_suelo_delta', gana ese "
+                      "angulo",
+        fuente="AASHTO LRFD 9a ed., C3.11.5.3, pags. impresas 3-121 y 3-122 "
+               "(PDF 175 y 176; citas AASHTO_LRFD_9.C3.11.5.3#DELTA y "
+               "AASHTO_LRFD_9.C3.11.5.3#PLANO_DEL_TALON) y Figura "
+               "C3.11.5.3-1b, pag. impresa 3-123",
+        reemplazado_por="Ensayo de interfase, declarado en "
+                        "'friccion_muro_suelo_delta'",
+        resolucion=Libre(
+            que_lo_fija="la practica que el comentario C3.11.5.3 de AASHTO "
+                        "describe; la fraccion dentro de la ventana, el "
+                        "proyectista",
+            dominio="adimensional, entre 0.33 y 0.67",
+        ),
+    ),
+
+    "regla_pendiente_relleno_trasdos": Criterio(
+        # CORRECCIONES DE T-7b (H4): el valor de archivo paso de
+        # «talud_quebrado_2h» a «cuna_de_tanteo». La pendiente equivalente
+        # es una simplificacion de los muros de suelo reforzado y, medida
+        # en A-01, SUBESTIMA el empuje estatico un 7 a 11 % frente a la cuña
+        # que la fuente pide; bajo sismo, con el k_h de archivo, dejaba a
+        # Mononobe-Okabe fuera de su dominio y la condicion sin cifra.
+        valor="cuna_de_tanteo",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   cuna_de_tanteo       cuña de Coulomb por el metodo de Culmann
+        #       sobre el plano vertical del talon, con la superficie REAL del
+        #       relleno: sube con el talud del terraplen y se quiebra en la
+        #       plataforma (AASHTO 3.11.5.3 y 3.11.5.8.1; bajo sismo,
+        #       pseudoestatica con k_h y k_v, C11.6.5.3). Es la de archivo.
+        #   talud_quebrado_2h    pendiente equivalente: la de la recta que va
+        #       de la coronacion del relleno retenido al terreno a una
+        #       distancia horizontal de dos veces la altura del muro
+        #       (Figura C3.11.5.8.1-1 de AASHTO, por analogia), con la
+        #       formula cerrada de Coulomb y de Mononobe-Okabe. SESGO
+        #       DECLARADO: subestima el empuje estatico del 7 al 11 % en los
+        #       cabezales de A-01.
+        #   talud_del_terraplen  la del talud del terraplen, como si no se
+        #       quebrara nunca: cota superior del empuje estatico.
+        sensibilidad=("cuna_de_tanteo", "talud_quebrado_2h",
+                      "talud_del_terraplen"),
+        concepto="Como se calcula, con la geometria real del relleno del "
+                 "trasdos, el empuje activo estatico y sismico del cabezal: "
+                 "por la cuña de tanteo sobre la superficie real o por la "
+                 "formula cerrada con una pendiente equivalente",
+        justificacion="Decide el coeficiente de empuje del relleno, que "
+                      "entra en todas las filas de la estabilidad. Detras "
+                      "del cabezal el relleno no es horizontal ni un talud "
+                      "indefinido: sube con el talud del terraplen desde la "
+                      "coronacion del relleno retenido y se quiebra en el "
+                      "borde de la plataforma. La formula de Coulomb de la "
+                      "ec. 3.11.5.3-1 es la de un talud uniforme, y para lo "
+                      "que se aparta de ella la fuente permite calcular el "
+                      "empuje con cuñas de prueba por el metodo de Culmann "
+                      "(AASHTO LRFD 3.11.5.3, cita "
+                      "AASHTO_LRFD_9.3.11.5.3#CULMANN); para el relleno "
+                      "quebrado de los muros de suelo reforzado recomienda "
+                      "la cuña de tanteo de Coulomb (3.11.5.8.1, cita "
+                      "AASHTO_LRFD_9.3.11.5.8.1#CUNA); y bajo sismo, donde "
+                      "Mononobe-Okabe no es adecuado, permite la cuña de "
+                      "tanteo (C11.6.5.3, cita "
+                      "AASHTO_LRFD_9.C11.6.5.3#CUNA). El valor de archivo es "
+                      "esa cuña, sobre el plano vertical del talon y con la "
+                      "superficie real: es lo que la fuente pide, coincide "
+                      "con Coulomb en un talud uniforme y con "
+                      "Mononobe-Okabe en un relleno horizontal, y con el "
+                      "relleno que se quiebra en la plataforma tiene maximo "
+                      "aun donde Mononobe-Okabe con una pendiente "
+                      "equivalente queda fuera de su dominio. Su "
+                      "coeficiente es el equivalente, 2·P/(gamma·h²), y se "
+                      "reparte en el plano con el diagrama triangular de "
+                      "Coulomb. Sigue siendo [A] porque la cuña de la "
+                      "fuente es de muros y su uso en el cabezal, que se "
+                      "MODELA como muro, es eleccion del proyecto. Las otras "
+                      "dos opciones quedan barribles: la pendiente "
+                      "equivalente de la Figura C3.11.5.8.1-1 (la "
+                      "alternativa simplificada que el comentario PERMITE "
+                      "para los muros de suelo reforzado, cita "
+                      "AASHTO_LRFD_9.C3.11.5.8.1#TALUD_QUEBRADO), que en "
+                      "los cabezales de A-01 da un empuje estatico un 7 a "
+                      "11 % MENOR que la cuña; y el talud entero sin "
+                      "quiebre, cota superior del empuje estatico. Con "
+                      "cualquiera de las dos, y con la pendiente declarada "
+                      "en 'pendiente_relleno_trasdos_i', rige la formula "
+                      "cerrada",
+        fuente="AASHTO LRFD 9a ed., 3.11.5.3, pag. impresa 3-121 (PDF 175; "
+               "cita AASHTO_LRFD_9.3.11.5.3#CULMANN); 3.11.5.8.1 y "
+               "C3.11.5.8.1, pag. impresa 3-137 (PDF 191; citas "
+               "AASHTO_LRFD_9.3.11.5.8.1#CUNA y "
+               "AASHTO_LRFD_9.C3.11.5.8.1#TALUD_QUEBRADO) y Figura "
+               "C3.11.5.8.1-1, pag. impresa 3-138 (PDF 192); C11.6.5.3, pag. "
+               "impresa 11-30 (PDF 1499; cita AASHTO_LRFD_9.C11.6.5.3#CUNA)",
+        reemplazado_por="Analisis de equilibrio limite generalizado (GLE, "
+                        "AASHTO A11.3.3) del relleno con la estratigrafia "
+                        "del EMS",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la cuña es lo que la fuente pide "
+                        "para la geometria real, y su uso en el cabezal "
+                        "modelado como muro es eleccion del proyecto",
+            dominio="una de las tres reglas de la ventana",
+        ),
+    ),
+
+    "factores_inclinacion_carga_portante": Criterio(
+        valor="aplicar",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("aplicar", "omitir"),
+        concepto="Si la resistencia portante nominal bajo la zapata del "
+                 "cabezal se reduce por la inclinacion de la carga (factores "
+                 "i_c, i_q, i_gamma de AASHTO 10.6.3.1.2a)",
+        justificacion="Decide si la resistencia portante se reduce porque la "
+                      "resultante sobre la base esta inclinada, que en un "
+                      "muro lo esta siempre. La fuente (AASHTO LRFD "
+                      "10.6.3.1.2a, cita AASHTO_LRFD_9.10.6.3.1.2a#QN) "
+                      "escribe los factores de inclinacion dentro de la "
+                      "ecuacion de la resistencia nominal, y su comentario "
+                      "dice que la mayoria de los geotecnistas no los usa, "
+                      "que se dedujeron para zapatas sin empotramiento, que "
+                      "combinados con los factores de resistencia pueden ser "
+                      "demasiado conservadores, y que con empotramiento "
+                      "modesto cabe considerar omitirlos. Lo "
+                      "que no resuelve: si se omiten en un muro. El proyecto "
+                      "los APLICA -- el lado seguro, y el del texto del "
+                      "articulo -- y deja «omitir» barrible: la diferencia "
+                      "es grande (con la horizontal en el 40 % de la "
+                      "vertical, el termino del peso propio del suelo baja a "
+                      "la quinta parte)",
+        fuente="AASHTO LRFD 9a ed., 10.6.3.1.2a, ecs. 10.6.3.1.2a-5 a -9 y "
+               "su comentario, pags. impresas 10-70 y 10-71 (PDF 1359 y "
+               "1360; cita AASHTO_LRFD_9.10.6.3.1.2a#QN)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el permiso del comentario "
+                        "C10.6.3.1.2a",
+            dominio="aplicar u omitir",
+        ),
+    ),
+
+    "terreno_delante_del_cabezal": Criterio(
+        valor="horizontal",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   horizontal          el terreno delante de la zapata es el fondo
+        #       del cauce, del que la zapata queda D_f por debajo: capacidad
+        #       portante de terreno horizontal (AASHTO 10.6.3.1.2a).
+        #   talud_descendente   el terreno baja delante de la zapata: zapata
+        #       en talud (Manual de Puentes 2.8.1.3.1.2c), con los factores
+        #       de 'N_cq_N_gammaq_meyerhof'.
+        sensibilidad=("horizontal", "talud_descendente"),
+        concepto="Forma del terreno DELANTE de la zapata del cabezal (del "
+                 "lado del cauce), que decide si la capacidad portante es la "
+                 "de terreno horizontal o la de una zapata en talud",
+        justificacion="Decide que ecuacion de capacidad portante aplica. La "
+                      "hoja de ruta (Sec. 9.3) situaba el cabezal en el "
+                      "borde del terraplen, no en terreno horizontal, y "
+                      "exigia la zapata en talud. Con el "
+                      "cabezal que el predimensionamiento de T-7a propone "
+                      "eso no describe la geometria: la zapata se desplanta "
+                      "bajo el terreno del pie del muro, que es el fondo del "
+                      "cauce (en la salida, la mas baja entre la solera y el "
+                      "fondo del receptor), y el talud del terraplen SUBE "
+                      "detras del muro, no baja delante. La reduccion por "
+                      "talud de la fuente (AASHTO LRFD 10.6.3.1.2c, cita "
+                      "AASHTO_LRFD_9.10.6.3.1.2c#TALUD) se define con la "
+                      "altura del terreno inclinado que queda por debajo de "
+                      "la base de la zapata, que aqui es cero. El proyecto "
+                      "adopta por eso el terreno horizontal, y cuenta como "
+                      "sobrecarga solo el empotramiento que queda bajo la "
+                      "hoya de socavacion cuando la Fase 6 la entrega. La "
+                      "otra opcion es para el cabezal que si queda sobre un "
+                      "terreno que desciende -- una salida a media ladera "
+                      "--: pide los factores del Manual de Puentes, y sin "
+                      "ellos se detiene. El defecto se reporta contra la "
+                      "hoja de ruta, que esta sesion corrige",
+        fuente="Geometria del cabezal de 'predimensionamiento_cabezal' "
+               "(T-7a) y AASHTO LRFD 9a ed., 10.6.3.1.2c y Figura "
+               "10.6.3.1.2c-1, pags. impresas 10-74 y 10-75 (PDF 1363 y "
+               "1364; cita AASHTO_LRFD_9.10.6.3.1.2c#TALUD)",
+        reemplazado_por="Levantamiento del terreno delante de cada cabezal",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el perfil del cauce delante "
+                        "del cabezal",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    # --- correcciones de T-7b (H7) --- El regimen del cabezal frente al
+    # empuje: la HIPOTESIS de modelacion con que el ensamble calcula la
+    # estabilidad externa, dicha como criterio y no escondida en un K_A.
+    "regimen_cabezal": Criterio(
+        valor="cedente",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   cedente      el muro se desplaza lo bastante para movilizar la
+        #       resistencia del relleno: empuje ACTIVO (cuña o Coulomb) y,
+        #       bajo sismo, el de 11.6.5.3. Es lo que el ensamble calcula.
+        #   no_cedente   el muro no puede ceder (estribo con aleros
+        #       estructurales, 11.6.5.4): reposo K0 para la resistencia y
+        #       k_h = 1.0·k_h0 con resultante en h/2 bajo sismo. El
+        #       ensamble NO lo implementa: declararlo detiene la
+        #       estabilidad con «metodo no evaluable».
+        sensibilidad=("cedente", "no_cedente"),
+        concepto="Si el cabezal se modela como muro que cede (empuje "
+                 "activo) o como muro que no cede (empuje en reposo y "
+                 "presiones sismicas de muro rigido)",
+        justificacion="Decide con que empuje se calcula la estabilidad "
+                      "externa del cabezal y con que coeficiente salen las "
+                      "solicitaciones que T-7c armara. Los metodos de "
+                      "11.6.5.3 suponen que el muro puede ceder lo bastante "
+                      "para movilizar la resistencia del relleno (AASHTO "
+                      "C11.6.5.4, cita AASHTO_LRFD_9.C11.6.5.4#CEDENTE), y "
+                      "para los "
+                      "muros que no ceden la fuente manda k_h = 1.0·k_h0 "
+                      "(11.6.5.4, cita AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE) y "
+                      "su comentario pone entre ellos a los estribos con "
+                      "aleros estructurales, dice que las presiones pueden "
+                      "superar a las de Mononobe-Okabe, que la resultante "
+                      "puede subir a h/2, y que el muro que no cede se "
+                      "diseña en resistencia con K0 (cita "
+                      "AASHTO_LRFD_9.C11.6.5.4#K0). Un cabezal monolitico "
+                      "con el barril y los aleros se parece a ese caso, y "
+                      "ninguna fuente dice cual es. El proyecto adopta "
+                      "«cedente» para la estabilidad EXTERNA, que es lo que "
+                      "el ensamble calcula -- el vuelco y el deslizamiento "
+                      "del conjunto movilizan el empuje activo -- y lo "
+                      "declara como hipotesis de modelacion. Las "
+                      "solicitaciones por elemento salen con ese mismo "
+                      "coeficiente y lo llevan marcado, con el K0 de "
+                      "3.11.5.2 al lado: si T-7c o el proyectista juzgan "
+                      "que la pantalla no cede, su armado iria con K0 (en "
+                      "A-01, del orden de un tercio a la mitad mas de "
+                      "empuje). «no_cedente» esta en la ventana y detiene "
+                      "la estabilidad: el programa no implementa las "
+                      "presiones de muro rigido",
+        fuente="AASHTO LRFD 9a ed., 11.6.5.4 y C11.6.5.4, pag. impresa "
+               "11-32 (PDF 1501; citas AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE, "
+               "AASHTO_LRFD_9.C11.6.5.4#CEDENTE y "
+               "AASHTO_LRFD_9.C11.6.5.4#K0); 3.11.5.2, pag. impresa 3-120 "
+               "(PDF 174; cita AASHTO_LRFD_9.3.11.5.2#K0)",
+        reemplazado_por="Analisis numerico de la interaccion del cabezal con "
+                        "el relleno, aprobado por el Propietario (11.6.5.4)",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: es la hipotesis con que se modela "
+                        "el cabezal, y ninguna fuente la fija",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    # --- T-7c --- (cadena T) El armado del cabezal: con que empuje se arma,
+    # con que materiales, de que catalogo salen las barras propuestas, que
+    # se hace con los minimos de las dos normas y con que criterio se juzga
+    # la traccion del cabezal de gravedad en ciclopeo. Seis criterios, todos
+    # de expediente: los consume `M9.armado_del_cabezal`, que solo corre a
+    # ese alcance (la Fase 9 se difiere entera a nivel de perfil).
+    "regimen_resistencia_elementos_cabezal": Criterio(
+        valor="no_cedente_k0",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   no_cedente_k0  la pantalla, la zapata y los aleros se arman con
+        #       el empuje en REPOSO (K0 de AASHTO 3.11.5.2, factor de carga
+        #       de la fila «En reposo», sin friccion muro-relleno), tomando
+        #       en cada seccion la MAYOR de esa solicitacion y la del muro
+        #       que cede; bajo sismo, el empuje que el ensamble entrega y la
+        #       resultante a h/2 si da mas momento.
+        #   cedente        se arman con las solicitaciones del ensamble de
+        #       T-7b tal como salen (empuje activo de la cuña o de Coulomb).
+        sensibilidad=("no_cedente_k0", "cedente"),
+        concepto="Empuje de tierras con que se calcula la RESISTENCIA de "
+                 "los elementos del cabezal (pantalla, zapata y aleros): en "
+                 "reposo, de muro que no cede, o activo, de muro que cede",
+        justificacion="Decide con que empuje se arma el cabezal, que no es "
+                      "la misma pregunta que la de su estabilidad externa "
+                      "('regimen_cabezal', que sigue en «cedente»: el vuelco "
+                      "y el deslizamiento del conjunto movilizan el empuje "
+                      "activo por definicion del mecanismo). La fuente "
+                      "recomienda proyectar con el empuje en reposo los "
+                      "muros que toleran poco o ningun movimiento (AASHTO "
+                      "C3.11.1, cita AASHTO_LRFD_9.C3.11.1#REPOSO) y liga el "
+                      "muro que no cede con el empuje en reposo en el estado "
+                      "limite de resistencia (C11.6.5.4, cita "
+                      "AASHTO_LRFD_9.C11.6.5.4#K0); del muro en voladizo "
+                      "tipico de mas de 5.0 ft dice que su deformacion basta "
+                      "para desarrollar el empuje activo (C3.11.5.2, cita "
+                      "AASHTO_LRFD_9.C3.11.5.2#ACTIVO). Ninguna dice cual de "
+                      "los dos es el cabezal de una alcantarilla. El "
+                      "proyecto adopta el reposo -- decision del dueño del "
+                      "proyecto, registrada en la ficha T7C-02 -- porque el "
+                      "cabezal es monolitico con el "
+                      "barril y con los aleros, que lo arriostran, y porque "
+                      "es el lado seguro de la resistencia: mas empuje, mas "
+                      "acero. Lo que la eleccion NO resuelve y la memoria "
+                      "dice: el K0 de la ec. 3.11.5.2-1 es de terreno "
+                      "horizontal y detras del cabezal el relleno sube, de "
+                      "modo que el reposo calculado es una cota inferior del "
+                      "real; por eso el armado toma en cada seccion la mayor "
+                      "de la solicitacion en reposo y la del muro que cede "
+                      "(que si lleva la pendiente, por la cuña de tanteo), y "
+                      "avisa cuando el armado cambia de una a otra. Bajo "
+                      "sismo la fuente no da un coeficiente de reposo: manda "
+                      "no reducir k_h (11.6.5.4) y pide considerar la "
+                      "resultante a h/2 (cita "
+                      "AASHTO_LRFD_9.C11.6.5.4#H_MEDIOS)",
+        fuente="AASHTO LRFD 9a ed., C3.11.1, pag. impresa 3-117 (PDF 171); "
+               "3.11.5.2 y C3.11.5.2, pag. impresa 3-120 (PDF 174); 11.6.5.4 "
+               "y C11.6.5.4, pag. impresa 11-32 (PDF 1501). Factor de carga "
+               "del empuje en reposo: Manual de Puentes, Tabla 2.4.5.3.1-2, "
+               "fila «En reposo» (1.35 / 0.90), [N] en "
+               "constantes_normativas.TABLA_GAMMA_P_FILAS",
+        reemplazado_por="Analisis de la interaccion del cabezal con el "
+                        "relleno, el barril y los aleros que diga cuanto se "
+                        "desplaza la pantalla",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ninguna fuente dice si la pantalla "
+                        "de un cabezal cede",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "fc_cabezal_mpa": Criterio(
+        valor=21.0,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        # De la Clase E (17.5 MPa) a la Clase A (35 MPa) de la Tabla 503-07
+        # del EG-2013: las clases de concreto estructural con que se puede
+        # especificar un cabezal armado.
+        sensibilidad=(17.5, 35.0),
+        concepto="Resistencia especificada a la compresion del concreto del "
+                 "cabezal armado (pantalla, zapata y aleros), f'c, en MPa",
+        justificacion="Decide la resistencia del concreto con que se "
+                      "calculan la flexion y el cortante del cabezal. "
+                      "Ninguna fuente la fija: el EG-2013 (Tabla 503-07, "
+                      "cita EG2013.503.04#T503_07) da las CLASES de concreto "
+                      "estructural y sus resistencias minimas, no cual "
+                      "lleva un cabezal. El proyecto adopta la Clase D, 21 "
+                      "MPa, que es la menor de las de concreto reforzado de "
+                      "uso corriente en obras de drenaje; es el lado seguro "
+                      "del calculo de resistencia (con mas f'c la seccion "
+                      "resiste mas) y NO el de la durabilidad: si el "
+                      "analisis quimico del EMS ('exposicion_quimica_ems') "
+                      "pide un f'c minimo mayor por las Tablas 4.2 y 4.4 de "
+                      "E.060, el armado lo dice como incumplimiento "
+                      "(verificacion A7, que decide cuando el dato existe; "
+                      "sin el, un aviso) y hay que subir este valor. La "
+                      "ventana son las clases E a A de la misma tabla; por "
+                      "debajo de 17 MPa E.060 9.4.1 no admite concreto "
+                      "estructural",
+        fuente="EG-2013 Seccion 503, num. 503.04, Tabla 503-07 'Clases de "
+               "concreto estructural', pag. impresa 912 (PDF 920): clases y "
+               "resistencias minimas, no la clase del cabezal",
+        reemplazado_por="La especificacion de concreto del expediente, con "
+                        "el analisis quimico del EMS delante",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, eligiendo la clase de concreto de "
+                        "la Tabla 503-07 del EG-2013",
+            dominio="MPa, entre 17.5 (Clase E) y 35 (Clase A)",
+        ),
+    ),
+
+    "acero_refuerzo_cabezal": Criterio(
+        valor="A615_grado_60",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("A615_grado_60", "A706_grado_60"),
+        concepto="Designacion del acero de refuerzo del cabezal: fija la "
+                 "fluencia de calculo y la razon fluencia / rotura del "
+                 "acero minimo de AASHTO 5.6.3.3",
+        justificacion="Decide que acero arma el cabezal. La fluencia (420 "
+                      "MPa en las dos designaciones, el Grado 60) y el "
+                      "factor γ3 del momento de agrietamiento (0.67 para "
+                      "AASHTO M 31 / ASTM A615 Grado 60 y 0.75 para ASTM "
+                      "A706 Grado 60: AASHTO 5.6.3.3, cita "
+                      "AASHTO_LRFD_9.5.6.3.3#MINIMO) NO se eligen aqui: "
+                      "salen de la designacion y viven en "
+                      "constantes_normativas (FY_ACERO_MPA, GAMMA_3_AASHTO). "
+                      "Lo que se elige es la designacion, y ninguna fuente "
+                      "la fija: E.060 3.5.3.1 admite las barras de la NTP "
+                      "341.031, que es la equivalente de ASTM A615. El "
+                      "proyecto adopta A615 Grado 60 por ser el acero "
+                      "corrugado de suministro corriente; con A706 el acero "
+                      "minimo por agrietamiento sube un 12 %",
+        fuente="AASHTO LRFD 9a ed., 5.6.3.3, pag. impresa 5-43 (PDF 402): "
+               "tabla de γ3 por designacion; E.060 3.5.3.1, pag. 32 (NTP "
+               "341.031). Ninguna fija la designacion del proyecto",
+        reemplazado_por="La especificacion de acero del expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con la especificacion de "
+                        "materiales del expediente",
+            dominio="una de las dos designaciones de la ventana",
+        ),
+    ),
+
+    "catalogo_barras_refuerzo_cabezal": Criterio(
+        valor={
+            # designacion: (diametro nominal en mm, area nominal en mm2)
+            "barras": {"3/8": (9.5, 71.0), "1/2": (12.7, 129.0),
+                       "5/8": (15.9, 199.0), "3/4": (19.1, 284.0),
+                       "1": (25.4, 510.0)},
+            # de mayor a menor: se propone el mayor que cumple
+            "espaciamientos_m": (0.30, 0.25, 0.20, 0.175, 0.15, 0.125,
+                                 0.10),
+            "barra_minima_principal": "1/2",
+            "barra_reparto": "3/8",
+        },
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        sensibilidad=(
+            "El catalogo es una PROPUESTA y no una exigencia: con otra "
+            "barra minima principal ('3/8' en vez de '1/2') o con otra "
+            "serie de espaciamientos cambian la barra y el espaciamiento "
+            "propuestos, no el acero requerido ni el minimo, que salen del "
+            "calculo. Lo que el plano lleve tiene que cumplir el acero "
+            "adoptado y el espaciamiento maximo de la tabla de armado",),
+        concepto="Catalogo de barras corrugadas y de espaciamientos de "
+                 "donde el programa PROPONE el armado de cada cara del "
+                 "cabezal, y la regla de la propuesta",
+        justificacion="Decide que barra y que espaciamiento se proponen "
+                      "para cada cara: el programa calcula el acero "
+                      "adoptado (el mayor del requerido y del minimo) y el "
+                      "espaciamiento maximo, y de este catalogo toma, "
+                      "empezando por la barra minima y subiendo de "
+                      "diametro, la primera barra que con el MAYOR "
+                      "espaciamiento de la serie no superior al maximo da "
+                      "al menos ese acero. Ninguna fuente fija un catalogo: "
+                      "las designaciones, diametros y areas son las "
+                      "nominales de las barras de ASTM A615 / NTP 341.031 "
+                      "(3/8\" a 1\"), norma que NO esta en normas/ y que la "
+                      "sesion no pudo verificar contra su PDF -- el "
+                      "proyectista las confirma con la ficha del "
+                      "fabricante --; la serie de espaciamientos (de 0.30 a "
+                      "0.10 m) y la barra minima de 1/2\" en la armadura "
+                      "principal son practica de detalle del proyecto. El "
+                      "programa propone y no impone: el proyectista puede "
+                      "armar con otra barra siempre que cumpla la tabla",
+        fuente="Sin fuente unica. Designaciones y areas nominales: ASTM "
+               "A615 / NTP 341.031, no disponible en normas/ (no "
+               "verificado contra PDF). Serie de espaciamientos y barra "
+               "minima: practica de detalle, eleccion del proyecto",
+        reemplazado_por="La ficha tecnica del proveedor de acero y el "
+                        "criterio de detalle del proyectista",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: es una regla de propuesta, no un "
+                        "valor de norma",
+            dominio="barras: designacion -> (diametro mm, area mm2); "
+                    "espaciamientos en m, de mayor a menor; las dos barras "
+                    "nombradas tienen que estar en el catalogo",
+        ),
+    ),
+
+    "regla_minimos_constructivos_cabezal": Criterio(
+        valor="mas_exigente_aashto_e060",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("mas_exigente_aashto_e060", "solo_aashto"),
+        concepto="Que se hace con el acero minimo y el espaciamiento "
+                 "maximo del cabezal, que AASHTO LRFD y E.060 fijan cada "
+                 "una por su lado",
+        justificacion="Decide cual de los dos juegos de minimos "
+                      "constructivos se aplica. En RESISTENCIA rige AASHTO "
+                      "LRFD Seccion 5 y E.060 solo contrasta, porque cargas "
+                      "y resistencias no se cruzan entre marcos; los "
+                      "minimos constructivos -- acero minimo de cada cara, "
+                      "espaciamiento maximo, capas -- no dependen de las "
+                      "cargas y si se pueden comparar. AASHTO pide el acero "
+                      "de 5.6.3.3 en la cara en traccion y el de retraccion "
+                      "y temperatura de 5.10.6 en cada cara y direccion, "
+                      "con el espaciamiento de 5.10.3.2; E.060 pide las "
+                      "cuantias de muros de 14.3.1 (0,0020 horizontal y "
+                      "0,0015 vertical, sobre el area bruta), las de losas "
+                      "y zapatas de 9.7.2 y 10.5.4 (0,0018, y 0,0012 en la "
+                      "cara en traccion) y el espaciamiento de 14.3.3. "
+                      "Ninguna deroga a la otra sobre una obra vial "
+                      "peruana -- la primera es la fuente tecnica del "
+                      "diseño y la segunda la norma local de concreto, "
+                      "aplicada por analogia --, y el proyecto aplica la "
+                      "mas exigente de las dos en cada cara, que es la "
+                      "misma regla del mayor que la §0.2 de la hoja de ruta "
+                      "usa para el recubrimiento. «solo_aashto» queda en la "
+                      "ventana para quien lea la Via 1 a la letra",
+        fuente="AASHTO LRFD 9a ed., 5.6.3.3, 5.10.6 y 5.10.3.2 (citas "
+               "AASHTO_LRFD_9.5.6.3.3#MINIMO, "
+               "AASHTO_LRFD_9.5.10.6#TEMPERATURA, "
+               "AASHTO_LRFD_9.5.10.3.2#ESPACIAMIENTO); E.060 14.3.1, "
+               "14.3.3, 9.7.2 y 10.5.4 (citas E060.14.3.1, E060.14.3.3, "
+               "E060.9.7.2#TEMPERATURA, E060.10.5.4#LOSAS). Ninguna dice "
+               "cual prevalece sobre un cabezal vial",
+        reemplazado_por="Una especificacion del Propietario que fije el "
+                        "juego de minimos del expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: es la regla de conflicto entre "
+                        "dos fuentes, y ninguna la escribe",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "criterio_traccion_cabezal_ciclopeo": Criterio(
+        valor="tracciones_nulas",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("tracciones_nulas", "traccion_admisible_e060"),
+        concepto="Con que criterio se juzga la traccion del cabezal de "
+                 "gravedad en concreto ciclopeo: sin tracciones (resultante "
+                 "en el tercio central) o con la traccion que E.060 admite",
+        justificacion="Decide cual de dos verificaciones DETIENE el cabezal "
+                      "de gravedad en la base y a media altura del cuerpo. "
+                      "La clasica del muro de gravedad pide "
+                      "tracciones nulas con cargas de servicio: la "
+                      "resultante dentro del tercio central de la base (e "
+                      "<= B/6) y de la seccion del cuerpo (e <= t/6). E.060 "
+                      "no la exige en el CUERPO: para el concreto simple "
+                      "admite una traccion de φ·0,42·√f'c (22.5.3, ec. 22-7; "
+                      "cita E060.22.5.3#TRACCION), con φ = 0,5 y f'c no mayor "
+                      "de 10 MPa en el ciclopeo (22.10.2.3; cita "
+                      "E060.22.10.2.3#PHI), y solo distingue el caso del "
+                      "tercio central para permitir un metodo empirico "
+                      "(22.6.3; cita E060.22.6.3#TERCIO). En las juntas de "
+                      "construccion si la prohibe (22.4.7; cita "
+                      "E060.22.4.7#JUNTAS), y el arranque del cuerpo sobre "
+                      "la zapata es una: por eso la verificacion del "
+                      "arranque decide siempre, con las dos opciones, salvo "
+                      "que se declare el vaciado monolitico "
+                      "('junta_arranque_cabezal_ciclopeo'), y este criterio "
+                      "decide las otras dos. El proyecto adopta las "
+                      "tracciones nulas, que es lo mas exigente y lo que "
+                      "pide el encargo de la cadena T (INFORME §4.6), y "
+                      "calcula la de E.060 al lado, por analogia, con sus "
+                      "cargas amplificadas; con la otra opcion decide la "
+                      "traccion admisible de E.060 y las tracciones nulas "
+                      "de la base y de media altura informan. AASHTO LRFD "
+                      "no trae el concreto ciclopeo",
+        fuente="E.060 22.5.3, 22.6.3 y 22.10.2.3, pags. 192 y 195 (citas "
+               "E060.22.5.3#TRACCION, E060.22.6.3#TERCIO, "
+               "E060.22.10.2.3#PHI): la traccion admisible; 22.4.7, pag. "
+               "191 (cita E060.22.4.7#JUNTAS): ninguna traccion a traves de "
+               "las juntas de construccion. Fuera de las juntas, el "
+               "criterio de tracciones nulas no tiene numeral: es practica "
+               "del muro de gravedad y eleccion del proyecto",
+        reemplazado_por="Una especificacion del Propietario para muros de "
+                        "gravedad en concreto ciclopeo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: E.060 admite traccion y el "
+                        "proyecto elige no contar con ella",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "concreto_ciclopeo_cabezal": Criterio(
+        valor={"fc_matriz_mpa": 14.0, "fraccion_piedra": 0.30},
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_DICT_CON_CAMPOS,
+        sensibilidad={"fc_matriz_mpa": (14.0, 21.0),
+                      "fraccion_piedra": (0.0, 0.30)},
+        concepto="Especificacion del concreto ciclopeo del cabezal de "
+                 "gravedad: resistencia de la matriz y fraccion de piedra "
+                 "desplazadora en volumen",
+        justificacion="Decide que concreto ciclopeo se especifica, que es "
+                      "lo que las dos verificaciones del material contrastan "
+                      "con sus "
+                      "dos limites: f'c de la matriz no menor que el mayor "
+                      "de los 10 MPa de E.060 22.10.1 y los 14 MPa de la "
+                      "Clase G del EG-2013 (Tabla 503-07), y piedra "
+                      "desplazadora no mayor del 30 % del volumen. Los "
+                      "limites son de las fuentes; el valor especificado "
+                      "es del proyecto, y se adopta en el limite de las dos "
+                      "(Clase G: concreto simple Clase F, 14 MPa, con 30 % "
+                      "de agregado ciclopeo), que es el menos resistente "
+                      "que las fuentes admiten y por eso el lado seguro del "
+                      "contraste de resistencia",
+        fuente="EG-2013 Seccion 503, Tabla 503-07, Clase G, pag. impresa "
+               "912 (PDF 920; cita EG2013.503.04#T503_07); E.060 22.10.1, "
+               "pag. 194. Fijan los limites, no la especificacion",
+        reemplazado_por="La especificacion de concreto ciclopeo del "
+                        "expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, dentro de los limites de E.060 "
+                        "22.10 y de la Clase G del EG-2013",
+            dominio="fc_matriz_mpa >= 14; 0 <= fraccion_piedra <= 0.30",
+        ),
+    ),
+
+    # --- correcciones de T-7c ------------------------------------------------
+    "clase_exposicion_fisuracion_cabezal": Criterio(
+        valor=None,                 # VACIO: la declara el Propietario
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("clase_1", "clase_2"),
+        concepto="Clase de exposicion del control de fisuracion de AASHTO "
+                 "5.6.7 en el cabezal armado: Clase 1 (gamma_e = 1.00) o "
+                 "Clase 2 (gamma_e = 0.75)",
+        justificacion="Decide el espaciamiento maximo del refuerzo de cada "
+                      "cara traccionada por fisuracion en servicio (fila A6 "
+                      "del armado; correcciones de T-7c, H3). La fuente da "
+                      "las dos clases y sus factores (cita "
+                      "AASHTO_LRFD_9.5.6.7#GAMMA_E) y deja la eleccion al "
+                      "Propietario: su comentario describe la Clase 1 como "
+                      "la cota superior del ancho de fisura y propone la "
+                      "Clase 2 para las subestructuras expuestas al agua "
+                      "(cita AASHTO_LRFD_9.C5.6.7#CLASE_1). Un cabezal de "
+                      "alcantarilla esta expuesto al agua del cauce, pero "
+                      "ninguna fuente lo clasifica, y por eso no tiene valor "
+                      "de archivo. Sin declarar, el armado no se detiene: "
+                      "la barra propuesta respeta la Clase 1, que "
+                      "es la menos exigente y la que cualquier clase pide, y "
+                      "la fila A6 imprime los dos espaciamientos maximos y "
+                      "sale como INDICADOR «no decidida» cuando el propuesto "
+                      "solo cumple la Clase 1. Declarada, A6 decide y la "
+                      "propuesta la respeta",
+        fuente="AASHTO LRFD 9a ed., 5.6.7 y C5.6.7, pags. impresas 5-55 y "
+               "5-56 (PDF 414 y 415; citas AASHTO_LRFD_9.5.6.7#FISURACION, "
+               "#GAMMA_E y AASHTO_LRFD_9.C5.6.7#CLASE_1): las dos clases, no "
+               "cual es la del cabezal",
+        reemplazado_por="La clase de exposicion que el Propietario declare "
+                        "para las subestructuras de la obra",
+        resolucion=Libre(
+            que_lo_fija="el Propietario, por la exposicion y la apariencia "
+                        "que admita para la obra",
+            dominio="una de las dos clases de la ventana",
+        ),
+    ),
+
+    "junta_arranque_cabezal_ciclopeo": Criterio(
+        valor="junta_de_construccion",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("junta_de_construccion", "vaciado_monolitico"),
+        concepto="Como se vacia el cabezal de gravedad en concreto ciclopeo "
+                 "en el encuentro de su cuerpo con la zapata: con junta de "
+                 "construccion (la zapata primero) o monolitico",
+        justificacion="Decide si la verificacion de tracciones nulas en el "
+                      "arranque del cuerpo detiene el cabezal siempre o solo "
+                      "con el criterio de tracciones nulas. E.060 22.4.7 "
+                      "(cita "
+                      "E060.22.4.7#JUNTAS) prohibe transmitir traccion a "
+                      "traves de las juntas de construccion de un elemento "
+                      "de concreto simple, y el encuentro del cuerpo con la "
+                      "zapata lo es cuando la zapata se vacia primero, que es "
+                      "la secuencia corriente. El proyecto adopta la junta "
+                      "-- el lado exigente: la fila decide, y con las cargas "
+                      "de servicio Y con las amplificadas de E.060 -- y deja "
+                      "el vaciado monolitico como alternativa barrible, que "
+                      "es una especificacion de obra que el plano tiene que "
+                      "pedir (correcciones de T-7c, H5)",
+        fuente="E.060 22.4.7, pag. 191 (cita E060.22.4.7#JUNTAS): la "
+               "prohibicion; la secuencia de vaciado es del proyecto",
+        reemplazado_por="La especificacion de vaciado del cabezal en el "
+                        "expediente",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con la secuencia de vaciado que el "
+                        "plano especifique",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "espesor_min_zapata_concreto_simple_m": Criterio(
+        valor=0.30,
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="N->",
+        forma=FORMA_FLOAT,
+        concepto="Espesor minimo de la zapata del cabezal de gravedad en "
+                 "concreto ciclopeo, m (E.060 22.7.4)",
+        justificacion="Decide el piso del espesor propuesto de la zapata del "
+                      "cabezal de gravedad y el umbral de CB6 cuando ese "
+                      "espesor se declara. La fuente (E.060 22.7.4, pag. 193; "
+                      "cita E060.22.7.4#ZAPATA) fija 300 mm para las zapatas "
+                      "de concreto simple estructural. Hasta el cierre de "
+                      "T-7c vivia como constante [N] "
+                      "(`ESPESOR_MIN_ZAPATA_CONCRETO_SIMPLE_M`); pasa a [N→] "
+                      "porque E.060 es una norma de edificaciones y la "
+                      "excepcion de la §0.2 de la hoja de ruta, que la hace "
+                      "regir en el cabezal, cubre solo la durabilidad "
+                      "(Cap. 4 y Art. 7.7): un minimo estructural de su "
+                      "Cap. 22 aplicado a una obra vial es una analogia, "
+                      "como el 15.7 de la zapata armada "
+                      "('peralte_min_zapata_armada_m'). Pregunta 1 del "
+                      "informe de la FASE A de T-7c, resuelta por el "
+                      "orquestador",
+        fuente="E.060, num. 22.7.4, pag. 193 (cita E060.22.7.4#ZAPATA), por "
+               "analogia",
+        reemplazado_por="Una norma vial que fije el espesor minimo de una "
+                        "zapata de concreto simple",
+        resolucion=Libre(
+            que_lo_fija="E.060 22.7.4, aplicado por analogia",
+            dominio="m, positivo",
+        ),
+    ),
+
+    "edicion_que_rige_el_expediente": Criterio(
+        valor=None,                 # VACIO: lo declara el proyectista
+        # NIVEL NO MEDIBLE POR CORRIDA, y se dice con esas palabras: ningun
+        # modulo lo invoca (`variables_entrada.consumido_por` vacio), de modo
+        # que ninguna de las tres corridas de tests/test_nivel_medido.py lo
+        # puede contradecir, y esta censado en SIN_CONSUMIDOR_Y_SIN_MEDIDA.
+        # El argumento: es la decision de marco normativo del expediente, no
+        # un numero del perfil. El perfil se calcula contra los PDF que estan
+        # en normas/, con cada cita anclada por sha1 a la edicion citada;
+        # cambiar de edicion es conseguir el documento, incorporarlo al
+        # registro y reverificar cada cita, que es trabajo de expediente.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_STR,
+        # LA VENTANA ES SIMBOLICA Y CERRADA, como la de
+        # 'homogeneidad_serie_fen': dos opciones y no hay tercera, y vale
+        # para las seis fuentes TECNICAS a la vez. El Manual de Puentes SALIO
+        # de esta ventana en EXT-6 (EXT-N-01, PC-26): es una norma LEGAL,
+        # aprobada y derogada por resolucion del MTC, y elegir su edicion
+        # citada no es una preferencia tecnica sino una cuestion de regimen
+        # transitorio; tiene su propio criterio,
+        # 'edicion_legal_que_rige_el_expediente'. Una eleccion por fuente NO
+        # cabe aqui a proposito: `establecer_valor_dinamico` solo puede
+        # validar contra esta ventana, y un valor con excepciones seria una
+        # tercera forma que ninguna guardia comprueba; si hiciera falta, es
+        # un criterio por fuente, no una excepcion en prosa.
+        sensibilidad=(
+            "la edicion citada en el registro: la que esta en normas/ y "
+            "contra la que estan verificadas las citas (sha1)",
+            "la edicion vigente del emisor a la fecha del expediente: exige "
+            "conseguirla, incorporarla al registro como Fuente y reverificar "
+            "contra ella cada cita que hoy se apoya en la citada"),
+        concepto="Edicion que rige el expediente en las fuentes tecnicas "
+                 "(AASHTO, ASTM) cuyo emisor publica una edicion posterior a "
+                 "la citada en el registro",
+        justificacion=(
+            "La verificacion de vigencia del registro encontro que ocho de "
+            "las fuentes presentes tienen edicion posterior publicada por su "
+            "emisor. En una el registro ya dice cual gobierna (las dos "
+            "ediciones de HDS-5 conviven en normas/ y una discrepancia "
+            "resuelta lo fija); otra es una norma legal peruana derogada por "
+            "resolucion y tiene su propio criterio, porque elegir su edicion "
+            "citada depende del regimen transitorio y no de una preferencia "
+            "tecnica; y en las seis restantes, todas normas tecnicas de "
+            "EE.UU., hay una eleccion tecnica pendiente: AASHTO LRFD (citada "
+            "la 9a ed. (2020); publicada la 10a ed. (2024)), AASHTO M 170M "
+            "(citada M 170M-04; vigente M 170M-23), AASHTO M 36 (citada "
+            "M 36-03; vigente M 36M/M 36-24), ASTM A760/A760M (citada -10; "
+            "vigente -25), ASTM A796/A796M (citada -13; vigente -21) y AASHTO "
+            "M 294 (traduccion de la -11; vigente -25). La edicion de estas "
+            "seis no la fija una resolucion peruana, pero tampoco es cierto "
+            "que nadie la mande: el Manual de Puentes adapta la AASHTO LRFD "
+            "en su 7a ed. (2014) y permite considerar sus actualizaciones "
+            "(registro MP.INTRODUCCION#LRFD_2014), de modo que citar una "
+            "edicion posterior a la 7a esta autorizado y elegir entre la "
+            "9a y la 10a corresponde a la entidad y/o propietario, a "
+            "propuesta del proyectista, que es quien lo declara aqui; para "
+            "las cinco normas de "
+            "producto y practica, ninguna fuente peruana nombra edicion. Se "
+            "declara vacia: elegir la citada mantiene valido el registro tal "
+            "como esta; elegir la vigente obliga a conseguir cada documento, "
+            "incorporarlo como Fuente y reverificar contra el cada cita, y "
+            "hasta entonces el expediente citaria una edicion que no tiene. "
+            "La ventana es simbolica y cerrada: la eleccion vale para las "
+            "seis fuentes a la vez, y una eleccion distinta por fuente no "
+            "cabe en ella --- exigiria un criterio por fuente, y se abriria "
+            "entonces, no aqui ---. Lo que no cambia con la eleccion: ninguna "
+            "cita y ningun valor de calculo; la vigencia es un metadato de "
+            "la fuente, y el sha1 sigue anclando cada cita a la edicion "
+            "contra la que se verifico"),
+        fuente=("Registro normativo: el campo `vigencia` de cada Fuente "
+                "presente (`fuentes.estado_de_vigencia`) y "
+                "`fuentes.fuentes_con_eleccion_de_edicion_pendiente_tecnica`, "
+                "que deriva de el las seis fuentes de arriba; un test exige "
+                "que esta ficha las nombre todas y solo a ellas. El ancla del "
+                "Manual de Puentes a la AASHTO LRFD 2014 (7a ed.) y su permiso "
+                "de considerar actualizaciones: MP Introduccion, pag. impresa "
+                "43 (PDF 44), registro MP.INTRODUCCION#LRFD_2014 y "
+                "DIS-MP-LRFD-EDICION. Emisores consultados por busqueda web: "
+                "AASHTO (AASHTO Journal, tienda y lista HM-44), ASTM "
+                "(store.astm.org), FHWA (biblioteca de hidraulica)"),
+        # LO QUE CIERRA EL VACIO, que es la columna «Que lo resuelve» de la
+        # memoria: no un ensayo ni un dato, sino una declaracion del
+        # proyectista con lo que ella arrastra si elige la vigente.
+        reemplazado_por=("Declaracion del proyectista sobre el marco normativo "
+                         "tecnico del expediente (edicion citada o vigente, "
+                         "para las seis fuentes tecnicas a la vez); si elige "
+                         "la vigente, ademas la incorporacion de cada "
+                         "documento al registro y la reverificacion de sus "
+                         "citas"),
+        verificacion_pendiente=(
+            "Declarar la opcion; si es la vigente, conseguir cada documento y "
+            "abrir una sesion de registro por fuente, como las que "
+            "incorporaron A796 y la traduccion de M 294. Para AASHTO LRFD, "
+            "comparar ademas la 10a ed. con la 9a en las Secciones 3 y 5, que "
+            "la propia AASHTO anuncia revisadas"),
+        sin_consumidor=(
+            "Ningun modulo lo invoca: no es una magnitud que entre en una "
+            "formula sino la decision de marco normativo del expediente. Su "
+            "consumidor natural seria la memoria, imprimiendo junto a cada "
+            "fuente su vigencia y la eleccion; cablearlo es trabajo de M11, no "
+            "de esta declaracion, y hasta entonces la vigencia se lee en el "
+            "registro (`fuentes.estado_de_vigencia`) y en el manifiesto"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al fijar el marco normativo tecnico "
+                        "del expediente; para AASHTO LRFD, a propuesta suya "
+                        "y con la conformidad de la entidad y/o propietario, "
+                        "que es a quien el Manual de Puentes permite "
+                        "considerar las actualizaciones",
+            dominio="una de las dos opciones de la ventana, para las seis "
+                    "fuentes tecnicas a la vez",
+        ),
+    ),
+
+    "edicion_legal_que_rige_el_expediente": Criterio(
+        valor=None,                 # VACIO: lo declara el proyectista
+        # NIVEL NO MEDIBLE POR CORRIDA, por lo mismo que su hermano tecnico:
+        # ningun modulo lo invoca y esta censado en SIN_CONSUMIDOR_Y_SIN_MEDIDA
+        # (tests/test_nivel_medido.py). Es la decision de marco normativo
+        # LEGAL del expediente, y de expediente por definicion: la edicion
+        # de una norma derogada solo puede regir un expediente si un acto lo
+        # ampara, y eso se declara al abrir el expediente, no al calcular el
+        # perfil.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        # UN DICCIONARIO Y NO UN TEXTO, porque la exigencia se hace en la
+        # puerta y no en la frase: la declaracion trae `opcion` (una de las
+        # dos de `sensibilidad`), `fecha_inicio_expediente` y
+        # `acto_regimen_transitorio`, y `_verificar_forma` rechaza la que no
+        # los traiga con texto (campos_obligatorios). Medido en la auditoria
+        # adversarial de EXT-6: con forma `str`, declarar la opcion «citada»
+        # sin fecha ni acto pasaba la guardia, y el prompt pedia que la
+        # exigiera. Para la opcion «vigente» los dos campos tambien tienen
+        # sentido: la fecha del expediente y el acto que hace aplicable la
+        # edicion 2018.
+        forma=FORMA_DICT_CON_CAMPOS,
+        campos_obligatorios=("opcion", "fecha_inicio_expediente",
+                             "acto_regimen_transitorio"),
+        # DOS OPCIONES, Y LA PRIMERA NO ES UNA PREFERENCIA: es una condicion.
+        # Hasta EXT-6 el Manual de Puentes compartia ventana con cinco normas
+        # tecnicas de EE.UU. («citada o vigente, para las siete a la vez»), y
+        # eso trataba igual una RD derogada que una ASTM superada (EXT-N-01,
+        # PC-26). Aqui la opcion «citada» dice lo que exige.
+        sensibilidad=(
+            "la edicion citada: Manual de Puentes 2016 (RD 041-2016-MTC/14, "
+            "la que esta en normas/), admisible solo si el expediente se "
+            "inicio antes de la vigencia de la RD 19-2018-MTC/14 "
+            "(15-01-2019) y un acto verificado del regimen transitorio lo "
+            "ampara; exige declarar la fecha de inicio del expediente y ese "
+            "acto",
+            "la edicion vigente: Manual de Puentes 2018 (RD 19-2018-MTC/14); "
+            "exige conseguirla, incorporarla al registro como Fuente y "
+            "reverificar contra ella cada cita del Manual de Puentes"),
+        concepto="Edicion del Manual de Puentes que rige el expediente: la "
+                 "citada en el registro, derogada por resolucion, o la "
+                 "vigente",
+        justificacion=(
+            "El Manual de Puentes es la unica fuente del registro cuya "
+            "edicion citada fue DEROGADA por un acto: el ejemplar de normas/ "
+            "es la edicion 2016, aprobada por resolucion directoral del MTC, "
+            "y la edicion 2018 del Manual actualizado la dejo sin efecto. Una "
+            "norma tecnica extranjera con edicion posterior sigue siendo "
+            "citable a eleccion del proyectista; una norma legal derogada "
+            "solo rige un expediente si el regimen transitorio del acto que "
+            "la derogo lo ampara para los expedientes iniciados bajo ella, y "
+            "eso depende de dos hechos que este software no tiene: la fecha "
+            "de inicio del expediente y el texto del acto, que hay que leer "
+            "y no suponer. Por eso se separa del criterio tecnico y por eso "
+            "la opcion citada no es una casilla: es una declaracion con dos "
+            "datos. Se declara vacia. Lo que no cambia con la eleccion: "
+            "ninguna cita y ningun valor de calculo; cada cita del Manual "
+            "sigue anclada por sha1 a la edicion contra la que se verifico, "
+            "y si se elige la vigente hay que conseguirla, incorporarla y "
+            "reverificar contra ella cada cita del Manual de Puentes antes "
+            "de que el expediente pueda citarla"),
+        fuente=("Registro normativo: `fuentes.MP.vigencia` (acto aprobatorio "
+                "RD 041-2016-MTC/14, impreso en las PDF 2 y 3 del ejemplar; "
+                "derogado por RD 19-2018-MTC/14, El Peruano dispositivo "
+                "1730970-1, vigente desde el 15-01-2019, verificado por "
+                "busqueda web) y "
+                "`fuentes.fuentes_con_eleccion_de_edicion_pendiente_legal`, "
+                "que deriva de ese campo la unica fuente de esta ficha; un "
+                "test exige que la nombre a ella y solo a ella"),
+        reemplazado_por=("Declaracion del proyectista con la fecha de inicio "
+                         "del expediente y el acto del regimen transitorio "
+                         "que ampara la edicion citada, o la incorporacion "
+                         "del Manual de Puentes 2018 al registro y la "
+                         "reverificacion de sus citas"),
+        verificacion_pendiente=(
+            "Leer la RD 19-2018-MTC/14 y su regimen transitorio para "
+            "expedientes en curso, que no fue legible en linea; declarar la "
+            "fecha de inicio del expediente; y si rige la edicion 2018, "
+            "abrir una sesion de registro para el Manual de Puentes "
+            "actualizado y medir que numerales de los citados cambiaron. La "
+            "declaracion es un diccionario: {'opcion': <una de las dos>, "
+            "'fecha_inicio_expediente': <fecha>, 'acto_regimen_transitorio': "
+            "<acto leido>}"),
+        sin_consumidor=(
+            "Ningun modulo lo invoca: es la decision de marco normativo legal "
+            "del expediente, no una magnitud. Su consumidor natural seria la "
+            "memoria, imprimiendo junto a las citas del Manual de Puentes "
+            "que edicion rige y por que acto; cablearlo es trabajo de M11, y "
+            "hasta entonces la vigencia y los dos actos se leen en el "
+            "registro (`fuentes.MP.vigencia`) y en el manifiesto"),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, al fijar el marco normativo legal "
+                        "del expediente, con la fecha de inicio y el acto "
+                        "del regimen transitorio si elige la edicion citada",
+            dominio="diccionario con `opcion` (una de las dos de la "
+                    "ventana), `fecha_inicio_expediente` y "
+                    "`acto_regimen_transitorio`",
+        ),
+    ),
+
+    # =======================================================================
+    # --- T-6 --- Geometria de 7.B (INF-3.3.3, INF-5.1.18)
+    # =======================================================================
+
+    "metodo_longitud_conducto": Criterio(
+        # POR QUE ES UN CRITERIO Y NO UN CAMBIO DE FORMULA. El metodo por
+        # extremo es el que la fuente describe (HDS-5 2.2.4 b., Figura 2.4),
+        # pero mueve la L de todo punto y con ella el control de salida, la
+        # caida y la cota de salida: es una decision con consecuencias, y la
+        # formula anterior tiene que poder reproducirse para comparar. La
+        # ventana es el conjunto cerrado de los dos metodos implementados.
+        valor="por_extremo",
+        nivel=NIVEL_PERFIL,         # lo invoca `M7.longitud_del_conducto`,
+                                    # antes de la Fase 4, en toda corrida
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("terraplen_simetrico", "por_extremo"),
+        concepto="Metodo con que se calcula la longitud del conducto de la "
+                 "Sec. 7.B cuando no se declara: con la misma altura de "
+                 "terraplen en los dos taludes, o con la de cada extremo",
+        justificacion="Decide como se proyectan los taludes del terraplen "
+                      "para obtener la longitud del conducto que usan el "
+                      "control de salida (friccion y caida S*L), el TW por "
+                      "cota y la cota de salida de 7.B. «por_extremo», el "
+                      "valor del archivo, parte de la superposicion del "
+                      "barril estimado sobre la seccion transversal del "
+                      "cruce que el HDS-5 describe (num. 2.2.4 b. y Figura "
+                      "2.4, pag. impresa 2.8, cita HDS5_3ED.2.2.4#LONGITUD) "
+                      "-- un talud a cada lado y la salida mas baja que la "
+                      "entrada -- y le añade una eleccion que es del "
+                      "proyecto y no de la fuente: a cada lado el talud "
+                      "baja desde el borde de la plataforma hasta el fondo "
+                      "del conducto en ese extremo, como si el barril no "
+                      "tuviera altura. La figura de la fuente dibuja los "
+                      "taludes muriendo en la cara superior del barril, y "
+                      "la Lamina N 01 del Manual del MTC en la coronacion "
+                      "de los cabezales; medir al fondo da por eso la cota "
+                      "superior de la longitud. La salida queda S*L mas "
+                      "baja que la entrada, de modo que "
+                      "L = [ancho + talud*(H_entrada + H_salida0)] / "
+                      "[cos(esviaje) - talud*S], con H medida desde el "
+                      "borde de la plataforma hasta el fondo de la entrada "
+                      "(medido en la columna cota_fondo_entrada, o adoptado "
+                      "por 'origen_cota_fondo_entrada'), corregido el borde "
+                      "por bombeo o por peralte -- excluyentes en un mismo "
+                      "punto -- cuando la seccion tipica los declara. El "
+                      "proyecto mide al fondo y no a la clave porque la "
+                      "seccion aun no se conoce cuando la longitud se "
+                      "necesita: el HDS-5 dice que el diseño arranca con "
+                      "una longitud aproximada (num. 3.1.4, pag. impresa "
+                      "3.9, cita HDS5_3ED.3.1.4#LONGITUD) y manda encajar "
+                      "despues la seccion elegida (num. 3.3.5, pag. impresa "
+                      "3.25), que es lo que 7.B hace al imprimir la "
+                      "longitud entre cabezales a la clave. La cota "
+                      "superior no es el lado seguro por construccion: "
+                      "alargar el conducto suma friccion y resta caida, y "
+                      "con la pendiente de A-01 del corredor de referencia "
+                      "el HW de salida baja -- 0.9925 m con la longitud al "
+                      "fondo (18.869 m) contra 1.0002 m con la longitud a "
+                      "la clave (14.676 m), 7.7 mm --, sin consecuencia en "
+                      "ese punto porque gobierna el control de entrada "
+                      "(1.042 m). Con el fondo de entrada adoptado igual al "
+                      "terreno hay ademas un sesgo declarado: esa cota es "
+                      "la del terreno en el eje, y el metodo ancla ahi la "
+                      "entrada y carga toda la caida aguas abajo (para un "
+                      "lecho de pendiente S que pasara por ella en el eje, "
+                      "la longitud de A-01 seria 18.638 m y no 18.869); con "
+                      "el fondo medido en el cauce es exacto. "
+                      "«terraplen_simetrico» es la "
+                      "formula que el proyecto usaba hasta T-6, "
+                      "L = (ancho + 2*talud*H_eje)/cos(esviaje) con H_eje = "
+                      "cota de rasante - cota de TERRENO, y es el caso "
+                      "particular del anterior cuando el fondo de entrada "
+                      "es el terreno, no hay bombeo y se desprecia la caida "
+                      "en la proyeccion del talud de salida. Las dos "
+                      "difieren en el factor cos/(cos - talud*S) -- 1.3 % "
+                      "en A-01 del corredor de referencia, con talud 2.0 y "
+                      "S = 0.006 -- y, cuando el fondo de entrada se mide "
+                      "bajo el terreno, en talud*2*(terreno - fondo), que "
+                      "es la parte que el metodo anterior no veia. El signo "
+                      "sobre el HW de salida no es fijo: alargar el "
+                      "conducto suma friccion y resta caida (ver la nota de "
+                      "'talud_terraplen')",
+        fuente="HDS-5 3a ed. (FHWA-HIF-12-026), num. 2.2.4 'Roadway Data', "
+               "inciso b. 'Culvert Length' y Figura 2.4, pag. impresa 2.8 "
+               "(PDF 70); num. 3.1.4, pag. impresa 3.9 (PDF 91); num. "
+               "3.3.5, pag. impresa 3.25 (PDF 107). La fuente describe el "
+               "procedimiento grafico con el barril estimado; la expresion "
+               "cerrada es su algebra, hecha por el proyecto, y medir al "
+               "fondo es eleccion del proyecto. Que metodo aplica es "
+               "adopcion: la "
+               "hoja de ruta (Sec. 7.B) solo escribe 'ancho de plataforma "
+               "+ proyeccion de taludes, afectada por esviaje'",
+        reemplazado_por="La longitud MEDIDA sobre la seccion transversal "
+                        "del cruce en los planos, declarada por punto como "
+                        "dato externo `longitud_m`: un dato medido no se "
+                        "sustituye por un metodo",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: las dos formulas son geometria y "
+                        "ninguna norma manda una",
+            dominio="declaracion del metodo; el conjunto cerrado viaja en "
+                    "`sensibilidad`",
+        ),
+    ),
+
+    "desnivel_minimo_entrega_m": Criterio(
+        # CERO NO ES «SIN CRITERIO»: es la entrega A NIVEL del fondo del
+        # receptor, la ubicacion a) de la Lamina N 01 del Manual, y es lo que
+        # G2 verificaba hasta T-6 sin decirlo en ninguna ficha. Con cualquier
+        # valor de la ventana los puntos del corredor de referencia conservan
+        # su veredicto de G2 (medido: el menor margen es 0.31 m).
+        valor=0.0,
+        nivel=NIVEL_PERFIL,         # lo invoca G2 en 7.B (`M7.g2_cota_salida`)
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.0, 0.30),
+        concepto="Desnivel minimo, en metros, que la cota de fondo de la "
+                 "salida del conducto debe guardar SOBRE la cota de fondo "
+                 "del cuerpo receptor (verificacion G2 de la Sec. 7.B)",
+        justificacion="Decide cuanto por encima del fondo del receptor "
+                      "tiene que quedar la salida para que G2 cumpla: "
+                      "cota_salida >= cota_fondo_receptor + desnivel. La "
+                      "fuente no da numero. El Manual del MTC exige que la "
+                      "pendiente de la alcantarilla no altere "
+                      "desmesuradamente la erosion y la sedimentacion (num. "
+                      "4.1.1.3.3, pag. impresa 71, cita MC_HHD.4.1.1.3.3) "
+                      "-- dos oraciones, sin cifra y sin mencion de la "
+                      "entrega -- y su Lamina N 01 tipifica las ubicaciones "
+                      "sin acotar ninguna: a) siguiendo la pendiente del "
+                      "cauce, con la salida a nivel del fondo; c) y d) con "
+                      "la salida SOBRE el cauce, y la advertencia de que "
+                      "entonces el terreno a la salida debe ser roca u otro "
+                      "material resistente a la erosion, o enrocado. De ahi "
+                      "que el desnivel no sea conservador en un solo "
+                      "sentido: una salida bajo el fondo del receptor queda "
+                      "enterrada y se colmata (lo que G2 impide con "
+                      "cualquier valor de la ventana), y una salida elevada "
+                      "descarga en caida y socava, de modo que cada "
+                      "centimetro de desnivel exigido es proteccion de "
+                      "salida que hay que dimensionar. Se adopta 0.0, la "
+                      "entrega a nivel: es la ubicacion a) de la lamina, la "
+                      "que no introduce escalon, y la lectura minima del "
+                      "amarre que la Sec. 7.B pide. El REMANSO del receptor "
+                      "no se cubre con este desnivel sino con el TW de la "
+                      "Sec. 1.3, que entra al control de salida. El extremo "
+                      "alto de la ventana, 0.30 m, es la holgura que un "
+                      "proyecto puede querer contra el sedimento que el "
+                      "propio receptor deposita en su fondo entre "
+                      "limpiezas; no sale de una fuente y por eso es "
+                      "ventana de un [A] y no rango citado",
+        fuente="NINGUNA fuente fija el valor. Manual de Hidrologia, "
+               "Hidraulica y Drenaje (MTC), num. 4.1.1.3.3 'Pendiente "
+               "longitudinal', pag. impresa 71 (PDF 74), y Lamina N 01 "
+               "'Ubicacion tipica de alcantarillas respecto a la pendiente "
+               "del cauce', pag. impresa 206 (PDF 209). El numeral exige "
+               "cuidar la PENDIENTE y no habla de la entrega; la lamina "
+               "tipifica donde puede quedar la salida y no acota ningun "
+               "desnivel. Contrastar la cota de salida con el fondo del "
+               "receptor es lectura del proyecto. La hoja de ruta (Sec. 7.B) "
+               "pide las cotas 'amarradas al perfil del cauce y a la cota "
+               "de fondo del receptor', sin desnivel",
+        reemplazado_por="El desnivel de entrega que el levantamiento del "
+                        "receptor y el estudio de su sedimentacion "
+                        "justifiquen (seccion medida del dren, cota de "
+                        "limpieza de la Junta de Usuarios), por punto",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: ninguna norma ni fuente tecnica de "
+                        "normas/ da un desnivel de entrega",
+            dominio="m >= 0; 0 es la entrega a nivel del fondo del receptor",
+        ),
+    ),
+
+    # --- T-3 --- (cadena T, INF-0.4) VC2: el empalme de la salida de un
+    # paso de canal con el fondo del canal aguas abajo. Lo pidio la cadena T
+    # sobre lo que §16.17 de docs/ruta_familia_c.md dejo «evaluado, medido,
+    # no implementado», y con los dos avisos que aquel apartado puso: la
+    # tolerancia no la da ninguna norma de normas/ como TOLERANCIA DE UN
+    # EMPALME -- la mas cercana es la de aceptacion de la cota superior de
+    # una placa de concreto, EG-2013 503.11 g) --, y en un paso de canal
+    # `cota_fondo_receptor` es el MISMO canal aguas abajo (homonimia).
+    # La verificacion AVISA y no detiene: el desajuste no depende de la
+    # seccion -- subir de B x H no lo corrige --, sino de la cota de entrada
+    # y de la pendiente, que son datos (G3 y V10 tienen la misma forma).
+    "desajuste_empalme_canal_m": Criterio(
+        valor=0.010,
+        nivel=NIVEL_PERFIL,         # lo invoca VC2 en 7.B (`M7.vc2_empalme_canal`)
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        sensibilidad=(0.010, 0.020),
+        concepto="Desajuste maximo, en metros y en valor absoluto, entre la "
+                 "cota de fondo de la salida de un paso de canal (Familia C) "
+                 "y el fondo del canal aguas abajo (verificacion VC2)",
+        justificacion="Decide cuanto puede quedar la salida del marco por "
+                      "encima o por debajo del fondo del canal aguas abajo "
+                      "antes de que VC2 lo avise: |cota_salida - "
+                      "cota_fondo_receptor| <= desajuste. En un paso de "
+                      "canal el conducto CONTINUA el canal: un escalon hacia "
+                      "arriba descarga en caida sobre el lecho y uno hacia "
+                      "abajo deja la salida enterrada y se colmata, de modo "
+                      "que la banda es de dos lados (§16.17 de "
+                      "docs/ruta_familia_c.md). La fuente no da la cifra "
+                      "como tolerancia de un empalme. Se adopta 0.010 m "
+                      "por analogia con la tolerancia de aceptacion de la "
+                      "cota superior de una placa de concreto, -10 mm a +10 "
+                      "mm (EG-2013, num. 503.11 g) 2., pag. impresa 934, "
+                      "cita EG2013.503.11g#COTAS): la cota superior de la "
+                      "losa de fondo ES el invert del marco, y un empalme "
+                      "que el diseño deja fuera de la tolerancia con que "
+                      "se recibe esa losa no se puede construir como "
+                      "empalme. El extremo alto de la ventana, 0.020 m, es "
+                      "la tolerancia de cota de la excavacion que recibe la "
+                      "losa (EG-2013, num. 501.07, pag. impresa 889, cita "
+                      "EG2013.501.07). VC2 avisa y no detiene: el desajuste "
+                      "lo fijan la cota de entrada y la pendiente, que son "
+                      "datos, y ninguna seccion lo corrige",
+        fuente="NINGUNA fuente fija la tolerancia de un empalme con un "
+               "canal. Las dos que se usan por analogia: EG-2013, num. "
+               "503.11 g) 2. 'Otras tolerancias' ('Cotas superiores de "
+               "placas y veredas: -10 mm a +10 mm.'), pag. impresa 934 (PDF "
+               "942), y num. 501.07 'Tolerancias' de la excavacion para "
+               "estructuras ('2 cm en cota'), pag. impresa 889 (PDF 897). "
+               "El requisito que VC2 lee lo escribe la Sec. 2.3 de la hoja "
+               "de ruta («No puede alterar la rasante hidraulica ni el "
+               "borde libre del canal»), y la tipologia del cruce la "
+               "dibuja la Lamina N 03 del Manual (marco en cruce de canal "
+               "de riego), sin acotar nada",
+        reemplazado_por="La tolerancia de empalme que fije el proyecto del "
+                        "canal (ANA / Junta de Usuarios del Bajo Piura) o la "
+                        "especificacion tecnica de la obra",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, por analogia con la tolerancia de "
+                        "aceptacion del EG-2013 para la cota superior de una "
+                        "placa de concreto",
+            dominio="m > 0, valor absoluto del desajuste admisible",
+        ),
+    ),
+}
+
+
+# ---------------------------------------------------------------------------
+# Coherencia de las etiquetas
+# ---------------------------------------------------------------------------
+
+ETIQUETAS_VALIDAS = ("N", "N->", "S", "C", "A")
+
+# Salida que todo mensaje de rango debe ofrecer. El error no es "tu numero
+# esta mal": es que el numero y el rango se contradicen, y quien declaro el
+# rango puede haber sido el equivocado.
+_SALIDA_RANGO = (
+    "si el rango ya no es el correcto, corrigelo en criterios_adoptados.py; "
+    "el rango y el valor se defienden juntos en la memoria"
+)
+
+
+# Un ancla es "<archivo>.md Sec. <n>", relativo a docs/.
+_ANCLA = re.compile(r"^(?P<doc>[\w.\-]+\.md)\s+Sec\.\s+(?P<sec>[\w.\-]+)$")
+_DOCS = Path(__file__).resolve().parents[1] / "docs"
+
+
+@lru_cache(maxsize=None)
+def _secciones_de(documento: str) -> frozenset:
+    """
+    Titulos de seccion de un documento de docs/, como anclas ("14.a", "9").
+
+    Se cachea porque la guardia corre en cada declaracion en caliente y el
+    documento no cambia dentro de una corrida. Si el archivo no existe
+    devuelve None, y quien llama lo distingue de "existe pero no tiene esa
+    seccion": son dos errores distintos y el mensaje lo dice.
+    """
+    ruta = _DOCS / documento
+    if not ruta.is_file():
+        return None
+    return frozenset(
+        m.group(1) for m in re.finditer(
+            r"^#{2,4}\s+([\w.\-]+?)\.?\s",
+            ruta.read_text(encoding="utf-8"), re.MULTILINE)
+    )
+
+
+def _verificar_ancla_de_vacio(clave: str, ancla: str) -> None:
+    """
+    El ancla tiene que RESOLVER, no solo estar bien escrita.
+
+    Un valor que dice cubrir un vacio verificado y apunta a un registro que no
+    existe es peor que uno que no dice nada: afirma una diligencia que nadie
+    hizo. Se comprueba al importar, igual que el test de referencias comprueba
+    los archivo:linea del manifiesto.
+    """
+    m = _ANCLA.match(ancla.strip())
+    if not m:
+        raise ValueError(
+            f"'{clave}' declara vacio_verificado={ancla!r}, que no tiene la "
+            "forma '<documento>.md Sec. <n>' (por ejemplo "
+            "'manifiesto_citas.md Sec. 14.a'). El ancla existe para que la "
+            "memoria pueda mandar al revisor al registro: si no resuelve, no "
+            "sirve"
+        )
+    documento, seccion = m.group("doc"), m.group("sec")
+    secciones = _secciones_de(documento)
+    if secciones is None:
+        raise ValueError(
+            f"'{clave}' declara vacio_verificado={ancla!r} pero "
+            f"docs/{documento} no existe"
+        )
+    if seccion not in secciones:
+        raise ValueError(
+            f"'{clave}' declara vacio_verificado={ancla!r} pero "
+            f"docs/{documento} no tiene una Sec. {seccion}. El vacio que este "
+            "valor dice cubrir no esta registrado: o se registra, o el campo "
+            "no se declara"
+        )
+
+
+# ---------------------------------------------------------------------------
+# El modo de resolucion (Sec. 4.3 del plan v12)
+# ---------------------------------------------------------------------------
+
+# Los cinco rangos de `normativa/esquema.py` §7. Se importan por NOMBRE y no
+# por el alias `RangoNormativo` porque `isinstance` no acepta un `Union`, y
+# porque la lista explicita hace visible en revision que la familia es cerrada.
+_RANGOS_NORMATIVOS = (_esquema.IntervaloAdmisible, _esquema.TechoUnico,
+                      _esquema.PisoUnico, _esquema.ConjuntoDeMaximos,
+                      _esquema.BandaDeInterpolacion)
+
+
+@lru_cache(maxsize=1)
+def _registro():
+    """
+    El registro normativo, armado una sola vez. La guardia lo necesita para
+    comprobar que una tabla citada por una `resolucion` EXISTE: un
+    `DeTabla` que apunta a una tabla que nadie transcribio prometeria una
+    ventana que no se puede pintar.
+    """
+    return _registro_normativo.construir()
+
+
+def verificar_resolucion(clave: str, r: Resolucion) -> ModoDeResolucion:
+    """
+    Forma de la resolucion y, cuando apunta al registro, que lo apuntado
+    exista. Es el criterio de salida de la Sec. 4.3 hecho guardia:
+
+        ninguna variable sin modo
+        ningun `DeTabla` sin tabla existente en el registro
+        ningun `EnRango` sin rango con semantica declarada
+
+    El tercero se comprueba por TIPO: la celda del registro tiene que ser uno
+    de los cinco rangos de `normativa/esquema.py` §7, donde la semantica ES el
+    tipo. Un float suelto no es un rango, y un rango sin semantica no existe.
+
+    ES PUBLICA Y VIVE AQUI, aunque no sea exclusiva de los criterios, por dos
+    razones: aqui esta la poblacion mas grande de las tres (59 de las 83
+    variables de entrada) y aqui ya esta el registro, del que este archivo
+    depende por `constantes_normativas`. `variables_entrada.py` la reutiliza
+    para las 17 columnas del CSV en vez de escribir una segunda copia que
+    pudiera divergir. Las reglas que valen SOLO para un criterio -- que
+    `Libre.opciones` este vacio, que un `de_ensayo` no lleve sensibilidad, que
+    el rotulo `de_catalogo` y el modo digan lo mismo -- no estan aqui sino en
+    `_verificar_criterio`.
+
+    Devuelve el modo, para que quien llame no tenga que volver a deducirlo.
+    """
+    modo = modo_de(r)          # levanta TypeError si no es de la familia
+
+    if isinstance(r, Libre):
+        if not r.que_lo_fija:
+            raise ValueError(
+                f"'{clave}' se resuelve `libre` y no dice QUIEN pone el "
+                "numero. Sin eso la ventana ofrece un campo vacio y la "
+                "memoria no puede escribir su procedencia"
+            )
+
+    elif isinstance(r, DeTabla):
+        if not r.tablas:
+            raise ValueError(f"'{clave}' se resuelve `de_tabla` y no cita "
+                             "ninguna tabla")
+        if not r.que_elige:
+            raise ValueError(f"'{clave}' se resuelve `de_tabla` y no dice "
+                             "QUE se elige sobre la tabla")
+        if (r.fila_id or r.columna_id) and len(r.tablas) != 1:
+            raise ValueError(
+                f"'{clave}' fija fila o columna y cita {len(r.tablas)} "
+                "tablas: no se sabe de cual. La fila y la columna solo "
+                "tienen sentido con una tabla"
+            )
+        for tabla_id in r.tablas:
+            tabla = _tabla_del_registro(clave, tabla_id)
+            if r.fila_id:
+                try:
+                    tabla.fila(r.fila_id)
+                except KeyError:
+                    raise ValueError(
+                        f"'{clave}' apunta a la fila '{r.fila_id}' de "
+                        f"'{tabla_id}', que la tabla no tiene"
+                    ) from None
+            if r.columna_id:
+                try:
+                    tabla.columna(r.columna_id)
+                except KeyError:
+                    raise ValueError(
+                        f"'{clave}' apunta a la columna '{r.columna_id}' de "
+                        f"'{tabla_id}', que la tabla no tiene"
+                    ) from None
+        if r.elegido_por and r.elegido_por not in CRITERIOS:
+            raise ValueError(
+                f"'{clave}' dice que la fila la elige '{r.elegido_por}', que "
+                "no es un criterio declarado"
+            )
+
+    elif isinstance(r, EnRango):
+        tabla = _tabla_del_registro(clave, r.tabla_id)
+        try:
+            celda = tabla.fila(r.fila_id).valores[r.columna_id]
+        except KeyError:
+            raise ValueError(
+                f"'{clave}' apunta a la celda "
+                f"({r.fila_id}, {r.columna_id}) de '{r.tabla_id}', que la "
+                "tabla no tiene"
+            ) from None
+        if not isinstance(celda, _RANGOS_NORMATIVOS):
+            raise ValueError(
+                f"'{clave}' se resuelve `en_rango` y la celda "
+                f"({r.fila_id}, {r.columna_id}) de '{r.tabla_id}' es "
+                f"{type(celda).__name__}, no un rango. Un `en_rango` sin "
+                "rango con SEMANTICA declarada es lo que deja a la ventana "
+                "pintar como minimo el primero de dos maximos (NOR-HID-04)"
+            )
+        if not r.que_acota:
+            raise ValueError(f"'{clave}' se resuelve `en_rango` y no dice "
+                             "QUE acota el rango")
+
+    elif isinstance(r, Derivada):
+        if not r.de or not r.regla:
+            raise ValueError(
+                f"'{clave}' se resuelve `derivada` y no declara de que se "
+                "deriva o con que regla. La ventana no lo deja editar: si no "
+                "dice de donde sale, el usuario se queda sin nada que leer"
+            )
+
+    elif isinstance(r, DeEnsayo):
+        if not r.ensayo or not r.trazabilidad_exigida:
+            raise ValueError(
+                f"'{clave}' se resuelve `de_ensayo` y no declara el "
+                "procedimiento o la trazabilidad que hay que exigir. Un dato "
+                "determinado se defiende con la lectura que lo reproduce"
+            )
+
+    elif isinstance(r, DeCatalogo):
+        if not r.advertencia:
+            raise ValueError(
+                f"'{clave}' se resuelve `de_catalogo` y no lleva "
+                "advertencia. El rotulo es todo el punto del modo: sin el, "
+                "un tope de proveedor se lee como exigencia normativa "
+                "(NOR-PRO-01, NOR-PRO-02)"
+            )
+        if r.catalogo_id not in _ids_de_catalogo():
+            raise ValueError(
+                f"'{clave}' cita el catalogo '{r.catalogo_id}', que no esta "
+                f"en el registro (hay: {sorted(_ids_de_catalogo())})"
+            )
+
+    return modo
+
+
+def _tabla_del_registro(clave: str, tabla_id: str):
+    try:
+        return _registro().tabla(tabla_id)
+    except KeyError:
+        raise ValueError(
+            f"'{clave}' declara que su valor sale de la tabla '{tabla_id}', "
+            "que no esta en el registro normativo. Una tabla que no esta "
+            "transcrita no se puede mostrar entera, que es lo que el modo "
+            "`de_tabla` promete"
+        ) from None
+
+
+def _ids_de_catalogo() -> frozenset:
+    return frozenset(c.id for c in _registro().catalogos)
+
+
+def _es_real(x: Any) -> bool:
+    """
+    Un numero real de verdad. `bool` queda fuera a proposito: en Python es
+    subclase de `int`, y sin esta exclusion `True` pasaria por un 1.0 valido
+    dentro de cualquier rango que contenga al 1.
+    """
+    return isinstance(x, numbers.Real) and not isinstance(x, bool)
+
+
+def _rango_numerico(sensibilidad: Any) -> Optional[Tuple]:
+    """
+    La sensibilidad si es un rango numerico validable; None si es SIMBOLICA.
+
+    La discriminacion es por FORMA, nunca por nombre de criterio: una
+    2-tupla de reales se valida entera, y cualquier otra cosa no vacia -- una
+    cadena como "2*phi_relleno_trasdos/3", un invocable, una tupla con un
+    extremo simbolico -- se acepta tal cual y no se toca. No se hace `float()`
+    sobre ella, no se coacciona a un formato que no tiene y no se descarta en
+    silencio: se declara, se imprime en el reporte como esta escrita, y el
+    analisis de sensibilidad la pide aparte.
+    """
+    if isinstance(sensibilidad, tuple) and all(_es_real(x) for x in sensibilidad):
+        return sensibilidad
+    return None
+
+
+def _verificar_sensibilidad(clave: str, c: Criterio) -> None:
+    """
+    Forma del rango, orden de sus extremos, y el valor dentro de el.
+
+    TRES FORMAS DE VENTANA, y la tercera llego en EXT-1 (EXT-V-05):
+
+      * un par numerico (min, max): se valida entero, y el valor -- escalar o
+        PAR -- tiene que caer dentro;
+      * una ventana SIMBOLICA (una cadena, una tupla con un extremo
+        simbolico): se declara, se imprime y no se evalua;
+      * un dict {campo: (min, max)} para los criterios cuyo valor es un dict
+        ('seccion_receptor' es el primero). Hasta EXT-1 su ventana estaba
+        escrita EN PROSA -- «n: 0.025 a 0.035» -- y por eso caia en la forma
+        simbolica: `n='0.03'` llegaba a M3 como texto y salia TypeError,
+        `n=True` valia 1, un tirante x5 pasaba y una clave desconocida se
+        ignoraba. La ventana por campo se evalua en `_verificar_dict`.
+
+    Y UN PAR ES UN PAR (PC-01): cuando el valor es una tupla o una lista bajo
+    un rango numerico, se exige que tenga DOS extremos y que esten en orden.
+    `n_manning_hdpe = (0.013, 0.010)` pasaba -- cada extremo cae en la
+    ventana -- y movia todas las velocidades de M3->M5->M6 al lado no
+    conservador: con Q = 1.167 m3/s y S = 0.020 el par nominal descarta el
+    HDPE por V3 y el invertido aprueba 0.90 m. El «no validamos el orden» de
+    `progresion_de_cajon` es un argumento de dos dimensiones que no se
+    traslada a un par escalar que la hoja de ruta (Sec. 4.1) presupone
+    ordenado: n_max para capacidad, n_min para velocidad.
+    """
+    s = c.sensibilidad
+    if s is None:
+        return
+    if not s:
+        raise ValueError(
+            f"'{clave}' declara una sensibilidad vacia ({s!r}). O declara el "
+            f"rango que se pudo elegir, o no declares el campo"
+        )
+
+    if isinstance(s, dict):
+        _verificar_dict(clave, c)
+        return
+
+    rango = _rango_numerico(s)
+    if rango is None:
+        return              # simbolica: declarada, respetada, no evaluada
+
+    if len(rango) != 2:
+        raise ValueError(
+            f"'{clave}' declara una sensibilidad de {len(rango)} extremos "
+            f"({s!r}). Un rango numerico tiene dos: minimo y maximo"
+        )
+    minimo, maximo = rango
+    if minimo > maximo:
+        raise ValueError(
+            f"'{clave}' tiene el rango de sensibilidad invertido ({s!r}): "
+            f"el minimo {minimo!r} es mayor que el maximo {maximo!r}"
+        )
+
+    if c.valor is None:
+        return              # sin valor no hay nada que contrastar
+
+    # El valor puede ser un escalar o una tupla (la regla de doble n de
+    # Sec. 4.1.1: `n_manning_hdpe` es un par, no un numero). En los dos casos
+    # se exige que CADA numero caiga dentro del rango declarado.
+    es_par = isinstance(c.valor, (tuple, list))
+    candidatos = tuple(c.valor) if es_par else (c.valor,)
+    if es_par and len(candidatos) != 2:
+        raise ValueError(
+            f"'{clave}' declara {c.valor!r}, de {len(candidatos)} elementos, "
+            f"bajo un rango de sensibilidad numerico {s!r}. Un valor en forma "
+            f"de secuencia es un PAR (minimo, maximo) -- la regla de doble n "
+            f"de la Sec. 4.1 -- y tiene exactamente dos extremos"
+        )
+    for x in candidatos:
+        if not _es_real(x):
+            raise ValueError(
+                f"'{clave}' declara un rango de sensibilidad numerico {s!r} "
+                f"pero su valor es {c.valor!r}, que no es un numero. "
+                f"Un rango numerico no puede defender un valor que no lo es: "
+                f"{_SALIDA_RANGO}"
+            )
+        if not minimo <= x <= maximo:
+            raise ValueError(
+                f"'{clave}' tiene el valor {c.valor!r} fuera del rango de "
+                f"sensibilidad que el mismo declara, {s!r} "
+                f"(el extremo infractor es {x!r}). {_SALIDA_RANGO}"
+            )
+    if es_par and not candidatos[0] <= candidatos[1]:
+        raise ValueError(
+            f"'{clave}' declara el par {c.valor!r} INVERTIDO: el primer "
+            f"extremo es el minimo y el segundo el maximo (regla de doble n, "
+            f"Sec. 4.1: n_max para capacidad, n_min para velocidad). Con el "
+            f"par al reves todas las velocidades salen del lado no "
+            f"conservador sin que ninguna verificacion lo note"
+        )
+
+
+def _verificar_dict(clave: str, c: Criterio) -> None:
+    """
+    La ventana ESTRUCTURADA {campo: (min, max)} de un criterio de valor dict
+    (EXT-V-05).
+
+    Se exige que la ventana misma este bien formada -- cada campo un par
+    numerico ordenado -- y, si hay valor, que el valor sea un dict con
+    EXACTAMENTE los campos de la ventana: una clave desconocida es una errata
+    que antes se ignoraba, y una clave que falta es un campo que M3 iba a
+    pedir con KeyError. Cada campo se contrasta con `_es_real` -- un texto o
+    un bool no son numeros -- y con su propio rango.
+    """
+    s = c.sensibilidad
+    for campo, rango in s.items():
+        par = _rango_numerico(rango)
+        if par is None or len(par) != 2:
+            raise ValueError(
+                f"'{clave}' declara para el campo {campo!r} la ventana "
+                f"{rango!r}, que no es un par numerico (minimo, maximo). Una "
+                f"sensibilidad estructurada lleva un par por campo"
+            )
+        if par[0] > par[1]:
+            raise ValueError(
+                f"'{clave}' tiene invertida la ventana del campo {campo!r} "
+                f"({rango!r}): el minimo es mayor que el maximo"
+            )
+    if c.valor is None:
+        return
+    if not isinstance(c.valor, dict):
+        raise ValueError(
+            f"'{clave}' declara una sensibilidad por campo ({sorted(s)}) y su "
+            f"valor es {c.valor!r}, que no es un dict con esos campos. "
+            f"{_SALIDA_RANGO}"
+        )
+    desconocidas = sorted(set(c.valor) - set(s))
+    faltantes = sorted(set(s) - set(c.valor))
+    if desconocidas or faltantes:
+        raise ValueError(
+            f"'{clave}' declara los campos {sorted(c.valor)} y su ventana "
+            f"conoce {sorted(s)}: desconocidos {desconocidas}, faltantes "
+            f"{faltantes}. Un campo que la ventana no conoce es una errata "
+            f"que antes se ignoraba en silencio; uno que falta es el que el "
+            f"consumidor iba a pedir y no iba a encontrar"
+        )
+    for campo, rango in s.items():
+        x = c.valor[campo]
+        minimo, maximo = rango
+        if not _es_real(x):
+            raise ValueError(
+                f"'{clave}' declara {campo!r} = {x!r}, que no es un numero, "
+                f"bajo la ventana numerica {rango!r}. Un texto o un bool no "
+                f"se defienden con un rango: {_SALIDA_RANGO}"
+            )
+        if not minimo <= x <= maximo:
+            raise ValueError(
+                f"'{clave}' declara {campo!r} = {x!r} fuera de la ventana "
+                f"que el mismo declara para ese campo, {rango!r}. "
+                f"{_SALIDA_RANGO}"
+            )
+
+
+def _numeros_de(valor: Any):
+    """
+    Todos los numeros reales que hay DENTRO de un valor de criterio, sea un
+    escalar, una tupla (la doble n de Sec. 4.1.1), una lista o un dict (el
+    predimensionamiento del cabezal, la exposicion quimica del EMS).
+
+    Existe para que la guardia de finitud no dependa de la FORMA del valor:
+    un `inf` escondido dentro de un dict entra al calculo igual que uno
+    escrito como escalar.
+    """
+    if isinstance(valor, dict):
+        for v in valor.values():
+            yield from _numeros_de(v)
+    elif isinstance(valor, (tuple, list, set, frozenset)):
+        for v in valor:
+            yield from _numeros_de(v)
+    elif isinstance(valor, str):
+        # UN TEXTO QUE SE LEE COMO NUMERO CUENTA COMO NUMERO. No es celo: es
+        # la puerta que quedaba abierta despues de cerrar `--declarar
+        # CLAVE=nan`. Con comillas -- `--declarar "CLAVE='nan'"` --
+        # `ast.literal_eval` tiene EXITO y devuelve la cadena 'nan', de modo
+        # que el respaldo a texto de `cli.py` no se ejecuta y su guardia no
+        # llega a mirar. El criterio queda con la cadena 'nan' guardada, y el
+        # primer consumidor que haga `float()` sobre el -- `M9_cabezal.
+        # cuantia_de_diseno` es el caso medido -- lo devuelve al calculo
+        # convertido en el mismo NaN que se rechazo, con la memoria
+        # imprimiendo `cuantia_adoptada = nan`.
+        #
+        # Solo cae el texto que se LEE como numero no finito. Un criterio
+        # categorico ('Bishop_Simplificado', 'cota_terreno', 'flexible') no
+        # se lee como numero y pasa intacto, que es para lo que el respaldo a
+        # texto existe.
+        try:
+            leido = float(valor)
+        except (TypeError, ValueError, OverflowError):
+            return
+        if not math.isfinite(leido):
+            yield leido
+    elif _es_real(valor):
+        yield valor
+
+
+def _verificar_finitud(clave: str, c: Criterio) -> None:
+    """
+    Ningun numero de un criterio puede ser infinito ni NaN, tenga o no rango
+    de sensibilidad declarado.
+
+    Por que hace falta aparte del rango (MAT-D14, criterio de salida de S16:
+    "ningun dato no finito entra al pipeline como diagnostico falso"): el
+    rango solo defiende a los criterios que declaran uno. Un criterio [A] con
+    `sensibilidad=None` -- 'talud_terraplen' es el caso vivo -- aceptaba
+    `inf` y `nan` por los tres caminos de declaracion. Y el camino existe de
+    verdad: `cli.py::declarar_criterios` resuelve el texto de `--declarar`
+    con `ast.literal_eval`, y `ast.literal_eval("1e999")` devuelve `inf` sin
+    error. Con `talud_terraplen = inf`, `M7.proyeccion_taludes` devuelve
+    `inf`, `longitud_conducto` devuelve `inf` y `cota_salida` devuelve
+    `-inf`: la memoria imprime un diagnostico entero construido sobre un
+    numero que no lo es.
+
+    `nan` es peor que `inf` y por eso no basta con acotar por rango: `nan`
+    es FALSO frente a `<=` y frente a `>=` a la vez, de modo que atraviesa
+    tanto una comprobacion escrita como "esta dentro del rango" como una
+    escrita como "no esta fuera".
+
+    LA GUARDIA ES AQUI Y NO EN `cli.py` porque aqui es el cuello: pasan por
+    `_verificar_criterio` las tres vias de declaracion --- el `--declarar` de
+    la CLI, el boton de la GUI y la escritura permanente ---, y una guardia
+    puesta en una sola de ellas deja las otras dos. La primera version de
+    este cierre puso la del texto en `cli.py`, en el brazo `except` de
+    `ast.literal_eval`, y una revision adversarial la esquivo con comillas:
+    `--declarar "CLAVE='nan'"` hace que `literal_eval` tenga exito, el brazo
+    `except` no se ejecute, y la cadena 'nan' entre entera. La de `cli.py` se
+    conserva porque da un mensaje mejor en su caso; la que cierra la clase es
+    esta.
+
+    HASTA DONDE LLEGA ESTA GUARDIA, dicho para que no se sobreentienda. Cierra
+    la PUERTA: ningun no-finito ENTRA. No cierra el OVERFLOW ARITMETICO, que
+    es otro defecto: con `talud_terraplen = 1e308` --- finito, y sin rango de
+    sensibilidad que lo acote --- `M7.proyeccion_taludes` multiplica y
+    devuelve `inf`, y el informe sale con `"longitud_m": {"valor": "inf"}`. Se
+    alcanza tambien sin criterio absurdo, solo desde el CSV: una
+    `cota_rasante = 1e308` pasa `_a_float`, `_valida_rangos` y
+    `_valida_cruzadas`, porque NINGUNA cota tiene techo en dominios.py, y
+    ponerle uno seria inventar un valor de proyecto, que es lo que CLAUDE.md
+    prohibe expresamente.
+
+    ESO YA NO ESTA ABIERTO. Cuando se escribio este parrafo el defecto no
+    tenia ID de auditoria y quedaba declarado aqui sin cerrar; S16.5 lo dio de
+    alta como SIS-G-01 y lo cerro donde corresponde, que NO es este archivo:
+    la guardia esta a la SALIDA de M7 (`M7_geometria._exigir_finito`), porque
+    un resultado no finito nacido de entradas finitas no es un dato mal
+    declarado del expediente sino el limite de la aritmetica, y por eso
+    tampoco sale como `DatoInvalidoError` sino con la clase que S16.5 anadio a
+    la taxonomia para nombrarlo, `modelos.LimiteNumericoError`. La misma
+    sesion cerro con esa clase sus dos hermanos de M4 --- SIS-G-02 (el area se
+    anula despues del solver) y la mitad alcanzable de MAT-O18 (`Q ** 2`
+    desborda) ---, que reventaban en crudo con ZeroDivisionError y
+    OverflowError. La division del trabajo se mantiene: aqui la ENTRADA, alla
+    la SALIDA.
+
+    Y no todo `inf` que llega a la memoria es ese defecto. SON DOS LOS
+    LEGITIMOS, no uno --- este parrafo nombraba solo el primero ---:
+    `M9.verificar_volteo` y `M9.verificar_deslizamiento` devuelven `math.inf`
+    A PROPOSITO como FS cuando la solicitacion es nula --- "no vuelca" no es
+    un numero grande, es la ausencia del momento volcante ---, y `cli._num`
+    los renderiza como texto para que el JSON siga siendo valido. Un barrido
+    que prohibiera todo no-finito en la SALIDA de todo el calculo romperia los
+    dos, y por eso la guardia de S16.5 vive solo en M7 y el censo de los dos
+    esta fijado en un test
+    (`test_los_dos_unicos_inf_deliberados_del_repositorio_siguen_ahi`).
+    """
+    for x in _numeros_de(c.valor):
+        try:
+            finito = math.isfinite(float(x))
+        except OverflowError:
+            # Un `int` de Python no tiene tope, y uno de 401 cifras no cabe en
+            # un double: `float(x)` lanza OverflowError, que no es ValueError
+            # ni KeyError y que ni `cli.main` ni la GUI atrapan. Entra por la
+            # misma puerta que el infinito y sale por el mismo mensaje, no por
+            # una traza: para el calculo son el mismo problema.
+            finito = False
+        if not finito:
+            raise ValueError(
+                f"'{clave}' recibe el valor {c.valor!r}, que contiene "
+                f"{x!r}: un criterio no puede declararse con un numero "
+                "infinito, con NaN ni con un entero que no quepa en doble "
+                "precision. No es un valor grande, es un valor que no existe, "
+                "y el calculo lo propagaria hasta la memoria sin detenerse en "
+                "ningun sitio"
+            )
+
+
+def _formas_de(c: Criterio) -> Tuple[str, ...]:
+    """La forma como tupla, sea una o la union de varias."""
+    return c.forma if isinstance(c.forma, tuple) else (c.forma,)
+
+
+def _es_par_de_reales(x: Any) -> bool:
+    return (isinstance(x, (tuple, list)) and len(x) == 2
+            and all(_es_real(e) for e in x))
+
+
+def _cumple_la_forma(forma: str, valor: Any, c: Criterio) -> Optional[str]:
+    """
+    Por que `valor` NO tiene la forma `forma`, o None si la tiene.
+
+    Cada rama es la lectura de UNA forma de `FORMAS`; un texto de vuelta es
+    el motivo que la puerta de declaracion imprime. `bool` queda fuera de
+    `int` y de `float` por lo mismo que en `_es_real`: `True` pasaria por un
+    1 valido. Un `int` SI vale como `float`: los consumidores hacen
+    `float()` sobre el, y quien teclea «30» para un angulo no teclea «30.0».
+    """
+    if forma == FORMA_INT:
+        if isinstance(valor, bool) or not isinstance(valor, int):
+            return "un ENTERO de Python (ni 1.0, ni True, ni '1')"
+        return None
+    if forma == FORMA_FLOAT:
+        if not _es_real(valor):
+            return "un NUMERO real (ni texto, ni bool, ni coleccion)"
+        return None
+    if forma == FORMA_STR:
+        if not isinstance(valor, str) or not valor.strip():
+            return "un TEXTO no vacio"
+        return None
+    if forma == FORMA_CATEGORIA:
+        opciones = c.sensibilidad
+        if not isinstance(valor, str) or valor not in opciones:
+            return ("uno de los textos del conjunto cerrado que declara "
+                    f"`sensibilidad`: {', '.join(map(repr, opciones))}")
+        return None
+    if forma == FORMA_PAR_ORDENADO:
+        if not _es_par_de_reales(valor):
+            return "un PAR (minimo, maximo) de dos numeros reales"
+        if not valor[0] <= valor[1]:
+            return "un PAR (minimo, maximo) en ese orden"
+        return None
+    if forma == FORMA_SERIE_DE_PARES:
+        if isinstance(valor, (str, bytes)) or not isinstance(valor, (tuple, list)):
+            return "una SERIE de pares [(B, H), ...] y no un escalar ni un texto"
+        if not valor:
+            return "una SERIE de pares con al menos un par"
+        if not all(_es_par_de_reales(par) for par in valor):
+            return "una SERIE en la que CADA elemento es un par de dos reales"
+        vistos = [tuple(par) for par in valor]
+        if len(set(vistos)) != len(vistos):
+            return "una SERIE de pares SIN repetidos"
+        return None
+    if forma == FORMA_DICT_CON_CAMPOS:
+        if not isinstance(valor, dict) or not valor:
+            return "un DICCIONARIO no vacio con sus campos"
+        if not all(isinstance(k, str) for k in valor):
+            return "un DICCIONARIO cuyos campos son textos"
+        # EXT-6: los campos que la ficha declara OBLIGATORIOS tienen que
+        # venir, y con texto. Es lo que convierte «la opcion citada exige
+        # la fecha de inicio del expediente y el acto» de una frase en una
+        # puerta ('edicion_legal_que_rige_el_expediente'). Y si la ficha
+        # declara un conjunto cerrado en `sensibilidad` (tupla de textos),
+        # el campo `opcion` tiene que ser uno de ellos.
+        faltan = [k for k in c.campos_obligatorios
+                  if not (isinstance(valor.get(k), str) and valor[k].strip())]
+        if faltan:
+            return (f"un DICCIONARIO con los campos obligatorios {faltan} "
+                    "declarados con texto")
+        s = c.sensibilidad
+        if "opcion" in c.campos_obligatorios and isinstance(s, tuple) \
+                and all(isinstance(x, str) for x in s) \
+                and valor.get("opcion") not in s:
+            return ("un DICCIONARIO cuyo campo `opcion` sea una de las "
+                    f"opciones de `sensibilidad`: {', '.join(map(repr, s))}")
+        return None
+    if forma == FORMA_SERIE_DE_CLAVES:
+        if isinstance(valor, (str, bytes)) or not isinstance(valor, (tuple, list)):
+            return "una TUPLA de claves de fila (textos), no un texto suelto"
+        if not valor or not all(isinstance(k, str) and k.strip() for k in valor):
+            return "una TUPLA no vacia de claves de fila (textos no vacios)"
+        if len(set(valor)) != len(valor):
+            return "una TUPLA de claves de fila SIN repetidos"
+        return None
+    raise ValueError(f"forma {forma!r} sin rama de comprobacion")
+
+
+def _verificar_forma(clave: str, c: Criterio) -> None:
+    """
+    La FORMA del valor, exigida a toda entrada, tenga o no ventana numerica
+    (EXT-5). Tres reglas:
+
+    1. `forma` es obligatoria y es una de `FORMAS`, o una tupla de ellas
+       (la union: `k_v`).
+    2. Es COHERENTE con la ventana: una sensibilidad numerica solo defiende
+       un `int`, un `float` o un `par_ordenado`; una ventana por campo, un
+       `dict_con_campos`; y una `categoria` exige que `sensibilidad` sea la
+       tupla de textos del conjunto cerrado --- que es donde CLAUDE.md dice
+       que vive el conjunto cerrado de un criterio ---.
+    3. El valor, si esta, cumple ALGUNA de las formas declaradas. Si no,
+       `ValueError` con el motivo de cada forma (contrato SIS-E-05): es el
+       rechazo en la puerta que hasta aqui llegaba tarde, en M2/M4, como un
+       `TypeError` que tumbaba la corrida.
+
+    Por que va aqui y no en cada consumidor: los consumidores YA validan
+    (`M2.numero_de_celdas`, `M2.progresion_de_cajon`, `M9.k_v_declarado`), y
+    cada uno lo hace a su manera y solo cuando le toca correr. La forma en
+    la ficha es lo que permite rechazar con el mismo rasero por los tres
+    caminos lo que NO TIENE LA ESTRUCTURA que el consumidor exige.
+
+    HASTA DONDE LLEGA, dicho para que no se sobreentienda: la forma es la
+    ESTRUCTURA, no el dominio. Un entero negativo para `n_celdas_cajon`, un
+    par con un lado negativo en `secciones_cajon_normalizadas` o un
+    `TW_receptor` de -1.0 m pasan esta guardia; los dos primeros los atrapa
+    el consumidor (`DatoInvalidoError`), y el tercero hoy no lo atrapa nadie
+    (medido en la auditoria adversarial de EXT-5: `cli.resolver` lo pasa
+    literal a `M3.tw_seccion_1_3`). El dominio se defiende con la ventana de
+    sensibilidad donde la hay, y con la guardia del consumidor donde no.
+    """
+    formas = _formas_de(c)
+    if not c.forma or not formas or not all(f in FORMAS for f in formas):
+        raise ValueError(
+            f"'{clave}' declara forma={c.forma!r}, que no es ninguna de "
+            f"{FORMAS} ni una tupla de ellas. Toda entrada dice que "
+            "ESTRUCTURA tiene su valor: es lo que la puerta de declaracion "
+            "exige antes de que el consumidor lo reviente"
+        )
+    s = c.sensibilidad
+    if c.campos_obligatorios and FORMA_DICT_CON_CAMPOS not in formas:
+        raise ValueError(
+            f"'{clave}' declara campos_obligatorios={c.campos_obligatorios!r} "
+            f"y forma={c.forma!r}: los campos obligatorios solo tienen "
+            f"sentido en un `{FORMA_DICT_CON_CAMPOS}`"
+        )
+    if isinstance(s, dict) and formas != (FORMA_DICT_CON_CAMPOS,):
+        raise ValueError(
+            f"'{clave}' declara una ventana por campo y forma={c.forma!r}: "
+            f"una ventana por campo solo defiende un `{FORMA_DICT_CON_CAMPOS}`"
+        )
+    if _rango_numerico(s) is not None and not set(formas) <= {
+            FORMA_INT, FORMA_FLOAT, FORMA_PAR_ORDENADO}:
+        raise ValueError(
+            f"'{clave}' declara un rango numerico {s!r} y forma={c.forma!r}: "
+            f"un rango numerico solo defiende `{FORMA_INT}`, `{FORMA_FLOAT}` "
+            f"o `{FORMA_PAR_ORDENADO}`"
+        )
+    if FORMA_CATEGORIA in formas and not (
+            isinstance(s, tuple) and s
+            and all(isinstance(x, str) and x for x in s)):
+        raise ValueError(
+            f"'{clave}' es una `{FORMA_CATEGORIA}` y su `sensibilidad` es "
+            f"{s!r}: el conjunto cerrado de una categoria es una tupla de "
+            "textos en `sensibilidad`, que es donde M11 lo imprime"
+        )
+    if c.valor is None:
+        return
+    motivos = []
+    for forma in formas:
+        motivo = _cumple_la_forma(forma, c.valor, c)
+        if motivo is None:
+            return
+        motivos.append(f"`{forma}`: {motivo}")
+    raise ValueError(
+        f"'{clave}' recibe {c.valor!r}, que no tiene la forma que el "
+        f"criterio declara ({' | '.join(motivos)}). Se rechaza en la puerta "
+        "de declaracion: aceptarlo dejaria que el consumidor lo reventara "
+        "despues con una excepcion fuera de ErrorProyecto"
+    )
+
+
+# Una clave de dict que es un entero ESCRITO como texto (el `'900'` que JSON
+# deja donde el archivo trae `900`): cifras ASCII con signo opcional, la
+# misma lectura que `gui/componentes._ENTERO`. La usan la guardia de abajo
+# (para la pista del mensaje) y la frontera del JSON de
+# `declaracion.valor_desde_json` (para rearmar la clave): una definicion.
+_ENTERO_ESCRITO = re.compile(r"^-?\d+$", re.ASCII)
+
+
+def _son_claves_enteras(plantilla: Dict[Any, Any]) -> bool:
+    """Todas las claves de `plantilla` son enteros de Python (`bool` no lo es)."""
+    return all(isinstance(k, int) and not isinstance(k, bool) for k in plantilla)
+
+
+def _exigir_claves(clave: str, valor: Any, plantilla: Any, donde: str) -> None:
+    """
+    `ValueError` si `valor` lleva, en un nivel donde las claves de
+    `plantilla` son TODAS enteras, una clave que no lo es; recorre los
+    niveles de abajo con la plantilla de la misma clave (o la de una hermana,
+    si el valor trae una clave que el archivo no tiene).
+    """
+    if not isinstance(valor, dict) or not isinstance(plantilla, dict) or not plantilla:
+        return
+    enteras = _son_claves_enteras(plantilla)
+    hermana = next(iter(plantilla.values()))
+    for k, v in valor.items():
+        if enteras and (not isinstance(k, int) or isinstance(k, bool)):
+            ejemplo = next(iter(plantilla))
+            pista = (f" Escriba {int(k)} sin comillas."
+                     if isinstance(k, str) and _ENTERO_ESCRITO.match(k) else "")
+            raise ValueError(
+                f"'{clave}': la clave {k!r}{donde} no tiene la forma de la ficha: "
+                f"en ese nivel las claves son ENTERAS (el archivo trae, p. ej., "
+                f"{ejemplo!r}) y el calculo no encuentra una clave de "
+                f"{type(k).__name__}.{pista}")
+        _exigir_claves(clave, v, plantilla.get(k, hermana),
+                       f"{donde} de {k!r}" if donde else f" de {k!r}")
+
+
+def _verificar_claves_de_la_ficha(clave: str, c: Criterio) -> None:
+    """
+    LA FORMA DE LAS CLAVES (UI-5, decision del dueño del 2026-11-15, ficha
+    UI3-03): donde las claves del valor del ARCHIVO de la ficha son enteras,
+    el valor declarado tiene que traerlas enteras. La forma
+    `dict_con_campos` mira la ESTRUCTURA del valor y no la de sus claves, y
+    `espesor_pared_conducto` --- un dict por material con el diametro
+    designado en mm, ENTERO, como clave --- aceptaba el `'900'` de un dict
+    copiado de un JSON: el consumidor (`M2.espesor_pared`) ya no encontraba
+    la fila y los puntos salian «no dimensionado» sin aviso.
+
+    La plantilla es el valor de ARCHIVO de la ficha (`CRITERIOS[clave]`), y
+    es lo unico que la guardia lee de `CRITERIOS`: al importar es el propio
+    valor (la regla es la identidad), en los dos caminos dinamicos es el
+    valor del archivo contra el que se declara. Sin valor de archivo no hay
+    forma que exigir. Desde la revision de UI-3 (N1) esta regla vivia en las
+    capas que llaman a la guardia (`declaracion.verificar_claves_de_la_ficha`)
+    y `establecer_valor_dinamico` a pelo aceptaba el `'900'`; UI-5 la trae
+    aqui, el cuello de los tres caminos, con el mismo mensaje.
+    """
+    ficha = CRITERIOS.get(clave)
+    plantilla = c.valor if ficha is None else ficha.valor
+    _exigir_claves(clave, c.valor, plantilla, "")
+
+
+# --- VE-1 (hallazgo H2 de su revision) --- Los campos de la PROGRESION DE
+# DIAMETROS: los dos que la aritmetica de `M2.siguiente_diametro` usa, y cual
+# de ellos tiene que ser positivo. Es una tabla de la GUARDIA, no de la ficha:
+# no cambia el valor, la etiqueta ni la ventana del criterio.
+_CAMPOS_DE_LA_PROGRESION = {"diametros_normalizados": ("inicio", "paso")}
+_CAMPOS_POSITIVOS_DE_LA_PROGRESION = {"diametros_normalizados": ("paso",)}
+
+
+def _verificar_campos_de_la_progresion(clave: str, c: Criterio) -> None:
+    """
+    La progresion de diametros trae EXACTAMENTE sus dos campos, los dos
+    numeros reales (ni texto, ni bool) y el paso positivo (VE-1, H2).
+
+    La forma `dict_con_campos` mira la estructura y no los campos, y la
+    ficha no tiene ventana por campo que los defienda (`_verificar_dict`),
+    de modo que la puerta aceptaba lo que el consumidor no puede recorrer.
+    Medido por la CLI antes de esta guardia: un paso 0 caia con
+    `ZeroDivisionError`, un paso o un inicio de texto con `TypeError`, un
+    campo ausente con `KeyError` --los cuatro fuera de `ErrorProyecto`, con
+    traza y codigo 1--; un paso booleano recorria 0.90, 1.90…, uno negativo
+    bajaba de 0.90 a 0.75, y un campo de mas se ignoraba en silencio. Hoy
+    los tres caminos lo rechazan con `ValueError` y el motivo.
+
+    EL INICIO NO SE ACOTA, a proposito: un inicio negativo lo rechaza la
+    seccion (`DatoInvalidoError` sobre `D`, dentro de `ErrorProyecto`) y la
+    linea base lo fija como su rama de error
+    (`tests/linea_base_familia_c/regenerar.sh`, corrida 3).
+    """
+    campos = _CAMPOS_DE_LA_PROGRESION.get(clave)
+    if campos is None or not isinstance(c.valor, dict):
+        return
+    faltan = [k for k in campos if k not in c.valor]
+    sobran = sorted(k for k in c.valor if k not in campos)
+    no_reales = [k for k in campos if k in c.valor and not _es_real(c.valor[k])]
+    no_positivos = [k for k in _CAMPOS_POSITIVOS_DE_LA_PROGRESION.get(clave, ())
+                    if k in c.valor and _es_real(c.valor[k])
+                    and not c.valor[k] > 0]
+    if faltan or sobran or no_reales or no_positivos:
+        raise ValueError(
+            f"'{clave}' recibe {c.valor!r}, que no es una progresion que se "
+            f"pueda recorrer: lleva exactamente los campos {list(campos)}, "
+            f"numeros reales (ni texto ni bool), con el paso mayor que cero. "
+            f"Faltan {faltan}, sobran {sobran}, no son numeros {no_reales}, "
+            f"no son positivos {no_positivos}. Se rechaza en la puerta de "
+            "declaracion: aceptarlo dejaria que M2 lo reventara despues fuera "
+            "de ErrorProyecto, o que recorriera otra serie en silencio"
+        )
+
+
+def _verificar_discrepancias(clave: str, c: Criterio) -> None:
+    """
+    Que los ids de `Criterio.discrepancias` existan en el registro y sigan
+    VIVOS.
+
+    El import es diferido por la misma razon que en `tabla_del_criterio`: este
+    archivo no depende de `normativa` en su cabecera.
+    """
+    if not c.discrepancias:
+        return
+    from src.normativa import registro as _reg
+    registro = _reg.construir()
+    for id_ in c.discrepancias:
+        try:
+            d = registro.discrepancia(id_)
+        except KeyError:
+            raise ValueError(
+                f"'{clave}' declara la discrepancia '{id_}', que no esta en "
+                "el registro. El id viaja al registro, no a la prosa: si no "
+                "existe, la memoria imprimiria un ancla rota") from None
+        if not d.viva:
+            raise ValueError(
+                f"'{clave}' declara la discrepancia '{id_}', que esta "
+                f"{d.estado.value}. Lo resuelto es material del manifiesto "
+                "--- para quien audita el codigo ---, no de la memoria, que "
+                "es para quien sustenta")
+
+
+def _verificar_criterio(clave: str, c: Criterio) -> None:
+    """
+    Valida UNA entrada: recibe el objeto ya armado, y de CRITERIOS lee una
+    sola cosa desde UI-5, el valor del ARCHIVO de su ficha, que es la
+    plantilla de la forma de las claves (`_verificar_claves_de_la_ficha`).
+
+    Es la unica que sabe que hace valida a una declaracion, y por eso la
+    atraviesan los TRES caminos por los que un criterio puede recibir valor:
+
+        archivo (import-time)      `_coherencia_de_etiquetas()`
+        declaracion en caliente    `establecer_valor_dinamico()`
+        escritura permanente       `escribir_valor_en_archivo()`
+
+    Los dos caminos dinamicos arman con `replace()` el Criterio que
+    RESULTARIA de la declaracion y lo pasan por aqui antes de aceptarla. La
+    logica vive una sola vez; los tres sitios son una linea y no pueden
+    divergir.
+
+    Es una guardia de arquitectura, no una validacion de dato: si falla al
+    importar, el archivo esta mal escrito y ninguna corrida deberia empezar.
+    Un [S] sin trazabilidad seria un hecho de sitio que el revisor no puede
+    reproducir, y un [S] con sensibilidad seria un hecho al que se le ofrece
+    un rango de valores alternativos, que es justo lo que un hecho no tiene.
+    """
+    _verificar_finitud(clave, c)
+    _verificar_discrepancias(clave, c)
+    if c.etiqueta not in ETIQUETAS_VALIDAS:
+        raise ValueError(
+            f"'{clave}' lleva la etiqueta {c.etiqueta!r}, que no es de la "
+            f"convencion {ETIQUETAS_VALIDAS}"
+        )
+    if c.etiqueta == "S":
+        if not c.trazabilidad:
+            raise ValueError(
+                f"'{clave}' es [S] y no declara trazabilidad. Un dato de "
+                "sitio se defiende diciendo como reproducir la lectura"
+            )
+        if c.sensibilidad:
+            raise ValueError(
+                f"'{clave}' es [S] y declara sensibilidad. Un hecho de "
+                "sitio no tiene rango que elegir: si lo tuviera, seria [A]"
+            )
+    elif c.trazabilidad:
+        raise ValueError(
+            f"'{clave}' no es [S] y declara trazabilidad. El campo es "
+            "exclusivo de los datos de sitio"
+        )
+
+    if c.opcional:
+        # Un opcional se sostiene sobre un defecto que vive FUERA de este
+        # archivo: la norma que `fuente` cita. Sin ese defecto, `valor=None`
+        # no significa "se aplica lo normativo", significa "no hay nada", y
+        # marcarlo opcional convierte un vacio en un silencio.
+        if not c.fuente or c.fuente.strip().upper().startswith("PENDIENTE"):
+            raise ValueError(
+                f"'{clave}' es opcional y su fuente es {c.fuente!r}. Un "
+                "criterio opcional refina un valor que la norma YA fija: su "
+                "fuente debe citar la norma de la que sale ese valor por "
+                "defecto, no quedar pendiente"
+            )
+        # Un refinamiento sin limites declarados no es un refinamiento: el
+        # rango dice hasta donde puede moverse el proyectista respecto del
+        # valor normativo, y es lo que la memoria tiene que defender.
+        if c.sensibilidad is None:
+            raise ValueError(
+                f"'{clave}' es opcional y no declara sensibilidad. El rango "
+                "es lo que acota cuanto puede apartarse del valor normativo "
+                "por defecto"
+            )
+
+    if c.de_catalogo and c.etiqueta in ("N", "N->"):
+        # Un tope de catalogo no puede llevar etiqueta normativa: si la
+        # llevara, la memoria lo imprimiria como exigencia y le buscaria un
+        # numeral que no tiene. Es exactamente el defecto NOR-PRO-01/02.
+        raise ValueError(
+            f"'{clave}' se rotula `de_catalogo` y lleva etiqueta "
+            f"{c.etiqueta!r}. Un valor de catalogo de proveedor no es una "
+            "exigencia normativa ni una analogia normativa: es [C] o [A]"
+        )
+
+    if c.vacio_verificado:
+        if c.valor is None:
+            raise ValueError(
+                f"'{clave}' declara vacio_verificado y no tiene valor. El "
+                "campo es para el valor que CUBRE un vacio registrado; un "
+                "criterio todavia vacio no cubre nada"
+            )
+        if not c.reemplazado_por:
+            raise ValueError(
+                f"'{clave}' cubre un vacio verificado y no declara "
+                "`reemplazado_por`. Una adopcion sobre un vacio agotado tiene "
+                "que decir que verificacion la cerraria de verdad, o se lee "
+                "como si el vacio ya estuviera resuelto"
+            )
+        _verificar_ancla_de_vacio(clave, c.vacio_verificado)
+
+    if c.resolucion is None:
+        raise ValueError(
+            f"'{clave}' no declara `resolucion`. Toda variable de entrada "
+            "dice COMO se resuelve (Sec. 4.3): de que tabla, de que rango, "
+            "de que ensayo, de que catalogo, de que se deriva, o que se "
+            "declara libre. Sin eso la GUI no sabe que ventana abrir y la "
+            "memoria no puede escribir de donde salio el valor"
+        )
+    modo = verificar_resolucion(clave, c.resolucion)
+
+    if isinstance(c.resolucion, Libre) and c.resolucion.opciones:
+        raise ValueError(
+            f"'{clave}' declara `Libre.opciones="
+            f"{c.resolucion.opciones!r}`. En un CRITERIO el conjunto cerrado "
+            "de valores admisibles vive en `sensibilidad`, que es lo que M11 "
+            "imprime: repetirlo aqui crea dos listas que pueden divergir. El "
+            "campo es para las variables que no son criterios -- la Familia "
+            "de un punto del CSV -- que no tienen `sensibilidad` donde "
+            "ponerlo"
+        )
+
+    if modo is ModoDeResolucion.DE_ENSAYO and c.sensibilidad is not None:
+        raise ValueError(
+            f"'{clave}' se resuelve `de_ensayo` y declara sensibilidad. Un "
+            "dato determinado por un procedimiento no tiene rango que "
+            "elegir: se defiende con la trazabilidad de la lectura. Si "
+            "hubiera rango, la resolucion no es `de_ensayo`"
+        )
+    if bool(c.de_catalogo) != (modo is ModoDeResolucion.DE_CATALOGO):
+        raise ValueError(
+            f"'{clave}' rotula `de_catalogo`={c.de_catalogo!r} y se resuelve "
+            f"`{modo.value}`. El rotulo y el modo son la misma afirmacion "
+            "dicha dos veces, y no pueden discrepar"
+        )
+
+    _verificar_nivel(clave, c)
+    _verificar_sensibilidad(clave, c)
+    # LA FORMA VA ULTIMA a proposito: las guardias de arriba dicen cosas mas
+    # precisas cuando aplican (la ventana, el par, el bool), y la forma es la
+    # ultima palabra sobre lo que ninguna de ellas mira. Y dentro de la forma,
+    # la de las CLAVES (UI-5): la estructura del valor, primero; sus claves,
+    # despues.
+    _verificar_forma(clave, c)
+    _verificar_claves_de_la_ficha(clave, c)
+    _verificar_campos_de_la_progresion(clave, c)
+
+
+def _verificar_nivel(clave: str, c: Criterio) -> None:
+    """
+    Las tres reglas del `nivel`, y las tres nacen del cierre del nivel de
+    perfil (S20):
+
+    1. El valor, si esta, es uno de los dos NIVELES.
+    2. Un criterio SIN VALOR tiene que declarar nivel. Un vacio que no dice a
+       que entrega pertenece no se puede planificar: no se sabe si bloquea el
+       perfil o si lo difiere el alcance.
+    3. Un criterio DE PERFIL con etiqueta [A] tiene que llevar `sensibilidad`
+       Y `resolucion`. Es el criterio de salida del nivel de perfil escrito
+       como invariante: "ningun [A] de perfil sin valor, sin sensibilidad y
+       sin procedencia". Las otras cuatro etiquetas quedan fuera por lo que
+       dice `ETIQUETAS_DE_ELECCION`.
+
+       LA REGLA NO MIRA SI HAY VALOR, y esa fue una correccion dentro de la
+       propia S20. Mirandolo, un criterio [A] de perfil sin declarar podia
+       quedarse sin ventana -- y entonces la GUI o la CLI no lo podian
+       declarar en caliente, porque el valor aparecia y la ventana seguia sin
+       estar --. La ventana es parte de la FICHA, no del valor: dice dentro de
+       que se va a poder elegir, y eso se sabe antes de elegir. Los dos que la
+       sesion no pudo cerrar ('TW_receptor' y 'homogeneidad_serie_fen') tienen
+       hoy su ventana escrita precisamente por esto.
+    """
+    if c.nivel and c.nivel not in NIVELES:
+        raise ValueError(
+            f"'{clave}' declara nivel={c.nivel!r}, que no es ninguno de "
+            f"{NIVELES}")
+    if c.valor is None and not c.opcional and not c.nivel:
+        raise ValueError(
+            f"'{clave}' esta sin valor y no declara `nivel`. Un vacio que no "
+            "dice a que entrega pertenece no se puede planificar: no se sabe "
+            f"si bloquea el nivel de perfil o si `--alcance {NIVEL_PERFIL}` "
+            "difiere su etapa al expediente")
+    if c.nivel == NIVEL_PERFIL and c.etiqueta in ETIQUETAS_DE_ELECCION:
+        if c.sensibilidad is None:
+            raise ValueError(
+                f"'{clave}' es de nivel {NIVEL_PERFIL} y esta declarado con "
+                f"etiqueta [{c.etiqueta}], pero no lleva `sensibilidad`. El "
+                "criterio de salida del nivel de perfil no admite un valor "
+                "elegido sin la ventana dentro de la que se eligio: sin ella "
+                "la memoria imprime un numero y el revisor no puede saber si "
+                "moverlo cambia el diseño")
+        if c.resolucion is None:
+            raise ValueError(
+                f"'{clave}' es de nivel {NIVEL_PERFIL} y esta declarado con "
+                f"etiqueta [{c.etiqueta}], pero no lleva `resolucion`. Un "
+                "valor sin procedencia no se puede defender: la memoria tiene "
+                "que poder escribir de que tabla, de que rango o de que "
+                "ensayo salio")
+
+
+def criterios_por_nivel(nivel: str) -> List[str]:
+    """Las claves de un nivel de entrega, en orden alfabetico."""
+    if nivel not in NIVELES:
+        raise ValueError(f"nivel {nivel!r} desconocido; hay {NIVELES}")
+    return sorted(k for k, c in CRITERIOS.items() if c.nivel == nivel)
+
+
+def criterios_de_perfil_sin_valor() -> List[str]:
+    """
+    Los criterios de PERFIL que siguen vacios: lo que le falta al nivel de
+    perfil para cerrar, sin mezclarlo con lo que es del expediente.
+
+    Es el corte que la lista plana de `criterios_sin_valor()` no hace y que
+    obligaba a leer los 24 vacios uno por uno para saber cuales frenaban esta
+    entrega.
+    """
+    return [k for k in criterios_por_nivel(NIVEL_PERFIL)
+            if CRITERIOS[k].valor is None and not CRITERIOS[k].opcional]
+
+
+def _coherencia_de_etiquetas() -> None:
+    """Somete TODO el archivo a la guardia, al importar el modulo."""
+    for clave, c in CRITERIOS.items():
+        _verificar_criterio(clave, c)
+
+
+_coherencia_de_etiquetas()
+
+
+# ---------------------------------------------------------------------------
+# Reporte para el modulo M11
+# ---------------------------------------------------------------------------
+
+# Orden de lectura, de mas determinado a mas elegido. [S] va entre [N->] y
+# [C]: su procedimiento es normativo y propio del sitio, no prestado ni ajeno.
+_ORDEN = {"N": 0, "N->": 1, "S": 2, "C": 3, "A": 4}
+
+
+def reporte_criterios(solo_usados: bool = True, *,
+                      contexto: Optional[Any] = None) -> str:
+    """
+    Genera el bloque de declaracion de criterios para el reporte final.
+    Con solo_usados=True lista unicamente los criterios que el calculo invoco.
+
+    Con `contexto` --- el `ContextoCorrida` del informe --- lee la FOTO de
+    esa corrida (usos, valores efectivos, declarados, vacios) y no el estado
+    vivo del proceso; es lo que `cli.volcar` le pasa desde EXT-4 (EXT-A-01).
+    Sin el, describe el estado de ahora mismo, que es lo que quiere quien lo
+    invoca desde la consola de este modulo.
+    """
+    if contexto is None:
+        usados = set(_USADOS)
+        efectivo = lambda k: criterio_efectivo(k).valor           # noqa: E731
+        en_caliente_de = declarado_en_caliente
+        sin_valor = criterios_sin_valor()
+        en_caliente = criterios_declarados_en_caliente()
+        opcionales = criterios_opcionales_sin_declarar()
+    else:
+        usados = set(contexto.criterios_usados)
+        efectivo = contexto.valor_efectivo
+        en_caliente_de = contexto.declarado_en_caliente
+        sin_valor = list(contexto.criterios_sin_valor)
+        en_caliente = list(contexto.declarados_en_caliente)
+        opcionales = list(contexto.criterios_opcionales_sin_declarar)
+    claves = sorted(
+        (usados if solo_usados else set(CRITERIOS)),
+        key=lambda k: (_ORDEN.get(CRITERIOS[k].etiqueta, 9), k),
+    )
+    if not claves:
+        return "No se invoco ningun criterio adoptado."
+
+    out = ["=" * 78,
+           "DECLARACION DE CRITERIOS ADOPTADOS",
+           "=" * 78, ""]
+
+    for k in claves:
+        c = replace(CRITERIOS[k], valor=efectivo(k))
+        valor_efectivo = c.valor
+        marca_override = ("  [declarado para esta corrida, no en archivo]"
+                          if en_caliente_de(k) else "")
+        marca_prov = "  [PROVISIONAL: valor de prueba, NO verificado]" if c.provisional else ""
+        marca_opc = "  [refinamiento opcional]" if c.opcional else ""
+        out.append(
+            f"[{c.etiqueta}] {k} = {valor_efectivo!r}"
+            f"{marca_override}{marca_prov}{marca_opc}")
+        out.append(f"     Concepto      : {c.concepto}")
+        if c.de_catalogo:
+            out.append(f"     DE CATALOGO   : {c.de_catalogo}")
+        out.append(f"     Justificacion : {c.justificacion}")
+        out.append(f"     Fuente        : {c.fuente}")
+        if c.reemplazado_por:
+            out.append(f"     Se sustituye por: {c.reemplazado_por}")
+        if c.sensibilidad:
+            out.append(f"     Sensibilidad  : {c.sensibilidad}")
+        if c.trazabilidad:
+            out.append(f"     Trazabilidad  : {c.trazabilidad}")
+        if c.verificacion_pendiente:
+            out.append(f"     >> VERIFICAR  : {c.verificacion_pendiente}")
+        out.append("")
+
+    pendientes = [k for k in claves if CRITERIOS[k].verificacion_pendiente]
+    if pendientes:
+        out.append("-" * 78)
+        out.append("ADVERTENCIA: los siguientes criterios tienen verificaciones")
+        out.append("pendientes y no deben citarse en la memoria hasta resolverlas:")
+        for k in pendientes:
+            out.append(f"  - {k}")
+        out.append("-" * 78)
+
+    if sin_valor:
+        out.append("")
+        out.append("-" * 78)
+        out.append("VACIOS SIN VALOR: detienen el calculo en cuanto se invocan")
+        out.append("(bloque aparte, Sec. 0.7 - no se sustituyen por defecto):")
+        for k in sin_valor:
+            out.append(f"  - [{CRITERIOS[k].etiqueta}] {k}: {CRITERIOS[k].concepto}")
+        out.append("-" * 78)
+
+    if en_caliente:
+        # Ni vacios (tienen valor) ni valores del archivo (no estan en el):
+        # sin este bloque se caian de las dos listas a la vez.
+        out.append("")
+        out.append("-" * 78)
+        out.append("DECLARADOS SOLO PARA ESTA CORRIDA - no estan en este")
+        out.append("archivo ni en el SHA-1 que la memoria imprime. Valen para")
+        out.append("esta corrida y para ninguna otra:")
+        for k in en_caliente:
+            c = CRITERIOS[k]
+            dice = ("el archivo lo declara sin valor" if c.valor is None
+                    else f"el archivo declara {c.valor!r}")
+            out.append(f"  - [{c.etiqueta}] {k} = {efectivo(k)!r}  ({dice})")
+        out.append("-" * 78)
+
+    sin_consumidor = criterios_sin_consumidor()
+    if sin_consumidor:
+        out.append("")
+        out.append("-" * 78)
+        out.append("DECLARADOS QUE NINGUNA ETAPA INVOCA - con la razon escrita")
+        out.append("en el propio criterio, no deducida de su ausencia:")
+        for k in sin_consumidor:
+            c = replace(CRITERIOS[k], valor=efectivo(k))
+            out.append(f"  - [{c.etiqueta}] {k} = {c.valor!r}")
+            out.append(f"      {c.sin_consumidor}")
+        out.append("-" * 78)
+
+    if opcionales:
+        out.append("")
+        out.append("-" * 78)
+        out.append("REFINAMIENTO OPCIONAL NO ADOPTADO - se aplica el valor")
+        out.append("normativo por defecto. NO son vacios: el calculo corre y")
+        out.append("nadie tiene obligacion de declararlos:")
+        for k in opcionales:
+            c = CRITERIOS[k]
+            out.append(f"  - [{c.etiqueta}] {k}: {c.concepto}")
+            out.append(f"      Norma que aporta el defecto: {c.fuente}")
+        out.append("-" * 78)
+
+    return "\n".join(out)
+
+
+def parametros_sensibilizables(solo_numericos: bool = True) -> Dict[str, Tuple]:
+    """
+    Los criterios con rango declarado, para el analisis de sensibilidad.
+
+    Con `solo_numericos=True` (por defecto) devuelve unicamente los rangos
+    que un barrido puede recorrer: 2-tuplas de reales. Una sensibilidad
+    SIMBOLICA -- expresada en funcion de otro criterio -- se declara y se
+    imprime en la memoria, pero no se puede recorrer sin resolver antes la
+    variable de la que depende, y hacer `float()` sobre ella la falsearia.
+    Con `solo_numericos=False` salen todas, tal como estan declaradas.
+    """
+    return {
+        k: c.sensibilidad for k, c in CRITERIOS.items()
+        if c.sensibilidad
+        and (not solo_numericos or _rango_numerico(c.sensibilidad) is not None)
+    }
+
+
+if __name__ == "__main__":
+    # Demostracion: cadena sismica completa desde una sola fuente. El PGA es
+    # un dato de sitio [S] y entra desde datos_sitio.py, no desde aqui.
+    from src import datos_sitio as ds
+
+    A_s = ds.valor("PGA_roca_B") * valor("F_pga")
+    k_h = valor("factor_muro_eleccion") * A_s
+
+    # 'clase_sitio' NO se invoca, aqui tampoco. Es un [S] sin valor y lo que
+    # la cadena consume es el factor: invocarlo lanzaria
+    # CriterioPendienteError y esta demostracion dejaria de correr por un
+    # dato que la cadena no necesita. Aparece en el reporte de abajo por
+    # `criterios_sin_valor()`, que es su puerta.
+
+    print(f"A_s = {A_s:.2f} g")
+    print(f"k_h = {k_h:.2f}")
+    print(f"k_v = {valor('k_v'):.2f}\n")
+    print(reporte_criterios())

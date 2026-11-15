@@ -1,0 +1,5 @@
+homogeneidad_serie_fen=serie_completa
+distribucion_precipitacion_maxima=lognormal_2p
+# la tesis usa Q = C*I*A/3.6 sin el coeficiente de uniformidad K de Temez
+coeficiente_uniformidad_temez=no_aplicar
+relacion_intensidad_duracion=tabla_04_coeficientes_de_duracion

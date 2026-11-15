@@ -1,0 +1,3 @@
+id,progresiva_km,familia,Q_m3s,area_ha,S_cauce,cota_terreno,cota_rasante,cota_subrasante,cbr_subrasante,esviaje_grados,ancho_plataforma,cota_fondo_receptor,Q_receptor_m3s,cota_TW,sucs_fundacion,NF_profundidad_m,cota_fondo_entrada,cota_coronacion_canal
+DALE-Q1000,0+100,A,28.31685,2000,0.015053,66.7299,74.7299,74.5799,10,0,20,65.8673,,68.2691,SM,,66.7299,
+DALE-Q1500,0+150,A,42.47527,2000,0.015053,66.7299,74.7299,74.5799,10,0,20,65.8673,,68.5251,SM,,66.7299,

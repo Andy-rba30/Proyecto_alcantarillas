@@ -1,0 +1,6 @@
+# 2026-11-15T04:20:21 [sin_nf] rc=1
+cd /home/user/val_web && NORMAS_DIR=/home/user/andy-rba30/normas python cli.py /tmp/validacion_web/defectos/O2_NF_y_V7/puntos_sin_nf.csv --alcance perfil --datos-externos /tmp/validacion_web/defectos/O2_NF_y_V7/externos.json --declarar 'diametros_normalizados={"inicio": 0.9144, "paso": 0.1524}' --declarar 'espesor_pared_conducto={"concreto_reforzado": {914: 0.1016, 1067: 0.1143, 1219: 0.127, 1372: 0.1397, 1524: 0.1524, 900: 0.1, 1050: 0.113, 1200: 0.125, 1350: 0.138, 1500: 0.15}, "hdpe": {900: 0.08975, 1050: 0.0846, 1200: 0.0985}}' --json /tmp/validacion_web/defectos/O2_NF_y_V7/salida/sin_nf.json
+
+# 2026-11-15T04:20:22 [nf_10m] rc=1
+cd /home/user/val_web && NORMAS_DIR=/home/user/andy-rba30/normas python cli.py /tmp/validacion_web/defectos/O2_NF_y_V7/puntos_nf_10m.csv --alcance perfil --datos-externos /tmp/validacion_web/defectos/O2_NF_y_V7/externos.json --declarar 'diametros_normalizados={"inicio": 0.9144, "paso": 0.1524}' --declarar 'espesor_pared_conducto={"concreto_reforzado": {914: 0.1016, 1067: 0.1143, 1219: 0.127, 1372: 0.1397, 1524: 0.1524, 900: 0.1, 1050: 0.113, 1200: 0.125, 1350: 0.138, 1500: 0.15}, "hdpe": {900: 0.08975, 1050: 0.0846, 1200: 0.0985}}' --json /tmp/validacion_web/defectos/O2_NF_y_V7/salida/nf_10m.json
+

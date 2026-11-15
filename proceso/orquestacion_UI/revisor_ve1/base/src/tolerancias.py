@@ -1,0 +1,201 @@
+"""
+tolerancias.py
+==============
+Precision numerica del calculo. NO son literales de proyecto.
+
+La regla de arquitectura dice que todo literal numerico fuera de
+`constantes_normativas.py` y `criterios_adoptados.py` es un defecto, y exime
+dos categorias: 0, 1, 2 e indices, y las constantes matematicas puras (pi).
+Este archivo es la TERCERA categoria exenta, y esta separada de las otras dos
+a proposito. La cuarta es `dominios.py`, con los limites de dominio del dato
+de entrada: tampoco son valores de proyecto, pero responden a otra pregunta
+(que valores puede tomar un dato, no cuanto vale el ultimo bit del float).
+
+Por que no son criterios adoptados
+----------------------------------
+Una constante normativa responde a "que exige la norma". Un criterio adoptado
+responde a "que decidio el proyectista donde la norma calla" y por eso lleva
+etiqueta [N->], [C] o [A], justificacion, fuente y analisis de sensibilidad.
+
+Una tolerancia no responde a ninguna de las dos preguntas: responde a "cuanto
+vale el ultimo bit del float". No lleva etiqueta porque no hay nada que
+declarar en la memoria de calculo; cambiarla no mueve ninguna magnitud fisica,
+solo el ruido de la aritmetica de punto flotante. Meterlas en
+`criterios_adoptados.py` ensuciaria el bloque de declaracion de criterios de
+M11 con parametros que a un revisor no le dicen nada.
+
+Corolario que si hay que vigilar: si alguna vez cambiar una de estas
+tolerancias convierte un "cumple" en un "no cumple", el problema NO es la
+tolerancia. Es que el diseno cae exactamente sobre el limite normativo, y eso
+se declara en la memoria en vez de esconderlo detras del redondeo.
+
+Uso
+---
+    from src.tolerancias import TOL_BRENT, TOL_UMBRAL_NORMATIVO
+
+    theta = brentq(f, a, b, xtol=TOL_BRENT)
+    cumple = y_sobre_D <= Y_SOBRE_D_MAX + TOL_UMBRAL_NORMATIVO
+
+Nunca comparar floats con ==: las tolerancias son explicitas y con nombre.
+"""
+
+# Convergencia de los dos solvers de Brent (tirante normal y tirante critico,
+# Sec. 4.1 y 4.2). La variable que se itera es theta en radianes, sobre
+# (0, 2*pi): 1e-10 rad equivale a ~1e-11 m de tirante en un tubo de 0.90 m,
+# once ordenes por debajo de cualquier magnitud con sentido constructivo, y
+# muy por encima del epsilon del double (~2.2e-16).
+TOL_BRENT = 1e-10
+
+# Margen del extremo del intervalo (0, 2*pi) sobre el que M3 busca theta con
+# Brent (Sec. 4.1). En theta=0 el conducto esta vacio: A=0, P=0 y R=0/0 es
+# indeterminado; en theta=2*pi esta lleno a presion, fuera del regimen de
+# flujo libre que modela Manning. Ningun theta real del diseno cae tan cerca
+# de cualquiera de los dos bordes (V1 tapa y/D en 0.75, muy lejos de ambos),
+# de modo que recortar el intervalo por este margen no descarta ninguna
+# solucion fisica: solo evita evaluar la geometria justo en la singularidad.
+TOL_THETA_BORDE = 1e-9
+
+# Comparacion contra un umbral normativo (y/D <= 0.75, V >= 0.25, HW/D <= 1.5).
+# Absorbe el ruido de punto flotante -- 0.675/0.90 puede dar 0.7500000000000001
+# y eso NO es un incumplimiento del borde libre -- sin llegar a tapar ninguna
+# holgura real: 1e-9 sobre magnitudes de orden 1 es una millonesima de
+# milimetro. Se suma al lado admisible de la comparacion, nunca al obtenido.
+TOL_UMBRAL_NORMATIVO = 1e-9
+
+# ---------------------------------------------------------------------------
+# COS_ESVIAJE_MIN: donde 1/cos(esviaje) deja de estar determinado (PC-32)
+# ---------------------------------------------------------------------------
+# `M7.factor_esviaje` divide por cos(theta) y el dominio del esviaje es abierto
+# en 90 grados: M0 admite todo theta < 90, y a medida que theta se acerca a 90
+# el coseno se acerca a cero. La pregunta que este umbral contesta es
+# NUMERICA, no de proyecto: a partir de que coseno el FACTOR ya no esta
+# determinado al ultimo bit. El argumento de radians(theta) lleva un redondeo
+# absoluto del orden de (pi/2)*epsilon, cos tiene pendiente ~1 cerca de 90
+# grados, de modo que el error RELATIVO del factor es ~ (pi/2)*epsilon/cos.
+# Se exige que ese error quede por debajo de TOL_UMBRAL_NORMATIVO -- la misma
+# tolerancia con que el proyecto compara cualquier umbral --, y despejando:
+#
+#     cos(theta) > (pi/2) * epsilon / TOL_UMBRAL_NORMATIVO  ~= 3.5e-7
+#
+# o sea theta < 89.99998 grados. Dos precisiones que el auditor adversarial de
+# EXT-1 pidio dejar escritas: (a) TOL_UMBRAL_NORMATIVO se usa aqui como
+# tolerancia RELATIVA sobre el factor, no absoluta -- el factor es
+# adimensional y de orden 1 en el cruce normal, y lo que se acota es cuanto lo
+# mueve el ultimo bit del angulo --; (b) la derivacion usa epsilon donde el
+# redondeo real de radians(theta) es ulp(theta)*pi/180 ~ 2.5e-16 rad, de modo
+# que SOBREESTIMA el error ~1.6 veces y el umbral detiene un poco ANTES de lo
+# estrictamente necesario: medido a 1 ulp del angulo, el cambio relativo del
+# factor en el umbral es 6.4e-10. Es el lado conservador. Lo que NO es: una cota de cordura sobre el
+# esviaje. El esviaje de 89.9 grados -- factor 573, longitud de 10 313 m en
+# A-01 -- pasa este umbral, y pasa A PROPOSITO: cortarlo exigiria un valor
+# que ninguna norma de normas/ fija, y `factor_esviaje` (MAT-O18) deja
+# escrito que ese valor, si el proyecto lo quiere, es un criterio [A] con su
+# sensibilidad, no un literal escondido aqui. Es la frontera exacta entre una
+# tolerancia (esta) y un valor de proyecto (aquel).
+import math as _math      # noqa: E402  -- solo para derivar el umbral
+import sys as _sys        # noqa: E402
+
+COS_ESVIAJE_MIN = (_math.pi / 2) * _sys.float_info.epsilon / TOL_UMBRAL_NORMATIVO
+
+# ---------------------------------------------------------------------------
+# El paso directo del perfil de la lamina de agua (E-A, HDS-5 pag. 3.12 y
+# Section 3.5): dos parametros NUMERICOS, ninguno de proyecto
+# ---------------------------------------------------------------------------
+# `M4.perfil_lamina` integra la ecuacion del flujo gradualmente variado por
+# paso directo: recorre el PARAMETRO PROPIO de la seccion (theta en la
+# circular, el tirante en el marco) en una escalera uniforme entre la
+# frontera de la salida y el objetivo del perfil (y_n, y_c o la clave), y en
+# cada escalon resuelve dx = (E_abajo - E_arriba)/(S - Sf_medio). Cuantos
+# escalones tiene la escalera es precision numerica: medido sobre los casos
+# del dictamen (D = 0.90, L = 20), 500, 2000 y 8000 escalones mueven el HW
+# del remanso menos de 1e-8 m; cambiarlo no mueve ninguna magnitud fisica,
+# solo el ruido de la discretizacion, y por eso vive aqui y no en un archivo
+# de valores. El cruce con x = L se resuelve dentro del escalon con Brent
+# (`TOL_BRENT`), no por interpolacion lineal, para que la escalera no
+# imponga su paso al tirante de la entrada.
+PASOS_PERFIL_LAMINA = 2000
+
+# Donde la escalera se detiene porque llego a la ASINTOTA: en un perfil M1 o
+# M2 la lamina tiende a y_n sin alcanzarlo, y ahi S - Sf tiende a cero por
+# los dos lados. Cuando |S - Sf_medio| queda por debajo de esta fraccion de
+# S, el cociente dx = dE/(S - Sf) ya no esta determinado en double --se
+# dividen dos residuos de redondeo-- y el perfil se toma como plano desde ese
+# escalon: la lamina esta, a todos los efectos, en y_n. Es una tolerancia
+# RELATIVA sobre la pendiente, del orden del ruido de la aritmetica de Sf
+# (una potencia 4/3 y dos cuadrados: unas decenas de ulp), y no un umbral de
+# proyecto.
+TOL_ASINTOTA_PERFIL = 1e-12
+
+# ---------------------------------------------------------------------------
+# El comparador de dos `informe_json` (E-B, E14): cuando dos numeros de dos
+# volcados son "el mismo numero"
+# ---------------------------------------------------------------------------
+# `src/comparador.py` empareja dos volcados por identidad de punto y compara
+# campo a campo. Dos corridas del mismo arbol sobre el mismo CSV producen los
+# MISMOS bytes (la linea base de la Familia C lo demuestra byte a byte), de
+# modo que la unica diferencia numerica legitima entre dos volcados iguales
+# es el ruido de la aritmetica en punto flotante --- la asociacion de una
+# suma, el orden de un producto --- y estas dos tolerancias lo absorben: un
+# umbral absoluto para las magnitudes pequenas (un tirante de 0.30 m, una
+# pendiente de 0.0008) y uno relativo para las grandes (una cota de 3800 m).
+# Son del mismo orden que `TOL_UMBRAL_NORMATIVO`, y por la misma razon: un
+# nanometro no es una diferencia de diseno. Una diferencia REAL de calculo
+# --- 0.3 mm de HW por una constante cambiada (EXT-2 midio -0.306 mm) --- esta
+# seis ordenes de magnitud por encima y se reporta.
+#
+# NO son valores de proyecto: cambiarlas no mueve ningun numero de ninguna
+# memoria; solo cuantas cifras tienen que coincidir para que el comparador
+# calle. Y no son un criterio: no hay nada que declarar en la memoria sobre
+# ellas.
+TOL_COMPARADOR_ABS = 1e-9
+TOL_COMPARADOR_REL = 1e-9
+
+# ---------------------------------------------------------------------------
+# El area de una obra escrita DOS VECES (T-1, auditoria adversarial)
+# ---------------------------------------------------------------------------
+# Con --cuencas el area de la cuenca de una obra esta en dos archivos y en dos
+# unidades: `area_ha` en el CSV de puntos (la que clasifica la obra y fija su
+# periodo de retorno) y `area_km2` en el CSV de cuencas (la que entra al metodo
+# racional). Son el mismo dato y tienen que decir lo mismo; cuando no, el
+# programa no elige una: se detiene con `DatoInvalidoError` nombrando el par.
+#
+# La tolerancia existe porque las dos se teclean REDONDEADAS, cada una en su
+# unidad. Dos escrituras del mismo numero a tres cifras significativas
+# difieren a lo sumo un 1 % (medio por ciento cada una), y eso no es una
+# contradiccion sino un redondeo. Por encima, son dos areas.
+#
+# NO es un valor de proyecto: no entra en ninguna formula ni mueve ningun
+# resultado. Solo decide cuando dos celdas dejan de ser la misma medida.
+TOL_REL_AREA_ESCRITA_DOS_VECES = 1e-2
+
+
+# ---------------------------------------------------------------------------
+# --- T-5 --- La busqueda del relleno maximo de la Fase 8
+# ---------------------------------------------------------------------------
+# `M8._relleno_maximo` busca el PRIMER relleno sobre la clave en que la
+# clase, la plancha o el perfil elegidos dejan de cumplir. El margen no es
+# monotono en todo el intervalo --la carga viva decrece con la profundidad
+# mientras la de tierra crece, y se desprecia de golpe pasados los 8.0 ft--,
+# de modo que un Brent sobre el intervalo entero podria devolver un cruce
+# POSTERIOR al primero, que es el lado inseguro. Se muestrea el intervalo en
+# este numero de tramos y se aplica Brent (con TOL_BRENT) en el primero que
+# cambia de signo. Es una resolucion numerica: solo un hundimiento del margen
+# mas estrecho que un tramo --del orden de un centimetro en los rellenos de
+# esta obra-- podria escaparsele.
+TRAMOS_BUSQUEDA_RELLENO_MAXIMO = 400
+
+
+# ---------------------------------------------------------------------------
+# --- T-7b --- La busqueda de la cuña critica (Coulomb / Culmann)
+# ---------------------------------------------------------------------------
+# `M9.cuna_de_tanteo` busca el angulo del plano de falla que da el MAYOR
+# empuje sobre el plano vertical del talon, con la superficie real del
+# relleno (talud que sube y se quiebra en la plataforma). La funcion del
+# angulo es suave salvo en el quiebre, donde tiene un pico anguloso; un
+# metodo de una sola llamada podria quedarse en un maximo local. Se muestrea
+# el intervalo admisible en este numero de tramos y se afina el mejor con
+# una busqueda acotada a los dos tramos vecinos, hasta `TOL_ANGULO_CUNA`
+# radianes. Es resolucion numerica: medido sobre los dos cabezales de A-01,
+# 450, 1800 y 7200 tramos dan el mismo empuje a 1e-9 kN/m.
+TRAMOS_CUNA_DE_TANTEO = 1800
+TOL_ANGULO_CUNA = 1e-10

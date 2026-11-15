@@ -1,0 +1,723 @@
+"""
+tests/test_cierre_perfil.py
+===========================
+El cierre del nivel de PERFIL, comprobado sobre el producto y no sobre el
+codigo.
+
+Tres cosas que ningun otro archivo de la suite comprueba, y las tres son el
+criterio de salida de S20:
+
+    1. `--alcance perfil` corre DE PUNTA A PUNTA sobre un CSV con todos los
+       datos externos presentes. Hasta S20 la corrida se detenia en la Fase 2
+       por falta de `luz_m`, y la auditoria normativa lo dejo escrito como
+       limitacion de su propio bloque G (`R48-041`): «lo que solo se imprime
+       en Fase 5 no esta cubierto por esta auditoria». Aqui esta cubierto.
+    2. La memoria contra un CASO RESUELTO A MANO. Los numeros de abajo se
+       calcularon con aritmetica independiente --- brentq sobre las formulas
+       escritas de nuevo, sin llamar a M3, M4 ni M7 --- y despues se
+       contrastaron contra el HTML generado. Un test que llama a la misma
+       funcion que quiere verificar no verifica nada.
+    3. Ningun [A] de perfil sin valor, sin sensibilidad y sin procedencia, y
+       la clasificacion perfil/expediente contrastada contra lo que la corrida
+       INVOCA de verdad, no contra una lista escrita a mano.
+
+POR QUE EL CSV ES OTRO. `tests/ejemplo_puntos.csv` trae `Q_receptor_m3s` y
+`cota_TW` vacias en las cuatro filas, que es el estado del expediente cuando
+esas dos columnas no existian para nadie (SIS-B-04). Ese archivo se conserva
+tal cual: es el que sostiene los tests de bloqueo. El de aqui,
+`ejemplo_puntos_perfil.csv`, es el mismo corredor con los datos externos que
+el nivel de perfil si tiene, y es el unico con el que se puede ejercitar la
+Sec. 1.3 entera.
+"""
+
+import math
+import re
+from pathlib import Path
+
+import pytest
+from scipy.optimize import brentq
+
+RAIZ = Path(__file__).resolve().parents[1]
+import cli                                                        # noqa: E402
+from src import criterios_adoptados as ca
+from src.modelos import SeccionReceptor, ViaDelTW
+from src.modulos import M11_reporte as M11
+from src.modulos import M3_hidraulica as M3
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE     # noqa: E402
+from tests.apoyo.criterios import sin_valor                       # noqa: E402
+
+CSV_PERFIL = RAIZ / "tests" / "ejemplo_puntos_perfil.csv"
+
+# Tolerancias de contraste contra el caso a mano. La de longitud y cotas es
+# el milimetro; la de velocidades y tirantes, la decima de milimetro. No son
+# tolerancias de convergencia --- esas viven en `tolerancias.py` --- sino de
+# COMPARACION entre dos calculos independientes de la misma magnitud, y se
+# eligen en el orden de la cifra que la memoria imprime.
+TOL_COTA = 1e-3
+TOL_FINA = 1e-4
+
+# Los datos externos del corredor que no son columna de Sec. 1.2. La luz de
+# 3.0 m sale del ancho del cauce en el cruce y es lo que separa alcantarilla
+# de puente (num. 4.1.1.3.1); el caudal y la pendiente de C-01 son los del
+# CANAL, no los de una quebrada (Sec. 2.3, Familia C).
+EXTERNOS_GLOBALES = dict(luz_m=3.0, L_hidraulico_m=120.0, TW_m=None,
+                         longitud_m=None, categoria_tr=None)
+EXTERNOS_POR_PUNTO = {"C-01": {"Q_m3s": 0.65, "S_conducto": 0.004}}
+
+
+# Los criterios que ESTA corrida invoco. Desde EXT-4 la foto la toma
+# `cli.correr` --- vacia el registro al entrar y lo captura al salir en
+# `Informe.contexto` ---, de modo que los dos tests de clasificacion de mas
+# abajo miden lo que la corrida DE PERFIL invoco y no lo que la suite
+# acumulo, sin vaciar ni reponer nada a mano.
+USADOS_POR_LA_CORRIDA: set = set()
+
+
+@pytest.fixture(scope="module")
+def informe_perfil():
+    externos = cli.cargar_datos_externos(None, EXTERNOS_GLOBALES)
+    for id_punto, datos in EXTERNOS_POR_PUNTO.items():
+        externos.por_punto.setdefault(id_punto, {}).update(
+            {clave: cli.DatoDeclarado(clave, valor, "datos del expediente")
+             for clave, valor in datos.items()})
+    informe = cli.correr(CSV_PERFIL, externos, alcance=cli.ALCANCE_PERFIL)
+    USADOS_POR_LA_CORRIDA.update(informe.contexto.criterios_usados)
+    return informe
+
+
+@pytest.fixture(scope="module")
+def memoria(informe_perfil):
+    """
+    La memoria CON LA PLANTILLA DE PERFIL, que es la que la CLI elige para
+    esta corrida. No es un detalle de fixture: las dos plantillas comparten
+    el contrato de marcadores pero no imprimen los mismos bloques, y usar la
+    de expediente aqui mediria un documento que nadie va a emitir (SIS-B-06).
+    """
+    return M11.memoria_html(
+        informe_perfil, proyecto="cierre del nivel de perfil",
+        ruta_plantilla=M11.DIR_PLANTILLAS / M11.NOMBRE_PLANTILLA_PERFIL)
+
+
+def _punto(informe, id_punto):
+    return next(p for p in informe.puntos if p.punto.id == id_punto)
+
+
+# ===========================================================================
+# 1 - La corrida llega a la Fase 5, que es lo que R48-041 no pudo medir
+# ===========================================================================
+
+def test_b01_queda_dimensionado_con_V1_V2_del_perfil_y_sin_bloqueo_no_evaluable(
+        informe_perfil):
+    """
+    EXT-3 fijaba aqui que B-01 --control de SALIDA con HW/D = 0.395 < 0.75--
+    salia dimensionado CON el bloqueo «metodo no evaluable» diferido y con
+    V1 y V2 diferidas. E-A (2026-09-21) trae el perfil de la lamina: la
+    aproximacion fuera de rango ya no se usa --el remanso decide-- y V1 y V2
+    se evaluan con el tirante maximo y la velocidad minima del perfil. Ningun
+    punto lleva ya el bloqueo, y B-01 sigue dimensionado.
+    """
+    from src.modelos import TipoDeBloqueo
+    b01 = _punto(informe_perfil, "B-01")
+    assert b01.dimensionado
+    h = b01.resultado.resultado_hidraulico
+    assert h.perfil is not None
+    assert not h.h_o_fuera_de_rango
+    for id_punto in ("A-01", "A-02", "B-01"):
+        assert not [b for b in _punto(informe_perfil, id_punto).bloqueos
+                    if b.tipo is TipoDeBloqueo.METODO_NO_EVALUABLE], id_punto
+    codigos = {v.codigo for _fase, v in b01.verificaciones()}
+    assert {"V1", "V2"} <= codigos
+
+
+def test_la_corrida_de_perfil_pasa_de_la_fase_2_y_dimensiona(informe_perfil):
+    """
+    Los tres puntos de conducto circular cierran. C-01 no, y no es un fallo:
+    la Familia C es marco o multicelda (Sec. 2.3) y el catalogo de Sec. 3.2
+    es circular. La distincion importa y por eso se comprueba: un punto que
+    no cierra por falta de dato y uno que no cierra porque es otra forma de
+    estructura se corrigen de forma distinta.
+    """
+    dimensionados = {p.punto.id for p in informe_perfil.puntos if p.dimensionado}
+    assert dimensionados == {"A-01", "A-02", "B-01"}
+
+    c01 = _punto(informe_perfil, "C-01")
+    assert not c01.dimensionado
+    motivos = " ".join(b.mensaje for b in c01.bloqueos)
+    # EL BLOQUEO DE C-01 CAMBIO DE NATURALEZA DOS VECES. En C5: de "M2 no
+    # ofrece material candidato para la Familia C", una afirmacion sobre el
+    # CATALOGO, a un criterio del cajon sin declarar, una afirmacion sobre el
+    # EXPEDIENTE. --- T-3 --- Desde T-3 los siete del cajon tienen valor de
+    # archivo, y el punto avanza hasta el primer DATO que esta corrida no le
+    # da: la pendiente del canal (`S_cauce`, que la fila deja vacia por
+    # tablero y que V2b compara con la del conducto). Sigue siendo una
+    # afirmacion sobre el expediente, y ya no es un criterio que declarar.
+    assert "S_cauce" in motivos
+    assert not any(b.criterio in VACIOS_DE_PERFIL_DEL_CAJON
+                   for b in c01.bloqueos)
+    assert "no ofrece material candidato" not in motivos
+
+
+def test_las_nueve_verificaciones_de_perfil_llegan_a_la_memoria(informe_perfil):
+    """
+    La limitacion `R48-041` de la auditoria normativa, cerrada: su bloque G
+    se midio sobre una corrida detenida en Fase 2, donde V4 y 7.A nunca se
+    ejecutan. Aqui se ejecutan las nueve obligatorias del alcance de perfil.
+    """
+    a01 = _punto(informe_perfil, "A-01")
+    codigos = [v.codigo for _, v in a01.verificaciones() if v.codigo]
+    # T-2 sumo V10 (la pendiente del conducto), que corre en los dos alcances
+    # y se evalua detras de V4b, antes del hueco de V5. G3 (T-6) es el aviso
+    # de esviaje de 7.B: cumple siempre, no bloquea. T-5 sumo la Fase 8 del
+    # conducto detras de V9: el tubo de concreto de A-01 lleva F8.CLASE.
+    assert codigos == ["V1", "V2", "V2b", "V3", "V4", "V4b", "V10", "V6",
+                       "V7", "V9", "F8.CLASE", "G1", "G2", "G3"]
+    assert all(v.cumple for _, v in a01.verificaciones())
+
+
+def test_lo_diferido_esta_listado_con_fundamento_en_el_bloque_de_alcance(
+        informe_perfil, memoria):
+    """
+    Criterio de salida: «todo lo diferido aparece listado con fundamento en
+    el bloque de alcance». Se comprueba sobre el HTML, que es donde el
+    revisor lo lee, y no solo sobre el objeto.
+    """
+    diferidos = informe_perfil.diferidos()
+    assert diferidos, "una corrida de perfil sin nada diferido no es de perfil"
+
+    # Las tres familias de diferimiento del alcance de perfil, cada una con
+    # su fundamento en el documento.
+    etapas = {b.etapa for _id, b in diferidos}
+    assert any("V5" in e for e in etapas)
+    assert any("V8" in e for e in etapas)
+    assert any("Fase 8" in e for e in etapas)
+    assert any("Fase 9" in e for e in etapas)
+
+    # Desde el ancla de la seccion y no desde su titulo: el indice (E-B)
+    # repite el titulo antes, como texto de un enlace.
+    bloque = memoria.split('<h2 id="alcance"')[1].split("<h2")[0]
+    for _id_punto, b in diferidos:
+        assert b.etapa in bloque or b.mensaje[:60] in bloque, b.etapa
+    # Y el fundamento, no solo el rotulo: la fuente que cerraria el criterio.
+    assert "DG-2018" in bloque and "Ley 29338" in bloque
+
+
+def test_ninguna_fila_de_la_fase_5_queda_sin_evaluar(memoria):
+    """
+    Lo que SIS-A-13 y MAT-O15 reprochaban: contar diez verificaciones donde
+    la hoja de ruta lista once, y dejar la resta al lector. La memoria lo
+    dice ahora en positivo.
+    """
+    assert "Las ONCE filas de la tabla de Fase 5" in memoria
+
+
+# ===========================================================================
+# 2 - La memoria contra el caso resuelto a mano (A-01)
+# ===========================================================================
+#
+# Todo lo de abajo se calcula aqui, con las formulas escritas de nuevo. Si
+# alguna coincidiera con la del modulo por copiarla, el test no valdria nada:
+# se escriben desde la fuente (Manning, la seccion circular de Sec. 4.1, la
+# ec. de Froude de Sec. 4.2.1, el control de salida de Sec. 4.3) y se comparan
+# contra lo que el pipeline produjo.
+
+A01 = dict(Q=1.167, S=0.006, D=0.90, n_min=0.010, n_max=0.013,
+           cota_terreno=42.10, cota_rasante=44.20, cota_subrasante=44.05,
+           ancho_plataforma=9.60, esviaje=15.0, cota_fondo_receptor=41.30,
+           Q_receptor=2.00, talud=2.0, ke=0.5, K_friccion=19.63, G=9.81,
+           receptor=dict(b=2.0, z=1.5, S=0.0008, n=0.030))
+
+
+def _longitud_a01():
+    """
+    7.B a mano, por extremo (T-6; HDS-5 num. 2.2.4 b.): cada talud baja hasta
+    el fondo del conducto en SU extremo y la salida queda S*L mas baja, de
+    modo que L aparece en los dos miembros y se despeja.
+
+        altura (borde - fondo de entrada) = 44.20 - 42.10 = 2.10 m, en los dos
+        L * cos(15) = 9.60 + 2.0*2.10 + 2.0*(2.10 + 0.006*L)
+        L = 18.00 / (cos(15 deg) - 2.0*0.006) = 18.00 / 0.953926 = 18.86939 m
+
+    Hasta T-6 era 18.00 / cos(15 deg) = 18.63497 m: la misma altura para los
+    dos taludes (el metodo `terraplen_simetrico`, que sigue declarable).
+    """
+    d = A01
+    altura = d["cota_rasante"] - d["cota_terreno"]
+    return ((d["ancho_plataforma"] + 2 * d["talud"] * altura)
+            / (math.cos(math.radians(d["esviaje"])) - d["talud"] * d["S"]))
+
+
+def _manning_circular(*, Q, S, D, n):
+    def f(th):
+        A = (D ** 2 / 8) * (th - math.sin(th))
+        R = A / (D * th / 2)
+        return (1 / n) * A * R ** (2 / 3) * S ** 0.5 - Q
+    th = brentq(f, 1e-9, 2 * math.pi - 1e-9, xtol=1e-12)
+    A = (D ** 2 / 8) * (th - math.sin(th))
+    return th, A, A / (D * th / 2), (D / 2) * (1 - math.cos(th / 2))
+
+
+def _manning_trapecial(*, Q, b, z, S, n):
+    def f(y):
+        A = (b + z * y) * y
+        R = A / (b + 2 * y * math.sqrt(1 + z ** 2))
+        return (1 / n) * A * R ** (2 / 3) * S ** 0.5 - Q
+    return brentq(f, 1e-9, 50.0, xtol=1e-12)
+
+
+def test_la_longitud_de_A01_reproduce_el_calculo_a_mano(informe_perfil):
+    """
+    7.B por extremo (ver `_longitud_a01`): L = 18.00 / (cos 15 - 0.012).
+    """
+    L = _longitud_a01()
+    assert L == pytest.approx(18.86939, abs=TOL_COTA)
+    assert _punto(informe_perfil, "A-01").longitud.valor == pytest.approx(
+        L, abs=TOL_COTA)
+
+
+def test_el_TW_de_A01_reproduce_el_paso_2_de_la_seccion_1_3(informe_perfil):
+    """
+    Sec. 1.3, pasos 1 y 2, a mano:
+
+        Q del receptor = 2.00 m3/s (columna del CSV, ANA / Junta)
+        Manning trapecial (b=2.0, z=1.5, S=0.0008, n=0.030) -> y_n = 0.908237 m
+        cota de agua   = 41.30 + 0.908237            = 42.20824 msnm
+        cota de salida = 42.10 - 0.006 * 18.86939    = 41.98678 msnm
+        TW             = 42.20824 - 41.98678         = 0.221453 m
+
+    Y la VIA queda registrada: si algun dia el TW volviera a salir de un
+    criterio declarado sin que nadie lo note, este assert lo dice.
+    """
+    d = A01
+    y_r = _manning_trapecial(Q=d["Q_receptor"], **d["receptor"])
+    assert y_r == pytest.approx(0.908237, abs=TOL_FINA)
+
+    L = _longitud_a01()
+    cota_salida = d["cota_terreno"] - d["S"] * L
+    TW = (d["cota_fondo_receptor"] + y_r) - cota_salida
+    assert TW == pytest.approx(0.221453, abs=TOL_FINA)
+
+    a01 = _punto(informe_perfil, "A-01")
+    assert a01.tw.valor == pytest.approx(TW, abs=TOL_FINA)
+    assert a01.tw_sec13.via is ViaDelTW.MANNING_RECEPTOR
+    assert a01.tw_sec13.cota_TW_msnm == pytest.approx(42.20824, abs=TOL_COTA)
+
+
+def test_la_hidraulica_de_A01_reproduce_el_calculo_a_mano(informe_perfil):
+    """
+    Sec. 4.1 y 4.2.1 a mano, con la regla de doble n:
+
+        theta = 3.950696 rad   A = 0.473279 m2   R = 0.266214 m
+        y_n   = 0.627123 m     y/D = 0.696803
+        V con n_max = 0.013 -> 2.465774 m/s   (V2, el piso)
+        V con n_min = 0.010 -> 3.205506 m/s   (V3 y Laushey, el techo)
+        y_c   = 0.639970 m
+    """
+    d = A01
+    _th, _A, R, y_n = _manning_circular(Q=d["Q"], S=d["S"], D=d["D"],
+                                        n=d["n_max"])
+    V_sed = (1 / d["n_max"]) * R ** (2 / 3) * d["S"] ** 0.5
+    V_ero = (1 / d["n_min"]) * R ** (2 / 3) * d["S"] ** 0.5
+    assert (y_n, V_sed, V_ero) == pytest.approx(
+        (0.627123, 2.465774, 3.205506), abs=TOL_FINA)
+
+    def froude(th):
+        A = (d["D"] ** 2 / 8) * (th - math.sin(th))
+        T = d["D"] * math.sin(th / 2)
+        return d["Q"] ** 2 * T / (d["G"] * A ** 3) - 1
+    thc = brentq(froude, 1e-6, 2 * math.pi - 1e-6, xtol=1e-12)
+    y_c = (d["D"] / 2) * (1 - math.cos(thc / 2))
+    assert y_c == pytest.approx(0.639970, abs=TOL_FINA)
+
+    h = _punto(informe_perfil, "A-01").resultado.resultado_hidraulico
+    assert h.y_normal == pytest.approx(y_n, abs=TOL_FINA)
+    assert h.y_critico == pytest.approx(y_c, abs=TOL_FINA)
+    assert h.V_sedimentacion == pytest.approx(V_sed, abs=TOL_FINA)
+    assert h.V_erosion == pytest.approx(V_ero, abs=TOL_FINA)
+
+
+def test_el_control_de_salida_de_A01_reproduce_el_calculo_a_mano(
+        informe_perfil):
+    """
+    Sec. 4.3 a mano, con el K de 19.63 (SI) y la seccion LLENA:
+
+        h_o = max(TW, (y_c + D)/2) = max(0.221453, 0.769985) = 0.769985 m
+        V   = Q / (pi/4 * D^2)                              = 1.834408 m/s
+        H   = (1 + 0.5 + 19.63*0.013^2*18.86939/(0.225)^(4/3)) * V^2/(2g)
+            = 0.335721 m
+        HW  = H + h_o - S*L                                 = 0.992490 m
+
+    (Con la L anterior a T-6, 18.63497 m, salia 0.992922 m: alargar el
+    conducto 0.234 m suma 0.0010 m de friccion y resta 0.0014 m de caida.)
+
+    El h_o lo gobierna la aproximacion (y_c + D)/2 y no el TW: es el caso que
+    el HDS-5 acota, y por eso la memoria imprime las tres condiciones de uso.
+    """
+    d = A01
+    L = _longitud_a01()
+
+    def froude(th):
+        A = (d["D"] ** 2 / 8) * (th - math.sin(th))
+        T = d["D"] * math.sin(th / 2)
+        return d["Q"] ** 2 * T / (d["G"] * A ** 3) - 1
+    y_c = (d["D"] / 2) * (1 - math.cos(
+        brentq(froude, 1e-6, 2 * math.pi - 1e-6, xtol=1e-12) / 2))
+
+    h_o = max(0.221453, (y_c + d["D"]) / 2)
+    V_llena = d["Q"] / ((math.pi / 4) * d["D"] ** 2)
+    H = ((1 + d["ke"]
+          + d["K_friccion"] * d["n_max"] ** 2 * L / (d["D"] / 4) ** (4 / 3))
+         * V_llena ** 2 / (2 * d["G"]))
+    HW_salida = H + h_o - d["S"] * L
+    assert HW_salida == pytest.approx(0.992490, abs=TOL_FINA)
+
+    h = _punto(informe_perfil, "A-01").resultado.resultado_hidraulico
+    assert h.HW_salida == pytest.approx(HW_salida, abs=TOL_FINA)
+
+
+def test_los_numeros_del_caso_a_mano_estan_en_la_memoria(memoria):
+    """
+    El contraste sobre el PRODUCTO. Los numeros de arriba tienen que estar
+    IMPRESOS, no solo calculados: es la diferencia entre "el codigo lo hace
+    bien" y "la memoria lo dice", que es la trampa de NOR-MEM-01.
+    """
+    # Desde el ancla del punto y no desde su rotulo: el indice (E-B) lo
+    # repite antes, como texto de un enlace.
+    a01 = memoria.split('id="punto-A-01"')[1].split('id="punto-A-02"')[0]
+    for numero in ("18.869",     # L de 7.B, por extremo (T-6)
+                   "0.221",      # TW de Sec. 1.3
+                   "0.627",      # y_n
+                   "0.640",      # y_c
+                   "2.466",      # V_sedimentacion (V2)
+                   "3.206",      # V_erosion (V3, Laushey)
+                   "43.142"):    # V4: cota de entrada + HW
+        assert numero in a01, f"la memoria de A-01 no imprime {numero}"
+
+
+# ===========================================================================
+# 3 - El nivel de perfil, cerrado y comprobable
+# ===========================================================================
+
+def test_ningun_A_de_perfil_invocado_queda_sin_valor(informe_perfil):
+    """
+    El criterio de salida, medido sobre lo que la corrida INVOCA de verdad.
+
+    No se lee de una lista: se lee de `criterios_usados()`, que es el registro
+    que la propia memoria imprime. Un criterio que gobierna un numero de esta
+    memoria y no esta declarado seria un numero sin defensa.
+    """
+    declarados_vacios = set(ca.criterios_de_perfil_sin_valor())
+    for clave in sorted(USADOS_POR_LA_CORRIDA):
+        c = ca.criterio_efectivo(clave)
+        if c.etiqueta != "A":
+            continue
+        if c.nivel == ca.NIVEL_EXPEDIENTE:
+            continue        # V5 y V8: los difiere el alcance, con fundamento
+        # C5 REABRIO EL NIVEL DE PERFIL, y esta es la unica forma honesta de
+        # escribirlo. Hasta C4 la asercion era `c.valor is not None` a secas,
+        # porque S20 habia cerrado el nivel y no quedaba ningun [A] de perfil
+        # invocado sin valor. C5 abre los del cajon -- la Familia C es un
+        # cruce de canal y el num. 4.1.1.3.4 a) remite su seccion a "cada
+        # diseño particular", de modo que el proyecto NO PUEDE escribirlos --,
+        # y con el marco en el catalogo la corrida de perfil los invoca.
+        #
+        # Lo que NO se relaja es el fondo: un [A] de perfil sin valor solo es
+        # admisible si esta DECLARADO como vacio abierto, y aun asi tiene que
+        # llevar ventana y procedencia. Lo que la asercion pierde en dureza lo
+        # gana en verdad: antes decia "no hay ninguno" y ahora dice "los que
+        # hay estan todos declarados", que es lo que se puede sostener.
+        if c.valor is None:
+            assert clave in declarados_vacios, (
+                f"[A] de perfil sin valor y sin declarar como vacio abierto: "
+                f"{clave}. Un vacio que la corrida invoca y que no figura en "
+                f"`criterios_de_perfil_sin_valor()` no se puede planificar")
+        assert c.sensibilidad is not None, f"[A] de perfil sin ventana: {clave}"
+        assert c.resolucion is not None, f"[A] de perfil sin procedencia: {clave}"
+
+
+def test_todo_criterio_que_la_corrida_de_perfil_invoca_esta_clasificado(
+        informe_perfil):
+    """
+    La clasificacion perfil/expediente no puede quedar desincronizada del
+    codigo, que es como se desincronizan las clasificaciones escritas a mano.
+
+    Un criterio que una corrida de PERFIL invoca es de perfil, salvo que su
+    etapa quede DIFERIDA por el alcance --- y eso no se afirma: se lee de los
+    bloqueos que la propia corrida marco `diferido_por_alcance`.
+    """
+    diferidos = {b.criterio for _id, b in informe_perfil.diferidos()
+                 if b.criterio}
+    for clave in sorted(USADOS_POR_LA_CORRIDA):
+        nivel = ca.CRITERIOS[clave].nivel
+        assert nivel, f"'{clave}' se invoca y no declara nivel"
+        if nivel == ca.NIVEL_EXPEDIENTE:
+            assert clave in diferidos, (
+                f"'{clave}' esta clasificado como de expediente y la corrida "
+                "de perfil lo invoca sin que su etapa quede diferida")
+
+
+# LOS VACIOS DE PERFIL SON DOS DESDE T-3 (eran diez: cinco los abrio C5, dos
+# C7 y uno PF-1). Quedan los NO INVOCADOS -- existen y esta corrida no llega a
+# ellos --. Los siete del cajon tienen valor de archivo desde T-3 de la
+# cadena T: la corrida SI los invoca, y ya no detienen el punto de Familia C.
+# La lista se conserva con su porque: los siete siguen siendo adopciones.
+VACIOS_DE_PERFIL_NO_INVOCADOS = [
+    "TW_receptor", "homogeneidad_serie_fen",
+    # 'seccion_cuneta' (T-9) estuvo aqui en la FASE A de T-9, sin valor de
+    # archivo; las correcciones de su auditoria le dieron el minimo de la
+    # Tabla Nº 34 para region muy lluviosa (decision A del dueño): ya no es
+    # un vacio.
+    # 'hw_entrada_fuera_de_rango' (PF-1, PC-03) estuvo aqui hasta T-2, que le
+    # dio valor de archivo («energia_critica», INF-0.5): ya no es un vacio.
+    # Sigue sin invocarlo esta corrida --el corredor del repositorio (S_cauce
+    # 0.006-0.008) queda muy por debajo del S* de cualquier punto (~0.38 con
+    # D = 0.90)-- y lo sigue ejercitando `tests/test_pf1_hw_fuera_de_rango.py`.
+]
+VACIOS_DE_PERFIL_DEL_CAJON = [
+    "secciones_cajon_normalizadas",   # la progresion B*H
+    "n_manning_cajon",                # la fila de la Tabla N 09
+    "embocadura_cajon",               # la carta de la Tabla A.1
+    "n_celdas_cajon",                 # una celda o multicelda
+    "ke_entrada_cajon",               # la fila de la Tabla C.2
+    # EL SEXTO ES DE C7 y su vacio es de OTRA CLASE que los cinco de C5. Los
+    # cinco salen del num. 4.1.1.3.4 a), que remite la seccion del cruce de
+    # canal a "cada diseño particular": el vacio es del MANUAL. Este sale de
+    # que la norma de PRODUCTO que tabula espesores -- AASHTO M 170M-04,
+    # columna «Wall Thickness» -- enumera sus filas por diametro designado de
+    # TUBERIA, y un marco no es una de ellas: el vacio es del CATALOGO. Los
+    # dos se declaran igual y por eso van juntos aqui; la razon no es la
+    # misma y por eso se dice.
+    "espesor_pared_cajon",            # el espesor adoptado del marco
+    # EL SEPTIMO TAMBIEN ES DE C7 y es de la clase del sexto, no de la de los
+    # cinco: el vacio es de la TABLA, no del Manual. La Tabla 12.6.6.3-1 de
+    # AASHTO LRFD enumera por tipo de conducto y sus dos filas de concreto
+    # dicen «Reinforced Concrete PIPE»; su unica fila con «box» es metalica.
+    # LO QUE LO DISTINGUE DEL SEXTO es que aqui la tabla CASI encaja, y por
+    # eso este vacio estuvo tapado: el codigo venia entregando 0.3048 m -- el
+    # piso de la fila del tubo -- a todo marco, sin declararlo y sin que el
+    # ancho entrara siquiera en el calculo.
+    "cobertura_minima_cajon",         # la cobertura de suelo del marco
+]
+
+
+def test_los_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
+    """
+    Son DIEZ, y ninguno es una omision: los diez declaran por que no se
+    pudieron cerrar.
+
+    LOS TRES QUE ESTA CORRIDA NO INVOCA (dos de S20 y uno de PF-1):
+
+    'TW_receptor'          Sec. 1.3 lo dejo como ULTIMA puerta. Con el
+                           expediente aportando el caudal del receptor, la
+                           corrida no llega a el.
+    'homogeneidad_serie_fen'  Desde T-1 SI es una eleccion --que se hace
+                           con los años FEN de la serie: los tres
+                           tratamientos de su ventana-- y la lee
+                           `MH_hidrologia`. Esta corrida no la invoca porque
+                           trae el caudal declarado en `Q_m3s`; y sigue vacia
+                           porque se decide con la serie delante, que es una
+                           entrada del proyecto. (Hasta T-1 este renglon la
+                           llamaba «un hecho sobre la serie»: el hecho --que
+                           años son FEN-- paso al CSV de la estacion.)
+
+    LOS SIETE DEL CAJON -- cinco de C5 y dos de C7 --, que esta corrida SI
+    invoca. Los cinco de C5, por una razon que
+    no es un olvido del proyecto sino una instruccion del numeral: el num.
+    4.1.1.3.4 a) exceptua a los cruces de canal de riego del piso de 0.90 m y
+    los remite a "cada diseño particular". Lo que ese numeral hace no es
+    liberar la seccion: la traslada del catalogo al DISEÑO. Escribirles un
+    valor aqui seria inventar lo que la norma manda decidir caso por caso.
+
+    Los DOS de C7 son de otra clase y conviene no confundirla con aquella: a
+    los cinco los calla el MANUAL, y a estos dos los calla la TABLA de la que
+    saldria el numero, porque enumera sus filas por un objeto que el marco no
+    es.
+
+    `espesor_pared_cajon`: la norma de PRODUCTO -- AASHTO M 170M-04, columna
+    «Wall Thickness» -- enumera por diametro designado de TUBERIA. Y no es un
+    vacio que alguien vaya a llenar con una tabla: la §14.1 adopto el vaciado
+    in situ justamente porque no hay norma de producto de cajon prefabricado
+    en normas/.
+
+    `cobertura_minima_cajon`: la Tabla 12.6.6.3-1 de AASHTO LRFD enumera por
+    TIPO DE CONDUCTO y sus dos filas de concreto dicen «Reinforced Concrete
+    PIPE». Este es el que mas se parece a un valor y no lo es, porque la tabla
+    CASI encaja -- tiene concreto, y tiene una fila con la palabra «box», que
+    es metalica --. La regla vinculante #9 mandaba traer de ahi el termino
+    `B'c/8` para el marco: se retiro en C7 contra la fuente primaria, y el
+    barrido que sostiene el vacio esta en la `AfirmacionNegativa`
+    SIN_CAJON_DE_CONCRETO_T12663.
+    """
+    # La funcion devuelve ORDENADO ALFABETICAMENTE, no por declaracion.
+    # --- T-3 --- Los siete del cajon ya no estan: tienen valor de archivo,
+    # con su ventana y su procedencia, y la corrida los invoca.
+    assert (ca.criterios_de_perfil_sin_valor()
+            == sorted(VACIOS_DE_PERFIL_NO_INVOCADOS))
+    for clave in VACIOS_DE_PERFIL_DEL_CAJON:
+        c = ca.CRITERIOS[clave]
+        assert c.valor is not None, clave
+        assert c.sensibilidad is not None and c.resolucion is not None, clave
+    # La corrida invoca los cinco de C5 (catalogo, progresion, ke, celdas) y
+    # se detiene en V2b por la pendiente del canal ANTES de V7 y de 7.A, que
+    # son las que leen los dos de C7 (espesor y cobertura).
+    for clave in VACIOS_DE_PERFIL_DEL_CAJON[:5]:
+        assert clave in USADOS_POR_LA_CORRIDA, clave
+
+    for clave in ca.criterios_de_perfil_sin_valor():
+        assert ca.CRITERIOS[clave].sensibilidad is not None, (
+            f"'{clave}' esta vacio y sin ventana: la ventana es parte de la "
+            "ficha, no del valor")
+        assert ca.CRITERIOS[clave].resolucion is not None, (
+            f"'{clave}' esta vacio y sin procedencia")
+
+    for clave in VACIOS_DE_PERFIL_NO_INVOCADOS:
+        assert clave not in USADOS_POR_LA_CORRIDA
+
+    # Y ninguno de los siete detiene ya al punto de Familia C.
+    c01 = _punto(informe_perfil, "C-01")
+    assert not any(b.criterio in VACIOS_DE_PERFIL_DEL_CAJON
+                   for b in c01.bloqueos)
+
+
+# ===========================================================================
+# 4 - Sec. 1.3: las cuatro vias, y la que gobierna
+# ===========================================================================
+
+SECCION = SeccionReceptor(b_m=2.0, z_HV=1.5, S=0.0008, n=0.030,
+                          altura_total_m=1.80)
+
+
+def _punto_de_prueba(**cambios):
+    from src.modelos import Familia, PuntoCritico
+    base = dict(id="X-01", progresiva_km=0.0, progresiva_display="0+000",
+                familia=Familia.A, Q_m3s=1.0, area_ha=100.0, S_cauce=0.006,
+                cota_terreno=42.10, cota_rasante=44.20, cota_subrasante=44.05,
+                cbr_subrasante=8.5, esviaje_grados=0.0, ancho_plataforma=9.60,
+                cota_fondo_receptor=41.30, Q_receptor_m3s=None, cota_TW=None,
+                sucs_fundacion="SM", NF_profundidad_m=1.40)
+    base.update(cambios)
+    return PuntoCritico(**base)
+
+
+def test_la_via_1_es_el_TW_declarado_y_no_necesita_geometria():
+    """
+    Con el TW a mano no hay cota que restar. Antes de S20 esta rama exigia
+    igual la cota de fondo de la salida --- y con ella la pendiente del
+    cauce ---, de modo que un punto de Familia C, cuya `S_cauce` va vacia
+    porque su pendiente es la del canal, se bloqueaba en el TW en vez de
+    llegar al bloqueo que de verdad tiene.
+    """
+    tw = M3.tw_seccion_1_3(punto=_punto_de_prueba(), cota_fondo_salida=None,
+                           tw_declarado=0.35)
+    assert tw.valor == pytest.approx(0.35, rel=REL_TRANSPORTE)
+    assert tw.via is ViaDelTW.DECLARADO
+    assert tw.cota_TW_msnm is None
+
+
+def test_la_via_2_convierte_la_columna_cota_TW_en_tirante():
+    """
+    SIS-B-04 medido: «un CSV con `cota_TW` llena sigue exigiendo --tw».
+    Tablero 3.1 rotula esa columna «Calculada (1.3)»: es el paso 2 resuelto
+    fuera, y lo que faltaba era la resta.
+    """
+    punto = _punto_de_prueba(cota_TW=42.35)
+    tw = M3.tw_seccion_1_3(punto=punto, cota_fondo_salida=42.00)
+    assert tw.valor == pytest.approx(0.35, abs=TOL_FINA)
+    assert tw.via is ViaDelTW.COTA_TW
+    assert tw.cota_TW_msnm == pytest.approx(42.35, abs=TOL_FINA)
+
+
+def test_una_cota_de_agua_bajo_el_fondo_de_la_salida_es_salida_libre():
+    """
+    El signo de la resta, que es donde esta el error facil: un TW negativo no
+    significa nada fisico. Daria un h_o menor que el de la salida libre, que
+    es imposible.
+    """
+    punto = _punto_de_prueba(cota_TW=41.50)
+    tw = M3.tw_seccion_1_3(punto=punto, cota_fondo_salida=42.00)
+    assert tw.valor == pytest.approx(0.0, abs=ABS_CERO)
+
+
+def test_la_via_4_calcula_los_dos_escenarios_y_corre_con_el_gobernante():
+    """
+    Paso 3 de Sec. 1.3: «dos escenarios acotados (salida libre / receptor a
+    seccion llena), cumplir en ambos».
+
+        salida libre    -> TW = 0 por definicion del escenario
+        seccion llena   -> cota = 41.30 + 1.80 = 43.10; TW = 43.10 - 42.00
+                           = 1.10 m
+
+    El diseño corre con el gobernante --- el mayor --- y los DOS viajan hasta
+    la memoria: cumplir con el mayor implica cumplir con el otro, y el
+    revisor tiene que poder comprobarlo en vez de creerlo.
+    """
+    with sin_valor("TW_receptor"):
+        tw = M3.tw_seccion_1_3(punto=_punto_de_prueba(),
+                               cota_fondo_salida=42.00)
+    assert tw.via is ViaDelTW.ESCENARIOS_ACOTADOS
+    assert dict(tw.escenarios)[M3.ESCENARIO_SALIDA_LIBRE] == pytest.approx(
+        0.0, abs=ABS_CERO)
+    assert dict(tw.escenarios)[M3.ESCENARIO_SECCION_LLENA] == pytest.approx(
+        1.10, abs=TOL_FINA)
+    assert tw.valor == pytest.approx(1.10, abs=TOL_FINA)
+
+
+def test_el_TW_mayor_es_el_peor_caso_y_por_eso_basta_correr_uno():
+    """
+    LA AFIRMACION QUE EL PASO 3 SOSTIENE, comprobada numericamente en vez de
+    argumentada: h_o = max(TW, (y_c + D)/2) no decrece con TW, HW de salida
+    crece con h_o, y el control gobernante es el mayor de los dos HW; luego
+    HW es monotono no decreciente en TW y su peor caso es el TW mayor.
+
+    Se barre el TW de 0 a 2 m sobre la geometria de A-01 y se exige que el HW
+    gobernante nunca baje. Si algun dia el control de salida dejara de ser
+    monotono en TW, «correr con el gobernante» dejaria de equivaler a
+    «cumplir en ambos» y este test es el que lo dice.
+    """
+    from src.modulos.M2_material import catalogo
+    from src.modulos.M4_control import resolver_control
+    from src.modelos import SeccionCircular, TipoMaterial
+
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    anterior = -math.inf
+    for paso in range(0, 21):
+        TW = paso / 10
+        r = resolver_control(seccion=SeccionCircular(0.90), Q=1.167, S=0.006,
+                             L=18.635, TW=TW, material=material)
+        gobernante = max(r.HW_entrada, r.HW_salida)
+        assert gobernante >= anterior - 1e-12, (
+            f"el HW gobernante bajo al subir el TW a {TW} m")
+        anterior = gobernante
+
+
+# ===========================================================================
+# 5 - Los cinco entregables de la Fase 11 estan en el documento
+# ===========================================================================
+
+def test_los_cinco_entregables_de_la_fase_11_estan_en_la_memoria(
+        memoria, informe_perfil, tmp_path):
+    """
+    Los cinco primeros de la lista de Fase 11 de la hoja de ruta. El tercero
+    es ademas un archivo aparte --- el cuadro resumen en CSV --- y se
+    comprueba tambien ahi: es el que se pega en el expediente.
+    """
+    secciones = re.findall(r"<h2[^>]*>(.*?)</h2>", memoria, re.S)
+    plano = " ".join(re.sub("<[^>]+>", "", s) for s in secciones)
+
+    assert "Memoria de calculo por punto critico" in plano   # entregable 1
+    assert "Criterios adoptados" in plano                    # entregable 2
+    assert "Tabla resumen" in plano                          # entregable 3
+    assert "Acotaciones" in plano                            # entregable 4
+    assert "Pendientes" in plano                             # entregable 2 (cola)
+    # Entregable 5: el analisis de sensibilidad, que hasta S18 solo lo
+    # consumian los tests (SIS-B-05). No es una seccion: va PEGADO a cada
+    # criterio adoptado, que es donde sirve --- decir de que rango salio el
+    # numero, ahi mismo donde el numero esta ---, y por eso se busca su
+    # rotulo y no un `<h2>`.
+    assert "Sensibilidad declarada" in memoria
+    assert "un barrido de sensibilidad lo recorre" in memoria
+
+    destino = tmp_path / "resumen.csv"
+    M11.exportar_csv(informe_perfil, destino)
+    filas = destino.read_text(encoding="utf-8").splitlines()
+    assert len(filas) == 5          # cabecera + los cuatro puntos
+    assert "A-01" in filas[1] and "0.90" in filas[1]

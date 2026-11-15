@@ -1,0 +1,6 @@
+# 2026-11-15T04:17:12 [cli_perfil] rc=1
+cd /home/user/val_web && NORMAS_DIR=/home/user/andy-rba30/normas python cli.py /tmp/validacion_web/casos/OBRA_DALE/puntos.csv --alcance perfil --datos-externos /tmp/validacion_web/casos/OBRA_DALE/externos.json --declarar 'diametros_normalizados={"inicio": 2.8956, "paso": 0.3048}' --declarar 'espesor_pared_conducto={"concreto_reforzado": {2896: 0.2667, 900: 0.1}, "hdpe": {900: 0.08975, 1050: 0.0846, 1200: 0.0985}}' --json /tmp/validacion_web/casos/OBRA_DALE/salida/cli.informe.json --html /tmp/validacion_web/casos/OBRA_DALE/salida/memoria.html
+
+# 2026-11-15T04:17:24 [cli_solo_concreto] rc=1
+cd /home/user/val_web && NORMAS_DIR=/home/user/andy-rba30/normas python cli.py /tmp/validacion_web/casos/OBRA_DALE/puntos.csv --alcance perfil --datos-externos /tmp/validacion_web/casos/OBRA_DALE/externos_solo_concreto.json --declarar 'diametros_normalizados={"inicio": 2.8956, "paso": 0.3048}' --declarar 'espesor_pared_conducto={"concreto_reforzado": {2896: 0.2667, 900: 0.1}, "hdpe": {900: 0.08975, 1050: 0.0846, 1200: 0.0985}}' --json /tmp/validacion_web/casos/OBRA_DALE/salida/cli_solo_concreto.informe.json --html /tmp/validacion_web/casos/OBRA_DALE/salida/memoria_solo_concreto.html
+

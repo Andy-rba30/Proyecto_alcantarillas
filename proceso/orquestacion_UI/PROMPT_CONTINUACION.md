@@ -1,0 +1,24 @@
+# Prompt para continuar en otra sesión
+
+Copia el bloque en una sesión nueva de Claude Code sobre el repositorio Andy-rba30/Proyecto_alcantarillas
+(entorno «Proyecto_alcantarillas», que ya instala Tk, xvfb y las dependencias).
+
+```text
+Eres la sesión ORQUESTADORA que continúa el trabajo de la cadena UI del repositorio Andy-rba30/Proyecto_alcantarillas. No implementas tú: lanzas subagentes (en worktree) por tarea, los revisas con un revisor independiente y decides si avanzar.
+
+0. Prepara:
+   - git fetch origin main claude/awesome-mendel-dyj4p4 claude/awesome-mendel-dyj4p4-respaldo
+   - Lee enteros CLAUDE.md, proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md y, de la rama de respaldo, proceso/orquestacion_UI/ESTADO.md (git show origin/claude/awesome-mendel-dyj4p4-respaldo:proceso/orquestacion_UI/ESTADO.md). ESTADO.md dice qué está en main, qué quedó a medias y qué decidió el dueño.
+   - Entorno: python debe ser 3.12 con tkinter (el script del entorno lo deja así; si no, ver «Entorno» en ESTADO.md). Clona el repositorio de normas (GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 https://github.com/Andy-rba30/normas /home/user/andy-rba30/normas) y usa NORMAS_DIR=/home/user/andy-rba30/normas. Copia medir.sh y respaldo.sh de proceso/orquestacion_UI/ (rama de respaldo) a tu scratchpad y ajusta sus rutas.
+   - Mide el par de la suite de partida con xvfb-run en un worktree FUERA del repo (varios tests recorren la raíz con rglob).
+
+1. UI-5 (7d52ca1) y VE-1 (822091f) ya están en origin/main. Lo que queda son decisiones del dueño (ESTADO.md, «Lo que sigue»): pregúntale cuál toma y conviértela en un prompt nuevo de la cadena con la misma puerta. (Histórico: si VE-1 (prompt en proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md, defectos D1-D3 de la validación externa) no está en origin/main: recupera su último commit «validacion(VE-1)» o su WIP de la rama de respaldo, aplica la misma puerta (revisor Fable) e intégralo. (Histórico: si UI-5 no estuviera en origin/main: recupera su último commit «interfaz(UI-5)» (es el padre del último commit de la rama de respaldo, o un antecesor suyo; compruébalo con git log), aplica la puerta —revisor independiente sin el contexto del implementador, con el diff y el prompt UI-5 del archivo de la cadena; lo confirmado se corrige antes de integrar; medición limpia con Tk real (passed + skipped = collected, ventana real corrida, línea base sin números movidos)— e intégralo por avance rápido en claude/awesome-mendel-dyj4p4 y en origin/main.
+
+2. VALIDACIÓN DE PUNTA A PUNTA con ejemplos externos (YA HECHA el 2026-11-15: resultados en proceso/orquestacion_UI/validacion_web/ y revisión de Fable en revision_validacion/ de la rama de respaldo; sólo amplíala si hay casos nuevos) (pedido expreso del dueño: la app ENTERA, no funciones sueltas). Los ejemplos recopilados están en proceso/orquestacion_UI/ejemplos_web/ de la rama de respaldo (ejemplos.json, RESUMEN.md); si faltan o son pocos, sigue buscando (WebSearch/WebFetch; la red del entorno permite tn.gov, fhwa.dot.gov, rosap.ntl.bts.gov, codot.gov, txdot.gov, core.ac.uk, dspace.espol.edu.ec y repositorios peruanos) sin inventar ningún dato. Para cada ejemplo completo: arma las entradas de la app (CSV de puntos, JSON de datos externos, CSV de cuencas y de estación si hay hidrología, declaraciones con --declarar o sesión), córrela de punta a punta por cli.py (perfil y expediente según el caso) y por la ventana real bajo xvfb (como tests/apoyo/gui_ui4_recorrido_real.py), y compara con lo publicado. Los datos que la app exige y el ejemplo no publica se declaran como DATOS DE PRUEBA rotulados y se demuestra (variándolos) que no mueven la magnitud comparada. Clasifica cada diferencia: defecto del programa / error o lectura de nomograma de la fuente / diferencia de método o de norma (el proyecto sigue el MTC y HDS-5). Informe en tabla (publicado, app, diferencia, clasificación, causa).
+
+3. Correcciones: lo que sea DEFECTO real se corrige con un subagente Opus (o Fable), con las reglas del proyecto (test en rojo primero, ficha en docs/decisiones_diferidas.md, línea base regenerada y declarada, ningún valor inventado; lo que exija decisión del dueño se le pregunta). Validación de cada corrección con un revisor independiente del OTRO modelo (si corrige Opus, revisa Fable, y viceversa). Misma puerta y entrega en main.
+
+4. Guardado: cada ~25 min y en cada hito, respalda con respaldo.sh (sube el trabajo en curso, ESTADO.md y los ejemplos a claude/awesome-mendel-dyj4p4-respaldo) y mantén ESTADO.md al día. Vigila el consumo con get_session (contexto y límite de 7 días): al 95 % guarda; al 98 % guarda y deja en el chat y en ESTADO.md un prompt de continuación como éste.
+
+5. Informe final al dueño en español y breve: qué se validó de punta a punta, tabla de contraste, defectos corregidos, lo diferido y el par de la suite de partida y de llegada.
+```

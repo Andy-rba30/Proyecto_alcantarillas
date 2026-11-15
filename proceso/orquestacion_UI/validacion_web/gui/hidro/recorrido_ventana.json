@@ -1,0 +1,198 @@
+{
+ "caso": "hidro",
+ "entradas": {
+  "csv": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/puntos.csv",
+  "externos": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/externos.json",
+  "sitio": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/sitio.json",
+  "cuencas": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/cuencas.csv",
+  "estacion": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/estacion.csv",
+  "alcance": "perfil",
+  "decl": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/declaraciones_TR100_50.txt",
+  "cli_json": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/salida/cli_TR100_50.informe.json"
+ },
+ "examinar": {
+  "csv": true,
+  "externos": true,
+  "sitio": true,
+  "cuencas": true,
+  "estacion": true
+ },
+ "campos_pestana_1": {
+  "proyecto_var": "Validacion hidrologia UPAO/UNC",
+  "csv_var": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/puntos.csv",
+  "datos_externos_var": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/externos.json",
+  "datos_sitio_var": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/sitio.json",
+  "cuencas_var": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/cuencas.csv",
+  "estacion_var": "/tmp/validacion_web/casos/HIDRO_UPAO_UNC/base/estacion.csv",
+  "alcance_var": "perfil"
+ },
+ "declaraciones": {
+  "homogeneidad_serie_fen": {
+   "declarado": true,
+   "mismo_valor": true,
+   "con_nota": false,
+   "primer_rotulo": "'homogeneidad_serie_fen' declarado a 'serie_completa' SOLO para la proxima corrida, con procedencia registrada (declarado el 2026-11-15T04:16:41 · el proyectista, con la serie de la estacion delante: el num. 3.4 del Manual manda incluir y evaluar los años del fenomeno El Niño y no dice como). criterios_adoptados.py no se modifico.",
+   "rotulo": "'homogeneidad_serie_fen' declarado a 'serie_completa' SOLO para la proxima corrida, con procedencia registrada (declarado el 2026-11-15T04:16:41 · el proyectista, con la serie de la estacion delante: el num. 3.4 del Manual manda incluir y evaluar los años del fenomeno El Niño y no dice como). criterios_adoptados.py no se modifico."
+  },
+  "distribucion_precipitacion_maxima": {
+   "declarado": true,
+   "mismo_valor": true,
+   "con_nota": false,
+   "primer_rotulo": "'distribucion_precipitacion_maxima' declarado a 'gumbel' SOLO para la proxima corrida, con procedencia registrada (declarado el 2026-11-15T04:16:41 · el proyectista: el Manual recomienda ocho distribuciones y permite elegir por la prueba de Kolmogorov-Smirnov; no manda ninguna). criterios_adoptados.py no se modifico.",
+   "rotulo": "'distribucion_precipitacion_maxima' declarado a 'gumbel' SOLO para la proxima corrida, con procedencia registrada (declarado el 2026-11-15T04:16:41 · el proyectista: el Manual recomienda ocho distribuciones y permite elegir por la prueba de Kolmogorov-Smirnov; no manda ninguna). criterios_adoptados.py no se modifico."
+  },
+  "riesgo_admisible_propietario": {
+   "declarado": true,
+   "mismo_valor": true,
+   "con_nota": false,
+   "primer_rotulo": "'riesgo_admisible_propietario' declarado a {'quebrada_importante': {'R': 0.22217864, 'n': 25}, 'quebrada_menor': {'R': 0.261430897, 'n': 15}} SOLO para la proxima corrida, con procedencia registrada (declarado el 2026-11-15T04:16:41 · la fila de tipo de obra con su R y su n, cuando el Propietario adopta valores distintos de los maximos recomendados que el proyecto toma por defecto). criterios_adoptados.py no se modifico.",
+   "rotulo": "'riesgo_admisible_propietario' declarado a {'quebrada_importante': {'R': 0.22217864, 'n': 25}, 'quebrada_menor': {'R': 0.261430897, 'n': 15}} SOLO para la proxima corrida, con procedencia registrada (declarado el 2026-11-15T04:16:41 · la fila de tipo de obra con su R y su n, cuando el Propietario adopta valores distintos de los maximos recomendados que el proyecto toma por defecto). criterios_adoptados.py no se modifico."
+  }
+ },
+ "segundos_ejecucion": 0.78,
+ "informe": true,
+ "error_visible": "",
+ "pestana_3_filas": [
+  [
+   "TINAS",
+   "1+000",
+   "A",
+   "no",
+   "-",
+   "-",
+   "-",
+   "-",
+   "-",
+   "-",
+   "0",
+   "1"
+  ],
+  [
+   "TINAS-T-DIAG",
+   "2+000",
+   "A",
+   "no",
+   "-",
+   "-",
+   "-",
+   "-",
+   "-",
+   "-",
+   "0",
+   "1"
+  ],
+  [
+   "TINAS-K-DIAG",
+   "3+000",
+   "A",
+   "no",
+   "-",
+   "-",
+   "-",
+   "-",
+   "-",
+   "-",
+   "0",
+   "1"
+  ],
+  [
+   "CUNETA1",
+   "4+000",
+   "B",
+   "si",
+   "Concreto reforzado",
+   "Ø 0.90 m",
+   "entrada",
+   "0.187",
+   "2.24",
+   "1.72",
+   "0",
+   "0"
+  ],
+  [
+   "UNC-CAJ",
+   "5+000",
+   "A",
+   "no",
+   "-",
+   "-",
+   "-",
+   "-",
+   "-",
+   "-",
+   "0",
+   "1"
+  ],
+  [
+   "UNC-A1",
+   "6+000",
+   "A",
+   "si",
+   "TMC galvanizada",
+   "Ø 1.80 m",
+   "salida",
+   "2.022",
+   "4.44",
+   "3.11",
+   "0",
+   "0"
+  ],
+  [
+   "UNC-A2",
+   "7+000",
+   "A",
+   "si",
+   "TMC galvanizada",
+   "Ø 1.50 m",
+   "salida",
+   "1.659",
+   "3.94",
+   "2.76",
+   "0",
+   "0"
+  ]
+ ],
+ "pestana_3_detalle": {
+  "TINAS": {
+   "texto": "TINAS  |  progresiva 1+000  |  Familia A\nFase 2  alcantarilla (luz 3.000 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 100 anios\nSec. 3.3 durabilidad: sin ensayos, matriz no aplicada\n[avisa] tmc: aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio\nsuelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos\nFase 4  sin dimensionar\nS_cauce  : 0.0200 m/m (CSV Sec. 1.2, columna S_cauce)\nVerificaciones:\n[OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1  obtenido 3.000 | admisible 6.000\nAcceso de mantenimiento: previsto en los planos (datos externos (globales); exigencia del num. 4.1.1.3.7 d))\nBloqueos:\n[MetodoNoEvaluableError] Fase 1-bis - Hidrologia: caudal de diseno (MH) -> caudal de diseno por el metodo racional\nmétodo no evaluable (Manual de Hidrología, cap. III): Q del punto TINAS -- el Manual situa el metodo racional en cuencas de area menor de 10 km2 (num. 3.12.2) y la cuenca tiene 55.911 km2. Hace falta: otro metodo de estimacion de caudales: el hidrograma unitario del num. 3.12.3 del Manual de Hidrologia, o el caudal declarado por el estudio hidrologico en la columna Q_m3s\n",
+   "lineas_de_la_cli_presentes_en_la_ventana (espacios normalizados, sin reglas ----)": true,
+   "n_lineas_cli": 15,
+   "lineas_cli_que_faltan": []
+  },
+  "TINAS-T-DIAG": {
+   "texto": "TINAS-T-DIAG  |  progresiva 2+000  |  Familia A\nFase 2  alcantarilla (luz 3.000 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 100 anios\nFase 1b Q calculado por el programa (MH_hidrologia) con la cuenca y la estación declaradas: Q = 16.809 m3/s | Q/A = 1.769 m3/s por km2 (C*I = 6.36 mm/h)\nHidrologia: TR 100 anios, P24 = 61.49 mm (gumbel; FEN: serie_completa), tc = 237.24 min, I = 9.91 mm/h, C = 0.50, A = 9.500 km2\nSec. 3.3 durabilidad: sin ensayos, matriz no aplicada\n[avisa] tmc: aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio\nsuelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos\nFase 4  sin dimensionar\nS_cauce  : 0.0200 m/m (CSV Sec. 1.2, columna S_cauce)\nVerificaciones:\n[OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1  obtenido 3.000 | admisible 6.000\nEmbocadura: cabezal_con_aleros (aleros a 45.0 grados con la pared del barril; esviaje 0 grados <= umbral 30: 45 grados (por defecto))\nAcceso de mantenimiento: previsto en los planos (datos externos (globales); exigencia del num. 4.1.1.3.7 d))\naviso: La serie de la estacion «CHACHAPOYAS» no declara ningun año FEN. La Fase 1-bis de la hoja de ruta dice que, si la serie no contiene los años del fenomeno El Niño extraordinario, el caudal de diseño esta subestimado de forma grave y eso es una limitacion central que la memoria tiene que declarar.\naviso: La serie que entra al ajuste tiene 17 años, menos de los 25 que el Manual recomienda (num. 3.4): la extrapolacion a 100 años de periodo de retorno es poco confiable, y la prueba de bondad de una serie corta rechaza muy poco.\naviso: La serie de «CHACHAPOYAS» no es continua: entre 1965 y 2011 faltan 30 años (1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003). El programa ajusta los años que hay y no rellena los que faltan; si entre ellos hay un año del fenomeno El Niño, la lluvia de diseño esta subestimada.\naviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce\naviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 16.7 cm en este punto\nBloqueos:\n[CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)\nfalta declarar: remanso_derecho_via [A] - Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)\nfuente: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto\n[CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)\nfalta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde\nfuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral\n[DisenoNoFactibleError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> material y diametro (bucle de MD)\nDiseno no factible en el punto TINAS-T-DIAG: ningun material candidato cumple la Fase 5. Concreto reforzado: material descartado por diámetro requerido (ultimo diametro con diseño estandar tabulado en AASHTO M 170M-04 / ASTM C 76M-02 (metrica), 2.70 m, criterio 'D_max_norma_producto' [C]; por encima la norma remite a un diseño especial del fabricante (Seccion 7.2), que este catalogo no recorre). Ultimo intento: Ø 2.70 m: incumple V3 (MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 \"Velocidades maximas admisibles (m/s) en conductos revestidos\", num. 4.1.1.3.6, pag. impresa 76; fuente de la tabla: HCANALES, Maximo Villon B. Los DOS numeros de cada fila son MAXIMOS -- lo dice el titulo --, de modo que se verifica solo el superior y el piso lo pone V2. Que el rango recorra la calidad del revestimiento es INTERPRETACION DEL PROYECTISTA y no del Manual: se declara aparte, en el bloque \"Umbrales normativos y su caracter\" de esta memoria. Se evalua con la velocidad de la rama de n MINIMO -- la estimacion alta --, que es el extremo conservador para un techo) obtenido 9.923619744195864 frente a 6.0; V7 (Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3)) obtenido 44.06399999999959 frente a 78.89670126519263 | TMC galvanizada: material descartado por diámetro requerido (mayor diametro en que la corrugacion adoptada es estandar, 2.10 m, criterio 'corrugacion_y_espesor_tmc' [A]; la serie de AASHTO M 36 / ASTM A760/A760M-10 sigue por encima con otra corrugacion). Ultimo intento: Ø 2.10 m: el conducto no transporta Q = 16.8094 m3/s en flujo libre con S = 0.02000 y n = 0.03 (Sec. 4.1) | HDPE: material descartado por diámetro requerido (ultimo tamaño de la serie de AASHTO M 294-11 (en normas/: traduccion no oficial), 1.50 m, criterio 'D_max_norma_producto' [C]). Ultimo intento: Ø 1.50 m: el conducto no transporta Q = 16.8094 m3/s en flujo libre con S = 0.02000 y n = 0.015 (Sec. 4.1)\n",
+   "lineas_de_la_cli_presentes_en_la_ventana (espacios normalizados, sin reglas ----)": true,
+   "n_lineas_cli": 29,
+   "lineas_cli_que_faltan": []
+  },
+  "UNC-A1": {
+   "texto": "UNC-A1  |  progresiva 6+000  |  Familia A\nFase 2  alcantarilla (luz 3.000 m, num. 4.1.1.3.1 / 4.1.1.5.1) | TR 100 anios\nFase 1b Q calculado por el programa (MH_hidrologia) con la cuenca y la estación declaradas: Q = 6.034 m3/s | Q/A = 5.067 m3/s por km2 (C*I = 18.23 mm/h)\nHidrologia: TR 100 anios, P24 = 61.49 mm (gumbel; FEN: serie_completa), tc = 38.20 min, I = 38.98 mm/h, C = 0.45, A = 1.191 km2\nSec. 3.3 durabilidad: sin ensayos, matriz no aplicada\n[avisa] tmc: aviso fijo, sin ensayo que lo dispare: el Manual de Hidrologia no recomienda alcantarillas metalicas en condiciones muy agresivas --aguas salinas o acidas, suelos alcalinos o con turba-- y pide proteccion para cualquier material en zonas costeras cercanas al mar. Antes de adoptar TMC hay que verificar la condicion del sitio\nsuelo de fundacion SM: no esta entre los grupos SUCS declarados deficientes (OL, OH, PT; criterio 'sucs_fundacion_deficiente' [A]). Eso no lo califica como apto: este aviso no evalua capacidad portante, asentamientos ni licuacion; bajo el nivel freatico, la E.050 (Art. 38, pag. 51) manda evaluar la licuacion de los suelos granulares y de algunos con finos\nFase 4  Material : TMC galvanizada (AASHTO M 36 / ASTM A760/A760M-10)\nSeccion  : Ø 1.80 m (interior)\nControl  : salida (HW = 2.022 m; entrada 1.896 / salida 2.022)\nHidraulica: y_n = 1.283 m, y_c = 1.223 m, V_erosion = 4.444 m/s (n min), V_sedimentacion = 3.111 m/s (n max), Q = 6.034 m3/s, S = 0.0200 m/m\nLongitud : L = 25.000 m (M7.longitud_conducto (Sec. 7.B, metodo por_extremo)) | TW = 0.300 m (datos externos (globales))\nRegimen  : parcialmente lleno | V_llena = 2.371 m/s | V_salida = 3.278 m/s (HDS-5 3.1.6, y_salida = 1.223 m)\nh_o      : 1.511 m (manda (y_c + D)/2; TW = 0.300 m) | HW_aprox/D = 1.005 | usa la aproximacion fuera de rango (< 0.75): no | cautela: si\nPerfil   : M2 | lleno en 0.000 m de 25.000 m (fraccion 0.000) | HW por remanso = 2.022 m (manda: la comprobacion pide mas carga que la aproximacion) | y_max = 1.283 m, V_min = 3.111 m/s\nS_cauce  : 0.0200 m/m (CSV Sec. 1.2, columna S_cauce)\nVerificaciones:\n[OK] Fase 2 4.1.1.3.1 / 4.1.1.5.1  obtenido 3.000 | admisible 6.000\n[OK] V1  MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.7 b) \"Borde libre\", pag. impresa 79. El numeral RECOMIENDA este borde libre (\"Se recomienda que el diseño hidraulico considere como minimo el 25 % de la altura, diametro o flecha de la estructura\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto, igual que el piso de V2 obtenido 0.713 | admisible 0.750\numbral del criterio 'borde_libre_y_sobre_d_max' [A]\n[OK] V2  MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.6, parrafo inmediatamente posterior a la Tabla Nº 10: arranca en la pag. impresa 76 y el valor se imprime en la 77. El numeral RECOMIENDA este minimo (\"recomendandose que la velocidad minima sea igual a 0.25 m/s\"), no lo prohibe: aqui se aplica como umbral duro por decision conservadora del proyecto. Se evalua con la velocidad de la rama de n MAXIMO -- la estimacion baja --, que es el extremo conservador para un piso obtenido 3.111 | admisible 0.250\numbral del criterio 'velocidad_minima_autolimpieza_m_s' [A]\n[OK] V2b  HDS-5 3.a ed. (FHWA-HIF-12-026), num. 5.3.3 \"Sedimentation\", pag. impresa 5.11. El numeral NO fija un umbral: nombra dos INDICADORES (\"barrel slope less than the natural channel and roughness greater than the channel are key indicators of potential problems\"). Aqui se evalua el PRIMERO, y como se aplica lo declara el criterio 'regimen_v2b' [A] (umbral duro que detiene el punto, o indicador con aviso que no descarta el diametro); el segundo exige el n de Manning del cauce natural, que no es columna de Sec. 1.2, y queda declarado pendiente. La otra mitad de la fila V2b de la hoja de ruta -- el acceso de mantenimiento en planos -- entra por el criterio 'acceso_mantenimiento_v2b' [A] obtenido 0.020 | admisible 0.020\numbral del criterio 'acceso_mantenimiento_v2b' [A]\n[OK] V3  MC-HHD (RD 20-2011-MTC/14), Tabla Nº 10 \"Velocidades maximas admisibles (m/s) en conductos revestidos\", num. 4.1.1.3.6, pag. impresa 76; fuente de la tabla: HCANALES, Maximo Villon B. Los DOS numeros de cada fila son MAXIMOS -- lo dice el titulo --, de modo que se verifica solo el superior y el piso lo pone V2. Que el rango recorra la calidad del revestimiento es INTERPRETACION DEL PROYECTISTA y no del Manual: se declara aparte, en el bloque \"Umbrales normativos y su caracter\" de esta memoria. Se evalua con la velocidad de la rama de n MINIMO -- la estimacion alta --, que es el extremo conservador para un techo obtenido 4.444 | admisible 4.572\numbral del criterio 'v_max_tmc' [A]\n[OK] V4  Manual de Suelos, Geologia, Geotecnia y Pavimentos (MTC), num. 4.5.4 y 9.1(3) [hoja de ruta: Sec. 5.1] obtenido 102.022 | admisible 103.050\numbral del criterio 'resguardo_HW_subrasante' [N->]\n[OK] V4b  Fase 5, V4b -- adopcion del proyectista ('HW_D_max' [A]). NO es exigencia: el HDS-5, num. 2.2.5 d) 'Agency Constraints', pag. impresa 2.10, DESCRIBE la banda 1.0-1.5 que imponen las agencias viales de EE. UU., y el MTC no fija HW/D alguno obtenido 1.124 | admisible 1.500\numbral del criterio 'HW_D_max' [A]\n[OK] V10  MC-HHD (RD 20-2011-MTC/14), num. 4.1.1.3.3 \"Pendiente longitudinal\", pag. impresa 71: exige que la pendiente no altere \"desmesuradamente\" la erosion y la sedimentacion, SIN fijar cifra. La banda es adopcion del proyectista ('pendiente_minima_conducto' y 'pendiente_maxima_conducto' [A]) sobre lo que el HDS-5 3.a ed. describe: admite el barril horizontal (num. 3.3.4, pag. impresa 3.25) y dice que la mayoria de las alcantarillas se construyen por debajo del 10 %, sin medidas estructurales especiales (num. 5.4.4, pag. impresa 5.16) obtenido 0.020 | admisible 0.100\numbral del criterio 'pendiente_maxima_conducto' [A]\n[OK] V6  3.1  obtenido 1 celda(s) -- por construccion del catalogo circular de la Sec. 3.2: un tubo es un solo barril | admisible sección única con palizada\n[OK] V7  Fase 5, V7 (subpresion: Manual de Puentes num. 2.4.3.8.2; equilibrio de factores de carga: Manual de Puentes Tablas 2.4.5.3.1-1 y 2.4.5.3.1-2, pag. impresa 143, con la fila de gamma_p elegida por estructura en 'factores_carga_aashto'; procedimiento: Fase 8, item 3) obtenido 56.978 | admisible 25.803\numbral del criterio 'factores_carga_aashto' [A]\n[OK] V9  Sec. 3.2 (V9, nuevo en v7)  obtenido 1.800 | admisible 2.100\numbral del criterio 'corrugacion_y_espesor_tmc' [A]\n[OK] F8.AREA AASHTO LRFD 12.7.2 (LRFD); EG-2013 Tabla 507-01 obtenido 0.478 | admisible 3.691\numbral del criterio 'corrugacion_y_espesor_tmc' [A]\n[OK] F8.COSTURA AASHTO LRFD 12.7.2 (LRFD); EG-2013 Tabla 507-01 obtenido 108.791 | admisible 239.190\numbral del criterio 'fabricacion_tmc' [A]\n[OK] F8.FF AASHTO LRFD 12.7.2 (LRFD); EG-2013 Tabla 507-01 obtenido 0.218 | admisible 0.246\numbral del criterio 'corrugacion_y_espesor_tmc' [A]\n[OK] G1  Sec. 7.A (recubrimiento: el mayor entre EG-2013 508.07 -- solo HDPE -- y AASHTO LRFD Art. 12.6.6.3, Tabla 12.6.6.3-1 / resguardo Sec. 5.1) obtenido 104.000 | admisible 102.972\numbral del criterio 'resguardo_HW_subrasante' [N->]\n[OK] G2  Sec. 7.B (cotas amarradas al fondo del receptor; desnivel de entrega: criterio 'desnivel_minimo_entrega_m' [A]) obtenido 99.500 | admisible 99.000\numbral del criterio 'desnivel_minimo_entrega_m' [A]\n[OK] G3  Sec. 7.B (esviaje del cruce frente al maximo adoptado: HDS-5 num. 5.4.2, por analogia; AVISO, el esviaje es dato de entrada) obtenido 0.000 | admisible 45.000\numbral del criterio 'esviaje_max_grados' [A]\nFase 6  d50 = 0.354 m, espesor 0.619 m, longitud 5.000 m (num. 4.1.1.3.7 c))\naviso: d50 no es un diseño de enrocado: falta la granulometria completa (Sec. 6 de la hoja de ruta, 4.1.1.3.7 c))\naviso: El filtro no se dimensiona: se declara como requisito. Sin filtro el enrocado se socava por debajo y falla (Sec. 6 de la hoja de ruta; Lámina Nº 05 del Manual; HEC-14 Sec. 10.2; EG-2013 num. 511.08)\naviso: Alcance: el d50 que rige sale del Manual MTC (num. 4.1.1.3.7 c), funcion solo de V. HDS-5 3a ed. (FHWA-HIF-12-026), Sec. 5.3.2 'Scour at Outlets', pag. 5.11, remite el apron de enrocado a HEC-14 Sec. 10.2, que lo dimensiona en funcion de Q, D y TW: se calcula AL LADO, como contraste, y la corrida avisa cuando pide mas que lo adoptado. La geometria de la proteccion se cierra en el expediente tecnico\nFroude de HEC-14 a la salida: Fr_e = 1.069 (ye = 0.959 m, HEC-14 num. 10.1.1); subcritico o critico por el tirante contra el critico\nentrada: V en la boca = 3.111 m/s; revestimiento adoptado: emboquillado_de_piedra (criterio tipo_proteccion_entrada)\nsocavacion a la salida para el desplante: sin dato\nFase 7  L = 25.000 m, cota entrada 100.000 (ADOPTADA) / salida 99.500 msnm\ncota de entrada: regla 'cota_terreno' declarada en el criterio 'origen_cota_fondo_entrada' [A]; el codigo NO la elige. La fila no trae cota de fondo de entrada medida\nlongitud: metodo por_extremo; entre cabezales a la clave 17.437 m\npendiente: S = 0.0200 m/m (S_cauce); caida 0.500 m\nfactible: la rasante 104.000 msnm alcanza la minima de 7.A (102.972 msnm, gobierna resguardo) -- PROVISIONAL: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce\nFase 8  68x13/3.51; relleno 2.033 m + paquete 0.150 m; relleno maximo 6.322 m\nEmbocadura: cabezal_con_aleros (aleros a 45.0 grados con la pared del barril; esviaje 0 grados <= umbral 30: 45 grados (por defecto))\nAcceso de mantenimiento: previsto en los planos (datos externos (globales); exigencia del num. 4.1.1.3.7 d))\naviso: La serie de la estacion «CHACHAPOYAS» no declara ningun año FEN. La Fase 1-bis de la hoja de ruta dice que, si la serie no contiene los años del fenomeno El Niño extraordinario, el caudal de diseño esta subestimado de forma grave y eso es una limitacion central que la memoria tiene que declarar.\naviso: La serie que entra al ajuste tiene 17 años, menos de los 25 que el Manual recomienda (num. 3.4): la extrapolacion a 100 años de periodo de retorno es poco confiable, y la prueba de bondad de una serie corta rechaza muy poco.\naviso: La serie de «CHACHAPOYAS» no es continua: entre 1965 y 2011 faltan 30 años (1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003). El programa ajusta los años que hay y no rellena los que faltan; si entre ellos hay un año del fenomeno El Niño, la lluvia de diseño esta subestimada.\naviso: fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce\naviso: plataforma tomada horizontal: no se declaro `bombeo` ni `peralte`. Declarar el bombeo de la seccion tipica: cada 1 % acorta la longitud 16.7 cm en este punto\naviso: Proteccion de salida: la velocidad de salida se tomo con el tirante critico (HDS-5 num. 3.1.6) porque el TW queda bajo el. HEC-14 num. 3.1.3: «The flow goes through critical depth upstream of the outlet when the tailwater elevation is below the critical depth elevation in the culvert.»; en el borde el tirante es MENOR que el critico y la velocidad MAYOR, de modo que V, el Froude y el d50 de Laushey son una cota inferior (no conservador). Magnitud, leida de la fuente y no calculada: en la Figura 3.4 de HEC-14, con descarga libre, la velocidad de borde es de 1.35 a 1.43 veces la critica, y el d50 de Laushey, que va con V², de 1.8 a 2.0 veces el impreso; en su ejemplo resuelto (pag. impresa 3-4, TW de 0.41 a 0.58 diametros), de 1.08 a 1.13 veces. Las Figuras 3.3 y 3.4, que dan el tirante de borde, no estan digitalizadas\naviso: Proteccion de salida: gobierna el control de salida y la velocidad de salida es la critica (3.278 m/s), pero la rama de n minimo de la regla de doble n da una velocidad normal MAYOR (4.444 m/s): con n minimo el tirante normal seria supercritico y la estimacion alta de la velocidad de salida seria esa. Con ella el d50 de Laushey seria 0.650 m y no 0.354 m. La velocidad de salida la fija M4 (HDS-5 num. 3.1.6) y aqui no se cambia\naviso: Proteccion de salida: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_receptor' y 'regimen_flujo_descarga' en los datos externos del punto; el enrocado se dimensiona igual, sin saber si el terreno lo necesita\naviso: Proteccion de salida: el apron de HEC-14 NO se evaluo -- el conducto mide 1.800 m de alto y la Tabla 1.1 de HEC-14 limita el apron de enrocado a conductos de hasta 1500 mm (60 in = 1.524 m, que es la cifra que rige; nota 8). Hace falta: un disipador diseñado por HEC-14 (Caps. 7 a 10), que este programa no implementa. Rige el d50 de Laushey\naviso: Proteccion de salida: la regla 'regla_espesor_longitud_proteccion_salida' pide la envolvente con HEC-14 y HEC-14 no es evaluable en este punto: rige el d50 de Laushey con el espesor y la longitud adoptados\naviso: Proteccion de salida: el espesor rige como 1.75 veces el d50 (0.619 m), bajo el piso de 2 veces de HEC-14: «Apron depth ranges from 3.5D50 for the smallest riprap to a limit of 2.0D50 for the larger riprap sizes.» (Sec. 10.2) y «The basin is pre-shaped and lined with riprap that is at least 2D50 thick.» (Sec. 10.1). Ver 'regla_espesor_longitud_proteccion_salida'\naviso: Proteccion de entrada: no se comparo la velocidad con la maxima admisible del terreno (Tabla Nº 11 del Manual) porque falta 'tipo_terreno_entrada' y 'regimen_flujo_descarga' en los datos externos del punto; no se sabe si la entrada necesita revestimiento\naviso: Socavacion a la salida: NO se estimo -- falta el suelo del lecho (`material_lecho_salida`, dato del EMS: tipo, y D84 y D16 si no es cohesivo o indice de plasticidad y resistencia al corte saturada si lo es). El desplante del cabezal de salida queda sin profundidad de socavacion; tambien se puede declarar (`profundidad_socavacion_estimada_m`)\naviso: F8: la costura longitudinal del TMC se verifico con la resistencia de la costura anular_remachada_simple de ASTM A796 (Tabla 5 o 7), que es la de OTRA fabricacion: el EG-2013 507.02 a) describe tuberia armada con pernos, cuya costura no tiene resistencia tabulada en ninguna fuente del repositorio. Confirmar con el fabricante la resistencia de la costura del producto que se especifique\naviso: F8: el TMC de 1.80 m necesita la plancha 68x13/3.51 y el catalogo adopta '68x13/2.01' ('corrugacion_y_espesor_tmc'): la envolvente geometrica de 7.A y de V7 se armo con la adoptada, y con la requerida la clave sube 1.50 mm. Declare la plancha requerida para que la geometria la use\nBloqueos:\n[CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V5 diferida al expediente (alcance perfil)\nfalta declarar: remanso_derecho_via [A] - Metodo con que V5 mide la extension del embalse aguas arriba de la alcantarilla, para compararla con el derecho de via del punto (embalse dentro del derecho de via, sin afectar a terceros ni a la faja marginal)\nfuente: Fase 5, V5 de la hoja de ruta. El requisito juridico: DG-2018 num. 304.07.01 y 304.07.02 con la Tabla 304.09 (pags. impresas 198-199, registro DG2018.304.07.02), y la Ley 29338 (ausente de normas/) para la faja marginal. La carga como profundidad del embalse: HDS-5 num. 2.2.5, pag. impresa 2.9 (PDF 71). El metodo es del proyecto\n[CriterioPendienteError] Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) -> verificacion V8 diferida al expediente (alcance perfil)\nfalta declarar: TR_evento_extremo [A] - Periodo de retorno del evento extremo de V8 y el umbral de no colapso de la via ante desborde\nfuente: PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral\n[DiferidoPorAlcance] Fase 8 - Estructural del conducto (M8) -> Fase 8: cama de apoyo y demanda del marco diferidas al expediente (alcance perfil)\nla cama de apoyo y relleno lateral (item 4) y la demanda de la losa del marco (12.11.2; el diseño del portico es de expediente por la hoja de ruta) no se ejecutan en alcance de perfil. La clase, el calibre o el perfil del conducto (items 1-2 y 5) SI se verifican: son las filas F8.* de la Fase 5. Disponibles sin cambios con --alcance expediente\n",
+   "lineas_de_la_cli_presentes_en_la_ventana (espacios normalizados, sin reglas ----)": true,
+   "n_lineas_cli": 90,
+   "lineas_cli_que_faltan": []
+  }
+ },
+ "json_exportado": true,
+ "sesion_guardada": true,
+ "json_igual_a_la_cli_sin_hora": true,
+ "diferencias_ventana_vs_cli": [],
+ "n_diferencias": 0,
+ "comparador": {
+  "iguales": true,
+  "lineas": [
+   "IGUALES: los dos volcados describen la misma corrida (7 puntos; no se comparan generado, expediente.generado_utc, expediente.csv, expediente.corredor_del_proyecto.origen, datos_sitio.usados[].origen, expediente.hidrologia.cuencas, expediente.hidrologia.estacion)."
+  ]
+ },
+ "dialogos": [
+  [
+   "info",
+   "JSON exportado",
+   "Archivo: /tmp/validacion_web/gui/hidro/ventana.informe.json"
+  ],
+  [
+   "info",
+   "Exito",
+   "Sesion guardada correctamente."
+  ]
+ ]
+}

@@ -1,0 +1,8 @@
+{
+ "globales": {
+  "luz_m": 4.0,
+  "longitud_m": 57.302400000000006,
+  "S_conducto": 0.015053,
+  "acceso_mantenimiento_previsto": true
+ }
+}

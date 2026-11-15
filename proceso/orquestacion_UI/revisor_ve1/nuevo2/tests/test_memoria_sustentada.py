@@ -1,0 +1,790 @@
+"""
+La memoria SUSTENTADA (§4.4 del plan de correcciones v12).
+
+Los tres criterios de salida que ese numeral escribe, cada uno como un test
+que se puede correr:
+
+    1. ningun `PasoDeMemoria` sin `por_que`;
+    2. ningun umbral sin cita;
+    3. ninguna cita textual que no este en el registro.
+
+Y alrededor, los cuatro hallazgos que la §4.4 nombra:
+
+    NOR-MEM-01  el matiz «recomienda, no prohibe» de V2 tiene que LLEGAR a la
+                memoria generada, no solo vivir en el codigo. Se comprueba
+                sobre el producto, que es donde fallaba.
+    MAT-O13     lo mismo para V1: el 0.75 tiene el mismo caracter que el 0.25
+                y solo V2 llevaba el matiz.
+    NOR-HID-04  la interpretacion del proyectista se imprime SEPARADA de la
+                cita, no pegada a ella como si fuera norma.
+    SIS-B-05    el analisis de sensibilidad llega al documento, no solo a los
+                tests.
+
+POR QUE SE COMPRUEBA SOBRE EL HTML GENERADO Y NO SOBRE LOS OBJETOS. Porque el
+defecto que origina esta sesion era exactamente esa diferencia: el repositorio
+afirmaba que el matiz de V2 «viaja hasta la memoria» y era cierto sobre el
+codigo y falso sobre el producto --- «recomend» aparecia CERO veces en la
+memoria generada ---. Un test sobre los objetos habria pasado.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+import pytest
+
+RAIZ = Path(__file__).resolve().parents[1]
+SRC = RAIZ / "src"
+
+from cli import cargar_datos_externos, correr                      # noqa: E402
+from src.modelos import (Magnitud, PasoDeMemoria, TipoDeVeredicto,
+                     Umbral, Veredicto)
+from src.modulos import M11_reporte as M11
+from src.normativa import fundamentos as F
+from src.normativa.registro import construir
+
+CSV_EJEMPLO = RAIZ / "tests" / "ejemplo_puntos.csv"
+
+
+@pytest.fixture(scope="module")
+def reg():
+    return construir()
+
+
+@pytest.fixture(scope="module")
+def informe():
+    """
+    La corrida real del CSV de ejemplo con los datos externos minimos, que es
+    la misma que usa `test_M11_reporte`.
+    """
+    externos = cargar_datos_externos(
+        None, {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 14.0,
+               "L_hidraulico_m": None, "categoria_tr": None})
+    return correr(CSV_EJEMPLO, externos)
+
+
+@pytest.fixture(scope="module")
+def memoria(informe):
+    return M11.memoria_html(informe, proyecto="prueba de la memoria sustentada")
+
+
+def _pasos_de(informe):
+    """Todos los `PasoDeMemoria` que ESTA corrida emitio, de donde sea."""
+    vistos = []
+
+    def _anota(paso):
+        if paso is not None:
+            vistos.append(paso)
+
+    for punto in informe.puntos:
+        if punto.clasificacion is not None:
+            _anota(getattr(punto.clasificacion.verificacion_luz, "paso", None))
+            _anota(getattr(punto.clasificacion.periodo_retorno, "paso", None))
+        # La Fase 1-bis (T-1): el caudal de diseño cuelga del punto, no de
+        # la clasificacion ni del resultado hidraulico.
+        if getattr(punto, "caudal", None) is not None:
+            vistos.extend(punto.caudal.pasos)
+        for _fase, v in punto.verificaciones():
+            _anota(getattr(v, "paso", None))
+        for escalon in punto.traza:
+            for v in escalon.verificaciones:
+                _anota(getattr(v, "paso", None))
+            hidraulico = getattr(escalon, "resultado_hidraulico", None)
+            if hidraulico is not None:
+                vistos.extend(hidraulico.pasos)
+        if punto.resultado is not None and \
+                punto.resultado.resultado_hidraulico is not None:
+            vistos.extend(punto.resultado.resultado_hidraulico.pasos)
+        # El TW de Sec. 1.3 tambien emite paso desde S20: es la unica traza
+        # de la Fase 1 que la memoria imprime, y sin recogerla aqui el
+        # fundamento F1.TW quedaria contado como "declarado y nunca usado".
+        if getattr(punto, "tw_sec13", None) is not None:
+            _anota(getattr(punto.tw_sec13, "paso", None))
+        # La matriz de durabilidad (T-4) emite un paso por ensayo declarado.
+        if getattr(punto, "durabilidad", None) is not None:
+            vistos.extend(punto.durabilidad.pasos)
+        # --- T-8 --- La Fase 6 emite desde T-8 MAS de un paso y en TRES
+        # piezas: la proteccion de salida (Laushey y, al lado, lo de HEC-14),
+        # la de entrada y la socavacion. Se recorren aqui por su cuenta, sin
+        # `M11.traza_proteccion`, por la misma razon que el resto: un test que
+        # consume la funcion que audita deja de auditarla.
+        for pieza in (punto.proteccion,
+                      getattr(punto, "proteccion_entrada", None),
+                      getattr(punto, "socavacion", None)):
+            if pieza is None:
+                continue
+            pasos_de_la_pieza = tuple(getattr(pieza, "pasos", ()) or ())
+            if pasos_de_la_pieza:
+                vistos.extend(pasos_de_la_pieza)
+            else:
+                _anota(getattr(pieza, "paso", None))
+        # --- T-9 --- La Fase 10 emite desde T-9 los pasos de la longitud
+        # por capacidad (y los del caudal de aporte, si lo calculo la Fase
+        # 1-bis) antes del espaciamiento maximo; VB1 sale con las
+        # verificaciones del punto. Se recorren sin `M11.traza_espaciamiento`.
+        if punto.espaciamiento is not None:
+            lh = getattr(punto.espaciamiento, "longitud_hidraulica", None)
+            if lh is not None:
+                vistos.extend(lh.pasos)
+            _anota(getattr(punto.espaciamiento, "paso", None))
+        # T-6: 7.B emite pasos propios (pendiente, esviaje, longitud, cota de
+        # salida, encaje). Si el punto no llego a 7.B, la longitud que se
+        # calculo antes de la Fase 4 trae igual los suyos.
+        geometria = getattr(punto, "geometria", None)
+        calculada = getattr(punto, "longitud_calculada", None)
+        if geometria is not None:
+            vistos.extend(geometria.pasos)
+        elif calculada is not None:
+            vistos.extend(calculada.pasos)
+    for recubrimiento in informe.cabezal.recubrimientos:
+        _anota(getattr(recubrimiento, "paso", None))
+    return vistos
+
+
+# ===========================================================================
+# Criterio de salida 1 - ningun PasoDeMemoria sin por_que
+# ===========================================================================
+
+def test_ningun_paso_de_memoria_sin_por_que(informe):
+    """
+    Sobre la corrida real. El invariante esta ademas en el `__post_init__` del
+    tipo --- un paso sin `por_que` no se construye ---, y este test comprueba
+    que la corrida produce pasos de verdad: un invariante que nadie ejerce no
+    prueba nada.
+    """
+    pasos = _pasos_de(informe)
+    assert pasos, ("la corrida no emitio ni un solo PasoDeMemoria: la traza "
+                   "no llega, y todo lo demas de este archivo seria vacuo")
+    sin_por_que = [p.que for p in pasos if not p.por_que.strip()]
+    assert not sin_por_que, sin_por_que
+
+
+def test_el_tipo_rechaza_un_paso_sin_por_que():
+    """El invariante, ejercido directamente."""
+    with pytest.raises(ValueError) as exc:
+        PasoDeMemoria(que="x", por_que="  ", formula="f", sustitucion=(),
+                      resultado=Magnitud("a", 1.0, "m", "de algun sitio"))
+    assert "por_que" in str(exc.value)
+
+
+def test_todo_paso_declara_el_fundamento_del_que_saco_su_por_que(informe, reg):
+    """
+    El `por_que` no se escribe suelto en el modulo de calculo: sale de un
+    `Fundamento` del registro, y el paso guarda su id. Es lo que impide
+    redactar «la norma obliga a...» encima de un parrafo que recomienda ---
+    el `Fundamento` lleva `verbo`, y el registro comprueba que el verbo este
+    sostenido por el caracter de alguna de sus citas (invariante T11).
+    """
+    for paso in _pasos_de(informe):
+        assert paso.fundamento_id, paso.que
+        fundamento = reg.fundamento(paso.fundamento_id)
+        assert paso.por_que == fundamento.por_que, (
+            f"{paso.que}: el por_que no es el del fundamento "
+            f"{paso.fundamento_id}. Alguien lo reescribio en el modulo")
+
+
+# ===========================================================================
+# Criterio de salida 2 - ningun umbral sin cita
+# ===========================================================================
+
+def test_ningun_umbral_sin_cita(informe, reg):
+    for paso in _pasos_de(informe):
+        if paso.umbral is None:
+            continue
+        assert paso.umbral.cita_id, paso.que
+        reg.cita(paso.umbral.cita_id)          # KeyError si no existe
+        assert paso.umbral.cita_id in paso.citas_textuales, (
+            f"{paso.que}: el umbral cita {paso.umbral.cita_id} y esa cita no "
+            "esta entre las que el paso imprime. El numero y la frase que lo "
+            "fija se imprimen juntos o el revisor lee uno sin la otra")
+
+
+def test_el_tipo_rechaza_un_umbral_sin_cita():
+    with pytest.raises(ValueError) as exc:
+        Umbral(descripcion="x", valor=1.0, unidad="m", cita_id="",
+               caracter="EXIGENCIA", aplicacion="se aplica")
+    assert "cita_id" in str(exc.value)
+
+
+def test_un_veredicto_de_cumplimiento_sin_umbral_no_se_construye():
+    """
+    Decir que algo cumple sin decir contra que es lo que hace indefendible una
+    memoria. Un paso que calcula y no juzga tiene su propio veredicto ---
+    `SIN_VEREDICTO` --- y no necesita inventarse un umbral.
+    """
+    with pytest.raises(ValueError) as exc:
+        PasoDeMemoria(
+            que="x", por_que="porque si", formula="f", sustitucion=(),
+            resultado=Magnitud("a", 1.0, "m", "de algun sitio"),
+            veredicto=Veredicto(tipo=TipoDeVeredicto.CUMPLE))
+    assert "sin umbral" in str(exc.value)
+
+
+def test_todo_umbral_normativo_del_bloque_fijo_lleva_su_cita(reg):
+    """
+    El otro sitio donde viven umbrales: `UMBRALES_DE_VERIFICACION`, que M11
+    imprime SIEMPRE (se imprima o no una sola fila de verificacion). Ninguna
+    de sus entradas puede quedarse sin cita del registro.
+    """
+    from src import constantes_normativas as cn
+
+    for u in cn.UMBRALES_DE_VERIFICACION:
+        anclas = tuple(u.get("citas", ())) + tuple(
+            t for t, _campo in u.get("literales_de_tabla", ()))
+        assert anclas, u["codigo"]
+        for cita_id in u.get("citas", ()):
+            reg.cita(cita_id)
+        for tabla_id, _campo in u.get("literales_de_tabla", ()):
+            reg.tabla(tabla_id)
+
+
+# ===========================================================================
+# Criterio de salida 3 - ninguna cita textual fuera del registro
+# ===========================================================================
+
+# Las comillas angulares son el rotulo de "esto es literal" en toda la memoria.
+CITA_EN_LA_MEMORIA = re.compile(r"&laquo;(.+?)&raquo;", re.DOTALL)
+
+
+def _desescapar(texto: str) -> str:
+    import html
+
+    return html.unescape(texto)
+
+
+def test_ninguna_cita_textual_de_la_memoria_esta_fuera_del_registro(memoria,
+                                                                    reg):
+    """
+    Todo lo que la memoria entrecomilla con &laquo;&raquo; --- que es como
+    marca «esto es literal de la fuente» --- tiene que existir en el registro,
+    verificado contra su pagina.
+
+    La lista blanca es corta y cada entrada dice por que. NO son excepciones
+    al criterio: son textos que la memoria entrecomilla y que NO se presentan
+    como cita de una norma --- una frase del propio expediente, un rotulo de
+    columna del CSV ---, y donde las comillas hacen de comillas y no de sello
+    de literalidad.
+    """
+    literales = reg.textos_literales()
+    normalizados = {" ".join(t.split()) for t in literales}
+    permitidos = {
+        # Transcripcion declarada como tal en el bloque de umbrales: la forma
+        # con el MAXIMO de h_o, que la 3a ed. del HDS-5 no imprime como
+        # igualdad y que NO puede internarse como `Cita` de la edicion de 1985
+        # porque la paginacion de esa copia es `SinDeterminar` (invariante T6
+        # del registro). Va rotulada «Transcripcion (NO es cita)».
+        "ho = TW or (dc + D)/2 whichever is larger.",
+    }
+    fuera = []
+    for bruto in CITA_EN_LA_MEMORIA.findall(memoria):
+        texto = " ".join(_desescapar(bruto).split())
+        if texto in normalizados or texto in permitidos:
+            continue
+        # Una cita puede imprimirse recortada por el ancho de la pagina o
+        # dentro de un parrafo mayor: se admite la inclusion en los dos
+        # sentidos, que sigue atando el texto a un original del registro.
+        if any(texto in t or t in texto for t in normalizados):
+            continue
+        fuera.append(texto[:160])
+    assert not fuera, (
+        "la memoria entrecomilla como literal texto que el registro no "
+        "sostiene:\n  " + "\n  ".join(fuera))
+
+
+# ===========================================================================
+# NOR-MEM-01 y MAT-O13 - el matiz de recomendacion, en el PRODUCTO
+# ===========================================================================
+
+def test_la_memoria_dice_que_V2_se_RECOMIENDA_y_el_proyecto_lo_endurece(memoria):
+    """
+    NOR-MEM-01, verificado donde fallaba: sobre la memoria generada. «recomend»
+    aparecia CERO veces mientras el repositorio afirmaba que el matiz era «lo
+    unico que la memoria imprime de V2».
+    """
+    assert memoria.lower().count("recomend") > 0
+    assert "0.25 m/s" in memoria
+    assert "sedimenta" in memoria.lower()
+    assert "RECOMENDACION" in memoria
+    assert "umbral DURO" in memoria
+
+
+def test_la_memoria_dice_lo_MISMO_de_V1(memoria):
+    """
+    MAT-O13: el 0.75 de V1 nace de una frase del mismo apartado y tiene el
+    mismo caracter de recomendacion; hasta la correccion solo V2 llevaba el
+    matiz. Los dos numerales se presentaban con distinta fuerza normativa sin
+    nada en la fuente que lo justificara.
+    """
+    assert "4.1.1.3.7 b)" in memoria
+    assert "25 %" in memoria
+    # La frase entera del numeral, tal como el registro la tiene.
+    assert "Se recomienda que el dise" in memoria
+
+
+def test_las_dos_mitades_del_parrafo_de_V2_llegan_por_separado(memoria):
+    """
+    La oracion del Manual dice DOS cosas con fuerza distinta: «se debera
+    verificar» (exigencia de comprobar) y «recomendandose que la velocidad
+    minima sea igual a 0.25 m/s» (recomendacion sobre el valor). Leida solo la
+    segunda, «V2 es una recomendacion» se entiende como que verificar el piso
+    es opcional, que no es lo que el Manual dice.
+    """
+    assert "Se deber" in memoria and "verificar que la velocidad m" in memoria
+    assert "recomend" in memoria
+    assert "EXIGENCIA + RECOMENDACION" in memoria
+
+
+# ===========================================================================
+# NOR-HID-04 - la interpretacion, separada de la cita
+# ===========================================================================
+
+def test_la_interpretacion_de_la_tabla_10_no_va_pegada_a_la_cita(memoria, reg):
+    """
+    Caso testigo de la regla tipografica. «El rango recorre la calidad del
+    revestimiento» es lectura del proyectista --- el Manual no dice por que hay
+    dos numeros --- y se imprimia dentro del mismo parrafo que la cita.
+
+    Se comprueban las tres cosas: que el texto esta, que lleva su rotulo de
+    interpretacion, y que NO aparece dentro de ningun bloque marcado como
+    literal de la fuente.
+    """
+    interp = reg.tabla("MC_HHD.T10").interpretacion
+    fragmento = "recorran la calidad del revestimiento"
+    assert fragmento in interp.texto
+    assert "NO lo dice el Manual" in memoria or "esto NO lo dice el Manual" \
+        in memoria.lower() or "NO lo dice el Manual" in memoria
+    assert 'class="aviso interpretacion"' in memoria
+    for literal in CITA_EN_LA_MEMORIA.findall(memoria):
+        assert fragmento not in _desescapar(literal), (
+            "la interpretacion del proyectista se esta imprimiendo DENTRO de "
+            "un bloque entrecomillado como literal de la fuente: es "
+            "exactamente NOR-HID-04")
+
+
+def test_la_interpretacion_lleva_lo_que_juega_en_contra(memoria, reg):
+    """
+    Una lectura que no encuentra nada en contra no se ha buscado a si misma:
+    el tipo `Interpretacion` exige al menos un `en_contra`, y la memoria lo
+    imprime. Es lo que permite a un revisor discutir la lectura sin discutir
+    la norma.
+    """
+    interp = reg.tabla("MC_HHD.T10").interpretacion
+    assert interp.en_contra
+    assert "juega EN CONTRA" in memoria
+    for contra in interp.en_contra:
+        assert contra[:40] in memoria
+
+
+# ===========================================================================
+# SIS-B-05 - el analisis de sensibilidad llega al documento
+# ===========================================================================
+
+def test_la_sensibilidad_declarada_se_imprime_como_analisis(memoria):
+    """
+    `parametros_sensibilizables()` existia y solo la consumian los tests,
+    mientras la plantilla anunciaba «con analisis de sensibilidad
+    obligatorio». El rango llegaba al documento, pero sin decir que era ni
+    para que servia.
+    """
+    from src import criterios_adoptados as ca
+
+    assert "Sensibilidad declarada" in memoria
+    assert "barrido de sensibilidad" in memoria
+    usados_con_rango = [k for k in ca.criterios_usados()
+                        if ca.criterio(k).sensibilidad]
+    assert usados_con_rango, "la corrida no invoco ningun criterio con rango"
+    for clave in usados_con_rango:
+        assert clave in memoria
+
+
+def test_la_procedencia_R1_de_cada_criterio_llega_a_la_memoria(memoria):
+    """
+    La regla R1: «se adopto X, elegido entre X1...Xn de la Tabla T (numeral N,
+    pag. P), por la razon R». Hasta S18 solo se imprimia para los valores
+    declarados por la ventana emergente; los criterios transcritos en el
+    archivo --- la inmensa mayoria de los que gobiernan una corrida --- se
+    imprimian sin decir de donde salen.
+    """
+    assert "De donde sale (R1)" in memoria
+
+
+# ===========================================================================
+# El censo de lo que NO tiene fundamento
+# ===========================================================================
+
+def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
+    """
+    Un `Fundamento` sin paso que lo imprima es una promesa que la memoria no
+    cumple. Los que hoy no pueden emitir paso en esta corrida --- los de fases
+    que el expediente no alcanza --- se declaran aqui, con la razon, en vez de
+    quedar sueltos.
+    """
+    from src import constantes_normativas as cn
+
+    emitidos = {p.fundamento_id for p in _pasos_de(informe)}
+    # Y los de las ELECCIONES que viajan dentro de un paso, que desde C7 son
+    # una segunda clase de consumidor y no un paso mas. Un `Fundamento` de
+    # eleccion no puede emitir paso propio -- lo que se elige no se verifica
+    # contra un umbral --, pero su `por_que` llega al revisor igual, por
+    # `M11._elecciones_del_paso`, y bajo `class="interpretacion"`, que es
+    # justamente lo que NOR-HID-04 pide para una lectura del proyectista.
+    #
+    # HOY NO PASA NADIE POR ESTA PUERTA, y decirlo es parte de abrirla: la
+    # unica eleccion con fundamento es la de la fila de gamma_p de V7, y esta
+    # corrida no llega a V7 (ver F5.V7_FILA en `sin_alcanzar`). Se abre igual
+    # porque sin ella el censo daria un FALSO huerfano en cuanto una corrida
+    # dimensione: contaria como no usado un fundamento que la memoria imprime.
+    emitidos |= {e.fundamento_id for p in _pasos_de(informe)
+                 for e in p.elecciones if e.fundamento_id}
+    # Los que llegan por la OTRA puerta: el bloque fijo de umbrales, que M11
+    # imprime siempre. `F3.D_MIN` solo tiene esa: el minimo de 0.90 m no se
+    # verifica sobre un resultado, es el piso de la serie de diametros
+    # candidatos, y aun asi su «por que» tiene que llegar al revisor.
+    del_bloque_fijo = {u["fundamento"] for u in cn.UMBRALES_DE_VERIFICACION}
+    # Las fases que la corrida por defecto no alcanza, cada una por un vacio
+    # del expediente y no por falta de fundamento.
+    sin_alcanzar = {
+        # --- T-4 --- LA MATRIZ DE DURABILIDAD Y EL ESPESOR. Los seis F3.DUR.*
+        # los emite `M2.matriz_durabilidad`, uno por ensayo DECLARADO, y la
+        # corrida por defecto no declara ninguno --es justo el caso «sin
+        # ensayos, matriz no aplicada»--; el del suelo de fundacion sale solo
+        # si el SUCS del punto esta en el conjunto declarado deficiente, y
+        # ninguno de los cuatro del fixture lo esta. F3.D_EXTERIOR viaja como
+        # ELECCION en el paso de V7, que esta corrida no alcanza (misma razon
+        # que F5.V7_FILA, abajo). Que los siete se emiten se MIDE en
+        # `tests/test_t4_materiales_durabilidad.py`, no se afirma aqui.
+        "F3.DUR.PH", "F3.DUR.RESISTIVIDAD", "F3.DUR.ABRASION",
+        "F3.DUR.SULFATOS", "F3.DUR.CLORUROS", "F3.DUR.SUELO_FUNDACION",
+        "F3.DUR.SUELO_AGRESIVO",    # idem: solo con ensayos (auditoria, H3)
+        "F3.D_EXTERIOR",
+        "F7.RELLENO",       # 7.A se detiene en 'espesor_pared_conducto'
+        # T-6: los siete de 7.B. Cinco cuelgan de un punto DIMENSIONADO, por
+        # la misma razon que F6.LAUSHEY -- esta corrida no dimensiona
+        # ninguno --. F7.ESVIAJE y F7.LONGITUD no lo necesitan (la longitud se
+        # calcula antes de la Fase 4 y sus dos pasos se emiten aunque el
+        # punto no cierre), pero esta corrida DECLARA la longitud
+        # (`longitud_m` = 14.0): no hay longitud calculada ni metodo que
+        # imprimir. Que los siete se emiten lo mide
+        # tests/test_t6_geometria.py, sin declararla.
+        "F7.PENDIENTE", "F7.COTA_SALIDA", "F7.ENCAJE", "F7.ENTREGA",
+        "F7.ESVIAJE_MAX", "F7.ESVIAJE", "F7.LONGITUD",
+        "F8.RECUBRIMIENTO",  # 9.4 se detiene en 'categoria_refuerzo_aashto'
+        "F10.CUNETA",       # falta el dato 'L_hidraulico_m'
+        "F6.LAUSHEY",       # Fase 6 cuelga de un punto dimensionado
+        # LOS SIETE DE LA FASE 1-bis QUE SOLO SE EMITEN CUANDO EL CAUDAL SE
+        # CALCULA (T-1). Esta corrida trae `Q_m3s` lleno en sus puntos de
+        # Familia A y B, de modo que el caudal entra declarado y de la
+        # hidrologia solo sale el octavo paso, `FH.Q_ESPECIFICO`, que no
+        # esta en esta lista. Que los siete se emiten con su fundamento y su
+        # cita lo mide `tests/test_t1_hidrologia.py::
+        # test_el_caudal_calculado_es_el_producto_de_sus_pasos`.
+        "FH.SERIE", "FH.AJUSTE", "FH.KS", "FH.TC", "FH.INTENSIDAD", "FH.C",
+        "FH.RACIONAL",
+        # El octavo de los que solo salen con el caudal calculado: el juicio
+        # del tratamiento FEN contra la regla de la hoja de ruta (paso 1b.3b,
+        # auditoria de T-1). Lo mide `test_t1_hidrologia.py::
+        # test_serie_sin_fen_con_menos_lluvia_que_la_completa_detiene_el_calculo`.
+        "FH.FEN",
+        # F5.V7_FILA SIGUE AQUI DESPUES DE C7, Y SU RAZON NO ES LA QUE EL
+        # PUNTO 0 ESCRIBIO. Aquel comentario decia que el fundamento existia
+        # «declarado y sin consumidor» hasta que el punto 3 lo cableara. El
+        # punto 3 lo cableo --- `M5.v7_flotacion` construye su eleccion con
+        # `modelos.eleccion("F5.V7_FILA")`, de ahi la segunda puerta de
+        # `emitidos` --- y aun asi sigue en esta lista, porque el motivo real
+        # es otro y MEDIDO: ESTA CORRIDA NO DIMENSIONA NINGUN PUNTO. Los tres
+        # de familias A y B se detienen en el criterio 'remanso_derecho_via',
+        # sin valor, y C-01 en el dato 'Q_m3s'; de modo que V7 no se ejecuta
+        # sobre ningun punto y no hay eleccion que emitir.
+        #
+        # DE PASO, EL LIMITE QUE ESO DESTAPA EN ESTE MISMO TEST: `F5.V7` no
+        # esta en esta lista y el test pasa igual, pero NO porque algun paso
+        # lo emita --- no lo emite nadie --- sino porque entra por
+        # `del_bloque_fijo`, la puerta de los umbrales. O sea que este censo
+        # no distingue «V7 corrio» de «V7 tiene umbral en el bloque fijo». No
+        # se arregla aqui: se deja dicho, y lo que si se mide es la otra mitad.
+        #
+        # QUE EL CABLEADO EXISTE SE COMPRUEBA, no se afirma, igual que con los
+        # cinco del cajon: `test_M5_verificaciones::test_la_eleccion_de_fila_
+        # de_V7_sale_de_su_fundamento_y_lista_las_siete` ejecuta V7 y lo mide.
+        "F5.V7_FILA",
+        # --- T-7b --- V5, V8 Y EL ENSAMBLE DE ESTABILIDAD. F5.V5 y F5.V8
+        # dejaron de ser huecos (tienen metodo y paso), pero su metodo y su
+        # umbral son DECLARABLES y no tienen valor de archivo -- decision del
+        # dueño --: la corrida por defecto se detiene en el criterio, como
+        # antes, y no emite el paso. Los diez F9.* del ensamble cuelgan de un
+        # punto DIMENSIONADO a nivel de expediente con el EMS declarado, y
+        # esta corrida no dimensiona ninguno. Que los doce se emiten lo mide
+        # tests/test_t7b_cabezal_estabilidad.py, de punta a punta por
+        # `servicio.correr` y pieza a pieza.
+        "F5.V5", "F5.V8",
+        "F9.EMPUJES", "F9.SOBRECARGA", "F9.AGUA", "F9.SISMO",
+        "F9.COMBINACIONES", "F9.E1_LRFD", "F9.E2_LRFD", "F9.E3_LRFD",
+        "F9.E_ASD", "F9.GLOBAL",
+        # --- T-7c --- EL ARMADO DEL CABEZAL Y SU ALTERNATIVA CICLOPEA. Los
+        # diez cuelgan de lo mismo que los del ensamble de estabilidad: un
+        # punto DIMENSIONADO a nivel de expediente con el angulo del relleno
+        # declarado, que la corrida por defecto no tiene. Que los nueve
+        # F9.ARM_* se emiten lo mide tests/test_t7c_cabezal_armado.py pieza a
+        # pieza (`test_el_armado_emite_un_paso_por_cada_cosa_que_un_revisor_
+        # pregunta`) y de punta a punta por `servicio.correr`; F9.CICLOPEO,
+        # por la puerta del tipo «gravedad» declarado.
+        "F9.ARM_REGIMEN", "F9.ARM_ZAPATA", "F9.ARM_FLEXION",
+        "F9.ARM_MINIMO", "F9.ARM_ESPACIAMIENTO", "F9.ARM_CORTANTE",
+        "F9.ARM_E060", "F9.ARM_CORTANTE_PLANO", "F9.ARM_TABLA",
+        "F9.CICLOPEO",
+        # --- correcciones de T-7c --- tres filas mas del armado, por la
+        # misma razon: la fisuracion de 5.6.7 (A6), el f'c por durabilidad
+        # (A7, solo con el analisis quimico del EMS declarado) y la altura de
+        # la zapata sobre su refuerzo (A8). Las mide test_t7c_cabezal_armado.
+        "F9.ARM_FISURACION", "F9.ARM_DURABILIDAD", "F9.ARM_PERALTE_ZAPATA",
+        # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
+        # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
+        # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve
+        # un candidato de marco, y viajan en `Material.pasos` hasta el bloque
+        # que M11 titula «Fases 3 y 4».
+        #
+        # SIGUEN AQUI, Y SU RAZON CAMBIO OTRA VEZ EN T-3. Hasta T-3 era un
+        # VACIO DEL EXPEDIENTE: los cinco criterios del cajon estaban sin
+        # valor y ningun punto de Familia C llegaba a construir el catalogo.
+        # Desde T-3 tienen valor de archivo, y la razon es la de F6.LAUSHEY:
+        # el paso existe y esta corrida -- sin caudal declarado para C-01 --
+        # no llega a pedirle candidatos a M2.
+        #
+        # QUE LOS PASOS EXISTEN SE COMPRUEBA, no se afirma:
+        # `test_M2_material::test_los_cinco_pasos_de_fase_3_del_marco_salen_
+        # con_su_fundamento` declara los criterios en caliente y los mide.
+        "F3.TIPO_MARCO",      # tipo de estructura del cruce
+        "F3.SECCION_CANAL",   # la progresion, fuera del piso de 0.90 m
+        "F3.MANTENIMIENTO",   # la cota inferior de esa progresion
+        "F3.CELDAS",          # una celda o multicelda
+        "F4.N_CAJON",         # la fila de la Tabla N 09 por analogia
+        # --- T-3 (auditoria, H1) --- el del valor de archivo del n del
+        # marco, la fila del cajon de la Tabla B.1 del HDS-5. Misma razon que
+        # los cinco: esta corrida no le pide candidatos a M2 para C-01. Que
+        # el paso existe y lleva su fundamento lo mide
+        # `tests/test_t3_correcciones_auditoria.py` (y la corrida 6 de la
+        # linea base, que lo imprime).
+        "F4.N_CAJON_TB1",
+        # `F4.FORMA_HDS5` SALIO DE ESTA LISTA EN C3, que es lo que C2 dejo
+        # dicho que tenia que pasar: «salen de esta lista en cuanto C4 y C5
+        # escriban los pasos que los imprimen; si en esa sesion siguen aqui,
+        # es que el paso se escribio sin su fundamento». C3 escribio el paso
+        # -- `M4._pasos_hidraulicos::de_forma` -- y ahora lo emite toda
+        # corrida que dimensione un punto.
+        #
+        # LOS DOS DE T-2, por la razon de F6.LAUSHEY y no por un vacio: su
+        # paso existe y la corrida por defecto no cae en el caso. Ningun punto
+        # del corredor tiene el barril horizontal (S de 0.004 a 0.010) ni una
+        # pendiente que saque la carta de su rango (S* ~ 0.38 con D = 0.90).
+        # QUE LOS PASOS EXISTEN SE COMPRUEBA en `tests/test_t2_hidraulica.py`,
+        # que corre los dos casos y lee el fundamento del paso y de la
+        # eleccion.
+        "F4.HORIZONTAL",    # el paso 4.1 del barril con S = 0
+        "F4.PISO_HW",       # la eleccion del piso de la carga a la entrada
+        # LOS NUEVE DE T-8, por la razon de F6.LAUSHEY: la Fase 6 cuelga de
+        # un punto dimensionado y esta corrida no dimensiona ninguno. Que
+        # los pasos existen y llevan su fundamento lo mide
+        # `tests/test_t8_proteccion.py` sobre la corrida ancha.
+        "F6.GEOMETRIA_ADOPTADA", "F6.FROUDE", "F6.V_ADMISIBLE", "F6.APRON",
+        "F6.APRON_GEOMETRIA", "F6.FILTRO", "F6.ENTRADA", "F6.SOCAVACION",
+        "F6.SOCAVACION_DESPLANTE",
+        # --- T-5 --- LOS DOCE DE LA FASE 8 (once de la FASE A y F8.HDPE_FF,
+        # el factor de flexibilidad del termoplastico que pidio la auditoria
+        # del cierre), por la razon de F6.LAUSHEY: los
+        # emite M8 sobre un escalon que pasa toda la tabla de la Fase 5, y
+        # esta corrida no dimensiona ningun punto (V5 se detiene antes). QUE
+        # LOS PASOS EXISTEN SE COMPRUEBA en `tests/test_t5_estructural_
+        # conducto.py`, que corre los tres materiales y el marco y lee el
+        # fundamento de cada paso; y en la corrida de perfil de la linea base,
+        # donde A-01 y A-02 imprimen F8.CARGA_VIVA, F8.CARGA_TIERRA y
+        # F8.CLASE_CONCRETO.
+        "F8.CARGA_VIVA", "F8.CARGA_TIERRA", "F8.CLASE_CONCRETO",
+        "F8.TMC_AREA", "F8.TMC_COSTURA", "F8.TMC_FF", "F8.TMC_ASD",
+        "F8.HDPE_EMPUJE", "F8.HDPE_PANDEO", "F8.HDPE_DEFLEXION",
+        "F8.HDPE_FF", "F8.MARCO_DEMANDA",
+        # LOS TRES DE T-3, por la razon de F6.LAUSHEY: 7.B cuelga de un punto
+        # dimensionado, y el marco y el paso de canal ademas de un punto de
+        # Familia C que dimensione. Que los pasos existen y llevan su
+        # fundamento lo mide `tests/test_t3_familia_c.py` sobre la corrida
+        # de la guia de perfil.
+        "F7.MARCO", "F7.EMPALME_CANAL", "F7.REMANSO_CANAL",
+        # LOS DE T-9, por la misma razon: esta corrida declara
+        # `L_hidraulico_m` = None y no trae los datos de la cuneta, de modo
+        # que la Fase 10 de B-01 se detiene antes de la capacidad, y VB2 (el
+        # aporte contra la capacidad, correcciones de T-9) no se evalua. Que
+        # los pasos existen y llevan su fundamento lo miden
+        # `tests/test_t9_espaciamiento.py` y `tests/test_t9_correcciones.py`.
+        # F10.TRAMO SALIO DE ESTA LISTA en las correcciones: con la decision
+        # C del dueño A-02 cierra el tramo de B-01 y VB1 se evalua (530 m).
+        "F10.CAPACIDAD", "F10.APORTE", "F10.L_HIDRAULICO",
+        "F10.APORTE_CAPACIDAD",
+        # LOS SIETE DE T-7a, por la misma razon y una mas: la Fase 9 del
+        # punto cuelga de un punto DIMENSIONADO y solo corre a expediente,
+        # donde ningun punto del fixture dimensiona (V5). Que los pasos
+        # existen y llevan su fundamento lo mide
+        # `tests/test_t7a_cabezal_geometria.py` sobre A-01 (ficha T7A-01).
+        "F9.EMBOCADURA", "F9.CORONACION", "F9.DESPLANTE", "F9.DIMENSIONES",
+        "F9.ALEROS", "F9.LOSA", "F9.LONGITUD",
+    }
+    declarados = set(F.FUNDAMENTOS)
+    huerfanos = declarados - emitidos - del_bloque_fijo - sin_alcanzar
+    assert not huerfanos, (
+        f"fundamentos que ningun paso imprime y que nadie declaro como "
+        f"inalcanzables en esta corrida: {sorted(huerfanos)}")
+
+
+def test_el_censo_de_lo_que_no_puede_tener_fundamento_esta_completo():
+    """
+    Las verificaciones sin `PasoDeMemoria` no son un hueco: son un censo. Cada
+    una dice por que no puede tener fundamento normativo hoy y que haria falta
+    para traerlo.
+
+    REESCRITO EN T-10, declarandolo: fijaba que V4b, V6 y V9 seguian en el
+    censo. T-10 les da paso (F5.V4b DEFINE, F5.V6 RECOMIENDA, F5.V9 DEFINE;
+    V9 sin umbral cuando el tope es de catalogo o del marco) y el censo
+    queda VACIO. Lo que se conserva es la forma: toda entrada que vuelva a
+    entrar dice su razon y lo que haria falta.
+    """
+    codigos = {id_.split(".")[-1] for id_, _p, _q in F.SIN_FUNDAMENTO}
+    assert not {"V4b", "V5", "V6", "V8", "V9", "CABEZAL"} & codigos
+    assert {"F5.V4b", "F5.V5", "F5.V6", "F5.V8", "F5.V9"} <= set(F.FUNDAMENTOS)
+    for id_, por_que, que_haria_falta in F.SIN_FUNDAMENTO:
+        assert por_que.strip() and que_haria_falta.strip(), id_
+
+
+def test_una_verificacion_sin_paso_imprime_su_razon_en_vez_de_callarla(
+        monkeypatch):
+    """
+    Un hueco callado en una memoria se lee como un olvido. Con la razon
+    delante se lee como lo que es.
+
+    REESCRITO EN T-10: el censo esta vacio (V4b, V6 y V9 tienen paso), de
+    modo que la maquinaria se prueba con una entrada de prueba en el censo:
+    el dia que una verificacion no pueda tener fundamento, sale con su razon.
+    """
+    monkeypatch.setattr(
+        F, "SIN_FUNDAMENTO",
+        (("F5.VX", "razon de prueba", "lo que haria falta, de prueba"),))
+    bloque = M11._paso_ausente("VX")
+    assert "sin fundamento normativo declarado" in bloque
+    assert "Que haria falta para traerlo" in bloque
+    assert "razon de prueba" in bloque
+    for codigo in ("V4b", "V6", "V9"):
+        assert M11._paso_ausente(codigo) == "", codigo
+
+
+# ===========================================================================
+# El cambio de fondo: M11 formatea, no reconstruye
+# ===========================================================================
+
+def test_la_memoria_imprime_el_desarrollo_del_calculo(memoria):
+    """
+    El criterio de salida de la §4.4 leido entero: «la memoria de un punto se
+    lee de arriba abajo y se entiende sin abrir el codigo; cada numero tiene
+    de donde salio, contra que se comparo y la frase de la norma».
+    """
+    assert 'class="paso"' in memoria
+    assert "Por que se hace" in memoria
+    assert "Con que valores" in memoria
+    assert "Contra que se compara" in memoria
+    assert "Veredicto" in memoria
+    assert "Lo que dice la fuente" in memoria
+
+
+def test_el_desarrollo_hidraulico_llega_aunque_el_punto_no_cierre(informe,
+                                                                  memoria):
+    """
+    En ESTE expediente ningun punto se dimensiona --- V5 se detiene siempre en
+    `ancho_derecho_via_m`, que ningun tablero aporta ---, de modo que
+    `ResultadoPunto.resultado_hidraulico` es None en todos. Sin el escalon de
+    la traza, el desarrollo que M3 y M4 SI calcularon no llegaria jamas al
+    revisor: es la misma trampa de NOR-MEM-01, cierta sobre el codigo y falsa
+    sobre el producto.
+    """
+    assert informe.dimensionados == 0, (
+        "si algun punto llegara a dimensionarse, este test deja de probar lo "
+        "que dice: revisar el supuesto antes de tocarlo")
+    assert any(getattr(p, "resultado_hidraulico", None) is not None
+               for punto in informe.puntos for p in punto.traza)
+    assert "ultimo escalon evaluado" in memoria
+    assert "Tirante normal y velocidades" in memoria
+
+
+def test_M11_no_calcula_y_sobre_D(informe):
+    """
+    SIS-A-07: M11 declaraba «sin calcular nada nuevo» y dividia `y_normal/D`
+    en dos sitios. El numero vive ahora en `ResultadoPunto.y_sobre_D`, escrito
+    una vez, y este test vigila que la capa de reporte no vuelva a hacerlo.
+
+    LA GUARDIA EXCLUIA `ast.Attribute` A LA IZQUIERDA, Y ERA CIEGA A LA FORMA
+    QUE PERSIGUE. `hidraulica.HW / resultado.D` --- que es exactamente
+    "aritmetica sobre magnitudes", y que estuvo en `_tabla_diseno` hasta C8 ---
+    tiene un `Attribute` a la izquierda y por tanto no la disparaba nunca. La
+    exclusion se puso para dejar pasar `Path`, pero un `Path` a la izquierda
+    de `/` es casi siempre un `Name` (`RAIZ / "src"`) o el resultado de otra
+    division; un ATRIBUTO a la izquierda de `/` es, en un modulo de reporte,
+    una magnitud. Asi que la exclusion se cambia por la lista de atributos que
+    de verdad son rutas, que es cerrada y se lee.
+
+    El caso vivo esta ademas cubierto por dato: `ResultadoHidraulico` trae
+    `HW_sobre_D_salida`, que calcula M4 --- quien tiene delante la seccion con
+    que dividio.
+    """
+    import ast
+
+    RUTAS = {"RAIZ", "SRC", "DIR_PLANTILLAS", "DIR_DOCS"}
+    fuente = (RAIZ / "src" / "modulos" / "M11_reporte.py").read_text(
+        encoding="utf-8")
+
+    def _es_ruta(nodo) -> bool:
+        """Una division de rutas de `pathlib`, no de magnitudes."""
+        if isinstance(nodo, ast.Name):
+            return nodo.id in RUTAS
+        if isinstance(nodo, ast.Attribute):
+            # `algo.parent / "x"` es idioma de `pathlib`: un atributo llamado
+            # `parent` no es una magnitud en ningun modulo de este proyecto.
+            return nodo.attr in {"parent", "parents"}
+        if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, ast.Div):
+            return _es_ruta(nodo.left)
+        return False
+
+    divisiones = [n for n in ast.walk(ast.parse(fuente))
+                  if isinstance(n, ast.BinOp) and isinstance(n.op, ast.Div)]
+    sospechosas = [ast.unparse(n) for n in divisiones
+                   if not _es_ruta(n.left) and not isinstance(n.left, ast.Call)]
+    assert not sospechosas, (
+        "M11 volvio a hacer aritmetica sobre magnitudes: la capa de reporte "
+        f"formatea la traza que el calculo emitio, no la recalcula. {sospechosas}")
+
+
+def test_la_guardia_de_aritmetica_ve_una_division_entre_dos_atributos():
+    """
+    LA MUTACION QUE LA GUARDIA ANTERIOR NO MATABA. Es lo que la deja probada
+    en vez de solo verde: se le da la expresion exacta que estuvo en M11 hasta
+    C8 y se exige que la marque.
+    """
+    import ast
+
+    RUTAS = {"RAIZ", "SRC", "DIR_PLANTILLAS", "DIR_DOCS"}
+
+    def _es_ruta(nodo) -> bool:
+        if isinstance(nodo, ast.Name):
+            return nodo.id in RUTAS
+        if isinstance(nodo, ast.Attribute):
+            return nodo.attr in {"parent", "parents"}
+        if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, ast.Div):
+            return _es_ruta(nodo.left)
+        return False
+
+    def _sospechosas(codigo: str):
+        return [ast.unparse(n) for n in ast.walk(ast.parse(codigo))
+                if isinstance(n, ast.BinOp) and isinstance(n.op, ast.Div)
+                and not _es_ruta(n.left) and not isinstance(n.left, ast.Call)]
+
+    assert _sospechosas("x = hidraulica.HW / resultado.D"), (
+        "la guardia no ve la division entre dos atributos, que es la forma "
+        "que de verdad tomo el defecto")
+    # Y no llora por las rutas, que es lo que la exclusion queria proteger.
+    assert not _sospechosas('p = RAIZ / "src" / "modulos"')
+    assert not _sospechosas('p = ARCHIVO.parent / "plantillas"')

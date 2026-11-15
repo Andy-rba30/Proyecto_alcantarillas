@@ -1,0 +1,1 @@
+v_max_concreto_eleccion=3.0

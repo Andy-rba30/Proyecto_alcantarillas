@@ -1,0 +1,3 @@
+homogeneidad_serie_fen=serie_completa
+distribucion_precipitacion_maxima=gumbel
+riesgo_admisible_propietario={"quebrada_importante": {"R": 0.048818199, "n": 25}, "quebrada_menor": {"R": 0.139941645, "n": 15}}

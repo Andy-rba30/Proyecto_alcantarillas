@@ -1,0 +1,2421 @@
+{
+ "generado": "2026-11-15",
+ "nota": "Busqueda con red restringida; ver RESUMEN.md. No se encontro ningun caso completo de expediente peruano ni informe hidraulico WSDOT de proyecto.",
+ "obras": [
+  {
+   "id": "OR-US-DALE-01",
+   "tipo": "hidraulica_circular",
+   "origen": "obra_real",
+   "nombre": "Dale Boulevard culverts (cruce de Neabsco Creek tributary A), Dale City, Prince William County, Virginia, EE. UU.",
+   "entidad": "FHWA Turner-Fairbank Hydraulic Laboratory para FEMA; alcantarilla diseñada por VDOT",
+   "anio": 2001,
+   "url": "https://rosap.ntl.bts.gov/view/dot/55707/dot_55707_DS1.pdf",
+   "referencia": "FHWA-RD-01-095, 'Hydraulics of Dale Boulevard Culverts', julio 2001. Intro p.1; Tablas 1-2 p.3; Tabla 4 p.8; Tabla 5 p.11; Tabla 6 p.12; Tabla 11 (datos de control de entrada, modelo) p.34",
+   "pdf_local": "pdf/FHWA-RD-01-095_Dale_Boulevard_Culverts.pdf",
+   "entradas": {
+    "geometria": "Dos tubos de concreto en serie con invert alineado: 25 ft de D=10.5 ft (aguas arriba, entrada con sección acampanada a 45°) + 163 ft de D=9.5 ft (aguas abajo)",
+    "pendiente_media_invert": "1.5 % (publicado en texto)",
+    "inverts_ft": {
+     "extremo_aguas_abajo_9.5ft": 216.1,
+     "union": 218.55,
+     "extremo_aguas_arriba_10.5ft": 218.93
+    },
+    "caudales_cfs": {
+     "500": "-",
+     "939": "T=5 anios",
+     "1279": "T=50",
+     "1418": "T=100",
+     "1861": "T=500",
+     "1000": "-",
+     "1500": "-",
+     "1750": "-",
+     "2000": "-"
+    },
+    "TW_sobre_invert_aguas_abajo_ft": {
+     "500": 6.86,
+     "1000": 7.88,
+     "1500": 8.72,
+     "1750": 9.24,
+     "2000": 9.56
+    },
+    "n_manning": null,
+    "ke_publicado": "derivado en el estudio (Tabla 9), no es dato de entrada",
+    "area_cuenca": null,
+    "C": null,
+    "I": null
+   },
+   "resultados": {
+    "metodo": "Ensayo en modelo físico 1:12 (laboratorio FHWA) escalado a prototipo; HEC-2 para el cauce",
+    "HW_energia_ft_(elev_msnm_ft)": {
+     "500": 226.79,
+     "1000": 231.16,
+     "1500": 237.33,
+     "1750": 238.8,
+     "2000": 242.8
+    },
+    "elev_lamina_aproximacion_ft": {
+     "500": 226.72,
+     "1000": 231.03,
+     "1500": 237.19,
+     "1750": 238.63,
+     "2000": 242.6
+    },
+    "cota_WS_aguas_arriba_HEC2_ft": {
+     "T10_Q939": 230.02,
+     "T50_Q1279": 234.14,
+     "T100_Q1418": 235.92,
+     "T500_Q1861": 239.94
+    },
+    "unidades": "ft y ft3/s tal como se publica (1 ft=0.305 m; 1 ft3/s=0.028 m3/s)"
+   },
+   "texto_literal": "The upstream 25-ft (7.6-m) length of 10.5-ft (3200-mm) diameter concrete pipe is connected in series to a 163-ft (49.7-m) length of 9.5-ft (2896-mm) diameter concrete pipe. (p.1)",
+   "notas": "Obra real con datos publicados completos de Q, TW, inverts y HW, pero (a) los resultados son de ENSAYO FISICO, no de HY-8 ni de nomograma; (b) son dos diametros en serie con entrada acampanada 45 grados, configuracion NO cubierta por HDS-5 (el propio informe lo dice, p.2), asi que un programa HDS-5 no la reproduce tal cual; (c) D~3 m, fuera de la escala de alcantarilla vial tipica. n, Ke del prototipo y area de cuenca no se publican (null). Util como contraste de control de entrada/salida de tubo circular de concreto SOLO de forma cualitativa; los datos Q-HW de los tubos individuales de modelo (Tabla 11) son de laboratorio. Completo para recalcular: NO (parcial).",
+   "completo_para_recalcular": false
+  },
+  {
+   "id": "OR-US-MN-02",
+   "tipo": "otro",
+   "origen": "obra_real",
+   "nombre": "50 alcantarillas de carretera en Minnesota (cuencas Cottonwood, Crow, Red Lake, Rock, Root, Snake, Pine, Lake Superior South, Big Fork), EE. UU.",
+   "entidad": "MnDOT / University of Minnesota St. Anthony Falls Laboratory",
+   "anio": 2021,
+   "url": "https://rosap.ntl.bts.gov/view/dot/61032/dot_61032_DS1.pdf (informe https://www.mndot.gov/research/reports/2021/202129.pdf)",
+   "referencia": "MN 2021-29 'Assessing Culverts in Minnesota: Fish Passage and Storm Vulnerability', nov 2021. Tabla 2 (caudales pico StreamStats, cfs) p.~21; Tabla 3 p.31; Tabla 4 (umbrales y caudal de desborde, HY-8) p.39; Apendice C Tablas C1-C3 (forma, material, inlet, span x rise, longitud, pendiente de fondo, sedimento) pp. C-1 a C-5",
+   "pdf_local": "pdf/MnDOT_2021-29_Assessing_Culverts_Minnesota.pdf",
+   "entradas": {
+    "ejemplo_LSS21": "caja de concreto 2 barriles 12x10 y 12x12 ft, longitud 80 ft, pendiente 0.5 %, pendiente del cauce aguas abajo 0.02 %, ancho a bankfull 31.1 ft",
+    "ejemplo_CW2": "caja de concreto 10x6 ft (App.C: span 10, rise 6, L=87 ft; Tabla 3 lista 10x10, L=50 ft: inconsistencia interna)",
+    "Q_picos_cfs": "Tabla 2: Q1.5, Q2, Q50, Q100 por sitio (p.ej. BF1: 55, 78, 397, 490 cfs) por StreamStats (regresion regional)",
+    "n_manning": null,
+    "ke": null,
+    "cota_rasante_y_cota_fondo": null
+   },
+   "resultados": {
+    "metodo": "HY-8 (FHWA), tailwater por seccion transversal levantada + LiDAR",
+    "caudal_de_desborde_de_calzada_cfs": {
+     "LSS21": 2772,
+     "LSS22": 7849,
+     "Snake4": 1158,
+     "Root2": 3147,
+     "CW2": 1148
+    },
+    "umbral_velocidad_2fts_cfs": {
+     "LSS21": 87.2,
+     "LSS22": 78.3,
+     "Snake4": 475.7,
+     "Root2": 116.9,
+     "CW2": 50.2
+    }
+   },
+   "texto_literal": "Table 4. Stream flow discharge values for velocity threshold (> 2 ft/s) and depth threshold (< 0.2 ft). Overtopping flow discharge value when flow begins to overtop roadway. LSS21 87.2 backwatered 2772",
+   "notas": "Estudio de investigacion (no expediente de proyecto). Aporta geometria real de 50 alcantarillas y resultados HY-8 solo para 5 (umbral de velocidad y desborde). No publica HW por caudal, cotas de rasante ni TW para recalcular el desborde. No sirve para validar HW; solo como datos de forma/pendiente reales. Completo para recalcular: NO.",
+   "completo_para_recalcular": false
+  },
+  {
+   "id": "OR-US-WI-03",
+   "tipo": "hidraulica_circular",
+   "origen": "obra_real",
+   "nombre": "STH 32, Pulaski-STH 22, Oconto County, Wisconsin, EE. UU. (proyecto 9190-26(27)-00): 9 cruces con alcantarilla circular de concreto",
+   "entidad": "Wisconsin DOT (WisDOT), Northeast Region",
+   "anio": 2018,
+   "url": "https://trust.dot.state.wi.us/ftp/dtsd/ne-region/ne-pds/9190_STH%2032/HY8Report_9190-26(27)-00.pdf",
+   "pdf_local": "pdf/WisDOT_9190-26-27-00_STH32_HY8Report.pdf",
+   "referencia": "Reporte HY-8 de 71 pp. (pp. PDF 1, 3-71). Por cruce: Tabla 'Summary of Culvert Flows' (pp. 4, 11, 19, 26, 33, 40, 49, 58, 66), 'Culvert Summary Table' (pp. 6, 13, 21, 28, 35, 42, 51, 60, 68) y datos de sitio/canal/calzada en la misma sección. Fecha de la reunion citada en nota: 21-3-2018. pp. 2-3 de cada bloque FDM 13-15 estan con fuente corrupta en el texto extraido, no son datos.",
+   "entradas_comunes": {
+    "unidades": "ft, cfs, ft/s (sistema ingles tal como se publica)",
+    "TR_o_hidrologia": "NO publicada: el reporte solo da Q minimo/diseno/maximo por cruce, sin area, C, I, Tc ni TR",
+    "ke": "no publicado como numero: 'Square Edge with Headwall' (HY-8 lo toma de HDS-5)",
+    "perfil_tipo": "Culvert Invert Data, un solo barril"
+   },
+   "cruces": [
+    {
+     "cruce": "Crossing 1",
+     "pdf_pagina_tabla_resumen": 6,
+     "entradas": {
+      "Q_diseno_cfs": 14.0,
+      "Q_max_cfs": 17.0,
+      "forma": "Circular",
+      "D_ft": 2.0,
+      "material": "Concrete",
+      "n_manning": 0.012,
+      "entrada": "Square Edge with Headwall",
+      "barriles": 1,
+      "invert_entrada_ft": 802.65,
+      "invert_salida_ft": 802.49,
+      "L_ft": 54.0,
+      "S_mm_publicada": 0.003,
+      "canal_TW": {
+       "forma": "Rectangular Channel",
+       "ancho_fondo_ft": 8.0,
+       "pendiente": 0.33,
+       "n": 0.029,
+       "invert_ft": 802.49
+      },
+      "cota_cresta_calzada_ft": 808.5
+     },
+     "resultados_HY8": {
+      "en_Q_diseno": {
+       "Q_cfs": 14.0,
+       "HW_elev_ft": 804.87,
+       "prof_HW_control_entrada_ft": 2.139,
+       "prof_HW_control_salida_ft": 2.221,
+       "tipo_flujo": "7-M2c",
+       "yn_ft": 1.761,
+       "yc_ft": 1.344,
+       "y_salida_ft": 1.344,
+       "TW_ft": 0.187,
+       "V_salida_fts": 6.235,
+       "V_TW_fts": 9.346
+      },
+      "en_Q_max": {
+       "Q_cfs": 17.0,
+       "HW_elev_ft": 805.2,
+       "prof_HW_control_entrada_ft": 2.508,
+       "prof_HW_control_salida_ft": 2.551,
+       "tipo_flujo": "7-M2c",
+       "yn_ft": 2.0,
+       "yc_ft": 1.484,
+       "y_salida_ft": 1.484,
+       "TW_ft": 0.211,
+       "V_salida_fts": 6.799,
+       "V_TW_fts": 10.075
+      }
+     },
+     "consistencia": {
+      "S_calc": 0.003,
+      "S_publicada": 0.003,
+      "HW_calc_invert_mas_prof_gobernante_ft": 804.87,
+      "HW_publicada_ft": 804.87,
+      "freeboard_a_cresta_ft": 3.63
+     }
+    },
+    {
+     "cruce": "Crossing 2",
+     "pdf_pagina_tabla_resumen": 13,
+     "entradas": {
+      "Q_diseno_cfs": 20.0,
+      "Q_max_cfs": 26.0,
+      "forma": "Circular",
+      "D_ft": 2.25,
+      "material": "Concrete",
+      "n_manning": 0.012,
+      "entrada": "Square Edge with Headwall",
+      "barriles": 1,
+      "invert_entrada_ft": 801.53,
+      "invert_salida_ft": 800.59,
+      "L_ft": 54.01,
+      "S_mm_publicada": 0.0174,
+      "canal_TW": {
+       "forma": "Rectangular Channel",
+       "ancho_fondo_ft": 8.0,
+       "pendiente": 0.33,
+       "n": 0.029,
+       "invert_ft": 800.99
+      },
+      "cota_cresta_calzada_ft": 806.0
+     },
+     "resultados_HY8": {
+      "en_Q_diseno": {
+       "Q_cfs": 20.0,
+       "HW_elev_ft": 804.04,
+       "prof_HW_control_entrada_ft": 2.508,
+       "prof_HW_control_salida_ft": 1.401,
+       "tipo_flujo": "5-S2n",
+       "yn_ft": 1.059,
+       "yc_ft": 1.56,
+       "y_salida_ft": 1.149,
+       "TW_ft": 0.233,
+       "V_salida_fts": 9.796,
+       "V_TW_fts": 10.731
+      },
+      "en_Q_max": {
+       "Q_cfs": 26.0,
+       "HW_elev_ft": 804.71,
+       "prof_HW_control_entrada_ft": 3.183,
+       "prof_HW_control_salida_ft": 2.393,
+       "tipo_flujo": "5-S2n",
+       "yn_ft": 1.238,
+       "yc_ft": 1.778,
+       "y_salida_ft": 1.35,
+       "TW_ft": 0.274,
+       "V_salida_fts": 10.448,
+       "V_TW_fts": 11.875
+      }
+     },
+     "consistencia": {
+      "S_calc": 0.0174,
+      "S_publicada": 0.0174,
+      "HW_calc_invert_mas_prof_gobernante_ft": 804.04,
+      "HW_publicada_ft": 804.04,
+      "freeboard_a_cresta_ft": 1.96
+     }
+    },
+    {
+     "cruce": "Crossing 3",
+     "pdf_pagina_tabla_resumen": 21,
+     "entradas": {
+      "Q_diseno_cfs": 15.0,
+      "Q_max_cfs": 19.0,
+      "forma": "Circular",
+      "D_ft": 2.5,
+      "material": "Concrete",
+      "n_manning": 0.012,
+      "entrada": "Square Edge with Headwall",
+      "barriles": 1,
+      "invert_entrada_ft": 798.5,
+      "invert_salida_ft": 798.33,
+      "L_ft": 56.0,
+      "S_mm_publicada": 0.003,
+      "canal_TW": {
+       "forma": "Rectangular Channel",
+       "ancho_fondo_ft": 8.0,
+       "pendiente": 0.33,
+       "n": 0.029,
+       "invert_ft": 798.33
+      },
+      "cota_cresta_calzada_ft": 801.75
+     },
+     "resultados_HY8": {
+      "en_Q_diseno": {
+       "Q_cfs": 15.0,
+       "HW_elev_ft": 800.56,
+       "prof_HW_control_entrada_ft": 1.938,
+       "prof_HW_control_salida_ft": 2.055,
+       "tipo_flujo": "2-M2c",
+       "yn_ft": 1.413,
+       "yc_ft": 1.304,
+       "y_salida_ft": 1.304,
+       "TW_ft": 0.195,
+       "V_salida_fts": 5.79,
+       "V_TW_fts": 9.601
+      },
+      "en_Q_max": {
+       "Q_cfs": 19.0,
+       "HW_elev_ft": 800.86,
+       "prof_HW_control_entrada_ft": 2.246,
+       "prof_HW_control_salida_ft": 2.363,
+       "tipo_flujo": "2-M2c",
+       "yn_ft": 1.655,
+       "yc_ft": 1.474,
+       "y_salida_ft": 1.474,
+       "TW_ft": 0.226,
+       "V_salida_fts": 6.311,
+       "V_TW_fts": 10.522
+      }
+     },
+     "consistencia": {
+      "S_calc": 0.003,
+      "S_publicada": 0.003,
+      "HW_calc_invert_mas_prof_gobernante_ft": 800.55,
+      "HW_publicada_ft": 800.56,
+      "freeboard_a_cresta_ft": 1.19
+     }
+    },
+    {
+     "cruce": "Crossing 4",
+     "pdf_pagina_tabla_resumen": 28,
+     "entradas": {
+      "Q_diseno_cfs": 21.0,
+      "Q_max_cfs": 26.0,
+      "forma": "Circular",
+      "D_ft": 2.5,
+      "material": "Concrete",
+      "n_manning": 0.012,
+      "entrada": "Square Edge with Headwall",
+      "barriles": 1,
+      "invert_entrada_ft": 797.86,
+      "invert_salida_ft": 797.57,
+      "L_ft": 96.0,
+      "S_mm_publicada": 0.003,
+      "canal_TW": {
+       "forma": "Rectangular Channel",
+       "ancho_fondo_ft": 8.0,
+       "pendiente": 0.33,
+       "n": 0.029,
+       "invert_ft": 797.57
+      },
+      "cota_cresta_calzada_ft": 802.0
+     },
+     "resultados_HY8": {
+      "en_Q_diseno": {
+       "Q_cfs": 21.0,
+       "HW_elev_ft": 800.37,
+       "prof_HW_control_entrada_ft": 2.399,
+       "prof_HW_control_salida_ft": 2.513,
+       "tipo_flujo": "7-M2c",
+       "yn_ft": 1.786,
+       "yc_ft": 1.554,
+       "y_salida_ft": 1.554,
+       "TW_ft": 0.24,
+       "V_salida_fts": 6.546,
+       "V_TW_fts": 10.936
+      },
+      "en_Q_max": {
+       "Q_cfs": 26.0,
+       "HW_elev_ft": 800.75,
+       "prof_HW_control_entrada_ft": 2.802,
+       "prof_HW_control_salida_ft": 2.894,
+       "tipo_flujo": "7-M2c",
+       "yn_ft": 2.249,
+       "yc_ft": 1.733,
+       "y_salida_ft": 1.733,
+       "TW_ft": 0.274,
+       "V_salida_fts": 7.161,
+       "V_TW_fts": 11.875
+      }
+     },
+     "consistencia": {
+      "S_calc": 0.003,
+      "S_publicada": 0.003,
+      "HW_calc_invert_mas_prof_gobernante_ft": 800.37,
+      "HW_publicada_ft": 800.37,
+      "freeboard_a_cresta_ft": 1.63
+     }
+    },
+    {
+     "cruce": "Crossing 5",
+     "pdf_pagina_tabla_resumen": 35,
+     "entradas": {
+      "Q_diseno_cfs": 42.0,
+      "Q_max_cfs": 52.0,
+      "forma": "Circular",
+      "D_ft": 3.0,
+      "material": "Concrete",
+      "n_manning": 0.012,
+      "entrada": "Square Edge with Headwall",
+      "barriles": 1,
+      "invert_entrada_ft": 788.76,
+      "invert_salida_ft": 788.26,
+      "L_ft": 62.0,
+      "S_mm_publicada": 0.0081,
+      "canal_TW": {
+       "forma": "Rectangular Channel",
+       "ancho_fondo_ft": 8.0,
+       "pendiente": 0.33,
+       "n": 0.029,
+       "invert_ft": 788.26
+      },
+      "cota_cresta_calzada_ft": 795.0
+     },
+     "resultados_HY8": {
+      "en_Q_diseno": {
+       "Q_cfs": 42.0,
+       "HW_elev_ft": 792.18,
+       "prof_HW_control_entrada_ft": 3.42,
+       "prof_HW_control_salida_ft": 2.639,
+       "tipo_flujo": "5-S2n",
+       "yn_ft": 1.756,
+       "yc_ft": 2.109,
+       "y_salida_ft": 1.823,
+       "TW_ft": 0.368,
+       "V_salida_fts": 9.346,
+       "V_TW_fts": 14.257
+      },
+      "en_Q_max": {
+       "Q_cfs": 52.0,
+       "HW_elev_ft": 792.91,
+       "prof_HW_control_entrada_ft": 4.146,
+       "prof_HW_control_salida_ft": 3.751,
+       "tipo_flujo": "5-S2n",
+       "yn_ft": 2.033,
+       "yc_ft": 2.342,
+       "y_salida_ft": 2.092,
+       "TW_ft": 0.421,
+       "V_salida_fts": 9.894,
+       "V_TW_fts": 15.455
+      }
+     },
+     "consistencia": {
+      "S_calc": 0.0081,
+      "S_publicada": 0.0081,
+      "HW_calc_invert_mas_prof_gobernante_ft": 792.18,
+      "HW_publicada_ft": 792.18,
+      "freeboard_a_cresta_ft": 2.82
+     }
+    },
+    {
+     "cruce": "Crossing 6",
+     "pdf_pagina_tabla_resumen": 42,
+     "entradas": {
+      "Q_diseno_cfs": 25.0,
+      "Q_max_cfs": 31.0,
+      "forma": "Circular",
+      "D_ft": 2.0,
+      "material": "Concrete",
+      "n_manning": 0.012,
+      "entrada": "Square Edge with Headwall",
+      "barriles": 1,
+      "invert_entrada_ft": 789.62,
+      "invert_salida_ft": 788.05,
+      "L_ft": 104.01,
+      "S_mm_publicada": 0.0151,
+      "canal_TW": {
+       "forma": "Rectangular Channel",
+       "ancho_fondo_ft": 8.0,
+       "pendiente": 0.33,
+       "n": 0.029,
+       "invert_ft": 788.05
+      },
+      "cota_cresta_calzada_ft": 798.25
+     },
+     "resultados_HY8": {
+      "en_Q_diseno": {
+       "Q_cfs": 25.0,
+       "HW_elev_ft": 793.44,
+       "prof_HW_control_entrada_ft": 3.823,
+       "prof_HW_control_salida_ft": 2.862,
+       "tipo_flujo": "5-S2n",
+       "yn_ft": 1.392,
+       "yc_ft": 1.761,
+       "y_salida_ft": 1.422,
+       "TW_ft": 0.267,
+       "V_salida_fts": 10.477,
+       "V_TW_fts": 11.697
+      },
+      "en_Q_max": {
+       "Q_cfs": 31.0,
+       "HW_elev_ft": 794.81,
+       "prof_HW_control_entrada_ft": 5.187,
+       "prof_HW_control_salida_ft": 4.29,
+       "tipo_flujo": "5-S2n",
+       "yn_ft": 1.71,
+       "yc_ft": 1.875,
+       "y_salida_ft": 1.716,
+       "TW_ft": 0.305,
+       "V_salida_fts": 10.841,
+       "V_TW_fts": 12.703
+      }
+     },
+     "consistencia": {
+      "S_calc": 0.0151,
+      "S_publicada": 0.0151,
+      "HW_calc_invert_mas_prof_gobernante_ft": 793.44,
+      "HW_publicada_ft": 793.44,
+      "freeboard_a_cresta_ft": 4.81
+     }
+    },
+    {
+     "cruce": "Crossing 7",
+     "pdf_pagina_tabla_resumen": 51,
+     "entradas": {
+      "Q_diseno_cfs": 25.0,
+      "Q_max_cfs": 31.0,
+      "forma": "Circular",
+      "D_ft": 2.0,
+      "material": "Concrete",
+      "n_manning": 0.012,
+      "entrada": "Square Edge with Headwall",
+      "barriles": 1,
+      "invert_entrada_ft": 784.24,
+      "invert_salida_ft": 781.32,
+      "L_ft": 98.04,
+      "S_mm_publicada": 0.0298,
+      "canal_TW": {
+       "forma": "Rectangular Channel",
+       "ancho_fondo_ft": 8.0,
+       "pendiente": 0.33,
+       "n": 0.029,
+       "invert_ft": 781.32
+      },
+      "cota_cresta_calzada_ft": 791.5
+     },
+     "resultados_HY8": {
+      "en_Q_diseno": {
+       "Q_cfs": 25.0,
+       "HW_elev_ft": 788.05,
+       "prof_HW_control_entrada_ft": 3.808,
+       "prof_HW_control_salida_ft": 1.45,
+       "tipo_flujo": "5-S2n",
+       "yn_ft": 1.105,
+       "yc_ft": 1.761,
+       "y_salida_ft": 1.162,
+       "TW_ft": 0.267,
+       "V_salida_fts": 13.213,
+       "V_TW_fts": 11.697
+      },
+      "en_Q_max": {
+       "Q_cfs": 31.0,
+       "HW_elev_ft": 789.41,
+       "prof_HW_control_entrada_ft": 5.173,
+       "prof_HW_control_salida_ft": 2.845,
+       "tipo_flujo": "5-S2n",
+       "yn_ft": 1.27,
+       "yc_ft": 1.875,
+       "y_salida_ft": 1.345,
+       "TW_ft": 0.305,
+       "V_salida_fts": 13.818,
+       "V_TW_fts": 12.703
+      }
+     },
+     "consistencia": {
+      "S_calc": 0.0298,
+      "S_publicada": 0.0298,
+      "HW_calc_invert_mas_prof_gobernante_ft": 788.05,
+      "HW_publicada_ft": 788.05,
+      "freeboard_a_cresta_ft": 3.45
+     }
+    },
+    {
+     "cruce": "Crossing 8",
+     "pdf_pagina_tabla_resumen": 60,
+     "entradas": {
+      "Q_diseno_cfs": 25.0,
+      "Q_max_cfs": 31.0,
+      "forma": "Circular",
+      "D_ft": 2.0,
+      "material": "Concrete",
+      "n_manning": 0.012,
+      "entrada": "Square Edge with Headwall",
+      "barriles": 1,
+      "invert_entrada_ft": 786.27,
+      "invert_salida_ft": 785.65,
+      "L_ft": 62.0,
+      "S_mm_publicada": 0.01,
+      "canal_TW": {
+       "forma": "Rectangular Channel",
+       "ancho_fondo_ft": 8.0,
+       "pendiente": 0.33,
+       "n": 0.029,
+       "invert_ft": 785.65
+      },
+      "cota_cresta_calzada_ft": 792.0
+     },
+     "resultados_HY8": {
+      "en_Q_diseno": {
+       "Q_cfs": 25.0,
+       "HW_elev_ft": 790.1,
+       "prof_HW_control_entrada_ft": 3.828,
+       "prof_HW_control_salida_ft": 3.377,
+       "tipo_flujo": "5-S2n",
+       "yn_ft": 1.686,
+       "yc_ft": 1.761,
+       "y_salida_ft": 1.686,
+       "TW_ft": 0.267,
+       "V_salida_fts": 8.866,
+       "V_TW_fts": 11.697
+      },
+      "en_Q_max": {
+       "Q_cfs": 31.0,
+       "HW_elev_ft": 791.46,
+       "prof_HW_control_entrada_ft": 5.193,
+       "prof_HW_control_salida_ft": 4.578,
+       "tipo_flujo": "7-M2c",
+       "yn_ft": 2.0,
+       "yc_ft": 1.875,
+       "y_salida_ft": 1.875,
+       "TW_ft": 0.305,
+       "V_salida_fts": 10.13,
+       "V_TW_fts": 12.703
+      }
+     },
+     "consistencia": {
+      "S_calc": 0.01,
+      "S_publicada": 0.01,
+      "HW_calc_invert_mas_prof_gobernante_ft": 790.1,
+      "HW_publicada_ft": 790.1,
+      "freeboard_a_cresta_ft": 1.9
+     }
+    },
+    {
+     "cruce": "Crossing 9",
+     "pdf_pagina_tabla_resumen": 68,
+     "entradas": {
+      "Q_diseno_cfs": 17.0,
+      "Q_max_cfs": 22.0,
+      "forma": "Circular",
+      "D_ft": 2.5,
+      "material": "Concrete",
+      "n_manning": 0.012,
+      "entrada": "Square Edge with Headwall",
+      "barriles": 1,
+      "invert_entrada_ft": 796.27,
+      "invert_salida_ft": 796.08,
+      "L_ft": 66.0,
+      "S_mm_publicada": 0.0029,
+      "canal_TW": {
+       "forma": "Rectangular Channel",
+       "ancho_fondo_ft": 8.0,
+       "pendiente": 0.33,
+       "n": 0.029,
+       "invert_ft": 796.08
+      },
+      "cota_cresta_calzada_ft": 802.3
+     },
+     "resultados_HY8": {
+      "en_Q_diseno": {
+       "Q_cfs": 17.0,
+       "HW_elev_ft": 798.48,
+       "prof_HW_control_entrada_ft": 2.093,
+       "prof_HW_control_salida_ft": 2.209,
+       "tipo_flujo": "2-M2c",
+       "yn_ft": 1.559,
+       "yc_ft": 1.389,
+       "y_salida_ft": 1.389,
+       "TW_ft": 0.211,
+       "V_salida_fts": 6.069,
+       "V_TW_fts": 10.075
+      },
+      "en_Q_max": {
+       "Q_cfs": 22.0,
+       "HW_elev_ft": 798.86,
+       "prof_HW_control_entrada_ft": 2.477,
+       "prof_HW_control_salida_ft": 2.588,
+       "tipo_flujo": "7-M2c",
+       "yn_ft": 1.898,
+       "yc_ft": 1.592,
+       "y_salida_ft": 1.592,
+       "TW_ft": 0.247,
+       "V_salida_fts": 6.67,
+       "V_TW_fts": 11.136
+      }
+     },
+     "consistencia": {
+      "S_calc": 0.0029,
+      "S_publicada": 0.0029,
+      "HW_calc_invert_mas_prof_gobernante_ft": 798.48,
+      "HW_publicada_ft": 798.48,
+      "freeboard_a_cresta_ft": 3.82
+     }
+    }
+   ],
+   "texto_literal": "Note: 2. The calculated headwater elevation at Crossing 3 exceeds the assumed bottom of subgrade by 2.6\". No erosion or other issues were noted during a field review. Therefore, existing pipe size will be maintained, while slope will be increased from 0.09% to 0.30% (p.1)",
+   "notas": "Caso muy bueno para hidraulica_circular (HDS-5 puro: HW control entrada/salida, d_c, d_n, velocidad de salida, perfil). Entradas geometricas completas y Q por cruce dados. Limitaciones: (1) sin hidrologia (Q declarado); (2) canal aguas abajo identico en los 9 cruces (rectangular, ancho 8.00 ft, pendiente 0.3300, n 0.029): pendiente 33% parece valor generico/placeholder, el TW queda muy bajo (0.2-0.4 ft) y el resultado es casi salida libre; un programa que calcule TW por otra via no reproducira el HW de salida exactamente; (3) 'Barrel Material: Concrete' con n=0.0120. Consistencia verificada: pendiente de culvert = (inv_ent - inv_sal)/L coincide con la publicada en los 9 cruces (diferencias <0.0001), y HW = invert de entrada + profundidad gobernante (max de control entrada/salida) en los cruces revisados. Hay una incoherencia declarada en la propia nota: el HW calculado del Cruce 3 supera la cota de subrasante asumida en 2.6 in, y la propuesta mantiene el diametro y aumenta la pendiente de 0.09 % a 0.30 %. El Cruce 3 en las tablas ya viene con S=0.0030 (la pendiente propuesta). En los Cruces 6-8 no se verifica HW vs subrasante (justificado en la nota 1). Completo para recalcular: SI (hidraulica de cada cruce), NO para hidrologia.",
+   "completo_para_recalcular": true
+  },
+  {
+   "id": "OR-PE-TU107-04",
+   "tipo": "hidrologia_racional",
+   "origen": "obra_real",
+   "nombre": "Via departamental TU-107 Bocapan-Tamarindo (33+3 km), Tumbes, Peru: estudio hidrologico para el drenaje transversal (tesis sobre la via real)",
+   "entidad": "Universidad Nacional de Tumbes (tesis de grado de Ing. Agricola, J. A. Ramos Estrada); via del Gobierno Regional de Tumbes",
+   "anio": 2026,
+   "url": "https://repositorio.untumbes.edu.pe/bitstreams/565eeb64-7f28-4ecc-88b6-ab2fab27ceb3/download",
+   "pdf_local": "pdf/UNTumbes_2026_Ramos_TU-107_drenaje_transversal.pdf",
+   "referencia": "Paginas impresas: Tabla 23 (P24 mensual, estacion Canaveral) p.60; Tabla 24 p.61; Tabla 25 (datos dudosos) p.62; Tabla 26 (41 cuencas: area, L cauce, cotas, S) p.64; Tabla 27 (Tc Temez y Bransby-Williams) p.65; Tabla 36 (K-S) p.74; Tabla 47 (P max probable) p.80; Tablas 48-50 pp.80-81; Tabla 65 (I por cuenca) p.90; Tabla 66 (Q racional <10 km2) p.92; Tabla 67 (hidrograma unitario >10 km2) p.93; Tabla 68 (alcantarillas) p.95; Tabla 69 (badenes) p.97",
+   "entradas": {
+    "estacion": "Canaveral, 133 msnm, serie P24 max 1983-1987, 1989-2021, 2023-2024 (40 anios) en Tabla 23-24 (valores literales)",
+    "serie_P24_max_mm": {
+     "1983": 491.0,
+     "1984": 216.0,
+     "1985": 33.0,
+     "1986": 19.0,
+     "1987": 360.0,
+     "1989": 129.0,
+     "1990": 24.0,
+     "1991": 717.0,
+     "1992": 306.3,
+     "1993": 104.5,
+     "1994": 103.8,
+     "1995": 32.1,
+     "1996": 63.0,
+     "1997": 729.2,
+     "1998": 150.0,
+     "1999": 100.1,
+     "2000": 334.8,
+     "2001": 63.0,
+     "2002": 129.0,
+     "2003": 64.2,
+     "2004": 82.4,
+     "2005": 42.5,
+     "2006": 226.0,
+     "2007": 151.6,
+     "2008": 287.1,
+     "2009": 237.6,
+     "2010": 185.9,
+     "2011": 108.8,
+     "2012": 296.8,
+     "2013": 167.2,
+     "2014": 45.1,
+     "2015": 187.3,
+     "2016": 80.6,
+     "2017": 369.2,
+     "2018": 61.0,
+     "2019": 165.2,
+     "2020": 68.3,
+     "2021": 140.4,
+     "2023": 381.3,
+     "2024": 93.6
+    },
+    "TR_adoptados_anios": "35 (alcantarillas de quebradas menores), 70 (alcantarillas y badenes de quebradas importantes), 140 (puentes)",
+    "tc": "promedio de Temez y Bransby-Williams (Tabla 27)",
+    "C": "0.10, 0.15 o 0.20 segun pendiente (Tabla 66)",
+    "tabla_26_27_cuencas": [
+     {
+      "cuenca": "C-1",
+      "progresiva": "00+458",
+      "area_km2": 0.25,
+      "L_cauce_km": 0.91,
+      "cota_max": 86,
+      "cota_min": 21,
+      "S_mm": 0.07,
+      "tc_temez_h": 0.43,
+      "tc_bransby_h": 0.46,
+      "tc_prom_h": 0.45,
+      "duracion_min": 26.81
+     },
+     {
+      "cuenca": "C-2",
+      "progresiva": "00+793",
+      "area_km2": 0.94,
+      "L_cauce_km": 2.21,
+      "cota_max": 102,
+      "cota_min": 17,
+      "S_mm": 0.04,
+      "tc_temez_h": 1.04,
+      "tc_bransby_h": 1.02,
+      "tc_prom_h": 1.03,
+      "duracion_min": 61.75
+     },
+     {
+      "cuenca": "C-3",
+      "progresiva": "02+681",
+      "area_km2": 0.56,
+      "L_cauce_km": 1.83,
+      "cota_max": 116,
+      "cota_min": 25,
+      "S_mm": 0.05,
+      "tc_temez_h": 0.86,
+      "tc_bransby_h": 0.84,
+      "tc_prom_h": 0.85,
+      "duracion_min": 50.98
+     },
+     {
+      "cuenca": "C-4",
+      "progresiva": "03+123",
+      "area_km2": 0.18,
+      "L_cauce_km": 0.81,
+      "cota_max": 45,
+      "cota_min": 24,
+      "S_mm": 0.03,
+      "tc_temez_h": 0.48,
+      "tc_bransby_h": 0.51,
+      "tc_prom_h": 0.5,
+      "duracion_min": 29.83
+     },
+     {
+      "cuenca": "C-5",
+      "progresiva": "03+293",
+      "area_km2": 2.31,
+      "L_cauce_km": 2.6,
+      "cota_max": 190,
+      "cota_min": 25,
+      "S_mm": 0.06,
+      "tc_temez_h": 1.01,
+      "tc_bransby_h": 1.05,
+      "tc_prom_h": 1.03,
+      "duracion_min": 61.6
+     },
+     {
+      "cuenca": "C-6",
+      "progresiva": "04+527",
+      "area_km2": 102.71,
+      "L_cauce_km": 23.88,
+      "cota_max": 455,
+      "cota_min": 25,
+      "S_mm": 0.02,
+      "tc_temez_h": 8.16,
+      "tc_bransby_h": 7.17,
+      "tc_prom_h": 7.67,
+      "duracion_min": 460.15
+     },
+     {
+      "cuenca": "C-7",
+      "progresiva": "06+207",
+      "area_km2": 12.11,
+      "L_cauce_km": 8.46,
+      "cota_max": 179,
+      "cota_min": 24,
+      "S_mm": 0.02,
+      "tc_temez_h": 3.57,
+      "tc_bransby_h": 3.25,
+      "tc_prom_h": 3.41,
+      "duracion_min": 204.54
+     },
+     {
+      "cuenca": "C-8",
+      "progresiva": "06+921",
+      "area_km2": 0.11,
+      "L_cauce_km": 0.47,
+      "cota_max": 65,
+      "cota_min": 32,
+      "S_mm": 0.07,
+      "tc_temez_h": 0.24,
+      "tc_bransby_h": 0.28,
+      "tc_prom_h": 0.26,
+      "duracion_min": 15.56
+     },
+     {
+      "cuenca": "C-9",
+      "progresiva": "07+793",
+      "area_km2": 1.23,
+      "L_cauce_km": 1.9,
+      "cota_max": 156,
+      "cota_min": 26,
+      "S_mm": 0.07,
+      "tc_temez_h": 0.78,
+      "tc_bransby_h": 0.82,
+      "tc_prom_h": 0.8,
+      "duracion_min": 47.77
+     },
+     {
+      "cuenca": "C-10",
+      "progresiva": "07+964",
+      "area_km2": 0.31,
+      "L_cauce_km": 1.14,
+      "cota_max": 126,
+      "cota_min": 25,
+      "S_mm": 0.09,
+      "tc_temez_h": 0.5,
+      "tc_bransby_h": 0.52,
+      "tc_prom_h": 0.51,
+      "duracion_min": 30.84
+     },
+     {
+      "cuenca": "C-11",
+      "progresiva": "09+913",
+      "area_km2": 0.27,
+      "L_cauce_km": 0.93,
+      "cota_max": 138,
+      "cota_min": 30,
+      "S_mm": 0.12,
+      "tc_temez_h": 0.4,
+      "tc_bransby_h": 0.43,
+      "tc_prom_h": 0.41,
+      "duracion_min": 24.66
+     },
+     {
+      "cuenca": "C-12",
+      "progresiva": "10+517",
+      "area_km2": 1.1,
+      "L_cauce_km": 1.57,
+      "cota_max": 172,
+      "cota_min": 40,
+      "S_mm": 0.08,
+      "tc_temez_h": 0.62,
+      "tc_bransby_h": 0.67,
+      "tc_prom_h": 0.65,
+      "duracion_min": 38.8
+     },
+     {
+      "cuenca": "C-13",
+      "progresiva": "12+005",
+      "area_km2": 17.3,
+      "L_cauce_km": 14.26,
+      "cota_max": 355,
+      "cota_min": 36,
+      "S_mm": 0.02,
+      "tc_temez_h": 5.58,
+      "tc_bransby_h": 4.66,
+      "tc_prom_h": 5.12,
+      "duracion_min": 307.09
+     },
+     {
+      "cuenca": "C-14",
+      "progresiva": "12+300",
+      "area_km2": 0.22,
+      "L_cauce_km": 0.95,
+      "cota_max": 61,
+      "cota_min": 38,
+      "S_mm": 0.02,
+      "tc_temez_h": 0.57,
+      "tc_bransby_h": 0.59,
+      "tc_prom_h": 0.58,
+      "duracion_min": 34.67
+     },
+     {
+      "cuenca": "C-15",
+      "progresiva": "13+352",
+      "area_km2": 0.65,
+      "L_cauce_km": 1.36,
+      "cota_max": 77,
+      "cota_min": 43,
+      "S_mm": 0.02,
+      "tc_temez_h": 0.72,
+      "tc_bransby_h": 0.76,
+      "tc_prom_h": 0.74,
+      "duracion_min": 44.6
+     },
+     {
+      "cuenca": "C-16",
+      "progresiva": "13+823",
+      "area_km2": 20.43,
+      "L_cauce_km": 11.65,
+      "cota_max": 380,
+      "cota_min": 31,
+      "S_mm": 0.03,
+      "tc_temez_h": 4.23,
+      "tc_bransby_h": 3.77,
+      "tc_prom_h": 4.0,
+      "duracion_min": 240.04
+     },
+     {
+      "cuenca": "C-17",
+      "progresiva": "16+873",
+      "area_km2": 13.05,
+      "L_cauce_km": 9.78,
+      "cota_max": 419,
+      "cota_min": 44,
+      "S_mm": 0.04,
+      "tc_temez_h": 3.53,
+      "tc_bransby_h": 3.15,
+      "tc_prom_h": 3.34,
+      "duracion_min": 200.69
+     },
+     {
+      "cuenca": "C-18",
+      "progresiva": "17+561",
+      "area_km2": 0.68,
+      "L_cauce_km": 1.37,
+      "cota_max": 233,
+      "cota_min": 55,
+      "S_mm": 0.13,
+      "tc_temez_h": 0.52,
+      "tc_bransby_h": 0.56,
+      "tc_prom_h": 0.54,
+      "duracion_min": 32.51
+     },
+     {
+      "cuenca": "C-19",
+      "progresiva": "17+803",
+      "area_km2": 0.14,
+      "L_cauce_km": 0.68,
+      "cota_max": 168,
+      "cota_min": 56,
+      "S_mm": 0.16,
+      "tc_temez_h": 0.29,
+      "tc_bransby_h": 0.32,
+      "tc_prom_h": 0.3,
+      "duracion_min": 18.15
+     },
+     {
+      "cuenca": "C-20",
+      "progresiva": "19+328",
+      "area_km2": 0.1,
+      "L_cauce_km": 0.44,
+      "cota_max": 211,
+      "cota_min": 85,
+      "S_mm": 0.29,
+      "tc_temez_h": 0.17,
+      "tc_bransby_h": 0.2,
+      "tc_prom_h": 0.19,
+      "duracion_min": 11.32
+     },
+     {
+      "cuenca": "C-21",
+      "progresiva": "20+281",
+      "area_km2": 1.04,
+      "L_cauce_km": 1.62,
+      "cota_max": 256,
+      "cota_min": 67,
+      "S_mm": 0.12,
+      "tc_temez_h": 0.6,
+      "tc_bransby_h": 0.65,
+      "tc_prom_h": 0.63,
+      "duracion_min": 37.54
+     },
+     {
+      "cuenca": "C-22",
+      "progresiva": "21+357",
+      "area_km2": 1.92,
+      "L_cauce_km": 2.68,
+      "cota_max": 295,
+      "cota_min": 80,
+      "S_mm": 0.08,
+      "tc_temez_h": 1.01,
+      "tc_bransby_h": 1.03,
+      "tc_prom_h": 1.02,
+      "duracion_min": 61.14
+     },
+     {
+      "cuenca": "C-23",
+      "progresiva": "21+720",
+      "area_km2": 0.17,
+      "L_cauce_km": 0.88,
+      "cota_max": 105,
+      "cota_min": 81,
+      "S_mm": 0.03,
+      "tc_temez_h": 0.52,
+      "tc_bransby_h": 0.54,
+      "tc_prom_h": 0.53,
+      "duracion_min": 31.77
+     },
+     {
+      "cuenca": "C-24",
+      "progresiva": "23+399",
+      "area_km2": 2.57,
+      "L_cauce_km": 4.15,
+      "cota_max": 309,
+      "cota_min": 75,
+      "S_mm": 0.06,
+      "tc_temez_h": 1.64,
+      "tc_bransby_h": 1.53,
+      "tc_prom_h": 1.58,
+      "duracion_min": 94.94
+     },
+     {
+      "cuenca": "C-25",
+      "progresiva": "23+749",
+      "area_km2": 0.69,
+      "L_cauce_km": 1.75,
+      "cota_max": 192,
+      "cota_min": 78,
+      "S_mm": 0.07,
+      "tc_temez_h": 0.76,
+      "tc_bransby_h": 0.77,
+      "tc_prom_h": 0.77,
+      "duracion_min": 46.05
+     },
+     {
+      "cuenca": "C-26",
+      "progresiva": "24+073",
+      "area_km2": 0.19,
+      "L_cauce_km": 1.03,
+      "cota_max": 167,
+      "cota_min": 81,
+      "S_mm": 0.08,
+      "tc_temez_h": 0.49,
+      "tc_bransby_h": 0.49,
+      "tc_prom_h": 0.49,
+      "duracion_min": 29.28
+     },
+     {
+      "cuenca": "C-27",
+      "progresiva": "24+227",
+      "area_km2": 0.18,
+      "L_cauce_km": 0.46,
+      "cota_max": 137,
+      "cota_min": 79,
+      "S_mm": 0.13,
+      "tc_temez_h": 0.2,
+      "tc_bransby_h": 0.25,
+      "tc_prom_h": 0.22,
+      "duracion_min": 13.49
+     },
+     {
+      "cuenca": "C-28",
+      "progresiva": "24+820",
+      "area_km2": 2.86,
+      "L_cauce_km": 2.29,
+      "cota_max": 326,
+      "cota_min": 94,
+      "S_mm": 0.1,
+      "tc_temez_h": 0.79,
+      "tc_bransby_h": 0.87,
+      "tc_prom_h": 0.83,
+      "duracion_min": 49.91
+     },
+     {
+      "cuenca": "C-29",
+      "progresiva": "25+582",
+      "area_km2": 0.2,
+      "L_cauce_km": 0.67,
+      "cota_max": 152,
+      "cota_min": 92,
+      "S_mm": 0.09,
+      "tc_temez_h": 0.31,
+      "tc_bransby_h": 0.35,
+      "tc_prom_h": 0.33,
+      "duracion_min": 19.66
+     },
+     {
+      "cuenca": "C-30",
+      "progresiva": "25+802",
+      "area_km2": 0.14,
+      "L_cauce_km": 0.83,
+      "cota_max": 198,
+      "cota_min": 91,
+      "S_mm": 0.13,
+      "tc_temez_h": 0.37,
+      "tc_bransby_h": 0.38,
+      "tc_prom_h": 0.38,
+      "duracion_min": 22.6
+     },
+     {
+      "cuenca": "C-31",
+      "progresiva": "26+082",
+      "area_km2": 0.13,
+      "L_cauce_km": 0.8,
+      "cota_max": 180,
+      "cota_min": 88,
+      "S_mm": 0.11,
+      "tc_temez_h": 0.37,
+      "tc_bransby_h": 0.38,
+      "tc_prom_h": 0.38,
+      "duracion_min": 22.61
+     },
+     {
+      "cuenca": "C-32",
+      "progresiva": "26+722",
+      "area_km2": 0.16,
+      "L_cauce_km": 1.03,
+      "cota_max": 274,
+      "cota_min": 131,
+      "S_mm": 0.14,
+      "tc_temez_h": 0.45,
+      "tc_bransby_h": 0.45,
+      "tc_prom_h": 0.45,
+      "duracion_min": 26.89
+     },
+     {
+      "cuenca": "C-33",
+      "progresiva": "26+977",
+      "area_km2": 0.11,
+      "L_cauce_km": 0.52,
+      "cota_max": 190,
+      "cota_min": 106,
+      "S_mm": 0.16,
+      "tc_temez_h": 0.23,
+      "tc_bransby_h": 0.26,
+      "tc_prom_h": 0.24,
+      "duracion_min": 14.53
+     },
+     {
+      "cuenca": "C-34",
+      "progresiva": "27+575",
+      "area_km2": 3.78,
+      "L_cauce_km": 4.77,
+      "cota_max": 366,
+      "cota_min": 86,
+      "S_mm": 0.06,
+      "tc_temez_h": 1.79,
+      "tc_bransby_h": 1.68,
+      "tc_prom_h": 1.74,
+      "duracion_min": 104.25
+     },
+     {
+      "cuenca": "C-35",
+      "progresiva": "27+925",
+      "area_km2": 8.1,
+      "L_cauce_km": 7.36,
+      "cota_max": 407,
+      "cota_min": 91,
+      "S_mm": 0.04,
+      "tc_temez_h": 2.73,
+      "tc_bransby_h": 2.49,
+      "tc_prom_h": 2.61,
+      "duracion_min": 156.41
+     },
+     {
+      "cuenca": "C-36",
+      "progresiva": "28+471",
+      "area_km2": 1.35,
+      "L_cauce_km": 2.34,
+      "cota_max": 295,
+      "cota_min": 94,
+      "S_mm": 0.09,
+      "tc_temez_h": 0.9,
+      "tc_bransby_h": 0.91,
+      "tc_prom_h": 0.91,
+      "duracion_min": 54.49
+     },
+     {
+      "cuenca": "C-37",
+      "progresiva": "31+951",
+      "area_km2": 0.17,
+      "L_cauce_km": 1.02,
+      "cota_max": 203,
+      "cota_min": 107,
+      "S_mm": 0.09,
+      "tc_temez_h": 0.48,
+      "tc_bransby_h": 0.48,
+      "tc_prom_h": 0.48,
+      "duracion_min": 28.72
+     },
+     {
+      "cuenca": "C-38",
+      "progresiva": "32+162",
+      "area_km2": 0.91,
+      "L_cauce_km": 1.68,
+      "cota_max": 281,
+      "cota_min": 103,
+      "S_mm": 0.11,
+      "tc_temez_h": 0.65,
+      "tc_bransby_h": 0.68,
+      "tc_prom_h": 0.66,
+      "duracion_min": 39.81
+     },
+     {
+      "cuenca": "C-39",
+      "progresiva": "32+341",
+      "area_km2": 0.12,
+      "L_cauce_km": 0.49,
+      "cota_max": 136,
+      "cota_min": 105,
+      "S_mm": 0.06,
+      "tc_temez_h": 0.26,
+      "tc_bransby_h": 0.29,
+      "tc_prom_h": 0.27,
+      "duracion_min": 16.45
+     },
+     {
+      "cuenca": "C-40",
+      "progresiva": "32+770",
+      "area_km2": 1.32,
+      "L_cauce_km": 2.21,
+      "cota_max": 270,
+      "cota_min": 109,
+      "S_mm": 0.07,
+      "tc_temez_h": 0.89,
+      "tc_bransby_h": 0.9,
+      "tc_prom_h": 0.89,
+      "duracion_min": 53.64
+     },
+     {
+      "cuenca": "C-41",
+      "progresiva": "33+315",
+      "area_km2": 0.34,
+      "L_cauce_km": 1.17,
+      "cota_max": 179,
+      "cota_min": 111,
+      "S_mm": 0.06,
+      "tc_temez_h": 0.56,
+      "tc_bransby_h": 0.58,
+      "tc_prom_h": 0.57,
+      "duracion_min": 34.23
+     }
+    ]
+   },
+   "resultados": {
+    "distribucion": "Log Normal 2P (min delta K-S 0.0535 < crit 0.2150); medias de log10(P24) 2.117 y desv 0.389 (Tabla 25)",
+    "P24_max_prob_corregida_mm_factor_1_13": {
+     "5": 314.3999,
+     "10": 466.351,
+     "20": 645.7498,
+     "25": 709.9677,
+     "50": 931.3573,
+     "70": 1051.6006,
+     "100": 1188.8504,
+     "140": 1328.0325,
+     "200": 1486.402,
+     "500": 1948.4364
+    },
+    "IDF": "I = Pd/t (Dick Peschke); Pd = coef_duracion*P24 (Tabla 48: 1h 0.25 ... 24h 1.00); I(1h, T=5)=78.6 mm/h",
+    "Tabla_66_Q_racional_36_cuencas": [
+     {
+      "cuenca": "C-1",
+      "progresiva": "00+458",
+      "A_km2": 0.25,
+      "S_mm": 0.07,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 280.28,
+       "70": 367.55,
+       "140": 481.97
+      },
+      "Q_m3s": {
+       "35": 2.86,
+       "70": 3.75,
+       "140": 4.92
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 2.92,
+       "70": 3.83,
+       "140": 5.02
+      },
+      "desvio_pct_TR35": 2.1
+     },
+     {
+      "cuenca": "C-2",
+      "progresiva": "00+793",
+      "A_km2": 0.94,
+      "S_mm": 0.04,
+      "C": 0.1,
+      "I_mmh": {
+       "35": 178.98,
+       "70": 234.7,
+       "140": 307.77
+      },
+      "Q_m3s": {
+       "35": 4.66,
+       "70": 6.12,
+       "140": 8.02
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 4.67,
+       "70": 6.13,
+       "140": 8.04
+      },
+      "desvio_pct_TR35": 0.2
+     },
+     {
+      "cuenca": "C-3",
+      "progresiva": "02+681",
+      "A_km2": 0.56,
+      "S_mm": 0.05,
+      "C": 0.1,
+      "I_mmh": {
+       "35": 198.4,
+       "70": 260.17,
+       "140": 341.17
+      },
+      "Q_m3s": {
+       "35": 3.08,
+       "70": 4.04,
+       "140": 5.3
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 3.09,
+       "70": 4.05,
+       "140": 5.31
+      },
+      "desvio_pct_TR35": 0.3
+     },
+     {
+      "cuenca": "C-4",
+      "progresiva": "03+123",
+      "A_km2": 0.18,
+      "S_mm": 0.03,
+      "C": 0.1,
+      "I_mmh": {
+       "35": 264.62,
+       "70": 347.01,
+       "140": 455.04
+      },
+      "Q_m3s": {
+       "35": 1.29,
+       "70": 1.7,
+       "140": 2.22
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.32,
+       "70": 1.74,
+       "140": 2.28
+      },
+      "desvio_pct_TR35": 2.3
+     },
+     {
+      "cuenca": "C-5",
+      "progresiva": "03+293",
+      "A_km2": 2.31,
+      "S_mm": 0.06,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 179.21,
+       "70": 235.0,
+       "140": 308.17
+      },
+      "Q_m3s": {
+       "35": 17.23,
+       "70": 22.59,
+       "140": 29.62
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 17.25,
+       "70": 22.62,
+       "140": 29.66
+      },
+      "desvio_pct_TR35": 0.1
+     },
+     {
+      "cuenca": "C-8",
+      "progresiva": "06+921",
+      "A_km2": 0.11,
+      "S_mm": 0.07,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 375.52,
+       "70": 492.43,
+       "140": 645.75
+      },
+      "Q_m3s": {
+       "35": 1.74,
+       "70": 2.28,
+       "140": 2.99
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.72,
+       "70": 2.26,
+       "140": 2.96
+      },
+      "desvio_pct_TR35": -1.1
+     },
+     {
+      "cuenca": "C-9",
+      "progresiva": "07+793",
+      "A_km2": 1.23,
+      "S_mm": 0.07,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 205.46,
+       "70": 269.43,
+       "140": 353.31
+      },
+      "Q_m3s": {
+       "35": 10.5,
+       "70": 13.77,
+       "140": 18.06
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 10.53,
+       "70": 13.81,
+       "140": 18.11
+      },
+      "desvio_pct_TR35": 0.3
+     },
+     {
+      "cuenca": "C-10",
+      "progresiva": "07+964",
+      "A_km2": 0.31,
+      "S_mm": 0.09,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 259.95,
+       "70": 340.89,
+       "140": 447.02
+      },
+      "Q_m3s": {
+       "35": 3.34,
+       "70": 4.37,
+       "140": 5.74
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 3.36,
+       "70": 4.4,
+       "140": 5.77
+      },
+      "desvio_pct_TR35": 0.6
+     },
+     {
+      "cuenca": "C-11",
+      "progresiva": "09+913",
+      "A_km2": 0.27,
+      "S_mm": 0.12,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 293.16,
+       "70": 384.43,
+       "140": 504.12
+      },
+      "Q_m3s": {
+       "35": 3.25,
+       "70": 4.26,
+       "140": 5.59
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 3.3,
+       "70": 4.32,
+       "140": 5.67
+      },
+      "desvio_pct_TR35": 1.5
+     },
+     {
+      "cuenca": "C-12",
+      "progresiva": "10+517",
+      "A_km2": 1.1,
+      "S_mm": 0.08,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 229.75,
+       "70": 301.28,
+       "140": 395.07
+      },
+      "Q_m3s": {
+       "35": 10.57,
+       "70": 13.86,
+       "140": 18.17
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 10.53,
+       "70": 13.81,
+       "140": 18.11
+      },
+      "desvio_pct_TR35": -0.4
+     },
+     {
+      "cuenca": "C-14",
+      "progresiva": "12+300",
+      "A_km2": 0.22,
+      "S_mm": 0.02,
+      "C": 0.1,
+      "I_mmh": {
+       "35": 244.09,
+       "70": 320.08,
+       "140": 419.73
+      },
+      "Q_m3s": {
+       "35": 1.51,
+       "70": 1.97,
+       "140": 2.59
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.49,
+       "70": 1.96,
+       "140": 2.57
+      },
+      "desvio_pct_TR35": -1.3
+     },
+     {
+      "cuenca": "C-15",
+      "progresiva": "13+352",
+      "A_km2": 0.65,
+      "S_mm": 0.02,
+      "C": 0.1,
+      "I_mmh": {
+       "35": 213.18,
+       "70": 279.54,
+       "140": 366.58
+      },
+      "Q_m3s": {
+       "35": 3.87,
+       "70": 5.07,
+       "140": 6.65
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 3.85,
+       "70": 5.05,
+       "140": 6.62
+      },
+      "desvio_pct_TR35": -0.5
+     },
+     {
+      "cuenca": "C-18",
+      "progresiva": "17+561",
+      "A_km2": 0.68,
+      "S_mm": 0.13,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 252.69,
+       "70": 331.36,
+       "140": 434.52
+      },
+      "Q_m3s": {
+       "35": 7.18,
+       "70": 9.42,
+       "140": 12.35
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 7.16,
+       "70": 9.39,
+       "140": 12.31
+      },
+      "desvio_pct_TR35": -0.3
+     },
+     {
+      "cuenca": "C-19",
+      "progresiva": "17+803",
+      "A_km2": 0.14,
+      "S_mm": 0.16,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 345.69,
+       "70": 453.31,
+       "140": 594.44
+      },
+      "Q_m3s": {
+       "35": 1.96,
+       "70": 2.57,
+       "140": 3.37
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 2.02,
+       "70": 2.64,
+       "140": 3.47
+      },
+      "desvio_pct_TR35": 3.1
+     },
+     {
+      "cuenca": "C-20",
+      "progresiva": "19+328",
+      "A_km2": 0.1,
+      "S_mm": 0.29,
+      "C": 0.2,
+      "I_mmh": {
+       "35": 445.43,
+       "70": 584.1,
+       "140": 765.95
+      },
+      "Q_m3s": {
+       "35": 2.52,
+       "70": 3.31,
+       "140": 4.34
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 2.47,
+       "70": 3.25,
+       "140": 4.26
+      },
+      "desvio_pct_TR35": -2.0
+     },
+     {
+      "cuenca": "C-21",
+      "progresiva": "20+281",
+      "A_km2": 1.04,
+      "S_mm": 0.12,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 233.86,
+       "70": 306.66,
+       "140": 402.14
+      },
+      "Q_m3s": {
+       "35": 10.13,
+       "70": 13.29,
+       "140": 17.43
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 10.13,
+       "70": 13.29,
+       "140": 17.43
+      },
+      "desvio_pct_TR35": 0.0
+     },
+     {
+      "cuenca": "C-22",
+      "progresiva": "21+357",
+      "A_km2": 1.92,
+      "S_mm": 0.08,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 179.93,
+       "70": 235.95,
+       "140": 309.41
+      },
+      "Q_m3s": {
+       "35": 14.39,
+       "70": 18.88,
+       "140": 24.75
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 14.39,
+       "70": 18.88,
+       "140": 24.75
+      },
+      "desvio_pct_TR35": 0.0
+     },
+     {
+      "cuenca": "C-23",
+      "progresiva": "21+720",
+      "A_km2": 0.17,
+      "S_mm": 0.03,
+      "C": 0.1,
+      "I_mmh": {
+       "35": 255.82,
+       "70": 335.47,
+       "140": 439.91
+      },
+      "Q_m3s": {
+       "35": 1.21,
+       "70": 1.58,
+       "140": 2.08
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.21,
+       "70": 1.58,
+       "140": 2.08
+      },
+      "desvio_pct_TR35": 0.0
+     },
+     {
+      "cuenca": "C-24",
+      "progresiva": "23+399",
+      "A_km2": 2.57,
+      "S_mm": 0.06,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 142.03,
+       "70": 186.25,
+       "140": 244.24
+      },
+      "Q_m3s": {
+       "35": 15.19,
+       "70": 19.92,
+       "140": 26.12
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 15.21,
+       "70": 19.94,
+       "140": 26.15
+      },
+      "desvio_pct_TR35": 0.1
+     },
+     {
+      "cuenca": "C-25",
+      "progresiva": "23+749",
+      "A_km2": 0.69,
+      "S_mm": 0.07,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 209.56,
+       "70": 274.8,
+       "140": 360.35
+      },
+      "Q_m3s": {
+       "35": 6.05,
+       "70": 7.93,
+       "140": 10.41
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 6.02,
+       "70": 7.9,
+       "140": 10.36
+      },
+      "desvio_pct_TR35": -0.5
+     },
+     {
+      "cuenca": "C-26",
+      "progresiva": "24+073",
+      "A_km2": 0.19,
+      "S_mm": 0.08,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 267.3,
+       "70": 350.52,
+       "140": 459.65
+      },
+      "Q_m3s": {
+       "35": 2.12,
+       "70": 2.77,
+       "140": 3.64
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 2.12,
+       "70": 2.77,
+       "140": 3.64
+      },
+      "desvio_pct_TR35": 0.0
+     },
+     {
+      "cuenca": "C-27",
+      "progresiva": "24+227",
+      "A_km2": 0.18,
+      "S_mm": 0.13,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 405.35,
+       "70": 531.55,
+       "140": 697.04
+      },
+      "Q_m3s": {
+       "35": 2.97,
+       "70": 3.9,
+       "140": 5.11
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 3.04,
+       "70": 3.99,
+       "140": 5.23
+      },
+      "desvio_pct_TR35": 2.4
+     },
+     {
+      "cuenca": "C-28",
+      "progresiva": "24+820",
+      "A_km2": 2.86,
+      "S_mm": 0.1,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 200.68,
+       "70": 263.16,
+       "140": 345.08
+      },
+      "Q_m3s": {
+       "35": 23.93,
+       "70": 31.38,
+       "140": 41.15
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 23.91,
+       "70": 31.36,
+       "140": 41.12
+      },
+      "desvio_pct_TR35": -0.1
+     },
+     {
+      "cuenca": "C-29",
+      "progresiva": "25+582",
+      "A_km2": 0.2,
+      "S_mm": 0.09,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 331.07,
+       "70": 434.15,
+       "140": 569.31
+      },
+      "Q_m3s": {
+       "35": 2.79,
+       "70": 3.65,
+       "140": 4.79
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 2.76,
+       "70": 3.62,
+       "140": 4.74
+      },
+      "desvio_pct_TR35": -1.1
+     },
+     {
+      "cuenca": "C-30",
+      "progresiva": "25+802",
+      "A_km2": 0.14,
+      "S_mm": 0.13,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 307.19,
+       "70": 402.83,
+       "140": 528.24
+      },
+      "Q_m3s": {
+       "35": 1.75,
+       "70": 2.3,
+       "140": 3.02
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.79,
+       "70": 2.35,
+       "140": 3.08
+      },
+      "desvio_pct_TR35": 2.3
+     },
+     {
+      "cuenca": "C-31",
+      "progresiva": "26+082",
+      "A_km2": 0.13,
+      "S_mm": 0.11,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 307.15,
+       "70": 402.78,
+       "140": 528.18
+      },
+      "Q_m3s": {
+       "35": 1.68,
+       "70": 2.2,
+       "140": 2.88
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.66,
+       "70": 2.18,
+       "140": 2.86
+      },
+      "desvio_pct_TR35": -1.2
+     },
+     {
+      "cuenca": "C-32",
+      "progresiva": "26+722",
+      "A_km2": 0.16,
+      "S_mm": 0.14,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 279.82,
+       "70": 366.93,
+       "140": 481.17
+      },
+      "Q_m3s": {
+       "35": 1.85,
+       "70": 2.43,
+       "140": 3.19
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.87,
+       "70": 2.45,
+       "140": 3.21
+      },
+      "desvio_pct_TR35": 1.1
+     },
+     {
+      "cuenca": "C-33",
+      "progresiva": "26+977",
+      "A_km2": 0.11,
+      "S_mm": 0.16,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 389.49,
+       "70": 510.75,
+       "140": 669.76
+      },
+      "Q_m3s": {
+       "35": 1.74,
+       "70": 2.28,
+       "140": 2.99
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.79,
+       "70": 2.34,
+       "140": 3.07
+      },
+      "desvio_pct_TR35": 2.9
+     },
+     {
+      "cuenca": "C-34",
+      "progresiva": "27+575",
+      "A_km2": 3.78,
+      "S_mm": 0.06,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 135.07,
+       "70": 177.12,
+       "140": 232.26
+      },
+      "Q_m3s": {
+       "35": 21.25,
+       "70": 27.86,
+       "140": 36.53
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 21.27,
+       "70": 27.9,
+       "140": 36.58
+      },
+      "desvio_pct_TR35": 0.1
+     },
+     {
+      "cuenca": "C-35",
+      "progresiva": "27+925",
+      "A_km2": 8.1,
+      "S_mm": 0.04,
+      "C": 0.1,
+      "I_mmh": {
+       "35": 108.6,
+       "70": 142.41,
+       "140": 186.75
+      },
+      "Q_m3s": {
+       "35": 24.42,
+       "70": 32.02,
+       "140": 41.99
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 24.43,
+       "70": 32.04,
+       "140": 42.02
+      },
+      "desvio_pct_TR35": 0.0
+     },
+     {
+      "cuenca": "C-36",
+      "progresiva": "28+471",
+      "A_km2": 1.35,
+      "S_mm": 0.09,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 191.42,
+       "70": 251.02,
+       "140": 329.17
+      },
+      "Q_m3s": {
+       "35": 10.78,
+       "70": 14.13,
+       "140": 18.53
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 10.77,
+       "70": 14.12,
+       "140": 18.52
+      },
+      "desvio_pct_TR35": -0.1
+     },
+     {
+      "cuenca": "C-37",
+      "progresiva": "31+951",
+      "A_km2": 0.17,
+      "S_mm": 0.09,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 270.07,
+       "70": 354.15,
+       "140": 464.4
+      },
+      "Q_m3s": {
+       "35": 1.91,
+       "70": 2.51,
+       "140": 3.29
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.91,
+       "70": 2.51,
+       "140": 3.29
+      },
+      "desvio_pct_TR35": 0.0
+     },
+     {
+      "cuenca": "C-38",
+      "progresiva": "32+162",
+      "A_km2": 0.91,
+      "S_mm": 0.11,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 226.62,
+       "70": 297.17,
+       "140": 389.69
+      },
+      "Q_m3s": {
+       "35": 8.55,
+       "70": 11.22,
+       "140": 14.71
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 8.59,
+       "70": 11.27,
+       "140": 14.78
+      },
+      "desvio_pct_TR35": 0.5
+     },
+     {
+      "cuenca": "C-39",
+      "progresiva": "32+341",
+      "A_km2": 0.12,
+      "S_mm": 0.06,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 364.37,
+       "70": 477.81,
+       "140": 626.57
+      },
+      "Q_m3s": {
+       "35": 1.79,
+       "70": 2.35,
+       "140": 3.08
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 1.82,
+       "70": 2.39,
+       "140": 3.13
+      },
+      "desvio_pct_TR35": 1.7
+     },
+     {
+      "cuenca": "C-40",
+      "progresiva": "32+770",
+      "A_km2": 1.32,
+      "S_mm": 0.07,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 193.05,
+       "70": 253.15,
+       "140": 331.96
+      },
+      "Q_m3s": {
+       "35": 10.58,
+       "70": 13.87,
+       "140": 18.19
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 10.62,
+       "70": 13.92,
+       "140": 18.26
+      },
+      "desvio_pct_TR35": 0.4
+     },
+     {
+      "cuenca": "C-41",
+      "progresiva": "33+315",
+      "A_km2": 0.34,
+      "S_mm": 0.06,
+      "C": 0.15,
+      "I_mmh": {
+       "35": 245.77,
+       "70": 322.28,
+       "140": 422.62
+      },
+      "Q_m3s": {
+       "35": 3.43,
+       "70": 4.5,
+       "140": 5.9
+      },
+      "Q_recalculado_CIA_36": {
+       "35": 3.48,
+       "70": 4.57,
+       "140": 5.99
+      },
+      "desvio_pct_TR35": 1.5
+     }
+    ]
+   },
+   "texto_literal": "El caudal maximo de diseno para cuencas con areas menores de 10 km2 se calculo mediante el metodo racional ... Q = C*I*A/3.6 (p.91)",
+   "notas": "Via real, 41 cuencas con coordenadas, progresiva, area, S, L, Tc y caudales completos (36 por metodo racional, 5 con area >10 km2 por hidrograma unitario). Es una TESIS sobre una via real, no un expediente oficial. Consistencia interna verificada: (a) Q = C*I*A/3.6 recalculado con los A, C, I publicados reproduce los 36 Q dentro de +-3 % (maximo 2.9 % en C-19, 2.6 % en C-4 y C-33), compatible con el redondeo del area a 2 decimales; (b) cuantiles Log Normal 2P recalculados desde la media y desviacion publicadas (z=0.8416 -> 278.3 mm para T=5; z=1.2816 -> 412.7 mm para T=10) coinciden con la Tabla 37-38/47 (278.23, 412.70); (c) la intensidad crece con T y con ratios casi constantes (I70/I35=1.31, I140/I35=1.72). Hallazgos a vigilar: (1) los P24 de la estacion Canaveral llegan a 729.2 mm en 24 h (1997) y 717 mm (1991); son del orden de acumulados mensuales de El Nino y es probable que la columna 'Maximo' mezcle total mensual con maximo diario; los resultados (P24 T=35 cercano a 800 mm, I de 100-500 mm/h) dependen de ello; (2) hay filas casi o totalmente repetidas en la Tabla 23: 1996 y 2001 (ene-dic 17/63/44/23/11.1 vs 11.0/32/0/0/0/2/0/15, iguales salvo mayo 11.10 vs 11.00) y 1989 y 2002 (13/129/71/10/0/1/0/0/0/1/1/3 identicas): parecen datos copiados; (3) T=35, 70 y 140 no coinciden con la tabla de la serie ajustada (5-500); las I de T=35/70/140 provienen de la regresion potencial K T^m/t^n ajustada a las Tablas 51-60 (no se verifico el ajuste); (4) el area en la Tabla 66 es la de la cuenca en km2 pero el metodo racional del Manual MTC aplica hasta 10 km2, correcto aqui; (5) Tc en horas (Tabla 27) = 'duracion' en min coincide. Completo para recalcular hidrologia: SI (entradas A, S, L, C, Tc, I por Tc); la IDF exige replicar la regresion potencial.",
+   "completo_para_recalcular": true
+  },
+  {
+   "id": "OR-PE-TU107-05",
+   "tipo": "hidraulica_circular",
+   "origen": "obra_real",
+   "nombre": "Via departamental TU-107 (Tumbes): verificacion/diseno de alcantarillas TMC y marcos existentes (11 puntos)",
+   "entidad": "Universidad Nacional de Tumbes (tesis) sobre via del GORE Tumbes",
+   "anio": 2026,
+   "url": "https://repositorio.untumbes.edu.pe/bitstreams/565eeb64-7f28-4ecc-88b6-ab2fab27ceb3/download",
+   "pdf_local": "pdf/UNTumbes_2026_Ramos_TU-107_drenaje_transversal.pdf",
+   "referencia": "Tabla 68, p.95; texto p.94 y p.96",
+   "entradas": {
+    "metodo_hidraulico": "Manning/ARMCO con S=0.02 m/m y n=0.024 (TMC circular) para TODAS las obras",
+    "Q_hidrologico_TR35_m3s_por_cuenca": "ver OR-PE-TU107-04 Tabla 66",
+    "obras": [
+     {
+      "cuenca": "C-1",
+      "progresiva_km": "0+458",
+      "obra_existente": "TMC 48in",
+      "ancho_m": null,
+      "alto_m": null,
+      "Q_hidrologico_m3s": 2.86,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-2",
+      "progresiva_km": "0+793",
+      "obra_existente": "Marco concreto 1.0x1.5 m",
+      "ancho_m": 1,
+      "alto_m": 1.5,
+      "Q_hidrologico_m3s": 4.66,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-8",
+      "progresiva_km": "6+921",
+      "obra_existente": "Marco 2x1 m",
+      "ancho_m": 2,
+      "alto_m": 1,
+      "Q_hidrologico_m3s": 1.74,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-15",
+      "progresiva_km": "13+352",
+      "obra_existente": "Marco 3x1.8 m",
+      "ancho_m": 3,
+      "alto_m": 1.8,
+      "Q_hidrologico_m3s": 3.87,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-19",
+      "progresiva_km": "17+803",
+      "obra_existente": "Marco 3x1 m",
+      "ancho_m": 3,
+      "alto_m": 1,
+      "Q_hidrologico_m3s": 1.96,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-20",
+      "progresiva_km": "19+328",
+      "obra_existente": "TMC 48in",
+      "ancho_m": null,
+      "alto_m": null,
+      "Q_hidrologico_m3s": 2.52,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-29",
+      "progresiva_km": "25+582",
+      "obra_existente": "Marco 3x1.83 m",
+      "ancho_m": 3,
+      "alto_m": 1.83,
+      "Q_hidrologico_m3s": 2.79,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-31",
+      "progresiva_km": "26+082",
+      "obra_existente": "Marco 2x1 m",
+      "ancho_m": 2,
+      "alto_m": 1,
+      "Q_hidrologico_m3s": 1.68,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-33",
+      "progresiva_km": "26+977",
+      "obra_existente": "Marco 2x1 m",
+      "ancho_m": 2,
+      "alto_m": 1,
+      "Q_hidrologico_m3s": 1.74,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-37",
+      "progresiva_km": "31+951",
+      "obra_existente": "TMC 48in",
+      "ancho_m": null,
+      "alto_m": null,
+      "Q_hidrologico_m3s": 1.91,
+      "S_mm": 0.02,
+      "n": 0.024
+     },
+     {
+      "cuenca": "C-39",
+      "progresiva_km": "32+341",
+      "obra_existente": "Marco 0.5x0.5 m",
+      "ancho_m": 0.5,
+      "alto_m": 0.5,
+      "Q_hidrologico_m3s": 1.79,
+      "S_mm": 0.02,
+      "n": 0.024
+     }
+    ]
+   },
+   "resultados": {
+    "tabla_68": [
+     {
+      "cuenca": "C-1",
+      "D_calculado_m": 1.27,
+      "D_calculado_in": 50.1,
+      "capacidad_obra_existente_m3s": 2.55,
+      "evaluacion": "No cumple",
+      "intervencion": "TMC 60in (D=1.52 m, cap 4.63)"
+     },
+     {
+      "cuenca": "C-2",
+      "D_calculado_m": 1.53,
+      "D_calculado_in": 60.17,
+      "capacidad_obra_existente_m3s": 2.39,
+      "evaluacion": "No cumple",
+      "intervencion": "TMC 72in (D=1.83 m, cap 7.52)"
+     },
+     {
+      "cuenca": "C-8",
+      "D_calculado_m": 1.06,
+      "D_calculado_in": 41.55,
+      "capacidad_obra_existente_m3s": 3.86,
+      "evaluacion": "Cumple",
+      "intervencion": "Mantener"
+     },
+     {
+      "cuenca": "C-15",
+      "D_calculado_m": 1.42,
+      "D_calculado_in": 56.09,
+      "capacidad_obra_existente_m3s": 14.46,
+      "evaluacion": "Cumple",
+      "intervencion": "Mantener"
+     },
+     {
+      "cuenca": "C-19",
+      "D_calculado_m": 1.1,
+      "D_calculado_in": 43.46,
+      "capacidad_obra_existente_m3s": 6.53,
+      "evaluacion": "Cumple",
+      "intervencion": "Mantener"
+     },
+     {
+      "cuenca": "C-20",
+      "D_calculado_m": 1.21,
+      "D_calculado_in": 47.8,
+      "capacidad_obra_existente_m3s": 2.55,
+      "evaluacion": "Cumple",
+      "intervencion": "Mantener"
+     },
+     {
+      "cuenca": "C-29",
+      "D_calculado_m": 1.26,
+      "D_calculado_in": 49.61,
+      "capacidad_obra_existente_m3s": 14.78,
+      "evaluacion": "Cumple",
+      "intervencion": "Mantener"
+     },
+     {
+      "cuenca": "C-31",
+      "D_calculado_m": 1.04,
+      "D_calculado_in": 41.0,
+      "capacidad_obra_existente_m3s": 3.86,
+      "evaluacion": "Cumple",
+      "intervencion": "Mantener"
+     },
+     {
+      "cuenca": "C-33",
+      "D_calculado_m": 1.06,
+      "D_calculado_in": 41.54,
+      "capacidad_obra_existente_m3s": 3.86,
+      "evaluacion": "Cumple",
+      "intervencion": "Mantener"
+     },
+     {
+      "cuenca": "C-37",
+      "D_calculado_m": 1.09,
+      "D_calculado_in": 43.08,
+      "capacidad_obra_existente_m3s": 2.55,
+      "evaluacion": "Cumple",
+      "intervencion": "Mantener"
+     },
+     {
+      "cuenca": "C-39",
+      "D_calculado_m": 1.07,
+      "D_calculado_in": 42.03,
+      "capacidad_obra_existente_m3s": 0.23,
+      "evaluacion": "No cumple",
+      "intervencion": "TMC 48in (cap 2.55) o 2 ojos de 24in"
+     }
+    ]
+   },
+   "texto_literal": "en la progresiva 0+458 descarga la cuenca C-1 con un caudal de 2.86 m3/s en una alcantarilla TMC 48\" que no cumple con la demanda hidraulica por lo que debe ser reemplazada por una TMC 60\" (p.96)",
+   "notas": "No es HDS-5 (sin HW, sin control de entrada/salida, sin ke, sin L ni TW): solo capacidad a seccion llena con Manning. Consistencia interna verificada: el 'diametro calculado' sale de D = (Q/1.5)^(3/8) para TODAS las 11 filas (p.ej. 2.86 -> 1.274 m vs 1.27 publicado), es decir Q = 1.5*D^(8/3) (equivale a ~0.82 de la capacidad a tubo lleno con n=0.024, S=0.02: 1.837*D^(8/3)), y las capacidades de los TMC proyectados (48, 60, 72 in: 2.55, 4.63, 7.52) lo cumplen. Incoherencias: (1) el 'diametro calculado' tambien se usa para marcos de concreto (equivalente circular); (2) la capacidad de los marcos NO se reproduce con Manning lleno n=0.024, S=0.02: publicados 2.39 (1.0x1.5), 3.86 (2x1), 14.46 (3x1.8), 6.53 (3x1), 14.78 (3x1.83), 0.23 (0.5x0.5) vs Manning lleno 3.96, 5.67, 21.68, 9.19, 22.20, 0.37 (razon 0.60-0.71, no constante); (3) usa n=0.024 (acero corrugado) para marcos de concreto; (4) altura 1.8 m vs 1.83 m dan capacidad 14.46 vs 14.78 (+2.2 % por +1.7 % de altura, plausible). La evaluacion cumple/no cumple es consistente con sus propios numeros (capacidad < Q: C-1, C-2, C-39). Completo para HDS-5: NO; util como caso de capacidad a seccion llena (circular TMC) y de decision de reemplazo.",
+   "completo_para_recalcular": false
+  },
+  {
+   "id": "OR-PE-QUERARI-06",
+   "tipo": "frecuencias",
+   "origen": "obra_real",
+   "nombre": "IOARR Renovacion de Puente Querari, camino vecinal CU-1430, Chosecani-Chihuita, CC Ccuyo, Marangani, Canchis, Cusco",
+   "entidad": "Municipalidad Distrital de Marangani (expediente tecnico; Oficina de Estudios y Proyectos)",
+   "anio": 2024,
+   "url": "https://apps.proviasdes.gob.pe/vsspml/Files/ET/AprobacionET/ComponenteET/2038473e-6ab0-4b57-b196-1aebe81a9fc8.pdf",
+   "pdf_local": "pdf/Marangani_2024_Puente_Querari_Estudio_Hidraulico.pdf",
+   "referencia": "Estudio hidraulico/hidrologico, setiembre 2024. PDF pp.: Cuadro 12-13 estacion (p.47, impresa 15), Cuadro 17 serie ordenada (p.56, imp.24), Tabla 18 K-S (p.67, imp.35), Cuadro 21 P por duracion (p.70, imp.38), Cuadro 22 intensidades (p.71, imp.39), Cuadro 24 coef. Mac-Math (p.74, imp.42), Cuadros 25-26 caudales (p.75, imp.43)",
+   "entradas": {
+    "estacion": "Sicuani 000759, 3574 msnm, 48 anios de P24 max (Cuadro 12); Cuadro 17 lista la serie ordenada creciente, p.ej. 45.3, 66.3, 66.8, 86.6, 93.3, 106, ..., 184.8 mm",
+    "cuencas": {
+     "Qarqapunku": {
+      "A_ha": 2958,
+      "S_mkm": 124.2
+     },
+     "Latarani": {
+      "A_ha": 25483,
+      "S_mkm": 62.24
+     }
+    },
+    "metodo_caudal": "Mac-Math: Q = 0.0091*C*I*A^(4/5)*S^(1/5), C=0.5 (suma C1+C2+C3)"
+   },
+   "resultados": {
+    "K_S": "Log Normal 2P delta 0.1055 (critico 0.238) mejor ajuste; Normal 0.1225, Gamma2P 0.1067, Gamma3P 0.1079, LogPearson3 0.9688, Gumbel 0.13",
+    "P24_mm_Cuadro21": {
+     "2": 36.0,
+     "5": 37.8,
+     "10": 41.3,
+     "25": 45.4,
+     "50": 48.3,
+     "140": 51.1,
+     "500": 57.1
+    },
+    "P24_mm_usada_en_Cuadro25": {
+     "2": 29.2,
+     "5": 34.1,
+     "10": 36.7,
+     "25": 39.2,
+     "50": 40.7,
+     "140": 43.5,
+     "200": 44.0,
+     "500": 48.8
+    },
+    "Q_Qarqapunku_m3s": {
+     "2": 6.35,
+     "5": 7.25,
+     "10": 7.89,
+     "25": 8.12,
+     "50": 8.42,
+     "140": 9.16,
+     "200": 9.94,
+     "500": 10.23
+    },
+    "Q_Latarani_m3s": {
+     "2": 9.32,
+     "5": 9.68,
+     "10": 10.46,
+     "25": 11.21,
+     "50": 11.69,
+     "140": 12.36,
+     "200": 14.08,
+     "500": 17.12
+    }
+   },
+   "texto_literal": "La prueba de bondad de ajuste de Smirnov Kolmogorov determino que el metodo de distribucion de frecuencias que mas se aproxima a la distribucion empirica de Weibull es la LOG NORMAL 2P con un valor de 0.1055. (Seccion 9.1 Conclusiones, pagina impresa siguiente a la 43)",
+   "notas": "Es un puente, no alcantarilla; no usa metodo racional (Mac-Math). Util solo como caso de frecuencias (Log Normal 2P, K-S) e IDF con coeficientes de duracion del Manual MTC. INCONSISTENCIAS INTERNAS GRAVES (no usar como caso patron): (1) la serie ordenada del Cuadro 17 tiene valores de 45 a 185 mm y mediana muy superior a 100 mm pero los cuantiles ajustados dan P24 = 36.0 mm para T=2 (Cuadro 21): el T=2 de una serie con mediana ~150 mm no puede ser 36 mm; (2) el Cuadro 25 usa P24 distintos (29.2, 34.1, 36.7, 39.2...) a los del Cuadro 21 (36.0, 37.8, 41.3, 45.4...) para los mismos TR; (3) aparecen TR de 140 y 200 anios en Cuadro 25 sin Cuadro 21 para 200; (4) los caudales no son monotonos con P24 de forma coherente (Latarani: 9.32 a T=2 con S menor, vs Qarqapunku 6.35); (5) el Cuadro 22 de intensidades: I(24h,T=2)=1.50 = 36.0/24 correcto, pero la intensidad usada en Mac-Math para tc no se publica; no se puede recalcular Q. Completo para recalcular: NO.",
+   "completo_para_recalcular": false
+  }
+ ]
+}

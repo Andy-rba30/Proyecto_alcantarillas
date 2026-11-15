@@ -1,0 +1,328 @@
+"""
+tests/test_linea_base.py
+========================
+LA LINEA BASE DE LA FAMILIA C, CONSUMIDA POR LA SUITE.
+
+Hasta C3.5 esta linea base solo «miraba» si alguien se acordaba de correr
+`regenerar.sh` a mano. Eso la hacia exactamente igual de fragil que el
+manifiesto anclado por linea: dependia de disciplina, no de la suite. Y la
+auditoria de C3 lo demostro midiendo, no opinando -- una mutacion que cambiaba
+la etiqueta de ecuacion impresa en las TRES memorias de produccion dejaba la
+suite en 1547 passed --.
+
+Este test cierra ese hueco: corre el MISMO script y compara. No reimplementa
+la corrida -- le pasa un destino y contrasta --, de modo que sigue habiendo UNA
+definicion de la linea base y no dos que puedan divergir.
+
+QUE HACER SI FALLA, y no es regenerar a ciegas. El mensaje nombra los archivos
+que se movieron. Hay que MIRAR EL DIFF y decidir cual de las dos cosas es:
+
+  * un numero de calculo se movio  -> es una regresion; se arregla el codigo.
+  * la salida cambio A PROPOSITO   -> se regenera con
+                                      `sh tests/linea_base_familia_c/regenerar.sh`
+                                      Y SE DECLARA en el commit que linea
+                                      cambio y por que.
+
+Las dos veces que esta linea base sirvio de verdad -- C1 y C3 -- el cambio fue
+de una sola linea, y la diferencia entre las dos lecturas se decidio leyendola.
+
+LO QUE ESTE TEST NO PUEDE VER, Y HAY QUE SABERLO PARA NO CONFIARSE. La linea
+base solo ve lo que el FIXTURE EJERCITA. Medido con tres mutaciones:
+
+    A · cablear `forma = 1` en el paso de memoria     -> NO lo ve  (hasta C3.5)
+    B · invertir la etiqueta de ecuacion (A.1)/(A.2)  -> lo ve
+    C · renombrar el `motivo` de un DatoInvalidoError -> lo ve
+
+LA A YA NO SE ESCAPA, Y ESO ES LO QUE C4 CAMBIO. Se le escapaba porque
+NINGUN PUNTO DEL FIXTURE USABA FORMA 2: las tres cartas circulares del
+catalogo son Forma 1, de modo que suponerla no movia un byte. C4 añadio la
+quinta corrida --`punto_cajon.py`, una seccion rectangular con una carta de
+cajon de la Tabla A.1, que es Forma 2--. Vuelto a medir sobre este mismo
+arbol, con las dos mutaciones que la Forma 2 admite:
+
+    A · `forma = FORMA_1` cableada en `_pasos_hidraulicos` (la ETIQUETA)
+        -> MUEVE `memoria_punto_cajon.html`. Antes no movia nada.
+    B · la Forma 2 deja de bifurcar en el CALCULO y se aplica la ec. (A.1)
+        -> HW de control de entrada  1.576717 m  ->  3.031241 m
+           (+1.454524 m, que es H_c/D + Ks*S sobre la altura del marco)
+
+La direccion de B es al ALZA en este punto, y conviene no confundirla con la
+de `CP5D_FORMA2_KS_ESPUREO`: aquella mide la mitad Ks*S sola --30 mm a la
+BAJA, no conservadora-- y esta mide las dos mitades juntas, con el H_c/D
+dominando. Las dos son la misma familia de defecto y solo una de ellas tiene
+signo peligroso; por eso el caso patron fija la que lo tiene y la linea base
+fija que el conjunto se mueve.
+
+Las dos capas siguen siendo COMPLEMENTARIAS y ninguna sustituye a la otra:
+los tests unitarios cubren caminos que el corredor no recorre; la linea base
+cubre la composicion entera -- las cinco corridas, los dos alcances, el JSON,
+el CSV y ahora las dos formas de seccion --.
+
+LA QUINTA CORRIDA NO ES LA CLI, y hay que saberlo: la CLI no puede producir
+un cajon hasta que C5 abra el catalogo de M2. El driver llama a M3 y a M4
+directamente. No es un diseño --no pasa por la Fase 5-- y su propio docstring
+declara las tres decisiones de C5 que toma prestadas para poder correr.
+"""
+
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+
+RAIZ = Path(__file__).resolve().parents[1]
+DIR = RAIZ / "tests" / "linea_base_familia_c"
+SCRIPT = DIR / "regenerar.sh"
+
+# EL INTERPRETE DEL SCRIPT, BUSCADO Y NO SUPUESTO. `regenerar.sh` es un script
+# POSIX y esta ventana solo se puede medir donde haya con que correrlo. En
+# Windows sin Git Bash ni WSL no lo hay, y hasta esta correccion los cuatro
+# tests de aqui reventaban con `FileNotFoundError` al invocar `sh`: cuatro
+# ERRORES, que en un resumen de pytest se leen igual que un fallo de calculo.
+#
+# QUE SE SALTE ES LO CORRECTO Y NO UNA CONCESION: lo que estos tests fijan es
+# que la salida comprometida sea la que produce el codigo, y eso no se puede
+# comprobar sin ejecutar el generador. Un `skip` CON MOTIVO dice «aqui no se
+# midio»; un error dice «aqui algo se rompio», y solo una de las dos es cierta.
+# La linea base se sigue midiendo en el entorno de referencia, que es donde el
+# proyecto declara su par.
+#
+# No se reescribe `regenerar.sh` en Python: es la herramienta con la que se
+# regenera a mano (`sh tests/linea_base_familia_c/regenerar.sh`), su encabezado
+# documenta los cuatro ejes de la ventana, y portarla seria cambiar el objeto
+# medido para poder medirlo en mas sitios.
+SH = shutil.which("sh") or shutil.which("bash")
+SIN_SH = SH is None
+MOTIVO_SIN_SH = (
+    "no hay `sh` ni `bash` en PATH: `regenerar.sh` es un script POSIX y sin "
+    "interprete la linea base no se puede regenerar para compararla (tipico "
+    "en Windows sin Git Bash ni WSL)")
+
+# Los generados. `regenerar.sh`, `README.md` y `entradas_ampliadas.json` son
+# ENTRADAS del proceso, no salidas, y por eso no se comparan.
+NO_GENERADOS = {"regenerar.sh", "README.md", "entradas_ampliadas.json",
+                "punto_cajon.py"}
+
+
+def _generados_comprometidos():
+    return {f.name for f in DIR.iterdir()
+            if f.is_file() and f.name not in NO_GENERADOS}
+
+
+@pytest.fixture(scope="module")
+def recien_generada(tmp_path_factory):
+    """
+    Corre el script contra un destino temporal. No toca el arbol.
+
+    El `skip` va AQUI y no en cada test: los cuatro de este archivo consumen
+    esta fixture, de modo que un solo punto de decision los salta a los cuatro
+    con el mismo motivo, y ninguno queda saltandose por su cuenta con una
+    razon que pueda divergir de las otras tres.
+    """
+    if SIN_SH:
+        pytest.skip(MOTIVO_SIN_SH)
+    destino = tmp_path_factory.mktemp("linea_base")
+    r = subprocess.run([SH, str(SCRIPT), str(destino)], cwd=RAIZ,
+                       capture_output=True, text=True)
+    assert r.returncode == 0, (
+        f"`regenerar.sh` fallo con codigo {r.returncode}.\n"
+        f"stdout: {r.stdout}\nstderr: {r.stderr}")
+    return destino
+
+
+def test_la_linea_base_comprometida_es_la_que_produce_el_codigo(recien_generada):
+    """
+    EL TEST QUE HACE QUE LA VENTANA DEJE DE DEPENDER DE QUE ALGUIEN SE ACUERDE.
+
+    Compara byte a byte cada salida. Un `assert` por archivo seria mas comodo
+    de leer, pero da UN fallo y esconde los otros once: aqui se recogen todos
+    y el mensaje los lista, porque saber si se movio una memoria o se movieron
+    las tres es la mitad del diagnostico.
+    """
+    movidos = []
+    for nombre in sorted(_generados_comprometidos()):
+        esperado = (DIR / nombre).read_bytes()
+        obtenido = (recien_generada / nombre).read_bytes()
+        if esperado != obtenido:
+            movidos.append(
+                f"{nombre}: {len(esperado)} bytes comprometidos, "
+                f"{len(obtenido)} generados")
+    assert not movidos, (
+        "la salida del programa ya no es la que la linea base tiene "
+        "comprometida:\n  " + "\n  ".join(movidos)
+        + "\n\nMIRA EL DIFF antes de regenerar. Si se movio un numero de "
+        "calculo es una regresion y se arregla el codigo; si la salida "
+        "cambio a proposito, regenera con `sh "
+        "tests/linea_base_familia_c/regenerar.sh` y DECLARA en el commit que "
+        "linea cambio y por que.")
+
+
+def test_el_script_no_produce_salidas_sin_comprometer(recien_generada):
+    """
+    La otra mitad: si alguien AÑADE una corrida al script y no compromete su
+    archivo, la ventana crece en el papel y no en el repositorio. Esto lo
+    caza -- y tambien el caso inverso, un archivo comprometido que el script
+    ya no produce y que se quedaria congelado para siempre --.
+    """
+    generados = {f.name for f in recien_generada.iterdir() if f.is_file()}
+    comprometidos = _generados_comprometidos()
+    assert generados == comprometidos, (
+        f"sin comprometer: {sorted(generados - comprometidos)} | "
+        f"comprometidos y ya no generados: "
+        f"{sorted(comprometidos - generados)}")
+
+
+def test_la_corrida_es_determinista(recien_generada, tmp_path):
+    """
+    Sin determinismo, el test de arriba seria intermitente y acabaria
+    desactivado. C0 midio que la corrida trae TRES campos volatiles -- dos
+    sellos de reloj y el mtime de criterios_adoptados.py, que cambia POR CLON
+    y no por corrida --, y `regenerar.sh` los normaliza. Esto comprueba que
+    la normalizacion sigue cubriendolos.
+
+    UNA SOLA CORRIDA EN VERDE (PC-22). Hasta EXT-11 este test lanzaba una
+    SEGUNDA corrida del script (6 s medidos en 5196dd2) para compararla con
+    la de la fixture. La segunda corrida ya existe: son los archivos
+    COMPROMETIDOS, generados por el mismo arbol en otro clon y otra hora
+    --- una prueba de determinismo mas fuerte que dos corridas seguidas en
+    la misma maquina, porque atraviesa justo el campo que cambia por clon.
+    Si la corrida de la fixture coincide con lo comprometido, el
+    determinismo queda demostrado sin correr nada mas. Solo cuando NO
+    coincide se lanza la segunda corrida, para separar los dos diagnosticos
+    que la discrepancia mezcla: un campo volatil sin normalizar (dos
+    corridas seguidas tambien difieren) o un cambio del codigo (dos corridas
+    seguidas coinciden y es el test de arriba el que tiene que fallar).
+    """
+    distintos_de_lo_comprometido = [
+        nombre for nombre in sorted(_generados_comprometidos())
+        if (DIR / nombre).read_bytes() != (recien_generada / nombre).read_bytes()]
+    if not distintos_de_lo_comprometido:
+        # En verde este test AFIRMA lo mismo que el de arriba y con otro
+        # sentido: la corrida de hoy reproduce byte a byte una corrida
+        # anterior del mismo arbol. Queda dicho que es la misma comparacion
+        # (auditoria de EXT-11); lo que añade es el camino rojo de abajo.
+        assert not distintos_de_lo_comprometido
+        return
+    segunda = tmp_path / "segunda"
+    r = subprocess.run([SH, str(SCRIPT), str(segunda)], cwd=RAIZ,
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    distintos = [f.name for f in sorted(recien_generada.iterdir())
+                 if f.is_file()
+                 and f.read_bytes() != (segunda / f.name).read_bytes()]
+    assert not distintos, (
+        f"dos corridas del mismo arbol dieron bytes distintos en {distintos}: "
+        "hay un campo volatil que la normalizacion de `regenerar.sh` no cubre")
+
+
+def test_el_comparador_dice_iguales_sobre_la_linea_base_recien_generada(recien_generada):
+    """
+    El primer consumidor del comparador (E-B, E14) es esta linea base: los
+    volcados comprometidos y los recien generados son LA MISMA corrida, y
+    `comparador.comparar` tiene que decirlo por identidad de punto con sus
+    tolerancias --- que es la afirmacion que el diff de bytes de arriba hace
+    sin nombrar ningun campo. Si los bytes coinciden y el comparador dice
+    DIFIEREN, el roto es el comparador; si los bytes difieren y el
+    comparador dice IGUALES, la diferencia es de formato y no de calculo, y
+    ese es exactamente el diagnostico que el mensaje del primer test pide
+    hacer a mano.
+    """
+    import json
+
+    from src import comparador
+
+    for nombre in sorted(n for n in _generados_comprometidos() if n.endswith(".json")):
+        comprometido = json.loads((DIR / nombre).read_text(encoding="utf-8"))
+        generado = json.loads((recien_generada / nombre).read_text(encoding="utf-8"))
+        resultado = comparador.comparar(comprometido, generado)
+        assert resultado.iguales, (nombre, resultado.lineas())
+        assert resultado.puntos_comunes == tuple(p["id"] for p in comprometido["puntos"])
+
+
+def test_la_ventana_cubre_los_ejes_que_dice_cubrir(recien_generada):
+    """
+    LA VENTANA MIDE LO QUE DICE MEDIR, y no de palabra. Cada assert de aqui
+    corresponde a un eje que el README declara, y esta escrito para que
+    ESTRECHARLA rompa un test en vez de pasar inadvertido -- que es como llego
+    a estar estrecha en primer lugar --.
+    """
+    lee = lambda n: (recien_generada / n).read_text(encoding="utf-8")
+
+    # (a) los dos alcances, con sus plantillas distintas
+    assert "perfil" in lee("cli_perfil.txt")
+    assert "expediente" in lee("cli_expediente.txt")
+
+    # (b) el JSON y el CSV de resumen, que la ventana de C0 tiraba
+    assert '"generado_utc"' in lee("informe_perfil_ancho.json")
+    assert lee("resumen_perfil_ancho.csv").strip(), "el CSV de resumen vino vacio"
+
+    # (c) DOS de los cuatro puntos dimensionan en la corrida ancha (tres hasta
+    # E-A); en la estrecha de C0 NINGUNO desde EXT-3 (era uno hasta EXT-2). Si
+    # alguien estrecha las entradas, esto cae. El que cayo en la estrecha es
+    # A-02: sin TW declarado, la via 4 de Sec. 1.3 le da TW = 1.196 m sobre
+    # D = 0.90 m, el barril va LLENO y V1/V2 dejan de aprobarse con el tirante
+    # normal (EXT-M-01); el README de la linea base lo declara. El que cayo en
+    # la ancha en E-A es B-01: su TW ampliado de 1.00 m ahoga el barril, la S1
+    # arranca en el TW y deja V_min = Q/A(TW) < 0.25 m/s en todo D, de modo
+    # que V2 no cumple en ningun escalon y el punto sale «no factible» con su
+    # motivo, donde hasta E-A salia dimensionado con V1/V2 diferidas.
+    ancho = lee("cli_perfil_ancho.txt")
+    assert ancho.count("Fase 4  sin dimensionar") == 2
+    assert lee("cli_perfil.txt").count("Fase 4  sin dimensionar") == 4
+
+    # (d) C-01, el punto de Familia C, llega a su bloqueo REAL. C5 lo CAMBIO,
+    # y el cambio es su criterio de salida: hasta C4 el punto se detenia en
+    # «no ofrece material candidato para la Familia C», que era una afirmacion
+    # sobre el CATALOGO y que no se podia resolver declarando nada; ahora se
+    # detiene en un criterio del cajon sin declarar, que es una afirmacion
+    # sobre el EXPEDIENTE. Se comprueban las dos mitades -- que aparece la
+    # nueva y que NO queda la vieja -- porque dejar las dos seria no haber
+    # cambiado nada.
+    #
+    # --- T-3 --- Y lo cambio otra vez T-3: los siete criterios del cajon
+    # tienen valor de archivo, y C-01 avanza hasta el primer DATO que la
+    # fila del fixture le niega -- la coronacion del canal, que VC1 exige --.
+    # Sigue siendo una afirmacion sobre el expediente, y ya no hay criterio
+    # que declarar. Ninguno de los siete puede reaparecer como bloqueo.
+    assert "Falta el dato 'cota_coronacion_canal' en el punto C-01" in ancho
+    assert "falta declarar: embocadura_cajon" not in ancho
+    assert "no ofrece material candidato" not in ancho
+
+    # (f) --- T-3 --- LA FAMILIA C DIMENSIONADA, el eje que T-3 añade: con la
+    # coronacion de la guia de perfil en una copia del CSV, C-01 sale
+    # dimensionado SIN DECLARAR NADA, con los valores de archivo del cajon, y
+    # publica VC1, G1, G2, VC2 y la geometria del marco.
+    familia_c = lee("cli_familia_c.txt")
+    bloque_c01 = familia_c.split("C-01  |")[1].split("Fase 9")[0]
+    assert "Seccion  : marco 1.20 \u00d7 0.90 m (interior)" in bloque_c01
+    for codigo in ("VC1", "G1", "G2", "VC2"):
+        assert f" {codigo} " in bloque_c01, codigo
+    assert "marco: 1 celda(s)" in bloque_c01
+    # Lo unico «por declarar» del punto es V8, diferida por el alcance de
+    # perfil como en los otros tres: ninguno del cajon.
+    for clave in ("embocadura_cajon", "ke_entrada_cajon", "n_manning_cajon",
+                  "n_celdas_cajon", "secciones_cajon_normalizadas",
+                  "espesor_pared_cajon", "cobertura_minima_cajon"):
+        assert f"falta declarar: {clave}" not in bloque_c01, clave
+
+    # (d-bis) EL PUNTO DE CAJON, el eje que añadio C4: una seccion NO
+    # circular resuelta por una carta de FORMA 2. Es lo que hace visible aqui
+    # la mutacion A, que hasta C3.5 solo cazaban los tests unitarios. Se
+    # comprueban las tres cosas que la hacen visible -- que la seccion es un
+    # marco, que la carta es de Forma 2 y que la rama aplicada es la que usa
+    # la ec. (A.2) pura --, porque si cualquiera de las tres se pierde la
+    # ceguera vuelve sin que nada avise.
+    cajon = lee("memoria_punto_cajon.html")
+    assert "marco 2.00 × 1.50 m" in cajon
+    assert "Equation Form 2" in cajon
+    assert "regimen entrada    no_sumergido" in cajon
+    assert "critico cerrado    True" in cajon
+
+    # (e) LA RAMA DE ERROR, que es la que motivo el ensanche: es la que C1
+    # movio sin que nada lo viera. Se comprueban las DOS cadenas -- `campo` y
+    # `motivo` --, porque C1 renombro la segunda dejando la primera intacta.
+    err = lee("cli_rama_error.txt")
+    assert "Dato invalido en 'D'" in err
+    assert "el diametro debe ser positivo" in err
+    assert "el diametro debe ser positivo" in lee("informe_rama_error.json")

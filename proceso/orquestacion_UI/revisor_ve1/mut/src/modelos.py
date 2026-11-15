@@ -1,0 +1,7699 @@
+"""
+modelos.py
+==========
+Tipos que fluyen entre modulos y taxonomia de excepciones del proyecto.
+
+Regla de arquitectura: ningun modulo define dicts ad-hoc para lo que ya existe
+aqui. Este archivo declara TIPOS, nunca valores: no contiene un solo literal
+numerico de proyecto. Los valores [N] estan en `constantes_normativas.py`
+(Anexo B) y los [N->], [C] y [A] en `criterios_adoptados.py` (Anexo A).
+
+Unidades
+--------
+SI estricto: m, m2, m3/s, m/s, rad, Pa, kN. Ninguna estructura de este archivo
+transporta pulgadas, pies ni kg/cm2.
+
+Unica salvedad, y es de presentacion, no de calculo: `TamizadoRasante` expone
+`delta_rasante_cm` junto al `delta_rasante_m` que almacena, porque Sec. 7.B
+redacta su salida en centimetros ("no factible -> subir rasante X cm"). El
+factor sale de `dominios.CENTIMETROS_POR_METRO` -- una definicion de unidad,
+no un valor de proyecto -- y ningun campo almacenado esta en centimetros.
+
+Dos campos conservan la unidad de su encabezado normativo porque son
+localizadores o clasificadores y no entran en ningun calculo hidraulico ni
+estructural (Sec. 1.1):
+
+    progresiva_km : km  - progresiva del cruce
+    area_ha       : ha  - area de cuenca, "solo clasificador"
+
+Referencias de numeral: docs/hoja_de_ruta_alcantarillas_v8.md
+"""
+
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass, fields
+from enum import Enum
+from functools import lru_cache
+from types import MappingProxyType
+from typing import Any, Dict, Mapping, Optional, Protocol, Tuple, Union
+
+from src.dominios import CENTIMETROS_POR_METRO
+from src.dominios import METROS_POR_KM                     # --- T-9 ---
+from src.tolerancias import TOL_THETA_BORDE, TOL_UMBRAL_NORMATIVO
+
+
+# ===========================================================================
+# Taxonomia de excepciones
+# ---------------------------------------------------------------------------
+# Prohibido usar Exception generica en logica de negocio. Toda excepcion del
+# calculo desciende de ErrorProyecto, para que la GUI pueda distinguir un
+# problema del expediente de un fallo del programa.
+#
+# SON CINCO, NO CUATRO, desde S16.5. La quinta -- LimiteNumericoError -- no se
+# anade porque las otras cuatro fueran insuficientes en teoria, sino porque el
+# proyecto YA la estaba usando sin nombrarla: ver la nota de MAT-D13 en su
+# docstring.
+# ===========================================================================
+
+class ErrorProyecto(Exception):
+    """
+    Raiz de la taxonomia. La GUI la trata como aviso, no como crash.
+
+    `verificaciones_completadas` es lo que la Fase 5 ALCANZO A VERIFICAR antes
+    de detenerse. No es un dato de la excepcion --- la excepcion sigue
+    significando lo mismo --- sino la parte del trabajo que ya estaba hecha
+    cuando el vacio aparecio, y que sin esto se tiraba.
+
+    Hace falta porque en este expediente ninguna combinacion pasa de V5:
+    `v5_remanso` se detiene siempre en `ancho_derecho_via_m`, que ningun
+    tablero aporta todavia. V1 a V4b SI se evaluaron, con su tirante, su
+    velocidad y su margen, y ese calculo no llegaba a la memoria --- ni el
+    veredicto ni el desarrollo ---, de modo que el revisor veia «no
+    dimensionado» sin ver nada de lo que si se comprobo. Es la misma trampa
+    que NOR-MEM-01: cierto sobre el codigo y falso sobre el producto.
+
+    Vacia por defecto, y solo la rellena `M5.verificar`. Ninguna otra
+    excepcion de la taxonomia la usa hoy.
+    """
+
+    verificaciones_completadas: Tuple["Verificacion", ...] = ()
+
+
+class CriterioPendienteError(ErrorProyecto):
+    """
+    Se invoco un criterio declarado en `criterios_adoptados.py` cuyo valor es
+    None (vacio normativo sin resolver).
+
+    Un criterio sin valor DETIENE el calculo; nunca se sustituye por un
+    default silencioso (Sec. 0.7). La GUI lo muestra como
+    "falta declarar: <clave>".
+    """
+
+    def __init__(self, clave: str,
+                 concepto: Optional[str] = None,
+                 fuente: Optional[str] = None) -> None:
+        self.clave = clave
+        self.concepto = concepto
+        self.fuente = fuente
+        texto = f"'{clave}' es un VACIO sin valor asignado"
+        if concepto:
+            texto += f" ({concepto})"
+        texto += ". Debe resolverse antes de continuar"
+        if fuente:
+            texto += f": {fuente}"
+        super().__init__(texto)
+
+    @property
+    def mensaje_gui(self) -> str:
+        """
+        La redaccion MINIMA que CLAUDE.md fija para esta excepcion, sin jerga
+        de programa. Se conserva sin consumidor de produccion, y esa es la
+        decision (SIS-B-07): ver `docs/decisiones_diferidas.md`, ficha
+        SIS-B-07.
+
+        NO ES POR AQUI POR DONDE LA GUI MUESTRA UN PENDIENTE, y el docstring
+        anterior --- «Texto que la GUI muestra al usuario» --- lo afirmaba. La
+        GUI llega por `servicio._etapa` -> `servicio._bloqueo` -> `Bloqueo` ->
+        `M11.criterios_bloqueantes` -> `gui/app.py::_llenar_resumen`, y pinta
+        SEIS columnas: clave, etiqueta, concepto, fuente, fases y puntos.
+        Cablear esta propiedad ahi cambiaria ese tablero por un solo dato.
+
+        Y no es que sea la via mas rica de dos: es la UNICA. Comprobado
+        vaciando el `valor` de los 46 criterios y de todos los datos de sitio:
+        `servicio.correr` devuelve su informe sin levantar nada, con los bloqueos
+        archivados. Los tres unicos sitios que levantan
+        `CriterioPendienteError` --- `criterios_adoptados.valor`,
+        `datos_sitio.valor` y `GeometriaCabezal.exigir_ancho_talon` --- cuelgan
+        todos de etapas envueltas por `_etapa`, de modo que ninguno alcanza el
+        `except ErrorProyecto` de la ventana. (Si corre otro codigo fuera de
+        `_etapa` --- `correr_cabezal` llama a `condicion_normativa_cabezal`, y
+        varias fases piden `externos.valor` ---: decir «lo unico que corre
+        fuera de `_etapa` es `cargar_puntos`» era describir mal el archivo,
+        aunque la conclusion se sostenga.) No hay consumidor honesto que
+        anadir.
+        """
+        return f"falta declarar: {self.clave}"
+
+
+class DisenoNoFactibleError(ErrorProyecto):
+    """
+    Ninguna combinacion material/diametro cumple las verificaciones del punto.
+
+    Lleva siempre el motivo y, cuando la salida del tamizado 7.A lo permite,
+    el delta de rasante requerido: el chequeo devuelve "no factible -> subir
+    rasante X cm", nunca un resultado silencioso (Sec. 7.B).
+    """
+
+    def __init__(self, motivo: str,
+                 delta_rasante_m: Optional[float] = None,
+                 id_punto: Optional[str] = None) -> None:
+        self.motivo = motivo
+        self.delta_rasante_m = delta_rasante_m
+        self.id_punto = id_punto
+        texto = "Diseno no factible"
+        if id_punto:
+            texto += f" en el punto {id_punto}"
+        texto += f": {motivo}"
+        if delta_rasante_m is not None:
+            texto += f". Subir la rasante {delta_rasante_m:.2f} m"
+        super().__init__(texto)
+
+
+class DatoFaltanteError(ErrorProyecto):
+    """Falta un dato de entrada del CSV (Sec. 1.2) o de un tablero externo."""
+
+    def __init__(self, campo: str,
+                 id_punto: Optional[str] = None,
+                 detalle: Optional[str] = None) -> None:
+        self.campo = campo
+        self.id_punto = id_punto
+        self.detalle = detalle
+        texto = f"Falta el dato '{campo}'"
+        if id_punto:
+            texto += f" en el punto {id_punto}"
+        if detalle:
+            texto += f". {detalle}"
+        super().__init__(texto)
+
+
+class DatoInvalidoError(ErrorProyecto):
+    """
+    El dato esta, pero no puede ser: no es del tipo esperado, cae fuera del
+    rango fisico posible, o contradice a otro dato de la misma fila (Sec. 1.5).
+
+    Es hermano de DatoFaltanteError y no el mismo: "falta la columna" y "la
+    columna trae un CBR negativo" son dos problemas distintos del expediente y
+    se corrigen de forma distinta. Ambos descienden de ErrorProyecto, de modo
+    que la GUI puede atrapar los dos con un solo except.
+    """
+
+    def __init__(self, campo: str,
+                 valor: Any = None,
+                 id_punto: Optional[str] = None,
+                 motivo: Optional[str] = None) -> None:
+        self.campo = campo
+        self.valor = valor
+        self.id_punto = id_punto
+        self.motivo = motivo
+        texto = f"Dato invalido en '{campo}'"
+        if id_punto:
+            texto += f" del punto {id_punto}"
+        if motivo:
+            texto += f": {motivo}"
+        if valor is not None:
+            texto += f" (valor leido: {valor!r})"
+        super().__init__(texto)
+
+
+class LimiteNumericoError(ErrorProyecto):
+    """
+    El dato individual CUMPLE su rango declarado en dominios.py, y es la
+    ARITMETICA que lo combina con otro dato o con una operacion la que no lo
+    puede representar en doble precision: o desborda a +-inf, o colapsa el
+    denominador de una division antes de que exista resultado.
+
+    NO ES una version mas de DatoInvalidoError, y tampoco es que
+    DatoInvalidoError sea la clase equivocada por definicion. La distincion es
+    de DONDE esta el problema:
+
+        DatoInvalidoError    el dato no puede ser: cae fuera del rango fisico
+                             de dominios.py, no es del tipo esperado, o
+                             contradice a otro dato de su fila.
+        LimiteNumericoError  cada dato, por separado, es perfectamente sano.
+                             Es la COMBINACION la que no cabe en un double.
+
+    POR QUE HACIA FALTA NOMBRARLA. Sin esta clase, un desbordamiento salia por
+    uno de dos caminos, y los dos son malos. O bien el calculo seguia con un
+    `inf` dentro y la memoria imprimia un diagnostico entero construido sobre
+    un numero que no lo es -- eso es SIS-G-01, medido en
+    `M7.proyeccion_taludes` --, o bien Python lanzaba `ZeroDivisionError` /
+    `OverflowError` en crudo, fuera de ErrorProyecto, y la GUI no sabia si eso
+    era un problema del expediente o un fallo del programa: son SIS-G-02 y la
+    mitad alcanzable de MAT-O18, las dos en `M4.tirante_critico`.
+
+    EL PRECEDENTE, dicho para que quien lea esta taxonomia no encuentre la
+    misma inconsistencia sin explicar: MAT-D13 cerro un caso IDENTICO a este
+    -- `M1_clasificacion.tr_desde_riesgo`, donde (1-R)^(1/n) redondea a 1 y el
+    denominador se anula con una R que esta DENTRO de su rango declarado --
+    bajo DatoInvalidoError, porque esta clase no existia todavia. No se migra
+    aqui: es codigo verde y su guarda funciona. Se deja escrito para que la
+    inconsistencia sea deliberada y visible, no un descuido.
+
+    De MAT-D13 se hereda, eso si, la FORMA de la guarda, que es lo que vale:
+    umbral MEDIDO en vez de un `!= 0` generico, condicion escrita EN POSITIVO
+    y negada (`not A > 0` y no `A <= 0`, porque un NaN es falso frente a las
+    dos y se colaria por la segunda), y mensaje que nombra al PAR culpable en
+    vez de acusar a un solo dato cuando la degeneracion es de la combinacion.
+
+    Desciende de ErrorProyecto y no de otra raiz aunque el diagnostico sea
+    aritmetico: lo que el revisor tiene delante es corregible desde el
+    expediente -- una cota absurda, un caudal absurdo --, y la GUI lo tiene que
+    mostrar como aviso y no como traza, que es justo el contrato de
+    ErrorProyecto. La firma es la de DatoInvalidoError a proposito: `motivo`
+    separa los casos igual que ya los separa ahi, sin un atributo nuevo.
+    """
+
+    def __init__(self, campo: str,
+                 valor: Any = None,
+                 id_punto: Optional[str] = None,
+                 motivo: Optional[str] = None) -> None:
+        self.campo = campo
+        self.valor = valor
+        self.id_punto = id_punto
+        self.motivo = motivo
+        texto = f"Limite de la aritmetica en '{campo}'"
+        if id_punto:
+            texto += f" del punto {id_punto}"
+        if motivo:
+            texto += f": {motivo}"
+        if valor is not None:
+            texto += f" (valor calculado: {valor!r})"
+        super().__init__(texto)
+
+
+# El motivo con que la v8 §4.3 (enmendada en EXT-0) nombra el estado: es la
+# frase que la memoria, el JSON y la CLI imprimen junto al HW del punto, y por
+# eso es UNA constante y no una redaccion por sitio.
+MOTIVO_METODO_NO_EVALUABLE = "método no evaluable (HDS-5 3.24, Sección 3.5)"
+# --- T-1 --- El mismo estado cuando lo que no alcanza es un metodo del
+# cap. III del Manual de Hidrologia (ver `MetodoNoEvaluableError.rotulo`).
+MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA = (
+    "método no evaluable (Manual de Hidrología, cap. III)")
+# --- T-8 --- El mismo estado cuando lo que no alcanza es un limite de HEC-14
+# (apron fuera de su poblacion, TW sobre la clave, hoya fuera de sus tablas):
+# encabezarlo con «HDS-5 3.24» seria una cita falsa (auditoria de T-8, ficha
+# T1-06 del mismo defecto en la hidrologia).
+MOTIVO_METODO_NO_EVALUABLE_HEC14 = (
+    "método no evaluable (HEC-14, FHWA-NHI-06-086)")
+
+
+class MetodoNoEvaluableError(ErrorProyecto):
+    """
+    El dato esta y es valido, el criterio esta declarado, y lo que falta es
+    un PROCEDIMIENTO que este software no implementa: el metodo disponible no
+    esta definido para el punto, o no alcanza a producir la magnitud que la
+    verificacion compara. Sexta de la taxonomia (EXT-3; EXT-M-01, EXT-M-02,
+    PC-27).
+
+    Regla que la separa de sus hermanas, en el orden en que se pregunta:
+        DatoFaltanteError        el revisor tiene que ANADIR un dato.
+        DatoInvalidoError        tiene que CORREGIR un dato.
+        CriterioPendienteError   tiene que DECLARAR una eleccion.
+        LimiteNumericoError      la aritmetica no cabe en un double.
+        MetodoNoEvaluableError   no hay nada que anadir, corregir ni declarar:
+                                 hace falta OTRO METODO (hoy, el perfil de la
+                                 lamina de agua de HDS-5 Section 3.5), y hasta
+                                 que exista el punto no se puede cerrar.
+
+    Los dos casos vivos, ambos bajo CONTROL DE SALIDA con el barril
+    parcialmente lleno (v8 §4.1 y §4.3):
+      * `que="HW"`: HW/D < 0.75, donde la fuente dice que la aproximacion de
+        h_o «should not be used» (pag. impresa 3.24). No es un incumplimiento
+        --subir de diametro solo baja HW/D-- ni un aviso: el HW publicado no
+        es un resultado del metodo.
+      * `que="V1"` / `"V2"`: el tirante y la velocidad dentro del conducto no
+        se conocen sin el perfil de la lamina, y no se inventa un criterio de
+        llenado para cerrarlas.
+
+    Viaja por la via `Bloqueo` con `TipoDeBloqueo.METODO_NO_EVALUABLE`:
+    DIFERIBLE a nivel de perfil (el punto sale dimensionado con HW no
+    evaluable y el motivo impreso) y NO diferible a nivel de expediente,
+    donde el punto no cierra. Nunca se traduce a `Verificacion(cumple=False)`
+    ni a `DisenoNoFactibleError`: MD la acumula como a los criterios
+    pendientes y la relanza, en vez de descartar el material.
+    """
+
+    def __init__(self, que: str, procedimiento: str, motivo: str,
+                 id_punto: Optional[str] = None, *,
+                 rotulo: Optional[str] = None) -> None:
+        self.que = que
+        self.procedimiento = procedimiento
+        self.motivo = motivo
+        self.id_punto = id_punto
+        # `rotulo` (T-1): el encabezado del mensaje. Por defecto es el de
+        # siempre, `MOTIVO_METODO_NO_EVALUABLE`, que NOMBRA A HDS-5 porque
+        # los dos casos de EXT-3 son de HDS-5. La hidrologia de T-1 levanta
+        # esta misma excepcion por limites del Manual de Hidrologia (Kirpich
+        # fuera de su rango de pendiente, el metodo racional por encima de
+        # 10 km2), y encabezarla con «HDS-5 3.24» seria una cita falsa: pasa
+        # `MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA`. El `str()` sigue empezando
+        # siempre por «método no evaluable (».
+        self.rotulo = MOTIVO_METODO_NO_EVALUABLE if rotulo is None else rotulo
+        texto = f"{self.rotulo}: {que}"
+        if id_punto:
+            texto += f" del punto {id_punto}"
+        texto += f" -- {motivo}. Hace falta: {procedimiento}"
+        super().__init__(texto)
+
+
+# ===========================================================================
+# Citas: la seccion interna y el numeral de la norma, separados
+# ===========================================================================
+
+class ReferenciaNormativa(str):
+    """
+    Cita partida en sus DOS mitades, que hasta ahora viajaban pegadas en un
+    solo string y se confundian entre si:
+
+        seccion_hoja_ruta   navegacion INTERNA de docs/hoja_de_ruta_*.md.
+                            "Sec. 9.1", "5.1", "Fase 10". No es una cita: son
+                            las coordenadas del apartado que trata el tema
+                            dentro del documento propio del proyecto.
+        numeral_norma       la CITA real y verificable, la que un revisor
+                            busca en el documento normativo: "EG-2013,
+                            Seccion 503, num. 503.01, pag. 905".
+
+    Por que hizo falta separarlas. Constantes como
+    `NUMERAL_9_1 = "Sec. 9.1 (EG-2013 num. 503.01, pag. 905)"` mezclaban las
+    dos cosas en una linea, y una verificacion externa leyo el string entero
+    como si fuese la cita -- salio a buscar una "Sec. 9.1" en el EG-2013, que
+    no existe. En `NUMERAL_8_1` el efecto fue peor: citaba una "Seccion 500"
+    del EG-2013 que tampoco existe (los conductos son las Secciones 505 a 508
+    del Capitulo V), un error de simplificacion arrastrado desde una version
+    temprana de la hoja de ruta. El defecto no era de una constante suelta:
+    era del formato, y por eso la solucion es un tipo y no cuatro parches.
+
+    Es una subclase de `str` a proposito. El valor sigue siendo el texto que
+    la memoria imprime, de modo que todo lo que ya consumia estos numerales
+    -- `Verificacion.numeral`, el escapado de M11, las pruebas que hacen
+    `numeral in memoria` -- sigue funcionando sin cambios, y ademas se puede
+    pedir cualquiera de las dos mitades por separado cuando el reporte quiera
+    imprimir solo la cita verificable.
+
+    El texto se compone con el NUMERAL DELANTE y la seccion propia detras y
+    etiquetada: quien lea de corrido encuentra primero lo que puede
+    verificar.
+    """
+
+    seccion_hoja_ruta: str
+    numeral_norma: str
+
+    def __new__(cls, *, seccion_hoja_ruta: str, numeral_norma: str):
+        obj = super().__new__(
+            cls, f"{numeral_norma} [hoja de ruta: {seccion_hoja_ruta}]")
+        obj.seccion_hoja_ruta = seccion_hoja_ruta
+        obj.numeral_norma = numeral_norma
+        return obj
+
+    def __repr__(self) -> str:
+        return (f"ReferenciaNormativa(seccion_hoja_ruta="
+                f"{self.seccion_hoja_ruta!r}, numeral_norma="
+                f"{self.numeral_norma!r})")
+
+
+
+# ---------------------------------------------------------------------------
+# Las constantes NUMERAL_* de modulo que ningun lector de produccion consume
+# ---------------------------------------------------------------------------
+# SIS-B-09: ocho constantes `NUMERAL_*` estan declaradas en sus modulos y no
+# las lee nadie. Estaba decidido y no estaba escrito, que es el defecto: sin
+# esta nota, un mantenedor no puede distinguir "todavia no cableada" de "no le
+# corresponde cablearse", y las dos se ven igual leyendo el archivo.
+#
+# La razon se escribe AQUI, una sola vez, y aqui y no en cada modulo porque
+# las ocho son la MISMA cosa y esta es la clase que la define:
+# `ReferenciaNormativa` existe justamente para separar la coordenada interna
+# de la hoja de ruta -- `seccion_hoja_ruta` -- de la cita verificable --
+# `numeral_norma` --, y las ocho son de la primera clase.
+#
+# POR QUE NO SE BORRAN. Son la unica marca en el codigo de que apartado de la
+# hoja de ruta implementa cada modulo, y esa navegacion se usa en cada
+# revision: se lee el modulo y se va al apartado. Borrarlas ahorraria ocho
+# lineas y costaria el mapa.
+#
+# POR QUE NO SE IMPRIMEN. Porque no son citas. Meter "4.1" o "Fase 5, V5" en
+# una memoria como si fueran numerales es exactamente el defecto que
+# `ReferenciaNormativa` existe para impedir -- una verificacion externa salio
+# a buscar una "Sec. 9.1" en el EG-2013, que no existe --. El numeral REAL de
+# cada calculo viaja por su propia via: `Verificacion.numeral`, las constantes
+# de `constantes_normativas` y el registro de `src/normativa/`.
+#
+# Dos de las ocho tienen ademas una segunda razon, y es un bloqueo ya
+# declarado: `NUMERAL_V5` y `NUMERAL_V8` anotan las dos verificaciones de la
+# Fase 5 que se detienen antes de devolver una `Verificacion` -- V5 por falta
+# del perfil de remanso y del ancho de derecho de via, V8 porque su logica no
+# esta escrita --, de modo que su numeral no llega a la memoria porque no hay
+# fila que anotar. Cuando esas dos se resuelvan, sus constantes se leeran
+# solas y saldran de esta lista.
+#
+# Si alguna se cablea o se borra, sale de aqui EN EL MISMO COMMIT. La guardia
+# que lo vigile es trabajo de la fase de tests (S16), no de esta: escribir
+# hoy un test contra el estado actual congelaria los defectos que las fases de
+# correccion todavia estan cerrando.
+NUMERALES_DE_SECCION_SIN_LECTOR = (
+    "modulos.M2_material.NUMERAL_MATERIAL",       # "Sec. 3.4"
+    "modulos.M3_hidraulica.NUMERAL_MANNING",      # "4.1"
+    "modulos.M4_control.NUMERAL_SALIDA",          # "4.3"
+    "modulos.M5_verificaciones.NUMERAL_V5",       # bloqueo declarado
+    "modulos.M5_verificaciones.NUMERAL_V8",       # bloqueo declarado
+    "modulos.M8_estructural.NUMERAL_8_1_2",       # "Fase 8, items 1-2"
+    "modulos.M8_estructural.NUMERAL_8_1",         # encabezado del bloque
+    "modulos.MD.NUMERAL_BUCLE",                   # "Sec. 2 de la guia"
+)
+
+
+# ===========================================================================
+# Enumeraciones (categorias declaradas por la hoja de ruta, no valores)
+# ===========================================================================
+
+class Familia(str, Enum):
+    """Familias de alcantarilla, Sec. 2.3."""
+    A = "A"   # de paso: Q hidrologico propio
+    B = "B"   # de alivio: Q del drenaje longitudinal
+    C = "C"   # cruces de canales y drenes: Q del canal (ANA / Junta)
+
+
+class Denominacion(str, Enum):
+    """
+    Umbral binario de luz, Sec. 2.1 (num. 4.1.1.3.1 y 4.1.1.5.1).
+
+    Son las DOS unicas denominaciones que reconoce la normativa MTC. No existe
+    la categoria "ponton": el Manual de Puentes remite al Glosario de Terminos
+    (pag. 44) y alli el termino no se tipifica. Si un expediente la usa, es uso
+    corriente y no una tercera clase de estructura.
+    """
+    ALCANTARILLA = "alcantarilla"   # luz < 6.0 m -> Manual de Hidrologia
+    PUENTE = "puente"               # luz >= 6.0 m -> Manual de Puentes, fuera de alcance
+
+
+class CategoriaTR(str, Enum):
+    """
+    Filas de la Tabla N 02 (num. 3.6), Sec. 2.2. El valor de cada miembro
+    coincide con la clave de `constantes_normativas.RIESGO_ADMISIBLE`, de modo
+    que la categoria y su par (R, n) no puedan divergir.
+    """
+    QUEBRADA_IMPORTANTE = "quebrada_importante"   # R = 30 %, n = 25 anios
+    QUEBRADA_MENOR = "quebrada_menor"             # R = 35 %, n = 15 anios
+
+
+class TipoMaterial(str, Enum):
+    """
+    Materiales admitidos, Sec. 3.4. El valor de cada miembro coincide con la
+    clave usada en `constantes_normativas.H_RELLENO_MIN` y `SECCION_EG2013`, y
+    con la de los criterios que se indexan por material ('D_max_catalogo',
+    'espesor_pared_conducto', 'cobertura_minima_aashto'). La correspondencia
+    con las claves de la Tabla N 09 (`MANNING`) la resuelve M2, no este
+    modulo.
+    """
+    CONCRETO_REFORZADO = "concreto_reforzado"
+    TMC = "tmc"
+    HDPE = "hdpe"
+
+
+class FormaSeccion(str, Enum):
+    """
+    La forma del barril que el CATALOGO ofrece (Sec. 3.2 y §4.4 del plan de la
+    Familia C), que NO es lo mismo que la `Seccion` que la resuelve.
+
+    `Seccion` es la geometria ya construida, con sus dimensiones; esto es la
+    familia a la que pertenece, y es lo que el catalogo necesita para saber de
+    que progresion sacar el siguiente escalon y de que criterios leer el n y
+    la carta de HDS-5. Un `Material` de marco y uno de tubo son los dos de
+    concreto reforzado -- el mismo `TipoMaterial` --, y lo que los separa es
+    esto.
+
+    Hasta C5 el catalogo era exclusivamente circular y esta distincion no
+    hacia falta: `Material.tipo` bastaba.
+    """
+
+    CIRCULAR = "circular"
+    RECTANGULAR = "rectangular"
+
+
+class ControlGobernante(str, Enum):
+    """Cual de los dos controles fija la carga a la entrada."""
+    ENTRADA = "entrada"   # Sec. 4.2, HDS-5
+    SALIDA = "salida"     # Sec. 4.3, HW = H + ho - S*L
+
+
+class RegimenBarril(str, Enum):
+    """
+    Como fluye el barril, que es lo que decide con QUE tirante y QUE velocidad
+    se comparan V1 y V2 (v8 §1.3 y §4.1, enmendadas en EXT-0; EXT-M-01).
+
+    LLENO cuando la salida esta sumergida, TW >= D: el TW llena el barril
+    hasta la clave (HDS-5 3.1.6, pag. impresa 3.18: «Total barrel area is
+    used when the tailwater exceeds the top of the barrel»). La v8 escribe la
+    condicion como «TW >= D, o HW >= D con la salida sumergida»; la segunda
+    clausula esta CONTENIDA en la primera --con salida sumergida TW ya es
+    >= D--, y se dice aqui para que nadie la busque como un tercer caso.
+
+    DISCREPANCIA CON LA FUENTE PRIMARIA, DECLARADA EN EL PUNTO DE USO (EXT-3,
+    auditoria adversarial). La v8 §1.3 escribe que con TW >= D «el barril
+    fluye lleno», a secas. HDS-5 3.1.3 (pag. impresa 3.2, PDF 84,
+    `HDS5_3ED.3.1.3#SUMERGENCIA`) lo matiza para el CONTROL DE ENTRADA:
+    «submergence of the outlet end of the culvert does not assure outlet
+    control. In this case, the flow just downstream of the inlet is
+    supercritical and a hydraulic jump forms in the culvert barrel». O sea:
+    bajo control de entrada con TW >= D el barril NO va lleno en toda su
+    longitud --el tramo de aguas arriba es supercritico y el resalto lo llena
+    hacia la salida (Fig. 3.1C y 3.1D)--. Lo que SI va lleno es la salida y el
+    tramo aguas abajo del resalto, que es donde V1 no tiene borde libre y
+    donde la velocidad es Q/A_llena, la MENOR del barril: por eso LLENO se
+    conserva para V1 y V2 tambien bajo control de entrada (rechaza V1 y
+    compara V2 con la velocidad baja: conservador en los dos), y por eso la
+    velocidad de salida bajo control de entrada se toma del tirante normal
+    (mayor: conservador para d50). El defecto se reporta contra la v8, que
+    sigue diciendo «fluye lleno» sin el matiz mientras no se corrija; quien
+    la lea sin leer esto entendera flujo a presion en toda la longitud.
+
+    PARCIALMENTE_LLENO en otro caso. Y ahi el regimen NO dice cuanto llena:
+    bajo control de entrada el flujo es supercritico y se aproxima al tirante
+    normal (HDS-5 3.1.3 y 3.1.6), que es lo que M3 entrega; bajo control de
+    salida el tirante dentro del conducto exige el perfil de la lamina de
+    agua (HDS-5 3.1.4, tipos 6 y 7; Section 3.5), y V1/V2 quedan PENDIENTES
+    por `MetodoNoEvaluableError`. No se inventa un criterio de llenado.
+    """
+    LLENO = "lleno"
+    PARCIALMENTE_LLENO = "parcialmente lleno"
+
+
+class TipoDePerfil(str, Enum):
+    """
+    Que perfil de lamina de agua resolvio el paso directo desde la salida
+    hacia la entrada (E-A; HDS-5 3.a ed. Section 3.5.1, pag. impresa 3.36-3.38,
+    PDF 118-120, y la prosa de la pag. 3.12, PDF 94). Los rotulos son los de
+    la fuente y los de HY-8:
+
+        M1        pendiente suave, TW > y_n: la lamina BAJA hacia y_n aguas
+                  arriba (tipo 3, «an M1 curve is computed starting at the
+                  tailwater depth at the outlet»).
+        M2        pendiente suave, max(y_c, TW) < y_n: la lamina SUBE hacia
+                  y_n aguas arriba (tipo 2, «an M2 curve is computed starting
+                  at critical depth at the outlet»; tipo 7 «to determine the
+                  length of culvert that will flow full»).
+        S1        pendiente pronunciada (y_n <= y_c) con la frontera por
+                  encima de y_c: la lamina baja hacia y_c y, si lo alcanza
+                  antes de la entrada, el remanso NO llega a la entrada y el
+                  control es de ENTRADA (tipo 1/5: «an S1 curve is computed
+                  and used if the S1 curve extends to the face of the
+                  culvert»). Incluye la S1 de longitud CERO: TW <= y_c en un
+                  barril supercritico, que es el caso (b) del dictamen.
+        UNIFORME  la frontera coincide con y_n: nada mueve la lamina.
+        LLENA     la linea de energia llena (Ec. 3.7) arranca en la salida
+                  y alcanza la entrada sin bajar de la clave: el barril va a
+                  presion en toda su longitud.
+
+    Con un tramo lleno que arranca en la salida y termina antes de la
+    entrada, el tipo es el de la LAMINA LIBRE que sigue aguas arriba (M1 o
+    S1), y `PerfilLamina.longitud_llena_m` dice cuanto midio el tramo lleno.
+    """
+    M1 = "M1"
+    M2 = "M2"
+    S1 = "S1"
+    UNIFORME = "uniforme"
+    LLENA = "llena"
+    # --- T-2 --- (INF-5.1.6). Barril HORIZONTAL, S = 0: no hay tirante normal
+    # hacia el que tender, y la lamina sube aguas arriba desde max(y_c, TW)
+    # sin asintota, hasta la entrada o hasta la clave. El rotulo es el que la
+    # fuente nombra (HDS-5 3.5.1, pag. impresa 3.37, `HDS5_3ED.3.5.1#H2`:
+    # «the horizontal profiles of H2 and H3 were added»); el H3 --supercritico
+    # sobre fondo horizontal-- no puede arrancar en la salida y este
+    # procedimiento no lo produce.
+    H2 = "H2"
+
+
+class CondicionRasante(str, Enum):
+    """
+    Cual de las dos condiciones de Sec. 7.A fija la cota de rasante minima:
+
+        cota rasante >= max( cota clave + h_rec + e_paq ,
+                             cota entrada + HW + resguardo(CBR) + e_paq )
+
+    No es una etiqueta cosmetica: dice que hay que mover para bajar la rasante
+    minima. Si gobierna RECUBRIMIENTO, el que manda es el conducto (bajar el
+    invert, reducir el diametro o cambiar de material, porque h_rec depende
+    del material); si gobierna RESGUARDO, manda la hidraulica (bajar el HW) o
+    el CBR de la subrasante. Con la condicion equivocada en la memoria, el
+    proyectista corrige la variable que no gobierna.
+    """
+    RECUBRIMIENTO = "recubrimiento"   # cota clave + h_rec + e_paq
+    RESGUARDO = "resguardo"           # cota entrada + HW + resguardo + e_paq
+
+
+class CondicionAnalisis(str, Enum):
+    """
+    Las dos columnas de la tabla de factores de seguridad de Sec. 9.3: cada
+    verificacion de estabilidad del cabezal tiene un FS estatico y otro
+    sismico, y no son la misma verificacion con otro numero -- cambian las
+    fuerzas actuantes (aparece el incremento de Mononobe-Okabe) y cambia el
+    umbral (3.00 -> 2.50, 1.50 -> 1.25).
+
+    Los valores reproducen las claves de `constantes_normativas.FS`: quien
+    lea el FS de la tabla lo indexa con este enum, no con un string suelto.
+    """
+    ESTATICO = "estatico"
+    SISMICO = "sismico"
+
+
+class GobiernaEspaciamiento(str, Enum):
+    """
+    Cual de los dos limites de Fase 10 fija el espaciamiento maximo entre
+    alcantarillas de alivio (Familia B): el limite normativo de longitud de
+    cuneta por regimen, o la longitud a la que la cuneta agota su capacidad
+    hidraulica admisible frente al caudal aportante. No es cosmetico: si
+    gobierna NORMATIVO el remedio de un espaciamiento insuficiente es
+    replantear puntos de alivio adicionales por norma; si gobierna
+    HIDRAULICO, el remedio esta en la cuneta (seccion, pendiente) o en el
+    area tributaria, no en el limite de 4.1.2.1 d).
+    """
+    NORMATIVO = "normativo"     # num. 4.1.2.1 d) -- long_max_cuneta
+    HIDRAULICO = "hidraulico"   # capacidad admisible de la cuneta
+
+
+class RegimenEntrada(str, Enum):
+    """
+    Rama de la formulacion de control de entrada de HDS-5 (Sec. 4.2). No es
+    una clasificacion cualitativa del flujo: es LA ECUACION que se aplico, y
+    por eso viaja en el resultado. Una memoria que dice "HW = 0.87 m" sin
+    decir con que rama se obtuvo no es revisable.
+
+    El umbral es el caudal adimensional q* = Ku*Q/(A*D^0.5), con los limites
+    [N] `Q_LIM_NO_SUMERGIDO` (3.5) y `Q_LIM_SUMERGIDO` (4.0).
+    """
+    NO_SUMERGIDO = "no_sumergido"   # q* <= 3.5 -> Forma 1, con H_c
+    TRANSICION = "transicion"       # 3.5 < q* < 4.0 -> interpolacion lineal
+    SUMERGIDO = "sumergido"         # q* >= 4.0 -> forma cuadratica en q*
+
+
+# ===========================================================================
+# Datos de entrada
+# ===========================================================================
+
+@dataclass(frozen=True)
+class PuntoCritico:
+    """
+    Una fila del CSV de entrada. El orden y el nombre de los campos reproducen
+    literalmente el encabezado de Sec. 1.2; M0 no debe renombrarlos.
+
+    Unica excepcion: `progresiva_display`, que NO es una columna del CSV. M0
+    la deriva del mismo string de entrada que `progresiva_km`, porque la
+    notacion vial ('0+380') y el valor numerico (0.380) sirven para cosas
+    distintas y ninguna de las dos se puede reconstruir bien desde la otra:
+    la memoria de calculo y los planos se citan en progresivas, no en
+    kilometros decimales, y '0.38' en un cuadro resumen es un error de forma
+    que un revisor de expediente vial detecta de inmediato. El calculo no usa
+    ninguna de las dos.
+
+    Los campos Optional no son opcionales por comodidad: cada uno corresponde
+    a un dato bloqueado en un tablero de pendientes. Se leen con `exigir()`,
+    que lanza DatoFaltanteError en vez de asumir un valor.
+
+    `sucs_fundacion` es obligatoria y NINGUN modulo la lee, y las dos cosas
+    son correctas a la vez. La obligatoriedad no la inventa el codigo: la
+    hoja de ruta la lista en Sec. 1.1 con etiqueta [N] E.050 y la incluye en
+    el encabezado literal de Sec. 1.2, o sea que una fila sin ella es un
+    expediente incompleto y M0 tiene que decirlo. Su consumidor previsto es
+    el criterio 'c_phi_fundacion' -- correlacion de resistencia desde la
+    clasificacion SUCS --, que esta declarado vacio y cuyo ensamblaje (E1-E5
+    de Sec. 9.3) esta fuera del alcance de esta CLI. Se carga, se valida y se
+    imprime en la memoria; el dia que E1-E5 se ensamblen, el dato ya esta.
+
+    `NF_profundidad_m` es la unica columna que NO viene del encabezado de
+    Sec. 1.2: se agrego al reclasificar el nivel freatico como dato de sitio
+    [S]. Era un criterio unico de proyecto (1.4 m, la caracterizacion de la
+    llanura del Bajo Piura) y su propia verificacion pendiente ya avisaba de
+    que podia variar punto a punto. Un dato que se MIDE en cada cruce es una
+    columna, no un criterio: el nivel freatico de un cruce en la llanura y el
+    de otro a tres kilometros son dos mediciones distintas, y declararlos con
+    un solo numero fingiria una uniformidad que ningun estudio del expediente
+    respalda. Viene vacio mientras el estudio geotecnico no de el valor de
+    cada punto, y entonces lo que se detiene es la verificacion que lo
+    necesite -- V7 en M8/M5, la subpresion del cabezal en M9 -- no la carga
+    del CSV.
+    """
+
+    id: str                            # identificador del punto
+    progresiva_km: float               # km - localizador; desde T-9 mide el tramo de cuneta de VB1 (Familia B)
+    progresiva_display: str            # '0+380' - notacion vial para el reporte
+    familia: Familia                   # Sec. 2.3
+    Q_m3s: Optional[float]             # m3/s - vacio en Familia C (Tablero 3.1)
+    area_ha: Optional[float]           # ha  - solo clasificador (Sec. 1.1)
+    S_cauce: Optional[float]           # m/m - pendiente del CAUCE (Sec. 1.5)
+    cota_terreno: float                # msnm
+    cota_rasante: float                # msnm - superficie de rodadura
+    cota_subrasante: float             # msnm - V4 se chequea contra esta
+    cbr_subrasante: float              # %   - define el resguardo de 5.1
+    esviaje_grados: float              # grados sexagesimales
+    ancho_plataforma: float            # m
+    cota_fondo_receptor: float         # msnm
+    Q_receptor_m3s: Optional[float]    # m3/s - ANA / Junta (Tablero 3.1)
+    cota_TW: Optional[float]           # msnm - calculada en 1.3 (Tablero 3.1)
+    sucs_fundacion: str                # clasificacion SUCS de la calicata
+    NF_profundidad_m: Optional[float]  # m - profundidad del nivel freatico
+    # LA COTA DE FONDO DE LA ENTRADA, MEDIDA. Dato de sitio [S] que varia punto
+    # a punto: nivelacion del fondo del cauce -- del CANAL, en un paso de canal
+    # -- en el cruce. Admite vacio: cuando falta, la cota la pone la regla que
+    # el proyectista declaro en 'origen_cota_fondo_entrada' [A].
+    #
+    # POR QUE HACIA FALTA, y no es una comodidad. En un PASO DE CANAL el canal
+    # atraviesa la via y continua: no hay cuerpo receptor distinto, y el invert
+    # del conducto NO se adopta -- se hereda del fondo del canal medido en el
+    # cruce. Con la unica regla que habia implementada ('cota_terreno') el
+    # invert quedaba a la cota del TERRENO NATURAL, o sea POR ENCIMA del fondo
+    # del canal en toda la profundidad de la seccion. HW es una carga sobre el
+    # invert, de modo que el error se propaga entero a V4, a V7 y al tamizado
+    # de 7.A.
+    #
+    # El `reemplazado_por` del criterio ya lo anticipaba con estas palabras:
+    # «Cota de fondo de entrada MEDIDA por punto, como columna propia del CSV.
+    # El dia que el expediente la entregue, este criterio deja de aplicarse: un
+    # dato medido no se sustituye por una regla adoptada». Este campo es ese
+    # dia.
+    cota_fondo_entrada: Optional[float] = None   # msnm - nivelacion en el cruce
+    # LA CORONACION DEL CANAL, MEDIDA. Segundo dato de sitio [S] del
+    # levantamiento de los seis cruces, y el que le da a VC1 la cota contra la
+    # que medir. Admite vacio, y sin el VC1 se detiene.
+    #
+    # POR QUE NO PODIA SALIR DE NINGUNA COLUMNA QUE YA HUBIERA. `cota_terreno`
+    # es el terreno natural del cruce y `cota_rasante` es la calzada: ninguna
+    # de las dos es el labio del canal. En un canal excavado la coronacion
+    # puede quedar bajo el terreno natural; en uno con bordos, por encima. No
+    # hay regla que las relacione, y por eso esto es una MEDICION y no una
+    # derivacion -- al reves que `cota_fondo_entrada`, que si tiene regla
+    # declarada para cuando falta.
+    #
+    # Y POR ESO SE MARCA EN `pendientes_externos` y aquella no. Una
+    # `cota_fondo_entrada` vacia no espera a nadie: hay criterio que la cubre.
+    # Una `cota_coronacion_canal` vacia espera al levantamiento, exactamente
+    # como `NF_profundidad_m` espera al estudio geotecnico. Es la misma forma y
+    # se marca igual.
+    cota_coronacion_canal: Optional[float] = None  # msnm - labio del canal
+
+    # Derivado por M0, no es columna del CSV: columnas que la fila dejo vacias
+    # porque el dato depende de terceros (Tablero 3). NO significa fila
+    # invalida; significa fila cargada y marcada. Quien decide si el punto se
+    # puede calcular con lo que falta es el modulo que necesite el dato, no M0.
+    pendientes_externos: Tuple[str, ...] = ()
+
+    @property
+    def pendiente_dato_externo(self) -> bool:
+        """True si la fila espera algun dato de un tablero externo."""
+        return bool(self.pendientes_externos)
+
+    def exigir(self, campo: str) -> Any:
+        """
+        Devuelve el dato o lanza DatoFaltanteError. Unico acceso permitido a
+        los campos que pueden venir vacios: nunca se sustituyen por un default.
+        """
+        if campo not in {f.name for f in fields(self)}:
+            raise AttributeError(
+                f"'{campo}' no es un campo de PuntoCritico (ver Sec. 1.2)"
+            )
+        dato = getattr(self, campo)
+        if dato is None:
+            raise DatoFaltanteError(campo, id_punto=self.id)
+        return dato
+
+
+@dataclass(frozen=True)
+class CotaDeEntrada:
+    """
+    La cota del fondo de la entrada CON SU PROCEDENCIA, msnm.
+
+    POR QUE NO ES UN `float`. Porque la misma magnitud llega hoy por dos vias
+    que NO son intercambiables para quien sustenta: MEDIDA --- nivelacion del
+    fondo del canal en el cruce, columna `cota_fondo_entrada` --- o
+    ADOPTADA --- la regla que el proyectista declaro en
+    'origen_cota_fondo_entrada' [A] ---. Un dato y una eleccion se corrigen en
+    sitios distintos y se defienden con argumentos distintos, y el revisor va
+    a preguntar cual de las dos es. Devolver un escalar obligaria a cada
+    consumidor a volver a preguntarselo al punto, que es como dos consumidores
+    acaban respondiendose cosas distintas.
+
+    Es la misma forma que `Verificacion` --- que no devuelve un `bool` desnudo
+    --- y por la misma razon: el numero sin su procedencia no es defendible.
+
+    `procedencia` se escribe para ENTRAR EN UNA `Magnitud`, que es donde la
+    memoria la imprime. No lleva formato ni etiquetas: eso lo pone M11.
+    """
+
+    valor: float                 # msnm
+    medida: bool                 # True si vino de la columna del CSV
+    procedencia: str             # para `Magnitud.procedencia`
+    # LA REGLA QUE PRODUJO LA COTA, cuando es adoptada: la clave de
+    # `M5.ORIGENES_COTA_ENTRADA` que el criterio 'origen_cota_fondo_entrada'
+    # declaraba EN ESA CORRIDA. `None` cuando la cota es medida, porque
+    # entonces no hubo regla. Es un campo desde EXT-4 (PC-07): el JSON la
+    # publicaba leyendo el registro global AL EXPORTAR, y una declaracion
+    # posterior cambiaba la regla impresa al lado de una cota que no cambio.
+    # La regla que gobierna un numero viaja con el numero.
+    regla: Optional[str] = None
+
+    @property
+    def rotulo(self) -> str:
+        """«MEDIDA» o «ADOPTADA», para los rotulos cortos del volcado."""
+        return "MEDIDA" if self.medida else "ADOPTADA"
+
+    # --- T-10 ---
+    @property
+    def nota(self) -> str:
+        """
+        La nota que acompaña al rotulo: lo que la cota ES. Vivia escrita en
+        el adaptador del JSON (`cli._geometria_json`) y la memoria decia otra
+        frase; una sola fuente, tres vistas (el JSON, la CLI y la memoria).
+        """
+        if self.medida:
+            return ("cota MEDIDA: columna cota_fondo_entrada del CSV; el "
+                    "criterio no se aplico en este punto")
+        return ("no es cota medida: sale de la regla declarada en ese "
+                "criterio mientras el expediente no entregue la cota de "
+                "invert de entrada por punto")
+
+    # --- T-6 ---
+    @property
+    def aviso(self) -> str:
+        """
+        El aviso que acompaña a una cota ADOPTADA igual al terreno
+        (INF-5.1.18), o cadena vacia cuando la cota es medida o sale de otra
+        regla. No es un incumplimiento ni detiene nada: dice que la rasante
+        minima de 7.A, V4 y V7 estan calculadas sobre una cota que nadie
+        midio, y que dato la sustituye (la columna `cota_fondo_entrada`).
+        """
+        if self.medida or self.regla != REGLA_FONDO_IGUAL_AL_TERRENO:
+            return ""
+        return AVISO_FONDO_ENTRADA_ADOPTADO
+
+
+# ===========================================================================
+# Material y geometria
+# ===========================================================================
+
+@dataclass(frozen=True)
+class ConstantesHDS5:
+    """
+    Constantes de control de entrada de la Tabla A.1 de HDS-5 (Sec. 4.2).
+    Los nombres de campo reproducen la notacion de la hoja de ruta.
+
+    Ks NO figura en la Tabla A.1: proviene de la formulacion de las ecuaciones
+    (-0.5 sin inglete, +0.7 con inglete). No omitirlo.
+
+    `forma` SI figura en la Tabla A.1 -- es su columna «Equation Form» -- y
+    hasta C2 no se transcribia. Vale 1 o 2, y no es un matiz de precision:
+
+        Forma 1   HWi/D = H_c/D + K*(q*)^M + Ks*S     ec. (A.1)
+        Forma 2   HWi/D = K*(q*)^M                     ec. (A.2)
+
+    La Forma 2 NO LLEVA EL TERMINO Ks*S. Esta escrito asi arriba porque la
+    primera redaccion de este docstring SI se lo puso -- «HWi/D = K*(q*)^M +
+    Ks*S» -- y se contradecia con su propio parrafo de mas abajo, que ya decia
+    que la Forma 2 no lo lleva. Verificado contra la fuente: `normas/
+    hif12026.pdf`, pag. impresa A.2 (PDF 191), imprime la ec. (A.2) como
+    HWi/D = K[Ku*Q/(A*D^0.5)]^M y nada mas. El contraste que lo cierra esta en
+    la MISMA pagina: la ec. (A.3), sumergida, si lleva «+ Y + Ks*S».
+
+    El error no era inocuo y por eso queda dicho: con Ks = -0.5 el termino
+    RESTA, de modo que copiarlo a la Forma 2 daria un HW MENOR que el real
+    -- del lado no conservador --. Medido sobre la Carta 9 escala 1
+    (K = 0.510, M = 0.667) con un cajon de 2.00 x 2.00 m, Q = 8 m3/s y
+    S = 0.03: 1.910 m contra 1.880 m, 30 mm de diferencia, y crece lineal con
+    la pendiente. Es exactamente el fallo que `F4.FORMA_HDS5` describe, y
+    estaba escrito en el sitio donde C3 lo iba a leer primero.
+
+    Son DOS REGRESIONES DISTINTAS sobre dos conjuntos de ensayos, y sus K y M
+    estan ajustadas cada una a SU ecuacion. Quien dice cual es cual es la
+    COLUMNA «Equation Form» de la Tabla A.1, fila por fila.
+
+    ESTE PARRAFO ATRIBUIA ESO AL NUM. A.3 -- «el HDS-5 lo dice con todas las
+    letras» -- Y ERA FALSO. El num. A.3 prohibe cruzar coeficientes entre
+    FORMAS GEOMETRICAS («rectangular (box) shapes» frente a «nonrectangular»),
+    no entre formas de ecuacion. La Tabla A.1 lo zanja: forma y geometria son
+    ORTOGONALES -- «Rect. Box Concrete» aparece con Forma 1 y con Forma 2, y
+    «Circular» tambien --, de modo que una prohibicion sobre geometrias no
+    puede ser la regla que separa las formas. Lo encontro la auditoria de C3,
+    y es el mismo genero de defecto que este docstring ya cometio con la
+    ecuacion: una afirmacion sobre la fuente que la fuente no sostiene.
+
+    Las tres cartas circulares del catalogo son Forma 1. De las cinco del
+    cajon que transcribio C2, la Carta 8 es Forma 1 y las Cartas 9 a 12 son
+    Forma 2.
+
+    LAS DOS FORMAS ESTAN IMPLEMENTADAS DESDE C3, en
+    `M4_control._hw_sobre_D_no_sumergido`, que bifurca por este campo. Este
+    parrafo decia «quien implemente la Forma 2 es C3; este campo solo la hace
+    visible», y era cierto hasta que C3 la implemento: se corrige aqui porque
+    una frase que describe un estado que dejo de ser cierto es el mismo
+    defecto que este docstring ya cometio una vez, solo que en prosa en vez
+    de en una ecuacion.
+
+    Que el campo exista sigue siendo la guardia: sin el, las constantes de una
+    carta de Forma 2 entrarian en la ecuacion de Forma 1 -- que lleva H_c/D y
+    Ks*S, y la Forma 2 ninguno de los dos --, y el HW saldria MAYOR que el
+    real (+91 % medido en I3 sobre el marco de la linea base: el H_c/D
+    espurio domina por dos ordenes al Ks*S que resta) sin que ninguna guardia
+    de signo lo detecte. Este parrafo decia «MENOR» hasta D9, mezclando ese
+    error con la mutacion de 30 mm del parrafo anterior, que es otra: alli se
+    suma solo Ks*S a la (A.2); aqui se copia la (A.1) entera. Lo que C3 añade es
+    que ahora tambien hay TESTS que lo detectan: `CP5D_FORMA2_KS_ESPUREO` fija
+    la diferencia de 30 mm, y tres tests de `test_M4_control` se ponen rojos
+    si alguien vuelve a sumar Ks*S en la Forma 2 -- comprobado mutando el
+    codigo, no supuesto --.
+    """
+    K: float
+    M: float
+    c: float
+    Y: float
+    Ks: float
+    forma: int          # columna «Equation Form» de la Tabla A.1: 1 o 2
+
+    @classmethod
+    def desde_dict(cls, datos: Dict[str, float]) -> "ConstantesHDS5":
+        """Construye desde una fila de `HDS5_INLET` o de un criterio adoptado."""
+        # `forma` se exige, no se rellena: un KeyError aqui dice que la fila
+        # o el criterio no declara su ecuacion, y ese es un dato que hay que
+        # anadir, no adivinar. Un `datos.get("forma", 1)` seria el default
+        # silencioso que CLAUDE.md llama el peor error posible.
+        return cls(K=datos["K"], M=datos["M"], c=datos["c"],
+                   Y=datos["Y"], Ks=datos["Ks"], forma=datos["forma"])
+
+
+@dataclass(frozen=True)
+class Material:
+    """
+    Material de conducto ya resuelto por M2: sus valores provienen de
+    `constantes_normativas.py` y de `criterios_adoptados.py`. Este modulo solo
+    declara la forma; no fija ningun numero.
+
+    Regla de doble n (Sec. 4.1): n maximo para capacidad y tirante, n minimo
+    para velocidad MAXIMA y socavacion. Se expone con TRES propiedades -- no
+    dos -- para que ningun modulo tenga que recordar cual es cual: la
+    velocidad tiene dos umbrales, un techo y un piso, y cada uno se calcula
+    con el n del extremo contrario. `n_para_velocidad_minima` devuelve el
+    mismo numero que `n_para_capacidad`, y tiene nombre propio porque el
+    motivo es otro: alli n_max da mas tirante, aqui da menos velocidad.
+
+    Dos campos que se leen mal si no se dice de que son:
+
+    `D_max` NO es un tope normativo. Es el tope de CATALOGO que el proyecto
+    adopta ('D_max_catalogo', [A]), y `D_max_de_catalogo` trae el rotulo con
+    que hay que imprimirlo. `norma_producto` es la norma que rige el producto
+    -- materiales, fabricacion, aceptacion -- y NO la que topa el diametro:
+    A760 tabula hasta 3600 mm y M 170M tambien (NOR-PRO-01, NOR-PRO-02).
+
+    `h_relleno_min_eg2013` es SOLO el minimo de EG-2013, que existe unicamente
+    para HDPE (Subseccion 508.07, pag. 984). No es el recubrimiento minimo del
+    material: ese lo calcula `M7_geometria.altura_recubrimiento` como el mayor
+    entre este y la cobertura minima de AASHTO (Tabla 12.6.6.3-1), y depende
+    del diametro exterior. Un None aqui significa "EG-2013 no lo fija para
+    este material", no "falta el dato".
+    """
+
+    tipo: TipoMaterial
+    nombre: str                             # etiqueta para el reporte
+    n_min: float                            # Tabla N 09 (o criterio adoptado)
+    n_max: float
+    D_max: float                            # m - tope de CATALOGO adoptado (V9)
+    D_max_de_catalogo: str                  # rotulo obligatorio de ese tope
+    norma_producto: str                     # designacion METRICA de la norma
+                                            # de producto: "AASHTO M 170M-04 /
+                                            # ASTM C 76M-02 (metrica)",
+                                            # "AASHTO M 36 / ASTM A760/A760M-10",
+                                            # "AASHTO M 294-11 (en normas/:
+                                            # traduccion no oficial)". Las imperiales
+                                            # (C76, M170) nombran documentos
+                                            # que este expediente no tiene y
+                                            # cuyas tablas van en pulgadas
+                                            # (NOR-PRO-05)
+    hds5: ConstantesHDS5                    # carta adoptada en Sec. 4.2
+    fila_manning: str                       # fila LITERAL de la Tabla N 09
+    # Los dos techos de velocidad, separados porque son dos cosas distintas y
+    # un solo campo las confundia (SIS-A-06): el campo anotado
+    # `Optional[Tuple[float, float]]` transportaba el par de la Tabla N 10 para
+    # el concreto y un ESCALAR para TMC y HDPE, de modo que el contrato que se
+    # consulta aqui decia lo que el dato no era.
+    v_max_tabla10: Optional[Tuple[float, ...]]   # m/s - fila de la Tabla N 10,
+                                            # tal cual: dos valores para el
+                                            # concreto, uno para la
+                                            # mamposteria. None = el material
+                                            # NO tiene fila en esa tabla
+    v_max_adoptado: Optional[float]         # m/s - techo escalar de un criterio
+                                            # [C] (TMC, HDPE). None = el techo
+                                            # sale de la tabla, o falta declararlo
+    h_relleno_min_eg2013: Optional[float]   # m sobre la clave; None = EG-2013 no lo fija
+    espesor_pared: Optional[float]          # m - t; None = criterio sin declarar
+    seccion_eg2013: str                     # 505 / 506 / 507 / 508 (Capitulo V)
+    # EL QUE AÑADE C5: el catalogo dejo de ser solo circular y hay decisiones
+    # que YA NO se pueden deducir del `tipo`. Un marco de concreto y un tubo
+    # de concreto son el mismo `TipoMaterial`, y lo que los separa es de que
+    # progresion sale su seccion, de que fila su n y de que carta de HDS-5 sus
+    # constantes de control de entrada.
+    forma: FormaSeccion                     # de que progresion sale la seccion
+    # LA TRAZA DE FASE 3, y viaja con el material porque es donde se decide.
+    # M2 la emite al resolver el catalogo -- que tipo de estructura, que
+    # seccion, cuantas celdas, que fila de rugosidad -- y `M4._pasos_
+    # hidraulicos` la antepone a la suya, de modo que llega a la memoria por
+    # el MISMO canal que ya existe (`ResultadoHidraulico.pasos`, que M11
+    # imprime bajo «Fases 3 y 4»). Sin este campo habria que abrir un canal
+    # nuevo en el reporte, que es de otra sesion.
+    #
+    # VACIA EN LA CIRCULAR, y no por olvido: el tubo no elige nada en Fase 3
+    # que no este ya en el bloque de criterios -- su fila de la Tabla N 09 y
+    # su carta de HDS-5 son lectura directa, no adopcion --. El marco si:
+    # cuatro de sus cinco decisiones son criterios declarados por el
+    # proyectista, y una memoria que no las desarrolle no las puede defender.
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    # --- T-4 --- DE QUE CRITERIO SALIO `D_max`. Desde T-4 el tope puede
+    # venir de dos sitios: la SERIE de la norma de producto
+    # ('D_max_norma_producto' [C], la regla) o la disponibilidad de mercado
+    # que el proyectista declare por debajo ('D_max_catalogo' [A], opcional);
+    # en el marco, de 'secciones_cajon_normalizadas'. V9 y el motivo de
+    # descarte de MD lo leen de aqui en vez de suponer la clave: con la clave
+    # cableada, un tope de norma se imprimia «de catalogo», que es la cita
+    # falsa de NOR-PRO-01 leida al reves. Vacio = constructor que no pasa por
+    # `M2.catalogo` (dobles de prueba): quien lo lea cae al rotulo.
+    D_max_criterio: str = ""
+
+    def __post_init__(self) -> None:
+        # EL PAR ES UN PAR (PC-01): n_min <= n_max, o la regla de doble n se
+        # invierte entera y cada verificacion usa el n del lado equivocado
+        # sin que ninguna lo note. M2 lo exige al leer el criterio; esto es
+        # la red de abajo para cualquier constructor que no pase por M2.
+        # Escrito negado (`not n_min <= n_max`) para que un NaN no se cuele,
+        # como en MAT-D13. Es DatoInvalidoError y no ValueError: el par lo
+        # escribio el expediente (un criterio o una tabla), no el programa.
+        # El None es el de «Campos que el catalogo puede dejar en None» (M2):
+        # el criterio del HDPE vacio viaja como (None, None) y lo detiene el
+        # consumidor, no este constructor. Sin esta salvedad el None salia de
+        # aqui como TypeError (auditor adversarial de EXT-1).
+        if self.n_min is None or self.n_max is None:
+            return
+        if not self.n_min <= self.n_max:
+            raise DatoInvalidoError(
+                "n_manning", valor=(self.n_min, self.n_max),
+                motivo=f"el par de Manning de {self.nombre} esta invertido o "
+                       f"no es comparable: n_min = {self.n_min!r} tiene que "
+                       f"ser <= n_max = {self.n_max!r} (regla de doble n, "
+                       "Sec. 4.1: n_max para capacidad, n_min para velocidad)")
+
+    @property
+    def n_para_capacidad(self) -> float:
+        """n maximo: conservador del lado de la inundacion (Sec. 4.1)."""
+        return self.n_max
+
+    @property
+    def n_para_velocidad_maxima(self) -> float:
+        """
+        n minimo: conservador del lado de la erosion (Sec. 4.1), o sea contra
+        los TECHOS de velocidad -- V3 y el d50 de Laushey. Es la estimacion
+        ALTA de velocidad.
+
+        El nombre reproduce el de la hoja de ruta (Sec. 4.1: n minimo para
+        "velocidad maxima y socavacion"). Se llamaba `n_para_velocidad`, sin
+        el "maxima", y ese nombre era la mitad del defecto MAT-D1: leido desde
+        V2 -- que es tambien una verificacion de velocidad -- parecia el n que
+        le tocaba, y no lo es.
+        """
+        return self.n_min
+
+    @property
+    def n_para_velocidad_minima(self) -> float:
+        """
+        n maximo: el que da la estimacion BAJA de velocidad sobre la geometria
+        de diseño, y por lo tanto el conservador contra un PISO de velocidad
+        (V2, autolimpieza, Sec. 4.1.1.3.6).
+
+        Devuelve el mismo numero que `n_para_capacidad` y existe aparte porque
+        la razon es distinta: en capacidad n_max se usa porque exige mas area,
+        y aqui porque entrega menos velocidad. Si algun dia el proyecto tomara
+        el n de dos tablas distintas para las dos cosas, esta propiedad es la
+        que cambiaria sin tocar la otra.
+        """
+        return self.n_max
+
+    @property
+    def v_max_definida(self) -> bool:
+        """
+        True si el material tiene un techo de velocidad aplicable: fila en la
+        Tabla N 10, o techo escalar declarado en su criterio.
+
+        HOY DEVUELVE True PARA LOS TRES, y el docstring anterior decia lo
+        contrario -- "False para TMC y HDPE mientras el Tablero 1.3 siga
+        abierto" (SIS-A-06). La frase no era falsa cuando se escribio: era
+        condicional, y su condicion se cerro al declararse 'v_max_tmc' y
+        'v_max_hdpe' con la fuente WSDOT. Vuelve a False para TMC o HDPE si
+        alguien vacia esos criterios, que es justo lo que este campo tiene que
+        poder decir.
+        """
+        return self.v_max_tabla10 is not None or self.v_max_adoptado is not None
+
+
+class Seccion(Protocol):
+    """
+    La forma del barril, detras de una interfaz (Sec. 4.1 del plan de la
+    Familia C). M3 y M4 dejan de saber si el conducto es un circulo.
+
+    MODELA UNA CELDA. El numero de celdas vive fuera y se reparte el caudal:
+    los coeficientes de HDS-5, el radio hidraulico y el control de entrada son
+    POR BARRIL.
+
+    DOS PARAMETRIZACIONES, Y NO ES REDUNDANCIA. La interfaz de arriba --
+    `area(y)`, `perimetro(y)`, `ancho_superficial(y)` -- esta escrita sobre el
+    TIRANTE, que es el lenguaje de la Sec. 4.1 y el que una seccion
+    rectangular usa directamente. La de abajo -- `bracket_llenado()`,
+    `geometria_en()`, `ancho_superficial_en_llenado()` -- esta escrita sobre
+    el PARAMETRO PROPIO de la seccion, que en la circular es el angulo mojado
+    theta y en una rectangular seria el propio tirante.
+
+    Por que existen las dos: el solver de Manning y el del tirante critico
+    recorren la seccion con Brent, y en la circular lo hacen SOBRE THETA. Si
+    el solver pasara a recorrer el tirante, la raiz a la que converge cambia
+    en los ultimos bits y con ella todos los numeros que cuelgan de ella. Eso
+    no es un refactor, es un cambio de metodo numerico. La seccion expone su
+    propio parametro para que el solver no tenga que elegir uno, y asi M3 y M4
+    quedan ciegos a la forma SIN mover un digito.
+
+    LAS DOS MITADES NO SON INTERCAMBIABLES, Y ESTE ES EL AVISO. La CANONICA
+    es la del parametro propio -- es la que consumen M3 y M4 y sobre la que
+    resuelve Brent --. La del tirante es de LECTURA, y desde C4 tiene DOS
+    consumidores en produccion, los dos dentro de
+    `SeccionRectangular.geometria_en`: el unico sitio donde no puede
+    equivocarse, porque en esa forma el parametro propio ES el tirante y las
+    dos vias coinciden bit a bit. Que sean dos y no mas lo vigila un censo del
+    AST --`test_seccion_rectangular::test_la_via_por_tirante_no_gana_
+    consumidores_sin_declararlos`--, y no un comentario: la auditoria de C4
+    demostro que un comentario no basta. Esta escrito como regla vinculante
+    #12 de docs/ruta_familia_c.md; aqui va lo imprescindible.
+
+    En la circular, `area(y)` / `perimetro(y)` / `ancho_superficial(y)` pasan
+    por `theta_desde_tirante(y)`, que es la inversa ALGEBRAICA de
+    `_tirante_en_theta` pero no su inversa en punto flotante. El error del
+    viaje de ida y vuelta NO ESTA ACOTADO POR UNA CONSTANTE: es un problema de
+    CONDICIONAMIENTO concentrado en los dos extremos del llenado. Medido en C1
+    sobre ocho diametros de 0.30 a 3.00 m:
+
+        y/D en [0.10, 0.75] (la ventana que admite V1)
+            A 9.7e-16   P 3.9e-16   T 4.0e-16      -- ultimos bits
+        y/D en [0.01, 0.99]
+            A 5.2e-15   P 1.5e-15   T 8.8e-15
+        theta = 1e-6 rad
+            P y T: 4.4e-5
+
+    Y EN LOS EXTREMOS DEL BRACKET, con la correccion que midio C4. C1 escribio
+    aqui "en los DOS extremos la via por tirante devuelve 0.0 EXACTO para P y
+    para T", y eso vale ENTERO en uno solo de los dos. Medido sobre D = 0.90:
+
+        theta = 1e-9 (extremo INFERIOR)
+            canonica    P = T = 4.5e-10
+            por tirante P = T = 0.0            <- 100 %, y cero EXACTO
+        theta = 2*pi - 1e-9 (extremo SUPERIOR)
+            canonica    T = 4.500001474513789e-10
+            por tirante T = 1.1021821192326179e-16   <- ~100 % relativo, pero
+                                                        NO es cero exacto
+            canonica    P = 2.8274333877808138
+            por tirante P = 2.827433388230814        <- 1.6e-10 relativo: el
+                                                        perimetro NO se anula
+
+    La consecuencia no cambia y sigue siendo peor que una deriva: `T` es el
+    denominador de `A^3/T` en `M4_control._residuo_critico`, y el cero exacto
+    esta justo en el extremo INFERIOR, que es de los primeros puntos donde
+    Brent evalua. Quien reescriba el residuo sobre `ancho_superficial(y)` no
+    mete un 1e-12: DIVIDE POR CERO, y reintroduce la clase de fallo que
+    SIS-G-02 cerro. Lo unico que se corrige es el enunciado -- en el extremo
+    superior el perimetro coincide en los ultimos bits --, y se corrige porque
+    una regla vinculante que dice de mas se deja de creer entera.
+
+    En el centro del rango las dos vias coinciden BIT A BIT (theta = pi:
+    divergencia 0.0 exacta en las tres magnitudes), de modo que una
+    comprobacion puntual las aprueba. Por eso el aviso esta aqui y no en un
+    test: no se detecta mirando.
+
+    En una seccion rectangular el parametro propio ES el tirante y las dos
+    vias coinciden exactamente. Eso no autoriza a pasar M3 y M4 a la via por
+    tirante: en la circular movería todos los numeros.
+
+    Regla operativa: el valor que ya viene en un `Geometria` -- `g.A`, `g.P`,
+    `g.T`, `g.R` -- NO se recalcula. La via por tirante solo se usa donde el
+    llamador tenga un tirante y ningun `Geometria`, nunca dentro de un solver.
+    """
+
+    @property
+    def altura(self) -> float:
+        """m - altura interior del barril. Es el "D" de HDS-5."""
+        ...
+
+    @property
+    def area_llena(self) -> float:
+        """m2 - area de la seccion llena. La consumen q* y el control de salida."""
+        ...
+
+    @property
+    def radio_hidraulico_lleno(self) -> float:
+        """m - radio hidraulico de la seccion llena (Sec. 4.3)."""
+        ...
+
+    def ancho_exterior(self, espesor: float) -> float:
+        """
+        m - `Bc`: ancho exterior de la seccion en planta, con la pared.
+
+        La nomenclatura es la del Art. 12.6.6.3 de AASHTO LRFD, que define
+        `Bc` como *"outside diameter or width of the structure"*: es la
+        dimension HORIZONTAL. Lo consume el peso del relleno de V7 -- el
+        prisma de suelo tiene el ancho que el conducto ocupa de verdad en
+        planta -- y es tambien el termino `Bc/8` de la cobertura minima.
+        """
+        ...
+
+    def canto_exterior(self, espesor: float) -> float:
+        """
+        m - `B'c`: canto exterior de la seccion, con la pared.
+
+        El mismo articulo lo define como *"out-to-out vertical rise of pipe"*:
+        es la dimension VERTICAL, y por eso NO es intercambiable con
+        `ancho_exterior`. En una circular las dos coinciden -- por eso el
+        proyecto pudo vivir hasta C7 con un solo `D_exterior` --; en un marco
+        no, y confundirlas es el error que la regla vinculante #9 estuvo a
+        punto de introducir.
+        """
+        ...
+
+    def area_exterior(self, espesor: float) -> float:
+        """
+        m2 - area que encierra la superficie EXTERIOR de la seccion.
+
+        Es el volumen desplazado por metro lineal, o sea la subpresion de V7
+        dividida por el peso especifico del agua (num. 2.4.3.8.2 del Manual de
+        Puentes: la fuerza actua sobre "todos los componentes de la estructura
+        que se encuentran debajo del nivel de agua de diseno").
+
+        NO SE DERIVA DE LOS DOS ANTERIORES, y por eso es un miembro propio: en
+        un rectangulo el area exterior SI es `Bc * B'c`, pero en una circular
+        es `pi/4 * D_ext^2`, que no es el producto de sus dos dimensiones
+        exteriores. Calcularla como producto le daria a la circular un 27 % de
+        area de mas -- la del cuadrado circunscrito --, que es la direccion
+        insegura al reves: mas subpresion de la real.
+        """
+        ...
+
+    def etiqueta(self) -> str:
+        """Como se nombra la seccion en la memoria."""
+        ...
+
+    def exigir_dimensiones_positivas(self) -> None:
+        """
+        Valida las dimensiones que definen la seccion y lanza
+        `DatoInvalidoError` --con el NOMBRE del dato-- si alguna no la cumple.
+
+        VIVE AQUI Y NO EN M3/M4 por dos razones. La primera es que el mensaje
+        nombra el dato --`campo` y `motivo` se imprimen los dos, en la memoria
+        y en el JSON-- y quien sabe como se llama el dato es la seccion. La
+        segunda es que hasta C4 la MISMA pareja de cadenas estaba escrita dos
+        veces, en `M3._validar_parametros` y en `M4._validar_Q_D`: dos copias
+        que hay que editar juntas para siempre.
+
+        Y EL NOMBRE NO ES EL "D" DE HDS-5, que es la distincion que C4 tuvo
+        que decidir (anotacion A-4 de §16.4). Son dos vocabularios que
+        coinciden en la circular y se separan en cuanto hay una forma que no
+        es un circulo:
+
+          * En las ECUACIONES DE HDS-5 --q*, HW/D, h_o-- "D" es correcto para
+            cualquier forma: la fuente lo define como *"D - Interior height of
+            culvert barrel"* (regla vinculante #4 de la Familia C). Esas
+            formulas siguen escribiendo "D" y no se tocan.
+          * En el DATO DE ENTRADA que el revisor tiene que corregir, "D"
+            significa diametro. Una `SeccionRectangular` no tiene diametro:
+            sus datos son el ancho B y la altura H. Los nombres de aqui son
+            esos, y por eso los pone la seccion.
+        """
+        ...
+
+    def magnitudes_de_forma(self) -> Tuple["Magnitud", ...]:
+        """
+        Las dimensiones que DEFINEN esta seccion, como `Magnitud` de memoria.
+
+        Una circular se define con un numero y una rectangular con dos: la
+        sustitucion de un paso no puede cablear cuantos son ni como se llaman.
+        """
+        ...
+
+    def formula_geometria(self) -> str:
+        """
+        Como se calculan A, P y R en esta forma, para imprimirlo en la memoria.
+
+        Es el hueco que el num. 4.1.1.3.6 deja abierto: prescribe Manning y
+        define A, P y R --por su significado y su unidad, con R = A/P como
+        unica relacion entre ellos-- y NO escribe ninguna geometria de
+        seccion. Lo rellena la seccion, y por eso la frase sale de aqui.
+
+        EL SUJETO ES EL NUMERAL Y NO EL MANUAL, y la precision importa: el
+        Manual SI enumera formas y SI impone una, en el num. 4.1.1.3.4 a).
+        El que no fija ninguna es este numeral.
+        """
+        ...
+
+    def llenado_critico_cerrado(self, Q: float, g: float) -> Optional[float]:
+        """
+        El parametro propio en estado CRITICO, si esta forma lo despeja; si no,
+        `None` y quien llama resuelve con Brent.
+
+        `g` LLEGA COMO ARGUMENTO Y NO SE IMPORTA AQUI, a proposito: la seccion
+        conoce el algebra de su forma, no cuanto vale la gravedad. Este modulo
+        declara tipos y geometria; que g valga 9.81 lo dice
+        `constantes_fisicas`, y quien lo consume es el modulo de calculo.
+        """
+        ...
+
+    def area(self, y: float) -> float:
+        """m2 - area hidraulica al tirante y."""
+        ...
+
+    def perimetro(self, y: float) -> float:
+        """m - perimetro mojado al tirante y."""
+        ...
+
+    def ancho_superficial(self, y: float) -> float:
+        """m - ancho de la lamina al tirante y. Es el T del tirante critico."""
+        ...
+
+    def bracket_llenado(self) -> Tuple[float, float]:
+        """Extremos del intervalo que Brent recorre sobre el parametro propio."""
+        ...
+
+    def geometria_en(self, llenado: float) -> "Geometria":
+        """`Geometria` completa para un valor del parametro propio."""
+        ...
+
+    def ancho_superficial_en_llenado(self, llenado: float) -> float:
+        """m - el T, desde el parametro propio y no desde el tirante."""
+        ...
+
+
+@dataclass(frozen=True)
+class SeccionCircular:
+    """
+    Seccion circular parcialmente llena (Sec. 4.1):
+
+        A = (D^2/8)(theta - sen theta)      P = D*theta/2      R = A/P
+
+    theta en radianes, sobre (0, 2*pi). Todas las longitudes en metros.
+
+    Su parametro propio de llenado es THETA, el angulo mojado, y por eso el
+    bracket de Brent sale de aqui: es la seccion la que sabe sobre que
+    variable se la recorre.
+    """
+
+    D: float          # m - diametro interior
+
+    @property
+    def altura(self) -> float:
+        """En un circulo la altura interior ES el diametro."""
+        return self.D
+
+    @property
+    def area_llena(self) -> float:
+        """A = pi*D^2/4. La usan q* (Sec. 4.2) y el control de salida (Sec. 4.3)."""
+        return math.pi * self.D ** 2 / 4  # literal-ok: area del circulo, pi*D^2/4
+
+    @property
+    def radio_hidraulico_lleno(self) -> float:
+        """R = A/P = (pi*D^2/4)/(pi*D) = D/4, seccion llena (Sec. 4.3)."""
+        return self.D / 4  # literal-ok: R = A/P de la seccion llena, D/4
+
+    # -- Geometria EXTERIOR: la que ve el agua y el relleno, no el caudal.
+    #
+    # EN UNA CIRCULAR LAS DOS DIMENSIONES EXTERIORES COINCIDEN, y esa
+    # coincidencia es la que dejo pasar el error que la regla #9 estuvo a
+    # punto de introducir: mientras el catalogo fue circular, `Bc` y `B'c`
+    # eran el mismo numero y nadie tenia que distinguirlos. Se implementan
+    # como dos miembros aunque aqui devuelvan lo mismo, porque el protocolo
+    # los separa y un marco los separa de verdad.
+
+    def ancho_exterior(self, espesor: float) -> float:
+        """Bc = D + 2t: el diametro exterior."""
+        return self.D + 2 * espesor
+
+    def canto_exterior(self, espesor: float) -> float:
+        """B'c = D + 2t. En un circulo el canto exterior ES el ancho."""
+        return self.D + 2 * espesor
+
+    def area_exterior(self, espesor: float) -> float:
+        """
+        pi/4 * (D + 2t)^2 -- el volumen desplazado por metro lineal.
+
+        NO es `ancho_exterior * canto_exterior`: eso seria el cuadrado
+        circunscrito, un 4/pi = 27 % mas de area, y en V7 mas area es mas
+        subpresion, o sea el lado inseguro al reves. Es la razon por la que
+        `area_exterior` es un miembro del protocolo y no una derivacion de
+        los otros dos.
+        """
+        return math.pi * self.ancho_exterior(espesor) ** 2 / 4  # literal-ok: area del circulo
+
+    def etiqueta(self) -> str:
+        """
+        Como la memoria nombra la seccion. Su consumidor llega con el reporte
+        de la Familia C; hoy no lo invoca ningun modulo y se declara igual,
+        porque es parte del contrato de `Seccion` y una implementacion que no
+        lo cumpliera no seria sustituible por otra. Su ficha esta en
+        `docs/decisiones_diferidas.md` (C1-02).
+
+        El rotulo es el que fija la §4.1 del plan de la Familia C -- "Ø 0.90 m"
+        frente al "marco 2.00 x 1.50 m" de la rectangular --. C1 lo escribio
+        primero como "D 0.90 m", que no era el de la especificacion desde la
+        que se escribio la clase; corregido al cierre. Los decimales son
+        PRESENTACION, de la misma naturaleza que los `FMT_*` de M11: no dicen
+        cuanto vale nada. Desde VE-1 (H1) los escribe `texto_de_dimension`:
+        dos como minimo («Ø 0.90 m», como siempre) y los que el diametro
+        declarado tenga («Ø 1.0668 m»). Con dos fijos, la serie de 6 in se
+        rotulaba «Ø 1.07 m», el diametro que nadie declaro.
+        """
+        return f"Ø {texto_de_dimension(self.D)} m"
+
+    def exigir_dimensiones_positivas(self) -> None:
+        """
+        EL TEXTO ES EL DE ANTES, LETRA POR LETRA, y eso es lo que hace que
+        renombrar no fuera la respuesta a la anotacion A-4 de §16.4. Un tubo
+        SI tiene diametro: "D" no era falso aqui, lo era en la otra forma. La
+        correccion consiste en que el nombre lo ponga la seccion, no en
+        cambiarselo a la que lo tenia bien.
+
+        La condicion se escribe EN POSITIVO Y NEGADA (`not ... > 0`) con la
+        plantilla de MAT-D13: `<= 0` deja pasar un NaN --es falso frente a los
+        dos operadores-- y un diametro NaN llegaba hasta Brent, que revienta
+        fuera de `ErrorProyecto`. Es la tercera anotacion que C1 dejo abierta.
+        """
+        if not self.D > 0:
+            raise DatoInvalidoError(
+                "D", valor=self.D, motivo="el diametro debe ser positivo")
+
+    def magnitudes_de_forma(self) -> Tuple["Magnitud", ...]:
+        """El diametro, que es la unica dimension que define un circulo."""
+        return (Magnitud("D", self.D, "m",
+                         "diametro interior del barril, que en un circulo es "
+                         "tambien su altura interior: el «D» de HDS-5",
+                         cifras=CIFRAS_FACTOR),)
+
+    def formula_geometria(self) -> str:
+        """Las tres de la Sec. 4.1, escritas sobre el angulo mojado."""
+        return ("A = (D^2/8)(theta - sen theta), P = D*theta/2, R = A/P, "
+                "con theta el angulo mojado")
+
+    def llenado_critico_cerrado(self, Q: float, g: float) -> Optional[float]:
+        """
+        `None`: en la circular el critico NO se despeja.
+
+        A^3/T = Q^2/g con A = (D^2/8)(theta - sen theta) y T = D*sen(theta/2)
+        es trascendente en theta, y por eso M4 le pone su segundo Brent. Este
+        `None` no es un hueco: es la respuesta, y es la que hace que el modulo
+        de calculo no tenga que preguntar de que forma es la seccion.
+        """
+        return None
+
+    # --- interfaz por TIRANTE (Sec. 4.1) -----------------------------------
+    # Es la que una seccion rectangular usa directamente. En la circular pasa
+    # por la inversion theta(y) = 2*arccos(1 - 2y/D), que es cerrada y exacta.
+    # NINGUN SOLVER DE HOY ENTRA POR AQUI: los dos recorren theta.
+
+    def theta_desde_tirante(self, y: float) -> float:
+        """theta = 2*arccos(1 - 2y/D), inversa de y = (D/2)(1 - cos(theta/2))."""
+        return 2 * math.acos(1 - 2 * y / self.D)
+
+    def area(self, y: float) -> float:
+        return self._area_en_theta(self.theta_desde_tirante(y))
+
+    def perimetro(self, y: float) -> float:
+        return self._perimetro_en_theta(self.theta_desde_tirante(y))
+
+    def ancho_superficial(self, y: float) -> float:
+        return self.ancho_superficial_en_llenado(self.theta_desde_tirante(y))
+
+    # --- parametrizacion propia: theta -------------------------------------
+
+    def bracket_llenado(self) -> Tuple[float, float]:
+        """
+        (theta_min, theta_max) sobre (0, 2*pi), separados del borde por
+        `tolerancias.TOL_THETA_BORDE`: en theta = 0 y theta = 2*pi exactos el
+        area y el perimetro se anulan y Brent no tiene residuo que morder.
+        """
+        return TOL_THETA_BORDE, 2 * math.pi - TOL_THETA_BORDE
+
+    def _area_en_theta(self, theta: float) -> float:
+        """A = (D^2/8)(theta - sen theta), Sec. 4.1."""
+        return (self.D ** 2 / 8) * (theta - math.sin(theta))  # literal-ok: Sec. 4.1
+
+    def _perimetro_en_theta(self, theta: float) -> float:
+        """P = D*theta/2, Sec. 4.1."""
+        return self.D * theta / 2
+
+    def _tirante_en_theta(self, theta: float) -> float:
+        """
+        y = (D/2)(1 - cos(theta/2)): identidad geometrica de la seccion
+        circular, no un valor normativo -- se deriva de la propia definicion
+        de theta como angulo mojado.
+        """
+        return (self.D / 2) * (1 - math.cos(theta / 2))
+
+    def ancho_superficial_en_llenado(self, llenado: float) -> float:
+        """
+        Ancho superficial, T = D*sen(theta/2), con theta = `llenado`.
+
+        EL PARAMETRO SE LLAMA COMO EN EL PROTOCOLO y no `theta`, aunque aqui
+        theta sea. Un `Protocol` con nombres distintos en cada implementacion
+        no es sustituible por palabra clave --`seccion.geometria_en(llenado=x)`
+        reventaria en una forma y no en la otra--, y la sustituibilidad es
+        justamente la propiedad que hace que M3 y M4 puedan quedarse ciegos a
+        la forma. Lo comprueba
+        `test_seccion_rectangular::test_las_dos_secciones_implementan_el_protocolo_entero`.
+
+        Identidad geometrica de la seccion circular, no un valor normativo:
+        se deriva de y = (D/2)(1 - cos(theta/2)). La necesita M4 para el
+        tirante critico, Q^2*T/(g*A^3) = 1 (Sec. 4.2).
+        """
+        return self.D * math.sin(llenado / 2)
+
+    def geometria_en(self, llenado: float) -> "Geometria":
+        """
+        Arma la `Geometria` completa (A, P, R, y) para un theta dado.
+
+        `llenado` es theta; se llama asi por el protocolo (ver
+        `ancho_superficial_en_llenado`).
+        """
+        theta = llenado
+        A = self._area_en_theta(theta)
+        P = self._perimetro_en_theta(theta)
+        return Geometria(seccion=self, llenado=theta, A=A, P=P, R=A / P,
+                         y=self._tirante_en_theta(theta))
+
+
+@dataclass(frozen=True)
+class SeccionRectangular:
+    """
+    Marco rectangular parcialmente lleno (Sec. 4.1 del plan de la Familia C):
+
+        A = B*y        P = B + 2y        R = A/P        T = B
+
+    MODELA UNA CELDA, Y ESO NO ES UN DETALLE DE IMPLEMENTACION. Es la regla
+    vinculante #3: los coeficientes de HDS-5, el radio hidraulico y el control
+    de entrada son POR BARRIL. Con N celdas se diseña UNA celda con Q/N y se
+    declara N; el numero de celdas no entra aqui ni multiplica nada de esta
+    clase. Meterlo dentro seria construir una seccion de area N*B*H cuyo
+    perimetro mojado no es el de ningun barril real, y con ella un R que no
+    corresponde a ninguna celda: el q* saldria de una abertura que no existe.
+    Donde vive N es en la Fase 3 (criterio de celdas, C5), fuera de la
+    geometria.
+
+    SU PARAMETRO PROPIO ES EL TIRANTE, y por eso las dos parametrizaciones de
+    `Seccion` COINCIDEN EXACTAMENTE aqui: `geometria_en(y)` y `area(y)` dan el
+    mismo numero, bit a bit, porque no hay ninguna inversion por medio. ESO NO
+    AUTORIZA A CAMBIAR DE VIA EN M3 NI EN M4 (regla vinculante #12): en la
+    circular la via por tirante pasa por `theta_desde_tirante`, que esta mal
+    condicionada. En el extremo INFERIOR del bracket devuelve 0.0 EXACTO para
+    P y para T --y T es el denominador de A^3/T en `M4._residuo_critico`, o
+    sea una division por cero en uno de los primeros puntos donde Brent
+    evalua--. En el SUPERIOR no: alli el perimetro coincide en los ultimos
+    bits (1.6e-10 relativo) y solo T cae, sin llegar a cero. La coincidencia
+    de las dos vias es una propiedad de ESTA forma, no del protocolo.
+
+    LAS DOS "R" DE UN MARCO NO SON LA MISMA, y conviene verlo antes de
+    compararlas. `geometria_en(y).R` es de LAMINA LIBRE: su perimetro mojado
+    es B + 2y y NO incluye la losa superior, porque a esa altura el agua no la
+    toca. `radio_hidraulico_lleno` es de SECCION LLENA A PRESION: su perimetro
+    es 2(B+H), con la losa dentro. En y = H las dos existen y NO coinciden --
+    con B = 2.00 m y H = 1.50 m dan 0.600 m y 0.4286 m, un 40 % de diferencia
+    --, y no es un error de ninguna de las dos: son dos regimenes distintos, y
+    cada consumidor usa el suyo (Manning, el de lamina libre; el control de
+    salida de la Sec. 4.3, el lleno). En la CIRCULAR esta distincion no se ve
+    porque las dos convergen: en theta = 2*pi el ancho de la lamina se anula y
+    el perimetro de lamina libre YA es el perimetro completo, pi*D. En un
+    marco el ancho de la lamina vale B hasta el final y nunca convergen.
+    """
+
+    B: float          # m - ancho interior de UNA celda
+    H: float          # m - altura interior del barril
+
+    @property
+    def altura(self) -> float:
+        """La altura interior es H. Es el "D" de HDS-5 (regla #4)."""
+        return self.H
+
+    # -- Geometria EXTERIOR: aqui las dos dimensiones SI se separan, y es la
+    # razon por la que el protocolo tiene dos miembros y no uno.
+
+    def ancho_exterior(self, espesor: float) -> float:
+        """Bc = B + 2t: el ancho exterior en planta."""
+        return self.B + 2 * espesor
+
+    def ancho_exterior_de_celdas(self, espesor: float, celdas: int) -> float:
+        """
+        --- T-3 --- El ancho exterior del marco de N celdas MONOLITICO:
+
+            N*B + (N - 1)*t + 2*t
+
+        Las celdas comparten tabique, del mismo espesor que las paredes
+        (un solo criterio, 'espesor_pared_cajon'): es la geometria de un marco
+        vaciado in situ (§14.1 de docs/ruta_familia_c.md). Con N = 1 es
+        `ancho_exterior`. Vive aqui y no en M5 ni en M7 porque lo leen los
+        dos -- V6 con N > 1 y la geometria del marco de 7.B -- y dos copias de
+        la misma cuenta son como divergen los numeros.
+        """
+        return celdas * self.B + (celdas - 1) * espesor + 2 * espesor
+
+    def canto_exterior(self, espesor: float) -> float:
+        """
+        B'c = H + 2t: el canto exterior.
+
+        DISTINTO DE `ancho_exterior`, y esa es toda la diferencia con la
+        circular. Un marco de 2.00 x 1.50 m con t = 0.15 tiene Bc = 2.30 m y
+        B'c = 1.80 m: intercambiarlos cambia la subpresion y el peso de
+        relleno en sentidos opuestos.
+        """
+        return self.H + 2 * espesor
+
+    def area_exterior(self, espesor: float) -> float:
+        """
+        (B + 2t)*(H + 2t) -- el volumen desplazado por metro lineal.
+
+        En un prisma el area exterior SI es el producto de sus dos
+        dimensiones exteriores. Es mas simple que en la circular, no mas
+        dificil: el rectangulo exterior no tiene nada que descontar.
+        """
+        return self.ancho_exterior(espesor) * self.canto_exterior(espesor)
+
+    @property
+    def area_llena(self) -> float:
+        """A = B*H. La usan q* (Sec. 4.2) y el control de salida (Sec. 4.3)."""
+        return self.B * self.H
+
+    @property
+    def radio_hidraulico_lleno(self) -> float:
+        """
+        R = A/P = B*H / (2(B+H)), seccion llena (Sec. 4.3).
+
+        El perimetro lleva la losa superior: a seccion llena el agua moja los
+        cuatro lados. Es el de PRESION, no el de lamina libre; ver el
+        docstring de la clase.
+        """
+        return self.B * self.H / (2 * (self.B + self.H))
+
+    def etiqueta(self) -> str:
+        """
+        El rotulo que fija la §4.1 del plan: "marco 2.00 × 1.50 m", con las
+        dimensiones declaradas sin redondear (`texto_de_dimension`, VE-1 H1).
+        """
+        return (f"marco {texto_de_dimension(self.B)} × "
+                f"{texto_de_dimension(self.H)} m")
+
+    def exigir_dimensiones_positivas(self) -> None:
+        """
+        Las DOS dimensiones, y en el orden en que se declaran. Un marco se
+        define con dos numeros: validar solo la altura dejaria pasar un ancho
+        nulo, y con B = 0 el caudal por unidad de ancho q = Q/B no existe.
+
+        Y LOS NOMBRES SON "B" Y "H", no "D": un marco no tiene diametro. Es la
+        mitad de la anotacion A-4 de §16.4 que solo esta sesion podia decidir,
+        porque es la primera que ve las dos formas a la vez.
+
+        Condicion en positivo y negada, plantilla de MAT-D13.
+        """
+        if not self.B > 0:
+            raise DatoInvalidoError(
+                "B", valor=self.B,
+                motivo="el ancho interior del marco debe ser positivo")
+        if not self.H > 0:
+            raise DatoInvalidoError(
+                "H", valor=self.H,
+                motivo="la altura interior del marco debe ser positiva")
+
+    def magnitudes_de_forma(self) -> Tuple["Magnitud", ...]:
+        """
+        LAS DOS, y en este orden. Una circular se define con un numero y un
+        marco con dos: es la razon por la que la sustitucion de un paso pide
+        esta tupla a la seccion en vez de escribir "D".
+        """
+        return (
+            Magnitud("B", self.B, "m",
+                     "ancho interior de UNA celda; con N celdas se diseña una "
+                     "celda con Q/N (regla #3: el control de entrada y el "
+                     "radio hidraulico son POR BARRIL)",
+                     cifras=CIFRAS_FACTOR),
+            Magnitud("H", self.H, "m",
+                     "altura interior del barril: el «D» de HDS-5, que la "
+                     "fuente define como *interior height of culvert barrel*",
+                     cifras=CIFRAS_FACTOR),
+        )
+
+    def formula_geometria(self) -> str:
+        """Las tres, escritas sobre el tirante, que es el parametro propio."""
+        return "A = B*y, P = B + 2y, R = A/P, con y el tirante"
+
+    # --- interfaz por TIRANTE (Sec. 4.1) -----------------------------------
+    # AQUI ES LA MISMA QUE LA DE ABAJO: el parametro propio de un marco es el
+    # tirante. Las dos vias no se unifican porque en la circular no coinciden
+    # (regla vinculante #12) y el protocolo es uno solo para las dos.
+
+    def area(self, y: float) -> float:
+        return self.B * y
+
+    def perimetro(self, y: float) -> float:
+        """
+        P = B + 2y: fondo y dos hastiales. NO lleva la losa superior, ni
+        siquiera en y = H, porque este es el perimetro de LAMINA LIBRE.
+        """
+        return self.B + 2 * y
+
+    def ancho_superficial(self, y: float) -> float:
+        """T = B, constante. Es lo que cierra el tirante critico."""
+        return self.B
+
+    # --- parametrizacion propia: el propio tirante --------------------------
+
+    def bracket_llenado(self) -> Tuple[float, float]:
+        """
+        (0, H): el intervalo entero, SIN margen de borde.
+
+        La circular necesita `TOL_THETA_BORDE` porque en theta = 0 y en
+        theta = 2*pi el area y el perimetro se anulan los dos y R = 0/0 queda
+        indeterminado. Aqui no pasa: en y = 0 el area vale 0 pero el perimetro
+        vale B > 0, de modo que R = 0/B = 0 esta definido y el residuo de
+        Manning vale -Q, que es el signo que Brent necesita. Copiarle el
+        margen a la circular seria arrastrar una defensa contra una
+        singularidad que esta forma no tiene.
+        """
+        return 0.0, self.H
+
+    def ancho_superficial_en_llenado(self, llenado: float) -> float:
+        """El mismo B: el parametro propio ES el tirante."""
+        return self.B
+
+    def geometria_en(self, llenado: float) -> "Geometria":
+        """
+        `Geometria` completa (A, P, R, y) para un tirante dado.
+
+        `llenado` y `y` valen lo mismo, y eso es correcto: el parametro propio
+        de esta forma es el tirante. No se "aprovecha" para nada -- quien
+        consuma un `Geometria` sigue leyendo `g.y` y `g.llenado` por su nombre.
+        """
+        y = llenado
+        A = self.area(y)
+        P = self.perimetro(y)
+        return Geometria(seccion=self, llenado=y, A=A, P=P, R=A / P, y=y)
+
+    def llenado_critico_cerrado(self, Q: float, g: float) -> Optional[float]:
+        """
+        y_c = (q^2/g)^(1/3), con q = Q/B. EXACTA: aqui no hay Brent.
+
+        Sale de la condicion de energia minima Q^2*T/(g*A^3) = 1 con T = B
+        constante y A = B*y: Q^2*B/(g*B^3*y^3) = 1, de donde y^3 = q^2/g. No
+        es una aproximacion ni una linealizacion; es la misma ecuacion que la
+        circular resuelve con Brent, despejada.
+
+        Y NO ES SOLO ELEGANCIA: retira la clase entera de fallos de
+        convergencia que `LimiteNumericoError` cubre en la circular (SIS-G-02,
+        donde un Q diminuto lleva el resolutor a un theta en que el area se
+        cancela). Lo que NO retira es la aritmetica, y por eso hay tres
+        guardias A LA SALIDA, con la forma de MAT-D13 -- umbral MEDIDO,
+        condicion en positivo y negada, mensaje que nombra al PAR culpable --.
+        Las tres se midieron sobre este mismo codigo:
+
+          1. `q ** 2` desborda para q >= 1.3407807929942597e+154 (con
+             B = 2.00 m eso es Q >= 2.6815615859885194e+154). `float.__pow__`
+             lanza OverflowError donde `q*q` daria `inf`.
+          2. `Q/B` puede dar `inf` SIN excepcion --Q = 1e308 con B = 1e-5--, y
+             entonces y_c sale `inf`: un tirante que no es un numero, y con el
+             un informe entero de diagnosticos sobre algo que no lo es
+             (SIS-G-01).
+          3. `q^2/g` se cancela a 0.0 exacto para q <= 4.715183354107886e-162
+             (el primer q que deja y_c > 0 es 4.715183354107887e-162, y da
+             y_c = 1.7031839360032837e-108). Con y_c = 0 no hay velocidad
+             critica que calcular.
+
+        La cuarta --que y_c salga positivo y aun asi A = B*y_c se anule-- NO
+        se guarda aqui: la atrapa la guardia de area de `M4.tirante_critico`,
+        que es comun a las dos formas. Es alcanzable, y medido: con
+        B = Q = 5e-324 (el denormal mas pequeño) y_c vale 0.4671363512679737 y
+        A vale 0.0 exacto.
+
+        Y HAY UNA QUINTA COSA QUE NO ES ARITMETICA, y por eso no esta en esa
+        lista: el TECHO. La forma cerrada retiro, sin que nadie lo notara, el
+        limite que en la circular ponia la geometria del bracket. Lo repone la
+        ultima linea, y la razon la escribe la fuente, no el proyecto: ver el
+        comentario junto a ella.
+        """
+        q = Q / self.B
+        try:
+            q_al_cuadrado = q ** 2  # literal-ok: el cuadrado de q en y_c = (q^2/g)^(1/3)
+        except OverflowError:
+            raise LimiteNumericoError(
+                "Q", valor=Q, motivo=(
+                    f"el par (Q = {Q!r} m3/s, B = {self.B!r} m) da un caudal "
+                    f"por unidad de ancho q = Q/B = {q!r} m2/s cuyo cuadrado "
+                    f"no cabe en doble precision, y sin q^2 no hay tirante "
+                    f"critico que despejar. No es un caudal fuera de rango "
+                    f"--'Q_m3s' solo exige ser positivo, y ponerle un techo "
+                    f"seria inventar un valor de proyecto--: es un caudal "
+                    f"cuyo cuadrado por unidad de ancho no es representable. "
+                    f"Revisa si la celda perdio el separador decimal, si el "
+                    f"caudal vino en otra unidad, o si el ancho de celda es "
+                    f"el de una celda y no el del conjunto")
+            ) from None
+        y_c = (q_al_cuadrado / g) ** (1 / 3)  # literal-ok: exponente de la raiz cubica de (q^2/g)
+        if not y_c < math.inf:
+            raise LimiteNumericoError(
+                "Q", valor=Q, motivo=(
+                    f"el par (Q = {Q!r} m3/s, B = {self.B!r} m) desborda al "
+                    f"despejar el tirante critico: q = Q/B = {q!r} m2/s y "
+                    f"y_c = (q^2/g)^(1/3) = {y_c!r} m, que no es un numero "
+                    f"finito. Cada dato cumple su rango por separado --el "
+                    f"ancho es positivo y el caudal tambien--; lo que no cabe "
+                    f"es la operacion que los combina")
+            )
+        if not y_c > 0:
+            raise LimiteNumericoError(
+                "Q", valor=Q, motivo=(
+                    f"el par (Q = {Q!r} m3/s, B = {self.B!r} m) degenera: el "
+                    f"caudal por unidad de ancho q = Q/B = {q!r} m2/s es tan "
+                    f"pequeño que q^2/g se cancela entero en doble precision "
+                    f"(ocurre desde q <= 4.715183354107886e-162) y el tirante "
+                    f"critico sale {y_c!r} m. Sin tirante no hay area y sin "
+                    f"area no hay velocidad critica. No es un caudal fuera de "
+                    f"rango: revisa si la celda perdio digitos o si el caudal "
+                    f"vino en otra unidad")
+            )
+        # EL TECHO, QUE LA FORMA CERRADA RETIRO SIN QUERER Y LA FUENTE SI PONE.
+        # VA DESPUES DE LAS DOS GUARDIAS Y NO ANTES, y el orden importa: con
+        # q = inf el `min` se tragaria el infinito --min(inf, H) = H-- y la
+        # guardia de finitud no llegaria a verlo nunca. Medido al escribirlo:
+        # puesto arriba, el par (Q = 1e308, B = 1e-5) devolvia 1.5 m tan
+        # tranquilo en vez de lanzar `LimiteNumericoError`.
+        # La circular lo tenia por geometria: su bracket es (0, 2*pi) y
+        # y = (D/2)(1 - cos(theta/2)) no puede pasar de D, de modo que un Q
+        # desmedido solo acerca y_c a D. Medido: `SeccionCircular(0.90)` da
+        # y_c = 0.8999649945 con Q = 15 y 0.8999999823 con Q = 100. El despeje
+        # no tiene ese limite: con el marco 2.00 x 1.50, Q = 15 m3/s y
+        # S = 0.05 m/m -- un punto VIABLE, y_n = 0.805 m, y/H = 0.54, dentro
+        # del 0.75 que admite V1 -- daba y_c = 1.7899 m, o sea un area critica
+        # de 3.58 m2 sobre un barril cuya area llena es 3.00 m2. El informe
+        # imprimia una seccion critica mas grande que el conducto entero, sin
+        # decir nada, porque el numero era positivo y finito.
+        #
+        # Y NO ES UNA DECISION DEL PROYECTO: lo escribe la fuente. HDS-5 3a
+        # ed., num. 3.3.3 «Outlet Control», pag. impresa 3.24 (PDF 106), en la
+        # misma lista de vinetas que la condicion de h_o, dice que el tirante
+        # critico no puede exceder D -- la altura interior del barril --. Las
+        # cartas del Apendice C lo acotan igual. La frase no se transcribe
+        # aqui: el registro no tiene todavia su `Verbatim`, y una segunda
+        # transcripcion a mano es lo que CLAUDE.md prohibe. Queda anotado
+        # como C4-5 en §16.8.
+        y_c = min(y_c, self.H)
+        return y_c
+
+
+@dataclass(frozen=True)
+class Geometria:
+    """
+    La seccion resuelta a un llenado concreto: A, P, R y el tirante.
+
+    LLEVA LA `Seccion`, NO EL DIAMETRO. Hasta C1 llevaba `D` y `theta`
+    sueltos, y con ellos la forma circular cableada en el tipo que atraviesa
+    todo el motor hidraulico. `llenado` es el parametro propio de la seccion
+    -- theta en la circular -- y las magnitudes derivadas se le piden a ella.
+
+    `y_sobre_D` CONSERVA EL NOMBRE aunque ya no haya un diametro: lo consumen
+    los tests del motor y es el nombre con que el numero viaja al reporte.
+    """
+
+    seccion: Seccion  # la forma del barril
+    llenado: float    # parametro propio de la seccion (theta en la circular)
+    A: float          # m2 - area hidraulica
+    P: float          # m  - perimetro mojado
+    R: float          # m  - radio hidraulico
+    y: float          # m  - tirante
+
+    @property
+    def y_sobre_D(self) -> float:
+        """Relacion de llenado. V1 exige y/D <= el maximo adoptado (0.75 por defecto)."""
+        return self.y / self.seccion.altura
+
+    @property
+    def T(self) -> float:
+        """Ancho superficial. Lo calcula la seccion desde su propio parametro."""
+        return self.seccion.ancho_superficial_en_llenado(self.llenado)
+
+
+@dataclass(frozen=True)
+class TiranteNormal:
+    """
+    Salida de M3 (Sec. 4.1): tirante normal resuelto por Manning + Brent con
+    la regla de doble n.
+
+    `geometria` es la UNICA solucion de Brent, con n_max (rama de capacidad y
+    tirante: V1 borde libre) -- el n mas conservador del lado de la
+    inundacion fija el theta real de diseño. Sobre esa MISMA geometria (mismo
+    theta, mismo R) se calculan las DOS velocidades de la regla de doble n,
+    porque un umbral de velocidad no tiene un extremo conservador sino dos, y
+    son opuestos:
+
+        `V_erosion`        con n_min: la estimacion ALTA. Es la que hay que
+                           usar contra un TECHO -- V3 (velocidad maxima
+                           admisible) y el d50 de Laushey (Fase 6) --, porque
+                           el riesgo esta en que la velocidad real sea mayor
+                           que la calculada.
+        `V_sedimentacion`  con n_max: la estimacion BAJA. Es la que hay que
+                           usar contra un PISO -- V2 (velocidad minima de
+                           autolimpieza) --, porque ahi el riesgo es el
+                           contrario: que la velocidad real sea MENOR que la
+                           calculada y el conducto sedimente.
+
+    POR QUE HAY DOS Y NO UNA (MAT-D1). Este tipo llevaba un solo campo `V`,
+    calculado con n_min, y V2 lo consumia: un piso verificado con la
+    estimacion alta de velocidad, o sea el conservadurismo invertido. La
+    Sec. 4.1 de la hoja de ruta asigna n minimo a "velocidad MAXIMA y
+    socavacion" y no nombra a V2; el fixture CP-3 modela el umbral de V2 con
+    n = 0.013, que es n_max. El repositorio se contradecia a si mismo, y la
+    ventana permisiva era real: con D = 0.90 m, y/D = 0.75 y S = 5e-5, la
+    velocidad de la rama n_max es 0.228 m/s -- por debajo del piso de
+    0.25 m/s -- mientras que la de la rama n_min da 0.297 m/s y el punto salia
+    "cumple".
+
+    `V_erosion * geometria.A != Q` en general: Q es el caudal de diseño que
+    define el theta (con n_max), mientras que esa velocidad asume una
+    rugosidad menor sobre la misma seccion (ver el fixture CP-2,
+    tests/fixtures/casos_patron.py, y `modulos.M3_hidraulica.resolver_manning`).
+    `V_sedimentacion`, en cambio, SI cumple `V * A = Q`, y no por casualidad:
+    es la velocidad media del mismo n con que se resolvio la geometria.
+
+    Eso la convierte ademas en el minimo REAL de la velocidad sobre todo el
+    rango de n de la Tabla N 09, no solo en "la de la geometria de diseño":
+    resolviendo Manning con un n menor, el tirante normal baja, el area baja y
+    la velocidad media Q/A sube. La cadena vale mientras theta este en la RAMA
+    CRECIENTE de la curva de capacidad de la seccion circular -- Q(theta) no
+    es monotona: alcanza su maximo cerca de y/D = 0.94 y decae hasta la
+    seccion llena --, y ahi esta siempre el diseño de este proyecto, porque V1
+    lo acota en y/D <= 0.75 (num. 4.1.1.3.7 b). Se dice y no se da por
+    supuesto: por encima de ese maximo la relacion theta(n) deja de ser
+    creciente y el argumento no aplicaria.
+    """
+
+    geometria: Geometria      # con n_max
+    V_erosion: float          # m/s, con n_min  - estimacion ALTA (techos)
+    V_sedimentacion: float    # m/s, con n_max  - estimacion BAJA (pisos)
+
+
+@dataclass(frozen=True)
+class SinTiranteNormal:
+    """
+    --- T-2 --- Lo que M3 devuelve cuando el barril es HORIZONTAL (S = 0): no
+    hay tirante normal, y eso no es «el conducto no alcanza» (INF-5.1.6).
+
+    TRES RESPUESTAS DISTINTAS DE `M3.resolver_manning`, y esta es la tercera:
+
+        TiranteNormal      hay flujo uniforme que transporta Q.
+        None               con esta S > 0 ningun tirante transporta Q en
+                           lamina libre: el escalon no alcanza y MD pasa al
+                           siguiente.
+        SinTiranteNormal   S = 0: Manning no tiene solucion para NINGUN
+                           caudal ni NINGUNA seccion, y subir de diametro no
+                           lo cambia. No es un fallo del escalon: es otro
+                           regimen. HDS-5 num. 3.3.4 (pag. impresa 3.25,
+                           `HDS5_3ED.3.3.4#HORIZONTAL`) admite el barril
+                           horizontal, y M4 lo resuelve con el control de
+                           entrada (Ks·S = 0), el de salida (S·L = 0) y el
+                           perfil de la lamina desde la salida (H2).
+
+    Es un objeto y no un `None` con otro nombre para que quien lo reciba no
+    pueda confundir las dos lecturas: `if normal is None` sigue significando
+    lo de siempre. No lleva geometria ni velocidades porque no las hay; lleva
+    la pendiente con que se pidio, para que el paso de memoria la imprima.
+    """
+
+    S: float = 0.0            # m/m - la pendiente del barril: nula
+
+
+@dataclass(frozen=True)
+class TiranteCritico:
+    """
+    Salida de la primera pieza de M4 (Sec. 4.2.1): tirante critico de la
+    seccion, raiz de Q^2*T/(g*A^3) = 1.
+
+    `cerrado` DICE POR CUAL DE LAS DOS VIAS SE RESOLVIO, y no es un detalle de
+    implementacion: es lo que la memoria tiene que imprimir. En la circular la
+    ecuacion es trascendente en theta y hace falta un segundo Brent; en un
+    marco T = B es constante y se despeja, y_c = (q^2/g)^(1/3). Un revisor que
+    lea "resuelta con Brent" sobre un numero que salio de una formula cerrada
+    no puede rehacerlo, y al reves tampoco. Lo pone la seccion y no lo deduce
+    el que imprime.
+
+    `geometria` es la seccion en estado critico (de ella salen y_c, A_c y T_c);
+    `V` = Q/A_c es la velocidad critica, y `H_c` = y_c + V^2/(2g) la energia
+    especifica critica que exige la Forma 1 del control de entrada.
+
+    A diferencia de `TiranteNormal`, aqui V SI es Q/A: el tirante critico no
+    depende de la rugosidad -- no interviene n en Q^2*T/(g*A^3) = 1 -- y por
+    lo tanto la regla de doble n (Sec. 4.1) no le aplica. Es la unica
+    velocidad del proyecto que se obtiene dividiendo Q entre A, y lo es porque
+    la ecuacion que la define no tiene rama de capacidad ni rama de erosion.
+    """
+
+    geometria: Geometria      # seccion en estado critico
+    V: float                  # m/s - velocidad critica, Q/A_c
+    H_c: float                # m  - energia especifica critica, y_c + V^2/(2g)
+    cerrado: bool             # True si la seccion lo despejo; False si Brent
+
+    @property
+    def y_c(self) -> float:
+        """Tirante critico, m."""
+        return self.geometria.y
+
+
+@dataclass(frozen=True)
+class TransicionEntrada:
+    """
+    Los dos extremos de la recta de transicion del control de entrada
+    (3.5 < q* < 4.0), con el caudal y el H_c con que se evaluo el inferior.
+
+    EXISTE POR EXT-M-04. «La rama no sumergida en q* = 3.5» es la del CAUDAL
+    que corresponde a q* = 3.5 -- `Q_lo` = 3.5 * A_llena * sqrt(D) / Ku -- y,
+    bajo Forma 1, con el H_c de ESE caudal, `H_c_lo`. Hasta EXT-2 el extremo
+    se evaluaba con el H_c del caudal real, de modo que se movia con q* y lo
+    que la memoria imprimia como «recta» era una curva (v8 §4.2, enmendada
+    en EXT-0). Los cuatro numeros viajan para que el paso F4.CONTROL los
+    sustituya: un HW «por la recta» sin sus dos extremos no se puede rehacer.
+
+    `H_c_lo` es `None` bajo Forma 2: la ec. (A.2) no lleva H_c, y publicar
+    un H_c que no entra en el numero seria la clase de sustitucion falsa que
+    C3 tuvo que corregir en ese mismo paso.
+    """
+
+    Q_lo: float                   # m3/s - el caudal de q* = 3.5
+    H_c_lo: Optional[float]       # m    - H_c(Q_lo); None bajo Forma 2
+    HW_lo: float                  # m    - rama no sumergida en q* = 3.5, * D
+    HW_hi: float                  # m    - rama sumergida en q* = 4.0, * D
+    peso: float                   # adimensional - (q* - 3.5) / (4.0 - 3.5)
+
+
+@dataclass(frozen=True)
+class ControlEntrada:
+    """
+    Salida del control de entrada HDS-5 (Sec. 4.2). Ademas del HW lleva el
+    q* y la rama aplicada: son lo que hace revisable el numero en la memoria.
+
+    `HW` es carga sobre el fondo de la entrada, en metros. `HW_sobre_D` es el
+    HWi/D adimensional que devuelven las ecuaciones de la Tabla A.1, antes de
+    multiplicar por D.
+
+    `HW_sobre_D` NO LO LEE NINGUNA RUTA DE PRODUCCION, y este docstring ha
+    dicho dos cosas falsas sobre el, las dos de la misma familia: predecir un
+    consumidor que no existia.
+
+    Primero decia que era "lo que compara V4b (HW/D <= 1.5)" (SIS-B-02,
+    SIS-A-02), cuando M5 ni siquiera implementaba V4b. Corregido eso, decia
+    que "sera el argumento del chequeo el dia que se cablee". El chequeo se
+    cableo en S14 y el argumento NO es este campo: `M5.v4b_relacion_hw_d`
+    divide entre D el HW del control GOBERNANTE, porque lo que la fuente
+    acota es el embalse que la obra produce, y este campo es el HWi/D del
+    control de ENTRADA, valido solo cuando ese control gobierna. Usarlo daria
+    un numero menor que el embalse real siempre que gobierne el de salida,
+    que es la direccion insegura.
+
+    El campo se conserva por lo que SI es -- la salida literal de las
+    ecuaciones de la Tabla A.1, la magnitud con la que HDS-5 razona, y
+    multiplicarla por D para volver a dividirla despues seria perderla y
+    recomponerla -- y lo que se dice de el es lo unico que se puede sostener:
+    que hoy solo lo leen los tests. Sin consumidor y con la razon escrita, no
+    sin consumidor y con un consumidor prometido.
+    """
+
+    HW: float                     # m  - HWi
+    HW_sobre_D: float             # adimensional - HWi/D
+    q_estrella: float             # adimensional - Ku*Q/(A_llena*D^0.5)
+    regimen: RegimenEntrada
+    critico: TiranteCritico
+    constantes: ConstantesHDS5
+    # LOS DOS EXTREMOS DE LA RECTA, cuando la rama es la de transicion
+    # (EXT-M-04). `None` en las dos ramas puras: ahi no hay recta. Ver
+    # `TransicionEntrada`.
+    transicion: Optional["TransicionEntrada"] = None
+    # EL PISO ADOPTADO cuando la correccion por pendiente dejo la ecuacion
+    # fuera de rango (PF-1, PC-03). `None` siempre que la ecuacion entrego
+    # carga por si sola, que es todo el corredor del repositorio. Ver
+    # `PisoDeCargaEntrada`.
+    piso: Optional["PisoDeCargaEntrada"] = None
+    numeral: str = "HDS-5 Ap. A, Tabla A.1 (Sec. 4.2)"
+
+
+@dataclass(frozen=True)
+class PisoDeCargaEntrada:
+    """
+    Lo que M4 adopto en lugar del HWi/D que la ecuacion de control de
+    entrada devolvio en cero o bajo cero (MAT-D10 / PC-03, cerrado en PF-1).
+
+    La correccion por pendiente Ks*S de las ecs. (A.1) y (A.3) es una recta
+    sin tope: con Ks = -0.5, un caudal chico y una pendiente grande la carga
+    sale NEGATIVA, que es una lamina bajo el fondo del conducto. Hasta PF-1
+    eso era un `DisenoNoFactibleError` definitivo y mudo --- el `Bloqueo`
+    viajaba sin `criterio` y la pestaña 4 no lo mostraba ---. Desde PF-1 es
+    un vacio DECLARABLE de perfil: el criterio [A] `hw_entrada_fuera_de_rango`
+    decide si se adopta la energia especifica critica H_c como piso
+    («energia_critica») o si el caso se descarta («descartar»); sin
+    declarar, `CriterioPendienteError` con el par (Q, S) culpable y S*.
+
+    `HW_sobre_D_formula` es lo que la ecuacion devolvio (<= 0), conservado
+    para que la memoria lo imprima al lado del piso; `S_limite` es la
+    pendiente S* a partir de la cual la ecuacion deja de entregar carga
+    para ese Q y ese D (None si la rama no depende de S), y es lo que le
+    dice al revisor cuanta pendiente sobra.
+    """
+
+    criterio: str
+    adoptado: str
+    HW_sobre_D_formula: float
+    S_limite: Optional[float]
+
+
+@dataclass(frozen=True)
+class ControlSalida:
+    """
+    Salida del control de salida (Sec. 4.3): HW = H + h_o - S*L.
+
+    Se guardan los tres sumandos por separado porque cada uno responde a una
+    pregunta distinta del revisor: `H` es la perdida total en el barril
+    (entrada + friccion + carga de velocidad), `h_o` es el nivel de agua a la
+    salida que la manda aguas arriba, y `S*L` es la caida del conducto.
+
+    `ahogado_por_TW` distingue las dos ramas de h_o = max(TW, (y_c + D)/2): si
+    es True, el que gobierna el remanso es el nivel del cuerpo receptor y no
+    la geometria del conducto. Es la situacion que Sec. 4.3 advierte
+    expresamente para descargas a drenes con nivel propio.
+
+    Y SE IMPRIME (SIS-B-18). La ficha lo señalaba como el unico de cinco
+    campos escritos y nunca leidos que ademas no viajaba ni al JSON ni al
+    HTML: una rama que el codigo distingue y el revisor no ve. Dejo de serlo
+    en S18 sin que nadie lo buscara --- `M4._pasos_hidraulicos` lo lee para
+    redactar la procedencia de h_o en su `PasoDeMemoria`, «(manda TW: la
+    salida esta ahogada)» frente a «(manda la aproximacion geometrica)» ---,
+    de modo que hoy la rama llega a la memoria como texto y con su razon.
+    Lo fija `tests/test_M4_control.py`.
+
+    Y AL JSON LLEGA DESDE EXT-3, con el bloque h_o ENTERO y no solo la
+    etiqueta de la rama: `h_o`, `TW`, `ahogado_por_TW`, `HW_sobre_D` y los
+    dos flags viajan a `ResultadoHidraulico` y de ahi a `cli._diseno_json` y
+    a `cli.volcar` (SIS-B-18, mitad JSON). Hasta entonces no llegaba ninguna
+    pieza del bloque, y la decision de S19 era que publicar la etiqueta sin
+    los dos numeros que la producen seria menos revisable que no publicarla:
+    por eso se abrio al bloque completo y no a un campo.
+
+    `h_o_fuera_de_rango` y `h_o_requiere_cautela` son las DOS condiciones de
+    uso que HDS-5 pone a esa aproximacion y que el proyecto puede evaluar
+    (NOR-HDS-05, num. 3.3.3, pag. impresa 3.24): por debajo de HW/D = 0.75 la
+    fuente dice que la aproximacion no debe usarse, y por debajo de 1.2 pide
+    cautela porque el barril puede fluir parcialmente lleno. Son banderas y no
+    excepciones a proposito: la fuente no prohibe calcular, dice que el numero
+    no es de fiar, y quien decide que hacer con un punto asi es el revisor.
+    Viajan a `ResultadoHidraulico` -- ya filtradas por si el control de salida
+    gobierna, que es la condicion con que la fuente las escribe -- y de ahi a
+    la memoria del punto.
+
+    La tercera condicion de la fuente -- que el barril fluya lleno en la mayor
+    parte de su longitud -- NO tiene bandera porque no se puede evaluar sin un
+    perfil de la lamina de agua. Queda declarada en
+    `constantes_normativas.H_O_CONDICION_APLICACION`.
+    """
+
+    HW: float                     # m  - carga sobre el fondo de la entrada
+    H: float                      # m  - perdida total en el barril
+    h_o: float                    # m  - max(TW, (y_c + D)/2)
+    TW: float                     # m  - tirante en el cuerpo receptor
+    caida: float                  # m  - S*L
+    V: float                      # m/s - velocidad de referencia del barril
+    R: float                      # m  - radio hidraulico de referencia
+    ahogado_por_TW: bool
+    critico: TiranteCritico
+    HW_sobre_D: float = 0.0       # adimensional - HW/D, lo que acotan las dos
+                                  # condiciones de uso de h_o
+    h_o_fuera_de_rango: bool = False      # HW/D < 0.75 (num. 3.3.3)
+    h_o_requiere_cautela: bool = False    # HW/D < 1.2  (num. 3.3.3)
+    # EL ke CON QUE SE CALCULO H, y no es redundante con el criterio: quien
+    # lea el criterio lee lo que el expediente DECLARO; este campo dice lo que
+    # la ecuacion USO. Viaja desde C5 porque el marco lo declara como CLAVE DE
+    # FILA de la Tabla C.2 y no como numero -- en el bloque del cajon el mismo
+    # coeficiente aparece hasta en tres filas --, de modo que sin este campo
+    # el paso de memoria tendria que volver a resolver la clave y habria dos
+    # sitios donde el numero se decide. `ke_fila` y `ke_agrupacion` van con el
+    # porque la fila suelta no identifica nada (ver 'ke_entrada_cajon'); en el
+    # tubo salen vacios: alli el criterio es un numero declarado.
+    ke: float = 0.0               # adimensional - coef. de perdida de entrada
+    ke_criterio: str = ""         # clave en criterios_adoptados.py
+    ke_fila: str = ""             # rotulo LITERAL de la fila de la Tabla C.2
+    ke_agrupacion: str = ""       # rotulo de agrupacion de esa fila
+    ke_bloque: str = ""           # familia de la tabla: «Box, Reinforced
+                                  # Concrete», «Pipe, Concrete»... Viaja con
+                                  # los otros dos porque la memoria lo IMPRIME,
+                                  # y estuvo CABLEADO en el texto hasta que la
+                                  # auditoria de C5 mostro que asi la
+                                  # procedencia no se podia desmentir
+    numeral: str = "Sec. 4.3"
+
+
+@dataclass(frozen=True)
+class PerfilLamina:
+    """
+    El perfil de la lamina de agua a lo largo del barril, resuelto por PASO
+    DIRECTO desde la salida hacia la entrada (E-A; NOR-HDS-05 cerrada). Es
+    el procedimiento de barril parcialmente lleno del Cap. III del HDS-5,
+    tal como la pag. impresa 3.12 (PDF 94) lo escribe: el calculo «begin[s]
+    at the water surface at the downstream end of the culvert and proceed[s]
+    upstream to the entrance», la frontera aguas abajo es «critical depth at
+    the culvert outlet or … the tailwater depth, whichever is higher», y
+    donde la lamina toca la clave se empalma «a straight, full flow hydraulic
+    grade line» con la pendiente de friccion de la Ec. 3.7. Lo resuelve
+    `M4.perfil_lamina`; este tipo es lo que sale.
+
+    ES UN TIPO PROPIO Y NO DIEZ CAMPOS SUELTOS EN `ResultadoHidraulico`, a
+    proposito (prompt de E-A: «no ampliar ResultadoHidraulico a ciegas»):
+    `ResultadoHidraulico.perfil` es UN campo, y quien necesite el perfil lo
+    lee entero, con su tipo y su procedencia.
+
+    Lo que entrega, y a quien:
+
+        `fraccion_llena`, `longitud_llena_m`
+            la PRIMERA SALIDA util: cuanto del barril va a seccion llena, que
+            vuelve MEDIDA la primera condicion de uso de h_o («can only be
+            used if the barrel flows full for most of its length», pag. 3.24)
+            que hasta E-A solo se declaraba. La juzga el paso F4.PERFIL.
+        `HW_remanso_m`, `y_entrada_m`, `V_entrada_m_s`
+            la SEGUNDA: la carga a la entrada por remanso, HW = y_entrada +
+            (1 + ke)·V_entrada²/2g (pag. 3.12: «The inlet losses and the
+            velocity head are added to the elevation of the hydraulic grade
+            line at the inlet»). `None` cuando el remanso NO alcanza la
+            entrada (`alcanza_entrada=False`): la S1 corto y_c en
+            `x_fin_remanso_m` < L, o tuvo longitud cero, y el control es de
+            entrada (Section 3.5.1: la S1 se usa «if the S1 curve extends to
+            the face of the culvert»). El proyecto NO situa el resalto por
+            momentum (HY-8 v7.3): esa lectura basta para el HW y queda
+            escrita en `docs/decisiones_diferidas.md`.
+        `sustituye_aproximacion`
+            True cuando HW_aproximado/D < 0.75, donde la fuente dice que la
+            aproximacion h_o = max(TW, (y_c + D)/2) «should not be used» y
+            que «backwater calculations are required» (pags. 3.24 y 3.12):
+            ahi `ResultadoHidraulico.HW_salida` es `HW_remanso_m` y no
+            `HW_aproximado_m`. Por encima de 0.75 la aproximacion sigue
+            siendo el metodo --la pag. 3.12 la avala («adequate results are
+            obtained down to a headwater of 0.75D»)-- y el remanso es la
+            comprobacion que la pag. 3.24 pide («should be used to check the
+            result from the approximate method»): en la banda de cautela
+            (`cautela_aproximacion`, HW_aprox/D < 1.2) la comprobacion MANDA
+            cuando pide mas carga (`comprobacion_manda`), y por encima de
+            1.2 se imprime. Es la decision de la v8 §4.3 (EXT-0, nota de
+            E-A), no una eleccion de esta pieza.
+        `y_asintota_m`
+            el tirante hacia el que tiende la lamina con la ley de friccion
+            del perfil (la Ec. 3.7, donde Sf = S): un 0.05 % por encima del
+            y_n de Manning de M3, porque K_FRICCION_SI/(2g) = 19.63/19.62.
+            None cuando el perfil no tiene asintota bajo la clave (S1,
+            crown, llena).
+        `y_max_m`, `V_min_m_s`
+            el tirante MAXIMO en lamina libre a lo largo del barril (D si hay
+            tramo lleno) y la velocidad MINIMA, Q/A(y_max): lo que V1 y V2
+            comparan bajo control de SALIDA con el barril parcialmente lleno,
+            que hasta E-A quedaba pendiente por `MetodoNoEvaluableError`. Con
+            n_max, como el resto del control de salida: mas tirante y menos
+            velocidad, el lado conservador de las dos. Cuando la S1 no
+            alcanza la entrada, el tramo supercritico aguas arriba del
+            resalto se aproxima por el uniforme, como bajo control de entrada
+            (EXT-3), y no mueve ninguno de los dos: en pendiente pronunciada
+            y_n < y_c <= y_salida, de modo que el maximo esta en la salida.
+        `estaciones`
+            (x desde la salida, y) de cada rung de lamina libre que el paso
+            directo resolvio, en orden aguas arriba. Sirven para rehacer el
+            balance de energia estacion a estacion --E_arriba + S·Δx =
+            E_abajo + Sf_medio·Δx-- que es la ecuacion del metodo; no van al
+            JSON.
+
+    `n` y `ke` son los que entraron: n_max (la regla de doble n manda el n
+    mayor para una carga) y el ke con que `control_salida` formo H, para que
+    el tramo lleno reproduzca la formula cerrada de la Sec. 4.3 exactamente.
+    `rungs` es el numero de escalones de la escalera en el parametro propio
+    de la seccion (`tolerancias.PASOS_PERFIL_LAMINA`): precision numerica,
+    no un valor de proyecto.
+    """
+
+    tipo: TipoDePerfil
+    y_salida_m: float                 # m  - frontera aguas abajo max(y_c, TW), acotada a D
+    alcanza_entrada: bool             # False: la S1 corto y_c antes de la entrada
+    x_fin_remanso_m: Optional[float]  # m  - donde termino el remanso si no alcanza
+    y_entrada_m: Optional[float]      # m  - tirante (o carga de presion) en la entrada
+    V_entrada_m_s: Optional[float]    # m/s
+    HW_remanso_m: Optional[float]     # m  - y_entrada + (1 + ke) V^2/2g
+    y_asintota_m: Optional[float]     # m  - donde la Ec. 3.7 da Sf = S (y_n'); None sin asintota
+    longitud_llena_m: float           # m  - tramo a seccion llena
+    fraccion_llena: float             # longitud_llena_m / L
+    y_max_m: float                    # m  - tirante maximo (V1)
+    V_min_m_s: float                  # m/s - velocidad minima, Q/A(y_max) (V2)
+    n: float                          # n_max con que se resolvio
+    ke: float                         # el ke de H
+    HW_aproximado_m: float            # m  - el HW de la aproximacion (ControlSalida.HW)
+    sustituye_aproximacion: bool      # HW_aproximado/D < 0.75: la aproximacion NO se usa
+    cautela_aproximacion: bool        # HW_aproximado/D < 1.2: la banda de cautela
+    rungs: int                        # escalones de la escalera
+    estaciones: Tuple[Tuple[float, float], ...] = ()
+
+    def __post_init__(self) -> None:
+        # Guardias de coherencia interna, forma MAT-D13: en positivo y negadas.
+        if not 0 <= self.fraccion_llena <= 1:
+            raise ValueError(
+                f"PerfilLamina: la fraccion llena ({self.fraccion_llena!r}) no "
+                "esta en [0, 1]")
+        if self.alcanza_entrada and self.HW_remanso_m is None:
+            raise ValueError(
+                "PerfilLamina: el remanso alcanza la entrada y no trae HW")
+        if not self.alcanza_entrada and self.HW_remanso_m is not None:
+            raise ValueError(
+                "PerfilLamina: el remanso no alcanza la entrada y trae HW")
+        if self.sustituye_aproximacion and not self.cautela_aproximacion:
+            raise ValueError(
+                "PerfilLamina: bajo 0.75 la aproximacion esta tambien bajo 1.2")
+
+    @property
+    def comprobacion_manda(self) -> bool:
+        """
+        True cuando, en la banda de cautela (0.75 <= HW_aprox/D < 1.2), el
+        remanso alcanza la entrada y pide MAS carga que la aproximacion. La
+        pag. 3.24 manda usar el remanso «to check the result from the
+        approximate method», y una comprobacion que da mas carga no se puede
+        descartar del lado de la inundacion: medido en E-A (auditoria
+        adversarial), en 165 de 228 combinaciones de la banda el remanso
+        superaba a la aproximacion, hasta +34 mm (+5 %). Por eso en la banda
+        el HW efectivo es el MAYOR de los dos (v8 §4.3, nota de E-A).
+        """
+        return (self.cautela_aproximacion and not self.sustituye_aproximacion
+                and self.HW_remanso_m is not None
+                and self.HW_remanso_m > self.HW_aproximado_m)
+
+    @property
+    def HW_efectivo_m(self) -> Optional[float]:
+        """
+        La carga de control de SALIDA que el punto usa: el remanso donde
+        sustituye a la aproximacion (HW_aprox/D < 0.75), el mayor de los dos
+        en la banda de cautela (`comprobacion_manda`), la aproximacion en el
+        resto; `None` si la aproximacion no se usa y el remanso no alcanza la
+        entrada --el control de salida no impone carga alguna y gobierna la
+        entrada--.
+        """
+        if self.sustituye_aproximacion:
+            return self.HW_remanso_m
+        if self.comprobacion_manda:
+            return self.HW_remanso_m
+        return self.HW_aproximado_m
+
+    @property
+    def salida_no_se_forma(self) -> bool:
+        """
+        --- T-12 (ficha T11-09) --- True cuando el control de SALIDA no
+        impone carga: la aproximacion h_o se descarta (HW_aprox/D < 0.75,
+        HDS-5 num. 3.3.3, pag. impresa 3.24: «should not be used») y el
+        remanso que la sustituye no alcanza la entrada (`HW_remanso_m` None;
+        Section 3.5.1). Es la condicion exacta en que `HW_efectivo_m` es
+        None. La regla vive AQUI, en el dato, para que la CLI (JSON y linea
+        «Control») y la memoria (fila «Control gobernante» de las dos vistas)
+        la lean de un solo sitio; hasta T-12 vivia en `cli.salida_no_se_forma`
+        y la memoria imprimia la aproximacion descartada como «salida».
+        """
+        return self.sustituye_aproximacion and self.HW_remanso_m is None
+
+
+# ===========================================================================
+# Sec. 1.3 - TW: se calcula, no se mide
+# ===========================================================================
+# LOS DOS TIPOS DE LA SEC. 1.3, Y POR QUE SON DOS. `SeccionReceptor` es el
+# DATO -- la geometria del dren o canal que recibe la descarga --, y
+# `TWDeterminado` es el RESULTADO, con la via por la que se obtuvo. Separarlos
+# permite que la memoria diga las dos cosas que un revisor pregunta delante de
+# un TW: de que seccion salio, y si salio de un caudal documentado o de un
+# escenario acotado.
+
+@dataclass(frozen=True)
+class SeccionReceptor:
+    """
+    Seccion transversal del cuerpo receptor, para el paso 2 de Sec. 1.3.
+
+    TRAPECIAL, que cubre los tres casos del corredor: un dren de tierra
+    (z > 0), un canal revestido rectangular (z = 0) y una cuneta triangular
+    (b = 0). No se modela seccion irregular: eso es un levantamiento
+    topografico del receptor, y el dia que exista el TW entra medido y esta
+    seccion sobra.
+
+    `altura_total_m` NO es el tirante: es la PROFUNDIDAD DE LA SECCION, del
+    fondo a la corona del bordo. Existe para el paso 3 -- el escenario de
+    "receptor a seccion llena" --, que sin ella no se puede acotar. Un
+    escenario acotado por un numero que nadie declaro no es un escenario
+    acotado.
+
+    Ninguno de los cuatro numeros sale de una norma: los declara el
+    proyectista en el criterio 'seccion_receptor' [A], con su trazabilidad.
+    """
+
+    b_m: float                 # m   - ancho de solera
+    z_HV: float                # H:V - talud lateral, proyeccion horizontal por unidad de altura
+    S: float                   # m/m - pendiente del receptor
+    n: float                   # -   - Manning del receptor
+    altura_total_m: float      # m   - profundidad de la seccion (fondo a corona)
+
+
+# --- T-2 --- De donde salio la seccion del receptor con que se obtuvo el TW
+# (vias 3 y 4 de Sec. 1.3). Son ROTULOS que la memoria imprime tal cual.
+SECCION_RECEPTOR_MEDIDA = "seccion medida (levantamiento del receptor)"
+SECCION_RECEPTOR_ADOPTADA = "seccion adoptada [A] por falta de levantamiento"
+ORIGENES_SECCION_RECEPTOR = (SECCION_RECEPTOR_MEDIDA, SECCION_RECEPTOR_ADOPTADA)
+
+# --- T-2 --- El aviso de un punto que declara que NO tiene previsto el acceso
+# de mantenimiento (`acceso_mantenimiento_previsto = false` en
+# --datos-externos). La EXIGENCIA es del Manual (num. 4.1.1.3.7 d), cita
+# MC_HHD.4.1.1.3.7d); el texto de aqui es del proyecto y lo dice. Vive en
+# este modulo porque lo imprimen el servicio (CLI y JSON) y la memoria (M11),
+# y M11 no importa del servicio.
+AVISO_SIN_ACCESO_DE_MANTENIMIENTO = (
+    "Acceso de mantenimiento: el punto declara que NO esta previsto "
+    "(acceso_mantenimiento_previsto = false). El Manual de Hidrologia, num. "
+    "4.1.1.3.7 d) 'Mantenimiento y limpieza', exige que las dimensiones de "
+    "la alcantarilla permitan el mantenimiento y la limpieza en su interior: "
+    "hay que preverlo en los planos (criterio 'acceso_mantenimiento_v2b') o "
+    "declarar la limitacion")
+
+
+
+# --- T-10 --- EL ALCANCE DECLARADO DEL EXPEDIENTE: lo que el programa NO hace
+# por DECISION DEL DUEÑO, dicho como alcance y no como omision (PRECISIONES
+# de T-10). Una fuente y tres vistas: la CLI (`cli._lineas_alcance`), el
+# JSON (`alcance.declarado`) y la memoria (`M11.bloque_alcance`). Vive aqui
+# por la misma razon que el aviso de arriba: M11 no importa del servicio.
+# Cada entrada nombra la ficha de `docs/decisiones_diferidas.md` donde esta
+# el argumento y el simbolo del codigo donde vive lo que si se hace.
+@dataclass(frozen=True)
+class AlcanceDeclarado:
+    clave: str
+    texto: str
+    ficha: str
+    simbolo: str
+
+
+ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
+    AlcanceDeclarado(
+        clave="armado_seccion_marco",
+        texto=("El armado de la SECCION del marco de concreto de la Familia C "
+               "no se diseña: el expediente llega al dimensionamiento y a la "
+               "demanda de la losa superior que entrega la Fase 8; el "
+               "analisis y el diseño del portico quedan para quien lo arme"),
+        ficha="T5-07", simbolo="M8_estructural.demanda_marco"),
+    AlcanceDeclarado(
+        clave="cabezal_paralelo_a_la_via",
+        texto=("El cabezal PARALELO a la via no se calcula: en las tres "
+               "familias el cabezal es normal al eje del conducto, que es lo "
+               "que supone la hidraulica (ke y cartas del HDS-5); el paralelo "
+               "queda como alternativa solo para el marco, diferida"),
+        ficha="T7A-03", simbolo="M9_cabezal.predimensionar_aleros"),
+    AlcanceDeclarado(
+        clave="iteracion_ancho_zapata_cabezal",
+        texto=("El ancho de la zapata del cabezal no se itera: la geometria "
+               "la propone la regla de predimensionamiento (o la declara "
+               "`cabezal_declarado`) y la estabilidad la juzga como llega; "
+               "la iteracion espera los parametros reales del EMS"),
+        ficha="T7B-09", simbolo="M9_cabezal.predimensionar_cabezal"),
+    AlcanceDeclarado(
+        clave="flotacion_marco_sin_peso_propio",
+        texto=("V7 del marco no pesa el concreto del marco (DC = 0, del lado "
+               "seguro): se revisara cuando llegue la seccion real del canal "
+               "de la ANA o de la Junta de usuarios"),
+        ficha="T3-08", simbolo="M5_verificaciones.v7_flotacion"),
+    AlcanceDeclarado(
+        clave="tirante_de_borde_hec14",
+        texto=("Las Figuras 3.3 y 3.4 de HEC-14 (tirante de borde a la "
+               "salida) no estan digitalizadas: con la velocidad tomada al "
+               "tirante critico el contraste con la Tabla N 11 es un "
+               "INDICADOR que no concluye; se digitalizaran en un trabajo "
+               "posterior a la cadena"),
+        ficha="T8-08", simbolo="M6_proteccion.proteccion_salida"),
+    # --- T-11 --- Las dos que faltaban de lo que el dueño dejo fuera
+    # (PRECISIONES_T-11, punto 4 (ii)): la regla de la velocidad de salida en
+    # la banda de regimen de M4 (decision del 2026-11-13: trabajo posterior a
+    # la cadena, junto con las Figuras 3.3 y 3.4) y el escalon de la regla de
+    # E-A en HW/D = 1.2 (medido por la verificacion de T-7, no corregido).
+    AlcanceDeclarado(
+        clave="velocidad_salida_banda_de_regimen",
+        texto=("Cuando las dos ramas de n no coinciden en el regimen (con n "
+               "maximo gobierna la salida con el TW bajo el critico; con n "
+               "minimo el tirante normal seria supercritico), la velocidad "
+               "de salida que llega a la Fase 6 es la critica y no la mayor "
+               "de la critica y la de erosion: la Fase 6 lo avisa con las "
+               "dos velocidades y el d50 que daria la alta; la regla de M4 "
+               "queda para un trabajo posterior a la cadena, junto con las "
+               "Figuras 3.3 y 3.4 de HEC-14"),
+        ficha="T8-09", simbolo="M6_proteccion._aviso_banda_de_regimen"),
+    AlcanceDeclarado(
+        clave="escalon_regla_salida_hw_1_2_d",
+        texto=("La regla de la carga de control de salida del HDS-5 num. "
+               "3.3.3 (entre 0.75 D y 1.2 D compiten la aproximacion y el "
+               "remanso; sobre 1.2 D rige la aproximacion) tiene un escalon "
+               "donde la aproximacion cruza HW/D = 1.2: un caudal mayor "
+               "puede dar unos milimetros menos de carga (11 mm medidos con "
+               "el tubo de A-01 entre 1.276 y 1.290 m3/s). Es el umbral que "
+               "la fuente escribe y no se suaviza; en V8 lo cubre la guardia "
+               "de la carga del evento extremo"),
+        ficha="T7V-01", simbolo="M4_control.resolver_control"),
+)
+
+
+class ViaDelTW(str, Enum):
+    """
+    Por cual de los cuatro caminos de Sec. 1.3 se obtuvo el TW de un punto.
+
+    El orden es el de precedencia y no es arbitrario: va del dato mas
+    determinado al escenario mas supuesto. Un TW medido no se sustituye por
+    uno calculado, y uno calculado no se sustituye por un escenario.
+    """
+
+    DECLARADO = "declarado por el proyectista (--tw / TW_m)"
+    COTA_TW = "columna `cota_TW` del CSV (paso 2 de Sec. 1.3, resuelto fuera)"
+    MANNING_RECEPTOR = ("Manning en la seccion del receptor con su Q de "
+                        "diseño (pasos 1 y 2 de Sec. 1.3)")
+    ESCENARIOS_ACOTADOS = ("dos escenarios acotados, sin caudal documentado "
+                           "(paso 3 de Sec. 1.3)")
+    CRITERIO = "criterio 'TW_receptor' (Tablero 3.1)"
+
+
+@dataclass(frozen=True)
+class TWDeterminado:
+    """
+    El TW de un punto y de donde salio (Sec. 1.3).
+
+    `valor` es un TIRANTE sobre el fondo de la SALIDA del conducto, en metros
+    -- no una cota --, que es lo que consume el control de salida. La
+    homonimia con `cota_TW` esta declarada en
+    `constantes_normativas.HOMONIMIA_TW` y es exactamente la que este tipo
+    existe para no volver a permitir: aqui el nombre del campo dice cual de
+    las dos es, y `cota_TW_msnm` viaja aparte cuando se conoce.
+
+    `escenarios` lleva los DOS del paso 3 cuando la via es
+    `ESCENARIOS_ACOTADOS`: (TW de salida libre, TW de receptor a seccion
+    llena). La hoja de ruta pide "cumplir en ambos" y el diseño corre con el
+    GOBERNANTE, que es el mayor; por que eso equivale a cumplir en los dos
+    esta demostrado en el docstring de `M3_hidraulica.tw_seccion_1_3`, y los
+    dos numeros viajan hasta la memoria para que el revisor lo pueda
+    comprobar en vez de creerlo.
+    """
+
+    valor: float                                   # m - tirante sobre el fondo de la salida
+    via: "ViaDelTW"
+    cota_TW_msnm: Optional[float] = None           # msnm - cuando se conoce
+    escenarios: Tuple[Tuple[str, float], ...] = ()
+    paso: Optional["PasoDeMemoria"] = None
+    # --- T-2 --- (INF-3.2.8). CON QUE SECCION DEL RECEPTOR se obtuvo, cuando
+    # la via la usa (3 y 4): la geometria, y de donde salio --MEDIDA por
+    # levantamiento, o ADOPTADA por el criterio [A] 'seccion_receptor'--. Y
+    # los AVISOS que la via dispara: el de la via 4 con seccion adoptada es
+    # el que dice que el TW que decide el diametro es una adopcion. Viajan
+    # aqui para que la CLI, el JSON y la memoria impriman el MISMO texto.
+    seccion: Optional["SeccionReceptor"] = None
+    origen_seccion: str = ""                       # uno de ORIGENES_SECCION_RECEPTOR, o ""
+    avisos: Tuple[str, ...] = ()
+
+
+# ===========================================================================
+# Resultados
+# ===========================================================================
+
+@dataclass(frozen=True)
+class ResultadoHidraulico:
+    """
+    Salida de M3 + M4 para una combinacion punto / material / diametro.
+
+    ATENCION a la regla de doble n (Sec. 4.1): `y_normal` se resuelve con
+    n_max, y la velocidad viaja en DOS campos porque un umbral de velocidad
+    tiene dos extremos conservadores opuestos (ver `TiranteNormal`):
+
+        `V_erosion`        con n_min, estimacion ALTA. Contra los TECHOS: V3
+                           y el d50 de la Fase 6. En general
+                           `V_erosion * A != Q`, y esa discrepancia es
+                           intencional.
+        `V_sedimentacion`  con n_max, estimacion BAJA. Contra el PISO: V2.
+
+    NO HAY UN CAMPO `V` A SECAS, Y ES DELIBERADO. Lo habia, valia `V_erosion`
+    y V2 lo consumia para verificar un piso con la estimacion alta (MAT-D1).
+    Un nombre neutro deja que cada consumidor suponga que "la velocidad" es la
+    suya; con dos nombres, elegir mal es visible en la linea que lo hace. Un
+    modulo que obtenga la velocidad dividiendo Q entre A esta anulando la
+    regla de doble n: siempre le dara `V_sedimentacion`, tambien cuando lo que
+    necesita es el techo.
+
+    HW_entrada y HW_salida son cargas sobre el fondo de la entrada, en metros.
+    La conversion a cota (msnm) la hace M7 sumando la cota de entrada.
+
+    `Q` y `S` son LOS DATOS CON QUE CORRIO EL DISENO, no los de la fila del
+    CSV, y viajan aqui por el mismo motivo: ninguno de los dos sale siempre de
+    su columna. Sec. 2.3 pone el caudal de la Familia B en el drenaje
+    longitudinal y el de la C en el canal, y el punto cuya rasante no sigue el
+    cauce declara su pendiente aparte ('S_conducto' de la CLI). Quien
+    consuma este resultado -- la Fase 6, el tamizado de 7.A, la memoria --
+    tiene que poder leer con QUE numeros se resolvio, sin volver a decidirlo.
+
+    `S` entro en el tipo al cerrarse MAT-D9: la Fase 7 la re-resolvia por su
+    cuenta contra `punto.S_cauce` y caia en la pendiente del cauce aunque el
+    diseno hubiera corrido con otra, de modo que un mismo punto tenia dos
+    pendientes -- una en el HW y otra en la cota de salida -- sin que nada lo
+    dijera. No es un dato nuevo: es el mismo que M3 y M4 ya recibieron, hecho
+    visible en su salida para que no se pueda elegir dos veces.
+
+    `h_o_fuera_de_rango` / `h_o_requiere_cautela`: HDS-5 acota el uso de
+    h_o = (dc + D)/2 con dos limites sobre HW/D, y los escribe condicionados a
+    que el control de salida gobierne (num. 3.3.3, pag. impresa 3.24). Aqui
+    llegan ya con esa condicion aplicada, de modo que True significa "este
+    punto usa la aproximacion fuera del rango que su fuente declara" y no
+    "podria pasarle a alguien". M11 lo imprime junto al HW del punto.
+
+    `Q_celda_m3s` y `numero_celdas` (EXT-M-03): `Q` SIGUE SIENDO EL CAUDAL
+    DEL PUNTO -- sus tres lectores (la memoria, el JSON de la CLI y la tabla
+    de resumen) lo imprimen como tal, y cambiarle el significado los habria
+    dejado imprimiendo un tercio del caudal como si fuera el del cruce --.
+    Lo que M4 RESUELVE es `Q_celda_m3s` = Q / `numero_celdas`, el caudal de
+    UN barril (regla vinculante #3 de ruta_familia_c.md §6; HDS-5 num.
+    5.4.3, cita `HDS5_3ED.5.4.3#REPARTO`). Los dos llevan default para que
+    los seis constructores de la suite y todo tubo circular -- una celda por
+    construccion del catalogo -- sigan armandose igual: `numero_celdas = 1`
+    y `Q_celda_m3s = Q`. Hasta EXT-2 el tipo no distinguia los dos caudales
+    y M4 recibia el total con un tirante normal resuelto para Q/N: la
+    memoria imprimia Q = 9.0 junto a un y_n que solo transporta 3.0.
+
+    EL REGIMEN DEL BARRIL, Y POR QUE ESTA AQUI (EXT-3; EXT-M-01, PC-04,
+    v8 §1.3 y §4.1 enmendadas en EXT-0). El parrafo de arriba sobre la doble
+    n sigue valiendo para el flujo UNIFORME, y el flujo uniforme no es el
+    unico regimen del barril: con TW >= D el barril fluye LLENO y el tirante
+    y la velocidad con que V1 y V2 se comparan son D y Q_celda/A_llena, no
+    los de Manning. Hasta EXT-3 la memoria imprimia «manda TW: la salida esta
+    ahogada» junto a V1 [OK] con y/D = 0.135, cuando a seccion llena el borde
+    libre no existe y la velocidad es 0.0786 m/s < 0.25.
+
+        `regimen_barril`   LLENO si TW >= D; PARCIALMENTE_LLENO en otro caso.
+        `V_llena_m_s`      Q_celda / A_llena: la velocidad del regimen LLENO.
+                           No lleva n --a seccion llena no hay tirante que
+                           resolver-- y por eso no rompe la regla de doble n:
+                           es la UNICA velocidad del barril en ese regimen,
+                           y V2 la compara tal cual.
+        `V_salida`         la velocidad a la SALIDA por HDS-5 3.1.6 (pag.
+                           impresa 3.18), como `Magnitud` con procedencia,
+                           que es la que recibe M6 (PC-04). Bajo control de
+                           SALIDA es Q_celda entre el area de la seccion al
+                           tirante min(D, max(TW, y_c)) --tirante critico,
+                           TW o seccion entera, segun el TW--: no depende de
+                           n. Bajo control de ENTRADA es la del tirante
+                           normal (pag. 3.24: «The velocity at normal depth
+                           is assumed to be the outlet velocity»), y de sus
+                           dos ramas la de n_min (`V_erosion`): el techo
+                           conservador para un d50 que crece con V^2. En
+                           pendiente suave con salida libre la de salida a
+                           y_c SUPERA a V_erosion (1.508 vs 1.184 m/s en el
+                           caso del dictamen): M6 recibia una piedra chica.
+        `y_salida_m`       el tirante con que se midio `V_salida`.
+        `h_o_m`, `TW_m`, `ahogado_por_TW`   el bloque h_o entero, que hasta
+                           EXT-3 no salia del `ControlSalida` (SIS-B-18): el
+                           JSON y `cli.volcar` lo imprimen junto a las dos
+                           banderas y a `HW_sobre_D_salida`.
+
+    Bajo control de SALIDA con el barril PARCIALMENTE LLENO el tirante y la
+    velocidad «del barril» salen DESDE E-A del perfil de la lamina de agua
+    (HDS-5 Section 3.5; `perfil`, un `PerfilLamina`): V1 compara
+    `perfil.y_max_m` y V2 `perfil.V_min_m_s`. Hasta E-A no existia y V1/V2 lo
+    decian con `MetodoNoEvaluableError`; hoy esa excepcion queda como el
+    fallback de un resultado armado SIN perfil (`perfil is None`), que M4 no
+    produce nunca.
+
+    `perfil` (E-A) es UN campo y no diez, a proposito: el perfil se lee
+    entero, con su tipo, su procedencia y sus dos salidas (la fraccion de
+    longitud a seccion llena y el HW por remanso). Con el, `HW_salida` es el
+    HW EFECTIVO del control de salida --el remanso donde sustituye a la
+    aproximacion (HW_aprox/D < 0.75, pag. 3.24 y 3.12 del HDS-5) y la
+    aproximacion en el resto-- y `HW_sobre_D_salida` es ese mismo efectivo
+    entre D; `h_o_fuera_de_rango` significa lo que su docstring dice --«este
+    punto USA la aproximacion fuera del rango que su fuente declara»-- y con
+    perfil no puede ser True: donde la aproximacion esta fuera de rango, no
+    se usa. Solo un resultado sin perfil puede llevarla en True, y es lo que
+    la compuerta `servicio._compuerta_metodo_h_o` sigue guardando.
+    """
+
+    # --- T-2 --- LOS TRES DE MANNING SON `None` EN UN BARRIL HORIZONTAL
+    # (S = 0, INF-5.1.6): no hay tirante normal ni velocidad uniforme, y un
+    # numero puesto ahi seria inventado. `sin_tirante_normal` lo dice en una
+    # palabra; V1 y V2 leen entonces el perfil de la lamina, V3 y la Fase 6
+    # la velocidad de la seccion de salida (`V_salida`), y los lectores que
+    # imprimen (CLI, JSON, memoria, ventana) escriben «no existe (S = 0)».
+    y_normal: Optional[float]             # m  - con n_max (Sec. 4.1)
+    y_critico: float                      # m  - Q^2*T/(g*A^3) = 1 (Sec. 4.2)
+    V_erosion: Optional[float]            # m/s - con n_min (Sec. 4.1)
+    V_sedimentacion: Optional[float]      # m/s - con n_max (Sec. 4.1)
+    Q: float                              # m3/s - caudal de diseno del punto
+    S: float                              # m/m - pendiente con que corrio el
+                                          # diseno (la del cauce salvo que el
+                                          # punto declare la suya): la MISMA
+                                          # que usa 7.B (MAT-D9)
+    HW_entrada: float                     # m  - control de entrada (Sec. 4.2)
+    HW_salida: float                      # m  - control de salida (Sec. 4.3)
+    control_gobernante: ControlGobernante
+    # PF-1 (PC-03): el piso que `control_entrada` adopto en lugar de la
+    # ecuacion, o None. Viaja aqui para que el JSON por punto y el comparador
+    # lo vean; la memoria lo imprime desde el paso F4.CONTROL.
+    piso_hw_entrada: Optional["PisoDeCargaEntrada"] = None
+    # Las dos condiciones de uso de h_o que el proyecto evalua, ya filtradas
+    # por si el control de salida gobierna (NOR-HDS-05). Ver `ControlSalida`.
+    h_o_fuera_de_rango: bool = False
+    h_o_requiere_cautela: bool = False
+    # EL HW/D DEL CONTROL DE SALIDA, que es el que las dos banderas de arriba
+    # acotan. Viaja como dato y no lo recompone el reporte: M11 imprimia
+    # `hidraulica.HW / resultado.D` en el aviso de h_o, que es la segunda
+    # mitad de SIS-A-07 --- la misma aritmetica sobre magnitudes, en el mismo
+    # modulo, sobrevivida al test que la persigue porque su guardia excluia
+    # `ast.Attribute` a la izquierda, y `hidraulica.HW` es un Attribute.
+    # Aqui llega ya calculado por M4 (`ControlSalida.HW_sobre_D`), que es
+    # quien tiene delante la seccion con que se dividio.
+    HW_sobre_D_salida: float = 0.0
+    # LA TRAZA HIDRAULICA (§4.4). Los pasos que M3 y M4 emitieron al resolver
+    # esta combinacion, en el orden en que se calcularon: Manning, tirante
+    # critico, control de entrada, control de salida y adopcion del
+    # gobernante. M11 los formatea; no los reconstruye.
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    # EL CAUDAL CON QUE M3 Y M4 RESOLVIERON DE VERDAD, y cuantos barriles
+    # lo reciben (EXT-M-03). Ver el docstring. `None` en el constructor
+    # significa «no hay reparto»: se rellena con `Q` en `__post_init__`.
+    Q_celda_m3s: Optional[float] = None   # m3/s - Q / numero_celdas
+    numero_celdas: int = 1                # barriles hidraulicamente iguales
+    # EL REGIMEN DEL BARRIL Y LO QUE DE EL DEPENDE (EXT-3; EXT-M-01, PC-04).
+    # Ver el docstring. Todos con default para que los constructores de la
+    # suite que no pasan por M4 sigan armandose; M4 los llena SIEMPRE, y
+    # `servicio._fase_6` trata un `V_salida` vacio como fallo de programa.
+    regimen_barril: RegimenBarril = RegimenBarril.PARCIALMENTE_LLENO
+    V_llena_m_s: Optional[float] = None   # m/s - Q_celda / A_llena (regimen LLENO)
+    V_salida: Optional["Magnitud"] = None # m/s - HDS-5 3.1.6, con procedencia
+    y_salida_m: Optional[float] = None    # m  - tirante con que se midio V_salida
+    h_o_m: Optional[float] = None         # m  - max(TW, (y_c + D)/2), Sec. 4.3
+    TW_m: Optional[float] = None          # m  - tirante en el receptor
+    ahogado_por_TW: bool = False          # manda TW en h_o, no la geometria
+    # EL PERFIL DE LA LAMINA (E-A): un solo campo, ver el docstring. M4 lo
+    # llena SIEMPRE; `None` solo en los constructores de la suite que no
+    # pasan por M4, y ahi V1/V2 vuelven al fallback de EXT-3.
+    perfil: Optional["PerfilLamina"] = None
+    # --- T-8 --- LA VELOCIDAD CRITICA, Q_celda / A_c, que M4 ya resolvio en
+    # el paso 4.2 y no salia del `TiranteCritico`. La lee la Fase 6 para la
+    # proteccion de la ENTRADA: bajo control de entrada el flujo pasa por el
+    # tirante critico justo aguas abajo de la boca (HDS-5 num. 3.1.3). `None`
+    # solo en los constructores de la suite que no pasan por M4.
+    V_critica_m_s: Optional[float] = None
+
+    def __post_init__(self) -> None:
+        if self.Q_celda_m3s is None:
+            object.__setattr__(self, "Q_celda_m3s", self.Q)
+
+    @property
+    def sin_tirante_normal(self) -> bool:
+        """
+        --- T-2 --- True si el barril es horizontal (S = 0) y por tanto no
+        hay flujo uniforme: `y_normal`, `V_erosion` y `V_sedimentacion` son
+        `None` (HDS-5 num. 3.3.4; `SinTiranteNormal`). Es el predicado UNICO
+        con que M5, la Fase 6 y los lectores eligen de donde sale el tirante
+        y la velocidad del barril.
+        """
+        return self.y_normal is None
+
+    @property
+    def HW(self) -> float:
+        """
+        Carga a la entrada del control que gobierna. Es un selector sobre lo
+        que M4 ya decidio, no una decision nueva.
+        """
+        if self.control_gobernante == ControlGobernante.ENTRADA:
+            return self.HW_entrada
+        return self.HW_salida
+
+    @property
+    def salida_no_se_forma(self) -> bool:
+        """
+        --- T-12 (ficha T11-09) --- True cuando el perfil de la lamina
+        descarto la aproximacion del control de salida y su remanso no
+        alcanza la entrada (`PerfilLamina.salida_no_se_forma`): entonces
+        `HW_salida` es la aproximacion DESCARTADA, no una carga de salida, y
+        ningun lector la publica como tal. False sin perfil.
+        """
+        return self.perfil is not None and self.perfil.salida_no_se_forma
+
+
+@dataclass(frozen=True)
+class ProteccionSalida:
+    """
+    Salida de M6 (Fase 6): d50 de Laushey y las dos piezas complementarias que
+    la hoja de ruta deja como criterio adoptado (espesor y longitud).
+
+    `d50` es la unica magnitud con formula normativa (num. 4.1.1.3.7 c). NO es
+    un diseño de enrocado: la hoja de ruta (Sec. 6) dice expresamente que
+    faltan la granulometria completa y el filtro, y que sin filtro el
+    enrocado se socava por debajo y falla. `advertencias` transporta ese
+    aviso para que ningun consumidor de este resultado lo omita.
+    """
+
+    # LOS TRES LLEVAN SIEMPRE NUMERO. T-8 los dejaba en `None` cuando la
+    # velocidad de salida no superaba la admisible de la Tabla Nº 11 («sin
+    # enrocado»); el dueño resolvio el 2026-11-12 que esa NUNCA es una
+    # conclusion del programa: la proteccion se calcula y se mantiene
+    # siempre, y la tabla informa (`requerida`). Siguen tipados `Optional`
+    # porque los constructores y los lectores anteriores lo esperan.
+    #
+    # `d50` ES EL QUE RIGE, y desde esa misma decision no es siempre el de
+    # Laushey: con la regla 'regla_espesor_longitud_proteccion_salida' en
+    # «envolvente_hec14» (el archivo) es el MAYOR de Laushey y de la Ec.
+    # (10.4) de HEC-14 cuando esta es evaluable; con «manual», el de Laushey.
+    # El de Laushey se publica siempre aparte, en `d50_laushey`.
+    d50: Optional[float]                  # m - el que rige (ver arriba)
+    espesor: Optional[float]              # m - el que rige, segun la regla
+    longitud: Optional[float]             # m - la que rige, segun la regla
+    V: float                              # m/s - la velocidad de SALIDA de
+                                          # HDS-5 3.1.6 con que se calculo
+                                          # (`ResultadoHidraulico.V_salida`):
+                                          # `V_erosion`, la rama de n minimo,
+                                          # bajo control de entrada, y Q
+                                          # entre el area al tirante de
+                                          # salida bajo control de salida o
+                                          # con el barril horizontal (EXT-3)
+    criterio_espesor: str                 # clave en criterios_adoptados.py
+    criterio_longitud: str                # clave en criterios_adoptados.py
+    advertencias: Tuple[str, ...]
+    numeral: str = "4.1.1.3.7 c)"
+    paso: Optional["PasoDeMemoria"] = None
+    # --- T-8 --- Lo que la Fase 6 añade AL LADO de Laushey. Todos con
+    # default, para que los constructores anteriores sigan armandose.
+    #   `requerida`   lo que INFORMA el contraste con la Tabla Nº 11: True
+    #                 si la velocidad de salida supera la admisible del
+    #                 terreno; False si no la supera (el terreno la
+    #                 resistiria segun la tabla: la proteccion se mantiene
+    #                 igual, y suprimirla queda sujeto a inspeccion de campo);
+    #                 None si el punto no declaro el terreno o si el
+    #                 contraste NO CONCLUYE porque la velocidad comparada es
+    #                 una cota inferior (`velocidad_admisible.concluyente`).
+    #   `pasos`       TODOS los pasos de la proteccion de salida, en su orden
+    #                 de lectura; `paso` sigue siendo el de Laushey.
+    #   `avisos`      lo que la corrida dice en voz alta: suben a
+    #                 `InformePunto.avisos()` (CLI, JSON y memoria).
+    requerida: Optional[bool] = None
+    froude: Optional["FroudeSalida"] = None
+    velocidad_admisible: Optional["VelocidadAdmisible"] = None
+    apron: Optional["ApronHEC14"] = None
+    filtro: Optional["RequisitoDeFiltro"] = None
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    # --- T-8, auditoria --- La clase de la Tabla 10.1 de HEC-14 que toca a
+    # la piedra que el proyecto PONE (el d50 de Laushey), y la regla con que
+    # se fijaron espesor y longitud: con «manual» (el archivo) son los
+    # adoptados; con «envolvente_hec14», el mayor de lo adoptado y HEC-14.
+    # `espesor_adoptado` y `longitud_adoptada` son siempre los del criterio,
+    # antes de la regla.
+    clase_de_la_piedra: Optional["ClaseHEC14"] = None
+    regla_espesor_longitud: Optional[str] = None
+    espesor_adoptado: Optional[float] = None
+    longitud_adoptada: Optional[float] = None
+    # --- T-8, segunda auditoria --- El d50 de LAUSHEY (Manual, num.
+    # 4.1.1.3.7 c)), que se calcula y se imprime siempre, rija o no: con
+    # «manual» es igual a `d50`; con la envolvente puede quedar por debajo.
+    # `rige_la_envolvente` dice si la regla llego a formarla (False con
+    # «manual» y cuando HEC-14 no es evaluable en el punto).
+    d50_laushey: Optional[float] = None
+    rige_la_envolvente: bool = False
+
+
+# ---------------------------------------------------------------------------
+# --- T-8 --- Proteccion de entrada y salida: las piezas nuevas de la Fase 6
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class FroudeSalida:
+    """
+    Numero de Froude a la salida, con el tirante equivalente de HEC-14 (num.
+    10.1.1): ye = yo en un marco, ye = (A/2)^0.5 en un tubo. `A` es el area
+    que la continuidad asigna a la velocidad de salida, Q_celda / V.
+    """
+
+    Fr: float                             # Fr_e, con ye: parametro de HEC-14
+    V: float                              # m/s - la V_salida de HDS-5 3.1.6
+    A: float                              # m2  - Q_celda / V
+    y_equivalente: float                  # m   - ye
+    # El REGIMEN, del tirante de salida contra el critico
+    # (`M6.flujo_supercritico`, la misma regla que el apron usa para la
+    # Ec. 10.5); None si falta uno de los dos. NO es Fr_e > 1: el ye de
+    # HEC-14 no clasifica el regimen (auditoria de T-8, hallazgo 2).
+    supercritico: Optional[bool]
+    seccion_llena: bool                   # la salida va a seccion llena
+    paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class VelocidadAdmisible:
+    """
+    La velocidad del flujo contra la maxima admisible del terreno (Tabla
+    Nº 11 del Manual). `supera` True es lo que dispara la proteccion.
+    """
+
+    donde: str                            # "salida" o "entrada"
+    tipo_terreno: str                     # clave de fila de la Tabla Nº 11
+    regimen_flujo: str                    # "intermitente" o "permanente"
+    V: float                              # m/s
+    V_admisible: float                    # m/s
+    supera: bool
+    paso: Optional["PasoDeMemoria"] = None
+    # --- T-8, segunda auditoria (H2) --- False cuando la velocidad NO
+    # supera la admisible pero es una COTA INFERIOR de la real (control de
+    # salida con el TW bajo el critico: el tirante de borde es menor, HEC-14
+    # num. 3.1.3): de esa comparacion no se concluye que el terreno resista.
+    concluyente: bool = True
+
+
+@dataclass(frozen=True)
+class ApronHEC14:
+    """
+    Apron de enrocado de HEC-14 Sec. 10.2: el D50 de la Ec. (10.4) y, de la
+    Tabla 10.1 (un EJEMPLO de estandar de proyecto), la clase, la longitud,
+    la profundidad y el ancho. Los cuatro ultimos son `None` cuando el D50
+    requerido supera la mayor clase de la tabla.
+    """
+
+    D50_requerido: float                  # m - Ec. (10.4)
+    D: float                              # m - diametro del conducto
+    D_de_calculo: float                   # m - D, o D' = (D + yn)/2 (Ec. 10.5)
+    ajustado_por_supercritico: bool
+    TW: float                             # m - el del punto
+    TW_de_calculo: float                  # m - acotado a 0.4·D por abajo
+    TW_acotado: bool
+    clase: Optional[int] = None
+    D50_clase: Optional[float] = None     # m
+    longitud: Optional[float] = None      # m
+    espesor: Optional[float] = None       # m
+    ancho_final: Optional[float] = None   # m
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    # --- T-8, segunda auditoria (H15) --- False si no se pudo decidir el
+    # regimen (falta el tirante de salida): la Ec. (10.5) no se aplico, y si
+    # el flujo fuera supercritico el D50 seria mayor. Se avisa.
+    regimen_determinado: bool = True
+
+
+@dataclass(frozen=True)
+class ClaseHEC14:
+    """
+    La clase de la Tabla 10.1 de HEC-14 que corresponde a una piedra dada
+    (la de D50 mayor o igual) y la geometria que la tabla le da: longitud
+    kL·D, profundidad ke·D50 de la clase, ancho final 3·D + (2/3)·L. Sin
+    clase (piedra mayor que la ultima) los cuatro ultimos van en None.
+    """
+
+    d50_de_partida: float                 # m
+    clase: Optional[int] = None
+    D50_clase: Optional[float] = None     # m
+    longitud: Optional[float] = None      # m
+    espesor: Optional[float] = None       # m
+    ancho_final: Optional[float] = None   # m
+    paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class RequisitoDeFiltro:
+    """
+    El filtro bajo el enrocado, como REQUISITO DECLARADO y no como diseño.
+    Con el pasante del tamiz N.º 200 del suelo (dato del EMS) elige la
+    columna de la Tabla 511-06 de EG-2013; sin el, los tres campos de la
+    columna quedan en `None` y `texto` dice que dato falta.
+    """
+
+    clase_geotextil: str
+    pasa_200_pct: Optional[float]
+    columna: Optional[str]                # rotulo de la columna de la tabla
+    permitividad_min_s1: Optional[float]
+    abertura_aparente_max_mm: Optional[float]
+    texto: str
+    citas: Tuple[str, ...] = ()
+    paso: Optional["PasoDeMemoria"] = None
+    avisos: Tuple[str, ...] = ()          # nota (5) a: suelo que pide diseño
+
+
+@dataclass(frozen=True)
+class ProteccionEntrada:
+    """
+    Proteccion de la ENTRADA (INF-5.1.13): la velocidad en la boca, el
+    revestimiento adoptado y lo que hay que proteger segun la embocadura.
+    Ninguna fuente de normas/ da dimensiones para la entrada: la geometria
+    del zampeado y del dentellon es del cabezal (T-7a).
+    """
+
+    tipo_embocadura: str
+    V_entrada: Optional[float]            # m/s; None si M4 no la publica
+    revestimiento: str                    # valor de 'tipo_proteccion_entrada'
+    criterio_revestimiento: str
+    elementos: Tuple[str, ...]            # lo que se protege, por embocadura
+    requerida: Optional[bool] = None      # como en `ProteccionSalida`
+    velocidad_admisible: Optional["VelocidadAdmisible"] = None
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+
+
+TIPO_LECHO_NO_COHESIVO = "no_cohesivo"
+TIPO_LECHO_COHESIVO = "cohesivo"
+TIPOS_DE_LECHO = (TIPO_LECHO_NO_COHESIVO, TIPO_LECHO_COHESIVO)
+
+
+@dataclass(frozen=True)
+class MaterialLecho:
+    """
+    El dato externo `material_lecho_salida`, ya validado: el suelo del lecho
+    a la salida, del EMS. Todos los campos son opcionales por separado
+    --cada calculo dice cual le falta-- y ninguno tiene valor por defecto.
+
+        tipo            "no_cohesivo" o "cohesivo": que ecuacion de HEC-14.
+        D84_m, D16_m    granulometria del lecho (no cohesivo): σ = (D84/D16)^0.5.
+        IP              indice de plasticidad (cohesivo).
+        Sv_Pa           resistencia al corte saturada, N/m2 (cohesivo).
+        pasa_200_pct    pasante del tamiz N.º 200, en %: elige la columna del
+                        geotextil de filtro (EG-2013, Tabla 511-06).
+    """
+
+    tipo: Optional[str] = None
+    D84_m: Optional[float] = None
+    D16_m: Optional[float] = None
+    IP: Optional[float] = None
+    Sv_Pa: Optional[float] = None
+    pasa_200_pct: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class HoyaDeSocavacion:
+    """La hoya de socavacion local estimada por HEC-14 Cap. 5."""
+
+    metodo: str                           # que ecuacion, con su numeral
+    profundidad: float                    # m - hs
+    ancho: float                          # m - Ws
+    longitud: float                       # m - Ls
+    distancia_al_maximo: float            # m - 0.4·Ls desde la salida
+    duracion_min: float                   # minutos
+    origen_duracion: str
+    Cs: float                             # el de la profundidad
+    Ch: float                             # el de la profundidad
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    # --- T-8, auditoria --- De donde salio t: `duracion_por_criterio` si
+    # rigio el criterio 'duracion_caudal_pico_socavacion_min' por falta del
+    # dato; `duracion_acotada` si el dato era menor de 30 min y se estimo con
+    # 30 como cota superior. Con el criterio, la SENSIBILIDAD: la profundidad
+    # que daria el otro extremo de su ventana (`duracion_alternativa_min`:
+    # los 30 minutos que la fuente recomienda cuando rige el techo, 360).
+    duracion_por_criterio: bool = False
+    duracion_acotada: bool = False
+    profundidad_alternativa: Optional[float] = None   # m
+    duracion_alternativa_min: Optional[float] = None
+
+
+ORIGEN_SOCAVACION_DECLARADA = "declarada (dato externo)"
+ORIGEN_SOCAVACION_ESTIMADA = "estimada (HEC-14, Cap. 5)"
+ORIGEN_SOCAVACION_SIN_DATO = "sin dato"
+
+
+@dataclass(frozen=True)
+class SocavacionSalida:
+    """
+    La profundidad de socavacion a la salida que la Fase 6 entrega al
+    desplante del cabezal (T-7a): la DECLARADA si el punto la trae, y si no
+    la ESTIMADA por HEC-14. `profundidad_para_desplante` es None cuando no
+    hay ninguna de las dos, y `motivo_no_estimada` dice que dato falta.
+    """
+
+    profundidad_para_desplante: Optional[float]   # m
+    origen: str
+    estimada: Optional[HoyaDeSocavacion] = None
+    declarada_m: Optional[float] = None
+    motivo_no_estimada: str = ""
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    # --- T-8, auditoria --- DESDE QUE COTA se mide la profundidad, que HEC-14
+    # Cap. 5 no define: el valor del criterio 'referencia_profundidad_
+    # socavacion', y la cota del fondo de la hoya que resulta (msnm) cuando
+    # el punto trae las cotas. Es lo que T-7a toma para el desplante.
+    referencia: Optional[str] = None
+    cota_referencia: Optional[float] = None       # msnm
+    cota_fondo_de_la_hoya: Optional[float] = None  # msnm
+
+
+@dataclass(frozen=True)
+class CamaApoyoRelleno:
+    """
+    Fila de la tabla 8.1 (EG-2013 Capitulo V) para un material: cama de
+    apoyo y sujecion / relleno lateral, con su numeral. Es informacion para
+    la memoria y los planos (Sec. 11, entregable 7), no una verificacion con
+    umbral: el CSV no trae una columna de compactacion realmente lograda
+    contra la que comparar.
+    """
+    cama_apoyo: str
+    sujecion_relleno_lateral: str
+    numeral: str
+    # DE DONDE SALEN LOS PORCENTAJES DE COMPACTACION que la fila imprime, y
+    # es un campo y no un comentario porque la memoria tiene que poder
+    # decirlo. Al verificar las cuatro fichas contra el EG-2013 (NOR-EG-03)
+    # aparecio que en tres de ellas el "95 % MDS" NO es literal de la
+    # subseccion citada: llega por REMISION -- 506.07 y 507.08 remiten a la
+    # Subseccion 205.12(c)(1), que es la que imprime Di > 0.95 De para la
+    # corona y Di > 0.90 De para base y cuerpo --, y en la ficha del concreto
+    # simple el 95 % de la pagina vecina es de OTRO elemento (el terreno base
+    # de 505.06). El valor es correcto; lo que faltaba era decir por que via
+    # llega, que es la diferencia entre una cita y una deduccion.
+    # Vacio significa "todo lo que la fila imprime es literal de su
+    # subseccion", que es el caso del HDPE.
+    procedencia_de_los_porcentajes: str = ""
+
+
+@dataclass(frozen=True)
+class FactoresFlotacion:
+    """
+    Los tres factores de carga gamma con que V7 evalua la flotacion del
+    conducto (Fase 8, item 3), leidos de 'factores_carga_aashto' (Tablas
+    3.4.1-1 y 3.4.1-2 de AASHTO LRFD).
+
+    Existe para que los tres viajen juntos con la clave del criterio de la
+    que salieron: quien lea el resultado de V7 en la memoria tiene que poder
+    ver CUAL gamma se aplico a cada carga, no solo el numero final. Un
+    equilibrio de factores de carga en el que no se distingue el gamma del
+    estabilizante del gamma del desestabilizante es indistinguible, en el
+    papel, de un factor de seguridad global -- que es justo lo que V7 dejo
+    de ser.
+
+    `gamma_DC` y `gamma_EV` son los MINIMOS de la Tabla 2.4.5.3.1-2: en
+    flotacion el peso propio y el peso del relleno estabilizan, y en LRFD lo
+    que estabiliza se minora. `gamma_WA` es el de la subpresion, que
+    desestabiliza y se mayora, y sale de la Tabla 2.4.5.3.1-1.
+
+    `fila_gamma_EV` es la fila LITERAL de la Tabla 2.4.5.3.1-2 de la que sale
+    `gamma_EV`, y viaja por la misma razon que el resto: esa tabla desglosa
+    el empuje vertical de tierra POR TIPO DE ESTRUCTURA -- un muro de
+    retencion y un conducto enterrado no llevan el mismo par -- y un gamma_EV
+    suelto no dice de cual de las seis filas salio. El par {1.35, 0.90} que
+    el proyecto uso durante un tiempo no era ninguna de ellas: mezclaba el
+    maximo de una con el minimo de otra (MAT-D8, NOR-PUE-03).
+
+    HASTA DONDE LLEGA HOY ESE CAMPO: hasta la memoria, y desde C7. Lo que
+    esta clausula decia hasta entonces --- «llega a este objeto y ahi se
+    queda... la memoria NO imprime hoy de que fila salio el gamma de V7» ---
+    era cierto y ya no lo es. `M5.v7_flotacion` lo publica en el `valor` de su
+    `EleccionDeProyecto`, junto al gamma que sale de esa fila y con las SIETE
+    filas de EV de la tabla en `entre`.
+
+    Y LA SALIDA QUE ESA CLAUSULA DABA POR NECESARIA NO LO ERA, que es lo que
+    conviene no repetir: decia que llevar la fila a la memoria «pide un campo
+    mas en `Verificacion` y su renderizado en M11». No pidio ninguno de los
+    dos. La procedencia de un valor elegido ya tenia sitio --- la R1, que
+    `EleccionDeProyecto` implementa y `M11._elecciones_del_paso` imprime ---
+    y lo que faltaba era usarlo. Un campo nuevo en `Verificacion` habria sido
+    un segundo canal para lo que ya tenia el suyo.
+    """
+    gamma_DC: float
+    gamma_EV: float
+    gamma_WA: float
+    criterio: str
+    fila_gamma_EV: str
+
+
+class EstadoDeVerificacion(str, Enum):
+    """
+    EL ESTADO DE UNA VERIFICACION, con una sola fuente (PC-27, cierre del
+    2026-09-22). Hasta aqui habia TRES capas que decian lo mismo sin que
+    nada las atara: `Verificacion.cumple` (lo que lee el pipeline), el
+    `TipoDeVeredicto` del `PasoDeMemoria` (lo que lee la memoria) y el
+    `Bloqueo` (lo que no llego a evaluarse). PF-4 midio la grieta: una misma
+    verificacion decia `cumple=True` al pipeline e INDICADOR a la memoria,
+    a proposito, y nada impedia que dijera dos cosas incompatibles.
+
+    Desde aqui `Verificacion.estado` ES la fuente, y las otras dos son
+    vistas: `cumple` se deriva de el (`EstadoDeVerificacion.cumple`) y el
+    veredicto del paso tiene que coincidir (`Verificacion.__post_init__` lo
+    exige). Lo que NO llego a evaluarse no es un estado de aqui: sigue siendo
+    un `Bloqueo`, porque no hay `Verificacion` que lo lleve. Cuatro valores:
+
+        CUMPLE       se evaluo y pasa.
+        NO_CUMPLE    se evaluo y no pasa: el punto se detiene.
+        INDICADOR    se evaluo, el indicador se disparo, y un [A] declarado
+                     decidio no detener el punto (PF-4, `regimen_v2b`).
+        NO_APLICA    la fila existe en la tabla de la Fase 5 y en ESTE punto
+                     no dice nada: V5 en la Familia C, SUSTITUIDA por VC1
+                     (`M5.v5_no_aplica_en_canal`). No cuenta como
+                     incumplida y la memoria lo imprime con esas palabras,
+                     con el motivo al lado; hasta aqui la fila simplemente
+                     no aparecia.
+    """
+    CUMPLE = "cumple"
+    NO_CUMPLE = "no cumple"
+    INDICADOR = "indicador"
+    NO_APLICA = "no aplica"
+
+    @property
+    def cumple(self) -> bool:
+        """La vista que lee el pipeline: solo NO_CUMPLE detiene el punto."""
+        return self is not EstadoDeVerificacion.NO_CUMPLE
+
+    @classmethod
+    def de_veredicto(cls, tipo: "TipoDeVeredicto") -> Optional["EstadoDeVerificacion"]:
+        """
+        El estado que un veredicto de paso implica, o None si el veredicto
+        no juzga (SIN_VEREDICTO) o no se evaluo (DIFERIDO, que es un
+        `Bloqueo` y no un estado de verificacion).
+        """
+        return {
+            TipoDeVeredicto.CUMPLE: cls.CUMPLE,
+            TipoDeVeredicto.NO_CUMPLE: cls.NO_CUMPLE,
+            TipoDeVeredicto.INDICADOR: cls.INDICADOR,
+        }.get(tipo)
+
+
+@dataclass(frozen=True)
+class Verificacion:
+    """
+    Resultado de una verificacion de la Fase 5. Nunca se devuelve un bool
+    desnudo: sin numeral, la memoria de calculo no es defendible.
+
+    `estado` es LA FUENTE del resultado desde el cierre de PC-27; `cumple`
+    sigue en la firma porque veinte constructores lo escriben, y desde aqui
+    es una VISTA comprobada: `__post_init__` deriva el estado cuando no viene
+    (del veredicto del paso, o de `cumple`) y rechaza con `ValueError` un
+    `cumple` que no sea el del estado, o un veredicto del paso que diga otra
+    cosa. `motivo_no_aplica` es obligatorio con NO_APLICA: una fila que «no
+    aplica» sin decir por que es un hueco con otro nombre.
+
+    `criterio_aplicado` es la clave de `criterios_adoptados.py` cuando el
+    umbral proviene de un criterio [N->], [C] o [A]; None cuando el umbral es
+    [N] puro y se lee de `constantes_normativas.py`.
+    """
+
+    cumple: bool
+    numeral: str                          # "4.1.1.3.7 b)", "HDS-5 Ap. A", ...
+    valor_obtenido: Any
+    valor_admisible: Any
+    criterio_aplicado: Optional[str]
+    codigo: Optional[str] = None          # "V1" .. "V9" (Fase 5)
+    # LA TRAZA DE LA MEMORIA, emitida por la propia funcion que verifica.
+    #
+    # Va aqui y no en un canal aparte porque es lo mismo que `cumple`: el
+    # resultado de la verificacion. Lo que cambia es a quien se lo cuenta --
+    # `cumple` al pipeline, `paso` al lector de la memoria -- y separarlos en
+    # dos objetos permitiria que dijeran cosas distintas, que es exactamente
+    # lo que pasaba cuando M11 reconstruia el relato leyendo resultados
+    # (SIS-A-07).
+    #
+    # `None` NO significa "sin fundamentar": significa que esa verificacion
+    # todavia no puede tener `Fundamento`, y la razon se censa en
+    # `normativa.fundamentos.SIN_FUNDAMENTO` con lo que habria que transcribir
+    # para traerla; M11 la imprime en el sitio del paso ausente, en vez de
+    # dejar el hueco callado. El censo esta VACIO desde T-10: V5 y V8 salieron
+    # en T-7b y V4b, V6 y V9 en T-10 (cuando el tope de V9 es de catalogo o
+    # del marco su paso sustituye sin juzgar).
+    paso: Optional["PasoDeMemoria"] = None
+    estado: Optional[EstadoDeVerificacion] = None
+    motivo_no_aplica: str = ""
+    # --- verificacion de T-7 --- Lo que la verificacion tiene que decir en
+    # voz alta SIN cambiar su veredicto: una carga que se acoto, una
+    # aproximacion usada en su banda de cautela. No es un INDICADOR (el
+    # veredicto sigue siendo el de la comparacion): es texto que
+    # `InformePunto.avisos()` recoge de las verificaciones de la seccion
+    # aceptada. V8 es su primer productor.
+    avisos: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        veredicto = getattr(self.paso, "veredicto", None)
+        derivado = (EstadoDeVerificacion.de_veredicto(veredicto.tipo)
+                    if veredicto is not None else None)
+        estado = self.estado
+        if estado is None:
+            if derivado is not None and derivado.cumple != bool(self.cumple):
+                raise ValueError(
+                    f"Verificacion {self.codigo or self.numeral}: el veredicto "
+                    f"del paso dice «{veredicto.tipo.value}» y `cumple`="
+                    f"{self.cumple!r}. La memoria y el pipeline tienen que "
+                    "decir lo mismo (SIS-A-07, PC-27)")
+            estado = derivado if derivado is not None else (
+                EstadoDeVerificacion.CUMPLE if self.cumple
+                else EstadoDeVerificacion.NO_CUMPLE)
+            object.__setattr__(self, "estado", estado)
+        if estado.cumple != bool(self.cumple):
+            raise ValueError(
+                f"Verificacion {self.codigo or self.numeral}: `cumple`="
+                f"{self.cumple!r} no es la vista del `estado` "
+                f"«{estado.value}». El estado es la fuente y `cumple` se "
+                "deriva de el; dos valores que discrepan son la grieta de "
+                "PC-27")
+        if derivado is not None and derivado is not estado:
+            raise ValueError(
+                f"Verificacion {self.codigo or self.numeral}: el veredicto "
+                f"del paso dice «{veredicto.tipo.value}» y el estado "
+                f"«{estado.value}». La memoria y el pipeline tienen que "
+                "decir lo mismo (SIS-A-07, PC-27)")
+        if estado is EstadoDeVerificacion.NO_APLICA and \
+                not str(self.motivo_no_aplica).strip():
+            raise ValueError(
+                f"Verificacion {self.codigo or self.numeral}: NO_APLICA sin "
+                "`motivo_no_aplica`. Una fila que no aplica tiene que decir "
+                "por que y que la sustituye")
+
+
+# ===========================================================================
+# La traza de la memoria (Sec. 4.4 del plan de correcciones v12)
+# ---------------------------------------------------------------------------
+# EL CAMBIO DE FONDO. Hasta S18 la memoria se RECONSTRUIA: M11 leia los
+# resultados y volvia a armar el relato -- y, para poder armarlo, volvia a
+# calcular (`y/D` en dos sitios, contra su propio docstring; SIS-A-07). Un
+# reporte que recalcula es un segundo motor de calculo sin tests, y lo que
+# imprime puede divergir de lo que el pipeline verifico sin que nada avise.
+#
+# A partir de aqui el calculo EMITE la traza y M11 la FORMATEA. `PasoDeMemoria`
+# es la unidad de esa traza: los ocho campos de la §4.4, y cada uno responde a
+# una pregunta que un revisor hace en voz alta delante de la memoria.
+#
+#     que              que se esta calculando
+#     por_que          por que la norma obliga o recomienda hacerlo
+#     formula          la expresion como la escribe la fuente, con su cita
+#     sustitucion      los valores que entran, con unidad y PROCEDENCIA
+#     resultado        el numero, con unidad y cifras declaradas
+#     umbral           contra que se compara, con cita y CARACTER
+#     veredicto        cumple / no cumple / diferido, con el margen
+#     citas_textuales  las transcripciones literales que lo sostienen
+#
+# TRES REGLAS ESTAN EN LOS TIPOS, no en un test que alguien puede no correr:
+#
+#   1. `por_que` es obligatorio y no vacio. Un paso sin fundamento no se
+#      construye. (Criterio de salida de la §4.4: "ningun PasoDeMemoria sin
+#      por_que".)
+#   2. Un `Umbral` sin `cita_id` no se construye. ("ningun umbral sin cita".)
+#   3. Un veredicto de cumplimiento sin umbral no se construye: decir "cumple"
+#      sin decir contra que es lo que hace indefendible una memoria.
+#
+# La cuarta -- que toda cita referenciada EXISTA en el registro -- no puede
+# vivir aqui: este archivo no importa `normativa`, y no debe. La comprueba
+# `modelos.paso()`, que si lo consulta, y la vuelve a comprobar el test sobre
+# la memoria generada.
+# ===========================================================================
+
+# DECIMALES DE PRESENTACION de la traza. Son de la misma naturaleza que los
+# `FMT_*` de M11 -- cuantos decimales se imprimen -- y por eso no son valores
+# de proyecto: `Magnitud` guarda el float entero y `cifras` solo dice como
+# escribirlo. Viven aqui, con nombre y una sola vez, en lugar de repetirse
+# como enteros sueltos en cada llamada de cada modulo de calculo: asi el
+# barrido de literales tiene tres lineas que mirar y no ochenta.
+CIFRAS_MAGNITUD = 3        # literal-ok: decimales de presentacion; no entra en ningun calculo
+# Cuatro para la PENDIENTE y para n: con tres, una S de 0.0006 se imprime
+# 0.001 y la caida S*L deja de poder recomputarse desde la memoria, que es
+# justo lo que esas filas existen para permitir (MAT-D9). Es la misma razon
+# por la que M11 tiene un FMT_4.
+CIFRAS_FINA = 4            # literal-ok: decimales de presentacion; no entra en ningun calculo
+CIFRAS_FACTOR = 2          # el 2 y el 1 no necesitan marca: la regla los exime
+CIFRAS_PORCENTAJE = 1
+
+
+def texto_de_dimension(valor: float) -> str:
+    """
+    Una dimension de seccion, en metros, como la ROTULA la memoria: con
+    `CIFRAS_FACTOR` decimales como minimo y con TODOS los que el numero
+    declarado tenga (Sec. 3.2; VE-1, hallazgo H1 de su revision).
+
+        0.9 -> «0.90»     1.05 -> «1.05»     1.0668 -> «1.0668»
+
+    POR QUE NO DOS FIJOS. El rotulo nombra el PRODUCTO, y con dos decimales
+    la serie de 6 in de 'diametros_normalizados' se leia «Ø 1.07 m» y
+    «Ø 1.22 m» en el JSON, la memoria y el CSV de resumen mientras el calculo
+    corria con 1.0668 y 1.2192: el lector veia un diametro que nadie
+    declaro. Los decimales salen de la forma decimal mas corta del float
+    (`repr`, la que lo reproduce exacto), que para un escalon de la serie es
+    la que se declaro (`M2._escalon_de_la_serie`). Con la progresion de
+    archivo y el marco de la linea base el texto es el de siempre.
+
+    Un valor no finito se escribe como antes, con `CIFRAS_FACTOR` («nan»).
+    """
+    from decimal import Decimal
+
+    if not math.isfinite(valor):
+        return f"{valor:.{CIFRAS_FACTOR}f}"
+    decimales = max(CIFRAS_FACTOR,
+                    -Decimal(repr(float(valor))).as_tuple().exponent)
+    return f"{valor:.{decimales}f}"
+
+
+# Alcance de la corrida. Rotulos, no valores de proyecto: con "expediente"
+# (el defecto) todo corre como siempre; con "perfil" V5 y V8 se INTENTAN pero
+# su fallo se difiere, y las Fases 8 y 9 no se ejecutan.
+#
+# VIVEN AQUI DESDE S18, y no en `cli.py`, porque dejaron de ser de la CLI:
+# M11 los necesita para decidir que va dentro de `bloque_pendientes` (el
+# volcado de los Tableros 1-2-3 es de la corrida de expediente), y M11 no
+# puede importar `cli` --- es `cli` quien importa M11 ---. La alternativa era
+# que M11 llevara su propia copia de las dos cadenas, que es como nacen las
+# dos fuentes de verdad que este proyecto persigue: `bloque_acotaciones` ya
+# comparaba contra un "expediente" escrito a mano.
+ALCANCE_PERFIL = "perfil"
+ALCANCE_EXPEDIENTE = "expediente"
+
+# LOS DOS NIVELES DE ENTREGA. No son etiquetas de la taxonomia de CLAUDE.md
+# (esas son [N], [N->], [S], [C], [A]) ni fases del calculo: dicen a que
+# ENTREGA pertenece un criterio o un dato de sitio. Un estudio de PERFIL
+# cierra con los primeros declarados; los segundos son del expediente
+# tecnico, y `--alcance perfil` difiere sus etapas con su fundamento.
+#
+# VIVEN AQUI DESDE EXT-10, y no en `criterios_adoptados.py` donde nacieron
+# (S20), porque desde EXT-10 los lleva tambien `DatoSitio.nivel`:
+# `criterios_adoptados` importa `datos_sitio` y `datos_sitio` no puede
+# importar `criterios_adoptados`, de modo que el unico hogar comun es este.
+# `criterios_adoptados` los reexporta con los mismos nombres (`ca.NIVEL_PERFIL`),
+# que es como los leen la GUI, `variables_entrada` y la suite.
+NIVEL_PERFIL = "perfil"
+NIVEL_EXPEDIENTE = "expediente"
+NIVELES = (NIVEL_PERFIL, NIVEL_EXPEDIENTE)
+
+
+class TipoDeVeredicto(str, Enum):
+    """
+    CUATRO estados, y el cuarto no es relleno. Un paso puede calcular sin
+    juzgar --el tirante normal es un numero, no un aprobado-- y forzarlo a
+    "cumple" o "no cumple" obligaria a inventarle un umbral, que es la forma
+    exacta de la cita falsa que este proyecto viene retirando.
+
+    DIFERIDO es distinto de NO_CUMPLE y de SIN_VEREDICTO: la verificacion
+    existe, tiene umbral y no se evaluo. Dos razones, y el `Bloqueo` del
+    punto dice cual: porque el alcance de la corrida la dejo fuera
+    (`--alcance perfil`), o porque el METODO disponible no la puede evaluar
+    ahi (`MetodoNoEvaluableError`, EXT-3: el paso F4.HO bajo control de
+    salida con HW/D < 0.75, hasta E-A). Imprimirla como "cumple" seria mentir
+    y como "no cumple" tambien: hasta EXT-3 el paso de h_o decia NO_CUMPLE
+    mientras el pipeline aceptaba el punto CON ESE HW, que es la divergencia
+    que SIS-A-07 prohibe.
+
+    NO_CUMPLE SOBRE UNA CONDICION DE USO DE UN METODO (E-A) no es esa
+    divergencia, y conviene decirlo porque se parece: los pasos F4.HO (bajo
+    HW/D < 0.75) y F4.PERFIL 4.3c (barril que no va lleno en la mayor parte)
+    juzgan la condicion que la fuente pone a la APROXIMACION de h_o, no al
+    diseño. Cuando dicen NO_CUMPLE, el paso dice ademas que hace el pipeline
+    con ello --usa el remanso, o conserva la aproximacion porque la pag. 3.12
+    la avala hasta 0.75D--, y el punto no se rechaza porque ninguna exigencia
+    sobre el diseño se incumple: `ResultadoPunto.verificaciones_incumplidas`
+    lee las `Verificacion`, no los pasos. Memoria y pipeline dicen lo mismo:
+    «esta condicion del metodo no se cumple, y por eso el HW es este».
+
+    INDICADOR (PF-4) ES EL QUINTO, Y ES UN VALOR DE ESTA CAPA, NO UNA CAPA
+    NUEVA. PC-27 («Cerrado parcial») deja escrito que el estado de
+    verificacion ya vive en tres capas que no se reducen entre si --
+    `Verificacion.cumple: bool`, este enum adosado al `PasoDeMemoria`, y
+    `Bloqueo` -- y que formalizar sin decidir cual gobierna produce una
+    cuarta. PF-4 no la produce: `cumple` sigue siendo el bool que lee la
+    compuerta de MD (`all(v.cumple ...)`) y `Bloqueo` no se toca. Lo que hace
+    falta es que ESTA capa pueda decir una cosa que ninguno de los cuatro
+    valores anteriores decia sin mentir: «la comparacion se evaluo, el
+    indicador que la fuente nombra SE DISPARO, y el proyecto decidio --por un
+    criterio [A] declarado, `regimen_v2b` = indicador_con_aviso-- no detener
+    el punto por ello». CUMPLE mentiria (el indicador se disparo); NO_CUMPLE
+    haria divergir la memoria del pipeline, que acepta el punto (SIS-A-07,
+    el mismo defecto que EXT-3 corrigio en F4.HO); DIFERIDO es «no se
+    evaluo» y aqui se evaluo; SIN_VEREDICTO es «no juzga» y aqui se juzgo
+    contra un umbral. Por eso INDICADOR exige umbral igual que CUMPLE y
+    NO_CUMPLE (`PasoDeMemoria.__post_init__`), y M11 lo pinta como AVISO --
+    ni incumple ni diferido--. `Veredicto.cumple` sigue diciendo solo
+    CUMPLE: un indicador disparado no «cumple», aunque el punto no se
+    detenga; esa propiedad no tiene consumidor de produccion (medido por
+    grep en PF-4) y se deja como esta. La fuente que lo sostiene es la que
+    lo nombra asi: HDS-5 3.a ed. num. 5.3.3, «are key indicators of
+    potential problems», `caracter` DEFINICION, sin umbral ni «shall».
+    """
+
+    CUMPLE = "cumple"
+    NO_CUMPLE = "no cumple"
+    DIFERIDO = "diferido"
+    SIN_VEREDICTO = "sin veredicto"
+    INDICADOR = "indicador"
+
+
+class TipoDeBloqueo(str, Enum):
+    """
+    Por que una etapa no se completo. Hasta EXT-3 `cli.Bloqueo.tipo` era un
+    `str` libre que valia `type(exc).__name__` o el literal "DiferidoPorAlcance"
+    escrito en tres sitios (PC-27). Los VALORES son esos mismos textos, a
+    proposito: la linea base, el JSON y los tests que comparan
+    `b.tipo == "CriterioPendienteError"` siguen leyendo lo mismo.
+
+    Cinco son excepciones del expediente (`de_excepcion` las traduce), el
+    sexto es una decision de la corrida y no una excepcion.
+    """
+    CRITERIO_PENDIENTE = "CriterioPendienteError"
+    DISENO_NO_FACTIBLE = "DisenoNoFactibleError"
+    DATO_FALTANTE = "DatoFaltanteError"
+    DATO_INVALIDO = "DatoInvalidoError"
+    LIMITE_NUMERICO = "LimiteNumericoError"
+    METODO_NO_EVALUABLE = "MetodoNoEvaluableError"
+    DIFERIDO_POR_ALCANCE = "DiferidoPorAlcance"
+
+    @classmethod
+    def de_excepcion(cls, exc: ErrorProyecto) -> "TipoDeBloqueo":
+        """El tipo de bloqueo que corresponde a una excepcion del expediente."""
+        for clase, tipo in _TIPO_DE_BLOQUEO_POR_CLASE:
+            if isinstance(exc, clase):
+                return tipo
+        raise TypeError(
+            f"{type(exc).__name__} no es una excepcion del expediente con "
+            f"tipo de bloqueo: la taxonomia de ErrorProyecto y "
+            f"TipoDeBloqueo tienen que crecer juntas")
+
+
+_TIPO_DE_BLOQUEO_POR_CLASE = (
+    (CriterioPendienteError, TipoDeBloqueo.CRITERIO_PENDIENTE),
+    (DisenoNoFactibleError, TipoDeBloqueo.DISENO_NO_FACTIBLE),
+    (DatoFaltanteError, TipoDeBloqueo.DATO_FALTANTE),
+    (DatoInvalidoError, TipoDeBloqueo.DATO_INVALIDO),
+    (LimiteNumericoError, TipoDeBloqueo.LIMITE_NUMERICO),
+    (MetodoNoEvaluableError, TipoDeBloqueo.METODO_NO_EVALUABLE),
+)
+
+
+@dataclass(frozen=True)
+class Bloqueo:
+    """
+    Una etapa que no se pudo completar, con la causa del expediente.
+
+    VIVE AQUI DESDE EXT-3, y antes en `cli.py` «a proposito» porque no fluia
+    entre modulos de calculo. Dejo de ser cierto cuando el estado
+    «pendiente / diferido / no evaluable» paso a ser un estado del DOMINIO y
+    no de la capa de reporte (PC-27): lo producen la Fase 5 y el bucle de MD
+    (`MetodoNoEvaluableError`), lo leen la CLI, la GUI y M11, y una misma
+    clase con `tipo` cerrado es lo que impide que cada capa escriba el suyo.
+    `InformePunto` e `Informe` siguen en `cli.py`: esos si son la forma del
+    reporte.
+
+    `criterio` esta relleno solo cuando la causa es un criterio pendiente: es
+    la clave que hay que declarar para desbloquear la etapa. `campo` cuando
+    falta o esta mal un dato. `delta_rasante_m` cuando el diseño no es
+    factible y 7.A pudo decir cuanto subir la rasante.
+    """
+
+    fase: str
+    etapa: str
+    tipo: TipoDeBloqueo
+    mensaje: str
+    criterio: Optional[str] = None
+    etiqueta: Optional[str] = None
+    concepto: Optional[str] = None
+    fuente: Optional[str] = None
+    campo: Optional[str] = None
+    delta_rasante_m: Optional[float] = None
+    # True cuando la etapa no se completo POR DECISION DE ALCANCE de la
+    # corrida (--alcance perfil), no por un defecto del expediente. Se imprime
+    # con su fundamento igual que cualquier bloqueo -- la memoria necesita esa
+    # constancia -- pero no cuenta para `Informe.cerrado`. Un
+    # METODO_NO_EVALUABLE lo lleva en True solo a nivel de perfil (v8 §4.3).
+    diferido_por_alcance: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.tipo, TipoDeBloqueo):
+            raise TypeError(
+                f"Bloqueo.tipo tiene que ser un TipoDeBloqueo, no "
+                f"{self.tipo!r}: el texto libre es lo que PC-27 retiro")
+
+
+@dataclass(frozen=True)
+class DatoEfectivoDeSitio:
+    """
+    Lo que un dato de sitio [S] APORTO a una corrida, y de donde (EXT-10).
+
+    Es la mitad de ESTADO de un `DatoSitio`, y solo esa: el valor con que
+    gobierno, la trazabilidad de ESA lectura, la fecha en que se declaro y
+    el archivo del que salio (`datos_sitio.py`, o el `sitio.json` / la sesion
+    de otra obra). La otra mitad --- concepto, procedimiento, fuente, ambito
+    --- es del ARCHIVO y la capa de reporte la sigue leyendo de `ds.dato`,
+    que es una lectura estatica. No es un segundo `DatoSitio`: es lo que
+    `ContextoCorrida.valores_efectivos` es para los criterios, con los tres
+    campos que un [S] lleva ademas del valor porque se defiende con
+    trazabilidad y no con rango.
+    """
+
+    valor: Any
+    trazabilidad: str
+    fecha: str
+    origen: str
+    declarado_en_caliente: bool
+
+
+@dataclass(frozen=True)
+class ContextoCorrida:
+    """
+    LA FOTO DEL ESTADO CON QUE CORRIO EL EXPEDIENTE, tomada por `servicio.correr`
+    al salir y colgada del `Informe` (EXT-A-01, PC-09; EXT-4).
+
+    Por que existe. Los tres archivos de valores llevan estado de PROCESO:
+    el registro de usos (`criterios_adoptados._USADOS`, `datos_sitio._USADOS`),
+    las declaraciones en caliente (`_OVERRIDES`) y el libro de procedencias
+    (`declaracion._PROCEDENCIAS`). Hasta EXT-4 los cuatro exportadores ---
+    `informe_json`, `volcar`, la memoria HTML y la trazabilidad --- los leian
+    AL EXPORTAR, en 39 sitios medidos. Con un proceso de un solo uso (la CLI)
+    daba igual; con la GUI, o con cualquier consumidor que reutilice el
+    proceso, la memoria de una corrida imprimia lo que otra corrida uso, lo
+    que se declaro DESPUES de correr, y el SHA-1 del CSV que hay en disco al
+    exportar y no del que se leyo. Una memoria que afirma algo falso sobre su
+    propia corrida es el peor defecto que puede tener este proyecto.
+
+    Que lleva, y por que cada cosa:
+
+    - `criterios_usados`, `datos_usados`: lo que ESTA corrida invoco. El
+      registro se vacia al entrar en `servicio.correr` y se fotografia al salir.
+    - `valores_efectivos`: el valor con que gobierno cada criterio del
+      catalogo, copiado EN PROFUNDIDAD --- un dict declarado en caliente y
+      mutado despues no puede mover la memoria de una corrida que ya paso ---.
+    - `procedencias`: el libro de `declaracion` tal como estaba, por clave.
+    - `declarados_en_caliente`, `pisados_en_caliente`: las dos listas que la
+      memoria imprime en bloques distintos (tantear no es falsear).
+    - `criterios_sin_valor`, `criterios_opcionales_sin_declarar`,
+      `criterios_con_verificacion_pendiente`: las tres listas derivadas que
+      `criterios_adoptados` calcula sobre el estado vivo, calculadas ENTONCES
+      y no al exportar.
+    - `csv_sha1`: de los MISMOS BYTES que M0 leyo, no del archivo en disco.
+    - `criterios_sha1`: la huella del archivo de criterios al correr.
+    - `datos_efectivos`, `datos_declarados_en_caliente`,
+      `datos_pisados_en_caliente`, `datos_sin_valor` (EXT-10): los datos de
+      sitio con que gobierno la corrida y de que archivo salio cada uno.
+    - `cuencas_sha1`, `estacion_sha1` (UI-1): las huellas de las dos
+      entradas de la hidrologia, de los bytes que se parsearon; None sin
+      hidrologia.
+
+    Que NO lleva: nada que sea del ARCHIVO y no del estado --- concepto,
+    fuente, justificacion, etiqueta, sensibilidad ---, que la capa de reporte
+    sigue leyendo del catalogo (`ca.criterio`, `ds.dato`): son lecturas
+    estaticas, y `tests/test_ext4_contexto_corrida.py` barre el AST de M11
+    para que sean las unicas.
+
+    Es `frozen` y vive aqui, en modelos.py, porque fluye entre la corrida y
+    las tres capas que la publican. Si un dia la GUI corre en hilo, el mismo
+    almacen pasa a `contextvars` sin tocar M2-M10: los 79 escritores de uso
+    pasan por tres funciones.
+    """
+
+    criterios_usados: Tuple[str, ...]
+    datos_usados: Tuple[str, ...]
+    valores_efectivos: Mapping[str, Any]
+    procedencias: Mapping[str, Any]
+    declarados_en_caliente: Tuple[str, ...]
+    pisados_en_caliente: Tuple[str, ...]
+    criterios_sin_valor: Tuple[str, ...]
+    criterios_opcionales_sin_declarar: Tuple[str, ...]
+    criterios_con_verificacion_pendiente: Tuple[str, ...]
+    csv_sha1: str
+    criterios_sha1: str
+    # LOS DATOS DE SITIO EFECTIVOS (EXT-10, EXT-V-01). Hasta EXT-10 la foto
+    # solo llevaba `datos_usados`, porque un [S] no tenia mas estado que el
+    # uso: su valor era el del archivo. Desde que un [S] de OTRA OBRA puede
+    # entrar por sesion (`datos_sitio.establecer_dato_dinamico`), el valor,
+    # la trazabilidad, la fecha y el ORIGEN con que gobierno cada dato son
+    # estado de la corrida, y viajan aqui con la misma regla que los
+    # criterios: se fotografian al salir y ningun exportador los lee del
+    # registro vivo. `datos_sin_valor` tambien es foto: una sesion puede
+    # rellenar un [S] vacio del archivo, y la lista cambia con el estado.
+    datos_efectivos: Mapping[str, "DatoEfectivoDeSitio"]
+    datos_declarados_en_caliente: Tuple[str, ...]
+    datos_pisados_en_caliente: Tuple[str, ...]
+    datos_sin_valor: Tuple[str, ...]
+    # LAS HUELLAS DE LAS DOS ENTRADAS DE LA HIDROLOGIA (UI-1, ficha T1-04),
+    # con la misma regla que `csv_sha1`: de los MISMOS bytes que el cargador
+    # parseo (`EntradaHidrologica.cuencas_sha1`), no del archivo que haya en
+    # disco al exportar. None cuando la corrida no trajo `--cuencas` ni
+    # `--estacion`: entonces la memoria y el JSON no imprimen nada de ellas y
+    # la linea base no cambia.
+    cuencas_sha1: Optional[str] = None
+    estacion_sha1: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        # `frozen` solo impide REASIGNAR los campos; un dict dentro seguia
+        # siendo mutable y `informe.contexto.valores_efectivos[k] = x` movia
+        # el JSON y el HTML de una corrida ya pasada sin excepcion (auditoria
+        # adversarial de EXT-4). Los mapas quedan de solo lectura y las
+        # secuencias, tuplas: la foto no se puede retocar, ni a proposito.
+        for campo in ("valores_efectivos", "procedencias", "datos_efectivos"):
+            valor = getattr(self, campo)
+            if not isinstance(valor, MappingProxyType):
+                object.__setattr__(self, campo, MappingProxyType(dict(valor)))
+        for campo in ("criterios_usados", "datos_usados",
+                      "declarados_en_caliente", "pisados_en_caliente",
+                      "criterios_sin_valor", "criterios_opcionales_sin_declarar",
+                      "criterios_con_verificacion_pendiente",
+                      "datos_declarados_en_caliente", "datos_pisados_en_caliente",
+                      "datos_sin_valor"):
+            object.__setattr__(self, campo, tuple(getattr(self, campo)))
+
+    def declarado_en_caliente(self, clave: str) -> bool:
+        """True si el valor que GOBERNO esa corrida entro en caliente."""
+        return clave in self.declarados_en_caliente
+
+    def dato_efectivo(self, clave: str) -> "DatoEfectivoDeSitio":
+        """El dato de sitio TAL COMO GOBERNO esa corrida, con su origen."""
+        return self.datos_efectivos[clave]
+
+    def dato_declarado_en_caliente(self, clave: str) -> bool:
+        """True si el [S] que goberno esa corrida entro por sesion."""
+        return clave in self.datos_declarados_en_caliente
+
+    def valor_efectivo(self, clave: str) -> Any:
+        """El valor con que gobierno el criterio en esa corrida."""
+        return self.valores_efectivos[clave]
+
+    def procedencia_de(self, clave: str) -> Optional[Any]:
+        """La procedencia registrada de la clave en esa corrida, o None."""
+        return self.procedencias.get(clave)
+
+    @staticmethod
+    def de(informe: Any) -> "ContextoCorrida":
+        """
+        El contexto de un informe, o un error que dice que el informe no lo
+        lleva. Solo `servicio.correr` lo produce: un `Informe` armado a mano no
+        tiene corrida que describir, y exportarlo leyendo el estado vivo
+        seria exactamente el defecto que este objeto cierra.
+        """
+        contexto = getattr(informe, "contexto", None)
+        if not isinstance(contexto, ContextoCorrida):
+            raise ValueError(
+                "el informe no lleva ContextoCorrida: solo servicio.correr lo "
+                "produce, y sin el la capa de reporte no puede decir con que "
+                "estado corrio el expediente")
+        return contexto
+
+
+@dataclass(frozen=True)
+class Magnitud:
+    """
+    Un numero de la memoria con las tres cosas que lo hacen rastreable: su
+    unidad, sus cifras y DE DONDE SALIO.
+
+    `procedencia` es obligatoria y es la mitad que faltaba. "V = 2.31 m/s" y
+    "V = 2.31 m/s, de M3 por Manning con la rama de n maximo" son la misma
+    linea en la pagina y no son la misma informacion: la primera obliga al
+    revisor a abrir el codigo, que es justo lo que el criterio de salida de la
+    §4.4 prohibe.
+
+    `cifras` es de PRESENTACION: cuantos decimales se imprimen. No redondea el
+    valor almacenado -- el calculo sigue con el float entero -- y por eso no
+    es un valor de proyecto.
+    """
+
+    simbolo: str
+    valor: Any
+    unidad: str
+    procedencia: str
+    cifras: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if not str(self.simbolo).strip():
+            raise ValueError("Magnitud sin simbolo: no se puede citar")
+        if not str(self.procedencia).strip():
+            raise ValueError(
+                f"Magnitud «{self.simbolo}» sin procedencia. La §4.4 exige "
+                "que la sustitucion diga de donde sale cada valor; un numero "
+                "sin origen es el que obliga a abrir el codigo")
+
+    @property
+    def texto(self) -> str:
+        """El valor con su unidad, como lo imprime la memoria."""
+        v = self.valor
+        if isinstance(v, float) and math.isfinite(v) and self.cifras is not None:
+            texto = f"{v:.{self.cifras}f}"
+        elif isinstance(v, float) and not math.isfinite(v):
+            texto = "no finito"
+        else:
+            texto = str(v)
+        return f"{texto} {self.unidad}".strip()
+
+
+@dataclass(frozen=True)
+class Umbral:
+    """
+    Contra que se compara un resultado, con su cita y con su CARACTER.
+
+    `cita_id` es obligatorio: es la regla 2 de arriba y el corazon de
+    NOR-MEM-01. Un umbral sin cita es un numero que la memoria presenta como
+    normativo sin poder decir de donde sale.
+
+    `caracter` y `aplicacion` van SEPARADOS a proposito. El primero es lo que
+    la FUENTE hace con el numero (exigencia, recomendacion, aproximacion); el
+    segundo es lo que el PROYECTO hace con el. Los dos coinciden casi siempre,
+    y donde no coinciden esta lo unico que hay que declarar: el 0.25 m/s de V2
+    y el 0.75 de V1 los RECOMIENDA el Manual y este proyecto los aplica como
+    umbral duro por decision conservadora propia (NOR-MEM-01, MAT-O13).
+    Fundirlos en un campo es como se fabrica una exigencia que la norma no
+    escribio.
+    """
+
+    descripcion: str
+    valor: Any
+    unidad: str
+    cita_id: str
+    caracter: str
+    aplicacion: str
+    criterio_aplicado: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not str(self.cita_id).strip():
+            raise ValueError(
+                f"Umbral «{self.descripcion}» sin `cita_id`. La §4.4 exige "
+                "que todo umbral de aceptacion lleve la frase de la fuente "
+                "que lo fija; sin id no hay frase que buscar en el registro")
+        if not str(self.aplicacion).strip():
+            raise ValueError(
+                f"Umbral «{self.descripcion}» sin `aplicacion`: hay que decir "
+                "que hace el proyecto con el, que es lo que separa una "
+                "recomendacion aplicada como dura de una exigencia")
+
+
+@dataclass(frozen=True)
+class Veredicto:
+    """
+    El resultado del contraste, con el MARGEN.
+
+    El margen es lo que convierte "cumple" en informacion: un punto que pasa
+    por 0.002 y otro que pasa por 0.4 se imprimen igual sin el, y no son el
+    mismo diseno.
+    """
+
+    tipo: TipoDeVeredicto
+    margen: Optional[float] = None
+    unidad: str = ""
+    explicacion: str = ""
+
+    @property
+    def cumple(self) -> bool:
+        return self.tipo is TipoDeVeredicto.CUMPLE
+
+
+@dataclass(frozen=True)
+class EleccionDeProyecto:
+    """
+    La PROCEDENCIA de una eleccion, que es la regla R1 del plan v12: «se
+    adopto X, elegido entre X1...Xn de la Tabla T (numeral N, pag. P), por la
+    razon R».
+
+    `entre` no es decorado: es lo que da sentido al analisis de sensibilidad.
+    Sin las alternativas, el rango declarado de un criterio [A] es un par de
+    numeros sueltos al pie de una ficha -- que es como estaba, consumido solo
+    por los tests (SIS-B-05).
+
+    `de_donde` es texto legible y `cita_id` el ancla al registro. `cita_id`
+    queda VACIO a proposito cuando la eleccion no sale de una norma: un tope
+    de catalogo no tiene numeral, y ponerle uno seria la cita falsa que
+    NOR-PRO-01 y NOR-PRO-02 retiraron. Por eso el vacio esta permitido aqui y
+    prohibido en `Umbral`.
+
+    `fundamento_id` ES OPCIONAL Y NO DEBERIA SERLO, y conviene decir por que
+    esta a medias en vez de dejarlo como si fuera una eleccion de diseno. La
+    §4.5 de la constitucion prohibe escribir el `por_que` en el modulo que
+    calcula -- sale de un `Fundamento`, cuyo verbo el registro contrasta
+    contra el `caracter` de sus citas --, y `PasoDeMemoria` lo cumple porque
+    `paso()` es su unica puerta. `EleccionDeProyecto` NO lo cumple: sus
+    `por_que` se escriben a mano en los modulos, uno por uno, y ninguno pasa
+    por T11. C7 abre la puerta que faltaba -- `eleccion()`, aqui al lado -- y
+    la usa en el unico sitio donde el `por_que` estaba diciendo algo que la
+    fuente no sostiene (la fila de gamma_p de V7, F5.V7_FILA). Migrar los
+    demas es trabajo aparte y no de esta sesion; mientras tanto el campo vacio
+    es la marca legible de cuales faltan.
+    """
+
+    que_se_adopto: str
+    valor: Any
+    entre: Tuple[str, ...]
+    de_donde: str
+    por_que: str
+    cita_id: str = ""
+    clave_criterio: str = ""
+    fundamento_id: str = ""
+
+    def __post_init__(self) -> None:
+        if not str(self.por_que).strip():
+            raise ValueError(
+                f"EleccionDeProyecto «{self.que_se_adopto}» sin `por_que`. La "
+                "R1 pide las tres cosas: que se eligio, entre que, y por que")
+
+    @property
+    def texto(self) -> str:
+        entre = ", ".join(str(x) for x in self.entre)
+        alternativas = f", elegido entre {entre}" if entre else ""
+        de = f" de {self.de_donde}" if self.de_donde else ""
+        return (f"se adopto {self.que_se_adopto} = {self.valor}"
+                f"{alternativas}{de}, por: {self.por_que}")
+
+
+@dataclass(frozen=True)
+class PasoDeMemoria:
+    """
+    Un paso de la memoria, emitido por la funcion que lo calcula.
+
+    No es un registro de depuracion ni una traza de ejecucion: es el parrafo
+    de la memoria, con sus numeros ya atados a su fuente, escrito por quien
+    tiene delante los valores. Por eso lo emite el calculo y no el reporte --
+    M11 no puede saber de donde salio un numero que le llega suelto.
+    """
+
+    que: str
+    por_que: str
+    formula: str
+    sustitucion: Tuple[Magnitud, ...]
+    resultado: Magnitud
+    umbral: Optional[Umbral] = None
+    veredicto: Optional[Veredicto] = None
+    citas_textuales: Tuple[str, ...] = ()
+    fundamento_id: str = ""
+    formula_cita_id: str = ""
+    elecciones: Tuple[EleccionDeProyecto, ...] = ()
+    fase: str = ""
+    codigo: str = ""
+    nota_del_proyecto: str = ""
+    # LAS DISCREPANCIAS QUE ESTE PASO TOCA POR SU VALOR Y NO POR SU CITA.
+    #
+    # La mayoria de las discrepancias llegan solas a la memoria: el registro
+    # cruza las citas que el paso imprime contra las `Parte.cita_id` que la
+    # discrepancia ya declara (`Registro.discrepancias_que_tocan`). Este
+    # campo es para las que hablan de un NUMERO que el paso sustituye y no de
+    # un texto que el paso cita -- `DIS-HR-G-LAUSHEY` es sobre el valor
+    # `G_LAUSHEY = 9.8`, `DIS-HR-D-MAX` sobre los topes de catalogo --, donde
+    # el cruce por cita no las alcanza.
+    #
+    # No es una lista de ids sueltos: el registro comprueba que cada uno
+    # exista, y M11 imprime la discrepancia entera desde el registro, de modo
+    # que aqui viaja el ID Y NUNCA EL TEXTO. Escribir aqui la discrepancia en
+    # prosa seria la segunda transcripcion que la §4.5 prohibe -- y es
+    # exactamente como llegaban a la memoria las dos que llegaban antes de
+    # C8: con el id escrito a mano dentro de la justificacion de un criterio.
+    discrepancias: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not str(self.que).strip():
+            raise ValueError("PasoDeMemoria sin `que`")
+        if not str(self.por_que).strip():
+            raise ValueError(
+                f"PasoDeMemoria «{self.que}» sin `por_que`. Es la regla 1 de "
+                "la §4.4 y no admite excepcion: el fundamento se declara en "
+                "`normativa/fundamentos.py` y se trae con `modelos.paso()`, "
+                "nunca se escribe suelto en el modulo de calculo")
+        # INDICADOR entra en la lista desde PF-4: decir que un indicador se
+        # disparo sin decir contra que es tan indefendible como un «cumple»
+        # sin umbral.
+        if self.veredicto is not None and self.umbral is None and \
+                self.veredicto.tipo in (TipoDeVeredicto.CUMPLE,
+                                        TipoDeVeredicto.NO_CUMPLE,
+                                        TipoDeVeredicto.INDICADOR):
+            raise ValueError(
+                f"PasoDeMemoria «{self.que}»: veredicto "
+                f"«{self.veredicto.tipo.value}» sin umbral. Decir que algo "
+                "cumple sin decir contra que es lo que hace indefendible una "
+                "memoria")
+        if self.umbral is not None and \
+                self.umbral.cita_id not in self.citas_textuales:
+            raise ValueError(
+                f"PasoDeMemoria «{self.que}»: la cita del umbral "
+                f"«{self.umbral.cita_id}» no esta en `citas_textuales`. El "
+                "umbral y su frase se imprimen juntos o el revisor lee el "
+                "numero sin la frase que lo fija")
+
+    @property
+    def juzga(self) -> bool:
+        """True si el paso contrasta contra un umbral."""
+        return self.umbral is not None
+
+
+@lru_cache(maxsize=1)
+def _registro_normativo():
+    """
+    El registro, armado una sola vez. Mismo patron y misma razon que
+    `criterios_adoptados._registro`: `paso()` lo consulta en cada llamada y
+    reconstruirlo por paso convertiria la traza en el cuello de botella del
+    pipeline.
+    """
+    from src.normativa import registro as _rn
+
+    return _rn.construir()
+
+
+def exigir_seccion_coherente(material: "Material", seccion: "Seccion") -> None:
+    """
+    Que la `Seccion` que llega sea de la FORMA que el material declara.
+
+    LA ABRIO LA AUDITORIA ADVERSARIAL DE C7, y su medicion es la razon de que
+    esto exista:
+
+        cobertura_minima_aashto(material=catalogo(CONCRETO_REFORZADO),
+                                seccion=SeccionRectangular(B=3.00, H=1.50))
+        -> 0.4125     # Bc/8 de la fila «Reinforced Concrete PIPE», sobre un
+                      # RECTANGULO
+
+    O sea el defecto que C7 declara no cometer -- aplicar una fila rotulada
+    «Pipe» a algo que no lo es --, alcanzable en tres lineas. Ocurre porque
+    `M7.cobertura_minima_aashto` y `M8._elemento_de` bifurcan por
+    `material.forma` mientras la geometria la pone la `Seccion`, y nada ataba
+    las dos cosas. En produccion el par siempre es coherente --la seccion sale
+    del catalogo del material-- de modo que ningun numero publicado estaba
+    mal; lo que estaba mal era la palabra «POR CONSTRUCCION» con que los
+    docstrings de C7 describian esa correccion. Con esta guardia lo es.
+
+    Va aqui y no en el `Protocol`: la forma no es una propiedad que la seccion
+    necesite conocer de si misma -- todo el diseño de `Seccion` consiste en
+    que el calculo NO pregunte de que forma es --, y anadirsela para poder
+    compararla desharia justamente eso. Lo que hace falta es cruzar los dos
+    objetos en la puerta por la que entran juntos, que es esto.
+    """
+    rectangular = isinstance(seccion, SeccionRectangular)
+    if (material.forma is FormaSeccion.RECTANGULAR) is not rectangular:
+        raise DatoInvalidoError(
+            campo="seccion",
+            valor=type(seccion).__name__,
+            motivo=(f"el material declara forma {material.forma.value} y la "
+                    f"seccion recibida es {type(seccion).__name__}: el par no "
+                    "es coherente. La forma decide que fila de tabla aplica, "
+                    "de modo que con el par cruzado se le aplicaria a esta "
+                    "seccion la fila de la otra"),
+        )
+
+
+def paso(fundamento_id: str, **kw: Any) -> PasoDeMemoria:
+    """
+    Construye un `PasoDeMemoria` trayendo el `por_que` del registro.
+
+    ES LA UNICA PUERTA que los modulos de calculo usan, y por eso el `por_que`
+    no se puede escribir a mano en un modulo: sale del `Fundamento`, que a su
+    vez esta atado a sus citas y a su verbo por la invariante T11. Escribirlo
+    suelto permitiria redactar «la norma obliga» encima de un parrafo que
+    recomienda, que es el defecto que NOR-MEM-01 y MAT-O13 dejaron por escrito.
+
+    El import del registro es DIFERIDO, igual que en
+    `criterios_adoptados.tabla_del_criterio`: `modelos.py` no depende de
+    `normativa` en su cabecera y no debe -- es el tipo que fluye entre modulos,
+    y la regla de dependencias del registro pone a `normativa` a la izquierda
+    de todo.
+
+    Comprueba ademas que toda cita referenciada EXISTA: es la unica de las
+    cuatro reglas de la §4.4 que este archivo no puede poner en un
+    `__post_init__`.
+    """
+    reg = _registro_normativo()
+    f = reg.fundamento(fundamento_id)
+    citas = tuple(kw.pop("citas_textuales", ()) or ())
+    umbral = kw.get("umbral")
+    if umbral is not None and umbral.cita_id not in citas:
+        citas = (umbral.cita_id,) + citas
+    for cita_id in citas:
+        reg.cita(cita_id)                       # KeyError si no existe
+    for eleccion in kw.get("elecciones", ()):
+        if eleccion.cita_id:
+            reg.cita(eleccion.cita_id)
+    if kw.get("formula_cita_id"):
+        reg.cita(kw["formula_cita_id"])
+    for discrepancia_id in kw.get("discrepancias", ()):
+        d = reg.discrepancia(discrepancia_id)   # KeyError si no existe
+        if not d.viva:
+            raise ValueError(
+                f"PasoDeMemoria: la discrepancia «{discrepancia_id}» esta "
+                f"{d.estado.value} y no llega a la memoria. Lo resuelto es "
+                "material del manifiesto -- para quien audita el codigo --, "
+                "no de la memoria, que es para quien sustenta: quien abra hoy "
+                "el PDF encuentra lo que la memoria dice y no hay nada que "
+                "defender. Ver `EstadoDiscrepancia.viva`")
+    kw.setdefault("fase", f.fase)
+    return PasoDeMemoria(por_que=f.por_que, fundamento_id=f.id,
+                         citas_textuales=citas, **kw)
+
+
+def eleccion(fundamento_id: str, **kw: Any) -> EleccionDeProyecto:
+    """
+    Construye una `EleccionDeProyecto` trayendo el `por_que` del registro, que
+    es lo mismo que `paso()` hace con un `PasoDeMemoria` y por la misma razon.
+
+    POR QUE HACIA FALTA, con el caso que lo abrio delante: el `por_que` de la
+    eleccion de fila de gamma_p de V7 estaba escrito a mano en
+    `M5.v7_flotacion` y decia, en mayusculas, que la tabla es normativa y que
+    que fila describe a la obra no lo es. Eso es cierto y es exactamente lo
+    que hay que decir -- pero escrito suelto no lo comprueba nadie: nada ataba
+    esa frase a un verbo, ni el verbo a las citas que lo sostienen. Puesto en
+    un `Fundamento`, T11 contrasta el verbo contra el `caracter` de las citas
+    y el censo de `test_memoria_sustentada` comprueba que no quede huerfano.
+
+    NO ES UN ATAJO PARA REPETIR EL `por_que` DEL PASO. Un `Fundamento` propio
+    para la eleccion es lo contrario de eso: separa la afirmacion fuerte del
+    paso -- «hay que verificar la flotacion», EXIGENCIA de tres numerales --
+    de la debil de la eleccion -- «esta obra es un portico rigido», que no lo
+    dice ninguna fuente --, que es lo que NOR-HID-04 pide y lo que una sola
+    cadena de texto no puede hacer.
+    """
+    f = _registro_normativo().fundamento(fundamento_id)
+    return EleccionDeProyecto(por_que=f.por_que, fundamento_id=f.id, **kw)
+
+
+# ===========================================================================
+# Fase 7 - Compatibilidad geometrica (salida de M7)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class TamizadoRasante:
+    """
+    Salida del tamizado previo de Sec. 7.A: la cota de rasante minima que el
+    punto admite, como MAXIMO de las dos condiciones, y cuanto le falta a la
+    rasante actual para alcanzarla.
+
+        cota rasante >= max( cota clave + h_rec + e_paq ,
+                             cota entrada + HW + resguardo(CBR) + e_paq )
+
+    Se guardan las DOS cotas por separado, no solo el maximo, porque la
+    memoria tiene que poder mostrar por cuanto quedo descartada la condicion
+    que no gobierna: una diferencia de 2 cm entre ambas significa que
+    cualquier ajuste de diametro cambia cual manda.
+
+    `delta_rasante_m` y `factible` los calcula M7 con la tolerancia de
+    `tolerancias.py` y viajan como campos, no como propiedades derivadas, para
+    que el objeto no vuelva a comparar floats por su cuenta. Son coherentes
+    con `cota_rasante_min` y `cota_rasante_actual` por construccion.
+
+    `criterio_recubrimiento` es hoy siempre 'cobertura_minima_aashto': el
+    recubrimiento minimo ya no es un escalar leido por material sino el mayor
+    entre el minimo de EG-2013 (que solo existe para HDPE) y la cobertura
+    minima de la Tabla 12.6.6.3-1 de AASHTO LRFD, y esa tabla entra en los
+    TRES materiales. Antes era None en HDPE -- donde el 0.30 m se leia como
+    [N] puro -- y 'h_relleno_min_concreto_tmc' en los otros dos; el campo
+    sigue siendo Optional porque un h_rec que algun dia vuelva a salir solo de
+    EG-2013 no tendria criterio que declarar.
+
+    `criterio_resguardo` es siempre 'resguardo_HW_subrasante', [N->] por
+    analogia declarada (Sec. 5.1).
+
+    LA CLAVE ES LA FISICA, no la hidraulica: `cota_clave` = cota de entrada +
+    altura interior + espesor de pared. EG-2013 508.07 mide el relleno minimo
+    "desde la clave de la tuberia", que es la superficie exterior (MAT-D4).
+
+    LOS DOS CAMPOS DE GEOMETRIA SE LLAMABAN `D_supuesto` Y `D_exterior`, y en
+    C7 dejaron de poder llamarse asi. No es cosmetica: eran dos nombres de
+    DIAMETRO para dos cosas que en un marco no son un diametro y ademas NO SON
+    LA MISMA DIMENSION.
+
+      `altura_supuesta`  es la INTERIOR y VERTICAL: el D de un tubo, la H de
+          una celda de marco. Es la que se apila sobre la cota de entrada para
+          dar la clave, y la que entra en Manning.
+      `ancho_exterior`   es el Bc del Art. 12.6.6.3 de AASHTO, "outside
+          diameter or WIDTH of the structure": HORIZONTAL. En un circulo
+          coincide con altura + 2t y por eso un solo campo bastaba; en un
+          marco son B + 2t y H + 2t, dos numeros distintos, y el nombre viejo
+          obligaba a elegir uno de los dos sin decir cual. Esa es exactamente
+          la confusion que dejaba a un marco recibiendo la cobertura de la
+          fila del tubo calculada sobre B'c.
+    """
+
+    cota_rasante_min: float               # msnm - el maximo de las dos
+    cota_rasante_actual: float            # msnm - la del CSV (Sec. 1.1)
+    cota_por_recubrimiento: float         # msnm - cota clave + h_rec + e_paq
+    cota_por_resguardo: float             # msnm - cota entrada + HW
+                                          #        + resguardo(CBR) + e_paq
+    condicion_gobernante: CondicionRasante
+    cota_entrada: float                   # msnm - fondo de la entrada
+    cota_clave: float                     # msnm - cota entrada + D + espesor de pared
+    altura_supuesta: float                # m  - altura INTERIOR del tamizado (Sec. 7.A)
+    espesor_pared: float                  # m  - t; separa el interior del exterior
+    ancho_exterior: float                 # m  - el Bc de AASHTO Art. 12.6.6.3
+    HW: float                             # m  - carga sobre el fondo de la entrada
+    h_recubrimiento: float                # m  - relleno minimo sobre la clave
+    espesor_paquete: float                # m  - cota rasante - cota subrasante
+    resguardo: float                      # m  - tabla de Sec. 5.1 segun CBR
+    factible: bool                        # la rasante actual ya alcanza
+    delta_rasante_m: float                # m  - 0.0 si es factible
+    criterio_recubrimiento: Optional[str]
+    # EL NUMERAL QUE LA FILA G1 IMPRIME, resuelto donde se conoce la forma.
+    # Viaja aqui por la misma razon que `criterio_recubrimiento`: G1 recibe
+    # solo el tamizado, y con una constante unica atribuia a todo material la
+    # Tabla 12.6.6.3-1 de AASHTO -- que no tiene fila de cajon de concreto --.
+    numeral_g1: str
+    # CUAL de los dos minimos gano la regla del mayor. No es derivable de los
+    # campos de aqui -- h_rec es el maximo y no dice de donde salio --, y sin
+    # el la memoria enuncia la regla sin publicar el resultado de aplicarla.
+    # Sus dos valores son `M7.MINIMO_EG2013` y `M7.MINIMO_AASHTO`.
+    minimo_que_gobierna: str
+    criterio_resguardo: str
+    id_punto: Optional[str] = None
+    numeral: str = "Sec. 7.A"
+    # --- T-6 --- (INF-5.1.18). `provisional` es True cuando la cota de
+    # entrada sobre la que se levantan las DOS condiciones es adoptada igual
+    # al terreno y no medida en el cauce: la rasante minima y su delta valen
+    # lo que valga esa adopcion, y `aviso` lleva la frase que lo dice. Con la
+    # columna `cota_fondo_entrada` llena los dos quedan en False y "".
+    provisional: bool = False
+    aviso: str = ""
+    # --- T-3 (auditoria adversarial, H5) --- LA COBERTURA DEL MARCO AVISA Y
+    # NO BLOQUEA. Su valor, 0.3048 m, es [A] por analogia con la fila del
+    # TUBO de la Tabla 12.6.6.3-1, y es MAS RESTRICTIVO que la fuente: el
+    # Manual admite la rasante a nivel de la losa (num. 4.1.1.3.4 a)), la
+    # Lamina N 03 dibuja el marco en cruce de canal sin relleno acotado y
+    # AASHTO LRFD 12.6.6.3 admite el cajon sin cobertura con la losa
+    # diseñada para la carga vehicular directa. Con `cobertura_como_aviso`
+    # (solo un marco) la condicion de recubrimiento que BLOQUEA es la clave
+    # bajo la subrasante -- cobertura cero, `cota_por_cobertura_exigible` =
+    # clave + e_paq --, y `cota_rasante_min`, `factible` y el delta se
+    # calculan con ella y con el resguardo; la cobertura adoptada queda en
+    # `cota_por_recubrimiento` y `alcanza_cobertura_adoptada` dice si la
+    # rasante la alcanza: si no, G1 sale como INDICADOR. En un tubo los dos
+    # campos quedan en False/None y nada cambia.
+    cobertura_como_aviso: bool = False
+    cota_por_cobertura_exigible: Optional[float] = None
+    alcanza_cobertura_adoptada: bool = True
+
+    @property
+    def delta_rasante_cm(self) -> float:
+        """
+        El mismo delta en centimetros, que es la unidad en que Sec. 7.B
+        redacta la salida ("no factible -> subir rasante X cm"). Es conversion
+        de presentacion: el calculo entero sigue en metros (SI).
+        """
+        return self.delta_rasante_m * CENTIMETROS_POR_METRO
+
+    @property
+    def criterio_gobernante(self) -> Optional[str]:
+        """Clave del criterio adoptado de la condicion que fija la rasante."""
+        if self.condicion_gobernante is CondicionRasante.RESGUARDO:
+            return self.criterio_resguardo
+        return self.criterio_recubrimiento
+
+    @property
+    def mensaje(self) -> str:
+        """
+        La frase que Sec. 7.B exige devolver, en centimetros. Nunca un
+        resultado silencioso: cuando el punto es factible tambien lo dice.
+        """
+        # --- T-6 --- el delta (o su ausencia) es PROVISIONAL mientras el
+        # fondo de entrada sea el terreno adoptado: se dice en la misma frase.
+        cola = f" -- PROVISIONAL: {self.aviso}" if self.provisional else ""
+        # --- T-3 (auditoria, H5) --- la cobertura adoptada del marco, que
+        # avisa y no bloquea, se dice en la misma frase.
+        if self.cobertura_como_aviso and not self.alcanza_cobertura_adoptada:
+            cola = (f" -- AVISO: no alcanza la cobertura adoptada por "
+                    f"analogia ({self.h_recubrimiento:.4f} m sobre la clave, "
+                    f"rasante {self.cota_por_recubrimiento:.3f} msnm)" + cola)
+        if self.factible:
+            return (f"factible: la rasante {self.cota_rasante_actual:.3f} msnm "
+                    f"alcanza la minima de 7.A ({self.cota_rasante_min:.3f} "
+                    f"msnm, gobierna {self.condicion_gobernante.value})"
+                    + cola)
+        return (f"no factible -> subir rasante {self.delta_rasante_cm:.1f} cm "
+                f"(de {self.cota_rasante_actual:.3f} a "
+                f"{self.cota_rasante_min:.3f} msnm; gobierna la condicion de "
+                f"{self.condicion_gobernante.value})" + cola)
+
+    def exigir_factible(self) -> None:
+        """
+        Lanza `DisenoNoFactibleError` con el delta si la rasante no alcanza.
+
+        Existe para el consumidor que necesita la excepcion (un bucle que debe
+        abortar el punto) sin perder el numero: el delta viaja SIEMPRE en
+        `delta_rasante_m`, nunca como un mensaje suelto ni como una excepcion
+        generica. Quien prefiera el resultado sin excepcion lee `factible` y
+        `delta_rasante_cm`, que es la forma en que M7 lo devuelve por defecto.
+        """
+        if self.factible:
+            return
+        raise DisenoNoFactibleError(
+            motivo=self.mensaje,
+            delta_rasante_m=self.delta_rasante_m,
+            id_punto=self.id_punto,
+        )
+
+
+# --- T-9 --- Los dos limites de la capacidad de una cuneta (num. 4.1.2.1 a)
+# del Manual de Hidrologia: «Caudal que transita con la cuneta llena» y
+# «Caudal que produce la velocidad máxima admisible»). Rotulos, no valores.
+CAPACIDAD_CUNETA_LLENA = "cuneta llena"
+CAPACIDAD_VELOCIDAD_LIMITE = "velocidad limite admisible"
+ORIGEN_L_DECLARADO = "declarado"
+ORIGEN_L_CALCULADO = "calculado"
+# El codigo de la verificacion del espaciamiento por tramo (Familia B). Es la
+# hermana de VC1 (la verificacion propia de la Familia C): «VB1».
+CODIGO_VB1 = "VB1"
+# --- T-9 (correcciones de la auditoria, H1) --- La condicion LITERAL del
+# Manual (num. 4.1.2.1 a), pag. impresa 177): «Q manning > Q de aporte». Es
+# la segunda verificacion de la Fase 10 y no necesita el tramo: el caudal de
+# aporte del alivio contra la capacidad admisible de la cuneta.
+CODIGO_VB2 = "VB2"
+# Como se reparte el aporte por metro de cuneta para la longitud por
+# capacidad (H1): con el TRAMO conocido, el caudal del alivio entre su
+# longitud; sin el, la escorrentia especifica por el ancho tributario.
+METODO_APORTE_TRAMO = "caudal del alivio repartido en su tramo (q' = Q / s)"
+METODO_APORTE_AREA = ("escorrentia especifica por el ancho tributario "
+                      "(q' = q · b)")
+
+
+@dataclass(frozen=True)
+class Espaciamiento:
+    """
+    Salida de Fase 10: espaciamiento maximo entre alcantarillas de alivio
+    (Familia B), el MINIMO de dos limites independientes:
+
+        espaciamiento_max = min(L_normativo, L_hidraulico)
+
+    `L_normativo` es el limite de num. 4.1.2.1 d) (longitud maxima de cuneta
+    segun regimen), leido del criterio adoptado 'long_max_cuneta' -- 200 m,
+    adoptado por el regimen FEN (Sec. 10, Anexo A).
+
+    `L_hidraulico` es la longitud a la que la cuneta agota su capacidad
+    admisible frente al caudal aportante por metro lineal. Hasta T-9 llegaba
+    siempre declarada (`L_hidraulico_m`); desde T-9 la DECLARADA sigue
+    ganando y, si no viene, M10 la calcula (`LongitudHidraulica`): la
+    seccion y el revestimiento de la cuneta son criterios [A]
+    ('seccion_cuneta', con el minimo muy lluvioso de la Tabla Nº 34 desde
+    las correcciones; 'revestimiento_cuneta'), su pendiente y el ancho
+    tributario son datos del trazo, y el aporte es el caudal del punto,
+    repartido en su tramo (Q / s) o por el ancho tributario (q · b).
+    `origen_L_hidraulico` dice cual de las dos fue.
+
+    ESTE OBJETO NO VERIFICA NADA (INF-5.1.12): es el espaciamiento MAXIMO.
+    Lo que se verifica es el espaciamiento ADOPTADO entre dos alivios, por
+    tramo (`TramoDeAlivio`, verificacion VB1). Hasta T-9 su paso decia
+    «cumple» comparando el minimo de dos limites con uno de ellos, que no
+    podia fallar.
+
+    Se guardan los DOS limites por separado, no solo el minimo, porque la
+    memoria tiene que poder mostrar por cuanto quedo descartado el que no
+    gobierna.
+    """
+    L_normativo: float           # m
+    L_hidraulico: float          # m
+    espaciamiento_max: float     # m - el minimo de los dos
+    gobierna: GobiernaEspaciamiento
+    criterio_normativo: str = "long_max_cuneta"
+    # La pagina impresa es la de la cita del registro (MC_HHD_CUNETA, 179):
+    # se repite aqui como texto porque `modelos` no importa del registro, y
+    # un test la compara con `MC_HHD_CUNETA.pagina_impresa` (PC-30).
+    numeral: str = ReferenciaNormativa(
+        seccion_hoja_ruta="Fase 10",
+        numeral_norma="Manual de Hidrologia, Hidraulica y Drenaje (MTC), "
+                      "num. 4.1.2.1 d), pag. 179",
+    )
+    paso: Optional["PasoDeMemoria"] = None
+    # --- T-9 --- DE DONDE SALIO `L_hidraulico`: declarado (dato externo
+    # `L_hidraulico_m`, que sigue ganando) o calculado por M10 con la cuneta
+    # (`longitud_hidraulica`, con sus pasos y avisos). Con la longitud
+    # declarada `longitud_hidraulica` es None.
+    origen_L_hidraulico: str = ORIGEN_L_DECLARADO
+    longitud_hidraulica: Optional["LongitudHidraulica"] = None
+
+    @property
+    def pasos(self) -> Tuple["PasoDeMemoria", ...]:
+        """
+        --- T-9 --- Todos los pasos de la Fase 10 del punto, en el orden del
+        calculo: los de la longitud por capacidad (si se calculo) y el del
+        espaciamiento maximo.
+        """
+        previos = (() if self.longitud_hidraulica is None
+                   else self.longitud_hidraulica.pasos)
+        return tuple(previos) + (() if self.paso is None else (self.paso,))
+
+    @property
+    def avisos(self) -> Tuple[str, ...]:
+        """--- T-9 --- Los avisos de la longitud por capacidad, si la hubo."""
+        if self.longitud_hidraulica is None:
+            return ()
+        return tuple(self.longitud_hidraulica.avisos)
+
+
+@dataclass(frozen=True)
+class CapacidadCuneta:
+    """
+    --- T-9 --- La capacidad admisible de la cuneta triangular de la Fase 10
+    (Manual de Hidrologia, num. 4.1.2.1 a), pag. impresa 174): el MENOR de
+    dos caudales, el de la cuneta llena (hasta `tirante_util_m`, la
+    profundidad menos el borde libre) y el que produce la velocidad limite
+    admisible de la Tabla Nº 33. Los dos van por separado porque el remedio
+    no es el mismo: si gobierna la cuneta llena falta seccion; si gobierna la
+    velocidad, falta revestimiento.
+    """
+    profundidad_m: float
+    ancho_m: float
+    talud_interior_HV: float      # Z1 = ancho / profundidad (Figura Nº 27)
+    talud_exterior_HV: float      # Z2
+    borde_libre_m: float
+    tirante_util_m: float
+    revestimiento: str
+    n: float                      # 1/K de la Tabla Nº 32
+    v_limite_m_s: float           # extremo leido de la Tabla Nº 33
+    S: float                      # pendiente longitudinal de la cuneta, m/m
+    area_llena_m2: float
+    radio_llena_m: float
+    Q_llena_m3s: float
+    V_llena_m_s: float
+    Q_velocidad_m3s: float        # caudal a la velocidad limite
+    Q_admisible_m3s: float
+    gobierna: str                 # CAPACIDAD_CUNETA_LLENA | ..._VELOCIDAD_LIMITE
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class LongitudHidraulica:
+    """
+    --- T-9 --- La longitud por capacidad de la cuneta (Sec. 10 punto 2 de la
+    hoja de ruta): la capacidad admisible dividida por el caudal aportante
+    por metro de cuneta,
+
+        q' = q · b / 10^6        [m3/s por m; q en m3/s por km2, b en m]
+        L_hidraulico = Q_admisible / q'
+
+    DESDE LAS CORRECCIONES DE LA AUDITORIA DE T-9 (H1) el aporte por metro
+    se reparte de DOS maneras, y `metodo_aporte` dice cual:
+
+      * TRAMO conocido (`METODO_APORTE_TRAMO`): q' = Q / s, el caudal de
+        aporte del alivio repartido uniformemente en su tramo real de
+        longitud s, y L_hidraulico = Q_adm · s / Q. Es la condicion literal
+        del Manual escrita como longitud: L_hidraulico >= s si y solo si
+        Q_adm >= Q. `escorrentia_m3s_km2` y `ancho_tributario_m` son None.
+      * TRAMO desconocido (`METODO_APORTE_AREA`): q' = q · b / 10^6, con q la
+        escorrentia especifica del area tributaria (Q / A) y b el ancho
+        tributario. Se publica la longitud que ese par implica, s_impl =
+        A · 10^6 / b (`s_implicita_m`), y si supera la longitud maxima
+        normativa del tramo se avisa: el area declarada no es la faja b x
+        tramo, y la longitud calculada no es fiable.
+
+    `caudal_de_aporte` es el `CaudalDeDiseno` de la Fase 1-bis cuando el
+    caudal se calculo (el mismo objeto del punto: no se recalcula, H11), o
+    None.
+    """
+    capacidad: CapacidadCuneta
+    escorrentia_m3s_km2: Optional[float]
+    origen_escorrentia: str
+    ancho_tributario_m: Optional[float]
+    q_por_metro_m3s_m: float
+    L_hidraulico: float
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    caudal_de_aporte: Optional["CaudalDeDiseno"] = None
+    metodo_aporte: str = METODO_APORTE_AREA
+    Q_aporte_m3s: Optional[float] = None
+    longitud_tramo_m: Optional[float] = None
+    s_implicita_m: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class AporteDelAlivio:
+    """
+    --- T-9 (correcciones de la auditoria, H1) --- VB2: el caudal de aporte
+    del alivio contra la capacidad admisible de la cuneta (Manual de
+    Hidrologia, num. 4.1.2.1 a), pag. impresa 177: «Q manning > Q de aporte,
+    Entonces el diseño está terminado»). En la Familia B el caudal del punto
+    es, por contrato, el de la cuneta que descarga en el alivio.
+
+    `capacidad` es None cuando no se pudo calcular --falta la pendiente de la
+    cuneta-- y entonces `verificacion` tambien, y `aviso` dice que VB2 no se
+    evaluo y por que. Con `L_hidraulico_m` declarado no se exige el dato: el
+    aviso basta (quien declara la longitud declara que la cuneta conduce su
+    aporte hasta ella).
+    """
+    Q_aporte_m3s: float
+    origen_aporte: str
+    capacidad: Optional[CapacidadCuneta]
+    verificacion: Optional["Verificacion"] = None
+    aviso: str = ""
+
+    @property
+    def pasos(self) -> Tuple["PasoDeMemoria", ...]:
+        """Los pasos de la capacidad de la cuneta, si se calculo."""
+        return () if self.capacidad is None else tuple(self.capacidad.pasos)
+
+
+@dataclass(frozen=True)
+class ExtremoDeTramo:
+    """
+    --- T-9 (correcciones de la auditoria, H3 y decision C) --- Donde empieza
+    el tramo de cuneta que VB1 mide para una alcantarilla de alivio: el lado
+    de PROGRESIVAS MENORES del alivio (el sentido del flujo no es dato y el
+    texto no lo presupone).
+
+    El extremo es, por orden: el inicio declarado (`inicio_tramo_cuneta_km`,
+    que no puede ser posterior a la obra); si no, la obra anterior en
+    progresiva que cierre el tramo --de Familia B siempre, de Familia A si el
+    criterio 'obras_familia_a_extremo_de_cuneta' vale «si»--; si no hay
+    ninguna, None, y VB1 no se puede evaluar.
+
+    `avisos` son los HUECOS que VB1 no mira: la cuneta entre la obra anterior
+    y un inicio declarado posterior a ella, y la del lado de progresivas
+    mayores del alivio cuando la obra siguiente no es otro alivio que la
+    verifique.
+    """
+    id_punto: str
+    progresiva_km: float
+    extremo: Optional[str]
+    progresiva_extremo_km: Optional[float]
+    origen_extremo: str
+    familia_extremo: Optional["Familia"] = None
+    avisos: Tuple[str, ...] = ()
+
+    @property
+    def longitud_m(self) -> Optional[float]:
+        """|progresiva − progresiva_extremo| en metros, o None sin extremo."""
+        if self.progresiva_extremo_km is None:
+            return None
+        return abs(self.progresiva_km - self.progresiva_extremo_km) * METROS_POR_KM
+
+
+@dataclass(frozen=True)
+class TramoDeAlivio:
+    """
+    --- T-9 --- El tramo de cuneta que descarga en una alcantarilla de alivio
+    (Familia B), entre ella y su extremo aguas arriba, y la verificacion VB1
+    de su longitud contra el espaciamiento maximo de la Fase 10.
+
+    EL EXTREMO es la obra B anterior en progresiva, o el inicio del tramo que
+    el punto declara (`inicio_tramo_cuneta_km`: punto alto de la rasante,
+    inicio del corte, otra obra de drenaje transversal). Sin ninguno de los
+    dos no hay tramo que medir: `verificacion` es None, `longitud_m` tambien,
+    y `aviso` lo dice. Con el espaciamiento maximo de algun extremo sin
+    conocer, se verifica contra el limite normativo SOLO si el tramo ya lo
+    excede (el maximo nunca lo supera); si no, tampoco hay verificacion y el
+    aviso nombra lo que falta.
+    """
+    id_punto: str
+    progresiva_km: float
+    extremo: Optional[str]
+    progresiva_extremo_km: Optional[float]
+    origen_extremo: str
+    longitud_m: Optional[float]
+    verificacion: Optional["Verificacion"] = None
+    aviso: str = ""
+    # --- T-9 (correcciones de la auditoria, H2 y H3) --- `falta` es el dato
+    # que destraba VB1 cuando no se evaluo (`inicio_tramo_cuneta_km` sin
+    # extremo, `L_hidraulico_m` con el maximo de un extremo desconocido): el
+    # servicio lo registra como `Bloqueo` del punto, porque una verificacion
+    # de la aceptacion de la Familia B que no se evaluo no puede dejar el
+    # expediente cerrado. `avisos` son los huecos de cuneta que VB1 no mira.
+    falta: str = ""
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class CompatibilidadGeometrica:
+    """
+    Salida de la verificacion final por punto de Sec. 7.B: la geometria del
+    conducto ya amarrada al perfil (longitud, esviaje, pendiente, cotas de
+    entrada y salida) y el expediente de verificaciones que la sostiene.
+
+    `longitud` = (ancho de plataforma + proyeccion de taludes) * factor de
+    esviaje, en metros. `caida` = S * longitud, y `cota_salida` = cota de
+    entrada - caida.
+    Como se obtuvo la proyeccion -- por extremo, con el terraplen simetrico,
+    o despejada de una longitud declarada -- lo dice `longitud_calculada`
+    (T-6); `proyeccion_taludes` es siempre la suma de los dos lados.
+
+    Las verificaciones llevan codigo G1/G2 para no confundirse con las V1-V9
+    de la Fase 5: son de otra fase y de otro modulo. La lista es corta a
+    proposito -- ver "Por que 7.B trae dos verificaciones con umbral y un
+    aviso" en el docstring de M7. Desde T-6 hay una tercera fila, G3, que es
+    el AVISO de esviaje: `cumple` es True siempre y por eso no entra en
+    `verificaciones_incumplidas` ni cambia `factible`.
+
+    `S_conducto` es la pendiente CON LA QUE CORRIO EL DISENO
+    (`ResultadoHidraulico.S`), no una que esta fase vuelva a elegir. Sec. 7.B
+    dice que la pendiente de la alcantarilla es la del cauce, y esa sigue
+    siendo la regla; lo que ya no puede pasar es que el punto que declara la
+    suya la use en el HW y no en la cota de salida (MAT-D9).
+    """
+
+    punto: PuntoCritico
+    # LA SECCION ADOPTADA EN LA FASE 4, y no el escalar `D` que este campo
+    # llevaba hasta C8. Misma razon que en `ResultadoPunto`: un `0.90` no dice
+    # si el marco era de 1.20 o de 2.00 m de luz, y la Fase 7 es la que
+    # publica la geometria amarrada al perfil.
+    seccion: Seccion
+    tamizado: TamizadoRasante             # el de 7.A, recalculado con ella
+    longitud: float                       # m
+    proyeccion_taludes: float             # m - suma de los dos taludes
+    factor_esviaje: float                 # adimensional - 1/cos(esviaje)
+    altura_terraplen: float               # m - cota rasante - cota terreno
+    S_conducto: float                     # m/m - la del diseno hidraulico
+                                          # (`ResultadoHidraulico.S`), que es
+                                          # la del cauce salvo declaracion
+    # LA COTA DE ENTRADA CON SU PROCEDENCIA, y no un `float` con un booleano
+    # al lado. Dos campos paralelos --- el numero y "si fue medido" --- son
+    # dos cosas que pueden divergir sin que nadie lo note, que es la leccion
+    # que `ResultadoPunto.D` frente a `seccion` dejo en C7 y C8. Aqui viajan
+    # pegados porque son el mismo hecho: el valor y de donde salio.
+    #
+    # Lo consume el volcado de texto, que marca la cota como MEDIDA o
+    # ADOPTADA: un numero en msnm sin marca se lee como cota levantada en
+    # campo, que es SIS-A-04.
+    cota_entrada: CotaDeEntrada           # msnm, con su procedencia
+    cota_salida: float                    # msnm - cota entrada - S*L
+    caida: float                          # m  - S*L
+    verificaciones: Tuple[Verificacion, ...]
+    numeral: str = "Sec. 7.B"
+    # --- T-6 --- Lo que 7.B CALCULA, con sus pasos. Todos con valor por
+    # defecto: un consumidor anterior a T-6 que construya este objeto sin
+    # ellos sigue funcionando, y M11 no imprime lo que no viene.
+    #   pasos                los `PasoDeMemoria` de 7.B en orden: pendiente
+    #                        adoptada, factor de esviaje, longitud, caida y
+    #                        cota de salida, encaje (G1, G2 y G3 llevan el
+    #                        suyo dentro de su `Verificacion`).
+    #   longitud_calculada   como salio L: metodo, altura del borde de la
+    #                        plataforma sobre el fondo EN CADA EXTREMO y la
+    #                        proyeccion de cada talud. Es lo que T-7a lee
+    #                        para la altura del cabezal y el largo del alero.
+    #   pendiente            la S del diseno CON SU ORIGEN (cauce, declarada,
+    #                        minima o maxima).
+    #   longitud_a_la_clave  longitud entre cabezales con el talud muriendo
+    #                        en la clave exterior de la seccion ADOPTADA
+    #                        (HDS-5 3.3.5); None cuando L es declarada o el
+    #                        metodo es el del terraplen simetrico.
+    #   desnivel_entrega     cota de salida - cota de fondo del receptor, m.
+    #   avisos               frases que la memoria imprime como aviso (fondo
+    #                        de entrada adoptado, esviaje sobre el maximo).
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    longitud_calculada: Optional["LongitudConducto"] = None
+    pendiente: Optional["PendienteAdoptada"] = None
+    longitud_a_la_clave: Optional[float] = None
+    desnivel_entrega: Optional[float] = None
+    avisos: Tuple[str, ...] = ()
+    # --- T-3 --- Lo que 7.B publica de un MARCO y de un paso de canal, los
+    # dos con valor por defecto para los constructores anteriores:
+    #   geometria_marco   la geometria del marco adoptado (B, H, celdas,
+    #                     espesor, dimensiones exteriores y cotas de fondo y
+    #                     de clave). None si la seccion es circular. Queda
+    #                     para quien la necesite (la demanda de la losa del
+    #                     marco, el cabezal por punto) sin volver a
+    #                     calcularla; hoy M8 no la lee (ficha T3-06).
+    #   remanso_canal     la sobreelevacion de la lamina del canal en el
+    #                     cruce y la longitud minima del remanso aguas arriba
+    #                     (Familia C). Es un AVISO, no una verificacion.
+    geometria_marco: Optional["GeometriaMarco"] = None
+    remanso_canal: Optional["RemansoCanal"] = None
+
+    @property
+    def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
+        """Las que M11 debe destacar en la memoria del punto."""
+        return tuple(v for v in self.verificaciones if not v.cumple)
+
+    @property
+    def factible(self) -> bool:
+        """True si las verificaciones de 7.B cumplen todas."""
+        return not self.verificaciones_incumplidas
+
+    @property
+    def delta_rasante_cm(self) -> Optional[float]:
+        """
+        Cuanto hay que subir la rasante, en centimetros, o None cuando subirla
+        no es el remedio.
+
+        Es el delta del TAMIZADO, o sea el de G1, y solo existe cuando G1 es
+        la que falla. Si la rasante alcanza y lo que incumple es G2 -- la cota
+        de salida contra el fondo del receptor --, subir la rasante NO lo
+        arregla: G2 se corrige con la pendiente, con la longitud o con la cota
+        del receptor. Por eso aqui va None y no 0.0, que es la misma regla que
+        `exigir_factible` ya aplicaba al construir la excepcion.
+
+        Devolvia 0.0 SIEMPRE, y eso hacia que `M11_reporte` escribiera
+        "Requiere subir la rasante 0.00 cm" en el punto cuya salida queda
+        enterrada bajo el receptor -- una instruccion vacia en el sitio donde
+        el revisor busca el remedio. El caso era inalcanzable mientras 7.B
+        corriese con la pendiente del cauce en vez de la del diseño (MAT-D9);
+        al cerrarse ese hallazgo dejo de serlo.
+        """
+        if self.tamizado.factible:
+            return None
+        return self.tamizado.delta_rasante_cm
+
+    def exigir_factible(self) -> None:
+        """
+        Lanza `DisenoNoFactibleError` si 7.B no cumple, con el delta de
+        rasante cuando el incumplimiento es el de la rasante congelada (G1).
+        Si el que falla es otro (G2, cota de salida contra el receptor), el
+        delta va en None porque subir la rasante NO lo resuelve: sale de la
+        pendiente y de la cota del receptor, no del tamizado.
+        """
+        incumplidas = self.verificaciones_incumplidas
+        if not incumplidas:
+            return
+        if not self.tamizado.factible:
+            self.tamizado.exigir_factible()
+        raise DisenoNoFactibleError(
+            motivo="7.B incumple " + "; ".join(
+                f"{v.codigo or 'sin codigo'} ({v.numeral}): obtenido "
+                f"{v.valor_obtenido!r} frente a {v.valor_admisible!r}"
+                for v in incumplidas
+            ),
+            id_punto=self.punto.id,
+        )
+
+
+# ===========================================================================
+# Fase 9 - Cabezal y aletas (salida de M9)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class PasoSismico:
+    """
+    Una fila de la tabla "Cadena sismica - desagregada" de Sec. 9.2.
+
+    La hoja de ruta la escribe desagregada a proposito: PGA, F_pga, A_s,
+    k_h0, factor de muro y k_h son SEIS cosas distintas con tres etiquetas
+    distintas ([N] el mapa y el numeral 2.8.1.1.14.2, [A] la eleccion de
+    F_pga), y hoy coinciden todas en 0.50 solo porque F_pga y el factor de
+    muro valen 1.0. Un reporte que imprima "k_h = 0.50" y nada mas no permite
+    ver que la unica pieza discutible de la cadena es F_pga, ni recalcularla
+    cuando llegue el SPT.
+
+    `criterio` es la clave de `criterios_adoptados.py` cuando el paso LEE un
+    valor declarado, y None cuando el paso lo CALCULA a partir de los
+    anteriores (A_s y k_h): esos dos no se declaran en ningun sitio, salen de
+    una multiplicacion, y por eso su `etiqueta` es "-" y no [N] ni [A].
+    """
+
+    simbolo: str                          # "PGA", "F_pga", "A_s", ...
+    valor: float
+    concepto: str
+    etiqueta: str                         # "N", "A", "-" (calculado)
+    origen: str                           # numeral o "Calculado"
+    criterio: Optional[str] = None        # clave en criterios_adoptados.py
+    # La CONDICION bajo la que el paso vale: de que filas de la tabla sale
+    # F_pga, en que rama de k_h0 cae la cimentacion, que caso de k_v rige.
+    # Tres de los siete pasos llevaban esa condicion implicita en el numero,
+    # que es como se pierde: el numero se revisa, el supuesto no se ve. Los
+    # pasos CALCULADOS (A_s, k_h) no llevan condicion propia -- heredan la de
+    # sus insumos -- y por eso el campo es opcional.
+    condicion: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class CadenaSismica:
+    """
+    Cadena sismica completa de Sec. 9.2, con los seis pasos horizontales mas
+    k_v, que va aparte porque NO deriva de la cadena: lo fija su propio
+    numeral ([N] condicionado, num. 2.8.1.1.14.2.1).
+
+        A_s  = F_pga * PGA
+        k_h0 = A_s                        (Manual de Puentes, 2.8.1.1.14.2.1)
+        k_h0 = 1.2 * F_pga * PGA          (idem, cimentacion en Clase A o B)
+        k_h  = factor_muro * k_h0
+
+    `pasos` reproduce la tabla de la hoja de ruta fila por fila para que el
+    informe la imprima entera -- con su condicion por eslabon, que es lo que
+    la hace revisable. Los campos escalares existen para que el calculo no
+    tenga que buscar dentro de la tupla.
+    """
+
+    PGA: float                            # g - roca Clase B, Tr = 1000 anios
+    F_pga: float                          # adimensional - factor de sitio
+    A_s: float                            # g - F_pga * PGA
+    k_h0: float                           # adimensional - A_s, o 1.2*F_pga*PGA en roca
+    factor_muro: float                    # adimensional - 1.0 = sin reduccion
+    k_h: float                            # adimensional - factor_muro * k_h0
+    k_v: float                            # adimensional - vertical, [N] aparte
+    pasos: Tuple[PasoSismico, ...]
+    numeral: str = "Sec. 9.2"
+    # Las filas de la Tabla 2.4.3.11.2.1.2-1 sobre las que se leyo F_pga, y
+    # en que rama de k_h0 cayo la cimentacion. Viajan con la cadena porque el
+    # numero no se puede revisar sin ellas: un F_pga de 1.0 leido sobre C/D/E
+    # y uno leido sobre A/B son dos afirmaciones distintas, y la segunda
+    # ademas cambia la formula de k_h0.
+    clases_de_sitio: Tuple[str, ...] = ()
+    cimentacion_en_roca: bool = False
+
+
+@dataclass(frozen=True)
+class GeometriaCabezal:
+    """
+    Predimensionamiento del cabezal, en metros. NO sale del CSV: Sec. 1.2 no
+    trae ninguna columna de geometria del cabezal y Sec. 9 no lo dimensiona.
+    Desde T-7a la PROPONE `M9.predimensionar_cabezal` para cada extremo de
+    cada punto dimensionado, con las reglas declaradas del criterio
+    'predimensionamiento_cabezal' [A], y el proyectista puede pisar cualquier
+    dimension por `--datos-externos` (clave `cabezal_declarado`); o la arma
+    el llamador de M9 en un tanteo, con los ocho campos de siempre.
+
+    `beta_grados` es la inclinacion del PARAMENTO INTERIOR (trasdos) respecto
+    de la vertical, con el signo de Mononobe-Okabe: positiva cuando el muro se
+    inclina alejandose del relleno. Un muro de paramento vertical es 0.
+    """
+
+    H: float                              # m - altura del muro sobre la zapata
+    B: float                              # m - ancho de la zapata
+    D_f: float                            # m - profundidad de desplante
+    espesor_corona: float                 # m - espesor del muro en la corona
+    espesor_base_muro: float              # m - espesor del muro en su arranque
+    espesor_zapata: float                 # m
+    beta_grados: float = 0.0              # grados desde la vertical
+    # Ancho del TALON, la parte de la zapata que queda del lado del relleno.
+    # Entra aqui porque el num. 2.8.1.1.14.1 define W_s como "el peso del
+    # suelo que esta inmediatamente encima del muro, INCLUYENDO EL TALON": sin
+    # esa medida no hay W_s y sin W_s no hay P_IR. Es opcional en la
+    # dataclase y NO por comodidad -- un default numerico seria inventar
+    # geometria --, sino para que las funciones que no lo necesitan sigan
+    # aceptando una geometria de tanteo sin el; quien lo necesita lo pide con
+    # `exigir_ancho_talon`, que se detiene si falta.
+    ancho_talon: Optional[float] = None   # m
+    # --- T-7a --- EL CABEZAL POR PUNTO (INF-4.2, INF-5.1.15). Todos con
+    # default None / vacio: una geometria de TANTEO -- la de los tests de M9
+    # y la que T-7b iterara -- sigue armandose con los ocho campos de arriba,
+    # y la que propone `M9.predimensionar_cabezal` lleva ademas DE QUE PUNTO
+    # y DE QUE EXTREMO es, su longitud, sus cotas, su tipo, sus aleros, la
+    # losa de entrega y, dimension por dimension, si salio de una regla o la
+    # declaro el proyectista (`dimensiones`). `H` sigue siendo la altura del
+    # muro SOBRE la zapata; `altura_total` (H + zapata) es la H_c del prompt.
+    longitud: Optional[float] = None      # m - L_c, normal al eje del conducto
+    tipo: Optional[str] = None            # 'voladizo_armado' | 'gravedad_ciclopeo'
+    id_punto: Optional[str] = None
+    extremo: Optional[str] = None         # 'entrada' | 'salida'
+    cota_coronacion: Optional[float] = None   # msnm
+    cota_desplante: Optional[float] = None    # msnm - base de la zapata
+    ancho_punta: Optional[float] = None   # m - zapata del lado libre (punta)
+    aleros: Optional["Aleros"] = None
+    losa: Optional["LosaDeEntrega"] = None
+    dimensiones: Tuple["DimensionDeCabezal", ...] = ()
+
+    def exigir_ancho_talon(self) -> float:
+        """
+        El ancho del talon, o `DatoFaltanteError` si la geometria no lo trae.
+
+        Desde T-7a ya no es `CriterioPendienteError` sobre
+        'predimensionamiento_cabezal': ese criterio TIENE valor (las reglas
+        del predimensionamiento) y la geometria que propone
+        `M9.predimensionar_cabezal` lleva el talon siempre. Una geometria sin
+        el solo puede venir de un TANTEO armado a mano, y lo que le falta es
+        un dato que el que tantea tiene que AÑADIR (regla de CLAUDE.md:
+        Faltante). Devolver 0 en su lugar anularia W_s y con el la mitad de
+        P_IR, en la direccion no conservadora.
+        """
+        if self.ancho_talon is None:
+            raise DatoFaltanteError(
+                "ancho_talon",
+                detalle="El num. 2.8.1.1.14.1 define W_s como el peso del suelo "
+                "inmediatamente encima del muro, incluyendo el talon: sin el "
+                "ancho del talon de la geometria del cabezal no hay W_s ni "
+                "P_IR. `M9.predimensionar_cabezal` lo propone; una geometria "
+                "de tanteo tiene que traerlo",
+            )
+        return self.ancho_talon
+
+    @property
+    def altura_total(self) -> float:
+        """
+        H + espesor de zapata, en m: la altura del plano vertical contra el
+        que actua el relleno. No es lo mismo que `H`, que mide solo el muro
+        sobre la zapata, y confundirlas subestima el empuje en el espesor de
+        la zapata entero.
+        """
+        return self.H + self.espesor_zapata
+
+
+# ===========================================================================
+# --- T-7a --- El cabezal POR PUNTO: aleros, losa de entrega, embocadura
+# ===========================================================================
+
+ORIGEN_DIMENSION_REGLA = "propuesta por regla"
+ORIGEN_DIMENSION_DECLARADA = "declarada"
+# --- T-7a, correcciones (H9) --- La dimension que la regla CALCULA a partir de
+# otra que el proyectista declaro (el talon con B declarado, la zapata con la
+# altura total declarada, los aleros con la altura...): no es «propuesta por
+# regla» -- su valor no lo eligio la regla -- ni «declarada» -- nadie la
+# tecleo --. Imprimirla con uno de los dos rotulos mentia sobre su origen.
+ORIGEN_DIMENSION_DERIVADA = "derivada de dimensiones declaradas"
+ORIGENES_DE_DIMENSION = (ORIGEN_DIMENSION_REGLA, ORIGEN_DIMENSION_DECLARADA,
+                         ORIGEN_DIMENSION_DERIVADA)
+
+
+@dataclass(frozen=True)
+class DimensionDeCabezal:
+    """
+    --- T-7a --- Una fila de la tabla de geometria del cabezal: la dimension,
+    su valor y DE DONDE SALIO --«propuesta por regla» (con la regla escrita y
+    el criterio que la declara) o «declarada» por el proyectista en
+    `--datos-externos`--. Es la tabla que el prompt pide imprimir en la
+    memoria de cada punto, y viaja con la geometria para que M11 la formatee
+    sin reconstruirla.
+    """
+
+    nombre: str
+    valor: Any
+    unidad: str
+    origen: str                     # uno de ORIGENES_DE_DIMENSION
+    regla: str                      # la regla, o «dato externo del punto»
+    criterio: str = ""              # clave del criterio que la gobierna
+
+    def __post_init__(self) -> None:
+        if self.origen not in ORIGENES_DE_DIMENSION:
+            raise ValueError(
+                f"DimensionDeCabezal «{self.nombre}»: origen {self.origen!r}; "
+                "se espera uno de " + ", ".join(
+                    f"«{o}»" for o in ORIGENES_DE_DIMENSION))
+        if not str(self.regla).strip():
+            raise ValueError(
+                f"DimensionDeCabezal «{self.nombre}» sin regla: una dimension "
+                "sin decir de donde salio es la que obliga a abrir el codigo")
+
+
+@dataclass(frozen=True)
+class Aleros:
+    """
+    --- T-7a --- Los dos aleros (aletas) de UN cabezal (INF-4.3).
+
+    `angulo_grados` es alfa, el angulo de cada alero CON LA PROLONGACION DE
+    LA PARED DEL BARRIL: la definicion de ΘW del HDS-5 («Flare angle of
+    wingwalls with respect to extension of culvert side wall», List of
+    Symbols, pag. impresa xix; cita HDS5_3ED.SIMBOLOS#THETA_W), la de los
+    rotulos de su Tabla C.2 («to barrel») y la del INFORME §4.3: 0 son aleros
+    paralelos al barril y 90 aleros en el plano del muro, que es un cabezal
+    recto.
+
+    CON ESVIAJE LOS DOS ALEROS NO SON IGUALES (correcciones de T-7a, H1). El
+    talud del terraplen baja PERPENDICULAR A LA VIA -- es como lo modela
+    `M7.longitud_conducto` --, y el eje del conducto forma con esa direccion
+    el esviaje theta. El cabezal es normal al eje, de modo que un alero forma
+    alfa - theta con la bajada del talud y el otro alfa + theta, y cada uno
+    tiene que recorrer, hasta que el talud baje de h0 a H_f, lo que el talud
+    avanza en planta ((h0 - H_f)·talud) dividido por el coseno de SU angulo:
+
+        L_corto = (h0 - H_f)·talud / cos(alfa - theta)
+        L_largo = (h0 - H_f)·talud / cos(alfa_largo + theta)
+
+    con theta en valor absoluto (con theta = 0 son la misma) y alfa_largo =
+    alfa salvo que el punto declare uno menor de ese lado. El CSV trae la
+    MAGNITUD del esviaje y no su sentido de giro, de modo que no se sabe cual
+    de los dos lados (izquierdo o derecho, aguas arriba o aguas abajo del
+    cruce) es el largo: lo fija la planta del cruce, y los dos se llaman
+    «corto» y «largo».
+
+    Las dos alturas son VISIBLES, sobre el terreno al pie
+    (`ExtremoDelConducto.cota_pie`): la inicial es la del cabezal en el
+    arranque (coronacion menos pie) y la final la de la punta. La zapata del
+    alero se desplanta a la misma cota que la del cabezal.
+    """
+
+    angulo_grados: float            # alfa, grados con la pared del barril
+    # --- T-7a, integracion --- el alfa del alero LARGO: el mismo alfa salvo
+    # que el punto declare uno menor de ese lado (`cabezal_declarado.
+    # angulo_alero_largo_grados`, aleros asimetricos), que es el remedio que
+    # el dueño aprobo para el alero largo de un cruce esviado.
+    angulo_largo_grados: float      # grados con la pared del barril
+    esviaje_grados: float           # theta, magnitud del esviaje del cruce
+    longitud_corto: float           # m - el alero que forma alfa - theta
+    longitud_largo: float           # m - el alero que forma alfa + theta
+    altura_inicial: float           # m - sobre el pie, en el arranque
+    altura_final: float             # m - sobre el pie, en la punta (H_f)
+    espesor: float                  # m
+    ancho_zapata: float             # m
+    espesor_zapata: float           # m
+
+    @property
+    def longitudes(self) -> Tuple[float, float]:
+        """(corto, largo), m."""
+        return (self.longitud_corto, self.longitud_largo)
+
+
+@dataclass(frozen=True)
+class LosaDeEntrega:
+    """
+    --- T-7a --- La losa (zampeado) delante del cabezal y el dentellon en su
+    borde libre: GEOMETRIA DECLARADA (T-7a punto 5, ficha T8-03). Su
+    verificacion hidraulica es de la Fase 6; aqui solo se dimensiona.
+
+    `profundidad_dentellon` SE MIDE DESDE EL TERRENO al borde de la losa
+    (`cota_terreno`) hasta la base del dentellon (`cota_base_dentellon`),
+    como la cota «0.80 min.» de la Lamina Nº 04, que arranca en la superficie
+    del terreno natural junto al dentellon -- alli, la cara inferior del
+    paquete losa + relleno granular -- y no en la cara superior de la losa
+    (correcciones de T-7a, H3). El terreno es el MISMO del desplante del
+    cabezal de ese extremo (`ExtremoDelConducto.cota_pie`): una referencia
+    por extremo para el desplante, la losa y el dentellon. La cota de la cara
+    superior de la losa no la fija este predimensionamiento.
+    """
+
+    longitud: float                 # m - normal al cabezal, hacia el cauce
+    espesor: float                  # m
+    profundidad_dentellon: float    # m - desde el terreno hasta su base
+    ancho_dentellon: float          # m
+    cota_terreno: float             # msnm - el pie del muro de ese extremo
+    cota_base_dentellon: float      # msnm - cota_terreno - profundidad
+
+
+@dataclass(frozen=True)
+class ExtremoDelConducto:
+    """
+    --- T-7a --- Lo que el cabezal de UN extremo necesita saber del conducto
+    y del cruce, ya resuelto por las fases anteriores (4, 6 y 7.B) y con su
+    procedencia. Es la entrada de `M9.predimensionar_cabezal`, que asi no
+    lee el `InformePunto` ni decide nada que ya se haya decidido.
+
+        cota_solera          fondo interior del conducto en ese extremo (la
+                             de entrada de 7.B, medida o adoptada; la de
+                             salida, entrada - S·L)
+        cota_pie             terreno AL PIE del muro: la referencia del
+                             desplante (E.050 Art. 26.1 lo mide desde la
+                             superficie del terreno) y de la altura de los
+                             aleros. Ver `origen_cota_pie`
+        cota_clave_exterior  la clave FISICA (M5.cota_clave: altura interior
+                             + pared), trasladada al extremo
+        cota_agua            el nivel de agua de diseño contra el muro: en la
+                             entrada, solera + HW de diseño (M4); en la
+                             salida, solera + max(TW, tirante de salida)
+        ancho_exterior       ancho exterior del conducto en planta, con
+                             todas sus celdas (N·B + (N+1)·t en un marco)
+        cota_fondo_hoya      fondo de la hoya de socavacion (Fase 6, T-8);
+                             solo en la salida y solo si se estimo o declaro
+    """
+
+    extremo: str
+    cota_solera: float
+    cota_pie: float
+    origen_cota_pie: str
+    cota_clave_exterior: float
+    cota_agua: float
+    origen_cota_agua: str
+    ancho_exterior: float
+    altura_interior: float
+    cota_fondo_hoya: Optional[float] = None
+    origen_socavacion: str = ""
+
+
+@dataclass(frozen=True)
+class EmbocaduraDelPunto:
+    """
+    --- T-7a --- La embocadura de un punto: si el cabezal lleva aleros y con
+    que angulo, resuelta ANTES de la Fase 4 porque es una entrada de la
+    hidraulica (fila de ke de la Tabla C.2 y carta de la Tabla A.1) y de la
+    proteccion de entrada (Fase 6), no solo de la geometria de la Fase 9.
+
+    `angulo_aletas` es None sin aleros. `regla` dice que rama de
+    'angulo_aletas' dio el angulo (por defecto, o por esviaje mayor que el
+    umbral). Que hace la fuente con esa embocadura lo dice
+    `M9.filas_hds5_del_cajon`: con tubo, nada (la Tabla C.2 agrupa «Headwall
+    or headwall and wingwalls» y las Cartas 1 a 3 no separan aleros); con
+    cajon, elige la banda de filas de las Tablas A.1 y C.2.
+    """
+
+    tipo: str                       # 'cabezal_con_aleros' | 'cabezal_recto'
+    angulo_aletas: Optional[float]  # grados con la pared del barril
+    regla: str
+    esviaje_grados: float
+    criterio_tipo: str
+    criterio_angulo: str
+    # --- T-7a, correcciones (decision 3 del dueño) --- lo que la embocadura
+    # del punto no puede representar y la corrida tiene que AVISAR (la caja
+    # receptora de un alivio de cuneta, Familia B). Sale por
+    # `InformePunto.avisos()`.
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class CabezalDelPunto:
+    """
+    --- T-7a --- La Fase 9 de UN punto: los dos cabezales (entrada y salida)
+    con su geometria completa, las verificaciones de compatibilidad con el
+    conducto y de los minimos con numero (CB1 a CB7), la longitud entre
+    cabezales que el relleno retenido cierra (ficha T6-01) y la de metrado,
+    los pasos de memoria y los avisos. La estabilidad (E1-E6) y el armado no
+    estan aqui: son T-7b y T-7c.
+    """
+
+    id_punto: str
+    embocadura: EmbocaduraDelPunto
+    entrada: GeometriaCabezal
+    salida: GeometriaCabezal
+    verificaciones: Tuple["Verificacion", ...]
+    longitud_entre_cabezales: Optional[float] = None   # m, entre trasdos
+    # --- T-7a, correcciones (H6) --- el barril completo, que atraviesa los
+    # dos muros normales al eje: L_cab + los dos espesores.
+    longitud_metrado: Optional[float] = None           # m
+    motivo_sin_longitud: str = ""
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    # --- T-7b --- El ensamble de estabilidad de cada cabezal, por condicion
+    # (`EstabilidadDelCabezal`): hasta cuatro, entrada y salida x estatica y
+    # sismica. Sus verificaciones E1 a E3 viajan TAMBIEN en `verificaciones`
+    # (la via por la que `InformePunto` cuenta incumplidas e indicadores), y
+    # sus avisos en `avisos`. Vacio = la estabilidad no se evaluo (su etapa
+    # se bloqueo y el punto lleva el `Bloqueo` con el motivo).
+    estabilidad: Tuple["EstabilidadDelCabezal", ...] = ()
+    # --- T-7c --- El armado de cada cabezal (`ArmadoDelCabezal`), o las
+    # verificaciones de su alternativa ciclopea: hasta dos, entrada y
+    # salida. Sus verificaciones A* / C* viajan TAMBIEN en `verificaciones`
+    # y sus avisos en `avisos`. Vacio = el armado no se evaluo (su etapa se
+    # bloqueo y el punto lleva el `Bloqueo` con el motivo).
+    armado: Tuple["ArmadoDelCabezal", ...] = ()
+
+    @property
+    def geometrias(self) -> Tuple[GeometriaCabezal, GeometriaCabezal]:
+        return (self.entrada, self.salida)
+
+    @property
+    def verificaciones_incumplidas(self) -> Tuple["Verificacion", ...]:
+        return tuple(v for v in self.verificaciones if not v.cumple)
+
+
+@dataclass(frozen=True)
+class EmpujeMononobeOkabe:
+    """
+    Coeficiente de empuje activo sismico K_AE por Mononobe-Okabe (Sec. 9.2) y
+    todos los angulos con que se obtuvo, porque sin ellos el numero no es
+    revisable: K_AE depende de cuatro angulos ademas de la cadena sismica y
+    tres de los cuatro (i, beta, delta) son adopciones del proyectista.
+
+    `K_A` es el coeficiente estatico de la MISMA formulacion (la de Coulomb
+    que resulta de hacer k_h = k_v = 0), no el de Rankine: el incremento
+    sismico solo tiene sentido restando dos coeficientes homogeneos. Con
+    i = beta = delta = 0 ambos coinciden con tan^2(45 - phi/2), y M9 lo
+    comprueba en un test.
+    """
+
+    K_AE: float                           # adimensional
+    K_A: float                            # adimensional - misma formulacion, k=0
+    psi_grados: float                     # arctan(k_h / (1 - k_v))
+    phi_grados: float                     # friccion interna del relleno
+    i_grados: float                       # pendiente del relleno
+    beta_grados: float                    # inclinacion del muro
+    delta_grados: float                   # friccion muro-suelo
+    k_h: float
+    k_v: float
+    numeral: str = "Sec. 9.2 (Mononobe-Okabe)"
+
+    @property
+    def incremento(self) -> float:
+        """K_AE - K_A: la parte sismica del coeficiente, siempre >= 0."""
+        return self.K_AE - self.K_A
+
+
+@dataclass(frozen=True)
+class EmpujesTrasdos:
+    """
+    Las cargas horizontales sobre el trasdos del cabezal en UNA condicion
+    (Sec. 9.2), cada una con su brazo sobre la base, mas la subpresion.
+
+    Cada empuje viaja con su brazo y no con un momento ya sumado, porque los
+    factores gamma de la combinacion (Manual de Puentes, Tablas 2.4.5.3.1-1 y
+    -2; la fila de gamma_p que aplica a cada estructura la declara
+    'factores_carga_aashto') se aplican POR TIPO DE CARGA -- EH, LS, WA, EQ
+    llevan factores distintos y algunos son dobles. Un momento total sumado
+    sin factorizar no se puede combinar despues.
+
+    `incremento_sismico` y `z_incremento` son None en condicion estatica. La
+    subpresion no lleva brazo: es vertical y su efecto es reducir la normal
+    en la base, no volcar.
+    """
+
+    condicion: CondicionAnalisis
+    altura_empuje: float                  # m - altura del plano de empuje
+    gamma_relleno: float                  # kN/m3
+    E_activo: float                       # kN/m - carga EH
+    z_activo: float                       # m sobre la base (H/3)
+    E_sobrecarga: float                   # kN/m - carga LS
+    z_sobrecarga: float                   # m sobre la base (H/2)
+    E_hidrostatico: float                 # kN/m - carga WA
+    z_hidrostatico: float                 # m sobre la base
+    U_subpresion: float                   # kN/m - carga WA, vertical
+    K_A: float
+    incremento_sismico: Optional[float] = None   # kN/m - carga EQ
+    z_incremento: Optional[float] = None         # m sobre la base
+    mononobe_okabe: Optional[EmpujeMononobeOkabe] = None
+    numeral: str = "Sec. 9.2"
+    # LA CADENA DE LA SOBRECARGA VIVA, que salia del modulo sin dejar rastro.
+    # `E_sobrecarga` es un numero y hasta esta sesion era el unico testigo de
+    # una decision con tres eslabones: la altura del muro CON zapata, la
+    # orientacion respecto al trafico -- que decide CUAL de las dos tablas de
+    # AASHTO aplica -- y el h_eq que sale de ellas. Sin estos tres campos la
+    # memoria imprimia un empuje que puede valer 1.87 veces el del expediente
+    # anterior citando solo un numeral peruano que dice 0.60 m.
+    h_eq_sobrecarga: Optional[float] = None      # m - altura de suelo equivalente
+    orientacion_muro: Optional[str] = None       # respecto al trafico
+    numeral_sobrecarga: str = ""                 # las DOS fuentes que la sostienen
+    # DE DONDE SALE `K_A` (EXT-M-06): el Ka de Coulomb del Manual de Puentes
+    # (num. 2.4.4.1.5.3), el mismo que resta el incremento sismico. Hasta
+    # EXT-7 era el de Rankine y el objeto no decia cual: dos coeficientes
+    # sobre el mismo muro y ningun campo que lo delatara.
+    numeral_k_a: str = ""
+
+    def __post_init__(self) -> None:
+        """
+        La carga EQ va ENTERA o no va: el empuje y su brazo son un solo dato.
+
+        Los dos campos son Optional e independientes, y con solo uno de ellos
+        el objeto quedaba en un estado medio que NADIE podia detectar y que es
+        NO CONSERVADOR: `empuje_horizontal_total` suma el incremento sismico
+        con la guarda `incremento_sismico is not None`, y `momento_volcante`
+        lo suma con `incremento_sismico is not None AND z_incremento is not
+        None`. Con `incremento_sismico = 9.7` y `z_incremento = None` la carga
+        EQ contaba en la FUERZA y desaparecia en silencio del VOLTEO -- que es
+        justo la direccion en la que un error no avisa, porque el FS de volteo
+        sale mas alto de lo que corresponde.
+
+        Hoy `M9_cabezal.empujes_trasdos` pone los dos juntos dentro del mismo
+        `if condicion is SISMICO`, de modo que el estado medio es inalcanzable
+        DESDE ESE CAMINO. Pero `EmpujesTrasdos` es una dataclass publica con
+        los dos campos sueltos: la guarda va en el tipo, que es donde el
+        estado imposible se hace imposible, y no en el llamador de turno.
+
+        POR QUE `ValueError` Y NO `DatoInvalidoError`. La primera version usaba
+        la taxonomia del expediente, y contradecia la frontera que este mismo
+        trabajo escribio en `M9_cabezal.py` (SIS-E-02): `DatoInvalidoError` es
+        para un argumento que ES una clave de tabla normativa, con el mensaje
+        enumerando las filas admisibles; para un estado interno no lo es. Y
+        este estado no es un dato del expediente que el proyectista pueda
+        corregir --- el docstring de arriba dice que es INALCANZABLE desde el
+        unico camino de produccion ---, de modo que presentarlo en la GUI como
+        "el expediente no se puede cargar" mandaria al revisor a buscar en el
+        CSV un defecto que esta en el codigo. Fuera de `ErrorProyecto`, cae en
+        el brazo de programa de la GUI y sale con traza, que es lo que un
+        invariante roto merece. Es la misma lectura que
+        `criterios_adoptados.establecer_valor_dinamico` (SIS-E-05).
+        """
+        completo = (self.incremento_sismico is not None
+                    and self.z_incremento is not None)
+        vacio = self.incremento_sismico is None and self.z_incremento is None
+        if not (completo or vacio):
+            raise ValueError(
+                "EmpujesTrasdos: la carga EQ va con su brazo o no va. Se "
+                f"recibio incremento_sismico={self.incremento_sismico!r} y "
+                f"z_incremento={self.z_incremento!r}: el empuje horizontal lo "
+                "sumaria y el momento volcante no, de modo que el volteo "
+                "saldria mas seguro de lo que es. Es un invariante del tipo, "
+                "no un dato del expediente: si esto se levanta, el defecto "
+                "esta en quien construyo el objeto."
+            )
+
+    @property
+    def empuje_horizontal_total(self) -> float:
+        """
+        Suma SIN FACTORAR de los empujes horizontales, kN/m. Es la demanda de
+        servicio: para Resistencia I o Evento Extremo I hay que factorar cada
+        componente por separado con `M9_cabezal.factores_de_carga`.
+        """
+        total = self.E_activo + self.E_sobrecarga + self.E_hidrostatico
+        if self.incremento_sismico is not None:
+            total += self.incremento_sismico
+        return total
+
+    @property
+    def momento_volcante(self) -> float:
+        """
+        Momento volcante SIN FACTORAR respecto del pie de la zapata, kN*m/m:
+        cada empuje por su brazo. Misma advertencia que
+        `empuje_horizontal_total` sobre los factores.
+        """
+        momento = (self.E_activo * self.z_activo
+                   + self.E_sobrecarga * self.z_sobrecarga
+                   + self.E_hidrostatico * self.z_hidrostatico)
+        if self.incremento_sismico is not None and self.z_incremento is not None:
+            momento += self.incremento_sismico * self.z_incremento
+        return momento
+
+
+@dataclass(frozen=True)
+class FuerzaInerciaMuro:
+    """
+    P_IR, la fuerza de inercia de la masa del muro bajo sismo (Manual de
+    Puentes num. 2.8.1.1.14.1, ec. 2.8.1.1.14.1-1 = AASHTO 11.6.5.1-1).
+
+    Este objeto no existia y el termino tampoco: la cadena sismica del
+    proyecto terminaba en k_h y K_AE, y el ensamble de empujes sumaba
+    EH + LS + WA + el incremento de Mononobe-Okabe sin ninguna linea de
+    inercia del muro (MAT-D6, MAT-X7). La MISMA seccion de la que la hoja de
+    ruta toma k_h0 exige combinar las dos.
+
+    Los dos pesos viajan separados y no sumados porque la fuente los define
+    aparte y son mas estrechos de lo que "peso del muro" sugiere: W_s es el
+    suelo que esta INMEDIATAMENTE ENCIMA del muro, incluido el talon, no el
+    relleno del trasdos entero.
+    """
+
+    P_IR: float                           # kN/m - k_h * (W_w + W_s)
+    W_w: float                            # kN/m - peso de la pared
+    W_s: float                            # kN/m - suelo sobre el muro y el talon
+    k_h: float                            # adimensional
+    numeral: str
+
+
+@dataclass(frozen=True)
+class CasoDemandaSismica:
+    """
+    Uno de los dos casos que el num. 2.8.1.1.14.1 manda investigar. No son dos
+    formas de decir lo mismo: la fuente advierte expresamente que los efectos
+    de P_AE y P_IR NO son simultaneos, y por eso reparte los porcentajes.
+    """
+
+    nombre: str                           # "100% P_AE + 50% P_IR", ...
+    fraccion_P_AE: float
+    fraccion_P_IR: float
+    P_AE_aplicado: float                  # kN/m - ya con su fraccion y su piso
+    P_IR_aplicado: float                  # kN/m - ya con su fraccion
+    total: float                          # kN/m
+    piso_estatico_activo: bool            # si el piso de P_A levanto la fraccion
+
+
+@dataclass(frozen=True)
+class DemandaSismicaCabezal:
+    """
+    P_seis: la demanda sismica del cabezal, como la define el num.
+    2.8.1.1.14.1 -- los dos casos y el mas desfavorable de los dos.
+
+    `P_AE` es el empuje TOTAL de Mononobe-Okabe (estatico mas dinamico) y no
+    su incremento: el comentario del articulo es explicito en que P_AE ya
+    incluye el empuje estatico y que el Ka estatico NO debe sumarsele. `P_A`
+    viaja aparte porque es el PISO del segundo caso, no un sumando.
+    """
+
+    casos: Tuple[CasoDemandaSismica, ...]
+    P_AE: float                           # kN/m - Mononobe-Okabe total
+    P_A: float                            # kN/m - empuje activo estatico
+    inercia: FuerzaInerciaMuro
+    numeral: str
+
+    def mas_desfavorable(self, efectos: Dict[str, float]) -> CasoDemandaSismica:
+        """
+        El caso que gobierna, comparando el EFECTO que el llamador midio en
+        cada uno: `{nombre_del_caso: efecto}`, con el efecto orientado de modo
+        que mayor sea peor (momento volcante, fuerza actuante, 1/FS...).
+
+        POR QUE NO HAY UN `gobernante` QUE COMPARE LAS SUMAS. Porque la fuente
+        no manda comparar fuerzas, manda comparar ANALISIS: "el resultado mas
+        conservador de estos dos ANALISIS se usara para el diseno del muro"
+        (Manual 2.8.1.1.14.1; "the most conservative result from these two
+        analyses", AASHTO 11.6.5.1). P_AE y P_IR actuan a alturas distintas
+        -- el empuje en el tercio inferior, la inercia en el centroide de la
+        masa del muro y su relleno --, de modo que el orden por fuerza
+        resultante NO es el orden por momento volcante. Ejemplo con brazos
+        corrientes: P_AE = 100 kN/m a 1.20 m y P_IR = 80 kN/m a 2.00 m dan
+        140 kN/m y 200.0 kN*m/m en el primer caso, y 130 kN/m y 220.0 kN*m/m
+        en el segundo: la suma senala el primero y el volteo lo gobierna el
+        segundo, un 10 % mas. Un `gobernante` que ordenara por `total`
+        devolveria el caso equivocado justo en la verificacion -- el volteo --
+        donde equivocarse es no conservador.
+
+        La comparacion por fuerza sigue disponible para quien de verdad la
+        necesite (deslizamiento con los dos empujes al mismo nivel), pero
+        tiene que pedirla nombrandola: `mas_desfavorable({c.nombre: c.total
+        for c in demanda.casos})`.
+        """
+        nombres = {c.nombre for c in self.casos}
+        faltan = nombres - set(efectos)
+        if faltan:
+            raise DatoInvalidoError(
+                campo="efectos", valor=sorted(efectos),
+                motivo=f"el numeral manda comparar los dos analisis y faltan "
+                       f"los de {sorted(faltan)}: sin el efecto de cada caso "
+                       f"no hay cual sea 'el resultado mas conservador'",
+            )
+        return max(self.casos, key=lambda c: efectos[c.nombre])
+
+
+@dataclass(frozen=True)
+class PresionContactoBase:
+    """
+    La presion de contacto bajo la zapata y la excentricidad que la produce
+    (Manual de Puentes num. 2.8.1.1.14.1 para el limite sismico; distribucion
+    lineal de Navier para las presiones).
+
+    Era el UNICO eslabon de la cadena de estabilidad sin procedimiento ni
+    vacio declarado: `verificar_capacidad_portante` exige `q_actuante` ya
+    resuelto y en el repositorio no habia con que producirlo (MAT-O16).
+
+    `distribucion` dice QUE RAMA del numeral se aplico, porque son dos y la
+    fuente las reparte por terreno de fundacion: presion uniforme sobre el
+    ancho efectivo B - 2e si el muro se apoya en suelo, y distribucion lineal
+    sobre B si se apoya en roca. Aplicar la de roca a una cimentacion en
+    suelo sobrestima el pico -- es conservador -- pero es la rama equivocada,
+    y sin este campo la eleccion no se veria en ningun sitio.
+
+    `dentro_del_nucleo` no es lo mismo que `cumple`, y solo cambia la formula
+    en la rama de ROCA: el nucleo central (e <= B/6) es la condicion para que
+    la distribucion lineal completa tenga sentido -- fuera de el la zapata
+    levanta y q_min saldria negativo --, mientras que el limite SISMICO
+    depende de gamma_EQ y llega hasta 0.4*B. Se informa en las dos ramas
+    porque es una propiedad de la resultante, no de la formula.
+    """
+
+    N: float                              # kN/m - normal neta en la base
+    B: float                              # m - ancho de zapata
+    e: float                              # m - excentricidad respecto del centro
+    q_max: float                          # kPa
+    q_min: float                          # kPa
+    ancho_efectivo: float                 # m - B - 2e
+    dentro_del_nucleo: bool
+    distribucion: str                     # que rama del numeral se aplico
+    numeral: str
+
+
+@dataclass(frozen=True)
+class CombinacionCarga:
+    """
+    Una de las tres combinaciones de Sec. 9.2 (AASHTO LRFD Sec. 3.4.1, via
+    Manual de Puentes num. 2.4.5.3): Resistencia I, Servicio I o Evento
+    Extremo I.
+
+    `componentes` nombra que cargas entran; `criterio_factores` apunta al
+    criterio de `criterios_adoptados.py` donde se declara QUE FILA de la
+    tabla de gamma_p describe a cada estructura. Este objeto describe la
+    combinacion y no la evalua.
+
+    Deciamos aqui que "la hoja de ruta NOMBRA las combinaciones pero no
+    transcribe la Tabla 3.4.1-1". Lo primero sigue siendo cierto y lo segundo
+    dejo de importar: las dos tablas del numeral 2.4.5.3.1 SI estan en el
+    corpus peruano -- Manual de Puentes, pag. impresa 143 -- y desde
+    NOR-PUE-04 estan transcritas como [N] en `constantes_normativas`. Pedir
+    los factores ya no detiene el calculo por falta de tabla; lo unico que
+    puede detenerlo es que falte la ELECCION de fila.
+    """
+
+    nombre: str                           # "Resistencia I", ...
+    numeral: str
+    componentes: Tuple[str, ...]
+    criterio_factores: str
+
+
+@dataclass(frozen=True)
+class RequisitosDurabilidad:
+    """
+    Relacion a/c maxima y f'c minimo que la agresividad quimica del sitio
+    impone al concreto, ya combinadas las Tablas 4.2 y 4.4 de E.060 por la
+    nota al pie que las dos llevan: "se debe utilizar la MENOR relacion
+    maxima agua-material cementante aplicable y el MAYOR f'c minimo".
+
+    Las dos tablas se cruzan en un solo punto del calculo -- este -- y el
+    resultado no es un numero suelto: es un par de exigencias con la fila que
+    produjo cada una. Sin `gobierna_a_c` y `gobierna_fc` la memoria no puede
+    decir POR QUE el concreto lleva esa relacion, que es justo lo que el
+    revisor va a preguntar cuando vea que la a/c de sulfatos y la de cloruros
+    no coinciden.
+
+    `a_c_max` puede ser None: significa que ninguna de las dos tablas impone
+    limite (exposicion insignificante y sin cloruros). No es un vacio del
+    expediente, es una exigencia que la norma no formula, y el consumidor
+    tiene que tratarlo como tal -- ver `M9.factor_recubrimiento_por_ac`.
+    """
+
+    a_c_max: Optional[float]              # relacion agua-material cementante
+    fc_min_MPa: Optional[float]
+    clase_sulfatos: str                   # fila de la Tabla 4.4 que aplica
+    gobierna_a_c: str                     # "Tabla 4.2" / "Tabla 4.4" / "-"
+    gobierna_fc: str
+    cementos_admisibles: Tuple[str, ...]  # Tabla 4.4, por clase de sulfatos
+    numeral: str
+
+
+@dataclass(frozen=True)
+class RecubrimientoDiseno:
+    """
+    Recubrimiento adoptado en mm y de donde sale, con los DOS operandos que la
+    regla de conflicto de Sec. 0.2 obliga a comparar: "rige el recubrimiento
+    mayor entre AASHTO y E.060".
+
+    Unico dato del proyecto en milimetros, coherente con
+    `constantes_normativas.RECUBRIMIENTO` (Art. 7.7.1 esta escrito en mm y
+    reescribirlo en metros solo introduciria ceros). No entra en ninguna
+    formula de equilibrio: es una especificacion de detalle para plano.
+
+    POR QUE EL LADO AASHTO LLEVA SIETE CAMPOS Y NO UNO. Ese lado ya no es un
+    valor declarado: es el resultado de una cadena -- fila de la tabla,
+    columna por categoria de acero, modificador por relacion a/c, piso
+    absoluto de 1.0 in -- y cada eslabon puede invertir quien gobierna. Un
+    solo numero obligaria al revisor a rehacer la cadena para saber si el
+    resultado es defendible, que es exactamente lo que paso con los 75 mm que
+    este objeto transportaba antes: el numero se leia bien y no habia forma de
+    ver que le faltaban una columna y un modificador.
+
+    LOS DOS ULTIMOS CAMPOS EXISTEN PORQUE UN FACTOR NO SE EXPLICA SOLO. El
+    `factor_ac` es un numero de una tabla de tres entradas, y del numero no se
+    deduce por que se eligio: 1.2 puede ser "la a/c maxima es 0.50 o mas" o
+    puede ser "no hay ninguna a/c contra la que evaluarlo y se toma el factor
+    mas exigente". Son dos situaciones distintas del expediente y la segunda
+    hay que poder leerla en la memoria, no solo en el codigo. `origen_factor`
+    la trae, y `requisitos` trae la exigencia de durabilidad entera -- con
+    que tabla gobierna cada mitad -- de la que el factor cuelga.
+    """
+
+    condicion: str                        # clave de RECUBRIMIENTO (Art. 7.7.1)
+    e060_mm: float
+    aashto_mm: float
+    adoptado_mm: float                    # max(e060, aashto) - Sec. 0.2
+    origen: str                           # "E.060" o "AASHTO"
+    criterio_aashto: str                  # clave en criterios_adoptados.py
+    numeral: str = "E.060 Art. 7.7.1 / Sec. 0.2 (regla del mayor)"
+    situacion: str = ""                   # fila de la tabla de AASHTO / MP
+    categoria: str = ""                   # columna: "A", "B" o "C"
+    tabulado_mm: float = 0.0              # valor de tabla, antes del factor
+    factor_ac: float = 1.0                # modificador por relacion a/c
+    piso_aplicado: bool = False           # True si mando el piso de 1.0 in
+    corpus_tabla: str = ""                # "[N] Manual de Puentes" / "[C] AASHTO LRFD"
+    origen_factor: str = ""               # por que ese factor por a/c
+    requisitos: Optional["RequisitosDurabilidad"] = None
+    paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class CuantiaRefuerzo:
+    """
+    Cuantia de refuerzo ADOPTADA para una direccion de un muro, con las dos
+    candidatas que la produjeron: la calculada por el diseno estructural y el
+    minimo normativo. El minimo de E.060 Art. 14.3.1 es un PISO OBLIGATORIO,
+    no una nota informativa, y por eso el resultado es
+    `max(cuantia_calculada, cuantia_minima)` -- una regla del maximo cuyo
+    resultado se guarda junto a `gobierna`, para que la memoria diga cual de
+    los dos mando y no obligue al revisor a rehacer la comparacion.
+
+    Sin `gobierna` el objeto no serviria: dos cuantias adoptadas iguales
+    pueden venir una de un calculo justo y otra de un calculo muy por debajo
+    del minimo, y son dos situaciones distintas de revisar.
+    """
+
+    direccion: str                        # "horizontal" / "vertical"
+    cuantia_calculada: float              # la que sale del diseno estructural
+    cuantia_minima: float                 # Art. 14.3.1 (o el escalon aplicable)
+    cuantia_adoptada: float               # max de las dos
+    gobierna: str                         # "calculo" o "minimo_normativo"
+    numeral: str
+    # La clave del PISO que se leyo bajo el regimen de 11.10.10 (horizontal o
+    # vertical); vacia cuando el minimo es el del 14.3.1, sea porque no hubo
+    # cortante alto o porque el regimen declarado es perpendicular al plano.
+    criterio_cortante_alto: str           # clave en criterios_adoptados.py, o ""
+    # EL PLANO DEL CORTANTE, que decide si el regimen de 11.10.10 rige
+    # (EXT-M-05). `None` cuando quien llama no afirmo cortante alto: la ficha
+    # ni se abrio. Con cortante alto lleva la categoria declarada en
+    # `criterio_regimen_cortante` (en el plano / perpendicular), porque el
+    # minimo aplicado no se puede defender sin decir en que plano actua la
+    # demanda que lo dispara.
+    regimen_cortante: Optional[str] = None
+    criterio_regimen_cortante: str = ""
+
+
+@dataclass(frozen=True)
+class EstabilidadCabezal:
+    """
+    Expediente de estabilidad del cabezal en UNA condicion (Sec. 9.3). Las
+    cinco verificaciones de la tabla llevan codigo E1..E5 para no confundirse
+    con las V1-V9 de la Fase 5 ni con las G1/G2 de la Fase 7.
+
+    El mismo cabezal se verifica dos veces, una por `CondicionAnalisis`: el
+    resultado estatico y el sismico son dos objetos, no dos campos de uno,
+    porque cambian a la vez las fuerzas y los umbrales.
+
+    LO QUE `estable` SIGNIFICA, y lo que significaba (EXT-M-07). Hasta EXT-7
+    `estable` era `not verificaciones_incumplidas`: True con E1-E3 solas --
+    la particion E1-E3 / E4-E5 es deliberada, porque E4 y E5 salen de un
+    analisis de taludes que este software no hace -- y True tambien con el
+    conjunto VACIO. Un docstring que prometia cinco verificaciones sobre una
+    propiedad que se conformaba con cero. Hoy el objeto lleva `exigidas`, las
+    filas que la tabla de Sec. 9.3 pide (derivadas de
+    `constantes_normativas.FS_CODIGO`, no escritas aqui), y las tres
+    preguntas se contestan por separado:
+
+        estabilidad_interna_cumple   las que SI se resolvieron cumplen todas
+        pendientes                   las exigidas que nadie resolvio
+        estable                      todas las exigidas presentes Y cumplidas
+
+    El invariante va en el tipo y no en el llamador: ni un expediente vacio
+    ni una verificacion con un codigo que la tabla no exige se pueden
+    construir (`ValueError`, por la misma razon que `EmpujesTrasdos`: es un
+    estado imposible del programa, no un dato del expediente).
+
+    `motivos_pendientes` dice POR QUE falta cada pendiente -- la clave del
+    criterio que la bloquea --, para que la memoria imprima «E4: pendiente
+    de 'metodo_estabilidad_global'» y no una fila en blanco. Solo puede
+    hablar de codigos que de verdad falten.
+    """
+
+    condicion: CondicionAnalisis
+    geometria: GeometriaCabezal
+    verificaciones: Tuple[Verificacion, ...]
+    exigidas: Tuple[str, ...]
+    numeral: str = "Sec. 9.3 (E.050)"
+    motivos_pendientes: Tuple[Tuple[str, str], ...] = ()   # (codigo, clave)
+
+    def __post_init__(self) -> None:
+        if not self.exigidas:
+            raise ValueError(
+                "EstabilidadCabezal: `exigidas` esta vacio. Sin la lista de "
+                "filas que la tabla de Sec. 9.3 pide, `estable` no tiene "
+                "contra que medirse; es un invariante del tipo, no un dato "
+                "del expediente")
+        if len(set(self.exigidas)) != len(self.exigidas):
+            raise ValueError(
+                "EstabilidadCabezal: `exigidas` repite un codigo: "
+                f"{self.exigidas}")
+        if not self.verificaciones:
+            raise ValueError(
+                "EstabilidadCabezal: el conjunto de verificaciones esta "
+                "vacio. Un expediente sin ninguna fila resuelta no es "
+                "«estable»: hasta EXT-7 lo era, porque `estable` solo "
+                "miraba que no hubiera incumplidas")
+        codigos = [v.codigo for v in self.verificaciones]
+        fuera = [c for c in codigos if c not in self.exigidas]
+        if fuera:
+            raise ValueError(
+                "EstabilidadCabezal: verificaciones con un codigo que la "
+                f"tabla de Sec. 9.3 no exige: {fuera}. Las exigidas son "
+                f"{self.exigidas}")
+        if len(set(codigos)) != len(codigos):
+            raise ValueError(
+                f"EstabilidadCabezal: codigo repetido en las verificaciones: "
+                f"{codigos}")
+        presentes = set(codigos)
+        motivos_fuera = [c for c, _ in self.motivos_pendientes
+                         if c in presentes or c not in self.exigidas]
+        if motivos_fuera:
+            raise ValueError(
+                "EstabilidadCabezal: `motivos_pendientes` habla de codigos "
+                f"que no estan pendientes: {motivos_fuera}")
+
+    @property
+    def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
+        """Las que M11 debe destacar en la memoria del cabezal."""
+        return tuple(v for v in self.verificaciones if not v.cumple)
+
+    @property
+    def pendientes(self) -> Tuple[str, ...]:
+        """Las exigidas que nadie resolvio, en el orden de la tabla."""
+        presentes = {v.codigo for v in self.verificaciones}
+        return tuple(c for c in self.exigidas if c not in presentes)
+
+    @property
+    def estabilidad_interna_cumple(self) -> bool:
+        """
+        True si TODAS las verificaciones resueltas cumplen. No dice nada de
+        las pendientes: es lo que `estable` afirmaba hasta EXT-7, con su
+        nombre verdadero.
+        """
+        return not self.verificaciones_incumplidas
+
+    @property
+    def estable(self) -> bool:
+        """True solo con las exigidas TODAS presentes y TODAS cumplidas."""
+        return not self.pendientes and not self.verificaciones_incumplidas
+
+
+# ===========================================================================
+# Clasificacion y periodo de retorno (Fase 2, salida de M1)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class PeriodoRetorno:
+    """
+    TR de diseno de un punto y la fila de la Tabla N 02 que lo sustenta
+    (Sec. 2.2). El TR no se transporta como un numero suelto: sin la fila que
+    lo origina, la memoria no puede defender por que son 71 anios y no 35.
+
+    `anios` es el valor de la columna "TR de diseno" de la tabla DERIVADA de
+    la Sec. 2.2 de la hoja de ruta -- la Tabla N 02 del Manual no trae esa
+    columna: trae R y n, y el TR se calcula --, redondeado al anio; `exacto`
+    conserva el resultado sin redondear.
+
+    `procede` es False en dos situaciones, y en ambas `anios` es None:
+      - Familia C: su caudal es el de diseno del canal (ANA / Junta), no un
+        caudal hidrologico con periodo de retorno propio (Sec. 2.3).
+      - Luz >= 6.0 m: el punto es un puente y esta fuera del alcance (Sec. 2.1).
+    """
+
+    procede: bool
+    categoria: Optional[CategoriaTR]
+    R: Optional[float]                    # riesgo admisible de falla
+    n: Optional[int]                      # vida util, anios
+    exacto: Optional[float]               # TR sin redondear
+    anios: Optional[int]                  # TR de diseno, calculado de la fila
+                                          # de la Tabla N 02 (tabla de la v8 §2.2)
+    numeral: str
+    fundamento: str                       # por que esta fila y no la otra
+    id_punto: Optional[str] = None
+    # El paso de memoria del TR (§4.4). `None` cuando `procede` es False: no
+    # hay TR que fundar, y el motivo lo lleva `fundamento`.
+    paso: Optional["PasoDeMemoria"] = None
+
+    def exigir_anios(self) -> int:
+        """
+        Devuelve el TR o lanza: un TR ausente nunca se sustituye por uno
+        plausible.
+
+        HOY NO LA LLAMA NADIE, y esa es la decision (SIS-B-08): ver
+        `docs/decisiones_diferidas.md`, ficha SIS-B-08. El docstring anterior
+        decia «Unico acceso permitido cuando el modulo que llama NECESITA el
+        numero», que es una condicion que no se cumple en ningun sitio --- la
+        misma forma de prometer un consumidor que este archivo ya desterro al
+        cerrar SIS-B-02 en `ControlEntrada`.
+
+        Los CINCO accesos de produccion al TR --- `M11._tabla_clasificacion`,
+        `M11.fila_resumen`, `M11._fila_resumen_csv`, `cli._clasificacion_json`
+        y `cli._lineas_punto` --- leen `.anios` y tratan el `None`
+        explicitamente: lo imprimen como ausente o lo propagan. Ninguno
+        necesita el entero, porque el paso que si lo necesitaria --- «Tc.py +
+        IDF con el TR de Fase 2», Sec. 1.1 --- ocurre fuera de este programa y
+        Q entra por columna del CSV.
+
+        Se conserva porque es la unica sentencia EJECUTABLE del invariante,
+        y `anios` esta anotado `Optional[int]`: sin ella, el consumidor que
+        llegue escribira `tr.anios or 35`, que es el default silencioso que
+        CLAUDE.md llama el peor error posible.
+
+        LIMITE CONOCIDO, declarado en vez de disimulado. Hay dos motivos por
+        los que `anios` es None y esta guardia solo distingue bien uno:
+        Familia C (el caudal es el de diseno del canal: falta el dato, y
+        `DatoFaltanteError('Q_m3s')` es correcto) y punto fuera de alcance
+        (es un puente: no falta nada, y lo que corresponde es
+        `DisenoNoFactibleError`, como en `M1_clasificacion.exigir_alcance`).
+        `PeriodoRetorno` no lleva hoy con que separarlos sin oler el texto de
+        `fundamento`, y el orden que el propio M1 documenta en su bloque de
+        Uso --- `exigir_alcance(...)` ANTES de leer el TR --- deja la segunda
+        rama fuera del camino. Cerrarlo del todo pide un discriminante en el
+        objeto, no una guardia mas: queda anotado en el registro.
+        """
+        if self.anios is None:
+            raise DatoFaltanteError(
+                "Q_m3s", id_punto=self.id_punto,
+                detalle=f"este punto no tiene TR de la Tabla N 02: {self.fundamento}",
+            )
+        return self.anios
+
+
+@dataclass(frozen=True)
+class PerfilFamilia:
+    """
+    Lo que la familia de Sec. 2.3 implica para el resto del calculo: de donde
+    sale su caudal, si la familia ya fija la fila de la Tabla N 02, que campos
+    del CSV necesita y con que verificaciones se acepta.
+
+    `verificaciones_aceptacion` es None cuando la hoja de ruta no declara un
+    conjunto propio para esa familia. None significa "no declarado", no
+    "ninguna": la tabla de la Fase 5 sigue aplicando punto por punto.
+
+    NADIE DESPACHA SOBRE ESTE CAMPO, Y ES DELIBERADO (SIS-B-13)
+    ----------------------------------------------------------
+    Lo escribe solo `M1_clasificacion.PERFILES` y lo leen solo dos asserts de
+    `tests/test_M1_clasificacion.py`. Cero lectores de produccion: `M5.verificar`
+    y el cierre `verificar` de `cli.py` corren la Fase 5 ENTERA sobre todo
+    punto, sin mirar la familia. La razon de que asi sea, dicha aqui porque es
+    lo que faltaba escrito: si algun modulo despachara sobre esta tupla, la
+    frase de la Sec. 2.3 se convertiria en un FILTRO y la Familia A se quedaria
+    sin V3 (velocidad maxima), V6, V7 (flotacion), V8 y V9 --- que la tabla de
+    la Fase 5 no exime por familia --- y las Familias B y C se quedarian sin
+    conjunto ninguno. Es la lectura no conservadora que este campo existe para
+    NO habilitar. Se conserva porque es la unica huella en el codigo de una
+    frase de la fuente de verdad, y el `None` carga una distincion que se
+    perderia al borrarlo.
+
+    DEFECTO CONTRA LA HOJA DE RUTA, que es la que hay que corregir (regla 7).
+    La Sec. 2.3 escribe «**A — Alcantarillas de paso.** Q hidrologico propio.
+    TR 71 o 35 anios. Aceptacion: V1 + V2 + V4 + V5.» --- un conjunto SOLO
+    para la Familia A y en una forma que se lee exhaustiva --- mientras la
+    Fase 5 tabula sus verificaciones sin calificarlas por familia, y para B y
+    C no declara nada. La hoja no dice si V1+V2+V4+V5 es «el minimo que A debe
+    pasar» o «las unicas que a A se le exigen». La fuente primaria no puede
+    dirimirlo: la taxonomia A/B/C y las etiquetas V1..V9 son de la hoja, no
+    del MTC (`M1.NUMERAL_FAMILIA = "Sec. 2.3"`, «sin numeral MTC propio»).
+    MIENTRAS NO SE CORRIJA, LA HOJA SIGUE MAL: quien la lea sin leer el codigo
+    disenara una alcantarilla de Familia A creyendo que no se le exige V7
+    (flotacion) ni V9 (disponibilidad de diametro). El codigo toma entretanto
+    la lectura conservadora --- aplicarlas todas ---, que es la unica que no
+    puede dejar un punto sin verificar.
+    """
+
+    familia: Familia
+    nombre: str
+    origen_del_caudal: str
+    categoria_tr: Optional[CategoriaTR]        # None: la familia no la fija
+    campos_requeridos: Tuple[str, ...]         # campos de PuntoCritico
+    verificaciones_aceptacion: Optional[Tuple[str, ...]]
+    notas: Tuple[str, ...]
+    numeral: str
+
+
+@dataclass(frozen=True)
+class Clasificacion:
+    """
+    Salida de M1 para un punto: denominacion por luz (Sec. 2.1), perfil de
+    familia (Sec. 2.3) y periodo de retorno (Sec. 2.2).
+
+    `datos_pendientes` son los campos que la familia necesita y la fila trajo
+    vacios por depender de un tablero externo. Como en M0, quien decide si el
+    punto se puede calcular sin ellos es el modulo que los necesite.
+    """
+
+    punto: PuntoCritico
+    luz_m: float
+    denominacion: Denominacion
+    verificacion_luz: Verificacion
+    perfil: PerfilFamilia
+    periodo_retorno: PeriodoRetorno
+    datos_pendientes: Tuple[str, ...] = ()
+
+    @property
+    def en_alcance(self) -> bool:
+        """False si la luz lo hace puente: Manual de Puentes, otro script."""
+        return self.denominacion is Denominacion.ALCANTARILLA
+
+
+@dataclass(frozen=True)
+class ResultadoPunto:
+    """
+    Resultado completo de un punto critico: la combinacion elegida y el
+    expediente de verificaciones que la sostiene.
+
+    `aceptado` y `punto` son los dos campos siempre presentes. Los demas solo
+    existen para puntos que llegaron a dimensionarse:
+
+        aceptado=True   material, D, resultado_hidraulico y verificaciones
+                        estan completos. motivo_rechazo es None.
+        aceptado=False  material, D, resultado_hidraulico y verificaciones
+                        son None / tupla vacia. motivo_rechazo explica por
+                        que no hubo solucion. M11 los lista aparte.
+
+    Esta separacion permite a `disenar_lote` devolver la lista completa del
+    expediente -- puntos resueltos y fallidos mezclados en el orden del CSV --
+    sin perder ningun punto ni forzar un aborte.
+    """
+
+    punto: PuntoCritico
+    aceptado: bool
+    material: Optional[Material] = None
+    # LA SECCION ADOPTADA, Y YA NO CONVIVE CON UN ESCALAR `D`.
+    #
+    # Hasta C7 este tipo llevaba ademas `D: Optional[float]`, "el diametro
+    # adoptado", que en un marco valia la ALTURA. C7 añadio la seccion sin
+    # tocarlo --- para que la Fase 7 pudiera ser ciega a la forma --- y dejo
+    # escrito que retirarlo era de C8, "con sus consumidores delante". C8 lo
+    # retira: eran once, y el peor era el titular de la memoria, que imprimia
+    # «Diametro adoptado D = 0.900 m» sobre un marco de 1.20 x 0.90 m.
+    #
+    # POR QUE NO BASTABA CON LA INVARIANTE. C7 cerro la divergencia entre los
+    # dos campos con un `__post_init__` de doble sentido, y era correcto
+    # mientras convivieran. Pero un `D` coherente con la seccion sigue siendo
+    # una PERDIDA DE INFORMACION: de «0.90» no se recupera si la luz eran
+    # 1.20 o 2.00 m, y todo consumidor que imprima ese escalar esta publicando
+    # media geometria bajo un nombre que en un cajon no significa nada.
+    seccion: Optional[Seccion] = None
+    resultado_hidraulico: Optional[ResultadoHidraulico] = None
+    verificaciones: Tuple[Verificacion, ...] = ()
+    motivo_rechazo: Optional[str] = None
+
+    @property
+    def y_sobre_D(self) -> Optional[float]:
+        """
+        Relacion de llenado del punto dimensionado, `y_normal / altura`, o
+        None si el punto no llego a dimensionarse.
+
+        CONSERVA EL NOMBRE AUNQUE YA NO HAYA UN `D`, y se declara aqui por lo
+        mismo que `Geometria.y_sobre_D` lo declara: "y/D" es como la Sec. 4.1
+        y el HDS-5 nombran la relacion de llenado, y renombrarlo a
+        `y_sobre_altura` obligaria a explicar en cada sitio que se trata del
+        mismo numero de la fuente. La `D` del nombre es la de la FUENTE; el
+        denominador es `seccion.altura`, que en una circular ES el diametro y
+        en un marco es la H de la celda.
+
+        Vive aqui, en el tipo que fluye entre modulos, y no en la capa de
+        reporte: M11 la calculaba inline en dos sitios (la tabla del punto y
+        la fila del cuadro resumen), contra su propio docstring de modulo
+        ("sin calcular nada nuevo") y contra la regla de arquitectura. Es el
+        mismo numero que V1 verifica en `M5_verificaciones.v1_borde_libre` y
+        el mismo que `Geometria.y_sobre_D` define para la seccion; escrito
+        una vez, no puede divergir entre la memoria y la verificacion.
+
+        Y DESDE EXT-3 SIGUE EL REGIMEN DEL BARRIL, como V1: `y_normal /
+        altura` solo bajo control de entrada; 1 a barril lleno; y bajo
+        control de salida con el barril parcialmente lleno, DESDE E-A, el
+        tirante maximo del perfil de la lamina (`perfil.y_max_m`), que es el
+        que V1 compara. Hasta E-A salia None --celda vacia declarada-- porque
+        V1 quedaba pendiente y publicar un y/D del flujo uniforme seria la
+        divergencia memoria/pipeline de SIS-A-07 en otra celda; None sigue
+        siendo la respuesta si el resultado no trae perfil.
+        """
+        if self.resultado_hidraulico is None or self.seccion is None:
+            return None
+        h = self.resultado_hidraulico
+        altura = self.seccion.altura
+        # EL MISMO TIRANTE QUE V1 COMPARA (EXT-3, auditoria adversarial; E-A):
+        # el del REGIMEN del barril y no el normal a secas. A barril LLENO el
+        # tirante es la altura entera; bajo control de SALIDA con el barril
+        # parcialmente lleno es el maximo del perfil de la lamina; solo bajo
+        # control de ENTRADA vale y_normal.
+        # --- T-2 --- y sin tirante normal (barril horizontal, S = 0) el
+        # tirante es el del perfil tambien cuando gobierna la entrada: es lo
+        # que V1 compara ahi (`M5._regimen_de_v1_v2`).
+        if h.regimen_barril is RegimenBarril.LLENO:
+            y = altura
+        elif (h.control_gobernante is ControlGobernante.SALIDA
+              or h.sin_tirante_normal):
+            if h.perfil is None:
+                return None
+            y = h.perfil.y_max_m
+        else:
+            y = h.y_normal
+        return y / altura
+
+    @property
+    def verificaciones_incumplidas(self) -> Tuple[Verificacion, ...]:
+        """Las que M11 debe destacar en la memoria del punto."""
+        return tuple(v for v in self.verificaciones if not v.cumple)
+
+    @property
+    def coherente(self) -> bool:
+        """
+        True si `aceptado` concuerda con las verificaciones y con el motivo de
+        rechazo. Sirve de guarda en los tests de M5 y M7.
+        """
+        if self.aceptado:
+            return not self.verificaciones_incumplidas and self.motivo_rechazo is None
+        return bool(self.motivo_rechazo)
+
+
+# ===========================================================================
+# Traza del diseno (bucle de MD; entregable 1 de la Fase 11)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class EscalonSinCabida:
+    """
+    --- T11-03 --- El escalon del catalogo cuya clave fisica NO CABE bajo la
+    subrasante: la cota de clave queda a nivel de la subrasante o por encima
+    y no hay relleno que pesar (V7) ni con que entrar a la norma de producto
+    (Fase 8). Lo arma `MD.disenar_material` y viaja en `PasoDiseno.sin_cabida`.
+
+    Existe porque ese hecho salia como `DatoInvalidoError` sobre
+    'cota_subrasante' --un dato que nadie toco: lo que cambio fue la seccion
+    que el bucle probaba-- y el punto como «no factible» sin su motivo
+    (hallazgo H4 de la auditoria de T-11). Es GEOMETRIA: las dos cotas son el
+    par culpable, y el motivo las nombra a las dos.
+
+    `delta_rasante_m` es el del tamizado de Sec. 7.A para ESTE escalon
+    (`M7.tamizado_rasante`), y solo se da cuando es geometria pura: el
+    escalon cumple todo lo que la Fase 5 le evaluo y gobierna la condicion de
+    recubrimiento, de modo que el numero no depende del HW. Es COTA INFERIOR
+    para este escalon, no el remedio verificado del punto. `nota` dice la
+    aritmetica cuando hay delta y por que no lo hay cuando es None.
+    """
+
+    cota_clave: float                     # msnm - cota entrada + altura + pared
+    cota_subrasante: float                # msnm - la del CSV (Sec. 1.2)
+    delta_rasante_m: Optional[float] = None
+    nota: str = ""
+
+    @property
+    def exceso_m(self) -> float:
+        """Cuanto queda la clave POR ENCIMA de la subrasante, m (>= -tol)."""
+        return self.cota_clave - self.cota_subrasante
+
+
+@dataclass(frozen=True)
+class PasoDiseno:
+    """
+    Un escalon del bucle de MD: el par (material, D) que se probo y como
+    termino.
+
+    Existe porque la Fase 11 exige publicar las ITERACIONES del diseño
+    (entregable 1) y `ResultadoPunto` solo conserva la combinacion ganadora:
+    con ella sola la memoria muestra la seccion adoptada pero no puede
+    defender por que se descarto la anterior, que es justamente lo que un
+    revisor pregunta. No la produce ningun calculo nuevo -- es lo que MD ya
+    evaluaba y descartaba en silencio.
+
+    `verificaciones` viene vacia cuando el escalon ni siquiera transporto el
+    caudal en flujo libre (M3 no hallo tirante normal): la Fase 5 no llego a
+    correr y `motivo` lo dice. En el escalon aceptado, `motivo` es "".
+    """
+
+    material: str                         # Material.nombre
+    # LA SECCION PROBADA, y no el escalar `D` que este campo tenia hasta C8.
+    # Un escalon del catalogo del cajon es un par (B, H): con solo la altura,
+    # la tabla de iteraciones imprimia «0.90» para tres marcos de luz
+    # distinta y el revisor no podia saber cual se descarto. Ademas obligaba a
+    # M11 a llamar «D» a lo que en un marco no es un diametro.
+    seccion: "Seccion"
+    aceptado: bool
+    motivo: str                           # por que se descarto; "" si aceptado
+    verificaciones: Tuple[Verificacion, ...] = ()
+    # EL RESULTADO HIDRAULICO DEL ESCALON, con su traza (§4.4).
+    #
+    # Viaja aqui, y no solo en el `ResultadoPunto` ganador, por la MISMA razon
+    # que existe `M11.bloque_umbrales`: en este expediente ningun punto llega
+    # a dimensionarse --- V5 se detiene siempre en `ancho_derecho_via_m`, que
+    # ningun tablero aporta todavia --- y `ResultadoPunto.resultado_hidraulico`
+    # es None en los cuatro puntos. Sin este campo, el desarrollo hidraulico
+    # que M3 y M4 SI calcularon no llegaria nunca al revisor, que es
+    # literalmente la forma de NOR-MEM-01: cierto sobre el codigo y falso
+    # sobre el producto.
+    #
+    # None cuando el escalon ni siquiera transporto el caudal en flujo libre
+    # (M3 no hallo tirante normal) o cuando revento antes de resolver M4.
+    resultado_hidraulico: Optional["ResultadoHidraulico"] = None
+    # --- T11-03 --- Relleno solo en el escalon cuya clave no cabe bajo la
+    # subrasante (`EscalonSinCabida`): con el termina la progresion del
+    # material, descartado POR RASANTE. None en todos los demas.
+    sin_cabida: Optional[EscalonSinCabida] = None
+
+    @property
+    def incumplidas(self) -> Tuple[Verificacion, ...]:
+        """Las verificaciones que hicieron descartar este escalon."""
+        return tuple(v for v in self.verificaciones if not v.cumple)
+
+
+# ===========================================================================
+# Modo de resolucion de una variable de entrada (Sec. 4.3 del plan v12)
+# ===========================================================================
+# Cada variable de entrada declara COMO SE RESUELVE. Eso es lo que le dice a
+# la GUI que ventana abrir y a M11 que imprimir, y es informacion que hoy no
+# existe en ninguna parte: el usuario ve una sola cosa -- "un dato que hay que
+# llenar" -- donde el repositorio tiene cuatro poblaciones separadas (las
+# columnas del CSV, los datos externos del JSON, los datos de sitio de
+# corredor y los criterios adoptados)
+# y seis maneras distintas de llegar al numero.
+#
+# LA SEMANTICA ES EL TIPO, igual que en `normativa/esquema.py` §7. No hay un
+# campo `modo: str` que alguien pueda escribir mal: el modo se LEE del tipo
+# del objeto `resolucion` (`modo_de()`), de forma que declarar una resolucion
+# y declarar un modo son el mismo acto y no pueden divergir.
+#
+# COMO SE ELIGE EL MODO. La escalera se recorre de arriba abajo y se para en
+# el primer peldaño que aplica; esta escrita aqui para que la clasificacion
+# de las 83 variables sea reproducible y no dependa del gusto de quien la
+# hizo:
+#
+#   1. El valor es una fila, una columna o una regla de lectura de una tabla
+#      normativa TRANSCRITA EN EL REGISTRO   ->  DeTabla
+#   2. Es un numero que una fuente acota con un piso, un techo o un
+#      intervalo escritos por ella                ->  EnRango
+#   3. El programa lo calcula desde otras variables ya declaradas y el
+#      usuario no puede editarlo                  ->  Derivada
+#   4. Sale de un catalogo o de la disponibilidad del mercado, y NO de una
+#      norma                                      ->  DeCatalogo
+#   5. Lo DETERMINA un procedimiento real aplicado a este sitio -- ensayo,
+#      medicion de campo, lectura de mapa o de plano, estudio de un tercero
+#      -- y por eso se defiende con trazabilidad y no con un rango de
+#      sensibilidad                               ->  DeEnsayo
+#   6. En cualquier otro caso                     ->  Libre
+#
+# ELEGIR (peldaño 6) Y DETERMINAR (peldaño 5) NO SON LO MISMO, y es lo que
+# separa `Libre` de `DeEnsayo`: un metodo de analisis lo elige el
+# proyectista aunque salga del mismo EMS del que sale la capacidad portante.
+# Por eso `metodo_estabilidad_global` es `Libre` y `capacidad_portante_adm`
+# es `DeEnsayo`.
+#
+# `DeEnsayo` cubre TODA determinacion por procedimiento, no solo el ensayo de
+# laboratorio: es la misma extension que CLAUDE.md le da a la etiqueta [S]
+# ("mapa, ensayo, medicion de campo"). Se llama asi porque asi lo nombra la
+# Sec. 4.3 del plan, y la ventana que abre es la misma en los tres casos:
+# campo mas TRAZABILIDAD OBLIGATORIA.
+
+
+class ModoDeResolucion(str, Enum):
+    """Los seis modos de la Sec. 4.3. Familia cerrada."""
+    LIBRE = "libre"
+    DE_TABLA = "de_tabla"
+    EN_RANGO = "en_rango"
+    DERIVADA = "derivada"
+    DE_ENSAYO = "de_ensayo"
+    DE_CATALOGO = "de_catalogo"
+
+
+@dataclass(frozen=True)
+class Libre:
+    """
+    Campo con su dominio fisico. Ninguna tabla, ningun rango de fuente y
+    ninguna medicion lo determinan: el numero lo pone quien firma.
+
+    `opciones` es para el conjunto cerrado de valores admisibles cuando la
+    variable no es numerica (la Familia de un punto). En un criterio NO se
+    usa: alli el conjunto ya vive en `Criterio.sensibilidad`, y repetirlo
+    aqui crearia dos listas que pueden divergir.
+
+    `tabla_pendiente` es la lista de trabajo que este censo produce: nombra
+    la tabla de la fuente que convertiria esta variable en `DeTabla` el dia
+    que se transcriba al registro. No es una excusa, es un pendiente con
+    nombre.
+    """
+    que_lo_fija: str
+    dominio: str = ""
+    opciones: Tuple[str, ...] = ()
+    tabla_pendiente: str = ""
+
+
+@dataclass(frozen=True)
+class DeTabla:
+    """
+    El valor es una fila, una columna, o la regla con que se lee una tabla
+    del registro. La ventana MUESTRA LA TABLA ENTERA -- con su numeral, su
+    pagina, sus notas y sus condiciones -- y el usuario elige sobre ella.
+
+    `tablas` es una tupla porque hay elecciones que se hacen mirando dos: la
+    de estribos y la de muros de AASHTO 3.11.6.4 se leen juntas o no se
+    entiende ninguna de las dos.
+
+    `laguna` se llena cuando lo que se elige NO es una fila sino una REGLA DE
+    LECTURA que la tabla no resuelve. Es la diferencia entre "elegi la fila
+    de 10 ft" y "elegi que hacer con un muro de 4 ft, que la tabla no
+    tabula": la memoria tiene que poder decir cual de las dos cosas paso.
+
+    `elegido_por` dice que OTRA variable elige la fila cuando esta transcribe
+    la tabla completa en vez de elegir dentro de ella.
+    """
+    tablas: Tuple[str, ...]
+    que_elige: str
+    fila_id: Optional[str] = None
+    columna_id: Optional[str] = None
+    elegido_por: Optional[str] = None
+    laguna: str = ""
+
+
+@dataclass(frozen=True)
+class EnRango:
+    """
+    El valor tiene que caer dentro de un rango que una fuente escribe.
+
+    NO COPIA EL RANGO: lo referencia por (tabla, fila, columna) del registro,
+    donde vive como `IntervaloAdmisible`, `TechoUnico`, `PisoUnico`,
+    `ConjuntoDeMaximos` o `BandaDeInterpolacion`. Copiarlo aqui pondria los
+    numeros de la norma fuera de su unico sitio y, peor, dejaria que la
+    ventana pintara como "minimo" el primero de dos maximos (NOR-HID-04),
+    que es exactamente el error que el tipo del registro existe para impedir.
+    """
+    tabla_id: str
+    fila_id: str
+    columna_id: str
+    que_acota: str
+
+
+@dataclass(frozen=True)
+class Derivada:
+    """
+    No editable: la calcula el programa desde otras variables ya declaradas.
+    La ventana muestra DE QUE se deriva y la memoria escribe la regla con su
+    numeral.
+    """
+    de: Tuple[str, ...]
+    regla: str
+
+
+@dataclass(frozen=True)
+class DeEnsayo:
+    """
+    La determina un procedimiento real aplicado a este sitio. La ventana pide
+    el valor Y LA TRAZABILIDAD, y la memoria escribe la trazabilidad -- nunca
+    una sensibilidad: no hay rango que elegir, hay una lectura que reproducir.
+    """
+    ensayo: str
+    trazabilidad_exigida: str
+
+
+@dataclass(frozen=True)
+class DeCatalogo:
+    """
+    Igual que `DeTabla` pero ROTULADO COMO CATALOGO, no como norma.
+
+    Existe por `NOR-PRO-01` y `NOR-PRO-02`: los topes de diametro estaban
+    atribuidos a AASHTO M170 y ASTM A760, que tabulan hasta 3600 mm.
+    Mostrarlos en una ventana rotulada "norma" seria crear una cita falsa
+    nueva, y por eso `advertencia` es obligatoria y dice que norma NO lo
+    sostiene.
+    """
+    catalogo_id: str
+    que_elige: str
+    advertencia: str
+
+
+Resolucion = Union[Libre, DeTabla, EnRango, Derivada, DeEnsayo, DeCatalogo]
+
+_MODO_DE_TIPO: Dict[type, ModoDeResolucion] = {
+    Libre: ModoDeResolucion.LIBRE,
+    DeTabla: ModoDeResolucion.DE_TABLA,
+    EnRango: ModoDeResolucion.EN_RANGO,
+    Derivada: ModoDeResolucion.DERIVADA,
+    DeEnsayo: ModoDeResolucion.DE_ENSAYO,
+    DeCatalogo: ModoDeResolucion.DE_CATALOGO,
+}
+
+
+def modo_de(resolucion: Resolucion) -> ModoDeResolucion:
+    """
+    El modo de una resolucion. Es una lectura del TIPO, no de un campo: una
+    variable no puede quedarse sin modo ni declarar uno que no corresponda a
+    como se resuelve.
+    """
+    try:
+        return _MODO_DE_TIPO[type(resolucion)]
+    except KeyError:
+        raise TypeError(
+            f"{resolucion!r} no es una resolucion de la familia cerrada de "
+            f"la Sec. 4.3: {tuple(t.__name__ for t in _MODO_DE_TIPO)}"
+        ) from None
+
+
+class Poblacion(str, Enum):
+    """
+    Las CUATRO poblaciones que el repositorio mantiene separadas y que el
+    usuario ve como una sola cosa -- "los datos que hay que llenar".
+
+    Estan separadas por buenas razones (una es del CSV y varia punto a punto,
+    otra es del corredor, la tercera es lo que el proyectista decidio donde la
+    norma calla, la cuarta entra por bandera o por el JSON de
+    `--datos-externos` sin ser columna) y esas razones no se tocan. Lo que
+    faltaba era la vista unica: sin ella, la GUI tiene pestañas que no se
+    pueden comparar y la memoria bloques que no suman.
+
+    `DATO_EXTERNO` llego en EXT-5 (EXT-G-03): las seis claves de
+    `servicio.CLAVES_EXTERNAS` que no son columna, ni dato de sitio, ni criterio
+    no estaban en ningun censo, y la ayuda de la GUI las mostraba como «sin
+    ficha». Se censan como poblacion propia y no como columnas porque no lo
+    son: no viven en el CSV y no varian necesariamente punto a punto.
+    """
+    COLUMNA_CSV = "columna_csv"
+    DATO_SITIO = "dato_sitio"
+    CRITERIO = "criterio"
+    DATO_EXTERNO = "dato_externo"
+
+
+@dataclass(frozen=True)
+class VariableDeEntrada:
+    """
+    Una variable que el expediente tiene que traer, con todo lo que la GUI
+    necesita para pintarla y M11 para imprimirla.
+
+    `criterio_destino` es el criterio [A] que RECIBE la eleccion cuando la
+    variable la alimenta sin ser ella misma un criterio: el CBR de la fila
+    entra en `resguardo_HW_subrasante`, la cota TW en `TW_receptor`. Para una
+    variable que ES un criterio, es su propia clave.
+
+    `dominio` nombra el limite de `dominios.py` que acota la celda, POR
+    NOMBRE y no por valor: el dominio fisico no es normativo -- fuera de el
+    la celda esta mal llenada -- y la ventana tiene que rotularlo asi
+    (§4.2 del plan).
+    """
+    clave: str
+    concepto: str
+    unidad: str
+    poblacion: Poblacion
+    resolucion: Resolucion
+    fase: str
+    consumido_por: Tuple[str, ...] = ()
+    criterio_destino: Optional[str] = None
+    dominio: Optional[str] = None
+    nota: str = ""
+
+    @property
+    def modo(self) -> ModoDeResolucion:
+        """El modo de la Sec. 4.3, leido del tipo de `resolucion`."""
+        return modo_de(self.resolucion)
+
+
+@dataclass(frozen=True)
+class VacioAdmitido:
+    """
+    Un grupo de columnas del CSV que pueden ir VACIAS, con quien debe el dato.
+
+    Existe porque «celda vacia» tiene dos lecturas opuestas que desde fuera no
+    se distinguen: falta un dato que el proyectista tenia que poner, o espera
+    a un tablero que todavia no respondio. M0 lo sabia --- lo declaraba en
+    cinco tuplas privadas, cada una con su razon escrita al lado --- y nadie
+    mas lo podia leer, de modo que el proyectista veia una columna vacia en su
+    CSV y creia que le faltaba un dato.
+
+    `familias` vacia significa TODA FAMILIA. Cuando lleva familias, el vacio
+    solo se admite en esas: `Q_m3s` va vacia en un cruce de canal y es
+    obligatoria en una alcantarilla de paso, y esa es la distincion que la
+    ayuda de la ventana tiene que poder decir.
+
+    `marca_pendiente` separa el vacio que ESPERA A ALGUIEN del que no: una
+    `cota_fondo_entrada` vacia no espera a nadie porque el proyecto tiene una
+    regla declarada para ese caso, y meterla entre los pendientes pintaria un
+    pendiente que no existe. Es el mismo matiz que `pendientes_externos`.
+    """
+
+    columnas: Tuple[str, ...]
+    quien_lo_debe: str
+    familias: Tuple[Familia, ...] = ()
+    marca_pendiente: bool = True
+
+    def alcanza_a(self, familia: Optional[Familia]) -> bool:
+        """
+        Si este vacio se admite para esa familia.
+
+        `familia=None` pregunta por el grupo entero, sin fijar una: es lo que
+        necesita una ayuda que se abre ANTES de que haya CSV cargado.
+        """
+        if not self.familias:
+            return True
+        return familia is None or familia in self.familias
+
+
+@dataclass(frozen=True)
+class CabeceraCSV:
+    """
+    Lo que se puede saber de un CSV leyendo SOLO su cabecera y contando las
+    celdas vacias: lo que el anticipo de la pestana 1 necesita ANTES de
+    correr (G3). La produce `M0_carga.leer_cabecera` y la consume
+    `anticipo.contraste_de_cabecera`; vive aqui porque fluye entre modulos.
+
+    NO VALIDA NADA -- ni tipos, ni rangos, ni cruzadas: eso es
+    `M0_carga.cargar_puntos`, y esta lectura existe justamente para no
+    ejecutarla --. Una cabecera incompleta o una celda imposible no son aqui
+    un error sino el CONTENIDO que el anticipo tiene que mostrar.
+
+    `columnas` conserva el orden del archivo (las de nombre vacio se
+    descartan); `vacias_por_columna` cuenta las celdas vacias de cada columna
+    --- una fila mas corta que la cabecera cuenta como vacias las celdas que
+    no alcanza a traer ---; `filas` son las filas de datos con algun
+    contenido.
+    """
+
+    columnas: Tuple[str, ...]
+    vacias_por_columna: Dict[str, int]
+    filas: int
+
+
+# ===========================================================================
+# El barrido de sensibilidad de un criterio (PF-3)
+# ===========================================================================
+
+@dataclass(frozen=True)
+class CorridaDelBarrido:
+    """
+    Una corrida del barrido: el valor que el criterio tomo en ella, la
+    procedencia con que se declaro (el texto del libro de `declaracion`),
+    el volcado ENTERO de `cli.informe_json` y lo que el comparador de E-B
+    dijo al contrastarla con la corrida del primer valor (`lineas()`, la
+    primera empieza por IGUALES o DIFIEREN). `comparable` es False cuando
+    el comparador encontro algun «no comparable»: metodo distinto en algun
+    punto, alcance distinto, o un punto con diseño en una corrida y sin el
+    en la otra. La produce `barrido.barrer`; ningun modulo de calculo la
+    lee.
+    """
+    valor: Any
+    procedencia: str
+    informe_json: Dict[str, Any]
+    comparacion_con_la_primera: Tuple[str, ...]
+    comparable: bool
+
+
+@dataclass(frozen=True)
+class FilaDelBarrido:
+    """
+    Una fila de la tabla del barrido: un punto en una corrida. Todo lo que
+    lleva se LEE del volcado de esa corrida (`puntos[].diseno`), y las dos
+    ultimas columnas se leen de la comparacion con la corrida del primer
+    valor: los codigos de las verificaciones cuyo veredicto `cumple` cambio,
+    y si el punto se pudo comparar (`motivo` dice por que no). Cuando el
+    punto no dimensiono, material, seccion, carga y control van en None y
+    `incumplidas_en_la_progresion` dice que verificaciones incumplio a lo
+    largo de su progresion (leido de `iteraciones[].incumplidas`); cuando
+    dimensiono va vacia.
+    """
+    valor: Any
+    id_punto: str
+    dimensionado: bool
+    material: Optional[str]
+    seccion: Optional[str]
+    HW_gobernante_m: Optional[float]
+    control_gobernante: Optional[str]
+    verificaciones_que_cambian: Tuple[str, ...]
+    comparable: bool
+    motivo: str = ""
+    incumplidas_en_la_progresion: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ResultadoDeBarrido:
+    """
+    El barrido entero de UNA clave sobre una lista de valores de su
+    ventana (PF-3): las corridas en el orden de los valores y la tabla por
+    punto, una fila por (valor, punto). Los volcados enteros viajan dentro
+    de cada corrida para que quien lea el barrido pueda comparar cualquier
+    par con el comparador sin volver a correr nada.
+    """
+    clave: str
+    corridas: Tuple[CorridaDelBarrido, ...]
+    filas: Tuple[FilaDelBarrido, ...]
+
+
+
+# ===========================================================================
+# --- T-4 --- Fase 3: la matriz de durabilidad (v8 §3.3 y §3.4)
+# ===========================================================================
+# Cuatro tipos, y los cuatro fluyen entre modulos: `servicio` arma los
+# ensayos desde los datos externos, `M2.matriz_durabilidad` emite el
+# dictamen, `MD.disenar_punto` lo recibe para filtrar los candidatos, y M11 y
+# la CLI lo imprimen.
+
+# La frase con que la memoria, el volcado de texto y el JSON dicen que la
+# matriz no actuo. Escrita UNA vez: la cadena T la pide textual.
+DURABILIDAD_SIN_ENSAYOS = "durabilidad: sin ensayos, matriz no aplicada"
+
+# Las claves de los ensayos, que son a la vez las claves con que entran por
+# `--datos-externos` (`servicio.CLAVES_DE_DURABILIDAD`) y los nombres de los
+# campos de `EnsayosDurabilidad`.
+ENSAYOS_DE_DURABILIDAD: Tuple[str, ...] = (
+    "sulfatos_suelo_ppm", "sulfatos_agua_ppm", "cloruros_ppm", "pH",
+    "resistividad_ohm_cm", "abrasion")
+
+
+@dataclass(frozen=True)
+class EnsayosDurabilidad:
+    """
+    Los ensayos de durabilidad de UN punto: dato de sitio [S] del EMS y del
+    estudio de campo, por punto o comun al corredor.
+
+    TODOS OPCIONALES Y SIN VALOR POR DEFECTO (docs/contrato_entradas.md): un
+    campo en None es «no hay ensayo», nunca «el ensayo dio cero». Con los
+    seis en None la matriz no actua.
+
+    UNIDADES Y QUE MIDE CADA UNO, porque dos de ellos se confunden:
+
+    sulfatos_suelo_ppm   sulfato soluble en agua presente en el SUELO, en
+                         mg/kg (ppm en peso). E.060 Tabla 4.4 lo tabula en
+                         porcentaje en peso: 1 % = 10 000 ppm.
+    sulfatos_agua_ppm    sulfato (SO4) en el AGUA, en ppm. Es la otra escala
+                         de la misma tabla, y NO es la misma magnitud: 1 500
+                         ppm en el suelo es exposicion moderada y en el agua
+                         es severa.
+    cloruros_ppm         cloruros en el suelo o en el agua, ppm.
+    pH                   del suelo o del agua; si hay los dos, el mas
+                         alejado de 7.
+    resistividad_ohm_cm  del suelo o del agua; si hay las dos, la menor.
+    abrasion             nivel de abrasion del sitio: una de las claves de
+                         `constantes_normativas.NIVELES_DE_ABRASION`.
+
+    `origenes` lleva de donde salio cada dato declarado (el JSON del
+    expediente, global o del punto), para que la memoria lo imprima.
+    """
+
+    sulfatos_suelo_ppm: Optional[float] = None
+    sulfatos_agua_ppm: Optional[float] = None
+    cloruros_ppm: Optional[float] = None
+    pH: Optional[float] = None
+    resistividad_ohm_cm: Optional[float] = None
+    abrasion: Optional[str] = None
+    origenes: Tuple[Tuple[str, str], ...] = ()
+
+    @property
+    def declarados(self) -> Tuple[str, ...]:
+        """Las claves que SI traen ensayo, en el orden del contrato."""
+        return tuple(clave for clave in ENSAYOS_DE_DURABILIDAD
+                     if getattr(self, clave) is not None)
+
+    @property
+    def hay_ensayos(self) -> bool:
+        return bool(self.declarados)
+
+    def origen_de(self, clave: str) -> str:
+        return dict(self.origenes).get(clave, "dato declarado del punto")
+
+
+class EfectoDeDurabilidad(str, Enum):
+    """
+    Que hace una regla de la matriz con un material. TRES, y solo el primero
+    cambia la lista de candidatos:
+
+    EXCLUYE   el material sale de los candidatos del punto.
+    EXIGE     el material sigue candidato CON un requisito de especificacion
+              (tipo de cemento, proteccion de la tuberia) que la memoria
+              deja escrito.
+    AVISA     ni excluye ni exige: la fuente es cualitativa o recomienda, y
+              la memoria lo imprime para que el proyectista decida.
+    """
+
+    EXCLUYE = "excluye"
+    EXIGE = "exige"
+    AVISA = "avisa"
+
+
+@dataclass(frozen=True)
+class ReglaDeDurabilidad:
+    """
+    UNA consecuencia de un ensayo sobre un material (o sobre el punto entero,
+    con `material` en None): que ensayo la dispara, que efecto tiene, que
+    hace el proyecto con ella y en que citas del registro se apoya.
+
+    `texto` es lo que el proyecto HACE, en prosa propia: no entrecomilla la
+    fuente. La frase de la fuente la imprime la memoria desde el registro,
+    por `cita_ids`.
+    """
+
+    ensayo: str
+    material: Optional[TipoMaterial]
+    efecto: EfectoDeDurabilidad
+    texto: str
+    cita_ids: Tuple[str, ...]
+    criterio: str = ""
+
+
+@dataclass(frozen=True)
+class DictamenDurabilidad:
+    """
+    Lo que la matriz de durabilidad dice de un punto.
+
+    `aplicada` es False cuando el punto no trae NINGUN ensayo: entonces no
+    hay reglas de ensayo ni pasos, los candidatos son los de la familia y la
+    memoria imprime `DURABILIDAD_SIN_ENSAYOS`. El aviso del suelo de
+    fundacion NO depende de los ensayos --lee una columna obligatoria del
+    CSV-- y puede venir en `reglas` aunque `aplicada` sea False.
+
+    `suelo_fundacion` es la linea que dice que se leyo de `sucs_fundacion` y
+    contra que conjunto, se dispare o no el aviso.
+    """
+
+    aplicada: bool
+    reglas: Tuple[ReglaDeDurabilidad, ...] = ()
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    ensayos: Optional[EnsayosDurabilidad] = None
+    suelo_fundacion: str = ""
+
+    @property
+    def excluidos(self) -> Tuple[TipoMaterial, ...]:
+        """Los materiales que la matriz saca de los candidatos, sin repetir."""
+        vistos: list = []
+        for regla in self.reglas:
+            if regla.efecto is EfectoDeDurabilidad.EXCLUYE \
+                    and regla.material is not None \
+                    and regla.material not in vistos:
+                vistos.append(regla.material)
+        return tuple(vistos)
+
+    def reglas_de(self, material: Optional[TipoMaterial]) -> Tuple[ReglaDeDurabilidad, ...]:
+        return tuple(r for r in self.reglas if r.material is material)
+
+    def motivo_de_exclusion(self, material: TipoMaterial) -> str:
+        """Por que quedo fuera ese material, o cadena vacia si no quedo."""
+        return "; ".join(r.texto for r in self.reglas
+                         if r.material is material
+                         and r.efecto is EfectoDeDurabilidad.EXCLUYE)
+
+    @property
+    def resumen(self) -> str:
+        """La linea que encabeza el bloque de durabilidad del punto."""
+        if not self.aplicada:
+            return DURABILIDAD_SIN_ENSAYOS
+        declarados = ", ".join(self.ensayos.declarados) if self.ensayos else ""
+        fuera = ", ".join(m.value for m in self.excluidos) or "ninguno"
+        return (f"durabilidad: matriz aplicada con {declarados}; materiales "
+                f"excluidos: {fuera}")
+# ===========================================================================
+# --- T-1 --- Fase 1-bis - Hidrologia (entradas y salida de MH_hidrologia)
+# ===========================================================================
+# Las dos ENTRADAS del proyecto que el calculo hidrologico consume --la cuenca
+# de cada obra y la serie de la estacion-- y lo que devuelve: el caudal de
+# diseño de un punto con su origen y su memoria. Fluyen entre
+# `modulos/MH_hidrologia.py`, `servicio.py`, `M11_reporte.py` y `cli.py`, y
+# por eso viven aqui. Ninguna trae valores por defecto de proyecto: los
+# `None` de `Cuenca` son columnas OPCIONALES del CSV, y lo que cada una
+# habilita cuando falta esta escrito en su campo.
+
+# Los dos origenes del caudal de un punto de Familia A o B. Son rotulos de la
+# memoria y del JSON, no valores de proyecto.
+ORIGEN_CAUDAL_DECLARADO = "declarado"
+ORIGEN_CAUDAL_CALCULADO = "calculado"
+# La frase que la memoria imprime cuando `Q_m3s` viene lleno (T-1, punto 2).
+LEYENDA_CAUDAL_DECLARADO = "Q declarado por el estudio hidrológico"
+LEYENDA_CAUDAL_CALCULADO = ("Q calculado por el programa (MH_hidrologia) con "
+                            "la cuenca y la estación declaradas")
+
+
+@dataclass(frozen=True)
+class Cuenca:
+    """
+    La cuenca aportante de UNA obra: una fila del CSV de cuencas (--cuencas).
+
+    Es una entrada del estudio hidrologico (docs/contrato_entradas.md): el
+    programa la valida y no la corrige. Para una alcantarilla de alivio
+    (Familia B) la «cuenca» es el area tributaria de la cuneta --plataforma y
+    talud--, `L_cauce_m` su longitud y `S_cauce_cuenca` su pendiente
+    longitudinal: el calculo es el mismo (num. 4.1.2.1 b del Manual).
+    """
+
+    id: str                     # el id de la obra en el CSV de puntos
+    area_km2: float             # km2
+    L_cauce_m: float            # m: longitud del cauce principal (o cuneta)
+    # m/m: pendiente media del cauce principal (o de la cuneta). Es la S de
+    # la formula del tiempo de concentracion, y las dos fuentes no la llaman
+    # igual: la Tabla N 05 escribe «pendiente promedio de la cuenca» en la
+    # fila de Kirpich y la ecuacion (30) «Pendiente promedio del cauce mayor».
+    # El CSV trae UNA, la del cauce, que es la que acompaña a `L_cauce_m`.
+    S_cauce_cuenca: float
+    cobertura: str              # clave de cobertura de la Tabla N 08
+    suelo: str                  # clave de tipo de suelo de la Tabla N 08
+    estacion: str               # nombre de la estacion del CSV de --estacion
+    metodo_tc: str              # clave del metodo de tiempo de concentracion
+    # m/m. OBLIGATORIA desde la auditoria de T-1: pendiente media del TERRENO
+    # de la cuenca, que es con la que la Tabla N 08 elige columna. Era
+    # opcional y, vacia, la tabla se leia con `S_cauce_cuenca`: un dato
+    # rellenado con otro, y por el lado no conservador. Es tambien la
+    # «pendiente promedio de la cuenca» de la ecuacion de retardo.
+    S_terreno: float
+    # OPCIONAL, y obligatoria solo con el metodo de California: desnivel
+    # entre la divisoria y la salida, m. No se deduce de S·L.
+    H_desnivel_m: Optional[float] = None
+    # Clave del ajuste de Kirpich por tipo de superficie (Tabla N 05,
+    # observaciones). OBLIGATORIA cuando `metodo_tc` es Kirpich --«ninguno»
+    # es una clave y hay que escribirla: una celda vacia no elige fila--; con
+    # cualquier otro metodo va vacia.
+    ajuste_kirpich: Optional[str] = None
+    # OPCIONAL, y obligatoria solo con la ecuacion de retardo: numero de
+    # curva de la cuenca. Lo entrega el estudio hidrologico; el programa no
+    # tiene tabla de la que leerlo.
+    CN: Optional[float] = None
+    origen: str = ""            # archivo y fila, para la memoria
+
+
+@dataclass(frozen=True)
+class RegistroDeLluvia:
+    """Un año de la serie: precipitacion maxima en 24 h y si fue año FEN."""
+
+    anio: int
+    p24_mm: float
+    fen: bool
+
+
+@dataclass(frozen=True)
+class SerieDeEstacion:
+    """
+    La serie de precipitacion maxima en 24 horas de una estacion (--estacion).
+
+    `fen` de cada registro es un HECHO que declara quien entrega la serie
+    (que años son del fenomeno El Niño); que se hace con esos años es el
+    criterio 'homogeneidad_serie_fen'.
+    """
+
+    estacion: str
+    registros: Tuple[RegistroDeLluvia, ...]
+    origen: str = ""
+
+    @property
+    def anios_fen(self) -> Tuple[int, ...]:
+        return tuple(r.anio for r in self.registros if r.fen)
+
+
+@dataclass(frozen=True)
+class EntradaHidrologica:
+    """
+    Las dos entradas de la Fase 1-bis, ya cargadas y validadas.
+
+    `cuencas_sha1` y `estacion_sha1` (UI-1, ficha T1-04): el SHA-1 de los
+    MISMOS bytes que el cargador parseo, como `ContextoCorrida.csv_sha1` es
+    el de los bytes que M0 leyo (PC-09). Los pone `servicio.cargar_hidrologia`,
+    que lee cada archivo una sola vez y le pasa esos bytes al cargador; una
+    entrada armada por otra via los deja en None. `servicio.correr` los copia
+    al contexto de la corrida, que es de donde los leen la memoria y el JSON.
+    """
+
+    cuencas: Dict[str, Cuenca]
+    estaciones: Dict[str, SerieDeEstacion]
+    origen_cuencas: str = ""
+    origen_estacion: str = ""
+    cuencas_sha1: Optional[str] = None
+    estacion_sha1: Optional[str] = None
+
+    def cuenca_de(self, id_punto: str) -> Optional[Cuenca]:
+        return self.cuencas.get(id_punto)
+
+    def ids_calculables(self) -> frozenset:
+        """
+        Los ids cuyo caudal se PUEDE intentar calcular: tienen cuenca y la
+        estacion que su cuenca nombra esta en el archivo de la estacion. Es
+        lo que M0 consulta para admitir `Q_m3s` vacio en las Familias A y B.
+        """
+        return frozenset(id_ for id_, c in self.cuencas.items()
+                         if c.estacion in self.estaciones)
+
+
+@dataclass(frozen=True)
+class AjusteDeDistribucion:
+    """Una distribucion ajustada a la serie, con su prueba de bondad."""
+
+    distribucion: str
+    parametros: Tuple[Tuple[str, float], ...]
+    n: int
+    D: float                    # estadistico de Kolmogorov-Smirnov
+    d_critico: float
+    alfa: float
+    acepta: bool                # D < d_critico (desigualdad estricta)
+    P_TR_mm: float              # cuantil del periodo de retorno
+
+
+@dataclass(frozen=True)
+class CaudalDeDiseno:
+    """
+    El caudal de diseño de un punto de Familia A o B, con su ORIGEN.
+
+    `pasos` es la memoria hidrologica del punto: los nueve pasos de la Fase
+    1-bis cuando el caudal se calculo, o solo el del caudal especifico cuando
+    entro declarado. `avisos` son textos que la memoria imprime tal cual y
+    que no detienen nada. `tratamiento_fen` es SIEMPRE None en un caudal
+    declarado: el criterio rige el caudal que el programa calcula, y del
+    declarado el programa no sabe que se hizo con los años FEN.
+    """
+
+    Q_m3s: float
+    origen: str                 # ORIGEN_CAUDAL_DECLARADO / _CALCULADO
+    leyenda: str
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    de_donde: str = ""          # la columna, el dato externo o el calculo
+    TR_anios: Optional[int] = None
+    area_km2: Optional[float] = None
+    tc_min: Optional[float] = None
+    I_mm_h: Optional[float] = None
+    C: Optional[float] = None
+    P24_TR_mm: Optional[float] = None
+    distribucion: Optional[str] = None
+    tratamiento_fen: Optional[str] = None
+    q_especifico_m3s_km2: Optional[float] = None
+    lamina_equivalente_mm_h: Optional[float] = None
+    ajustes: Tuple[AjusteDeDistribucion, ...] = ()
+    # Lo que la auditoria de T-1 pidio que viaje y no solo se imprima. La
+    # duracion de la lluvia de diseño NO siempre es `tc_min`: por debajo de
+    # 'duracion_minima_lluvia_min' se adopta el minimo. `K_uniformidad` es el
+    # coeficiente de la ecuacion (31) cuando el caudal lo lleva; None cuando
+    # no (otro metodo de tc, o 'coeficiente_uniformidad_temez' = no_aplicar).
+    metodo_tc: Optional[str] = None
+    duracion_min: Optional[float] = None
+    K_uniformidad: Optional[float] = None
+
+    @property
+    def calculado(self) -> bool:
+        return self.origen == ORIGEN_CAUDAL_CALCULADO
+# ===========================================================================
+# --- T-6 --- Geometria de 7.B: longitud por extremo y pendiente con origen
+# (INF-3.3.3, INF-5.1.18, INF-3.2.7)
+# ===========================================================================
+
+# La regla de 'origen_cota_fondo_entrada' que dispara el aviso, y el aviso.
+# El texto es el de la cadena T (T-6 punto 1) y vive aqui, junto al tipo que
+# lo emite (`CotaDeEntrada.aviso`), para que M7, la CLI y M11 impriman LA
+# MISMA frase.
+REGLA_FONDO_IGUAL_AL_TERRENO = "cota_terreno"
+AVISO_FONDO_ENTRADA_ADOPTADO = (
+    "fondo de entrada adoptado igual al terreno de plataforma: medir en el "
+    "cauce")
+
+
+class MetodoLongitud(str, Enum):
+    """
+    Como se obtuvo la longitud del conducto de Sec. 7.B.
+
+    TERRAPLEN_SIMETRICO  la formula anterior a T-6, conservada como caso
+                         particular: los dos taludes bajan la MISMA altura,
+                         la del eje (cota de rasante - cota de terreno).
+    POR_EXTREMO          cada talud baja desde el borde de la plataforma
+                         hasta el fondo del conducto EN SU EXTREMO; la salida
+                         queda S*L mas baja que la entrada (HDS-5 2.2.4 b.).
+    DECLARADA            `longitud_m` entro como dato externo: no se calcula.
+
+    Los dos primeros valores son los de la ventana del criterio
+    'metodo_longitud_conducto' [A].
+    """
+    TERRAPLEN_SIMETRICO = "terraplen_simetrico"
+    POR_EXTREMO = "por_extremo"
+    DECLARADA = "declarada"
+
+
+class OrigenPendiente(str, Enum):
+    """
+    De donde sale la pendiente con que corre el diseño (T-6 punto 5).
+
+    CAUCE      `S_cauce`: la regla de Sec. 7.B, el conducto sigue al cauce.
+    DECLARADA  el dato externo `S_conducto` del punto.
+    MINIMA     la del cauce queda bajo 'pendiente_minima_conducto' y gobierna
+               el minimo adoptado.
+    MAXIMA     la del cauce supera 'pendiente_maxima_conducto' y gobierna el
+               maximo adoptado.
+
+    Los dos ultimos se dan solo sobre la pendiente del CAUCE, contra la banda
+    de T-2 (`M5.limites_de_pendiente()`): una pendiente declarada es una
+    decision del expediente y el calculo no la pisa -- la juzga V10, la
+    verificacion de pendiente de la Fase 5 --. Con ellos el conducto deja de
+    seguir a su cauce, y `M7.aviso_de_pendiente` dice que trae consigo.
+    """
+    CAUCE = "S_cauce"
+    DECLARADA = "S_conducto declarada"
+    MINIMA = "pendiente_minima_conducto"
+    MAXIMA = "pendiente_maxima_conducto"
+
+
+@dataclass(frozen=True)
+class PendienteAdoptada:
+    """
+    La pendiente del conducto CON SU ORIGEN, m/m. La resuelve
+    `M7.pendiente_adoptada` UNA vez, antes de la Fase 4, y es la que usan la
+    longitud, el TW, el diseño hidraulico y 7.B (MAT-D9: la pendiente no se
+    elige dos veces).
+
+    `S_minima` y `S_maxima` son los extremos de la banda adoptada VIGENTES en
+    la corrida, o None cuando la pendiente es DECLARADA (entonces la banda no
+    se lee aqui: la aplica V10): se guardan para que la memoria diga contra
+    que se comparo, no solo que gano.
+    """
+    valor: float
+    origen: OrigenPendiente
+    S_cauce: Optional[float]
+    S_declarada: Optional[float]
+    S_minima: Optional[float]
+    S_maxima: Optional[float]
+    procedencia: str
+
+
+@dataclass(frozen=True)
+class LongitudConducto:
+    """
+    La longitud del conducto de Sec. 7.B con todo lo que la produjo.
+
+    Convenciones (todas en metros y msnm, sobre la seccion del cruce):
+
+      cota_borde_*        cota del borde de la plataforma en ese lado: la
+                          rasante del eje, corregida por bombeo y peralte
+                          cuando se declaran.
+      cota_referencia_*   cota a la que muere el talud en ese lado. En
+                          POR_EXTREMO es el fondo del conducto en ese extremo
+                          (la salida, S*L bajo la entrada); en
+                          TERRAPLEN_SIMETRICO, el terreno del eje en los dos.
+      altura_*            cota_borde - cota_referencia: la altura de
+                          terraplen que el talud baja en ese lado.
+      proyeccion_*        talud * altura: lo que ese talud añade, medido
+                          NORMAL a la via.
+      semilongitud_*      tramo de conducto, sobre su eje, entre el eje de la
+                          via y ese extremo.
+
+    Lo consume 7.B (cota de salida, encaje) y lo consumira el cabezal por
+    punto (T-7a): altura de terraplen en cada extremo y largo del alero.
+    `pasos` son los `PasoDeMemoria` que lo explican (factor de esviaje y
+    longitud), emitidos por el calculo.
+    """
+    longitud: float
+    metodo: MetodoLongitud
+    factor_esviaje: float
+    talud: Optional[float]
+    S: Optional[float]
+    bombeo: Optional[float]
+    peralte: Optional[float]
+    cota_borde_entrada: Optional[float]
+    cota_borde_salida: Optional[float]
+    cota_referencia_entrada: Optional[float]
+    cota_referencia_salida: Optional[float]
+    altura_entrada: Optional[float]
+    altura_salida: Optional[float]
+    proyeccion_entrada: Optional[float]
+    proyeccion_salida: Optional[float]
+    proyeccion_taludes: float
+    semilongitud_entrada: Optional[float]
+    semilongitud_salida: Optional[float]
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    # Avisos de la longitud (auditor de T-6): la plataforma tomada horizontal
+    # por no declararse bombeo ni peralte, o una pendiente transversal
+    # declarada que el metodo o una longitud declarada dejan sin aplicar.
+    avisos: Tuple[str, ...] = ()
+    # --- T-10 --- El paso 7.B.3b del metodo por extremo: el reparto de la
+    # longitud (altura del terraplen en la salida, proyeccion de los taludes
+    # y semilongitudes) que el JSON publicaba y la memoria no. Va APARTE de
+    # `pasos` porque es de 7.B y no del calculo previo a la Fase 4: lo
+    # imprime la geometria del punto que dimensiona (`CompatibilidadGeometrica
+    # .pasos`), no la traza del que no llega a 7.B, cuyo JSON no publica esos
+    # numeros. None en los otros metodos.
+    paso_reparto: Optional["PasoDeMemoria"] = None
+
+
+# ===========================================================================
+# --- T-5 --- (cadena T, 2026-11-12) Fase 8: estructural del conducto
+# (INF-3.3.5). Lo que M8 devuelve. Viven aqui por la regla de la casa: son
+# tipos que fluyen entre M8, la Fase 5 (M5 y el verificador de perfil del
+# servicio), el servicio y M11.
+# ===========================================================================
+
+@dataclass(frozen=True)
+class CargaVivaEnterrada:
+    """
+    La carga viva HL-93 a la profundidad del conducto (AASHTO LRFD
+    3.6.1.2.6, con el HL-93 y el IM del Manual de Puentes). Todo en SI.
+
+    `vehiculo` dice cual de los dos gobernó ("camion" o "tandem"), y
+    GOBIERNA EL DE MAYOR EFECTO, no el de mayor presion (auditoria de T-5):
+    lo que carga al conducto es la presion por el largo del area cargada que
+    cae sobre el --W_L = P_L min(l_w, B_c) en el tubo de concreto, P_L C_L
+    F_1 en los flexibles--, y con poco relleno y luz grande el tandem (ejes
+    a 4 ft) da menos presion sobre un area mas larga y carga mas. `efecto`
+    es el valor de esa medida para el que gobierna, `efecto_descripcion`
+    dice cual es, y `candidatos` trae los DOS vehiculos como tuplas
+    (vehiculo, P_kN, l_w_m, w_w_m, P_L_kPa, efecto). `P_kN` es la carga de
+    las ruedas que interactuan sobre el area `l_w x w_w`. `despreciada` es
+    True solo cuando el criterio 'carga_viva_bajo_relleno_alto' toma el
+    PERMISO de 3.6.1.2.6a (relleno de mas de 8 ft que ademas supera la luz)
+    y entonces `P_L_kPa` vale 0; `en_zona_de_permiso` dice si el relleno
+    esta en esa zona, se tome o no el permiso. `paso` es el desarrollo.
+    """
+    H_m: float
+    LLDF: float
+    IM_pct: float
+    m: float
+    vehiculo: str
+    P_kN: float
+    l_w_m: float
+    w_w_m: float
+    P_L_kPa: float
+    despreciada: bool
+    paso: "PasoDeMemoria"
+    efecto: float = 0.0
+    efecto_descripcion: str = ""
+    candidatos: Tuple[Tuple[str, float, float, float, float, float], ...] = ()
+    en_zona_de_permiso: bool = False
+
+
+@dataclass(frozen=True)
+class DemandaMarco:
+    """
+    La demanda sobre la losa superior del marco (AASHTO LRFD 12.11) que el
+    diseño de la seccion --diferido al expediente-- tiene que cubrir. Es
+    una DEMANDA, no una verificacion: no hay resistencia contra que
+    compararla mientras la seccion no se diseñe.
+    """
+    F_e: float
+    w_tierra_kPa: float
+    w_viva_kPa: float
+    w_u_kPa: float
+    luz_m: float
+    M_u_referencia_kNm_m: float
+    pasos: Tuple["PasoDeMemoria", ...]
+
+
+@dataclass(frozen=True)
+class ResultadoEstructural:
+    """
+    La Fase 8 de un conducto: las cargas, lo que se eligio (clase, plancha o
+    perfil), las verificaciones que deciden si la combinacion EXISTE y el
+    relleno maximo con que la eleccion sigue cumpliendo.
+
+    `verificaciones` son las que la Fase 5 suma a su tabla (codigos F8.*):
+    deciden, igual que V1 a V10, si el escalon se acepta. `pasos` son los de
+    la carga y la seleccion, que no juzgan; `avisos` sube a
+    `InformePunto.avisos()`; `diferido` lista lo que de verdad sigue fuera
+    del alcance. `seleccion` es el texto de lo elegido ("Clase II",
+    "68x13/2.77", ...) y vacio si nada cumple.
+
+    `cota_inferior` es True SOLO en el resultado del HDPE calculado con el
+    perfil MINIMO de la Tabla A12-11 de AASHTO LRFD por no haberse declarado
+    el del fabricante: sus veredictos no son los de un producto real
+    (C12.12.3.2) y por eso ese resultado no llega nunca a la tabla de la
+    Fase 5 --`M8.verificar_hdpe` se detiene con `DatoFaltanteError` y lo
+    lleva dentro--; se obtiene con `M8.cota_inferior_hdpe`.
+    """
+    material: str
+    H_relleno_m: float
+    e_paquete_m: float
+    H_total_m: float
+    seleccion: str
+    relleno_maximo_m: Optional[float]
+    verificaciones: Tuple["Verificacion", ...]
+    pasos: Tuple["PasoDeMemoria", ...]
+    avisos: Tuple[str, ...] = ()
+    diferido: Tuple[str, ...] = ()
+    demanda_marco: Optional[DemandaMarco] = None
+    cota_inferior: bool = False
+
+    @property
+    def cumple(self) -> bool:
+        return all(v.cumple for v in self.verificaciones)
+
+
+# --- T-5 --- El mismo estado cuando lo que no alcanza es el metodo de la
+# carga viva a traves del relleno de AASHTO LRFD 3.6.1.2.6a (relleno menor
+# que el de su dominio). Mismo recurso que T-1: encabezarla con «HDS-5
+# 3.24» seria una cita falsa (`MetodoNoEvaluableError.rotulo`).
+MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL = (
+    "método no evaluable (AASHTO LRFD 3.6.1.2.6a)")
+
+
+# ===========================================================================
+# --- T-3 --- (cadena T, INF-0.4) La geometria del marco y el remanso del
+# canal. Viven aqui por la regla de la casa: fluyen de M7 al servicio, a la
+# CLI, al JSON y a M11. Integrado T-3 detras de T-5, `GeometriaMarco` no
+# tiene consumidor en M8 -- `M8.demanda_marco` lee la `Seccion`,
+# `espesor_pared` y la misma `M5.cota_clave`, con los mismos numeros -- y
+# queda para la demanda de la losa y el cabezal por punto (T-7a) cuando se
+# toquen (ficha T3-06).
+# ===========================================================================
+
+@dataclass(frozen=True)
+class GeometriaMarco:
+    """
+    La geometria del marco adoptado, en SI y en cotas msnm (Sec. 7.A/7.B).
+
+    UN SOLO ESPESOR para paredes, losas y tabique: el criterio
+    'espesor_pared_cajon' [A] es uno, y separarlo en tres seria inventar dos
+    adopciones que nadie declaro. Con N celdas el marco es MONOLITICO --
+    vaciado in situ, §14.1 de docs/ruta_familia_c.md --: las celdas
+    comparten tabique y entre ellas no hay relleno, de modo que el ancho
+    exterior es N*B + (N-1)*t + 2*t.
+
+    Las cotas se apilan sobre el fondo INTERIOR de la entrada (el invert, la
+    superficie por donde corre el agua): la clave interior a H, la exterior a
+    H + t -- que es la MISMA que `M5.cota_clave` le da a V7 y a 7.A --, y la
+    base exterior a t por debajo. `relleno_sobre_losa_m` es la subrasante
+    menos la clave exterior, la altura de relleno que la Fase 8 carga.
+    """
+    B_m: float
+    H_m: float
+    celdas: int
+    espesor_m: float
+    tabique_m: float                 # 0.0 con una sola celda
+    ancho_exterior_m: float
+    canto_exterior_m: float
+    cota_fondo_interior_msnm: float
+    cota_clave_interior_msnm: float
+    cota_clave_exterior_msnm: float
+    cota_base_exterior_msnm: float
+    cota_subrasante_msnm: float
+    relleno_sobre_losa_m: float
+    paso: Optional["PasoDeMemoria"] = None
+
+
+@dataclass(frozen=True)
+class RemansoCanal:
+    """
+    La sobreelevacion de la lamina del canal en el cruce y la longitud
+    MINIMA del remanso aguas arriba (Familia C). Es un AVISO: ninguna fuente
+    de normas/ fija un umbral, y no hay verificacion que lo juzgue.
+
+    `evaluado` es False cuando falta la seccion medida del canal: entonces
+    no hay numeros y `aviso` dice que falta. Con ella:
+
+      y_normal_canal_m    tirante normal del canal en el cruce (Manning en
+                          la seccion medida, con el caudal del canal)
+      y_critico_canal_m   --- T-3 (auditoria, H2) --- tirante critico del
+                          canal en la misma seccion (Q^2 T = g A^3)
+      sobreelevacion_m    HW - y_normal: cuanto levanta la obra la lamina
+                          sobre la que el canal tendria sin ella. Negativa o
+                          nula, la obra no la levanta.
+      longitud_minima_m   sobreelevacion / S_canal: la distancia aguas arriba
+                          a la que la lamina horizontal del embalse corta la
+                          lamina normal. Es una COTA INFERIOR solo en un
+                          canal SUAVE (y_normal > y_critico): el perfil M1
+                          real queda por encima de esa horizontal y se
+                          extiende mas alla, asintotico al normal.
+
+    --- T-3 (auditoria adversarial, H2 y H3) --- `concluye` es False, con la
+    razon en `motivo_no_concluye` y en `aviso`, en dos casos en que la cuenta
+    de arriba NO dice lo que parece, y entonces `longitud_minima_m` va en
+    None -- ninguna cifra se presenta como cota --:
+      - canal de pendiente FUERTE (y_normal <= y_critico): el remanso es una
+        S1 que termina en resalto aguas arriba, y la horizontal no lo acota
+        (puede ser mas corto que sobreelevacion / S). La sobreelevacion en
+        el cruce si se publica: es HW - y_normal, un hecho de la seccion.
+      - VC2 fuera de tolerancia: el HW de la obra sale de una descarga en
+        caida libre a la salida, que el canal no tiene porque el empalme no
+        cierra; ni la sobreelevacion ni la longitud se publican.
+    """
+    evaluado: bool
+    aviso: str
+    seccion_origen: str = ""
+    Q_canal_m3s: Optional[float] = None
+    S_canal: Optional[float] = None
+    y_normal_canal_m: Optional[float] = None
+    HW_m: Optional[float] = None
+    cota_lamina_entrada_msnm: Optional[float] = None
+    sobreelevacion_m: Optional[float] = None
+    longitud_minima_m: Optional[float] = None
+    paso: Optional["PasoDeMemoria"] = None
+    concluye: bool = False
+    y_critico_canal_m: Optional[float] = None
+    motivo_no_concluye: str = ""
+
+
+# ===========================================================================
+# --- T-7b --- (cadena T) · V5 y V8 con metodo, y el ensamble de estabilidad
+# ===========================================================================
+
+# Los rotulos de `MetodoNoEvaluableError` de T-7b: cada uno nombra SU fuente
+# (leccion de T-1 y T-8: encabezarlo con «HDS-5 3.24» seria una cita falsa).
+MOTIVO_METODO_NO_EVALUABLE_REMANSO = (
+    "método no evaluable (V5, embalse a nivel aguas arriba)")
+MOTIVO_METODO_NO_EVALUABLE_EVENTO_EXTREMO = (
+    "método no evaluable (V8, evento extremo)")
+MOTIVO_METODO_NO_EVALUABLE_CABEZAL = (
+    "método no evaluable (AASHTO LRFD 11.6, estabilidad del cabezal)")
+
+# Las opciones del criterio 'remanso_derecho_via' (V5), que desde T-7b elige
+# el METODO. «embalse_a_nivel» es la unica implementada; el perfil de remanso
+# paso a paso queda nombrado y diferido (ficha T7B-01).
+METODO_REMANSO_EMBALSE_A_NIVEL = "embalse_a_nivel"
+# --- correcciones de T-7b (H2) --- el criterio de COTA que el HDS-5 num.
+# 2.2.5 si sostiene: la cota del embalse de diseño contra la cota de
+# afectacion aguas arriba (dato externo por punto).
+METODO_REMANSO_COTA_AFECTACION = "cota_de_afectacion"
+METODO_REMANSO_PERFIL_PASO_A_PASO = "perfil_de_remanso_paso_a_paso"
+METODOS_DE_REMANSO = (METODO_REMANSO_EMBALSE_A_NIVEL,
+                      METODO_REMANSO_COTA_AFECTACION,
+                      METODO_REMANSO_PERFIL_PASO_A_PASO)
+
+# Las opciones del criterio 'umbral_no_colapso_evento_extremo' (V8).
+UMBRAL_V8_SIN_DESBORDE = "sin_desborde_de_la_plataforma"
+UMBRAL_V8_DESBORDE_ADMITIDO = "desborde_admitido_con_terraplen_protegido"
+UMBRALES_V8 = (UMBRAL_V8_SIN_DESBORDE, UMBRAL_V8_DESBORDE_ADMITIDO)
+
+
+@dataclass(frozen=True)
+class DerechoDeViaDelPunto:
+    """
+    --- T-7b --- Lo que V5 necesita del punto ademas del resultado
+    hidraulico: el ancho del derecho de via declarado para ese cruce (dato
+    externo `ancho_derecho_via_m`, None si no se declaro) y donde queda la
+    boca de entrada respecto del eje de la via, medido a lo largo del eje
+    del conducto (la semilongitud de entrada de 7.B, o L/2 si la longitud se
+    declaro). Lo arma el servicio; V5 no lee el informe.
+    """
+
+    ancho_m: Optional[float]
+    origen_ancho: str
+    semilongitud_entrada_m: Optional[float]
+    origen_semilongitud: str
+    # El piso del DG-2018 (Tabla 304.09 por clase de via), si la clase de via
+    # esta declarada: es un CONTRASTE del dato, no lo sustituye.
+    piso_dg2018_m: Optional[float] = None
+    origen_piso: str = ""
+    # --- correcciones de T-7b (H2) --- la cota del terreno o del bien a
+    # proteger en el limite del derecho de via aguas arriba (dato externo
+    # `cota_afectacion_aguas_arriba_msnm`, None si no se declaro): la lee el
+    # metodo «cota_de_afectacion».
+    cota_afectacion_msnm: Optional[float] = None
+    origen_cota_afectacion: str = ""
+
+
+@dataclass(frozen=True)
+class EventoExtremoDelPunto:
+    """
+    --- T-7b --- Lo que V8 necesita ademas del resultado de diseño: el caudal
+    y el tirante del receptor del evento extremo (datos externos, None si no
+    se declararon), la cota a la que la plataforma desborda (el borde de la
+    plataforma del lado de la entrada, de 7.B, o la rasante) y la funcion con
+    que el servicio resuelve la hidraulica de la seccion adoptada para ese
+    caudal (M3 y M4, que M5 no importa).
+    """
+
+    Q_m3s: Optional[float]
+    TW_m: Optional[float]
+    origen: str
+    cota_desborde: Optional[float]
+    origen_cota_desborde: str
+    resolver: Optional[Any] = None      # (seccion, material) -> ResultadoHidraulico | None
+
+
+# Los dos regimenes con que V8 resuelve el caudal del evento extremo
+# (correcciones de T-7b, H3).
+REGIMEN_EVENTO_LAMINA_LIBRE = "lamina libre"
+REGIMEN_EVENTO_A_PRESION = "barril a presion"
+
+
+@dataclass(frozen=True)
+class HidraulicaDelEventoExtremo:
+    """
+    --- correcciones de T-7b (H3) --- La carga del caudal del evento extremo
+    por la seccion candidata, y COMO se obtuvo: en lamina libre, con la
+    hidraulica completa de M4 (`resolver_control`); o, cuando M3 no le
+    encuentra tirante normal porque el caudal no cabe en lamina libre, con
+    el barril trabajando A PRESION, con las MISMAS piezas de M4 que no
+    necesitan tirante normal: el control de entrada (la ec. A.3 sumergida,
+    o la que corresponda a su q*) y el de salida a barril lleno (HW = H +
+    h_o - S·L), gobernando la mayor (`M4.hw_gobernante`). Ninguna ecuacion
+    nueva.
+
+    --- verificacion de T-7 (punto 3) --- «sin perfil» ERA EL DEFECTO: la
+    aproximacion de barril lleno competia sin las dos reglas que el mismo M4
+    aplica en lamina libre (HDS-5 num. 3.3.3, pag. 3.24), y un caudal MAYOR
+    podia dar MENOS carga que el de diseño. Ahora compite con el perfil de
+    la lamina (`M4.perfil_lamina`, que no necesita tirante normal):
+    `HW_salida` es la carga EFECTIVA de salida y `avisos` dice cuando la
+    aproximacion estuvo en la banda de cautela o no se uso. Salen por
+    `Verificacion.avisos` de V8 y de ahi por `InformePunto.avisos()`.
+    """
+
+    HW: float
+    control_gobernante: "ControlGobernante"
+    regimen: str
+    HW_entrada: float
+    HW_salida: float
+    nota: str = ""
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class DatosDeExpediente:
+    """--- T-7b --- Los datos de expediente que la Fase 5 recibe del servicio."""
+
+    derecho_de_via: Optional[DerechoDeViaDelPunto] = None
+    evento_extremo: Optional[EventoExtremoDelPunto] = None
+
+
+# ---------------------------------------------------------------------------
+# El ensamble de estabilidad del cabezal (Fase 9, Sec. 9.2 y 9.3)
+# ---------------------------------------------------------------------------
+
+MARCO_LRFD = "LRFD"
+MARCO_ASD = "ASD"
+MARCOS_DE_ESTABILIDAD = (MARCO_LRFD, MARCO_ASD)
+
+# Las tres opciones del criterio 'marco_estabilidad_cabezal': cual marco
+# RIGE (sus verificaciones deciden) y que se hace con el otro (informa).
+MARCO_RIGE_LRFD = "lrfd_rige_asd_informa"
+MARCO_RIGE_ASD = "asd_rige_lrfd_informa"
+MARCO_ENVOLVENTE = "envolvente_de_los_dos"
+REGLAS_DE_MARCO = (MARCO_RIGE_LRFD, MARCO_RIGE_ASD, MARCO_ENVOLVENTE)
+
+# Tipos de carga del ensamble, con la nomenclatura de AASHTO 3.3.2.
+CARGA_DC = "DC"
+CARGA_EV = "EV"
+CARGA_EH = "EH"
+CARGA_LS = "LS"
+CARGA_WA = "WA"
+CARGA_EQ = "EQ"
+TIPOS_DE_CARGA_DEL_CABEZAL = (CARGA_DC, CARGA_EV, CARGA_EH, CARGA_LS,
+                              CARGA_WA, CARGA_EQ)
+
+ELEMENTO_PANTALLA = "pantalla"
+ELEMENTO_ZAPATA = "zapata"
+ELEMENTO_ALEROS = "aleros"
+ELEMENTOS_DEL_CABEZAL = (ELEMENTO_PANTALLA, ELEMENTO_ZAPATA, ELEMENTO_ALEROS)
+
+
+@dataclass(frozen=True)
+class CargaDeCabezal:
+    """
+    --- T-7b --- UNA carga del ensamble, por metro de muro, SIN FACTORAR
+    (valor nominal de servicio), con su brazo.
+
+    Convencion de signos, una para todo el ensamble: el origen esta en la
+    arista inferior de la PUNTA (lado del cauce); `x` crece hacia el relleno
+    y `z` hacia arriba desde la base de la zapata. `V` es positiva hacia
+    abajo y `H` positiva hacia la punta (empuja el muro hacia el cauce). El
+    momento respecto de la punta es `V·x - H·z`, positivo si estabiliza: la
+    subpresion entra con `V` negativa.
+
+    `sobre` dice a que elemento le llega la carga (pantalla o zapata), que es
+    lo que T-7c necesita para sacar las solicitaciones de cada uno.
+    """
+
+    codigo: str             # 'DC.pantalla', 'EV.talon', 'EH.h', 'LS.v', ...
+    tipo: str               # uno de TIPOS_DE_CARGA_DEL_CABEZAL
+    descripcion: str
+    V: float = 0.0          # kN/m
+    H: float = 0.0          # kN/m
+    x: float = 0.0          # m, brazo de V desde la punta
+    z: float = 0.0          # m, brazo de H sobre la base de la zapata
+    sobre: str = ELEMENTO_ZAPATA
+    procedencia: str = ""
+
+    def __post_init__(self) -> None:
+        if self.tipo not in TIPOS_DE_CARGA_DEL_CABEZAL:
+            raise ValueError(f"CargaDeCabezal «{self.codigo}»: tipo "
+                             f"{self.tipo!r} desconocido")
+        for nombre in ("V", "H", "x", "z"):
+            valor = getattr(self, nombre)
+            if not (isinstance(valor, (int, float)) and math.isfinite(valor)):
+                raise LimiteNumericoError(
+                    f"CargaDeCabezal.{nombre}", valor=valor,
+                    motivo=f"la carga «{self.codigo}» del ensamble de "
+                           "estabilidad no es un numero finito")
+
+    @property
+    def momento(self) -> float:
+        """Momento respecto de la punta, kN·m/m, positivo si estabiliza."""
+        return self.V * self.x - self.H * self.z
+
+
+@dataclass(frozen=True)
+class CombinacionDeEstabilidad:
+    """
+    --- T-7b --- Las cargas del ensamble combinadas con SUS factores para
+    UNA verificacion: marco (LRFD o ASD), condicion (estatica o sismica),
+    nombre (Resistencia I con gamma maximos, Evento Extremo I caso 1...) y
+    las resultantes. `factores` es la tupla (codigo de la carga, factor): en
+    el marco ASD todos valen 1 (cargas de servicio, E.050 Art. 17.1) y los
+    de las cargas que la combinacion no incluye valen 0.
+    """
+
+    nombre: str
+    marco: str
+    condicion: CondicionAnalisis
+    factores: Tuple[Tuple[str, float], ...]
+    N: float                # kN/m, suma de verticales factoradas (hacia abajo)
+    H: float                # kN/m, suma de horizontales factoradas
+    M_estabilizante: float  # kN·m/m respecto de la punta
+    M_volcante: float       # kN·m/m respecto de la punta
+    B: float                # m
+    para: str = ""          # que verificacion la usa
+
+    @property
+    def momento_neto(self) -> float:
+        return self.M_estabilizante - self.M_volcante
+
+    @property
+    def x_resultante(self) -> float:
+        """Posicion de la resultante vertical desde la punta, m."""
+        return self.momento_neto / self.N
+
+    @property
+    def excentricidad(self) -> float:
+        """e = B/2 - x_resultante, m (positiva hacia la punta)."""
+        return self.B / 2 - self.x_resultante
+
+    # --- T-10 (correcciones, H7) ---
+    @property
+    def excentricidad_publicable(self) -> Optional[float]:
+        """
+        La excentricidad que las vistas imprimen, o None SIN carga vertical
+        hacia abajo (N <= 0: no hay resultante que excentrar). La regla vive
+        aqui, en el dato, y no repetida en el JSON y en la memoria.
+        """
+        return self.excentricidad if self.N > 0 else None
+
+    def factor_de(self, codigo: str) -> float:
+        return dict(self.factores).get(codigo, 0.0)
+
+
+@dataclass(frozen=True)
+class SolicitacionDeElemento:
+    """
+    --- T-7b --- La solicitacion FACTORADA de un elemento del cabezal en su
+    seccion critica, por metro de muro, para una combinacion del marco LRFD:
+    lo que T-7c necesita para armar. `seccion` dice donde se mide (arranque
+    de la pantalla, cara de la pantalla en la punta o en el talon).
+    """
+
+    elemento: str           # uno de ELEMENTOS_DEL_CABEZAL
+    seccion: str
+    combinacion: str
+    V_u: float              # kN/m
+    M_u: float              # kN·m/m
+    nota: str = ""
+    # --- correcciones de T-7b (H7) --- CON QUE EMPUJE SALE, dicho en la
+    # interfaz para que T-7c no lo herede sin saberlo: el regimen del
+    # cabezal ('regimen_cabezal' [A]), el nombre y el valor del coeficiente
+    # con que se calcularon los empujes de esta solicitacion, y el K0 de
+    # AASHTO 3.11.5.2 con su cociente, que es el factor por el que crecerian
+    # los empujes de la pantalla si se juzgara que no cede (C11.6.5.4).
+    regimen: str = ""
+    coeficiente_de_empuje: str = ""     # 'K_A' (estatica) o 'K_AE' (sismica)
+    K_empuje: Optional[float] = None
+    K0: Optional[float] = None
+    K0_sobre_K_A: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class EntornoDelCabezal:
+    """
+    --- T-7b --- Lo que el ensamble de estabilidad necesita de UN cabezal
+    ademas de su geometria, ya resuelto por las fases anteriores: hasta
+    donde llega el relleno que retiene, como sube el terreno detras de el,
+    donde esta el agua y que suelo lo soporta. Lo arma
+    `M9.datos_del_cabezal_del_punto`; el ensamble no lee el informe.
+
+        cota_relleno           coronacion menos bordillo: la superficie del
+                               relleno retenido contra el trasdos
+        cota_borde_plataforma  borde de la plataforma del lado de ese
+                               extremo (7.B), donde el talud se quiebra
+        talud                  H:V del terraplen
+        cota_freatico          COTA del nivel freatico, msnm: la columna
+                               NF_profundidad_m medida desde el terreno
+                               natural del cruce (`cota_terreno`), que es la
+                               convencion de M8, del censo y del contrato de
+                               entradas; None si la columna va vacia
+        origen_freatico        de donde sale esa cota (texto del paso)
+        cota_pie               terreno delante del muro (el de T-7a)
+        cota_fondo_hoya        fondo de la hoya de socavacion, si la hay
+        suelo                  parametros del suelo de fundacion DEL PUNTO
+                               (dato externo validado), o None: rige el
+                               criterio de corredor
+        cota_agua_diseno       nivel del agua de diseño contra ese cabezal
+                               (en la entrada solera + HW de M4; en la
+                               salida solera + tirante de salida), si se
+                               conoce: solo informa el aviso del desembalse
+                               rapido con el relleno drenado
+
+    LA COTA Y NO LA PROFUNDIDAD (correcciones de T-7b, H1). Hasta la
+    auditoria el entorno llevaba la profundidad del freatico y el ensamble la
+    restaba de la profundidad de desplante de CADA cabezal, es decir, la leia
+    bajo el pie del muro; el resto del repositorio la lee bajo el terreno del
+    cruce. En la salida de A-01 eso dejaba el agua 0.80 m mas baja (bajo la
+    zapata en vez de 0.20 m sobre la base), del lado inseguro. Con la cota no
+    hay datum que elegir en el ensamble.
+    """
+
+    id_punto: str
+    extremo: str
+    geometria: GeometriaCabezal
+    cota_relleno: float
+    cota_borde_plataforma: float
+    origen_cota_borde: str
+    talud: float
+    esviaje_grados: float
+    cota_freatico: Optional[float]
+    cota_pie: float
+    cota_fondo_hoya: Optional[float] = None
+    suelo: Optional[dict] = None
+    origen_freatico: str = ""
+    cota_agua_diseno: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class EstabilidadDelCabezal:
+    """
+    --- T-7b --- El ensamble de estabilidad de UN cabezal (un extremo de un
+    punto) en UNA condicion: las cargas sin factorar con sus brazos, las
+    combinaciones de los dos marcos, las verificaciones E1 a E3 de cada
+    marco (las del marco que rige deciden; las del otro informan), las
+    solicitaciones factoradas por elemento y los pasos de memoria.
+
+    `pendientes` son las filas que NO se evaluaron con su motivo (E4 y E5,
+    la estabilidad global y la del talud, diferidas al expediente con el
+    EMS): se imprimen, no se callan y no cuentan como cumplidas.
+    """
+
+    id_punto: str
+    extremo: str
+    condicion: CondicionAnalisis
+    regla_de_marco: str
+    cargas: Tuple[CargaDeCabezal, ...]
+    combinaciones: Tuple[CombinacionDeEstabilidad, ...]
+    verificaciones: Tuple["Verificacion", ...]
+    solicitaciones: Tuple[SolicitacionDeElemento, ...] = ()
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    pendientes: Tuple[Tuple[str, str], ...] = ()
+    # Lo que identifica al calculo sin abrir los pasos.
+    K_A: Optional[float] = None
+    K_AE: Optional[float] = None
+    i_grados: Optional[float] = None
+    delta_grados: Optional[float] = None
+    altura_empuje: Optional[float] = None
+    h_eq: Optional[float] = None
+    k_h: Optional[float] = None
+    # --- correcciones de T-7b --- como se calculo el empuje (cuña de tanteo
+    # o formula cerrada), los coeficientes de la formula cerrada que quedan
+    # como CONTRASTE (None donde no es evaluable), el regimen del cabezal y
+    # el K0 de referencia.
+    metodo_empuje: str = ""
+    K_A_contraste: Optional[float] = None
+    K_AE_contraste: Optional[float] = None
+    regimen: str = ""
+    K0: Optional[float] = None
+
+    def del_marco(self, marco: str) -> Tuple["Verificacion", ...]:
+        return tuple(v for v in self.verificaciones
+                     if f"-{marco}." in (v.codigo or ""))
+
+    @property
+    def cumple(self) -> bool:
+        """Todas las verificaciones que DECIDEN cumplen (las que informan no)."""
+        return all(v.cumple for v in self.verificaciones)
+
+
+# ===========================================================================
+# --- T-7c --- (cadena T) · el armado del cabezal y la alternativa ciclopea
+# ===========================================================================
+# Lo que `M9.armado_del_cabezal` entrega por cabezal: el armado de cada
+# seccion critica (pantalla en su arranque, punta y talon de la zapata en la
+# cara de la pantalla, alero en su arranque), el acero de reparto de cada
+# elemento, y la TABLA de armado que la memoria imprime -- emitida aqui como
+# datos y como `PasoDeMemoria`: M11 la formatea, no la calcula --. Para el
+# cabezal de gravedad en ciclopeo no hay armado: van sus verificaciones de
+# traccion y de material.
+
+# Las dos opciones de 'regimen_resistencia_elementos_cabezal' [A].
+REGIMEN_RESISTENCIA_K0 = "no_cedente_k0"
+REGIMEN_RESISTENCIA_CEDENTE = "cedente"
+REGIMENES_DE_RESISTENCIA = (REGIMEN_RESISTENCIA_K0,
+                            REGIMEN_RESISTENCIA_CEDENTE)
+
+# Las dos opciones de 'regla_minimos_constructivos_cabezal' [A].
+MINIMOS_MAS_EXIGENTE = "mas_exigente_aashto_e060"
+MINIMOS_SOLO_AASHTO = "solo_aashto"
+REGLAS_DE_MINIMOS = (MINIMOS_MAS_EXIGENTE, MINIMOS_SOLO_AASHTO)
+
+# Las dos opciones de 'criterio_traccion_cabezal_ciclopeo' [A].
+TRACCION_NULA = "tracciones_nulas"
+TRACCION_ADMISIBLE_E060 = "traccion_admisible_e060"
+CRITERIOS_DE_TRACCION_CICLOPEO = (TRACCION_NULA, TRACCION_ADMISIBLE_E060)
+
+# --- correcciones de T-7c (H3) --- Las dos clases de exposicion de AASHTO
+# 5.6.7 (gamma_e = 1.00 y 0.75), opciones de 'clase_exposicion_fisuracion_
+# cabezal' [A], que NO tiene valor de archivo: la declara el Propietario.
+CLASE_EXPOSICION_1 = "clase_1"
+CLASE_EXPOSICION_2 = "clase_2"
+CLASES_DE_EXPOSICION = (CLASE_EXPOSICION_1, CLASE_EXPOSICION_2)
+
+# El marco de las combinaciones del CONTRASTE con E.060 (9.2.5): un tercer
+# rotulo junto a MARCO_LRFD y MARCO_ASD, para que `M9.solicitaciones_por_
+# elemento` pueda entregar las solicitaciones de ESE marco sin que nadie las
+# confunda con las que rigen.
+MARCO_E060 = "E060"
+
+# El rotulo de `MetodoNoEvaluableError` cuando lo que no se puede evaluar es
+# el cortante de una seccion fuera de las condiciones del procedimiento
+# simplificado de AASHTO 5.7.3.4.1 (el general, 5.7.3.4.2, no se implementa).
+MOTIVO_METODO_NO_EVALUABLE_ARMADO = (
+    "método no evaluable (AASHTO LRFD 5.7.3.4, cortante del cabezal)")
+
+# Claves de las secciones criticas del cabezal armado.
+SECCION_PANTALLA = "pantalla"
+SECCION_PUNTA = "punta"
+SECCION_TALON = "talon"
+SECCION_ALERO = "alero"
+SECCIONES_DEL_ARMADO = (SECCION_PANTALLA, SECCION_PUNTA, SECCION_TALON,
+                        SECCION_ALERO)
+
+
+@dataclass(frozen=True)
+class BarraPropuesta:
+    """
+    --- T-7c --- La barra y el espaciamiento que el programa PROPONE para
+    una cara, tomados del catalogo [A] 'catalogo_barras_refuerzo_cabezal'.
+    Es una propuesta: lo que el plano lleve tiene que dar al menos el acero
+    adoptado con un espaciamiento no mayor que el maximo.
+    """
+
+    designacion: str        # '1/2', '5/8', ... (pulgadas, como en el catalogo)
+    diametro_mm: float
+    area_mm2: float
+    espaciamiento: float    # m, entre ejes
+    As_provisto: float      # mm2/m
+
+    @property
+    def texto(self) -> str:
+        return f"Ø {self.designacion}\" @ {self.espaciamiento:.3f} m"
+
+
+@dataclass(frozen=True)
+class SolicitacionDeArmado:
+    """
+    --- T-7c --- El momento y el cortante FACTORADOS de una seccion para UNA
+    combinacion, con el factor de resistencia que le corresponde y con que
+    empuje salieron. `M_u_reposo` / `M_u_cedente` (y los de cortante) son los
+    dos valores que el regimen compara: rige el de `M_u` / `V_u`.
+    """
+
+    combinacion: str
+    condicion: CondicionAnalisis
+    M_u: float                      # kN·m/m, el que rige (no negativo)
+    V_u: float                      # kN/m, el que rige (no negativo)
+    phi_flexion: float
+    phi_corte: float
+    M_u_cedente: float
+    V_u_cedente: float
+    M_u_reposo: Optional[float] = None
+    V_u_reposo: Optional[float] = None
+    nota: str = ""
+
+
+@dataclass(frozen=True)
+class ArmadoDeSeccion:
+    """
+    --- T-7c --- El armado de UNA seccion critica del cabezal, por metro de
+    muro: las solicitaciones que la gobiernan, el acero que la flexion pide,
+    los dos minimos, el adoptado, la barra propuesta y la resistencia que
+    resulta, con las verificaciones A1 a A5 (las del marco que rige, AASHTO
+    LRFD Seccion 5) y las de contraste con E.060, que informan.
+    """
+
+    elemento: str                   # uno de ELEMENTOS_DEL_CABEZAL
+    clave: str                      # una de SECCIONES_DEL_ARMADO
+    seccion: str                    # donde se mide
+    cara: str                       # la cara en traccion
+    espesor: float                  # m
+    recubrimiento_mm: float
+    origen_recubrimiento: str
+    d: float                        # m, con la barra propuesta
+    regimen: str
+    solicitaciones: Tuple[SolicitacionDeArmado, ...]
+    rige_flexion: SolicitacionDeArmado
+    rige_cortante: SolicitacionDeArmado
+    As_resistencia: float           # mm2/m, el que pide el momento que rige
+    As_minimo_flexion: float        # mm2/m, AASHTO 5.6.3.3
+    As_minimo_constructivo: float   # mm2/m, retraccion / cuantia minima
+    origen_minimo: str
+    As_adoptado: float              # mm2/m, el mayor de los tres
+    gobierna: str                   # 'resistencia' | 'minimo de flexion' | ...
+    s_max: float                    # m
+    origen_s_max: str
+    barra: Optional[BarraPropuesta]
+    M_r: Optional[float]            # kN·m/m con la barra propuesta
+    epsilon_t: Optional[float]
+    d_v: Optional[float]            # m
+    V_c: Optional[float]            # kN/m nominal
+    V_r: Optional[float]            # kN/m factorado
+    # Contraste con E.060 (solo condicion estatica), o None.
+    M_u_e060: Optional[float] = None
+    V_u_e060: Optional[float] = None
+    As_e060: Optional[float] = None
+    V_r_e060: Optional[float] = None
+    # --- correcciones de T-7c --- La fisuracion de AASHTO 5.6.7 en Servicio
+    # I (H3): el momento de servicio, si 5.6.7 aplica (traccion bruta sobre
+    # 0.8·f_r), la tension del acero y el espaciamiento maximo de cada clase
+    # de exposicion ({'clase_1': s, 'clase_2': s}, m); None sin momento de
+    # servicio. Y el peralte de cortante de la letra de 5.7.2.8 cuando el
+    # adoptado se acota al peralte efectivo (H8).
+    M_servicio: Optional[float] = None
+    fisuracion_aplica: Optional[bool] = None
+    f_ss: Optional[float] = None
+    s_fisuracion: Optional[dict] = None
+    clase_exposicion: Optional[str] = None
+    d_v_letra: Optional[float] = None
+    verificaciones: Tuple["Verificacion", ...] = ()
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class FilaDeArmado:
+    """
+    --- T-7c --- Una fila de la tabla de armado del cabezal (T-7c punto 4):
+    el acero requerido por resistencia, el minimo, el adoptado y la barra
+    propuesta, de UNA posicion (cara y direccion) de UN elemento. `gobierna`
+    dice cual de los dos mando.
+    """
+
+    elemento: str
+    posicion: str
+    As_requerido: float             # mm2/m (0 en el acero de reparto)
+    As_minimo: float                # mm2/m
+    origen_minimo: str
+    As_adoptado: float              # mm2/m
+    gobierna: str
+    s_max: float                    # m
+    barra: Optional[BarraPropuesta]
+
+    @property
+    def cumple(self) -> bool:
+        """Hay barra en el catalogo que da el acero adoptado."""
+        return self.barra is not None
+
+
+@dataclass(frozen=True)
+class ArmadoDelCabezal:
+    """
+    --- T-7c --- El armado de UN cabezal (un extremo de un punto), o las
+    verificaciones de su alternativa en concreto ciclopeo.
+
+        tipo        'voladizo_armado' o 'gravedad_ciclopeo' (el de T-7a)
+        regimen     el de 'regimen_resistencia_elementos_cabezal'
+        secciones   las secciones criticas armadas (vacio en el ciclopeo)
+        tabla       la tabla de armado por elemento, para la memoria
+        sismico     si el Evento Extremo I entro al armado; cuando no, el
+                    motivo esta en `avisos` y el armado sale solo de
+                    Resistencia I
+    """
+
+    id_punto: str
+    extremo: str
+    tipo: str
+    regimen: str
+    fc_mpa: float
+    fy_mpa: Optional[float]
+    secciones: Tuple[ArmadoDeSeccion, ...] = ()
+    tabla: Tuple[FilaDeArmado, ...] = ()
+    verificaciones: Tuple["Verificacion", ...] = ()
+    pasos: Tuple["PasoDeMemoria", ...] = ()
+    avisos: Tuple[str, ...] = ()
+    sismico: bool = False
+    K0: Optional[float] = None
+    K_A: Optional[float] = None
+
+    def seccion(self, clave: str) -> ArmadoDeSeccion:
+        return next(s for s in self.secciones if s.clave == clave)
+
+    @property
+    def cumple(self) -> bool:
+        """Todas las verificaciones que DECIDEN cumplen."""
+        return all(v.cumple for v in self.verificaciones)

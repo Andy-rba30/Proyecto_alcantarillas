@@ -1,0 +1,2687 @@
+"""
+tests/test_gui_contrato.py
+==========================
+Contrato de `gui/app.py`, que hasta la sesion S16 no tenia NI UN test.
+
+Por que estos tests leen el arbol en vez de importar el modulo
+--------------------------------------------------------------
+`gui/app.py` importa `tkinter` en su cabecera, y `tkinter` no esta disponible
+en todo entorno donde corre la suite (no viene con la biblioteca estandar
+compilada de muchas imagenes de servidor, y `ttkbootstrap` depende de el). Un
+test que importara el modulo se SALTARIA justo donde mas falta hace: en la
+integracion continua sin escritorio.
+
+Lo que estos tests comprueban NO necesita ejecutar la GUI. Son propiedades del
+CODIGO -- que orden tienen los brazos de un `except`, que la traduccion de
+banderas no este escrita dos veces --, y esas se leen del AST con la misma
+tecnica que ya usa `tests/test_sin_literales.py`. Es la unica forma de que
+esta guardia corra SIEMPRE.
+
+Los hallazgos que cierra
+------------------------
+    SIS-F-01  (PARCIAL, y conviene decir hasta donde). Los tests de este
+              bloque NO ejecutan ninguna de las ~590 sentencias de gui/app.py:
+              leen el arbol. Lo que cierran es que los brazos de except no
+              vuelvan a la forma de SIS-E-01 / SIS-E-03. La parte EJECUTABLE
+              -- las tres reimplementaciones que la ficha nombra -- se cubre
+              en el bloque de mas abajo, que SI importa el modulo con un doble
+              de tkinter y llama a la logica pura. El codigo que construye
+              widgets sigue sin ejecutarse, y probarlo con un doble seria un
+              espejismo: lo que se veria correr no es lo que corre en pantalla.
+    SIS-E-01  el manejador de EJECUTAR capturaba (OSError, ValueError) ANTES
+              del brazo con traza: un ValueError nacido en el pipeline -- la
+              forma mas comun de un fallo de programa -- se mostraba como
+              "No se pudo leer la entrada", que manda al proyectista a revisar
+              su CSV. La CLI usaba el brazo estrecho correcto.
+    SIS-E-03  los tres exportadores capturaban `Exception` sin traza, mientras
+              el patron hermano de `ejecutar_pipeline` si la imprime.
+    SIS-A-17  la GUI no exponia `--alcance`: corria SIEMPRE "expediente" y
+              `memoria_perfil.html` era inalcanzable desde la interfaz. El
+              bloque nuevo comprueba que el selector existe, que llega a
+              `cli.correr` y que la plantilla se elige con la MISMA funcion que
+              usa `cli.main`.
+    SIS-A-18  la sesion JSON no guardaba ni restauraba los criterios
+              declarados. El bloque nuevo comprueba las dos mitades, y ademas
+              que la restauracion pase por la guardia.
+    SIS-A-01  cerrado en S2 y comprobado aqui DE PUNTA A PUNTA por primera
+              vez: un valor declarado desde la ventana emergente aparece en la
+              memoria HTML marcado como declarado para la corrida, y con la
+              procedencia --- fila, tabla, cita, alternativas --- que la regla
+              R1 del plan v12 exige.
+
+El arbol de la ventana emergente
+--------------------------------
+`gui/ventana_normativa.py` entra en los mismos barridos de AST que
+`gui/app.py`: un manejador desnudo o un `except BaseException` en la ventana
+nueva seria el mismo defecto en otro archivo. Lo que la ventana MUESTRA no se
+prueba aqui sino en `tests/test_ventana_normativa.py`, que lo compara campo a
+campo sin escritorio; aqui solo se comprueba lo que es propio de la pantalla:
+que recorra el orden visual que el plan declara.
+"""
+
+import ast
+import re
+from pathlib import Path
+
+import pytest
+
+import cli
+
+RAIZ = Path(__file__).resolve().parents[1]
+GUI = RAIZ / "gui" / "app.py"
+CLI = RAIZ / "cli.py"
+
+VENTANA = RAIZ / "gui" / "ventana_normativa.py"
+COMPONENTES = RAIZ / "gui" / "componentes.py"
+
+ARBOL_GUI = ast.parse(GUI.read_text(encoding="utf-8-sig"), filename="app.py")
+ARBOL_CLI = ast.parse(CLI.read_text(encoding="utf-8-sig"), filename="cli.py")
+ARBOL_VENTANA = ast.parse(VENTANA.read_text(encoding="utf-8-sig"),
+                          filename="ventana_normativa.py")
+ARBOL_COMPONENTES = ast.parse(COMPONENTES.read_text(encoding="utf-8-sig"),
+                              filename="componentes.py")
+EXPORTACION_PDF = RAIZ / "gui" / "exportacion_pdf.py"
+ARBOL_EXPORTACION = ast.parse(EXPORTACION_PDF.read_text(encoding="utf-8-sig"),
+                              filename="exportacion_pdf.py")
+EDITORES = RAIZ / "gui" / "editores.py"
+ARBOL_EDITORES = ast.parse(EDITORES.read_text(encoding="utf-8-sig"),
+                           filename="editores.py")
+
+ARBOLES_DE_LA_GUI = {
+    "gui/app.py": ARBOL_GUI,
+    "gui/ventana_normativa.py": ARBOL_VENTANA,
+    "gui/componentes.py": ARBOL_COMPONENTES,
+    # EXT-8: el subproceso del PDF, sin Tk pero capa de presentacion.
+    "gui/exportacion_pdf.py": ARBOL_EXPORTACION,
+    # E-B (E10): los editores tipados de la pestaña 2.
+    "gui/editores.py": ARBOL_EDITORES,
+}
+
+
+# ---------------------------------------------------------------------------
+# Lectura del arbol
+# ---------------------------------------------------------------------------
+
+def _funcion(arbol, nombre):
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)) and nodo.name == nombre:
+            return nodo
+    raise AssertionError(f"'{nombre}' ya no existe: el test quedo obsoleto")
+
+
+def _nombre_de_tipo(nodo):
+    if isinstance(nodo, ast.Name):
+        return nodo.id
+    if isinstance(nodo, ast.Attribute):
+        return nodo.attr
+    return None
+
+
+def _brazos(funcion):
+    """[(tuple de tipos capturados, nodo del handler), ...] en orden."""
+    brazos = []
+    for nodo in ast.walk(funcion):
+        if not isinstance(nodo, ast.Try):
+            continue
+        for manejador in nodo.handlers:
+            tipo = manejador.type
+            if tipo is None:
+                capturados = ("<desnudo>",)
+            elif isinstance(tipo, ast.Tuple):
+                capturados = tuple(_nombre_de_tipo(e) for e in tipo.elts)
+            else:
+                capturados = (_nombre_de_tipo(tipo),)
+            brazos.append((capturados, manejador))
+    return brazos
+
+
+def _llama_a(nodo, nombre):
+    """
+    La llamada tiene que ser una SENTENCIA DEL CUERPO del brazo, no un
+    descendiente cualquiera: una `traceback.print_exc()` metida bajo un
+    `if False:` no imprime ninguna traza y dejaba el test en verde.
+    """
+    for sentencia in getattr(nodo, "body", []):
+        if (isinstance(sentencia, ast.Expr)
+                and isinstance(sentencia.value, ast.Call)
+                and _nombre_de_tipo(sentencia.value.func) == nombre):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# SIS-E-01 - el orden de los brazos de EJECUTAR
+# ---------------------------------------------------------------------------
+
+def test_el_brazo_de_entrada_de_la_gui_no_captura_ValueError():
+    """
+    Un ValueError nacido dentro del pipeline es un fallo de PROGRAMA. Si el
+    primer brazo lo captura, el proyectista lee "No se pudo leer la entrada"
+    -- y el brazo que imprime la traza no llega a ejecutarse nunca.
+    """
+    brazos = _brazos(_funcion(ARBOL_GUI, "ejecutar_pipeline"))
+    culpables = [capturados for capturados, _ in brazos
+                 if "ValueError" in capturados]
+    assert not culpables, (
+        f"ejecutar_pipeline vuelve a capturar ValueError en {culpables}: un "
+        "fallo de programa se presentaria como problema del expediente. Da "
+        "igual si el brazo es el primero o esta en un try ANIDADO -- mirar "
+        "solo brazos[0] protegia una posicion del recorrido, no la propiedad")
+
+
+def test_los_brazos_de_la_gui_y_de_la_cli_leen_la_entrada_igual():
+    """
+    Las dos puertas del mismo pipeline tienen que fallar igual: la asimetria
+    entre ellas es lo que delato SIS-E-01, igual que la de `isfinite` delato
+    MAT-D14.
+    """
+    de_la_gui = _brazos(_funcion(ARBOL_GUI, "ejecutar_pipeline"))[0][0]
+    de_la_cli = [caps for caps, _ in _brazos(_funcion(ARBOL_CLI, "main"))
+                 if "OSError" in caps]
+    assert de_la_cli, "la CLI dejo de tener su brazo de lectura de entrada"
+    assert set(de_la_gui) == set(de_la_cli[0]), (
+        f"la GUI captura {de_la_gui} y la CLI {de_la_cli[0]}: la misma "
+        "entrada tiene que fallar igual por las dos puertas")
+
+
+# El brazo de lectura de entrada, en TODAS las funciones que abren un archivo
+# que el proyectista elige. Comparar solo `brazos[0]` de `ejecutar_pipeline`
+# --- como hacia la primera version de este archivo --- dejaba fuera la otra
+# puerta que abre un archivo del usuario, `cargar_sesion`, que capturaba
+# `(OSError, JSONDecodeError)` SIN `UnicodeDecodeError`: el mismo JSON en ANSI
+# que `ejecutar_pipeline` explica por escrito estrellaba la ventana dos
+# funciones mas abajo.
+PUERTAS_QUE_LEEN_UN_ARCHIVO = ("ejecutar_pipeline", "cargar_sesion")
+
+
+@pytest.mark.parametrize("nombre", PUERTAS_QUE_LEEN_UN_ARCHIVO)
+def test_toda_puerta_que_lee_un_archivo_atrapa_el_error_de_codificacion(nombre):
+    """
+    `UnicodeDecodeError` es subclase de `ValueError`, no de `OSError` ni de
+    `JSONDecodeError`: un brazo escrito como `(OSError, JSONDecodeError)` no
+    lo ve, y un archivo guardado en ANSI sale como traza en vez de como
+    "el archivo no esta en UTF-8".
+    """
+    brazos = _brazos(_funcion(ARBOL_GUI, nombre))
+    lectura = [caps for caps, _ in brazos if "OSError" in caps]
+    assert lectura, f"'{nombre}' dejo de tener brazo de lectura de entrada"
+    assert "UnicodeDecodeError" in lectura[0], (
+        f"'{nombre}' captura {lectura[0]} y le falta UnicodeDecodeError")
+
+
+def test_la_divergencia_de_la_gui_con_la_cli_es_solo_el_brazo_de_programa():
+    """
+    La GUI tiene un brazo que la CLI no tiene, y es DELIBERADO: una ventana no
+    se puede caer con una traza en la consola que nadie mira, de modo que
+    `ejecutar_pipeline` termina en `except Exception` + `traceback.print_exc()`.
+    La CLI no lo necesita porque ahi la traza SI es la salida.
+
+    El test fija esa divergencia para que no crezca: cualquier OTRA diferencia
+    entre las dos puertas es la asimetria que SIS-E-01 denuncia. La primera
+    version comparaba solo el primer brazo y por eso no habria visto una
+    segunda divergencia aparecer.
+    """
+    gui = [set(caps) for caps, _ in _brazos(_funcion(ARBOL_GUI, "ejecutar_pipeline"))]
+    cli_ = [set(caps) for caps, _ in _brazos(_funcion(ARBOL_CLI, "main"))]
+    solo_en_la_gui = [b for b in gui if b not in cli_]
+    assert solo_en_la_gui == [{"Exception"}], (
+        f"la GUI tiene brazos que la CLI no: {solo_en_la_gui}. El unico "
+        "admitido es {'Exception'}, el que imprime la traza en vez de dejar "
+        "caer la ventana; cualquier otro es la asimetria de SIS-E-01.")
+
+
+def test_el_brazo_de_expediente_va_antes_del_de_programa():
+    """
+    `ErrorProyecto` tiene que capturarse ANTES que `Exception`: al reves, un
+    problema del expediente saldria con traza como si fuera un defecto del
+    programa, que es la distincion entera que CLAUDE.md pide a la taxonomia.
+    """
+    brazos = [caps for caps, _ in _brazos(_funcion(ARBOL_GUI, "ejecutar_pipeline"))]
+    posicion = {}
+    for indice, capturados in enumerate(brazos):
+        for tipo in capturados:
+            posicion.setdefault(tipo, indice)
+    assert "ErrorProyecto" in posicion, "el brazo del expediente desaparecio"
+    assert "Exception" in posicion, "el brazo con traza desaparecio"
+    assert posicion["ErrorProyecto"] < posicion["Exception"]
+
+
+def test_el_brazo_ancho_de_ejecutar_imprime_la_traza():
+    for capturados, manejador in _brazos(_funcion(ARBOL_GUI, "ejecutar_pipeline")):
+        if "Exception" in capturados:
+            assert _llama_a(manejador, "print_exc"), (
+                "el brazo de Exception dejo de imprimir la traza")
+            return
+    raise AssertionError("no hay brazo de Exception en ejecutar_pipeline")
+
+
+# ---------------------------------------------------------------------------
+# SIS-E-03 - los tres exportadores
+# ---------------------------------------------------------------------------
+
+# Son CUATRO botones de exportacion, no tres. `exportar_json` comparte
+# pestana con los otros y su cuerpo llama a `cli.informe_json` y a
+# `json.dumps(..., allow_nan=False)`: dejarlo fuera de la tupla congelaba la
+# omision, y con un ErrorProyecto o un NaN el usuario no veia NADA.
+# Y SEIS desde UI-2: las dos vistas de la memoria resumida (ficha T12-04).
+EXPORTADORES = ("exportar_html", "exportar_pdf", "exportar_csv",
+                "exportar_json", "exportar_html_resumida",
+                "exportar_pdf_resumida")
+
+
+@pytest.mark.parametrize("nombre", EXPORTADORES)
+def test_cada_exportador_imprime_la_traza_del_fallo_inesperado(nombre):
+    """
+    SIS-E-03: los tres capturaban `Exception` a secas y mostraban el tipo y el
+    mensaje, sin traza. Un fallo dentro de weasyprint o de la plantilla salia
+    como una linea sin ninguna pista de donde ocurrio, mientras el patron
+    hermano de `ejecutar_pipeline`, tres pantallas mas arriba, si la imprime.
+    """
+    anchos = [(caps, man) for caps, man in _brazos(_funcion(ARBOL_GUI, nombre))
+              if "Exception" in caps or "<desnudo>" in caps]
+    assert anchos, f"'{nombre}' ya no tiene brazo ancho: revisa este test"
+    for _, manejador in anchos:
+        assert _llama_a(manejador, "print_exc"), (
+            f"'{nombre}' captura Exception sin imprimir la traza")
+
+
+@pytest.mark.parametrize("nombre", EXPORTADORES)
+def test_cada_exportador_separa_el_fallo_del_expediente(nombre):
+    """
+    Un `ErrorProyecto` al exportar -- un criterio que faltaba y que la memoria
+    necesita -- lo corrige el proyectista y no lleva traza. El brazo estrecho
+    tiene que existir y venir primero.
+    """
+    brazos = [caps for caps, _ in _brazos(_funcion(ARBOL_GUI, nombre))]
+    estrechos = [i for i, caps in enumerate(brazos) if "ErrorProyecto" in caps]
+    anchos = [i for i, caps in enumerate(brazos) if "Exception" in caps]
+    assert estrechos, f"'{nombre}' no distingue el fallo del expediente"
+    assert anchos, f"'{nombre}' no tiene brazo con traza"
+    assert min(estrechos) < min(anchos)
+
+
+# ---------------------------------------------------------------------------
+# La GUI no puede volver a quedarse sin ninguna guardia
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("archivo", sorted(ARBOLES_DE_LA_GUI))
+def test_ningun_manejador_de_la_gui_captura_sin_nombrar_la_excepcion(archivo):
+    """
+    Un `except:` desnudo -- y un `except BaseException`, que hace lo mismo con
+    otro nombre -- se tragan hasta un KeyboardInterrupt: el usuario pulsa
+    Ctrl-C y la ventana se lo come.
+
+    Se barren los TRES archivos de la GUI y no solo `app.py`: el defecto no es
+    de un archivo, es de la capa, y la ventana emergente nacio despues de que
+    este test se escribiera.
+    """
+    culpables = [(nodo.lineno, _nombre_de_tipo(nodo.type) or "<desnudo>")
+                 for nodo in ast.walk(ARBOLES_DE_LA_GUI[archivo])
+                 if isinstance(nodo, ast.ExceptHandler)
+                 and (nodo.type is None
+                      or _nombre_de_tipo(nodo.type) == "BaseException")]
+    assert not culpables, f"manejador que se traga todo en {archivo}: {culpables}"
+
+
+# ---------------------------------------------------------------------------
+# SIS-A-17 - el alcance de la corrida, expuesto
+# ---------------------------------------------------------------------------
+
+def _llamadas(arbol, nombre_func):
+    """Las llamadas cuyo callable se escribe exactamente `nombre_func`."""
+    return [nodo for nodo in ast.walk(arbol)
+            if isinstance(nodo, ast.Call)
+            and ast.unparse(nodo.func) == nombre_func]
+
+
+def test_la_gui_le_pasa_el_alcance_a_correr():
+    """
+    SIS-A-17. `cli.correr` acepta `alcance` desde hace tiempo y la ventana lo
+    llamaba sin el, de modo que TODA corrida de la GUI era de expediente.
+    """
+    llamadas = _llamadas(ARBOL_GUI, "cli.correr")
+    assert llamadas, "la GUI dejo de llamar a cli.correr"
+    for llamada in llamadas:
+        claves = {kw.arg for kw in llamada.keywords}
+        assert "alcance" in claves, (
+            "cli.correr sin `alcance`: la ventana volveria a correr siempre "
+            "en expediente")
+
+
+def test_la_gui_ofrece_los_dos_alcances_que_la_cli_acepta():
+    """
+    Ni uno mas ni uno menos: los valores del selector salen de las constantes
+    de `cli.py`, no de dos cadenas escritas otra vez. Dos listas de alcances
+    que puedan divergir son dos programas.
+    """
+    nombrados = {ast.unparse(nodo) for nodo in ast.walk(ARBOL_GUI)
+                 if isinstance(nodo, ast.Attribute)
+                 and nodo.attr in ("ALCANCE_PERFIL", "ALCANCE_EXPEDIENTE")}
+    assert nombrados == {"cli.ALCANCE_PERFIL", "cli.ALCANCE_EXPEDIENTE"}, (
+        f"la GUI nombra {nombrados}: los alcances salen de cli.py, no de dos "
+        "cadenas escritas otra vez")
+    radios = _llamadas(ARBOL_GUI, "ttk.Radiobutton")
+    assert radios, "el selector de alcance desaparecio"
+    for radio in radios:
+        atadas = {ast.unparse(kw.value) for kw in radio.keywords
+                  if kw.arg == "variable"}
+        assert atadas == {"self.alcance_var"}, atadas
+
+
+def test_la_gui_elige_la_plantilla_con_la_misma_funcion_que_la_cli():
+    """
+    `plantilla_por_alcance` es la regla, y tiene que haber UNA. Con la GUI
+    eligiendo por su cuenta, la misma corrida daria dos memorias distintas
+    segun por que puerta se exportara.
+    """
+    assert _llamadas(ARBOL_GUI, "cli.plantilla_por_alcance"), (
+        "la GUI elige la plantilla por su cuenta")
+    assert _llamadas(ARBOL_CLI, "plantilla_por_alcance"), (
+        "cli.main dejo de usar plantilla_por_alcance: el test quedo obsoleto")
+
+
+def test_los_dos_exportadores_de_memoria_pasan_la_plantilla():
+    """
+    HTML y PDF. Solo uno de los dos habria dejado la memoria de perfil
+    inalcanzable por la mitad, que es peor que no tenerla.
+    """
+    for nombre, funcion_cli in (("exportar_html", "cli.exportar_html"),
+                                ("exportar_pdf", "cli.exportar_pdf")):
+        llamadas = _llamadas(ARBOL_GUI, funcion_cli)
+        assert llamadas, f"la GUI dejo de llamar a {funcion_cli}"
+        for llamada in llamadas:
+            claves = {kw.arg for kw in llamada.keywords}
+            assert "ruta_plantilla" in claves, nombre
+
+
+# ---------------------------------------------------------------------------
+# SIS-A-18 - la sesion guarda lo que se decidio, no solo donde estaba
+# ---------------------------------------------------------------------------
+
+def _dict_de_sesion():
+    """
+    El diccionario de la sesion, leido del arbol. Desde EXT-8 lo arma
+    `_datos_de_sesion` --- lo comparten «Guardar sesion» y el subproceso del
+    PDF --- y `guardar_sesion` lo llama.
+    """
+    funcion = _funcion(ARBOL_GUI, "_datos_de_sesion")
+    for nodo in ast.walk(funcion):
+        if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
+                and isinstance(nodo.targets[0], ast.Name)
+                and nodo.targets[0].id == "data"
+                and isinstance(nodo.value, ast.Dict)):
+            return {clave.value for clave in nodo.value.keys
+                    if isinstance(clave, ast.Constant)}
+    raise AssertionError("_datos_de_sesion dejo de armar el dict `data`")
+
+
+def test_la_sesion_guarda_los_criterios_y_el_alcance():
+    """
+    SIS-A-18. Sin estas dos claves, una sesion describia DONDE estaba el
+    expediente y no QUE se habia decidido sobre el, que es la parte que cuesta
+    rehacer.
+    """
+    claves = _dict_de_sesion()
+    assert "criterios" in claves
+    assert "alcance" in claves
+
+
+def test_la_sesion_restaura_por_el_camino_con_guardia():
+    """
+    Un JSON de sesion es un archivo que alguien pudo editar a mano. Se repone
+    por `declaracion.restaurar_sesion`, que declara con
+    `establecer_valor_dinamico`; meterlo en `_OVERRIDES` a mano convertiria el
+    formato de sesion en la puerta de atras que este proyecto no tiene.
+    """
+    assert _llamadas(ARBOL_GUI, "dec.restaurar_sesion"), (
+        "la GUI restaura los criterios por otro camino")
+    assert _llamadas(ARBOL_GUI, "dec.estado_de_sesion"), (
+        "la GUI arma el bloque de criterios por su cuenta")
+
+
+def test_la_version_del_formato_de_sesion_subio():
+    """
+    El patron de `legacy/Tc.py`: una sesion vieja se sigue leyendo y se avisa
+    de lo que no traia. Sin subir la version, el aviso no se puede dar.
+    """
+    # Desde EXT-8 la version vive en `src/sesion.py` (la CLI la lee tambien)
+    # y la GUI la reexporta con el mismo nombre.
+    import re
+    from src import sesion
+    arbol_sesion = ast.parse((RAIZ / "src" / "sesion.py").read_text(encoding="utf-8-sig"))
+    declaradas = [n.value.value for n in arbol_sesion.body if isinstance(n, ast.Assign)
+                  and any(getattr(t, "id", "") == "FORMATO_SESION" for t in n.targets)
+                  and isinstance(n.value, ast.Constant)]
+    assert declaradas, "src/sesion.py dejo de declarar FORMATO_SESION como constante"
+    assert declaradas[0] == sesion.FORMATO_SESION
+    assert sesion.FORMATO_SESION >= 2
+
+
+# ---------------------------------------------------------------------------
+# La ventana emergente: lo unico suyo que es de pantalla
+# ---------------------------------------------------------------------------
+
+def test_la_ventana_recorre_el_orden_visual_declarado():
+    """
+    El orden de la Sec. 4.2/4.3 esta declarado como DATO en
+    `ventana_normativa.ORDEN_VISUAL_TABLA`, y la ventana lo RECORRE en vez de
+    llamar a siete metodos en fila. Cambiar el orden obliga a cambiar el dato,
+    que es donde el test lo mira.
+    """
+    funcion = _funcion(ARBOL_VENTANA, "_pintar_tabla")
+    fuente = ast.unparse(funcion)
+    assert "orden_visual" in fuente, (
+        "la ventana dejo de recorrer el orden declarado")
+
+
+def test_la_ventana_tiene_un_metodo_por_bloque_del_orden_visual():
+    """
+    El recorrido llama a `_bloque_<nombre>`: si falta uno, la ventana revienta
+    al abrirse en vez de pintar de menos en silencio. El test lo adelanta.
+    """
+    from src import ventana_normativa as vn_src
+
+    metodos = {nodo.name for nodo in ast.walk(ARBOL_VENTANA)
+               if isinstance(nodo, ast.FunctionDef)}
+    for bloque in vn_src.ORDEN_VISUAL_TABLA:
+        assert f"_bloque_{bloque}" in metodos, bloque
+
+
+def test_la_ventana_declara_por_el_modulo_de_declaracion_y_no_por_su_cuenta():
+    """
+    La ventana pinta; declarar es de `declaracion.py`, que es quien pasa por
+    la guardia. Una llamada directa a `establecer_valor_dinamico` desde el
+    widget saltaria el registro de procedencia --- el valor entraria bien y la
+    memoria no podria decir de donde salio.
+    """
+    llamadas = {ast.unparse(nodo.func) for nodo in ast.walk(ARBOL_VENTANA)
+                if isinstance(nodo, ast.Call)}
+    assert {"dec.declarar_desde_tabla", "dec.declarar_en_rango",
+            "dec.declarar_valor"} <= llamadas
+    # Sobre el ARBOL y no sobre el texto (SIS-C-01/SIS-C-02): buscar la cadena
+    # la encontraria dentro del docstring que explica por que NO se llama, y
+    # el test quedaria rojo sobre un comentario --- el reverso exacto del
+    # `FACTOR_MURO_TABLA` que estuvo verde sobre uno.
+    culpables = [nombre for nombre in llamadas
+                 if nombre.endswith("establecer_valor_dinamico")]
+    assert not culpables, (
+        f"la ventana llama a {culpables}: declararia saltandose el registro "
+        "de procedencia, y la memoria no podria decir de donde salio el valor")
+
+
+# ---------------------------------------------------------------------------
+# La traza de procedencia de la pestana 3 (G4): src/ produce, gui/ pinta
+# ---------------------------------------------------------------------------
+
+def test_la_pestana_3_ofrece_la_traza_de_procedencia():
+    """
+    El boton «¿De donde sale este numero?» existe en la pestana 3 y su
+    `command` es el manejador de la traza. Sobre el ARBOL, no sobre el texto:
+    la cadena aparece tambien en docstrings.
+    """
+    funcion = _funcion(ARBOL_GUI, "_construir_tab_puntos")
+    botones = [n for n in ast.walk(funcion)
+               if isinstance(n, ast.Call)
+               and _nombre_de_tipo(n.func) == "BotonAccion"]
+    con_texto = [b for b in botones if any(
+        isinstance(a, ast.Constant) and isinstance(a.value, str)
+        and "De donde sale este numero" in a.value for a in b.args)]
+    assert con_texto, "la pestana 3 ya no ofrece la traza de procedencia"
+    comandos = {kw.value.attr for b in con_texto for kw in b.keywords
+                if kw.arg == "command" and isinstance(kw.value, ast.Attribute)}
+    assert comandos == {"_abrir_traza_punto"}
+
+
+def test_la_traza_la_produce_traza_punto_y_la_gui_solo_pinta():
+    """
+    El mismo reparto que la ventana normativa, comprobado por las dos caras:
+    el manejador CONSUME `traza_punto.traza_del_punto`, y de ese modulo la
+    GUI solo usa lo pintable --- la funcion, los tres registros y el titulo
+    del hueco ---. Si la GUI necesitara mas (una cita, un fundamento, una
+    discrepancia), el sitio donde añadirlo es `src/traza_punto.py`.
+    """
+    abrir = _funcion(ARBOL_GUI, "_abrir_traza_punto")
+    llamadas = [n for n in ast.walk(abrir)
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "traza_del_punto"
+                and isinstance(n.func.value, ast.Name)
+                and n.func.value.id == "tp"]
+    assert llamadas, ("el manejador ya no consume la capa de contenido: la "
+                      "GUI estaria componiendo la traza por su cuenta")
+
+    usos = {n.attr for n in ast.walk(ARBOL_GUI)
+            if isinstance(n, ast.Attribute)
+            and isinstance(n.value, ast.Name) and n.value.id == "tp"}
+    permitidos = {"traza_del_punto", "REGISTRO_FUENTE",
+                  "REGISTRO_INTERPRETACION", "REGISTRO_PROYECTO",
+                  "TITULO_HUECO"}
+    assert usos <= permitidos, (
+        f"gui/app.py usa de traza_punto mas que lo pintable: "
+        f"{sorted(usos - permitidos)}")
+
+
+def test_la_gui_pinta_los_tres_registros_separados_y_no_lee_normativa():
+    """
+    NOR-HID-04 en la pantalla: los tres registros tipograficos de la §4.4 se
+    pintan con estilos DISTINTOS --- el pintor configura un tag por cada uno
+    --- y la GUI no importa `normativa` por su cuenta: todo lo que afirma
+    sobre una norma le llega ya elegido por la capa de contenido.
+    """
+    pintor = _funcion(ARBOL_GUI, "_pintar_traza")
+    registros = {n.attr for n in ast.walk(pintor)
+                 if isinstance(n, ast.Attribute)
+                 and isinstance(n.value, ast.Name) and n.value.id == "tp"
+                 and n.attr.startswith("REGISTRO_")}
+    assert registros == {"REGISTRO_FUENTE", "REGISTRO_INTERPRETACION",
+                         "REGISTRO_PROYECTO"}, (
+        "el pintor dejo de dar estilo propio a cada registro: pegados, los "
+        "tres se leen como norma (NOR-HID-04)")
+
+    # Por PARTES del nombre y no por la primera: desde EXT-9 el registro se
+    # importa como `src.normativa`, y mirar solo `split(".")[0]` dejaria la
+    # guardia vacua.
+    for nodo in ast.walk(ARBOL_GUI):
+        if isinstance(nodo, ast.Import):
+            assert not any("normativa" in a.name.split(".")
+                           for a in nodo.names)
+        if isinstance(nodo, ast.ImportFrom):
+            assert "normativa" not in (nodo.module or "").split(".")
+            assert not any(a.name == "normativa" for a in nodo.names)
+
+
+def test_la_ventana_declara_la_conciencia_de_dpi_antes_de_crear_el_tk():
+    """
+    Bloque 1b del rediseño visual. Medido en Windows: el titulo de la
+    ventana salia nitido y el contenido borroso, que es la firma de un
+    proceso sin conciencia de DPI estirado por el escalado de pantalla. La
+    declaracion vale solo si llega ANTES del primer `Tk`; este test fija el
+    orden en `main` sobre el arbol, y que fuera de Windows la funcion no
+    toca nada.
+    """
+    import sys
+
+    cuerpo = ast.unparse(_funcion(ARBOL_GUI, "main"))
+    assert "declarar_conciencia_de_dpi" in cuerpo, (
+        "`main` dejo de declarar la conciencia de DPI")
+    assert cuerpo.index("declarar_conciencia_de_dpi") < cuerpo.index("Window("), (
+        "la conciencia de DPI se declara DESPUES de crear la ventana: "
+        "Windows la ignora y el contenido vuelve a salir borroso")
+
+    from tests.apoyo.doble_tkinter import gui_componentes
+    comp = gui_componentes()
+    if sys.platform != "win32":
+        assert comp.declarar_conciencia_de_dpi() == comp.DPI_NO_APLICA
+    else:
+        assert comp.declarar_conciencia_de_dpi() in {
+            comp.DPI_POR_MONITOR_V2, comp.DPI_POR_MONITOR,
+            comp.DPI_DEL_SISTEMA, comp.DPI_NO_DECLARADA}
+
+
+def test_la_navegacion_lateral_conmuta_el_notebook_y_no_lleva_paso_propio():
+    """
+    Bloque 3 del rediseño visual, la enmienda a «Notebook por pestañas» de
+    CLAUDE.md: la ventana construye `NavegacionLateral` SOBRE `self.nb`, el
+    Notebook lleva el estilo que retira la tira de pestañas, y la columna no
+    guarda ningun indice propio: lee el activo del Notebook y cambia de vista
+    por `select`. Sobre el arbol; lo real lo mide el smoke de ventana.
+    """
+    crear = _funcion(ARBOL_GUI, "_crear_interfaz")
+    navegaciones = [n for n in ast.walk(crear) if isinstance(n, ast.Call)
+                    and _nombre_de_tipo(n.func) == "NavegacionLateral"]
+    assert len(navegaciones) == 1, "la ventana dejo de construir la navegacion lateral"
+    args = [ast.unparse(a) for a in navegaciones[0].args]
+    assert "self.nb" in args, "la navegacion no conmuta el Notebook de la ventana"
+    assert any("VISTAS" in a for a in args), (
+        "los rotulos de la navegacion tienen que salir de VISTAS, como las cabeceras")
+    notebooks = [n for n in ast.walk(crear) if isinstance(n, ast.Call)
+                 and _nombre_de_tipo(n.func) == "Notebook"]
+    estilos = {kw.value.value for n in notebooks for kw in n.keywords
+               if kw.arg == "style" and isinstance(kw.value, ast.Constant)}
+    assert estilos == {"Lateral.TNotebook"}, estilos
+
+    clase = next(n for n in ast.walk(ARBOL_COMPONENTES)
+                 if isinstance(n, ast.ClassDef) and n.name == "NavegacionLateral")
+    metodos = {n.name for n in clase.body if isinstance(n, ast.FunctionDef)}
+    assert {"ir", "activo", "refrescar"} <= metodos
+    activo = ast.unparse(next(n for n in clase.body
+                              if isinstance(n, ast.FunctionDef) and n.name == "activo"))
+    assert 'index("current")' in activo or "index('current')" in activo, (
+        "el paso activo tiene que leerse del Notebook, no de un indice propio")
+    fuente = ast.unparse(clase)
+    assert "<<NotebookTabChanged>>" in fuente, (
+        "la columna no escucha los `select` hechos por fuera de ella")
+
+
+def test_los_componentes_de_la_gui_estan_en_un_solo_sitio():
+    """
+    `CLAUDE.md`: «No reinventar los componentes». `Tooltip` y `MarcoScroll`
+    viven en `gui/componentes.py` y los DOS consumidores los importan de alli.
+    Una copia en cada ventana es como se separan.
+    """
+    definidos = {nodo.name for nodo in ast.walk(ARBOL_COMPONENTES)
+                 if isinstance(nodo, ast.ClassDef)}
+    assert {"Tooltip", "MarcoScroll", "CampoValidable"} <= definidos
+    for arbol, nombre in ((ARBOL_GUI, "gui/app.py"),
+                          (ARBOL_VENTANA, "gui/ventana_normativa.py")):
+        clases = {nodo.name for nodo in ast.walk(arbol)
+                  if isinstance(nodo, ast.ClassDef)}
+        assert not (clases & {"Tooltip", "MarcoScroll"}), (
+            f"{nombre} vuelve a definir un componente que ya es comun")
+
+
+def test_el_campo_validable_valida_al_escribir_y_no_al_calcular():
+    """
+    Sec. 4.3: «Valida al escribir, no al calcular». La traduccion literal de
+    esa frase es un `trace_add` sobre la variable; sin el, el campo solo se
+    revisaria al pulsar el boton, que es el patron de `legacy/Tc.py` y
+    justamente lo que el plan pide cambiar.
+    """
+    # POR AST Y NO POR TEXTO (PC-21): `"trace_add" in read_text()` se ponia
+    # verde sobre el comentario del encabezado de `gui/componentes.py`, que
+    # nombra el `trace_add` para explicarlo. Lo que se afirma es que
+    # `CampoValidable` LO LLAMA.
+    campo = next(n for n in ast.walk(ARBOL_COMPONENTES)
+                 if isinstance(n, ast.ClassDef) and n.name == "CampoValidable")
+    llamadas = [n for n in ast.walk(campo) if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "trace_add"]
+    assert llamadas, "CampoValidable ya no engancha un trace_add a su variable"
+    assert any(isinstance(a, ast.Constant) and a.value == "write"
+               for c in llamadas for a in c.args), (
+        "el trace_add tiene que escuchar la ESCRITURA, que es validar al escribir")
+
+
+# ---------------------------------------------------------------------------
+# La parte EJECUTABLE de SIS-F-01: la logica pura, con un doble de tkinter
+# ---------------------------------------------------------------------------
+# Los tests de arriba leen el arbol. Estos IMPORTAN el modulo y llaman a sus
+# funciones, con un doble de `tkinter` en `sys.modules`. La distincion importa
+# y se declara: probar con un doble la logica PURA -- interpretar un texto,
+# traducir un nombre de bandera -- es honesto, porque esa logica no toca la
+# pantalla; probar con un doble el codigo que CONSTRUYE widgets seria un
+# espejismo, porque lo que se veria correr no es lo que corre. Por eso aqui
+# solo entran las tres reimplementaciones que la ficha SIS-F-01 nombra.
+
+
+def _con_doble_de_tkinter():
+    """Importa gui.app con tkinter sustituido, y devuelve el modulo."""
+    import sys
+    import types
+
+    if "gui.app" in sys.modules:
+        return sys.modules["gui.app"]
+
+    class _Cualquiera:
+        def __init__(self, *a, **k):
+            pass
+
+        def __getattr__(self, nombre):
+            return _Cualquiera()
+
+        def __call__(self, *a, **k):
+            return _Cualquiera()
+
+    def _doble(nombre):
+        modulo = types.ModuleType(nombre)
+        modulo.__getattr__ = lambda n: _Cualquiera
+        return modulo
+
+    for nombre in ("tkinter", "tkinter.filedialog", "tkinter.messagebox",
+                   "tkinter.ttk", "ttkbootstrap", "ttkbootstrap.constants"):
+        sys.modules.setdefault(nombre, _doble(nombre))
+    sys.modules["tkinter"].filedialog = sys.modules["tkinter.filedialog"]
+    sys.modules["tkinter"].messagebox = sys.modules["tkinter.messagebox"]
+    sys.modules["tkinter"].ttk = sys.modules["tkinter.ttk"]
+
+    import gui.app as app
+    return app
+
+
+@pytest.fixture(scope="module")
+def app():
+    return _con_doble_de_tkinter()
+
+
+@pytest.fixture
+def ventana(app):
+    """Una instancia SIN construir widgets: solo para llamar a su logica."""
+    return object.__new__(app.ExpedienteApp)
+
+
+def test_el_campo_de_declaracion_admite_la_coma_decimal(ventana):
+    """Quien teclea en la ventana escribe 1,5 y espera un numero."""
+    from tests.apoyo.aproximacion import REL_TRANSPORTE
+
+    assert ventana._interpretar_valor_declarado("1,5") == pytest.approx(
+        1.5, rel=REL_TRANSPORTE)
+    assert ventana._interpretar_valor_declarado(" 2.5 ") == pytest.approx(
+        2.5, rel=REL_TRANSPORTE)
+
+
+def test_el_campo_de_declaracion_devuelve_el_texto_si_no_es_un_numero(ventana):
+    """Los criterios CATEGORICOS entran por aqui: 'flexible', 'A'..."""
+    assert ventana._interpretar_valor_declarado("flexible") == "flexible"
+    assert ventana._interpretar_valor_declarado(" cota_terreno ") == "cota_terreno"
+
+
+def test_el_campo_vacio_no_declara_nada(ventana):
+    """
+    SIS-E-04: el ValueError es deliberado y no sale de la clase. El test fija
+    que sigue siendo ValueError -- si alguien lo cambia a un ErrorProyecto sin
+    tocar los dos llamadores, el mensaje dejaria de mostrarse en el panel.
+    """
+    with pytest.raises(ValueError, match="no puede quedar vacio"):
+        ventana._interpretar_valor_declarado("   ")
+
+
+def test_la_gui_y_la_cli_divergen_al_interpretar_la_coma_y_esta_declarado(ventana):
+    """
+    LA DIVERGENCIA, FIJADA A PROPOSITO. `cli.declarar_criterios` resuelve el
+    texto con `ast.literal_eval` y leeria '1,5' como la TUPLA (1, 5); la
+    ventana lo lee como 1.5. Unificar por el lado de la CLI convertiria en
+    silencio el numero que el usuario quiso escribir en una tupla valida, que
+    es peor que la duplicacion. El test existe para que la divergencia se vea
+    y se decida, en vez de descubrirse.
+    """
+    import ast as _ast
+
+    assert _ast.literal_eval("1,5") == (1, 5)
+    assert ventana._interpretar_valor_declarado("1,5") != (1, 5)
+    assert "DIVERGE" in ventana._interpretar_valor_declarado.__doc__, (
+        "la divergencia tiene que estar escrita donde vive el codigo")
+
+
+def test_el_tablero_de_puntos_muestra_la_SECCION_y_no_un_diametro(app):
+    """
+    C8, punto 2, en la ventana. La columna decia «D (m)» y leia
+    `resultado.D`, un escalar que en un marco vale la ALTURA: dos marcos de
+    1.20 x 0.90 y 2.00 x 0.90 salian los dos «0.90» en el tablero, o sea la
+    mitad que NO gobierna la capacidad.
+
+    Se mira el codigo fuente y no los widgets porque los widgets aqui son
+    dobles: lo que se vigila es el contrato de columnas, que es lo que la
+    ventana de verdad construye.
+    """
+    import ast
+    import inspect
+    import textwrap
+
+    fuente = inspect.getsource(app.ExpedienteApp._construir_tab_puntos)
+    arbol = ast.parse(textwrap.dedent(fuente))
+    cols = [n for n in ast.walk(arbol)
+            if isinstance(n, ast.Assign)
+            and any(getattr(x, "id", "") == "cols" for x in n.targets)]
+    assert cols, "la tabla de puntos dejo de declarar sus columnas en `cols`"
+    nombres = [e.value for e in cols[0].value.elts]
+    assert "seccion" in nombres
+    assert "D" not in nombres, (
+        "volvio la columna «D» al tablero: en un marco no hay diametro, y "
+        "publicar solo la altura es publicar media geometria")
+
+
+def test_la_ventana_puede_declarar_los_SIETE_criterios_del_cajon(ventana):
+    """
+    C8, punto 6: los criterios de la Familia C se declaran en caliente por la
+    ventana COMO CUALQUIER [A] DE PERFIL, y eso incluye el unico que no es un
+    escalar ni una cadena.
+
+    EL DEFECTO QUE CIERRA. `secciones_cajon_normalizadas` es la serie de pares
+    (B, H) del catalogo del cajon. Con las dos ramas que la funcion tenia
+    --- numero o texto ---, lo tecleado volvia como CADENA, la guardia de
+    `criterios_adoptados` la aceptaba (no valida la forma), y el bucle de MD
+    se detenia despues con un `DatoInvalidoError` correcto y sin salida:
+    la ventana ofrecia el campo y por el campo no cabia el valor. Uno de los
+    siete criterios de la Familia C quedaba fuera de la declaracion en
+    caliente sin que nada lo dijera.
+    """
+    from src import criterios_adoptados as ca_
+
+    tecleado = {
+        "embocadura_cajon": "cajon_concreto_aletas_30_75",
+        "n_manning_cajon": "concreto_afinado",
+        "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+        "espesor_pared_cajon": "0,20",          # con coma, como se teclea
+        "cobertura_minima_cajon": "0.3048",
+        "n_celdas_cajon": "1",
+        "secciones_cajon_normalizadas":
+            "[[1.20, 0.90], [1.50, 1.20], [2.00, 1.50]]",
+    }
+    for clave, texto in tecleado.items():
+        valor = ventana._interpretar_valor_declarado(texto)
+        ca_.establecer_valor_dinamico(clave, valor)
+        try:
+            assert ca_.valor(clave) is not None
+        finally:
+            ca_.quitar_valor_dinamico(clave)
+
+    serie = ventana._interpretar_valor_declarado(
+        "[[1.20, 0.90], [1.50, 1.20], [2.00, 1.50]]")
+    # Solo se TRANSPORTA lo tecleado: la tolerancia es la del transporte.
+    from tests.apoyo.aproximacion import REL_TRANSPORTE
+
+    assert [type(par) for par in serie] == [list, list, list], (
+        "la serie de pares tiene que llegar como pares, no como la cadena que "
+        "el bucle de MD rechaza")
+    assert [x for par in serie for x in par] == pytest.approx(
+        [1.20, 0.90, 1.50, 1.20, 2.00, 1.50], rel=REL_TRANSPORTE)
+
+
+def test_un_literal_estructurado_mal_cerrado_sale_como_rotulo_y_no_como_traza(
+        ventana):
+    """
+    La otra mitad: la rama nueva no puede reventar la ventana. Un corchete sin
+    cerrar es `ValueError`, que es lo que los dos llamadores atrapan tres
+    lineas mas abajo para pintar el rotulo rojo (SIS-E-04).
+    """
+    with pytest.raises(ValueError, match="empieza como una lista"):
+        ventana._interpretar_valor_declarado("[[1.20, 0.90], [1.50")
+
+
+def test_la_rama_estructurada_no_reabre_la_ambiguedad_del_1_coma_5(ventana):
+    """
+    LA GUARDIA DE LA DIVERGENCIA, que es lo que hace admisible la rama nueva.
+
+    La ambiguedad que la divergencia con la CLI protege vive en el texto SIN
+    delimitadores: '1,5' es un decimal para quien teclea y la tupla (1, 5)
+    para `ast.literal_eval`. La rama estructurada solo se toma cuando el texto
+    ABRE con '[', '(' o '{', cosa que ningun decimal escrito con coma hace, de
+    modo que ese caso sigue yendo por la rama del float. Sin este test, la
+    ampliacion de C8 pasaria por una reunificacion con la CLI, que es
+    exactamente lo que el otro test de este archivo prohibe.
+    """
+    from tests.apoyo.aproximacion import REL_TRANSPORTE
+
+    assert ventana._interpretar_valor_declarado("1,5") == pytest.approx(
+        1.5, rel=REL_TRANSPORTE)
+    assert ventana._interpretar_valor_declarado("1,5") != (1, 5)
+    # Y con delimitador SI es una tupla, porque entonces no hay ambiguedad.
+    assert ventana._interpretar_valor_declarado("(1,5)") == (1, 5)
+
+
+def test_la_gui_traduce_las_mismas_banderas_que_la_cli(app, ventana):
+    """
+    SIS-F-01: "la GUI reimplementa la traduccion de banderas". Sigue
+    reimplementandola, y este test impide que las dos listas se separen: las
+    claves que `_leer_banderas` produce tienen que ser EXACTAMENTE las que
+    `cli.main` arma para `cargar_datos_externos`.
+    """
+    class _Var:
+        def __init__(self, texto=""):
+            self._texto = texto
+
+        def get(self):
+            return self._texto
+
+    ventana.externos_vars = {clave: _Var() for clave, *_ in app.CAMPOS_EXTERNOS}
+    banderas = ventana._leer_banderas()
+
+    de_la_cli = _banderas_de_la_cli()
+    assert set(banderas) == de_la_cli, (
+        f"la ventana produce {sorted(banderas)} y la CLI espera "
+        f"{sorted(de_la_cli)}: las dos traducciones se separaron")
+    assert all(valor is None for valor in banderas.values()), (
+        "un campo vacio tiene que traducirse a None, no a cadena vacia")
+
+
+def test_la_gui_pasa_la_coma_decimal_a_punto_salvo_en_la_categoria(app, ventana):
+    """
+    La otra mitad de la traduccion: los campos numericos admiten coma y la
+    categoria de TR es una FILA de la Tabla N 02, no un numero.
+    """
+    class _Var:
+        def __init__(self, texto=""):
+            self._texto = texto
+
+        def get(self):
+            return self._texto
+
+    ventana.externos_vars = {clave: _Var("1,5") for clave, *_ in app.CAMPOS_EXTERNOS}
+    ventana.externos_vars["categoria_tr"] = _Var("quebrada_menor")
+    banderas = ventana._leer_banderas()
+
+    assert banderas["luz_m"] == "1.5"
+    assert banderas["L_hidraulico_m"] == "1.5", (
+        "la clave l_hidraulico se traduce a L_hidraulico_m: es el mapeo a mano "
+        "que SIS-F-01 denuncia y el que se separaria en silencio")
+    assert banderas["categoria_tr"] == "quebrada_menor"
+
+
+def _banderas_de_la_cli():
+    """Las claves del dict que `cli.main` arma, leidas del arbol."""
+    principal = _funcion(ARBOL_CLI, "main")
+    for nodo in ast.walk(principal):
+        if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
+                and isinstance(nodo.targets[0], ast.Name)
+                and nodo.targets[0].id == "banderas"
+                and isinstance(nodo.value, ast.Dict)):
+            return {clave.value for clave in nodo.value.keys
+                    if isinstance(clave, ast.Constant)}
+    raise AssertionError("cli.main dejo de armar el dict `banderas`")
+
+
+# ---------------------------------------------------------------------------
+# De punta a punta: la ventana -> el calculo -> la memoria (SIS-A-01, R1)
+# ---------------------------------------------------------------------------
+# Es el criterio de salida de la sesion, y es el unico test del archivo que
+# corre el pipeline entero. Los demas leen arboles o llaman a logica pura;
+# este comprueba la cadena completa, que es donde SIS-A-01 se rompio: el valor
+# gobernaba los numeros de una pagina que lo declaraba «sin declarar».
+
+
+@pytest.fixture
+def _corrida_limpia():
+    """Deja el estado declarado como lo encontro (ver test_declaracion.py)."""
+    from src import criterios_adoptados as ca
+    from src import declaracion as dec
+
+    dec.limpiar()
+    previos = ca.valores_dinamicos()
+    yield
+    dec.limpiar()
+    for clave in list(ca.valores_dinamicos()):
+        if clave not in previos:
+            ca.quitar_valor_dinamico(clave)
+    for clave, valor in previos.items():
+        ca.establecer_valor_dinamico(clave, valor)
+
+
+def test_un_valor_declarado_desde_la_ventana_aparece_en_la_memoria(_corrida_limpia):
+    """
+    La cadena entera, sin saltarse un eslabon:
+
+      1. la ventana declara `ke_entrada` desde la fila de la Tabla C.2 del
+         HDS-5, por `declaracion.declarar_desde_tabla`;
+      2. el pipeline corre con ese valor;
+      3. la memoria HTML lo imprime marcado como DECLARADO PARA ESTA CORRIDA
+         (SIS-A-01, cerrado en S2 y nunca comprobado de punta a punta), y
+      4. ademas dice DE DONDE salio: la fila, la tabla, la cita y las
+         alternativas descartadas, que es lo que la regla R1 del plan v12
+         exige y lo que `_procedencia` sola no podia dar.
+    """
+    import cli
+    from src import declaracion as dec
+    from src.modulos import M11_reporte as M11
+
+    procedencia = dec.declarar_desde_tabla(
+        "ke_entrada", 0.5, filas=("concreto_headwall_square_edge",))
+
+    externos = cli.cargar_datos_externos(
+        None, {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 14.0,
+               "L_hidraulico_m": None, "categoria_tr": None})
+    informe = cli.correr(RAIZ / "tests" / "ejemplo_puntos.csv", externos)
+    memoria = M11.memoria_html(informe, proyecto="prueba de punta a punta")
+
+    assert "ke_entrada" in memoria, (
+        "el criterio declarado no llego siquiera a invocarse en la corrida: "
+        "sin invocacion no hay nada que comprobar y el test miente")
+    assert "DECLARADO PARA ESTA CORRIDA" in memoria
+    assert "Proviene de" in memoria
+    assert procedencia.tabla_id in memoria
+    assert "concreto_headwall_square_edge" in memoria
+    assert "Alternativas descartadas" in memoria
+    assert procedencia.fecha in memoria
+    assert "LA TABLA ES NORMATIVA; LA ELECCION DE FILA NO LO ES" in memoria
+
+
+def test_la_memoria_no_inventa_procedencia_para_lo_declarado_por_la_cli(_corrida_limpia):
+    """
+    El contrapeso. No toda declaracion en caliente pasa por la ventana:
+    `--declarar` y `conftest` no registran procedencia, y fingir una que nadie
+    registro seria peor que no imprimir ninguna.
+    """
+    import cli
+    from src import criterios_adoptados as ca
+    from src import declaracion as dec
+    from src.modulos import M11_reporte as M11
+
+    ca.establecer_valor_dinamico("ke_entrada", 0.5)
+    assert dec.procedencia_de("ke_entrada") is None
+
+    externos = cli.cargar_datos_externos(
+        None, {"luz_m": 2.0, "TW_m": 0.0, "longitud_m": 14.0,
+               "L_hidraulico_m": None, "categoria_tr": None})
+    informe = cli.correr(RAIZ / "tests" / "ejemplo_puntos.csv", externos)
+    memoria = M11.memoria_html(informe, proyecto="prueba de punta a punta")
+
+    assert "DECLARADO PARA ESTA CORRIDA" in memoria
+    # La ficha de procedencia DE LA VENTANA no aparece: no hubo ventana.
+    assert "Alternativas descartadas" not in memoria
+    assert "LA TABLA ES NORMATIVA; LA ELECCION DE FILA NO LO ES" not in memoria
+    # Lo que SI aparece desde S18 --- y es una garantia nueva, no una fuga ---
+    # es la fila que el ARCHIVO declara en `Criterio.resolucion`: la regla R1
+    # exige que toda eleccion diga de donde sale, y hasta S18 los criterios
+    # transcritos en el archivo (la inmensa mayoria de los que gobiernan una
+    # corrida) se imprimian sin decirlo. Para que eso no se lea como la
+    # procedencia del valor EN VIGOR --- que aqui entro por `--declarar` y no
+    # por ese camino --- va con la advertencia delante, y es la advertencia lo
+    # que este test vigila.
+    assert "concreto_headwall_square_edge" in memoria
+    assert "El valor en vigor NO salio por este camino" in memoria
+
+
+# ---------------------------------------------------------------------------
+# S19 -- lo que la GUI DECIDE, y que hasta aqui no ejercitaba nadie
+# ---------------------------------------------------------------------------
+# Estos tests siguen la misma linea que los de arriba: se prueba lo que la
+# ventana DECIDE, no lo que dibuja. La frontera declarada en SIS-F-01 no se
+# mueve --- el cableado de widgets sigue sin ejecutarse y probarlo con el
+# doble seria un espejismo ---, pero dentro de ella quedaban tres decisiones
+# sin cubrir: el estado con que se rotula cada criterio, la leyenda que
+# explica las etiquetas, y de donde saca la tabla el valor que muestra.
+
+
+def test_el_estado_de_un_criterio_distingue_los_tres_casos(ventana):
+    """
+    `_estado_criterio` es la unica regla de la ventana que decide como se
+    rotula una fila, y de ella salen tambien los colores. Los tres casos son
+    distintos y uno de ellos --- «declarado (corrida)» --- es el que SIS-A-01
+    dejo invisible durante toda la vida del proyecto: un valor que gobernaba
+    el calculo y que la memoria imprimia como sin declarar.
+    """
+    from src import criterios_adoptados as ca
+    from src import declaracion as dec
+
+    pendiente = next(c for c, v in ca.CRITERIOS.items() if v.valor is None)
+    resuelto = next(c for c, v in ca.CRITERIOS.items() if v.valor is not None)
+
+    assert ventana._estado_criterio(pendiente) == ("PENDIENTE", "pendiente")
+    assert ventana._estado_criterio(resuelto) == ("resuelto", "resuelto")
+
+    ca.establecer_valor_dinamico(pendiente, ca.CRITERIOS[resuelto].valor)
+    try:
+        assert ventana._estado_criterio(pendiente) == (
+            "declarado (corrida)", "declarado_corrida")
+    finally:
+        dec.olvidar(pendiente)
+        ca.limpiar_valores_dinamicos()
+
+
+def test_el_estado_de_un_criterio_distingue_PISAR_de_RELLENAR(ventana):
+    """
+    El cuarto estado, y por que no puede ser el mismo que el tercero.
+
+    Declarar en caliente sobre un criterio VACIO rellena un hueco y deja el
+    expediente donde estaba. Declarar sobre uno que YA TIENE valor sustituye
+    una decision transcrita, que sigue en el archivo diciendo otra cosa. Es la
+    diferencia entre tantear y falsear, y si las dos filas se rotularan igual
+    la tabla no la mostraria: exactamente la forma que tuvo SIS-A-01, un valor
+    que gobierna el calculo y que la pantalla describe como otra cosa.
+    """
+    from src import criterios_adoptados as ca
+    from src import declaracion as dec
+
+    # Un pendiente de forma `float` (EXT-5): la puerta exige la forma que la
+    # ficha declara, y 1.0 no es un texto ni una clase de sitio.
+    pendiente = next(c for c, v in ca.CRITERIOS.items()
+                     if v.valor is None and v.forma == ca.FORMA_FLOAT
+                     and v.sensibilidad is None)
+    resuelto = next(c for c, v in ca.CRITERIOS.items()
+                    if isinstance(v.valor, float) and v.sensibilidad is None)
+
+    assert ventana._estado_criterio(resuelto) == ("resuelto", "resuelto")
+
+    ca.establecer_valor_dinamico(pendiente, 1.0)
+    ca.establecer_valor_dinamico(resuelto, ca.CRITERIOS[resuelto].valor * 2)
+    try:
+        assert ventana._estado_criterio(pendiente) == (
+            "declarado (corrida)", "declarado_corrida")
+        assert ventana._estado_criterio(resuelto) == (
+            "pisado (corrida)", "pisado_corrida"), (
+            "pisar un valor del archivo se rotulo igual que rellenar un vacio")
+    finally:
+        dec.olvidar(pendiente)
+        dec.olvidar(resuelto)
+        ca.limpiar_valores_dinamicos()
+
+    # Y al quitarlo, cada uno vuelve a LO SUYO: el vacio a PENDIENTE y el
+    # pisado al valor del archivo. Es el punto que hacia mentir al mensaje de
+    # `_quitar_valor_corrida`.
+    assert ventana._estado_criterio(pendiente) == ("PENDIENTE", "pendiente")
+    assert ventana._estado_criterio(resuelto) == ("resuelto", "resuelto")
+
+
+def test_el_filtro_y_los_colores_cubren_los_cuatro_estados():
+    """
+    Un estado que `_estado_criterio` puede devolver y que la tabla no sabe
+    pintar sale con el color de nadie; uno que el filtro no ofrece es
+    inencontrable entre 69 filas. Los tres conjuntos se derivan del ARBOL y se
+    contrastan, en vez de copiarse a mano en tres sitios.
+    """
+    funcion = _funcion(ARBOL_GUI, "_estado_criterio")
+    devueltos = {n.value.elts[1].value for n in ast.walk(funcion)
+                 if isinstance(n, ast.Return) and isinstance(n.value, ast.Tuple)}
+    assert devueltos == {"pendiente", "declarado_corrida", "pisado_corrida",
+                         "resuelto"}, devueltos
+
+    pintados = {n.args[0].value for n in ast.walk(ARBOL_GUI)
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "tag_configure" and n.args
+                and isinstance(n.args[0], ast.Constant)}
+    assert devueltos <= pintados, (
+        f"estados sin color en la tabla: {sorted(devueltos - pintados)}")
+
+    import gui.app as gapp
+    ofrecidos = {tag for _rotulo, tag in gapp.FILTROS_DE_ESTADO if tag}
+    assert devueltos == ofrecidos, (
+        f"el filtro no ofrece {sorted(devueltos - ofrecidos)} y ofrece de mas "
+        f"{sorted(ofrecidos - devueltos)}")
+
+
+def _leyenda_de_etiquetas() -> str:
+    """El texto de la leyenda de la pestana de Criterios, leido del arbol."""
+    for nodo in ast.walk(ARBOL_GUI):
+        if isinstance(nodo, ast.Constant) and isinstance(nodo.value, str) \
+                and nodo.value.startswith("Etiquetas:"):
+            return nodo.value
+    raise AssertionError("la pestana de Criterios perdio su leyenda de etiquetas")
+
+
+def test_la_leyenda_nombra_exactamente_las_etiquetas_que_el_archivo_puede_tener():
+    """
+    SIS-A-11. La leyenda anunciaba `[N]` --- que este archivo no tiene, y se
+    comia `[S]`, que si ---. No es que el codigo lo impida: `ETIQUETAS_VALIDAS`
+    admite 'N' y `_verificar_criterio` la aceptaria; lo que sostiene la
+    separacion es el guardian
+    `tests/test_criterios_adoptados.py::test_ningun_criterio_adoptado_lleva_ya_la_etiqueta_N`.
+    Anunciar `[N]` invita a leer como norma lo que es adopcion, que es el error
+    que la taxonomia de CLAUDE.md existe para evitar.
+
+    El conjunto esperado NO se transcribe aqui: se DERIVA del archivo. Si
+    manana entra el primer `[N->]` nuevo o desaparece el ultimo `[S]`, este
+    test lo dice en vez de quedarse verde sobre una lista copiada.
+    """
+    from src import criterios_adoptados as ca
+
+    presentes = {c.etiqueta for c in ca.CRITERIOS.values()}
+    leyenda = _leyenda_de_etiquetas()
+    anunciadas = set(re.findall(r"\[([^\]]+)\]", leyenda))
+
+    assert anunciadas == presentes, (
+        f"la leyenda anuncia {sorted(anunciadas)} y el archivo tiene "
+        f"{sorted(presentes)}")
+    assert "N" not in anunciadas, (
+        "la leyenda volvio a anunciar [N], que este archivo no tiene")
+    assert "constantes_normativas.py" in leyenda, (
+        "la leyenda tiene que decir DONDE vive lo normativo, no solo callarlo")
+
+
+def test_la_ventana_principal_no_afirma_reutilizar_el_campo_validable():
+    """
+    SIS-A-12. El encabezado decia reutilizar «MarcoScroll, Tooltip y campo
+    validable» de legacy/Tc.py, y de los tres este archivo usa dos: el campo
+    validable vive en `gui/componentes.CampoValidable` y lo cablean la ventana
+    emergente y, desde E-B, los editores tipados de `gui/editores.py` (E10),
+    que la pestaña 2 monta por forma. `gui/app.py` sigue sin importarlo:
+    lo que importa es el modulo de editores, y el encabezado dice las dos
+    cosas. Quedaba ademas `color_borde_ok`, el color neutro que aquel
+    componente pintaba, calculado y sin lector.
+    """
+    doc = ast.get_docstring(ARBOL_GUI) or ""
+    importados = {alias.name for nodo in ast.walk(ARBOL_GUI)
+                  if isinstance(nodo, ast.ImportFrom)
+                  and (nodo.module or "").endswith("componentes")
+                  for alias in nodo.names}
+    de_gui = {alias.name for nodo in ast.walk(ARBOL_GUI)
+              if isinstance(nodo, ast.ImportFrom) and nodo.module == "gui"
+              for alias in nodo.names}
+
+    assert "CampoValidable" not in importados, (
+        "si gui/app.py pasa a usar CampoValidable, actualiza su encabezado: "
+        "este test existe para que las dos cosas no se separen otra vez")
+    assert "editores" in de_gui, (
+        "la pestaña 2 monta los editores tipados de gui/editores.py (E-B)")
+    assert "campo validable" in doc.lower(), (
+        "el encabezado tiene que seguir diciendo DONDE esta el campo validable")
+    assert "gui/componentes.CampoValidable" in doc, (
+        "el encabezado nombra el componente por su sitio, no de memoria")
+    assert "gui/editores.py" in doc, (
+        "el encabezado dice que los editores tipados son el segundo consumidor")
+
+    asignados = {d.attr for nodo in ast.walk(ARBOL_GUI)
+                 if isinstance(nodo, ast.Assign)
+                 for d in nodo.targets if isinstance(d, ast.Attribute)}
+    assert "color_borde_ok" not in asignados, (
+        "volvio `color_borde_ok`: o lo lee alguien, o no se calcula")
+
+
+def test_la_tabla_de_criterios_muestra_el_valor_efectivo_y_no_lo_recalcula():
+    """
+    SIS-A-01 en su forma de guardia. La tabla tiene que leer el valor por
+    `criterios_adoptados.criterio_efectivo`, que es la MISMA funcion que usan
+    M11 y el JSON. Tres copias de la regla «override si lo hay, archivo si
+    no» son tres sitios donde puede divergir, y esa divergencia fue el
+    hallazgo bloqueante del expediente.
+    """
+    funcion = _funcion(ARBOL_GUI, "_llenar_tabla_criterios")
+
+    # NO BASTA CON QUE LA LLAMADA ESTE: tiene que ser la que ALIMENTA la
+    # columna. La primera version de este test solo buscaba la cadena
+    # `ca.criterio_efectivo` entre las llamadas, y con eso SIS-A-01 se reabria
+    # dejando la llamada en su sitio y leyendo el valor de otro lado --- la
+    # fila quedaba rotulada «declarado (corrida)» y con «(sin declarar)» en la
+    # columna de valor, contradiciendose en pantalla ---. Es el defecto
+    # FACTOR_MURO_TABLA otra vez: verde sobre la mencion del simbolo.
+    #
+    # Se sigue el DATO: que nombre recibe el resultado de
+    # `ca.criterio_efectivo(...).valor`, y que ese nombre entre en el
+    # `values=` del `insert`.
+    def _es_valor_efectivo(nodo):
+        return (isinstance(nodo, ast.Attribute) and nodo.attr == "valor"
+                and isinstance(nodo.value, ast.Call)
+                and isinstance(nodo.value.func, ast.Attribute)
+                and nodo.value.func.attr == "criterio_efectivo")
+
+    nombres = {d.id for n in ast.walk(funcion) if isinstance(n, ast.Assign)
+               and _es_valor_efectivo(n.value)
+               for d in n.targets if isinstance(d, ast.Name)}
+    assert nombres, (
+        "la tabla dejo de leer el valor efectivo por la funcion comun: "
+        "ningun nombre recibe `ca.criterio_efectivo(...).valor`")
+
+    insercion = next(
+        n for n in ast.walk(funcion)
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "insert")
+    valores = next(kw.value for kw in insercion.keywords if kw.arg == "values")
+    usados = {x.id for x in ast.walk(valores) if isinstance(x, ast.Name)}
+    assert nombres & usados, (
+        f"`ca.criterio_efectivo` se llama y su resultado ({sorted(nombres)}) "
+        f"NO entra en la fila ({sorted(usados)}): la tabla estaria mostrando "
+        "otro valor y SIS-A-01 quedaria reabierto")
+
+
+def test_el_encabezado_enumera_las_pestanas_y_exportaciones_que_la_ventana_crea():
+    """
+    SIS-A-10 fue exactamente esto: el encabezado listaba tres pestanas y la
+    aplicacion creaba cuatro, y la que faltaba era la unica que REESCRIBE
+    `criterios_adoptados.py`. Se cerro en S17 a mano; sin guardia, se vuelve a
+    abrir en cuanto alguien anada la quinta.
+
+    Cuenta las cosas en el ARBOL --- los `nb.add(...)` y los metodos
+    `exportar_*` --- y las contrasta con lo que el docstring numera. No compara
+    textos: compara cantidades y nombres de formato, que es lo unico que puede
+    envejecer sin que nadie lo note.
+    """
+    doc = ast.get_docstring(ARBOL_GUI) or ""
+
+    pestanas_en_codigo = sum(
+        1 for n in ast.walk(ARBOL_GUI)
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "add" and isinstance(n.func.value, ast.Attribute)
+        and n.func.value.attr == "nb")
+    numeradas = len(re.findall(r"^\s{4}(\d)\.\s", doc, re.M))
+    assert pestanas_en_codigo == numeradas == 4, (
+        f"el codigo crea {pestanas_en_codigo} pestanas y el encabezado numera "
+        f"{numeradas}")
+    assert "son CUATRO" in doc
+
+    # Desde UI-2 son seis: la memoria resumida en HTML y en PDF (T12-04).
+    exportadores = {n.name.removeprefix("exportar_").upper().replace("_", " ")
+                    for n in ast.walk(ARBOL_GUI)
+                    if isinstance(n, ast.FunctionDef)
+                    and n.name.startswith("exportar_")}
+    assert exportadores == {"JSON", "HTML", "PDF", "CSV", "HTML RESUMIDA",
+                            "PDF RESUMIDA"}
+    linea_export = next(l for l in doc.splitlines() if "exportacion (" in l)
+    assert all(f in linea_export for f in exportadores), (
+        f"el encabezado no nombra todas las exportaciones: {linea_export}")
+
+
+# ---------------------------------------------------------------------------
+# La corrida de PERFIL, DE PUNTA A PUNTA, sobre una ventana de verdad
+# ---------------------------------------------------------------------------
+# Todo lo de arriba prueba la GUI sin construir un solo widget: unos leyendo el
+# arbol, otros con un doble de tkinter. Es lo correcto para lo que prueban, y
+# tiene un limite que la propia ficha SIS-F-01 declara: «el codigo que
+# construye widgets sigue sin ejecutarse».
+#
+# Esto lo ejecuta. Levanta un `Tk` real --- bajo un servidor X virtual, si hace
+# falta ---, construye la ventana entera, rellena los campos como los
+# rellenaria el proyectista, pulsa EJECUTAR y comprueba el informe que sale.
+# Es el criterio de salida de S20 escrito como test: «--alcance perfil corre de
+# punta a punta DESDE LA GUI y produce memoria completa».
+#
+# SE SALTA, NO FALLA, si no hay tkinter o no hay display, por la misma razon
+# por la que los tests de PDF se saltan sin PyMuPDF: `requirements.txt` es lo
+# que hace falta para CALCULAR y la ventana necesita ademas un entorno
+# grafico, que muchas imagenes de servidor no tienen. Saltarlo no deja el
+# hueco sin cubrir: los tests de arriba siguen vigilando el contrato, y este
+# anade la unica comprobacion que ellos no pueden dar.
+
+def _interprete_con_ventana():
+    """
+    Un interprete que pueda levantar un `Tk` DE VERDAD, o None.
+
+    Se prueba en un SUBPROCESO y no aqui, y las dos razones son la misma: este
+    proceso ya tiene dobles de `tkinter` y de `ttkbootstrap` instalados por los
+    tests de arriba --- de modo que importarlos aqui no diria nada --- y crear
+    y destruir un `Tk` en el proceso de pytest deja rastro en el estado global
+    de tkinter.
+
+    Se prueba el interprete de la suite primero. Si no tiene tkinter --- que es
+    lo corriente en una imagen de servidor: no viene con la biblioteca
+    estandar compilada --- se prueban los interpretes del sistema, porque el
+    paquete `python3-tk` de la distribucion suele estar instalado para UNO de
+    ellos y no para el que corre la suite. Lo que se busca es poder ejecutar la
+    ventana, no ejecutarla con un interprete concreto.
+    """
+    import shutil
+    import subprocess
+    import sys
+
+    sonda = ("import tkinter, ttkbootstrap; r = tkinter.Tk(); r.destroy()")
+    envoltorio = [] if shutil.which("xvfb-run") is None else ["xvfb-run", "-a"]
+    candidatos = [sys.executable, "python3.12", "python3.11", "python3"]
+    for interprete in candidatos:
+        if interprete != sys.executable and shutil.which(interprete) is None:
+            continue
+        try:
+            hecho = subprocess.run(envoltorio + [interprete, "-c", sonda],
+                                   capture_output=True, timeout=120)
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if hecho.returncode == 0:
+            return interprete, envoltorio
+    return None, envoltorio
+
+
+_INTERPRETE, _ENVOLTORIO = _interprete_con_ventana()
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_la_seleccion_de_la_tabla_sobrevive_al_filtro(tmp_path):
+    """
+    Teclear en el filtro NO pierde la seleccion, y declarar con el filtro
+    puesto no revienta.
+
+    ESTE TEST EXISTE POR LO QUE LA SUITE NO CAZO. La pestana 2 se entrego con
+    tres defectos y la suite estaba verde, porque el unico apoyo que levantaba
+    una ventana --- `gui_corrida_perfil.py` --- asigna
+    `_clave_criterio_seleccionado` A MANO y no toca ni el filtro ni la
+    seleccion real del `Treeview`. Se probaba lo que la ventana DECIDE, no lo
+    que el usuario HACE, y los tres vivian en medio:
+
+      - `<<TreeviewSelect>>` es un evento ENCOLADO. `_llenar_tabla_criterios`
+        borraba las filas sin reponer la seleccion, y en el siguiente giro del
+        bucle `_al_seleccionar_criterio` entraba con seleccion vacia y ponia la
+        clave a None. Sin `Tk` de verdad y sin `update()`, eso no ocurre.
+      - Con la clave perdida, teclear DESELECCIONABA el criterio y la fila que
+        el filtro protegia desaparecia al segundo tecleo.
+      - Y `_tras_declarar_en_ventana` hacia `selection_set` sobre esa fila
+        ausente: `_tkinter.TclError`, que no desciende de `ErrorProyecto` y por
+        tanto la GUI no distingue de un fallo del programa.
+
+    Las cuatro afirmaciones de abajo son esos defectos escritos como
+    invariantes. Comprobado por MUTACION contra `3850127`, el commit que los
+    tenia: alli este test falla en las cuatro.
+    """
+    import json
+    import subprocess
+
+    destino = tmp_path / "observado.json"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_seleccion_real",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads(destino.read_text(encoding="utf-8"))
+    clave = obs["clave"]
+
+    # 1. La seleccion sobrevive al filtro, con todo lo que cuelga de ella.
+    assert obs["seleccionada_tras_teclear"] == clave, (
+        "teclear en el filtro perdio la seleccion: `_llenar_tabla_criterios` "
+        "borro las filas y no las repuso")
+    assert obs["seleccion_del_arbol"] == [clave], (
+        "la clave sobrevivio pero el arbol se quedo sin seleccion: son dos "
+        "estados del mismo hecho y no pueden discrepar")
+    assert obs["detalle_tras_teclear"], "el detalle se vacio al teclear"
+    assert obs["boton_norma_tras_teclear"] == "normal", (
+        "los botones se apagaron al teclear, como si no hubiera criterio")
+
+    # 2. La confirmacion de lo declarado no se borra por filtrar.
+    assert obs["confirmacion_tras_teclear"] == obs["confirmacion_tras_declarar"], (
+        "el mensaje de la declaracion se borro al tocar el filtro")
+
+    # 3. La fila protegida sigue ahi al SEGUNDO tecleo, no solo al primero.
+    assert obs["fila_tras_segundo_tecleo"], (
+        "la fila protegida aguanto un refiltrado y no el siguiente")
+    assert obs["seleccionada_tras_segundo_tecleo"] == clave
+
+    # 4. Declarar desde la emergente con el filtro puesto no revienta, ni
+    #    siquiera cuando la clave declarada NO es la que quedo seleccionada.
+    assert obs["declarar_con_filtro"] == "ok", (
+        f"declarar con el filtro puesto reviento: {obs['declarar_con_filtro']}")
+    assert obs["fila_tras_declarar_desde_emergente"], (
+        "se declaro y la fila declarada no quedo a la vista")
+    assert obs["declarar_otra_clave"] == "ok", (
+        "la emergente declaro una clave distinta de la seleccionada y reviento: "
+        f"{obs['declarar_otra_clave']}")
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_la_GUI_corre_el_alcance_de_perfil_de_punta_a_punta(tmp_path):
+    """
+    La ventana de verdad: se construye, se rellena, se ejecuta y se exporta.
+
+    El criterio de salida de S20 escrito como test: «--alcance perfil corre de
+    punta a punta DESDE LA GUI y produce memoria completa». Corre en un
+    proceso aparte --- ver `tests/apoyo/gui_corrida_perfil.py` --- porque este
+    ya tiene dobles de tkinter instalados y con ellos la ventana seria un
+    espejismo.
+    """
+    import json
+    import subprocess
+
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_corrida_perfil",
+                       str(tmp_path)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+
+    resumen = json.loads((tmp_path / "resumen_de_la_corrida.json")
+                         .read_text(encoding="utf-8"))
+    assert resumen["alcance"] == cli.ALCANCE_PERFIL
+    # G1: las secciones de familia de la pestana 1 EXISTEN en la ventana de
+    # verdad --- que es lo que el AST no puede ver --- y su encabezado hace lo
+    # que el plan pide: «— puntos» con la seccion visible antes de cargar el
+    # CSV, y el conteo real de puntos por familia despues (el CSV de perfil
+    # trae 2 de A, 1 de B y 1 de C).
+    assert resumen["secciones_sin_csv"] == {"B": "— puntos",
+                                            "A|B": "— puntos"}
+    assert resumen["secciones_con_csv"] == {
+        "B": "Familia B: 1 punto en el CSV",
+        "A|B": "Familia A: 2 puntos · Familia B: 1 punto en el CSV"}
+    assert resumen["dimensionados"] == ["A-01", "A-02", "B-01"]
+    assert resumen["diferidos"] > 0, "nada diferido: no es alcance de perfil"
+    # E-A: B-01 sigue dimensionado y ya SIN «HW no evaluable». En esta corrida
+    # (TW = 0) es un barril supercritico que la aproximacion clasificaba bajo
+    # control de salida con HW/D = 0.395 < 0.75; con el perfil de la lamina el
+    # remanso desde y_c no remonta nada, gobierna la entrada y V1/V2 se
+    # evaluan. Lo que la ventana pinta es lo que el producto produce: ningun
+    # «metodo no evaluable» en ningun punto.
+    assert resumen["hw_no_evaluable"] == []
+    # EXT-5 (PC-13): C-01 entra aqui. Con '1' leido como 1.0 el marco no
+    # pasaba de M2 y C-01 nunca llegaba a V1/V2; con el entero que la ventana
+    # entrega ahora, llega. Desde E-A ni C-01 ni B-01 difieren V1/V2: se
+    # evaluan sobre el perfil. C-01 sigue sin dimensionar por su bloqueo REAL
+    # (`S_cauce`), que afirma `tests/test_ext5_forma_gui.py`.
+    assert resumen["v1_v2_diferidas"] == []
+    assert resumen["cajon_declarado"]["n_celdas_cajon"] == "1"
+    # La plantilla la elige el ALCANCE de la corrida, que es SIS-A-17.
+    assert resumen["plantilla"] == cli.NOMBRE_PLANTILLA_PERFIL
+    # EL TABLERO, ANTES DE DECLARAR NADA: los dos que el alcance de perfil
+    # difiere (V5 y V8) Y EL DE LA FAMILIA C. La lista decia solo los dos y
+    # eran TRES --- `embocadura_cajon` es lo primero que le falta a C-01 ---,
+    # o sea que esta comprobacion estaba mal desde que la Familia C entro en
+    # el CSV de perfil. No lo vio nadie porque este test se SALTA en cuanto
+    # no hay entorno grafico, que es el caso del contenedor de desarrollo: un
+    # test saltado no defiende su aserto (C8, punto 6).
+    assert resumen["tablero_antes"] == ["TR_evento_extremo",
+                                        "embocadura_cajon",
+                                        "remanso_derecho_via"], (
+        "la Familia C tiene que aparecer en el tablero de la ventana: si su "
+        "criterio pendiente no se lista, el proyectista no sabe que declarar")
+
+    # Y DESPUES DE DECLARAR LOS SIETE POR EL CAMINO DEL RATON, el de la
+    # Familia C ya no bloquea. Es el punto 6 entero: no basta con que el
+    # criterio se vea, tiene que poder declararse desde ahi como cualquier
+    # [A] de perfil.
+    assert "embocadura_cajon" not in resumen["tablero_despues"]
+    assert set(resumen["cajon_declarado"]) == {
+        "embocadura_cajon", "n_manning_cajon", "ke_entrada_cajon",
+        "espesor_pared_cajon", "cobertura_minima_cajon", "n_celdas_cajon",
+        "secciones_cajon_normalizadas"}
+    # El unico que no es escalar ni cadena, y el que no cabia por la ventana
+    # hasta C8: tiene que haber llegado como PARES.
+    assert resumen["cajon_declarado"]["secciones_cajon_normalizadas"] == (
+        "[[1.2, 0.9], [1.5, 1.2], [2.0, 1.5]]")
+
+    memoria = (tmp_path / "memoria.html").read_text(encoding="utf-8")
+    assert "4. Alcance y diferimientos" in memoria
+    assert "Obtencion del TW en el cuerpo receptor" in memoria
+    assert "V2b" in memoria
+    assert len((tmp_path / "resumen.csv").read_text(
+        encoding="utf-8").splitlines()) == 5
+    informe = json.loads((tmp_path / "informe.json").read_text(
+        encoding="utf-8"))
+    assert informe["alcance"]["nivel"] == cli.ALCANCE_PERFIL
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_el_informe_de_la_ventana_es_de_su_corrida_y_cuenta_como_la_cli(tmp_path):
+    """
+    EXT-4 sobre la ventana de verdad (PC-15, EXT-G-02): ver
+    `tests/apoyo/gui_contexto_real.py`. Lo que el AST no puede ver: el texto
+    real de «Etapas bloqueadas», el estado real de los cuatro exportadores y
+    su tooltip tras declarar, quitar, cargar sesion y fallar.
+    """
+    import json
+    import subprocess
+
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_contexto_real",
+                       str(tmp_path)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    r = json.loads((tmp_path / "resumen_contexto.json")
+                   .read_text(encoding="utf-8"))
+
+    # (f) la MISMA cuenta que la CLI, y es la de los bloqueos reales.
+    assert r["gui_etapas_bloqueadas"] == r["cli_etapas_bloqueadas"]
+    assert int(r["gui_etapas_bloqueadas"]) == r["informe_bloqueos_reales"]
+    assert r["informe_bloqueos_reales"] < r["informe_bloqueos_totales"], (
+        "sin diferidos en esta corrida el test no distingue las dos cuentas")
+    assert int(r["gui_diferidas"]) == (r["informe_bloqueos_totales"]
+                                       - r["informe_bloqueos_reales"])
+    assert all(e["encendido"] for e in r["exportadores_tras_correr"].values())
+    assert r["barra_tras_correr"].startswith("Ejecutado (")
+    # La columna «Bloqueos» de la pestaña 3 cuenta los reales del punto.
+    assert r["columna_bloqueos"] == r["bloqueos_reales_por_punto"]
+    assert r["columna_bloqueos"] != r["bloqueos_totales_por_punto"]
+    # El nombre del proyecto es el de la corrida, no el del campo al exportar.
+    assert r["proyecto_en_la_memoria"] is True
+    assert r["otro_nombre_en_la_memoria"] is False
+
+    # (e) los cuatro gestos invalidan y apagan con motivo.
+    import gui.app as gapp
+    for gesto in ("declarar", "quitar", "cargar"):
+        assert r[f"informe_tras_{gesto}"] is True, gesto
+        for nombre, estado in r[f"exportadores_tras_{gesto}"].items():
+            assert not estado["encendido"], (gesto, nombre)
+            assert estado["motivo"] == gapp.MOTIVO_INFORME_DESACTUALIZADO
+    assert "Sin informe vigente" in r["barra_tras_declarar"]
+    assert r["filas_puntos_tras_declarar"] == 0
+    # Cargar SUSTITUYE: la clave de la obra anterior se fue, la de la
+    # sesion entro, y el proyecto es el de la sesion.
+    assert "phi_relleno_trasdos" not in r["declarados_tras_cargar"]
+    assert "ke_entrada" in r["declarados_tras_cargar"]
+    assert r["proyecto_tras_cargar"] == "obra B"
+    assert r["externo_ausente_tras_cargar"] == ""
+    # Una corrida fallida tampoco deja el informe anterior como vigente.
+    assert r["informe_tras_fallo"] is True
+    for estado in r["exportadores_tras_fallo"].values():
+        assert not estado["encendido"]
+        assert estado["motivo"] == gapp.MOTIVO_CORRIDA_FALLIDA
+    assert "Sin informe vigente" in r["barra_tras_fallo"]
+    # Y la sesion deformada no toco nada y se dijo con dialogo (PC-16).
+    assert r["proyecto_tras_sesion_rota"] == "antes de la sesion rota"
+    assert r["dialogo_sesion_rota"] == ["error"]
+
+
+# ===========================================================================
+# Los filtros derivados de la pestana 2, y la anotacion de la pestana 1
+# ===========================================================================
+# Se comprueban sobre el ARBOL y no sobre una ventana viva por la misma razon
+# que el resto de este archivo: no hay `tkinter` garantizado en el entorno de
+# la suite. Lo que se persigue aqui no es que los widgets se pinten --- eso lo
+# mira el test de ventana real, que se salta cuando no hay Tk --- sino que
+# NINGUNO DE LOS FILTROS DERIVADOS CALCULE SU PROPIA RESPUESTA: si la pestana
+# 2 decidiera por su cuenta que criterios puede invocar un alcance --- o que
+# fase consume cada variable ---, seria una segunda clasificacion capaz de
+# contradecir a la del informe o a la del censo.
+
+
+def _llamadas_de(funcion):
+    """Los nombres llamados dentro de una funcion, como 'ca.criterios_usados'."""
+    nombres = set()
+    for nodo in ast.walk(funcion):
+        if not isinstance(nodo, ast.Call):
+            continue
+        f = nodo.func
+        if isinstance(f, ast.Name):
+            nombres.add(f.id)
+        elif isinstance(f, ast.Attribute):
+            base = f.value
+            if isinstance(base, ast.Name):
+                nombres.add(f"{base.id}.{f.attr}")
+            elif isinstance(base, ast.Attribute):
+                nombres.add(f"{base.attr}.{f.attr}")
+            else:
+                nombres.add(f.attr)
+    return nombres
+
+
+def test_el_filtro_de_ambito_no_calcula_ninguna_de_sus_dos_respuestas():
+    """
+    `_claves_del_ambito` tiene que PREGUNTAR, no deducir.
+
+    La respuesta de alcance la da `criterios_adoptados.criterios_del_alcance`,
+    que lee `Criterio.nivel` --- el campo que `tests/test_nivel_medido.py`
+    contrasta contra corridas reales en las dos direcciones ---. La de la
+    corrida la da `M11.criterios_bloqueantes`, que es el MISMO bloque que la
+    memoria imprime bajo «Criterios pendientes que bloquearon una etapa». Una
+    tercera regla escrita en la ventana seria una tercera respuesta a la misma
+    pregunta.
+    """
+    llamadas = _llamadas_de(_funcion(ARBOL_GUI, "_claves_del_ambito"))
+    assert "ca.criterios_del_alcance" in llamadas, (
+        "el filtro de alcance dejo de leer `criterios_adoptados`: si lo "
+        "deduce de los consumidores, es una segunda clasificacion")
+    assert "M11.criterios_bloqueantes" in llamadas, (
+        "el filtro de bloqueantes dejo de leer el bloque del informe")
+
+
+def test_el_filtro_de_alcance_lee_el_alcance_que_declara_la_pestana_1():
+    """
+    El eje no se elige dos veces. Si la pestana 2 tuviera su propio selector
+    de alcance, el proyectista podria estar mirando el filtro de «perfil»
+    mientras la corrida que va a lanzar es de «expediente», y las dos
+    pantallas describirian corridas distintas.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_claves_del_ambito"))
+    assert "self.alcance_var.get()" in fuente, (
+        "el filtro de alcance tiene que leer `alcance_var`, que es el mismo "
+        "dato que usa EJECUTAR")
+    for literal in ("'perfil'", '"perfil"', "'expediente'", '"expediente"'):
+        assert literal not in fuente, (
+            f"el filtro de ambito nombra el alcance {literal} a mano: "
+            "es una segunda declaracion de alcance")
+
+
+def test_el_alcance_de_la_pestana_1_repinta_la_tabla_de_criterios():
+    """
+    Sin la traza, la tabla se queda filtrando por el alcance anterior hasta el
+    proximo repintado --- y un filtro que muestra el resultado de otra
+    pregunta es peor que no tener filtro.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "__init__"))
+    assert "self.alcance_var.trace_add" in fuente
+    assert "_refiltrar" in fuente
+
+
+def test_el_filtro_de_bloqueantes_sin_corrida_no_deja_la_tabla_a_cero():
+    """
+    Sin informe no hay conjunto medido. Devolver el vacio dejaria la tabla sin
+    filas, y una tabla de criterios vacia se lee como «no queda nada por
+    declarar», que es la lectura mas peligrosa que esta pestana puede dar.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_claves_del_ambito"))
+    assert "if self.informe is None:\n        return None" in fuente or \
+           "self.informe is None" in fuente, (
+        "el filtro de bloqueantes no comprueba que haya corrida")
+    aviso = ast.unparse(_funcion(ARBOL_GUI, "_pintar_aviso_de_ambito"))
+    assert "MOTIVO_SIN_CORRIDA_FILTRO" in aviso, (
+        "sin corrida, el filtro tiene que decir por que no filtra")
+
+
+def test_el_recuento_dice_el_total_y_lo_que_el_filtro_esconde():
+    """
+    Las dos mitades del contrato que el proyectista pidio: el total no se
+    mueve con el filtro, y lo escondido se dice tan alto como lo mostrado.
+
+    El recuento de PENDIENTES se cuenta antes de filtrar --- se comprueba
+    sobre el orden de las sentencias, no sobre el texto --- porque un filtro
+    que ademas moviera ese numero contestaria «te quedan 11» cuando lo cierto
+    es «te quedan 33, de los que 11 los puede invocar esta corrida».
+    """
+    pintar = ast.unparse(_funcion(ARBOL_GUI, "_pintar_recuento"))
+    assert "len(ca.CRITERIOS)" in pintar, (
+        "el total tiene que ser el del archivo, no el de las filas visibles")
+    assert "esconde" in pintar, (
+        "el recuento dejo de decir cuantas filas esconde el filtro")
+
+    llenar = _funcion(ARBOL_GUI, "_llenar_tabla_criterios")
+    cuerpo = ast.unparse(llenar)
+    orden_conteo = cuerpo.index("pendientes += 1")
+    orden_filtro = cuerpo.index("_pasa_el_filtro")
+    assert orden_conteo < orden_filtro, (
+        "los pendientes se estan contando DESPUES de filtrar: el recuento "
+        "dejaria de ser el del expediente y pasaria a ser el de la vista")
+
+
+# ---------------------------------------------------------------------------
+# G2 - el filtro de FASE: derivado del censo, compuesto, sin mover el recuento
+# ---------------------------------------------------------------------------
+
+
+def test_las_opciones_del_filtro_de_fase_son_las_fases_del_censo(app):
+    """
+    Contrato central del filtro de FASE (G2), comprobado por MUTACION
+    funcional: las opciones son EXACTAMENTE
+    `{variables_entrada.variable(clave).fase for clave in ca.CRITERIOS}`,
+    calculado AQUI por su cuenta y comparado conjunto a conjunto. Una lista
+    escrita en `gui/` puede coincidir hoy; deja de coincidir el dia que el
+    censo mueva una variable de fase --- que es exactamente lo que S21 midio
+    con `factores_carga_aashto` ---, y este test la caza entonces sin que
+    nadie tenga que acordarse del combo.
+    """
+    from src import criterios_adoptados as ca
+    from src import variables_entrada as ve
+
+    esperadas = sorted({ve.variable(clave).fase for clave in ca.CRITERIOS})
+    assert app._fases_del_censo() == esperadas, (
+        "las opciones del filtro de fase divergen del censo: o hay una lista "
+        "escrita en gui/, o la derivacion dejo de leer `variables_entrada`")
+    # Y son varias: un combo con una sola fase (o ninguna) diria que la
+    # derivacion se rompio aunque la igualdad de arriba quedara vacua.
+    assert len(esperadas) > 1
+
+
+def test_la_derivacion_de_fases_no_contiene_ninguna_cadena_escrita():
+    """
+    La mitad AST del contrato: `_fases_del_censo` no contiene NI UNA cadena
+    ademas de su docstring. No hay una fase escrita «por si acaso», ni un
+    separador con el que partir las compuestas --- partirlas seria una
+    segunda regla sobre el « · » que `variables_entrada._fase` compone, y la
+    variable que consumen dos fases aparece con las dos, que es lo cierto.
+    """
+    funcion = _funcion(ARBOL_GUI, "_fases_del_censo")
+    # El docstring se excluye por POSICION (primera sentencia), no por texto:
+    # `ast.get_docstring` lo devuelve dedentado y no igualaria a la constante.
+    cuerpo = funcion.body
+    if (cuerpo and isinstance(cuerpo[0], ast.Expr)
+            and isinstance(cuerpo[0].value, ast.Constant)):
+        cuerpo = cuerpo[1:]
+    cadenas = [n.value for sentencia in cuerpo for n in ast.walk(sentencia)
+               if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+    assert cadenas == [], (
+        "`_fases_del_censo` contiene cadenas escritas: la lista de fases "
+        "tiene que salir del censo, no de gui/")
+    llamadas = _llamadas_de(funcion)
+    assert "ve.variable" in llamadas, (
+        "la derivacion dejo de leer `variables_entrada.variable`")
+    assert "ca.CRITERIOS" in ast.unparse(funcion), (
+        "la derivacion dejo de recorrer las claves de `ca.CRITERIOS`")
+
+
+def test_el_combo_de_fase_se_llena_con_la_derivacion():
+    """
+    El combo no tiene otra fuente: sus `values` son el rotulo de «sin filtro»
+    mas `_fases_del_censo()`. Si alguien le pasara una lista propia, la
+    derivacion existiria y el combo la ignoraria --- el test de arriba
+    seguiria verde y la ventana mentiria igual.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_criterios"))
+    assert "[FILTRO_FASE_TODAS] + _fases_del_censo()" in fuente, (
+        "el combo de fase dejo de llenarse con `_fases_del_censo`")
+    assert "self.filtro_fase_var" in fuente
+
+
+def test_el_filtro_de_fase_compone_en_Y_con_los_otros_tres(ventana):
+    """
+    Y logico, comprobado EJECUTANDO `_encaja_en_el_filtro` (logica pura, sin
+    widgets): con fase y texto puestos a la vez pasa exactamente la
+    interseccion, y la fase de cada fila se compara contra la MISMA
+    atribucion del censo de la que salen las opciones.
+    """
+    from src import criterios_adoptados as ca
+    from src import variables_entrada as ve
+
+    class _Var:
+        def __init__(self, valor):
+            self._valor = valor
+
+        def get(self):
+            return self._valor
+
+    import gui.app as gapp
+
+    fases = gapp._fases_del_censo()
+    # La fase mas poblada, para que la interseccion con el texto no sea
+    # trivialmente vacia.
+    fase = max(fases, key=lambda f: sum(
+        1 for c in ca.CRITERIOS if ve.variable(c).fase == f))
+
+    ventana._claves_ambito = None
+    ventana._clave_criterio_seleccionado = None
+    ventana.filtro_estado_var = _Var(gapp.FILTROS_DE_ESTADO[0][0])
+    ventana.filtro_texto_var = _Var("")
+    ventana.filtro_fase_var = _Var(fase)
+
+    solo_fase = {c for c in ca.CRITERIOS
+                 if ventana._encaja_en_el_filtro(c, "pendiente")}
+    assert solo_fase == {c for c in ca.CRITERIOS
+                         if ve.variable(c).fase == fase}, (
+        "el filtro de fase no aplica la atribucion del censo")
+
+    texto = sorted(solo_fase)[0][:4].lower()
+    ventana.filtro_texto_var = _Var(texto)
+    con_texto = {c for c in ca.CRITERIOS
+                 if ventana._encaja_en_el_filtro(c, "pendiente")}
+    esperado = {c for c in solo_fase
+                if texto in c.lower() or texto in ca.criterio(c).concepto.lower()}
+    assert con_texto == esperado, (
+        "fase y texto no se componen en Y: uno esta sustituyendo al otro")
+    assert con_texto <= solo_fase
+
+    # Y con «Todas» el filtro de fase no aparta nada: es el neutro del Y.
+    ventana.filtro_texto_var = _Var("")
+    ventana.filtro_fase_var = _Var(gapp.FILTRO_FASE_TODAS)
+    assert {c for c in ca.CRITERIOS
+            if ventana._encaja_en_el_filtro(c, "pendiente")} == set(ca.CRITERIOS)
+
+
+def test_el_filtro_de_fase_no_cambia_la_base_del_recuento():
+    """
+    La fase filtra por el MISMO camino que los otros tres ---
+    `_encaja_en_el_filtro`, que `_llenar_tabla_criterios` consulta DESPUES de
+    contar pendientes ---, de modo que el contrato del recuento («pendientes
+    sobre el archivo entero, escondidos del filtro combinado») lo cubre sin
+    una segunda regla. Este test fija que el camino siga siendo ese: una rama
+    de fase metida en `_llenar_tabla_criterios` antes del conteo moveria la
+    base sin tocar `_pintar_recuento`.
+    """
+    encaja = ast.unparse(_funcion(ARBOL_GUI, "_encaja_en_el_filtro"))
+    assert "_fase_del_filtro" in encaja, (
+        "la condicion de fase salio de `_encaja_en_el_filtro`: ya no compone "
+        "con la excepcion de la fila seleccionada ni con el recuento")
+    assert "ve.variable" in encaja, (
+        "la fila dejo de compararse contra la atribucion del censo")
+    llenar = ast.unparse(_funcion(ARBOL_GUI, "_llenar_tabla_criterios"))
+    assert "_fase_del_filtro" not in llenar and "filtro_fase_var" not in llenar, (
+        "hay una rama de fase propia en `_llenar_tabla_criterios`: filtraria "
+        "por fuera de `_pasa_el_filtro` y la base del recuento se moveria")
+    # Y el combo repinta al elegir: la traza incluye a `filtro_fase_var`.
+    construir = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_criterios"))
+    assert "self.filtro_fase_var)" in construir.replace("\n", ""), (
+        "`filtro_fase_var` no esta en la traza que repinta la tabla")
+
+
+def test_la_anotacion_de_familias_no_deshabilita_ningun_campo():
+    """
+    Anotar, no bloquear. El proyectista puede estar preparando el dato de un
+    punto que todavia no metio en el CSV, y un campo apagado se lo impide
+    mientras le dice que se equivoco.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_pintar_no_aplica"))
+    for prohibido in ("disabled", "state="):
+        assert prohibido not in fuente, (
+            f"la anotacion de familias usa `{prohibido}`: deshabilitar decide "
+            "por el proyectista en vez de informarle")
+    assert "cli.familias_que_usan" in fuente, (
+        "la ventana tiene que preguntarle a `cli` que familias usan cada dato, "
+        "no llevar su propia regla")
+
+
+def test_la_anotacion_distingue_no_se_sabe_de_no_hay_ninguna():
+    """
+    `familias_csv = None` es «no se pudo leer el CSV» y una tupla vacia seria
+    «no trae familias». Anotar «no aplica» sobre la primera seria decirle al
+    proyectista que un campo le sobra sin haber leido su archivo.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_pintar_no_aplica"))
+    assert "self.familias_csv is None" in fuente
+    releer = ast.unparse(_funcion(ARBOL_GUI, "_releer_familias"))
+    assert "self.familias_csv = None" in releer, (
+        "si el CSV no se puede leer, la anotacion tiene que callarse")
+
+
+def test_la_traduccion_de_campo_a_clave_externa_es_una_sola():
+    """
+    `_leer_banderas` y la anotacion necesitan la MISMA correspondencia entre
+    el rotulo de la ventana (`l_hidraulico`) y la clave del expediente
+    (`L_hidraulico_m`). Dos copias se separan el dia que aparezca un sexto
+    campo, y entonces la ventana anota sobre un campo y declara sobre otro.
+    """
+    banderas = ast.unparse(_funcion(ARBOL_GUI, "_leer_banderas"))
+    assert "CLAVE_EXTERNA_DE_CAMPO" in banderas, (
+        "`_leer_banderas` volvio a traducir por su cuenta")
+    assert "L_hidraulico_m" not in banderas, (
+        "la clave del expediente esta escrita a mano dentro de `_leer_banderas`")
+
+    import gui.app as app
+    assert set(app.ExpedienteApp.CLAVE_EXTERNA_DE_CAMPO) == {
+        clave for clave, *_r in app.CAMPOS_EXTERNOS}, (
+        "la traduccion no cubre exactamente los campos de la ventana")
+    for clave in app.ExpedienteApp.CLAVE_EXTERNA_DE_CAMPO.values():
+        assert clave in cli.CLAVES_EXTERNAS, clave
+
+
+# ===========================================================================
+# Los dos iconos de ayuda de la pestana 1
+# ===========================================================================
+
+def test_los_dos_campos_de_archivo_llevan_su_icono_de_ayuda():
+    """
+    Uno por campo de ENTRADA DEL EXPEDIENTE, y cada uno abre SU pestana:
+    el CSV de puntos, el JSON de datos externos y, desde UI-1, los dos CSV de
+    la hidrologia, que abren la misma pestaña porque van juntos (el campo del
+    `sitio.json` no lleva icono: su forma la dice el tooltip).
+
+    El icono va al lado del campo que explica y no en un menu de ayuda: la
+    pregunta «que columnas lleva esto» se hace mirando el campo, y una ayuda
+    que hay que ir a buscar es una ayuda que no se lee.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_datos"))
+    assert fuente.count("BotonAyuda(") == 4, (
+        "la pestana 1 tiene cuatro campos de archivo con ayuda (CSV, JSON, "
+        "cuencas y estacion) y tiene que tener cuatro iconos")
+    assert fuente.count("ayuda_ent.PESTANA_HIDROLOGIA") == 2
+    # `ayuda_ent` y no `ayuda`: el alias corto lo pisa la variable de bucle de
+    # CAMPOS_EXTERNOS, en esta misma funcion, y la lambda del icono acabaria
+    # pidiendole `.PESTANA_CSV` a una cadena de tooltip. Se renombro en S22 y
+    # el nombre queda fijado aqui para que no vuelva.
+    assert "ayuda_ent.PESTANA_CSV" in fuente
+    assert "ayuda_ent.PESTANA_JSON" in fuente
+    variables_de_bucle = {objetivo.id
+                          for nodo in ast.walk(_funcion(ARBOL_GUI,
+                                                        "_construir_tab_datos"))
+                          if isinstance(nodo, ast.For)
+                          for objetivo in ast.walk(nodo.target)
+                          if isinstance(objetivo, ast.Name)}
+    assert "ayuda_ent" not in variables_de_bucle, (
+        "el alias del modulo de ayuda vuelve a estar pisado por una variable "
+        "de bucle: la lambda del icono reventaria al pulsarlo")
+
+
+def test_la_ayuda_no_abre_una_ventana_nueva_en_cada_clic():
+    """
+    Sin reutilizar la ventana viva, cada clic apila una copia: el usuario
+    acabaria con cuatro ayudas y cerraria la de arriba creyendo que las cerro
+    todas. Al pulsar el icono del otro campo con la ayuda ya abierta, lo que se
+    espera es que CAMBIE DE PESTANA, no que nazca otra.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_abrir_ayuda"))
+    assert "winfo_exists" in fuente, (
+        "no se comprueba si la ventana sigue viva antes de reutilizarla")
+    assert "nb.select" in fuente, (
+        "con la ayuda ya abierta, el icono del otro campo tiene que cambiarle "
+        "la pestana")
+    assert "lift" in fuente
+
+
+def test_la_ventana_de_ayuda_no_sabe_nada_por_su_cuenta():
+    """
+    `gui/ayuda_entrada.py` PINTA. Todo lo que afirma se lo da
+    `src/ayuda_entrada.py`, que lo deriva de `M0_carga` y de
+    `variables_entrada`. Es el mismo reparto que sostiene
+    `gui/ventana_normativa.py`, y aqui se comprueba igual: por los nombres que
+    la ventana llama.
+    """
+    arbol = ast.parse((RAIZ / "gui" / "ayuda_entrada.py").read_text(
+        encoding="utf-8"))
+    llamadas = set()
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Attribute) \
+                and isinstance(nodo.func.value, ast.Name):
+            llamadas.add(f"{nodo.func.value.id}.{nodo.func.attr}")
+    for nombre in ("ay.fichas_de_columnas", "ay.cabecera_csv",
+                   "ay.vacios_por_quien_lo_debe", "ay.fichas_de_datos_externos",
+                   "ay.esqueleto_json",
+                   # La pestana de conceptos (G5) consume la misma capa: las
+                   # cuatro listas le llegan armadas de src/ayuda_entrada.py.
+                   "ay.fichas_de_familias", "ay.fichas_de_etiquetas",
+                   "ay.fichas_de_estados", "ay.fichas_de_glosario"):
+        assert nombre in llamadas, (
+            f"la ventana dejo de pedir '{nombre}': o lo calcula ella, o dejo "
+            "de mostrarlo")
+
+    importados = {parte for n in ast.walk(arbol)
+                  if isinstance(n, ast.ImportFrom) and n.module
+                  for parte in n.module.split(".")
+                  + [a.name for a in n.names]}
+    assert "modulos" not in importados, (
+        "la ventana importa un modulo de calculo: el contenido tiene que "
+        "llegarle armado por `src/ayuda_entrada.py`")
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_la_ayuda_de_entrada_se_abre_de_verdad(tmp_path):
+    """
+    Que la ventana SE CONSTRUYA, que es el hueco que ni el contenido ni el AST
+    cubren.
+
+    `test_ayuda_entrada.py` comprueba que las 19 columnas salen del censo, y
+    los tests de contrato de arriba comprueban el cableado leyendo el arbol.
+    Entre las dos queda lo que solo un `Tk` real ve: un `grid` mal puesto, un
+    `iid` repetido en el `Treeview`, un atributo mal escrito. Nada de eso
+    aparece en el AST y todo revienta al abrirla.
+    """
+    # Los dos imports van DENTRO, como en los otros dos tests de ventana de
+    # este archivo: arriba se instalan dobles de tkinter y el modulo se lee
+    # entero antes de que ninguno de los tres corra.
+    import json
+    import subprocess
+
+    destino = tmp_path / "ayuda.json"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ayuda_real",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"la ayuda de entrada no se pudo abrir:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads(destino.read_text(encoding="utf-8"))
+    assert obs["ok"], obs.get("error")
+
+    from src import ayuda_entrada as ay
+    from src.modulos import M0_carga as m0
+
+    # 1. Las dos tablas se llenan con lo que el censo dice, y con nada mas.
+    assert obs["filas_csv_csv"] == list(m0.COLUMNAS)
+    assert len(obs["filas_json_csv"]) == len(cli.CLAVES_EXTERNAS)
+
+    # 2. Cada icono abre la ventana en SU pestana, la de conceptos incluida.
+    assert "CSV" in obs["pestana_activa_csv"]
+    assert "JSON" in obs["pestana_activa_json"]
+    assert "Conceptos" in obs["pestana_activa_conceptos"]
+    assert "hidrologia" in obs["pestana_activa_hidrologia"]
+
+    # 2a. UI-1: la pestaña de la hidrologia pinta las columnas de los dos CSV
+    #     tal como las da `src/ayuda_entrada.py` (que las pregunta al cargador),
+    #     y el «i» de los dos campos la abre sobre la ventana viva.
+    pintadas = obs["filas_hidrologia_hidrologia"]
+    for archivo in (ay.ARCHIVO_CUENCAS, ay.ARCHIVO_ESTACION):
+        fichas = [f for f in ay.fichas_de_hidrologia() if f.archivo == archivo]
+        assert [fila[0] for fila in pintadas[archivo]] == [f.clave for f in fichas]
+        for fila, f in zip(pintadas[archivo], fichas):
+            assert fila[1] == f.resumen_de_obligatoriedad
+            assert fila[2] == f.que_admite, f.clave
+    assert obs["misma_ventana_hidrologia"]
+    assert "hidrologia" in obs["pestana_tras_el_icono_de_hidrologia"]
+
+    # 2b. La pestana de conceptos (G5) pinta lo que la capa de contenido le
+    #     da: el glosario trae el censo ENTERO y en su orden, y la prosa trae
+    #     un parrafo de las etiquetas y un estado --- comparados contra la
+    #     ficha, no contra un texto escrito aqui.
+    from src import variables_entrada as ve
+    assert obs["filas_glosario_csv"] == sorted(ve.VARIABLES, key=str.lower)
+    etiqueta = ay.fichas_de_etiquetas()[0]
+    assert etiqueta.explicacion in obs["texto_conceptos"]
+    assert etiqueta.archivo in obs["texto_conceptos"]
+    estado = ay.fichas_de_estados()[0]
+    assert estado.rotulo in obs["texto_conceptos"]
+    familia = ay.fichas_de_familias()[0]
+    assert familia.origen_del_caudal in obs["texto_conceptos"], (
+        "el «de donde sale el Q» de la familia no llego a la pantalla")
+
+    # 3. El detalle responde a la seleccion. Se compara contra la ficha, no
+    #    contra un texto escrito aqui: lo que se comprueba es que la ventana
+    #    pinte LO QUE LE DAN.
+    ficha = ay.ficha_de_columna("sucs_fundacion")
+    assert ficha.de_donde_sale in obs["detalle_csv"], (
+        "el panel de detalle no muestra la procedencia de la columna")
+    assert ficha.concepto in obs["detalle_csv"]
+
+    # 4. Una sola ventana viva, con la pestana cambiada.
+    assert obs["misma_ventana"], (
+        "el segundo icono abrio una ventana nueva en vez de reutilizar la viva")
+    assert "JSON" in obs["pestana_tras_el_segundo_icono"]
+    assert obs["cerrada_abre_otra"], (
+        "cerrada a mano, el icono tiene que poder abrirla otra vez")
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_la_ventana_normativa_se_construye_y_se_cierra_de_verdad(tmp_path):
+    """
+    El hueco que la ficha SIS-F-01 dejo NOMBRADO y que los otros tres tests
+    de ventana no cubrian: `gui/ventana_normativa.py` -- el archivo entero --
+    no se construia NUNCA bajo un `Tk` real. `gui_seleccion_real` llama a
+    `_tras_declarar_en_ventana` a proposito SIN abrir la emergente (y dice
+    por que), y `test_ventana_normativa.py` compara el CONTENIDO sin
+    pantalla; entre los dos, un `grid` mal puesto o un atributo mal escrito
+    en cualquiera de los siete `_bloque_*` reventaba al abrirla y la suite
+    seguia verde.
+
+    El smoke -- ver `tests/apoyo/gui_smoke_normativa.py` -- hace lo que el
+    proyectista hace: construye la aplicacion, puebla las CUATRO pestanas
+    con `tests/ejemplo_puntos.csv` (el CSV de expediente; la corrida de
+    perfil ya tiene el suyo), y abre y cierra la ventana normativa de un
+    criterio `de_tabla` por el camino del raton.
+    """
+    import json
+    import subprocess
+
+    destino = tmp_path / "smoke.json"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_smoke_normativa",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"el smoke de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads(destino.read_text(encoding="utf-8"))
+
+    # La aplicacion entera, poblada con el CSV de expediente.
+    assert obs["pestanas"] == 4
+    assert obs["informe"], "la corrida no produjo informe"
+    assert obs["puntos_en_tabla"] == 4, (
+        "ejemplo_puntos.csv trae 4 puntos y la tabla de la pestana 3 tiene "
+        f"{obs['puntos_en_tabla']}")
+    assert obs["pestanas_recorridas"]
+    # Bloque 3 del rediseño visual: la navegacion lateral y el Notebook son
+    # UNA sola fuente del paso activo, medido en las dos direcciones.
+    assert obs["navegacion_sigue_al_notebook"] == [0, 1, 2, 3], (
+        "la columna de navegacion no sigue a los `select` del Notebook")
+    assert obs["notebook_tras_ir"] == 1, (
+        "el `ir` de la columna no cambia la pestaña del Notebook")
+    assert obs["items_de_navegacion"] == obs["pestanas"]
+
+    # La emergente del criterio `de_tabla`: se abrio de verdad, con la cara
+    # TABLA construida, y se cerro sin dejar rastro.
+    assert obs["seleccionado"] == "ke_entrada"
+    assert obs["emergentes_abiertas"] == 1, (
+        "la ventana normativa no llego a abrirse")
+    assert "Tabla normativa" in obs["titulo_emergente"]
+    assert obs["widgets_de_la_emergente"] > 20, (
+        "la emergente se abrio casi vacia: la cara TABLA no se construyo")
+    assert obs["emergentes_tras_cerrar"] == 0
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_las_tres_caras_restantes_se_construyen_y_declaran_de_verdad(tmp_path):
+    """
+    El ALCANCE que el auditor adversarial de I1b dejo medido como abierto en
+    SIS-F-01: el smoke de arriba abre la cara TABLA, y `_pintar_rango`,
+    `_pintar_catalogo`, `_pintar_campo` y el camino de `_declarar` seguian
+    sin construirse bajo Tk. `tests/apoyo/gui_caras_normativa.py` abre las
+    tres caras con una clave de cada una --- medida contra el modelo, no
+    copiada ---, teclea un valor MALO y uno BUENO y declara por el mismo
+    metodo que cuelga del boton: el malo no deja rastro (rotulo «No se
+    declaro», nada en caliente, sin procedencia, sin callback) y el bueno
+    deja los cuatro (rotulo «Declarado», en caliente, procedencia que lo
+    nombra, callback con la clave).
+    """
+    import json
+    import subprocess
+
+    destino = tmp_path / "caras.json"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_caras_normativa",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=600)
+    assert hecho.returncode == 0, (
+        f"el apoyo de las tres caras fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads(destino.read_text(encoding="utf-8"))
+    assert set(obs) == {"RANGO", "CATALOGO", "CAMPO"}
+    for cara, o in obs.items():
+        assert o["cara_modelo"] == cara, (cara, o["clave"])
+        assert o["campo_construido"], f"{cara}: el pie no construyo el campo"
+        assert o["widgets"] > 10, (cara, o["widgets"])
+        # La CARA esta pintada, no solo la carcasa (auditor de C09: con los
+        # tres `_pintar_*` en no-op la ventana seguia sumando 20 widgets).
+        assert o["la_cara_esta_pintada"], (cara, o["texto_de_la_cara"])
+        # Y se declaro PULSANDO el boton, no llamando al metodo.
+        assert o["boton_construido"], cara
+        # El malo no deja rastro.
+        assert o["rotulo_tras_malo"].startswith("No se declaro"), o
+        assert o["en_caliente_tras_malo"] is False
+        assert o["procedencia_tras_malo"] is False
+        assert o["callback_tras_malo"] == []
+        # El bueno deja los cuatro.
+        assert o["rotulo_tras_bueno"].startswith("Declarado para esta corrida"), o
+        assert o["en_caliente_tras_bueno"] is True
+        assert o["procedencia_tras_bueno"]
+        assert o["callback_tras_bueno"] == [o["clave"]]
+    # Y cada cara dice de donde viene el valor con las palabras de su
+    # resolucion: la fila de la tabla, el catalogo que NO es norma, el
+    # proyectista.
+    assert "MC_HHD.T10" in obs["RANGO"]["procedencia_tras_bueno"]
+    # La validacion al escribir de la cara RANGO avisa del 9.0 antes de
+    # pulsar, y no dice nada del 4.5.
+    assert obs["RANGO"]["validacion_al_escribir_tras_malo"], obs["RANGO"]
+    assert "6.0" in obs["RANGO"]["validacion_al_escribir_tras_malo"]
+    assert "NO es una norma" in obs["CATALOGO"]["procedencia_tras_bueno"]
+    assert "proyectista" in obs["CAMPO"]["procedencia_tras_bueno"]
+
+
+# ===========================================================================
+# G1: la pestana 1 agrupada por familia (derivado) y sin jerga de CLI
+# ===========================================================================
+# Dos contratos, cada uno con la tecnica que le corresponde:
+#
+# - La AGRUPACION se prueba EJECUTANDO `_secciones_de_campos` (logica pura,
+#   con el doble de tkinter) y ademas POR MUTACION: mover una fila en
+#   `cli.FAMILIAS_QUE_USAN` tiene que mover el campo de seccion sin tocar
+#   gui/. Es el criterio de aceptacion de G1 escrito como test, y el mismo
+#   molde que `test_ayuda_entrada` usa para la ayuda derivada.
+#
+# - El LENGUAJE se prueba sobre el ARBOL: ninguna cadena visible de la
+#   pestana 1 nombra una bandera de la CLI (`--luz`, `--alcance`...) ni un
+#   codigo de modulo (`M0`, `M11`). La LISTA BLANCA son los textos de ayuda
+#   --- tooltips, `BotonAyuda` y el elemento `ayuda` de `CAMPOS_EXTERNOS` ---
+#   porque ese es el destino DECLARADO de esa informacion: «equivale a la
+#   bandera --luz de la linea de comandos» se lee al preguntar por el campo,
+#   no en su rotulo. Los codigos de modulo tienen su propio destino, la barra
+#   de estado, que por eso tampoco se barre.
+
+BANDERA_DE_CLI = re.compile(r"(?<![\w-])--[a-z]")
+CODIGO_DE_MODULO = re.compile(r"\bM\d+\b")
+
+
+def test_las_secciones_de_la_pestana_1_se_derivan_del_censo_de_familias(
+        app, ventana, monkeypatch):
+    """
+    La pertenencia campo->seccion NO esta escrita en gui/: sale de
+    `cli.familias_que_usan`. Un dato sin fila declarada lo usan las tres
+    familias (la semantica de `tests/test_familias_del_csv.py`) y cae en
+    «Comunes a todas las familias»; uno con fila cae en la seccion de SUS
+    familias --- las de la medida, no las del rotulo viejo, que decia
+    «Familia A» sobre un dato que la medida atribuye a A y B ---.
+    """
+    from src.modelos import Familia
+
+    todas = tuple(Familia)
+    traduccion = app.ExpedienteApp.CLAVE_EXTERNA_DE_CAMPO
+    secciones = ventana._secciones_de_campos()
+    assert secciones[0][0] == todas, (
+        "«Comunes a todas las familias» tiene que pintarse primero")
+    por_familias = dict(secciones)
+
+    comunes = {clave for clave, *_ in por_familias[todas]}
+    assert comunes == {campo for campo, ext in traduccion.items()
+                       if ext not in cli.FAMILIAS_QUE_USAN}, (
+        "un dato sin fila en cli.FAMILIAS_QUE_USAN lo usan las tres familias "
+        "y va en la seccion de comunes")
+
+    for campo, ext in traduccion.items():
+        if ext in cli.FAMILIAS_QUE_USAN:
+            usan = cli.familias_que_usan(ext)
+            assert campo in {c for c, *_ in por_familias[usan]}, (
+                f"'{campo}' no esta en la seccion de sus familias {usan}")
+
+    assert ventana._titulo_seccion(todas) == "Comunes a todas las familias"
+
+    # LA MEDIDA (criterio de aceptacion de G1): mover la fila mueve el campo
+    # de seccion sin tocar gui/. Mismo recurso que test_ayuda_entrada.
+    monkeypatch.setitem(cli.FAMILIAS_QUE_USAN, "L_hidraulico_m", (Familia.A,))
+    movidas = dict(ventana._secciones_de_campos())
+    assert "l_hidraulico" in {c for c, *_ in movidas[(Familia.A,)]}, (
+        "la fila se movio en cli.FAMILIAS_QUE_USAN y el campo no cambio de "
+        "seccion: la GUI lleva su propia tabla")
+    assert (Familia.B,) not in movidas, (
+        "la seccion vieja sobrevivio sin campos: la agrupacion no se derivo")
+
+
+def test_la_asignacion_campo_seccion_no_vive_en_un_dict_local_de_la_gui():
+    """
+    La otra mitad, sobre el arbol: `_secciones_de_campos` PREGUNTA a cli ---
+    por el accesor `familias_que_usan`, no leyendo `FAMILIAS_QUE_USAN` a pelo,
+    que se saltaria la regla «sin fila = las tres» --- y traduce por
+    `CLAVE_EXTERNA_DE_CAMPO`, la MISMA correspondencia que la anotacion. Y ni
+    ahi ni en `_construir_tab_datos` hay un dict literal ni una familia
+    nombrada a mano (`Familia.B`) que pudiera ser la segunda tabla.
+    """
+    funcion = _funcion(ARBOL_GUI, "_secciones_de_campos")
+    fuente = ast.unparse(funcion)
+    assert "cli.familias_que_usan" in fuente, (
+        "la agrupacion dejo de preguntarle a cli que familias usan cada dato")
+    assert "CLAVE_EXTERNA_DE_CAMPO" in fuente, (
+        "la agrupacion traduce el campo por su cuenta: dos traducciones se "
+        "separan (es la leccion de SIS-F-01)")
+    # `{}` como acumulador vale; un dict CON claves escritas es la tabla
+    # paralela que este test prohibe.
+    assert not any(isinstance(n, ast.Dict) and n.keys
+                   for n in ast.walk(funcion)), (
+        "hay un dict literal con claves dentro de `_secciones_de_campos`: la "
+        "asignacion campo->seccion tiene que derivarse, no escribirse")
+    assert not any(isinstance(n, ast.Attribute) and n.attr == "FAMILIAS_QUE_USAN"
+                   for n in ast.walk(ARBOL_GUI)), (
+        "gui/app.py lee cli.FAMILIAS_QUE_USAN a pelo: el accesor "
+        "`familias_que_usan` es el que aporta la regla del defecto")
+    for nombre in ("_secciones_de_campos", "_construir_tab_datos"):
+        a_mano = {n.attr for n in ast.walk(_funcion(ARBOL_GUI, nombre))
+                  if isinstance(n, ast.Attribute)
+                  and isinstance(n.value, ast.Name) and n.value.id == "Familia"}
+        assert not a_mano, (
+            f"'{nombre}' nombra familias a mano ({sorted(a_mano)}): esa es "
+            "exactamente la clase de lista que la derivacion vino a retirar")
+
+
+def _cadenas_visibles_de_la_pestana_1():
+    """
+    Las cadenas que la pestana 1 PINTA, leidas del arbol: los `text=` de sus
+    widgets, el rotulo de cada radio de alcance, la etiqueta y la unidad de
+    cada tupla de `CAMPOS_EXTERNOS`, los textos de los encabezados de seccion
+    y el titulo de la ventana. Los textos de ayuda quedan fuera a proposito:
+    son la lista blanca (ver el encabezado del bloque).
+    """
+    visibles = []
+
+    construir = _funcion(ARBOL_GUI, "_construir_tab_datos")
+    for nodo in ast.walk(construir):
+        if isinstance(nodo, ast.Call):
+            for kw in nodo.keywords:
+                if kw.arg == "text" and isinstance(kw.value, ast.Constant) \
+                        and isinstance(kw.value.value, str):
+                    visibles.append(kw.value.value)
+        # El rotulo de cada radio de alcance: el segundo elemento de las
+        # tuplas cuyo primer elemento es cli.ALCANCE_*.
+        if isinstance(nodo, ast.Tuple) and len(nodo.elts) == 3 \
+                and isinstance(nodo.elts[0], ast.Attribute) \
+                and nodo.elts[0].attr.startswith("ALCANCE") \
+                and isinstance(nodo.elts[1], ast.Constant):
+            visibles.append(nodo.elts[1].value)
+
+    for nombre in ("_titulo_seccion", "_pintar_encabezados_familia"):
+        visibles.extend(n.value for n in ast.walk(_funcion(ARBOL_GUI, nombre))
+                        if isinstance(n, ast.Constant)
+                        and isinstance(n.value, str))
+
+    for nodo in ast.walk(ARBOL_GUI):
+        if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
+                and isinstance(nodo.targets[0], ast.Name)
+                and nodo.targets[0].id == "CAMPOS_EXTERNOS"):
+            for tupla in nodo.value.elts:
+                for indice in (1, 3):        # etiqueta y unidad; ayuda NO
+                    if isinstance(tupla.elts[indice], ast.Constant):
+                        visibles.append(tupla.elts[indice].value)
+        if (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Attribute)
+                and nodo.func.attr == "title" and nodo.args
+                and isinstance(nodo.args[0], ast.Constant)):
+            visibles.append(nodo.args[0].value)
+
+    assert visibles, "el rastreo de cadenas visibles se quedo vacio"
+    return visibles
+
+
+def test_ninguna_cadena_visible_de_la_pestana_1_nombra_banderas_ni_modulos():
+    """
+    G1, tarea 2: el proyectista que mira la ventana no teclea `--luz` ni sabe
+    que es «M0». La informacion no se pierde: la equivalencia con la bandera
+    vive en el tooltip de cada campo y los codigos de modulo en la barra de
+    estado, que son las dos zonas que este barrido no toca.
+    """
+    culpables = [texto for texto in _cadenas_visibles_de_la_pestana_1()
+                 if BANDERA_DE_CLI.search(texto)
+                 or CODIGO_DE_MODULO.search(texto)]
+    assert not culpables, (
+        f"cadenas visibles de la pestana 1 con jerga de CLI o de modulos: "
+        f"{culpables!r}")
+
+
+# ===========================================================================
+# G3: el anticipo de bloqueos antes de correr — derivado e informativo
+# ===========================================================================
+# Cuatro contratos, todos sobre el arbol (no hay tkinter garantizado):
+#
+# - el panel EXISTE en la pestana 1 y muestra el aviso fijo DEL CONTENIDO
+#   (`anticipo.AVISO_DEL_ANTICIPO`, que dice «estimación»), no una copia;
+# - sus tres bloques los PRODUCE `src/anticipo.py` y la GUI solo pinta ---
+#   y `src/anticipo.py`, a su vez, se deriva de los simbolos censados:
+#   `ca.criterios_del_alcance` x `ca.criterios_sin_valor`, `M0_carga` y los
+#   dos diccionarios de diferimiento de `cli` ---;
+# - el boton de EJECUTAR no depende del anticipo (regla dura de G3): el
+#   unico sitio del archivo que lo deshabilita es `ejecutar_pipeline`,
+#   mientras corre;
+# - el clic de una fila REUTILIZA la seleccion existente de la pestana 2,
+#   por el mismo camino que `_tras_declarar_en_ventana`.
+#
+# El CONTENIDO de los tres bloques se prueba ejecutandolo, sin pantalla, en
+# tests/test_anticipo.py; la lectura de solo-cabecera, en test_M0_carga.py.
+
+
+def test_la_pestana_1_construye_el_panel_de_anticipo_con_su_aviso():
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_construir_tab_datos"))
+    assert "Anticipo antes de correr" in fuente, (
+        "la pestana 1 dejo de construir el panel de anticipo")
+    assert "antc.AVISO_DEL_ANTICIPO" in fuente, (
+        "el aviso del panel tiene que ser EL MISMO objeto que declara "
+        "src/anticipo.py: una copia escrita aqui puede divergir y dejar de "
+        "decir «estimación»")
+
+    from src import anticipo as antc
+    assert "Estimación" in antc.AVISO_DEL_ANTICIPO
+    assert "pestaña 4" in antc.AVISO_DEL_ANTICIPO
+
+
+def test_los_tres_bloques_del_anticipo_los_produce_src_y_la_gui_pinta():
+    """
+    `_pintar_anticipo` PREGUNTA, no deduce: los tres bloques y sus lineas
+    salen de `src/anticipo.py`. Y no lee el CSV por su cuenta --- toda
+    lectura vive en src/ (regla dura de G3) ---: ni `open`, ni el modulo
+    `csv`, ni `cargar_puntos` aparecen en la funcion.
+    """
+    pintar = _funcion(ARBOL_GUI, "_pintar_anticipo")
+    llamadas = _llamadas_de(pintar)
+    for nombre in ("antc.criterios_vacios_alcanzables",
+                   "antc.contraste_de_cabecera",
+                   "antc.lineas_del_contraste",
+                   "antc.diferimientos_del_alcance",
+                   "antc.lineas_de_diferimientos",
+                   # PF-2: el cuarto bloque, los datos que faltan por punto.
+                   "antc.datos_faltantes_por_punto",
+                   "antc.lineas_del_prevuelo"):
+        assert nombre in llamadas, (
+            f"la GUI dejo de pedir '{nombre}': o lo calcula ella, o dejo de "
+            "mostrar ese bloque")
+    # La lectura no se hace aqui NI SIQUIERA por la puerta buena: la llamada
+    # a `leer_cabecera` es de `antc.contraste_de_cabecera`, no de la GUI. Se
+    # mira por las LLAMADAS y no por el texto, porque el docstring de la
+    # funcion nombra la lectura al explicar donde vive.
+    for prohibida in llamadas:
+        assert not prohibida.endswith((".open", ".reader", ".DictReader",
+                                       ".cargar_puntos", ".leer_cabecera")), (
+            f"`_pintar_anticipo` llama a `{prohibida}`: gui/ no parsea el "
+            "CSV con logica propia -- la lectura vive en src/ y llega "
+            "armada por `antc.contraste_de_cabecera`")
+    assert "open" not in llamadas and "cargar_puntos" not in llamadas
+
+
+def test_el_contenido_del_anticipo_se_deriva_de_los_simbolos_censados():
+    """
+    La otra mitad del contrato, sobre `src/anticipo.py`: el bloque 1 es la
+    interseccion de `criterios_del_alcance` con `criterios_sin_valor`, el 2
+    contrasta contra `COLUMNAS` y `VACIOS_ADMITIDOS` leyendo SOLO la cabecera
+    (`leer_cabecera`), y el 3 lee los dos diccionarios de diferimiento del
+    servicio de calculo (`servicio`, desde EXT-9; `cli` hasta entonces).
+    Ninguna de esas listas puede estar escrita a mano.
+
+    SE MIRAN NODOS `Attribute`, NO EL TEXTO DE `ast.unparse`: hasta EXT-9 el
+    test buscaba la cadena `cli.X` en el unparse, que incluye los
+    docstrings, y quedo VERDE SOBRE EL DOCSTRING cuando el modulo paso a
+    leer `servicio.X` (lo encontro el auditor adversarial de EXT-9: el
+    patron FACTOR_MURO_TABLA que CLAUDE.md nombra). Los literales de la
+    pareja diferida se buscan sobre las constantes del arbol, por lo mismo.
+    """
+    arbol = ast.parse((RAIZ / "src" / "anticipo.py").read_text(
+        encoding="utf-8"), filename="anticipo.py")
+    leidos = {f"{n.value.id}.{n.attr}" for n in ast.walk(arbol)
+              if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)}
+    for simbolo in ("ca.criterios_del_alcance", "ca.criterios_sin_valor",
+                    "m0.COLUMNAS", "m0.VACIOS_ADMITIDOS", "m0.leer_cabecera",
+                    "servicio.VERIFICACIONES_DIFERIDAS_POR_ALCANCE",
+                    "servicio.MODULOS_DIFERIDOS_POR_ALCANCE"):
+        assert simbolo in leidos, (
+            f"src/anticipo.py dejo de leer '{simbolo}': ese bloque paso a "
+            "ser una lista propia, que es justo lo que G3 prohibe")
+    # Sin literales de la pareja diferida: la lista se LEE del servicio.
+    constantes = {n.value for n in ast.walk(arbol)
+                  if isinstance(n, ast.Constant) and isinstance(n.value, str)}
+    for literal in ("V5", "V8"):
+        assert literal not in constantes, (
+            f"src/anticipo.py escribe {literal!r} a mano: el bloque 3 tiene "
+            "que leerse del servicio, no transcribirse")
+
+
+def test_el_boton_de_ejecutar_no_depende_del_anticipo():
+    """
+    Regla dura de G3: el anticipo es una ESTIMACION y ninguna estimacion
+    gobierna un boton. Correr siempre se puede --- el pipeline convierte
+    cada falta en un Bloqueo declarado --- de modo que el UNICO sitio del
+    archivo que deshabilita EJECUTAR es `ejecutar_pipeline`, mientras corre.
+    """
+    pintar = ast.unparse(_funcion(ARBOL_GUI, "_pintar_anticipo"))
+    assert "btn_ejecutar" not in pintar, (
+        "`_pintar_anticipo` toca el boton de ejecutar: el anticipo es "
+        "informativo y no gobierna nada")
+
+    culpables = [
+        nodo.name for nodo in ast.walk(ARBOL_GUI)
+        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and nodo.name != "ejecutar_pipeline"
+        and "btn_ejecutar.deshabilitar" in ast.unparse(nodo)]
+    assert not culpables, (
+        f"{culpables} deshabilitan el boton de EJECUTAR: el unico motivo "
+        "declarado para apagarlo es que la corrida este en marcha")
+
+
+def test_el_clic_del_anticipo_reutiliza_la_seleccion_de_la_pestana_2():
+    """
+    La navegacion es la MISMA que la de `_tras_declarar_en_ventana`, y en el
+    mismo orden: adoptar la clave ANTES de repintar (para que
+    `_pasa_el_filtro` proteja esa fila), reponer la seleccion sobre el arbol
+    de criterios y cambiar de pestana. Una seleccion propia seria la segunda
+    forma de seleccionar la misma tabla.
+    """
+    fuente = ast.unparse(_funcion(ARBOL_GUI, "_ir_al_criterio_del_anticipo"))
+    orden_adopta = fuente.index("self._clave_criterio_seleccionado = ")
+    orden_repinta = fuente.index("self._llenar_tabla_criterios()")
+    assert orden_adopta < orden_repinta, (
+        "la clave se adopta DESPUES de repintar: `_pasa_el_filtro` no "
+        "protegeria la fila y `selection_set` podria apuntar al vacio")
+    assert "self.tree_criterios_todos.selection_set" in fuente
+    assert "self.nb.select(self.tab_criterios)" in fuente
+
+
+def test_el_anticipo_se_refresca_al_cargar_csv_y_al_cambiar_alcance():
+    """
+    Los dos gestos que el plan declara, mas el tercero que los cubre a
+    todos: `_llenar_tabla_criterios` repinta el anticipo porque declarar o
+    quitar un valor en caliente cambia que criterios siguen vacios, y esas
+    acciones terminan todas alli.
+    """
+    for nombre in ("_releer_familias", "__init__", "_llenar_tabla_criterios"):
+        fuente = ast.unparse(_funcion(ARBOL_GUI, nombre))
+        assert "_pintar_anticipo" in fuente, (
+            f"'{nombre}' dejo de repintar el anticipo: el panel se quedaria "
+            "describiendo el estado anterior")
+
+
+# ---------------------------------------------------------------------------
+# EXT-8: el PDF fuera del hilo de Tk y la accesibilidad minima, en ventana real
+# ---------------------------------------------------------------------------
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_ext8_la_ventana_real_exporta_sin_bloquear_y_responde_al_teclado(tmp_path):
+    """
+    Lo que el AST no ve (EXT-8, PC-11 y PC-17), medido con una ventana de
+    verdad por `tests/apoyo/gui_ext8_real.py`: el rotulo visible del motivo
+    dice lo mismo que el tooltip y se vacia al correr; `<Button-4>` sobre
+    el canvas no revienta; Escape cierra la ventana normativa y la ayuda;
+    Control-Return ejecuta; y el PDF sale --- por el subproceso, con el
+    boton apagado diciendo por que y un estado terminal en el rotulo,
+    cuando weasyprint esta operativo en ese interprete; por el navegador,
+    con su HTML escrito, cuando no ---. Es el NOVENO test de ventana real.
+    """
+    import json
+    import subprocess
+
+    destino = tmp_path / "salida"
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ext8_real",
+                       str(destino)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=900)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    obs = json.loads((destino / "observado.json").read_text(encoding="utf-8"))
+
+    # PC-17
+    assert obs["rotulo_antes"] == f"No disponible: {obs['motivo_sin_corrida']}"
+    assert obs["rotulo_tras_correr"] == ""
+    assert obs["rueda_x11"] == [-1, 1]
+    assert set(obs["eventos_rueda"]) == {"<MouseWheel>", "<Button-4>", "<Button-5>"}
+    assert obs["normativa_cerrada_con_escape"] is True
+    assert obs["ayuda_cerrada_con_escape"] is True
+    assert obs["control_return_atado"] is True
+    assert obs["informe_tras_control_return"] is True
+    assert obs["ayuda_pdf_nombra_umbral"] is True
+
+    # PC-11
+    if obs["weasyprint_disponible"]:
+        assert obs["boton_pdf_apagado_durante"] is True
+        assert "proceso aparte" in obs["motivo_durante"]
+        assert obs["cancelar_encendido_durante"] is True
+        assert obs["estado_pdf_durante"].startswith("PDF en marcha")
+        assert obs["termino_a_tiempo"] is True
+        assert obs["estado_final"] == "terminado", obs["rotulo_estado_final"]
+        assert obs["pdf_existe"] is True
+        assert obs["boton_pdf_encendido_despues"] is True
+        assert obs["rotulo_estado_final"].startswith("Terminado")
+        assert obs["cancelacion_termino"] is True
+        assert obs["estado_cancelado"] == "cancelado", obs["rotulo_cancelado"]
+        assert obs["pdf_cancelado_no_existe"] is True
+        assert obs["rotulo_cancelado"].startswith("Cancelado")
+    else:
+        assert obs["html_navegador_existe"] is True
+        assert "weasyprint" in obs["rotulo_estado_final"]
+
+
+@pytest.mark.skipif(_INTERPRETE is None,
+                    reason="ningun interprete disponible puede levantar una "
+                           "ventana (falta tkinter, ttkbootstrap o el "
+                           "entorno grafico)")
+def test_ext10_la_ventana_real_calcula_dos_obras_una_vacia_y_abre_B_tras_A(tmp_path):
+    """
+    EXT-10 sobre la ventana de verdad (EXT-V-01, E04): ver
+    `tests/apoyo/gui_ext10_real.py`. Lo que el AST no puede ver: el valor
+    real del campo «JSON de datos de sitio» tras cargar una sesion, el
+    archivo real que «Guardar sesion» escribe (formato 3 con id, sitio y
+    corridas embebidas), y que PGA gobierna de verdad la corrida de la
+    ventana con la obra A, con la obra vacia y con la obra B abierta tras A.
+    """
+    import json
+    import subprocess
+
+    from src import datos_sitio as ds
+    from tests.apoyo.aproximacion import REL_TRANSPORTE
+
+    hecho = subprocess.run(
+        _ENVOLTORIO + [_INTERPRETE, "-m", "tests.apoyo.gui_ext10_real",
+                       str(tmp_path)],
+        cwd=RAIZ, capture_output=True, text=True, timeout=900)
+    assert hecho.returncode == 0, (
+        f"la corrida de la GUI fallo:\n{hecho.stdout}\n{hecho.stderr}")
+    r = json.loads((tmp_path / "resumen_ext10.json").read_text(encoding="utf-8"))
+
+    # 1. La obra A gobierna con su PGA y la memoria sabe de que archivo salio.
+    assert r["pga_A"] == pytest.approx(0.40, rel=REL_TRANSPORTE)
+    assert r["origen_A"].endswith("sitio_A.json")
+    assert r["corredor_A"] == "Obra A, km 0-4"
+    assert all(r["exportadores_tras_A"].values())
+
+    # 2. La sesion guardada es formato 3 y lleva lo que E04 pide.
+    g = r["sesion_guardada"]
+    # Formato 4 desde UI-1 (las dos rutas de la hidrologia): lo de E04 sigue.
+    assert g["formato_version"] == 4 and g["id"] == r["id_inicial"]
+    assert g["datos_sitio"].endswith("sitio_A.json")
+    assert g["claves_sitio"] == ["PGA_roca_B", "corredor_del_proyecto"]
+    assert g["csv_sha1"] and g["corridas"] == 1 and g["corrida_tiene_informe"]
+    assert g["errores"] == []
+
+    # 3. La obra vacia: nada declarado, identidad nueva, el archivo gobierna.
+    n = r["tras_nuevo"]
+    assert n["campo_sitio"] == "" and n["proyecto"] == "" and n["csv"] == ""
+    assert n["informe_es_None"] and not any(n["exportadores"].values())
+    assert n["declarados"] == [] and n["id_cambio"] and n["corridas"] == 0
+    assert r["pga_vacia"] == pytest.approx(0.50, rel=REL_TRANSPORTE)
+    assert r["origen_vacia"] == ds.ORIGEN_ARCHIVO
+
+    # 4. Abrir B tras A: sustituye, y lo que gobierna es lo de B.
+    b = r["tras_cargar_B"]
+    assert b["campo_sitio"] == "" and b["id"] == b["id_esperado"]
+    assert b["declarados"] == ["PGA_roca_B", "corredor_del_proyecto"]
+    assert b["pga_efectivo"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
+    assert b["origen"].startswith("sesion ") and b["informe_es_None"]
+    assert r["pga_B"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
+    assert r["corredor_B"] == "Obra B, km 10-12"
+    # El campo gana al bloque, y borrarlo devuelve el bloque de la sesion.
+    assert r["pga_con_A_en_el_campo"] == pytest.approx(0.40, rel=REL_TRANSPORTE)
+    assert r["pga_con_campo_vacio"] == pytest.approx(0.30, rel=REL_TRANSPORTE)
+
+    # 5. Un sitio.json malo no corre, lo dice, y no toca lo que gobernaba.
+    m = r["tras_malo"]
+    assert m["informe_es_None"] and "PGA_rocaB" in m["error_visible"]
+    assert m["pga_efectivo"] == pytest.approx(0.30, rel=REL_TRANSPORTE)

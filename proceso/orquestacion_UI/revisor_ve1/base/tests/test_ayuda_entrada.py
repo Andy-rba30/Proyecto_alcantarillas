@@ -1,0 +1,764 @@
+"""
+tests/test_ayuda_entrada.py
+===========================
+La ayuda de la pestana 1, comprobada donde importa: que esta DERIVADA.
+
+Lo que este archivo persigue
+----------------------------
+Una tabla de columnas escrita a mano no falla el dia que se escribe: falla
+seis meses despues, cuando alguien anade una columna a `PuntoCritico` y nadie
+se acuerda de la ayuda. Para entonces el proyectista lee una lista de 19
+columnas mientras el programa exige 20, y el error que ve es «faltan columnas
+en el encabezado» sobre un archivo que llenó siguiendo la ayuda del propio
+programa.
+
+Comparar el texto de la ayuda contra un texto esperado NO cubre eso: los dos
+textos se escriben el mismo dia y envejecen juntos. Lo que si lo cubre es
+MOVER LA FUENTE y comprobar que la ayuda se mueve con ella, y es lo que hacen
+los tres primeros tests: anaden una columna, cambian un grupo de vacios y
+quitan un limite, sobre las declaraciones de verdad.
+
+Por que se puede escribir asi
+-----------------------------
+Porque `src/ayuda_entrada.py` lee `m0.COLUMNAS` POR EL MODULO y no por el
+valor. Con un `from modulos.M0_carga import COLUMNAS` la ayuda tendria una
+foto de la tupla, la foto no se podria mover, y este archivo no existiria ---
+que es la forma en que un defecto se vuelve invisible: no dejando escribir la
+prueba que lo encontraria.
+"""
+
+import json
+from pathlib import Path
+
+import pytest
+
+RAIZ = Path(__file__).resolve().parents[1]
+SRC = RAIZ / "src"
+
+from src import ayuda_entrada as ay
+import cli                                                        # noqa: E402
+from src import variables_entrada as ve
+from src.modelos import (Familia, Libre, Poblacion,
+                     VariableDeEntrada)
+from src.modulos import M0_carga as m0
+
+COLUMNA_INVENTADA = "columna_de_prueba_que_no_existe"
+
+
+# ===========================================================================
+# 1 - La ayuda se mueve con su fuente
+# ===========================================================================
+
+def test_una_columna_nueva_aparece_sola_en_la_ayuda(monkeypatch):
+    """
+    EL TEST QUE HACE QUE ESTA AYUDA NO SEA UNA TABLA PARALELA.
+
+    Se anade una columna al encabezado y a la ficha del censo --- las dos
+    fuentes de verdad --- y NO se toca `ayuda_entrada`. Si la ayuda tuviera su
+    propia lista, aqui seguiria diciendo 19.
+    """
+    nueva = VariableDeEntrada(
+        clave=COLUMNA_INVENTADA,
+        concepto="Columna inventada por el test para mover el censo",
+        unidad="m",
+        poblacion=Poblacion.COLUMNA_CSV,
+        resolucion=Libre(que_lo_fija="el test", dominio="m > 0"),
+        fase="Fase 1 - Datos de entrada",
+    )
+    monkeypatch.setattr(m0, "COLUMNAS", m0.COLUMNAS + (COLUMNA_INVENTADA,))
+    monkeypatch.setitem(ve.VARIABLES, COLUMNA_INVENTADA, nueva)
+
+    fichas = ay.fichas_de_columnas()
+    assert fichas[-1].clave == COLUMNA_INVENTADA, (
+        "la columna nueva no llego a la ayuda: la lista esta escrita aparte")
+    assert fichas[-1].concepto == nueva.concepto
+    assert fichas[-1].dominio_declarado == "m > 0"
+    assert ay.cabecera_csv().endswith("," + COLUMNA_INVENTADA), (
+        "la cabecera copiable no recogio la columna nueva, y es justo la que "
+        "el proyectista pega en su hoja")
+    assert ay.fila_de_ejemplo().count(ay.SEPARADOR_CSV) == len(m0.COLUMNAS) - 1
+
+
+def test_la_obligatoriedad_se_mueve_con_el_grupo_de_vacios(monkeypatch):
+    """
+    La segunda fuente: `M0_carga.VACIOS_ADMITIDOS`.
+
+    Se le quita a la Familia C su grupo y `Q_m3s` tiene que pasar a
+    obligatoria. Si la ayuda llevara escrito «puede ir vacia en Familia C»,
+    seguiria diciendolo mientras la carga ya la exige --- y el proyectista
+    dejaria la celda vacia por indicacion del programa.
+    """
+    antes = ay.ficha_de_columna("Q_m3s")
+    assert not antes.obligatoria
+    assert antes.familias_que_admiten_vacio == (Familia.C,)
+
+    sin_familia_c = tuple(v for v in m0.VACIOS_ADMITIDOS
+                          if v.familias != (Familia.C,))
+    monkeypatch.setattr(m0, "VACIOS_ADMITIDOS", sin_familia_c)
+
+    despues = ay.ficha_de_columna("Q_m3s")
+    assert despues.obligatoria, (
+        "quitado el grupo de la Familia C, `Q_m3s` sigue figurando como "
+        "opcional: la ayuda no lee `VACIOS_ADMITIDOS`")
+    assert despues.resumen_de_obligatoriedad() == "SI, en las tres familias"
+
+
+def test_el_limite_fisico_lo_pinta_la_misma_funcion_que_la_ventana_normativa():
+    """
+    El dominio de `dominios.py` se pide a `ventana_normativa.dominio_mostrado`,
+    que es la que usa la ventana emergente de un criterio. Dos formas de pintar
+    el mismo limite en dos pantallas del mismo programa es un limite en el que
+    no se puede confiar --- y ademas una de las dos acabaria rotulandolo como
+    normativo, que es el error que esa funcion existe para impedir.
+    """
+    from src import ventana_normativa as vn
+
+    f = ay.ficha_de_columna("S_cauce")
+    assert f.limite_fisico == vn.dominio_mostrado("S_CAUCE_MAX")
+    assert f.limite_fisico.clase == "dominio_fisico"
+    assert "S_CAUCE_MAX" in f.limite_fisico.frase
+
+
+# ===========================================================================
+# 2 - Lo que la ayuda promete sobre el CSV
+# ===========================================================================
+
+def test_la_cabecera_es_exactamente_la_del_encabezado_que_M0_exige():
+    """
+    Es lo que se pega en una hoja vacia, asi que tiene que ser la MISMA linea
+    que `cargar_puntos` acepta. Se comprueba contra `COLUMNAS` y ademas contra
+    la primera linea del CSV de ejemplo del repositorio, que es un archivo que
+    M0 carga de verdad.
+    """
+    assert ay.cabecera_csv() == ",".join(m0.COLUMNAS)
+    real = (RAIZ / "tests" / "ejemplo_puntos_perfil.csv").read_text(
+        encoding="utf-8").splitlines()[0]
+    assert ay.cabecera_csv() == real, (
+        "la cabecera de la ayuda no coincide con la del CSV que la suite carga")
+
+
+def test_toda_columna_llega_con_concepto_y_con_procedencia():
+    """
+    Una fila de la ayuda sin concepto o sin «de donde sale» es una fila que no
+    ayuda. No se comprueba el texto --- eso lo decide `variables_entrada` ---
+    sino que EXISTA: si manana entra una columna con la ficha a medias, el
+    hueco se ve aqui y no en la pantalla del proyectista.
+    """
+    for f in ay.fichas_de_columnas():
+        assert f.concepto.strip(), f.clave
+        assert f.de_donde_sale.strip(), f.clave
+        assert f.unidad.strip(), f.clave
+
+
+def test_las_columnas_van_en_el_orden_del_encabezado_y_no_en_otro():
+    """
+    El orden es el del archivo, para poder seguir la ayuda de izquierda a
+    derecha mientras se mira la hoja. Alfabetico seria mas comodo de buscar y
+    inutil para llenar.
+    """
+    assert [f.clave for f in ay.fichas_de_columnas()] == list(m0.COLUMNAS)
+
+
+def test_la_ayuda_reclama_una_columna_que_no_existe():
+    with pytest.raises(KeyError, match="no es columna del encabezado"):
+        ay.ficha_de_columna(COLUMNA_INVENTADA)
+
+
+# ===========================================================================
+# 3 - Los vacios, que es la mitad que la lista de columnas no da
+# ===========================================================================
+
+def test_los_vacios_de_la_ayuda_son_los_que_la_carga_admite_de_verdad():
+    """
+    El contraste que importa: lo que la ayuda dice que puede ir vacio tiene que
+    ser lo que `_punto_desde_fila` acepta. Se pregunta a
+    `columnas_que_admiten_vacio`, que es la funcion que la CARGA consulta, no
+    una lista repetida.
+    """
+    for familia in Familia:
+        de_la_carga = m0.columnas_que_admiten_vacio(familia)
+        de_la_ayuda = {f.clave for f in ay.fichas_de_columnas()
+                       if familia in f.familias_que_admiten_vacio}
+        assert de_la_ayuda == de_la_carga, familia
+
+
+def test_la_familia_C_es_la_unica_con_un_grupo_propio_y_la_ayuda_lo_dice():
+    """
+    El caso que motivo esta ayuda: en un cruce de canal, `Q_m3s`, `area_ha` y
+    `S_cauce` van vacias A PROPOSITO y las debe el Tablero 3.1. Un proyectista
+    que no lo sepa cree que le falta un dato suyo.
+    """
+    grupos = ay.vacios_por_quien_lo_debe()
+    de_familia_c = [g for g in grupos if g[2] == (Familia.C,)]
+    assert len(de_familia_c) == 1, "la Familia C tiene un solo grupo propio"
+    quien, columnas, _familias = de_familia_c[0]
+    assert set(columnas) == {"Q_m3s", "area_ha", "S_cauce"}
+    assert "ANA" in quien or "Junta" in quien, (
+        "el grupo tiene que nombrar a quien debe el dato, que es la razon de "
+        "que la celda pueda ir vacia")
+
+
+def test_el_vacio_que_no_espera_a_nadie_se_distingue_de_los_que_si():
+    """
+    `cota_fondo_entrada` admite vacio y NO espera a ningun tablero: el proyecto
+    tiene regla declarada para su ausencia. Es el mismo matiz que
+    `pendientes_externos` --- que por eso no la incluye --- y la ayuda lo
+    conserva en vez de meter las cinco en un saco.
+    """
+    grupos = {tuple(cols): quien for quien, cols, _f in ay.vacios_por_quien_lo_debe()}
+    quien = grupos[("cota_fondo_entrada",)]
+    assert "nadie" in quien.lower()
+    assert "origen_cota_fondo_entrada" in quien
+
+    sin_pendiente = {c for v in m0.VACIOS_ADMITIDOS if not v.marca_pendiente
+                     for c in v.columnas}
+    assert sin_pendiente == {"cota_fondo_entrada"}
+
+
+# ===========================================================================
+# 4 - La ayuda del JSON, incluida su parte pobre
+# ===========================================================================
+
+def test_el_esqueleto_del_json_se_puede_pegar_y_correr(tmp_path):
+    """
+    LA PROMESA QUE HAY QUE COMPROBAR, y el primer esqueleto NO la cumplia: metia
+    las ocho claves con `null` de valor, que parece el «no declarado» natural y
+    no lo es --- `cli._dato_externo` exige un numero ---, de modo que el archivo
+    de ejemplo de la ayuda reventaba al cargarse. Un ejemplo que no carga es
+    peor que no dar ninguno.
+    """
+    ruta = tmp_path / "externos.json"
+    ruta.write_text(ay.esqueleto_json(), encoding="utf-8")
+    externos = cli.cargar_datos_externos(
+        ruta, {clave: None for clave in cli.CLAVES_EXTERNAS})
+    assert externos.globales == {}
+    assert json.loads(ay.esqueleto_json()).keys() == {"globales", "puntos"}
+
+
+def test_las_claves_del_json_son_las_que_cli_admite_y_ninguna_mas():
+    """
+    Una clave que la ayuda anunciara y `_exige_clave` rechazara seria una
+    trampa: el proyectista la escribiria y la corrida le diria «clave no
+    reconocida» sobre lo que el programa acaba de recomendarle.
+    """
+    assert [f.clave for f in ay.fichas_de_datos_externos()] == list(
+        cli.CLAVES_EXTERNAS)
+    assert ay.claves_admitidas() == ", ".join(cli.CLAVES_EXTERNAS)
+
+
+def test_las_familias_de_cada_clave_salen_de_cli_y_no_de_una_copia(monkeypatch):
+    """
+    `FAMILIAS_QUE_USAN` es la MISMA declaracion que `cli._fase_10` consulta.
+    Se comprueba moviendola.
+    """
+    antes = {f.clave: f.familias for f in ay.fichas_de_datos_externos()}
+    assert antes["L_hidraulico_m"] == (Familia.B,)
+
+    monkeypatch.setitem(cli.FAMILIAS_QUE_USAN, "L_hidraulico_m", (Familia.A,))
+    despues = {f.clave: f.familias for f in ay.fichas_de_datos_externos()}
+    assert despues["L_hidraulico_m"] == (Familia.A,), (
+        "la ayuda del JSON lleva su propia tabla de familias")
+
+
+def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
+    """
+    LAS OCHO ESTAN EN EL CENSO desde EXT-5 (EXT-G-03), y la ficha se DERIVA
+    de ahi: concepto, unidad y origen son los de `variables_entrada`, letra
+    por letra. Este test sustituye al que marcaba el hueco de las seis
+    («el dia que esas seis entren en el censo, falla»): entraron, como la
+    poblacion `dato_externo`, y la ayuda ya no tiene nada que declarar vacio.
+    """
+    fichas = ay.fichas_de_datos_externos()
+    assert {f.clave for f in fichas} == set(cli.CLAVES_EXTERNAS)
+    for f in fichas:
+        v = ve.variable(f.clave)
+        assert f.concepto == v.concepto and f.concepto, f.clave
+        assert f.unidad == v.unidad and f.unidad, f.clave
+        assert f.de_donde_sale == ve.como_se_lee(v), f.clave
+    # Eran seis hasta T-2, que sumo las dos que no son magnitudes: la seccion
+    # MEDIDA del receptor (un objeto) y si el acceso de mantenimiento esta
+    # previsto (un booleano). Las dos, opcionales y sin valor por defecto.
+    # T-8 sumo las seis de la Fase 6 (terreno del cauce en la salida y en la
+    # entrada, regimen del flujo, suelo del lecho, duracion del caudal pico y
+    # socavacion declarada): tambien opcionales y sin valor por defecto.
+    seis = {f.clave for f in fichas if f.clave not in m0.COLUMNAS}
+    # T-6 de la cadena T sumo dos, la pendiente transversal de la plataforma
+    # (`bombeo` y `peralte`), y T-8 las seis de la Fase 6: son catorce las
+    # que no son columna.
+    assert seis == {"luz_m", "TW_m", "longitud_m", "S_conducto",
+                    "L_hidraulico_m", "categoria_tr",
+                    "seccion_receptor_medida",
+                    "acceso_mantenimiento_previsto",
+                    "bombeo", "peralte",
+                    "tipo_terreno_receptor", "tipo_terreno_entrada",
+                    "regimen_flujo_descarga", "material_lecho_salida",
+                    "duracion_caudal_pico_min",
+                    "profundidad_socavacion_estimada_m",
+                    # --- T-9 --- las tres de la cuneta de la Fase 10: son
+                    # diecisiete las que no son columna.
+                    "ancho_tributario_m", "S_cuneta",
+                    "inicio_tramo_cuneta_km",
+                    # --- T-7b --- las tres de V5 y V8 (PUNTO 0): veinte.
+                    "ancho_derecho_via_m", "Q_evento_extremo_m3s",
+                    "TW_evento_extremo_m",
+                    # --- cierre de T-7b (H2) --- la cota de afectacion del
+                    # metodo de cota de V5: veintiuna.
+                    "cota_afectacion_aguas_arriba_msnm"}
+    for clave in seis:
+        assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
+
+
+def test_las_dos_claves_con_ficha_dicen_lo_mismo_que_la_ayuda_del_csv():
+    """
+    `Q_m3s` y `S_cauce` salen en las dos pestanas, y tienen que decir lo mismo:
+    son el mismo dato, entregado por dos vias --- la columna, y el JSON cuando
+    el Tablero 3.1 responde ---. Dos conceptos distintos para el mismo dato en
+    la misma ventana es peor que no explicarlo.
+    """
+    del_json = {f.clave: f for f in ay.fichas_de_datos_externos()
+                if f.clave in m0.COLUMNAS}
+    assert set(del_json) == {"Q_m3s", "S_cauce"}
+    for clave, ficha in del_json.items():
+        columna = ay.ficha_de_columna(clave)
+        assert ficha.concepto == columna.concepto
+        assert ficha.unidad == columna.unidad
+        assert ficha.de_donde_sale == columna.de_donde_sale
+
+
+# ===========================================================================
+# 5 - El reparto contenido / pintura
+# ===========================================================================
+
+def test_el_contenido_no_importa_tkinter():
+    """
+    `src/ayuda_entrada.py` se prueba sin escritorio, y eso solo es cierto
+    mientras no arrastre `gui/`. Es la misma frontera que sostiene
+    `src/ventana_normativa.py`.
+
+    SE MIRA EL ARBOL Y NO EL TEXTO, y el primer intento lo miraba: buscaba la
+    cadena «tkinter» en el archivo y fallaba contra el propio docstring, que
+    explica por que NO se importa. Es la trampa que este repositorio ya tiene
+    nombrada --- un test verde (o rojo) sobre el comentario que explica la
+    regla en vez de sobre la regla ---, y aqui salio del lado ruidoso, que es
+    el barato.
+    """
+    import ast
+
+    arbol = ast.parse((SRC / "ayuda_entrada.py").read_text(encoding="utf-8"))
+    importados = set()
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.Import):
+            importados.update(a.name.split(".")[0] for a in nodo.names)
+        elif isinstance(nodo, ast.ImportFrom) and nodo.module:
+            importados.add(nodo.module.split(".")[0])
+    assert "tkinter" not in importados
+    assert "gui" not in importados
+
+
+def test_la_ventana_no_escribe_ninguna_columna_por_su_cuenta():
+    """
+    `gui/ayuda_entrada.py` PINTA. Si nombrara una columna del CSV a mano, esa
+    seria la version que envejece --- y ademas la que el proyectista lee.
+    """
+    import ast
+    arbol = ast.parse((RAIZ / "gui" / "ayuda_entrada.py").read_text(encoding="utf-8"))
+    # Las CADENAS del arbol, sin docstrings (PC-21): hasta EXT-11 se filtraban
+    # los comentarios a mano y se buscaba `"columna"` en el texto restante, y
+    # un docstring que nombrara la columna contaba como escritura.
+    cadenas = set()
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, (ast.FunctionDef, ast.ClassDef, ast.Module)):
+            cuerpo = nodo.body
+            if cuerpo and isinstance(cuerpo[0], ast.Expr) \
+                    and isinstance(cuerpo[0].value, ast.Constant) \
+                    and isinstance(cuerpo[0].value.value, str):
+                cuerpo = cuerpo[1:]
+            for hijo in cuerpo:
+                for n in ast.walk(hijo):
+                    if isinstance(n, ast.Constant) and isinstance(n.value, str):
+                        cadenas.add(n.value)
+    # Las dos que el docstring cita como ejemplo del cruce entre las dos
+    # pestanas quedan fuera; lo que se persigue son las OTRAS diecisiete
+    # escritas en un widget.
+    escritas = [c for c in m0.COLUMNAS
+                if c not in ("Q_m3s", "S_cauce") and c in cadenas]
+    assert not escritas, (
+        "la ventana escribe columnas a mano: " + ", ".join(escritas))
+
+
+# ===========================================================================
+# 6 - Los dos defectos de `variables_entrada` que la ayuda destapo (S23)
+# ===========================================================================
+# Los encontro la ayuda derivada de S22 al pintar la ficha de cada columna: no
+# eran defectos de la ayuda sino de la FICHA, y por eso se cerraron en
+# `variables_entrada` y no en la ventana. Cada uno tiene aqui el test que
+# impide que vuelva, y los dos comprueban la ficha CONTRA EL CODIGO QUE CARGA,
+# no contra un texto esperado.
+
+
+def test_la_progresiva_declara_las_dos_notaciones_que_M0_acepta():
+    """
+    EL PRIMER DEFECTO. El dominio decia solo «km >= 0, dentro del corredor» y
+    `M0._progresiva` acepta ADEMAS la notacion vial con '+', que es la que usan
+    los dos CSV del repositorio y la que la memoria imprime. Quien leyera la
+    ayuda escribiria '0.380' creyendo que es la unica forma.
+
+    No se comprueba el texto por el texto: se CARGAN las dos formas y se exige
+    que la ficha nombre las dos. Si manana `_progresiva` dejara de aceptar una,
+    el test de abajo lo dice; si la ficha dejara de nombrarla, este.
+    """
+    f = ay.ficha_de_columna("progresiva_km")
+    assert "0+380" in f.dominio_declarado or "'+'" in f.dominio_declarado, (
+        "el dominio de la progresiva no nombra la notacion vial")
+    assert "0.380" in f.dominio_declarado, (
+        "el dominio no nombra los kilometros decimales")
+    # El tope de los metros se NOMBRA, no se escribe: asi la ayuda no puede
+    # decir un limite distinto del que `_progresiva` aplica.
+    assert "METROS_POR_KM" in f.dominio_declarado
+
+
+def test_M0_acepta_de_verdad_las_dos_notaciones_que_la_ficha_declara(tmp_path):
+    """
+    La otra mitad del par: que lo declarado sea lo que la carga hace.
+
+    Se escriben dos CSV identicos salvo la progresiva --- uno en notacion vial
+    y otro en kilometros decimales --- y las dos filas tienen que dar el MISMO
+    punto. Con eso la ficha no puede prometer una forma que M0 rechace.
+    """
+    cabecera = ay.cabecera_csv()
+    base = (RAIZ / "tests" / "ejemplo_puntos_perfil.csv").read_text(
+        encoding="utf-8").splitlines()
+    fila = base[1].split(",")
+    columna = list(m0.COLUMNAS).index("progresiva_km")
+
+    puntos = {}
+    for etiqueta, escrito in (("vial", "0+380"), ("decimal", "0.380")):
+        celdas = list(fila)
+        celdas[columna] = escrito
+        ruta = tmp_path / f"progresiva_{etiqueta}.csv"
+        ruta.write_text("\n".join([cabecera, ",".join(celdas)]) + "\n",
+                        encoding="utf-8")
+        puntos[etiqueta] = m0.cargar_puntos(ruta)[0]
+
+    assert puntos["vial"].progresiva_km == puntos["decimal"].progresiva_km
+    # Y la memoria imprime siempre la vial, sea como se haya escrito la celda.
+    assert puntos["vial"].progresiva_display == "0+380"
+    assert puntos["decimal"].progresiva_display.startswith("0+380")
+
+
+def test_la_ficha_del_sucs_dice_que_escribir_en_la_celda():
+    """
+    EL SEGUNDO DEFECTO. La celda es texto libre y la ficha no decia ni que
+    forma tiene un grupo SUCS, de modo que quien llena el CSV no tenia de donde
+    saberlo.
+
+    Lo que se comprueba es que la nota traiga las tres cosas que la hacen
+    utilizable Y honesta: los simbolos basicos, su fuente con pagina, y el
+    hueco --- que la forma doble que el expediente usa no la enumera ninguna
+    fuente de `normas/` ---.
+    """
+    f = ay.ficha_de_columna("sucs_fundacion")
+    assert f.nota, "la columna del SUCS volvio a quedarse sin nota"
+    for simbolo in ("GW", "GP", "GM", "GC", "SW", "SP", "SM", "SC",
+                    "ML", "CL", "OL", "MH", "CH", "OH", "Pt"):
+        assert simbolo in f.nota, simbolo
+    assert "E.050" in f.nota and "31" in f.nota, (
+        "la nota tiene que citar la fuente de los simbolos con su pagina")
+    assert "D-2487" in f.nota, (
+        "la nota tiene que decir quien define las duplas y que no esta en "
+        "normas/: sin eso, el hueco parece un descuido")
+    assert "NO valida" in f.nota, (
+        "la nota tiene que decir que M0 no valida la celda, porque es lo que "
+        "separa esta declaracion de una restriccion")
+
+
+def test_declarar_el_vocabulario_del_sucs_NO_restringe_la_carga(tmp_path):
+    """
+    LA CONDICION CON QUE SE ACEPTO DECLARARLO: que informe sin cerrar puertas.
+
+    Se cargan tres celdas --- un simbolo basico, una DUPLA que no esta entre
+    los quince, y una cadena que no es SUCS en absoluto --- y las tres tienen
+    que entrar. Si algun dia alguien convierte la nota en una lista aplicada,
+    este test se pone rojo y obliga a decidirlo en vez de que ocurra de
+    tapadillo.
+
+    La dupla no es un caso inventado: `tests/ejemplo_puntos.csv` trae 'SP-SM',
+    de modo que aplicar los quince simbolos de E.050 rechazaria el propio
+    expediente del repositorio.
+    """
+    cabecera = ay.cabecera_csv()
+    base = (RAIZ / "tests" / "ejemplo_puntos_perfil.csv").read_text(
+        encoding="utf-8").splitlines()
+    fila = base[1].split(",")
+    columna = list(m0.COLUMNAS).index("sucs_fundacion")
+
+    for escrito in ("SM", "SP-SM", "no-es-un-grupo-sucs"):
+        celdas = list(fila)
+        celdas[columna] = escrito
+        ruta = tmp_path / "sucs.csv"
+        ruta.write_text("\n".join([cabecera, ",".join(celdas)]) + "\n",
+                        encoding="utf-8")
+        punto = m0.cargar_puntos(ruta)[0]
+        assert punto.sucs_fundacion == escrito, (
+            f"'{escrito}' dejo de cargarse: la nota del SUCS se convirtio en "
+            "una restriccion")
+
+
+def test_ninguna_lista_declarada_valida_una_celda_de_texto():
+    """
+    La razon por la que el vocabulario del SUCS es una NOTA y no un `opciones`,
+    escrita como guardia.
+
+    `Libre.opciones` solo se IMPRIME --- M11, la ventana normativa y esta
+    ayuda ---; ningun validador lo lee. Si eso cambiara, la nota del SUCS
+    tendria que revisarse antes, porque su lista NO esta cerrada por ninguna
+    fuente de `normas/`.
+    """
+    import ast
+
+    fuente = (SRC / "modulos" / "M0_carga.py").read_text(encoding="utf-8")
+    arbol = ast.parse(fuente)
+    atributos = {n.attr for n in ast.walk(arbol) if isinstance(n, ast.Attribute)}
+    assert "opciones" not in atributos, (
+        "M0 empezo a leer `opciones`: si ahora valida celdas contra la lista "
+        "declarada, la nota del SUCS pasa a restringir la carga y hay que "
+        "revisarla --- sus quince simbolos dejarian fuera el 'SP-SM' del "
+        "propio expediente")
+
+
+def test_la_nota_de_una_columna_llega_a_la_ficha():
+    """
+    `VariableDeEntrada.nota` existia, `reporte_variables` la imprimia, y la
+    ayuda de S22 la descartaba. Dos columnas la llevan hoy; las dos tienen que
+    llegar.
+    """
+    con_nota = {f.clave for f in ay.fichas_de_columnas() if f.nota}
+    assert con_nota == {c for c in m0.COLUMNAS if ve.variable(c).nota}
+    assert con_nota == {"sucs_fundacion", "NF_profundidad_m"}, (
+        "cambio el censo de columnas con nota: revisa que la ayuda las siga "
+        "pintando todas")
+
+
+# ===========================================================================
+# 7 - La ayuda de conceptos (G5): listas derivadas, parrafos con guardia
+# ===========================================================================
+# El mismo patron de la seccion 1, aplicado a las cuatro listas nuevas: se
+# MUEVE la fuente y se mira si la ayuda se mueve con ella. Donde la lista es
+# derivada y el parrafo es texto a mano (etiquetas, estados), lo que se
+# comprueba es la GUARDIA: una entrada nueva sin parrafo DETIENE la ayuda en
+# vez de omitirse, y con el parrafo puesto aparece sola.
+
+
+def test_toda_familia_del_enum_llega_con_su_perfil(monkeypatch):
+    """
+    Las familias salen de `M1_clasificacion.PERFILES` recorriendo el ENUM.
+    Se mueve el perfil y la ficha se mueve: si la ayuda llevara sus propios
+    rotulos, el nombre cambiado no llegaria.
+    """
+    from dataclasses import replace
+
+    from src.modulos import M1_clasificacion as m1
+
+    fichas = ay.fichas_de_familias()
+    assert [f.familia for f in fichas] == list(Familia)
+    for ficha in fichas:
+        perfil = m1.PERFILES[ficha.familia]
+        assert ficha.nombre == perfil.nombre
+        assert ficha.origen_del_caudal == perfil.origen_del_caudal, (
+            "el «de donde sale el Q» de la ficha no es el del perfil")
+        assert perfil.nombre in ficha.rotulo
+
+    monkeypatch.setitem(m1.PERFILES, Familia.B,
+                        replace(m1.PERFILES[Familia.B],
+                                nombre="Nombre movido por el test"))
+    movidas = {f.familia: f for f in ay.fichas_de_familias()}
+    assert movidas[Familia.B].nombre == "Nombre movido por el test", (
+        "la ayuda de familias lleva su propia lista de nombres")
+
+
+def test_una_familia_sin_perfil_detiene_la_ayuda(monkeypatch):
+    """
+    La guardia de la lista: una familia nueva en el enum sin perfil en
+    `PERFILES` no se puede describir sin inventarla, asi que la ayuda se
+    detiene con KeyError en vez de omitir la fila --- que es como una tabla
+    escrita a mano se quedaria callada.
+    """
+    from src.modulos import M1_clasificacion as m1
+
+    monkeypatch.delitem(m1.PERFILES, Familia.C)
+    with pytest.raises(KeyError, match="no tiene perfil"):
+        ay.fichas_de_familias()
+
+
+def test_las_etiquetas_son_las_de_la_taxonomia_y_en_su_orden():
+    """
+    La LISTA sale de `criterios_adoptados.ETIQUETAS_VALIDAS` --- la misma
+    declaracion que la guardia de los criterios aplica --- y en su orden, que
+    es el de mas determinado a mas elegido. Cada fila trae parrafo y archivo,
+    y el archivo EXISTE en src/: un «vive en» que apunte a un modulo retirado
+    mandaria al lector a buscar donde no hay nada.
+    """
+    from src import criterios_adoptados as ca
+
+    fichas = ay.fichas_de_etiquetas()
+    assert [f.etiqueta for f in fichas] == list(ca.ETIQUETAS_VALIDAS)
+    for f in fichas:
+        assert f.nombre.strip() and f.explicacion.strip(), f.etiqueta
+        assert (SRC / f.archivo).exists(), (
+            f"la etiqueta [{f.etiqueta}] dice vivir en '{f.archivo}', que no "
+            "existe en src/")
+
+
+def test_una_etiqueta_sin_parrafo_o_un_parrafo_sin_etiqueta_fallan(monkeypatch):
+    """
+    LA GUARDIA QUE EL PROMPT DE G5 EXIGE, en las dos direcciones. Una
+    etiqueta nueva sin fila de ayuda no se omite: detiene. Y una fila cuya
+    etiqueta ya no esta en la taxonomia tambien: seria la tabla paralela que
+    este archivo se prohibe, envejeciendo en silencio.
+    """
+    from src import criterios_adoptados as ca
+
+    monkeypatch.setattr(ca, "ETIQUETAS_VALIDAS",
+                        ca.ETIQUETAS_VALIDAS + ("X",))
+    with pytest.raises(KeyError, match="'X'"):
+        ay.fichas_de_etiquetas()
+
+    monkeypatch.setattr(ca, "ETIQUETAS_VALIDAS", ("N", "A"))
+    with pytest.raises(KeyError, match="ya no tiene"):
+        ay.fichas_de_etiquetas()
+
+
+def test_los_estados_son_los_de_la_tabla_de_criterios():
+    """
+    Los cuatro primeros estados se DERIVAN del arbol de `gui/app.py`
+    (`FILTROS_DE_ESTADO` para la lista y el orden, los `return` de
+    `_estado_criterio` para el rotulo), y aqui se contrastan con una lectura
+    INDEPENDIENTE del mismo arbol. Despues vienen los dos conceptos del
+    pipeline, cada uno anclado al simbolo del que sale --- y las anclas se
+    comprueban contra el simbolo real, no contra un texto.
+    """
+    import ast as ast_mod
+    from dataclasses import fields
+
+    from src import criterios_adoptados as ca
+    from src.modelos import TipoDeVeredicto
+
+    arbol = ast_mod.parse((RAIZ / "gui" / "app.py").read_text(
+        encoding="utf-8"))
+    filtros = next(ast_mod.literal_eval(n.value) for n in ast_mod.walk(arbol)
+                   if isinstance(n, ast_mod.Assign)
+                   and any(isinstance(t, ast_mod.Name)
+                           and t.id == "FILTROS_DE_ESTADO"
+                           for t in n.targets))
+    retornos = {}
+    for n in ast_mod.walk(arbol):
+        if isinstance(n, ast_mod.FunctionDef) and n.name == "_estado_criterio":
+            for r in ast_mod.walk(n):
+                if isinstance(r, ast_mod.Return):
+                    rotulo, tag = ast_mod.literal_eval(r.value)
+                    retornos[tag] = rotulo
+    tags_gui = [tag for _rotulo, tag in filtros if tag is not None]
+
+    fichas = ay.fichas_de_estados()
+    de_la_tabla = [f for f in fichas
+                   if f.origen == "gui/app.py::_estado_criterio"]
+    assert [f.tag for f in de_la_tabla] == tags_gui, (
+        "los estados de la ayuda no son los de la tabla de criterios")
+    for f in de_la_tabla:
+        assert f.rotulo == retornos[f.tag], (
+            f"el rotulo de '{f.tag}' no es el que _estado_criterio devuelve")
+
+    conceptos = {f.tag: f for f in fichas if f not in de_la_tabla}
+    assert set(conceptos) == {"vacio_verificado",
+                              TipoDeVeredicto.DIFERIDO.value}
+    assert "vacio_verificado" in {c.name for c in fields(ca.Criterio)}, (
+        "el ancla del vacio verificado desaparecio del Criterio y la ayuda "
+        "sigue mostrandolo")
+    assert conceptos["diferido"].rotulo == TipoDeVeredicto.DIFERIDO.value
+    for f in fichas:
+        assert f.explicacion.strip(), f.tag
+
+
+def test_un_estado_nuevo_exige_su_parrafo_y_con_el_aparece_solo(
+        tmp_path, monkeypatch):
+    """
+    EL TEST QUE PIDE EL PROMPT DE G5 («añade un estado y la ayuda lo recoge
+    sin tocar gui/ayuda_entrada.py»). Se escribe una copia de `gui/app.py`
+    con un estado mas --- en el filtro Y en `_estado_criterio`, que es donde
+    un estado real naceria --- y se mira lo que hace la ayuda: sin parrafo,
+    DETIENE con el nombre del estado; con el parrafo puesto en
+    `src/ayuda_entrada.py`, la fila aparece con el rotulo de la GUI, sin
+    tocar la ventana.
+    """
+    fuente = (RAIZ / "gui" / "app.py").read_text(encoding="utf-8")
+    ancla_filtro = '    ("Resueltos en el archivo", "resuelto"),'
+    ancla_retorno = '        return "resuelto", "resuelto"'
+    assert ancla_filtro in fuente and ancla_retorno in fuente, (
+        "cambiaron las anclas de gui/app.py: actualiza este test")
+    copia = tmp_path / "app_con_estado_nuevo.py"
+    copia.write_text(
+        fuente
+        .replace(ancla_filtro,
+                 ancla_filtro + '\n    ("De prueba", "estado_de_prueba"),')
+        .replace(ancla_retorno,
+                 ancla_retorno + '\n        return "de prueba", '
+                                 '"estado_de_prueba"'),
+        encoding="utf-8")
+
+    with pytest.raises(KeyError, match="estado_de_prueba"):
+        ay.fichas_de_estados(ruta_gui=copia)
+
+    monkeypatch.setitem(ay._EXPLICACIONES_DE_ESTADOS, "estado_de_prueba",
+                        "Parrafo puesto por el test.")
+    fichas = {f.tag: f for f in ay.fichas_de_estados(ruta_gui=copia)}
+    assert fichas["estado_de_prueba"].rotulo == "de prueba", (
+        "el rotulo del estado nuevo no llego desde _estado_criterio")
+
+
+def test_si_el_filtro_y_los_retornos_divergen_la_ayuda_no_elige(tmp_path):
+    """
+    `FILTROS_DE_ESTADO` promete llevar los MISMOS tags que devuelve
+    `_estado_criterio` (su comentario lo dice con palabras). La ayuda exige
+    esa promesa en vez de fiarse de una de las dos listas: si divergen, no
+    hay verdad que mostrar y se detiene diciendolo.
+    """
+    fuente = (RAIZ / "gui" / "app.py").read_text(encoding="utf-8")
+    copia = tmp_path / "app_divergente.py"
+    copia.write_text(fuente.replace(
+        '    ("Resueltos en el archivo", "resuelto"),',
+        '    ("Resueltos en el archivo", "resuelto"),\n'
+        '    ("Huerfano", "tag_sin_retorno"),'), encoding="utf-8")
+    with pytest.raises(KeyError, match="mismos estados"):
+        ay.fichas_de_estados(ruta_gui=copia)
+
+
+def test_el_glosario_es_el_censo_entero_y_en_alfabetico():
+    """
+    El glosario no elige: son las variables del censo, TODAS, con concepto y
+    unidad, en alfabetico --- porque un glosario se consulta buscando un
+    nombre, no llenando un archivo de izquierda a derecha.
+    """
+    fichas = ay.fichas_de_glosario()
+    assert [f.clave for f in fichas] == sorted(ve.VARIABLES, key=str.lower)
+    for f in fichas:
+        assert f.concepto.strip() and f.unidad.strip(), f.clave
+        assert f.fase.strip(), f.clave
+        assert "_" not in f.poblacion, (
+            "el rotulo de poblacion salio crudo del enum en vez de llano")
+
+
+def test_una_variable_nueva_aparece_sola_en_el_glosario(monkeypatch):
+    """El gemelo del test de la seccion 1, sobre la cuarta lista derivada."""
+    nueva = VariableDeEntrada(
+        clave=COLUMNA_INVENTADA,
+        concepto="Variable inventada por el test para mover el censo",
+        unidad="m",
+        poblacion=Poblacion.COLUMNA_CSV,
+        resolucion=Libre(que_lo_fija="el test", dominio="m > 0"),
+        fase="Fase 1 - Datos de entrada",
+    )
+    monkeypatch.setitem(ve.VARIABLES, COLUMNA_INVENTADA, nueva)
+    fichas = {f.clave: f for f in ay.fichas_de_glosario()}
+    assert COLUMNA_INVENTADA in fichas, (
+        "la variable nueva no llego al glosario: la lista esta escrita aparte")
+    assert fichas[COLUMNA_INVENTADA].poblacion == "columna del CSV"

@@ -1,0 +1,318 @@
+"""
+tests/test_M3_hidraulica.py
+============================
+M3 contra la Fase 4.1: geometria circular parcialmente llena y tirante normal
+por Manning + Brent, con la regla de doble n.
+
+Los tests que mas importan son cuatro:
+
+    - la geometria (A, P, R) reproduce el caso patron CP-2 dentro de su
+      tolerancia;
+    - la regla de doble n da dos thetas distintos para el mismo Q/D/S (n_max
+      frente a n_min) y V sale del theta de n_min, NO de Q/A(theta n_max);
+    - un Q que ningun theta en (0, 2*pi) puede transportar devuelve None, sin
+      lanzar una excepcion generica;
+    - HDPE hereda el rango de Manning por analogia (Sec. 4.1.1) y por eso
+      produce dos ramas distintas igual que concreto y TMC, nunca una sola.
+"""
+
+import math
+
+import pytest
+
+from src.modelos import (DatoInvalidoError, Geometria, SeccionCircular, TiranteNormal,
+                     TipoMaterial)
+from src.modulos.M2_material import catalogo
+from src.modulos.M3_hidraulica import area, geometria, perimetro, resolver_manning, tirante_normal
+from tests.fixtures.casos_patron import CP2_GEOMETRIA_MANNING, CP3_VELOCIDAD_MINIMA
+
+
+@pytest.fixture
+def concreto():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO)
+
+
+@pytest.fixture
+def hdpe():
+    return catalogo(TipoMaterial.HDPE)
+
+
+# ---------------------------------------------------------------------------
+# CP-2 - Geometria circular y Manning (Sec. 4.1)
+# ---------------------------------------------------------------------------
+
+def test_geometria_reproduce_cp2():
+    c = CP2_GEOMETRIA_MANNING
+    theta = c["theta_esperado"]
+    g = geometria(SeccionCircular(c["D"]), theta)
+
+    assert isinstance(g, Geometria)
+    assert g.A == pytest.approx(c["A_esperado"], abs=c["tolerancia_geometria"])
+    assert g.P == pytest.approx(c["P_esperado"], abs=c["tolerancia_geometria"])
+    assert g.R == pytest.approx(c["R_esperado"], abs=c["tolerancia_geometria"])
+    assert g.y_sobre_D == pytest.approx(c["y_sobre_D"], abs=c["tolerancia_geometria"])
+
+
+def test_area_y_perimetro_funciones_sueltas_coinciden_con_geometria():
+    c = CP2_GEOMETRIA_MANNING
+    theta = c["theta_esperado"]
+    assert area(SeccionCircular(c["D"]), theta) == pytest.approx(c["A_esperado"], abs=c["tolerancia_geometria"])
+    assert perimetro(SeccionCircular(c["D"]), theta) == pytest.approx(c["P_esperado"], abs=c["tolerancia_geometria"])
+
+
+def test_tirante_normal_resuelve_el_theta_de_cp2_desde_Q():
+    """
+    CP-2 da y/D=0.75 y deriva Q_con_n_max = V_con_n_max * A. Yendo en sentido
+    inverso -- desde ese Q hasta el theta -- tirante_normal() debe encontrar
+    el mismo theta, con Brent y no con la formula cerrada de y/D.
+    """
+    c = CP2_GEOMETRIA_MANNING
+    g = tirante_normal(seccion=SeccionCircular(c["D"]), Q=c["Q_con_n_max_esperado"], S=c["S"], n=c["n_max"])
+
+    assert g is not None
+    assert g.llenado == pytest.approx(c["theta_esperado"], rel=1e-4)
+    assert g.A == pytest.approx(c["A_esperado"], abs=c["tolerancia_geometria"])
+
+
+def test_velocidad_con_n_max_reproduce_cp2():
+    c = CP2_GEOMETRIA_MANNING
+    g = tirante_normal(seccion=SeccionCircular(c["D"]), Q=c["Q_con_n_max_esperado"], S=c["S"], n=c["n_max"])
+    V = c["Q_con_n_max_esperado"] / g.A
+    assert V == pytest.approx(c["V_con_n_max_esperado"], abs=c["tolerancia_hidraulica"])
+
+
+# ---------------------------------------------------------------------------
+# Regla de doble n (Sec. 4.1)
+# ---------------------------------------------------------------------------
+
+def test_resolver_manning_aplica_doble_n(concreto):
+    c = CP2_GEOMETRIA_MANNING
+    Q = c["Q_con_n_max_esperado"]
+
+    resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=concreto)
+
+    assert isinstance(resolucion, TiranteNormal)
+    assert resolucion.geometria.llenado == pytest.approx(c["theta_esperado"], rel=1e-4)
+    assert resolucion.V_erosion == pytest.approx(
+        c["V_con_n_min_esperado"], abs=c["tolerancia_hidraulica"])
+    assert resolucion.V_sedimentacion == pytest.approx(
+        c["V_con_n_max_esperado"], abs=c["tolerancia_hidraulica"])
+
+
+def test_v_con_n_min_no_es_Q_sobre_area(concreto):
+    """
+    Guarda de diseno explicita: V*A != Q en general. Si un modulo calculara V
+    como Q / geometria.A estaria ignorando la regla de doble n (Sec. 4.1) y
+    devolviendo la velocidad de la rama de n_max en vez de la de n_min.
+    """
+    c = CP2_GEOMETRIA_MANNING
+    Q = c["Q_con_n_max_esperado"]
+    resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=concreto)
+
+    V_incorrecta = Q / resolucion.geometria.A
+    assert resolucion.V_erosion != pytest.approx(V_incorrecta, rel=1e-3)
+    assert resolucion.V_erosion > V_incorrecta   # n_min < n_max -> misma R, mas velocidad
+    # La otra rama SI vale Q/A, y por construccion: es la velocidad media del
+    # mismo n con que se resolvio el tirante. Es lo que la hace el minimo real
+    # de la velocidad sobre el rango de n, o sea el extremo conservador de V2.
+    assert resolucion.V_sedimentacion == pytest.approx(V_incorrecta, rel=1e-9)
+
+
+def test_las_dos_ramas_comparten_la_misma_geometria(concreto):
+    """
+    La regla de doble n NO resuelve Brent dos veces: la velocidad de n_min se
+    calcula sobre el mismo theta/R que fijo la rama de n_max (ver CP-2).
+    """
+    c = CP2_GEOMETRIA_MANNING
+    Q = c["Q_con_n_max_esperado"]
+
+    resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=concreto)
+    factor = resolucion.geometria.R ** (2 / 3) * c["S"] ** (1 / 2)
+
+    assert resolucion.V_erosion == pytest.approx(
+        factor / concreto.n_para_velocidad_maxima, rel=1e-9)
+    assert resolucion.V_sedimentacion == pytest.approx(
+        factor / concreto.n_para_velocidad_minima, rel=1e-9)
+
+
+def test_hdpe_tambien_aplica_doble_n_por_el_rango_de_criterios_adoptados(hdpe):
+    """Sec. 4.1.1: el n de HDPE es un RANGO, no un valor puntual;
+    resolver_manning() debe seguir dando una V de erosion distinta de la
+    velocidad implicita en la rama de capacidad.
+
+    Desde T-4 el rango es 0.009-0.015 (HDS-5 Table B.1) y no el 0.010-0.013
+    del concreto. El caudal del caso patron se calculo con n = 0.013: con el
+    n maximo del HDPE ese mismo caudal ya no cabe en el tubo y
+    `resolver_manning` devuelve None, que es correcto. Se escala el caudal
+    por el cociente de los dos n para medir el mismo tirante del caso."""
+    c = CP2_GEOMETRIA_MANNING
+    Q = c["Q_con_n_max_esperado"] * c["n_max"] / hdpe.n_max
+
+    assert hdpe.n_min != hdpe.n_max
+    resolucion = resolver_manning(seccion=SeccionCircular(c["D"]), Q=Q, S=c["S"], material=hdpe)
+
+    assert resolucion is not None
+    V_con_n_max = Q / resolucion.geometria.A
+    assert resolucion.V_erosion > V_con_n_max
+    assert resolucion.V_sedimentacion == pytest.approx(V_con_n_max, rel=1e-9)
+
+
+# ---------------------------------------------------------------------------
+# CP-3 - la velocidad minima nunca gobierna (Sec. 5.2), contraste adicional
+# de la formula de velocidad usando el R de CP-2 con otra pendiente
+# ---------------------------------------------------------------------------
+
+def test_pendiente_que_produce_v_objetivo_de_cp3():
+    """
+    SIS-F-17. Este test NO INVOCABA CODIGO DE PRODUCCION: reescribia la
+    formula de Manning dentro del propio assert y la contrastaba contra el
+    dorado del fixture, de modo que comprobaba que el fixture es coherente
+    consigo mismo -- que es trabajo del bloque `__main__` de casos_patron.py,
+    no de la suite -- y no protegia ni una linea de M3. Contaba en el conteo
+    de tests sin defender nada.
+
+    Ahora entra por `resolver_manning`, que es la funcion que el pipeline usa,
+    con el caudal que corresponde a la geometria de CP-2: la pendiente de CP-3
+    tiene que devolver, en la rama de velocidad MINIMA (n = 0.013, el n mas
+    alto del concreto), exactamente la V objetivo de V2. Si M3 aplicara la
+    misma n a las dos ramas, o resolviera theta con la pendiente equivocada,
+    este test cae.
+    """
+    c3 = CP3_VELOCIDAD_MINIMA
+    c2 = CP2_GEOMETRIA_MANNING
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    assert material.n_para_velocidad_minima == pytest.approx(c3["n"]), (
+        "CP-3 se escribio para el n mas alto del concreto: si el catalogo "
+        "cambia, el caso patron tiene que revisarse antes que este test")
+
+    # El caudal que llena el conducto hasta el y/D de CP-2 a la velocidad
+    # objetivo de V2. Sale del dorado de area de CP-2, no de una cuenta nueva.
+    Q = c3["V_objetivo"] * c2["A_esperado"]
+
+    resolucion = resolver_manning(seccion=SeccionCircular(c3["D"]), Q=Q,
+                                  S=c3["S_que_produce_V_objetivo"],
+                                  material=material)
+
+    assert resolucion is not None, "la pendiente de CP-3 tiene que converger"
+    assert resolucion.geometria.y_sobre_D == pytest.approx(c3["y_sobre_D"],
+                                                          abs=c3["tolerancia_V"])
+    assert resolucion.V_sedimentacion == pytest.approx(c3["V_objetivo"],
+                                                       abs=c3["tolerancia_V"])
+    # Y la doble n sigue separando las dos ramas: con n_min < n_max la
+    # velocidad de erosion es la mayor de las dos (Sec. 4.1).
+    assert resolucion.V_erosion > resolucion.V_sedimentacion
+
+
+# ---------------------------------------------------------------------------
+# El caso "sin solucion"
+# ---------------------------------------------------------------------------
+
+def test_un_caudal_que_ningun_theta_transporta_devuelve_none():
+    """D=0.90 lleno a presion (Sec. 4.1) no llega a transportar un Q absurdo:
+    tirante_normal() debe devolver None, no lanzar una excepcion generica."""
+    g = tirante_normal(seccion=SeccionCircular(0.90), Q=100.0, S=0.005, n=0.013)
+    assert g is None
+
+
+def test_resolver_manning_devuelve_none_si_la_rama_de_n_max_no_converge(concreto):
+    resolucion = resolver_manning(seccion=SeccionCircular(0.90), Q=100.0, S=0.005, material=concreto)
+    assert resolucion is None
+
+
+def test_none_no_es_una_excepcion():
+    """El caso sin solucion es un resultado de diseño, no un fallo del programa."""
+    try:
+        resultado = tirante_normal(seccion=SeccionCircular(0.90), Q=100.0, S=0.005, n=0.013)
+    except Exception as exc:   # pragma: no cover - documenta la intencion del test
+        pytest.fail(f"tirante_normal() no debe lanzar excepcion en el caso "
+                    f"sin solucion, lanzo {type(exc).__name__}: {exc}")
+    assert resultado is None
+
+
+# ---------------------------------------------------------------------------
+# Validacion de parametros
+# ---------------------------------------------------------------------------
+
+# EL MOTIVO SE COMPRUEBA, Y NO ES CELO: ES LA REGRESION QUE C1 SE COMIO.
+# Este test solo miraba `campo`, y por eso paso en verde mientras C1 renombraba
+# el MOTIVO de "el diametro debe ser positivo" a "la altura interior de la
+# seccion debe ser positiva". Los dos viajan juntos dentro de `str(exc)` --
+# `cli._bloqueo` lo guarda como `mensaje`, `cli._bloqueo_json` lo publica y
+# `M11._tabla_bloqueos` lo pinta --, de modo que renombrar el motivo MUEVE
+# SALIDA igual que renombrar el campo: medido, 12 apariciones en el JSON y una
+# en el HTML con un solo `--declarar`. Un test que pinea la mitad de una cadena
+# impresa no defiende la cadena.
+@pytest.mark.parametrize("kwargs, campo, motivo", [
+    # El campo sigue siendo "D" despues de C1 aunque M3 ya no reciba un
+    # diametro, y el motivo sigue hablando de diametro: los dos se imprimen, y
+    # C1 no mueve salida. La nota del porque esta en `M3._validar_parametros`.
+    ({"D": 0.0, "Q": 1.0, "S": 0.005, "n": 0.013}, "D",
+     "el diametro debe ser positivo"),
+    ({"D": 0.90, "Q": -1.0, "S": 0.005, "n": 0.013}, "Q",
+     "el caudal debe ser positivo"),
+    # T-2 (INF-5.1.6): la guardia es solo contra S < 0. S = 0 es el barril
+    # horizontal que el HDS-5 admite (num. 3.3.4) y ya no es un dato invalido;
+    # lo que M3 hace con el esta en tests/test_t2_hidraulica.py.
+    ({"D": 0.90, "Q": 1.0, "S": -0.001, "n": 0.013}, "S",
+     "la pendiente no puede ser negativa: S = 0 es un barril horizontal, que "
+     "se admite; una pendiente adversa no"),
+    ({"D": 0.90, "Q": 1.0, "S": float("nan"), "n": 0.013}, "S",
+     "la pendiente no puede ser negativa: S = 0 es un barril horizontal, que "
+     "se admite; una pendiente adversa no"),
+    ({"D": 0.90, "Q": 1.0, "S": 0.005, "n": 0.0}, "n",
+     "el coeficiente de Manning debe ser positivo"),
+])
+def test_parametros_invalidos_lanzan_dato_invalido(kwargs, campo, motivo):
+    kwargs = dict(kwargs)
+    kwargs["seccion"] = SeccionCircular(kwargs.pop("D"))
+    with pytest.raises(DatoInvalidoError) as exc:
+        tirante_normal(**kwargs)
+    assert exc.value.campo == campo
+    assert exc.value.motivo == motivo
+
+
+# ---------------------------------------------------------------------------
+# MAT-O18: el contrato de None, con el numero que lo hace exacto
+# ---------------------------------------------------------------------------
+
+def test_el_None_de_tirante_normal_es_conservador_y_no_literal():
+    """
+    MAT-O18. (Desde EXT-2, PC-06, el None en esa banda lo devuelve ANTES la
+    guardia `not Q < Q_lleno` de `tirante_normal`, comun a las dos formas; la
+    razon de Brent que sigue abajo es la que habia hasta entonces y sigue
+    siendo cierta para el bracket.) El docstring decia que None significa
+    "no hay theta donde Manning iguale Q". No es exacto: la curva Q(theta) de una seccion
+    circular tiene un PICO cerca de y/D ~ 0.94 y despues BAJA hasta el caudal
+    a seccion llena. En la banda (Q_lleno, Q_pico] SI existe theta -- dos, de
+    hecho -- y la funcion devuelve None igual, porque Brent no encuentra
+    cambio de signo en el intervalo completo.
+
+    El test fija las DOS cosas: que la banda existe de verdad (se recomputa
+    Manning aqui, sin llamar a la funcion bajo prueba) y que la funcion
+    devuelve None en ella. La direccion importa y por eso no se "arregla":
+    devolver None de mas es conservador -- manda a M2 al siguiente diametro --
+    y un tirante por encima de y/D = 0.94 lo rechazaria V1 una fase mas tarde.
+    """
+    D, S, n = 0.90, 0.005, 0.013
+
+    def caudal(theta):
+        A = (D ** 2 / 8) * (theta - math.sin(theta))
+        P = D * theta / 2
+        return (1 / n) * (A / P) ** (2 / 3) * S ** 0.5 * A
+
+    Q_lleno = caudal(2 * math.pi - 1e-9)
+    Q_pico = max(caudal(1e-6 + k * (2 * math.pi - 2e-6) / 20000)
+                 for k in range(20001))
+
+    assert Q_pico > Q_lleno, (
+        "si la curva fuera monotona el contrato literal seria cierto y este "
+        "test sobraria")
+
+    en_la_banda = (Q_lleno + Q_pico) / 2
+    assert tirante_normal(SeccionCircular(D), en_la_banda, S, n) is None, (
+        "la funcion devuelve None en la banda, y eso es lo que el docstring "
+        "tiene que decir")
+
+    # Y por debajo del lleno si resuelve, que es el otro lado del contrato.
+    resuelto = tirante_normal(SeccionCircular(D), Q_lleno * 0.9, S, n)
+    assert resuelto is not None and resuelto.y_sobre_D < 1.0

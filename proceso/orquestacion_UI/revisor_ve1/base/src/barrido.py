@@ -1,0 +1,381 @@
+# -*- coding: utf-8 -*-
+"""
+barrido.py
+==========
+El BARRIDO DE SENSIBILIDAD de un criterio [A] sobre su ventana (PF-3): el
+pipeline corre una vez por valor, cada volcado se contrasta con el del
+primer valor por el comparador de E-B, y sale una tabla por punto. Es lo que
+una tesis tiene que mostrar de cada [A] de perfil: que pasa con el
+diametro, la carga a la entrada y las verificaciones cuando el criterio
+recorre la ventana que la constitucion le exige declarar.
+
+Que es, y que no
+----------------
+* NUNCA RECALCULA. La aritmetica es la del pipeline (`servicio.correr`) y
+  la comparacion la del comparador (`comparador.comparar`); este modulo no
+  importa `src.modulos` ni `cli`, y `tests/test_pf3_barrido.py` lo fija por
+  AST. La tabla se LEE de los volcados y de la comparacion: no hace una
+  resta ni un cociente sobre una magnitud.
+* LA MISMA PUERTA QUE UNA DECLARACION. Cada valor entra por
+  `editores.declarar`, que es lo que la pestana 2 y la ventana emergente
+  usan: la guardia de forma y de ventana de `criterios_adoptados`, la
+  exigencia de fila o nota para un criterio de tabla, la trazabilidad de un
+  dato de ensayo. Y entra ANTES de la primera corrida, para todos los
+  valores: un barrido con un valor fuera de la ventana no es sensibilidad,
+  es otra adopcion, y no corre nada (`ValueError`).
+* NINGUNA CORRIDA HEREDA DE LA ANTERIOR, Y EL PROCESO QUEDA COMO ESTABA.
+  El estado de entrada (lo declarado y su procedencia,
+  `declaracion.estado_de_sesion`) se fotografia al entrar; cada corrida
+  parte de el (`restaurar_sesion(sustituir=True)`), declara SU valor y
+  corre; al salir --- tambien si una corrida falla --- se repone el mismo
+  estado. Cada `Informe.contexto` es de su corrida (EXT-4), y el volcado
+  que viaja en `CorridaDelBarrido` lo dice: el valor barrido figura entre
+  los usados como declarado en caliente, con su procedencia.
+* UNA CLAVE A LA VEZ. Barrer dos claves es llamar dos veces; el producto
+  cartesiano no existe aqui ni en la CLI, porque una tabla de sensibilidad
+  de una tesis se lee por un eje.
+* NO ES PARTE DEL EXPEDIENTE. La memoria HTML no cambia: el barrido es un
+  anexo de la tesis, y por eso la CLI lo escribe en su propio JSON y no
+  arma ninguna memoria cuando barre.
+
+El volcado lo hace quien llama (`volcar`, que en produccion es
+`cli.informe_json`): `src/` no importa `cli` (EXT-9), y el barrido necesita
+el MISMO volcado que la sesion embebe y que el comparador entiende.
+
+Y desde UI-3 el JSON del barrido se LEE DE VUELTA (`resultado_del_volcado`,
+el inverso de `volcado_del_barrido`): la ventana corre el barrido en un
+proceso hijo por la CLI y pinta la tabla con `lineas_de_la_tabla` sobre lo
+que el hijo escribio, en vez de con una copia suya (ficha UI3-01).
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import asdict
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
+
+from src import comparador as _comparador
+from src import criterios_adoptados as _ca
+from src import declaracion as _dec
+from src import editores as _sed
+from src import servicio
+from src.modelos import (CorridaDelBarrido, Derivada, FilaDelBarrido,
+                         ResultadoDeBarrido)
+
+# Los campos del volcado de una verificacion que llevan el veredicto
+# (`cli._verificacion_json`), como sufijo del rotulo del comparador:
+# «verificacion V2.cumple». Son DOS desde PF-4 y no uno: `cumple` dice si el
+# punto se detiene y `veredicto` que juzgo la memoria, y bajo `regimen_v2b` =
+# indicador_con_aviso pueden moverse por separado --- el indicador que se
+# dispara pasa de CUMPLE a INDICADOR con `cumple` en True las dos veces ---.
+# Mirando solo `cumple`, la tabla del barrido diria «sin cambios de
+# veredicto» sobre una corrida en la que el indicador se disparo. El
+# conjunto de codigos deduplica, de modo que una verificacion que mueve los
+# dos campos sigue contando una vez.
+_CAMPOS_DE_VEREDICTO = (".cumple", ".veredicto")
+
+
+# LA REGLA DEL BOTON DE LA VENTANA (UI-3; revision de UI-3, H5): un barrido
+# recorre la VENTANA de sensibilidad que la ficha declara, y sin ventana no es
+# sensibilidad sino otra adopcion. Vive aqui y no en gui/ porque es una regla
+# sobre el criterio; la ventana solo la pinta.
+MOTIVO_SIN_VENTANA = ("el criterio no declara ventana de sensibilidad: un barrido "
+                      "fuera de una ventana no es sensibilidad, es otra adopcion")
+
+
+def motivo_para_no_barrer(clave: str) -> Optional[str]:
+    """
+    Por que la VENTANA no ofrece barrer `clave`, o None si lo ofrece: un
+    criterio que se deriva no se elige (el mismo motivo que «Aplicar»,
+    `editores.esquema_de(...).motivo_no_editable`), y uno sin `sensibilidad`
+    no tiene ventana que recorrer (`MOTIVO_SIN_VENTANA`).
+
+    LA PUERTA DE LA CLI NO LA APLICA, y se dice en vez de igualarlas:
+    `verificar_valores` --- la de `cli.py --barrido` --- declara cada valor
+    por la de «Aplicar», que acepta un criterio sin ventana, y UI-3 no cambia
+    lo que la CLI acepta. La divergencia, medida, esta en la ficha UI3-01
+    para el dueño.
+    """
+    criterio = _ca.criterio(clave)
+    if isinstance(criterio.resolucion, Derivada):
+        return _sed.esquema_de(clave).motivo_no_editable
+    if criterio.sensibilidad is None:
+        return MOTIVO_SIN_VENTANA
+    return None
+
+
+def verificar_valores(clave: str, valores: Sequence[Any], *, fila: str = "",
+                      nota: str = "",
+                      declaraciones_base: Optional[Mapping[str, Any]] = None) -> None:
+    """
+    LA PUERTA, PARA TODOS LOS VALORES, SIN CORRER NADA: cada valor se
+    declara de verdad por la puerta de la pestana 2 (`editores.declarar`),
+    sobre el estado de entrada mas `declaraciones_base` --- la elegibilidad
+    de una fila (R4) depende de otros criterios, y una base que solo se
+    verificara sin aplicarse rechazaba lo que la pestana 2 acepta (auditor
+    adversarial de PF-3) ---, y se deshace. `ValueError` si algun valor no
+    pasa; `KeyError` si la clave no existe. Al salir el estado es el de
+    entrada. `barrer` la llama antes de su primera corrida; la CLI la llama
+    para TODOS sus barridos antes de correr el primero.
+    """
+    valores = tuple(valores)
+    if not valores:
+        raise ValueError(f"el barrido de '{clave}' no trae ningun valor")
+    _ca.criterio(clave)  # KeyError si la clave no existe, antes de nada
+    base = dict(declaraciones_base or {})
+    entrada = _dec.estado_de_sesion()
+    try:
+        for k, v in base.items():
+            _ca.verificar_declaracion(k, v)
+        for valor in valores:
+            _dec.restaurar_sesion(entrada, sustituir=True)
+            for k, v in base.items():
+                _ca.establecer_valor_dinamico(k, v)
+            _sed.declarar(clave, valor, fila=fila, nota=nota)
+    finally:
+        _dec.restaurar_sesion(entrada, sustituir=True)
+
+
+def barrer(ruta_csv: Path, externos: Any, alcance: str, clave: str,
+           valores: Sequence[Any], *, fila: str = "", nota: str = "",
+           declaraciones_base: Optional[Mapping[str, Any]] = None,
+           hidrologia: Any = None,
+           volcar: Callable[[servicio.Informe], Dict[str, Any]]) -> ResultadoDeBarrido:
+    """
+    Corre el pipeline una vez por cada valor de `valores` con `clave`
+    declarada a ese valor, y devuelve las corridas con su volcado y la
+    tabla por punto.
+
+    `fila` y `nota` son los de una declaracion desde la pestana 2: la fila
+    de la tabla de la que proviene el valor, o la nota que explica por que
+    se adopta otro numero; un criterio de tabla exige uno de los dos
+    (`editores.declarar`), y un dato de ensayo exige la nota.
+    `declaraciones_base` son declaraciones que acompañan a TODAS las
+    corridas ademas de las que el proceso ya tenia al entrar (por el mismo
+    camino que `--declarar`: `establecer_valor_dinamico`, con su guardia y
+    sin procedencia). `volcar` convierte cada `Informe` en el dict que el
+    comparador lee (`cli.informe_json`). `hidrologia` (T-1) son las entradas
+    de la Fase 1-bis que `servicio.cargar_hidrologia` devolvio, o None: se
+    pasan tal cual a cada corrida, de modo que los criterios hidrologicos
+    (distribucion, tratamiento FEN, relacion intensidad-duracion) se pueden
+    barrer igual que los demas.
+
+    Lanza `ValueError` (o `KeyError` si la clave no existe) ANTES de la
+    primera corrida si algun valor no pasa la puerta; los errores del
+    expediente (`ErrorProyecto`) de una corrida salen tal cual, con el
+    estado del proceso ya repuesto.
+    """
+    valores = tuple(valores)
+    base = dict(declaraciones_base or {})
+    # 1. LA PUERTA, PARA TODOS LOS VALORES, ANTES DE LA PRIMERA CORRIDA: lo
+    # que rechaza sale de aqui sin haber corrido nada.
+    verificar_valores(clave, valores, fila=fila, nota=nota, declaraciones_base=base)
+    entrada = _dec.estado_de_sesion()
+    try:
+        # 2. UNA CORRIDA POR VALOR, cada una desde el estado de entrada.
+        corridas: List[Tuple[Any, str, Dict[str, Any]]] = []
+        for valor in valores:
+            _dec.restaurar_sesion(entrada, sustituir=True)
+            for k, v in base.items():
+                _ca.establecer_valor_dinamico(k, v)
+            procedencia = _sed.declarar(clave, valor, fila=fila, nota=nota)
+            informe = servicio.correr(ruta_csv, externos, alcance=alcance,
+                                      hidrologia=hidrologia)
+            corridas.append((valor, procedencia.como_texto(), volcar(informe)))
+    finally:
+        _dec.restaurar_sesion(entrada, sustituir=True)
+
+    # 3. CADA VOLCADO CONTRA EL DEL PRIMER VALOR, por el comparador.
+    primero = corridas[0][2]
+    salida_corridas: List[CorridaDelBarrido] = []
+    filas: List[FilaDelBarrido] = []
+    for valor, procedencia, volcado in corridas:
+        comparacion = _comparador.comparar(primero, volcado)
+        salida_corridas.append(CorridaDelBarrido(
+            valor=valor, procedencia=procedencia, informe_json=volcado,
+            comparacion_con_la_primera=comparacion.lineas(),
+            comparable=not comparacion.no_comparables))
+        filas.extend(_filas_de(valor, volcado, comparacion))
+    return ResultadoDeBarrido(clave=clave, corridas=tuple(salida_corridas),
+                              filas=tuple(filas))
+
+
+def _verificacion_que_cambia(d: _comparador.Diferencia) -> Optional[str]:
+    """
+    El codigo de la verificacion si esta diferencia es un cambio de
+    VEREDICTO: `cumple` o `veredicto` distinto, o la verificacion evaluada
+    en una corrida y ausente en la otra --- que es como sale cuando el punto
+    deja de dimensionar y sus once verificaciones desaparecen del volcado
+    (auditor adversarial de PF-3) ---. None si es otra cosa (un valor
+    obtenido, un umbral).
+    """
+    rotulo = _comparador.ROTULO_VERIFICACION
+    if not d.campo.startswith(rotulo):
+        return None
+    for campo in _CAMPOS_DE_VEREDICTO:
+        if d.campo.endswith(campo):
+            return d.campo[len(rotulo):-len(campo)]
+    if {d.a, d.b} == {_comparador.VALOR_EVALUADA, _comparador.VALOR_AUSENTE}:
+        return d.campo[len(rotulo):]
+    return None
+
+
+def _filas_de(valor: Any, volcado: Dict[str, Any],
+              comparacion: _comparador.ComparacionDeInformes) -> List[FilaDelBarrido]:
+    """
+    La tabla de una corrida: una fila por punto, leida del volcado y de la
+    comparacion. Un punto que NO dimensiono dice ademas que verificaciones
+    incumplio a lo largo de su progresion (`iteraciones[].incumplidas`, la
+    union), porque «no dimensionado» sin el por que es lo que la tesis no
+    puede leer: el comparador solo dice que el diseño esta en A y no en B.
+    """
+    salida = []
+    for punto in volcado.get("puntos") or []:
+        id_punto = str(punto.get("id"))
+        diseno = punto.get("diseno") or {}
+        dimensionado = bool(punto.get("dimensionado"))
+        motivos = tuple(n.por_que for n in comparacion.no_comparables if n.donde == id_punto)
+        cambian = tuple(sorted({
+            codigo for codigo in (_verificacion_que_cambia(d)
+                                  for d in comparacion.diferencias if d.donde == id_punto)
+            if codigo}))
+        incumplidas: Tuple[str, ...] = ()
+        if not dimensionado:
+            incumplidas = tuple(sorted({
+                str(c) for paso in (punto.get("iteraciones") or [])
+                for c in (paso.get("incumplidas") or [])}))
+        salida.append(FilaDelBarrido(
+            valor=valor, id_punto=id_punto, dimensionado=dimensionado,
+            material=diseno.get("material"), seccion=diseno.get("seccion"),
+            HW_gobernante_m=diseno.get("HW_gobernante_m"),
+            control_gobernante=diseno.get("control_gobernante"),
+            verificaciones_que_cambian=cambian,
+            comparable=not motivos, motivo="; ".join(motivos),
+            incumplidas_en_la_progresion=incumplidas))
+    return salida
+
+
+# ===========================================================================
+# Presentacion: el JSON y la tabla de texto, elegidos aqui para que la CLI
+# y una ventana impriman lo mismo
+# ===========================================================================
+
+def volcado_del_barrido(resultado: ResultadoDeBarrido) -> Dict[str, Any]:
+    """El barrido como dict listo para `json.dump`, con los volcados enteros dentro."""
+    # Sin `dataclasses.asdict`: copia en profundidad cada volcado, y un
+    # volcado lleva objetos del registro normativo que no se copian (los
+    # serializa `escribir_json_atomico`, como al expediente). El volcado
+    # entra tal cual: es el mismo dict que la sesion embebe.
+    return {
+        "clave": resultado.clave,
+        "corridas": [{"valor": c.valor, "procedencia": c.procedencia,
+                      "informe_json": c.informe_json,
+                      "comparacion_con_la_primera": list(c.comparacion_con_la_primera),
+                      "comparable": c.comparable} for c in resultado.corridas],
+        "filas": [asdict(f) for f in resultado.filas],
+    }
+
+
+def _texto_json(valor: Any) -> str:
+    """
+    El valor tal como lo escribe el JSON, para compararlo como TEXTO y no
+    como numero. Pasa PRIMERO por el JSON y despues ordena: `sort_keys`
+    ordenaba las claves enteras de un valor pedido (900, 1050...) como
+    numeros y las del JSON del hijo, que ya son texto, alfabeticamente, y
+    el barrido de `espesor_pared_conducto` salia siempre «corrio otro
+    valor» (revision de UI-3, H1).
+    """
+    return json.dumps(json.loads(json.dumps(valor, ensure_ascii=False)),
+                      sort_keys=True, ensure_ascii=False)
+
+
+def resultado_del_volcado(volcado: Mapping[str, Any], *,
+                          valores: Optional[Sequence[Any]] = None) -> ResultadoDeBarrido:
+    """
+    El INVERSO de `volcado_del_barrido` (UI-3, ficha UI3-01): el
+    `ResultadoDeBarrido` que describe el JSON de un barrido, para que quien
+    no lo corrio en su proceso --- la ventana, que lo corre en un proceso
+    hijo por la CLI --- pinte la tabla con `lineas_de_la_tabla` y no con
+    una copia suya. No lee nada que el volcado no traiga y no recalcula.
+
+    `valores` son los valores PEDIDOS, en orden, cuando quien llama los
+    tiene: el JSON no tiene tuplas, y sin ellos un par `(0.009, 0.013)`
+    vuelve como la lista `[0.009, 0.013]` y la tabla lo imprimiria con
+    corchetes, distinto de la CLI. Cada uno tiene que escribirse en JSON
+    igual que el valor de su corrida, o es `ValueError`: unos valores que
+    no son los del barrido no se aceptan en silencio. Las filas se reparten
+    por corrida con el numero de puntos de cada volcado, que es como
+    `_filas_de` las produjo.
+    """
+    corridas_json = list(volcado.get("corridas") or [])
+    filas_json = list(volcado.get("filas") or [])
+    if valores is None:
+        pedidos: Tuple[Any, ...] = tuple(c.get("valor") for c in corridas_json)
+    else:
+        pedidos = tuple(valores)
+        if len(pedidos) != len(corridas_json):
+            raise ValueError(
+                f"el barrido de '{volcado.get('clave')}' trae {len(corridas_json)} "
+                f"corrida(s) y se pidieron {len(pedidos)} valor(es)")
+        for pedido, corrida in zip(pedidos, corridas_json):
+            if _texto_json(pedido) != _texto_json(corrida.get("valor")):
+                raise ValueError(
+                    f"el barrido de '{volcado.get('clave')}' corrio el valor "
+                    f"{corrida.get('valor')!r} donde se pidio {pedido!r}")
+    corridas: List[CorridaDelBarrido] = []
+    filas: List[FilaDelBarrido] = []
+    inicio = 0
+    for pedido, corrida in zip(pedidos, corridas_json):
+        corridas.append(CorridaDelBarrido(
+            valor=pedido, procedencia=corrida["procedencia"],
+            informe_json=corrida["informe_json"],
+            comparacion_con_la_primera=tuple(corrida["comparacion_con_la_primera"]),
+            comparable=bool(corrida["comparable"])))
+        fin = inicio + len(corrida["informe_json"].get("puntos") or [])
+        for fila in filas_json[inicio:fin]:
+            filas.append(FilaDelBarrido(**{
+                **fila, "valor": pedido,
+                "verificaciones_que_cambian": tuple(fila["verificaciones_que_cambian"]),
+                "incumplidas_en_la_progresion": tuple(
+                    fila.get("incumplidas_en_la_progresion") or ())}))
+        inicio = fin
+    if inicio != len(filas_json):
+        raise ValueError(
+            f"el barrido de '{volcado.get('clave')}' trae {len(filas_json)} fila(s) "
+            f"y sus corridas describen {inicio} punto(s)")
+    return ResultadoDeBarrido(clave=volcado["clave"], corridas=tuple(corridas),
+                              filas=tuple(filas))
+
+
+ENCABEZADO_DE_LA_TABLA = ("valor", "punto", "material", "seccion", "HW (m)",
+                          "control", "verificaciones que cambian",
+                          "incumplidas si no dimensiona", "comparable")
+
+
+def lineas_de_la_tabla(resultado: ResultadoDeBarrido) -> Tuple[str, ...]:
+    """
+    La tabla del barrido en texto, una linea por (valor, punto), con la
+    comparacion de cada corrida con la primera debajo. Solo elige textos y
+    orden: los numeros se imprimen como estan en el volcado.
+    """
+    celdas = [ENCABEZADO_DE_LA_TABLA]
+    for f in resultado.filas:
+        celdas.append((
+            repr(f.valor), f.id_punto,
+            (f.material or "—") if f.dimensionado else "no dimensionado",
+            f.seccion or "—", "—" if f.HW_gobernante_m is None else repr(f.HW_gobernante_m),
+            f.control_gobernante or "—",
+            ", ".join(f.verificaciones_que_cambian) or "ninguna",
+            ", ".join(f.incumplidas_en_la_progresion) or "—",
+            "si" if f.comparable else f"NO: {f.motivo}"))
+    anchos = [max(len(fila[i]) for fila in celdas) for i in range(len(ENCABEZADO_DE_LA_TABLA))]
+    salida = [f"Barrido de '{resultado.clave}' sobre {len(resultado.corridas)} valor(es): "
+              + ", ".join(repr(c.valor) for c in resultado.corridas)]
+    for fila in celdas:
+        salida.append("  ".join(celda.ljust(ancho) for celda, ancho in zip(fila, anchos)).rstrip())
+    for c in resultado.corridas:
+        salida.append(f"{resultado.clave} = {c.valor!r} ({c.procedencia}): "
+                      + c.comparacion_con_la_primera[0])
+        salida.extend("    " + linea for linea in c.comparacion_con_la_primera[1:])
+    return tuple(salida)

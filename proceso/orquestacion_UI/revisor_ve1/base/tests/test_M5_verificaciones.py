@@ -1,0 +1,1834 @@
+"""
+tests/test_M5_verificaciones.py
+=================================
+M5 contra las nueve verificaciones de la tabla de Fase 5:
+
+    V1, V2, V9      calculo directo, un umbral [N] o el tope de M2.
+    V3              rango [N] para concreto; CriterioPendienteError para
+                    TMC y HDPE mientras 'v_max_tmc' / 'v_max_hdpe' esten
+                    vacios (Tablero 1.3).
+    V4              resguardo de Sec. 5.1 leido desde 'resguardo_HW_subrasante'
+                    (criterio_aplicado debe apuntar a ese criterio, cuya
+                    etiqueta es [N->], no [N]).
+    V5, V8          CriterioPendienteError: la hoja de ruta no entrega
+                    formula/metodo/dato, y los dos criterios nuevos
+                    ('remanso_derecho_via', 'TR_evento_extremo') se declaran
+                    vacios a proposito.
+    V7              Fase 8 SI entrega procedimiento, y desde la correccion
+                    del marco LRFD es un equilibrio de factores de carga
+                    (gamma_DC*DC + gamma_EV*EV >= gamma_WA*U), no un FS
+                    global. Los gamma son [N] (Manual de Puentes, Tablas
+                    2.4.5.3.1-1/-2) y 'factores_carga_aashto' es [A] -- la
+                    fila de gamma_p que describe a cada estructura --, de
+                    modo que ya no se detiene; el unico vacio que le queda a
+                    V7 es 'peso_especifico_relleno_kn_m3'.
+    V6              cumple por construccion: M2/MD no ofrecen diseño
+                    multibarril.
+    verificar()     el agregado con la firma de MD.Verificador: se detiene
+                    en la primera pendiente, en el orden de la tabla.
+"""
+
+import math
+import re
+from pathlib import Path
+
+import pytest
+
+from src import criterios_adoptados as ca
+from src.constantes_normativas import (RESGUARDO_NAPA_SUBRASANTE, V_MIN,
+                                   Y_SOBRE_D_MAX)
+from src.dominios import CBR_MIN_FISICO
+from src.modelos import (ControlGobernante, CriterioPendienteError,
+                         TipoDeVeredicto,
+                         EstadoDeVerificacion,
+                     DatoFaltanteError, DatoInvalidoError, ErrorProyecto,
+                     Familia, FormaSeccion, PuntoCritico, ResultadoHidraulico,
+                     SeccionCircular, SeccionRectangular, TipoMaterial)
+from src.modulos.M2_material import catalogo
+from src.modulos.M8_estructural import factores_carga_flotacion
+from src.modulos.M5_verificaciones import (CRITERIO_ORIGEN_COTA_ENTRADA,
+                                       CRITERIO_V_MAX_CONCRETO,
+                                       ORIGENES_COTA_ENTRADA,
+                                       NUMERAL_V2, NUMERAL_V3, NUMERAL_V7,
+                                       altura_relleno_sobre_clave,
+                                       cota_clave, cota_de_entrada,
+                                       resguardo_por_cbr, v1_borde_libre,
+                                       v2_velocidad_minima,
+                                       v3_velocidad_maxima,
+                                       v2b_sedimentacion,
+                                       v4_carga_entrada, v4b_relacion_hw_d,
+                                       v5_remanso,
+                                       vc1_borde_libre_canal,
+                                       v6_material_solido_arrastre,
+                                       v7_flotacion, v8_evento_extremo,
+                                       v9_disponibilidad_diametro, verificar)
+from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.criterios import con_valor, declarados, sin_valor
+from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
+                                         CP3_VELOCIDAD_MINIMA)
+
+D_REFERENCIA = 0.90
+
+
+def _punto(**cambios) -> PuntoCritico:
+    base = dict(
+        id="A-01",
+        progresiva_km=0.380,
+        progresiva_display="0+380",
+        familia=Familia.A,
+        Q_m3s=1.1673,
+        area_ha=850.0,
+        S_cauce=0.006,
+        cota_terreno=42.10,
+        cota_rasante=44.20,
+        cota_subrasante=44.05,
+        cbr_subrasante=8.5,
+        esviaje_grados=15.0,
+        ancho_plataforma=9.60,
+        cota_fondo_receptor=41.30,
+        Q_receptor_m3s=None,
+        cota_TW=None,
+        sucs_fundacion="SM",
+        NF_profundidad_m=None,     # lo da el estudio geotecnico, por punto
+    )
+    base.update(cambios)
+    return PuntoCritico(**base)
+
+
+def _resultado(*, y_normal=0.60, y_critico=0.40, V=1.5, Q=1.0, S=0.006,
+              V_erosion=None, V_sedimentacion=None,
+              HW_entrada=0.50, HW_salida=0.20,
+              control=ControlGobernante.ENTRADA) -> ResultadoHidraulico:
+    """
+    Doble de prueba del resultado hidraulico para las nueve verificaciones.
+
+    `V` fija LAS DOS ramas de velocidad al mismo numero, que es lo que un test
+    de umbrales necesita: M5 compara contra un limite, no reconstruye Manning.
+    Un test que quiera distinguirlas -- porque V2 lee la rama de n maximo y V3
+    la de n minimo (MAT-D1) -- pasa `V_erosion` y/o `V_sedimentacion`.
+    """
+    return ResultadoHidraulico(
+        y_normal=y_normal, y_critico=y_critico,
+        V_erosion=V if V_erosion is None else V_erosion,
+        V_sedimentacion=V if V_sedimentacion is None else V_sedimentacion,
+        Q=Q, S=S, HW_entrada=HW_entrada, HW_salida=HW_salida,
+        control_gobernante=control,
+    )
+
+
+def _uniforme(normal) -> ResultadoHidraulico:
+    """
+    El `TiranteNormal` de M3 envuelto como lo que V2 recibe de verdad: un
+    `ResultadoHidraulico` en REGIMEN UNIFORME --barril parcialmente lleno bajo
+    control de ENTRADA--, que es el unico regimen en que V2 compara la rama
+    n_max de Manning (EXT-3). Hasta EXT-3 estos tests le pasaban a V2 el
+    `TiranteNormal` a secas, porque V2 solo leia `V_sedimentacion`; ahora
+    tambien lee el regimen y el control, y el doble tiene que decirlos.
+    """
+    return _resultado(y_normal=normal.geometria.y,
+                      V_erosion=normal.V_erosion,
+                      V_sedimentacion=normal.V_sedimentacion,
+                      control=ControlGobernante.ENTRADA)
+
+
+@pytest.fixture
+def concreto():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO)
+
+
+@pytest.fixture
+def tmc():
+    return catalogo(TipoMaterial.TMC)
+
+
+@pytest.fixture
+def hdpe():
+    return catalogo(TipoMaterial.HDPE)
+
+
+# ===========================================================================
+# V1 - Borde libre
+# ===========================================================================
+
+def test_v1_cumple_dentro_del_borde_libre():
+    v = v1_borde_libre(D=0.90, material=catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                       punto=_punto(), resultado=_resultado(y_normal=0.60))
+    assert v.cumple
+    assert v.codigo == "V1"
+    # El numeral ya no viaja pelado: lleva RD, pagina, texto literal y el
+    # caracter de RECOMENDACION, igual que el de V2 (MAT-O13, NOR-HID-10).
+    assert "4.1.1.3.7 b)" in v.numeral
+    assert "RD 20-2011-MTC/14" in v.numeral
+    assert "RECOMIENDA" in v.numeral and "umbral duro" in v.numeral
+    assert "pag. impresa 79" in v.numeral
+    assert v.valor_admisible == pytest.approx(Y_SOBRE_D_MAX)
+    # Desde C05 (PC-24) la fila declara la ADOPCION: el 0.75 se aplica como
+    # umbral duro por el criterio [A] 'borde_libre_y_sobre_d_max'.
+    assert v.criterio_aplicado == "borde_libre_y_sobre_d_max"
+
+
+def test_v1_incumple_sobre_el_borde_libre():
+    v = v1_borde_libre(D=0.90, material=catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                       punto=_punto(), resultado=_resultado(y_normal=0.80))
+    assert not v.cumple
+    assert v.valor_obtenido == pytest.approx(0.80 / 0.90)
+
+
+def test_v1_en_el_limite_exacto_cumple():
+    v = v1_borde_libre(D=0.90, material=catalogo(TipoMaterial.CONCRETO_REFORZADO),
+                       punto=_punto(),
+                       resultado=_resultado(y_normal=0.90 * Y_SOBRE_D_MAX))
+    assert v.cumple
+
+
+# ---------------------------------------------------------------------------
+# V1 con un MARCO, y la advertencia de alcance de la Familia C (§15.6.3)
+# ---------------------------------------------------------------------------
+
+DECLARACIONES_CAJON = {
+    "embocadura_cajon": "cajon_concreto_aletas_30_75",
+    "n_manning_cajon": "concreto_afinado",
+    "n_celdas_cajon": 1,
+    "ke_entrada_cajon": "cajon_aletas_30_75_escuadra",
+    "secciones_cajon_normalizadas": ((1.50, 1.20), (2.00, 1.50)),
+}
+
+
+def _marco():
+    return catalogo(TipoMaterial.CONCRETO_REFORZADO,
+                    forma=FormaSeccion.RECTANGULAR)
+
+
+def test_v1_de_un_marco_sustituye_la_altura_y_no_un_diametro():
+    """
+    El num. 4.1.1.3.7 b) escribe "el 25 % de la altura, diametro o flecha de
+    la estructura": las TRES magnitudes en la misma oracion. Por eso V1 cubre
+    al marco sin analogia y sigue siendo [N] puro; lo unico que cambia es cual
+    de las tres se sustituye, y la memoria tiene que decir cual.
+    """
+    with declarados(DECLARACIONES_CAJON):
+        v = v1_borde_libre(D=1.50, material=_marco(), punto=_punto(),
+                           resultado=_resultado(y_normal=1.00))
+    assert v.criterio_aplicado == "borde_libre_y_sobre_d_max"   # la adopcion (C05)
+    assert "y/H" in v.paso.formula
+    assert "altura interior de la celda" in v.paso.formula
+    simbolos = [m.simbolo for m in v.paso.sustitucion]
+    assert "H" in simbolos and "D" not in simbolos
+    procedencia = [m.procedencia for m in v.paso.sustitucion if m.simbolo == "H"]
+    assert "secciones_cajon_normalizadas" in procedencia[0]
+    assert v.paso.resultado.simbolo == "y/H"
+
+
+def test_v1_de_un_tubo_sigue_sustituyendo_el_diametro(concreto):
+    """La contraparte: el circular no se mueve ni un texto."""
+    v = v1_borde_libre(D=0.90, material=concreto, punto=_punto(),
+                       resultado=_resultado(y_normal=0.60))
+    assert "y/D" in v.paso.formula
+    assert [m.simbolo for m in v.paso.sustitucion] == ["y_normal", "D"]
+    assert v.paso.resultado.simbolo == "y/D"
+
+
+def test_v1_de_un_punto_de_familia_c_lleva_la_advertencia_de_alcance(concreto):
+    """
+    §15.6.3, segundo vehiculo: la advertencia PEGADA AL NUMERO.
+
+    La declaracion entera sale una vez por punto en `bloque_alcance`; lo que
+    esta nota aporta es lo que aquel bloque no puede dar -- decir, junto a
+    ESTE umbral, contra que cota mide --. Es la leccion de NOR-HDS-05: un
+    aviso que no señala el punto afectado es el «nadie se entera».
+    """
+    nota = v1_borde_libre(D=0.90, material=concreto,
+                          punto=_punto(familia=Familia.C),
+                          resultado=_resultado(y_normal=0.60)
+                          ).paso.nota_del_proyecto
+    assert "ALCANCE (Familia C" in nota
+    assert "la altura interior del propio barril" in nota
+    # LA AFIRMACION CAMBIO AL IMPLEMENTARSE VC1, y el cambio es el hallazgo del
+    # test. Antes la nota decia que cumplir V1 acredita la obra «COMO
+    # ALCANTARILLA DE PASO» y no dice nada del canal, porque NADA miraba el
+    # canal. Hoy VC1 lo mira, de modo que esa frase seria falsa: lo que la
+    # nota tiene que decir es que ESTE umbral no mide contra el canal y que
+    # hay que leer tambien la fila VC1, que si.
+    assert "COMO CRUCE DE CANAL" in nota
+    assert "VC1, que SI se evalua" in nota
+    # Y lo que VC1 tampoco cierra sigue nombrado junto al numero, que es la
+    # unica forma de que el revisor lo vea sin bajar al bloque de alcance.
+    assert "rasante" in nota and "hidraulica" in nota
+    # Y sigue llevando lo que ya llevaba: la nota se suma, no sustituye.
+    assert "umbral duro" in nota
+
+
+def test_v4_de_un_punto_de_familia_c_lleva_la_advertencia_con_SU_cota():
+    """
+    La segunda de las dos que la pueden llevar, y la que sostiene el argumento
+    de §15.6.2: V4 mide contra la subrasante de la VIA, no contra el canal.
+    """
+    nota = v4_carga_entrada(punto=_punto(familia=Familia.C),
+                            resultado=_resultado()).paso.nota_del_proyecto
+    assert "ALCANCE (Familia C" in nota
+    assert "la subrasante de la VIA" in nota
+
+
+def test_un_punto_que_no_es_de_familia_c_no_lleva_advertencia_de_alcance(
+        concreto):
+    assert "ALCANCE (Familia C" not in v1_borde_libre(
+        D=0.90, material=concreto, punto=_punto(familia=Familia.A),
+        resultado=_resultado(y_normal=0.60)).paso.nota_del_proyecto
+    assert v4_carga_entrada(punto=_punto(familia=Familia.A),
+                            resultado=_resultado()).paso.nota_del_proyecto == ""
+
+
+def test_v4b_lleva_paso_y_la_advertencia_de_la_familia_c():
+    """
+    REESCRITO EN T-10, declarandolo. Fijaba que V4b NO emitia
+    `PasoDeMemoria` y que su razon estaba censada en `SIN_FUNDAMENTO`, y
+    dejaba escrito: «el dia que V4b tenga fundamento, este test cae y hay
+    que ponerle la nota». T-10 le da fundamento --- F5.V4b, con el verbo
+    DEFINE, sobre la frase del HDS-5 que DESCRIBE la banda 1.0-1.5 de las
+    agencias de EE. UU. (caracter DEFINICION), sin convertirla en exigencia
+    --- y la nota de §15.6.3 se le pone en la Familia C, como a V1 y V4.
+    """
+    from src.normativa import registro
+    from src.normativa.fundamentos import SIN_FUNDAMENTO
+    reg = registro.construir()
+    v = v4b_relacion_hw_d(D=0.90, resultado=_resultado())
+    assert v.paso is not None and v.paso.fundamento_id == "F5.V4b"
+    assert reg.fundamento("F5.V4b").verbo.value == "define"
+    assert v.paso.umbral.cita_id == "HDS5_3ED.2.2.5d#AGENCIAS"
+    assert reg.cita(v.paso.umbral.cita_id).caracter.value == "definicion"
+    assert v.paso.umbral.criterio_aplicado == "HW_D_max"
+    assert "F5.V4b" not in {id_ for id_, _p, _q in SIN_FUNDAMENTO}
+    assert v.paso.nota_del_proyecto == ""          # sin punto, sin nota
+    a = v4b_relacion_hw_d(D=0.90, resultado=_resultado(),
+                          punto=_punto(familia=Familia.A))
+    assert "ALCANCE (Familia C" not in a.paso.nota_del_proyecto
+    c = v4b_relacion_hw_d(D=0.90, resultado=_resultado(),
+                          punto=_punto(familia=Familia.C))
+    assert "ALCANCE (Familia C" in c.paso.nota_del_proyecto
+
+
+# ---------------------------------------------------------------------------
+# V6 y V9 con un marco
+# ---------------------------------------------------------------------------
+
+def test_v6_de_un_marco_depende_del_criterio_y_no_de_lo_que_MD_no_sabe_hacer():
+    with declarados(DECLARACIONES_CAJON):
+        v = v6_material_solido_arrastre(material=_marco())
+    assert v.cumple
+    assert v.criterio_aplicado == "n_celdas_cajon"
+    assert "1 celda" in v.valor_obtenido
+
+
+def test_v6_no_cumple_si_el_expediente_declara_multicelda():
+    """
+    EL VEREDICTO SE PUEDE PONER EN ROJO, que es lo que antes no pasaba: V6
+    valia True por construccion del programa -- "M2/MD no ofrecen diseño
+    multibarril" -- y ese enunciado dejo de ser cierto en C5. Con dos celdas
+    declaradas, la Sec. 3.1 no se cumple y V6 lo dice.
+    """
+    with declarados({**DECLARACIONES_CAJON, "n_celdas_cajon": 2}):
+        v = v6_material_solido_arrastre(material=_marco())
+    assert not v.cumple
+    assert "2 celda" in v.valor_obtenido
+
+
+def test_v6_de_un_tubo_no_consulta_ningun_criterio_del_cajon(concreto):
+    v = v6_material_solido_arrastre(material=concreto)
+    assert v.cumple and v.criterio_aplicado is None
+    assert "catalogo circular" in v.valor_obtenido
+
+
+def test_v9_de_un_marco_cita_la_progresion_y_no_el_tope_del_tubo():
+    """
+    V9 es disponibilidad de SECCION desde C5. El tope de un marco es la mayor
+    altura de su progresion declarada; atribuirlo a 'D_max_catalogo' -- un
+    diametro de tuberia por material -- seria un numero verdadero con
+    procedencia falsa.
+    """
+    with declarados(DECLARACIONES_CAJON):
+        v = v9_disponibilidad_diametro(D=1.50, material=_marco())
+        fuera = v9_disponibilidad_diametro(D=1.80, material=_marco())
+    assert v.cumple and v.criterio_aplicado == "secciones_cajon_normalizadas"
+    assert v.valor_admisible == pytest.approx(1.50, rel=REL_TRANSPORTE)
+    assert not fuera.cumple
+
+
+def test_v9_de_un_tubo_cita_el_criterio_que_fijo_su_tope(concreto):
+    """
+    Hasta T-4 este test se llamaba «…sigue citando el tope de catalogo» y
+    esperaba 'D_max_catalogo' con 2.70 m. Desde T-4 el tope del tubo lo fija
+    la norma de producto --en concreto, el ultimo diametro con diseño
+    estandar de M 170M, que son los mismos 2.70 m, ahora con fuente-- y V9
+    cita el criterio que GOBERNO, que viaja en
+    `Material.D_max_criterio` (INF-3.3.1). Con la disponibilidad declarada
+    por debajo, vuelve a citar 'D_max_catalogo'.
+    """
+    v = v9_disponibilidad_diametro(D=0.90, material=concreto)
+    assert v.criterio_aplicado == "D_max_norma_producto"
+    assert v.valor_admisible == pytest.approx(2.70, rel=REL_TRANSPORTE)
+    with declarados({"D_max_catalogo": {"concreto_reforzado": 2.40}}):
+        local = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+        v = v9_disponibilidad_diametro(D=0.90, material=local)
+    assert v.criterio_aplicado == "D_max_catalogo"
+    assert v.valor_admisible == pytest.approx(2.40, rel=REL_TRANSPORTE)
+
+
+# ===========================================================================
+# V2 - Velocidad minima
+# ===========================================================================
+
+def test_v2_cumple_sobre_el_piso():
+    v = v2_velocidad_minima(resultado=_resultado(V=1.0))
+    assert v.cumple
+    assert v.codigo == "V2"
+    assert v.valor_admisible == pytest.approx(V_MIN)
+
+
+def test_v2_incumple_bajo_el_piso():
+    v = v2_velocidad_minima(resultado=_resultado(V=0.10))
+    assert not v.cumple
+
+
+def test_el_numeral_de_v2_lleva_a_la_memoria_pagina_y_matiz_de_recomendacion():
+    """
+    `numeral` es lo UNICO que la memoria imprime de V2 (M11 lo vuelca en su
+    columna). Si el sustento no viaja dentro de este string, el revisor lee
+    "4.1.1.3.6" pelado: ni la pagina, ni de que parrafo sale, ni -- lo que mas
+    importa -- que el numeral RECOMIENDA el 0.25 y no lo prohibe. V2 lo aplica
+    como umbral duro por decision conservadora del proyecto, y quien vea un
+    punto rechazado por V2 tiene que poder distinguir una recomendacion
+    incumplida de una infraccion.
+    """
+    assert "4.1.1.3.6" in NUMERAL_V2
+    # La cita da las DOS paginas: el parrafo arranca en la 76 y el 0.25 se
+    # imprime en la 77 -- quien fuera a la 76 a comprobar el numero no lo
+    # encontraba.
+    assert "pag. impresa 76" in NUMERAL_V2 and "77" in NUMERAL_V2
+    assert "RD 20-2011-MTC/14" in NUMERAL_V2
+    assert "RECOMIENDA" in NUMERAL_V2
+    assert "recomendandose" in NUMERAL_V2
+    assert "umbral duro" in NUMERAL_V2
+    # El comportamiento NO cambia: el matiz se declara, no se aplica.
+    assert not v2_velocidad_minima(resultado=_resultado(V=0.10)).cumple
+
+
+def test_el_texto_literal_del_numeral_esta_transcrito_y_no_resumido():
+    """
+    El parrafo que fija V_MIN se transcribe entero en constantes_normativas y
+    en el docstring de V2. Un numero sin su parrafo pierde las dos cosas que
+    el parrafo fija: que es una recomendacion, y que la razon es la
+    sedimentacion (no el desgaste) -- que es lo que lo separa de V3.
+    """
+    from src import constantes_normativas as CN
+    from src.modulos import M5_verificaciones as M5
+
+    literal = "recomendándose que la velocidad mínima sea igual a 0.25 m/s"
+    razon = ("no produzca sedimentación que pueda incidir en una reducción de "
+             "su capacidad hidráulica")
+
+    def plano(ruta):
+        """El texto sin marcas de comentario ni saltos: la cita va partida
+        entre lineas y eso es formato, no una cita distinta."""
+        crudo = ruta.read_text(encoding="utf-8")
+        return " ".join(crudo.replace("#", " ").split())
+
+    for ruta in (Path(CN.__file__), Path(M5.__file__)):
+        texto = plano(ruta)
+        assert literal in texto, f"falta la cita literal en {ruta.name}"
+        assert razon in texto, f"falta la razon (sedimentacion) en {ruta.name}"
+        assert "4.1.1.3.6" in texto and "pag. impresa 76" in texto
+
+
+def test_el_numeral_de_v3_lleva_a_la_memoria_el_titulo_de_la_tabla():
+    """
+    El TITULO de la Tabla Nº 10 ES el sustento de que se verifique un solo
+    extremo, no un adorno: "Velocidades maximas admisibles". Vivia solo en el
+    comentario de constantes_normativas y en docs/manifiesto_citas.md, que no
+    van al expediente.
+    """
+    # Con la unidad: el titulo impreso es "Velocidades maximas admisibles
+    # (m/s) en conductos revestidos", y omitir "(m/s)" en una cita entre
+    # comillas es lo primero que un revisor detecta (NOR-HID-06).
+    assert ("Velocidades maximas admisibles (m/s) en conductos revestidos"
+            in NUMERAL_V3)
+    assert "pag. impresa 76" in NUMERAL_V3
+    assert "4.1.1.3.6" in NUMERAL_V3
+    assert "RD 20-2011-MTC/14" in NUMERAL_V3
+    assert "solo el superior" in NUMERAL_V3
+
+
+def test_v2_y_v3_declaran_el_mismo_numeral_y_se_distinguen_por_el_texto():
+    """
+    Salen del mismo num. 4.1.1.3.6 y de la misma pag. 76. Lo que separa el
+    piso del techo no es el numeral: es el titulo de la tabla (V3) y el
+    parrafo que la sigue (V2). Si algun dia los dos numerales vuelven a ser
+    el numero pelado, se vuelven indistinguibles en la memoria.
+    """
+    assert "4.1.1.3.6" in NUMERAL_V2 and "4.1.1.3.6" in NUMERAL_V3
+    assert NUMERAL_V2 != NUMERAL_V3
+    assert "Tabla Nº 10" in NUMERAL_V2 and "Tabla Nº 10" in NUMERAL_V3
+    # V2 es el piso y lo dice; V3 es el techo y lo dice.
+    assert "posterior a la Tabla" in NUMERAL_V2
+    assert "maximas admisibles" in NUMERAL_V3
+
+
+# ===========================================================================
+# V3 - Velocidad maxima
+# ===========================================================================
+
+def test_v3_concreto_verifica_solo_el_techo(concreto):
+    """
+    El admisible que V3 publica es UN escalar -- el extremo superior de la
+    Tabla N 10 -- no el par. Si vuelve a salir la tupla, alguien restauro la
+    lectura de piso+techo que esta correccion elimino.
+    """
+    v = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=4.5))
+    assert v.cumple
+    assert v.codigo == "V3"
+    assert v.valor_admisible == pytest.approx(6.0)
+    assert v.criterio_aplicado is None
+
+
+def test_v3_concreto_incumple_sobre_el_maximo(concreto):
+    v = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=7.0))
+    assert not v.cumple
+
+
+def test_v3_concreto_cumple_bajo_el_extremo_inferior(concreto):
+    """
+    1.0 m/s en concreto CUMPLE V3.
+
+    Los dos numeros de la Tabla N 10 son velocidades maximas (el titulo de la
+    tabla, num. 4.1.1.3.6 pag. 76, es "Velocidades maximas admisibles en
+    conductos revestidos"): el rango recorre la calidad del revestimiento, no
+    un piso y un techo. Antes esta misma velocidad se rechazaba por V3, que
+    era exigir un segundo piso, por material y mas alto que el normativo, sin
+    numeral que lo sostenga. El piso lo pone V2 y son 0.25 m/s.
+    """
+    v = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=1.0))
+    assert v.cumple
+
+
+def test_v3_sin_declarar_el_criterio_usa_el_techo_normativo(concreto, monkeypatch):
+    """
+    'v_max_concreto_eleccion' es OPCIONAL: sin declarar, V3 no se bloquea --
+    aplica el 6.0 [N] de la Tabla N 10 y no registra el criterio como usado,
+    de modo que no ensucia la declaracion de la memoria.
+    """
+    ca.limpiar_valores_dinamicos()
+    assert ca.criterio(CRITERIO_V_MAX_CONCRETO).valor is None
+
+    v = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=5.5))
+    assert v.cumple
+    assert v.valor_admisible == pytest.approx(6.0)
+    assert v.criterio_aplicado is None, (
+        "sin declarar, el umbral es [N] de la tabla y la memoria no debe "
+        "atribuirlo a un criterio adoptado")
+    assert CRITERIO_V_MAX_CONCRETO not in ca.criterios_usados()
+
+
+def test_v3_declarado_baja_el_techo_y_lo_atribuye(concreto, monkeypatch):
+    """
+    Declarado en 4.5, el techo baja: 4.0 m/s cumple y 5.0 no. Y la
+    `Verificacion` lo ATRIBUYE al criterio, que es lo que permite a un revisor
+    distinguir el umbral normativo del adoptado.
+    """
+    original = ca.CRITERIOS[CRITERIO_V_MAX_CONCRETO]
+    monkeypatch.setitem(
+        ca.CRITERIOS, CRITERIO_V_MAX_CONCRETO,
+        original.__class__(**{**original.__dict__, "valor": 4.5}))
+
+    pasa = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=4.0))
+    assert pasa.cumple
+    assert pasa.valor_admisible == pytest.approx(4.5)
+    assert pasa.criterio_aplicado == CRITERIO_V_MAX_CONCRETO
+
+    falla = v3_velocidad_maxima(material=concreto, resultado=_resultado(V=5.0))
+    assert not falla.cumple, (
+        "5.0 m/s supera el techo declarado de 4.5: tiene que incumplir "
+        "aunque siga por debajo del 6.0 normativo")
+
+
+def test_v3_declarado_no_reintroduce_un_piso(concreto, monkeypatch):
+    """
+    El criterio baja el TECHO, no crea un piso. Con 4.5 declarado, 1.0 m/s
+    sigue cumpliendo V3: la correccion de la Parte B no se deshace por
+    declararlo.
+    """
+    original = ca.CRITERIOS[CRITERIO_V_MAX_CONCRETO]
+    monkeypatch.setitem(
+        ca.CRITERIOS, CRITERIO_V_MAX_CONCRETO,
+        original.__class__(**{**original.__dict__, "valor": 4.5}))
+    assert v3_velocidad_maxima(material=concreto,
+                               resultado=_resultado(V=1.0)).cumple
+
+
+def test_v3_solo_el_concreto_lee_ese_criterio(tmc, monkeypatch):
+    """
+    'v_max_concreto_eleccion' es del concreto. TMC y HDPE siguen leyendo su
+    propio criterio y lanzando CriterioPendienteError mientras este vacio:
+    declarar el del concreto no puede desbloquearlos por la puerta de atras.
+    """
+    original = ca.CRITERIOS[CRITERIO_V_MAX_CONCRETO]
+    monkeypatch.setitem(
+        ca.CRITERIOS, CRITERIO_V_MAX_CONCRETO,
+        original.__class__(**{**original.__dict__, "valor": 4.5}))
+
+    v = v3_velocidad_maxima(material=tmc, resultado=_resultado(V=2.0))
+    assert v.criterio_aplicado == "v_max_tmc", (
+        "el TMC tiene que seguir leyendo SU criterio: declarar el del "
+        "concreto no puede cambiarle el umbral")
+    assert v.valor_admisible == pytest.approx(ca.valor("v_max_tmc"))
+
+
+def test_v3_bajo_el_rango_lo_sigue_atrapando_v2_si_toca(concreto):
+    """
+    La contraparte que evita que el fix abra un agujero: por debajo de 0.25
+    m/s el conducto sigue rechazandose, pero por V2 y con SU numeral, que es
+    donde la norma pone el piso de autolimpieza.
+    """
+    lento = _resultado(V=0.10)
+    assert v3_velocidad_maxima(material=concreto, resultado=lento).cumple
+    assert not v2_velocidad_minima(resultado=lento).cumple
+
+
+@pytest.mark.parametrize("material_fixture, clave", [
+    ("tmc", "v_max_tmc"),
+    ("hdpe", "v_max_hdpe"),
+])
+def test_v3_tmc_hdpe_verifica_contra_el_criterio_declarado(material_fixture,
+                                                           clave, request):
+    """
+    Los dos criterios ya estan declarados (WSDOT Hydraulics Manual, Tabla 8-4,
+    4.572 m/s): V3 evalua contra ese techo y lo ATRIBUYE a su clave, que es lo
+    que distingue un umbral adoptado de uno normativo en la memoria.
+    """
+    material = request.getfixturevalue(material_fixture)
+    techo = ca.valor(clave)
+
+    v = v3_velocidad_maxima(material=material, resultado=_resultado(V=2.0))
+    assert v.cumple
+    assert v.valor_admisible == pytest.approx(techo)
+    assert v.criterio_aplicado == clave
+
+    rapido = v3_velocidad_maxima(material=material,
+                                 resultado=_resultado(V=techo + 1.0))
+    assert not rapido.cumple
+
+
+@pytest.mark.parametrize("material_fixture, clave", [
+    ("tmc", "v_max_tmc"),
+    ("hdpe", "v_max_hdpe"),
+])
+def test_v3_tmc_hdpe_vuelve_a_bloquear_si_el_criterio_se_vacia(
+        material_fixture, clave, request, monkeypatch):
+    """
+    Lo que estos dos criterios protegian antes de tener valor, y sigue siendo
+    la conducta correcta: la Tabla N 10 no cubre materiales flexibles, de modo
+    que sin el criterio no hay con que comparar y V3 se detiene en vez de
+    inventar un techo. El catalogo de M2 hay que reconstruirlo dentro del
+    parche, porque la fixture lo armo con el criterio ya declarado.
+    """
+    original = ca.CRITERIOS[clave]
+    monkeypatch.setitem(ca.CRITERIOS, clave,
+                        original.__class__(**{**original.__dict__,
+                                              "valor": None}))
+    material = catalogo(request.getfixturevalue(material_fixture).tipo)
+
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        v3_velocidad_maxima(material=material, resultado=_resultado(V=2.0))
+    assert excinfo.value.clave == clave
+
+
+# ===========================================================================
+# V4 - Carga a la entrada HW
+# ===========================================================================
+
+@pytest.mark.parametrize("cbr, resguardo_esperado", [
+    (25.0, 0.60),   # >= 20 %: excelente-muy buena
+    (20.0, 0.60),   # limite exacto, incluido en el primer tramo
+    (15.0, 0.80),   # 6-20 %: buena-regular
+    (6.0, 0.80),    # limite exacto
+    (4.0, 1.00),    # 3-6 %: insuficiente
+    (3.0, 1.00),    # limite exacto
+    (1.5, 1.20),    # < 3 %: inadecuada
+])
+def test_resguardo_por_cbr_reproduce_la_tabla_5_1(cbr, resguardo_esperado):
+    assert resguardo_por_cbr(cbr) == pytest.approx(resguardo_esperado)
+
+
+def test_v4_usa_el_criterio_resguardo_y_su_etiqueta_es_N_flecha():
+    punto = _punto(cota_terreno=42.10, cota_subrasante=44.05, cbr_subrasante=8.5)
+    # resguardo(CBR=8.5) = 0.80 m (tramo 6-20%). admisible = 44.05 - 0.80 = 43.25
+    # HW_cota = cota_terreno + HW = 42.10 + HW
+    v = v4_carga_entrada(punto=punto, resultado=_resultado(HW_entrada=0.50))
+
+    assert v.codigo == "V4"
+    assert v.criterio_aplicado == "resguardo_HW_subrasante"
+    assert ca.criterio(v.criterio_aplicado).etiqueta == "N->"
+    assert v.valor_admisible == pytest.approx(44.05 - 0.80)
+    assert v.valor_obtenido == pytest.approx(42.10 + 0.50)
+    assert v.cumple      # 42.60 <= 43.25
+
+
+def test_v4_incumple_cuando_el_HW_supera_la_subrasante_con_resguardo():
+    punto = _punto(cota_terreno=42.10, cota_subrasante=44.05, cbr_subrasante=8.5)
+    v = v4_carga_entrada(punto=punto, resultado=_resultado(HW_entrada=3.0))
+    assert not v.cumple
+
+
+def test_v4_usa_HW_del_control_gobernante():
+    """Si gobierna salida, V4 debe leer HW_salida, no HW_entrada."""
+    punto = _punto(cota_terreno=42.10, cota_subrasante=44.05, cbr_subrasante=8.5)
+    resultado = _resultado(HW_entrada=0.10, HW_salida=3.0,
+                           control=ControlGobernante.SALIDA)
+    v = v4_carga_entrada(punto=punto, resultado=resultado)
+    assert v.valor_obtenido == pytest.approx(42.10 + 3.0)
+    assert not v.cumple
+
+
+# ===========================================================================
+# V5, V7, V8 - Pendientes declarados
+# ===========================================================================
+
+def test_v5_lanza_pendiente_por_falta_de_metodo_y_dato():
+    punto = _punto()
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        v5_remanso(punto=punto, resultado=_resultado())
+    assert excinfo.value.clave == "remanso_derecho_via"
+
+
+def test_v5_con_el_criterio_declarado_no_revienta_con_assertionerror():
+    """
+    Regresion: con 'remanso_derecho_via' DECLARADO, V5 lanzaba un
+    `AssertionError` desnudo. Al no descender de ErrorProyecto, `cli._etapa`
+    no lo capturaba y la corrida entera abortaba. Ahora sale DatoFaltanteError
+    -- que si es ErrorProyecto -- y la CLI lo anota como bloqueo del punto.
+
+    REESCRITO EN T-7b: el criterio es desde T-7b el METODO de V5 (categoria
+    de dos textos), de modo que se declara por la puerta con el metodo
+    implementado; y un valor que burle la puerta ('cumple', lo que este test
+    imponia) lo rechaza el consumidor con DatoInvalidoError, que tambien es
+    ErrorProyecto. El metodo en si lo fija tests/test_t7b_cabezal_
+    estabilidad.py.
+    """
+    punto = _punto()
+    with con_valor("remanso_derecho_via", "cumple",
+                   motivo="segunda linea: un metodo que burla la puerta"):
+        with pytest.raises(DatoInvalidoError) as invalido:
+            v5_remanso(punto=punto, resultado=_resultado())
+    assert isinstance(invalido.value, ErrorProyecto)
+    with declarados({"remanso_derecho_via": "embalse_a_nivel"}):
+        with pytest.raises(DatoFaltanteError) as excinfo:
+            v5_remanso(punto=punto, resultado=_resultado())
+
+    assert isinstance(excinfo.value, ErrorProyecto)
+    assert excinfo.value.campo == "ancho_derecho_via_m"
+    assert excinfo.value.id_punto == "A-01"
+
+
+# ===========================================================================
+# VC1 - Cruce de canal: borde libre del canal (Sec. 2.3)
+# ===========================================================================
+# EL PUNTO DE PRUEBA, con sus cotas y por que estas. Es el C-01 del fixture --
+# fondo del canal 36.28, subrasante 38.95 -- mas la coronacion que el
+# levantamiento de los cruces aporta. El calado del canal (coronacion - fondo)
+# se elige de modo que las dos ramas del veredicto sean alcanzables moviendo
+# SOLO el HW, que es lo que la verificacion compara: con un canal de 1.20 m de
+# calado y 0.50 m de borde libre, la cota admisible queda 0.70 m sobre el
+# fondo.
+_C01_FONDO = 36.28
+_C01_CORONACION = 37.48          # 1.20 m de calado
+
+
+def _punto_de_canal(**cambios):
+    base = dict(id="C-01", familia=Familia.C,
+                cota_fondo_entrada=_C01_FONDO,
+                cota_coronacion_canal=_C01_CORONACION)
+    base.update(cambios)
+    return _punto(**base)
+
+
+def test_vc1_cumple_cuando_el_agua_queda_bajo_el_borde_libre():
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.60,
+                                                   HW_salida=0.20))
+    assert v.cumple
+    assert v.codigo == "VC1"
+    # cota_entrada + HW = 36.28 + 0.60 = 36.88
+    assert v.valor_obtenido == pytest.approx(36.88, rel=REL_TRANSPORTE)
+    # coronacion - borde libre = 37.48 - 0.50 = 36.98
+    assert v.valor_admisible == pytest.approx(36.98, rel=REL_TRANSPORTE)
+    assert v.paso.veredicto.margen == pytest.approx(0.10,
+                                                    rel=REL_TRANSPORTE)
+    assert v.criterio_aplicado == "borde_libre_canal_m"
+
+
+def test_vc1_no_cumple_cuando_el_agua_invade_el_borde_libre():
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.90,
+                                                   HW_salida=0.20))
+    assert not v.cumple
+    assert v.valor_obtenido == pytest.approx(37.18, rel=REL_TRANSPORTE)
+    assert v.paso.veredicto.margen == pytest.approx(-0.20,
+                                                    rel=REL_TRANSPORTE)
+    assert "desborda" in v.paso.veredicto.explicacion
+
+
+def test_vc1_y_v1_no_se_sustituyen_una_pasa_y_la_otra_no(concreto):
+    """
+    LA COMPROBACION QUE JUSTIFICA QUE VC1 EXISTA, y no una frase sobre ella.
+
+    El mismo punto, el mismo conducto y el mismo caudal: V1 CUMPLE --- el
+    barril trabaja al 67 % de su altura, holgado frente al 0.75 --- y VC1 NO
+    CUMPLE --- el agua embalsada a la entrada rebasa la coronacion del canal
+    menos su borde libre ---. Miden magnitudes distintas contra cotas
+    distintas, de modo que ninguna acota a la otra: es exactamente lo que la
+    declaracion de alcance venia afirmando sin poder demostrarlo, porque la
+    verificacion que lo demuestra no existia.
+    """
+    punto = _punto_de_canal()
+    resultado = _resultado(y_normal=0.60, HW_entrada=0.90, HW_salida=0.20)
+
+    v1 = v1_borde_libre(D=0.90, material=concreto, punto=punto,
+                        resultado=resultado)
+    vc1 = vc1_borde_libre_canal(punto=punto, resultado=resultado)
+
+    assert v1.cumple, "V1 tiene que pasar para que el contraste diga algo"
+    assert not vc1.cumple
+    # Y no es que VC1 sea «V1 con otro numero»: las magnitudes ni siquiera
+    # tienen la misma unidad. V1 compara una razon adimensional; VC1, cotas.
+    assert v1.paso.resultado.unidad == ""
+    assert vc1.paso.resultado.unidad == "msnm"
+
+
+def test_vc1_se_detiene_si_falta_la_coronacion_y_nombra_la_columna():
+    """
+    Sin la columna no hay veredicto, y la excepcion es Faltante y no
+    Pendiente: el revisor tiene que CONSEGUIR la cota (levantamiento), no
+    decidirla. No hay regla declarada que la sustituya.
+    """
+    with pytest.raises(DatoFaltanteError) as excinfo:
+        vc1_borde_libre_canal(punto=_punto_de_canal(cota_coronacion_canal=None),
+                              resultado=_resultado())
+    assert excinfo.value.campo == "cota_coronacion_canal"
+    assert excinfo.value.id_punto == "C-01"
+    assert isinstance(excinfo.value, ErrorProyecto)
+
+
+def test_vc1_se_detiene_si_el_borde_libre_no_esta_declarado():
+    """
+    Y el orden importa: el criterio se pide ANTES de mirar la columna, de modo
+    que un expediente sin borde libre declarado se detiene por el criterio
+    aunque ademas le falte la coronacion. Las dos son detenciones distintas y
+    se corrigen distinto.
+    """
+    with sin_valor("borde_libre_canal_m"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            vc1_borde_libre_canal(
+                punto=_punto_de_canal(cota_coronacion_canal=None),
+                resultado=_resultado())
+    assert excinfo.value.clave == "borde_libre_canal_m"
+
+
+def test_vc1_usa_el_invert_MEDIDO_y_no_invoca_la_regla_del_terreno():
+    """
+    VC1 comparte con V4 la puerta `cota_de_entrada`, y por tanto su
+    precedencia: con la columna llena manda el dato medido y el criterio
+    'origen_cota_fondo_entrada' no se aplica. Importa aqui mas que en V4,
+    porque en un paso de canal el fondo medido ES el fondo del canal y la
+    regla del terreno lo pondria por encima, en toda la profundidad de la
+    seccion.
+    """
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.60))
+    procedencia = [m for m in v.paso.sustitucion
+                   if m.simbolo == "cota_entrada"][0].procedencia
+    assert "cota_fondo_entrada" in procedencia
+    assert "MEDIDO" in procedencia
+    # Y con la columna vacia se aplica la regla, que aqui es `cota_terreno`.
+    v2 = vc1_borde_libre_canal(
+        punto=_punto_de_canal(cota_fondo_entrada=None,
+                              cota_coronacion_canal=45.00),
+        resultado=_resultado(HW_entrada=0.60))
+    assert v2.valor_obtenido == pytest.approx(42.10 + 0.60,
+                                              rel=REL_TRANSPORTE)
+
+
+def test_vc1_declara_el_borde_libre_como_eleccion_con_su_banda():
+    """
+    La ventana viaja con el numero: la memoria tiene que poder decir entre que
+    se eligio, y que la banda es la de un BADEN. Sin eso, el 0.50 se lee como
+    un valor normativo del canal, que es lo que no es.
+    """
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.60))
+    eleccion = v.paso.elecciones[0]
+    assert eleccion.valor == "0.5 m"
+    assert eleccion.entre == ("0.3 m", "0.5 m")
+    assert "BADEN" in eleccion.de_donde
+    assert eleccion.cita_id == "MC_HHD.4.1.1.4.1e#RANGO"
+    assert eleccion.clave_criterio == "borde_libre_canal_m"
+
+
+def test_vc1_no_presenta_su_umbral_como_exigencia_sobre_un_canal():
+    """
+    T11 EN EL SITIO DONDE PODIA FALLAR EN SILENCIO. El apartado 4.1.1.4.1 e)
+    lleva DOS oraciones: la primera es EXIGENCIA («debe contemplar mantener un
+    borde libre minimo») y la segunda RECOMENDACION («se recomienda adoptar
+    valores entre 0.30 y 0.50m»). Colgar el umbral o el verbo de la primera
+    habria pasado T11 sin queja --- T11 mira el `caracter` de la cita, no de
+    que trata --- y habria impreso el 0.50 con fuerza de exigencia sobre un
+    canal, cuando la fuente lo recomienda sobre un baden.
+
+    Es el mismo agujero estructural que C7 midio en `F5.V7`, aqui cerrado a
+    proposito y fijado por un test.
+    """
+    from src.normativa.esquema import Caracter, Verbo
+    from src.normativa.fundamentos import FUNDAMENTOS
+
+    v = vc1_borde_libre_canal(punto=_punto_de_canal(),
+                              resultado=_resultado(HW_entrada=0.60))
+    # La cita del UMBRAL --- la que lleva el numero --- es la del rango, y su
+    # caracter en el registro es RECOMENDACION.
+    assert v.paso.umbral.cita_id == "MC_HHD.4.1.1.4.1e#RANGO"
+    from src.normativa.registro import construir
+    assert construir().cita(
+        v.paso.umbral.cita_id).caracter is Caracter.RECOMENDACION
+    # El `caracter` que la memoria imprime nombra LAS DOS, como en V2 y por la
+    # misma razon: el apartado obliga a que HAYA borde libre y recomienda
+    # cuanto. Lo que no puede pasar es que se imprima solo la primera.
+    assert v.paso.umbral.caracter == "EXIGENCIA + RECOMENDACION"
+    assert FUNDAMENTOS["F5.VC1"].verbo is Verbo.RECOMIENDA
+    # Y el numeral impreso dice de que obra habla la fuente.
+    assert "baden" in v.numeral and "analogia declarada" in v.numeral
+    assert "NO fija borde libre para un canal" in v.numeral
+
+
+def test_v7_lanza_pendiente_por_falta_de_peso_especifico_del_relleno(concreto):
+    """
+    Con 'peso_especifico_relleno_kn_m3' vacio, V7 se detiene ahi -- antes de
+    llegar a 'factores_carga_aashto' -- porque el termino EV se arma antes
+    que los factores de carga en `v7_flotacion`.
+    """
+    punto = _punto()
+    with sin_valor("peso_especifico_relleno_kn_m3"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            v7_flotacion(punto=punto, material=concreto,
+                         seccion=SeccionCircular(D=0.90),
+                         resultado=_resultado())
+        assert excinfo.value.clave == "peso_especifico_relleno_kn_m3"
+
+
+# La ELECCION de fila de gamma_p por estructura, que es lo que declara hoy
+# 'factores_carga_aashto'. Esta pone al conducto de concreto en la fila del
+# MURO DE RETENCION (minimo 1.00) para poder ver, en un test, que el gamma_EV
+# de V7 sale de la fila declarada. La eleccion del proyecto es otra:
+# "Estructura rigida enterrada", minimo 0.90.
+ELECCION_DEMO = {"concreto_reforzado": {"EV": "EV_muros_y_estribos_de_retencion"}}
+
+
+def test_v7_calcula_completo_en_cuanto_declara_el_peso_del_relleno(
+        concreto, monkeypatch):
+    """
+    Los gamma son [N] y la eleccion de fila esta declarada: ya no se detiene
+    aqui. El unico vacio que le queda a V7 es 'peso_especifico_relleno_kn_m3'.
+    Declarado ese, V7 calcula completo con los gamma REALES sin tocar nada
+    mas: para el conducto de concreto, la fila "Estructura rigida enterrada"
+    da EV minimo 0.90, DC minimo 0.90 y WA 1.00.
+    """
+    original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
+    monkeypatch.setitem(
+        ca.CRITERIOS, "peso_especifico_relleno_kn_m3",
+        original.__class__(**{**original.__dict__, "valor": 18.0}),
+    )
+    punto = _punto()
+    v = v7_flotacion(punto=punto, material=concreto,
+                         seccion=SeccionCircular(D=0.90),
+                     resultado=_resultado())
+    assert v.codigo == "V7"
+    assert v.criterio_aplicado == "factores_carga_aashto"
+    assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
+    assert v.valor_admisible == pytest.approx(
+        1.00 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
+    assert v.cumple
+
+
+def test_v7_calcula_completo_con_los_dos_criterios_declarados(concreto,
+                                                                monkeypatch):
+    """
+    Recalculado a mano con la geometria FISICA del conducto (C01): el espesor
+    de pared de la corrida de pruebas para el concreto es t = 0.10 m, de modo
+    que D_ext = 0.90 + 2*0.10 = 1.10 m.
+
+    cota_terreno=42.10 (= cota de entrada supuesta), D=0.90, t=0.10
+        -> clave = 42.10 + 0.90 + 0.10 = 43.10   (clave FISICA, MAT-D4)
+    cota_subrasante=44.05 -> altura_relleno = 44.05 - 43.10 = 0.95 m.
+    U  = 9.81 * (pi/4) * 1.10^2 = 9.3228... kN/m   (volumen desplazado, MAT-D3)
+    EV = 18.0 * 1.10 * 0.95 = 18.81 kN/m;  DC = 0 (peso propio omitido)
+    estabilizante   = 0.90*0 + 1.00*18.81 = 18.81 kN/m
+    desestabilizante = 1.00 * U = 9.3228... kN/m  -> cumple
+
+    Los numeros anteriores -- clave 43.00, altura 1.05, U = 6.2417, EV = 17.01
+    -- salian de usar el diametro interior en los dos sitios. U estaba un 33 %
+    por debajo del real, y esa es la carga desestabilizante.
+    """
+    for clave, val in (("peso_especifico_relleno_kn_m3", 18.0),
+                       ("factores_carga_aashto", ELECCION_DEMO)):
+        original = ca.CRITERIOS[clave]
+        monkeypatch.setitem(
+            ca.CRITERIOS, clave,
+            original.__class__(**{**original.__dict__, "valor": val}),
+        )
+    punto = _punto()
+    v = v7_flotacion(punto=punto, material=concreto,
+                         seccion=SeccionCircular(D=0.90),
+                     resultado=_resultado())
+    assert v.codigo == "V7"
+    assert v.criterio_aplicado == "factores_carga_aashto"
+    assert v.valor_obtenido == pytest.approx(1.00 * 18.81, abs=1e-6)
+    assert v.valor_admisible == pytest.approx(
+        1.00 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
+    assert v.cumple
+
+
+def test_v7_no_es_un_factor_de_seguridad_global(concreto, monkeypatch):
+    """
+    El estabilizante y el desestabilizante llevan gamma DISTINTOS y cada uno
+    el suyo: con gamma_EV_min != gamma_WA, un FS global no podria reproducir
+    el resultado, y esa es la prueba de que V7 dejo de serlo.
+
+    Los dos gamma son los REALES y ya no hacen falta inventados: el conducto
+    de concreto cuelga de "Estructura rigida enterrada" y entra con su minimo
+    0.90, mientras WA entra con el 1.00 de la Tabla 2.4.5.3.1-1. La version
+    anterior de este test declaraba un WA de 1.25 para forzar la diferencia;
+    ese numero ya no se puede declarar, porque el factor de WA no es una
+    eleccion del proyecto sino una celda [N] de la tabla.
+    """
+    original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
+    monkeypatch.setitem(
+        ca.CRITERIOS, "peso_especifico_relleno_kn_m3",
+        original.__class__(**{**original.__dict__, "valor": 18.0}),
+    )
+    g = factores_carga_flotacion(material=concreto)
+    # anclados, no derivados
+    assert (g.gamma_EV, g.gamma_WA) == pytest.approx((0.90, 1.00),
+                                                     rel=REL_TRANSPORTE)
+    v = v7_flotacion(punto=_punto(), material=concreto,
+                     seccion=SeccionCircular(D=0.90),
+                     resultado=_resultado())
+    assert v.valor_obtenido == pytest.approx(0.90 * 18.81, abs=1e-6)
+    assert v.valor_admisible == pytest.approx(
+        1.00 * 9.81 * (math.pi / 4) * 1.10 ** 2, abs=1e-6)
+    # Y el punto del test: los dos lados llevan gamma DISTINTOS, de modo que
+    # ningun factor de seguridad global reproduce el resultado.
+    assert g.gamma_EV != g.gamma_WA
+
+
+def test_la_eleccion_de_fila_de_V7_sale_de_su_fundamento_y_lista_las_siete(
+        concreto, monkeypatch):
+    """
+    D-8, y las dos mitades de su arreglo.
+
+    LA PRIMERA: la `EleccionDeProyecto` de V7 enumeraba CUATRO filas escritas
+    a mano y la Tabla 2.4.5.3.1-2 tiene SIETE de EV. La que faltaba era
+    «Porticos rigidos», que es justo la del marco: la memoria publicaba una
+    eleccion sin listar la opcion que se estaba eligiendo. Ahora `entre` se
+    DERIVA de la transcripcion (`M8.filas_ev_de_la_tabla`), de modo que no
+    puede volver a divergir de ella.
+
+    LA SEGUNDA: la eleccion no decia QUE fila salio elegida --- su `valor` era
+    "gamma_EV min = 0.9", un numero que las tres filas candidatas comparten
+    --- de modo que el dato que hacia falta para discutirla no estaba. Ahora
+    el `valor` nombra la fila.
+
+    Y EL `por_que` YA NO SE ESCRIBE EN M5: sale de `F5.V7_FILA`, que es lo
+    que ata su verbo al `caracter` de sus citas por T11. Se comprueba por
+    identidad con el registro, no por parecido de texto.
+    """
+    from src.normativa.registro import construir
+
+    original = ca.CRITERIOS["peso_especifico_relleno_kn_m3"]
+    monkeypatch.setitem(
+        ca.CRITERIOS, "peso_especifico_relleno_kn_m3",
+        original.__class__(**{**original.__dict__, "valor": 18.0}),
+    )
+    v = v7_flotacion(punto=_punto(), material=concreto,
+                     seccion=SeccionCircular(D=0.90), resultado=_resultado())
+    # Dos elecciones desde T-4: la de la fila de gamma_p y la del espesor que
+    # separa el diametro hidraulico del exterior (F3.D_EXTERIOR).
+    e, e_espesor = v.paso.elecciones
+    assert e_espesor.fundamento_id == "F3.D_EXTERIOR"
+    assert e_espesor.clave_criterio == "espesor_pared_conducto"
+
+    assert e.fundamento_id == "F5.V7_FILA"
+    assert e.por_que == construir().fundamento("F5.V7_FILA").por_que
+
+    assert len(e.entre) == 7, e.entre
+    assert all(fila.startswith("EV:") for fila in e.entre)
+    # LA QUE FALTABA, nombrada: sin ella no hay rama de marco que publicar.
+    assert any("Pórticos rígidos" in fila for fila in e.entre)
+    # Y la fila elegida esta ENTRE las alternativas, que es lo que una
+    # eleccion publicada significa y lo que D-8 rompia.
+    assert any(fila in str(e.valor) for fila in e.entre)
+    assert "Estructura rígida enterrada" in str(e.valor)
+
+
+def test_la_fila_de_gamma_p_de_un_marco_es_la_de_porticos_rigidos(monkeypatch):
+    """
+    La rama que abre el punto 3 de C7, y la trampa que la hacia invisible.
+
+    Un marco de concreto y un tubo de concreto son el MISMO `TipoMaterial`,
+    de modo que `factores_carga_aashto` indexado por material no podia
+    distinguirlos: el marco heredaba la fila del tubo. Quien los separa es la
+    FORMA, porque la Tabla 2.4.5.3.1-2 desglosa por tipo de ESTRUCTURA.
+
+    EL NUMERO NO CAMBIA Y LA CITA SI, y ese es el punto del test: el MINIMO
+    de las dos filas vale 0.90 y V7 lee el minimo. Nada fallaba de forma
+    ruidosa mientras la fila impresa era la equivocada --- es el precedente
+    NOR-HID-01, un valor que acierta por casualidad con una cita que no lo
+    sostiene ---, y por eso lo que se asserta es el NOMBRE de la fila y no
+    solo el gamma. Lo que si cambia es el maximo (1.35 frente a 1.30), y ese
+    gobierna la Fase 8, que `--alcance perfil` difiere.
+    """
+    declaraciones = dict(DECLARACIONES_CAJON)
+    declaraciones["espesor_pared_cajon"] = 0.15
+    declaraciones["peso_especifico_relleno_kn_m3"] = 18.0
+    with declarados(declaraciones):
+        marco = _marco()
+        g_marco = factores_carga_flotacion(material=marco)
+        v = v7_flotacion(punto=_punto(), material=marco,
+                         seccion=SeccionRectangular(B=2.00, H=1.50),
+                         resultado=_resultado())
+        g_tubo = factores_carga_flotacion(material=catalogo(
+            TipoMaterial.CONCRETO_REFORZADO))
+
+    assert "Pórticos rígidos" in g_marco.fila_gamma_EV
+    assert "Estructura rígida enterrada" in g_tubo.fila_gamma_EV
+    # BC Y B'c NO SON INTERCAMBIABLES, y hasta que la auditoria adversarial de
+    # C7 lo midio nada lo comprobaba: las dos `Magnitud` que C7e anadio se
+    # justificaban con «en un marco NO coinciden, y esa coincidencia es la que
+    # oculto el defecto hasta C7» -- y la unica ejecucion de V7 en la suite y
+    # en la linea base era CIRCULAR, donde coinciden. Intercambiarlas
+    # sobrevivia a la suite entera. Sobre 2.00 x 1.50 con t = 0.15:
+    # Bc = 2.30 (HORIZONTAL, el del prisma de relleno) y B'c = 1.80.
+    por_simbolo = {m.simbolo: m.valor for m in v.paso.sustitucion}
+    assert por_simbolo["Bc"] == pytest.approx(2.30, rel=REL_TRANSPORTE)
+    assert por_simbolo["B'c"] == pytest.approx(1.80, rel=REL_TRANSPORTE)
+    # El numero coincide -- por eso hacia falta mirar la fila.
+    assert g_marco.gamma_EV == pytest.approx(g_tubo.gamma_EV, rel=REL_TRANSPORTE)
+    # Y la memoria del marco imprime SU fila, no la del tubo.
+    e, e_espesor = v.paso.elecciones
+    assert "Pórticos rígidos" in str(e.valor)
+    assert e_espesor.clave_criterio == "espesor_pared_cajon"
+
+
+def test_v8_lanza_pendiente_por_falta_de_TR_y_umbral():
+    punto = _punto()
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        v8_evento_extremo(punto=punto, resultado=_resultado())
+    assert excinfo.value.clave == "TR_evento_extremo"
+
+
+def test_v8_con_el_TR_declarado_reclama_el_caudal_y_no_revienta():
+    """
+    La SEGUNDA rama de V8, que hasta S20 era un `raise AssertionError` desnudo
+    y tumbaba la corrida entera de la CLI (no desciende de `ErrorProyecto`, de
+    modo que `cli._etapa` no lo capturaba). Declarar el TR no cierra V8:
+    falta el CAUDAL de ese periodo de retorno, y este software no hace
+    hidrologia. Es la misma forma que V5 ya tenia.
+    """
+    from tests.apoyo.criterios import con_valor
+    punto = _punto()
+    with con_valor("TR_evento_extremo", 500,
+                   motivo="test: TR del evento extremo, para llegar a la "
+                          "segunda rama de V8"):
+        with pytest.raises(DatoFaltanteError) as excinfo:
+            v8_evento_extremo(punto=punto, resultado=_resultado())
+    assert excinfo.value.campo == "Q_evento_extremo_m3s"
+    assert isinstance(excinfo.value, ErrorProyecto)
+
+
+def test_los_dos_vacios_de_la_fase_5_son_los_que_el_alcance_de_perfil_difiere():
+    """
+    De los tres vacios que la Fase 5 tenia, quedan DOS -- y no es casualidad
+    cuales: son exactamente los de V5 y V8, las dos verificaciones que
+    `--alcance perfil` difiere al expediente. El tercero,
+    'peso_especifico_relleno_kn_m3', alimenta V7, que en perfil es
+    OBLIGATORIA, y por eso se cerro al cerrarse el nivel de perfil (S20).
+
+    La clasificacion no se afirma aqui a mano: se lee del campo `nivel`, que
+    es el que la GUI y la memoria consultan.
+    """
+    for clave in ("remanso_derecho_via", "TR_evento_extremo"):
+        assert clave in ca.criterios_sin_valor()
+        assert ca.CRITERIOS[clave].nivel == ca.NIVEL_EXPEDIENTE
+    assert ca.CRITERIOS["peso_especifico_relleno_kn_m3"].valor is not None
+    assert ca.CRITERIOS["peso_especifico_relleno_kn_m3"].nivel == ca.NIVEL_PERFIL
+    # 'factores_carga_aashto' no es un vacio: declara la fila de gamma_p de
+    # cada estructura, y los gamma en si son [N] (NOR-PUE-04)
+    assert "factores_carga_aashto" not in ca.criterios_sin_valor()
+
+
+# ===========================================================================
+# V6 - Material solido de arrastre
+# ===========================================================================
+
+def test_v6_cumple_por_construccion():
+    v = v6_material_solido_arrastre(
+        material=catalogo(TipoMaterial.CONCRETO_REFORZADO))
+    assert v.cumple
+    assert v.codigo == "V6"
+    assert v.criterio_aplicado is None
+
+
+# ===========================================================================
+# V9 - Disponibilidad de diametro
+# ===========================================================================
+
+def test_v9_cumple_bajo_el_tope(concreto):
+    v = v9_disponibilidad_diametro(D=0.90, material=concreto)
+    assert v.cumple
+    assert v.codigo == "V9"
+    assert v.valor_admisible == pytest.approx(concreto.D_max)
+    # Desde T-4 el tope del tubo es el de la serie de su norma de producto,
+    # y el criterio que V9 cita es el que lo fijo (INF-3.3.1).
+    assert v.criterio_aplicado == "D_max_norma_producto"
+
+
+def test_v9_incumple_sobre_el_tope(hdpe):
+    """HDPE topa en 1.50 m (el mas restrictivo): 1.65 ya lo supera."""
+    v = v9_disponibilidad_diametro(D=1.65, material=hdpe)
+    assert not v.cumple
+    assert v.valor_admisible == pytest.approx(1.50)
+
+
+def test_v9_en_el_tope_exacto_cumple(hdpe):
+    v = v9_disponibilidad_diametro(D=hdpe.D_max, material=hdpe)
+    assert v.cumple
+
+
+# ===========================================================================
+# verificar() - el agregado que llama MD
+# ===========================================================================
+
+def test_verificar_se_detiene_en_V5_la_primera_pendiente_en_orden(concreto):
+    """
+    Con concreto, V3 no esta pendiente (rango [N] directo): la primera
+    excepcion de la secuencia V1..V9 es V5.
+    """
+    punto = _punto()
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        verificar(punto=punto, material=concreto,
+                  seccion=SeccionCircular(D=0.90),
+                 resultado=_resultado(y_normal=0.60, V=1.5))
+    assert excinfo.value.clave == "remanso_derecho_via"
+
+
+def test_verificar_con_tmc_ya_pasa_v3_y_se_detiene_en_v5(tmc):
+    """
+    Con 'v_max_tmc' declarado, V3 deja de ser el freno y `verificar` avanza
+    hasta el siguiente vacio real de la tabla, que es V5 ('remanso_derecho_via').
+    Antes se detenia en V3, que precede a V5 en el orden de la Fase 5.
+    """
+    punto = _punto()
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        verificar(punto=punto, material=tmc,
+                  seccion=SeccionCircular(D=0.90),
+                 resultado=_resultado(y_normal=0.60, V=1.5))
+    assert excinfo.value.clave == "remanso_derecho_via"
+
+
+def test_verificar_en_familia_C_corre_VC1_en_vez_de_V5(concreto):
+    """
+    LA UNICA BIFURCACION POR FAMILIA DE LA FASE 5, comprobada por su efecto.
+
+    Un punto de Familia C con la coronacion medida y el criterio declarado ya
+    NO se detiene en 'remanso_derecho_via': V5 no se le corre. Lo que ocupa su
+    posicion es VC1, que tiene con que resolverse y emite veredicto.
+    """
+    punto = _punto(familia=Familia.C, id="C-99",
+                   cota_fondo_entrada=36.28, cota_coronacion_canal=38.30)
+    # Se detiene mas ADELANTE que antes, y eso es parte del hallazgo: con V5
+    # fuera, la primera pendiente que queda en el orden de la tabla es la de
+    # V8 ('TR_evento_extremo'). Lo verificado hasta ahi viaja en la excepcion.
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        verificar(punto=punto, material=concreto,
+                  seccion=SeccionCircular(D=0.90),
+                  resultado=_resultado(y_normal=0.60, V=1.5))
+    assert excinfo.value.clave == "TR_evento_extremo"
+    hechas = excinfo.value.verificaciones_completadas
+    codigos = [v.codigo for v in hechas]
+    assert "VC1" in codigos
+    # Desde el cierre de C10 (PC-27) V5 SI figura, pero como fila que NO
+    # APLICA: no se evaluo, no lleva valor y dice que VC1 la sustituye.
+    # Antes no figuraba, y una fila ausente no se distingue de una olvidada.
+    v5 = [v for v in hechas if v.codigo == "V5"]
+    assert len(v5) == 1
+    assert v5[0].estado is EstadoDeVerificacion.NO_APLICA
+    assert v5[0].valor_obtenido is None and "VC1" in v5[0].motivo_no_aplica
+    # Y la posicion importa: VC1 ocupa el hueco de V5, entre V4b y V6, y la
+    # fila «no aplica» de V5 va pegada detras de VC1. Desde T-2 entre V4b y
+    # el hueco va V10 (la pendiente del conducto), que se evalua ANTES para
+    # que una V5 o una VC1 que se detengan no la tapen.
+    assert codigos.index("V10") == codigos.index("V4b") + 1
+    assert codigos.index("VC1") == codigos.index("V10") + 1
+    assert codigos.index("V5") == codigos.index("VC1") + 1
+    assert codigos.index("V5") == codigos.index("V6") - 1
+
+
+def test_verificar_en_familia_A_sigue_deteniendose_en_V5_y_no_corre_VC1(concreto):
+    """
+    La contracara: la sustitucion es de la Familia C y de nadie mas. Un punto
+    de Familia A con la coronacion llena --- que no deberia tenerla, pero el
+    tipo lo admite --- sigue corriendo V5 y deteniendose en su criterio.
+    """
+    punto = _punto(cota_coronacion_canal=45.00)
+    with pytest.raises(CriterioPendienteError) as excinfo:
+        verificar(punto=punto, material=concreto,
+                  seccion=SeccionCircular(D=0.90),
+                  resultado=_resultado(y_normal=0.60, V=1.5))
+    assert excinfo.value.clave == "remanso_derecho_via"
+
+
+def test_verificar_tiene_la_firma_del_protocol_de_MD(concreto):
+    """
+    MD.Verificador exige (punto=, material=, seccion=, resultado=), por
+    keyword. Decia `D=` -- la firma anterior a C7i -- mientras el cuerpo ya
+    llamaba con `seccion=`: el test pasaba porque un `Protocol` no se
+    comprueba en runtime, de modo que su docstring era lo unico que afirmaba
+    la firma y afirmaba la equivocada. Lo encontro la auditoria adversarial
+    de C7.
+    """
+    with pytest.raises(CriterioPendienteError):
+        verificar(punto=_punto(), material=concreto,
+                  seccion=SeccionCircular(D=0.90),
+                 resultado=_resultado())
+
+
+# ---------------------------------------------------------------------------
+# La cota de fondo de entrada es una DECLARACION, no un supuesto del codigo
+# ---------------------------------------------------------------------------
+# SIS-A-04: M5 adoptaba `punto.cota_terreno` dentro del modulo, sin criterio,
+# sin Anexo A y sin marca en la memoria, y esa eleccion gobierna V4, V7 y la
+# rasante de 7.A. La regla nuclear del proyecto dice que un hueco que no
+# cierra ninguna norma se declara vacio y detiene el calculo.
+
+def test_sin_declarar_el_origen_la_cota_de_entrada_detiene_el_calculo():
+    """
+    La regla nuclear del proyecto, comprobada: un criterio vacio DETIENE, no
+    se sustituye por un default. El criterio quedo declarado en S20 al
+    cerrarse el nivel de perfil, de modo que el vacio se devuelve aqui dentro
+    (`tests.apoyo.criterios.sin_valor`): lo que este test fija es la conducta
+    del modulo ante un vacio, que es permanente, y no el estado del
+    expediente, que no lo es.
+    """
+    with sin_valor(CRITERIO_ORIGEN_COTA_ENTRADA):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            cota_de_entrada(_punto())
+        assert excinfo.value.clave == CRITERIO_ORIGEN_COTA_ENTRADA
+        assert ca.criterio(CRITERIO_ORIGEN_COTA_ENTRADA).valor is None
+
+
+def test_la_regla_declarada_es_la_que_se_aplica():
+    punto = _punto()
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+    assert cota_de_entrada(punto).valor == pytest.approx(punto.cota_terreno)
+    assert CRITERIO_ORIGEN_COTA_ENTRADA in ca.criterios_usados(), (
+        "la eleccion tiene que registrarse como usada o la memoria no la "
+        "declara")
+
+
+def test_el_fondo_de_entrada_MEDIDO_manda_sobre_la_regla_adoptada():
+    """
+    LA PRECEDENCIA, que es el corazon de esta via: un dato medido no se
+    sustituye por una regla adoptada. Lo dice el `reemplazado_por` del propio
+    criterio desde que existe, y desde que el CSV trae la columna es codigo.
+
+    En un PASO DE CANAL la diferencia no es cosmetica: con 'cota_terreno' el
+    invert queda a la cota del terreno natural, o sea POR ENCIMA del fondo del
+    canal en toda la profundidad de la seccion. Aqui se separan 0.62 m a
+    proposito --- dentro de la banda medida en este corredor, 0.30 a 0.95 m ---
+    para que confundir las dos no pueda pasar por redondeo.
+    """
+    medida = 41.48
+    punto = _punto(cota_fondo_entrada=medida)
+    assert punto.cota_terreno == pytest.approx(42.10, rel=REL_TRANSPORTE), (
+        "el fixture cambio: este test necesita que terreno y fondo medido NO "
+        "coincidan, o no distingue nada")
+
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+    # El registro de usos llega con lo que invocaron los tests anteriores
+    # del modulo; sin partir de cero, el aserto de abajo mediria la suma de
+    # la sesion y no esta llamada.
+    ca.reiniciar_usos()
+    cota = cota_de_entrada(punto)
+
+    assert cota.valor == pytest.approx(medida, rel=REL_TRANSPORTE)
+    assert cota.medida is True
+    assert cota.rotulo == "MEDIDA"
+    assert "cota_fondo_entrada" in cota.procedencia
+    # Y EL CRITERIO NI SIQUIERA SE INVOCA: esta corrida no lo uso, de modo que
+    # la memoria no tiene por que declararlo. Registrarlo seria afirmar que
+    # una eleccion gobierno un numero que no gobierna.
+    assert CRITERIO_ORIGEN_COTA_ENTRADA not in ca.criterios_usados()
+
+
+def test_sin_dato_medido_rige_la_regla_y_lo_dice():
+    """
+    La otra via. El valor es el mismo de siempre; lo que se comprueba ademas
+    es que la procedencia lo DIGA, porque es lo que separa un dato de una
+    eleccion en la memoria.
+    """
+    punto = _punto()
+    assert punto.cota_fondo_entrada is None
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+    ca.reiniciar_usos()
+
+    cota = cota_de_entrada(punto)
+
+    assert cota.valor == pytest.approx(punto.cota_terreno, rel=REL_TRANSPORTE)
+    assert cota.medida is False
+    assert cota.rotulo == "ADOPTADA"
+    assert "cota_terreno" in cota.procedencia
+    assert CRITERIO_ORIGEN_COTA_ENTRADA in ca.criterios_usados()
+
+
+def test_pedir_la_cota_medida_y_no_tenerla_es_DatoFaltante_y_no_una_caida_silenciosa():
+    """
+    LA EXCEPCION AL ORDEN, y la razon de que 'cota_fondo_entrada' sea tambien
+    una regla declarable y no solo una columna: quien la declara esta PIDIENDO
+    el dato medido. Si la fila lo deja vacio, la respuesta correcta es
+    detenerse --- el revisor tiene que AÑADIR algo, o sea `DatoFaltanteError`
+    --- y no caer en silencio a la regla del terreno, que es la que
+    sobrestima el invert.
+    """
+    punto = _punto()
+    assert punto.cota_fondo_entrada is None
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA,
+                                 "cota_fondo_entrada")
+    try:
+        with pytest.raises(DatoFaltanteError) as excinfo:
+            cota_de_entrada(punto)
+        assert excinfo.value.campo == "cota_fondo_entrada"
+        assert excinfo.value.id_punto == punto.id
+    finally:
+        ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA,
+                                     "cota_terreno")
+
+
+def test_la_memoria_de_V4_dice_si_el_invert_vino_MEDIDO_o_de_la_regla():
+    """
+    EL PUNTO QUE EL REVISOR PREGUNTA, comprobado sobre el paso que la memoria
+    imprime y no sobre el objeto: la `Magnitud` de la cota de entrada lleva la
+    procedencia, y la procedencia dice cual de las dos vias fue.
+
+    Antes de la columna, esa procedencia estaba ESCRITA A MANO en el modulo y
+    afirmaba siempre «regla declarada en el criterio ... el codigo NO la
+    elige». Con el dato medido esa frase seria falsa justo donde el numero es
+    mejor.
+    """
+    resultado = _resultado(HW_entrada=0.50)
+
+    ca.establecer_valor_dinamico(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_terreno")
+    adoptada = v4_carga_entrada(punto=_punto(), resultado=resultado)
+    medida = v4_carga_entrada(
+        punto=_punto(cota_fondo_entrada=41.48), resultado=resultado)
+
+    def _procedencia(v):
+        return next(m.procedencia for m in v.paso.sustitucion
+                    if m.simbolo == "cota_entrada")
+
+    assert "cota_fondo_entrada" in _procedencia(medida)
+    assert "MEDIDO" in _procedencia(medida)
+    assert "regla" in _procedencia(adoptada)
+    assert _procedencia(medida) != _procedencia(adoptada), (
+        "las dos vias tienen que imprimirse distinto o la memoria no las "
+        "distingue, que es justo lo que el revisor pregunta")
+
+    # Y el NUMERO se mueve con ellas: no es una etiqueta decorativa sobre el
+    # mismo resultado.
+    assert medida.valor_obtenido < adoptada.valor_obtenido
+
+
+def test_la_regla_de_la_cota_medida_esta_implementada_y_la_ventana_lo_dice():
+    """
+    Las dos mitades de la declaracion tienen que coincidir: lo que M5 sabe
+    aplicar (`ORIGENES_COTA_ENTRADA`) y lo que la ficha del criterio ofrece
+    como ventana (`sensibilidad`). Cuando eran una sola, un comentario decia
+    que la ventana de un elemento no era una formalidad; ahora son dos y ese
+    comentario habria quedado caduco sin que nada avisara.
+    """
+    assert set(ORIGENES_COTA_ENTRADA) == {"cota_terreno", "cota_fondo_entrada"}
+    assert set(ca.criterio(CRITERIO_ORIGEN_COTA_ENTRADA).sensibilidad) == \
+        set(ORIGENES_COTA_ENTRADA)
+
+
+def test_una_regla_no_implementada_es_dato_invalido_no_un_fallo_de_programa():
+    """
+    Declarar una regla que este modulo no sabe aplicar es un problema del
+    expediente -- alguien eligio algo que el software no implementa -- y sale
+    como `DatoInvalidoError` de la taxonomia del proyecto, no como KeyError.
+    """
+    # `con_valor`: la puerta rechaza una regla fuera del conjunto cerrado
+    # desde EXT-5 (`categoria`); aqui se prueba la guardia del consumidor.
+    with con_valor(CRITERIO_ORIGEN_COTA_ENTRADA, "cota_de_invert_medida",
+                   motivo="regla no implementada, que la puerta ya rechaza"):
+        with pytest.raises(DatoInvalidoError):
+            cota_de_entrada(_punto())
+
+
+def test_las_doce_filas_de_la_fase_5_tienen_su_funcion():
+    """
+    La tabla de Fase 5 de la hoja de ruta tiene DOCE filas y este modulo tiene
+    DOCE funciones (once hasta T-2, que sumo V10, la pendiente del conducto,
+    a la tabla y al modulo en el mismo cambio). Ninguna queda como ejercicio
+    de resta del lector, que es lo que SIS-A-13 y MAT-O15 reprochaban de V2b.
+
+    LAS DOS QUE FALTABAN SE CABLEARON EN SESIONES DISTINTAS, y este test las
+    vigila a las dos: V4b en S14 (`v4b_relacion_hw_d`), una vez cerrada la
+    procedencia de su umbral -- que es la secuencia que el conflicto #1
+    impone --, y V2b en S20 (`v2b_sedimentacion`), una vez encontrado el
+    numeral que la sostiene, el 5.3.3 del HDS-5. Una fila cableada que
+    siguiera declarandose "no evaluada" seria la misma clase de afirmacion
+    falsa que SIS-A-03 denuncio en ocho docstrings, solo que impresa en la
+    memoria; y una fila sin cablear que no se declarara seria el defecto
+    contrario, que es el que V2b tenia.
+    """
+    from src.modulos import M11_reporte as M11
+    from src.modulos.M5_verificaciones import verificaciones_no_evaluadas
+
+    textos = verificaciones_no_evaluadas()
+    assert textos == (), (
+        "alguna fila de Fase 5 volvio a declararse no evaluada. Si es "
+        "cierto, el conteo de abajo tiene que cambiar con ella; si no lo es, "
+        "la constancia esta mintiendo")
+
+    # El conteo, contra la hoja de ruta y contra este modulo: si alguno de los
+    # dos cambia, la afirmacion de arriba deja de ser cierta.
+    #
+    # El patron de funciones lleva la `b` OPCIONAL a proposito. Sin ella
+    # (`v\d+_`) no casaba `v4b_...` ni `v2b_...`, que son justo las dos que
+    # esta guardia vigila -- y gracias a ella entraron en el conteo el dia que
+    # se cablearon, en vez de dejar la constancia en verde diciendo que nadie
+    # las evalua.
+    raiz = Path(__file__).resolve().parents[1]
+    # La hoja se localiza como lo hace M11 -- que exige que haya exactamente
+    # una --, no con el primer resultado de un glob.
+    hoja = M11.ruta_hoja_de_ruta()
+    filas = re.findall(r"^\| \*\*(V\d+b?)\*\*", hoja.read_text(encoding="utf-8"), re.M)
+    import ast
+    modulo = (raiz / "src" / "modulos" / "M5_verificaciones.py").read_text(encoding="utf-8")
+    # Por AST y no por regex sobre el texto (PC-21): un `def` en un
+    # comentario o en un docstring contaria igual.
+    # `v5_no_aplica_en_canal` (C10, PC-27) no es una verificacion: es la fila
+    # que dice que V5 no se evalua en la Familia C. Se excluye por nombre
+    # completo, no por patron, para que no entre otra por la misma puerta.
+    funciones = [n.name for n in ast.parse(modulo).body
+                 if isinstance(n, ast.FunctionDef) and re.match(r"v\d+b?_", n.name)
+                 and n.name != "v5_no_aplica_en_canal"]
+    assert len(filas) == 12, f"la tabla de Fase 5 ya no tiene doce filas: {filas}"
+    assert len(funciones) == 12, f"M5 ya no tiene doce verificaciones: {funciones}"
+    assert sorted(filas) == sorted(f.split("_")[0].upper().replace("B", "b")
+                                   for f in funciones)
+    assert len(textos) == len(filas) - len(funciones)
+
+
+def test_v2b_compara_la_pendiente_del_conducto_con_la_del_cauce():
+    """
+    El indicador del HDS-5 num. 5.3.3: el conducto no se tiende mas plano que
+    el cauce que lo alimenta. Cumple con la pendiente del cauce (que es lo
+    normal, Sec. 7.B) y NO cumple en cuanto el diseño la baja.
+    """
+    punto = _punto()
+    igual = v2b_sedimentacion(punto=punto, resultado=_resultado(S=punto.S_cauce))
+    assert igual.cumple and igual.codigo == "V2b"
+    assert igual.criterio_aplicado == "acceso_mantenimiento_v2b"
+
+    # T-2: el valor de archivo de 'regimen_v2b' es «indicador_con_aviso», y
+    # el «no cumple» es el del regimen «umbral_duro», que sigue en la ventana.
+    # Los dos regimenes hacen LA MISMA comparacion; cambia el veredicto.
+    ca.establecer_valor_dinamico("regimen_v2b", "umbral_duro")
+    try:
+        mas_plano = v2b_sedimentacion(
+            punto=punto, resultado=_resultado(S=punto.S_cauce / 2))
+    finally:
+        ca.quitar_valor_dinamico("regimen_v2b")
+    assert not mas_plano.cumple
+    assert "colmatacion" in mas_plano.paso.veredicto.explicacion
+
+    avisado = v2b_sedimentacion(
+        punto=punto, resultado=_resultado(S=punto.S_cauce / 2))
+    assert avisado.cumple
+    assert avisado.paso.veredicto.tipo is TipoDeVeredicto.INDICADOR
+    assert avisado.valor_obtenido == mas_plano.valor_obtenido
+    assert avisado.valor_admisible == mas_plano.valor_admisible
+
+
+def test_v2b_se_detiene_sin_el_acceso_de_mantenimiento_declarado():
+    """
+    La mitad [A] de la fila V2b. Antes de S20 era un parrafo que la memoria
+    imprimia y que nadie tenia que contestar; ahora es un criterio que
+    DETIENE, de modo que el expediente no puede cerrar sin decir como se va a
+    limpiar cada punto.
+    """
+    with sin_valor("acceso_mantenimiento_v2b"):
+        with pytest.raises(CriterioPendienteError) as excinfo:
+            v2b_sedimentacion(punto=_punto(), resultado=_resultado())
+        assert excinfo.value.clave == "acceso_mantenimiento_v2b"
+
+
+def test_v2b_sin_pendiente_de_cauce_reclama_la_columna():
+    """Sin S_cauce el indicador no tiene contra que comparar: Faltante."""
+    punto = _punto(S_cauce=None)
+    with pytest.raises(DatoFaltanteError) as excinfo:
+        v2b_sedimentacion(punto=punto, resultado=_resultado())
+    assert excinfo.value.campo == "S_cauce"
+
+
+# ===========================================================================
+# C09 / SIS-F-10 y SIS-B-23 - la guarda de la altura de relleno, y la que no
+# ===========================================================================
+#
+# `altura_relleno_sobre_clave` es la magnitud que consumen V7 (Fase 5) y la
+# tabla de la norma de producto (Fase 8). Su guarda estaba escrita y no la
+# ejecutaba ninguna corrida: sin test, nada garantizaba que la GUI reciba
+# DatoInvalidoError sobre 'cota_subrasante' -- que es la casilla que el
+# revisor tiene que CORREGIR -- en vez de un numero negativo que sigue
+# viajando hasta elegir una clase de tubo contra un relleno que no existe.
+#
+# La segunda mitad del bloque es la contraria: `resguardo_por_cbr` lleva un
+# `raise` que NO se alcanza, y lo que se escribe no es un test que lo alcance
+# por inyeccion sino la demostracion de por que es inalcanzable (SIS-B-23).
+
+
+@pytest.mark.parametrize("delta_sobre_la_clave, descripcion", [
+    (0.00, "la subrasante coincide exactamente con la clave"),
+    (-0.45, "la clave asoma por encima de la subrasante"),
+    (-2.00, "la clave asoma casi entera"),
+])
+def test_una_clave_al_nivel_de_la_subrasante_o_encima_es_una_cota_a_corregir(
+        hdpe, delta_sobre_la_clave, descripcion):
+    """
+    Falla si la resta pierde su guarda -- que es exactamente el defecto de
+    SIS-A-21: la copia de `cli._fase_8` hacia la misma resta SIN comprobar el
+    signo, y solo no hacia daño porque la Fase 8 se detenia antes por otro
+    motivo. El dia que ese otro motivo se declare, un relleno negativo entra
+    a la tabla de la norma de producto y elige una clase contra un numero sin
+    sentido fisico.
+
+    Se comprueba la CLASE (DatoInvalidoError, no CriterioPendienteError: la
+    cota esta, hay que corregirla), el CAMPO ('cota_subrasante', que es la
+    casilla del CSV) y que el motivo diga por que -- con el numero del
+    relleno que salio, para que el revisor sepa cuanto le falta.
+    """
+    seccion = SeccionCircular(D=1.50)
+    punto_base = _punto()
+    clave = cota_clave(punto=punto_base, material=hdpe, seccion=seccion)
+    subrasante = clave + delta_sobre_la_clave
+
+    with pytest.raises(DatoInvalidoError) as exc:
+        altura_relleno_sobre_clave(
+            punto=_punto(cota_subrasante=subrasante), material=hdpe,
+            seccion=seccion)
+
+    assert exc.value.campo == "cota_subrasante", descripcion
+    assert exc.value.id_punto == punto_base.id
+    assert "no hay relleno sobre la clave" in exc.value.motivo
+    # El motivo NO cita numeral de fase, a proposito: la misma magnitud la
+    # consumen V7 y la Fase 8, y nombrar una sola mandaria al revisor a la
+    # etapa equivocada la mitad de las veces.
+    assert NUMERAL_V7 not in exc.value.motivo
+
+
+def test_con_la_subrasante_por_encima_de_la_clave_la_altura_es_la_resta(hdpe):
+    """
+    El contraste: la guarda no rechaza rellenos pequeños, solo los nulos o
+    negativos. Falla si alguien la endurece con un minimo inventado.
+    """
+    seccion = SeccionCircular(D=1.50)
+    clave = cota_clave(punto=_punto(), material=hdpe, seccion=seccion)
+    holgura = 0.40
+
+    altura = altura_relleno_sobre_clave(
+        punto=_punto(cota_subrasante=clave + holgura), material=hdpe,
+        seccion=seccion)
+
+    assert altura == pytest.approx(holgura, rel=REL_TRANSPORTE)
+
+
+# --- guarda defensiva: se demuestra inalcanzable, no se alcanza ------------
+
+def test_la_tabla_de_resguardo_no_deja_ningun_CBR_sin_fila():
+    """
+    SIS-B-23. `resguardo_por_cbr` termina en un `raise ValueError` que ningun
+    CBR alcanza, porque las cuatro filas de RESGUARDO_NAPA_SUBRASANTE son
+    exhaustivas por construccion: la primera no tiene techo, la ultima no
+    tiene piso, y las intermedias encadenan sin hueco. Por eso ese `raise` no
+    lleva un test que lo ejecute -- lleva este, que demuestra por que no se
+    puede ejecutar.
+
+    Falla el dia que alguien edite la tabla y abra un hueco (o le ponga techo
+    a la fila de arriba, o piso a la de abajo): entonces el `raise` deja de
+    ser inalcanzable y este test lo dice AQUI, con la fila culpable, en vez
+    de esperar a que el CBR de una obra caiga en el agujero.
+    """
+    filas = list(RESGUARDO_NAPA_SUBRASANTE)
+
+    # Los dos extremos abiertos: sin ellos la tabla no cubre la recta entera.
+    assert filas[0][1] is None, "la fila de CBR mas alto dejo de ser ilimitada"
+    assert filas[-1][0] is None, "la fila de CBR mas bajo dejo de ser ilimitada"
+
+    # Y el encadenado, sin hueco ni solape, entre filas consecutivas.
+    for (cbr_min, _, _), (_, techo_siguiente, _) in zip(filas, filas[1:]):
+        assert cbr_min == techo_siguiente, (
+            f"hueco o solape en la tabla: {cbr_min} frente a {techo_siguiente}")
+
+    # La consecuencia observable, barrida desde el piso del dominio fisico del
+    # dato (dominios.CBR_MIN_FISICO, que es lo que M0 admite; techo no hay
+    # desde PF-6, R48-007) y mas alla de los dos extremos de la tabla: toda
+    # entrada devuelve resguardo, ninguna llega al `raise`.
+    bordes = [b for fila in filas for b in fila[:2] if b is not None]
+    muestras = sorted(set(
+        bordes
+        + [b - 0.1 for b in bordes] + [b + 0.1 for b in bordes]
+        + [CBR_MIN_FISICO + 0.1, max(bordes) * 10, max(bordes) * 100]))
+    for cbr in muestras:
+        assert resguardo_por_cbr(cbr) > 0, f"CBR = {cbr} se quedo sin fila"
+
+
+# ---------------------------------------------------------------------------
+# SIS-F-13: M5 contra su caso patron, por la cadena de produccion entera
+# ---------------------------------------------------------------------------
+
+def test_v2_contra_el_caso_patron_CP3_por_la_cadena_de_produccion():
+    """
+    SIS-F-13 contaba a M5 entre los modulos «sin caso patron», y no es cierto:
+    CP-3 (Sec. 5.2) es SUYO --- fija la V objetivo de V2 y la pendiente que la
+    produce --- y lo que pasaba es que lo consumian `test_M3` y
+    `test_constantes_normativas` en vez de este archivo. Aqui se cierra esa
+    tercera razon, y sin fabricar ningun dorado nuevo: el conflicto n.7 del
+    plan lo prohibe y no hace falta.
+
+    Los demas tests de V2 pasan un `_resultado(V=...)` fabricado, que es lo
+    correcto para probar un umbral. Este NO: entra por el catalogo de M2,
+    resuelve Manning con M3 a la pendiente de CP-3 y le da a V2 el resultado
+    que sale de ahi.
+
+    QUE VIGILA Y QUE NO, dicho con precision porque la primera version de este
+    docstring prometia de mas. Lo que aporta en EXCLUSIVA es el consumo del
+    caso patron por la cadena de produccion --- que es lo que SIS-F-13 pide y
+    lo que ningun test hacia ---. Lo que NO vigila, pese a que su mensaje de
+    assert lo insinuaba, es la tolerancia de umbral: `V_sedimentacion` sale
+    0.2500073 contra un `V_MIN` de 0.25, un margen de 7.3e-06, y
+    `TOL_UMBRAL_NORMATIVO` es 1e-09 --- siete mil veces mas estrecha ---, de
+    modo que quitarla no cambia el resultado. Tampoco discrimina la RAMA: eso
+    lo hace el test de mas abajo, y lo hace en exclusiva. «El filo» de CP-3 es
+    una coincidencia de tres cifras, no un empate.
+    """
+    from src.modelos import SeccionCircular
+    from src.modulos.M3_hidraulica import resolver_manning
+
+    c3, c2 = CP3_VELOCIDAD_MINIMA, CP2_GEOMETRIA_MANNING
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    assert material.n_para_velocidad_minima == pytest.approx(
+        c3["n"], rel=REL_TRANSPORTE), (
+        "CP-3 se escribio para el n mas alto del concreto: si el catalogo "
+        "cambia, el caso patron se revisa antes que este test")
+
+    resolucion = resolver_manning(seccion=SeccionCircular(c3["D"]),
+                                  Q=c3["V_objetivo"] * c2["A_esperado"],
+                                  S=c3["S_que_produce_V_objetivo"],
+                                  material=material)
+    assert resolucion is not None
+
+    v2 = v2_velocidad_minima(resultado=_uniforme(resolucion))
+    assert v2.codigo == "V2"
+    assert v2.valor_admisible == pytest.approx(V_MIN, rel=REL_TRANSPORTE)
+    assert v2.valor_obtenido == pytest.approx(c3["V_objetivo"], abs=c3["tolerancia_V"])
+    assert v2.cumple, (
+        "a la pendiente de CP-3 la velocidad iguala el piso y el umbral es "
+        ">=: si esto falla, se invirtio la comparacion")
+
+    # Y V2 lee la rama de n MAXIMO (MAT-D1): la estimacion BAJA de velocidad,
+    # que es la conservadora para un piso. Con la rama de erosion el punto
+    # pasaria con holgura y el filo del caso patron no se veria.
+    assert resolucion.V_erosion > resolucion.V_sedimentacion
+    assert v2.valor_obtenido == pytest.approx(resolucion.V_sedimentacion,
+                                              rel=REL_TRANSPORTE)
+
+
+def test_la_salvedad_de_CP3_es_cierta_y_no_solo_una_advertencia_escrita():
+    """
+    LA MITAD DE CP-3 QUE NADIE EJERCITABA, y es la que MAT-O20 obligo a
+    escribir. El fixture concluye que «para D=0.90, y/D=0.75 y n=0.013, V2 se
+    cumple para cualquier S >= 0.001 y no gobierna el diseno», y a continuacion
+    se desdice a si mismo con la salvedad: «No es universal: no vale para
+    tirantes relativos muy bajos --- con y/D < 0.056 (mismo D y n) V2 SI se
+    viola a S = 0.001».
+
+    Esa salvedad era una AFIRMACION ESCRITA Y NO COMPROBADA, que es justo lo
+    que este proyecto persigue. Aqui se comprueba: a la pendiente constructiva
+    minima, y bajando el caudal hasta un tirante relativo por debajo de 0.056,
+    V2 INCUMPLE. Y por encima de ese tirante cumple, de modo que el test fija
+    la salvedad Y su frontera, no solo un lado.
+
+    La primera version de este test hacia otra cosa y no lo decia: mantenia Q
+    fijo y subia S, con lo que el tirante caia a y/D = 0.32 --- fuera del
+    conjunto de condiciones de la conclusion que citaba --- y quedaba a 2.9
+    veces del piso, sin poder distinguir nada.
+    """
+    from src.modelos import SeccionCircular
+    from src.modulos.M3_hidraulica import resolver_manning
+
+    c3 = CP3_VELOCIDAD_MINIMA
+    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
+    S = c3["S_constructiva_minima_referencia"]
+
+    # Q pequeño -> tirante relativo por DEBAJO de la salvedad del fixture.
+    bajo = resolver_manning(seccion=SeccionCircular(c3["D"]), Q=0.003, S=S, material=material)
+    assert bajo is not None
+    assert bajo.geometria.y_sobre_D < 0.056, (
+        "el caudal elegido ya no cae bajo el tirante relativo de la salvedad: "
+        "el test estaria comprobando otra cosa")
+    assert not v2_velocidad_minima(resultado=_uniforme(bajo)).cumple, (
+        "la salvedad de CP-3 dice que con y/D < 0.056 V2 SI se viola a "
+        "S = 0.001, y aqui no se viola: o la salvedad es falsa o M3 cambio")
+
+    # Y por encima de ese tirante, la conclusion del fixture se sostiene.
+    alto = resolver_manning(seccion=SeccionCircular(c3["D"]), Q=0.02, S=S, material=material)
+    assert alto is not None and alto.geometria.y_sobre_D > 0.056
+    assert v2_velocidad_minima(resultado=_uniforme(alto)).cumple
+
+
+def test_v2_decide_con_la_rama_de_n_MAXIMO_y_no_con_la_de_erosion():
+    """
+    MAT-D1, DEFENDIDO. La correccion decia que V2 --- el PISO de velocidad ---
+    tiene que leer la rama de n maximo, la estimacion BAJA, porque para un
+    piso la conservadora es la baja; leer la de erosion invierte el
+    conservadurismo y deja pasar un punto que sedimenta.
+
+    Estaba corregida y NO LA DEFENDIA NADIE. Se comprobo mutando
+    `v2_velocidad_minima` a `resultado.V_erosion >= V_MIN` y corriendo la
+    suite entera: 1497 tests en verde. La razon es que todos los tests de V2
+    usan `_resultado(V=...)`, que fija LAS DOS ramas al mismo numero, y con
+    las dos iguales la mutacion es invisible.
+
+    Este test las separa a los dos lados del piso --- exactamente la ventana
+    que el propio docstring de la funcion describe, S entre 3.55e-5 y 6.01e-5
+    --- de modo que solo hay una respuesta correcta y la mutacion la falla.
+    """
+    a_los_dos_lados = _resultado(V_erosion=0.297, V_sedimentacion=0.228)
+
+    v2 = v2_velocidad_minima(resultado=a_los_dos_lados)
+    assert not v2.cumple, (
+        "V2 esta leyendo la rama de EROSION: con n_min por encima del piso y "
+        "n_max por debajo, el punto sedimenta y tiene que rechazarse (MAT-D1)")
+    assert v2.valor_obtenido == pytest.approx(0.228, rel=REL_TRANSPORTE), (
+        "y lo que la memoria imprime tiene que ser la MISMA rama que decide")
+
+    # La direccion contraria, para que el test no pase por casualidad con
+    # cualquier par: con las dos por encima, cumple.
+    v2 = v2_velocidad_minima(resultado=_resultado(V_erosion=0.60,
+                                                  V_sedimentacion=0.30))
+    assert v2.cumple

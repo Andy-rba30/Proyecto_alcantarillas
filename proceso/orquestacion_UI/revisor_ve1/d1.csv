@@ -1,0 +1,2 @@
+id,progresiva,familia,TR_anios,tipo_hidraulico,material,norma_producto,seccion,V_erosion_ms,V_sedimentacion_ms,y_sobre_D,HW_m,control_gobernante,proteccion_d50_m,proteccion_espesor_m,proteccion_longitud_m,tipo_cabezal
+P1,0+100,A,35,concreto_reforzado,Concreto reforzado,AASHTO M 170M-04 / ASTM C 76M-02 (metrica),Ø 1.22 m,3.46,2.66,0.61,1.20,entrada,0.394,1.00,8.534,cabezal_con_aleros (aleros a 45.00 grados)
