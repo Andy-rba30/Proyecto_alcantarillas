@@ -644,3 +644,28 @@ T-12, el último prompt de la cadena, no cambia cálculo. Lo que dice de la lín
   (sin `NORMAS_DIR`, 6250 y 175: sin él se salta todo lo que abre un PDF); sobre una
   exportación (`git archive HEAD`) con `NORMAS_DIR`, 6398 y 27, sin ningún fallo;
   la de proceso pasa entera (145 de 145). Lo invariante sigue siendo `collected = passed + skipped`.
+
+---
+
+## 9. UI-5 de la cadena de interfaz: la línea base tras cuatro decisiones del dueño (2026-11-15)
+
+UI-5 no cambia cálculo. Dos de sus decisiones tocan la salida, y la línea base de la Familia
+C se regeneró con su script (`sh tests/linea_base_familia_c/regenerar.sh`) declarando la
+causa:
+
+- **Lo que la resumida dice de su completa y de su encabezado** (ficha UI2-01 b): en
+  `memoria_resumida_expediente.html`, el párrafo de la remisión, que decía que el
+  encabezado de trazabilidad «es el mismo en las dos» y hoy dice sólo lo que el encabezado
+  prueba (`M11.REMISION_COMO_COMPROBARLO`), y el párrafo del bloque «0. Encabezado de
+  trazabilidad» de la plantilla, que prometía lo mismo desde T-12 y contaba la huella de la
+  hoja de ruta, que se lee al exportar. La revisión de UI-5 y su verificación (fichas UI5-02
+  y UI5-03) corrigieron esos textos; cada regeneración movió esos textos y nada más. Sin
+  números.
+- **La huella de `criterios_adoptados.py`** (ficha UI3-03: su guardia exige la forma de las
+  claves): `criterios_sha1` en los cuatro JSON y la fila del encabezado en las cuatro
+  memorias de la CLI. Ningún valor, ficha ni nivel de criterio cambió.
+
+Ocho archivos (13 líneas nuevas por 12), y nada más: los cinco `cli_*.txt`, los dos CSV de resumen y la
+memoria del cajón, idénticos byte a byte. **Diámetros, secciones, materiales y HW movidos:
+ninguno.** El detalle, en el README de la carpeta; el par de la suite, en
+`proceso/bitacora_conteos_y_entorno.md`.

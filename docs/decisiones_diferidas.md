@@ -7055,10 +7055,9 @@ T11-09 a la memoria.
   (las dos memorias en HTML llevan el mismo encabezado; el JSON del hijo es el de la
   ventana salvo la hora, porque el hijo recalcula). Las correcciones de su revisión, en la
   ficha UI2-03. UI-4 las exportó en su recorrido de extremo a extremo (ficha UI4-01).
-- **Abierto:** lo que UI-2 dejó escrito en la ficha UI2-01: la remisión de la resumida a
-  su completa habla de banderas de la CLI y promete un encabezado común que entre la
-  completa de la ventana y la resumida del hijo no se cumple.
-- **Qué haría falta:** lo de la ficha UI2-01.
+- **Abierto:** nada: la remisión de la resumida a su completa se cerró en UI-5 (ficha
+  UI2-01).
+- **Qué haría falta:** nada.
 - **Dónde vive:** `src/modulos/M11_reporte.py::memoria_resumida_html`
 
 ## T12-05 · Licencia «todos los derechos reservados», `pyproject.toml` sin empaquetado y el README de usuario
@@ -7141,19 +7140,20 @@ mueve, porque sin hidrología la memoria y el JSON no ganan ni un byte.
   `docs/contrato_entradas.md` §2-bis. (5) El comparador mira la hidrología sin sus rutas
   (`comparador.RUTAS_DE_LA_HIDROLOGIA`), y el anticipo dice lo mismo que `--prevuelo`
   (`servicio.mensaje_de_carga_fallida`, `anticipo.AVISO_HIDROLOGIA_NO_CALCULADA`).
-- **Abierto:** si cambiar el CSV tendría que invalidar también, para que los gestos de
-  la pestaña 1 sean uno; y el hijo del PDF relee los dos archivos de la hidrología como
-  relee el CSV (ficha EXT-8-02): si cambian entre correr y exportar, su JSON lleva otras
-  huellas y nada lo detiene. Las dos frases de `CLAUDE.md` que UI-1 dejó desfasadas
-  («`FORMATO_SESION = 3`» y «La GUI y la sesión todavía no conocen las dos entradas»)
-  las corrigió el dueño tras la cadena UI (2026-11-15; ficha UI4-02). Y un
-  resto anterior a UI-1, fuera de su alcance: si falla el JSON de datos externos, el
-  anticipo dice «El pre-vuelo no pudo armar los datos externos» y la CLI «No se pudo leer
-  la entrada».
-- **Qué haría falta:** la decisión del dueño sobre el gesto del CSV; para la relectura,
-  lo que se decida en EXT-8-02; el resto del
+- **Cerrado (UI-5, decisión del dueño del 2026-11-15):** cambiar el CSV de puntos
+  invalida el informe, un gesto con la hidrología (`MOTIVO_CSV_CAMBIADO`). La premisa que
+  (1) refutaba se cumple desde UI-5 por decisión: hasta entonces el campo sólo releía las
+  familias (ningún test lo fijaba; lo decía esta ficha). Qué cuenta como «cambiar» —toda
+  escritura, también la misma ruta— y por qué abrir una sesión o un proyecto nuevo no pisan
+  su motivo, en el docstring de `_al_cambiar_el_csv`.
+- **Abierto:** el hijo del PDF relee los archivos de la hidrología como relee el CSV
+  (ficha EXT-8-02), y los demás campos de la pestaña 1 no invalidan (ficha UI5-01). Las
+  dos frases de `CLAUDE.md` que UI-1 dejó desfasadas las corrigió el dueño (ficha UI4-02).
+  Y un resto anterior a UI-1: si falla el JSON de datos externos, el anticipo dice «El
+  pre-vuelo no pudo armar los datos externos» y la CLI «No se pudo leer la entrada».
+- **Qué haría falta:** para la relectura, lo que se decida en EXT-8-02; el resto del
   JSON, `servicio.mensaje_de_carga_fallida` también en ese brazo del anticipo.
-- **Dónde vive:** `gui/app.py::_al_cambiar_la_hidrologia`
+- **Dónde vive:** `gui/app.py::_al_cambiar_el_csv`
 
 ## UI1-02 · Tres conductores de ventana real se habían quedado atrás de T-3, y el editor de la pestaña 2 sólo nombra filas de la primera tabla
 
@@ -7209,9 +7209,13 @@ progreso de la resumida (ficha UI2-03), y la línea base no se mueve.
   cuadro resumen (CSV)» salía cortado y «Comparar con otro JSON...» fuera de la vista—, y
   pasar sólo «Comparar» a la segunda no bastaba (medido: el CSV seguía cortado); hoy son
   tres filas, la memoria completa con el JSON, la resumida y los datos (CSV y comparar).
-- **Qué haría falta:** (b) una remisión que no nombre la puerta ni prometa el encabezado
-  entre vistas de dos corridas, o que el hijo no recalcule (EXT-8-02): decisión del dueño,
-  porque mueve la línea base de la resumida.
+- **Cerrado (UI-5, decisión del dueño del 2026-11-15):** (b) la remisión es cierta en la
+  CLI con las dos vistas, en la resumida HTML de la ventana y en la PDF del hijo: nombra la
+  completa sólo si la escribió la misma invocación, y dice lo que el encabezado prueba de
+  las dos vistas, y sólo eso (`M11.REMISION_COMO_COMPROBARLO`, corregida en la revisión:
+  ficha UI5-02). La línea base se regeneró: esa frase y la huella de
+  `criterios_adoptados.py` (ficha UI3-03), ningún número.
+- **Qué haría falta:** nada de (b); que el hijo no recalcule sigue en EXT-8-02.
 - **Dónde vive:** `gui/app.py::BOTONES_DE_EXPORTACION`
 
 ## UI2-02 · El cabezal del proyecto en la pestaña 4, con el texto de la CLI
@@ -7256,9 +7260,15 @@ progreso de la resumida (ficha UI2-03), y la línea base no se mueve.
   cierra, y escribe la memoria igual; exigir 0 daba por fallido el PDF de todo expediente
   que aún no cierra (las dos corridas de referencia lo son). Un 1 de Python (excepción sin
   atrapar) no se confunde porque el éxito exige además el PDF de trabajo.
-- **Qué haría falta:** nada en la ventana. Que la CLI escriba el PDF de forma atómica
-  (`M11._escribir_pdf`) es decisión del dueño. Si el hijo cae a la vía del navegador, el
+- **Cerrado (UI-5, decisión del dueño del 2026-11-15):** el PDF se escribe de forma
+  atómica (`src/escritura_atomica.escribir_atomico`, ficha UI5-02), en las dos vistas, la
+  CLI directa y el hijo. La
+  defensa de este módulo queda como SEGUNDA LÍNEA (comentario de
+  `CODIGOS_DE_SALIDA_CON_MEMORIA`), y el test del hijo bajo `ulimit -f` de UI-2 se cambió
+  declarando la causa: ya no queda PDF de trabajo cortado.
+- **Qué haría falta:** nada en la ventana. Si el hijo cae a la vía del navegador, el
   HTML se retira con el directorio de trabajo y la exportación sale FALLIDA, sin archivo.
+  La CLI que falla al escribir, en la ficha UI5-01.
 - **Dónde vive:** `gui/exportacion_pdf.py::CODIGOS_DE_SALIDA_CON_MEMORIA`
 
 
@@ -7347,9 +7357,17 @@ línea base no se mueve y la CLI imprime lo mismo salvo con la entrada atípica 
   nada; con `--barrido` sale igual. Ninguna entrada bien escrita cambia de resultado. La guardia de
   `criterios_adoptados.verificar_declaracion` sigue sin mirar las claves: es un archivo
   protegido, y la puerta se puso en las capas que lo llaman.
-- **Qué haría falta:** que la guardia del archivo exija también la forma de las claves,
-  cuando el dueño decida tocar `criterios_adoptados.py`.
-- **Dónde vive:** `src/declaracion.py::verificar_claves_de_la_ficha`
+- **Cerrado (UI-5, decisión del dueño del 2026-11-15):** la regla vive en la guardia del
+  archivo (`criterios_adoptados._verificar_claves_de_la_ficha`, que `_verificar_criterio`
+  llama: archivo, declaración en caliente y escritura permanente), con el mismo mensaje.
+  `declaracion.verificar_claves_de_la_ficha` se retiró con sus siete llamadas: las capas de
+  arriba llaman a la guardia; la frontera del JSON (`valor_desde_json`) se queda, con la
+  definición de la guardia. El valor de archivo de los 141, sus filas de tabla y los
+  extremos de su ventana pasan por todos los caminos, `restaurar_sesion` incluido
+  (`tests/test_ui5_decisiones.py`). Ningún valor ni nivel cambia; la huella del archivo sí.
+  La frase de EXT-5 de `CLAUDE.md` sigue siendo cierta y no se tocó.
+- **Qué haría falta:** nada; lo que deja la plantilla de archivo, en la ficha UI5-01.
+- **Dónde vive:** `src/criterios_adoptados.py::_verificar_claves_de_la_ficha`
 
 
 # Parte LIX — Lo que UI-4 de la cadena de interfaz dejó escrito: la ventana verificada de extremo a extremo
@@ -7439,3 +7457,88 @@ memoria cambia, y la línea base no se mueve: el recorrido la reproduce por la v
   sin el bucle que repone las banderas, cae el test del ciclo.
 - **Qué haría falta:** nada.
 - **Dónde vive:** `tests/apoyo/gui_ui4_recorrido_real.py::ALCANCE_DEL_CICLO`
+
+
+# Parte LX — Lo que UI-5 de la cadena de interfaz dejó escrito: cuatro decisiones del dueño sobre lo que la cadena dejó abierto
+
+UI-5 (2026-11-15, sobre `2d37c2c`: main con UI-1 a UI-4 y la corrección de tres frases de
+`CLAUDE.md`) aplica cuatro decisiones del dueño del 2026-11-15 y cierra los puntos de las
+fichas UI1-01, UI2-01 (b), UI2-03 y UI3-03 que esperaban por ellas. Ningún cálculo cambia:
+la línea base se regeneró y su diff es la frase de la remisión en la resumida y la huella de
+`criterios_adoptados.py`, cuya guardia se tocó (ficha UI3-03); ningún número.
+
+## UI5-01 · Lo que las cuatro decisiones dejan abierto
+
+- **Cerrado (UI-5):** (1) el CSV de puntos invalida el informe, un gesto con la hidrología
+  (ficha UI1-01); (2) la remisión de la resumida a su completa es cierta en la CLI, en la
+  ventana y en el hijo (ficha UI2-01); (3) el PDF se escribe de forma atómica (ficha
+  UI2-03); (4) la forma de las claves la exige la guardia del archivo (ficha UI3-03). Cada
+  una con sus tests en `tests/test_ui5_decisiones.py`, escritos en rojo.
+- **Abierto:** (a) los demás campos de la pestaña 1 —el JSON de datos externos, el de
+  datos de sitio, las banderas y el alcance— siguen sin invalidar el informe, como decidió
+  EXT-8 (el hijo usa las entradas fotografiadas al correr): «un solo gesto» es el del CSV y
+  la hidrología, y la ventana real lo fija como frontera. (b) El hijo del PDF sigue
+  recalculando y releyendo los archivos (fichas EXT-8-02 y EXT-10-04): la resumida dice lo
+  que el encabezado prueba, y un encabezado igual no prueba la misma corrida. (c) Si la
+  escritura del PDF falla, la CLI sale con la traza de Python y el código 1, el mismo que
+  «corre y no cierra»; el destino queda intacto y el hijo lo distingue porque no deja PDF
+  de trabajo, pero quien usa la CLI lee una traza. (d) `exportar_html` y
+  `exportar_html_resumida` (EXT-8, T-12) siguen con su temporal FIJO `<destino>.parcial`,
+  con los cuatro defectos que la revisión midió en el primer intento (ficha UI5-02), y
+  `exportar_csv` escribe directo: fuera del permiso de UI-5 en `M11_reporte.py`.
+  `sesion.escribir_json_atomico` usa un temporal único, pero su nombre lleva el del destino
+  y no sigue enlaces ni conserva el modo. (e) La plantilla de la forma de las claves es el
+  valor de ARCHIVO de la ficha: un criterio sin valor de archivo no tiene forma de claves
+  que exigir (hoy el único de claves enteras, `espesor_pared_conducto`, lo tiene).
+- **Qué haría falta:** (a) y (b), decisión del dueño sobre EXT-8-02; (c) atrapar el
+  `OSError` de la escritura en `cli.main` con su mensaje y otro código; (d) que esas
+  escrituras usen `src/escritura_atomica.escribir_atomico`; (e) un campo de la ficha con la
+  forma de las claves, si aparece un criterio de claves enteras sin valor de archivo.
+- **Dónde vive:** `src/escritura_atomica.py::escribir_atomico`
+
+## UI5-02 · Lo que la revisión independiente de UI-5 encontró: una implicación al revés, la pestaña 2 sin repintar y un temporal de nombre fijo
+
+- **Cerrado (revisión de UI-5, sin hallazgos altos ni medios; tres bajos confirmados):**
+  (H1) la remisión daba por SUFICIENTE que el encabezado coincidiera, y dos corridas con un
+  valor declarado distinto en el mismo segundo llevan el mismo encabezado y dimensionan
+  distinto: hoy dice sólo la implicación que vale (`M11.REMISION_COMO_COMPROBARLO`), y la
+  línea base cambia en ese párrafo y nada más. (H2, anterior a UI-5 y alcanzable con el
+  gesto nuevo) la pestaña 2 con «Solo los que bloquearon esta corrida» seguía filtrando por
+  el informe retirado: toda retirada la repinta sin corrida (`_vaciar_tablas_del_informe`),
+  también una corrida que falla. (H3) el temporal fijo `<destino>.parcial` fallaba con un
+  destino de nombre largo, pisaba un archivo del usuario con ese nombre, se compartía entre
+  dos exportaciones al mismo destino y volvía archivo regular un enlace sin conservar el
+  modo: la memoria en PDF y la entrega del PDF del hijo usan una función,
+  `src/escritura_atomica.escribir_atomico` (temporal único, corto y oculto, junto al archivo
+  enlazado; conserva el modo).
+- **Por qué así:** los tres se escribieron en rojo (14 `xfailed`) y se liberaron al
+  corregir; tres guardias los acompañan (el hecho que obliga a la redacción de H1 y el modo
+  de un archivo nuevo, por las dos vías). Cada corrección se midió por mutación.
+- **Qué haría falta:** nada; lo que queda de H3 fuera del permiso, en la ficha UI5-01 (d).
+- **Dónde vive:** `gui/app.py::_vaciar_tablas_del_informe`
+
+## UI5-03 · Lo que la verificación de la revisión de UI-5 encontró: la hoja de ruta en la remisión, el borrador de la pestaña 2, su motivo y los permisos
+
+- **Cerrado (verificación de `22890ce`; H1 a H3 confirmados, cuatro bajos nuevos):** (N1) la
+  remisión y el párrafo del encabezado de la plantilla de la resumida contaban la huella de
+  la hoja de ruta como de la corrida, y se lee al exportar: hoy no cuenta
+  (`M11.REMISION_COMO_COMPROBARLO`; la trazabilidad no cambia). (N2) el repintado de H2
+  reseleccionaba la fila y la reselección reescribía un valor tecleado y sin aplicar: con la
+  misma fila y el mismo valor efectivo el borrador se queda (`_al_seleccionar_criterio`).
+  (N3) la pestaña 2 decía «todavía no se ejecutó» tras un informe retirado: dice lo que la
+  barra (`texto_sin_informe`). (N4) la escritura atómica rechazaba menos y nombraba el
+  temporal: un destino sin permiso de escritura se rechaza nombrándolo, un directorio que
+  no admite el temporal con destino escribible se escribe directo como antes de UI-5, y todo
+  error nombra el destino (`escribir_atomico`, por las dos vías). Medido además como usuario
+  sin privilegios: los cuatro casos dan lo de `2d37c2c`. Y de la verificación de `ae51aa2`
+  (N1 a N4 confirmados), (N5) con la firma de N2, abrir OTRA obra con el mismo valor
+  efectivo dejaba el borrador de la anterior: «Cargar sesión», «Nuevo proyecto» e «Importar
+  decisiones» olvidan la firma (`_restaurar_criterios`), y el borrador sigue a salvo en la
+  misma obra. El cambio de texto de la plantilla de la resumida (N1) lo aceptó el dueño.
+- **Por qué así:** el borrador se conserva por firma (fila y valor efectivo) porque la
+  reselección es un evento encolado de Tk que llega después del repintado; la escritura
+  directa en un directorio sin permiso es la de siempre, y negarse a escribir lo que el
+  usuario puede escribir era peor. Dieciocho tests en rojo (`--runxfail`, cada uno por su
+  motivo; cuatro de N5) y una guardia; cada corrección, comprobada por mutación.
+- **Qué haría falta:** nada.
+- **Dónde vive:** `src/escritura_atomica.py::_nombrando_el_destino`

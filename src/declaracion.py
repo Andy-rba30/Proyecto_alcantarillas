@@ -69,7 +69,6 @@ Regla de uso
 from __future__ import annotations
 
 import math
-import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -698,7 +697,6 @@ def declarar_desde_tabla(clave: str, valor: Any, *,
             "adopta otro numero (la memoria lo imprimira como «DIFIERE de "
             "la celda»)")
 
-    verificar_claves_de_la_ficha(clave, valor)
     _ca.establecer_valor_dinamico(clave, valor)
 
     legibles = tuple(f.etiqueta_legible for f in contenido.filas
@@ -789,7 +787,6 @@ def declarar_en_rango(clave: str, valor: Any, *,
         raise ValueError(
             f"'{clave}' no admite el valor {valor!r}: {resultado.mensaje}")
 
-    verificar_claves_de_la_ficha(clave, valor)
     _ca.establecer_valor_dinamico(clave, valor)
 
     contenido = _vn.contenido_de_rango(clave)
@@ -830,7 +827,6 @@ def declarar_valor(clave: str, valor: Any, *, nota: str = "") -> Procedencia:
         catalogo_id = catalogo.catalogo_id
         aviso = catalogo.advertencia
 
-    verificar_claves_de_la_ficha(clave, valor)
     _ca.establecer_valor_dinamico(clave, valor)
 
     procedencia = Procedencia(
@@ -974,7 +970,6 @@ def restaurar_sesion(estado: Any, *,
         valor = valor_desde_json(clave, valor)
         try:
             _ca.verificar_declaracion(clave, valor)
-            verificar_claves_de_la_ficha(clave, valor)
         except (ValueError, KeyError) as exc:
             rechazados.append((clave, str(exc)))
             continue
@@ -1010,11 +1005,6 @@ def restaurar_sesion(estado: Any, *,
                                    tuple(rechazados), retirados)
 
 
-# Una clave de dict que JSON escribio como texto y era un entero: cifras
-# ASCII con signo opcional (la misma lectura que `gui/componentes._ENTERO`).
-_ENTERO_ESCRITO = re.compile(r"^-?\d+$", re.ASCII)
-
-
 def _con_las_claves_de(valor: Any, plantilla: Any) -> Any:
     """
     `valor` con las claves de `plantilla`, a cualquier profundidad: donde
@@ -1025,11 +1015,13 @@ def _con_las_claves_de(valor: Any, plantilla: Any) -> Any:
     """
     if not isinstance(valor, dict) or not isinstance(plantilla, dict) or not plantilla:
         return valor
-    enteras = all(isinstance(k, int) and not isinstance(k, bool) for k in plantilla)
+    # La lectura del entero escrito y la de «claves enteras» son las de la
+    # guardia del archivo (UI-5): una definicion, en `criterios_adoptados`.
+    enteras = _ca._son_claves_enteras(plantilla)
     hermana = next(iter(plantilla.values()))
     salida = {}
     for k, v in valor.items():
-        nueva = (int(k) if enteras and isinstance(k, str) and _ENTERO_ESCRITO.match(k)
+        nueva = (int(k) if enteras and isinstance(k, str) and _ca._ENTERO_ESCRITO.match(k)
                  else k)
         salida[nueva] = _con_las_claves_de(v, plantilla.get(nueva, hermana))
     return salida
@@ -1052,7 +1044,8 @@ def valor_desde_json(clave: str, valor: Any) -> Any:
     `'900'` son la misma clave, y en Python no. Las puertas que declaran un
     valor de Python --- la pestaña 2 y sus editores, la ventana emergente,
     `--declarar`, el barrido --- RECHAZAN la clave de texto donde la ficha
-    la tiene entera (`verificar_claves_de_la_ficha`), de modo que el estado
+    la tiene entera (la guardia del archivo desde UI-5:
+    `criterios_adoptados._verificar_claves_de_la_ficha`), de modo que el estado
     vivo nunca la lleva y esta funcion es la identidad sobre el: el barrido
     lo fotografia y lo repone sin cambiarlo (revision de UI-3, N1; hasta
     entonces «Aplicar» aceptaba `'900'`, la corrida de la ventana no
@@ -1070,48 +1063,6 @@ def valor_desde_json(clave: str, valor: Any) -> Any:
     except KeyError:
         return valor
     return _con_las_claves_de(valor, plantilla)
-
-
-def _exigir_claves(clave: str, valor: Any, plantilla: Any, donde: str) -> None:
-    if not isinstance(valor, dict) or not isinstance(plantilla, dict) or not plantilla:
-        return
-    enteras = all(isinstance(k, int) and not isinstance(k, bool) for k in plantilla)
-    hermana = next(iter(plantilla.values()))
-    for k, v in valor.items():
-        if enteras and (not isinstance(k, int) or isinstance(k, bool)):
-            ejemplo = next(iter(plantilla))
-            pista = (f" Escriba {int(k)} sin comillas."
-                     if isinstance(k, str) and _ENTERO_ESCRITO.match(k) else "")
-            raise ValueError(
-                f"'{clave}': la clave {k!r}{donde} no tiene la forma de la ficha: "
-                f"en ese nivel las claves son ENTERAS (el archivo trae, p. ej., "
-                f"{ejemplo!r}) y el calculo no encuentra una clave de "
-                f"{type(k).__name__}.{pista}")
-        _exigir_claves(clave, v, plantilla.get(k, hermana),
-                       f"{donde} de {k!r}" if donde else f" de {k!r}")
-
-
-def verificar_claves_de_la_ficha(clave: str, valor: Any) -> None:
-    """
-    LA PUERTA DE LA FORMA DE LAS CLAVES (revision de UI-3, N1): `ValueError`
-    si `valor` lleva, donde las claves del valor del ARCHIVO de la ficha son
-    enteras, una que no lo es --- el `'900'` de un dict copiado de un JSON
-    ---. `criterios_adoptados.verificar_declaracion` exige la forma del
-    valor (`dict_con_campos`) y no la de sus claves, y la acepta; el
-    consumidor (`M2.espesor_pared`) ya no encontraba la fila y los puntos
-    salian «no dimensionado» sin aviso. La llaman TODAS las puertas que
-    declaran: las tres de este modulo (`declarar_valor`, `declarar_en_rango`,
-    `declarar_desde_tabla`: pestaña 2, editores y ventana emergente),
-    `editores.verificar` (en seco), `cli.declarar_criterios` (`--declarar`),
-    las declaraciones de base del barrido y `restaurar_sesion` --- esta
-    DESPUES de `valor_desde_json`, que es la frontera del JSON ---. Mismo
-    valor, mismo veredicto, por cualquier camino.
-    """
-    try:
-        plantilla = _ca.criterio(clave).valor
-    except KeyError:
-        return
-    _exigir_claves(clave, valor, plantilla, "")
 
 
 def _procedencia_desde_json(crudo: Dict[str, Any], clave: str = "") -> Procedencia:

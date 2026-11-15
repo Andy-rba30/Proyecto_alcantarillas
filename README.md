@@ -153,7 +153,9 @@ puntos con la celda `Q_m3s` vacía— el «CSV de cuencas» y el «CSV de la est
 juntos (cada campo con «Examinar...» y, los que la tienen, su ayuda «i»). Debajo, los datos
 declarados que no son columna del CSV, el alcance de la corrida (perfil o expediente) y el
 anticipo de lo que va a faltar punto a punto, que es lo que `--prevuelo` imprime. Cambiar
-uno de los dos CSV de la hidrología retira el informe de la corrida anterior.
+el CSV de puntos o uno de los dos CSV de la hidrología —escribir en su campo, también la
+misma ruta otra vez, porque el archivo pudo cambiar en disco— retira el informe de la
+corrida anterior, y la exportación queda apagada hasta volver a ejecutar.
 
 ![Pestaña 1: las entradas de la corrida de referencia con la hidrología calculada](docs/capturas_interfaz/pestana_1_datos.png)
 
@@ -223,7 +225,22 @@ proceso aparte, que **vuelve a correr la obra** con la sesión de esa corrida, d
 encabezado lleva la hora de esa nueva corrida (y las huellas de los archivos tal como estén
 al exportar). Con la CLI, también a partir de la sesión guardada (`python cli.py --sesion
 sesion.json --html completa.html --html-resumida resumida.html`), que es la única vía en que
-la resumida nombra el archivo de su completa.
+la resumida nombra el archivo de su completa. Fuera de esa vía la resumida no afirma que su
+completa sea de la misma corrida: dice lo que el encabezado prueba —de la misma corrida,
+coinciden la hora UTC de la corrida y las huellas del CSV, de los criterios y de la
+hidrología; si alguna difiere, son dos corridas; que coincidan no lo prueba, porque la hora
+va al segundo y las huellas no cubren lo declarado para la corrida ni los datos externos o
+de sitio—. La huella de la hoja de ruta y la fecha de generación se leen al exportar cada
+vista y no cuentan para esto.
+
+Las memorias en PDF (y el HTML que la vía del navegador deja para `Ctrl+P`) se escriben
+primero en un archivo temporal oculto del mismo directorio y sólo al terminar reemplazan al
+destino: si la escritura falla a mitad (disco lleno, cuota), el archivo que hubiera en el
+destino queda como estaba. Si el destino es un enlace simbólico se reemplaza el archivo
+enlazado, y un archivo que ya existía conserva sus permisos. Un destino sin permiso de
+escritura se rechaza, y en un directorio que no admite el temporal (sin permiso de
+escritura) un destino escribible se escribe directo, sin esa garantía; los errores nombran
+el destino.
 
 ## 6. Alcance: lo que el programa NO hace
 

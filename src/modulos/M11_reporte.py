@@ -5306,24 +5306,65 @@ def pendientes_resumidos(informe: Any) -> str:
     return '<table class="ancha">' + "".join(filas) + "</table>"
 
 
+# --- UI-5 (decision del dueño del 2026-11-15, ficha UI2-01 b) --- LO QUE EL
+# ENCABEZADO PRUEBA DE LAS DOS VISTAS, y solo eso. La resumida se escribe en
+# tres contextos y la frase tiene que ser cierta en los tres: la CLI con las
+# dos vistas en una invocacion (el mismo informe: el encabezado coincide), la
+# resumida HTML de la ventana (el mismo informe que la completa de la
+# ventana: coincide) y la resumida PDF del proceso hijo, que VUELVE A CORRER
+# la obra (ficha EXT-8-02: otra hora, y las huellas de los archivos tal como
+# esten al exportar): ahi no tiene por que coincidir con la completa de la
+# ventana, y hasta UI-5 la memoria decia que si. Y la implicacion vale en UN
+# sentido (revision de UI-5, H1): de la misma corrida, el encabezado
+# coincide, y uno distinto prueba que son dos; uno IGUAL no prueba que sea la
+# misma, porque la hora va al segundo y las huellas no cubren todo lo que la
+# corrida leyo (lo declarado para ella, los datos externos, los de sitio):
+# dos corridas con un valor declarado distinto en el mismo segundo llevan el
+# mismo encabezado y dimensionan distinto. Y solo cuenta lo que el
+# encabezado toma de la CORRIDA (verificacion de UI-5, N1): la hora UTC y las
+# huellas del `ContextoCorrida`; la huella de la hoja de ruta y la fecha de
+# generacion las lee `trazabilidad` al exportar cada vista. Los tests y la
+# ventana la leen de aqui; no se transcribe dos veces.
+REMISION_COMO_COMPROBARLO = (
+    "Si las dos vistas salen de la MISMA corrida, coinciden en su encabezado "
+    "de trazabilidad la hora UTC de la corrida y las huellas del CSV, de los "
+    "criterios y, con hidrologia, de las cuencas y de la estacion. Si alguna "
+    "de esas difiere, son dos corridas, y lo que dice una no se lee en la "
+    "otra; que coincidan no prueba que sean la misma, porque la hora va al "
+    "segundo y esas huellas no cubren todo lo que la corrida leyo (lo "
+    "declarado para ella, los datos externos, los de sitio). La huella de la "
+    "hoja de ruta y la fecha de generacion se leen al exportar cada vista y "
+    "no cuentan para esto. De la misma corrida, ningun numero de esta vista "
+    "falta en aquella.")
+
+
 def _remision_a_la_completa(nombre_completa: Optional[str]) -> str:
-    """La frase que ata la resumida a SU memoria completa (misma corrida)."""
+    """
+    La frase que ata la resumida a SU memoria completa.
+
+    Con `nombre_completa` (la CLI escribio las dos en la misma invocacion)
+    nombra el archivo y dice que salen del MISMO informe, que ahi es cierto.
+    Sin el (la resumida HTML de la ventana, la resumida PDF del proceso hijo,
+    la CLI con solo `--html-resumida` o `--pdf-resumida`) no nombra ninguna
+    puerta ni promete el encabezado: dice que la completa se exporta aparte.
+    En los dos casos dice lo que el encabezado prueba de las dos vistas, y
+    solo eso (`REMISION_COMO_COMPROBARLO`). Hasta UI-5 mandaba a `--html` o `--pdf`
+    «en la MISMA invocacion» y afirmaba que el encabezado «es el mismo en las
+    dos», falso entre la completa de la ventana y la resumida del hijo
+    (ficha UI2-01 b).
+    """
     if nombre_completa:
-        donde = (f"en <code>{_esc(nombre_completa)}</code>, escrita en la "
-                 "MISMA invocacion que esta")
+        donde = (f"se escribio en <code>{_esc(nombre_completa)}</code>, en la "
+                 "MISMA invocacion que esta: las dos salen del MISMO informe")
     else:
-        donde = ("con <code>--html</code> o <code>--pdf</code> en la MISMA "
-                 "invocacion que esta (esta corrida no la escribio)")
+        donde = "no se escribio con esta vista: se exporta aparte"
     return (
         '<div class="nota"><p><b>Esta es la memoria RESUMIDA, para imprimir.'
         "</b> La memoria COMPLETA &mdash; el anexo digital, con el desarrollo "
         "de cada paso, sus formulas sustituidas, sus citas literales, los "
         "criterios declarados con su justificacion y su fuente, las "
-        "acotaciones, los umbrales y las discrepancias &mdash; se emite "
-        f"{donde}. Las dos salen del MISMO informe: el encabezado de "
-        "trazabilidad de arriba (huellas del CSV, de los criterios y de la "
-        "hoja de ruta, y hora de la corrida) es el mismo en las dos, y ningun "
-        "numero de esta vista falta en aquella.</p></div>")
+        "acotaciones, los umbrales y las discrepancias &mdash; "
+        f"{donde}. {REMISION_COMO_COMPROBARLO}</p></div>")
 
 
 def memoria_resumida_html(informe: Any, *, proyecto: str = "",
@@ -5334,7 +5375,8 @@ def memoria_resumida_html(informe: Any, *, proyecto: str = "",
     --- T-12 --- La memoria RESUMIDA de la corrida, como una cadena (ver el
     bloque de arriba). `nombre_completa` es el archivo de la memoria
     completa que la misma invocacion escribe, para que la resumida remita a
-    el; sin el, la resumida dice como obtenerla. Mismo contrato de
+    el; sin el, dice que se exporta aparte (`_remision_a_la_completa`,
+    UI-5). Mismo contrato de
     marcadores que la completa, en las dos direcciones: un marcador que la
     plantilla pide y aqui no se entrega revienta (`substitute`), y uno que
     aqui se entrega y la plantilla no imprime es `ValueError`.
@@ -5519,12 +5561,26 @@ def _escribir_pdf(contenido: str, destino: Path, *, abrir_navegador: bool,
     Las dos vias de `exportar_pdf` (weasyprint o el HTML para el navegador)
     sobre una memoria ya armada: la usan la completa y, desde T-12, la
     resumida (`exportar_pdf_resumida`). `rotulo` encabeza el mensaje.
+
+    --- UI-5 (decision del dueño del 2026-11-15, ficha UI2-03) --- LAS DOS
+    VIAS ESCRIBEN DE FORMA ATOMICA (`src/escritura_atomica.escribir_atomico`,
+    la misma funcion que la entrega del PDF del hijo de la ventana):
+    weasyprint escribe el PDF por partes, y sobre el destino final un fallo a
+    mitad (disco lleno, cuota, E/S) dejaba el destino truncado y destruia el
+    PDF que el usuario tuviera ahi. Vale para la CLI directa y para el
+    proceso hijo de la ventana, que es la misma CLI. `ruta` es lo que se
+    pidio; si es un enlace simbolico, se reemplaza el archivo enlazado.
     """
+    # Importada aqui y no en la cabecera: es lo unico de este modulo que la
+    # usa, y la cabecera no se mueve (las anclas por linea del manifiesto).
+    from src import escritura_atomica
     weasyprint_disponible()
     if WeasyHTML is not None and not forzar_navegador:
         if progreso is not None:
             progreso(ETAPA_PDF, 0, 1)
-        WeasyHTML(string=contenido, base_url=str(DIR_PLANTILLAS)).write_pdf(str(destino))
+        documento = WeasyHTML(string=contenido, base_url=str(DIR_PLANTILLAS))
+        escritura_atomica.escribir_atomico(
+            destino, lambda temporal: documento.write_pdf(str(temporal)))
         if progreso is not None:
             progreso(ETAPA_PDF, 1, 1)
         return ResultadoExportacion(
@@ -5532,7 +5588,8 @@ def _escribir_pdf(contenido: str, destino: Path, *, abrir_navegador: bool,
             mensaje=f"{rotulo} exportada a PDF con weasyprint: {destino}")
 
     respaldo = destino.with_suffix(".html")
-    respaldo.write_text(contenido, encoding="utf-8")
+    escritura_atomica.escribir_atomico(
+        respaldo, lambda temporal: temporal.write_text(contenido, encoding="utf-8"))
     if progreso is not None:
         progreso(ETAPA_NAVEGADOR, 1, 1)
     if abrir_navegador:

@@ -2507,9 +2507,9 @@ def declarar_criterios(declaraciones: Sequence[str]) -> List[str]:
                 "escribela con parentesis: (0.010, 0.013). La coma sin "
                 "parentesis no declara nada"
             )
-        # La forma de las CLAVES que la ficha tiene enteras: la misma puerta
-        # que la pestaña 2 y el barrido (revision de UI-3, N1).
-        _declaracion.verificar_claves_de_la_ficha(clave, valor_nuevo)
+        # La forma de las CLAVES que la ficha tiene enteras la exige la
+        # guardia del archivo desde UI-5 (ficha UI3-03): la misma puerta que
+        # la pestaña 2 y el barrido.
         ca.establecer_valor_dinamico(clave, valor_nuevo)
         aplicadas.append(clave)
     return aplicadas

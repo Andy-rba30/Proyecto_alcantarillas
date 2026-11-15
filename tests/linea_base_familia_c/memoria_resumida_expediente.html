@@ -186,13 +186,14 @@
 <h1>Memoria de calculo resumida &mdash; Alcantarillas y cabezales</h1>
 <p class="subtitulo">(proyecto no declarado)</p>
 <p class="lead"></p>
-<div class="nota"><p><b>Esta es la memoria RESUMIDA, para imprimir.</b> La memoria COMPLETA &mdash; el anexo digital, con el desarrollo de cada paso, sus formulas sustituidas, sus citas literales, los criterios declarados con su justificacion y su fuente, las acotaciones, los umbrales y las discrepancias &mdash; se emite en <code>memoria_exp.html</code>, escrita en la MISMA invocacion que esta. Las dos salen del MISMO informe: el encabezado de trazabilidad de arriba (huellas del CSV, de los criterios y de la hoja de ruta, y hora de la corrida) es el mismo en las dos, y ningun numero de esta vista falta en aquella.</p></div>
+<div class="nota"><p><b>Esta es la memoria RESUMIDA, para imprimir.</b> La memoria COMPLETA &mdash; el anexo digital, con el desarrollo de cada paso, sus formulas sustituidas, sus citas literales, los criterios declarados con su justificacion y su fuente, las acotaciones, los umbrales y las discrepancias &mdash; se escribio en <code>memoria_exp.html</code>, en la MISMA invocacion que esta: las dos salen del MISMO informe. Si las dos vistas salen de la MISMA corrida, coinciden en su encabezado de trazabilidad la hora UTC de la corrida y las huellas del CSV, de los criterios y, con hidrologia, de las cuencas y de la estacion. Si alguna de esas difiere, son dos corridas, y lo que dice una no se lee en la otra; que coincidan no prueba que sean la misma, porque la hora va al segundo y esas huellas no cubren todo lo que la corrida leyo (lo declarado para ella, los datos externos, los de sitio). La huella de la hoja de ruta y la fecha de generacion se leen al exportar cada vista y no cuentan para esto. De la misma corrida, ningun numero de esta vista falta en aquella.</p></div>
 <!-- ==================================================================== -->
 <h2 id="trazabilidad">0. Encabezado de trazabilidad</h2>
 <p>Identifica <em>que</em> se calculo, <em>con que reglas</em> y <em>con que
-datos</em>. Es el MISMO encabezado que el de la memoria completa de esta
-corrida: si las huellas o la hora de la corrida no coinciden, las dos memorias
-no son de la misma corrida.</p>
+datos</em>. La hora UTC de la corrida y las huellas del CSV, de los criterios
+y de la hidrologia son las de la corrida; la huella de la hoja de ruta y la
+fecha de generacion se leen al exportar. Lo que este encabezado prueba frente
+al de la memoria completa, en la nota del principio.</p>
 <div class="trazabilidad">
 <table>
   <tbody>
@@ -209,7 +210,7 @@ no son de la misma corrida.</p>
     <tr><th>Fecha de criterios_adoptados.py</th>
         <td><FECHA></td></tr>
     <tr><th>SHA-1 de criterios_adoptados.py</th>
-        <td class="mono">3ea7ae5f108273ef56b4ef10d5e815398fe18910</td></tr>
+        <td class="mono">e1a8865740c4d4bf75f640d87647162dc4e53724</td></tr>
     <tr><th>Fecha de generacion</th>
         <td><FECHA> &nbsp;(corrida UTC: <UTC>)</td></tr>
     <tr><th>Estado del expediente</th>

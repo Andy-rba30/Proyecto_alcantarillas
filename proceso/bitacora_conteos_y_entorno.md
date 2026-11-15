@@ -2280,7 +2280,8 @@ T-7a: 5709; T-7b: 6002; T-7c: 6276; verificación de fórmulas de T-7: 6310;
 T-10: 6360; T-11: 6469; T-12: 6425 en la suite del entregable, que entregó
 138 a la de proceso (145); UI-1 de la cadena de interfaz: 6469 (medido con
 ventana Tk, ver su sección al final); UI-2: 6524 (ídem); UI-3, rebasada sobre UI-2:
-6573 (ídem); UI-4, cierre de la cadena de interfaz: 6619 (ídem). La
+6573 (ídem); UI-4, cierre de la cadena de interfaz: 6619 (ídem); UI-5, cuatro
+decisiones del dueño tras la cadena: 6691 (ídem, con las correcciones de su revisión y de sus dos verificaciones). La
 «Ventana Tk = no» de las medidas de pre-N1 se consiguió simulando la ausencia
 de entorno gráfico (sin `DISPLAY` y con un `xvfb-run` que falla), que es una
 de las tres condiciones legítimas del salto; en N1, corriendo la suite ANTES
@@ -2526,3 +2527,87 @@ saltado. El recorrido entero, con los dos PDF del hijo y las capturas, tarda uno
 suite del checkout, 15 a 16 min. Las cuatro corridas de la suite del entregable se
 lanzaron una detrás de otra, y el test de presupuesto de tiempo
 (`test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint`) pasó en las cuatro.
+
+## UI-5 de la cadena de interfaz (2026-11-15): el par con ventana Tk, MEDIDO
+
+UI-5 (cuatro decisiones del dueño sobre lo que la cadena dejó abierto: el CSV de puntos que
+invalida el informe, la remisión de la resumida a su completa, el PDF escrito de forma
+atómica y la forma de las claves en la guardia del archivo de criterios; fichas UI1-01,
+UI2-01, UI2-03, UI3-03 y la nueva UI5-01) se midió sobre su rama de worktree, desde
+`2d37c2c` (main con UI-1 a UI-4 y la corrección de tres frases de `CLAUDE.md`), con
+`python` 3.12 con `tkinter`, `ttkbootstrap` y `weasyprint`, ImageMagick, `xvfb-run -a`,
+PyMuPDF y `NORMAS_DIR` enlazado: la fila «sí · sí». La partida se midió de nuevo al
+empezar, en un worktree aparte fuera del repositorio: 6619 `collected` y ningún fallo (la
+corrida llegó al 100 %; su reparto passed/skipped no quedó registrado, y con el mismo
+entorno la fila de UI-4 es 6609 y 10). Los saltos son los de siempre: los diez
+estructurales de `test_familias_del_csv` y, en la exportación, los cuatro que leen lo
+versionado o necesitan `.git`; ninguno es de Tk ni de PDF.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, partida (`2d37c2c`), checkout de git | sí | sí | — | — | 6619 |
+| entregable, UI-5 primer intento (`26fa8f1`), checkout de git | sí | sí | 6643 | 10 | 6653 |
+| entregable, UI-5 primer intento, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 6639 | 14 | 6653 |
+| entregable, UI-5 con las correcciones de su revisión, checkout de git | sí | sí | 6661 | 10 | 6671 |
+| entregable, UI-5 con las correcciones, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 6657 | 14 | 6671 |
+| proceso, UI-5 con las correcciones, checkout | sí | sí | 145 | 0 | 145 |
+| entregable, UI-5 con las correcciones de su verificación, checkout de git | sí | sí | 6677 | 10 | 6687 |
+| entregable, UI-5 con las de su verificación, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 6673 | 14 | 6687 |
+| proceso, UI-5 con las de su verificación, checkout | sí | sí | 145 | 0 | 145 |
+| entregable, UI-5 con N5 (segunda verificación), checkout de git | sí | sí | 6681 | 10 | 6691 |
+| entregable, UI-5 con N5, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 6677 | 14 | 6691 |
+| proceso, UI-5 con N5, checkout | sí | sí | 145 | 0 | 145 |
+
+UI-5 suma 34 tests: 33 en `tests/test_ui5_decisiones.py` —26 escritos en rojo
+(`xfail(strict=True)`, cada uno fallando por su motivo con `--runxfail`) y liberados al
+implementar, y siete guardias que pasaron antes y después; tres de ellos sobre la ventana
+de verdad (`tests/apoyo/gui_ui5_real.py`)— y el caso del parametrizado de
+`test_decisiones_diferidas` que ancla la ficha UI5-01. Dos tests existentes se cambiaron
+declarando la causa: el del hijo del PDF bajo `ulimit -f` de UI-2 (exigía un PDF de trabajo
+cortado, que desde UI-5 no queda) y el de la sesión v3 del recorrido de UI-4 (con otro
+archivo de criterios la respuesta correcta es DIFIERE, y sólo por su huella). Cada decisión
+se comprobó por mutación: la traza del CSV devuelta a `_releer_familias`, el CSV escrito
+antes de los bloques de la sesión, el PDF escrito sobre el destino y la guardia sin la regla
+de las claves; con cada mutante caen sus tests. Con Tk corren 53 tests de ventana real —los
+50 de UI-1 a UI-4 más los tres de UI-5—, ninguno saltado. Las dos corridas de la suite del
+entregable (checkout y exportación) se lanzaron a la vez, de unos 16 min cada una, y el test
+de presupuesto de tiempo (`test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint`)
+pasó en las dos.
+
+La revisión independiente de UI-5 (ficha UI5-02; sin hallazgos altos ni medios, tres bajos
+confirmados) sumó 18 tests: 17 en `tests/test_ui5_decisiones.py` —14 escritos en rojo y
+liberados al corregir (H1, la remisión que daba por suficiente que el encabezado coincidiera;
+H2, la pestaña 2 que no se repintaba al retirar el informe, uno de ellos sobre la ventana de
+verdad; H3, el temporal de nombre fijo de la escritura atómica, que desde la corrección es
+`src/escritura_atomica.escribir_atomico` para la memoria en PDF y para la entrega del PDF
+del hijo) y tres guardias— y el anclaje de la ficha UI5-02. Cada corrección se midió por
+mutación: sin el repintado de la pestaña 2 caen sus cuatro tests; sin resolver el enlace,
+los dos del enlace; sin el cambio de modo, los dos del archivo nuevo; con el temporal fijo,
+los seis de (a), (b) y (c). La línea base se regeneró otra vez y cambió sólo el párrafo de la
+remisión. Con Tk corren 54 tests de ventana real, ninguno saltado; las dos corridas del
+entregable se lanzaron otra vez a la vez y el test de presupuesto de tiempo pasó en las dos.
+
+La verificación de esas correcciones (ficha UI5-03; H1 a H3 confirmados, cuatro bajos
+nuevos) sumó 16 tests: 15 en `tests/test_ui5_decisiones.py` —14 escritos en rojo y liberados
+al corregir (N1, la huella de la hoja de ruta contada como de la corrida en la remisión y en
+el párrafo del encabezado de la plantilla de la resumida; N2, el borrador de la pestaña 2
+perdido en la reselección del repintado; N3, «todavía no se ejecutó» tras un informe
+retirado; N4, los permisos y los mensajes de la escritura atómica) y una guardia— y el
+anclaje de la ficha UI5-03. Cada corrección se midió por mutación: sin la firma del editor o
+sin el motivo guardado caen los seis tests de N2 y N3; sin el rechazo del destino sin
+permiso, sin la escritura directa o sin nombrar el destino, los suyos de N4. N4 se midió
+además como el usuario `nobody` sobre una copia del módulo: un archivo escribible en un
+directorio sin permiso de escritura se escribe, un archivo 0444 se rechaza nombrándolo, y
+un directorio inexistente o un destino que es un directorio fallan nombrando el destino. La
+línea base se regeneró y cambiaron sólo esos dos textos de la resumida. Con Tk corren 56
+tests de ventana real, ninguno saltado; las dos corridas del entregable, a la vez, y el test
+de presupuesto de tiempo pasó en las dos.
+
+La segunda verificación (N1 a N4 confirmados; ficha UI5-03) encontró un bajo más, abierto por
+la corrección de N2: (N5) abrir OTRA obra con el mismo valor efectivo del criterio
+seleccionado dejaba en el editor el borrador de la anterior. «Cargar sesión», «Nuevo
+proyecto» e «Importar decisiones» olvidan la firma del editor (`_restaurar_criterios`).
+Suma 4 tests en rojo (tres con el doble, uno de ventana real), liberados al corregir; sin
+la línea que olvida la firma caen los cuatro, y los dos de N2 siguen pasando. Con Tk corren
+57 tests de ventana real, ninguno saltado; las dos corridas del entregable, a la vez, y el
+test de presupuesto de tiempo pasó en las dos.

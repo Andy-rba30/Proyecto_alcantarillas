@@ -670,6 +670,13 @@ def main(salida: Path, capturas=None) -> int:
                                          v3["corridas"][-1]["informe_json"])
             sesion_v3["reproduce"] = comparacion.iguales
             sesion_v3["comparacion"] = comparacion.lineas()[:6]
+            # Que difiere, campo a campo (UI-5): con otro archivo de criterios
+            # la respuesta correcta es DIFIERE, y solo por su huella.
+            sesion_v3["diferencias"] = [[d.donde, d.campo]
+                                        for d in comparacion.diferencias]
+            sesion_v3["no_comparables"] = len(comparacion.no_comparables)
+            sesion_v3["puntos_solo_en_uno"] = (len(comparacion.solo_en_a)
+                                               + len(comparacion.solo_en_b))
         reescrita = salida / "sesion_v3_reescrita.json"
         gapp.filedialog.asksaveasfilename = lambda **kw: str(reescrita)
         barra["Guardar sesion"].invoke()

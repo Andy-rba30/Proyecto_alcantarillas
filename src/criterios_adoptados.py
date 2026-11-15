@@ -12290,6 +12290,69 @@ def _verificar_forma(clave: str, c: Criterio) -> None:
     )
 
 
+# Una clave de dict que es un entero ESCRITO como texto (el `'900'` que JSON
+# deja donde el archivo trae `900`): cifras ASCII con signo opcional, la
+# misma lectura que `gui/componentes._ENTERO`. La usan la guardia de abajo
+# (para la pista del mensaje) y la frontera del JSON de
+# `declaracion.valor_desde_json` (para rearmar la clave): una definicion.
+_ENTERO_ESCRITO = re.compile(r"^-?\d+$", re.ASCII)
+
+
+def _son_claves_enteras(plantilla: Dict[Any, Any]) -> bool:
+    """Todas las claves de `plantilla` son enteros de Python (`bool` no lo es)."""
+    return all(isinstance(k, int) and not isinstance(k, bool) for k in plantilla)
+
+
+def _exigir_claves(clave: str, valor: Any, plantilla: Any, donde: str) -> None:
+    """
+    `ValueError` si `valor` lleva, en un nivel donde las claves de
+    `plantilla` son TODAS enteras, una clave que no lo es; recorre los
+    niveles de abajo con la plantilla de la misma clave (o la de una hermana,
+    si el valor trae una clave que el archivo no tiene).
+    """
+    if not isinstance(valor, dict) or not isinstance(plantilla, dict) or not plantilla:
+        return
+    enteras = _son_claves_enteras(plantilla)
+    hermana = next(iter(plantilla.values()))
+    for k, v in valor.items():
+        if enteras and (not isinstance(k, int) or isinstance(k, bool)):
+            ejemplo = next(iter(plantilla))
+            pista = (f" Escriba {int(k)} sin comillas."
+                     if isinstance(k, str) and _ENTERO_ESCRITO.match(k) else "")
+            raise ValueError(
+                f"'{clave}': la clave {k!r}{donde} no tiene la forma de la ficha: "
+                f"en ese nivel las claves son ENTERAS (el archivo trae, p. ej., "
+                f"{ejemplo!r}) y el calculo no encuentra una clave de "
+                f"{type(k).__name__}.{pista}")
+        _exigir_claves(clave, v, plantilla.get(k, hermana),
+                       f"{donde} de {k!r}" if donde else f" de {k!r}")
+
+
+def _verificar_claves_de_la_ficha(clave: str, c: Criterio) -> None:
+    """
+    LA FORMA DE LAS CLAVES (UI-5, decision del dueño del 2026-11-15, ficha
+    UI3-03): donde las claves del valor del ARCHIVO de la ficha son enteras,
+    el valor declarado tiene que traerlas enteras. La forma
+    `dict_con_campos` mira la ESTRUCTURA del valor y no la de sus claves, y
+    `espesor_pared_conducto` --- un dict por material con el diametro
+    designado en mm, ENTERO, como clave --- aceptaba el `'900'` de un dict
+    copiado de un JSON: el consumidor (`M2.espesor_pared`) ya no encontraba
+    la fila y los puntos salian «no dimensionado» sin aviso.
+
+    La plantilla es el valor de ARCHIVO de la ficha (`CRITERIOS[clave]`), y
+    es lo unico que la guardia lee de `CRITERIOS`: al importar es el propio
+    valor (la regla es la identidad), en los dos caminos dinamicos es el
+    valor del archivo contra el que se declara. Sin valor de archivo no hay
+    forma que exigir. Desde la revision de UI-3 (N1) esta regla vivia en las
+    capas que llaman a la guardia (`declaracion.verificar_claves_de_la_ficha`)
+    y `establecer_valor_dinamico` a pelo aceptaba el `'900'`; UI-5 la trae
+    aqui, el cuello de los tres caminos, con el mismo mensaje.
+    """
+    ficha = CRITERIOS.get(clave)
+    plantilla = c.valor if ficha is None else ficha.valor
+    _exigir_claves(clave, c.valor, plantilla, "")
+
+
 def _verificar_discrepancias(clave: str, c: Criterio) -> None:
     """
     Que los ids de `Criterio.discrepancias` existan en el registro y sigan
@@ -12320,7 +12383,9 @@ def _verificar_discrepancias(clave: str, c: Criterio) -> None:
 
 def _verificar_criterio(clave: str, c: Criterio) -> None:
     """
-    Valida UNA entrada. No lee CRITERIOS: recibe el objeto ya armado.
+    Valida UNA entrada: recibe el objeto ya armado, y de CRITERIOS lee una
+    sola cosa desde UI-5, el valor del ARCHIVO de su ficha, que es la
+    plantilla de la forma de las claves (`_verificar_claves_de_la_ficha`).
 
     Es la unica que sabe que hace valida a una declaracion, y por eso la
     atraviesan los TRES caminos por los que un criterio puede recibir valor:
@@ -12451,8 +12516,11 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
     _verificar_sensibilidad(clave, c)
     # LA FORMA VA ULTIMA a proposito: las guardias de arriba dicen cosas mas
     # precisas cuando aplican (la ventana, el par, el bool), y la forma es la
-    # ultima palabra sobre lo que ninguna de ellas mira.
+    # ultima palabra sobre lo que ninguna de ellas mira. Y dentro de la forma,
+    # la de las CLAVES (UI-5): la estructura del valor, primero; sus claves,
+    # despues.
     _verificar_forma(clave, c)
+    _verificar_claves_de_la_ficha(clave, c)
 
 
 def _verificar_nivel(clave: str, c: Criterio) -> None:

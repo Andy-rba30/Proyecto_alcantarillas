@@ -78,6 +78,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from src import escritura_atomica
 from src import sesion as _sesion
 
 # LOS LIMITES MEDIDOS, escritos donde el usuario los lee (la ayuda del
@@ -110,7 +111,12 @@ PROGRESO_INICIAL = "lanzando el proceso de exportacion"
 # (`_pdf_de_trabajo_entero`): weasyprint escribe por partes, cabecera primero
 # y `%%EOF` al final, y un fallo a mitad (disco lleno, cuota, E/S) dejaba un
 # archivo que empieza por `%PDF`, sale con 1 y se entregaba truncado
-# (verificacion de la revision de UI-2).
+# (verificacion de la revision de UI-2). Desde UI-5 (ficha UI2-03) el hijo
+# ya no lo deja: `M11._escribir_pdf` escribe a un temporal y lo retira al
+# fallar, de modo que con 1 y sin PDF de trabajo la exportacion es FALLIDA
+# por la primera condicion. El trailer se queda como SEGUNDA LINEA: cuesta
+# leer 1 KB y cubre lo que la escritura atomica no ve (un PDF que weasyprint
+# diera por escrito sin serlo).
 CODIGOS_DE_SALIDA_CON_MEMORIA = (0, 1)
 
 # Donde tiene que estar el marcador de fin de archivo de un PDF entero: en
@@ -444,7 +450,9 @@ class ProcesoPdf:
         El hijo dejo SU PDF y ENTERO: el de trabajo (que `iniciar` vacio)
         empieza por `%PDF` y termina con el trailer `%%EOF` en sus ultimos
         `COLA_DEL_PDF_BYTES`. Un PDF cortado a mitad de la escritura empieza
-        bien y no termina: no se entrega.
+        bien y no termina: no se entrega. Desde UI-5 es la segunda linea: la
+        primera es que `M11._escribir_pdf` no deja un PDF cortado (ficha
+        UI2-03).
         """
         try:
             with self.ruta_pdf_de_trabajo.open("rb") as f:
@@ -459,15 +467,18 @@ class ProcesoPdf:
     def _entregar(self) -> None:
         """
         Copia el PDF de trabajo al destino, de forma atomica: primero a un
-        `.parcial` junto al destino (el directorio de trabajo puede estar en
+        temporal junto al destino (el directorio de trabajo puede estar en
         otro sistema de archivos, y `os.replace` no cruza de uno a otro) y
         despues `os.replace`. Un fallo a mitad deja el destino como estaba.
+
+        Desde la revision de UI-5 (H3) por la MISMA funcion que la memoria en
+        PDF de M11 (`src/escritura_atomica.escribir_atomico`): hasta entonces
+        el temporal era «<destino>.parcial», un nombre fijo que no cabia con
+        un destino de nombre largo, pisaba un archivo del usuario con ese
+        nombre, volvia archivo regular un destino que era enlace simbolico y
+        no conservaba su modo.
         """
         self.destino.parent.mkdir(parents=True, exist_ok=True)
-        parcial = self.destino.with_name(self.destino.name + ".parcial")
-        try:
-            shutil.copyfile(self.ruta_pdf_de_trabajo, parcial)
-            os.replace(parcial, self.destino)
-        finally:
-            if parcial.exists():
-                parcial.unlink()
+        escritura_atomica.escribir_atomico(
+            self.destino,
+            lambda temporal: shutil.copyfile(self.ruta_pdf_de_trabajo, temporal))

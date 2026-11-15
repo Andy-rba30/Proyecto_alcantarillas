@@ -884,6 +884,11 @@ CENSO_DE_MARCAS = {
     # `FORMATO_V3 = 3`, que la migracion v2 -> v3 escribe y compara. Las dos
     # son versiones del formato, no magnitudes.
     "src/sesion.py": 2,
+    # Revision de UI-5 (H3): los bits de permiso POSIX de un archivo nuevo
+    # antes de la mascara del proceso (0o666), con que la escritura atomica
+    # da a un archivo que no existia el modo de siempre y no el 0600 de su
+    # temporal. Es un modo del sistema de archivos, no una magnitud.
+    "src/escritura_atomica.py": 1,
     # 28 -> 24 + 4: `Tooltip` y `MarcoScroll` se MOVIERON a
     # `gui/componentes.py` para que la ventana emergente los reutilice en vez
     # de copiarlos, y sus cuatro marcas viajaron con ellos (tres de offset de

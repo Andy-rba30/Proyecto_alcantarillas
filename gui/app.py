@@ -269,7 +269,10 @@ eso mismo el informe deja de describir el estado de la ventana ---.
 `_invalidar_informe` lo retira y apaga los exportadores diciendo por que ---
 el grupo entero, `BOTONES_DE_EXPORTACION`, siete desde UI-2 ---, y lo llaman
 los cuatro gestos que cambian el estado (declarar, quitar, escribir en
-archivo, cargar sesion) y el propio EJECUTAR antes de correr: una corrida
+archivo, cargar sesion), el de escribir en los campos de la pestaña 1 de los
+que sale la corrida --- el CSV de cuencas y el de la estacion desde UI-1, el
+CSV de puntos desde UI-5 (ficha UI1-01): toda escritura, tambien la misma
+ruta --- y el propio EJECUTAR antes de correr: una corrida
 fallida no deja el informe anterior como vigente en las pestañas 3 y 4 --- el
 panel del cabezal del proyecto incluido --- ni en la barra. El nombre del
 proyecto se lee AL CORRER, no al exportar, por la misma razon. Y `root.report_callback_exception` convierte en dialogo lo
@@ -430,6 +433,20 @@ MOTIVO_HIDROLOGIA_CAMBIADA = (
     "el informe de la ultima corrida ya no describe el estado actual: se "
     "cambio el CSV de cuencas o el de la estacion despues de correr. Vuelva "
     "a ejecutar el calculo")
+# El texto con que la barra, el panel del cabezal del proyecto y la linea del
+# ambito de la pestaña 2 dicen que el informe se retiro, y por que (EXT-4;
+# la pestaña 2 desde la verificacion de UI-5, N3). Una funcion, para que los
+# tres digan lo mismo.
+def texto_sin_informe(motivo):
+    """«Sin informe vigente: <motivo>.»"""
+    return f"Sin informe vigente: {motivo}."
+
+
+# UI-5 (decision del dueño del 2026-11-15, ficha UI1-01): el MISMO gesto con
+# el CSV de puntos. Hasta UI-5 el campo del CSV solo releia las familias.
+MOTIVO_CSV_CAMBIADO = (
+    "el informe de la ultima corrida ya no describe el estado actual: se "
+    "cambio el CSV de puntos despues de correr. Vuelva a ejecutar el calculo")
 
 # Los filtros de estado de la tabla de criterios (pestana 2). Cada entrada es
 # (rotulo, tag), y el `tag` es el MISMO que devuelve `_estado_criterio`: filtrar
@@ -630,6 +647,12 @@ class ExpedienteApp:
         self.alcance_var = tk.StringVar(value=cli.ALCANCE_EXPEDIENTE)
 
         self.informe: Optional[cli.Informe] = None
+        # Por que no hay informe, si un gesto o una corrida fallida lo
+        # retiraron; None si todavia no se corrio (verificacion de UI-5, N3).
+        self._motivo_sin_informe: Optional[str] = None
+        # Que fila y que valor efectivo muestra el editor de la pestaña 2: si
+        # una reseleccion trae los mismos, el borrador se queda (N2).
+        self._firma_del_editor = None
         self.entradas_de_la_corrida = {}
         # La ventana del barrido abierta (UI-3), o None: una a la vez.
         self.ventana_barrido = None
@@ -663,8 +686,9 @@ class ExpedienteApp:
             "write", lambda *_a: (self._refiltrar(), self._pintar_anticipo()))
         # Y la anotacion de la pestana 1 se rehace al cambiar el CSV, que es
         # cuando cambian las familias del expediente (el anticipo tambien:
-        # `_releer_familias` termina repintandolo).
-        self.csv_var.trace_add("write", lambda *_a: self._releer_familias())
+        # `_releer_familias` termina repintandolo). Desde UI-5 el gesto
+        # retira ademas el informe vigente, como el de la hidrologia.
+        self.csv_var.trace_add("write", lambda *_a: self._al_cambiar_el_csv())
         # El bloque 4 del anticipo (PF-2) depende ademas del JSON de datos
         # externos y de las banderas de esta pestaña: sin estas trazas se
         # quedaba viejo hasta tocar el CSV o el alcance (auditor de PF-2).
@@ -755,6 +779,29 @@ class ExpedienteApp:
         self._invalidar_informe(MOTIVO_HIDROLOGIA_CAMBIADA)
         self._pintar_anticipo()
 
+    def _al_cambiar_el_csv(self):
+        """
+        El gesto de escribir en el campo del CSV de puntos (UI-5, decision
+        del dueño del 2026-11-15, ficha UI1-01): el MISMO que el de los dos
+        campos de la hidrologia. El informe vigente se retira y los siete
+        exportadores se apagan con `MOTIVO_CSV_CAMBIADO`; las familias y el
+        anticipo se releen, como hasta UI-5.
+
+        QUE CUENTA COMO «CAMBIAR»: toda escritura en el campo, tambien la
+        misma ruta tecleada otra vez o elegida otra vez con «Examinar…»
+        (la traza de Tk avisa en cada escritura y no se compara con la ruta
+        de la corrida). Volver a dar la entrada es el gesto con que el
+        usuario dice «use el archivo como esta ahora», y el archivo pudo
+        cambiar en disco: retirar el informe cuesta volver a correr, que son
+        milisegundos por punto, y no retirarlo dejaria exportar una corrida
+        de otros bytes. Abrir una sesion o un proyecto nuevo ya retiran el
+        informe con SU motivo, y escriben este campo despues (como los de la
+        hidrologia), de modo que este gesto no lo pisa: sin informe no hay
+        nada que invalidar.
+        """
+        self._invalidar_informe(MOTIVO_CSV_CAMBIADO)
+        self._releer_familias()
+
     def _rutas_de_hidrologia(self):
         """
         Las dos rutas de la hidrologia como `servicio.cargar_hidrologia` las
@@ -766,7 +813,7 @@ class ExpedienteApp:
                 ses.ruta_de_campo(self.estacion_var.get()))
 
     def _vaciar_tablas_del_informe(self, motivo):
-        """Las pestañas 3 y 4 y la barra dejan de mostrar la corrida anterior."""
+        """Las pestañas 2, 3 y 4 y la barra dejan de mostrar la corrida anterior."""
         for arbol in (self.tree_puntos, self.tree_criterios):
             for item in arbol.get_children():
                 arbol.delete(item)
@@ -777,10 +824,22 @@ class ExpedienteApp:
                 lbl.configurar("-", comp.INSIGNIA_NEUTRA)
             else:
                 lbl.config(text="-", foreground="")
-        self.lbl_estado.config(text=f"Sin informe vigente: {motivo}.")
+        # El texto de la retirada, UNO para la barra, el panel del cabezal y
+        # la pestaña 2 (verificacion de UI-5, N3): se guarda el motivo.
+        self._motivo_sin_informe = motivo
+        self.lbl_estado.config(text=texto_sin_informe(motivo))
         # El panel del cabezal del proyecto (UI-2) se vacia con el resto de
         # la pestaña 4 y dice lo mismo que la barra.
-        self._pintar_cabezal_del_proyecto(f"Sin informe vigente: {motivo}.")
+        self._pintar_cabezal_del_proyecto(texto_sin_informe(motivo))
+        # Y la pestaña 2 se repinta SIN corrida (revision de UI-5, H2): con
+        # «Solo los que bloquearon esta corrida» seguia filtrando por el
+        # informe retirado y diciendo «medido sobre la corrida de …». Toda
+        # retirada pasa por aqui --- un gesto que invalida, EJECUTAR antes de
+        # correr y los dos brazos de una corrida que falla ---, y la pestaña
+        # 2 lee `self.informe`, que ya es None. El repintado vuelve a
+        # seleccionar la fila, y un borrador de la pestaña no se pierde por
+        # eso (`_al_seleccionar_criterio`, N2).
+        self._refiltrar()
 
     # ------------------------------------------------------------------
     # Construccion de la interfaz
@@ -1974,8 +2033,16 @@ class ExpedienteApp:
             texto = (f"segun el alcance «{self.alcance_var.get()}» de la "
                      f"pestana 1 ({escondidos} fuera de alcance)")
         elif ambito == AMBITO_BLOQUEANTES:
-            texto = (MOTIVO_SIN_CORRIDA_FILTRO if self.informe is None
-                     else f"medido sobre la corrida de {self.informe.generado}")
+            # Sin informe, por que (verificacion de UI-5, N3): sin corrida
+            # todavia, o un informe que un gesto o una corrida fallida
+            # retiraron, con el texto de la barra.
+            retirado = getattr(self, "_motivo_sin_informe", None)
+            if self.informe is not None:
+                texto = f"medido sobre la corrida de {self.informe.generado}"
+            elif retirado is None:
+                texto = MOTIVO_SIN_CORRIDA_FILTRO
+            else:
+                texto = texto_sin_informe(retirado)
         else:
             texto = ""
         self.lbl_ambito.config(
@@ -2172,6 +2239,7 @@ class ExpedienteApp:
             self.lbl_estado_criterio.config(text="")
         if not seleccion:
             self._clave_criterio_seleccionado = None
+            self._firma_del_editor = None
             self.lbl_criterio_seleccionado.config(text="(ninguno seleccionado)")
             for boton in (self.btn_aplicar_corrida, self.btn_quitar_declarado,
                           self.btn_guardar_archivo, self.btn_ventana_norma):
@@ -2209,15 +2277,26 @@ class ExpedienteApp:
         comp.escribir_campos(self.txt_detalle_criterio, campos)
 
         valor_actual = ca.criterio_efectivo(clave).valor
-        # El editor primero y el literal despues, bajo la misma guardia de
-        # sincronizacion: `set` dispara `_literal_cambio`, que repintaria el
-        # editor recien montado con lo que acaba de pintar.
-        self._montar_editor(clave, valor_actual)
-        self._sincronizando_editor = True
-        try:
-            self.valor_declarado_var.set(self._literal_de(valor_actual))
-        finally:
-            self._sincronizando_editor = False
+        # EL BORRADOR SE QUEDA SI NADA CAMBIO (verificacion de UI-5, N2). Un
+        # repintado de la tabla vuelve a seleccionar la MISMA fila
+        # (`_reponer_seleccion`) y Tk encola este evento: reescribir aqui el
+        # campo y el editor perdia el valor tecleado y sin aplicar cada vez
+        # que se retiraba el informe (cambiar el CSV o la hidrologia, una
+        # corrida fallida). Con la misma fila y el mismo valor efectivo que el
+        # editor ya muestra, no se reescriben; si el valor efectivo cambio
+        # --- declarar, quitar, cargar una sesion ---, si.
+        firma = (clave, repr(valor_actual))
+        if firma != getattr(self, "_firma_del_editor", None):
+            # El editor primero y el literal despues, bajo la misma guardia de
+            # sincronizacion: `set` dispara `_literal_cambio`, que repintaria el
+            # editor recien montado con lo que acaba de pintar.
+            self._montar_editor(clave, valor_actual)
+            self._sincronizando_editor = True
+            try:
+                self.valor_declarado_var.set(self._literal_de(valor_actual))
+            finally:
+                self._sincronizando_editor = False
+            self._firma_del_editor = firma
 
         en_caliente = ca.declarado_en_caliente(clave)
         # DECLARAR EN CALIENTE YA NO DEPENDE DE QUE EL CRITERIO ESTE VACIO.
@@ -3864,7 +3943,6 @@ class ExpedienteApp:
             return
 
         self.proyecto_var.set(data.get("proyecto", ""))
-        self.csv_var.set(data.get("csv", ""))
         self.datos_externos_var.set(data.get("datos_externos", ""))
         self.datos_sitio_var.set(data.get("datos_sitio", ""))
         # Los externos que la sesion NO trae se reponen a vacio: la ventana
@@ -3881,10 +3959,12 @@ class ExpedienteApp:
         self.alcance_var.set(alcance)
 
         aviso = self._aplicar_bloques_de_sesion(data, origen=f"sesion {Path(ruta).name}")
-        # Las dos rutas de la hidrologia (formato 4; una sesion v3 las trae
-        # vacias tras migrar). DESPUES de los bloques, que ya retiraron el
-        # informe con el motivo de la sesion: el gesto de los dos campos no
-        # pisa ese motivo con el suyo.
+        # El CSV y las dos rutas de la hidrologia (formato 4; una sesion v3
+        # las trae vacias tras migrar). DESPUES de los bloques, que ya
+        # retiraron el informe con el motivo de la sesion: el gesto de los
+        # tres campos (UI-1; el del CSV desde UI-5) no pisa ese motivo con el
+        # suyo.
+        self.csv_var.set(data.get("csv", ""))
         self.cuencas_var.set(data.get("cuencas", ""))
         self.estacion_var.set(data.get("estacion", ""))
 
@@ -3916,15 +3996,15 @@ class ExpedienteApp:
             return
         data = ses.sesion_vacia(APP_VERSION)
         self.proyecto_var.set(data["proyecto"])
-        self.csv_var.set(data["csv"])
         self.datos_externos_var.set(data["datos_externos"])
         self.datos_sitio_var.set(data["datos_sitio"])
         for var in self.externos_vars.values():
             var.set("")
         self.alcance_var.set(data["alcance"])
         aviso = self._aplicar_bloques_de_sesion(data, origen="proyecto nuevo")
-        # Vacios, como los demas campos (UI-1), y despues de los bloques por
-        # la misma razon que en «Cargar sesion».
+        # Vacios, como los demas campos (UI-1; el CSV desde UI-5), y despues
+        # de los bloques por la misma razon que en «Cargar sesion».
+        self.csv_var.set(data["csv"])
         self.cuencas_var.set(data["cuencas"])
         self.estacion_var.set(data["estacion"])
         self.lbl_error_datos.config(text="")
@@ -4017,6 +4097,12 @@ class ExpedienteApp:
         retira ANTES de volcar la nueva (EXT-A-02). `False` es importar. En
         los dos casos el informe de la ultima corrida deja de estar vigente.
         """
+        # El editor de la pestaña 2 olvida que mostraba (verificacion de UI-5,
+        # N5): lo tecleado y sin aplicar es de la obra anterior, y la firma de
+        # N2 lo conservaba si el criterio seleccionado tenia el mismo valor
+        # efectivo en las dos. Abrir una sesion, un proyecto nuevo e importar
+        # pasan por aqui; la reseleccion que sigue repone el valor efectivo.
+        self._firma_del_editor = None
         # Con `sustituir` se vacia aunque la sesion no traiga bloque: abrir
         # una sesion sin criterios es abrir una obra sin decisiones.
         self._invalidar_informe(MOTIVO_INFORME_DESACTUALIZADO)

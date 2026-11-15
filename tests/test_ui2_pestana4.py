@@ -651,9 +651,18 @@ def test_b_un_pdf_cortado_a_mitad_por_el_hijo_real_no_se_entrega(tmp_path, expdf
     La reproduccion de la verificacion, con el hijo DE VERDAD: un interprete
     con `ulimit -f 1000` (Python ignora SIGXFSZ, y la escritura falla con
     `OSError` [Errno 27]) escribe la memoria completa de `expediente_cabezal`
-    (1.8 MB) y la corta en 1 000 KB: el hijo sale con 1 y un archivo que
-    empieza por `%PDF` sin `%%EOF`. Antes se daba por terminado y reemplazaba
-    el PDF del usuario.
+    (1.8 MB) y la corta en 1 000 KB: el hijo sale con 1. Antes se daba por
+    terminado y reemplazaba el PDF del usuario.
+
+    CAMBIADO EN UI-5 (decision del dueño, ficha UI2-03), declarando la causa:
+    hasta UI-5 el hijo dejaba en su directorio de trabajo un PDF CORTADO
+    (empieza por `%PDF` y no lleva `%%EOF`), que este test exigia para no
+    perder su objeto, y lo que lo detenia era la comprobacion del trailer de
+    `ProcesoPdf`. Desde UI-5 `M11._escribir_pdf` escribe a un temporal del
+    mismo directorio y lo retira al fallar: el hijo no deja PDF de trabajo
+    ninguno, ni cortado ni entero, y el destino sigue sin tocarse. El
+    trailer se queda como segunda linea (su test, el del hijo de mentira que
+    sale con 0 o 1 y un PDF «truncado», sigue arriba).
     """
     if not M11.weasyprint_disponible():
         pytest.skip("weasyprint no esta operativo en este interprete: el hijo no "
@@ -676,9 +685,11 @@ def test_b_un_pdf_cortado_a_mitad_por_el_hijo_real_no_se_entrega(tmp_path, expdf
         directorio_trabajo=tmp_path / "trabajo", interprete=str(limitado), raiz=RAIZ)
     proceso.iniciar()
     estado = _esperar(proceso)
-    cortado = proceso.ruta_pdf_de_trabajo.read_bytes()
-    assert cortado.startswith(b"%PDF") and b"%%EOF" not in cortado[-1024:], (
-        "el PDF no se corto: el test perderia su objeto")
+    salida_del_hijo = proceso.ruta_salida.read_text(encoding="utf-8", errors="replace")
+    assert "File too large" in salida_del_hijo or "Errno 27" in salida_del_hijo, (
+        "la escritura no se corto: el test perderia su objeto")
+    assert not proceso.ruta_pdf_de_trabajo.exists(), "M11 dejo un PDF de trabajo cortado"
+    assert not list(proceso.directorio_trabajo.glob("*.parcial"))
     assert estado is expdf.EstadoPdf.FALLIDO, proceso.detalle
     assert "codigo 1" in proceso.detalle
     assert destino.read_bytes() == PDF_ANTERIOR

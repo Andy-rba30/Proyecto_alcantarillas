@@ -128,7 +128,6 @@ def verificar_valores(clave: str, valores: Sequence[Any], *, fila: str = "",
     try:
         for k, v in base.items():
             _ca.verificar_declaracion(k, v)
-            _dec.verificar_claves_de_la_ficha(k, v)
         for valor in valores:
             _dec.restaurar_sesion(entrada, sustituir=True)
             for k, v in base.items():

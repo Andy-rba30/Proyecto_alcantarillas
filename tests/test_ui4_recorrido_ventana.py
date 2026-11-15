@@ -610,7 +610,22 @@ def test_c7_la_sesion_v3_se_abre_reproduce_y_se_reescribe(r):
     assert v3["declarados"] == ["phi_relleno_trasdos"]
     assert all(tipo != "error" for tipo, _t, _x in v3["dialogos"])
     assert v3["informe"], v3["error_visible"]
-    assert v3["reproduce"], v3["comparacion"]
+    # CAMBIADO EN UI-5, declarando la causa: el fixture v3 es una sesion de la
+    # version anterior, NO se regenera (su LEEME), y su corrida embebida lleva
+    # la huella del archivo de criterios con que se guardo. UI-5 cambio la
+    # guardia de `criterios_adoptados.py` (ficha UI3-03) y con ella su huella,
+    # que el comparador compara: con otro archivo de criterios la respuesta
+    # correcta es DIFIERE, y SOLO por esa huella --- ningun punto, ningun
+    # numero, nada sin comparar ---. Es la misma regla que UI-1 escribio para
+    # la CLI (`test_d_la_cli_abre_la_sesion_v3_y_corre_sin_hidrologia`).
+    import hashlib
+    fixture = json.loads((RAIZ / recorrido.SESION_V3).read_text(encoding="utf-8"))
+    huella = hashlib.sha1(M11.ARCHIVO_CRITERIOS.read_bytes()).hexdigest()
+    if fixture["corridas"][-1]["criterios_sha1"] == huella:
+        assert v3["reproduce"], v3["comparacion"]
+    else:
+        assert v3["diferencias"] == [["expediente", "criterios_sha1"]], v3["comparacion"]
+        assert v3["no_comparables"] == 0 and v3["puntos_solo_en_uno"] == 0
     reescrita = v3["reescrita"]
     assert reescrita["formato_version"] == ses.FORMATO_SESION
     assert reescrita["id_igual"] and reescrita["errores"] == []

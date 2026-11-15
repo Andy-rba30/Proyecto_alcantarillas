@@ -1588,3 +1588,35 @@ de T11-09; el cajón, IGUAL.
 contra los JSON de `f77c5d4`: IGUALES los cuatro.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## Regenerada en UI-5 (2026-11-15, sobre `2d37c2c`): la remisión de la resumida y la huella de `criterios_adoptados.py`; ningún número de cálculo
+
+UI-5 de la cadena de interfaz no cambia cálculo. Aplica dos decisiones del dueño que tocan la
+salida (fichas UI2-01 b y UI3-03 de `docs/decisiones_diferidas.md`), y frente a `2d37c2c`
+cambian **ocho archivos: 13 líneas nuevas por 12**, de dos clases:
+
+**1. Lo que la resumida dice de su completa y de su encabezado** — en
+**`memoria_resumida_expediente.html`**, dos textos. (a) UNA línea: el párrafo
+`<div class="nota">` que `M11._remision_a_la_completa` escribe. Decía que el encabezado de
+trazabilidad «es el mismo en las dos», falso entre la completa de la ventana y la resumida
+PDF del proceso hijo, que vuelve a correr la obra (ficha EXT-8-02); hoy, como la corrida 4
+escribe las dos vistas en una invocación, nombra `memoria_exp.html` y dice que salen del
+MISMO informe, y añade lo que el encabezado prueba de dos vistas, y sólo eso
+(`M11.REMISION_COMO_COMPROBARLO`). (b) El párrafo bajo «0. Encabezado de trazabilidad», que
+la plantilla `src/plantillas/memoria_resumida.html` trae desde T-12 (3 líneas → 4): prometía
+lo mismo y contaba la huella de la hoja de ruta, que no es de la corrida sino que se lee al
+exportar. La revisión independiente de UI-5 y su verificación (fichas UI5-02, H1, y UI5-03,
+N1) corrigieron los dos textos y la línea base se regeneró dos veces más: cada vez cambiaron
+esos textos y ningún otro byte de los dieciséis archivos. Ninguno lleva un número.
+
+**2. La huella de `criterios_adoptados.py`** — `3ea7ae5f…` → la nueva, porque UI-5 trajo a
+su guardia la forma de las claves (`_verificar_claves_de_la_ficha`): en los cuatro JSON
+(`criterios_sha1`) y en el encabezado de trazabilidad de las cuatro memorias de la CLI
+(`memoria_expediente.html`, `memoria_perfil.html`, `memoria_perfil_ancha.html` y la
+resumida). Ningún valor, ninguna ficha ni ningún nivel de criterio cambió.
+
+**Idénticos byte a byte**: los cinco `cli_*.txt`, los dos CSV de resumen y
+`memoria_punto_cajon.html`. Medido con `git diff --stat` (8 archivos, 13 inserciones y 12
+borrados) y línea a línea: fuera de esas dos clases no cambia nada.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
