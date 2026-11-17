@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-17 · Commit del árbol de origen: `33bd7fc+cambios-sin-commit` · Suite: PROVISIONAL (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-17 · Commit del árbol de origen: `7221fe0+cambios-sin-commit` · Suite: PROVISIONAL (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -57,7 +57,7 @@ es del proyecto.
 > DATOS DE PRUEBA, NO DEL PROYECTO: los de la corrida de punta a punta de los tests de T-7b y T-7c (`_correr_de_prueba`): freatico, cota de afectacion, evento extremo, relleno, fundacion y sobrecarga de prueba para A-01. A-01 llega a la Fase 9 entera (geometria, estabilidad y armado).
 
 - Entradas: `tests/fixtures/corridas_de_referencia/expediente_cabezal/puntos.csv` · datos externos `tests/fixtures/corridas_de_referencia/expediente_cabezal/externos.json` · datos de sitio `tests/fixtures/corridas_de_referencia/expediente_cabezal/sitio.json` · alcance: `expediente`.
-- Criterios declarados SOLO para esta corrida: `remanso_derecho_via`, `TR_evento_extremo`, `umbral_no_colapso_evento_extremo`, `phi_relleno_trasdos`, `c_phi_fundacion`, `drenaje_trasdos`, `factor_muro_eleccion`, `dimensionamiento_zapata_cabezal`.
+- Criterios declarados SOLO para esta corrida: `remanso_derecho_via`, `TR_evento_extremo`, `umbral_no_colapso_evento_extremo`, `phi_relleno_trasdos`, `c_phi_fundacion`, `drenaje_trasdos`, `factor_muro_eleccion`.
 - Puntos: 4 · dimensionados: 1 (A-01).
 - Etapas que la corrida no completó (la razón está en el informe; aquí sólo se nombra la etapa):
   - A-02: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DATO_FALTANTE`).
@@ -75,7 +75,7 @@ es del proyecto.
 > DATOS DE PRUEBA, NO DEL PROYECTO: el juego de la validacion integral de T-11 (`tests/fixtures/juego_validacion_integral.py`) con la variante `caudal_calculado`: A-01, A-02 y B-01 traen la celda `Q_m3s` vacia y la Fase 1-bis calcula su caudal con las cuencas y la serie SINTETICAS de T-1 (`tests/fixtures/hidrologia/`). Con esos caudales ninguno de los tres cabe bajo la subrasante y no dimensiona; C-01 dimensiona y llega a la Fase 9.
 
 - Entradas: `tests/fixtures/corridas_de_referencia/hidrologia_calculada/puntos.csv` · datos externos `tests/fixtures/corridas_de_referencia/hidrologia_calculada/externos.json` · datos de sitio `tests/fixtures/corridas_de_referencia/hidrologia_calculada/sitio.json` · alcance: `expediente`.
-- Criterios declarados SOLO para esta corrida: `remanso_derecho_via`, `TR_evento_extremo`, `umbral_no_colapso_evento_extremo`, `phi_relleno_trasdos`, `c_phi_fundacion`, `peso_especifico_saturado_relleno_kn_m3`, `drenaje_trasdos`, `factor_muro_eleccion`, `categoria_refuerzo_aashto`, `clase_exposicion_fisuracion_cabezal`, `exposicion_quimica_ems`, `homogeneidad_serie_fen`, `dimensionamiento_zapata_cabezal`.
+- Criterios declarados SOLO para esta corrida: `remanso_derecho_via`, `TR_evento_extremo`, `umbral_no_colapso_evento_extremo`, `phi_relleno_trasdos`, `c_phi_fundacion`, `peso_especifico_saturado_relleno_kn_m3`, `drenaje_trasdos`, `factor_muro_eleccion`, `categoria_refuerzo_aashto`, `clase_exposicion_fisuracion_cabezal`, `exposicion_quimica_ems`, `homogeneidad_serie_fen`.
 - Puntos: 4 · dimensionados: 1 (C-01).
 - Etapas que la corrida no completó (la razón está en el informe; aquí sólo se nombra la etapa):
   - A-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DISENO_NO_FACTIBLE`).
@@ -83,7 +83,7 @@ es del proyecto.
   - B-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DATO_FALTANTE`).
   - C-01: Fase 5 - Verificaciones → VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no) (`TipoDeBloqueo.DIFERIDO_POR_ALCANCE`).
 
-Pasos emitidos: **1007** · fórmulas distintas: **294** · fundamentos ejercitados: **106** de 131.
+Pasos emitidos: **1007** · fórmulas distintas: **294** · fundamentos ejercitados: **106** de 133.
 
 ## 2. Índice
 
@@ -417,6 +417,7 @@ fórmulas no están en el §2 y este cuadro es lo que impide leer el
 | `F4.HORIZONTAL` | Fase 4 - Dimensionamiento hidraulico | Barril horizontal (S = 0): no hay tirante normal, y el regimen del conducto lo fija el extremo de aguas abajo | `M4_control` |
 | `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | `M2_material` |
 | `F4.PISO_HW` | Fase 4 - Dimensionamiento hidraulico | Carga de control de entrada cuando la correccion por pendiente Ks·S la deja nula o negativa: el piso adoptado (`hw_entrada_fuera_de_rango`) | sin `paso()`; entra por otra puerta desde `M4_control` |
+| `F5.V1.RECEPTOR` | Fase 5 - Verificaciones | Diametro gobernado por el nivel del receptor: el que bastaria por la hidraulica sola y el descenso del tirante del receptor con el que cumpliria el borde libre | `MD` |
 | `F5.V2b.REGIMEN` | Fase 5 - Verificaciones | V2b - El regimen con que se aplica el indicador de pendiente: umbral duro o indicador con aviso (`regimen_v2b`) | sin `paso()` y sin mención fuera del registro |
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | sin `paso()`; entra por otra puerta desde `M5_verificaciones` |
 | `F5.V7_NIVEL` | Fase 5 - Verificaciones | Nivel de agua de diseño de la flotacion: lo especifica o aprueba el Propietario | sin `paso()`; entra por otra puerta desde `M5_verificaciones` |
@@ -432,6 +433,7 @@ fórmulas no están en el §2 y este cuadro es lo que impide leer el
 | `F8.TMC_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia metalica corrugada: factor de flexibilidad de manejo e instalacion | `M8_estructural` |
 | `F9.ARM_DURABILIDAD` | Fase 9 - Cabezal y aletas | Resistencia del concreto del cabezal frente a la minima por durabilidad | `M9_cabezal` |
 | `F9.CICLOPEO` | Fase 9 - Cabezal y aletas | Cabezal de gravedad en concreto ciclopeo: posicion de la resultante en la base y en el cuerpo, y limites del material | `M9_cabezal` |
+| `F9.DIMENSIONADO_PERALTE` | Fase 9 - Cabezal y aletas | Dimensionamiento del peralte de la zapata del cabezal hasta que su armado cumple | `M9_cabezal` |
 | `FH.FACTOR_P24` | Fase 1-bis - Hidrologia: caudal de diseño | Factor de intervalo fijo de la serie de 24 horas: por cuanto se multiplica cada maximo anual antes del ajuste | sin `paso()` y sin mención fuera del registro |
 | `FH.RM_C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia del metodo racional modificado, por el numero de curva: umbral de escorrentia y ecuacion (35) | `MH_hidrologia` |
 | `FH.RM_CAUDAL` | Fase 1-bis - Hidrologia: caudal de diseño | Caudal de diseño por el metodo racional modificado, Q = 0.278 · C · I · A · K | `MH_hidrologia` |
