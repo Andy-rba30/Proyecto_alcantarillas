@@ -457,6 +457,36 @@ V1 = _fundamento(
         "con y/D = 0.135 sobre un barril que iba lleno (EXT-M-01)."),
 )
 
+# --- VE-3.13 (decision 8 del dueño) --- EL DIAMETRO GOBERNADO POR EL NIVEL
+# DEL RECEPTOR. No es una verificacion nueva ni cambia ningun diametro: dice,
+# cuando V1 descarto escalones SOLO por el TW bajo «no_cumple», que diametro
+# bastaria por la hidraulica sola y con que descenso del TW cumpliria. El
+# verbo es el de V1 --RECOMIENDA, la cita del 25 %--, porque lo que este paso
+# lleva de la fuente es el mismo umbral; que «no_cumple» descarte por el
+# receptor es la eleccion del criterio, que viaja como `EleccionDeProyecto`.
+V1_RECEPTOR = _fundamento(
+    id="F5.V1.RECEPTOR",
+    fase=F5,
+    que_paso=("Diametro gobernado por el nivel del receptor: el que bastaria "
+              "por la hidraulica sola y el descenso del tirante del receptor "
+              "con el que cumpliria el borde libre"),
+    por_que=(
+        "Cuando el tirante del receptor supera el llenado admisible, el "
+        "borde libre del barril lo fija el receptor y no el caudal de "
+        "diseño: ningun diametro menor que ese tirante lo resuelve, y lo "
+        "que lo resuelve es la cota de la salida o la rasante. Con la "
+        "lectura que descarta esos diametros el adoptado puede ser varios "
+        "escalones mayor que el que el caudal pide, y el revisor tiene que "
+        "saberlo para decidir si sube el diametro o mueve la salida."),
+    verbo=Verbo.RECOMIENDA,
+    citas=("MC_HHD.4.1.1.3.7b",),
+    que_pasa_si_no_se_hace=(
+        "La memoria imprimiria un diametro mayor del que el caudal pide sin "
+        "decir que lo decidio el nivel del receptor, y la alternativa de "
+        "bajar ese nivel o subir la salida quedaria fuera de la vista del "
+        "proyectista."),
+)
+
 # EL VERBO ES `RECOMIENDA` Y NO `OBLIGA`, Y ESO NO ES TIMIDEZ: es la unica
 # lectura que las citas sostienen. La primera de las dos --- «debe contemplar
 # mantener un borde libre minimo» --- SI es EXIGENCIA, de modo que poner

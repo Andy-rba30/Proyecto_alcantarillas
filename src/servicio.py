@@ -1868,6 +1868,13 @@ class InformePunto:
         # la de diseño.
         for _, v in self.verificaciones():
             avisos.extend(a for a in v.avisos if a not in avisos)
+        # --- VE-3.13 (decision 8 del dueño) --- el diametro que goberno el
+        # nivel del receptor: lo que bastaria por la hidraulica sola y la
+        # alternativa de cota, con el texto que MD emitio.
+        gobierno = (self.resultado.gobierno_por_receptor
+                    if self.resultado is not None else None)
+        if gobierno is not None and gobierno.aviso not in avisos:
+            avisos.append(gobierno.aviso)
         # --- T-9 --- Los de la Fase 10: los de la longitud por capacidad
         # (pendiente de la cuneta fuera de la banda del Manual, capacidad
         # gobernada por la velocidad limite, los del caudal de aporte) y el

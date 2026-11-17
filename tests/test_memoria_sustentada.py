@@ -563,6 +563,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # a la estabilidad. Y el del PERALTE (VE-3.9), que cuelga del armado.
         # Que se emiten lo mide tests/test_ve3_dimensionamiento_cabezal.py.
         "F9.DIMENSIONADO", "F9.DIMENSIONADO_PERALTE",
+        # --- VE-3.13 (decision 8 del dueño) --- EL DIAMETRO GOBERNADO POR
+        # EL NIVEL DEL RECEPTOR: esta corrida no tiene ningun punto cuyo
+        # diametro lo decida el TW bajo «no_cumple». Que se emite lo mide
+        # tests/test_ve3_13_gobierno_receptor.py (E07 de los ensayos).
+        "F5.V1.RECEPTOR",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve

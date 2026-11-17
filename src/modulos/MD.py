@@ -181,8 +181,14 @@ from typing import (Callable, List, Optional, Protocol, Sequence, Tuple,
                     Iterable)
 
 from src import criterios_adoptados as ca
+import dataclasses
+
 from src.modelos import (CondicionRasante,
                      CriterioPendienteError,
+                     EleccionDeProyecto,
+                     GobiernoPorReceptor,
+                     Magnitud,
+                     paso,
                      DatoFaltanteError,
                      DatoInvalidoError,
                      DictamenDurabilidad,
@@ -1071,14 +1077,21 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     # falta, cuales de sus escalones SI se evaluaron y desde cual no (H1 de
     # la auditoria de T-4).
     escalones: List[PasoDiseno] = []
+    # --- VE-3.13 --- TODOS los escalones recorridos, de todos los
+    # materiales y en orden, con su `Material`: los necesita
+    # `_gobierno_por_receptor` para saber que diametro adoptaria «aviso».
+    recorridos: List[Tuple[Material, PasoDiseno]] = []
+    material_en_curso: List[Material] = []
 
-    def _anota(paso: PasoDiseno) -> None:
-        escalones.append(paso)
+    def _anota(paso_diseno: PasoDiseno) -> None:
+        escalones.append(paso_diseno)
+        recorridos.append((material_en_curso[-1], paso_diseno))
         if registrar is not None:
-            registrar(paso)
+            registrar(paso_diseno)
 
     for material in candidatos:
         del escalones[:]
+        material_en_curso.append(material)
         try:
             resultado, motivo = disenar_material(
                 punto, material, Q=Q, S=S, L=L, TW=TW, verificar=verificar,
@@ -1153,6 +1166,13 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
             _exigir_criterios_validos(invalidos_de_criterio)
             _exigir_metodo_evaluable(no_evaluables)
             _exigir_datos_presentes(faltantes)
+            # --- VE-3.13 (decision 8 del dueño) --- si el diametro lo
+            # goberno el NIVEL DEL RECEPTOR, se dice; el diametro no cambia.
+            gobierno = _gobierno_por_receptor(punto, resultado, recorridos,
+                                              verificar)
+            if gobierno is not None:
+                resultado = dataclasses.replace(
+                    resultado, gobierno_por_receptor=gobierno)
             return resultado
 
         fallos.append(f"{material.nombre}: {motivo}")
@@ -1612,3 +1632,149 @@ def disenar_lote(puntos: Iterable[PuntoCritico], *, L: float, TW: float,
         except ErrorProyecto as exc:
             resultados.append(_resultado_fallido(punto, exc))
     return resultados
+
+
+# ===========================================================================
+# VE-3.13 (decision 8 del dueño) -- el diametro gobernado por el receptor
+# ===========================================================================
+
+def _descartado_solo_por_el_receptor(escalon: PasoDiseno) -> bool:
+    """
+    True si el escalon se descarto UNICAMENTE por V1 y V1 dice que fue el
+    nivel del receptor (`Verificacion.descarta_solo_el_receptor`: con su
+    tirante propio el barril conserva el borde libre, y la lectura de
+    'borde_libre_bajo_tw_ahogante' es «no_cumple»). Un escalon que ademas
+    incumple otra verificacion no cuenta: no lo gobierna solo el receptor.
+    """
+    incumplidas = escalon.incumplidas
+    return (len(incumplidas) == 1 and incumplidas[0].codigo == "V1"
+            and incumplidas[0].descarta_solo_el_receptor)
+
+
+def _gobierno_por_receptor(punto: PuntoCritico, adoptado: ResultadoPunto,
+                           recorridos: Sequence[Tuple[Material, PasoDiseno]],
+                           verificar: Verificador
+                           ) -> Optional[GobiernoPorReceptor]:
+    """
+    --- VE-3.13 --- Si V1 descarto escalones SOLO por el nivel del receptor,
+    el diametro adoptado lo goberno el receptor y no el caudal. Para decir
+    que diametro bastaria por la hidraulica sola se vuelve a pasar la Fase 5
+    --con el MISMO `verificar` de la corrida-- por esos escalones, en el
+    orden en que se recorrieron y con la lectura «aviso» FORZADA
+    (`M5.lectura_bajo_tw_forzada`, que no declara nada): el primero que
+    cierra es el que «aviso» adoptaria. Nada de esa pasada se publica salvo
+    cual cerro.
+
+    None --nada que decir-- si ningun escalon se descarto solo por el
+    receptor, si ninguno de ellos cerraria con «aviso» antes del adoptado
+    (entonces el receptor no cambio el diametro), o si la pasada hipotetica
+    se detiene en una excepcion (no se afirma lo que no se pudo evaluar).
+    """
+    if not any(_descartado_solo_por_el_receptor(e) for _, e in recorridos):
+        return None
+    m5 = import_module(MODULO_VERIFICACIONES)
+    forzar = getattr(m5, "lectura_bajo_tw_forzada", None)
+    if forzar is None:
+        return None
+    hidraulico: Optional[Tuple[Material, PasoDiseno]] = None
+    for material, escalon in recorridos:
+        if escalon.aceptado:
+            break
+        if not _descartado_solo_por_el_receptor(escalon) or \
+                escalon.resultado_hidraulico is None:
+            continue
+        try:
+            with forzar(m5.LECTURA_TW_AVISO):
+                hipoteticas = tuple(verificar(
+                    punto=punto, material=material, seccion=escalon.seccion,
+                    resultado=escalon.resultado_hidraulico))
+        except ErrorProyecto:
+            return None
+        if hipoteticas and all(v.cumple for v in hipoteticas):
+            hidraulico = (material, escalon)
+            break
+    if hidraulico is None:
+        return None
+
+    material_h, escalon_h = hidraulico
+    v1 = next(v for v in escalon_h.verificaciones if v.codigo == "V1")
+    y_sobre_D_max = v1.valor_admisible
+    tw = escalon_h.resultado_hidraulico.TW_m
+    D_h = escalon_h.seccion.altura
+    tw_admisible = y_sobre_D_max * D_h
+    descenso = tw - tw_admisible
+
+    adoptado_nombre = adoptado.material.nombre
+    descartados = tuple(
+        (e.seccion.etiqueta() if m.nombre == adoptado_nombre
+         else f"{m.nombre} {e.seccion.etiqueta()}")
+        for m, e in recorridos if _descartado_solo_por_el_receptor(e))
+    etiqueta_h = (escalon_h.seccion.etiqueta() if material_h.nombre ==
+                  adoptado_nombre else
+                  f"{material_h.nombre} {escalon_h.seccion.etiqueta()}")
+    etiqueta_adoptada = adoptado.seccion.etiqueta()
+    criterio_tw = m5.CRITERIO_BORDE_LIBRE_BAJO_TW
+    ficha = ca.criterio(criterio_tw)
+    alternativa = (
+        f"ALTERNATIVA que el proyectista evalua, no es un remedio verificado: "
+        f"con el tirante del receptor {descenso:.3f} m mas bajo --o la "
+        f"solera de salida {descenso:.3f} m mas alta-- el {etiqueta_h} "
+        f"cumpliria V1 (TW <= {y_sobre_D_max:g} x {D_h:.2f} = "
+        f"{tw_admisible:.3f} m sobre la solera). Las demas fases NO se "
+        "recorrieron con esa cota: la pendiente, la longitud, V4 y el "
+        "cabezal cambian con ella y hay que volver a correr el punto.")
+    paso_gobierno = paso(
+        "F5.V1.RECEPTOR",
+        codigo="V1",
+        que=("El diametro lo goberno el nivel del receptor, no el caudal de "
+             "diseño"),
+        formula="descenso = TW - (y/D)max x D_h",
+        sustitucion=(
+            Magnitud("TW", tw, "m",
+                     "tirante del receptor sobre la solera de salida, el "
+                     "que V1 juzgo (paso 1.3)"),
+            Magnitud("(y/D)max", y_sobre_D_max, "",
+                     "el umbral adoptado de V1"),
+            Magnitud("D_h", D_h, "m",
+                     f"altura del {material_h.nombre} {escalon_h.seccion.etiqueta()}, "
+                     "el que la lectura «aviso» adopta: cumple toda la Fase "
+                     "5 con el borde libre de su tirante propio (pasada "
+                     "hipotetica con esa lectura, en el mismo orden de la "
+                     "progresion)"),
+        ),
+        resultado=Magnitud(
+            "descenso", descenso, "m",
+            "lo que el tirante del receptor tendria que bajar -- o la "
+            "solera de salida subir -- para que el diametro hidraulico "
+            "cumpla V1"),
+        elecciones=(EleccionDeProyecto(
+            que_se_adopto="lectura del borde libre cuando lo toma el nivel "
+                          "del receptor",
+            valor=str(ca.valor(criterio_tw)),
+            entre=tuple(str(v) for v in (ficha.sensibilidad or ())),
+            de_donde=f"el criterio '{criterio_tw}' [A]",
+            por_que=ficha.justificacion,
+            cita_id="MC_HHD.4.1.1.3.7b#LLENA",
+            clave_criterio=criterio_tw),),
+        nota_del_proyecto=(
+            f"Con «{ca.valor(criterio_tw)}», V1 descarto "
+            f"{', '.join(descartados)} solo porque el TW les quita el borde "
+            f"libre; el diametro adoptado ({adoptado_nombre} "
+            f"{etiqueta_adoptada}) no cambia. " + alternativa),
+    )
+    aviso = (
+        f"V1: el diametro {adoptado_nombre} {etiqueta_adoptada} lo goberno el "
+        f"nivel del receptor, no el caudal de diseño: V1 descarto "
+        f"{', '.join(descartados)} solo porque el TW ({tw:.3f} m sobre la "
+        f"solera de salida) les quita el borde libre ('{criterio_tw}' = "
+        f"«{ca.valor(criterio_tw)}»). Por la hidraulica sola bastaria "
+        f"{material_h.nombre} {escalon_h.seccion.etiqueta()}, el que la "
+        "lectura «aviso» adopta. " + alternativa)
+    return GobiernoPorReceptor(
+        material_adoptado=adoptado_nombre,
+        seccion_adoptada=adoptado.seccion,
+        material_hidraulico=material_h.nombre,
+        seccion_hidraulica=escalon_h.seccion,
+        escalones_descartados=descartados,
+        tw_m=tw, y_sobre_D_max=y_sobre_D_max, tw_admisible_m=tw_admisible,
+        descenso_tw_m=descenso, paso=paso_gobierno, aviso=aviso)
