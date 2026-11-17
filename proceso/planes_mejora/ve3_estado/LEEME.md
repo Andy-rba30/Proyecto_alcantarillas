@@ -46,6 +46,10 @@ contra el encargo de VE-3.9 como BORRADOR, terminar, y rebasar sobre la rama de 
 - Guardar el progreso periódicamente (este archivo y las ramas de respaldo).
 - Paso 0.10 m y tope 1.5·H de la zapata como valor de archivo; que crezca también el espesor;
   VC3 sin F bloquea el punto (2026-11-17, tarde).
+- Sin cuota de Fable: las revisiones independientes y los ensayos de diseño se hacen con Opus a
+  esfuerzo máximo. Ensayos del conducto en curso (informe en
+  /home/user/verificacion_fable/ENSAYOS_DISENO_CONDUCTO.md, se copia aquí al terminar); los del
+  cabezal, después de VE-3.9.
 
 ## Pendiente después de lo que está en curso
 
