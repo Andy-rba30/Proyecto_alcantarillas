@@ -330,8 +330,11 @@ def test_n2_la_ficha_del_saturado_declara_su_signo():
 
 
 def test_n2_ningun_otro_criterio_declara_positivo():
+    # Desde VE-3 (ficha VE2-05) tambien la capacidad portante admisible,
+    # que paso a [S] con el mismo campo: el censo crece por decision del
+    # dueño, no en silencio.
     con_signo = sorted(k for k, c in ca.CRITERIOS.items() if c.positivo)
-    assert con_signo == [CLAVE_SATURADO]
+    assert con_signo == ["capacidad_portante_adm", CLAVE_SATURADO]
 
 
 @pytest.mark.parametrize("valor", [0, 0.0, -20.0])

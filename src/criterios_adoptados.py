@@ -5238,7 +5238,13 @@ CRITERIOS: Dict[str, Criterio] = {
         # traer el suyo en `--datos-externos` (`suelo_fundacion`), que gana.
         valor=None,                 # completar con el EMS
         nivel=NIVEL_EXPEDIENTE,
-        etiqueta="A",
+        # ES [S], NO [A] (VE-3, ficha VE2-05, decision del dueño): son los
+        # parametros que el EMS de ESTE sitio mide; no hay rango que elegir y
+        # se defienden con la trazabilidad de la lectura, como el peso
+        # especifico saturado del relleno desde N2 de VE-2. Sin `positivo`:
+        # la forma es un dict (un booleano y tres numeros) y sus campos los
+        # valida el consumidor, `M9.validar_suelo_fundacion`.
+        etiqueta="S",
         forma=FORMA_DICT_CON_CAMPOS,
         # Los cuatro campos obligatorios (cohesivo, c_kpa, phi_grados,
         # gamma_kn_m3) NO van en `campos_obligatorios`, que exige TEXTO en
@@ -5273,6 +5279,20 @@ CRITERIOS: Dict[str, Criterio] = {
                "de corte directo o triaxial, o correlacion con SPT, por "
                "calicata. E.050 Art. 20 (cita E050.20) para la regla de c "
                "y phi",
+        trazabilidad="NO SE HA EJECUTADO NINGUN ENSAYO. La lectura que hace "
+                     "falta: del EMS del expediente, por calicata y a la "
+                     "profundidad de desplante del cabezal, si el suelo se "
+                     "trata como cohesivo o friccionante, la cohesion (kPa), "
+                     "el angulo de friccion interna (grados) y el peso "
+                     "especifico (kN/m3), con el ensayo (corte directo o "
+                     "triaxial, o la correlacion con SPT declarada), y si "
+                     "el EMS las entrega la resistencia portante nominal y "
+                     "la presion admisible. Se declara con el ensayo, la "
+                     "calicata, la profundidad y el laboratorio "
+                     "(`DeEnsayo.trazabilidad_exigida`). Es el valor de "
+                     "CORREDOR: vale mientras el EMS lo de por tramo "
+                     "homogeneo, y un punto con otro suelo trae el suyo en "
+                     "`suelo_fundacion` de `--datos-externos`, que gana",
         reemplazado_por="Corte directo o SPT",
         resolucion=DeEnsayo(
             ensayo="parametros de resistencia y peso especifico del suelo de "
@@ -5287,11 +5307,24 @@ CRITERIOS: Dict[str, Criterio] = {
     "capacidad_portante_adm": Criterio(
         valor=None,                 # completar
         nivel=NIVEL_EXPEDIENTE,
-        etiqueta="A",
+        # ES [S], NO [A] (VE-3, ficha VE2-05, decision del dueño): la
+        # presion admisible la entrega el EMS de ESTE sitio; no hay rango que
+        # elegir. `positivo`: una presion admisible no es cero ni negativa.
+        etiqueta="S",
         forma=FORMA_FLOAT,
+        positivo=True,
         concepto="Capacidad portante admisible del terreno de fundacion",
-        justificacion="Derivada de c_phi_fundacion, que es a su vez adoptado",
+        justificacion="Derivada de c_phi_fundacion, que es a su vez un dato "
+                      "de ensayo del EMS ([S])",
         fuente="PENDIENTE",
+        trazabilidad="NO SE HA EJECUTADO NINGUN ENSAYO. La lectura que hace "
+                     "falta: la presion admisible del terreno de fundacion "
+                     "que entrega el EMS, en kPa, con la calicata, la "
+                     "profundidad de desplante, el metodo de calculo y el "
+                     "factor de seguridad que adopta "
+                     "(`DeEnsayo.trazabilidad_exigida`). Depende de la "
+                     "zapata de cada cabezal, de modo que un valor de "
+                     "corredor solo vale para un tramo homogeneo",
         reemplazado_por="EMS conforme a E.050",
         # --- T-7b --- SIGUE SIN CONSUMIDOR, y ahora con otra razon: la
         # presion admisible que el EMS entregue entra al ensamble de
@@ -5319,6 +5352,11 @@ CRITERIOS: Dict[str, Criterio] = {
     "Mw_licuefaccion": Criterio(
         valor=None,                 # VACIO: bloquea la evaluacion de licuefaccion
         nivel=NIVEL_EXPEDIENTE,
+        # SIGUE [A] (VE-3, ficha VE2-05, decision del dueño), aunque se
+        # resuelva `DeEnsayo` como los dos parametros del suelo que pasaron
+        # a [S]: elegir el escenario sismico -- la desagregacion del peligro
+        # o el sismo de subduccion que se adopta -- es una decision del
+        # proyectista, no la lectura de un ensayo.
         etiqueta="A",
         forma=FORMA_FLOAT,
         concepto="Magnitud sismica para el factor de escala de magnitud (MSF)",

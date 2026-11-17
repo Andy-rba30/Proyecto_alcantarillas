@@ -1675,8 +1675,8 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | `TW_receptor` | [A] | sin valor de archivo y el juego no lo declara: no hay valor efectivo desde el que barrer; dato del receptor (ANA / Junta), y con la sección de archivo de `seccion_receptor` nunca se lee |
 | `seccion_cuneta` | [A] | ventana POR CAMPO de un dict: barrerlo exige elegir una esquina por campo, y no se hizo (NO SE MIDIÓ) |
 | `TR_evento_extremo` | [A] | el juego lo declara (500 años) pero la ficha no tiene ventana: el TR del evento extremo lo fija el Propietario con el estudio hidrológico |
-| `c_phi_fundacion` | [A] | dato de ensayo o de sitio, sin ventana: se declara con su trazabilidad, no se elige |
-| `capacidad_portante_adm` | [A] | sin valor de archivo y el juego no lo declara: no hay valor efectivo desde el que barrer; dato de ensayo o de sitio, sin ventana: se declara con su trazabilidad, no se elige; sin consumidor (`tests/test_nivel_medido.py::SIN_CONSUMIDOR_Y_SIN_MEDIDA`) |
+| `c_phi_fundacion` | [S] | dato de ensayo o de sitio, sin ventana: se declara con su trazabilidad, no se elige |
+| `capacidad_portante_adm` | [S] | sin valor de archivo y el juego no lo declara: no hay valor efectivo desde el que barrer; dato de ensayo o de sitio, sin ventana: se declara con su trazabilidad, no se elige; sin consumidor (`tests/test_nivel_medido.py::SIN_CONSUMIDOR_Y_SIN_MEDIDA`) |
 | `Mw_licuefaccion` | [A] | sin valor de archivo y el juego no lo declara: no hay valor efectivo desde el que barrer; dato de ensayo o de sitio, sin ventana: se declara con su trazabilidad, no se elige; sin consumidor (`tests/test_nivel_medido.py::SIN_CONSUMIDOR_Y_SIN_MEDIDA`) |
 | `diametros_normalizados` | [C] | su valor es una fila o un conjunto de filas de una tabla (forma estructurada) y la ventana, si la hay, va por fila o en prosa: no es legible por máquina |
 | `secciones_cajon_normalizadas` | [A] | su valor es una fila o un conjunto de filas de una tabla (forma estructurada) y la ventana, si la hay, va por fila o en prosa: no es legible por máquina |

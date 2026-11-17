@@ -253,8 +253,8 @@ Ningún criterio se rellenó en `criterios_adoptados.py`: los que el juego neces
 | `remanso_derecho_via` | [A] | expediente | — | decision | sí | sí | Fase 5, V5 de la hoja de ruta. |
 | `TR_evento_extremo` | [A] | expediente | — | decision | sí | sí | PENDIENTE - Fase 5, V8 de la hoja de ruta: '[N] verificacion, no diseño', sin numeral que fije el TR ni el umbral |
 | `phi_relleno_trasdos` | [A] | expediente | — | ensayo | sí | sí | PENDIENTE |
-| `c_phi_fundacion` | [A] | expediente | — | ensayo | sí | sí | Estudio de mecanica de suelos (EMS) del expediente: ensayo de corte directo o triaxial, o correlacion con SPT, por calicata. |
-| `capacidad_portante_adm` | [A] | expediente | — | ensayo | no (censado) | no | PENDIENTE |
+| `c_phi_fundacion` | [S] | expediente | — | ensayo | sí | sí | Estudio de mecanica de suelos (EMS) del expediente: ensayo de corte directo o triaxial, o correlacion con SPT, por calicata. |
+| `capacidad_portante_adm` | [S] | expediente | — | ensayo | no (censado) | no | PENDIENTE |
 | `Mw_licuefaccion` | [A] | expediente | — | ensayo | no (censado) | no | PENDIENTE: desagregacion del peligro sismico o adopcion justificada del sismo de diseno de la subduccion del norte peruano |
 | `D_max_catalogo` | [A] | perfil | opcional | decision | sí | no | NINGUNA NORMA fija la disponibilidad de mercado. |
 | `h_eq_bajo_altura_tabulada` | [A] | expediente | — | decision | sí | no | AASHTO LRFD 9a ed. |

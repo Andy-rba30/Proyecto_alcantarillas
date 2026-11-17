@@ -1625,7 +1625,7 @@ class ExpedienteApp:
             # esa separacion es el guardian
             # `test_ningun_criterio_adoptado_lleva_ya_la_etiqueta_N`.
             # Anunciar [N] aqui invitaba a leer como norma lo que es
-            # adopcion. [S] SI esta -- hoy cuatro entradas, los datos de sitio
+            # adopcion. [S] SI esta -- hoy seis entradas, los datos de sitio
             # pendientes de ensayo que comparten tablero con los criterios --
             # y faltaba.
             text="Etiquetas: [N->] normativo por analogia  "

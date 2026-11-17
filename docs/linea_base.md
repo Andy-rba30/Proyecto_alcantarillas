@@ -875,3 +875,13 @@ fórmulas un escalón de TMC bajo control de salida pasa a comparar `V_salida` =
 contra su techo de 4.572 m/s: cumple igual que antes.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 19. VE-3.2 (ficha VE2-05): los parámetros del suelo de fundación son [S]; ningún número se mueve (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh`. `c_phi_fundacion` y
+`capacidad_portante_adm` pasan de [A] a [S] pendiente de ensayo, con su `trazabilidad`, y la
+capacidad portante lleva `positivo`. Resultado: `criterios_sha1` en los cuatro JSON y en las
+cuatro memorias, y la etiqueta de esas dos filas ([A] → [S]) en las tablas de criterios de
+`memoria_expediente.html`, `memoria_perfil.html` y `memoria_perfil_ancha.html`. Nada más.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
