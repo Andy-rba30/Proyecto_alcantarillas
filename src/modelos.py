@@ -5211,6 +5211,11 @@ class IntentoDeZapata:
     condiciones: Tuple[str, ...]
     incumplidas: Tuple[str, ...]
     al_tope: bool = False
+    # --- VE-3.14 (H-5, H-12 de los ensayos de diseño del cabezal) --- La
+    # punta del intento cuando crecio la punta (el pase de la punta), y si
+    # el intento es de la re-optimizacion del ancho tras el peralte.
+    punta: Optional[float] = None
+    reoptimizado: bool = False
 
     @property
     def cumple(self) -> bool:
