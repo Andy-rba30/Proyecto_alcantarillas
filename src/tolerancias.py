@@ -87,7 +87,12 @@ TOL_UMBRAL_NORMATIVO = 1e-9
 # magnitud por debajo de cualquier diferencia de rama: la velocidad de n_min
 # sobre el tirante de n_max --la formula anterior a VE-2-- se aparta de la
 # continuidad un 4.8 % como minimo. Cambiarla no mueve ninguna magnitud:
-# solo la lee la comprobacion de continuidad de la suite.
+# solo la lee la comprobacion de continuidad de la suite. VALE PARA EL
+# DOMINIO MEDIDO (Q desde el 0.1 % del lleno): como el `xtol` es absoluto,
+# la desviacion relativa crece aproximadamente como 1/Q, y la verificacion
+# de las correcciones midio 1.81e-8 con Q desde el 0.01 % del lleno. Una
+# comprobacion de continuidad por debajo del 0.1 % del lleno tiene que medir
+# su propia tolerancia.
 TOL_REL_CONTINUIDAD_MANNING = 1e-8
 
 # ---------------------------------------------------------------------------

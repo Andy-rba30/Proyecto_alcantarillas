@@ -234,6 +234,13 @@ def test_m4_el_signo_solo_se_declara_en_un_numero():
     with pytest.raises(ValueError, match="no_negativo"):
         ca._verificar_criterio(CLAVE_NIVEL, c)
 
+    # Tambien SIN VALOR (verificacion de las correcciones de VE-2, N7): la
+    # ficha esta mal escrita aunque el criterio siga vacio. Un mutante que
+    # cortara con `valor is None` antes de mirar la forma sobrevivia.
+    vacio = replace(c, valor=None)
+    with pytest.raises(ValueError, match="no_negativo"):
+        ca._verificar_criterio(CLAVE_NIVEL, vacio)
+
 
 def test_m4_la_segunda_linea_del_consumidor_se_queda():
     """
