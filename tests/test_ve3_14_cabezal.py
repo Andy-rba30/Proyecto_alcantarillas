@@ -482,3 +482,43 @@ def test_el_incremento_sismico_con_agua_va_con_el_peso_total(juego):
                + 20.0 * d["h_w"] ** 2 / 2)
     esperado = (d["K_AE"] * (1.0 - d["k_v"]) - d["K_A"]) * gamma_t
     assert d["P_AE"] - d["P_A"] == pytest.approx(esperado, rel=REL_TRANSPORTE)
+
+
+
+# ===========================================================================
+# BLOQUE 5 (H-10, H-11): lo que la app dice de si misma
+# ===========================================================================
+
+def test_el_alcance_declarado_ya_no_dice_que_el_ancho_no_se_itera():
+    from src.modelos import ALCANCE_DECLARADO
+    a = next(x for x in ALCANCE_DECLARADO
+             if x.clave == "iteracion_ancho_zapata_cabezal")
+    assert "no se itera:" not in a.texto
+    assert "NO FACTIBLE" in a.texto and "VE-3.14" in a.texto
+
+
+def test_el_resumen_atribuye_el_metodo_no_evaluable_a_su_causa(tmp_path):
+    """
+    E3 con el relleno muy abierto: la etapa sismica se detiene por «metodo
+    no evaluable» y no hay ningun criterio sin valor. El RESUMEN decia
+    «Mientras un criterio siga sin valor...»; hoy dice la causa.
+    """
+    import cli
+    import json
+    import subprocess
+    import sys
+    args = [sys.executable, str(RAIZ / "cli.py"), str(E3 / "puntos.csv"),
+            "--alcance", "expediente",
+            "--datos-externos", str(E3 / "externos.json"),
+            "--datos-sitio", str(E3 / "sitio.json")]
+    for clave, valor in json.loads(
+            (E3 / "declaraciones.json").read_text(encoding="utf-8")).items():
+        args += ["--declarar", f"{clave}={valor!r}"]
+    args += ["--declarar",
+             "agua_del_relleno_bajo_sismo='relleno_muy_abierto'"]
+    r = subprocess.run(args, cwd=RAIZ, capture_output=True, text=True,
+                       check=False)
+    resumen = r.stdout[r.stdout.rindex("RESUMEN"):]
+    assert "metodo no evaluable" in resumen
+    assert "Mientras un criterio siga sin valor" not in resumen
+    assert cli.TipoDeBloqueo is not None
