@@ -1641,6 +1641,19 @@ coronación en 37.48, y con 37.30 el punto entero sale `DisenoNoFactibleError`.
    remanso** (paso a paso o HEC-RAS) y la coronación del canal **a lo largo** del
    tramo, no solo en el cruce.
 
+> **Cerrados (VE-3.6 y VE-3.7, 2026-11-17).** El hueco 1 lo cierra **VC3**: las pérdidas
+> de la obra —(cota de entrada + HW) − (fondo del canal aguas abajo + TW)— contra el
+> desnivel F que el perfil del canal provee en el cruce, criterio [C] del USBR *Design of
+> Small Canal Structures* (1978), núm. 2-6; F es dato del canal (`desnivel_perfil_canal_m`)
+> y VC3 va en la tabla de la Fase 5, de modo que agranda la sección. El hueco 2 lo cierra
+> el **perfil por paso directo** del canal (`M3.perfil_remanso_trapecial`): en un canal de
+> pendiente fuerte la S1 hasta el resalto (el conjugado del normal) ya concluye, y en uno
+> suave la M1 se da hasta (1 + f) y_n con el criterio opcional
+> `fraccion_fin_remanso_canal`. Lo que sigue abierto: la coronación del canal **a lo largo**
+> del tramo (el perfil supone el canal prismático, con la coronación paralela al fondo, y
+> con esa hipótesis el cruce es la sección crítica) y el mismo perfil en V5 de las Familias
+> A y B, que necesita la sección del cauce de aproximación.
+
 **Lo que este apartado decía y era inexacto**, dicho porque la inexactitud dirigió mal
 la planificación: «VC1 necesita **el nivel de agua de diseño** y el borde libre del
 canal». El nivel de agua de diseño **no hace falta** para la mitad del borde libre

@@ -170,7 +170,8 @@ from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
                      SECCION_RECEPTOR_MEDIDA, SeccionReceptor,
                      SinTiranteNormal, TiranteNormal,
                      TWDeterminado, ViaDelTW, paso)
-from src.tolerancias import TOL_BRENT, TOL_THETA_BORDE
+from src.tolerancias import (PASOS_PERFIL_REMANSO, TOL_BRENT,
+                              TOL_THETA_BORDE)
 
 NUMERAL_MANNING = "4.1"
 
@@ -659,6 +660,104 @@ def tirante_critico_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:
                f"{y_hi:g} m: la combinacion de solera {seccion.b_m} m y "
                f"talud {seccion.z_HV} H:V no tiene sentido fisico para ese "
                "caudal")
+
+
+def tirante_conjugado_trapecial(*, Q: float, seccion: SeccionReceptor,
+                                y: float) -> float:
+    """
+    --- VE-3.7 --- El tirante CONJUGADO (secuente) de `y` en la seccion
+    trapecial del canal, m: el otro tirante con la misma funcion momentum
+    M(y) = Q^2 / (g A) + y_G A, con y_G = y (3 b + 2 z y) / (6 (b + z y)) la
+    profundidad del centroide del trapecio bajo la lamina. Es donde el
+    HDS-5 situa el resalto al final de una S1 (num. 3.5.1, la profundidad
+    secuente; cita HDS5_3ED.3.5.1#S1 en su nota); la ecuacion de momentum
+    de un resalto en canal prismatico horizontal es de manual y el
+    algebra del trapecio, del proyecto.
+
+    Con `y` supercritico devuelve el subcritico, y al reves. El corchete se
+    abre desde el critico por duplicacion, como en los tirantes normal y
+    critico de esta seccion.
+    """
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
+    b, z = seccion.b_m, seccion.z_HV
+
+    def M(t: float) -> float:
+        A = area_trapecial(b=b, z=z, y=t)
+        y_G = t * (3 * b + 2 * z * t) / (6 * (b + z * t))  # literal-ok: centroide del trapecio
+        return Q * Q / (G * A) + y_G * A
+
+    y_c = tirante_critico_trapecial(Q=Q, seccion=seccion)
+    objetivo = M(y)
+    if y < y_c:
+        y_hi = max(2 * y_c, seccion.altura_total_m)
+        for _ in range(DUPLICACIONES_MAX_CORCHETE):
+            if M(y_hi) > objetivo:
+                return brentq(lambda t: M(t) - objetivo, y_c, y_hi,
+                              xtol=TOL_BRENT)
+            y_hi *= 2                                     # duplicacion del corchete
+    else:
+        return brentq(lambda t: M(t) - objetivo, TOL_THETA_BORDE, y_c,
+                      xtol=TOL_BRENT)
+    raise LimiteNumericoError(
+        "tirante_conjugado_canal", valor=y,
+        motivo=f"no hay tirante conjugado de y = {y} m con Q = {Q} m3/s en "
+               "la seccion declarada del canal")
+
+
+def perfil_remanso_trapecial(*, Q: float, seccion: SeccionReceptor,
+                             y_inicio: float, y_fin: float,
+                             pasos: int = PASOS_PERFIL_REMANSO
+                             ) -> Tuple[float, Tuple[Tuple[float, float], ...]]:
+    """
+    --- VE-3.7 --- El perfil de la lamina en el canal prismatico trapecial
+    por PASO DIRECTO, aguas ARRIBA desde la boca de la obra (`y_inicio`)
+    hasta `y_fin`: el mismo metodo con que el HDS-5 calcula la lamina en el
+    barril (num. 3.5, cita HDS5_3ED.3.5#PERFIL; aqui sobre el canal), en
+    cada escalon
+
+        dx = (E_abajo - E_arriba) / (S - Sf_medio),   E = y + V^2 / (2 g),
+        Sf = (n Q / (A R^(2/3)))^2   (Manning, Manual num. 4.1.1.3.6)
+
+    Devuelve (longitud aguas arriba en m, estaciones (x, y)). Los escalones
+    van en progresion GEOMETRICA de (y - y_n), con y_n el tirante normal del
+    canal, para que la escalera no pierda precision cerca de la asintota de
+    una M1 (`tolerancias.PASOS_PERFIL_REMANSO`). Sirve para la M1 de un
+    canal suave (y_inicio > y_fin > y_n) y para la S1 de uno fuerte, hasta
+    el conjugado del normal (y_inicio > y_fin > y_c > y_n).
+    """
+    b, z = seccion.b_m, seccion.z_HV
+    S, n = seccion.S, seccion.n
+    y_n = tirante_normal_trapecial(Q=Q, seccion=seccion)
+    if not (y_inicio > y_fin > y_n and pasos >= 2):
+        raise DatoInvalidoError(
+            "perfil_remanso", valor=(y_inicio, y_fin, y_n),
+            motivo="el paso directo del remanso va de la boca hacia aguas "
+                   "arriba con el tirante decreciendo hacia el normal: "
+                   "y_inicio > y_fin > y_n")
+
+    def _E_Sf(t: float) -> Tuple[float, float]:
+        A = area_trapecial(b=b, z=z, y=t)
+        R = A / perimetro_trapecial(b=b, z=z, y=t)
+        V = Q / A
+        return t + V * V / (2 * G), (n * V / R ** (2 / 3)) ** 2   # literal-ok: Manning
+
+    d0, d1 = y_inicio - y_n, y_fin - y_n
+    x = 0.0
+    estaciones = [(0.0, y_inicio)]
+    E_a, Sf_a = _E_Sf(y_inicio)
+    for i in range(1, pasos + 1):
+        t = y_n + d0 * (d1 / d0) ** (i / pasos)
+        E_b, Sf_b = _E_Sf(t)
+        x += (E_a - E_b) / (S - (Sf_a + Sf_b) / 2)   # literal-ok: Sf medio del escalon
+        estaciones.append((x, t))
+        E_a, Sf_a = E_b, Sf_b
+    if not (x > 0 and math.isfinite(x)):
+        raise LimiteNumericoError(
+            "perfil_remanso", valor=x,
+            motivo=f"el paso directo del remanso no dio una longitud finita "
+                   f"y positiva entre y = {y_inicio} m y y = {y_fin} m "
+                   f"(y_n = {y_n} m)")
+    return x, tuple(estaciones)
 
 
 def seccion_del_receptor(seccion_medida: Optional[SeccionReceptor] = None

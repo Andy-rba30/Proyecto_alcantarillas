@@ -1654,7 +1654,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 ## 5. Los criterios que no se barren, por nombre
 
-86 barridos sobre 84 criterios; estos 62 no se barren, y la razón:
+86 barridos sobre 84 criterios; estos 63 no se barren, y la razón:
 
 | Criterio | Etiqueta | Por qué no se barre |
 |---|---|---|
@@ -1663,6 +1663,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | `F_pga` | [A] | su valor es una fila o un conjunto de filas de una tabla (forma estructurada) y la ventana, si la hay, va por fila o en prosa: no es legible por máquina |
 | `k_v` | [A] | forma compuesta (categoria o numero) con la ventana en prosa: ventana en prosa (un piso o una regla, sin dos extremos): no es legible por máquina y no se barrió (NO SE MIDIÓ) |
 | `pendiente_relleno_trasdos_i` | [A] | [A] OPCIONAL sin valor: sin declararlo rige la regla escrita en su ficha; el juego no lo declara |
+| `fraccion_fin_remanso_canal` | [A] | [A] OPCIONAL sin valor: sin declararlo rige la regla escrita en su ficha; el juego no lo declara |
 | `friccion_muro_suelo_delta` | [A] | [A] OPCIONAL sin valor: sin declararlo rige la regla escrita en su ficha; el juego no lo declara |
 | `riesgo_admisible_propietario` | [A] | [A] OPCIONAL sin valor: sin declararlo rige la regla escrita en su ficha; el juego no lo declara |
 | `coeficiente_escorrentia_superficie_vial` | [C] | Derivada de otros criterios o del registro: no se declara |

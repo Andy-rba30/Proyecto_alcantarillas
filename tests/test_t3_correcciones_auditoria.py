@@ -336,6 +336,14 @@ def test_h2_canal_de_pendiente_fuerte_el_remanso_no_concluye():
     El caso del auditor: canal rectangular b = 1.20, n = 0.014, S = 0.02,
     Q = 0.85, HW = 0.90. A mano: y_c = (Q^2/(g b^2))^(1/3) = 0.371 > y_n =
     0.231: el remanso es una S1 que termina en resalto y dh/S NO acota.
+
+    CAMBIADO EN VE-3.7, y el nombre se conserva por la historia: desde que
+    el perfil se calcula por paso directo (`M3.perfil_remanso_trapecial`),
+    el canal fuerte SI concluye -- con la S1 hasta el resalto, donde el
+    tirante baja al conjugado del normal --. Lo que sigue en pie de H2: dh/S
+    no se presenta como cota (`longitud_minima_m` None, sin «AL MENOS»). La
+    longitud la fija `tests/test_ve3_remanso.py` contra una integracion
+    independiente.
     """
     canal = SeccionReceptor(b_m=1.20, z_HV=0.0, S=0.02, n=0.014,
                             altura_total_m=1.20)
@@ -345,12 +353,12 @@ def test_h2_canal_de_pendiente_fuerte_el_remanso_no_concluye():
     y_n = _yn_rectangular(0.85, 1.20, 0.02, 0.014)
     assert y_c == pytest.approx(0.371, abs=TOL_RESULTADO)
     assert y_n == pytest.approx(0.231, abs=TOL_RESULTADO)
-    assert rem.evaluado and not rem.concluye
+    assert rem.evaluado and rem.concluye
     assert rem.y_critico_canal_m == pytest.approx(y_c, abs=TOL_BISECCION)
     assert rem.y_normal_canal_m == pytest.approx(y_n, abs=TOL_BISECCION)
     assert rem.longitud_minima_m is None
+    assert rem.longitud_remanso_m is not None and rem.longitud_remanso_m > 0
     assert "resalto" in rem.aviso and "AL MENOS" not in rem.aviso
-    assert "no concluye" in rem.aviso
 
 
 def test_h2_canal_suave_sigue_dando_la_cota_inferior():

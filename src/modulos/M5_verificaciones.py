@@ -2454,8 +2454,12 @@ def v5_remanso(*, punto: PuntoCritico,
         raise MetodoNoEvaluableError(
             "V5", "perfil de remanso paso a paso aguas arriba del embalse",
             "el metodo declarado en 'remanso_derecho_via' no esta "
-            "implementado: exige la seccion y la topografia del cauce de "
-            "aproximacion. Los metodos implementados son "
+            "implementado en V5: el perfil por paso directo existe desde "
+            "VE-3.7 para un canal prismatico trapecial "
+            "(`M3.perfil_remanso_trapecial`, el remanso de la Familia C), "
+            "pero V5 necesita la seccion, el n y la pendiente del CAUCE de "
+            "aproximacion, que no son dato de entrada (ficha T7B-01). Los "
+            "metodos implementados son "
             f"'{METODO_REMANSO_EMBALSE_A_NIVEL}' y "
             f"'{METODO_REMANSO_COTA_AFECTACION}'",
             id_punto=punto.id, rotulo=MOTIVO_METODO_NO_EVALUABLE_REMANSO)

@@ -7125,6 +7125,14 @@ class RemansoCanal:
     concluye: bool = False
     y_critico_canal_m: Optional[float] = None
     motivo_no_concluye: str = ""
+    # --- VE-3.7 --- La longitud del remanso por el PERFIL (paso directo,
+    # `M3.perfil_remanso_trapecial`) y como se obtuvo: en un canal fuerte,
+    # la S1 hasta el resalto (el conjugado del tirante normal); en uno
+    # suave, la M1 hasta (1 + fraccion) y_n si el criterio
+    # 'fraccion_fin_remanso_canal' esta declarado. None si no se calculo.
+    longitud_remanso_m: Optional[float] = None
+    metodo_longitud: str = ""
+    y_conjugado_canal_m: Optional[float] = None
 
 
 # ===========================================================================

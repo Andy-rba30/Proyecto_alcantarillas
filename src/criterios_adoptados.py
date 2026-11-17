@@ -1883,6 +1883,44 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    "fraccion_fin_remanso_canal": Criterio(
+        # --- VE-3.7 --- OPCIONAL, sin valor de archivo. El perfil M1 de un
+        # canal suave remansado es ASINTOTICO al tirante normal: no tiene un
+        # final, y ninguna fuente del repositorio fija donde cortarlo. Sin
+        # declararlo, `M7.remanso_canal` da la cota inferior de siempre (la
+        # horizontal del embalse, dh / S) y lo avisa; declarado, da ademas la
+        # longitud del perfil por paso directo hasta (1 + f) y_n.
+        # NIVEL: perfil, el de la etapa que lo consume (7.B, que corre a
+        # `--alcance perfil` en la Familia C con la seccion medida del
+        # canal). Ninguna corrida de referencia trae esa seccion, de modo que
+        # la medida de `tests/test_nivel_medido.py` no lo alcanza: lo mide
+        # `tests/test_ve3_remanso.py`.
+        valor=None,
+        opcional=True,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        concepto="Fraccion f del tirante normal del canal con que termina el "
+                 "perfil M1 del remanso de un paso de canal (Familia C): la "
+                 "longitud del remanso es la distancia aguas arriba hasta "
+                 "donde el tirante baja a (1 + f) y_n",
+        justificacion="Decide, solo si se declara, la longitud del remanso "
+                      "del canal que la memoria publica en un canal suave: "
+                      "una f menor alarga el perfil (la M1 se acerca al "
+                      "normal sin alcanzarlo). No cambia ningun diseño: la "
+                      "longitud es un aviso, y el nivel en el cruce lo "
+                      "juzgan VC1 y VC3",
+        fuente="Adopcion del proyectista: la fuente del metodo (el paso "
+               "directo, HDS-5 num. 3.5) no fija donde termina una curva "
+               "asintotica",
+        sensibilidad=(0.001, 0.05),
+        resolucion=Libre(
+            que_lo_fija="el proyectista, como tolerancia de fin del perfil; "
+                        "sin declararlo la longitud del perfil no se publica",
+            dominio="fraccion, 0 < f < 1",
+        ),
+    ),
+
     "friccion_muro_suelo_delta": Criterio(
         # --- T-7b --- YA NO BLOQUEA: es OPCIONAL. El angulo de friccion sobre
         # el plano de empuje sale de phi por la fraccion de

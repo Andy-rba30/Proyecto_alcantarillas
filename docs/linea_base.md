@@ -904,3 +904,12 @@ como cualquier fila de la tabla y puede agrandar la sección: lo fija
 `tests/test_ve3_familia_c.py` (C-01 con el fondo en el canal y F = 0.30 m pasa de
 1.20 × 0.90 a 1.50 × 1.20 m), fuera de la línea base y fuera del juego de T-11, cuyas
 variantes no mueven secciones.
+
+## 22. VE-3.7 (Familia C): el remanso del canal por paso directo; sólo la huella de `criterios_adoptados.py` (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh`. El perfil por paso directo
+(`M3.perfil_remanso_trapecial`) sólo corre en la Familia C con la sección medida del canal
+(`seccion_receptor_medida`), que las entradas de la línea base no traen: el remanso de C-01
+sigue «no se evaluó». Lo único que cambia es la huella de `criterios_adoptados.py` (el
+criterio opcional nuevo `fraccion_fin_remanso_canal`) en los cuatro JSON y en las memorias.
+**Diámetros, secciones, materiales y HW movidos: ninguno.**

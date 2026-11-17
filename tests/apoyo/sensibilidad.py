@@ -309,6 +309,9 @@ NO_BARRIBLES: Dict[str, str] = {
     "k_v": ("forma compuesta (categoria o numero) con la ventana en prosa: "
             + _R_PROSA),
     "pendiente_relleno_trasdos_i": _R_OPCIONAL,
+    # --- VE-3.7 --- solo cambia la longitud publicada del remanso del canal
+    # en un AVISO (canal suave, Familia C): ningun diseño ni veredicto.
+    "fraccion_fin_remanso_canal": _R_OPCIONAL,
     "friccion_muro_suelo_delta": _R_OPCIONAL,
     "riesgo_admisible_propietario": _R_OPCIONAL,
     "coeficiente_escorrentia_superficie_vial": _R_DERIVADA,
