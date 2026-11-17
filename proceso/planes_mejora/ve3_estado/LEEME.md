@@ -178,6 +178,12 @@ lectura de la cuota semanal y hasta ahora no ha recibido ningún aviso de límit
 aviso de límite se toma como 97 % y se hace el PASE (detener agentes en punto limpio,
 respaldar, LEEME y PROMPT_CONTINUAR al día, `PASE.md`, commit «PASE:» y no empujar más).
 
+**Estado (2026-11-17, ~21:45 UTC):** VE-3.11 integrado (`7221fe0`, ficha VE3-08: V7 con el
+peso propio del concreto, V1 con el resalto dentro del barril, titulares por V2/V2b/V10, delta
+de 7.A rotulado con V7; ningún diámetro de la línea base cambia). En curso: VE-3.12 (decisiones
+1, 3, 6, 7; respaldo `…-respaldo-clases-y-aviso-acpa`), la DECISIÓN 8 (VE-3.13; respaldo
+`…-respaldo-decision-8`) y los ensayos de diseño del cabezal (informe en `informes_en_curso/`).
+
 ## Decisiones del dueño (2026-11-17)
 
 - VE2-04: sí, V3 con la mayor velocidad bajo control de salida (hecho, VE-3.1).
