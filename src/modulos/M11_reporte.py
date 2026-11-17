@@ -3104,6 +3104,25 @@ def _pasos_hidraulicos_del_punto(informe: Any) -> str:
     return aviso + bloque_pasos(pasos, TITULO_TRAZA_HIDRAULICA_ULTIMO)
 
 
+TITULO_GOBIERNO_RECEPTOR = ("Diametro gobernado por el nivel del receptor "
+                            "(no por el caudal de diseño)")
+
+
+def _paso_gobierno_por_receptor(informe: Any) -> str:
+    """
+    --- VE-3.13 (decision 8 del dueño) --- El paso que MD emitio cuando el
+    diametro lo goberno el nivel del receptor
+    (`ResultadoPunto.gobierno_por_receptor`), detras de la tabla de
+    iteraciones que muestra los escalones descartados. Formato: el numero y
+    el texto vienen del paso.
+    """
+    resultado = getattr(informe, "resultado", None)
+    gobierno = getattr(resultado, "gobierno_por_receptor", None)
+    if gobierno is None:
+        return ""
+    return bloque_pasos((gobierno.paso,), TITULO_GOBIERNO_RECEPTOR)
+
+
 def memoria_de_punto(informe: Any) -> str:
     """Bloque completo de un punto critico (entregable 1 de la Fase 11)."""
     punto = informe.punto
@@ -3122,6 +3141,7 @@ def memoria_de_punto(informe: Any) -> str:
         _bloque_hidrologia(informe),
         _bloque_durabilidad(informe),
         _tabla_iteraciones(informe),
+        _paso_gobierno_por_receptor(informe),
         _tabla_diseno(informe),
         _paso_del_tw(informe),
         _pasos_hidraulicos_del_punto(informe),
@@ -3846,6 +3866,9 @@ def pasos_del_punto(punto: Any) -> Tuple[Any, ...]:
     if punto.resultado is not None and \
             punto.resultado.resultado_hidraulico is not None:
         vistos.extend(punto.resultado.resultado_hidraulico.pasos)
+    if punto.resultado is not None and \
+            getattr(punto.resultado, "gobierno_por_receptor", None) is not None:
+        _anota(punto.resultado.gobierno_por_receptor.paso)     # VE-3.13
     if getattr(punto, "tw_sec13", None) is not None:
         _anota(getattr(punto.tw_sec13, "paso", None))
     vistos.extend(traza_durabilidad(punto))

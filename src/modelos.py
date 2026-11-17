@@ -3352,6 +3352,14 @@ class Verificacion:
     # `InformePunto.avisos()` recoge de las verificaciones de la seccion
     # aceptada. V8 es su primer productor.
     avisos: Tuple[str, ...] = ()
+    # --- VE-3.13 (decision 8 del dueño) --- True SOLO en un V1 que no
+    # cumple porque el NIVEL DEL RECEPTOR deja al barril sin borde libre,
+    # con el tirante PROPIO del caudal de diseño conservandolo, bajo la
+    # lectura «no_cumple» de 'borde_libre_bajo_tw_ahogante'. Es lo que MD
+    # necesita para decir que el diametro lo goberno el receptor y no el
+    # caudal (`MD._descartado_solo_por_el_receptor`); V1 lo sabe y MD no
+    # tiene que repetir su logica.
+    descarta_solo_el_receptor: bool = False
 
     def __post_init__(self) -> None:
         veredicto = getattr(self.paso, "veredicto", None)
@@ -5937,6 +5945,44 @@ class Clasificacion:
 
 
 @dataclass(frozen=True)
+class GobiernoPorReceptor:
+    """
+    --- VE-3.13 (decision 8 del dueño) --- El diametro adoptado lo goberno
+    el NIVEL DEL RECEPTOR, no el caudal de diseño: con
+    'borde_libre_bajo_tw_ahogante' = «no_cumple», V1 descarto escalones que
+    conservaban el borde libre con su tirante propio y que nada mas de la
+    Fase 5 descartaba. No cambia ningun diametro; dice tres cosas:
+
+      (a) que lo goberno el receptor (los escalones que descarto, en orden);
+      (b) el diametro que bastaria por la hidraulica sola: el que la lectura
+          «aviso» adoptaria, EVALUADO de verdad con esa lectura (MD vuelve a
+          pasar la Fase 5 por los escalones descartados, sin publicar nada
+          de esa pasada salvo cual cerro);
+      (c) el descenso del TW --o la subida de la solera de salida-- con el
+          que ese diametro cumpliria V1: TW - (y/D)max · D_h. Es una
+          ALTERNATIVA que el proyectista evalua, no un remedio verificado:
+          las demas fases no se vuelven a correr con esa cota (cambian la
+          pendiente, la longitud, V4 y el cabezal).
+
+    Lo emite MD (`MD._gobierno_por_receptor`), con su `PasoDeMemoria`; M11,
+    la CLI, el JSON y la pestaña 3 solo lo imprimen (`aviso` es el texto del
+    aviso del punto).
+    """
+
+    material_adoptado: str
+    seccion_adoptada: "Seccion"
+    material_hidraulico: str
+    seccion_hidraulica: "Seccion"
+    escalones_descartados: Tuple[str, ...]   # etiquetas, en orden
+    tw_m: float                              # tirante del receptor sobre la solera de salida
+    y_sobre_D_max: float                     # el umbral adoptado de V1
+    tw_admisible_m: float                    # (y/D)max · D_h
+    descenso_tw_m: float                     # tw_m - tw_admisible_m
+    paso: "PasoDeMemoria"
+    aviso: str
+
+
+@dataclass(frozen=True)
 class ResultadoPunto:
     """
     Resultado completo de un punto critico: la combinacion elegida y el
@@ -5978,6 +6024,11 @@ class ResultadoPunto:
     resultado_hidraulico: Optional[ResultadoHidraulico] = None
     verificaciones: Tuple[Verificacion, ...] = ()
     motivo_rechazo: Optional[str] = None
+    # --- VE-3.13 (decision 8 del dueño) --- Cuando el diametro adoptado lo
+    # goberno el NIVEL DEL RECEPTOR y no el caudal (V1 descarto escalones
+    # SOLO por el TW bajo «no_cumple»): el diametro que bastaria por la
+    # hidraulica sola y la alternativa de cota. None en los demas puntos.
+    gobierno_por_receptor: Optional["GobiernoPorReceptor"] = None
 
     @property
     def y_sobre_D(self) -> Optional[float]:

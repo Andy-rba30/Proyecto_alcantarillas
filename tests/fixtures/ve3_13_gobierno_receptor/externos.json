@@ -1,0 +1,13 @@
+{
+ "_advertencia": "FIXTURE DE PRUEBA, NO ES UN RESULTADO DEL PROYECTO: escenario E07 de los ensayos de diseño del conducto (decisión 8 del dueño), TW = 1.0 m",
+ "globales": {
+  "luz_m": 2.0,
+  "bombeo": 0.02,
+  "acceso_mantenimiento_previsto": true
+ },
+ "puntos": {
+  "E07": {
+   "TW_m": 1.0
+  }
+ }
+}

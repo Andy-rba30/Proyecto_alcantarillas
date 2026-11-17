@@ -1106,7 +1106,35 @@ def _punto_json(informe: InformePunto) -> Dict[str, Any]:
     # verificaciones F8.* viajan en `verificaciones`, con la fase del diseño.
     if informe.estructural is not None or informe.cama_apoyo is not None:
         salida["estructural"] = _estructural_json(informe)
+    # --- VE-3.13 (decision 8 del dueño) --- Solo en el punto cuyo diametro
+    # goberno el nivel del receptor: los demas no cambian de forma (la linea
+    # base solo se mueve si alguno de sus puntos tiene ese gobierno).
+    gobierno = (informe.resultado.gobierno_por_receptor
+                if informe.resultado is not None else None)
+    if gobierno is not None:
+        salida["gobierno_por_receptor"] = _gobierno_por_receptor_json(gobierno)
     return salida
+
+
+def _gobierno_por_receptor_json(g: Any) -> Dict[str, Any]:
+    """
+    --- VE-3.13 --- El diametro que goberno el nivel del receptor, tal como
+    MD lo emitio (`modelos.GobiernoPorReceptor`). La alternativa de cota es
+    eso, una alternativa: `alternativa_no_verificada` lo dice para la
+    maquina, como el aviso lo dice para el lector.
+    """
+    return {
+        "material_adoptado": g.material_adoptado,
+        "seccion_adoptada": g.seccion_adoptada.etiqueta(),
+        "material_hidraulico": g.material_hidraulico,
+        "seccion_hidraulica": g.seccion_hidraulica.etiqueta(),
+        "escalones_descartados_por_el_receptor": list(g.escalones_descartados),
+        "TW_m": g.tw_m,
+        "y_sobre_D_max": g.y_sobre_D_max,
+        "TW_admisible_m": g.tw_admisible_m,
+        "descenso_tw_m": g.descenso_tw_m,
+        "alternativa_no_verificada": True,
+    }
 
 
 def _estructural_json(informe: InformePunto) -> Dict[str, Any]:

@@ -255,7 +255,8 @@ auditoria adversarial de esa sesion.
 from __future__ import annotations
 
 import math
-from typing import Optional, Tuple
+from contextlib import contextmanager
+from typing import Iterator, Optional, Tuple
 
 from src import criterios_adoptados as ca
 from src.constantes_normativas import (BORDE_LIBRE_BADEN_RANGO_M,
@@ -548,11 +549,40 @@ CRITERIO_PENDIENTE_MINIMA = "pendiente_minima_conducto"
 CRITERIO_PENDIENTE_MAXIMA = "pendiente_maxima_conducto"
 
 
+# --- VE-3.13 (decision 8 del dueño) --- LA LECTURA FORZADA, sólo para que
+# MD sepa que diametro adoptaria «aviso» (`MD._gobierno_por_receptor`). No es
+# una declaracion: no pasa por la puerta de criterios ni deja rastro en la
+# sesion, y `lectura_bajo_tw_forzada` la repone al salir aunque la Fase 5
+# lance. Ninguna verificacion de esa pasada se publica.
+_LECTURA_TW_FORZADA: Optional[str] = None
+
+
+@contextmanager
+def lectura_bajo_tw_forzada(lectura: str) -> Iterator[None]:
+    """
+    V1 lee `lectura` en vez del valor de 'borde_libre_bajo_tw_ahogante'
+    mientras dura el bloque. Solo para la evaluacion hipotetica de MD.
+    """
+    global _LECTURA_TW_FORZADA
+    if lectura not in LECTURAS_BAJO_TW:
+        raise ValueError(f"lectura forzada {lectura!r} fuera de "
+                         f"{LECTURAS_BAJO_TW!r}")
+    previa = _LECTURA_TW_FORZADA
+    _LECTURA_TW_FORZADA = lectura
+    try:
+        yield
+    finally:
+        _LECTURA_TW_FORZADA = previa
+
+
 def _lectura_bajo_tw_ahogante() -> str:
     """
     La lectura declarada en 'borde_libre_bajo_tw_ahogante', validada como
-    segunda linea (la puerta ya exige la categoria): forma MAT-D13.
+    segunda linea (la puerta ya exige la categoria): forma MAT-D13. Dentro de
+    `lectura_bajo_tw_forzada`, la forzada (VE-3.13).
     """
+    if _LECTURA_TW_FORZADA is not None:
+        return _LECTURA_TW_FORZADA
     lectura = ca.valor(CRITERIO_BORDE_LIBRE_BAJO_TW)   # CriterioPendienteError
     if not (isinstance(lectura, str) and lectura in LECTURAS_BAJO_TW):
         raise DatoInvalidoError(
@@ -1047,6 +1077,7 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     por_receptor = lleno or remansado_por_receptor
     lectura_tw = _lectura_bajo_tw_ahogante() if por_receptor else None
     aviso_por_tw = False
+    propio_cumple = False
     sustitucion_extra: Tuple[Magnitud, ...] = ()
     elecciones: Tuple[EleccionDeProyecto, ...] = ()
     if por_receptor:
@@ -1196,6 +1227,11 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
         valor_admisible=y_sobre_D_max,
         criterio_aplicado=CRITERIO_BORDE_LIBRE,   # la adopcion, [A] (C05)
         codigo="V1",
+        # VE-3.13: no cumple SOLO porque el receptor le quita el borde libre
+        # (con su tirante propio lo conserva) y la lectura es «no_cumple».
+        descarta_solo_el_receptor=(
+            por_receptor and not cumple and propio_cumple
+            and lectura_tw == LECTURA_TW_NO_CUMPLE),
         paso=paso(
             "F5.V1",
             codigo="V1",
