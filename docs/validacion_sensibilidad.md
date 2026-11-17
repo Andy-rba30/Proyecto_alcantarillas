@@ -24,7 +24,7 @@
 | conducto | `regimen_v2b` | [A] | umbral_duro / indicador_con_aviso | 'indicador_con_aviso', 'umbral_duro' | juego | MUEVE EL DISEÑO | diseño: C-01 con 'umbral_duro': Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: C-01 con 'umbral_duro': 107 |
 | conducto | `hw_entrada_fuera_de_rango` | [A] | energia_critica / descartar | 'energia_critica', 'descartar' | juego | NO LO LEE LA CORRIDA | ningún punto queda fuera del rango de la corrección por pendiente (la carta da carga positiva en todos los escalones evaluados) |
 | conducto | `n_manning_cajon` | [C] | 'concrete_boxes' / 'concreto_afinado' / num. B.3 del HDS-5 (cita HDS5_3ED.B.3#CAJON_IN_SITU): 0.012 a 0.022 en un cajon VACIADO IN SITU, segun el encofrado | 'concrete_boxes', 'concreto_afinado' | juego | MUEVE EL HW | HW: C-01 con 'concreto_afinado': 0.6231 → 0.6233 m |
-| conducto | `espesor_pared_cajon` | [A] | EL SIGNO ES CONTRAINTUITIVO Y VA PRIMERO, porque quien declare este criterio va a suponer lo contrario: ENGROSAR LA PARED EMPEORA LA FLOTACION. Una pared mas gruesa parece mas estructura y por tanto mas seguridad, y con `DC = 0` / HACIA ABAJO el limite no es la flotacion sino el propio calculo estructural, que este alcance difiere: una pared que flota mejor puede no resistir el empuje de tierras ni la carga viva. Por eso la ventana no se puede cerrar a nivel de perfil y el criterio se ADOPTA en vez de optimizarse: el optimo de V7 y el minimo estructural empujan en sentidos opuestos y solo la Fase 8 tiene los dos numeros / VENTANA DE LA ADOPCION (T-3): 0.20 m | 0.2, 0.25, 0.3 | juego | MUEVE EL DISEÑO | diseño: C-01 con 0.3: Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: C-01 con 0.3: 107 |
+| conducto | `espesor_pared_cajon` | [A] | EL SIGNO, Y QUE SE INVIRTIO EN VE-3.11: desde entonces V7 suma el peso propio del concreto (H4 de los ensayos de diseño del conducto), y ENGROSAR LA PARED MEJORA LA FLOTACION: el anillo que se agrega pesa gamma_c = 23.56 kN/m3 y desplaza agua de 9.81, de modo que por cada metro de t el lado estabilizante crece 0.90*gamma_c*2*(Bc + B'c) y el empuje solo gamma_w*2*(Bc + B'c). Medido sobre un marco de 2.00 x 1.50 m con 0.95 m de relleno y gamma_r = 18 kN/m3: t = 0.15 da margen +18.96 kN/m, t = 0.20 da +25.28 y t = 0.25 da +31.83. HASTA VE-3.11, con DC = 0, era al reves / HACIA ABAJO el limite no es la flotacion sino el propio calculo estructural, que este alcance difiere: una pared que flota mejor puede no resistir el empuje de tierras ni la carga viva. Por eso la ventana no se puede cerrar a nivel de perfil y el criterio se ADOPTA en vez de optimizarse: el optimo de V7 y el minimo estructural empujan en sentidos opuestos y solo la Fase 8 tiene los dos numeros / VENTANA DE LA ADOPCION (T-3): 0.20 m | 0.2, 0.25, 0.3 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `borde_libre_y_sobre_d_max` | [A] | 0.0–0.75 | 0.75, 0.6, 0.0 | juego | MUEVE EL DISEÑO | diseño: A-01 con 0.6: Concreto reforzado, Ø 0.90 m → Concreto reforzado, Ø 1.05 m; A-01 con 0.0: Concreto reforzado, Ø 0.90 m → no dimensiona; A-02 con 0.0: Concreto reforzado, Ø 0.90 m → no dimensiona; B-01 con 0.0: Concreto reforzado, Ø 0.90 m → no dimensiona; C-01 con 0.0: Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: A-01 con 0.0: 105; A-02 con 0.0: 105; B-01 con 0.0: 105; C-01 con 0.0: 107 |
 | conducto | `ke_entrada` | [C] | 0.2–0.9 | 0.5, 0.2, 0.9 | juego | MUEVE EL HW | HW: A-01 con 0.9: 1.0420 → 1.0618 m |
 | conducto | `embocadura_cabezal` | [A] | cabezal_con_aleros / cabezal_recto | 'cabezal_con_aleros', 'cabezal_recto' | juego | MUEVE EL DISEÑO | diseño: C-01 con 'cabezal_recto': Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: A-01 con 'cabezal_recto': 12; A-02 con 'cabezal_recto': 12; B-01 con 'cabezal_recto': 12; C-01 con 'cabezal_recto': 107 |
@@ -102,10 +102,10 @@
 
 ## 3. Lo que el resumen dice, por clase
 
-- **MUEVE EL DISEÑO** (12): `seccion_receptor` (juego_sin_TW), `v_max_concreto_eleccion`, `v_max_concreto_eleccion` (juego_tmc_excluida), `regimen_v2b`, `espesor_pared_cajon`, `borde_libre_y_sobre_d_max`, `embocadura_cabezal`, `origen_cota_fondo_entrada`, `remanso_derecho_via`, `pendiente_minima_conducto`, `nivel_agua_diseno_v7`, `umbral_no_colapso_evento_extremo`.
+- **MUEVE EL DISEÑO** (11): `seccion_receptor` (juego_sin_TW), `v_max_concreto_eleccion`, `v_max_concreto_eleccion` (juego_tmc_excluida), `regimen_v2b`, `borde_libre_y_sobre_d_max`, `embocadura_cabezal`, `origen_cota_fondo_entrada`, `remanso_derecho_via`, `pendiente_minima_conducto`, `nivel_agua_diseno_v7`, `umbral_no_colapso_evento_extremo`.
 - **MUEVE VEREDICTOS** (25): `eta_importancia_operativa_conducto`, `factor_muro_eleccion`, `gamma_EQ`, `fraccion_delta_sobre_phi_trasdos`, `fila_phi_estabilidad_cabezal` (juego_cabezal_de_la_regla), `factores_inclinacion_carga_portante` (juego_cabezal_de_la_regla), `regla_pendiente_relleno_trasdos`, `regimen_resistencia_elementos_cabezal`, `eta_ductilidad_cabezal`, `eta_redundancia_cabezal`, `marco_estabilidad_cabezal`, `regimen_cabezal`, `drenaje_trasdos`, `fc_cabezal_mpa`, `F_pga_lectura_columna_extrema`, `punto_aplicacion_incremento_sismico`, `revestimiento_cuneta`, `phi_relleno_trasdos`, `peso_especifico_relleno_kn_m3`, `talud_terraplen`, `referencia_profundidad_socavacion`, `margen_zapata_bajo_socavacion_m`, `terreno_delante_del_cabezal`, `clase_exposicion_fisuracion_cabezal`, `metodo_longitud_conducto`.
 - **MUEVE EL HW** (2): `n_manning_cajon`, `ke_entrada`.
-- **LEÍDO, SIN EFECTO MEDIBLE** (31): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `duracion_caudal_pico_socavacion_min`, `factor_intervalo_fijo_p24` (juego_caudal_calculado), `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `lectura_coeficientes_socavacion_hec14`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`.
+- **LEÍDO, SIN EFECTO MEDIBLE** (32): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `espesor_pared_cajon`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `duracion_caudal_pico_socavacion_min`, `factor_intervalo_fijo_p24` (juego_caudal_calculado), `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `lectura_coeficientes_socavacion_hec14`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`.
 - **NO LO LEE LA CORRIDA** (16): `borde_libre_bajo_tw_ahogante`, `seccion_receptor`, `hw_entrada_fuera_de_rango`, `inclinacion_muro_beta`, `homogeneidad_serie_fen`, `distribucion_precipitacion_maxima`, `nivel_significancia_ks`, `relacion_intensidad_duracion`, `duracion_minima_lluvia_min`, `tc_fuera_de_la_poblacion_del_metodo`, `coeficiente_uniformidad_temez`, `demanda_sismica_licuefaccion`, `fabricacion_tmc`, `relleno_estructural_hdpe`, `criterio_traccion_cabezal_ciclopeo`, `junta_arranque_cabezal_ciclopeo`.
 
 ### 3.1 El cabezal de la regla: E3 estática y E1 sísmica del marco LRFD frente a sus dos [A]
@@ -279,7 +279,7 @@ régimen del indicador de V2b (PRECISIONES). Base: el juego completo. Efecto: **
 | 'umbral_duro' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 'umbral_duro' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 'umbral_duro' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
-| 'umbral_duro' | C-01 | no dimensiona | — | — | (el punto no dimensiona: 107 cambian o desaparecen) | V2b, V7 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
+| 'umbral_duro' | C-01 | no dimensiona | — | — | (el punto no dimensiona: 107 cambian o desaparecen) | V2b | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
 
 ### `hw_entrada_fuera_de_rango`
 
@@ -313,7 +313,7 @@ doble n del marco (PRECISIONES). Se barre la alternativa de TABLA (n menor); el 
 
 ### `espesor_pared_cajon`
 
-espesor de pared del marco (correcciones de T-11, H3); la ventana está en prosa (0.20 a 0.30 m, ficha T3-08). Base: el juego completo. Efecto: **MUEVE EL DISEÑO**.
+espesor de pared del marco (correcciones de T-11, H3); la ventana está en prosa (0.20 a 0.30 m, ficha T3-08). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
 
 | Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
 |---|---|---|---|---|---|---|---|
@@ -328,7 +328,7 @@ espesor de pared del marco (correcciones de T-11, H3); la ventana está en prosa
 | 0.3 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 0.3 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 0.3 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
-| 0.3 | C-01 | no dimensiona | — | — | (el punto no dimensiona: 107 cambian o desaparecen) | V7 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
+| 0.3 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `borde_libre_y_sobre_d_max`
 
@@ -347,7 +347,7 @@ umbral de V1, sólo endurecible (T-11). Se barre además un valor intermedio (0.
 | 0.0 | A-01 | no dimensiona | — | — | (el punto no dimensiona: 105 cambian o desaparecen) | V1, V7 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
 | 0.0 | A-02 | no dimensiona | — | — | (el punto no dimensiona: 105 cambian o desaparecen) | V1, V7 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
 | 0.0 | B-01 | no dimensiona | — | — | (el punto no dimensiona: 105 cambian o desaparecen) | V1, V7 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
-| 0.0 | C-01 | no dimensiona | — | — | (el punto no dimensiona: 107 cambian o desaparecen) | V1, V7 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
+| 0.0 | C-01 | no dimensiona | — | — | (el punto no dimensiona: 107 cambian o desaparecen) | V1 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
 
 ### `ke_entrada`
 
@@ -1104,7 +1104,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | 0.005 | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
 | 0.005 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 0.005 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
-| 0.005 | C-01 | no dimensiona | — | — | (el punto no dimensiona: 107 cambian o desaparecen) | V10, V7 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
+| 0.005 | C-01 | no dimensiona | — | — | (el punto no dimensiona: 107 cambian o desaparecen) | V10 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
 
 ### `pendiente_maxima_conducto`
 

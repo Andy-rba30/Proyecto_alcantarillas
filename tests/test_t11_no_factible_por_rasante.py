@@ -629,11 +629,15 @@ def _no_factible(informe, id_punto):
 # LOS MISMOS que la linea base traia antes de la correccion (leidos de
 # `informe.traza` sobre `c774035`). Lo unico que cambia es el texto del
 # motivo de los dos que no caben.
+# DESDE VE-3.11 (H4 de los ensayos de diseño del conducto) V7 suma el peso
+# propio del concreto: el Ø 1.20 y el Ø 1.35 m de concreto ya la cumplen y
+# solo incumplen V1. El resto de la progresion y el veredicto del punto (no
+# factible por rasante, delta 0.31981) no cambian.
 ITERACIONES_A01_ESTRECHA = [
     ("Concreto reforzado", "Ø 0.90 m", ["V1", "V4"]),
     ("Concreto reforzado", "Ø 1.05 m", ["V1", "V4"]),
-    ("Concreto reforzado", "Ø 1.20 m", ["V1", "V7"]),
-    ("Concreto reforzado", "Ø 1.35 m", ["V1", "V7"]),
+    ("Concreto reforzado", "Ø 1.20 m", ["V1"]),
+    ("Concreto reforzado", "Ø 1.35 m", ["V1"]),
     ("Concreto reforzado", "Ø 1.50 m", ["V7"]),
     ("Concreto reforzado", "Ø 1.65 m", ["V7"]),
     ("Concreto reforzado", "Ø 1.80 m", []),
@@ -702,7 +706,14 @@ def test_sin_TW_los_puntos_cuyo_escalon_incumple_V2_no_llevan_delta(
     haria cumplir, y no se da delta.
     """
     _, b = _no_factible(estrecha, id_punto)
-    assert "NO FACTIBLE POR RASANTE" in b.mensaje
+    # DESDE VE-3.11 (H6 de los ensayos de diseño del conducto) el titular
+    # nombra la causa real: en B-01 V2 no cumple en NINGUN escalon evaluado
+    # y crecer el diametro no la resuelve, de modo que el punto ya no sale
+    # «por rasante» sino «por V2». A-02 sigue «por rasante» (no todos sus
+    # escalones incumplen V2).
+    titular = ("NO FACTIBLE POR V2" if id_punto == "B-01"
+               else "NO FACTIBLE POR RASANTE")
+    assert titular in b.mensaje
     assert "Dato invalido en 'cota_subrasante'" not in b.mensaje
     assert b.delta_rasante_m is None
     assert "No se da delta de rasante" in b.mensaje

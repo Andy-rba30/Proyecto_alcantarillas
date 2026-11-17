@@ -129,7 +129,7 @@ def test_los_juicios_del_anexo(medidas):
             "seccion_receptor@juego_sin_TW", "v_max_concreto_eleccion",
             "v_max_concreto_eleccion@juego_tmc_excluida",
             "regimen_v2b", "borde_libre_y_sobre_d_max", "embocadura_cabezal",
-            "espesor_pared_cajon", "pendiente_minima_conducto",
+            "pendiente_minima_conducto",
             "remanso_derecho_via", "umbral_no_colapso_evento_extremo",
             "origen_cota_fondo_entrada",
             # --- VE-2 (c2) --- el nivel de agua de diseño de V7: con
@@ -163,6 +163,11 @@ def test_los_juicios_del_anexo(medidas):
         "MUEVE EL HW": {"n_manning_cajon", "ke_entrada"},
         "LEÍDO, SIN EFECTO MEDIBLE": {
             "HW_D_max", "v_max_tmc", "v_max_hdpe", "fraccion_llena_mayor_parte",
+            # --- VE-3.11 (H4) --- V7 suma el peso propio del marco: una pared
+            # de 0.30 m ya no hace flotar el marco de C-01 (antes lo dejaba
+            # sin diseño), y engrosarla MEJORA la flotacion. Antes estaba en
+            # «MUEVE EL DISEÑO».
+            "espesor_pared_cajon",
             "instalacion_estandar_concreto", "carga_viva_bajo_relleno_alto",
             "duracion_caudal_pico_socavacion_min", "acceso_mantenimiento_v2b",
             "acero_refuerzo_cabezal", "borde_libre_canal_m",

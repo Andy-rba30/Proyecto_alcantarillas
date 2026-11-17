@@ -55,6 +55,16 @@ TOL_BRENT = 1e-10
 # solucion fisica: solo evita evaluar la geometria justo en la singularidad.
 TOL_THETA_BORDE = 1e-9
 
+# --- VE-3.11 (H2) --- Puntos de la integral del PRIMER MOMENTO del area mojada
+# respecto de la lamina, int_0^y A(z) dz, con que `M3.tirante_conjugado_barril`
+# forma la funcion momentum de una seccion de barril cualquiera (la circular
+# no tiene forma cerrada a mano en el proyecto). Es precision de una
+# cuadratura trapecial sobre el llenado propio de la seccion: con 4001 puntos
+# el error relativo del momento es del orden de 1e-7 (medido contra la forma
+# cerrada del rectangulo, B*y^2/2), muy por debajo de lo que distingue un TW
+# de su conjugado. Cambiarlo no mueve ninguna magnitud fisica.
+PUNTOS_MOMENTO_SECCION = 4001
+
 # Comparacion contra un umbral normativo (y/D <= 0.75, V >= 0.25, HW/D <= 1.5).
 # Absorbe el ruido de punto flotante -- 0.675/0.90 puede dar 0.7500000000000001
 # y eso NO es un incumplimiento del borde libre -- sin llegar a tapar ninguna

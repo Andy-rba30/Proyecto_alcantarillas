@@ -1020,7 +1020,11 @@ def test_el_barrido_de_la_lectura_sobre_la_corrida_estrecha(tmp_path):
             p["id"]: (p["diseno"] or {}).get("seccion")
             for p in puntos if p["dimensionado"]}
     assert por_valor["no_cumple"] == {}
-    assert por_valor["aviso"] == {"A-02": "Ø 0.90 m"}
+    # DESDE VE-3.11 (H4 de los ensayos de diseño del conducto) V7 suma el
+    # peso propio del concreto, y bajo «aviso» A-01 tambien dimensiona: su
+    # Ø 1.20 m, que solo fallaba V7, ahora la cumple. Bajo «no_cumple» (el
+    # archivo, que es la linea base) nada cambia.
+    assert por_valor["aviso"] == {"A-01": "Ø 1.20 m", "A-02": "Ø 0.90 m"}
 
 
 # ===========================================================================

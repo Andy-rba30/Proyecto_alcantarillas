@@ -170,7 +170,8 @@ from src.modelos import (CIFRAS_FINA, CIFRAS_MAGNITUD, DatoInvalidoError,
                      SECCION_RECEPTOR_MEDIDA, SeccionReceptor,
                      SinTiranteNormal, TiranteNormal,
                      TWDeterminado, ViaDelTW, paso)
-from src.tolerancias import (PASOS_PERFIL_REMANSO, TOL_BRENT,
+from src.tolerancias import (PASOS_PERFIL_REMANSO, PUNTOS_MOMENTO_SECCION,
+                             TOL_BRENT,
                               TOL_THETA_BORDE)
 
 NUMERAL_MANNING = "4.1"
@@ -660,6 +661,57 @@ def tirante_critico_trapecial(*, Q: float, seccion: SeccionReceptor) -> float:
                f"{y_hi:g} m: la combinacion de solera {seccion.b_m} m y "
                f"talud {seccion.z_HV} H:V no tiene sentido fisico para ese "
                "caudal")
+
+
+def tirante_conjugado_barril(*, Q: float, seccion: Seccion, y: float,
+                             y_c: float) -> Optional[float]:
+    """
+    --- VE-3.11 (H2 de los ensayos de diseño del conducto) --- El tirante
+    CONJUGADO (secuente) del tirante supercritico `y` dentro del barril, m, o
+    `None` si no cabe en la seccion (el momentum de `y` supera al de la
+    seccion llena: el resalto no se forma a lamina libre).
+
+    Es donde HDS-5 situa el resalto bajo control de ENTRADA con la salida
+    alta: num. 3.1.3, pag. impresa 3.2 («submergence of the outlet end of the
+    culvert does not assure outlet control. In this case, the flow just
+    downstream of the inlet is supercritical and a hydraulic jump forms in the
+    culvert barrel»). Si el TW alcanza el conjugado del tirante normal, el
+    resalto entra al barril y aguas abajo de el la lamina esta al nivel del
+    TW; si no, el resalto sale y el barril va a tirante normal.
+
+    La funcion momentum es M(t) = Q^2 / (g A) + int_0^t A(z) dz (el primer
+    momento del area mojada respecto de la lamina), la misma ecuacion que
+    `tirante_conjugado_trapecial` escribe con el centroide del trapecio. Aqui
+    la seccion es cualquiera del protocolo `Seccion` (la circular no tiene
+    forma cerrada en el proyecto), y la integral se hace por trapecios sobre
+    el llenado PROPIO de la seccion, por la via canonica (`geometria_en`), con
+    `PUNTOS_MOMENTO_SECCION` puntos: no pasa por la via por tirante.
+    """
+    import numpy as np
+    from scipy.optimize import brentq   # perezoso: ver la nota junto a los imports
+    lo, hi = seccion.bracket_llenado()
+    llenados = np.linspace(lo, hi, PUNTOS_MOMENTO_SECCION)
+    geos = [seccion.geometria_en(float(l)) for l in llenados]
+    ys = np.array([g.y for g in geos])
+    As = np.array([g.A for g in geos])
+    primer_momento = np.concatenate(
+        ([0.0], np.cumsum((As[1:] + As[:-1]) / 2 * np.diff(ys))))
+
+    def momento_en(l: float) -> float:
+        g = seccion.geometria_en(l)
+        return (Q * Q / (G * g.A)
+                + float(np.interp(g.y, ys, primer_momento)))
+
+    def llenado_de(t: float) -> float:
+        return brentq(lambda l: seccion.geometria_en(l).y - t, lo, hi,
+                      xtol=TOL_BRENT)
+
+    objetivo = momento_en(llenado_de(y))
+    l_c = llenado_de(y_c)
+    if momento_en(hi) < objetivo:
+        return None
+    l2 = brentq(lambda l: momento_en(l) - objetivo, l_c, hi, xtol=TOL_BRENT)
+    return seccion.geometria_en(l2).y
 
 
 def tirante_conjugado_trapecial(*, Q: float, seccion: SeccionReceptor,

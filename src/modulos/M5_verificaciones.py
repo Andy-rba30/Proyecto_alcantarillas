@@ -296,6 +296,7 @@ from src.modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
                                     empuje_flotacion_kn_m,
                                     factores_carga_flotacion,
                                     filas_ev_de_la_tabla,
+                                    peso_propio_conducto_kn_m,
                                     peso_relleno_bajo_el_nivel_kn_m,
                                     peso_relleno_kn_m,
                                     regla_nivel_agua_v7,
@@ -938,6 +939,27 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
     """
     simbolo, nombre, procedencia = _magnitud_de_llenado(material)
     regimen = _regimen_de_v1_v2("V1", resultado, punto.id)
+    # --- VE-3.11 (H2 de los ensayos de diseño del conducto) --- BAJO CONTROL
+    # DE ENTRADA EL RECEPTOR TAMBIEN PUEDE FIJAR EL TIRANTE DEL BARRIL. Con el
+    # tramo de aguas arriba supercritico, si el TW alcanza el conjugado del
+    # tirante normal el resalto se forma DENTRO del barril y aguas abajo de el
+    # la lamina esta al nivel del TW (HDS-5 num. 3.1.3, pag. impresa 3.2,
+    # `HDS5_3ED.3.1.3#SUMERGENCIA`); con el barril subcritico, el remanso M1
+    # llega a la salida en cuanto TW > y_n. M4 lo dice en
+    # `ResultadoHidraulico.receptor_en_el_barril` y V1 lee entonces el tirante
+    # MAXIMO del perfil, como bajo control de salida, para que la lectura del
+    # borde libre sea UNA SOLA A LO LARGO DEL TW (nota T-2 de la hoja de ruta:
+    # «La lectura es una sola a lo largo del TW: no cambia al cruzar TW = D»).
+    # Hasta VE-3.11 V1 tomaba aqui el tirante normal y el rechazo saltaba
+    # recien en TW = D (E13 del revisor: Ø 0.90 con 0.80 m de agua en el
+    # barril). SOLO V1: V2 sigue con su regimen (`_regimen_de_v1_v2`), y si
+    # el resalto dentro del barril deberia cambiar tambien la velocidad que
+    # V2 juzga es otra pregunta, no tocada aqui.
+    entrada_con_receptor = (regimen == REGIMEN_UNIFORME
+                            and resultado.receptor_en_el_barril
+                            and resultado.perfil is not None)
+    if entrada_con_receptor:
+        regimen = REGIMEN_PERFIL
     lleno = regimen == REGIMEN_LLENO
     y_sobre_D_max = _umbral_adoptado_v1()
     lleno_por_caudal = False
@@ -955,7 +977,16 @@ def v1_borde_libre(*, D: float, material: Material, punto: PuntoCritico,
         procedencia_y = (
             "tirante MAXIMO del perfil de la lamina de agua (M4, paso 4.3c/"
             "4.3d, con n_max): "
-            + ("el barril es HORIZONTAL (S = 0) y no tiene tirante normal, "
+            + ("bajo control de ENTRADA el TW del receptor fija el tirante "
+               "del barril: "
+               + (f"alcanza el conjugado del tirante normal "
+                  f"({resultado.y_conjugado_m:.3f} m) y el resalto se forma "
+                  "DENTRO del conducto (HDS-5 num. 3.1.3), aguas abajo del "
+                  "cual la lamina esta al nivel del TW"
+                  if resultado.resalto_en_el_barril else
+                  "el barril va subcritico y el remanso M1 llega a la salida")
+               if entrada_con_receptor else
+               "el barril es HORIZONTAL (S = 0) y no tiene tirante normal, "
                "de modo que la lamina dentro del conducto es la que sube "
                "desde max(y_c, TW) hacia la entrada"
                if resultado.sin_tirante_normal else
@@ -3103,10 +3134,10 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
     de M8 declaraba esa aproximacion "del lado conservador" cuando es
     exactamente la contraria (MAT-D3).
 
-    DC = 0: no suma el peso propio del conducto (ver "Por que el peso propio
-    del conducto no entra en V7" en el docstring de M8_estructural). Omitirlo
-    es conservador, reduce el lado estabilizante en vez de inflarlo: la
-    Tabla 2.4.5.3.1-2 del Manual de Puentes admitiria 0.90·DC.
+    DC, EL PESO PROPIO: desde VE-3.11 (H4 de los ensayos de diseño del
+    conducto) el concreto lo suma, γ_c · (A_exterior − A_interior), como
+    escribe la fila V7 de la hoja de ruta; el TMC y el HDPE no, porque el
+    peso del producto no es un dato declarado (`M8.peso_propio_conducto_kn_m`).
 
     LAS DOS HIPOTESIS SON ADOPCIONES DEL PROYECTO Y NO DEL SITIO (VE-2, c1).
     El nivel de agua de diseño lo especifica o aprueba el Propietario
@@ -3208,7 +3239,10 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
                          "analogia [N->] con el Manual de Puentes 2.4.4.1.3",
                          cifras=CIFRAS_MAGNITUD))
             citas_nivel += ("MP.2.4.4.1.3#SUMERGIDO",)
-    DC = 0.0                 # peso propio omitido, del lado conservador
+    # --- VE-3.11 (H4) --- EL PESO PROPIO DEL CONCRETO ENTRA (fila V7 de la
+    # hoja de ruta, 0.90·(DC + EV) >= U); el del TMC y el HDPE sigue en cero.
+    DC, procedencia_dc = peso_propio_conducto_kn_m(
+        material=material, seccion=seccion, espesor=t)
     g = factores_carga_flotacion(material=material)   # CriterioPendienteError si EV no se detuvo antes
 
     estabilizante = g.gamma_DC * DC + g.gamma_EV * EV
@@ -3279,10 +3313,11 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
                          "(num. 2.4.3.8.2 del Manual de Puentes)", cifras=CIFRAS_MAGNITUD),
                 Magnitud("EV", EV, "kN/m",
                          "peso del relleno sobre la clave", cifras=CIFRAS_MAGNITUD),
-                Magnitud("DC", DC, "kN/m",
-                         "peso propio del conducto, OMITIDO a proposito: "
-                         "reduce el lado estabilizante y es del lado "
-                         "conservador", cifras=CIFRAS_MAGNITUD),
+                Magnitud("DC", DC, "kN/m", procedencia_dc,
+                         cifras=CIFRAS_MAGNITUD),
+                Magnitud("gamma_DC_min", g.gamma_DC, "",
+                         "minimo de la fila «DC: Componentes y Auxiliares» "
+                         "de la Tabla 2.4.5.3.1-2", cifras=CIFRAS_FACTOR),
                 Magnitud("gamma_EV_min", g.gamma_EV, "",
                          "minimo de la fila de gamma_p que describe a este "
                          "material en la Tabla 2.4.5.3.1-2", cifras=CIFRAS_FACTOR),
