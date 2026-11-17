@@ -2520,11 +2520,23 @@ ALCANCE_DECLARADO: Tuple[AlcanceDeclarado, ...] = (
         ficha="T7A-03", simbolo="M9_cabezal.predimensionar_aleros"),
     AlcanceDeclarado(
         clave="iteracion_ancho_zapata_cabezal",
-        texto=("El ancho de la zapata del cabezal no se itera: la geometria "
-               "la propone la regla de predimensionamiento (o la declara "
-               "`cabezal_declarado`) y la estabilidad la juzga como llega; "
-               "la iteracion espera los parametros reales del EMS"),
-        ficha="T7B-09", simbolo="M9_cabezal.predimensionar_cabezal"),
+        # --- VE-3.14 (H-10 de los ensayos de diseño del cabezal) --- Este
+        # texto decia hasta VE-3.14 que el ancho «no se itera», y se itera
+        # desde VE-3.5 (el peralte desde VE-3.9 y la pantalla desde
+        # VE-3.14): la memoria declaraba fuera de alcance lo que hacia. Lo
+        # que SIGUE fuera es lo que el texto dice ahora.
+        texto=("El cabezal se dimensiona solo como zapata CORRIDA sobre la "
+               "grilla de 'dimensionamiento_zapata_cabezal': el ancho por la "
+               "estabilidad (VE-3.5, con la punta si el talon llega al "
+               "tope), el peralte por el armado de la zapata (VE-3.9) y la "
+               "pantalla por su armado (VE-3.14). Si ninguna zapata corrida "
+               "cumple dentro del tope, el cabezal se declara NO FACTIBLE con "
+               "estos criterios y no se proponen dentellon, llave de corte, "
+               "mejoramiento del suelo ni pilotes; una dimension declarada "
+               "(`cabezal_declarado`) no se itera y la estabilidad la juzga "
+               "como llega; los parametros son los de prueba hasta el EMS"),
+        ficha="T7B-09",
+        simbolo="M9_cabezal.dimensionar_zapata_por_estabilidad"),
     AlcanceDeclarado(
         clave="flotacion_marco_sin_peso_propio",
         texto=("V7 del marco no pesa el concreto del marco (DC = 0, del lado "

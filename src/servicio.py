@@ -3215,16 +3215,23 @@ def etapa_de_armado(extremo: str, que: str) -> str:
 def _fase_9_armado(informe: InformePunto, entornos) -> None:
     """
     --- T-7c --- EL ARMADO DE CADA CABEZAL (o la verificacion de su
-    alternativa ciclopea), detras de la estabilidad y con la MISMA
-    geometria: no se itera ninguna dimension, pase o no el cabezal sus
+    alternativa ciclopea), detras de la estabilidad y con la geometria FINAL
+    que dejaron los tres dimensionamientos de `_fase_9` (VE-3.14, H-11 de
+    los ensayos de diseño del cabezal: este texto decia «no se itera
+    ninguna dimension», y desde VE-3.5 el ancho se itera por la
+    estabilidad, desde VE-3.9 el peralte por el armado de la zapata y desde
+    VE-3.14 la pantalla por el armado de la pantalla y de los aleros). AQUI
+    no se itera nada mas: se arma esa geometria, pase o no el cabezal sus
     filas E1 a E3 (el aviso del armado lo dice). Por cabezal:
 
       voladizo armado   una etapa por las solicitaciones de resistencia,
                         una por elemento (pantalla, zapata, aleros) y una
                         por la tabla: lo que un elemento no pueda evaluar
-                        -- el cortante fuera del procedimiento simplificado,
-                        el recubrimiento sin fila -- queda como `Bloqueo`
-                        del punto y los demas siguen.
+                        -- el recubrimiento sin fila, un criterio sin valor
+                        (el cortante fuera del simplificado ya no: desde
+                        VE-3.14 lo verifica el procedimiento general de
+                        5.7.3.4.2) -- queda como `Bloqueo` del punto y los
+                        demas siguen.
       gravedad ciclopeo una etapa: tracciones y material.
 
     Ningun punto sale de la Fase 9 con el armado callado: o esta, o hay un

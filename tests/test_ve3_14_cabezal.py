@@ -376,3 +376,149 @@ def test_si_el_armado_de_la_pantalla_nunca_cumple_el_bucle_termina_y_lo_dice(
         assert g.espesor_base_muro < g.H
         assert any(f"Cabezal de {g.extremo}" in a and "se detuvo" in a
                    for a in cab.avisos), g.extremo
+
+
+
+# ===========================================================================
+# BLOQUE 4 (H-3): con agua en el plano de empuje, el sismo NO se salta
+# ===========================================================================
+# Hasta VE-3.14 la condicion sismica se detenia con «metodo no evaluable»
+# en cuanto habia agua en el plano de empuje, el ancho se dimensionaba sin
+# ella y se rotulaba «dimensionada por estabilidad»; el mensaje recomendaba
+# declarar el drenaje aunque ya estuviera declarado. Hoy: C11.6.5.3, peso
+# TOTAL bajo el agua para el relleno que no drena libremente
+# ('agua_del_relleno_bajo_sismo' [C]); el relleno muy abierto sigue
+# deteniendose (Westergaard no esta en ninguna fuente del repositorio).
+
+from src.modelos import (ORIGEN_DIMENSION_ESTABILIDAD,          # noqa: E402
+                         ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA)
+
+E3 = RAIZ / "tests" / "fixtures" / "ensayos_cabezal" / "E3_muy_alto"
+
+
+def _origen_del_ancho(cabezal_json, extremo):
+    g = next(c for c in cabezal_json["cabezales"] if c["extremo"] == extremo)
+    return next(d["origen"] for d in g["dimensiones"]
+                if d["nombre"] == "ancho de la zapata (B)")
+
+
+def test_e3_con_agua_la_condicion_sismica_se_evalua_y_dimensiona(tmp_path):
+    d = correr_escenario(E3, tmp_path)
+    punto = d["puntos"][0]
+    assert not [b for b in punto["bloqueos"]
+                if "agua en el plano de empuje" in (b.get("mensaje") or "")]
+    codigos = {v["codigo"]: v["cumple"] for v in punto["verificaciones"]
+               if v.get("codigo")}
+    assert codigos.get("E1-LRFD.sis.s") is True
+    assert _origen_del_ancho(punto["cabezal"], "salida") == \
+        ORIGEN_DIMENSION_ESTABILIDAD
+    sismica = next(e for e in punto["cabezal"]["estabilidad"]
+                   if e["extremo"] == "salida" and e["condicion"] == "sismico")
+    assert sismica["K_AE"] is not None
+    # La cifra, medida (DATOS DE PRUEBA): con el sismo el ancho de la salida
+    # crece a 5.970 m (sin el, la app daba 4.670 m; el revisor de los
+    # ensayos, 5.05 a 5.37 m con sus criterios). Un incremento sismico con
+    # el peso sumergido en vez del total da otro ancho.
+    salida = next(c for c in punto["cabezal"]["cabezales"]
+                  if c["extremo"] == "salida")
+    assert salida["B_m"] == pytest.approx(5.970032344780179, abs=ABS_MM)
+
+
+def test_e3_con_relleno_muy_abierto_se_detiene_y_no_rotula_estabilidad(
+        tmp_path):
+    """
+    Con el relleno declarado muy abierto la condicion sismica se detiene
+    (Westergaard no esta en el repositorio); el mensaje ya no recomienda el
+    drenaje que esta declarado, y el ancho se rotula como dimensionado con la
+    estabilidad EVALUABLE, no «por estabilidad».
+    """
+    d = correr_escenario(E3, tmp_path, "--declarar",
+                         "agua_del_relleno_bajo_sismo='relleno_muy_abierto'")
+    punto = d["puntos"][0]
+    bloqueo = next(b for b in punto["bloqueos"]
+                   if "agua en el plano de empuje" in (b.get("mensaje") or ""))
+    assert "El drenaje ya esta declarado" in bloqueo["mensaje"]
+    assert "Declarar el drenaje" not in bloqueo["mensaje"]
+    assert _origen_del_ancho(punto["cabezal"], "salida") == \
+        ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA
+
+
+
+def test_el_incremento_sismico_con_agua_va_con_el_peso_total(juego):
+    """
+    La cuenta, aparte: con el relleno lleno de agua (sin drenaje y el
+    freatico alto), el incremento sismico es (K_AE·(1 - k_v) - K_A)·Γ_t, con
+    Γ_t la integral del peso TOTAL sobre el plano de empuje (C11.6.5.3); el
+    estatico sigue con el sumergido.
+    """
+    from dataclasses import replace
+    p = _a01(juego)
+    entornos = M9.datos_del_cabezal_del_punto(
+        punto=p.punto_de_calculo, cabezal=p.cabezal, geometria=p.geometria,
+        socavacion=p.socavacion, suelo_del_punto=None, resultado=p.resultado)
+    entorno = next(e for e in entornos if e.extremo == "salida")
+    alto = replace(entorno, cota_freatico=entorno.cota_pie + 10.0)
+    import tempfile
+    from pathlib import Path
+    from src import criterios_adoptados as ca
+    from src import datos_sitio as ds
+    from src import servicio
+    with tempfile.TemporaryDirectory() as tmp:
+        e = V.materializar(V.juego_completo(), Path(tmp))
+        try:
+            servicio.cargar_datos_sitio(e.sitio)
+            for clave, valor in e.declaraciones.items():
+                ca.establecer_valor_dinamico(clave, valor)
+            ca.establecer_valor_dinamico(
+                "peso_especifico_saturado_relleno_kn_m3", 20.0)
+            _c, d = M9.cargas_del_cabezal(alto, CondicionAnalisis.SISMICO)
+        finally:
+            for clave in ca.valores_dinamicos():
+                ca.quitar_valor_dinamico(clave)
+            ds.limpiar_datos_dinamicos()
+    assert d["h_w"] > 0
+    h_seco = d["h"] - d["h_w"]
+    gamma_t = (d["gamma"] * h_seco ** 2 / 2 + d["gamma"] * h_seco * d["h_w"]
+               + 20.0 * d["h_w"] ** 2 / 2)
+    esperado = (d["K_AE"] * (1.0 - d["k_v"]) - d["K_A"]) * gamma_t
+    assert d["P_AE"] - d["P_A"] == pytest.approx(esperado, rel=REL_TRANSPORTE)
+
+
+
+# ===========================================================================
+# BLOQUE 5 (H-10, H-11): lo que la app dice de si misma
+# ===========================================================================
+
+def test_el_alcance_declarado_ya_no_dice_que_el_ancho_no_se_itera():
+    from src.modelos import ALCANCE_DECLARADO
+    a = next(x for x in ALCANCE_DECLARADO
+             if x.clave == "iteracion_ancho_zapata_cabezal")
+    assert "no se itera:" not in a.texto
+    assert "NO FACTIBLE" in a.texto and "VE-3.14" in a.texto
+
+
+def test_el_resumen_atribuye_el_metodo_no_evaluable_a_su_causa(tmp_path):
+    """
+    E3 con el relleno muy abierto: la etapa sismica se detiene por «metodo
+    no evaluable» y no hay ningun criterio sin valor. El RESUMEN decia
+    «Mientras un criterio siga sin valor...»; hoy dice la causa.
+    """
+    import cli
+    import json
+    import subprocess
+    import sys
+    args = [sys.executable, str(RAIZ / "cli.py"), str(E3 / "puntos.csv"),
+            "--alcance", "expediente",
+            "--datos-externos", str(E3 / "externos.json"),
+            "--datos-sitio", str(E3 / "sitio.json")]
+    for clave, valor in json.loads(
+            (E3 / "declaraciones.json").read_text(encoding="utf-8")).items():
+        args += ["--declarar", f"{clave}={valor!r}"]
+    args += ["--declarar",
+             "agua_del_relleno_bajo_sismo='relleno_muy_abierto'"]
+    r = subprocess.run(args, cwd=RAIZ, capture_output=True, text=True,
+                       check=False)
+    resumen = r.stdout[r.stdout.rindex("RESUMEN"):]
+    assert "metodo no evaluable" in resumen
+    assert "Mientras un criterio siga sin valor" not in resumen
+    assert cli.TipoDeBloqueo is not None

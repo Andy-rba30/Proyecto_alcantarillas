@@ -279,6 +279,7 @@ from src.modelos import (Bloqueo, Clasificacion, CompatibilidadGeometrica,
 from src.modelos import (ORIGEN_DIMENSION_DECLARADA,   # --- T-7a ---
                          ORIGEN_DIMENSION_DERIVADA)
 from src.modelos import ALCANCE_DECLARADO               # --- T-10 ---
+from src.modelos import TipoDeBloqueo                   # --- VE-3.14 ---
 from src.modulos import M2_material as M2
 from src.modulos import M5_verificaciones as M5
 from src.modulos.M8_estructural import (CODIGO_PASO_HMAX_TIPO4,
@@ -2101,9 +2102,40 @@ def _lineas_resumen(informe: Informe) -> List[str]:
     if not informe.cerrado:
         out.append("")
         if r.bloqueadas or not r.incumplidas:
-            out.append("El expediente NO cierra. Mientras un criterio siga sin "
-                       "valor, la etapa que lo invoca se detiene: no se "
-                       "sustituye por un defecto (Sec. 0.7).")
+            # --- VE-3.14 (H-10 de los ensayos de diseño del cabezal) --- La
+            # frase decia siempre «mientras un criterio siga sin valor»,
+            # tambien cuando lo que detenia la etapa era un metodo que el
+            # programa no implementa o un dato que falta: la causa se lee del
+            # TIPO de cada bloqueo que cuenta.
+            tipos = {b.tipo for _id, b in informe.bloqueos_reales()}
+            causas = []
+            if TipoDeBloqueo.CRITERIO_PENDIENTE in tipos:
+                causas.append(
+                    "mientras un criterio siga sin valor, la etapa que lo "
+                    "invoca se detiene: no se sustituye por un defecto "
+                    "(Sec. 0.7)")
+            if TipoDeBloqueo.METODO_NO_EVALUABLE in tipos:
+                causas.append(
+                    "hay etapas detenidas por «metodo no evaluable»: lo que "
+                    "falta es un procedimiento que el programa no implementa "
+                    "(el bloqueo de cada punto dice cual), no un criterio por "
+                    "declarar ni un incumplimiento")
+            if tipos & {TipoDeBloqueo.DATO_FALTANTE,
+                        TipoDeBloqueo.DATO_INVALIDO}:
+                causas.append(
+                    "falta o no vale un dato de entrada (el bloqueo de cada "
+                    "punto nombra el campo)")
+            if tipos & {TipoDeBloqueo.LIMITE_NUMERICO,
+                        TipoDeBloqueo.DISENO_NO_FACTIBLE}:
+                causas.append(
+                    "una etapa no tiene solucion con estos datos (limite "
+                    "numerico o diseño no factible; ver el bloqueo)")
+            if not causas:
+                causas.append(
+                    "mientras un criterio siga sin valor, la etapa que lo "
+                    "invoca se detiene: no se sustituye por un defecto "
+                    "(Sec. 0.7)")
+            out.append("El expediente NO cierra: " + "; ".join(causas) + ".")
         else:
             # --- T-9 (correcciones) --- Sin etapas bloqueadas, lo que impide
             # el cierre son verificaciones que se evaluaron y no cumplen (VB1

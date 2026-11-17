@@ -430,6 +430,10 @@ def test_cada_alcance_declarado_nombra_una_ficha_que_existe():
     # dueño dejo fuera y que T-10 no tenia (PRECISIONES_T-11, punto 4 (ii)):
     # la velocidad de salida en la banda de regimen de M4 (T8-09) y el
     # escalon de la regla de E-A en HW/D = 1.2 (T7V-01). Antes eran cinco.
+    # VE-3.14 (H-10): 'iteracion_ancho_zapata_cabezal' conserva la clave y
+    # la ficha, pero su TEXTO ya no dice «no se itera» (se itera desde
+    # VE-3.5): dice lo que sigue fuera -- la zapata no corrida -- y su
+    # simbolo es ahora `dimensionar_zapata_por_estabilidad`.
     assert {a.clave for a in ALCANCE_DECLARADO} == {
         "armado_seccion_marco", "cabezal_paralelo_a_la_via",
         "iteracion_ancho_zapata_cabezal", "flotacion_marco_sin_peso_propio",
