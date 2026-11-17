@@ -277,8 +277,11 @@ RELACIONES: Dict[str, Tuple[Relacion, ...]] = {
         ("S_conducto-S_cauce", "r", "v['S_conducto'] - v['S_cauce']"),
     ),
     # M5 --- V <= v_max.
+    # M5 --- V <= v_max. Desde VE-3.1 la magnitud es `V_erosion` o, bajo
+    # control de salida y cuando es mayor, `V_salida` (`M5._velocidad_de_v3`,
+    # ficha VE3-01): la primera magnitud en las dos ramas, como V1 y V2.
     "F5.V3@V3": (
-        ("V", "r", "v['V_erosion']"),
+        ("V", "r", "v['_1']"),
     ),
     # M5 --- cota_entrada + HW <= cota_subrasante - resguardo(CBR).
     "F5.V4@V4": (

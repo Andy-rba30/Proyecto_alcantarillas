@@ -64,8 +64,9 @@ import pytest
 
 from src.constantes_normativas import (KU_SI, K_MANNING_SI, Q_LIM_NO_SUMERGIDO,
                                        Q_LIM_SUMERGIDO)
-from src.modelos import (ConstantesHDS5, FormaSeccion, RegimenEntrada,
-                         SeccionCircular, SeccionRectangular, TipoMaterial)
+from src.modelos import (ConstantesHDS5, ControlGobernante, FormaSeccion,
+                         RegimenEntrada, SeccionCircular, SeccionRectangular,
+                         TipoMaterial)
 from src.modulos import MD
 from src.modulos.M2_material import catalogo
 from src.modulos.M3_hidraulica import resolver_manning, tirante_normal
@@ -453,8 +454,20 @@ def test_V3_juzga_la_estimacion_ALTA_y_no_la_baja(tipo, clave_v_max):
                           "la ventana de sensibilidad a proposito"):
         v3 = v3_velocidad_maxima(material=material, resultado=r)
     assert not v3.cumple
-    assert v3.valor_obtenido == pytest.approx(normal.V_erosion, rel=REL_TRANSPORTE)
-    _el_paso_de_v3_publica_la_rama_alta(v3.paso, normal, techo)
+    # DESDE VE-3.1 (ficha VE3-01), bajo control de SALIDA V3 juzga la mayor
+    # de `V_erosion` y `V_salida`: con el TMC de este caso gobierna la salida
+    # y su velocidad (y_c, salida libre) supera a la de n_min. Lo que el test
+    # protege no cambia: V3 juzga la estimacion ALTA y nunca `V_sedimentacion`.
+    salida = (r.control_gobernante is ControlGobernante.SALIDA
+              and r.V_salida is not None
+              and r.V_salida.valor > normal.V_erosion)
+    alta = r.V_salida.valor if salida else normal.V_erosion
+    assert v3.valor_obtenido == pytest.approx(alta, rel=REL_TRANSPORTE)
+    assert v3.valor_obtenido >= normal.V_erosion > normal.V_sedimentacion
+    if salida:
+        assert "V_salida" in v3.paso.resultado.simbolo
+    else:
+        _el_paso_de_v3_publica_la_rama_alta(v3.paso, normal, techo)
 
 
 def _el_paso_de_v3_publica_la_rama_alta(paso, normal, techo):
