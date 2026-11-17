@@ -2697,3 +2697,33 @@ referencias y el sello de `docs/trazabilidad.csv`; `manifiesto_registro_normativ
 Con Tk corren los mismos 57 tests de ventana real, ninguno saltado. Las dos corridas del
 entregable se lanzaron a la vez, de unos 16 min cada una, con otra suite ajena corriendo
 en la máquina, y el test de presupuesto de tiempo pasó en las dos.
+
+## VE-2 de la cadena de interfaz (2026-11-17): el par con ventana Tk, MEDIDO — integración
+
+VE-2 (las siete decisiones de VE1-02, en cuatro partes desarrolladas en paralelo: (b) la
+velocidad de erosión con su propio tirante de n mínimo; (a) y (g) la columna del n del
+concreto y los diámetros designados por norma de producto; (c) la justificación y el nivel
+de agua de diseño de V7; (e), (f) y (d) el aviso de consistencia, el racional modificado de
+10 a 770 km² y el factor de intervalo fijo) se integró en `claude/elegant-rubin-4ax72s`
+sobre `72a8d01`, en el orden (b) → (a, g) → (c) → (e, f, d), regenerando la línea base y
+los documentos generados sobre el conjunto tras cada parte. Entorno: `python` 3.12 con
+`tkinter`, `ttkbootstrap`, `weasyprint`, PyMuPDF, `xvfb-run -a` y `NORMAS_DIR` enlazado
+(la fila «sí · sí»). La partida es la de `72a8d01`, medida en clon limpio por la sesión
+anterior: 6739 / 10 / 6749. Cada parte se midió entera en su propia rama: (b) 7293 / 10,
+(a, g) 6778 / 10, (c) 6777 / 10, (e, f, d) 6792 / 10. Los saltos son los de siempre: los
+diez estructurales de `test_familias_del_csv` y, en la exportación, los cuatro que leen lo
+versionado o necesitan `.git`; ninguno es de Tk ni de PDF.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, partida (`72a8d01`), clon limpio | sí | sí | 6739 | 10 | 6749 |
+| entregable, VE-2 integrado, clon limpio fuera del repositorio | sí | sí | 7425 | 10 | 7435 |
+| entregable, VE-2 integrado, exportación (`git archive HEAD`, fuera del repo) | sí | sí | 7421 | 14 | 7435 |
+| proceso, VE-2 integrado, clon limpio | sí | sí | 145 | 0 | 145 |
+
+VE-2 suma 686 tests: 669 en sus cuatro archivos (`tests/test_ve2_velocidad_erosion.py`,
+`test_ve2_materiales.py`, `test_ve2_flotacion.py`, `test_ve2_hidrologia.py`), escritos en
+rojo con `xfail(strict=True)` y liberados al implementar, con sus mutantes anotados, y el
+resto en tests existentes cambiados declarando la causa. Criterios: 141 → 146, los cinco
+[A] de perfil, ninguno existente cambia de valor. Sólo (b) mueve números de la línea base
+(`docs/linea_base.md` §11 y §16).

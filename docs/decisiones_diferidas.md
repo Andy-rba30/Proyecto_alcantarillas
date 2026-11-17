@@ -7809,3 +7809,49 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   y su cita. Tests en `tests/test_ve2_hidrologia.py`; barrido sobre la variante
   `caudal_calculado` en `tests/apoyo/sensibilidad.py`.
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::precipitacion_de_diseno`
+
+## VE2-01 · Lo que sigue mal en la hoja de ruta después de VE-2 (no se edita: lo corrige el dueño)
+
+- **Qué se difirió:** corregir `docs/hoja_de_ruta_alcantarillas_v8.md`, que VE-2 no edita.
+  Tres textos, cada uno verificado contra su PDF y declarado en el punto de uso:
+  (1) la §4.1 rotula la doble n «**Regla [N]**» sin numeral: el Manual de Hidrología, núm.
+  4.1.1.3.6, pág. impresa 74, sólo dice «n : Coeficiente de Manning (Ver Tabla Nº 09)», y la
+  Tabla Nº 09 (pág. impresa 75) da MÍNIMO, NORMAL y MÁXIMO sin regla de columna; desde VE-2
+  la columna es el criterio [A] `columna_n_manning_concreto` (VE2-A), y la velocidad a
+  tirante normal la sostienen HDS-5 núm. 3.3.2, pág. 3.24 y HEC-14 núm. 3.2.2, pág. 3-7
+  (VE2-B). (2) La fila **V7** de la Fase 5 («Tubería vacía, NF en su cota más alta») y la
+  Fase 8, ítem 3 («obligatoria con NF a 1.4 m») callan que el nivel de agua de diseño lo
+  especifica o aprueba el Propietario (Manual de Puentes núm. 2.4.3.8.1, pág. impresa 113);
+  desde VE-2 es el criterio [A] `nivel_agua_diseno_v7` (VE2-C). (3) De VE1-01 sigue sin
+  corregir la §1.2, nota `INF-5.1.11`: «la lee V7» de `NF_profundidad_m`, sin condición;
+  desde VE-2 V7 la lee **sólo** con `nivel_agua_diseno_v7` = `nf_del_punto`.
+- **Por qué:** la hoja de ruta es la fuente normativa única y la corrige su dueño; mientras
+  no lo haga, quien la lea sin leer el código diseñará con el rótulo y la hipótesis
+  equivocados (CLAUDE.md, «Fuente de verdad»). Las tres discrepancias están declaradas en
+  `F4.MANNING`, en `M8_estructural` («Por que U asume sumersion completa») y en la fila de
+  `NF_profundidad_m` de `docs/contrato_entradas.md`.
+- **Qué haría falta:** que el dueño corrija los tres textos, y retirar entonces las
+  declaraciones del punto de uso y el centinela de `tests/test_ve1_validacion.py`.
+- **Dónde vive:** `src/modulos/M8_estructural.py::regla_nivel_agua_v7`
+
+## VE2-02 · Lo que VE-2 dejó diferido, reunido
+
+- **Qué se difirió:** lo abierto de cada parte, cada uno en su ficha: (b) el tirante de
+  salida bajo control de entrada sigue siendo el de n máximo (lo leen como nivel la Ec.
+  10.5 de HEC-14 y el cabezal) y el 1.184 m/s del dictamen sigue como histórico fuera del
+  permiso (VE2-B); (a) la fila «Rugosidad (regla de doble n)» de
+  `M11._filas_combinacion_adoptada` es texto fijo que no nombra la columna declarada
+  (VE2-A); (g) con la opción inglesa, el tope de 2.70 m y V9 comparan el diámetro de cálculo
+  y no el designado, y la pared del diámetro inglés no está decidida (VE2-G); (c2) con `nf_del_punto` y el nivel sobre la clave, una
+  corrida de perfil se detiene en un dato de ensayo de expediente (VE2-C); (e) el contraste
+  cuantitativo de la consistencia, sin fuente (VE2-E); (f) cuencas desde 770 km² y Pd ≤ Po
+  (VE2-F); (d) el 1.13 como [C], sin el PDF de su fuente (VE2-D). Y uno de la integración:
+  `src/indice_formulas.py::menciones_del_fundamento` sólo reconoce ids `F<n>.<nombre>`, de
+  modo que el índice rotula «sin mención fuera del registro» a `FH.FACTOR_P24`, que entra
+  por `eleccion()` desde `MH_hidrologia` (lo mismo le pasa desde antes a
+  `F5.V2b.REGIMEN`); es herramienta del índice, fuera del permiso de VE-2.
+- **Por qué:** cada uno pide una decisión del dueño, una fuente que no está en el
+  repositorio de normas o un archivo fuera del permiso de la etapa.
+- **Qué haría falta:** lo que dice cada ficha; para el índice, ampliar el patrón a
+  `F[0-9H]+\.[A-Za-z0-9_.]+` y regenerar `docs/indice_formulas.md`.
+- **Dónde vive:** `src/indice_formulas.py::menciones_del_fundamento`

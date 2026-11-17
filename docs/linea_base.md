@@ -818,3 +818,19 @@ cuatro memorias de la CLI la fila de la huella y la del recuento («142 criterio
 declarados» por 141 en su rama; integrado detrás de (a), (g) y (c), 145 → 146), regenerada con `sh tests/linea_base_familia_c/regenerar.sh`.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 16. VE-2 integrado (2026-11-17): regenerada sobre el conjunto; sólo (b) mueve números
+
+Las cuatro partes de VE-2 se integraron en este orden —(b), (a) y (g), (c), (e) (f) y
+(d)— y la línea base se **regeneró sobre el conjunto** con `sh
+tests/linea_base_familia_c/regenerar.sh` tras cada una. Contra la del bloque 1 (§11), el
+conjunto sólo añade lo que §12 a §15 describen: la huella de `criterios_adoptados.py`, el
+recuento del encabezado («146 criterios declarados, 21 todavía sin valor»), los cuatro
+criterios nuevos que la corrida usa en la lista de criterios usados de los JSON
+(`columna_n_manning_concreto`, `diametro_de_diseno_concreto`, `nivel_agua_diseno_v7`;
+`factor_intervalo_fijo_p24` no, porque la línea base trae `Q_m3s` lleno), el margen
+estacional entre los que siguen sin valor, y los textos de V7 y de la columna del n. **Los
+números de cálculo son los de §11, y ningún diámetro, sección, material ni HW se movió
+respecto de `72a8d01` salvo lo que §11 lista** (A-01, A-02, C-01 y el cajón, por (b); medido hoja por hoja en los cuatro JSON, con un
+único número que §11 no escribía: el ancho final de la clase de A-02, 6.30 → 5.70 m, que
+acompaña al paso de la clase 4 a la 3).

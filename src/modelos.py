@@ -1049,7 +1049,10 @@ class Material:
     #
     # VACIA EN LA CIRCULAR, y no por olvido: el tubo no elige nada en Fase 3
     # que no este ya en el bloque de criterios -- su fila de la Tabla N 09 y
-    # su carta de HDS-5 son lectura directa, no adopcion --. El marco si:
+    # su carta de HDS-5 son lectura directa, no adopcion --. SALVO EL TUBO DE
+    # CONCRETO desde VE-2 (a): la COLUMNA de su fila de la Tabla N 09 es el
+    # criterio [A] 'columna_n_manning_concreto', y su eleccion viaja aqui
+    # (paso F4.N_CONCRETO de `M2._pasos_del_tubo_de_concreto`). El marco si:
     # cuatro de sus cinco decisiones son criterios declarados por el
     # proyectista, y una memoria que no las desarrolle no las puede defender.
     pasos: Tuple["PasoDeMemoria", ...] = ()
