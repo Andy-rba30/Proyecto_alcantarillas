@@ -8068,3 +8068,23 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** el cortante general de 5.7.3.4.2 y extender el dimensionamiento a la
   pantalla y al alero.
 - **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_peralte_por_armado`
+
+## VE3-08 · Ensayos de diseño del conducto: H4, H2, H6 y H3 (VE-3.11)
+
+- **Cerrado:** (H4) V7 suma el peso propio del conducto de concreto, γ_c·(A_ext − A_int), con
+  `peso_especifico_concreto_kn_m3` [C], ahora de nivel perfil (fila V7 de la hoja de ruta:
+  0.90·(DC + EV) ≥ U); TMC y HDPE sin DC (el peso del producto no es dato declarado); con DC,
+  engrosar la pared mejora la flotación. (H2) Bajo control de entrada, si el TW alcanza el
+  conjugado del tirante normal (`M3.tirante_conjugado_barril`, función momentum) el resalto
+  entra al barril (HDS-5 3.1.3, pág. 3.2) y V1 juzga con el tirante máximo del perfil; también
+  con barril subcrítico y TW > y_n: la lectura de `borde_libre_bajo_tw_ahogante` es una sola a
+  lo largo del TW (nota T-2). (H6) El titular de un «no factible» nombra V2, V2b o V10 cuando
+  fallan en todo escalón evaluado. (H3 b) El delta de 7.A se rotula si V7 seguiría sin cumplir.
+  Línea base §25: ningún diámetro, sección ni material (B-01 pasa a «NO FACTIBLE POR V2»).
+- **Abierto:** (H3 a) el delta con V4 gobernada por el resguardo sigue sin darse (regla de
+  T11-03: el HW depende de la longitud); si V2 adopta la velocidad aguas abajo del resalto; E06
+  (titular por V3), H7 (la progresión sigue tras una falla que sólo empeora) y H8 (cobertura G1
+  fuera del bucle).
+- **Qué haría falta:** decidir si V2 adopta el régimen del resalto; iterar 7.A con el HW para
+  dar el delta de resguardo.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::v1_borde_libre`

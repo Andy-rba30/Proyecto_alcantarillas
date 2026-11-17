@@ -745,13 +745,16 @@ def test_las_tres_claves_de_V5_y_V8_son_datos_externos_por_punto():
     REESCRITO DECLARANDOLO (correcciones de T-7b, H2): son CUATRO desde que
     V5 tiene el metodo de cota, cuyo dato es la cota de afectacion aguas
     arriba; `CLAVES_EXTERNAS` pasa de 24 a 25. La cota admite cero y signo.
+    Y 26 desde VE-3.6, que sumo `desnivel_perfil_canal_m` (el F del canal
+    que VC3 pide en la Familia C); este recuento se habia quedado en 25.
     """
     assert servicio.CLAVES_DE_V5_Y_V8 == (
         "ancho_derecho_via_m", "Q_evento_extremo_m3s", "TW_evento_extremo_m",
         "cota_afectacion_aguas_arriba_msnm")
     for clave in servicio.CLAVES_DE_V5_Y_V8:
         assert clave in servicio.CLAVES_EXTERNAS
-    assert len(servicio.CLAVES_EXTERNAS) == 25
+    assert len(servicio.CLAVES_EXTERNAS) == 26
+    assert "desnivel_perfil_canal_m" in servicio.CLAVES_EXTERNAS
     cota = "cota_afectacion_aguas_arriba_msnm"
     assert {f.value for f in servicio.FAMILIAS_QUE_USAN[cota]} == {"A", "B"}
     assert cota in servicio.CLAVES_QUE_ADMITEN_CERO
