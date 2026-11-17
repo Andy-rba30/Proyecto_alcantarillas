@@ -122,6 +122,15 @@ decisión (H2, H3, H4 y titulares), respaldo en
 `claude/youthful-shannon-rjzmuc-respaldo-ensayos-h2-h4`. Los informes en curso de
 `/home/user/verificacion_fable/` se copian a `informes_en_curso/` con cada respaldo.
 
+**Acuse de la sesión orquestadora (2026-11-17, ~21:05 UTC):** leídas las dos respuestas del
+dueño y las dos verificaciones. VE-3.9 integrado (`347d8e2`, `6c54867`, ficha VE3-05 en
+`a82b99d`). En curso: VE-3.11 (H2, H3, H4 y titulares; respaldo `…-respaldo-ensayos-h2-h4`),
+VE-3.12 (decisiones 1, 3, 6 y 7: clases III–V [C] del USACE con tope por clase, Clase IV
+bloqueada donde no se lee; O-2 cerrado; aviso ACPA en F8.CLASE sin gobernar y la redacción del
++65 %; el hueco 1.0–2.0 ft; respaldo `…-respaldo-clases-y-aviso-acpa`) y los ensayos de
+diseño del CABEZAL (Opus, esfuerzo máximo; informe en `informes_en_curso/`). La decisión 2
+(`no_cumple`) no requiere cambio. Antes de integrar en `main` se avisará aquí.
+
 ## Decisiones del dueño (2026-11-17)
 
 - VE2-04: sí, V3 con la mayor velocidad bajo control de salida (hecho, VE-3.1).
