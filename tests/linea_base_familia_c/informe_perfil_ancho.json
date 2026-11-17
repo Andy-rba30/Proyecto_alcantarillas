@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "7686cd155a9ca164d66664745c8d1e3b961aa1b9",
+    "criterios_sha1": "c50f2b91f113288fd30b403b10fe00445b8cda21",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -563,7 +563,7 @@
         "numeral": null,
         "verificacion_diferida": [
           "Metodo directo del tubo de concreto (AASHTO LRFD 12.10.4.2): no se usa; la clase sale del metodo indirecto de 12.10.4.3, que la norma admite como alternativa",
-          "D-load de 0.3 mm de las Clases I, III, IV y V de AASHTO M 170M: ilegibles en el ejemplar de normas/ y no transcritas; un tubo que pida mas que la Clase II se detiene diciendo que clases faltan y que lo destraba un ejemplar legible de M 170M o de ASTM C76M ('clases_producto_por_relleno')"
+          "Clases de AASHTO M 170M que el ejemplar de normas/ no deja verificar: la D-load de la Clase I no se transcribe (solo se tabula desde 1500 mm); las de las Clases III, IV y V vienen de una fuente SECUNDARIA (la tabla de ASTM C76 de un ejemplo resuelto del USACE EM 1110-2-2902, B-7); y el ultimo diametro con pared B de la Clase IV no se lee, de modo que la Clase IV queda BLOQUEADA por encima de 300 mm. Lo destraba un ejemplar legible de M 170M o de ASTM C76M ('clases_producto_por_relleno')"
         ]
       },
       "espaciamiento_alivio": null,
@@ -1149,7 +1149,7 @@
         "numeral": null,
         "verificacion_diferida": [
           "Metodo directo del tubo de concreto (AASHTO LRFD 12.10.4.2): no se usa; la clase sale del metodo indirecto de 12.10.4.3, que la norma admite como alternativa",
-          "D-load de 0.3 mm de las Clases I, III, IV y V de AASHTO M 170M: ilegibles en el ejemplar de normas/ y no transcritas; un tubo que pida mas que la Clase II se detiene diciendo que clases faltan y que lo destraba un ejemplar legible de M 170M o de ASTM C76M ('clases_producto_por_relleno')"
+          "Clases de AASHTO M 170M que el ejemplar de normas/ no deja verificar: la D-load de la Clase I no se transcribe (solo se tabula desde 1500 mm); las de las Clases III, IV y V vienen de una fuente SECUNDARIA (la tabla de ASTM C76 de un ejemplo resuelto del USACE EM 1110-2-2902, B-7); y el ultimo diametro con pared B de la Clase IV no se lee, de modo que la Clase IV queda BLOQUEADA por encima de 300 mm. Lo destraba un ejemplar legible de M 170M o de ASTM C76M ('clases_producto_por_relleno')"
         ]
       },
       "espaciamiento_alivio": null,
@@ -2051,7 +2051,10 @@
         "etiqueta": "C",
         "valor": {
           "concreto_reforzado": {
-            "II": 50.0
+            "II": 50.0,
+            "III": 65.0,
+            "IV": 100.0,
+            "V": 140.0
           }
         },
         "declarado_en_caliente": false,
@@ -2406,6 +2409,13 @@
         "concepto": "Regla con que se fijan el tamaño de la piedra, el espesor y la longitud de la proteccion de salida"
       },
       {
+        "clave": "relleno_max_contraste_acpa_m",
+        "etiqueta": "A",
+        "valor": 1.0,
+        "declarado_en_caliente": false,
+        "concepto": "Relleno total hasta la rasante, m, por DEBAJO del cual el paso F8.CLASE del tubo de concreto imprime, como contraste que no rige, la clase que saldria con la longitud efectiva de ACPA (DD 1, Eq. [2])"
+      },
+      {
         "clave": "remanso_derecho_via",
         "etiqueta": "A",
         "valor": null,
@@ -2503,7 +2513,6 @@
       "categoria_refuerzo_aashto",
       "clase_exposicion_fisuracion_cabezal",
       "clase_sitio",
-      "dimensionamiento_zapata_cabezal",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "exposicion_quimica_ems",
