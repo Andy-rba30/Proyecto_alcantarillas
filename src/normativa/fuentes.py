@@ -1202,12 +1202,53 @@ USBR_DSCS = Fuente(
         "Usuarios)."),
 )
 
+# --- VE-3.12 --- La D-load de 0.3 mm de las Clases III a V del tubo de
+# concreto (decisiones 1 y 7 del dueño, 2026-11-17). El ejemplar de M 170M de
+# normas/ no las deja leer; este documento del USACE las imprime en un
+# EJEMPLO RESUELTO (Apendice B), no en una tabla normativa: fuente [C]
+# secundaria, y su cita lo dice.
+USACE_EM_1110_2_2902 = Fuente(
+    id="USACE_EM_1110_2_2902",
+    titulo="Conduits, Culverts, and Pipes (EM 1110-2-2902)",
+    emisor="U.S. Army Corps of Engineers",
+    edicion="31 Mar 1997, Change 1 del 31 Mar 1998",
+    anio=1998,
+    archivo_pdf=("normas/USACE EM 1110-2-2902 Conduits, Culverts and Pipes "
+                 "(1997, Change 1 1998).pdf"),
+    sha1="cfdc3bfd1c9291d30c98de11f27b1f1fbf7a95d8",
+    paginas_pdf=87,
+    paginacion=PorCapitulo(base={"B": 64}, separadores=("-",)),
+    vigencia=Vigencia(
+        estado=VIGENCIA_GABINETE, fecha=VIGENCIA_VERIFICADA_EL_VE3,
+        como=("no se busco su vigencia: se usa SOLO por la tabla «ASTM C76 "
+              "Class and D0.01» de su ejemplo resuelto del Apendice B (pag. "
+              "impresa B-7), como fuente secundaria de las D-load de 0.3 mm "
+              "de AASHTO M 170M / ASTM C76M que el ejemplar de normas/ no deja "
+              "leer"),
+        pendiente_gabinete=("sustituir la cita por la tabla de un ejemplar "
+                            "legible de AASHTO M 170M (la vigente) o de ASTM "
+                            "C76M en cuanto el dueño lo consiga")),
+    nota=(
+        "ENTRA EN VE-3.12 (decisiones 1 y 7 del dueño): las D-load de 0.3 mm "
+        "de las Clases III, IV y V del tubo de concreto. Es un EJEMPLO "
+        "RESUELTO del Apendice B («Chapter 3: Circular Precast Concrete Pipe "
+        "for Small Dams and Major Levees — D-Load Analysis»), sin edicion de "
+        "ASTM C76 y sin unidades impresas en la tabla (se deducen de la misma "
+        "pagina y de la B-8, «D0.01 = 57 N/m/mm (1,172 plf/ft) ASTM C76M "
+        "Class III»). Las cifras son las NOMINALES de la norma metrica (100 y "
+        "140 no son 95.76 ni 143.64), que es la que el EG-2013 506 manda "
+        "(AASHTO M-170M). Es [C], no [N]: el numeral no se verifica contra "
+        "el ejemplar normativo. Verificacion independiente en "
+        "proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/"
+        "clases_iii_v_astm_c76.md."),
+)
+
 FUENTES: Dict[str, Fuente] = {
     f.id: f for f in (
         MC_HHD, MP, MS, EG2013, E030, E050, E060,
         HDS5_3ED, HDS5_SI_1985, AASHTO_LRFD_9,
         AASHTO_M170M, AASHTO_M36, ASTM_A760, ASTM_A796, AASHTO_M294_TRAD,
-        DG2018, HEC14, WSDOT_HM, USBR_DSCS,
+        DG2018, HEC14, WSDOT_HM, USBR_DSCS, USACE_EM_1110_2_2902,
     )
 }
 

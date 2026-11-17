@@ -671,7 +671,8 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
     # 'nivel_agua_diseno_v7' y 'margen_estacional_nf_v7_m' (c2), 'factor_intervalo_fijo_p24' (d).
     # 147 desde VE-3.5: 'dimensionamiento_zapata_cabezal'; 148 con el de VE-3.7,
     # 'fraccion_fin_remanso_canal' (las dos ramas se integraron juntas).
-    assert len(ca.CRITERIOS) == 148 and barridos > 100, (len(ca.CRITERIOS),
+    # 149 desde VE-3.12: 'relleno_max_contraste_acpa_m' (decision 6 del dueño).
+    assert len(ca.CRITERIOS) == 149 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 

@@ -314,6 +314,16 @@ def test_el_concreto_de_A01_es_clase_II_con_la_D_load_calculada_a_mano(
 def test_el_relleno_maximo_del_concreto_es_donde_la_clase_se_agota(
         del_expediente, a01):
     """El relleno maximo es un CRUCE: con 1 cm mas, la Clase II no alcanza."""
+    # VE-3.12: desde que las Clases III a V estan transcritas (decision 1
+    # del dueño), este test fija el MECANISMO de T-5 con solo la Clase II,
+    # el estado del archivo hasta VE-3.12.
+    with con_valor("clases_producto_por_relleno",
+                   {"concreto_reforzado": {"II": 50.0}},
+                   motivo="el estado del archivo hasta VE-3.12"):
+        _cruce_de_la_clase_II(a01)
+
+
+def _cruce_de_la_clase_II(a01):
     mat = _material(TipoMaterial.CONCRETO_REFORZADO)
     sec = SeccionCircular(CP["D"])
     H = _altura(a01, mat, CP["D"])
@@ -377,8 +387,9 @@ def test_la_instalacion_de_archivo_es_el_tipo_3_y_el_tipo_4_esta_en_la_ventana()
 def test_clases_producto_por_relleno_solo_trae_lo_que_el_ejemplar_deja_leer():
     c = ca.CRITERIOS["clases_producto_por_relleno"]
     assert set(c.valor) == {"concreto_reforzado"}
-    assert c.valor["concreto_reforzado"] == pytest.approx({"II": 50.0},
-                                                          rel=REL_TRANSPORTE)
+    # VE-3.12 (decisiones 1 y 7 del dueño): III a V desde el USACE.
+    assert c.valor["concreto_reforzado"] == pytest.approx(
+        {"II": 50.0, "III": 65.0, "IV": 100.0, "V": 140.0}, rel=REL_TRANSPORTE)
     assert c.nivel == ca.NIVEL_PERFIL and c.etiqueta == "C"
     with con_valor("clases_producto_por_relleno", {"concreto_reforzado": {}},
                    motivo="un ejemplar sin ninguna clase legible"):

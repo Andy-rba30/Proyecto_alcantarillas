@@ -92,8 +92,9 @@ def test_clases_producto_por_relleno_ya_no_esta_vacio():
     assert "clases_producto_por_relleno" not in ca.criterios_sin_valor()
     valor = ca.CRITERIOS["clases_producto_por_relleno"].valor
     assert set(valor) == {"concreto_reforzado"}
-    assert valor["concreto_reforzado"] == pytest.approx({"II": 50.0},
-                                                        rel=REL_TRANSPORTE)
+    # VE-3.12 (decisiones 1 y 7 del dueño): III a V desde el USACE.
+    assert valor["concreto_reforzado"] == pytest.approx(
+        {"II": 50.0, "III": 65.0, "IV": 100.0, "V": 140.0}, rel=REL_TRANSPORTE)
 
 
 # ===========================================================================

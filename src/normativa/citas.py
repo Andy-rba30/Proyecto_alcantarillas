@@ -140,6 +140,8 @@ _SHA = {
     "WSDOT_HM": "b34bb7bd448c249301e2a1a82234be70e8b6d916",
     # --- VE-3.6 --- La fuente [C] de VC3 (Familia C).
     "USBR_DSCS": "75510d711ce1f6643333937a1ea38f3b469cc1f7",
+    # --- VE-3.12 --- Las D-load de las Clases III a V (fuente [C] secundaria).
+    "USACE_EM_1110_2_2902": "cfdc3bfd1c9291d30c98de11f27b1f1fbf7a95d8",
 }
 
 _TODAS = []
@@ -14943,6 +14945,84 @@ USBR_DSCS_2_6_CHECK = _cita(
           "ejemplo son las de entrada y salida mas la friccion del tubo "
           "(paso (b)(11)); el proyecto las mide como la diferencia de lamina "
           "entre la entrada y la salida de la obra (ver VC3)."),
+)
+
+
+# ===========================================================================
+# --- VE-3.12 --- Las Clases III a V del tubo de concreto (decisiones 1 y 7
+# del dueño, 2026-11-17): la D-load de 0.3 mm, del ejemplo resuelto del
+# USACE (fuente [C] secundaria, capa de texto), y lo que el ejemplar de M 170M
+# deja leer de los diametros que tabula cada clase (por imagen).
+# ===========================================================================
+FECHA_VE3_12 = "2026-11-17"
+POR_VE3_12 = "validacion/VE-3.12 · lectura directa de la pagina por la sesion"
+VE3_12 = (FECHA_VE3_12, POR_VE3_12)
+
+USACE_EM_1110_2_2902_B7_C76 = _cita(
+    id="USACE_EM_1110_2_2902.B-7#C76",
+    fuente_id="USACE_EM_1110_2_2902",
+    numeral="Appendix B, Chapter 3",
+    titulo_numeral="D-Load Analysis",
+    pagina_impresa="B-7",
+    pagina_pdf=71,
+    texto_literal=Verbatim(texto="ASTM C76 Class and D0.01", pagina_pdf=71),
+    caracter=Caracter.DEFINICION,
+    sesion=VE3_12,
+    nota=("Titulo de la tabla del EJEMPLO RESUELTO (no tabla normativa) de la "
+          "pag. impresa B-7: «I 40 (800)», «II 50 (1,000)», «III 65 (1,350)», "
+          "«IV 100 (2,000)», «V 140 (3,000)», N/m/mm con el valor de la norma "
+          "inglesa en lb/ft/ft entre parentesis. Las cifras metricas son las "
+          "NOMINALES de ASTM C76M / AASHTO M 170M, no una conversion (100 y "
+          "140 no son 95.76 ni 143.64). El ejemplar de M 170M de normas/ "
+          "corrobora la Clase II (0.3 mm = 50.0, AASHTO_M170M.T2#DLOAD), la "
+          "ultima de la Clase III (100.0, coherente con 65 x 1.5) y la Clase V "
+          "con la primera cifra ilegible («?40.0»); I, IV y el 65 de la III no "
+          "se confirman en el. El proyecto transcribe III, IV y V (decision 1 "
+          "del dueño); la I no, porque la norma solo la tabula desde 1500 mm. "
+          "El tubo suministrado tiene que ser M 170M (EG-2013 506): la clase "
+          "homonima de ASTM C76 en unidades inglesas resiste hasta un 4.2 % "
+          "menos."),
+)
+
+AASHTO_M170M_T5_PARED_B = _cita(
+    id="AASHTO_M170M.T5#PARED_B",
+    fuente_id="AASHTO_M170M",
+    numeral="Table 5",
+    titulo_numeral="Design Requirements for Class V Reinforced Concrete Pipe",
+    pagina_impresa="M 170M-10",
+    pagina_pdf=10,
+    texto_literal=Verbatim(texto="1200", pagina_pdf=10),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=VE3_12,
+    nota=("LEIDO POR IMAGEN (escaneo girado, legible). En la Clase V la Pared "
+          "A no tiene diseño en ningun diametro; la PARED B tiene espesor y "
+          "acero de 300 a 1200 mm (50 a 125 mm) y de 1350 mm en adelante "
+          "llamada a nota y rayas (diseño especial de la Seccion 7.2); la "
+          "Pared C llega a 1800 mm. El programa toma el espesor de la pared B, "
+          "de modo que la Clase V no se ofrece por encima de 1200 mm: vista de "
+          "calculo, DIAMETRO_MAX_TABULADO_PARED_B_POR_CLASE_M170M_MM."),
+)
+
+AASHTO_M170M_T4_LEGIBLE = _cita(
+    id="AASHTO_M170M.T4#LEGIBLE",
+    fuente_id="AASHTO_M170M",
+    numeral="Table 4",
+    titulo_numeral="Design Requirements for Class IV Reinforced Concrete Pipe",
+    pagina_impresa="M 170M-8",
+    pagina_pdf=8,
+    texto_literal=Verbatim(texto="300", pagina_pdf=8),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=VE3_12,
+    nota=("LEIDO POR IMAGEN. De la Tabla 4 (Clase IV) solo se lee su PRIMERA "
+          "fila, 300 mm (pared B de 50 mm); el resto de la pagina es una "
+          "recomposicion OCR vacia salvo los rotulos 2100 y 2250. El ultimo "
+          "diametro con diseño estandar de la Clase IV no se puede leer y no "
+          "se inventa (decision 7 del dueño): por encima de 300 mm la Clase IV "
+          "queda BLOQUEADA, y un tubo que la necesite se detiene con el dato "
+          "que falta. Vista de calculo: "
+          "DIAMETRO_MAX_LEGIBLE_POR_CLASE_M170M_MM."),
 )
 
 

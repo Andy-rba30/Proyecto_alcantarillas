@@ -7750,7 +7750,16 @@ CRITERIOS: Dict[str, Criterio] = {
             # {material: {clase: D-load de 0.3 mm en N/m/mm}}. Una clase que
             # no esta es una clase cuya D-load no se pudo leer: la norma la
             # tiene; este ejemplar no la deja ver.
-            "concreto_reforzado": {"II": 50.0},
+            # --- VE-3.12 (decisiones 1 y 7 del dueño, 2026-11-17) --- III,
+            # IV y V desde la tabla «ASTM C76 Class and D0.01» del ejemplo
+            # resuelto del USACE EM 1110-2-2902 (pag. impresa B-7, cita
+            # USACE_EM_1110_2_2902.B-7#C76): fuente [C] SECUNDARIA, valores
+            # nominales de la norma metrica. Cada clase se ofrece solo en los
+            # diametros que el ejemplar de M 170M deja verificar
+            # (`M8.clases_de_concreto_para`): la V con pared B hasta 1200 mm;
+            # la IV, ilegible por encima de 300 mm, queda BLOQUEADA.
+            "concreto_reforzado": {"II": 50.0, "III": 65.0, "IV": 100.0,
+                                   "V": 140.0},
         },
         nivel=NIVEL_PERFIL,
         etiqueta="C",
@@ -7770,12 +7779,17 @@ CRITERIOS: Dict[str, Criterio] = {
                       "hasta donde el ejemplar la deja leer: la D-load de "
                       "0.3 mm de la Clase II, 50.0 N/m/mm, impresa al pie de "
                       "su tabla, que tiene filas con pared B y acero de 300 "
-                      "a 2700 mm. Las de las Clases I, III, IV y V no se leen "
-                      "en el ejemplar --sus tablas son recomposiciones OCR "
-                      "con digitos equivocados-- y no se escriben de memoria: "
-                      "si un punto pide mas que la Clase II, la Fase 8 se "
-                      "detiene diciendo que clase falta transcribir. La Clase "
-                      "I, ademas, solo se tabula de 1500 mm en adelante. Para "
+                      "a 2700 mm. Las de las Clases III, IV y V (65, 100 y "
+                      "140 N/m/mm) vienen desde VE-3.12 de una fuente "
+                      "SECUNDARIA, la tabla de ASTM C76 de un ejemplo "
+                      "resuelto del USACE (decision 1 del dueño), porque en "
+                      "el ejemplar de M 170M no se leen; y cada una se ofrece "
+                      "solo donde el ejemplar deja verificar que la norma la "
+                      "tabula con pared B (decision 7): la V hasta 1200 mm; "
+                      "la IV no por encima de 300 mm, donde queda BLOQUEADA y "
+                      "un tubo que la necesite se detiene con el dato que "
+                      "falta. La Clase I no se transcribe: solo se tabula de "
+                      "1500 mm en adelante. Para "
                       "el TMC (ASTM A796, AASHTO LRFD 12.7) y el HDPE (AASHTO "
                       "LRFD 12.12) no hay clase por altura: el espesor de la "
                       "plancha y la verificacion del perfil son la salida de "
@@ -7784,7 +7798,15 @@ CRITERIOS: Dict[str, Criterio] = {
         fuente="AASHTO M 170M-04, Tabla 2 'Design Requirements for Class II "
                "Reinforced Concrete Pipe' (continuacion), pag. impresa M 170M-5, "
                "leida por imagen: «D-load to produce a 0.3-mm crack 50.0» "
-               "(cita AASHTO_M170M.T2#DLOAD). AASHTO LRFD 9a ed., Art. "
+               "(cita AASHTO_M170M.T2#DLOAD). Clases III, IV y V: USACE EM "
+               "1110-2-2902 (Change 1, 31 Mar 98), Apendice B, pag. impresa "
+               "B-7, tabla «ASTM C76 Class and D0.01» de un EJEMPLO "
+               "RESUELTO, fuente secundaria (cita "
+               "USACE_EM_1110_2_2902.B-7#C76); M 170M-04 solo corrobora la "
+               "ultima de la III (100.0) y la V con la primera cifra "
+               "ilegible; los topes de diametro, M 170M-04 Tablas 4 y 5 por "
+               "imagen (citas AASHTO_M170M.T4#LEGIBLE y "
+               "AASHTO_M170M.T5#PARED_B). AASHTO LRFD 9a ed., Art. "
                "12.10.4.3.1, pag. impresa 12-64: «The D-load for a particular "
                "class and size of pipe shall be determined in accordance with "
                "AASHTO M 170M» (cita AASHTO_LRFD_9.12.10.4.3.1#DLOAD). EG-2013 "
@@ -7793,38 +7815,79 @@ CRITERIOS: Dict[str, Criterio] = {
                "12.7 y 12.12 para el TMC y el HDPE, sin tabla de clase "
                "(afirmaciones negativas SIN_TABLA_CALIBRE_POR_COBERTURA_A796 "
                "y SIN_CLASE_POR_ALTURA_M294_TRAD)",
-        reemplazado_por="Las D-load de 0.3 mm de las Clases I, III, IV y V, "
-                        "leidas en un ejemplar legible de AASHTO M 170M "
-                        "(la M 170M-23 vigente, o ASTM C76M): se añaden aqui "
-                        "como filas del dict. El codigo ya sabe desde que "
-                        "diametro tabula la norma cada clase "
-                        "(DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM: la Clase "
-                        "I desde 1500 mm, las demas desde 300 mm) y no "
-                        "ofrece una clase por debajo; y con las cinco "
-                        "declaradas, un tubo que pida mas que la Clase V "
-                        "deja de detenerse por dato que falta y pasa a NO "
-                        "CUMPLIR. Es una entrada que debe conseguir el dueño "
-                        "del proyecto (docs/contrato_entradas.md)",
+        reemplazado_por="Un ejemplar legible de AASHTO M 170M (la M 170M-23 "
+                        "vigente) o de ASTM C76M: confirma o corrige las D-load "
+                        "de las Clases III, IV y V que hoy vienen del USACE, "
+                        "da la de la Clase I y, sobre todo, el ultimo diametro "
+                        "con pared B de la Clase IV, que hoy la deja "
+                        "BLOQUEADA por encima de 300 mm "
+                        "(DIAMETRO_MAX_LEGIBLE_POR_CLASE_M170M_MM). Es una "
+                        "entrada que debe conseguir el dueño del proyecto "
+                        "(docs/contrato_entradas.md)",
         verificacion_pendiente="LEGIBILIDAD DEL EJEMPLAR (medida en T-5, "
                                "pagina por pagina y por imagen): Clase II "
                                "0.3 mm = 50.0 (PDF 5, legible); Clase III, "
                                "ultima = 100.0 (PDF 7), 0.3 mm no se ve; "
                                "Clase V, «\\ 40.0» y «1 ISD» (PDF 11, el "
                                "primer digito ilegible); Clases I y IV, "
-                               "ilegibles. Con solo la Clase II un tubo que "
-                               "pida mas se detiene en vez de recibir una "
-                               "clase que el ejemplar no deja verificar: es "
-                               "decision del dueño del proyecto (2026-11-12) "
-                               "BLOQUEAR, no subir de diametro para esquivar "
-                               "una clase. Los diametros desde los que cada "
-                               "clase se tabula SI se leen (PDF 3, 4, 6, 8 y "
-                               "10): 1500 mm la Clase I y 300 mm las otras "
-                               "cuatro",
+                               "ilegibles. Desde VE-3.12 las D-load de III a V "
+                               "vienen del USACE (fuente secundaria) y lo que "
+                               "sigue pendiente es el ejemplar legible: es "
+                               "decision del dueño del proyecto (2026-11-12, "
+                               "reafirmada el 2026-11-17) BLOQUEAR, no subir "
+                               "de diametro ni de clase para esquivar una "
+                               "clase que el ejemplar no deja verificar. Los "
+                               "diametros desde los que cada clase se tabula "
+                               "SI se leen (PDF 3, 4, 6, 8 y 10): 1500 mm la "
+                               "Clase I y 300 mm las otras cuatro; los ultimos "
+                               "con pared B, solo los de la II y la III (2700 "
+                               "mm) y la V (1200 mm)",
         resolucion=Libre(
             que_lo_fija="la norma de producto, por clase; el proyecto solo "
                         "transcribe lo que el ejemplar deja leer",
             tabla_pendiente="AASHTO M 170M-04 Tablas 1, 3, 4 y 5: D-load de "
-                            "0.3 mm ilegible en el ejemplar de normas/",
+                            "0.3 mm ilegible en el ejemplar de normas/ (III a "
+                            "V, desde el USACE); Tabla 4: ultimo diametro con "
+                            "pared B de la Clase IV, ilegible",
+        ),
+    ),
+
+    # --- VE-3.12 (decision 6 del dueño, 2026-11-17) --- EL RELLENO HASTA EL
+    # QUE SE IMPRIME EL CONTRASTE DE LA PRACTICA ACPA en el paso F8.CLASE del
+    # tubo de concreto. La carga viva que RIGE sigue siendo la lectura literal
+    # de AASHTO LRFD 9.a ed. (12.10.2.3: «uniform vertical distribution across
+    # the top of the pipe», sin longitud efectiva); con poco relleno esa
+    # lectura sube una o dos clases respecto de la practica ACPA (DD 1, 2009,
+    # Eq. [2], L_e = L + 1.75(3/4 R_o)), y el dueño decidio mostrarlo como
+    # contraste que NO gobierna, como el de la instalacion Tipo 4. Nivel de
+    # PERFIL: lo consume `M8.verificar_concreto`, que la Fase 5 corre a nivel
+    # de perfil (F8.CLASE; medido en tests/test_ve3_clases_iii_v.py).
+    "relleno_max_contraste_acpa_m": Criterio(
+        valor=1.0,
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        positivo=True,
+        concepto="Relleno total hasta la rasante, m, por DEBAJO del cual el "
+                 "paso F8.CLASE del tubo de concreto imprime, como contraste "
+                 "que no rige, la clase que saldria con la longitud efectiva "
+                 "de ACPA (DD 1, Eq. [2])",
+        justificacion="Decision del dueño del proyecto (segunda respuesta "
+                      "del LEEME de VE-3) sobre la verificacion "
+                      "independiente de la carga viva de M8: se mantiene la "
+                      "lectura literal de AASHTO LRFD 9.a ed. y solo se "
+                      "avisa del contraste ACPA en tubos de concreto con "
+                      "relleno < 1.0 m. La verificacion midio que a partir "
+                      "de ~1.0 m de relleno la clase no cambia entre las dos "
+                      "lecturas (con 1.5 m la D-load difiere ~10 %)",
+        fuente="Decision del dueño (proceso/planes_mejora/ve3_estado/LEEME.md, "
+               "segunda respuesta, punto 6); medida en proceso/planes_mejora/"
+               "ve3_estado/verificaciones_del_dueno/carga_viva_m8_poco_"
+               "relleno.md, §4",
+        sensibilidad=(0.6096, 1.5),   # m: desde 2.0 ft (dominio del metodo) hasta donde la verificacion midio ~10 % de diferencia
+        resolucion=Libre(
+            que_lo_fija="el dueño del proyecto: hasta que relleno quiere ver "
+                        "el contraste; no cambia ningun diseño",
         ),
     ),
 

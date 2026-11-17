@@ -879,8 +879,10 @@ OBSERVACIONES = (
      "sigue la letra. En f_ss la diferencia es menor del 0.5 % en los dos "
      "ejemplos. Las filas de metodo exigen ademas que el motor de el n de esa "
      "formula, calculado aparte (`n_aashto_us`)."),
-    ("O-2", "El «b» del acero de temperatura. CDOT toma b = 12 in (la franja "
-     "de calculo); M9 pasa el ancho real del elemento, que es lo que AASHTO "
+    ("O-2", "El «b» del acero de temperatura — CERRADA a favor de M9 "
+     "(decision 3 del dueño, 2026-11-17: se deja el ancho real). CDOT toma b "
+     "= 12 in (la franja de calculo); M9 pasa el ancho real del elemento, que "
+     "es lo que AASHTO "
      "5.10.6 llama «least width of component section». Con el ancho real el "
      "minimo es mayor en un muro largo. En los tres casos de CDOT la ec. "
      "5.10.6-1 con b = 12 in queda bajo el piso de 0.11 in²/ft, de modo que "

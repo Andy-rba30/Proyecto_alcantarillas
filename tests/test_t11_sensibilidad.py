@@ -206,7 +206,12 @@ def test_los_juicios_del_anexo(medidas):
             # lluvia y el caudal un 13 %), pero en ese juego A-01, A-02 y
             # B-01 no dimensionan con ninguno de los dos valores y C-01 no
             # pasa por la hidrologia: no hay diseño ni veredicto que mover.
-            "factor_intervalo_fijo_p24@juego_caudal_calculado"},
+            "factor_intervalo_fijo_p24@juego_caudal_calculado",
+            # VE-3.12 (decision 6 del dueño): el umbral del contraste ACPA.
+            # Lo LEE la Fase 8 de cada tubo de concreto, y por construccion
+            # no mueve nada: el contraste ACPA NO GOBIERNA, solo agrega un
+            # paso F8.ACPA y un aviso cuando el relleno es poco.
+            "relleno_max_contraste_acpa_m"},
         "NO LO LEE LA CORRIDA": {
             "borde_libre_bajo_tw_ahogante", "seccion_receptor",
             "hw_entrada_fuera_de_rango", "coeficiente_uniformidad_temez",

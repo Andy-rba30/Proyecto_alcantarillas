@@ -1723,6 +1723,10 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "que el freatico sube entre la lectura y su nivel mas alto"),
     "phi_relleno_trasdos": _Meta(unidad="grados"),
     "predimensionamiento_cabezal": _Meta(unidad="m y adimensional (reglas)"),
+    "relleno_max_contraste_acpa_m": _Meta(
+        unidad="m",
+        nota="Relleno total hasta la rasante por debajo del cual F8.CLASE del "
+             "tubo de concreto imprime el contraste ACPA, que no rige"),
     "dimensionamiento_zapata_cabezal": _Meta(
         unidad="m (paso) y adimensional (tope sobre H_c)",
         nota="Solo se lee si la zapata de la regla no cumple la estabilidad "
