@@ -959,3 +959,41 @@ de canal real, 0.30-0.40 m, lo dejaría sin sección). Regenerada con
   `dimensionamiento_zapata_cabezal` entre los criterios sin valor.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 23. VE-3.9: el paso y el tope de la zapata como valor de archivo, y el peralte dimensionado por su armado; sólo la huella y el recuento (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto
+primero en el `PATH`). `dimensionamiento_zapata_cabezal` pasa de vacío a valor de archivo
+({paso 0.10 m, tope 1.5·H_c}, decisión del dueño) y el peralte de la zapata se dimensiona
+por su armado (`M9.dimensionar_peralte_por_armado`), pero ninguna corrida de la línea base
+llega a la estabilidad ni al armado del cabezal: lo único que cambia es la huella de
+`criterios_adoptados.py` en los cuatro JSON y, en las cuatro memorias, la fila de la huella
+y la del recuento («148 criterios declarados, 21 todavía sin valor»; la línea base de
+partida decía «147», porque no se había regenerado tras integrar la Familia C, que sumó un
+criterio). **Diámetros, secciones, materiales y HW movidos: ninguno.** Donde sí se mueve el
+cabezal es en `docs/validacion_integral.md`: en la corrida titular el peralte crece en los
+ocho cabezales y en el juego en dos, y el armado de la zapata deja de tener filas sin
+cumplir.
+
+Medido sobre los datos de PRUEBA de la validación integral (no del proyecto):
+
+| Corrida | Cabezales con peralte dimensionado | Peraltes adoptados | Filas de la zapata sin cumplir | Filas de estabilidad LRFD sin cumplir |
+|---|---|---|---|---|
+| Titular (decisiones de archivo: trasdós sin drenaje) | 8 de 8 | 1.004 a 1.504 m (anchos 3.38 a 5.28 m) | 0 | 0 |
+| Juego (trasdós drenado) | 2 de 8 (salidas de A-01 y A-02) | 0.804 y 0.704 m | 0 | 0 |
+
+Lo que sigue sin cumplir es de la PANTALLA y del ALERO, que este dimensionamiento no toca:
+A1 (flexión) de la pantalla y del alero de la salida de A-01 en las dos corridas, y de A-02
+y C-01 en el juego; A2 (cortante) como indicador en los mismos elementos. Las filas ASD de
+estabilidad que no salen «cumple» son indicadores, no deciden. Los peraltes de la titular
+son grandes porque entre 16 in y el peralte cuyo vuelo queda bajo 3·d_v el cortante sale
+de AASHTO 5.7.3.4.1 y el programa no implementa el procedimiento general (5.7.3.4.2): esos
+peraltes no se pueden verificar y el dimensionamiento pasa al primero verificable, que es
+conservador.
+
+En el anexo de sensibilidad (`docs/validacion_sensibilidad.md`) dos claves pasan de «mueve
+veredictos» a «leído, sin efecto medible» (`clase_exposicion_fisuracion_cabezal` y
+`metodo_longitud_conducto`): cambiaban un veredicto del armado de la zapata que hoy el
+peralte absorbe. Y el barrido de §3.1 vuelve a medir la zapata de la REGLA: la base
+`juego_cabezal_de_la_regla` declaraba el criterio sin valor y el barrido no lo aplicaba
+(`tests/apoyo/sensibilidad.py::medir` lo aplica desde VE-3.9).
