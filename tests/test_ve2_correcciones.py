@@ -44,6 +44,7 @@ from src.modulos import MD
 from tests.apoyo import validacion_integral as V
 from tests.fixtures import juego_validacion_integral as J
 from tests.test_MD import L_CONDUCTO, TW_LIBRE, _punto, _verificacion
+from tests.test_t11_no_factible_por_rasante import ABS_MM, DELTA_TMC_195
 
 
 class _DatoFaltante:
@@ -216,7 +217,9 @@ def test_el_caso_real_de_la_pared_sigue_no_factible_por_rasante_con_su_delta():
     assert TipoDeBloqueo.DATO_FALTANTE not in tipos
     b = next(b for b in a01.bloqueos
              if b.tipo is TipoDeBloqueo.DISENO_NO_FACTIBLE)
-    assert b.delta_rasante_m == pytest.approx(0.31981, abs=1e-5)
+    # El delta es el del TMC Ø 1.95 m de A-01, el dorado a mano de T11-03
+    # (0.31981 m), con su tolerancia nombrada.
+    assert b.delta_rasante_m == pytest.approx(DELTA_TMC_195, abs=ABS_MM)
 
 
 def test_otro_dato_del_punto_de_V8_tambien_decide():
