@@ -3,6 +3,23 @@
 Material de proceso, no del entregable. Lo mantiene la sesión orquestadora y se actualiza
 cada vez que se integra algo. Fecha de esta versión: 2026-11-17.
 
+> **MENSAJE DEL DUEÑO A LA SESIÓN ORQUESTADORA DE VE-3 (2026-11-17, 20:30 UTC), dejado
+> desde otra sesión porque el dueño ya NO tiene acceso a esta.** Nadie va a leer el chat de
+> esta sesión ni a responder preguntas en él: todo lo que importe tiene que quedar en el
+> repositorio.
+>
+> 1. **Copia ya al repo lo que tengas fuera de él**, empezando por
+>    `/home/user/verificacion_fable/ENSAYOS_DISENO_CONDUCTO.md` (aunque esté a medias,
+>    rotulado BORRADOR) a `proceso/planes_mejora/ve3_estado/`, con commit y push a esta
+>    rama. Desde ahora, todo informe en curso se copia y empuja con los respaldos de cada
+>    15 minutos, igual que el código.
+> 2. **Las preguntas al dueño no se hacen en el chat**: escríbelas en este LEEME
+>    («Decisiones pendientes del dueño»), con tu recomendación, y sigue con lo que no
+>    dependa de ellas.
+> 3. **Deja un `PROMPT_CONTINUAR.md` en esta carpeta, y mantenlo al día**, para que otra
+>    sesión retome VE-3 desde las ramas si esta se corta (como se hizo con VE-2).
+> 4. No integres en `main`: eso sigue esperando la autorización del dueño.
+
 ## Dónde está cada cosa
 
 - `main` = `3a65e30`: VE-2 integrado con sus correcciones y dos verificaciones Fable.
