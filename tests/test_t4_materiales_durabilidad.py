@@ -1377,6 +1377,56 @@ def test_h1_con_otra_fabricacion_declarada_el_caso_del_auditor_adopta_tmc(
     assert any("EG-2013 507.02 a)" in a for a in punto.avisos())
 
 
+# --- Correccion de VE-2 (revision independiente, B1) --- EL CASO ORIGINAL DEL
+# AUDITOR (S = 0.012) NO LO FIJABA NADIE desde que `CASO_G2` paso a 0.015. Se
+# fija aqui con lo que da HOY, MEDIDO sobre d9b59f9 (no copiado de la
+# revision): con la velocidad de erosion sobre el tirante de n minimo (VE-2)
+# el concreto deja de incumplir V3 desde Ø 1.50 m (5.945 m/s; 5.951 en
+# Ø 1.65 m, contra 6.0); Ø 1.50 m se descarta por V4b, y Ø 1.65 m --que cumple
+# la tabla de la Fase 5-- lo detiene la Fase 8 por la D-load de las clases de
+# AASHTO M 170M que el ejemplar no deja leer (124.8 N/m/mm, y la clase II
+# transcrita no la alcanza). El punto sale bloqueado por ESE dato
+# (`clases_producto_por_relleno`, T-5: un punto al que solo le falta un dato
+# no es «no factible»); el TMC sigue descartado por la costura en 1.95 y
+# 2.10 m y el HDPE no se evalua desde 1.50 m (falta la fila de su pared).
+CASO_G2_ORIGINAL = CASO_G2.replace(",0.015,", ",0.012,")
+# Las velocidades se leen al milimetro por segundo: lo que el test fija es de
+# que lado del techo quedan, no su ultimo digito.
+ABS_UN_MM_POR_S = 1e-3
+
+
+def test_b1_el_caso_original_del_auditor_se_detiene_en_la_clase_d_load(
+        del_expediente, tmp_path):
+    """
+    Rasante alta, Q = 6 m3/s, S = 0.012 (el `CASO_G2` de T-4), TW = 0.3,
+    con los valores del archivo. Desde VE-2 el concreto cumple V3 en Ø 1.50 y
+    1.65 m, y el punto NO es «no factible»: le falta la D-load de una clase de
+    AASHTO M 170M (Fase 8). Ver el bloque de arriba.
+    """
+    assert ",0.012," in CASO_G2_ORIGINAL
+    punto = _correr_csv(tmp_path, CASO_G2_ORIGINAL)
+    assert not punto.dimensionado
+    (bloqueo,) = [b for b in punto.bloqueos if "MD" in b.etapa]
+    assert bloqueo.tipo.value == "DatoFaltanteError"
+    assert bloqueo.campo == "clases_producto_por_relleno"
+    assert "1.65 m" in bloqueo.mensaje
+    del_concreto = {e.seccion.etiqueta(): e for e in punto.traza
+                    if "oncreto" in e.material}
+    assert list(del_concreto)[-1] == "Ø 1.65 m"
+    for etiqueta, v3_medida in (("Ø 1.50 m", 5.945), ("Ø 1.65 m", 5.951)):
+        (v3,) = [v for v in del_concreto[etiqueta].verificaciones
+                 if v.codigo == "V3"]
+        assert v3.cumple, etiqueta
+        assert v3.valor_obtenido == pytest.approx(v3_medida,
+                                                  abs=ABS_UN_MM_POR_S)
+        assert v3.valor_obtenido < v3.valor_admisible
+    assert "incumple V4b" in del_concreto["Ø 1.50 m"].motivo
+    assert MD.MARCA_ESCALON_SIN_EVALUAR in del_concreto["Ø 1.65 m"].motivo
+    del_tmc = [e for e in punto.traza if "TMC" in e.material]
+    for escalon in del_tmc[-2:]:
+        assert "incumple F8.COSTURA" in escalon.motivo
+
+
 def test_h1_un_candidato_anterior_sin_evaluar_por_dato_bloquea_al_posterior(
         del_expediente, tmp_path):
     """

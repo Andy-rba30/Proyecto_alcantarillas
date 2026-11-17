@@ -1,48 +1,44 @@
-# Estado de VE-2 (para retomar en otra sesión)
+# Estado de VE-2
 
-Material de proceso, no del entregable. Lo dejó la sesión orquestadora el 2026-11-17 porque
-el presupuesto de tokens de la sesión estaba sobre el 90 %.
+Material de proceso, no del entregable. Reescrito el 2026-11-17, en las correcciones de la
+revisión independiente (hallazgo B4): hasta entonces este archivo describía el estado de la
+mañana del 17 —ningún agente había commiteado y el trabajo vivía en parches— y ya no era
+cierto.
 
-## Dónde quedó
+## Dónde está
 
-- `main` = `72a8d01`: VE-1 integrado y el prompt VE-2 en
-  `proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md`.
-- Suite de partida medida en un clon limpio de `72a8d01` (python 3.12 con tkinter, xvfb,
-  `NORMAS_DIR` enlazado): **6739 passed, 10 skipped, 6749 collected**, igual que VE-1.
-  Ojo: en el checkout principal `test_los_imports_relativos_solo_viven_en_src_normativa`
-  falla mientras existan worktrees de agentes en `.claude/worktrees/` (el test barre todo el
-  árbol); medir siempre en un clon limpio.
-- VE-2 se repartió en cuatro agentes en paralelo, cada uno en su worktree, con el contrato
-  común de abajo. **Ninguno había commiteado todavía** cuando se guardó este estado; sus
-  cambios en curso están en los parches `*.wip.patch` de esta carpeta (diff contra
-  `72a8d01`, incluidos los archivos nuevos). Son trabajo A MEDIAS: no se integran tal cual.
+| Paso | Dónde | Estado |
+|---|---|---|
+| Prompt VE-2 | `main` = `72a8d01`, `proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md` | escrito y aprobado por el dueño |
+| Las cuatro partes, (b) → (a, g) → (c) → (e, f, d) | `claude/elegant-rubin-4ax72s`: `9a9b998`, `4c077c2`, `9fedc8d`, `2b9aa21`, `c250d06` | terminadas |
+| Integración | `claude/elegant-rubin-4ax72s` = `8dd435e` («validacion(VE-2): integración — VE1-02 (a) a (g)») | suite 7425 / 10 / 7435 |
+| Revisión independiente con Fable | `revision/ve2-fable` = `d9b59f9`, informe en `REVISION_FABLE.md` de esta carpeta | «integrar con correcciones»: un alto (A1), cuatro medios, cinco bajos |
+| Correcciones de la revisión | rama `claude/youthful-shannon-rjzmuc`, desde `d9b59f9` | en curso |
+| Verificación de las correcciones (Fable) y paso a `main` | — | pendiente |
 
-| Parche | Decisiones VE1-02 | Pasos del prompt | Mueve la línea base |
-|---|---|---|---|
-| `b_velocidad_erosion.wip.patch` | (b) | 1-5 | sí |
-| `a_g_materiales.wip.patch` | (a), (g) | 7, 14 | no (valores de archivo) |
-| `c_flotacion_v7.wip.patch` | (c1), (c2) | 6, 13 | no (valores de archivo) |
-| `e_f_d_hidrologia.wip.patch` | (e), (f), (d) | 8, 10-12 | no (valores de archivo) |
+`main` sigue en `72a8d01` hasta que la verificación apruebe.
 
-## Cómo retomar
+Los cuatro parches con que se retomó VE-2 (`a_g_materiales.commit.patch`,
+`b_velocidad_erosion.commit.patch`, `c_flotacion_v7.wip.patch`, `e_f_d_hidrologia.wip.patch`,
+unas 13 700 líneas) se retiraron de esta carpeta: lo que tenían está en los commits de la
+tabla, y los archivos siguen en la historia (`git show d9b59f9:proceso/planes_mejora/ve2_estado/<archivo>`).
+Ningún test del entregable ni de proceso los leía.
 
-1. Entorno: `apt-get install -y python3-tk xvfb`; usar `python3.12` (el 3.13 del contenedor
-   no trae tkinter) con `pip install --break-system-packages -r requirements.txt PyMuPDF` y
-   `pillow<13` (ttkbootstrap); clonar `Andy-rba30/Normas` y `export NORMAS_DIR=<clon>`.
-2. Si los agentes de la sesión anterior terminaron y sus ramas existen, integrar sus ramas.
-   Si no, partir de `main`, aplicar el parche de la parte (`git apply --3way`) como
-   BORRADOR y terminar los pasos del prompt VE-2 que falten (tests en rojo primero).
-3. Integrar en orden de bloque: (b) → (c1, a, e) → (f, d) → (c2, g). Conflictos esperables
-   y cómo se resuelven: los recuentos de criterios (141 + los nuevos) se suman; los
-   documentos generados y la línea base se REGENERAN sobre el conjunto con sus comandos;
-   fichas de `docs/decisiones_diferidas.md`, se conservan todas.
-4. Revisión independiente con el modelo Fable (pedido del dueño) de lo más crítico: (b), (f),
-   (c2)+(g) y la integración final. El revisor recibe el diff y el prompt, no las
-   conclusiones del implementador; reverifica citas en el PDF y recalcula a mano la ALC46 de
-   UPAO (V_erosion ≈ 5.81 m/s, Ø 0.90 m) y una cuenca de 55.9 km² por el racional modificado.
-5. Después: ficha VE2-01 (lo que sigue mal en la hoja de ruta), CLAUDE.md («141 desde …» →
-   «N desde VE-2»), fila del par en `proceso/bitacora_conteos_y_entorno.md`, suite en clon
-   limpio y en exportación, y empujar a `main`.
+## Los otros archivos de esta carpeta
+
+- `REVISION_FABLE.md`: el informe de la revisión independiente (hallazgos, evidencia, par).
+- `PROMPT_CONTINUAR.md` y `PROMPT_REVISION_FABLE.md`: los prompts con que se terminó la
+  integración y se lanzó la revisión desde otra cuenta. Se conservan como constancia; los
+  dos describen el estado anterior a `8dd435e`.
+- `preambulo.md`: el contrato común que se dio a los agentes de las cuatro partes.
+- `ejemplos_estructurales.md`: ejemplos resueltos para validar M8 y M9 (ver abajo).
+
+## Entorno (medido)
+
+`python3.12` con tkinter, `xvfb-run -a`, `pip install -r requirements.txt PyMuPDF "pillow<13"`,
+y `NORMAS_DIR` = clon de `Andy-rba30/Normas`. La suite se mide en un clon limpio fuera del
+repositorio: en un checkout con worktrees de agentes en `.claude/worktrees/`,
+`test_los_imports_relativos_solo_viven_en_src_normativa` falla porque barre todo el árbol.
 
 ## Lo que sigue después de VE-2 (pedido del dueño, 2026-11-17)
 
@@ -55,7 +51,3 @@ el presupuesto de tokens de la sesión estaba sobre el 90 %.
    estabilidad LRFD en los 8 cabezales de la validación integral y no se itera (ficha
    T7B-09). Verificarlo con datos reales y que el dueño decida si el programa dimensiona el
    cabezal o sólo verifica uno declarado.
-
-## Contrato común que se dio a los agentes
-
-Ver `preambulo.md` en esta carpeta.
