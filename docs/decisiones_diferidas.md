@@ -7855,3 +7855,25 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** lo que dice cada ficha; para el índice, ampliar el patrón a
   `F[0-9H]+\.[A-Za-z0-9_.]+` y regenerar `docs/indice_formulas.md`.
 - **Dónde vive:** `src/indice_formulas.py::menciones_del_fundamento`
+
+## VE2-04 · V3 no mira la velocidad de salida bajo control de salida (M1 de la revisión independiente de VE-2)
+
+- **Qué se difirió:** `M5._velocidad_de_v3` compara con el techo de la Tabla Nº 10 siempre
+  `V_erosion` (Q / A del tirante normal de n mínimo) cuando S > 0. Bajo control de salida la
+  sección de salida la define el tirante crítico, el TW o la altura del conducto (HDS-5,
+  hif12026, núm. 3.1.6, pág. impresa 3.18: «In outlet control, the cross sectional area of
+  the flow is defined by the geometry of the outlet and either critical depth, tailwater
+  depth, or the height of the conduit»), y en pendiente suave con salida libre esa velocidad
+  supera a la normal. El programa ya la calcula (`ResultadoHidraulico.V_salida`) y la juzga
+  M6; V3 sólo la usa con S = 0 (T-2). Medido (`M4.resolver_control`, Ø 0.90 m, Q = 0.3 m³/s,
+  S = 0.001, L = 20 m, TW = 0, concreto): `V_salida` = 1.508 m/s a y_c = 0.316 m y
+  `V_erosion` = 1.107 m/s (1.184 con la fórmula anterior a VE-2, cuyo 30 % de más tapaba
+  parte de la diferencia).
+- **Por qué:** es anterior a VE-2, el prompt de VE-2 mandaba no tocar la velocidad de salida,
+  y la corrección cambiaría diseños (puntos de pendiente suave con TW bajo el crítico
+  podrían perder escalones por V3) y movería la línea base: es decisión del dueño, no una
+  corrección. Con los techos de 3 a 6 m/s del concreto rara vez decide.
+- **Qué haría falta:** que el dueño decida si V3 juzga max(`V_erosion`, `V_salida`) bajo
+  control de salida; si sí, tests en rojo con el caso de arriba, corrección en
+  `_velocidad_de_v3` y línea base regenerada con su lista de números movidos.
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::_velocidad_de_v3`
