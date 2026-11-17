@@ -639,6 +639,26 @@ def test_la_hidrologia_calculada_entra_al_indice_de_formulas():
     assert calculados == {"A-01", "A-02", "B-01"}
     texto = ind.INDICE_FORMULAS.read_text(encoding="utf-8")
     cuadro_4 = texto[texto.index("## 4. Fundamentos que la corrida"):]
+    # CAMBIADO EN VE-2 (decision (f) del dueño, VE1-02; ficha VE2-F), y se
+    # declara la causa: desde VE-2 la Fase 1-bis tiene tres fundamentos mas,
+    # los del metodo racional modificado (FH.RM_*), que solo emite una cuenca
+    # de 10 a 770 km2. Las tres cuencas de esta corrida tienen menos de
+    # 10 km2 (8.5, 2.1 y 0.18), son las del juego de la validacion integral
+    # y no se tocan; los tres pasos los mide `tests/test_ve2_hidrologia.py`.
+    # Cualquier OTRO fundamento de la Fase 1-bis sigue sin poder faltar.
+    sin_alcanzar_por_area = ("`FH.RM_INTENSIDAD`", "`FH.RM_C`", "`FH.RM_CAUDAL`")
+    for f in sin_alcanzar_por_area:
+        assert f in cuadro_4, f
+        cuadro_4 = cuadro_4.replace(f, "")
+    # Y VE-2 (d), declarandolo: el fundamento de la ELECCION del factor de
+    # intervalo fijo viaja dentro del paso del ajuste (1b.2), no como paso
+    # propio, y el cuadro solo cuenta pasos (como F5.V7_FILA). Esta corrida
+    # SI lo ejercita: se comprueba en sus elecciones.
+    elecciones = {e.fundamento_id
+                  for p in ind.pasos_de_las_corridas([informe])
+                  for e in p.elecciones if e.fundamento_id}
+    assert "FH.FACTOR_P24" in elecciones
+    cuadro_4 = cuadro_4.replace("`FH.FACTOR_P24`", "")
     assert "`FH." not in cuadro_4
 
 

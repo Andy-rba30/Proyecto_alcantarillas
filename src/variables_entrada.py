@@ -1521,6 +1521,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "duracion_minima_lluvia_min": _Meta(unidad="min"),
     "tc_fuera_de_la_poblacion_del_metodo": _Meta(unidad="-"),
     "coeficiente_uniformidad_temez": _Meta(unidad="-"),
+    # VE-2 (d): multiplica la serie de 24 horas antes del ajuste.
+    "factor_intervalo_fijo_p24": _Meta(unidad="-"),
     "coeficiente_escorrentia_superficie_vial": _Meta(unidad="-"),
     "diametros_normalizados": _Meta(unidad="m"),
     # --- VE-2 (g) --- el diametro de diseño que admite el tubo de concreto.

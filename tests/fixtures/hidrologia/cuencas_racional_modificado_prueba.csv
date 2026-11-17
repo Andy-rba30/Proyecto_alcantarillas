@@ -1,0 +1,10 @@
+# DATOS DE PRUEBA, NO DEL PROYECTO. Una cuenca SINTETICA de 55.9 km2 para los
+# tests del metodo racional modificado de VE-2 (tests/test_ve2_hidrologia.py,
+# num. 3.12.2.1 del Manual de Hidrologia, de 10 a 770 km2): area, longitud,
+# pendientes, cobertura y numero de curva inventados para ejercitar el
+# calculo, no medidos en ninguna cuenca del corredor. El id es el de A-01 de
+# tests/ejemplo_puntos.csv; el test le pone area_ha = 5590 en una copia del
+# CSV de puntos. Archivo APARTE de cuencas_prueba.csv a proposito: aquel es
+# el de la corrida de referencia de T-11 (caudal_calculado), byte a byte.
+id,area_km2,L_cauce_m,S_cauce_cuenca,S_terreno,cobertura,suelo,estacion,metodo_tc,H_desnivel_m,ajuste_kirpich,CN
+A-01,55.9,15000,0.02,0.03,pastos_vegetacion_ligera,semipermeable,PRUEBA-SINTETICA,temez,,,75

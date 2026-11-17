@@ -4100,7 +4100,7 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   convergencia, y un caso patrón hecho a mano para cada una.
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::METODOS_TC`
 
-## T1-08 · El método racional modificado no está implementado: de él se toman la fórmula de Témez y el coeficiente K
+## T1-08 · El método racional modificado no estaba implementado: de él se tomaban la fórmula de Témez y el coeficiente K — Cerrado (VE-2) de 10 a 770 km²
 
 - **Qué se difirió:** el método completo del núm. 3.12.2.1 del Manual de Hidrología
   (págs. impresas 50 a 52): su intensidad con el factor de torrencialidad, su factor
@@ -4111,11 +4111,16 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
   en vez de callarse: el paso del tiempo de concentración y el del caudal lo dicen, y
   el coeficiente de uniformidad K de la ecuación (31) —que es del mismo numeral y
   sube el caudal— lo decide el criterio [A] `coeficiente_uniformidad_temez`, con
-  «aplicar» como valor de archivo. El resto del método pide el número de curva y un
-  mapa de isolíneas del factor de torrencialidad que el Manual da para España.
-- **Qué haría falta:** las ecuaciones restantes en el registro con su cita, el número
-  de curva como dato de la cuenca, una fuente para el factor de torrencialidad en el
-  Perú, y un método de caudal seleccionable por fila del CSV de cuencas.
+  «aplicar» como valor de archivo. El resto del método pide el número de curva. **Corregido
+  en VE-2:** esta ficha decía que pedía también «un mapa de isolíneas del factor de
+  torrencialidad» para España, y la página no lo trae: el 11 está escrito, fijo, dentro de
+  la ecuación (34) (pág. impresa 52, leída en la imagen).
+- **Cerrado (VE-2):** el método entero calcula de 10 a 770 km² (ficha VE2-F); bajo 10 km²
+  sigue el uso híbrido de arriba.
+- **Qué haría falta:** hecho en VE-2 lo que esta ficha pedía (las ecuaciones en el registro,
+  el número de curva como dato de la cuenca, el método elegido por el área); el 11 es el
+  del Manual, y un factor regional del Perú en su lugar pediría una fuente que hoy no está
+  en el repositorio de normas. Lo de 770 km² en adelante, en VE2-F.
 - **Dónde vive:** `src/modulos/MH_hidrologia.py::coeficiente_de_uniformidad`
 
 ## T1-09 · CERRADA: declarar `serie_sin_fen` cuando da menos lluvia que la serie completa detiene el cálculo del punto
@@ -7600,7 +7605,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   se detiene desde 10 km², y Tinas (55.9 km²) y cinco cuencas de TU-107 no se calculan.
   (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
   redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
-- **Cerrado (VE-2):** (b), ficha VE2-B; (a) y (g), VE2-A y VE2-G.
+- **Cerrado (VE-2):** (b), ficha VE2-B; (a) y (g), VE2-A y VE2-G; (e), (f) y (d), VE2-E,
+  VE2-F y VE2-D.
 - **Cerrado (VE-2), (c1):** ficha VE2-C.
 - **Cerrado (VE-2), (c2):** ficha VE2-C.
 - **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
@@ -7731,3 +7737,75 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** decidir (1) —un saturado propio del conducto como [A] de perfil con
   ventana, o aceptar el bloqueo— y corregir (2).
 - **Dónde vive:** `src/modulos/M8_estructural.py::cota_nivel_agua_v7_del_nf`
+
+## VE2-E · Aviso de consistencia de la serie de lluvias, sin umbral — Cerrado (VE-2)
+
+- **Qué se difirió:** nada de lo decidido: el dueño eligió (2026-11-17) el aviso sin umbral
+  de VE1-02 (e). La lluvia de diseño emite un quinto paso, `1b.3c` (`FH.CONSISTENCIA`,
+  verbo «obliga»), DESPUÉS de los cuatro de T-1: dice que el Manual exige evaluar «la
+  consistencia de los datos registrados» (núm. 3.3, pág. impresa 21, PDF 24, cita
+  `MC_HHD.3.3#CONSISTENCIA`, EXIGENCIA) y que es «primordial» (núm. 3.4, pág. impresa 22,
+  `MC_HHD.3.4#CONSISTENCIA`, DEFINICIÓN), que el programa NO la evalúa y que el
+  proyectista tiene que declarar que lo hizo. Imprime mínimo, mediana, máximo (con su año)
+  y máximo / mediana de la serie ENTERA registrada, sin umbral ni veredicto. **Queda
+  diferido** un contraste cuantitativo: no hay procedimiento ni número de corte (buscados
+  «doble masa», «double mass», «outlier» y «dudoso» en el Manual de Hidrología, WSDOT,
+  HEC-14, HDS-5, Puentes y DG-2018: cero; «consistencia» sólo en las dos citas).
+- **Por qué:** fijar un corte sería rellenar un vacío (CLAUDE.md, «Fuente de verdad»).
+  Patrón de `FH.Q_ESPECIFICO`. Va al final para no mover las posiciones que T-1 fijó; dos
+  tests de T-1 cambiados declarando la causa (`PASOS_DE_LA_FASE_1B`, y el paso sin
+  `formula_cita_id`). Ningún número se mueve: el índice de fórmulas gana una fila.
+- **Qué haría falta:** para el contraste cuantitativo, una fuente con procedimiento y umbral
+  en el repositorio de normas, su cita, y un criterio [A] con valor None que detenga hasta
+  que se declare; los tests, en `tests/test_ve2_hidrologia.py` (siete mutantes muertos).
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::_paso_consistencia`
+
+## VE2-F · Método racional modificado de 10 a 770 km² — Cerrado (VE-2), con tres lecturas declaradas
+
+- **Qué se difirió:** nada de lo decidido (dueño, 2026-11-17, VE1-02 (f)). Desde 10 km² el
+  caudal de una obra sale del núm. 3.12.2.1 entero, ec. (29) a (35), leídas en la IMAGEN
+  de las págs. impresas 51 y 52 (PDF 54 y 55): KA, P = KA·Pd, I con el 11 fijo, Po =
+  5000/CN − 50, C, K siempre, Q = 0.278·C·I·A·K; citas `MC_HHD.3.12.2.1#METODO`, `#KA`,
+  `#P`, `#I`, `#C`; literales [N] en `constantes_normativas.py`. Fuera de A < 770 km² y de
+  0.25-24 h, `MetodoNoEvaluableError` con el rótulo de la hidrología, nombrando SCS
+  triangular (hasta 30 km², pág. 56), Snyder (30 a 30 000 km², pág. 58) y HEC-HMS (núm.
+  3.12.4), **no implementados**. El aporte de una cuneta sigue con el racional simple.
+- **Por qué:** tres lecturas, declaradas en el punto de uso: (1) KA = 1 − log10(A)/15
+  (`Interpretacion` de `#KA`); (2) la ec. (35) escribe Pd y no la P corregida: se aplica
+  sin corregirla, y el paso imprime el C que daría P; la «pd» minúscula se lee Pd; (3) la
+  frontera de 10 km² es la del racional simple («Muy usado para cuencas, A<10 Km2», pág.
+  49): los dos rangos se solapan y bajo 10 km² no cambia nada. Se avisa «adaptada para las
+  condiciones climáticas de España». CN es la columna opcional de la ecuación de retardo,
+  REUSADA: desde 10 km² obligatoria (Tabla Nº 07, pág. 47, cita `MC_HHD.3.11#T07`), y
+  `metodo_tc` tiene que ser `temez` (ec. 30). Ni el pre-vuelo ni la pestaña 1 listan
+  columnas a mano: no se tocan. Ningún número de la línea base ni de la corrida de
+  referencia (sus cuencas tienen menos de 10 km²).
+- **Qué haría falta:** para cuencas desde 770 km², implementar un método de hidrograma con su
+  cita; para Pd ≤ Po (C ≤ 0), que el Manual diga qué hacer: hoy detiene. Tests y una cuenca
+  de PRUEBA de 55.9 km² (`cuencas_racional_modificado_prueba.csv`) en
+  `tests/test_ve2_hidrologia.py`.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::_caudal_racional_modificado`
+
+## VE2-D · Factor de intervalo fijo de la serie de 24 h como criterio [A], con 1.00 — Cerrado (VE-2)
+
+- **Qué se difirió:** nada de lo decidido (dueño, 2026-11-17, VE1-02 (d)). Criterio [A] de
+  perfil `factor_intervalo_fijo_p24`, forma `float`, valor de archivo 1.00 (la lectura
+  literal del Manual: la máxima en 24 horas sin conversión, núm. 3.8.1, pág. impresa 36,
+  cita `MC_HHD.3.8.1#P24`, y la fila de 24 h de la Tabla Nº 04 vale 1.00, pág. 37),
+  ventana 1.00-1.13 y resolución `Libre`. El 1.13 es práctica SIN FUENTE en el
+  repositorio de normas («1.13», «intervalo fijo», «fixed interval», «Weiss», «OMM», «WMO»
+  buscados en el Manual de Hidrología, WSDOT, HEC-14, HDS-5, Puentes y DG-2018: ninguna
+  aparición como factor de lluvia); pasaría a [C] sólo si se trae la guía de la OMM o
+  Weiss (1964) con su página.
+- **Por qué así:** se aplica a la SERIE, antes del ajuste (`precipitacion_de_diseno`), y no
+  al cuantil: corrige cada lectura, y el contraste con lo observado (1b.2) y el de los
+  años FEN (1b.3b) comparan lo mismo. Las tres distribuciones ajustadas son de escala: el
+  cuantil sale exactamente multiplicado y D no cambia. El aviso de consistencia (1b.3c)
+  sigue sobre la serie REGISTRADA. La memoria imprime el factor (`f_24h`, con su
+  procedencia) y su elección (`FH.FACTOR_P24`) con la lluvia de los dos extremos; con un
+  factor distinto de 1, un aviso. Con 1.00 cada dato se multiplica por 1.0: ningún número
+  se mueve (índice de fórmulas y validación integral, sólo textos).
+- **Qué haría falta:** para el [C], el PDF de la fuente del 1.13 en el repositorio de normas
+  y su cita. Tests en `tests/test_ve2_hidrologia.py`; barrido sobre la variante
+  `caudal_calculado` en `tests/apoyo/sensibilidad.py`.
+- **Dónde vive:** `src/modulos/MH_hidrologia.py::precipitacion_de_diseno`

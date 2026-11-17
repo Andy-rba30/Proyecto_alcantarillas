@@ -1409,7 +1409,9 @@ H_RACIONAL = _fundamento(
         "pasa de mm/h por km² a m³/s. El metodo supone lluvia uniforme "
         "sobre toda la cuenca durante el tiempo de concentracion, y eso solo "
         "es razonable en cuencas chicas: el Manual lo situa por debajo de "
-        "10 km², y por encima el programa no lo evalua. Para una cuneta es "
+        "10 km², y por encima el programa no lo evalua (desde 10 km² el "
+        "caudal de una obra sale del metodo racional modificado, con sus "
+        "propios pasos). Para una cuneta es "
         "la misma expresion, escrita C·I·A/3.6. Cuando el tiempo de "
         "concentracion sale de la formula de Temez, que es una pieza del "
         "metodo racional modificado, el caudal lleva ademas el coeficiente "
@@ -1446,6 +1448,162 @@ H_Q_ESPECIFICO = _fundamento(
         "se comprobaba que fuera positivo y finito, y 850 ha con "
         "1.167 m³/s pasaban sin que nada dijera que eso es medio milimetro "
         "por hora de escorrentia."),
+)
+
+# --- VE-2 (e) --- EL AVISO DE CONSISTENCIA DE LA SERIE, sin umbral. Mismo
+# patron que `FH.Q_ESPECIFICO`: el paso informa y no juzga, porque la fuente
+# manda evaluar y no da ni procedimiento ni numero de corte (ficha VE2-E).
+H_CONSISTENCIA = _fundamento(
+    id="FH.CONSISTENCIA",
+    fase=FH,
+    que_paso=("Consistencia de la serie de la estacion: lo que el Manual "
+              "manda evaluar y el programa no evalua"),
+    por_que=(
+        "La lluvia de diseño se extrapola de la serie, y un dato mal "
+        "registrado --una lectura en otra unidad, un acumulado de varios "
+        "dias anotado como uno, un año copiado de otra estacion-- pesa en el "
+        "ajuste tanto como uno bueno. El Manual manda evaluar las "
+        "condiciones de las estaciones y la consistencia de los datos "
+        "registrados, y dice que la consistencia es primordial para empezar "
+        "el estudio; no dice como se evalua ni con que numero se juzga, y "
+        "ninguna otra fuente del expediente lo da. Por eso este paso no "
+        "tiene umbral ni veredicto: imprime lo que el Manual exige, que el "
+        "programa no lo hizo, y que el proyectista tiene que declarar en "
+        "la memoria que lo hizo, con que procedimiento y con que resultado. "
+        "Para orientarlo imprime el minimo, la mediana y el maximo de la "
+        "serie entera, sin juzgarlos."),
+    verbo=Verbo.OBLIGA,
+    citas=("MC_HHD.3.3#CONSISTENCIA",       # EXIGENCIA -> sostiene OBLIGA
+           "MC_HHD.3.4#CONSISTENCIA"),      # DEFINICION (es primordial)
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta VE-2 (VE1-02 (e)): una serie con mediana de "
+        "140 mm y un maximo de 729 mm se ajustaba sin que la memoria dijera "
+        "que nadie habia mirado si ese maximo es un dato o un error, y el "
+        "caudal de diseño colgaba de el sin aviso."),
+)
+
+# --- VE-2 (f) --- EL METODO RACIONAL MODIFICADO COMPLETO, de 10 a 770 km2:
+# tres pasos con fundamento propio (la intensidad, el coeficiente y el
+# caudal), que sustituyen a FH.INTENSIDAD, FH.C y FH.RACIONAL cuando el area
+# de la cuenca sale del racional simple. Los codigos de paso son los mismos
+# (1b.5, 1b.6, 1b.7): la memoria los lee en el mismo orden. Ficha VE2-F.
+# --- VE-2 (d) --- EL FACTOR DE INTERVALO FIJO de la serie de 24 horas: la
+# ELECCION del criterio [A] 'factor_intervalo_fijo_p24', que viaja en el paso
+# del ajuste (1b.2). Un fundamento de eleccion y no de paso (C7,
+# `modelos.eleccion`): lo que se elige no se verifica. Ficha VE2-D.
+H_FACTOR_P24 = _fundamento(
+    id="FH.FACTOR_P24",
+    fase=FH,
+    que_paso=("Factor de intervalo fijo de la serie de 24 horas: por cuanto se "
+              "multiplica cada maximo anual antes del ajuste"),
+    por_que=(
+        "La serie de una estacion trae, año por año, la mayor lluvia de 24 "
+        "horas que se registro. El Manual la usa tal cual: la lluvia de una "
+        "duracion menor se estima multiplicando la maxima en 24 horas por un "
+        "coeficiente de duracion, y el de 24 horas en su Tabla Nº 04 es 1.00. "
+        "Una practica externa, que ninguna fuente del repositorio de normas "
+        "trae, multiplica antes cada maximo por 1.13: sostiene que una "
+        "lectura de intervalo fijo --de una hora fija a la misma hora del "
+        "dia siguiente-- queda por debajo de la maxima de 24 horas "
+        "corridas. Elegir el factor "
+        "sube la lluvia de diseño y el caudal en la misma proporcion; por "
+        "eso es un criterio [A] declarado, con su procedencia en la memoria, "
+        "y el valor de archivo es el del Manual."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.3.8.1#P24",              # DEFINICION -> sostiene DEFINE
+           "MC_HHD.3.8.1#T04"),             # PERMISO (la fila de 24 h: 1.00)
+    que_pasa_si_no_se_hace=(
+        "VE1-02 (d): la tesis UPAO y la via TU-107 aplican el 1.13 y el "
+        "programa no; sin el factor como eleccion declarada, la lluvia de "
+        "diseño y el caudal quedan un 11.5 % por debajo de los de esos "
+        "estudios sin que la memoria diga por que difieren."),
+)
+
+H_RM_INTENSIDAD = _fundamento(
+    id="FH.RM_INTENSIDAD",
+    fase=FH,
+    que_paso=("Intensidad del metodo racional modificado: factor reductor por "
+              "area, precipitacion corregida sobre la cuenca y ecuacion (34)"),
+    por_que=(
+        "Desde 10 km² la lluvia ya no cae igual sobre toda la cuenca ni dura "
+        "lo mismo en todas partes, y el racional simple deja de valer: el "
+        "Manual lo situa por debajo de esa area. Para cuencas de hasta "
+        "770 km² da el metodo racional modificado, que corrige las dos "
+        "cosas. Primero reduce la lluvia maxima diaria por el tamaño de la "
+        "cuenca --cuanto mayor el area, menos probable que toda ella reciba "
+        "el maximo a la vez-- con el factor KA de la ecuacion (32), y de "
+        "ahi la precipitacion corregida P de la (33). Despues lleva esa "
+        "lluvia a la intensidad de una duracion igual al tiempo de "
+        "concentracion con su propia relacion, la (34), y no con Dick y "
+        "Peschke ni con la Tabla Nº 04. El metodo esta adaptado a las "
+        "condiciones climaticas de España, y el Manual lo adopta sin decir "
+        "como se adapto: la memoria lo avisa."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.3.12.2.1#METODO",        # DEFINICION -> sostiene DEFINE
+           "MC_HHD.3.12.2.1#KA", "MC_HHD.3.12.2.1#P",
+           "MC_HHD.3.12.2.1#I"),
+    que_pasa_si_no_se_hace=(
+        "Es lo que pasaba hasta VE-2 (VE1-02 (f), ficha T1-08): la Fase "
+        "1-bis se detenia desde 10 km², y una cuenca de 55.9 km² o las "
+        "cinco mayores de la via de la validacion externa no se calculaban; "
+        "su caudal solo podia entrar declarado."),
+)
+
+H_RM_C = _fundamento(
+    id="FH.RM_C",
+    fase=FH,
+    que_paso=("Coeficiente de escorrentia del metodo racional modificado, por "
+              "el numero de curva: umbral de escorrentia y ecuacion (35)"),
+    por_que=(
+        "En el racional simple el coeficiente C sale de la Tabla Nº 08; en "
+        "el modificado sale de la propia lluvia y del suelo: el umbral de "
+        "escorrentia Po es la lluvia que la cuenca absorbe antes de "
+        "escurrir, y depende del numero de curva, que el estudio "
+        "hidrologico lee en la Tabla Nº 07 por grupo de suelo y uso de la "
+        "tierra. La ecuacion (35) da la fraccion que escurre: es 1 cuando "
+        "la cuenca no absorbe nada y 0 cuando la lluvia no pasa del umbral. "
+        "La ecuacion escribe la lluvia maxima diaria Pd, no la corregida por "
+        "el area: el programa la aplica como esta escrita y lo declara."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.3.12.2.1#C",             # DEFINICION -> sostiene DEFINE
+           "MC_HHD.3.11#T07"),
+    que_pasa_si_no_se_hace=(
+        "El coeficiente seria el de la Tabla Nº 08, que es del metodo simple "
+        "y no depende de cuanto llueve: mezclarlo con la intensidad del "
+        "modificado seria otro uso hibrido, sin fuente que lo respalde."),
+)
+
+H_RM_CAUDAL = _fundamento(
+    id="FH.RM_CAUDAL",
+    fase=FH,
+    que_paso=("Caudal de diseño por el metodo racional modificado, "
+              "Q = 0.278 · C · I · A · K"),
+    por_que=(
+        "Es la ecuacion (29): la del racional con el coeficiente de "
+        "uniformidad K de la (31), que corrige la hipotesis de lluvia "
+        "uniforme en el tiempo y crece con el tiempo de concentracion. "
+        "Aqui K no es una eleccion: es parte de la ecuacion del metodo. El "
+        "Manual acota el metodo a areas menores de 770 km² y a tiempos de "
+        "concentracion de 0.25 a 24 horas, y fuera de eso el programa no lo "
+        "evalua. Para cuencas mayores el Manual describe otros metodos --el "
+        "hidrograma triangular del SCS, recomendado hasta 30 km²; el de "
+        "Snyder, de 30 a 30 000 km²; el modelo HEC-HMS-- que el programa no "
+        "implementa: el mensaje los nombra con su rango y su pagina, y el "
+        "caudal de esa cuenca entra declarado. La frontera con el racional "
+        "simple es la de siempre, 10 km²: por debajo el caudal sigue "
+        "saliendo de la ecuacion (28)."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.3.12.2.1#K",             # DEFINICION -> sostiene DEFINE
+           "MC_HHD.3.12.2.1#TC",            # APROXIMACION (el rango)
+           "MC_HHD.3.12.2#AREA",            # la frontera de 10 km2
+           "MC_HHD.3.12.3.2a#AREA",         # SCS, no implementado
+           "MC_HHD.3.12.3.2b#AREA",         # Snyder, no implementado
+           "MC_HHD.3.12.4"),                # HEC-HMS, no implementado
+    que_pasa_si_no_se_hace=(
+        "Sin el metodo, una cuenca de 10 a 770 km² solo tenia el caudal "
+        "declarado; con el racional simple extrapolado, la intensidad media "
+        "sobre toda la cuenca y sin reduccion por area daria un caudal sin "
+        "fuente."),
 )
 
 

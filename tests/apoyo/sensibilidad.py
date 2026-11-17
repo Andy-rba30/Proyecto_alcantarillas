@@ -113,6 +113,13 @@ BASES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
                            "fuera por los sulfatos del juego (500 ppm > 200)",
                            (("declarar", "suelo_agresivo_lrfd_sobre_tmc",
                              "excluye"),)),
+    # VE-2 (d): la variante del juego con el caudal CALCULADO, la de la
+    # corrida de referencia `hidrologia_calculada`. Con el juego completo el
+    # caudal es el declarado y un criterio de la Fase 1-bis no se lee.
+    "juego_caudal_calculado": ("el juego con `Q_m3s` vacío en A-01, A-02 y "
+                               "B-01 (variante `caudal_calculado`): el "
+                               "caudal lo calcula la Fase 1-bis",
+                               J.VARIANTES["caudal_calculado"][1]),
 }
 
 
@@ -209,6 +216,13 @@ BARRIDOS_A_MANO: Tuple[Barrido, ...] = (
     Barrido("duracion_caudal_pico_socavacion_min", GRUPO_CABEZAL,
             "duración del pico para la hoya de socavación, que baja el "
             "desplante del cabezal de salida (T-11)"),
+    # --- VE-2 (d) --- el factor de intervalo fijo de la serie de 24 h,
+    # sobre la variante con el caudal calculado (en el juego no se lee).
+    Barrido("factor_intervalo_fijo_p24", GRUPO_HIDROLOGIA,
+            "factor de intervalo fijo de la serie de 24 h (VE-2 (d)), sobre "
+            "el caudal CALCULADO: con el juego completo el caudal es el "
+            "declarado y el factor no se lee",
+            base="juego_caudal_calculado"),
 )
 
 def _efectivo(clave: str) -> Any:

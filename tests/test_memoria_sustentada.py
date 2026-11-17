@@ -486,6 +486,20 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # auditoria de T-1). Lo mide `test_t1_hidrologia.py::
         # test_serie_sin_fen_con_menos_lluvia_que_la_completa_detiene_el_calculo`.
         "FH.FEN",
+        # --- VE-2 (e) --- el aviso de consistencia de la serie, sin umbral
+        # (paso 1b.3c): solo sale con el caudal calculado, por la misma
+        # razon que los siete de arriba. Lo mide
+        # `tests/test_ve2_hidrologia.py`.
+        "FH.CONSISTENCIA",
+        # --- VE-2 (f) --- los tres pasos del metodo racional modificado,
+        # que solo emite un caudal CALCULADO de una cuenca de 10 a 770 km2;
+        # las de esta corrida (y las de la corrida de referencia) tienen
+        # menos de 10 km2. Los mide `tests/test_ve2_hidrologia.py`.
+        "FH.RM_INTENSIDAD", "FH.RM_C", "FH.RM_CAUDAL",
+        # --- VE-2 (d) --- la ELECCION del factor de intervalo fijo de la
+        # serie, que viaja en el paso del ajuste (1b.2): mismo motivo, solo
+        # la emite un caudal calculado. Lo mide `tests/test_ve2_hidrologia.py`.
+        "FH.FACTOR_P24",
         # F5.V7_FILA SIGUE AQUI DESPUES DE C7, Y SU RAZON NO ES LA QUE EL
         # PUNTO 0 ESCRIBIO. Aquel comentario decia que el fundamento existia
         # «declarado y sin consumidor» hasta que el punto 3 lo cableara. El

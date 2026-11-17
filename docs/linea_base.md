@@ -805,3 +805,16 @@ en las memorias, la elección del nivel en el paso de V7 (fundamento F5.V7_NIVEL
 de los dos criterios y el recuento del encabezado, **«141 criterios declarados, 20 todavía
 sin valor» → «143 …, 21 …»** medido en su rama sobre `72a8d01`; integrado detrás de (a) y (g), «143 … » → «145 …». Los cinco `cli_*.txt`, los dos CSV de resumen y la memoria
 del cajón, idénticos. **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 15. VE-2 (e), (f) y (d), la parte de hidrología: sólo la huella de `criterios_adoptados.py` (2026-11-17)
+
+La línea base no ejercita la Fase 1-bis (sus corridas traen `Q_m3s` lleno), de modo que
+el aviso de consistencia de la serie (e), el método racional modificado (f) y el factor de
+intervalo fijo (d) no la tocan. Lo único que se movió es el archivo de criterios: en (f)
+cambió el texto de `verificacion_pendiente` de `coeficiente_uniformidad_temez` (que ya no
+es cierto que el método completo no esté implementado), y en (d) entró el criterio
+`factor_intervalo_fijo_p24`. Resultado: `criterios_sha1` en los cuatro JSON, y en las
+cuatro memorias de la CLI la fila de la huella y la del recuento («142 criterios
+declarados» por 141 en su rama; integrado detrás de (a), (g) y (c), 145 → 146), regenerada con `sh tests/linea_base_familia_c/regenerar.sh`.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**

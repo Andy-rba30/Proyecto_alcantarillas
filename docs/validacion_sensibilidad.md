@@ -46,6 +46,7 @@
 | cabezal | `drenaje_trasdos` | [A] | sin_drenaje / drenado | 'drenado', 'sin_drenaje' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'sin_drenaje': 26; A-02 con 'sin_drenaje': 22; B-01 con 'sin_drenaje': 22; C-01 con 'sin_drenaje': 26 |
 | cabezal | `fc_cabezal_mpa` | [A] | 17.5–35.0 | 21.0, 17.5, 35.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 17.5: 6; C-01 con 17.5: 2; A-01 con 35.0: 1; A-02 con 35.0: 4; B-01 con 35.0: 2; C-01 con 35.0: 2 |
 | cabezal | `duracion_caudal_pico_socavacion_min` | [A] | 30.0–360.0 | 360.0, 30.0 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
+| hidrología | `factor_intervalo_fijo_p24` | [A] | 1.0–1.13 | 1.0, 1.13 | juego_caudal_calculado | LEÍDO, SIN EFECTO MEDIBLE | — |
 | cabezal | `F_pga_lectura_columna_extrema` | [A] | limite_inclusive / limite_estricto | 'limite_inclusive', 'limite_estricto' | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 'limite_estricto': 64; A-02 con 'limite_estricto': 64; B-01 con 'limite_estricto': 64; C-01 con 'limite_estricto': 64 |
 | cabezal | `inclinacion_muro_beta` | [A] | 0.0–10.0 | 0.0, 10.0 | juego | NO LO LEE LA CORRIDA | sólo lo lee la vía de contraste de Coulomb / Mononobe-Okabe; el empuje que rige sale de la cuña de tanteo sobre el plano vertical del talón |
 | cabezal | `punto_aplicacion_incremento_sismico` | [C] | 0.333–0.6 | 0.6, 0.333 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 0.333: 1; A-02 con 0.333: 1; C-01 con 0.333: 1 |
@@ -104,7 +105,7 @@
 - **MUEVE EL DISEÑO** (12): `seccion_receptor` (juego_sin_TW), `v_max_concreto_eleccion`, `v_max_concreto_eleccion` (juego_tmc_excluida), `regimen_v2b`, `espesor_pared_cajon`, `borde_libre_y_sobre_d_max`, `embocadura_cabezal`, `origen_cota_fondo_entrada`, `remanso_derecho_via`, `pendiente_minima_conducto`, `nivel_agua_diseno_v7`, `umbral_no_colapso_evento_extremo`.
 - **MUEVE VEREDICTOS** (25): `eta_importancia_operativa_conducto`, `factor_muro_eleccion`, `gamma_EQ`, `fraccion_delta_sobre_phi_trasdos`, `fila_phi_estabilidad_cabezal`, `factores_inclinacion_carga_portante`, `regla_pendiente_relleno_trasdos`, `regimen_resistencia_elementos_cabezal`, `eta_ductilidad_cabezal`, `eta_redundancia_cabezal`, `marco_estabilidad_cabezal`, `regimen_cabezal`, `drenaje_trasdos`, `fc_cabezal_mpa`, `F_pga_lectura_columna_extrema`, `punto_aplicacion_incremento_sismico`, `revestimiento_cuneta`, `phi_relleno_trasdos`, `peso_especifico_relleno_kn_m3`, `talud_terraplen`, `lectura_coeficientes_socavacion_hec14`, `referencia_profundidad_socavacion`, `margen_zapata_bajo_socavacion_m`, `terreno_delante_del_cabezal`, `metodo_longitud_conducto`.
 - **MUEVE EL HW** (2): `n_manning_cajon`, `ke_entrada`.
-- **LEÍDO, SIN EFECTO MEDIBLE** (30): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `duracion_caudal_pico_socavacion_min`, `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `clase_exposicion_fisuracion_cabezal`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`.
+- **LEÍDO, SIN EFECTO MEDIBLE** (31): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `duracion_caudal_pico_socavacion_min`, `factor_intervalo_fijo_p24` (juego_caudal_calculado), `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `clase_exposicion_fisuracion_cabezal`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`.
 - **NO LO LEE LA CORRIDA** (16): `borde_libre_bajo_tw_ahogante`, `seccion_receptor`, `hw_entrada_fuera_de_rango`, `inclinacion_muro_beta`, `homogeneidad_serie_fen`, `distribucion_precipitacion_maxima`, `nivel_significancia_ks`, `relacion_intensidad_duracion`, `duracion_minima_lluvia_min`, `tc_fuera_de_la_poblacion_del_metodo`, `coeficiente_uniformidad_temez`, `demanda_sismica_licuefaccion`, `fabricacion_tmc`, `relleno_estructural_hdpe`, `criterio_traccion_cabezal_ciclopeo`, `junta_arranque_cabezal_ciclopeo`.
 
 ### 3.1 El cabezal de la regla: E3 estática y E1 sísmica del marco LRFD frente a sus dos [A]
@@ -683,6 +684,21 @@ duración del pico para la hoya de socavación, que baja el desplante del cabeza
 | 30.0 | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
 | 30.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 30.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+
+### `factor_intervalo_fijo_p24` — base `juego_caudal_calculado`
+
+factor de intervalo fijo de la serie de 24 h (VE-2 (d)), sobre el caudal CALCULADO: con el juego completo el caudal es el declarado y el factor no se lee. Base: el juego con `Q_m3s` vacío en A-01, A-02 y B-01 (variante `caudal_calculado`): el caudal lo calcula la Fase 1-bis. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+
+| Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+|---|---|---|---|---|---|---|---|
+| 1.0 | A-01 | no dimensiona | — | — | ninguna | V1, V3, V4, V4b, V5 | sí |
+| 1.0 | A-02 | no dimensiona | — | — | ninguna | V3, V4, V4b, V5 | sí |
+| 1.0 | B-01 | no dimensiona | — | — | ninguna | V1, V4, V4b, V7 | sí |
+| 1.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 1.13 | A-01 | no dimensiona | — | — | ninguna | DisenoNoFactibleError: material y diametro (bucle de MD) | sí |
+| 1.13 | A-02 | no dimensiona | — | — | ninguna | V1, V3, V4, V4b, V5 | sí |
+| 1.13 | B-01 | no dimensiona | — | — | ninguna | V3, V4, V7 | sí |
+| 1.13 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
 ### `F_pga_lectura_columna_extrema`
 
@@ -1638,7 +1654,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 ## 5. Los criterios que no se barren, por nombre
 
-85 barridos sobre 83 criterios; estos 62 no se barren, y la razón:
+86 barridos sobre 84 criterios; estos 62 no se barren, y la razón:
 
 | Criterio | Etiqueta | Por qué no se barre |
 |---|---|---|

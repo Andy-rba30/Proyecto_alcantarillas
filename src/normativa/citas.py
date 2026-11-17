@@ -7134,6 +7134,68 @@ MC_HHD_3_4_REGISTRO = _cita(
           "el paso de la serie lo imprime como INDICADOR y no detiene."),
 )
 
+# --- VE-2 (e) --- LA CONSISTENCIA DE LA SERIE: lo que el Manual manda evaluar
+# y no dice como. Leidas por la sesion de VE-2 (2026-11-17) abriendo las dos
+# paginas por TEXTO; desfase +3. La sesion busco «doble masa», «double
+# mass», «outlier» y «dudoso» en el Manual de Hidrologia, WSDOT, HEC-14,
+# HDS-5 (las dos ediciones), Puentes y DG-2018: cero apariciones, y
+# «consistencia» en el Manual solo esta en estas dos oraciones. El programa
+# no tiene con que evaluarla y no se inventa un umbral. Las dos
+# citas sostienen el paso `FH.CONSISTENCIA` (un aviso sin umbral, el patron
+# de `FH.Q_ESPECIFICO`).
+FECHA_VE2 = "2026-11-17"
+POR_VE2 = "validacion/VE-2 · lectura directa de la pagina por la sesion"
+VE2 = (FECHA_VE2, POR_VE2)
+
+MC_HHD_3_3_CONSISTENCIA = _cita(
+    id="MC_HHD.3.3#CONSISTENCIA",
+    fuente_id="MC_HHD",
+    numeral="3.3",
+    titulo_numeral="Estudios de Campo",
+    pagina_impresa="21",
+    pagina_pdf=24,
+    pagina_pdf_titulo=23,
+    texto_literal=Verbatim(
+        texto=("Se debe evaluar las condiciones de las estaciones "
+               "pluviométricas e hidrométricas, así como la consistencia de "
+               "los datos registrados."),
+        pagina_pdf=24),
+    caracter=Caracter.EXIGENCIA,
+    sesion=VE2,
+    nota=("El numeral abre en la pag. impresa 20 (PDF 23) y esta oracion "
+          "esta en la 21 (PDF 24), entre el parrafo de los sectores "
+          "criticos y el de la localizacion de las cuencas. «Se debe»: es "
+          "un mandato, y el UNICO de las dos citas de la consistencia. Ni "
+          "este numeral ni el resto del Manual dicen COMO se evalua la "
+          "consistencia ni con que numero se juzga: por eso el paso que lo "
+          "imprime no tiene umbral ni veredicto (VE-2, ficha VE2-E)."),
+)
+
+MC_HHD_3_4_CONSISTENCIA = _cita(
+    id="MC_HHD.3.4#CONSISTENCIA",
+    fuente_id="MC_HHD",
+    numeral="3.4",
+    titulo_numeral="Evaluación de la Información Hidrológica",
+    pagina_impresa="22",
+    pagina_pdf=25,
+    pagina_pdf_titulo=24,
+    texto_literal=Verbatim(
+        texto=("La representatividad, calidad, extensión y consistencia de "
+               "los datos es primordial para el inicio del estudio "
+               "hidrológico"),
+        pagina_pdf=25),
+    # DEFINICION y no EXIGENCIA: la oracion dice que la consistencia ES
+    # primordial, y no manda nada por si misma; lo que sigue («por ello, se
+    # recomienda contar con un mínimo de 25 años») es MC_HHD.3.4#REGISTRO.
+    caracter=Caracter.DEFINICION,
+    sesion=VE2,
+    derivado_de="MC_HHD.3.4#FEN",
+    nota=("Primera clausula de la oracion de MC_HHD.3.4#REGISTRO y "
+          "MC_HHD.3.4#FEN, pag. impresa 22 (PDF 25). Dice por que importa "
+          "la consistencia; el mandato de evaluarla es el del num. 3.3 "
+          "(MC_HHD.3.3#CONSISTENCIA)."),
+)
+
 MC_HHD_3_7_1 = _cita(
     id="MC_HHD.3.7.1",
     fuente_id="MC_HHD",
@@ -7341,6 +7403,44 @@ MC_HHD_T04 = _cita(
           "multiplica a la precipitacion maxima en 24 horas y da la "
           "PRECIPITACION de esa duracion; la intensidad es ese producto "
           "entre la duracion."),
+)
+
+# --- VE-2 (d) --- LA SERIE DE 24 HORAS, TAL CUAL. Leida por la sesion de VE-2
+# (2026-11-17) por texto, y la fila de 24 horas de la Tabla Nº 04 (1.00, pag.
+# impresa 37, PDF 40) en el texto y en la tabla del registro (MC_HHD.T04).
+# La sesion busco «1.13», «1,13», «intervalo fijo», «fixed interval» y
+# «Weiss» en el Manual de Hidrologia, WSDOT, HEC-14, HDS-5 (las dos
+# ediciones), Puentes y DG-2018: ninguna aparicion como factor de lluvia.
+# Sostiene el fundamento `FH.FACTOR_P24` de la eleccion del criterio [A]
+# 'factor_intervalo_fijo_p24' (ficha VE2-D).
+MC_HHD_3_8_1_P24 = _cita(
+    id="MC_HHD.3.8.1#P24",
+    fuente_id="MC_HHD",
+    numeral="3.8.1",
+    titulo_numeral="Curvas Intensidad – Duración – Frecuencia",
+    pagina_impresa="36",
+    pagina_pdf=39,
+    pagina_pdf_titulo=36,
+    texto_literal=Verbatim(
+        texto=("Ordinariamente solo se cuenta con lluvias máximas en 24 horas, "
+               "por lo que el valor de la Intensidad de la precipitación "
+               "pluvial máxima generalmente se estima a partir de la "
+               "precipitación máxima en 24 horas, multiplicada por un "
+               "coeficiente de duración"),
+        pagina_pdf=39),
+    # DEFINICION: describe lo que «generalmente» se hace con la serie de 24
+    # horas en el Peru; no manda ni recomienda. Lo que dice, y que importa
+    # aqui, es lo que NO dice: no convierte la maxima de 24 horas de ningun
+    # modo antes de multiplicarla por el coeficiente de duracion, y el
+    # coeficiente de su Tabla Nº 04 para 24 horas es 1.00.
+    caracter=Caracter.DEFINICION,
+    sesion=VE2,
+    nota=("Oracion del parrafo que presenta la Tabla Nº 04, pag. impresa 36 "
+          "(PDF 39). La fila de 24 horas de esa tabla vale 1.00 (pag. "
+          "impresa 37, PDF 40). El Manual usa la maxima en 24 horas sin "
+          "conversion: un factor que la multiplique antes del ajuste (el "
+          "1.13 de intervalo fijo de la practica, que ninguna fuente del "
+          "repositorio de normas trae) es una adopcion [A] del proyecto."),
 )
 
 MC_HHD_3_8_1_DICK_PESCHKE = _cita(
@@ -7579,10 +7679,12 @@ MC_HHD_3_12_2_1_TC = _cita(
           "(m/m)»; Tc sale en HORAS (lo dicen el rango de arriba y el "
           "apartado B). Es la formula de Temez, y vive AQUI y no en la "
           "Tabla Nº 05. El rango de area y de Tc es el del metodo racional "
-          "modificado entero, del que esta formula es una pieza: el "
-          "proyecto toma SOLO la formula del tiempo de concentracion y le "
-          "aplica ese rango como validez; no usa el resto del metodo "
-          "(coeficiente de uniformidad, factor reductor, numero de curva)."),
+          "modificado entero, del que esta formula es una pieza. Por debajo "
+          "de 10 km2 el proyecto toma SOLO la formula del tiempo de "
+          "concentracion (y el K de MC_HHD.3.12.2.1#K, segun el criterio "
+          "'coeficiente_uniformidad_temez') y le aplica ese rango como "
+          "validez; desde VE-2, de 10 a 770 km2 el caudal se calcula con el "
+          "metodo ENTERO (ficha VE2-F) y este rango acota el metodo."),
 )
 
 MC_HHD_3_13 = _cita(
@@ -7709,9 +7811,244 @@ MC_HHD_3_12_2_1_K = _cita(
           "concentración (horas)». K es siempre mayor que 1 y crece con Tc "
           "(1.01 a 0.25 h, 1.07 a 1 h, 1.79 a 24 h). El metodo trae ademas "
           "su propia intensidad (ec. 34), su factor reductor por area (ec. "
-          "32) y su coeficiente C por numero de curva (ec. 35), que el "
-          "proyecto NO usa: toma la formula del tiempo de concentracion "
-          "(ec. 30) y, con ella, este coeficiente."),
+          "32) y su coeficiente C por numero de curva (ec. 35). Hasta VE-2 "
+          "el proyecto NO los usaba: tomaba la formula del tiempo de "
+          "concentracion (ec. 30) y, con ella, este coeficiente. Desde VE-2 "
+          "(ficha VE2-F) el metodo ENTERO calcula el caudal de 10 a 770 km2; "
+          "por debajo de 10 km2 sigue el uso hibrido de T-1."),
+)
+
+# --- VE-2 (f) --- EL METODO RACIONAL MODIFICADO COMPLETO (num. 3.12.2.1) y
+# los limites de los metodos que el programa NO implementa. Leidas por la
+# sesion de VE-2 (2026-11-17): las formulas en la IMAGEN de las pags.
+# impresas 51 y 52 (PDF 54 y 55, render a 6x), porque la capa de texto las
+# parte en renglones sueltos («28 / 1.0 / 1.0 / 1.0 / 28 / 11 / * / 24 /
+# −»); los textos, por texto. Desfase +3. Lo que la ficha T1-08 decia y la
+# pagina no trae: NO hay mapa de isolineas del factor de torrencialidad;
+# el 11 esta escrito, fijo, dentro de la ecuacion (34).
+MC_HHD_3_12_2_1_METODO = _cita(
+    id="MC_HHD.3.12.2.1#METODO",
+    fuente_id="MC_HHD",
+    numeral="3.12.2.1",
+    titulo_numeral="Método Racional Modificado",
+    pagina_impresa="50",
+    pagina_pdf=53,
+    texto_literal=Verbatim(
+        texto=("Es el método racional según la formulación propuesta por "
+               "Témez (1987, 1991) adaptada para las condiciones climáticas "
+               "de España."),
+        pagina_pdf=53),
+    caracter=Caracter.DEFINICION,
+    sesion=VE2,
+    nota=("Primera oracion del numeral, al pie de la pag. impresa 50 (PDF "
+          "53). Sigue en la 51: «Y permite estimar de forma sencilla "
+          "caudales punta en cuencas de drenaje naturales con áreas menores "
+          "de 770 km2 y con tiempos de concentración (Tc) de entre 0.25 y 24 "
+          "horas» (MC_HHD.3.12.2.1#TC). «adaptada para las condiciones "
+          "climáticas de España» es un hecho de la fuente que el caudal "
+          "calculado por este metodo imprime como aviso: el Manual lo adopta "
+          "para el Peru sin decir como se adapto."),
+)
+
+MC_HHD_3_12_2_1_KA = _cita(
+    id="MC_HHD.3.12.2.1#KA",
+    fuente_id="MC_HHD",
+    numeral="3.12.2.1",
+    titulo_numeral="Método Racional Modificado",
+    pagina_impresa="51",
+    pagina_pdf=54,
+    pagina_pdf_titulo=53,
+    texto_literal=Verbatim(texto="KA =   1 – (log10 A/15)", pagina_pdf=54),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE2,
+    nota=("Ecuacion (32), apartado «C) Coeficiente de simultaneidad  o "
+          "Factor reductor (kA)», con «A : Área de la cuenca (Km2)» al "
+          "principio de la pag. impresa 52. En la imagen y en el texto la "
+          "pagina escribe lo mismo, sin parentesis alrededor de log10 A ni "
+          "alrededor de A/15."),
+    interpretacion=Interpretacion(
+        texto=("Se lee KA = 1 − log10(A)/15: el logaritmo de A, dividido "
+               "entre 15."),
+        en_contra=(
+            "la pagina no separa con parentesis el logaritmo del cociente: "
+            "«(log10 A/15)» admite tambien la lectura 1 − log10(A/15)",
+        ),
+        a_favor=(
+            "con 1 − log10(A/15) el factor valdria 1.18 a 10 km2 y 1 a "
+            "15 km2: pasaria de 1, y el apartado lo llama «Factor "
+            "reductor»; con la lectura adoptada vale 0.93 a 10 km2 y 0.81 a "
+            "770 km2, y reduce la lluvia en todo el rango del metodo",
+            "la ecuacion (33) lo usa para obtener la «Precipitación máxima "
+            "corregida sobre la cuenca», que es la lluvia puntual REDUCIDA "
+            "por el area",
+        )),
+)
+
+MC_HHD_3_12_2_1_P = _cita(
+    id="MC_HHD.3.12.2.1#P",
+    fuente_id="MC_HHD",
+    numeral="3.12.2.1",
+    titulo_numeral="Método Racional Modificado",
+    pagina_impresa="52",
+    pagina_pdf=55,
+    pagina_pdf_titulo=53,
+    texto_literal=Verbatim(
+        texto="Precipitación máxima corregida sobre la cuenca (P)",
+        pagina_pdf=55),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE2,
+    nota=("Apartado D), ecuacion (33), vista en imagen: P = kA · Pd, con "
+          "«kA : Factor reductor» y «Pd : Precitación máxima diaria (mm)» "
+          "(la errata «Precitación» es de la pagina). El programa toma por "
+          "Pd la precipitacion maxima en 24 horas del periodo de retorno de "
+          "diseño, la del ajuste de la serie (num. 3.7 y 3.8.1)."),
+)
+
+MC_HHD_3_12_2_1_I = _cita(
+    id="MC_HHD.3.12.2.1#I",
+    fuente_id="MC_HHD",
+    numeral="3.12.2.1",
+    titulo_numeral="Método Racional Modificado",
+    pagina_impresa="52",
+    pagina_pdf=55,
+    pagina_pdf_titulo=53,
+    texto_literal=Verbatim(texto="Intensidad de Precipitación  ( I )",
+                           pagina_pdf=55),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE2,
+    nota=("Apartado E), ecuacion (34), vista en imagen: I = (P/24) · "
+          "(11)^((28^0.1 − Tc^0.1)/(28^0.1 − 1)), con «P : Precitación "
+          "máxima corregida (mm)» y «Tc : Tiempo de concentración (horas)». "
+          "I sale en mm/h: P/24 es la intensidad media del dia. El 11 esta "
+          "ESCRITO en la ecuacion, fijo: la pagina no le da nombre, ni mapa, "
+          "ni tabla por region. Con Tc = 1 h el exponente vale 1 y la "
+          "intensidad es 11 veces la media de 24 horas; con Tc = 24 h, casi "
+          "la media."),
+)
+
+MC_HHD_3_12_2_1_C = _cita(
+    id="MC_HHD.3.12.2.1#C",
+    fuente_id="MC_HHD",
+    numeral="3.12.2.1",
+    titulo_numeral="Método Racional Modificado",
+    pagina_impresa="52",
+    pagina_pdf=55,
+    pagina_pdf_titulo=53,
+    texto_literal=Verbatim(texto="Coeficiente de Escorrentía ( C )",
+                           pagina_pdf=55),
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE2,
+    nota=("Apartado F), ecuacion (35), vista en imagen: C = (Pd − Po) · "
+          "(Pd + 23·Po) / (pd + 11·Po)^2, con «Pd : Precitación máxima "
+          "diaria (mm)», «Po : Umbral de escorrentía = (5000/CN) − 50» y «CN "
+          ": Número de curva». La (35) escribe Pd, la lluvia diaria SIN el "
+          "factor reductor, y no la P corregida de la (33) que si usa la "
+          "(34): el programa la aplica como esta escrita, sin corregirla, y "
+          "lo declara en el paso (ficha VE2-F). La ec. (29) define C como "
+          "«Coeficiente de escorrentía para el intervalo en el que se "
+          "produce I» (pag. impresa 51)."),
+    interpretacion=Interpretacion(
+        texto=("La «p» minuscula del denominador de la (35) se lee Pd, la "
+               "precipitacion maxima diaria."),
+        en_contra=(
+            "la imagen escribe «pd» con p minuscula en el denominador y "
+            "«Pd» con mayuscula en el numerador",
+        ),
+        a_favor=(
+            "el «Donde» de la (35) lista solo Pd, Po y CN: no hay una "
+            "variable pd distinta",
+            "con Pd en los tres sitios, C vale 1 cuando Po = 0 (CN = 100, "
+            "superficie impermeable) y 0 cuando Pd = Po, que son los dos "
+            "extremos fisicos del coeficiente",
+        )),
+)
+
+MC_HHD_T07 = _cita(
+    id="MC_HHD.3.11#T07",
+    fuente_id="MC_HHD",
+    numeral="3.11",
+    titulo_numeral="Precipitación total y efectiva",
+    pagina_impresa="47",
+    pagina_pdf=50,
+    pagina_pdf_titulo=45,
+    texto_literal=Verbatim(
+        texto=("Números de curva de escorrentía para usos selectos de "
+               "tierra agrícola, suburbana y urbana"),
+        pagina_pdf=50),
+    caracter=Caracter.DEFINICION,
+    sesion=VE2,
+    nota=("Titulo de la Tabla Nº 07 (pag. impresa 47, PDF 50), que sigue: "
+          "«(condiciones antecedentes de humedad II, Ia = 0.2s)». La remite "
+          "la pag. impresa 46: «Los valores de CN para varios tipos de uso "
+          "de la tierra en estos tipos de suelos se muestran en la Tabla Nº "
+          "07». El programa NO la transcribe: el numero de curva de cada "
+          "cuenca es un dato del estudio hidrologico (columna CN del CSV de "
+          "cuencas, [S]), leido en esta tabla por grupo hidrologico de "
+          "suelo y uso de la tierra."),
+)
+
+MC_HHD_3_12_3_2A_AREA = _cita(
+    id="MC_HHD.3.12.3.2a#AREA",
+    fuente_id="MC_HHD",
+    numeral="3.12.3.2 a)",
+    titulo_numeral="Hidrogramas sintéticos",
+    pagina_impresa="56",
+    pagina_pdf=59,
+    pagina_pdf_titulo=57,
+    texto_literal=Verbatim(
+        texto=("Este método es recomendable tan solo para cuencas de hasta "
+               "a 30 Km2."),
+        pagina_pdf=59),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE2,
+    nota=("Apartado «a)  Hidrograma sintético triangular del SCS» (abre en "
+          "la pag. impresa 55, PDF 58). El programa NO implementa este "
+          "metodo: se nombra con su rango en el mensaje de una cuenca que "
+          "el racional modificado no cubre."),
+)
+
+MC_HHD_3_12_3_2B_AREA = _cita(
+    id="MC_HHD.3.12.3.2b#AREA",
+    fuente_id="MC_HHD",
+    numeral="3.12.3.2 b)",
+    titulo_numeral="Hidrogramas sintéticos",
+    pagina_impresa="58",
+    pagina_pdf=61,
+    pagina_pdf_titulo=57,
+    texto_literal=Verbatim(
+        texto="El rango de aplicación de este método es de 30 a 30 000 Km2",
+        pagina_pdf=61),
+    caracter=Caracter.APROXIMACION,
+    sesion=VE2,
+    nota=("Apartado «b) Método Hidrograma Unitario Sintético de Snyder» "
+          "(abre en la pag. impresa 57, PDF 60). El programa NO lo "
+          "implementa: se nombra con su rango en el mensaje de una cuenca "
+          "de 770 km2 o mas, o con un tiempo de concentracion fuera de "
+          "0.25-24 h."),
+)
+
+MC_HHD_3_12_4 = _cita(
+    id="MC_HHD.3.12.4",
+    fuente_id="MC_HHD",
+    numeral="3.12.4",
+    titulo_numeral=("Sistema de Modelamiento Hidrológico (HMS-Hydrologic "
+                    "Modeling System)"),
+    pagina_impresa="58",
+    pagina_pdf=61,
+    texto_literal=Verbatim(
+        texto=("Con el modelo HEC-HMS, se puede simular la respuesta que "
+               "tendrá la cuenca de un río en su escurrimiento superficial, "
+               "como producto de la precipitación"),
+        pagina_pdf=61),
+    caracter=Caracter.DEFINICION,
+    sesion=VE2,
+    nota=("El numeral describe el programa del HEC y no le escribe rango de "
+          "area. El programa NO lo implementa: se nombra en el mensaje de "
+          "una cuenca que el racional modificado no cubre."),
 )
 
 MC_HHD_3_12_5_PIURA = _cita(

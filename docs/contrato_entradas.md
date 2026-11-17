@@ -78,8 +78,15 @@ la tabla familia por familia está en `docs/guia_perfil.md` §1.1.
 
 Son **opcionales y van juntas**. Sin ellas el caudal entra declarado por `Q_m3s`, como
 siempre. Con ellas, un punto de Familia A o B que tenga fila en el CSV de cuencas puede
-traer `Q_m3s` vacío y el programa lo calcula por el método racional
-(`src/modulos/MH_hidrologia.py`, Manual de Hidrología cap. III). **Ninguna columna tiene
+traer `Q_m3s` vacío y el programa lo calcula (`src/modulos/MH_hidrologia.py`, Manual
+de Hidrología cap. III): por el **método racional** (núm. 3.12.2) si la cuenca tiene
+menos de 10 km², y desde VE-2 por el **método racional modificado** (núm. 3.12.2.1,
+ecuaciones 29 a 35) de 10 a 770 km², con el tiempo de concentración de Témez entre 0.25
+y 24 h. La frontera de 10 km² es la del racional simple («Muy usado para cuencas,
+A<10 Km2», pág. impresa 49); usar el modificado desde ahí es lectura del proyecto.
+Desde 770 km² no se evalúa: el Manual describe el hidrograma de Snyder (30 a 30 000 km²,
+pág. 58), el triangular del SCS (hasta 30 km², pág. 56) y HEC-HMS, y el programa no los
+implementa; el caudal entra declarado (ficha `VE2-F`). **Ninguna columna tiene
 valor por defecto**: las obligatorias detienen la carga si faltan, y las opcionales
 vacías no se rellenan —lo que cada una habilita está en su fila—. Las líneas que
 empiezan por `#` son comentarios. En la ventana son los campos «CSV de cuencas» y «CSV
@@ -90,17 +97,17 @@ de la estación» de la pestaña 1, y la sesión los guarda desde el formato 4 (
 | Columna | Unidad | Origen | Qué es | Si falta |
 |---|---|---|---|---|
 | `id` | — | Trazo | El `id` de la obra en el CSV de puntos | La carga se detiene |
-| `area_km2` | km² | **Estudio hidrológico** | Área de la cuenca aportante, delimitada sobre plano. En una alcantarilla de alivio, el área tributaria de la cuneta (plataforma y talud). Desde 10 km² el método racional no se evalúa. **Tiene que decir lo mismo que `area_ha` del CSV de puntos**, que es la que fija el periodo de retorno | La carga se detiene. Si las dos áreas difieren más de un 1 % (un redondeo), el punto se detiene nombrando el par |
+| `area_km2` | km² | **Estudio hidrológico** | Área de la cuenca aportante, delimitada sobre plano. En una alcantarilla de alivio, el área tributaria de la cuneta (plataforma y talud). Por debajo de 10 km² el caudal sale del método racional; de 10 a 770 km², del racional modificado; desde 770 km² no se evalúa. El aporte de una cuneta es siempre del racional simple (núm. 4.1.2.1 b), con su límite de 10 km². **Tiene que decir lo mismo que `area_ha` del CSV de puntos**, que es la que fija el periodo de retorno | La carga se detiene. Si las dos áreas difieren más de un 1 % (un redondeo), el punto se detiene nombrando el par |
 | `L_cauce_m` | m | Estudio hidrológico | Longitud del cauce principal, o del recorrido del flujo sobre la superficie cuando el método es de flujo superficial | La carga se detiene |
 | `S_cauce_cuenca` | m/m | Estudio hidrológico | Pendiente media del cauce principal, o de la superficie por la que corre el flujo: la que acompaña a `L_cauce_m`. Entra a la fórmula del tiempo de concentración (Kirpich, FAA, Témez) | La carga se detiene |
 | `S_terreno` | m/m | Estudio hidrológico | Pendiente media del **terreno** de la cuenca. Con ella la Tabla Nº 08 elige columna, y es la «pendiente promedio de la cuenca» de la ecuación de retardo. **No es** la del cauce y no se rellena con ella | La carga se detiene |
-| `cobertura` | clave | Estudio hidrológico | Fila de cobertura de la Tabla Nº 08 —`sin_vegetacion`, `cultivos`, `pastos_vegetacion_ligera`, `hierba_grama`, `bosques_densa_vegetacion`— **o** una superficie de la plataforma vial, que esa tabla no tiene: `pavimento`, `berma_de_tierra`, `talud_de_tierra`, `talud_con_cesped` (criterio [C] `coeficiente_escorrentia_superficie_vial`, WSDOT Table 2-2, con su incremento por periodo de retorno) | La carga se detiene |
+| `cobertura` | clave | Estudio hidrológico | (Desde 10 km² se valida y no se lee: el racional modificado da su propio C por el número de curva.) Fila de cobertura de la Tabla Nº 08 —`sin_vegetacion`, `cultivos`, `pastos_vegetacion_ligera`, `hierba_grama`, `bosques_densa_vegetacion`— **o** una superficie de la plataforma vial, que esa tabla no tiene: `pavimento`, `berma_de_tierra`, `talud_de_tierra`, `talud_con_cesped` (criterio [C] `coeficiente_escorrentia_superficie_vial`, WSDOT Table 2-2, con su incremento por periodo de retorno) | La carga se detiene |
 | `suelo` | clave | Estudio hidrológico · EMS | Tipo de suelo de la Tabla Nº 08: `impermeable`, `semipermeable`, `permeable`. **Vacía** cuando `cobertura` es una superficie vial | La carga se detiene (con cobertura de cuenca vacía; con superficie vial, llena) |
 | `estacion` | texto | Estudio hidrológico | Nombre de la estación cuya serie representa a la cuenca; tiene que estar en el CSV de la estación | La carga se detiene |
-| `metodo_tc` | clave | Estudio hidrológico | Método del tiempo de concentración, **por cuenca**: `kirpich` y `california_culverts_practice` (cauce; salieron de cuencas con pendientes de 3 a 10 %), `federal_aviation_administration` (flujo superficial: plataforma, talud, cuenca plana), `retardo_scs` (pide `CN`; cuencas de menos de 800 ha) o `temez` (0.25 a 24 h; trae consigo el coeficiente K). Fuera de la población de una fórmula decide el criterio `tc_fuera_de_la_poblacion_del_metodo` | La carga se detiene |
+| `metodo_tc` | clave | Estudio hidrológico | Método del tiempo de concentración, **por cuenca**: `kirpich` y `california_culverts_practice` (cauce; salieron de cuencas con pendientes de 3 a 10 %), `federal_aviation_administration` (flujo superficial: plataforma, talud, cuenca plana), `retardo_scs` (pide `CN`; cuencas de menos de 800 ha) o `temez` (0.25 a 24 h; trae consigo el coeficiente K). **Desde 10 km² tiene que ser `temez`**: es la ecuación (30) del racional modificado, y otra fórmula detiene el punto. Fuera de la población de una fórmula decide el criterio `tc_fuera_de_la_poblacion_del_metodo` | La carga se detiene |
 | `H_desnivel_m` | m | Topografía / QGIS | **Opcional.** Desnivel entre la divisoria y la salida | Sólo lo exige el método de California: sin él, ese punto se detiene. No se deduce de S·L |
 | `ajuste_kirpich` | clave | Estudio hidrológico | **Obligatoria con `metodo_tc = kirpich`**, vacía con cualquier otro: `ninguno`, `superficie_de_concreto_o_asfalto` (×0.4) o `canal_de_concreto` (×0.2), de la observación de la Tabla Nº 05. «`ninguno`» es una clave y se escribe | La carga se detiene: una celda vacía no elige la fila sin factor |
-| `CN` | — | Estudio hidrológico | **Opcional.** Número de curva de la cuenca (mayor que 0, hasta 100). El programa no tiene tabla de la que leerlo | Sólo lo exige `retardo_scs`: sin él, ese punto se detiene |
+| `CN` | — | Estudio hidrológico | **Opcional.** Número de curva de la cuenca (mayor que 0, hasta 100), dato de sitio [S]: el estudio lo lee en la Tabla Nº 07 del Manual (pág. impresa 47) por grupo hidrológico de suelo y uso de la tierra; el programa no tiene tabla de la que leerlo. La misma columna sirve a la ecuación de retardo y, desde VE-2, al racional modificado (umbral de escorrentía Po = 5000/CN − 50 y coeficiente C de la ecuación 35) | La exigen `retardo_scs` y toda cuenca de 10 km² o más: sin él, ese punto se detiene. Bajo 10 km² y con otro método, puede ir vacía |
 
 **CSV de la estación** — una fila por año; un archivo puede traer varias estaciones:
 
@@ -126,8 +133,14 @@ Cuatro criterios más gobiernan el cálculo y tienen valor de archivo: la duraci
 de la lluvia de diseño (`duracion_minima_lluvia_min`, [C], 5 min), el trato de una
 cuenca fuera de la población de su fórmula (`tc_fuera_de_la_poblacion_del_metodo`, [A],
 «no evaluar»), el coeficiente de uniformidad con la fórmula de Témez
-(`coeficiente_uniformidad_temez`, [A], «aplicar») y el coeficiente de las superficies
-viales (`coeficiente_escorrentia_superficie_vial`, [C]).
+(`coeficiente_uniformidad_temez`, [A], «aplicar»; rige sólo el uso híbrido bajo 10 km²:
+en el racional modificado K es parte de la ecuación 29 y va siempre) y el coeficiente de
+las superficies viales (`coeficiente_escorrentia_superficie_vial`, [C]). Los tres
+primeros no los lee el racional modificado, que trae su propia intensidad (ecuación 34)
+y su tiempo de concentración desde 0.25 h. Desde VE-2, un quinto: el factor de intervalo
+fijo de la serie (`factor_intervalo_fijo_p24`, [A], 1.00, ventana 1.00-1.13), que
+multiplica cada máximo anual de `p24_mm` antes del ajuste; con 1.00 la serie entra tal
+cual, como la usa el Manual (ficha `VE2-D`).
 
 ---
 

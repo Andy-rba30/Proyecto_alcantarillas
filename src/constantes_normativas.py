@@ -4240,6 +4240,53 @@ KS_N_MINIMO_TABULADO = min(TABLA_03_KS)
 NUMERAL_SERIE_HIDROLOGICA = _reg.cita("MC_HHD.3.4#FEN").como_texto()
 NUMERAL_AVENIDA_DE_DISENO = _reg.cita("MC_HHD.3.13").como_texto()
 
+# --- VE-2 (f) --- El metodo racional modificado COMPLETO, num. 3.12.2.1
+# (pags. impresas 50 a 52, PDF 53 a 55). Leido en la IMAGEN de las dos
+# paginas de las formulas: la capa de texto las parte en renglones sueltos y
+# de ahi no se transcribe un exponente. Las ecuaciones (29), (30) y (31) ya
+# estaban arriba (`RACIONAL_COEFICIENTE_SI`, `TC_TEMEZ_SI`,
+# `UNIFORMIDAD_TEMEZ_SI`); estas son las cuatro que faltaban. Y el rango del
+# metodo es el de `TC_TEMEZ_AREA_MAX_KM2` y `TC_TEMEZ_RANGO_H`, que desde VE-2
+# acotan el metodo entero y no solo su formula de Tc. Todas son de Temez,
+# española, sin forma inglesa en uso: no llevan equivalente imperial.
+#
+# Ecuacion (32): KA = 1 – (log10 A/15), A en km2. Se lee 1 − log10(A)/15 (la
+# `Interpretacion` de MC_HHD.3.12.2.1#KA dice por que). `_SI` porque el
+# logaritmo es de A EN KM2: con A en otra unidad el 15 no vale.
+FACTOR_REDUCTOR_AREA_SI = {"divisor": 15}
+NUMERAL_FACTOR_REDUCTOR_AREA = _reg.cita("MC_HHD.3.12.2.1#KA").como_texto()
+NUMERAL_PRECIPITACION_CORREGIDA = _reg.cita("MC_HHD.3.12.2.1#P").como_texto()
+# Ecuacion (34): I = (P/24) · (11)^((28^0.1 − Tc^0.1)/(28^0.1 − 1)), P en mm,
+# Tc en HORAS, I en mm/h. El 11 esta ESCRITO en la ecuacion, fijo: la
+# pagina no le da nombre ni mapa ni tabla por region (la ficha T1-08 decia
+# que el Manual daba «un mapa de isolineas del factor de torrencialidad para
+# España»: no lo da). Con Tc = 1 h el exponente vale 1 y la intensidad es 11
+# veces la media del dia. `_SI` porque el 24 y el 28 son HORAS.
+INTENSIDAD_RACIONAL_MODIFICADO_SI = {"horas_del_dia": 24, "factor": 11,
+                                     "horas_de_referencia": 28,
+                                     "exponente": 0.1}
+NUMERAL_INTENSIDAD_RACIONAL_MODIFICADO = _reg.cita(
+    "MC_HHD.3.12.2.1#I").como_texto()
+# El umbral de escorrentia de la (35): Po = (5000/CN) − 50, en MM (con CN =
+# 100, Po = 0). `_SI` porque el 5000 y el 50 son milimetros.
+UMBRAL_ESCORRENTIA_SI = {"numerador": 5000, "resta": 50}
+# Ecuacion (35): C = (Pd − Po)(Pd + 23·Po) / (Pd + 11·Po)^2. Adimensional
+# (cociente de milimetros entre milimetros al cuadrado sobre milimetros al
+# cuadrado): no es `_SI`. La (35) escribe Pd, NO la P corregida de la (33):
+# se aplica como esta escrita (ficha VE2-F).
+COEFICIENTE_RACIONAL_MODIFICADO = {"suma_numerador": 23,
+                                   "suma_denominador": 11}
+NUMERAL_COEFICIENTE_RACIONAL_MODIFICADO = _reg.cita(
+    "MC_HHD.3.12.2.1#C").como_texto()
+NUMERAL_RACIONAL_MODIFICADO = _reg.cita("MC_HHD.3.12.2.1#METODO").como_texto()
+# Los metodos de caudal que el programa NO implementa, con el rango que el
+# Manual les escribe: se nombran en el mensaje de una cuenca que el
+# racional modificado no cubre.
+NUMERAL_HIDROGRAMA_SCS = _reg.cita("MC_HHD.3.12.3.2a#AREA").como_texto()
+NUMERAL_HIDROGRAMA_SNYDER = _reg.cita("MC_HHD.3.12.3.2b#AREA").como_texto()
+NUMERAL_HEC_HMS = _reg.cita("MC_HHD.3.12.4").como_texto()
+NUMERAL_TABLA_07 = _reg.cita("MC_HHD.3.11#T07").como_texto()
+
 
 # ===========================================================================
 # Constantes de REFERENCIA: transcritas del Anexo B, sin consumidor de calculo

@@ -667,9 +667,9 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
         ca.establecer_valor_dinamico(clave, criterio.valor)
         ca.quitar_valor_dinamico(clave)
         barridos += 1
-    # 145 desde VE-2: 'columna_n_manning_concreto' (a), 'diametro_de_diseno_concreto' (g),
-    # 'nivel_agua_diseno_v7' y 'margen_estacional_nf_v7_m' (c2).
-    assert len(ca.CRITERIOS) == 145 and barridos > 100, (len(ca.CRITERIOS),
+    # 146 desde VE-2: 'columna_n_manning_concreto' (a), 'diametro_de_diseno_concreto' (g),
+    # 'nivel_agua_diseno_v7' y 'margen_estacional_nf_v7_m' (c2), 'factor_intervalo_fijo_p24' (d).
+    assert len(ca.CRITERIOS) == 146 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 

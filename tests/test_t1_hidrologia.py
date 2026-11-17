@@ -140,8 +140,13 @@ A02_SIN_Q = {"A-02": {"Q_m3s": "", "area_ha": AREA_HA_DE_LA_CUENCA_CHICA}}
 REDONDEO_DEL_UMBRAL = 1e-5      # el umbral se imprime con tres decimales
 
 
-PASOS_DE_LA_FASE_1B = ["1b.1", "1b.2", "1b.3", "1b.3b", "1b.4", "1b.5",
-                       "1b.6", "1b.7", "1b.8"]
+# CAMBIADO EN VE-2 (decision (e) del dueño, VE1-02; ficha VE2-E), y se
+# declara la causa: la lluvia de diseño emite desde VE-2 un quinto paso, el
+# aviso de consistencia de la serie sin umbral (`1b.3c`, `FH.CONSISTENCIA`),
+# DESPUES de los cuatro de T-1 para no mover sus posiciones. Lo mide
+# `tests/test_ve2_hidrologia.py`.
+PASOS_DE_LA_FASE_1B = ["1b.1", "1b.2", "1b.3", "1b.3b", "1b.3c", "1b.4",
+                       "1b.5", "1b.6", "1b.7", "1b.8"]
 
 
 def _por_id(informe, id_punto):
@@ -797,9 +802,12 @@ def test_el_caudal_calculado_es_el_producto_de_sus_pasos(MH, cuencas, serie):
         assert p.fundamento_id.startswith("FH.") and p.por_que and p.citas_textuales
         assert all(m.procedencia for m in p.sustitucion)
     # Dos pasos no citan su formula porque no es de una fuente: el recuento
-    # de años (1b.1) y la regla de la hoja de ruta (1b.3b).
+    # de años (1b.1) y la regla de la hoja de ruta (1b.3b). Desde VE-2, tres:
+    # el aviso de consistencia (1b.3c) imprime minimo, mediana y maximo de la
+    # serie, que no es una formula del Manual (el Manual manda evaluar y no
+    # dice como; ficha VE2-E).
     assert all(p.formula_cita_id for p in c.pasos
-               if p.codigo not in ("1b.1", "1b.3b"))
+               if p.codigo not in ("1b.1", "1b.3b", "1b.3c"))
 
 
 def test_el_caudal_crece_con_el_periodo_de_retorno(MH, cuencas, serie):
@@ -812,11 +820,24 @@ def test_el_caudal_crece_con_el_periodo_de_retorno(MH, cuencas, serie):
 
 
 def test_una_cuenca_de_10_km2_se_detiene_antes_de_ajustar_nada(MH, cuencas, serie):
-    """Y no exige el criterio FEN para decirlo: el metodo no aplica."""
+    """
+    Y no exige el criterio FEN para decirlo.
+
+    CAMBIADO EN VE-2 (decision (f) del dueño, VE1-02; ficha VE2-F), y se
+    declara la causa: hasta VE-2 una cuenca de 10 km2 o mas no tenia metodo
+    y se detenia con `MetodoNoEvaluableError`. Desde VE-2 la calcula el
+    metodo racional modificado, que pide el numero de curva: A-01 de 12 km2
+    sin `CN` se detiene por el DATO que falta (antes de ajustar nada, sin el
+    criterio FEN), y desde 770 km2 sigue sin metodo.
+    """
     from dataclasses import replace
-    from src.modelos import MetodoNoEvaluableError
-    with pytest.raises(MetodoNoEvaluableError):
+    from src.modelos import DatoFaltanteError, MetodoNoEvaluableError
+    with pytest.raises(DatoFaltanteError) as exc:
         MH.caudal_de_diseno(replace(cuencas["A-01"], area_km2=12.0), serie, 71)
+    assert exc.value.campo == "CN"
+    with pytest.raises(MetodoNoEvaluableError):
+        MH.caudal_de_diseno(replace(cuencas["A-01"], area_km2=800.0, CN=75.0),
+                            serie, 71)
 
 
 def test_la_relacion_intensidad_duracion_es_barrible(MH, cuencas, serie):

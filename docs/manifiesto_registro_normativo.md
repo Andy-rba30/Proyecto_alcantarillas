@@ -1263,14 +1263,25 @@ línea que se pueda romper.
 
 | id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
 |---|---|---|---|---|---|
+| `MC_HHD.3.11#T07` | 3.11 | «Precipitación total y efectiva» | pág. impresa **47** · PDF 50 | definicion | 2026-11-17 · texto |
 | `MC_HHD.3.12.2` | 3.12.2 | ESTIMACIÓN DE CAUDALES › «Método Racional» | pág. impresa **49** · PDF 52 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.3.12.2#AREA` | 3.12.2 | ESTIMACIÓN DE CAUDALES › «Método Racional» | pág. impresa **49** · PDF 52 | aproximacion | 2026-11-11 · texto |
 | `MC_HHD.3.12.2#T08` | 3.12.2 | ESTIMACIÓN DE CAUDALES › «Método Racional» | pág. impresa **50** · PDF 53 | exigencia | 2026-11-11 · ambos |
+| `MC_HHD.3.12.2.1#C` | 3.12.2.1 | «Método Racional Modificado» | pág. impresa **52** · PDF 55 | definicion | 2026-11-17 · ambos |
+| `MC_HHD.3.12.2.1#I` | 3.12.2.1 | «Método Racional Modificado» | pág. impresa **52** · PDF 55 | definicion | 2026-11-17 · ambos |
 | `MC_HHD.3.12.2.1#K` | 3.12.2.1 | «Método Racional Modificado» | pág. impresa **51** · PDF 54 | definicion | 2026-11-11 · ambos |
+| `MC_HHD.3.12.2.1#KA` | 3.12.2.1 | «Método Racional Modificado» | pág. impresa **51** · PDF 54 | definicion | 2026-11-17 · ambos |
+| `MC_HHD.3.12.2.1#METODO` | 3.12.2.1 | «Método Racional Modificado» | pág. impresa **50** · PDF 53 | definicion | 2026-11-17 · texto |
+| `MC_HHD.3.12.2.1#P` | 3.12.2.1 | «Método Racional Modificado» | pág. impresa **52** · PDF 55 | definicion | 2026-11-17 · ambos |
 | `MC_HHD.3.12.2.1#TC` | 3.12.2.1 | «Método Racional Modificado» | pág. impresa **51** · PDF 54 | aproximacion | 2026-11-11 · ambos |
+| `MC_HHD.3.12.3.2a#AREA` | 3.12.3.2 a) | «Hidrogramas sintéticos» | pág. impresa **56** · PDF 59 | recomendacion | 2026-11-17 · texto |
+| `MC_HHD.3.12.3.2b#AREA` | 3.12.3.2 b) | «Hidrogramas sintéticos» | pág. impresa **58** · PDF 61 | aproximacion | 2026-11-17 · texto |
+| `MC_HHD.3.12.4` | 3.12.4 | «Sistema de Modelamiento Hidrológico (HMS-Hydrologic Modeling System)» | pág. impresa **58** · PDF 61 | definicion | 2026-11-17 · texto |
 | `MC_HHD.3.12.5#G` | 3.12.5 | «Otras Metodologías» | pág. impresa **63** · PDF 66 | definicion | 2026-08-28 · ambos |
 | `MC_HHD.3.12.5#PIURA` | 3.12.5 | «Otras Metodologías» | pág. impresa **64** · PDF 67 | exigencia | 2026-11-11 · texto |
 | `MC_HHD.3.13` | 3.13 | «Avenida de Diseño» | pág. impresa **65** · PDF 68 | definicion | 2026-11-11 · texto |
+| `MC_HHD.3.3#CONSISTENCIA` | 3.3 | «Estudios de Campo» | pág. impresa **21** · PDF 24 | exigencia | 2026-11-17 · texto |
+| `MC_HHD.3.4#CONSISTENCIA` | 3.4 | «Evaluación de la Información Hidrológica» | pág. impresa **22** · PDF 25 | definicion | 2026-11-17 · texto |
 | `MC_HHD.3.4#FEN` | 3.4 | «Evaluación de la Información Hidrológica» | pág. impresa **22** · PDF 25 | exigencia | 2026-11-11 · texto |
 | `MC_HHD.3.4#REGISTRO` | 3.4 | «Evaluación de la Información Hidrológica» | pág. impresa **22** · PDF 25 | recomendacion | 2026-11-11 · texto |
 | `MC_HHD.3.6` | 3.6 | «Selección del Período de Retorno» | pág. impresa **25** · PDF 28 | recomendacion | 2026-08-28 · ambos |
@@ -1283,6 +1294,7 @@ línea que se pueda romper.
 | `MC_HHD.3.7.2b#T03` | 3.7.2 b) | 3.7.2 Pruebas de bondad de ajuste › «b) Prueba Kolmogorov – Smirnov» | pág. impresa **32** · PDF 35 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.3.8.1#DICK_PESCHKE` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **37** · PDF 40 | permiso | 2026-11-11 · ambos |
 | `MC_HHD.3.8.1#DURACION` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **36** · PDF 39 | definicion | 2026-11-11 · texto |
+| `MC_HHD.3.8.1#P24` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **36** · PDF 39 | definicion | 2026-11-17 · texto |
 | `MC_HHD.3.8.1#T04` | 3.8.1 | «Curvas Intensidad – Duración – Frecuencia» | pág. impresa **36** · PDF 39 | permiso | 2026-11-11 · ambos |
 | `MC_HHD.3.9#T05` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | definicion | 2026-11-11 · ambos |
 | `MC_HHD.3.9#T05_CALIFORNIA` | 3.9 | «Tiempo de Concentración» | pág. impresa **39** · PDF 42 | aproximacion | 2026-11-11 · ambos |
@@ -1350,21 +1362,43 @@ línea que se pueda romper.
 | `MC_HHD.LAMINA_04#DENTELLON` | Anexos, Lámina Nº 04 | «DE ALIVIADERO CON DISIPADOR DE ENERGÍA» | pág. impresa **210** · PDF 213 | definicion | 2026-11-12 · ambos |
 | `MC_HHD.LAMINA_05` | Anexos, Lámina Nº 05 | «ALCANTARILLA  CON  ENROCADO» | pág. impresa **211** · PDF 214 | definicion | 2026-11-12 · ambos |
 
+> **`MC_HHD.3.11#T07`** — Titulo de la Tabla Nº 07 (pag. impresa 47, PDF 50), que sigue: «(condiciones antecedentes de humedad II, Ia = 0.2s)». La remite la pag. impresa 46: «Los valores de CN para varios tipos de uso de la tierra en estos tipos de suelos se muestran en la Tabla Nº 07». El programa NO la transcribe: el numero de curva de cada cuenca es un dato del estudio hidrologico (columna CN del CSV de cuencas, [S]), leido en esta tabla por grupo hidrologico de suelo y uso de la tierra.
+
 > **`MC_HHD.3.12.2`** — Ecuacion (28). Las unidades estan en la pag. impresa 50 (PDF 53): Q «Descarga máxima de diseño (m3/s)», C «Coeficiente de escorrentía (Ver Tabla Nº 08)», I «Intensidad de precipitación máxima horaria (mm/h)», A «Área de la cuenca (Km2).» El 0,278 es 1/3.6, la conversion de mm/h·km² a m³/s: es el mismo cociente que el num. 4.1.2.1 b) escribe como C·I·A/3.6. El numeral NO trae ejemplo numerico.
 
 > **`MC_HHD.3.12.2#AREA`** — La desigualdad es ESTRICTA: 10 km² exactos quedan fuera. Y el verbo es descriptivo («Muy usado para»): la fuente no prohibe el metodo por encima, dice donde se usa. El proyecto lo aplica como limite de validez y por encima no evalua, remitiendo al hidrograma unitario del num. 3.12.3.
 
 > **`MC_HHD.3.12.2#T08`** — Es la oracion que sigue a la Tabla Nº 08. La tabla da el NUMERO; que fila describe a la cuenca lo establece el estudio, con sus caracteristicas: por eso cobertura y suelo son columnas del CSV de cuencas y no una eleccion del programa.
 
-> **`MC_HHD.3.12.2.1#K`** — Ecuacion (29), con «K : Coeficiente de Uniformidad». Su apartado «B) Coeficiente de Uniformidad» da la ecuacion (31), vista en imagen: K = 1 + Tc^1.25 / (Tc^1.25 + 14), con «Tc= Tiempo de concentración (horas)». K es siempre mayor que 1 y crece con Tc (1.01 a 0.25 h, 1.07 a 1 h, 1.79 a 24 h). El metodo trae ademas su propia intensidad (ec. 34), su factor reductor por area (ec. 32) y su coeficiente C por numero de curva (ec. 35), que el proyecto NO usa: toma la formula del tiempo de concentracion (ec. 30) y, con ella, este coeficiente.
+> **`MC_HHD.3.12.2.1#C`** — Apartado F), ecuacion (35), vista en imagen: C = (Pd − Po) · (Pd + 23·Po) / (pd + 11·Po)^2, con «Pd : Precitación máxima diaria (mm)», «Po : Umbral de escorrentía = (5000/CN) − 50» y «CN : Número de curva». La (35) escribe Pd, la lluvia diaria SIN el factor reductor, y no la P corregida de la (33) que si usa la (34): el programa la aplica como esta escrita, sin corregirla, y lo declara en el paso (ficha VE2-F). La ec. (29) define C como «Coeficiente de escorrentía para el intervalo en el que se produce I» (pag. impresa 51).
 
-> **`MC_HHD.3.12.2.1#TC`** — Ecuacion (30), apartado «A) Tiempo de Concentración (Tc)», vista en imagen: Tc = 0.3 · (L / S^0.25)^0.76, con «L= Longitud del cauce mayor (km)» y «S= Pendiente promedio del cauce mayor (m/m)»; Tc sale en HORAS (lo dicen el rango de arriba y el apartado B). Es la formula de Temez, y vive AQUI y no en la Tabla Nº 05. El rango de area y de Tc es el del metodo racional modificado entero, del que esta formula es una pieza: el proyecto toma SOLO la formula del tiempo de concentracion y le aplica ese rango como validez; no usa el resto del metodo (coeficiente de uniformidad, factor reductor, numero de curva).
+> **`MC_HHD.3.12.2.1#I`** — Apartado E), ecuacion (34), vista en imagen: I = (P/24) · (11)^((28^0.1 − Tc^0.1)/(28^0.1 − 1)), con «P : Precitación máxima corregida (mm)» y «Tc : Tiempo de concentración (horas)». I sale en mm/h: P/24 es la intensidad media del dia. El 11 esta ESCRITO en la ecuacion, fijo: la pagina no le da nombre, ni mapa, ni tabla por region. Con Tc = 1 h el exponente vale 1 y la intensidad es 11 veces la media de 24 horas; con Tc = 24 h, casi la media.
+
+> **`MC_HHD.3.12.2.1#K`** — Ecuacion (29), con «K : Coeficiente de Uniformidad». Su apartado «B) Coeficiente de Uniformidad» da la ecuacion (31), vista en imagen: K = 1 + Tc^1.25 / (Tc^1.25 + 14), con «Tc= Tiempo de concentración (horas)». K es siempre mayor que 1 y crece con Tc (1.01 a 0.25 h, 1.07 a 1 h, 1.79 a 24 h). El metodo trae ademas su propia intensidad (ec. 34), su factor reductor por area (ec. 32) y su coeficiente C por numero de curva (ec. 35). Hasta VE-2 el proyecto NO los usaba: tomaba la formula del tiempo de concentracion (ec. 30) y, con ella, este coeficiente. Desde VE-2 (ficha VE2-F) el metodo ENTERO calcula el caudal de 10 a 770 km2; por debajo de 10 km2 sigue el uso hibrido de T-1.
+
+> **`MC_HHD.3.12.2.1#KA`** — Ecuacion (32), apartado «C) Coeficiente de simultaneidad  o Factor reductor (kA)», con «A : Área de la cuenca (Km2)» al principio de la pag. impresa 52. En la imagen y en el texto la pagina escribe lo mismo, sin parentesis alrededor de log10 A ni alrededor de A/15.
+
+> **`MC_HHD.3.12.2.1#METODO`** — Primera oracion del numeral, al pie de la pag. impresa 50 (PDF 53). Sigue en la 51: «Y permite estimar de forma sencilla caudales punta en cuencas de drenaje naturales con áreas menores de 770 km2 y con tiempos de concentración (Tc) de entre 0.25 y 24 horas» (MC_HHD.3.12.2.1#TC). «adaptada para las condiciones climáticas de España» es un hecho de la fuente que el caudal calculado por este metodo imprime como aviso: el Manual lo adopta para el Peru sin decir como se adapto.
+
+> **`MC_HHD.3.12.2.1#P`** — Apartado D), ecuacion (33), vista en imagen: P = kA · Pd, con «kA : Factor reductor» y «Pd : Precitación máxima diaria (mm)» (la errata «Precitación» es de la pagina). El programa toma por Pd la precipitacion maxima en 24 horas del periodo de retorno de diseño, la del ajuste de la serie (num. 3.7 y 3.8.1).
+
+> **`MC_HHD.3.12.2.1#TC`** — Ecuacion (30), apartado «A) Tiempo de Concentración (Tc)», vista en imagen: Tc = 0.3 · (L / S^0.25)^0.76, con «L= Longitud del cauce mayor (km)» y «S= Pendiente promedio del cauce mayor (m/m)»; Tc sale en HORAS (lo dicen el rango de arriba y el apartado B). Es la formula de Temez, y vive AQUI y no en la Tabla Nº 05. El rango de area y de Tc es el del metodo racional modificado entero, del que esta formula es una pieza. Por debajo de 10 km2 el proyecto toma SOLO la formula del tiempo de concentracion (y el K de MC_HHD.3.12.2.1#K, segun el criterio 'coeficiente_uniformidad_temez') y le aplica ese rango como validez; desde VE-2, de 10 a 770 km2 el caudal se calcula con el metodo ENTERO (ficha VE2-F) y este rango acota el metodo.
+
+> **`MC_HHD.3.12.3.2a#AREA`** — Apartado «a)  Hidrograma sintético triangular del SCS» (abre en la pag. impresa 55, PDF 58). El programa NO implementa este metodo: se nombra con su rango en el mensaje de una cuenca que el racional modificado no cubre.
+
+> **`MC_HHD.3.12.3.2b#AREA`** — Apartado «b) Método Hidrograma Unitario Sintético de Snyder» (abre en la pag. impresa 57, PDF 60). El programa NO lo implementa: se nombra con su rango en el mensaje de una cuenca de 770 km2 o mas, o con un tiempo de concentracion fuera de 0.25-24 h.
+
+> **`MC_HHD.3.12.4`** — El numeral describe el programa del HEC y no le escribe rango de area. El programa NO lo implementa: se nombra en el mensaje de una cuenca que el racional modificado no cubre.
 
 > **`MC_HHD.3.12.5#G`** — Primera de las DOS paginas del Manual donde 9.8 figura como gravedad.
 
 > **`MC_HHD.3.12.5#PIURA`** — La oracion entera: «Otra metodología es la que resalte la influencia de El Fenómeno “El Niño”, en especial en la Vertiente del Pacífico del Perú, departamentos de Piura y Tumbes, donde es necesario un tratamiento especial del análisis para determinar el caudal de diseño.» El Manual lo dice de los caudales y no da el tratamiento; el proyecto lo imprime en la memoria hidrologica porque el ajuste de una sola distribucion a una serie con años de El Niño puede dejar la lluvia de diseño por debajo de lo ya observado, y eso se avisa en el paso del ajuste.
 
 > **`MC_HHD.3.13`** — El numeral no da formula ni umbral: remite al estudio hidrologico («Estimación de Caudales») y a «la experiencia y el buen tino del ingeniero proyectista». Por eso el caudal especifico Q/A se imprime como contraste y no se juzga contra nada.
+
+> **`MC_HHD.3.3#CONSISTENCIA`** — El numeral abre en la pag. impresa 20 (PDF 23) y esta oracion esta en la 21 (PDF 24), entre el parrafo de los sectores criticos y el de la localizacion de las cuencas. «Se debe»: es un mandato, y el UNICO de las dos citas de la consistencia. Ni este numeral ni el resto del Manual dicen COMO se evalua la consistencia ni con que numero se juzga: por eso el paso que lo imprime no tiene umbral ni veredicto (VE-2, ficha VE2-E).
+
+> **`MC_HHD.3.4#CONSISTENCIA`** — Primera clausula de la oracion de MC_HHD.3.4#REGISTRO y MC_HHD.3.4#FEN, pag. impresa 22 (PDF 25). Dice por que importa la consistencia; el mandato de evaluarla es el del num. 3.3 (MC_HHD.3.3#CONSISTENCIA).
 
 > **`MC_HHD.3.4#FEN`** — El numeral abre en la pag. impresa 21 (PDF 24) y esta oracion esta en la 22 (PDF 25). Son DOS mandatos en una oracion y tiran en sentidos opuestos: la serie «deberá incluir» los años del Niño, y esos años deben «ser evaluados» para no sobredimensionar. La fuente no dice COMO evaluarlos: de ahi el criterio 'homogeneidad_serie_fen'.
 
@@ -1387,6 +1421,8 @@ línea que se pueda romper.
 > **`MC_HHD.3.7.2b#T03`** — La tabla empieza en la pag. impresa 32 (PDF 35: n = 5 a 25) y termina en la 33 (PDF 36: n = 30, 35 y 40, y «Fuente: Aparicio, 1999.»).
 
 > **`MC_HHD.3.8.1#DICK_PESCHKE`** — Ecuacion (16), vista en imagen: Pd = P24h · (d / 1440)^0.25, con d en MINUTOS y las dos precipitaciones en mm. Y a renglon seguido: «La intensidad se halla dividiendo la precipitación Pd entre la duración.» Las dos condiciones van unidas por «o»: basta con no tener registros pluviograficos, que es el caso de una serie de maximas en 24 horas.
+
+> **`MC_HHD.3.8.1#P24`** — Oracion del parrafo que presenta la Tabla Nº 04, pag. impresa 36 (PDF 39). La fila de 24 horas de esa tabla vale 1.00 (pag. impresa 37, PDF 40). El Manual usa la maxima en 24 horas sin conversion: un factor que la multiplique antes del ajuste (el 1.13 de intervalo fijo de la practica, que ninguna fuente del repositorio de normas trae) es una adopcion [A] del proyecto.
 
 > **`MC_HHD.3.8.1#T04`** — La Tabla Nº 04 empieza en la pag. impresa 36 (PDF 39: 1 a 8 horas) y termina en la 37 (PDF 40: 10 a 48 horas). El coeficiente multiplica a la precipitacion maxima en 24 horas y da la PRECIPITACION de esa duracion; la intensidad es ese producto entre la duracion.
 
@@ -3147,11 +3183,16 @@ recomienda.
 | `F9.SOBRECARGA` | Fase 9 - Cabezal y aletas | Sobrecarga viva de trafico sobre el relleno: altura equivalente, empuje y peso sobre el talon | **obliga** | `MP.2.4.2.2#SOBRECARGA`, `AASHTO_LRFD_9.3.11.6.4`, `AASHTO_LRFD_9.3.11.6.4#ALTURA`, `AASHTO_LRFD_9.C11.5.6#SOBRECARGA` |
 | `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | **recomienda** | `MC_HHD.3.7.1`, `MC_HHD.3.7.1.1`, `MC_HHD.3.7.1.2`, `MC_HHD.3.7.1.7`, `MC_HHD.3.7.2b` |
 | `FH.C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura vegetal, tipo de suelo y pendiente del terreno | **obliga** | `MC_HHD.3.12.2#T08`, `WSDOT_HM.2-6.2#T2-2`, `WSDOT_HM.2-6.2#FRECUENCIA` |
+| `FH.CONSISTENCIA` | Fase 1-bis - Hidrologia: caudal de diseño | Consistencia de la serie de la estacion: lo que el Manual manda evaluar y el programa no evalua | **obliga** | `MC_HHD.3.3#CONSISTENCIA`, `MC_HHD.3.4#CONSISTENCIA` |
+| `FH.FACTOR_P24` | Fase 1-bis - Hidrologia: caudal de diseño | Factor de intervalo fijo de la serie de 24 horas: por cuanto se multiplica cada maximo anual antes del ajuste | **define** | `MC_HHD.3.8.1#P24`, `MC_HHD.3.8.1#T04` |
 | `FH.FEN` | Fase 1-bis - Hidrologia: caudal de diseño | Contraste del tratamiento de los años FEN: la lluvia de diseño adoptada frente a la de la serie completa y la de la serie sin los años FEN | **obliga** | `MC_HHD.3.4#FEN`, `MC_HHD.3.12.5#PIURA` |
 | `FH.INTENSIDAD` | Fase 1-bis - Hidrologia: caudal de diseño | Intensidad de la lluvia de diseño para una duracion igual al tiempo de concentracion, desde la precipitacion maxima en 24 horas | **permite** | `MC_HHD.3.8.1#DICK_PESCHKE`, `MC_HHD.3.8.1#T04`, `MC_HHD.3.8.1#DURACION`, `WSDOT_HM.2-6.3#TC_MINIMO` |
 | `FH.KS` | Fase 1-bis - Hidrologia: caudal de diseño | Prueba de bondad de ajuste de Kolmogorov-Smirnov: D = max |Fo(xm) − F(xm)| contra el valor critico d de la Tabla Nº 03 | **define** | `MC_HHD.3.7.2b`, `MC_HHD.3.7.2b#T03`, `MC_HHD.3.7.2b#ELIGE` |
 | `FH.Q_ESPECIFICO` | Fase 1-bis - Hidrologia: caudal de diseño | Caudal especifico Q/A del caudal de diseño, como contraste de plausibilidad | **define** | `MC_HHD.3.13`, `MC_HHD.3.12.2` |
 | `FH.RACIONAL` | Fase 1-bis - Hidrologia: caudal de diseño | Caudal de diseño por el metodo racional, Q = 0.278 · C · I · A | **define** | `MC_HHD.3.12.2`, `MC_HHD.3.12.2#AREA`, `MC_HHD.4.1.2.1b`, `MC_HHD.3.12.2.1#K` |
+| `FH.RM_C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia del metodo racional modificado, por el numero de curva: umbral de escorrentia y ecuacion (35) | **define** | `MC_HHD.3.12.2.1#C`, `MC_HHD.3.11#T07` |
+| `FH.RM_CAUDAL` | Fase 1-bis - Hidrologia: caudal de diseño | Caudal de diseño por el metodo racional modificado, Q = 0.278 · C · I · A · K | **define** | `MC_HHD.3.12.2.1#K`, `MC_HHD.3.12.2.1#TC`, `MC_HHD.3.12.2#AREA`, `MC_HHD.3.12.3.2a#AREA`, `MC_HHD.3.12.3.2b#AREA`, `MC_HHD.3.12.4` |
+| `FH.RM_INTENSIDAD` | Fase 1-bis - Hidrologia: caudal de diseño | Intensidad del metodo racional modificado: factor reductor por area, precipitacion corregida sobre la cuenca y ecuacion (34) | **define** | `MC_HHD.3.12.2.1#METODO`, `MC_HHD.3.12.2.1#KA`, `MC_HHD.3.12.2.1#P`, `MC_HHD.3.12.2.1#I` |
 | `FH.SERIE` | Fase 1-bis - Hidrologia: caudal de diseño | Serie de precipitacion maxima en 24 horas de la estacion: longitud de registro, años FEN que contiene y como se tratan | **obliga** | `MC_HHD.3.4#FEN`, `MC_HHD.3.4#REGISTRO`, `MC_HHD.3.12.5#PIURA` |
 | `FH.TC` | Fase 1-bis - Hidrologia: caudal de diseño | Tiempo de concentracion de la cuenca, por el metodo declarado en el CSV de cuencas | **define** | `MC_HHD.3.9#T05`, `MC_HHD.3.9#T05_KIRPICH`, `MC_HHD.3.9#T05_CALIFORNIA`, `MC_HHD.3.9#T05_FAA`, `MC_HHD.3.9#T05_SCS`, `MC_HHD.3.12.2.1#TC` |
 
@@ -3307,7 +3348,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 515.
+Citas sin firma de verificación: **6** de 527.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

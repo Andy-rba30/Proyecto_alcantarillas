@@ -2536,19 +2536,78 @@ CRITERIOS: Dict[str, Criterio] = {
                "3.12.2.1 'Método Racional Modificado', ecuaciones (29), (30) "
                "y (31), pag. impresa 51 (PDF 54): citas MC_HHD.3.12.2.1#K "
                "(DEFINICION) y MC_HHD.3.12.2.1#TC (APROXIMACION)",
-        verificacion_pendiente="El metodo racional modificado completo no "
-                               "esta implementado: su intensidad, su factor "
-                               "reductor por area y su coeficiente de "
-                               "escorrentia por numero de curva no se usan "
-                               "(ficha T1-08 de docs/decisiones_diferidas.md). "
-                               "Lo que se calcula con la formula de Temez es "
-                               "un hibrido declarado, con o sin K",
+        verificacion_pendiente="El criterio rige SOLO por debajo de 10 km2: "
+                               "ahi lo que se calcula con la formula de "
+                               "Temez es un hibrido declarado, con o sin K. "
+                               "Desde VE-2 (fichas T1-08 y VE2-F de "
+                               "docs/decisiones_diferidas.md), de 10 a "
+                               "770 km2 el caudal sale del metodo racional "
+                               "modificado completo --su intensidad, su "
+                               "factor reductor por area y su coeficiente "
+                               "por numero de curva-- y K es parte de su "
+                               "ecuacion (29): va siempre y este criterio "
+                               "no se lee",
         resolucion=Libre(
             que_lo_fija="el proyectista: el Manual da K dentro de un metodo "
                         "del que el proyecto toma solo el tiempo de "
                         "concentracion, y no dice si K acompaña a esa pieza "
                         "fuera del metodo",
             dominio="declaracion; el conjunto cerrado viaja en `sensibilidad`",
+        ),
+    ),
+
+    # --- VE-2 (d) --- decision del dueño (2026-11-17) sobre VE1-02 (d) ---
+    "factor_intervalo_fijo_p24": Criterio(
+        valor=1.0,                  # adimensional: la serie tal cual
+        nivel=NIVEL_PERFIL,         # lo invoca la Fase 1-bis en cada caudal
+                                    # calculado, a perfil (medido en
+                                    # tests/test_ve2_hidrologia.py)
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        # De la serie tal cual (el Manual) al 1.13 de la practica.
+        sensibilidad=(1.0, 1.13),
+        concepto="Factor por el que se multiplica cada maximo anual de "
+                 "precipitacion en 24 horas de la serie de la estacion, ANTES "
+                 "del ajuste de frecuencia, para llevar una lectura de "
+                 "intervalo fijo a la maxima de 24 horas corridas",
+        justificacion="Decide si la serie de maximas en 24 horas entra al "
+                      "ajuste tal como la entrega la estacion o corregida "
+                      "por intervalo fijo. La fuente no la corrige: el num. "
+                      "3.8.1 del Manual de Hidrologia estima la lluvia de una "
+                      "duracion a partir de la precipitacion maxima en 24 "
+                      "horas multiplicada por un coeficiente de duracion "
+                      "(cita MC_HHD.3.8.1#P24), y el de 24 horas en su Tabla "
+                      "N 04 es 1.00 (cita MC_HHD.3.8.1#T04). Se adopta 1.00, "
+                      "la lectura literal del Manual. El extremo alto de la "
+                      "ventana, 1.13, es una practica que aplican la tesis "
+                      "UPAO y la via TU-107 de la validacion externa (VE1-02 "
+                      "(d)) y que esta sin fuente en el repositorio de "
+                      "normas: «1.13», «intervalo fijo», «fixed interval», "
+                      "«Weiss», «OMM» y «WMO» no aparecen como factor de "
+                      "lluvia en ningun PDF. Pasaria a [C] solo si se trae al "
+                      "repositorio de normas la guia de la OMM o el trabajo "
+                      "de Weiss que la practica cita, con su pagina. "
+                      "Se aplica a la serie y no al cuantil: corrige cada "
+                      "lectura, y con eso el contraste del ajuste con lo "
+                      "observado sigue comparando lo mismo. Las tres "
+                      "distribuciones que el programa ajusta son de escala, "
+                      "de modo que el cuantil sale exactamente multiplicado "
+                      "por el factor. Sensibilidad: con 1.13 la lluvia de "
+                      "diseño sube un 13 % exacto, el caudal del racional "
+                      "simple tambien, y el del racional modificado algo mas "
+                      "(su coeficiente de escorrentia crece con la lluvia); "
+                      "con el valor de archivo nada cambia",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. 3.8.1 "
+               "'Curvas Intensidad – Duración – Frecuencia', pag. impresa 36 "
+               "(PDF 39), y Tabla N 04, fila de 24 horas (1.00), pag. impresa "
+               "37 (PDF 40): citas MC_HHD.3.8.1#P24 (DEFINICION) y "
+               "MC_HHD.3.8.1#T04 (PERMISO). El 1.13 del extremo alto de la "
+               "ventana: practica sin fuente en el repositorio de normas",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: el Manual usa la maxima en 24 horas "
+                        "sin conversion y ninguna fuente del repositorio de "
+                        "normas da otro factor",
+            dominio="adimensional, de 1.00 (la serie tal cual) a 1.13",
         ),
     ),
 

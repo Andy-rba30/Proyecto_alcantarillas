@@ -1693,4 +1693,12 @@ encabezado («141 criterios declarados, 20 todavía sin valor» → «143 …, 2
 numéricas de los JSON fuera de la lista de criterios, idénticas; `cli_*.txt`, CSV y la
 memoria del cajón, idénticos.
 
+## Regenerada en VE-2, parte de hidrología (2026-11-17): sólo la huella de `criterios_adoptados.py`
+
+El aviso de consistencia (e) y el racional modificado (f) son de la Fase 1-bis, que esta
+línea base no ejercita, y el factor de intervalo fijo (d) también. Cambian sólo
+`criterios_sha1` (el texto de `verificacion_pendiente` de `coeficiente_uniformidad_temez`
+y el criterio nuevo `factor_intervalo_fijo_p24`), en los cuatro JSON y en las cuatro
+memorias de la CLI, y en éstas el recuento: «142 criterios declarados» por 141 en su rama; integrado detrás de (a), (g) y (c), 145 → 146.
+
 **Diámetros, secciones, materiales y HW movidos: ninguno.**

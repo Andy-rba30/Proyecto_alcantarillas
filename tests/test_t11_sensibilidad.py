@@ -177,7 +177,13 @@ def test_los_juicios_del_anexo(medidas):
             # VE-2 (g): admitir tambien el diametro ingles convertido no
             # mueve nada mientras la progresion sea la de archivo, toda
             # designada (0.90 + 0.15 m).
-            "diametro_de_diseno_concreto"},
+            "diametro_de_diseno_concreto",
+            # VE-2 (d), declarandolo: el factor de intervalo fijo, barrido
+            # sobre la variante con el caudal calculado. Lo LEE (sube la
+            # lluvia y el caudal un 13 %), pero en ese juego A-01, A-02 y
+            # B-01 no dimensionan con ninguno de los dos valores y C-01 no
+            # pasa por la hidrologia: no hay diseño ni veredicto que mover.
+            "factor_intervalo_fijo_p24@juego_caudal_calculado"},
         "NO LO LEE LA CORRIDA": {
             "borde_libre_bajo_tw_ahogante", "seccion_receptor",
             "hw_entrada_fuera_de_rango", "coeficiente_uniformidad_temez",
