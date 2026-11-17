@@ -7966,31 +7966,41 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 
 ## VE3-03 · M9 contra ejemplos publicados (Caltrans BDP 11.2.2, CDOT Ex. 11)
 
-- **Cerrado:** 61 contrastes de las funciones de M9 (empujes, excentricidad y presión de
-  contacto uniforme y lineal, e admisible sísmica, flexión, Mcr, fisuración, dv y Vc con el β
-  de la fuente, decisión del cortante simplificado, acero de temperatura) contra lo
-  recalculado con la fórmula de cada fuente: 53 coinciden al 1 %, 5 son erratas de la fuente
-  (el motor coincide con lo recalculado), 3 difieren por el módulo Ec (método declarado),
-  0 defectos. Los ejemplos están en el repositorio de normas, `ejemplos_resueltos/`.
-- **Abierto:** (O-1) si M9 debe usar la ec. 5.4.2.4-1 con el peso unitario del concreto del
-  proyecto en vez de la de C5.4.2.4-1; (O-2) el ancho del acero de temperatura (M9 el real,
-  CDOT una franja de 12 in). La estabilidad integrada (`ensamble_estabilidad`, cuña de
-  tanteo, Mononobe-Okabe con relleno inclinado) sigue sin ejemplo externo.
-- **Qué haría falta:** decisión del dueño sobre O-1 y O-2; un ejemplo con la geometría
-  completa del relleno para la cuña y el sismo.
+- **Cerrado:** 64 contrastes de M9 contra lo recalculado con la fórmula de cada fuente: 57
+  coinciden al 1 %, 4 son erratas de la fuente (el motor coincide con lo recalculado), 3
+  difieren por el módulo Ec y 0 son defectos (empujes, excentricidad, presión de contacto
+  uniforme y lineal, e admisible sísmica, flexión, Mcr, fisuración, dv y Vc con el β de la
+  fuente, decisión del simplificado, acero de temperatura). Las filas de método exigen además
+  que el motor dé la referencia de su método, calculada aparte. Correcciones de la revisión
+  Fable (A-3, M-1): la «errata» de temperatura de CDOT se retiró (la hoja comprueba el piso en
+  AD456) y la ec. 5.10.6-1 se contrasta en los tres casos de la hoja y el piso aparte. O-1 se
+  cierra a favor de M9: AASHTO C5.4.2.4-1 (pág. 5-20, PDF 379) da 2 500·f'c^0.33 para el
+  concreto de peso normal con w_c = 0.145 kcf; los 0.150 kcf de CDOT son los del concreto
+  armado para cargas muertas.
+- **Abierto:** O-2, el ancho del acero de temperatura (M9 el real, CDOT una franja de 12 in;
+  en los tres casos manda el piso). Sin ejemplo externo: la estabilidad integrada
+  (`ensamble_estabilidad`, cuña de tanteo, Mononobe-Okabe con relleno inclinado) y las ramas
+  piso 0.72·h de dv, γEQ = 1 y tope de V_n.
+- **Qué haría falta:** decisión del dueño sobre O-2; un ejemplo con la geometría completa del
+  relleno para la cuña y el sismo.
 - **Dónde vive:** `tests/apoyo/validacion_cabezal.py::contrastes`
 
 ## VE3-04 · M8 contra ejemplos publicados (ACPA, USACE, PPI)
 
-- **Cerrado:** `docs/validacion_conducto.md` contrasta M8 con ACPA DD 1, DD 22 y CPDM
-  cap. 4 y con USACE EM 1110-2-2902 ap. B: 42 contrastes, 32 coinciden, 10 difieren por
-  edición o método con su causa escrita, 0 defectos; dos erratas de las fuentes registradas
-  (el intermedio del CPDM 4-7 y el «4267» de DD 22).
-- **Abierto:** con poco relleno la carga viva de M8 sobre tubos de concreto pequeños sale muy
-  por encima de ACPA 2000/2009 (+65 % de carga, +104 % de D-load), por la edición (HL-93 con
-  m = 1.20 y 0.06·D_i) y por la lectura W_L = P_L·min(l_w, B_c) sin longitud efectiva: del lado
-  seguro, pero sin ejemplo resuelto con la edición 2013 o posterior. No se contrastaron el
-  HDPE del PPI (vehículo de obra, no HL-93) ni la costura y el FF ASD del TMC.
-- **Qué haría falta:** un ejemplo resuelto con AASHTO LRFD 2013 o posterior para juzgar la
-  lectura de W_L, y que un ingeniero la revise; un ejemplo de HDPE con HL-93.
+- **Cerrado:** `docs/validacion_conducto.md` contrasta M8 con ACPA DD 1, DD 22 y CPDM cap. 4
+  y con el USACE EM 1110-2-2902 ap. B: 44 contrastes en dos categorías que no se suman
+  (revisión Fable, A-1). Contrastados con la fuente, 33 (IM, VAF, B_FE con el 3.93 del CPDM
+  4-2, un B_FLL, el empuje de flotación, el USACE y la clase II); el motor reproduce su propio
+  método, 11 (toda la carga viva y la D-load, más la rama l_w < B_c sin fuente). 0 defectos;
+  dos erratas de las fuentes (el intermedio del CPDM 4-7 y el «4267» de DD 22). W_L se lee por
+  la ruta real (`verificar_concreto`) y la referencia interpola a mano (A-2).
+- **Abierto:** con poco relleno la carga viva de M8 sobre tubos pequeños sale por encima de
+  ACPA (+65 % en DD 1 ej. 1, +104 % de D-load en el CPDM 4-7), casi toda por la longitud
+  efectiva (ej. 1: +9.6 % de presión y +50.7 % de L_e; ej. 4: −2.1 % y +32.2 %). Repartir sin
+  L_e es la lectura LITERAL de la 9.ª ed., no un defecto: 12.10.2.3 (pág. 12-54, PDF 1692,
+  «uniform vertical distribution across the top of the pipe») y C12.10.4.3.2c (pág. 12-66,
+  PDF 1704). Reserva: ningún ejemplo resuelto con la edición 2013 o posterior lo confirma con
+  un número. Sin contrastar: el HDPE del PPI, la costura y el FF ASD del TMC.
+- **Qué haría falta:** un ejemplo resuelto de tubo de concreto con la edición 2013 o
+  posterior, que un ingeniero revise la observación, y un ejemplo de HDPE con HL-93.
 - **Dónde vive:** `tests/apoyo/validacion_conducto.py::contrastes`
