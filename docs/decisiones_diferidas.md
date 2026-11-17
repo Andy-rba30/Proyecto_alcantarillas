@@ -949,7 +949,8 @@ catorce, y su ficha lo dice sin borrarse.
   con veredicto y margen en metros. Corre en la posición de V5 —que en esta
   familia no aplica— y es OBLIGATORIA también a `--alcance perfil`: sin la
   columna o sin el criterio se detiene, no devuelve «no evaluable».
-- **Abierto:** la mitad que habla de la **rasante hidráulica**. VC1 acota el
+- **Abierto (cerrado en VE-3.6 y VE-3.7: fichas VE3-06 y VE3-07; sigue abierta sólo la
+  coronación a lo largo del tramo):** la mitad que habla de la **rasante hidráulica**. VC1 acota el
   NIVEL que el agua alcanza; no mide en cuánto la obra levanta el pelo de agua
   del canal respecto del que tendría sin ella. Un punto puede cumplir VC1 con
   holgura y haber elevado la rasante hidráulica en una fracción apreciable del
@@ -8004,3 +8005,40 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** un ejemplo resuelto de tubo de concreto con la edición 2013 o
   posterior, que un ingeniero revise la observación, y un ejemplo de HDPE con HL-93.
 - **Dónde vive:** `tests/apoyo/validacion_conducto.py::contrastes`
+
+## VE3-06 · VC3: las pérdidas de la obra contra el desnivel del perfil del canal (Familia C)
+
+- **Cerrado (VE-3.6, decisión del dueño del 2026-11-17):** VC3 = (cota_entrada + HW) −
+  (cota_fondo_receptor + TW) ≤ F, con F el desnivel del perfil del canal en el cruce
+  (`desnivel_perfil_canal_m`, clave [S] del canal en `--datos-externos`, opcional, sólo
+  Familia C). Fuente [C] `USBR_DSCS`: USBR, *Design of Small Canal Structures* (1978), núm.
+  2-6, pág. impresa 23 («F (water surface differential) = Upstream canal NWS El. - Downstream
+  canal NWS El.») y 24 («Compare computed losses with the loss provided on profile sheet»); el
+  PDF, de dominio público, está en el repositorio de normas. Va en la tabla de la Fase 5 junto
+  a VC1 y DIMENSIONA: C-01 con F = 0.30 m pasa de 1.20 × 0.90 a 1.50 × 1.20 m; con 0.40 se
+  queda; con 0.15 no hay sección que cumpla.
+- **Por qué así:** es el criterio del propio diseño de canales (la obra no puede consumir más
+  carga que la que el perfil del canal le deja) y no un número inventado: F es del canal, no
+  del proyectista de la vía.
+- **Qué haría falta:** decisión del dueño: sin F declarado hoy no hay fila y 7.B lo avisa
+  (`AVISO_VC3_SIN_DESNIVEL`), como T-3 dejó el remanso sin sección; ¿debe ser un bloqueo del
+  punto? (la hoja de ruta dice que la Familia C espera el dato de ANA / Junta de Usuarios).
+- **Dónde vive:** `src/modulos/M5_verificaciones.py::vc3_rasante_canal`
+
+## VE3-07 · El remanso del canal por paso directo (Familia C)
+
+- **Cerrado (VE-3.7):** `M3.perfil_remanso_trapecial`, paso directo (HDS-5 núm. 3.5) en canal
+  prismático trapecial con escalones geométricos en (y − y_n), y el tirante conjugado por la
+  función momentum (`M3.tirante_conjugado_trapecial`): en canal de pendiente fuerte la curva
+  S1 concluye en el resalto; en canal suave la M1 se calcula hasta donde el proyectista declare
+  (`fraccion_fin_remanso_canal`, [A] de perfil, opcional, ventana 0.001–0.05) y sin el
+  criterio queda la cota inferior dh/S. Contrastado con una integración independiente
+  (scipy `solve_ivp`, rtol 1e-11) y con Bélanger en el rectangular: peor error 6.5e-8, contra
+  una tolerancia nombrada de 1e-6.
+- **Abierto:** el perfil supone un canal prismático (sin la coronación a lo largo del tramo, el
+  cruce es la sección crítica); V5 de las Familias A y B sigue sin el método paso a paso porque
+  le falta la sección del cauce de aproximación (T7B-01), y su mensaje lo dice; no hay un
+  ejemplo resuelto publicado y legal de paso directo contra el que contrastar.
+- **Qué haría falta:** la sección del cauce de aproximación para V5 de A y B; un ejemplo
+  resuelto publicado (p. ej. del USBR o del manual de referencia de HEC-RAS).
+- **Dónde vive:** `src/modulos/M3_hidraulica.py::perfil_remanso_trapecial`
