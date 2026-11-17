@@ -103,6 +103,8 @@ punta que crece, pantalla y alero dimensionados, sismo con agua por C11.6.5.3, t
 JSON) y deja las elecciones 9–14 como opciones con su efecto medido; respaldo
 `claude/youthful-shannon-rjzmuc-respaldo-cabezal-defectos`.
 
+**Corrección de la sesión tras la verificación del dueño (`verificaciones_del_dueno/cabezal_decisiones_9_14.md`):** la cita del Manual de Puentes 2.11.8.5 en la 11 estaba mal leída (es de barreras de sonido): la 11 se sostiene sólo con AASHTO 11.5.7 / Tabla 11.5.7-1. La recomendación 12 se RETIRA (C11.6.5.4 y la hoja de ruta §9.2: un cabezal con aleros puede no ceder; el valor de archivo ya es «sin reducción»). La 14 queda en sólo bajar el margen (HEC-14 5.1.3); la «hoya protegida» se retira por no tener fuente. 9, 10 y 13, con las condiciones de esa verificación. VE-3.14 implementa las opciones con esas condiciones, sin cambiar valores de archivo.
+
 9. **Talón de la zapata (H-2, parte C):** hoy rige el «peso entero» de 11.6.1.2 (2.4 a 13
    veces el momento del método exacto con los talones largos que genera el bucle).
    **Recomendación: método exacto (con la reacción del terreno), como Caltrans BDP 11.2**;
