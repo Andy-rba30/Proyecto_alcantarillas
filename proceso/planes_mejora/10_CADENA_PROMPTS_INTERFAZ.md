@@ -92,6 +92,7 @@ UI-1 hidrología en la ventana + sesión formato 4      (primero, secuencial)
 UI-4 integración y verificación de la ventana         (último, secuencial)
 UI-5 cuatro decisiones del dueño tras la cadena        (añadido el 2026-11-15, después de UI-4)
 VE-1 defectos confirmados por la validación externa  (añadido el 2026-11-15, después de UI-5)
+VE-2 las siete decisiones de VE1-02, revisadas contra los PDF  (añadido el 2026-11-17, después de VE-1)
 ```
 
 **Por qué UI-1 va primero:** cambia el formato de la sesión y lo que viaja al proceso hijo;
@@ -221,6 +222,84 @@ Ejecuta únicamente VE-1 de proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md 
 4. Fichas en docs/decisiones_diferidas.md: VE1-01 con D1, D2 y D3 (qué se hizo y qué sigue mal en la hoja de ruta), y VE1-02 con las DECISIONES DEL DUEÑO que la validación dejó a la vista, sin tomarlas: (a) si el n del concreto, o la columna de la Tabla N° 09 que se usa, pasa a ser un criterio [A] declarable (hoy no lo es, a diferencia de n_manning_hdpe y n_manning_cajon); (b) la definición de la velocidad de erosión, hoy V(n máx) × 1.30 sobre la geometría de n máximo y no Manning resuelto con n mínimo (en el caso UPAO ALC46, Q = 0.317 m³/s y S = 0.10, eso sube el diámetro de 0.90 a 1.35 m); (c) las hipótesis de V7 (sumersión completa y DC = 0, justificadas en M8 con un argumento de sitio del Bajo Piura); (d) el factor 1.13 de intervalo fijo de las series de 24 h, que el Manual no trae y que las tesis aplican (−11.5 % en P24 y Q sin él): criterio o nota del contrato de entradas; (e) un aviso de plausibilidad de la serie de lluvias SIN umbral (el Manual núm. 3.4 manda evaluar la consistencia de los datos; patrón ya existente de FH.Q_ESPECIFICO), a la vista de una serie de 729 mm/24 h ajustada sin aviso; (f) el racional modificado hasta 770 km² (ficha T1-08); (g) en D1, si se prefiriera resolución de centímetro: rechazo en la puerta en vez de recorrer la serie. Cada una con el número medido que la motiva.
 
 Permisos de esta etapa: src/modulos/M2_material.py SÓLO en el cálculo del siguiente escalón de la progresión (y lo que necesite); src/variables_entrada.py SÓLO el concepto de NF_profundidad_m; docs/. Nada de criterios_adoptados.py, constantes_normativas.py, datos_sitio.py ni de la hoja de ruta; ningún resultado de la línea base cambia. Tests primero, en rojo. Ritual de cierre. Commit: validacion(VE-1): ... — D1, D2, D3.
+```
+
+### VE-2 · Las siete decisiones de VE1-02, revisadas contra los PDF (añadido el 2026-11-17, después de VE-1)
+
+Por pedido del dueño, antes de decidir se revisaron las siete decisiones de la ficha VE1-02
+contra los PDF del repositorio de normas (tres revisores en paralelo, sólo lectura, cada cita
+con numeral, página y texto literal; la orquestadora releyó cinco en el PDF y coinciden). El
+dueño aprobó el 2026-11-17 la recomendación y el orden: primero el único defecto de método
+(b), luego lo que sólo cambia justificación o ficha (c1, a, e), luego la hidrología (f, d) y
+al final lo que cambia descartes (c2, g). Hallazgos de la revisión que el prompt usa:
+
+- **(b)** Ninguna fuente toma el tirante de un n y la velocidad de otro. HDS-5 (hif12026)
+  núm. 3.3.2, pág. 3.24 (PDF 106): «the velocity at normal depth is assumed to be the outlet
+  velocity»; núm. 3.1.6, págs. 3.17-3.18; HEC-14 núm. 3.2.2, pág. 3-7: «normal flow is
+  assumed at the culvert outlet and the outlet velocity is computed using Manning's
+  Equation», y su ejemplo de la pág. 3-8 resuelve un tirante por cada n. El Manual, núm.
+  4.1.1.3.6, pág. 74: Manning «para una condición de régimen uniforme» con Q = VA. Hoy
+  `V_erosion` = V(n_máx)·n_máx/n_mín sobre A(n_máx), es decir V·A = 1.3·Q.
+- **(a)** Ninguna fuente sostiene la doble n: la Tabla Nº 09 da MÍNIMO / NORMAL / MÁXIMO
+  (0.010 / 0.011 / 0.013 con la lectura corregida) sin regla de columna; HDS-5 pág. 3.8 (PDF
+  90): «Typical Manning's n values used for designing culverts are n = 0.012 for smooth
+  walled culverts»; pág. B.2: «0.011 to 0.013 based on field installation and aging».
+- **(c)** Manual de Puentes 2.4.3.8.1 (pág. 113): «Los niveles de agua de diseño […] serán
+  los especificados y/o aprobados por el Propietario»; 2.4.3.8.2: subpresión «debajo del
+  nivel de agua de diseño»; AASHTO LRFD 12.6.1 (PDF 1652): «Water buoyancy loads shall be
+  evaluated for buried structures with inverts below the water table»; 12.6.2.3 y C12.6.2.3;
+  Tabla 2.4.5.3.1-2 del Manual: DC mínimo 0.90. DC = 0 no contradice la norma; el relleno
+  sobre la clave pesa húmedo (17 kN/m³) y sólo es coherente con el nivel de diseño en la
+  clave; con γ_EV = 0.90 la equivalencia de VE1-02 (c) da 0.50·D_ext y no 0.45.
+- **(e)** Manual núm. 3.3 (pág. 21) y 3.4 (pág. 22) exigen evaluar la consistencia; ningún
+  PDF da procedimiento ni umbral (doble masa, outliers, K_n, WRC: cero resultados).
+- **(f)** El racional modificado se puede implementar con lo que el Manual imprime: núm.
+  3.12.2.1, págs. 50-52, ec. (29) a (35), «áreas menores de 770 km2 y con tiempos de
+  concentración (Tc) de entre 0.25 y 24 horas»; el factor de torrencialidad está FIJO (= 11)
+  dentro de la ec. (34) y no hay mapa: la ficha T1-08 está mal cuando dice que el Manual da
+  un mapa para España. La ec. (35) escribe Pd y no la P corregida por área. Otros límites:
+  racional «A<10 Km2» (pág. 49), SCS triangular «hasta a 30 Km2» (pág. 56), Snyder «de 30 a
+  30 000 Km2» (pág. 58).
+- **(d)** El 1.13 no está en ningún PDF del repositorio («1.13», «intervalo fijo», «fixed
+  interval», «Weiss», «OMM»/«WMO»: ninguna aparición como factor de lluvia). El Manual usa la
+  máxima en 24 h sin conversión (núm. 3.8.1, pág. 36; Tabla Nº 04).
+- **(g)** Las normas métricas designan 1050 mm para 42 in: AASHTO M 294 7.2.1, AASHTO M 36
+  Table 6 y ASTM A760 Tabla 1; sólo AASHTO M 170M (tabla «Permissible Variation in Internal
+  Diameter», 1050 | 42 | 1067) admite «At the manufacturer's option […] the converted
+  English diameter». 375, 525, 675 y 825 mm son diámetros normativos: una guardia «de
+  centímetro» los rechazaría.
+- **Aviso:** `HydraulicsManual.pdf` del repositorio de normas es el WSDOT M 23-03, no el
+  manual TDOT de la validación (que vive fuera, en la rama de orquestación).
+
+```text
+Ejecuta únicamente VE-2 de proceso/planes_mejora/10_CADENA_PROMPTS_INTERFAZ.md y aplica sus reglas comunes (§1) y proceso/reglas_de_correccion_de_auditorias.md. Parte de main con VE-1 integrado. Son siete decisiones del dueño (2026-11-17) sobre la ficha VE1-02, en CUATRO bloques y en este orden; cada bloque es un commit propio con la suite verde antes de pasar al siguiente, y si un bloque no cierra te detienes ahí y lo reportas. Lee antes: CLAUDE.md entero (en especial «Fuente de verdad», la taxonomía, «Nivel de entrega» y «Tests»), las fichas VE1-01, VE1-02 y T1-08 de docs/decisiones_diferidas.md, el bloque VE-2 de este archivo (los hallazgos de la revisión normativa: son el punto de partida, NO la verificación: toda cita que uses la verificas tú contra el PDF con numeral, página impresa y texto literal), src/modulos/M3_hidraulica.py (resolver_manning y el encabezado), modelos.TiranteNormal, los consumidores de V_erosion (M4_control: V_salida y d50 de Laushey; M5_verificaciones: V3 y techos; M11_reporte), src/modulos/M5_verificaciones.py::v7_flotacion, src/modulos/M8_estructural.py (empuje_flotacion_kn_m y docstrings de la subpresión), src/modulos/MH_hidrologia.py (precipitacion_de_diseno, caudal_de_diseno, límites de método), docs/contrato_entradas.md §2-bis, src/modulos/M2_material.py (progresión y _escalon_de_la_serie) y criterios_adoptados._verificar_campos_de_la_progresion. Enlaza NORMAS_DIR (clon de Andy-rba30/Normas) e instala PyMuPDF: sin PDF no se cierra ningún bloque.
+
+BLOQUE 1 · (b) VELOCIDAD DE EROSIÓN — defecto de método, cambia diseños.
+1. M3.resolver_manning calcula hoy la estimación ALTA como V(n_máx)·n_máx/n_mín sobre la geometría de n_máx (V·A = 1.3·Q, «por diseño» en modelos.TiranteNormal). Corrígelo: la velocidad alta resuelve SU PROPIO tirante normal con n_mín (segunda resolución de Brent sobre la misma ecuación) y V_erosion = Q/A(y_n con n_mín); la estimación baja (n_máx) y el tirante de capacidad no cambian. Bajo control de salida la velocidad de salida sigue siendo la que M4 ya toma (crítico, TW o barril lleno, HDS-5 3.1.6): no la toques. Si la segunda resolución no converge, el mismo trato que hoy da la primera (None / su excepción), nunca un default.
+2. Recorre TODOS los consumidores de V_erosion (V3 y los techos de velocidad, la V_salida y el d50 de Laushey de M4/M6, la Tabla Nº 10 y la Nº 11, M11) y di en la ficha qué usa cada uno y con qué cita. Verifica contra el Manual (págs. 76-77) con qué tabla se compara cada velocidad: la revisión leyó que el techo del concreto (3.0-6.0 m/s, v_max_concreto_eleccion) es de la Tabla Nº 10 y que la Nº 11 es del cauce aguas abajo; si algún texto del código o de la memoria lo dice al revés, corrígelo.
+3. El Fundamento y la memoria del paso dejan de decir que la doble n es «Regla [N]» y citan HDS-5 3.3.2 / HEC-14 3.2.2 para «velocidad a tirante normal».
+4. Tests primero, en rojo: continuidad V_erosion·A(n_mín) = Q dentro de tolerancia nombrada, para circular y marco; el caso UPAO ALC46 (Q = 0.317 m³/s, S = 0.10, D = 0.90 m, concreto) da 5.81 m/s y dimensiona Ø 0.90 m, no 1.35 m; un mutante que vuelva a la fórmula vieja muere. El test o comentario que fija «V_erosion*A != Q, por diseño» se cambia declarando la causa.
+5. Este bloque MUEVE la línea base: regenera tests/linea_base_familia_c/ y docs/linea_base.md con su script, y los documentos generados (indice_formulas.md, validacion_integral.md, validacion_hds5.md, validacion_hy8.md, validacion_sensibilidad.md, manifiesto_citas.md, trazabilidad.csv) con sus comandos (CLAUDE.md, «Tests»); lista en la ficha cada número que se movió, punto por punto, y comprueba que ningún diámetro de la línea base sube. Commit: validacion(VE-2.1): ... — VE1-02 (b).
+
+BLOQUE 2 · (c1), (a), (e) — justificación y fichas; NINGÚN número de la línea base cambia.
+6. (c1) V7: reemplaza en M8 y M5.v7_flotacion la justificación por el NF somero del Bajo Piura (argumento de sitio [S] que la norma no usa) por la normativa: el nivel de agua de diseño lo fija el Propietario (Manual de Puentes 2.4.3.8.1) y por eso sumersión completa con el nivel en la clave es una ADOPCIÓN [A] conservadora; DC = 0 es lado seguro frente al 0.90·DC que la norma admitiría (Tabla 2.4.5.3.1-2, 2.4.5.3.1; AASHTO C12.6.2.3). Corrige en VE1-02 (c) la equivalencia (0.50·D_ext con γ_EV = 0.90, o di con qué γ_EV sale 0.45).
+7. (a) Nuevo criterio [A] de nivel perfil (nombre sugerido `columna_n_manning_concreto`, forma `categoria`) con valor de archivo = la doble n de hoy (n máx de la Tabla Nº 09 para capacidad, n mín para velocidad) y sensibilidad con al menos 'columna_normal' (0.011, Tabla Nº 09) y 'n_unico_hds5' (0.012, HDS-5 pág. 3.8, [C]), resolución y Fundamento; lo consume Material del concreto (tubo; el marco sigue con n_manning_cajon). La tabla es [N] en constantes_normativas.py y la elección [A] en criterios_adoptados.py (CLAUDE.md, «Tabla y elección se separan siempre»). Con el valor de archivo la línea base no se mueve: compruébalo. Añade el barrido de este criterio a la validación de sensibilidad.
+8. (e) Aviso de plausibilidad de la serie de lluvias SIN umbral, con su Fundamento en el Manual núm. 3.3 y 3.4 (verbo sostenido por el carácter de la cita: «se debe evaluar»), patrón de FH.Q_ESPECIFICO: la memoria dice que el Manual exige evaluar la consistencia, que el programa no la evalúa y que el proyectista debe declarar que lo hizo. Ningún número de corte (inventarlo sería rellenar un vacío). Si quieres un test cuantitativo, entra como [A] con valor None y queda diferido con ficha.
+9. Tests primero, en rojo; línea base intacta (sólo huellas de criterios_adoptados.py si cambian; ningún número). Commit: validacion(VE-2.2): ... — VE1-02 (c), (a), (e).
+
+BLOQUE 3 · (f), (d) — hidrología.
+10. (f) Implementa el método racional modificado del Manual núm. 3.12.2.1 (págs. 50-52, ec. 29 a 35) en MH_hidrologia para 10 ≤ A < 770 km² y 0.25 ≤ Tc ≤ 24 h, por la misma puerta de homogeneidad_serie_fen; fuera de esos límites sigue MetodoNoEvaluableError con su rótulo (Snyder, SCS triangular y HEC-HMS NO se implementan: nómbralos en el mensaje con su rango y página). Cada ecuación con su cita en el registro normativo verificada contra la imagen de la pág. 52; los literales de la fórmula con `# literal-ok` o como [N] en constantes_normativas.py (el 11 de la ec. 34 es [N]). Declara en el punto de uso, sin corregirlo, que la ec. (35) escribe Pd y no la P corregida por área, y avisa que el método está «adaptado para las condiciones climáticas de España». El número de curva entra como columna nueva del CSV de cuencas ([S], Tabla Nº 07, pág. 47), opcional para A < 10 km²; actualiza docs/contrato_entradas.md §2-bis, el pre-vuelo, la pestaña 1 si lista columnas y el fixture sintético de tests/fixtures/hidrologia/ con una cuenca de 10 a 770 km² rotulada como de PRUEBA. Corrige la ficha T1-08 (el Manual no da mapa: da el 11 dentro de la ec. 34). Si el cambio del límite de 10 km² del racional simple hace falta, no lo hagas: «Muy usado para cuencas, A<10 Km2» se mantiene como frontera entre los dos métodos y se dice así.
+11. (d) Nuevo criterio [A] de nivel perfil `factor_intervalo_fijo_p24` (forma float), valor de archivo 1.00 (lectura literal del Manual, que usa la máxima de 24 h sin conversión: núm. 3.8.1, pág. 36), ventana 1.00-1.13, resolución, y sensibilidad que diga que 1.13 es práctica sin fuente en el repositorio y que pasaría a [C] sólo si se trae la guía de la OMM / Weiss (1964) al repositorio de normas. Se aplica en precipitacion_de_diseno ANTES del ajuste de distribución o a la serie, según lo que el método pida (decídelo y dilo en la ficha). La memoria imprime el factor y su procedencia.
+12. Tests primero, en rojo: Tinas-tipo (55.9 km²) se calcula con el racional modificado; 800 km² y Tc fuera de 0.25-24 h son MetodoNoEvaluable con su rótulo; el factor 1.13 sube P24 un 13 % exacto; con 1.00 la corrida de referencia de hidrología no cambia (indice_formulas, validacion_integral). Commit: validacion(VE-2.3): ... — VE1-02 (f), (d), T1-08.
+
+BLOQUE 4 · (c2), (g) — cambian descartes; el valor de ARCHIVO reproduce hoy.
+13. (c2) Nuevo criterio [A] para el nivel de agua de diseño de V7 (Manual de Puentes 2.4.3.8.1: lo fija el Propietario), forma categoria, valor de archivo 'en_la_clave' (lo que hoy se calcula: la línea base no se mueve) y al menos una alternativa que lea NF_profundidad_m del punto: V7 se evalúa sólo si el fondo del conducto queda bajo ese nivel (AASHTO 12.6.1, «inverts below the water table»), y el relleno bajo el nivel pesa sumergido (γ' = γ_sat − γ_agua; γ_sat ya existe como criterio de ensayo) por analogía [N→] con el Manual de Puentes 2.4.4.1.3 («densidades del suelo sumergido»). Declara que NF_profundidad_m es una lectura de campo y no necesariamente el nivel más alto previsto (trazabilidad [S] obligatoria, o un margen estacional [A] sin valor que detenga). Actualiza la fila de NF_profundidad_m del contrato y el concepto de la columna (que hoy dicen, por VE-1, que V7 no la lee).
+14. (g) Diámetros por norma de producto: transcribe como [N] en constantes_normativas.py las series de diámetros designados de AASHTO M 170M (y su diámetro inglés convertido), M 294 y M 36 / ASTM A760, con su cita y página verificadas; la guardia del criterio diametros_normalizados (o la de M2 por material, decide y dilo) rechaza un escalón que no sea designado para su material, y admite el diámetro inglés convertido (p. ej. 1.0668 m) SÓLO para concreto, como elección [A] declarada. Comprueba primero que los trece escalones de la progresión de archivo son designados para cada material que los usa; si alguno no lo es, NO lo corrijas: detente y repórtalo. No uses resolución de centímetro (rechazaría 0.375, 0.525, 0.675 y 0.825 m, que son normativos).
+15. Tests primero, en rojo; la línea base no se mueve con los valores de archivo. Commit: validacion(VE-2.4): ... — VE1-02 (c), (g).
+
+HOJA DE RUTA: NO la edites. Abre la ficha VE2-01 con lo que sigue mal en ella, cada punto con la cita que lo sostiene: (1) la doble n rotulada «Regla [N]» (§4.1) no tiene numeral y es [A]; (2) la fila V7 presenta «NF en su cota más alta» sin decir que el nivel de agua de diseño lo fija el Propietario; (3) lo de VE1-01 que siga sin corregir. Declara cada discrepancia en el punto de uso (CLAUDE.md, «Fuente de verdad»).
+
+Permisos de esta etapa (por decisión del dueño): src/modulos/M3_hidraulica.py, M4_control.py, M5_verificaciones.py, M8_estructural.py, MH_hidrologia.py, M2_material.py y M11_reporte.py en lo que cada bloque necesita; src/criterios_adoptados.py para los criterios nuevos (con nivel, forma, sensibilidad y resolución) y la guardia de (g), sin cambiar el valor de ningún criterio existente; src/constantes_normativas.py sólo para tablas y literales [N] verificados; el registro normativo (src/normativa/) para las citas nuevas; docs/, tests/ y los fixtures de PRUEBA. Nada de datos_sitio.py ni de la hoja de ruta. Los recuentos de CLAUDE.md («141 desde …») se actualizan con «N desde VE-2» en cada sitio donde aparecen, y sólo esos. Cada decisión y cada corrección comprobadas por mutación. Fichas: cierra lo que resuelvas de VE1-02 y T1-08, abre VE2-01 (hoja de ruta) y VE2-02 (lo diferido). Ritual de cierre con el par de la suite en la bitácora tras cada bloque. Revisión independiente antes de integrar (§5, punto 3), buscando: un consumidor de V_erosion que siguió con la fórmula vieja, un número de la línea base que se movió en los bloques 2 a 4, una cita sin verificar contra el PDF, un criterio sin nivel o sin ventana, un valor rellenado en silencio.
 ```
 
 ---
