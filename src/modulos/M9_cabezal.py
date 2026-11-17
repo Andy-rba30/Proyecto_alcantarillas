@@ -381,6 +381,10 @@ CRITERIO_FACTORES_CARGA = "factores_carga_aashto"
 CRITERIO_GAMMA_RELLENO = "peso_especifico_relleno_kn_m3"
 CRITERIO_GAMMA_CONCRETO = "peso_especifico_concreto_kn_m3"
 CRITERIO_GEOMETRIA = "predimensionamiento_cabezal"
+# --- VE-3.5 --- El paso y el tope del dimensionamiento de la zapata por
+# estabilidad (`dimensionar_zapata_por_estabilidad`), [A] sin valor de
+# archivo.
+CRITERIO_DIMENSIONAMIENTO_ZAPATA = "dimensionamiento_zapata_cabezal"
 # El NF ya no es criterio: es la columna 'NF_profundidad_m' del CSV, medida en
 # cada cruce. Entra por argumento a las funciones que lo necesitan.
 
@@ -3849,6 +3853,7 @@ from src.constantes_normativas import (BANDAS_ALETAS_CAJON_A1,  # noqa: E402
 from src.dominios import MILIMETROS_POR_METRO  # noqa: E402
 from src.modelos import (ORIGEN_DIMENSION_DECLARADA,  # noqa: E402
                          ORIGEN_DIMENSION_DERIVADA,
+                         ORIGEN_DIMENSION_ESTABILIDAD, IntentoDeZapata,
                          ORIGEN_DIMENSION_REGLA, Aleros, CabezalDelPunto,
                          Familia, LimiteNumericoError, PasoDeMemoria,
                          DimensionDeCabezal, EmbocaduraDelPunto,
@@ -4496,7 +4501,9 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
                            talud: float,
                            declaradas: Optional[dict] = None,
                            tipo_declarado: Optional[str] = None,
-                           id_punto: Optional[str] = None) -> GeometriaCabezal:
+                           id_punto: Optional[str] = None,
+                           ancho_por_estabilidad: Optional[float] = None
+                           ) -> GeometriaCabezal:
     """
     La geometria PROPUESTA del cabezal de UN extremo (INF-4.2), con las
     reglas declaradas de 'predimensionamiento_cabezal' [A] y los minimos que
@@ -4505,6 +4512,14 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
     la que el punto trae en `declaradas`, que gana -- o «derivada de
     dimensiones declaradas» -- la que la regla calcula a partir de una
     declarada --.
+
+    --- VE-3.5 --- `ancho_por_estabilidad` es el ancho de zapata que el
+    dimensionamiento por estabilidad adopto
+    (`dimensionar_zapata_por_estabilidad`): sustituye al de la regla solo si
+    el punto NO declaro `ancho_zapata_m` (lo declarado gana siempre), crece
+    por el TALON -- la punta queda en la de la regla, fraccion_punta·B de la
+    regla, salvo que se declare -- y la zapata y el talon salen con el origen
+    «dimensionada por estabilidad».
 
         coronacion   = max(clave exterior + recubrimiento + bordillo,
                            nivel de agua del extremo + resguardo)
@@ -4673,12 +4688,22 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
 
     # 5. Zapata
     B_decl = "ancho_zapata_m" in declaradas
-    B = (declaradas["ancho_zapata_m"] if B_decl
-         else reglas["fraccion_ancho_zapata"] * H_c)
-    dims.append(_dim("ancho de la zapata (B)", B,
-                     f"{reglas['fraccion_ancho_zapata']:g}·H_c (regla "
-                     "'fraccion_ancho_zapata')", CRITERIO_GEOMETRIA, B_decl,
-                     de=de["H_c"]))
+    B_regla = reglas["fraccion_ancho_zapata"] * H_c
+    B = declaradas["ancho_zapata_m"] if B_decl else B_regla
+    texto_B = (f"{reglas['fraccion_ancho_zapata']:g}·H_c (regla "
+               "'fraccion_ancho_zapata')")
+    por_estabilidad = ancho_por_estabilidad is not None and not B_decl
+    if por_estabilidad:
+        B = ancho_por_estabilidad
+        dims.append(DimensionDeCabezal(
+            nombre="ancho de la zapata (B)", valor=B, unidad="m",
+            origen=ORIGEN_DIMENSION_ESTABILIDAD,
+            regla=(f"el menor de la grilla {B_regla:.3f} m + k·paso que "
+                   f"cumple la estabilidad, partiendo de {texto_B}"),
+            criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA))
+    else:
+        dims.append(_dim("ancho de la zapata (B)", B, texto_B,
+                         CRITERIO_GEOMETRIA, B_decl, de=de["H_c"]))
     de["B"] = frozenset({"ancho_zapata_m"}) if B_decl else de["H_c"]
     ez_decl = "espesor_zapata_m" in declaradas
     if ez_decl:
@@ -4708,8 +4733,11 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
                    f"altura total del cabezal de {extremo.extremo} "
                    f"({H_c:.3f} m)")
     p_decl = "ancho_punta_m" in declaradas
+    # Con B dimensionado por estabilidad la punta queda en la de la REGLA
+    # (VE-3.5): crece el talon, que suma el peso del relleno.
     punta = (declaradas["ancho_punta_m"] if p_decl
-             else reglas["fraccion_punta"] * B)
+             else reglas["fraccion_punta"] * (B_regla if por_estabilidad
+                                              else B))
     dims.append(_dim("ancho de la punta", punta,
                      f"{reglas['fraccion_punta']:g}·B (regla "
                      "'fraccion_punta')", CRITERIO_GEOMETRIA, p_decl,
@@ -4722,9 +4750,17 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
             motivo=f"el talon sale negativo en el cabezal de "
                    f"{extremo.extremo}: B = {B:.3f} m no alcanza para la "
                    f"punta ({punta:.3f} m) y la pantalla ({e_base:.3f} m)")
-    dims.append(_dim("ancho del talon", talon, "B - punta - pantalla",
-                     CRITERIO_GEOMETRIA, False,
-                     de=de["B"] | de["punta"] | de["e_base"]))
+    if por_estabilidad:
+        dims.append(DimensionDeCabezal(
+            nombre="ancho del talon", valor=talon, unidad="m",
+            origen=ORIGEN_DIMENSION_ESTABILIDAD,
+            regla="B - punta - pantalla, con B dimensionado por estabilidad "
+                  "(la punta queda en la de la regla: crece el talon)",
+            criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA))
+    else:
+        dims.append(_dim("ancho del talon", talon, "B - punta - pantalla",
+                         CRITERIO_GEOMETRIA, False,
+                         de=de["B"] | de["punta"] | de["e_base"]))
 
     # 6. Longitud del muro
     L_decl = "longitud_m" in declaradas
@@ -5406,7 +5442,9 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
                       socavacion=None,
                       declarados: Optional[dict] = None,
                       coherencia_embocadura: Optional[str] = None,
-                      motivo_sin_socavacion: str = "") -> CabezalDelPunto:
+                      motivo_sin_socavacion: str = "",
+                      anchos_por_estabilidad: Optional[dict] = None
+                      ) -> CabezalDelPunto:
     """
     Los dos cabezales de un punto DIMENSIONADO, con sus aleros, su losa, sus
     verificaciones de compatibilidad (CB1 a CB7), la longitud entre
@@ -5448,7 +5486,9 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
         tipo = propias.pop(CAMPO_TIPO_DECLARADO, None)
         g = predimensionar_cabezal(
             extremo=extremo, embocadura=embocadura, talud=talud,
-            declaradas=propias, tipo_declarado=tipo, id_punto=punto.id)
+            declaradas=propias, tipo_declarado=tipo, id_punto=punto.id,
+            ancho_por_estabilidad=(anchos_por_estabilidad or {}).get(
+                extremo.extremo))
         geometrias.append(g)
         if tipo is None:
             tipos_por_regla.append(g)
@@ -8471,6 +8511,271 @@ def integrar_estabilidad(cabezal: CabezalDelPunto,
         pasos=cabezal.pasos + tuple(p for e in estabilidades
                                     for p in e.pasos),
         avisos=tuple(avisos), estabilidad=estabilidades)
+
+
+# ===========================================================================
+# --- VE-3.5 --- EL DIMENSIONAMIENTO DE LA ZAPATA POR ESTABILIDAD
+# ===========================================================================
+# Decision del dueño del 2026-11-17: el programa DIMENSIONA el cabezal en vez
+# de solo verificar lo que la regla de T-7a propone (ficha T7B-09: con los
+# datos de prueba de la validacion integral, la zapata de la regla no pasa
+# E3-LRFD estatico ni E1-LRFD sismico en ningun punto). Va DETRAS de la
+# estabilidad de la geometria de la regla y DELANTE del armado, que se hace
+# con la geometria final (`servicio._fase_9`).
+#
+# QUE CRECE Y POR QUE: el ancho B, por el TALON -- la punta queda en la de la
+# regla --. El talon suma el peso del relleno sobre la zapata y alarga el
+# brazo de las cargas verticales, que es lo que piden el deslizamiento (mas
+# fuerza normal en la base) y la capacidad portante (menos excentricidad,
+# mas ancho efectivo) de un muro en voladizo. Medido con los datos de prueba
+# de A-01: la entrada cumple con 2.40 m y la salida con 3.20 m, partiendo de
+# 1.575 y 2.679 m.
+#
+# COMO: B_k = B_regla + k·paso, k = 1, 2, ...; se adopta el primer B_k con el
+# que todas las condiciones evaluadas cumplen (E1 a E3 del marco que decide),
+# sin pasar B_max = fraccion_ancho_max·H_c. Paso y tope son de
+# 'dimensionamiento_zapata_cabezal' [A], sin valor de archivo: si falta, el
+# dimensionamiento se detiene con `CriterioPendienteError` y la geometria de
+# la regla se verifica como hasta VE-3.5. Un ancho DECLARADO gana y no se
+# itera. Con el tope alcanzado la zapata queda en el mayor ancho de la
+# grilla que no lo pasa, sus filas siguen sin cumplir y un aviso lo dice: no
+# es una excepcion -- el cabezal esta calculado y la memoria muestra cuanto
+# le falta --, es un resultado que no cumple.
+
+from dataclasses import dataclass, replace  # noqa: E402
+from typing import Dict, List  # noqa: E402
+
+
+@dataclass(frozen=True)
+class DimensionadoDeZapatas:
+    """
+    Lo que entrega `dimensionar_zapata_por_estabilidad`: el cabezal con la
+    geometria FINAL (sin la estabilidad integrada: la evalua otra vez el
+    servicio por su via de etapas), los anchos adoptados por extremo (solo
+    los que cambiaron respecto de la regla), los intentos, los pasos de
+    memoria y los avisos.
+    """
+
+    cabezal: CabezalDelPunto
+    anchos: Dict[str, float]
+    intentos: Tuple[IntentoDeZapata, ...]
+    pasos: Tuple[PasoDeMemoria, ...]
+    avisos: Tuple[str, ...]
+
+
+def extremos_a_dimensionar(cabezal: CabezalDelPunto,
+                           estabilidades: Sequence[EstabilidadDelCabezal],
+                           declarados: Optional[dict] = None
+                           ) -> Tuple[str, ...]:
+    """
+    Los extremos cuyo ancho de zapata NO se declaro y cuya estabilidad
+    EVALUADA no cumple (alguna fila que decide incumple). Un extremo sin
+    ninguna condicion evaluada no se dimensiona: su bloqueo ya dice por que
+    no hay estabilidad, y crecer la zapata a ciegas no la arregla.
+    """
+    declarados = declarados or {}
+    extremos = []
+    for g in cabezal.geometrias:
+        if "ancho_zapata_m" in declarados.get(g.extremo, {}):
+            continue
+        propias = [e for e in estabilidades if e.extremo == g.extremo]
+        if propias and not all(e.cumple for e in propias):
+            extremos.append(g.extremo)
+    return tuple(extremos)
+
+
+def _regla_de_dimensionamiento() -> Tuple[float, float]:
+    """
+    'dimensionamiento_zapata_cabezal' [A]: (paso en m, fraccion del tope
+    sobre H_c). Sin valor, `CriterioPendienteError`; campos ausentes o no
+    positivos, `DatoInvalidoError` con la clave del criterio (segunda
+    linea, como las reglas de 'predimensionamiento_cabezal').
+    """
+    regla = ca.valor(CRITERIO_DIMENSIONAMIENTO_ZAPATA)
+    if not isinstance(regla, dict):
+        raise DatoInvalidoError(CRITERIO_DIMENSIONAMIENTO_ZAPATA, valor=regla,
+                                motivo="se espera el dict con 'paso_m' y "
+                                       "'fraccion_ancho_max'")
+    paso_m = _exigir_positivo(CRITERIO_DIMENSIONAMIENTO_ZAPATA,
+                              regla.get("paso_m"),
+                              "paso del ancho de la zapata ('paso_m')")
+    fraccion = _exigir_positivo(CRITERIO_DIMENSIONAMIENTO_ZAPATA,
+                                regla.get("fraccion_ancho_max"),
+                                "tope del ancho sobre H_c "
+                                "('fraccion_ancho_max')")
+    return paso_m, fraccion
+
+
+def _intento(extremo: str, B: float,
+             estabilidades: Sequence[EstabilidadDelCabezal]) -> IntentoDeZapata:
+    propias = [e for e in estabilidades if e.extremo == extremo]
+    return IntentoDeZapata(
+        extremo=extremo, B=B,
+        condiciones=tuple(e.condicion.value for e in propias),
+        incumplidas=tuple(v.codigo for e in propias
+                          for v in e.verificaciones if not v.cumple))
+
+
+def _estabilidades_evaluables(entornos, extremos) -> List[EstabilidadDelCabezal]:
+    """
+    La estabilidad de los `extremos` en las condiciones que se pueden
+    evaluar. Lo que una condicion no puede evaluar (un dato del EMS,
+    Mononobe-Okabe fuera de su dominio) NO detiene el dimensionamiento: se
+    salta, y el servicio lo registra como `Bloqueo` cuando evalua la
+    geometria final por su via de etapas.
+    """
+    evaluadas = []
+    for entorno in entornos:
+        if entorno.extremo not in extremos:
+            continue
+        for condicion in CONDICIONES_DE_ESTABILIDAD:
+            try:
+                evaluadas.append(ensamble_estabilidad(entorno, condicion))
+            except ErrorProyecto:
+                continue
+    return evaluadas
+
+
+def _texto_intentos(intentos: Sequence[IntentoDeZapata]) -> str:
+    partes = []
+    for i in intentos:
+        if i.cumple:
+            estado = "cumple"
+        elif i.incumplidas:
+            estado = "no cumplen " + ", ".join(i.incumplidas)
+        else:
+            estado = "ninguna condicion evaluable"
+        partes.append(f"{i.B:.3f} m: {estado}")
+    return " -> ".join(partes)
+
+
+def dimensionar_zapata_por_estabilidad(
+        *, punto, resultado, geometria, embocadura,
+        cabezal: CabezalDelPunto,
+        estabilidades: Sequence[EstabilidadDelCabezal],
+        socavacion=None, declarados: Optional[dict] = None,
+        coherencia_embocadura: Optional[str] = None,
+        motivo_sin_socavacion: str = "",
+        suelo_del_punto: Optional[dict] = None
+        ) -> Optional[DimensionadoDeZapatas]:
+    """
+    --- VE-3.5 --- El ancho de la zapata de cada cabezal cuya estabilidad no
+    cumple con la geometria de la regla, por intentos: B_k = B_regla +
+    k·paso, el primero con el que todas las condiciones evaluadas cumplen
+    E1 a E3 del marco que decide (AASHTO LRFD 11.6.3.2, 11.6.3.3 y
+    11.6.3.6), sin pasar B_max = fraccion_ancho_max·H_c
+    ('dimensionamiento_zapata_cabezal' [A]). Crece el talon.
+
+    `cabezal` y `estabilidades` son los de la geometria de la regla (la
+    partida, k = 0), ya evaluados por el servicio. Devuelve None si no hay
+    nada que dimensionar (todo cumple, o el ancho de los extremos que no
+    cumplen se declaro): en ese caso el criterio ni se lee. Lanza
+    `CriterioPendienteError` si hay que dimensionar y el criterio no tiene
+    valor.
+    """
+    extremos = extremos_a_dimensionar(cabezal, estabilidades, declarados)
+    if not extremos:
+        return None
+    paso_m, fraccion = _regla_de_dimensionamiento()
+    partida = {g.extremo: g for g in cabezal.geometrias}
+    intentos = {e: [_intento(e, partida[e].B, estabilidades)]
+                for e in extremos}
+    anchos: Dict[str, float] = {}
+    vivos = list(extremos)
+    final = cabezal
+    k = 0
+    while vivos:
+        k += 1
+        candidatos = {}
+        for e in vivos:
+            g0 = partida[e]
+            tope = fraccion * (g0.H + g0.espesor_zapata)
+            B = g0.B + k * paso_m
+            if B > tope + TOL_UMBRAL_NORMATIVO:
+                intentos[e][-1] = replace(intentos[e][-1], al_tope=True)
+            else:
+                candidatos[e] = B
+        if not candidatos:
+            break
+        anchos.update(candidatos)
+        final = cabezal_del_punto(
+            punto=punto, resultado=resultado, geometria=geometria,
+            embocadura=embocadura, socavacion=socavacion,
+            declarados=declarados,
+            coherencia_embocadura=coherencia_embocadura,
+            motivo_sin_socavacion=motivo_sin_socavacion,
+            anchos_por_estabilidad=dict(anchos))
+        entornos = datos_del_cabezal_del_punto(
+            punto=punto, cabezal=final, geometria=geometria,
+            socavacion=socavacion, suelo_del_punto=suelo_del_punto,
+            resultado=resultado)
+        evaluadas = _estabilidades_evaluables(entornos, candidatos)
+        vivos = []
+        for e, B in candidatos.items():
+            intento = _intento(e, B, evaluadas)
+            intentos[e].append(intento)
+            if not intento.cumple:
+                vivos.append(e)
+    pasos, avisos = [], []
+    for e in extremos:
+        g0 = partida[e]
+        H_c = g0.H + g0.espesor_zapata
+        tope = fraccion * H_c
+        ultimo = intentos[e][-1]
+        pasos.append(paso(
+            "F9.DIMENSIONADO", codigo=f"9.3.d.{e[0]}",
+            que=f"Ancho de la zapata del cabezal de {e}, dimensionado por "
+                "estabilidad",
+            formula=("B_k = B_regla + k·paso, k = 0, 1, 2, ...: el primer B_k "
+                     "con el que E1 a E3 del marco que decide cumplen en "
+                     "las condiciones evaluadas, con B_k <= B_max = "
+                     "fraccion_ancho_max·H_c"),
+            sustitucion=(
+                Magnitud("B_regla", g0.B, "m",
+                         f"regla 'fraccion_ancho_zapata' de "
+                         f"'{CRITERIO_GEOMETRIA}' [A]"),
+                Magnitud("paso", paso_m, "m",
+                         f"criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' "
+                         "[A]"),
+                Magnitud("B_max", tope, "m",
+                         f"{fraccion:g}·H_c, H_c = {H_c:.3f} m, criterio "
+                         f"'{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' [A]"),
+            ),
+            resultado=Magnitud(
+                "B", ultimo.B, "m",
+                ("dimensionada por estabilidad" if ultimo.cumple else
+                 "el mayor ancho de la grilla que no pasa el tope: NO "
+                 "cumple")),
+            nota_del_proyecto=(
+                "Crece el talon; la punta queda en la de la regla. "
+                "Intentos: " + _texto_intentos(intentos[e]))))
+        if not ultimo.cumple:
+            pendientes = (", ".join(ultimo.incumplidas)
+                          or "condiciones sin evaluar")
+            avisos.append(
+                f"Cabezal de {e} de {punto.id}: el dimensionamiento de la "
+                f"zapata llego al tope B_max = {tope:.3f} m ({fraccion:g}·H_c,"
+                f" criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}') con B = "
+                f"{ultimo.B:.3f} m y siguen sin cumplir {pendientes}: "
+                "ampliar el tope, añadir un dentellon de corte (y contar el "
+                "pasivo, AASHTO 11.6.3.5) o declarar la zapata "
+                "(`cabezal_declarado`)")
+    return DimensionadoDeZapatas(
+        cabezal=final, anchos=anchos,
+        intentos=tuple(i for e in extremos for i in intentos[e]),
+        pasos=tuple(pasos), avisos=tuple(avisos))
+
+
+def incorporar_dimensionado(cabezal: CabezalDelPunto,
+                            dimensionado: DimensionadoDeZapatas
+                            ) -> CabezalDelPunto:
+    """El cabezal con los intentos, los pasos y los avisos del dimensionado."""
+    from dataclasses import replace as _replace
+    avisos = list(cabezal.avisos)
+    avisos.extend(a for a in dimensionado.avisos if a not in avisos)
+    return _replace(cabezal, intentos_de_zapata=dimensionado.intentos,
+                    pasos=cabezal.pasos + dimensionado.pasos,
+                    avisos=tuple(avisos))
 
 
 # ===========================================================================

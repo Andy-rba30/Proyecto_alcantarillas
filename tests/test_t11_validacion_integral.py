@@ -218,17 +218,28 @@ def test_B01_corre_con_el_TW_de_la_guia_y_el_tramo_declarado(base):
     assert v["V2"] == "cumple"
 
 
-def test_el_cabezal_de_la_regla_no_pasa_E3_estatico_ni_E1_sismico(base):
+def test_el_cabezal_se_dimensiona_y_pasa_E3_estatico_y_E1_sismico(base):
     """
-    UN RESULTADO, NO UN FALLO DE LA VALIDACION (PRECISIONES_T-11): con la
-    zapata que propone la regla de T-7a, el deslizamiento estatico y la
-    capacidad portante sismica del marco LRFD no pasan en ningun punto. La
-    variante `zapata_declarada_3m` muestra el otro lado.
+    UN RESULTADO, NO UN FALLO DE LA VALIDACION (PRECISIONES_T-11). Hasta
+    VE-3.5 este test se llamaba «el cabezal de la regla no pasa E3 estatico
+    ni E1 sismico» y lo fijaba: con la zapata que propone la regla de T-7a,
+    el deslizamiento estatico y la capacidad portante sismica del marco LRFD
+    no pasaban en ningun punto. Desde VE-3.5 la zapata se DIMENSIONA por
+    estabilidad (el juego declara el paso y el tope, datos de prueba) y las
+    dos filas cumplen en los cuatro puntos, con el ancho «dimensionado por
+    estabilidad». Que la regla sola no pasa lo fija
+    `tests/test_ve3_dimensionamiento_cabezal.py` (sin el criterio) y la §3.1
+    de la sensibilidad (base `juego_cabezal_de_la_regla`).
     """
+    from src.modelos import ORIGEN_DIMENSION_ESTABILIDAD
     for p in base.puntos:
         v = V.verificaciones_del_punto(base, p.punto.id)
-        assert v["E3-LRFD.est.e"] == "no cumple", p.punto.id
-        assert v["E1-LRFD.sis.e"] == "no cumple", p.punto.id
+        assert v["E3-LRFD.est.e"] == "cumple", p.punto.id
+        assert v["E1-LRFD.sis.e"] == "cumple", p.punto.id
+        g = p.cabezal.entrada
+        b = next(d for d in g.dimensiones
+                 if d.nombre == "ancho de la zapata (B)")
+        assert b.origen == ORIGEN_DIMENSION_ESTABILIDAD, p.punto.id
 
 
 @pytest.mark.lento
@@ -483,7 +494,8 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
     exactamente dos criterios con valor de archivo, cada uno con su razon
     escrita (`J.PISA_EL_ARCHIVO_PORQUE`), y la variante titular los deja en
     su valor. Con ellos los cuatro puntos dimensionan igual, las tres filas
-    estaticas del marco LRFD no pasan en los ocho cabezales y la condicion
+    estaticas del marco LRFD pasan en los ocho cabezales con la zapata
+    dimensionada (desde VE-3.5; antes no pasaban en ninguno) y la condicion
     sismica es «metodo no evaluable» (T7B-05) en los ocho.
     """
     pisadas = {k for k in J.DECLARACIONES if ca.CRITERIOS[k].valor is not None}
@@ -501,8 +513,13 @@ def test_la_corrida_titular_es_la_de_las_decisiones_de_archivo(titular):
         r = V.resumen_del_punto(titular, p)
         assert (r["familia"], r["material"], r["seccion"]) == \
             DISENO_ESPERADO[r["id"]], r["id"]
+    # --- VE-3.5 --- hasta aqui las tres filas estaticas del marco LRFD no
+    # pasaban en los ocho cabezales (la zapata de la regla); el juego
+    # declara el paso y el tope del dimensionamiento (datos de prueba) y la
+    # zapata crece hasta que pasan en los ocho.
     assert V.filas_estaticas_que_no_pasan(titular) == {
-        "E1-LRFD.est": 8, "E2-LRFD.est": 8, "E3-LRFD.est": 8}
+        "E1-LRFD.est": 0, "E2-LRFD.est": 0, "E3-LRFD.est": 0}
+    assert V.zapatas_dimensionadas(titular)["dimensionadas"] == 8
     bloqueos = [(b.punto, b.que) for b in V.todos_los_bloqueos(titular)]
     assert sorted(bloqueos) == sorted(
         [("C-01", "VC1-01")] + [(i, "T7B-05") for i in DISENO_ESPERADO] * 2)

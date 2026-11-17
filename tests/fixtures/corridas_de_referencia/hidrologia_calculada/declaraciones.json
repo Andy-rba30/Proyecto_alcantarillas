@@ -23,5 +23,9 @@
    "cloruros": false
   }
  },
- "homogeneidad_serie_fen": "serie_completa"
+ "homogeneidad_serie_fen": "serie_completa",
+ "dimensionamiento_zapata_cabezal": {
+  "paso_m": 0.1,
+  "fraccion_ancho_max": 1.5
+ }
 }

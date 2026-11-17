@@ -120,6 +120,18 @@ BASES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
                                "B-01 (variante `caudal_calculado`): el "
                                "caudal lo calcula la Fase 1-bis",
                                J.VARIANTES["caudal_calculado"][1]),
+    # VE-3.5: el juego SIN el paso y el tope del dimensionamiento de la
+    # zapata. Con ellos la zapata crece hasta cumplir y E1 a E3 pasan con
+    # cualquier valor de los dos [A] de §3.1; sin ellos el dimensionamiento
+    # se detiene y la geometria verificada es la de la REGLA, que es la que
+    # §3.1 mide.
+    "juego_cabezal_de_la_regla": ("el juego sin "
+                                  "`dimensionamiento_zapata_cabezal`: la "
+                                  "zapata es la de la regla de T-7a, sin "
+                                  "dimensionar (VE-3.5)",
+                                  (("declarar",
+                                    "dimensionamiento_zapata_cabezal",
+                                    None),)),
 }
 
 
@@ -194,9 +206,11 @@ BARRIDOS_A_MANO: Tuple[Barrido, ...] = (
     Barrido("fraccion_delta_sobre_phi_trasdos", GRUPO_CABEZAL,
             "fricción del trasdós δ/φ (PRECISIONES)"),
     Barrido("fila_phi_estabilidad_cabezal", GRUPO_CABEZAL,
-            "fila de φ de la estabilidad LRFD (PRECISIONES)"),
+            "fila de φ de la estabilidad LRFD (PRECISIONES)",
+            base="juego_cabezal_de_la_regla"),
     Barrido("factores_inclinacion_carga_portante", GRUPO_CABEZAL,
-            "factores de inclinación de la capacidad portante (PRECISIONES)"),
+            "factores de inclinación de la capacidad portante (PRECISIONES)",
+            base="juego_cabezal_de_la_regla"),
     Barrido("regla_pendiente_relleno_trasdos", GRUPO_CABEZAL,
             "superficie del relleno para el empuje (PRECISIONES)"),
     Barrido("regimen_resistencia_elementos_cabezal", GRUPO_CABEZAL,
@@ -322,6 +336,10 @@ NO_BARRIBLES: Dict[str, str] = {
     "TW_receptor": (_R_SIN_VALOR + "; dato del receptor (ANA / Junta), y con "
                     "la sección de archivo de `seccion_receptor` nunca se lee"),
     "seccion_cuneta": _R_POR_CAMPO,
+    "dimensionamiento_zapata_cabezal": (
+        "el juego lo declara (paso 0.10 m, tope 1.5·H_c, datos de prueba) "
+        "pero la ficha no tiene ventana: ninguna fuente fija el paso ni el "
+        "tope del dimensionamiento de la zapata (VE-3.5)"),
     "TR_evento_extremo": ("el juego lo declara (500 años) pero la ficha no "
                           "tiene ventana: el TR del evento extremo lo fija el "
                           "Propietario con el estudio hidrológico"),
@@ -738,10 +756,11 @@ def generar(medidas: Optional[Sequence[Medida]] = None) -> str:
     A("### 3.1 El cabezal de la regla: E3 estática y E1 sísmica del marco "
       "LRFD frente a sus dos [A]")
     A("")
-    A("Con la zapata que propone la regla de T-7a (que no se itera, ficha "
-      "T7B-09) estas cuatro filas no pasan en la corrida del juego "
-      "(`docs/validacion_integral.md` §2). Lo que cada uno de los dos [A] de "
-      "los que dependen hace con ellas, medido:")
+    A("Con la zapata que propone la regla de T-7a, SIN dimensionar (base "
+      "`juego_cabezal_de_la_regla`: desde VE-3.5 la zapata del juego crece "
+      "hasta cumplir, y estas filas pasan con cualquier valor), estas cuatro "
+      "filas no pasan. Lo que cada uno de los dos [A] de los que dependen "
+      "hace con ellas, medido:")
     A("")
     A("| Criterio | Valor | " + " | ".join(f"`{f}`" for f in FILAS_DEL_CABEZAL)
       + " |")
@@ -761,8 +780,9 @@ def generar(medidas: Optional[Sequence[Medida]] = None) -> str:
                 f"`{m.barrido.clave}`", _valor(valor), *celdas)) + " |")
     A("")
     A("Ninguno de los dos hace pasar E3 estática a la ENTRADA: ahí el "
-      "deslizamiento de A-01 lo resuelve la zapata más ancha (variante "
-      "`zapata_declarada_3m` de `docs/validacion_integral.md` §5), no la "
+      "deslizamiento lo resuelve la zapata más ancha —la que el "
+      "dimensionamiento de VE-3.5 adopta, o la declarada de la variante "
+      "`zapata_declarada_3m` de `docs/validacion_integral.md` §5—, no la "
       "lectura de un [A].")
     A("")
     vmax = [m for m in medidas if m.barrido.clave == "v_max_concreto_eleccion"]

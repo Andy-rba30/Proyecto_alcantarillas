@@ -9493,6 +9493,68 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- VE-3.5 (decision del dueño del 2026-11-17: el programa DIMENSIONA
+    # el cabezal) --- EL PASO Y EL TOPE DEL ANCHO DE LA ZAPATA, VACIOS. La
+    # geometria de la regla de T-7a no pasa la estabilidad LRFD en ningun
+    # punto de la validacion integral (ficha T7B-09), y desde VE-3.5 la
+    # zapata CRECE por el talon hasta cumplir E1 a E3 de los dos marcos que
+    # deciden (`M9.dimensionar_zapata_por_estabilidad`). Cuanto crece en cada
+    # intento y hasta donde son valores de proyecto que ninguna fuente fija:
+    # la hoja de ruta no los trae; AASHTO 11.6.3 y el Manual de Puentes
+    # verifican una geometria, no la dimensionan; y la practica que la regla
+    # de T-7a ya cita (B = 0.4 a 0.7·H) no sirve de tope, porque la regla
+    # esta en 0.7 y es la que no cumple. Por CLAUDE.md, el vacio se declara
+    # y detiene el calculo -- solo el dimensionamiento: la geometria de la
+    # regla se sigue verificando como hasta VE-3.5 --.
+    "dimensionamiento_zapata_cabezal": Criterio(
+        valor=None,                 # VACIO: detiene el dimensionamiento del cabezal
+        # NIVEL: el de su etapa, la Fase 9, que solo corre a expediente.
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        # Los dos campos son NUMEROS: `campos_obligatorios` es para campos
+        # de texto (EXT-6) y no aplica; los valida el consumidor en segunda
+        # linea (`M9._regla_de_dimensionamiento`), como las reglas de
+        # 'predimensionamiento_cabezal'.
+        forma=FORMA_DICT_CON_CAMPOS,
+        concepto="Dimensionamiento del ancho de la zapata del cabezal por "
+                 "estabilidad: el paso con que crece el ancho B en cada "
+                 "intento (m) y el tope del ancho como fraccion de la altura "
+                 "total del cabezal H_c (B_max = fraccion_ancho_max·H_c)",
+        justificacion="Decide cuanto crece la zapata de un cabezal cuya "
+                      "geometria de regla no cumple la estabilidad LRFD "
+                      "(E1 capacidad portante, E2 excentricidad, E3 "
+                      "deslizamiento, estatica y sismica) y hasta donde se "
+                      "intenta antes de declarar que con esa familia de "
+                      "geometrias no cumple. Crece el TALON (la punta queda "
+                      "en la de la regla): suma el peso del relleno sobre la "
+                      "zapata y el brazo de las cargas verticales, que es lo "
+                      "que la estabilidad de un muro en voladizo pide cuando "
+                      "falla el deslizamiento o la capacidad portante. El "
+                      "paso fino da la zapata minima de la grilla y cuesta "
+                      "corridas; el grueso, al reves. El tope dice donde la "
+                      "solucion racional deja de ser una zapata mas ancha y "
+                      "pasa a ser un dentellon de corte (y el pasivo de "
+                      "AASHTO 11.6.3.5), una zapata declarada o un suelo "
+                      "mejorado: eso lo decide el proyectista, no el "
+                      "programa. Medido con los datos de PRUEBA del juego de "
+                      "T-11 (A-01): la entrada cumple con B = 2.40 m "
+                      "(1.07·H_c) y la salida con 3.20 m (0.84·H_c)",
+        fuente="PENDIENTE - ninguna fuente de normas/ fija el paso ni el "
+               "tope: AASHTO LRFD 11.6.3 (E1 a E3) y el Manual de Puentes "
+               "2.4 verifican una geometria; el predimensionamiento B = 0.4 "
+               "a 0.7·H de la regla de T-7a ('predimensionamiento_cabezal', "
+               "[A]) es el punto de partida, no el tope",
+        reemplazado_por="Plano de encofrado del cabezal de cada punto, o el "
+                        "ancho declarado en `cabezal_declarado`, que gana y "
+                        "no se itera",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: modulo de encofrado para el paso y "
+                        "el limite a partir del cual prefiere un dentellon o "
+                        "una zapata declarada para el tope",
+            dominio="paso_m > 0 en m; fraccion_ancho_max > 0, adimensional",
+        ),
+    ),
+
     "N_cq_N_gammaq_meyerhof": Criterio(
         valor=None,                 # VACIO: bloquea la capacidad portante en talud
         nivel=NIVEL_EXPEDIENTE,

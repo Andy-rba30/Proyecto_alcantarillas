@@ -701,6 +701,31 @@ def cabezales_evaluados(informe: Any) -> int:
     return sum(2 for p in informe.puntos if p.cabezal is not None)
 
 
+def zapatas_dimensionadas(informe: Any) -> Dict[str, int]:
+    """
+    --- VE-3.5 --- De los cabezales del informe: cuantos tienen la zapata
+    dimensionada por estabilidad, cuantos cumplen todas las condiciones de
+    estabilidad que se evaluaron, y cuantas filas del armado del TALON no
+    cumplen (el talon crece con la zapata; el peralte, no).
+    """
+    from src.modelos import ORIGEN_DIMENSION_ESTABILIDAD
+    dimensionadas = estables = talon = 0
+    for p in informe.puntos:
+        cab = p.cabezal
+        if cab is None:
+            continue
+        for g in cab.geometrias:
+            b = next(d for d in g.dimensiones
+                     if d.nombre == "ancho de la zapata (B)")
+            dimensionadas += b.origen == ORIGEN_DIMENSION_ESTABILIDAD
+            propias = [e for e in cab.estabilidad if e.extremo == g.extremo]
+            estables += bool(propias) and all(e.cumple for e in propias)
+        talon += sum(1 for v in cab.verificaciones
+                     if ".talon." in (v.codigo or "") and not v.cumple)
+    return {"dimensionadas": dimensionadas, "estables": estables,
+            "talon": talon}
+
+
 def pisa_el_archivo() -> Tuple[Tuple[str, Any, Any, str], ...]:
     """
     (clave, valor de archivo, valor del juego, por que el juego lo cambia)
@@ -812,24 +837,35 @@ def generar(*, base: Any = None, por_defecto: Any = None,
                 [(p.punto.id, _no_cumple(verificaciones_del_punto(titular, p.punto.id)))
                  for p in titular.puntos])
     A("")
-    estaticas = filas_estaticas_que_no_pasan(titular)
+    estaticas = {f: n for f, n in filas_estaticas_que_no_pasan(titular).items()
+                 if n}
     n_cab = cabezales_evaluados(titular)
+    zap = zapatas_dimensionadas(titular)
     sismicas = sum(1 for b in todos_los_bloqueos(titular) if b.que == "T7B-05")
     A("Lectura de ingeniería (no la escribe el programa; las cifras sí): con "
       "las decisiones de archivo los cuatro puntos dimensionan igual que con "
-      "el juego —el cabezal no entra al dimensionamiento del conducto—, y el "
-      "cabezal de la regla de T-7a **no pasa la estabilidad estática del "
-      "marco LRFD que rige**: "
-      + ", ".join(f"`{f}` no cumple en {n} de {n_cab} cabezales"
-                  for f, n in estaticas.items())
+      "el juego —el cabezal no entra al dimensionamiento del conducto—. La "
+      "zapata de la regla de T-7a no pasa la estabilidad estática del marco "
+      "LRFD que rige, y desde VE-3.5 **se dimensiona**: crece por el talón "
+      "con el paso y el tope que el juego declara (datos de prueba, "
+      "`dimensionamiento_zapata_cabezal`) en "
+      f"{zap['dimensionadas']} de {n_cab} cabezales, y la estabilidad "
+      f"evaluada cumple en {zap['estables']} de {n_cab}"
+      + ("" if not estaticas else "; siguen sin cumplir: " + ", ".join(
+          f"`{f}` en {n} de {n_cab} cabezales" for f, n in estaticas.items()))
+      + ". El talón más largo traslada el problema al **armado**: "
+      f"{zap['talon']} filas del talón no cumplen, porque el peralte de la "
+      "zapata sigue siendo el de la regla —el dimensionamiento crece el "
+      "ancho, no el espesor—"
       + f". La condición **sísmica no se evalúa** ({sismicas} bloqueos "
       "«método no evaluable», ficha T7B-05: con el trasdós sin drenaje el "
       "relleno está saturado y el empuje sísmico con agua en el relleno pide "
       "un equilibrio límite generalizado que el programa no implementa). El "
       "**peso específico saturado del relleno** es un ensayo del EMS que esta "
       "rama necesita: sin él la estabilidad y el armado de los ocho "
-      "cabezales se detienen (§4.2). Es la sensibilidad de una geometría que "
-      "no se itera (ficha T7B-09), no un fallo de la validación.")
+      "cabezales se detienen (§4.2). No es un fallo de la validación: es lo "
+      "que el dimensionamiento de VE-3.5 resuelve y lo que deja para el "
+      "armado.")
     A("")
     A("### 2.1 Variante que ejercita la cadena sísmica y el caso drenado: el "
       "juego tal como está")
@@ -849,21 +885,26 @@ def generar(*, base: Any = None, por_defecto: Any = None,
                 [(p.punto.id, _no_cumple(verificaciones_del_punto(base, p.punto.id)))
                  for p in base.puntos])
     A("")
-    A("Lectura de ingeniería (no la escribe el programa): las filas E3 "
-      "(deslizamiento) estática y E1 (capacidad portante) sísmica del marco "
-      "LRFD no pasan con la zapata que propone la regla de T-7a en ninguno de "
-      "los cuatro puntos; la variante `zapata_declarada_3m` (§5) muestra que "
-      "con 3.00 m de zapata las de A-01 pasan, y el anexo de sensibilidad "
+    zap_base = zapatas_dimensionadas(base)
+    A("Lectura de ingeniería (no la escribe el programa; las cifras sí): las "
+      "filas E3 (deslizamiento) estática y E1 (capacidad portante) sísmica "
+      "del marco LRFD no pasan con la zapata que propone la regla de T-7a en "
+      "ninguno de los cuatro puntos, y desde VE-3.5 la zapata se dimensiona "
+      f"por estabilidad: crece en {zap_base['dimensionadas']} de "
+      f"{cabezales_evaluados(base)} cabezales y la estabilidad evaluada cumple "
+      f"en {zap_base['estables']}; {zap_base['talon']} filas del armado del "
+      "talón no cumplen con el peralte de la regla. La variante "
+      "`zapata_declarada_3m` (§5) muestra una zapata declarada, que no se "
+      "itera, y el anexo de sensibilidad "
       "(`docs/validacion_sensibilidad.md` §3.1) mide los dos [A] de los que "
-      "dependen: omitir los factores de inclinación hace pasar E1 sísmica en "
-      "los cuatro, la fila de φ de muros hace pasar E3 estática a la salida "
-      "de A-01, A-02 y C-01, y ninguno hace pasar E3 estática a la entrada. "
+      "dependen —los factores de inclinación y la fila de φ—, que desde "
+      "VE-3.5 deciden cuánto crece la zapata más que si pasa. "
       "Las filas A1 de la pantalla y "
       "el alero de SALIDA no pasan donde la socavación baja el desplante (la "
       "pantalla crece y ninguna barra del catálogo alcanza); la variante "
       "`sin_socavacion_A01` muestra el otro lado. Ninguna de las dos es un "
-      "fallo de la validación: son la sensibilidad de una geometría que no se "
-      "itera (ficha T7B-09).")
+      "fallo de la validación: el dimensionamiento de VE-3.5 crece el ancho "
+      "de la zapata y no su espesor ni el de la pantalla.")
     A("")
     c01 = {n: _c01_en_el_canal(i) for n, _t, i, _e in var
            if n == VARIANTE_C01_EN_EL_CANAL}

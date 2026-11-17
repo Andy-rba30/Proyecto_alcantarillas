@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "e9f231ee74ee48c359cd26be128039309da3a607",
+    "criterios_sha1": "11c693a596bb73d0116075b74925d1f712a8e809",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -1500,6 +1500,7 @@
       "categoria_refuerzo_aashto",
       "clase_exposicion_fisuracion_cabezal",
       "clase_sitio",
+      "dimensionamiento_zapata_cabezal",
       "edicion_legal_que_rige_el_expediente",
       "edicion_que_rige_el_expediente",
       "exposicion_quimica_ems",

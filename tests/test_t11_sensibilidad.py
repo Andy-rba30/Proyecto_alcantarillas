@@ -140,13 +140,21 @@ def test_los_juicios_del_anexo(medidas):
         "MUEVE VEREDICTOS": {
             "eta_importancia_operativa_conducto", "factor_muro_eleccion",
             "gamma_EQ", "fraccion_delta_sobre_phi_trasdos",
-            "fila_phi_estabilidad_cabezal",
-            "factores_inclinacion_carga_portante",
+            # --- VE-3.5 --- los dos [A] de §3.1 se miden sobre la zapata de
+            # la REGLA (base `juego_cabezal_de_la_regla`): con el juego la
+            # zapata se dimensiona y las filas que miden pasan siempre.
+            "fila_phi_estabilidad_cabezal@juego_cabezal_de_la_regla",
+            "factores_inclinacion_carga_portante@juego_cabezal_de_la_regla",
+            # --- VE-3.5 --- con la zapata dimensionada la Clase 1 de 5.6.7
+            # cambia un veredicto de A-01 (la fisuracion, A6, la unica fila
+            # que la clase toca); con la zapata de la regla no movia nada
+            # medible.
+            "clase_exposicion_fisuracion_cabezal",
             "regla_pendiente_relleno_trasdos",
             "regimen_resistencia_elementos_cabezal", "eta_ductilidad_cabezal",
             "eta_redundancia_cabezal", "marco_estabilidad_cabezal",
             "regimen_cabezal", "drenaje_trasdos", "fc_cabezal_mpa",
-            "F_pga_lectura_columna_extrema", "lectura_coeficientes_socavacion_hec14",
+            "F_pga_lectura_columna_extrema",
             "margen_zapata_bajo_socavacion_m", "metodo_longitud_conducto",
             "peso_especifico_relleno_kn_m3", "phi_relleno_trasdos",
             "punto_aplicacion_incremento_sismico",
@@ -158,7 +166,11 @@ def test_los_juicios_del_anexo(medidas):
             "instalacion_estandar_concreto", "carga_viva_bajo_relleno_alto",
             "duracion_caudal_pico_socavacion_min", "acceso_mantenimiento_v2b",
             "acero_refuerzo_cabezal", "borde_libre_canal_m",
-            "clase_exposicion_fisuracion_cabezal", "condicion_pavimento",
+            "condicion_pavimento",
+            # --- VE-3.5 --- con la zapata dimensionada la lectura de los
+            # coeficientes de la hoya ya no cambia ningun veredicto del
+            # cabezal de salida (con la de la regla cambiaba alguno).
+            "lectura_coeficientes_socavacion_hec14",
             "corrugacion_y_espesor_tmc", "desajuste_empalme_canal_m",
             "desnivel_minimo_entrega_m", "espesor_proteccion_salida",
             "esviaje_max_grados", "lectura_velocidad_limite_cuneta",

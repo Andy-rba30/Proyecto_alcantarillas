@@ -3685,6 +3685,33 @@ GLOBAL_CABEZAL = _fundamento(
         "que lo soporta."),
 )
 
+# --- VE-3.5 --- El dimensionamiento de la zapata por estabilidad. La fuente
+# EXIGE las tres verificaciones; COMO se llega a una geometria que las
+# cumple no lo dice, y eso -- crecer el talon en pasos hasta un tope -- es
+# eleccion del proyecto: va en la nota del paso y en el criterio
+# 'dimensionamiento_zapata_cabezal' [A], no en el `por_que`.
+DIMENSIONADO_ZAPATA_CABEZAL = _fundamento(
+    id="F9.DIMENSIONADO",
+    fase=F9,
+    que_paso=("Dimensionamiento del ancho de la zapata del cabezal hasta que "
+              "la estabilidad cumple"),
+    por_que=(
+        "La fuente exige que el muro cumpla la capacidad portante, la "
+        "excentricidad de la resultante y el deslizamiento en la base, y no "
+        "dice como dimensionarlo para conseguirlo. Cuando la geometria "
+        "propuesta no cumple alguna de las tres en el marco que decide, la "
+        "zapata se ensancha en pasos y se vuelve a verificar, hasta el primer "
+        "ancho que cumple o hasta un tope; cada intento queda en la memoria "
+        "con lo que no cumplio."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.11.6.3.2#PORTANTE", "AASHTO_LRFD_9.11.6.3.3#EXC",
+           "AASHTO_LRFD_9.11.6.3.6#DESLIZAMIENTO"),
+    que_pasa_si_no_se_hace=(
+        "El cabezal saldria con una zapata que desliza o sobrecarga el "
+        "suelo, y el expediente no cerraria sin que el proyectista la "
+        "redimensionara a mano."),
+)
+
 
 # ===========================================================================
 # --- T-7c --- (cadena T) · el armado del cabezal y la alternativa ciclopea

@@ -669,7 +669,8 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
         barridos += 1
     # 146 desde VE-2: 'columna_n_manning_concreto' (a), 'diametro_de_diseno_concreto' (g),
     # 'nivel_agua_diseno_v7' y 'margen_estacional_nf_v7_m' (c2), 'factor_intervalo_fijo_p24' (d).
-    assert len(ca.CRITERIOS) == 146 and barridos > 100, (len(ca.CRITERIOS),
+    # 147 desde VE-3.5: 'dimensionamiento_zapata_cabezal'.
+    assert len(ca.CRITERIOS) == 147 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 
