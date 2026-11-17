@@ -79,6 +79,11 @@ VE-3.9 quedó a medias: su último respaldo es `3c15302` en la rama de respaldo 
 generados y la §23 de la línea base empezada). Para retomarlo: partir de esa rama, revisar
 contra el encargo de VE-3.9 como BORRADOR, terminar, y rebasar sobre la rama de trabajo.
 
+Además en curso: **VE-3.11**, las correcciones de los ensayos del conducto que no esperan
+decisión (H2, H3, H4 y titulares), respaldo en
+`claude/youthful-shannon-rjzmuc-respaldo-ensayos-h2-h4`. Los informes en curso de
+`/home/user/verificacion_fable/` se copian a `informes_en_curso/` con cada respaldo.
+
 ## Decisiones del dueño (2026-11-17)
 
 - VE2-04: sí, V3 con la mayor velocidad bajo control de salida (hecho, VE-3.1).
