@@ -98,6 +98,11 @@ La sesión corrige YA los DEFECTOS (VE-3.14, abajo). Estas son ELECCIONES de cri
 recomendación de la sesión; la sesión deja cada una implementada como opción del criterio
 para que la decisión sea sólo cambiar el valor de archivo:
 
+En curso: **VE-3.14** corrige los DEFECTOS (cortante general 5.7.3.4.2, parada en el tope y
+punta que crece, pantalla y alero dimensionados, sismo con agua por C11.6.5.3, textos y
+JSON) y deja las elecciones 9–14 como opciones con su efecto medido; respaldo
+`claude/youthful-shannon-rjzmuc-respaldo-cabezal-defectos`.
+
 9. **Talón de la zapata (H-2, parte C):** hoy rige el «peso entero» de 11.6.1.2 (2.4 a 13
    veces el momento del método exacto con los talones largos que genera el bucle).
    **Recomendación: método exacto (con la reacción del terreno), como Caltrans BDP 11.2**;
