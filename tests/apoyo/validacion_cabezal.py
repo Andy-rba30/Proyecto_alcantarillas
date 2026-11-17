@@ -66,6 +66,7 @@ from src.constantes_fisicas import (KIP_EN_KN, KSI_EN_MPA, PIE_EN_METROS,
 from src.constantes_normativas import (ORIENTACION_PARALELO_AL_TRAFICO)
 from src.modelos import CombinacionDeEstabilidad, CondicionAnalisis
 from src.modulos import M9_cabezal as M9
+from tests.apoyo.validacion_conducto import TOL_REL_MOTOR
 from tests.apoyo.validacion_externa import (TOLERANCIA_EJEMPLO_IMPRESO,
                                             dentro_de)
 
@@ -117,6 +118,13 @@ class Contraste:
     funcion: str
     metodo: str = ""      # por que el motor difiere de lo recalculado
     errata: str = ""      # por que la fuente difiere de su propia cuenta
+    # LA REFERENCIA PROPIA DEL MOTOR (correcciones de la revision Fable,
+    # M-1): en una fila con `metodo`, lo que el motor TIENE que dar con SU
+    # metodo, escrito aqui aparte (sin llamar a M9). Sin ella, cualquier
+    # valor del motor fuera del 1 % pasaba por «difiere por metodo»: un Ec
+    # un 4 a 10 % distinto sobrevivia. Con ella, el motor que no la sigue
+    # (fuera de `TOL_REL_MOTOR`) es un DEFECTO, cuadre o no con la fuente.
+    referencia: Optional[Numero] = None
 
     def diferencia_fuente(self) -> Optional[float]:
         return _rel(self.publicado, self.recalculado)
@@ -130,10 +138,18 @@ class Contraste:
     def motor_cuadra(self) -> bool:
         return _igual(self.motor, self.recalculado)
 
+    def motor_sigue_su_referencia(self) -> bool:
+        return (self.referencia is not None
+                and dentro_de(self.motor / self.referencia - 1.0,
+                              TOL_REL_MOTOR))
+
     @property
     def juicio(self) -> str:
+        if self.referencia is not None and not self.motor_sigue_su_referencia():
+            return JUICIO_DEFECTO
         if not self.motor_cuadra():
-            return JUICIO_METODO if self.metodo else JUICIO_DEFECTO
+            return (JUICIO_METODO if self.metodo
+                    and self.motor_sigue_su_referencia() else JUICIO_DEFECTO)
         if self.errata:
             return JUICIO_ERRATA
         return JUICIO_COINCIDE if self.fuente_cuadra() else JUICIO_DEFECTO
@@ -217,6 +233,16 @@ def fss_por_inercia_us(*, Ms: float, As: float, d: float, n: float) -> float:
     return n * Ms * 12.0 * (d - x) / I
 
 
+def n_aashto_us(*, fc: float) -> float:
+    """
+    n = Es/Ec con el Ec del comentario C5.4.2.4-1 de AASHTO LRFD 9.a ed.
+    (pag. 5-20, PDF 379: «For normal weight concrete with wc = 0.145 kcf, Ec
+    may be taken as 2,500 f'c^0.33»), Es = 29 000 ksi (5.4.3.2). Es el metodo
+    de M9, escrito aqui sin llamarlo: la REFERENCIA de las filas de metodo.
+    """
+    return 29000.0 / (2500.0 * fc ** 0.33)
+
+
 def vc_us(*, beta: float, fc: float, dv: float) -> float:
     """AASHTO 5.7.3.3-3: Vc = 0.0316·β·√f'c·b·dv (kip por pie)."""
     return 0.0316 * beta * math.sqrt(fc) * B_FRANJA_IN * dv
@@ -227,10 +253,30 @@ def dv_us(*, de: float, a: float, h: float) -> float:
     return max(de - a / 2, 0.9 * de, 0.72 * h)
 
 
+def temperatura_ec_us(*, b: float, h: float, fy: float) -> float:
+    """AASHTO 5.10.6-1 SIN acotar, como la celda Y455 de CDOT (in2/ft)."""
+    return 1.30 * b * h / (2 * (b + h) * fy)
+
+
 def temperatura_us(*, b: float, h: float, fy: float) -> float:
     """AASHTO 5.10.6-1 con el tope de 5.10.6-2 (0.11 a 0.60 in2/ft)."""
-    As = 1.30 * b * h / (2 * (b + h) * fy)
-    return min(max(As, 0.11), 0.60)
+    return min(max(temperatura_ec_us(b=b, h=h, fy=fy), 0.11), 0.60)
+
+
+# La ec. 5.10.6-1 es lineal en 1/f_y. Para que el piso de 5.10.6-2 (0.11
+# in2/ft) no tape la ecuacion del motor --los tres casos de CDOT dan de 0.072
+# a 0.083--, el motor se llama con f_y / ESCALA_FY_TEMPERATURA (el resultado
+# cae dentro de la banda 0.11-0.60) y se divide entre la misma escala. Una
+# potencia de dos: la division es exacta en coma flotante.
+ESCALA_FY_TEMPERATURA = 2.0
+
+
+def _temperatura_ec_motor(*, b_in: float, h_in: float, fy_ksi: float) -> float:
+    """La ec. 5.10.6-1 de M9 (in2/ft), leida por la escala de f_y."""
+    return (M9.acero_de_temperatura_aashto(
+        ancho=b_in * IN, espesor=h_in * IN,
+        fy=fy_ksi / ESCALA_FY_TEMPERATURA * KSI)
+        / IN2_POR_FT / ESCALA_FY_TEMPERATURA)
 
 
 def presion_uniforme_us(*, V: float, M_punta: float, B: float) -> dict:
@@ -418,23 +464,30 @@ def contrastes_cdot() -> Tuple[Contraste, ...]:
     mot = M9.fisuracion_aashto(M_s=Ms * KIPFT_POR_FT, As=As * IN2_POR_FT,
                                d=de * IN, espesor=h_tallo * IN, d_c=dc * IN,
                                fc=fc * KSI, fy=fy * KSI)
+    n_m9 = n_aashto_us(fc=fc)
+    ref = fisuracion_us(Ms=Ms, As=As, d=de, h=h_tallo, dc=dc, n=n_m9,
+                        gamma_e=0.75)
     add(Contraste(
         CDOT, "n = Es/Ec", "—", 6.54, n_cdot, mot["n"], "T321 (Ec en T320)",
         "M9.fisuracion_aashto",
         metodo=("Ec: CDOT usa la ec. 5.4.2.4-1, 120 000·K1·wc²·f'c^0.33 con "
                 "wc = 0.150 kcf (4435 ksi); M9 usa la del comentario "
                 "C5.4.2.4-1, 2500·f'c^0.33, que es la misma con wc = 0.145 "
-                "kcf (4107 ksi). Ver la observacion O-1.")))
+                "kcf (4107 ksi). Ver la observacion O-1 (cerrada a favor de "
+                "M9)."),
+        referencia=n_m9))
     add(Contraste(
         CDOT, "k de la seccion fisurada", "—", 0.179, rec["k"], mot["k"],
         "Q397", "M9.fisuracion_aashto",
         metodo="el k depende de n (O-1): con el n de M9 sale 0.1790",
         errata=("la hoja calcula k con ρ = 0.003, el valor MOSTRADO de "
                 "0.620/(12·18.69) = 0.002764 («as displayed», celda AF1): "
-                "con ρ exacto y su n = 6.54, k = 0.1729")))
+                "con ρ exacto y su n = 6.54, k = 0.1729"),
+        referencia=ref["k"]))
     add(Contraste(CDOT, "f_ss = Ms/(As·j·d)", "ksi", 29.52, rec["fss"],
                   mot["f_ss"] / KSI, "AA400", "M9.fisuracion_aashto",
-                  metodo="n distinto (O-1); f_ss casi no depende de n"))
+                  metodo="n distinto (O-1); f_ss casi no depende de n",
+                  referencia=ref["fss"]))
     add(Contraste(CDOT, "β_s", "—", 1.18, rec["beta_s"], mot["beta_s"],
                   "AA401", "M9.fisuracion_aashto"))
     add(Contraste(CDOT, "s_max (γe = 0.75, clase 2)", "in", 10.45,
@@ -471,19 +524,40 @@ def contrastes_cdot() -> Tuple[Contraste, ...]:
         "M9.simplificado_permitido"))
 
     # --- Acero de retraccion y temperatura (AASHTO 5.10.6) -----------------
+    # CORRECCIONES DE LA REVISION FABLE (A-3): esta fila se declaraba
+    # «errata de la fuente» («la hoja aplica la ec. 5.10.6-1 sin el piso de
+    # 5.10.6-2») y NO lo era: la hoja calcula la 5.10.6-1 en Y455 y comprueba
+    # el piso y el techo en la fila siguiente (AD456 = IF(AND(T454 >= 0.11,
+    # T454 <= 0.6), ...)), como AASHTO. Y al compararla con el valor acotado,
+    # el motor devolvia el piso y la ecuacion de M9 no se contrastaba (dos
+    # mutantes de la ec. 5.10.6-1 sobrevivian). Hoy son dos contrastes: la
+    # ECUACION, en los tres casos que la hoja calcula, leida en el motor por
+    # la escala de f_y (`_temperatura_ec_motor`), y el PISO aparte.
+    for celda, h_in, elemento in (("Y455", h_tallo, "alzado (h = 21 in)"),
+                                  ("Y70 y Y140", TF * 12.0,
+                                   "zapata: talon y punta (h = 15 in)"),
+                                  ("Y210", 18.0,
+                                   "llave de corte (h = 18 in)")):
+        add(Contraste(
+            CDOT, f"As de la ec. 5.10.6-1 sin acotar, {elemento}, b = 12 in",
+            "in²/ft",
+            {"Y455": 0.083, "Y70 y Y140": 0.072, "Y210": 0.078}[celda],
+            temperatura_ec_us(b=B_FRANJA_IN, h=h_in, fy=fy),
+            _temperatura_ec_motor(b_in=B_FRANJA_IN, h_in=h_in, fy_ksi=fy),
+            celda + (" (hoja «Footing and key design»)"
+                     if celda != "Y455" else ""),
+            "M9.acero_de_temperatura_aashto (llamado con f_y/2, para que el "
+            "piso de 5.10.6-2 no tape la ecuacion, y dividido entre 2: la "
+            "ec. es lineal en 1/f_y)"))
     add(Contraste(
-        CDOT, "As de temperatura por cara con b = 12 in, h = 21 in", "in²/ft",
-        0.083, temperatura_us(b=B_FRANJA_IN, h=h_tallo, fy=fy),
+        CDOT, "As minima de temperatura del alzado: la ec. 5.10.6-1 (Y455) "
+        "con el piso de 5.10.6-2 que la hoja comprueba en AD456", "in²/ft",
+        max(0.083, 0.11), temperatura_us(b=B_FRANJA_IN, h=h_tallo, fy=fy),
         M9.acero_de_temperatura_aashto(ancho=B_FRANJA_IN * IN,
                                        espesor=h_tallo * IN, fy=fy * KSI)
         / IN2_POR_FT,
-        "Y455", "M9.acero_de_temperatura_aashto",
-        errata=("la hoja aplica la ec. 5.10.6-1 (0.0827 in²/ft) sin el piso de "
-                "la ec. 5.10.6-2 (0.11 ≤ As ≤ 0.60; cita "
-                "AASHTO_LRFD_9.5.10.6#TEMPERATURA); el #4 @ 12 provisto "
-                "(0.20 in²/ft) cumple igual. Ademas toma b = 12 in, la franja "
-                "de calculo, donde AASHTO dice «least width of component "
-                "section»: M9 pasa el ancho real del elemento (O-2)")))
+        "Y455 y AD456 (= IF(AND(T454>=0.11, T454<=0.6), «OK», «Fails»))",
+        "M9.acero_de_temperatura_aashto (con su piso)"))
     return tuple(C)
 
 
@@ -509,8 +583,12 @@ TABLA_SISMICA = (
     ("kh·6", "-8.22", "13.5", "-111.02"), ("kh·7", "-0.37", "3.5", "-1.29"),
     ("kh·8", "-1.25", "26.48", "-33.10"),
 )
-# La fila kh·4 (0.06 kip, brazo 0.38 ft, +0.02) no se revisa: su signo
-# contradice al de las demas inercias y su momento es de la ultima cifra.
+# La fila kh·4 (0.06 kip, brazo 0.38 ft, +0.02) no se revisa porque su
+# momento es de la ultima cifra. Su signo es CORRECTO: la parte 4 es la llave
+# de corte (0.15·0.75·2.0 = 0.22 kip, p. 11.2-55), que queda POR DEBAJO del
+# punto O, y su fuerza de inercia da momento de signo contrario al de las
+# demas (correcciones de la revision Fable, M-4: este comentario decia que
+# el signo «contradice» al de las demas inercias).
 MOMENTO_KH4_IMPRESO = 0.02
 SUMA_SISMICA_IMPRESA = 194.46
 # Tabla 11.2.2-3 (p. 11.2-23), servicio.
@@ -693,6 +771,7 @@ def contrastes_caltrans() -> Tuple[Contraste, ...]:
     mot = M9.fisuracion_aashto(M_s=Ms * KIPFT_POR_FT, As=As * IN2_POR_FT,
                                d=de * IN, espesor=h * IN, d_c=dc * IN,
                                fc=fc * KSI, fy=fy * KSI)
+    n_m9 = n_aashto_us(fc=fc)
     add(Contraste(
         CALTRANS, "n = Es/Ec", "—", 8.0,
         29000.0 / (57.0 * math.sqrt(fc * 1000.0)), mot["n"], "p. 11.2-36",
@@ -700,12 +779,15 @@ def contrastes_caltrans() -> Tuple[Contraste, ...]:
         metodo=("Ec: Caltrans usa 57 000·√f'c (psi), la expresion de ACI "
                 "318 (3605 ksi, n = 8.04, redondeado a 8); M9 la del "
                 "comentario C5.4.2.4-1 de AASHTO (3950 ksi, n = 7.34). Ver "
-                "O-1.")))
+                "O-1 (cerrada a favor de M9)."),
+        referencia=n_m9))
     add(Contraste(CALTRANS, "β_s", "—", 1.14, rec["beta_s"], mot["beta_s"],
                   "p. 11.2-36", "M9.fisuracion_aashto"))
     add(Contraste(CALTRANS, "f_ss (seccion fisurada)", "ksi", 27.0, fss_rec,
                   mot["f_ss"] / KSI, "p. 11.2-37", "M9.fisuracion_aashto",
-                  metodo="n distinto (O-1); f_ss casi no depende de n"))
+                  metodo="n distinto (O-1); f_ss casi no depende de n",
+                  referencia=fisuracion_us(Ms=Ms, As=As, d=de, h=h, dc=dc,
+                                           n=n_m9, gamma_e=1.0)["fss"]))
     add(Contraste(
         CALTRANS, "s_max (γe = 1.0, clase 1)", "in", 17.6,
         700 * 1.0 / (rec["beta_s"] * fss_rec) - 2 * dc,
@@ -785,18 +867,25 @@ NO_CONTRASTABLE = (
 )
 
 OBSERVACIONES = (
-    ("O-1", "El modulo de elasticidad del concreto. M9 toma n con la "
-     "expresion del comentario C5.4.2.4-1 (2500·f'c^0.33 ksi, la de wc = "
-     "0.145 kcf); la ec. 5.4.2.4-1 con un peso unitario mayor (CDOT usa "
-     "0.150 kcf) da un Ec mayor y un n menor (6.54 frente a 7.06). En f_ss la "
-     "diferencia es menor del 0.5 % en los dos ejemplos, porque j casi no "
-     "depende de n. Se deja al dueño si M9 debe usar la ec. 5.4.2.4-1 con el "
-     "peso unitario del concreto del proyecto (no se midio aqui cual es)."),
+    ("O-1", "El modulo de elasticidad del concreto — CERRADA a favor de M9 "
+     "(correcciones de la revision Fable, M-5). M9 toma n con la expresion "
+     "del comentario C5.4.2.4-1 de AASHTO LRFD 9.a ed. (pag. 5-20, PDF 379: "
+     "«For normal weight concrete with wc = 0.145 kcf, Ec may be taken as "
+     "2,500 f'c^0.33»). La Tabla 3.5.1-1 da 0.145 kcf al concreto de peso "
+     "normal con f'c ≤ 5.0 ksi, y C3.5.1 (pag. 3-21, PDF 75) dice que los "
+     "0.005 kcf de mas del concreto ARMADO son para las cargas muertas, no "
+     "para el Ec. CDOT mete 0.150 kcf en la ec. 5.4.2.4-1 (n = 6.54 frente a "
+     "7.06) y Caltrans usa 57 000·√f'c, que no es de AASHTO: M9 es el que "
+     "sigue la letra. En f_ss la diferencia es menor del 0.5 % en los dos "
+     "ejemplos. Las filas de metodo exigen ademas que el motor de el n de esa "
+     "formula, calculado aparte (`n_aashto_us`)."),
     ("O-2", "El «b» del acero de temperatura. CDOT toma b = 12 in (la franja "
      "de calculo); M9 pasa el ancho real del elemento, que es lo que AASHTO "
      "5.10.6 llama «least width of component section». Con el ancho real el "
-     "minimo es mayor en un muro largo; ninguno de los dos ejemplos baja del "
-     "piso de 0.11 in²/ft."),
+     "minimo es mayor en un muro largo. En los tres casos de CDOT la ec. "
+     "5.10.6-1 con b = 12 in queda bajo el piso de 0.11 in²/ft, de modo que "
+     "ahi el b no cambia el acero minimo; los contrastes de la ecuacion usan "
+     "el b de la fuente."),
 )
 
 
@@ -854,6 +943,12 @@ def generar() -> str:
       "una **errata de la fuente**, declarada con su causa.")
     A(f"- Juicios: «{JUICIO_COINCIDE}», «{JUICIO_ERRATA}», «{JUICIO_METODO}» "
       f"y «{JUICIO_DEFECTO}». La suite exige cero defectos.")
+    A("- En una fila con **método** declarado, el motor tiene además que dar "
+      "la **referencia de su propio método**, calculada aparte en el arnés "
+      "sin llamar a M9 (hoy, el n = Es/Ec del comentario C5.4.2.4-1 y lo que "
+      f"depende de él), con `TOL_REL_MOTOR` = {TOL_REL_MOTOR:g}; si no la da, "
+      "es un **defecto**, cuadre o no con la fuente (correcciones de la "
+      "revisión Fable, M-1).")
     A("")
     for numero, ejemplo, filas in ((2, CALTRANS, contrastes_caltrans()),
                                    (3, CDOT, contrastes_cdot())):
@@ -876,7 +971,9 @@ def generar() -> str:
                 if c.errata:
                     A(f"- *{c.paso}* — **errata:** {c.errata}.")
                 if c.metodo:
-                    A(f"- *{c.paso}* — **método:** {c.metodo}")
+                    A(f"- *{c.paso}* — **método:** {c.metodo} Referencia del "
+                      f"motor con su método: {_num(c.referencia)}; motor: "
+                      f"{_num(c.motor)}.")
             A("")
     A("## 4. La aritmética de la propia fuente (Caltrans, tablas de momentos)")
     A("")

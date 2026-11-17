@@ -50,6 +50,7 @@ def test_ningun_contraste_es_un_defecto_del_motor(contrastes):
 COINCIDEN = (
     "DD1-IM-2ft", "DD1-IM-6ft",
     *(f"CPDM-VAF-{i}" for i in range(1, 5)),
+    "CPDM-BFE-48-1",
     *(f"CPDM-BFE-{d}-{i}" for d in (12, 24, 36, 72, 144) for i in range(1, 5)),
     "CPDM-BFLL-36", "DD22-U", "USACE-T", "USACE-A", "USACE-FC",
     "USACE-CLASE-II",
@@ -58,15 +59,78 @@ POR_METODO = (
     "DD1-EJ1", "DD1-EJ4", "CPDM-BFLL-12", "CPDM-BFLL-24", "CPDM-BFLL-48",
     "CPDM-4-2", "CPDM-4-5", "CPDM-4-7", "DD22-WI", "DD22-V7",
 )
+SIN_FUENTE = ("M8-LW-72",)
 
 
 def test_el_censo_de_clases_es_el_del_documento(contrastes):
     """Que ningun contraste cambie de clase sin que este censo lo diga."""
-    assert sorted(contrastes) == sorted(COINCIDEN + POR_METODO)
+    assert sorted(contrastes) == sorted(COINCIDEN + POR_METODO + SIN_FUENTE)
     for i in COINCIDEN:
         assert contrastes[i].clase == V.COINCIDE, i
     for i in POR_METODO:
         assert contrastes[i].clase == V.METODO, i
+    for i in SIN_FUENTE:
+        assert contrastes[i].clase == V.SIN_FUENTE, i
+
+
+def test_ninguna_cifra_de_W_L_ni_de_D_load_esta_contrastada_con_la_fuente(
+        contrastes):
+    """
+    Correcciones de la revision Fable (A-1): la carga viva y la D-load de M8
+    estan TODAS en la categoria «reproduce su propio metodo», y el resumen
+    del documento lo dice; no se suman a lo contrastado con la fuente.
+    """
+    cargas = [i for i in contrastes
+              if i.startswith(("DD1-EJ", "CPDM-4-", "M8-LW"))]
+    assert cargas
+    for i in cargas:
+        assert contrastes[i].clase in V.REPRODUCE_SU_METODO, i
+    assert "Ninguna cifra de W_L ni de D-load" in V.generar()
+
+
+def test_la_rama_l_w_menor_que_B_c_se_ejercita(contrastes):
+    """
+    Correcciones de la revision Fable (A-2): un caso donde el ancho cargado
+    l_w es MENOR que B_c, de modo que min(l_w, B_c) toma l_w; y el W_L del
+    motor sale de `M8.verificar_concreto`, la ruta real. El mutante
+    «W_L = P_L·B_c» lo convierte en DEFECTO.
+    """
+    det = V.hl93_detalle(2.0, 6.0, 86.0 / 12)
+    assert det["l_w"] < 86.0 / 12
+    c = contrastes["M8-LW-72"]
+    assert c.motor == pytest.approx(c.referencia, rel=TOL_REL_MOTOR)
+
+
+def test_la_referencia_interpola_sin_la_funcion_del_motor():
+    """
+    A-2: las referencias de la D-load y de la carga viva no llaman a
+    `M8._interpolar` (en `_contrastes_tablas` solo lo usa la columna MOTOR).
+    """
+    import ast
+    import inspect
+    import textwrap
+    for f in (V._dload_aashto_a_mano, V.hl93_detalle, V._interpolar_a_mano):
+        arbol = ast.parse(textwrap.dedent(inspect.getsource(f)))
+        llamadas_a_m8 = [
+            n.func.attr for n in ast.walk(arbol)
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+            and isinstance(n.func.value, ast.Name) and n.func.value.id == "M8"]
+        assert not llamadas_a_m8, (f.__name__, llamadas_a_m8)
+    assert V._interpolar_a_mano(48.0, (36.0, 72.0), (4.0, 3.8)) == \
+        pytest.approx(3.9333333333333336, rel=TOL_REL_MOTOR)
+
+
+def test_la_descomposicion_de_dd1_explica_todo_el_exceso(contrastes):
+    """
+    Correcciones de la revision Fable (M-3): el exceso de M8 sobre DD 1 es
+    exactamente presion x longitud efectiva (l_w >= B_c en los dos), y casi
+    todo es la L_e.
+    """
+    for d in V.descomposicion_dd1(list(contrastes.values())):
+        assert d["l_w"] >= 37 / 12
+        assert d["presion"] * d["longitud"] == pytest.approx(
+            d["total"], rel=TOL_REL_MOTOR)
+        assert d["longitud"] - 1 > abs(d["presion"] - 1)
 
 
 @pytest.mark.parametrize("id_", COINCIDEN)

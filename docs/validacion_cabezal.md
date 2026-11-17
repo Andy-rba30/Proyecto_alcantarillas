@@ -10,6 +10,7 @@
 - **Tolerancia: 1%**, la de un ejemplo impreso (`TOLERANCIA_EJEMPLO_IMPRESO` de `tests/apoyo/validacion_externa.py`): las fuentes imprimen tres o cuatro cifras y redondean los intermedios.
 - Por cada cifra: **publicado** (la fuente), **recalculado** (la fórmula de la propia fuente, en sus unidades, sin M9) y **motor** (M9 en SI, devuelto a las unidades de la fuente). El motor se juzga contra lo recalculado; si la fuente no cuadra con su propia cuenta es una **errata de la fuente**, declarada con su causa.
 - Juicios: «coincide», «errata de la fuente; el motor coincide con lo recalculado», «difiere por método (declarado)» y «DEFECTO DEL MOTOR». La suite exige cero defectos.
+- En una fila con **método** declarado, el motor tiene además que dar la **referencia de su propio método**, calculada aparte en el arnés sin llamar a M9 (hoy, el n = Es/Ec del comentario C5.4.2.4-1 y lo que depende de él), con `TOL_REL_MOTOR` = 1e-09; si no la da, es un **defecto**, cuadre o no con la fuente (correcciones de la revisión Fable, M-1).
 
 ## 2. Caltrans BDP 11.2.2
 
@@ -48,8 +49,8 @@ Erratas de la fuente y diferencias de método:
 
 - *q = V/B', sismo (Evento Extremo)* — **errata:** la fuente divide 55.35 (no 55.36) por 7.03; la diferencia es de la cuarta cifra. En la misma pagina escribe q_n = 32.22 ksf y luego 0.8·(33.22) = 26.58: una de las dos cifras de q_n esta mal (no la usa el motor).
 - *e = B/2 − ΣM_O/V, servicio* — **errata:** la fuente escribe e = 19/2 − 8.79 = 0.70, y esa resta da 0.71; con x = 465.8/52.98 = 8.792 e = 0.708 (y B' = 17.584, que la fuente imprime 17.59).
-- *n = Es/Ec* — **método:** Ec: Caltrans usa 57 000·√f'c (psi), la expresion de ACI 318 (3605 ksi, n = 8.04, redondeado a 8); M9 la del comentario C5.4.2.4-1 de AASHTO (3950 ksi, n = 7.34). Ver O-1.
-- *f_ss (seccion fisurada)* — **método:** n distinto (O-1); f_ss casi no depende de n
+- *n = Es/Ec* — **método:** Ec: Caltrans usa 57 000·√f'c (psi), la expresion de ACI 318 (3605 ksi, n = 8.04, redondeado a 8); M9 la del comentario C5.4.2.4-1 de AASHTO (3950 ksi, n = 7.34). Ver O-1 (cerrada a favor de M9). Referencia del motor con su método: 7.341; motor: 7.341.
+- *f_ss (seccion fisurada)* — **método:** n distinto (O-1); f_ss casi no depende de n Referencia del motor con su método: 26.89; motor: 26.89.
 
 ## 3. CDOT Ex. 11
 
@@ -87,17 +88,19 @@ Erratas de la fuente y diferencias de método:
 | dv (5.7.2.8) | in | 18.2 | 18.28 | 18.28 | 0.00% | errata de la fuente; el motor coincide con lo recalculado | S411 | `M9.cortante_del_concreto` |
 | Vc con β = 1.81 (β del procedimiento general, dato de la fuente) | kip/ft | 26.5 | 26.62 | 26.62 | 0.00% | errata de la fuente; el motor coincide con lo recalculado | AA444 (β en S440) | `M9.cortante_del_concreto` |
 | ¿Procedimiento simplificado de 5.7.3.4.1 permitido en el alzado sin estribos (h = 21 in)? | sí/no | no | no | no | — | coincide | A413 («does not qualify for simplified procedure») | `M9.simplificado_permitido` |
-| As de temperatura por cara con b = 12 in, h = 21 in | in²/ft | 0.083 | 0.11 | 0.11 | 0.00% | errata de la fuente; el motor coincide con lo recalculado | Y455 | `M9.acero_de_temperatura_aashto` |
+| As de la ec. 5.10.6-1 sin acotar, alzado (h = 21 in), b = 12 in | in²/ft | 0.083 | 0.08273 | 0.08273 | 0.00% | coincide | Y455 | `M9.acero_de_temperatura_aashto (llamado con f_y/2, para que el piso de 5.10.6-2 no tape la ecuacion, y dividido entre 2: la ec. es lineal en 1/f_y)` |
+| As de la ec. 5.10.6-1 sin acotar, zapata: talon y punta (h = 15 in), b = 12 in | in²/ft | 0.072 | 0.07222 | 0.07222 | 0.00% | coincide | Y70 y Y140 (hoja «Footing and key design») | `M9.acero_de_temperatura_aashto (llamado con f_y/2, para que el piso de 5.10.6-2 no tape la ecuacion, y dividido entre 2: la ec. es lineal en 1/f_y)` |
+| As de la ec. 5.10.6-1 sin acotar, llave de corte (h = 18 in), b = 12 in | in²/ft | 0.078 | 0.078 | 0.078 | 0.00% | coincide | Y210 (hoja «Footing and key design») | `M9.acero_de_temperatura_aashto (llamado con f_y/2, para que el piso de 5.10.6-2 no tape la ecuacion, y dividido entre 2: la ec. es lineal en 1/f_y)` |
+| As minima de temperatura del alzado: la ec. 5.10.6-1 (Y455) con el piso de 5.10.6-2 que la hoja comprueba en AD456 | in²/ft | 0.11 | 0.11 | 0.11 | 0.00% | coincide | Y455 y AD456 (= IF(AND(T454>=0.11, T454<=0.6), «OK», «Fails»)) | `M9.acero_de_temperatura_aashto (con su piso)` |
 
 Erratas de la fuente y diferencias de método:
 
-- *n = Es/Ec* — **método:** Ec: CDOT usa la ec. 5.4.2.4-1, 120 000·K1·wc²·f'c^0.33 con wc = 0.150 kcf (4435 ksi); M9 usa la del comentario C5.4.2.4-1, 2500·f'c^0.33, que es la misma con wc = 0.145 kcf (4107 ksi). Ver la observacion O-1.
+- *n = Es/Ec* — **método:** Ec: CDOT usa la ec. 5.4.2.4-1, 120 000·K1·wc²·f'c^0.33 con wc = 0.150 kcf (4435 ksi); M9 usa la del comentario C5.4.2.4-1, 2500·f'c^0.33, que es la misma con wc = 0.145 kcf (4107 ksi). Ver la observacion O-1 (cerrada a favor de M9). Referencia del motor con su método: 7.062; motor: 7.062.
 - *k de la seccion fisurada* — **errata:** la hoja calcula k con ρ = 0.003, el valor MOSTRADO de 0.620/(12·18.69) = 0.002764 («as displayed», celda AF1): con ρ exacto y su n = 6.54, k = 0.1729.
-- *k de la seccion fisurada* — **método:** el k depende de n (O-1): con el n de M9 sale 0.1790
-- *f_ss = Ms/(As·j·d)* — **método:** n distinto (O-1); f_ss casi no depende de n
+- *k de la seccion fisurada* — **método:** el k depende de n (O-1): con el n de M9 sale 0.1790 Referencia del motor con su método: 0.179; motor: 0.179.
+- *f_ss = Ms/(As·j·d)* — **método:** n distinto (O-1); f_ss casi no depende de n Referencia del motor con su método: 29.51; motor: 29.51.
 - *dv (5.7.2.8)* — **errata:** la celda escribe dv = max(de − c/2, …) con c = 0.982 in (AA360), y AASHTO 5.7.2.8 resta a/2 (a = 0.81 in): 18.199 frente a 18.285 in; dentro del 1 %.
 - *Vc con β = 1.81 (β del procedimiento general, dato de la fuente)* — **errata:** el texto de la celda escribe «0.0316 (2)(1) …» y el valor usa β = 1.81 de S440: con β = 2 saldria 29.3 kip; el numero publicado es el de β = 1.81 con el dv de S411.
-- *As de temperatura por cara con b = 12 in, h = 21 in* — **errata:** la hoja aplica la ec. 5.10.6-1 (0.0827 in²/ft) sin el piso de la ec. 5.10.6-2 (0.11 ≤ As ≤ 0.60; cita AASHTO_LRFD_9.5.10.6#TEMPERATURA); el #4 @ 12 provisto (0.20 in²/ft) cumple igual. Ademas toma b = 12 in, la franja de calculo, donde AASHTO dice «least width of component section»: M9 pasa el ancho real del elemento (O-2).
 
 ## 4. La aritmética de la propia fuente (Caltrans, tablas de momentos)
 
@@ -157,12 +160,12 @@ Las filas que no cuadran son erratas de la fuente. La de la parte 6 de servicio 
 
 ## 6. Observaciones para el dueño (no son defectos)
 
-- **O-1.** El modulo de elasticidad del concreto. M9 toma n con la expresion del comentario C5.4.2.4-1 (2500·f'c^0.33 ksi, la de wc = 0.145 kcf); la ec. 5.4.2.4-1 con un peso unitario mayor (CDOT usa 0.150 kcf) da un Ec mayor y un n menor (6.54 frente a 7.06). En f_ss la diferencia es menor del 0.5 % en los dos ejemplos, porque j casi no depende de n. Se deja al dueño si M9 debe usar la ec. 5.4.2.4-1 con el peso unitario del concreto del proyecto (no se midio aqui cual es).
-- **O-2.** El «b» del acero de temperatura. CDOT toma b = 12 in (la franja de calculo); M9 pasa el ancho real del elemento, que es lo que AASHTO 5.10.6 llama «least width of component section». Con el ancho real el minimo es mayor en un muro largo; ninguno de los dos ejemplos baja del piso de 0.11 in²/ft.
+- **O-1.** El modulo de elasticidad del concreto — CERRADA a favor de M9 (correcciones de la revision Fable, M-5). M9 toma n con la expresion del comentario C5.4.2.4-1 de AASHTO LRFD 9.a ed. (pag. 5-20, PDF 379: «For normal weight concrete with wc = 0.145 kcf, Ec may be taken as 2,500 f'c^0.33»). La Tabla 3.5.1-1 da 0.145 kcf al concreto de peso normal con f'c ≤ 5.0 ksi, y C3.5.1 (pag. 3-21, PDF 75) dice que los 0.005 kcf de mas del concreto ARMADO son para las cargas muertas, no para el Ec. CDOT mete 0.150 kcf en la ec. 5.4.2.4-1 (n = 6.54 frente a 7.06) y Caltrans usa 57 000·√f'c, que no es de AASHTO: M9 es el que sigue la letra. En f_ss la diferencia es menor del 0.5 % en los dos ejemplos. Las filas de metodo exigen ademas que el motor de el n de esa formula, calculado aparte (`n_aashto_us`).
+- **O-2.** El «b» del acero de temperatura. CDOT toma b = 12 in (la franja de calculo); M9 pasa el ancho real del elemento, que es lo que AASHTO 5.10.6 llama «least width of component section». Con el ancho real el minimo es mayor en un muro largo. En los tres casos de CDOT la ec. 5.10.6-1 con b = 12 in queda bajo el piso de 0.11 in²/ft, de modo que ahi el b no cambia el acero minimo; los contrastes de la ecuacion usan el b de la fuente.
 
 ## 7. Resumen
 
 - **Caltrans BDP 11.2.2:** 28 contrastes — 25 «coincide»; 2 «errata de la fuente; el motor coincide con lo recalculado»; 1 «difiere por método (declarado)»; 0 «DEFECTO DEL MOTOR».
-- **CDOT Ex. 11:** 33 contrastes — 28 «coincide»; 3 «errata de la fuente; el motor coincide con lo recalculado»; 2 «difiere por método (declarado)»; 0 «DEFECTO DEL MOTOR».
+- **CDOT Ex. 11:** 36 contrastes — 32 «coincide»; 2 «errata de la fuente; el motor coincide con lo recalculado»; 2 «difiere por método (declarado)»; 0 «DEFECTO DEL MOTOR».
 - **Aritmética de Caltrans:** 2 filas que no cuadran, de 30.
 - **Defectos del motor: 0.**

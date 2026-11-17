@@ -67,8 +67,10 @@ ERRATAS_ESPERADAS = {
     (VC.CDOT, "dv (5.7.2.8)"),
     (VC.CDOT, "Vc con β = 1.81 (β del procedimiento general, dato de la "
               "fuente)"),
-    (VC.CDOT, "As de temperatura por cara con b = 12 in, h = 21 in"),
 }
+# Hasta las correcciones de la revision Fable (A-3) el censo traia una sexta,
+# «As de temperatura por cara con b = 12 in, h = 21 in»: NO era errata (la
+# hoja comprueba el piso de 5.10.6-2 en AD456) y se retiro.
 
 
 def test_el_censo_de_erratas_de_las_fuentes():
@@ -104,6 +106,31 @@ def test_las_diferencias_de_metodo_son_las_declaradas():
                       (VC.CDOT, "k de la seccion fisurada")}
 
 
+def test_toda_fila_de_metodo_trae_la_referencia_del_motor():
+    """
+    Correcciones de la revision Fable (M-1): una fila que difiere por metodo
+    fija tambien lo que el motor TIENE que dar con su metodo, calculado
+    aparte; sin eso, cualquier valor del motor fuera del 1 % pasaba.
+    """
+    sin_referencia = [_id(c) for c in VC.contrastes()
+                      if c.metodo and c.referencia is None]
+    assert not sin_referencia, sin_referencia
+
+
+def test_la_ecuacion_de_temperatura_del_motor_se_contrasta_y_no_su_piso():
+    """
+    Correcciones de la revision Fable (A-3): las tres filas de la ec.
+    5.10.6-1 de CDOT (0.083, 0.072 y 0.078 in2/ft, todas bajo el piso de
+    0.11) se leen en el motor por la escala de f_y y no devuelven el piso.
+    """
+    filas = [c for c in VC.contrastes()
+             if c.paso.startswith("As de la ec. 5.10.6-1 sin acotar")]
+    assert len(filas) == 3
+    for c in filas:
+        assert c.juicio == VC.JUICIO_COINCIDE
+        assert c.motor < 0.11, c.paso
+
+
 def test_la_aritmetica_de_caltrans_solo_falla_donde_se_declara():
     no_cuadran = [r for r in VC.revisiones_caltrans() if not r.cuadra]
     assert {r.fila for r in no_cuadran} == {
@@ -115,6 +142,11 @@ def test_la_aritmetica_de_caltrans_solo_falla_donde_se_declara():
 @pytest.mark.parametrize("constante, factor, paso", [
     ("MODULO_ROTURA_AASHTO_SI", 1.05, "Mcr"),
     ("NUCLEO_CENTRAL_DIVISOR", 5.0 / 6.0, "trapecio"),
+    # Los de la revision Fable que sobrevivian (M-1 y A-3):
+    ("EC_COEFICIENTE_AASHTO_SI", 0.90, "n = Es/Ec"),
+    ("EC_COEFICIENTE_AASHTO_SI", 1.04, "n = Es/Ec"),
+    ("ES_REFUERZO_AASHTO_MPA", 0.95, "n = Es/Ec"),
+    ("TEMPERATURA_COEFICIENTE_AASHTO_SI", 1.0 / 1.30, "ec. 5.10.6-1"),
 ])
 def test_mutar_una_formula_de_M9_rompe_el_contraste(monkeypatch, constante,
                                                      factor, paso):
