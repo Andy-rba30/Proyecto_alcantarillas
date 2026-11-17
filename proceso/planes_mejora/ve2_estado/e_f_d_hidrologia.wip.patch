@@ -1,16 +1,105 @@
+diff --git a/docs/contrato_entradas.md b/docs/contrato_entradas.md
+index 1b7b5e2..1243c41 100644
+--- a/docs/contrato_entradas.md
++++ b/docs/contrato_entradas.md
+@@ -78,8 +78,15 @@ la tabla familia por familia está en `docs/guia_perfil.md` §1.1.
+ 
+ Son **opcionales y van juntas**. Sin ellas el caudal entra declarado por `Q_m3s`, como
+ siempre. Con ellas, un punto de Familia A o B que tenga fila en el CSV de cuencas puede
+-traer `Q_m3s` vacío y el programa lo calcula por el método racional
+-(`src/modulos/MH_hidrologia.py`, Manual de Hidrología cap. III). **Ninguna columna tiene
++traer `Q_m3s` vacío y el programa lo calcula (`src/modulos/MH_hidrologia.py`, Manual
++de Hidrología cap. III): por el **método racional** (núm. 3.12.2) si la cuenca tiene
++menos de 10 km², y desde VE-2 por el **método racional modificado** (núm. 3.12.2.1,
++ecuaciones 29 a 35) de 10 a 770 km², con el tiempo de concentración de Témez entre 0.25
++y 24 h. La frontera de 10 km² es la del racional simple («Muy usado para cuencas,
++A<10 Km2», pág. impresa 49); usar el modificado desde ahí es lectura del proyecto.
++Desde 770 km² no se evalúa: el Manual describe el hidrograma de Snyder (30 a 30 000 km²,
++pág. 58), el triangular del SCS (hasta 30 km², pág. 56) y HEC-HMS, y el programa no los
++implementa; el caudal entra declarado (ficha `VE2-F`). **Ninguna columna tiene
+ valor por defecto**: las obligatorias detienen la carga si faltan, y las opcionales
+ vacías no se rellenan —lo que cada una habilita está en su fila—. Las líneas que
+ empiezan por `#` son comentarios. En la ventana son los campos «CSV de cuencas» y «CSV
+@@ -90,17 +97,17 @@ de la estación» de la pestaña 1, y la sesión los guarda desde el formato 4 (
+ | Columna | Unidad | Origen | Qué es | Si falta |
+ |---|---|---|---|---|
+ | `id` | — | Trazo | El `id` de la obra en el CSV de puntos | La carga se detiene |
+-| `area_km2` | km² | **Estudio hidrológico** | Área de la cuenca aportante, delimitada sobre plano. En una alcantarilla de alivio, el área tributaria de la cuneta (plataforma y talud). Desde 10 km² el método racional no se evalúa. **Tiene que decir lo mismo que `area_ha` del CSV de puntos**, que es la que fija el periodo de retorno | La carga se detiene. Si las dos áreas difieren más de un 1 % (un redondeo), el punto se detiene nombrando el par |
++| `area_km2` | km² | **Estudio hidrológico** | Área de la cuenca aportante, delimitada sobre plano. En una alcantarilla de alivio, el área tributaria de la cuneta (plataforma y talud). Por debajo de 10 km² el caudal sale del método racional; de 10 a 770 km², del racional modificado; desde 770 km² no se evalúa. El aporte de una cuneta es siempre del racional simple (núm. 4.1.2.1 b), con su límite de 10 km². **Tiene que decir lo mismo que `area_ha` del CSV de puntos**, que es la que fija el periodo de retorno | La carga se detiene. Si las dos áreas difieren más de un 1 % (un redondeo), el punto se detiene nombrando el par |
+ | `L_cauce_m` | m | Estudio hidrológico | Longitud del cauce principal, o del recorrido del flujo sobre la superficie cuando el método es de flujo superficial | La carga se detiene |
+ | `S_cauce_cuenca` | m/m | Estudio hidrológico | Pendiente media del cauce principal, o de la superficie por la que corre el flujo: la que acompaña a `L_cauce_m`. Entra a la fórmula del tiempo de concentración (Kirpich, FAA, Témez) | La carga se detiene |
+ | `S_terreno` | m/m | Estudio hidrológico | Pendiente media del **terreno** de la cuenca. Con ella la Tabla Nº 08 elige columna, y es la «pendiente promedio de la cuenca» de la ecuación de retardo. **No es** la del cauce y no se rellena con ella | La carga se detiene |
+-| `cobertura` | clave | Estudio hidrológico | Fila de cobertura de la Tabla Nº 08 —`sin_vegetacion`, `cultivos`, `pastos_vegetacion_ligera`, `hierba_grama`, `bosques_densa_vegetacion`— **o** una superficie de la plataforma vial, que esa tabla no tiene: `pavimento`, `berma_de_tierra`, `talud_de_tierra`, `talud_con_cesped` (criterio [C] `coeficiente_escorrentia_superficie_vial`, WSDOT Table 2-2, con su incremento por periodo de retorno) | La carga se detiene |
++| `cobertura` | clave | Estudio hidrológico | (Desde 10 km² se valida y no se lee: el racional modificado da su propio C por el número de curva.) Fila de cobertura de la Tabla Nº 08 —`sin_vegetacion`, `cultivos`, `pastos_vegetacion_ligera`, `hierba_grama`, `bosques_densa_vegetacion`— **o** una superficie de la plataforma vial, que esa tabla no tiene: `pavimento`, `berma_de_tierra`, `talud_de_tierra`, `talud_con_cesped` (criterio [C] `coeficiente_escorrentia_superficie_vial`, WSDOT Table 2-2, con su incremento por periodo de retorno) | La carga se detiene |
+ | `suelo` | clave | Estudio hidrológico · EMS | Tipo de suelo de la Tabla Nº 08: `impermeable`, `semipermeable`, `permeable`. **Vacía** cuando `cobertura` es una superficie vial | La carga se detiene (con cobertura de cuenca vacía; con superficie vial, llena) |
+ | `estacion` | texto | Estudio hidrológico | Nombre de la estación cuya serie representa a la cuenca; tiene que estar en el CSV de la estación | La carga se detiene |
+-| `metodo_tc` | clave | Estudio hidrológico | Método del tiempo de concentración, **por cuenca**: `kirpich` y `california_culverts_practice` (cauce; salieron de cuencas con pendientes de 3 a 10 %), `federal_aviation_administration` (flujo superficial: plataforma, talud, cuenca plana), `retardo_scs` (pide `CN`; cuencas de menos de 800 ha) o `temez` (0.25 a 24 h; trae consigo el coeficiente K). Fuera de la población de una fórmula decide el criterio `tc_fuera_de_la_poblacion_del_metodo` | La carga se detiene |
++| `metodo_tc` | clave | Estudio hidrológico | Método del tiempo de concentración, **por cuenca**: `kirpich` y `california_culverts_practice` (cauce; salieron de cuencas con pendientes de 3 a 10 %), `federal_aviation_administration` (flujo superficial: plataforma, talud, cuenca plana), `retardo_scs` (pide `CN`; cuencas de menos de 800 ha) o `temez` (0.25 a 24 h; trae consigo el coeficiente K). **Desde 10 km² tiene que ser `temez`**: es la ecuación (30) del racional modificado, y otra fórmula detiene el punto. Fuera de la población de una fórmula decide el criterio `tc_fuera_de_la_poblacion_del_metodo` | La carga se detiene |
+ | `H_desnivel_m` | m | Topografía / QGIS | **Opcional.** Desnivel entre la divisoria y la salida | Sólo lo exige el método de California: sin él, ese punto se detiene. No se deduce de S·L |
+ | `ajuste_kirpich` | clave | Estudio hidrológico | **Obligatoria con `metodo_tc = kirpich`**, vacía con cualquier otro: `ninguno`, `superficie_de_concreto_o_asfalto` (×0.4) o `canal_de_concreto` (×0.2), de la observación de la Tabla Nº 05. «`ninguno`» es una clave y se escribe | La carga se detiene: una celda vacía no elige la fila sin factor |
+-| `CN` | — | Estudio hidrológico | **Opcional.** Número de curva de la cuenca (mayor que 0, hasta 100). El programa no tiene tabla de la que leerlo | Sólo lo exige `retardo_scs`: sin él, ese punto se detiene |
++| `CN` | — | Estudio hidrológico | **Opcional.** Número de curva de la cuenca (mayor que 0, hasta 100), dato de sitio [S]: el estudio lo lee en la Tabla Nº 07 del Manual (pág. impresa 47) por grupo hidrológico de suelo y uso de la tierra; el programa no tiene tabla de la que leerlo. La misma columna sirve a la ecuación de retardo y, desde VE-2, al racional modificado (umbral de escorrentía Po = 5000/CN − 50 y coeficiente C de la ecuación 35) | La exigen `retardo_scs` y toda cuenca de 10 km² o más: sin él, ese punto se detiene. Bajo 10 km² y con otro método, puede ir vacía |
+ 
+ **CSV de la estación** — una fila por año; un archivo puede traer varias estaciones:
+ 
+@@ -126,8 +133,11 @@ Cuatro criterios más gobiernan el cálculo y tienen valor de archivo: la duraci
+ de la lluvia de diseño (`duracion_minima_lluvia_min`, [C], 5 min), el trato de una
+ cuenca fuera de la población de su fórmula (`tc_fuera_de_la_poblacion_del_metodo`, [A],
+ «no evaluar»), el coeficiente de uniformidad con la fórmula de Témez
+-(`coeficiente_uniformidad_temez`, [A], «aplicar») y el coeficiente de las superficies
+-viales (`coeficiente_escorrentia_superficie_vial`, [C]).
++(`coeficiente_uniformidad_temez`, [A], «aplicar»; rige sólo el uso híbrido bajo 10 km²:
++en el racional modificado K es parte de la ecuación 29 y va siempre) y el coeficiente de
++las superficies viales (`coeficiente_escorrentia_superficie_vial`, [C]). Los tres
++primeros no los lee el racional modificado, que trae su propia intensidad (ecuación 34)
++y su tiempo de concentración desde 0.25 h.
+ 
+ ---
+ 
 diff --git a/docs/decisiones_diferidas.md b/docs/decisiones_diferidas.md
-index 6c445cc..dbffcf5 100644
+index 6c445cc..8e6c1f9 100644
 --- a/docs/decisiones_diferidas.md
 +++ b/docs/decisiones_diferidas.md
-@@ -7599,6 +7599,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
+@@ -4100,7 +4100,7 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
+   convergencia, y un caso patrón hecho a mano para cada una.
+ - **Dónde vive:** `src/modulos/MH_hidrologia.py::METODOS_TC`
+ 
+-## T1-08 · El método racional modificado no está implementado: de él se toman la fórmula de Témez y el coeficiente K
++## T1-08 · El método racional modificado no estaba implementado: de él se tomaban la fórmula de Témez y el coeficiente K — Cerrado (VE-2) de 10 a 770 km²
+ 
+ - **Qué se difirió:** el método completo del núm. 3.12.2.1 del Manual de Hidrología
+   (págs. impresas 50 a 52): su intensidad con el factor de torrencialidad, su factor
+@@ -4111,11 +4111,16 @@ tres más (`T1-07` a `T1-09`) las dejó la auditoría adversarial de la misma se
+   en vez de callarse: el paso del tiempo de concentración y el del caudal lo dicen, y
+   el coeficiente de uniformidad K de la ecuación (31) —que es del mismo numeral y
+   sube el caudal— lo decide el criterio [A] `coeficiente_uniformidad_temez`, con
+-  «aplicar» como valor de archivo. El resto del método pide el número de curva y un
+-  mapa de isolíneas del factor de torrencialidad que el Manual da para España.
+-- **Qué haría falta:** las ecuaciones restantes en el registro con su cita, el número
+-  de curva como dato de la cuenca, una fuente para el factor de torrencialidad en el
+-  Perú, y un método de caudal seleccionable por fila del CSV de cuencas.
++  «aplicar» como valor de archivo. El resto del método pide el número de curva. **Corregido
++  en VE-2:** esta ficha decía que pedía también «un mapa de isolíneas del factor de
++  torrencialidad» para España, y la página no lo trae: el 11 está escrito, fijo, dentro de
++  la ecuación (34) (pág. impresa 52, leída en la imagen).
++- **Cerrado (VE-2):** el método entero calcula de 10 a 770 km² (ficha VE2-F); bajo 10 km²
++  sigue el uso híbrido de arriba.
++- **Qué haría falta:** hecho en VE-2 lo que esta ficha pedía (las ecuaciones en el registro,
++  el número de curva como dato de la cuenca, el método elegido por el área); el 11 es el
++  del Manual, y un factor regional del Perú en su lugar pediría una fuente que hoy no está
++  en el repositorio de normas. Lo de 770 km² en adelante, en VE2-F.
+ - **Dónde vive:** `src/modulos/MH_hidrologia.py::coeficiente_de_uniformidad`
+ 
+ ## T1-09 · CERRADA: declarar `serie_sin_fen` cuando da menos lluvia que la serie completa detiene el cálculo del punto
+@@ -7599,6 +7604,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
    se detiene desde 10 km², y Tinas (55.9 km²) y cinco cuencas de TU-107 no se calculan.
    (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
    redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
-+- **Cerrado (VE-2):** (e), ficha VE2-E.
++- **Cerrado (VE-2):** (e) y (f), fichas VE2-E y VE2-F.
  - **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
    el programa calcula; el permiso de VE-1 no las alcanza.
  - **Qué haría falta:** la decisión del dueño y, por cada una adoptada, un prompt con sus
-@@ -7607,3 +7608,24 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
+@@ -7607,3 +7613,51 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
  - **Dónde vive:** `src/modulos/M3_hidraulica.py::resolver_manning` (a) y (b);
    `M8_estructural.empuje_flotacion_kn_m` (c); `MH_hidrologia.precipitacion_de_diseno`
    (d) y (e); `MH_hidrologia.caudal_de_diseno` (f); `criterios_adoptados._verificar_criterio` (g).
@@ -25,8 +114,9 @@ index 6c445cc..dbffcf5 100644
 +  `MC_HHD.3.4#CONSISTENCIA`, DEFINICIÓN), que el programa NO la evalúa y que el
 +  proyectista tiene que declarar que lo hizo. Imprime mínimo, mediana, máximo (con su año)
 +  y máximo / mediana de la serie ENTERA registrada, sin umbral ni veredicto. **Queda
-+  diferido** un contraste cuantitativo: no hay procedimiento ni número de corte en ningún
-+  PDF del repositorio de normas (doble masa, datos dudosos, K_n, WRC: cero apariciones).
++  diferido** un contraste cuantitativo: no hay procedimiento ni número de corte (buscados
++  «doble masa», «double mass», «outlier» y «dudoso» en el Manual de Hidrología, WSDOT,
++  HEC-14, HDS-5, Puentes y DG-2018: cero; «consistencia» sólo en las dos citas).
 +- **Por qué:** fijar un corte sería rellenar un vacío (CLAUDE.md, «Fuente de verdad»).
 +  Patrón de `FH.Q_ESPECIFICO`. Va al final para no mover las posiciones que T-1 fijó; dos
 +  tests de T-1 cambiados declarando la causa (`PASOS_DE_LA_FASE_1B`, y el paso sin
@@ -35,6 +125,32 @@ index 6c445cc..dbffcf5 100644
 +  en el repositorio de normas, su cita, y un criterio [A] con valor None que detenga hasta
 +  que se declare; los tests, en `tests/test_ve2_hidrologia.py` (siete mutantes muertos).
 +- **Dónde vive:** `src/modulos/MH_hidrologia.py::_paso_consistencia`
++
++## VE2-F · Método racional modificado de 10 a 770 km² — Cerrado (VE-2), con tres lecturas declaradas
++
++- **Qué se difirió:** nada de lo decidido (dueño, 2026-11-17, VE1-02 (f)). Desde 10 km² el
++  caudal de una obra sale del núm. 3.12.2.1 entero, ec. (29) a (35), leídas en la IMAGEN
++  de las págs. impresas 51 y 52 (PDF 54 y 55): KA, P = KA·Pd, I con el 11 fijo, Po =
++  5000/CN − 50, C, K siempre, Q = 0.278·C·I·A·K; citas `MC_HHD.3.12.2.1#METODO`, `#KA`,
++  `#P`, `#I`, `#C`; literales [N] en `constantes_normativas.py`. Fuera de A < 770 km² y de
++  0.25-24 h, `MetodoNoEvaluableError` con el rótulo de la hidrología, nombrando SCS
++  triangular (hasta 30 km², pág. 56), Snyder (30 a 30 000 km², pág. 58) y HEC-HMS (núm.
++  3.12.4), **no implementados**. El aporte de una cuneta sigue con el racional simple.
++- **Por qué:** tres lecturas, declaradas en el punto de uso: (1) KA = 1 − log10(A)/15
++  (`Interpretacion` de `#KA`); (2) la ec. (35) escribe Pd y no la P corregida: se aplica
++  sin corregirla, y el paso imprime el C que daría P; la «pd» minúscula se lee Pd; (3) la
++  frontera de 10 km² es la del racional simple («Muy usado para cuencas, A<10 Km2», pág.
++  49): los dos rangos se solapan y bajo 10 km² no cambia nada. Se avisa «adaptada para las
++  condiciones climáticas de España». CN es la columna opcional de la ecuación de retardo,
++  REUSADA: desde 10 km² obligatoria (Tabla Nº 07, pág. 47, cita `MC_HHD.3.11#T07`), y
++  `metodo_tc` tiene que ser `temez` (ec. 30). Ni el pre-vuelo ni la pestaña 1 listan
++  columnas a mano: no se tocan. Ningún número de la línea base ni de la corrida de
++  referencia (sus cuencas tienen menos de 10 km²).
++- **Qué haría falta:** para cuencas desde 770 km², implementar un método de hidrograma con su
++  cita; para Pd ≤ Po (C ≤ 0), que el Manual diga qué hacer: hoy detiene. Tests y una cuenca
++  de PRUEBA de 55.9 km² (`cuencas_racional_modificado_prueba.csv`) en
++  `tests/test_ve2_hidrologia.py`.
++- **Dónde vive:** `src/modulos/MH_hidrologia.py::_caudal_racional_modificado`
 diff --git a/docs/indice_formulas.md b/docs/indice_formulas.md
 index cfa0a81..235dd9d 100644
 --- a/docs/indice_formulas.md
@@ -125,11 +241,137 @@ index aefa55b..af72c8f 100644
  MC_HHD.3.4#FEN,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.4,Evaluación de la Información Hidrológica,22,25,exigencia,texto,2026-11-11,no,,fundamento FH.FEN (Fase 1-bis - Hidrologia: caudal de diseño); fundamento FH.SERIE (Fase 1-bis - Hidrologia: caudal de diseño)
  MC_HHD.3.4#REGISTRO,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.4,Evaluación de la Información Hidrológica,22,25,recomendacion,texto,2026-11-11,no,,fundamento FH.SERIE (Fase 1-bis - Hidrologia: caudal de diseño)
  MC_HHD.3.6,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.6,Selección del Período de Retorno,25,28,recomendacion,ambos,2026-08-28,no,,fundamento F2.TR (Fase 2 - Clasificacion y periodo de retorno); tabla MC_HHD.T02 -> M1.Clasificacion; tabla MC_HHD.T02 -> M1.periodo_retorno_de
+diff --git a/src/constantes_normativas.py b/src/constantes_normativas.py
+index 6432c20..6a33456 100644
+--- a/src/constantes_normativas.py
++++ b/src/constantes_normativas.py
+@@ -4232,6 +4232,53 @@ KS_N_MINIMO_TABULADO = min(TABLA_03_KS)
+ NUMERAL_SERIE_HIDROLOGICA = _reg.cita("MC_HHD.3.4#FEN").como_texto()
+ NUMERAL_AVENIDA_DE_DISENO = _reg.cita("MC_HHD.3.13").como_texto()
+ 
++# --- VE-2 (f) --- El metodo racional modificado COMPLETO, num. 3.12.2.1
++# (pags. impresas 50 a 52, PDF 53 a 55). Leido en la IMAGEN de las dos
++# paginas de las formulas: la capa de texto las parte en renglones sueltos y
++# de ahi no se transcribe un exponente. Las ecuaciones (29), (30) y (31) ya
++# estaban arriba (`RACIONAL_COEFICIENTE_SI`, `TC_TEMEZ_SI`,
++# `UNIFORMIDAD_TEMEZ_SI`); estas son las cuatro que faltaban. Y el rango del
++# metodo es el de `TC_TEMEZ_AREA_MAX_KM2` y `TC_TEMEZ_RANGO_H`, que desde VE-2
++# acotan el metodo entero y no solo su formula de Tc. Todas son de Temez,
++# española, sin forma inglesa en uso: no llevan equivalente imperial.
++#
++# Ecuacion (32): KA = 1 – (log10 A/15), A en km2. Se lee 1 − log10(A)/15 (la
++# `Interpretacion` de MC_HHD.3.12.2.1#KA dice por que). `_SI` porque el
++# logaritmo es de A EN KM2: con A en otra unidad el 15 no vale.
++FACTOR_REDUCTOR_AREA_SI = {"divisor": 15}
++NUMERAL_FACTOR_REDUCTOR_AREA = _reg.cita("MC_HHD.3.12.2.1#KA").como_texto()
++NUMERAL_PRECIPITACION_CORREGIDA = _reg.cita("MC_HHD.3.12.2.1#P").como_texto()
++# Ecuacion (34): I = (P/24) · (11)^((28^0.1 − Tc^0.1)/(28^0.1 − 1)), P en mm,
++# Tc en HORAS, I en mm/h. El 11 esta ESCRITO en la ecuacion, fijo: la
++# pagina no le da nombre ni mapa ni tabla por region (la ficha T1-08 decia
++# que el Manual daba «un mapa de isolineas del factor de torrencialidad para
++# España»: no lo da). Con Tc = 1 h el exponente vale 1 y la intensidad es 11
++# veces la media del dia. `_SI` porque el 24 y el 28 son HORAS.
++INTENSIDAD_RACIONAL_MODIFICADO_SI = {"horas_del_dia": 24, "factor": 11,
++                                     "horas_de_referencia": 28,
++                                     "exponente": 0.1}
++NUMERAL_INTENSIDAD_RACIONAL_MODIFICADO = _reg.cita(
++    "MC_HHD.3.12.2.1#I").como_texto()
++# El umbral de escorrentia de la (35): Po = (5000/CN) − 50, en MM (con CN =
++# 100, Po = 0). `_SI` porque el 5000 y el 50 son milimetros.
++UMBRAL_ESCORRENTIA_SI = {"numerador": 5000, "resta": 50}
++# Ecuacion (35): C = (Pd − Po)(Pd + 23·Po) / (Pd + 11·Po)^2. Adimensional
++# (cociente de milimetros entre milimetros al cuadrado sobre milimetros al
++# cuadrado): no es `_SI`. La (35) escribe Pd, NO la P corregida de la (33):
++# se aplica como esta escrita (ficha VE2-F).
++COEFICIENTE_RACIONAL_MODIFICADO = {"suma_numerador": 23,
++                                   "suma_denominador": 11}
++NUMERAL_COEFICIENTE_RACIONAL_MODIFICADO = _reg.cita(
++    "MC_HHD.3.12.2.1#C").como_texto()
++NUMERAL_RACIONAL_MODIFICADO = _reg.cita("MC_HHD.3.12.2.1#METODO").como_texto()
++# Los metodos de caudal que el programa NO implementa, con el rango que el
++# Manual les escribe: se nombran en el mensaje de una cuenca que el
++# racional modificado no cubre.
++NUMERAL_HIDROGRAMA_SCS = _reg.cita("MC_HHD.3.12.3.2a#AREA").como_texto()
++NUMERAL_HIDROGRAMA_SNYDER = _reg.cita("MC_HHD.3.12.3.2b#AREA").como_texto()
++NUMERAL_HEC_HMS = _reg.cita("MC_HHD.3.12.4").como_texto()
++NUMERAL_TABLA_07 = _reg.cita("MC_HHD.3.11#T07").como_texto()
++
+ 
+ # ===========================================================================
+ # Constantes de REFERENCIA: transcritas del Anexo B, sin consumidor de calculo
+diff --git a/src/criterios_adoptados.py b/src/criterios_adoptados.py
+index ef30140..da799e0 100644
+--- a/src/criterios_adoptados.py
++++ b/src/criterios_adoptados.py
+@@ -2525,13 +2525,17 @@ CRITERIOS: Dict[str, Criterio] = {
+                "3.12.2.1 'Método Racional Modificado', ecuaciones (29), (30) "
+                "y (31), pag. impresa 51 (PDF 54): citas MC_HHD.3.12.2.1#K "
+                "(DEFINICION) y MC_HHD.3.12.2.1#TC (APROXIMACION)",
+-        verificacion_pendiente="El metodo racional modificado completo no "
+-                               "esta implementado: su intensidad, su factor "
+-                               "reductor por area y su coeficiente de "
+-                               "escorrentia por numero de curva no se usan "
+-                               "(ficha T1-08 de docs/decisiones_diferidas.md). "
+-                               "Lo que se calcula con la formula de Temez es "
+-                               "un hibrido declarado, con o sin K",
++        verificacion_pendiente="El criterio rige SOLO por debajo de 10 km2: "
++                               "ahi lo que se calcula con la formula de "
++                               "Temez es un hibrido declarado, con o sin K. "
++                               "Desde VE-2 (fichas T1-08 y VE2-F de "
++                               "docs/decisiones_diferidas.md), de 10 a "
++                               "770 km2 el caudal sale del metodo racional "
++                               "modificado completo --su intensidad, su "
++                               "factor reductor por area y su coeficiente "
++                               "por numero de curva-- y K es parte de su "
++                               "ecuacion (29): va siempre y este criterio "
++                               "no se lee",
+         resolucion=Libre(
+             que_lo_fija="el proyectista: el Manual da K dentro de un metodo "
+                         "del que el proyecto toma solo el tiempo de "
 diff --git a/src/modulos/MH_hidrologia.py b/src/modulos/MH_hidrologia.py
-index bcf241c..2d4b548 100644
+index bcf241c..377e03b 100644
 --- a/src/modulos/MH_hidrologia.py
 +++ b/src/modulos/MH_hidrologia.py
-@@ -89,7 +89,7 @@ import csv
+@@ -9,6 +9,11 @@ estacion (T-1 de la cadena T; INF-3.1.2 a INF-3.1.6, INF-5.2.5).
+     cuenca --Tabla N 05 / ec. (30)--> tc        cuenca --Tabla N 08--> C
+                      Q = 0.278 · C · I · A      (num. 3.12.2, ec. 28)
+ 
++    Desde VE-2, de 10 a 770 km2, el metodo racional modificado completo
++    (num. 3.12.2.1, ec. 29 a 35; `_caudal_racional_modificado`):
++    Pd = P24(TR) ; KA = 1 − log10(A)/15 ; P = KA·Pd ; I = ec. (34) ;
++    C = ec. (35) con CN ;  Q = 0.278 · C · I · A · K
++
+ Fuente unica: Manual de Hidrologia, Hidraulica y Drenaje (MTC), capitulo III.
+ Cada numero sale de `constantes_normativas.py` (bloque T-1), que a su vez
+ deriva las cuatro tablas del registro (`normativa/tablas.py`), y cada paso
+@@ -27,8 +32,10 @@ QUE HACE Y QUE NO
+   y la relacion intensidad-duracion son criterios [A] de
+   `criterios_adoptados.py`.
+ * NO evalua fuera del rango que la fuente ESCRIBE: Temez fuera de 0.25-24 h
+-  o de 770 km2, el metodo racional desde 10 km2, la Tabla N 04 por debajo de
+-  1 hora. En todos sale `MetodoNoEvaluableError` con lo que hace falta.
++  o de 770 km2, el metodo racional simple desde 10 km2 (desde VE-2 una obra
++  de 10 a 770 km2 pasa al racional modificado; el aporte de una cuneta no),
++  el modificado desde 770 km2, la Tabla N 04 por debajo de 1 hora. En todos
++  sale `MetodoNoEvaluableError` con lo que hace falta.
+ * Donde la fuente solo DESCRIBE de que cuencas salio una formula (Kirpich y
+   California, 3-10 % de pendiente; la ecuacion de retardo, menos de 800 ha)
+   decide el criterio 'tc_fuera_de_la_poblacion_del_metodo': no evaluar
+@@ -52,8 +59,11 @@ LO QUE EL MANUAL NO TRAE, y por eso este modulo no hace
+   años FEN).
+ * Fila de pavimento en la Tabla N 08 (lo cubre una fuente tecnica [C]), ni
+   ponderacion de C por subareas.
+-* El metodo racional modificado completo: de el se toman la formula de Temez
+-  y el coeficiente K (ficha T1-08 de docs/decisiones_diferidas.md).
++* Hasta VE-2, el metodo racional modificado completo: de el se tomaban la
++  formula de Temez y el coeficiente K (ficha T1-08). Desde VE-2 se calcula
++  entero de 10 a 770 km2 (ficha VE2-F); lo que sigue sin hacerse son los
++  metodos de hidrograma para cuencas mayores (SCS triangular, Snyder,
++  HEC-HMS), que el mensaje nombra con su rango.
+ * Ejemplo numerico del metodo racional: los dorados de
+   `tests/test_t1_hidrologia.py` estan calculados a mano y lo dicen.
+ 
+@@ -89,13 +99,22 @@ import csv
  import io
  import math
  from pathlib import Path
@@ -138,7 +380,52 @@ index bcf241c..2d4b548 100644
  from typing import Any, Dict, List, Optional, Sequence, Tuple
  
  from src import criterios_adoptados as ca
-@@ -202,6 +202,10 @@ CODIGO_SERIE = "1b.1"
+-from src.constantes_normativas import (DICK_PESCHKE, DISTRIBUCIONES_3_7_1,
++from src.constantes_normativas import (COEFICIENTE_RACIONAL_MODIFICADO,
++                                       DICK_PESCHKE, DISTRIBUCIONES_3_7_1,
+                                        DISTRIBUCIONES_CON_ESTIMADOR_IMPRESO,
+-                                       GUMBEL_MOMENTOS, KS_N_MINIMO_TABULADO,
++                                       FACTOR_REDUCTOR_AREA_SI,
++                                       GUMBEL_MOMENTOS,
++                                       INTENSIDAD_RACIONAL_MODIFICADO_SI,
++                                       KS_N_MINIMO_TABULADO,
++                                       NUMERAL_HEC_HMS,
++                                       NUMERAL_HIDROGRAMA_SCS,
++                                       NUMERAL_HIDROGRAMA_SNYDER,
++                                       NUMERAL_RACIONAL_MODIFICADO,
++                                       NUMERAL_TABLA_07, NUMERAL_TC_TEMEZ,
+                                        RACIONAL_AREA_MAX_KM2,
+                                        RACIONAL_COEFICIENTE_SI,
+                                        REGISTRO_MINIMO_RECOMENDADO_ANIOS,
+@@ -111,6 +130,7 @@ from src.constantes_normativas import (DICK_PESCHKE, DISTRIBUCIONES_3_7_1,
+                                        TC_RETARDO_SCS_SI,
+                                        TC_TEMEZ_AREA_MAX_KM2,
+                                        TC_TEMEZ_RANGO_H, TC_TEMEZ_SI,
++                                       UMBRAL_ESCORRENTIA_SI,
+                                        UNIFORMIDAD_TEMEZ_SI)
+ from src.dominios import (HECTAREAS_POR_KM2, METROS_POR_KM, MINUTOS_POR_HORA,
+                           S_CAUCE_MAX)
+@@ -198,10 +218,30 @@ PROCEDIMIENTO_HIDROGRAMA = ("otro metodo de estimacion de caudales: el "
+                             "de Hidrologia, o el caudal declarado por el "
+                             "estudio hidrologico en la columna Q_m3s")
+ 
++# --- VE-2 (f) --- Desde 10 km2 el caudal de una obra sale del metodo
++# racional MODIFICADO (num. 3.12.2.1), hasta 770 km2; por encima, de un metodo
++# de hidrograma que el programa no implementa. El mensaje los nombra con el
++# rango y la pagina que el Manual les escribe.
++PROCEDIMIENTO_FUERA_DEL_RACIONAL_MODIFICADO = (
++    "un metodo de hidrograma, que el programa no implementa: el hidrograma "
++    "triangular del SCS, recomendado para cuencas de hasta 30 km2 "
++    f"({NUMERAL_HIDROGRAMA_SCS}); el de Snyder, de 30 a 30 000 km2 "
++    f"({NUMERAL_HIDROGRAMA_SNYDER}); o el modelo HEC-HMS ({NUMERAL_HEC_HMS}). "
++    "O el caudal declarado por el estudio hidrologico en la columna Q_m3s")
++
++# Los dos metodos de caudal de la Fase 1-bis, y la frontera entre ellos: la
++# del racional simple, «Muy usado para cuencas, A<10 Km2» (pag. impresa 49).
++METODO_RACIONAL = "racional"
++METODO_RACIONAL_MODIFICADO = "racional_modificado"
++
+ CODIGO_SERIE = "1b.1"
  CODIGO_AJUSTE = "1b.2"
  CODIGO_KS = "1b.3"
  CODIGO_FEN = "1b.3b"
@@ -149,7 +436,114 @@ index bcf241c..2d4b548 100644
  CODIGO_TC = "1b.4"
  CODIGO_INTENSIDAD = "1b.5"
  CODIGO_C = "1b.6"
-@@ -880,9 +884,10 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
+@@ -394,7 +434,8 @@ def tc_retardo_scs_min(*, L_m: float, CN: float, S: float, area_km2: float,
+ 
+ 
+ def tc_temez_h(*, L_km: float, S: float, area_km2: float,
+-               id_punto: Optional[str] = None) -> float:
++               id_punto: Optional[str] = None,
++               procedimiento: Optional[str] = None) -> float:
+     """
+     Temez, ecuacion (30) del num. 3.12.2.1 (pag. impresa 51):
+     Tc = 0.3 · (L / S^0.25)^0.76, Tc en HORAS, L en KM, S en m/m.
+@@ -402,6 +443,12 @@ def tc_temez_h(*, L_km: float, S: float, area_km2: float,
+     El metodo del que la formula es pieza vale para areas menores de 770 km2
+     y Tc de 0.25 a 24 horas: fuera de eso NO se evalua, sin criterio que lo
+     relaje, porque aqui la fuente si escribe un rango de aplicacion.
++
++    `procedimiento` (VE-2): lo que el mensaje de un Tc fuera de rango ofrece
++    como remedio. Por omision, otro metodo de tiempo de concentracion (el uso
++    hibrido, por debajo de 10 km2); el metodo racional modificado completo
++    pasa los de hidrograma, porque desde 10 km2 otra formula de Tc no es
++    remedio.
+     """
+     if not area_km2 < TC_TEMEZ_AREA_MAX_KM2:
+         raise _no_evaluable(
+@@ -419,10 +466,11 @@ def tc_temez_h(*, L_km: float, S: float, area_km2: float,
+             f"la formula de Temez da Tc = {tc_h:.3f} h y el Manual la acota "
+             f"a tiempos de concentracion de {minimo:g} a {maximo:g} horas "
+             "(num. 3.12.2.1)",
+-            "otro metodo de tiempo de concentracion en la columna "
+-            "`metodo_tc` del CSV de cuencas "
+-            f"({', '.join(m for m in METODOS_TC if m != TC_METODO_TEMEZ)}), "
+-            "o el caudal declarado en Q_m3s",
++            procedimiento or (
++                "otro metodo de tiempo de concentracion en la columna "
++                "`metodo_tc` del CSV de cuencas "
++                f"({', '.join(m for m in METODOS_TC if m != TC_METODO_TEMEZ)}), "
++                "o el caudal declarado en Q_m3s"),
+             id_punto)
+     return tc_h
+ 
+@@ -465,6 +513,7 @@ def _juicio_de_poblacion(metodo: str, cita: str, aviso: Optional[str], *,
+ 
+ 
+ def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
++                            racional_modificado: bool = False,
+                             ) -> Tuple[float, PasoDeMemoria, Tuple[str, ...]]:
+     """
+     El tiempo de concentracion de la cuenca, en MINUTOS, por el metodo que su
+@@ -472,7 +521,10 @@ def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
+     y Tabla N 05; num. 3.12.2.1 para Temez).
+ 
+     `C` es el coeficiente de escorrentia del metodo racional, que solo la
+-    formula de la FAA usa.
++    formula de la FAA usa. `racional_modificado` (VE-2): el caudal de la
++    cuenca sale del metodo racional modificado completo, del que la formula
++    de Temez es la ecuacion (30); entonces no hay uso hibrido que declarar,
++    y un Tc fuera de 0.25-24 h remite a los metodos de hidrograma.
+     """
+     metodo = cuenca.metodo_tc
+     L = Magnitud("L", cuenca.L_cauce_m, "m",
+@@ -581,7 +633,10 @@ def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
+     elif metodo == TC_METODO_TEMEZ:
+         tc_h = tc_temez_h(L_km=cuenca.L_cauce_m / METROS_POR_KM,
+                           S=cuenca.S_cauce_cuenca, area_km2=cuenca.area_km2,
+-                          id_punto=cuenca.id)
++                          id_punto=cuenca.id,
++                          procedimiento=(
++                              PROCEDIMIENTO_FUERA_DEL_RACIONAL_MODIFICADO
++                              if racional_modificado else None))
+         tc = tc_h * MINUTOS_POR_HORA
+         formula = ("Tc = 0.3 · (L / S^0.25)^0.76   [horas; L en km, S en m/m]"
+                    " ; tc = 60 · Tc [min]")
+@@ -603,15 +658,26 @@ def tiempo_de_concentracion(cuenca: Cuenca, *, C: Optional[float] = None,
+             tipo=TipoDeVeredicto.CUMPLE,
+             explicacion="el tiempo de concentracion y el area estan dentro "
+                         "del rango del metodo")
+-        notas.append(
+-            "USO HIBRIDO, declarado. Esta formula no es una fila de la Tabla "
+-            "N 05: es la del tiempo de concentracion del metodo racional "
+-            "modificado (num. 3.12.2.1), y el caudal de este punto se "
+-            "calcula con la ecuacion (28) del metodo racional simple. De "
+-            "aquel metodo se toma el tiempo de concentracion y, si el "
+-            f"criterio '{CRITERIO_K_TEMEZ}' lo manda, el coeficiente de "
+-            f"uniformidad K (paso {CODIGO_RACIONAL}); no su intensidad ni su "
+-            "coeficiente de escorrentia por numero de curva.")
++        if racional_modificado:
++            notas.append(
++                "Esta formula no es una fila de la Tabla N 05: es la "
++                "ecuacion (30) del metodo racional modificado (num. "
++                "3.12.2.1), que es el metodo con que se calcula el caudal de "
++                f"esta cuenca de {cuenca.area_km2:g} km2. No hay uso hibrido: "
++                "la intensidad, el coeficiente de escorrentia y el "
++                "coeficiente de uniformidad son los del mismo metodo (pasos "
++                f"{CODIGO_INTENSIDAD} a {CODIGO_RACIONAL}).")
++        else:
++            notas.append(
++                "USO HIBRIDO, declarado. Esta formula no es una fila de la "
++                "Tabla N 05: es la del tiempo de concentracion del metodo "
++                "racional modificado (num. 3.12.2.1), y el caudal de este "
++                "punto se calcula con la ecuacion (28) del metodo racional "
++                "simple. De aquel metodo se toma el tiempo de concentracion "
++                f"y, si el criterio '{CRITERIO_K_TEMEZ}' lo manda, el "
++                f"coeficiente de uniformidad K (paso {CODIGO_RACIONAL}); no "
++                "su intensidad ni su coeficiente de escorrentia por numero "
++                "de curva, que el metodo completo usa desde 10 km2.")
+     else:
+         raise DatoInvalidoError(
+             "metodo_tc", valor=metodo, id_punto=cuenca.id,
+@@ -880,9 +946,10 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
      años FEN no hay serie que ajustar (T-1, punto 3). Es la UNICA puerta
      publica al ajuste.
  
@@ -163,7 +557,7 @@ index bcf241c..2d4b548 100644
  
      SE DETIENE TAMBIEN, con `MetodoNoEvaluableError`, cuando `serie_sin_fen`
      da MENOS lluvia que la serie completa: la hoja de ruta manda adoptar el
-@@ -1281,7 +1286,81 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
+@@ -1281,7 +1348,81 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
          umbral=umbral_fen, veredicto=veredicto_fen,
          nota_del_proyecto=nota_fen)
      return (adoptado, evaluados, tratamiento,
@@ -246,20 +640,379 @@ index bcf241c..2d4b548 100644
  
  
  # ===========================================================================
+@@ -1763,6 +1904,13 @@ def caudal_declarado(*, Q_m3s: float, de_donde: str,
+ def _caudal_calculado(cuenca: Cuenca, serie: SerieDeEstacion, TR: float, *,
+                       de_cuneta: bool) -> CaudalDeDiseno:
+     """El calculo comun de `caudal_de_diseno` y `caudal_de_aporte_cuneta`."""
++    # --- VE-2 (f) --- Desde 10 km2 el caudal de una OBRA sale del metodo
++    # racional modificado completo (num. 3.12.2.1). El aporte de una cuneta
++    # no: el num. 4.1.2.1 b) escribe la ecuacion del racional simple, y un
++    # area tributaria de 10 km2 no es una cuneta; sigue con su limite.
++    if not de_cuneta and \
++            metodo_de_caudal(cuenca.area_km2) == METODO_RACIONAL_MODIFICADO:
++        return _caudal_racional_modificado(cuenca, serie, TR)
+     # El area se comprueba ANTES de ajustar nada: si el metodo no aplica a
+     # esta cuenca, lo demas no hace falta.
+     exigir_alcance_del_racional(cuenca.area_km2, cuenca.id)
+@@ -1907,6 +2055,343 @@ def _caudal_calculado(cuenca: Cuenca, serie: SerieDeEstacion, TR: float, *,
+         metodo_tc=cuenca.metodo_tc, duracion_min=d_min, K_uniformidad=K)
+ 
+ 
++# ===========================================================================
++# 5-bis. Metodo racional modificado, de 10 a 770 km2 (num. 3.12.2.1) — VE-2
++# ===========================================================================
++
++def metodo_de_caudal(area_km2: float) -> str:
++    """
++    Con que metodo se calcula el caudal de una obra, por su area (VE-2,
++    VE1-02 (f), ficha VE2-F). Por debajo de 10 km2 el racional simple de
++    T-1 (num. 3.12.2, «Muy usado para cuencas, A<10 Km2», pag. impresa 49);
++    desde 10 km2 el racional modificado (num. 3.12.2.1), que el Manual acota
++    a areas menores de 770 km2. Los dos rangos se SOLAPAN por debajo de
++    10 km2 y el Manual no dice cual usar ahi: que la frontera entre los dos
++    sea esos 10 km2 es lectura del proyecto, la que deja intacto todo lo que
++    T-1 calculaba. La condicion va en positivo, de modo que un NaN cae en el
++    modificado y su limite de area lo detiene.
++    """
++    if area_km2 < RACIONAL_AREA_MAX_KM2:
++        return METODO_RACIONAL
++    return METODO_RACIONAL_MODIFICADO
++
++
++def exigir_alcance_del_racional_modificado(area_km2: float,
++                                           id_punto: Optional[str] = None,
++                                           ) -> None:
++    """
++    El limite de area del metodo racional modificado (num. 3.12.2.1, pag.
++    impresa 51): «áreas menores de 770 km2», desigualdad ESTRICTA. Desde ahi
++    lanza `MetodoNoEvaluableError` nombrando los metodos de hidrograma que el
++    Manual describe para cuencas mayores y que el programa NO implementa.
++    """
++    if not area_km2 < TC_TEMEZ_AREA_MAX_KM2:
++        raise _no_evaluable(
++            "Q",
++            f"el metodo racional modificado vale para areas menores de "
++            f"{TC_TEMEZ_AREA_MAX_KM2:g} km2 ({NUMERAL_TC_TEMEZ}) y la cuenca "
++            f"tiene {area_km2:g} km2",
++            PROCEDIMIENTO_FUERA_DEL_RACIONAL_MODIFICADO, id_punto)
++
++
++def factor_reductor_por_area(area_km2: float) -> float:
++    """
++    El factor reductor KA de la ecuacion (32) del num. 3.12.2.1 (pag. impresa
++    51): KA = 1 – (log10 A/15), A en km2, leido como 1 − log10(A)/15 (la
++    `Interpretacion` de la cita MC_HHD.3.12.2.1#KA dice por que).
++    """
++    return 1 - math.log10(area_km2 / FACTOR_REDUCTOR_AREA_SI["divisor"])
++
++
++def intensidad_racional_modificado_mm_h(*, P_mm: float, Tc_h: float) -> float:
++    """
++    La intensidad del metodo racional modificado, ecuacion (34) del num.
++    3.12.2.1 (pag. impresa 52):
++
++        I = (P/24) · (11)^((28^0.1 − Tc^0.1)/(28^0.1 − 1))
++
++    P = precipitacion maxima corregida sobre la cuenca en mm (ecuacion 33),
++    Tc en HORAS, I en mm/h. El 11 esta escrito en la ecuacion, fijo: la
++    pagina no le da nombre, mapa ni tabla por region.
++    """
++    k = INTENSIDAD_RACIONAL_MODIFICADO_SI
++    referencia = k["horas_de_referencia"] ** k["exponente"]
++    exponente = (referencia - Tc_h ** k["exponente"]) / (referencia - 1)
++    return P_mm / k["horas_del_dia"] * k["factor"] ** exponente
++
++
++def umbral_de_escorrentia_mm(CN: float) -> float:
++    """
++    El umbral de escorrentia de la ecuacion (35), en mm: Po = (5000/CN) − 50
++    (num. 3.12.2.1, pag. impresa 52). Con CN = 100 vale 0.
++    """
++    k = UMBRAL_ESCORRENTIA_SI
++    return k["numerador"] / CN - k["resta"]
++
++
++def _c_de_la_35(lluvia_mm: float, Po_mm: float) -> float:
++    """La aritmetica de la ecuacion (35), con la lluvia que se le pase."""
++    k = COEFICIENTE_RACIONAL_MODIFICADO
++    return ((lluvia_mm - Po_mm) * (lluvia_mm + k["suma_numerador"] * Po_mm)
++            / (lluvia_mm + k["suma_denominador"] * Po_mm) ** 2)
++
++
++def coeficiente_racional_modificado(*, Pd_mm: float, CN: float,
++                                    id_punto: Optional[str] = None) -> float:
++    """
++    El coeficiente de escorrentia del metodo racional modificado, ecuacion
++    (35) del num. 3.12.2.1 (pag. impresa 52):
++
++        C = (Pd − Po)(Pd + 23·Po) / (Pd + 11·Po)^2 ,  Po = (5000/CN) − 50
++
++    Pd es la precipitacion maxima DIARIA, la que la ecuacion escribe, y NO la
++    P corregida por el area de la (33): se aplica como esta escrita, sin
++    corregirla, y el paso lo declara (ficha VE2-F). La «p» minuscula del
++    denominador se lee Pd (`Interpretacion` de MC_HHD.3.12.2.1#C).
++
++    Si la lluvia no pasa del umbral la ecuacion da un coeficiente nulo o
++    negativo, y el Manual no dice que hacer: `MetodoNoEvaluableError`, no un
++    cero que dejaria la obra sin caudal.
++    """
++    Po = umbral_de_escorrentia_mm(CN)
++    if not Pd_mm > Po:
++        raise _no_evaluable(
++            "C",
++            f"la precipitacion maxima diaria de diseño, Pd = {Pd_mm:.1f} mm, "
++            f"no supera el umbral de escorrentia Po = {Po:.1f} mm que el "
++            f"numero de curva CN = {CN:g} da: la ecuacion (35) del num. "
++            "3.12.2.1 da un coeficiente de escorrentia nulo o negativo, y el "
++            "Manual no dice que hacer con el",
++            "revisar el numero de curva de la cuenca (columna CN, Tabla N 07)"
++            ", o el caudal declarado por el estudio hidrologico en la "
++            "columna Q_m3s",
++            id_punto)
++    return _c_de_la_35(Pd_mm, Po)
++
++
++def caudal_racional_modificado(*, C: float, I_mm_h: float, area_km2: float,
++                               K: float, id_punto: Optional[str] = None,
++                               ) -> float:
++    """
++    Q = 0,278 · C · I · A · K, ecuacion (29) del num. 3.12.2.1 (pag. impresa
++    51): I en mm/h, A en km2, Q en m3/s, K el coeficiente de uniformidad de
++    la (31). Desde 770 km2 no se evalua
++    (`exigir_alcance_del_racional_modificado`).
++    """
++    exigir_alcance_del_racional_modificado(area_km2, id_punto)
++    return RACIONAL_COEFICIENTE_SI * C * I_mm_h * area_km2 * K
++
++
++def _caudal_racional_modificado(cuenca: Cuenca, serie: SerieDeEstacion,
++                                TR: float) -> CaudalDeDiseno:
++    """
++    El caudal de diseño de una obra de 10 a 770 km2 por el metodo racional
++    modificado completo (num. 3.12.2.1, ecuaciones 29 a 35; VE-2, ficha
++    VE2-F), por la MISMA puerta del criterio 'homogeneidad_serie_fen' que el
++    racional simple (`precipitacion_de_diseno`).
++
++    Lo que se comprueba ANTES de ajustar nada: el area (menor de 770 km2),
++    que el tiempo de concentracion sea el del metodo --su ecuacion (30),
++    `metodo_tc` = temez-- y que la cuenca traiga su numero de curva (columna
++    CN, la MISMA columna opcional de la ecuacion de retardo, REUSADA: desde
++    10 km2 la exige la ecuacion 35).
++
++    Lo que NO lee: la Tabla N 08 (el metodo da su propio C), la relacion
++    intensidad-duracion (su intensidad es la ecuacion 34), la duracion
++    minima de la lluvia (el metodo acota Tc desde 0.25 h) ni el criterio
++    'coeficiente_uniformidad_temez' (K es parte de la ecuacion 29, no una
++    eleccion: el criterio rige solo el uso hibrido por debajo de 10 km2).
++    """
++    exigir_alcance_del_racional_modificado(cuenca.area_km2, cuenca.id)
++    if cuenca.metodo_tc != TC_METODO_TEMEZ:
++        raise _no_evaluable(
++            "tc",
++            f"desde {RACIONAL_AREA_MAX_KM2:g} km2 el caudal se calcula por el "
++            f"metodo racional modificado ({NUMERAL_RACIONAL_MODIFICADO}), "
++            "cuyo tiempo de concentracion es el de su ecuacion (30), la de "
++            f"Temez; la fila de la cuenca declara metodo_tc = "
++            f"{cuenca.metodo_tc}",
++            f"declarar metodo_tc = {TC_METODO_TEMEZ} en la fila de la cuenca "
++            "(con ajuste_kirpich vacio), o el caudal declarado en Q_m3s",
++            cuenca.id)
++    if cuenca.CN is None:
++        raise DatoFaltanteError(
++            "CN", id_punto=cuenca.id,
++            detalle=f"desde {RACIONAL_AREA_MAX_KM2:g} km2 el caudal se calcula "
++                    "por el metodo racional modificado, cuyo coeficiente de "
++                    "escorrentia --ecuacion (35) del num. 3.12.2.1-- pide el "
++                    "numero de curva de la cuenca. Es la columna opcional CN "
++                    "del CSV de cuencas (la misma de la ecuacion de retardo); "
++                    "la lee el estudio hidrologico en la Tabla N 07 "
++                    f"({NUMERAL_TABLA_07}) y el programa no tiene tabla de la "
++                    "que leerla")
++    tc, paso_tc, avisos_tc = tiempo_de_concentracion(cuenca,
++                                                     racional_modificado=True)
++    adoptado, evaluados, tratamiento, pasos_lluvia, avisos_lluvia = \
++        precipitacion_de_diseno(serie, TR, id_punto=cuenca.id)
++    Tc_h = tc / MINUTOS_POR_HORA
++    Pd = adoptado.P_TR_mm
++    A_km2, CN = cuenca.area_km2, cuenca.CN
++    KA = factor_reductor_por_area(A_km2)
++    P = KA * Pd
++    I = intensidad_racional_modificado_mm_h(P_mm=P, Tc_h=Tc_h)
++    Po = umbral_de_escorrentia_mm(CN)
++    C = coeficiente_racional_modificado(Pd_mm=Pd, CN=CN, id_punto=cuenca.id)
++    K = coeficiente_de_uniformidad(Tc_h)
++    Q = caudal_racional_modificado(C=C, I_mm_h=I, area_km2=A_km2, K=K,
++                                   id_punto=cuenca.id)
++    if not (math.isfinite(Q) and Q > 0):
++        raise LimiteNumericoError(
++            "Q calculado", valor=Q, id_punto=cuenca.id,
++            motivo=f"el caudal no es un numero positivo con C = {C:g}, "
++                   f"I = {I:g} mm/h, A = {A_km2:g} km2 y K = {K:g}")
++
++    cita_metodo = _REG.cita("MC_HHD.3.12.2.1#METODO")
++    A = Magnitud("A", A_km2, "km2", f"columna area_km2 de {cuenca.origen}",
++                 cifras=CIFRAS_FINA)
++    Pd_mag = Magnitud("Pd", Pd, "mm",
++                      f"paso {CODIGO_AJUSTE}: la precipitacion maxima en 24 "
++                      "horas del periodo de retorno de diseño, que el "
++                      "programa toma por la «Precitación máxima diaria» del "
++                      "metodo", cifras=CIFRAS_MAGNITUD)
++    Tc_mag = Magnitud("Tc", Tc_h, "h", f"paso {CODIGO_TC}, de minutos a horas",
++                      cifras=CIFRAS_FINA)
++    sin_veredicto = Veredicto(
++        tipo=TipoDeVeredicto.SIN_VEREDICTO,
++        explicacion="calculo de un factor del metodo, no verificacion")
++
++    paso_i = paso(
++        "FH.RM_INTENSIDAD", codigo=CODIGO_INTENSIDAD,
++        que=("Intensidad del metodo racional modificado: precipitacion "
++             "corregida por el area y ecuacion (34)"),
++        formula=("KA = 1 − log10(A)/15 ; P = KA · Pd ; I = (P/24) · "
++                 "11^((28^0.1 − Tc^0.1)/(28^0.1 − 1))   [A en km2, P y Pd en "
++                 "mm, Tc en horas, I en mm/h]"),
++        formula_cita_id="MC_HHD.3.12.2.1#I",
++        citas_textuales=("MC_HHD.3.12.2.1#METODO", "MC_HHD.3.12.2.1#KA",
++                         "MC_HHD.3.12.2.1#P", "MC_HHD.3.12.2.1#I"),
++        sustitucion=(
++            A,
++            Magnitud("KA", KA, "", "factor reductor por area, ecuacion (32)",
++                     cifras=CIFRAS_FINA),
++            Pd_mag,
++            Magnitud("P", P, "mm", "precipitacion maxima corregida sobre la "
++                     "cuenca, ecuacion (33)", cifras=CIFRAS_MAGNITUD),
++            Tc_mag),
++        resultado=Magnitud("I", I, "mm/h", "intensidad de diseño, ecuacion "
++                           "(34)", cifras=CIFRAS_MAGNITUD),
++        veredicto=sin_veredicto,
++        nota_del_proyecto=(
++            f"{_lectura_del_proyecto('MC_HHD.3.12.2.1#KA')} El 11 de la "
++            "ecuacion (34) esta escrito en la pagina, fijo: el Manual no le "
++            "da nombre, mapa ni tabla por region. La intensidad no sale de "
++            "la relacion intensidad-duracion de la Fase 1-bis (Dick y "
++            "Peschke o la Tabla N 04) sino de la ecuacion del metodo, y la "
++            "duracion es el tiempo de concentracion, que el metodo acota "
++            "desde 0.25 h."))
++
++    C_con_P = _c_de_la_35(P, Po)
++    texto_C_con_P = (f"{C_con_P:.3f}" if P > Po else
++                     "nulo o negativo (P no supera Po)")
++    paso_c = paso(
++        "FH.RM_C", codigo=CODIGO_C,
++        que=("Coeficiente de escorrentia del metodo racional modificado, por "
++             "el numero de curva"),
++        formula=("Po = 5000/CN − 50 ; C = (Pd − Po)·(Pd + 23·Po) / "
++                 "(Pd + 11·Po)^2   [Pd y Po en mm]"),
++        formula_cita_id="MC_HHD.3.12.2.1#C",
++        citas_textuales=("MC_HHD.3.12.2.1#C", "MC_HHD.3.11#T07"),
++        sustitucion=(
++            Magnitud("CN", CN, "", f"columna CN de {cuenca.origen}: numero de "
++                     "curva que el estudio hidrologico lee en la Tabla N 07",
++                     cifras=CIFRAS_MAGNITUD),
++            Pd_mag,
++            Magnitud("Po", Po, "mm", "umbral de escorrentia, (5000/CN) − 50",
++                     cifras=CIFRAS_MAGNITUD)),
++        resultado=Magnitud("C", C, "", "coeficiente de escorrentia, ecuacion "
++                           "(35)", cifras=CIFRAS_MAGNITUD),
++        veredicto=sin_veredicto,
++        nota_del_proyecto=(
++            "DECLARADO EN EL PUNTO DE USO. La ecuacion (35) escribe Pd, la "
++            "precipitacion maxima diaria, y no la P corregida por el area de "
++            "la ecuacion (33), que la (34) si usa: el programa la aplica "
++            "como esta escrita, sin corregirla. Con P = "
++            f"{P:.1f} mm en lugar de Pd = {Pd:.1f} mm el coeficiente seria "
++            f"{texto_C_con_P} en vez de {C:.3f}. "
++            f"{_lectura_del_proyecto('MC_HHD.3.12.2.1#C')} La Tabla N 08 no "
++            "entra: el metodo da su propio coeficiente, y las columnas "
++            "cobertura y suelo de la fila no se leen para esta cuenca."))
++
++    cita_rango = "MC_HHD.3.12.2.1#TC"
++    frontera = _REG.cita("MC_HHD.3.12.2#AREA")
++    paso_q = paso(
++        "FH.RM_CAUDAL", codigo=CODIGO_RACIONAL,
++        que="Caudal de diseño por el metodo racional modificado",
++        formula=("Q = 0.278 · C · I · A · K ; K = 1 + Tc^1.25 / (Tc^1.25 + 14)"
++                 "   [Q en m3/s, I en mm/h, A en km2, Tc en horas]"),
++        formula_cita_id="MC_HHD.3.12.2.1#K",
++        citas_textuales=("MC_HHD.3.12.2.1#K", "MC_HHD.3.12.2#AREA",
++                         "MC_HHD.3.12.3.2a#AREA", "MC_HHD.3.12.3.2b#AREA",
++                         "MC_HHD.3.12.4"),
++        sustitucion=(
++            Magnitud("C", C, "", f"paso {CODIGO_C}", cifras=CIFRAS_MAGNITUD),
++            Magnitud("I", I, "mm/h", f"paso {CODIGO_INTENSIDAD}",
++                     cifras=CIFRAS_MAGNITUD),
++            A, Tc_mag,
++            Magnitud("K", K, "", "coeficiente de uniformidad, ecuacion (31): "
++                     "parte de la ecuacion del metodo, no una eleccion",
++                     cifras=CIFRAS_FINA)),
++        resultado=Magnitud("Q", Q, "m3/s", "caudal de diseño",
++                           cifras=CIFRAS_MAGNITUD),
++        umbral=Umbral(
++            descripcion=("area maxima de cuenca del metodo racional "
++                         "modificado (exclusiva)"),
++            valor=TC_TEMEZ_AREA_MAX_KM2, unidad="km2", cita_id=cita_rango,
++            caracter=_caracter(cita_rango),
++            aplicacion="limite de validez: desde ese area el programa no "
++                       "evalua el metodo y nombra los de hidrograma, que no "
++                       "implementa (la fuente dice para que cuencas vale, "
++                       "no prohibe salir)"),
++        veredicto=Veredicto(
++            tipo=TipoDeVeredicto.CUMPLE,
++            margen=TC_TEMEZ_AREA_MAX_KM2 - A_km2, unidad="km2",
++            explicacion="el area de la cuenca esta dentro del alcance del "
++                        "metodo racional modificado"),
++        nota_del_proyecto=(
++            f"Metodo racional modificado ({cita_metodo.como_texto()}): "
++            f"«{cita_metodo.texto_literal.texto}». La frontera con el "
++            "racional simple es la de siempre: el Manual dice del racional "
++            f"«{frontera.texto_literal.texto}» ({frontera.como_texto()}), y "
++            "usar el modificado desde ahi y no por debajo es lectura del "
++            "proyecto --los dos rangos se solapan bajo 10 km2, donde sigue "
++            "el racional simple de T-1--. K va siempre: es parte de la "
++            "ecuacion (29); el criterio "
++            f"'{CRITERIO_K_TEMEZ}' rige solo el uso hibrido de la formula "
++            "de Temez por debajo de 10 km2."))
++    q, lamina, paso_qa = _paso_q_especifico(
++        Magnitud("Q", Q, "m3/s", f"paso {CODIGO_RACIONAL}",
++                 cifras=CIFRAS_MAGNITUD), A)
++    aviso_espana = (
++        f"El caudal de esta cuenca ({A_km2:g} km2) se calculo por el metodo "
++        "racional modificado, que el Manual describe asi: "
++        f"«{cita_metodo.texto_literal.texto}» ({cita_metodo.como_texto()}). "
++        "El Manual lo adopta para el Peru sin decir como se adapto; el "
++        "estudio hidrologico tiene que defender su uso en esta cuenca.")
++    return CaudalDeDiseno(
++        Q_m3s=Q, origen=ORIGEN_CAUDAL_CALCULADO,
++        leyenda=LEYENDA_CAUDAL_CALCULADO,
++        pasos=(*pasos_lluvia, paso_tc, paso_i, paso_c, paso_q, paso_qa),
++        avisos=(*avisos_lluvia, *avisos_tc, aviso_espana),
++        de_donde=(f"{cuenca.origen}; estacion «{serie.estacion}» de "
++                  f"{serie.origen}; metodo racional modificado (num. "
++                  "3.12.2.1)"),
++        TR_anios=TR, area_km2=A_km2, tc_min=tc, I_mm_h=I, C=C,
++        P24_TR_mm=Pd, distribucion=adoptado.distribucion,
++        tratamiento_fen=tratamiento, q_especifico_m3s_km2=q,
++        lamina_equivalente_mm_h=lamina, ajustes=evaluados,
++        metodo_tc=cuenca.metodo_tc, duracion_min=tc, K_uniformidad=K)
++
++
+ def caudal_de_diseno(cuenca: Cuenca, serie: SerieDeEstacion,
+                      TR: float) -> CaudalDeDiseno:
+     """
 diff --git a/src/normativa/citas.py b/src/normativa/citas.py
-index 9c0c1b8..4a3e901 100644
+index 9c0c1b8..309a672 100644
 --- a/src/normativa/citas.py
 +++ b/src/normativa/citas.py
-@@ -7134,6 +7134,67 @@ MC_HHD_3_4_REGISTRO = _cita(
+@@ -7134,6 +7134,68 @@ MC_HHD_3_4_REGISTRO = _cita(
            "el paso de la serie lo imprime como INDICADOR y no detiene."),
  )
  
 +# --- VE-2 (e) --- LA CONSISTENCIA DE LA SERIE: lo que el Manual manda evaluar
 +# y no dice como. Leidas por la sesion de VE-2 (2026-11-17) abriendo las dos
-+# paginas por TEXTO; desfase +3. El barrido de la revision normativa del
-+# dueño (doble masa, datos dudosos, outliers, K_n, WRC en todos los PDF del
-+# repositorio de normas) dio cero apariciones como procedimiento: el
-+# programa no tiene con que evaluarla y no se inventa un umbral. Las dos
++# paginas por TEXTO; desfase +3. La sesion busco «doble masa», «double
++# mass», «outlier» y «dudoso» en el Manual de Hidrologia, WSDOT, HEC-14,
++# HDS-5 (las dos ediciones), Puentes y DG-2018: cero apariciones, y
++# «consistencia» en el Manual solo esta en estas dos oraciones. El programa
++# no tiene con que evaluarla y no se inventa un umbral. Las dos
 +# citas sostienen el paso `FH.CONSISTENCIA` (un aviso sin umbral, el patron
 +# de `FH.Q_ESPECIFICO`).
 +FECHA_VE2 = "2026-11-17"
@@ -318,11 +1071,287 @@ index 9c0c1b8..4a3e901 100644
  MC_HHD_3_7_1 = _cita(
      id="MC_HHD.3.7.1",
      fuente_id="MC_HHD",
+@@ -7579,10 +7641,12 @@ MC_HHD_3_12_2_1_TC = _cita(
+           "(m/m)»; Tc sale en HORAS (lo dicen el rango de arriba y el "
+           "apartado B). Es la formula de Temez, y vive AQUI y no en la "
+           "Tabla Nº 05. El rango de area y de Tc es el del metodo racional "
+-          "modificado entero, del que esta formula es una pieza: el "
+-          "proyecto toma SOLO la formula del tiempo de concentracion y le "
+-          "aplica ese rango como validez; no usa el resto del metodo "
+-          "(coeficiente de uniformidad, factor reductor, numero de curva)."),
++          "modificado entero, del que esta formula es una pieza. Por debajo "
++          "de 10 km2 el proyecto toma SOLO la formula del tiempo de "
++          "concentracion (y el K de MC_HHD.3.12.2.1#K, segun el criterio "
++          "'coeficiente_uniformidad_temez') y le aplica ese rango como "
++          "validez; desde VE-2, de 10 a 770 km2 el caudal se calcula con el "
++          "metodo ENTERO (ficha VE2-F) y este rango acota el metodo."),
+ )
+ 
+ MC_HHD_3_13 = _cita(
+@@ -7709,9 +7773,244 @@ MC_HHD_3_12_2_1_K = _cita(
+           "concentración (horas)». K es siempre mayor que 1 y crece con Tc "
+           "(1.01 a 0.25 h, 1.07 a 1 h, 1.79 a 24 h). El metodo trae ademas "
+           "su propia intensidad (ec. 34), su factor reductor por area (ec. "
+-          "32) y su coeficiente C por numero de curva (ec. 35), que el "
+-          "proyecto NO usa: toma la formula del tiempo de concentracion "
+-          "(ec. 30) y, con ella, este coeficiente."),
++          "32) y su coeficiente C por numero de curva (ec. 35). Hasta VE-2 "
++          "el proyecto NO los usaba: tomaba la formula del tiempo de "
++          "concentracion (ec. 30) y, con ella, este coeficiente. Desde VE-2 "
++          "(ficha VE2-F) el metodo ENTERO calcula el caudal de 10 a 770 km2; "
++          "por debajo de 10 km2 sigue el uso hibrido de T-1."),
++)
++
++# --- VE-2 (f) --- EL METODO RACIONAL MODIFICADO COMPLETO (num. 3.12.2.1) y
++# los limites de los metodos que el programa NO implementa. Leidas por la
++# sesion de VE-2 (2026-11-17): las formulas en la IMAGEN de las pags.
++# impresas 51 y 52 (PDF 54 y 55, render a 6x), porque la capa de texto las
++# parte en renglones sueltos («28 / 1.0 / 1.0 / 1.0 / 28 / 11 / * / 24 /
++# −»); los textos, por texto. Desfase +3. Lo que la ficha T1-08 decia y la
++# pagina no trae: NO hay mapa de isolineas del factor de torrencialidad;
++# el 11 esta escrito, fijo, dentro de la ecuacion (34).
++MC_HHD_3_12_2_1_METODO = _cita(
++    id="MC_HHD.3.12.2.1#METODO",
++    fuente_id="MC_HHD",
++    numeral="3.12.2.1",
++    titulo_numeral="Método Racional Modificado",
++    pagina_impresa="50",
++    pagina_pdf=53,
++    texto_literal=Verbatim(
++        texto=("Es el método racional según la formulación propuesta por "
++               "Témez (1987, 1991) adaptada para las condiciones climáticas "
++               "de España."),
++        pagina_pdf=53),
++    caracter=Caracter.DEFINICION,
++    sesion=VE2,
++    nota=("Primera oracion del numeral, al pie de la pag. impresa 50 (PDF "
++          "53). Sigue en la 51: «Y permite estimar de forma sencilla "
++          "caudales punta en cuencas de drenaje naturales con áreas menores "
++          "de 770 km2 y con tiempos de concentración (Tc) de entre 0.25 y 24 "
++          "horas» (MC_HHD.3.12.2.1#TC). «adaptada para las condiciones "
++          "climáticas de España» es un hecho de la fuente que el caudal "
++          "calculado por este metodo imprime como aviso: el Manual lo adopta "
++          "para el Peru sin decir como se adapto."),
++)
++
++MC_HHD_3_12_2_1_KA = _cita(
++    id="MC_HHD.3.12.2.1#KA",
++    fuente_id="MC_HHD",
++    numeral="3.12.2.1",
++    titulo_numeral="Método Racional Modificado",
++    pagina_impresa="51",
++    pagina_pdf=54,
++    pagina_pdf_titulo=53,
++    texto_literal=Verbatim(texto="KA =   1 – (log10 A/15)", pagina_pdf=54),
++    caracter=Caracter.DEFINICION,
++    metodo=AMBOS,
++    sesion=VE2,
++    nota=("Ecuacion (32), apartado «C) Coeficiente de simultaneidad  o "
++          "Factor reductor (kA)», con «A : Área de la cuenca (Km2)» al "
++          "principio de la pag. impresa 52. En la imagen y en el texto la "
++          "pagina escribe lo mismo, sin parentesis alrededor de log10 A ni "
++          "alrededor de A/15."),
++    interpretacion=Interpretacion(
++        texto=("Se lee KA = 1 − log10(A)/15: el logaritmo de A, dividido "
++               "entre 15."),
++        en_contra=(
++            "la pagina no separa con parentesis el logaritmo del cociente: "
++            "«(log10 A/15)» admite tambien la lectura 1 − log10(A/15)",
++        ),
++        a_favor=(
++            "con 1 − log10(A/15) el factor valdria 1.18 a 10 km2 y 1 a "
++            "15 km2: pasaria de 1, y el apartado lo llama «Factor "
++            "reductor»; con la lectura adoptada vale 0.93 a 10 km2 y 0.81 a "
++            "770 km2, y reduce la lluvia en todo el rango del metodo",
++            "la ecuacion (33) lo usa para obtener la «Precipitación máxima "
++            "corregida sobre la cuenca», que es la lluvia puntual REDUCIDA "
++            "por el area",
++        )),
++)
++
++MC_HHD_3_12_2_1_P = _cita(
++    id="MC_HHD.3.12.2.1#P",
++    fuente_id="MC_HHD",
++    numeral="3.12.2.1",
++    titulo_numeral="Método Racional Modificado",
++    pagina_impresa="52",
++    pagina_pdf=55,
++    pagina_pdf_titulo=53,
++    texto_literal=Verbatim(
++        texto="Precipitación máxima corregida sobre la cuenca (P)",
++        pagina_pdf=55),
++    caracter=Caracter.DEFINICION,
++    metodo=AMBOS,
++    sesion=VE2,
++    nota=("Apartado D), ecuacion (33), vista en imagen: P = kA · Pd, con "
++          "«kA : Factor reductor» y «Pd : Precitación máxima diaria (mm)» "
++          "(la errata «Precitación» es de la pagina). El programa toma por "
++          "Pd la precipitacion maxima en 24 horas del periodo de retorno de "
++          "diseño, la del ajuste de la serie (num. 3.7 y 3.8.1)."),
++)
++
++MC_HHD_3_12_2_1_I = _cita(
++    id="MC_HHD.3.12.2.1#I",
++    fuente_id="MC_HHD",
++    numeral="3.12.2.1",
++    titulo_numeral="Método Racional Modificado",
++    pagina_impresa="52",
++    pagina_pdf=55,
++    pagina_pdf_titulo=53,
++    texto_literal=Verbatim(texto="Intensidad de Precipitación  ( I )",
++                           pagina_pdf=55),
++    caracter=Caracter.DEFINICION,
++    metodo=AMBOS,
++    sesion=VE2,
++    nota=("Apartado E), ecuacion (34), vista en imagen: I = (P/24) · "
++          "(11)^((28^0.1 − Tc^0.1)/(28^0.1 − 1)), con «P : Precitación "
++          "máxima corregida (mm)» y «Tc : Tiempo de concentración (horas)». "
++          "I sale en mm/h: P/24 es la intensidad media del dia. El 11 esta "
++          "ESCRITO en la ecuacion, fijo: la pagina no le da nombre, ni mapa, "
++          "ni tabla por region. Con Tc = 1 h el exponente vale 1 y la "
++          "intensidad es 11 veces la media de 24 horas; con Tc = 24 h, casi "
++          "la media."),
++)
++
++MC_HHD_3_12_2_1_C = _cita(
++    id="MC_HHD.3.12.2.1#C",
++    fuente_id="MC_HHD",
++    numeral="3.12.2.1",
++    titulo_numeral="Método Racional Modificado",
++    pagina_impresa="52",
++    pagina_pdf=55,
++    pagina_pdf_titulo=53,
++    texto_literal=Verbatim(texto="Coeficiente de Escorrentía ( C )",
++                           pagina_pdf=55),
++    caracter=Caracter.DEFINICION,
++    metodo=AMBOS,
++    sesion=VE2,
++    nota=("Apartado F), ecuacion (35), vista en imagen: C = (Pd − Po) · "
++          "(Pd + 23·Po) / (pd + 11·Po)^2, con «Pd : Precitación máxima "
++          "diaria (mm)», «Po : Umbral de escorrentía = (5000/CN) − 50» y «CN "
++          ": Número de curva». La (35) escribe Pd, la lluvia diaria SIN el "
++          "factor reductor, y no la P corregida de la (33) que si usa la "
++          "(34): el programa la aplica como esta escrita, sin corregirla, y "
++          "lo declara en el paso (ficha VE2-F). La ec. (29) define C como "
++          "«Coeficiente de escorrentía para el intervalo en el que se "
++          "produce I» (pag. impresa 51)."),
++    interpretacion=Interpretacion(
++        texto=("La «p» minuscula del denominador de la (35) se lee Pd, la "
++               "precipitacion maxima diaria."),
++        en_contra=(
++            "la imagen escribe «pd» con p minuscula en el denominador y "
++            "«Pd» con mayuscula en el numerador",
++        ),
++        a_favor=(
++            "el «Donde» de la (35) lista solo Pd, Po y CN: no hay una "
++            "variable pd distinta",
++            "con Pd en los tres sitios, C vale 1 cuando Po = 0 (CN = 100, "
++            "superficie impermeable) y 0 cuando Pd = Po, que son los dos "
++            "extremos fisicos del coeficiente",
++        )),
++)
++
++MC_HHD_T07 = _cita(
++    id="MC_HHD.3.11#T07",
++    fuente_id="MC_HHD",
++    numeral="3.11",
++    titulo_numeral="Precipitación total y efectiva",
++    pagina_impresa="47",
++    pagina_pdf=50,
++    pagina_pdf_titulo=45,
++    texto_literal=Verbatim(
++        texto=("Números de curva de escorrentía para usos selectos de "
++               "tierra agrícola, suburbana y urbana"),
++        pagina_pdf=50),
++    caracter=Caracter.DEFINICION,
++    sesion=VE2,
++    nota=("Titulo de la Tabla Nº 07 (pag. impresa 47, PDF 50), que sigue: "
++          "«(condiciones antecedentes de humedad II, Ia = 0.2s)». La remite "
++          "la pag. impresa 46: «Los valores de CN para varios tipos de uso "
++          "de la tierra en estos tipos de suelos se muestran en la Tabla Nº "
++          "07». El programa NO la transcribe: el numero de curva de cada "
++          "cuenca es un dato del estudio hidrologico (columna CN del CSV de "
++          "cuencas, [S]), leido en esta tabla por grupo hidrologico de "
++          "suelo y uso de la tierra."),
++)
++
++MC_HHD_3_12_3_2A_AREA = _cita(
++    id="MC_HHD.3.12.3.2a#AREA",
++    fuente_id="MC_HHD",
++    numeral="3.12.3.2 a)",
++    titulo_numeral="Hidrogramas sintéticos",
++    pagina_impresa="56",
++    pagina_pdf=59,
++    pagina_pdf_titulo=57,
++    texto_literal=Verbatim(
++        texto=("Este método es recomendable tan solo para cuencas de hasta "
++               "a 30 Km2."),
++        pagina_pdf=59),
++    caracter=Caracter.RECOMENDACION,
++    sesion=VE2,
++    nota=("Apartado «a)  Hidrograma sintético triangular del SCS» (abre en "
++          "la pag. impresa 55, PDF 58). El programa NO implementa este "
++          "metodo: se nombra con su rango en el mensaje de una cuenca que "
++          "el racional modificado no cubre."),
++)
++
++MC_HHD_3_12_3_2B_AREA = _cita(
++    id="MC_HHD.3.12.3.2b#AREA",
++    fuente_id="MC_HHD",
++    numeral="3.12.3.2 b)",
++    titulo_numeral="Hidrogramas sintéticos",
++    pagina_impresa="58",
++    pagina_pdf=61,
++    pagina_pdf_titulo=57,
++    texto_literal=Verbatim(
++        texto="El rango de aplicación de este método es de 30 a 30 000 Km2",
++        pagina_pdf=61),
++    caracter=Caracter.APROXIMACION,
++    sesion=VE2,
++    nota=("Apartado «b) Método Hidrograma Unitario Sintético de Snyder» "
++          "(abre en la pag. impresa 57, PDF 60). El programa NO lo "
++          "implementa: se nombra con su rango en el mensaje de una cuenca "
++          "de 770 km2 o mas, o con un tiempo de concentracion fuera de "
++          "0.25-24 h."),
++)
++
++MC_HHD_3_12_4 = _cita(
++    id="MC_HHD.3.12.4",
++    fuente_id="MC_HHD",
++    numeral="3.12.4",
++    titulo_numeral=("Sistema de Modelamiento Hidrológico (HMS-Hydrologic "
++                    "Modeling System)"),
++    pagina_impresa="58",
++    pagina_pdf=61,
++    texto_literal=Verbatim(
++        texto=("Con el modelo HEC-HMS, se puede simular la respuesta que "
++               "tendrá la cuenca de un río en su escurrimiento superficial, "
++               "como producto de la precipitación"),
++        pagina_pdf=61),
++    caracter=Caracter.DEFINICION,
++    sesion=VE2,
++    nota=("El numeral describe el programa del HEC y no le escribe rango de "
++          "area. El programa NO lo implementa: se nombra en el mensaje de "
++          "una cuenca que el racional modificado no cubre."),
+ )
+ 
+ MC_HHD_3_12_5_PIURA = _cita(
 diff --git a/src/normativa/fundamentos.py b/src/normativa/fundamentos.py
-index ba08f44..f6b0595 100644
+index ba08f44..7ca44dc 100644
 --- a/src/normativa/fundamentos.py
 +++ b/src/normativa/fundamentos.py
-@@ -1357,6 +1357,38 @@ H_Q_ESPECIFICO = _fundamento(
+@@ -1318,7 +1318,9 @@ H_RACIONAL = _fundamento(
+         "pasa de mm/h por km² a m³/s. El metodo supone lluvia uniforme "
+         "sobre toda la cuenca durante el tiempo de concentracion, y eso solo "
+         "es razonable en cuencas chicas: el Manual lo situa por debajo de "
+-        "10 km², y por encima el programa no lo evalua. Para una cuneta es "
++        "10 km², y por encima el programa no lo evalua (desde 10 km² el "
++        "caudal de una obra sale del metodo racional modificado, con sus "
++        "propios pasos). Para una cuneta es "
+         "la misma expresion, escrita C·I·A/3.6. Cuando el tiempo de "
+         "concentracion sale de la formula de Temez, que es una pieza del "
+         "metodo racional modificado, el caudal lleva ademas el coeficiente "
+@@ -1357,6 +1359,130 @@ H_Q_ESPECIFICO = _fundamento(
          "por hora de escorrentia."),
  )
  
@@ -358,14 +1387,106 @@ index ba08f44..f6b0595 100644
 +        "caudal de diseño colgaba de el sin aviso."),
 +)
 +
++# --- VE-2 (f) --- EL METODO RACIONAL MODIFICADO COMPLETO, de 10 a 770 km2:
++# tres pasos con fundamento propio (la intensidad, el coeficiente y el
++# caudal), que sustituyen a FH.INTENSIDAD, FH.C y FH.RACIONAL cuando el area
++# de la cuenca sale del racional simple. Los codigos de paso son los mismos
++# (1b.5, 1b.6, 1b.7): la memoria los lee en el mismo orden. Ficha VE2-F.
++H_RM_INTENSIDAD = _fundamento(
++    id="FH.RM_INTENSIDAD",
++    fase=FH,
++    que_paso=("Intensidad del metodo racional modificado: factor reductor por "
++              "area, precipitacion corregida sobre la cuenca y ecuacion (34)"),
++    por_que=(
++        "Desde 10 km² la lluvia ya no cae igual sobre toda la cuenca ni dura "
++        "lo mismo en todas partes, y el racional simple deja de valer: el "
++        "Manual lo situa por debajo de esa area. Para cuencas de hasta "
++        "770 km² da el metodo racional modificado, que corrige las dos "
++        "cosas. Primero reduce la lluvia maxima diaria por el tamaño de la "
++        "cuenca --cuanto mayor el area, menos probable que toda ella reciba "
++        "el maximo a la vez-- con el factor KA de la ecuacion (32), y de "
++        "ahi la precipitacion corregida P de la (33). Despues lleva esa "
++        "lluvia a la intensidad de una duracion igual al tiempo de "
++        "concentracion con su propia relacion, la (34), y no con Dick y "
++        "Peschke ni con la Tabla Nº 04. El metodo esta adaptado a las "
++        "condiciones climaticas de España, y el Manual lo adopta sin decir "
++        "como se adapto: la memoria lo avisa."),
++    verbo=Verbo.DEFINE,
++    citas=("MC_HHD.3.12.2.1#METODO",        # DEFINICION -> sostiene DEFINE
++           "MC_HHD.3.12.2.1#KA", "MC_HHD.3.12.2.1#P",
++           "MC_HHD.3.12.2.1#I"),
++    que_pasa_si_no_se_hace=(
++        "Es lo que pasaba hasta VE-2 (VE1-02 (f), ficha T1-08): la Fase "
++        "1-bis se detenia desde 10 km², y una cuenca de 55.9 km² o las "
++        "cinco mayores de la via de la validacion externa no se calculaban; "
++        "su caudal solo podia entrar declarado."),
++)
++
++H_RM_C = _fundamento(
++    id="FH.RM_C",
++    fase=FH,
++    que_paso=("Coeficiente de escorrentia del metodo racional modificado, por "
++              "el numero de curva: umbral de escorrentia y ecuacion (35)"),
++    por_que=(
++        "En el racional simple el coeficiente C sale de la Tabla Nº 08; en "
++        "el modificado sale de la propia lluvia y del suelo: el umbral de "
++        "escorrentia Po es la lluvia que la cuenca absorbe antes de "
++        "escurrir, y depende del numero de curva, que el estudio "
++        "hidrologico lee en la Tabla Nº 07 por grupo de suelo y uso de la "
++        "tierra. La ecuacion (35) da la fraccion que escurre: es 1 cuando "
++        "la cuenca no absorbe nada y 0 cuando la lluvia no pasa del umbral. "
++        "La ecuacion escribe la lluvia maxima diaria Pd, no la corregida por "
++        "el area: el programa la aplica como esta escrita y lo declara."),
++    verbo=Verbo.DEFINE,
++    citas=("MC_HHD.3.12.2.1#C",             # DEFINICION -> sostiene DEFINE
++           "MC_HHD.3.11#T07"),
++    que_pasa_si_no_se_hace=(
++        "El coeficiente seria el de la Tabla Nº 08, que es del metodo simple "
++        "y no depende de cuanto llueve: mezclarlo con la intensidad del "
++        "modificado seria otro uso hibrido, sin fuente que lo respalde."),
++)
++
++H_RM_CAUDAL = _fundamento(
++    id="FH.RM_CAUDAL",
++    fase=FH,
++    que_paso=("Caudal de diseño por el metodo racional modificado, "
++              "Q = 0.278 · C · I · A · K"),
++    por_que=(
++        "Es la ecuacion (29): la del racional con el coeficiente de "
++        "uniformidad K de la (31), que corrige la hipotesis de lluvia "
++        "uniforme en el tiempo y crece con el tiempo de concentracion. "
++        "Aqui K no es una eleccion: es parte de la ecuacion del metodo. El "
++        "Manual acota el metodo a areas menores de 770 km² y a tiempos de "
++        "concentracion de 0.25 a 24 horas, y fuera de eso el programa no lo "
++        "evalua. Para cuencas mayores el Manual describe otros metodos --el "
++        "hidrograma triangular del SCS, recomendado hasta 30 km²; el de "
++        "Snyder, de 30 a 30 000 km²; el modelo HEC-HMS-- que el programa no "
++        "implementa: el mensaje los nombra con su rango y su pagina, y el "
++        "caudal de esa cuenca entra declarado. La frontera con el racional "
++        "simple es la de siempre, 10 km²: por debajo el caudal sigue "
++        "saliendo de la ecuacion (28)."),
++    verbo=Verbo.DEFINE,
++    citas=("MC_HHD.3.12.2.1#K",             # DEFINICION -> sostiene DEFINE
++           "MC_HHD.3.12.2.1#TC",            # APROXIMACION (el rango)
++           "MC_HHD.3.12.2#AREA",            # la frontera de 10 km2
++           "MC_HHD.3.12.3.2a#AREA",         # SCS, no implementado
++           "MC_HHD.3.12.3.2b#AREA",         # Snyder, no implementado
++           "MC_HHD.3.12.4"),                # HEC-HMS, no implementado
++    que_pasa_si_no_se_hace=(
++        "Sin el metodo, una cuenca de 10 a 770 km² solo tenia el caudal "
++        "declarado; con el racional simple extrapolado, la intensidad media "
++        "sobre toda la cuenca y sin reduccion por area daria un caudal sin "
++        "fuente."),
++)
++
  
  # ===========================================================================
  # Lo que NO tiene fundamento, y por que. Censo, no omision.
 diff --git a/tests/test_memoria_sustentada.py b/tests/test_memoria_sustentada.py
-index da46529..da2b5e7 100644
+index da46529..6a48347 100644
 --- a/tests/test_memoria_sustentada.py
 +++ b/tests/test_memoria_sustentada.py
-@@ -486,6 +486,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
+@@ -486,6 +486,16 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
          # auditoria de T-1). Lo mide `test_t1_hidrologia.py::
          # test_serie_sin_fen_con_menos_lluvia_que_la_completa_detiene_el_calculo`.
          "FH.FEN",
@@ -374,11 +1495,16 @@ index da46529..da2b5e7 100644
 +        # razon que los siete de arriba. Lo mide
 +        # `tests/test_ve2_hidrologia.py`.
 +        "FH.CONSISTENCIA",
++        # --- VE-2 (f) --- los tres pasos del metodo racional modificado,
++        # que solo emite un caudal CALCULADO de una cuenca de 10 a 770 km2;
++        # las de esta corrida (y las de la corrida de referencia) tienen
++        # menos de 10 km2. Los mide `tests/test_ve2_hidrologia.py`.
++        "FH.RM_INTENSIDAD", "FH.RM_C", "FH.RM_CAUDAL",
          # F5.V7_FILA SIGUE AQUI DESPUES DE C7, Y SU RAZON NO ES LA QUE EL
          # PUNTO 0 ESCRIBIO. Aquel comentario decia que el fundamento existia
          # «declarado y sin consumidor» hasta que el punto 3 lo cableara. El
 diff --git a/tests/test_t1_hidrologia.py b/tests/test_t1_hidrologia.py
-index 493add4..677ad55 100644
+index 493add4..3ceba67 100644
 --- a/tests/test_t1_hidrologia.py
 +++ b/tests/test_t1_hidrologia.py
 @@ -140,8 +140,13 @@ A02_SIN_Q = {"A-02": {"Q_m3s": "", "area_ha": AREA_HA_DE_LA_CUENCA_CHICA}}
@@ -412,12 +1538,40 @@ index 493add4..677ad55 100644
  
  
  def test_el_caudal_crece_con_el_periodo_de_retorno(MH, cuencas, serie):
+@@ -812,11 +820,24 @@ def test_el_caudal_crece_con_el_periodo_de_retorno(MH, cuencas, serie):
+ 
+ 
+ def test_una_cuenca_de_10_km2_se_detiene_antes_de_ajustar_nada(MH, cuencas, serie):
+-    """Y no exige el criterio FEN para decirlo: el metodo no aplica."""
++    """
++    Y no exige el criterio FEN para decirlo.
++
++    CAMBIADO EN VE-2 (decision (f) del dueño, VE1-02; ficha VE2-F), y se
++    declara la causa: hasta VE-2 una cuenca de 10 km2 o mas no tenia metodo
++    y se detenia con `MetodoNoEvaluableError`. Desde VE-2 la calcula el
++    metodo racional modificado, que pide el numero de curva: A-01 de 12 km2
++    sin `CN` se detiene por el DATO que falta (antes de ajustar nada, sin el
++    criterio FEN), y desde 770 km2 sigue sin metodo.
++    """
+     from dataclasses import replace
+-    from src.modelos import MetodoNoEvaluableError
+-    with pytest.raises(MetodoNoEvaluableError):
++    from src.modelos import DatoFaltanteError, MetodoNoEvaluableError
++    with pytest.raises(DatoFaltanteError) as exc:
+         MH.caudal_de_diseno(replace(cuencas["A-01"], area_km2=12.0), serie, 71)
++    assert exc.value.campo == "CN"
++    with pytest.raises(MetodoNoEvaluableError):
++        MH.caudal_de_diseno(replace(cuencas["A-01"], area_km2=800.0, CN=75.0),
++                            serie, 71)
+ 
+ 
+ def test_la_relacion_intensidad_duracion_es_barrible(MH, cuencas, serie):
 diff --git a/tests/test_ve2_hidrologia.py b/tests/test_ve2_hidrologia.py
 new file mode 100644
-index 0000000..a93e8d3
+index 0000000..809c170
 --- /dev/null
 +++ b/tests/test_ve2_hidrologia.py
-@@ -0,0 +1,238 @@
+@@ -0,0 +1,579 @@
 +"""
 +tests/test_ve2_hidrologia.py — VE-2, la parte de hidrologia: (e), (f) y (d)
 +==========================================================================
@@ -656,3 +1810,360 @@ index 0000000..a93e8d3
 +    por = {m.simbolo: m.valor for m in p.sustitucion}
 +    assert por["n"] == 40
 +    assert por["minimo"] == pytest.approx(secos[0].p24_mm, rel=REL)
++
++
++# ===========================================================================
++# (f) Metodo racional modificado de 10 a 770 km2 — VE1-02 (f), T1-08
++# ===========================================================================
++# El num. 3.12.2.1 del Manual (pags. impresas 50 a 52, PDF 53 a 55), leido
++# en la IMAGEN de las dos paginas (la capa de texto parte las formulas):
++#
++#   (29) Q = 0,278 C I A K               (30) Tc = 0.3 (L / S^0.25)^0.76
++#   (31) K = 1 + Tc^1.25 / (Tc^1.25 + 14) (32) KA = 1 – (log10 A/15)
++#   (33) P = kA Pd
++#   (34) I = (P/24) * (11)^((28^0.1 – Tc^0.1)/(28^0.1 – 1))
++#   (35) C = (Pd – Po)(Pd + 23 Po) / (pd + 11 Po)^2 ,  Po = (5000/CN) – 50
++#
++# «áreas menores de 770 km2 y con tiempos de concentración (Tc) de entre
++# 0.25 y 24 horas». La frontera de 10 km2 con el racional simple es la de
++# siempre («Muy usado para cuencas, A<10 Km2», pag. impresa 49).
++
++ROJO_F = pytest.mark.xfail(strict=True, reason="VE-2 (f): el metodo racional "
++                           "modificado todavia no esta implementado")
++CUENCAS_RM = FIXTURES / "cuencas_racional_modificado_prueba.csv"
++ROTULO_DE_PRUEBA = "DATOS DE PRUEBA, NO DEL PROYECTO"
++ID_RM = "A-01"                       # el id de una obra de ejemplo_puntos.csv
++AREA_RM_KM2 = 55.9
++L_RM_KM, S_RM, CN_RM = 15.0, 0.02, 75.0
++PUNTOS = RAIZ / "tests" / "ejemplo_puntos.csv"
++
++
++def _a_mano(*, A, L_km, S, CN, Pd):
++    """
++    Las ecuaciones (29) a (35) escritas aqui, con `math` y sin pasar por
++    `MH_hidrologia`. Devuelve un dict con cada factor.
++    """
++    import math
++    Tc = 0.3 * (L_km / S ** 0.25) ** 0.76                       # (30), horas
++    K = 1 + Tc ** 1.25 / (Tc ** 1.25 + 14)                      # (31)
++    KA = 1 - math.log10(A) / 15                                 # (32)
++    P = KA * Pd                                                 # (33)
++    I = (P / 24) * 11 ** ((28 ** 0.1 - Tc ** 0.1) / (28 ** 0.1 - 1))   # (34)
++    Po = 5000 / CN - 50                                         # umbral
++    C = (Pd - Po) * (Pd + 23 * Po) / (Pd + 11 * Po) ** 2        # (35), con Pd
++    Q = 0.278 * C * I * A * K                                   # (29)
++    return dict(Tc=Tc, K=K, KA=KA, P=P, I=I, Po=Po, C=C, Q=Q)
++
++
++def _cuenca_rm(MH, **cambios):
++    from src.modelos import Cuenca
++    base = dict(id=ID_RM, area_km2=AREA_RM_KM2, L_cauce_m=L_RM_KM * 1000,
++                S_cauce_cuenca=S_RM, cobertura="pastos_vegetacion_ligera",
++                suelo="semipermeable", estacion=ESTACION_DE_PRUEBA,
++                metodo_tc="temez", S_terreno=0.03, H_desnivel_m=None,
++                ajuste_kirpich=None, CN=CN_RM, origen="prueba VE-2")
++    base.update(cambios)
++    return Cuenca(**base)
++
++
++def test_f_un_caso_a_mano_con_las_ecuaciones_transcritas(MH):
++    """
++    Pd = 100 mm, A = 55.9 km2, L = 15 km, S = 0.02, CN = 75. A mano:
++      Tc = 0.3 · (15 / 0.02^0.25)^0.76 = 0.3 · (15 / 0.376060)^0.76
++         = 0.3 · 39.8873^0.76 = 4.94032 h
++      K  = 1 + 4.94032^1.25 / (4.94032^1.25 + 14) = 1.344734
++      KA = 1 − log10(55.9)/15 = 1 − 1.747412/15 = 0.883506
++      P  = 0.883506 · 100 = 88.3506 mm
++      I  = (88.3506/24) · 11^((28^0.1 − 4.94032^0.1)/(28^0.1 − 1))
++         = 3.681274 · 11^0.58 = 14.16644 mm/h
++      Po = 5000/75 − 50 = 16.6667 mm
++      C  = (100 − 16.6667)(100 + 383.333)/(100 + 183.333)^2 = 0.501730
++      Q  = 0.278 · 0.501730 · 14.16644 · 55.9 · 1.344734 = 148.533 m3/s
++    """
++    h = _a_mano(A=AREA_RM_KM2, L_km=L_RM_KM, S=S_RM, CN=CN_RM, Pd=100.0)
++    dorado = dict(Tc=4.94032, K=1.344734, KA=0.883506, P=88.3506, I=14.16644,
++                  Po=16.6667, C=0.501730, Q=148.533)
++    for clave, valor in dorado.items():
++        assert h[clave] == pytest.approx(valor, rel=1e-5), clave
++    assert MH.factor_reductor_por_area(AREA_RM_KM2) == pytest.approx(h["KA"], rel=REL)
++    assert MH.intensidad_racional_modificado_mm_h(P_mm=h["P"], Tc_h=h["Tc"]) \
++        == pytest.approx(h["I"], rel=REL)
++    assert MH.umbral_de_escorrentia_mm(CN_RM) == pytest.approx(h["Po"], rel=REL)
++    assert MH.coeficiente_racional_modificado(Pd_mm=100.0, CN=CN_RM) \
++        == pytest.approx(h["C"], rel=REL)
++    assert MH.caudal_racional_modificado(C=h["C"], I_mm_h=h["I"],
++                                         area_km2=AREA_RM_KM2, K=h["K"]) \
++        == pytest.approx(h["Q"], rel=REL)
++
++
++def test_f_una_cuenca_de_55_9_km2_se_calcula_por_el_racional_modificado(MH, serie):
++    """La cuenca de 55.9 km2 entera, con la lluvia de diseño de la serie."""
++    cuenca = _cuenca_rm(MH)
++    with _declarados({FEN: "serie_completa"}):
++        c = MH.caudal_de_diseno(cuenca, serie, 71)
++    Pd = c.P24_TR_mm
++    por = {p.codigo: p for p in c.pasos}
++    assert Pd == pytest.approx(por["1b.2"].resultado.valor, rel=REL)
++    h = _a_mano(A=AREA_RM_KM2, L_km=L_RM_KM, S=S_RM, CN=CN_RM, Pd=Pd)
++    assert c.calculado and c.metodo_tc == "temez"
++    assert c.tc_min == pytest.approx(h["Tc"] * 60, rel=REL)
++    assert c.duracion_min == pytest.approx(c.tc_min, rel=REL)
++    assert c.K_uniformidad == pytest.approx(h["K"], rel=REL)
++    assert c.I_mm_h == pytest.approx(h["I"], rel=REL)
++    assert c.C == pytest.approx(h["C"], rel=REL)
++    assert c.Q_m3s == pytest.approx(h["Q"], rel=REL)
++    fundamentos = [p.fundamento_id for p in c.pasos]
++    assert fundamentos == ["FH.SERIE", "FH.AJUSTE", "FH.KS", "FH.FEN",
++                           "FH.CONSISTENCIA", "FH.TC", "FH.RM_INTENSIDAD",
++                           "FH.RM_C", "FH.RM_CAUDAL", "FH.Q_ESPECIFICO"]
++    assert [p.codigo for p in c.pasos][-5:] == ["1b.4", "1b.5", "1b.6",
++                                                 "1b.7", "1b.8"]
++    assert "racional modificado" in c.de_donde
++    # El paso del caudal lleva su umbral (770 km2, exclusivo) con su cita.
++    q = por["1b.7"]
++    assert q.umbral.valor == pytest.approx(770.0) and \
++        q.umbral.cita_id == "MC_HHD.3.12.2.1#TC"
++    assert q.formula_cita_id == "MC_HHD.3.12.2.1#K"
++    # Y el paso del tiempo de concentracion NO dice «uso hibrido»: aqui la
++    # formula de Temez es la del metodo con que se calcula el caudal.
++    assert "HIBRIDO" not in por["1b.4"].nota_del_proyecto
++
++
++def test_f_el_metodo_esta_adaptado_a_espana_y_se_avisa(MH, serie):
++    with _declarados({FEN: "serie_completa"}):
++        c = MH.caudal_de_diseno(_cuenca_rm(MH), serie, 71)
++    assert any("adaptada para las condiciones climáticas de España" in a
++               for a in c.avisos)
++
++
++def test_f_la_ecuacion_35_lleva_Pd_y_no_la_P_corregida_y_se_declara(MH, serie):
++    """
++    La pagina escribe Pd en la (35) y P = kA·Pd en la (34): se aplica como
++    esta escrito, SIN corregirlo, y se declara en el punto de uso.
++    """
++    import math
++    with _declarados({FEN: "serie_completa"}):
++        c = MH.caudal_de_diseno(_cuenca_rm(MH), serie, 71)
++    P = c.P24_TR_mm * (1 - math.log10(AREA_RM_KM2) / 15)
++    con_P = _a_mano(A=AREA_RM_KM2, L_km=L_RM_KM, S=S_RM, CN=CN_RM, Pd=P)
++    assert c.C != pytest.approx(con_P["C"], rel=1e-6)
++    paso_c = next(p for p in c.pasos if p.fundamento_id == "FH.RM_C")
++    nota = paso_c.nota_del_proyecto
++    assert "Pd" in nota and "no la P corregida" in nota and "sin corregir" in nota
++    assert {"MC_HHD.3.12.2.1#C", "MC_HHD.3.11#T07"} <= set(paso_c.citas_textuales)
++
++
++def test_f_K_va_siempre_y_no_lo_gobierna_el_criterio_del_hibrido(MH, serie):
++    """
++    En el metodo completo K es parte de la ec. (29): el criterio
++    'coeficiente_uniformidad_temez' decide solo el uso hibrido (Temez con el
++    racional simple, por debajo de 10 km2). Tampoco la relacion
++    intensidad-duracion: la intensidad es la de la ec. (34).
++    """
++    with _declarados({FEN: "serie_completa"}):
++        base = MH.caudal_de_diseno(_cuenca_rm(MH), serie, 71)
++    with _declarados({FEN: "serie_completa",
++                      "coeficiente_uniformidad_temez": "no_aplicar",
++                      "relacion_intensidad_duracion":
++                          "tabla_04_coeficientes_de_duracion"}):
++        otra = MH.caudal_de_diseno(_cuenca_rm(MH), serie, 71)
++    assert otra.Q_m3s == pytest.approx(base.Q_m3s, rel=REL)
++    assert otra.K_uniformidad == pytest.approx(base.K_uniformidad, rel=REL)
++    assert base.K_uniformidad > 1
++
++
++@pytest.mark.parametrize("area,metodo", [(9.99, "FH.RACIONAL"),
++                                         (10.0, "FH.RM_CAUDAL"),
++                                         (769.9, "FH.RM_CAUDAL")])
++def test_f_la_frontera_de_10_km2_separa_los_dos_metodos(MH, serie, area, metodo):
++    """«A<10 Km2» (pag. 49): por debajo el simple, desde 10 el modificado."""
++    with _declarados({FEN: "serie_completa"}):
++        c = MH.caudal_de_diseno(_cuenca_rm(MH, area_km2=area), serie, 71)
++    assert metodo in [p.fundamento_id for p in c.pasos]
++    assert MH.metodo_de_caudal(area) == (
++        MH.METODO_RACIONAL if area < 10 else MH.METODO_RACIONAL_MODIFICADO)
++
++
++@pytest.mark.parametrize("area", [770.0, 800.0, 30000.0])
++def test_f_desde_770_km2_no_se_evalua_y_nombra_los_metodos_sin_implementar(
++        MH, serie, area):
++    from src.modelos import (MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA,
++                             MetodoNoEvaluableError)
++    with _declarados({FEN: "serie_completa"}):
++        with pytest.raises(MetodoNoEvaluableError) as exc:
++            MH.caudal_de_diseno(_cuenca_rm(MH, area_km2=area), serie, 71)
++    texto = str(exc.value)
++    assert texto.startswith(MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA)
++    for trozo in ("770", "Snyder", "30 a 30 000", "58", "SCS", "hasta 30",
++                  "56", "HEC-HMS", "3.12.4", "no implementa", "Q_m3s"):
++        assert trozo in texto, trozo
++
++
++@pytest.mark.parametrize("L_km,S,area", [(0.5, 0.2, 12.0),        # Tc 0.24 h
++                                         (400.0, 0.0001, 700.0)]) # Tc 164 h
++def test_f_tc_fuera_de_0_25_a_24_h_no_se_evalua(MH, serie, L_km, S, area):
++    from src.modelos import (MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA,
++                             MetodoNoEvaluableError)
++    cuenca = _cuenca_rm(MH, area_km2=area, L_cauce_m=L_km * 1000,
++                        S_cauce_cuenca=S)
++    with _declarados({FEN: "serie_completa"}):
++        with pytest.raises(MetodoNoEvaluableError) as exc:
++            MH.caudal_de_diseno(cuenca, serie, 71)
++    texto = str(exc.value)
++    assert texto.startswith(MOTIVO_METODO_NO_EVALUABLE_HIDROLOGIA)
++    assert "0.25" in texto and "24" in texto
++    # Desde 10 km2 otro metodo de tiempo de concentracion no es remedio: el
++    # mensaje remite a los metodos de hidrograma y al caudal declarado.
++    assert "Snyder" in texto and "Q_m3s" in texto
++
++
++def test_f_desde_10_km2_el_tiempo_de_concentracion_es_el_de_la_ec_30(MH, serie):
++    from src.modelos import MetodoNoEvaluableError
++    cuenca = _cuenca_rm(MH, metodo_tc="kirpich", ajuste_kirpich="ninguno")
++    with _declarados({FEN: "serie_completa"}):
++        with pytest.raises(MetodoNoEvaluableError) as exc:
++            MH.caudal_de_diseno(cuenca, serie, 71)
++    assert "temez" in str(exc.value) and "(30)" in str(exc.value)
++
++
++def test_f_sin_numero_de_curva_desde_10_km2_falta_un_dato(MH, serie):
++    """CN es columna opcional (la de la ecuacion de retardo, REUSADA): desde
++    10 km2 la exige la ec. (35), y se dice antes de ajustar nada."""
++    from src.modelos import DatoFaltanteError
++    with pytest.raises(DatoFaltanteError) as exc:
++        MH.caudal_de_diseno(_cuenca_rm(MH, CN=None), serie, 71)
++    assert exc.value.campo == "CN" and "(35)" in str(exc.value)
++
++
++def test_f_un_umbral_de_escorrentia_mayor_que_la_lluvia_no_se_rellena(MH, serie):
++    """CN = 30: Po = 116.7 mm > Pd ≈ 99.8 mm, y la (35) da C <= 0."""
++    from src.modelos import MetodoNoEvaluableError
++    with _declarados({FEN: "serie_completa"}):
++        with pytest.raises(MetodoNoEvaluableError) as exc:
++            MH.caudal_de_diseno(_cuenca_rm(MH, CN=30.0), serie, 71)
++    assert "umbral de escorrentia" in str(exc.value)
++
++
++def test_f_pasa_por_la_puerta_del_criterio_fen(MH, serie):
++    from src.modelos import CriterioPendienteError
++    from tests.apoyo.criterios import sin_valor
++    with sin_valor(FEN):
++        with pytest.raises(CriterioPendienteError):
++            MH.caudal_de_diseno(_cuenca_rm(MH), serie, 71)
++
++
++def test_f_la_cuneta_sigue_con_el_racional_simple_y_su_limite(MH, serie):
++    """GUARDIA (pasaba antes y tiene que seguir pasando). El num. 4.1.2.1 b)
++    escribe la ecuacion del racional SIMPLE: el aporte de una cuneta no pasa
++    al modificado (y un area tributaria de 10 km2 no es una cuneta)."""
++    from src.modelos import MetodoNoEvaluableError
++    with _declarados({FEN: "serie_completa"}):
++        with pytest.raises(MetodoNoEvaluableError) as exc:
++            MH.caudal_de_aporte_cuneta(_cuenca_rm(MH, area_km2=12.0), serie, 71)
++    assert "hidrograma unitario" in str(exc.value)
++
++
++def test_f_las_citas_de_las_ecuaciones_estan_en_el_registro(reg):
++    from src.normativa.esquema import Caracter
++    paginas = {"MC_HHD.3.12.2.1#METODO": ("50", 53),
++               "MC_HHD.3.12.2.1#KA": ("51", 54),
++               "MC_HHD.3.12.2.1#P": ("52", 55),
++               "MC_HHD.3.12.2.1#I": ("52", 55),
++               "MC_HHD.3.12.2.1#C": ("52", 55),
++               "MC_HHD.3.12.3.2a#AREA": ("56", 59),
++               "MC_HHD.3.12.3.2b#AREA": ("58", 61),
++               "MC_HHD.3.12.4": ("58", 61),
++               "MC_HHD.3.11#T07": ("47", 50)}
++    for cita_id, (impresa, pdf) in paginas.items():
++        c = reg.cita(cita_id)
++        assert (c.pagina_impresa, c.pagina_pdf) == (impresa, pdf), cita_id
++        assert c.verificado is not None, cita_id
++    metodo = reg.cita("MC_HHD.3.12.2.1#METODO")
++    assert "adaptada para las condiciones climáticas de España" in \
++        metodo.texto_literal.texto
++    assert reg.cita("MC_HHD.3.12.3.2a#AREA").texto_literal.texto == (
++        "Este método es recomendable tan solo para cuencas de hasta a 30 Km2.")
++    assert reg.cita("MC_HHD.3.12.3.2b#AREA").texto_literal.texto == (
++        "El rango de aplicación de este método es de 30 a 30 000 Km2")
++    # Las dos lecturas del proyecto, con lo que juega en contra.
++    ka = reg.cita("MC_HHD.3.12.2.1#KA")
++    assert ka.texto_literal.texto == "KA =   1 – (log10 A/15)"
++    assert ka.interpretacion is not None and ka.interpretacion.en_contra
++    assert reg.cita("MC_HHD.3.12.2.1#C").interpretacion.en_contra
++    for f in ("FH.RM_INTENSIDAD", "FH.RM_C", "FH.RM_CAUDAL"):
++        assert reg.fundamento(f).citas
++    assert reg.cita("MC_HHD.3.12.3.2a#AREA").caracter is Caracter.RECOMENDACION
++
++
++def test_f_los_literales_de_las_ecuaciones_son_N_en_constantes(MH):
++    from src import constantes_normativas as CN
++    assert CN.FACTOR_REDUCTOR_AREA_SI == {"divisor": 15}
++    assert CN.INTENSIDAD_RACIONAL_MODIFICADO_SI == {
++        "horas_del_dia": 24, "factor": 11, "horas_de_referencia": 28,
++        "exponente": 0.1}
++    assert CN.UMBRAL_ESCORRENTIA_SI == {"numerador": 5000, "resta": 50}
++    assert CN.COEFICIENTE_RACIONAL_MODIFICADO == {"suma_numerador": 23,
++                                                  "suma_denominador": 11}
++
++
++def test_f_el_fixture_de_prueba_tiene_la_cuenca_de_10_a_770_km2(MH):
++    primera = CUENCAS_RM.read_text(encoding="utf-8").splitlines()[0]
++    assert primera.startswith("#") and ROTULO_DE_PRUEBA in primera
++    c = MH.cargar_cuencas(CUENCAS_RM)[ID_RM]
++    assert 10 <= c.area_km2 < 770 and c.CN is not None
++    assert c.area_km2 == pytest.approx(AREA_RM_KM2)
++    # Las cuencas de la corrida de referencia no se tocaron.
++    assert {k: v.area_km2 for k, v in MH.cargar_cuencas(CUENCAS).items()} == \
++        {"A-01": 8.5, "A-02": 2.1, "B-01": 0.18}
++
++
++def test_f_de_punta_a_punta_por_el_servicio(tmp_path):
++    """El CSV de puntos con A-01 de 5590 ha (55.9 km2) y Q vacio."""
++    import csv
++    from src import servicio
++    with PUNTOS.open(encoding="utf-8", newline="") as fh:
++        filas = list(csv.DictReader(fh))
++    for fila in filas:
++        if fila["id"] == ID_RM:
++            fila.update({"Q_m3s": "", "area_ha": "5590"})
++    ruta = tmp_path / "puntos.csv"
++    with ruta.open("w", encoding="utf-8", newline="") as fh:
++        w = csv.DictWriter(fh, fieldnames=list(filas[0]))
++        w.writeheader()
++        w.writerows(filas)
++    externos = servicio.cargar_datos_externos(None, {"luz_m": 2.0, "TW_m": 0.0})
++    h = servicio.cargar_hidrologia(CUENCAS_RM, ESTACION)
++    with _declarados({FEN: "serie_completa"}):
++        informe = servicio.correr(ruta, externos, "perfil", h)
++    punto = next(i for i in informe.puntos if i.punto.id == ID_RM)
++    assert punto.caudal is not None and punto.caudal.calculado
++    assert "FH.RM_CAUDAL" in [p.fundamento_id for p in punto.caudal.pasos]
++
++
++def test_f_el_contrato_y_la_ficha_T1_08_lo_dicen():
++    contrato = (RAIZ / "docs" / "contrato_entradas.md").read_text(encoding="utf-8")
++    seccion = contrato[contrato.index("## 2-bis"):contrato.index("## 3.")]
++    assert "racional modificado" in seccion and "770" in seccion
++    assert "Desde 10 km² el método racional no se evalúa" not in seccion
++    fichas = (RAIZ / "docs" / "decisiones_diferidas.md").read_text(encoding="utf-8")
++    i = fichas.index("## T1-08")
++    t108 = fichas[i:fichas.index("\n## ", i + 3)]
++    assert "Cerrado (VE-2)" in t108
++    assert "que el Manual da para España" not in t108
++    assert "## VE2-F" in fichas
+diff --git a/tests/fixtures/hidrologia/cuencas_racional_modificado_prueba.csv b/tests/fixtures/hidrologia/cuencas_racional_modificado_prueba.csv
+new file mode 100644
+index 0000000..9c259f0
+--- /dev/null
++++ b/tests/fixtures/hidrologia/cuencas_racional_modificado_prueba.csv
+@@ -0,0 +1,10 @@
++# DATOS DE PRUEBA, NO DEL PROYECTO. Una cuenca SINTETICA de 55.9 km2 para los
++# tests del metodo racional modificado de VE-2 (tests/test_ve2_hidrologia.py,
++# num. 3.12.2.1 del Manual de Hidrologia, de 10 a 770 km2): area, longitud,
++# pendientes, cobertura y numero de curva inventados para ejercitar el
++# calculo, no medidos en ninguna cuenca del corredor. El id es el de A-01 de
++# tests/ejemplo_puntos.csv; el test le pone area_ha = 5590 en una copia del
++# CSV de puntos. Archivo APARTE de cuencas_prueba.csv a proposito: aquel es
++# el de la corrida de referencia de T-11 (caudal_calculado), byte a byte.
++id,area_km2,L_cauce_m,S_cauce_cuenca,S_terreno,cobertura,suelo,estacion,metodo_tc,H_desnivel_m,ajuste_kirpich,CN
++A-01,55.9,15000,0.02,0.03,pastos_vegetacion_ligera,semipermeable,PRUEBA-SINTETICA,temez,,,75
