@@ -48,7 +48,7 @@ from src import datos_sitio as ds
 from src.modelos import TipoDeBloqueo
 from src.modulos import M9_cabezal as M9
 from tests.apoyo import validacion_integral as V
-from tests.apoyo.aproximacion import REL_TRANSPORTE
+from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE
 from tests.fixtures import juego_validacion_integral as J
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -310,7 +310,10 @@ def test_cada_metodo_no_evaluable_nombra_una_ficha_que_existe(una, variantes,
                for b in ef.bloqueos_nuevos if b.clase == V.CLASE_METODO}
     fichas |= {b.que for b in V.todos_los_bloqueos(base)
                if b.clase == V.CLASE_METODO}
-    assert fichas == {"T7B-05", "T7B-06", "T7C-03", "VC1-01"}
+    # Hasta VE-3.9 tambien T7C-03 (el cortante de la zapata de C-01 con
+    # lecho cohesivo, fuera de 5.7.3.4.1): desde VE-3.9 el peralte crece
+    # por su armado hasta salir de esa franja (0.873 m) y ya no se detiene.
+    assert fichas == {"T7B-05", "T7B-06", "VC1-01"}
     for ficha in fichas:
         assert f"## {ficha} · " in texto, ficha
 
@@ -441,7 +444,10 @@ def test_las_variantes_que_dejan_un_metodo_sin_evaluar(variantes):
         return {(b.punto, b.que) for b in variantes[nombre][2].bloqueos_nuevos}
     assert fichas("freatico_a_2m") == {("A-01", "T7B-06"), ("A-02", "T7B-06")}
     assert fichas("drenaje_de_archivo") == {(i, "T7B-05") for i in DISENO_ESPERADO}
-    assert fichas("C01_lecho_cohesivo") == {("C-01", "T7B-06"), ("C-01", "T7C-03")}
+    # Sin ("C-01", "T7C-03") desde VE-3.9: el peralte de la salida de C-01
+    # partia de 0.473 m (H_c/10, ya sobre 16 in) con el cortante fuera de
+    # 5.7.3.4.1, y hoy crece por su armado hasta 0.873 m, donde se verifica.
+    assert fichas("C01_lecho_cohesivo") == {("C-01", "T7B-06")}
 
 
 def test_el_caudal_calculado_sin_tratamiento_FEN_detiene_por_el_criterio(variantes):
@@ -461,15 +467,23 @@ def test_con_la_zapata_de_3m_el_cabezal_de_entrada_de_A01_pasa_entero(variantes)
     MEDIDO, no supuesto: con la zapata declarada de 3.00 m (la prueba de
     T-7b), las doce filas E del cabezal de ENTRADA de A-01 pasan en los dos
     marcos. El de SALIDA, desplantado en el fondo de la hoya de socavacion,
-    sigue sin pasar la capacidad portante sismica del marco LRFD: la zapata
-    sola no lo resuelve.
+    no pasaba la capacidad portante sismica del marco LRFD con el peralte de
+    la regla. CAMBIADO EN VE-3.9: el ancho declarado no se itera, pero el
+    PERALTE no se declaro y crece por su armado (0.404 -> 0.704 m); con esa
+    zapata la salida tambien pasa E1-LRFD sismica.
     """
+    from src.modelos import ORIGEN_DIMENSION_ARMADO
     _t, informe, _ef = variantes["zapata_declarada_3m"]
     v = V.verificaciones_del_punto(informe, "A-01")
     entrada = {k: e for k, e in v.items() if k.startswith("E") and k.endswith(".e")}
     assert len(entrada) == 12 and set(entrada.values()) == {"cumple"}
-    assert v["E1-LRFD.sis.s"] == "no cumple"
+    assert v["E1-LRFD.sis.s"] == "cumple"
     assert v["E3-LRFD.est.s"] == "cumple"
+    salida = _punto(informe, "A-01").cabezal.salida
+    assert salida.B == pytest.approx(3.0, abs=ABS_CERO)
+    assert next(d for d in salida.dimensiones
+                if d.nombre == "espesor de la zapata").origen == \
+        ORIGEN_DIMENSION_ARMADO
 
 
 def test_ninguna_variante_mueve_un_diametro_que_dimensiona(variantes):

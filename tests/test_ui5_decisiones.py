@@ -1250,10 +1250,10 @@ SIN_NADA_QUE_BARRER = {
     "edicion_que_rige_el_expediente", "edicion_legal_que_rige_el_expediente",
     # VE-2 (c2): sin valor de archivo y con ventana en prosa (su extremo de
     # arriba depende del NF de cada punto).
-    "margen_estacional_nf_v7_m",
-    # VE-3.5: el paso y el tope del dimensionamiento de la zapata, sin valor
-    # de archivo y sin ventana (ninguna fuente la fija).
-    "dimensionamiento_zapata_cabezal"}
+    "margen_estacional_nf_v7_m"}
+# VE-3.5 lo habia sumado ('dimensionamiento_zapata_cabezal', sin valor de
+# archivo y sin ventana). Desde VE-3.9 tiene valor de archivo y ventana por
+# campo (decision del dueño), y ya hay que barrer.
 
 
 def _formas(c):

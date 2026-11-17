@@ -212,6 +212,66 @@ def test_el_bucle_termina_en_el_limite_fisico(monkeypatch, juego):
     assert any("crecio hasta" in a for a in d.avisos)
 
 
+def test_incumplidas_del_armado_de_la_zapata_por_peralte(juego, monkeypatch):
+    """
+    La lectura que el bucle usa: con el peralte final de la salida de A-01,
+    nada; con el de la regla, A1 y A2 del talon; dentro de la franja que
+    5.7.3.4.1 no cubre, la marca; y si el armado no se puede evaluar por
+    otra causa, None (crecer el peralte no lo arregla).
+    """
+    # Leida DURANTE la corrida (fuera de ella los criterios que el juego
+    # declara ya no estan, y el armado no se puede evaluar).
+    from src.modelos import CriterioPendienteError
+    vistos = []
+    original = M9.incumplidas_del_armado_de_la_zapata
+
+    def espia(entorno):
+        r = original(entorno)
+        if entorno.id_punto == "A-01" and entorno.extremo == "salida":
+            vistos.append((round(entorno.geometria.espesor_zapata, 3), r))
+        return r
+
+    monkeypatch.setattr(M9, "incumplidas_del_armado_de_la_zapata", espia)
+    _correr()
+    leidos = dict(vistos)
+    assert {"A1.talon.s", "A2.talon.s"} <= set(leidos[0.404])
+    assert leidos[0.604] == (M9.CORTANTE_NO_VERIFICABLE,)
+    assert leidos[round(_punto(juego).cabezal.salida.espesor_zapata, 3)] == ()
+
+    def pendiente(*_a, **_k):
+        raise CriterioPendienteError("categoria_refuerzo_aashto")
+
+    monkeypatch.setattr(M9, "solicitaciones_de_resistencia", pendiente)
+    p = _punto(juego)
+    entorno = M9.datos_del_cabezal_del_punto(
+        punto=p.punto_de_calculo, cabezal=p.cabezal, geometria=p.geometria,
+        socavacion=p.socavacion, resultado=p.resultado)[1]
+    assert original(entorno) is None
+
+
+def test_incorporar_peralte_reemplaza_los_pasos_del_ancho_redimensionado(
+        juego):
+    from src.modelos import IntentoDePeralte, IntentoDeZapata
+    cab = _punto(juego).cabezal
+    viejo = next(p for p in cab.pasos if p.codigo == "9.3.d.s")
+    nuevo_ancho = type(viejo)(**{**viejo.__dict__, "nota_del_proyecto":
+                                 "re-dimensionado"})
+    intento = IntentoDePeralte(extremo="salida", espesor_zapata=0.5, B=3.0,
+                               incumplidas=())
+    ancho = IntentoDeZapata(extremo="salida", B=3.1,
+                            condiciones=("estatico",), incumplidas=())
+    d = M9.DimensionadoDePeralte(
+        cabezal=cab, espesores={"salida": 0.5}, anchos={"salida": 3.1},
+        intentos=(intento,), intentos_de_ancho=(ancho,), pasos=(),
+        pasos_de_ancho=(nuevo_ancho,), avisos=("aviso de prueba",))
+    r = M9.incorporar_peralte(cab, d)
+    del_ancho = [p for p in r.pasos if p.codigo == "9.3.d.s"]
+    assert del_ancho == [nuevo_ancho]
+    assert r.intentos_de_peralte == (intento,)
+    assert r.intentos_de_zapata[-1] == ancho
+    assert r.avisos[-1] == "aviso de prueba"
+
+
 def test_sin_el_criterio_no_se_dimensiona_ni_el_ancho_ni_el_peralte():
     a01 = _punto(_correr(("sin_valor", "dimensionamiento_zapata_cabezal")))
     pendientes = [b for b in a01.bloqueos

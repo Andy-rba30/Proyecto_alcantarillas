@@ -933,3 +933,18 @@ Regenerada con `sh tests/linea_base_familia_c/regenerar.sh`. El perfil por paso 
 sigue «no se evaluó». Lo único que cambia es la huella de `criterios_adoptados.py` (el
 criterio opcional nuevo `fraccion_fin_remanso_canal`) en los cuatro JSON y en las memorias.
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 23. VE-3.9: el paso y el tope de la zapata como valor de archivo, y el peralte dimensionado por su armado; sólo la huella y el recuento (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto
+primero en el `PATH`). `dimensionamiento_zapata_cabezal` pasa de vacío a valor de archivo
+({paso 0.10 m, tope 1.5·H_c}, decisión del dueño) y el peralte de la zapata se dimensiona
+por su armado (`M9.dimensionar_peralte_por_armado`), pero ninguna corrida de la línea base
+llega a la estabilidad ni al armado del cabezal: lo único que cambia es la huella de
+`criterios_adoptados.py` en los cuatro JSON y, en las cuatro memorias, la fila de la huella
+y la del recuento («148 criterios declarados, 21 todavía sin valor»; la línea base de
+partida decía «147», porque no se había regenerado tras integrar la Familia C, que sumó un
+criterio). **Diámetros, secciones, materiales y HW movidos: ninguno.** Donde sí se mueve el
+cabezal es en `docs/validacion_integral.md`: en la corrida titular el peralte crece en los
+ocho cabezales y en el juego en dos, y el armado de la zapata deja de tener filas sin
+cumplir.

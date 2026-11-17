@@ -722,10 +722,13 @@ def zapatas_dimensionadas(informe: Any) -> Dict[str, int]:
     --- VE-3.5 --- De los cabezales del informe: cuantos tienen la zapata
     dimensionada por estabilidad, cuantos cumplen todas las condiciones de
     estabilidad que se evaluaron, y cuantas filas del armado del TALON no
-    cumplen (el talon crece con la zapata; el peralte, no).
+    cumplen. --- VE-3.9 --- Y cuantos tienen el PERALTE dimensionado por su
+    armado, cuantas filas del armado de la ZAPATA (punta, talon y zapata)
+    no cumplen, y cuantas de la PANTALLA y el ALERO, cuyo espesor sigue
+    siendo el de la regla.
     """
-    from src.modelos import ORIGEN_DIMENSION_ESTABILIDAD
-    dimensionadas = estables = talon = 0
+    from src.modelos import ORIGEN_DIMENSION_ARMADO, ORIGEN_DIMENSION_ESTABILIDAD
+    dimensionadas = estables = talon = peraltes = zapata = pantalla = 0
     for p in informe.puntos:
         cab = p.cabezal
         if cab is None:
@@ -734,12 +737,22 @@ def zapatas_dimensionadas(informe: Any) -> Dict[str, int]:
             b = next(d for d in g.dimensiones
                      if d.nombre == "ancho de la zapata (B)")
             dimensionadas += b.origen == ORIGEN_DIMENSION_ESTABILIDAD
+            e_z = next(d for d in g.dimensiones
+                       if d.nombre == "espesor de la zapata")
+            peraltes += e_z.origen == ORIGEN_DIMENSION_ARMADO
             propias = [e for e in cab.estabilidad if e.extremo == g.extremo]
             estables += bool(propias) and all(e.cumple for e in propias)
-        talon += sum(1 for v in cab.verificaciones
-                     if ".talon." in (v.codigo or "") and not v.cumple)
+        for v in cab.verificaciones:
+            codigo = v.codigo or ""
+            if v.cumple:
+                continue
+            talon += ".talon." in codigo
+            zapata += any(f".{s}." in codigo
+                          for s in ("punta", "talon", "zapata"))
+            pantalla += any(f".{s}." in codigo for s in ("pantalla", "alero"))
     return {"dimensionadas": dimensionadas, "estables": estables,
-            "talon": talon}
+            "talon": talon, "peraltes": peraltes, "zapata": zapata,
+            "pantalla": pantalla}
 
 
 def pisa_el_archivo() -> Tuple[Tuple[str, Any, Any, str], ...]:
@@ -863,16 +876,21 @@ def generar(*, base: Any = None, por_defecto: Any = None,
       "el juego —el cabezal no entra al dimensionamiento del conducto—. La "
       "zapata de la regla de T-7a no pasa la estabilidad estática del marco "
       "LRFD que rige, y desde VE-3.5 **se dimensiona**: crece por el talón "
-      "con el paso y el tope que el juego declara (datos de prueba, "
-      "`dimensionamiento_zapata_cabezal`) en "
+      "con el paso y el tope de `dimensionamiento_zapata_cabezal` (valor de "
+      "archivo desde VE-3.9, decisión del dueño) en "
       f"{zap['dimensionadas']} de {n_cab} cabezales, y la estabilidad "
       f"evaluada cumple en {zap['estables']} de {n_cab}"
       + ("" if not estaticas else "; siguen sin cumplir: " + ", ".join(
           f"`{f}` en {n} de {n_cab} cabezales" for f, n in estaticas.items()))
-      + ". El talón más largo traslada el problema al **armado**: "
-      f"{zap['talon']} filas del talón no cumplen, porque el peralte de la "
-      "zapata sigue siendo el de la regla —el dimensionamiento crece el "
-      "ancho, no el espesor—"
+      + ". El talón más largo pedía más **peralte** para armarse, y desde "
+      f"VE-3.9 el peralte crece por su armado en {zap['peraltes']} de "
+      f"{n_cab} cabezales: quedan {zap['zapata']} filas del armado de la "
+      f"zapata sin cumplir, y {zap['pantalla']} de la pantalla y el alero, "
+      "cuyo espesor sigue siendo el de la regla. Los peraltes salen gruesos "
+      "porque entre 16 in y el peralte cuyo vuelo queda bajo 3·d_v el "
+      "cortante cae fuera del procedimiento simplificado de AASHTO "
+      "5.7.3.4.1 y el programa no implementa el general (5.7.3.4.2): el "
+      "adoptado es el primero que puede verificar"
       + f". La condición **sísmica no se evalúa** ({sismicas} bloqueos "
       "«método no evaluable», ficha T7B-05: con el trasdós sin drenaje el "
       "relleno está saturado y el empuje sísmico con agua en el relleno pide "
@@ -880,8 +898,7 @@ def generar(*, base: Any = None, por_defecto: Any = None,
       "**peso específico saturado del relleno** es un ensayo del EMS que esta "
       "rama necesita: sin él la estabilidad y el armado de los ocho "
       "cabezales se detienen (§4.2). No es un fallo de la validación: es lo "
-      "que el dimensionamiento de VE-3.5 resuelve y lo que deja para el "
-      "armado.")
+      "que el dimensionamiento de VE-3.5 y VE-3.9 resuelve y lo que deja.")
     A("")
     A("### 2.1 Variante que ejercita la cadena sísmica y el caso drenado: el "
       "juego tal como está")
@@ -908,8 +925,9 @@ def generar(*, base: Any = None, por_defecto: Any = None,
       "ninguno de los cuatro puntos, y desde VE-3.5 la zapata se dimensiona "
       f"por estabilidad: crece en {zap_base['dimensionadas']} de "
       f"{cabezales_evaluados(base)} cabezales y la estabilidad evaluada cumple "
-      f"en {zap_base['estables']}; {zap_base['talon']} filas del armado del "
-      "talón no cumplen con el peralte de la regla. La variante "
+      f"en {zap_base['estables']}; el peralte crece por su armado (VE-3.9) "
+      f"en {zap_base['peraltes']} y quedan {zap_base['zapata']} filas del "
+      "armado de la zapata sin cumplir. La variante "
       "`zapata_declarada_3m` (§5) muestra una zapata declarada, que no se "
       "itera, y el anexo de sensibilidad "
       "(`docs/validacion_sensibilidad.md` §3.1) mide los dos [A] de los que "
@@ -918,9 +936,9 @@ def generar(*, base: Any = None, por_defecto: Any = None,
       "Las filas A1 de la pantalla y "
       "el alero de SALIDA no pasan donde la socavación baja el desplante (la "
       "pantalla crece y ninguna barra del catálogo alcanza); la variante "
-      "`sin_socavacion_A01` muestra el otro lado. Ninguna de las dos es un "
-      "fallo de la validación: el dimensionamiento de VE-3.5 crece el ancho "
-      "de la zapata y no su espesor ni el de la pantalla.")
+      "`sin_socavacion_A01` muestra el otro lado. No es un fallo de la "
+      "validación: el dimensionamiento crece el ancho (VE-3.5) y el peralte "
+      "(VE-3.9) de la zapata, y no el espesor de la pantalla.")
     A("")
     c01 = {n: _c01_en_el_canal(i) for n, _t, i, _e in var
            if n == VARIANTE_C01_EN_EL_CANAL}
