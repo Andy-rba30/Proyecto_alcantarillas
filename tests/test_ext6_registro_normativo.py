@@ -427,7 +427,9 @@ def test_toda_fuente_presente_lleva_vigencia_como_campo_y_no_como_marca():
         fecha = {"DG2018": fu.VIGENCIA_VERIFICADA_EL_EXT6,
                  "HEC14": fu.VIGENCIA_VERIFICADA_EL_T0,
                  "WSDOT_HM": fu.VIGENCIA_VERIFICADA_EL_T0,
-                 "USBR_DSCS": fu.VIGENCIA_VERIFICADA_EL_VE3}.get(
+                 "USBR_DSCS": fu.VIGENCIA_VERIFICADA_EL_VE3,
+                 # VE-3.12: la fuente secundaria de las Clases III a V.
+                 "USACE_EM_1110_2_2902": fu.VIGENCIA_VERIFICADA_EL_VE3}.get(
                      f.id, fu.VIGENCIA_VERIFICADA_EL)
         assert f.vigencia.fecha == fecha, f.id
         assert "VIGENCIA CONFIRMADA" not in f.nota and "EDICION POSTERIOR DETECTADA" not in f.nota, f.id

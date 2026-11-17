@@ -4997,6 +4997,40 @@ FF_LIMITE_TERMOPLASTICO_MM_N = (FF_LIMITE_TERMOPLASTICO_IN_KIP * PULGADA_EN_MM
 DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM = {"I": 1500, "II": 300, "III": 300,
                                             "IV": 300, "V": 300}
 
+# [C] --- VE-3.12 (decision 7 del dueño, 2026-11-17) --- EL ULTIMO diametro
+# interior que AASHTO M 170M-04 tabula CON PARED B para cada clase, mm, el
+# gemelo del minimo de arriba. El programa toma el espesor de la pared B, y
+# una clase por encima de su ultima fila con pared B es «diseño especial» de
+# la Seccion 7.2, no una clase estandar: no se ofrece. Solo se escribe la que
+# el ejemplar deja LEER: la Clase V, 1200 mm (Tabla 5, PDF 10, por imagen;
+# cita AASHTO_M170M.T5#PARED_B). Las Clases II y III llegan al tope general
+# del catalogo (DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM, 2700 mm; Tabla 3
+# continuada, PDF 7). Una clase que no esta aqui ni en el diccionario de abajo
+# usa ese tope general.
+DIAMETRO_MAX_TABULADO_PARED_B_POR_CLASE_M170M_MM = {"V": 1200}
+
+# [C] --- VE-3.12 (decision 7 del dueño) --- El MAYOR diametro, mm, en el que
+# la tabla de una clase se deja leer cuando su ultima fila NO se lee: de la
+# Tabla 4 (Clase IV, PDF 8) solo la primera fila, 300 mm (cita
+# AASHTO_M170M.T4#LEGIBLE). Por encima de este diametro la clase queda
+# BLOQUEADA: puede que la norma la tabule, pero el ejemplar no deja
+# verificarlo, y un tubo que la necesite se detiene con el dato que falta
+# (`M8.verificar_concreto`). No es el tope de la clase: es lo unico que se lee.
+DIAMETRO_MAX_LEGIBLE_POR_CLASE_M170M_MM = {"IV": 300}
+
+# [C] --- VE-3.12 (decision 6 del dueño, 2026-11-17) --- La LONGITUD EFECTIVA
+# de la practica ACPA para la carga viva sobre un tubo de concreto: ACPA
+# Design Data 1 «Highway Live Loads on Concrete Pipe» (2009), Eq. [2], pag. 3:
+# L_e = L + 1.75 (3/4 R_o), con R_o el rise exterior del tubo (B_c en el
+# circular) y L la dimension del area cargada a lo largo del tubo. Solo la
+# usa el CONTRASTE que no rige del paso F8.CLASE (`M8.verificar_concreto`):
+# la carga que rige es la lectura literal de AASHTO LRFD 9.a ed. 12.10.2.3,
+# sin L_e (ficha VE3-04). El PDF de DD 1 esta en el repositorio de normas,
+# `ejemplos_resueltos/conducto/acpa_dd1.pdf`; no es fuente registrada porque
+# no sostiene ningun valor que rija.
+COEFICIENTE_LONGITUD_EFECTIVA_ACPA = 1.75
+FRACCION_DEL_RISE_LONGITUD_EFECTIVA_ACPA = 0.75
+
 
 # ===========================================================================
 # --- T-3 --- (cadena T, auditoria adversarial, H1) La fila del MARCO de la

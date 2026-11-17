@@ -119,6 +119,9 @@ PERFIL_DECLARADO = {
 # transcribieron y aqui solo sirven para ejercitar la logica de clases.
 CINCO_CLASES_DE_PRUEBA = {"concreto_reforzado": {
     "I": 40.0, "II": 50.0, "III": 65.0, "IV": 100.0, "V": 140.0}}
+# El valor de archivo HASTA VE-3.12: solo la Clase II. Los tests que fijan el
+# mecanismo del dato que falta de T-5 corren con el.
+SOLO_CLASE_II = {"concreto_reforzado": {"II": 50.0}}
 
 
 @pytest.fixture
@@ -317,7 +320,11 @@ def test_la_carga_viva_pasados_8_ft_se_conserva_y_la_clase_II_deja_de_alcanzar(
     mat = _mat(TipoMaterial.CONCRETO_REFORZADO)
     punto = _con_relleno(a01, mat, g["D"], g["H_rel"])
     sec = SeccionCircular(g["D"])
-    with declarados({"instalacion_estandar_concreto": "tipo_3"}):
+    # VE-3.12: desde que las Clases III a V estan transcritas (decision 1
+    # del dueño), este test fija el MECANISMO de T-5 con solo la Clase II,
+    # el estado del archivo hasta VE-3.12.
+    with declarados({"instalacion_estandar_concreto": "tipo_3",
+                     "clases_producto_por_relleno": SOLO_CLASE_II}):
         with pytest.raises(DatoFaltanteError) as exc:
             M8.verificar_concreto(punto=punto, material=mat, seccion=sec,
                                   altura_relleno=g["H_rel"])
@@ -370,6 +377,14 @@ def test_el_relleno_maximo_del_concreto_ya_no_usa_el_permiso(del_expediente, a01
     mat = _mat(TipoMaterial.CONCRETO_REFORZADO)
     sec = SeccionCircular(0.90)
     H = _altura(a01, mat, 0.90)
+    # VE-3.12: desde que las Clases III a V estan transcritas (decision 1
+    # del dueño), este test fija el MECANISMO de T-5 con solo la Clase II,
+    # el estado del archivo hasta VE-3.12.
+    with declarados({"clases_producto_por_relleno": SOLO_CLASE_II}):
+        _relleno_maximo_con_solo_la_II(a01, mat, sec, H)
+
+
+def _relleno_maximo_con_solo_la_II(a01, mat, sec, H):
     conservando = M8.verificar_concreto(punto=a01, material=mat, seccion=sec,
                                         altura_relleno=H)
     with declarados({"carga_viva_bajo_relleno_alto": "despreciar_3_6_1_2_6a"}):
@@ -771,9 +786,12 @@ def test_la_clase_I_no_se_ofrece_por_debajo_de_1500_mm(del_expediente, a01):
     mat = _mat(TipoMaterial.CONCRETO_REFORZADO)
     with declarados({"clases_producto_por_relleno": CINCO_CLASES_DE_PRUEBA}):
         ofrecidas, faltan = M8.clases_de_concreto_para(0.90)
-        assert list(ofrecidas) == ["II", "III", "IV", "V"] and faltan == ()
+        # VE-3.12: la Clase IV queda BLOQUEADA por encima de 300 mm (su
+        # tabla solo se lee hasta ahi) y la V con pared B solo llega a 1200
+        # mm (decision 7 del dueño): ya no se ofrecen todas.
+        assert list(ofrecidas) == ["II", "III", "V"] and faltan == ()
         assert list(M8.clases_de_concreto_para(1.50)[0]) == [
-            "I", "II", "III", "IV", "V"]
+            "I", "II", "III"]
         r = M8.verificar_concreto(
             punto=_con_relleno(a01, mat, 0.90, 1.0), material=mat,
             seccion=SeccionCircular(0.90), altura_relleno=1.0)
@@ -813,15 +831,20 @@ def test_el_bloqueo_del_concreto_dice_exactamente_que_falta(del_expediente, a01)
     tabula para ESE diametro y no estan transcritas, y lo que lo destraba.
     """
     mat = _mat(TipoMaterial.CONCRETO_REFORZADO)
-    with pytest.raises(DatoFaltanteError) as exc:
+    # VE-3.12: desde que las Clases III a V estan transcritas (decision 1
+    # del dueño), este test fija el MECANISMO de T-5 con solo la Clase II,
+    # el estado del archivo hasta VE-3.12.
+    with declarados({"clases_producto_por_relleno": SOLO_CLASE_II}), \
+            pytest.raises(DatoFaltanteError) as exc:
         M8.verificar_concreto(
             punto=_con_relleno(a01, mat, 1.50, 5.0), material=mat,
             seccion=SeccionCircular(1.50), altura_relleno=5.0)
     mensaje = str(exc.value)
     assert exc.value.campo == "clases_producto_por_relleno"
     # En 1.50 m la Clase I SI se tabula, pero es INFERIOR a la II transcrita:
-    # las que faltan son las superiores.
-    assert "Clases III, IV, V" in mensaje
+    # las que faltan son las superiores; y desde VE-3.12 la V no, porque con
+    # pared B M 170M solo la tabula hasta 1200 mm.
+    assert "Clases III, IV de" in mensaje
     assert "AASHTO M 170M" in mensaje and "ASTM C76M" in mensaje
     assert "docs/contrato_entradas.md" in mensaje
     contrato = (RAIZ / "docs/contrato_entradas.md").read_text(encoding="utf-8")

@@ -2727,6 +2727,11 @@ CLASE_CONCRETO = _fundamento(
            "AASHTO_LRFD_9.12.10.2.3",
            "AASHTO_M170M.T2#DLOAD",
            "AASHTO_M170M.T1#DIAMETROS",
+           # VE-3.12: las D-load de III a V (USACE, fuente secundaria) y lo
+           # que el ejemplar de M 170M deja leer de los topes por clase.
+           "USACE_EM_1110_2_2902.B-7#C76",
+           "AASHTO_M170M.T4#LEGIBLE",
+           "AASHTO_M170M.T5#PARED_B",
            "AASHTO_LRFD_9.T12.10.2.1-1",
            "AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR",
            "EG2013.506.02#CLASE",

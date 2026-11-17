@@ -43,7 +43,11 @@ CENSO_EDICION_POSTERIOR = (
 
 # Ninguna quedo indeterminable en linea. Si una sesion futura marca alguna
 # «a gabinete», este censo la recibe a sabiendas.
-CENSO_A_GABINETE = ()
+# VE-3.12: el USACE EM 1110-2-2902 entra SOLO como fuente secundaria de las
+# D-load de las Clases III a V (un ejemplo resuelto): su vigencia no se busco
+# y queda a gabinete, dicho en su `Vigencia` (sustituirlo por un ejemplar
+# legible de M 170M o ASTM C76M).
+CENSO_A_GABINETE = ("USACE_EM_1110_2_2902",)
 
 # Como la ficha de cada criterio nombra a cada fuente con eleccion pendiente.
 # El test exige que las claves sean EXACTAMENTE las que el registro deriva, de

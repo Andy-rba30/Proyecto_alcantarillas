@@ -1312,7 +1312,8 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 'nivel_agua_diseno_v7' y 'margen_estacional_nf_v7_m' (c2), 'factor_intervalo_fijo_p24' (d).
     # 147 desde VE-3.5: 'dimensionamiento_zapata_cabezal'; 148 con el de VE-3.7,
     # 'fraccion_fin_remanso_canal' (las dos ramas se integraron juntas).
-    assert len(por_clave) == len(ca.CRITERIOS) == 148
+    # 149 desde VE-3.12: 'relleno_max_contraste_acpa_m' (decision 6 del dueño).
+    assert len(por_clave) == len(ca.CRITERIOS) == 149
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.

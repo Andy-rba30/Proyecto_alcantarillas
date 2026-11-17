@@ -58,6 +58,8 @@ para que un contraste pase. Un DEFECTO se imprime como tal.
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import math
 import sys
 from dataclasses import dataclass, replace
@@ -311,20 +313,30 @@ def _contrastes_dd1() -> List[Contraste]:
             unidad="lb/ft", publicado=publicado, recalculado=recalc,
             referencia=ref, motor=motor,
             explicacion=(
-                f"DD 1 (2009) aplica la distribucion ANTERIOR a 2013 ({carga}, "
-                "sin presencia multiple), LLDF 1.15 fijo, sin "
-                "el termino 0.06 D_i, y reparte la carga a lo largo del tubo "
-                "con la longitud efectiva L_e = L + 1.75 (3/4 R_o), donde R_o "
-                "es la ALTURA exterior del tubo (= D_o en un circular; la "
-                "Fig. 7 de DD 1 escribe 3/4 B_c), no el radio. M8 aplica "
+                "LA CAUSA DOMINANTE de la diferencia es que la 9.a ed. NO "
+                "ESCRIBE la longitud efectiva de ACPA (×1.51 en el ej. 1, "
+                "×1.32 en el ej. 4): DD 1 reparte la carga a lo largo del "
+                "tubo con L_e = L + 1.75 (3/4 R_o), donde R_o es la ALTURA "
+                "exterior del tubo (= D_o en un circular; la Fig. 7 de DD 1 "
+                "escribe 3/4 B_c), no el radio, y AASHTO LRFD 9.a ed. "
+                "12.10.2.3 reparte la carga «across the top of the pipe» sin "
+                "L_e y compensa el reparto longitudinal con 0.06 D_i y B_FLL "
+                "(C12.10.4.3.2c). El cambio de edicion explica solo el resto "
+                "(la presion en la clave, ×1.10 en el ej. 1, ×0.98 en el ej. "
+                f"4; descomposicion en el §8): DD 1 (2009) usa la distribucion "
+                f"ANTERIOR a 2013 ({carga}, sin presencia multiple), LLDF 1.15 "
+                "fijo y sin el termino 0.06 D_i. M8 aplica "
                 "AASHTO LRFD 9.a ed. 3.6.1.2.6b: HL-93 (gobierna el "
                 f"{vehiculo}), m = 1.20, LLDF {_lldf_9a(Di_ft, True):.3f} "
                 "interpolado por diametro (Tabla 3.6.1.2.6a-1), 0.06 D_i en el "
                 "ancho y W_L = P_L min(l_w, B_c), sin L_e. El IM es el mismo "
-                f"({IM:.2f} %, contraste DD1-IM). No es un defecto, y casi "
-                "toda la diferencia es la L_e (ver la descomposicion del "
-                "§8). El W_L del motor es el que `M8.verificar_concreto` "
-                "sustituye en la D-load.")))
+                f"({IM:.2f} %, contraste DD1-IM). No es un defecto: es la "
+                "lectura literal de la 9.a ed., que el dueño mantiene "
+                "(decision del 2026-11-17); con menos de "
+                "'relleno_max_contraste_acpa_m' el paso F8.CLASE imprime al "
+                "lado, como contraste que no rige, la clase que saldria con "
+                "la L_e de ACPA. El W_L del motor es el que "
+                "`M8.verificar_concreto` sustituye en la D-load.")))
     # --- La rama l_w < B_c, que ningun ejemplo alcanza (A-2) --------------
     # Ø 72 in pared B (7 in; B_c = 86 in = 7.17 ft, el tubo de DD 22) con 2 ft:
     # el ancho cargado l_w (~3.2 ft) es MENOR que B_c y gobierna el min.
@@ -536,12 +548,21 @@ def _verificar_concreto_del_motor(*, D_in: float, pared_in: float,
                        espesor_pared={round(D * 1000.0): t})       # literal-ok: mm por m
     carga_viva = ("conservar" if conservar_carga_viva
                   else "despreciar_3_6_1_2_6a")
+    # --- VE-3.12 --- El arnes solo LEE la D-load requerida: los topes de
+    # diametro por clase (la V con pared B hasta 1200 mm, la IV bloqueada
+    # por encima de 300 mm) deciden que clase se ofrece, no cuanto pide el
+    # tubo, y aqui se quitan para que un Ø 48 in con la D-load de la Clase V
+    # no se detenga antes de publicarla.
+    from src import constantes_normativas as CN
     with declarados({"instalacion_estandar_concreto": tipo,
                      "carga_viva_bajo_relleno_alto": carga_viva}), \
             con_valor("clases_producto_por_relleno", CLASES_DEL_ARNES,
                       motivo="arnes de la validacion externa de M8: ofrece "
                              "las Clases II y V de USACE pag. B-7 para que la "
-                             "D-load requerida quede a la vista"):
+                             "D-load requerida quede a la vista"), \
+            patch.dict(CN.DIAMETRO_MAX_TABULADO_PARED_B_POR_CLASE_M170M_MM,
+                       clear=True), \
+            patch.dict(CN.DIAMETRO_MAX_LEGIBLE_POR_CLASE_M170M_MM, clear=True):
         r = M8.verificar_concreto(punto=punto, material=material,
                                   seccion=SeccionCircular(D),
                                   altura_relleno=H_ft * PIE_EN_METROS)
@@ -743,17 +764,34 @@ def _contrastes_usace() -> List[Contraste]:
 def _contrastes_clases() -> List[Contraste]:
     from src import criterios_adoptados as ca
     archivo = ca.CRITERIOS["clases_producto_por_relleno"].valor
-    return [Contraste(
+    clase_ii = Contraste(
         id="USACE-CLASE-II", fuente="USACE", pagina="B-7",
         que="D-load a 0.01 in de la Clase II de ASTM C76M", unidad="N/m/mm",
         publicado=50.0, recalculado=50.0, referencia=50.0,       # literal-ok: pag. B-7
         motor=archivo["concreto_reforzado"]["II"],
-        explicacion=("La unica clase transcrita en 'clases_producto_por_relleno' "
-                     "(AASHTO M 170M). USACE imprime ademas I 40, III 65, IV 100 "
-                     "y V 140 N/m/mm (ASTM C76M de su edicion); M8 no las "
-                     "transcribe (ficha de DIFERIDO_CLASES_M170M) y este "
-                     "documento no las usa como fuente: solo el arnes de la "
-                     "D-load ofrece II y V para dejar la cuenta a la vista."))]
+        explicacion=("La Clase II de 'clases_producto_por_relleno' sale de "
+                     "AASHTO M 170M-04 (pag. M 170M-5, legible); el USACE la "
+                     "imprime igual: dos fuentes que coinciden."))
+    # --- VE-3.12 (decision 1 del dueño) --- Las Clases III a V SE TRANSCRIBEN
+    # DESDE ESTA MISMA TABLA del USACE (fuente secundaria [C]): el contraste
+    # comprueba la TRANSCRIPCION, no una segunda fuente. M 170M-04 solo
+    # corrobora la ultima de la III (100.0) y la V con la primera cifra
+    # ilegible (cita USACE_EM_1110_2_2902.B-7#C76).
+    impresas = {"III": 65.0, "IV": 100.0, "V": 140.0}             # literal-ok: pag. B-7
+    resto = [Contraste(
+        id=f"USACE-CLASE-{c}", fuente="USACE", pagina="B-7",
+        que=f"D-load a 0.01 in de la Clase {c} de ASTM C76M", unidad="N/m/mm",
+        publicado=d, recalculado=d, referencia=d,
+        motor=archivo["concreto_reforzado"][c],
+        explicacion=("Transcrita en 'clases_producto_por_relleno' DESDE esta "
+                     "tabla del ejemplo resuelto del USACE (decision del "
+                     "dueño, 2026-11-17; fuente secundaria [C]): el contraste "
+                     "comprueba la transcripcion. Cada clase se ofrece solo "
+                     "donde el ejemplar de M 170M deja verificar que la tabula "
+                     "con pared B (la V hasta 1200 mm; la IV, bloqueada por "
+                     "encima de 300 mm)."))
+        for c, d in impresas.items()]
+    return [clase_ii] + resto
 
 
 # ===========================================================================
@@ -829,7 +867,13 @@ def observacion_carga_viva(cs: Sequence[Contraste]) -> str:
     "longitudinal. La revision Fable lo dictamino como la lectura literal de "
     "la 9.a ed. y no un defecto, con una reserva que sigue en pie: ninguna "
     "de estas fuentes resuelve un ejemplo con la edicion 2013 o posterior, y "
-    "solo uno asi cerraria W_L con un numero de terceros.")
+    "solo uno asi cerraria W_L con un numero de terceros. DECISION DEL DUEÑO "
+    "(2026-11-17, sobre una segunda verificacion independiente): se MANTIENE "
+    "la lectura literal de la 9.a ed.; con menos de "
+    "'relleno_max_contraste_acpa_m' hasta la rasante el paso F8.CLASE del "
+    "tubo de concreto imprime al lado, como contraste que NO gobierna, la "
+    "clase que saldria con la L_e de ACPA (paso F8.ACPA). La revision de un "
+    "ingeniero sigue pendiente antes de la sustentacion.")
 
 
 NO_CONTRASTADO = (
@@ -856,7 +900,7 @@ NO_CONTRASTADO = (
      "carga de Spangler (cama de cuna de concreto, B_f = 6.098): es el metodo "
      "de las camas historicas, que AASHTO 12.10.2.1 sustituye por las "
      "instalaciones estandar. Solo su tabla de clases se contrasta "
-     "(USACE-CLASE-II)."),
+     "(USACE-CLASE-II a V)."),
 )
 
 

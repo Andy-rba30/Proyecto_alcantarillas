@@ -9791,6 +9791,14 @@ def acero_de_temperatura_aashto(*, ancho: float, espesor: float,
     CARA Y POR DIRECCION: A_s >= 1.30·b·h / [2·(b + h)·f_y], acotado a 0.11
     <= A_s <= 0.60 in2/ft. `ancho` (b, el menor ancho de la seccion) y
     `espesor` (h) en m; la conversion a SI esta en la constante.
+
+    EL ANCHO ES EL REAL DEL ELEMENTO, no una franja de calculo (cierre de O-2,
+    decision 3 del dueño, 2026-11-17): 5.10.6 define b como el «least width
+    of component section», y una franja de 12 in (CDOT Ex. 11) es una
+    convencion de calculo, no la letra. Con el ancho real el minimo es mayor
+    en un muro largo, que es el lado seguro; en los casos de CDOT manda el
+    piso de 0.11 in2/ft y el ancho no cambia el acero (docs/
+    validacion_cabezal.md).
     """
     for nombre, x in (("ancho", ancho), ("espesor", espesor), ("fy", fy)):
         if not (_finito(x) and x > 0):

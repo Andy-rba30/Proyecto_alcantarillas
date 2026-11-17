@@ -823,11 +823,13 @@ DIFERIDO_CONCRETO_DIRECTO = (
     "la clase sale del metodo indirecto de 12.10.4.3, que la norma admite "
     "como alternativa")
 DIFERIDO_CLASES_M170M = (
-    "D-load de 0.3 mm de las Clases I, III, IV y V de AASHTO M 170M: "
-    "ilegibles en el ejemplar de normas/ y no transcritas; un tubo que pida "
-    "mas que la Clase II se detiene diciendo que clases faltan y que lo "
-    "destraba un ejemplar legible de M 170M o de ASTM C76M "
-    "('clases_producto_por_relleno')")
+    "Clases de AASHTO M 170M que el ejemplar de normas/ no deja verificar: "
+    "la D-load de la Clase I no se transcribe (solo se tabula desde 1500 mm); "
+    "las de las Clases III, IV y V vienen de una fuente SECUNDARIA (la tabla "
+    "de ASTM C76 de un ejemplo resuelto del USACE EM 1110-2-2902, B-7); y el "
+    "ultimo diametro con pared B de la Clase IV no se lee, de modo que la "
+    "Clase IV queda BLOQUEADA por encima de 300 mm. Lo destraba un ejemplar "
+    "legible de M 170M o de ASTM C76M ('clases_producto_por_relleno')")
 DIFERIDO_PANDEO_LOCAL_HDPE = (
     "Pandeo local de los elementos del perfil del HDPE (AASHTO LRFD "
     "12.12.3.10.1b, ancho efectivo por elemento): necesita la geometria "
@@ -940,6 +942,14 @@ CODIGOS_FASE_8 = (CODIGO_CLASE, CODIGO_AREA, CODIGO_COSTURA, CODIGO_FF,
 # maximo. La CLI de texto lee el segundo por su codigo.
 CODIGO_PASO_TIPO4 = "F8.TIPO4"
 CODIGO_PASO_HMAX_TIPO4 = "F8.HMAX_TIPO4"
+# --- VE-3.12 (decision 6 del dueño) --- El contraste de la practica ACPA en
+# el paso F8.CLASE del tubo de concreto con poco relleno (no rige).
+CODIGO_CONTRASTE_ACPA = "F8.ACPA"
+CRITERIO_UMBRAL_ACPA = "relleno_max_contraste_acpa_m"
+# Las clases cuya D-load viene de la fuente SECUNDARIA del USACE (VE-3.12):
+# su paso cita esa tabla y no la de M 170M.
+CLASES_DESDE_USACE = ("III", "IV", "V")
+CITA_CLASES_USACE = "USACE_EM_1110_2_2902.B-7#C76"
 # El aviso FIJO de la costura del TMC (auditoria de T-5 y decision del
 # dueño del 2026-11-12): la resistencia con que se verifica es la de una
 # costura REMACHADA de ASTM A796, y el EG-2013 507.02 a) describe tuberia
@@ -1452,27 +1462,74 @@ def _clases_transcritas() -> dict:
             for c in CLASES_M170M if c in del_material}
 
 
+def _clase_tabulada_con_pared_b(clase: str, D_mm: float) -> bool:
+    """
+    True si AASHTO M 170M tabula la clase con PARED B en el diametro `D_mm`:
+    desde su primera fila (`DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM`) hasta
+    su ultima fila con pared B leida (`DIAMETRO_MAX_TABULADO_PARED_B_POR_
+    CLASE_M170M_MM`; sin entrada, el tope general del catalogo de concreto).
+    Por encima la clase es diseño especial de la Seccion 7.2 (VE-3.12, H1 de
+    la verificacion de las clases: la Clase V con pared B solo llega a 1200
+    mm).
+    """
+    minimo = _CN.DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM[clase]
+    maximo = _CN.DIAMETRO_MAX_TABULADO_PARED_B_POR_CLASE_M170M_MM.get(
+        clase, _CN.DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM)
+    return (D_mm + TOL_UMBRAL_NORMATIVO >= minimo
+            and D_mm <= maximo + TOL_UMBRAL_NORMATIVO)
+
+
+def _clase_bloqueada(clase: str, D_mm: float) -> bool:
+    """
+    True si el ejemplar de M 170M no deja verificar que la clase se tabule
+    en el diametro `D_mm`: su tabla solo se lee hasta
+    `DIAMETRO_MAX_LEGIBLE_POR_CLASE_M170M_MM` (la Clase IV, 300 mm). No se
+    inventa el tope (decision 7 del dueño, 2026-11-17): por encima, BLOQUEADA.
+    """
+    legible = _CN.DIAMETRO_MAX_LEGIBLE_POR_CLASE_M170M_MM.get(clase)
+    return legible is not None and D_mm > legible + TOL_UMBRAL_NORMATIVO
+
+
 def clases_de_concreto_para(D: float) -> Tuple[dict, Tuple[str, ...]]:
     """
     Las clases de M 170M que se le pueden ofrecer a un tubo de diametro `D`
-    (m): ({clase: D-load} de las TRANSCRITAS que la norma tabula para ese
-    diametro, en orden creciente; las clases SUPERIORES a la mayor ofrecida
-    que la norma tabula para ese diametro y no estan transcritas).
+    (m): ({clase: D-load} de las TRANSCRITAS que la norma tabula con pared B
+    para ese diametro y que el ejemplar deja VERIFICAR, en orden creciente;
+    las clases SUPERIORES a la mayor ofrecida que la norma tabula para ese
+    diametro y no estan transcritas).
 
     La norma no tabula todas las clases en todos los diametros: la Clase I
-    empieza en 1500 mm (`DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM`). Sin esta
-    guardia, completar el criterio con la D-load de la Clase I hacia que un
-    tubo de 0.90 m saliera «Clase I» (auditoria de T-5).
+    empieza en 1500 mm (`DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM`) y, desde
+    VE-3.12, la Clase V con pared B termina en 1200 mm. Sin esta guardia,
+    completar el criterio con la D-load de la Clase I hacia que un tubo de
+    0.90 m saliera «Clase I» (auditoria de T-5). Una clase BLOQUEADA en el
+    diametro (`clases_bloqueadas_para`) no se ofrece ni cuenta como que falta.
     """
     D_mm = D * MILIMETROS_POR_METRO
-    minimo = _CN.DIAMETRO_MIN_TABULADO_POR_CLASE_M170M_MM
     transcritas = _clases_transcritas()
     tabuladas = [c for c in CLASES_M170M
-                 if D_mm + TOL_UMBRAL_NORMATIVO >= minimo[c]]
-    ofrecidas = {c: transcritas[c] for c in tabuladas if c in transcritas}
+                 if _clase_tabulada_con_pared_b(c, D_mm)]
+    ofrecidas = {c: transcritas[c] for c in tabuladas
+                 if c in transcritas and not _clase_bloqueada(c, D_mm)}
     ultima = max((tabuladas.index(c) for c in ofrecidas), default=-1)
     faltan = tuple(c for c in tabuladas[ultima + 1:] if c not in transcritas)
     return ofrecidas, faltan
+
+
+def clases_bloqueadas_para(D: float) -> Tuple[str, ...]:
+    """
+    Las clases TRANSCRITAS que M 170M tabularia en el diametro `D` (m) segun
+    su primera fila, pero cuyo ultimo diametro el ejemplar no deja leer y que
+    quedan por encima de lo legible (VE-3.12, decision 7 del dueño): hoy la
+    Clase IV por encima de 300 mm. Un tubo que necesite una de ellas se
+    detiene con el dato que falta (`verificar_concreto`); no recibe otra
+    clase ni otro diametro para esquivarla.
+    """
+    D_mm = D * MILIMETROS_POR_METRO
+    transcritas = _clases_transcritas()
+    return tuple(c for c in CLASES_M170M
+                 if c in transcritas and _clase_tabulada_con_pared_b(c, D_mm)
+                 and _clase_bloqueada(c, D_mm))
 
 
 def verificar_concreto(*, punto: PuntoCritico, material: Material,
@@ -1510,6 +1567,17 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
         falta ningun dato: el tubo NO CUMPLE (`Verificacion` con
         `cumple=False` frente a la mayor clase), y MD prueba el escalon o el
         material siguiente.
+
+    Y DESDE VE-3.12 UN TERCER CASO, el de la clase BLOQUEADA (decision 7 del
+    dueño, 2026-11-17): si la menor clase que alcanza es una que el ejemplar
+    de M 170M no deja verificar a este diametro (`clases_bloqueadas_para`: la
+    Clase IV por encima de 300 mm), `DatoFaltanteError` nombrando la clase y
+    lo legible; no se le da la clase siguiente para esquivarla. Las D-load de
+    III a V vienen de la tabla de ASTM C76 de un ejemplo resuelto del USACE
+    (fuente secundaria [C]) y el paso lo dice en su umbral y en sus citas.
+
+    EL CONTRASTE ACPA SE IMPRIME AL LADO con poco relleno, y no rige
+    (`_contraste_acpa`, decision 6 del dueño).
 
     EL TIPO 4 SE IMPRIME AL LADO, como contraste que no rige (decision del
     dueño): la D-load, la clase y el relleno maximo que saldrian sin
@@ -1563,12 +1631,35 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
     VAF, B_FE, factor_tipo = _factores(tipo)
     D_req, W_E, W_L, cv = _demanda(H_rel, tipo)
     ofrecidas, faltan = clases_de_concreto_para(D)
+    bloqueadas = clases_bloqueadas_para(D)
+    transcritas = _clases_transcritas()
+    candidatas = {c: transcritas[c] for c in CLASES_M170M
+                  if c in ofrecidas or c in bloqueadas}
 
     def _clase_minima(D_pedida: float):
-        return next(((c, d) for c, d in ofrecidas.items()
+        # --- VE-3.12 --- La menor de las ofrecidas Y de las bloqueadas: si la
+        # que alcanza es una bloqueada, el tubo se detiene (abajo) en vez de
+        # recibir la siguiente para esquivarla (decision 7 del dueño).
+        return next(((c, d) for c, d in candidatas.items()
                      if d + TOL_UMBRAL_NORMATIVO >= D_pedida), None)
 
     elegida = _clase_minima(D_req)
+    if elegida is not None and elegida[0] in bloqueadas:
+        legible = _CN.DIAMETRO_MAX_LEGIBLE_POR_CLASE_M170M_MM[elegida[0]]
+        raise DatoFaltanteError(
+            CRITERIO_CLASES_PRODUCTO, id_punto=punto.id,
+            detalle=(f"el tubo de concreto de {D:.2f} m pide una D-load de "
+                     f"{D_req:.1f} N/m/mm (metodo indirecto, AASHTO LRFD "
+                     f"12.10.4.3, instalacion {tipo}) y la clase que la "
+                     f"alcanza es la Clase {elegida[0]} "
+                     f"({elegida[1]:.1f} N/m/mm), que esta BLOQUEADA a este "
+                     "diametro: de su tabla de AASHTO M 170M el ejemplar de "
+                     f"normas/ solo deja leer hasta {legible} mm, y no se "
+                     "inventa hasta donde la norma la tabula con pared B "
+                     "(decision del dueño, 2026-11-17). Se destraba con un "
+                     "ejemplar legible de AASHTO M 170M (el vigente) o de "
+                     "ASTM C76M. No se resuelve con otra clase ni subiendo "
+                     "de diametro"))
     if elegida is None and (faltan or not ofrecidas):
         nombres = ", ".join(faltan) if faltan else "ninguna transcrita"
         raise DatoFaltanteError(
@@ -1589,6 +1680,13 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
                      "diametro: lo que el punto pide es una clase superior"))
     cumple = elegida is not None
     clase, D_clase = elegida if cumple else list(ofrecidas.items())[-1]
+    desde_usace = clase in CLASES_DESDE_USACE
+    contraste = _contraste_acpa(
+        D=D, B_c=B_c, H_total=H_rel + e_paq, cv=cv, W_L=W_L, W_E=W_E,
+        W_F=W_F, B_FE=B_FE, B_FLL=B_FLL, S_i_mm=S_i_mm,
+        factor_tipo=factor_tipo, D_req=D_req, clase_minima=_clase_minima,
+        clase_que_rige=(f"Clase {clase}" if cumple else
+                        f"ninguna (ni la Clase {clase})"))
     p_tierra = paso(
         "F8.CARGA_TIERRA", codigo="F8.EV",
         que="Carga de tierra sobre el tubo de concreto (instalacion estandar)",
@@ -1622,15 +1720,18 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
             "lectura del proyecto; los dos pesan en el prisma porque la Eq. "
             "12.10.2.1-1 no distingue capas."))
     nota_clases = (
-        "Solo la D-load de la Clase II es legible en el ejemplar de M 170M "
-        "--las de las Clases I, III, IV y V no se transcriben de memoria--: "
-        "la clase elegida es la menor de las transcritas que la norma "
-        "tabula para este diametro (la Clase I solo desde 1500 mm), y un "
-        "tubo que pida mas que la mayor transcrita se detiene diciendo que "
-        "clases faltan. "
-        if faltan else
-        "Las clases superiores de M 170M estan transcritas: si ninguna "
-        "alcanza, el tubo no cumple. ")
+        "Solo la D-load de la Clase II es legible en el ejemplar de M 170M; "
+        "las de las Clases III, IV y V vienen de la tabla de ASTM C76 de un "
+        "ejemplo resuelto del USACE EM 1110-2-2902 (B-7), fuente "
+        "SECUNDARIA [C] (decision del dueño, 2026-11-17). La clase elegida es "
+        "la menor de las transcritas que la norma tabula con pared B para "
+        "este diametro (la Clase I solo desde 1500 mm; la V con pared B solo "
+        "hasta 1200 mm) y que el ejemplar deja verificar (la IV, por encima "
+        "de 300 mm, BLOQUEADA: si es la que alcanza, el tubo se detiene con "
+        "el dato que falta). "
+        + ("Un tubo que pida mas que la mayor transcrita se detiene diciendo "
+           "que clases faltan. " if faltan else
+           "Si ninguna de las ofrecidas alcanza, el tubo no cumple. "))
     v = _verificacion_f8(paso("F8.CLASE_CONCRETO", **_campos_f8(
             codigo=CODIGO_CLASE,
             que=f"Clase del tubo de concreto: D-load requerida frente a la Clase {clase}",
@@ -1655,7 +1756,11 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
             admisible=D_clase,
             unidad="N/m/mm",
             cita_umbral="AASHTO_LRFD_9.12.10.4.3.1#DLOAD",
-            descripcion_umbral=f"D-load de 0.3 mm de la Clase {clase} (AASHTO M 170M)",
+            descripcion_umbral=(
+                f"D-load de 0.3 mm de la Clase {clase} (ASTM C76M / AASHTO "
+                "M 170M, por la tabla del ejemplo resuelto del USACE EM "
+                "1110-2-2902, B-7 [C], fuente secundaria)" if desde_usace else
+                f"D-load de 0.3 mm de la Clase {clase} (AASHTO M 170M)"),
             aplicacion="umbral duro: la clase elegida es la MINIMA transcrita "
                     "cuya D-load alcanza la requerida; la EG-2013 manda "
                     "indicarla en el Proyecto",
@@ -1665,7 +1770,9 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
             explicacion=(f"el tubo es Clase {clase} o superior" if cumple else
                          f"ni la Clase {clase}, la mayor de AASHTO M 170M "
                          "para este diametro, alcanza la D-load requerida"),
-            citas=("AASHTO_M170M.T2#DLOAD", "AASHTO_M170M.T1#DIAMETROS",
+            citas=((CITA_CLASES_USACE, "AASHTO_M170M.T5#PARED_B",
+                    "AASHTO_M170M.T4#LEGIBLE") if desde_usace else ())
+              + ("AASHTO_M170M.T2#DLOAD", "AASHTO_M170M.T1#DIAMETROS",
                    "EG2013.506.02#CLASE", "AASHTO_LRFD_9.12.10.2.3",
                    "AASHTO_LRFD_9.12.10.4.3.2a", "AASHTO_LRFD_9.12.10.4.3.2c",
                    "AASHTO_LRFD_9.T12.10.2.1-1", "EG2013.506.07",
@@ -1673,6 +1780,9 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
                    "EG2013.205.12#COMPACTACION")
         + (("AASHTO_LRFD_9.12.10.4.3.1#TIPO1",) if factor_tipo != 1.0 else ()),
             nota=nota_clases
+              + ("CON POCO RELLENO, el paso F8.ACPA imprime al lado el "
+                 "contraste de la practica ACPA (longitud efectiva de DD 1), "
+                 "que NO GOBIERNA. " if contraste is not None else "")
               + "W_L = P_L min(l_w, B_c) es la lectura del proyecto de la "
               "carga viva «uniformly distributed across the top of the "
               "pipe». La instalacion es una ELECCION del proyecto "
@@ -1683,6 +1793,10 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
               "al lado lo que saldria con el Tipo 4.")),
         numeral=NUMERAL_F8_CLASE)
     pasos: List[PasoDeMemoria] = [cv.paso, p_tierra]
+    avisos_acpa: Tuple[str, ...] = ()
+    if contraste is not None:
+        pasos.append(contraste[0])
+        avisos_acpa = (contraste[1],)
     H_max = None
     if cumple:
         def _margen(H: float) -> float:
@@ -1710,10 +1824,86 @@ def verificar_concreto(*, punto: PuntoCritico, material: Material,
         e_paquete_m=e_paq, H_total_m=H_rel + e_paq,
         seleccion=f"Clase {clase}" if cumple else "", relleno_maximo_m=H_max,
         verificaciones=(v,), pasos=tuple(pasos),
-        avisos=_aviso_de_carga_viva_despreciada(cv),
+        avisos=_aviso_de_carga_viva_despreciada(cv) + avisos_acpa,
         diferido=(DIFERIDO_CONCRETO_DIRECTO,)
         + ((DIFERIDO_CLASES_M170M,)
            if len(_clases_transcritas()) < len(CLASES_M170M) else ()))
+
+
+def _contraste_acpa(*, D: float, B_c: float, H_total: float, cv, W_L: float,
+                    W_E: float, W_F: float, B_FE: float, B_FLL: float,
+                    S_i_mm: float, factor_tipo: float, D_req: float,
+                    clase_minima, clase_que_rige: str):
+    """
+    El CONTRASTE DE LA PRACTICA ACPA, que NO GOBIERNA (VE-3.12, decision 6 del
+    dueño, 2026-11-17): con menos relleno total hasta la rasante que
+    'relleno_max_contraste_acpa_m', la carga viva repartida ademas en la
+    longitud efectiva de ACPA Design Data 1 (2009), Eq. [2]:
+
+        L_e = w_w + 1.75 (3/4) B_c        W_L,ACPA = W_L w_w / L_e
+
+    aplicada sobre el reparto de la 9.a ed. (w_w es la dimension del area
+    cargada a lo largo del tubo, la «L» de ACPA), y la clase que saldria con
+    ella. La que rige es la de la lectura literal de AASHTO LRFD 9.a ed.
+    12.10.2.3 (sin L_e: ficha VE3-04); el contraste existe para que el
+    revisor vea cuanto pesa esa lectura con poco relleno (una o dos clases en
+    tubos de 0.60 a 0.90 m con menos de ~1.0 m). Devuelve (paso, aviso), o
+    None por encima del umbral o si la carga viva se desprecio.
+    """
+    umbral = ca.valor(CRITERIO_UMBRAL_ACPA)
+    if cv.despreciada or not H_total < umbral:
+        return None
+    w_w = cv.w_w_m
+    L_e = w_w + (_CN.COEFICIENTE_LONGITUD_EFECTIVA_ACPA
+                 * _CN.FRACCION_DEL_RISE_LONGITUD_EFECTIVA_ACPA * B_c)
+    W_L_acpa = W_L * w_w / L_e
+    D_acpa = (factor_tipo * ((W_E + W_F) / B_FE + W_L_acpa / B_FLL)
+              * N_POR_KN / S_i_mm)
+    elegida = clase_minima(D_acpa)
+    texto = (f"Clase {elegida[0]}" if elegida is not None else
+             "ninguna de las transcritas")
+    p = paso(
+        "F8.CLASE_CONCRETO", codigo=CODIGO_CONTRASTE_ACPA,
+        que=("Contraste con la practica ACPA (longitud efectiva L_e de DD 1, "
+             "Eq. [2]): carga viva y D-load -- NO GOBIERNA"),
+        formula=("L_e = w_w + 1.75 (3/4) B_c; W_L,ACPA = W_L w_w / L_e; "
+                 "D_ACPA = [(W_E + W_F)/B_FE + W_L,ACPA/B_FLL] / S_i"),
+        formula_cita_id="AASHTO_LRFD_9.12.10.4.3.1",
+        citas_textuales=("AASHTO_LRFD_9.12.10.2.3",
+                         "AASHTO_LRFD_9.12.10.4.3.2c"),
+        sustitucion=(
+            Magnitud("W_L", W_L, "kN/m", "la que rige (paso F8.CLASE), sin "
+                     "L_e", cifras=CIFRAS_MAGNITUD),
+            Magnitud("w_w", w_w, "m", f"area cargada a lo largo del tubo, "
+                     f"{cv.vehiculo} (paso F8.LL)", cifras=CIFRAS_MAGNITUD),
+            Magnitud("B_c", B_c, "m", "diametro exterior (el R_o de ACPA)",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("L_e", L_e, "m", "ACPA DD 1 (2009), Eq. [2] [C], solo "
+                     "para este contraste", cifras=CIFRAS_MAGNITUD),
+            Magnitud("D_ACPA", D_acpa, "N/m/mm", "D-load con W_L,ACPA",
+                     cifras=CIFRAS_MAGNITUD),
+            Magnitud("clase_ACPA", texto, "", "la menor de las transcritas "
+                     "que alcanzaria D_ACPA")),
+        resultado=Magnitud("W_L_ACPA", W_L_acpa, "kN/m", "carga viva por "
+                           "metro con la longitud efectiva de ACPA",
+                           cifras=CIFRAS_MAGNITUD),
+        nota_del_proyecto=(
+            "CONTRASTE QUE NO GOBIERNA (decision del dueño, 2026-11-17). La "
+            "carga viva que rige es la lectura literal de AASHTO LRFD 9.a "
+            "ed., que reparte la carga «across the top of the pipe» sin "
+            "longitud efectiva y compensa el reparto a lo largo del tubo con "
+            "0.06 D_i y B_FLL (C12.10.4.3.2c); la practica ACPA le suma "
+            "L_e. Se imprime con menos de "
+            f"{umbral:.2f} m de relleno hasta la rasante "
+            f"('{CRITERIO_UMBRAL_ACPA}' [A]), donde las dos lecturas pueden "
+            "dar clases distintas."))
+    aviso = (
+        f"F8 (contraste ACPA, NO GOBIERNA): con {H_total:.2f} m de relleno "
+        f"hasta la rasante el tubo de {D:.2f} m pide {D_req:.1f} N/m/mm con "
+        f"la lectura literal de AASHTO LRFD 9.a ed. ({clase_que_rige}); con "
+        f"la longitud efectiva de ACPA DD 1 (L_e = {L_e:.2f} m) pediria "
+        f"{D_acpa:.1f} N/m/mm ({texto}). Rige la primera")
+    return p, aviso
 
 
 def _contraste_tipo_4(*, D: float, D_pulg: float, H_rel: float, demanda,
@@ -1735,6 +1925,9 @@ def _contraste_tipo_4(*, D: float, D_pulg: float, H_rel: float, demanda,
             H_rel, D, id_punto)
     texto_clase = (f"Clase {elegida_4[0]}" if elegida_4 is not None else
                    "ninguna de las clases transcritas alcanza")
+    if (elegida_4 is not None
+            and elegida_4[0] in clases_bloqueadas_para(D)):
+        texto_clase += " (bloqueada a este diametro)"
     citas = ("AASHTO_LRFD_9.T12.10.2.1-1", "AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR",
              "EG2013.506.07", "EG2013.506.10", "EG2013.T205-01",
              "EG2013.205.12#COMPACTACION")

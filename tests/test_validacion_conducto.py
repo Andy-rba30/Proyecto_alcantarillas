@@ -54,6 +54,10 @@ COINCIDEN = (
     *(f"CPDM-BFE-{d}-{i}" for d in (12, 24, 36, 72, 144) for i in range(1, 5)),
     "CPDM-BFLL-36", "DD22-U", "USACE-T", "USACE-A", "USACE-FC",
     "USACE-CLASE-II",
+    # --- VE-3.12 (decision 1 del dueño) --- Las Clases III a V se
+    # transcriben DESDE esta tabla del USACE: el contraste comprueba la
+    # transcripcion (fuente secundaria [C]), no una segunda fuente.
+    "USACE-CLASE-III", "USACE-CLASE-IV", "USACE-CLASE-V",
 )
 POR_METODO = (
     "DD1-EJ1", "DD1-EJ4", "CPDM-BFLL-12", "CPDM-BFLL-24", "CPDM-BFLL-48",
