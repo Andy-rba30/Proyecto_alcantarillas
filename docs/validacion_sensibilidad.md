@@ -1654,7 +1654,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 ## 5. Los criterios que no se barren, por nombre
 
-86 barridos sobre 84 criterios; estos 63 no se barren, y la razón:
+86 barridos sobre 84 criterios; estos 64 no se barren, y la razón:
 
 | Criterio | Etiqueta | Por qué no se barre |
 |---|---|---|
