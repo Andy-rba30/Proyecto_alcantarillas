@@ -303,7 +303,10 @@ def test_las_ocho_claves_del_json_tienen_ficha_y_sale_del_censo():
                     "TW_evento_extremo_m",
                     # --- cierre de T-7b (H2) --- la cota de afectacion del
                     # metodo de cota de V5: veintiuna.
-                    "cota_afectacion_aguas_arriba_msnm"}
+                    "cota_afectacion_aguas_arriba_msnm",
+                    # --- VE-3.6 --- el desnivel del perfil del canal (VC3,
+                    # Familia C): veintidos.
+                    "desnivel_perfil_canal_m"}
     for clave in seis:
         assert ve.variable(clave).poblacion is Poblacion.DATO_EXTERNO
 

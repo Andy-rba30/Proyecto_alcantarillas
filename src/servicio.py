@@ -732,6 +732,17 @@ VERIFICACION_QUE_EXIGE_LA_CLAVE: Dict[str, str] = {
     CLAVE_Q_EVENTO_EXTREMO: "V8",
     CLAVE_TW_EVENTO_EXTREMO: "V8",
 }
+# --- VE-3.6 --- VC3 (Familia C): el desnivel F que el perfil del canal
+# provee en el cruce (USBR, Design of Small Canal Structures, num. 2-6). Es
+# dato del proyecto del CANAL, por punto, opcional y sin valor por defecto;
+# admite el cero (el perfil no provee ninguno: VC3 exige no perder nada).
+# Sin el, VC3 no se evalua y 7.B lo avisa: es una entrada con via alterna
+# para el pre-vuelo (no detiene nada), como la seccion medida del canal.
+CLAVE_DESNIVEL_PERFIL_CANAL = "desnivel_perfil_canal_m"
+CLAVES_EXTERNAS += (CLAVE_DESNIVEL_PERFIL_CANAL,)
+CLAVES_QUE_ADMITEN_CERO += (CLAVE_DESNIVEL_PERFIL_CANAL,)
+FAMILIAS_QUE_USAN[CLAVE_DESNIVEL_PERFIL_CANAL] = (Familia.C,)
+EXTERNOS_CON_VIA_ALTERNA += (CLAVE_DESNIVEL_PERFIL_CANAL,)
 ETAPA_BUCLE_DE_MD = "material y diametro (bucle de MD)"
 # --- T-7b --- EL SUELO DE FUNDACION DEL CABEZAL, POR PUNTO: los mismos
 # campos del criterio de corredor 'c_phi_fundacion' (cohesivo, c_kpa,
@@ -2348,7 +2359,11 @@ def _datos_de_expediente(informe: InformePunto, externos: DatosExternos,
         cota_desborde=cota_desborde, origen_cota_desborde=origen_cota,
         resolver=resolver if (Q_ext is not None and TW_ext is not None)
         else None)
-    return DatosDeExpediente(derecho_de_via=derecho, evento_extremo=evento)
+    # --- VE-3.6 --- VC3 (Familia C): el desnivel del perfil del canal.
+    desnivel = (externos.valor(punto.id, CLAVE_DESNIVEL_PERFIL_CANAL)
+                if punto.familia is Familia.C else None)
+    return DatosDeExpediente(derecho_de_via=derecho, evento_extremo=evento,
+                             desnivel_perfil_canal_m=desnivel)
 
 
 def _diferir_verificacion(informe: InformePunto, codigo: str,
@@ -2529,6 +2544,11 @@ def _verificador_perfil(informe: InformePunto,
                 # La fila sustituida, como «no aplica» y con su motivo
                 # (PC-27): la tabla de la Fase 5 conserva sus once filas.
                 filas.append(M5.v5_no_aplica_en_canal(punto=punto))
+                # --- VE-3.6 --- VC3 detras de VC1, como en `M5.verificar`.
+                vc3 = M5.pieza_vc3(punto=punto, resultado=resultado,
+                                   expediente=expediente)
+                if vc3 is not None:
+                    filas.append(vc3)
         except ErrorProyecto as exc:
             if codigo_hueco in VERIFICACIONES_DIFERIDAS_POR_ALCANCE[ALCANCE_PERFIL]:
                 _diferir_verificacion(informe, codigo_hueco, exc,
@@ -3201,10 +3221,14 @@ def _fase_7(informe: InformePunto,
     """
     resultado = informe.resultado
     seccion_canal = None
+    desnivel = None
     if externos is not None and informe.punto.familia is Familia.C:
         medida = externos.valor(informe.punto.id,
                                 CLAVE_SECCION_RECEPTOR_MEDIDA)
         seccion_canal = None if medida is None else SeccionReceptor(**medida)
+        # --- VE-3.6 --- el desnivel del perfil del canal, para VC3.
+        desnivel = externos.valor(informe.punto.id,
+                                  CLAVE_DESNIVEL_PERFIL_CANAL)
     # --- T-6 --- Si la longitud se CALCULO, viaja el objeto entero (metodo,
     # alturas por extremo, pasos); si se DECLARO, el escalar, y 7.B lo rotula
     # como declarado. En los dos casos es la misma L que uso la Fase 4.
@@ -3222,7 +3246,8 @@ def _fase_7(informe: InformePunto,
             # aplican); con la calculada ya van dentro de `calculada`.
             bombeo=informe.transversales[0],
             peralte=informe.transversales[1],
-            seccion_canal=seccion_canal))
+            seccion_canal=seccion_canal,
+            desnivel_perfil_canal_m=desnivel))
 
 
 def _fase_8_conducto(informe: InformePunto) -> None:

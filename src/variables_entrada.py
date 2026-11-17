@@ -1012,6 +1012,28 @@ _EXTERNOS: Dict[str, _Externo] = {
     ),
 
     # --- T-2 --- (cadena T, 2026-11-11) -------------------------------------
+    # --- VE-3.6 --- VC3 (Familia C): el desnivel del perfil del canal.
+    "desnivel_perfil_canal_m": _Externo(
+        concepto="Desnivel F que el perfil del CANAL provee en el cruce, m: "
+                 "su lamina normal aguas arriba menos la aguas abajo, del "
+                 "proyecto del canal (USBR, Design of Small Canal Structures "
+                 "1978, num. 2-6, «water surface differential»). VC3 compara "
+                 "con el las perdidas de la obra -- la lamina a la entrada "
+                 "menos la aguas abajo -- para no alterar la rasante "
+                 "hidraulica del canal (Sec. 2.3). Familia C",
+        unidad="m",
+        resolucion=Libre(
+            que_lo_fija="el perfil longitudinal del canal (ANA / Junta de "
+                        "Usuarios); 0 si el perfil no provee desnivel en el "
+                        "cruce. Dato por punto, opcional y sin valor por "
+                        "defecto",
+            dominio="m >= 0, finito",
+        ),
+        fase_declarada=_FASE_DE_MODULO["M5_verificaciones"],
+        nota="La lee `servicio._datos_de_expediente` y la pasa a "
+             "`M5.pieza_vc3`, en la tabla de la Fase 5 al lado de VC1. Sin "
+             "ella VC3 no tiene fila y 7.B lo avisa",
+    ),
     "seccion_receptor_medida": _Externo(
         concepto="Seccion transversal MEDIDA del cuerpo receptor (dren, "
                  "quebrada o canal) en la descarga: un objeto con el ancho de "

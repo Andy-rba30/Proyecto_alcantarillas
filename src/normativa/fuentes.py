@@ -153,6 +153,8 @@ from .esquema import (
 VIGENCIA_VERIFICADA_EL = "2026-09-14"
 VIGENCIA_VERIFICADA_EL_EXT6 = "2026-09-20"
 VIGENCIA_VERIFICADA_EL_T0 = "2026-11-11"
+# --- VE-3.6 --- La del USBR «Design of Small Canal Structures» (Familia C).
+VIGENCIA_VERIFICADA_EL_VE3 = "2026-11-17"
 VIGENCIA_COMO = (
     "busqueda web (WebSearch) sobre resultados de las paginas del emisor y "
     "de repositorios oficiales; ninguna pagina fue legible directamente desde "
@@ -1155,12 +1157,57 @@ WSDOT_HM = Fuente(
         "volver a mirar."),
 )
 
+# --- VE-3.6 (Familia C, cierre de la mitad de la rasante de VC1-01) --- EL
+# USBR «Design of Small Canal Structures» (1978). Es la fuente [C] del
+# criterio con que se juzga si un cruce altera la rasante hidraulica de un
+# canal: la obra se diseña para que sus perdidas no superen el desnivel que
+# el perfil del canal provee en el cruce (F, «water surface differential»,
+# num. 2-6). Documento de dominio publico del Bureau of Reclamation. El
+# ejemplar es un ESCANEO con capa de texto OCR (458 paginas): el texto de las
+# frases citadas sale limpio de la capa, y la numeracion es continua: la pag.
+# impresa N es la PDF N + 23 en el cuerpo del Capitulo II medido (22 -> 45,
+# 23 -> 46, 24 -> 47). Bajado de una copia universitaria (luk.staff.ugm.ac.id)
+# porque usbr.gov no respondio desde la sesion.
+USBR_DSCS = Fuente(
+    id="USBR_DSCS",
+    titulo="Design of Small Canal Structures",
+    emisor="U.S. Department of the Interior — Bureau of Reclamation",
+    edicion="1978 (Aisenbrey, Hayes, Warren, Winsett y Young)",
+    anio=1978,
+    archivo_pdf="normas/USBR Design of Small Canal Structures (1978).pdf",
+    sha1="75510d711ce1f6643333937a1ea38f3b469cc1f7",
+    paginas_pdf=458,
+    paginacion=Corrida(desfase=23),
+    vigencia=Vigencia(
+        estado=VIGENCIA_CONFIRMADA, fecha=VIGENCIA_VERIFICADA_EL_VE3,
+        como=("busqueda web (WebSearch) desde la sesion de VE-3.6: la "
+              "pagina de resumenes de manuales del Bureau en usbr.gov "
+              "(techreferences/mands/mands-abstracts/manabs3.html) lo lista "
+              "como «Design of Small Canal Structures, 1978», sin edicion "
+              "posterior: confirmada por lo que el resultado transcribe, como "
+              "T-0 confirmo HEC-14; el PDF de usbr.gov no respondio y el "
+              "ejemplar viene de una copia universitaria del mismo escaneo"),
+        pendiente_gabinete=("confirmar en usbr.gov que no hay revision "
+                            "posterior a 1978 y que el escaneo es el del "
+                            "Bureau")),
+    nota=(
+        "ENTRA EN VE-3.6 para la Familia C (paso de canal): la Sec. 2.3 de la "
+        "hoja de ruta prohibe alterar la rasante hidraulica del canal y "
+        "ninguna fuente de normas/ decia como juzgarlo. El num. 2-6 (Road "
+        "Crossings, Design Example, pags. impresas 23-24) lo hace: F, el "
+        "desnivel de la lamina normal entre aguas arriba y aguas abajo del "
+        "cruce que el perfil del canal provee, contra las perdidas "
+        "calculadas de la obra. Es [C]: fuente tecnica de EE.UU., no norma "
+        "peruana; el dato F es del proyecto del canal (ANA / Junta de "
+        "Usuarios)."),
+)
+
 FUENTES: Dict[str, Fuente] = {
     f.id: f for f in (
         MC_HHD, MP, MS, EG2013, E030, E050, E060,
         HDS5_3ED, HDS5_SI_1985, AASHTO_LRFD_9,
         AASHTO_M170M, AASHTO_M36, ASTM_A760, ASTM_A796, AASHTO_M294_TRAD,
-        DG2018, HEC14, WSDOT_HM,
+        DG2018, HEC14, WSDOT_HM, USBR_DSCS,
     )
 }
 

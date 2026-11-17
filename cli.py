@@ -80,7 +80,9 @@ diferencia importa porque se corrigen en sitios distintos:
       Y, desde el cierre de T-7b, `cota_afectacion_aguas_arriba_msnm` (msnm;
       la cota del terreno o del bien a proteger en el limite del derecho de
       via aguas arriba, de la topografia), que lee V5 con el metodo
-      «cota_de_afectacion».
+      «cota_de_afectacion». Y, desde VE-3.6, `desnivel_perfil_canal_m` (m;
+      el desnivel F de la lamina normal del canal que su perfil provee en el
+      cruce, del proyecto del canal; admite 0), que lee VC3 en la Familia C.
   (b) COLUMNAS QUE UNA FAMILIA DEJA VACIAS POR TABLERO. `Q_m3s` y `S_cauce`.
       La columna existe y para la Familia C va vacia a proposito
       (`M0_carga._VACIAS_FAMILIA_C`): su valor no lo tiene quien escribe el
