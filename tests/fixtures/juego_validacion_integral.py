@@ -428,7 +428,14 @@ VARIANTES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
     # menor que el de diseño (1.791 m3/s)») y la validacion lo tomaba por un
     # hallazgo. La hidrologia no calcula el del evento extremo (ficha T1-03):
     # es una entrada del proyecto, y la variante no la inventa; la deja
-    # vacia. Con eso los tres puntos quedan como estaban (NO FACTIBLE).
+    # vacia. Con eso A-01 y A-02 quedan como estaban (NO FACTIBLE POR
+    # RASANTE), y B-01 NO: su HDPE Ø 1.20 m cumple la tabla de la Fase 5 y
+    # V8 lo detiene por el dato que falta. Hasta las correcciones de VE-2
+    # (A1 de la revision Fable) este comentario decia «los tres quedan como
+    # estaban (NO FACTIBLE)», y B-01 salia «no factible» con un delta de
+    # rasante porque `MD.disenar_punto` no trataba como decisivo el dato que
+    # falta en la Fase 5; hoy sale el bloqueo del dato
+    # (`tests/test_ve2_correcciones.py`).
     "caudal_calculado": (
         "A-01, A-02 y B-01 con `Q_m3s` vacio: el caudal lo calcula la Fase "
         "1-bis con las cuencas y la serie sinteticas de T-1, y sin el caudal "

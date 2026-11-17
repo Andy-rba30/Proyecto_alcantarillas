@@ -151,7 +151,11 @@ Excepciones
                             no la alcanza ninguna familia y se conserva para
                             la que venga.
     DatoFaltanteError       el punto no trae Q ni S y no se pasaron como
-                            argumento (llega desde `PuntoCritico.exigir`).
+                            argumento (llega desde `PuntoCritico.exigir`);
+                            o a todos los candidatos les falto un dato
+                            (PC-28); o el que falto detuvo un escalon que
+                            cumplia todo lo evaluado, en la Fase 8 (T-5) o
+                            en la Fase 5 (correcciones de VE-2, A1).
     DatoInvalidoError       llega desde M3 / M4 / M5: un dato que no puede
                             ser. Si un candidato cierra, el material que lo
                             detecto se descarta; si ninguno cierra y lo
@@ -1101,8 +1105,21 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     # T4-10: el dato que falta ANTES de la tabla (la pared de un diametro)
     # en un material cuyos escalones evaluados incumplen sigue saliendo «no
     # factible» con el motivo, porque ahi nadie sabe si ese escalon cumpliria.
+    #
+    # --- correcciones de VE-2 (A1 de la revision Fable) --- Y EL QUE FALTA
+    # EN LA PROPIA FASE 5, TAMBIEN. El dato que V8 pide una vez declarado su
+    # TR (`Q_evento_extremo_m3s`) detiene un escalon que cumple todo lo que
+    # la tabla le evaluo -- V8 solo corre sobre el candidato que ya cumple
+    # lo anterior -- y no llevaba la marca de la Fase 8, de modo que el
+    # punto salia «no factible» cuando otro material incumplia (B-01 de la
+    # variante `caudal_calculado` del juego de T-11). Es el mismo criterio
+    # que T11-03 aplica al dato invalido (`_exigir_datos_validos`): decide
+    # el que detuvo un escalon que cumplia lo evaluado. La otra mitad de
+    # T4-10 no cambia: el que falta sobre un escalon que YA incumplia, o
+    # antes de la Fase 5 (sin `verificaciones_completadas`), no decide.
     decisivos = [exc for exc in faltantes
-                 if getattr(exc, ATRIBUTO_ESCALON_CUMPLE_LO_DEMAS, False)]
+                 if getattr(exc, ATRIBUTO_ESCALON_CUMPLE_LO_DEMAS, False)
+                 or _detuvo_un_escalon_que_cumplia(exc)]
     if decisivos:
         raise decisivos[0]
 
@@ -1188,7 +1205,9 @@ def _exigir_datos_presentes(faltantes: Sequence[DatoFaltanteError]) -> None:
     --los que si se evaluaron incumplen, y eso es lo que el punto es--; el
     motivo lista los escalones que no se evaluaron y por que dato
     (`_motivo_escalones_sin_evaluar`), y solo si a TODOS les falto un dato
-    sale `DatoFaltanteError` (PC-28).
+    sale `DatoFaltanteError` (PC-28) -- o si el que falto detuvo un escalon
+    que cumplia todo lo evaluado, en la Fase 8 (T-5) o en la propia Fase 5
+    (correcciones de VE-2, A1: `_detuvo_un_escalon_que_cumplia`) --.
     """
     if faltantes:
         raise faltantes[0]
@@ -1255,6 +1274,18 @@ def _lo_levanto_la_fase_5(exc: ErrorProyecto) -> bool:
     return ATRIBUTO_COMPLETADAS in vars(exc)
 
 
+def _detuvo_un_escalon_que_cumplia(exc: ErrorProyecto) -> bool:
+    """
+    True si la excepcion la levanto la Fase 5 (`_lo_levanto_la_fase_5`) y
+    todo lo que la tabla alcanzo a evaluar en ese escalon CUMPLE: a ese
+    material solo lo separa de un diseño lo que la excepcion dice. Es la
+    condicion «decisivo» de T11-03 para el dato invalido y, desde las
+    correcciones de VE-2 (A1), tambien para el dato que falta.
+    """
+    return (_lo_levanto_la_fase_5(exc)
+            and all(v.cumple for v in getattr(exc, ATRIBUTO_COMPLETADAS)))
+
+
 def _exigir_datos_validos(invalidos: Sequence[DatoInvalidoError],
                           n_candidatos: int) -> None:
     """
@@ -1287,7 +1318,7 @@ def _exigir_datos_validos(invalidos: Sequence[DatoInvalidoError],
     El escalon que no cabe bajo la subrasante ya no es un dato invalido.
     """
     decisivos = [exc for exc in invalidos
-                 if all(v.cumple for v in getattr(exc, ATRIBUTO_COMPLETADAS))]
+                 if _detuvo_un_escalon_que_cumplia(exc)]
     if decisivos:
         raise decisivos[0]
     if invalidos and len(invalidos) == n_candidatos:
