@@ -1616,15 +1616,60 @@ def _velocidad_de_v3(resultado: ResultadoHidraulico) -> Magnitud:
     por min(D, max(TW, y_c)). Es `ResultadoHidraulico.V_salida` (HDS-5 num.
     3.1.6, pag. impresa 3.18), que no lleva n. No se le busca un sustituto
     con Manning, que ahi no tiene solucion.
+
+    --- VE-3 (ficha VE2-04, decision del dueño del 2026-11-17) --- BAJO
+    CONTROL DE SALIDA, LA MAYOR DE LAS DOS. La Tabla Nº 10 limita «la
+    velocidad» del flujo en el conducto: el texto que la introduce (num.
+    4.1.1.3.6, pag. impresa 76; `tablas.T10.texto_previo`) no la restringe
+    al tirante normal. Bajo control de salida la seccion de salida la define
+    el tirante critico, el TW o la altura del conducto (HDS-5 num. 3.1.6,
+    pag. impresa 3.18), y en pendiente suave con salida libre la lamina baja
+    hacia la salida y alli el flujo va mas rapido que a tirante normal: en
+    el caso de la ficha, 1.508 m/s contra 1.107. Que la velocidad que la
+    tabla limita sea la MAYOR del conducto es la lectura del proyecto -- el
+    Manual no dice en que seccion se mide --, y se elige la mayor porque un
+    techo se verifica contra la estimacion alta. Bajo control de ENTRADA
+    `V_salida` es la del tirante normal (M4 la registra asi) y no cambia
+    nada. Sin `V_salida` bajo control de salida no se cae a `V_erosion`:
+    faltaria la mitad de lo que se compara, y es `MetodoNoEvaluableError`.
     """
     if not resultado.sin_tirante_normal:
-        return Magnitud(
-            "V_erosion", resultado.V_erosion, "m/s",
+        procedencia_erosion = (
             "M3, velocidad de la rama de n MINIMO -- la estimacion "
             "ALTA de velocidad, que es el extremo conservador contra "
             "un TECHO --, con su propio tirante normal: Q / A(y_n con "
             "n_min), paso 4.1. No es la de V2, que verifica un piso y "
-            "usa la rama opuesta", cifras=CIFRAS_MAGNITUD)
+            "usa la rama opuesta")
+        if resultado.control_gobernante is not ControlGobernante.SALIDA:
+            return Magnitud("V_erosion", resultado.V_erosion, "m/s",
+                            procedencia_erosion, cifras=CIFRAS_MAGNITUD)
+        if resultado.V_salida is None:
+            raise MetodoNoEvaluableError(
+                que="V3",
+                procedimiento="la velocidad a la salida de HDS-5 3.1.6, que "
+                              "`M4.resolver_control` emite en "
+                              "`ResultadoHidraulico.V_salida`: este "
+                              "resultado no la trae",
+                motivo="bajo control de salida V3 juzga la mayor de la "
+                       "velocidad a tirante normal y la de la seccion de "
+                       "salida, y sin la segunda no hay comparacion")
+        v_salida = resultado.V_salida.valor
+        if v_salida > resultado.V_erosion:
+            return Magnitud(
+                "V_salida", v_salida, "m/s",
+                "M4 (paso 4.3b): Q_celda / A(min(D, max(TW, y_c))), la "
+                "velocidad de la seccion de SALIDA (HDS-5 num. 3.1.6). Bajo "
+                "control de SALIDA V3 juzga la MAYOR de esta y la del "
+                f"tirante normal de n minimo (V_erosion = "
+                f"{resultado.V_erosion:.3f} m/s): la lamina baja hacia la "
+                "salida y alli el flujo va mas rapido. No lleva n de Manning",
+                cifras=CIFRAS_MAGNITUD)
+        return Magnitud(
+            "V_erosion", resultado.V_erosion, "m/s",
+            procedencia_erosion + f". Bajo control de SALIDA V3 juzga la "
+            "MAYOR de esta y la de la seccion de salida (HDS-5 num. 3.1.6), "
+            f"que aqui es menor (V_salida = {v_salida:.3f} m/s)",
+            cifras=CIFRAS_MAGNITUD)
     if resultado.V_salida is None:
         raise MetodoNoEvaluableError(
             que="V3",
@@ -1835,7 +1880,7 @@ def v3_velocidad_maxima(*, material: Material,
     if material.tipo in CRITERIO_V_MAX:
         clave = CRITERIO_V_MAX[material.tipo]
         v_max = ca.valor(clave)     # CriterioPendienteError mientras falte
-        V = _velocidad_de_v3(resultado).valor   # V_erosion; V_salida si S = 0
+        V = _velocidad_de_v3(resultado).valor   # ver _velocidad_de_v3
         cumple = V <= v_max + TOL_UMBRAL_NORMATIVO
         return Verificacion(
             cumple=cumple,
@@ -1862,7 +1907,7 @@ def v3_velocidad_maxima(*, material: Material,
             v_max = adoptado
             clave = CRITERIO_V_MAX_CONCRETO
 
-    V = _velocidad_de_v3(resultado).valor       # V_erosion; V_salida si S = 0
+    V = _velocidad_de_v3(resultado).valor       # ver _velocidad_de_v3
     cumple = V <= v_max + TOL_UMBRAL_NORMATIVO
     return Verificacion(
         cumple=cumple,

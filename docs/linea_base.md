@@ -854,3 +854,24 @@ veces que la lista aparece) y de expediente, además de la huella. N1 (A1 acotad
 del punto) no mueve la línea base, por la misma razón que A1.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 18. VE-3.1 (ficha VE2-04): bajo control de salida V3 juzga la mayor de V_erosion y V_salida; ningún número se mueve (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (Python del proyecto primero en
+el `PATH`). Bajo control de SALIDA, V3 compara contra el techo de la Tabla Nº 10 la mayor de
+la velocidad del tirante normal de n mínimo (`V_erosion`) y la de la sección de salida
+(`V_salida`, HDS-5 núm. 3.1.6). En las corridas de la línea base, todo escalón bajo control
+de salida tiene la salida MÁS LENTA que el tirante normal, de modo que V3 sigue comparando
+`V_erosion`: **ningún número de los cuatro JSON cambia** (ni `valor_obtenido` de V3, ni
+veredicto, ni diámetro). Lo único que se mueve es la procedencia de esa velocidad en las
+memorias, que ahora dice con qué se comparó: «Bajo control de SALIDA V3 juzga la MAYOR de
+esta y la de la sección de salida […], que aquí es menor (V_salida = x m/s)». Escalones
+afectados: tres en `memoria_expediente.html` (V_salida 0.149, 1.908 y 2.412 m/s), tres en
+`memoria_perfil.html` (0.066, 0.357 y 0.924 m/s) y dos en `memoria_perfil_ancha.html`
+(0.084 y 1.908 m/s).
+
+Fuera de la línea base, en la corrida de referencia `expediente_cabezal` del índice de
+fórmulas un escalón de TMC bajo control de salida pasa a comparar `V_salida` = 1.739 m/s
+contra su techo de 4.572 m/s: cumple igual que antes.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
