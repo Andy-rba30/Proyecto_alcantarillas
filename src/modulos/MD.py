@@ -154,8 +154,9 @@ Excepciones
                             argumento (llega desde `PuntoCritico.exigir`);
                             o a todos los candidatos les falto un dato
                             (PC-28); o el que falto detuvo un escalon que
-                            cumplia todo lo evaluado, en la Fase 8 (T-5) o
-                            en la Fase 5 (correcciones de VE-2, A1).
+                            cumplia todo lo evaluado, en la Fase 8 (T-5) o,
+                            si es un dato del punto, en la Fase 5
+                            (correcciones de VE-2, A1 y N1).
     DatoInvalidoError       llega desde M3 / M4 / M5: un dato que no puede
                             ser. Si un candidato cierra, el material que lo
                             detecto se descarta; si ninguno cierra y lo
@@ -1102,24 +1103,32 @@ def disenar_punto(punto: PuntoCritico, *, L: float, TW: float,
     # no cumple (decision del dueño del proyecto, 2026-11-12: «no verificado
     # con un producto real», no un «no cumple» a secas). Se relanza ese
     # `DatoFaltanteError`, con su campo. No cambia la otra mitad de la ficha
-    # T4-10: el dato que falta ANTES de la tabla (la pared de un diametro)
-    # en un material cuyos escalones evaluados incumplen sigue saliendo «no
-    # factible» con el motivo, porque ahi nadie sabe si ese escalon cumpliria.
+    # T4-10: el dato de catalogo que falta (la pared de un diametro, que V7
+    # pide dentro de la Fase 5) en un material cuyos escalones evaluados
+    # incumplen sigue saliendo «no factible» con el motivo, porque ahi nadie
+    # sabe si ese escalon cumpliria.
     #
-    # --- correcciones de VE-2 (A1 de la revision Fable) --- Y EL QUE FALTA
-    # EN LA PROPIA FASE 5, TAMBIEN. El dato que V8 pide una vez declarado su
-    # TR (`Q_evento_extremo_m3s`) detiene un escalon que cumple todo lo que
-    # la tabla le evaluo -- V8 solo corre sobre el candidato que ya cumple
-    # lo anterior -- y no llevaba la marca de la Fase 8, de modo que el
-    # punto salia «no factible» cuando otro material incumplia (B-01 de la
-    # variante `caudal_calculado` del juego de T-11). Es el mismo criterio
-    # que T11-03 aplica al dato invalido (`_exigir_datos_validos`): decide
-    # el que detuvo un escalon que cumplia lo evaluado. La otra mitad de
-    # T4-10 no cambia: el que falta sobre un escalon que YA incumplia, o
-    # antes de la Fase 5 (sin `verificaciones_completadas`), no decide.
+    # --- correcciones de VE-2 (A1 de la revision Fable) --- Y EL DATO DEL
+    # PUNTO QUE FALTA EN LA PROPIA FASE 5, TAMBIEN. El dato que V8 pide una
+    # vez declarado su TR (`Q_evento_extremo_m3s`) detiene un escalon que
+    # cumple todo lo que la tabla le evaluo -- V8 solo corre sobre el
+    # candidato que ya cumple lo anterior -- y no llevaba la marca de la
+    # Fase 8, de modo que el punto salia «no factible» cuando otro material
+    # incumplia (B-01 de la variante `caudal_calculado` del juego de T-11).
+    # Es el mismo criterio que T11-03 aplica al dato invalido del punto
+    # (`_exigir_datos_validos`): decide el que detuvo un escalon que cumplia
+    # lo evaluado. SOLO EL DATO DEL PUNTO (N1 de la verificacion de esas
+    # correcciones; decision del dueño, 2026-11-17): la fila de pared de un
+    # diametro que V7 pide (`espesor_pared_conducto[...]`) es un dato de
+    # CATALOGO, y volverla decisiva quitaba el «no factible por rasante» y su
+    # delta a puntos que, declarada la fila, seguian sin diseño
+    # (`_falta_un_dato_de_catalogo`). La otra mitad de T4-10 no cambia: el
+    # dato de catalogo, el que falta sobre un escalon que YA incumplia y el
+    # que falta antes de la Fase 5 no deciden.
     decisivos = [exc for exc in faltantes
                  if getattr(exc, ATRIBUTO_ESCALON_CUMPLE_LO_DEMAS, False)
-                 or _detuvo_un_escalon_que_cumplia(exc)]
+                 or (_detuvo_un_escalon_que_cumplia(exc)
+                     and not _falta_un_dato_de_catalogo(exc))]
     if decisivos:
         raise decisivos[0]
 
@@ -1206,8 +1215,9 @@ def _exigir_datos_presentes(faltantes: Sequence[DatoFaltanteError]) -> None:
     motivo lista los escalones que no se evaluaron y por que dato
     (`_motivo_escalones_sin_evaluar`), y solo si a TODOS les falto un dato
     sale `DatoFaltanteError` (PC-28) -- o si el que falto detuvo un escalon
-    que cumplia todo lo evaluado, en la Fase 8 (T-5) o en la propia Fase 5
-    (correcciones de VE-2, A1: `_detuvo_un_escalon_que_cumplia`) --.
+    que cumplia todo lo evaluado, en la Fase 8 (T-5) o, si es un dato DEL
+    PUNTO, en la propia Fase 5 (correcciones de VE-2, A1 y N1:
+    `_detuvo_un_escalon_que_cumplia`, `_falta_un_dato_de_catalogo`) --.
     """
     if faltantes:
         raise faltantes[0]
@@ -1284,6 +1294,20 @@ def _detuvo_un_escalon_que_cumplia(exc: ErrorProyecto) -> bool:
     """
     return (_lo_levanto_la_fase_5(exc)
             and all(v.cumple for v in getattr(exc, ATRIBUTO_COMPLETADAS)))
+
+
+def _falta_un_dato_de_catalogo(exc: DatoFaltanteError) -> bool:
+    """
+    True si el dato que falta nombra un CRITERIO de `criterios_adoptados`
+    --el catalogo o el producto, no el punto--: la fila de pared de un
+    diametro que V7 pide llega como «espesor_pared_conducto[hdpe][1350]», y
+    su raiz, antes del primer corchete, es la clave del criterio. Es la misma
+    frontera que `disenar_punto` traza para el dato invalido (`exc.campo in
+    ca.CRITERIOS`, auditor de C05). Correcciones de VE-2, N1 de su
+    verificacion: un dato del punto que falta en la Fase 5 sobre un escalon
+    que cumple lo evaluado decide; uno de catalogo, no (ficha T4-10).
+    """
+    return str(exc.campo).split("[", 1)[0] in ca.CRITERIOS
 
 
 def _exigir_datos_validos(invalidos: Sequence[DatoInvalidoError],

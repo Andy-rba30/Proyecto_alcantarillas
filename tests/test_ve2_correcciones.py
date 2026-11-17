@@ -21,9 +21,13 @@ detiene en el perfil del fabricante del HDPE, otro dato. CLAUDE.md
 factible"».
 
 LO QUE NO CAMBIA, y esta fijado aqui (la ficha T4-10): el dato que falta
-sobre un escalon que YA incumplia, y el que falta ANTES de la Fase 5 (la
-pared de un diametro, sin `verificaciones_completadas`), siguen dejando el
-punto en lo que son los materiales que si se evaluaron.
+sobre un escalon que YA incumplia, el que falta antes de la Fase 5 (sin
+`verificaciones_completadas`) y, desde N1 de la verificacion de estas
+correcciones, el dato de CATALOGO que falta dentro de la Fase 5 (la fila de
+pared de un diametro, que pide V7 con V1 a V6 ya cumplidas) siguen dejando
+el punto en lo que son los materiales que si se evaluaron. Esta frase
+decia que la pared se pedia «antes de la Fase 5»: era falso, y por eso A1
+la volvia decisiva sin que ningun test lo viera.
 
 SE ESCRIBIO EN ROJO PRIMERO, contra d9b59f9: fallaban los dos que piden el
 `DatoFaltanteError` decisivo de la Fase 5 y el del servicio con la variante.
@@ -50,15 +54,16 @@ class _DatoFaltante:
     Los demas materiales se rechazan.
     """
 
-    def __init__(self, tipos, completadas=None):
+    def __init__(self, tipos, completadas=None, campo="Q_evento_extremo_m3s"):
         self.tipos = set(tipos)
         self.completadas = completadas
+        self.campo = campo
 
     def __call__(self, *, punto, material, seccion, resultado):
         if material.tipo in self.tipos:
             exc = DatoFaltanteError(
-                "Q_evento_extremo_m3s",
-                detalle=f"lo pide V8 (visto en {material.nombre})")
+                self.campo,
+                detalle=f"lo pide la Fase 5 (visto en {material.nombre})")
             if self.completadas is not None:
                 exc.verificaciones_completadas = tuple(self.completadas)
             raise exc
@@ -109,9 +114,10 @@ def test_el_dato_que_falta_sobre_un_escalon_que_ya_incumple_no_decide():
 
 def test_el_dato_que_falta_antes_de_la_fase_5_sigue_como_hasta_hoy():
     """
-    Sin `verificaciones_completadas` (la pared de un diametro, que M2 pide
-    antes de la tabla) y con otros materiales evaluados que incumplen: «no
-    factible», con el material citado como no evaluado.
+    Sin `verificaciones_completadas` (lo que M3 o M4 piden antes de la
+    tabla; la pared de un diametro NO es de aqui: la pide V7 dentro de la
+    Fase 5, ver los tests de N1 abajo) y con otros materiales evaluados que
+    incumplen: «no factible», con el material citado como no evaluado.
     """
     verificar = _DatoFaltante([TipoMaterial.HDPE], completadas=None)
     with pytest.raises(DisenoNoFactibleError):
@@ -157,3 +163,57 @@ def test_con_el_evento_extremo_coherente_B01_espera_el_perfil_del_hdpe():
     b = next(b for b in b01.bloqueos
              if b.tipo is TipoDeBloqueo.DATO_FALTANTE)
     assert b.campo == "perfil_hdpe_fabricante"
+
+
+# ===========================================================================
+# N1 de la verificacion de las correcciones (Fable): SOLO EL DATO DEL PUNTO
+# ===========================================================================
+# A1 tal como se escribio primero volvia decisivo TODO dato que falta en la
+# Fase 5 sobre un escalon que cumple lo evaluado, y eso incluia la fila de
+# pared de un diametro del catalogo que V7 pide (`espesor_pared_conducto`):
+# la verificacion midio 30 casos del juego de T-11 que pasaban de «NO
+# FACTIBLE POR RASANTE», con su delta, a «falta la pared», y que declarada la
+# fila volvian al mismo «no factible» con el mismo delta. Decision del dueño
+# (2026-11-17): decide solo el dato DEL PUNTO; el que nombra un criterio
+# --un dato de catalogo o de producto-- sigue la ficha T4-10.
+
+
+def test_el_dato_de_catalogo_que_falta_en_la_fase_5_no_decide():
+    """
+    La fila de pared que V7 pide, sobre un escalon que cumple lo evaluado, y
+    los otros materiales que incumplen: «no factible», como en T4-10.
+    """
+    verificar = _DatoFaltante([TipoMaterial.HDPE], (_verificacion(True),),
+                              campo="espesor_pared_conducto[hdpe][1350]")
+    with pytest.raises(DisenoNoFactibleError) as exc:
+        MD.disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
+                         verificar=verificar)
+    assert "espesor_pared_conducto[hdpe][1350]" in exc.value.motivo
+
+    # Con el campo de un criterio sin corchetes, igual.
+    verificar = _DatoFaltante([TipoMaterial.HDPE], (_verificacion(True),),
+                              campo="espesor_pared_conducto")
+    with pytest.raises(DisenoNoFactibleError):
+        MD.disenar_punto(_punto(), L=L_CONDUCTO, TW=TW_LIBRE,
+                         verificar=verificar)
+
+
+def test_el_caso_real_de_la_pared_sigue_no_factible_por_rasante_con_su_delta():
+    """
+    El caso medido por la verificacion, por el servicio: A-01 del juego con
+    Q = 1.0 m3/s, S = 0.004 y un evento extremo de 3.0 m3/s. El HDPE Ø 1.35 m
+    cumple V1 a V6 y V7 pide su fila de pared, que el catalogo no trae; el
+    Ø 1.20 m incumple V7. Sale «no factible por rasante» con el delta de
+    7.A de `d9b59f9` (0.3198 m), no «falta la pared».
+    """
+    cambios = (("celda", "A-01", "Q_m3s", "1.0"),
+               ("celda", "A-01", "S_cauce", "0.004"),
+               ("externo", "A-01", "Q_evento_extremo_m3s", 3.0))
+    informe = V.correr_juego(V.aplicar(V.juego_completo(), cambios))
+    a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
+    assert not a01.dimensionado
+    tipos = {b.tipo for b in a01.bloqueos}
+    assert TipoDeBloqueo.DATO_FALTANTE not in tipos
+    b = next(b for b in a01.bloqueos
+             if b.tipo is TipoDeBloqueo.DISENO_NO_FACTIBLE)
+    assert b.delta_rasante_m == pytest.approx(0.31981, abs=1e-5)

@@ -495,7 +495,14 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   TMC. Los tres detienen un escalón que CUMPLE toda la tabla de la Fase 5, y
   por eso `MD.disenar_punto` los relanza cuando ningún candidato cierra
   (`ATRIBUTO_ESCALON_CUMPLE_LO_DEMAS`): un punto al que solo le falta un
-  dato no es «no factible» (ficha T5-10).
+  dato no es «no factible» (ficha T5-10). **Y desde las correcciones de
+  VE-2 (A1, acotada por N1 de su verificación) también el dato DEL PUNTO
+  que falta dentro de la Fase 5** sobre un escalón que cumple todo lo
+  evaluado (`Q_evento_extremo_m3s`, que V8 pide): decide como el inválido
+  de T11-03 (`MD._detuvo_un_escalon_que_cumplia`). Un dato de CATÁLOGO —el
+  que nombra un criterio, como la fila de pared de un diámetro que pide V7
+  (`MD._falta_un_dato_de_catalogo`)— no decide, y el punto sigue «no
+  factible» con su delta de rasante (ficha T4-10, VE2-03).
 - DatoInvalidoError: el dato **está** pero no puede ser: no es del tipo
   esperado, cae fuera del rango físico de dominios.py, o contradice a otro
   dato de su misma fila (§1.5). Hermana de DatoFaltanteError y no la misma:

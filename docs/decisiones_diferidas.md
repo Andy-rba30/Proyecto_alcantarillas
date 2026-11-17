@@ -7860,9 +7860,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 ## VE2-03 · Lo que la revisión independiente de VE-2 encontró y se corrigió (A1, M3, M4, B1, B3, B4)
 
 - **Cerrado (revisión Fable, `proceso/planes_mejora/ve2_estado/REVISION_FABLE.md`; un alto,
-  dos medios y tres bajos):** (A1) el `DatoFaltanteError` que la Fase 5 levanta sobre un
-  escalón que cumple lo evaluado decide como el inválido de T11-03
-  (`MD._detuvo_un_escalon_que_cumplia`): B-01 de la variante `caudal_calculado` ya no sale
+  dos medios y tres bajos):** (A1) el `DatoFaltanteError` de un dato DEL PUNTO que la Fase 5
+  levanta sobre un escalón que cumple lo evaluado decide como el inválido de T11-03
+  (`MD._detuvo_un_escalon_que_cumplia`; uno de catálogo no, ficha VE2-05): B-01 de la variante `caudal_calculado` ya no sale
   «no factible» con delta de rasante, sale el dato que falta (`Q_evento_extremo_m3s`), y
   con ese dato coherente se detiene en `perfil_hdpe_fabricante`. (M3)
   `peso_especifico_saturado_relleno_kn_m3` es de perfil, medido por una corrida de perfil
