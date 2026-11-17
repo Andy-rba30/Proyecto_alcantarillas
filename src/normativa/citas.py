@@ -15152,4 +15152,73 @@ AASHTO_C5_7_3_4_2_NEGATIVO = _cita(
 )
 
 
+# --- VE-3.14 (H-3 de los ensayos de diseño del cabezal) --- El agua en la
+# cuña bajo sismo: el comentario C11.6.5.3 da los dos tratamientos.
+AASHTO_C11_6_5_3_AGUA_TOTAL = _cita(
+    id="AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.5.3",
+    titulo_numeral="Calculation of Seismic Active Earth Pressures",
+    pagina_impresa="11-31",
+    pagina_pdf=1500,
+    pagina_pdf_titulo=1498,
+    texto_literal=Verbatim(
+        texto=("should be used to estimate the earth pressure when using the "
+               "M–O Method, under the assumption that the soil and water "
+               "move as a unit during seismic loading. This situation will "
+               "apply for soils that are not free draining."),
+        pagina_pdf=1500),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE3_14,
+    nota=("El sujeto, en la frase anterior: «If the soil within the wedge is "
+          "fully saturated, then the total unit weight (γt)». El mismo "
+          "comentario abre el parrafo con que el agua dentro de la cuña "
+          "«can influence the magnitude of the seismic active earth "
+          "pressure» y pide el nivel medio del agua en el tiempo."),
+    interpretacion=Interpretacion(
+        texto=("El proyecto calcula el INCREMENTO sismico (P_AE - P_A) con el "
+               "peso TOTAL del suelo bajo el agua -- el suelo y el agua se "
+               "mueven juntos -- y deja el empuje estatico como estaba: el "
+               "suelo sumergido mas la hidrostatica, que juntos son la "
+               "presion total en reposo del agua. Con el agua solo en parte "
+               "de la cuña, el peso total entra solo en esa parte. Es el "
+               "tratamiento del relleno que no drena libremente, que es el "
+               "relleno compactado del trasdos; el del relleno muy abierto "
+               "(pedraplen) es el otro parrafo del comentario."),
+        en_contra=("si el relleno fuera muy abierto (pedraplen), el agua no "
+                   "se moveria con el suelo y faltaria la presion "
+                   "hidrodinamica, que el programa no calcula",
+                   "el comentario habla de la cuña ENTERA saturada; aplicarlo "
+                   "a la parte mojada es una extension"),
+        a_favor=("con el peso total la inercia del agua entra en el "
+                 "incremento: es mayor que con el peso sumergido",
+                 "la condicion (2) de 11.6.5.3 solo excluye el relleno "
+                 "saturado Y suelto, que puede licuar; el relleno compactado "
+                 "del trasdos no es ese caso")),
+)
+
+AASHTO_C11_6_5_3_AGUA_ABIERTO = _cita(
+    id="AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="C11.6.5.3",
+    titulo_numeral="Calculation of Seismic Active Earth Pressures",
+    pagina_impresa="11-32",
+    pagina_pdf=1501,
+    pagina_pdf_titulo=1498,
+    texto_literal=Verbatim(
+        texto=("the effective unit weight should be used in the pressure "
+               "determination and an additional force component due to "
+               "hydrodynamic effects should be added to the wall pressure."),
+        pagina_pdf=1501),
+    caracter=Caracter.RECOMENDACION,
+    sesion=VE3_14,
+    nota=("El caso, en la frase anterior: «If the backfill material is a very "
+          "open granular material, such as quarry spalls, it is possible "
+          "that the water will not move with the soil during seismic "
+          "loading». La presion hidrodinamica «Generally, these methods "
+          "involve a form of the Westergaard solution» (Kramer, 1996): la "
+          "formula no esta en ninguna fuente del repositorio de normas, y "
+          "por eso el programa se detiene en este caso en vez de inventarla."),
+)
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

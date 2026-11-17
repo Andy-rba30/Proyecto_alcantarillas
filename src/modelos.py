@@ -4970,10 +4970,18 @@ ORIGEN_DIMENSION_ESTABILIDAD = "dimensionada por estabilidad"
 # el armado de la zapata (punta y talon) cumple
 # (`M9.dimensionar_peralte_por_armado`). Tampoco lo eligio la regla.
 ORIGEN_DIMENSION_ARMADO = "dimensionada por armado"
+# --- VE-3.14 (H-3 de los ensayos de diseño del cabezal) --- El ancho que
+# el dimensionamiento hizo crecer con la estabilidad EVALUABLE cuando una
+# condicion no se pudo evaluar (su `Bloqueo` lo dice): rotularlo
+# «dimensionada por estabilidad» decia que la estabilidad entera estaba
+# cubierta.
+ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA = ("dimensionada con la estabilidad "
+                                           "evaluable (falta una condicion)")
 ORIGENES_DE_DIMENSION = (ORIGEN_DIMENSION_REGLA, ORIGEN_DIMENSION_DECLARADA,
                          ORIGEN_DIMENSION_DERIVADA,
                          ORIGEN_DIMENSION_ESTABILIDAD,
-                         ORIGEN_DIMENSION_ARMADO)
+                         ORIGEN_DIMENSION_ARMADO,
+                         ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA)
 
 
 @dataclass(frozen=True)

@@ -3603,7 +3603,9 @@ SISMO_CABEZAL = _fundamento(
            "AASHTO_LRFD_9.C11.6.5.3#RESULTANTE",
            "AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE",
            "AASHTO_LRFD_9.11.6.5.2.2#REDUCCION",
-           "AASHTO_LRFD_9.A11.3.1#KAE", "MP.2.8.1.1.14.1#EXC"),
+           "AASHTO_LRFD_9.A11.3.1#KAE", "MP.2.8.1.1.14.1#EXC",
+           "AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL",
+           "AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO"),
     que_pasa_si_no_se_hace=(
         "Con la aceleracion de este sitio la demanda sismica es la que "
         "gobierna el cabezal: sin ella, la estabilidad verificada es solo "

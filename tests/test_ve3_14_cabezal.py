@@ -314,7 +314,7 @@ def test_la_pantalla_crece_con_la_zapata_y_la_punta_y_el_talon_no_cambian(
         aceptado.B - g.ancho_punta - 0.30, abs=ABS_MM)
 
 
-def correr_escenario(carpeta, tmp_path):
+def correr_escenario(carpeta, tmp_path, *extra):
     """Un escenario de los ensayos (DATOS DE PRUEBA), por la CLI."""
     import json
     import subprocess
@@ -329,8 +329,8 @@ def correr_escenario(carpeta, tmp_path):
             (carpeta / "declaraciones.json").read_text(encoding="utf-8")
             ).items():
         args += ["--declarar", f"{clave}={valor!r}"]
-    subprocess.run(args, cwd=RAIZ, capture_output=True, text=True,
-                   check=False)
+    subprocess.run(args + list(extra), cwd=RAIZ, capture_output=True,
+                   text=True, check=False)
     return json.loads(salida.read_text(encoding="utf-8"))
 
 

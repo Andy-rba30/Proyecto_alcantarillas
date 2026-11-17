@@ -1098,10 +1098,14 @@ def test_si_la_cadena_reduce_kh_el_muro_que_no_cede_lo_avisa(tanteo,
 def test_si_el_sismo_no_es_evaluable_el_armado_sale_de_resistencia_I_y_avisa(
         tanteo):
     """
-    Sin drenaje el relleno se llena de agua y la condicion sismica no es
-    evaluable (T-7b): el armado NO se detiene, sale de Resistencia I y lo
-    dice; el bloqueo de esa causa es el de la estabilidad sismica.
+    Sin drenaje el relleno se llena de agua y, con el relleno declarado muy
+    abierto, la condicion sismica no es evaluable (CAMBIADO DECLARANDOLO en
+    VE-3.14: con el de archivo se evalua con el peso total, C11.6.5.3): el
+    armado NO se detiene, sale de Resistencia I y lo dice; el bloqueo de
+    esa causa es el de la estabilidad sismica.
     """
+    ca.establecer_valor_dinamico("agua_del_relleno_bajo_sismo",
+                                 "relleno_muy_abierto")
     ca.establecer_valor_dinamico("drenaje_trasdos", "sin_drenaje")
     ca.establecer_valor_dinamico("peso_especifico_saturado_relleno_kn_m3",
                                  20.0)

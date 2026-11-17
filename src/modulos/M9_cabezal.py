@@ -6837,19 +6837,44 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                                            "no negativo y finito")
         k_v = cadena.k_v
         psi = angulo_inercia_sismica(k_h=k_h, k_v=k_v)
+        # --- VE-3.14 (H-3 de los ensayos de diseño del cabezal) --- CON
+        # AGUA EN EL PLANO DE EMPUJE, EL SISMO NO SE SALTA. Hasta VE-3.14 se
+        # detenia aqui sin cifra, y el ancho se dimensionaba sin la
+        # condicion sismica (y se rotulaba «dimensionada por estabilidad»).
+        # El comentario C11.6.5.3 da dos tratamientos: el relleno que no
+        # drena libremente -- suelo y agua se mueven juntos -- va con el
+        # peso TOTAL (cita AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL), y el muy
+        # abierto con el sumergido mas la presion hidrodinamica de
+        # Westergaard, que ninguna fuente del repositorio da: ese sigue
+        # deteniendose ('agua_del_relleno_bajo_sismo' [C]).
+        tratamiento_agua = None
         if h_w > TOL_UMBRAL_NORMATIVO:
-            raise _no_evaluable(
-                f"empuje sismico del cabezal de {ext}",
-                "metodo de equilibrio limite generalizado (GLE, AASHTO "
-                "A11.3.3) con el tratamiento del agua del relleno",
-                f"hay agua en el plano de empuje (h_w = {h_w:.3f} m, "
-                f"'{CRITERIO_DRENAJE}' = '{drenaje}') y AASHTO 11.6.5.3 "
-                "admite el metodo de Mononobe-Okabe solo con el relleno no "
-                "saturado; su comentario da dos tratamientos segun la "
-                "permeabilidad del relleno, y uno exige la presion "
-                "hidrodinamica. Declarar el drenaje del trasdos "
-                "('drenaje_trasdos' = 'drenado') lo deja evaluable si el "
-                "freatico queda bajo la zapata", idp)
+            tratamiento_agua = ca.valor(CRITERIO_AGUA_SISMO)
+            if tratamiento_agua not in (AGUA_SE_MUEVE_CON_EL_SUELO,
+                                        AGUA_RELLENO_MUY_ABIERTO):
+                raise DatoInvalidoError(
+                    CRITERIO_AGUA_SISMO, valor=tratamiento_agua,
+                    motivo="se espera una de: " + ", ".join(
+                        (AGUA_SE_MUEVE_CON_EL_SUELO,
+                         AGUA_RELLENO_MUY_ABIERTO)))
+            if tratamiento_agua == AGUA_RELLENO_MUY_ABIERTO:
+                remedio = (
+                    " Declarar el drenaje del trasdos ('drenaje_trasdos' = "
+                    "'drenado') baja el agua del relleno al freatico natural"
+                    if drenaje == DRENAJE_SIN else
+                    " El drenaje ya esta declarado: esta agua es la del "
+                    "freatico natural, que el drenaje no baja")
+                raise _no_evaluable(
+                    f"empuje sismico del cabezal de {ext}",
+                    "la presion hidrodinamica del agua del relleno "
+                    "(solucion de Westergaard, que ninguna fuente del "
+                    "repositorio de normas da) o un analisis externo",
+                    f"hay agua en el plano de empuje (h_w = {h_w:.3f} m, "
+                    f"'{CRITERIO_DRENAJE}' = '{drenaje}') y el relleno "
+                    f"esta declarado muy abierto ('{CRITERIO_AGUA_SISMO}' "
+                    f"= '{tratamiento_agua}'): AASHTO C11.6.5.3 pide el "
+                    "peso sumergido MAS la presion hidrodinamica." + remedio,
+                    idp)
         dominio_MO = ang["phi"] >= ang["i"] + psi - TOL_UMBRAL_NORMATIVO
         K_AE_formula = (k_ae_mononobe_okabe(
             phi_grados=ang["phi"], i_grados=ang["i"],
@@ -6893,6 +6918,15 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
         P_AE = empuje_activo_sismico_total(gamma_relleno=gamma, K_AE=K_AE,
                                            H=h, k_v=k_v)
         dP = P_AE - P_A
+        if tratamiento_agua == AGUA_SE_MUEVE_CON_EL_SUELO:
+            # El incremento con el peso TOTAL bajo el agua (C11.6.5.3): la
+            # integral del peso total sobre el plano, Γ_t, en lugar de
+            # gamma·h²/2; el estatico (suelo sumergido mas hidrostatica) no
+            # cambia. En seco Γ_t = gamma·h²/2 y es la formula de arriba.
+            gamma_t = (gamma * h_seco ** 2 / 2 + gamma * h_seco * h_w
+                       + gamma_sat * h_w ** 2 / 2)
+            dP = (K_AE * (1.0 - k_v) - K_A) * gamma_t
+            P_AE = P_A + dP
         fraccion = ca.valor(CRITERIO_BRAZO_SISMICO)
         if not (_finito(fraccion) and 0 < fraccion <= 1):
             raise DatoInvalidoError(CRITERIO_BRAZO_SISMICO, valor=fraccion,
@@ -6946,6 +6980,7 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
                 sobre=ELEMENTO_ZAPATA,
                 procedencia=f"k_h·W_s = {k_h:.3f}·{W_s:.3f}"))
         datos.update(K_AE=K_AE, k_h=k_h, k_v=k_v, P_AE=P_AE,
+                     tratamiento_agua_sismo=tratamiento_agua,
                      z_AE=(P_A * z_A + dP * z_dP) / P_AE,
                      fraccion_brazo=fraccion, psi=psi,
                      K_AE_formula=K_AE_formula, rho_AE=rho_AE)
@@ -8275,16 +8310,31 @@ def _pasos_de_cargas(entorno, condicion, cargas, combos, datos,
                              "AASHTO_LRFD_9.C11.6.5.3#CUNA",
                              "AASHTO_LRFD_9.C11.6.5.3#RESULTANTE",
                              "AASHTO_LRFD_9.C11.6.5.4#CEDENTE",
-                             "AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE"),
+                             "AASHTO_LRFD_9.11.6.5.4#NO_CEDENTE")
+            + (("AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL",)
+               if datos.get("tratamiento_agua_sismo")
+               == AGUA_SE_MUEVE_CON_EL_SUELO else ()),
             nota_del_proyecto=(
-                ("Cuña de tanteo pseudoestatica (C11.6.5.3) con la "
-                 "superficie real, relleno sin agua en el plano de empuje; "
-                 "Mononobe-Okabe con la pendiente equivalente queda al lado "
-                 "como contraste. "
-                 if datos["metodo_empuje"] == METODO_EMPUJE_CUNA else
-                 "Mononobe-Okabe dentro de su dominio: relleno sin agua en "
-                 f"el plano de empuje y phi = {ang['phi']:.2f} >= i + psi = "
-                 f"{ang['i']:.2f} + {datos['psi']:.2f} grados. ")
+                (("Con agua en el plano de empuje (h_w = "
+                  f"{datos['h_w']:.3f} m) el incremento sismico va con el "
+                  "peso TOTAL del suelo bajo el agua: suelo y agua se mueven "
+                  "juntos en el relleno que no drena libremente (C11.6.5.3, "
+                  "'agua_del_relleno_bajo_sismo' [C]); el estatico sigue "
+                  "con el sumergido y la hidrostatica. "
+                  if datos.get("tratamiento_agua_sismo")
+                  == AGUA_SE_MUEVE_CON_EL_SUELO else "")
+                 + ("Cuña de tanteo pseudoestatica (C11.6.5.3) con la "
+                    "superficie real"
+                    + ("" if datos.get("tratamiento_agua_sismo") else
+                       ", relleno sin agua en el plano de empuje")
+                    + "; Mononobe-Okabe con la pendiente equivalente queda "
+                    "al lado como contraste. "
+                    if datos["metodo_empuje"] == METODO_EMPUJE_CUNA else
+                    "Mononobe-Okabe dentro de su dominio: "
+                    + ("" if datos.get("tratamiento_agua_sismo") else
+                       "relleno sin agua en el plano de empuje y ")
+                    + f"phi = {ang['phi']:.2f} >= i + psi = "
+                    f"{ang['i']:.2f} + {datos['psi']:.2f} grados. "))
                 + "Regimen del cabezal CEDENTE ('regimen_cabezal' [A]): un "
                 "muro que no cede pediria k_h = 1.0·k_h0 y presiones mayores "
                 "(11.6.5.4). Los dos casos "
@@ -9690,6 +9740,40 @@ def dimensionar_pantalla_por_armado(
         cabezal=final, espesores=pantallas,
         intentos=tuple(f"{e}: " + " -> ".join(trazas[e]) for e in estado),
         pasos=tuple(pasos), avisos=tuple(avisos))
+
+
+def rotular_estabilidad_incompleta(cabezal: CabezalDelPunto,
+                                   estabilidades) -> CabezalDelPunto:
+    """
+    --- VE-3.14 (H-3) --- Las dimensiones «dimensionada por estabilidad» de
+    un cabezal cuya geometria FINAL no pudo evaluar alguna condicion de
+    estabilidad (su etapa lleva el `Bloqueo`) pasan a
+    `ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA`, con la condicion que falta en
+    la regla: el ancho se dimensiono con lo evaluable, no con todo.
+    """
+    from dataclasses import replace as _replace
+    from src.modelos import ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA
+    nuevas = {}
+    for g in cabezal.geometrias:
+        evaluadas = {e.condicion for e in estabilidades
+                     if e.extremo == g.extremo}
+        faltan = [c.value for c in CONDICIONES_DE_ESTABILIDAD
+                  if c not in evaluadas]
+        if not faltan:
+            continue
+        dims = tuple(
+            _replace(d, origen=ORIGEN_DIMENSION_ESTABILIDAD_INCOMPLETA,
+                     regla=(f"{d.regla}; SIN la condicion "
+                            f"{', '.join(faltan)}, que no se pudo evaluar "
+                            "(ver su bloqueo)"))
+            if d.origen == ORIGEN_DIMENSION_ESTABILIDAD else d
+            for d in g.dimensiones)
+        if dims != g.dimensiones:
+            nuevas[g.extremo] = _replace(g, dimensiones=dims)
+    if not nuevas:
+        return cabezal
+    return _replace(cabezal, entrada=nuevas.get("entrada", cabezal.entrada),
+                    salida=nuevas.get("salida", cabezal.salida))
 
 
 def incorporar_pantalla(cabezal: CabezalDelPunto,
