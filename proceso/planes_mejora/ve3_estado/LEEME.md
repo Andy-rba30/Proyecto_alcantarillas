@@ -24,8 +24,13 @@ por paso directo), VE-3.8 (correcciones de la revisión Fable a la validación e
 
 | Trabajo | Respaldo del trabajo en curso (cada 15 min) |
 |---|---|
-| VE-3.9: paso 0.10 m y tope 1.5·H como valor de archivo de `dimensionamiento_zapata_cabezal`, y el ESPESOR de la zapata también se dimensiona (armado del talón A1/A2) | `claude/youthful-shannon-rjzmuc-respaldo-cabezal-espesor` |
-| VE-3.10: VC3 sin F BLOQUEA el punto (DatoFaltanteError), con F de prueba en el juego y en la línea base de la Familia C | `claude/youthful-shannon-rjzmuc-respaldo-vc3-bloqueo` |
+| **DETENIDO por el dueño (2026-11-17 19:49 UTC), a medias** — VE-3.9: paso 0.10 m y tope 1.5·H como valor de archivo de `dimensionamiento_zapata_cabezal`, y el ESPESOR de la zapata también se dimensiona (armado del talón A1/A2) | `claude/youthful-shannon-rjzmuc-respaldo-cabezal-espesor` |
+
+VE-3.10 (VC3 sin F bloquea) ya está integrado (`8ca5fc9`, ficha VE3-06 en `eb97467`).
+VE-3.9 quedó a medias: su último respaldo es `3c15302` en la rama de respaldo de la tabla
+(sobre `6a87006`, con un commit «wip VE-3.9» y 21 archivos sin commitear: código, tests,
+generados y la §23 de la línea base empezada). Para retomarlo: partir de esa rama, revisar
+contra el encargo de VE-3.9 como BORRADOR, terminar, y rebasar sobre la rama de trabajo.
 
 ## Decisiones del dueño (2026-11-17)
 
