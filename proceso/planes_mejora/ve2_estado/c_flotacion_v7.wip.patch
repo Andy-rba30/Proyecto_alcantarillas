@@ -1,5 +1,29 @@
+diff --git a/docs/contrato_entradas.md b/docs/contrato_entradas.md
+index 1b7b5e2..e4a1b64 100644
+--- a/docs/contrato_entradas.md
++++ b/docs/contrato_entradas.md
+@@ -68,7 +68,7 @@ la tabla familia por familia está en `docs/guia_perfil.md` §1.1.
+ | `Q_receptor_m3s` | m³/s | **ANA / Junta** | Caudal de diseño del cuerpo receptor. Es la vía 3 del TW (Manning en el receptor). **0 es un receptor seco** y se admite desde T-2 (TW = 0, salida libre); negativo, no | Puede ir vacía en las tres familias; el TW sale por otra vía |
+ | `cota_TW` | msnm | **ANA / Junta** | Nivel de agua del receptor durante la avenida, ya calculado fuera. Es la vía 2 del TW | Puede ir vacía en las tres familias |
+ | `sucs_fundacion` | texto | **EMS** | Clasificación SUCS del suelo de fundación, de la calicata más cercana | La carga se detiene. Desde T-4 la lee la matriz de durabilidad para el aviso «suelo de fundación deficiente → marco» (`INF-5.1.9`): compara el grupo con el conjunto del criterio `sucs_fundacion_deficiente` `[A]`; no cambia material ni sección |
+-| `NF_profundidad_m` | m | **EMS** | Profundidad del nivel freático **en el cruce**, medida por punto **bajo el terreno natural del cruce** (`cota_terreno`). La leen dos fases, y las dos la convierten en COTA (`cota_terreno − NF`): desde T-7b, la **Fase 9**, la estabilidad del cabezal (empuje del agua, subpresión y capacidad portante), que la compara con la base de cada zapata —la misma cota para los dos cabezales (cierre de T-7b, H1)— y de cuyas solicitaciones sale su armado; y desde T-5, la **Fase 8**, la presión del agua sobre la pared de un TMC o un HDPE, que supone el agua al menos hasta la clave y sólo la sube si el NF queda más alto (`M8.verificar_tmc`, `M8._evaluar_hdpe`). **V7 no la lee** (corregido en VE-1, D2: esta fila se la atribuía a V7 y decía que V7 quedaba pendiente del dato): la flotación supone el conducto sumergido sea cual sea el NF —«Tubería vacía, NF en su cota más alta», fila V7 de la Fase 5 de la hoja de ruta, con la subpresión del Manual de Puentes núm. 2.4.3.8.2 sobre lo que está «debajo del nivel de agua de diseño»— (`M8.empuje_flotacion_kn_m`); que V7 leyera el NF medido exigiría un nivel de agua de diseño y una regla de sumersión parcial que ninguna fuente del proyecto fija. **Discrepancia con la hoja de ruta (VE-1, D3):** su §1.2, en la nota `INF-5.1.11`, dice de esta columna «la lee V7», contra su propia fila V7; el defecto se reporta contra la hoja de ruta en la ficha VE1-01 de `docs/decisiones_diferidas.md`, y **la hoja de ruta sigue mal mientras el dueño no la corrija** | Puede ir vacía: V7 se calcula igual, y la estabilidad de los dos cabezales del punto —y su armado— queda como bloqueo «dato faltante» (la geometría del cabezal sí se propone). En un TMC o un HDPE la Fase 8 sigue con el agua hasta la clave |
++| `NF_profundidad_m` | m | **EMS** | Profundidad del nivel freático **en el cruce**, medida por punto **bajo el terreno natural del cruce** (`cota_terreno`). La leen dos fases, y las dos la convierten en COTA (`cota_terreno − NF`): desde T-7b, la **Fase 9**, la estabilidad del cabezal (empuje del agua, subpresión y capacidad portante), que la compara con la base de cada zapata —la misma cota para los dos cabezales (cierre de T-7b, H1)— y de cuyas solicitaciones sale su armado; y desde T-5, la **Fase 8**, la presión del agua sobre la pared de un TMC o un HDPE, que supone el agua al menos hasta la clave y sólo la sube si el NF queda más alto (`M8.verificar_tmc`, `M8._evaluar_hdpe`). **V7 la lee sólo si el criterio `nivel_agua_diseno_v7` [A] declara `nf_del_punto`** (VE-2, c2): el nivel de agua de diseño lo especifica o aprueba el Propietario (Manual de Puentes núm. 2.4.3.8.1, pág. impresa 113), y con esa alternativa es `cota_terreno − NF + margen_estacional_nf_v7_m` —el margen es un [A] sin valor que detiene, porque esta columna es una **lectura de campo** y no necesariamente el freático más alto previsto de AASHTO 12.6.2.3—; V7 se evalúa sólo si el fondo exterior del conducto queda bajo ese nivel (AASHTO 12.6.1) y si no sale «no aplica» (`M8.cota_nivel_agua_v7_del_nf`). **Con el valor de archivo (`en_la_clave`), V7 no la lee** (corregido en VE-1, D2, cuando esta fila se la atribuía sin condición): la flotación supone el conducto sumergido hasta la clave sea cual sea el NF —«Tubería vacía, NF en su cota más alta», fila V7 de la Fase 5 de la hoja de ruta, con la subpresión del Manual de Puentes núm. 2.4.3.8.2 sobre lo que está «debajo del nivel de agua de diseño»— (`M8.empuje_flotacion_kn_m`; ficha VE2-C). **Discrepancia con la hoja de ruta (VE-1, D3):** su §1.2, en la nota `INF-5.1.11`, dice de esta columna «la lee V7», contra su propia fila V7; el defecto se reporta contra la hoja de ruta en la ficha VE1-01 de `docs/decisiones_diferidas.md`, y **la hoja de ruta sigue mal mientras el dueño no la corrija** | Puede ir vacía: con el valor de archivo de `nivel_agua_diseno_v7` V7 se calcula igual (con `nf_del_punto`, V7 se detiene: «dato faltante»), y la estabilidad de los dos cabezales del punto —y su armado— queda como bloqueo «dato faltante» (la geometría del cabezal sí se propone). En un TMC o un HDPE la Fase 8 sigue con el agua hasta la clave |
+ | `cota_fondo_entrada` | msnm | Topografía / QGIS | Invert de entrada **medido** en el cauce, aguas arriba | Puede ir vacía: rige el criterio `origen_cota_fondo_entrada` (hoy «igual al terreno»), que es una adopción y no una medición (`INF-5.1.18`). Desde T-6 la memoria lo **avisa** («fondo de entrada adoptado igual al terreno de plataforma: medir en el cauce») y marca como provisional el delta de rasante de 7.A; con la celda llena, el dato medido gana y el aviso desaparece |
+ | `cota_coronacion_canal` | msnm | Topografía / QGIS | La más baja de las dos coronaciones del canal en el cruce. La compara VC1 | Puede ir vacía; en la Familia C, VC1 queda pendiente de ese dato (y con ella el punto: desde T-3 el marco ya no se detiene en sus criterios, sino aquí) |
+ 
+@@ -488,6 +488,10 @@ test exige que esta lista las nombre):
+ - `q_n_kpa` del EMS (`suelo_fundacion`) — sólo con la cimentación en **roca** (filas A o B
+   declaradas en `F_pga`): la ecuación de AASHTO 10.6.3.1.2a es de suelo y, sin el dato,
+   la capacidad portante es «método no evaluable».
++- `margen_estacional_nf_v7_m` [A] sin valor — sólo con `nivel_agua_diseno_v7` =
++  `nf_del_punto` (VE-2): detiene V7, y con ella el punto. Con esa alternativa V7 exige
++  además `NF_profundidad_m` del punto y, si el nivel de agua de diseño queda sobre la clave,
++  `peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C).
+ 
+ **Una entrada que no detiene pero cambia el diseño:** sin `TW_m` (ni `cota_TW`, ni
+ `Q_receptor_m3s`) el TW sale de los dos escenarios acotados con la sección **adoptada** de
 diff --git a/docs/decisiones_diferidas.md b/docs/decisiones_diferidas.md
-index 6c445cc..f591962 100644
+index 6c445cc..701b5d7 100644
 --- a/docs/decisiones_diferidas.md
 +++ b/docs/decisiones_diferidas.md
 @@ -7589,7 +7589,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
@@ -7,44 +31,73 @@ index 6c445cc..f591962 100644
    sumersión completa y DC = 0, justificadas en `M8_estructural` con el NF somero del Bajo
    Piura, un argumento de sitio: con el NF a 10 m V7 descarta igual (1.2745 frente a
 -  9.6235 kN/m); equivalen a un relleno de unas 0.45 veces el diámetro exterior. (d) El
-+  9.6235 kN/m); equivalen a un relleno de unas 0.50 veces el diámetro exterior con γ_EV = 0.90,
-+  el de V7 (0.45 era la cuenta con γ_EV = 1.00, sin factorar; corregido en VE-2). (d) El
++  9.6235 kN/m); equivalen a un relleno de unas 0.50 veces el diámetro exterior con γ_EV = 0.90
++  (0.45 con γ_EV = 1.00, sin factorar). (d) El
    factor 1.13 de intervalo fijo de las series de 24 h, que el Manual no trae y aplican la
    tesis UPAO y la vía TU-107: sin él P24 y Q quedan 11.5 % abajo. (e) Un aviso de
    plausibilidad de la serie SIN umbral (patrón de `FH.Q_ESPECIFICO`): el Manual manda
-@@ -7599,6 +7600,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
+@@ -7599,6 +7600,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
    se detiene desde 10 km², y Tinas (55.9 km²) y cinco cuencas de TU-107 no se calculan.
    (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
    redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
-+- **Cerrado (VE-2), (c1):** V7 se justifica con el Manual de Puentes 2.4.3.8.1 (el nivel lo fija el Propietario) y no con el sitio; ficha VE2-C.
++- **Cerrado (VE-2), (c1):** V7 se justifica con la norma, no con el sitio; ficha VE2-C.
++- **Cerrado (VE-2), (c2):** el nivel de agua de V7 es el [A] `nivel_agua_diseno_v7`; ficha VE2-C.
  - **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
    el programa calcula; el permiso de VE-1 no las alcanza.
  - **Qué haría falta:** la decisión del dueño y, por cada una adoptada, un prompt con sus
-@@ -7607,3 +7609,24 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
+@@ -7607,3 +7610,29 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
  - **Dónde vive:** `src/modulos/M3_hidraulica.py::resolver_manning` (a) y (b);
    `M8_estructural.empuje_flotacion_kn_m` (c); `MH_hidrologia.precipitacion_de_diseno`
    (d) y (e); `MH_hidrologia.caudal_de_diseno` (f); `criterios_adoptados._verificar_criterio` (g).
 +
 +## VE2-C · V7: el nivel de agua de diseño es una elección [A] del Propietario
 +
-+- **Cerrado (VE-2), (c1):** la sumersión completa y DC = 0 se justificaban con el NF
-+  somero del Bajo Piura, un argumento de sitio. Hoy, con la norma verificada en el PDF:
-+  el Manual de Puentes, núm. 2.4.3.8.1, pág. impresa 113, «Los niveles de agua de diseño
-+  para los diferentes estados límites serán los especificados y/o aprobados por el
-+  Propietario» (AASHTO LRFD 3.7.1, pág. 3-45); la subpresión de 2.4.3.8.2 actúa «debajo
-+  del nivel de agua de diseño»; AASHTO 12.6.1 (pág. 12-14) obliga a evaluarla con el
-+  invert bajo el freático y 12.6.2.3 (pág. 12-19) con «the highest anticipated
-+  groundwater level», sin cota. El nivel en la clave es por eso una adopción [A]
-+  conservadora. DC = 0 queda del lado seguro frente al 0.90·DC de la Tabla 2.4.5.3.1-2
-+  (pág. 143; 2.4.5.3.1, pág. 142), y C12.6.2.3 compara «the dead load on the crown» con
-+  el empuje. La equivalencia de VE1-02 (c), medida con el código: el relleno que
-+  equilibra V7 es 0.50 · D_ext con γ_EV = 0.90 (0.45 con γ_EV = 1.00, sin factorar).
-+  Ningún número de la línea base se mueve; cambian el `por_que` de F5.V7 y sus citas.
-+- **Abierto:** la hoja de ruta presenta «NF en su cota más alta» (fila V7) y «obligatoria
-+  con NF a 1.4 m» (Fase 8, ítem 3) sin decir que el nivel lo fija el Propietario; se
-+  declara en el punto de uso y la hoja de ruta sigue mal mientras el dueño no la corrija.
-+- **Qué haría falta:** que el dueño corrija los dos textos de la hoja de ruta.
-+- **Dónde vive:** `src/modulos/M8_estructural.py::empuje_flotacion_kn_m`
++- **Cerrado (VE-2), (c1):** V7 ya no se justifica con el NF somero del Bajo Piura (argumento
++  de sitio): el Manual de Puentes 2.4.3.8.1, pág. impresa 113 (AASHTO 3.7.1, pág. 3-45),
++  deja el nivel de agua de diseño al Propietario; 2.4.3.8.2 hace actuar la subpresión
++  «debajo» de él; AASHTO 12.6.1 y 12.6.2.3 no dan cota. El nivel en la clave es una adopción
++  [A] conservadora, y DC = 0 queda del lado seguro frente al 0.90·DC de la Tabla
++  2.4.5.3.1-2 (C12.6.2.3: «the dead load on the crown»). La equivalencia de VE1-02 (c),
++  medida con el código: 0.50 · D_ext con γ_EV = 0.90 (0.45 con 1.00, sin factorar).
++- **Cerrado (VE-2), (c2):** criterio `nivel_agua_diseno_v7` [A] de perfil: `en_la_clave`
++  de archivo (lo de siempre; ningún número de la línea base se mueve) o `nf_del_punto`,
++  cota_terreno − NF + `margen_estacional_nf_v7_m` ([A] de perfil sin valor, que detiene: la
++  columna es una lectura de campo y no el freático más alto de 12.6.2.3). V7 se evalúa sólo
++  si el fondo exterior queda bajo el nivel (12.6.1; si no, «no aplica»), con el área
++  exterior bajo el nivel, y el relleno bajo el agua pesa γ_sat − γ_agua, [N→] del Manual de
++  Puentes 2.4.4.1.3 (empuje lateral). El pre-vuelo y el censo lo dicen con y sin la
++  alternativa.
++- **Abierto:** (1) con `nf_del_punto` y el nivel sobre la clave, una corrida de perfil se
++  detiene en `peso_especifico_saturado_relleno_kn_m3`, de expediente (es de ensayo: no admite
++  ventana, y un [A] de perfil la exige), que el filtro de perfil de la pestaña 2 no muestra;
++  (2) la hoja de ruta (fila V7; Fase 8, ítem 3, «con NF a 1.4 m») calla que el nivel lo
++  fija el Propietario, y sigue mal mientras el dueño no la corrija.
++- **Qué haría falta:** decidir (1) —un saturado propio del conducto como [A] de perfil con
++  ventana, o aceptar el bloqueo— y corregir (2).
++- **Dónde vive:** `src/modulos/M8_estructural.py::cota_nivel_agua_v7_del_nf`
+diff --git a/docs/linea_base.md b/docs/linea_base.md
+index 7cdaf77..978d222 100644
+--- a/docs/linea_base.md
++++ b/docs/linea_base.md
+@@ -692,3 +692,18 @@ H2 le añadió a su guardia la de los campos de la progresión
+ encabezado en las cuatro memorias de la CLI, ocho líneas en ocho archivos. El rótulo
+ nuevo de la sección (H1, `modelos.texto_de_dimension`) escribe los mismos «Ø 0.90 m» y
+ «marco 1.20 × 0.90 m» de siempre: ningún otro byte cambió.
++
++---
++
++## 11. VE-2 (c1): V7 se justifica con la norma y no con el sitio; ningún número se mueve (2026-11-17)
++
++VE-2.2 (c1) no cambia cálculo: reemplaza la justificación de la flotación (V7) por el NF
++somero del Bajo Piura por la del Manual de Puentes, núm. 2.4.3.8.1 (el nivel de agua de
++diseño lo fija el Propietario; ficha VE2-C). Regenerada con su script, la línea base cambia
++**tres memorias HTML y ningún número**: en `memoria_perfil.html`, `memoria_perfil_ancha.html`
++y `memoria_expediente.html`, el `por_que` de F5.V7 (anexo de fundamentos) y, en la ancha,
++el paso de V7 de los puntos que lo evalúan, que cita además la frase del 2.4.3.8.1 (y con
++ella cambian los anclajes `paso-…`, que son huellas del contenido). Los JSON, los CSV de
++resumen, los cinco `cli_*.txt` y la memoria del cajón, idénticos byte a byte; los valores
++de V7 (estabilizante y desestabilizante) que la memoria imprime, los mismos.
++**Diámetros, secciones, materiales y HW movidos: ninguno.**
 diff --git a/docs/manifiesto_citas.md b/docs/manifiesto_citas.md
 index 0668d71..d8cd109 100644
 --- a/docs/manifiesto_citas.md
@@ -193,11 +246,229 @@ index aefa55b..f94443b 100644
  MP.2.4.3.8.2,MP,Manual de Puentes,Version Libro,2.4.3.8.2,Subpresiones,113,114,exigencia,texto,2026-08-28,no,,fundamento F5.V7 (Fase 5 - Verificaciones); fundamento F9.AGUA (Fase 9 - Cabezal y aletas)
  MP.2.4.4.1.5.3,MP,Manual de Puentes,Version Libro,2.4.4.1.5.3,"Coeficiente de Empuje Lateral Activo, ka",135,136,permiso,texto,2026-09-20,no,DIS-HR-KA-COULOMB [resuelta],fundamento F9.EMPUJES (Fase 9 - Cabezal y aletas)
  MP.2.4.5.2#EV,MP,Manual de Puentes,Version Libro,2.4.5.2,Cargas y Denominación de las Cargas,140,141,definicion,texto,2026-08-28,no,,fundamento F5.V7 (Fase 5 - Verificaciones); fundamento F5.V7_FILA (Fase 5 - Verificaciones)
+diff --git a/src/anticipo.py b/src/anticipo.py
+index 26d3b1d..c4e8b0a 100644
+--- a/src/anticipo.py
++++ b/src/anticipo.py
+@@ -63,6 +63,7 @@ from src.modelos import ErrorProyecto, Familia, VacioAdmitido
+ # Por el modulo y no por el valor, por la razon escrita en `ayuda_entrada.py`:
+ # un `from ... import COLUMNAS` copia la tupla y la deja leyendo una foto.
+ from src.modulos import M0_carga as m0
++from src.modulos import M8_estructural as M8
+ 
+ # La linea fija del panel (regla dura de G3). La palabra «estimacion» no es
+ # opcional: el proyecto distingue estimaciones de medidas y esta es una
+@@ -427,10 +428,31 @@ def _grupos_que_admiten(columna: str, familia: Optional[Familia]) -> Tuple[Vacio
+                  if columna in v.columnas and v.alcanza_a(familia))
+ 
+ 
++# --- VE-2 (c2) --- EL CONSUMO CONDICIONAL DE UNA COLUMNA. El censo de
++# `variables_entrada` es estatico: le encuentra a 'NF_profundidad_m' a V7
++# (M5, por `M8.cota_nivel_agua_v7_del_nf`), y V7 solo la lee si
++# 'nivel_agua_diseno_v7' declara «nf_del_punto». Con el valor de archivo
++# («en_la_clave») esos dos modulos no cuentan como consumidores, y la columna
++# vacia sigue ESPERANDO al EMS a nivel de perfil; con la alternativa, la
++# EXIGE V7 en los dos alcances. La pregunta la contesta M8 sin registrar el
++# uso del criterio (`M8.v7_lee_el_nivel_freatico`): el pre-vuelo no corre el
++# calculo.
++_CONSUMO_CONDICIONAL = {
++    "NF_profundidad_m": (("M5_verificaciones", "M8_estructural"),
++                         M8.v7_lee_el_nivel_freatico),
++}
++
++
+ def _consumidores_de_calculo(clave: str, alcance: str) -> Tuple[str, ...]:
+     diferidos = set(servicio.MODULOS_DIFERIDOS_POR_ALCANCE.get(alcance, ()))
++    inactivos: Tuple[str, ...] = ()
++    if clave in _CONSUMO_CONDICIONAL:
++        modulos, lo_lee = _CONSUMO_CONDICIONAL[clave]
++        if not lo_lee():
++            inactivos = modulos
+     return tuple(m for m in _ve.variable(clave).consumido_por
+-                 if m not in _LECTORES_SIN_CALCULO and m not in diferidos)
++                 if m not in _LECTORES_SIN_CALCULO and m not in diferidos
++                 and m not in inactivos)
+ 
+ 
+ def _aplica(clave: str, familia: Optional[Familia]) -> bool:
+diff --git a/src/criterios_adoptados.py b/src/criterios_adoptados.py
+index ef30140..5d02b93 100644
+--- a/src/criterios_adoptados.py
++++ b/src/criterios_adoptados.py
+@@ -7590,6 +7590,137 @@ CRITERIOS: Dict[str, Criterio] = {
+         ),
+     ),
+ 
++    # =======================================================================
++    # --- VE-2 (c2) --- EL NIVEL DE AGUA DE DISEÑO DE V7, que la norma deja
++    # al Propietario (Manual de Puentes 2.4.3.8.1). Hasta VE-2 era una
++    # hipotesis cableada en `M8.empuje_flotacion_kn_m` --el conducto
++    # sumergido entero-- y ningun criterio lo decia; desde aqui es una
++    # eleccion [A] con su ventana, y el valor de archivo reproduce lo que se
++    # calculaba (la linea base no se mueve). NIVEL MEDIDO, los dos de perfil:
++    #   * 'nivel_agua_diseno_v7' lo invoca V7 (Fase 5) en toda corrida que la
++    #     evalua: lo mide la corrida de perfil de `tests/test_nivel_medido.py`.
++    #   * 'margen_estacional_nf_v7_m' solo lo lee V7 con la alternativa
++    #     'nf_del_punto', que ninguna corrida de referencia declara: NO se
++    #     mide por corridas de referencia (lo mide la corrida de perfil de
++    #     `tests/test_ve2_flotacion.py`, que la declara) y su nivel es el de
++    #     su unico consumidor, V7.
++    # =======================================================================
++    "nivel_agua_diseno_v7": Criterio(
++        valor="en_la_clave",
++        nivel=NIVEL_PERFIL,
++        etiqueta="A",
++        forma=FORMA_CATEGORIA,
++        #   en_la_clave    el nivel de agua de diseño en la clave EXTERIOR del
++        #       conducto: sumergido entero, el relleno sobre la clave en seco
++        #       (peso humedo). Es la hipotesis de la fila V7 de la hoja de
++        #       ruta («Tubería vacía, NF en su cota más alta») y la que V7
++        #       calculaba hasta VE-2.
++        #   nf_del_punto   el nivel en el freatico MEDIDO del cruce, mas un
++        #       ascenso estacional declarado: cota_terreno - NF_profundidad_m
++        #       + 'margen_estacional_nf_v7_m'. V7 se evalua solo si el fondo
++        #       exterior del conducto queda bajo ese nivel (AASHTO 12.6.1); si
++        #       no, «no aplica». El relleno bajo el nivel pesa sumergido.
++        sensibilidad=("en_la_clave", "nf_del_punto"),
++        concepto="Nivel de agua de diseño con que V7 evalua la flotacion del "
++                 "conducto vacio: en la clave (sumergido entero) o en el "
++                 "freatico medido del cruce mas un ascenso estacional",
++        justificacion="Decide la subpresion U de V7 y cuanto del relleno "
++                      "sobre la clave pesa sumergido. La norma no fija el "
++                      "nivel: el Manual de Puentes, num. 2.4.3.8.1, dice que "
++                      "los niveles de agua de diseño «serán los especificados "
++                      "y/o aprobados por el Propietario» (cita "
++                      "MP.2.4.3.8.1#NIVEL_DE_DISENO; AASHTO 3.7.1 igual), y la "
++                      "subpresion de 2.4.3.8.2 actua sobre lo que queda "
++                      "debajo de ese nivel. El valor de archivo, "
++                      "«en_la_clave», es la adopcion conservadora: sumergido "
++                      "entero el conducto desplaza todo su volumen y ningun "
++                      "nivel mas bajo da mas empuje, y el relleno sobre la "
++                      "clave pesa humedo (17 kN/m3), que es coherente solo "
++                      "con el nivel en la clave. «nf_del_punto» lee la "
++                      "columna NF_profundidad_m, que es una LECTURA DE CAMPO "
++                      "y no necesariamente el freatico mas alto previsto "
++                      "(AASHTO 12.6.2.3): por eso le suma "
++                      "'margen_estacional_nf_v7_m', sin valor, que detiene "
++                      "hasta que se declare. Con ese nivel V7 se evalua solo "
++                      "si el fondo EXTERIOR del conducto queda bajo el "
++                      "(AASHTO 12.6.1 pide «inverts below the water table»; el "
++                      "fondo exterior, mas bajo que el invert, es el lado "
++                      "conservador), y el relleno bajo el nivel pesa "
++                      "sumergido, el saturado menos el del agua, por "
++                      "ANALOGIA [N->] con el Manual de Puentes 2.4.4.1.3, que "
++                      "exige densidades sumergidas para el empuje LATERAL; el "
++                      "saturado es el dato de ensayo "
++                      "'peso_especifico_saturado_relleno_kn_m3'. Declararlo "
++                      "es escribir 'nivel_agua_diseno_v7' = «nf_del_punto» en "
++                      "la sesion o con --declarar",
++        fuente="Manual de Puentes num. 2.4.3.8.1, pag. impresa 113 (cita "
++               "MP.2.4.3.8.1#NIVEL_DE_DISENO) y 2.4.3.8.2; AASHTO LRFD 9a "
++               "ed., 3.7.1 (pag. 3-45), 12.6.1 (pag. 12-14) y 12.6.2.3 (pag. "
++               "12-19); por analogia, Manual de Puentes num. 2.4.4.1.3, pag. "
++               "impresa 133 (cita MP.2.4.4.1.3#SUMERGIDO)",
++        reemplazado_por="El nivel de agua de diseño que el Propietario "
++                        "especifique o apruebe para la flotacion del "
++                        "conducto, o el freatico mas alto previsto que de el "
++                        "estudio geotecnico del cruce",
++        resolucion=Libre(
++            que_lo_fija="el Propietario: los niveles de agua de diseño son "
++                        "los que el especifica o aprueba (Manual de Puentes "
++                        "2.4.3.8.1); el proyectista propone una de las dos "
++                        "reglas",
++            dominio="una de las dos opciones de la ventana",
++        ),
++    ),
++
++    "margen_estacional_nf_v7_m": Criterio(
++        valor=None,                 # VACIO: solo lo lee V7 con 'nf_del_punto'
++        nivel=NIVEL_PERFIL,
++        etiqueta="A",
++        forma=FORMA_FLOAT,
++        # VENTANA SIMBOLICA, y a proposito: el extremo de arriba depende del
++        # punto (llevar el nivel al terreno natural del cruce es un margen
++        # igual a su NF_profundidad_m), de modo que ningun par de numeros
++        # unico la describe sin inventar uno. El de abajo es 0 m, la lectura
++        # ya es el nivel mas alto; un margen negativo lo rechaza el
++        # consumidor (`M8.cota_nivel_agua_v7_del_nf`, DatoInvalidoError).
++        sensibilidad=("0 m: la lectura de NF_profundidad_m ya es el freatico "
++                      "mas alto previsto (medida en la epoca de aguas altas, "
++                      "o una serie piezometrica que la cubre)",
++                      "el ascenso estacional que estime el estudio "
++                      "geotecnico entre la fecha de la lectura y la epoca "
++                      "del nivel mas alto; con un margen igual a "
++                      "NF_profundidad_m el nivel llega al terreno natural "
++                      "del cruce"),
++        concepto="Ascenso del nivel freatico, m, entre la lectura de "
++                 "NF_profundidad_m y el freatico mas alto previsto, para el "
++                 "nivel de agua de diseño de V7 con 'nivel_agua_diseno_v7' = "
++                 "«nf_del_punto»",
++        justificacion="La columna NF_profundidad_m es una lectura de campo "
++                      "(calicata o piezometro, en una fecha): un NF de "
++                      "estiaje y uno de avenida no son el mismo dato, y "
++                      "AASHTO LRFD 12.6.2.3 manda considerar el levantamiento "
++                      "bajo «the highest anticipated groundwater level» (cita "
++                      "AASHTO_LRFD_9.12.6.2.3#UPLIFT). Ninguna fuente del "
++                      "repositorio da la oscilacion estacional del freatico, "
++                      "y rellenarla con 0 seria afirmar sin dato que la "
++                      "lectura es el nivel mas alto: por eso esta vacio y "
++                      "detiene V7 cuando 'nivel_agua_diseno_v7' = "
++                      "«nf_del_punto». Con el valor de archivo de ese "
++                      "criterio («en_la_clave») no se lee nunca. Es un solo "
++                      "margen para todo el corredor: si el estudio da "
++                      "oscilaciones distintas por cruce, rige el mayor",
++        fuente="PENDIENTE - estudio geotecnico: oscilacion estacional del "
++               "freatico (serie piezometrica, o lectura en la epoca de aguas "
++               "altas); AASHTO LRFD 9a ed., 12.6.2.3, pag. impresa 12-19",
++        reemplazado_por="El freatico mas alto previsto de cada cruce, que "
++                        "de el estudio geotecnico",
++        resolucion=Libre(
++            que_lo_fija="el proyectista, con el estudio geotecnico: la "
++                        "oscilacion estacional del freatico entre la fecha "
++                        "de la lectura y la epoca del nivel mas alto",
++            dominio="m >= 0",
++        ),
++    ),
++
+     # =======================================================================
+     # --- T-5 --- (cadena T, 2026-11-12) SIETE CRITERIOS NUEVOS de la Fase 8,
+     # al final de su seccion: cinco de la FASE A y dos del cierre
+@@ -10372,7 +10503,12 @@ CRITERIOS: Dict[str, Criterio] = {
+                       "'peso_especifico_relleno_kn_m3': usar ese mismo "
+                       "numero como saturado subestimaria el empuje del suelo "
+                       "sumergido. Por eso esta vacio: lo da el ensayo del "
+-                      "material de cantera",
++                      "material de cantera. Desde VE-2 lo lee tambien V7, "
++                      "solo con 'nivel_agua_diseno_v7' = «nf_del_punto» y el "
++                      "nivel sobre la clave, para el relleno del conducto que "
++                      "queda bajo el agua (`M8.peso_relleno_bajo_el_nivel_kn_m`): "
++                      "con el valor de archivo de ese criterio V7 no lo lee, y "
++                      "su nivel sigue siendo el del cabezal (ficha VE2-C)",
+         fuente="PENDIENTE - ensayo del material de relleno (peso especifico "
+                "y gravedad especifica de solidos, a la compactacion "
+                "especificada)",
 diff --git a/src/modulos/M5_verificaciones.py b/src/modulos/M5_verificaciones.py
-index c86e288..52000cf 100644
+index c86e288..587dcf5 100644
 --- a/src/modulos/M5_verificaciones.py
 +++ b/src/modulos/M5_verificaciones.py
-@@ -3042,7 +3042,17 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
+@@ -289,10 +289,16 @@ from src.modulos.M2_material import (CRITERIO_CALIBRE_TMC,
+                                  numero_de_celdas,
+                                  procedencia_del_espesor)
+ from src.modulos.M8_estructural import (CRITERIO_FACTORES_CARGA,
++                                    CRITERIO_NIVEL_AGUA_V7,
++                                    NIVEL_V7_EN_LA_CLAVE, NIVELES_AGUA_V7,
++                                    cota_nivel_agua_v7_del_nf,
++                                    empuje_flotacion_bajo_el_nivel_kn_m,
+                                     empuje_flotacion_kn_m,
+                                     factores_carga_flotacion,
+                                     filas_ev_de_la_tabla,
++                                    peso_relleno_bajo_el_nivel_kn_m,
+                                     peso_relleno_kn_m,
++                                    regla_nivel_agua_v7,
+                                     verificaciones_estructurales)
+ from src.tolerancias import TOL_UMBRAL_NORMATIVO
+ 
+@@ -3042,7 +3048,17 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
  
      DC = 0: no suma el peso propio del conducto (ver "Por que el peso propio
      del conducto no entra en V7" en el docstring de M8_estructural). Omitirlo
@@ -216,22 +487,185 @@ index c86e288..52000cf 100644
  
      Se detiene en 'peso_especifico_relleno_kn_m3' (el termino EV) o en
      'factores_carga_aashto' (la eleccion de fila de gamma_p), los dos vacios
-@@ -3102,7 +3112,12 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
+@@ -3050,14 +3066,79 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
+     docstring del modulo.
+     """
+     exigir_seccion_coherente(material, seccion)
++    # --- VE-2 (c2) --- EL NIVEL DE AGUA DE DISEÑO ES UNA ELECCION [A]
++    # ('nivel_agua_diseno_v7'), y con el valor de archivo («en_la_clave») el
++    # calculo es el de siempre, por las mismas dos funciones: la linea base
++    # no se mueve. La alternativa «nf_del_punto» es la rama de abajo.
++    regla_nivel = regla_nivel_agua_v7()
+     D = seccion.altura
+     altura_relleno = altura_relleno_sobre_clave(punto=punto, material=material,
+                                                 seccion=seccion)
+ 
+     t = espesor_pared(material, D)
+-    U = empuje_flotacion_kn_m(seccion=seccion, espesor=t)
+-    EV = peso_relleno_kn_m(seccion=seccion, espesor=t,
+-                           altura_relleno=altura_relleno)
++    magnitudes_nivel: Tuple[Magnitud, ...] = ()
++    citas_nivel: Tuple[str, ...] = ()
++    if regla_nivel == NIVEL_V7_EN_LA_CLAVE:
++        U = empuje_flotacion_kn_m(seccion=seccion, espesor=t)
++        EV = peso_relleno_kn_m(seccion=seccion, espesor=t,
++                               altura_relleno=altura_relleno)
++        valor_nivel = ("«en_la_clave»: el nivel de agua de diseño en la clave "
++                       "exterior del conducto; sumergido entero, y el relleno "
++                       "sobre la clave en seco (peso humedo)")
++    else:
++        # EL NIVEL SALE DEL FREATICO MEDIDO DEL CRUCE, con su ascenso
++        # estacional declarado, y se compara con el FONDO EXTERIOR del
++        # conducto (la clave fisica menos el canto exterior): AASHTO 12.6.1
++        # pide evaluar la flotacion «with inverts below the water table», y
++        # el fondo exterior, mas bajo que el invert, es el disparo
++        # conservador -- con agua sobre el, ya hay subpresion (2.4.3.8.2) --.
++        cota_nivel, nf, margen = cota_nivel_agua_v7_del_nf(punto=punto)
++        cota_clave_ext = cota_clave(punto=punto, material=material,
++                                    seccion=seccion)
++        cota_fondo_ext = cota_clave_ext - seccion.canto_exterior(t)
++        if not cota_nivel - cota_fondo_ext > TOL_UMBRAL_NORMATIVO:
++            return _v7_no_aplica(punto=punto, cota_nivel=cota_nivel, nf=nf,
++                                 margen=margen, cota_fondo_ext=cota_fondo_ext)
++        h_agua = cota_nivel - cota_fondo_ext
++        h_sumergida = max(cota_nivel - cota_clave_ext, 0.0)
++        U = empuje_flotacion_bajo_el_nivel_kn_m(seccion=seccion, espesor=t,
++                                                altura_agua=h_agua)
++        EV, gamma_sat = peso_relleno_bajo_el_nivel_kn_m(
++            seccion=seccion, espesor=t, altura_relleno=altura_relleno,
++            altura_sumergida=h_sumergida)
++        valor_nivel = (f"«nf_del_punto»: cota {cota_nivel:.3f} msnm = "
++                       f"cota_terreno {punto.cota_terreno:.3f} - "
++                       f"NF_profundidad_m {nf:.3f} + margen {margen:.3f}")
++        magnitudes_nivel = (
++            Magnitud("cota_nivel_agua", cota_nivel, "msnm",
++                     "nivel de agua de diseño: cota_terreno - "
++                     "NF_profundidad_m + 'margen_estacional_nf_v7_m'",
++                     cifras=CIFRAS_MAGNITUD),
++            Magnitud("NF", nf, "m",
++                     "profundidad del freatico MEDIDA bajo el terreno del "
++                     "cruce (columna NF_profundidad_m del CSV, del EMS): una "
++                     "lectura de campo", cifras=CIFRAS_MAGNITUD),
++            Magnitud("margen_estacional", margen, "m",
++                     "ascenso estacional declarado hasta el freatico mas "
++                     "alto previsto ('margen_estacional_nf_v7_m' [A])",
++                     cifras=CIFRAS_MAGNITUD),
++            Magnitud("h_agua", h_agua, "m",
++                     "nivel sobre el fondo EXTERIOR del conducto: con el "
++                     "canto exterior o mas, sumergido entero",
++                     cifras=CIFRAS_MAGNITUD))
++        citas_nivel = ("AASHTO_LRFD_9.12.6.1#FLOTACION",)
++        if gamma_sat is not None:
++            magnitudes_nivel += (
++                Magnitud("h_relleno_sumergido",
++                         min(h_sumergida, altura_relleno), "m",
++                         "relleno sobre la clave que queda bajo el nivel",
++                         cifras=CIFRAS_MAGNITUD),
++                Magnitud("gamma_sat", gamma_sat, "kN/m3",
++                         "peso especifico saturado del relleno (ensayo); "
++                         "bajo el nivel pesa gamma_sat - gamma_agua, por "
++                         "analogia [N->] con el Manual de Puentes 2.4.4.1.3",
++                         cifras=CIFRAS_MAGNITUD))
++            citas_nivel += ("MP.2.4.4.1.3#SUMERGIDO",)
+     DC = 0.0                 # peso propio omitido, del lado conservador
+     g = factores_carga_flotacion(material=material)   # CriterioPendienteError si EV no se detuvo antes
+ 
+@@ -3102,8 +3183,13 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
              # NOR-HID-04: lo que la fuente DICE y lo que el proyecto LEE no se
              # pegan --. La discrepancia entera esta en
              # DIS-AASHTO-GAMMA-EV-12.6.1, estado ABIERTA.
 -            citas_textuales=("MP.2.4.5.3.1#MINIMO",
+-                             "AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX"),
 +            # --- VE-2 (c1) --- Y la frase que dice QUIEN fija el nivel de
 +            # agua de diseño, para que la sumersion completa se lea en la
 +            # memoria como la adopcion que es y no como algo que la norma
 +            # prescribe.
 +            citas_textuales=("MP.2.4.3.8.1#NIVEL_DE_DISENO",
 +                             "MP.2.4.5.3.1#MINIMO",
-                              "AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX"),
++                             "AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX") + citas_nivel,
              sustitucion=(
                  Magnitud("Bc", seccion.ancho_exterior(t), "m",
+                          "ancho EXTERIOR en planta (Art. 12.6.6.3 de AASHTO: "
+@@ -3119,7 +3205,8 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
+                          "punto: el relleno que de verdad hay encima, no el "
+                          "minimo admisible de 7.A", cifras=CIFRAS_MAGNITUD),
+                 Magnitud("U", U, "kN/m",
+-                         "subpresion sobre el conducto vacio "
++                         "subpresion sobre el conducto vacio, bajo el nivel "
++                         "de agua de diseño de 'nivel_agua_diseno_v7' "
+                          "(num. 2.4.3.8.2 del Manual de Puentes)", cifras=CIFRAS_MAGNITUD),
+                 Magnitud("EV", EV, "kN/m",
+                          "peso del relleno sobre la clave", cifras=CIFRAS_MAGNITUD),
+@@ -3132,7 +3219,7 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
+                          "material en la Tabla 2.4.5.3.1-2", cifras=CIFRAS_FACTOR),
+                 Magnitud("gamma_WA", g.gamma_WA, "",
+                          "factor de la carga de agua, Tabla 2.4.5.3.1-1",
+-                         cifras=CIFRAS_FACTOR)),
++                         cifras=CIFRAS_FACTOR)) + magnitudes_nivel,
+             resultado=Magnitud("accion estabilizante", estabilizante, "kN/m",
+                                "gamma_DC*DC + gamma_EV*EV", cifras=CIFRAS_MAGNITUD),
+             umbral=_umbral_de(
+@@ -3151,11 +3238,57 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
+                 de_donde="la Tabla 2.4.5.3.1-2 del Manual de Puentes "
+                          "(= 3.4.1-2 de AASHTO LRFD), pag. impresa 143",
+                 cita_id="MP.T2.4.5.3.1-2",
+-                clave_criterio=CRITERIO_FACTORES_CARGA), eleccion_t),
++                clave_criterio=CRITERIO_FACTORES_CARGA), eleccion_t,
++                eleccion(
++                    "F5.V7_NIVEL",
++                    que_se_adopto="nivel de agua de diseño de la flotacion "
++                                  "(lo especifica o aprueba el Propietario)",
++                    valor=valor_nivel,
++                    entre=NIVELES_AGUA_V7,
++                    de_donde="Manual de Puentes num. 2.4.3.8.1, pag. impresa "
++                             "113: el nivel lo fija el Propietario; el "
++                             "proyecto lo declara en 'nivel_agua_diseno_v7'",
++                    cita_id="MP.2.4.3.8.1#NIVEL_DE_DISENO",
++                    clave_criterio=CRITERIO_NIVEL_AGUA_V7)),
+         ),
+     )
+ 
+ 
++def _v7_no_aplica(*, punto: PuntoCritico, cota_nivel: float, nf: float,
++                  margen: float, cota_fondo_ext: float) -> Verificacion:
++    """
++    --- VE-2 (c2) --- La fila V7 cuando, con 'nivel_agua_diseno_v7' =
++    «nf_del_punto», el nivel de agua de diseño no llega al fondo exterior
++    del conducto: NO APLICA, con el motivo, y no un «cumple» fabricado.
++    AASHTO LRFD 12.6.1 dispara la evaluacion de la flotacion con «inverts
++    below the water table» (cita AASHTO_LRFD_9.12.6.1#FLOTACION); sin agua
++    sobre el fondo no hay subpresion (Manual de Puentes 2.4.3.8.2) y la
++    verificacion no tiene nada que comparar. Es el mismo estado que
++    `v5_no_aplica_en_canal`: no cuenta como incumplida ni como cumplida.
++    """
++    return Verificacion(
++        cumple=True,
++        numeral=NUMERAL_V7,
++        valor_obtenido=None,
++        valor_admisible=None,
++        criterio_aplicado=CRITERIO_NIVEL_AGUA_V7,
++        codigo="V7",
++        estado=EstadoDeVerificacion.NO_APLICA,
++        motivo_no_aplica=(
++            f"con 'nivel_agua_diseno_v7' = «nf_del_punto» el nivel de agua "
++            f"de diseño queda en {cota_nivel:.3f} msnm (cota_terreno "
++            f"{punto.cota_terreno:.3f} - NF_profundidad_m {nf:.3f} + margen "
++            f"{margen:.3f}), a la altura del fondo EXTERIOR del conducto "
++            f"({cota_fondo_ext:.3f} msnm) o por debajo. AASHTO LRFD 12.6.1 "
++            "manda evaluar la flotacion de las estructuras enterradas «with "
++            "inverts below the water table»; el proyecto compara con el fondo "
++            "exterior, mas bajo que el invert, del lado conservador, y sin "
++            "agua sobre el no hay subpresion (Manual de Puentes 2.4.3.8.2). "
++            "No es un «cumple»: la verificacion no se evaluo porque su "
++            "condicion de disparo no se da en este punto"),
++    )
++
++
+ # ---------------------------------------------------------------------------
+ # V8 - Evento extremo / FEN (Fase 5, V8)
+ # ---------------------------------------------------------------------------
 diff --git a/src/modulos/M8_estructural.py b/src/modulos/M8_estructural.py
-index 0e4d0ac..c74b7b4 100644
+index 0e4d0ac..96b0421 100644
 --- a/src/modulos/M8_estructural.py
 +++ b/src/modulos/M8_estructural.py
 @@ -39,7 +39,14 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
@@ -299,7 +733,17 @@ index 0e4d0ac..c74b7b4 100644
  
  Por eso U NO depende del valor del NF: la hipotesis es sumersion completa, y
  sumergido del todo el conducto desplaza su volumen entero este el freatico a
-@@ -309,6 +339,13 @@ def empuje_flotacion_kn_m(*, seccion: Seccion, espesor: float) -> float:
+@@ -209,7 +239,8 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
+                          Material, MetodoNoEvaluableError,
+                          MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL, PasoDeMemoria,
+                          PuntoCritico, ReferenciaNormativa,
+-                         ResultadoEstructural, Seccion, TipoDeVeredicto,
++                         ResultadoEstructural, Seccion, SeccionCircular,
++                         SeccionRectangular, TipoDeVeredicto,
+                          TipoMaterial, Umbral, Verificacion, Veredicto, paso)
+ from src.modulos.M2_material import espesor_pared, numero_de_celdas
+ from src.tolerancias import (TOL_BRENT, TOL_UMBRAL_NORMATIVO,
+@@ -309,6 +340,13 @@ def empuje_flotacion_kn_m(*, seccion: Seccion, espesor: float) -> float:
  
          U = gamma_agua * area_exterior
  
@@ -313,11 +757,171 @@ index 0e4d0ac..c74b7b4 100644
      DE DONDE SALE LA OBLIGACION, que hasta C7 no estaba citada: el num.
      2.4.3.8.2 del Manual de Puentes manda considerar la subpresion como una
      fuerza de levantamiento sobre "todos los componentes de la estructura que
+@@ -394,6 +432,159 @@ def peso_relleno_kn_m(*, seccion: Seccion, espesor: float,
+     return gamma_relleno * seccion.ancho_exterior(espesor) * altura_relleno
+ 
+ 
++# ---------------------------------------------------------------------------
++# --- VE-2 (c2) --- El nivel de agua de diseño de V7, declarable
++# ---------------------------------------------------------------------------
++# El Manual de Puentes, num. 2.4.3.8.1, deja el nivel de agua de diseño al
++# Propietario (cita MP.2.4.3.8.1#NIVEL_DE_DISENO), y hasta VE-2 este modulo lo
++# fijaba sin decirlo: sumersion completa. Hoy lo dice 'nivel_agua_diseno_v7'
++# [A]: «en_la_clave» (archivo) es exactamente lo de antes -- V7 no pasa por
++# ninguna de las funciones de abajo salvo `regla_nivel_agua_v7`, y la linea
++# base no se mueve -- y «nf_del_punto» lee el freatico del cruce.
++CRITERIO_NIVEL_AGUA_V7 = "nivel_agua_diseno_v7"
++NIVEL_V7_EN_LA_CLAVE = "en_la_clave"
++NIVEL_V7_NF_DEL_PUNTO = "nf_del_punto"
++NIVELES_AGUA_V7 = (NIVEL_V7_EN_LA_CLAVE, NIVEL_V7_NF_DEL_PUNTO)
++CRITERIO_MARGEN_NF_V7 = "margen_estacional_nf_v7_m"
++# El MISMO dato de ensayo que el cabezal lee para su relleno bajo el agua
++# (`M9.CRITERIO_GAMMA_SATURADO`): el proyecto usa un solo relleno, y su peso
++# humedo ya es uno solo ('peso_especifico_relleno_kn_m3', que leen V7 y M9).
++CRITERIO_PESO_SATURADO = "peso_especifico_saturado_relleno_kn_m3"
++
++
++def regla_nivel_agua_v7() -> str:
++    """
++    El nivel de agua de diseño con que V7 evalua la flotacion, leido de
++    'nivel_agua_diseno_v7' [A] (registra el uso: la memoria lo imprime).
++
++    Una regla que no es de la ventana no llega aqui por la puerta de los
++    criterios --es una `categoria`--; la guardia de abajo es la segunda
++    linea, para el que monte un `Criterio` por otra via.
++    """
++    regla = ca.valor(CRITERIO_NIVEL_AGUA_V7)
++    if regla not in NIVELES_AGUA_V7:
++        raise DatoInvalidoError(
++            CRITERIO_NIVEL_AGUA_V7, valor=regla,
++            motivo=f"no es una de las reglas implementadas {NIVELES_AGUA_V7}")
++    return regla
++
++
++def v7_lee_el_nivel_freatico() -> bool:
++    """
++    Si V7, con lo que hoy esta declarado, lee la columna 'NF_profundidad_m'.
++    NO registra el uso del criterio: es la pregunta del pre-vuelo
++    (`anticipo.datos_faltantes_por_punto`), que no corre el calculo y no
++    puede ensuciar el registro de la corrida.
++    """
++    regla = ca.criterio_efectivo(CRITERIO_NIVEL_AGUA_V7).valor
++    return regla == NIVEL_V7_NF_DEL_PUNTO
++
++
++def cota_nivel_agua_v7_del_nf(*, punto: PuntoCritico
++                              ) -> Tuple[float, float, float]:
++    """
++    El nivel de agua de diseño de V7 con «nf_del_punto», msnm, y las dos
++    lecturas de las que sale: `(cota, NF_profundidad_m, margen)`.
++
++        cota = cota_terreno - NF_profundidad_m + margen
++
++    El NF se mide bajo el terreno natural del CRUCE (la misma lectura que la
++    Fase 9 hace en `M9.altura_agua_sobre_base`). Es una LECTURA DE CAMPO y
++    no necesariamente el freatico mas alto previsto que AASHTO 12.6.2.3
++    nombra, y por eso se le suma 'margen_estacional_nf_v7_m' [A]: sin valor,
++    `CriterioPendienteError`; nunca 0 por defecto, que seria afirmar sin
++    dato que la lectura ya es el nivel mas alto.
++
++    Se detiene, en este orden: `DatoFaltanteError` sin 'NF_profundidad_m'
++    (la columna admite la celda vacia: la debe el EMS);
++    `CriterioPendienteError` sin el margen; `DatoInvalidoError` con un margen
++    negativo, que bajaria el nivel por debajo de la lectura (la ventana del
++    criterio es simbolica y no lo evalua).
++    """
++    nf = punto.exigir("NF_profundidad_m")
++    margen = ca.valor(CRITERIO_MARGEN_NF_V7)
++    if not margen >= 0:
++        raise DatoInvalidoError(
++            CRITERIO_MARGEN_NF_V7, valor=margen, id_punto=punto.id,
++            motivo="el ascenso estacional del freatico no puede ser negativo: "
++                   "bajaria el nivel de agua de diseño por debajo de la "
++                   "lectura de NF_profundidad_m")
++    return punto.cota_terreno - nf + margen, nf, margen
++
++
++def empuje_flotacion_bajo_el_nivel_kn_m(*, seccion: Seccion, espesor: float,
++                                        altura_agua: float) -> float:
++    """
++    U con el nivel de agua de diseño a `altura_agua` m sobre el fondo
++    EXTERIOR del conducto, kN/m: la sumatoria de las componentes verticales
++    de la presion hidrostatica sobre lo que queda bajo el nivel (Manual de
++    Puentes 2.4.3.8.2), o sea gamma_agua por el AREA EXTERIOR SUMERGIDA.
++
++    Con el nivel en el canto exterior o por encima es `empuje_flotacion_kn_m`
++    -- el mismo numero, por la misma funcion --; por debajo, el area de la
++    MISMA forma con las dimensiones exteriores bajo esa altura: un segmento
++    de circulo (Sec. 4.1, A = (D^2/8)(theta - sen theta), sobre el diametro
++    exterior) o un rectangulo (Bc * h). La geometria no se reescribe: es la
++    de `SeccionCircular.area` y `SeccionRectangular.area`, que son las de la
++    lamina libre, construidas sobre el contorno exterior.
++    """
++    canto = seccion.canto_exterior(espesor)
++    if not altura_agua < canto:
++        return empuje_flotacion_kn_m(seccion=seccion, espesor=espesor)
++    if not altura_agua > 0:
++        return 0.0
++    if isinstance(seccion, SeccionRectangular):
++        exterior = SeccionRectangular(B=seccion.ancho_exterior(espesor),
++                                      H=canto)
++    elif isinstance(seccion, SeccionCircular):
++        exterior = SeccionCircular(D=seccion.ancho_exterior(espesor))
++    else:
++        raise TypeError(f"forma de seccion no implementada: {seccion!r}")
++    return GAMMA_AGUA_KN_M3 * exterior.area(altura_agua)
++
++
++def peso_relleno_bajo_el_nivel_kn_m(*, seccion: Seccion, espesor: float,
++                                    altura_relleno: float,
++                                    altura_sumergida: float
++                                    ) -> Tuple[float, Optional[float]]:
++    """
++    EV con `altura_sumergida` m del relleno sobre la clave bajo el nivel de
++    agua de diseño, kN/m, y el peso saturado con que se peso (None si no
++    hizo falta):
++
++        EV = Bc * [ gamma_r * (H - h_s) + (gamma_sat - gamma_agua) * h_s ]
++
++    con h_s acotada por la altura de relleno H (sobre la subrasante el
++    paquete no entra en EV, como siempre). El relleno bajo el agua pesa
++    SUMERGIDO por ANALOGIA [N->] con el Manual de Puentes 2.4.4.1.3, que
++    exige las densidades del suelo sumergido para el empuje LATERAL bajo el
++    freatico (cita MP.2.4.4.1.3#SUMERGIDO): para el peso vertical que
++    estabiliza el conducto no hay frase, y la analogia va del lado
++    conservador (sujeta menos).
++
++    El saturado es 'peso_especifico_saturado_relleno_kn_m3', dato de ensayo
++    sin valor de archivo: solo se lee si hay relleno bajo el agua (mas que
++    `TOL_UMBRAL_NORMATIVO`, para que el ruido flotante de un nivel en la
++    clave no lo exija) y sin el, `CriterioPendienteError`. Un saturado que
++    no supera al agua daria un peso sumergido nulo o negativo:
++    `DatoInvalidoError`, como en el cabezal.
++    """
++    if not altura_sumergida > TOL_UMBRAL_NORMATIVO:
++        return peso_relleno_kn_m(seccion=seccion, espesor=espesor,
++                                 altura_relleno=altura_relleno), None
++    h_s = min(altura_sumergida, altura_relleno)
++    gamma_relleno = ca.valor(CRITERIO_PESO_RELLENO)
++    gamma_sat = ca.valor(CRITERIO_PESO_SATURADO)   # CriterioPendienteError
++    if not (math.isfinite(gamma_sat) and gamma_sat > GAMMA_AGUA_KN_M3):
++        raise DatoInvalidoError(
++            CRITERIO_PESO_SATURADO, valor=gamma_sat,
++            motivo="tiene que ser mayor que el peso especifico del agua: "
++                   "el relleno bajo el nivel pesa el saturado menos el agua")
++    ancho = seccion.ancho_exterior(espesor)
++    return (ancho * (gamma_relleno * (altura_relleno - h_s)
++                     + (gamma_sat - GAMMA_AGUA_KN_M3) * h_s), gamma_sat)
++
++
+ COMBINACION_V7 = "Resistencia I"
+ # V7 es un equilibrio de factores de carga LRFD -- MINORA lo que estabiliza
+ # (DC, EV) y MAYORA lo que desestabiliza (WA) -- y esos son exactamente los
 diff --git a/src/normativa/citas.py b/src/normativa/citas.py
-index 9c0c1b8..7dcef7e 100644
+index 9c0c1b8..9712016 100644
 --- a/src/normativa/citas.py
 +++ b/src/normativa/citas.py
-@@ -14272,5 +14272,67 @@ HDS5_2_2_5D_AGENCIAS = _cita(
+@@ -14272,5 +14272,99 @@ HDS5_2_2_5D_AGENCIAS = _cita(
            "tope del proyecto es el criterio [A] 'HW_D_max'."),
  )
  
@@ -356,8 +960,10 @@ index 9c0c1b8..7dcef7e 100644
 +          "no sobre cual es: el Manual no da ningun nivel de agua de diseño "
 +          "para una alcantarilla enterrada. Por eso el nivel con que V7 "
 +          "evalua la flotacion es una adopcion [A] del proyecto en el sitio "
-+          "de la decision del Propietario, y la lectura del primer parrafo («las condiciones de aguas máximas y "
-+          "aguas mínimas», de pilares y partes del puente) no se traslada al "
++          "de la decision del Propietario ('nivel_agua_diseno_v7', desde "
++          "VE-2), y la lectura del primer parrafo («las condiciones de aguas "
++          "máximas y aguas mínimas», de pilares y partes del puente) no se "
++          "traslada al "
 +          "conducto."),
 +)
 +
@@ -383,10 +989,40 @@ index 9c0c1b8..7dcef7e 100644
 +          "el proyecto."),
 +)
 +
++
++# LA DENSIDAD SUMERGIDA, que el Manual exige para el empuje LATERAL del suelo
++# bajo el freatico. V7 la aplica POR ANALOGIA [N->] al peso VERTICAL del
++# relleno que queda bajo el nivel de agua de diseño cuando
++# 'nivel_agua_diseno_v7' declara un nivel sobre la clave
++# (`M8.peso_relleno_bajo_el_nivel_kn_m`): la frase no habla de cargas
++# verticales, y por eso es analogia declarada y no lectura directa.
++MP_SUELO_SUMERGIDO = _cita(
++    id="MP.2.4.4.1.3#SUMERGIDO",
++    fuente_id="MP",
++    numeral="2.4.4.1.3",
++    titulo_numeral="Presencia de Agua",
++    pagina_impresa="133",
++    pagina_pdf=134,
++    texto_literal=Verbatim(
++        texto=("Para determinar el empuje lateral del suelo debajo del nivel "
++               "freático se deberán utilizar las densidades del suelo "
++               "sumergido."),
++        pagina_pdf=134),
++    caracter=Caracter.EXIGENCIA,
++    corresponde_en=("AASHTO_LRFD_9.3.11.3",),
++    sesion=VE2,
++    nota=("Tercer parrafo del num. 2.4.4.1.3 (3.11.3 AASHTO; el gemelo es "
++          "`AASHTO_LRFD_9.3.11.3`). Su ambito es el EMPUJE LATERAL del suelo "
++          "detras de un muro. Para el peso del prisma de relleno que "
++          "estabiliza al conducto en V7 no hay frase: aplicarle la densidad "
++          "sumergida es ANALOGIA [N->] del proyecto, y va del lado "
++          "conservador (el relleno sumergido pesa menos y sujeta menos)."),
++)
++
  
  CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
 diff --git a/src/normativa/fundamentos.py b/src/normativa/fundamentos.py
-index ba08f44..f33d9bd 100644
+index ba08f44..52099c6 100644
 --- a/src/normativa/fundamentos.py
 +++ b/src/normativa/fundamentos.py
 @@ -625,11 +625,26 @@ V7 = _fundamento(
@@ -430,6 +1066,150 @@ index ba08f44..f33d9bd 100644
             "AASHTO_LRFD_9.12.6.1#FLOTACION",    # EXIGENCIA -> lo sostiene
             "AASHTO_LRFD_9.12.6.2.3#UPLIFT",     # EXIGENCIA -> lo sostiene
             "AASHTO_LRFD_9.3.7.2",               # EXIGENCIA (gemelo del peruano)
+@@ -748,6 +767,52 @@ V7_FILA_GAMMA = _fundamento(
+ # definitoria va primera y la tabla segunda.
+ 
+ 
++# --- VE-2 (c2) --- LA ELECCION DEL NIVEL DE AGUA DE DISEÑO, que tampoco es
++# del paso. Que haya que verificar la flotacion lo obligan tres numerales
++# (F5.V7); con QUE NIVEL, la norma lo deja al Propietario, y el proyecto lo
++# declara en 'nivel_agua_diseno_v7' [A]. El verbo es OBLIGA porque lo que las
++# citas exigen es real --que el nivel lo fije el Propietario, que la flotacion
++# se evalue con el invert bajo el freatico, que el suelo bajo el agua pese
++# sumergido en el empuje lateral--; lo que el proyecto ELIGE, y lo que aplica
++# por ANALOGIA, lo dice el texto y no el verbo.
++V7_NIVEL_DE_DISENO = _fundamento(
++    id="F5.V7_NIVEL",
++    fase=F5,
++    que_paso=("Nivel de agua de diseño de la flotacion: lo especifica o "
++              "aprueba el Propietario"),
++    por_que=(
++        "La subpresion actua sobre lo que queda debajo del nivel de agua de "
++        "diseño, y ese nivel no lo da la norma: el Manual de Puentes "
++        "(2.4.3.8.1, igual que AASHTO 3.7.1) lo deja al Propietario, y "
++        "AASHTO 12.6.2.3 lo nombra como el freatico mas alto previsto, sin "
++        "cota. El proyecto lo adopta en la CLAVE del conducto, sumergido "
++        "entero, que es el lado conservador: ningun nivel mas bajo da mas "
++        "empuje, y el relleno sobre la clave pesa humedo, que es coherente "
++        "solo con el nivel en la clave. La alternativa declarable lee el "
++        "freatico MEDIDO del cruce y le suma un ascenso estacional, porque "
++        "una lectura de campo no es el nivel mas alto previsto; con ella la "
++        "flotacion se evalua solo si el fondo exterior del conducto queda "
++        "bajo ese nivel (AASHTO 12.6.1: «with inverts below the water "
++        "table»), y el relleno bajo el agua pesa el saturado menos el agua "
++        "por ANALOGIA con el Manual de Puentes 2.4.4.1.3, que exige las "
++        "densidades del suelo sumergido para el empuje LATERAL bajo el "
++        "freatico y no habla del peso vertical."),
++    verbo=Verbo.OBLIGA,
++    citas=("MP.2.4.3.8.1#NIVEL_DE_DISENO",       # EXIGENCIA: quien lo fija
++           "AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO",  # EXIGENCIA: el gemelo
++           "AASHTO_LRFD_9.12.6.1#FLOTACION",     # EXIGENCIA: el disparo
++           "AASHTO_LRFD_9.12.6.2.3#UPLIFT",      # EXIGENCIA: el mas alto
++           "MP.2.4.4.1.3#SUMERGIDO",             # EXIGENCIA lateral: analogia
++           "AASHTO_LRFD_9.3.11.3"),              # el gemelo de AASHTO
++    que_pasa_si_no_se_hace=(
++        "La memoria imprimiria la sumersion completa como si la norma la "
++        "prescribiera, y el revisor no veria que es una decision del "
++        "Propietario que el proyecto tomo por el: la misma cita falsa que "
++        "NOR-HID-01 retiro, escrita sobre un nivel en vez de un valor. Y "
++        "quien conociera el freatico de su cruce no tendria donde decirlo."),
++)
++
++
+ # ===========================================================================
+ # Fase 6 - Proteccion de salida
+ # ===========================================================================
+diff --git a/src/variables_entrada.py b/src/variables_entrada.py
+index d31fce1..1d0807b 100644
+--- a/src/variables_entrada.py
++++ b/src/variables_entrada.py
+@@ -789,10 +789,16 @@ _COLUMNAS: Dict[str, _Columna] = {
+         # lee (`M8.empuje_flotacion_kn_m`). Es el texto del pre-vuelo y de la
+         # ayuda: corto, con la discrepancia de la hoja de ruta en una frase y
+         # el detalle en la ficha VE1-01.
++        # --- VE-2 (c2) --- Desde VE-2 V7 la lee, pero SOLO con la alternativa
++        # 'nf_del_punto' de 'nivel_agua_diseno_v7' (`M8.cota_nivel_agua_v7_
++        # del_nf`); con el valor de archivo, no. Las dos cosas en el texto, y
++        # la discrepancia de la hoja de ruta (§1.2: «la lee V7», sin esa
++        # condicion) sigue en la ficha VE1-01.
+         concepto="Profundidad del nivel freatico bajo el terreno natural en "
+-                 "el cruce. La leen la estabilidad del cabezal (Fase 9) y la "
+-                 "presion del agua sobre un TMC o un HDPE (Fase 8). La hoja "
+-                 "de ruta (§1.2) dice que la lee V7; no la lee: ficha VE1-01",
++                 "el cruce. La leen el cabezal (Fase 9), la presion del agua "
++                 "sobre un TMC o un HDPE (Fase 8) y V7 solo con "
++                 "'nivel_agua_diseno_v7' = 'nf_del_punto', no con el de "
++                 "archivo: fichas VE2-C y VE1-01",
+         unidad="m",
+         resolucion=DeEnsayo(
+             ensayo="medicion del nivel freatico en la calicata o el "
+@@ -804,7 +810,11 @@ _COLUMNAS: Dict[str, _Columna] = {
+         ),
+         nota="Es la unica columna que no viene del encabezado de Sec. 1.2: se "
+              "agrego al reclasificar el nivel freatico, que era un criterio "
+-             "unico de proyecto (1.4 m) y se MIDE en cada cruce.",
++             "unico de proyecto (1.4 m) y se MIDE en cada cruce. Es una "
++             "LECTURA de campo y no necesariamente el freatico mas alto "
++             "previsto (AASHTO 12.6.2.3): por eso V7, cuando la lee, le suma "
++             "el ascenso estacional 'margen_estacional_nf_v7_m' [A], sin "
++             "valor, que la detiene hasta que se declare (VE-2).",
+     ),
+ }
+ 
+@@ -1660,6 +1670,18 @@ _META_CRITERIOS: Dict[str, _Meta] = {
+     "nivel_significancia_ks": _Meta(unidad="- (probabilidad)"),
+     "peso_especifico_concreto_kn_m3": _Meta(unidad="kN/m3"),
+     "peso_especifico_relleno_kn_m3": _Meta(unidad="kN/m3"),
++    # --- VE-2 (c2) --- el nivel de agua de diseño de V7 y el ascenso
++    # estacional que su alternativa suma a la lectura del freatico.
++    "nivel_agua_diseno_v7": _Meta(
++        unidad="-",
++        nota="Categoria: 'en_la_clave' (archivo: sumergido entero) o "
++             "'nf_del_punto' (cota_terreno - NF_profundidad_m + "
++             "'margen_estacional_nf_v7_m'). La fija el Propietario (Manual "
++             "de Puentes 2.4.3.8.1)"),
++    "margen_estacional_nf_v7_m": _Meta(
++        unidad="m",
++        nota="Solo con 'nivel_agua_diseno_v7' = 'nf_del_punto'. >= 0: lo "
++             "que el freatico sube entre la lectura y su nivel mas alto"),
+     "phi_relleno_trasdos": _Meta(unidad="grados"),
+     "predimensionamiento_cabezal": _Meta(unidad="m y adimensional (reglas)"),
+     "procedimiento_flexion_corte_aashto_sec5": _Meta(unidad="-"),
+diff --git a/tests/apoyo/validacion_integral.py b/tests/apoyo/validacion_integral.py
+index e6df1a3..7292e52 100644
+--- a/tests/apoyo/validacion_integral.py
++++ b/tests/apoyo/validacion_integral.py
+@@ -1154,6 +1154,13 @@ CONDICIONALES_NO_MEDIDAS: Dict[str, str] = {
+         "con la cimentacion en ROCA (filas A o B declaradas en 'F_pga'), "
+         "donde la ecuacion de 10.6.3.1.2a no aplica y sin el dato la "
+         "capacidad portante es «metodo no evaluable»"),
++    # --- VE-2 (c2) ---
++    "margen_estacional_nf_v7_m": (
++        "solo con `nivel_agua_diseno_v7` = 'nf_del_punto': detiene V7 (el "
++        "ascenso estacional del freatico sobre la lectura de "
++        "`NF_profundidad_m`), y con esa alternativa V7 exige ademas el NF "
++        "del punto y, con el nivel sobre la clave, "
++        "`peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C)"),
+ }
+ 
+ 
+diff --git a/tests/linea_base_familia_c/README.md b/tests/linea_base_familia_c/README.md
+index 52b5dd4..2fa4293 100644
+--- a/tests/linea_base_familia_c/README.md
++++ b/tests/linea_base_familia_c/README.md
+@@ -1638,3 +1638,12 @@ medido con `git diff -U0`). El rótulo de la sección (H1) da los mismos «Ø 0.
+ «marco 1.20 × 0.90 m».
+ 
+ **Diámetros, secciones, materiales y HW movidos: ninguno.**
++
++## Regenerada en VE-2 (c1) (2026-11-17, sobre `72a8d01`): sólo textos de V7, ningún número
++
++V7 deja de justificarse con el NF somero del corredor y cita el Manual de Puentes 2.4.3.8.1
++(ficha VE2-C). Cambian tres memorias (`memoria_perfil.html`, `memoria_perfil_ancha.html`,
++`memoria_expediente.html`): el `por_que` de F5.V7 y, en la ancha, el paso de V7 con la cita
++nueva y sus anclajes de contenido. JSON, CSV, `cli_*.txt` y la memoria del cajón: idénticos.
++
++**Diámetros, secciones, materiales y HW movidos: ninguno.**
 diff --git a/tests/linea_base_familia_c/memoria_expediente.html b/tests/linea_base_familia_c/memoria_expediente.html
 index a162193..56c13ef 100644
 --- a/tests/linea_base_familia_c/memoria_expediente.html
@@ -487,12 +1267,127 @@ index 19d738c..54c0815 100644
  
  <footer>
  <p>Generado automaticamente por <code>M11_reporte.py</code> el
+diff --git a/tests/test_M8_estructural.py b/tests/test_M8_estructural.py
+index 14a33d7..1e0fe01 100644
+--- a/tests/test_M8_estructural.py
++++ b/tests/test_M8_estructural.py
+@@ -297,10 +297,23 @@ def test_el_NF_ya_no_es_un_criterio_de_este_modulo():
+     ruta_m8 = Path(M8.__file__)
+     assert "CRITERIO_NF" not in estructura.nombres_asignados(ruta_m8)
+     assert "CRITERIO_NF" not in estructura.nombres_usados(ruta_m8)
+-    assert "NF_profundidad_m" not in estructura.textos_de_llamada_o_indice(
+-        ruta_m8), (
+-        "M8 volvio a invocar el NF del punto: la flotacion se evalua con el "
+-        "conducto lleno de aire, no con el freatico medido")
++    # --- VE-2 (c2) --- CAMBIADO DECLARANDO LA CAUSA. Decia que M8 no invoca
++    # el NF del punto en ninguna parte, porque la flotacion no lo leia. Desde
++    # VE-2 lo invoca en UNA funcion, `cota_nivel_agua_v7_del_nf`, que solo
++    # corre con la alternativa 'nf_del_punto' de 'nivel_agua_diseno_v7' [A]
++    # (el nivel de agua de diseño lo fija el Propietario, Manual de Puentes
++    # 2.4.3.8.1). Con el valor de archivo V7 sigue sin leerlo: lo mide
++    # `tests/test_ve1_validacion.py::test_d2_guardia_v7_no_lee_el_nivel_freatico`.
++    # Lo que se conserva es lo que este test protege: que el NF no vuelva a
++    # ser un criterio y que su lectura no se esparza por el modulo.
++    import ast
++    arbol = ast.parse(ruta_m8.read_text(encoding="utf-8"))
++    invocadoras = {
++        f.name for f in arbol.body if isinstance(f, ast.FunctionDef)
++        and "NF_profundidad_m" in {
++            a.value for n in ast.walk(f) if isinstance(n, ast.Call)
++            for a in n.args if isinstance(a, ast.Constant)}}
++    assert invocadoras == {"cota_nivel_agua_v7_del_nf"}, invocadoras
+ 
+ 
+ # ===========================================================================
+diff --git a/tests/test_ui5_decisiones.py b/tests/test_ui5_decisiones.py
+index 9db96ec..a4885bd 100644
+--- a/tests/test_ui5_decisiones.py
++++ b/tests/test_ui5_decisiones.py
+@@ -1247,7 +1247,10 @@ SIN_NADA_QUE_BARRER = {
+     "c_phi_fundacion", "capacidad_portante_adm", "Mw_licuefaccion", "D_max_catalogo",
+     "perfil_hdpe_fabricante", "N_cq_N_gammaq_meyerhof", "metodo_estabilidad_global",
+     "exposicion_quimica_ems", "peso_especifico_saturado_relleno_kn_m3",
+-    "edicion_que_rige_el_expediente", "edicion_legal_que_rige_el_expediente"}
++    "edicion_que_rige_el_expediente", "edicion_legal_que_rige_el_expediente",
++    # VE-2 (c2): sin valor de archivo y con ventana en prosa (su extremo de
++    # arriba depende del NF de cada punto).
++    "margen_estacional_nf_v7_m"}
+ 
+ 
+ def _formas(c):
+@@ -1302,7 +1305,8 @@ def candidatos():
+ 
+ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
+     por_clave, fuera = candidatos
+-    assert len(por_clave) == len(ca.CRITERIOS) == 141
++    # VE-2 (c2): 141 + 'nivel_agua_diseno_v7' + 'margen_estacional_nf_v7_m'.
++    assert len(por_clave) == len(ca.CRITERIOS) == 143
+     assert fuera == FILAS_FUERA_DE_SU_VENTANA
+     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
+     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.
+diff --git a/tests/test_ve1_validacion.py b/tests/test_ve1_validacion.py
+index 9c07359..bee9ad6 100644
+--- a/tests/test_ve1_validacion.py
++++ b/tests/test_ve1_validacion.py
+@@ -338,6 +338,12 @@ def test_d2_guardia_quien_lee_el_nf_es_la_fase_8_y_el_cabezal():
+     (la presion del agua sobre la pared del TMC y del HDPE, si el NF queda
+     sobre la clave: `M8.verificar_tmc`, `M8._evaluar_hdpe`) y la Fase 9 (la
+     estabilidad del cabezal), y NO M5, donde vive V7.
++
++    --- VE-2 (c2) --- EL CONJUNTO NO CAMBIA Y LA LECTURA SI, y se declara: desde
++    VE-2 M8 lee el NF tambien para V7, en `M8.cota_nivel_agua_v7_del_nf`, y
++    solo cuando 'nivel_agua_diseno_v7' declara «nf_del_punto» (con el valor
++    de archivo, no: lo fija la guardia de comportamiento de arriba, que
++    sigue igual). M5 sigue sin leer la columna por su cuenta.
+     """
+     assert _lectores_del_nf() == {"M8_estructural", "M9_cabezal"}
+ 
+@@ -363,8 +369,13 @@ def test_d2_la_fila_del_contrato_no_atribuye_el_nf_a_v7():
+ def test_d2_el_concepto_de_la_columna_dice_quien_la_lee():
+     concepto = ve.variable("NF_profundidad_m").concepto
+     assert "flotacion (V7)" not in concepto
+-    # Redactado como lo pidio la revision (H5): la discrepancia en una frase.
+-    assert "dice que la lee V7; no la lee" in concepto
++    # --- VE-2 (c2) --- CAMBIADO DECLARANDO LA CAUSA. Decia «dice que la lee
++    # V7; no la lee», que desde VE-2 es falso a medias: V7 la lee con la
++    # alternativa 'nf_del_punto' de 'nivel_agua_diseno_v7' y no con el valor
++    # de archivo. El concepto dice las dos cosas, y la discrepancia de la
++    # hoja de ruta (§1.2, «la lee V7» sin condicion) remite a VE1-01.
++    assert "V7 solo con 'nivel_agua_diseno_v7' = 'nf_del_punto'" in concepto
++    assert "no con el de archivo" in concepto and "VE1-01" in concepto
+     assert "Fase 8" in concepto and "cabezal" in concepto
+ 
+ 
+@@ -602,7 +613,8 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
+         ca.establecer_valor_dinamico(clave, criterio.valor)
+         ca.quitar_valor_dinamico(clave)
+         barridos += 1
+-    assert len(ca.CRITERIOS) == 141 and barridos > 100, (len(ca.CRITERIOS),
++    # VE-2 (c2): 141 + 'nivel_agua_diseno_v7' + 'margen_estacional_nf_v7_m'.
++    assert len(ca.CRITERIOS) == 143 and barridos > 100, (len(ca.CRITERIOS),
+                                                           barridos)
+ 
+ 
+@@ -631,8 +643,11 @@ def test_h3_la_discrepancia_de_la_doble_n_esta_en_el_punto_de_uso(modulo, titulo
+ def test_h5_el_concepto_del_nf_es_corto_y_la_discrepancia_breve():
+     concepto = ve.variable("NF_profundidad_m").concepto
+     assert len(concepto) <= 250, len(concepto)
+-    assert concepto.endswith(
+-        "La hoja de ruta (§1.2) dice que la lee V7; no la lee: ficha VE1-01")
++    # --- VE-2 (c2) --- La cola remite ahora a las DOS fichas: VE2-C (quien
++    # la lee y con que criterio) y VE1-01 (la discrepancia de la hoja de
++    # ruta). Cambiado declarando la causa: la cola anterior negaba sin
++    # condicion que V7 la leyera.
++    assert concepto.endswith("no con el de archivo: fichas VE2-C y VE1-01")
+ 
+ 
+ def test_h5_ve1_02_g_con_numero_y_donde_vive_de_cada_decision():
 diff --git a/tests/test_ve2_flotacion.py b/tests/test_ve2_flotacion.py
 new file mode 100644
-index 0000000..493c3eb
+index 0000000..e471e4d
 --- /dev/null
 +++ b/tests/test_ve2_flotacion.py
-@@ -0,0 +1,225 @@
+@@ -0,0 +1,594 @@
 +"""
 +tests/test_ve2_flotacion.py
 +===========================
@@ -718,3 +1613,372 @@ index 0000000..493c3eb
 +                      "12.6.2.3", "C12.6.2.3", "Tabla 2.4.5.3.1-2",
 +                      "0.50", "Bajo Piura"):
 +        assert necesario in ficha, necesario
++
++
++# ===========================================================================
++# (c2) · el nivel de agua de diseño de V7, criterio [A] declarable
++# ===========================================================================
++# Bloque 4 de VE-2. El nivel lo fija el Propietario (MP 2.4.3.8.1), y el
++# proyecto lo ADOPTA en la clave: 'nivel_agua_diseno_v7' = 'en_la_clave', que
++# es exactamente lo que V7 calculaba (la linea base no se mueve). La
++# alternativa 'nf_del_punto' lee la columna NF_profundidad_m del punto, le
++# suma el ascenso estacional 'margen_estacional_nf_v7_m' ([A] SIN valor: la
++# lectura de campo no es el nivel mas alto previsto de AASHTO 12.6.2.3, y
++# rellenar el margen con 0 seria inventarlo) y evalua V7 solo si el fondo del
++# conducto queda bajo ese nivel (AASHTO 12.6.1); si no, «no aplica» con su
++# motivo. El relleno bajo el nivel pesa sumergido, gamma' = gamma_sat -
++# gamma_agua, por analogia [N->] con el Manual de Puentes 2.4.4.1.3; gamma_sat
++# es el criterio de ensayo 'peso_especifico_saturado_relleno_kn_m3', que sin
++# valor detiene (nunca un default).
++
++from src.modelos import (CriterioPendienteError, DatoFaltanteError,      # noqa: E402
++                         DatoInvalidoError, EstadoDeVerificacion, Familia,
++                         Libre, PuntoCritico, SeccionRectangular)
++from src.tolerancias import TOL_UMBRAL_NORMATIVO                          # noqa: E402
++from tests.apoyo.criterios import declarados                              # noqa: E402
++
++CLAVE_NIVEL = "nivel_agua_diseno_v7"
++CLAVE_MARGEN = "margen_estacional_nf_v7_m"
++CLAVE_SATURADO = "peso_especifico_saturado_relleno_kn_m3"
++CONCRETO = TipoMaterial.CONCRETO_REFORZADO
++CITA_SUMERGIDO = "MP.2.4.4.1.3#SUMERGIDO"
++
++
++def _punto(**cambios) -> PuntoCritico:
++    """
++    El cruce A-01 del fixture del repositorio. Con la regla de archivo
++    'origen_cota_fondo_entrada' = 'cota_terreno' el invert interior queda en
++    42.10; con D = 0.90 y la pared de archivo t = 0.10 m, la clave fisica en
++    43.10 y el fondo EXTERIOR en 42.00, y sobre la clave 0.95 m de relleno
++    hasta la subrasante (44.05). DATOS DE PRUEBA.
++    """
++    base = dict(
++        id="A-01", progresiva_km=0.380, progresiva_display="0+380",
++        familia=Familia.A, Q_m3s=1.1673, area_ha=850.0, S_cauce=0.006,
++        cota_terreno=42.10, cota_rasante=44.20, cota_subrasante=44.05,
++        cbr_subrasante=8.5, esviaje_grados=15.0, ancho_plataforma=9.60,
++        cota_fondo_receptor=41.30, Q_receptor_m3s=None, cota_TW=None,
++        sucs_fundacion="SM", NF_profundidad_m=None)
++    base.update(cambios)
++    return PuntoCritico(**base)
++
++
++def _v7(punto, seccion=None, material=None):
++    return M5.v7_flotacion(punto=punto,
++                           material=material or catalogo(CONCRETO),
++                           seccion=seccion or SeccionCircular(D=0.90),
++                           resultado=None)
++
++
++def _segmento(D: float, h: float) -> float:
++    """Area de un circulo de diametro D bajo una cuerda a altura h."""
++    theta = 2 * math.acos(1 - 2 * h / D)
++    return (D ** 2 / 8) * (theta - math.sin(theta))
++
++
++GAMMA_R = 17.0          # 'peso_especifico_relleno_kn_m3' de archivo
++BC = 1.10               # D + 2t, el tubo de 0.90 con t = 0.10
++H_REL = 44.05 - 43.10   # relleno sobre la clave fisica
++
++
++# --- las dos fichas --------------------------------------------------------
++
++def test_c2_el_nivel_de_agua_de_diseno_es_un_criterio_a_de_perfil():
++    c = ca.CRITERIOS[CLAVE_NIVEL]
++    assert c.valor == "en_la_clave"
++    assert (c.etiqueta, c.forma, c.nivel) == ("A", ca.FORMA_CATEGORIA,
++                                              ca.NIVEL_PERFIL)
++    assert "en_la_clave" in c.sensibilidad and "nf_del_punto" in c.sensibilidad
++    assert isinstance(c.resolucion, Libre)
++    assert "Propietario" in c.resolucion.que_lo_fija
++    for necesario in ("2.4.3.8.1", "12.6.1", "2.4.4.1.3"):
++        assert necesario in c.fuente, necesario
++    # La categoria es cerrada: un nivel que no es de la ventana no entra.
++    with pytest.raises(ValueError):
++        ca.verificar_declaracion(CLAVE_NIVEL, "en_el_terreno")
++
++
++def test_c2_el_margen_estacional_es_un_a_de_perfil_sin_valor():
++    c = ca.CRITERIOS[CLAVE_MARGEN]
++    assert c.valor is None and not c.opcional
++    assert (c.etiqueta, c.forma, c.nivel) == ("A", ca.FORMA_FLOAT,
++                                              ca.NIVEL_PERFIL)
++    assert c.sensibilidad is not None and c.resolucion is not None
++    assert CLAVE_MARGEN in ca.criterios_de_perfil_sin_valor()
++    assert "12.6.2.3" in c.fuente or "12.6.2.3" in c.justificacion
++
++
++# --- con el valor de archivo, V7 es la de siempre --------------------------
++
++def test_c2_con_el_valor_de_archivo_v7_no_lee_el_nf_y_registra_el_criterio():
++    ca.reiniciar_usos()
++    v = {nf: _v7(_punto(NF_profundidad_m=nf)) for nf in (None, 0.05, 10.0)}
++    assert len({(x.valor_obtenido, x.valor_admisible) for x in v.values()}) == 1
++    x = v[None]
++    assert x.valor_admisible == M8.empuje_flotacion_kn_m(
++        seccion=SeccionCircular(D=0.90), espesor=0.10)
++    assert x.valor_obtenido == pytest.approx(0.90 * GAMMA_R * BC * H_REL,
++                                             rel=1e-12)
++    assert CLAVE_NIVEL in ca.criterios_usados()
++    assert CLAVE_MARGEN not in ca.criterios_usados()
++    eleccion = [e for e in x.paso.elecciones if e.clave_criterio == CLAVE_NIVEL]
++    assert len(eleccion) == 1 and "en_la_clave" in eleccion[0].valor
++    assert eleccion[0].cita_id == CITA_NIVEL_MP
++
++
++# --- la alternativa: lee el NF del punto ------------------------------------
++
++def test_c2_con_nf_del_punto_sin_nf_es_dato_faltante():
++    with declarados({CLAVE_NIVEL: "nf_del_punto"}):
++        with pytest.raises(DatoFaltanteError) as exc:
++            _v7(_punto(NF_profundidad_m=None))
++    assert exc.value.campo == "NF_profundidad_m"
++
++
++def test_c2_con_nf_del_punto_sin_margen_es_criterio_pendiente():
++    with declarados({CLAVE_NIVEL: "nf_del_punto"}):
++        with pytest.raises(CriterioPendienteError) as exc:
++            _v7(_punto(NF_profundidad_m=0.50))
++    assert exc.value.clave == CLAVE_MARGEN
++
++
++# Mutante medido: comparar el nivel con la CLAVE en vez del fondo exterior
++# (o devolver un «cumple» en vez de NO_APLICA) -> muere aqui.
++def test_c2_con_el_nivel_bajo_el_fondo_v7_no_aplica_y_lo_dice():
++    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 0.0}):
++        v = _v7(_punto(NF_profundidad_m=0.50))        # nivel 41.60 < 42.00
++    assert v.estado is EstadoDeVerificacion.NO_APLICA
++    assert v.codigo == "V7" and v.cumple
++    for necesario in ("12.6.1", "41.600", "42.000", "nf_del_punto",
++                      "inverts below the water table"):
++        assert necesario in v.motivo_no_aplica, necesario
++
++
++def test_c2_sumersion_parcial_empuja_solo_lo_que_queda_bajo_el_nivel():
++    """Nivel 42.05: 5 cm sobre el fondo exterior. U es el segmento."""
++    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 0.0}):
++        v = _v7(_punto(NF_profundidad_m=0.05))
++    h = (42.10 - 0.05) - 42.00
++    assert v.estado is not EstadoDeVerificacion.NO_APLICA
++    assert v.valor_admisible == pytest.approx(
++        1.00 * GAMMA_AGUA_KN_M3 * _segmento(BC, h), rel=1e-9)
++    assert v.valor_admisible < 0.05 * M8.empuje_flotacion_kn_m(
++        seccion=SeccionCircular(D=0.90), espesor=0.10)
++    # El relleno queda entero en seco: no hace falta el saturado (sin valor).
++    assert v.valor_obtenido == pytest.approx(0.90 * GAMMA_R * BC * H_REL,
++                                             rel=1e-12)
++
++
++def test_c2_con_el_nivel_sobre_la_clave_sin_saturado_es_criterio_pendiente():
++    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 1.50}):
++        with pytest.raises(CriterioPendienteError) as exc:
++            _v7(_punto(NF_profundidad_m=0.10))       # nivel 43.50
++    assert exc.value.clave == CLAVE_SATURADO
++
++
++# Mutante medido: pesar el relleno sumergido con gamma_sat en vez de
++# gamma_sat - gamma_agua -> muere aqui.
++def test_c2_el_relleno_bajo_el_nivel_pesa_sumergido():
++    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 1.50,
++                     CLAVE_SATURADO: 20.0}):
++        v = _v7(_punto(NF_profundidad_m=0.10))       # nivel 43.50
++    h_sum = 43.50 - 43.10
++    EV = BC * (GAMMA_R * (H_REL - h_sum) + (20.0 - GAMMA_AGUA_KN_M3) * h_sum)
++    assert v.valor_obtenido == pytest.approx(0.90 * EV, rel=1e-9)
++    assert v.valor_admisible == M8.empuje_flotacion_kn_m(
++        seccion=SeccionCircular(D=0.90), espesor=0.10)
++    assert CITA_SUMERGIDO in v.paso.citas_textuales
++
++
++def test_c2_sobre_la_subrasante_todo_el_relleno_va_sumergido():
++    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 3.0,
++                     CLAVE_SATURADO: 20.0}):
++        v = _v7(_punto(NF_profundidad_m=0.10))       # nivel 45.00 > 44.05
++    EV = BC * (20.0 - GAMMA_AGUA_KN_M3) * H_REL
++    assert v.valor_obtenido == pytest.approx(0.90 * EV, rel=1e-9)
++
++
++def test_c2_con_el_nivel_en_la_clave_las_dos_reglas_coinciden():
++    """
++    nf_del_punto con el nivel justo en la clave (42.10 - 0.10 + 1.10) es la
++    misma hipotesis que 'en_la_clave': mismo U, mismo EV, y el ruido
++    flotante de la cota no obliga a declarar el saturado.
++    """
++    archivo = _v7(_punto(NF_profundidad_m=0.10))
++    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 1.10}):
++        nf = _v7(_punto(NF_profundidad_m=0.10))
++    assert nf.valor_admisible == pytest.approx(archivo.valor_admisible,
++                                               rel=1e-12)
++    assert nf.valor_obtenido == pytest.approx(archivo.valor_obtenido,
++                                              rel=1e-9)
++
++
++def test_c2_en_un_marco_el_volumen_bajo_el_nivel_es_un_rectangulo():
++    seccion = SeccionRectangular(B=2.00, H=1.50)
++    t = 0.20
++    for h in (0.05, 0.80):
++        assert M8.empuje_flotacion_bajo_el_nivel_kn_m(
++            seccion=seccion, espesor=t, altura_agua=h) == pytest.approx(
++                GAMMA_AGUA_KN_M3 * seccion.ancho_exterior(t) * h, rel=1e-12)
++    # Sobre el canto exterior, el empuje es el del conducto entero.
++    assert M8.empuje_flotacion_bajo_el_nivel_kn_m(
++        seccion=seccion, espesor=t, altura_agua=10.0) == \
++        M8.empuje_flotacion_kn_m(seccion=seccion, espesor=t)
++    # Y en una circular, el segmento.
++    circ = SeccionCircular(D=0.90)
++    assert M8.empuje_flotacion_bajo_el_nivel_kn_m(
++        seccion=circ, espesor=0.10, altura_agua=0.30) == pytest.approx(
++            GAMMA_AGUA_KN_M3 * _segmento(1.10, 0.30), rel=1e-12)
++
++
++def test_c2_un_margen_negativo_es_dato_invalido():
++    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: -0.10}):
++        with pytest.raises(DatoInvalidoError) as exc:
++            _v7(_punto(NF_profundidad_m=0.50))
++    assert exc.value.campo == CLAVE_MARGEN
++
++
++def test_c2_un_saturado_que_no_supera_al_agua_es_dato_invalido():
++    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 1.50,
++                     CLAVE_SATURADO: 9.0}):
++        with pytest.raises(DatoInvalidoError) as exc:
++            _v7(_punto(NF_profundidad_m=0.10))
++    assert exc.value.campo == CLAVE_SATURADO
++
++
++def test_c2_el_paso_dice_de_donde_sale_el_nivel():
++    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 0.0}):
++        v = _v7(_punto(NF_profundidad_m=0.05))
++    eleccion = [e for e in v.paso.elecciones if e.clave_criterio == CLAVE_NIVEL]
++    assert len(eleccion) == 1
++    assert "nf_del_punto" in eleccion[0].valor and "42.050" in eleccion[0].valor
++    nombres = {m.simbolo for m in v.paso.sustitucion}
++    assert {"cota_nivel_agua", "NF", "margen_estacional"} <= nombres
++
++
++def test_c2_el_fundamento_de_la_eleccion_se_sostiene_y_cita_la_analogia():
++    reg = construir()
++    f = FUNDAMENTOS["F5.V7_NIVEL"]
++    assert CITA_NIVEL_MP in f.citas and CITA_SUMERGIDO in f.citas
++    assert "ANALOGIA" in f.por_que
++    c = reg.cita(CITA_SUMERGIDO)
++    assert (c.numeral, c.pagina_impresa, c.pagina_pdf) == ("2.4.4.1.3", "133",
++                                                           134)
++    assert c.texto_literal.texto == (
++        "Para determinar el empuje lateral del suelo debajo del nivel "
++        "freático se deberán utilizar las densidades del suelo sumergido.")
++    assert not reg.problemas_de_integridad()
++
++
++@pytest.mark.pdf
++def test_c2_el_literal_del_suelo_sumergido_esta_en_su_pagina():
++    test_c1_el_literal_del_nivel_de_diseno_esta_en_su_pagina(CITA_SUMERGIDO)
++
++
++# --- quien lee la columna, con y sin la alternativa -------------------------
++
++def test_c2_el_censo_le_encuentra_a_v7_como_consumidor_del_nf():
++    from src import variables_entrada as ve
++    consumidores = set(ve.variable("NF_profundidad_m").consumido_por)
++    assert {"M5_verificaciones", "M8_estructural", "M9_cabezal"} <= consumidores
++    concepto = ve.variable("NF_profundidad_m").concepto
++    assert len(concepto) <= 250, len(concepto)
++    for necesario in ("nf_del_punto", "V7", "archivo", "VE2-C"):
++        assert necesario in concepto, necesario
++
++
++def _prevuelo_del_nf(alcance):
++    import cli
++    from src import anticipo as antc
++    externos = cli.cargar_datos_externos(
++        RAIZ / "tests" / "linea_base_familia_c" / "entradas_ampliadas.json",
++        dict(luz_m=2.75, TW_m=None, longitud_m=None, L_hidraulico_m=None,
++             categoria_tr=None))
++    estimado = antc.datos_faltantes_por_punto(
++        RAIZ / "tests" / "ejemplo_puntos.csv", externos, alcance)
++    return [e for e in estimado if e.dato == "NF_profundidad_m"]
++
++
++# Mutante medido: que el pre-vuelo ignore el consumo condicional y cuente a
++# V7 siempre (o nunca) -> muere aqui, en una de las dos mitades.
++def test_c2_el_prevuelo_dice_que_v7_la_exige_solo_con_la_alternativa():
++    import cli
++    sin = _prevuelo_del_nf(cli.ALCANCE_PERFIL)
++    assert sin and all(not e.detiene for e in sin)
++    with declarados({CLAVE_NIVEL: "nf_del_punto"}):
++        con = _prevuelo_del_nf(cli.ALCANCE_PERFIL)
++    assert con and all(e.detiene for e in con)
++    assert all("M5_verificaciones" in e.etapa for e in con)
++
++
++def test_c2_la_fila_del_contrato_dice_las_dos_cosas():
++    contrato = (RAIZ / "docs" / "contrato_entradas.md").read_text(
++        encoding="utf-8")
++    fila = next(l for l in contrato.split("\n")
++                if l.startswith("| `NF_profundidad_m` |"))
++    for necesario in ("nivel_agua_diseno_v7", "nf_del_punto", "en_la_clave",
++                      "V7 no la lee", "margen_estacional_nf_v7_m",
++                      "VE2-C"):
++        assert necesario in fila, necesario
++
++
++def test_c2_la_ficha_ve2_c_cierra_c2_y_dice_lo_diferido():
++    ficha = _plano(_ficha("VE2-C"))
++    assert "Cerrado (VE-2), (c2)" in ficha
++    for necesario in ("nivel_agua_diseno_v7", "margen_estacional_nf_v7_m",
++                      "12.6.1", "2.4.4.1.3", "[N→]",
++                      "peso_especifico_saturado_relleno_kn_m3"):
++        assert necesario in ficha, necesario
++    ve1_02 = _ficha("VE1-02")
++    assert re.search(r"^- \*\*Cerrado \(VE-2\), \(c2\):\*\*", ve1_02, re.M)
++
++
++# --- de punta a punta -------------------------------------------------------
++
++def _corrida_de_perfil(tmp_path, nf: str, declaraciones: dict):
++    import json as _json
++    import cli
++    from src import servicio
++    csv = tmp_path / f"p1_{nf or 'sin_nf'}.csv"
++    csv.write_text(
++        "id,progresiva_km,familia,Q_m3s,area_ha,S_cauce,cota_terreno,"
++        "cota_rasante,cota_subrasante,cbr_subrasante,esviaje_grados,"
++        "ancho_plataforma,cota_fondo_receptor,Q_receptor_m3s,cota_TW,"
++        "sucs_fundacion,NF_profundidad_m,cota_fondo_entrada,"
++        "cota_coronacion_canal\n"
++        f"P1,0+100,A,1.0,50,0.005,100.0,104.0,103.85,10,0,9.0,99.5,,,SM,"
++        f"{nf},,\n", encoding="utf-8")
++    ext = tmp_path / "externos.json"
++    ext.write_text(_json.dumps({"globales": {"luz_m": 3.0, "TW_m": 0.3}}),
++                   encoding="utf-8")
++    externos = cli.cargar_datos_externos(
++        ext, {"luz_m": None, "TW_m": None, "longitud_m": None,
++              "L_hidraulico_m": None, "categoria_tr": None})
++    with declarados(declaraciones):
++        informe = servicio.correr(csv, externos, alcance=cli.ALCANCE_PERFIL)
++    return cli.informe_json(informe)
++
++
++def _v7_del_volcado(volcado):
++    (p,) = volcado["puntos"]
++    v7 = [v for v in p["verificaciones"] if v["codigo"] == "V7"]
++    return p, (v7[0] if v7 else None)
++
++
++def test_c2_de_punta_a_punta_la_alternativa_no_aplica_o_detiene(tmp_path):
++    """
++    P1 (el cruce sintetico de Familia A de VE-1, DATOS DE PRUEBA) lleva el
++    invert en el terreno natural (regla de archivo 'cota_terreno'): con el
++    NF a 1.40 m y sin margen, el nivel de diseño queda 1.30 m bajo el fondo
++    exterior y V7 «no aplica»; sin NF, la alternativa detiene el punto con
++    «dato faltante». Con el valor de archivo, V7 es la de siempre.
++    """
++    _p, v7 = _v7_del_volcado(_corrida_de_perfil(tmp_path, "1.40", {}))
++    assert v7 is not None and v7["estado"] == "cumple"
++    _p, v7 = _v7_del_volcado(_corrida_de_perfil(
++        tmp_path, "1.40", {CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 0.0}))
++    assert v7 is not None and v7["estado"] == "no aplica", v7
++    p, _v = _v7_del_volcado(_corrida_de_perfil(
++        tmp_path, "", {CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: 0.0}))
++    assert not p["dimensionado"]
++    assert "NF_profundidad_m" in str(p["bloqueos"])
