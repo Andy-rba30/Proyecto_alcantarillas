@@ -7981,12 +7981,13 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   cierra a favor de M9: AASHTO C5.4.2.4-1 (pág. 5-20, PDF 379) da 2 500·f'c^0.33 para el
   concreto de peso normal con w_c = 0.145 kcf; los 0.150 kcf de CDOT son los del concreto
   armado para cargas muertas.
-- **Abierto:** O-2, el ancho del acero de temperatura (M9 el real, CDOT una franja de 12 in;
-  en los tres casos manda el piso). Sin ejemplo externo: la estabilidad integrada
+- **Abierto:** O-2 se CERRÓ (decisión 3 del dueño, VE-3.12): el acero de temperatura usa el
+  ancho real, que es lo que 5.10.6 escribe («least width of component section»). Sin ejemplo
+  externo: la estabilidad integrada
   (`ensamble_estabilidad`, cuña de tanteo, Mononobe-Okabe con relleno inclinado) y las ramas
   piso 0.72·h de dv, γEQ = 1 y tope de V_n.
-- **Qué haría falta:** decisión del dueño sobre O-2; un ejemplo con la geometría completa del
-  relleno para la cuña y el sismo.
+- **Qué haría falta:** un ejemplo con la geometría completa del relleno para la cuña y el
+  sismo.
 - **Dónde vive:** `tests/apoyo/validacion_cabezal.py::contrastes`
 
 ## VE3-04 · M8 contra ejemplos publicados (ACPA, USACE, PPI)
@@ -8005,8 +8006,12 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   «uniform vertical distribution across the top of the pipe») y C12.10.4.3.2c (pág. 12-66,
   PDF 1704). Reserva: ningún ejemplo resuelto con la edición 2013 o posterior lo confirma con
   un número. Sin contrastar: el HDPE del PPI, la costura y el FF ASD del TMC.
-- **Qué haría falta:** un ejemplo resuelto de tubo de concreto con la edición 2013 o
-  posterior, que un ingeniero revise la observación, y un ejemplo de HDPE con HL-93.
+- **Qué haría falta:** decisión 6 del dueño (VE-3.12): se MANTIENE la lectura literal; se
+  añade sólo el paso F8.ACPA, un contraste que NO gobierna (la clase que saldría con
+  W_L·w_w/(w_w + 1.75·0.75·B_c)), para tubo de concreto con relleno menor que
+  `relleno_max_contraste_acpa_m` ([A] de perfil, 1.0 m); la causa dominante del +65 % es que
+  la 9.ª ed. no escribe L_e (×1.51), no la edición (×1.10). Sigue pendiente la revisión de un
+  ingeniero y un ejemplo de HDPE con HL-93.
 - **Dónde vive:** `tests/apoyo/validacion_conducto.py::contrastes`
 
 ## VE3-06 · VC3: las pérdidas de la obra contra el desnivel del perfil del canal (Familia C)
@@ -8106,3 +8111,36 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   paso (hoy se da como descenso, porque 7.B corre después de MD); si la pasada hipotética con
   «aviso» lanza en algún escalón, no se afirma nada.
 - **Dónde vive:** `src/modulos/MD.py::_gobierno_por_receptor`
+
+## VE3-10 · Clases III a V del tubo de concreto desde una fuente secundaria, con tope de diámetro por clase
+
+- **Cerrado (decisiones 1 y 7 del dueño, VE-3.12):** `clases_producto_por_relleno` [C] = II 50,
+  III 65, IV 100, V 140 N/m/mm (0.3 mm). La II, de M 170M legible; III a V, de la tabla de ASTM
+  C76 del ejemplo resuelto del USACE EM 1110-2-2902, ap. B, pág. B-7 (PDF 71), cita
+  `USACE_EM_1110_2_2902.B-7#C76`: fuente SECUNDARIA (el tubo sigue siendo de M 170M, que en
+  el ejemplar del repositorio sólo corrobora el orden de las clases). Topes leídos de M 170M:
+  la V con pared B sólo hasta 1200 mm (Tabla 5, pág. M 170M-10); la IV es legible sólo en la
+  fila de 300 mm (Tabla 4) y por encima queda BLOQUEADA: si es la clase mínima que se pide, el
+  punto se detiene con `DatoFaltanteError` (no se salta a la V ni se sube de diámetro). En los
+  ensayos del conducto cierran 10 de las 12 corridas sin diseño; quedan 2 bloqueadas por la IV
+  (Ø 0.90). El caso G2 original de T-4 pasa de «falta un dato» a «no factible» por F8.CLASE
+  (ninguna clase estándar alcanza a Ø 1.65 m).
+- **Por qué así:** es la única fuente legible de esos valores en el repositorio; inventar el
+  tope de la IV sería rellenar un vacío.
+- **Qué haría falta:** un ejemplar legible de AASHTO M 170M o ASTM C76 que confirme III a V y
+  dé el tope real de la IV.
+- **Dónde vive:** `src/modulos/M8_estructural.py::clases_bloqueadas_para`
+
+## VE3-11 · El hueco 1.0 ≤ H < 2.0 ft del tubo de concreto no se implementa
+
+- **Qué se difirió:** AASHTO LRFD 3.6.1.2.6a manda el tubo de concreto con menos de 2.0 ft de
+  relleno a la franja de la losa del cajón (Eq. 4.6.2.10.2-1) diseñado «for a depth of 1.0
+  ft». Hoy un relleno bajo 0.6096 m sigue saliendo `MetodoNoEvaluableError` (un relleno de
+  0.60 m cae 9.6 mm bajo el umbral).
+- **Por qué:** aplicarlo a un tubo circular por el método indirecto exige tres lecturas que la
+  norma no escribe: cómo E se combina con E_span, qué parte de la franja cae sobre el tubo y
+  cómo esa carga se vuelve la W_L del método indirecto (que 12.10.4.3 define con la huella,
+  W_L = P_L·min(l_w, B_c)). Sería un [N→]/[A], una decisión, no una transcripción.
+- **Qué haría falta:** una decisión del dueño sobre las tres lecturas o la revisión de un
+  ingeniero estructural; el B_FLL bajo 2 ft ya está transcrito.
+- **Dónde vive:** `src/modulos/M8_estructural.py::verificar_concreto`

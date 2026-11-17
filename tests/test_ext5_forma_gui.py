@@ -96,7 +96,10 @@ SEIS_EXTERNAS = ("luz_m", "TW_m", "longitud_m", "S_conducto",
                  "ancho_derecho_via_m", "Q_evento_extremo_m3s",
                  "TW_evento_extremo_m",
                  # --- cierre de T-7b (H2) --- el dato del metodo de cota.
-                 "cota_afectacion_aguas_arriba_msnm")
+                 "cota_afectacion_aguas_arriba_msnm",
+                 # --- VE-3.6 --- el F del canal que VC3 pide en la Familia
+                 # C; este censo se habia quedado sin el desde VE-3.6.
+                 "desnivel_perfil_canal_m")
 
 
 def _formas_de(clave):

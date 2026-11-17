@@ -1022,23 +1022,6 @@ mueve, punto por punto, comparado hoja por hoja en los cuatro JSON:
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
 
-## 27. VE-3.13 (decisión 8 del dueño): el diámetro gobernado por el nivel del receptor; la línea base NO se mueve (2026-11-17)
-
-Cuando V1 descarta escalones SOLO por el TW del receptor bajo `borde_libre_bajo_tw_ahogante`
-= «no_cumple», MD emite el paso `F5.V1.RECEPTOR` y `ResultadoPunto.gobierno_por_receptor`:
-que el diámetro lo gobernó el receptor, el que bastaría por la hidráulica sola (el que la
-lectura «aviso» adopta, evaluado de verdad con esa lectura) y el descenso del TW —o la
-subida de la solera de salida— con el que ese diámetro cumpliría V1, rotulado como
-ALTERNATIVA no verificada. Ningún punto de la línea base tiene ese gobierno: ningún número
-ni texto de la línea base se mueve por esto (el JSON sólo lleva `gobierno_por_receptor` en
-el punto que lo tiene, y la marca nueva de `Verificacion` no se serializa). Medido con
-`sh tests/linea_base_familia_c/regenerar.sh` sobre `7221fe0` + VE-3.13: la única
-diferencia frente a lo comprometido es la que ya traía el árbol de partida respecto de
-VE-3.9 (la huella de `criterios_adoptados.py` y «22 → 21 todavía sin valor»), que se
-regenera sobre el conjunto al integrar. El caso que sí lo tiene, E07 de los ensayos de
-diseño del conducto (Ø 1.35 m adoptado, Ø 0.90 m por la hidráulica, descenso 0.325 m), es
-dato de prueba en `tests/fixtures/ve3_13_gobierno_receptor/`.
-
 ## 26. VE-3.12: las Clases III a V del tubo de concreto, sus topes de diámetro y el contraste ACPA; ningún número de cálculo se mueve (2026-11-17)
 
 Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto primero
@@ -1056,3 +1039,20 @@ de clases y el umbral del contraste), y en las memorias la nota del paso F8.CLAS
 clase.
 
 **Diámetros, secciones, materiales, clases y HW movidos: ninguno.**
+
+## 27. VE-3.13 (decisión 8 del dueño): el diámetro gobernado por el nivel del receptor; la línea base NO se mueve (2026-11-17)
+
+Cuando V1 descarta escalones SOLO por el TW del receptor bajo `borde_libre_bajo_tw_ahogante`
+= «no_cumple», MD emite el paso `F5.V1.RECEPTOR` y `ResultadoPunto.gobierno_por_receptor`:
+que el diámetro lo gobernó el receptor, el que bastaría por la hidráulica sola (el que la
+lectura «aviso» adopta, evaluado de verdad con esa lectura) y el descenso del TW —o la
+subida de la solera de salida— con el que ese diámetro cumpliría V1, rotulado como
+ALTERNATIVA no verificada. Ningún punto de la línea base tiene ese gobierno: ningún número
+ni texto de la línea base se mueve por esto (el JSON sólo lleva `gobierno_por_receptor` en
+el punto que lo tiene, y la marca nueva de `Verificacion` no se serializa). Medido con
+`sh tests/linea_base_familia_c/regenerar.sh` sobre `7221fe0` + VE-3.13: la única
+diferencia frente a lo comprometido es la que ya traía el árbol de partida respecto de
+VE-3.9 (la huella de `criterios_adoptados.py` y «22 → 21 todavía sin valor»), que se
+regenera sobre el conjunto al integrar. El caso que sí lo tiene, E07 de los ensayos de
+diseño del conducto (Ø 1.35 m adoptado, Ø 0.90 m por la hidráulica, descenso 0.325 m), es
+dato de prueba en `tests/fixtures/ve3_13_gobierno_receptor/`.
