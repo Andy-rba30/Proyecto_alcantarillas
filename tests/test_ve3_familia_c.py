@@ -146,8 +146,22 @@ def test_pieza_vc3_solo_da_fila_en_un_paso_de_canal_con_el_desnivel():
 
 
 def test_un_desnivel_que_ninguna_seccion_alcanza_deja_el_punto_no_factible():
-    c01 = _c01((FONDO_EN_EL_CANAL, ("externo", "C-01", CLAVE, 0.15)))
+    # CAMBIADO DECLARANDO LA CAUSA (integracion de VE-3.11 con VE-3.6): este
+    # test usaba F = 0.15 m, con el que hasta VE-3.11 ningun marco cumplia
+    # porque los mayores incumplian V7 (flotacion sin el peso propio del
+    # concreto). Con DC en V7 (VE-3.11, H4) F = 0.15 m dimensiona el marco
+    # 2.00 x 1.50 m (VC3 0.137 <= 0.15, test de abajo). Ninguna seccion
+    # alcanza con F = 0.10 m.
+    c01 = _c01((FONDO_EN_EL_CANAL, ("externo", "C-01", CLAVE, 0.10)))
     assert not c01.dimensionado
+
+
+def test_un_desnivel_pequeno_exige_un_marco_mayor():
+    c01 = _c01((FONDO_EN_EL_CANAL, ("externo", "C-01", CLAVE, 0.15)))
+    assert c01.dimensionado
+    assert c01.resultado.seccion.etiqueta() == "marco 2.00 × 1.50 m"
+    vc3 = next(v for v in c01.resultado.verificaciones if v.codigo == "VC3")
+    assert vc3.cumple
 
 
 def test_sin_el_desnivel_C01_ya_no_avisa_se_detiene():

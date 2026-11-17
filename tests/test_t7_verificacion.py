@@ -294,7 +294,11 @@ def test_p3_los_avisos_de_una_verificacion_salen_por_avisos_del_punto():
     punto = next(p for p in M0.cargar_puntos(CSV_EJEMPLO) if p.id == "A-01")
     informe = servicio.InformePunto(punto=punto)
     assert not [a for a in informe.avisos() if a.startswith("V8:")]
-    informe.resultado = SimpleNamespace(verificaciones=(v, v), aceptado=True)
+    # Desde VE-3.13 `InformePunto.avisos()` lee tambien
+    # `ResultadoPunto.gobierno_por_receptor` (decision 8 del dueno): el doble
+    # lo trae vacio, como un `ResultadoPunto` sin ese gobierno.
+    informe.resultado = SimpleNamespace(verificaciones=(v, v), aceptado=True,
+                                        gobierno_por_receptor=None)
     assert [a for a in informe.avisos() if a.startswith("V8:")] == list(
         v.avisos)
 
