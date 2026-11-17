@@ -15,18 +15,18 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-17.
 - Repositorio de normas (`Andy-rba30/Normas`, `main` `b845d8b`): `ejemplos_resueltos/` con los
   PDF y hojas de los ejemplos (cajón, cabezal y muros, conducto) y su catálogo.
 
-## En curso (agentes en paralelo)
+## En curso (agentes en paralelo) — actualizado tras integrar VE-3.5 a VE-3.8 (`6a87006`)
+
+Integrado en la rama además de lo de arriba: VE-3.5 (la zapata del cabezal se dimensiona por
+estabilidad), VE-3.6/3.7 (Familia C: VC3 contra el desnivel F del canal, fuente USBR; remanso
+por paso directo), VE-3.8 (correcciones de la revisión Fable a la validación estructural).
+148 criterios. El PDF del USBR está en el repositorio de normas (`normas/`).
 
 | Trabajo | Respaldo del trabajo en curso (cada 15 min) |
 |---|---|
-| VE-3.5 dimensionamiento del cabezal (crecer la zapata hasta cumplir la estabilidad LRFD, con tope; lo declarado gana; paso y tope con fuente o como criterio vacío) | `claude/youthful-shannon-rjzmuc-respaldo-cabezal` |
-| VE-3.6 / VE-3.7 Familia C (datos del canal, sobreelevación Δh con admisible, remanso por paso directo también para V5) | `claude/youthful-shannon-rjzmuc-respaldo-familia-c` |
-| Revisión Fable de la validación de M8 y M9 contra los ejemplos (pedido del dueño: los ejemplos pueden estar mal) | informe en `/home/user/verificacion_fable/REVISION_VALIDACION_ESTRUCTURAL.md` (se copia aquí al terminar) |
-| Suite completa de `61a4dcc` (clon limpio y exportación) | — |
-
-Las ramas de respaldo llevan un commit suelto «respaldo WIP» sobre `61a4dcc` con el árbol del
-agente tal como estaba (archivos sin commitear incluidos). Para retomar: `git checkout -b
-<nueva> origin/<rama de respaldo>`, revisar contra el encargo y terminarlo; es BORRADOR.
+| VE-3.9: paso 0.10 m y tope 1.5·H como valor de archivo de `dimensionamiento_zapata_cabezal`, y el ESPESOR de la zapata también se dimensiona (armado del talón A1/A2) | `claude/youthful-shannon-rjzmuc-respaldo-agent-a5b3b06a3d74de34c` |
+| VE-3.10: VC3 sin F BLOQUEA el punto (DatoFaltanteError), con F de prueba en el juego y en la línea base de la Familia C | `claude/youthful-shannon-rjzmuc-respaldo-agent-a9faca4ff8abe1b54` |
+| Regeneración de la línea base y de los documentos generados sobre el conjunto | — |
 
 ## Decisiones del dueño (2026-11-17)
 
@@ -40,6 +40,8 @@ agente tal como estaba (archivos sin commitear incluidos). Para retomar: `git ch
 - Después: ensayos de diseño simulados (la app diseña; Fable diseña a mano sin ver la app; se
   compara que cumpla, que no esté sobredimensionado y que sea monótono).
 - Guardar el progreso periódicamente (este archivo y las ramas de respaldo).
+- Paso 0.10 m y tope 1.5·H de la zapata como valor de archivo; que crezca también el espesor;
+  VC3 sin F bloquea el punto (2026-11-17, tarde).
 
 ## Pendiente después de lo que está en curso
 
