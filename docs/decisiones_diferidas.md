@@ -8088,3 +8088,21 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** decidir si V2 adopta el régimen del resalto; iterar 7.A con el HW para
   dar el delta de resguardo.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::v1_borde_libre`
+
+## VE3-09 · El diámetro gobernado por el nivel del receptor se dice (decisión 8 del dueño, VE-3.13)
+
+- **Cerrado:** `borde_libre_bajo_tw_ahogante` sigue en «no_cumple» y ningún diámetro cambia.
+  Cuando V1 descarta escalones SÓLO por el TW (marca `Verificacion.descarta_solo_el_receptor`),
+  MD vuelve a pasar la Fase 5 por ellos con la lectura «aviso» forzada
+  (`M5.lectura_bajo_tw_forzada`, sin declarar nada) y emite el paso `F5.V1.RECEPTOR` y
+  `ResultadoPunto.gobierno_por_receptor`: (a) los escalones descartados por el receptor; (b)
+  el diámetro hidráulico (el que «aviso» adopta); (c) el descenso del TW o la subida de la
+  solera, TW − (y/D)max·D_h, rotulado como ALTERNATIVA no verificada. Lo imprimen la memoria
+  completa y la resumida, la CLI, la pestaña 3 y el JSON. E07 de los ensayos: Ø 1.35 adoptado,
+  Ø 0.90 hidráulico, 0.325 m. La línea base no lo ejercita (§27).
+- **Por qué así:** es presentación emitida por el cálculo (la regla de la memoria), no
+  aritmética en M11, y la causa la dice la propia justificación del criterio.
+- **Qué haría falta:** si el dueño quiere la cota absoluta de salida, pasar la cota de 7.B al
+  paso (hoy se da como descenso, porque 7.B corre después de MD); si la pasada hipotética con
+  «aviso» lanza en algún escalón, no se afirma nada.
+- **Dónde vive:** `src/modulos/MD.py::_gobierno_por_receptor`
