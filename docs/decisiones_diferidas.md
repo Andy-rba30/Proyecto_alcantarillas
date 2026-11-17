@@ -5950,6 +5950,9 @@ marca del régimen para T-7c.
   50.28, que cumpliría sin inclinación); la sísmica de salida no es evaluable (H1).
 - **Dónde vive:** `src/modulos/M9_cabezal.py::predimensionar_cabezal`
 
+- **Cerrado en VE-3.5 (decisión del dueño, 2026-11-17):** la iteración del ancho que faltaba
+  existe (`M9.dimensionar_zapata_por_estabilidad`, ficha VE3-05); con los datos de prueba del
+  juego los ocho cabezales cumplen la estabilidad.
 ## T7B-10 · La aceptación de T-7b se escribió después del código; el rojo y la mutación se midieron
 
 - **Qué se difirió:** escribir la aceptación en rojo con `xfail(strict=True)` antes del
@@ -8042,3 +8045,22 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** la sección del cauce de aproximación para V5 de A y B; un ejemplo
   resuelto publicado (p. ej. del USBR o del manual de referencia de HEC-RAS).
 - **Dónde vive:** `src/modulos/M3_hidraulica.py::perfil_remanso_trapecial`
+
+## VE3-05 · El cabezal se dimensiona por estabilidad: la zapata crece por el talón
+
+- **Cerrado (VE-3.5, decisión del dueño del 2026-11-17):** detrás de la estabilidad de la
+  regla y delante del armado, B_k = B_regla + k·paso hasta el primer ancho que cumple E1 a E3
+  en las condiciones evaluadas, sin pasar fraccion_ancho_max·H_c; crece el talón (suma el peso
+  del relleno) y la punta queda la de la regla. Lo declarado gana. Con el tope alcanzado queda
+  el mayor ancho de la grilla, que no cumple, con su aviso. Origen «dimensionada por
+  estabilidad» y traza en `F9.DIMENSIONADO` (AASHTO 11.6.3.2, 11.6.3.3, 11.6.3.6). La línea
+  base no lo ejercita (§20); con los datos de prueba los ocho cabezales del juego cumplen.
+- **Abierto:** (1) el paso y el tope (`dimensionamiento_zapata_cabezal` [A] de expediente, sin
+  valor de archivo: ninguna fuente los fija; propuesta 0.10 m y 1.5·H_c; en A-01 la entrada
+  cumple con 2.40 m = 1.07·H_c y la salida con 3.20 m = 0.84·H_c). (2) El ESPESOR de la
+  zapata no crece: con el talón más largo no cumplen filas A1/A2 de su armado (28 en la
+  corrida titular, 3 en el juego). (3) El dentellón de corte (pasivo de AASHTO 11.6.3.5) no
+  se ofrece como alternativa.
+- **Qué haría falta:** decisión del dueño sobre (1); extender el dimensionamiento al peralte
+  de la zapata para (2).
+- **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_zapata_por_estabilidad`

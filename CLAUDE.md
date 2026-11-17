@@ -226,15 +226,22 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   socavación de la Fase 6 y de la Fase 8) arma los dos cabezales de cada punto
   dimensionado con `M9.cabezal_del_punto`, y el proyecto solo guarda la suma
   (`InformeCabezal.por_punto`). Cada dimensión lleva su ORIGEN —«propuesta por
-  regla», «declarada» (`cabezal_declarado` de `--datos-externos`) o «derivada
-  de dimensiones declaradas»—, y una declarada se contrasta con los mínimos
+  regla», «declarada» (`cabezal_declarado` de `--datos-externos`), «derivada
+  de dimensiones declaradas» o, desde VE-3.5, «dimensionada por estabilidad»—,
+  y una declarada se contrasta con los mínimos
   con número (CB1 a CB7). La embocadura es del punto y se resuelve ANTES de la
   Fase 4 (`M9.embocadura_del_punto`): en un marco, la carta y el ke declarados
   tienen que ser de la banda de ángulo del cabezal. El cabezal es normal al
   eje del conducto y, con esviaje, sus dos aleros miden distinto. Fichas
-  T7A-01 a T7A-08.
-- **Y desde T-7c cada cabezal se ARMA detrás de su estabilidad, con la misma
-  geometría y sin iterarla** (`servicio._fase_9_armado`: una etapa por las
+  T7A-01 a T7A-08. **Y desde VE-3.5 la zapata se DIMENSIONA por estabilidad**
+  cuando la de la regla no cumple E1 a E3 y su ancho no se declaró
+  (`M9.dimensionar_zapata_por_estabilidad`: crece el talón con el paso y hasta
+  el tope de `dimensionamiento_zapata_cabezal` [A]; con el tope alcanzado
+  queda el mayor ancho, que no cumple, con su aviso). Lo declarado gana y no
+  se itera. Ficha VE3-05.
+- **Y desde T-7c cada cabezal se ARMA detrás de su estabilidad, con la
+  geometría final —la de la regla, la declarada o, desde VE-3.5, la
+  dimensionada por estabilidad— y sin iterarla en el armado** (`servicio._fase_9_armado`: una etapa por las
   solicitaciones, una por elemento y una por la tabla, para que lo que un
   elemento no pueda evaluar quede como `Bloqueo` y los demás sigan). Rige
   AASHTO LRFD Sección 5 sobre las solicitaciones FACTORADAS (filas A1 a A4,
@@ -267,7 +274,7 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   numérica. Es lo que M2/M4 iban a exigir de todos modos, dicho en la ficha
   para que se rechace en la puerta con `ValueError` (SIS-E-05) y no en el
   consumidor con un `TypeError` fuera de `ErrorProyecto`: medido antes de
-  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2) aceptaban la cadena `'cero'` y la GUI no podía
+  EXT-5, 53 de las 70 claves (71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3) aceptaban la cadena `'cero'` y la GUI no podía
   declarar el entero de `n_celdas_cajon` (PC-13, PC-14). Una `categoria`
   valida contra la tupla de textos de `sensibilidad`, que es donde vive el
   conjunto cerrado de un criterio; las guardias de los consumidores se
@@ -359,7 +366,7 @@ documento. La tercera es el criterio de salida del nivel de perfil escrito como
 invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
 procedencia**.
 
-**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2), no sólo los que no tienen valor.** La
+**Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor
 —once de Fase 9 y licuefacción, dos opcionales— se habían quedado sin
 clasificar. Se rellenaron **midiendo**, no opinando, y esa distinción tiene
@@ -400,7 +407,7 @@ consecuencias que conviene leer antes de tocar el campo:
 
 **Para qué se completó, además de por completitud:** `nivel` gobierna el
 filtro de alcance de la pestaña 2 (`criterios_adoptados.criterios_del_alcance`),
-que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2) a 36 y los pendientes
+que a `--alcance perfil` pasa la tabla de 69 filas (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2, 148 desde VE-3) a 36 y los pendientes
 visibles de 33 a 11. El filtro **no oculta**: el recuento sigue contando los 33
 sobre el archivo entero y dice además cuántas filas esconde. Y **no se apoya en
 la derivación estática** de `variables_entrada` —que es una ESTIMACIÓN y tuvo
