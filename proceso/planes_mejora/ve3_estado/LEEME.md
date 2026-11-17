@@ -24,6 +24,44 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-17.
 
 La sesión sigue con lo que no depende de ellas. Responder aquí (o en el chat) basta.
 
+> **RESPUESTA DEL DUEÑO (2026-11-17, ~20:45 UTC), escrita desde otra sesión: se ACEPTAN las
+> cinco recomendaciones tal como están abajo.**
+>
+> 1. Clases III a V: **sí**, transcribirlas como [C] desde la tabla de ASTM C76 del USACE EM
+>    1110-2-2902, con su cita verificada (numeral, página impresa, texto literal). Hazlo ya.
+> 2. `borde_libre_bajo_tw_ahogante`: **se mantiene `no_cumple`**.
+> 3. O-2 del cabezal: **se deja el ancho real** del acero de temperatura y se cierra O-2.
+> 4. Carga viva de M8 con poco relleno: **revisión de ingeniero antes de la sustentación**;
+>    ningún cambio de código.
+> 5. Integrar en `main` cuando la suite esté verde y los ensayos del cabezal estén hechos;
+>    **antes de integrar, avísalo en este LEEME** (el dueño autoriza el paso a `main` aquí).
+>
+> **Verificaciones independientes en curso desde la otra sesión (modelo Fable)** sobre lo de
+> mayor importancia: (a) los valores D0.01 de las Clases I a V contra el PDF del USACE y, si
+> se puede leer, contra AASHTO M 170M / ASTM C76 —la decisión 1 depende de ellos—, y (b) la
+> lectura de la carga viva de M8 con poco relleno contra AASHTO LRFD 9.ª 3.6.1.2.6 —es la
+> revisión de la decisión 4, como primer filtro antes del ingeniero—. Sus informes llegarán
+> como archivos nuevos en `proceso/planes_mejora/ve3_estado/verificaciones_del_dueno/`. No
+> esperes por ellos: si (a) encuentra una discrepancia en una cifra que ya transcribiste,
+> corrígela con su cita; si (b) encuentra un defecto real, trátalo como hallazgo de VE-3.
+> Revisa esa carpeta cada vez que actualices este LEEME.
+>
+> **SEGUNDA RESPUESTA DEL DUEÑO (2026-11-17, ~20:55 UTC), tras las dos verificaciones Fable
+> (ya en `verificaciones_del_dueno/`):**
+>
+> 6. **Carga viva de M8 con poco relleno: se MANTIENE la lectura literal de AASHTO LRFD 9.ª
+>    (sin L_e).** No se adopta el L_e de ACPA como criterio. Se añade SÓLO un aviso en el
+>    paso F8.CLASE (tubos de concreto con relleno < 1.0 m) con el contraste de la práctica
+>    ACPA (la clase que saldría con L_e), rotulado como contraste que NO gobierna. Corrige
+>    además la redacción de la ficha VE3-04 y de `docs/validacion_conducto.md` (≈ línea 83):
+>    la causa dominante del +65 % es que la 9.ª ed. no escribe L_e (×1.51), no el cambio de
+>    edición. El hueco de 1.0 ≤ H < 2.0 ft en concreto (hallazgo 3 de ese informe) es
+>    hallazgo de VE-3: trátalo o fíchalo.
+> 7. **Clases III a V: transcribir CON el tope de diámetro por clase** de M 170M (H1 alto del
+>    informe `clases_iii_v_astm_c76.md`): Clase V sólo hasta 1200 mm con pared B; el tope
+>    de la Clase IV, ilegible en el ejemplar, queda BLOQUEADO (no se inventa). Cita al USACE
+>    como fuente secundaria y di qué corrobora M 170M y qué no (H2, H3).
+
 1. **Clases III a V del tubo de concreto (ensayos del conducto, H1, alta).** Sólo la Clase II
    de M 170M está transcrita, y con más de ≈ 2.4 m de tierra sobre la clave ningún tubo de
    concreto cierra (13 de 57 corridas sin diseño; en 11 la app ya tenía un TMC que cumple).
