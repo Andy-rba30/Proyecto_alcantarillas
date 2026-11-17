@@ -3854,6 +3854,7 @@ from src.dominios import MILIMETROS_POR_METRO  # noqa: E402
 from src.modelos import (ORIGEN_DIMENSION_DECLARADA,  # noqa: E402
                          ORIGEN_DIMENSION_DERIVADA,
                          ORIGEN_DIMENSION_ESTABILIDAD, IntentoDeZapata,
+                         ORIGEN_DIMENSION_ARMADO, IntentoDePeralte,
                          ORIGEN_DIMENSION_REGLA, Aleros, CabezalDelPunto,
                          Familia, LimiteNumericoError, PasoDeMemoria,
                          DimensionDeCabezal, EmbocaduraDelPunto,
@@ -4502,7 +4503,8 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
                            declaradas: Optional[dict] = None,
                            tipo_declarado: Optional[str] = None,
                            id_punto: Optional[str] = None,
-                           ancho_por_estabilidad: Optional[float] = None
+                           ancho_por_estabilidad: Optional[float] = None,
+                           espesor_por_armado: Optional[float] = None
                            ) -> GeometriaCabezal:
     """
     La geometria PROPUESTA del cabezal de UN extremo (INF-4.2), con las
@@ -4724,8 +4726,22 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
             de_ez = de_tipo
             criterio_ez = (CRITERIO_PERALTE_ZAPATA_ARMADA
                            if tipo == TIPO_VOLADIZO else CRITERIO_GEOMETRIA)
-    dims.append(_dim("espesor de la zapata", e_z, texto_ez or "-",
-                     criterio_ez, ez_decl, de=de_ez))
+    # --- VE-3.9 --- El peralte que el armado de la zapata hizo crecer
+    # (`dimensionar_peralte_por_armado`): no lo eligio la regla ni lo
+    # declaro nadie. La altura total no cambia (la fijan las cotas): crece
+    # la zapata hacia arriba y la pantalla sobre ella se acorta.
+    if espesor_por_armado is not None and not ez_decl:
+        dims.append(DimensionDeCabezal(
+            nombre="espesor de la zapata", valor=espesor_por_armado,
+            unidad="m", origen=ORIGEN_DIMENSION_ARMADO,
+            regla=(f"el menor de la grilla {e_z:.3f} m + k·paso con el que "
+                   "el armado de la zapata (punta y talon) cumple, partiendo "
+                   f"de {texto_ez}"),
+            criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA))
+        e_z = espesor_por_armado
+    else:
+        dims.append(_dim("espesor de la zapata", e_z, texto_ez or "-",
+                         criterio_ez, ez_decl, de=de_ez))
     if not H_c > e_z:
         raise DatoInvalidoError(
             "espesor_zapata_m", valor=e_z, id_punto=id_punto,
@@ -5443,7 +5459,8 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
                       declarados: Optional[dict] = None,
                       coherencia_embocadura: Optional[str] = None,
                       motivo_sin_socavacion: str = "",
-                      anchos_por_estabilidad: Optional[dict] = None
+                      anchos_por_estabilidad: Optional[dict] = None,
+                      espesores_por_armado: Optional[dict] = None
                       ) -> CabezalDelPunto:
     """
     Los dos cabezales de un punto DIMENSIONADO, con sus aleros, su losa, sus
@@ -5488,6 +5505,8 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
             extremo=extremo, embocadura=embocadura, talud=talud,
             declaradas=propias, tipo_declarado=tipo, id_punto=punto.id,
             ancho_por_estabilidad=(anchos_por_estabilidad or {}).get(
+                extremo.extremo),
+            espesor_por_armado=(espesores_por_armado or {}).get(
                 extremo.extremo))
         geometrias.append(g)
         if tipo is None:
@@ -8656,7 +8675,9 @@ def dimensionar_zapata_por_estabilidad(
         socavacion=None, declarados: Optional[dict] = None,
         coherencia_embocadura: Optional[str] = None,
         motivo_sin_socavacion: str = "",
-        suelo_del_punto: Optional[dict] = None
+        suelo_del_punto: Optional[dict] = None,
+        anchos_previos: Optional[dict] = None,
+        espesores_por_armado: Optional[dict] = None
         ) -> Optional[DimensionadoDeZapatas]:
     """
     --- VE-3.5 --- El ancho de la zapata de cada cabezal cuya estabilidad no
@@ -8672,6 +8693,13 @@ def dimensionar_zapata_por_estabilidad(
     cumplen se declaro): en ese caso el criterio ni se lee. Lanza
     `CriterioPendienteError` si hay que dimensionar y el criterio no tiene
     valor.
+
+    --- VE-3.9 --- `dimensionar_peralte_por_armado` la vuelve a llamar
+    cuando un peralte mayor deja de cumplir la estabilidad: entonces
+    `cabezal` ya trae los anchos dimensionados (la grilla sigue desde el
+    ancho actual, que esta en ella), `anchos_previos` los conserva para el
+    extremo que no se re-dimensiona y `espesores_por_armado` mantiene los
+    peraltes que el armado hizo crecer.
     """
     extremos = extremos_a_dimensionar(cabezal, estabilidades, declarados)
     if not extremos:
@@ -8680,7 +8708,7 @@ def dimensionar_zapata_por_estabilidad(
     partida = {g.extremo: g for g in cabezal.geometrias}
     intentos = {e: [_intento(e, partida[e].B, estabilidades)]
                 for e in extremos}
-    anchos: Dict[str, float] = {}
+    anchos: Dict[str, float] = dict(anchos_previos or {})
     vivos = list(extremos)
     final = cabezal
     k = 0
@@ -8704,7 +8732,8 @@ def dimensionar_zapata_por_estabilidad(
             declarados=declarados,
             coherencia_embocadura=coherencia_embocadura,
             motivo_sin_socavacion=motivo_sin_socavacion,
-            anchos_por_estabilidad=dict(anchos))
+            anchos_por_estabilidad=dict(anchos),
+            espesores_por_armado=espesores_por_armado)
         entornos = datos_del_cabezal_del_punto(
             punto=punto, cabezal=final, geometria=geometria,
             socavacion=socavacion, suelo_del_punto=suelo_del_punto,
@@ -8731,9 +8760,14 @@ def dimensionar_zapata_por_estabilidad(
                      "las condiciones evaluadas, con B_k <= B_max = "
                      "fraccion_ancho_max·H_c"),
             sustitucion=(
-                Magnitud("B_regla", g0.B, "m",
-                         f"regla 'fraccion_ancho_zapata' de "
-                         f"'{CRITERIO_GEOMETRIA}' [A]"),
+                (Magnitud("B_partida", g0.B, "m",
+                          "ancho ya dimensionado por estabilidad, que el "
+                          "peralte nuevo de la zapata (VE-3.9) dejo sin "
+                          "cumplir: la grilla sigue desde el")
+                 if e in (anchos_previos or {}) else
+                 Magnitud("B_regla", g0.B, "m",
+                          f"regla 'fraccion_ancho_zapata' de "
+                          f"'{CRITERIO_GEOMETRIA}' [A]")),
                 Magnitud("paso", paso_m, "m",
                          f"criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' "
                          "[A]"),
@@ -8776,6 +8810,304 @@ def incorporar_dimensionado(cabezal: CabezalDelPunto,
     return _replace(cabezal, intentos_de_zapata=dimensionado.intentos,
                     pasos=cabezal.pasos + dimensionado.pasos,
                     avisos=tuple(avisos))
+
+
+# ===========================================================================
+# --- VE-3.9 --- EL PERALTE DE LA ZAPATA, DIMENSIONADO POR SU ARMADO
+# ===========================================================================
+# Decision del dueño del 2026-11-17: con el talon que la estabilidad ensancha
+# (VE-3.5), el peralte de la regla (H_c / divisor, o su piso) deja de
+# alcanzar para armar la zapata -- en la corrida titular de la validacion
+# integral fallaban A1 y A2 del talon en los ocho cabezales --. El peralte
+# crece con el MISMO paso del criterio 'dimensionamiento_zapata_cabezal'
+# hasta que el armado de la zapata cumple. Como el peralte cambia el peso y
+# la distribucion de la zapata, la estabilidad se RE-VERIFICA con cada
+# peralte y, si deja de cumplir, el ancho vuelve a crecer desde el actual.
+#
+# EL TOPE DEL PERALTE NO ES UN VALOR DE PROYECTO NUEVO: es el limite fisico
+# que la geometria ya exige (`predimensionar_cabezal`: la zapata tiene que
+# dejar pantalla sobre ella, H_c > e_z). Ninguna fuente de normas/ fija un
+# peralte maximo (E.060 15.7 y AASHTO 5.12.8 dan minimos), y declarar uno
+# seria rellenar un vacio; el bucle termina igual porque el peralte crece
+# en pasos finitos hacia una cota finita.
+
+
+@dataclass(frozen=True)
+class DimensionadoDePeralte:
+    """
+    --- VE-3.9 --- Lo que `dimensionar_peralte_por_armado` entrega: el
+    cabezal con la geometria final, los peraltes y los anchos dimensionados
+    por extremo, los intentos de peralte, los intentos de ancho que la
+    re-verificacion de la estabilidad añadio, los pasos de memoria (los del
+    peralte y, si el ancho volvio a crecer, los del ancho que REEMPLAZAN a
+    los de VE-3.5 de ese extremo) y los avisos.
+    """
+
+    cabezal: CabezalDelPunto
+    espesores: Dict[str, float]
+    anchos: Dict[str, float]
+    intentos: Tuple[IntentoDePeralte, ...]
+    intentos_de_ancho: Tuple[IntentoDeZapata, ...]
+    pasos: Tuple[PasoDeMemoria, ...]
+    pasos_de_ancho: Tuple[PasoDeMemoria, ...]
+    avisos: Tuple[str, ...]
+
+
+# Las filas del armado de la ZAPATA que deciden y que un peralte mayor
+# puede hacer cumplir: flexion (A1), cortante sin estribos (A2), acero
+# minimo (A3), espaciamiento de la barra propuesta (A4) y fisuracion en
+# servicio (A6), de la punta y del talon. A5 (contraste con E.060) informa;
+# A8 (altura sobre el refuerzo inferior) cumple por construccion desde la
+# regla y solo mejora con el peralte.
+FILAS_DEL_ARMADO_DE_LA_ZAPATA = ("A1", "A2", "A3", "A4", "A6")
+# La marca del intento cuyo cortante queda FUERA de las condiciones en que
+# AASHTO 5.7.3.4.1 permite el procedimiento simplificado (peralte >= 16 in y
+# vuelo >= 3·d_v) y que el programa no puede verificar porque no implementa
+# el general de 5.7.3.4.2. No es un incumplimiento: es un peralte que no se
+# puede VERIFICAR. Un peralte mayor puede volver a serlo -- cuando el vuelo
+# queda por debajo de 3·d_v --, y por eso el dimensionamiento sigue
+# creciendo: adopta el primer peralte que puede verificar y que cumple, que
+# es conservador frente a uno intermedio que con el general podria cumplir.
+CORTANTE_NO_VERIFICABLE = "A2: fuera de 5.7.3.4.1, sin verificar"
+
+
+def incumplidas_del_armado_de_la_zapata(entorno: EntornoDelCabezal
+                                        ) -> Optional[Tuple[str, ...]]:
+    """
+    Los codigos de las filas del armado de la zapata (punta y talon) que NO
+    cumplen con la geometria del `entorno`; `(CORTANTE_NO_VERIFICABLE,)` si
+    el cortante queda fuera del procedimiento simplificado de 5.7.3.4.1
+    (un peralte mayor puede volver a ser verificable); o None si el armado
+    no se puede evaluar por otra causa (un criterio del recubrimiento sin
+    declarar...), que crecer el peralte no arregla: entonces el
+    dimensionamiento no adivina, y el servicio registra el `Bloqueo` cuando
+    arma la geometria final. El cabezal de gravedad no se arma: vacia.
+    """
+    if entorno.geometria.tipo == TIPO_GRAVEDAD:
+        return ()
+    try:
+        sol = solicitaciones_de_resistencia(entorno)
+        piezas = armar_elemento(entorno, ELEMENTO_ZAPATA, sol)
+    except MetodoNoEvaluableError as exc:
+        if exc.rotulo == MOTIVO_METODO_NO_EVALUABLE_ARMADO:
+            return (CORTANTE_NO_VERIFICABLE,)
+        return None
+    except ErrorProyecto:
+        return None
+    return tuple(v.codigo for p in piezas for v in p.verificaciones
+                 if not v.cumple
+                 and (v.codigo or "").split(".")[0]
+                 in FILAS_DEL_ARMADO_DE_LA_ZAPATA)
+
+
+def _texto_intentos_de_peralte(intentos: Sequence[IntentoDePeralte]) -> str:
+    partes = []
+    for i in intentos:
+        estado = ("cumple" if i.cumple
+                  else "no cumplen " + ", ".join(i.incumplidas))
+        if i.ancho_redimensionado:
+            estado += f" (el ancho volvio a crecer: B = {i.B:.3f} m)"
+        partes.append(f"{i.espesor_zapata:.3f} m: {estado}")
+    return " -> ".join(partes)
+
+
+def dimensionar_peralte_por_armado(
+        *, punto, resultado, geometria, embocadura,
+        cabezal: CabezalDelPunto,
+        socavacion=None, declarados: Optional[dict] = None,
+        coherencia_embocadura: Optional[str] = None,
+        motivo_sin_socavacion: str = "",
+        suelo_del_punto: Optional[dict] = None,
+        anchos: Optional[dict] = None
+        ) -> Optional[DimensionadoDePeralte]:
+    """
+    --- VE-3.9 --- El peralte de la zapata de cada cabezal de voladizo cuyo
+    armado de la zapata (punta y talon: A1 a A4 y A6, AASHTO LRFD 5.6.3,
+    5.7.3.3, 5.6.3.3, 5.10.3.2 y 5.6.7) no cumple con la geometria que llega
+    -- la de la regla o la que la estabilidad dimensiono --, por intentos:
+    e_z,k = e_z,0 + k·paso ('dimensionamiento_zapata_cabezal' [A], el mismo
+    paso del ancho), el primero con el que esas filas cumplen, con e_z < H_c
+    (la zapata deja pantalla sobre ella).
+
+    CON CADA PERALTE SE RE-VERIFICA LA ESTABILIDAD: si deja de cumplir, el
+    ancho vuelve a crecer desde el actual (`dimensionar_zapata_por_estabilidad`
+    con `anchos_previos`). EL BUCLE TERMINA: en cada vuelta el peralte de
+    cada extremo vivo crece un paso o el extremo sale (cumple, llega a H_c o
+    su armado deja de ser evaluable), y el ancho solo crece, dentro de su
+    tope; las dos sucesiones son monotonas y acotadas, de modo que hay a lo
+    sumo ceil(H_c / paso) vueltas por extremo.
+
+    Un peralte DECLARADO (`cabezal_declarado`) gana y no se itera; el
+    cabezal de gravedad no se arma y no se itera. Devuelve None si no hay
+    nada que dimensionar; en ese caso el criterio ni se lee.
+    """
+    declarados = declarados or {}
+    anchos = dict(anchos or {})
+
+    def entornos_de(cab):
+        return {e.extremo: e for e in datos_del_cabezal_del_punto(
+            punto=punto, cabezal=cab, geometria=geometria,
+            socavacion=socavacion, suelo_del_punto=suelo_del_punto,
+            resultado=resultado)}
+
+    entornos = entornos_de(cabezal)
+    estado = {}
+    for g in cabezal.geometrias:
+        if "espesor_zapata_m" in declarados.get(g.extremo, {}):
+            continue
+        entorno = entornos.get(g.extremo)
+        if entorno is None:
+            continue
+        incumplidas = incumplidas_del_armado_de_la_zapata(entorno)
+        if incumplidas:
+            estado[g.extremo] = incumplidas
+    if not estado:
+        return None
+    paso_m, _fraccion = _regla_de_dimensionamiento()
+    partida = {g.extremo: g for g in cabezal.geometrias}
+    intentos = {e: [IntentoDePeralte(
+        extremo=e, espesor_zapata=partida[e].espesor_zapata,
+        B=partida[e].B, incumplidas=inc)] for e, inc in estado.items()}
+    espesores: Dict[str, float] = {}
+    intentos_de_ancho: List[IntentoDeZapata] = []
+    pasos_de_ancho: Dict[str, PasoDeMemoria] = {}
+    avisos_de_ancho: List[str] = []
+    final = cabezal
+    vivos = list(estado)
+    while vivos:
+        actuales = {g.extremo: g for g in final.geometrias}
+        for e in list(vivos):
+            g = actuales[e]
+            nuevo = g.espesor_zapata + paso_m
+            if not nuevo < g.H + g.espesor_zapata - TOL_UMBRAL_NORMATIVO:
+                intentos[e][-1] = replace(intentos[e][-1], al_tope=True)
+                vivos.remove(e)
+            else:
+                espesores[e] = nuevo
+        if not vivos:
+            break
+        final = cabezal_del_punto(
+            punto=punto, resultado=resultado, geometria=geometria,
+            embocadura=embocadura, socavacion=socavacion,
+            declarados=declarados,
+            coherencia_embocadura=coherencia_embocadura,
+            motivo_sin_socavacion=motivo_sin_socavacion,
+            anchos_por_estabilidad=dict(anchos) or None,
+            espesores_por_armado=dict(espesores))
+        # La estabilidad con el peralte nuevo: si deja de cumplir, el ancho
+        # vuelve a crecer desde el actual.
+        entornos = entornos_de(final)
+        evaluadas = _estabilidades_evaluables(list(entornos.values()), vivos)
+        redimensionados = set()
+        dim = dimensionar_zapata_por_estabilidad(
+            punto=punto, resultado=resultado, geometria=geometria,
+            embocadura=embocadura, cabezal=final, estabilidades=evaluadas,
+            socavacion=socavacion, declarados=declarados,
+            coherencia_embocadura=coherencia_embocadura,
+            motivo_sin_socavacion=motivo_sin_socavacion,
+            suelo_del_punto=suelo_del_punto, anchos_previos=anchos,
+            espesores_por_armado=espesores)
+        if dim is not None:
+            redimensionados = {i.extremo for i in dim.intentos}
+            anchos.update(dim.anchos)
+            final = dim.cabezal
+            entornos = entornos_de(final)
+            intentos_de_ancho.extend(dim.intentos)
+            for p in dim.pasos:
+                pasos_de_ancho[p.codigo] = p
+            avisos_de_ancho.extend(dim.avisos)
+        actuales = {g.extremo: g for g in final.geometrias}
+        siguen = []
+        for e in vivos:
+            incumplidas = incumplidas_del_armado_de_la_zapata(entornos[e])
+            # Un armado que deja de ser evaluable con este peralte no se
+            # da por bueno: el intento lo dice y el extremo sale del bucle
+            # (el servicio registra el `Bloqueo` al armar la geometria final).
+            intentos[e].append(IntentoDePeralte(
+                extremo=e, espesor_zapata=actuales[e].espesor_zapata,
+                B=actuales[e].B,
+                incumplidas=(("armado no evaluable",) if incumplidas is None
+                             else incumplidas),
+                ancho_redimensionado=e in redimensionados))
+            if incumplidas:
+                siguen.append(e)
+        vivos = siguen
+    pasos, avisos = [], []
+    for e in estado:
+        g0 = partida[e]
+        H_c = g0.H + g0.espesor_zapata
+        ultimo = intentos[e][-1]
+        pasos.append(paso(
+            "F9.DIMENSIONADO_PERALTE", codigo=f"9.3.p.{e[0]}",
+            que=f"Peralte de la zapata del cabezal de {e}, dimensionado por "
+                "su armado",
+            formula=("e_z,k = e_z,0 + k·paso, k = 0, 1, 2, ...: el primer "
+                     "e_z,k con el que la flexion, el cortante sin estribos, "
+                     "el acero minimo, el espaciamiento y la fisuracion de la "
+                     "punta y del talon cumplen, con e_z,k < H_c; con cada "
+                     "e_z,k se re-verifica la estabilidad"),
+            sustitucion=(
+                Magnitud("e_z,0", g0.espesor_zapata, "m",
+                         f"peralte de la regla de '{CRITERIO_GEOMETRIA}' "
+                         "[A] o su piso"),
+                Magnitud("paso", paso_m, "m",
+                         f"criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' "
+                         "[A], el mismo paso del ancho"),
+                Magnitud("H_c", H_c, "m",
+                         "altura total del cabezal, de las cotas: el peralte "
+                         "tiene que dejar pantalla sobre la zapata"),
+            ),
+            resultado=Magnitud(
+                "e_z", ultimo.espesor_zapata, "m",
+                ("dimensionada por armado" if ultimo.cumple else
+                 "el mayor peralte probado: el armado de la zapata NO "
+                 "cumple")),
+            nota_del_proyecto=(
+                "El tope del peralte es el fisico (H_c), no un valor de "
+                "proyecto: ninguna fuente fija un peralte maximo. Un peralte "
+                "de 16 in o mas cuyo vuelo es de 3·d_v o mas queda fuera del "
+                "cortante simplificado de AASHTO 5.7.3.4.1 y el programa no "
+                "implementa el general (5.7.3.4.2): ese peralte no se puede "
+                "verificar y el dimensionamiento sigue al siguiente, de "
+                "modo que el adoptado es el primero VERIFICABLE que cumple "
+                "(conservador). Intentos: "
+                + _texto_intentos_de_peralte(intentos[e]))))
+        if not ultimo.cumple:
+            avisos.append(
+                f"Cabezal de {e} de {punto.id}: el peralte de la zapata "
+                f"crecio hasta {ultimo.espesor_zapata:.3f} m sin que su "
+                f"armado cumpla ({', '.join(ultimo.incumplidas)}): revisar "
+                "la geometria (la pantalla, el talon o un dentellon) o "
+                "declarar la zapata (`cabezal_declarado`)")
+    avisos.extend(a for a in avisos_de_ancho if a not in avisos)
+    return DimensionadoDePeralte(
+        cabezal=final, espesores=espesores, anchos=anchos,
+        intentos=tuple(i for e in estado for i in intentos[e]),
+        intentos_de_ancho=tuple(intentos_de_ancho), pasos=tuple(pasos),
+        pasos_de_ancho=tuple(pasos_de_ancho.values()),
+        avisos=tuple(avisos))
+
+
+def incorporar_peralte(cabezal: CabezalDelPunto,
+                       dimensionado: DimensionadoDePeralte
+                       ) -> CabezalDelPunto:
+    """
+    El cabezal con los intentos de peralte, los pasos (los del ancho que la
+    re-verificacion volvio a dimensionar REEMPLAZAN a los de VE-3.5 con el
+    mismo codigo) y los avisos.
+    """
+    from dataclasses import replace as _replace
+    nuevos = {p.codigo for p in dimensionado.pasos_de_ancho}
+    pasos = tuple(p for p in cabezal.pasos if p.codigo not in nuevos)
+    avisos = list(cabezal.avisos)
+    avisos.extend(a for a in dimensionado.avisos if a not in avisos)
+    return _replace(
+        cabezal,
+        intentos_de_zapata=(cabezal.intentos_de_zapata
+                            + dimensionado.intentos_de_ancho),
+        intentos_de_peralte=dimensionado.intentos,
+        pasos=pasos + dimensionado.pasos_de_ancho + dimensionado.pasos,
+        avisos=tuple(avisos))
 
 
 # ===========================================================================

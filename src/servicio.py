@@ -164,10 +164,13 @@ from src.modulos.M9_cabezal import (ELEMENTOS_ARMADOS,  # --- T-7c ---
                                     solicitaciones_de_resistencia,
                                     verificar_cabezal_ciclopeo)
 from src.modulos.M9_cabezal import (CONDICIONES_DE_ESTABILIDAD,
+                                    CRITERIO_DIMENSIONAMIENTO_ZAPATA,
                                     datos_del_cabezal_del_punto,
+                                    dimensionar_peralte_por_armado,
                                     dimensionar_zapata_por_estabilidad,
                                     ensamble_estabilidad,
                                     incorporar_dimensionado,
+                                    incorporar_peralte,
                                     integrar_estabilidad,
                                     validar_suelo_fundacion)
 from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
@@ -2990,6 +2993,8 @@ def etapa_de_estabilidad(extremo: str, condicion: str) -> str:
 # buscan las etapas de estabilidad bloqueadas por ese texto no la cuentan.
 ETAPA_DIMENSIONAMIENTO_CABEZAL = ("dimensionamiento de la zapata de los "
                                   "cabezales (VE-3.5)")
+ETAPA_DIMENSIONAMIENTO_PERALTE = ("dimensionamiento del peralte de la zapata "
+                                  "de los cabezales por su armado (VE-3.9)")
 
 
 def _estabilidades(informe: InformePunto, entornos, bloqueos) -> list:
@@ -3083,8 +3088,11 @@ def _fase_9(informe: InformePunto,
             socavacion=informe.socavacion, declarados=declarados,
             coherencia_embocadura=informe.coherencia_embocadura,
             motivo_sin_socavacion=motivo, suelo_del_punto=suelo))
+    # Los bloqueos de la estabilidad que CUENTAN son los de la geometria
+    # final: si el dimensionamiento la cambia, la final se evalua de nuevo y
+    # los de la partida se descartan.
+    de_la_final = de_la_regla
     if dimensionado is not None and dimensionado.anchos:
-        informe.bloqueos.extend(del_dimensionado)
         informe.cabezal = dimensionado.cabezal
         entornos = _etapa(
             informe.bloqueos, FASE_CABEZAL,
@@ -3094,13 +3102,53 @@ def _fase_9(informe: InformePunto,
                 geometria=informe.geometria, socavacion=informe.socavacion,
                 suelo_del_punto=suelo, resultado=informe.resultado))
         if entornos is None:
+            informe.bloqueos.extend(del_dimensionado)
             return
-        estabilidades = _estabilidades(informe, entornos, informe.bloqueos)
-    else:
-        informe.bloqueos.extend(de_la_regla + del_dimensionado)
+        de_la_final = []
+        estabilidades = _estabilidades(informe, entornos, de_la_final)
+    # --- VE-3.9 --- EL PERALTE DE LA ZAPATA, POR SU ARMADO, detras del
+    # ancho: si la punta o el talon no se pueden armar con el peralte de la
+    # regla, crece con el mismo paso y la estabilidad se re-verifica con
+    # cada peralte (el ancho puede volver a crecer). No corre si el ancho se
+    # detuvo por el criterio sin valor: el mismo vacio ya esta bloqueado.
+    del_peralte = []
+    vacio = any(b.tipo is TipoDeBloqueo.CRITERIO_PENDIENTE
+                and b.criterio == CRITERIO_DIMENSIONAMIENTO_ZAPATA
+                for b in del_dimensionado)
+    peralte = None if vacio else _etapa(
+        del_peralte, FASE_CABEZAL, ETAPA_DIMENSIONAMIENTO_PERALTE,
+        lambda: dimensionar_peralte_por_armado(
+            punto=informe.punto_de_calculo, resultado=informe.resultado,
+            geometria=informe.geometria, embocadura=informe.embocadura,
+            cabezal=informe.cabezal, socavacion=informe.socavacion,
+            declarados=declarados,
+            coherencia_embocadura=informe.coherencia_embocadura,
+            motivo_sin_socavacion=motivo, suelo_del_punto=suelo,
+            anchos=None if dimensionado is None else dimensionado.anchos))
+    if peralte is not None and peralte.espesores:
+        informe.cabezal = peralte.cabezal
+        entornos = _etapa(
+            informe.bloqueos, FASE_CABEZAL,
+            "datos de la estabilidad del cabezal (T-7b)",
+            lambda: datos_del_cabezal_del_punto(
+                punto=informe.punto_de_calculo, cabezal=informe.cabezal,
+                geometria=informe.geometria, socavacion=informe.socavacion,
+                suelo_del_punto=suelo, resultado=informe.resultado))
+        if entornos is None:
+            informe.bloqueos.extend(del_dimensionado + del_peralte)
+            return
+        de_la_final = []
+        estabilidades = _estabilidades(informe, entornos, de_la_final)
+    informe.bloqueos.extend(de_la_final + del_dimensionado + del_peralte)
+    # La traza de los dos dimensionamientos, sobre la geometria FINAL (que
+    # `cabezal_del_punto` construye de nuevo y sin ella): primero el ancho,
+    # despues el peralte, que reemplaza los pasos del ancho que la
+    # re-verificacion de la estabilidad volvio a dimensionar.
     if dimensionado is not None:
         informe.cabezal = incorporar_dimensionado(informe.cabezal,
                                                   dimensionado)
+    if peralte is not None:
+        informe.cabezal = incorporar_peralte(informe.cabezal, peralte)
     informe.cabezal = integrar_estabilidad(informe.cabezal, estabilidades)
     _fase_9_armado(informe, entornos)
 

@@ -43,9 +43,9 @@ from tests.apoyo import validacion_integral as V
 from tests.apoyo.aproximacion import ABS_CERO
 
 CRITERIO = "dimensionamiento_zapata_cabezal"
-# DATOS DE PRUEBA: un paso de 0.10 m y un tope de 1.5·H_c, los que la
-# validacion integral declara en su juego. No son la propuesta de valor del
-# proyecto: el criterio no tiene valor de archivo.
+# Un paso de 0.10 m y un tope de 1.5·H_c. Hasta VE-3.9 eran DATOS DE PRUEBA
+# que el juego declaraba; desde VE-3.9 son el VALOR DE ARCHIVO del criterio
+# (decision del dueño del 2026-11-17) y el juego ya no los declara.
 PRUEBA = {"paso_m": 0.10, "fraccion_ancho_max": 1.5}
 ABS_MM = 5e-7   # sumas exactas de datos con tres decimales
 
@@ -67,12 +67,21 @@ def _estabilidad_cumple(cabezal, extremo):
     return bool(ests) and all(e.cumple for e in ests)
 
 
-SIN_EL_CRITERIO = ("declarar", CRITERIO, None)
+# Desde VE-3.9 el criterio tiene valor de archivo: «declarar None» ya no lo
+# vacia. El juego lo deja SIN VALOR, archivo incluido (`sin_valor`).
+SIN_EL_CRITERIO = ("sin_valor", CRITERIO)
 
 
-def test_el_juego_declara_el_criterio_con_los_datos_de_prueba():
+def test_el_paso_y_el_tope_son_el_valor_de_archivo_y_el_juego_no_los_declara():
+    """
+    CAMBIADO EN VE-3.9 (decision del dueño): se llamaba «el juego declara el
+    criterio con los datos de prueba»; hoy los datos son el valor de archivo
+    y el juego no los repite.
+    """
+    from src import criterios_adoptados as ca
     from tests.fixtures import juego_validacion_integral as J
-    assert J.DECLARACIONES[CRITERIO] == PRUEBA
+    assert ca.CRITERIOS[CRITERIO].valor == PRUEBA
+    assert CRITERIO not in J.DECLARACIONES
 
 
 @pytest.fixture(scope="module")
@@ -167,12 +176,18 @@ def test_el_ancho_declarado_gana_y_no_se_itera():
 
 def test_con_un_tope_pequeno_no_cumple_y_lo_dice():
     """
-    Tope de 0.80·H_c: la entrada de A-01 (H_c = 2.25 m) necesita 2.40 m y el
-    tope la deja en el mayor ancho de la grilla que no lo pasa, 1.775 m
-    (1.575 + 2·0.10, porque 1.875 > 1.80).
+    Tope de 0.80·H_c: la entrada de A-01 (H_c = 2.25 m) necesita 2.075 m y
+    el tope la deja en el mayor ancho de la grilla que no lo pasa, 1.775 m
+    (1.575 + 2·0.10, porque 1.875 > 1.80). Desde VE-3.9 0.80 queda FUERA de
+    la ventana del criterio (1.0 a 2.0·H_c) y la puerta lo rechazaria: se
+    impone con `con_valor`, que lo dice, porque lo que se prueba es el
+    comportamiento AL TOPE, que dentro de la ventana no se alcanza.
     """
-    informe = _correr(("declarar", CRITERIO,
-                       {"paso_m": 0.10, "fraccion_ancho_max": 0.80}))
+    from tests.apoyo.criterios import con_valor
+    with con_valor(CRITERIO, {"paso_m": 0.10, "fraccion_ancho_max": 0.80},
+                   motivo="tope bajo la ventana a proposito: la zapata "
+                          "tiene que llegar al tope para probar el aviso"):
+        informe = _correr()
     cab = _punto(informe).cabezal
     entrada = cab.entrada
     assert entrada.B == pytest.approx(1.775, abs=ABS_MM)
@@ -223,16 +238,16 @@ def test_extremos_a_dimensionar_son_los_que_no_cumplen_y_no_se_declararon(
 def test_si_todo_cumple_no_se_dimensiona_ni_se_lee_el_criterio(dimensionado):
     """
     Con la geometria que ya cumple y el criterio SIN valor: devuelve None y
-    no levanta `CriterioPendienteError` (el criterio ni se lee).
+    no levanta `CriterioPendienteError` (el criterio ni se lee). Desde VE-3.9
+    el criterio tiene valor de archivo y se vacia aqui con `sin_valor`.
     """
-    from src import criterios_adoptados as ca
+    from tests.apoyo.criterios import sin_valor
     p = _punto(dimensionado)
-    # La corrida del juego deja el proceso como estaba: sin el criterio.
-    assert ca.valor_si_declarado(CRITERIO) is None
-    assert M9.dimensionar_zapata_por_estabilidad(
-        punto=p.punto_de_calculo, resultado=p.resultado,
-        geometria=p.geometria, embocadura=p.embocadura,
-        cabezal=p.cabezal, estabilidades=p.cabezal.estabilidad) is None
+    with sin_valor(CRITERIO):
+        assert M9.dimensionar_zapata_por_estabilidad(
+            punto=p.punto_de_calculo, resultado=p.resultado,
+            geometria=p.geometria, embocadura=p.embocadura,
+            cabezal=p.cabezal, estabilidades=p.cabezal.estabilidad) is None
 
 
 def test_incorporar_dimensionado_suma_intentos_pasos_y_avisos(sin_criterio):

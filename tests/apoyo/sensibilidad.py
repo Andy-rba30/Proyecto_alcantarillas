@@ -59,6 +59,7 @@ vacio de declaraciones y lo repone al salir.
 
 from __future__ import annotations
 
+import contextlib
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -71,6 +72,7 @@ from src import criterios_adoptados as ca
 from src import datos_sitio as ds
 from src import servicio
 from tests.apoyo import validacion_integral as V
+from tests.apoyo.criterios import sin_valor
 from tests.fixtures import juego_validacion_integral as J
 
 RAIZ = Path(__file__).resolve().parents[2]
@@ -125,13 +127,15 @@ BASES: Dict[str, Tuple[str, Tuple[Tuple[Any, ...], ...]]] = {
     # cualquier valor de los dos [A] de §3.1; sin ellos el dimensionamiento
     # se detiene y la geometria verificada es la de la REGLA, que es la que
     # §3.1 mide.
+    # Desde VE-3.9 el criterio tiene valor de archivo: «declarar None» ya
+    # no lo vacia, y la base lo deja SIN VALOR (`sin_valor`, archivo
+    # incluido) para que la geometria siga siendo la de la regla.
     "juego_cabezal_de_la_regla": ("el juego sin "
                                   "`dimensionamiento_zapata_cabezal`: la "
                                   "zapata es la de la regla de T-7a, sin "
-                                  "dimensionar (VE-3.5)",
-                                  (("declarar",
-                                    "dimensionamiento_zapata_cabezal",
-                                    None),)),
+                                  "dimensionar (VE-3.5, VE-3.9)",
+                                  (("sin_valor",
+                                    "dimensionamiento_zapata_cabezal"),)),
 }
 
 
@@ -340,9 +344,8 @@ NO_BARRIBLES: Dict[str, str] = {
                     "la sección de archivo de `seccion_receptor` nunca se lee"),
     "seccion_cuneta": _R_POR_CAMPO,
     "dimensionamiento_zapata_cabezal": (
-        "el juego lo declara (paso 0.10 m, tope 1.5·H_c, datos de prueba) "
-        "pero la ficha no tiene ventana: ninguna fuente fija el paso ni el "
-        "tope del dimensionamiento de la zapata (VE-3.5)"),
+        "valor de archivo del dueño (paso 0.10 m, tope 1.5·H_c, VE-3.9); "
+        + _R_POR_CAMPO),
     "TR_evento_extremo": ("el juego lo declara (500 años) pero la ficha no "
                           "tiene ventana: el TR del evento extremo lo fija el "
                           "Propietario con el estudio hidrológico"),
@@ -585,9 +588,16 @@ def medir(b: Barrido) -> Medida:
     for clave in previas:
         ca.quitar_valor_dinamico(clave)
     ds.limpiar_datos_dinamicos()
+    vaciados = contextlib.ExitStack()
     try:
         with tempfile.TemporaryDirectory(prefix="t11_sens_") as tmp:
             e = V.materializar(juego, Path(tmp))
+            # --- VE-3.9 --- Las claves que la base deja SIN VALOR (archivo
+            # incluido): `V.correr` las vacia, y el barrido tiene que hacer
+            # lo mismo o la base no es la que dice (la de
+            # `juego_cabezal_de_la_regla` dimensionaba la zapata).
+            for clave in e.sin_valor:
+                vaciados.enter_context(sin_valor(clave))
             servicio.cargar_datos_sitio(e.sitio)
             externos = servicio.cargar_datos_externos(e.externos, {})
             hidro = servicio.cargar_hidrologia(e.cuencas, e.estacion)
@@ -597,6 +607,7 @@ def medir(b: Barrido) -> Medida:
                 declaraciones_base=base, hidrologia=hidro,
                 volcar=cli.informe_json)
     finally:
+        vaciados.close()
         for clave in ca.valores_dinamicos():
             ca.quitar_valor_dinamico(clave)
         for clave, valor in previas.items():

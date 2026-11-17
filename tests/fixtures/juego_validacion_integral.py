@@ -304,12 +304,11 @@ DECLARACIONES: Dict[str, Any] = {
     # Tratamiento FEN de la serie sintetica: la serie completa (lo mas
     # conservador por construccion). Solo rige el caudal CALCULADO.
     "homogeneidad_serie_fen": "serie_completa",
-    # --- VE-3.5 --- Paso y tope del dimensionamiento de la zapata del
-    # cabezal: DATOS DE PRUEBA (0.10 m y 1.5·H_c), no la propuesta del
-    # proyecto. El criterio no tiene valor de archivo y sin el la zapata de
-    # la regla no pasa la estabilidad en ningun punto (ficha T7B-09).
-    "dimensionamiento_zapata_cabezal": {"paso_m": 0.10,
-                                        "fraccion_ancho_max": 1.5},
+    # --- VE-3.5 / VE-3.9 --- El paso y el tope del dimensionamiento de la
+    # zapata del cabezal ('dimensionamiento_zapata_cabezal') los DECLARABA
+    # este juego como datos de prueba (0.10 m y 1.5·H_c) mientras el
+    # criterio no tenia valor. Desde VE-3.9 son su valor de archivo
+    # (decision del dueño del 2026-11-17) y el juego ya no los declara.
 }
 
 # Por que el juego PISA un valor de archivo (correcciones de T-11, H2): las

@@ -145,17 +145,12 @@ def test_los_juicios_del_anexo(medidas):
             # zapata se dimensiona y las filas que miden pasan siempre.
             "fila_phi_estabilidad_cabezal@juego_cabezal_de_la_regla",
             "factores_inclinacion_carga_portante@juego_cabezal_de_la_regla",
-            # --- VE-3.5 --- con la zapata dimensionada la Clase 1 de 5.6.7
-            # cambia un veredicto de A-01 (la fisuracion, A6, la unica fila
-            # que la clase toca); con la zapata de la regla no movia nada
-            # medible.
-            "clase_exposicion_fisuracion_cabezal",
             "regla_pendiente_relleno_trasdos",
             "regimen_resistencia_elementos_cabezal", "eta_ductilidad_cabezal",
             "eta_redundancia_cabezal", "marco_estabilidad_cabezal",
             "regimen_cabezal", "drenaje_trasdos", "fc_cabezal_mpa",
             "F_pga_lectura_columna_extrema",
-            "margen_zapata_bajo_socavacion_m", "metodo_longitud_conducto",
+            "margen_zapata_bajo_socavacion_m",
             "peso_especifico_relleno_kn_m3", "phi_relleno_trasdos",
             "punto_aplicacion_incremento_sismico",
             "referencia_profundidad_socavacion", "revestimiento_cuneta",
@@ -167,6 +162,17 @@ def test_los_juicios_del_anexo(medidas):
             "duracion_caudal_pico_socavacion_min", "acceso_mantenimiento_v2b",
             "acero_refuerzo_cabezal", "borde_libre_canal_m",
             "condicion_pavimento",
+            # --- VE-3.9 --- MOVIDO DE «MUEVE VEREDICTOS»: con VE-3.5 la Clase
+            # 1 de 5.6.7 cambiaba la fisuracion (A6) de la zapata de A-01;
+            # desde VE-3.9 el peralte de la zapata CRECE hasta que su armado
+            # cumple, A6 incluida, de modo que la clase mueve el peralte y no
+            # un veredicto (el anexo clasifica por veredictos y por la seccion
+            # del conducto, no por las dimensiones del cabezal).
+            "clase_exposicion_fisuracion_cabezal",
+            # --- VE-3.9 --- MOVIDO DE «MUEVE VEREDICTOS», por la misma
+            # razon: la longitud del conducto cambiaba un veredicto del armado
+            # de la zapata, y desde VE-3.9 el peralte crece hasta cumplirlo.
+            "metodo_longitud_conducto",
             # --- VE-3.5 --- con la zapata dimensionada la lectura de los
             # coeficientes de la hoya ya no cambia ningun veredicto del
             # cabezal de salida (con la de la regla cambiaba alguno).
