@@ -131,6 +131,27 @@ bloqueada donde no se lee; O-2 cerrado; aviso ACPA en F8.CLASE sin gobernar y la
 diseño del CABEZAL (Opus, esfuerzo máximo; informe en `informes_en_curso/`). La decisión 2
 (`no_cumple`) no requiere cambio. Antes de integrar en `main` se avisará aquí.
 
+> **TERCERA RESPUESTA DEL DUEÑO (2026-11-17, ~21:10 UTC) — decisión 8: el borde libre bajo
+> el nivel del receptor.** `borde_libre_bajo_tw_ahogante` SIGUE en `no_cumple` (la decisión 2
+> no cambia y ningún diámetro adoptado cambia). Lo que cambia es la PRESENTACIÓN: hoy, cuando
+> el TW del receptor deja al barril sin borde libre, la progresión sube el diámetro hasta
+> D > TW/0.75 (hasta cuatro escalones, E07 0.90 → 1.35 m de los ensayos del conducto) y la
+> memoria sólo dice el diámetro adoptado. La justificación del propio criterio dice que la
+> causa es el nivel del receptor y que lo que lo resuelve suele ser la cota de la salida o la
+> rasante. Pedido:
+>
+> - En todo punto donde V1 descartó escalones SÓLO por el TW del receptor (el escalón cumplía
+>   V1 con su tirante propio y todo lo demás de la Fase 5), la memoria (completa y resumida),
+>   el JSON y la pestaña 3 dicen: (a) que el diámetro lo gobernó el nivel del receptor, no el
+>   caudal; (b) el diámetro que bastaría por la hidráulica sola (el que `aviso` adoptaría);
+>   (c) la cota de salida —o el descenso del TW— con la que ese diámetro cumpliría V1
+>   (TW ≤ 0.75·D sobre la solera de salida), rotulada como alternativa que el proyectista
+>   evalúa, no como remedio verificado (no se re-corren las demás fases con esa cota).
+> - Es presentación emitida por el cálculo (`PasoDeMemoria`, regla «la memoria la emite el
+>   cálculo»), no aritmética en M11. Test en rojo primero; caso de los ensayos (E07) y la
+>   línea base. Ficha nueva en `docs/decisiones_diferidas.md` si algo queda fuera.
+> - Prioridad: después de VE-3.11 y VE-3.12; antes de integrar en `main`.
+
 ## Decisiones del dueño (2026-11-17)
 
 - VE2-04: sí, V3 con la mayor velocidad bajo control de salida (hecho, VE-3.1).
