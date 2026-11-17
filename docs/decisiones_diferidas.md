@@ -7589,7 +7589,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   de 0.90 a 1.35 m (a 0.90 m, 6.28 frente a 5.81 m/s; umbral 6.0). (c) Las hipótesis de V7,
   sumersión completa y DC = 0, justificadas en `M8_estructural` con el NF somero del Bajo
   Piura, un argumento de sitio: con el NF a 10 m V7 descarta igual (1.2745 frente a
-  9.6235 kN/m); equivalen a un relleno de unas 0.45 veces el diámetro exterior. (d) El
+  9.6235 kN/m); equivalen a un relleno de unas 0.50 veces el diámetro exterior con γ_EV = 0.90
+  (0.45 con γ_EV = 1.00, sin factorar). (d) El
   factor 1.13 de intervalo fijo de las series de 24 h, que el Manual no trae y aplican la
   tesis UPAO y la vía TU-107: sin él P24 y Q quedan 11.5 % abajo. (e) Un aviso de
   plausibilidad de la serie SIN umbral (patrón de `FH.Q_ESPECIFICO`): el Manual manda
@@ -7599,8 +7600,9 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   se detiene desde 10 km², y Tinas (55.9 km²) y cinco cuencas de TU-107 no se calculan.
   (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
   redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
-- **Cerrado (VE-2):** (b), ficha VE2-B. **Cerrado (VE-2) (a):** ficha VE2-A.
-- **Cerrado (VE-2) (g):** diámetros designados por material; ficha VE2-G.
+- **Cerrado (VE-2):** (b), ficha VE2-B; (a) y (g), VE2-A y VE2-G.
+- **Cerrado (VE-2), (c1):** ficha VE2-C.
+- **Cerrado (VE-2), (c2):** ficha VE2-C.
 - **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
   el programa calcula; el permiso de VE-1 no las alcanza.
 - **Qué haría falta:** la decisión del dueño y, por cada una adoptada, un prompt con sus
@@ -7703,3 +7705,29 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** (1) decisión del dueño y un cambio en V9; (2) decidir si la pared
   del diámetro inglés es la del designado; (3) otro ejemplar de M 170M, no recompuesto.
 - **Dónde vive:** `src/modulos/M2_material.py::_exigir_escalon_designado`
+
+## VE2-C · V7: el nivel de agua de diseño es una elección [A] del Propietario
+
+- **Cerrado (VE-2), (c1):** V7 ya no se justifica con el NF somero del Bajo Piura (argumento
+  de sitio): el Manual de Puentes 2.4.3.8.1, pág. impresa 113 (AASHTO 3.7.1, pág. 3-45),
+  deja el nivel de agua de diseño al Propietario; 2.4.3.8.2 hace actuar la subpresión
+  «debajo» de él; AASHTO 12.6.1 y 12.6.2.3 no dan cota. El nivel en la clave es una adopción
+  [A] conservadora, y DC = 0 queda del lado seguro frente al 0.90·DC de la Tabla
+  2.4.5.3.1-2 (C12.6.2.3: «the dead load on the crown»). La equivalencia de VE1-02 (c),
+  medida con el código: 0.50 · D_ext con γ_EV = 0.90 (0.45 con 1.00, sin factorar).
+- **Cerrado (VE-2), (c2):** criterio `nivel_agua_diseno_v7` [A] de perfil: `en_la_clave`
+  de archivo (lo de siempre; ningún número de la línea base se mueve) o `nf_del_punto`,
+  cota_terreno − NF + `margen_estacional_nf_v7_m` ([A] de perfil sin valor, que detiene: la
+  columna es una lectura de campo y no el freático más alto de 12.6.2.3). V7 se evalúa sólo
+  si el fondo exterior queda bajo el nivel (12.6.1; si no, «no aplica»), con el área
+  exterior bajo el nivel, y el relleno bajo el agua pesa γ_sat − γ_agua, [N→] del Manual de
+  Puentes 2.4.4.1.3 (empuje lateral). El pre-vuelo y el censo lo dicen con y sin la
+  alternativa.
+- **Abierto:** (1) con `nf_del_punto` y el nivel sobre la clave, una corrida de perfil se
+  detiene en `peso_especifico_saturado_relleno_kn_m3`, de expediente (es de ensayo: no admite
+  ventana, y un [A] de perfil la exige), que el filtro de perfil de la pestaña 2 no muestra;
+  (2) la hoja de ruta (fila V7; Fase 8, ítem 3, «con NF a 1.4 m») calla que el nivel lo
+  fija el Propietario, y sigue mal mientras el dueño no la corrija.
+- **Qué haría falta:** decidir (1) —un saturado propio del conducto como [A] de perfil con
+  ventana, o aceptar el bloqueo— y corregir (2).
+- **Dónde vive:** `src/modulos/M8_estructural.py::cota_nivel_agua_v7_del_nf`

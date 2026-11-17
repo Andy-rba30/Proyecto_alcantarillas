@@ -1247,7 +1247,10 @@ SIN_NADA_QUE_BARRER = {
     "c_phi_fundacion", "capacidad_portante_adm", "Mw_licuefaccion", "D_max_catalogo",
     "perfil_hdpe_fabricante", "N_cq_N_gammaq_meyerhof", "metodo_estabilidad_global",
     "exposicion_quimica_ems", "peso_especifico_saturado_relleno_kn_m3",
-    "edicion_que_rige_el_expediente", "edicion_legal_que_rige_el_expediente"}
+    "edicion_que_rige_el_expediente", "edicion_legal_que_rige_el_expediente",
+    # VE-2 (c2): sin valor de archivo y con ventana en prosa (su extremo de
+    # arriba depende del NF de cada punto).
+    "margen_estacional_nf_v7_m"}
 
 
 def _formas(c):
@@ -1302,9 +1305,9 @@ def candidatos():
 
 def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     por_clave, fuera = candidatos
-    # 143 desde VE-2: 'columna_n_manning_concreto' (a) y
-    # 'diametro_de_diseno_concreto' (g).
-    assert len(por_clave) == len(ca.CRITERIOS) == 143
+    # 145 desde VE-2: 'columna_n_manning_concreto' (a), 'diametro_de_diseno_concreto' (g),
+    # 'nivel_agua_diseno_v7' y 'margen_estacional_nf_v7_m' (c2).
+    assert len(por_clave) == len(ca.CRITERIOS) == 145
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.

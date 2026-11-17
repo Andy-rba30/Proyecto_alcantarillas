@@ -7737,6 +7737,137 @@ CRITERIOS: Dict[str, Criterio] = {
     ),
 
     # =======================================================================
+    # --- VE-2 (c2) --- EL NIVEL DE AGUA DE DISEÑO DE V7, que la norma deja
+    # al Propietario (Manual de Puentes 2.4.3.8.1). Hasta VE-2 era una
+    # hipotesis cableada en `M8.empuje_flotacion_kn_m` --el conducto
+    # sumergido entero-- y ningun criterio lo decia; desde aqui es una
+    # eleccion [A] con su ventana, y el valor de archivo reproduce lo que se
+    # calculaba (la linea base no se mueve). NIVEL MEDIDO, los dos de perfil:
+    #   * 'nivel_agua_diseno_v7' lo invoca V7 (Fase 5) en toda corrida que la
+    #     evalua: lo mide la corrida de perfil de `tests/test_nivel_medido.py`.
+    #   * 'margen_estacional_nf_v7_m' solo lo lee V7 con la alternativa
+    #     'nf_del_punto', que ninguna corrida de referencia declara: NO se
+    #     mide por corridas de referencia (lo mide la corrida de perfil de
+    #     `tests/test_ve2_flotacion.py`, que la declara) y su nivel es el de
+    #     su unico consumidor, V7.
+    # =======================================================================
+    "nivel_agua_diseno_v7": Criterio(
+        valor="en_la_clave",
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   en_la_clave    el nivel de agua de diseño en la clave EXTERIOR del
+        #       conducto: sumergido entero, el relleno sobre la clave en seco
+        #       (peso humedo). Es la hipotesis de la fila V7 de la hoja de
+        #       ruta («Tubería vacía, NF en su cota más alta») y la que V7
+        #       calculaba hasta VE-2.
+        #   nf_del_punto   el nivel en el freatico MEDIDO del cruce, mas un
+        #       ascenso estacional declarado: cota_terreno - NF_profundidad_m
+        #       + 'margen_estacional_nf_v7_m'. V7 se evalua solo si el fondo
+        #       exterior del conducto queda bajo ese nivel (AASHTO 12.6.1); si
+        #       no, «no aplica». El relleno bajo el nivel pesa sumergido.
+        sensibilidad=("en_la_clave", "nf_del_punto"),
+        concepto="Nivel de agua de diseño con que V7 evalua la flotacion del "
+                 "conducto vacio: en la clave (sumergido entero) o en el "
+                 "freatico medido del cruce mas un ascenso estacional",
+        justificacion="Decide la subpresion U de V7 y cuanto del relleno "
+                      "sobre la clave pesa sumergido. La norma no fija el "
+                      "nivel: el Manual de Puentes, num. 2.4.3.8.1, dice que "
+                      "los niveles de agua de diseño los especifica o "
+                      "aprueba el Propietario (cita "
+                      "MP.2.4.3.8.1#NIVEL_DE_DISENO; AASHTO 3.7.1 igual), y la "
+                      "subpresion de 2.4.3.8.2 actua sobre lo que queda "
+                      "debajo de ese nivel. El valor de archivo, "
+                      "«en_la_clave», es la adopcion conservadora: sumergido "
+                      "entero el conducto desplaza todo su volumen y ningun "
+                      "nivel mas bajo da mas empuje, y el relleno sobre la "
+                      "clave pesa humedo (17 kN/m3), que es coherente solo "
+                      "con el nivel en la clave. «nf_del_punto» lee la "
+                      "columna NF_profundidad_m, que es una lectura de campo "
+                      "y no necesariamente el freatico mas alto previsto "
+                      "(AASHTO 12.6.2.3): por eso le suma "
+                      "'margen_estacional_nf_v7_m', sin valor, que detiene "
+                      "hasta que se declare. Con ese nivel V7 se evalua solo "
+                      "si el fondo EXTERIOR del conducto queda bajo el "
+                      "(AASHTO 12.6.1 pide «inverts below the water table»; el "
+                      "fondo exterior, mas bajo que el invert, es el lado "
+                      "conservador), y el relleno bajo el nivel pesa "
+                      "sumergido, el saturado menos el del agua, por "
+                      "ANALOGIA [N->] con el Manual de Puentes 2.4.4.1.3, que "
+                      "exige densidades sumergidas para el empuje LATERAL; el "
+                      "saturado es el dato de ensayo "
+                      "'peso_especifico_saturado_relleno_kn_m3'. Declararlo "
+                      "es escribir 'nivel_agua_diseno_v7' = «nf_del_punto» en "
+                      "la sesion o con --declarar",
+        fuente="Manual de Puentes num. 2.4.3.8.1, pag. impresa 113 (cita "
+               "MP.2.4.3.8.1#NIVEL_DE_DISENO) y 2.4.3.8.2; AASHTO LRFD 9a "
+               "ed., 3.7.1 (pag. 3-45), 12.6.1 (pag. 12-14) y 12.6.2.3 (pag. "
+               "12-19); por analogia, Manual de Puentes num. 2.4.4.1.3, pag. "
+               "impresa 133 (cita MP.2.4.4.1.3#SUMERGIDO)",
+        reemplazado_por="El nivel de agua de diseño que el Propietario "
+                        "especifique o apruebe para la flotacion del "
+                        "conducto, o el freatico mas alto previsto que de el "
+                        "estudio geotecnico del cruce",
+        resolucion=Libre(
+            que_lo_fija="el Propietario: los niveles de agua de diseño son "
+                        "los que el especifica o aprueba (Manual de Puentes "
+                        "2.4.3.8.1); el proyectista propone una de las dos "
+                        "reglas",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "margen_estacional_nf_v7_m": Criterio(
+        valor=None,                 # VACIO: solo lo lee V7 con 'nf_del_punto'
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_FLOAT,
+        # VENTANA SIMBOLICA, y a proposito: el extremo de arriba depende del
+        # punto (llevar el nivel al terreno natural del cruce es un margen
+        # igual a su NF_profundidad_m), de modo que ningun par de numeros
+        # unico la describe sin inventar uno. El de abajo es 0 m, la lectura
+        # ya es el nivel mas alto; un margen negativo lo rechaza el
+        # consumidor (`M8.cota_nivel_agua_v7_del_nf`, DatoInvalidoError).
+        sensibilidad=("0 m: la lectura de NF_profundidad_m ya es el freatico "
+                      "mas alto previsto (medida en la epoca de aguas altas, "
+                      "o una serie piezometrica que la cubre)",
+                      "el ascenso estacional que estime el estudio "
+                      "geotecnico entre la fecha de la lectura y la epoca "
+                      "del nivel mas alto; con un margen igual a "
+                      "NF_profundidad_m el nivel llega al terreno natural "
+                      "del cruce"),
+        concepto="Ascenso del nivel freatico, m, entre la lectura de "
+                 "NF_profundidad_m y el freatico mas alto previsto, para el "
+                 "nivel de agua de diseño de V7 con 'nivel_agua_diseno_v7' = "
+                 "«nf_del_punto»",
+        justificacion="La columna NF_profundidad_m es una lectura de campo "
+                      "(calicata o piezometro, en una fecha): un NF de "
+                      "estiaje y uno de avenida no son el mismo dato, y "
+                      "AASHTO LRFD 12.6.2.3 manda considerar el levantamiento "
+                      "bajo «the highest anticipated groundwater level» (cita "
+                      "AASHTO_LRFD_9.12.6.2.3#UPLIFT). Ninguna fuente del "
+                      "repositorio da la oscilacion estacional del freatico, "
+                      "y rellenarla con 0 seria afirmar sin dato que la "
+                      "lectura es el nivel mas alto: por eso esta vacio y "
+                      "detiene V7 cuando 'nivel_agua_diseno_v7' = "
+                      "«nf_del_punto». Con el valor de archivo de ese "
+                      "criterio («en_la_clave») no se lee nunca. Es un solo "
+                      "margen para todo el corredor: si el estudio da "
+                      "oscilaciones distintas por cruce, rige el mayor",
+        fuente="PENDIENTE - estudio geotecnico: oscilacion estacional del "
+               "freatico (serie piezometrica, o lectura en la epoca de aguas "
+               "altas); AASHTO LRFD 9a ed., 12.6.2.3, pag. impresa 12-19",
+        reemplazado_por="El freatico mas alto previsto de cada cruce, que "
+                        "de el estudio geotecnico",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el estudio geotecnico: la "
+                        "oscilacion estacional del freatico entre la fecha "
+                        "de la lectura y la epoca del nivel mas alto",
+            dominio="m >= 0",
+        ),
+    ),
+
+    # =======================================================================
     # --- T-5 --- (cadena T, 2026-11-12) SIETE CRITERIOS NUEVOS de la Fase 8,
     # al final de su seccion: cinco de la FASE A y dos del cierre
     # ('carga_viva_bajo_relleno_alto' y 'perfil_hdpe_fabricante', que
@@ -10518,7 +10649,12 @@ CRITERIOS: Dict[str, Criterio] = {
                       "'peso_especifico_relleno_kn_m3': usar ese mismo "
                       "numero como saturado subestimaria el empuje del suelo "
                       "sumergido. Por eso esta vacio: lo da el ensayo del "
-                      "material de cantera",
+                      "material de cantera. Desde VE-2 lo lee tambien V7, "
+                      "solo con 'nivel_agua_diseno_v7' = «nf_del_punto» y el "
+                      "nivel sobre la clave, para el relleno del conducto que "
+                      "queda bajo el agua (`M8.peso_relleno_bajo_el_nivel_kn_m`): "
+                      "con el valor de archivo de ese criterio V7 no lo lee, y "
+                      "su nivel sigue siendo el del cabezal (ficha VE2-C)",
         fuente="PENDIENTE - ensayo del material de relleno (peso especifico "
                "y gravedad especifica de solidos, a la compactacion "
                "especificada)",

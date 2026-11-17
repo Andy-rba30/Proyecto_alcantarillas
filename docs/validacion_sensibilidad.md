@@ -76,6 +76,7 @@
 | conducto | `corrugacion_y_espesor_tmc` | [A] | 68x13/1.32 / 68x13/1.63 / 68x13/2.01 / 68x13/2.77 / 68x13/3.51 / 68x13/4.27 / 75x25/1.32 / 75x25/1.63 / 75x25/2.01 / 75x25/2.77 / 75x25/3.51 / 75x25/4.27 / 125x25/1.63 / 125x25/2.01 / 125x25/2.77 / 125x25/3.51 / 125x25/4.27 | '68x13/2.01', '68x13/1.32', '68x13/1.63', '68x13/2.77', '68x13/3.51', '68x13/4.27', '75x25/1.32', '75x25/1.63', '75x25/2.01', '75x25/2.77', '75x25/3.51', '75x25/4.27', '125x25/1.63', '125x25/2.01', '125x25/2.77', '125x25/3.51', '125x25/4.27' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `suelo_agresivo_lrfd_sobre_tmc` | [A] | aviso / excluye | 'aviso', 'excluye' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `peso_especifico_relleno_kn_m3` | [A] | 17.0–20.0 | 17.0, 20.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 20.0: 11; A-02 con 20.0: 4; B-01 con 20.0: 6; C-01 con 20.0: 2 |
+| conducto | `nivel_agua_diseno_v7` | [A] | en_la_clave / nf_del_punto | 'en_la_clave', 'nf_del_punto' | juego | MUEVE EL DISEÑO | diseño: A-01 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; A-02 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; B-01 con 'nf_del_punto': Concreto reforzado, Ø 0.90 m → no dimensiona; C-01 con 'nf_del_punto': Concreto reforzado, marco 1.20 × 0.90 m → no dimensiona · veredictos que cambian: A-01 con 'nf_del_punto': 105; A-02 con 'nf_del_punto': 105; B-01 con 'nf_del_punto': 105; C-01 con 'nf_del_punto': 106 |
 | conducto | `fabricacion_tmc` | [A] | helicoidal / anular_remachada_simple / anular_remachada_doble / anular_empernada | 'anular_remachada_simple', 'helicoidal', 'anular_remachada_doble', 'anular_empernada' | juego | NO LO LEE LA CORRIDA | ningún punto adopta TMC: el concreto es el primer candidato |
 | conducto | `relleno_estructural_hdpe` | [A] | Sn-100 / Sn-95 / Si-95 / Cl-95 | 'Si-95', 'Sn-100', 'Sn-95', 'Cl-95' | juego | NO LO LEE LA CORRIDA | ningún punto adopta HDPE: el concreto es el primer candidato |
 | conducto | `talud_terraplen` | [A] | 1.5–2.0 | 2.0, 1.5 | juego | MUEVE VEREDICTOS | veredictos que cambian: B-01 con 1.5: 1 |
@@ -100,7 +101,7 @@
 
 ## 3. Lo que el resumen dice, por clase
 
-- **MUEVE EL DISEÑO** (11): `seccion_receptor` (juego_sin_TW), `v_max_concreto_eleccion`, `v_max_concreto_eleccion` (juego_tmc_excluida), `regimen_v2b`, `espesor_pared_cajon`, `borde_libre_y_sobre_d_max`, `embocadura_cabezal`, `origen_cota_fondo_entrada`, `remanso_derecho_via`, `pendiente_minima_conducto`, `umbral_no_colapso_evento_extremo`.
+- **MUEVE EL DISEÑO** (12): `seccion_receptor` (juego_sin_TW), `v_max_concreto_eleccion`, `v_max_concreto_eleccion` (juego_tmc_excluida), `regimen_v2b`, `espesor_pared_cajon`, `borde_libre_y_sobre_d_max`, `embocadura_cabezal`, `origen_cota_fondo_entrada`, `remanso_derecho_via`, `pendiente_minima_conducto`, `nivel_agua_diseno_v7`, `umbral_no_colapso_evento_extremo`.
 - **MUEVE VEREDICTOS** (25): `eta_importancia_operativa_conducto`, `factor_muro_eleccion`, `gamma_EQ`, `fraccion_delta_sobre_phi_trasdos`, `fila_phi_estabilidad_cabezal`, `factores_inclinacion_carga_portante`, `regla_pendiente_relleno_trasdos`, `regimen_resistencia_elementos_cabezal`, `eta_ductilidad_cabezal`, `eta_redundancia_cabezal`, `marco_estabilidad_cabezal`, `regimen_cabezal`, `drenaje_trasdos`, `fc_cabezal_mpa`, `F_pga_lectura_columna_extrema`, `punto_aplicacion_incremento_sismico`, `revestimiento_cuneta`, `phi_relleno_trasdos`, `peso_especifico_relleno_kn_m3`, `talud_terraplen`, `lectura_coeficientes_socavacion_hec14`, `referencia_profundidad_socavacion`, `margen_zapata_bajo_socavacion_m`, `terreno_delante_del_cabezal`, `metodo_longitud_conducto`.
 - **MUEVE EL HW** (2): `n_manning_cajon`, `ke_entrada`.
 - **LEÍDO, SIN EFECTO MEDIBLE** (30): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `duracion_caudal_pico_socavacion_min`, `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `clase_exposicion_fisuracion_cabezal`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`.
@@ -1277,6 +1278,21 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | 20.0 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | E1-LRFD.est.e, E1-LRFD.est.s, E3-ASD.est.e, E3-ASD.est.s, E3-LRFD.sis.e, E3-LRFD.sis.s | — | sí |
 | 20.0 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | A5.alero.s, A5.pantalla.s | — | sí |
 
+### `nivel_agua_diseno_v7`
+
+derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **MUEVE EL DISEÑO**.
+
+| Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+|---|---|---|---|---|---|---|---|
+| 'en_la_clave' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'en_la_clave' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 'en_la_clave' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'en_la_clave' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 'nf_del_punto' | A-01 | no dimensiona | — | — | (el punto no dimensiona: 105 cambian o desaparecen) | V1 | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
+| 'nf_del_punto' | A-02 | no dimensiona | — | — | (el punto no dimensiona: 105 cambian o desaparecen) | CriterioPendienteError: material y diametro (bucle de MD) (margen_estacional_nf_v7_m) | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
+| 'nf_del_punto' | B-01 | no dimensiona | — | — | (el punto no dimensiona: 105 cambian o desaparecen) | CriterioPendienteError: material y diametro (bucle de MD) (margen_estacional_nf_v7_m) | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
+| 'nf_del_punto' | C-01 | no dimensiona | — | — | (el punto no dimensiona: 106 cambian o desaparecen) | CriterioPendienteError: material y diametro (bucle de MD) (margen_estacional_nf_v7_m) | NO: el punto tiene diseño en A y no en B: no hay numeros que comparar (ver `dimensionado` y `bloqueos`) |
+
 ### `fabricacion_tmc`
 
 derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **NO LO LEE LA CORRIDA**.
@@ -1622,7 +1638,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 ## 5. Los criterios que no se barren, por nombre
 
-84 barridos sobre 82 criterios; estos 61 no se barren, y la razón:
+85 barridos sobre 83 criterios; estos 62 no se barren, y la razón:
 
 | Criterio | Etiqueta | Por qué no se barre |
 |---|---|---|
@@ -1687,4 +1703,5 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | `espesor_min_zapata_concreto_simple_m` | [N->] | valor de una fuente ([N→] o [C]) sin ventana: no hay rango que barrer |
 | `edicion_que_rige_el_expediente` | [A] | sin valor de archivo y el juego no lo declara: no hay valor efectivo desde el que barrer; sin consumidor (`tests/test_nivel_medido.py::SIN_CONSUMIDOR_Y_SIN_MEDIDA`) |
 | `edicion_legal_que_rige_el_expediente` | [A] | sin valor de archivo y el juego no lo declara: no hay valor efectivo desde el que barrer; sin consumidor (`tests/test_nivel_medido.py::SIN_CONSUMIDOR_Y_SIN_MEDIDA`) |
+| `margen_estacional_nf_v7_m` | [A] | sin valor de archivo y el juego no lo declara: no hay valor efectivo desde el que barrer; ventana en prosa (un piso o una regla, sin dos extremos): no es legible por máquina y no se barrió (NO SE MIDIÓ) |
 

@@ -371,6 +371,9 @@ NO_BARRIBLES: Dict[str, str] = {
     "edicion_que_rige_el_expediente": _R_SIN_VALOR + "; " + _R_SIN_CONSUMIDOR,
     "edicion_legal_que_rige_el_expediente": (_R_SIN_VALOR + "; "
                                              + _R_SIN_CONSUMIDOR),
+    # --- VE-2 (c2) --- solo lo lee V7 con 'nivel_agua_diseno_v7' =
+    # 'nf_del_punto'; su barrido es el de ese criterio, que si se barre.
+    "margen_estacional_nf_v7_m": _R_SIN_VALOR + "; " + _R_PROSA,
 }
 
 

@@ -1154,6 +1154,13 @@ CONDICIONALES_NO_MEDIDAS: Dict[str, str] = {
         "con la cimentacion en ROCA (filas A o B declaradas en 'F_pga'), "
         "donde la ecuacion de 10.6.3.1.2a no aplica y sin el dato la "
         "capacidad portante es «metodo no evaluable»"),
+    # --- VE-2 (c2) ---
+    "margen_estacional_nf_v7_m": (
+        "solo con `nivel_agua_diseno_v7` = 'nf_del_punto': detiene V7 (el "
+        "ascenso estacional del freatico sobre la lectura de "
+        "`NF_profundidad_m`), y con esa alternativa V7 exige ademas el NF "
+        "del punto y, con el nivel sobre la clave, "
+        "`peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C)"),
 }
 
 

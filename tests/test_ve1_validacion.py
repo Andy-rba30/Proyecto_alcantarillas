@@ -389,6 +389,12 @@ def test_d2_guardia_quien_lee_el_nf_es_la_fase_8_y_el_cabezal():
     (la presion del agua sobre la pared del TMC y del HDPE, si el NF queda
     sobre la clave: `M8.verificar_tmc`, `M8._evaluar_hdpe`) y la Fase 9 (la
     estabilidad del cabezal), y NO M5, donde vive V7.
+
+    --- VE-2 (c2) --- EL CONJUNTO NO CAMBIA Y LA LECTURA SI, y se declara: desde
+    VE-2 M8 lee el NF tambien para V7, en `M8.cota_nivel_agua_v7_del_nf`, y
+    solo cuando 'nivel_agua_diseno_v7' declara «nf_del_punto» (con el valor
+    de archivo, no: lo fija la guardia de comportamiento de arriba, que
+    sigue igual). M5 sigue sin leer la columna por su cuenta.
     """
     assert _lectores_del_nf() == {"M8_estructural", "M9_cabezal"}
 
@@ -414,8 +420,13 @@ def test_d2_la_fila_del_contrato_no_atribuye_el_nf_a_v7():
 def test_d2_el_concepto_de_la_columna_dice_quien_la_lee():
     concepto = ve.variable("NF_profundidad_m").concepto
     assert "flotacion (V7)" not in concepto
-    # Redactado como lo pidio la revision (H5): la discrepancia en una frase.
-    assert "dice que la lee V7; no la lee" in concepto
+    # --- VE-2 (c2) --- CAMBIADO DECLARANDO LA CAUSA. Decia «dice que la lee
+    # V7; no la lee», que desde VE-2 es falso a medias: V7 la lee con la
+    # alternativa 'nf_del_punto' de 'nivel_agua_diseno_v7' y no con el valor
+    # de archivo. El concepto dice las dos cosas, y la discrepancia de la
+    # hoja de ruta (§1.2, «la lee V7» sin condicion) remite a VE1-01.
+    assert "V7 solo con 'nivel_agua_diseno_v7' = 'nf_del_punto'" in concepto
+    assert "no con el de archivo" in concepto and "VE1-01" in concepto
     assert "Fase 8" in concepto and "cabezal" in concepto
 
 
@@ -656,9 +667,9 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
         ca.establecer_valor_dinamico(clave, criterio.valor)
         ca.quitar_valor_dinamico(clave)
         barridos += 1
-    # 143 desde VE-2: 'columna_n_manning_concreto' (a) y
-    # 'diametro_de_diseno_concreto' (g).
-    assert len(ca.CRITERIOS) == 143 and barridos > 100, (len(ca.CRITERIOS),
+    # 145 desde VE-2: 'columna_n_manning_concreto' (a), 'diametro_de_diseno_concreto' (g),
+    # 'nivel_agua_diseno_v7' y 'margen_estacional_nf_v7_m' (c2).
+    assert len(ca.CRITERIOS) == 145 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 
@@ -687,8 +698,11 @@ def test_h3_la_discrepancia_de_la_doble_n_esta_en_el_punto_de_uso(modulo, titulo
 def test_h5_el_concepto_del_nf_es_corto_y_la_discrepancia_breve():
     concepto = ve.variable("NF_profundidad_m").concepto
     assert len(concepto) <= 250, len(concepto)
-    assert concepto.endswith(
-        "La hoja de ruta (§1.2) dice que la lee V7; no la lee: ficha VE1-01")
+    # --- VE-2 (c2) --- La cola remite ahora a las DOS fichas: VE2-C (quien
+    # la lee y con que criterio) y VE1-01 (la discrepancia de la hoja de
+    # ruta). Cambiado declarando la causa: la cola anterior negaba sin
+    # condicion que V7 la leyera.
+    assert concepto.endswith("no con el de archivo: fichas VE2-C y VE1-01")
 
 
 def test_h5_ve1_02_g_con_numero_y_donde_vive_de_cada_decision():

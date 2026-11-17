@@ -213,6 +213,7 @@ Cada una está nombrada en `docs/contrato_entradas.md` §7 (lo comprueba el test
 - `h_eq_bajo_altura_tabulada` — solo con un muro de menos de 5.0 ft (1.524 m), bajo la primera fila de la tabla de h_eq de AASHTO 3.11.6.4 (`M9._interpolar_h_eq`).
 - `N_cq_N_gammaq_meyerhof` — solo con `terreno_delante_del_cabezal` = 'talud_descendente': la zapata en talud del Manual de Puentes 2.8.1.3.1.2c.
 - `q_n_kpa` — la resistencia portante nominal del EMS (`suelo_fundacion`): solo con la cimentacion en ROCA (filas A o B declaradas en 'F_pga'), donde la ecuacion de 10.6.3.1.2a no aplica y sin el dato la capacidad portante es «metodo no evaluable».
+- `margen_estacional_nf_v7_m` — solo con `nivel_agua_diseno_v7` = 'nf_del_punto': detiene V7 (el ascenso estacional del freatico sobre la lectura de `NF_profundidad_m`), y con esa alternativa V7 exige ademas el NF del punto y, con el nivel sobre la clave, `peso_especifico_saturado_relleno_kn_m3` (ficha VE2-C).
 
 ## 5. Variantes: una decisión del juego, del otro lado
 
@@ -258,6 +259,7 @@ Ningún criterio se rellenó en `criterios_adoptados.py`: los que el juego neces
 | `D_max_catalogo` | [A] | perfil | opcional | decision | sí | no | NINGUNA NORMA fija la disponibilidad de mercado. |
 | `h_eq_bajo_altura_tabulada` | [A] | expediente | — | decision | sí | no | AASHTO LRFD 9a ed. |
 | `h_eq_banda_intermedia_borde` | [A] | expediente | — | decision | sí | no | AASHTO LRFD 9a ed. |
+| `margen_estacional_nf_v7_m` | [A] | perfil | — | decision | sí | no | PENDIENTE - estudio geotecnico: oscilacion estacional del freatico (serie piezometrica, o lectura en la epoca de aguas altas); AASHTO LRFD 9a ed., 12.6.2.3, pag. |
 | `perfil_hdpe_fabricante` | [A] | perfil | opcional | decision | sí | no | AASHTO LRFD 9a ed., Art. |
 | `N_cq_N_gammaq_meyerhof` | [A] | expediente | — | decision | sí | no | PENDIENTE - Manual de Puentes num. |
 | `metodo_estabilidad_global` | [A] | expediente | — | decision | sí | no | PENDIENTE - E.050 Art. |

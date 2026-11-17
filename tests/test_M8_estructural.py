@@ -297,10 +297,23 @@ def test_el_NF_ya_no_es_un_criterio_de_este_modulo():
     ruta_m8 = Path(M8.__file__)
     assert "CRITERIO_NF" not in estructura.nombres_asignados(ruta_m8)
     assert "CRITERIO_NF" not in estructura.nombres_usados(ruta_m8)
-    assert "NF_profundidad_m" not in estructura.textos_de_llamada_o_indice(
-        ruta_m8), (
-        "M8 volvio a invocar el NF del punto: la flotacion se evalua con el "
-        "conducto lleno de aire, no con el freatico medido")
+    # --- VE-2 (c2) --- CAMBIADO DECLARANDO LA CAUSA. Decia que M8 no invoca
+    # el NF del punto en ninguna parte, porque la flotacion no lo leia. Desde
+    # VE-2 lo invoca en UNA funcion, `cota_nivel_agua_v7_del_nf`, que solo
+    # corre con la alternativa 'nf_del_punto' de 'nivel_agua_diseno_v7' [A]
+    # (el nivel de agua de diseño lo fija el Propietario, Manual de Puentes
+    # 2.4.3.8.1). Con el valor de archivo V7 sigue sin leerlo: lo mide
+    # `tests/test_ve1_validacion.py::test_d2_guardia_v7_no_lee_el_nivel_freatico`.
+    # Lo que se conserva es lo que este test protege: que el NF no vuelva a
+    # ser un criterio y que su lectura no se esparza por el modulo.
+    import ast
+    arbol = ast.parse(ruta_m8.read_text(encoding="utf-8"))
+    invocadoras = {
+        f.name for f in arbol.body if isinstance(f, ast.FunctionDef)
+        and "NF_profundidad_m" in {
+            a.value for n in ast.walk(f) if isinstance(n, ast.Call)
+            for a in n.args if isinstance(a, ast.Constant)}}
+    assert invocadoras == {"cota_nivel_agua_v7_del_nf"}, invocadoras
 
 
 # ===========================================================================

@@ -131,7 +131,12 @@ def test_los_juicios_del_anexo(medidas):
             "regimen_v2b", "borde_libre_y_sobre_d_max", "embocadura_cabezal",
             "espesor_pared_cajon", "pendiente_minima_conducto",
             "remanso_derecho_via", "umbral_no_colapso_evento_extremo",
-            "origen_cota_fondo_entrada"},
+            "origen_cota_fondo_entrada",
+            # --- VE-2 (c2) --- el nivel de agua de diseño de V7: con
+            # 'nf_del_punto' V7 pide el ascenso estacional del freatico
+            # ('margen_estacional_nf_v7_m', sin valor) y los puntos que la
+            # evaluan dejan de dimensionar hasta que se declare.
+            "nivel_agua_diseno_v7"},
         "MUEVE VEREDICTOS": {
             "eta_importancia_operativa_conducto", "factor_muro_eleccion",
             "gamma_EQ", "fraccion_delta_sobre_phi_trasdos",

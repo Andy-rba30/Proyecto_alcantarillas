@@ -1673,3 +1673,24 @@ el diámetro inglés convertido. La progresión de archivo es toda designada: se
 criterio en los cuatro JSON (también en la rama de error, cuyo bloqueo y motivo no
 cambian: un escalón no positivo lo sigue rechazando la hidráulica) y su ficha y su fila
 en las memorias—. **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## Regenerada en VE-2 (c1) (2026-11-17, sobre `72a8d01`): sólo textos de V7, ningún número
+
+V7 deja de justificarse con el NF somero del corredor y cita el Manual de Puentes 2.4.3.8.1
+(ficha VE2-C). Cambian tres memorias (`memoria_perfil.html`, `memoria_perfil_ancha.html`,
+`memoria_expediente.html`): el `por_que` de F5.V7 y, en la ancha, el paso de V7 con la cita
+nueva y sus anclajes de contenido. JSON, CSV, `cli_*.txt` y la memoria del cajón: idénticos.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## Regenerada en VE-2 (c2) (2026-11-17): el nivel de agua de V7 como criterio, ningún número de cálculo
+
+Dos criterios nuevos (`nivel_agua_diseno_v7`, de archivo `en_la_clave`, y
+`margen_estacional_nf_v7_m`, sin valor). Cambian la huella de `criterios_adoptados.py`, la
+lista de criterios usados (el nuevo, donde se evalúa V7) y la de los vacíos (el margen) en
+los JSON, y en las memorias la elección del nivel en el paso de V7 y el recuento del
+encabezado («141 criterios declarados, 20 todavía sin valor» → «143 …, 21 …» en su rama; integrado detrás de (a) y (g), 143 → 145). Las hojas
+numéricas de los JSON fuera de la lista de criterios, idénticas; `cli_*.txt`, CSV y la
+memoria del cajón, idénticos.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**

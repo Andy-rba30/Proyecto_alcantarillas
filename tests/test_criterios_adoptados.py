@@ -175,7 +175,11 @@ def test_todo_criterio_de_perfil_sin_valor_tiene_ficha_declarable():
     # cajon salieron en T-3: tienen valor de archivo (INF-0.4). --- T-9 ---
     # 'seccion_cuneta' estuvo aqui en la FASE A de T-9; desde sus
     # correcciones tiene el minimo muy lluvioso de la Tabla Nº 34.
-    assert sorted(claves) == ["TW_receptor", "homogeneidad_serie_fen"]
+    # --- VE-2 (c2) --- 'margen_estacional_nf_v7_m': el ascenso estacional
+    # del freatico, que solo lee V7 con 'nivel_agua_diseno_v7' =
+    # 'nf_del_punto'; su VALOR lo da el estudio geotecnico, no el software.
+    assert sorted(claves) == ["TW_receptor", "homogeneidad_serie_fen",
+                              "margen_estacional_nf_v7_m"]
     for clave in claves:
         c = CRITERIOS[clave]
         for campo in ("concepto", "justificacion", "fuente"):

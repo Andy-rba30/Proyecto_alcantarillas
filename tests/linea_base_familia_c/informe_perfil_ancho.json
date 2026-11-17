@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "ece5e7fa445b333c0236e62565dfe92e3b7affa2",
+    "criterios_sha1": "3cb799ec9d93e25d4b7b180fa51435416475c76d",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -2346,6 +2346,13 @@
         "concepto": "Coeficiente de rugosidad de Manning para HDPE de interior liso"
       },
       {
+        "clave": "nivel_agua_diseno_v7",
+        "etiqueta": "A",
+        "valor": "en_la_clave",
+        "declarado_en_caliente": false,
+        "concepto": "Nivel de agua de diseño con que V7 evalua la flotacion del conducto vacio: en la clave (sumergido entero) o en el freatico medido del cruce mas un ascenso estacional"
+      },
+      {
         "clave": "obras_familia_a_extremo_de_cuneta",
         "etiqueta": "A",
         "valor": "si",
@@ -2498,6 +2505,7 @@
       "h_eq_bajo_altura_tabulada",
       "h_eq_banda_intermedia_borde",
       "homogeneidad_serie_fen",
+      "margen_estacional_nf_v7_m",
       "metodo_estabilidad_global",
       "peso_especifico_saturado_relleno_kn_m3",
       "phi_relleno_trasdos",

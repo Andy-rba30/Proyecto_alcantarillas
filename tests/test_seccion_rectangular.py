@@ -896,6 +896,14 @@ CENSO_VIA_POR_TIRANTE = {
     # de esa funcion (critica y llena) salen de la via canonica y no estan
     # aqui a proposito: `critico.geometria.A` y `seccion.area_llena`.
     ("src/modulos/M4_control.py", "velocidad_de_salida", "area"),
+    # VE-2 (c2): el AREA EXTERIOR SUMERGIDA de V7 con el nivel de agua de
+    # diseño a una altura h sobre el fondo exterior. h es una diferencia de
+    # COTAS (nivel menos fondo), no la salida de un solver, y no hay
+    # `Geometria` delante: es el caso que la regla #12 admite, como el TW de
+    # EXT-3. Solo el area, que no divide por nada, y solo con h en (0, canto
+    # exterior): fuera de ese intervalo la funcion no la llama.
+    ("src/modulos/M8_estructural.py", "empuje_flotacion_bajo_el_nivel_kn_m",
+     "area"),
 }
 
 

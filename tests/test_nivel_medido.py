@@ -226,6 +226,13 @@ def test_lo_que_ninguna_corrida_invoca_se_clasifica_por_su_consumidor(
                 cli.VERIFICACIONES_DIFERIDAS_POR_ALCANCE[cli.ALCANCE_PERFIL]
             assert consumidores == {"M5_verificaciones"}, clave
             continue
+        if clave in DE_UNA_ALTERNATIVA_NO_DE_ARCHIVO:
+            # V7 corre a perfil, y lo lee solo con una alternativa de otro
+            # criterio que el archivo no trae.
+            otro, alternativa = DE_UNA_ALTERNATIVA_NO_DE_ARCHIVO[clave]
+            assert ca.CRITERIOS[otro].valor != alternativa, clave
+            assert corren_a_perfil == {"M5_verificaciones"}, clave
+            continue
         if ca.CRITERIOS[clave].nivel == ca.NIVEL_EXPEDIENTE:
             assert not corren_a_perfil, (
                 f"'{clave}' esta clasificado como de EXPEDIENTE y el censo le "
@@ -260,6 +267,22 @@ def test_lo_que_ninguna_corrida_invoca_se_clasifica_por_su_consumidor(
 # V8 de punta a punta. Que solo lo lee V8 se comprueba abajo, por AST.
 DE_UNA_VERIFICACION_DIFERIDA = {
     "umbral_no_colapso_evento_extremo": "V8",
+}
+
+# --- VE-2 (c2) --- UN CRITERIO DE EXPEDIENTE QUE UNA ALTERNATIVA DE PERFIL
+# LEE. El peso saturado del relleno es del cabezal (Fase 9, expediente), y
+# desde VE-2 lo lee tambien V7 (Fase 5), pero solo con 'nivel_agua_diseno_v7'
+# = 'nf_del_punto' y el nivel sobre la clave (`M8.peso_relleno_bajo_el_
+# nivel_kn_m`). Con el valor de archivo ninguna corrida de perfil lo invoca
+# --la segunda direccion de arriba lo mide--, y el censo estatico le
+# encuentra a M5 por la cadena de llamadas. NO SE RECLASIFICA a perfil, y es
+# una tension declarada en la ficha VE2-C: es dato de ensayo (`DeEnsayo` no
+# admite ventana) y un [A] de perfil la exige; con la alternativa declarada,
+# una corrida de perfil se detiene en el. Que su unico consumidor de perfil
+# sea V7 lo comprueba la rama de arriba.
+DE_UNA_ALTERNATIVA_NO_DE_ARCHIVO = {
+    "peso_especifico_saturado_relleno_kn_m3": ("nivel_agua_diseno_v7",
+                                               "nf_del_punto"),
 }
 
 

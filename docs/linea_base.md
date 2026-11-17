@@ -758,6 +758,8 @@ evento extremo, que era el de su Q declarado (ficha VE2-B). Los documentos gener
 regeneraron con sus comandos; `validacion_hds5.md` y `validacion_sensibilidad.md` salen
 idénticos.
 
+## 12. VE-2 (a) y (g): la columna del n del concreto y los diámetros designados, criterios [A]; ningún número se mueve (2026-11-17)
+
 **VE-2 (a)** (`validacion(VE-2.2)`, ficha VE2-A): la columna del n del tubo de concreto
 pasa a ser el criterio [A] `columna_n_manning_concreto`, con la doble n de siempre como
 valor de archivo. Se mueven **ocho archivos y ningún número de cálculo**: la huella de
@@ -777,3 +779,29 @@ el diámetro inglés convertido. La progresión de archivo es toda designada: se
 criterio en los cuatro JSON (también en la rama de error, cuyo bloqueo y motivo no
 cambian: un escalón no positivo lo sigue rechazando la hidráulica) y su ficha y su fila
 en las memorias—. **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 13. VE-2 (c1): V7 se justifica con la norma y no con el sitio; ningún número se mueve (2026-11-17)
+
+VE-2.2 (c1) no cambia cálculo: reemplaza la justificación de la flotación (V7) por el NF
+somero del Bajo Piura por la del Manual de Puentes, núm. 2.4.3.8.1 (el nivel de agua de
+diseño lo fija el Propietario; ficha VE2-C). Regenerada con su script, la línea base cambia
+**tres memorias HTML y ningún número**: en `memoria_perfil.html`, `memoria_perfil_ancha.html`
+y `memoria_expediente.html`, el `por_que` de F5.V7 (anexo de fundamentos) y, en la ancha,
+el paso de V7 de los puntos que lo evalúan, que cita además la frase del 2.4.3.8.1 (y con
+ella cambian los anclajes `paso-…`, que son huellas del contenido). Los JSON, los CSV de
+resumen, los cinco `cli_*.txt` y la memoria del cajón, idénticos byte a byte; los valores
+de V7 (estabilizante y desestabilizante) que la memoria imprime, los mismos.
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 14. VE-2 (c2): el nivel de agua de diseño de V7, criterio [A]; ningún número de cálculo se mueve (2026-11-17)
+
+VE-2.4 (c2) añade `nivel_agua_diseno_v7` [A] (valor de archivo `en_la_clave`, lo que V7
+calculaba) y `margen_estacional_nf_v7_m` [A] sin valor (ficha VE2-C). Regenerada con su
+script, la línea base cambia **ocho archivos y ningún número de cálculo** (las hojas
+numéricas de los cuatro JSON, fuera de la lista de criterios usados, idénticas): la huella
+de `criterios_adoptados.py` (cuatro JSON y las memorias); el criterio nuevo en los criterios
+usados de las corridas que evalúan V7 y el margen en la lista de los que siguen sin valor;
+en las memorias, la elección del nivel en el paso de V7 (fundamento F5.V7_NIVEL), la fila
+de los dos criterios y el recuento del encabezado, **«141 criterios declarados, 20 todavía
+sin valor» → «143 …, 21 …»** medido en su rama sobre `72a8d01`; integrado detrás de (a) y (g), «143 … » → «145 …». Los cinco `cli_*.txt`, los dos CSV de resumen y la memoria
+del cajón, idénticos. **Diámetros, secciones, materiales y HW movidos: ninguno.**

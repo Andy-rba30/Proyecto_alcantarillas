@@ -651,11 +651,26 @@ V7 = _fundamento(
     id="F5.V7",
     fase=F5,
     que_paso="V7 - Flotacion del conducto vacio bajo el nivel freatico",
+    # --- VE-2 (c1) --- La segunda frase decia «En el Bajo Piura, con NF
+    # somero y arenas saturadas, no es un caso de laboratorio»: un argumento
+    # de SITIO que ninguna de las citas de abajo usa. Lo que la norma dice
+    # del nivel es QUIEN lo fija (MP.2.4.3.8.1#NIVEL_DE_DISENO), y con eso
+    # la sumersion completa queda como lo que es, una adopcion [A].
     por_que=(
-        "Un conducto vacio bajo el nivel freatico es un flotador: la "
+        "Un conducto vacio bajo el nivel de agua de diseño es un flotador: la "
         "subpresion sobre su superficie exterior puede superar el peso propio "
-        "mas el del relleno que lo cubre y levantarlo. En el Bajo Piura, con "
-        "NF somero y arenas saturadas, no es un caso de laboratorio. "
+        "mas el del relleno que lo cubre y levantarlo. CUAL ES ESE NIVEL NO "
+        "LO DICE LA NORMA: los niveles de agua de diseño son los que el "
+        "Propietario especifica o aprueba (Manual de Puentes num. 2.4.3.8.1, "
+        "el mismo de AASHTO 3.7.1), y AASHTO 12.6.2.3 lo nombra como el "
+        "freatico mas alto previsto sin dar su cota. Por eso la hipotesis "
+        "con que se comprueba --tuberia vacia y el nivel en la clave, o sea "
+        "el conducto sumergido entero-- es una ADOPCION [A] conservadora del "
+        "proyecto en el sitio de esa decision, y no un hecho del sitio: "
+        "sumergido entero, el conducto desplaza todo su volumen, y ningun "
+        "nivel mas bajo daria mas empuje. Y el peso propio del conducto (DC) "
+        "no se suma: la Tabla 2.4.5.3.1-2 admitiria contarlo con su minimo "
+        "0.90, y omitirlo acorta el lado que estabiliza, del lado seguro. "
         "QUE PARTE DE ESTO ES DE LA FUENTE Y CUAL ES DEL PROYECTO, que es lo "
         "que hay que poder separar al leer la memoria. De la fuente: que la "
         "subpresion se considere una fuerza de levantamiento sobre todos los "
@@ -689,6 +704,10 @@ V7 = _fundamento(
         "estado ABIERTA."),
     verbo=Verbo.OBLIGA,
     citas=("MP.2.4.3.8.2",                      # EXIGENCIA -> sostiene OBLIGA
+           # --- VE-2 (c1) --- QUIEN fija el nivel bajo el que actua la
+           # subpresion de la cita anterior: el Propietario. Es lo que hace
+           # de la sumersion completa una adopcion y no una lectura.
+           "MP.2.4.3.8.1#NIVEL_DE_DISENO",      # EXIGENCIA (quien, no cual)
            "AASHTO_LRFD_9.12.6.1#FLOTACION",    # EXIGENCIA -> lo sostiene
            "AASHTO_LRFD_9.12.6.2.3#UPLIFT",     # EXIGENCIA -> lo sostiene
            "AASHTO_LRFD_9.3.7.2",               # EXIGENCIA (gemelo del peruano)
@@ -772,6 +791,52 @@ V7_FILA_GAMMA = _fundamento(
 # el reparto de esa magnitud en filas por tipo de estructura la tabla lo
 # IMPONE, y a cual pertenece esta obra no lo dice nadie. Por eso la cita
 # definitoria va primera y la tabla segunda.
+
+
+# --- VE-2 (c2) --- LA ELECCION DEL NIVEL DE AGUA DE DISEÑO, que tampoco es
+# del paso. Que haya que verificar la flotacion lo obligan tres numerales
+# (F5.V7); con QUE NIVEL, la norma lo deja al Propietario, y el proyecto lo
+# declara en 'nivel_agua_diseno_v7' [A]. El verbo es OBLIGA porque lo que las
+# citas exigen es real --que el nivel lo fije el Propietario, que la flotacion
+# se evalue con el invert bajo el freatico, que el suelo bajo el agua pese
+# sumergido en el empuje lateral--; lo que el proyecto ELIGE, y lo que aplica
+# por ANALOGIA, lo dice el texto y no el verbo.
+V7_NIVEL_DE_DISENO = _fundamento(
+    id="F5.V7_NIVEL",
+    fase=F5,
+    que_paso=("Nivel de agua de diseño de la flotacion: lo especifica o "
+              "aprueba el Propietario"),
+    por_que=(
+        "La subpresion actua sobre lo que queda debajo del nivel de agua de "
+        "diseño, y ese nivel no lo da la norma: el Manual de Puentes "
+        "(2.4.3.8.1, igual que AASHTO 3.7.1) lo deja al Propietario, y "
+        "AASHTO 12.6.2.3 lo nombra como el freatico mas alto previsto, sin "
+        "cota. El proyecto lo adopta en la CLAVE del conducto, sumergido "
+        "entero, que es el lado conservador: ningun nivel mas bajo da mas "
+        "empuje, y el relleno sobre la clave pesa humedo, que es coherente "
+        "solo con el nivel en la clave. La alternativa declarable lee el "
+        "freatico MEDIDO del cruce y le suma un ascenso estacional, porque "
+        "una lectura de campo no es el nivel mas alto previsto; con ella la "
+        "flotacion se evalua solo si el fondo exterior del conducto queda "
+        "bajo ese nivel (AASHTO 12.6.1: «with inverts below the water "
+        "table»), y el relleno bajo el agua pesa el saturado menos el agua "
+        "por ANALOGIA con el Manual de Puentes 2.4.4.1.3, que exige las "
+        "densidades del suelo sumergido para el empuje LATERAL bajo el "
+        "freatico y no habla del peso vertical."),
+    verbo=Verbo.OBLIGA,
+    citas=("MP.2.4.3.8.1#NIVEL_DE_DISENO",       # EXIGENCIA: quien lo fija
+           "AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO",  # EXIGENCIA: el gemelo
+           "AASHTO_LRFD_9.12.6.1#FLOTACION",     # EXIGENCIA: el disparo
+           "AASHTO_LRFD_9.12.6.2.3#UPLIFT",      # EXIGENCIA: el mas alto
+           "MP.2.4.4.1.3#SUMERGIDO",             # EXIGENCIA lateral: analogia
+           "AASHTO_LRFD_9.3.11.3"),              # el gemelo de AASHTO
+    que_pasa_si_no_se_hace=(
+        "La memoria imprimiria la sumersion completa como si la norma la "
+        "prescribiera, y el revisor no veria que es una decision del "
+        "Propietario que el proyecto tomo por el: la misma cita falsa que "
+        "NOR-HID-01 retiro, escrita sobre un nivel en vez de un valor. Y "
+        "quien conociera el freatico de su cruce no tendria donde decirlo."),
+)
 
 
 # ===========================================================================

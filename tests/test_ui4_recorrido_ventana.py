@@ -625,20 +625,22 @@ def test_c7_la_sesion_v3_se_abre_reproduce_y_se_reescribe(r):
     if fixture["corridas"][-1]["criterios_sha1"] == huella:
         assert v3["reproduce"], v3["comparacion"]
     else:
-        # CAMBIADO EN VE-2, declarando la causa: VE-2 (a) y (g) suman dos
-        # criterios de perfil que el tubo de concreto lee en toda corrida
-        # ('columna_n_manning_concreto', 'diametro_de_diseno_concreto'), y la
-        # corrida de hoy los lista como USADOS mientras la del fixture --que
-        # es de una version anterior y no se regenera-- no los conoce. Lo
-        # admitido sigue siendo lo que el archivo de criterios explica: la
-        # huella y, ademas, un criterio usado HOY que la corrida guardada no
+        # CAMBIADO EN VE-2, declarando la causa, con las dos razones que
+        # cada parte escribio por su lado: (a), (g) y (c2) suman criterios
+        # que la corrida de hoy lista como USADOS mientras la del fixture
+        # --de una version anterior, que no se regenera-- no los conoce; y
+        # (c2) suma un criterio SIN valor ('margen_estacional_nf_v7_m'), y
+        # con el el recuento de los vacios del volcado. Las dos solo las
+        # puede producir el archivo de criterios: lo admitido es la huella,
+        # ese recuento y un criterio usado HOY que la corrida guardada no
         # tenia. Ningun punto, ningun numero, nada sin comparar.
         guardada = fixture["corridas"][-1]["informe_json"]["criterios"]["usados"]
         conocidos = {c["clave"] for c in guardada}
         diferencias = v3["diferencias"]
         assert ["expediente", "criterios_sha1"] in diferencias, v3["comparacion"]
         for seccion, clave in diferencias:
-            if [seccion, clave] == ["expediente", "criterios_sha1"]:
+            if [seccion, clave] in (["expediente", "criterios_sha1"],
+                                    ["criterios", "sin_valor_declarados[len]"]):
                 continue
             assert seccion == "criterios" and clave not in conocidos \
                 and clave in ca.CRITERIOS, v3["comparacion"]

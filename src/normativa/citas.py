@@ -14311,6 +14311,100 @@ HDS5_2_2_5D_AGENCIAS = _cita(
           "tope del proyecto es el criterio [A] 'HW_D_max'."),
 )
 
+# ===========================================================================
+# --- VE-2 (c) --- QUIEN FIJA EL NIVEL DE AGUA DE DISEÑO DE V7
+# ===========================================================================
+# La flotacion (V7) se justificaba con el NF somero del Bajo Piura, un
+# argumento de SITIO que la norma no usa. La norma no fija el nivel: dice que
+# lo especifica o aprueba el Propietario, y la subpresion de 2.4.3.8.2 actua
+# sobre lo que queda «debajo del nivel de agua de diseño» que este parrafo
+# deja en sus manos. Por eso la sumersion completa --el nivel en la clave--
+# es una ADOPCION [A] conservadora del proyecto y no un hecho. Las dos
+# paginas las abrio la propia sesion por su capa de texto.
+FECHA_VE2 = "2026-11-17"
+POR_VE2 = "validacion/VE-2 · lectura directa de la pagina por la sesion"
+VE2 = (FECHA_VE2, POR_VE2)
+
+MP_NIVEL_DE_DISENO = _cita(
+    id="MP.2.4.3.8.1#NIVEL_DE_DISENO",
+    fuente_id="MP",
+    numeral="2.4.3.8.1",
+    titulo_numeral="Presión Hidrostática",
+    pagina_impresa="113",
+    pagina_pdf=114,
+    texto_literal=Verbatim(
+        texto=("Los niveles de agua de diseño para los diferentes estados "
+               "límites serán los especificados y/o aprobados por el "
+               "Propietario."),
+        pagina_pdf=114),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO",),
+    sesion=VE2,
+    nota=("Tercer parrafo del num. 2.4.3.8.1 «Presión Hidrostática» (3.7.1 "
+          "AASHTO), en la MISMA pagina que la subpresion de 2.4.3.8.2, que "
+          "remite a este articulo. Es EXIGENCIA sobre QUIEN fija el nivel, "
+          "no sobre cual es: el Manual no da ningun nivel de agua de diseño "
+          "para una alcantarilla enterrada. Por eso el nivel con que V7 "
+          "evalua la flotacion es una adopcion [A] del proyecto en el sitio "
+          "de la decision del Propietario ('nivel_agua_diseno_v7', desde "
+          "VE-2), y la lectura del primer parrafo («las condiciones de aguas "
+          "máximas y aguas mínimas», de pilares y partes del puente) no se "
+          "traslada al "
+          "conducto."),
+)
+
+AASHTO_3_7_1_NIVEL_DE_DISENO = _cita(
+    id="AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="3.7.1",
+    titulo_numeral="Static Pressure",
+    pagina_impresa="3-45",
+    pagina_pdf=99,
+    texto_literal=Verbatim(
+        texto=("Design water levels for various limit states shall be as "
+               "specified and/or approved by the Owner."),
+        pagina_pdf=99),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("MP.2.4.3.8.1#NIVEL_DE_DISENO",),
+    sesion=VE2,
+    nota=("El gemelo del Manual de Puentes, en la misma pagina que la "
+          "subpresion de 3.7.2 («acting on all components below design "
+          "water level»). El 12.6.2.3 de la Sec. 12 nombra el nivel con "
+          "otras palabras --«the highest anticipated groundwater level»-- "
+          "y tampoco da su cota: la da el estudio del sitio, o la adopta "
+          "el proyecto."),
+)
+
+
+# LA DENSIDAD SUMERGIDA, que el Manual exige para el empuje LATERAL del suelo
+# bajo el freatico. V7 la aplica POR ANALOGIA [N->] al peso VERTICAL del
+# relleno que queda bajo el nivel de agua de diseño cuando
+# 'nivel_agua_diseno_v7' declara un nivel sobre la clave
+# (`M8.peso_relleno_bajo_el_nivel_kn_m`): la frase no habla de cargas
+# verticales, y por eso es analogia declarada y no lectura directa.
+MP_SUELO_SUMERGIDO = _cita(
+    id="MP.2.4.4.1.3#SUMERGIDO",
+    fuente_id="MP",
+    numeral="2.4.4.1.3",
+    titulo_numeral="Presencia de Agua",
+    pagina_impresa="133",
+    pagina_pdf=134,
+    texto_literal=Verbatim(
+        texto=("Para determinar el empuje lateral del suelo debajo del nivel "
+               "freático se deberán utilizar las densidades del suelo "
+               "sumergido."),
+        pagina_pdf=134),
+    caracter=Caracter.EXIGENCIA,
+    corresponde_en=("AASHTO_LRFD_9.3.11.3",),
+    sesion=VE2,
+    nota=("Tercer parrafo del num. 2.4.4.1.3 (3.11.3 AASHTO; el gemelo es "
+          "`AASHTO_LRFD_9.3.11.3`). Su ambito es el EMPUJE LATERAL del suelo "
+          "detras de un muro. Para el peso del prisma de relleno que "
+          "estabiliza al conducto en V7 no hay frase: aplicarle la densidad "
+          "sumergida es ANALOGIA [N->] del proyecto, y va del lado "
+          "conservador (el relleno sumergido pesa menos y sujeta menos)."),
+)
+
 
 # ===========================================================================
 # --- VE-2 (a) y (g) --- Las citas de las dos decisiones de MATERIALES de la

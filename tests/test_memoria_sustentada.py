@@ -508,6 +508,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # cinco del cajon: `test_M5_verificaciones::test_la_eleccion_de_fila_
         # de_V7_sale_de_su_fundamento_y_lista_las_siete` ejecuta V7 y lo mide.
         "F5.V7_FILA",
+        # --- VE-2 (c2) --- La eleccion del nivel de agua de diseño viaja en
+        # el MISMO paso de V7, como la de la fila: misma razon. Que el
+        # cableado existe lo mide `tests/test_ve2_flotacion.py` (la eleccion
+        # con `clave_criterio` = 'nivel_agua_diseno_v7' en las dos reglas).
+        "F5.V7_NIVEL",
         # --- T-7b --- V5, V8 Y EL ENSAMBLE DE ESTABILIDAD. F5.V5 y F5.V8
         # dejaron de ser huecos (tienen metodo y paso), pero su metodo y su
         # umbral son DECLARABLES y no tienen valor de archivo -- decision del

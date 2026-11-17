@@ -701,6 +701,12 @@ PERFIL_SIN_VALOR_QUE_ESPERA_UNA_ENTRADA = {
         "cota_TW, sin Q_receptor_m3s, sin seccion medida y con "
         "seccion_receptor vacio (`servicio.tw_sin_via_de_sec_1_3`)--; con la "
         "seccion de archivo de seccion_receptor nunca se lee"),
+    # --- VE-2 (c2) ---
+    "margen_estacional_nf_v7_m": (
+        "el estudio geotecnico: el ascenso estacional del freatico sobre la "
+        "lectura de NF_profundidad_m (solo lo lee V7 con "
+        "'nivel_agua_diseno_v7' = 'nf_del_punto'; con el valor de archivo, "
+        "'en_la_clave', nunca se lee)"),
 }
 
 

@@ -191,6 +191,7 @@ línea que se pueda romper.
 | `AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | exigencia | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS` | 3.6.1.2.6a | «3.6.1.2.6a—General» | pág. impresa **3-26** · PDF 80 | permiso | 2026-11-12 · texto |
 | `AASHTO_LRFD_9.3.6.1.2.6b#PL` | 3.6.1.2.6b | «3.6.1.2.6b—Traffic Parallel to the Culvert Span» | pág. impresa **3-28** · PDF 82 | exigencia | 2026-11-12 · texto |
+| `AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO` | 3.7.1 | «Static Pressure» | pág. impresa **3-45** · PDF 99 | exigencia | 2026-11-17 · texto |
 | `AASHTO_LRFD_9.3.7.2` | 3.7.2 | «Buoyancy» | pág. impresa **3-45** · PDF 99 | exigencia | 2026-08-28 · texto |
 | `AASHTO_LRFD_9.5.10.1` | 5.10.1 | «Concrete Cover» | pág. impresa **5-167** · PDF 526 | exigencia | 2026-08-28 · ambos |
 | `AASHTO_LRFD_9.5.10.1#ESTRIBOS` | 5.10.1 | «Concrete Cover» | pág. impresa **5-168** · PDF 527 | permiso | 2026-08-28 · ambos |
@@ -425,6 +426,8 @@ línea que se pueda romper.
 > **`AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS`** — La segunda mitad del permiso de #DESPRECIABLE: en una alcantarilla de VARIOS vanos la condicion no es la luz de un vano sino la distancia entre las caras interiores de los muros extremos. El marco de varias celdas la usa (`M8.demanda_marco`); el permiso solo se toma si 'carga_viva_bajo_relleno_alto' lo declara.
 
 > **`AASHTO_LRFD_9.3.6.1.2.6b#PL`** — Las ecuaciones 3.6.1.2.6b-1 a -7 (pags. 3-27 y 3-28) se leyeron renderizadas: H_int-t = (s_w - w_t/12 - 0.06 D_i/12)/LLDF; w_w = w_t/12 + LLDF(H) + 0.06 D_i/12 (mas s_w si H >= H_int-t); H_int-p = (s_a - l_t/12)/LLDF; l_w = l_t/12 + LLDF(H) (mas s_a si H >= H_int-p); P_L = P(1 + IM/100)(m)/A_LL. La ec. -1 escribe D_j y la lista de simbolos D_i: errata tipografica de la fuente, el simbolo es el mismo. Las cifras en pulgadas y pies se convierten a SI una sola vez (constantes_fisicas).
+
+> **`AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO`** — El gemelo del Manual de Puentes, en la misma pagina que la subpresion de 3.7.2 («acting on all components below design water level»). El 12.6.2.3 de la Sec. 12 nombra el nivel con otras palabras --«the highest anticipated groundwater level»-- y tampoco da su cota: la da el estudio del sitio, o la adopta el proyecto.
 
 > **`AASHTO_LRFD_9.3.7.2`** — «all components below design water level»: el mismo ambito neutro que el numeral peruano. Es DEFINITORIA de la fuerza; quien pone la condicion de disparo para una estructura enterrada es el 12.6.1, que remite aqui expresamente.
 
@@ -1515,7 +1518,9 @@ línea que se pueda romper.
 | `MP.2.4.3.2.2.5` | 2.4.3.2.2.5 | «Área de Contacto de los Neumáticos» | pág. impresa **104** · PDF 105 | definicion | 2026-11-12 · texto |
 | `MP.2.4.3.2.2.6` | 2.4.3.2.2.6 | «Presencia Múltiple de Sobrecargas» | pág. impresa **105** · PDF 106 | exigencia | 2026-11-12 · texto |
 | `MP.2.4.3.3.2` | 2.4.3.3.2 | «Componentes Enterrados» | pág. impresa **109** · PDF 110 | exigencia | 2026-11-12 · texto |
+| `MP.2.4.3.8.1#NIVEL_DE_DISENO` | 2.4.3.8.1 | «Presión Hidrostática» | pág. impresa **113** · PDF 114 | exigencia | 2026-11-17 · texto |
 | `MP.2.4.3.8.2` | 2.4.3.8.2 | «Subpresiones» | pág. impresa **113** · PDF 114 | exigencia | 2026-08-28 · texto |
+| `MP.2.4.4.1.3#SUMERGIDO` | 2.4.4.1.3 | «Presencia de Agua» | pág. impresa **133** · PDF 134 | exigencia | 2026-11-17 · texto |
 | `MP.2.4.4.1.5.3` | 2.4.4.1.5.3 | «Coeficiente de Empuje Lateral Activo, ka» | pág. impresa **135** · PDF 136 | permiso | 2026-09-20 · texto |
 | `MP.2.4.5.2#EV` | 2.4.5.2 | «Cargas y Denominación de las Cargas» | pág. impresa **140** · PDF 141 | definicion | 2026-08-28 · texto |
 | `MP.2.4.5.3.1#MINIMO` | 2.4.5.3.1 | «Factores de Carga y Combinaciones de Carga» | pág. impresa **142** · PDF 143 | exigencia | 2026-08-28 · texto |
@@ -1553,7 +1558,11 @@ línea que se pueda romper.
 
 > **`MP.2.4.3.3.2`** — Sigue la ec. 2.4.3.3.2-1 (3.6.2.2-1 AASHTO): IM = 33(1.0 - 0.125 D_E) >= 0 %, con «D_E = profundidad mínima de la cubierta de tierra sobre la estructura (ft)». El Manual conserva los PIES: la pendiente en SI es 0.125/0.3048 por metro (IM_ENTERRADO_PENDIENTE_SI).
 
+> **`MP.2.4.3.8.1#NIVEL_DE_DISENO`** — Tercer parrafo del num. 2.4.3.8.1 «Presión Hidrostática» (3.7.1 AASHTO), en la MISMA pagina que la subpresion de 2.4.3.8.2, que remite a este articulo. Es EXIGENCIA sobre QUIEN fija el nivel, no sobre cual es: el Manual no da ningun nivel de agua de diseño para una alcantarilla enterrada. Por eso el nivel con que V7 evalua la flotacion es una adopcion [A] del proyecto en el sitio de la decision del Propietario ('nivel_agua_diseno_v7', desde VE-2), y la lectura del primer parrafo («las condiciones de aguas máximas y aguas mínimas», de pilares y partes del puente) no se traslada al conducto.
+
 > **`MP.2.4.3.8.2`** — SU AMBITO ES NEUTRO RESPECTO DE LA FORMA y por eso el marco entra DIRECTO, sin analogia que declarar: dice «todos los componentes de la estructura», no «la tuberia». DEFINE LA FUERZA U y nada mas: no fija estado limite, ni combinacion, ni criterio de aceptacion. La desigualdad que V7 evalua NO sale de aqui -- ver el `por_que` de F5.V7 --. El «2.4.3.8.1» al que remite es el empuje hidrostatico general, del que esta es la componente vertical.
+
+> **`MP.2.4.4.1.3#SUMERGIDO`** — Tercer parrafo del num. 2.4.4.1.3 (3.11.3 AASHTO; el gemelo es `AASHTO_LRFD_9.3.11.3`). Su ambito es el EMPUJE LATERAL del suelo detras de un muro. Para el peso del prisma de relleno que estabiliza al conducto en V7 no hay frase: aplicarle la densidad sumergida es ANALOGIA [N->] del proyecto, y va del lado conservador (el relleno sumergido pesa menos y sujeta menos).
 
 > **`MP.2.4.4.1.5.3`** — ES COULOMB (3.11.5.3 AASHTO): ka = sen²(θ + φ'f) / [r·sen²θ·sen(θ − δ)], con r = [1 + √(sen(φ'f + δ)·sen(φ'f − β) / (sen(θ − δ)·sen(θ + β)))]², ecs. 2.4.4.1.5.3-1 y -2 (PDF 136); la simbologia (Figura 2.4.4.1.5.3-1, «empuje activo de Coulomb») y la Tabla 2.4.4.1.5.3-1 de δ estan en la PDF 137 (pag. impresa 136). θ es el angulo de la cara posterior del muro con la HORIZONTAL y β el del relleno con la horizontal: en la formulacion de M9 (Mononobe-Okabe con k_h = k_v = 0) el trasdos se mide desde la VERTICAL (β_M9 = 90° − θ) y el talud del relleno es i (= β del Manual); la identidad entre las dos escrituras es exacta y la recalcula el bloque __main__ de tests/fixtures/casos_patron.py (CP-9, bloque C). Con θ = 90°, δ = 0 y β = 0 se reduce a tan²(45 − φ/2), la forma que la v8 §9.2 escribia (DIS-HR-KA-COULOMB, resuelta en EXT-0). El «se puede tomar» es PERMISO: la fuente ofrece la expresion, no la impone; el proyecto la adopta como coeficiente estatico por homogeneidad con el sismico (EXT-M-06).
 
@@ -3066,8 +3075,9 @@ recomienda.
 | `F5.V4b` | Fase 5 - Verificaciones | V4b - Carga relativa HW/D frente al tope adoptado por el proyectista | **define** | `HDS5_3ED.2.2.5d#AGENCIAS`, `HDS5_3ED.2.2.5#EMBALSE` |
 | `F5.V5` | Fase 5 - Verificaciones | V5: el embalse aguas arriba frente al derecho de via, por el metodo declarado (cota de afectacion o embalse a nivel) | **define** | `HDS5_3ED.2.2.5#EMBALSE`, `HDS5_3ED.2.2.5#NO_EXCEDER`, `HDS5_3ED.2.2.5a#COTA_DE_DANO`, `DG2018.304.07.01`, `DG2018.304.07.02`, `DG2018.304.07.02#INCREMENTO` |
 | `F5.V6` | Fase 5 - Verificaciones | V6 - Seccion unica cuando el cauce arrastra material solido: numero de celdas del conducto | **recomienda** | `MC_HHD.4.1.1.3.4a#MULTIPLES` |
-| `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
+| `F5.V7` | Fase 5 - Verificaciones | V7 - Flotacion del conducto vacio bajo el nivel freatico | **obliga** | `MP.2.4.3.8.2`, `MP.2.4.3.8.1#NIVEL_DE_DISENO`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `AASHTO_LRFD_9.3.7.2`, `MP.2.4.5.3.1#MINIMO`, `AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX`, `MP.2.4.5.2#EV`, `AASHTO_LRFD_9.C12.6.2.3`, `MP.T2.4.5.3.1-1`, `MP.T2.4.5.3.1-2` |
 | `F5.V7_FILA` | Fase 5 - Verificaciones | Fila de gamma_p de la Tabla 2.4.5.3.1-2 que describe a esta estructura | **define** | `MP.2.4.5.2#EV`, `MP.T2.4.5.3.1-2` |
+| `F5.V7_NIVEL` | Fase 5 - Verificaciones | Nivel de agua de diseño de la flotacion: lo especifica o aprueba el Propietario | **obliga** | `MP.2.4.3.8.1#NIVEL_DE_DISENO`, `AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO`, `AASHTO_LRFD_9.12.6.1#FLOTACION`, `AASHTO_LRFD_9.12.6.2.3#UPLIFT`, `MP.2.4.4.1.3#SUMERGIDO`, `AASHTO_LRFD_9.3.11.3` |
 | `F5.V8` | Fase 5 - Verificaciones | V8: nivel del embalse con el caudal del evento extremo frente a la cota de desborde de la plataforma | **permite** | `HDS5_3ED.2.2.5a#COTA_CRITICA` |
 | `F5.V9` | Fase 5 - Verificaciones | V9 - Seccion requerida frente al tope de la serie de su material | **define** | `AASHTO_M170M.T1_T5#DIAMETROS`, `AASHTO_M170M.7.2.1`, `AASHTO_M36.T6` |
 | `F5.VC1` | Fase 5 - Verificaciones | VC1 - Cruce de canal: el agua embalsada a la entrada no llega a la coronacion del canal, con su borde libre | **recomienda** | `MC_HHD.4.1.1.4.1e`, `MC_HHD.4.1.1.4.1e#RANGO` |
@@ -3297,7 +3307,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 512.
+Citas sin firma de verificación: **6** de 515.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

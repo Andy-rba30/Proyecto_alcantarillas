@@ -1056,8 +1056,12 @@ def test_la_eleccion_de_fila_de_V7_sale_de_su_fundamento_y_lista_las_siete(
     v = v7_flotacion(punto=_punto(), material=concreto,
                      seccion=SeccionCircular(D=0.90), resultado=_resultado())
     # Dos elecciones desde T-4: la de la fila de gamma_p y la del espesor que
-    # separa el diametro hidraulico del exterior (F3.D_EXTERIOR).
-    e, e_espesor = v.paso.elecciones
+    # separa el diametro hidraulico del exterior (F3.D_EXTERIOR). Y TRES desde
+    # VE-2 (c2), declarado: la tercera es la del nivel de agua de diseño
+    # ('nivel_agua_diseno_v7', F5.V7_NIVEL), que la norma deja al Propietario.
+    e, e_espesor, e_nivel = v.paso.elecciones
+    assert e_nivel.fundamento_id == "F5.V7_NIVEL"
+    assert e_nivel.clave_criterio == "nivel_agua_diseno_v7"
     assert e_espesor.fundamento_id == "F3.D_EXTERIOR"
     assert e_espesor.clave_criterio == "espesor_pared_conducto"
 
@@ -1117,8 +1121,9 @@ def test_la_fila_de_gamma_p_de_un_marco_es_la_de_porticos_rigidos(monkeypatch):
     assert por_simbolo["B'c"] == pytest.approx(1.80, rel=REL_TRANSPORTE)
     # El numero coincide -- por eso hacia falta mirar la fila.
     assert g_marco.gamma_EV == pytest.approx(g_tubo.gamma_EV, rel=REL_TRANSPORTE)
-    # Y la memoria del marco imprime SU fila, no la del tubo.
-    e, e_espesor = v.paso.elecciones
+    # Y la memoria del marco imprime SU fila, no la del tubo. (La tercera
+    # eleccion, desde VE-2, es la del nivel de agua de diseño.)
+    e, e_espesor, _e_nivel = v.paso.elecciones
     assert "Pórticos rígidos" in str(e.valor)
     assert e_espesor.clave_criterio == "espesor_pared_cajon"
 

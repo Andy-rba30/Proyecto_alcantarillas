@@ -789,10 +789,16 @@ _COLUMNAS: Dict[str, _Columna] = {
         # lee (`M8.empuje_flotacion_kn_m`). Es el texto del pre-vuelo y de la
         # ayuda: corto, con la discrepancia de la hoja de ruta en una frase y
         # el detalle en la ficha VE1-01.
+        # --- VE-2 (c2) --- Desde VE-2 V7 la lee, pero SOLO con la alternativa
+        # 'nf_del_punto' de 'nivel_agua_diseno_v7' (`M8.cota_nivel_agua_v7_
+        # del_nf`); con el valor de archivo, no. Las dos cosas en el texto, y
+        # la discrepancia de la hoja de ruta (§1.2: «la lee V7», sin esa
+        # condicion) sigue en la ficha VE1-01.
         concepto="Profundidad del nivel freatico bajo el terreno natural en "
-                 "el cruce. La leen la estabilidad del cabezal (Fase 9) y la "
-                 "presion del agua sobre un TMC o un HDPE (Fase 8). La hoja "
-                 "de ruta (§1.2) dice que la lee V7; no la lee: ficha VE1-01",
+                 "el cruce. La leen el cabezal (Fase 9), la presion del agua "
+                 "sobre un TMC o un HDPE (Fase 8) y V7 solo con "
+                 "'nivel_agua_diseno_v7' = 'nf_del_punto', no con el de "
+                 "archivo: fichas VE2-C y VE1-01",
         unidad="m",
         resolucion=DeEnsayo(
             ensayo="medicion del nivel freatico en la calicata o el "
@@ -804,7 +810,11 @@ _COLUMNAS: Dict[str, _Columna] = {
         ),
         nota="Es la unica columna que no viene del encabezado de Sec. 1.2: se "
              "agrego al reclasificar el nivel freatico, que era un criterio "
-             "unico de proyecto (1.4 m) y se MIDE en cada cruce.",
+             "unico de proyecto (1.4 m) y se MIDE en cada cruce. Es una "
+             "LECTURA de campo y no necesariamente el freatico mas alto "
+             "previsto (AASHTO 12.6.2.3): por eso V7, cuando la lee, le suma "
+             "el ascenso estacional 'margen_estacional_nf_v7_m' [A], sin "
+             "valor, que la detiene hasta que se declare (VE-2).",
     ),
 }
 
@@ -1673,6 +1683,18 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "nivel_significancia_ks": _Meta(unidad="- (probabilidad)"),
     "peso_especifico_concreto_kn_m3": _Meta(unidad="kN/m3"),
     "peso_especifico_relleno_kn_m3": _Meta(unidad="kN/m3"),
+    # --- VE-2 (c2) --- el nivel de agua de diseño de V7 y el ascenso
+    # estacional que su alternativa suma a la lectura del freatico.
+    "nivel_agua_diseno_v7": _Meta(
+        unidad="-",
+        nota="Categoria: 'en_la_clave' (archivo: sumergido entero) o "
+             "'nf_del_punto' (cota_terreno - NF_profundidad_m + "
+             "'margen_estacional_nf_v7_m'). La fija el Propietario (Manual "
+             "de Puentes 2.4.3.8.1)"),
+    "margen_estacional_nf_v7_m": _Meta(
+        unidad="m",
+        nota="Solo con 'nivel_agua_diseno_v7' = 'nf_del_punto'. >= 0: lo "
+             "que el freatico sube entre la lectura y su nivel mas alto"),
     "phi_relleno_trasdos": _Meta(unidad="grados"),
     "predimensionamiento_cabezal": _Meta(unidad="m y adimensional (reglas)"),
     "procedimiento_flexion_corte_aashto_sec5": _Meta(unidad="-"),

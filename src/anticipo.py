@@ -63,6 +63,7 @@ from src.modelos import ErrorProyecto, Familia, VacioAdmitido
 # Por el modulo y no por el valor, por la razon escrita en `ayuda_entrada.py`:
 # un `from ... import COLUMNAS` copia la tupla y la deja leyendo una foto.
 from src.modulos import M0_carga as m0
+from src.modulos import M8_estructural as M8
 
 # La linea fija del panel (regla dura de G3). La palabra «estimacion» no es
 # opcional: el proyecto distingue estimaciones de medidas y esta es una
@@ -427,10 +428,31 @@ def _grupos_que_admiten(columna: str, familia: Optional[Familia]) -> Tuple[Vacio
                  if columna in v.columnas and v.alcanza_a(familia))
 
 
+# --- VE-2 (c2) --- EL CONSUMO CONDICIONAL DE UNA COLUMNA. El censo de
+# `variables_entrada` es estatico: le encuentra a 'NF_profundidad_m' a V7
+# (M5, por `M8.cota_nivel_agua_v7_del_nf`), y V7 solo la lee si
+# 'nivel_agua_diseno_v7' declara «nf_del_punto». Con el valor de archivo
+# («en_la_clave») esos dos modulos no cuentan como consumidores, y la columna
+# vacia sigue ESPERANDO al EMS a nivel de perfil; con la alternativa, la
+# EXIGE V7 en los dos alcances. La pregunta la contesta M8 sin registrar el
+# uso del criterio (`M8.v7_lee_el_nivel_freatico`): el pre-vuelo no corre el
+# calculo.
+_CONSUMO_CONDICIONAL = {
+    "NF_profundidad_m": (("M5_verificaciones", "M8_estructural"),
+                         M8.v7_lee_el_nivel_freatico),
+}
+
+
 def _consumidores_de_calculo(clave: str, alcance: str) -> Tuple[str, ...]:
     diferidos = set(servicio.MODULOS_DIFERIDOS_POR_ALCANCE.get(alcance, ()))
+    inactivos: Tuple[str, ...] = ()
+    if clave in _CONSUMO_CONDICIONAL:
+        modulos, lo_lee = _CONSUMO_CONDICIONAL[clave]
+        if not lo_lee():
+            inactivos = modulos
     return tuple(m for m in _ve.variable(clave).consumido_por
-                 if m not in _LECTORES_SIN_CALCULO and m not in diferidos)
+                 if m not in _LECTORES_SIN_CALCULO and m not in diferidos
+                 and m not in inactivos)
 
 
 def _aplica(clave: str, familia: Optional[Familia]) -> bool:

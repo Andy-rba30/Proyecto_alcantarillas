@@ -39,7 +39,14 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
          `verificaciones_estructurales()` (Fase 5, codigos F8.*) y
          `seleccionar_clase_calibre()` (etapa de la Fase 8).
 
-    3    Flotacion (V7), obligatoria con NF a 1.4 m.
+    3    Flotacion (V7), «obligatoria con NF a 1.4 m» en la letra de la
+         hoja de ruta. LA OBLIGACION NO SALE DE ESE NF (VE-2, c1): el NF ya
+         no es un valor unico de proyecto sino la columna 'NF_profundidad_m'
+         de cada cruce, y lo que obliga a verificar la flotacion es AASHTO
+         LRFD 12.6.1 y 12.6.2.3 con la subpresion del Manual de Puentes
+         2.4.3.8.2; ver «Por que U asume sumersion completa». La discrepancia
+         se reporta contra la hoja de ruta en la ficha VE2-C de
+         `docs/decisiones_diferidas.md`.
          `empuje_flotacion_kn_m()`, `peso_relleno_kn_m()` y
          `factores_carga_flotacion()` -- SI implementadas: son las piezas
          del EQUILIBRIO DE FACTORES DE CARGA LRFD que
@@ -118,6 +125,16 @@ trae hoy la serie de concreto reforzado, 0.100 a 0.250 m de 900 a 2700 mm; para
 los demas materiales no trae fila y `M2.espesor_pared` levanta DatoFaltanteError).
 Lo segundo NO lo declara nadie, de modo que sumar DC seguiria exigiendo inventar
 un dato -- la densidad --, y la conclusion no cambia.
+LO QUE LA NORMA ADMITIRIA, dicho para que DC = 0 se lea como lo que es (VE-2,
+c1): el num. 2.4.5.3.1 del Manual de Puentes (pag. impresa 142) manda
+investigar el factor MINIMO de la carga permanente que aumenta la estabilidad,
+y la Tabla 2.4.5.3.1-2 (pag. impresa 143) le da a «DC: Componentes y
+Auxiliares» un minimo de 0.90; el lado estabilizante podria llevar 0.90·DC.
+Omitirlo esta del lado seguro frente a esa suma, y es ademas la forma que el
+comentario C12.6.2.3 de AASHTO describe: «the dead load on the crown of the
+structure should exceed the buoyancy of the culvert» -- el peso SOBRE la
+clave contra el empuje, sin el peso propio --, que es comentario y dice
+`should`, de modo que sostiene la forma y no la exigencia.
 ESTE PARRAFO DECIA que el espesor estaba «hoy sin valor», que ademas se
 contradecia con el «ya esta declarado» de la misma linea. El que falta es el
 otro. Omitirlo es la alternativa conservadora, NO una
@@ -136,20 +153,45 @@ Solamente", es de una combinacion que Sec. 9.2 no nombra.
 Por que U asume sumersion completa
 -------------------------------------
 La fila V7 de la Fase 5 fija la hipotesis de calculo: "tuberia vacia, NF en
-su cota mas alta". Con el NF somero de la llanura del Bajo Piura y sin una
-columna de invert real en el CSV (Sec. 1.2 -- misma limitacion que
-`M5_verificaciones.cota_de_entrada`), la lectura conservadora de "NF en
-su cota mas alta" es sumersion completa del conducto, no una geometria de
-sumersion parcial contra una cota de invert supuesta. Nunca subestima el
-empuje.
+su cota mas alta". CUAL ES ESA COTA NO LA FIJA LA NORMA, y eso es lo que este
+apartado tiene que decir (VE-2, c1). El Manual de Puentes, num. 2.4.3.8.1
+(pag. impresa 113): «Los niveles de agua de diseño para los diferentes estados
+límites serán los especificados y/o aprobados por el Propietario» (AASHTO LRFD
+3.7.1, pag. 3-45, igual); la subpresion del num. 2.4.3.8.2, en la misma
+pagina, actua sobre lo que esta «debajo del nivel de agua de diseño»; y AASHTO
+12.6.2.3 manda considerar el levantamiento «below the highest anticipated
+groundwater level» sin dar su cota. Sumergir el conducto entero --el nivel de
+agua de diseño en la clave-- es por eso una ADOPCION [A] del proyecto en el
+sitio de la decision del Propietario, y es la conservadora: sumergido entero
+el conducto desplaza todo su volumen, y ningun nivel mas bajo daria mas
+empuje. Nunca subestima el empuje.
 
-Por eso U NO depende del valor del NF: la hipotesis es sumersion completa, y
-sumergido del todo el conducto desplaza su volumen entero este el freatico a
-1.4 m o a 0.8 m. El NF de cada cruce llega hoy por la columna
-'NF_profundidad_m' del CSV (dato de sitio [S] que se mide punto a punto, ya
-no un criterio unico de proyecto), y lo que si lo usa es la subpresion del
-cabezal en M9. Que U no lo lea es la razon de que V7 siga siendo calculable
-en un punto cuyo NF todavia no ha medido el estudio geotecnico.
+HASTA VE-2 ESTE APARTADO SE APOYABA EN EL SITIO: «con el NF somero de la llanura
+del Bajo Piura», un argumento que la norma no usa y que no es portable a otra
+obra (en un cruce con el freatico a 10 m, V7 descarta igual). Se reemplazo; la
+falta de una columna de invert real en el CSV (Sec. 1.2, la misma limitacion
+de `M5_verificaciones.cota_de_entrada`) sigue siendo cierta, y es una razon
+mas para no construir una sumersion parcial contra una cota supuesta.
+
+Por eso, CON EL VALOR DE ARCHIVO, U NO depende del valor del NF: la hipotesis
+es sumersion completa, y sumergido del todo el conducto desplaza su volumen
+entero este el freatico a 1.4 m o a 0.8 m. El NF de cada cruce llega hoy por
+la columna 'NF_profundidad_m' del CSV (dato de sitio [S] que se mide punto a
+punto, ya no un criterio unico de proyecto), y lo que si lo usa es la
+subpresion del cabezal en M9. Que U no lo lea es la razon de que V7 siga
+siendo calculable en un punto cuyo NF todavia no ha medido el estudio
+geotecnico.
+
+DESDE VE-2 (c2) EL NIVEL SE PUEDE DECLARAR, porque la eleccion es del
+Propietario y no del programa: 'nivel_agua_diseno_v7' [A] vale «en_la_clave»
+en el archivo -- lo de este apartado, sin cambiar un bit -- y admite
+«nf_del_punto», que lee la columna del cruce y le suma el ascenso estacional
+'margen_estacional_nf_v7_m' [A] (sin valor: una lectura de campo no es el
+freatico mas alto previsto de 12.6.2.3). Con esa alternativa V7 se evalua
+solo si el fondo exterior queda bajo el nivel (12.6.1; si no, «no aplica»),
+U es la del area exterior bajo el nivel (`empuje_flotacion_bajo_el_nivel_kn_m`)
+y el relleno bajo el agua pesa sumergido (`peso_relleno_bajo_el_nivel_kn_m`).
+Ver `cota_nivel_agua_v7_del_nf` y la ficha VE2-C.
 
 Excepciones
 -----------
@@ -160,15 +202,22 @@ Excepciones
                              modulos.M5_verificaciones.v7_flotacion).
                              'factores_carga_aashto' ya no esta vacio ([A]:
                              la eleccion de fila de gamma_p por estructura).
+                             (VE-2) Con 'nivel_agua_diseno_v7' =
+                             «nf_del_punto»: 'margen_estacional_nf_v7_m', y
+                             con el nivel sobre la clave
+                             'peso_especifico_saturado_relleno_kn_m3'.
     DatoInvalidoError        la eleccion de 'factores_carga_aashto' no cubre
                              el material del punto, nombra una fila que no
                              esta en la Tabla 2.4.5.3.1-2, o nombra una cuyo
                              extremo la fuente declara N/A; un paquete
                              estructural negativo (rasante bajo subrasante).
+                             (VE-2) Un margen estacional negativo, o un peso
+                             saturado que no supera al del agua.
     DatoFaltanteError        (T-5) la D-load de una clase de M 170M que el
                              ejemplar no deja leer; la resistencia de una
                              costura empernada; el perfil de un HDPE que la
-                             Tabla A12-11 no trae.
+                             Tabla A12-11 no trae. (VE-2) Con «nf_del_punto»,
+                             la columna 'NF_profundidad_m' vacia.
     MetodoNoEvaluableError   (T-5) relleno fuera del dominio de la carga viva
                              de AASHTO LRFD 3.6.1.2.6 (menos de 2.0 ft sobre
                              concreto o marco, 1.0 ft o menos sobre un
@@ -209,7 +258,8 @@ from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, CIFRAS_MAGNITUD,
                          Material, MetodoNoEvaluableError,
                          MOTIVO_METODO_NO_EVALUABLE_ESTRUCTURAL, PasoDeMemoria,
                          PuntoCritico, ReferenciaNormativa,
-                         ResultadoEstructural, Seccion, TipoDeVeredicto,
+                         ResultadoEstructural, Seccion, SeccionCircular,
+                         SeccionRectangular, TipoDeVeredicto,
                          TipoMaterial, Umbral, Verificacion, Veredicto, paso)
 from src.modulos.M2_material import espesor_pared, numero_de_celdas
 from src.tolerancias import (TOL_BRENT, TOL_UMBRAL_NORMATIVO,
@@ -309,6 +359,13 @@ def empuje_flotacion_kn_m(*, seccion: Seccion, espesor: float) -> float:
 
         U = gamma_agua * area_exterior
 
+    EL NIVEL EN LA CLAVE ES UNA ADOPCION, NO UNA LECTURA (VE-2, c1): el nivel
+    de agua de diseño lo especifica o aprueba el Propietario (Manual de
+    Puentes num. 2.4.3.8.1, pag. impresa 113; AASHTO 3.7.1), y el proyecto
+    lo pone en la clave porque sumergido entero el conducto desplaza todo su
+    volumen y ningun nivel mas bajo da mas empuje. Ver «Por que U asume
+    sumersion completa» en el docstring del modulo.
+
     DE DONDE SALE LA OBLIGACION, que hasta C7 no estaba citada: el num.
     2.4.3.8.2 del Manual de Puentes manda considerar la subpresion como una
     fuerza de levantamiento sobre "todos los componentes de la estructura que
@@ -392,6 +449,159 @@ def peso_relleno_kn_m(*, seccion: Seccion, espesor: float,
     """
     gamma_relleno = ca.valor(CRITERIO_PESO_RELLENO)   # CriterioPendienteError mientras falte
     return gamma_relleno * seccion.ancho_exterior(espesor) * altura_relleno
+
+
+# ---------------------------------------------------------------------------
+# --- VE-2 (c2) --- El nivel de agua de diseño de V7, declarable
+# ---------------------------------------------------------------------------
+# El Manual de Puentes, num. 2.4.3.8.1, deja el nivel de agua de diseño al
+# Propietario (cita MP.2.4.3.8.1#NIVEL_DE_DISENO), y hasta VE-2 este modulo lo
+# fijaba sin decirlo: sumersion completa. Hoy lo dice 'nivel_agua_diseno_v7'
+# [A]: «en_la_clave» (archivo) es exactamente lo de antes -- V7 no pasa por
+# ninguna de las funciones de abajo salvo `regla_nivel_agua_v7`, y la linea
+# base no se mueve -- y «nf_del_punto» lee el freatico del cruce.
+CRITERIO_NIVEL_AGUA_V7 = "nivel_agua_diseno_v7"
+NIVEL_V7_EN_LA_CLAVE = "en_la_clave"
+NIVEL_V7_NF_DEL_PUNTO = "nf_del_punto"
+NIVELES_AGUA_V7 = (NIVEL_V7_EN_LA_CLAVE, NIVEL_V7_NF_DEL_PUNTO)
+CRITERIO_MARGEN_NF_V7 = "margen_estacional_nf_v7_m"
+# El MISMO dato de ensayo que el cabezal lee para su relleno bajo el agua
+# (`M9.CRITERIO_GAMMA_SATURADO`): el proyecto usa un solo relleno, y su peso
+# humedo ya es uno solo ('peso_especifico_relleno_kn_m3', que leen V7 y M9).
+CRITERIO_PESO_SATURADO = "peso_especifico_saturado_relleno_kn_m3"
+
+
+def regla_nivel_agua_v7() -> str:
+    """
+    El nivel de agua de diseño con que V7 evalua la flotacion, leido de
+    'nivel_agua_diseno_v7' [A] (registra el uso: la memoria lo imprime).
+
+    Una regla que no es de la ventana no llega aqui por la puerta de los
+    criterios --es una `categoria`--; la guardia de abajo es la segunda
+    linea, para el que monte un `Criterio` por otra via.
+    """
+    regla = ca.valor(CRITERIO_NIVEL_AGUA_V7)
+    if regla not in NIVELES_AGUA_V7:
+        raise DatoInvalidoError(
+            CRITERIO_NIVEL_AGUA_V7, valor=regla,
+            motivo=f"no es una de las reglas implementadas {NIVELES_AGUA_V7}")
+    return regla
+
+
+def v7_lee_el_nivel_freatico() -> bool:
+    """
+    Si V7, con lo que hoy esta declarado, lee la columna 'NF_profundidad_m'.
+    NO registra el uso del criterio: es la pregunta del pre-vuelo
+    (`anticipo.datos_faltantes_por_punto`), que no corre el calculo y no
+    puede ensuciar el registro de la corrida.
+    """
+    regla = ca.criterio_efectivo(CRITERIO_NIVEL_AGUA_V7).valor
+    return regla == NIVEL_V7_NF_DEL_PUNTO
+
+
+def cota_nivel_agua_v7_del_nf(*, punto: PuntoCritico
+                              ) -> Tuple[float, float, float]:
+    """
+    El nivel de agua de diseño de V7 con «nf_del_punto», msnm, y las dos
+    lecturas de las que sale: `(cota, NF_profundidad_m, margen)`.
+
+        cota = cota_terreno - NF_profundidad_m + margen
+
+    El NF se mide bajo el terreno natural del CRUCE (la misma lectura que la
+    Fase 9 hace en `M9.altura_agua_sobre_base`). Es una LECTURA DE CAMPO y
+    no necesariamente el freatico mas alto previsto que AASHTO 12.6.2.3
+    nombra, y por eso se le suma 'margen_estacional_nf_v7_m' [A]: sin valor,
+    `CriterioPendienteError`; nunca 0 por defecto, que seria afirmar sin
+    dato que la lectura ya es el nivel mas alto.
+
+    Se detiene, en este orden: `DatoFaltanteError` sin 'NF_profundidad_m'
+    (la columna admite la celda vacia: la debe el EMS);
+    `CriterioPendienteError` sin el margen; `DatoInvalidoError` con un margen
+    negativo, que bajaria el nivel por debajo de la lectura (la ventana del
+    criterio es simbolica y no lo evalua).
+    """
+    nf = punto.exigir("NF_profundidad_m")
+    margen = ca.valor(CRITERIO_MARGEN_NF_V7)
+    if not margen >= 0:
+        raise DatoInvalidoError(
+            CRITERIO_MARGEN_NF_V7, valor=margen, id_punto=punto.id,
+            motivo="el ascenso estacional del freatico no puede ser negativo: "
+                   "bajaria el nivel de agua de diseño por debajo de la "
+                   "lectura de NF_profundidad_m")
+    return punto.cota_terreno - nf + margen, nf, margen
+
+
+def empuje_flotacion_bajo_el_nivel_kn_m(*, seccion: Seccion, espesor: float,
+                                        altura_agua: float) -> float:
+    """
+    U con el nivel de agua de diseño a `altura_agua` m sobre el fondo
+    EXTERIOR del conducto, kN/m: la sumatoria de las componentes verticales
+    de la presion hidrostatica sobre lo que queda bajo el nivel (Manual de
+    Puentes 2.4.3.8.2), o sea gamma_agua por el AREA EXTERIOR SUMERGIDA.
+
+    Con el nivel en el canto exterior o por encima es `empuje_flotacion_kn_m`
+    -- el mismo numero, por la misma funcion --; por debajo, el area de la
+    MISMA forma con las dimensiones exteriores bajo esa altura: un segmento
+    de circulo (Sec. 4.1, A = (D^2/8)(theta - sen theta), sobre el diametro
+    exterior) o un rectangulo (Bc * h). La geometria no se reescribe: es la
+    de `SeccionCircular.area` y `SeccionRectangular.area`, que son las de la
+    lamina libre, construidas sobre el contorno exterior.
+    """
+    canto = seccion.canto_exterior(espesor)
+    if not altura_agua < canto:
+        return empuje_flotacion_kn_m(seccion=seccion, espesor=espesor)
+    if not altura_agua > 0:
+        return 0.0
+    if isinstance(seccion, SeccionRectangular):
+        exterior = SeccionRectangular(B=seccion.ancho_exterior(espesor),
+                                      H=canto)
+    elif isinstance(seccion, SeccionCircular):
+        exterior = SeccionCircular(D=seccion.ancho_exterior(espesor))
+    else:
+        raise TypeError(f"forma de seccion no implementada: {seccion!r}")
+    return GAMMA_AGUA_KN_M3 * exterior.area(altura_agua)
+
+
+def peso_relleno_bajo_el_nivel_kn_m(*, seccion: Seccion, espesor: float,
+                                    altura_relleno: float,
+                                    altura_sumergida: float
+                                    ) -> Tuple[float, Optional[float]]:
+    """
+    EV con `altura_sumergida` m del relleno sobre la clave bajo el nivel de
+    agua de diseño, kN/m, y el peso saturado con que se peso (None si no
+    hizo falta):
+
+        EV = Bc * [ gamma_r * (H - h_s) + (gamma_sat - gamma_agua) * h_s ]
+
+    con h_s acotada por la altura de relleno H (sobre la subrasante el
+    paquete no entra en EV, como siempre). El relleno bajo el agua pesa
+    SUMERGIDO por ANALOGIA [N->] con el Manual de Puentes 2.4.4.1.3, que
+    exige las densidades del suelo sumergido para el empuje LATERAL bajo el
+    freatico (cita MP.2.4.4.1.3#SUMERGIDO): para el peso vertical que
+    estabiliza el conducto no hay frase, y la analogia va del lado
+    conservador (sujeta menos).
+
+    El saturado es 'peso_especifico_saturado_relleno_kn_m3', dato de ensayo
+    sin valor de archivo: solo se lee si hay relleno bajo el agua (mas que
+    `TOL_UMBRAL_NORMATIVO`, para que el ruido flotante de un nivel en la
+    clave no lo exija) y sin el, `CriterioPendienteError`. Un saturado que
+    no supera al agua daria un peso sumergido nulo o negativo:
+    `DatoInvalidoError`, como en el cabezal.
+    """
+    if not altura_sumergida > TOL_UMBRAL_NORMATIVO:
+        return peso_relleno_kn_m(seccion=seccion, espesor=espesor,
+                                 altura_relleno=altura_relleno), None
+    h_s = min(altura_sumergida, altura_relleno)
+    gamma_relleno = ca.valor(CRITERIO_PESO_RELLENO)
+    gamma_sat = ca.valor(CRITERIO_PESO_SATURADO)   # CriterioPendienteError
+    if not (math.isfinite(gamma_sat) and gamma_sat > GAMMA_AGUA_KN_M3):
+        raise DatoInvalidoError(
+            CRITERIO_PESO_SATURADO, valor=gamma_sat,
+            motivo="tiene que ser mayor que el peso especifico del agua: "
+                   "el relleno bajo el nivel pesa el saturado menos el agua")
+    ancho = seccion.ancho_exterior(espesor)
+    return (ancho * (gamma_relleno * (altura_relleno - h_s)
+                     + (gamma_sat - GAMMA_AGUA_KN_M3) * h_s), gamma_sat)
 
 
 COMBINACION_V7 = "Resistencia I"

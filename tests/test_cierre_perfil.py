@@ -486,6 +486,11 @@ VACIOS_DE_PERFIL_NO_INVOCADOS = [
     # Sigue sin invocarlo esta corrida --el corredor del repositorio (S_cauce
     # 0.006-0.008) queda muy por debajo del S* de cualquier punto (~0.38 con
     # D = 0.90)-- y lo sigue ejercitando `tests/test_pf1_hw_fuera_de_rango.py`.
+    # --- VE-2 (c2) --- El ascenso estacional del freatico sobre la lectura
+    # de NF_profundidad_m: solo lo lee V7 con 'nivel_agua_diseno_v7' =
+    # 'nf_del_punto', que esta corrida no declara (con el valor de archivo,
+    # 'en_la_clave', no se invoca). Lo ejercita `tests/test_ve2_flotacion.py`.
+    "margen_estacional_nf_v7_m",
 ]
 VACIOS_DE_PERFIL_DEL_CAJON = [
     "secciones_cajon_normalizadas",   # la progresion B*H
