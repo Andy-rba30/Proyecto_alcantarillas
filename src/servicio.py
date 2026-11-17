@@ -169,6 +169,7 @@ from src.modulos.M9_cabezal import (CONDICIONES_DE_ESTABILIDAD,
                                     dimensionar_peralte_por_armado,
                                     dimensionar_pantalla_por_armado,
                                     incorporar_pantalla,
+                                    rotular_estabilidad_incompleta,
                                     dimensionar_zapata_por_estabilidad,
                                     ensamble_estabilidad,
                                     incorporar_dimensionado,
@@ -3196,6 +3197,10 @@ def _fase_9(informe: InformePunto,
         informe.cabezal = incorporar_peralte(informe.cabezal, peralte)
     if pantalla is not None:
         informe.cabezal = incorporar_pantalla(informe.cabezal, pantalla)
+    # --- VE-3.14 (H-3) --- un ancho dimensionado sin una condicion de
+    # estabilidad no se rotula «dimensionada por estabilidad».
+    informe.cabezal = rotular_estabilidad_incompleta(informe.cabezal,
+                                                     estabilidades)
     informe.cabezal = integrar_estabilidad(informe.cabezal, estabilidades)
     _fase_9_armado(informe, entornos)
 

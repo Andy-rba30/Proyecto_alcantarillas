@@ -12112,6 +12112,55 @@ CRITERIOS: Dict[str, Criterio] = {
             dominio="m > 0, valor absoluto del desajuste admisible",
         ),
     ),
+
+    "agua_del_relleno_bajo_sismo": Criterio(
+        # --- VE-3.14 (H-3 de los ensayos de diseño del cabezal) --- Hasta
+        # VE-3.14, con agua en el plano de empuje la condicion sismica del
+        # cabezal se detenia sin cifra y el ancho se dimensionaba SIN ella.
+        # NIVEL: el de la Fase 9 (expediente), su unico consumidor
+        # (`M9.cargas_del_cabezal`, condicion sismica con agua).
+        valor="se_mueve_con_el_suelo",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_CATEGORIA,
+        #   se_mueve_con_el_suelo  relleno que no drena libremente (el
+        #       compactado del trasdos): el incremento sismico con el peso
+        #       TOTAL del suelo bajo el agua (C11.6.5.3, primer tratamiento).
+        #   relleno_muy_abierto    pedraplen: peso sumergido mas la presion
+        #       hidrodinamica (Westergaard), que ninguna fuente del
+        #       repositorio da: la condicion sismica se detiene sin cifra.
+        sensibilidad=("se_mueve_con_el_suelo", "relleno_muy_abierto"),
+        concepto="Como se trata el agua del relleno del trasdos bajo sismo: "
+                 "si se mueve con el suelo o, en un relleno muy abierto, no",
+        justificacion="Decide el empuje sismico del cabezal cuando hay agua "
+                      "en el plano de empuje. AASHTO 11.6.5.3 excluye del "
+                      "metodo el relleno saturado Y suelto (que puede "
+                      "licuar), y su comentario C11.6.5.3 (citas "
+                      "AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL y "
+                      "#AGUA_ABIERTO) da los dos tratamientos: con el suelo "
+                      "que no drena libremente, el peso TOTAL, porque suelo "
+                      "y agua se mueven juntos; con un relleno muy abierto "
+                      "(pedraplen), el peso sumergido mas la presion "
+                      "hidrodinamica. El valor de archivo es el primero, que "
+                      "es el del relleno compactado del trasdos que el "
+                      "proyecto especifica; el segundo detiene la condicion "
+                      "sismica con «metodo no evaluable», porque la formula "
+                      "de Westergaard no esta en ninguna fuente del "
+                      "repositorio de normas y no se inventa",
+        fuente="AASHTO LRFD 9a ed., 11.6.5.3 y C11.6.5.3, pags. impresas "
+               "11-29 a 11-32 (PDF 1498 a 1501; citas "
+               "AASHTO_LRFD_9.11.6.5.3#VALIDEZ, "
+               "AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL y "
+               "AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO)",
+        reemplazado_por="Especificacion del material del relleno del trasdos "
+                        "(granulometria y permeabilidad) en los planos y en "
+                        "las especificaciones tecnicas",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el material del relleno que "
+                        "especifica",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
 }
 
 

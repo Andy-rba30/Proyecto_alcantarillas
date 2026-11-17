@@ -1506,6 +1506,8 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "marco_estabilidad_cabezal": _Meta(unidad="-"),
     "fila_phi_estabilidad_cabezal": _Meta(unidad="-"),
     "drenaje_trasdos": _Meta(unidad="-"),
+    # --- VE-3.14 --- el agua del relleno bajo sismo (la consume M9, Fase 9).
+    "agua_del_relleno_bajo_sismo": _Meta(unidad="-"),
     "peso_especifico_saturado_relleno_kn_m3": _Meta(unidad="kN/m3"),
     "fraccion_delta_sobre_phi_trasdos": _Meta(unidad="- (fraccion de phi)"),
     "regla_pendiente_relleno_trasdos": _Meta(unidad="-"),

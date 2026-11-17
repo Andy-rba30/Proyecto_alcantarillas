@@ -1196,14 +1196,25 @@ def test_drenado_con_freatico_alto_solo_moja_hasta_el_nivel_natural(tanteo):
 
 
 def test_con_agua_en_el_plano_de_empuje_el_sismo_no_se_evalua(tanteo):
-    """AASHTO 11.6.5.3: Mononobe-Okabe solo con el relleno no saturado."""
+    """
+    CAMBIADO DECLARANDOLO (VE-3.14, H-3 de los ensayos de diseño del
+    cabezal): con agua en el plano de empuje el sismo se EVALUA con el peso
+    total bajo el agua (C11.6.5.3, 'agua_del_relleno_bajo_sismo' [C] de
+    archivo); la detencion queda para el relleno declarado muy abierto, cuya
+    presion hidrodinamica (Westergaard) no esta en el repositorio.
+    """
     ca.establecer_valor_dinamico("drenaje_trasdos", "sin_drenaje")
     with con_valor("peso_especifico_saturado_relleno_kn_m3", 20.0,
                    motivo="dato de ensayo de prueba"):
-        with pytest.raises(MetodoNoEvaluableError) as exc:
-            M9.ensamble_estabilidad(tanteo, SIS)
+        e = M9.ensamble_estabilidad(tanteo, SIS)
+        assert e.K_AE is not None
+        with con_valor("agua_del_relleno_bajo_sismo", "relleno_muy_abierto",
+                       motivo="la rama que se sigue deteniendo"):
+            with pytest.raises(MetodoNoEvaluableError) as exc:
+                M9.ensamble_estabilidad(tanteo, SIS)
     assert str(exc.value).startswith(modelos.MOTIVO_METODO_NO_EVALUABLE_CABEZAL)
-    assert "11.6.5.3" in str(exc.value)
+    assert "C11.6.5.3" in str(exc.value)
+    assert "Declarar el drenaje" in str(exc.value)
 
 
 # ===========================================================================
@@ -1882,9 +1893,18 @@ def test_sin_drenaje_el_agua_llena_el_relleno_retenido_y_no_pasa_del_muro(
 
 
 def test_con_agua_natural_en_el_plano_el_sismo_tampoco_se_evalua(muro_2):
-    """Drenado, pero con el freatico sobre la base: 11.6.5.3 no lo admite."""
-    with pytest.raises(MetodoNoEvaluableError):
-        _ensamble_muro_2(muro_2, SIS)
+    """
+    CAMBIADO DECLARANDOLO (VE-3.14, H-3): drenado pero con el freatico sobre
+    la base, el sismo se evalua con el peso total (C11.6.5.3); solo el
+    relleno declarado muy abierto se detiene, y el mensaje ya no recomienda
+    el drenaje que esta declarado.
+    """
+    _ensamble_muro_2(muro_2, SIS)
+    with con_valor("agua_del_relleno_bajo_sismo", "relleno_muy_abierto",
+                   motivo="la rama que se sigue deteniendo"):
+        with pytest.raises(MetodoNoEvaluableError) as exc:
+            _ensamble_muro_2(muro_2, SIS)
+    assert "El drenaje ya esta declarado" in str(exc.value)
 
 
 def test_los_margenes_de_las_seis_filas_son_los_del_dorado(tanteo):
@@ -3027,11 +3047,19 @@ def test_el_freatico_se_mide_bajo_el_terreno_del_cruce_y_moja_la_salida(
     assert [e.condicion for e in a01.cabezal.estabilidad
             if e.extremo == "entrada"] == [EST, SIS]
     # Con el peso saturado declarado (de prueba): la estatica de la salida se
-    # evalua con la subpresion del dorado, y la sismica no es evaluable.
+    # evalua con la subpresion del dorado. CAMBIADO DECLARANDOLO (VE-3.14,
+    # H-3): la sismica tambien (peso total bajo el agua, C11.6.5.3); con el
+    # relleno declarado muy abierto se detiene, con su h_w.
     _, a01 = _correr_de_prueba(
         tmp_path, NF="1.4",
         declaraciones={"peso_especifico_saturado_relleno_kn_m3": 20.0})
-    sis_s = next(b for b in a01.bloqueos if "estabilidad E1-E3" in b.etapa
+    assert not [b for b in a01.bloqueos if "estabilidad E1-E3" in b.etapa
+                and "salida" in b.etapa and "sismico" in b.etapa]
+    _, abierto = _correr_de_prueba(
+        tmp_path, NF="1.4",
+        declaraciones={"peso_especifico_saturado_relleno_kn_m3": 20.0,
+                       "agua_del_relleno_bajo_sismo": "relleno_muy_abierto"})
+    sis_s = next(b for b in abierto.bloqueos if "estabilidad E1-E3" in b.etapa
                  and "salida" in b.etapa and "sismico" in b.etapa)
     assert sis_s.tipo is TipoDeBloqueo.METODO_NO_EVALUABLE
     assert "h_w = 0.200 m" in sis_s.mensaje

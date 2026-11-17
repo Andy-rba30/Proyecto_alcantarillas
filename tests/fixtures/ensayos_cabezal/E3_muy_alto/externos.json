@@ -1,0 +1,32 @@
+{
+ "globales": {
+  "luz_m": 3.0,
+  "TW_m": 0.3,
+  "bombeo": 0.02,
+  "acceso_mantenimiento_previsto": true,
+  "regimen_flujo_descarga": "intermitente",
+  "ancho_derecho_via_m": 20.0,
+  "sulfatos_suelo_ppm": 500,
+  "sulfatos_agua_ppm": 100,
+  "cloruros_ppm": 50,
+  "pH": 7.5,
+  "resistividad_ohm_cm": 3500,
+  "abrasion": "poco_abrasivo"
+ },
+ "puntos": {
+  "E3": {
+   "cota_afectacion_aguas_arriba_msnm": 45.9,
+   "Q_evento_extremo_m3s": 4.995,
+   "TW_evento_extremo_m": 0.5,
+   "tipo_terreno_receptor": "graduado_grava_gruesa",
+   "tipo_terreno_entrada": "graduado_grava_gruesa",
+   "material_lecho_salida": {
+    "tipo": "no_cohesivo",
+    "D84_m": 0.03,
+    "D16_m": 0.002,
+    "pasa_200_pct": 8
+   },
+   "duracion_caudal_pico_min": 60
+  }
+ }
+}

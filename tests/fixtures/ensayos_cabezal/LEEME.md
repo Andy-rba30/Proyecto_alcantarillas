@@ -16,6 +16,11 @@ fuera del repositorio.
   criterios de archivo la pantalla de 0.30 m de la regla no se podía armar
   (A1 a A6 de la pantalla y del alero, H-1 de los ensayos) y la app la
   entregaba así; desde VE-3.14 la pantalla se dimensiona por su armado.
+- `E3_muy_alto/`: el más alto (H_c de la salida 5.10 m), con el freático
+  natural 0.26 m sobre la base de la zapata de la salida y el drenaje del
+  trasdós declarado. Hasta VE-3.14 la condición sísmica de la salida se
+  detenía por el agua y el ancho se dimensionaba sin ella (H-3); desde
+  VE-3.14 se evalúa con el peso total bajo el agua (C11.6.5.3).
 
 El comando con que se corre está en el test; las declaraciones en caliente
 del revisor están en `declaraciones.json`.
