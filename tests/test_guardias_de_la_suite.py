@@ -1200,6 +1200,8 @@ PUBLICAS_SIN_REFERENCIA_EN_TESTS = {
     # (juego y escenario E2) y su mutante «sin etapa».
     "M9_cabezal.dimensionar_pantalla_por_armado": "la llama `_fase_9` (servicio: etapa del dimensionamiento de la pantalla, VE-3.14)",
     "M9_cabezal.incorporar_pantalla": "la llama `_fase_9` (servicio) tras la etapa de la pantalla (VE-3.14)",
+    "M9_cabezal.rotular_estabilidad_incompleta": "la llama `_fase_9` (servicio); la miden los escenarios E3 de tests/test_ve3_14_cabezal.py",
+    "M9_cabezal.empujes_sobre_la_cara_de_la_pantalla": "la llama `empujes_sobre_el_arranque` con la opcion 10; la mide test_opcion_10 de tests/test_ve3_14_cabezal.py",
     # `M0_carga.leer_bytes` salio en UI-1: la nombra
     # `tests/test_ui1_hidrologia_ventana.py`, que la sustituye para probar que
     # la huella de la hidrologia es de los bytes que se parsearon.

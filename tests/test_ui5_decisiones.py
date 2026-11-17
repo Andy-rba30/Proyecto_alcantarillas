@@ -1312,8 +1312,10 @@ def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     # 'nivel_agua_diseno_v7' y 'margen_estacional_nf_v7_m' (c2), 'factor_intervalo_fijo_p24' (d).
     # 147 desde VE-3.5: 'dimensionamiento_zapata_cabezal'; 148 con el de VE-3.7,
     # 'fraccion_fin_remanso_canal' (las dos ramas se integraron juntas).
-    # 149 desde VE-3.14: 'agua_del_relleno_bajo_sismo' (H-3 de los ensayos).
-    assert len(por_clave) == len(ca.CRITERIOS) == 149
+    # 149 desde VE-3.14: 'agua_del_relleno_bajo_sismo' (H-3 de los ensayos);
+    # 152 con las opciones 9, 10 y 13 ('momento_talon_cabezal',
+    # 'carga_pantalla_cabezal', 'distribucion_incremento_sismico').
+    assert len(por_clave) == len(ca.CRITERIOS) == 152
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.

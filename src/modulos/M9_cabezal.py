@@ -5873,6 +5873,25 @@ CRITERIO_DRENAJE = "drenaje_trasdos"
 CRITERIO_AGUA_SISMO = "agua_del_relleno_bajo_sismo"
 AGUA_SE_MUEVE_CON_EL_SUELO = "se_mueve_con_el_suelo"
 AGUA_RELLENO_MUY_ABIERTO = "relleno_muy_abierto"
+# --- VE-3.14, opciones 9, 10 y 13 --- (ver sus fichas en criterios_adoptados)
+CRITERIO_MOMENTO_TALON = "momento_talon_cabezal"
+TALON_PESO_ENTERO = "peso_entero"
+TALON_EXACTO = "exacto"
+CRITERIO_CARGA_PANTALLA = "carga_pantalla_cabezal"
+PANTALLA_PLANO_VIRTUAL = "plano_virtual_del_talon"
+PANTALLA_CUNA = "cuna_sobre_la_pantalla"
+CRITERIO_DISTRIBUCION_INCREMENTO = "distribucion_incremento_sismico"
+INCREMENTO_FRACCION = "fraccion_de_h"
+INCREMENTO_DISTRIBUCION_ESTATICA = "distribucion_estatica"
+
+
+def _eleccion(clave: str, opciones: Tuple[str, ...]) -> str:
+    """El valor de una eleccion de conjunto cerrado, validado (segunda linea)."""
+    valor = ca.valor(clave)
+    if valor not in opciones:
+        raise DatoInvalidoError(clave, valor=valor,
+                                motivo="se espera una de: " + ", ".join(opciones))
+    return valor
 CRITERIO_GAMMA_SATURADO = "peso_especifico_saturado_relleno_kn_m3"
 CRITERIO_FRACCION_DELTA = "fraccion_delta_sobre_phi_trasdos"
 CRITERIO_REGLA_PENDIENTE = "regla_pendiente_relleno_trasdos"
@@ -6913,6 +6932,32 @@ def cargas_del_cabezal(entorno: EntornoDelCabezal,
             raise DatoInvalidoError(CRITERIO_BRAZO_SISMICO, valor=fraccion,
                                     motivo="fraccion de h entre 0 y 1")
         z_dP = fraccion * h
+        distribucion = _eleccion(CRITERIO_DISTRIBUCION_INCREMENTO,
+                                 (INCREMENTO_FRACCION,
+                                  INCREMENTO_DISTRIBUCION_ESTATICA))
+        if distribucion == INCREMENTO_DISTRIBUCION_ESTATICA:
+            # --- VE-3.14, opcion 13 --- AASHTO 11.6.5.3: el empuje total
+            # con la distribucion del estatico, «but no less than H/3»: el
+            # incremento en el mayor del centroide estatico y h/3. Solo con
+            # el muro que cede: para el que no cede C11.6.5.4 pide h/2.
+            if ca.valor(CRITERIO_FACTOR_MURO) != FACTOR_MURO_CON_REDUCCION:
+                raise DatoInvalidoError(
+                    CRITERIO_DISTRIBUCION_INCREMENTO, valor=distribucion,
+                    id_punto=idp,
+                    motivo=("la distribucion estatica del incremento (11.6.5.3) "
+                            "es del muro que CEDE, y "
+                            f"'{CRITERIO_FACTOR_MURO}' no declara la "
+                            "reduccion por desplazamiento: para el muro que "
+                            "no cede C11.6.5.4 pide la resultante a h/2"))
+            # El centroide del diagrama ESTATICO con que se diseña el muro:
+            # el suelo (EH, a z_A) y la sobrecarga (LS, uniforme, a h/2),
+            # en componente horizontal; con la sobrecarga queda sobre h/3.
+            H_EH = P_A * math.cos(inclinacion)
+            H_LS = K_A * gamma * h_eq * h
+            z_estatico = ((H_EH * z_A + H_LS * h / 2) / (H_EH + H_LS)
+                          if H_EH + H_LS > 0 else z_A)
+            z_dP = max(z_estatico, h / LADOS_DEL_TRIANGULO)
+            fraccion = z_dP / h
         cargas.append(CargaDeCabezal(
             C_EQ_H, CARGA_EQ, "incremento sismico del empuje, horizontal",
             H=dP * math.cos(inclinacion), z=z_dP, sobre=ELEMENTO_PANTALLA,
@@ -7795,6 +7840,67 @@ def _incremento_sobre_el_arranque(H: float, datos: dict, e_z: float,
     return _carga_lineal_sobre_un_tramo(0.0, h, base, corona, e_z, h, e_z)
 
 
+def _diagrama_sobre_la_cara(K: float, gamma: float, gamma_bajo: float,
+                            alto: float, mojado: float) -> Tuple[float, float]:
+    """
+    (P, z) del diagrama K·gamma·z sobre un plano de altura `alto` con
+    `mojado` m de agua sobre su base: triangulo seco, su continuacion bajo
+    el agua y triangulo con `gamma_bajo`; z desde la base del plano.
+    """
+    seco = alto - mojado
+    partes = (
+        (K * gamma * seco ** 2 / 2, mojado + seco / LADOS_DEL_TRIANGULO),
+        (K * gamma * seco * mojado, mojado / 2),
+        (K * gamma_bajo * mojado ** 2 / 2, mojado / LADOS_DEL_TRIANGULO),
+    )
+    P = sum(x for x, _ in partes)
+    return P, (sum(x * z for x, z in partes) / P if P > 0 else 0.0)
+
+
+def empujes_sobre_la_cara_de_la_pantalla(datos: dict, e_z: float, *,
+                                         id_punto: Optional[str] = None
+                                         ) -> dict:
+    """
+    --- VE-3.14, opcion 10 --- El empuje de una cuña de tanteo sobre la
+    CARA del trasdos de la pantalla (Caltrans BDP 11.2, 11.2.2.4.1: «a trial
+    wedge analysis along AB»), de altura h_p = z_rel - e_z (el relleno
+    contra la pantalla), con la superficie REAL: el talud que sube desde la
+    corona del relleno hasta la plataforma (`cuna_de_tanteo` con la subida
+    entera). Devuelve los coeficientes equivalentes K = 2·P/h_p² (estatico)
+    y, si `datos` es de la condicion sismica, K_E = 2·P_E/(h_p²·(1 - k_v));
+    y los diagramas: el estatico con el suelo sumergido bajo el agua y el
+    incremento con el peso total (C11.6.5.3) si hay agua.
+    """
+    rel, ang = datos["relleno"], datos["angulos"]
+    h_p = rel["z_rel"] - e_z
+    if not h_p > TOL_UMBRAL_NORMATIVO:
+        return {"h_p": 0.0, "K": 0.0, "P": 0.0, "z": 0.0, "dP": 0.0,
+                "K_E": None}
+    gamma = datos["gamma"]
+    gamma_sat = datos.get("gamma_saturado")
+    gamma_sum = (gamma_sat - GAMMA_AGUA_KN_M3) if gamma_sat else 0.0
+    mojado = min(max(datos["h_w"] - e_z, 0.0), h_p)
+    P1, _rho = cuna_de_tanteo(h=h_p, subida=rel["subida"], talud=rel["talud"],
+                              phi_grados=ang["phi"], delta_grados=ang["delta"],
+                              gamma=1.0, que="empuje sobre la cara de la "
+                              "pantalla", id_punto=id_punto)
+    K = 2 * P1 / h_p ** 2
+    P, z = _diagrama_sobre_la_cara(K, gamma, gamma_sum, h_p, mojado)
+    salida = {"h_p": h_p, "K": K, "P": P, "z": z, "dP": 0.0, "K_E": None}
+    if datos.get("K_AE") is not None:
+        k_h, k_v = datos["k_h"], datos["k_v"]
+        P1E, _ = cuna_de_tanteo(h=h_p, subida=rel["subida"],
+                                talud=rel["talud"], phi_grados=ang["phi"],
+                                delta_grados=ang["delta"], gamma=1.0, k_h=k_h,
+                                k_v=k_v, que="empuje sismico sobre la cara de "
+                                "la pantalla", id_punto=id_punto)
+        K_E = 2 * P1E / (h_p ** 2 * (1.0 - k_v))
+        gamma_t = gamma_sat if (gamma_sat and mojado > 0) else gamma
+        G, _zt = _diagrama_sobre_la_cara(1.0, gamma, gamma_t, h_p, mojado)
+        salida.update(K_E=K_E, dP=(K_E * (1.0 - k_v) - K) * G)
+    return salida
+
+
 def empujes_sobre_el_arranque(cargas: tuple, datos: dict, e_z: float, *,
                               id_punto: Optional[str] = None) -> dict:
     """
@@ -7826,10 +7932,30 @@ def empujes_sobre_el_arranque(cargas: tuple, datos: dict, e_z: float, *,
     por_codigo = {c.codigo: c for c in cargas}
     alto = max(h - e_z, 0.0)
     salida = {}
+    cara = None
+    if _eleccion(CRITERIO_CARGA_PANTALLA, (PANTALLA_PLANO_VIRTUAL,
+                                           PANTALLA_CUNA)) == PANTALLA_CUNA:
+        # --- VE-3.14, opcion 10 --- la cuña sobre la cara de la pantalla,
+        # en la misma proporcion con que cada juego (activo o reposo) escala
+        # el diagrama del plano virtual.
+        cara = empujes_sobre_la_cara_de_la_pantalla(datos, e_z,
+                                                    id_punto=id_punto)
     for c in cargas:
         if c.sobre != ELEMENTO_PANTALLA:
             continue
-        if c.codigo == C_EH_H:
+        if cara is not None and c.codigo == C_EH_H:
+            P_total, _ = diagrama_del_suelo_sobre(datos, 0.0)
+            r = c.H / P_total if P_total > 0 else 0.0
+            salida[c.codigo] = (cara["P"] * r, cara["P"] * cara["z"] * r)
+        elif cara is not None and c.codigo == C_LS_H:
+            proporcion = cara["K"] / datos["K_A"] if datos["K_A"] > 0 else 0.0
+            H = c.H * cara["h_p"] / h * proporcion
+            salida[c.codigo] = (H, H * cara["h_p"] / 2)
+        elif cara is not None and c.codigo == C_EQ_H:
+            H = cara["dP"] * math.cos(datos["inclinacion"])
+            brazo = min(datos["fraccion_brazo"], 1.0) * cara["h_p"]
+            salida[c.codigo] = (H, H * brazo)
+        elif c.codigo == C_EH_H:
             P_total, _ = diagrama_del_suelo_sobre(datos, 0.0)
             P, M = diagrama_del_suelo_sobre(datos, e_z)
             r = c.H / P_total if P_total > 0 else 0.0
@@ -10837,6 +10963,10 @@ def _momentos_de_servicio(entorno: EntornoDelCabezal, juego: tuple,
                                                    z["punta"][1]),
                                         z["punta"][1])
         _, M_t = _talon_con_el_peso_entero(g, juego, combo, datos)
+        if (z is not None and _eleccion(CRITERIO_MOMENTO_TALON,
+                                        (TALON_PESO_ENTERO, TALON_EXACTO))
+                == TALON_EXACTO):
+            M_t = z["talon"][1]
         salida[SECCION_TALON] = max(salida.get(SECCION_TALON, M_t), M_t)
     return salida
 
@@ -10885,6 +11015,8 @@ def solicitaciones_de_resistencia(entorno: EntornoDelCabezal) -> dict:
     g = entorno.geometria
     regimen = regimen_de_resistencia()
     proc = _procedimiento()
+    metodo_talon = _eleccion(CRITERIO_MOMENTO_TALON,
+                             (TALON_PESO_ENTERO, TALON_EXACTO))
     est, sis = CondicionAnalisis.ESTATICO, CondicionAnalisis.SISMICO
     quien = _aviso_cabezal(entorno)
     avisos: List[str] = []
@@ -10917,6 +11049,17 @@ def solicitaciones_de_resistencia(entorno: EntornoDelCabezal) -> dict:
                       if z is None else
                       f"M = {z['talon'][1]:.2f}, V = {z['talon'][0]:.2f} "
                       f"({z['forma']})")
+            if metodo_talon == TALON_EXACTO and z is not None:
+                # --- VE-3.14, opcion 9 --- el «more exact method» de
+                # 11.6.1.2: la reaccion lineal de 10.6.5 con las cargas
+                # factoradas de ESTA combinacion, sin traccion.
+                return z["talon"][1], z["talon"][0], (
+                    "metodo mas exacto (AASHTO 11.6.1.2, "
+                    f"'{CRITERIO_MOMENTO_TALON}' = '{TALON_EXACTO}'): "
+                    "descontando la reaccion lineal del terreno (10.6.5, "
+                    f"cargas de esta combinacion, sin traccion) y la "
+                    f"subpresion: {exacto}; peso entero (contraste): M = "
+                    f"{Mp:.2f} kN·m/m, V = {Vp:.2f} kN/m")
             return Mp, Vp, (
                 f"peso entero (AASHTO 11.6.1.2): M = {Mp:.2f} kN·m/m, V = "
                 f"{Vp:.2f} kN/m; descontando la reaccion lineal del terreno "
