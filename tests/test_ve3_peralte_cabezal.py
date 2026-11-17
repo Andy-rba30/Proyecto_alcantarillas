@@ -119,15 +119,19 @@ def test_el_peralte_crece_solo_donde_hace_falta(juego):
     assert salida.H < regla.cabezal.salida.H
 
 
-def test_los_peraltes_que_5734_1_no_cubre_se_marcan_y_se_saltan(juego):
+def test_los_peraltes_que_5734_1_no_cubre_ya_no_se_saltan(juego):
+    """
+    REESCRITO DECLARANDOLO (VE-3.14, H-2 de los ensayos de diseño del
+    cabezal): hasta VE-3.14 un peralte fuera del simplificado de 5.7.3.4.1
+    se marcaba «sin verificar» y se saltaba, aunque nada fallara, y la
+    zapata crecia de mas. Hoy el procedimiento general de 5.7.3.4.2 lo
+    verifica: ningun intento queda marcado y el ultimo cumple.
+    """
     cab = _punto(juego).cabezal
     intentos = [i for i in cab.intentos_de_peralte if i.extremo == "salida"]
-    marcados = [i for i in intentos
+    assert not [i for i in intentos
                 if i.incumplidas == (M9.CORTANTE_NO_VERIFICABLE,)]
-    assert marcados, "ningun intento cayo fuera de 5.7.3.4.1"
-    # Todos los marcados tienen 16 in o mas.
-    assert all(i.espesor_zapata >= 0.4064 - ABS_MM for i in marcados)
-    assert intentos[-1].cumple
+    assert not intentos or intentos[-1].cumple
 
 
 def test_la_memoria_explica_el_peralte(juego):
@@ -216,7 +220,8 @@ def test_incumplidas_del_armado_de_la_zapata_por_peralte(juego, monkeypatch):
     """
     La lectura que el bucle usa: con el peralte final de la salida de A-01,
     nada; con el de la regla, A1 y A2 del talon; dentro de la franja que
-    5.7.3.4.1 no cubre, la marca; y si el armado no se puede evaluar por
+    5.7.3.4.1 no cubre, desde VE-3.14 lo que el general diga (antes, la
+    marca); y si el armado no se puede evaluar por
     otra causa, None (crecer el peralte no lo arregla).
     """
     # Leida DURANTE la corrida (fuera de ella los criterios que el juego
@@ -239,7 +244,10 @@ def test_incumplidas_del_armado_de_la_zapata_por_peralte(juego, monkeypatch):
         return next(r for k, r in leidos.items()
                     if k == pytest.approx(e_z, abs=ABS_MM))
     assert {"A1.talon.s", "A2.talon.s"} <= set(leido(0.404))
-    assert leido(0.604) == (M9.CORTANTE_NO_VERIFICABLE,)
+    # Desde VE-3.14 la franja que 5.7.3.4.1 no cubre se VERIFICA con el
+    # procedimiento general (antes, la marca «sin verificar»): lo que sale
+    # son incumplidas reales, sin la marca.
+    assert M9.CORTANTE_NO_VERIFICABLE not in leido(0.604)
     assert leidos[round(_punto(juego).cabezal.salida.espesor_zapata, 3)] == ()
 
     def pendiente(*_a, **_k):

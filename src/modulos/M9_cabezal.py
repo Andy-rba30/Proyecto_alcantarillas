@@ -9159,7 +9159,7 @@ def incorporar_peralte(cabezal: CabezalDelPunto,
 
 from dataclasses import replace as _reemplazar  # noqa: E402
 
-from src.constantes_fisicas import KPA_POR_MPA  # noqa: E402
+from src.constantes_fisicas import KPA_POR_MPA, N_POR_KN, PULGADA_EN_MM  # noqa: E402
 from src.constantes_normativas import (  # noqa: E402
     ALFA_1_BLOQUE_AASHTO, ALFA_BLOQUE_E060, BETA_1_BLOQUE_AASHTO,
     BETA_1_E060, BETA_1_E060_MINIMO, BETA_1_MINIMO,
@@ -9183,6 +9183,9 @@ from src.constantes_normativas import (  # noqa: E402
     TEMPERATURA_S_VECES_ESPESOR, TRACCION_CONCRETO_SIMPLE_E060,
     VC_COEFICIENTE_AASHTO_SI, VC_COEFICIENTE_E060,
     VN_TOPE_SOBRE_FC_AASHTO, ZAPATA_SIMPLIFICADO_VECES_DV,
+    GENERAL_BETA_NUMERADOR, GENERAL_BETA_COEF_DEFORMACION,
+    GENERAL_BETA_NUMERADOR_SXE_IN, GENERAL_BETA_SUMANDO_SXE_IN,
+    SXE_FACTOR_AGREGADO, SXE_SUMANDO_AGREGADO_IN, SXE_MIN_IN, SXE_MAX_IN,
     EC_COEFICIENTE_AASHTO_SI, EC_EXPONENTE_AASHTO, ES_REFUERZO_AASHTO_MPA,
     EXCENTRICIDAD_MIN_MURO_CONCRETO_SIMPLE_E060, FISURACION_BETA_S_FACTOR,
     FISURACION_COEFICIENTE_AASHTO_SI, FISURACION_FRACCION_FR,
@@ -9782,6 +9785,49 @@ def simplificado_permitido(*, es_zapata: bool, espesor: float,
                    + ("" if not es_zapata else
                       f" y vuelo {vuelo:.3f} m >= 3·d_v = "
                       f"{ZAPATA_SIMPLIFICADO_VECES_DV * d_v:.3f} m"))
+
+
+def beta_procedimiento_general(*, M_u: float, V_u: float, d_v: float,
+                               A_s: float) -> dict:
+    """
+    β y εs del procedimiento GENERAL de cortante de AASHTO 5.7.3.4.2 (pags.
+    impresas 5-70 a 5-72) para una seccion SIN el refuerzo transversal
+    minimo, por metro de ancho (VE-3.14, H-2 de los ensayos de diseño del
+    cabezal: hasta aqui el programa se detenia con «metodo no evaluable»
+    cuando el simplificado de 5.7.3.4.1 no aplicaba):
+
+        |M_u| >= |V_u|·d_v                                  (definicion de M_u)
+        εs  = (|M_u|/d_v + |V_u|) / (E_s·A_s) >= 0            (ec. 5.7.3.4.2-4)
+        s_x = d_v                       (una sola capa de acero en traccion)
+        s_xe = s_x·1.38 / (a_g + 0.63), 12.0 in <= s_xe <= 80.0 in  (5.7.3.4.2-7)
+        β   = [4.8 / (1 + 750·εs)]·[51 / (39 + s_xe)]         (ec. 5.7.3.4.2-2)
+
+    con N_u = A_ps = V_p = 0 (el cabezal no lleva traccion axial ni
+    presfuerzo) y a_g = 0, la cota inferior que vale para cualquier agregado
+    (interpretacion de la cita AASHTO_LRFD_9.5.7.3.4.2#SXE). `M_u` en kN·m/m,
+    `V_u` en kN/m, `d_v` en m y `A_s` en mm2/m.
+    """
+    for nombre, x in (("M_u", M_u), ("V_u", V_u)):
+        if not (_finito(x) and x >= 0):
+            raise LimiteNumericoError(nombre, valor=x,
+                                      motivo="solicitacion no negativa y finita")
+    for nombre, x in (("d_v", d_v), ("A_s", A_s)):
+        if not (_finito(x) and x > 0):
+            raise DatoInvalidoError(nombre, valor=x,
+                                    motivo="positivo y finito para el "
+                                           "procedimiento general de cortante")
+    M = max(M_u, V_u * d_v)
+    rigidez = ES_REFUERZO_AASHTO_MPA * A_s / N_POR_KN          # kN/m
+    eps_s = max((M / d_v + V_u) / rigidez, 0.0)
+    s_x_in = d_v * MILIMETROS_POR_METRO / PULGADA_EN_MM
+    s_xe_in = s_x_in * SXE_FACTOR_AGREGADO / SXE_SUMANDO_AGREGADO_IN
+    s_xe_in = min(max(s_xe_in, SXE_MIN_IN), SXE_MAX_IN)
+    beta = (GENERAL_BETA_NUMERADOR
+            / (1 + GENERAL_BETA_COEF_DEFORMACION * eps_s)
+            * GENERAL_BETA_NUMERADOR_SXE_IN
+            / (GENERAL_BETA_SUMANDO_SXE_IN + s_xe_in))
+    return {"beta": beta, "eps_s": eps_s, "M_u_efectivo": M,
+            "s_x_in": s_x_in, "s_xe_in": s_xe_in}
 
 
 def acero_de_temperatura_aashto(*, ancho: float, espesor: float,
@@ -10636,8 +10682,9 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
       3. con esa barra: resistencia nominal, deformacion neta del acero
          (tiene que llegar a 0.005 para que el factor 0.90 valga) y A1;
       4. cortante del concreto sin refuerzo transversal con el procedimiento
-         SIMPLIFICADO, previa comprobacion de sus condiciones
-         (`simplificado_permitido`), y A2;
+         SIMPLIFICADO si sus condiciones se cumplen (`simplificado_permitido`)
+         y, si no, desde VE-3.14, con el GENERAL de 5.7.3.4.2 (β de la ec.
+         5.7.3.4.2-2 por combinacion, `beta_procedimiento_general`), y A2;
       5. A3 (acero provisto frente al minimo), A4 (espaciamiento) y, si se
          le pasa `contraste_e060` = (M_u, V_u) de las combinaciones de E.060,
          A5: el aprovechamiento de la seccion en ese marco, que INFORMA;
@@ -10653,11 +10700,12 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
          no cumple ninguna. Sin momento de servicio (un tanteo con un par
          M, V) A6 no se evalua y A4 lo dice.
 
-    SE DETIENE con `MetodoNoEvaluableError` (rotulo del armado) cuando la
-    seccion queda fuera de las condiciones del simplificado: el general de
-    5.7.3.4.2 no esta implementado, y aplicar beta = 2.0 a una seccion
-    gruesa sin estribos es lo que el comentario de la fuente llama
-    «seriously unconservative».
+    HASTA VE-3.14 SE DETENIA con `MetodoNoEvaluableError` (rotulo del
+    armado) cuando la seccion quedaba fuera de las condiciones del
+    simplificado, porque el general de 5.7.3.4.2 no estaba implementado (y
+    aplicar beta = 2.0 a una seccion gruesa sin estribos es lo que el
+    comentario de la fuente llama «seriously unconservative»). Desde VE-3.14
+    (H-2 de los ensayos de diseño del cabezal) la verifica el general.
 
     Lo que NO hace: no cruza marcos (las resistencias de E.060 solo se
     comparan con cargas de E.060), no dimensiona estribos y no cambia el
@@ -10892,20 +10940,32 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
     permitido, por_cual = simplificado_permitido(
         es_zapata=es_zapata, espesor=espesor, vuelo=vuelo,
         d_v=cort["d_v_letra"])
+    # --- VE-3.14 (H-2 de los ensayos de diseño del cabezal) --- FUERA DEL
+    # SIMPLIFICADO, EL PROCEDIMIENTO GENERAL. Hasta VE-3.14 la seccion se
+    # detenia aqui con «metodo no evaluable» y el dimensionamiento del
+    # peralte la saltaba aunque nada fallara. Hoy β sale de la ec.
+    # 5.7.3.4.2-2 (seccion sin el refuerzo transversal minimo), una por
+    # COMBINACION, porque depende de M_u y V_u (`beta_procedimiento_general`).
+    general = {}
+    if permitido:
+        V_n_de = {id(s): cort["V_n"] for s in sols}
+        V_c_de = {id(s): cort["V_c"] for s in sols}
+        beta_de = {id(s): proc["beta_simplificado"] for s in sols}
+    else:
+        V_n_de, V_c_de, beta_de = {}, {}, {}
+        for s in sols:
+            g = beta_procedimiento_general(M_u=s.M_u, V_u=s.V_u,
+                                           d_v=cort["d_v"], A_s=As_provisto)
+            c_s = cortante_del_concreto(d=d, a=res["a"], espesor=espesor,
+                                        fc=fc, beta=g["beta"])
+            general[id(s)] = g
+            V_n_de[id(s)], V_c_de[id(s)] = c_s["V_n"], c_s["V_c"]
+            beta_de[id(s)] = g["beta"]
+    rige_V = min(sols, key=lambda s: s.phi_corte * V_n_de[id(s)] - s.V_u)
     if not permitido:
-        raise MetodoNoEvaluableError(
-            f"cortante de {seccion}",
-            "procedimiento general de AASHTO LRFD 5.7.3.4.2 (o una seccion "
-            "con el refuerzo transversal minimo de 5.7.2.5)",
-            "la seccion queda fuera de las condiciones en que 5.7.3.4.1 "
-            f"permite el procedimiento simplificado ({por_cual}) y no lleva "
-            "refuerzo transversal; el comentario de la fuente advierte que "
-            "las expresiones tradicionales son inseguras en elementos "
-            "grandes sin estribos, y el programa no implementa el general",
-            id_punto, rotulo=MOTIVO_METODO_NO_EVALUABLE_ARMADO)
-    rige_V = max(sols, key=lambda s: s.V_u / s.phi_corte)
-    V_r = rige_V.phi_corte * cort["V_n"]
-    cumple_V = all(s.phi_corte * cort["V_n"] >= s.V_u - TOL_UMBRAL_NORMATIVO
+        cort = dict(cort, V_c=V_c_de[id(rige_V)], V_n=V_n_de[id(rige_V)])
+    V_r = rige_V.phi_corte * V_n_de[id(rige_V)]
+    cumple_V = all(s.phi_corte * V_n_de[id(s)] >= s.V_u - TOL_UMBRAL_NORMATIVO
                    for s in sols)
     mitad = rige_V.phi_corte * cort["V_c"] / 2
     # Pregunta 4 del cierre de T-7c: la pantalla (y el alero) se tratan como
@@ -10923,8 +10983,13 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
     v_cortante = _verificacion_de_armado(
         fundamento="F9.ARM_CORTANTE", codigo=codigo("A2"),
         que=f"A2, cortante sin refuerzo transversal: {donde}",
-        formula="V_r = phi·V_n >= V_u;  V_n = min(V_c, 0.25·f'c·b_v·d_v);  "
-                "V_c = 0.0316·beta·sqrt(f'c)·b_v·d_v (ksi, in), beta = 2.0",
+        formula=("V_r = phi·V_n >= V_u;  V_n = min(V_c, 0.25·f'c·b_v·d_v);  "
+                 "V_c = 0.0316·beta·sqrt(f'c)·b_v·d_v (ksi, in), "
+                 + ("beta = 2.0 (5.7.3.4.1)" if permitido else
+                    "beta = [4.8/(1 + 750·eps_s)]·[51/(39 + s_xe)] (ec. "
+                    "5.7.3.4.2-2), eps_s = (|M_u|/d_v + |V_u|)/(E_s·A_s) "
+                    "(ec. 5.7.3.4.2-4), s_xe = s_x·1.38/(a_g + 0.63) "
+                    "(ec. 5.7.3.4.2-7), s_x = d_v, a_g = 0")),
         sustitucion=(
             mag("V_u", rige_V.V_u, "kN/m", rige_V.combinacion),
             mag("phi", rige_V.phi_corte, "", "AASHTO 5.5.4.2 o 1.3.2.1",
@@ -10935,9 +11000,21 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
                 + ("" if abs(cort["d_v_letra"] - cort["d_v"])
                    <= TOL_UMBRAL_NORMATIVO else
                    f"; la letra daria {cort['d_v_letra']:.4f} m")),
-            mag("beta", proc["beta_simplificado"], "",
+            mag("beta", beta_de[id(rige_V)], "",
                 f"procedimiento simplificado de 5.7.3.4.1, permitido por: "
-                f"{por_cual}", CIFRAS_FACTOR),
+                f"{por_cual}" if permitido else
+                "procedimiento general de 5.7.3.4.2 (ec. 5.7.3.4.2-2), "
+                f"porque el simplificado no aplica: {por_cual}",
+                CIFRAS_FACTOR),
+            *(() if permitido else (
+                mag("eps_s", general[id(rige_V)]["eps_s"], "",
+                    "(max(M_u, V_u·d_v)/d_v + V_u)/(E_s·A_s), ec. "
+                    "5.7.3.4.2-4, con la barra propuesta", CIFRAS_FINA),
+                mag("s_xe", general[id(rige_V)]["s_xe_in"], "in",
+                    "s_x·1.38/(a_g + 0.63) con s_x = d_v y a_g = 0 (cota "
+                    "inferior: interpretacion de la cita "
+                    "AASHTO_LRFD_9.5.7.3.4.2#SXE), en [12, 80] in",
+                    CIFRAS_FACTOR))),
             mag("V_c", cort["V_c"], "kN/m",
                 f"{VC_COEFICIENTE_AASHTO_SI:.4f}·beta·sqrt(f'c [MPa])·d_v, "
                 "en SI"),
@@ -10951,11 +11028,23 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
         criterio=CRITERIO_FLEXION_CORTE, cumple=cumple_V,
         margen=V_r - rige_V.V_u, decide=True, obtenido=rige_V.V_u,
         nota=("Sin refuerzo transversal: si no cumple, la salida es mas "
-              "espesor, no estribos (el programa no los dimensiona)."),
+              "espesor, no estribos (el programa no los dimensiona)."
+              + ("" if permitido else
+                 " Procedimiento general: cada combinacion con su β, " +
+                 "; ".join(f"{s.combinacion}: β = {beta_de[id(s)]:.3f}, "
+                           f"phi·V_n = {s.phi_corte * V_n_de[id(s)]:.1f} "
+                           f"frente a V_u = {s.V_u:.1f} kN/m" for s in sols)
+                 + ".")),
         explicacion_falla="V_u > phi·V_n: aumentar el espesor de la seccion",
         indicador=indicador_V,
-        citas=("AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO",
-               "AASHTO_LRFD_9.5.7.2.8#DV", "AASHTO_LRFD_9.5.5.4.2#CORTE"))
+        citas=(("AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO",) if permitido else
+               ("AASHTO_LRFD_9.5.7.3.4.1#SIMPLIFICADO",
+                "AASHTO_LRFD_9.5.7.3.4.2#GENERAL",
+                "AASHTO_LRFD_9.5.7.3.4.2#MU",
+                "AASHTO_LRFD_9.5.7.3.4.2#SXE",
+                "AASHTO_LRFD_9.5.7.3.4.2#SX",
+                "AASHTO_LRFD_9.C5.7.3.4.2#NEGATIVO"))
+              + ("AASHTO_LRFD_9.5.7.2.8#DV", "AASHTO_LRFD_9.5.5.4.2#CORTE"))
     avisos = []
     if elegido["aviso_rec"]:
         avisos.append(elegido["aviso_rec"])

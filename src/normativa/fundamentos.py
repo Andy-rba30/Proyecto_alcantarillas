@@ -3910,7 +3910,11 @@ CORTANTE_CABEZAL = _fundamento(
            "AASHTO_LRFD_9.C5.7.3.4.1#GRANDES", "AASHTO_LRFD_9.5.7.2.8#DV",
            "AASHTO_LRFD_9.5.5.4.2#CORTE",
            "AASHTO_LRFD_9.5.7.2.3#TRANSVERSAL",
-           "AASHTO_LRFD_9.1.3.2.1#EXTREMO"),
+           "AASHTO_LRFD_9.1.3.2.1#EXTREMO",
+           # --- VE-3.14 --- el procedimiento general, implementado.
+           "AASHTO_LRFD_9.5.7.3.4.2#GENERAL", "AASHTO_LRFD_9.5.7.3.4.2#MU",
+           "AASHTO_LRFD_9.5.7.3.4.2#SXE", "AASHTO_LRFD_9.5.7.3.4.2#SX",
+           "AASHTO_LRFD_9.C5.7.3.4.2#NEGATIVO"),
     que_pasa_si_no_se_hace=(
         "La seccion fallaria por traccion diagonal, sin aviso, antes de "
         "agotar su flexion."),

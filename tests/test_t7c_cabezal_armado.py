@@ -1395,19 +1395,19 @@ def test_el_minimo_de_flexion_sale_del_momento_de_resistencia_y_no_del_sismico()
         abs=TOL_AS)
 
 
-def test_fuera_del_simplificado_el_cortante_se_detiene_con_su_rotulo():
+def test_fuera_del_simplificado_el_cortante_se_verifica_con_el_general():
     """
-    Una pantalla de 0.45 m sin estribos queda fuera de 5.7.3.4.1 (16.0 in):
-    «metodo no evaluable», con el rotulo del ARMADO y no el de HDS-5.
+    REESCRITO DECLARANDOLO (VE-3.14, H-2 de los ensayos de diseño del
+    cabezal): una pantalla de 0.45 m sin estribos queda fuera de 5.7.3.4.1
+    (16.0 in), y hasta VE-3.14 se detenia con «metodo no evaluable» porque el
+    procedimiento general de 5.7.3.4.2 no estaba implementado. Hoy se
+    verifica con la β de la ec. 5.7.3.4.2-2 (tests/test_ve3_14_cabezal.py).
     """
-    with pytest.raises(MetodoNoEvaluableError) as e:
-        M9.diseno_flexion_corte(momento=30.0, cortante=40.0, espesor=0.45,
+    s = M9.diseno_flexion_corte(momento=30.0, cortante=40.0, espesor=0.45,
                                 id_punto="T-00")
-    assert e.value.rotulo == modelos.MOTIVO_METODO_NO_EVALUABLE_ARMADO
-    assert str(e.value).startswith("método no evaluable (AASHTO LRFD 5.7.3.4")
-    assert "HDS-5" not in str(e.value)
-    assert "5.7.3.4.2" in e.value.procedimiento
-    assert isinstance(e.value, ErrorProyecto)
+    a2 = next(v for v in s.verificaciones if v.codigo.startswith("A2"))
+    assert "5.7.3.4.2" in a2.paso.formula
+    assert s.V_r is not None and s.V_r > 0
 
 
 def test_una_zapata_gruesa_y_corta_si_entra_en_el_simplificado():
@@ -1417,8 +1417,10 @@ def test_una_zapata_gruesa_y_corta_si_entra_en_el_simplificado():
               seccion="punta de prueba", cara="inferior", ancho_seccion=2.0)
     s = M9.diseno_flexion_corte(vuelo=0.80, **kw)
     assert s.V_r > 0
-    with pytest.raises(MetodoNoEvaluableError):
-        M9.diseno_flexion_corte(vuelo=2.50, **kw)
+    # Con el vuelo largo, desde VE-3.14 el procedimiento general (antes,
+    # «metodo no evaluable»): menos resistencia que con β = 2.
+    largo = M9.diseno_flexion_corte(vuelo=2.50, **kw)
+    assert 0 < largo.V_r < s.V_r
 
 
 def test_la_pantalla_avisa_cuando_el_cortante_pasa_de_la_mitad_de_la_resistencia():
@@ -2133,12 +2135,23 @@ def test_el_tipo_gravedad_declarado_lleva_a_la_alternativa_ciclopea(tmp_path):
 
 @pytest.mark.lento
 def test_un_elemento_que_no_se_puede_evaluar_es_un_bloqueo_y_los_demas_siguen(
-        tmp_path):
+        tmp_path, monkeypatch):
     """
     Una pantalla declarada de 0.45 m queda fuera del simplificado de
     cortante: su etapa deja un `Bloqueo` «metodo no evaluable» con el
     rotulo del armado, y la zapata y los aleros se arman igual.
+
+    CAMBIADO DECLARANDOLO (VE-3.14): desde que el procedimiento general de
+    5.7.3.4.2 existe, la pantalla de 0.45 m ya no se detiene sola. Lo que este
+    test protege --un elemento que no se puede evaluar deja SU bloqueo y los
+    demas se arman-- se ejercita forzando la falta del metodo en el general.
     """
+    def sin_general(**_kw):
+        raise MetodoNoEvaluableError(
+            "cortante de prueba", "procedimiento general de AASHTO LRFD "
+            "5.7.3.4.2", "forzado por el test", None,
+            rotulo=modelos.MOTIVO_METODO_NO_EVALUABLE_ARMADO)
+    monkeypatch.setattr(M9, "beta_procedimiento_general", sin_general)
     _, a01 = _correr_de_prueba(
         tmp_path, extra_a01={"cabezal_declarado": {
             "espesor_base_muro_m": 0.45, "espesor_corona_m": 0.45}})
