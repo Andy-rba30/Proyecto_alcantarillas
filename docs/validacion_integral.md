@@ -266,7 +266,7 @@ Ningún criterio se rellenó en `criterios_adoptados.py`: los que el juego neces
 | `categoria_refuerzo_aashto` | [A] | expediente | — | decision | sí | sí | PENDIENTE - AASHTO LRFD 9a ed., Tabla 5.10.1-1 y su nota al pie, pag. |
 | `exposicion_quimica_ems` | [S] | expediente | — | ensayo | sí | sí | PENDIENTE - Analisis quimico del EMS (contenido de sulfatos y cloruros en suelo y en agua freatica). |
 | `umbral_no_colapso_evento_extremo` | [A] | expediente | — | decision | sí | sí | Fase 5, V8 de la hoja de ruta, sin numeral. |
-| `peso_especifico_saturado_relleno_kn_m3` | [A] | perfil | — | ensayo | sí | sí | PENDIENTE - ensayo del material de relleno (peso especifico y gravedad especifica de solidos, a la compactacion especificada) |
+| `peso_especifico_saturado_relleno_kn_m3` | [S] | perfil | — | ensayo | sí | sí | PENDIENTE - ensayo del material de relleno (peso especifico y gravedad especifica de solidos, a la compactacion especificada) |
 | `clase_exposicion_fisuracion_cabezal` | [A] | expediente | — | decision | sí | sí | AASHTO LRFD 9a ed., 5.6.7 y C5.6.7, pags. |
 | `edicion_que_rige_el_expediente` | [A] | expediente | — | decision | no (censado) | no | Registro normativo: el campo `vigencia` de cada Fuente presente (`fuentes.estado_de_vigencia`) y `fuentes.fuentes_con_eleccion_de_edicion_pendiente_tecnica`, que deriva de el las seis fuentes de arriba; un test exige que esta ficha las nomb |
 | `edicion_legal_que_rige_el_expediente` | [A] | expediente | — | decision | no (censado) | no | Registro normativo: `fuentes.MP.vigencia` (acto aprobatorio RD 041-2016-MTC/14, impreso en las PDF 2 y 3 del ejemplar; derogado por RD 19-2018-MTC/14, El Peruano dispositivo 1730970-1, vigente desde el 15-01-2019, verificado por busqueda we |

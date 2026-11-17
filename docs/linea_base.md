@@ -847,4 +847,10 @@ línea base: ninguna de sus corridas tiene un punto al que la Fase 5 le detenga 
 que falta un escalón que cumple; sí mueve `docs/validacion_integral.md` (variante
 `caudal_calculado`, B-01) y el resumen de la tercera corrida del índice de fórmulas.
 
+Y de la verificación de esas correcciones (ficha VE2-05), regenerada otra vez sobre el
+conjunto: N2 reetiqueta `peso_especifico_saturado_relleno_kn_m3` de [A] a [S], y eso se ve
+en la etiqueta de su fila en las tablas de criterios de las memorias de perfil (las dos
+veces que la lista aparece) y de expediente, además de la huella. N1 (A1 acotada al dato
+del punto) no mueve la línea base, por la misma razón que A1.
+
 **Diámetros, secciones, materiales y HW movidos: ninguno.**

@@ -1713,7 +1713,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | `dentellon_losa_entrega` | [N->] | valor de una fuente ([N→] o [C]) sin ventana: no hay rango que barrer |
 | `profundidad_cimentacion_min_cabezal_m` | [N->] | valor de una fuente ([N→] o [C]) sin ventana: no hay rango que barrer |
 | `peralte_min_zapata_armada_m` | [N->] | valor de una fuente ([N→] o [C]) sin ventana: no hay rango que barrer |
-| `peso_especifico_saturado_relleno_kn_m3` | [A] | dato de ensayo o de sitio, sin ventana: se declara con su trazabilidad, no se elige |
+| `peso_especifico_saturado_relleno_kn_m3` | [S] | dato de ensayo o de sitio, sin ventana: se declara con su trazabilidad, no se elige |
 | `catalogo_barras_refuerzo_cabezal` | [A] | su valor es una fila o un conjunto de filas de una tabla (forma estructurada) y la ventana, si la hay, va por fila o en prosa: no es legible por máquina |
 | `concreto_ciclopeo_cabezal` | [A] | ventana POR CAMPO de un dict: barrerlo exige elegir una esquina por campo, y no se hizo (NO SE MIDIÓ); ningún cabezal del juego es de gravedad |
 | `espesor_min_zapata_concreto_simple_m` | [N->] | valor de una fuente ([N→] o [C]) sin ventana: no hay rango que barrer |

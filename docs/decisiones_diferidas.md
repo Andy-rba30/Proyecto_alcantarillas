@@ -7731,8 +7731,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   alternativa.
 - **Abierto:** (1) cerrado en las correcciones de la revisión (VE2-03, M3): con
   `nf_del_punto` y el nivel sobre la clave una corrida de perfil se detiene en
-  `peso_especifico_saturado_relleno_kn_m3`, que hoy es de perfil —el dato de ensayo quedó
-  exento de la ventana— y el filtro de perfil de la pestaña 2 lo muestra;
+  `peso_especifico_saturado_relleno_kn_m3`, que hoy es [S] pendiente de ensayo y de perfil
+  (VE2-05, N2), y el filtro de perfil de la pestaña 2 lo muestra;
   (2) la hoja de ruta (fila V7; Fase 8, ítem 3, «con NF a 1.4 m») calla que el nivel lo
   fija el Propietario, y sigue mal mientras el dueño no la corrija.
 - **Qué haría falta:** corregir (2).
@@ -7866,9 +7866,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   «no factible» con delta de rasante, sale el dato que falta (`Q_evento_extremo_m3s`), y
   con ese dato coherente se detiene en `perfil_hdpe_fabricante`. (M3)
   `peso_especifico_saturado_relleno_kn_m3` es de perfil, medido por una corrida de perfil
-  con `nivel_agua_diseno_v7` = `nf_del_punto`; para eso la regla 3 de `_verificar_nivel`
-  exime de la ventana al dato de ensayo, que lleva la trazabilidad de `DeEnsayo` (CLAUDE.md
-  al día). (M4) `Criterio.no_negativo`, comprobado por `_verificar_signo` en los tres
+  con `nivel_agua_diseno_v7` = `nf_del_punto`, y es [S] pendiente de ensayo con su
+  `trazabilidad` (ficha VE2-05, N2). (M4) `Criterio.no_negativo`, comprobado por `_verificar_signo` en los tres
   caminos, sólo en `margen_estacional_nf_v7_m`; sin tope inventado. (B1) el caso G2
   original (S = 0.012) queda fijado: se detiene en la clase D-load de la Fase 8. (B3)
   `TOL_REL_CONTINUIDAD_MANNING` a 1e-8: fuera de la malla de la suite (marcos con Q bajo el
@@ -7905,3 +7904,28 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   control de salida; si sí, tests en rojo con el caso de arriba, corrección en
   `_velocidad_de_v3` y línea base regenerada con su lista de números movidos.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::_velocidad_de_v3`
+
+## VE2-05 · Lo que la verificación de las correcciones de VE-2 encontró (N1 a N7)
+
+- **Cerrado (verificación Fable, `proceso/planes_mejora/ve2_estado/VERIFICACION_FABLE.md`;
+  un alto, un medio y cinco bajos; decisiones del dueño del 2026-11-17 en N1 y N2):** (N1)
+  A1 volvía decisiva también la fila de pared de un diámetro que V7 pide dentro de la Fase 5
+  (30 casos del juego de T-11 pasaban de «no factible por rasante» con delta a «falta la
+  pared»): decide sólo el dato del punto; el que nombra un criterio no
+  (`MD._falta_un_dato_de_catalogo`), con el caso real fijado (A-01, Q = 1.0, S = 0.004,
+  extremo 3.0: delta 0.31981) y los textos que decían que la pared se pide «antes de la
+  tabla» corregidos. (N2) `peso_especifico_saturado_relleno_kn_m3` es [S] pendiente de
+  ensayo, con `trazabilidad`, de perfil (medido); la excepción que M3 había puesto en la
+  regla 3 de `_verificar_nivel` se retira y CLAUDE.md vuelve a su texto; `Criterio.positivo`
+  rechaza en la puerta 0 y negativos, sólo en este criterio. (N3) VE2-C y VE2-02 al día. (N4)
+  CLAUDE.md («Excepciones») recoge A1 y N1. (N5) VE2-04 detrás de VE2-03. (N6) la tolerancia
+  de continuidad dice su dominio (Q desde el 0.1 % del lleno). (N7) el mutante de
+  `_verificar_signo` con el criterio vacío muere.
+- **Por qué así:** N1 conserva la ficha T4-10 para lo que es catálogo y la regla de CLAUDE.md
+  («un punto al que solo le falta un dato no es "no factible"») para el dato del punto, con
+  la misma frontera que el dato inválido (`exc.campo in ca.CRITERIOS`); N2 sigue la
+  taxonomía: un dato determinado por un procedimiento no tiene rango que elegir y se
+  defiende con trazabilidad, que es [S].
+- **Qué haría falta:** nada para estos. Sigue como antes de VE-2 que por la CLI un dato de
+  ensayo se declara sin nota (la pestaña 2 la exige).
+- **Dónde vive:** `src/modulos/MD.py::_falta_un_dato_de_catalogo`
