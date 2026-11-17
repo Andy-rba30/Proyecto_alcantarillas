@@ -997,3 +997,27 @@ de canal real, 0.30-0.40 m, lo dejaría sin sección). Regenerada con
   `dimensionamiento_zapata_cabezal` entre los criterios sin valor.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
+
+## 25. VE-3.11: hallazgos de los ensayos de diseño del conducto (H2, H3, H4, H6) (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` sobre `33bd7fc`. Lo que se
+mueve, punto por punto, comparado hoja por hoja en los cuatro JSON:
+
+- **H4, V7 suma el peso propio del concreto** (γ_c · (A_exterior − A_interior), con
+  `peso_especifico_concreto_kn_m3` = 23.56 kN/m³, que pasa a ser criterio usado de la
+  corrida de perfil):
+  - `informe_familia_c.json` y `informe_perfil_ancho.json`, A-01, V7: lado estabilizante
+    15.988 → 22.650 kN/m; A-02: 16.830 → 23.491 kN/m (los dos ya cumplían).
+  - `informe_familia_c.json`, C-01 (marco), V7: 23.256 → 44.460 kN/m (ya cumplía).
+  - B-01 (las dos corridas): los escalones de concreto Ø 1.20, 1.35 y 1.50 m dejan de
+    incumplir V7 (siguen incumpliendo V2); en Ø 1.65 y 1.80 m V7 sigue sin cumplir, con el
+    lado estabilizante 7.165 → 26.851 y 2.467 → 25.491 kN/m.
+- **H6, el titular nombra la causa real**: B-01 (las dos corridas) pasa de «NO FACTIBLE POR
+  RASANTE» a «NO FACTIBLE POR V2: no cumple en ningun escalon evaluado…» (V2 incumplida en
+  todos los escalones de los dos candidatos que llegaron a la subrasante).
+- **H2** (V1 con el resalto dentro del barril bajo control de entrada) y **H3** (el rótulo
+  de V7 en el delta de 7.A): sin efecto en estas corridas.
+- La huella `criterios_sha1` en los cuatro JSON y en las memorias, y la lista de criterios
+  usados (se suma `peso_especifico_concreto_kn_m3`).
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
