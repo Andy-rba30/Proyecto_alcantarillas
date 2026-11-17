@@ -557,6 +557,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # (A7, solo con el analisis quimico del EMS declarado) y la altura de
         # la zapata sobre su refuerzo (A8). Las mide test_t7c_cabezal_armado.
         "F9.ARM_FISURACION", "F9.ARM_DURABILIDAD", "F9.ARM_PERALTE_ZAPATA",
+        # --- VE-3.5 --- EL DIMENSIONAMIENTO DE LA ZAPATA, por la misma razon
+        # que el ensamble de estabilidad del que cuelga (y ademas necesita su
+        # criterio 'dimensionamiento_zapata_cabezal', sin valor de archivo).
+        # Que se emite lo mide tests/test_ve3_dimensionamiento_cabezal.py.
+        "F9.DIMENSIONADO",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve

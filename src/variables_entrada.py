@@ -1723,6 +1723,10 @@ _META_CRITERIOS: Dict[str, _Meta] = {
              "que el freatico sube entre la lectura y su nivel mas alto"),
     "phi_relleno_trasdos": _Meta(unidad="grados"),
     "predimensionamiento_cabezal": _Meta(unidad="m y adimensional (reglas)"),
+    "dimensionamiento_zapata_cabezal": _Meta(
+        unidad="m (paso) y adimensional (tope sobre H_c)",
+        nota="Solo se lee si la zapata de la regla no cumple la estabilidad "
+             "y su ancho no se declaro (VE-3.5)"),
     "procedimiento_flexion_corte_aashto_sec5": _Meta(unidad="-"),
     "punto_aplicacion_incremento_sismico": _Meta(unidad="- (fraccion de H)"),
     "relacion_intensidad_duracion": _Meta(unidad="-"),

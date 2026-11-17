@@ -552,6 +552,13 @@ def test_los_datos_de_la_corrida_de_expediente_son_los_de_T7b_y_T7c():
     carpeta = ind.DIR_CORRIDAS_DE_REFERENCIA.joinpath("expediente_cabezal")
     declaradas = json.loads(carpeta.joinpath("declaraciones.json").read_text())
     assert declaradas.pop("remanso_derecho_via") == "cota_de_afectacion"
+    # VE-3.5: la corrida de referencia declara ademas el paso y el tope del
+    # dimensionamiento de la zapata (DATOS DE PRUEBA, los del juego de la
+    # validacion integral) para que el indice ejercite el dimensionamiento;
+    # las corridas de T-7c verifican la geometria de la REGLA y no lo llevan.
+    from tests.fixtures import juego_validacion_integral as J
+    assert declaradas.pop("dimensionamiento_zapata_cabezal") == \
+        J.DECLARACIONES["dimensionamiento_zapata_cabezal"]
     assert declaradas == t7c.DECLARACIONES_DE_PRUEBA
     externos = json.loads(carpeta.joinpath("externos.json").read_text())
     # Lo que `_correr_de_prueba` escribe en su JSON, leido de su AST.

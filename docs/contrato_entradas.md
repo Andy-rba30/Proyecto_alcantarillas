@@ -245,6 +245,14 @@ dimensión tiene que ser un número finito, mayor que cero y no mayor que
 `dominios.DIMENSION_CABEZAL_MAX_M`; un texto, un booleano, un cero o una clave desconocida
 detienen la carga (`M9.validar_cabezal_declarado`). Sin el objeto, rige la regla.
 
+**Desde VE-3.5 el ancho de la zapata se DIMENSIONA** cuando la geometría de la regla no
+cumple la estabilidad y el punto no declaró `ancho_zapata_m`: crece por el talón en pasos
+hasta cumplir E1 a E3 o hasta un tope (`M9.dimensionar_zapata_por_estabilidad`). El paso y
+el tope son el criterio `dimensionamiento_zapata_cabezal` [A], que **declara el
+proyectista** y no tiene valor de archivo: sin él el dimensionamiento se detiene («criterio
+pendiente», cuenta en «Etapas bloqueadas») y se verifica la geometría de la regla. Un
+ancho declarado gana y no se itera.
+
 Lo que el cabezal **sí** necesita del sitio no es nuevo: la profundidad de socavación a la
 salida (`material_lecho_salida` o `profundidad_socavacion_estimada_m`, §3, de T-8) baja su
 desplante y el dentellón de su losa; sin ninguna de las dos, el desplante de salida queda
@@ -470,6 +478,7 @@ tabla: detienen sólo en una rama que ninguna de las dos bases recorre.
 | `TR_evento_extremo` | criterio que se declara | Propietario (con el estudio hidrológico) | V8, y con ella el punto |
 | `umbral_no_colapso_evento_extremo` | criterio que se declara | Propietario | Ídem |
 | `remanso_derecho_via` | criterio que se declara | Proyectista | V5, y con ella el punto (Familias A y B) |
+| `dimensionamiento_zapata_cabezal` | criterio que se declara | Proyectista | Con la zapata de la regla que no cumple la estabilidad (y su ancho sin declarar): el dimensionamiento de la zapata de los dos cabezales del punto (VE-3.5); sin él se verifica la geometría de la regla |
 | `categoria_refuerzo_aashto` | criterio que se declara | Proyectista · especificación de materiales | Los tres recubrimientos de diseño de la 9.4 de la Fase 9 del proyecto (§3.4) |
 | `drenaje_trasdos` | método diferido con ficha | Proyectista (y los planos) | Con el valor de archivo (`sin_drenaje`), la condición sísmica de la estabilidad de los dos cabezales de cada punto: ficha T7B-05 (equilibrio límite generalizado con el agua del relleno) |
 

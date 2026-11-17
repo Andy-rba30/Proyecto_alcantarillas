@@ -886,6 +886,26 @@ cuatro memorias, y la etiqueta de esas dos filas ([A] → [S]) en las tablas de 
 
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
 
+## 20. VE-3.5: el cabezal se dimensiona por estabilidad; la línea base no ejercita la estabilidad y no mueve ningún número (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto
+primero en el `PATH`). VE-3.5 añade el criterio `dimensionamiento_zapata_cabezal` [A] de
+expediente, SIN valor de archivo (el paso y el tope del ancho de la zapata), y el
+dimensionamiento de la zapata por intentos detrás de la estabilidad de la geometría de la
+regla (`M9.dimensionar_zapata_por_estabilidad`). Ninguna corrida de la línea base llega a
+evaluar la estabilidad de un cabezal (la de expediente se detiene antes en los criterios
+del EMS y del relleno que no declara), de modo que el dimensionamiento no corre en ella y
+el criterio nuevo no se lee. Lo que se mueve: `criterios_sha1` en los cuatro JSON, la
+clave nueva en la lista de criterios sin valor de los cuatro JSON, y en las memorias la
+fila de la huella, el recuento («147 criterios declarados, 22 todavía sin valor») y la
+fila del criterio nuevo en la lista de pendientes (nota de perfil y Tablero 1).
+
+**Diámetros, secciones, materiales, HW y geometrías de cabezal movidos: ninguno.** Donde
+el dimensionamiento sí corre (la validación integral, que declara el criterio con datos de
+PRUEBA, y la corrida de referencia `expediente_cabezal` del índice de fórmulas), las
+zapatas crecen y las filas E1 a E3 cumplen: lo dicen `docs/validacion_integral.md`, la
+ficha nueva y `tests/test_ve3_dimensionamiento_cabezal.py`.
+
 ## 21. VE-3.6 (Familia C): VC3, la rasante hidráulica del canal; ningún número se mueve (2026-11-17)
 
 Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto

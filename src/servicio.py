@@ -165,7 +165,9 @@ from src.modulos.M9_cabezal import (ELEMENTOS_ARMADOS,  # --- T-7c ---
                                     verificar_cabezal_ciclopeo)
 from src.modulos.M9_cabezal import (CONDICIONES_DE_ESTABILIDAD,
                                     datos_del_cabezal_del_punto,
+                                    dimensionar_zapata_por_estabilidad,
                                     ensamble_estabilidad,
+                                    incorporar_dimensionado,
                                     integrar_estabilidad,
                                     validar_suelo_fundacion)
 from src.modelos import (DatosDeExpediente, DerechoDeViaDelPunto,
@@ -2976,6 +2978,32 @@ def etapa_de_estabilidad(extremo: str, condicion: str) -> str:
             f"{condicion} (T-7b)")
 
 
+# --- VE-3.5 --- El rotulo de la etapa del dimensionamiento de la zapata: un
+# `Bloqueo` con esta etapa dice que el dimensionamiento no corrio (su
+# criterio sin valor) y que la geometria verificada es la de la regla. No
+# dice «estabilidad»: no es una etapa de estabilidad, y los consumidores que
+# buscan las etapas de estabilidad bloqueadas por ese texto no la cuentan.
+ETAPA_DIMENSIONAMIENTO_CABEZAL = ("dimensionamiento de la zapata de los "
+                                  "cabezales (VE-3.5)")
+
+
+def _estabilidades(informe: InformePunto, entornos, bloqueos) -> list:
+    """
+    La estabilidad de cada cabezal en cada condicion, una etapa por cabezal
+    y por condicion, con lo que no se pueda evaluar en `bloqueos`.
+    """
+    estabilidades = []
+    for entorno in entornos:
+        for condicion in CONDICIONES_DE_ESTABILIDAD:
+            resultado = _etapa(
+                bloqueos, FASE_CABEZAL,
+                etapa_de_estabilidad(entorno.extremo, condicion.value),
+                lambda e=entorno, c=condicion: ensamble_estabilidad(e, c))
+            if resultado is not None:
+                estabilidades.append(resultado)
+    return estabilidades
+
+
 def _fase_9(informe: InformePunto,
             externos: Optional[DatosExternos] = None) -> None:
     """
@@ -3035,15 +3063,39 @@ def _fase_9(informe: InformePunto,
             suelo_del_punto=suelo, resultado=informe.resultado))
     if entornos is None:
         return
-    estabilidades = []
-    for entorno in entornos:
-        for condicion in CONDICIONES_DE_ESTABILIDAD:
-            resultado = _etapa(
-                informe.bloqueos, FASE_CABEZAL,
-                etapa_de_estabilidad(entorno.extremo, condicion.value),
-                lambda e=entorno, c=condicion: ensamble_estabilidad(e, c))
-            if resultado is not None:
-                estabilidades.append(resultado)
+    # --- VE-3.5 --- LA GEOMETRIA DE LA REGLA SE EVALUA PRIMERO, y lo que no
+    # pueda evaluar se guarda aparte: si el dimensionamiento cambia la
+    # zapata, la geometria FINAL se vuelve a evaluar por esta misma via y
+    # sus bloqueos son los que cuentan, no los de la partida.
+    de_la_regla, del_dimensionado = [], []
+    estabilidades = _estabilidades(informe, entornos, de_la_regla)
+    dimensionado = _etapa(
+        del_dimensionado, FASE_CABEZAL, ETAPA_DIMENSIONAMIENTO_CABEZAL,
+        lambda: dimensionar_zapata_por_estabilidad(
+            punto=informe.punto_de_calculo, resultado=informe.resultado,
+            geometria=informe.geometria, embocadura=informe.embocadura,
+            cabezal=informe.cabezal, estabilidades=estabilidades,
+            socavacion=informe.socavacion, declarados=declarados,
+            coherencia_embocadura=informe.coherencia_embocadura,
+            motivo_sin_socavacion=motivo, suelo_del_punto=suelo))
+    if dimensionado is not None and dimensionado.anchos:
+        informe.bloqueos.extend(del_dimensionado)
+        informe.cabezal = dimensionado.cabezal
+        entornos = _etapa(
+            informe.bloqueos, FASE_CABEZAL,
+            "datos de la estabilidad del cabezal (T-7b)",
+            lambda: datos_del_cabezal_del_punto(
+                punto=informe.punto_de_calculo, cabezal=informe.cabezal,
+                geometria=informe.geometria, socavacion=informe.socavacion,
+                suelo_del_punto=suelo, resultado=informe.resultado))
+        if entornos is None:
+            return
+        estabilidades = _estabilidades(informe, entornos, informe.bloqueos)
+    else:
+        informe.bloqueos.extend(de_la_regla + del_dimensionado)
+    if dimensionado is not None:
+        informe.cabezal = incorporar_dimensionado(informe.cabezal,
+                                                  dimensionado)
     informe.cabezal = integrar_estabilidad(informe.cabezal, estabilidades)
     _fase_9_armado(informe, entornos)
 

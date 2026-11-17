@@ -4931,8 +4931,13 @@ ORIGEN_DIMENSION_DECLARADA = "declarada"
 # regla» -- su valor no lo eligio la regla -- ni «declarada» -- nadie la
 # tecleo --. Imprimirla con uno de los dos rotulos mentia sobre su origen.
 ORIGEN_DIMENSION_DERIVADA = "derivada de dimensiones declaradas"
+# --- VE-3.5 --- La dimension que el programa hizo CRECER hasta que la
+# estabilidad cumple (`M9.dimensionar_zapata_por_estabilidad`): el ancho de
+# la zapata y, con el, el talon. No la eligio la regla ni la declaro nadie.
+ORIGEN_DIMENSION_ESTABILIDAD = "dimensionada por estabilidad"
 ORIGENES_DE_DIMENSION = (ORIGEN_DIMENSION_REGLA, ORIGEN_DIMENSION_DECLARADA,
-                         ORIGEN_DIMENSION_DERIVADA)
+                         ORIGEN_DIMENSION_DERIVADA,
+                         ORIGEN_DIMENSION_ESTABILIDAD)
 
 
 @dataclass(frozen=True)
@@ -5153,6 +5158,11 @@ class CabezalDelPunto:
     # y sus avisos en `avisos`. Vacio = el armado no se evaluo (su etapa se
     # bloqueo y el punto lleva el `Bloqueo` con el motivo).
     armado: Tuple["ArmadoDelCabezal", ...] = ()
+    # --- VE-3.5 --- Los anchos de zapata que el dimensionamiento por
+    # estabilidad PROBO, en orden, por extremo: el primero es el de la regla
+    # y el ultimo el adoptado. Vacio = no se dimensiono (la regla cumplio,
+    # el ancho se declaro o el criterio del paso y el tope esta sin valor).
+    intentos_de_zapata: Tuple["IntentoDeZapata", ...] = ()
 
     @property
     def geometrias(self) -> Tuple[GeometriaCabezal, GeometriaCabezal]:
@@ -5161,6 +5171,28 @@ class CabezalDelPunto:
     @property
     def verificaciones_incumplidas(self) -> Tuple["Verificacion", ...]:
         return tuple(v for v in self.verificaciones if not v.cumple)
+
+
+@dataclass(frozen=True)
+class IntentoDeZapata:
+    """
+    --- VE-3.5 --- Un intento del dimensionamiento de la zapata de UN
+    cabezal (`M9.dimensionar_zapata_por_estabilidad`): el ancho probado, las
+    condiciones de estabilidad que se pudieron evaluar con el, las filas que
+    DECIDEN y no cumplieron y si el intento cumple (todas las evaluadas
+    cumplen). Es la traza que la memoria imprime: que se probo y por que se
+    siguio.
+    """
+
+    extremo: str
+    B: float                                  # m
+    condiciones: Tuple[str, ...]
+    incumplidas: Tuple[str, ...]
+    al_tope: bool = False
+
+    @property
+    def cumple(self) -> bool:
+        return bool(self.condiciones) and not self.incumplidas
 
 
 @dataclass(frozen=True)
