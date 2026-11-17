@@ -994,6 +994,7 @@ línea que se pueda romper.
 | `HDS5_3ED.3.1.4#HW_REMANSO` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.1.4#K` | 3.1.4, ec. (3.4b) | «Outlet Control» | pág. impresa **3.10** · PDF 92 | definicion | 2026-08-28 · texto |
 | `HDS5_3ED.3.1.4#LONGITUD` | 3.1.4 | «Outlet Control» | pág. impresa **3.9** · PDF 91 | aproximacion | 2026-11-11 · texto |
+| `HDS5_3ED.3.1.4#N_TIPICO` | 3.1.4 | «Outlet Control» | pág. impresa **3.8** · PDF 90 | definicion | 2026-11-17 · ambos |
 | `HDS5_3ED.3.1.4#REMANSO` | 3.1.4 | «Outlet Control» | pág. impresa **3.12** · PDF 94 | definicion | 2026-09-21 · texto |
 | `HDS5_3ED.3.1.6#V_SALIDA` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
 | `HDS5_3ED.3.1.6#V_SALIDA_TW` | 3.1.6 | «Outlet Velocity» | pág. impresa **3.18** · PDF 100 | definicion | 2026-09-20 · texto |
@@ -1031,6 +1032,7 @@ línea que se pueda romper.
 | `HDS5_3ED.A.3#FORMAS` | A.3 | «A.3  INLET CONTROL DIMENSIONLESS DESIGN CURVES» | pág. impresa **A.2** · PDF 191 | exigencia | 2026-09-07 · texto |
 | `HDS5_3ED.A.3#PENDIENTE_2` | A.3 | «A.3  INLET CONTROL DIMENSIONLESS DESIGN CURVES» | pág. impresa **A.2** · PDF 191 | definicion | 2026-11-11 · texto |
 | `HDS5_3ED.A.3.1#CRITICO` | A.3.1 | «Elliptical Structural Plate Example» | pág. impresa **A.3** · PDF 192 | definicion | 2026-11-11 · texto |
+| `HDS5_3ED.B.2#CONCRETO_CAMPO` | B.2 | «CONCRETE PIPE CULVERTS» | pág. impresa **B.2** · PDF 204 | definicion | 2026-11-17 · texto |
 | `HDS5_3ED.B.3#CAJON_IN_SITU` | B.3 | «CONCRETE BOX CULVERT» | pág. impresa **B.2** · PDF 204 | definicion | 2026-11-12 · ambos |
 | `HDS5_3ED.SIMBOLOS#THETA_W` | List of Symbols, ΘW | «LIST OF SYMBOLS (Cont.)» | pág. impresa **xix** · PDF 23 | definicion | 2026-11-13 · texto |
 | `HDS5_3ED.TA.1` | Table A.1 | «Constants for Inlet Control Equations for Charts in Appendix G.» | pág. impresa **A.8** · PDF 197 | definicion | 2026-08-28 · ambos |
@@ -1068,6 +1070,8 @@ línea que se pueda romper.
 > **`HDS5_3ED.3.1.4#K`** — El 19.63 ESTA en la fuente, no es derivacion. El numeral abre en la pag. impresa 3.5 y la ecuacion esta en la 3.10.
 
 > **`HDS5_3ED.3.1.4#LONGITUD`** — Lista «Factors Influencing Outlet Control», que empieza en la pag. impresa 3.8 (PDF 90); el numeral abre en la 3.5 (PDF 87). La oracion anterior define la magnitud: «Barrel length is the total culvert length from the entrance to the exit of the culvert». Es la razon, escrita por la fuente, de que la longitud del diseño hidraulico se calcule ANTES de conocer la seccion y por eso sin su altura: la altura del barril y la pendiente mueven la longitud real, y el diseño arranca con una aproximacion.
+
+> **`HDS5_3ED.3.1.4#N_TIPICO`** — Item «Barrel roughness» de «Factors Influencing Outlet Control», num. 3.1.4, pag. impresa 3.8 (PDF 90; el numeral abre en la 3.5, PDF 87). Comprobado por texto y renderizada a 1.3x. Es UN n por material --0.012 para pared lisa--, no un par: la alternativa 'n_unico_hds5' del criterio [A] 'columna_n_manning_concreto' lo usa para capacidad y para velocidad. Remite al Apendice B, cuyo num. B.2 da para el concreto 0.011 a 0.013 en obra (HDS5_3ED.B.2#CONCRETO_CAMPO).
 
 > **`HDS5_3ED.3.1.4#REMANSO`** — Es el procedimiento en prosa (pieza 1 del paquete I1): la frontera aguas abajo max(y_c, TW) y la marcha hacia la entrada. La frase anterior dice para que casos: «Backwater calculations may be required for the partly full flow conditions shown in Figures 3.7A and C».
 
@@ -1136,6 +1140,8 @@ línea que se pueda romper.
 > **`HDS5_3ED.A.3#PENDIENTE_2`** — Dos cosas en una frase: que la correccion por pendiente es CHICA («the slope effect is small»), y que fijarla en el 2 % deja la carga del lado conservador en pendientes mayores. Es el extremo inferior de la ventana de `pendiente_maxima_conducto` (0.02: la pendiente con que la fuente traza sus curvas) y el argumento con que el proyecto lee el termino Ks·S como una correccion menor que no puede anular la carga.
 
 > **`HDS5_3ED.A.3.1#CRITICO`** — ES LA CONDICION DE FLUJO CRITICO ESCRITA POR LA FUENTE, y no con los simbolos del paso que la cita. La pagina la escribe como V_c^2/(2g) = y_h/2 con y_h = A_p/T_p el tirante hidraulico, y dos renglones despues como numero de Froude: «Since the Froude number equals 1.0 at critical depth, Vc can be determined from the Froude number equation», con Qc = Ap (g yh)^0.5. Sustituyendo V = Q/A y y_h = A/T, las dos son Q^2/g = A^3/T, que es la forma en que `M4._residuo_critico` la resuelve: la igualdad es algebra de una linea y la hace el proyecto, no la fuente. Esta en un EJEMPLO del Apendice A (el desarrollo de la curva adimensional de una seccion eliptica), no en un numeral de definiciones: el HDS-5 no dedica ningun apartado a definir el tirante critico --lo lee de las cartas del Apendice C (num. 3.3.3)--, y esta es la unica pagina del ejemplar que escribe la condicion con la que se calcula. La misma pagina define H_c/D = d_c/D + y_h/(2D), ec. (A.4), que es el H_c de la Forma 1.
+
+> **`HDS5_3ED.B.2#CONCRETO_CAMPO`** — Num. B.2, pag. impresa B.2 (PDF 204). DESCRIBE el n del tubo de concreto en obra: el de laboratorio (~0.009) sube a 0.011-0.013 por la instalacion y el envejecimiento. Ese intervalo coincide con las columnas NORMAL y MAXIMO de la fila «tubo recto y libre de basuras» de la Tabla Nº 09 (lectura corregida), y NO con el MINIMO (0.010) que la doble n usa para la velocidad: es lo que sostiene que el extremo de erosion de la doble n sea un valor por debajo de lo que el HDS-5 espera en obra (lado seguro para V3).
 
 > **`HDS5_3ED.B.3#CAJON_IN_SITU`** — La pagina imprime «0.022  see concrete lined open channels  from» con DOS espacios a cada lado y sin parentesis (comprobado renderizada); el texto va como la capa de texto lo entrega, con los espacios normalizados. DESCRIBE el rango del cajon VACIADO IN SITU y lo liga a la calidad del ENCOFRADO, no a un acabado: es la ventana HACIA ARRIBA del n de capacidad del criterio 'n_manning_cajon' [C], cuyo valor de archivo es la fila «Concrete Boxes / Smooth» de la Tabla B.1 (0.012-0.015, pag. impresa B.6). Remite a la Tabla 1 del HDS 3 (FHWA 1961), que no esta en normas/.
 
@@ -3001,6 +3007,7 @@ recomienda.
 | `F4.MANNING` | Fase 4 - Dimensionamiento hidraulico | Tirante normal y velocidad en el conducto, por Manning: DOS tirantes normales, uno con cada extremo del rango de la Tabla N 09 (n_max y n_min), y la velocidad de cada uno con su propio tirante | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HEC14.3.2.2#V_SALIDA_NORMAL` |
 | `F4.N_CAJON` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por analogia declarada dentro del grupo A de la Tabla N 09 | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09` |
 | `F4.N_CAJON_TB1` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del cajon de concreto, por la fila del cajon de la Tabla B.1 del HDS-5 | **define** | `HDS5_3ED.TB.1`, `HDS5_3ED.B.3#CAJON_IN_SITU` |
+| `F4.N_CONCRETO` | Fase 4 - Dimensionamiento hidraulico | Coeficiente de rugosidad de Manning del tubo de concreto: de que columna de la Tabla N 09 sale el n de capacidad y el de velocidad | **define** | `MC_HHD.4.1.1.3.6`, `MC_HHD.4.1.1.3.6#T09`, `HDS5_3ED.3.1.4#N_TIPICO`, `HDS5_3ED.B.2#CONCRETO_CAMPO` |
 | `F4.PERFIL` | Fase 4 - Dimensionamiento hidraulico | Perfil de la lamina de agua por paso directo desde la salida hacia la entrada: longitud a seccion llena y carga a la entrada por remanso (HDS-5 pag. 3.12 y Section 3.5) | **define** | `HDS5_3ED.3.1.4#REMANSO`, `HDS5_3ED.3.1.4#EMPALME`, `HDS5_3ED.3.1.4#HW_REMANSO`, `HDS5_3ED.3.1.4#0_75D`, `HDS5_3ED.3.5#PERFIL`, `HDS5_3ED.3.5.1#S1`, `HDS5_3ED.3.5.1#TIPO7`, `HDS5_3ED.3.3.3#HO` |
 | `F4.PISO_HW` | Fase 4 - Dimensionamiento hidraulico | Carga de control de entrada cuando la correccion por pendiente Ks·S la deja nula o negativa: el piso adoptado (`hw_entrada_fuera_de_rango`) | **define** | `HDS5_3ED.A.2.1#FORMA_1`, `HDS5_3ED.A.2.1#KS`, `HDS5_3ED.A.3#PENDIENTE_2` |
 | `F4.REGIMEN` | Fase 4 - Dimensionamiento hidraulico | Regimen del barril y velocidad a la salida, con el area que HDS-5 3.1.6 asigna a cada caso | **define** | `HDS5_3ED.3.1.6#V_SALIDA`, `HDS5_3ED.3.1.6#V_SALIDA_TW`, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`, `HDS5_3ED.3.1.3#SUMERGENCIA` |
@@ -3243,7 +3250,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 508.
+Citas sin firma de verificación: **6** de 510.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

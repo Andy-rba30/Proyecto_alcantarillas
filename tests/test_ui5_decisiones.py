@@ -1302,7 +1302,8 @@ def candidatos():
 
 def test_4_el_barrido_cubre_los_141_y_censa_lo_que_no_barre(candidatos):
     por_clave, fuera = candidatos
-    assert len(por_clave) == len(ca.CRITERIOS) == 141
+    # 142 desde VE-2 (a): 'columna_n_manning_concreto'.
+    assert len(por_clave) == len(ca.CRITERIOS) == 142
     assert fuera == FILAS_FUERA_DE_SU_VENTANA
     assert {k for k, cs in por_clave.items() if not cs} == SIN_NADA_QUE_BARRER
     # Y el barrido no es de juguete: cada valor de archivo esta, y mas.

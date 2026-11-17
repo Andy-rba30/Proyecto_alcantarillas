@@ -163,7 +163,12 @@ def test_los_juicios_del_anexo(medidas):
             "regla_espesor_longitud_proteccion_salida",
             "regla_minimos_constructivos_cabezal",
             "suelo_agresivo_lrfd_sobre_tmc", "tipo_proteccion_entrada",
-            "umbral_area_quebrada_importante_ha"},
+            "umbral_area_quebrada_importante_ha",
+            # VE-2 (a): el criterio nuevo de la columna del n del tubo de
+            # concreto, derivado del censo. En el juego los tres tubos
+            # quedan en Ø 0.90 m bajo control de ENTRADA (que no depende de
+            # n) con las tres columnas: se lee y no mueve nada.
+            "columna_n_manning_concreto"},
         "NO LO LEE LA CORRIDA": {
             "borde_libre_bajo_tw_ahogante", "seccion_receptor",
             "hw_entrada_fuera_de_rango", "coeficiente_uniformidad_temez",

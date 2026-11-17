@@ -1653,3 +1653,13 @@ punto, en `docs/linea_base.md` §11: A-01 3.206 → 3.040 m/s y d50 0.338 → 0.
 5.40 → 0.600 / 5.00 m; C-01 2.084 → 1.955 m/s; el cajón 2.694463 → 2.496046 m/s.
 
 **Diámetros, secciones, materiales y HW movidos: ninguno; ningún diámetro sube.**
+
+**VE-2 (a)** (`validacion(VE-2.2)`, ficha VE2-A): la columna del n del tubo de concreto
+pasa a ser el criterio [A] `columna_n_manning_concreto`, con la doble n de siempre como
+valor de archivo. Se mueven **ocho archivos y ningún número de cálculo**: la huella de
+`criterios_adoptados.py` y el recuento «141 → 142 criterios declarados» del encabezado;
+la entrada del criterio en los criterios usados de los cuatro JSON; su ficha y su fila
+en las memorias, y en la memoria ancha el paso nuevo `F4.N_CONCRETO` (A-01 y su remisión)
+con el fundamento y las dos citas del HDS-5 en el anexo. Medido con un diff por
+fragmentos de las memorias contra `HEAD`: sólo reemplazos de recuento y huella, y
+inserciones. **Diámetros, secciones, materiales, n y HW movidos: ninguno.**

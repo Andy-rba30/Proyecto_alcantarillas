@@ -183,6 +183,13 @@ numeral. El Manual de Hidrologia, num. 4.1.1.3.6, pag. impresa 74, solo dice
 «n : Coeficiente de Manning (Ver Tabla Nº 09)», y la tabla da MINIMO, NORMAL
 y MAXIMO sin regla de columna: la eleccion es adopcion del proyecto, y la
 hoja de ruta sigue mal mientras el dueño no la corrija (decision VE1-02 (a)).
+DESDE VE-2 la eleccion esta escrita donde se hace: es el criterio [A] de
+perfil 'columna_n_manning_concreto', con la doble n de siempre como valor de
+archivo y dos alternativas barribles --la columna NORMAL (0.011) y el n
+unico de pared lisa del HDS-5 (0.012, num. 3.1.4, pag. impresa 3.8, [C])--;
+la lee `_par_manning_del_tubo_de_concreto` y la desarrolla en la memoria
+`_pasos_del_tubo_de_concreto` (ficha VE2-A). Solo el TUBO: el marco sigue con
+'n_manning_cajon' y el TMC con su subfila de la tabla.
 
 LA MATRIZ DE DURABILIDAD ES UN FILTRO REAL DESDE T-4 (INF-3.3.1; v8 §3.3).
 `matriz_durabilidad(punto, ensayos)` recibe los ensayos del punto --pH,
@@ -310,6 +317,12 @@ CRITERIO_SUCS_DEFICIENTE = "sucs_fundacion_deficiente"
 # "diametro designado", que es justo lo que no tiene.
 CRITERIO_ESPESOR_PARED_CAJON = "espesor_pared_cajon"
 CRITERIO_N_MANNING_HDPE = "n_manning_hdpe"
+# --- VE-2 (a) --- La columna de la Tabla N 09 del TUBO de concreto, y sus
+# tres valores: el conjunto cerrado de la ficha (forma `categoria`).
+CRITERIO_COLUMNA_N_CONCRETO = "columna_n_manning_concreto"
+COLUMNA_DOBLE_N = "doble_n_minimo_maximo"
+COLUMNA_NORMAL = "columna_normal"
+COLUMNA_N_UNICO_HDS5 = "n_unico_hds5"
 CRITERIO_HDS5_HDPE = "hds5_embocadura_hdpe"
 # Los cinco del cajon (C5). Los cuatro primeros los lee ESTE modulo; el quinto
 # lo lee M4 cuando llega al control de salida, y aqui solo viaja su CLAVE
@@ -1396,6 +1409,12 @@ def catalogo(material: MaterialLike,
         n_min, n_max = _par_de_manning(CRITERIO_N_MANNING_HDPE,
                                        _valor_si_declarado(CRITERIO_N_MANNING_HDPE))
         hds5 = ConstantesHDS5.desde_dict(ca.valor(CRITERIO_HDS5_HDPE))
+    elif tipo is TipoMaterial.CONCRETO_REFORZADO:
+        # --- VE-2 (a) --- la columna de la Tabla N 09 es el criterio [A]
+        # 'columna_n_manning_concreto'; con su valor de archivo, la doble n
+        # de siempre: MANNING['concreto_tubo_recto'].
+        n_min, n_max = _par_manning_del_tubo_de_concreto()
+        hds5 = ConstantesHDS5.desde_dict(HDS5_INLET[_HDS5_CLAVE[tipo]])
     else:
         n_min, n_max = MANNING[_MANNING_CLAVE[tipo]]
         hds5 = ConstantesHDS5.desde_dict(HDS5_INLET[_HDS5_CLAVE[tipo]])
@@ -1485,9 +1504,164 @@ def catalogo(material: MaterialLike,
                         else SECCION_EG2013[tipo.value]),
         forma=forma,
         pasos=(_pasos_del_marco() if forma is FormaSeccion.RECTANGULAR
+               else _pasos_del_tubo_de_concreto(n_min, n_max)
+               if tipo is TipoMaterial.CONCRETO_REFORZADO
                else ()),
         D_max_criterio=D_max_criterio,
     )
+
+
+# ---------------------------------------------------------------------------
+# --- VE-2 (a) --- La columna del n del TUBO de concreto
+# ---------------------------------------------------------------------------
+
+def _columna_n_del_concreto() -> str:
+    """
+    La columna de la Tabla N 09 que 'columna_n_manning_concreto' [A] elige
+    para el tubo de concreto (VE-2, decision VE1-02 (a)).
+
+    La puerta de declaracion ya exige uno de los tres textos (forma
+    `categoria`); esto es la segunda linea para quien la esquive, como
+    `_fila_manning_de_cajon` para el marco: un texto ajeno al conjunto se
+    detiene como `DatoInvalidoError` del expediente, no como `KeyError`.
+    """
+    columna = ca.valor(CRITERIO_COLUMNA_N_CONCRETO)
+    if columna not in (COLUMNA_DOBLE_N, COLUMNA_NORMAL, COLUMNA_N_UNICO_HDS5):
+        raise DatoInvalidoError(
+            CRITERIO_COLUMNA_N_CONCRETO, valor=columna,
+            motivo=f"la columna del n del tubo de concreto es una de "
+                   f"'{COLUMNA_DOBLE_N}', '{COLUMNA_NORMAL}' o "
+                   f"'{COLUMNA_N_UNICO_HDS5}'")
+    return columna
+
+
+def _par_manning_del_tubo_de_concreto() -> Tuple[float, float]:
+    """
+    El par (n_min, n_max) del TUBO de concreto, segun la columna adoptada
+    (Sec. 4.1; num. 4.1.1.3.6 y Tabla N 09 del Manual de Hidrologia; HDS-5
+    num. 3.1.4).
+
+        'doble_n_minimo_maximo'  (MINIMO, MAXIMO) de la fila    (0.010, 0.013)
+        'columna_normal'         (NORMAL, NORMAL)               (0.011, 0.011)
+        'n_unico_hds5'           (0.012, 0.012), HDS-5 pag. 3.8 [C]
+
+    Los valores de la fila se LEEN de `TABLA_09_FILAS` (la transcripcion
+    [N]) y el del HDS-5 de `criterios_adoptados.N_MANNING_PARED_LISA_HDS5`
+    ([C]): aqui no se escribe ningun n. La DOBLE N NO TIENE NUMERAL --la
+    hoja de ruta la rotula «Regla [N]» en su §4.1 y sigue mal mientras el
+    dueño no la corrija (ficha VE1-01)--, y por eso la columna es una
+    eleccion [A] y no una lectura. Con un n unico, n_min = n_max: la
+    estimacion alta y la baja de velocidad coinciden.
+    """
+    columna = _columna_n_del_concreto()
+    fila = TABLA_09_FILAS[_MANNING_CLAVE[TipoMaterial.CONCRETO_REFORZADO]]
+    if columna == COLUMNA_NORMAL:
+        return fila["normal"], fila["normal"]
+    if columna == COLUMNA_N_UNICO_HDS5:
+        return ca.N_MANNING_PARED_LISA_HDS5, ca.N_MANNING_PARED_LISA_HDS5
+    return MANNING[_MANNING_CLAVE[TipoMaterial.CONCRETO_REFORZADO]]
+
+
+def _rotulo_de_la_columna_del_concreto(columna: str) -> str:
+    """
+    El rotulo de rugosidad del tubo de concreto para el reporte. Con el
+    valor de archivo es la fila LITERAL de siempre --la memoria no cambia
+    una letra--; con una alternativa dice de que columna, o de que fuente,
+    salio el n.
+    """
+    fila = TABLA_09_FILAS[_MANNING_CLAVE[TipoMaterial.CONCRETO_REFORZADO]]
+    if columna == COLUMNA_NORMAL:
+        return (f"{fila['fila']} -- columna NORMAL para capacidad y "
+                f"velocidad (criterio '{CRITERIO_COLUMNA_N_CONCRETO}' [A])")
+    if columna == COLUMNA_N_UNICO_HDS5:
+        return (f"ninguna: n = {ca.N_MANNING_PARED_LISA_HDS5} tipico de "
+                "diseño de un conducto de pared lisa, HDS-5 num. 3.1.4, pag. "
+                f"impresa 3.8 [C] (criterio '{CRITERIO_COLUMNA_N_CONCRETO}' "
+                "[A])")
+    return fila["fila"]
+
+
+# Las tres opciones, en el orden de la ficha, como las lee la memoria.
+_ENTRE_COLUMNAS_DEL_CONCRETO = (
+    "doble n: MINIMO de la fila para velocidad maxima y socavacion, MAXIMO "
+    "para capacidad y tirante (Tabla N 09)",
+    "columna NORMAL de la fila para las dos ramas (Tabla N 09)",
+    "n unico de pared lisa del HDS-5, num. 3.1.4, pag. impresa 3.8 [C]",
+)
+
+
+def _pasos_del_tubo_de_concreto(n_min: float,
+                                n_max: float) -> Tuple[PasoDeMemoria, ...]:
+    """
+    La traza de Fase 3 del TUBO de concreto: UNA decision, la columna de la
+    Tabla N 09 de la que sale su n (VE-2, decision VE1-02 (a)).
+
+    Hasta VE-2 el tubo no emitia ningun paso aqui --«su fila de la Tabla N 09
+    y su carta de la Tabla A.1 son lectura directa», decia el docstring de
+    `_pasos_del_marco`--, y la fila sigue siendolo; la COLUMNA no: es el
+    criterio [A] 'columna_n_manning_concreto', y una memoria que no lo
+    desarrolle no lo puede defender. Viaja en `Material.pasos` por el mismo
+    canal que el marco. El TMC y el HDPE siguen sin paso: el TMC lee su
+    doble n directamente de su subfila y el HDPE de su criterio [C].
+    """
+    columna = _columna_n_del_concreto()
+    rotulo = _rotulo_de_la_columna_del_concreto(columna)
+    citas = ("MC_HHD.4.1.1.3.6", "MC_HHD.4.1.1.3.6#T09")
+    if columna == COLUMNA_N_UNICO_HDS5:
+        citas += ("HDS5_3ED.3.1.4#N_TIPICO",)
+    formula = {
+        COLUMNA_DOBLE_N: ("n_max = columna MAXIMO de la fila -> capacidad, "
+                          "tirante y control de salida; n_min = columna "
+                          "MINIMO -> velocidad maxima y socavacion"),
+        COLUMNA_NORMAL: ("n = columna NORMAL de la fila, para capacidad y "
+                         "para velocidad"),
+        COLUMNA_N_UNICO_HDS5: ("n = n tipico de diseño de un conducto de "
+                               "pared lisa (HDS-5), para capacidad y para "
+                               "velocidad"),
+    }[columna]
+    return (paso(
+        "F4.N_CONCRETO",
+        codigo="4.1",
+        que="Coeficiente de rugosidad de Manning del tubo de concreto",
+        formula=formula,
+        formula_cita_id=("HDS5_3ED.3.1.4#N_TIPICO"
+                         if columna == COLUMNA_N_UNICO_HDS5
+                         else "MC_HHD.4.1.1.3.6#T09"),
+        citas_textuales=citas,
+        sustitucion=(
+            Magnitud("n_min", n_min, "",
+                     "n para la rama de EROSION (V3, d50): la estimacion "
+                     "alta de velocidad", cifras=CIFRAS_FINA),
+            Magnitud("n_max", n_max, "",
+                     "n para la rama de CAPACIDAD (tirante, V1, HW de "
+                     "salida)", cifras=CIFRAS_FINA)),
+        resultado=Magnitud("columna adoptada", rotulo, "",
+                           f"criterio '{CRITERIO_COLUMNA_N_CONCRETO}' [A]",
+                           cifras=None),
+        veredicto=Veredicto(tipo=TipoDeVeredicto.SIN_VEREDICTO,
+                            explicacion="adopcion, no verificacion"),
+        elecciones=(EleccionDeProyecto(
+            que_se_adopto="la columna de la Tabla N 09 de la que sale el n "
+                          "del tubo de concreto",
+            valor=columna,
+            entre=_ENTRE_COLUMNAS_DEL_CONCRETO,
+            de_donde="Tabla N 09, num. 4.1.1.3.6, pag. impresa 75, fila "
+                     "«tubo recto y libre de basuras»",
+            por_que="la tabla da tres columnas por fila y ni el Manual ni el "
+                    "HDS-5 dicen cual usar: la eleccion es del proyecto, sin "
+                    "numeral, y por eso un criterio [A] declarado",
+            cita_id="MC_HHD.4.1.1.3.6#T09",
+            clave_criterio=CRITERIO_COLUMNA_N_CONCRETO),),
+        nota_del_proyecto=(
+            "La hoja de ruta (Sec. 4.1) rotula la doble n «Regla [N]» y no "
+            "tiene numeral que la sostenga: el Manual solo dice «n : "
+            "Coeficiente de Manning (Ver Tabla Nº 09)» y la tabla no dice "
+            "que columna usar. La hoja de ruta sigue mal mientras el dueño "
+            "no la corrija (ficha VE1-01). El num. B.2 del HDS-5 da 0.011 a "
+            "0.013 para el tubo de concreto en obra: el MINIMO de la fila "
+            "(0.010) queda por debajo, del lado seguro para la velocidad "
+            "maxima."),
+    ),)
 
 
 def _pasos_del_marco() -> Tuple[PasoDeMemoria, ...]:
@@ -1501,9 +1675,11 @@ def _pasos_del_marco() -> Tuple[PasoDeMemoria, ...]:
     modo que llegan a la memoria por el canal que ya existe -- el bloque que
     M11 titula «Fases 3 y 4» -- sin abrir uno nuevo.
 
-    POR QUE EL TUBO NO TIENE NINGUNA. Su fila de la Tabla N 09 y su carta de
+    POR QUE EL TUBO NO TIENE ESTAS. Su fila de la Tabla N 09 y su carta de
     la Tabla A.1 son LECTURA DIRECTA de una tabla normativa: no hay eleccion
-    que desarrollar, y lo que hay ya sale en el bloque de criterios. El marco
+    que desarrollar. DESDE VE-2 el tubo de concreto tiene UNA, la columna de
+    esa fila ('columna_n_manning_concreto' [A]), y la emite
+    `_pasos_del_tubo_de_concreto`; el TMC y el HDPE siguen sin paso. El marco
     tiene cuatro criterios declarados por el proyectista y uno mas -- el ke --
     que se mueve con ellos: una memoria que no los desarrolle no los puede
     defender.
@@ -1792,6 +1968,8 @@ def _fila_manning(tipo: TipoMaterial, forma: FormaSeccion) -> str:
                 f"'{CRITERIO_N_MANNING_CAJON}': el grupo A de la tabla cubre "
                 f"al cajon por su titulo y ninguna de sus filas nombra la "
                 f"seccion rectangular")
+    if tipo is TipoMaterial.CONCRETO_REFORZADO:
+        return _rotulo_de_la_columna_del_concreto(_columna_n_del_concreto())
     if tipo in _MANNING_CLAVE:
         return TABLA_09_FILAS[_MANNING_CLAVE[tipo]]["fila"]
     return (f"no listado en la Tabla N 09; analogia declarada en el "

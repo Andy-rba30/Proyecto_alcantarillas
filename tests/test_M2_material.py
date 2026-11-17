@@ -463,10 +463,20 @@ def test_los_cinco_pasos_de_fase_3_del_marco_salen_con_su_fundamento():
 def test_el_tubo_no_emite_ningun_paso_de_fase_3():
     """
     La contraparte, y es la que fija que los cinco no son decoracion: el tubo
-    NO elige nada en Fase 3 -- su fila de la Tabla N 09 y su carta de la Tabla
-    A.1 son lectura directa -- y por eso su tupla viene vacia.
+    NO elige nada en Fase 3 que no sea su columna de rugosidad -- su fila de
+    la Tabla N 09 y su carta de la Tabla A.1 son lectura directa --.
+
+    CAMBIADO EN VE-2 (decision VE1-02 (a)), declarando la causa: decia que
+    la tupla del tubo de concreto venia VACIA. Desde VE-2 la COLUMNA de la
+    Tabla N 09 de la que sale su n es el criterio [A]
+    'columna_n_manning_concreto', y el tubo de concreto emite UN paso, el de
+    esa eleccion (F4.N_CONCRETO); lo fija `tests/test_ve2_materiales.py`.
+    El TMC y el HDPE siguen sin ninguno.
     """
-    assert catalogo(TipoMaterial.CONCRETO_REFORZADO).pasos == ()
+    pasos = catalogo(TipoMaterial.CONCRETO_REFORZADO).pasos
+    assert [p.fundamento_id for p in pasos] == ["F4.N_CONCRETO"]
+    assert catalogo(TipoMaterial.TMC).pasos == ()
+    assert catalogo(TipoMaterial.HDPE).pasos == ()
 
 
 def test_el_tope_de_catalogo_del_marco_sale_de_su_propia_progresion():

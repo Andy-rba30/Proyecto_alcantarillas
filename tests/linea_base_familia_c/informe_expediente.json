@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "45363ff79a26b4885350510b79b9f6e224bf3196",
+    "criterios_sha1": "5813c4ddcd56e89b815d66cc092cd76ebe511c3e",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -1068,6 +1068,13 @@
         "valor": null,
         "declarado_en_caliente": false,
         "concepto": "Categoria de material de refuerzo de la Tabla 5.10.1-1 de AASHTO LRFD ('A' acero sin recubrir, 'B' epoxico o galvanizado, 'C' acero AASHTO M 334M), que decide que columna de la tabla de recubrimientos aplica a este cabezal"
+      },
+      {
+        "clave": "columna_n_manning_concreto",
+        "etiqueta": "A",
+        "valor": "doble_n_minimo_maximo",
+        "declarado_en_caliente": false,
+        "concepto": "Columna de la Tabla Nº 09 de la que sale el coeficiente de Manning del TUBO de concreto: la doble n (minimo y maximo), la columna normal o el n unico del HDS-5"
       },
       {
         "clave": "corrugacion_y_espesor_tmc",

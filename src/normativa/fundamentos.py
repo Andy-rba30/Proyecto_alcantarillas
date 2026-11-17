@@ -1819,6 +1819,46 @@ N_CAJON_TB1 = _fundamento(
 )
 
 
+# --- VE-2 (a) --- La columna de la Tabla N 09 de la que sale el n del TUBO
+# de concreto. Hasta VE-2 era lectura directa «n_min = MINIMO, n_max =
+# MAXIMO», rotulada «Regla [N]» por la hoja de ruta (§4.1) sin numeral que la
+# sostenga (ficha VE1-01, D3); desde VE-2 es el criterio [A]
+# 'columna_n_manning_concreto', y este paso desarrolla la eleccion. Verbo
+# DEFINE: las tres citas DESCRIBEN valores (la tabla, el n tipico del HDS-5 y
+# el de obra del num. B.2); ninguna manda una columna.
+N_CONCRETO = _fundamento(
+    id="F4.N_CONCRETO",
+    fase=F4,
+    que_paso=("Coeficiente de rugosidad de Manning del tubo de concreto: "
+              "de que columna de la Tabla N 09 sale el n de capacidad y el "
+              "de velocidad"),
+    por_que=(
+        "El Manual remite el n a la Tabla N 09 y la tabla da, para el tubo "
+        "de concreto, tres columnas --MINIMO, NORMAL y MAXIMO-- sin decir "
+        "cual se usa: la eleccion de columna es del proyecto, sin numeral "
+        "que la fije, y por eso es un criterio [A] declarado y no una "
+        "lectura de la norma. Elegirla cambia de signo segun lo que se "
+        "verifique: un n mayor es el lado seguro para el tirante, el borde "
+        "libre y la carga de salida, y un n menor para la velocidad maxima y "
+        "la socavacion. El HDS-5 describe 0.012 como el n tipico de diseño de "
+        "un conducto de pared lisa, y 0.011 a 0.013 como el n del tubo de "
+        "concreto en obra; ninguna de las tres fuentes obliga a usar los dos "
+        "extremos de la fila."),
+    verbo=Verbo.DEFINE,
+    citas=("MC_HHD.4.1.1.3.6",               # DEFINICION -> sostiene DEFINE
+           "MC_HHD.4.1.1.3.6#T09",           # DEFINICION
+           "HDS5_3ED.3.1.4#N_TIPICO",        # DEFINICION
+           "HDS5_3ED.B.2#CONCRETO_CAMPO"),   # DEFINICION
+    que_pasa_si_no_se_hace=(
+        "La memoria imprimiria la doble n del tubo como una lectura directa "
+        "de la Tabla N 09 --que es como la rotula la hoja de ruta, «Regla "
+        "[N]»--, y un revisor que abra la pag. impresa 74 no encontraria "
+        "ninguna regla de columna: el valor que gobierna el tirante y la "
+        "velocidad del conducto mas usado del expediente quedaria apoyado en "
+        "un numeral que no lo dice, sin ventana ni alternativa barrible."),
+)
+
+
 # ===========================================================================
 # --- T-2 --- (cadena T, 2026-11-11) · Pendiente del conducto
 # ===========================================================================

@@ -391,6 +391,14 @@ RIESGO_ADMISIBLE = {
 # extremo que la deja del lado seguro. El valor NORMAL no entra en ninguna de
 # las dos ramas: entraria en un calculo de un solo n, que es justo lo que la
 # regla prohibe.
+# --- VE-2 (a) --- ESE PARRAFO DESCRIBE LA ELECCION DE ARCHIVO, NO UNA NORMA.
+# La «regla de doble n» no tiene numeral: el num. 4.1.1.3.6 solo remite a
+# esta tabla, y la tabla no dice que columna usar (ficha VE1-01, D3; la hoja
+# de ruta la rotula «Regla [N]» y sigue mal mientras no se corrija). Para el
+# TUBO de concreto la columna es desde VE-2 el criterio [A]
+# 'columna_n_manning_concreto' (archivo: la doble n; alternativas: la
+# columna NORMAL o el n unico de pared lisa del HDS-5). Los valores de la
+# tabla siguen siendo [N] aqui; cual columna aplica es [A] alli.
 NUMERAL_DISENO_HIDRAULICO = _reg.cita("MC_HHD.4.1.1.3.6").como_texto()
 # El numeral con el que ESTE se confundio antes de S5, declarado para que la
 # confusion no pueda repetirse en silencio: el 4.1.1.3.5 es "Recomendaciones y

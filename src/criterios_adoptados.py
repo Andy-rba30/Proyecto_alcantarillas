@@ -909,6 +909,17 @@ def _n_manning_hdpe_hds5() -> Tuple[float, float]:
 _N_MANNING_HDPE_HDS5 = _n_manning_hdpe_hds5()
 
 
+# --- VE-2 (a) --- El n UNICO que el HDS-5 da como tipico de diseño para un
+# conducto de PARED LISA (num. 3.1.4, pag. impresa 3.8, cita
+# HDS5_3ED.3.1.4#N_TIPICO: «Typical Manning's n values used for designing
+# culverts are n = 0.012 for smooth walled culverts»). Es [C] y por eso vive
+# aqui y no en `constantes_normativas`: no es una exigencia peruana, es la
+# alternativa 'n_unico_hds5' del criterio [A] 'columna_n_manning_concreto'.
+# No es una fila de tabla que se pueda leer del registro --es una frase--, y
+# `tests/test_ve2_materiales.py` comprueba que el numero ES el de la frase.
+N_MANNING_PARED_LISA_HDS5 = 0.012
+
+
 # --- T-4 --- El espesor del HDPE, DERIVADO de la Table A12-11 de AASHTO LRFD
 # (`AASHTO_LRFD_9.TA12-11`): el t que lleva el diametro DESIGNADO del catalogo
 # hasta el diametro exterior MAXIMO del producto, t = (Max. OD - D) / 2. El
@@ -2968,6 +2979,80 @@ CRITERIOS: Dict[str, Criterio] = {
                       "HDPE de interior liso. La Tabla N 09 peruana no "
                       "tabula el polietileno: la fila es de la fuente "
                       "tecnica, y por eso la etiqueta es [C]",
+        ),
+    ),
+
+    # --- VE-2 (a) --- (decision del dueño, 2026-11-17, ficha VE1-02 (a)) LA
+    # COLUMNA DEL n DEL TUBO DE CONCRETO ES UNA ELECCION [A]. Hasta VE-2 la
+    # doble n del concreto era lectura directa de la Tabla N 09 --MINIMO para
+    # velocidad, MAXIMO para capacidad-- rotulada «Regla [N]» por la hoja de
+    # ruta (§4.1) sin numeral (ficha VE1-01, D3). El valor de archivo es esa
+    # misma doble n: ningun numero del expediente se mueve.
+    "columna_n_manning_concreto": Criterio(
+        valor="doble_n_minimo_maximo",
+        # DE PERFIL: lo lee `M2.catalogo` al armar el tubo de concreto, que
+        # la corrida `--alcance perfil` arma para todo punto de Familia A o
+        # B (lo mide `tests/test_nivel_medido.py`).
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("doble_n_minimo_maximo", "columna_normal",
+                      "n_unico_hds5"),
+        concepto="Columna de la Tabla Nº 09 de la que sale el coeficiente de "
+                 "Manning del TUBO de concreto: la doble n (minimo y maximo), "
+                 "la columna normal o el n unico del HDS-5",
+        justificacion="Decide con que n de Manning se resuelve el tubo de "
+                      "concreto. El Manual de Hidrologia, num. 4.1.1.3.6 "
+                      "(pag. impresa 74, cita MC_HHD.4.1.1.3.6), solo remite "
+                      "a la Tabla Nº 09, y la tabla (pag. impresa 75) da "
+                      "para la fila del tubo recto de concreto "
+                      "tres columnas, MINIMO 0.010, NORMAL 0.011 y MAXIMO "
+                      "0.013 (lectura corregida del bloque A.2, errata "
+                      "DIS-MCHHD-T09-A2-DESPLAZADA), sin regla de columna: "
+                      "la doble n es una adopcion del proyecto, sin numeral "
+                      "que la sostenga, y la hoja de ruta la rotula «Regla "
+                      "[N]» en su §4.1, que sigue mal mientras el dueño no la "
+                      "corrija (ficha VE1-01). Se adopta la doble n "
+                      "('doble_n_minimo_maximo'): el MAXIMO (0.013) para "
+                      "capacidad, tirante y control de salida, y el MINIMO "
+                      "(0.010) para velocidad maxima y socavacion, cada "
+                      "verificacion con el extremo que la deja del lado "
+                      "seguro. Alternativas barribles: 'columna_normal' -- el "
+                      "0.011 de la misma fila para las dos ramas, el valor "
+                      "corriente de la tabla: baja el tirante y la carga de "
+                      "salida y sube la velocidad de capacidad; 'n_unico_hds5' "
+                      "-- 0.012 para las dos ramas, el n tipico de diseño de "
+                      "un conducto de pared lisa del HDS-5 (num. 3.1.4, pag. "
+                      "impresa 3.8), [C]; el num. B.2 del HDS-5 (pag. impresa "
+                      "B.2) da 0.011 a 0.013 para el tubo de concreto en "
+                      "obra. Con un n unico la estimacion alta y la baja de "
+                      "velocidad coinciden: se pierde el margen de la doble "
+                      "n en las dos ramas a la vez",
+        fuente="Manual de Hidrologia, Hidraulica y Drenaje (MTC), num. "
+               "4.1.1.3.6 «Diseño hidraulico», pag. impresa 74 (PDF 77), "
+               "cita MC_HHD.4.1.1.3.6, y Tabla Nº 09, pag. impresa 75 (PDF "
+               "78), cita MC_HHD.4.1.1.3.6#T09, fila «A.2 NO METALICOS - a. "
+               "Concreto - tubo recto y libre de basuras», leida con la "
+               "correccion de DIS-MCHHD-T09-A2-DESPLAZADA "
+               "(constantes_normativas.TABLA_09_FILAS). HDS-5 3a ed. "
+               "(FHWA-HIF-12-026), num. 3.1.4 «Outlet Control», pag. impresa "
+               "3.8 (PDF 90), cita HDS5_3ED.3.1.4#N_TIPICO: «Typical "
+               "Manning's n values used for designing culverts are n = 0.012 "
+               "for smooth walled culverts»; y num. B.2 «CONCRETE PIPE "
+               "CULVERTS», pag. impresa B.2 (PDF 204), cita "
+               "HDS5_3ED.B.2#CONCRETO_CAMPO: «These values are increased to "
+               "0.011 to 0.013 based on field installation and aging». LA "
+               "DOBLE N NO TIENE NUMERAL, sin numeral en ninguna de las tres "
+               "fuentes: es la Sec. 4.1 de la hoja de ruta, que la rotula "
+               "[N] (ficha VE1-01, D3)",
+        reemplazado_por="Ficha tecnica del tubo especificado (metodo de "
+                        "fabricacion y juntas), con el n del fabricante y el "
+                        "ensayo que lo respalda",
+        resolucion=Libre(
+            que_lo_fija="el proyectista: la Tabla Nº 09 da tres columnas por "
+                        "fila y ni el Manual ni el HDS-5 dicen cual usar ni "
+                        "que se usen los dos extremos",
+            dominio="doble_n_minimo_maximo | columna_normal | n_unico_hds5",
         ),
     ),
 

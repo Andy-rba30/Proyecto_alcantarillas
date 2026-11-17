@@ -1655,6 +1655,13 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     # PF-1 (PC-03): categoria (energia_critica | descartar), la consume M4.
     "hw_entrada_fuera_de_rango": _Meta(unidad="-"),
     "n_manning_hdpe": _Meta(unidad="-"),
+    # --- VE-2 (a) --- la columna de la Tabla N 09 del tubo de concreto.
+    "columna_n_manning_concreto": _Meta(
+        unidad="- (columna de la Tabla N 09, o el n unico del HDS-5)",
+        nota="Se declara la COLUMNA, no el par: los n se leen de la fila "
+             "«tubo recto y libre de basuras» (o de la frase del HDS-5) para "
+             "que el criterio y la tabla no puedan divergir. Solo el TUBO de "
+             "concreto: el marco lee 'n_manning_cajon'."),
     "origen_cota_fondo_entrada": _Meta(unidad="-"),
     "pendiente_relleno_trasdos_i": _Meta(unidad="grados"),
     "nivel_significancia_ks": _Meta(unidad="- (probabilidad)"),

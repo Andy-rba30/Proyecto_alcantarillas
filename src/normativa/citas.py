@@ -14312,4 +14312,76 @@ HDS5_2_2_5D_AGENCIAS = _cita(
 )
 
 
+# ===========================================================================
+# --- VE-2 (a) y (g) --- Las citas de las dos decisiones de MATERIALES de la
+# ficha VE1-02, aprobadas por el dueño el 2026-11-17. Mismo regimen que T-0:
+# la propia sesion abrio cada pagina; las del HDS-5 por su capa de texto y
+# renderizadas, las de AASHTO M 170M SOLO por imagen (el ejemplar no entrega
+# texto utilizable, y su imagen es a su vez una RECOMPOSICION OCR con letras
+# y digitos equivocados: lo que la transcripcion corrige se declara en la
+# nota de cada cita y en `DIS-M170M-T6-RECOMPOSICION`).
+# ===========================================================================
+FECHA_VE2 = "2026-11-17"
+POR_VE2 = "validacion/VE-2 · lectura directa de la pagina por la sesion"
+VE2 = (FECHA_VE2, POR_VE2)
+
+# (a) El n UNICO que el HDS-5 da como tipico para un conducto de pared lisa:
+# la alternativa [C] 'n_unico_hds5' del criterio 'columna_n_manning_concreto'.
+HDS5_3_1_4_N_TIPICO = _cita(
+    id="HDS5_3ED.3.1.4#N_TIPICO",
+    fuente_id="HDS5_3ED",
+    numeral="3.1.4",
+    titulo_numeral="Outlet Control",
+    pagina_impresa="3.8",
+    pagina_pdf=90,
+    pagina_pdf_titulo=87,
+    texto_literal=Verbatim(
+        texto=("Typical Manning's n values used for designing culverts are "
+               "n = 0.012 for smooth walled culverts and n = 0.024 for rough "
+               "culverts (corrugated)."),
+        pagina_pdf=90),
+    # DEFINICION y no RECOMENDACION: la frase DESCRIBE los valores tipicos
+    # con que se diseña, dentro de la lista «Factors Influencing Outlet
+    # Control» (item «Barrel roughness»). No pide ninguno.
+    caracter=Caracter.DEFINICION,
+    metodo=AMBOS,
+    sesion=VE2,
+    nota=("Item «Barrel roughness» de «Factors Influencing Outlet Control», "
+          "num. 3.1.4, pag. impresa 3.8 (PDF 90; el numeral abre en la 3.5, "
+          "PDF 87). Comprobado por texto y renderizada a 1.3x. Es UN n por "
+          "material --0.012 para pared lisa--, no un par: la alternativa "
+          "'n_unico_hds5' del criterio [A] 'columna_n_manning_concreto' lo "
+          "usa para capacidad y para velocidad. Remite al Apendice B, cuyo "
+          "num. B.2 da para el concreto 0.011 a 0.013 en obra "
+          "(HDS5_3ED.B.2#CONCRETO_CAMPO)."),
+)
+
+HDS5_B2_CONCRETO_CAMPO = _cita(
+    id="HDS5_3ED.B.2#CONCRETO_CAMPO",
+    fuente_id="HDS5_3ED",
+    numeral="B.2",
+    titulo_numeral="CONCRETE PIPE CULVERTS",
+    pagina_impresa="B.2",
+    pagina_pdf=204,
+    pagina_pdf_titulo=204,
+    texto_literal=Verbatim(
+        texto=("Laboratory tests on tamped pipe (24 to 36 in. (600 to 900 "
+               "mm) average to good joints) resulted in Manning's n values "
+               "of about 0.009 (Straub et al. 1960). These values are "
+               "increased to 0.011 to 0.013 based on field installation and "
+               "aging."),
+        pagina_pdf=204),
+    caracter=Caracter.DEFINICION,
+    sesion=VE2,
+    nota=("Num. B.2, pag. impresa B.2 (PDF 204). DESCRIBE el n del tubo de "
+          "concreto en obra: el de laboratorio (~0.009) sube a 0.011-0.013 "
+          "por la instalacion y el envejecimiento. Ese intervalo coincide con "
+          "las columnas NORMAL y MAXIMO de la fila «tubo recto y libre de "
+          "basuras» de la Tabla Nº 09 (lectura corregida), y NO con el "
+          "MINIMO (0.010) que la doble n usa para la velocidad: es lo que "
+          "sostiene que el extremo de erosion de la doble n sea un valor por "
+          "debajo de lo que el HDS-5 espera en obra (lado seguro para V3)."),
+)
+
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}

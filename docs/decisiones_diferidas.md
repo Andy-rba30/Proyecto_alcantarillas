@@ -7599,7 +7599,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   se detiene desde 10 km², y Tinas (55.9 km²) y cinco cuencas de TU-107 no se calculan.
   (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
   redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
-- **Cerrado (VE-2):** (b), la velocidad de erosión resuelve su propio tirante normal con n mínimo y UPAO ALC46 dimensiona Ø 0.90 m (ficha VE2-B).
+- **Cerrado (VE-2):** (b), ficha VE2-B. **Cerrado (VE-2) (a):** ficha VE2-A.
 - **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
   el programa calcula; el permiso de VE-1 no las alcanza.
 - **Qué haría falta:** la decisión del dueño y, por cada una adoptada, un prompt con sus
@@ -7640,3 +7640,32 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   histórico en `src/servicio.py` y `src/constantes_normativas.py`, fuera del permiso;
   (iii) la hoja de ruta §4.1 sigue mal (VE1-01, VE2-01).
 - **Dónde vive:** `src/modulos/M3_hidraulica.py::resolver_manning`
+
+## VE2-A · La columna del n del concreto es una elección [A]
+
+- **Cerrado (VE-2, decisión VE1-02 (a)):** la columna de la Tabla Nº 09 de la que sale el n
+  del TUBO de concreto es el criterio [A] de perfil `columna_n_manning_concreto` (forma
+  `categoria`): `doble_n_minimo_maximo` (archivo: MÍNIMO 0.010 para velocidad, MÁXIMO
+  0.013 para capacidad, lectura corregida del bloque A.2, DIS-MCHHD-T09-A2-DESPLAZADA),
+  `columna_normal` (0.011, NORMAL de la misma fila) y `n_unico_hds5` (0.012, [C], HDS-5
+  núm. 3.1.4, pág. impresa 3.8, PDF 90). Lo lee `M2.catalogo` sólo para el tubo; el marco
+  sigue con `n_manning_cajon` y el HDPE con `n_manning_hdpe`. La tabla sigue [N] en
+  `constantes_normativas.TABLA_09_FILAS`; el 0.012 es [C] en
+  `criterios_adoptados.N_MANNING_PARED_LISA_HDS5`, atado por test a su frase. La elección
+  se desarrolla en la memoria (paso `F4.N_CONCRETO`, verbo DEFINE: sus cuatro citas son
+  DEFINICION, ninguna manda una columna). Barrido en `docs/validacion_sensibilidad.md`.
+- **Por qué así:** el Manual (núm. 4.1.1.3.6, pág. impresa 74) sólo dice «n : Coeficiente
+  de Manning (Ver Tabla Nº 09)» y la tabla (pág. impresa 75) no dice qué columna; el HDS-5
+  da 0.012 como n típico de pared lisa y 0.011 a 0.013 para el tubo en obra (núm. B.2,
+  pág. impresa B.2). Con el valor de archivo **ningún número se mueve**: la línea base
+  cambia sólo en la huella de `criterios_adoptados.py`, el recuento 141 → 142, la ficha
+  del criterio y el paso nuevo (texto); ninguna cota, tirante, velocidad ni diámetro.
+- **Abierto:** (1) la hoja de ruta (§4.1) sigue rotulando la doble n «Regla [N]» (ficha
+  VE1-01, D3). (2) La fila «Rugosidad (regla de doble n) … Fila de la Tabla N 09» de
+  `M11._filas_combinacion_adoptada` es texto fijo de M11, fuera del permiso: con una
+  alternativa declarada imprime ese rótulo seguido de la columna o de la fuente real
+  (`Material.fila_manning`). (3) El comentario de `modelos.Material.pasos` («VACIA EN LA
+  CIRCULAR») ya no es cierto del tubo de concreto; `modelos.py` está fuera del permiso.
+- **Qué haría falta:** (1) que el dueño corrija la §4.1; (2) y (3), una línea en
+  `M11_reporte.py` y otra en `modelos.py` al integrar.
+- **Dónde vive:** `src/modulos/M2_material.py::_par_manning_del_tubo_de_concreto`
