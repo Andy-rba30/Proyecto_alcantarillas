@@ -5193,6 +5193,12 @@ class CabezalDelPunto:
     # armado de la zapata cumplio, el peralte se declaro, el cabezal es de
     # gravedad o el armado no se pudo evaluar).
     intentos_de_peralte: Tuple["IntentoDePeralte", ...] = ()
+    # --- VE-3.14 --- Los espesores de pantalla que el dimensionamiento por
+    # armado de la pantalla y de los aleros PROBO, uno por extremo
+    # dimensionado («extremo: e_0: no cumplen ... -> e_1: cumple»). Vacio =
+    # no se dimensiono (el armado cumplio con la regla, el espesor se
+    # declaro, el cabezal es de gravedad o el armado no se pudo evaluar).
+    intentos_de_pantalla: Tuple[str, ...] = ()
 
     @property
     def geometrias(self) -> Tuple[GeometriaCabezal, GeometriaCabezal]:

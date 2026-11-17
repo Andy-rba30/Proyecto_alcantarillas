@@ -1838,6 +1838,21 @@ def _cabezal_del_punto_json(informe: InformePunto) -> Optional[Dict[str, Any]]:
     salida["longitud_entre_cabezales_m"] = _num(c.longitud_entre_cabezales)
     salida["longitud_metrado_m"] = _num(c.longitud_metrado)
     salida["motivo_sin_longitud_entre_cabezales"] = c.motivo_sin_longitud
+    # --- VE-3.14 (H-10) --- la traza de los tres dimensionamientos: que se
+    # probo y por que se siguio (la memoria la imprime en los pasos 9.3.d,
+    # 9.3.p y 9.3.m; el JSON la lleva para quien la lea sin la memoria).
+    salida["intentos_de_zapata"] = [{
+        "extremo": i.extremo, "B_m": _num(i.B), "punta_m": _num(i.punta),
+        "condiciones": list(i.condiciones),
+        "incumplidas": list(i.incumplidas), "cumple": i.cumple,
+        "al_tope": i.al_tope, "reoptimizado": i.reoptimizado}
+        for i in c.intentos_de_zapata]
+    salida["intentos_de_peralte"] = [{
+        "extremo": i.extremo, "espesor_zapata_m": _num(i.espesor_zapata),
+        "B_m": _num(i.B), "incumplidas": list(i.incumplidas),
+        "cumple": i.cumple, "ancho_redimensionado": i.ancho_redimensionado,
+        "al_tope": i.al_tope} for i in c.intentos_de_peralte]
+    salida["intentos_de_pantalla"] = list(c.intentos_de_pantalla)
     # --- T-7b --- el ensamble de estabilidad de cada cabezal y condicion:
     # cargas sin factorar con su brazo, combinaciones de los dos marcos,
     # codigos de sus verificaciones (que van enteras en `verificaciones`

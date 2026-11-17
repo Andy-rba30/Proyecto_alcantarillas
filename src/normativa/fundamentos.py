@@ -3803,6 +3803,33 @@ DIMENSIONADO_PERALTE_CABEZAL = _fundamento(
         "cerraria sin que el proyectista la redimensionara a mano."),
 )
 
+# --- VE-3.14 --- La pantalla (y los aleros, que heredan su espesor)
+# dimensionada por su armado (H-1 de los ensayos de diseño del cabezal). La
+# fuente EXIGE que la seccion resista; COMO se llega al espesor -- crecer en
+# pasos, uniforme, con la zapata que crece lo mismo -- es eleccion del
+# proyecto: va en la nota del paso y en 'dimensionamiento_zapata_cabezal'.
+DIMENSIONADO_PANTALLA_CABEZAL = _fundamento(
+    id="F9.DIMENSIONADO_PANTALLA",
+    fase=F9,
+    que_paso=("Dimensionamiento del espesor de la pantalla del cabezal (y de "
+              "sus aleros) hasta que su armado cumple"),
+    por_que=(
+        "La fuente exige que la resistencia factorada a flexion y a "
+        "cortante de cada seccion no sea menor que la solicitacion "
+        "factorada, y no dice como dimensionar la seccion para "
+        "conseguirlo. Cuando la pantalla o los aleros no cumplen con el "
+        "espesor propuesto, el espesor crece en pasos, la seccion se vuelve "
+        "a armar y la estabilidad y la zapata se vuelven a verificar, hasta "
+        "el primer espesor que cumple; cada intento queda en la memoria con "
+        "lo que no cumplio."),
+    verbo=Verbo.OBLIGA,
+    citas=("AASHTO_LRFD_9.5.6.3.2.1#MR", "AASHTO_LRFD_9.5.7.3.3#VN"),
+    que_pasa_si_no_se_hace=(
+        "El cabezal saldria con una pantalla que se agota por flexion o por "
+        "cortante en su arranque, y el expediente no cerraria sin que el "
+        "proyectista la redimensionara a mano."),
+)
+
 
 # ===========================================================================
 # --- T-7c --- (cadena T) · el armado del cabezal y la alternativa ciclopea

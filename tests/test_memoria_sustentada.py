@@ -568,6 +568,10 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
         # diametro lo decida el TW bajo «no_cumple». Que se emite lo mide
         # tests/test_ve3_13_gobierno_receptor.py (E07 de los ensayos).
         "F5.V1.RECEPTOR",
+        # --- VE-3.14 --- Y el de la PANTALLA, que cuelga del armado de la
+        # pantalla y de los aleros. Que se emite lo mide
+        # tests/test_ve3_14_cabezal.py.
+        "F9.DIMENSIONADO_PANTALLA",
         # LOS CINCO DEL CAJON, Y SU RAZON CAMBIO EN C5. Hasta C4 estaban aqui
         # porque EL PASO QUE LOS EMITIRIA NO EXISTIA. Ahora existe: los cinco
         # los emite `M2_material._pasos_del_marco` cuando el catalogo resuelve

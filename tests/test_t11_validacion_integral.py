@@ -477,7 +477,12 @@ def test_con_la_zapata_de_3m_el_cabezal_de_entrada_de_A01_pasa_entero(variantes)
     v = V.verificaciones_del_punto(informe, "A-01")
     entrada = {k: e for k, e in v.items() if k.startswith("E") and k.endswith(".e")}
     assert len(entrada) == 12 and set(entrada.values()) == {"cumple"}
-    assert v["E1-LRFD.sis.s"] == "cumple"
+    # CAMBIADO DECLARANDOLO (VE-3.14, bloque 3): con el acero que el
+    # cortante general pide, el peralte de la salida baja de 0.704 a
+    # 0.504 m; con el ANCHO DECLARADO (3.0 m, que no se itera) la zapata mas
+    # liviana ya no pasa E1-LRFD sismica, y la app lo dice en vez de
+    # cubrirlo con un peralte inflado. La entrada sigue pasando entera.
+    assert v["E1-LRFD.sis.s"] == "no cumple"
     assert v["E3-LRFD.est.s"] == "cumple"
     salida = _punto(informe, "A-01").cabezal.salida
     assert salida.B == pytest.approx(3.0, abs=ABS_CERO)
