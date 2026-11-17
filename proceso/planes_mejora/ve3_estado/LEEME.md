@@ -24,7 +24,7 @@ por paso directo), VE-3.8 (correcciones de la revisión Fable a la validación e
 
 | Trabajo | Respaldo del trabajo en curso (cada 15 min) |
 |---|---|
-| **DETENIDO por el dueño (2026-11-17 19:49 UTC), a medias** — VE-3.9: paso 0.10 m y tope 1.5·H como valor de archivo de `dimensionamiento_zapata_cabezal`, y el ESPESOR de la zapata también se dimensiona (armado del talón A1/A2) | `claude/youthful-shannon-rjzmuc-respaldo-cabezal-espesor` |
+| **Retomado** (el primer agente se detuvo a las 19:49 UTC; uno nuevo parte de su respaldo `3c15302` y respalda en `claude/youthful-shannon-rjzmuc-respaldo-cabezal-espesor-2`) — VE-3.9: paso 0.10 m y tope 1.5·H como valor de archivo de `dimensionamiento_zapata_cabezal`, y el ESPESOR de la zapata también se dimensiona (armado del talón A1/A2) | `claude/youthful-shannon-rjzmuc-respaldo-cabezal-espesor` |
 
 VE-3.10 (VC3 sin F bloquea) ya está integrado (`8ca5fc9`, ficha VE3-06 en `eb97467`).
 VE-3.9 quedó a medias: su último respaldo es `3c15302` en la rama de respaldo de la tabla
