@@ -7869,7 +7869,6 @@ CRITERIOS: Dict[str, Criterio] = {
         nivel=NIVEL_PERFIL,
         etiqueta="A",
         forma=FORMA_FLOAT,
-        positivo=True,
         concepto="Relleno total hasta la rasante, m, por DEBAJO del cual el "
                  "paso F8.CLASE del tubo de concreto imprime, como contraste "
                  "que no rige, la clase que saldria con la longitud efectiva "

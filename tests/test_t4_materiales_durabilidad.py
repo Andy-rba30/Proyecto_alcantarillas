@@ -1395,24 +1395,36 @@ CASO_G2_ORIGINAL = CASO_G2.replace(",0.015,", ",0.012,")
 ABS_UN_MM_POR_S = 1e-3
 
 
-def test_b1_el_caso_original_del_auditor_se_detiene_en_la_clase_d_load(
+# --- VE-3.12 (decisiones 1 y 7 del dueño), declarandolo: EL CASO CAMBIA DE
+# SALIDA. Con las Clases III a V transcritas (fuente secundaria [C]) la
+# D-load que pide Ø 1.65 m (124.8 N/m/mm) ya no es «un dato que falta»: a ese
+# diametro M 170M ofrece la II (50) y la III (65), la IV (100) esta BLOQUEADA
+# por encima de 300 mm y tampoco alcanza, y la V (140) con pared B solo se
+# tabula hasta 1200 mm (desde 1350 mm es diseño especial). Ninguna clase
+# estandar la alcanza, y la demanda baja con el diametro sin llegar nunca a
+# la III (112.2 en Ø 2.70 m): el concreto se agota por F8.CLASE hasta el
+# ultimo diametro del catalogo, el TMC sigue descartado por la costura y el
+# HDPE por V3 en Ø 1.50 m. El punto es «no factible» con su motivo, que dice
+# que lo que falta es otra clase y no un tubo mayor. Hasta VE-3.12 salia
+# bloqueado por `clases_producto_por_relleno` (ver el bloque de arriba).
+def test_b1_el_caso_original_del_auditor_no_es_factible_por_la_clase_d_load(
         del_expediente, tmp_path):
     """
     Rasante alta, Q = 6 m3/s, S = 0.012 (el `CASO_G2` de T-4), TW = 0.3,
     con los valores del archivo. Desde VE-2 el concreto cumple V3 en Ø 1.50 y
-    1.65 m, y el punto NO es «no factible»: le falta la D-load de una clase de
-    AASHTO M 170M (Fase 8). Ver el bloque de arriba.
+    1.65 m; desde VE-3.12 ninguna clase estandar de M 170M alcanza la D-load
+    de Ø 1.65 m en adelante y el punto es «no factible» por F8.CLASE.
     """
     assert ",0.012," in CASO_G2_ORIGINAL
     punto = _correr_csv(tmp_path, CASO_G2_ORIGINAL)
     assert not punto.dimensionado
     (bloqueo,) = [b for b in punto.bloqueos if "MD" in b.etapa]
-    assert bloqueo.tipo.value == "DatoFaltanteError"
-    assert bloqueo.campo == "clases_producto_por_relleno"
-    assert "1.65 m" in bloqueo.mensaje
+    assert bloqueo.tipo.value == "DisenoNoFactibleError"
+    assert "incumple F8.CLASE" in bloqueo.mensaje
+    assert "no es un tubo mayor sino otra clase" in bloqueo.mensaje
     del_concreto = {e.seccion.etiqueta(): e for e in punto.traza
                     if "oncreto" in e.material}
-    assert list(del_concreto)[-1] == "Ø 1.65 m"
+    assert list(del_concreto)[-1] == "Ø 2.70 m"
     for etiqueta, v3_medida in (("Ø 1.50 m", 5.945), ("Ø 1.65 m", 5.951)):
         (v3,) = [v for v in del_concreto[etiqueta].verificaciones
                  if v.codigo == "V3"]
@@ -1421,7 +1433,13 @@ def test_b1_el_caso_original_del_auditor_se_detiene_en_la_clase_d_load(
                                                   abs=ABS_UN_MM_POR_S)
         assert v3.valor_obtenido < v3.valor_admisible
     assert "incumple V4b" in del_concreto["Ø 1.50 m"].motivo
-    assert MD.MARCA_ESCALON_SIN_EVALUAR in del_concreto["Ø 1.65 m"].motivo
+    for etiqueta, escalon in del_concreto.items():
+        if etiqueta not in ("Ø 0.90 m", "Ø 1.05 m", "Ø 1.20 m", "Ø 1.35 m",
+                            "Ø 1.50 m"):
+            assert "incumple F8.CLASE" in escalon.motivo, etiqueta
+            # frente a la mayor clase OFRECIDA, la III: la IV esta
+            # bloqueada y la V no se tabula con pared B a estos diametros
+            assert "frente a 65.0" in escalon.motivo, etiqueta
     del_tmc = [e for e in punto.traza if "TMC" in e.material]
     for escalon in del_tmc[-2:]:
         assert "incumple F8.COSTURA" in escalon.motivo
