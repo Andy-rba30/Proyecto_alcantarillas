@@ -12,6 +12,10 @@ fuera del repositorio.
   que cumpla la estabilidad dentro del tope: el escenario con el que la app
   entregaba 5.68 × 1.70 m (H-6 de los ensayos) y que desde VE-3.14 declara
   «no factible» sin inflar el peralte.
+- `E2_alto/`: relleno alto (H_c de la salida 4.51 m), suelo granular. Con los
+  criterios de archivo la pantalla de 0.30 m de la regla no se podía armar
+  (A1 a A6 de la pantalla y del alero, H-1 de los ensayos) y la app la
+  entregaba así; desde VE-3.14 la pantalla se dimensiona por su armado.
 
 El comando con que se corre está en el test; las declaraciones en caliente
 del revisor están en `declaraciones.json`.

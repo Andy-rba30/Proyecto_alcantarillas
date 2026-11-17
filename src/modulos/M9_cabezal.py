@@ -4505,7 +4505,8 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
                            id_punto: Optional[str] = None,
                            ancho_por_estabilidad: Optional[float] = None,
                            espesor_por_armado: Optional[float] = None,
-                           punta_por_estabilidad: Optional[float] = None
+                           punta_por_estabilidad: Optional[float] = None,
+                           pantalla_por_armado: Optional[float] = None
                            ) -> GeometriaCabezal:
     """
     La geometria PROPUESTA del cabezal de UN extremo (INF-4.2), con las
@@ -4683,21 +4684,42 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
     e_base = declaradas["espesor_base_muro_m"] if eb_decl else e_regla
     de["e_corona"] = frozenset({"espesor_corona_m"}) if ec_decl else de_e
     de["e_base"] = frozenset({"espesor_base_muro_m"}) if eb_decl else de_e
-    dims.append(_dim("espesor de la pantalla en la corona", e_corona,
-                     texto_e, CRITERIO_GEOMETRIA, ec_decl, de=de_e))
-    dims.append(_dim("espesor de la pantalla en el arranque", e_base,
-                     texto_e + "; trasdos vertical", CRITERIO_GEOMETRIA,
-                     eb_decl, de=de_e))
+    # --- VE-3.14 (H-1 de los ensayos de diseño del cabezal) --- La pantalla
+    # de espesor uniforme que el armado hizo crecer
+    # (`dimensionar_pantalla_por_armado`): la corona y el arranque crecen
+    # juntos (el alero hereda el espesor de la corona) y la zapata crece lo
+    # mismo, de modo que la punta y el talon no cambian. Lo declarado gana.
+    crecimiento_pantalla = 0.0
+    pantalla_por_arm = (pantalla_por_armado is not None and not ec_decl
+                        and not eb_decl and tipo == TIPO_VOLADIZO)
+    if pantalla_por_arm:
+        crecimiento_pantalla = pantalla_por_armado - e_base
+        e_corona = e_base = pantalla_por_armado
+        for nombre in ("espesor de la pantalla en la corona",
+                       "espesor de la pantalla en el arranque"):
+            dims.append(DimensionDeCabezal(
+                nombre=nombre, valor=pantalla_por_armado, unidad="m",
+                origen=ORIGEN_DIMENSION_ARMADO,
+                regla=(f"el menor de la grilla {e_regla:.3f} m + k·paso con "
+                       "el que el armado de la pantalla y de los aleros "
+                       f"cumple, partiendo de {texto_e}"),
+                criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA))
+    else:
+        dims.append(_dim("espesor de la pantalla en la corona", e_corona,
+                         texto_e, CRITERIO_GEOMETRIA, ec_decl, de=de_e))
+        dims.append(_dim("espesor de la pantalla en el arranque", e_base,
+                         texto_e + "; trasdos vertical", CRITERIO_GEOMETRIA,
+                         eb_decl, de=de_e))
 
     # 5. Zapata
     B_decl = "ancho_zapata_m" in declaradas
-    B_regla = reglas["fraccion_ancho_zapata"] * H_c
+    B_regla = reglas["fraccion_ancho_zapata"] * H_c + crecimiento_pantalla
     B = declaradas["ancho_zapata_m"] if B_decl else B_regla
     texto_B = (f"{reglas['fraccion_ancho_zapata']:g}·H_c (regla "
                "'fraccion_ancho_zapata')")
     por_estabilidad = ancho_por_estabilidad is not None and not B_decl
     if por_estabilidad:
-        B = ancho_por_estabilidad
+        B = ancho_por_estabilidad + crecimiento_pantalla
         dims.append(DimensionDeCabezal(
             nombre="ancho de la zapata (B)", valor=B, unidad="m",
             origen=ORIGEN_DIMENSION_ESTABILIDAD,
@@ -4753,8 +4775,8 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
     # Con B dimensionado por estabilidad la punta queda en la de la REGLA
     # (VE-3.5): crece el talon, que suma el peso del relleno.
     punta = (declaradas["ancho_punta_m"] if p_decl
-             else reglas["fraccion_punta"] * (B_regla if por_estabilidad
-                                              else B))
+             else reglas["fraccion_punta"]
+             * ((B_regla if por_estabilidad else B) - crecimiento_pantalla))
     # --- VE-3.14 (H-5 de los ensayos de diseño del cabezal) --- La punta
     # tambien puede crecer: cuando con el talon al tope la estabilidad no
     # cumple (suelo cohesivo, excentricidad hacia la punta), el
@@ -4814,6 +4836,18 @@ def predimensionar_cabezal(*, extremo: ExtremoDelConducto,
         reglas=reglas, declaradas=declaradas,
         de_altura_inicial=de["corona"], de_espesor=de["e_corona"],
         id_punto=id_punto)
+    if pantalla_por_arm:
+        # El alero hereda el espesor de la corona: si la pantalla se
+        # dimensiono por su armado (que arma tambien los aleros), el alero
+        # lo esta, salvo que su espesor se haya declarado.
+        dims_aleros = tuple(
+            replace(d, origen=ORIGEN_DIMENSION_ARMADO,
+                    regla="el de la pantalla, dimensionada por el armado de "
+                          "la pantalla y de los aleros",
+                    criterio=CRITERIO_DIMENSIONAMIENTO_ZAPATA)
+            if (d.nombre == "espesor de los aleros"
+                and d.origen == ORIGEN_DIMENSION_REGLA) else d
+            for d in dims_aleros)
     dims.extend(dims_aleros)
 
     # 8. Losa de entrega y dentellon, sobre el terreno del pie (H3)
@@ -5481,7 +5515,8 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
                       motivo_sin_socavacion: str = "",
                       anchos_por_estabilidad: Optional[dict] = None,
                       espesores_por_armado: Optional[dict] = None,
-                      puntas_por_estabilidad: Optional[dict] = None
+                      puntas_por_estabilidad: Optional[dict] = None,
+                      pantallas_por_armado: Optional[dict] = None
                       ) -> CabezalDelPunto:
     """
     Los dos cabezales de un punto DIMENSIONADO, con sus aleros, su losa, sus
@@ -5530,6 +5565,8 @@ def cabezal_del_punto(*, punto, resultado, geometria, embocadura,
             espesor_por_armado=(espesores_por_armado or {}).get(
                 extremo.extremo),
             punta_por_estabilidad=(puntas_por_estabilidad or {}).get(
+                extremo.extremo),
+            pantalla_por_armado=(pantallas_por_armado or {}).get(
                 extremo.extremo))
         geometrias.append(g)
         if tipo is None:
@@ -8960,6 +8997,9 @@ class DimensionadoDePeralte:
     pasos: Tuple[PasoDeMemoria, ...]
     pasos_de_ancho: Tuple[PasoDeMemoria, ...]
     avisos: Tuple[str, ...]
+    # --- VE-3.14 --- Las puntas que la re-verificacion de la estabilidad
+    # dejo (las de partida mas las que volvio a dimensionar).
+    puntas: Dict[str, float] = field(default_factory=dict)
 
 
 # Las filas del armado de la ZAPATA que deciden y que un peralte mayor
@@ -9282,7 +9322,7 @@ def dimensionar_peralte_por_armado(
         intentos=tuple(i for e in estado for i in intentos[e]),
         intentos_de_ancho=tuple(intentos_de_ancho), pasos=tuple(pasos),
         pasos_de_ancho=tuple(pasos_de_ancho.values()),
-        avisos=tuple(avisos))
+        avisos=tuple(avisos), puntas=dict(puntas))
 
 
 def incorporar_peralte(cabezal: CabezalDelPunto,
@@ -9305,6 +9345,233 @@ def incorporar_peralte(cabezal: CabezalDelPunto,
         intentos_de_peralte=dimensionado.intentos,
         pasos=pasos + dimensionado.pasos_de_ancho + dimensionado.pasos,
         avisos=tuple(avisos))
+
+
+# ===========================================================================
+# --- VE-3.14 --- LA PANTALLA Y LOS ALEROS, DIMENSIONADOS POR SU ARMADO
+# ===========================================================================
+# H-1 de los ensayos de diseño del cabezal: la pantalla quedaba en el espesor
+# de la regla ('espesor_pantalla_voladizo_m', 0.30 m) para cualquier altura,
+# y su armado (y el del alero, que hereda el espesor de la corona) no
+# cumplia desde H_c ≈ 3 m: la app entregaba un cabezal que no se podia
+# construir. Hoy el espesor de la pantalla -- uniforme, corona y arranque --
+# crece con el MISMO paso de 'dimensionamiento_zapata_cabezal' hasta que el
+# armado de la pantalla y de los aleros cumple. La zapata crece lo mismo
+# (la punta y el talon no cambian: el peso solo aumenta), y con cada espesor
+# se re-verifican la estabilidad y el armado de la zapata.
+#
+# EL TOPE ES FISICO, no un valor de proyecto: la pantalla no puede ser mas
+# gruesa que alta (H_c - e_z); ninguna fuente fija un espesor maximo.
+
+FILAS_DEL_ARMADO_DE_LA_PANTALLA = FILAS_DEL_ARMADO_DE_LA_ZAPATA
+
+
+def incumplidas_del_armado_de_la_pantalla(entorno: EntornoDelCabezal
+                                          ) -> Optional[Tuple[str, ...]]:
+    """
+    --- VE-3.14 --- Los codigos de las filas del armado de la PANTALLA y de
+    los ALEROS (A1 a A4 y A6) que no cumplen con la geometria del `entorno`,
+    o None si el armado no se puede evaluar (crecer el espesor no lo
+    arregla: el servicio registra el `Bloqueo` al armar la geometria final).
+    El cabezal de gravedad no se arma: vacia.
+    """
+    if entorno.geometria.tipo == TIPO_GRAVEDAD:
+        return ()
+    try:
+        sol = solicitaciones_de_resistencia(entorno)
+        piezas = (list(armar_elemento(entorno, ELEMENTO_PANTALLA, sol))
+                  + list(armar_elemento(entorno, ELEMENTO_ALEROS, sol)))
+    except ErrorProyecto:
+        return None
+    return tuple(v.codigo for p in piezas for v in p.verificaciones
+                 if not v.cumple
+                 and (v.codigo or "").split(".")[0]
+                 in FILAS_DEL_ARMADO_DE_LA_PANTALLA)
+
+
+@dataclass(frozen=True)
+class DimensionadoDePantalla:
+    """--- VE-3.14 --- El cabezal con la pantalla dimensionada y su traza."""
+
+    cabezal: CabezalDelPunto
+    espesores: Dict[str, float]
+    intentos: Tuple[str, ...]
+    pasos: Tuple[PasoDeMemoria, ...]
+    avisos: Tuple[str, ...]
+
+
+def dimensionar_pantalla_por_armado(
+        *, punto, resultado, geometria, embocadura,
+        cabezal: CabezalDelPunto,
+        socavacion=None, declarados: Optional[dict] = None,
+        coherencia_embocadura: Optional[str] = None,
+        motivo_sin_socavacion: str = "",
+        suelo_del_punto: Optional[dict] = None,
+        anchos: Optional[dict] = None, puntas: Optional[dict] = None,
+        espesores_zapata: Optional[dict] = None
+        ) -> Optional[DimensionadoDePantalla]:
+    """
+    --- VE-3.14 (H-1) --- El espesor de la pantalla (uniforme) de cada
+    cabezal de voladizo cuyo armado de la pantalla o de los aleros (A1 a A4
+    y A6, AASHTO LRFD 5.6.3, 5.7.3.3, 5.6.3.3, 5.10.3.2 y 5.6.7) no cumple:
+    e_k = e_0 + k·paso ('dimensionamiento_zapata_cabezal' [A], el mismo paso
+    de la zapata), el primero con el que esas filas cumplen, con e_k < H (la
+    pantalla no puede ser mas gruesa que alta). La zapata crece lo mismo
+    (punta y talon fijos). Con cada espesor se re-verifican la estabilidad
+    y el armado de la zapata: si dejaran de cumplir, el extremo se detiene y
+    lo dice. Termina: el espesor solo crece, en pasos finitos, hacia H.
+
+    Un espesor DECLARADO (corona o arranque) gana y no se itera; el cabezal
+    de gravedad no se arma. Devuelve None si no hay nada que dimensionar.
+    """
+    declarados = declarados or {}
+
+    def construir(pantallas):
+        return cabezal_del_punto(
+            punto=punto, resultado=resultado, geometria=geometria,
+            embocadura=embocadura, socavacion=socavacion,
+            declarados=declarados,
+            coherencia_embocadura=coherencia_embocadura,
+            motivo_sin_socavacion=motivo_sin_socavacion,
+            anchos_por_estabilidad=dict(anchos or {}) or None,
+            espesores_por_armado=dict(espesores_zapata or {}) or None,
+            puntas_por_estabilidad=dict(puntas or {}) or None,
+            pantallas_por_armado=dict(pantallas) or None)
+
+    def entornos_de(cab):
+        return {e.extremo: e for e in datos_del_cabezal_del_punto(
+            punto=punto, cabezal=cab, geometria=geometria,
+            socavacion=socavacion, suelo_del_punto=suelo_del_punto,
+            resultado=resultado)}
+
+    entornos = entornos_de(cabezal)
+    estado = {}
+    for g in cabezal.geometrias:
+        propias = declarados.get(g.extremo, {})
+        if "espesor_corona_m" in propias or "espesor_base_muro_m" in propias:
+            continue
+        entorno = entornos.get(g.extremo)
+        if entorno is None:
+            continue
+        inc = incumplidas_del_armado_de_la_pantalla(entorno)
+        if inc:
+            estado[g.extremo] = inc
+    if not estado:
+        return None
+    paso_m, _fraccion = _regla_de_dimensionamiento()
+    partida = {g.extremo: g for g in cabezal.geometrias}
+    # Lo que la estabilidad y el armado de la zapata ya no cumplian con la
+    # pantalla de partida (una zapata «no factible», por ejemplo) no detiene
+    # el crecimiento: lo detiene lo que DEJA de cumplir al engrosarla.
+    de_partida = _estabilidades_evaluables(list(entornos.values()), estado)
+    base = {e: set(_intento(e, 0.0, de_partida).incumplidas)
+            | set(incumplidas_del_armado_de_la_zapata(entornos[e]) or ())
+            for e in estado}
+    trazas = {e: [f"{partida[e].espesor_base_muro:.3f} m: no cumplen "
+                  + ", ".join(inc)] for e, inc in estado.items()}
+    pantallas: Dict[str, float] = {}
+    final = cabezal
+    vivos = list(estado)
+    detenidos = {}
+    while vivos:
+        actuales = {g.extremo: g for g in final.geometrias}
+        for e in list(vivos):
+            g = actuales[e]
+            nuevo = g.espesor_base_muro + paso_m
+            if not nuevo < g.H - TOL_UMBRAL_NORMATIVO:
+                detenidos[e] = (f"el espesor llego al tope fisico (la altura "
+                                f"de la pantalla, {g.H:.3f} m)")
+                vivos.remove(e)
+            else:
+                pantallas[e] = nuevo
+        if not vivos:
+            break
+        final = construir(pantallas)
+        entornos = entornos_de(final)
+        evaluadas = _estabilidades_evaluables(list(entornos.values()), vivos)
+        siguen = []
+        for e in vivos:
+            inc = incumplidas_del_armado_de_la_pantalla(entornos[e])
+            est = _intento(e, 0.0, evaluadas)
+            zap = incumplidas_del_armado_de_la_zapata(entornos[e])
+            if inc is None:
+                trazas[e].append(f"{pantallas[e]:.3f} m: armado no evaluable")
+                detenidos[e] = "el armado dejo de ser evaluable"
+                continue
+            nuevas = sorted((set(est.incumplidas) | set(zap or ()))
+                            - base[e])
+            if nuevas:
+                trazas[e].append(
+                    f"{pantallas[e]:.3f} m: la estabilidad o el armado de la "
+                    "zapata dejan de cumplir (" + ", ".join(nuevas) + ")")
+                detenidos[e] = ("al engrosar la pantalla la estabilidad o el "
+                                "armado de la zapata dejan de cumplir")
+                continue
+            if inc:
+                trazas[e].append(f"{pantallas[e]:.3f} m: no cumplen "
+                                 + ", ".join(inc))
+                siguen.append(e)
+            else:
+                trazas[e].append(f"{pantallas[e]:.3f} m: cumple")
+        vivos = siguen
+    pasos, avisos = [], []
+    actuales = {g.extremo: g for g in final.geometrias}
+    for e in estado:
+        g0 = partida[e]
+        cumple = e not in detenidos
+        pasos.append(paso(
+            "F9.DIMENSIONADO_PANTALLA", codigo=f"9.3.m.{e[0]}",
+            que=f"Espesor de la pantalla (y de los aleros) del cabezal de "
+                f"{e}, dimensionado por su armado",
+            formula=("e_k = e_0 + k·paso, k = 0, 1, 2, ...: el primer e_k con "
+                     "el que la flexion, el cortante sin estribos, el acero "
+                     "minimo, el espaciamiento y la fisuracion de la "
+                     "pantalla y de los aleros cumplen, con e_k < H; la "
+                     "zapata crece lo mismo (punta y talon fijos)"),
+            sustitucion=(
+                Magnitud("e_0", g0.espesor_base_muro, "m",
+                         f"espesor de la pantalla de '{CRITERIO_GEOMETRIA}' "
+                         "[A]"),
+                Magnitud("paso", paso_m, "m",
+                         f"criterio '{CRITERIO_DIMENSIONAMIENTO_ZAPATA}' "
+                         "[A], el mismo paso de la zapata"),
+                Magnitud("H", g0.H, "m", "altura de la pantalla: tope "
+                         "fisico del espesor"),
+            ),
+            resultado=Magnitud(
+                "e", actuales[e].espesor_base_muro, "m",
+                "dimensionada por armado" if cumple else
+                "el mayor espesor probado: el armado de la pantalla o de los "
+                "aleros NO cumple"),
+            nota_del_proyecto=(
+                "Intentos: " + " -> ".join(trazas[e]) + ". La zapata crece "
+                "lo mismo que la pantalla, con la punta y el talon fijos: B "
+                f"= {g0.B:.3f} + ({actuales[e].espesor_base_muro:.3f} - "
+                f"{g0.espesor_base_muro:.3f}) = {actuales[e].B:.3f} m; la "
+                "estabilidad y el armado de la zapata se re-verificaron con "
+                "cada espesor.")))
+        if not cumple:
+            avisos.append(
+                f"Cabezal de {e} de {punto.id}: el dimensionamiento de la "
+                f"pantalla se detuvo en {actuales[e].espesor_base_muro:.3f} m "
+                f"porque {detenidos[e]}: revisar la geometria o declarar el "
+                "espesor (`cabezal_declarado`)")
+    return DimensionadoDePantalla(
+        cabezal=final, espesores=pantallas,
+        intentos=tuple(f"{e}: " + " -> ".join(trazas[e]) for e in estado),
+        pasos=tuple(pasos), avisos=tuple(avisos))
+
+
+def incorporar_pantalla(cabezal: CabezalDelPunto,
+                        dimensionado: DimensionadoDePantalla
+                        ) -> CabezalDelPunto:
+    """El cabezal con los pasos y los avisos del dimensionado de la pantalla."""
+    from dataclasses import replace as _replace
+    avisos = list(cabezal.avisos)
+    avisos.extend(a for a in dimensionado.avisos if a not in avisos)
+    return _replace(cabezal, pasos=cabezal.pasos + dimensionado.pasos,
+                    intentos_de_pantalla=dimensionado.intentos,
+                    avisos=tuple(avisos))
 
 
 # ===========================================================================
@@ -10025,6 +10292,44 @@ def beta_procedimiento_general(*, M_u: float, V_u: float, d_v: float,
             / (GENERAL_BETA_SUMANDO_SXE_IN + s_xe_in))
     return {"beta": beta, "eps_s": eps_s, "M_u_efectivo": M,
             "s_x_in": s_x_in, "s_xe_in": s_xe_in}
+
+
+def acero_para_cortante_general(*, M_u: float, V_u: float, d_v: float,
+                                 phi: float, V_c_por_beta: float,
+                                 V_tope: float) -> Optional[float]:
+    """
+    --- VE-3.14 --- El acero longitudinal en traccion (mm2/m) con el que la
+    seccion SIN refuerzo transversal cumple phi·V_n >= V_u por el
+    procedimiento GENERAL de AASHTO 5.7.3.4.2: la ec. 5.7.3.4.2-2 despejada
+    en εs y la 5.7.3.4.2-4 despejada en A_s,
+
+        β_n  = V_u / (phi·V_c_por_beta)
+        εs_n = [4.8·51 / ((39 + s_xe)·β_n) - 1] / 750
+        A_s  = (max(M_u, V_u·d_v)/d_v + V_u) / (E_s·εs_n)
+
+    con s_x = d_v y a_g = 0 (`beta_procedimiento_general`). `V_c_por_beta`
+    es la resistencia del concreto por unidad de β con ESTE d_v (kN/m) y
+    `V_tope` el tope 0.25·f'c·b_v·d_v. Es lo que el procedimiento general
+    pone en manos del proyectista sin cambiar el espesor: mas acero
+    longitudinal, menor εs, mayor β. None si ningun acero alcanza (el tope
+    de 0.25·f'c·b_v·d_v, o un β mayor que el de εs = 0): entonces lo que
+    falta es espesor.
+    """
+    if not (_finito(V_u) and V_u > 0):
+        return 0.0
+    if phi * V_tope < V_u - TOL_UMBRAL_NORMATIVO:
+        return None
+    s_xe_in = d_v * MILIMETROS_POR_METRO / PULGADA_EN_MM \
+        * SXE_FACTOR_AGREGADO / SXE_SUMANDO_AGREGADO_IN
+    s_xe_in = min(max(s_xe_in, SXE_MIN_IN), SXE_MAX_IN)
+    beta_n = V_u / (phi * V_c_por_beta)
+    tope_beta = (GENERAL_BETA_NUMERADOR * GENERAL_BETA_NUMERADOR_SXE_IN
+                 / (GENERAL_BETA_SUMANDO_SXE_IN + s_xe_in))
+    eps_n = (tope_beta / beta_n - 1) / GENERAL_BETA_COEF_DEFORMACION
+    if not eps_n > 0:
+        return None
+    M = max(M_u, V_u * d_v)
+    return (M / d_v + V_u) * N_POR_KN / (ES_REFUERZO_AASHTO_MPA * eps_n)
 
 
 def acero_de_temperatura_aashto(*, ancho: float, espesor: float,
@@ -10994,7 +11299,7 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
                 and s <= fis["s_max"][clase_rige] + TOL_UMBRAL_NORMATIVO)
         return admite
 
-    def elegir(con_fisuracion: bool):
+    def elegir(con_fisuracion: bool, piso: float = 0.0):
         elegido = None
         activo = False
         for diametro, area, nombre in catalogo["barras"]:
@@ -11018,7 +11323,7 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
                              aviso_rec=aviso_rec, condicion=condicion,
                              As_res=As_res, As_minf=As_minf, barra=None)
             if alcanza and As_minf is not None:
-                adoptado = max(As_res, As_minf, As_min_c)
+                adoptado = max(As_res, As_minf, As_min_c, piso)
                 candidato["As_adoptado"] = adoptado
                 unico = dict(catalogo, barras=((diametro, area, nombre),))
                 candidato["barra"] = proponer_barra(
@@ -11031,11 +11336,63 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
         return elegido
 
     con_fisuracion = momento_servicio is not None
-    elegido = elegir(con_fisuracion)
-    if con_fisuracion and (elegido is None or elegido["barra"] is None):
-        # Ninguna barra del catalogo cumple 5.6.7: se propone sin ella y A6
-        # lo dice; el acero y el espaciamiento de resistencia no esperan.
-        elegido = elegir(False)
+
+    def elegir_con_fisuracion(piso: float = 0.0):
+        elegido = elegir(con_fisuracion, piso)
+        if con_fisuracion and (elegido is None or elegido["barra"] is None):
+            # Ninguna barra del catalogo cumple 5.6.7: se propone sin ella y
+            # A6 lo dice; el acero y el espaciamiento de resistencia no
+            # esperan.
+            elegido = elegir(False, piso)
+        return elegido
+
+    def piso_por_cortante(eleg) -> float:
+        """
+        --- VE-3.14 --- El acero que el cortante del procedimiento GENERAL
+        pide con la barra de `eleg` (0.0 si el simplificado aplica, si ya
+        cumple o si ningun acero alcanza: entonces A2 lo dice y la salida
+        es espesor).
+        """
+        if eleg is None or eleg["barra"] is None:
+            return 0.0
+        As_p = eleg["barra"].As_provisto
+        r = resistencia_a_flexion(As=As_p, d=eleg["d"], fc=fc, fy=fy)
+        c = cortante_del_concreto(d=eleg["d"], a=r["a"], espesor=espesor,
+                                  fc=fc, beta=proc["beta_simplificado"])
+        ok, _por = simplificado_permitido(es_zapata=es_zapata,
+                                          espesor=espesor, vuelo=vuelo,
+                                          d_v=c["d_v_letra"])
+        if ok:
+            return 0.0
+        piso = 0.0
+        for s in sols:
+            necesario = acero_para_cortante_general(
+                M_u=s.M_u, V_u=s.V_u, d_v=c["d_v"], phi=s.phi_corte,
+                V_c_por_beta=c["V_c"] / proc["beta_simplificado"],
+                V_tope=VN_TOPE_SOBRE_FC_AASHTO * fc * KPA_POR_MPA * c["d_v"])
+            if necesario is None:
+                return 0.0
+            piso = max(piso, necesario)
+        return piso if piso > As_p + TOL_UMBRAL_NORMATIVO else 0.0
+
+    elegido = elegir_con_fisuracion()
+    # --- VE-3.14 --- FUERA DEL SIMPLIFICADO, EL ACERO LONGITUDINAL TAMBIEN
+    # LO PIDE EL CORTANTE: con el procedimiento general β depende de εs, y
+    # εs del acero en traccion. Si el cortante no cumple con el acero de
+    # flexion, el acero adoptado sube hasta el que lo hace cumplir (la ec.
+    # 5.7.3.4.2-2 despejada, `acero_para_cortante_general`), como el
+    # proyectista lo haria antes de engrosar la seccion; la seccion tiene
+    # que seguir controlada por traccion (A1 lo verifica). Cada pasada solo
+    # sube el piso y el catalogo es finito: termina.
+    As_por_cortante = 0.0
+    for _barra in catalogo["barras"]:
+        piso = piso_por_cortante(elegido)
+        if not piso > As_por_cortante + TOL_UMBRAL_NORMATIVO:
+            break
+        nuevo = elegir_con_fisuracion(piso)
+        if nuevo is None or nuevo["barra"] is None:
+            break
+        elegido, As_por_cortante = nuevo, piso
     if elegido is None:
         raise DatoInvalidoError(
             "espesor", valor=espesor, id_punto=id_punto,
@@ -11051,6 +11408,9 @@ def diseno_flexion_corte(*, momento: Optional[float] = None,
     As_minimo = max(As_min_c, As_minf or 0.0)
     if not alcanza:
         gobierna = "la seccion no alcanza"
+    elif As_por_cortante > max(As_res, As_minimo) + TOL_UMBRAL_NORMATIVO:
+        gobierna = ("cortante sin estribos, procedimiento general (AASHTO "
+                    "5.7.3.4.2): mas acero longitudinal, menor εs")
     elif As_res >= As_minimo - TOL_UMBRAL_NORMATIVO:
         gobierna = "resistencia"
     elif (As_minf or 0.0) >= As_min_c:

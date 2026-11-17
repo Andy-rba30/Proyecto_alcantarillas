@@ -207,13 +207,172 @@ def test_en_arcilla_la_zapata_no_factible_no_infla_el_peralte(tmp_path):
 
 def test_el_ancho_se_reoptimiza_tras_el_peralte(juego):
     """
-    La salida de A-01 del juego: el peralte crece a 0.804 m y con la zapata
-    mas pesada se prueba un ancho menor; aqui no alcanza (E1 sismico), de
-    modo que el ancho adoptado es el minimo que cumple con ese peralte.
+    La salida de A-01 del juego: el peralte crece (0.604 m desde el bloque 3,
+    que arma la zapata con el acero que el cortante general pide; 0.804 m en
+    el bloque 2) y con la zapata mas pesada se prueba un ancho menor; aqui no
+    alcanza (E1 sismico), de modo que el ancho adoptado es el minimo que
+    cumple con ese peralte. El ancho FINAL lleva ademas lo que la pantalla
+    crecio (bloque 3): se compara con el ancho que la estabilidad acepto.
     """
     cab = _a01(juego).cabezal
     reopt = [i for i in cab.intentos_de_zapata
              if i.extremo == "salida" and i.reoptimizado]
     assert reopt, "no se intento re-optimizar el ancho tras el peralte"
-    assert reopt[-1].B == pytest.approx(cab.salida.B - 0.10, abs=ABS_MM)
+    aceptado = [i for i in cab.intentos_de_zapata if i.extremo == "salida"
+                and i.cumple and not i.reoptimizado][-1]
+    assert reopt[-1].B == pytest.approx(aceptado.B - 0.10, abs=ABS_MM)
     assert not reopt[-1].cumple
+
+
+# ===========================================================================
+# BLOQUE 3 (H-1): la pantalla y el alero, DIMENSIONADOS por su armado
+# ===========================================================================
+# Hasta VE-3.14 la pantalla quedaba en los 0.30 m de la regla para cualquier
+# altura y la app entregaba cabezales cuyo armado de la pantalla y del alero
+# no cumplia (8 de 20 en los ensayos). Hoy el espesor crece con el paso de
+# 'dimensionamiento_zapata_cabezal' hasta que el armado cumple; la zapata
+# crece lo mismo (punta y talon fijos) y la estabilidad y la zapata se
+# re-verifican. Y fuera de 5.7.3.4.1 el cortante general pide ACERO antes que
+# espesor: con β de la ec. 5.7.3.4.2-2, mas acero longitudinal es menor εs.
+
+from src.constantes_fisicas import KPA_POR_MPA                  # noqa: E402
+from src.modelos import ORIGEN_DIMENSION_ARMADO                 # noqa: E402
+
+E2 = RAIZ / "tests" / "fixtures" / "ensayos_cabezal" / "E2_alto"
+
+
+def test_el_acero_del_cortante_general_cierra_la_ecuacion():
+    """La ec. 5.7.3.4.2-2 despejada: con ese acero, phi·V_c = V_u exacto."""
+    c = M9.cortante_del_concreto(d=0.66, a=0.02, espesor=0.75, fc=21.0,
+                                 beta=1.0)
+    tope = cn.VN_TOPE_SOBRE_FC_AASHTO * 21.0 * KPA_POR_MPA * c["d_v"]
+    As = M9.acero_para_cortante_general(M_u=250.0, V_u=260.0, d_v=c["d_v"],
+                                        phi=0.9, V_c_por_beta=c["V_c"],
+                                        V_tope=tope)
+    g = M9.beta_procedimiento_general(M_u=250.0, V_u=260.0, d_v=c["d_v"],
+                                      A_s=As)
+    phi_V_c = 0.9 * g["beta"] * c["V_c"]
+    assert phi_V_c == pytest.approx(260.0, rel=REL_TRANSPORTE)
+    # Ningun acero alcanza: lo que falta es espesor.
+    assert M9.acero_para_cortante_general(
+        M_u=250.0, V_u=5000.0, d_v=c["d_v"], phi=0.9,
+        V_c_por_beta=c["V_c"], V_tope=tope) is None
+
+
+def test_fuera_del_simplificado_el_cortante_pide_acero_antes_que_espesor():
+    """
+    Pantalla de 0.60 m (general por los 16.0 in) con poco momento y mucho
+    cortante: con el acero de flexion A2 no cumple; el acero adoptado sube
+    hasta el que el cortante general pide, y lo dice `gobierna`.
+    """
+    s = M9.diseno_flexion_corte(momento=60.0, cortante=220.0, espesor=0.60,
+                                id_punto="T-00")
+    a2 = next(v for v in s.verificaciones if v.codigo.startswith("A2"))
+    assert a2.cumple
+    assert "5.7.3.4.2" in s.gobierna
+    assert s.As_adoptado > max(s.As_resistencia, s.As_minimo_flexion,
+                               s.As_minimo_constructivo)
+
+
+def test_la_pantalla_y_el_alero_se_dimensionan_por_su_armado(juego):
+    """
+    La salida de A-01 del juego: con la pantalla de 0.30 m de la regla, A1 de
+    la pantalla y del alero no cumplian; la pantalla crece a 0.40 m (un
+    paso), corona y arranque, el alero la hereda y los tres llevan el origen
+    «dimensionada por armado». Ninguna fila del cabezal queda sin cumplir.
+    """
+    cab = _a01(juego).cabezal
+    g = cab.salida
+    assert g.espesor_corona == pytest.approx(0.40, abs=ABS_MM)
+    assert g.espesor_base_muro == pytest.approx(0.40, abs=ABS_MM)
+    assert g.aleros.espesor == pytest.approx(0.40, abs=ABS_MM)
+    origen = {d.nombre: d.origen for d in g.dimensiones}
+    for nombre in ("espesor de la pantalla en la corona",
+                   "espesor de la pantalla en el arranque",
+                   "espesor de los aleros"):
+        assert origen[nombre] == ORIGEN_DIMENSION_ARMADO, nombre
+    traza = [i for i in cab.intentos_de_pantalla if i.startswith("salida")]
+    assert traza and "0.300 m: no cumplen A1.pantalla.s" in traza[0]
+    assert traza[0].endswith("0.400 m: cumple")
+    assert not cab.verificaciones_incumplidas
+    paso = next(p for p in cab.pasos if p.codigo == "9.3.m.s")
+    assert paso.resultado.valor == pytest.approx(0.40, abs=ABS_MM)
+    # La entrada cumplia con la regla: no se toca.
+    assert cab.entrada.espesor_base_muro == pytest.approx(0.30, abs=ABS_MM)
+    assert not [i for i in cab.intentos_de_pantalla if i.startswith("entrada")]
+
+
+def test_la_pantalla_crece_con_la_zapata_y_la_punta_y_el_talon_no_cambian(
+        juego):
+    """La zapata crece lo mismo que la pantalla: B = B_estabilidad + Δe."""
+    cab = _a01(juego).cabezal
+    g = cab.salida
+    aceptado = [i for i in cab.intentos_de_zapata if i.extremo == "salida"
+                and i.cumple and not i.reoptimizado][-1]
+    assert g.B == pytest.approx(aceptado.B + (0.40 - 0.30), abs=ABS_MM)
+    assert g.ancho_talon == pytest.approx(
+        aceptado.B - g.ancho_punta - 0.30, abs=ABS_MM)
+
+
+def correr_escenario(carpeta, tmp_path):
+    """Un escenario de los ensayos (DATOS DE PRUEBA), por la CLI."""
+    import json
+    import subprocess
+    import sys
+    salida = tmp_path / f"{carpeta.name}.json"
+    args = [sys.executable, str(RAIZ / "cli.py"), str(carpeta / "puntos.csv"),
+            "--alcance", "expediente",
+            "--datos-externos", str(carpeta / "externos.json"),
+            "--datos-sitio", str(carpeta / "sitio.json"), "--json",
+            str(salida)]
+    for clave, valor in json.loads(
+            (carpeta / "declaraciones.json").read_text(encoding="utf-8")
+            ).items():
+        args += ["--declarar", f"{clave}={valor!r}"]
+    subprocess.run(args, cwd=RAIZ, capture_output=True, text=True,
+                   check=False)
+    return json.loads(salida.read_text(encoding="utf-8"))
+
+
+def test_e2_alto_entrega_un_cabezal_completo_que_cumple(tmp_path):
+    """
+    E2 de los ensayos (H_c de la salida 4.51 m): hasta VE-3.14 la app
+    entregaba la pantalla de 0.30 m con A1 a A6 de la pantalla y del alero
+    sin cumplir. Hoy: pantalla y alero dimensionados, ninguna fila de la Fase
+    9 sin cumplir, y la traza de los tres dimensionamientos en el JSON.
+    """
+    d = correr_escenario(E2, tmp_path)
+    punto = d["puntos"][0]
+    cab = punto["cabezal"]
+    salida = next(c for c in cab["cabezales"] if c["extremo"] == "salida")
+    # 0.70 m: con el acero que el cortante general pide (sin el, 1.20 m:
+    # el espesor crecia para bajar un εs que el acero de flexion dejaba alto).
+    assert salida["espesor_base_muro_m"] == pytest.approx(0.70, abs=ABS_MM)
+    assert salida["aleros"]["espesor_m"] == pytest.approx(
+        salida["espesor_base_muro_m"], abs=ABS_MM)
+    fallan = [v["codigo"] for v in punto["verificaciones"]
+              if "Fase 9" in (v.get("fase") or "") and not v["cumple"]]
+    assert not fallan, fallan
+    assert any(t.startswith("salida") and t.endswith("cumple")
+               for t in cab["intentos_de_pantalla"])
+    assert cab["intentos_de_zapata"] and cab["intentos_de_peralte"]
+
+
+def test_si_el_armado_de_la_pantalla_nunca_cumple_el_bucle_termina_y_lo_dice(
+        monkeypatch):
+    """
+    Terminacion, medida: con `incumplidas_del_armado_de_la_pantalla`
+    sustituida por una que nunca cumple, el espesor crece hasta su tope
+    fisico (la altura de la pantalla) o hasta que la estabilidad o la zapata
+    dejan de cumplir, y se DETIENE con un aviso; nunca queda una pantalla tan
+    gruesa como alta.
+    """
+    original = M9.incumplidas_del_armado_de_la_pantalla
+    monkeypatch.setattr(M9, "incumplidas_del_armado_de_la_pantalla",
+                        lambda entorno: (tuple(original(entorno) or ())
+                                         + ("A1.pantalla.prueba",)))
+    cab = _a01(V.correr_juego(V.juego_completo())).cabezal
+    for g in cab.geometrias:
+        assert g.espesor_base_muro < g.H
+        assert any(f"Cabezal de {g.extremo}" in a and "se detuvo" in a
+                   for a in cab.avisos), g.extremo

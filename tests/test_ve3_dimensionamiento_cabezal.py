@@ -122,6 +122,8 @@ def test_es_el_menor_ancho_de_la_grilla_que_cumple(dimensionado,
     """El intento anterior al aceptado NO cumplia: la zapata es la minima."""
     cab = _punto(dimensionado).cabezal
     regla = {g.extremo: g.B for g in _punto(sin_criterio).cabezal.geometrias}
+    pantalla_regla = {g.extremo: g.espesor_base_muro
+                      for g in _punto(sin_criterio).cabezal.geometrias}
     for g in cab.geometrias:
         # CAMBIADO DECLARANDOLO (VE-3.14, H-12): los intentos de la
         # re-optimizacion del ancho tras el peralte van al final de la traza
@@ -133,7 +135,10 @@ def test_es_el_menor_ancho_de_la_grilla_que_cumple(dimensionado,
                                               abs=ABS_CERO)
         assert not intentos[0].cumple
         assert intentos[-1].cumple
-        assert intentos[-1].B == pytest.approx(g.B, abs=ABS_CERO)
+        # CAMBIADO DECLARANDOLO (VE-3.14, H-1): si la pantalla crecio por
+        # su armado, la zapata crecio lo mismo (punta y talon fijos).
+        crecio = g.espesor_base_muro - pantalla_regla[g.extremo]
+        assert intentos[-1].B == pytest.approx(g.B - crecio, abs=ABS_CERO)
         assert all(not i.cumple for i in intentos[:-1])
         assert len(intentos) >= 2
 

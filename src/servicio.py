@@ -167,6 +167,8 @@ from src.modulos.M9_cabezal import (CONDICIONES_DE_ESTABILIDAD,
                                     CRITERIO_DIMENSIONAMIENTO_ZAPATA,
                                     datos_del_cabezal_del_punto,
                                     dimensionar_peralte_por_armado,
+                                    dimensionar_pantalla_por_armado,
+                                    incorporar_pantalla,
                                     dimensionar_zapata_por_estabilidad,
                                     ensamble_estabilidad,
                                     incorporar_dimensionado,
@@ -2995,6 +2997,8 @@ ETAPA_DIMENSIONAMIENTO_CABEZAL = ("dimensionamiento de la zapata de los "
                                   "cabezales (VE-3.5)")
 ETAPA_DIMENSIONAMIENTO_PERALTE = ("dimensionamiento del peralte de la zapata "
                                   "de los cabezales por su armado (VE-3.9)")
+ETAPA_DIMENSIONAMIENTO_PANTALLA = ("dimensionamiento de la pantalla de los "
+                                   "cabezales por su armado (VE-3.14)")
 
 
 def _estabilidades(informe: InformePunto, entornos, bloqueos) -> list:
@@ -3142,16 +3146,56 @@ def _fase_9(informe: InformePunto,
             return
         de_la_final = []
         estabilidades = _estabilidades(informe, entornos, de_la_final)
-    informe.bloqueos.extend(de_la_final + del_dimensionado + del_peralte)
-    # La traza de los dos dimensionamientos, sobre la geometria FINAL (que
+    # --- VE-3.14 --- LA PANTALLA (Y LOS ALEROS), POR SU ARMADO, detras del
+    # peralte: si su armado no cumple con el espesor de la regla, el espesor
+    # crece con el mismo paso; la zapata crece lo mismo y la estabilidad y el
+    # armado de la zapata se re-verifican con cada espesor.
+    del_pantalla = []
+    anchos_finales = (peralte.anchos if peralte is not None
+                      and peralte.anchos else
+                      None if dimensionado is None else dimensionado.anchos)
+    pantalla = None if vacio else _etapa(
+        del_pantalla, FASE_CABEZAL, ETAPA_DIMENSIONAMIENTO_PANTALLA,
+        lambda: dimensionar_pantalla_por_armado(
+            punto=informe.punto_de_calculo, resultado=informe.resultado,
+            geometria=informe.geometria, embocadura=informe.embocadura,
+            cabezal=informe.cabezal, socavacion=informe.socavacion,
+            declarados=declarados,
+            coherencia_embocadura=informe.coherencia_embocadura,
+            motivo_sin_socavacion=motivo, suelo_del_punto=suelo,
+            anchos=anchos_finales,
+            puntas=(peralte.puntas if peralte is not None
+                    else None if dimensionado is None
+                    else dimensionado.puntas),
+            espesores_zapata=None if peralte is None else peralte.espesores))
+    if pantalla is not None and pantalla.espesores:
+        informe.cabezal = pantalla.cabezal
+        entornos = _etapa(
+            informe.bloqueos, FASE_CABEZAL,
+            "datos de la estabilidad del cabezal (T-7b)",
+            lambda: datos_del_cabezal_del_punto(
+                punto=informe.punto_de_calculo, cabezal=informe.cabezal,
+                geometria=informe.geometria, socavacion=informe.socavacion,
+                suelo_del_punto=suelo, resultado=informe.resultado))
+        if entornos is None:
+            informe.bloqueos.extend(del_dimensionado + del_peralte
+                                    + del_pantalla)
+            return
+        de_la_final = []
+        estabilidades = _estabilidades(informe, entornos, de_la_final)
+    informe.bloqueos.extend(de_la_final + del_dimensionado + del_peralte
+                            + del_pantalla)
+    # La traza de los tres dimensionamientos, sobre la geometria FINAL (que
     # `cabezal_del_punto` construye de nuevo y sin ella): primero el ancho,
     # despues el peralte, que reemplaza los pasos del ancho que la
-    # re-verificacion de la estabilidad volvio a dimensionar.
+    # re-verificacion de la estabilidad volvio a dimensionar, y la pantalla.
     if dimensionado is not None:
         informe.cabezal = incorporar_dimensionado(informe.cabezal,
                                                   dimensionado)
     if peralte is not None:
         informe.cabezal = incorporar_peralte(informe.cabezal, peralte)
+    if pantalla is not None:
+        informe.cabezal = incorporar_pantalla(informe.cabezal, pantalla)
     informe.cabezal = integrar_estabilidad(informe.cabezal, estabilidades)
     _fase_9_armado(informe, entornos)
 

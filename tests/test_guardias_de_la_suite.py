@@ -1195,6 +1195,11 @@ def test_el_detector_textual_ve_las_evasiones_que_el_auditor_probo(cuerpo, esper
 MODULOS_DE_CALCULO = sorted((RAIZ / "src" / "modulos").glob("*.py"))
 
 PUBLICAS_SIN_REFERENCIA_EN_TESTS = {
+    # --- VE-3.14 --- las dos piezas de la etapa de la pantalla que solo
+    # el servicio llama; la etapa la miden tests/test_ve3_14_cabezal.py
+    # (juego y escenario E2) y su mutante «sin etapa».
+    "M9_cabezal.dimensionar_pantalla_por_armado": "la llama `_fase_9` (servicio: etapa del dimensionamiento de la pantalla, VE-3.14)",
+    "M9_cabezal.incorporar_pantalla": "la llama `_fase_9` (servicio) tras la etapa de la pantalla (VE-3.14)",
     # `M0_carga.leer_bytes` salio en UI-1: la nombra
     # `tests/test_ui1_hidrologia_ventana.py`, que la sustituye para probar que
     # la huella de la hidrologia es de los bytes que se parsearon.

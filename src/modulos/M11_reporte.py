@@ -2459,7 +2459,8 @@ def _bloque_armado(a: Any) -> str:
                         "<th>Espesor / d (m)</th>",
                         "<th>Recubrimiento (mm)</th>",
                         "<th>Rige la flexion</th>",
-                        "<th>M_u (kN&middot;m/m) [cede / reposo]</th>",
+                        "<th>M_u (kN&middot;m/m) [cede / reposo]; V_u "
+                        "(kN/m) [cede]</th>",
                         "<th>As resist. / min. flex. / min. constr. "
                         "(mm&sup2;/m)</th>",
                         "<th>As adoptado (mm&sup2;/m), gobierna</th>",
@@ -2478,7 +2479,11 @@ def _bloque_armado(a: Any) -> str:
                     f"<small>{_esc(sec.origen_recubrimiento)}</small>"),
                 _td(_esc(rf.combinacion)),
                 _td(f"{_num(rf.M_u, FMT_2)} [{_num(rf.M_u_cedente, FMT_2)} / "
-                    f"{_num(rf.M_u_reposo, FMT_2)}]", "num"),
+                    f"{_num(rf.M_u_reposo, FMT_2)}]<br><small>V_u "
+                    f"{_num(sec.rige_cortante.V_u, FMT_2)} ["
+                    f"{_num(sec.rige_cortante.V_u_cedente, FMT_2)}] "
+                    f"({_esc(sec.rige_cortante.combinacion)})</small>",
+                    "num"),
                 _td(f"{_num(sec.As_resistencia, FMT_2)} / "
                     f"{_num(sec.As_minimo_flexion, FMT_2)} / "
                     f"{_num(sec.As_minimo_constructivo, FMT_2)}", "num"),
