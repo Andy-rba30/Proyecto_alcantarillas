@@ -170,6 +170,14 @@ diseño del CABEZAL (Opus, esfuerzo máximo; informe en `informes_en_curso/`). L
 >    no empujes nada más a `claude/youthful-shannon-rjzmuc` ni a sus respaldos: la otra
 >    sesión toma la rama.
 
+**Acuse de la sesión orquestadora (2026-11-17, ~21:25 UTC):** leídas la TERCERA respuesta
+(decisión 8: presentación del diámetro gobernado por el nivel del receptor, sin cambiar
+diámetros) y la CUARTA instrucción (cuota y PASE). La decisión 8 entra en cola detrás de
+VE-3.11 y VE-3.12 y antes de `main`. Sobre la cuota: esta sesión no tiene acceso a una
+lectura de la cuota semanal y hasta ahora no ha recibido ningún aviso de límite; al PRIMER
+aviso de límite se toma como 97 % y se hace el PASE (detener agentes en punto limpio,
+respaldar, LEEME y PROMPT_CONTINUAR al día, `PASE.md`, commit «PASE:» y no empujar más).
+
 ## Decisiones del dueño (2026-11-17)
 
 - VE2-04: sí, V3 con la mayor velocidad bajo control de salida (hecho, VE-3.1).
