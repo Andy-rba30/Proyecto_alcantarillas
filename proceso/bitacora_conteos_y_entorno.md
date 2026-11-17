@@ -2727,3 +2727,29 @@ rojo con `xfail(strict=True)` y liberados al implementar, con sus mutantes anota
 resto en tests existentes cambiados declarando la causa. Criterios: 141 → 146, los cinco
 [A] de perfil, ninguno existente cambia de valor. Sólo (b) mueve números de la línea base
 (`docs/linea_base.md` §11 y §16).
+
+## VE-2, correcciones de la revisión independiente y de su verificación (2026-11-17): el par con ventana Tk, MEDIDO
+
+Correcciones sobre `d9b59f9` (la revisión Fable de VE-2, «integrar con correcciones») en
+`claude/youthful-shannon-rjzmuc`: A1, M3, M4, B1, B3 y B4 (ficha VE2-03), M1 a ficha
+(VE2-04), y lo que encontró la verificación Fable de esas correcciones —N1 (A1 acotada al
+dato del punto) y N2 (el peso saturado del relleno es [S]), decididos por el dueño, y N3 a
+N7— más los bajos de una segunda verificación corta, «integrar en main» (VE2-05). Entorno:
+`python` 3.12.13 (el de `uv`, con Tk 9.0: el `python3-tk` del sistema no se pudo instalar
+desde el contenedor) en un venv con `requirements.txt`, PyMuPDF y `pillow<13`;
+`xvfb-run -a`; `NORMAS_DIR` = clon de `Andy-rba30/Normas`. La partida (`d9b59f9`) se midió
+en este entorno y dio el par de la revisión: Tk 9 no mueve nada.
+
+| Suite y árbol | `NORMAS_DIR` | Ventana Tk | `passed` | `skipped` | `collected` |
+|---|---|---|---|---|---|
+| entregable, partida (`d9b59f9`), clon limpio | sí | sí | 7425 | 10 | 7435 |
+| entregable, correcciones (`4d31f68`), clon limpio fuera del repositorio | sí | sí | 7475 | 10 | 7485 |
+| entregable, correcciones (`4d31f68`), exportación (`git archive HEAD`, fuera del repo) | sí | sí | 7471 | 14 | 7485 |
+| proceso, correcciones, clon limpio | sí | sí | 145 | 0 | 145 |
+
+Las correcciones suman 50 tests (`tests/test_ve2_correcciones.py`, `tests/test_ve2_revision_m3_m4.py`
+y uno en `test_t4_materiales_durabilidad.py`), escritos en rojo y con sus mutantes medidos.
+Un incidente medido: con tres corridas de la suite y un agente a la vez en la máquina,
+`test_pc10_import_cli_cabe_en_el_presupuesto_sin_weasyprint` falló una vez (0.342 s contra
+0.3 s); `import cli` mide 0.26-0.27 s antes y después de las correcciones, y en las
+corridas finales, de dos en paralelo, pasó.
