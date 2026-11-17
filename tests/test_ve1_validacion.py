@@ -86,7 +86,7 @@ HDPE = TipoMaterial.HDPE
 SERIE_6_IN = {"inicio": 0.9144, "paso": 0.1524}
 
 
-def _recorrido(material, serie=None) -> list:
+def _recorrido(material, serie=None, *, ingles=False) -> list:
     """
     Los escalones de la progresion de `material`, como TEXTO: `repr` del
     float, que es lo que `json.dumps` vuelca y lo que se lee en el JSON. Se
@@ -103,8 +103,18 @@ def _recorrido(material, serie=None) -> list:
 
     if serie is None:
         return _caminar()
-    with declarados({M2.CRITERIO_DIAMETROS: serie}):
+    # VE-2 (g): el diametro ingles convertido (la serie de 6 in) solo lo
+    # admite el CONCRETO, y solo si 'diametro_de_diseno_concreto' lo declara.
+    eleccion = ({M2.CRITERIO_DIAMETRO_DE_DISENO: M2.DIAMETRO_DESIGNADO_O_INGLES}
+                if ingles else {})
+    with declarados({M2.CRITERIO_DIAMETROS: serie, **eleccion}):
         return _caminar()
+
+
+def _escalones(serie, n: int) -> list:
+    """Los n primeros escalones de la ARITMETICA de la serie, como texto."""
+    return [repr(M2._escalon_de_la_serie(serie["inicio"], serie["paso"], k))
+            for k in range(n)]
 
 
 # ===========================================================================
@@ -123,10 +133,30 @@ SEIS_IN = {
 }
 
 
+def test_d1_la_serie_de_6_in_se_recorre_tal_cual():
+    """
+    CAMBIADO EN VE-2 (decision VE1-02 (g)), declarando la causa: recorria la
+    serie de 6 in en los TRES materiales. Desde VE-2 los escalones son los
+    DESIGNADOS por la norma de producto de cada material
+    (`M2._exigir_escalon_designado`), y el diametro ingles convertido
+    (0.9144 m = 36 in) solo lo admite AASHTO M 170M (num. 12.1) y solo si
+    'diametro_de_diseno_concreto' lo declara. Lo que D1 fijaba --que la serie
+    se recorre TAL CUAL, sin 1.07-- sigue fijado en el concreto; el TMC y el
+    HDPE la rechazan (`tests/test_ve2_materiales.py`), y su aritmetica la
+    fija `test_d1_la_aritmetica_de_la_serie_de_6_in_no_redondea`.
+    """
+    assert _recorrido(CONCRETO, SERIE_6_IN, ingles=True) == SEIS_IN[CONCRETO]
+    for material in (TMC, HDPE):
+        with pytest.raises(DatoInvalidoError) as exc:
+            _recorrido(material, SERIE_6_IN, ingles=True)
+        assert exc.value.campo == M2.CRITERIO_DIAMETROS
+
+
 @pytest.mark.parametrize("material", [CONCRETO, TMC, HDPE],
                          ids=lambda m: m.value)
-def test_d1_la_serie_de_6_in_se_recorre_tal_cual(material):
-    assert _recorrido(material, SERIE_6_IN) == SEIS_IN[material]
+def test_d1_la_aritmetica_de_la_serie_de_6_in_no_redondea(material):
+    """El escalon de la serie es el declarado, sin 1.07 (D1), en los tres."""
+    assert _escalones(SERIE_6_IN, len(SEIS_IN[material])) == SEIS_IN[material]
 
 
 PASOS_DE_PRUEBA = {
@@ -144,8 +174,18 @@ PASOS_DE_PRUEBA = {
 
 @pytest.mark.parametrize("paso", sorted(PASOS_DE_PRUEBA))
 def test_d1_pasos_de_75_y_de_125_mm(paso):
-    assert (_recorrido(CONCRETO, {"inicio": 0.90, "paso": paso})
-            == PASOS_DE_PRUEBA[paso])
+    """
+    CAMBIADO EN VE-2 (decision VE1-02 (g)), declarando la causa: recorria
+    estas dos series por `M2.siguiente_diametro`. Su segundo escalon (0.975 y
+    1.025 m) no es un diametro designado de AASHTO M 170M, y desde VE-2 M2
+    lo rechaza; lo que D1 fijaba es la ARITMETICA del escalon, y eso se
+    comprueba sobre `M2._escalon_de_la_serie`, que es quien la hace.
+    """
+    serie = {"inicio": 0.90, "paso": paso}
+    assert _escalones(serie, len(PASOS_DE_PRUEBA[paso])) == PASOS_DE_PRUEBA[paso]
+    with pytest.raises(DatoInvalidoError) as exc:
+        _recorrido(CONCRETO, serie)
+    assert exc.value.campo == M2.CRITERIO_DIAMETROS
 
 
 @pytest.mark.parametrize("serie, esperado", [
@@ -159,7 +199,14 @@ def test_d1_pasos_de_75_y_de_125_mm(paso):
                                           "1.37625"]),
 ], ids=["tres_decimales", "cinco_decimales"])
 def test_d1_series_con_mas_decimales_tampoco_se_redondean(serie, esperado):
-    assert _recorrido(HDPE, serie) == esperado
+    """
+    CAMBIADO EN VE-2 (decision VE1-02 (g)), por la misma causa que el de
+    arriba: 0.914 y 1.05875 m no son designados de AASHTO M 294, y el HDPE
+    ya no los recorre; la aritmetica se fija sobre `_escalon_de_la_serie`.
+    """
+    assert _escalones(serie, len(esperado)) == esperado
+    with pytest.raises(DatoInvalidoError):
+        _recorrido(HDPE, serie)
 
 
 def test_d1_guardia_la_progresion_por_defecto_no_se_mueve():
@@ -239,7 +286,11 @@ def _correr_p1(tmp_path: Path, *, Q: float, nf: str = "") -> dict:
 def _correr_p1_con_la_serie_de_6_in(tmp_path: Path, *, Q: float) -> dict:
     pared = dict(ESPESOR_PARED_DE_PRUEBA)
     pared[CONCRETO.value] = {**pared[CONCRETO.value], **PARED_6_IN_DE_PRUEBA}
+    # VE-2 (g): con la eleccion del diametro ingles convertido, que es la
+    # que admite la serie de 6 in en el concreto (el primer candidato).
     with declarados({M2.CRITERIO_DIAMETROS: SERIE_6_IN,
+                     M2.CRITERIO_DIAMETRO_DE_DISENO:
+                         M2.DIAMETRO_DESIGNADO_O_INGLES,
                      CLAVE_ESPESOR_PARED: pared}):
         return _correr_p1(tmp_path, Q=Q)
 
@@ -491,6 +542,9 @@ def _correr_la_cli_con_la_serie_de_6_in(tmp_path: Path, *, Q: float) -> dict:
         str(csv), "--alcance", "perfil",
         "--datos-externos", str(externos_json),
         "--declarar", f"{M2.CRITERIO_DIAMETROS}={SERIE_6_IN!r}",
+        # VE-2 (g): la serie de 6 in solo la admite el concreto, declarada.
+        "--declarar", (f"{M2.CRITERIO_DIAMETRO_DE_DISENO}="
+                       f"{M2.DIAMETRO_DESIGNADO_O_INGLES!r}"),
         "--declarar", f"{CLAVE_ESPESOR_PARED}={pared!r}",
         "--json", str(salidas["json"]), "--html", str(salidas["html"]),
         "--csv-resumen", str(salidas["csv"])])
@@ -602,8 +656,9 @@ def test_h2_guardia_el_valor_de_archivo_de_todos_los_criterios_sigue_pasando():
         ca.establecer_valor_dinamico(clave, criterio.valor)
         ca.quitar_valor_dinamico(clave)
         barridos += 1
-    # 142 desde VE-2 (a): 'columna_n_manning_concreto'.
-    assert len(ca.CRITERIOS) == 142 and barridos > 100, (len(ca.CRITERIOS),
+    # 143 desde VE-2: 'columna_n_manning_concreto' (a) y
+    # 'diametro_de_diseno_concreto' (g).
+    assert len(ca.CRITERIOS) == 143 and barridos > 100, (len(ca.CRITERIOS),
                                                           barridos)
 
 

@@ -3,7 +3,7 @@
     "csv": "tests/ejemplo_puntos.csv",
     "generado_utc": "<UTC>",
     "csv_sha1": "7ae59002159b228f3681ec0d34a4e8ae65052015",
-    "criterios_sha1": "5813c4ddcd56e89b815d66cc092cd76ebe511c3e",
+    "criterios_sha1": "ece5e7fa445b333c0236e62565dfe92e3b7affa2",
     "corredor_del_proyecto": {
       "valor": "terraplen de ~5 km de la Fase 0-bis de la hoja de ruta, num. 150",
       "origen": "src/datos_sitio.py"
@@ -833,6 +833,13 @@
         "valor": "68x13/2.01",
         "declarado_en_caliente": false,
         "concepto": "Corrugacion y espesor de plancha de la tuberia metalica corrugada del catalogo: de ellos sale el diametro exterior D_ext = D + 2 x (profundidad de corrugacion + espesor de plancha), en que diametros es estandar el producto y, en la Fase 8, las propiedades de la seccion"
+      },
+      {
+        "clave": "diametro_de_diseno_concreto",
+        "etiqueta": "A",
+        "valor": "designado",
+        "declarado_en_caliente": false,
+        "concepto": "Diametros de diseño que admite la progresion del tubo de concreto: solo los DESIGNADOS de AASHTO M 170M, o tambien el diametro ingles convertido de cada uno"
       },
       {
         "clave": "diametros_normalizados",

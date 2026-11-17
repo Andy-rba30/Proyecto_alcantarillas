@@ -2951,7 +2951,10 @@ T_M294_TRAD_7_2_2 = _tabla(
         # --- T-4 --- Idem: el extremo de esta columna es el tope de la serie
         # del HDPE en 'D_max_norma_producto' [C].
         ColumnaDeTabla(id="dn_mm", etiqueta_literal="Diámetro, mm (in.)",
-                       unidad="mm", uso=Usada(por=("M2.tope_de_diametro",))),
+                       unidad="mm", uso=Usada(por=(
+                           "M2.tope_de_diametro",
+                           # --- VE-2 (g) --- la serie designada [N] del HDPE
+                           "constantes_normativas.DIAMETROS_DESIGNADOS_MM"))),
         # --- T-5 --- la pulgada designada es la LLAVE con que la vista
         # PE_M294_PERFIL_MINIMO une esta serie con la Table A12-11 de AASHTO
         # LRFD, que tabula por tamaño nominal en pulgadas. No es una
@@ -3251,7 +3254,10 @@ T_M36_T6 = _tabla(
         # espesor. La de 38x6.5 y las tres de costilla siguen sin consumidor.
         ColumnaDeTabla(id="dn_mm",
                        etiqueta_literal="Nominal Inside Diameter, mm",
-                       unidad="mm", uso=Usada(por=("M2.tope_de_diametro",))),
+                       unidad="mm", uso=Usada(por=(
+                           "M2.tope_de_diametro",
+                           # --- VE-2 (g) --- la serie designada [N] del TMC
+                           "constantes_normativas.DIAMETROS_DESIGNADOS_MM"))),
         ColumnaDeTabla(id="c38x6_5", etiqueta_literal="38 by 6.5 mm",
                        unidad="", uso=_NO_USADA_TMC),
         ColumnaDeTabla(id="c68x13", etiqueta_literal="68 by 13 mm",
@@ -4286,8 +4292,15 @@ T_M170M_T5 = _tabla(
         # la serie llega a 3600 mm, pero por encima de 2700 mm las tablas no
         # traen pared ni acero (diseño especial, Seccion 7.2). El tope sale
         # de `constantes_normativas.DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM`.
+        # --- VE-2 (g) --- la columna de diametros SI se consume desde VE-2:
+        # es la serie designada [N] del concreto
+        # (`constantes_normativas.DIAMETROS_DESIGNADOS_MM`), contra la que
+        # `M2.siguiente_diametro` exige cada escalon del tubo.
         ColumnaDeTabla(id="dn_mm", etiqueta_literal="Internal Designed Diameter, mm",
-                       unidad="mm", uso=_NO_USADA_CONCRETO),
+                       unidad="mm",
+                       uso=Usada(por=(
+                           "constantes_normativas.DIAMETROS_DESIGNADOS_MM",
+                           "M2.siguiente_diametro"))),
         ColumnaDeTabla(id="wall_b_mm", etiqueta_literal="Wall Thickness, mm",
                        unidad="mm", uso=_NO_USADA_CONCRETO),
         ColumnaDeTabla(id="wall_c_mm", etiqueta_literal="Wall Thickness, mm",
@@ -4341,6 +4354,112 @@ T_M170M_T5 = _tabla(
             "la columna B de esta tabla (100, 113, 125)",
         ),
     ),
+)
+
+
+# ===========================================================================
+# --- VE-2 (g) --- AASHTO M 170M-04, Table 6 «Permissible Variation in
+# Internal Diameter», por IMAGEN de la pag. PDF 20 (rotulo de pie «M
+# 17OM-20»), renderizada a 2.0x. Es la tabla a la que remite el num. 12.1
+# («See Table 6. At the manufacturer's option the design diameter shall be
+# the designated diameter or the converted English diameter», cita
+# AASHTO_M170M.12.1): por cada diametro DESIGNADO da su equivalente ingles en
+# pulgadas y en milimetros, que es el «converted English diameter».
+#
+# LA IMAGEN ES UNA RECOMPOSICION OCR, como la de las Tablas 1 a 4 (Fuente
+# AASHTO_M170M), y NUEVE celdas de las filas transcritas salen con digitos o
+# letras equivocadas. Se transcriben CORREGIDAS y cada correccion se sostiene
+# en DOS comprobaciones independientes que no salen de esta pagina rota: la
+# columna de designados es la serie de la Tabla 5 (escaneo REAL, PDF 10,
+# `AASHTO_M170M.T5`), y la columna en mm es la pulgada por 25.4 redondeada al
+# milimetro en las veintiuna filas. Las nueve, con lo que imprime la imagen,
+# estan en DIS-M170M-T6-RECOMPOSICION; `tests/test_ve2_materiales.py` exige
+# las dos comprobaciones fila a fila.
+#
+# ACOTADA a 300-2700 mm: las seis filas de 2850 a 3600 quedan fuera (ver el
+# `Acotada`), y ningun diametro de ese tramo lo recorre el catalogo del
+# concreto, cuyo tope es 2700 mm (DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM).
+# ===========================================================================
+_USADA_M170M_T6 = Usada(por=("constantes_normativas.EQUIVALENTE_INGLES_M170M",
+                             "M2.siguiente_diametro"))
+
+T_M170M_T6 = _tabla(
+    id="AASHTO_M170M.T6",
+    cita_id="AASHTO_M170M.T6",
+    titulo_literal="Permissible Variation in Internal Diameter",
+    columnas=(
+        ColumnaDeTabla(id="dn_mm",
+                       etiqueta_literal="Designated Diameter of Pipe, mm",
+                       unidad="mm", uso=_USADA_M170M_T6),
+        ColumnaDeTabla(id="dn_in",
+                       etiqueta_literal="Equivalent English Dia, in.",
+                       unidad="in", uso=_USADA_M170M_T6),
+        # La imagen imprime este rotulo como «pqq glish Dia, mm»; se
+        # transcribe con la lectura de su gemelo de la columna anterior.
+        ColumnaDeTabla(id="ingles_mm",
+                       etiqueta_literal="Equivalent English Dia, mm",
+                       unidad="mm", uso=_USADA_M170M_T6),
+    ),
+    filas=tuple(
+        FilaDeTabla(
+            id=f"AASHTO_M170M.T6#d{dn_mm}",
+            etiqueta_literal=str(dn_mm),
+            valores={"dn_mm": dn_mm, "dn_in": dn_in, "ingles_mm": ingles_mm},
+            uso=_USADA_M170M_T6)
+        # (designado mm, ingles in, ingles mm) leidos de la PDF 20, con las
+        # nueve celdas corregidas de DIS-M170M-T6-RECOMPOSICION (la imagen
+        # imprime: 300 -> «30S»; 375 -> «1$» y «3gl»; 525 -> «123»; 1350 ->
+        # «S4»; 1650 -> «1659»; 1800 -> «lS00»; 1950 -> «i950»; 2400 ->
+        # «9d»).
+        for dn_mm, dn_in, ingles_mm in (
+            (300, 12, 305), (375, 15, 381), (450, 18, 457), (525, 21, 533),
+            (600, 24, 610), (675, 27, 686), (750, 30, 762), (825, 33, 838),
+            (900, 36, 914), (1050, 42, 1067), (1200, 48, 1219),
+            (1350, 54, 1372), (1500, 60, 1524), (1650, 66, 1676),
+            (1800, 72, 1829), (1950, 78, 1981), (2100, 84, 2134),
+            (2250, 90, 2286), (2400, 96, 2438), (2550, 102, 2591),
+            (2700, 108, 2743),
+        )),
+    alcance=Acotada(
+        razon=("el catalogo del concreto se topa en 2700 mm, el mayor "
+               "diametro con diseño estandar de la norma "
+               "(DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM); y en el tramo "
+               "de mas arriba la recomposicion OCR deja celdas que no se "
+               "pueden leer ni corregir con la aritmetica de la tabla sola"),
+        que_queda_fuera=("las seis filas de 2850 a 3600 mm. La imagen "
+                         "imprime «2830 | 114 | 2896», «3000 | 120 | iM8», "
+                         "«3150 | 126 | 3200», «3300 | 132 | 3333», «3450 | "
+                         "U38 | 3S05» y una ultima fila ilegible entera, "
+                         "«ice | i‹i | 3ass»"),
+        donde_leerlo=("PDF 20 del ejemplar de normas/, mitad superior; la "
+                      "serie de designados de 2850 a 3600 mm esta en la "
+                      "Tabla 5 (AASHTO_M170M.T5, escaneo real)")),
+    erratas=("DIS-M170M-T6-RECOMPOSICION",),
+    interpretacion=Interpretacion(
+        texto=("Por cada diametro designado del sistema metrico la tabla da "
+               "el diametro ingles equivalente --la pulgada y su conversion "
+               "a milimetros--, y el num. 12.1 deja al fabricante elegir "
+               "cual de los dos es el de diseño. El proyecto lo usa para "
+               "admitir, solo en el concreto y solo si el criterio [A] "
+               "'diametro_de_diseno_concreto' lo declara, un escalon que sea "
+               "el diametro ingles convertido de una fila (p. ej. 1.0668 m, "
+               "42 in, de la fila de 1050 mm)"),
+        en_contra=(
+            "la imagen del ejemplar es una recomposicion OCR y no un "
+            "escaneo: nueve de las 63 celdas transcritas se leen corregidas "
+            "(DIS-M170M-T6-RECOMPOSICION), y la palabra «Table» se imprime "
+            "sin su numero; «Table 6» sale del num. 12.1",
+            "la columna en mm imprime la pulgada convertida REDONDEADA al "
+            "milimetro (1067 por 1066.8): un escalon de 1.0668 m y uno de "
+            "1.067 m son el mismo diametro ingles convertido, y el proyecto "
+            "admite los dos",
+        ),
+        a_favor=(
+            "las veintiuna filas transcritas cumplen las dos comprobaciones "
+            "independientes: la columna de designados es fila a fila la "
+            "serie de la Tabla 5 (escaneo real) de 300 a 2700 mm, y la "
+            "columna en mm es round(pulgadas x 25.4) en las veintiuna",)),
+    vistas_de_calculo=("EQUIVALENTE_INGLES_M170M",),
 )
 
 

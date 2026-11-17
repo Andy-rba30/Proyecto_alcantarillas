@@ -7600,6 +7600,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
   redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
 - **Cerrado (VE-2):** (b), ficha VE2-B. **Cerrado (VE-2) (a):** ficha VE2-A.
+- **Cerrado (VE-2) (g):** diámetros designados por material; ficha VE2-G.
 - **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
   el programa calcula; el permiso de VE-1 no las alcanza.
 - **Qué haría falta:** la decisión del dueño y, por cada una adoptada, un prompt con sus
@@ -7669,3 +7670,36 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 - **Qué haría falta:** (1) que el dueño corrija la §4.1; (2) y (3), una línea en
   `M11_reporte.py` y otra en `modelos.py` al integrar.
 - **Dónde vive:** `src/modulos/M2_material.py::_par_manning_del_tubo_de_concreto`
+
+## VE2-G · Los diámetros son los designados por la norma de producto
+
+- **Cerrado (VE-2, decisión VE1-02 (g)):** comprobado PRIMERO que los trece escalones de
+  la progresión de archivo son designados para cada material que los usa (13 el
+  concreto, 9 el TMC, 5 el HDPE). Las series designadas son [N] en
+  `constantes_normativas.DIAMETROS_DESIGNADOS_MM`, leídas del registro: M 170M Tabla 5
+  (300 a 3600 mm), M 36 Table 6 / ASTM A760 Tabla 1 (100 a 3600, con 500 y sin 525) y
+  M 294 núm. 7.2.1 (300 a 1500, sin 825). `M2.siguiente_diametro` rechaza, POR MATERIAL,
+  el escalón no designado (`DatoInvalidoError` sobre 'diametros_normalizados'). El
+  diámetro inglés convertido (p. ej. 1.0668 m) sólo lo admite el concreto y sólo con el
+  criterio [A] de perfil `diametro_de_diseno_concreto` = 'designado_o_ingles_convertido'
+  (archivo: 'designado'): AASHTO M 170M núm. 12.1, pág. impresa M 170M-19 (PDF 19),
+  PERMISO, y su Table 6, pág. impresa M 170M-20 (PDF 20), en el registro como
+  `AASHTO_M170M.T6` (300 a 2700 mm, `EQUIVALENTE_INGLES_M170M`). Las dos leídas por
+  imagen: la página es una recomposición OCR y la transcripción corrige nueve celdas
+  (DIS-M170M-T6-RECOMPOSICION) y letras de la frase (nota de la cita).
+- **Por qué así:** la guardia vive en M2 y no en la puerta del criterio porque la
+  progresión es una para tres materiales con series distintas, y la puerta no sabe qué
+  materiales ni qué tope recorrerá la corrida; la puerta sigue exigiendo la estructura
+  (VE-1 H2). Tolerancia `TOL_UMBRAL_NORMATIVO` en metros, no de centímetro: 375, 525, 675
+  y 825 mm son designados. Un escalón no positivo lo sigue rechazando la hidráulica
+  (rama de error de la línea base). Con los valores de archivo ningún número se mueve.
+- **Abierto:** (1) con la opción inglesa, el escalón de 108 in (2.7432 m, designado
+  2700) queda fuera del tope de 2.70 m: el tope y V9 comparan el diámetro de cálculo y
+  no el designado; cambiarlo toca V9 (`M5_verificaciones`), fuera del permiso.
+  (2) Con la opción inglesa, 'espesor_pared_conducto' necesita las filas 914, 1067…
+  (su clave es el diámetro redondeado al mm, `M2.espesor_pared`); leer la pared de la
+  fila designada sería otra decisión, no tomada. (3) Las seis filas de 2850 a 3600 de la
+  Table 6 no se transcriben (`Acotada`).
+- **Qué haría falta:** (1) decisión del dueño y un cambio en V9; (2) decidir si la pared
+  del diámetro inglés es la del designado; (3) otro ejemplar de M 170M, no recompuesto.
+- **Dónde vive:** `src/modulos/M2_material.py::_exigir_escalon_designado`

@@ -4411,6 +4411,55 @@ NUMERAL_DIAMETRO_MAX_ESTANDAR_M170M = (
     "y acero tabulados; por encima, diseño especial de la Seccion 7.2, num. "
     "7.2.1 y 7.2.2 (pag. impresa M 170M-13)")
 
+# --- VE-2 (g) --- (decision del dueño, 2026-11-17, ficha VE1-02 (g)) LOS
+# DIAMETROS DESIGNADOS POR LA NORMA DE PRODUCTO de cada material, en mm. Son
+# las columnas de diametros de las tablas del registro, LEIDAS y no copiadas,
+# y cada una con sus citas en `CITAS_DIAMETROS_DESIGNADOS`:
+#
+#   concreto  AASHTO M 170M-04, Tabla 5 (escaneo real, PDF 10): 300 a 3600,
+#             paso 75 hasta 900 y 150 despues; «Tables 1 to 5» con la
+#             envolvente leida tabla a tabla (AASHTO_M170M.T1_T5#DIAMETROS)
+#   tmc       AASHTO M 36 Table 6 (PDF 12), gemela de ASTM A760 Tabla 1: 100
+#             a 3600, con 500 y no 525 (num. 8.1.1: el diametro nominal se
+#             elige de la Table 6)
+#   hdpe      AASHTO M 294-11 num. 7.2.1 y tabla de 7.2.2 (traduccion no
+#             oficial): 300 a 1500, sin 825
+#
+# Contra estas series `M2.siguiente_diametro` exige cada escalon del tubo
+# (ficha VE2-G). La progresion de archivo (0.90 + 0.15 m) cae entera dentro
+# de las tres hasta el tope de cada material. Etiqueta: [N] como el resto de
+# las tablas de este archivo --los valores de una tabla son de la tabla--;
+# que diametro de diseño admite el concreto es [A]
+# ('diametro_de_diseno_concreto').
+def _serie_designada(tabla_id: str) -> tuple:
+    return tuple(sorted(int(fila.valores["dn_mm"])
+                        for fila in _reg.tabla(tabla_id).filas))
+
+
+DIAMETROS_DESIGNADOS_MM = {
+    "concreto_reforzado": _serie_designada("AASHTO_M170M.T5"),
+    "tmc": _serie_designada("AASHTO_M36.T6"),
+    "hdpe": _serie_designada("AASHTO_M294_TRAD.T7.2.2"),
+}
+CITAS_DIAMETROS_DESIGNADOS = {
+    "concreto_reforzado": ("AASHTO_M170M.T5", "AASHTO_M170M.T1_T5#DIAMETROS"),
+    "tmc": ("AASHTO_M36.T6", "AASHTO_M36.8.1.1", "ASTM_A760.T1"),
+    "hdpe": ("AASHTO_M294_TRAD.7.2.1", "AASHTO_M294_TRAD.7.2.2"),
+}
+
+# El DIAMETRO INGLES CONVERTIDO de cada designado del concreto: {designado mm:
+# (pulgadas, mm)}, de la Table 6 «Permissible Variation in Internal Diameter»
+# de AASHTO M 170M-04 (PDF 20, tabla AASHTO_M170M.T6, transcrita de 300 a
+# 2700 mm con nueve celdas corregidas de la recomposicion OCR,
+# DIS-M170M-T6-RECOMPOSICION). El num. 12.1 (cita AASHTO_M170M.12.1) deja al
+# fabricante diseñar con el designado o con este; el proyecto lo admite solo
+# si 'diametro_de_diseno_concreto' lo declara. M 36 y M 294 no lo prevén.
+EQUIVALENTE_INGLES_M170M = {
+    int(fila.valores["dn_mm"]): (int(fila.valores["dn_in"]),
+                                 int(fila.valores["ingles_mm"]))
+    for fila in _reg.tabla("AASHTO_M170M.T6").filas
+}
+
 
 # ===========================================================================
 # --- T-8 --- (cadena T) · proteccion de entrada y salida (M6)

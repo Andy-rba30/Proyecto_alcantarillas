@@ -168,7 +168,11 @@ def test_los_juicios_del_anexo(medidas):
             # concreto, derivado del censo. En el juego los tres tubos
             # quedan en Ø 0.90 m bajo control de ENTRADA (que no depende de
             # n) con las tres columnas: se lee y no mueve nada.
-            "columna_n_manning_concreto"},
+            "columna_n_manning_concreto",
+            # VE-2 (g): admitir tambien el diametro ingles convertido no
+            # mueve nada mientras la progresion sea la de archivo, toda
+            # designada (0.90 + 0.15 m).
+            "diametro_de_diseno_concreto"},
         "NO LO LEE LA CORRIDA": {
             "borde_libre_bajo_tw_ahogante", "seccion_receptor",
             "hw_entrada_fuera_de_rango", "coeficiente_uniformidad_temez",

@@ -253,7 +253,6 @@ def test_a_la_validacion_de_sensibilidad_barre_la_columna():
 # (g) · los diametros son los designados por la norma de producto
 # ===========================================================================
 
-@pytest.mark.xfail(strict=True, reason="VE-2 (g): las series no son [N]")
 def test_g_las_series_designadas_son_las_de_la_norma_de_producto():
     designados = cn.DIAMETROS_DESIGNADOS_MM
     for material in ("concreto_reforzado", "tmc", "hdpe"):
@@ -269,7 +268,6 @@ def test_g_las_series_designadas_son_las_de_la_norma_de_producto():
         assert mm in designados["concreto_reforzado"], mm
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2 (g): la tabla no esta transcrita")
 def test_g_el_equivalente_ingles_de_M170M_y_su_aritmetica():
     from src.constantes_fisicas import PULGADA_EN_MM
     equivalente = cn.EQUIVALENTE_INGLES_M170M
@@ -285,7 +283,6 @@ def test_g_el_equivalente_ingles_de_M170M_y_su_aritmetica():
     assert tuple(sorted(equivalente)) == tuple(d for d in serie_t5 if d <= 2700)
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2 (g): la cita 12.1 no existe")
 def test_g_la_opcion_del_fabricante_esta_citada():
     reg = _reg()
     cita = reg.cita("AASHTO_M170M.12.1")
@@ -317,7 +314,6 @@ def test_g_guardia_los_escalones_de_archivo_son_designados_para_su_material():
             assert round(float(D) * 1000) in serie, (material, D)
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2 (g): M2 no rechaza el escalon")
 @pytest.mark.parametrize("tipo", [CONCRETO, TMC, HDPE], ids=lambda t: t.value)
 def test_g_un_escalon_no_designado_se_rechaza_nombrando_el_criterio(tipo):
     # 0.90 + 0.075 m: el 0.975 no es designado en ninguna de las tres normas.
@@ -328,7 +324,6 @@ def test_g_un_escalon_no_designado_se_rechaza_nombrando_el_criterio(tipo):
     assert "0.975" in str(exc) and "designad" in str(exc)
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2 (g): M2 no rechaza el escalon")
 @pytest.mark.parametrize("tipo, admitidos", [
     # 0.375 + 0.075 m: hasta 0.90 los de M 170M son todos designados; en M 36
     # el 525 no existe (la serie salta de 450 a 500); en M 294 el 825 no.
@@ -344,7 +339,6 @@ def test_g_la_guardia_es_por_material_y_no_de_centimetro(tipo, admitidos):
     assert exc is not None and exc.campo == M2.CRITERIO_DIAMETROS
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2 (g): M2 no rechaza el escalon")
 def test_g_sin_la_eleccion_el_concreto_rechaza_la_serie_de_6_in():
     with declarados({M2.CRITERIO_DIAMETROS: SERIE_6_IN}):
         admitidos, exc = _recorrido_hasta_el_rechazo(CONCRETO)
@@ -353,7 +347,6 @@ def test_g_sin_la_eleccion_el_concreto_rechaza_la_serie_de_6_in():
     assert DIAMETRO_DE_DISENO in str(exc) and "0.9144" in str(exc)
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2 (g): el criterio no existe")
 def test_g_con_la_eleccion_el_concreto_recorre_la_serie_de_6_in_tal_cual():
     with declarados({M2.CRITERIO_DIAMETROS: SERIE_6_IN,
                      DIAMETRO_DE_DISENO: "designado_o_ingles_convertido"}):
@@ -364,7 +357,6 @@ def test_g_con_la_eleccion_el_concreto_recorre_la_serie_de_6_in_tal_cual():
         assert _recorrido(CONCRETO) == ARCHIVO
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2 (g): el criterio no existe")
 @pytest.mark.parametrize("tipo", [TMC, HDPE], ids=lambda t: t.value)
 def test_g_el_ingles_convertido_es_solo_del_concreto(tipo):
     with declarados({M2.CRITERIO_DIAMETROS: SERIE_6_IN,
@@ -374,7 +366,6 @@ def test_g_el_ingles_convertido_es_solo_del_concreto(tipo):
     assert "0.9144" in str(exc)
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2 (g): el criterio no existe")
 def test_g_el_criterio_tiene_su_ficha_de_perfil_y_lo_lee_el_concreto():
     c = ca.criterio(DIAMETRO_DE_DISENO)
     assert c.etiqueta == "A" and c.nivel == NIVEL_PERFIL
@@ -403,7 +394,6 @@ def test_g_guardia_el_inicio_negativo_lo_sigue_rechazando_la_seccion():
                 -0.90, rel=REL_TRANSPORTE)
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2: las fichas no estan escritas")
 def test_las_fichas_ve2_a_y_ve2_g_y_vE1_02_marcada():
     fichas = _fichas()
     assert any(k.startswith("VE2-A") for k in fichas), sorted(fichas)[-5:]
@@ -415,7 +405,6 @@ def test_las_fichas_ve2_a_y_ve2_g_y_vE1_02_marcada():
                    for linea in ve1_02.splitlines()), letra
 
 
-@pytest.mark.xfail(strict=True, reason="VE-2: los recuentos son de 141")
 def test_el_censo_suma_los_dos_criterios_nuevos():
     assert {COLUMNA, DIAMETRO_DE_DISENO} <= set(ca.CRITERIOS)
     assert len(ca.CRITERIOS) >= 143

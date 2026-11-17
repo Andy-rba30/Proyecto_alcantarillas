@@ -55,7 +55,12 @@ def _material(carta=None, n_min=None, n_max=None):
     """
     import dataclasses
     base = catalogo(TipoMaterial.CONCRETO_REFORZADO)
-    cambios = {}
+    # CAMBIADO EN VE-2 (decision VE1-02 (a)), declarando la causa: desde
+    # VE-2 el TUBO de concreto trae en `pasos` su eleccion de Fase 3 (la
+    # columna de la Tabla N 09, F4.N_CONCRETO). Este doble es un MARCO
+    # armado sobre el tubo, y la traza de esa eleccion no es suya: se le
+    # retira, como estaba hasta VE-2 (la tupla del tubo venia vacia).
+    cambios = {"pasos": ()}
     if carta is not None:
         cambios["hds5"] = ConstantesHDS5.desde_dict(HDS5_INLET[carta])
     if n_min is not None:

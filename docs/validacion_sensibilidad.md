@@ -71,6 +71,7 @@
 | conducto | `pendiente_maxima_conducto` | [A] | 0.02–0.1 | 0.1, 0.02 | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | cabezal | `phi_relleno_trasdos` | [A] | 30.0–38.0 | 34.0, 30.0, 38.0 | juego | MUEVE VEREDICTOS | veredictos que cambian: A-01 con 30.0: 13; A-02 con 30.0: 6; B-01 con 30.0: 8; C-01 con 30.0: 7; A-01 con 38.0: 2; A-02 con 38.0: 4; B-01 con 38.0: 3; C-01 con 38.0: 5 |
 | sin consumidor | `demanda_sismica_licuefaccion` | [A] | 475–1000 | 1000, 475 | juego | NO LO LEE LA CORRIDA | sin consumidor (`SIN_CONSUMIDOR_Y_SIN_MEDIDA`): la licuefacción no se evalúa |
+| conducto | `diametro_de_diseno_concreto` | [A] | designado / designado_o_ingles_convertido | 'designado', 'designado_o_ingles_convertido' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `condicion_pavimento` | [A] | no_pavimentado / flexible / rigido | 'flexible', 'no_pavimentado', 'rigido' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `corrugacion_y_espesor_tmc` | [A] | 68x13/1.32 / 68x13/1.63 / 68x13/2.01 / 68x13/2.77 / 68x13/3.51 / 68x13/4.27 / 75x25/1.32 / 75x25/1.63 / 75x25/2.01 / 75x25/2.77 / 75x25/3.51 / 75x25/4.27 / 125x25/1.63 / 125x25/2.01 / 125x25/2.77 / 125x25/3.51 / 125x25/4.27 | '68x13/2.01', '68x13/1.32', '68x13/1.63', '68x13/2.77', '68x13/3.51', '68x13/4.27', '75x25/1.32', '75x25/1.63', '75x25/2.01', '75x25/2.77', '75x25/3.51', '75x25/4.27', '125x25/1.63', '125x25/2.01', '125x25/2.77', '125x25/3.51', '125x25/4.27' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
 | conducto | `suelo_agresivo_lrfd_sobre_tmc` | [A] | aviso / excluye | 'aviso', 'excluye' | juego | LEÍDO, SIN EFECTO MEDIBLE | — |
@@ -102,7 +103,7 @@
 - **MUEVE EL DISEÑO** (11): `seccion_receptor` (juego_sin_TW), `v_max_concreto_eleccion`, `v_max_concreto_eleccion` (juego_tmc_excluida), `regimen_v2b`, `espesor_pared_cajon`, `borde_libre_y_sobre_d_max`, `embocadura_cabezal`, `origen_cota_fondo_entrada`, `remanso_derecho_via`, `pendiente_minima_conducto`, `umbral_no_colapso_evento_extremo`.
 - **MUEVE VEREDICTOS** (25): `eta_importancia_operativa_conducto`, `factor_muro_eleccion`, `gamma_EQ`, `fraccion_delta_sobre_phi_trasdos`, `fila_phi_estabilidad_cabezal`, `factores_inclinacion_carga_portante`, `regla_pendiente_relleno_trasdos`, `regimen_resistencia_elementos_cabezal`, `eta_ductilidad_cabezal`, `eta_redundancia_cabezal`, `marco_estabilidad_cabezal`, `regimen_cabezal`, `drenaje_trasdos`, `fc_cabezal_mpa`, `F_pga_lectura_columna_extrema`, `punto_aplicacion_incremento_sismico`, `revestimiento_cuneta`, `phi_relleno_trasdos`, `peso_especifico_relleno_kn_m3`, `talud_terraplen`, `lectura_coeficientes_socavacion_hec14`, `referencia_profundidad_socavacion`, `margen_zapata_bajo_socavacion_m`, `terreno_delante_del_cabezal`, `metodo_longitud_conducto`.
 - **MUEVE EL HW** (2): `n_manning_cajon`, `ke_entrada`.
-- **LEÍDO, SIN EFECTO MEDIBLE** (29): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `duracion_caudal_pico_socavacion_min`, `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `clase_exposicion_fisuracion_cabezal`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`.
+- **LEÍDO, SIN EFECTO MEDIBLE** (30): `HW_D_max`, `v_max_tmc`, `v_max_hdpe`, `fraccion_llena_mayor_parte`, `instalacion_estandar_concreto`, `carga_viva_bajo_relleno_alto`, `duracion_caudal_pico_socavacion_min`, `umbral_area_quebrada_importante_ha`, `columna_n_manning_concreto`, `esviaje_max_grados`, `borde_libre_canal_m`, `long_max_cuneta`, `lectura_velocidad_limite_cuneta`, `obras_familia_a_extremo_de_cuneta`, `acceso_mantenimiento_v2b`, `pendiente_maxima_conducto`, `diametro_de_diseno_concreto`, `condicion_pavimento`, `corrugacion_y_espesor_tmc`, `suelo_agresivo_lrfd_sobre_tmc`, `espesor_proteccion_salida`, `longitud_proteccion_salida`, `tipo_proteccion_entrada`, `regla_espesor_longitud_proteccion_salida`, `regimen_cortante_muro_e060_art_11_10_2`, `acero_refuerzo_cabezal`, `regla_minimos_constructivos_cabezal`, `clase_exposicion_fisuracion_cabezal`, `desnivel_minimo_entrega_m`, `desajuste_empalme_canal_m`.
 - **NO LO LEE LA CORRIDA** (16): `borde_libre_bajo_tw_ahogante`, `seccion_receptor`, `hw_entrada_fuera_de_rango`, `inclinacion_muro_beta`, `homogeneidad_serie_fen`, `distribucion_precipitacion_maxima`, `nivel_significancia_ks`, `relacion_intensidad_duracion`, `duracion_minima_lluvia_min`, `tc_fuera_de_la_poblacion_del_metodo`, `coeficiente_uniformidad_temez`, `demanda_sismica_licuefaccion`, `fabricacion_tmc`, `relleno_estructural_hdpe`, `criterio_traccion_cabezal_ciclopeo`, `junta_arranque_cabezal_ciclopeo`.
 
 ### 3.1 El cabezal de la regla: E3 estática y E1 sísmica del marco LRFD frente a sus dos [A]
@@ -1137,6 +1138,21 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 | 475 | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
 | 475 | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
 
+### `diametro_de_diseno_concreto`
+
+derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
+
+| Valor | Punto | Material y sección | HW (m) | Control | Verificaciones que cambian frente al primer valor | Incumplidas o bloqueo si no dimensiona | Comparable |
+|---|---|---|---|---|---|---|---|
+| 'designado' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'designado' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 'designado' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'designado' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+| 'designado_o_ingles_convertido' | A-01 | Concreto reforzado, Ø 0.90 m | 1.042 | entrada | ninguna | — | sí |
+| 'designado_o_ingles_convertido' | A-02 | Concreto reforzado, Ø 0.90 m | 0.572 | entrada | ninguna | — | sí |
+| 'designado_o_ingles_convertido' | B-01 | Concreto reforzado, Ø 0.90 m | 0.232 | entrada | ninguna | — | sí |
+| 'designado_o_ingles_convertido' | C-01 | Concreto reforzado, marco 1.20 × 0.90 m | 0.623 | salida | ninguna | — | sí |
+
 ### `condicion_pavimento`
 
 derivado del censo (valor efectivo y ventana legible por máquina; correcciones de T-11, H3). Base: el juego completo. Efecto: **LEÍDO, SIN EFECTO MEDIBLE**.
@@ -1606,7 +1622,7 @@ derivado del censo (valor efectivo y ventana legible por máquina; correcciones 
 
 ## 5. Los criterios que no se barren, por nombre
 
-83 barridos sobre 81 criterios; estos 61 no se barren, y la razón:
+84 barridos sobre 82 criterios; estos 61 no se barren, y la razón:
 
 | Criterio | Etiqueta | Por qué no se barre |
 |---|---|---|

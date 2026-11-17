@@ -5386,6 +5386,67 @@ CRITERIOS: Dict[str, Criterio] = {
         ),
     ),
 
+    # --- VE-2 (g) --- (decision del dueño, 2026-11-17, ficha VE1-02 (g)) EL
+    # DIAMETRO INGLES CONVERTIDO SOLO EN EL CONCRETO, Y DECLARADO. La guardia
+    # de M2 (`M2._exigir_escalon_designado`) rechaza, por material, el escalon
+    # que no sea un diametro DESIGNADO de su norma de producto
+    # (`constantes_normativas.DIAMETROS_DESIGNADOS_MM`, [N]). AASHTO M 170M es
+    # la unica de las tres que deja al fabricante diseñar con el diametro
+    # ingles convertido (num. 12.1); este criterio dice si el catalogo del
+    # proyecto lo admite. El valor de archivo, 'designado', no mueve nada: la
+    # progresion de archivo (0.90 + 0.15 m) es toda designada.
+    "diametro_de_diseno_concreto": Criterio(
+        valor="designado",
+        # DE PERFIL: lo lee `M2.siguiente_diametro` en cada escalon del tubo
+        # de concreto, que la corrida `--alcance perfil` recorre (lo mide
+        # `tests/test_nivel_medido.py`).
+        nivel=NIVEL_PERFIL,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        sensibilidad=("designado", "designado_o_ingles_convertido"),
+        concepto="Diametros de diseño que admite la progresion del tubo de "
+                 "concreto: solo los DESIGNADOS de AASHTO M 170M, o tambien "
+                 "el diametro ingles convertido de cada uno",
+        justificacion="Decide que diametros de la progresion se admiten en "
+                      "el tubo de concreto. AASHTO M 170M, num. 12.1 (pag. "
+                      "impresa M 170M-19, cita AASHTO_M170M.12.1), deja al "
+                      "FABRICANTE elegir como diametro de diseño el "
+                      "designado o el ingles convertido, y su Table 6 da por "
+                      "cada designado el ingles convertido (1050 mm -> 42 in "
+                      "-> 1067 mm). La eleccion no es de una norma peruana "
+                      "ni del proyecto por si solo: depende del producto que "
+                      "se especifique, y por eso [A]. Se adopta 'designado': "
+                      "la serie metrica designada de la norma, la misma que "
+                      "M 36 / ASTM A760 y M 294 designan para el TMC y el "
+                      "HDPE, y la que recorre la progresion de archivo (0.90 "
+                      "+ 0.15 m). 'designado_o_ingles_convertido' admite "
+                      "ademas el diametro ingles convertido de cada fila (la "
+                      "serie de 6 in, 0.9144 + 0.1524 m): +1.6 % de "
+                      "diametro y +3.2 % de area en el 900, del lado de la "
+                      "capacidad. NO alcanza al TMC ni al HDPE: M 36 (num. "
+                      "8.1.1 y Table 6) y M 294 (num. 7.2.1) solo designan "
+                      "la serie metrica, y alli un escalon de 6 in se "
+                      "rechaza con cualquier valor de este criterio",
+        fuente="AASHTO M 170M-04, num. 12.1 «Internal Diameter», pag. "
+               "impresa M 170M-19 (PDF 19), cita AASHTO_M170M.12.1, y Table 6 "
+               "«Permissible Variation in Internal Diameter», pag. impresa M "
+               "170M-20 (PDF 20), tabla AASHTO_M170M.T6, leidas por imagen "
+               "(el ejemplar es una recomposicion OCR: las correcciones "
+               "estan declaradas en la cita y en las erratas de la tabla del "
+               "registro). Las "
+               "series designadas de los tres materiales: "
+               "constantes_normativas.DIAMETROS_DESIGNADOS_MM (Tabla 5 de "
+               "M 170M; Table 6 de M 36 y Tabla 1 de A760; num. 7.2.1 y tabla "
+               "de 7.2.2 de M 294, traduccion no oficial)",
+        reemplazado_por="Especificacion del tubo de concreto con el diametro "
+                        "de diseño que el fabricante adopte (num. 12.1)",
+        resolucion=Libre(
+            que_lo_fija="el fabricante, a su opcion (AASHTO M 170M num. "
+                        "12.1); el proyecto declara cual admite su catalogo",
+            dominio="designado | designado_o_ingles_convertido",
+        ),
+    ),
+
     # =======================================================================
     # LOS SIETE DEL CAJON (C5 y C7). DESDE T-3 TODOS LLEVAN VALOR DE ARCHIVO.
     # =======================================================================

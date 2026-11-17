@@ -289,6 +289,10 @@ from src.constantes_normativas import (DIAMETROS_ESTANDAR_TMC,
                                    SIMBOLOS_SUCS, SULFATOS,
                                    TMC_PLANCHA_CORRUGADA)
 from src.dominios import MILIMETROS_POR_METRO, PPM_POR_PORCIENTO
+# --- VE-2 (g) --- las series designadas [N] y el ingles convertido de M 170M.
+from src.constantes_normativas import (DIAMETROS_DESIGNADOS_MM,
+                                   EQUIVALENTE_INGLES_M170M)
+from src.constantes_fisicas import PULGADA_EN_MM
 from src.modelos import (CIFRAS_FACTOR, CIFRAS_FINA, ConstantesHDS5,
                      DatoFaltanteError, DatoInvalidoError,
                      DictamenDurabilidad, EfectoDeDurabilidad,
@@ -304,6 +308,10 @@ NUMERAL_CATALOGO = "Sec. 3.2"     # nuevo en v7, sin numeral MTC propio
 NUMERAL_MATERIAL = "Sec. 3.4"
 
 CRITERIO_DIAMETROS = "diametros_normalizados"
+# --- VE-2 (g) --- el diametro de diseño que admite el tubo de concreto.
+CRITERIO_DIAMETRO_DE_DISENO = "diametro_de_diseno_concreto"
+DIAMETRO_DESIGNADO = "designado"
+DIAMETRO_DESIGNADO_O_INGLES = "designado_o_ingles_convertido"
 CRITERIO_D_MAX_CATALOGO = "D_max_catalogo"
 CRITERIO_ESPESOR_PARED = "espesor_pared_conducto"
 # --- T-4 --- los cuatro criterios que T-4 abre y que lee este modulo.
@@ -983,6 +991,12 @@ def siguiente_diametro(material: MaterialLike,
     dato `D` que el usuario no escribio. Lo calcula `_escalon_de_la_serie`,
     que ni redondea ni deja ruido flotante (ver su docstring); la guardia de
     pertenencia de arriba no cambia.
+
+    Y DESDE VE-2 (decision VE1-02 (g)) CADA ESCALON QUE DEVUELVE ES UN
+    DIAMETRO DESIGNADO de la norma de producto de ese material
+    (`_exigir_escalon_designado`): la serie de 6 in se rechaza en el TMC y en
+    el HDPE, y en el concreto solo pasa si 'diametro_de_diseno_concreto'
+    admite el diametro ingles convertido de AASHTO M 170M (num. 12.1).
     """
     tipo = _tipo_material(material)
     prog = _progresion()
@@ -990,6 +1004,7 @@ def siguiente_diametro(material: MaterialLike,
     tope, _clave, _rotulo = tope_de_diametro(tipo)
 
     if D is None:
+        _exigir_escalon_designado(tipo, inicio)
         return inicio
 
     pasos = (D - inicio) / paso
@@ -1004,6 +1019,7 @@ def siguiente_diametro(material: MaterialLike,
     siguiente = _escalon_de_la_serie(inicio, paso, n + 1)
     if siguiente > tope + TOL_UMBRAL_NORMATIVO:
         return None
+    _exigir_escalon_designado(tipo, siguiente)
     return siguiente
 
 
@@ -1043,6 +1059,108 @@ def _escalon_de_la_serie(inicio, paso, k: int) -> float:
 
     exacto = Decimal(repr(float(inicio))) + k * Decimal(repr(float(paso)))
     return float(exacto)
+
+
+# ---------------------------------------------------------------------------
+# --- VE-2 (g) --- Los diametros son los DESIGNADOS por la norma de producto
+# ---------------------------------------------------------------------------
+
+# La norma de producto cuya serie designada se exige a cada material, para el
+# mensaje. La serie misma es [N] en `constantes_normativas` y sus citas en
+# `CITAS_DIAMETROS_DESIGNADOS`.
+_NORMA_DE_LA_SERIE_DESIGNADA = {
+    TipoMaterial.CONCRETO_REFORZADO: "AASHTO M 170M (Tablas 1 a 5)",
+    TipoMaterial.TMC: "AASHTO M 36 Table 6 / ASTM A760 Tabla 1",
+    TipoMaterial.HDPE: "AASHTO M 294 num. 7.2.1 (traduccion no oficial)",
+}
+
+
+def _diametro_de_diseno_del_concreto() -> str:
+    """
+    'diametro_de_diseno_concreto' [A]: si el catalogo del concreto admite,
+    ademas del designado, el diametro ingles convertido (AASHTO M 170M num.
+    12.1). Segunda linea detras de la puerta (forma `categoria`).
+    """
+    eleccion = ca.valor(CRITERIO_DIAMETRO_DE_DISENO)
+    if eleccion not in (DIAMETRO_DESIGNADO, DIAMETRO_DESIGNADO_O_INGLES):
+        raise DatoInvalidoError(
+            CRITERIO_DIAMETRO_DE_DISENO, valor=eleccion,
+            motivo=f"el diametro de diseño del concreto es "
+                   f"'{DIAMETRO_DESIGNADO}' o "
+                   f"'{DIAMETRO_DESIGNADO_O_INGLES}'")
+    return eleccion
+
+
+def _es_el_diametro(D: float, mm: float) -> bool:
+    """D (m) es el diametro de `mm` milimetros, con la tolerancia nombrada."""
+    return abs(D - mm / MILIMETROS_POR_METRO) <= TOL_UMBRAL_NORMATIVO
+
+
+def _exigir_escalon_designado(tipo: TipoMaterial, D: float) -> None:
+    """
+    El escalon `D` (m) de la progresion es un diametro DESIGNADO por la norma
+    de producto de `tipo`, o --solo en el concreto, y solo si
+    'diametro_de_diseno_concreto' lo declara-- el diametro ingles convertido
+    de un designado (VE-2, decision VE1-02 (g)).
+
+    DONDE VIVE LA GUARDIA, Y POR QUE AQUI Y NO EN LA PUERTA DEL CRITERIO.
+    'diametros_normalizados' es UNA progresion para los tres materiales, y
+    sus series designadas no son la misma: M 36 tiene 500 y no 525, M 294 no
+    tiene 825, y el ingles convertido es solo de M 170M. La puerta no sabe
+    que materiales recorrera la corrida ni hasta que tope (depende de otros
+    tres criterios), y una serie de 6 in puede ser valida para el concreto
+    con la opcion declarada y no para el TMC. Por eso se rechaza POR
+    MATERIAL, aqui, cada escalon antes de evaluarlo: ningun diametro no
+    designado llega a la hidraulica. La puerta sigue exigiendo la ESTRUCTURA
+    (`criterios_adoptados._verificar_campos_de_la_progresion`, VE-1 H2).
+
+    `DatoInvalidoError` sobre 'diametros_normalizados': es el VALOR DE UN
+    CRITERIO que el consumidor rechaza, y `MD.disenar_punto` lo trata como
+    tal (bloqueo DATO_INVALIDO con la clave, no «material no evaluable»).
+
+    TOLERANCIA `TOL_UMBRAL_NORMATIVO` sobre el diametro en metros: los
+    escalones salen exactos de `_escalon_de_la_serie`, de modo que no hay
+    resolucion de centimetro que rechace 375, 525, 675 u 825 mm --son
+    designados normativos--. El ingles convertido se admite exacto (pulgadas
+    x 25.4) o como lo imprime la Table 6, redondeado al milimetro (1.0668 y
+    1.067 m son el mismo tubo de 42 in).
+
+    UN ESCALON NO POSITIVO NO SE MIRA: no es un diametro, y lo rechaza la
+    hidraulica sobre el dato 'D' como hasta hoy (rama de error de la linea
+    base, `tests/linea_base_familia_c/regenerar.sh`, corrida 3).
+    """
+    admite_ingles = (tipo is TipoMaterial.CONCRETO_REFORZADO
+                     and _diametro_de_diseno_del_concreto()
+                     == DIAMETRO_DESIGNADO_O_INGLES)
+    if not D > 0:
+        return
+    designados = DIAMETROS_DESIGNADOS_MM[tipo.value]
+    if any(_es_el_diametro(D, mm) for mm in designados):
+        return
+    if admite_ingles and any(
+            _es_el_diametro(D, pulgadas * PULGADA_EN_MM)
+            or _es_el_diametro(D, ingles_mm)
+            for pulgadas, ingles_mm in EQUIVALENTE_INGLES_M170M.values()):
+        return
+    if tipo is TipoMaterial.CONCRETO_REFORZADO:
+        cola = ("ni es el diametro ingles convertido de ninguno (AASHTO M "
+                "170M num. 12.1 y Table 6)" if admite_ingles else
+                "; el diametro ingles convertido de AASHTO M 170M (num. "
+                "12.1: «the designated diameter or the converted English "
+                "diameter») solo se admite declarando "
+                f"'{CRITERIO_DIAMETRO_DE_DISENO}' = "
+                f"'{DIAMETRO_DESIGNADO_O_INGLES}'")
+    else:
+        cola = ("; el diametro ingles convertido es solo del concreto: la "
+                "norma de este material no lo preve")
+    raise DatoInvalidoError(
+        CRITERIO_DIAMETROS, valor=D,
+        motivo=f"el escalon {D!r} m de la progresion no es un diametro "
+               f"designado de {_NORMA_DE_LA_SERIE_DESIGNADA[tipo]} para "
+               f"'{tipo.value}' (designados de {designados[0]} a "
+               f"{designados[-1]} mm){cola}. La progresion recorre los "
+               "diametros DESIGNADOS de la norma de producto de cada "
+               "material (VE-2, ficha VE2-G)")
 
 
 def siguiente_seccion(material: Material,

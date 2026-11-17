@@ -1303,4 +1303,61 @@ DIS_KA_COULOMB = _d(
     estado=EstadoDiscrepancia.RESUELTA,
 )
 
+
+# --- VE-2 (g) --- La Table 6 de AASHTO M 170M-04 llega al ejemplar como una
+# RECOMPOSICION OCR (igual que las Tablas 1 a 4, ver la Fuente): la imagen
+# misma trae digitos y letras cambiados. No es una errata del original --que
+# no esta en normas/--, pero tiene la consecuencia de una: quien abra la PDF
+# 20 y lea al pie de la letra encuentra celdas distintas de las que el
+# registro transcribe. Por eso es ERRATA_DE_IMPRENTA (viva): el PDF sigue
+# imprimiendo lo que imprime.
+DIS_M170M_T6_RECOMPOSICION = _d(
+    id="DIS-M170M-T6-RECOMPOSICION",
+    objeto=("nueve celdas de las filas de 300 a 2700 mm de la Table 6 "
+            "«Permissible Variation in Internal Diameter» de AASHTO M 170M-04 "
+            "(PDF 20), tal como las imprime la recomposicion OCR del ejemplar"),
+    partes=(
+        Parte(quien="AASHTO_M170M (imagen de la PDF 20)",
+              que_dice=("imprime, en la columna de designados, «123» en la "
+                        "fila de 21 in, «1659» en la de 66 in, «lS00» en la de "
+                        "72 in e «i950» en la de 78 in; en la de pulgadas, "
+                        "«1$» en la fila de 375 mm, «S4» en la de 1350 y «9d» "
+                        "en la de 2400; y en la de milimetros, «30S» en la "
+                        "fila de 300 mm y «3gl» en la de 375"),
+              cita_id="AASHTO_M170M.T6"),
+        Parte(quien="AASHTO_M170M (Tabla 5, escaneo real, y la aritmetica de "
+                    "la Table 6)",
+              que_dice=("la Tabla 5 (PDF 10, escaneo real, AASHTO_M170M.T5) "
+                        "da la serie de designados 300, 375, 450, 525, ..., "
+                        "1500, 1650, 1800, 1950, 2100, ... 2700: las cuatro "
+                        "celdas de designados se leen 525, 1650, 1800 y 1950 "
+                        "en el orden de la tabla; y en las veintiuna filas la "
+                        "columna en mm es la pulgada por 25.4 redondeada al "
+                        "milimetro, de modo que «1$» es 15 (381 mm), «S4» 54 "
+                        "(1372 mm), «9d» 96 (2438 mm), «30S» 305 (12 x 25.4 = "
+                        "304.8) y «3gl» 381 (15 x 25.4)"),
+              cita_id="AASHTO_M170M.T5"),
+    ),
+    gana=("AASHTO_M170M (Tabla 5, escaneo real, y la aritmetica de la "
+          "Table 6)"),
+    por_que=("cada celda corregida queda fijada por dos hechos que no salen "
+             "de la imagen rota: la serie de designados de un escaneo real "
+             "del mismo documento y la conversion pulgada-milimetro que la "
+             "propia tabla aplica, sin excepcion, en las filas legibles. Las "
+             "seis filas de 2850 a 3600 mm, con celdas que ninguna de las "
+             "dos comprobaciones fija («3333», la ultima fila entera), NO se "
+             "transcriben (Acotada)"),
+    efecto_si_se_sigue_la_otra=("leida al pie de la letra, la tabla no "
+                                "tendria fila para los designados de 525, "
+                                "1650, 1800 y 1950 mm y daria 1659 mm como "
+                                "designado; con «S4» y «9d» no habria "
+                                "diametro ingles convertido para 1350 y 2400 "
+                                "mm, y 'diametro_de_diseno_concreto' = "
+                                "'designado_o_ingles_convertido' rechazaria "
+                                "los escalones 1.3716 y 2.4384 m de la serie "
+                                "de 6 in, que la norma admite"),
+    estado=EstadoDiscrepancia.ERRATA_DE_IMPRENTA,
+)
+
+
 DISCREPANCIAS: Dict[str, Discrepancia] = {d.id: d for d in _TODAS}

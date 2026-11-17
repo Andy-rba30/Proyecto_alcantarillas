@@ -63,6 +63,7 @@ from types import SimpleNamespace
 import pytest
 
 import cli
+from src import criterios_adoptados as ca
 from src import indice_formulas as ind
 from src import sesion as ses
 from src.modulos import M11_reporte as M11
@@ -624,7 +625,23 @@ def test_c7_la_sesion_v3_se_abre_reproduce_y_se_reescribe(r):
     if fixture["corridas"][-1]["criterios_sha1"] == huella:
         assert v3["reproduce"], v3["comparacion"]
     else:
-        assert v3["diferencias"] == [["expediente", "criterios_sha1"]], v3["comparacion"]
+        # CAMBIADO EN VE-2, declarando la causa: VE-2 (a) y (g) suman dos
+        # criterios de perfil que el tubo de concreto lee en toda corrida
+        # ('columna_n_manning_concreto', 'diametro_de_diseno_concreto'), y la
+        # corrida de hoy los lista como USADOS mientras la del fixture --que
+        # es de una version anterior y no se regenera-- no los conoce. Lo
+        # admitido sigue siendo lo que el archivo de criterios explica: la
+        # huella y, ademas, un criterio usado HOY que la corrida guardada no
+        # tenia. Ningun punto, ningun numero, nada sin comparar.
+        guardada = fixture["corridas"][-1]["informe_json"]["criterios"]["usados"]
+        conocidos = {c["clave"] for c in guardada}
+        diferencias = v3["diferencias"]
+        assert ["expediente", "criterios_sha1"] in diferencias, v3["comparacion"]
+        for seccion, clave in diferencias:
+            if [seccion, clave] == ["expediente", "criterios_sha1"]:
+                continue
+            assert seccion == "criterios" and clave not in conocidos \
+                and clave in ca.CRITERIOS, v3["comparacion"]
         assert v3["no_comparables"] == 0 and v3["puntos_solo_en_uno"] == 0
     reescrita = v3["reescrita"]
     assert reescrita["formato_version"] == ses.FORMATO_SESION

@@ -1513,6 +1513,12 @@ _META_CRITERIOS: Dict[str, _Meta] = {
     "coeficiente_uniformidad_temez": _Meta(unidad="-"),
     "coeficiente_escorrentia_superficie_vial": _Meta(unidad="-"),
     "diametros_normalizados": _Meta(unidad="m"),
+    # --- VE-2 (g) --- el diametro de diseño que admite el tubo de concreto.
+    "diametro_de_diseno_concreto": _Meta(
+        unidad="-",
+        nota="Solo el CONCRETO: AASHTO M 170M (num. 12.1) es la unica de las "
+             "tres normas de producto que deja diseñar con el diametro ingles "
+             "convertido. El TMC y el HDPE recorren solo sus designados."),
     "edicion_que_rige_el_expediente": _Meta(
         unidad="-",
         fase_declarada="Fase 0 - Marco normativo del expediente (vigencia de "

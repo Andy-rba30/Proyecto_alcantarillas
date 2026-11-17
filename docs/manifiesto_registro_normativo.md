@@ -562,16 +562,20 @@ línea que se pueda romper.
 |---|---|---|---|---|---|
 | `AASHTO_M170M.1.1` | 1.1 | «SCOPE» | pág. impresa **M 170M-1** · PDF 1 | definicion | 2026-09-20 · imagen renderizada |
 | `AASHTO_M170M.1.1#NOTA1` | 1.2, Note 1 | «SCOPE» | pág. impresa **M 170M-1** · PDF 1 | definicion | 2026-09-20 · imagen renderizada |
+| `AASHTO_M170M.12.1` | 12.1 | PERMISSIBLE VARIATIONS › «Internal Diameter» | pág. impresa **M 170M-19** · PDF 19 | permiso | 2026-11-17 · imagen renderizada |
 | `AASHTO_M170M.7.2.1` | 7.2.1 | «Modified and Special Designs» | pág. impresa **M 170M-13** · PDF 13 | definicion | 2026-11-11 · imagen renderizada |
 | `AASHTO_M170M.7.2.2` | 7.2.2 | «Modified and Special Designs» | pág. impresa **M 170M-13** · PDF 13 | exigencia | 2026-11-11 · imagen renderizada |
 | `AASHTO_M170M.T1#DIAMETROS` | Table 1 | «Design Requirements for Class I Reinforced Concrete Pipe» | pág. impresa **M 170M-3** · PDF 3 | definicion | 2026-11-12 · imagen renderizada |
 | `AASHTO_M170M.T1_T5#DIAMETROS` | Tables 1 to 5 | «Table 1—Design Requirements for Class I Reinforced Concrete Pipe» | pág. impresa **M 170M-3** · PDF 3 | definicion | 2026-09-12 · imagen renderizada |
 | `AASHTO_M170M.T2#DLOAD` | Table 2 | «Design Requirements for Class II Reinforced Concrete Pipe» | pág. impresa **M 170M-5** · PDF 5 | definicion | 2026-11-12 · imagen renderizada |
 | `AASHTO_M170M.T5` | Table 5 | «Table 5—Design Requirements for Class V Reinforced Concrete Pipe» | pág. impresa **M 170M-10** · PDF 10 | definicion | 2026-09-22 · imagen renderizada |
+| `AASHTO_M170M.T6` | Table 6 | PERMISSIBLE VARIATIONS › «Permissible Variation in Internal Diameter» | pág. impresa **M 170M-20** · PDF 20 | definicion | 2026-11-17 · imagen renderizada |
 
 > **`AASHTO_M170M.1.1`** — Leida sobre la PDF 1 renderizada a escala 3.0 (el OCR imprime «iniendcd io be used» y «culvens»). Cubre TUBERIA («pipe»); un marco rectangular vaciado in situ no es tuberia y esta norma no lo rige. La PDF 1 rotula ademas «AASHTO Designation: M 170M-04» y «ASTM Designation: C 76M-02», que es la doble designacion del rotulo que M2 imprime.
 
 > **`AASHTO_M170M.1.1#NOTA1`** — LO QUE LA NORMA DICE QUE NO ES: ni cama, ni relleno, ni la relacion entre la carga de campo y la clase. La nota sigue: la experiencia muestra que el buen desempeño depende de elegir la clase, la cama y el relleno, y el propietario «is cautioned that he must correlate the field requirements with the class of pipe specified». Es la misma clausula que M 36 lleva en su 1.3 y A760 en su 1.4, y la razon de que 'clases_producto_por_relleno' sea un criterio del proyecto y no una lectura de la norma.
+
+> **`AASHTO_M170M.12.1`** — Leida sobre la PDF 19 renderizada a 2.0x. LA IMAGEN ES UNA RECOMPOSICION OCR, no un escaneo: imprime «in/ema/ Diameter—SaeTable 6. At the manufacturer’s option tbc dcsigo diaractcr sball be tbc designated diameter of the convwtcd English diameter.» La transcripcion corrige «in/ema/» -> «Internal», «Sae» -> «See», «tbc» -> «the», «dcsigo» -> «design», «diaractcr» -> «diameter», «sball» -> «shall», «convwtcd» -> «converted» y «of the» -> «or the»: esta ultima es la unica lectura con sentido (la frase ofrece DOS diametros de diseño y la Tabla 6 los da en dos columnas) y se declara como lectura, no como texto impreso. EL NUMERAL «12.1» SE DEDUCE, porque la imagen no lo imprime: la seccion PERMISSIBLE VARIATIONS es la 12 (el num. 8.1.4, PDF 14, remite a «Section 12.5», y la PDF 20 abre «13. REPAIRS» tras la tabla), «Internal Diameter» es su primer apartado y los siguientes llegan degradados como «3.», «4», «.5.», «.5.1.» y «2.5.2.». La frase siguiente acota la tolerancia sobre el «design diameter»: ±1.5 % de 300 a 600 mm y ±1 % o 10 mm, lo mayor, por encima.
 
 > **`AASHTO_M170M.7.2.1`** — Leida sobre la PDF 13 renderizada; la capa visible del ejemplar es un OCR defectuoso («pemiitted», «mquest», «reinfomenicnt») y la transcripcion corrige esas letras. LO QUE SOSTIENE: los tamaños que las Tablas 1 a 5 listan SIN area de acero no tienen diseño estandar; son diseños especiales que el fabricante propone y el propietario aprueba. LEIDO TABLA A TABLA SOBRE LAS PAGINAS RENDERIZADAS (T-4, 2026-11-11): Tabla 1 (Clase I, PDF 3), filas de 1500 a 2700 mm con pared y acero --la de 2700: pared A 225 mm, pared B 250 mm-- y filas de 2850, 3000, 3150, 3300 y 3450 mm con llamada a nota y rayas; Tabla 3 (Clase III, PDF 6-7), la ultima fila con acero es la de 2700 mm y las de 3000, 3150 y 3600 llevan llamada y rayas (las de 2850, 3300 y 3450 no se leen en el ejemplar); Tabla 5 (Clase V, PDF 10), pared tabulada hasta 1800 mm (AASHTO_M170M.T5). La nota al pie de las tablas, leida en la PDF 3 y en la PDF 5: «For modified or special designs, see Section 7.2 ...» y «Pipe over 2400 mm in diameter shall have two circular cages or an inner circular cage plus one elliptical cage». NO LEIDO: el cuerpo de la Tabla 2 (PDF 4) y el maximo de la Tabla 4, cuya mitad baja no esta en el escaneo. Con lo leido, el mayor diametro con diseño estandar es 2700 mm en las dos clases que se pudieron leer hasta el final.
 
@@ -584,6 +588,8 @@ línea que se pueda romper.
 > **`AASHTO_M170M.T2#DLOAD`** — LEIDO POR IMAGEN, y es LA UNICA D-load de 0.3 mm LEGIBLE en el ejemplar. La pag. PDF 5 («Table 2—Continued») imprime al pie «D-load to produce a 0.3-mm crack 50.0» y «D-load to produce the ultimate load ?S.0» (el primer digito, ilegible). Las Tablas 1, 3, 4 y 5 son recomposiciones OCR con digitos equivocados (nota de la Fuente): la de la Clase V imprime «\ 40.0», la de la Clase III solo la ultima, «100.0», y la Clase I e IV no se leen. NO SE COMPLETAN DE MEMORIA: las Clases I, III, IV y V quedan sin D-load en 'clases_producto_por_relleno' y el paso lo dice. Y la Tabla 2 (PDF 4) tiene filas con pared B y acero de 300 a 2700 mm: la Clase II existe en todo el catalogo de concreto.
 
 > **`AASHTO_M170M.T5`** — La pagina PDF 10 es un escaneo real, legible, impreso girado 90 grados (el rotulo de pie «M 170M-10» y «TS-4a» van verticales). La columna «Internal Designed Diameter, mm» --asi la imprime, con «Designed» y no «Designated»-- tiene 27 filas de 300 a 3600 mm, y es la serie que CP11 usa como dorado del concreto. Las columnas de espesor de pared B (300 a 1200 mm) y C (300 a 1800 mm) son legibles y se transcriben; las de refuerzo no, porque ningun modulo las consume (M8 no dimensiona el tubo de concreto).
+
+> **`AASHTO_M170M.T6`** — Leida sobre la PDF 20 renderizada a 2.0x (rotulo de pie «M 17OM-20»). La imagen imprime «Table» y el titulo SIN el numero: «Table 6» es como la llama el num. 12.1 («See Table 6»). Tres columnas: «Designated Diameter of Pipe, mm», «Equivalent English Dia, in.» y «Equivalent English Dia, mm» (este rotulo llega como «pqq glish Dia, mm»). Las celdas que la recomposicion OCR imprime mal, y por que se leen como se leen, estan en DIS-M170M-T6-RECOMPOSICION; la tabla del registro (AASHTO_M170M.T6) transcribe de 300 a 2700 mm.
 
 ### AASHTO M 294-11 «Tubería corrugada de polietileno, 300 a 1500 mm (12 a 60 in.) de diámetro» — TRADUCCION NO OFICIAL al español  (`AASHTO_M294_TRAD`)
 
@@ -1770,8 +1776,7 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 ### `AASHTO_M170M.T5` — Table 5—Design Requirements for Class V Reinforced Concrete Pipe
 
 - Cita: `AASHTO_M170M.T5`
-- Tabla completa · el calculo usa 0 de 3 columnas y 0 de 27 filas
-- Columna «Internal Designed Diameter, mm» transcrita y **no usada**: ningun modulo dimensiona hoy el tubo de concreto por clase D-load: la columna de diametros es el dorado de CP11 para `M2.siguiente_diametro` (contraste de la progresion contra la serie de la norma de producto, conflicto #7) y los espesores son el insumo de la verificacion pendiente de 'espesor_pared_conducto', que los leyo por imagen
+- Tabla completa · el calculo usa 1 de 3 columnas y 0 de 27 filas
 - Columna «Wall Thickness, mm» transcrita y **no usada**: ningun modulo dimensiona hoy el tubo de concreto por clase D-load: la columna de diametros es el dorado de CP11 para `M2.siguiente_diametro` (contraste de la progresion contra la serie de la norma de producto, conflicto #7) y los espesores son el insumo de la verificacion pendiente de 'espesor_pared_conducto', que los leyo por imagen
 - Columna «Wall Thickness, mm» transcrita y **no usada**: ningun modulo dimensiona hoy el tubo de concreto por clase D-load: la columna de diametros es el dorado de CP11 para `M2.siguiente_diametro` (contraste de la progresion contra la serie de la norma de producto, conflicto #7) y los espesores son el insumo de la verificacion pendiente de 'espesor_pared_conducto', que los leyo por imagen
 - **Interpretación del proyectista, no de la fuente**: El ejemplar de normas/ conserva esta tabla como ESCANEO REAL (PDF 10, girado 90 grados) y las Tablas 1 a 4 como recomposiciones OCR cuya imagen trae digitos equivocados (371 por 375, 1390 por 1350, «3tS0», «6tXI») y filas superpuestas. Por eso la serie de diametros del concreto se toma de la Clase V: la serie designada es la misma en las cinco clases --la norma tabula por diametro y clase--, y es lo unico que el registro afirma de esta transcripcion.
@@ -1809,6 +1814,44 @@ sus campos `alcance` y `uso`, de modo que no puede contradecirlos.
 | 3300 | 3300 |  |  | no usada |
 | 3450 | 3450 |  |  | no usada |
 | 3600 | 3600 |  |  | no usada |
+
+### `AASHTO_M170M.T6` — Permissible Variation in Internal Diameter
+
+- Cita: `AASHTO_M170M.T6`
+- Transcripcion acotada · el calculo usa 3 de 3 columnas y 21 de 21 filas
+- **Transcripción acotada.** Razón: el catalogo del concreto se topa en 2700 mm, el mayor diametro con diseño estandar de la norma (DIAMETRO_MAX_CON_DISENO_ESTANDAR_M170M_MM); y en el tramo de mas arriba la recomposicion OCR deja celdas que no se pueden leer ni corregir con la aritmetica de la tabla sola
+  - Qué queda fuera: las seis filas de 2850 a 3600 mm. La imagen imprime «2830 | 114 | 2896», «3000 | 120 | iM8», «3150 | 126 | 3200», «3300 | 132 | 3333», «3450 | U38 | 3S05» y una ultima fila ilegible entera, «ice | i‹i | 3ass»
+  - Dónde leerlo: PDF 20 del ejemplar de normas/, mitad superior; la serie de designados de 2850 a 3600 mm esta en la Tabla 5 (AASHTO_M170M.T5, escaneo real)
+- **Interpretación del proyectista, no de la fuente**: Por cada diametro designado del sistema metrico la tabla da el diametro ingles equivalente --la pulgada y su conversion a milimetros--, y el num. 12.1 deja al fabricante elegir cual de los dos es el de diseño. El proyecto lo usa para admitir, solo en el concreto y solo si el criterio [A] 'diametro_de_diseno_concreto' lo declara, un escalon que sea el diametro ingles convertido de una fila (p. ej. 1.0668 m, 42 in, de la fila de 1050 mm)
+  - En contra: la imagen del ejemplar es una recomposicion OCR y no un escaneo: nueve de las 63 celdas transcritas se leen corregidas (DIS-M170M-T6-RECOMPOSICION), y la palabra «Table» se imprime sin su numero; «Table 6» sale del num. 12.1
+  - En contra: la columna en mm imprime la pulgada convertida REDONDEADA al milimetro (1067 por 1066.8): un escalon de 1.0668 m y uno de 1.067 m son el mismo diametro ingles convertido, y el proyecto admite los dos
+  - A favor: las veintiuna filas transcritas cumplen las dos comprobaciones independientes: la columna de designados es fila a fila la serie de la Tabla 5 (escaneo real) de 300 a 2700 mm, y la columna en mm es round(pulgadas x 25.4) en las veintiuna
+- **Errata declarada**: `DIS-M170M-T6-RECOMPOSICION`
+- Vistas de cálculo derivadas: `EQUIVALENTE_INGLES_M170M`
+
+| Fila | Designated Diameter of Pipe, mm | Equivalent English Dia, in. | Equivalent English Dia, mm | Uso |
+|---|---|---|---|---|
+| 300 | 300 | 12 | 305 | usada |
+| 375 | 375 | 15 | 381 | usada |
+| 450 | 450 | 18 | 457 | usada |
+| 525 | 525 | 21 | 533 | usada |
+| 600 | 600 | 24 | 610 | usada |
+| 675 | 675 | 27 | 686 | usada |
+| 750 | 750 | 30 | 762 | usada |
+| 825 | 825 | 33 | 838 | usada |
+| 900 | 900 | 36 | 914 | usada |
+| 1050 | 1050 | 42 | 1067 | usada |
+| 1200 | 1200 | 48 | 1219 | usada |
+| 1350 | 1350 | 54 | 1372 | usada |
+| 1500 | 1500 | 60 | 1524 | usada |
+| 1650 | 1650 | 66 | 1676 | usada |
+| 1800 | 1800 | 72 | 1829 | usada |
+| 1950 | 1950 | 78 | 1981 | usada |
+| 2100 | 2100 | 84 | 2134 | usada |
+| 2250 | 2250 | 90 | 2286 | usada |
+| 2400 | 2400 | 96 | 2438 | usada |
+| 2550 | 2550 | 102 | 2591 | usada |
+| 2700 | 2700 | 108 | 2743 | usada |
 
 ### `AASHTO_M294_TRAD.T7.2.2` — Espesor de pared
 
@@ -3213,6 +3256,10 @@ corrija**. La tercera obligación vive aquí.
   - Si se sigue la otra: quien busque el «Apendice G» no lo encuentra y puede concluir que la tabla no esta
   - *HDS5_3ED*: su Tabla A.1 se titula «Constants for Inlet Control Equations for Charts in Appendix G» y en esta 3a edicion NO EXISTE un Apendice G
   - *codigo*: las cartas estan en el Apendice C, «DESIGN CHARTS, TABLES, AND FORMS», que abre en la pag. impresa C.1 (PDF 211)
+- **`DIS-M170M-T6-RECOMPOSICION` — nueve celdas de las filas de 300 a 2700 mm de la Table 6 «Permissible Variation in Internal Diameter» de AASHTO M 170M-04 (PDF 20), tal como las imprime la recomposicion OCR del ejemplar.** Gana **AASHTO_M170M (Tabla 5, escaneo real, y la aritmetica de la Table 6)**: cada celda corregida queda fijada por dos hechos que no salen de la imagen rota: la serie de designados de un escaneo real del mismo documento y la conversion pulgada-milimetro que la propia tabla aplica, sin excepcion, en las filas legibles. Las seis filas de 2850 a 3600 mm, con celdas que ninguna de las dos comprobaciones fija («3333», la ultima fila entera), NO se transcriben (Acotada)
+  - Si se sigue la otra: leida al pie de la letra, la tabla no tendria fila para los designados de 525, 1650, 1800 y 1950 mm y daria 1659 mm como designado; con «S4» y «9d» no habria diametro ingles convertido para 1350 y 2400 mm, y 'diametro_de_diseno_concreto' = 'designado_o_ingles_convertido' rechazaria los escalones 1.3716 y 2.4384 m de la serie de 6 in, que la norma admite
+  - *AASHTO_M170M (imagen de la PDF 20)*: imprime, en la columna de designados, «123» en la fila de 21 in, «1659» en la de 66 in, «lS00» en la de 72 in e «i950» en la de 78 in; en la de pulgadas, «1$» en la fila de 375 mm, «S4» en la de 1350 y «9d» en la de 2400; y en la de milimetros, «30S» en la fila de 300 mm y «3gl» en la de 375
+  - *AASHTO_M170M (Tabla 5, escaneo real, y la aritmetica de la Table 6)*: la Tabla 5 (PDF 10, escaneo real, AASHTO_M170M.T5) da la serie de designados 300, 375, 450, 525, ..., 1500, 1650, 1800, 1950, 2100, ... 2700: las cuatro celdas de designados se leen 525, 1650, 1800 y 1950 en el orden de la tabla; y en las veintiuna filas la columna en mm es la pulgada por 25.4 redondeada al milimetro, de modo que «1$» es 15 (381 mm), «S4» 54 (1372 mm), «9d» 96 (2438 mm), «30S» 305 (12 x 25.4 = 304.8) y «3gl» 381 (15 x 25.4)
 - **`DIS-MCHHD-LAMINA-03-TMC` — que dibuja la Lamina Nº 03 del Manual, segun el cuerpo del propio Manual y segun la lamina.** Gana **MC_HHD (Lamina Nº 03)**: es la pagina que contiene el dibujo. El cuerpo la ANUNCIA y la lamina la CONTIENE: ante una discrepancia entre el anuncio y la cosa anunciada, gana la cosa. Ademas la contradiccion es verificable en un sentido y no en el otro -- se puede contar las figuras de la lamina; no se puede deducir su contenido del anuncio --. Se registra porque un revisor que lea el cuerpo, vaya a la lamina y encuentre una TMC en la primera figura pensara que la cita del proyecto esta mal puesta, y no lo esta: lo que esta mal es el anuncio del propio Manual
   - Si se sigue la otra: ninguno sobre ningun numero: la lamina no acota nada (ver la afirmacion negativa `SIN_COTAS_LAMINA_03`). El efecto es sobre la CREDIBILIDAD de la cita -- el revisor cuenta tres figuras donde el Manual anuncia una clase --, y por eso se declara en vez de corregirse en silencio
   - *MC_HHD (cuerpo del num. 4.1.1.3.4 a))*: el cuerpo del num. 4.1.1.3.4 a), pag. impresa 73 (PDF 76), anuncia la lamina asi: «En la Lámina Nº 03, se aprecia secciones típicas de alcantarillas tipo marco de concreto con protecciones de entrada y salida.» -- solo marco de concreto
@@ -3250,7 +3297,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 510.
+Citas sin firma de verificación: **6** de 512.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`

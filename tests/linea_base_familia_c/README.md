@@ -1663,3 +1663,13 @@ en las memorias, y en la memoria ancha el paso nuevo `F4.N_CONCRETO` (A-01 y su 
 con el fundamento y las dos citas del HDS-5 en el anexo. Medido con un diff por
 fragmentos de las memorias contra `HEAD`: sólo reemplazos de recuento y huella, y
 inserciones. **Diámetros, secciones, materiales, n y HW movidos: ninguno.**
+
+**VE-2 (g)** (`validacion(VE-2.4)`, ficha VE2-G): los escalones tienen que ser diámetros
+designados por la norma de producto de cada material, y el criterio [A]
+`diametro_de_diseno_concreto` (archivo: `designado`) decide si el concreto admite además
+el diámetro inglés convertido. La progresión de archivo es toda designada: se mueven
+**los mismos ocho archivos y ningún número de cálculo** —la huella de
+`criterios_adoptados.py`, el recuento «142 → 143 criterios declarados», la entrada del
+criterio en los cuatro JSON (también en la rama de error, cuyo bloqueo y motivo no
+cambian: un escalón no positivo lo sigue rechazando la hidráulica) y su ficha y su fila
+en las memorias—. **Diámetros, secciones, materiales y HW movidos: ninguno.**

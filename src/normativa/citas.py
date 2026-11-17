@@ -14384,4 +14384,71 @@ HDS5_B2_CONCRETO_CAMPO = _cita(
 )
 
 
+# (g) La opcion del fabricante de M 170M: el diametro de diseño es el
+# DESIGNADO o el INGLES CONVERTIDO. La imagen del ejemplar es una
+# recomposicion OCR y la frase sale con letras cambiadas; se transcribe
+# corregida y cada correccion se declara.
+AASHTO_M170M_12_1 = _cita(
+    id="AASHTO_M170M.12.1",
+    fuente_id="AASHTO_M170M",
+    numeral="12.1",
+    titulo_numeral="Internal Diameter",
+    jerarquia_numeral=("PERMISSIBLE VARIATIONS",),
+    pagina_impresa="M 170M-19",
+    pagina_pdf=19,
+    texto_literal=Verbatim(
+        texto=("Internal Diameter—See Table 6. At the manufacturer's option "
+               "the design diameter shall be the designated diameter or the "
+               "converted English diameter."),
+        pagina_pdf=19),
+    # PERMISO: la norma deja al FABRICANTE elegir entre los dos diametros de
+    # diseño; no exige ninguno de los dos.
+    caracter=Caracter.PERMISO,
+    metodo=IMAGEN,
+    sesion=VE2,
+    nota=("Leida sobre la PDF 19 renderizada a 2.0x. LA IMAGEN ES UNA "
+          "RECOMPOSICION OCR, no un escaneo: imprime «in/ema/ "
+          "Diameter—SaeTable 6. At the manufacturer’s option tbc dcsigo "
+          "diaractcr sball be tbc designated diameter of the convwtcd English "
+          "diameter.» La transcripcion corrige «in/ema/» -> «Internal», «Sae» "
+          "-> «See», «tbc» -> «the», «dcsigo» -> «design», «diaractcr» -> "
+          "«diameter», «sball» -> «shall», «convwtcd» -> «converted» y «of "
+          "the» -> «or the»: esta ultima es la unica lectura con sentido (la "
+          "frase ofrece DOS diametros de diseño y la Tabla 6 los da en dos "
+          "columnas) y se declara como lectura, no como texto impreso. EL "
+          "NUMERAL «12.1» SE DEDUCE, porque la imagen no lo imprime: la "
+          "seccion PERMISSIBLE VARIATIONS es la 12 (el num. 8.1.4, PDF 14, "
+          "remite a «Section 12.5», y la PDF 20 abre «13. REPAIRS» tras la "
+          "tabla), «Internal Diameter» es su primer apartado y los siguientes "
+          "llegan degradados como «3.», «4», «.5.», «.5.1.» y «2.5.2.». La "
+          "frase siguiente acota la tolerancia sobre el «design diameter»: "
+          "±1.5 % de 300 a 600 mm y ±1 % o 10 mm, lo mayor, por encima."),
+)
+
+AASHTO_M170M_T6 = _cita(
+    id="AASHTO_M170M.T6",
+    fuente_id="AASHTO_M170M",
+    numeral="Table 6",
+    titulo_numeral="Permissible Variation in Internal Diameter",
+    jerarquia_numeral=("PERMISSIBLE VARIATIONS",),
+    pagina_impresa="M 170M-20",
+    pagina_pdf=20,
+    texto_literal=Verbatim(
+        texto="Permissible Variation in Internal Diameter",
+        pagina_pdf=20),
+    caracter=Caracter.DEFINICION,
+    metodo=IMAGEN,
+    sesion=VE2,
+    nota=("Leida sobre la PDF 20 renderizada a 2.0x (rotulo de pie «M "
+          "17OM-20»). La imagen imprime «Table» y el titulo SIN el numero: "
+          "«Table 6» es como la llama el num. 12.1 («See Table 6»). Tres "
+          "columnas: «Designated Diameter of Pipe, mm», «Equivalent English "
+          "Dia, in.» y «Equivalent English Dia, mm» (este rotulo llega como "
+          "«pqq glish Dia, mm»). Las celdas que la recomposicion OCR imprime "
+          "mal, y por que se leen como se leen, estan en "
+          "DIS-M170M-T6-RECOMPOSICION; la tabla del registro "
+          "(AASHTO_M170M.T6) transcribe de 300 a 2700 mm."),
+)
+
+
 CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
