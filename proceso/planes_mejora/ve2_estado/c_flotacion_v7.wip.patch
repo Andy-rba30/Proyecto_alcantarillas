@@ -1,0 +1,490 @@
+diff --git a/docs/decisiones_diferidas.md b/docs/decisiones_diferidas.md
+index 6c445cc..19b2ca3 100644
+--- a/docs/decisiones_diferidas.md
++++ b/docs/decisiones_diferidas.md
+@@ -7589,7 +7589,8 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
+   de 0.90 a 1.35 m (a 0.90 m, 6.28 frente a 5.81 m/s; umbral 6.0). (c) Las hipótesis de V7,
+   sumersión completa y DC = 0, justificadas en `M8_estructural` con el NF somero del Bajo
+   Piura, un argumento de sitio: con el NF a 10 m V7 descarta igual (1.2745 frente a
+-  9.6235 kN/m); equivalen a un relleno de unas 0.45 veces el diámetro exterior. (d) El
++  9.6235 kN/m); equivalen a un relleno de unas 0.50 veces el diámetro exterior con γ_EV = 0.90,
++  el de V7 (0.45 era la cuenta con γ_EV = 1.00, sin factorar; corregido en VE-2). (d) El
+   factor 1.13 de intervalo fijo de las series de 24 h, que el Manual no trae y aplican la
+   tesis UPAO y la vía TU-107: sin él P24 y Q quedan 11.5 % abajo. (e) Un aviso de
+   plausibilidad de la serie SIN umbral (patrón de `FH.Q_ESPECIFICO`): el Manual manda
+@@ -7599,6 +7600,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
+   se detiene desde 10 km², y Tinas (55.9 km²) y cinco cuencas de TU-107 no se calculan.
+   (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
+   redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
++- **Cerrado (VE-2), (c1):** V7 se justifica con el Manual de Puentes 2.4.3.8.1 (el nivel lo fija el Propietario) y no con el sitio; ficha VE2-C.
+ - **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
+   el programa calcula; el permiso de VE-1 no las alcanza.
+ - **Qué haría falta:** la decisión del dueño y, por cada una adoptada, un prompt con sus
+diff --git a/src/modulos/M5_verificaciones.py b/src/modulos/M5_verificaciones.py
+index c86e288..52000cf 100644
+--- a/src/modulos/M5_verificaciones.py
++++ b/src/modulos/M5_verificaciones.py
+@@ -3042,7 +3042,17 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
+ 
+     DC = 0: no suma el peso propio del conducto (ver "Por que el peso propio
+     del conducto no entra en V7" en el docstring de M8_estructural). Omitirlo
+-    es conservador, reduce el lado estabilizante en vez de inflarlo.
++    es conservador, reduce el lado estabilizante en vez de inflarlo: la
++    Tabla 2.4.5.3.1-2 del Manual de Puentes admitiria 0.90·DC.
++
++    LAS DOS HIPOTESIS SON ADOPCIONES DEL PROYECTO Y NO DEL SITIO (VE-2, c1).
++    El nivel de agua de diseño lo especifica o aprueba el Propietario
++    (Manual de Puentes num. 2.4.3.8.1, pag. impresa 113; AASHTO 3.7.1), y
++    la norma no da ninguno para una alcantarilla enterrada: el conducto
++    sumergido entero --el nivel en la clave-- es la adopcion [A]
++    conservadora, la que ningun nivel mas bajo supera en empuje. Hasta VE-2
++    se justificaba con el freatico somero del corredor, un argumento que la
++    norma no usa y que no es portable a otra obra.
+ 
+     Se detiene en 'peso_especifico_relleno_kn_m3' (el termino EV) o en
+     'factores_carga_aashto' (la eleccion de fila de gamma_p), los dos vacios
+@@ -3102,7 +3112,12 @@ def v7_flotacion(*, punto: PuntoCritico, material: Material,
+             # NOR-HID-04: lo que la fuente DICE y lo que el proyecto LEE no se
+             # pegan --. La discrepancia entera esta en
+             # DIS-AASHTO-GAMMA-EV-12.6.1, estado ABIERTA.
+-            citas_textuales=("MP.2.4.5.3.1#MINIMO",
++            # --- VE-2 (c1) --- Y la frase que dice QUIEN fija el nivel de
++            # agua de diseño, para que la sumersion completa se lea en la
++            # memoria como la adopcion que es y no como algo que la norma
++            # prescribe.
++            citas_textuales=("MP.2.4.3.8.1#NIVEL_DE_DISENO",
++                             "MP.2.4.5.3.1#MINIMO",
+                              "AASHTO_LRFD_9.12.6.1#GAMMA_EV_MAX"),
+             sustitucion=(
+                 Magnitud("Bc", seccion.ancho_exterior(t), "m",
+diff --git a/src/modulos/M8_estructural.py b/src/modulos/M8_estructural.py
+index 0e4d0ac..c74b7b4 100644
+--- a/src/modulos/M8_estructural.py
++++ b/src/modulos/M8_estructural.py
+@@ -39,7 +39,14 @@ Los cinco puntos de Fase 8, y lo que hace este modulo con cada uno:
+          `verificaciones_estructurales()` (Fase 5, codigos F8.*) y
+          `seleccionar_clase_calibre()` (etapa de la Fase 8).
+ 
+-    3    Flotacion (V7), obligatoria con NF a 1.4 m.
++    3    Flotacion (V7), «obligatoria con NF a 1.4 m» en la letra de la
++         hoja de ruta. LA OBLIGACION NO SALE DE ESE NF (VE-2, c1): el NF ya
++         no es un valor unico de proyecto sino la columna 'NF_profundidad_m'
++         de cada cruce, y lo que obliga a verificar la flotacion es AASHTO
++         LRFD 12.6.1 y 12.6.2.3 con la subpresion del Manual de Puentes
++         2.4.3.8.2; ver «Por que U asume sumersion completa». La discrepancia
++         se reporta contra la hoja de ruta en la ficha VE2-C de
++         `docs/decisiones_diferidas.md`.
+          `empuje_flotacion_kn_m()`, `peso_relleno_kn_m()` y
+          `factores_carga_flotacion()` -- SI implementadas: son las piezas
+          del EQUILIBRIO DE FACTORES DE CARGA LRFD que
+@@ -118,6 +125,16 @@ trae hoy la serie de concreto reforzado, 0.100 a 0.250 m de 900 a 2700 mm; para
+ los demas materiales no trae fila y `M2.espesor_pared` levanta DatoFaltanteError).
+ Lo segundo NO lo declara nadie, de modo que sumar DC seguiria exigiendo inventar
+ un dato -- la densidad --, y la conclusion no cambia.
++LO QUE LA NORMA ADMITIRIA, dicho para que DC = 0 se lea como lo que es (VE-2,
++c1): el num. 2.4.5.3.1 del Manual de Puentes (pag. impresa 142) manda
++investigar el factor MINIMO de la carga permanente que aumenta la estabilidad,
++y la Tabla 2.4.5.3.1-2 (pag. impresa 143) le da a «DC: Componentes y
++Auxiliares» un minimo de 0.90; el lado estabilizante podria llevar 0.90·DC.
++Omitirlo esta del lado seguro frente a esa suma, y es ademas la forma que el
++comentario C12.6.2.3 de AASHTO describe: «the dead load on the crown of the
++structure should exceed the buoyancy of the culvert» -- el peso SOBRE la
++clave contra el empuje, sin el peso propio --, que es comentario y dice
++`should`, de modo que sostiene la forma y no la exigencia.
+ ESTE PARRAFO DECIA que el espesor estaba «hoy sin valor», que ademas se
+ contradecia con el «ya esta declarado» de la misma linea. El que falta es el
+ otro. Omitirlo es la alternativa conservadora, NO una
+@@ -136,12 +153,25 @@ Solamente", es de una combinacion que Sec. 9.2 no nombra.
+ Por que U asume sumersion completa
+ -------------------------------------
+ La fila V7 de la Fase 5 fija la hipotesis de calculo: "tuberia vacia, NF en
+-su cota mas alta". Con el NF somero de la llanura del Bajo Piura y sin una
+-columna de invert real en el CSV (Sec. 1.2 -- misma limitacion que
+-`M5_verificaciones.cota_de_entrada`), la lectura conservadora de "NF en
+-su cota mas alta" es sumersion completa del conducto, no una geometria de
+-sumersion parcial contra una cota de invert supuesta. Nunca subestima el
+-empuje.
++su cota mas alta". CUAL ES ESA COTA NO LA FIJA LA NORMA, y eso es lo que este
++apartado tiene que decir (VE-2, c1). El Manual de Puentes, num. 2.4.3.8.1
++(pag. impresa 113): «Los niveles de agua de diseño para los diferentes estados
++límites serán los especificados y/o aprobados por el Propietario» (AASHTO LRFD
++3.7.1, pag. 3-45, igual); la subpresion del num. 2.4.3.8.2, en la misma
++pagina, actua sobre lo que esta «debajo del nivel de agua de diseño»; y AASHTO
++12.6.2.3 manda considerar el levantamiento «below the highest anticipated
++groundwater level» sin dar su cota. Sumergir el conducto entero --el nivel de
++agua de diseño en la clave-- es por eso una ADOPCION [A] del proyecto en el
++sitio de la decision del Propietario, y es la conservadora: sumergido entero
++el conducto desplaza todo su volumen, y ningun nivel mas bajo daria mas
++empuje. Nunca subestima el empuje.
++
++HASTA VE-2 ESTE APARTADO SE APOYABA EN EL SITIO: «con el NF somero de la llanura
++del Bajo Piura», un argumento que la norma no usa y que no es portable a otra
++obra (en un cruce con el freatico a 10 m, V7 descarta igual). Se reemplazo; la
++falta de una columna de invert real en el CSV (Sec. 1.2, la misma limitacion
++de `M5_verificaciones.cota_de_entrada`) sigue siendo cierta, y es una razon
++mas para no construir una sumersion parcial contra una cota supuesta.
+ 
+ Por eso U NO depende del valor del NF: la hipotesis es sumersion completa, y
+ sumergido del todo el conducto desplaza su volumen entero este el freatico a
+@@ -309,6 +339,13 @@ def empuje_flotacion_kn_m(*, seccion: Seccion, espesor: float) -> float:
+ 
+         U = gamma_agua * area_exterior
+ 
++    EL NIVEL EN LA CLAVE ES UNA ADOPCION, NO UNA LECTURA (VE-2, c1): el nivel
++    de agua de diseño lo especifica o aprueba el Propietario (Manual de
++    Puentes num. 2.4.3.8.1, pag. impresa 113; AASHTO 3.7.1), y el proyecto
++    lo pone en la clave porque sumergido entero el conducto desplaza todo su
++    volumen y ningun nivel mas bajo da mas empuje. Ver «Por que U asume
++    sumersion completa» en el docstring del modulo.
++
+     DE DONDE SALE LA OBLIGACION, que hasta C7 no estaba citada: el num.
+     2.4.3.8.2 del Manual de Puentes manda considerar la subpresion como una
+     fuerza de levantamiento sobre "todos los componentes de la estructura que
+diff --git a/src/normativa/citas.py b/src/normativa/citas.py
+index 9c0c1b8..7dcef7e 100644
+--- a/src/normativa/citas.py
++++ b/src/normativa/citas.py
+@@ -14272,5 +14272,67 @@ HDS5_2_2_5D_AGENCIAS = _cita(
+           "tope del proyecto es el criterio [A] 'HW_D_max'."),
+ )
+ 
++# ===========================================================================
++# --- VE-2 (c) --- QUIEN FIJA EL NIVEL DE AGUA DE DISEÑO DE V7
++# ===========================================================================
++# La flotacion (V7) se justificaba con el NF somero del Bajo Piura, un
++# argumento de SITIO que la norma no usa. La norma no fija el nivel: dice que
++# lo especifica o aprueba el Propietario, y la subpresion de 2.4.3.8.2 actua
++# sobre lo que queda «debajo del nivel de agua de diseño» que este parrafo
++# deja en sus manos. Por eso la sumersion completa --el nivel en la clave--
++# es una ADOPCION [A] conservadora del proyecto y no un hecho. Las dos
++# paginas las abrio la propia sesion por su capa de texto.
++FECHA_VE2 = "2026-11-17"
++POR_VE2 = "validacion/VE-2 · lectura directa de la pagina por la sesion"
++VE2 = (FECHA_VE2, POR_VE2)
++
++MP_NIVEL_DE_DISENO = _cita(
++    id="MP.2.4.3.8.1#NIVEL_DE_DISENO",
++    fuente_id="MP",
++    numeral="2.4.3.8.1",
++    titulo_numeral="Presión Hidrostática",
++    pagina_impresa="113",
++    pagina_pdf=114,
++    texto_literal=Verbatim(
++        texto=("Los niveles de agua de diseño para los diferentes estados "
++               "límites serán los especificados y/o aprobados por el "
++               "Propietario."),
++        pagina_pdf=114),
++    caracter=Caracter.EXIGENCIA,
++    corresponde_en=("AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO",),
++    sesion=VE2,
++    nota=("Tercer parrafo del num. 2.4.3.8.1 «Presión Hidrostática» (3.7.1 "
++          "AASHTO), en la MISMA pagina que la subpresion de 2.4.3.8.2, que "
++          "remite a este articulo. Es EXIGENCIA sobre QUIEN fija el nivel, "
++          "no sobre cual es: el Manual no da ningun nivel de agua de diseño "
++          "para una alcantarilla enterrada. Por eso el nivel con que V7 "
++          "evalua la flotacion es una adopcion [A] del proyecto en el sitio "
++          "de la decision del Propietario, y la lectura del primer parrafo («las condiciones de aguas máximas y "
++          "aguas mínimas», de pilares y partes del puente) no se traslada al "
++          "conducto."),
++)
++
++AASHTO_3_7_1_NIVEL_DE_DISENO = _cita(
++    id="AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO",
++    fuente_id="AASHTO_LRFD_9",
++    numeral="3.7.1",
++    titulo_numeral="Static Pressure",
++    pagina_impresa="3-45",
++    pagina_pdf=99,
++    texto_literal=Verbatim(
++        texto=("Design water levels for various limit states shall be as "
++               "specified and/or approved by the Owner."),
++        pagina_pdf=99),
++    caracter=Caracter.EXIGENCIA,
++    corresponde_en=("MP.2.4.3.8.1#NIVEL_DE_DISENO",),
++    sesion=VE2,
++    nota=("El gemelo del Manual de Puentes, en la misma pagina que la "
++          "subpresion de 3.7.2 («acting on all components below design "
++          "water level»). El 12.6.2.3 de la Sec. 12 nombra el nivel con "
++          "otras palabras --«the highest anticipated groundwater level»-- "
++          "y tampoco da su cota: la da el estudio del sitio, o la adopta "
++          "el proyecto."),
++)
++
+ 
+ CITAS: Dict[str, Cita] = {c.id: c for c in _TODAS}
+diff --git a/src/normativa/fundamentos.py b/src/normativa/fundamentos.py
+index ba08f44..f33d9bd 100644
+--- a/src/normativa/fundamentos.py
++++ b/src/normativa/fundamentos.py
+@@ -625,11 +625,26 @@ V7 = _fundamento(
+     id="F5.V7",
+     fase=F5,
+     que_paso="V7 - Flotacion del conducto vacio bajo el nivel freatico",
++    # --- VE-2 (c1) --- La segunda frase decia «En el Bajo Piura, con NF
++    # somero y arenas saturadas, no es un caso de laboratorio»: un argumento
++    # de SITIO que ninguna de las citas de abajo usa. Lo que la norma dice
++    # del nivel es QUIEN lo fija (MP.2.4.3.8.1#NIVEL_DE_DISENO), y con eso
++    # la sumersion completa queda como lo que es, una adopcion [A].
+     por_que=(
+-        "Un conducto vacio bajo el nivel freatico es un flotador: la "
++        "Un conducto vacio bajo el nivel de agua de diseño es un flotador: la "
+         "subpresion sobre su superficie exterior puede superar el peso propio "
+-        "mas el del relleno que lo cubre y levantarlo. En el Bajo Piura, con "
+-        "NF somero y arenas saturadas, no es un caso de laboratorio. "
++        "mas el del relleno que lo cubre y levantarlo. CUAL ES ESE NIVEL NO "
++        "LO DICE LA NORMA: los niveles de agua de diseño son los que el "
++        "Propietario especifica o aprueba (Manual de Puentes num. 2.4.3.8.1, "
++        "el mismo de AASHTO 3.7.1), y AASHTO 12.6.2.3 lo nombra como el "
++        "freatico mas alto previsto sin dar su cota. Por eso la hipotesis "
++        "con que se comprueba --tuberia vacia y el nivel en la clave, o sea "
++        "el conducto sumergido entero-- es una ADOPCION [A] conservadora del "
++        "proyecto en el sitio de esa decision, y no un hecho del sitio: "
++        "sumergido entero, el conducto desplaza todo su volumen, y ningun "
++        "nivel mas bajo daria mas empuje. Y el peso propio del conducto (DC) "
++        "no se suma: la Tabla 2.4.5.3.1-2 admitiria contarlo con su minimo "
++        "0.90, y omitirlo acorta el lado que estabiliza, del lado seguro. "
+         "QUE PARTE DE ESTO ES DE LA FUENTE Y CUAL ES DEL PROYECTO, que es lo "
+         "que hay que poder separar al leer la memoria. De la fuente: que la "
+         "subpresion se considere una fuerza de levantamiento sobre todos los "
+@@ -663,6 +678,10 @@ V7 = _fundamento(
+         "estado ABIERTA."),
+     verbo=Verbo.OBLIGA,
+     citas=("MP.2.4.3.8.2",                      # EXIGENCIA -> sostiene OBLIGA
++           # --- VE-2 (c1) --- QUIEN fija el nivel bajo el que actua la
++           # subpresion de la cita anterior: el Propietario. Es lo que hace
++           # de la sumersion completa una adopcion y no una lectura.
++           "MP.2.4.3.8.1#NIVEL_DE_DISENO",      # EXIGENCIA (quien, no cual)
+            "AASHTO_LRFD_9.12.6.1#FLOTACION",    # EXIGENCIA -> lo sostiene
+            "AASHTO_LRFD_9.12.6.2.3#UPLIFT",     # EXIGENCIA -> lo sostiene
+            "AASHTO_LRFD_9.3.7.2",               # EXIGENCIA (gemelo del peruano)
+diff --git a/tests/test_ve2_flotacion.py b/tests/test_ve2_flotacion.py
+new file mode 100644
+index 0000000..493c3eb
+--- /dev/null
++++ b/tests/test_ve2_flotacion.py
+@@ -0,0 +1,225 @@
++"""
++tests/test_ve2_flotacion.py
++===========================
++VE-2, decision (c) de la ficha VE1-02: la flotacion del conducto (V7).
++
++(c1) LA JUSTIFICACION, bloque 2 de VE-2. La sumersion completa y DC = 0 se
++     justificaban en `M8_estructural` y en el `por_que` de F5.V7 con el NF
++     somero del Bajo Piura: un argumento de SITIO que la norma no usa. Lo que
++     la norma dice, verificado contra los PDF del repositorio de normas:
++
++       * Manual de Puentes num. 2.4.3.8.1, pag. impresa 113 (PDF 114): «Los
++         niveles de agua de diseño para los diferentes estados límites serán
++         los especificados y/o aprobados por el Propietario.» (AASHTO LRFD
++         9.a ed. 3.7.1, pag. 3-45, PDF 99, lo dice igual: «Design water
++         levels for various limit states shall be as specified and/or
++         approved by the Owner.»)
++       * num. 2.4.3.8.2, misma pagina: la subpresion actua sobre lo que esta
++         «debajo del nivel de agua de diseño».
++       * AASHTO 12.6.1 (pag. 12-14, PDF 1652) y 12.6.2.3 (pag. 12-19, PDF
++         1657): evaluar la flotacion con el invert bajo el freatico, y el
++         levantamiento bajo «the highest anticipated groundwater level».
++       * Manual de Puentes 2.4.5.3.1 (pag. 142) y Tabla 2.4.5.3.1-2 (pag.
++         143): «DC: Componentes y Auxiliares» 1.25 / 0.90, y la carga
++         permanente que estabiliza se investiga con su MINIMO. C12.6.2.3:
++         «the dead load on the crown of the structure should exceed the
++         buoyancy of the culvert».
++
++     Por eso el nivel en la clave (sumersion completa) es una ADOPCION [A]
++     conservadora del proyecto en el sitio de una decision del Propietario,
++     y DC = 0 queda del lado seguro frente al 0.90·DC que la tabla
++     admitiria. Y la equivalencia que la ficha VE1-02 (c) escribia, «unas
++     0.45 veces el diametro exterior», es la de pesos SIN factorar: con el
++     gamma_EV = 0.90 que V7 aplica sale 0.50 (medido abajo con el codigo).
++
++Escrita PRIMERO, en rojo (§1 regla 4 de la cadena): los tests de (c1) con
++`xfail(strict=True)` fallaban por su motivo antes de tocar los textos; se
++liberaron al corregir. Los mutantes se anotan junto a cada test.
++"""
++
++from __future__ import annotations
++
++import math
++import re
++from pathlib import Path
++
++import pytest
++
++from src import criterios_adoptados as ca
++from src.constantes_fisicas import GAMMA_AGUA_KN_M3
++from src.modelos import SeccionCircular, TipoMaterial
++from src.modulos import M5_verificaciones as M5
++from src.modulos import M8_estructural as M8
++from src.modulos.M2_material import catalogo, espesor_pared
++from src.normativa import fuentes
++from src.normativa.esquema import Caracter
++from src.normativa.fundamentos import FUNDAMENTOS
++from src.normativa.registro import construir
++
++RAIZ = Path(__file__).resolve().parents[1]
++REGISTRO = RAIZ / "docs" / "decisiones_diferidas.md"
++
++CITA_NIVEL_MP = "MP.2.4.3.8.1#NIVEL_DE_DISENO"
++CITA_NIVEL_AASHTO = "AASHTO_LRFD_9.3.7.1#NIVEL_DE_DISENO"
++
++
++def _seccion_del_docstring(doc: str, titulo: str) -> str:
++    """El apartado `titulo` (subrayado con guiones) de un docstring de
++    modulo, hasta el apartado siguiente, con los espacios normalizados."""
++    resto = doc.split(titulo + "\n", 1)[1]
++    cuerpo = resto.split("\n", 1)[1]                  # la linea de guiones
++    cuerpo = re.split(r"\n[^\n]+\n-{4,}\n", cuerpo, maxsplit=1)[0]
++    return " ".join(cuerpo.split())
++
++
++def _plano(texto: str) -> str:
++    return " ".join(texto.split())
++
++
++def _ficha(nombre: str) -> str:
++    texto = REGISTRO.read_text(encoding="utf-8")
++    inicio = texto.index(f"\n## {nombre} · ")
++    fin = texto.find("\n## ", inicio + 1)
++    return texto[inicio:fin if fin != -1 else len(texto)]
++
++
++# ===========================================================================
++# (c1) · la justificacion de V7 es la de la norma, no la del sitio
++# ===========================================================================
++
++# Mutante medido: devolver al `por_que` la frase «En el Bajo Piura, con NF
++# somero y arenas saturadas, no es un caso de laboratorio.» -> muere aqui.
++def test_c1_el_por_que_de_v7_no_se_apoya_en_el_sitio():
++    por_que = _plano(FUNDAMENTOS["F5.V7"].por_que)
++    assert "Bajo Piura" not in por_que and "NF somero" not in por_que
++    for necesario in ("Propietario", "2.4.3.8.1", "[A]", "conservadora",
++                      "0.90"):
++        assert necesario in por_que, necesario
++
++
++# Mutante medido: quitar `CITA_NIVEL_MP` de las citas de F5.V7 -> muere aqui
++# (y el registro la declara huerfana).
++def test_c1_el_fundamento_de_v7_cita_el_nivel_de_diseno_del_propietario():
++    reg = construir()
++    assert CITA_NIVEL_MP in FUNDAMENTOS["F5.V7"].citas
++    c = reg.cita(CITA_NIVEL_MP)
++    assert c.numeral == "2.4.3.8.1"
++    assert (c.pagina_impresa, c.pagina_pdf) == ("113", 114)
++    assert c.caracter is Caracter.EXIGENCIA
++    assert c.texto_literal.texto == (
++        "Los niveles de agua de diseño para los diferentes estados límites "
++        "serán los especificados y/o aprobados por el Propietario.")
++    gemela = reg.cita(CITA_NIVEL_AASHTO)
++    assert (gemela.numeral, gemela.pagina_impresa, gemela.pagina_pdf) == (
++        "3.7.1", "3-45", 99)
++    assert gemela.texto_literal.texto == (
++        "Design water levels for various limit states shall be as "
++        "specified and/or approved by the Owner.")
++    assert CITA_NIVEL_AASHTO in c.corresponde_en
++    assert not reg.problemas_de_integridad()
++
++
++@pytest.mark.pdf
++@pytest.mark.parametrize("cita_id", [CITA_NIVEL_MP, CITA_NIVEL_AASHTO])
++def test_c1_el_literal_del_nivel_de_diseno_esta_en_su_pagina(cita_id):
++    """Cada literal, leido otra vez en su pagina del PDF (sin espacios)."""
++    import fitz
++    c = construir().cita(cita_id)
++    ruta = fuentes.ruta_pdf(fuentes.FUENTES[c.fuente_id])
++    if not ruta.exists():
++        pytest.skip(f"no esta el PDF de {c.fuente_id}")
++    texto = fitz.open(str(ruta))[c.pagina_pdf - 1].get_text()
++    plano = lambda t: "".join(t.split())                    # noqa: E731
++    assert plano(c.texto_literal.texto) in plano(texto)
++
++
++# Mutante medido: devolver al apartado la frase del NF somero de la llanura
++# del Bajo Piura -> muere aqui.
++def test_c1_m8_justifica_la_sumersion_completa_con_la_norma():
++    apartado = _seccion_del_docstring(M8.__doc__,
++                                      "Por que U asume sumersion completa")
++    # La justificacion va ANTES del parrafo que cuenta lo que se reemplazo,
++    # y es ese parrafo el unico que puede nombrar el argumento de sitio.
++    justificacion, historia = apartado.split("HASTA VE-2", 1)
++    assert "Bajo Piura" not in justificacion and "somero" not in justificacion
++    assert "Bajo Piura" in historia and "no es portable" in historia
++    for necesario in ("2.4.3.8.1", "Propietario", "[A]", "conservadora",
++                      "12.6.2.3", "highest anticipated groundwater level"):
++        assert necesario in justificacion, necesario
++
++
++def test_c1_m8_dice_que_dc_cero_esta_del_lado_seguro_frente_al_0_90():
++    apartado = _seccion_del_docstring(
++        M8.__doc__, "Por que el peso propio del conducto no entra en V7")
++    for necesario in ("Tabla 2.4.5.3.1-2", "0.90", "2.4.5.3.1",
++                      "C12.6.2.3", "lado seguro"):
++        assert necesario in apartado, necesario
++
++
++def test_c1_v7_y_el_empuje_nombran_al_propietario():
++    for doc in (M5.v7_flotacion.__doc__, M8.empuje_flotacion_kn_m.__doc__):
++        texto = _plano(doc)
++        assert "Bajo Piura" not in texto
++        assert "2.4.3.8.1" in texto and "Propietario" in texto
++
++
++# --- la equivalencia de VE1-02 (c), medida con el codigo -------------------
++
++def _relleno_que_equilibra(gamma_ev: float) -> float:
++    """
++    La altura de relleno sobre la clave con la que V7 queda en el limite,
++    gamma_EV · gamma_r · Bc · H = gamma_WA · U, para el tubo de concreto de
++    0.90 m con su espesor de archivo, en multiplos del diametro exterior.
++    Las piezas son las de produccion: `M8.empuje_flotacion_kn_m`, el ancho
++    exterior de la seccion y el gamma_WA de `factores_carga_flotacion`.
++    """
++    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
++    seccion = SeccionCircular(D=0.90)
++    t = espesor_pared(material, seccion.altura)
++    U = M8.empuje_flotacion_kn_m(seccion=seccion, espesor=t)
++    g = M8.factores_carga_flotacion(material=material)
++    gamma_r = ca.CRITERIOS["peso_especifico_relleno_kn_m3"].valor
++    Bc = seccion.ancho_exterior(t)
++    H = g.gamma_WA * U / (gamma_ev * gamma_r * Bc)
++    return H / Bc
++
++
++def test_c1_la_equivalencia_de_v7_es_0_50_d_ext_con_el_gamma_de_v7():
++    """
++    Con el gamma_EV que V7 aplica (0.90, el minimo de la fila del conducto)
++    el relleno que equilibra la subpresion es 0.50 veces el diametro
++    exterior; 0.45 sale con gamma_EV = 1.00, o sea con pesos sin factorar.
++    Las dos, en forma cerrada: gamma_WA·gamma_agua·pi / (4·gamma_EV·gamma_r).
++    """
++    material = catalogo(TipoMaterial.CONCRETO_REFORZADO)
++    g = M8.factores_carga_flotacion(material=material)
++    assert g.gamma_EV == pytest.approx(0.90) and g.gamma_WA == pytest.approx(1.0)
++    gamma_r = ca.CRITERIOS["peso_especifico_relleno_kn_m3"].valor
++    cerrada = lambda gev: (g.gamma_WA * GAMMA_AGUA_KN_M3 * math.pi    # noqa: E731
++                           / (4 * gev * gamma_r))
++    assert _relleno_que_equilibra(g.gamma_EV) == pytest.approx(cerrada(0.90),
++                                                               rel=1e-12)
++    assert round(_relleno_que_equilibra(g.gamma_EV), 2) == 0.50
++    assert round(_relleno_que_equilibra(1.00), 2) == 0.45
++
++
++# Mutante medido: devolver a la ficha «equivalen a un relleno de unas 0.45
++# veces el diámetro exterior» sin el gamma -> muere aqui.
++def test_c1_la_ficha_ve1_02_c_dice_0_50_con_gamma_ev_0_90():
++    ficha = _ficha("VE1-02")
++    c = ficha.split("(c)", 1)[1].split("(d)", 1)[0]
++    assert "unas 0.45 veces el diámetro exterior." not in _plano(c)
++    assert "0.50 veces el diámetro exterior con γ_EV = 0.90" in _plano(c)
++    assert "0.45" in c and "γ_EV = 1.00" in c
++    # El inciso propio, cerrado en una linea.
++    assert re.search(r"^- \*\*Cerrado \(VE-2\), \(c1\):\*\*", ficha, re.M)
++
++
++def test_c1_la_ficha_ve2_c_existe_y_cita_lo_verificado():
++    ficha = _plano(_ficha("VE2-C"))
++    assert "V7: el nivel de agua de diseño es una elección [A] del Propietario" \
++        in ficha
++    for necesario in ("2.4.3.8.1", "pág. impresa 113", "3.7.1", "12.6.1",
++                      "12.6.2.3", "C12.6.2.3", "Tabla 2.4.5.3.1-2",
++                      "0.50", "Bajo Piura"):
++        assert necesario in ficha, necesario

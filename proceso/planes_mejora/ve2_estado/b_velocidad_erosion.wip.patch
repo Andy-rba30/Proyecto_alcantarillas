@@ -1,0 +1,1270 @@
+diff --git a/src/modelos.py b/src/modelos.py
+index f044022..fcf0a9d 100644
+--- a/src/modelos.py
++++ b/src/modelos.py
+@@ -1933,20 +1933,20 @@ class Geometria:
+ class TiranteNormal:
+     """
+     Salida de M3 (Sec. 4.1): tirante normal resuelto por Manning + Brent con
+-    la regla de doble n.
++    la regla de doble n, UN TIRANTE POR CADA EXTREMO del rango de n (VE-2).
+ 
+-    `geometria` es la UNICA solucion de Brent, con n_max (rama de capacidad y
++    `geometria` es la solucion de Brent con n_max (rama de capacidad y
+     tirante: V1 borde libre) -- el n mas conservador del lado de la
+-    inundacion fija el theta real de diseño. Sobre esa MISMA geometria (mismo
+-    theta, mismo R) se calculan las DOS velocidades de la regla de doble n,
+-    porque un umbral de velocidad no tiene un extremo conservador sino dos, y
+-    son opuestos:
+-
+-        `V_erosion`        con n_min: la estimacion ALTA. Es la que hay que
+-                           usar contra un TECHO -- V3 (velocidad maxima
+-                           admisible) y el d50 de Laushey (Fase 6) --, porque
+-                           el riesgo esta en que la velocidad real sea mayor
+-                           que la calculada.
++    inundacion fija el theta real de diseño --, y `geometria_erosion` la de
++    n_min, sobre la misma ecuacion, la misma seccion y el mismo Q: un tirante
++    MENOR. Cada velocidad es la de SU tirante, porque un umbral de velocidad
++    no tiene un extremo conservador sino dos, y son opuestos:
++
++        `V_erosion`        con n_min: Q / geometria_erosion.A, la estimacion
++                           ALTA. Es la que hay que usar contra un TECHO -- V3
++                           (velocidad maxima admisible) y el d50 de Laushey
++                           (Fase 6) --, porque el riesgo esta en que la
++                           velocidad real sea mayor que la calculada.
+         `V_sedimentacion`  con n_max: la estimacion BAJA. Es la que hay que
+                            usar contra un PISO -- V2 (velocidad minima de
+                            autolimpieza) --, porque ahi el riesgo es el
+@@ -1961,31 +1961,44 @@ class TiranteNormal:
+     n = 0.013, que es n_max. El repositorio se contradecia a si mismo, y la
+     ventana permisiva era real: con D = 0.90 m, y/D = 0.75 y S = 5e-5, la
+     velocidad de la rama n_max es 0.228 m/s -- por debajo del piso de
+-    0.25 m/s -- mientras que la de la rama n_min da 0.297 m/s y el punto salia
+-    "cumple".
+-
+-    `V_erosion * geometria.A != Q` en general: Q es el caudal de diseño que
+-    define el theta (con n_max), mientras que esa velocidad asume una
+-    rugosidad menor sobre la misma seccion (ver el fixture CP-2,
+-    tests/fixtures/casos_patron.py, y `modulos.M3_hidraulica.resolver_manning`).
+-    `V_sedimentacion`, en cambio, SI cumple `V * A = Q`, y no por casualidad:
+-    es la velocidad media del mismo n con que se resolvio la geometria.
+-
+-    Eso la convierte ademas en el minimo REAL de la velocidad sobre todo el
+-    rango de n de la Tabla N 09, no solo en "la de la geometria de diseño":
+-    resolviendo Manning con un n menor, el tirante normal baja, el area baja y
+-    la velocidad media Q/A sube. La cadena vale mientras theta este en la RAMA
+-    CRECIENTE de la curva de capacidad de la seccion circular -- Q(theta) no
+-    es monotona: alcanza su maximo cerca de y/D = 0.94 y decae hasta la
+-    seccion llena --, y ahi esta siempre el diseño de este proyecto, porque V1
+-    lo acota en y/D <= 0.75 (num. 4.1.1.3.7 b). Se dice y no se da por
+-    supuesto: por encima de ese maximo la relacion theta(n) deja de ser
+-    creciente y el argumento no aplicaria.
+-    """
+-
+-    geometria: Geometria      # con n_max
+-    V_erosion: float          # m/s, con n_min  - estimacion ALTA (techos)
+-    V_sedimentacion: float    # m/s, con n_max  - estimacion BAJA (pisos)
++    0.25 m/s -- mientras que la de la rama n_min daba 0.297 m/s y el punto
++    salia "cumple".
++
++    LAS DOS CUMPLEN LA CONTINUIDAD, CADA UNA CON SU AREA (VE-2, decision (b)
++    de la ficha VE1-02, aprobada el 2026-11-17):
++    `V_erosion * geometria_erosion.A = Q` y `V_sedimentacion * geometria.A =
++    Q`, hasta `tolerancias.TOL_REL_CONTINUIDAD_MANNING`. HASTA VE-2 ESTE
++    DOCSTRING DECIA LO CONTRARIO, «V_erosion * geometria.A != Q en general»,
++    y era cierto: `V_erosion` era la velocidad de n_min SOBRE LA GEOMETRIA DE
++    n_max, V*A = Q*n_max/n_min (1.3*Q en el concreto), un caudal que no pasa
++    por el conducto. Se corrigio porque ninguna fuente toma el tirante de un
++    n y la velocidad de otro: HDS-5 num. 3.3.2 (pag. impresa 3.24) «The
++    velocity at normal depth is assumed to be the outlet velocity» y HEC-14
++    num. 3.2.2 (pag. impresa 3-7), cuyo ejemplo de la pag. 3-8 resuelve un
++    tirante por cada n. Sobre la geometria de n_max, `V_erosion * A` sigue
++    siendo mayor que Q (A(n_max) > A(n_min)), y eso es lo que se espera.
++
++    Eso convierte a cada una en el extremo REAL de la velocidad sobre el
++    rango de n de la Tabla N 09, no solo en "la de una geometria": con un n
++    menor el tirante normal baja, el area baja y la velocidad media Q/A sube.
++    La cadena vale mientras theta este en la RAMA CRECIENTE de la curva de
++    capacidad de la seccion circular -- Q(theta) no es monotona: alcanza su
++    maximo cerca de y/D = 0.94 y decae hasta la seccion llena --, y ahi esta
++    siempre el diseño de este proyecto, porque V1 lo acota en y/D <= 0.75
++    (num. 4.1.1.3.7 b). Se dice y no se da por supuesto: por encima de ese
++    maximo la relacion theta(n) deja de ser creciente y el argumento no
++    aplicaria.
++
++    `geometria_erosion` viaja para que la memoria imprima el tirante con que
++    se midio `V_erosion` (pasos 4.1 y 4.3b de M4). No es el tirante de
++    registro: el que se publica como `y_normal`, el que V1 juzga y el que
++    M4 da como tirante de salida bajo control de entrada es el de n_max.
++    """
++
++    geometria: Geometria          # con n_max  - tirante de capacidad (V1)
++    V_erosion: float              # m/s, Q / geometria_erosion.A - ALTA (techos)
++    V_sedimentacion: float        # m/s, con n_max  - estimacion BAJA (pisos)
++    geometria_erosion: Geometria  # con n_min  - el tirante de V_erosion (VE-2)
+ 
+ 
+ @dataclass(frozen=True)
+@@ -2619,10 +2632,12 @@ class ResultadoHidraulico:
+     n_max, y la velocidad viaja en DOS campos porque un umbral de velocidad
+     tiene dos extremos conservadores opuestos (ver `TiranteNormal`):
+ 
+-        `V_erosion`        con n_min, estimacion ALTA. Contra los TECHOS: V3
+-                           y el d50 de la Fase 6. En general
+-                           `V_erosion * A != Q`, y esa discrepancia es
+-                           intencional.
++        `V_erosion`        con n_min y SU tirante normal, estimacion ALTA.
++                           Contra los TECHOS: V3 y el d50 de la Fase 6.
++                           Cumple Q = V*A con el area de ESE tirante, no con
++                           la de `y_normal` (VE-2; hasta VE-2 era la de n_min
++                           sobre la geometria de n_max y V*A = 1.3*Q en el
++                           concreto: ver `TiranteNormal`).
+         `V_sedimentacion`  con n_max, estimacion BAJA. Contra el PISO: V2.
+ 
+     NO HAY UN CAMPO `V` A SECAS, Y ES DELIBERADO. Lo habia, valia `V_erosion`
+@@ -2695,12 +2710,26 @@ class ResultadoHidraulico:
+                            n. Bajo control de ENTRADA es la del tirante
+                            normal (pag. 3.24: «The velocity at normal depth
+                            is assumed to be the outlet velocity»), y de sus
+-                           dos ramas la de n_min (`V_erosion`): el techo
+-                           conservador para un d50 que crece con V^2. En
+-                           pendiente suave con salida libre la de salida a
+-                           y_c SUPERA a V_erosion (1.508 vs 1.184 m/s en el
+-                           caso del dictamen): M6 recibia una piedra chica.
+-        `y_salida_m`       el tirante con que se midio `V_salida`.
++                           dos ramas la de n_min (`V_erosion`, con su propio
++                           tirante desde VE-2): el techo conservador para un
++                           d50 que crece con V^2. En pendiente suave con
++                           salida libre la de salida a y_c SUPERA a la
++                           normal (1.508 vs 1.184 m/s en el caso del
++                           dictamen, medida con la formula anterior a VE-2;
++                           hoy la normal es aun menor): M6 recibia una piedra
++                           chica.
++        `y_salida_m`       el TIRANTE a la salida. Bajo control de SALIDA y
++                           con el barril horizontal, el mismo con que se
++                           midio `V_salida`, min(D, max(TW, y_c)). Bajo
++                           control de ENTRADA, el tirante normal de REGISTRO,
++                           el de n_max (`y_normal`): la regla de doble n da
++                           el tirante con n MAXIMO y la velocidad con n
++                           MINIMO, y desde VE-2 esa velocidad se mide con su
++                           propio tirante, mas bajo, que el paso 4.3b imprime
++                           al lado (`y_n_min`). Lo leen como TIRANTE el
++                           rotulo del regimen del Froude y la Ec. (10.5) de
++                           HEC-14 (M6) y el nivel de agua contra el cabezal
++                           de salida (M9); ver la ficha VE2-B.
+         `h_o_m`, `TW_m`, `ahogado_por_TW`   el bloque h_o entero, que hasta
+                            EXT-3 no salia del `ControlSalida` (SIS-B-18): el
+                            JSON y `cli.volcar` lo imprimen junto a las dos
+@@ -2779,7 +2808,7 @@ class ResultadoHidraulico:
+     regimen_barril: RegimenBarril = RegimenBarril.PARCIALMENTE_LLENO
+     V_llena_m_s: Optional[float] = None   # m/s - Q_celda / A_llena (regimen LLENO)
+     V_salida: Optional["Magnitud"] = None # m/s - HDS-5 3.1.6, con procedencia
+-    y_salida_m: Optional[float] = None    # m  - tirante con que se midio V_salida
++    y_salida_m: Optional[float] = None    # m  - tirante a la salida (ver arriba: bajo control de entrada, el de registro)
+     h_o_m: Optional[float] = None         # m  - max(TW, (y_c + D)/2), Sec. 4.3
+     TW_m: Optional[float] = None          # m  - tirante en el receptor
+     ahogado_por_TW: bool = False          # manda TW en h_o, no la geometria
+diff --git a/src/modulos/M11_reporte.py b/src/modulos/M11_reporte.py
+index b69e1a4..8087b75 100644
+--- a/src/modulos/M11_reporte.py
++++ b/src/modulos/M11_reporte.py
+@@ -1195,8 +1195,9 @@ def _filas_combinacion_adoptada(informe: Any) -> Tuple[str, ...]:
+                        f"{_num(hidraulica.y_normal)} m &middot; y<sub>c</sub> = "
+                        f"{_num(hidraulica.y_critico)} m &middot; "
+                        f"V<sub>erosion</sub> = "
+-                       f"{_num(hidraulica.V_erosion, FMT_2)} m/s (con n minimo, "
+-                       f"contra el techo de V3) &middot; "
++                       f"{_num(hidraulica.V_erosion, FMT_2)} m/s (con n minimo "
++                       f"y su propio tirante normal, contra el techo de V3) "
++                       f"&middot; "
+                        f"V<sub>sedimentacion</sub> = "
+                        f"{_num(hidraulica.V_sedimentacion, FMT_2)} m/s (con n "
+                        f"maximo, contra el piso de V2)"))]),
+diff --git a/src/modulos/M3_hidraulica.py b/src/modulos/M3_hidraulica.py
+index 017afb5..2722b50 100644
+--- a/src/modulos/M3_hidraulica.py
++++ b/src/modulos/M3_hidraulica.py
+@@ -39,7 +39,8 @@ Regla de doble n (Sec. 4.1)
+ -----------------------------
+ n MAXIMO para capacidad y tirante (V1, borde libre): conservador del lado de
+ la inundacion. n MINIMO para velocidad MAXIMA y socavacion (V3, Laushey):
+-conservador del lado de la erosion.
++conservador del lado de la erosion. Cada extremo con SU tirante normal (VE-2,
++ver abajo).
+ 
+ DISCREPANCIA CON LA HOJA DE RUTA (VE-1, ficha VE1-01). Su Sec. 4.1 rotula
+ esta regla «Regla [N]», y la fuente primaria no la sostiene: el Manual de
+@@ -51,15 +52,26 @@ ADOPCION del proyecto, la que la hoja de ruta escribe y este modulo aplica.
+ La hoja de ruta sigue mal mientras el dueño no la corrija, y si la
+ eleccion pasa a ser un criterio declarable es la decision VE1-02 (a).
+ 
+-La UNICA resolucion de Brent usa n_max: es el n que, para el mismo Q y D,
+-exige mas area y por lo tanto fija el theta real de diseño (mas resistencia
+--> mas tirante para el mismo caudal). Las velocidades NO salen de una segunda
+-resolucion de Brent con un theta distinto: salen de recalcular Manning SOBRE
+-ESA MISMA geometria (mismo theta, mismo R) con cada uno de los dos n -- el
+-mismo canal visto con la rugosidad mas baja y con la mas alta. Asi lo fija el
+-fixture CP-2 (tests/fixtures/casos_patron.py: D, y/D, S fijos, y las dos
+-velocidades V_con_n_max y V_con_n_min salen de la MISMA R con dos n
+-distintos).
++CADA EXTREMO RESUELVE SU PROPIO TIRANTE (VE-2, decision (b) de VE1-02)
++-------------------------------------------------------------------------
++Dos resoluciones de Brent sobre la misma ecuacion, una por extremo del
++rango: con n_max el tirante de CAPACIDAD (el theta de diseño, el que juzga
++V1), y con n_min el tirante de EROSION, mas bajo. Cada velocidad es la de su
++propio tirante, y por eso cada una cumple la continuidad Q = V*A con SU area.
++
++Hasta VE-2 habia UNA sola resolucion, con n_max, y la velocidad alta se
++recalculaba con n_min SOBRE ESA MISMA geometria (mismo theta, mismo R): la
++velocidad de una rugosidad sobre el tirante de otra, con V*A = Q*n_max/n_min
++(1.3*Q en el concreto). Lo fijaba el fixture CP-2 y lo documentaba
++`modelos.TiranteNormal` como «V_erosion*A != Q, por diseño». La revision de
++la ficha VE1-02 contra los PDF no encontro ninguna fuente que tome el tirante
++de un n y la velocidad de otro: el HDS-5 (hif12026, num. 3.3.2, pag. impresa
++3.24, `HDS5_3ED.3.3.2#V_SALIDA_ENTRADA`) dice «determine the normal depth and
++velocity in the culvert barrel.  The velocity at normal depth is assumed to
++be the outlet velocity», y HEC-14 (num. 3.2.2, pag. impresa 3-7,
++`HEC14.3.2.2#V_SALIDA_NORMAL`) calcula la velocidad de salida con Manning a
++tirante normal; su ejemplo de la pag. 3-8 resuelve un tirante por cada n y
++toma Vo = Q/A de cada uno. El dueño aprobo la correccion el 2026-11-17.
+ 
+ DOS VELOCIDADES, NO UNA (MAT-D1)
+ ---------------------------------
+@@ -71,23 +83,22 @@ suponer la mas BAJA, que sale de n_max.
+ 
+ `resolver_manning()` devuelve las dos:
+ 
+-    V_erosion       = (1/n_min)*R^(2/3)*S^0.5    estimacion ALTA  -> V3, d50
+-    V_sedimentacion = (1/n_max)*R^(2/3)*S^0.5    estimacion BAJA  -> V2
++    V_erosion       = Q / A(y_n con n_min)                estimacion ALTA  -> V3, d50
++    V_sedimentacion = (1/n_max)*R(n_max)^(2/3)*S^0.5      estimacion BAJA  -> V2
+ 
+-Hasta esta correccion devolvia solo la primera, bajo el nombre `V`, y V2 la
++(la segunda es Q / A(y_n con n_max), la misma cuenta escrita como Manning).
++Hasta MAT-D1 devolvia solo la primera, bajo el nombre `V`, y V2 la
+ consumia: un piso verificado con la estimacion alta. La Sec. 4.1 de la hoja
+ de ruta asigna n minimo a "velocidad maxima y socavacion" -- V2 no esta en
+ esa lista -- y el fixture CP-3 modela el umbral de V2 con n = 0.013, que es
+ n_max: el repositorio se contradecia a si mismo.
+ 
+ `V_sedimentacion` es ademas el minimo REAL de la velocidad sobre todo el rango
+-de n de la Tabla N 09, no solo el minimo sobre esta geometria: con un n menor
+-el tirante normal baja, el area baja y la velocidad media Q/A sube -- mientras
+-theta este en la rama creciente de la curva de capacidad, que es donde V1
+-mantiene el diseño (y/D <= 0.75); ver `modelos.TiranteNormal`, que enuncia la
+-condicion. Y cumple `V_sedimentacion * A = Q` exactamente, porque es la
+-velocidad media del mismo n con que se resolvio el tirante. Ver la advertencia
+-ya documentada en `modelos.TiranteNormal` (V_erosion*A != Q, por diseño).
++de n de la Tabla N 09: con un n menor el tirante normal baja, el area baja y
++la velocidad media Q/A sube -- mientras theta este en la rama creciente de
++la curva de capacidad, que es donde V1 mantiene el diseño (y/D <= 0.75); ver
++`modelos.TiranteNormal`, que enuncia la condicion. Y `V_erosion`, por la
++misma cadena, es el maximo real: la de n_min con su tirante.
+ 
+ `tirante_normal()`, la pieza mas chica, resuelve Manning para un solo n. Queda
+ publica porque M4 la reutiliza para lo que si necesita geometria de un n
+@@ -383,27 +394,38 @@ def tirante_normal(seccion: Seccion, Q: float, S: float, n: float) -> Optional[G
+ def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material
+                      ) -> Union[TiranteNormal, SinTiranteNormal, None]:
+     """
+-    Resuelve el tirante normal (Sec. 4.1) aplicando la regla de doble n:
+-
+-    1. Una unica resolucion de Brent con `material.n_para_capacidad` (n_max):
+-       fija el theta real de diseño -- el mas conservador del lado de la
+-       inundacion, el que alimenta V1 (borde libre).
+-    2. Sobre esa MISMA geometria (mismo R), las DOS velocidades del rango de
+-       n de la Tabla N 09:
+-         - con `material.n_para_velocidad_maxima` (n_min), la estimacion ALTA,
+-           conservadora contra los TECHOS (V3, Laushey);
+-         - con `material.n_para_velocidad_minima` (n_max), la estimacion BAJA,
+-           conservadora contra el PISO (V2, autolimpieza).
+-
+-    Las dos salen de la misma expresion de Manning -- V =
+-    (K_MANNING_SI/n)*R^(2/3)*S^0.5, ec. (47) del num. 4.1.1.3.6 -- con la
+-    misma R y distinto n. Ninguna se
+-    obtiene dividiendo Q entre A: hacerlo devolveria siempre la segunda, y con
+-    ella un techo verificado del lado inseguro.
++    Resuelve el tirante normal (Sec. 4.1) con los DOS extremos del rango de n
++    de la Tabla N 09, cada uno con SU tirante (VE-2, decision (b)):
++
++    1. Brent con `material.n_para_capacidad` (n_max): el tirante de
++       CAPACIDAD, el mas conservador del lado de la inundacion, el que
++       alimenta V1 (borde libre). Sobre el, con el mismo n,
++       `V_sedimentacion` = (K_MANNING_SI/n_max)*R^(2/3)*S^0.5 (ec. (47) del
++       num. 4.1.1.3.6), la estimacion BAJA, conservadora contra el PISO (V2,
++       autolimpieza); cumple V*A = Q porque es la velocidad media del mismo
++       n con que se resolvio el tirante.
++    2. Brent con `material.n_para_velocidad_maxima` (n_min), SOBRE LA MISMA
++       ECUACION: el tirante normal de esa rugosidad, mas bajo, y
++       `V_erosion` = Q / A(y_n con n_min), la estimacion ALTA, conservadora
++       contra los TECHOS (V3, Laushey). Es tambien la ec. (47) evaluada sobre
++       su propio tirante: Q/A y Manning coinciden alli hasta la convergencia
++       de Brent (`tolerancias.TOL_REL_CONTINUIDAD_MANNING`).
++
++    POR QUE DOS RESOLUCIONES Y NO UNA (VE-2). Hasta VE-2 habia una sola, con
++    n_max, y la velocidad alta se calculaba con n_min SOBRE ESA geometria: la
++    velocidad de una rugosidad sobre el tirante de otra, con V*A = Q*n_max/
++    n_min (1.3*Q en el concreto), un caudal que no pasa por el conducto.
++    Ninguna fuente lo hace asi: el HDS-5 (num. 3.3.2, pag. impresa 3.24)
++    manda «determine the normal depth and velocity in the culvert barrel», y
++    HEC-14 (num. 3.2.2, pag. impresa 3-7) calcula la velocidad de salida con
++    Manning a tirante normal, y su ejemplo de la pag. 3-8 resuelve un tirante
++    por cada n. En UPAO ALC46 (Q = 0.317 m3/s, S = 0.10) la formula vieja daba
++    6.28 m/s a Ø 0.90 m, sobre el techo de 6.0 del concreto, y esta da 5.81.
+ 
+     Devuelve None si la resolucion de Brent con n_max no converge: el
+     material no alcanza a transportar Q en flujo libre a esta D y S, y no
+-    hay geometria sobre la que evaluar las velocidades.
++    hay geometria sobre la que evaluar las velocidades. La de n_min recibe el
++    MISMO trato: None, nunca un sustituto.
+ 
+     Y `SinTiranteNormal` SI EL BARRIL ES HORIZONTAL, S = 0 (T-2, INF-5.1.6):
+     no hay tirante normal para ningun caudal ni seccion, y eso no es «este
+@@ -439,12 +461,25 @@ def resolver_manning(seccion: Seccion, Q: float, S: float, material: Material
+         return SinTiranteNormal(S=S)
+     if geom is None:
+         return None
++    # --- VE-2 (decision (b) de VE1-02) --- LA RAMA ALTA RESUELVE SU PROPIO
++    # TIRANTE: la misma ecuacion, la misma seccion y el mismo Q, con n_min.
++    # Hasta VE-2 la velocidad alta era la de n_min SOBRE LA GEOMETRIA DE
++    # n_max, V(n_max)*n_max/n_min, y su V*A no era Q sino Q*n_max/n_min (1.3*Q
++    # en el concreto). Si esta segunda resolucion no converge, el trato es el
++    # de la primera: None, sin sustituto. Con n_min <= n_max no ocurre --el
++    # caudal a seccion llena crece al bajar n--, y no se le pone un default
++    # para el dia en que un material traiga el par al reves.
++    geom_erosion = tirante_normal(seccion, Q, S,
++                                  material.n_para_velocidad_maxima)
++    if geom_erosion is None:
++        return None
+ 
+     factor_geometrico = K_MANNING_SI * geom.R ** (2 / 3) * S ** (1 / 2)  # literal-ok: exponentes de Manning, ec. (47) del num. 4.1.1.3.6 / Sec. 4.1
+     return TiranteNormal(
+         geometria=geom,
+-        V_erosion=factor_geometrico / material.n_para_velocidad_maxima,
++        V_erosion=Q / geom_erosion.A,
+         V_sedimentacion=factor_geometrico / material.n_para_velocidad_minima,
++        geometria_erosion=geom_erosion,
+     )
+ 
+ 
+diff --git a/src/modulos/M4_control.py b/src/modulos/M4_control.py
+index ee8e8cf..5c40909 100644
+--- a/src/modulos/M4_control.py
++++ b/src/modulos/M4_control.py
+@@ -1540,10 +1540,15 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
+     Control de ENTRADA (pag. impresa 3.24, «The velocity at normal depth is
+     assumed to be the outlet velocity»): la del tirante normal. De sus dos
+     ramas se toma la de n MINIMO, `V_erosion`, la estimacion ALTA: d50 crece
+-    con V^2 y el techo es el lado conservador de una proteccion. Es lo que M6
+-    recibia siempre hasta EXT-3, tambien bajo control de salida, donde en
+-    pendiente suave con salida libre la velocidad a y_c es MAYOR (1.508 vs
+-    1.184 m/s en el caso del dictamen) y la piedra salia chica.
++    con V^2 y el techo es el lado conservador de una proteccion. Desde VE-2
++    es la velocidad del tirante normal RESUELTO con n_min, Q_celda/A(y_n), y
++    no la de n_min sobre el tirante de n_max (HEC-14 num. 3.2.2, pag.
++    impresa 3-7, y su ejemplo de la 3-8, un tirante por cada n). El tirante
++    que se devuelve es el de registro, el de n_max: ver `ResultadoHidraulico.
++    y_salida_m`. Es lo que M6 recibia siempre hasta EXT-3, tambien bajo
++    control de salida, donde en pendiente suave con salida libre la velocidad
++    a y_c es MAYOR (1.508 vs 1.184 m/s en el caso del dictamen, medido con la
++    formula anterior a VE-2) y la piedra salia chica.
+ 
+     BARRIL HORIZONTAL (T-2, INF-5.1.6): con S = 0 no hay tirante normal
+     (`normal` es un `SinTiranteNormal`), y la regla de la pag. 3.24 no se
+@@ -1562,13 +1567,22 @@ def velocidad_de_salida(*, Q_celda: float, seccion: Seccion, TW: float,
+                         "conserva la del tirante normal como techo declarado, "
+                         "porque el 3.1.6 no da la regla para ese caso y d50 "
+                         "crece con V^2")
++        # --- VE-2 (decision (b)) --- LA VELOCIDAD ES LA DEL TIRANTE NORMAL
++        # DE n_min, CON SU PROPIO TIRANTE: V_erosion = Q_celda / A(y_n con
++        # n_min), y la procedencia lo nombra. El tirante que se devuelve como
++        # `y_salida` sigue siendo el normal de REGISTRO, el de n_max: la
++        # regla de doble n da el tirante con n maximo y la velocidad con n
++        # minimo (ficha VE2-B, que dice quien lee ese tirante).
+         return Magnitud(
+             "V_salida", normal.V_erosion, "m/s",
+             "HDS-5 num. 3.3.2 (pag. impresa 3.24) y 3.1.6: bajo control de "
+-            "ENTRADA la velocidad a la salida es la del tirante normal. De las "
+-            "dos ramas de n (Sec. 4.1) se toma la de n MINIMO, V_erosion, la "
+-            "estimacion ALTA: es el techo conservador para un d50 que crece "
+-            "con el cuadrado de V" + salida_llena,
++            "ENTRADA la velocidad a la salida es la del tirante normal; HEC-14 "
++            "num. 3.2.2 (pag. impresa 3-7) la calcula con Manning a tirante "
++            "normal. De las dos ramas de n (Sec. 4.1) se toma la de n MINIMO, "
++            "V_erosion, la estimacion ALTA, resuelta con su propio tirante "
++            f"normal (y_n = {normal.geometria_erosion.y:.3f} m con n_min, "
++            "V = Q_celda / A(y_n)): es el techo conservador para un d50 que "
++            "crece con el cuadrado de V" + salida_llena,
+             cifras=CIFRAS_MAGNITUD), normal.geometria.y
+     D = seccion.altura
+     y_salida = min(D, max(TW, critico.y_c))
+@@ -2247,9 +2261,14 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
+         que="Tirante normal y velocidades en el conducto",
+         formula="Q = (k_n/n) * A * R^(2/3) * S^(1/2), con k_n = K_MANNING_SI "
+                 "el coeficiente de unidades del SI, resuelta con Brent "
+-                "sobre el parametro de llenado de la seccion; A, P y R son "
+-                "los del paso anterior",
++                "sobre el parametro de llenado de la seccion UNA VEZ POR "
++                "CADA n del rango (n_max y n_min); A, P y R son los del paso "
++                "anterior; en cada rama V = Q / A(y_n de ese n)",
+         formula_cita_id="MC_HHD.4.1.1.3.6",
++        # --- VE-2 (decision (b)) --- La «velocidad a tirante normal» de las
++        # dos fuentes que la definen asi: cada rama con su propio tirante.
++        citas_textuales=("HDS5_3ED.3.3.2#V_SALIDA_ENTRADA",
++                         "HEC14.3.2.2#V_SALIDA_NORMAL"),
+         sustitucion=(
+             # EL COEFICIENTE DE UNIDADES VA EN LA SUSTITUCION, y hasta PD no
+             # iba: la formula no es homogenea, y el 1.0 que la cierra en SI
+@@ -2294,13 +2313,27 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
+                             explicacion="paso de calculo: no contrasta contra "
+                                         "ningun umbral"),
+         nota_del_proyecto=(
++            # --- VE-2 (decision (b)) --- DOS RESOLUCIONES, DOS TIRANTES. La
++            # nota decia «se resuelve DOS veces» sobre un codigo que resolvia
++            # una y recalculaba la otra velocidad sobre la misma geometria;
++            # hoy es literal, y la nota imprime el tirante de cada rama.
+             f"La seccion se resuelve DOS veces, una por extremo del rango de "
+-            f"n: V_erosion = {normal.V_erosion:.3f} m/s con n_min (estimacion "
+-            f"ALTA, para los techos: V3 y el d50 de la Fase 6) y "
+-            f"V_sedimentacion = {normal.V_sedimentacion:.3f} m/s con n_max "
+-            f"(estimacion BAJA, para el piso de V2). No hay una «la» "
++            f"n, cada una con SU tirante normal. Con n_max: y_n = "
++            f"{normal.geometria.y:.3f} m (el resultado de arriba: el tirante "
++            f"de capacidad, que juzga V1) y V_sedimentacion = "
++            f"{normal.V_sedimentacion:.3f} m/s (estimacion BAJA, para el piso "
++            f"de V2). Con n_min: y_n = {normal.geometria_erosion.y:.3f} m y "
++            f"V_erosion = Q / A(y_n) = {Q_celda:.{CIFRAS_MAGNITUD}f} / "
++            f"{normal.geometria_erosion.A:.{CIFRAS_MAGNITUD}f} = "
++            f"{normal.V_erosion:.3f} m/s (estimacion ALTA, para los techos: "
++            f"V3 y el d50 de la Fase 6). Cada velocidad es la de su propio "
++            f"tirante y cumple Q = V*A con su area: la velocidad a tirante "
++            f"normal del HDS-5 (num. 3.3.2) y de HEC-14 (num. 3.2.2, cuyo "
++            f"ejemplo resuelve un tirante por cada n). No hay una «la» "
+             f"velocidad: un piso y un techo tienen extremos conservadores "
+-            f"opuestos."),
++            f"opuestos. Usar los DOS extremos de la Tabla Nº 09, y cual para "
++            f"que, es adopcion del proyecto: la tabla da minimo, normal y "
++            f"maximo sin regla de columna (ficha VE1-01)."),
+     )
+ 
+     # SU FUNDAMENTO YA NO ES `F4.CONTROL`, Y NO ES UN CAMBIO COSMETICO. Ese
+@@ -2733,8 +2766,10 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
+         que="Regimen del barril y velocidad a la salida (HDS-5 3.1.6)",
+         formula="regimen = LLENO si TW >= D, PARCIALMENTE LLENO si no; "
+                 "V_salida = Q_celda / A(y_salida), con y_salida = "
+-                "min(D, max(TW, y_c)) bajo control de salida y y_salida = y_n "
+-                "bajo control de entrada",
++                "min(D, max(TW, y_c)) bajo control de salida; bajo control "
++                "de entrada V_salida = Q_celda / A(y_n_min), la velocidad del "
++                "tirante normal resuelto con n_min, y y_salida = y_n, el "
++                "tirante normal de registro (n_max)",
+         formula_cita_id="HDS5_3ED.3.1.6#V_SALIDA",
+         citas_textuales=("HDS5_3ED.3.1.6#V_SALIDA", "HDS5_3ED.3.1.6#V_SALIDA_TW",
+                          "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA",
+@@ -2756,6 +2791,17 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
+              Magnitud("y_n", normal.geometria.y, "m",
+                       "tirante normal del paso 4.1, con n_max",
+                       cifras=CIFRAS_MAGNITUD)),
++            # --- VE-2 (decision (b)) --- Bajo control de ENTRADA la
++            # velocidad de salida es la del tirante normal de n_min, y ese
++            # tirante se imprime: sin el, la formula de arriba no se puede
++            # rehacer con los numeros del paso.
++            *(() if horizontal or control is not ControlGobernante.ENTRADA
++              else (Magnitud("y_n_min", normal.geometria_erosion.y, "m",
++                             "tirante normal del paso 4.1 resuelto con n_min: "
++                             "el de la velocidad de salida bajo control de "
++                             "entrada (HDS-5 3.3.2; HEC-14 3.2.2), con area "
++                             f"A = {normal.geometria_erosion.A:.{CIFRAS_MAGNITUD}f} "
++                             "m2", cifras=CIFRAS_MAGNITUD),)),
+             Magnitud("Q_celda", Q_celda, "m3/s",
+                      "caudal de UNA celda, el mismo con que se resolvieron "
+                      "los pasos 4.1 a 4.3", cifras=CIFRAS_MAGNITUD),
+@@ -2776,9 +2822,11 @@ def _pasos_hidraulicos(*, seccion, Q, S, L, TW, material, normal, critico, entra
+                      "que V2 compara cuando el barril va lleno",
+                      cifras=CIFRAS_MAGNITUD),
+             Magnitud("y_salida", regimen.y_salida, "m",
+-                     "tirante con que se mide la velocidad a la salida: "
+-                     "min(D, max(TW, y_c)) bajo control de salida, y_n bajo "
+-                     "control de entrada", cifras=CIFRAS_MAGNITUD),
++                     "tirante a la salida: min(D, max(TW, y_c)) bajo control "
++                     "de salida, el mismo con que se mide la velocidad; bajo "
++                     "control de entrada y_n, el tirante normal de registro "
++                     "(n_max), y la velocidad se mide con y_n_min",
++                     cifras=CIFRAS_MAGNITUD),
+             Magnitud("control", control.value, "",
+                      "el control que gobierna, del paso 4.4", cifras=None)),
+         resultado=regimen.V_salida,
+diff --git a/src/modulos/M5_verificaciones.py b/src/modulos/M5_verificaciones.py
+index c86e288..c4f9336 100644
+--- a/src/modulos/M5_verificaciones.py
++++ b/src/modulos/M5_verificaciones.py
+@@ -1598,7 +1598,12 @@ def _velocidad_de_v3(resultado: ResultadoHidraulico) -> Magnitud:
+     La velocidad que V3 compara contra el techo, con su procedencia.
+ 
+     En flujo uniforme es `V_erosion`, la rama de n MINIMO (la estimacion
+-    ALTA: el extremo conservador contra un techo). --- T-2 --- EN UN BARRIL
++    ALTA: el extremo conservador contra un techo), que desde VE-2 es la
++    velocidad del tirante normal RESUELTO con n_min, Q / A(y_n), y no la de
++    n_min sobre el tirante de n_max: la velocidad media del conducto que la
++    Tabla N 10 limita es la de un tirante que transporta Q. Con la formula
++    anterior el caso UPAO ALC46 de la validacion externa daba 6.28 m/s a
++    Ø 0.90 m por 5.81 y V3 lo rechazaba. --- T-2 --- EN UN BARRIL
+     HORIZONTAL (S = 0, INF-5.1.6) no hay velocidad uniforme: la mayor del
+     barril es la de la seccion de SALIDA, porque sobre un fondo horizontal
+     la lamina es subcritica y baja hacia la salida (perfil H2), donde pasa
+@@ -1611,8 +1616,9 @@ def _velocidad_de_v3(resultado: ResultadoHidraulico) -> Magnitud:
+             "V_erosion", resultado.V_erosion, "m/s",
+             "M3, velocidad de la rama de n MINIMO -- la estimacion "
+             "ALTA de velocidad, que es el extremo conservador contra "
+-            "un TECHO. No es la de V2, que verifica un piso y usa la "
+-            "rama opuesta", cifras=CIFRAS_MAGNITUD)
++            "un TECHO --, con su propio tirante normal: Q / A(y_n con "
++            "n_min), paso 4.1. No es la de V2, que verifica un piso y "
++            "usa la rama opuesta", cifras=CIFRAS_MAGNITUD)
+     if resultado.V_salida is None:
+         raise MetodoNoEvaluableError(
+             que="V3",
+diff --git a/src/modulos/M6_proteccion.py b/src/modulos/M6_proteccion.py
+index 93437ff..c4a212a 100644
+--- a/src/modulos/M6_proteccion.py
++++ b/src/modulos/M6_proteccion.py
+@@ -126,10 +126,12 @@ QUE VELOCIDAD ENTRA (regla de doble n, Sec. 4.1)
+ -------------------------------------------------
+ La de SALIDA de HDS-5 3.1.6 que M4 emite (`ResultadoHidraulico.V_salida`),
+ con su procedencia. Bajo control de entrada es `V_erosion`, la rama de n
+-MINIMO -- la estimacion ALTA --; bajo control de salida y con el barril
+-horizontal (S = 0, donde no hay tirante normal) es Q entre el area al tirante
+-de salida. El Froude se forma con ESA velocidad y con el area que la
+-continuidad le asigna, Q_celda / V, no con el tirante normal.
++MINIMO -- la estimacion ALTA --, que desde VE-2 es la velocidad del tirante
++normal RESUELTO con n_min (Q_celda / A(y_n de n_min); HEC-14 num. 3.2.2);
++bajo control de salida y con el barril horizontal (S = 0, donde no hay
++tirante normal) es Q entre el area al tirante de salida. El Froude se forma
++con ESA velocidad y con el area que la continuidad le asigna, Q_celda / V,
++que bajo control de entrada es justamente el area del tirante de n_min.
+ 
+ DOS CASOS EN QUE ESA VELOCIDAD QUEDA CORTA, y se AVISAN sin tocar el numero,
+ que es de M4: (1) control de salida con el TW bajo el critico: el tirante
+@@ -511,10 +513,13 @@ def froude_salida(*, V: Magnitud, Q_celda: float, seccion: Seccion,
+ 
+     `V` es la velocidad de SALIDA de HDS-5 3.1.6 y `A` el area que la
+     continuidad le asigna, A = Q_celda / V (HEC-14 Cap. 3). NO se usa el
+-    tirante normal: bajo control de entrada `V` es la rama de n minimo sobre
+-    la geometria de n maximo y V·A(y_n) != Q; con el area de continuidad el
+-    numero es el de la velocidad que de verdad entra a la proteccion, del
+-    lado ALTO. `y_salida` (el tirante con que M4 midio esa velocidad) y
++    tirante de `y_salida`: bajo control de entrada `V` es la rama de n minimo
++    y, desde VE-2, la de SU tirante normal, de modo que A = Q_celda / V es el
++    area de ese tirante (hasta VE-2 era la rama de n minimo sobre la geometria
++    de n maximo, y la continuidad era la unica forma de darle un area); con
++    el area de continuidad el numero es el de la velocidad que de verdad
++    entra a la proteccion, del lado ALTO. `y_salida` (el tirante a la salida
++    que M4 publica: bajo control de entrada, el normal de REGISTRO, n_max) y
+     `y_critico` sirven para el regimen y para decir si la salida va a
+     seccion llena; no entran en la formula.
+     """
+@@ -768,12 +773,15 @@ def apron_hec14(*, Q_celda: float, seccion: Seccion, TW: float,
+     fase lo avise; antes se resolvia en silencio como «no supercritico».
+ 
+     EL yn ES EL DE REGISTRO, Y NO ES EL LADO ALTO DEL D50, dicho para que no
+-    se lea de mas: la regla de doble n (Sec. 4.1) resuelve los TIRANTES con
+-    n_max, y este es el que M3 publica. Con n_min el tirante supercritico
+-    seria menor, D' tambien, y como D50 va con D'^(-4/3) la piedra saldria
+-    algo mayor. El paso lo declara en la procedencia de D'. Si este D50
+-    rige o es solo contraste lo decide la regla
+-    'regla_espesor_longitud_proteccion_salida' en `proteccion_salida`.
++    se lea de mas: la regla de doble n (Sec. 4.1) da los TIRANTES con n_max,
++    y este es el que M4 publica como tirante de salida. Con n_min el tirante
++    supercritico es menor --desde VE-2 M3 lo resuelve, para la velocidad
++    (`TiranteNormal.geometria_erosion`), y no viaja aqui--, D' tambien, y
++    como D50 va con D'^(-4/3) la piedra saldria algo mayor. El paso lo
++    declara en la procedencia de D'; pasar a ese tirante es una decision
++    diferida en la ficha VE2-B. Si este D50 rige o es solo contraste lo
++    decide la regla 'regla_espesor_longitud_proteccion_salida' en
++    `proteccion_salida`.
+     """
+     _exigir_positivo("Q_celda", Q_celda, "caudal de un barril, m3/s")
+     _exigir_no_negativo("TW", TW, "tirante del receptor, m")
+@@ -1411,7 +1419,15 @@ def _aviso_banda_de_regimen(resultado: ResultadoHidraulico
+     velocidad de salida seria `V_erosion`, la que entra bajo control de
+     entrada. El auditor midio el salto en A-01: con S = 0.0058 (control de
+     entrada) 3.160 m/s y d50 = 0.329 m; con S = 0.0056 (control de salida)
+-    2.412 m/s y d50 = 0.191 m.
++    2.412 m/s y d50 = 0.191 m (con la formula anterior a VE-2).
++
++    DESDE VE-2 LA IMPLICACION ES EXACTA. `V_erosion` es la velocidad del
++    tirante normal RESUELTO con n_min, Q_celda / A(y_n), y con el mismo Q y
++    la misma seccion V_erosion > V_c equivale a y_n(n_min) < y_c: el aviso
++    afirma lo que la comparacion prueba. Hasta VE-2 `V_erosion` era la de
++    n_min sobre la geometria de n_max, mayor que la de su propio tirante, y
++    el aviso podia saltar sin que el tirante normal de n_min fuera
++    supercritico.
+     """
+     if not _con_la_velocidad_al_critico(resultado) \
+             or resultado.sin_tirante_normal or resultado.V_erosion is None \
+diff --git a/src/normativa/citas.py b/src/normativa/citas.py
+index 9c0c1b8..79f5002 100644
+--- a/src/normativa/citas.py
++++ b/src/normativa/citas.py
+@@ -9145,6 +9145,45 @@ HEC14_3_1_3_BORDE = _cita(
+           "borde y no estan digitalizadas."),
+ )
+ 
++# ---- VE-2 (decision (b) de VE1-02): la velocidad a TIRANTE NORMAL ---------
++# Mismo regimen que T-0 y T-8: la propia sesion abrio la pagina por su capa
++# de texto (`python3 -m src.normativa.extraccion texto hec14 38 2`) y leyo
++# tambien el ejemplo de la pagina siguiente. La firma lo dice. Nombre propio
++# y no `VE2`: la cadena VE-2 corre en cuatro bloques en paralelo.
++FECHA_VE2_B = "2026-11-17"
++POR_VE2_B = "validacion/VE-2 bloque 1 · lectura directa de la pagina por la sesion"
++VE2_B = (FECHA_VE2_B, POR_VE2_B)
++
++HEC14_3_2_2_V_SALIDA_NORMAL = _cita(
++    id="HEC14.3.2.2#V_SALIDA_NORMAL",
++    fuente_id="HEC14",
++    numeral="3.2.2",
++    titulo_numeral="3.2.2 Unsubmerged Outlets (Normal Depth)",
++    pagina_impresa="3-7",
++    pagina_pdf=38,
++    texto_literal=Verbatim(
++        texto=("For culvert flow types shown in Figure 3.5A and C, normal "
++               "flow is assumed at the culvert outlet and the outlet "
++               "velocity is computed using Manning's Equation."),
++        pagina_pdf=38),
++    # APROXIMACION, como la del HDS-5 3.3.2 que dice lo mismo: «is assumed».
++    caracter=Caracter.APROXIMACION,
++    sesion=VE2_B,
++    nota=("Es la seccion 3.2 «Culverts on Steep Slopes», «culverts flowing "
++          "with inlet control» (misma pagina). El ejemplo que sigue, «Design "
++          "Example: Increasing Roughness to Reduce Velocity (SI)» (pag. "
++          "impresa 3-8, PDF 39), resuelve UN tirante por cada n: con n = "
++          "0.012 «y = 0.41(1.524) = 0.625 m», «A = 0.3032(1.524)2 = 0.704 "
++          "m2» y «Vo, = Q/A = 2.832/0.704 = 4.02 m/s»; con n = 0.024 «y = "
++          "0.62(1.524) = 0.945 m», «A = 0.5115(1.524)2 = 1.19 m2» y «Vo, = "
++          "Q/A = 2.832/1.19 = 2.38 m/s»; y concluye del primero "
++          "«Since yc > y, the flow is supercritical and exit depth is normal "
++          "depth». Es lo que sostiene que la velocidad de n_min se mida con "
++          "el tirante normal de n_min y no con el de n_max (VE-2, ficha "
++          "VE2-B): ninguna fuente toma el tirante de un n y la velocidad de "
++          "otro."),
++)
++
+ EG2013_T511_06_NOTA_5A = _cita(
+     id="EG2013.511.08#NOTA_5A",
+     fuente_id="EG2013",
+diff --git a/src/normativa/fundamentos.py b/src/normativa/fundamentos.py
+index ba08f44..9e38b88 100644
+--- a/src/normativa/fundamentos.py
++++ b/src/normativa/fundamentos.py
+@@ -212,33 +212,58 @@ D_MIN = _fundamento(
+ # Fase 4 - Dimensionamiento hidraulico
+ # ===========================================================================
+ 
++# --- VE-2 (decision (b) de VE1-02) --- Hasta VE-2 este fundamento decia que
++# el calculo fija UNA geometria y evalua sobre ella DOS velocidades, «una
++# seccion y dos rugosidades sobre la misma seccion», y lo apoyaba solo en el
++# Manual: leida en la memoria, la doble n parecia una regla del Manual, que
++# es lo que la hoja de ruta escribe («Regla [N]», Sec. 4.1) y la fuente no
++# sostiene (ficha VE1-01, D3). Hoy dice las dos cosas por separado: la
++# eleccion de los dos extremos es ADOPCION del proyecto, y la velocidad de
++# cada extremo es la de su propio tirante normal, que es lo que el HDS-5 y
++# HEC-14 si dicen (APROXIMACION: «is assumed»; DEFINE es compatible).
+ MANNING = _fundamento(
+     id="F4.MANNING",
+     fase=F4,
+-    que_paso=("Tirante normal y velocidad en el conducto, por Manning: UNA "
+-              "geometria (el tirante, con n_max) y DOS velocidades, una por "
+-              "cada extremo del rango de la Tabla N 09"),
+-    por_que=(
+-        "La rugosidad de un conducto no es un numero: la Tabla N 09 da un "
+-        "rango por material, y el rango no es incertidumbre de medicion sino "
+-        "el estado real de la superficie a lo largo de la vida de la obra. "
+-        "Resolver con un solo n obliga a elegir cual, y esa eleccion cambia de "
+-        "signo segun que se verifique: contra un TECHO de velocidad el extremo "
+-        "conservador es el n minimo --la estimacion alta-- y contra un PISO es "
+-        "el n maximo --la baja--. Por eso el calculo fija UNA geometria --el "
+-        "tirante normal con n_max, que es el que mas llena el conducto-- y "
+-        "sobre ella evalua DOS velocidades, una por cada n, y cada "
+-        "verificacion consume la que la deja del lado seguro. No son dos "
+-        "escenarios independientes: es una seccion y dos rugosidades sobre "
+-        "la misma seccion."),
++    que_paso=("Tirante normal y velocidad en el conducto, por Manning: DOS "
++              "tirantes normales, uno con cada extremo del rango de la Tabla "
++              "N 09, y la velocidad de cada uno con su propio tirante"),
++    por_que=(
++        "La rugosidad de un conducto no es un numero: la Tabla N 09 da, por "
++        "material, un minimo, un normal y un maximo, y el rango no es "
++        "incertidumbre de medicion sino el estado real de la superficie a lo "
++        "largo de la vida de la obra. Resolver con un solo n obliga a elegir "
++        "cual, y esa eleccion cambia de signo segun que se verifique: contra "
++        "un TECHO de velocidad el extremo conservador es el n minimo --la "
++        "estimacion alta-- y contra un PISO de velocidad o un nivel de agua "
++        "es el n maximo. La tabla no dice que columna se usa: tomar los DOS "
++        "extremos, y cual para que, es adopcion del proyecto. La hoja de ruta "
++        "la escribe como «Regla [N]» (Sec. 4.1) sin un numeral que la "
++        "sostenga, y sigue asi mientras no se corrija (ficha VE1-01). Lo que "
++        "las fuentes si dicen es COMO se obtiene la velocidad de cada "
++        "extremo: a tirante normal. El HDS-5 toma la velocidad del tirante "
++        "normal como la de salida bajo control de entrada, y HEC-14 la "
++        "calcula con Manning a tirante normal y en su ejemplo resuelve un "
++        "tirante por cada n. Por eso el calculo resuelve DOS tirantes "
++        "normales, uno con cada n, y cada velocidad es la de su propio "
++        "tirante, con Q = V*A: con n_max el tirante de capacidad, el que mas "
++        "llena el conducto, y la velocidad baja; con n_min un tirante menor y "
++        "la velocidad alta. Cada verificacion consume la que la deja del "
++        "lado seguro."),
+     verbo=Verbo.DEFINE,
+-    citas=("MC_HHD.4.1.1.3.6", "MC_HHD.4.1.1.3.6#T09"),
++    citas=("MC_HHD.4.1.1.3.6", "MC_HHD.4.1.1.3.6#T09",
++           "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA",     # APROXIMACION
++           "HEC14.3.2.2#V_SALIDA_NORMAL"),       # APROXIMACION
+     que_pasa_si_no_se_hace=(
+         "Con una sola rama, la mitad de las verificaciones corre por el lado "
+         "inseguro sin que nada lo diga. Es exactamente el defecto que V2 tuvo "
+         "hasta que se corrigio (MAT-D1): evaluaba el piso de velocidad con la "
+         "estimacion alta, o sea declaraba «cumple» justo en el caso en que el "
+-        "conducto sedimenta."),
++        "conducto sedimenta. Y con las dos ramas sobre UN tirante --la "
++        "velocidad de n_min sobre la geometria de n_max, como se calculaba "
++        "hasta VE-2--, la velocidad alta no cumple la continuidad (V*A = 1.3*Q "
++        "en el concreto) y el techo rechaza diametros que lo cumplen: en el "
++        "caso UPAO ALC46 de la validacion externa, 6.28 m/s por 5.81 a "
++        "Ø 0.90 m, y el punto subia a Ø 1.35 m."),
+ )
+ 
+ CONTROL = _fundamento(
+diff --git a/src/tolerancias.py b/src/tolerancias.py
+index e19aecb..b95fba5 100644
+--- a/src/tolerancias.py
++++ b/src/tolerancias.py
+@@ -62,6 +62,23 @@ TOL_THETA_BORDE = 1e-9
+ # milimetro. Se suma al lado admisible de la comparacion, nunca al obtenido.
+ TOL_UMBRAL_NORMATIVO = 1e-9
+ 
++# --- VE-2 (decision (b) de VE1-02) --- Continuidad de una rama de Manning:
++# cuanto puede diferir, en RELATIVO, el producto V*A del caudal Q con que se
++# resolvio el tirante normal de esa rama. Las dos ramas resuelven su propio
++# tirante con Brent (`M3.resolver_manning`), y el llenado resuelto reproduce
++# Q hasta `TOL_BRENT` en el parametro de llenado, amplificado por dQ/dllenado.
++# MEDIDO al cerrar VE-2 sobre la malla de `tests/test_ve2_velocidad_erosion.py`
++# (seis secciones circulares x tres materiales y cuatro marcos x cuatro
++# pendientes x seis fracciones de Q_lleno, las dos ramas): la peor desviacion
++# entre la velocidad de Manning sobre la geometria resuelta y Q/A es 8.1e-11
++# en la rama de n_min y 3.6e-11 en la de n_max (la misma que midio EXT-11).
++# Se fija doce veces por encima de lo medido y muy por debajo de cualquier
++# diferencia de rama: la velocidad de n_min sobre el tirante de n_max --la
++# formula anterior a VE-2-- se aparta de la continuidad un 4.8 % como minimo
++# en la misma malla. Cambiarla no mueve ninguna magnitud: solo la lee la
++# comprobacion de continuidad de la suite.
++TOL_REL_CONTINUIDAD_MANNING = 1e-9
++
+ # ---------------------------------------------------------------------------
+ # COS_ESVIAJE_MIN: donde 1/cos(esviaje) deja de estar determinado (PC-32)
+ # ---------------------------------------------------------------------------
+diff --git a/tests/test_ve2_velocidad_erosion.py b/tests/test_ve2_velocidad_erosion.py
+new file mode 100644
+index 0000000..e477d57
+--- /dev/null
++++ b/tests/test_ve2_velocidad_erosion.py
+@@ -0,0 +1,501 @@
++"""
++tests/test_ve2_velocidad_erosion.py
++===================================
++La aceptacion del BLOQUE 1 de VE-2: la decision (b) de la ficha VE1-02,
++aprobada por el dueño el 2026-11-17. Es el unico defecto de METODO de las
++siete decisiones, y el unico bloque que mueve numeros de la linea base.
++
++EL DEFECTO. `M3.resolver_manning` resolvia UN tirante normal, con n_max, y
++sobre esa misma geometria calculaba la velocidad alta como
++V(n_max) * n_max / n_min: la velocidad de una rugosidad sobre el tirante de
++otra. Para el concreto (0.010 / 0.013) eso es V * A = 1.3 * Q, un caudal que
++no pasa por el conducto (`modelos.TiranteNormal` lo documentaba «por diseño»).
++Ninguna fuente toma el tirante de un n y la velocidad de otro: el HDS-5
++(hif12026, num. 3.3.2, pag. impresa 3.24) dice «determine the normal depth
++and velocity in the culvert barrel.  The velocity at normal depth is assumed
++to be the outlet velocity», y HEC-14 (num. 3.2.2, pag. impresa 3-7) «normal
++flow is assumed at the culvert outlet and the outlet velocity is computed
++using Manning's Equation»; su ejemplo de la pag. impresa 3-8 resuelve UN
++tirante por cada n (y = 0.625 m con n = 0.012, y = 0.945 m con n = 0.024) y
++toma Vo = Q/A de cada uno.
++
++LA CORRECCION. La velocidad alta resuelve SU PROPIO tirante normal con n_min
++(una segunda resolucion de Brent sobre la misma ecuacion) y
++V_erosion = Q / A(y_n con n_min). La estimacion baja (n_max) y el tirante de
++capacidad no cambian. Bajo control de SALIDA la velocidad de salida que toma
++M4 (critico, TW o barril lleno, HDS-5 3.1.6) no se toca.
++
++Escrita PRIMERO, en rojo (§1 regla 4 de la cadena; preambulo de VE-2): los
++tests de la correccion llevaban `xfail(strict=True)` con la expectativa y
++fallaban por su motivo antes de tocar M3 (medido con `--runxfail`: la
++continuidad con V*A = 1.3*Q, el caso UPAO con 6.284 m/s y Ø 1.35 m, el
++mutante sin el texto nuevo, el campo `geometria_erosion` ausente, el
++fundamento y la cita de HEC-14 sin registrar, la ficha sin escribir). Los
++que llevan GUARDIA en el docstring valen antes y despues: fijan lo que la
++correccion NO puede mover.
++
++Los datos del caso UPAO ALC46 (Q = 0.317 m3/s, S = 0.10, D = 0.90 m,
++concreto) son los de la validacion externa (ficha VE1-02 (b)); el resto del
++punto es el cruce sintetico P1 de `tests/test_ve1_validacion.py`, DATOS DE
++PRUEBA y no de proyecto.
++
++LA TOLERANCIA ES NOMBRADA (`tolerancias.TOL_REL_CONTINUIDAD_MANNING`) y se
++midio sobre la malla de abajo al cerrar VE-2: la peor desviacion relativa
++entre la velocidad de Manning sobre la geometria resuelta y Q/A fue de
++8.1e-11 en la rama de n_min y de 3.6e-11 en la de n_max (la de EXT-11). El
++mutante de la formula vieja se aparta de la continuidad un 4.8 % como
++minimo en la misma malla: cuarenta y ocho millones de veces la tolerancia.
++"""
++
++from __future__ import annotations
++
++import importlib.util
++import json
++import math
++import re
++from pathlib import Path
++
++import pytest
++
++import cli
++from src import servicio
++from src import tolerancias
++from src.constantes_normativas import K_MANNING_SI
++from src.modelos import (ControlGobernante, FormaSeccion, SeccionCircular,
++                         SeccionRectangular, TiranteNormal, TipoMaterial)
++from src.modulos import M3_hidraulica as M3
++from src.modulos import M4_control as M4
++from src.modulos import M5_verificaciones as M5
++from src.modulos import M6_proteccion as M6
++from src.modulos.M2_material import catalogo
++from src.normativa import registro as _registro
++from tests.apoyo.aproximacion import REL_TRANSPORTE
++from tests.apoyo.criterios import declarados
++from tests.test_ext2_multicelda_transicion import CAJON_N3
++
++RAIZ = Path(__file__).resolve().parents[1]
++FUENTE_M3 = RAIZ / "src" / "modulos" / "M3_hidraulica.py"
++REGISTRO_DE_DECISIONES = RAIZ / "docs" / "decisiones_diferidas.md"
++
++CONCRETO = TipoMaterial.CONCRETO_REFORZADO
++TMC = TipoMaterial.TMC
++HDPE = TipoMaterial.HDPE
++
++ID_CITA_HEC14 = "HEC14.3.2.2#V_SALIDA_NORMAL"
++ID_CITA_HDS5 = "HDS5_3ED.3.3.2#V_SALIDA_ENTRADA"
++
++# ---------------------------------------------------------------------------
++# Las mallas (las de `tests/test_ext11_propiedades.py`, menos el 0.99 de
++# Q_lleno: alli la curva circular pasa su pico y la rama de n_min ya no es la
++# solucion baja de la misma familia)
++# ---------------------------------------------------------------------------
++DIAMETROS_M = (0.90, 1.05, 1.20, 1.50, 1.80, 2.40)
++MARCOS_B_H = ((1.00, 1.00), (1.50, 1.00), (2.00, 1.50), (2.50, 2.00))
++PENDIENTES = (0.002, 0.005, 0.010, 0.030)
++FRACCIONES = (0.05, 0.10, 0.30, 0.50, 0.70, 0.90)
++MATERIALES_CIRCULARES = (CONCRETO, TMC, HDPE)
++
++# Tolerancia del caso UPAO: la validacion externa da dos decimales (5.81 m/s)
++# y la ficha VE1-02 los mismos; se compara con media centesima.
++ABS_CASO_UPAO_M_S = 0.005
++UPAO = {"Q": 0.317, "S": 0.10, "D": 0.90}
++
++# EN ROJO ANTES DE CORREGIR: la expectativa de la decision (b). Se retira al
++# implementar (§1 regla 4 de la cadena).
++ROJO_VE2 = pytest.mark.xfail(strict=True, reason=(
++    "VE-2 (b): la velocidad de erosion todavia se calcula con n_min sobre la "
++    "geometria de n_max (V*A = 1.3*Q)"))
++
++
++# ---------------------------------------------------------------------------
++# Oraculo independiente: Manning resuelto aqui, sin M3
++# ---------------------------------------------------------------------------
++
++def _geometria_circular(D, theta):
++    A = (D ** 2 / 8) * (theta - math.sin(theta))   # Sec. 4.1
++    P = D * theta / 2
++    return A, P
++
++
++def _geometria_marco(B, y):
++    return B * y, B + 2 * y
++
++
++def _area_normal_independiente(seccion, Q, S, n):
++    """
++    El area del tirante normal de Manning para (Q, S, n), resuelta con brentq
++    sobre las formulas de la Sec. 4.1 escritas aqui y no con `M3`: es lo que
++    hace de la continuidad una comprobacion y no una tautologia.
++    """
++    from scipy.optimize import brentq
++
++    if isinstance(seccion, SeccionCircular):
++        geom = lambda x: _geometria_circular(seccion.D, x)
++        a, b = 1e-9, 2 * math.pi - 1e-9
++    else:
++        geom = lambda x: _geometria_marco(seccion.B, x)
++        a, b = 1e-12, seccion.H
++
++    def f(x):
++        A, P = geom(x)
++        return (K_MANNING_SI / n) * A * (A / P) ** (2 / 3) * S ** 0.5 - Q
++
++    x = brentq(f, a, b, xtol=1e-13)
++    return geom(x)[0]
++
++
++def _Q_lleno(seccion, n, S):
++    return ((K_MANNING_SI / n) * seccion.area_llena
++            * seccion.radio_hidraulico_lleno ** (2 / 3) * S ** 0.5)
++
++
++@pytest.fixture
++def marco():
++    """El material del cajon, con los criterios de EXT-2 declarados."""
++    with declarados(CAJON_N3):
++        yield catalogo(CONCRETO, forma=FormaSeccion.RECTANGULAR)
++
++
++def _continuidad(r, seccion, Q, S, material):
++    """
++    La comprobacion de la correccion, escrita UNA vez para que el mutante de
++    abajo la reciba igual: V_erosion * A(y_n con n_min) = Q.
++    """
++    A_min = _area_normal_independiente(seccion, Q, S,
++                                       material.n_para_velocidad_maxima)
++    assert r.V_erosion * A_min == pytest.approx(
++        Q, rel=tolerancias.TOL_REL_CONTINUIDAD_MANNING), (
++        f"V_erosion * A(n_min) = {r.V_erosion * A_min!r} y Q = {Q!r}")
++
++
++# ===========================================================================
++# 1 · La continuidad de la rama de n_min
++# ===========================================================================
++
++@ROJO_VE2
++@pytest.mark.parametrize("tipo", MATERIALES_CIRCULARES, ids=lambda t: t.value)
++@pytest.mark.parametrize("D", DIAMETROS_M)
++@pytest.mark.parametrize("S", PENDIENTES)
++@pytest.mark.parametrize("fraccion", FRACCIONES)
++def test_continuidad_circular_V_erosion_por_A_de_n_min_es_Q(tipo, D, S, fraccion):
++    material = catalogo(tipo)
++    seccion = SeccionCircular(D)
++    Q = fraccion * _Q_lleno(seccion, material.n_para_capacidad, S)
++    r = M3.resolver_manning(seccion, Q, S, material)
++    assert isinstance(r, TiranteNormal)
++    _continuidad(r, seccion, Q, S, material)
++
++
++@ROJO_VE2
++@pytest.mark.parametrize("B,H", MARCOS_B_H)
++@pytest.mark.parametrize("S", PENDIENTES)
++@pytest.mark.parametrize("fraccion", FRACCIONES)
++def test_continuidad_marco_V_erosion_por_A_de_n_min_es_Q(marco, B, H, S, fraccion):
++    seccion = SeccionRectangular(B, H)
++    Q = fraccion * _Q_lleno(seccion, marco.n_para_capacidad, S)
++    r = M3.resolver_manning(seccion, Q, S, marco)
++    assert isinstance(r, TiranteNormal)
++    assert marco.n_min < marco.n_max, "la fila del cajon es un rango"
++    _continuidad(r, seccion, Q, S, marco)
++
++
++@ROJO_VE2
++@pytest.mark.parametrize("seccion", [SeccionCircular(1.20),
++                                     SeccionRectangular(2.00, 1.50)],
++                         ids=["circular", "marco"])
++def test_V_erosion_es_ademas_la_velocidad_de_manning_sobre_su_propio_tirante(
++        marco, seccion):
++    """
++    Q/A y la ec. (47) del num. 4.1.1.3.6 son la MISMA velocidad cuando se
++    evaluan sobre el tirante que resolvio ese n: la correccion no cambia de
++    formula, cambia de geometria. `geometria_erosion` es la que M3 publica.
++    """
++    material = (catalogo(CONCRETO) if isinstance(seccion, SeccionCircular)
++                else marco)
++    S = 0.01
++    Q = 0.4 * _Q_lleno(seccion, material.n_para_capacidad, S)
++    r = M3.resolver_manning(seccion, Q, S, material)
++    g = r.geometria_erosion
++    V_manning = (K_MANNING_SI / material.n_para_velocidad_maxima
++                 * g.R ** (2 / 3) * S ** 0.5)
++    assert r.V_erosion == pytest.approx(
++        V_manning, rel=tolerancias.TOL_REL_CONTINUIDAD_MANNING)
++    assert g.A == pytest.approx(
++        _area_normal_independiente(seccion, Q, S,
++                                   material.n_para_velocidad_maxima),
++        rel=tolerancias.TOL_REL_CONTINUIDAD_MANNING)
++    # Con un n menor el tirante normal baja (rama creciente de la curva).
++    assert g.y < r.geometria.y
++
++
++@pytest.mark.parametrize("tipo", MATERIALES_CIRCULARES, ids=lambda t: t.value)
++@pytest.mark.parametrize("D", (0.90, 1.80))
++@pytest.mark.parametrize("fraccion", (0.10, 0.70))
++def test_guardia_la_rama_de_capacidad_y_V_sedimentacion_no_cambian(tipo, D, fraccion):
++    """
++    GUARDIA (vale antes y despues). El tirante de capacidad sigue siendo el
++    de n_max --el que V1 juzga-- y V_sedimentacion su velocidad media:
++    V_sedimentacion * A(n_max) = Q. La decision (b) solo cambia la rama alta.
++    """
++    material = catalogo(tipo)
++    seccion, S = SeccionCircular(D), 0.005
++    Q = fraccion * _Q_lleno(seccion, material.n_para_capacidad, S)
++    r = M3.resolver_manning(seccion, Q, S, material)
++    A_max = _area_normal_independiente(seccion, Q, S, material.n_para_capacidad)
++    assert r.geometria.A == pytest.approx(
++        A_max, rel=tolerancias.TOL_REL_CONTINUIDAD_MANNING)
++    assert r.V_sedimentacion * A_max == pytest.approx(
++        Q, rel=tolerancias.TOL_REL_CONTINUIDAD_MANNING)
++
++
++# ===========================================================================
++# 2 · El caso UPAO ALC46 de la validacion externa
++# ===========================================================================
++
++@ROJO_VE2
++def test_upao_alc46_la_velocidad_de_erosion_a_0_90_m_es_5_81():
++    """
++    VE1-02 (b): a Ø 0.90 m la formula vieja daba 6.28 m/s, por encima del
++    techo de 6.0 de la Tabla Nº 10, y la de cada rama con su tirante 5.81.
++    """
++    r = M3.resolver_manning(SeccionCircular(UPAO["D"]), UPAO["Q"], UPAO["S"],
++                            catalogo(CONCRETO))
++    assert r.V_erosion == pytest.approx(5.81, abs=ABS_CASO_UPAO_M_S)
++    # El tirante de n_min, que es el que la memoria imprime.
++    assert r.geometria_erosion.y == pytest.approx(0.1266, abs=1e-4)
++    # La rama de capacidad sigue con su tirante de siempre.
++    assert r.geometria.y == pytest.approx(0.1438, abs=1e-4)
++
++
++CABECERA = (
++    "id,progresiva_km,familia,Q_m3s,area_ha,S_cauce,cota_terreno,"
++    "cota_rasante,cota_subrasante,cbr_subrasante,esviaje_grados,"
++    "ancho_plataforma,cota_fondo_receptor,Q_receptor_m3s,cota_TW,"
++    "sucs_fundacion,NF_profundidad_m,cota_fondo_entrada,"
++    "cota_coronacion_canal\n")
++BANDERAS_VACIAS = {"luz_m": None, "TW_m": None, "longitud_m": None,
++                   "L_hidraulico_m": None, "categoria_tr": None}
++
++
++def _correr_upao(tmp_path: Path) -> dict:
++    """
++    El punto P1 de `tests/test_ve1_validacion.py` con el caudal y la
++    pendiente de UPAO ALC46, a alcance de perfil y en proceso.
++    """
++    csv = tmp_path / "upao_alc46.csv"
++    csv.write_text(CABECERA + f"P1,0+100,A,{UPAO['Q']},50,{UPAO['S']},100.0,"
++                   "104.0,103.85,10,0,9.0,99.5,,,SM,,,\n", encoding="utf-8")
++    externos_json = tmp_path / "externos.json"
++    externos_json.write_text(json.dumps(
++        {"globales": {"luz_m": 3.0, "TW_m": 0.3}}), encoding="utf-8")
++    externos = cli.cargar_datos_externos(externos_json, BANDERAS_VACIAS)
++    informe = servicio.correr(csv, externos, alcance=cli.ALCANCE_PERFIL)
++    return cli.informe_json(informe)
++
++
++@ROJO_VE2
++def test_upao_alc46_de_punta_a_punta_dimensiona_0_90_y_no_1_35(tmp_path):
++    """
++    Con la formula vieja el concreto incumplia V3 en 0.90, 1.05 y 1.20 m
++    (6.28, 6.16 y 6.05 m/s) y el punto dimensionaba Ø 1.35 m. Con cada rama
++    sobre su tirante, 0.90 m cumple V3 con 5.81 m/s y es el primer escalon.
++    """
++    (punto,) = _correr_upao(tmp_path)["puntos"]
++    assert punto["dimensionado"], punto["bloqueos"]
++    assert punto["diseno"]["seccion"] == "Ø 0.90 m"
++    assert [it["aceptado"] for it in punto["iteraciones"]] == [True]
++    (v3,) = [v for v in punto["verificaciones"] if v["codigo"] == "V3"]
++    assert v3["estado"] == "cumple"
++    assert v3["valor_obtenido"] == pytest.approx(5.81, abs=ABS_CASO_UPAO_M_S)
++    assert v3["valor_admisible"] == pytest.approx(6.0, rel=REL_TRANSPORTE)
++    # Gobierna la entrada: la velocidad de salida es la del tirante normal
++    # de n_min, la MISMA que V3 juzga (HDS-5 3.3.2).
++    assert punto["diseno"]["control_gobernante"] == "entrada"
++    assert punto["diseno"]["V_salida_m_s"] == pytest.approx(
++        punto["diseno"]["V_erosion_m_s"], rel=REL_TRANSPORTE)
++
++
++# ===========================================================================
++# 3 · Lo que NO se toca: la velocidad de salida bajo control de salida
++# ===========================================================================
++
++def test_guardia_bajo_control_de_salida_la_velocidad_de_salida_no_cambia():
++    """
++    GUARDIA (vale antes y despues). El caso subcritico del dictamen
++    (`tests/test_ext3_regimen_barril.py`): gobierna la salida con el TW bajo
++    el critico, y la velocidad de salida es Q / A(y_c) = 1.508 m/s, sin n.
++    La decision (b) no la mueve.
++    """
++    r = M4.resolver_control(seccion=SeccionCircular(0.90), Q=0.3, S=0.001,
++                            L=20.0, TW=0.0, material=catalogo(CONCRETO))
++    assert r.control_gobernante is ControlGobernante.SALIDA
++    assert r.V_salida.valor == pytest.approx(1.508, abs=5e-4)
++    assert r.y_salida_m == pytest.approx(r.y_critico, rel=REL_TRANSPORTE)
++
++
++@ROJO_VE2
++def test_bajo_control_de_entrada_V_salida_es_V_erosion_y_su_paso_lo_dice():
++    """
++    Bajo control de entrada M4 toma la velocidad del tirante normal (HDS-5
++    3.3.2): es V_erosion, y su procedencia nombra el tirante de n_min con
++    que se midio, no el de registro.
++    """
++    material = catalogo(CONCRETO)
++    seccion = SeccionCircular(UPAO["D"])
++    r = M4.resolver_control(seccion=seccion, Q=UPAO["Q"], S=UPAO["S"],
++                            L=20.0, TW=0.3, material=material)
++    assert r.control_gobernante is ControlGobernante.ENTRADA
++    assert r.V_salida.valor == pytest.approx(r.V_erosion, rel=REL_TRANSPORTE)
++    normal = M3.resolver_manning(seccion, UPAO["Q"], UPAO["S"], material)
++    assert f"{normal.geometria_erosion.y:.3f}" in r.V_salida.procedencia
++    assert "su propio tirante" in r.V_salida.procedencia
++
++
++# ===========================================================================
++# 4 · El mutante que vuelve a la formula vieja muere
++# ===========================================================================
++
++# El texto de la correccion en `resolver_manning` y el de la formula vieja.
++# El mutante sustituye el primero por el segundo en una COPIA del modulo,
++# cargada aparte: el arbol de trabajo no se toca.
++EXPRESION_CORREGIDA = "V_erosion=Q / geom_erosion.A"
++EXPRESION_VIEJA = ("V_erosion=factor_geometrico / "
++                   "material.n_para_velocidad_maxima")
++
++
++def _modulo_mutado(tmp_path):
++    fuente = FUENTE_M3.read_text(encoding="utf-8")
++    assert fuente.count(EXPRESION_CORREGIDA) == 1, (
++        "la correccion de VE-2 no esta en resolver_manning con el texto que "
++        "el mutante espera")
++    ruta = tmp_path / "M3_mutado_ve2.py"
++    ruta.write_text(fuente.replace(EXPRESION_CORREGIDA, EXPRESION_VIEJA),
++                    encoding="utf-8")
++    spec = importlib.util.spec_from_file_location("M3_mutado_ve2", ruta)
++    modulo = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(modulo)
++    return modulo
++
++
++@ROJO_VE2
++@pytest.mark.parametrize("seccion", [SeccionCircular(0.90),
++                                     SeccionRectangular(2.00, 1.50)],
++                         ids=["circular", "marco"])
++def test_el_mutante_de_la_formula_vieja_muere(tmp_path, marco, seccion):
++    material = (catalogo(CONCRETO) if isinstance(seccion, SeccionCircular)
++                else marco)
++    S = 0.01
++    Q = 0.5 * _Q_lleno(seccion, material.n_para_capacidad, S)
++    # El original pasa la comprobacion...
++    _continuidad(M3.resolver_manning(seccion, Q, S, material),
++                 seccion, Q, S, material)
++    # ...y el mutante no: V * A(n_min) se aparta de Q mucho mas que la
++    # tolerancia (medido: un 4.8 % como minimo en la malla).
++    mutado = _modulo_mutado(tmp_path).resolver_manning(seccion, Q, S, material)
++    with pytest.raises(AssertionError):
++        _continuidad(mutado, seccion, Q, S, material)
++
++
++# ===========================================================================
++# 5 · El fundamento, la cita y la memoria del paso
++# ===========================================================================
++
++@ROJO_VE2
++def test_la_cita_de_hec14_3_2_2_esta_registrada_con_su_pagina():
++    cita = _registro.construir().cita(ID_CITA_HEC14)
++    assert cita.fuente_id == "HEC14"
++    assert cita.numeral == "3.2.2"
++    assert cita.pagina_impresa == "3-7"
++    assert cita.pagina_pdf == 38
++    assert ("normal flow is assumed at the culvert outlet and the outlet "
++            "velocity is computed using Manning's Equation"
++            in cita.texto_literal.texto)
++    assert cita.verificado is not None
++
++
++@ROJO_VE2
++def test_el_fundamento_de_manning_ya_no_presenta_la_doble_n_como_norma():
++    """
++    F4.MANNING decia «UNA geometria y DOS velocidades ... una seccion y dos
++    rugosidades sobre la misma seccion», con citas solo del Manual: leida en
++    la memoria, la doble n parecia del Manual (la hoja de ruta la rotula
++    «Regla [N]» sin numeral; ficha VE1-01, D3). Hoy dice que la eleccion de
++    los dos extremos es adopcion del proyecto y cita la «velocidad a tirante
++    normal» del HDS-5 y de HEC-14.
++    """
++    f = _registro.construir().fundamento("F4.MANNING")
++    assert ID_CITA_HDS5 in f.citas and ID_CITA_HEC14 in f.citas
++    texto = f.que_paso + " " + f.por_que
++    assert "misma seccion" not in texto
++    assert "UNA geometria" not in texto
++    assert "adopcion" in texto.lower()
++    assert "Regla [N]" in f.por_que, (
++        "el fundamento declara en el punto de uso que la hoja de ruta sigue "
++        "rotulando la doble n como «Regla [N]»")
++
++
++def _pasos(resultado, fundamento_id):
++    return [p for p in resultado.pasos if p.fundamento_id == fundamento_id]
++
++
++@ROJO_VE2
++def test_la_memoria_del_paso_de_manning_imprime_el_tirante_de_n_min():
++    material = catalogo(CONCRETO)
++    seccion = SeccionCircular(UPAO["D"])
++    r = M4.resolver_control(seccion=seccion, Q=UPAO["Q"], S=UPAO["S"],
++                            L=20.0, TW=0.3, material=material)
++    normal = M3.resolver_manning(seccion, UPAO["Q"], UPAO["S"], material)
++    (manning,) = _pasos(r, "F4.MANNING")
++    simbolos = {m.simbolo: m.valor for m in manning.sustitucion}
++    assert "y_n_min" not in simbolos     # es un resultado, no un dato
++    nota = manning.nota_del_proyecto
++    assert f"{normal.geometria_erosion.y:.3f}" in nota
++    assert f"{normal.V_erosion:.3f}" in nota
++    assert "Regla [N]" not in nota
++    for cita in (ID_CITA_HDS5, ID_CITA_HEC14):
++        assert cita in manning.citas_textuales
++    (regimen,) = _pasos(r, "F4.REGIMEN")
++    sustituidos = {m.simbolo: m.valor for m in regimen.sustitucion}
++    assert sustituidos["y_n_min"] == pytest.approx(
++        normal.geometria_erosion.y, rel=REL_TRANSPORTE)
++
++
++# ===========================================================================
++# 6 · Tabla Nº 10 contra Nº 11: que velocidad se compara con cual
++# ===========================================================================
++
++def test_guardia_V3_juzga_la_tabla_10_y_la_salida_la_tabla_11():
++    """
++    GUARDIA (vale antes y despues), verificada contra el Manual: la Tabla Nº
++    10 (pag. impresa 76, PDF 79) es de «conductos revestidos» y la juzga V3
++    con la velocidad DENTRO del conducto (V_erosion); la Nº 11 (pag. impresa
++    77, PDF 80) es de «canales no revestidos», la presenta el parrafo de «la
++    velocidad de flujo a la salida de la alcantarilla ... a fin de evitar
++    procesos de socavacion del cauce aguas abajo», y la juzga el paso 6.4 con
++    la velocidad de SALIDA.
++    """
++    material = catalogo(CONCRETO)
++    r = M4.resolver_control(seccion=SeccionCircular(UPAO["D"]), Q=UPAO["Q"],
++                            S=UPAO["S"], L=20.0, TW=0.3, material=material)
++    v3 = M5.v3_velocidad_maxima(material=material, resultado=r)
++    assert v3.paso.formula_cita_id == "MC_HHD.4.1.1.3.6#T10"
++    assert v3.valor_obtenido == pytest.approx(r.V_erosion, rel=REL_TRANSPORTE)
++    adm = M6.velocidad_admisible_del_cauce(
++        V=r.V_salida, tipo_terreno="grava_fina", regimen_flujo="intermitente")
++    assert adm.paso.formula_cita_id == "MC_HHD.4.1.1.3.6#T11"
++    reg = _registro.construir()
++    assert "conductos" in reg.cita("MC_HHD.4.1.1.3.6#T10").texto_literal.texto
++    assert "canales no" in reg.cita("MC_HHD.4.1.1.3.6#T11").texto_literal.texto
++
++
++# ===========================================================================
++# 7 · La ficha
++# ===========================================================================
++
++@ROJO_VE2
++def test_la_ficha_ve2_b_existe_y_cierra_el_inciso_b_de_ve1_02():
++    texto = REGISTRO_DE_DECISIONES.read_text(encoding="utf-8")
++    assert re.search(r"^## VE2-B · La velocidad de erosión resuelve su propio "
++                     r"tirante con n mínimo", texto, re.M)
++    ve1_02 = texto.split("## VE1-02 ·", 1)[1].split("\n## ", 1)[0]
++    assert re.search(r"Cerrado \(VE-2\).*\(b\)", ve1_02)

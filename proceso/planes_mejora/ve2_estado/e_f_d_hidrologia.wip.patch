@@ -1,0 +1,658 @@
+diff --git a/docs/decisiones_diferidas.md b/docs/decisiones_diferidas.md
+index 6c445cc..dbffcf5 100644
+--- a/docs/decisiones_diferidas.md
++++ b/docs/decisiones_diferidas.md
+@@ -7599,6 +7599,7 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
+   se detiene desde 10 km², y Tinas (55.9 km²) y cinco cuencas de TU-107 no se calculan.
+   (g) En D1, resolución de centímetro: rechazar en la puerta la serie de 6 in, que
+   redondeada se leía 1.07 por 1.0668 (+0.3 % de diámetro, +0.6 % de área).
++- **Cerrado (VE-2):** (e), ficha VE2-E.
+ - **Por qué no se toman aquí:** cambian fichas, etiquetas o diseños —(b) y (c)— o lo que
+   el programa calcula; el permiso de VE-1 no las alcanza.
+ - **Qué haría falta:** la decisión del dueño y, por cada una adoptada, un prompt con sus
+@@ -7607,3 +7608,24 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
+ - **Dónde vive:** `src/modulos/M3_hidraulica.py::resolver_manning` (a) y (b);
+   `M8_estructural.empuje_flotacion_kn_m` (c); `MH_hidrologia.precipitacion_de_diseno`
+   (d) y (e); `MH_hidrologia.caudal_de_diseno` (f); `criterios_adoptados._verificar_criterio` (g).
++
++## VE2-E · Aviso de consistencia de la serie de lluvias, sin umbral — Cerrado (VE-2)
++
++- **Qué se difirió:** nada de lo decidido: el dueño eligió (2026-11-17) el aviso sin umbral
++  de VE1-02 (e). La lluvia de diseño emite un quinto paso, `1b.3c` (`FH.CONSISTENCIA`,
++  verbo «obliga»), DESPUÉS de los cuatro de T-1: dice que el Manual exige evaluar «la
++  consistencia de los datos registrados» (núm. 3.3, pág. impresa 21, PDF 24, cita
++  `MC_HHD.3.3#CONSISTENCIA`, EXIGENCIA) y que es «primordial» (núm. 3.4, pág. impresa 22,
++  `MC_HHD.3.4#CONSISTENCIA`, DEFINICIÓN), que el programa NO la evalúa y que el
++  proyectista tiene que declarar que lo hizo. Imprime mínimo, mediana, máximo (con su año)
++  y máximo / mediana de la serie ENTERA registrada, sin umbral ni veredicto. **Queda
++  diferido** un contraste cuantitativo: no hay procedimiento ni número de corte en ningún
++  PDF del repositorio de normas (doble masa, datos dudosos, K_n, WRC: cero apariciones).
++- **Por qué:** fijar un corte sería rellenar un vacío (CLAUDE.md, «Fuente de verdad»).
++  Patrón de `FH.Q_ESPECIFICO`. Va al final para no mover las posiciones que T-1 fijó; dos
++  tests de T-1 cambiados declarando la causa (`PASOS_DE_LA_FASE_1B`, y el paso sin
++  `formula_cita_id`). Ningún número se mueve: el índice de fórmulas gana una fila.
++- **Qué haría falta:** para el contraste cuantitativo, una fuente con procedimiento y umbral
++  en el repositorio de normas, su cita, y un criterio [A] con valor None que detenga hasta
++  que se declare; los tests, en `tests/test_ve2_hidrologia.py` (siete mutantes muertos).
++- **Dónde vive:** `src/modulos/MH_hidrologia.py::_paso_consistencia`
+diff --git a/docs/indice_formulas.md b/docs/indice_formulas.md
+index cfa0a81..235dd9d 100644
+--- a/docs/indice_formulas.md
++++ b/docs/indice_formulas.md
+@@ -7,7 +7,7 @@
+ > Si difieren, lo que hay que corregir es el cálculo o el registro, no
+ > este archivo.
+ >
+-> **Sello.** Fecha de generación: 2026-11-13 · Commit del árbol de origen: `6f121e0` · Suite: 6402 passed, 23 skipped (PyMuPDF sí · ventana Tk no · repositorio de normas enlazado)
++> **Sello.** Fecha de generación: 2026-11-17 · Commit del árbol de origen: `72a8d01+cambios-sin-commit` · Suite: 6739 passed, 10 skipped (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)
+ >
+ > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
+ > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
+@@ -83,7 +83,7 @@ es del proyecto.
+   - B-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DISENO_NO_FACTIBLE`).
+   - C-01: Fase 5 - Verificaciones → VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no) (`TipoDeBloqueo.DIFERIDO_POR_ALCANCE`).
+ 
+-Pasos emitidos: **1113** · fórmulas distintas: **287** · fundamentos ejercitados: **102** de 122.
++Pasos emitidos: **1116** · fórmulas distintas: **288** · fundamentos ejercitados: **103** de 123.
+ 
+ ## 2. Índice
+ 
+@@ -95,6 +95,7 @@ Pasos emitidos: **1113** · fórmulas distintas: **287** · fundamentos ejercita
+ | Fase 1-bis - Hidrologia: caudal de diseño | `MH_hidrologia` | `1b.2` | Precipitacion maxima en 24 h para TR = 71 años, distribucion «lognormal_2p» | `FH.AJUSTE` (recomienda) | `x_T = exp(Y + z_T · Sy) ; Y, Sy = media y desviacion (n − 1) de ln x` | num. 3.7.1.2 · 'Distribución  Log  Normal  2  Parámetros' · pag. impresa 27 · PDF 30 | **T** [años] ← «periodo de retorno de la Fase 2 (Tabla N 02)»<br>**Y** [adimensional] ← «estimado de la serie con la expresion que el Manual imprime»<br>**Sy** [adimensional] ← «estimado de la serie con la expresion que el Manual imprime» | **P24(TR)** [mm] | mayor lluvia registrada cuyo periodo de retorno empirico no supera el de diseño (año 1998, T empirico = … años) [mm] · num. 3.7.2 b) · 3.7.2 Pruebas de bondad de ajuste · 'b) Prueba Kolmogorov – Smirnov' · pag. impresa 32 · PDF 35 | 2 |
+ | Fase 1-bis - Hidrologia: caudal de diseño | `MH_hidrologia` | `1b.3` | Bondad de ajuste de Kolmogorov-Smirnov de la distribucion adoptada | `FH.KS` (define) | `D = max \|Fo(xm) − F(xm)\| ; Fo(xm) = 1 − m/(n + 1) ; se acepta si D < d` | num. 3.7.2 b) · 3.7.2 Pruebas de bondad de ajuste · 'b) Prueba Kolmogorov – Smirnov' · pag. impresa 32 · PDF 35 | **n** [adimensional] ← «años que entran al ajuste»<br>**alfa** [adimensional] ← «criterio adoptado 'nivel_significancia_ks' [A]»<br>**d** [adimensional] ← «Tabla N 03, fila n = …, columna alfa = …» | **D** [adimensional] | valor critico d de Kolmogorov-Smirnov [adimensional] · num. 3.7.2 b) · 3.7.2 Pruebas de bondad de ajuste · 'b) Prueba Kolmogorov – Smirnov' · pag. impresa 32 · PDF 35 · criterio [A] `nivel_significancia_ks` | 3 |
+ | Fase 1-bis - Hidrologia: caudal de diseño | `MH_hidrologia` | `1b.3b` | Tratamiento de los años FEN contra la regla de la hoja de ruta: el ajuste mas conservador | `FH.FEN` (obliga) | `P24(TR) adoptada >= P24(TR) de la otra serie` | *(sin `formula_cita_id`; el fundamento cita: `MC_HHD.3.4#FEN`, `MC_HHD.3.12.5#PIURA`)* | **P24(TR) con 'serie_completa'** [mm] ← «paso 1b.2: la serie adoptada»<br>**P24(TR) con 'serie_sin_fen'** [mm] ← «la misma regla de eleccion sobre la otra serie (lognormal_2p, n = …)» | **P24(TR) adoptada** [mm] | precipitacion de diseño con 'serie_sin_fen', el otro ajuste que la regla manda reportar [mm] · num. 3.4 · 'Evaluación de la Información Hidrológica' · pag. impresa 22 · PDF 25 · criterio [A] `homogeneidad_serie_fen` | 3 |
++| Fase 1-bis - Hidrologia: caudal de diseño | `MH_hidrologia` | `1b.3c` | Consistencia de la serie de la estacion «PRUEBA-SINTETICA» (aviso, sin umbral) | `FH.CONSISTENCIA` (obliga) | `maximo / mediana de la serie registrada   [indicador sin umbral: el Manual no da procedimiento ni numero de corte]` | *(sin `formula_cita_id`; el fundamento cita: `MC_HHD.3.3#CONSISTENCIA`, `MC_HHD.3.4#CONSISTENCIA`)* | **n** [años] ← «registros de 'estacion.csv': la serie ENTERA, con sus años FEN, porque la consistencia es de los datos registrados»<br>**minimo** [mm] ← «columna p24_mm de 'estacion.csv', año 1990»<br>**mediana** [mm] ← «de los 40 años de 'estacion.csv'»<br>**maximo** [mm] ← «columna p24_mm de 'estacion.csv', año 1998» | **maximo / mediana** [adimensional] | — | 3 |
+ | Fase 1-bis - Hidrologia: caudal de diseño | `MH_hidrologia` | `1b.4` | Tiempo de concentracion de la cuenca, metodo «temez» | `FH.TC` (define) | `Tc = 0.3 · (L / S^0.25)^0.76   [horas; L en km, S en m/m] ; tc = 60 · Tc [min]` | num. 3.12.2.1 · 'Método Racional Modificado' · pag. impresa 51 · PDF 54 | **L** [km] ← «columna L_cauce_m de 'cuencas.csv', linea 8, de m a km»<br>**S** [m/m] ← «columna S_cauce_cuenca de 'cuencas.csv', linea 8»<br>**Tc** [h] ← «ecuacion (30), antes de pasar a minutos» | **tc** [min] | rango de tiempo de concentracion del metodo de Temez [h] · num. 3.12.2.1 · 'Método Racional Modificado' · pag. impresa 51 · PDF 54 | 1 |
+ | Fase 1-bis - Hidrologia: caudal de diseño | `MH_hidrologia` | `1b.5` | Intensidad de la lluvia de diseño, de duracion igual al tiempo de concentracion | `FH.INTENSIDAD` (permite) | `Pd = P24 · (d / 1440)^0.25 ; I = Pd / (d / 60)   [d en min, I en mm/h]` | num. 3.8.1 · 'Curvas Intensidad – Duración – Frecuencia' · pag. impresa 37 · PDF 40 | **P24** [mm] ← «precipitacion de diseño del paso 1b.2»<br>**tc** [min] ← «tiempo de concentracion del paso 1b.4»<br>**d** [min] ← «la duracion de la lluvia de diseño es el tiempo de concentracion»<br>**Pd** [mm] ← «precipitacion de esa duracion» | **I** [mm/h] | duracion minima de la lluvia de diseño [min] · num. 2-6.3 · 'Time of Concentration' · pag. impresa 2-10 · PDF 46 · criterio [C] `duracion_minima_lluvia_min` | 3 |
+ | Fase 1-bis - Hidrologia: caudal de diseño | `MH_hidrologia` | `1b.6` | Coeficiente de escorrentia C de la cuenca | `FH.C` (obliga) | `C = Tabla N 08 [cobertura, tipo de suelo, pendiente del terreno]` | num. 3.12.2 · ESTIMACIÓN DE CAUDALES · 'Método Racional' · pag. impresa 50 · PDF 53 | **cobertura** [adimensional] ← «columna cobertura de 'cuencas.csv', linea 8» ‖ «columna cobertura de 'cuencas.csv', linea 9»<br>**suelo** [adimensional] ← «columna suelo de 'cuencas.csv', linea 8» ‖ «columna suelo de 'cuencas.csv', linea 9»<br>**S** [m/m] ← «columna S_terreno de 'cuencas.csv', linea 8» ‖ «columna S_terreno de 'cuencas.csv', linea 9»<br>**columna** [adimensional] ← «clase de pendiente de la Tabla N 08 en que cae S» | **C** [adimensional] | — | 2 |
+diff --git a/docs/manifiesto_registro_normativo.md b/docs/manifiesto_registro_normativo.md
+index 3175bd3..306e427 100644
+--- a/docs/manifiesto_registro_normativo.md
++++ b/docs/manifiesto_registro_normativo.md
+@@ -1253,6 +1253,8 @@ línea que se pueda romper.
+ | `MC_HHD.3.12.5#G` | 3.12.5 | «Otras Metodologías» | pág. impresa **63** · PDF 66 | definicion | 2026-08-28 · ambos |
+ | `MC_HHD.3.12.5#PIURA` | 3.12.5 | «Otras Metodologías» | pág. impresa **64** · PDF 67 | exigencia | 2026-11-11 · texto |
+ | `MC_HHD.3.13` | 3.13 | «Avenida de Diseño» | pág. impresa **65** · PDF 68 | definicion | 2026-11-11 · texto |
++| `MC_HHD.3.3#CONSISTENCIA` | 3.3 | «Estudios de Campo» | pág. impresa **21** · PDF 24 | exigencia | 2026-11-17 · texto |
++| `MC_HHD.3.4#CONSISTENCIA` | 3.4 | «Evaluación de la Información Hidrológica» | pág. impresa **22** · PDF 25 | definicion | 2026-11-17 · texto |
+ | `MC_HHD.3.4#FEN` | 3.4 | «Evaluación de la Información Hidrológica» | pág. impresa **22** · PDF 25 | exigencia | 2026-11-11 · texto |
+ | `MC_HHD.3.4#REGISTRO` | 3.4 | «Evaluación de la Información Hidrológica» | pág. impresa **22** · PDF 25 | recomendacion | 2026-11-11 · texto |
+ | `MC_HHD.3.6` | 3.6 | «Selección del Período de Retorno» | pág. impresa **25** · PDF 28 | recomendacion | 2026-08-28 · ambos |
+@@ -1348,6 +1350,10 @@ línea que se pueda romper.
+ 
+ > **`MC_HHD.3.13`** — El numeral no da formula ni umbral: remite al estudio hidrologico («Estimación de Caudales») y a «la experiencia y el buen tino del ingeniero proyectista». Por eso el caudal especifico Q/A se imprime como contraste y no se juzga contra nada.
+ 
++> **`MC_HHD.3.3#CONSISTENCIA`** — El numeral abre en la pag. impresa 20 (PDF 23) y esta oracion esta en la 21 (PDF 24), entre el parrafo de los sectores criticos y el de la localizacion de las cuencas. «Se debe»: es un mandato, y el UNICO de las dos citas de la consistencia. Ni este numeral ni el resto del Manual dicen COMO se evalua la consistencia ni con que numero se juzga: por eso el paso que lo imprime no tiene umbral ni veredicto (VE-2, ficha VE2-E).
++
++> **`MC_HHD.3.4#CONSISTENCIA`** — Primera clausula de la oracion de MC_HHD.3.4#REGISTRO y MC_HHD.3.4#FEN, pag. impresa 22 (PDF 25). Dice por que importa la consistencia; el mandato de evaluarla es el del num. 3.3 (MC_HHD.3.3#CONSISTENCIA).
++
+ > **`MC_HHD.3.4#FEN`** — El numeral abre en la pag. impresa 21 (PDF 24) y esta oracion esta en la 22 (PDF 25). Son DOS mandatos en una oracion y tiran en sentidos opuestos: la serie «deberá incluir» los años del Niño, y esos años deben «ser evaluados» para no sobredimensionar. La fuente no dice COMO evaluarlos: de ahi el criterio 'homogeneidad_serie_fen'.
+ 
+ > **`MC_HHD.3.4#REGISTRO`** — Misma oracion que MC_HHD.3.4#FEN, otra clausula. Es «se recomienda»: una serie mas corta no queda prohibida, y por eso el paso de la serie lo imprime como INDICADOR y no detiene.
+@@ -3084,6 +3090,7 @@ recomienda.
+ | `F9.SOBRECARGA` | Fase 9 - Cabezal y aletas | Sobrecarga viva de trafico sobre el relleno: altura equivalente, empuje y peso sobre el talon | **obliga** | `MP.2.4.2.2#SOBRECARGA`, `AASHTO_LRFD_9.3.11.6.4`, `AASHTO_LRFD_9.3.11.6.4#ALTURA`, `AASHTO_LRFD_9.C11.5.6#SOBRECARGA` |
+ | `FH.AJUSTE` | Fase 1-bis - Hidrologia: caudal de diseño | Precipitacion maxima en 24 horas para el periodo de retorno, por ajuste de una distribucion de probabilidad a la serie | **recomienda** | `MC_HHD.3.7.1`, `MC_HHD.3.7.1.1`, `MC_HHD.3.7.1.2`, `MC_HHD.3.7.1.7`, `MC_HHD.3.7.2b` |
+ | `FH.C` | Fase 1-bis - Hidrologia: caudal de diseño | Coeficiente de escorrentia C de la Tabla Nº 08, por cobertura vegetal, tipo de suelo y pendiente del terreno | **obliga** | `MC_HHD.3.12.2#T08`, `WSDOT_HM.2-6.2#T2-2`, `WSDOT_HM.2-6.2#FRECUENCIA` |
++| `FH.CONSISTENCIA` | Fase 1-bis - Hidrologia: caudal de diseño | Consistencia de la serie de la estacion: lo que el Manual manda evaluar y el programa no evalua | **obliga** | `MC_HHD.3.3#CONSISTENCIA`, `MC_HHD.3.4#CONSISTENCIA` |
+ | `FH.FEN` | Fase 1-bis - Hidrologia: caudal de diseño | Contraste del tratamiento de los años FEN: la lluvia de diseño adoptada frente a la de la serie completa y la de la serie sin los años FEN | **obliga** | `MC_HHD.3.4#FEN`, `MC_HHD.3.12.5#PIURA` |
+ | `FH.INTENSIDAD` | Fase 1-bis - Hidrologia: caudal de diseño | Intensidad de la lluvia de diseño para una duracion igual al tiempo de concentracion, desde la precipitacion maxima en 24 horas | **permite** | `MC_HHD.3.8.1#DICK_PESCHKE`, `MC_HHD.3.8.1#T04`, `MC_HHD.3.8.1#DURACION`, `WSDOT_HM.2-6.3#TC_MINIMO` |
+ | `FH.KS` | Fase 1-bis - Hidrologia: caudal de diseño | Prueba de bondad de ajuste de Kolmogorov-Smirnov: D = max |Fo(xm) − F(xm)| contra el valor critico d de la Tabla Nº 03 | **define** | `MC_HHD.3.7.2b`, `MC_HHD.3.7.2b#T03`, `MC_HHD.3.7.2b#ELIGE` |
+@@ -3240,7 +3247,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
+ verificación.
+ 
+ 
+-Citas sin firma de verificación: **6** de 507.
++Citas sin firma de verificación: **6** de 509.
+ - `AASHTO_M294_TRAD.1.1.1`
+ - `AASHTO_M294_TRAD.1.4`
+ - `AASHTO_M294_TRAD.7.2.1`
+diff --git a/docs/trazabilidad.csv b/docs/trazabilidad.csv
+index aefa55b..af72c8f 100644
+--- a/docs/trazabilidad.csv
++++ b/docs/trazabilidad.csv
+@@ -1,4 +1,4 @@
+-# Sello · fecha: 2026-11-15 · commit: 4dded5c · alcance: registro completo, una fila por Cita: 507 citas de 18 fuentes · suite: 6739 passed, 10 skipped (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)
++# Sello · fecha: 2026-11-17 · commit: 72a8d01+cambios-sin-commit · alcance: registro completo, una fila por Cita: 509 citas de 18 fuentes · suite: 6739 passed, 10 skipped (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)
+ cita_id,fuente_id,norma,edicion,numeral,titulo_numeral,pagina_impresa,pagina_pdf,caracter,metodo_verificacion,fecha_verificacion,tiene_interpretacion,discrepancias_que_la_tocan,consumidores_declarados
+ AASHTO_LRFD_9.1.2#BRIDGE,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",1.2,DEFINITIONS,1-2,17,definicion,ambos,2026-09-22,no,DIS-LUZ-DENOMINACION [abierta],fundamento F2.LUZ (Fase 2 - Clasificacion y periodo de retorno)
+ AASHTO_LRFD_9.1.3.2.1#ETA,AASHTO_LRFD_9,AASHTO LRFD Bridge Design Specifications,"Ninth Edition, 2020",1.3.2.1,General,1-3,18,exigencia,texto,2026-11-13,sí,,
+@@ -382,6 +382,8 @@ MC_HHD.3.12.2.1#TC,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version L
+ MC_HHD.3.12.5#G,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.12.5,Otras Metodologías,63,66,definicion,ambos,2026-08-28,no,,
+ MC_HHD.3.12.5#PIURA,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.12.5,Otras Metodologías,64,67,exigencia,texto,2026-11-11,no,,fundamento FH.FEN (Fase 1-bis - Hidrologia: caudal de diseño); fundamento FH.SERIE (Fase 1-bis - Hidrologia: caudal de diseño)
+ MC_HHD.3.13,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.13,Avenida de Diseño,65,68,definicion,texto,2026-11-11,no,,fundamento FH.Q_ESPECIFICO (Fase 1-bis - Hidrologia: caudal de diseño)
++MC_HHD.3.3#CONSISTENCIA,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.3,Estudios de Campo,21,24,exigencia,texto,2026-11-17,no,,fundamento FH.CONSISTENCIA (Fase 1-bis - Hidrologia: caudal de diseño)
++MC_HHD.3.4#CONSISTENCIA,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.4,Evaluación de la Información Hidrológica,22,25,definicion,texto,2026-11-17,no,,fundamento FH.CONSISTENCIA (Fase 1-bis - Hidrologia: caudal de diseño)
+ MC_HHD.3.4#FEN,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.4,Evaluación de la Información Hidrológica,22,25,exigencia,texto,2026-11-11,no,,fundamento FH.FEN (Fase 1-bis - Hidrologia: caudal de diseño); fundamento FH.SERIE (Fase 1-bis - Hidrologia: caudal de diseño)
+ MC_HHD.3.4#REGISTRO,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.4,Evaluación de la Información Hidrológica,22,25,recomendacion,texto,2026-11-11,no,,fundamento FH.SERIE (Fase 1-bis - Hidrologia: caudal de diseño)
+ MC_HHD.3.6,MC_HHD,"Manual de Hidrologia, Hidraulica y Drenaje",Version Libro,3.6,Selección del Período de Retorno,25,28,recomendacion,ambos,2026-08-28,no,,fundamento F2.TR (Fase 2 - Clasificacion y periodo de retorno); tabla MC_HHD.T02 -> M1.Clasificacion; tabla MC_HHD.T02 -> M1.periodo_retorno_de
+diff --git a/src/modulos/MH_hidrologia.py b/src/modulos/MH_hidrologia.py
+index bcf241c..2d4b548 100644
+--- a/src/modulos/MH_hidrologia.py
++++ b/src/modulos/MH_hidrologia.py
+@@ -89,7 +89,7 @@ import csv
+ import io
+ import math
+ from pathlib import Path
+-from statistics import NormalDist, fmean, stdev
++from statistics import NormalDist, fmean, median, stdev
+ from typing import Any, Dict, List, Optional, Sequence, Tuple
+ 
+ from src import criterios_adoptados as ca
+@@ -202,6 +202,10 @@ CODIGO_SERIE = "1b.1"
+ CODIGO_AJUSTE = "1b.2"
+ CODIGO_KS = "1b.3"
+ CODIGO_FEN = "1b.3b"
++# --- VE-2 (e) --- el aviso de consistencia de la serie, el ULTIMO paso de la
++# lluvia de diseño: va despues de los cuatro de T-1 para no mover las
++# posiciones que aquellos tienen en `precipitacion_de_diseno`.
++CODIGO_CONSISTENCIA = "1b.3c"
+ CODIGO_TC = "1b.4"
+ CODIGO_INTENSIDAD = "1b.5"
+ CODIGO_C = "1b.6"
+@@ -880,9 +884,10 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
+     años FEN no hay serie que ajustar (T-1, punto 3). Es la UNICA puerta
+     publica al ajuste.
+ 
+-    Los cuatro pasos: la serie y su tratamiento (1b.1), el ajuste contrastado
+-    con lo ya observado (1b.2), la bondad (1b.3) y el juicio del tratamiento
+-    FEN contra la regla de la hoja de ruta (1b.3b).
++    Los cinco pasos: la serie y su tratamiento (1b.1), el ajuste contrastado
++    con lo ya observado (1b.2), la bondad (1b.3), el juicio del tratamiento
++    FEN contra la regla de la hoja de ruta (1b.3b) y, desde VE-2, el aviso
++    de consistencia de la serie, sin umbral (1b.3c, `_paso_consistencia`).
+ 
+     SE DETIENE TAMBIEN, con `MetodoNoEvaluableError`, cuando `serie_sin_fen`
+     da MENOS lluvia que la serie completa: la hoja de ruta manda adoptar el
+@@ -1281,7 +1286,81 @@ def precipitacion_de_diseno(serie: SerieDeEstacion, TR: float, *,
+         umbral=umbral_fen, veredicto=veredicto_fen,
+         nota_del_proyecto=nota_fen)
+     return (adoptado, evaluados, tratamiento,
+-            (paso_serie, paso_ajuste, paso_ks, paso_fen), tuple(avisos))
++            (paso_serie, paso_ajuste, paso_ks, paso_fen,
++             _paso_consistencia(serie)), tuple(avisos))
++
++
++def _paso_consistencia(serie: SerieDeEstacion) -> PasoDeMemoria:
++    """
++    El AVISO DE CONSISTENCIA de la serie, SIN UMBRAL (VE-2, VE1-02 (e); ficha
++    VE2-E). Patron de `_paso_q_especifico`: informa y no juzga.
++
++    El Manual manda evaluar «la consistencia de los datos registrados» (num.
++    3.3, pag. impresa 21) y dice que es primordial (num. 3.4, pag. impresa
++    22), y ni el ni ninguna fuente del repositorio de normas dan el
++    procedimiento ni un numero de corte. Inventar uno seria rellenar un
++    vacio: el paso dice que el Manual lo exige, que el programa NO lo hace y
++    que el proyectista tiene que declarar que lo hizo, e imprime el minimo,
++    la mediana y el maximo de la serie ENTERA de la estacion --la que se
++    registro, no la que entra al ajuste-- sin juzgarlos.
++    """
++    cita_33, cita_34 = "MC_HHD.3.3#CONSISTENCIA", "MC_HHD.3.4#CONSISTENCIA"
++    registros = serie.registros
++    valores = [r.p24_mm for r in registros]
++    menor = min(registros, key=lambda r: r.p24_mm)
++    mayor = max(registros, key=lambda r: r.p24_mm)
++    mediana = median(valores)
++    # Una mediana de 0 mm (una costa arida con media serie seca) no tiene
++    # cociente: se dice, no se divide.
++    cociente: Any = (mayor.p24_mm / mediana if mediana > 0 else
++                     "sin cociente: la mediana de la serie es 0 mm")
++    texto_cociente = (f"{cociente:.1f}" if mediana > 0 else cociente)
++    exigencia = _REG.cita(cita_33)
++    return paso(
++        "FH.CONSISTENCIA", codigo=CODIGO_CONSISTENCIA,
++        que=(f"Consistencia de la serie de la estacion «{serie.estacion}» "
++             "(aviso, sin umbral)"),
++        formula=("maximo / mediana de la serie registrada   [indicador sin "
++                 "umbral: el Manual no da procedimiento ni numero de corte]"),
++        citas_textuales=(cita_33, cita_34),
++        sustitucion=(
++            Magnitud("n", len(valores), "años",
++                     f"registros de {serie.origen}: la serie ENTERA, con sus "
++                     "años FEN, porque la consistencia es de los datos "
++                     "registrados"),
++            Magnitud("minimo", menor.p24_mm, "mm",
++                     f"columna p24_mm de {serie.origen}, año {menor.anio}",
++                     cifras=CIFRAS_MAGNITUD),
++            Magnitud("mediana", mediana, "mm",
++                     f"de los {len(valores)} años de {serie.origen}",
++                     cifras=CIFRAS_MAGNITUD),
++            Magnitud("maximo", mayor.p24_mm, "mm",
++                     f"columna p24_mm de {serie.origen}, año {mayor.anio}",
++                     cifras=CIFRAS_MAGNITUD)),
++        resultado=Magnitud("maximo / mediana", cociente, "",
++                           "cuantas veces la mayor lluvia registrada supera "
++                           "a la mediana de la serie", cifras=CIFRAS_FINA),
++        veredicto=Veredicto(
++            tipo=TipoDeVeredicto.SIN_VEREDICTO,
++            explicacion="aviso, no verificacion: el Manual manda evaluar la "
++                        "consistencia y no le pone umbral, y el programa no "
++                        "inventa uno"),
++        nota_del_proyecto=(
++            "AVISO DE CONSISTENCIA, sin umbral. El Manual exige que se "
++            f"evalue: «{exigencia.texto_literal.texto}» "
++            f"({exigencia.como_texto()}), y dice que la consistencia de los "
++            "datos es primordial para el inicio del estudio hidrologico "
++            f"({_REG.cita(cita_34).como_texto()}). El programa NO la evalua: "
++            "ni el Manual ni ninguna otra fuente del expediente dan el "
++            "procedimiento ni un numero de corte, y fijar uno seria rellenar "
++            "un vacio. El proyectista tiene que declarar en la memoria que "
++            "la evaluo, con que procedimiento y con que resultado. Para "
++            "orientarlo, la serie entera de la estacion "
++            f"«{serie.estacion}» ({len(valores)} años) va de "
++            f"{menor.p24_mm:.1f} mm ({menor.anio}) a {mayor.p24_mm:.1f} mm "
++            f"({mayor.anio}), con mediana {mediana:.1f} mm y un cociente "
++            f"maximo / mediana de {texto_cociente}: el programa no los "
++            "juzga."))
+ 
+ 
+ # ===========================================================================
+diff --git a/src/normativa/citas.py b/src/normativa/citas.py
+index 9c0c1b8..4a3e901 100644
+--- a/src/normativa/citas.py
++++ b/src/normativa/citas.py
+@@ -7134,6 +7134,67 @@ MC_HHD_3_4_REGISTRO = _cita(
+           "el paso de la serie lo imprime como INDICADOR y no detiene."),
+ )
+ 
++# --- VE-2 (e) --- LA CONSISTENCIA DE LA SERIE: lo que el Manual manda evaluar
++# y no dice como. Leidas por la sesion de VE-2 (2026-11-17) abriendo las dos
++# paginas por TEXTO; desfase +3. El barrido de la revision normativa del
++# dueño (doble masa, datos dudosos, outliers, K_n, WRC en todos los PDF del
++# repositorio de normas) dio cero apariciones como procedimiento: el
++# programa no tiene con que evaluarla y no se inventa un umbral. Las dos
++# citas sostienen el paso `FH.CONSISTENCIA` (un aviso sin umbral, el patron
++# de `FH.Q_ESPECIFICO`).
++FECHA_VE2 = "2026-11-17"
++POR_VE2 = "validacion/VE-2 · lectura directa de la pagina por la sesion"
++VE2 = (FECHA_VE2, POR_VE2)
++
++MC_HHD_3_3_CONSISTENCIA = _cita(
++    id="MC_HHD.3.3#CONSISTENCIA",
++    fuente_id="MC_HHD",
++    numeral="3.3",
++    titulo_numeral="Estudios de Campo",
++    pagina_impresa="21",
++    pagina_pdf=24,
++    pagina_pdf_titulo=23,
++    texto_literal=Verbatim(
++        texto=("Se debe evaluar las condiciones de las estaciones "
++               "pluviométricas e hidrométricas, así como la consistencia de "
++               "los datos registrados."),
++        pagina_pdf=24),
++    caracter=Caracter.EXIGENCIA,
++    sesion=VE2,
++    nota=("El numeral abre en la pag. impresa 20 (PDF 23) y esta oracion "
++          "esta en la 21 (PDF 24), entre el parrafo de los sectores "
++          "criticos y el de la localizacion de las cuencas. «Se debe»: es "
++          "un mandato, y el UNICO de las dos citas de la consistencia. Ni "
++          "este numeral ni el resto del Manual dicen COMO se evalua la "
++          "consistencia ni con que numero se juzga: por eso el paso que lo "
++          "imprime no tiene umbral ni veredicto (VE-2, ficha VE2-E)."),
++)
++
++MC_HHD_3_4_CONSISTENCIA = _cita(
++    id="MC_HHD.3.4#CONSISTENCIA",
++    fuente_id="MC_HHD",
++    numeral="3.4",
++    titulo_numeral="Evaluación de la Información Hidrológica",
++    pagina_impresa="22",
++    pagina_pdf=25,
++    pagina_pdf_titulo=24,
++    texto_literal=Verbatim(
++        texto=("La representatividad, calidad, extensión y consistencia de "
++               "los datos es primordial para el inicio del estudio "
++               "hidrológico"),
++        pagina_pdf=25),
++    # DEFINICION y no EXIGENCIA: la oracion dice que la consistencia ES
++    # primordial, y no manda nada por si misma; lo que sigue («por ello, se
++    # recomienda contar con un mínimo de 25 años») es MC_HHD.3.4#REGISTRO.
++    caracter=Caracter.DEFINICION,
++    sesion=VE2,
++    derivado_de="MC_HHD.3.4#FEN",
++    nota=("Primera clausula de la oracion de MC_HHD.3.4#REGISTRO y "
++          "MC_HHD.3.4#FEN, pag. impresa 22 (PDF 25). Dice por que importa "
++          "la consistencia; el mandato de evaluarla es el del num. 3.3 "
++          "(MC_HHD.3.3#CONSISTENCIA)."),
++)
++
+ MC_HHD_3_7_1 = _cita(
+     id="MC_HHD.3.7.1",
+     fuente_id="MC_HHD",
+diff --git a/src/normativa/fundamentos.py b/src/normativa/fundamentos.py
+index ba08f44..f6b0595 100644
+--- a/src/normativa/fundamentos.py
++++ b/src/normativa/fundamentos.py
+@@ -1357,6 +1357,38 @@ H_Q_ESPECIFICO = _fundamento(
+         "por hora de escorrentia."),
+ )
+ 
++# --- VE-2 (e) --- EL AVISO DE CONSISTENCIA DE LA SERIE, sin umbral. Mismo
++# patron que `FH.Q_ESPECIFICO`: el paso informa y no juzga, porque la fuente
++# manda evaluar y no da ni procedimiento ni numero de corte (ficha VE2-E).
++H_CONSISTENCIA = _fundamento(
++    id="FH.CONSISTENCIA",
++    fase=FH,
++    que_paso=("Consistencia de la serie de la estacion: lo que el Manual "
++              "manda evaluar y el programa no evalua"),
++    por_que=(
++        "La lluvia de diseño se extrapola de la serie, y un dato mal "
++        "registrado --una lectura en otra unidad, un acumulado de varios "
++        "dias anotado como uno, un año copiado de otra estacion-- pesa en el "
++        "ajuste tanto como uno bueno. El Manual manda evaluar las "
++        "condiciones de las estaciones y la consistencia de los datos "
++        "registrados, y dice que la consistencia es primordial para empezar "
++        "el estudio; no dice como se evalua ni con que numero se juzga, y "
++        "ninguna otra fuente del expediente lo da. Por eso este paso no "
++        "tiene umbral ni veredicto: imprime lo que el Manual exige, que el "
++        "programa no lo hizo, y que el proyectista tiene que declarar en "
++        "la memoria que lo hizo, con que procedimiento y con que resultado. "
++        "Para orientarlo imprime el minimo, la mediana y el maximo de la "
++        "serie entera, sin juzgarlos."),
++    verbo=Verbo.OBLIGA,
++    citas=("MC_HHD.3.3#CONSISTENCIA",       # EXIGENCIA -> sostiene OBLIGA
++           "MC_HHD.3.4#CONSISTENCIA"),      # DEFINICION (es primordial)
++    que_pasa_si_no_se_hace=(
++        "Es lo que pasaba hasta VE-2 (VE1-02 (e)): una serie con mediana de "
++        "140 mm y un maximo de 729 mm se ajustaba sin que la memoria dijera "
++        "que nadie habia mirado si ese maximo es un dato o un error, y el "
++        "caudal de diseño colgaba de el sin aviso."),
++)
++
+ 
+ # ===========================================================================
+ # Lo que NO tiene fundamento, y por que. Censo, no omision.
+diff --git a/tests/test_memoria_sustentada.py b/tests/test_memoria_sustentada.py
+index da46529..da2b5e7 100644
+--- a/tests/test_memoria_sustentada.py
++++ b/tests/test_memoria_sustentada.py
+@@ -486,6 +486,11 @@ def test_todo_fundamento_declarado_lo_usa_algun_paso(informe):
+         # auditoria de T-1). Lo mide `test_t1_hidrologia.py::
+         # test_serie_sin_fen_con_menos_lluvia_que_la_completa_detiene_el_calculo`.
+         "FH.FEN",
++        # --- VE-2 (e) --- el aviso de consistencia de la serie, sin umbral
++        # (paso 1b.3c): solo sale con el caudal calculado, por la misma
++        # razon que los siete de arriba. Lo mide
++        # `tests/test_ve2_hidrologia.py`.
++        "FH.CONSISTENCIA",
+         # F5.V7_FILA SIGUE AQUI DESPUES DE C7, Y SU RAZON NO ES LA QUE EL
+         # PUNTO 0 ESCRIBIO. Aquel comentario decia que el fundamento existia
+         # «declarado y sin consumidor» hasta que el punto 3 lo cableara. El
+diff --git a/tests/test_t1_hidrologia.py b/tests/test_t1_hidrologia.py
+index 493add4..677ad55 100644
+--- a/tests/test_t1_hidrologia.py
++++ b/tests/test_t1_hidrologia.py
+@@ -140,8 +140,13 @@ A02_SIN_Q = {"A-02": {"Q_m3s": "", "area_ha": AREA_HA_DE_LA_CUENCA_CHICA}}
+ REDONDEO_DEL_UMBRAL = 1e-5      # el umbral se imprime con tres decimales
+ 
+ 
+-PASOS_DE_LA_FASE_1B = ["1b.1", "1b.2", "1b.3", "1b.3b", "1b.4", "1b.5",
+-                       "1b.6", "1b.7", "1b.8"]
++# CAMBIADO EN VE-2 (decision (e) del dueño, VE1-02; ficha VE2-E), y se
++# declara la causa: la lluvia de diseño emite desde VE-2 un quinto paso, el
++# aviso de consistencia de la serie sin umbral (`1b.3c`, `FH.CONSISTENCIA`),
++# DESPUES de los cuatro de T-1 para no mover sus posiciones. Lo mide
++# `tests/test_ve2_hidrologia.py`.
++PASOS_DE_LA_FASE_1B = ["1b.1", "1b.2", "1b.3", "1b.3b", "1b.3c", "1b.4",
++                       "1b.5", "1b.6", "1b.7", "1b.8"]
+ 
+ 
+ def _por_id(informe, id_punto):
+@@ -797,9 +802,12 @@ def test_el_caudal_calculado_es_el_producto_de_sus_pasos(MH, cuencas, serie):
+         assert p.fundamento_id.startswith("FH.") and p.por_que and p.citas_textuales
+         assert all(m.procedencia for m in p.sustitucion)
+     # Dos pasos no citan su formula porque no es de una fuente: el recuento
+-    # de años (1b.1) y la regla de la hoja de ruta (1b.3b).
++    # de años (1b.1) y la regla de la hoja de ruta (1b.3b). Desde VE-2, tres:
++    # el aviso de consistencia (1b.3c) imprime minimo, mediana y maximo de la
++    # serie, que no es una formula del Manual (el Manual manda evaluar y no
++    # dice como; ficha VE2-E).
+     assert all(p.formula_cita_id for p in c.pasos
+-               if p.codigo not in ("1b.1", "1b.3b"))
++               if p.codigo not in ("1b.1", "1b.3b", "1b.3c"))
+ 
+ 
+ def test_el_caudal_crece_con_el_periodo_de_retorno(MH, cuencas, serie):
+diff --git a/tests/test_ve2_hidrologia.py b/tests/test_ve2_hidrologia.py
+new file mode 100644
+index 0000000..a93e8d3
+--- /dev/null
++++ b/tests/test_ve2_hidrologia.py
+@@ -0,0 +1,238 @@
++"""
++tests/test_ve2_hidrologia.py — VE-2, la parte de hidrologia: (e), (f) y (d)
++==========================================================================
++Tres decisiones del dueño (2026-11-17) sobre la ficha VE1-02 de
++`docs/decisiones_diferidas.md`, en la Fase 1-bis (`MH_hidrologia`):
++
++(e) Paso 8 del prompt VE-2. Un AVISO DE CONSISTENCIA de la serie de lluvias,
++    SIN UMBRAL: el Manual de Hidrologia manda evaluar «la consistencia de los
++    datos registrados» (num. 3.3, pag. impresa 21) y ninguna fuente del
++    repositorio de normas da el procedimiento ni un numero de corte. La
++    memoria lo dice, dice que el programa no lo evalua y que el proyectista
++    tiene que declarar que lo hizo. Patron de `FH.Q_ESPECIFICO`.
++
++COMO SE MIDIO EL ROJO. Cada bloque de este archivo se escribio ANTES que su
++implementacion, con `xfail(strict=True)` y la expectativa (nunca la salida
++del programa como oraculo), y se corrio en rojo; al implementar se quito la
++marca. Los dorados numericos estan calculados a mano en el propio test, con
++`math` y `statistics`, por un camino que no pasa por `MH_hidrologia`.
++
++LOS DATOS SON SINTETICOS: la serie de `tests/fixtures/hidrologia/` (rotulada
++«DATOS DE PRUEBA, NO DEL PROYECTO»), la misma que T-1.
++"""
++
++from __future__ import annotations
++
++import statistics
++from dataclasses import replace
++from pathlib import Path
++
++import pytest
++
++RAIZ = Path(__file__).resolve().parent.parent
++FIXTURES = RAIZ / "tests" / "fixtures" / "hidrologia"
++CUENCAS = FIXTURES / "cuencas_prueba.csv"
++ESTACION = FIXTURES / "estacion_prueba.csv"
++ESTACION_DE_PRUEBA = "PRUEBA-SINTETICA"
++FEN = "homogeneidad_serie_fen"
++REL = 1e-9          # dos caminos de la misma aritmetica
++
++
++def _declarados(valores):
++    from tests.apoyo.criterios import declarados
++    return declarados(valores)
++
++
++@pytest.fixture()
++def MH():
++    from src.modulos import MH_hidrologia
++    return MH_hidrologia
++
++
++@pytest.fixture()
++def serie(MH):
++    return MH.cargar_estacion(ESTACION)[ESTACION_DE_PRUEBA]
++
++
++@pytest.fixture()
++def cuencas(MH):
++    return MH.cargar_cuencas(CUENCAS)
++
++
++@pytest.fixture()
++def reg():
++    from src.normativa import registro
++    return registro.construir()
++
++
++# ===========================================================================
++# (e) Aviso de consistencia de la serie, SIN umbral — VE1-02 (e)
++# ===========================================================================
++
++CITA_33 = "MC_HHD.3.3#CONSISTENCIA"
++CITA_34 = "MC_HHD.3.4#CONSISTENCIA"
++FUNDAMENTO_CONSISTENCIA = "FH.CONSISTENCIA"
++
++
++def _paso_de_consistencia(pasos):
++    candidatos = [p for p in pasos if p.fundamento_id == FUNDAMENTO_CONSISTENCIA]
++    assert len(candidatos) == 1, [p.fundamento_id for p in pasos]
++    return candidatos[0]
++
++
++def test_e_las_dos_citas_de_consistencia_son_las_de_la_pagina(reg):
++    """
++    Num. 3.3 «Estudios de Campo», pag. impresa 21 (PDF 24): «Se debe evaluar
++    las condiciones de las estaciones pluviométricas e hidrométricas, así
++    como la consistencia de los datos registrados.» Es EXIGENCIA («Se
++    debe»). Num. 3.4, pag. impresa 22 (PDF 25): «La representatividad,
++    calidad, extensión y consistencia de los datos es primordial para el
++    inicio del estudio hidrológico» — no manda nada por si misma.
++    """
++    from src.normativa.esquema import Caracter
++    c33 = reg.cita(CITA_33)
++    assert (c33.numeral, c33.pagina_impresa, c33.pagina_pdf) == ("3.3", "21", 24)
++    assert c33.titulo_numeral == "Estudios de Campo"
++    assert c33.texto_literal.texto == (
++        "Se debe evaluar las condiciones de las estaciones pluviométricas e "
++        "hidrométricas, así como la consistencia de los datos registrados.")
++    assert c33.caracter is Caracter.EXIGENCIA
++    assert c33.verificado is not None
++    c34 = reg.cita(CITA_34)
++    assert (c34.numeral, c34.pagina_impresa, c34.pagina_pdf) == ("3.4", "22", 25)
++    assert "consistencia de los datos es primordial" in c34.texto_literal.texto
++    assert c34.caracter is not Caracter.EXIGENCIA
++
++
++def test_e_el_fundamento_dice_obliga_y_lo_sostiene_la_exigencia_del_3_3(reg):
++    from src.normativa.esquema import Verbo
++    f = reg.fundamento(FUNDAMENTO_CONSISTENCIA)
++    assert f.verbo is Verbo.OBLIGA
++    assert CITA_33 in f.citas and CITA_34 in f.citas
++    assert f.fase == reg.fundamento("FH.SERIE").fase
++    assert not [p for p in reg.problemas_de_integridad()
++                if FUNDAMENTO_CONSISTENCIA in p]
++
++
++def test_e_la_lluvia_de_diseno_emite_el_aviso_sin_umbral_y_sin_veredicto(MH, serie):
++    """
++    El paso dice las tres cosas que el prompt pide: que el Manual EXIGE
++    evaluar la consistencia, que el programa NO la evalua y que el
++    proyectista tiene que DECLARAR que lo hizo. Sin umbral ni veredicto: no
++    hay numero de corte en ninguna fuente, e inventarlo seria rellenar un
++    vacio.
++    """
++    from src.modelos import TipoDeVeredicto
++    with _declarados({FEN: "serie_completa"}):
++        *_, pasos, _avisos = MH.precipitacion_de_diseno(serie, 71)
++    p = _paso_de_consistencia(pasos)
++    assert p.umbral is None
++    assert p.veredicto.tipo is TipoDeVeredicto.SIN_VEREDICTO
++    nota = p.nota_del_proyecto
++    assert nota.startswith("AVISO DE CONSISTENCIA, sin umbral")
++    for trozo in ("consistencia de los datos registrados", "3.3",
++                  "NO la evalua", "declarar"):
++        assert trozo in nota, trozo
++    assert CITA_33 in p.citas_textuales and CITA_34 in p.citas_textuales
++    # Va DESPUES de los cuatro pasos de siempre (1b.1, 1b.2, 1b.3, 1b.3b):
++    # las posiciones que T-1 fijo no se mueven.
++    assert [x.codigo for x in pasos] == ["1b.1", "1b.2", "1b.3", "1b.3b",
++                                         MH.CODIGO_CONSISTENCIA]
++    assert MH.CODIGO_CONSISTENCIA == "1b.3c"
++
++
++def test_e_el_paso_imprime_la_serie_entera_sin_juzgarla(MH, serie):
++    """
++    Lo que el paso imprime para orientar al proyectista, calculado aqui a
++    mano con `statistics` sobre la serie ENTERA de la estacion (la
++    consistencia es de los datos registrados, no de la serie que entra al
++    ajuste): n, minimo, mediana, maximo y maximo / mediana.
++    """
++    valores = [r.p24_mm for r in serie.registros]
++    mediana = statistics.median(valores)
++    maximo = max(valores)
++    with _declarados({FEN: "serie_completa"}):
++        *_, pasos, _ = MH.precipitacion_de_diseno(serie, 71)
++    p = _paso_de_consistencia(pasos)
++    por = {m.simbolo: m.valor for m in p.sustitucion}
++    assert por["n"] == len(valores) == 40
++    assert por["minimo"] == pytest.approx(min(valores), rel=REL)
++    assert por["mediana"] == pytest.approx(mediana, rel=REL)
++    assert por["maximo"] == pytest.approx(maximo, rel=REL)
++    assert p.resultado.simbolo == "maximo / mediana"
++    assert p.resultado.valor == pytest.approx(maximo / mediana, rel=REL)
++    # El año del maximo, para que el proyectista sepa que dato revisar.
++    anio_max = max(serie.registros, key=lambda r: r.p24_mm).anio
++    assert str(anio_max) in " ".join(m.procedencia for m in p.sustitucion)
++
++
++@pytest.mark.parametrize("multiplicador", [1.0, 30.0])
++def test_e_ningun_numero_de_corte_cambia_el_trato(MH, serie, multiplicador):
++    """
++    La misma serie con su maximo multiplicado por 30 (cociente maximo /
++    mediana de casi 300): el paso sigue SIN veredicto, sin umbral, y el
++    calculo NO se detiene. Si alguien le pusiera un corte, este test muere.
++    """
++    from src.modelos import TipoDeVeredicto
++    mayor = max(serie.registros, key=lambda r: r.p24_mm)
++    registros = tuple(replace(r, p24_mm=r.p24_mm * multiplicador)
++                      if r is mayor else r for r in serie.registros)
++    otra = replace(serie, registros=registros)
++    with _declarados({FEN: "serie_completa"}):
++        ajuste, *_, pasos, avisos = MH.precipitacion_de_diseno(otra, 71)
++    p = _paso_de_consistencia(pasos)
++    assert p.umbral is None
++    assert p.veredicto.tipo is TipoDeVeredicto.SIN_VEREDICTO
++    assert ajuste.P_TR_mm > 0
++    # No es un aviso que cambie con el dato: la nota dice lo mismo.
++    with _declarados({FEN: "serie_completa"}):
++        *_, pasos_base, _ = MH.precipitacion_de_diseno(serie, 71)
++    base = _paso_de_consistencia(pasos_base)
++    assert p.nota_del_proyecto.split(". ")[0] == base.nota_del_proyecto.split(". ")[0]
++
++
++def test_e_el_caudal_calculado_lo_lleva_y_el_declarado_no(MH, serie, cuencas):
++    with _declarados({FEN: "serie_completa"}):
++        c = MH.caudal_de_diseno(cuencas["A-02"], serie, 71)
++    assert MH.CODIGO_CONSISTENCIA in [p.codigo for p in c.pasos]
++    declarado = MH.caudal_declarado(Q_m3s=1.0, de_donde="columna Q_m3s",
++                                    area_km2=2.1, origen_area="prueba")
++    assert FUNDAMENTO_CONSISTENCIA not in [p.fundamento_id for p in declarado.pasos]
++
++
++def test_e_el_modulo_no_tiene_umbral_de_consistencia():
++    """
++    Por AST: ningun nombre de `MH_hidrologia` ni de `constantes_normativas`
++    habla de un umbral o un limite de consistencia. Un corte inventado
++    tendria que vivir en uno de los dos.
++    """
++    import ast
++    for ruta in (RAIZ / "src" / "modulos" / "MH_hidrologia.py",
++                 RAIZ / "src" / "constantes_normativas.py"):
++        arbol = ast.parse(ruta.read_text(encoding="utf-8"))
++        nombres = {n.id for n in ast.walk(arbol) if isinstance(n, ast.Name)}
++        nombres |= {n.name for n in ast.walk(arbol)
++                    if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
++        sospechosos = {x for x in nombres if "CONSISTENCIA" in x.upper()
++                       and any(t in x.upper() for t in ("UMBRAL", "LIMITE",
++                                                         "MAX", "CORTE"))}
++        assert not sospechosos, (ruta.name, sospechosos)
++
++
++def test_e_la_consistencia_es_de_la_serie_registrada_no_de_la_ajustada(MH, serie):
++    """
++    Con `serie_sin_fen` el ajuste usa 37 años, y el aviso sigue hablando de
++    los 40 registrados: la consistencia es de los datos que la estacion
++    registro. Para que `serie_sin_fen` no se detenga (T1-09) se marcan FEN
++    los tres años MAS SECOS: quitarlos sube la lluvia de diseño.
++    """
++    secos = sorted(serie.registros, key=lambda r: r.p24_mm)[:3]
++    registros = tuple(replace(r, fen=r in secos) for r in serie.registros)
++    otra = replace(serie, registros=registros)
++    with _declarados({FEN: "serie_sin_fen"}):
++        ajuste, *_, pasos, _ = MH.precipitacion_de_diseno(otra, 71)
++    assert ajuste.n == 37
++    p = _paso_de_consistencia(pasos)
++    por = {m.simbolo: m.valor for m in p.sustitucion}
++    assert por["n"] == 40
++    assert por["minimo"] == pytest.approx(secos[0].p24_mm, rel=REL)
