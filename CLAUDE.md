@@ -352,20 +352,12 @@ criterio lleva por eso un segundo campo, `Criterio.nivel`, con dos valores:
   valor: dice dentro de qué se va a poder elegir, y eso se sabe antes de
   elegir. Sin ese matiz, un [A] de perfil sin declarar se quedaba sin ventana y
   entonces la GUI y la CLI no lo podían declarar en caliente — el valor
-  aparecía y la ventana seguía sin estar. **Salvo el dato de ensayo** (desde
-  las correcciones de VE-2, M3): un [A] de perfil que se resuelve `DeEnsayo`
-  lleva `resolucion` y NO lleva `sensibilidad`, porque `_verificar_criterio`
-  se la prohíbe —un dato determinado por un procedimiento no tiene rango que
-  elegir, la misma razón por la que un [S] declara trazabilidad y no
-  sensibilidad—; su ventana es la trazabilidad que `DeEnsayo` exige al
-  declararlo. Antes las dos guardias juntas hacían imposible un [A] de
-  perfil por ensayo, y el peso específico saturado del relleno, que V7 lee
-  en perfil desde VE-2, tenía que quedarse marcado de expediente.
+  aparecía y la ventana seguía sin estar.
 
 Las tres reglas están en `criterios_adoptados._verificar_nivel`, no en un
 documento. La tercera es el criterio de salida del nivel de perfil escrito como
-invariante: **ningún [A] de perfil sin valor, sin sensibilidad (o, si es
-de ensayo, sin trazabilidad exigida) y sin procedencia**.
+invariante: **ningún [A] de perfil sin valor, sin sensibilidad y sin
+procedencia**.
 
 **Y desde S21 el nivel lo llevan los 69 (70 desde T1, 71 desde EXT-6, 73 desde EXT-7, 74 desde E-A, 75 desde PF-1, 76 desde PF-4, 77 desde el cierre de C10, 79 desde el de C05, 82 desde T-2, 88 desde T-4, 95 desde T-1, 97 desde T-6, 102 desde T-8, 109 desde T-5, 110 desde T-3, 114 desde T-9, 119 desde T-7a, 129 desde T-7b, 139 desde T-7c, 141 desde la verificación de fórmulas de T-7, 146 desde VE-2), no sólo los que no tienen valor.** La
 guardia sólo lo exigía a los criterios SIN VALOR, de modo que trece con valor

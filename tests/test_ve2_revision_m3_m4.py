@@ -40,6 +40,19 @@ M4 · EL MARGEN ESTACIONAL NO ENTRA NEGATIVO POR LA PUERTA.
      inventa un tope: la ventana sigue siendo la de la ficha. La guardia del
      consumidor se queda como segunda linea.
 
+N2 · (verificacion Fable de estas correcciones, decision del dueño) EL PESO
+     SATURADO ES [S], Y LA EXENCION DE ARRIBA SE RETIRA. La verificacion
+     observo que la exencion se justificaba con la definicion de [S] de la
+     propia taxonomia (CLAUDE.md: «un [S] no tiene rango que elegir y se
+     defiende con la trazabilidad de la lectura»), y que un dato de ensayo
+     del relleno es, por esa regla, un [S] pendiente de ensayo. El dueño
+     eligio reetiquetarlo: `peso_especifico_saturado_relleno_kn_m3` es [S]
+     con su `trazabilidad`, sigue de perfil (medido) y la regla 3 de
+     `_verificar_nivel` vuelve a exigir ventana a TODO [A] de perfil, sin
+     excepcion (CLAUDE.md, al texto de d9b59f9). Y como observo tambien que
+     la puerta aceptaba 0 y negativos, `Criterio.positivo` (el mismo campo
+     que `DatoSitio.positivo`) los rechaza por los tres caminos.
+
 Escrita PRIMERO, en rojo: los tests de abajo fallaban por su motivo antes de
 tocar `criterios_adoptados.py` (medido con el archivo de d9b59f9: 13 fallos
 de los 23; los diez que pasaban fijan lo que no debe cambiar --- el cero y el
@@ -75,11 +88,16 @@ RAIZ = Path(__file__).resolve().parents[1]
 # ===========================================================================
 
 def test_m3_el_peso_saturado_es_de_perfil_y_sigue_siendo_de_ensayo():
+    """
+    N2: es [S] pendiente de ensayo (antes [A] con la exencion de la regla
+    3), con su trazabilidad; el nivel sigue siendo el medido, perfil.
+    """
     c = ca.CRITERIOS[CLAVE_SATURADO]
     assert c.nivel == ca.NIVEL_PERFIL
-    assert (c.etiqueta, c.forma, c.valor) == ("A", ca.FORMA_FLOAT, None)
+    assert (c.etiqueta, c.forma, c.valor) == ("S", ca.FORMA_FLOAT, None)
+    assert c.trazabilidad and "ensayo" in c.trazabilidad
     assert isinstance(c.resolucion, DeEnsayo)
-    assert c.sensibilidad is None          # un de_ensayo no tiene rango
+    assert c.sensibilidad is None          # un [S] no tiene rango
 
 
 def test_m3_el_filtro_de_perfil_lo_muestra():
@@ -88,9 +106,32 @@ def test_m3_el_filtro_de_perfil_lo_muestra():
     assert CLAVE_SATURADO in ca.criterios_de_perfil_sin_valor()
 
 
-def test_m3_la_guardia_admite_un_a_de_perfil_de_ensayo_sin_ventana():
-    c = replace(ca.CRITERIOS[CLAVE_SATURADO], nivel=ca.NIVEL_PERFIL)
-    ca._verificar_nivel(CLAVE_SATURADO, c)
+def _como_a(c):
+    """La misma ficha rotulada [A], como estaba antes de N2."""
+    return replace(c, etiqueta="A", trazabilidad=None)
+
+
+def test_m3_la_guardia_vuelve_a_exigir_ventana_al_a_de_perfil_de_ensayo():
+    """
+    CAMBIADO EN N2 (verificacion Fable; se llamaba «…admite un [A] de perfil
+    de ensayo sin ventana»): la exencion de la regla 3 se retira con la
+    decision del dueño de reetiquetar el peso saturado a [S]. Un [A] de
+    perfil que se resuelve por ensayo vuelve a no poder quedarse sin
+    ventana; el que no tiene rango que elegir es [S].
+    """
+    c = _como_a(ca.CRITERIOS[CLAVE_SATURADO])
+    assert isinstance(c.resolucion, DeEnsayo) and c.sensibilidad is None
+    with pytest.raises(ValueError, match="sensibilidad"):
+        ca._verificar_nivel(CLAVE_SATURADO, c)
+
+
+def test_n2_ningun_a_de_perfil_queda_sin_ventana():
+    """El invariante de salida del perfil, sobre el archivo entero."""
+    sin_ventana = sorted(
+        k for k, c in ca.CRITERIOS.items()
+        if c.nivel == ca.NIVEL_PERFIL and c.etiqueta == "A"
+        and c.sensibilidad is None)
+    assert sin_ventana == []
 
 
 @pytest.mark.parametrize("clave", [
@@ -112,16 +153,28 @@ def test_m3_la_guardia_sigue_exigiendo_ventana_a_los_demas_a_de_perfil(clave):
         ca._verificar_nivel(clave, replace(c, sensibilidad=None))
 
 
-def test_m3_la_guardia_sigue_exigiendo_resolucion_al_a_de_perfil_de_ensayo():
-    c = replace(ca.CRITERIOS[CLAVE_SATURADO], resolucion=None)
+def test_m3_la_guardia_sigue_exigiendo_resolucion_al_a_de_perfil():
+    """
+    CAMBIADO EN N2 (se llamaba «…resolucion al [A] de perfil de ensayo»):
+    con la regla 3 de vuelta al texto de d9b59f9, un [A] de perfil sin
+    ventana se rechaza por la ventana antes de mirar la resolucion, y el
+    caso del ensayo ya no existe. Lo que se sigue fijando es la otra mitad
+    de la regla: con ventana y sin `resolucion`, tampoco entra.
+    """
+    c = replace(ca.CRITERIOS[CLAVE_MARGEN], resolucion=None)
+    assert c.sensibilidad is not None
     with pytest.raises(ValueError, match="resolucion"):
-        ca._verificar_nivel(CLAVE_SATURADO, c)
+        ca._verificar_nivel(CLAVE_MARGEN, c)
 
 
 def test_m3_y_la_guardia_sigue_prohibiendo_la_ventana_al_de_ensayo():
     c = replace(ca.CRITERIOS[CLAVE_SATURADO], sensibilidad=(18.0, 22.0))
-    with pytest.raises(ValueError, match="de_ensayo"):
+    # Desde N2 la rechaza primero la regla del [S] («un hecho de sitio no
+    # tiene rango que elegir»); rotulado [A], la del `de_ensayo`.
+    with pytest.raises(ValueError, match=r"\[S\] y declara sensibilidad"):
         ca._verificar_criterio(CLAVE_SATURADO, c)
+    with pytest.raises(ValueError, match="de_ensayo"):
+        ca._verificar_criterio(CLAVE_SATURADO, _como_a(c))
 
 
 def _corrida_de_perfil_con_el_nivel_sobre_la_clave(tmp_path):
@@ -264,3 +317,66 @@ def test_m4_con_cero_v7_sigue_evaluando_con_la_lectura():
     with declarados({CLAVE_NIVEL: "nf_del_punto"}):
         with pytest.raises(CriterioPendienteError):
             _v7(_punto(NF_profundidad_m=0.05))
+
+
+# ===========================================================================
+# N2 · el peso saturado no entra cero ni negativo por la puerta
+# ===========================================================================
+
+def test_n2_la_ficha_del_saturado_declara_su_signo():
+    c = ca.CRITERIOS[CLAVE_SATURADO]
+    assert c.positivo is True
+    assert c.valor is None          # ningun valor de archivo cambia
+
+
+def test_n2_ningun_otro_criterio_declara_positivo():
+    con_signo = sorted(k for k, c in ca.CRITERIOS.items() if c.positivo)
+    assert con_signo == [CLAVE_SATURADO]
+
+
+@pytest.mark.parametrize("valor", [0, 0.0, -20.0])
+def test_n2_cero_y_negativo_no_entran_por_el_archivo(valor):
+    c = replace(ca.CRITERIOS[CLAVE_SATURADO], valor=valor)
+    with pytest.raises(ValueError, match="positivo"):
+        ca._verificar_criterio(CLAVE_SATURADO, c)
+
+
+@pytest.mark.parametrize("valor", [0, 0.0, -20.0])
+def test_n2_cero_y_negativo_no_entran_en_caliente(valor):
+    with pytest.raises(ValueError, match="positivo"):
+        ca.verificar_declaracion(CLAVE_SATURADO, valor)
+    with pytest.raises(ValueError, match="positivo"):
+        ca.establecer_valor_dinamico(CLAVE_SATURADO, valor)
+    assert not ca.declarado_en_caliente(CLAVE_SATURADO)
+
+
+def test_n2_cero_no_entra_por_la_cli():
+    try:
+        with pytest.raises((ValueError, SystemExit)):
+            cli.declarar_criterios([f"{CLAVE_SATURADO}=0"])
+        assert not ca.declarado_en_caliente(CLAVE_SATURADO)
+    finally:
+        ca.quitar_valor_dinamico(CLAVE_SATURADO)
+
+
+def test_n2_cero_no_se_escribe_en_el_archivo(tmp_path):
+    copia = tmp_path / "criterios_adoptados.py"
+    original = Path(ca.__file__).read_text(encoding="utf-8")
+    copia.write_text(original, encoding="utf-8")
+    with pytest.raises(ValueError, match="positivo"):
+        ca.escribir_valor_en_archivo(CLAVE_SATURADO, 0.0, ruta=str(copia))
+    assert copia.read_text(encoding="utf-8") == original
+
+
+def test_n2_el_nan_no_entra_y_un_positivo_si():
+    with pytest.raises(ValueError):
+        ca.verificar_declaracion(CLAVE_SATURADO, math.nan)
+    ca.verificar_declaracion(CLAVE_SATURADO, 19.5)
+
+
+def test_n2_positivo_solo_se_declara_en_un_numero():
+    c = replace(ca.CRITERIOS[CLAVE_NIVEL], positivo=True)
+    with pytest.raises(ValueError, match="positivo"):
+        ca._verificar_criterio(CLAVE_NIVEL, c)
+    with pytest.raises(ValueError, match="positivo"):
+        ca._verificar_criterio(CLAVE_NIVEL, replace(c, valor=None))

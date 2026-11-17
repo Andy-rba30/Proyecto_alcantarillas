@@ -205,6 +205,11 @@ class Criterio:
     # un tope: no dice cuanto puede valer, solo que no puede ser menor que
     # cero. Solo en `int` o `float` (`_verificar_signo`).
     no_negativo: bool = False
+    # Y EL ESTRICTO (verificacion de las correcciones de VE-2, N2): el mismo
+    # campo que `datos_sitio.DatoSitio.positivo`. Un peso especifico cero o
+    # negativo no es un dato que se pueda leer de un ensayo; sin esto la
+    # puerta lo aceptaba y solo lo rechazaba el consumidor.
+    positivo: bool = False
     nivel: str = ""
     # LAS DISCREPANCIAS DECLARADAS QUE ESTE CRITERIO TOCA, por su id.
     #
@@ -10711,12 +10716,20 @@ CRITERIOS: Dict[str, Criterio] = {
         # archivo ninguna corrida de referencia lo invoca (lo censa
         # `tests/test_nivel_medido.py::DE_UNA_ALTERNATIVA_NO_DE_ARCHIVO`).
         # Su otro consumidor, el cabezal (Fase 9), es de expediente: el
-        # nivel es el de la PRIMERA etapa que lo consume. Es [A] de perfil
-        # SIN `sensibilidad` porque se resuelve `de_ensayo`, y la regla 3 de
-        # `_verificar_nivel` exime al dato de ensayo de la ventana.
+        # nivel es el de la PRIMERA etapa que lo consume.
+        #
+        # ES [S], NO [A] (verificacion de las correcciones de VE-2, N2,
+        # decision del dueño): no hay nada que elegir -- es la medicion de
+        # laboratorio del relleno de ESTE proyecto, a la compactacion que su
+        # especificacion fija --, de modo que se defiende con la trazabilidad
+        # de la lectura y no con un rango (CLAUDE.md, «Taxonomia»). Hasta N2
+        # era [A] de perfil sin ventana, y para eso M3 habia eximido al dato
+        # de ensayo de la regla 3 de `_verificar_nivel`; la exencion se
+        # retiro con el reetiquetado.
         nivel=NIVEL_PERFIL,
-        etiqueta="A",
+        etiqueta="S",
         forma=FORMA_FLOAT,
+        positivo=True,
         concepto="Peso especifico SATURADO del relleno del trasdos, kN/m3, "
                  "para el empuje del suelo bajo el nivel del agua",
         justificacion="Decide el peso sumergido del relleno (saturado menos "
@@ -10738,10 +10751,26 @@ CRITERIOS: Dict[str, Criterio] = {
                       "con el valor de archivo de ese criterio V7 no lo lee, "
                       "pero con la alternativa una corrida de perfil se "
                       "detiene en el, y por eso es de perfil (revision de "
-                      "VE-2, M3)",
+                      "VE-2, M3). Es [S] y no [A]: cambia al cambiar de "
+                      "cantera o de especificacion de compactacion, no al "
+                      "cambiar de proyectista. Vive aqui, y no en "
+                      "datos_sitio.py, porque sigue pendiente del ensayo, que "
+                      "es la condicion que este archivo admite para un [S]",
         fuente="PENDIENTE - ensayo del material de relleno (peso especifico "
                "y gravedad especifica de solidos, a la compactacion "
                "especificada)",
+        trazabilidad="NO SE HA EJECUTADO NINGUN ENSAYO. La lectura que hace "
+                     "falta: el peso especifico saturado del material de "
+                     "relleno del trasdos, compactado al grado que fija la "
+                     "especificacion del proyecto, a partir de su peso "
+                     "especifico seco a esa compactacion y de la gravedad "
+                     "especifica de solidos (o medido sobre la muestra "
+                     "saturada), en kN/m3. Se declara con la cantera, el "
+                     "ensayo, el grado de compactacion y el laboratorio "
+                     "(`DeEnsayo.trazabilidad_exigida`). Vale para todo el "
+                     "corredor mientras el relleno venga de la misma cantera "
+                     "y se compacte a la misma especificacion; con dos "
+                     "canteras deja de ser un dato de corredor",
         reemplazado_por="Ensayo del material de cantera del relleno",
         resolucion=DeEnsayo(
             ensayo="peso especifico saturado del relleno compactado del "
@@ -12942,30 +12971,40 @@ def _verificar_criterio(clave: str, c: Criterio) -> None:
 
 def _verificar_signo(clave: str, c: Criterio) -> None:
     """
-    `Criterio.no_negativo` (revision de VE-2, M4): el valor, si esta, no es
-    menor que cero. Va DESPUES de `_verificar_forma`, de modo que aqui el
-    valor ya es un numero real finito (`_verificar_finitud` dejo fuera el
-    NaN y el infinito). La condicion se escribe en positivo y negada (forma
-    MAT-D13), como en `datos_sitio._verificar_dato`.
+    `Criterio.no_negativo` (revision de VE-2, M4) y `Criterio.positivo`
+    (verificacion de sus correcciones, N2): el valor, si esta, no es menor
+    que cero, o es mayor que cero. Va DESPUES de `_verificar_forma`, de modo
+    que aqui el valor ya es un numero real finito (`_verificar_finitud` dejo
+    fuera el NaN y el infinito). La condicion se escribe en positivo y
+    negada (forma MAT-D13), como en `datos_sitio._verificar_dato`.
 
-    El campo solo se declara en un `int` o un `float`: en otra forma no hay
-    un signo que comprobar, y declararlo seria una ficha mal escrita.
+    Los campos solo se declaran en un `int` o un `float`: en otra forma no
+    hay un signo que comprobar, y declararlos seria una ficha mal escrita
+    --- tambien con el criterio vacio, por eso la forma se mira antes que el
+    valor ---.
     """
-    if not c.no_negativo:
-        return
-    formas = _formas_de(c)
-    if not formas or not set(formas) <= {FORMA_INT, FORMA_FLOAT}:
-        raise ValueError(
-            f"'{clave}' declara no_negativo con forma={c.forma!r}: el signo "
-            f"solo se declara en un numero escalar (`{FORMA_INT}` o "
-            f"`{FORMA_FLOAT}`)")
+    for campo in ("no_negativo", "positivo"):
+        if not getattr(c, campo):
+            continue
+        formas = _formas_de(c)
+        if not formas or not set(formas) <= {FORMA_INT, FORMA_FLOAT}:
+            raise ValueError(
+                f"'{clave}' declara {campo} con forma={c.forma!r}: el signo "
+                f"solo se declara en un numero escalar (`{FORMA_INT}` o "
+                f"`{FORMA_FLOAT}`)")
     if c.valor is None:
         return
-    if not c.valor >= 0:
+    if c.no_negativo and not c.valor >= 0:
         raise ValueError(
             f"'{clave}' no admite un valor negativo y recibe {c.valor!r}: su "
             "ficha declara `no_negativo`. Se rechaza en la puerta de "
             "declaracion, por los tres caminos, y no en el consumidor")
+    if c.positivo and not c.valor > 0:
+        raise ValueError(
+            f"'{clave}' tiene que ser positivo (mayor que cero) y recibe "
+            f"{c.valor!r}: su ficha declara `positivo`. Se rechaza en la "
+            "puerta de declaracion, por los tres caminos, y no en el "
+            "consumidor")
 
 
 def _verificar_nivel(clave: str, c: Criterio) -> None:
@@ -12991,20 +13030,6 @@ def _verificar_nivel(clave: str, c: Criterio) -> None:
        que se va a poder elegir, y eso se sabe antes de elegir. Los dos que la
        sesion no pudo cerrar ('TW_receptor' y 'homogeneidad_serie_fen') tienen
        hoy su ventana escrita precisamente por esto.
-
-       SALVO EL DATO DE ENSAYO (revision de VE-2, M3), que lleva
-       `resolucion` y NO lleva ventana. `_verificar_criterio` le PROHIBE la
-       `sensibilidad` a un `de_ensayo` («un dato determinado por un
-       procedimiento no tiene rango que elegir»), y esta regla se la exigia
-       a todo [A] de perfil: juntas hacian imposible un [A] de perfil que se
-       resuelve por ensayo, y el primero que lo necesito --- el peso
-       especifico saturado del relleno, que V7 lee desde VE-2 --- tuvo que
-       quedarse marcado de expediente aunque una corrida de perfil se
-       detenga en el. La «ventana» de un dato de ensayo es la trazabilidad
-       que `DeEnsayo.trazabilidad_exigida` pide al declararlo (E-B: un dato
-       de ensayo exige la nota), y eso es lo que la GUI y la CLI necesitan
-       para declararlo en caliente. La `resolucion` se sigue exigiendo, y
-       se comprueba primero: sin ella no se sabe si es un dato de ensayo.
     """
     if c.nivel and c.nivel not in NIVELES:
         raise ValueError(
@@ -13017,14 +13042,7 @@ def _verificar_nivel(clave: str, c: Criterio) -> None:
             f"si bloquea el nivel de perfil o si `--alcance {NIVEL_PERFIL}` "
             "difiere su etapa al expediente")
     if c.nivel == NIVEL_PERFIL and c.etiqueta in ETIQUETAS_DE_ELECCION:
-        if c.resolucion is None:
-            raise ValueError(
-                f"'{clave}' es de nivel {NIVEL_PERFIL} y esta declarado con "
-                f"etiqueta [{c.etiqueta}], pero no lleva `resolucion`. Un "
-                "valor sin procedencia no se puede defender: la memoria tiene "
-                "que poder escribir de que tabla, de que rango o de que "
-                "ensayo salio")
-        if c.sensibilidad is None and not isinstance(c.resolucion, DeEnsayo):
+        if c.sensibilidad is None:
             raise ValueError(
                 f"'{clave}' es de nivel {NIVEL_PERFIL} y esta declarado con "
                 f"etiqueta [{c.etiqueta}], pero no lleva `sensibilidad`. El "
@@ -13032,6 +13050,13 @@ def _verificar_nivel(clave: str, c: Criterio) -> None:
                 "elegido sin la ventana dentro de la que se eligio: sin ella "
                 "la memoria imprime un numero y el revisor no puede saber si "
                 "moverlo cambia el diseño")
+        if c.resolucion is None:
+            raise ValueError(
+                f"'{clave}' es de nivel {NIVEL_PERFIL} y esta declarado con "
+                f"etiqueta [{c.etiqueta}], pero no lleva `resolucion`. Un "
+                "valor sin procedencia no se puede defender: la memoria tiene "
+                "que poder escribir de que tabla, de que rango o de que "
+                "ensayo salio")
 
 
 def criterios_por_nivel(nivel: str) -> List[str]:
