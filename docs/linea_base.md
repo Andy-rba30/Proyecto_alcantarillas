@@ -1038,3 +1038,21 @@ VE-3.9 (la huella de `criterios_adoptados.py` y «22 → 21 todavía sin valor»
 regenera sobre el conjunto al integrar. El caso que sí lo tiene, E07 de los ensayos de
 diseño del conducto (Ø 1.35 m adoptado, Ø 0.90 m por la hidráulica, descenso 0.325 m), es
 dato de prueba en `tests/fixtures/ve3_13_gobierno_receptor/`.
+
+## 26. VE-3.12: las Clases III a V del tubo de concreto, sus topes de diámetro y el contraste ACPA; ningún número de cálculo se mueve (2026-11-17)
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto primero
+en el `PATH`). `clases_producto_por_relleno` pasa de `{"II": 50.0}` a `{"II": 50.0, "III": 65.0,
+"IV": 100.0, "V": 140.0}` (decisiones 1 y 7 del dueño: III a V desde la tabla de ASTM C76 del
+ejemplo resuelto del USACE EM 1110-2-2902, B-7, fuente secundaria [C]; la V con pared B solo
+hasta 1200 mm y la IV bloqueada por encima de 300 mm), y entra el criterio
+`relleno_max_contraste_acpa_m` [A] = 1.0 m (decisión 6: contraste ACPA que no gobierna).
+Resultado: la huella de `criterios_adoptados.py` y el recuento («149 criterios, 21 sin valor»;
+la regeneración también recoge el valor de archivo de `dimensionamiento_zapata_cabezal` de
+VE-3.9, que el árbol de partida tenía sin regenerar), los criterios usados de los JSON (la tabla
+de clases y el umbral del contraste), y en las memorias la nota del paso F8.CLASE y el texto de
+`DIFERIDO_CLASES_M170M`. Ningún punto de la línea base pide más que la Clase II ni tiene menos de
+1.0 m de relleno sobre un tubo de concreto: no aparece ningún contraste ACPA ni cambia ninguna
+clase.
+
+**Diámetros, secciones, materiales, clases y HW movidos: ninguno.**

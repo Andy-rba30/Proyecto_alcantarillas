@@ -15,7 +15,7 @@
 
 ## 1. Fuentes
 
-Las 19 presentes, con el SHA-1 exacto contra el que se
+Las 20 presentes, con el SHA-1 exacto contra el que se
 verificó cada cita y la regla de paginación MEDIDA, no supuesta. **Desde
 T-12 su PDF vive SOLO en el repositorio de normas**, enlazado por
 `NORMAS_DIR` (`fuentes.directorios_de_normas`): los dieciséis que hasta
@@ -43,6 +43,7 @@ de la §1-bis, son los PDF de ese repositorio.
 | `MC_HHD` | Manual de Hidrologia, Hidraulica y Drenaje | Version Libro | corrida, +3 | 225 | `a31e853b8171b931863d7afa4379bbbc57cacb0d` | sí | confirmada 2026-09-14; aprobada por RD 20-2011-MTC/14 |
 | `MP` | Manual de Puentes | Version Libro | corrida, +1 | 673 | `67a7a9f1c61cad8f9ca179cd4ca777f96b49dc44` | sí | **posterior detectada** 2026-09-14: Manual de Puentes actualizado 2018 (630 paginas); aprobada por RD 041-2016-MTC/14; **derogada por RD 19-2018-MTC/14** |
 | `MS` | Manual de Carreteras: Suelos, Geologia, Geotecnia y Pavimentos — Seccion Suelos y Pavimentos | Version abril 2014 | corrida, +1 | 281 | `21d19a71090c1e586cd31596db8a4d007dc7b96f` | sí | confirmada 2026-09-14; aprobada por RD 10-2014-MTC/14 |
+| `USACE_EM_1110_2_2902` | Conduits, Culverts, and Pipes (EM 1110-2-2902) | 31 Mar 1997, Change 1 del 31 Mar 1998 | por capítulo: B=64 | 87 | `cfdc3bfd1c9291d30c98de11f27b1f1fbf7a95d8` | sí | **a gabinete** 2026-11-17 |
 | `USBR_DSCS` | Design of Small Canal Structures | 1978 (Aisenbrey, Hayes, Warren, Winsett y Young) | corrida, +23 | 458 | `75510d711ce1f6643333937a1ea38f3b469cc1f7` | sí | confirmada 2026-11-17 |
 | `WSDOT_HM` | WSDOT Hydraulics Manual (M 23-03) | M 23-03.12, April 2026 | por capítulo: 1=14, 10=265, 10A=289, 2=36, 2A=63, 3=65, 4=86, 5=100, 6=120, 7=130, 7A=210, 7B=211, 8=215, 9=264, G=298 | 325 | `b34bb7bd448c249301e2a1a82234be70e8b6d916` | sí | confirmada 2026-11-11 |
 
@@ -58,7 +59,7 @@ el archivo cambia.
 | `MDCTA_2016` | Manual de Dispositivos de Control del Transito Automotor para Calles y Carreteras | 532 | `58b948b70ca1fd28e133559471b2a4dba28afb1c` | es la norma de señalizacion vial (señales, marcas, semaforos); ninguna fase de la v8 ni ninguna verificacion de M1 a M10 cita un numeral suyo. La demarcacion del derecho de via que el DG-2018 §304.07.03 remite a la RM 404-2011-MTC/02 tampoco pasa por este manual |
 | `MSV_2017` | Manual de Seguridad Vial (2017) | 461 | `cc47c736c38503005a85966002a3ed267524b240` | ninguna fase de la hoja de ruta v8 cita un numeral suyo: trata la seguridad vial de la plataforma (barreras, zonas despejadas, señalizacion), no el drenaje transversal. Lo unico que roza al proyecto es la zona despejada junto a cabezales y aletas, y la v8 no la evalua |
 
-**Estado final (T-12):** 19 fuentes presentes y 2 PDF censados, todos en el repositorio de normas y ninguno en este; 12 fuentes citadas sin PDF (§2).
+**Estado final (T-12):** 20 fuentes presentes y 2 PDF censados, todos en el repositorio de normas y ninguno en este; 12 fuentes citadas sin PDF (§2).
 
 ## 2. Fuentes que se citan y NO están en el repositorio de normas
 
@@ -572,7 +573,9 @@ línea que se pueda romper.
 | `AASHTO_M170M.T1#DIAMETROS` | Table 1 | «Design Requirements for Class I Reinforced Concrete Pipe» | pág. impresa **M 170M-3** · PDF 3 | definicion | 2026-11-12 · imagen renderizada |
 | `AASHTO_M170M.T1_T5#DIAMETROS` | Tables 1 to 5 | «Table 1—Design Requirements for Class I Reinforced Concrete Pipe» | pág. impresa **M 170M-3** · PDF 3 | definicion | 2026-09-12 · imagen renderizada |
 | `AASHTO_M170M.T2#DLOAD` | Table 2 | «Design Requirements for Class II Reinforced Concrete Pipe» | pág. impresa **M 170M-5** · PDF 5 | definicion | 2026-11-12 · imagen renderizada |
+| `AASHTO_M170M.T4#LEGIBLE` | Table 4 | «Design Requirements for Class IV Reinforced Concrete Pipe» | pág. impresa **M 170M-8** · PDF 8 | definicion | 2026-11-17 · imagen renderizada |
 | `AASHTO_M170M.T5` | Table 5 | «Table 5—Design Requirements for Class V Reinforced Concrete Pipe» | pág. impresa **M 170M-10** · PDF 10 | definicion | 2026-09-22 · imagen renderizada |
+| `AASHTO_M170M.T5#PARED_B` | Table 5 | «Design Requirements for Class V Reinforced Concrete Pipe» | pág. impresa **M 170M-10** · PDF 10 | definicion | 2026-11-17 · imagen renderizada |
 | `AASHTO_M170M.T6` | Table 6 | PERMISSIBLE VARIATIONS › «Permissible Variation in Internal Diameter» | pág. impresa **M 170M-20** · PDF 20 | definicion | 2026-11-17 · imagen renderizada |
 
 > **`AASHTO_M170M.1.1`** — Leida sobre la PDF 1 renderizada a escala 3.0 (el OCR imprime «iniendcd io be used» y «culvens»). Cubre TUBERIA («pipe»); un marco rectangular vaciado in situ no es tuberia y esta norma no lo rige. La PDF 1 rotula ademas «AASHTO Designation: M 170M-04» y «ASTM Designation: C 76M-02», que es la doble designacion del rotulo que M2 imprime.
@@ -591,7 +594,11 @@ línea que se pueda romper.
 
 > **`AASHTO_M170M.T2#DLOAD`** — LEIDO POR IMAGEN, y es LA UNICA D-load de 0.3 mm LEGIBLE en el ejemplar. La pag. PDF 5 («Table 2—Continued») imprime al pie «D-load to produce a 0.3-mm crack 50.0» y «D-load to produce the ultimate load ?S.0» (el primer digito, ilegible). Las Tablas 1, 3, 4 y 5 son recomposiciones OCR con digitos equivocados (nota de la Fuente): la de la Clase V imprime «\ 40.0», la de la Clase III solo la ultima, «100.0», y la Clase I e IV no se leen. NO SE COMPLETAN DE MEMORIA: las Clases I, III, IV y V quedan sin D-load en 'clases_producto_por_relleno' y el paso lo dice. Y la Tabla 2 (PDF 4) tiene filas con pared B y acero de 300 a 2700 mm: la Clase II existe en todo el catalogo de concreto.
 
+> **`AASHTO_M170M.T4#LEGIBLE`** — LEIDO POR IMAGEN. De la Tabla 4 (Clase IV) solo se lee su PRIMERA fila, 300 mm (pared B de 50 mm); el resto de la pagina es una recomposicion OCR vacia salvo los rotulos 2100 y 2250. El ultimo diametro con diseño estandar de la Clase IV no se puede leer y no se inventa (decision 7 del dueño): por encima de 300 mm la Clase IV queda BLOQUEADA, y un tubo que la necesite se detiene con el dato que falta. Vista de calculo: DIAMETRO_MAX_LEGIBLE_POR_CLASE_M170M_MM.
+
 > **`AASHTO_M170M.T5`** — La pagina PDF 10 es un escaneo real, legible, impreso girado 90 grados (el rotulo de pie «M 170M-10» y «TS-4a» van verticales). La columna «Internal Designed Diameter, mm» --asi la imprime, con «Designed» y no «Designated»-- tiene 27 filas de 300 a 3600 mm, y es la serie que CP11 usa como dorado del concreto. Las columnas de espesor de pared B (300 a 1200 mm) y C (300 a 1800 mm) son legibles y se transcriben; las de refuerzo no, porque ningun modulo las consume (M8 no dimensiona el tubo de concreto).
+
+> **`AASHTO_M170M.T5#PARED_B`** — LEIDO POR IMAGEN (escaneo girado, legible). En la Clase V la Pared A no tiene diseño en ningun diametro; la PARED B tiene espesor y acero de 300 a 1200 mm (50 a 125 mm) y de 1350 mm en adelante llamada a nota y rayas (diseño especial de la Seccion 7.2); la Pared C llega a 1800 mm. El programa toma el espesor de la pared B, de modo que la Clase V no se ofrece por encima de 1200 mm: vista de calculo, DIAMETRO_MAX_TABULADO_PARED_B_POR_CLASE_M170M_MM.
 
 > **`AASHTO_M170M.T6`** — Leida sobre la PDF 20 renderizada a 2.0x (rotulo de pie «M 17OM-20»). La imagen imprime «Table» y el titulo SIN el numero: «Table 6» es como la llama el num. 12.1 («See Table 6»). Tres columnas: «Designated Diameter of Pipe, mm», «Equivalent English Dia, in.» y «Equivalent English Dia, mm» (este rotulo llega como «pqq glish Dia, mm»). Las celdas que la recomposicion OCR imprime mal, y por que se leen como se leen, estan en DIS-M170M-T6-RECOMPOSICION; la tabla del registro (AASHTO_M170M.T6) transcribe de 300 a 2700 mm.
 
@@ -1657,6 +1664,14 @@ línea que se pueda romper.
 > **`MS.9.1.1`** — NOR-SUE-03: ES EL NUMERAL QUE NO CONTIENE NINGUNO DE LOS DOS VALORES DE COMPACTACION. No imprime ni 0.95 ni 0.90 ni ningun porcentaje: va de CBR ≥ 6 % y de alternativas de estabilizacion. Sostiene CBR_MIN_SUBRASANTE, no COMPACTACION_*.
 
 > **`MS.9.1.3`** — El apartado 3) CRUZA EL SALTO DE PAGINA: arranca en la impresa 89 (PDF 90) y termina en la 90 (PDF 91), donde se imprimen el 1.00 m, el 1.20 m y la frase de los remedios («En caso necesario, se colocarán subdrenes o capas anticontaminantes y/o drenantes o se elevará la rasante hasta el nivel necesario»). El `texto_literal` es la mitad que cabe en la pagina que la cita declara, porque es la que T2 tiene que poder encontrar ahi. Segunda ocurrencia de la MISMA regla, con las mismas cuatro cifras, y con tres diferencias literales: dice «La superficie» donde el 4.5.4 dice «El nivel superior», dice «extraordinaria y muy buena» donde aquel dice «excelente - muy buena», y NO enuncia los intervalos numericos de CBR. Los intervalos solo estan en el 4.5.4, y por eso la cita del proyecto al 4.5.4 es la correcta.
+
+### Conduits, Culverts, and Pipes (EM 1110-2-2902)  (`USACE_EM_1110_2_2902`)
+
+| id de la cita | Numeral | Título literal del numeral | Página | Carácter | Verificada |
+|---|---|---|---|---|---|
+| `USACE_EM_1110_2_2902.B-7#C76` | Appendix B, Chapter 3 | «D-Load Analysis» | pág. impresa **B-7** · PDF 71 | definicion | 2026-11-17 · texto |
+
+> **`USACE_EM_1110_2_2902.B-7#C76`** — Titulo de la tabla del EJEMPLO RESUELTO (no tabla normativa) de la pag. impresa B-7: «I 40 (800)», «II 50 (1,000)», «III 65 (1,350)», «IV 100 (2,000)», «V 140 (3,000)», N/m/mm con el valor de la norma inglesa en lb/ft/ft entre parentesis. Las cifras metricas son las NOMINALES de ASTM C76M / AASHTO M 170M, no una conversion (100 y 140 no son 95.76 ni 143.64). El ejemplar de M 170M de normas/ corrobora la Clase II (0.3 mm = 50.0, AASHTO_M170M.T2#DLOAD), la ultima de la Clase III (100.0, coherente con 65 x 1.5) y la Clase V con la primera cifra ilegible («?40.0»); I, IV y el 65 de la III no se confirman en el. El proyecto transcribe III, IV y V (decision 1 del dueño); la I no, porque la norma solo la tabula desde 1500 mm. El tubo suministrado tiene que ser M 170M (EG-2013 506): la clase homonima de ASTM C76 en unidades inglesas resiste hasta un 4.2 % menos.
 
 ### Design of Small Canal Structures  (`USBR_DSCS`)
 
@@ -3154,7 +3169,7 @@ recomienda.
 | `F7.VC3` | Fase 7 - Compatibilidad geometrica | VC3: perdidas de la obra frente al desnivel que el perfil del canal provee en el cruce | **recomienda** | `USBR_DSCS.2-6#CHECK`, `USBR_DSCS.2-6#F` |
 | `F8.CARGA_TIERRA` | Fase 8 - Verificacion estructural del conducto | Carga de tierra sobre el conducto: prisma de relleno y paquete estructural, con la interaccion suelo-estructura de su tipo | **obliga** | `AASHTO_LRFD_9.12.10.2.1#VAF`, `AASHTO_LRFD_9.12.10.2.1#PESO_MIN`, `AASHTO_LRFD_9.12.10.2.2`, `AASHTO_LRFD_9.C12.7.2.2`, `AASHTO_LRFD_9.12.11.2.2.1`, `MP.2.4.2.1#PESOS` |
 | `F8.CARGA_VIVA` | Fase 8 - Verificacion estructural del conducto | Carga viva HL-93 a la profundidad de la clave: presion vertical por la rueda distribuida a traves del relleno | **obliga** | `AASHTO_LRFD_9.3.6.1.2.6a#RELLENO`, `AASHTO_LRFD_9.3.6.1.2.6a#EJES`, `AASHTO_LRFD_9.3.6.1.2.6a#UN_CARRIL`, `AASHTO_LRFD_9.3.6.1.2.6a#DESPRECIABLE`, `AASHTO_LRFD_9.3.6.1.2.6a#VARIOS_VANOS`, `AASHTO_LRFD_9.3.6.1.2.6a#CONCRETO_SOMERO`, `AASHTO_LRFD_9.T3.6.1.2.6a-1`, `AASHTO_LRFD_9.3.6.1.2.6b#PL`, `AASHTO_LRFD_9.C3.6.1.2.6b`, `MP.2.4.3.2.2.2`, `MP.2.4.3.2.2.3`, `MP.2.4.3.2.2.5`, `MP.2.4.3.2.2.6`, `MP.2.4.3.3.2`, `AASHTO_LRFD_9.12.11.2.1#LL` |
-| `F8.CLASE_CONCRETO` | Fase 8 - Verificacion estructural del conducto | Clase del tubo de concreto reforzado por el metodo indirecto: D-load requerida frente a la D-load de la clase | **obliga** | `AASHTO_LRFD_9.12.10.4.3.1`, `AASHTO_LRFD_9.12.10.4.3.1#TIPO1`, `AASHTO_LRFD_9.12.10.4.3.1#DLOAD`, `AASHTO_LRFD_9.12.10.4.3.2a`, `AASHTO_LRFD_9.12.10.4.3.2c`, `AASHTO_LRFD_9.12.10.2.3`, `AASHTO_M170M.T2#DLOAD`, `AASHTO_M170M.T1#DIAMETROS`, `AASHTO_LRFD_9.T12.10.2.1-1`, `AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR`, `EG2013.506.02#CLASE`, `EG2013.506.07`, `EG2013.506.10`, `EG2013.T205-01`, `EG2013.205.12#COMPACTACION` |
+| `F8.CLASE_CONCRETO` | Fase 8 - Verificacion estructural del conducto | Clase del tubo de concreto reforzado por el metodo indirecto: D-load requerida frente a la D-load de la clase | **obliga** | `AASHTO_LRFD_9.12.10.4.3.1`, `AASHTO_LRFD_9.12.10.4.3.1#TIPO1`, `AASHTO_LRFD_9.12.10.4.3.1#DLOAD`, `AASHTO_LRFD_9.12.10.4.3.2a`, `AASHTO_LRFD_9.12.10.4.3.2c`, `AASHTO_LRFD_9.12.10.2.3`, `AASHTO_M170M.T2#DLOAD`, `AASHTO_M170M.T1#DIAMETROS`, `USACE_EM_1110_2_2902.B-7#C76`, `AASHTO_M170M.T4#LEGIBLE`, `AASHTO_M170M.T5#PARED_B`, `AASHTO_LRFD_9.T12.10.2.1-1`, `AASHTO_LRFD_9.T12.10.2.1-1#PROCTOR`, `EG2013.506.02#CLASE`, `EG2013.506.07`, `EG2013.506.10`, `EG2013.T205-01`, `EG2013.205.12#COMPACTACION` |
 | `F8.HDPE_DEFLEXION` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deflexion vertical de servicio | **obliga** | `AASHTO_LRFD_9.12.12.2.2`, `AASHTO_LRFD_9.C12.12.2.2` |
 | `F8.HDPE_EMPUJE` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: deformacion de compresion por el empuje frente a su limite | **obliga** | `AASHTO_LRFD_9.12.12.3.10.1d`, `AASHTO_LRFD_9.12.12.3.10.1c#EP`, `AASHTO_LRFD_9.12.12.3.5`, `AASHTO_LRFD_9.T12.12.3.3-1`, `AASHTO_LRFD_9.T12.12.3.5-1`, `AASHTO_LRFD_9.12.12.3.10.1b#STUB`, `AASHTO_M294_TRAD.7.7`, `AASHTO_LRFD_9.TA12-11`, `AASHTO_LRFD_9.12.12.3.2`, `AASHTO_LRFD_9.C12.12.3.2`, `AASHTO_LRFD_9.T12.12.3.5-2`, `AASHTO_LRFD_9.12.5.4`, `AASHTO_LRFD_9.1.3.5`, `MP.2.3.2.5`, `EG2013.508.02#GRANULAR`, `EG2013.T301-01`, `EG2013.508.07#COMPACTACION` |
 | `F8.HDPE_FF` | Fase 8 - Verificacion estructural del conducto | Tuberia de polietileno corrugado: factor de flexibilidad para el manejo y la instalacion | **obliga** | `AASHTO_LRFD_9.12.5.6.3`, `AASHTO_LRFD_9.12.12.3.6`, `AASHTO_LRFD_9.TA12-11` |
@@ -3364,7 +3379,7 @@ vigila. Una cita con cualquier campo pendiente NO puede llevar firma de
 verificación.
 
 
-Citas sin firma de verificación: **6** de 529.
+Citas sin firma de verificación: **6** de 532.
 - `AASHTO_M294_TRAD.1.1.1`
 - `AASHTO_M294_TRAD.1.4`
 - `AASHTO_M294_TRAD.7.2.1`
