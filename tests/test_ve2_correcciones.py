@@ -217,3 +217,24 @@ def test_el_caso_real_de_la_pared_sigue_no_factible_por_rasante_con_su_delta():
     b = next(b for b in a01.bloqueos
              if b.tipo is TipoDeBloqueo.DISENO_NO_FACTIBLE)
     assert b.delta_rasante_m == pytest.approx(0.31981, abs=1e-5)
+
+
+def test_otro_dato_del_punto_de_V8_tambien_decide():
+    """
+    La regla es «dato del punto», no «Q_evento_extremo_m3s» (B1 de la
+    segunda verificacion Fable: el mutante que la limitaba a ese campo
+    sobrevivia). A-01 con Q = 1.5 m3/s, S = 0.004 y sin el tirante aguas
+    abajo del evento extremo: un escalon que cumple lo evaluado se detiene
+    en V8 por `TW_evento_extremo_m`, y el punto sale con ese dato que falta
+    (en `d9b59f9` salia «no factible por rasante», delta 0.31981).
+    """
+    cambios = (("celda", "A-01", "Q_m3s", "1.5"),
+               ("celda", "A-01", "S_cauce", "0.004"),
+               ("externo", "A-01", "TW_evento_extremo_m", None))
+    informe = V.correr_juego(V.aplicar(V.juego_completo(), cambios))
+    a01 = next(p for p in informe.puntos if p.punto.id == "A-01")
+    assert not a01.dimensionado
+    assert TipoDeBloqueo.DISENO_NO_FACTIBLE not in {b.tipo for b in a01.bloqueos}
+    b = next(b for b in a01.bloqueos
+             if b.tipo is TipoDeBloqueo.DATO_FALTANTE)
+    assert b.campo == "TW_evento_extremo_m"

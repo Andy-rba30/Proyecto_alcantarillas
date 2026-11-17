@@ -7926,6 +7926,11 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   la misma frontera que el dato inválido (`exc.campo in ca.CRITERIOS`); N2 sigue la
   taxonomía: un dato determinado por un procedimiento no tiene rango que elegir y se
   defiende con trazabilidad, que es [S].
-- **Qué haría falta:** nada para estos. Sigue como antes de VE-2 que por la CLI un dato de
-  ensayo se declara sin nota (la pestaña 2 la exige).
+- **Qué haría falta:** nada para estos. De la segunda verificación (Fable, `VERIFICACION_FABLE_2.md`,
+  «integrar en main»): la regla de N1 queda fijada también por `TW_evento_extremo_m`; la
+  frontera es por NOMBRE (un dato de catálogo futuro de la Fase 5 cuyo campo no sea un
+  criterio decidiría como del punto); por la CLI un dato de ensayo se sigue declarando sin
+  nota, como antes de VE-2; y `c_phi_fundacion`, `capacidad_portante_adm` y
+  `Mw_licuefaccion` siguen [A] con `DeEnsayo` (si la razón de N2 vale para ellos lo decide el
+  dueño).
 - **Dónde vive:** `src/modulos/MD.py::_falta_un_dato_de_catalogo`

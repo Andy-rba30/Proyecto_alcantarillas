@@ -835,7 +835,7 @@ respecto de `72a8d01` salvo lo que §11 lista** (A-01, A-02, C-01 y el cajón, p
 único número que §11 no escribía: el ancho final de la clase de A-02, 6.30 → 5.70 m, que
 acompaña al paso de la clase 4 a la 3).
 
-## 17. Correcciones de la revisión independiente de VE-2 (2026-11-17): sólo la huella de `criterios_adoptados.py`
+## 17. Correcciones de la revisión independiente de VE-2 y de su verificación (2026-11-17): la huella de `criterios_adoptados.py` y la etiqueta del peso saturado
 
 Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto
 primero en el `PATH`: el `python3` del sistema puede no traer scipy). De las seis
