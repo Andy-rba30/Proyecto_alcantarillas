@@ -227,7 +227,8 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   dimensionado con `M9.cabezal_del_punto`, y el proyecto solo guarda la suma
   (`InformeCabezal.por_punto`). Cada dimensión lleva su ORIGEN —«propuesta por
   regla», «declarada» (`cabezal_declarado` de `--datos-externos`), «derivada
-  de dimensiones declaradas» o, desde VE-3.5, «dimensionada por estabilidad»—,
+  de dimensiones declaradas» o, desde VE-3.5/3.9, «dimensionada por
+  estabilidad» o «por armado»—,
   y una declarada se contrasta con los mínimos
   con número (CB1 a CB7). La embocadura es del punto y se resuelve ANTES de la
   Fase 4 (`M9.embocadura_del_punto`): en un marco, la carta y el ke declarados
@@ -237,11 +238,15 @@ el 0.5 es [N] y cuál de las dos declaraciones aplica a esta obra es [A].
   cuando la de la regla no cumple E1 a E3 y su ancho no se declaró
   (`M9.dimensionar_zapata_por_estabilidad`: crece el talón con el paso y hasta
   el tope de `dimensionamiento_zapata_cabezal` [A]; con el tope alcanzado
-  queda el mayor ancho, que no cumple, con su aviso). Lo declarado gana y no
+  queda el mayor ancho, que no cumple, con su aviso), y desde VE-3.9 también
+  su PERALTE, por el armado de la punta y del talón
+  (`M9.dimensionar_peralte_por_armado`), con el mismo paso y re-verificando la
+  estabilidad; el paso y el tope son valor de archivo (0.10 m y 1.5·H_c,
+  decisión del dueño) y el tope del peralte es físico. Lo declarado gana y no
   se itera. Ficha VE3-05.
 - **Y desde T-7c cada cabezal se ARMA detrás de su estabilidad, con la
   geometría final —la de la regla, la declarada o, desde VE-3.5, la
-  dimensionada por estabilidad— y sin iterarla en el armado** (`servicio._fase_9_armado`: una etapa por las
+  dimensionada por estabilidad o por armado— y sin iterarla en el armado** (`servicio._fase_9_armado`: una etapa por las
   solicitaciones, una por elemento y una por la tabla, para que lo que un
   elemento no pueda evaluar quede como `Bloqueo` y los demás sigan). Rige
   AASHTO LRFD Sección 5 sobre las solicitaciones FACTORADAS (filas A1 a A4,

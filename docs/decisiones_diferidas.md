@@ -8048,21 +8048,23 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   resuelto publicado (p. ej. del USBR o del manual de referencia de HEC-RAS).
 - **Dónde vive:** `src/modulos/M3_hidraulica.py::perfil_remanso_trapecial`
 
-## VE3-05 · El cabezal se dimensiona por estabilidad: la zapata crece por el talón
+## VE3-05 · El cabezal se dimensiona: la zapata crece por el talón (estabilidad) y en peralte (armado)
 
-- **Cerrado (VE-3.5, decisión del dueño del 2026-11-17):** detrás de la estabilidad de la
-  regla y delante del armado, B_k = B_regla + k·paso hasta el primer ancho que cumple E1 a E3
-  en las condiciones evaluadas, sin pasar fraccion_ancho_max·H_c; crece el talón (suma el peso
-  del relleno) y la punta queda la de la regla. Lo declarado gana. Con el tope alcanzado queda
-  el mayor ancho de la grilla, que no cumple, con su aviso. Origen «dimensionada por
-  estabilidad» y traza en `F9.DIMENSIONADO` (AASHTO 11.6.3.2, 11.6.3.3, 11.6.3.6). La línea
-  base no lo ejercita (§20); con los datos de prueba los ocho cabezales del juego cumplen.
-- **Abierto:** (1) el paso y el tope (`dimensionamiento_zapata_cabezal` [A] de expediente, sin
-  valor de archivo: ninguna fuente los fija; propuesta 0.10 m y 1.5·H_c; en A-01 la entrada
-  cumple con 2.40 m = 1.07·H_c y la salida con 3.20 m = 0.84·H_c). (2) El ESPESOR de la
-  zapata no crece: con el talón más largo no cumplen filas A1/A2 de su armado (28 en la
-  corrida titular, 3 en el juego). (3) El dentellón de corte (pasivo de AASHTO 11.6.3.5) no
-  se ofrece como alternativa.
-- **Qué haría falta:** decisión del dueño sobre (1); extender el dimensionamiento al peralte
-  de la zapata para (2).
-- **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_zapata_por_estabilidad`
+- **Cerrado (VE-3.5; VE-3.9, decisiones del dueño del 2026-11-17):** detrás de la estabilidad de
+  la regla, B_k = B_regla + k·paso hasta cumplir E1 a E3, sin pasar fraccion_ancho_max·H_c
+  (crece el talón). Después el peralte crece con el mismo paso hasta que el armado de la punta
+  y del talón (A1, A2, A3, A4, A6) cumple, re-verificando la estabilidad con cada peralte (el
+  ancho puede volver a crecer; el bucle termina porque los dos sólo crecen y están acotados).
+  `dimensionamiento_zapata_cabezal` [A] con valor de archivo 0.10 m y 1.5·H_c (decisión del
+  dueño; ventana propuesta 0.05–0.20 m y 1.0–2.0·H_c); el tope del peralte es físico (deja
+  pantalla). Orígenes «dimensionada por estabilidad» y «dimensionada por armado»; trazas en
+  `F9.DIMENSIONADO` y `F9.DIMENSIONADO_PERALTE` (AASHTO 11.6.3.x, 5.6.3.2.1, 5.7.3.3). Con los
+  datos de prueba no queda ninguna fila de zapata ni de estabilidad LRFD sin cumplir (titular:
+  peraltes de 1.00 a 1.50 m y anchos de 3.38 a 5.28 m; juego: dos salidas con 0.80 y 0.70 m).
+- **Abierto:** (1) los peraltes con el cortante fuera de 5.7.3.4.1 se saltan (el procedimiento
+  general de 5.7.3.4.2 no está implementado), lo que agranda el peralte más de lo necesario;
+  (2) el espesor de la pantalla y del alero no se dimensiona (A1 de la salida de A-01, A-02 y
+  C-01 sin cumplir); (3) el dentellón de corte de 11.6.3.5 no se ofrece.
+- **Qué haría falta:** el cortante general de 5.7.3.4.2 y extender el dimensionamiento a la
+  pantalla y al alero.
+- **Dónde vive:** `src/modulos/M9_cabezal.py::dimensionar_peralte_por_armado`

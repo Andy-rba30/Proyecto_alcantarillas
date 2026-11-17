@@ -934,32 +934,6 @@ sigue «no se evaluó». Lo único que cambia es la huella de `criterios_adoptad
 criterio opcional nuevo `fraccion_fin_remanso_canal`) en los cuatro JSON y en las memorias.
 **Diámetros, secciones, materiales y HW movidos: ninguno.**
 
-## 24. VE-3.10 (Familia C): VC3 sin el desnivel del perfil del canal DETIENE el punto (2026-11-17)
-
-Decisión del dueño (ficha VE3-06): en un paso de canal sin `desnivel_perfil_canal_m` el
-punto ya no sale con el aviso de 7.B («VC3 … no se evaluó», retirado): se detiene en el
-bucle de MD con `DatoFaltanteError` de esa clave, en la posición de VC1 y también a
-`--alcance perfil`. Para que la corrida dedicada de la Familia C siga dimensionando C-01,
-`entradas_ampliadas.json` declara **F = 1.20 m como DATO DE PRUEBA rotulado** (con la entrada
-en el terreno del cruce y el TW de 0.30 m, el marco de 1.20 × 0.90 m pierde 1.023 m; un F
-de canal real, 0.30-0.40 m, lo dejaría sin sección). Regenerada con
-`sh tests/linea_base_familia_c/regenerar.sh`, punto por punto:
-
-- **C-01, corrida de la Familia C (`informe_familia_c.json`, `cli_familia_c.txt`):** la
-  fila VC3 se evalúa y CUMPLE (pérdida 1.0230 m frente a F = 1.20 m, margen 0.177 m), y el
-  aviso de 7.B desaparece. **La sección (marco 1.20 × 0.90 m), el material y el HW no se
-  mueven.**
-- **C-01 en las otras tres corridas (perfil estrecha y ancha, expediente):** sin cambio:
-  se detiene antes, en VC1, por la coronación del canal que esas corridas no traen; F no
-  llega a pedirse.
-- **A-01, A-02 y B-01:** sin cambio (la clave sólo la usa la Familia C).
-- **Lo que la regeneración trae de la integración de VE-3.5 y VE-3.7, que el árbol de
-  partida tenía sin regenerar:** la huella `criterios_sha1` en los cuatro JSON y en las
-  memorias, el recuento «148 criterios declarados, 22 todavía sin valor», y
-  `dimensionamiento_zapata_cabezal` entre los criterios sin valor.
-
-**Diámetros, secciones, materiales y HW movidos: ninguno.**
-
 ## 23. VE-3.9: el paso y el tope de la zapata como valor de archivo, y el peralte dimensionado por su armado; sólo la huella y el recuento (2026-11-17)
 
 Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto
@@ -997,3 +971,29 @@ veredictos» a «leído, sin efecto medible» (`clase_exposicion_fisuracion_cabe
 peralte absorbe. Y el barrido de §3.1 vuelve a medir la zapata de la REGLA: la base
 `juego_cabezal_de_la_regla` declaraba el criterio sin valor y el barrido no lo aplicaba
 (`tests/apoyo/sensibilidad.py::medir` lo aplica desde VE-3.9).
+
+## 24. VE-3.10 (Familia C): VC3 sin el desnivel del perfil del canal DETIENE el punto (2026-11-17)
+
+Decisión del dueño (ficha VE3-06): en un paso de canal sin `desnivel_perfil_canal_m` el
+punto ya no sale con el aviso de 7.B («VC3 … no se evaluó», retirado): se detiene en el
+bucle de MD con `DatoFaltanteError` de esa clave, en la posición de VC1 y también a
+`--alcance perfil`. Para que la corrida dedicada de la Familia C siga dimensionando C-01,
+`entradas_ampliadas.json` declara **F = 1.20 m como DATO DE PRUEBA rotulado** (con la entrada
+en el terreno del cruce y el TW de 0.30 m, el marco de 1.20 × 0.90 m pierde 1.023 m; un F
+de canal real, 0.30-0.40 m, lo dejaría sin sección). Regenerada con
+`sh tests/linea_base_familia_c/regenerar.sh`, punto por punto:
+
+- **C-01, corrida de la Familia C (`informe_familia_c.json`, `cli_familia_c.txt`):** la
+  fila VC3 se evalúa y CUMPLE (pérdida 1.0230 m frente a F = 1.20 m, margen 0.177 m), y el
+  aviso de 7.B desaparece. **La sección (marco 1.20 × 0.90 m), el material y el HW no se
+  mueven.**
+- **C-01 en las otras tres corridas (perfil estrecha y ancha, expediente):** sin cambio:
+  se detiene antes, en VC1, por la coronación del canal que esas corridas no traen; F no
+  llega a pedirse.
+- **A-01, A-02 y B-01:** sin cambio (la clave sólo la usa la Familia C).
+- **Lo que la regeneración trae de la integración de VE-3.5 y VE-3.7, que el árbol de
+  partida tenía sin regenerar:** la huella `criterios_sha1` en los cuatro JSON y en las
+  memorias, el recuento «148 criterios declarados, 22 todavía sin valor», y
+  `dimensionamiento_zapata_cabezal` entre los criterios sin valor.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**
