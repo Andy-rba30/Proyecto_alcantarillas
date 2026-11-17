@@ -123,8 +123,12 @@ def test_es_el_menor_ancho_de_la_grilla_que_cumple(dimensionado,
     cab = _punto(dimensionado).cabezal
     regla = {g.extremo: g.B for g in _punto(sin_criterio).cabezal.geometrias}
     for g in cab.geometrias:
+        # CAMBIADO DECLARANDOLO (VE-3.14, H-12): los intentos de la
+        # re-optimizacion del ancho tras el peralte van al final de la traza
+        # y se miran aparte (tests/test_ve3_14_cabezal.py); aqui, la grilla
+        # creciente del dimensionamiento por estabilidad.
         intentos = [i for i in cab.intentos_de_zapata
-                    if i.extremo == g.extremo]
+                    if i.extremo == g.extremo and not i.reoptimizado]
         assert intentos[0].B == pytest.approx(regla[g.extremo],
                                               abs=ABS_CERO)
         assert not intentos[0].cumple

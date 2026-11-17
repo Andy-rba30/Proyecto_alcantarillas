@@ -3131,7 +3131,10 @@ def _fase_9(informe: InformePunto,
             declarados=declarados,
             coherencia_embocadura=informe.coherencia_embocadura,
             motivo_sin_socavacion=motivo, suelo_del_punto=suelo,
-            anchos=None if dimensionado is None else dimensionado.anchos))
+            anchos=None if dimensionado is None else dimensionado.anchos,
+            puntas=None if dimensionado is None else dimensionado.puntas,
+            no_factibles=(() if dimensionado is None
+                          else dimensionado.no_factibles)))
     if peralte is not None and peralte.espesores:
         informe.cabezal = peralte.cabezal
         entornos = _etapa(

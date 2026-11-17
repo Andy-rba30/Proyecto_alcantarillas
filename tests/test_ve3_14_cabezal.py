@@ -114,3 +114,106 @@ def test_el_general_rige_por_combinacion():
     beta = next(m for m in a2.paso.sustitucion if m.simbolo == "beta")
     assert beta.valor == pytest.approx(b_rige, rel=REL_TRANSPORTE)
     assert "Resistencia I" in a2.paso.nota_del_proyecto and "Evento Extremo I" in a2.paso.nota_del_proyecto
+
+
+# ===========================================================================
+# BLOQUE 2 (H-6, H-5, H-12): el bucle de la zapata
+# ===========================================================================
+# H-6: en el tope el bucle seguia, el peralte crecia por el cortante «sin
+# verificar» y la geometria final era absurda (E5-sal: 14 intentos en 5.679 m
+# y 1.70 m de peralte) y tampoco cumplia. Hoy: al tope, la zapata corrida es
+# NO FACTIBLE con estos criterios, se dice, y el peralte no se itera.
+# H-5: solo crecia el talon; hoy, con el talon al tope, se prueba la punta.
+# H-12: el ancho se dimensionaba con la zapata delgada y no bajaba cuando el
+# peralte la hacia mas pesada; hoy se re-optimiza hacia abajo.
+
+from tests.apoyo import validacion_integral as V          # noqa: E402
+from tests.apoyo.criterios import con_valor                # noqa: E402
+from tests.test_ve3_dimensionamiento_cabezal import ABS_MM  # noqa: E402
+
+CRITERIO = "dimensionamiento_zapata_cabezal"
+
+
+def _a01(informe):
+    return next(p for p in informe.puntos if p.punto.id == "A-01")
+
+
+@pytest.fixture(scope="module")
+def juego():
+    return V.correr_juego(V.juego_completo())
+
+
+def test_al_tope_la_zapata_es_no_factible_y_el_peralte_no_se_infla():
+    """
+    Tope de 0.80·H_c, impuesto fuera de la ventana con `con_valor` (como en
+    tests/test_ve3_dimensionamiento_cabezal.py) para llegar al tope: la
+    entrada de A-01 no cumple con ningun ancho de la grilla. Se prueba la
+    punta (sus intentos llevan la punta), se declara NO FACTIBLE y su peralte
+    no se itera.
+    """
+    with con_valor(CRITERIO, {"paso_m": 0.10, "fraccion_ancho_max": 0.80},
+                   motivo="tope bajo la ventana a proposito: llegar al tope"):
+        informe = V.correr_juego(V.juego_completo())
+    cab = _a01(informe).cabezal
+    assert any("NO FACTIBLE" in a and "entrada" in a for a in cab.avisos)
+    de_la_punta = [i for i in cab.intentos_de_zapata
+                   if i.extremo == "entrada" and i.punta is not None]
+    assert de_la_punta, "con el talon al tope no se probo la punta"
+    puntas = [i.punta for i in de_la_punta]
+    assert puntas == sorted(puntas) and len(set(puntas)) == len(puntas)
+    assert not [i for i in cab.intentos_de_peralte if i.extremo == "entrada"]
+    # La geometria que queda es la del talon al tope, no la ultima de la punta.
+    assert cab.entrada.B == pytest.approx(1.775, abs=ABS_MM)
+
+
+RAIZ = __import__("pathlib").Path(__file__).resolve().parents[1]
+E5 = RAIZ / "tests" / "fixtures" / "ensayos_cabezal" / "E5_arcilla_blanda"
+
+
+def correr_e5(tmp_path):
+    """El escenario E5 de los ensayos (DATOS DE PRUEBA), por la CLI."""
+    import json
+    import subprocess
+    import sys
+    salida = tmp_path / "e5.json"
+    args = [sys.executable, str(RAIZ / "cli.py"), str(E5 / "puntos.csv"),
+            "--alcance", "expediente",
+            "--datos-externos", str(E5 / "externos.json"),
+            "--datos-sitio", str(E5 / "sitio.json"), "--json", str(salida)]
+    for clave, valor in json.loads(
+            (E5 / "declaraciones.json").read_text(encoding="utf-8")).items():
+        args += ["--declarar", f"{clave}={valor!r}"]
+    subprocess.run(args, cwd=RAIZ, capture_output=True, text=True,
+                   check=False)
+    return json.loads(salida.read_text(encoding="utf-8"))
+
+
+def test_en_arcilla_la_zapata_no_factible_no_infla_el_peralte(tmp_path):
+    """
+    E5 de los ensayos (suelo cohesivo): con los criterios de archivo ninguna
+    zapata corrida de la grilla cumple la estabilidad de la salida. Hasta
+    VE-3.14 el bucle seguia en el tope, el peralte crecia a 1.704 m y la
+    app entregaba 5.68 × 1.70 m sin cumplir; hoy lo declara NO FACTIBLE y el
+    peralte se queda en el de la regla.
+    """
+    d = correr_e5(tmp_path)
+    punto = d["puntos"][0]
+    salida = next(c for c in punto["cabezal"]["cabezales"]
+                  if c["extremo"] == "salida")
+    assert salida["espesor_zapata_m"] == pytest.approx(0.40414, abs=ABS_MM)
+    assert any("NO FACTIBLE" in a and "salida" in a
+               for a in punto.get("avisos", []))
+
+
+def test_el_ancho_se_reoptimiza_tras_el_peralte(juego):
+    """
+    La salida de A-01 del juego: el peralte crece a 0.804 m y con la zapata
+    mas pesada se prueba un ancho menor; aqui no alcanza (E1 sismico), de
+    modo que el ancho adoptado es el minimo que cumple con ese peralte.
+    """
+    cab = _a01(juego).cabezal
+    reopt = [i for i in cab.intentos_de_zapata
+             if i.extremo == "salida" and i.reoptimizado]
+    assert reopt, "no se intento re-optimizar el ancho tras el peralte"
+    assert reopt[-1].B == pytest.approx(cab.salida.B - 0.10, abs=ABS_MM)
+    assert not reopt[-1].cumple
