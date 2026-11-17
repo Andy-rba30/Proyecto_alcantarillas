@@ -88,7 +88,39 @@ de ruta), H4 (V7 omite el peso propio del tubo, contra la fórmula 0.90·(DC + E
 proyecto ya declara el peso del concreto), H3 (el delta de rasante que falta o que ignora V7)
 y los titulares engañosos de los «no factible».
 
+## Decisiones pendientes del dueño — ENSAYOS DEL CABEZAL (2026-11-17, ~22:00 UTC)
+
+Informe: `ENSAYOS_DISENO_CABEZAL.md` (Opus, esfuerzo máximo, 10 escenarios, 20 cabezales).
+**Veredicto: hoy la app NO entrega buenos diseños de cabezal.** El motor de estabilidad está
+bien (111 filas E1–E3 coinciden con un motor independiente); el diseño queda incompleto
+(pantalla y alero sin dimensionar) y sobredimensionado (peralte de zapata hasta 4.3 veces).
+La sesión corrige YA los DEFECTOS (VE-3.14, abajo). Estas son ELECCIONES de criterio, con la
+recomendación de la sesión; la sesión deja cada una implementada como opción del criterio
+para que la decisión sea sólo cambiar el valor de archivo:
+
+9. **Talón de la zapata (H-2, parte C):** hoy rige el «peso entero» de 11.6.1.2 (2.4 a 13
+   veces el momento del método exacto con los talones largos que genera el bucle).
+   **Recomendación: método exacto (con la reacción del terreno), como Caltrans BDP 11.2**;
+   AASHTO lo permite («unless a more exact method is used», pág. 11-20).
+10. **Carga de la pantalla (H-4):** hoy el diagrama del plano virtual del talón (1.5 a 4 veces
+    la cuña sobre la propia cara de la pantalla). **Recomendación: cuña de tanteo sobre la
+    cara de la pantalla** (Caltrans BDP 11.2, pág. 11.2-27/28).
+11. **Factores φ de estabilidad (H-7):** hoy los de zapatas (Tabla 10.5.5.2.2-1: 0.45/0.80).
+    **Recomendación: los de muros, Tabla 11.5.7-1 (0.55/1.0)**: 11.5.7 dice «shall be used
+    for wall design» y el Manual de Puentes 2.11.8.5 remite a ella.
+12. **Régimen estabilidad / armado (H-8):** hoy la estabilidad con muro que cede (k_h =
+    0.5·k_h0) y el armado con muro que no cede (K0, k_h0). **Recomendación: el mismo régimen
+    para los dos; muro que cede** salvo que el Propietario declare aleros estructurales que
+    impidan el giro (C11.6.5.4).
+13. **Punto de aplicación del incremento sísmico (H-9):** hoy 0.6·h. **Recomendación: la
+    especificación de la 9.ª ed., 11.6.5.3: distribución como la estática y no menos de H/3**
+    (el comentario admite 0.4–0.5 h para el total).
+14. **Desplante de la salida bajo la hoya de socavación SIN proteger + 0.61 m, además del
+    enrocado (H-14):** doble protección. **Recomendación: con el delantal de enrocado
+    diseñado, desplantar bajo la hoya protegida** (o bajar el margen); a decidir.
+
 ## Dónde está cada cosa
+
 
 - `main` = `3a65e30`: VE-2 integrado con sus correcciones y dos verificaciones Fable.
 - `claude/youthful-shannon-rjzmuc` (rama de trabajo de la sesión): VE-3 integrado hasta
