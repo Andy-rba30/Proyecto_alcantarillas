@@ -44,7 +44,11 @@ midio sobre la malla de abajo al cerrar VE-2: la peor desviacion relativa
 entre la velocidad de Manning sobre la geometria resuelta y Q/A fue de
 8.1e-11 en la rama de n_min y de 3.6e-11 en la de n_max (la de EXT-11). El
 mutante de la formula vieja se aparta de la continuidad un 4.8 % como
-minimo en la misma malla: cuarenta y ocho millones de veces la tolerancia.
+minimo en la misma malla. La tolerancia es 1e-8 desde las correcciones de
+VE-2 (B3 de la revision Fable): fuera de esta malla, con Q bajo el 5 % del
+lleno en los marcos, se midieron 1.81e-9 (el barrido, en el comentario de
+`src/tolerancias.py`); el mutante sigue a cuatro millones ochocientas mil
+veces la tolerancia.
 """
 
 from __future__ import annotations

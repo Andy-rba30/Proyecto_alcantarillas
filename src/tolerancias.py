@@ -72,12 +72,23 @@ TOL_UMBRAL_NORMATIVO = 1e-9
 # pendientes x seis fracciones de Q_lleno, las dos ramas): la peor desviacion
 # entre la velocidad de Manning sobre la geometria resuelta y Q/A es 8.1e-11
 # en la rama de n_min y 3.6e-11 en la de n_max (la misma que midio EXT-11).
-# Se fija doce veces por encima de lo medido y muy por debajo de cualquier
-# diferencia de rama: la velocidad de n_min sobre el tirante de n_max --la
-# formula anterior a VE-2-- se aparta de la continuidad un 4.8 % como minimo
-# en la misma malla. Cambiarla no mueve ninguna magnitud: solo la lee la
-# comprobacion de continuidad de la suite.
-TOL_REL_CONTINUIDAD_MANNING = 1e-9
+# Se fijo en 1e-9, «doce veces por encima de lo medido». CORRECCIONES DE
+# VE-2 (B3 de la revision Fable): esa malla empieza en el 5 % del lleno, y
+# fuera de ella la cifra no vale. Un barrido aleatorio fuera de la malla
+# (Random(7), 40 000 marcos de `MARCOS_B_H` con S log-uniforme de 1e-4 a 0.3
+# y Q uniforme del 0.1 % al 99.99 % del lleno; las secciones circulares de
+# `DIAMETROS_M` con Random(20261117) y 20 000 muestras dan 1.25e-10) midio
+# 1.81e-9 entre Manning sobre la geometria de n_min y Q/A, y 1.10e-9 en
+# V_erosion*A/Q - 1, en el marco 1.0 x 1.0 con S = 0.0505 y Q al 0.53 % del
+# lleno: el `xtol` de Brent es absoluto y con un tirante de milimetros pesa
+# mas en relativo. Ninguna magnitud del calculo se mueve por eso (1.8e-9
+# relativo es una millonesima de milimetro por segundo en la velocidad). Se
+# fija en 1e-8, cinco veces y media lo medido y todavia seis ordenes de
+# magnitud por debajo de cualquier diferencia de rama: la velocidad de n_min
+# sobre el tirante de n_max --la formula anterior a VE-2-- se aparta de la
+# continuidad un 4.8 % como minimo. Cambiarla no mueve ninguna magnitud:
+# solo la lee la comprobacion de continuidad de la suite.
+TOL_REL_CONTINUIDAD_MANNING = 1e-8
 
 # ---------------------------------------------------------------------------
 # COS_ESVIAJE_MIN: donde 1/cos(esviaje) deja de estar determinado (PC-32)
