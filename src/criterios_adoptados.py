@@ -12174,6 +12174,181 @@ CRITERIOS: Dict[str, Criterio] = {
             dominio="m > 0, valor absoluto del desajuste admisible",
         ),
     ),
+
+    # --- VE-3.14, OPCIONES 9, 10 y 13 de los ensayos de diseño del
+    # cabezal --- tres elecciones del proyecto con su alternativa. El valor
+    # de archivo es el comportamiento de hoy; la alternativa la sostiene la
+    # fuente y la verifico el dueño (verificaciones_del_dueno/
+    # cabezal_decisiones_9_14.md). NIVEL: el de la Fase 9 (expediente).
+    "momento_talon_cabezal": Criterio(
+        valor="peso_entero",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   peso_entero  AASHTO 11.6.1.2: el talon en voladizo con el peso
+        #       ENTERO de lo que tiene encima (la regla por defecto).
+        #   exacto       el «more exact method» de la misma frase: menos la
+        #       reaccion lineal del terreno de 10.6.5 con las cargas
+        #       factoradas de CADA combinacion (Resistencia I con gamma
+        #       maximos y minimos, los dos casos del Evento Extremo I), sin
+        #       traccion; si la resultante cae fuera de la base, peso entero.
+        sensibilidad=("peso_entero", "exacto"),
+        concepto="Con que carga se arma el talon de la zapata del cabezal: "
+                 "el peso entero de lo que tiene encima o descontando la "
+                 "reaccion del terreno",
+        justificacion="Decide el momento y el cortante del talon, y con "
+                      "ellos su acero y el peralte que el armado pide. AASHTO "
+                      "LRFD 11.6.1.2 (cita AASHTO_LRFD_9.11.6.1.2#TALON) "
+                      "manda el peso entero «unless a more exact method is "
+                      "used», y 10.6.5 (cita AASHTO_LRFD_9.10.6.5#LINEAL) "
+                      "fija la presion de contacto lineal con las cargas "
+                      "factoradas. El valor de archivo es la regla por "
+                      "defecto; «exacto» descuenta la reaccion combinacion "
+                      "por combinacion, sin traccion, y deja el peso entero "
+                      "impreso como contraste. Los ensayos midieron el peso "
+                      "entero 2.3 a 4.3 veces mayor en las geometrias que "
+                      "cumplen",
+        fuente="AASHTO LRFD 9a ed., 11.6.1.2, pag. impresa 11-20 (PDF 1489) "
+               "y 10.6.5, pag. impresa 10-86 (PDF 1375)",
+        reemplazado_por="Decision del proyectista, con el EMS",
+        resolucion=Libre(
+            que_lo_fija="el proyectista",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "carga_pantalla_cabezal": Criterio(
+        valor="plano_virtual_del_talon",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   plano_virtual_del_talon  la pantalla con el diagrama del plano
+        #       virtual del extremo del talon integrado sobre el arranque
+        #       (T7C-12): cota superior, carga presion por encima de la
+        #       corona del muro.
+        #   cuna_sobre_la_pantalla   la cuña de tanteo sobre la cara del
+        #       trasdos de la pantalla, hasta la superficie REAL (el talud
+        #       sobre la corona y la sobrecarga), y bajo sismo la cuña con
+        #       k_h mas la inercia de la pantalla (Caltrans BDP 11.2,
+        #       11.2.2.4.1).
+        sensibilidad=("plano_virtual_del_talon", "cuna_sobre_la_pantalla"),
+        concepto="Con que empuje se arma la pantalla del cabezal: el del "
+                 "plano virtual del talon o el de una cuña sobre su propia "
+                 "cara",
+        justificacion="Decide el momento y el cortante de la pantalla, y con "
+                      "ellos su espesor (dimensionada por su armado desde "
+                      "VE-3.14). AASHTO no fija el plano de carga del diseño "
+                      "estructural de la pantalla; el ejemplo resuelto de "
+                      "Caltrans (Bridge Design Practice 11.2, 11.2.2.4.1, "
+                      "pags. 11.2-27 y 11.2-28: «Soil pressure is obtained by "
+                      "performing a trial wedge analysis along AB») carga la "
+                      "pantalla con una cuña sobre su cara y separa ese "
+                      "diagrama del de la estabilidad externa; bajo sismo, "
+                      "la cuña sismica y la inercia de la pantalla, no la "
+                      "del relleno sobre el talon (pag. 11.2-33). El valor "
+                      "de archivo es la cota superior de T7C-12; la "
+                      "alternativa lleva la cuña hasta la superficie real "
+                      "(talud sobre la corona y sobrecarga), con las "
+                      "condiciones del dueño",
+        fuente="Caltrans Bridge Design Practice, cap. 11.2 (oct. 2022), "
+               "11.2.2.4.1, pags. 11.2-27, 11.2-28 y 11.2-33 (ejemplo "
+               "resuelto del repositorio de normas, ejemplos_resueltos/"
+               "cabezal_muros); AASHTO LRFD 9a ed., 3.11.5.3 y C11.6.5.3 "
+               "(cuña de tanteo)",
+        reemplazado_por="Decision del proyectista",
+        resolucion=Libre(
+            que_lo_fija="el proyectista",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "distribucion_incremento_sismico": Criterio(
+        valor="fraccion_de_h",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="A",
+        forma=FORMA_CATEGORIA,
+        #   fraccion_de_h          el incremento a la fraccion de h de
+        #       'punto_aplicacion_incremento_sismico' (0.6 de archivo).
+        #   distribucion_estatica  AASHTO 11.6.5.3: el empuje total con la
+        #       distribucion del estatico, «but no less than H/3»: el
+        #       incremento en el mayor del centroide estatico y h/3. SOLO
+        #       con el muro que cede ('factor_muro_eleccion' con la
+        #       reduccion): con el que no cede C11.6.5.4 pide h/2.
+        sensibilidad=("fraccion_de_h", "distribucion_estatica"),
+        concepto="Donde se aplica el incremento sismico del empuje: a una "
+                 "fraccion fija de h o con la distribucion del empuje "
+                 "estatico, no por debajo de h/3",
+        justificacion="Decide el brazo del incremento sismico y con el la "
+                      "excentricidad, el volteo y la portante sismicos. "
+                      "AASHTO 11.6.5.3 (cita "
+                      "AASHTO_LRFD_9.11.6.5.3#DISTRIBUCION) distribuye el "
+                      "empuje total como el estatico, no por debajo de H/3 "
+                      "(«should»: un piso recomendado); el Manual de Puentes "
+                      "2.8.1.1.14.3 lo traduce y su Apendice A.11.3.1 lo "
+                      "da por suficiente para muros de rutina. El valor de "
+                      "archivo es el de hoy (la fraccion fija, 0.6 sobre el "
+                      "incremento); la alternativa toma el mayor del "
+                      "centroide estatico y h/3, y solo con el muro que cede: "
+                      "para el que no cede C11.6.5.4 pide la resultante a "
+                      "h/2, y la eleccion se rechaza",
+        fuente="AASHTO LRFD 9a ed., 11.6.5.3 y C11.6.5.3, pag. impresa "
+               "11-30 (PDF 1499); C11.6.5.4, pag. impresa 11-32 (PDF 1501); "
+               "Manual de Puentes 2.8.1.1.14.3 y A.11.3.1",
+        reemplazado_por="Decision del proyectista",
+        resolucion=Libre(
+            que_lo_fija="el proyectista",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
+
+    "agua_del_relleno_bajo_sismo": Criterio(
+        # --- VE-3.14 (H-3 de los ensayos de diseño del cabezal) --- Hasta
+        # VE-3.14, con agua en el plano de empuje la condicion sismica del
+        # cabezal se detenia sin cifra y el ancho se dimensionaba SIN ella.
+        # NIVEL: el de la Fase 9 (expediente), su unico consumidor
+        # (`M9.cargas_del_cabezal`, condicion sismica con agua).
+        valor="se_mueve_con_el_suelo",
+        nivel=NIVEL_EXPEDIENTE,
+        etiqueta="C",
+        forma=FORMA_CATEGORIA,
+        #   se_mueve_con_el_suelo  relleno que no drena libremente (el
+        #       compactado del trasdos): el incremento sismico con el peso
+        #       TOTAL del suelo bajo el agua (C11.6.5.3, primer tratamiento).
+        #   relleno_muy_abierto    pedraplen: peso sumergido mas la presion
+        #       hidrodinamica (Westergaard), que ninguna fuente del
+        #       repositorio da: la condicion sismica se detiene sin cifra.
+        sensibilidad=("se_mueve_con_el_suelo", "relleno_muy_abierto"),
+        concepto="Como se trata el agua del relleno del trasdos bajo sismo: "
+                 "si se mueve con el suelo o, en un relleno muy abierto, no",
+        justificacion="Decide el empuje sismico del cabezal cuando hay agua "
+                      "en el plano de empuje. AASHTO 11.6.5.3 excluye del "
+                      "metodo el relleno saturado Y suelto (que puede "
+                      "licuar), y su comentario C11.6.5.3 (citas "
+                      "AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL y "
+                      "#AGUA_ABIERTO) da los dos tratamientos: con el suelo "
+                      "que no drena libremente, el peso TOTAL, porque suelo "
+                      "y agua se mueven juntos; con un relleno muy abierto "
+                      "(pedraplen), el peso sumergido mas la presion "
+                      "hidrodinamica. El valor de archivo es el primero, que "
+                      "es el del relleno compactado del trasdos que el "
+                      "proyecto especifica; el segundo detiene la condicion "
+                      "sismica con «metodo no evaluable», porque la formula "
+                      "de Westergaard no esta en ninguna fuente del "
+                      "repositorio de normas y no se inventa",
+        fuente="AASHTO LRFD 9a ed., 11.6.5.3 y C11.6.5.3, pags. impresas "
+               "11-29 a 11-32 (PDF 1498 a 1501; citas "
+               "AASHTO_LRFD_9.11.6.5.3#VALIDEZ, "
+               "AASHTO_LRFD_9.C11.6.5.3#AGUA_TOTAL y "
+               "AASHTO_LRFD_9.C11.6.5.3#AGUA_ABIERTO)",
+        reemplazado_por="Especificacion del material del relleno del trasdos "
+                        "(granulometria y permeabilidad) en los planos y en "
+                        "las especificaciones tecnicas",
+        resolucion=Libre(
+            que_lo_fija="el proyectista, con el material del relleno que "
+                        "especifica",
+            dominio="una de las dos opciones de la ventana",
+        ),
+    ),
 }
 
 

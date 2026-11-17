@@ -515,10 +515,93 @@ def test_el_resumen_atribuye_el_metodo_no_evaluable_a_su_causa(tmp_path):
             (E3 / "declaraciones.json").read_text(encoding="utf-8")).items():
         args += ["--declarar", f"{clave}={valor!r}"]
     args += ["--declarar",
-             "agua_del_relleno_bajo_sismo='relleno_muy_abierto'"]
+             "agua_del_relleno_bajo_sismo='relleno_muy_abierto'",
+             "--json", str(tmp_path / "e3.json")]
     r = subprocess.run(args, cwd=RAIZ, capture_output=True, text=True,
                        check=False)
     resumen = r.stdout[r.stdout.rindex("RESUMEN"):]
     assert "metodo no evaluable" in resumen
     assert "Mientras un criterio siga sin valor" not in resumen
     assert cli.TipoDeBloqueo is not None
+
+
+
+# ===========================================================================
+# OPCIONES 9, 10 y 13: las alternativas de tres elecciones [A]
+# ===========================================================================
+# El valor de archivo es el comportamiento de hoy (los tests de arriba lo
+# fijan); la alternativa la sostiene la fuente, con las condiciones de la
+# verificacion del dueño (verificaciones_del_dueno/cabezal_decisiones_9_14.md).
+# Las cifras de los escenarios de los ensayos van en el informe de VE-3.14.
+
+def _seccion(cabezal, extremo, clave):
+    a = next(x for x in cabezal.armado if x.extremo == extremo)
+    return next(s for s in a.secciones if s.clave == clave)
+
+
+def test_opcion_9_el_talon_exacto_descuenta_la_reaccion(juego):
+    """
+    'momento_talon_cabezal' = 'exacto': el talon con la reaccion lineal de
+    10.6.5 de CADA combinacion; el peso entero queda como contraste en la
+    nota, y el momento que rige no supera al del peso entero.
+    """
+    archivo = _seccion(_a01(juego).cabezal, "entrada", "talon")
+    with con_valor("momento_talon_cabezal", "exacto",
+                   motivo="la alternativa de la opcion 9"):
+        exacto = _seccion(_a01(V.correr_juego(V.juego_completo())).cabezal,
+                          "entrada", "talon")
+    assert "metodo mas exacto" in exacto.rige_flexion.nota
+    assert "peso entero (contraste)" in exacto.rige_flexion.nota
+    assert exacto.rige_flexion.M_u < archivo.rige_flexion.M_u
+    assert all(s.condicion in (CondicionAnalisis.ESTATICO,
+                               CondicionAnalisis.SISMICO)
+               for s in exacto.solicitaciones)
+
+
+def test_opcion_10_la_cuna_sobre_la_pantalla_carga_menos(juego):
+    """
+    'carga_pantalla_cabezal' = 'cuna_sobre_la_pantalla': la pantalla con la
+    cuña sobre su propia cara (Caltrans BDP 11.2), hasta la superficie real;
+    el plano virtual del talon es la cota superior y carga mas.
+    """
+    archivo = _seccion(_a01(juego).cabezal, "entrada", "pantalla")
+    with con_valor("carga_pantalla_cabezal", "cuna_sobre_la_pantalla",
+                   motivo="la alternativa de la opcion 10"):
+        cuna = _seccion(_a01(V.correr_juego(V.juego_completo())).cabezal,
+                        "entrada", "pantalla")
+    assert 0 < cuna.rige_flexion.M_u < archivo.rige_flexion.M_u
+
+
+def test_opcion_13_solo_con_el_muro_que_cede():
+    """
+    'distribucion_incremento_sismico' = 'distribucion_estatica' con el muro
+    que NO cede ('factor_muro_eleccion' = 'sin_reduccion', el de archivo) se
+    rechaza con la causa; con la reduccion declarada (la del juego), el
+    incremento va al mayor del centroide estatico y h/3, por debajo del
+    0.6·h de archivo.
+    """
+    from dataclasses import replace
+    j = V.juego_completo()
+    con13 = replace(j, declaraciones={
+        **j.declaraciones,
+        "distribucion_incremento_sismico": "distribucion_estatica"})
+    assert con13.declaraciones["factor_muro_eleccion"] == \
+        "reduccion_por_desplazamiento"
+    cede = _a01(V.correr_juego(con13))
+    no_cede = _a01(V.correr_juego(replace(con13, declaraciones={
+        **con13.declaraciones, "factor_muro_eleccion": "sin_reduccion"})))
+    assert any("distribucion_incremento_sismico" in (b.mensaje or "")
+               for b in no_cede.bloqueos)
+    sis = next(e for e in cede.cabezal.estabilidad
+               if e.extremo == "entrada"
+               and e.condicion is CondicionAnalisis.SISMICO)
+    dP = next(c for c in sis.cargas if c.codigo == "EQ.dPAE.h")
+    eh = next(c for c in sis.cargas if c.codigo == "EH.h")
+    ls = next(c for c in sis.cargas if c.codigo == "LS.h")
+    # El centroide del diagrama estatico (suelo y sobrecarga): con la
+    # sobrecarga queda sobre h/3, y es el que rige.
+    z_estatico = (eh.H * eh.z + ls.H * ls.z) / (eh.H + ls.H)
+    assert z_estatico > sis.altura_empuje / 3
+    assert dP.z == pytest.approx(max(z_estatico, sis.altura_empuje / 3),
+                                 rel=REL_TRANSPORTE)
+    assert dP.z < 0.6 * sis.altura_empuje
