@@ -20,7 +20,10 @@ diferencia de lamina entre su entrada y su salida,
 
 y F es un dato del proyecto del CANAL (`desnivel_perfil_canal_m`, por
 punto, de --datos-externos; ANA / Junta de Usuarios). Sin el dato VC3 no se
-evalua y la corrida lo AVISA, como T-3 dejo el remanso sin seccion medida.
+evaluaba y la corrida lo AVISABA, como T-3 dejo el remanso sin seccion
+medida; desde VE-3.10 (decision del dueño) el punto se DETIENE pidiendo el
+dato (`tests/test_ve3_vc3_bloquea.py`), y los tests de aqui que fijaban el
+aviso se cambiaron a esa conducta, declarando la causa en cada uno.
 
 SE ESCRIBIO EN ROJO PRIMERO, contra 61a4dcc.
 """
@@ -67,8 +70,12 @@ def test_vc3_en_el_borde_cumple_y_un_desnivel_cero_es_no_alterar():
     assert not _vc3(0.0, entrada=36.20, HW=0.42, TW=0.41).cumple
 
 
-def test_vc3_sin_desnivel_declarado_no_se_evalua():
-    assert _vc3(None) is None
+def test_vc3_sin_desnivel_declarado_detiene_el_punto():
+    # VE-3.10: hasta aqui devolvia None (no se evaluaba); hoy pide el dato.
+    from src.modelos import DatoFaltanteError
+    with pytest.raises(DatoFaltanteError) as exc:
+        _vc3(None)
+    assert exc.value.campo == CLAVE
 
 
 def test_vc3_cita_al_usbr_y_su_fundamento_esta_registrado():
@@ -84,7 +91,9 @@ def test_el_desnivel_es_una_clave_externa_de_la_familia_c_que_admite_cero():
     assert CLAVE in servicio.CLAVES_EXTERNAS
     assert servicio.familias_que_usan(CLAVE) == (Familia.C,)
     assert CLAVE in servicio.CLAVES_QUE_ADMITEN_CERO
-    assert CLAVE in servicio.EXTERNOS_CON_VIA_ALTERNA
+    # VE-3.10: ya no es una entrada con via alterna (sin ella el punto se
+    # detiene, y el pre-vuelo tiene regla propia que lo dice).
+    assert CLAVE not in servicio.EXTERNOS_CON_VIA_ALTERNA
 
 
 def _c01(cambios=()):
@@ -118,12 +127,14 @@ def test_VC3_va_en_la_tabla_de_la_fase_5_y_DIMENSIONA():
 def test_pieza_vc3_solo_da_fila_en_un_paso_de_canal_con_el_desnivel():
     """La puerta de las dos tablas de la Fase 5 (`verificar` y perfil)."""
     from src.modelos import DatosDeExpediente
+    from src.modelos import DatoFaltanteError
     c01 = _c01((FONDO_EN_EL_CANAL,))
     rh = c01.resultado.resultado_hidraulico
     punto = c01.punto_de_calculo
-    assert M5.pieza_vc3(punto=punto, resultado=rh, expediente=None) is None
-    assert M5.pieza_vc3(punto=punto, resultado=rh,
-                        expediente=DatosDeExpediente()) is None
+    # VE-3.10: sin F (o sin `DatosDeExpediente`) ya no da None, se detiene.
+    for expediente in (None, DatosDeExpediente()):
+        with pytest.raises(DatoFaltanteError):
+            M5.pieza_vc3(punto=punto, resultado=rh, expediente=expediente)
     v = M5.pieza_vc3(punto=punto, resultado=rh,
                      expediente=DatosDeExpediente(
                          desnivel_perfil_canal_m=F_DE_PRUEBA))
@@ -139,8 +150,12 @@ def test_un_desnivel_que_ninguna_seccion_alcanza_deja_el_punto_no_factible():
     assert not c01.dimensionado
 
 
-def test_sin_el_desnivel_C01_avisa_que_VC3_no_se_evaluo():
-    c01 = _c01()
-    assert "VC3" not in [v.codigo for v in c01.resultado.verificaciones]
-    assert any(M5.AVISO_VC3_SIN_DESNIVEL in a for a in c01.geometria.avisos)
-    assert M7.AVISO_VC3_SIN_DESNIVEL is M5.AVISO_VC3_SIN_DESNIVEL
+def test_sin_el_desnivel_C01_ya_no_avisa_se_detiene():
+    # VE-3.10: este test fijaba el AVISO de 7.B (`AVISO_VC3_SIN_DESNIVEL`,
+    # retirado). Hoy, sin F, C-01 no dimensiona y el bloqueo pide el dato.
+    from src.modelos import TipoDeBloqueo
+    c01 = _c01((("externo", "C-01", CLAVE, None),))
+    assert not c01.dimensionado
+    assert any(b.tipo is TipoDeBloqueo.DATO_FALTANTE and b.campo == CLAVE
+               for b in c01.bloqueos)
+    assert not hasattr(M7, "AVISO_VC3_SIN_DESNIVEL")

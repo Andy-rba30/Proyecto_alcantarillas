@@ -155,7 +155,7 @@ si no se declara:
 | `Q_evento_extremo_m3s` | no | número | — | las tres | nada a nivel de perfil; a expediente, con `TR_evento_extremo` declarado, V8 se detiene |
 | `TW_evento_extremo_m` | no | número | — | las tres | nada a nivel de perfil; a expediente, con `TR_evento_extremo` declarado, V8 se detiene |
 | `cota_afectacion_aguas_arriba_msnm` | no | número | — | A, B | nada a nivel de perfil; a expediente, con `remanso_derecho_via` declarado, V5 se detiene |
-| `desnivel_perfil_canal_m` | no | número | — | C | el programa la resuelve por otra vía |
+| `desnivel_perfil_canal_m` | no | número | — | C | el pre-vuelo la lista como falta |
 <!-- fin: externos -->
 
 «Por otra vía» quiere decir: `longitud_m` la calcula la Fase 7.B con las
@@ -219,14 +219,21 @@ El JSON de esta guía, `guia/externos.json`:
 {
   "globales": {"TW_m": 0.3, "L_hidraulico_m": 120.0},
   "puntos": {
-    "C-01": {"Q_m3s": 0.85, "S_cauce": 0.006, "S_conducto": 0.006}
+    "C-01": {"Q_m3s": 0.85, "S_cauce": 0.006, "S_conducto": 0.006,
+             "desnivel_perfil_canal_m": 1.20}
   }
 }
 ```
 
-Tres cosas que este archivo decide y conviene leer antes de copiarlo: el TW
+Cuatro cosas que este archivo decide y conviene leer antes de copiarlo: el TW
 global de 0.3 m es un escenario del ejemplo, no un dato de la vía; el caudal y
-la pendiente de C-01 son los del **canal** (Sec. 2.3), no los de una cuenca; y
+la pendiente de C-01 son los del **canal** (Sec. 2.3), no los de una cuenca;
+`desnivel_perfil_canal_m` es el desnivel F que el **perfil del canal** provee
+en el cruce (lo da su proyecto: ANA / Junta de Usuarios), contra el que VC3
+compara las pérdidas de la obra —sin él un cruce de canal se detiene—, y
+1.20 m es un valor del ejemplo: con la entrada en el terreno del cruce (regla
+de archivo) el marco de C-01 pierde entre 0.9 y 1.0 m según el TW, y un F del
+orden del de un canal real (0.30-0.40 m) lo dejaría sin sección que cumpla; y
 `S_conducto` se declara **igual** que `S_cauce`. La verificación V2b compara la
 pendiente del conducto con la del cauce (HDS-5 §5.3.3, indicador de
 sedimentación). Con el valor de archivo del criterio `regimen_v2b`

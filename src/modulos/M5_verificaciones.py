@@ -3896,19 +3896,27 @@ NUMERAL_VC3 = ("Sec. 2.3 (paso de canal: «No puede alterar la rasante "
                "hidraulica»); criterio [C] del USBR, Design of Small Canal "
                "Structures (1978), num. 2-6 (c)(1): perdidas de la obra <= "
                "F, el desnivel de la lamina normal del canal en el cruce")
-AVISO_VC3_SIN_DESNIVEL = (
-    "VC3 (rasante hidraulica del canal) no se evaluo: falta el desnivel que "
-    "el perfil del canal provee en el cruce (`desnivel_perfil_canal_m` en "
-    "--datos-externos: F, la lamina normal aguas arriba menos la aguas "
-    "abajo, del proyecto del canal -- ANA / Junta de Usuarios --; 0 si el "
-    "perfil no provee ninguno). Sin el, el expediente no verifica que la "
-    "obra no altere la rasante hidraulica que la Sec. 2.3 protege")
+# --- VE-3.10 (decision del dueño, 2026-11-17) --- SIN F EL PUNTO SE
+# DETIENE. Hasta aqui VC3 sin el dato no daba fila y 7.B lo AVISABA
+# (`AVISO_VC3_SIN_DESNIVEL`, retirado): el punto salia dimensionado sin que
+# nadie hubiera comparado sus perdidas con el canal. El revisor tiene que
+# AÑADIR un dato del proyecto del canal: `DatoFaltanteError` (CLAUDE.md,
+# «Excepciones»), en la misma posicion que VC1 y obligatorio tambien a
+# `--alcance perfil`, como VC1. Este texto es el detalle del bloqueo y el del
+# pre-vuelo (`anticipo.datos_faltantes_por_punto`): uno solo.
+DETALLE_FALTA_DESNIVEL_CANAL = (
+    "VC3 (rasante hidraulica del canal, Sec. 2.3) lo necesita: F, el "
+    "desnivel de la lamina normal del canal que su perfil provee en el "
+    "cruce (aguas arriba menos aguas abajo), sale del proyecto del canal "
+    "-- ANA / Junta de Usuarios --; se declara en --datos-externos como "
+    "`desnivel_perfil_canal_m`, y 0 si el perfil no provee ninguno. Sin el, "
+    "el expediente no verifica que la obra no altere la rasante hidraulica")
 
 
 def vc3_rasante_canal(*, punto: PuntoCritico, cota_entrada_msnm: float,
                       HW: float, TW: float,
                       desnivel_perfil_m: Optional[float]
-                      ) -> Optional[Verificacion]:
+                      ) -> Verificacion:
     """
     VC3: las perdidas de un paso de canal frente al desnivel que el perfil
     del canal provee en el cruce (Familia C). USBR, Design of Small Canal
@@ -3921,8 +3929,9 @@ def vc3_rasante_canal(*, punto: PuntoCritico, cota_entrada_msnm: float,
     del cruce menos la aguas abajo, del perfil del canal) es un DATO del
     proyecto del canal, `desnivel_perfil_canal_m` de --datos-externos; 0 si
     el perfil no provee ninguno, y entonces VC3 exige no perder nada. Sin el
-    dato devuelve None: la corrida lo avisa (`AVISO_VC3_SIN_DESNIVEL`) y no
-    se inventa un F.
+    dato lanza `DatoFaltanteError` con la clave (VE-3.10, decision del dueño:
+    el punto se detiene pidiendo el dato; hasta entonces devolvia None y 7.B
+    lo avisaba), y no se inventa un F.
 
     LECTURA DEL PROYECTO, declarada en el paso: el USBR suma las perdidas
     de entrada y salida y la friccion del tubo; aqui se miden como la
@@ -3939,7 +3948,8 @@ def vc3_rasante_canal(*, punto: PuntoCritico, cota_entrada_msnm: float,
     externa ya lo rechaza, y esta es la segunda linea.
     """
     if desnivel_perfil_m is None:
-        return None
+        raise DatoFaltanteError(CLAVE_DESNIVEL_PERFIL_CANAL, id_punto=punto.id,
+                                detalle=DETALLE_FALTA_DESNIVEL_CANAL)
     if not (desnivel_perfil_m >= 0 and math.isfinite(desnivel_perfil_m)):
         raise DatoInvalidoError(
             CLAVE_DESNIVEL_PERFIL_CANAL, valor=desnivel_perfil_m,
@@ -4023,16 +4033,18 @@ def pieza_vc3(*, punto: PuntoCritico, resultado: ResultadoHidraulico,
     --- VE-3.6 --- VC3 para la tabla de la Fase 5 (las dos puertas:
     `verificar` y el verificador de perfil del servicio): la cota de entrada
     de `cota_de_entrada` -- la misma que VC1 --, el HW y el TW de la Fase 4
-    y el desnivel F de `DatosDeExpediente`. None si no es un paso de canal o
-    si F no se declaro.
+    y el desnivel F de `DatosDeExpediente`. None si no es un paso de canal;
+    en un paso de canal sin F (tampoco sin `DatosDeExpediente`, que es no
+    traerlo) `DatoFaltanteError`, desde VE-3.10.
     """
-    if punto.familia is not Familia.C or expediente is None:
+    if punto.familia is not Familia.C:
         return None
     return vc3_rasante_canal(
         punto=punto, cota_entrada_msnm=cota_de_entrada(punto).valor,
         HW=resultado.HW,
         TW=resultado.TW_m if resultado.TW_m is not None else 0.0,
-        desnivel_perfil_m=expediente.desnivel_perfil_canal_m)
+        desnivel_perfil_m=(None if expediente is None
+                           else expediente.desnivel_perfil_canal_m))
 
 
 
@@ -4246,9 +4258,10 @@ def verificar(*, punto: PuntoCritico, material: Material,
         if hechas[-1].codigo == "VC1":
             hechas.append(v5_no_aplica_en_canal(punto=punto))
             # --- VE-3.6 --- VC3 detras de VC1: la rasante hidraulica del
-            # canal, con el desnivel F del perfil del canal. Sin F no hay
-            # fila (7.B lo avisa); con F decide como cualquier fila de la
-            # tabla, de modo que la progresion agranda la seccion.
+            # canal, con el desnivel F del perfil del canal; decide como
+            # cualquier fila de la tabla, de modo que la progresion agranda
+            # la seccion. Sin F, desde VE-3.10, el punto se detiene
+            # (`DatoFaltanteError`), como VC1 sin la coronacion.
             try:
                 vc3 = pieza_vc3(punto=punto, resultado=resultado,
                                 expediente=expediente)
