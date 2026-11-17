@@ -5475,6 +5475,22 @@ VN_TOPE_SOBRE_FC_AASHTO = 0.25
 BETA_SIMPLIFICADO_AASHTO = 2.0
 PERALTE_MAX_SIMPLIFICADO_AASHTO_SI = 16.0 * _M_POR_PULG    # 16.0 in = 0.4064 m (estricto)
 ZAPATA_SIMPLIFICADO_VECES_DV = 3.0
+# ---- 5.7.3.4.2 «General Procedure», pags. impresas 5-70 a 5-72 (PDF 429 a
+# 431) (VE-3.14, H-2 de los ensayos del cabezal). Seccion SIN el refuerzo
+# transversal minimo de 5.7.2.5 (el cabezal no lleva estribos):
+#   beta = [4.8 / (1 + 750·eps_s)]·[51 / (39 + s_xe)]   (ec. 5.7.3.4.2-2, s_xe en in)
+#   eps_s = (|M_u|/d_v + 0.5·N_u + |V_u - V_p| - A_ps·f_po) / (E_s·A_s + E_p·A_ps)
+#                                                        (ec. 5.7.3.4.2-4), |M_u| >= |V_u - V_p|·d_v
+#   s_xe = s_x·1.38 / (a_g + 0.63), 12.0 in <= s_xe <= 80.0 in   (ec. 5.7.3.4.2-7)
+# Sin traccion axial ni presfuerzo, N_u = A_ps = V_p = 0.
+GENERAL_BETA_NUMERADOR = 4.8
+GENERAL_BETA_COEF_DEFORMACION = 750.0
+GENERAL_BETA_NUMERADOR_SXE_IN = 51.0
+GENERAL_BETA_SUMANDO_SXE_IN = 39.0
+SXE_FACTOR_AGREGADO = 1.38
+SXE_SUMANDO_AGREGADO_IN = 0.63
+SXE_MIN_IN = 12.0
+SXE_MAX_IN = 80.0
 # ---- 5.7.2.8, pag. impresa 5-65 (PDF 424): d_v = distancia entre las
 # resultantes de traccion y compresion (d_e - a/2), que «need not be taken
 # to be less than the greater of 0.9·d_e or 0.72·h».

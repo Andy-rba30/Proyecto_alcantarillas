@@ -13552,8 +13552,8 @@ AASHTO_5_7_3_4_1_SIMPLIFICADO = _cita(
           "muro menor que 3·d_v, o seccion de peralte total menor que 16.0 "
           "in (0.4064 m) -- la pantalla y los aleros no llevan refuerzo "
           "transversal --. Fuera de ellas la fuente manda el procedimiento "
-          "general de 5.7.3.4.2, que el programa no implementa: se detiene "
-          "con «metodo no evaluable»."),
+          "general de 5.7.3.4.2, que el programa implementa desde VE-3.14 "
+          "(hasta entonces se detenia con «metodo no evaluable»)."),
 )
 
 AASHTO_C5_7_3_4_1_GRANDES = _cita(
@@ -15023,6 +15023,132 @@ AASHTO_M170M_T4_LEGIBLE = _cita(
           "queda BLOQUEADA, y un tubo que la necesite se detiene con el dato "
           "que falta. Vista de calculo: "
           "DIAMETRO_MAX_LEGIBLE_POR_CLASE_M170M_MM."),
+)
+
+
+# ===========================================================================
+# --- VE-3.14 --- AASHTO LRFD 5.7.3.4.2, el procedimiento GENERAL de cortante
+# para la seccion sin el refuerzo transversal minimo (H-2 de los ensayos de
+# diseño del cabezal): hasta VE-3.14 el programa se detenia con «metodo no
+# evaluable» cuando el simplificado de 5.7.3.4.1 no aplicaba. Leidas en la
+# capa de texto de las paginas (las ecuaciones, por imagen).
+# ===========================================================================
+FECHA_VE3_14 = "2026-11-17"
+POR_VE3_14 = "validacion/VE-3.14 · lectura directa de la pagina por la sesion"
+VE3_14 = (FECHA_VE3_14, POR_VE3_14)
+
+AASHTO_5_7_3_4_2_GENERAL = _cita(
+    id="AASHTO_LRFD_9.5.7.3.4.2#GENERAL",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.7.3.4.2",
+    titulo_numeral="General Procedure",
+    pagina_impresa="5-70",
+    pagina_pdf=429,
+    texto_literal=Verbatim(
+        texto=("When sections do not contain at least the minimum amount of "
+               "shear reinforcement, the value of β may be as specified in "
+               "Eq. 5.7.3.4.2-2:"),
+        pagina_pdf=429),
+    caracter=Caracter.PERMISO,
+    metodo=AMBOS,
+    sesion=VE3_14,
+    nota=("Ec. 5.7.3.4.2-2, leida por imagen: β = [4.8 / (1 + 750·εs)]·[51 / "
+          "(39 + s_xe)], s_xe en in. Ec. 5.7.3.4.2-4: εs = (|M_u|/d_v + 0.5·N_u "
+          "+ |V_u − V_p| − A_ps·f_po) / (E_s·A_s + E_p·A_ps). Es el "
+          "procedimiento que la fuente da para la seccion fuera de las "
+          "condiciones de 5.7.3.4.1; el cabezal no lleva refuerzo "
+          "transversal ni presfuerzo ni traccion axial (N_u = A_ps = V_p = 0)."),
+)
+
+AASHTO_5_7_3_4_2_MU = _cita(
+    id="AASHTO_LRFD_9.5.7.3.4.2#MU",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.7.3.4.2",
+    titulo_numeral="General Procedure",
+    pagina_impresa="5-71",
+    pagina_pdf=430,
+    pagina_pdf_titulo=429,
+    texto_literal=Verbatim(
+        texto="absolute value of the factored moment at the section, not taken less than",
+        pagina_pdf=430),
+    caracter=Caracter.DEFINICION,
+    derivado_de="AASHTO_LRFD_9.5.7.3.4.2#GENERAL",
+    sesion=VE3_14,
+    nota="Sigue «|V_u − V_p|·d_v (kip-in.)», por imagen.",
+)
+
+AASHTO_5_7_3_4_2_SXE = _cita(
+    id="AASHTO_LRFD_9.5.7.3.4.2#SXE",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.7.3.4.2",
+    titulo_numeral="General Procedure",
+    pagina_impresa="5-71",
+    pagina_pdf=430,
+    pagina_pdf_titulo=429,
+    texto_literal=Verbatim(
+        texto=("the crack spacing parameter as influenced by aggregate size, "
+               "sxe, shall be determined as:"),
+        pagina_pdf=430),
+    caracter=Caracter.DEFINICION,
+    derivado_de="AASHTO_LRFD_9.5.7.3.4.2#GENERAL",
+    metodo=AMBOS,
+    sesion=VE3_14,
+    nota=("Ec. 5.7.3.4.2-7, por imagen: s_xe = s_x·1.38 / (a_g + 0.63), con "
+          "«12.0 in. ≤ s_xe ≤ 80.0 in.» (pag. 5-72, PDF 431)."),
+    interpretacion=Interpretacion(
+        texto=("El proyecto toma a_g = 0 (cota inferior): con un tamaño de "
+               "agregado nulo s_xe es el mayor posible y β el menor, de modo "
+               "que el resultado es valido para cualquier agregado; declarar "
+               "el tamaño maximo del agregado del proyecto solo podria subir "
+               "β. No es un valor de proyecto, es el extremo seguro de la "
+               "formula."),
+        en_contra=("la fuente define a_g como el tamaño maximo del agregado "
+                   "(in), un dato del concreto que el proyecto especificara",
+                   "con un agregado real de 3/4 in β sube y la seccion "
+                   "necesaria baja: la cota inferior sobredimensiona algo"),
+        a_favor=("la formula es monotona en a_g: a_g = 0 da la β minima, "
+                 "valida para cualquier agregado",
+                 "la EG-2013 (seccion 610) deja el tamaño maximo a las "
+                 "especificaciones del proyecto: no hay un valor normativo")),
+)
+
+AASHTO_5_7_3_4_2_SX = _cita(
+    id="AASHTO_LRFD_9.5.7.3.4.2#SX",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.7.3.4.2",
+    titulo_numeral="General Procedure",
+    pagina_impresa="5-72",
+    pagina_pdf=431,
+    pagina_pdf_titulo=429,
+    texto_literal=Verbatim(
+        texto=("crack spacing parameter, taken as the lesser of either dv or "
+               "the maximum distance between layers of longitudinal crack "
+               "control reinforcement"),
+        pagina_pdf=431),
+    caracter=Caracter.DEFINICION,
+    derivado_de="AASHTO_LRFD_9.5.7.3.4.2#GENERAL",
+    sesion=VE3_14,
+    nota=("La seccion del cabezal lleva una sola capa de acero en la cara en "
+          "traccion, sin capas intermedias de control de fisuras: s_x = d_v."),
+)
+
+AASHTO_C5_7_3_4_2_NEGATIVO = _cita(
+    id="AASHTO_LRFD_9.C5.7.3.4.2#NEGATIVO",
+    fuente_id="AASHTO_LRFD_9",
+    numeral="5.7.3.4.2",
+    titulo_numeral="General Procedure",
+    pagina_impresa="5-72",
+    pagina_pdf=431,
+    pagina_pdf_titulo=429,
+    texto_literal=Verbatim(
+        texto=("is negative, it should be taken as zero or the value should "
+               "be recalculated"),
+        pagina_pdf=431),
+    caracter=Caracter.RECOMENDACION,
+    derivado_de="AASHTO_LRFD_9.5.7.3.4.2#GENERAL",
+    sesion=VE3_14,
+    nota=("Sin traccion axial ni presfuerzo y con M_u y V_u no negativos, εs "
+          "no puede salir negativo; la regla se aplica igual (se toma 0)."),
 )
 
 
