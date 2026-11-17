@@ -480,7 +480,10 @@ distinga un problema del expediente de un fallo del programa con un solo except.
   desciende de `ErrorProyecto` tumba la corrida entera** porque `servicio._etapa` no
   la captura, y la GUI no la puede distinguir de un fallo del programa. La
   regla que los separa sigue siendo la misma: si el revisor tiene que AÑADIR
-  algo es Faltante. Se amplió aquí en S16 (SIS-E-06): `modelos.py`
+  algo es Faltante. Y desde VE-3.10, el desnivel del perfil del canal
+  (`desnivel_perfil_canal_m`) que VC3 pide en un paso de canal (Familia C):
+  sin él el punto se detiene en el bucle de MD, a los dos alcances.
+  Se amplió aquí en S16 (SIS-E-06): `modelos.py`
   llevaba tiempo declarando el contrato ancho — "del CSV (Sec. 1.2) o de un
   tablero externo" — y el código lo usaba así, de modo que la constitución
   describía una excepción más estrecha que la que el proyecto tiene. La

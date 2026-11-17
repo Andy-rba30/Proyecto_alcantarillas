@@ -8011,23 +8011,25 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
 
 ## VE3-06 · VC3: las pérdidas de la obra contra el desnivel del perfil del canal (Familia C)
 
-- **Cerrado (VE-3.6, decisión del dueño del 2026-11-17):** VC3 = (cota_entrada + HW) −
+- **Cerrado (VE-3.6; VE-3.10, decisión del dueño del 2026-11-17):** VC3 = (cota_entrada + HW) −
   (cota_fondo_receptor + TW) ≤ F, con F el desnivel del perfil del canal en el cruce
-  (`desnivel_perfil_canal_m`, clave [S] del canal en `--datos-externos`, opcional, sólo
-  Familia C). Fuente [C] `USBR_DSCS`: USBR, *Design of Small Canal Structures* (1978), núm.
-  2-6, pág. impresa 23 («F (water surface differential) = Upstream canal NWS El. - Downstream
-  canal NWS El.») y 24 («Compare computed losses with the loss provided on profile sheet»); el
-  PDF, de dominio público, está en el repositorio de normas. Va en la tabla de la Fase 5 junto
-  a VC1 y DIMENSIONA: C-01 con F = 0.30 m pasa de 1.20 × 0.90 a 1.50 × 1.20 m; con 0.40 se
-  queda; con 0.15 no hay sección que cumpla.
+  (`desnivel_perfil_canal_m`, clave [S] del canal en `--datos-externos`, sólo Familia C).
+  Fuente [C] `USBR_DSCS`: USBR, *Design of Small Canal Structures* (1978), núm. 2-6, pág.
+  impresa 23 («F (water surface differential) = Upstream canal NWS El. - Downstream canal NWS
+  El.») y 24 («Compare computed losses with the loss provided on profile sheet»); el PDF, de
+  dominio público, está en el repositorio de normas. Va en la posición de VC1 y DIMENSIONA
+  (con la entrada en el canal, F = 0.30 m lleva el marco de C-01 a 1.50 × 1.20 m). SIN F el
+  punto se DETIENE (`DatoFaltanteError`, a los dos alcances), el pre-vuelo lo anuncia como
+  falta que detiene y el aviso de 7.B se retiró. Los juegos de prueba declaran F = 1.20 m,
+  rotulado (con la entrada en el terreno el marco pierde entre 0.91 y 1.02 m); la variante
+  `C01_sin_desnivel` muestra el bloqueo.
 - **Por qué así:** es el criterio del propio diseño de canales (la obra no puede consumir más
-  carga que la que el perfil del canal le deja) y no un número inventado: F es del canal, no
-  del proyectista de la vía.
-- **Qué haría falta:** decisión del dueño: sin F declarado hoy no hay fila y 7.B lo avisa
-  (`AVISO_VC3_SIN_DESNIVEL`), como T-3 dejó el remanso sin sección; ¿debe ser un bloqueo del
-  punto? (la hoja de ruta dice que la Familia C espera el dato de ANA / Junta de Usuarios).
+  carga que la que el perfil del canal le deja), y F es del canal, no del proyectista de la
+  vía: un cruce sin él no se entrega sin verificar.
+- **Qué haría falta:** el bloqueo diferido de VC1 sigue diciendo «rasante hidráulica, no»
+  aunque VC3 ya la verifica, y la CLI imprime «umbral del criterio» para un dato externo:
+  dos textos por corregir.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::vc3_rasante_canal`
-
 ## VE3-07 · El remanso del canal por paso directo (Familia C)
 
 - **Cerrado (VE-3.7):** `M3.perfil_remanso_trapecial`, paso directo (HDS-5 núm. 3.5) en canal
