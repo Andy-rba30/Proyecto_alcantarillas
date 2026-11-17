@@ -15,7 +15,7 @@ cada vez que se integra algo. Fecha de esta versión: 2026-11-17.
 - Repositorio de normas (`Andy-rba30/Normas`, `main` `b845d8b`): `ejemplos_resueltos/` con los
   PDF y hojas de los ejemplos (cajón, cabezal y muros, conducto) y su catálogo.
 
-## En curso (agentes en paralelo) — actualizado tras integrar VE-3.5 a VE-3.8 (`6a87006`)
+## En curso (agentes en paralelo) — actualizado tras integrar VE-3.5 a VE-3.8 (`6a87006`); línea base y documentos generados del conjunto en `1fdffd7` (sellos PROVISIONAL)
 
 Integrado en la rama además de lo de arriba: VE-3.5 (la zapata del cabezal se dimensiona por
 estabilidad), VE-3.6/3.7 (Familia C: VC3 contra el desnivel F del canal, fuente USBR; remanso
@@ -24,9 +24,8 @@ por paso directo), VE-3.8 (correcciones de la revisión Fable a la validación e
 
 | Trabajo | Respaldo del trabajo en curso (cada 15 min) |
 |---|---|
-| VE-3.9: paso 0.10 m y tope 1.5·H como valor de archivo de `dimensionamiento_zapata_cabezal`, y el ESPESOR de la zapata también se dimensiona (armado del talón A1/A2) | `claude/youthful-shannon-rjzmuc-respaldo-agent-a5b3b06a3d74de34c` |
-| VE-3.10: VC3 sin F BLOQUEA el punto (DatoFaltanteError), con F de prueba en el juego y en la línea base de la Familia C | `claude/youthful-shannon-rjzmuc-respaldo-agent-a9faca4ff8abe1b54` |
-| Regeneración de la línea base y de los documentos generados sobre el conjunto | — |
+| VE-3.9: paso 0.10 m y tope 1.5·H como valor de archivo de `dimensionamiento_zapata_cabezal`, y el ESPESOR de la zapata también se dimensiona (armado del talón A1/A2) | `claude/youthful-shannon-rjzmuc-respaldo-cabezal-espesor` |
+| VE-3.10: VC3 sin F BLOQUEA el punto (DatoFaltanteError), con F de prueba en el juego y en la línea base de la Familia C | `claude/youthful-shannon-rjzmuc-respaldo-vc3-bloqueo` |
 
 ## Decisiones del dueño (2026-11-17)
 
