@@ -261,7 +261,7 @@ from src.modelos import (CriterioPendienteError, DatoFaltanteError,      # noqa:
                          DatoInvalidoError, EstadoDeVerificacion, Familia,
                          Libre, PuntoCritico, SeccionRectangular)
 from src.tolerancias import TOL_UMBRAL_NORMATIVO                          # noqa: E402
-from tests.apoyo.criterios import declarados                              # noqa: E402
+from tests.apoyo.criterios import con_valor, declarados                   # noqa: E402
 
 CLAVE_NIVEL = "nivel_agua_diseno_v7"
 CLAVE_MARGEN = "margen_estacional_nf_v7_m"
@@ -495,9 +495,18 @@ def test_c2_las_piezas_publicas_de_m8_por_su_nombre():
 
 
 def test_c2_un_margen_negativo_es_dato_invalido():
-    with declarados({CLAVE_NIVEL: "nf_del_punto", CLAVE_MARGEN: -0.10}):
-        with pytest.raises(DatoInvalidoError) as exc:
-            _v7(_punto(NF_profundidad_m=0.50))
+    # CAMBIADO en la revision de VE-2 (M4), declarando la causa: desde ella
+    # la PUERTA rechaza el margen negativo (`Criterio.no_negativo`), y
+    # `declarados` --que pasa por la puerta-- ya no lo deja llegar al
+    # consumidor. Lo que este test fija es la SEGUNDA linea, la de M8, y para
+    # llegar a ella se esquiva la puerta con `con_valor`, que exige motivo.
+    # El rechazo en la puerta lo fija `tests/test_ve2_revision_m3_m4.py`.
+    with declarados({CLAVE_NIVEL: "nf_del_punto"}):
+        with con_valor(CLAVE_MARGEN, -0.10,
+                       motivo="segunda linea: el negativo que la puerta "
+                              "rechaza, llevado al consumidor a proposito"):
+            with pytest.raises(DatoInvalidoError) as exc:
+                _v7(_punto(NF_profundidad_m=0.50))
     assert exc.value.campo == CLAVE_MARGEN
 
 

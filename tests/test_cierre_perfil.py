@@ -40,7 +40,7 @@ from scipy.optimize import brentq
 RAIZ = Path(__file__).resolve().parents[1]
 import cli                                                        # noqa: E402
 from src import criterios_adoptados as ca
-from src.modelos import SeccionReceptor, ViaDelTW
+from src.modelos import DeEnsayo, SeccionReceptor, ViaDelTW
 from src.modulos import M11_reporte as M11
 from src.modulos import M3_hidraulica as M3
 from tests.apoyo.aproximacion import ABS_CERO, REL_TRANSPORTE     # noqa: E402
@@ -491,6 +491,11 @@ VACIOS_DE_PERFIL_NO_INVOCADOS = [
     # 'nf_del_punto', que esta corrida no declara (con el valor de archivo,
     # 'en_la_clave', no se invoca). Lo ejercita `tests/test_ve2_flotacion.py`.
     "margen_estacional_nf_v7_m",
+    # --- Revision de VE-2 (M3) --- El peso especifico saturado del relleno,
+    # dato de ensayo: lo lee V7 con la misma alternativa y el nivel sobre la
+    # clave, y entonces una corrida de perfil se detiene en el (lo mide
+    # `tests/test_ve2_revision_m3_m4.py`). Esta corrida no lo invoca.
+    "peso_especifico_saturado_relleno_kn_m3",
 ]
 VACIOS_DE_PERFIL_DEL_CAJON = [
     "secciones_cajon_normalizadas",   # la progresion B*H
@@ -583,6 +588,13 @@ def test_los_vacios_de_perfil_que_quedan_dicen_por_que(informe_perfil):
         assert clave in USADOS_POR_LA_CORRIDA, clave
 
     for clave in ca.criterios_de_perfil_sin_valor():
+        # CAMBIADO en la revision de VE-2 (M3), declarando la causa: el dato
+        # de ENSAYO no lleva ventana --la guardia se la prohibe-- y su
+        # «ventana» es la trazabilidad que `DeEnsayo` exige al declararlo.
+        # Antes ningun vacio de perfil era de ensayo.
+        if isinstance(ca.CRITERIOS[clave].resolucion, DeEnsayo):
+            assert ca.CRITERIOS[clave].resolucion.trazabilidad_exigida, clave
+            continue
         assert ca.CRITERIOS[clave].sensibilidad is not None, (
             f"'{clave}' esta vacio y sin ventana: la ventana es parte de la "
             "ficha, no del valor")

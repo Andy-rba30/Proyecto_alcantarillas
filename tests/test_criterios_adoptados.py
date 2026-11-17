@@ -24,7 +24,7 @@ from src.constantes_normativas import (F_PGA_TABLA,
 from src.criterios_adoptados import (CRITERIOS, criterio, criterios_sin_valor,
                                  parametros_sensibilizables, reporte_criterios,
                                  valor)
-from src.modelos import CriterioPendienteError, ErrorProyecto
+from src.modelos import CriterioPendienteError, DeEnsayo, ErrorProyecto
 from tests.fixtures.casos_patron import (CP2_GEOMETRIA_MANNING,
                                          CP7_CADENA_SISMICA,
                                          CP8_CONTROL_SALIDA)
@@ -178,14 +178,26 @@ def test_todo_criterio_de_perfil_sin_valor_tiene_ficha_declarable():
     # --- VE-2 (c2) --- 'margen_estacional_nf_v7_m': el ascenso estacional
     # del freatico, que solo lee V7 con 'nivel_agua_diseno_v7' =
     # 'nf_del_punto'; su VALOR lo da el estudio geotecnico, no el software.
+    # --- Revision de VE-2 (M3) --- 'peso_especifico_saturado_relleno_kn_m3',
+    # dato de ENSAYO que V7 lee con esa alternativa y el nivel sobre la
+    # clave: paso de expediente a perfil porque una corrida de perfil se
+    # detiene en el. Su VALOR lo da el ensayo del relleno.
     assert sorted(claves) == ["TW_receptor", "homogeneidad_serie_fen",
-                              "margen_estacional_nf_v7_m"]
+                              "margen_estacional_nf_v7_m",
+                              "peso_especifico_saturado_relleno_kn_m3"]
     for clave in claves:
         c = CRITERIOS[clave]
         for campo in ("concepto", "justificacion", "fuente"):
             assert str(getattr(c, campo)).strip(), (
                 f"{clave}: `{campo}` vacio --- la ventana no puede presentar "
                 "un vacio sin decir que es ni de donde saldria")
+        if isinstance(c.resolucion, DeEnsayo):
+            # CAMBIADO en la revision de VE-2 (M3), declarando la causa: un
+            # dato de ensayo no tiene ventana (la guardia se la prohibe); lo
+            # que la ventana de la GUI le pide es la trazabilidad.
+            assert c.sensibilidad is None
+            assert c.resolucion.ensayo and c.resolucion.trazabilidad_exigida
+            continue
         assert c.sensibilidad, (
             f"{clave}: sin `sensibilidad` --- la ventana es parte de la "
             "FICHA y se conoce antes de elegir")

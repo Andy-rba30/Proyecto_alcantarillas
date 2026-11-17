@@ -378,13 +378,18 @@ dentro de la que se elige. La tabla sale de esas fichas:
 | `TW_receptor` | [A] | `float` | m >= 0 sobre el fondo de la salida; 0 es salida libre |
 | `homogeneidad_serie_fen` | [A] | `categoria` | una de: `serie_completa`, `serie_sin_fen`, `dos_poblaciones` |
 | `margen_estacional_nf_v7_m` | [A] | `float` | m >= 0 |
+| `peso_especifico_saturado_relleno_kn_m3` | [A] | `float` | sin ventana: lo da el ensayo (peso especifico saturado del relleno compactado del trasdos), con su trazabilidad (cantera, ensayo, grado de compactacion y laboratorio) |
 <!-- fin: criterios -->
 
-Ninguno de los tres detiene este ejemplo, porque sólo se invocan en
+Ninguno de los cuatro detiene este ejemplo, porque sólo se invocan en
 condiciones que el ejemplo no alcanza: `margen_estacional_nf_v7_m` (VE-2) es
 lo que el freático sube sobre la lectura de `NF_profundidad_m` y sólo lo lee
 la flotación (V7) cuando `nivel_agua_diseno_v7` declara `nf_del_punto`; con
-el valor de archivo, `en_la_clave`, nunca se lee. `TW_receptor` es la última puerta del
+el valor de archivo, `en_la_clave`, nunca se lee. Con esa misma alternativa y
+el nivel sobre la clave, V7 lee también `peso_especifico_saturado_relleno_kn_m3`
+para el relleno que queda bajo el agua: es un dato de **ensayo** del relleno,
+no una elección, y por eso no tiene ventana sino trazabilidad (la pestaña 2
+la pide como nota al declararlo). `TW_receptor` es la última puerta del
 TW (Sec. 1.3) cuando no hay ni `TW_m`, ni `cota_TW`, ni caudal del receptor;
 y `homogeneidad_serie_fen` es la decisión de qué se hace con los años del
 fenómeno El Niño de la serie de precipitación (Fase 1-bis), y sólo la invoca
@@ -422,6 +427,7 @@ elegir):
 --declarar TW_receptor=0.0
 --declarar homogeneidad_serie_fen=serie_completa
 --declarar margen_estacional_nf_v7_m=0.0
+--declarar peso_especifico_saturado_relleno_kn_m3=20.0
 ```
 
 Por forma: un `float` se escribe con punto decimal; un `int` sin decimales;

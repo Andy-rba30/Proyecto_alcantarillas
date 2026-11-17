@@ -727,6 +727,13 @@ PERFIL_SIN_VALOR_QUE_ESPERA_UNA_ENTRADA = {
         "lectura de NF_profundidad_m (solo lo lee V7 con "
         "'nivel_agua_diseno_v7' = 'nf_del_punto'; con el valor de archivo, "
         "'en_la_clave', nunca se lee)"),
+    # --- Revision de VE-2 (M3) --- paso de expediente a perfil: con la misma
+    # alternativa y el nivel sobre la clave, V7 lo lee y una corrida de
+    # perfil se detiene en el.
+    "peso_especifico_saturado_relleno_kn_m3": (
+        "el ensayo del material de cantera del relleno (lo lee el cabezal "
+        "con agua en el relleno, y V7 solo con 'nivel_agua_diseno_v7' = "
+        "'nf_del_punto' y el nivel sobre la clave)"),
 }
 
 

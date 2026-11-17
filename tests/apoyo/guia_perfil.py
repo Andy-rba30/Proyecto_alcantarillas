@@ -49,7 +49,7 @@ from src import criterios_adoptados as ca
 from src import datos_sitio as ds
 from src import servicio
 from src import sesion
-from src.modelos import DeTabla, Derivada, Familia, Libre
+from src.modelos import DeEnsayo, DeTabla, Derivada, Familia, Libre
 from src.modulos import M0_carga as M0
 from src.modulos import M11_reporte as M11
 
@@ -187,7 +187,10 @@ def ventana_de(clave: str) -> str:
     """
     La ventana de un criterio, dicha con lo que su ficha declara: las opciones
     cerradas de una `categoria` (que viven en `sensibilidad`), las tablas de
-    una resolucion `DeTabla`, o el `dominio` de una `Libre`.
+    una resolucion `DeTabla`, el `dominio` de una `Libre`, o --- desde la
+    revision de VE-2 (M3), que trajo el primer dato de ENSAYO de perfil --- el
+    ensayo de un `DeEnsayo` con la trazabilidad que se exige al declararlo:
+    un dato de ensayo no tiene rango que elegir.
     """
     c = ca.CRITERIOS[clave]
     r = c.resolucion
@@ -197,6 +200,9 @@ def ventana_de(clave: str) -> str:
         return "la clave de una fila de " + ", ".join(f"`{t}`" for t in r.tablas)
     if isinstance(r, Libre) and r.dominio:
         return r.dominio
+    if isinstance(r, DeEnsayo):
+        return (f"sin ventana: lo da el ensayo ({r.ensayo}), con su "
+                f"trazabilidad ({r.trazabilidad_exigida})")
     raise ValueError(f"{clave}: no se sabe escribir su ventana ({type(r).__name__})")
 
 

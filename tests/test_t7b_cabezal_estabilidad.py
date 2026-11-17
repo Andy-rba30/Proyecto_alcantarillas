@@ -281,11 +281,21 @@ def test_los_factores_de_resistencia_salen_de_la_fila_declarada():
 # 2. LOS CRITERIOS: nada inventado, y nada con valor donde el dueño dijo que no
 # ===========================================================================
 
+# CAMBIADO en la revision de VE-2 (M3), declarando la causa: el peso
+# saturado del relleno nacio aqui de expediente (lo leia solo el cabezal), y
+# desde VE-2 lo lee tambien V7 con 'nivel_agua_diseno_v7' = 'nf_del_punto';
+# medido en `tests/test_ve2_revision_m3_m4.py`, una corrida de perfil se
+# detiene en el, y paso a perfil. Los otros ocho siguen de expediente.
+DE_PERFIL_DESDE_LA_REVISION_DE_VE2 = ("peso_especifico_saturado_relleno_kn_m3",)
+
+
 def test_los_nueve_criterios_nuevos_estan_al_final_y_son_de_expediente():
     claves = list(ca.CRITERIOS)
     for clave in NUEVOS_T7B:
         c = ca.CRITERIOS[clave]
-        assert c.nivel == ca.NIVEL_EXPEDIENTE, clave
+        esperado = (ca.NIVEL_PERFIL if clave in DE_PERFIL_DESDE_LA_REVISION_DE_VE2
+                    else ca.NIVEL_EXPEDIENTE)
+        assert c.nivel == esperado, clave
         assert c.justificacion.strip(), clave
     # Al final de su seccion: los nueve van seguidos, en este orden.
     indices = [claves.index(k) for k in NUEVOS_T7B]
