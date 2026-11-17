@@ -7,7 +7,7 @@
 > Si difieren, lo que hay que corregir es el cálculo o el registro, no
 > este archivo.
 >
-> **Sello.** Fecha de generación: 2026-11-17 · Commit del árbol de origen: `7646c22+cambios-sin-commit` · Suite: 7425 passed, 10 skipped (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)
+> **Sello.** Fecha de generación: 2026-11-17 · Commit del árbol de origen: `f39e26f+cambios-sin-commit` · Suite: PROVISIONAL (PyMuPDF sí · ventana Tk sí · repositorio de normas enlazado)
 >
 > **Qué es una fila.** Una fórmula distinta que la corrida evaluó:
 > fase, módulo emisor (derivado del AST de `src/modulos/`, no de una
@@ -80,7 +80,7 @@ es del proyecto.
 - Etapas que la corrida no completó (la razón está en el informe; aquí sólo se nombra la etapa):
   - A-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DISENO_NO_FACTIBLE`).
   - A-02: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DISENO_NO_FACTIBLE`).
-  - B-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DISENO_NO_FACTIBLE`).
+  - B-01: Fases 3-5 - Diseno hidraulico (MD: M2/M3/M4/M5) → material y diametro (bucle de MD) (`TipoDeBloqueo.DATO_FALTANTE`).
   - C-01: Fase 5 - Verificaciones → VC1 - alcance del requisito de la Sec. 2.3 (borde libre verificado; rasante hidraulica, no) (`TipoDeBloqueo.DIFERIDO_POR_ALCANCE`).
 
 Pasos emitidos: **1105** · fórmulas distintas: **290** · fundamentos ejercitados: **104** de 129.

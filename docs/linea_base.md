@@ -834,3 +834,17 @@ números de cálculo son los de §11, y ningún diámetro, sección, material ni
 respecto de `72a8d01` salvo lo que §11 lista** (A-01, A-02, C-01 y el cajón, por (b); medido hoja por hoja en los cuatro JSON, con un
 único número que §11 no escribía: el ancho final de la clase de A-02, 6.30 → 5.70 m, que
 acompaña al paso de la clase 4 a la 3).
+
+## 17. Correcciones de la revisión independiente de VE-2 (2026-11-17): sólo la huella de `criterios_adoptados.py`
+
+Regenerada con `sh tests/linea_base_familia_c/regenerar.sh` (con el Python del proyecto
+primero en el `PATH`: el `python3` del sistema puede no traer scipy). De las seis
+correcciones (ficha VE2-03), sólo M3 y M4 tocan `criterios_adoptados.py`: el nivel de
+`peso_especifico_saturado_relleno_kn_m3` (expediente → perfil) y el campo `no_negativo` de
+`margen_estacional_nf_v7_m`. Resultado: `criterios_sha1` en los cuatro JSON y la fila de la
+huella en las cuatro memorias, y nada más. A1 (el dato que falta en la Fase 5) no mueve la
+línea base: ninguna de sus corridas tiene un punto al que la Fase 5 le detenga por un dato
+que falta un escalón que cumple; sí mueve `docs/validacion_integral.md` (variante
+`caudal_calculado`, B-01) y el resumen de la tercera corrida del índice de fórmulas.
+
+**Diámetros, secciones, materiales y HW movidos: ninguno.**

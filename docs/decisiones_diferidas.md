@@ -7877,3 +7877,30 @@ la línea base se regeneró y su diff es la frase de la remisión en la resumida
   control de salida; si sí, tests en rojo con el caso de arriba, corrección en
   `_velocidad_de_v3` y línea base regenerada con su lista de números movidos.
 - **Dónde vive:** `src/modulos/M5_verificaciones.py::_velocidad_de_v3`
+
+## VE2-03 · Lo que la revisión independiente de VE-2 encontró y se corrigió (A1, M3, M4, B1, B3, B4)
+
+- **Cerrado (revisión Fable, `proceso/planes_mejora/ve2_estado/REVISION_FABLE.md`; un alto,
+  dos medios y tres bajos):** (A1) el `DatoFaltanteError` que la Fase 5 levanta sobre un
+  escalón que cumple lo evaluado decide como el inválido de T11-03
+  (`MD._detuvo_un_escalon_que_cumplia`): B-01 de la variante `caudal_calculado` ya no sale
+  «no factible» con delta de rasante, sale el dato que falta (`Q_evento_extremo_m3s`), y
+  con ese dato coherente se detiene en `perfil_hdpe_fabricante`. (M3)
+  `peso_especifico_saturado_relleno_kn_m3` es de perfil, medido por una corrida de perfil
+  con `nivel_agua_diseno_v7` = `nf_del_punto`; para eso la regla 3 de `_verificar_nivel`
+  exime de la ventana al dato de ensayo, que lleva la trazabilidad de `DeEnsayo` (CLAUDE.md
+  al día). (M4) `Criterio.no_negativo`, comprobado por `_verificar_signo` en los tres
+  caminos, sólo en `margen_estacional_nf_v7_m`; sin tope inventado. (B1) el caso G2
+  original (S = 0.012) queda fijado: se detiene en la clase D-load de la Fase 8. (B3)
+  `TOL_REL_CONTINUIDAD_MANNING` a 1e-8: fuera de la malla de la suite (marcos con Q bajo el
+  5 % del lleno) se midieron 1.81e-9. (B4) los cuatro parches de `ve2_estado/` retirados
+  (siguen en la historia) y su LEEME al día.
+- **Por qué así:** A1 es la regla de CLAUDE.md («un punto al que solo le falta un dato no
+  es "no factible"»), aplicada con el mismo criterio que el dato inválido; M3 sigue la
+  regla de las dos direcciones del nivel. Tests en rojo primero
+  (`tests/test_ve2_correcciones.py`, `tests/test_ve2_revision_m3_m4.py`).
+- **Qué haría falta:** nada para estos. Quedan para el dueño M1 (ficha VE2-04) y, ya
+  diferido, M2 (VE2-B); B2 (un `TypeError` inalcanzable en M8) y B5 (dos diámetros de
+  cálculo del concreto con la opción inglesa, declarado en la `Interpretacion`) se dejan
+  como están.
+- **Dónde vive:** `src/modulos/MD.py::_detuvo_un_escalon_que_cumplia`
